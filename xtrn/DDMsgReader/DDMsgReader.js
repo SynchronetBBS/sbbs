@@ -301,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 21";
-var READER_DATE = "2017-01-08";
+var READER_VERSION = "1.17 Beta 22";
+var READER_DATE = "2017-01-10";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -708,8 +708,9 @@ if (gDoDDMR)
 		bbs.cursub = originalSubBoardIdx;
 	}
 
-	// Remove the temporary attachments directory if it exists
+	// Remove the temporary attachments & ANSI temp directories if they exists
 	deltree(gFileAttachDir);
+	deltree(backslash(system.node_dir + "DDMsgReaderANSIMsgTemp"));
 
 	// Before this script finishes, make sure the terminal attributes are set back
 	// to normal (in case there are any attributes left on, such as background,
@@ -9619,7 +9620,6 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		for (var hdrFileIdx = 0; hdrFileIdx < enhHdrLines.length; ++hdrFileIdx)
 		{
 			console.gotoxy(screenX, screenY++);
-			//console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
 			console.putmsg(this.ParseMsgAtCodes(enhHdrLines[hdrFileIdx], pMsgHdr,
 			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false));
 		}
@@ -12482,9 +12482,9 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 			// Write the message to a file in a temporary directory,
 			// have the frame object read it, then delete the temporary
 			// directory.
-			var ANSITempDirExists = false;
 			var readerTmpOutputDir = backslash(system.node_dir + "DDMsgReaderANSIMsgTemp");
-			if (!file_exists(readerTmpOutputDir))
+			var ANSITempDirExists = file_exists(readerTmpOutputDir);
+			if (!ANSITempDirExists)
 				ANSITempDirExists = mkdir(readerTmpOutputDir);
 			if (ANSITempDirExists)
 			{
@@ -15345,7 +15345,7 @@ function scrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 					retObj.topLineIdx += pFrame.height;
 					if (retObj.topLineIdx > topLineIdxForLastPage)
 						retObj.topLineIdx = topLineIdxForLastPage;
-					pFrame.scrollTo(1, retObj.topLineIdx+1);
+					pFrame.scrollTo(0, retObj.topLineIdx);
 					cycleFrame = true;
 					writeTxtLines = true;
 				}
@@ -15357,20 +15357,20 @@ function scrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 					retObj.topLineIdx -= pFrame.height;
 					if (retObj.topLineIdx < 0)
 						retObj.topLineIdx = 0;
-					pFrame.scrollTo(1, retObj.topLineIdx+1);
+					pFrame.scrollTo(0, retObj.topLineIdx);
 					cycleFrame = true;
 					writeTxtLines = true;
 				}
 				break;
 			case KEY_HOME: // First page
 				//pFrame.home();
-				pFrame.scrollTo(1, 1);
+				pFrame.scrollTo(0, 0);
 				cycleFrame = true;
 				retObj.topLineIdx = 0;
 				break;
 			case KEY_END: // Last page
 				//pFrame.end();
-				pFrame.scrollTo(1, topLineIdxForLastPage+1);
+				pFrame.scrollTo(0, topLineIdxForLastPage);
 				cycleFrame = true;
 				retObj.topLineIdx = topLineIdxForLastPage;
 				break;
