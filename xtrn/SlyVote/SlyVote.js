@@ -217,6 +217,8 @@ else
 		subBoardsLB.Add(desc, slyVoteCfg.subBoardCodes[idx]);
 	}
 	gSubBoardCode = subBoardsLB.GetVal();
+	if (gSubBoardCode == null)
+		exit(0);
 	console.gotoxy(1, subBoardsLB.pos.y+subBoardsLB.size.height+1);
 }
 
@@ -283,22 +285,30 @@ function DoMainMenu()
 		nextProgramState = VOTING_ON_A_TOPIC;
 	else if (userChoice == "answerAll")
 	{
-		
+		// TODO
 	}
 	else if (userChoice == "create")
 	{
+		// Set the user's current sub-board to the chosen sub-board before
+		// posting a poll
+		var curSubCodeBackup = bbs.cursub_code;
+		bbs.cursub_code = gSubBoardCode;
+		// Let the user post a poll
 		console.print("\1n");
 		console.gotoxy(1, console.screen_rows);
 		bbs.exec("?postpoll.js");
+		// Restore the user's sub-board
+		bbs.cursub_code = curSubCodeBackup;
 	}
 	else if (userChoice == "viewResults")
 		nextProgramState = VIEWING_VOTE_RESULTS;
-	else if (userChoice == "quit")
+	else if ((userChoice == "quit") || (userChoice == null))
 		nextProgramState = EXIT_SLYVOTE;
 
 	return nextProgramState;
 }
 
+// Lets the user choose a voting topic (poll) to vote on
 function ChooseVoteTopic()
 {
 	gProgramState = VOTING_ON_A_TOPIC;
@@ -365,7 +375,7 @@ function ChooseVoteTopic()
 			//topicsMenu.Erase();
 			console.gotoxy(18, pleaseSelectTextRow);
 			printf("%" + strip_ctrl(pleaseSectTopicText).length + "s", "");
-			var voteRetObj = ChooseVoteTopic(gSubBoardCode, userChoice, startCol, listTopRow, textLen, menuHeight);
+			var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, userChoice, startCol, listTopRow, textLen, menuHeight);
 			drawTopicsMenu = true;
 			if (voteRetObj.errorMsg.length > 0)
 			{
@@ -394,7 +404,7 @@ function ChooseVoteTopic()
 	return nextProgramState;
 }
 
-// Lets the user choose a topic to vote on, and then vote on it
+// Displays options for a topic and lets the user vote on it
 //
 // Parameters:
 //  pSubBoardCode: The internal code of the sub-board
@@ -407,14 +417,14 @@ function ChooseVoteTopic()
 // Return value: An object containing the following properties:
 //               errorMsg: A string containing a message on error, or an empty string on success
 //               mnemonicsRequiredForErrorMsg: Whether or not mnemonics is required to display the error message
-function ChooseVoteTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, pMenuHeight)
+function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, pMenuHeight)
 {
 	var retObj = {
 		errorMsg: "",
 		mnemonicsRequiredForErrorMsg: false,
 		nextProgramState: VOTING_ON_A_TOPIC
 	};
-	
+
 	// Open the chosen sub-board
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
@@ -427,7 +437,6 @@ function ChooseVoteTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidt
 				var pollTextAndOpts = GetPollTextAndOpts(msgHdr);
 				// Print the poll question text
 				console.gotoxy(1, pStartRow-4);
-				//printf("\1n\1c%-" + console.screen_columns + "s", msgHdr.subject.substr(0, console.screen_columns));
 				var pollSubject = msgHdr.subject.substr(0, console.screen_columns);
 				console.print("\1n\1c" + pollSubject);
 				// Output up to the first 3 poll comment lines
@@ -447,23 +456,26 @@ function ChooseVoteTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidt
 				optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
 				// Get the user's choice of voting option and submit it for voting
 				var userChoice = optionsMenu.GetVal(true);
-				var voteRetObj = VoteOnTopic(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
-				// If there was an error, then show it.  Otherwise, show a success message.
-				var firstLineEraseLength = pollSubject.length;
-				console.gotoxy(1, pStartRow-4);
-				printf("\1n%" + pollSubject.length + "s", "");
-				console.gotoxy(1, pStartRow-4);
-				if (voteRetObj.errorMsg.length > 0)
+				if (userChoice != null)
 				{
-					var voteErrMsg = voteRetObj.errorMsg.substr(0, console.screen_columns - 2);
-					firstLineEraseLength = voteErrMsg.length;
-					console.print("\1y\1h* " + voteErrMsg);
-					mswait(ERROR_PAUSE_WAIT_MS);
-				}
-				else
-				{
-					console.print("\1cYour vote was successfully saved.");
-					mswait(ERROR_PAUSE_WAIT_MS);
+					var voteRetObj = VoteOnTopic(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
+					// If there was an error, then show it.  Otherwise, show a success message.
+					var firstLineEraseLength = pollSubject.length;
+					console.gotoxy(1, pStartRow-4);
+					printf("\1n%" + pollSubject.length + "s", "");
+					console.gotoxy(1, pStartRow-4);
+					if (voteRetObj.errorMsg.length > 0)
+					{
+						var voteErrMsg = voteRetObj.errorMsg.substr(0, console.screen_columns - 2);
+						firstLineEraseLength = voteErrMsg.length;
+						console.print("\1y\1h* " + voteErrMsg);
+						mswait(ERROR_PAUSE_WAIT_MS);
+					}
+					else
+					{
+						console.print("\1cYour vote was successfully saved.");
+						mswait(ERROR_PAUSE_WAIT_MS);
+					}
 				}
 
 				// Before returning, erase the poll question text and comment lines from the screen
