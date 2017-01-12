@@ -10,6 +10,12 @@
  * 2016-12-29 Eric Oulashin     Version 0.01 Beta
  *                              Started
  */
+ 
+ // TODO:
+ // - Answer all topics
+ // - In the result viewer, allow users to type in a topic number and jump to it
+ // - Allow sysops to delete polls
+ // - Add a help screen?
 
 
 load("sbbsdefs.js");
@@ -53,8 +59,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.01 Beta";
-var SLYVOTE_DATE = "2017-01-10";
+var SLYVOTE_VERSION = "0.03 Beta";
+var SLYVOTE_DATE = "2017-01-11";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -214,8 +220,6 @@ else
 	console.gotoxy(1, subBoardsLB.pos.y+subBoardsLB.size.height+1);
 }
 
-//bbs.exec("?postpoll.js");
-
 // Program states
 var MAIN_MENU = 0;
 var VOTING_ON_A_TOPIC = 1;
@@ -316,7 +320,7 @@ function ChooseVoteTopic()
 		console.print("\1n\1y\1h" + voteTopicInfo.errorMsg + "\1n");
 		console.crlf();
 		console.pause();
-		return;
+		return MAIN_MENU;
 	}
 	else if (voteTopicInfo.msgHdrs.length == 0)
 	{
@@ -324,7 +328,7 @@ function ChooseVoteTopic()
 		console.print("\1n\1cThere are no polls to vote on in this section\1n");
 		console.crlf();
 		console.pause();
-		return;
+		return MAIN_MENU;
 	}
 
 	// Display the list of voting topics
@@ -361,7 +365,7 @@ function ChooseVoteTopic()
 			//topicsMenu.Erase();
 			console.gotoxy(18, pleaseSelectTextRow);
 			printf("%" + strip_ctrl(pleaseSectTopicText).length + "s", "");
-			var voteRetObj = VoteOnTopic(gSubBoardCode, userChoice, startCol, listTopRow, textLen, menuHeight);
+			var voteRetObj = ChooseVoteTopic(gSubBoardCode, userChoice, startCol, listTopRow, textLen, menuHeight);
 			drawTopicsMenu = true;
 			if (voteRetObj.errorMsg.length > 0)
 			{
@@ -390,7 +394,7 @@ function ChooseVoteTopic()
 	return nextProgramState;
 }
 
-// Lets the user vote on a topic
+// Lets the user choose a topic to vote on, and then vote on it
 //
 // Parameters:
 //  pSubBoardCode: The internal code of the sub-board
@@ -403,7 +407,7 @@ function ChooseVoteTopic()
 // Return value: An object containing the following properties:
 //               errorMsg: A string containing a message on error, or an empty string on success
 //               mnemonicsRequiredForErrorMsg: Whether or not mnemonics is required to display the error message
-function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, pMenuHeight)
+function ChooseVoteTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, pMenuHeight)
 {
 	var retObj = {
 		errorMsg: "",
@@ -443,7 +447,7 @@ function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, p
 				optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
 				// Get the user's choice of voting option and submit it for voting
 				var userChoice = optionsMenu.GetVal(true);
-				var voteRetObj = VoteOnMessage(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
+				var voteRetObj = VoteOnTopic(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
 				// If there was an error, then show it.  Otherwise, show a success message.
 				var firstLineEraseLength = pollSubject.length;
 				console.gotoxy(1, pStartRow-4);
@@ -480,7 +484,8 @@ function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, p
 		else
 		{
 			// The user has already voted
-			retObj.errorMsg = bbs.text(VotedAlready).replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
+			retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
+			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 			retObj.mnemonicsRequiredForErrorMsg = true;
 		}
 
@@ -904,7 +909,7 @@ function GetPollTextAndOpts(pMsgHdr)
 //               mnemonicsRequiredForErrorMsg: Boolean - Whether or not mnemonics is required to print the error message
 //               updatedHdr: The updated message header containing vote information.
 //                           If something went wrong, this will be null.
-function VoteOnMessage(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pRemoveNLsFromVoteText)
+function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pRemoveNLsFromVoteText)
 {
 	var retObj = new Object();
 	retObj.BBSHasVoteFunction = (typeof(pMsgbase.vote_msg) === "function");
@@ -1022,7 +1027,7 @@ function VoteOnMessage(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber,
 			if (typeof(pUserVoteNumber) != "number")
 			{
 				console.clear("\1n");
-				var selectHdr = bbs.text(SelectItemHdr);
+				var selectHdr = bbs.text(typeof(SelectItemHdr) != "undefined" ? SelectItemHdr : 501);
 				printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
 				var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
 				var optionNum = 1;
@@ -1037,7 +1042,7 @@ function VoteOnMessage(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber,
 				console.crlf();
 				// Get the selection prompt text from text.dat and replace the %u or %d with
 				// the number 1 (default option)
-				var selectPromptText = bbs.text(SelectItemWhich);
+				var selectPromptText = bbs.text(typeof(SelectItemWhich) != "undefined" ? SelectItemWhich : 503);
 				selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
 				console.mnemonics(selectPromptText);
 				// Get & process the selection from the user
@@ -1265,7 +1270,7 @@ function ViewVoteResults(pSubBoardCode)
 				pollMsgHdrs.push(msgHdrs[prop]);
 		}
 		delete msgHdrs; // Free some memory
-
+		
 		// If there are no polls, then just return
 		if (pollMsgHdrs.length == 0)
 		{
@@ -1306,11 +1311,19 @@ function ViewVoteResults(pSubBoardCode)
 		// User input loop
 		var currentMsgIdx = 0;
 		var drawMsg = true;
+		var drawKeyHelpLine = false;
 		var continueOn = true;
 		while (continueOn)
 		{
 			// Do garbage collection to ensure low memory usage
 			js.gc(true);
+
+			// Display the key help line if specified to do so
+			if (drawKeyHelpLine)
+			{
+				console.gotoxy(1, console.screen_rows);
+				console.print("\1n" + keyHelpLine);
+			}
 
 			// Get the message header lines to be displayed
 			var dateTimeStr = pollMsgHdrs[currentMsgIdx]["date"].replace(/ [-+][0-9]+$/, "");
@@ -1339,6 +1352,7 @@ function ViewVoteResults(pSubBoardCode)
 				displayFrame.draw();
 			var scrollRetObj = ScrollFrame(displayFrame, displayFrameScrollbar, 0, "\1n", false, 1, console.screen_rows);
 			drawMsg = true;
+			drawKeyHelpLine = false;
 			if (scrollRetObj.lastKeypress == KEY_LEFT)
 			{
 				// Go back one poll topic
@@ -1373,7 +1387,37 @@ function ViewVoteResults(pSubBoardCode)
 			}
 			else if (scrollRetObj.lastKeypress == gReaderKeys.vote)
 			{
-				// TODO: Vote on the topic
+				// Let the user vote on the topic in interactive mode (this uses
+				// traditional style interaction rather than usinga lightbar).
+				var voteRetObj = VoteOnTopic(pSubBoardCode, msgbase, pollMsgHdrs[currentMsgIdx], user, null, true);
+				drawKeyHelpLine = true;
+				// If the user's vote was saved, then update the message header so that it includes
+				// the user's vote information.
+				if (voteRetObj.savedVote)
+				{
+					var msgHdrs = msgbase.get_all_msg_headers(true);
+					pollMsgHdrs[currentMsgIdx] = msgHdrs[pollMsgHdrs[currentMsgIdx].number];
+					delete msgHdrs;
+				}
+				// If there is an error message, then display it.
+				if (voteRetObj.errorMsg.length > 0)
+				{
+					console.gotoxy(1, gMessageRow);
+					if (voteRetObj.mnemonicsRequiredForErrorMsg)
+					{
+						console.mnemonics(voteRetObj.errorMsg);
+						mswait(ERROR_PAUSE_WAIT_MS);
+						console.gotoxy(1, gMessageRow);
+						printf("\1n%" + console.screen_columns + "s", "");
+					}
+					else
+					{
+						console.print("\1n\1y\1h" + voteRetObj.errorMsg);
+						mswait(ERROR_PAUSE_WAIT_MS);
+						console.gotoxy(1, gMessageRow);
+						printf("\1n%" + strip_ctrl(voteRetObj.errorMsg).length + "s", "");
+					}
+				}
 			}
 			else if (/[0-9]/.test(scrollRetObj.lastKeypress))
 			{

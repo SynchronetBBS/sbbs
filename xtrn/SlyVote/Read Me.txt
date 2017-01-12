@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.01 Beta
-                           Release date: 2017-01-01
+                                 Version 0.02 Beta
+                           Release date: 2017-01-11
 
                                      by
 
@@ -12,8 +12,6 @@
                         Email: eric.oulashin@gmail.com
 
 
-
-This file describes SlyVote.
 
 Contents
 ========
@@ -36,8 +34,12 @@ SlyVote is a voting booth door for Synchronet, which allows users to add and
 vote on various topics with multiple-choice answers.  SlyVote makes use of the
 voting capabilities in the Synchronet messagebase, which were added to
 Synchronet 3.17.  Thus, SlyVote requires version 3.17 or higher of Synchronet,
-along with the latest sbbsdefs.js and possibly other JavaScript files included
-with Synchronet.
+along with the latest JavaScript files for Synchronet, such as the following:
+- sbbsdefs.js
+- text.js
+- frame.js
+- scrollbar.js
+- Possibly other JavaScript files
 
 SlyVote requires an ANSI terminal, since SlyVote makes use of lightbar menus
 which do cursor movement, etc.
@@ -51,6 +53,14 @@ yet.
 
 3. Installation & Setup
 =======================
+First, ensure that you have an up-to-date Synchronet system running Synchronet
+3.17 or higher, and ensure that your Synchronet JavaScript files (in
+sbbs/exec/load) are up to date.  Before the official Synchronet 3.17 is/was
+released, daily 3.17 beta builds can be downloaded from Vertrauen (the home
+BBS of Synchronet).  See the section below titled "Updating Synchronet".
+
+Setting up SlyVote
+------------------
 SlyVote is comprised of the following files:
 1. SlyVote.js             The SlyVote script
 
@@ -113,6 +123,22 @@ can add a menu command to run SlyVote as follows:
 bbs.exec("?../xtrn/SlyVote/SlyVote.js");
 
 
+Updating Synchronet
+-------------------
+SlyVote requires Synchronet 3.17 or higher, along with the latest Synchronet
+JavaScript files.
+Daily-built Windows beta binaries can be downloaded from this URL:
+ftp://vert.synchro.net/main/SBBS/sbbs_dev.zip
+Daily-built Linux x64 binaries can be downloaded here:
+ftp://vert.synchro.net/main/SBBS/sbbs_dev.tgz
+To update your JavaScript files, first download the sbbs_run archive - Either
+one of the following:
+With CRLF line endings: ftp://vert.synchro.net/main/SBBS/sbbs_run.zip
+With CR line endings: ftp://vert.synchro.net/main/SBBS/sbbs_run.tgz
+Then, extract the archive and copy the files from sbbs/exec/load into your
+sbbs/exec/load directory.
+
+
 4. Configuration file
 =====================
 The format of SlyVote.cfg is setting=value.  SlyVote.cfg supports the following
@@ -127,5 +153,8 @@ subBoardCodes                         A comma-separated list of internal
                                       specified if you only want to use one
                                       sub-board with SlyVote.  Also,
                                       subBoardCodes can appear multiple times
-                                      in SlyVote.cfg, and all sub-boards will
-                                      be used.
+                                      in SlyVote.cfg, and all specified
+                                      sub-boards will be used.  If any of the
+                                      specified sub-board codes don't exist or
+                                      refer to sub-boards that don't allow
+                                      voting, then they will not be used.
