@@ -47,12 +47,15 @@ var err=null;
 
 function get_message_offsets(type)
 {
-	offsets=new Array;
-	var last_offset;
-	var idx;
-	var hdr;
+	offsets=[];//new Array; // is this global or something?
+//	var last_offset;
+//	var idx;
+//	var hdr;
 
-	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
+//	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
+	for (var last_offset = 0; last_offset <= msgbase.last_msg; last_offset++) {
+		var idx = msgbase.get_msg_index(true, last_offset);
+		if (typeof idx === 'undefined' || idx === null) continue;
 		if(idx.attr&MSG_DELETE)
 			continue;
 		if(sub=='mail' && idx.to!=user.number)
@@ -66,11 +69,12 @@ function get_message_offsets(type)
 				continue;
 		}
 		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED))
-			break;
-		msg=new Array;
-		msg.idx=idx;
-		msg.offset=last_offset;
-		offsets.push(msg);
+			break; // pourquoi?
+		// msg=new Array;
+		// msg.idx=idx;
+		// msg.offset=last_offset;
+		// offsets.push(msg);
+		offsets.push({ idx : idx, offset : last_offset });
 	}
 	return(offsets);
 }
