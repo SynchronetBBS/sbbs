@@ -5,7 +5,9 @@
 #ifndef _TELNET_IO_H_
 #define _TELNET_IO_H_
 
+#ifndef TELNET_NO_DLL
 #define TELNET_NO_DLL
+#endif
 #include "telnet.h"
 
 extern uchar	telnet_local_option[0x100];

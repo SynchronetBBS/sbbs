@@ -9,7 +9,9 @@
 
 #include "genwrap.h"
 #include "sockwrap.h"
+#ifndef TELNET_NO_DLL
 #define TELNET_NO_DLL
+#endif
 #include "telnet.h"
 #include "gen_defs.h"
 #include "bbslist.h"
