@@ -78,7 +78,7 @@ var OAuth1_Client = function () {
 				function (e) {
 					e = e.split('=');
 					if (e.length < 2) return;
-					data[e][0] = data[e][1];
+					data[e[0]] = [e][1];
 				}
 			);
 		}
