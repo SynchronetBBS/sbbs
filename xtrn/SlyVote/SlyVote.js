@@ -59,8 +59,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.03 Beta";
-var SLYVOTE_DATE = "2017-01-11";
+var SLYVOTE_VERSION = "0.04 Beta";
+var SLYVOTE_DATE = "2017-01-12";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -1273,13 +1273,22 @@ function ViewVoteResults(pSubBoardCode)
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
 	{
-		// Fill an array of message headers for the poll messages
+		// Fill an array of message headers for the poll messages.
+		// Also, determine the index of the message to read based on the
+		// user's last-read pointer.
+		var currentMsgIdx = 0;
+		var pollMsgIdx = 0;
 		var pollMsgHdrs = [];
 		var msgHdrs = msgbase.get_all_msg_headers(true);
 		for (var prop in msgHdrs)
 		{
 			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+			{
 				pollMsgHdrs.push(msgHdrs[prop]);
+				if (msgHdrs[prop].number == msg_area.sub[pSubBoardCode].last_read)
+					currentMsgIdx = pollMsgIdx;
+				++pollMsgIdx;
+			}
 		}
 		delete msgHdrs; // Free some memory
 		
@@ -1321,7 +1330,6 @@ function ViewVoteResults(pSubBoardCode)
 		console.print(keyHelpLine);
 
 		// User input loop
-		var currentMsgIdx = 0;
 		var drawMsg = true;
 		var drawKeyHelpLine = false;
 		var continueOn = true;
@@ -1439,6 +1447,16 @@ function ViewVoteResults(pSubBoardCode)
 			}
 			else if (scrollRetObj.lastKeypress == gReaderKeys.quit)
 				continueOn = false;
+
+			// Update the user's scan pointer and last read message pointer
+			if (pSubBoardCode != "mail") // && !this.SearchTypePopulatesSearchResults()
+			{
+				// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
+				// msgbase.last_msg)?
+				if (pollMsgHdrs[currentMsgIdx].number > msg_area.sub[pSubBoardCode].scan_ptr)
+					msg_area.sub[pSubBoardCode].scan_ptr = pollMsgHdrs[currentMsgIdx].number;
+				msg_area.sub[pSubBoardCode].last_read = pollMsgHdrs[currentMsgIdx].number;
+			}
 		}
 
 		msgbase.close();
