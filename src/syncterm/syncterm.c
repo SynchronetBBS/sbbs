@@ -1330,10 +1330,12 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+#if !defined(WITHOUT_CRYPTLIB)
 	/* Cryptlib initialization MUST be done before ciolib init */
 	if(!crypt_loaded)
 		init_crypt();
 	atexit(exit_crypt);
+#endif
 
 	/* UIFC initialization */
     memset(&uifc,0,sizeof(uifc));
