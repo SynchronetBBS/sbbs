@@ -83,7 +83,11 @@ SlyVote is comprised of the following files:
                           You do not need to edit or use this file directly.
                           You can keep this file in the SlyVote directory or
                           copy it to your sbbs/exec/load directory if it's
-                          not already there.  
+                          not already there.  This file has been added to
+                          Synchronet's CVS source code repository in
+                          sbbs/exec/load, so it may already be part of your
+                          Synchronet setup if you have updated your JavaScript
+                          files.
 
 SlyVote.cfg is a plain text file, so it can be edited using any text editor.
 
