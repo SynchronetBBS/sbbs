@@ -301,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 22";
-var READER_DATE = "2017-01-10";
+var READER_VERSION = "1.17 Beta 23";
+var READER_DATE = "2017-01-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -9693,6 +9693,7 @@ function DigDistMsgReader_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 			displayFrame.h_scroll = false;
 			displayFrame.scrollbars = false;
 			// Load the message file into the Frame object and draw the frame
+			displayFrame.attr&=~HIGH;
 			displayFrame.load(txtFileFilename);
 			displayFrame.draw();
 		}
