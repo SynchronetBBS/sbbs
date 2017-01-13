@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.02 Beta
-                           Release date: 2017-01-11
+                                 Version 0.04 Beta
+                           Release date: 2017-01-12
 
                                      by
 
@@ -44,10 +44,23 @@ along with the latest JavaScript files for Synchronet, such as the following:
 SlyVote requires an ANSI terminal, since SlyVote makes use of lightbar menus
 which do cursor movement, etc.
 
+Since SlyVote makes use of Synchronet's messagebase, SlyVote can be configured
+to use one or more of your message sub-boards to work with.  If more than one
+sub-board is specified, SlyVote will prompt the user which sub-board to use
+when launching SlyVote.  You might want to create a separate local sub-board
+just for poll voting topics, or perhaps multiple local sub-boards for poll
+voting if you want to have separate categories of poll topics.  Also, it's
+certainly possible to use SlyVote with a networked sub-board, as long as the
+sub-board supports voting.  Message sub-boards that support voting would need
+to be networked only with other Synchronet BBSes (Dove-Net is a common one,
+although a few BBSes on Dove-Net are not Synchronet).  FidoNet networks and
+other message networks that might not have Synchronet BBSes should not support
+voting by default in Synchronet.
+
 SlyVote's look and feel was initially based on DCT Vote, a voting booth door
 which was available in the 1990s.
 
-NOTE: SlyVote is currently in a very early beta state and is not fully complete
+NOTE: SlyVote is currently in an early beta state and is not fully complete
 yet.
 
 
