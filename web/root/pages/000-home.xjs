@@ -6,7 +6,7 @@
 ?>
 
 <script src="./ftelnet/ftelnet.min.js" id="fTelnetScript"></script>
-<div id="fTelnetContainer" style="margin-bottom:1em;"></div>
+<div id="fTelnetContainer" style="margin-bottom:1em;clear:both;"></div>
 <div class="row">
 	<div class="center-block" style="width:200px;margin-bottom:1em;">
 		<button id="ftelnet-connect" class="btn btn-primary">
