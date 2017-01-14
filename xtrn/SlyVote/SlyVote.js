@@ -59,8 +59,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.04 Beta";
-var SLYVOTE_DATE = "2017-01-12";
+var SLYVOTE_VERSION = "0.05 Beta";
+var SLYVOTE_DATE = "2017-01-13";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -451,7 +451,7 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 				// Create the poll options menu, and show it and let the user choose an option
 				var optionsMenu = new DDLightbarMenu(pStartCol, pStartRow, pMenuWidth, pMenuHeight);
 				for (i = 0; i < pollTextAndOpts.options.length; ++i)
-					optionsMenu.Add(pollTextAndOpts.options[i], i);
+					optionsMenu.Add(pollTextAndOpts.options[i], i+1);
 				optionsMenu.colors.itemColor = "\1c";
 				optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
 				// Get the user's choice of voting option and submit it for voting
