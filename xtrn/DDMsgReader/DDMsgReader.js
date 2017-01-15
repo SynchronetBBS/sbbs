@@ -277,10 +277,16 @@
 					 added in the future.
 */
 
-// TODO:
-// - Add support for message voting when that becomes available in
-//   Synchronet's JavaScript.  The voting feature was added to
-//   Synchronet around November 10, 2016.
+/*
+Idea to fix the newscan pointer issue reported by Accession:
+Ensure hdrsForCurrentSubBoard and hdrsForCurrentSubBoardByMsgNum are populated?
+FilterMsgHdrsIntoHdrsForCurrentSubBoard(pMsgHdrs, pClearFirst)
+PopulateHdrsForCurrentSubBoard()
+this.hdrsForCurrentSubBoard = new Array();
+this.hdrsForCurrentSubBoardByMsgNum = new Object();
+_GetMsgIdx
+_MessageAreaScan
+*/
 
 load("sbbsdefs.js");
 load("text.js"); // Text string definitions (referencing text.dat)
@@ -301,8 +307,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 23";
-var READER_DATE = "2017-01-12";
+var READER_VERSION = "1.17 Beta 24";
+var READER_DATE = "2017-01-15";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2193,13 +2199,31 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 					this.msgbase = new MsgBase(this.subBoardCode);
 					if (this.msgbase.open())
 					{
+						// Get a filtered list of messages for this sub-board
+						this.PopulateHdrsForCurrentSubBoard();
+
 						//this.setSubBoardCode(msg_area.grp_list[grpIndex].sub_list[subIndex].code); // Needs to be set before getting the last read/scan pointer index
 
 						// If the current sub-board contains only deleted messages,
-						// then skip it.
+						// or if the user has already read the last message in this
+						// sub-board, then skip it.
 						var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
 						var nonDeletedMsgsExist = (this.FindNextNonDeletedMsgIdx(scanPtrMsgIdx-1, true) > -1);
-						if (!nonDeletedMsgsExist)
+						var userHasReadLastMessage = false;
+						if (this.subBoardCode != "mail")
+						{
+							// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
+							// msgbase.last_msg)?
+							if (this.hdrsForCurrentSubBoard.length > 0)
+							{
+								if ((msg_area.sub[this.subBoardCode].last_read == this.hdrsForCurrentSubBoard[this.hdrsForCurrentSubBoard.length-1].number) ||
+									(scanPtrMsgIdx == this.hdrsForCurrentSubBoard.length-1))
+								{
+									userHasReadLastMessage = true;
+								}
+							}
+						}
+						if (!nonDeletedMsgsExist || userHasReadLastMessage)
 						{
 							if (this.msgbase != null)
 								this.msgbase.close();
@@ -2316,14 +2340,33 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 				this.msgbase = new MsgBase(this.subBoardCode);
 				if (this.msgbase.open())
 				{
+					// Get a filtered list of messages for this sub-board
+					this.PopulateHdrsForCurrentSubBoard();
+
 					// The following line is now done before the 'if' statement above
 					//this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code); // Needs to be set before the last read/scan pointer message
 
-					// If the current sub-board contains only deleted messages,
-					// then skip it.
 					var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
+
+					// If the current sub-board contains only deleted messages, or if
+					// the user has already read the last message in the sub-board,
+					// then skip it.
 					var nonDeletedMsgsExist = (this.FindNextNonDeletedMsgIdx(scanPtrMsgIdx-1, true) > -1);
-					if (!nonDeletedMsgsExist)
+					var userHasReadLastMessage = false;
+					if (this.subBoardCode != "mail")
+					{
+						// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
+						// msgbase.last_msg)?
+						if (this.hdrsForCurrentSubBoard.length > 0)
+						{
+							if ((msg_area.sub[this.subBoardCode].last_read == this.hdrsForCurrentSubBoard[this.hdrsForCurrentSubBoard.length-1].number) ||
+							    (scanPtrMsgIdx == this.hdrsForCurrentSubBoard.length-1))
+							{
+								userHasReadLastMessage = true;
+							}
+						}
+					}
+					if (!nonDeletedMsgsExist || userHasReadLastMessage)
 					{
 						if (this.msgbase != null)
 							this.msgbase.close();
@@ -2433,6 +2476,10 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 			{
 				// Force garbage collection to ensure enough memory is available to continue
 				js.gc(true);
+
+				// Get a filtered list of messages for this sub-board
+				this.PopulateHdrsForCurrentSubBoard();
+
 				// Temporarily change the user's sub-board to the current
 				// sub-board so that certain @-codes (such as @GRP-L@, etc.)
 				// are displayed by Synchronet correctly.
@@ -2441,11 +2488,26 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 
 				//this.setSubBoardCode(bbs.cursub_code); // Needs to be set before getting the last read/scan pointer message
 
-				// Only scan this sub-board if it contains messages that are not
-				// marked as deleted.
+				// If the current sub-board contains only deleted messages, or if
+				// the user has already read the last message in the sub-board,
+				// then skip it.
 				var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
 				var nonDeletedMsgsExist = (this.FindNextNonDeletedMsgIdx(scanPtrMsgIdx-1, true) > -1);
-				if (nonDeletedMsgsExist)
+				var userHasReadLastMessage = false;
+				if (this.subBoardCode != "mail")
+				{
+					// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
+					// msgbase.last_msg)?
+					if (this.hdrsForCurrentSubBoard.length > 0)
+					{
+						if ((msg_area.sub[this.subBoardCode].last_read == this.hdrsForCurrentSubBoard[this.hdrsForCurrentSubBoard.length-1].number) ||
+							(scanPtrMsgIdx == this.hdrsForCurrentSubBoard.length-1))
+						{
+							userHasReadLastMessage = true;
+						}
+					}
+				}
+				if (nonDeletedMsgsExist && !userHasReadLastMessage)
 				{
 					// We might want the starting message index to be different
 					// depending on the scan mode.
@@ -4655,6 +4717,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// If not reading personal email, then update the scan & last read message pointers.
 	if (this.subBoardCode != "mail") // && !this.SearchTypePopulatesSearchResults()
 	{
+		// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
+		// msgbase.last_msg)?
 		if (msgHeader.number > msg_area.sub[this.subBoardCode].scan_ptr)
 			msg_area.sub[this.subBoardCode].scan_ptr = msgHeader.number;
 		msg_area.sub[this.subBoardCode].last_read = msgHeader.number;
