@@ -376,17 +376,22 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		writeln(strings.thread_view.container.open);
 		keys.forEach(function (key, index) { writeMessage(thread, keys, key, index); });
 		writeln(strings.thread_view.container.close);
-		msgBase.close();
 		if (keys.length > 1 && firstUnread !== '') {
 			writeln(strings.script.open);
 			writeln(format(strings.thread_view.set_unread, firstUnread));
 			writeln(strings.script.close);
 		}
 		// Update scan pointer
-		if (thread.messages[thread.__last].number > msg_area.sub[http_request.query.sub[0]].scan_ptr) {
+		if (user.alias !== settings.guest &&
+			!isNaN(thread.messages[thread.__last].number) &&
+			thread.messages[thread.__last].number < 0xFFFFFFFF &&
+			thread.messages[thread.__last].number > msg_area.sub[http_request.query.sub[0]].scan_ptr &&
+			thread.messages[thread.__last].number <= msgBase.last_msg
+		) {
 			msg_area.sub[http_request.query.sub[0]].scan_ptr =
 			thread.messages[thread.__last].number;
 		}
+		msgBase.close();
 
 		writeln(strings.script.open);
 		if (settings.keyboard_navigation) writeln(strings.script.thread_navigation);
