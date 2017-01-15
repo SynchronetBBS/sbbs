@@ -68,7 +68,7 @@ var body = payload.commits.map(
 		if (e.added.length > 0) ret.push('Added: ' + e.added.join(', '));
 		if (e.removed.length > 0) ret.push('Removed: ' + e.removed.join(', '));
 		if (e.modified.length > 0) ret.push('Modified: ' + e.modified.join(', '));
-		ret.push('', 'Message:', e.message, '');
+		ret.push('', 'Message:', e.message, '', 'Commit URL:', e.url, '');
 		return ret.join('\r\n');
 	}
 );
