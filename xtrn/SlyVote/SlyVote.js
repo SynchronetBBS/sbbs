@@ -13,9 +13,7 @@
  
  // TODO:
  // - Answer all topics
- // - In the result viewer, allow users to type in a topic number and jump to it
- // - Allow sysops to delete polls
- // - Add a help screen?
+  // - Add a help screen?
 
 
 load("sbbsdefs.js");
@@ -59,8 +57,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.05 Beta";
-var SLYVOTE_DATE = "2017-01-13";
+var SLYVOTE_VERSION = "0.06 Beta";
+var SLYVOTE_DATE = "2017-01-15";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -1059,7 +1057,7 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 				console.mnemonics(selectPromptText);
 				// Get & process the selection from the user
 				var maxNum = optionNum - 1;
-				// TODO: Update to support multiple answers from the user
+				// TODO: Update to support multiple answers from the user?
 				userInputNum = console.getnum(maxNum);
 				console.print("\1n");
 			}
@@ -1282,7 +1280,8 @@ function ViewVoteResults(pSubBoardCode)
 		var msgHdrs = msgbase.get_all_msg_headers(true);
 		for (var prop in msgHdrs)
 		{
-			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+			var msgIsDeleted = ((msgHdrs[prop].attr & MSG_DELETE) == MSG_DELETE);
+			if (!msgIsDeleted && (msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
 			{
 				pollMsgHdrs.push(msgHdrs[prop]);
 				if (msgHdrs[prop].number == msg_area.sub[pSubBoardCode].last_read)
@@ -1305,7 +1304,11 @@ function ViewVoteResults(pSubBoardCode)
 		}
 
 		// Create the key help line to be displayed at the bottom of the screen
-		var keyHelpLine = "\1" + "7" + CenterText("\1rLeft\1b, \1rRight\1b, \1rUp\1b, \1rDn\1b, \1rPgUp\1b/\1rDn\1b, \1rF\1m)\1birst, \1rL\1m)\1bast, \1r#\1b, \1rQ\1m)\1buit", console.screen_columns-1);
+		var keyText = "\1rLeft\1b, \1rRight\1b, \1rUp\1b, \1rDn\1b, \1rPgUp\1b/\1rDn\1b, \1rF\1m)\1birst, \1rL\1m)\1bast, \1r#\1b, ";
+		if (user.compare_ars("SYSOP"))
+			keyText += "\1rDEL\1b, ";
+		keyText += "\1rQ\1m)\1buit";
+		var keyHelpLine = "\1" + "7" + CenterText(keyText, console.screen_columns-1);
 
 		// Get the unmodified default header lines to be displayed
 		var displayMsgHdrUnmodified = GetDefaultMsgDisplayHdr();
@@ -1313,7 +1316,6 @@ function ViewVoteResults(pSubBoardCode)
 		// Calculate the height of the frame to use
 		var frameHeight = console.screen_rows - displayMsgHdrUnmodified.length - 1;
 		// Create the frame object to use for displaying the message
-		// TODO: The scrollbar scroll amount seems to change as the message lengths change
 		var displayFrame = new Frame(1, // x: Horizontal coordinate of top left
 		                             displayMsgHdrUnmodified.length + 1, // y: Vertical coordinate of top left
 		                             console.screen_columns, // Width
@@ -1443,13 +1445,91 @@ function ViewVoteResults(pSubBoardCode)
 			{
 				// The user started typing a number - Continue inputting the
 				// poll number and go to that poll
-				// TODO
+
+				var originalCurpos = console.getxy();
+				// Put the user's input back in the input buffer to
+				// be used for getting the rest of the message number.
+				console.ungetstr(scrollRetObj.lastKeypress);
+				// Move the cursor to the last row of the screen and prompt the
+				// user for the message number.
+				console.gotoxy(1, console.screen_rows);
+				printf("\1n%" + +(console.screen_columns-1) + "s", ""); // Clear the last row
+				console.gotoxy(1, console.screen_rows);
+				// Prompt for the message number, and go to that message if it's
+				// different from the current message
+				var msgNumInput = PromptForMsgNum(pollMsgHdrs.length, {x: 1, y: console.screen_rows}, "\1n\1cTopic #\1g\1h: \1c", false, ERROR_PAUSE_WAIT_MS, false);
+				if (msgNumInput-1 != currentMsgIdx)
+					currentMsgIdx = msgNumInput-1;
+				else
+					drawMsg = false;
+				drawKeyHelpLine = true;
+			}
+			else if (scrollRetObj.lastKeypress == KEY_DEL)
+			{
+				// Only allow the sysop to delete a message
+				if (user.compare_ars("SYSOP"))
+				{
+					// Go to the last line and confirm whether to delete the message
+					console.gotoxy(1, console.screen_rows);
+					printf("\1n%" + +(console.screen_columns-1) + "s", "");
+					console.gotoxy(1, console.screen_rows);
+					var deleteMsg = !console.noyes("\1n\1cDelete this topic\1n");
+					if (deleteMsg)
+					{
+						var delMsgRetObj = DeleteMessage(msgbase, pollMsgHdrs[currentMsgIdx].number, pSubBoardCode);
+						// Show an error message if there was one
+						var errorMsg = "";
+						if (!delMsgRetObj.messageDeleted)
+							errorMsg = "The message was not deleted";
+						else if (!delMsgRetObj.allVoteMsgsDeleted)
+							errorMsg = "Not all vote result messages were deleted";
+						if (errorMsg.length > 0)
+						{
+							console.gotoxy(1, console.screen_rows);
+							printf("\1n%" + +(console.screen_columns-1) + "s", "");
+							console.gotoxy(1, console.screen_rows);
+							console.print("\1n\1y\1h* " + errorMsg);
+							mswait(ERROR_PAUSE_WAIT_MS);
+							console.gotoxy(1, console.screen_rows);
+							printf("\1n%" + strip_ctrl(errorMsg).length + "s", "");
+						}
+
+						// If the message was deleted, remove it from the array and
+						// adjust the current message index if necessary
+						if (delMsgRetObj.messageDeleted)
+						{
+							pollMsgHdrs.splice(currentMsgIdx, 1);
+							// Adjust the current message index
+							if (pollMsgHdrs.length > 0)
+							{
+								if (currentMsgIdx >= pollMsgHdrs.length)
+									currentMsgIdx = pollMsgHdrs.length - 1;
+							}
+							else
+							{
+								continueOn = false;
+								console.gotoxy(1, console.screen_rows);
+								console.print("\1n");
+								console.crlf();
+								console.print("\1nThere are no more vote topics.\1n");
+								console.pause();
+							}
+						}
+					}
+					// Note: Leave drawMsg as true because the yes/no prompt on the
+					// last row would shift the message up one line
+					//else
+					//	drawMsg = false;
+					drawKeyHelpLine = true;
+				}
+				else
+					drawMsg = false;
 			}
 			else if (scrollRetObj.lastKeypress == gReaderKeys.quit)
 				continueOn = false;
 
 			// Update the user's scan pointer and last read message pointer
-			if (pSubBoardCode != "mail") // && !this.SearchTypePopulatesSearchResults()
+			if (pSubBoardCode != "mail")
 			{
 				// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
 				// msgbase.last_msg)?
@@ -2221,6 +2301,161 @@ function ScrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 			default:
 				continueOn = false;
 				break;
+		}
+	}
+
+	return retObj;
+}
+
+// Prompts the user for a message number and keeps repeating if they enter and
+// invalid message number.  It is assumed that the cursor has already been
+// placed where it needs to be for the prompt text, but a cursor position is
+// one of the parameters to this function so that this function can write an
+// error message if the message number inputted from the user is invalid.
+//
+// Parameters:
+//  pMaxNum: The maximum number allowed
+//  pCurPos: The starting position of the cursor (used for positioning the
+//           cursor at the prompt text location to display an error message).
+//           If not needed (i.e., in a traditional user interface or non-ANSI
+//           terminal), this parameter can be null.
+//  pPromptText: The text to use to prompt the user
+//  pClearToEOLAfterPrompt: Whether or not to clear to the end of the line after
+//                          writing the prompt text (boolean)
+//  pErrorPauseTimeMS: The time (in milliseconds) to pause after displaying the
+//                     error that the message number is invalid
+//  pRepeat: Boolean - Whether or not to ask repeatedly until the user enters a
+//           valid message number.  Optional; defaults to false.
+//
+// Return value: The message number entered by the user.  If the user didn't
+//               enter a message number, this will be 0.
+function PromptForMsgNum(pMaxNum, pCurPos, pPromptText, pClearToEOLAfterPrompt,
+                         pErrorPauseTimeMS, pRepeat)
+{
+	var curPosValid = ((pCurPos != null) && (typeof(pCurPos) == "object") &&
+	                   pCurPos.hasOwnProperty("x") && (typeof(pCurPos.x) == "number") &&
+	                   pCurPos.hasOwnProperty("y") && (typeof(pCurPos.y) == "number"));
+	var useCurPos = (console.term_supports(USER_ANSI) && curPosValid);
+
+	var msgNum = 0;
+	var promptCount = 0;
+	var lastErrorLen = 0; // The length of the last error message
+	var promptTextLen = console.strlen(pPromptText);
+	var continueAskingMsgNum = false;
+	do
+	{
+		++promptCount;
+		msgNum = 0;
+		if (promptTextLen > 0)
+			console.print(pPromptText);
+		if (pClearToEOLAfterPrompt && useCurPos)
+		{
+			// The first time the user is being prompted, clear the line to the
+			// end of the line.  For subsequent times, clear the line from the
+			// prompt text length to the error text length;
+			if (promptCount == 1)
+			{
+				var curPos = console.getxy();
+				var clearLen = console.screen_columns - curPos.x + 1;
+				if (curPos.y == console.screen_rows)
+					--clearLen;
+				printf("\1n%" + clearLen + "s", "");
+			}
+			else
+			{
+				if (lastErrorLen > promptTextLen)
+				{
+					console.print("\1n");
+					console.gotoxy(pCurPos.x+promptTextLen, pCurPos.y);
+					var clearLen = lastErrorLen - promptTextLen;
+					printf("\1n%" + clearLen + "s", "");
+				}
+			}
+			console.gotoxy(pCurPos.x+promptTextLen, pCurPos.y);
+		}
+		msgNum = console.getnum(pMaxNum);
+		continueAskingMsgNum = false;
+	}
+	while (continueAskingMsgNum);
+	return msgNum;
+}
+
+// Deletes a message
+//
+// Parameters:
+//  pMsgbase: The MessageBase object for the message sub-board
+//  pMsgNum: The number of the message to delete
+//  pSubBoardCode: The internal code of the sub-board
+//
+// Return value: An object containing the following values:
+//               messageDeleted: Boolean - Whether or not the message was deleted
+//               allVoteMsgsDeleted: Boolean - Whether or not all vote response messages were deleted
+function DeleteMessage(pMsgbase, pMsgNum, pSubBoardCode)
+{
+	var retObj = {
+		messageDeleted: false,
+		allVoteMsgsDeleted: false
+	};
+
+	retObj.messageDeleted = pMsgbase.remove_msg(false, pMsgNum);
+	if (retObj.messageDeleted)
+	{
+		// Delete any vote response messages for this message
+		var voteDelRetObj = DeleteVoteMsgs(pMsgbase, pMsgNum, (pSubBoardCode == "mail"));
+		retObj.allVoteMsgsDeleted = voteDelRetObj.allVoteMsgsDeleted;
+	}
+
+	return retObj;
+}
+
+// Deletes vote messages (messages that have voting response data for a message with
+// a given message number).
+//
+// Parameters:
+//  pMsgbase: A MessageBase object containing the messages to be deleted
+//  pMsgNum: The number of the message for which vote messages should be deleted
+//  pIsMailSub: Boolean - Whether or not it's the personal email area
+//
+// Return value: An object containing the following properties:
+//               numVoteMsgs: The number of vote messages for the given message number
+//               numVoteMsgsDeleted: The number of vote messages that were deleted
+//               allVoteMsgsDeleted: Boolean - Whether or not all vote messages were deleted
+function DeleteVoteMsgs(pMsgbase, pMsgNum, pIsEmailSub)
+{
+	var retObj = {
+		numVoteMsgs: 0,
+		numVoteMsgsDeleted: 0,
+		allVoteMsgsDeleted: true
+	};
+
+	if ((pMsgbase === null) || !pMsgbase.is_open)
+		return retObj;
+	if (typeof(pMsgNum) != "number")
+		return retObj;
+	if (pIsEmailSub)
+		return retObj;
+
+	// This relies on get_all_msg_headers() returning vote messages.  The get_all_msg_headers()
+	// function was added in Synchronet 3.16, and the 'true' parameter to get vote headers was
+	// added in Synchronet 3.17.
+	if (typeof(pMsgbase.get_all_msg_headers) === "function")
+	{
+		var msgHdrs = pMsgbase.get_all_msg_headers(true);
+		for (var msgHdrsProp in msgHdrs)
+		{
+			if (msgHdrs[msgHdrsProp] == null)
+				continue;
+			// If this header is a vote header and its thread_back or reply_id matches the given message
+			// number, then we can delete this message.
+			var isVoteMsg = (((msgHdrs[msgHdrsProp].attr & MSG_VOTE) == MSG_VOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_UPVOTE) == MSG_UPVOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_DOWNVOTE) == MSG_DOWNVOTE));
+			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgNum))
+			{
+				++retObj.numVoteMsgs;
+				msgWasDeleted = pMsgbase.remove_msg(false, msgHdrs[msgHdrsProp].number);
+				retObj.allVoteMsgsDeleted = (retObj.allVoteMsgsDeleted && msgWasDeleted);
+				if (msgWasDeleted)
+					++retObj.numVoteMsgsDeleted;
+			}
 		}
 	}
 
