@@ -11,9 +11,9 @@
  *                              Started
  */
  
- // TODO:
- // - Answer all topics
-  // - Add a help screen?
+// TODO:
+// - Answer all topics
+// - Add a help screen?
 
 
 load("sbbsdefs.js");
@@ -57,8 +57,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.06 Beta";
-var SLYVOTE_DATE = "2017-01-15";
+var SLYVOTE_VERSION = "0.07 Beta";
+var SLYVOTE_DATE = "2017-01-16";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -155,6 +155,8 @@ var ERROR_PAUSE_WAIT_MS = 1500;
 
 var gBottomBorderRow = 23;
 var gMessageRow = 3;
+
+var gUserIsSysop = user.compare_ars("SYSOP");
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -430,7 +432,8 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 		if (!HasUserVotedOnMsg(pMsgNum, pSubBoardCode, msgbase, user))
 		{
 			var msgHdr = msgbase.get_msg_header(false, pMsgNum, true);
-			if (msgHdr != null)
+			//IsReadableMsgHdr(pMsgHdr, pSubBoardCode)
+			if ((msgHdr != null) && IsReadableMsgHdr(msgHdr, pSubBoardCode))
 			{
 				var pollTextAndOpts = GetPollTextAndOpts(msgHdr);
 				// Print the poll question text
@@ -1280,6 +1283,14 @@ function ViewVoteResults(pSubBoardCode)
 		var msgHdrs = msgbase.get_all_msg_headers(true);
 		for (var prop in msgHdrs)
 		{
+			if (IsReadableMsgHdr(msgHdrs[prop], pSubBoardCode))
+			{
+				pollMsgHdrs.push(msgHdrs[prop]);
+				if (msgHdrs[prop].number == msg_area.sub[pSubBoardCode].last_read)
+					currentMsgIdx = pollMsgIdx;
+				++pollMsgIdx;
+			}
+			/*
 			var msgIsDeleted = ((msgHdrs[prop].attr & MSG_DELETE) == MSG_DELETE);
 			if (!msgIsDeleted && (msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
 			{
@@ -1288,6 +1299,7 @@ function ViewVoteResults(pSubBoardCode)
 					currentMsgIdx = pollMsgIdx;
 				++pollMsgIdx;
 			}
+			*/
 		}
 		delete msgHdrs; // Free some memory
 		
@@ -1305,7 +1317,7 @@ function ViewVoteResults(pSubBoardCode)
 
 		// Create the key help line to be displayed at the bottom of the screen
 		var keyText = "\1rLeft\1b, \1rRight\1b, \1rUp\1b, \1rDn\1b, \1rPgUp\1b/\1rDn\1b, \1rF\1m)\1birst, \1rL\1m)\1bast, \1r#\1b, ";
-		if (user.compare_ars("SYSOP"))
+		if (gUserIsSysop)
 			keyText += "\1rDEL\1b, ";
 		keyText += "\1rQ\1m)\1buit";
 		var keyHelpLine = "\1" + "7" + CenterText(keyText, console.screen_columns-1);
@@ -1467,7 +1479,7 @@ function ViewVoteResults(pSubBoardCode)
 			else if (scrollRetObj.lastKeypress == KEY_DEL)
 			{
 				// Only allow the sysop to delete a message
-				if (user.compare_ars("SYSOP"))
+				if (gUserIsSysop)
 				{
 					// Go to the last line and confirm whether to delete the message
 					console.gotoxy(1, console.screen_rows);
@@ -2460,4 +2472,98 @@ function DeleteVoteMsgs(pMsgbase, pMsgNum, pIsEmailSub)
 	}
 
 	return retObj;
+}
+
+// Returns whether a message is readable to the user, based on its
+// header and the sub-board code.
+//
+// Parameters:
+//  pMsgHdr: The header object for the message
+//  pSubBoardCode: The internal code for the sub-board the message is in
+//
+// Return value: Boolean - Whether or not the message is readable for the user
+function IsReadableMsgHdr(pMsgHdr, pSubBoardCode)
+{
+	if (pMsgHdr === null)
+		return false;
+	if ((pMsgHdr.type & MSG_TYPE_POLL) != MSG_TYPE_POLL)
+		return false;
+	if (pSubBoardCode.toUpperCase() == "MAIL")
+		return false;
+
+	// Let the sysop see unvalidated messages and private messages but not other users.
+	if (!gUserIsSysop)
+	{
+		if ((msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0)) ||
+		    (((pMsgHdr.attr & MSG_PRIVATE) == MSG_PRIVATE) && !userHandleAliasNameMatch(pMsgHdr.to)))
+		{
+			return false;
+		}
+	}
+	// If the message is deleted, determine whether it should be viewable, based
+	// on the system settings.
+	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+	{
+		return false;
+		/*
+		// If the user is a sysop, check whether sysops can view deleted messages.
+		// Otherwise, check whether users can view deleted messages.
+		if (gIsSysop)
+		{
+			if ((system.settings & SYS_SYSVDELM) == 0)
+				return false;
+		}
+		else
+		{
+			if ((system.settings & SYS_USRVDELM) == 0)
+				return false;
+		}
+		*/
+	}
+	// The message voting and poll variables were added in sbbsdefs.js for
+	// Synchronet 3.17.  Make sure they're defined before referencing them.
+	if (typeof(MSG_UPVOTE) != "undefined")
+	{
+		if ((pMsgHdr.attr & MSG_UPVOTE) == MSG_UPVOTE)
+			return false;
+	}
+	if (typeof(MSG_DOWNVOTE) != "undefined")
+	{
+		if ((pMsgHdr.attr & MSG_DOWNVOTE) == MSG_DOWNVOTE)
+			return false;
+	}
+	// Don't include polls as being unreadable messages - They just need to have
+	// their answer selections read from the header instead of the message body
+	/*
+	if (typeof(MSG_POLL) != "undefined")
+	{
+		if ((pMsgHdr.attr & MSG_POLL) == MSG_POLL)
+			return false;
+	}
+	*/
+	return true;
+}
+
+// Returns whether a given name matches the logged-in user's handle, alias, or
+// name.
+//
+// Parameters:
+//  pName: A name to match against the logged-in user
+//
+// Return value: Boolean - Whether or not the given name matches the logged-in
+//               user's handle, alias, or name
+function UserHandleAliasNameMatch(pName)
+{
+   if (typeof(pName) != "string")
+      return false;
+
+   var userMatch = false;
+   var nameUpper = pName.toUpperCase();
+   if (user.handle.length > 0)
+      userMatch = (nameUpper.indexOf(user.handle.toUpperCase()) > -1);
+   if (!userMatch && (user.alias.length > 0))
+      userMatch = (nameUpper.indexOf(user.alias.toUpperCase()) > -1);
+   if (!userMatch && (user.name.length > 0))
+      userMatch = (nameUpper.indexOf(user.name.toUpperCase()) > -1);
+   return userMatch;
 }
