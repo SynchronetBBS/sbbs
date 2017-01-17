@@ -277,16 +277,8 @@
 					 added in the future.
 */
 
-/*
-Idea to fix the newscan pointer issue reported by Accession:
-Ensure hdrsForCurrentSubBoard and hdrsForCurrentSubBoardByMsgNum are populated?
-FilterMsgHdrsIntoHdrsForCurrentSubBoard(pMsgHdrs, pClearFirst)
-PopulateHdrsForCurrentSubBoard()
-this.hdrsForCurrentSubBoard = new Array();
-this.hdrsForCurrentSubBoardByMsgNum = new Object();
-_GetMsgIdx
-_MessageAreaScan
-*/
+// TODO:
+// - Message validation (for the sysop) for boards that require validation
 
 load("sbbsdefs.js");
 load("text.js"); // Text string definitions (referencing text.dat)
@@ -307,8 +299,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 24";
-var READER_DATE = "2017-01-15";
+var READER_VERSION = "1.17 Beta 25";
+var READER_DATE = "2017-01-16";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2159,338 +2151,61 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	if ((this.msgbase != null) && (this.msgbase.is_open))
 		this.msgbase.close();
 
-	// Perform the message scan
-	this.doingMsgScan = true;
-	var continueNewScan = true;
-	var userAborted = false;
+	// Create an array of internal codes of sub-boards to scan
+	var subBoardsToScan = [];
 	if (scanScopeChar == "A") // All sub-board scan
 	{
-		this.doingMultiSubBoardScan = true;
-		// Iterate through all message groups & sub-boards looking for ones with unread
-		// messages.  When a sub-board with unread messages is found, then let the user
-		// read messages in that sub-board.
-		for (var grpIndex = 0; (grpIndex < msg_area.grp_list.length) && continueNewScan; ++grpIndex)
+		for (var grpIndex = 0; grpIndex < msg_area.grp_list.length; ++grpIndex)
 		{
-			// Group description: msg_area.grp_list[grpIndex].description
-			// Iterate through the sub-boards in this message group looking for unread messages
-			for (var subIndex = 0; (subIndex < msg_area.grp_list[grpIndex].sub_list.length) && continueNewScan; ++subIndex)
-			{
-				// Force garbage collection to ensure enough memory is available to continue
-				js.gc(true);
-				// Set the console line counter to 0 to prevent screen pausing
-				// when the "Searching ..." and "No messages were found" text is
-				// displayed repeatedly
-				console.line_counter = 0;
-				// If the sub-board's access requirements allows the user to read it
-				// and it's enabled in the user's message scan configuration, then go
-				// ahead with this sub-board.
-				// Note: Used to use this to determine whether the user could access the
-				// sub-board:
-				//user.compare_ars(msg_area.grp_list[grpIndex].sub_list[subIndex].ars)
-				// Now using the can_read property.
-				this.setSubBoardCode(msg_area.grp_list[grpIndex].sub_list[subIndex].code); // Needs to be set before getting the last read/scan pointer index
-				if (msg_area.sub[this.subBoardCode].can_read &&
-				    ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
-				{
-					// Sub-board description: msg_area.grp_list[grpIndex].sub_list[subIndex].description
-					// Open the sub-board and check for unread messages.  If there are any, then let
-					// the user read the messages in the sub-board.
-					//this.msgbase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[subIndex].code);
-					this.msgbase = new MsgBase(this.subBoardCode);
-					if (this.msgbase.open())
-					{
-						// Get a filtered list of messages for this sub-board
-						this.PopulateHdrsForCurrentSubBoard();
-
-						//this.setSubBoardCode(msg_area.grp_list[grpIndex].sub_list[subIndex].code); // Needs to be set before getting the last read/scan pointer index
-
-						// If the current sub-board contains only deleted messages,
-						// or if the user has already read the last message in this
-						// sub-board, then skip it.
-						var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
-						var nonDeletedMsgsExist = (this.FindNextNonDeletedMsgIdx(scanPtrMsgIdx-1, true) > -1);
-						var userHasReadLastMessage = false;
-						if (this.subBoardCode != "mail")
-						{
-							// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
-							// msgbase.last_msg)?
-							if (this.hdrsForCurrentSubBoard.length > 0)
-							{
-								if ((msg_area.sub[this.subBoardCode].last_read == this.hdrsForCurrentSubBoard[this.hdrsForCurrentSubBoard.length-1].number) ||
-									(scanPtrMsgIdx == this.hdrsForCurrentSubBoard.length-1))
-								{
-									userHasReadLastMessage = true;
-								}
-							}
-						}
-						if (!nonDeletedMsgsExist || userHasReadLastMessage)
-						{
-							if (this.msgbase != null)
-								this.msgbase.close();
-							continue;
-						}
-
-						// In the switch cases below, bbs.curgrp and bbs.cursub are
-						// temporarily changed the user's sub-board to the current
-						// sub-board so that certain @-codes (such as @GRP-L@, etc.)
-						// are displayed by Synchronet correctly.
-
-						// We might want the starting message index to be different
-						// depending on the scan mode.
-						switch (pScanMode)
-						{
-							case SCAN_NEW:
-								// Make sure the sub-board has some messages.  Let the user read it if
-								// the scan pointer index is -1 (one unread message) or if it points to
-								// a message within the number of messages in the sub-board.
-								if ((this.msgbase.total_msgs > 0) && ((scanPtrMsgIdx == -1) || (scanPtrMsgIdx < this.msgbase.total_msgs-1)))
-								{
-									bbs.curgrp = grpIndex;
-									bbs.cursub = subIndex;
-									// Start at the first unread message.
-									var startMsgIdx = scanPtrMsgIdx + 1;
-									if (this.SearchingAndResultObjsDefinedForCurSub())
-										startMsgIdx = 0;
-									// Allow the user to read messages in this sub-board.  Don't allow
-									// the user to change to a different message area, don't pause
-									// when there's no search results in a sub-board, and return
-									// instead of going to the next sub-board via navigation.
-									var readRetObj = this.ReadOrListSubBoard(null, startMsgIdx, false, true, false);
-									// If the user stopped reading & decided to quit, then exit the
-									// message scan loops.
-									if (readRetObj.stoppedReading)
-									{
-										continueNewScan = false;
-										userAborted = true;
-									}
-								}
-								break;
-							case SCAN_TOYOU: // All messages to the user
-								bbs.curgrp = grpIndex;
-								bbs.cursub = subIndex;
-								// Search for messages to the user in the current sub-board
-								// and let the user read the sub-board if messages are
-								// found.  Don't allow the user to change to a different
-								// message area, don't pause when there's no search results
-								// in a sub-board, and return instead of going to the next
-								// sub-board via navigation.
-								this.searchType = SEARCH_TO_USER_CUR_MSG_AREA;
-								var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, false);
-								// If the user stopped reading & decided to quit, then exit the
-								// message scan loops.
-								if (readRetObj.stoppedReading)
-								{
-									continueNewScan = false;
-									userAborted = true;
-								}
-								break;
-							case SCAN_UNREAD: // New (unread) messages to the user
-								bbs.curgrp = grpIndex;
-								bbs.cursub = subIndex;
-								// Search for messages to the user in the current sub-board
-								// and let the user read the sub-board if messages are
-								// found.  Don't allow the user to change to a different
-								// message area, don't pause when there's no search results
-								// in a sub-board, and return instead of going to the next
-								// sub-board via navigation.
-								this.searchType = SEARCH_TO_USER_NEW_SCAN;
-								var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, false);
-								// If the user stopped reading & decided to quit, then exit the
-								// message scan loops.
-								if (readRetObj.stoppedReading)
-								{
-									continueNewScan = false;
-									userAborted = true;
-								}
-								break;
-							default:
-								break;
-						}
-
-						if (this.msgbase != null)
-							this.msgbase.close();
-					}
-				}
-			}
+			for (var subIndex = 0; subIndex < msg_area.grp_list[grpIndex].sub_list.length; ++subIndex)
+				subBoardsToScan.push(msg_area.grp_list[grpIndex].sub_list[subIndex].code);
 		}
 	}
 	else if (scanScopeChar == "G") // Group scan
 	{
-		this.doingMultiSubBoardScan = true;
-		// Iterate through the sub-boards in the current message group looking for messages
-		for (var subIndex = 0; (subIndex < msg_area.grp_list[bbs.curgrp].sub_list.length) && continueNewScan; ++subIndex)
-		{
-			// Force garbage collection to ensure enough memory is available to continue
-			js.gc(true);
-			// Set the console line counter to 0 to prevent screen pausing
-			// when the "Searching ..." and "No messages were found" text is
-			// displayed repeatedly
-			console.line_counter = 0;
-			// If the sub-board's access requirements allows the user to read it
-			// and it's enabled in the user's message scan configuration, then go
-			// ahead with this sub-board.
-			this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code); // Needs to be set before the last read/scan pointer message
-			if (msg_area.sub[this.subBoardCode].can_read &&
-			    ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
-			{
-				// Sub-board description: msg_area.grp_list[bbs.curgrp].sub_list[subIndex].description
-				// Open the sub-board and check for unread messages.  If there are any, then let
-				// the user read the messages in the sub-board.
-				//this.msgbase = new MsgBase(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code);
-				this.msgbase = new MsgBase(this.subBoardCode);
-				if (this.msgbase.open())
-				{
-					// Get a filtered list of messages for this sub-board
-					this.PopulateHdrsForCurrentSubBoard();
-
-					// The following line is now done before the 'if' statement above
-					//this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code); // Needs to be set before the last read/scan pointer message
-
-					var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
-
-					// If the current sub-board contains only deleted messages, or if
-					// the user has already read the last message in the sub-board,
-					// then skip it.
-					var nonDeletedMsgsExist = (this.FindNextNonDeletedMsgIdx(scanPtrMsgIdx-1, true) > -1);
-					var userHasReadLastMessage = false;
-					if (this.subBoardCode != "mail")
-					{
-						// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
-						// msgbase.last_msg)?
-						if (this.hdrsForCurrentSubBoard.length > 0)
-						{
-							if ((msg_area.sub[this.subBoardCode].last_read == this.hdrsForCurrentSubBoard[this.hdrsForCurrentSubBoard.length-1].number) ||
-							    (scanPtrMsgIdx == this.hdrsForCurrentSubBoard.length-1))
-							{
-								userHasReadLastMessage = true;
-							}
-						}
-					}
-					if (!nonDeletedMsgsExist || userHasReadLastMessage)
-					{
-						if (this.msgbase != null)
-							this.msgbase.close();
-						continue;
-					}
-
-					// Temporarily change the user's sub-board to the current
-					// sub-board so that certain @-codes (such as @GRP-L@, etc.)
-					// are displayed by Synchronet correctly.
-					bbs.curgrp = msg_area.sub[this.subBoardCode].grp_index;
-					bbs.cursub = msg_area.sub[this.subBoardCode].index;
-
-					// We might want the starting message index to be different
-					// depending on the scan mode.
-					switch (pScanMode)
-					{
-						case SCAN_NEW:
-							// Make sure the sub-board has some messages.  Let the user read it if
-							// the scan pointer index is -1 (one unread message) or if it points to
-							// a message within the number of messages in the sub-board.
-							if ((this.msgbase.total_msgs > 0) && ((scanPtrMsgIdx == -1) || (scanPtrMsgIdx < this.msgbase.total_msgs-1)))
-							{
-								//bbs.cursub = subIndex; // Now done a bit earlier
-								// Start at the first unread message.
-								var startMsgIdx = scanPtrMsgIdx + 1;
-								if (this.SearchingAndResultObjsDefinedForCurSub())
-									startMsgIdx = 0;
-								// Allow the user to read messages in this sub-board.  Don't allow
-								// the user to change to a different message area, don't pause
-								// when there's no search results in a sub-board, and return
-								// instead of going to the next sub-board via navigation.
-								var readRetObj = this.ReadOrListSubBoard(null, startMsgIdx, false, true, false);
-								// If the user stopped reading & decided to quit, then exit the
-								// message scan loops.
-								if (readRetObj.stoppedReading)
-								{
-									continueNewScan = false;
-									userAborted = true;
-								}
-							}
-							break;
-						case SCAN_TOYOU: // All messages to the user
-							//bbs.cursub = subIndex; // Now done a bit earlier
-							// Search for messages to the user in the current sub-board
-							// and let the user read the sub-board if messages are found.
-							// Don't allow the user to change to a different message
-							// area, don't pause when there's no search results in a
-							// sub-board, and return instead of going to the next sub-board
-							// via navigation.
-							this.searchType = SEARCH_TO_USER_CUR_MSG_AREA;
-							var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, false);
-							// If the user stopped reading & decided to quit, then exit the
-							// message scan loops.
-							if (readRetObj.stoppedReading)
-							{
-								continueNewScan = false;
-								userAborted = true;
-							}
-							break;
-						case SCAN_UNREAD: // New (unread) messages to the user
-							//bbs.cursub = subIndex; // Now done a bit earlier
-							// Search for unread messages to the user in the current
-							// sub-board and let the user read the sub-board if messages
-							// are found.  Don't allow the user to change to a different
-							// message area, don't pause when there's no search results
-							// in a sub-board, and return instead of going to the next
-							// sub-board via navigation.
-							this.searchType = SEARCH_TO_USER_NEW_SCAN_CUR_GRP;
-							var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, false);
-							// If the user stopped reading & decided to quit, then exit the
-							// message scan loops.
-							if (readRetObj.stoppedReading)
-							{
-								continueNewScan = false;
-								userAborted = true;
-							}
-							break;
-						default:
-							break;
-					}
-
-					if (this.msgbase != null)
-						this.msgbase.close();
-				}
-			}
-		}
+		for (var subIndex = 0; subIndex < msg_area.grp_list[bbs.curgrp].sub_list.length; ++subIndex)
+			subBoardsToScan.push(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code);
 	}
 	else if (scanScopeChar == "S") // Current sub-board scan
+		subBoardsToScan.push(bbs.cursub_code);
+	// Do a scan through the sub-boards
+	this.doingMsgScan = true;
+	var continueNewScan = true;
+	var userAborted = false;
+	this.doingMultiSubBoardScan = (subBoardsToScan.length > 1);
+	for (var subCodeIdx = 0; (subCodeIdx < subBoardsToScan.length) && continueNewScan; ++subCodeIdx)
 	{
-		this.doingMultiSubBoardScan = false;
-		// If the command-line arguments don't specify the sub-board code or
-		// the user is reading personal email, then set the object's sub-board
-		// code to the user's current sub-board code (bbs.cursub_code) to ensure
-		// that we open the correct messagebase and so that @-codes, etc. display
-		// for the correct sub-board.
-		if (!gCmdLineArgVals.hasOwnProperty("subboard") || gListPersonalEmailCmdLineOpt)
-			this.setSubBoardCode(bbs.cursub_code);
-		// Make sure the user has access permissions for the current sub-board and
-		// has it set up in their scan configuration before letting the user read
-		// it.
-		if (msg_area.sub[this.subBoardCode].can_read &&
-		    ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
+		// Force garbage collection to ensure enough memory is available to continue
+		js.gc(true);
+		// Set the console line counter to 0 to prevent screen pausing
+		// when the "Searching ..." and "No messages were found" text is
+		// displayed repeatedly
+		console.line_counter = 0;
+		// If the sub-board's access requirements allows the user to read it
+		// and it's enabled in the user's message scan configuration, then go
+		// ahead with this sub-board.
+		// Note: Used to use this to determine whether the user could access the
+		// sub-board:
+		//user.compare_ars(msg_area.grp_list[grpIndex].sub_list[subIndex].ars)
+		// Now using the can_read property.
+		this.setSubBoardCode(subBoardsToScan[subCodeIdx]); // Needs to be set before getting the last read/scan pointer index
+		if (msg_area.sub[this.subBoardCode].can_read && ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
 		{
+			// Sub-board description: msg_area.grp_list[grpIndex].sub_list[subIndex].description
+			// Open the sub-board and check for unread messages.  If there are any, then let
+			// the user read the messages in the sub-board.
+			//this.msgbase = new MsgBasesubBoardsToScan[subCodeIdx]);
 			this.msgbase = new MsgBase(this.subBoardCode);
-			//this.msgbase = new MsgBase(bbs.cursub_code);
 			if (this.msgbase.open())
 			{
-				// Force garbage collection to ensure enough memory is available to continue
-				js.gc(true);
-
 				// Get a filtered list of messages for this sub-board
 				this.PopulateHdrsForCurrentSubBoard();
 
-				// Temporarily change the user's sub-board to the current
-				// sub-board so that certain @-codes (such as @GRP-L@, etc.)
-				// are displayed by Synchronet correctly.
-				bbs.curgrp = msg_area.sub[this.subBoardCode].grp_index;
-				bbs.cursub = msg_area.sub[this.subBoardCode].index;
+				//this.setSubBoardCode(subBoardsToScan[subCodeIdx]); // Needs to be set before getting the last read/scan pointer index
 
-				//this.setSubBoardCode(bbs.cursub_code); // Needs to be set before getting the last read/scan pointer message
-
-				// If the current sub-board contains only deleted messages, or if
-				// the user has already read the last message in the sub-board,
-				// then skip it.
+				// If the current sub-board contains only deleted messages,
+				// or if the user has already read the last message in this
+				// sub-board, then skip it.
 				var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
 				var nonDeletedMsgsExist = (this.FindNextNonDeletedMsgIdx(scanPtrMsgIdx-1, true) > -1);
 				var userHasReadLastMessage = false;
@@ -2501,61 +2216,94 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 					if (this.hdrsForCurrentSubBoard.length > 0)
 					{
 						if ((msg_area.sub[this.subBoardCode].last_read == this.hdrsForCurrentSubBoard[this.hdrsForCurrentSubBoard.length-1].number) ||
-							(scanPtrMsgIdx == this.hdrsForCurrentSubBoard.length-1))
+						    (scanPtrMsgIdx == this.hdrsForCurrentSubBoard.length-1))
 						{
 							userHasReadLastMessage = true;
 						}
 					}
 				}
-				if (nonDeletedMsgsExist && !userHasReadLastMessage)
+				if (!nonDeletedMsgsExist || userHasReadLastMessage)
 				{
-					// We might want the starting message index to be different
-					// depending on the scan mode.
-					switch (pScanMode)
-					{
-						case SCAN_NEW:
-							// Make sure the sub-board has some messages.  Let the user read it if
-							// the scan pointer index is -1 (one unread message) or if it points to
-							// a message within the number of messages in the sub-board.
-							if ((this.msgbase.total_msgs > 0) && ((scanPtrMsgIdx == -1) || (scanPtrMsgIdx < this.msgbase.total_msgs-1)))
+					if (this.msgbase != null)
+						this.msgbase.close();
+					continue;
+				}
+
+				// In the switch cases below, bbs.curgrp and bbs.cursub are
+				// temporarily changed the user's sub-board to the current
+				// sub-board so that certain @-codes (such as @GRP-L@, etc.)
+				// are displayed by Synchronet correctly.
+
+				// We might want the starting message index to be different
+				// depending on the scan mode.
+				switch (pScanMode)
+				{
+					case SCAN_NEW:
+						// Make sure the sub-board has some messages.  Let the user read it if
+						// the scan pointer index is -1 (one unread message) or if it points to
+						// a message within the number of messages in the sub-board.
+						if ((this.msgbase.total_msgs > 0) && ((scanPtrMsgIdx == -1) || (scanPtrMsgIdx < this.msgbase.total_msgs-1)))
+						{
+							bbs.curgrp = grpIndex;
+							bbs.cursub = subIndex;
+							// Start at the first unread message.
+							var startMsgIdx = scanPtrMsgIdx + 1;
+							if (this.SearchingAndResultObjsDefinedForCurSub())
+								startMsgIdx = 0;
+							// Allow the user to read messages in this sub-board.  Don't allow
+							// the user to change to a different message area, don't pause
+							// when there's no search results in a sub-board, and return
+							// instead of going to the next sub-board via navigation.
+							var readRetObj = this.ReadOrListSubBoard(null, startMsgIdx, false, true, false);
+							// If the user stopped reading & decided to quit, then exit the
+							// message scan loops.
+							if (readRetObj.stoppedReading)
 							{
-								if (this.subBoardCode != "mail")
-									bbs.cursub = msg_area.sub[bbs.cursub_code].index;
-								// Start at the first unread message.
-								var startMsgIdx = scanPtrMsgIdx + 1;
-								if (this.SearchingAndResultObjsDefinedForCurSub())
-									startMsgIdx = 0;
-								// Allow the user to read messages in this sub-board.  Don't allow
-								// the user to change to a different message area, don't pause
-								// when there's no search results in a sub-board, and return
-								// instead of going to the next sub-board via navigation.
-								var readRetObj = this.ReadOrListSubBoard(null, startMsgIdx, false, true, true);
-								userAborted = readRetObj.stoppedReading;
+								continueNewScan = false;
+								userAborted = true;
 							}
-							break;
-						case SCAN_TOYOU: // All messages to the user
-							if (this.subBoardCode != "mail")
-								bbs.cursub = msg_area.sub[bbs.cursub_code].index;
-							// Set the search type to messages to the user and let the user
-							// read the sub-board.  ReadOrListSubBoard() will do the search.
-							// Don't allow the user to change to a different message area.
-							this.searchType = SEARCH_TO_USER_CUR_MSG_AREA;
-							var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, true);
-							userAborted = readRetObj.stoppedReading;
-							break;
-						case SCAN_UNREAD: // New (unread) messages to the user
-							bbs.cursub = msg_area.sub[bbs.cursub_code].index;
-							// Set the search type to messages to the user and let the user
-							// read the sub-board.  ReadOrListSubBoard() will do the search.
-							// Don't allow the user to change to a different message area.
-							this.searchType = SEARCH_TO_USER_NEW_SCAN_CUR_SUB;
-							bbs.cursub = msg_area.sub[bbs.cursub_code].index;
-							var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, true);
-							userAborted = readRetObj.stoppedReading;
-							break;
-						default:
-							break;
-					}
+						}
+						break;
+					case SCAN_TOYOU: // All messages to the user
+						bbs.curgrp = grpIndex;
+						bbs.cursub = subIndex;
+						// Search for messages to the user in the current sub-board
+						// and let the user read the sub-board if messages are
+						// found.  Don't allow the user to change to a different
+						// message area, don't pause when there's no search results
+						// in a sub-board, and return instead of going to the next
+						// sub-board via navigation.
+						this.searchType = SEARCH_TO_USER_CUR_MSG_AREA;
+						var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, false);
+						// If the user stopped reading & decided to quit, then exit the
+						// message scan loops.
+						if (readRetObj.stoppedReading)
+						{
+							continueNewScan = false;
+							userAborted = true;
+						}
+						break;
+					case SCAN_UNREAD: // New (unread) messages to the user
+						bbs.curgrp = grpIndex;
+						bbs.cursub = subIndex;
+						// Search for messages to the user in the current sub-board
+						// and let the user read the sub-board if messages are
+						// found.  Don't allow the user to change to a different
+						// message area, don't pause when there's no search results
+						// in a sub-board, and return instead of going to the next
+						// sub-board via navigation.
+						this.searchType = SEARCH_TO_USER_NEW_SCAN;
+						var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, false);
+						// If the user stopped reading & decided to quit, then exit the
+						// message scan loops.
+						if (readRetObj.stoppedReading)
+						{
+							continueNewScan = false;
+							userAborted = true;
+						}
+						break;
+					default:
+						break;
 				}
 
 				if (this.msgbase != null)
@@ -2563,6 +2311,8 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 			}
 		}
 	}
+	this.doingMultiSubBoardScan = false;
+
 
 	// Restore the original sub-board code, searched message headers, etc.
 	this.searchType = originalSearchType;
@@ -18315,7 +18065,7 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	if (pMsgHdr === null)
 		return false;
 	// Let the sysop see unvalidated messages and private messages but not other users.
-	if (gIsSysop)
+	if (!gIsSysop)
 	{
 		if (pSubBoardCode != "mail")
 		{
