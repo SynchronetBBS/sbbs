@@ -57,8 +57,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.07 Beta";
-var SLYVOTE_DATE = "2017-01-16";
+var SLYVOTE_VERSION = "0.08 Beta";
+var SLYVOTE_DATE = "2017-01-18";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -225,7 +225,8 @@ else
 // Program states
 var MAIN_MENU = 0;
 var VOTING_ON_A_TOPIC = 1;
-var VIEWING_VOTE_RESULTS = 2;
+var VOTE_ON_ALL_TOPICS = 2;
+var VIEWING_VOTE_RESULTS = 3;
 var EXIT_SLYVOTE = 999;
 
 var gProgramState = MAIN_MENU;
@@ -240,7 +241,10 @@ while (gContinueSlyVote)
 			gProgramState = DoMainMenu();
 			break;
 		case VOTING_ON_A_TOPIC:
-			gProgramState = ChooseVoteTopic();
+			gProgramState = ChooseVoteTopic(true);
+			break;
+		case VOTE_ON_ALL_TOPICS:
+			gProgramState = ChooseVoteTopic(false);
 			break;
 		case VIEWING_VOTE_RESULTS:
 			gProgramState = ViewVoteResults(gSubBoardCode);
@@ -284,9 +288,7 @@ function DoMainMenu()
 	if (userChoice == "vote")
 		nextProgramState = VOTING_ON_A_TOPIC;
 	else if (userChoice == "answerAll")
-	{
-		// TODO
-	}
+		nextProgramState = VOTE_ON_ALL_TOPICS;
 	else if (userChoice == "create")
 	{
 		// Set the user's current sub-board to the chosen sub-board before
@@ -308,8 +310,12 @@ function DoMainMenu()
 	return nextProgramState;
 }
 
-// Lets the user choose a voting topic (poll) to vote on
-function ChooseVoteTopic()
+// Lets the user choose a voting topic (poll) to vote on.
+//
+// Parameters:
+//  pLetUserChoose: Boolean - Whether or not to let the user choose a topic.  Defaults
+//                  to true.  If false, then all topics will be presented in order.
+function ChooseVoteTopic(pLetUserChoose)
 {
 	gProgramState = VOTING_ON_A_TOPIC;
 	var nextProgramState = VOTING_ON_A_TOPIC;
@@ -335,7 +341,7 @@ function ChooseVoteTopic()
 	else if (voteTopicInfo.msgHdrs.length == 0)
 	{
 		console.gotoxy(1, gMessageRow);
-		console.print("\1n\1cThere are no polls to vote on in this section\1n");
+		console.print("\1n\1gThere are no polls to vote on in this section\1n");
 		console.crlf();
 		console.pause();
 		return MAIN_MENU;
@@ -345,38 +351,67 @@ function ChooseVoteTopic()
 	console.print("\1n");
 	var pleaseSelectTextRow = 6;
 	// Draw the columns to frame the voting topics
-	var columnX1 = 17;
-	var columnX2 = 63;
-	var textLen = columnX2 - columnX1 - 2;
-	var listTopRow = pleaseSelectTextRow + 1;
-	for (var posY = listTopRow; posY < gBottomBorderRow; ++posY)
-	{
-		console.gotoxy(columnX1, posY);
-		console.print("\1" + "7\1h\1wÝ\1n\1k\1" + "7\1n\1" + "7\1k\1hÞ\1n");
-		console.gotoxy(columnX2, posY);
-		console.print("\1" + "7\1h\1wÝ\1n\1k\1" + "7\1n\1" + "7\1k\1hÞ\1n");
-	}
-	// Create the menu containing voting topics and get the user's choice
-	var startCol = columnX1+2;
+	listTopRow = pleaseSelectTextRow + 1;
+	var drawColRetObj = DrawVoteColumns(listTopRow);
+
+	var startCol = drawColRetObj.columnX1+2;
 	var menuHeight = gBottomBorderRow-listTopRow-1;
-	var topicsMenu = new DDLightbarMenu(startCol, listTopRow, textLen, menuHeight);
-	for (var i = 0; i < voteTopicInfo.msgHdrs.length; ++i)
-		topicsMenu.Add(voteTopicInfo.msgHdrs[i].subject, voteTopicInfo.msgHdrs[i].number);
-	var drawTopicsMenu = true;
-	while (nextProgramState == VOTING_ON_A_TOPIC)
+
+	var letUserChoose = (typeof(pLetUserChoose) == "boolean" ? pLetUserChoose : true);
+	if (letUserChoose)
 	{
-		var pleaseSectTopicText = "\1n\1c\1hP\1n\1clease select a topic to vote on (\1hESC\1n\1g=\1cReturn)\1n";
-		console.gotoxy(18, pleaseSelectTextRow);
-		console.print(pleaseSectTopicText);
-		console.print("\1n");
-		var userChoice = topicsMenu.GetVal(drawTopicsMenu);
-		if (userChoice != null)
+		// Create the menu containing voting topics and get the user's choic
+		var topicsMenu = new DDLightbarMenu(startCol, listTopRow, drawColRetObj.textLen, menuHeight);
+		for (var i = 0; i < voteTopicInfo.msgHdrs.length; ++i)
+			topicsMenu.Add(voteTopicInfo.msgHdrs[i].subject, voteTopicInfo.msgHdrs[i].number);
+		var drawTopicsMenu = true;
+		while (nextProgramState == VOTING_ON_A_TOPIC)
 		{
-			//topicsMenu.Erase();
+			var pleaseSectTopicText = "\1n\1c\1hP\1n\1clease select a topic to vote on (\1hESC\1n\1g=\1cReturn)\1n";
 			console.gotoxy(18, pleaseSelectTextRow);
-			printf("%" + strip_ctrl(pleaseSectTopicText).length + "s", "");
-			var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, userChoice, startCol, listTopRow, textLen, menuHeight);
-			drawTopicsMenu = true;
+			console.print(pleaseSectTopicText);
+			console.print("\1n");
+			var userChoice = topicsMenu.GetVal(drawTopicsMenu);
+			if (userChoice != null)
+			{
+				//topicsMenu.Erase();
+				console.gotoxy(18, pleaseSelectTextRow);
+				printf("%" + strip_ctrl(pleaseSectTopicText).length + "s", "");
+				var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, userChoice, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
+				drawTopicsMenu = true;
+				if (voteRetObj.errorMsg.length > 0)
+				{
+					console.gotoxy(1, gMessageRow);
+					if (voteRetObj.mnemonicsRequiredForErrorMsg)
+					{
+						console.gotoxy(1, gMessageRow);
+						console.mnemonics(voteRetObj.errorMsg);
+						mswait(ERROR_PAUSE_WAIT_MS);
+						console.gotoxy(1, gMessageRow);
+						printf("\1n%" + console.screen_columns + "s", "");
+					}
+					else
+					{
+						console.print("\1n\1y\1h" + voteRetObj.errorMsg);
+						mswait(ERROR_PAUSE_WAIT_MS);
+						console.gotoxy(1, gMessageRow);
+						printf("\1n%" + voteRetObj.errorMsg.length + "s", "");
+					}
+				}
+			}
+			else // The user chose to exit the topics menu
+				nextProgramState = MAIN_MENU;
+		}
+	}
+	else
+	{
+		// Vote on all topics
+		nextProgramState = MAIN_MENU;
+		for (var i = 0; i < voteTopicInfo.msgHdrs.length; ++i)
+		{
+			var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, voteTopicInfo.msgHdrs[i].number, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
+			if (voteRetObj.userExited)
+				break;
 			if (voteRetObj.errorMsg.length > 0)
 			{
 				console.gotoxy(1, gMessageRow);
@@ -395,10 +430,9 @@ function ChooseVoteTopic()
 					console.gotoxy(1, gMessageRow);
 					printf("\1n%" + voteRetObj.errorMsg.length + "s", "");
 				}
+				break;
 			}
 		}
-		else // The user chose to exit the topics menu
-			nextProgramState = MAIN_MENU;
 	}
 
 	return nextProgramState;
@@ -415,11 +449,13 @@ function ChooseVoteTopic()
 //  pMenuHeight: The height to use for the topic option menu
 //
 // Return value: An object containing the following properties:
+//               userExited: Boolean - Whether or not the user exited without voting
 //               errorMsg: A string containing a message on error, or an empty string on success
 //               mnemonicsRequiredForErrorMsg: Whether or not mnemonics is required to display the error message
 function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, pMenuHeight)
 {
 	var retObj = {
+		userExited: false,
 		errorMsg: "",
 		mnemonicsRequiredForErrorMsg: false,
 		nextProgramState: VOTING_ON_A_TOPIC
@@ -457,11 +493,12 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 				optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
 				// Get the user's choice of voting option and submit it for voting
 				var userChoice = optionsMenu.GetVal(true);
+				var firstLineEraseLength = pollSubject.length;
 				if (userChoice != null)
 				{
 					var voteRetObj = VoteOnTopic(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
 					// If there was an error, then show it.  Otherwise, show a success message.
-					var firstLineEraseLength = pollSubject.length;
+					//var firstLineEraseLength = pollSubject.length;
 					console.gotoxy(1, pStartRow-4);
 					printf("\1n%" + pollSubject.length + "s", "");
 					console.gotoxy(1, pStartRow-4);
@@ -474,10 +511,13 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 					}
 					else
 					{
-						console.print("\1cYour vote was successfully saved.");
+						console.print("\1gYour vote was successfully saved.");
+						firstLineEraseLength = 33;
 						mswait(ERROR_PAUSE_WAIT_MS);
 					}
 				}
+				else
+					retObj.userExited = true;
 
 				// Before returning, erase the poll question text and comment lines from the screen
 				console.print("\1n");
@@ -2566,4 +2606,37 @@ function UserHandleAliasNameMatch(pName)
    if (!userMatch && (user.name.length > 0))
       userMatch = (nameUpper.indexOf(user.name.toUpperCase()) > -1);
    return userMatch;
+}
+
+// Draws the colums that will be on either side of the voting topics
+// & choices.
+//
+// Parameters:
+//  pTopRow: The row on the screen to use as the top row
+//
+// Return value: An object containing the following properties:
+//               columnX1: The X coordinate of the first (left) column
+//               columnX2: The X coordinate of the first (right) column
+//               textLen: The length of text that can fit between the columns
+//               colWidth: The width of the columns
+function DrawVoteColumns(pTopRow)
+{
+	var retObj = {
+		columnX1: 17,
+		columnX2: 63,
+		textLen: 0,
+		colWidth: 3
+	};
+	retObj.textLen = retObj.columnX2 - retObj.columnX1 - 2;
+
+	// Draw the columns
+	for (var posY = pTopRow; posY < gBottomBorderRow; ++posY)
+	{
+		console.gotoxy(retObj.columnX1, posY);
+		console.print("\1" + "7\1h\1wÝ\1n\1k\1" + "7\1n\1" + "7\1k\1hÞ\1n");
+		console.gotoxy(retObj.columnX2, posY);
+		console.print("\1" + "7\1h\1wÝ\1n\1k\1" + "7\1n\1" + "7\1k\1hÞ\1n");
+	}
+
+	return retObj;
 }
