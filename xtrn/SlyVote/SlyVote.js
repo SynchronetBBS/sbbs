@@ -12,7 +12,6 @@
  */
  
 // TODO:
-// - Answer all topics
 // - Add a help screen?
 
 
@@ -57,7 +56,7 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.08 Beta";
+var SLYVOTE_VERSION = "0.09 Beta";
 var SLYVOTE_DATE = "2017-01-18";
 
 // Determine the script's startup directory.
@@ -467,15 +466,21 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 	{
 		if (!HasUserVotedOnMsg(pMsgNum, pSubBoardCode, msgbase, user))
 		{
+			// Display the ESC=Quit text
+			console.gotoxy(1, console.screen_rows-3);
+			console.print("\1n\1c\1hESC\1g=\1n\1cQuit\1n");
+
+			// Get the topic options and let the user choose one
 			var msgHdr = msgbase.get_msg_header(false, pMsgNum, true);
 			//IsReadableMsgHdr(pMsgHdr, pSubBoardCode)
 			if ((msgHdr != null) && IsReadableMsgHdr(msgHdr, pSubBoardCode))
 			{
 				var pollTextAndOpts = GetPollTextAndOpts(msgHdr);
-				// Print the poll question text
-				console.gotoxy(1, pStartRow-4);
+				// Print the poll question text centered on the screen
 				var pollSubject = msgHdr.subject.substr(0, console.screen_columns);
-				console.print("\1n\1c" + pollSubject);
+				var pollSubjectStartCol = (console.screen_columns / 2) - (pollSubject.length / 2);
+				console.gotoxy(pollSubjectStartCol, pStartRow-4);
+				console.print("\1n\1g\1h" + pollSubject + "\1n");
 				// Output up to the first 3 poll comment lines
 				//console.print("\1n");
 				var i = 0;
@@ -507,20 +512,21 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 						var voteErrMsg = voteRetObj.errorMsg.substr(0, console.screen_columns - 2);
 						firstLineEraseLength = voteErrMsg.length;
 						console.print("\1y\1h* " + voteErrMsg);
-						mswait(ERROR_PAUSE_WAIT_MS);
 					}
 					else
 					{
 						console.print("\1gYour vote was successfully saved.");
 						firstLineEraseLength = 33;
-						mswait(ERROR_PAUSE_WAIT_MS);
 					}
+					mswait(ERROR_PAUSE_WAIT_MS);
 				}
 				else
 					retObj.userExited = true;
 
 				// Before returning, erase the poll question text and comment lines from the screen
 				console.print("\1n");
+				console.gotoxy(pollSubjectStartCol, pStartRow-4);
+				printf("%" + pollSubject.length + "s", "");
 				console.gotoxy(1, pStartRow-4);
 				printf("%" + firstLineEraseLength + "s", "");
 				i = 0;
@@ -533,6 +539,10 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 			}
 			else
 				retObj.errorMsg = "Unable to retrieve the topic options";
+
+			// Erase the ESC=Quit text
+			console.gotoxy(1, console.screen_rows-3);
+			printf("\1n%8s", "");
 		}
 		else
 		{
