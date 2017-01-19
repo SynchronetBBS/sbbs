@@ -54,3 +54,10 @@ printf("Updating exec directory: ");
 printf("%s\n", update_exec_dir() ? "Success" : "FAILURE");
 printf("Updating ip_address field: ");
 printf("%d records updated\n", move_laston_address());
+
+var sbbsecho_cfg = system.ctrl_dir + "sbbsecho.cfg";
+var sbbsecho_ini = system.ctrl_dir + "sbbsecho.ini";
+if(file_exists(sbbsecho_cfg) && !file_exists(sbbsecho_ini)) {
+	printf("Converting %s to %s: ", sbbsecho_cfg, sbbsecho_ini);
+	load({}, "sbbsecho_upgrade.js");
+}
