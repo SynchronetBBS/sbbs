@@ -56,8 +56,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.09 Beta";
-var SLYVOTE_DATE = "2017-01-18";
+var SLYVOTE_VERSION = "0.10 Beta";
+var SLYVOTE_DATE = "2017-01-19";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -405,9 +405,16 @@ function ChooseVoteTopic(pLetUserChoose)
 	else
 	{
 		// Vote on all topics
+		var pollNumTextLen = 0; // To clear the poll # text later
 		nextProgramState = MAIN_MENU;
 		for (var i = 0; i < voteTopicInfo.msgHdrs.length; ++i)
 		{
+			// Display the poll number
+			var pollNumText = format("\1n\1c%3d of %-3d", +(i+1), voteTopicInfo.msgHdrs.length);
+			console.gotoxy(1, console.screen_rows-4);
+			console.print(pollNumText);
+			pollNumTextLen = strip_ctrl(pollNumText).length;
+			// Let the user vote on the poll
 			var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, voteTopicInfo.msgHdrs[i].number, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
 			if (voteRetObj.userExited)
 				break;
@@ -429,9 +436,14 @@ function ChooseVoteTopic(pLetUserChoose)
 					console.gotoxy(1, gMessageRow);
 					printf("\1n%" + voteRetObj.errorMsg.length + "s", "");
 				}
+				console.gotoxy(1, console.screen_rows-4);
+				printf("\1n%" + strip_ctrl(pollNumText).length + "s", "");
 				break;
 			}
 		}
+		// Erase the poll number text
+		console.gotoxy(1, console.screen_rows-4);
+		printf("\1n%" + strip_ctrl(pollNumText).length + "s", "");
 	}
 
 	return nextProgramState;
@@ -496,9 +508,14 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 					optionsMenu.Add(pollTextAndOpts.options[i], i+1);
 				optionsMenu.colors.itemColor = "\1c";
 				optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
-				// Get the user's choice of voting option and submit it for voting
+				// Get the user's choice of voting option
 				var userChoice = optionsMenu.GetVal(true);
-				var firstLineEraseLength = pollSubject.length;
+				// Erase the poll subject text so it doesn't look weird when the success/error
+				// message is displayed
+				console.gotoxy(pollSubjectStartCol, pStartRow-4);
+				printf("%" + strip_ctrl(pollSubject).length + "s", "");
+				// Submit the user's choice if they chose something
+				var firstLineEraseLength = 0;
 				if (userChoice != null)
 				{
 					var voteRetObj = VoteOnTopic(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
@@ -523,10 +540,8 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 				else
 					retObj.userExited = true;
 
-				// Before returning, erase the poll question text and comment lines from the screen
+				// Before returning, erase the pcomment lines from the screen
 				console.print("\1n");
-				console.gotoxy(pollSubjectStartCol, pStartRow-4);
-				printf("%" + pollSubject.length + "s", "");
 				console.gotoxy(1, pStartRow-4);
 				printf("%" + firstLineEraseLength + "s", "");
 				i = 0;
@@ -1161,14 +1176,26 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 		console.clear("\1n");
 	else
 		console.print("\1n");
-	//bbs.menu("../" + gStartupPath + "slyvote");
+
+	// Borders and stylized SlyVote text
 	DisplayTopScreenBorder();
 	DisplaySlyVoteText();
 	DisplayVerAndRegBorders();
 	console.gotoxy(1, gBottomBorderRow);
 	DisplayBottomScreenBorder();
-	console.print("\1n");
+	// Write the current sub-board
+	/*
+	var groupName = msg_area.sub[gSubBoardCode].grp_name;
+	var subBoardName = msg_area.sub[gSubBoardCode].name;
+	var subBoardDesc = msg_area.sub[gSubBoardCode].description;
+	*/
+	var subBoardText = msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name;
+	subBoardText = "\1n\1b\1hCurrent topic area: \1w" + subBoardText.substr(0, console.scren_columns);
+	var subBoardTextX = (console.screen_columns/2) - (strip_ctrl(subBoardText).length/2);
+	console.gotoxy(subBoardTextX, 9);
+	console.print(subBoardText);
 	// Write the SlyVote version centered
+	console.print("\1n");
 	var fieldWidth = 28;
 	console.gotoxy(41, 14);
 	console.print(CenterText("\1n\1hSlyVote v\1c" + SLYVOTE_VERSION.replace(".", "\1b.\1c") + "\1n", fieldWidth));
