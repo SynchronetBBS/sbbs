@@ -56,8 +56,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.10 Beta";
-var SLYVOTE_DATE = "2017-01-19";
+var SLYVOTE_VERSION = "0.11 Beta";
+var SLYVOTE_DATE = "2017-01-20";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -1056,7 +1056,7 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 		}
 		else if (userVotedMaxVotes)
 		{
-			retObj.errorMsg = bbs.text(VotedAlready);
+			retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
 			if (removeNLsFromVoteText)
 				retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 			retObj.mnemonicsRequiredForErrorMsg = true;
@@ -1510,24 +1510,26 @@ function ViewVoteResults(pSubBoardCode)
 					pollMsgHdrs[currentMsgIdx] = msgHdrs[pollMsgHdrs[currentMsgIdx].number];
 					delete msgHdrs;
 				}
-				// If there is an error message, then display it.
+				// If there is an error message, then display it at the bottom row.
 				if (voteRetObj.errorMsg.length > 0)
 				{
-					console.gotoxy(1, gMessageRow);
+					console.gotoxy(1, console.screen_rows-1);
+					printf("\1n%" + +(console.screen_columns-1) + "s", "");
+					console.gotoxy(1, console.screen_rows-1);
 					if (voteRetObj.mnemonicsRequiredForErrorMsg)
 					{
-						console.mnemonics(voteRetObj.errorMsg);
+						console.mnemonics(voteRetObj.errorMsg.substr(0, console.screen_columns-1));
 						mswait(ERROR_PAUSE_WAIT_MS);
-						console.gotoxy(1, gMessageRow);
-						printf("\1n%" + console.screen_columns + "s", "");
 					}
 					else
 					{
-						console.print("\1n\1y\1h" + voteRetObj.errorMsg);
+						console.print("\1n\1y\1h" + voteRetObj.errorMsg.substr(0, console.screen_columns-1));
 						mswait(ERROR_PAUSE_WAIT_MS);
-						console.gotoxy(1, gMessageRow);
+						console.gotoxy(1, console.screen_rows-1);
 						printf("\1n%" + strip_ctrl(voteRetObj.errorMsg).length + "s", "");
 					}
+					drawMsg = true;
+					drawKeyHelpLine = false;
 				}
 			}
 			else if (/[0-9]/.test(scrollRetObj.lastKeypress))
