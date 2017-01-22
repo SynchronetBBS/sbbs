@@ -299,8 +299,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 25";
-var READER_DATE = "2017-01-16";
+var READER_VERSION = "1.17 Beta 26";
+var READER_DATE = "2017-01-21";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4400,9 +4400,10 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	if (msgHeader.from.length == 0)
 		msgHeader.from = "All";
 
-	// Get the message text and see if it has any ANSI codes.  If it has ANSI codes,
-	// then don't use the scrolling interface so that the ANSI gets displayed properly.
-	var messageText = this.GetMsgBody(msgHeader);
+	// Get the message text and see if it has any ANSI codes.  Remove any pause
+	// codes it might have.  If it has ANSI codes, then don't use the scrolling
+	// interface so that the ANSI gets displayed properly.
+	var messageText = this.GetMsgBody(msgHeader).replace("\1p", "").replace("\1P", "");
 	// If the message has ANSI content, then use the scrolling interface only
 	// if frame.js is available on the BBS machine and the option to use the
 	// scrolling interface for ANSI messages is enabled.
