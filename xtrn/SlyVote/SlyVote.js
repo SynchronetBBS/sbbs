@@ -56,8 +56,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.11 Beta";
-var SLYVOTE_DATE = "2017-01-20";
+var SLYVOTE_VERSION = "0.12 Beta";
+var SLYVOTE_DATE = "2017-01-21";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -206,19 +206,29 @@ if (slyVoteCfg.subBoardCodes.length == 1)
 	gSubBoardCode = slyVoteCfg.subBoardCodes[0];
 else
 {
-	console.gotoxy(2, 1);
-	console.print("\1n\1cChoose a sub-board:");
-	var subBoardsLB = new DDLightbarMenu(2, 2, 45, 10);
+	// Clear the screen & display the SlyVote stylized text
+	console.clear("\1n");
+	DisplaySlyVoteText();
+
+	// Draw columns to frame the topic area menu
+	var listTopRow = 8;
+	var drawColRetObj = DrawVoteColumns(listTopRow);
+
+	// Display the menu of topic areas
+	console.gotoxy(drawColRetObj.columnX1+7, listTopRow-1);
+	//console.print("\1n\1cChoose a topic area (\1hESC\1g=\1n\1cExit):");
+	console.print("\1n\1b\1hChoose a topic area (\1cESC\1g=\1n\1cExit\1h\1b):");
+	var subBoardMenu = new DDLightbarMenu(drawColRetObj.columnX1+drawColRetObj.colWidth-1, listTopRow, drawColRetObj.textLen, drawColRetObj.colHeight);
 	for (var idx = 0; idx < slyVoteCfg.subBoardCodes.length; ++idx)
 	{
-		var name = msg_area.sub[slyVoteCfg.subBoardCodes[idx]].name;
-		var desc = msg_area.sub[slyVoteCfg.subBoardCodes[idx]].description;
-		subBoardsLB.Add(desc, slyVoteCfg.subBoardCodes[idx]);
+		var subBoardGrpAndName = msg_area.sub[slyVoteCfg.subBoardCodes[idx]].grp_name + " - " + msg_area.sub[slyVoteCfg.subBoardCodes[idx]].name;
+		subBoardMenu.Add(subBoardGrpAndName, slyVoteCfg.subBoardCodes[idx]);
 	}
-	gSubBoardCode = subBoardsLB.GetVal();
+	gSubBoardCode = subBoardMenu.GetVal();
+	// Exit if the user pressed ESC rather than choosing an area
 	if (gSubBoardCode == null)
 		exit(0);
-	console.gotoxy(1, subBoardsLB.pos.y+subBoardsLB.size.height+1);
+	console.gotoxy(1, subBoardMenu.pos.y+subBoardMenu.size.height+1);
 }
 
 // Program states
@@ -346,16 +356,17 @@ function ChooseVoteTopic(pLetUserChoose)
 		return MAIN_MENU;
 	}
 
-	// Display the list of voting topics
+	// Draw the columns to frame the voting topics
 	console.print("\1n");
 	var pleaseSelectTextRow = 6;
-	// Draw the columns to frame the voting topics
 	listTopRow = pleaseSelectTextRow + 1;
 	var drawColRetObj = DrawVoteColumns(listTopRow);
 
-	var startCol = drawColRetObj.columnX1+2;
+	//var startCol = drawColRetObj.columnX1+2;
+	var startCol = drawColRetObj.columnX1+drawColRetObj.colWidth-1;
 	var menuHeight = gBottomBorderRow-listTopRow-1;
 
+	// If we are to let the user chooes a topic, then display the list of voting topics
 	var letUserChoose = (typeof(pLetUserChoose) == "boolean" ? pLetUserChoose : true);
 	if (letUserChoose)
 	{
@@ -370,13 +381,13 @@ function ChooseVoteTopic(pLetUserChoose)
 			console.gotoxy(18, pleaseSelectTextRow);
 			console.print(pleaseSectTopicText);
 			console.print("\1n");
-			var userChoice = topicsMenu.GetVal(drawTopicsMenu);
-			if (userChoice != null)
+			var chosenMsgNum = topicsMenu.GetVal(drawTopicsMenu);
+			if (chosenMsgNum != null)
 			{
 				//topicsMenu.Erase();
 				console.gotoxy(18, pleaseSelectTextRow);
 				printf("%" + strip_ctrl(pleaseSectTopicText).length + "s", "");
-				var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, userChoice, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
+				var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, chosenMsgNum, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
 				drawTopicsMenu = true;
 				if (voteRetObj.errorMsg.length > 0)
 				{
@@ -484,7 +495,6 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 
 			// Get the topic options and let the user choose one
 			var msgHdr = msgbase.get_msg_header(false, pMsgNum, true);
-			//IsReadableMsgHdr(pMsgHdr, pSubBoardCode)
 			if ((msgHdr != null) && IsReadableMsgHdr(msgHdr, pSubBoardCode))
 			{
 				var pollTextAndOpts = GetPollTextAndOpts(msgHdr);
@@ -1184,11 +1194,6 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	console.gotoxy(1, gBottomBorderRow);
 	DisplayBottomScreenBorder();
 	// Write the current sub-board
-	/*
-	var groupName = msg_area.sub[gSubBoardCode].grp_name;
-	var subBoardName = msg_area.sub[gSubBoardCode].name;
-	var subBoardDesc = msg_area.sub[gSubBoardCode].description;
-	*/
 	var subBoardText = msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name;
 	subBoardText = "\1n\1b\1hCurrent topic area: \1w" + subBoardText.substr(0, console.scren_columns);
 	var subBoardTextX = (console.screen_columns/2) - (strip_ctrl(subBoardText).length/2);
@@ -1394,9 +1399,9 @@ function ViewVoteResults(pSubBoardCode)
 
 		// Create the key help line to be displayed at the bottom of the screen
 		var keyText = "\1rLeft\1b, \1rRight\1b, \1rUp\1b, \1rDn\1b, \1rPgUp\1b/\1rDn\1b, \1rF\1m)\1birst, \1rL\1m)\1bast, \1r#\1b, ";
-		if (gUserIsSysop)
+		if (PollDeleteAllowed(msgbase, pSubBoardCode))
 			keyText += "\1rDEL\1b, ";
-		keyText += "\1rQ\1m)\1buit";
+		keyText += "\1rQ\1m)\1buit, \1r?";
 		var keyHelpLine = "\1" + "7" + CenterText(keyText, console.screen_columns-1);
 
 		// Get the unmodified default header lines to be displayed
@@ -1557,8 +1562,7 @@ function ViewVoteResults(pSubBoardCode)
 			}
 			else if (scrollRetObj.lastKeypress == KEY_DEL)
 			{
-				// Only allow the sysop to delete a message
-				if (gUserIsSysop)
+				if (PollDeleteAllowed(msgbase, pSubBoardCode))
 				{
 					// Go to the last line and confirm whether to delete the message
 					console.gotoxy(1, console.screen_rows);
@@ -1615,6 +1619,12 @@ function ViewVoteResults(pSubBoardCode)
 				}
 				else
 					drawMsg = false;
+			}
+			else if (scrollRetObj.lastKeypress == "?")
+			{
+				DisplayViewingResultsHelpScr(msgbase, pSubBoardCode);
+				drawKeyHelpLine = true;
+				drawMsg = true;
 			}
 			else if (scrollRetObj.lastKeypress == gReaderKeys.quit)
 				continueOn = false;
@@ -2658,15 +2668,18 @@ function UserHandleAliasNameMatch(pName)
 //               columnX2: The X coordinate of the first (right) column
 //               textLen: The length of text that can fit between the columns
 //               colWidth: The width of the columns
+//               colHeight: The height of the columns
 function DrawVoteColumns(pTopRow)
 {
 	var retObj = {
 		columnX1: 17,
 		columnX2: 63,
 		textLen: 0,
-		colWidth: 3
+		colWidth: 3,
+		colHeight: 0
 	};
 	retObj.textLen = retObj.columnX2 - retObj.columnX1 - 2;
+	retObj.colHeight = gBottomBorderRow - pTopRow - 1;
 
 	// Draw the columns
 	for (var posY = pTopRow; posY < gBottomBorderRow; ++posY)
@@ -2678,4 +2691,67 @@ function DrawVoteColumns(pTopRow)
 	}
 
 	return retObj;
+}
+
+// Returns whether deleting a poll (message) is allowed.
+//
+// Parameters:
+//  pMsgbase: The MsgBase object representing the current open sub-board
+//  pSubBoardCode: The internal code of the sub-board
+//
+// REturen value: Boolean - Whether deleting a poll is allowed
+function PollDeleteAllowed(pMsgbase, pSubBoardCode)
+{
+	var canDelete = gUserIsSysop || (pSubBoardCode == "mail");
+	if ((pMsgbase != null) && pMsgbase.is_open && (pMsgbase.cfg != null))
+		canDelete = canDelete || ((pMsgbase.cfg.settings & SUB_DEL) == SUB_DEL);
+	return canDelete;
+}
+
+// Displays a help screen for viewing all poll results
+//
+// Parameters:
+//  pMsgbase: A MessageBase object representing the sub-board
+//  pSubBoardCode: The internal code of the sub-board
+function DisplayViewingResultsHelpScr(pMsgbase, pSubBoardCode)
+{
+	console.clear("\n");
+	var progName = "SlyVote";
+	var posX = (console.screen_columns/2) - (progName.length/2);
+	console.gotoxy(posX, 1);
+	console.print("\1c\1h" + progName);
+	console.gotoxy(posX, 2);
+	console.print("\1k컴컴컴�");
+	var versionText = "\1n\1cVersion \1g" + SLYVOTE_VERSION + "\1w\1h (\1b" + SLYVOTE_DATE + "\1w)\1n";
+	posX = (console.screen_columns/2) - (strip_ctrl(versionText).length/2);
+	console.gotoxy(posX, 3);
+	console.print(versionText);
+	console.crlf();
+	console.crlf();
+	var subBoardGrpAndName = msg_area.sub[pSubBoardCode].grp_name + " - " + msg_area.sub[pSubBoardCode].name;
+	console.print("\1cCurrently viewing results in area \1g" + subBoardGrpAndName);
+	console.crlf();
+	console.crlf();
+	console.print("Keys");
+	console.crlf();
+	console.print("\1k\1h컴컴");
+	console.crlf();
+	var keyHelpLines = ["\1h\1cDown\1g/\1cup arrow    \1g: \1n\1cScroll the text down\1g/\1cup",
+	                    "\1h\1cLeft\1g/\1cright arrow \1g: \1n\1cGo to the previous\1g/\1cnext poll",
+	                    "\1h\1cPageUp\1g/\1cPageDown  \1g: \1n\1cScroll the text up\1g/\1cdown a page",
+	                    "\1h\1cHOME             \1g: \1n\1cGo to the top of the text",
+	                    "\1h\1cEND              \1g: \1n\1cGo to the bottom of the text",
+						"\1h\1cF                \1g: \1n\1cGo to the first poll",
+						"\1h\1cL                \1g: \1n\1cGo to the last poll"];
+	if (gUserIsSysop)
+		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current poll");
+	else if (PollDeleteAllowed(pMsgbase, pSubBoardCode))
+		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current poll (if it's yours)");
+	keyHelpLines.push("\1h\1cQ                \1g: \1n\1cQuit out of viewing poll results");
+	for (var idx = 0; idx < keyHelpLines.length; ++idx)
+	{
+		console.print("\1n" + keyHelpLines[idx]);
+		console.crlf();
+	}
+	console.pause();
 }
