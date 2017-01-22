@@ -299,7 +299,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 26";
+var READER_VERSION = "1.17 Beta 27";
 var READER_DATE = "2017-01-21";
 
 // Keyboard key codes for displaying on the screen
@@ -993,6 +993,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.VoteOnMessage = DigDistMsgReader_VoteOnMessage;
 	this.HasUserVotedOnMsg = DigDistMsgReader_HasUserVotedOnMsg;
 	this.GetMsgBody = DigDistMsgReader_GetMsgBody;
+	this.RefreshMsgHdrInArrays = DigDistMsgReader_RefreshMsgHdrInArrays;
 
 	// These two variables keep track of whether we're doing a message scan that spans
 	// multiple sub-boards so that the enhanced reader function can enable use of
@@ -1014,40 +1015,43 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.areaChooserHdrMaxLines = 5;
 	
 	// Some key bindings for enhanced reader mode
-	this.enhReaderKeys = new Object();
-	this.enhReaderKeys.reply = "R";
-	this.enhReaderKeys.privateReply = "I";
-	this.enhReaderKeys.editMsg = "E";
-	this.enhReaderKeys.showHelp = "?";
-	this.enhReaderKeys.postMsg = "P";
-	this.enhReaderKeys.nextMsg = KEY_RIGHT;
-	this.enhReaderKeys.previousMsg = KEY_LEFT;
-	this.enhReaderKeys.firstMsg = "F";
-	this.enhReaderKeys.lastMsg = "L";
-	this.enhReaderKeys.showKludgeLines = "K";
-	this.enhReaderKeys.showHdrInfo = "H";
-	this.enhReaderKeys.showMsgList = "M";
-	this.enhReaderKeys.chgMsgArea = "C";
-	this.enhReaderKeys.userEdit = "U";
-	this.enhReaderKeys.quit = "Q";
-	this.enhReaderKeys.prevMsgByTitle = "<";
-	this.enhReaderKeys.nextMsgByTitle = ">";
-	this.enhReaderKeys.prevMsgByAuthor = "{";
-	this.enhReaderKeys.nextMsgByAuthor = "}";
-	this.enhReaderKeys.prevMsgByToUser = "[";
-	this.enhReaderKeys.nextMsgByToUser = "]";
-	this.enhReaderKeys.prevMsgByThreadID = "(";
-	this.enhReaderKeys.nextMsgByThreadID = ")";
-	this.enhReaderKeys.prevSubBoard = "-";
-	this.enhReaderKeys.nextSubBoard = "+";
-	this.enhReaderKeys.downloadAttachments = CTRL_A;
-	this.enhReaderKeys.saveToBBSMachine = CTRL_S;
-	this.enhReaderKeys.deleteMessage = KEY_DEL;
-	this.enhReaderKeys.selectMessage = " ";
-	this.enhReaderKeys.batchDelete = CTRL_D;
-	this.enhReaderKeys.forwardMsg = "O";
-	this.enhReaderKeys.vote = "V";
-	this.enhReaderKeys.showVotes = "T";
+	this.enhReaderKeys = {
+		reply: "R",
+		privateReply: "I",
+		editMsg: "E",
+		showHelp: "?",
+		postMsg: "P",
+		nextMsg: KEY_RIGHT,
+		previousMsg: KEY_LEFT,
+		firstMsg: "F",
+		lastMsg: "L",
+		showKludgeLines: "K",
+		showHdrInfo: "H",
+		showMsgList: "M",
+		chgMsgArea: "C",
+		userEdit: "U",
+		quit: "Q",
+		prevMsgByTitle: "<",
+		nextMsgByTitle: ">",
+		prevMsgByAuthor: "{",
+		nextMsgByAuthor: "}",
+		prevMsgByToUser: "[",
+		nextMsgByToUser: "]",
+		prevMsgByThreadID: "(",
+		nextMsgByThreadID: ")",
+		prevSubBoard: "-",
+		nextSubBoard: "+",
+		downloadAttachments: CTRL_A,
+		saveToBBSMachine: CTRL_S,
+		deleteMessage: KEY_DEL,
+		selectMessage: " ",
+		batchDelete: CTRL_D,
+		forwardMsg: "O",
+		vote: "V",
+		showVotes: "T"
+	};
+	if (gIsSysop)
+		this.enhReaderKeys.validateMsg = "A";
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -1327,6 +1331,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.CalcMsgListScreenIdxVarsFromMsgNum = DigDistMsgReader_CalcMsgListScreenIdxVarsFromMsgNum;
 	// A method for validating a user's choice of message area
 	this.ValidateMsgAreaChoice = DigDistMsgReader_ValidateMsgAreaChoice;
+	this.ValidateMsg = DigDistMsgReader_ValidateMsg;
 
 	// printf strings for message group/sub-board lists
 	// Message group information (printf strings)
@@ -5403,6 +5408,33 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					writeMessage = false;
 				}
 				break;
+			case this.enhReaderKeys.validateMsg: // Validate the message
+				// Temporary
+				//console.print("\1n\r\nModerated: " + msg_area.sub[this.subBoardCode].is_moderated + "\r\n\1p");
+				// End Temporary
+				if (gIsSysop && msg_area.sub[this.subBoardCode].is_moderated)
+				{
+					var message = "";
+					if (this.ValidateMsg(this.subBoardCode, msgHeader.number))
+					{
+						message = "\1n\1cMessage validation successful";
+						// Refresh the message header in the arrays
+						this.RefreshMsgHdrInArrays(msgHeader.number);
+						// Exit out of the reader and come back to read
+						// the same message again so that the voting results
+						// are re-loaded and displayed on the screen.
+						retObj.newMsgOffset = pOffset;
+						retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						continueOn = false;
+						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+					}
+					else
+						message = "\1n\1y\1hMessage validation failed!";
+					this.DisplayEnhReaderError(message, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+				}
+				else
+					writeMessage = false;
+				break;
 			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
 				continueOn = false;
@@ -9300,6 +9332,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	{
 		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current message");
 		keyHelpLines.push("\1h\1cCtrl-S           \1g: \1n\1cSave the message (to the BBS machine)");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.validateMsg + "                \1g: \1n\1cValidate the message");
 	}
 	else if (this.CanDelete() || this.CanDeleteLastMsg())
 		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current message (if it's yours)");
@@ -13155,6 +13188,37 @@ function DigDistMsgReader_ValidateMsgAreaChoice(pGrpIdx, pSubIdx, pCurPos)
 	return retObj;
 }
 
+// For the DigDistMsgReader class: Validates a message if the sub-board
+// requires message validation.
+//
+// Parameters:
+//  pSubBoardCode: The internal code of the sub-board
+//  pMsgNum: The message number
+//
+// Return value: Boolean - Whether or not validating the message was successful
+function DigDistMsgReader_ValidateMsg(pSubBoardCode, pMsgNum)
+{
+	if (!msg_area.sub[pSubBoardCode].is_moderated)
+		return true;
+	if ((this.msgbase == null) || !this.msgbase.is_open)
+		return false;
+
+	var validationSuccessful = false;
+	var msgHdr = this.msgbase.get_msg_header(false, pMsgNum, false);
+	if (msgHdr != null)
+	{
+		if ((msgHdr.attr & MSG_VALIDATED) == 0)
+		{
+			msgHdr.attr &= MSG_VALIDATED;
+			validationSuccessful = this.msgbase.put_msg_header(false, msgHdr.number, msgHdr);
+		}
+		else
+			validationSuccessful = true;
+	}
+
+	return validationSuccessful;
+}
+
 // For the DigDistMsgReader class: Writes message lines to a file on the BBS
 // machine.
 //
@@ -14154,6 +14218,41 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 	else
 		msgBody = this.msgbase.get_msg_body(false, pMsgHdr.number);
 	return msgBody;
+}
+
+// For the DigDistMsgReader class: Refreshes a message header in one of the
+// internal message arrays.
+//
+// Parameters:
+//  pMsgNum: The number of the message to replace
+function DigDistMsgReader_RefreshMsgHdrInArrays(pMsgNum)
+{
+	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
+	    (this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
+	{
+		for (var i = 0; i < this.msgSearchHdrs[this.subBoardCode].indexed.length; ++i)
+		{
+			if (this.msgSearchHdrs[this.subBoardCode].indexed[i].number == pMsgNum)
+			{
+				var newMsgHdr = this.msgbase.get_msg_header(false, pMsgNum, true);
+				if (newMsgHdr != null)
+					this.msgSearchHdrs[this.subBoardCode].indexed[i] = newMsgHdr;
+				break;
+			}
+		}
+	}
+	else if (this.hdrsForCurrentSubBoard.length > 0)
+	{
+		if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(pMsgNum))
+		{
+			var msgHdrs = this.msgbase.get_all_msg_headers();
+			if (msgHdrs.hasOwnProperty(pMsgNum))
+			{
+				var msgIdx = this.hdrsForCurrentSubBoardByMsgNum[pMsgNum];
+				this.hdrsForCurrentSubBoard[msgIdx] = msgHdrs[pMsgNum];
+			}
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
