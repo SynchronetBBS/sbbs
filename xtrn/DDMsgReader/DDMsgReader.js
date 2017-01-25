@@ -299,8 +299,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 28";
-var READER_DATE = "2017-01-24";
+var READER_VERSION = "1.17 Beta 29";
+var READER_DATE = "2017-01-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5409,7 +5409,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				}
 				break;
 			case this.enhReaderKeys.validateMsg: // Validate the message
-				if (gIsSysop && msg_area.sub[this.subBoardCode].is_moderated)
+				if (gIsSysop && (this.subBoardCode != "mail") && msg_area.sub[this.subBoardCode].is_moderated)
 				{
 					var message = "";
 					if (this.ValidateMsg(this.subBoardCode, msgHeader.number))
@@ -6129,7 +6129,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				writeMessage = true;
 				break;
 			case this.enhReaderKeys.validateMsg: // Validate the message
-				if (gIsSysop && msg_area.sub[this.subBoardCode].is_moderated)
+				if (gIsSysop && (this.subBoardCode != "mail") && msg_area.sub[this.subBoardCode].is_moderated)
 				{
 					var message = "";
 					if (this.ValidateMsg(this.subBoardCode, msgHeader.number))
@@ -14252,14 +14252,17 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 	// If the user is a sysop, this is a moderated message area, and the message
 	// hasn't been validated, then prepend the message with a message to let the
 	// sysop now know to validate it.
-	if (gIsSysop && msg_area.sub[this.subBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
+	if (this.subBoardCode != "mail")
 	{
-		var validateNotice = "\1n\1h\1yThis is an unvalidated message in a moderated area.  Press "
-		                   + this.enhReaderKeys.validateMsg + " to validate it.\r\n\1g";
-		for (var i = 0; i < 79; ++i)
-			validateNotice += HORIZONTAL_SINGLE;
-		validateNotice += "\1n\r\n";
-		msgBody = validateNotice + msgBody;
+		if (gIsSysop && msg_area.sub[this.subBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
+		{
+			var validateNotice = "\1n\1h\1yThis is an unvalidated message in a moderated area.  Press "
+							   + this.enhReaderKeys.validateMsg + " to validate it.\r\n\1g";
+			for (var i = 0; i < 79; ++i)
+				validateNotice += HORIZONTAL_SINGLE;
+			validateNotice += "\1n\r\n";
+			msgBody = validateNotice + msgBody;
+		}
 	}
 
 	return msgBody;
