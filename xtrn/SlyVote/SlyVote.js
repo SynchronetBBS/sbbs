@@ -12,7 +12,8 @@
  */
  
 // TODO:
-// - Add a help screen?
+// When Rob Swindell implements multiple-choice voting support, update
+// SlyVote to support that
 
 
 load("sbbsdefs.js");
@@ -56,8 +57,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.12 Beta";
-var SLYVOTE_DATE = "2017-01-21";
+var SLYVOTE_VERSION = "0.13 Beta";
+var SLYVOTE_DATE = "2017-01-24";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -174,6 +175,8 @@ var gReaderKeys = {
 	vote: "V",
 	quit: "Q"
 }
+if (gUserIsSysop)
+	gReaderKeys.validateMsg = "A";
 
 
 //  cfgReadError: A string which will contain a message if failed to read the configuration file
@@ -920,6 +923,23 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 	}
 	else
 		msgBody = pMsgbase.get_msg_body(false, pMsgHdr.number);
+
+	// Remove any Synchronet pause codes that might exist in the message
+	msgBody = msgBody.replace("\1p", "").replace("\1P", "");
+
+	// If the user is a sysop, this is a moderated message area, and the message
+	// hasn't been validated, then prepend the message with a message to let the
+	// sysop now know to validate it.
+	if (gUserIsSysop && msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
+	{
+		var validateNotice = "\1n\1h\1yThis is an unvalidated message in a moderated area.  Press "
+		                   + gReaderKeys.validateMsg + " to validate it.\r\n\1g";
+		for (var i = 0; i < 79; ++i)
+			validateNotice += "Ä"; // Horizontal single line
+		validateNotice += "\1n\r\n";
+		msgBody = validateNotice + msgBody;
+	}
+
 	return msgBody;
 }
 
@@ -1626,6 +1646,34 @@ function ViewVoteResults(pSubBoardCode)
 				drawKeyHelpLine = true;
 				drawMsg = true;
 			}
+			else if (scrollRetObj.lastKeypress == gReaderKeys.validateMsg)
+			{
+				if (gUserIsSysop && msg_area.sub[pSubBoardCode].is_moderated)
+				{
+					var validated = ValidateMsg(msgbase, pSubBoardCode, pollMsgHdrs[currentMsgIdx].number);
+					console.gotoxy(1, console.screen_rows-2);
+					console.print("\1n\1h\1g");
+					for (var i = 0; i < console.screen_columns-1; ++i)
+						console.print("Ä"); // Horizontal single line
+					console.gotoxy(1, console.screen_rows-1);
+					printf("\1n%" + +(console.screen_columns-1) + "s", "");
+					console.gotoxy(1, console.screen_rows-1);
+					if (validated)
+					{
+						console.print("\1cMessage was validated successfully.\1n");
+						drawMsg = true;
+						pollMsgHdrs[currentMsgIdx].attr |= MSG_VALIDATED;
+					}
+					else
+					{
+						console.print("\1y\1hMessage validation failed!\1n");
+						drawMsg = false;
+					}
+					mswait(ERROR_PAUSE_WAIT_MS);
+				}
+				else
+					drawMsg = false;
+			}
 			else if (scrollRetObj.lastKeypress == gReaderKeys.quit)
 				continueOn = false;
 
@@ -1634,9 +1682,12 @@ function ViewVoteResults(pSubBoardCode)
 			{
 				// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
 				// msgbase.last_msg)?
-				if (pollMsgHdrs[currentMsgIdx].number > msg_area.sub[pSubBoardCode].scan_ptr)
-					msg_area.sub[pSubBoardCode].scan_ptr = pollMsgHdrs[currentMsgIdx].number;
-				msg_area.sub[pSubBoardCode].last_read = pollMsgHdrs[currentMsgIdx].number;
+				if (msgbase.get_all_msg_headers(false).length > 0)
+				{
+					if (pollMsgHdrs[currentMsgIdx].number > msg_area.sub[pSubBoardCode].scan_ptr)
+						msg_area.sub[pSubBoardCode].scan_ptr = pollMsgHdrs[currentMsgIdx].number;
+					msg_area.sub[pSubBoardCode].last_read = pollMsgHdrs[currentMsgIdx].number;
+				}
 			}
 		}
 
@@ -2754,4 +2805,40 @@ function DisplayViewingResultsHelpScr(pMsgbase, pSubBoardCode)
 		console.crlf();
 	}
 	console.pause();
+}
+
+// Validates a message if the sub-board requires message validation.
+//
+// Parameters:
+//  pMsgbase: The MsgBase object representing the sub-board
+//  pSubBoardCode: The internal code of the sub-board
+//  pMsgHdrOrMsgNum: The message header or number
+//
+// Return value: Boolean - Whether or not validating the message was successful
+function ValidateMsg(pMsgbase, pSubBoardCode, pMsgHdrOrMsgNum)
+{
+	if (!msg_area.sub[pSubBoardCode].is_moderated)
+		return true;
+	if ((pMsgbase == null) || !pMsgbase.is_open)
+		return false;
+
+	var msgNum = 0;
+	if (typeof(pMsgHdrOrMsgNum) == "object")
+		msgNum = pMsgHdrOrMsgNum.number;
+	else if(typeof(pMsgHdrOrMsgNum) == "number")
+		pMsgNum = pMsgHdrOrMsgNum;
+	var validationSuccessful = false;
+	var msgHdr = pMsgbase.get_msg_header(false, msgNum, false);
+	if (msgHdr != null)
+	{
+		if ((msgHdr.attr & MSG_VALIDATED) == 0)
+		{
+			msgHdr.attr |= MSG_VALIDATED;
+			validationSuccessful = pMsgbase.put_msg_header(false, msgHdr.number, msgHdr);
+		}
+		else
+			validationSuccessful = true;
+	}
+
+	return validationSuccessful;
 }
