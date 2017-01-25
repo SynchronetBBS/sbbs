@@ -57,8 +57,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.13 Beta";
-var SLYVOTE_DATE = "2017-01-24";
+var SLYVOTE_VERSION = "0.14 Beta";
+var SLYVOTE_DATE = "2017-01-25";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -930,14 +930,17 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 	// If the user is a sysop, this is a moderated message area, and the message
 	// hasn't been validated, then prepend the message with a message to let the
 	// sysop now know to validate it.
-	if (gUserIsSysop && msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
+	if (pSubBoardCode != "mail")
 	{
-		var validateNotice = "\1n\1h\1yThis is an unvalidated message in a moderated area.  Press "
-		                   + gReaderKeys.validateMsg + " to validate it.\r\n\1g";
-		for (var i = 0; i < 79; ++i)
-			validateNotice += "Ä"; // Horizontal single line
-		validateNotice += "\1n\r\n";
-		msgBody = validateNotice + msgBody;
+		if (gUserIsSysop && msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
+		{
+			var validateNotice = "\1n\1h\1yThis is an unvalidated message in a moderated area.  Press "
+							   + gReaderKeys.validateMsg + " to validate it.\r\n\1g";
+			for (var i = 0; i < 79; ++i)
+				validateNotice += "Ä"; // Horizontal single line
+			validateNotice += "\1n\r\n";
+			msgBody = validateNotice + msgBody;
+		}
 	}
 
 	return msgBody;
