@@ -299,8 +299,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 27";
-var READER_DATE = "2017-01-21";
+var READER_VERSION = "1.17 Beta 28";
+var READER_DATE = "2017-01-24";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5409,9 +5409,6 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				}
 				break;
 			case this.enhReaderKeys.validateMsg: // Validate the message
-				// Temporary
-				//console.print("\1n\r\nModerated: " + msg_area.sub[this.subBoardCode].is_moderated + "\r\n\1p");
-				// End Temporary
 				if (gIsSysop && msg_area.sub[this.subBoardCode].is_moderated)
 				{
 					var message = "";
@@ -6130,6 +6127,36 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				}
 				console.pause();
 				writeMessage = true;
+				break;
+			case this.enhReaderKeys.validateMsg: // Validate the message
+				if (gIsSysop && msg_area.sub[this.subBoardCode].is_moderated)
+				{
+					var message = "";
+					if (this.ValidateMsg(this.subBoardCode, msgHeader.number))
+					{
+						message = "\1n\1cMessage validation successful";
+						// Refresh the message header in the arrays
+						this.RefreshMsgHdrInArrays(msgHeader.number);
+						// Exit out of the reader and come back to read
+						// the same message again so that the voting results
+						// are re-loaded and displayed on the screen.
+						retObj.newMsgOffset = pOffset;
+						retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						continueOn = false;
+					}
+					else
+					{
+						message = "\1n\1y\1hMessage validation failed!";
+						writeMessage = true;
+					}
+					console.crlf();
+					console.print(message);
+					console.print("\1n");
+					console.crlf();
+					console.pause();
+				}
+				else
+					writeMessage = false;
 				break;
 			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
@@ -13209,7 +13236,7 @@ function DigDistMsgReader_ValidateMsg(pSubBoardCode, pMsgNum)
 	{
 		if ((msgHdr.attr & MSG_VALIDATED) == 0)
 		{
-			msgHdr.attr &= MSG_VALIDATED;
+			msgHdr.attr |= MSG_VALIDATED;
 			validationSuccessful = this.msgbase.put_msg_header(false, msgHdr.number, msgHdr);
 		}
 		else
@@ -14087,6 +14114,7 @@ function DigDistMsgReader_HasUserVotedOnMsg(pMsgNum, pUser)
 function DigDistMsgReader_GetMsgBody(pMsgHdr)
 {
 	var msgBody = "";
+
 	if ((typeof(MSG_TYPE_POLL) != "undefined") && (pMsgHdr.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
 	{
 		// A poll is intended to be parsed (and displayed) using on the header data. The
@@ -14217,6 +14245,20 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 	}
 	else
 		msgBody = this.msgbase.get_msg_body(false, pMsgHdr.number);
+
+	// If the user is a sysop, this is a moderated message area, and the message
+	// hasn't been validated, then prepend the message with a message to let the
+	// sysop now know to validate it.
+	if (gIsSysop && msg_area.sub[this.subBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
+	{
+		var validateNotice = "\1n\1h\1yThis is an unvalidated message in a moderated area.  Press "
+		                   + this.enhReaderKeys.validateMsg + " to validate it.\r\n\1g";
+		for (var i = 0; i < 79; ++i)
+			validateNotice += HORIZONTAL_SINGLE;
+		validateNotice += "\1n\r\n";
+		msgBody = validateNotice + msgBody;
+	}
+
 	return msgBody;
 }
 
@@ -18365,52 +18407,3 @@ function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib, pClearLineAft
    }
 }
 
-function logStackTrace(levels) {
-    var callstack = [];
-    var isCallstackPopulated = false;
-    try {
-        i.dont.exist += 0; //doesn't exist- that's the point
-    } catch (e) {
-        if (e.stack) { //Firefox / chrome
-            var lines = e.stack.split('\n');
-            for (var i = 0, len = lines.length; i < len; i++) {
-                    callstack.push(lines[i]);
-            }
-            //Remove call to logStackTrace()
-            callstack.shift();
-            isCallstackPopulated = true;
-        }
-        else if (window.opera && e.message) { //Opera
-            var lines = e.message.split('\n');
-            for (var i = 0, len = lines.length; i < len; i++) {
-                if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
-                    var entry = lines[i];
-                    //Append next line also since it has the file info
-                    if (lines[i + 1]) {
-                        entry += " at " + lines[i + 1];
-                        i++;
-                    }
-                    callstack.push(entry);
-                }
-            }
-            //Remove call to logStackTrace()
-            callstack.shift();
-            isCallstackPopulated = true;
-        }
-    }
-    if (!isCallstackPopulated) { //IE and Safari
-        var currentFunction = arguments.callee.caller;
-        while (currentFunction) {
-            var fn = currentFunction.toString();
-            var fname = fn.substring(fn.indexOf("function") + 8, fn.indexOf("(")) || "anonymous";
-            callstack.push(fname);
-            currentFunction = currentFunction.caller;
-        }
-    }
-    if (levels) {
-        console.print(callstack.slice(0, levels).join("\r\n"));
-    }
-    else {
-        console.print(callstack.join("\r\n"));
-    }
-}
