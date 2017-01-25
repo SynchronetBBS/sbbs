@@ -951,6 +951,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 {
 	char	oldlst[MAX_PATH+1];
 
+	memset(fn, 0, fnlen);
 #ifdef _WIN32
 	char	*home;
 	static	dll_handle	shell32=NULL;
@@ -1065,7 +1066,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 	}
 
 	/* Create if it doesn't exist */
-	if(!isdir(fn)) {
+	if(*fn && !isdir(fn)) {
 		if(MKDIR(fn))
 			fn[0]=0;
 	}
