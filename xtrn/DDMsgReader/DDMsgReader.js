@@ -4408,7 +4408,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// Get the message text and see if it has any ANSI codes.  Remove any pause
 	// codes it might have.  If it has ANSI codes, then don't use the scrolling
 	// interface so that the ANSI gets displayed properly.
-	var messageText = this.GetMsgBody(msgHeader).replace("\1p", "").replace("\1P", "");
+	var messageText = this.GetMsgBody(msgHeader);
 	// If the message has ANSI content, then use the scrolling interface only
 	// if frame.js is available on the BBS machine and the option to use the
 	// scrolling interface for ANSI messages is enabled.
@@ -14245,6 +14245,9 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 	}
 	else
 		msgBody = this.msgbase.get_msg_body(false, pMsgHdr.number);
+	
+	// Remove any Synchronet pause codes that might exist in the message
+	msgBody = msgBody.replace("\1p", "").replace("\1P", "");
 
 	// If the user is a sysop, this is a moderated message area, and the message
 	// hasn't been validated, then prepend the message with a message to let the
