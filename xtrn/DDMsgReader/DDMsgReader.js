@@ -299,8 +299,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 29";
-var READER_DATE = "2017-01-25";
+var READER_VERSION = "1.17 Beta 30";
+var READER_DATE = "2017-01-28";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2153,7 +2153,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	// If the object's message base is currently open, then close it.  The object's
 	// message base object will be used to open each sub-board to scan for & read
 	// unread messages.
-	if ((this.msgbase != null) && (this.msgbase.is_open))
+	if ((this.msgbase != null) && this.msgbase.is_open)
 		this.msgbase.close();
 
 	// Create an array of internal codes of sub-boards to scan
@@ -2251,10 +2251,12 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 						{
 							bbs.curgrp = grpIndex;
 							bbs.cursub = subIndex;
-							// Start at the first unread message.
-							var startMsgIdx = scanPtrMsgIdx + 1;
-							if (this.SearchingAndResultObjsDefinedForCurSub())
-								startMsgIdx = 0;
+							// Start at the scan pointer
+							var startMsgIdx = scanPtrMsgIdx;
+							// If the message has already been read, then start at the next message
+							var tmpMsgHdr = this.GetMsgHdrByIdx(startMsgIdx);
+							if ((tmpMsgHdr != null) && (msg_area.sub[this.subBoardCode].last_read == tmpMsgHdr.number) && (startMsgIdx < this.NumMessages(true) - 1))
+								++startMsgIdx;
 							// Allow the user to read messages in this sub-board.  Don't allow
 							// the user to change to a different message area, don't pause
 							// when there's no search results in a sub-board, and return
@@ -12569,7 +12571,8 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	var msgIdx = 0;
 	//if (msg_area.sub[this.subBoardCode].scan_ptr != 4294967295) // Crazy value the first time a user reads messages
 	//msgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].scan_ptr);
-	msgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
+	if (msg_area.sub[this.subBoardCode].scan_ptr != 4294967295) // Crazy value the first time a user reads messages
+		msgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
 	// Sanity checking for msgIdx
 	if ((msgIdx < 0) || (msgIdx >= this.msgbase.total_msgs))
 	{
@@ -15656,8 +15659,13 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 					{
 						// If this message has been read, then start at the next message.
 						var startMsgHeader = pMsgbase.get_msg_header(true, startMsgIndex, false);
-						if ((startMsgHeader.attr & MSG_READ) == MSG_READ)
+						if (startMsgHeader == null)
 							++startMsgIndex;
+						else
+						{
+							if ((startMsgHeader.attr & MSG_READ) == MSG_READ)
+								++startMsgIndex;
+						}
 					}
 				}
 				if (typeof(pEndIndex) != "number")
@@ -18412,4 +18420,3 @@ function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib, pClearLineAft
       console.cleartoeol(clearLineAttrib);
    }
 }
-
