@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.04 Beta
-                           Release date: 2017-01-12
+                                 Version 0.15 Beta
+                           Release date: 2017-02-05
 
                                      by
 
@@ -19,6 +19,7 @@ Contents
 2. Introduction
 3. Installation & Setup
 4. Configuration file
+5. Notes for sysops
 
 
 1. Disclaimer
@@ -39,6 +40,7 @@ along with the latest JavaScript files for Synchronet, such as the following:
 - text.js
 - frame.js
 - scrollbar.js
+- DDLightbarMenu.js
 - Possibly other JavaScript files
 
 SlyVote requires an ANSI terminal, since SlyVote makes use of lightbar menus
@@ -175,3 +177,18 @@ subBoardCodes                         A comma-separated list of internal
                                       specified sub-board codes don't exist or
                                       refer to sub-boards that don't allow
                                       voting, then they will not be used.
+
+5. Notes for sysops
+===================
+For sysops, polls can be deleted when viewing results from SlyVote.
+
+SlyVote uses the following lines from Synchronet's text.dat file (located in
+the sbbs/ctrl directory):
+120 (CantPostOnSub)
+501 (SelectItemHdr)
+503 (SelectItemWhich)
+759 (CantReadSub)
+779 (VotingNotAllowed)
+780 (VotedAlready)
+781 (R_Voting)
+787 (PollVoteNotice)
