@@ -52,13 +52,14 @@ if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
 	
 }
 
+load("text.js");
 load("frame.js");
 load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.14 Beta";
-var SLYVOTE_DATE = "2017-01-25";
+var SLYVOTE_VERSION = "0.15 Beta";
+var SLYVOTE_DATE = "2017-02-05";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -181,8 +182,8 @@ if (gUserIsSysop)
 
 //  cfgReadError: A string which will contain a message if failed to read the configuration file
 //  subBoardCodes: An array containing sub-board codes read from the configuration file
-var slyVoteCfg = ReadConfigFile();
-if (slyVoteCfg.cfgReadError.length > 0)
+var gSlyVoteCfg = ReadConfigFile();
+if (gSlyVoteCfg.cfgReadError.length > 0)
 {
 	log(LOG_ERR, "SlyVote: Error reading SlyVote.cfg");
 	bbs.log_str("SlyVote: Error reading SlyVote.cfg");
@@ -193,7 +194,7 @@ if (slyVoteCfg.cfgReadError.length > 0)
 	console.pause();
 	exit();
 }
-if (slyVoteCfg.subBoardCodes.length == 0)
+if (gSlyVoteCfg.subBoardCodes.length == 0)
 {
 	console.print("\1n");
 	console.crlf();
@@ -205,33 +206,18 @@ if (slyVoteCfg.subBoardCodes.length == 0)
 
 // Determine which sub-board to use - If there is more than one, let the user choose.
 var gSubBoardCode = "";
-if (slyVoteCfg.subBoardCodes.length == 1)
-	gSubBoardCode = slyVoteCfg.subBoardCodes[0];
+if (gSlyVoteCfg.subBoardCodes.length == 1)
+	gSubBoardCode = gSlyVoteCfg.subBoardCodes[0];
 else
 {
-	// Clear the screen & display the SlyVote stylized text
-	console.clear("\1n");
-	DisplaySlyVoteText();
-
-	// Draw columns to frame the topic area menu
-	var listTopRow = 8;
-	var drawColRetObj = DrawVoteColumns(listTopRow);
-
-	// Display the menu of topic areas
-	console.gotoxy(drawColRetObj.columnX1+7, listTopRow-1);
-	//console.print("\1n\1cChoose a topic area (\1hESC\1g=\1n\1cExit):");
-	console.print("\1n\1b\1hChoose a topic area (\1cESC\1g=\1n\1cExit\1h\1b):");
-	var subBoardMenu = new DDLightbarMenu(drawColRetObj.columnX1+drawColRetObj.colWidth-1, listTopRow, drawColRetObj.textLen, drawColRetObj.colHeight);
-	for (var idx = 0; idx < slyVoteCfg.subBoardCodes.length; ++idx)
-	{
-		var subBoardGrpAndName = msg_area.sub[slyVoteCfg.subBoardCodes[idx]].grp_name + " - " + msg_area.sub[slyVoteCfg.subBoardCodes[idx]].name;
-		subBoardMenu.Add(subBoardGrpAndName, slyVoteCfg.subBoardCodes[idx]);
-	}
-	gSubBoardCode = subBoardMenu.GetVal();
+	// Let the user choose a sub-board
+	var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.subBoardCodes);
+	gSubBoardCode = chooseSubRetObj.subBoardChoice;
 	// Exit if the user pressed ESC rather than choosing an area
 	if (gSubBoardCode == null)
 		exit(0);
-	console.gotoxy(1, subBoardMenu.pos.y+subBoardMenu.size.height+1);
+	else
+		console.gotoxy(1, chooseSubRetObj.menuPos.y + chooseSubRetObj.menuSize.height + 1);
 }
 
 // Program states
@@ -276,47 +262,137 @@ while (gContinueSlyVote)
 // Helper functions
 ////////////////////////////////////////////////////////////
 
+// Lets the user choose a voting sub-board when there are multiple sub-boards
+// configured.
+//
+// Parameters:
+//  pSubBoardCodes: An array of sub-board codes
+//
+// Return value: An object containing the following properties:
+//               subBoardChoice: The user's choice of sub-board (internal code), or null if the user aborted.
+//               menuPos: The menu position
+//               menuSize: The menu size
+function ChooseVotingSubBoard(pSubBoardCodes)
+{
+	// Clear the screen & display the SlyVote stylized text
+	console.clear("\1n");
+	DisplaySlyVoteText();
+
+	// Draw columns to frame the topic area menu
+	var listTopRow = 8;
+	var drawColRetObj = DrawVoteColumns(listTopRow);
+
+	// Display the menu of topic areas
+	console.gotoxy(drawColRetObj.columnX1+7, listTopRow-1);
+	//console.print("\1n\1cChoose a topic area (\1hESC\1g=\1n\1cExit):");
+	console.print("\1n\1b\1hChoose a topic area (\1cESC\1g=\1n\1cExit\1h\1b):");
+	var subBoardMenu = new DDLightbarMenu(drawColRetObj.columnX1+drawColRetObj.colWidth-1, listTopRow, drawColRetObj.textLen, drawColRetObj.colHeight);
+	for (var idx = 0; idx < pSubBoardCodes.length; ++idx)
+	{
+		var subBoardGrpAndName = msg_area.sub[pSubBoardCodes[idx]].grp_name + " - " + msg_area.sub[pSubBoardCodes[idx]].name;
+		subBoardMenu.Add(subBoardGrpAndName, pSubBoardCodes[idx]);
+	}
+	var retObj = new Object();
+	retObj.subBoardChoice = subBoardMenu.GetVal();
+	retObj.menuPos = subBoardMenu.pos;
+	retObj.menuSize = subBoardMenu.size;
+	return retObj;
+}
+
 var gMainMenu = null;
 function DoMainMenu()
 {
 	gProgramState = MAIN_MENU;
 	var nextProgramState = MAIN_MENU;
+
+	// Menu option return values
+	var voteOnTopicOpt = 0;
+	var answerAllTopicsOpt = 1;
+	var createTopicOpt = 2;
+	var viewResultsOpt = 3;
+	var changeTopicAreaOpt = 4;
+	var quitToBBSOpt = 5;
+
 	// Display the SlyVote screen and menu of choices
 	console.clear("\1n");
 	var mainScrRetObj = DisplaySlyVoteMainVoteScreen(false);
 	if (gMainMenu == null)
 	{
-		gMainMenu = new DDLightbarMenu(mainScrRetObj.optMenuX, mainScrRetObj.optMenuY, 17, 5);
-		gMainMenu.Add("Vote On A Topic", "vote", "1");
-		gMainMenu.Add("Answer All Topics", "answerAll", "2");
-		gMainMenu.Add("Create A Topic", "create", "3");
-		gMainMenu.Add("View Results", "viewResults", "4");
-		gMainMenu.Add("Quit To BBS", "quit", "5");
+		var mainMenuHeight = 5;
+		if (gSlyVoteCfg.subBoardCodes.length > 1)
+			++mainMenuHeight;
+		gMainMenu = new DDLightbarMenu(mainScrRetObj.optMenuX, mainScrRetObj.optMenuY, 17, mainMenuHeight);
+		gMainMenu.Add("Vote On A Topic", voteOnTopicOpt, "1");
+		gMainMenu.Add("Answer All Topics", answerAllTopicsOpt, "2");
+		gMainMenu.Add("Create A Topic", createTopicOpt, "3");
+		gMainMenu.Add("View Results", viewResultsOpt, "4");
+		if (gSlyVoteCfg.subBoardCodes.length > 1)
+		{
+			gMainMenu.Add("Change topic area", changeTopicAreaOpt, "5");
+			gMainMenu.Add("Quit To BBS", quitToBBSOpt, "6");
+		}
+		else
+			gMainMenu.Add("Quit To BBS", quitToBBSOpt, "5");
 		gMainMenu.colors.itemColor = "\1n\1w";
 		gMainMenu.colors.selectedItemColor = "\1n\1" + "4\1w\1h";
 	}
 	// Get the user's choice and take appropriate action
 	var userChoice = gMainMenu.GetVal(true);
-	if (userChoice == "vote")
-		nextProgramState = VOTING_ON_A_TOPIC;
-	else if (userChoice == "answerAll")
-		nextProgramState = VOTE_ON_ALL_TOPICS;
-	else if (userChoice == "create")
+	if (userChoice == voteOnTopicOpt)
 	{
-		// Set the user's current sub-board to the chosen sub-board before
-		// posting a poll
-		var curSubCodeBackup = bbs.cursub_code;
-		bbs.cursub_code = gSubBoardCode;
-		// Let the user post a poll
-		console.print("\1n");
-		console.gotoxy(1, console.screen_rows);
-		bbs.exec("?postpoll.js");
-		// Restore the user's sub-board
-		bbs.cursub_code = curSubCodeBackup;
+		if (msg_area.sub[gSubBoardCode].can_post)
+			nextProgramState = VOTING_ON_A_TOPIC;
+		else
+			DisplayErrorWithPause("\1y\1h" + RemoveCRLFCodes(bbs.text(CantPostOnSub)), gMessageRow, false);
 	}
-	else if (userChoice == "viewResults")
-		nextProgramState = VIEWING_VOTE_RESULTS;
-	else if ((userChoice == "quit") || (userChoice == null))
+	else if (userChoice == answerAllTopicsOpt)
+	{
+		if (msg_area.sub[gSubBoardCode].can_post)
+			nextProgramState = VOTE_ON_ALL_TOPICS;
+		else
+			DisplayErrorWithPause("\1y\1h" + RemoveCRLFCodes(bbs.text(CantPostOnSub)), gMessageRow, false);
+	}
+	else if (userChoice == createTopicOpt)
+	{
+		// Only let the user create a topic if the user is allowed to post in
+		// the sub-board.
+		if (msg_area.sub[gSubBoardCode].can_post)
+		{
+			// Set the user's current sub-board to the chosen sub-board before
+			// posting a poll
+			var curSubCodeBackup = bbs.cursub_code;
+			bbs.cursub_code = gSubBoardCode;
+			// Let the user post a poll
+			console.print("\1n");
+			console.gotoxy(1, console.screen_rows);
+			bbs.exec("?postpoll.js");
+			// Restore the user's sub-board
+			bbs.cursub_code = curSubCodeBackup;
+		}
+		else
+			DisplayErrorWithPause("\1y\1h" + RemoveCRLFCodes(bbs.text(CantPostOnSub)), gMessageRow, false);
+	}
+	else if (userChoice == viewResultsOpt)
+	{
+		if (msg_area.sub[gSubBoardCode].can_read)
+			nextProgramState = VIEWING_VOTE_RESULTS;
+		else
+		{
+			var errorMsg = format(RemoveCRLFCodes(bbs.text(CantReadSub)), msg_area.sub[gSubBoardCode].grp_name, msg_area.sub[gSubBoardCode].name);
+			if (errorMsg.substr(0, 2) == "\1n")
+				errorMsg = errorMsg.substr(2);
+			DisplayErrorWithPause("\1y\1h" + errorMsg, gMessageRow, false);
+		}
+	}
+	else if (userChoice == changeTopicAreaOpt)
+	{
+		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.subBoardCodes);
+		var chosenSubBoardCode = chooseSubRetObj.subBoardChoice;
+		// If the user didn't abort choosing an area, then set gSubBoardCode.
+		if (chosenSubBoardCode != null)
+			gSubBoardCode = chosenSubBoardCode;
+	}
+	else if ((userChoice == quitToBBSOpt) || (userChoice == null))
 		nextProgramState = EXIT_SLYVOTE;
 
 	return nextProgramState;
@@ -393,24 +469,7 @@ function ChooseVoteTopic(pLetUserChoose)
 				var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, chosenMsgNum, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
 				drawTopicsMenu = true;
 				if (voteRetObj.errorMsg.length > 0)
-				{
-					console.gotoxy(1, gMessageRow);
-					if (voteRetObj.mnemonicsRequiredForErrorMsg)
-					{
-						console.gotoxy(1, gMessageRow);
-						console.mnemonics(voteRetObj.errorMsg);
-						mswait(ERROR_PAUSE_WAIT_MS);
-						console.gotoxy(1, gMessageRow);
-						printf("\1n%" + console.screen_columns + "s", "");
-					}
-					else
-					{
-						console.print("\1n\1y\1h" + voteRetObj.errorMsg);
-						mswait(ERROR_PAUSE_WAIT_MS);
-						console.gotoxy(1, gMessageRow);
-						printf("\1n%" + voteRetObj.errorMsg.length + "s", "");
-					}
-				}
+					DisplayErrorWithPause(voteRetObj.errorMsg, gMessageRow, voteRetObj.mnemonicsRequiredForErrorMsg);
 			}
 			else // The user chose to exit the topics menu
 				nextProgramState = MAIN_MENU;
@@ -434,22 +493,7 @@ function ChooseVoteTopic(pLetUserChoose)
 				break;
 			if (voteRetObj.errorMsg.length > 0)
 			{
-				console.gotoxy(1, gMessageRow);
-				if (voteRetObj.mnemonicsRequiredForErrorMsg)
-				{
-					console.gotoxy(1, gMessageRow);
-					console.mnemonics(voteRetObj.errorMsg);
-					mswait(ERROR_PAUSE_WAIT_MS);
-					console.gotoxy(1, gMessageRow);
-					printf("\1n%" + console.screen_columns + "s", "");
-				}
-				else
-				{
-					console.print("\1n\1y\1h" + voteRetObj.errorMsg);
-					mswait(ERROR_PAUSE_WAIT_MS);
-					console.gotoxy(1, gMessageRow);
-					printf("\1n%" + voteRetObj.errorMsg.length + "s", "");
-				}
+				DisplayErrorWithPause(voteRetObj.errorMsg, gMessageRow, voteRetObj.mnemonicsRequiredForErrorMsg);
 				console.gotoxy(1, console.screen_rows-4);
 				printf("\1n%" + strip_ctrl(pollNumText).length + "s", "");
 				break;
@@ -575,8 +619,8 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 		else
 		{
 			// The user has already voted
-			retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
-			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
+			retObj.errorMsg = bbs.text(VotedAlready);
+			retObj.errorMsg = RemoveCRLFCodes(retObj.errorMsg);
 			retObj.mnemonicsRequiredForErrorMsg = true;
 		}
 
@@ -898,7 +942,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 					// Get the line from text.dat for writing who voted & when.  It
 					// is a format string and should look something like this:
 					//"\r\n\1n\1" + "0\1hOn %s, in \1c%s \1n\1" + "0\1c%s\r\n\1h\1m%s voted in your poll: \1n\1" + "0\1h%s\r\n" 787 PollVoteNotice
-					var userVotedInYourPollText = bbs.text(typeof(PollVoteNotice) != "undefined" ? PollVoteNotice : 787);
+					var userVotedInYourPollText = bbs.text(PollVoteNotice);
 
 					// Pass true to get_all_msg_headers() to tell it to return vote messages
 					// (the parameter was introduced in Synchronet 3.17+)
@@ -1049,7 +1093,7 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 	{
 		retObj.errorMsg = bbs.text(VotingNotAllowed);
 		if (removeNLsFromVoteText)
-			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
+			retObj.errorMsg = RemoveCRLFCodes(retObj.errorMsg);
 		retObj.mnemonicsRequiredForErrorMsg = true;
 		return retObj;
 	}
@@ -1089,9 +1133,9 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 		}
 		else if (userVotedMaxVotes)
 		{
-			retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
+			retObj.errorMsg = bbs.text(VotedAlready);
 			if (removeNLsFromVoteText)
-				retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
+				retObj.errorMsg = RemoveCRLFCodes(retObj.errorMsg);
 			retObj.mnemonicsRequiredForErrorMsg = true;
 			return retObj;
 		}
@@ -1102,7 +1146,7 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 	{
 		retObj.errorMsg = bbs.text(VotedAlready);
 		if (removeNLsFromVoteText)
-			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
+			retObj.errorMsg = RemoveCRLFCodes(retObj.errorMsg);
 		retObj.mnemonicsRequiredForErrorMsg = true;
 		return retObj;
 	}
@@ -1138,7 +1182,7 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 			if (typeof(pUserVoteNumber) != "number")
 			{
 				console.clear("\1n");
-				var selectHdr = bbs.text(typeof(SelectItemHdr) != "undefined" ? SelectItemHdr : 501);
+				var selectHdr = bbs.text(SelectItemHdr);
 				printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
 				var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
 				var optionNum = 1;
@@ -1153,7 +1197,7 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 				console.crlf();
 				// Get the selection prompt text from text.dat and replace the %u or %d with
 				// the number 1 (default option)
-				var selectPromptText = bbs.text(typeof(SelectItemWhich) != "undefined" ? SelectItemWhich : 503);
+				var selectPromptText = bbs.text(SelectItemWhich);
 				selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
 				console.mnemonics(selectPromptText);
 				// Get & process the selection from the user
@@ -1235,7 +1279,10 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	// Write the option numbers
 	var curPos = { x: 7, y: 12 };
 	var retObj = { optMenuX: curPos.x+4, optMenuY: curPos.y }; // For the option menu to be used later
-	for (var optNum = 1; optNum <= 5; ++optNum)
+	var numMenuOptions = 5;
+	if (gSlyVoteCfg.subBoardCodes.length > 1)
+		++numMenuOptions;
+	for (var optNum = 1; optNum <= numMenuOptions; ++optNum)
 	{
 		console.gotoxy(curPos.x, curPos.y++);
 		console.print("\1" + "7\1h\1wÝ\1n\1k\1" + "7" + optNum + "\1n\1" + "7\1k\1hÞ\1n");
@@ -1412,11 +1459,7 @@ function ViewVoteResults(pSubBoardCode)
 		if (pollMsgHdrs.length == 0)
 		{
 			msgbase.close();
-			console.gotoxy(1, gMessageRow);
-			console.print("\1n\1y\1hThere are no topics to view.\1n");
-			mswait(ERROR_PAUSE_WAIT_MS);
-			console.gotoxy(1, gMessageRow);
-			printf("%28s", ""); // Erase the error message
+			DisplayErrorWithPause("\1n\1y\1hThere are no topics to view.\1n", gMessageRow, false);
 			return nextProgramState;
 		}
 
@@ -2770,16 +2813,7 @@ function PollDeleteAllowed(pMsgbase, pSubBoardCode)
 function DisplayViewingResultsHelpScr(pMsgbase, pSubBoardCode)
 {
 	console.clear("\n");
-	var progName = "SlyVote";
-	var posX = (console.screen_columns/2) - (progName.length/2);
-	console.gotoxy(posX, 1);
-	console.print("\1c\1h" + progName);
-	console.gotoxy(posX, 2);
-	console.print("\1kÄÄÄÄÄÄÄ");
-	var versionText = "\1n\1cVersion \1g" + SLYVOTE_VERSION + "\1w\1h (\1b" + SLYVOTE_DATE + "\1w)\1n";
-	posX = (console.screen_columns/2) - (strip_ctrl(versionText).length/2);
-	console.gotoxy(posX, 3);
-	console.print(versionText);
+	DisplayProgramNameAndVerForHelpScreens();
 	console.crlf();
 	console.crlf();
 	var subBoardGrpAndName = msg_area.sub[pSubBoardCode].grp_name + " - " + msg_area.sub[pSubBoardCode].name;
@@ -2808,6 +2842,21 @@ function DisplayViewingResultsHelpScr(pMsgbase, pSubBoardCode)
 		console.crlf();
 	}
 	console.pause();
+}
+
+// Displays the program name & version for help screens
+function DisplayProgramNameAndVerForHelpScreens()
+{
+	var progName = "SlyVote";
+	var posX = (console.screen_columns/2) - (progName.length/2);
+	console.gotoxy(posX, 1);
+	console.print("\1c\1h" + progName);
+	console.gotoxy(posX, 2);
+	console.print("\1kÄÄÄÄÄÄÄ");
+	var versionText = "\1n\1cVersion \1g" + SLYVOTE_VERSION + "\1w\1h (\1b" + SLYVOTE_DATE + "\1w)\1n";
+	posX = (console.screen_columns/2) - (strip_ctrl(versionText).length/2);
+	console.gotoxy(posX, 3);
+	console.print(versionText);
 }
 
 // Validates a message if the sub-board requires message validation.
@@ -2844,4 +2893,44 @@ function ValidateMsg(pMsgbase, pSubBoardCode, pMsgHdrOrMsgNum)
 	}
 
 	return validationSuccessful;
+}
+
+// Displays an error message on a specified row on the screen with the error delay.
+//
+// Parameters:
+//  pErrorMsg: The error message to display
+//  pMessageRow: The row on the screen to display the message on
+//  pMnemonicsRequired: Boolean - Whether or not mnemonics is required to display the
+//                      message string
+function DisplayErrorWithPause(pErrorMsg, pMessageRow, pMnemonicsRequired)
+{
+	console.gotoxy(1, pMessageRow);
+	if (pMnemonicsRequired)
+	{
+		var errorMessage = pErrorMsg.substr(0, console.screen_columns);
+		console.mnemonics(errorMessage);
+		mswait(ERROR_PAUSE_WAIT_MS);
+		console.gotoxy(1, pMessageRow);
+		//printf("\1n%" + console.screen_columns + "s", "");
+		printf("\1n%" + errorMessage.length + "s", "");
+	}
+	else
+	{
+		var errorMessage = "\1n" + pErrorMsg.substr(0, console.screen_columns);
+		console.print("\1n\1y\1h" + errorMessage);
+		mswait(ERROR_PAUSE_WAIT_MS);
+		console.gotoxy(1, pMessageRow);
+		printf("\1n%" + errorMessage.length + "s", "");
+	}
+}
+
+// Removes newline codes (CR & LF) from a string.
+//
+// Parameters:
+//  pText: The string to remove newline codes from
+//
+// Return value: The string with newline codes removed
+function RemoveCRLFCodes(pText)
+{
+	return pText.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 }
