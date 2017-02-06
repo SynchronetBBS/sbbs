@@ -299,8 +299,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 30";
-var READER_DATE = "2017-01-28";
+var READER_VERSION = "1.17 Beta 31";
+var READER_DATE = "2017-02-05";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1780,6 +1780,18 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 			return retObj;
 		}
 	}
+
+	// If the user doesn't have permission to read the current sub-board, then
+	// don't allow the user to read it.
+	if (!msg_area.sub[this.subBoardCode].can_read)
+	{
+		var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
+		console.print("\1n" + errorMsg);
+		console.pause();
+		retObj.stoppedReading = true;
+		return retObj;
+	}
+
 	// (re)-open the message base
 	if (previousSubBoardCode != this.subBoardCode)
 	{
@@ -2411,6 +2423,18 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		retObj.stoppedReading = true;
 		return retObj;
 	}
+
+	// If the user doesn't have permission to read the current sub-board, then
+	// don't allow the user to read it.
+	if (!msg_area.sub[this.subBoardCode].can_read)
+	{
+		var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
+		console.print("\1n" + errorMsg);
+		console.pause();
+		retObj.stoppedReading = true;
+		return retObj;
+	}
+
 	if (previousSubBoardCode != this.subBoardCode)
 	{
 		if ((this.msgbase != null) && (this.msgbase.is_open))
@@ -2831,6 +2855,17 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pAllowChgSubBoard)
 		console.print("sub-board was specified. Please notify the sysop.\r\n\1p");
 		return retObj;
 	}
+
+	// If the user doesn't have permission to read the current sub-board, then
+	// don't allow the user to read it.
+	if (!msg_area.sub[this.subBoardCode].can_read)
+	{
+		var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
+		console.print("\1n" + errorMsg);
+		console.pause();
+		return retObj;
+	}
+
 	if (previousSubBoardCode != this.subBoardCode)
 	{
 		this.msgbase = null;
@@ -2893,6 +2928,16 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 	var retObj = new Object();
 	retObj.lastUserInput = "";
 	retObj.selectedMsgOffset = -1;
+
+	// If the user doesn't have permission to read the current sub-board, then
+	// don't allow the user to read it.
+	if (!msg_area.sub[this.subBoardCode].can_read)
+	{
+		var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
+		console.print("\1n" + errorMsg);
+		console.pause();
+		return retObj;
+	}
 
 	// Reset this.readAMessage and deniedReadingmessage to false, in case the
 	// message listing has previously ended with them set to true.
@@ -3236,6 +3281,16 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 	var retObj = new Object();
 	retObj.lastUserInput = "";
 	retObj.selectedMsgOffset = -1;
+
+	// If the user doesn't have permission to read the current sub-board, then
+	// don't allow the user to read it.
+	if (!msg_area.sub[this.subBoardCode].can_read)
+	{
+		var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
+		console.print("\1n" + errorMsg);
+		console.pause();
+		return retObj;
+	}
 
 	// This method is only supported if the user's terminal supports
 	// ANSI.
