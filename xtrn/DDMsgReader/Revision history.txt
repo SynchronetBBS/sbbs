@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.17     2017-??-??   Added support for Synchronet's new voting feature that
+                      was added in Synchronet 1.17.  Added support to allow the
+                      sysop to validate messages in moderated message areas.
+                      Fixed various bugs related to doing a newscan, displaying
+                      messages with ANSI content, out-of-bounds error when
+                      deleting a message, etc.
 1.16     2016-09-11   Added a new feature that allows users to forward a
                       message to an email address or to another user on the
                       BBS (using the O key).  This can be useful, for

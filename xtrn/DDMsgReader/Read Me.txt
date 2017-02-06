@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.16
-                           Release date: 2016-09-11
+                                 Version 1.17
+                           Release date: 2016-??-??
 
                                      by
 
@@ -30,6 +30,7 @@ Contents
    - Main configuration file (DDMsgReader.cfg)
    - Theme configuration file
 6. Drop file for replying to messages with Synchronet message editors
+7. text.dat lines used in Digital Distortion Message Reader
 
 
 1. Disclaimer
@@ -42,22 +43,24 @@ that there are no serious issues with it (at least, none that I have seen).
 2. Introduction
 ===============
 Digital Distortion Message Reader is a script for Synchronet that provides an
-alternate message reading interface.  The intent is to provide a very
-functional yet intuitive user interface for reading messages.  For ANSI users,
-a reader interface is provided which allows scrolling the message up & down
-(with the up & down arrow keys, as well as the PageUp & PageDown keys),
-navigating through the messages in the message area (AKA sub-board) using the
-left & right arrow keys, replying to messages, and other common messagebase
-functionality.  The Digital Distortion Message Reader can also list messages
-in the message area and allows forward & reverse navigation through the message
-list using a lightbar or traditional user interface.  A message area chooser
-feature is also included, allowing the user to change to a different message
-area to read/list messages.  Message newscan and various types of message
-searching are also available.  This script requires Synchronet version 3.15
-or newer.  Also, it is written in JavaScript, hence the .js filename extension.
+alternate message reading interface.  For ANSI users, a reader interface is
+provided which allows scrolling the message up & down (with the up & down arrow
+keys, as well as the PageUp & PageDown keys), navigating through the messages
+in the message area (AKA sub-board) using the left & right arrow keys, replying
+to messages, and other common messagebase functionality.  The Digital
+Distortion Message Reader can also list messages in the message area and allows
+forward & reverse navigation through the message list using a lightbar or
+traditional user interface.  An integrated message area chooser feature is also
+included, allowing the user to change to a different message area to read/list
+messages.  Message newscan and various types of message searching are also
+available.  This script requires Synchronet version 3.15 or newer.
+
+When using Synchronet 3.17, the message voting features added in Synchronet
+3.17 are supported.  For regular messages, users can vote a message up or down,
+and users can also vote in poll messages.
 
 If the user's terminal does not support ANSI, the reader will fall back to a
-more traditional user interface (which does not support scrolling).  The user
+traditional user interface (which does not support scrolling).  The user
 interface style can also be toggled by the sysop in the configuration file
 in case the sysop wants the reader to use the traditional interface even for
 ANSI users.
@@ -996,3 +999,21 @@ the message information from that file instead.
 Note that if you have SlyEdit installed on your BBS, this version of Digital
 Distortion Message Reader (1.00) requires version 1.27 or newer of SlyEdit in
 order for SlyEdit to properly get the correct message from the message lister.
+
+7. text.dat lines used in Digital Distortion Message Reader
+===========================================================
+This message reader uses the following lines from Synchronet's text.dat file
+(located in the sbbs/ctrl directory):
+10 (Email)
+30 (Aborted)
+54 (DeleteMailQ)
+501 (SelectItemHdr)
+503 (SelectItemWhich)
+563 (Pause)
+662 (DownloadAttachedFileQ)
+759 (CantReadSub)
+779 (VotingNotAllowed)
+780 (VotedAlready)
+781 (R_Voting)
+783 (VoteMsgUpDownOrQuit)
+787 (PollVoteNotice)
