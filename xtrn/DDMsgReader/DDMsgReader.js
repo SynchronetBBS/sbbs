@@ -299,8 +299,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 31";
-var READER_DATE = "2017-02-05";
+var READER_VERSION = "1.17 Beta 32";
+var READER_DATE = "2017-02-08";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1783,13 +1783,16 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
-	if (!msg_area.sub[this.subBoardCode].can_read)
+	if (this.subBoardCode != "mail")
 	{
-		var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
-		console.print("\1n" + errorMsg);
-		console.pause();
-		retObj.stoppedReading = true;
-		return retObj;
+		if (!msg_area.sub[this.subBoardCode].can_read)
+		{
+			var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
+			console.print("\1n" + errorMsg);
+			console.pause();
+			retObj.stoppedReading = true;
+			return retObj;
+		}
 	}
 
 	// (re)-open the message base
@@ -2426,13 +2429,16 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
-	if (!msg_area.sub[this.subBoardCode].can_read)
+	if (this.subBoardCode != "mail")
 	{
-		var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
-		console.print("\1n" + errorMsg);
-		console.pause();
-		retObj.stoppedReading = true;
-		return retObj;
+		if (!msg_area.sub[this.subBoardCode].can_read)
+		{
+			var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
+			console.print("\1n" + errorMsg);
+			console.pause();
+			retObj.stoppedReading = true;
+			return retObj;
+		}
 	}
 
 	if (previousSubBoardCode != this.subBoardCode)
@@ -2858,12 +2864,15 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pAllowChgSubBoard)
 
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
-	if (!msg_area.sub[this.subBoardCode].can_read)
+	if (this.subBoardCode != "mail")
 	{
-		var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
-		console.print("\1n" + errorMsg);
-		console.pause();
-		return retObj;
+		if (!msg_area.sub[this.subBoardCode].can_read)
+		{
+			var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
+			console.print("\1n" + errorMsg);
+			console.pause();
+			return retObj;
+		}
 	}
 
 	if (previousSubBoardCode != this.subBoardCode)
@@ -2931,12 +2940,15 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
-	if (!msg_area.sub[this.subBoardCode].can_read)
+	if (this.subBoardCode != "mail")
 	{
-		var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
-		console.print("\1n" + errorMsg);
-		console.pause();
-		return retObj;
+		if (!msg_area.sub[this.subBoardCode].can_read)
+		{
+			var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
+			console.print("\1n" + errorMsg);
+			console.pause();
+			return retObj;
+		}
 	}
 
 	// Reset this.readAMessage and deniedReadingmessage to false, in case the
@@ -3284,12 +3296,15 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
-	if (!msg_area.sub[this.subBoardCode].can_read)
+	if (this.subBoardCode != "mail")
 	{
-		var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
-		console.print("\1n" + errorMsg);
-		console.pause();
-		return retObj;
+		if (!msg_area.sub[this.subBoardCode].can_read)
+		{
+			var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
+			console.print("\1n" + errorMsg);
+			console.pause();
+			return retObj;
+		}
 	}
 
 	// This method is only supported if the user's terminal supports
