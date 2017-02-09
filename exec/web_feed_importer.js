@@ -52,7 +52,7 @@ var appendLink = true; // Append the item's <link /> value to the message
 var reverseOrder = true; // Leave this unless your feeds sort oldest to newest
 
 // I know about the built-in dupe-checking, but am doing this for reasons.
-var dupeCheck = function(sub, id) {
+function dupeCheck(sub, id) {
 	var msgBase = new MsgBase(sub);
 	msgBase.open();
 	var header = msgBase.get_msg_header(id);
@@ -60,7 +60,7 @@ var dupeCheck = function(sub, id) {
 	return (header !== null);
 }
 
-var prepareText = function(text) {
+function prepareText(text) {
 	/*	Some things aren't caught by html_decode()
 		Each property name in 'replacements' will replace any of the strings
 		in the replacements[property] array that are present in 'text'. */
@@ -120,7 +120,7 @@ var prepareText = function(text) {
 	return text;
 }
 
-var importItem = function(sub, item) {
+function importItem(sub, item) {
 	var id = format(
 		"<%s@%s>",
 		md5_calc(item.date + item.title + item.body, true),
@@ -147,8 +147,8 @@ var importItem = function(sub, item) {
 	);
 }
 
-var importSubFeeds = function(sub, feeds) {
-	for(var f in feeds) {
+function importSubFeeds(sub, feeds) {
+	for (var f in feeds) {
 		try {
 			var feed = new Feed(feeds[f]);
 			for each(var channel in feed.channels) {
@@ -178,10 +178,46 @@ var importSubFeeds = function(sub, feeds) {
 
 }
 
-var importFeeds = function() {
-	var subs = get_mod_options("feeds");
-	for(var sub in subs)
-		importSubFeeds(sub.toUpperCase(), subs[sub].split(","));
+// String feed, Array subs
+function importFeedToSubs(feed, subs) {
+	try {
+		var _feed = new Feed(feed);
+		for each (var channel in _feed.channels) {
+			if (reverseOrder) channel.items.reverse();
+			for each (var item in channel.items) {
+				item.author = channel.title + (item.author == '' ? '' : ( ' (' + item.author + ')'));
+				if (item.title == '') item.title = channel.title;
+				item.title = prepareText(item.title);
+				item.body = prepareText(item.body);
+				item.content = prepareText(item.content);
+				if (appendLink && item.link != '') {
+					item.body += '\r\n\r\n' + item.link;
+					if (item.content !== '') item.content += '\r\n\r\n' + item.link;
+				}
+				if (item.body == '' && item.content == '') continue;
+				subs.forEach(function (e) { importItem(e, item); });
+			}
+		}
+	} catch (err) {
+		log(LOG_ERR, err);
+	}
+}
+
+function importFeeds() {
+	var opts = get_mod_options("feeds");
+	Object.keys(opts).forEach(
+		function (e) {
+			if (e.match(/^_crosspost/i) !== null) {
+				var opt = opts[e].split(',');
+				var feed = opt.shift();
+				var subs = opt;
+				log(feed + ',' + JSON.stringify(opt));
+				importFeedToSubs(feed, subs);
+			} else {
+				importSubFeeds(e.toUpperCase(), opts[e].split(','));
+			}
+		}
+	);
 }
 
 importFeeds();
