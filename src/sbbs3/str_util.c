@@ -200,6 +200,48 @@ BOOL DLLCALL findstr_in_string(const char* insearchof, char* string)
 	return(found);
 }
 
+static uint32_t encode_ipv4_address(unsigned int byte[])
+{
+	if(byte[0] > 0xff || byte[1] > 0xff || byte[2] > 0xff || byte[3] > 0xff)
+		return 0;
+	return (byte[0]<<24) | (byte[1]<<16) | (byte[2]<<8) | byte[3];
+}
+
+static uint32_t parse_ipv4_address(const char* str)
+{
+	unsigned int byte[4];
+
+	if(sscanf(str, "%u.%u.%u.%u", &byte[0], &byte[1], &byte[2], &byte[3]) != 4)
+		return 0;
+	return encode_ipv4_address(byte);
+}
+
+static uint32_t parse_cidr(const char* p, unsigned* subnet)
+{
+	unsigned int byte[4];
+
+	if(*p == '!')
+		p++;
+
+	*subnet = 0;
+	if(sscanf(p, "%u.%u.%u.%u/%u", &byte[0], &byte[1], &byte[2], &byte[3], subnet) != 5 || *subnet > 32)
+		return 0;
+	return encode_ipv4_address(byte);
+}
+
+static BOOL is_cidr_match(const char *p, uint32_t ip_addr, uint32_t cidr, unsigned subnet)
+{
+	BOOL	match = FALSE;
+
+	if(*p == '!')
+		match = TRUE;
+
+	if(((ip_addr ^ cidr) >> (32-subnet)) == 0)
+		match = !match;
+
+	return match;
+}
+
 /****************************************************************************/
 /* Pattern matching string search of 'insearchof' in 'list'.				*/
 /****************************************************************************/
@@ -208,18 +250,23 @@ BOOL DLLCALL findstr_in_list(const char* insearchof, str_list_t list)
 	size_t	index;
 	BOOL	found=FALSE;
 	char*	p;
+	uint32_t ip_addr, cidr;
+	unsigned subnet;
 
 	if(list==NULL || insearchof==NULL)
-		return(FALSE);
-
+		return FALSE;
+	ip_addr = parse_ipv4_address(insearchof);
 	for(index=0; list[index]!=NULL; index++) {
 		p=list[index];
 		SKIP_WHITESPACE(p);
-		found=findstr_in_string(insearchof,p);
-		if(found!=(*p=='!'))
+		if(ip_addr != 0 && (cidr = parse_cidr(p, &subnet)) != 0)
+			found = is_cidr_match(p, ip_addr, cidr, subnet);
+		else
+			found = findstr_in_string(insearchof,p);
+		if(found != (*p=='!'))
 			break;
 	}
-	return(found);
+	return found;
 }
 
 /****************************************************************************/
@@ -230,21 +277,27 @@ BOOL DLLCALL findstr(const char* insearchof, const char* fname)
 	char		str[256];
 	BOOL		found=FALSE;
 	FILE*		fp;
+	uint32_t	ip_addr, cidr;
+	unsigned	subnet;
 
 	if(insearchof==NULL || fname==NULL)
-		return(FALSE);
+		return FALSE;
 
 	if((fp=fopen(fname,"r"))==NULL)
-		return(FALSE); 
+		return FALSE; 
 
+	ip_addr = parse_ipv4_address(insearchof);
 	while(!feof(fp) && !ferror(fp) && !found) {
 		if(!fgets(str,sizeof(str),fp))
 			break;
-		found=findstr_in_string(insearchof,str);
+		if(ip_addr !=0 && (cidr = parse_cidr(str, &subnet)) != 0)
+			found = is_cidr_match(str, ip_addr, cidr, subnet);
+		else
+			found = findstr_in_string(insearchof, str);
 	}
 
 	fclose(fp);
-	return(found);
+	return found;
 }
 
 /****************************************************************************/
