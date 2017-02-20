@@ -299,8 +299,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 32";
-var READER_DATE = "2017-02-08";
+var READER_VERSION = "1.17 Beta 33";
+var READER_DATE = "2017-02-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -12423,6 +12423,52 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	retObj.displayFrame = null;
 	retObj.displayFrameScrollbar = null;
 	var msgHasANSICodes = (typeof(pMsgHasANSICodes) == "boolean" ? pMsgHasANSICodes : textHasANSICodes(retObj.msgText));
+	// If the message has ANSI codes, then check to see if the ANSI codees are
+	// only on the first 2 lines (within 160 characters).  If so, then convert
+	// the ANSI color codes to Synchronet codes.  Some messages contain a couple
+	// extra lines at the beginning with a "By: <name> to <name>" and a date, and
+	// some of those messages contain ANSI codes in those lines, which will mess
+	// up the display of the message using the scrolling interface.
+	if (msgHasANSICodes)
+	{
+		var lastANSIIdx = idxOfLastANSICode(msgTextAltered);
+		if (lastANSIIdx <= 160)
+		{
+			msgTextAltered = cvtANSIToSyncAndRemoveUnwantedANSI(msgTextAltered);
+			//msgTextAltered = removeANSIFromStr(msgTextAltered);
+			msgHasANSICodes = false;
+		}
+	}
+
+	// If this is a message with a "By: <name> to <name>" and a date, then
+	// sometimes such a message might have enter characters (ASCII 13), which
+	// can mess up the display of the message, so remove enter characters
+	// from the beginning of the message.
+	var msgTextWithoutAttrs = strip_ctrl(msgTextAltered);
+	var first240Chars = msgTextWithoutAttrs.substr(0, 240);
+	var fromToSearchStr = "By: " + pMsgHdr.from + " to " + pMsgHdr.to;
+	var toFromSearchStr = "By: " + pMsgHdr.to + " to " + pMsgHdr.from;
+	var fromToStrIdx = msgTextWithoutAttrs.indexOf(fromToSearchStr);
+	var toFromStrIdx = msgTextWithoutAttrs.indexOf(toFromSearchStr);
+	var strIdx = -1;
+	if (fromToStrIdx > -1)
+		strIdx = fromToStrIdx;
+	else if (toFromStrIdx > -1)
+		strIdx = toFromStrIdx;
+	if (strIdx > -1)
+	{
+		// " on Mon Feb 13 2017 01:00 pm " // 29 characters long
+		strIdx += toFromSearchStr.length + 29 + 37; // 37: Extra room for Synchronet attribute codes
+		// Remove enter characters from the beginning of the message
+		var tmpStr = msgTextAltered.substring(0, strIdx).replace(ascii(13), "");
+		msgTextAltered = tmpStr + msgTextAltered.substr(strIdx);
+		// To remove the "By: <name> to <name> on <date>" lines altogether:
+		//msgTextAltered = msgTextAltered.substr(strIdx);
+	}
+
+	// If the message (still) has ANSI codes, then it is probably an ANSI message.
+	// Set up a Frame object to display the message, since the Frame object handles
+	// ANSI well with scrolling.
 	if (msgHasANSICodes)
 	{
 		if (gFrameJSAvailable && console.term_supports(USER_ANSI))
@@ -16795,47 +16841,8 @@ function ANSIAttrsToSyncAttrs(pText)
 			}
 			deltree(readerTmpDir);
 		}
-		else
-		{
-			// Attributes
-			var text = pText.replace(/\[0[mM]/g, "\1n"); // All attributes off
-			text = text.replace(/\[1[mM]/g, "\1h"); // Bold on (use high intensity)
-			text = text.replace(/\[5[mM]/g, "\1i"); // Blink on
-			// Foreground colors
-			text = text.replace(/\[30[mM]/g, "\1k"); // Black foreground
-			text = text.replace(/\[31[mM]/g, "\1r"); // Red foreground
-			text = text.replace(/\[32[mM]/g, "\1g"); // Green foreground
-			text = text.replace(/\[33[mM]/g, "\1y"); // Yellow foreground
-			text = text.replace(/\[34[mM]/g, "\1b"); // Blue foreground
-			text = text.replace(/\[35[mM]/g, "\1m"); // Magenta foreground
-			text = text.replace(/\[36[mM]/g, "\1c"); // Cyan foreground
-			text = text.replace(/\[37[mM]/g, "\1w"); // White foreground
-			// Background colors
-			text = text.replace(/\[40[mM]/g, "\1" + "0"); // Black background
-			text = text.replace(/\[41[mM]/g, "\1" + "1"); // Red background
-			text = text.replace(/\[42[mM]/g, "\1" + "2"); // Green background
-			text = text.replace(/\[43[mM]/g, "\1" + "3"); // Yellow background
-			text = text.replace(/\[44[mM]/g, "\1" + "4"); // Blue background
-			text = text.replace(/\[45[mM]/g, "\1" + "5"); // Magenta background
-			text = text.replace(/\[46[mM]/g, "\1" + "6"); // Cyan background
-			text = text.replace(/\[47[mM]/g, "\1" + "7"); // White background
-
-			// Convert ;-delimited modes (such as [Value;...;Valuem)
-			text = ANSIMultiConvertToSyncCodes(text);
-
-			// Remove ANSI codes that are not wanted (such as moving the cursor, etc.)
-			text = text.replace(/\[[0-9]+[aA]/g, ""); // Cursor up
-			text = text.replace(/\[[0-9]+[bB]/g, ""); // Cursor down
-			text = text.replace(/\[[0-9]+[cC]/g, ""); // Cursor forward
-			text = text.replace(/\[[0-9]+[dD]/g, ""); // Cursor backward
-			text = text.replace(/\[[0-9]+;[0-9]+[hH]/g, ""); // Cursor position
-			text = text.replace(/\[[0-9]+;[0-9]+[fF]/g, ""); // Cursor position
-			text = text.replace(/\[[sS]/g, ""); // Restore cursor position
-			text = text.replace(/\[2[jJ]/g, ""); // Erase display
-			text = text.replace(/\[[kK]/g, ""); // Erase line
-			text = text.replace(/\[=[0-9]+[hH]/g, ""); // Set various screen modes
-			text = text.replace(/\[=[0-9]+[lL]/g, ""); // Reset various screen modes
-		}
+		else // Convert ANSI codes to Synchronet attributes & remove unwanted ANSI codes
+			text = cvtANSIToSyncAndRemoveUnwantedANSI(text);
 
 		return text;
 	}
@@ -16851,9 +16858,99 @@ function ANSIAttrsToSyncAttrs(pText)
 // Return value: Boolean - Whether or not the text has ANSI codes in it
 function textHasANSICodes(pText)
 {
+	
 	return(/\[[0-9]+[mM]/.test(pText) || /\[[0-9]+(;[0-9]+)+[mM]/.test(pText) ||
 	       /\[[0-9]+[aAbBcCdD]/.test(pText) || /\[[0-9]+;[0-9]+[hHfF]/.test(pText) ||
 	       /\[[sSuUkK]/.test(pText) || /\[2[jJ]/.test(pText));
+	/*
+	var regex1 = new RegExp(ascii(27) + "\[[0-9]+[mM]");
+	var regex2 = new RegExp(ascii(27) + "\[[0-9]+(;[0-9]+)+[mM]");
+	var regex3 = new RegExp(ascii(27) + "\[[0-9]+[aAbBcCdD]");
+	var regex4 = new RegExp(ascii(27) + "\[[0-9]+;[0-9]+[hHfF]");
+	var regex5 = new RegExp(ascii(27) + "\[[sSuUkK]");
+	var regex6 = new RegExp(ascii(27) + "\[2[jJ]");
+	return(regex1.test(pText) || regex2.test(pText) || regex3.test(pText) ||
+	       regex4.test(pText) || regex5.test(pText) || regex6.test(pText));
+	*/
+}
+
+// Returns the index of the last ANSI code in a string.
+//
+// Parameters:
+//  pStr: The string to search for
+//
+// Return value: The index of the last ANSI code in the string, or -1 if not found
+function idxOfLastANSICode(pStr)
+{
+	var ANSIRegexes = [ new RegExp(ascii(27) + "\[[0-9]+[mM]"),
+	                    new RegExp(ascii(27) + "\[[0-9]+(;[0-9]+)+[mM]"),
+	                    new RegExp(ascii(27) + "\[[0-9]+[aAbBcCdD]"),
+	                    new RegExp(ascii(27) + "\[[0-9]+;[0-9]+[hHfF]"),
+	                    new RegExp(ascii(27) + "\[[sSuUkK]"),
+	                    new RegExp(ascii(27) + "\[2[jJ]") ];
+
+	var lastANSIIdx = -1;
+	for (var i = 0; i < ANSIRegexes.length; ++i)
+	{
+		ANSIRegexes[i].ignoreCase = true;
+		var lastANSIIdxTmp = regexLastIndexOf(pStr, ANSIRegexes[i]);
+		if (lastANSIIdxTmp > lastANSIIdx)
+			lastANSIIdx = lastANSIIdxTmp;
+	}
+	return lastANSIIdx;
+}
+
+// Removes ANSI codes from a string.
+//
+// Parameters:
+//  pStr: The string to remove ANSI codes from
+//
+// Return value: A version of the string without ANSI codes
+function removeANSIFromStr(pStr)
+{
+	if (typeof(pStr) != "string")
+		return "";
+
+	var ANSIRegexes = [ new RegExp(ascii(27) + "\[[0-9]+[mM]", "gi"),
+	                    new RegExp(ascii(27) + "\[[0-9]+(;[0-9]+)+[mM]", "gi"),
+	                    new RegExp(ascii(27) + "\[[0-9]+[aAbBcCdD]", "gi"),
+	                    new RegExp(ascii(27) + "\[[0-9]+;[0-9]+[hHfF]", "gi"),
+	                    new RegExp(ascii(27) + "\[[sSuUkK]", "gi"),
+	                    new RegExp(ascii(27) + "\[2[jJ]", "gi") ];
+
+	var theStr = pStr;
+	for (var i = 0; i < ANSIRegexes.length; ++i)
+		theStr = theStr.replace(ANSIRegexes[i], "");
+	return theStr;
+}
+
+// Returns the last index in a string where a regex is found.
+// From this page:
+// http://stackoverflow.com/questions/273789/is-there-a-version-of-javascripts-string-indexof-that-allows-for-regular-expr
+//
+// Parameters:
+//  pStr: The string to search
+//  pRegex: The regular expression to match in the string
+//  pStartPos: Optional - The starting position in the string.  If this is not
+//             passed, then the end of the string will be used.
+//
+// Return value: The last index in the string where the regex is found, or -1 if not found.
+function regexLastIndexOf(pStr, pRegex, pStartPos)
+{
+	pRegex = (pRegex.global) ? pRegex : new RegExp(pRegex.source, "g" + (pRegex.ignoreCase ? "i" : "") + (pRegex.multiLine ? "m" : ""));
+	if (typeof(pStartPos) == "undefined")
+		pStartPos = pStr.length;
+	else if (pStartPos < 0)
+		pStartPos = 0;
+	var stringToWorkWith = pStr.substring(0, pStartPos + 1);
+	var lastIndexOf = -1;
+	var nextStop = 0;
+	while ((result = pRegex.exec(stringToWorkWith)) != null)
+	{
+		lastIndexOf = result.index;
+		pRegex.lastIndex = ++nextStop;
+	}
+    return lastIndexOf;
 }
 
 // Converts ANSI ;-delimited modes (such as [Value;...;Valuem) to Synchronet
@@ -16921,6 +17018,55 @@ function ANSIMultiConvertToSyncCodes(pText)
 		updatedText = updatedText.replace(multiMatches[i], syncCodes);
 	}
 	return updatedText;
+}
+
+// Given some text, this converts ANSI color codes to Synchronet codes and
+// removes unwanted ANSI codes (such as cursor movement codes, etc.).
+//
+// Parameters:
+//  pText: A string to process
+//
+// Return value: A version of the string with Synchronet color codes converted to
+//               Synchronet attribute codes and unwanted ANSI codes removed
+function cvtANSIToSyncAndRemoveUnwantedANSI(pText)
+{
+	// Attributes
+	var txt = pText.replace(/\[0[mM]/g, "\1n"); // All attributes off
+	txt = txt.replace(/\[1[mM]/g, "\1h"); // Bold on (use high intensity)
+	txt = txt.replace(/\[5[mM]/g, "\1i"); // Blink on
+	// Foreground colors
+	txt = txt.replace(/\[30[mM]/g, "\1k"); // Black foreground
+	txt = txt.replace(/\[31[mM]/g, "\1r"); // Red foreground
+	txt = txt.replace(/\[32[mM]/g, "\1g"); // Green foreground
+	txt = txt.replace(/\[33[mM]/g, "\1y"); // Yellow foreground
+	txt = txt.replace(/\[34[mM]/g, "\1b"); // Blue foreground
+	txt = txt.replace(/\[35[mM]/g, "\1m"); // Magenta foreground
+	txt = txt.replace(/\[36[mM]/g, "\1c"); // Cyan foreground
+	txt = txt.replace(/\[37[mM]/g, "\1w"); // White foreground
+	// Background colors
+	txt = txt.replace(/\[40[mM]/g, "\1" + "0"); // Black background
+	txt = txt.replace(/\[41[mM]/g, "\1" + "1"); // Red background
+	txt = txt.replace(/\[42[mM]/g, "\1" + "2"); // Green background
+	txt = txt.replace(/\[43[mM]/g, "\1" + "3"); // Yellow background
+	txt = txt.replace(/\[44[mM]/g, "\1" + "4"); // Blue background
+	txt = txt.replace(/\[45[mM]/g, "\1" + "5"); // Magenta background
+	txt = txt.replace(/\[46[mM]/g, "\1" + "6"); // Cyan background
+	txt = txt.replace(/\[47[mM]/g, "\1" + "7"); // White background
+	// Convert ;-delimited modes (such as [Value;...;Valuem)
+	txt = ANSIMultiConvertToSyncCodes(txt);
+	// Remove ANSI codes that are not wanted (such as moving the cursor, etc.)
+	txt = txt.replace(/\[[0-9]+[aA]/g, ""); // Cursor up
+	txt = txt.replace(/\[[0-9]+[bB]/g, ""); // Cursor down
+	txt = txt.replace(/\[[0-9]+[cC]/g, ""); // Cursor forward
+	txt = txt.replace(/\[[0-9]+[dD]/g, ""); // Cursor backward
+	txt = txt.replace(/\[[0-9]+;[0-9]+[hH]/g, ""); // Cursor position
+	txt = txt.replace(/\[[0-9]+;[0-9]+[fF]/g, ""); // Cursor position
+	txt = txt.replace(/\[[sS]/g, ""); // Restore cursor position
+	txt = txt.replace(/\[2[jJ]/g, ""); // Erase display
+	txt = txt.replace(/\[[kK]/g, ""); // Erase line
+	txt = txt.replace(/\[=[0-9]+[hH]/g, ""); // Set various screen modes
+	txt = txt.replace(/\[=[0-9]+[lL]/g, ""); // Reset various screen modes
+	return txt;
 }
 
 // Returns whether a given message group index & sub-board index (or the current ones,
