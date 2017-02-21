@@ -58,8 +58,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.15 Beta";
-var SLYVOTE_DATE = "2017-02-05";
+var SLYVOTE_VERSION = "0.16 Beta";
+var SLYVOTE_DATE = "2017-02-20";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -310,15 +310,16 @@ function DoMainMenu()
 	var answerAllTopicsOpt = 1;
 	var createTopicOpt = 2;
 	var viewResultsOpt = 3;
-	var changeTopicAreaOpt = 4;
-	var quitToBBSOpt = 5;
+	var viewStatsOpt = 4;
+	var changeTopicAreaOpt = 5;
+	var quitToBBSOpt = 6;
 
 	// Display the SlyVote screen and menu of choices
 	console.clear("\1n");
 	var mainScrRetObj = DisplaySlyVoteMainVoteScreen(false);
 	if (gMainMenu == null)
 	{
-		var mainMenuHeight = 5;
+		var mainMenuHeight = 6;
 		if (gSlyVoteCfg.subBoardCodes.length > 1)
 			++mainMenuHeight;
 		gMainMenu = new DDLightbarMenu(mainScrRetObj.optMenuX, mainScrRetObj.optMenuY, 17, mainMenuHeight);
@@ -326,13 +327,14 @@ function DoMainMenu()
 		gMainMenu.Add("Answer All Topics", answerAllTopicsOpt, "2");
 		gMainMenu.Add("Create A Topic", createTopicOpt, "3");
 		gMainMenu.Add("View Results", viewResultsOpt, "4");
+		gMainMenu.Add("View stats", viewStatsOpt, "5");
 		if (gSlyVoteCfg.subBoardCodes.length > 1)
 		{
-			gMainMenu.Add("Change topic area", changeTopicAreaOpt, "5");
-			gMainMenu.Add("Quit To BBS", quitToBBSOpt, "6");
+			gMainMenu.Add("Change topic area", changeTopicAreaOpt, "6");
+			gMainMenu.Add("Quit To BBS", quitToBBSOpt, "7");
 		}
 		else
-			gMainMenu.Add("Quit To BBS", quitToBBSOpt, "5");
+			gMainMenu.Add("Quit To BBS", quitToBBSOpt, "6");
 		gMainMenu.colors.itemColor = "\1n\1w";
 		gMainMenu.colors.selectedItemColor = "\1n\1" + "4\1w\1h";
 	}
@@ -383,6 +385,11 @@ function DoMainMenu()
 				errorMsg = errorMsg.substr(2);
 			DisplayErrorWithPause("\1y\1h" + errorMsg, gMessageRow, false);
 		}
+	}
+	else if (userChoice == viewStatsOpt)
+	{
+		ViewStats(gSubBoardCode);
+		nextProgramState = MAIN_MENU;
 	}
 	else if (userChoice == changeTopicAreaOpt)
 	{
@@ -1279,7 +1286,7 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	// Write the option numbers
 	var curPos = { x: 7, y: 12 };
 	var retObj = { optMenuX: curPos.x+4, optMenuY: curPos.y }; // For the option menu to be used later
-	var numMenuOptions = 5;
+	var numMenuOptions = 6;
 	if (gSlyVoteCfg.subBoardCodes.length > 1)
 		++numMenuOptions;
 	for (var optNum = 1; optNum <= numMenuOptions; ++optNum)
@@ -2921,6 +2928,116 @@ function DisplayErrorWithPause(pErrorMsg, pMessageRow, pMnemonicsRequired)
 		mswait(ERROR_PAUSE_WAIT_MS);
 		console.gotoxy(1, pMessageRow);
 		printf("\1n%" + errorMessage.length + "s", "");
+	}
+}
+
+// Lets the user view poll stats for a sub-board.
+//
+// Parameters:
+//  pSubBoardCode: The internal code of the sub-board to view stats for
+function ViewStats(pSubBoardCode)
+{
+	/*
+	var msgbase = new MsgBase(pSubBoardCode);
+	if (msgbase.open())
+	{
+		console.clear("\1n");
+
+		msgbase.close();
+	}
+	*/
+	// Return value: An object containing the following properties:
+	//               errorMsg: A string containing an error message on failure or a blank string on success
+	//               msgHdrs: An array containing message headers for voting topics
+	var topicRetObj = GetVoteTopicHdrs(pSubBoardCode, false);
+	if (topicRetObj.errorMsg.length > 0)
+	{
+		console.gotoxy(1, gMessageRow);
+		console.print("\1n\1h\1y" + topicRetObj.errorMsg + "\1n");
+		mswait(ERROR_PAUSE_WAIT_MS);
+		return;
+	}
+	if (topicRetObj.msgHdrs.length == 0)
+	{
+		console.gotoxy(1, gMessageRow);
+		console.print("\1n\1r\1yThere are no topics in this area.\1n");
+		mswait(ERROR_PAUSE_WAIT_MS);
+		return;
+	}
+
+	console.clear("\1n");
+	//total_votes
+	//subject
+	//from
+	//tally: 1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0
+	//date (str)
+	// Sort the array by number of votes, with the highest first.
+	topicRetObj.msgHdrs.sort(function(pA, pB) {
+		if (pA.total_votes < pB.total_votes)
+			return 1;
+		else if (pA.total_votes = pB.total_votes)
+			return 0;
+		else if (pA.total_votes > pB.total_votes)
+			return -1;
+	});
+	// Display the poll stats
+	console.print("\1w\1hTopics ranked by number of votes (highest to lowest):\1n");
+	console.crlf();
+	console.crlf();
+	var labelColor = "\1w\1h";
+	for (var i = 0; i < topicRetObj.msgHdrs.length; ++i)
+	{
+		console.print("\1n" + labelColor + "Topic: \1n\1g" + topicRetObj.msgHdrs[i].subject);
+		console.crlf();
+		console.print("\1n" + labelColor + "By: \1n\1r\1h" + topicRetObj.msgHdrs[i].from);
+		console.crlf();
+		console.print("\1n" + labelColor + "Date: \1n\1b\1h" + topicRetObj.msgHdrs[i].date);
+		console.crlf();
+		console.print("\1n" + labelColor + "Number of votes: \1n\1m\1h" + topicRetObj.msgHdrs[i].total_votes);
+		console.crlf();
+		// Find the option(s) with the highest number(s) of votes
+		var tallyIdx = 0;
+		var answersAndNumVotes = [];
+		for (var fieldI = 0; fieldI < topicRetObj.msgHdrs[i].field_list.length; ++fieldI)
+		{
+			if (topicRetObj.msgHdrs[i].field_list[fieldI].type == SMB_POLL_ANSWER)
+			{
+				var answerObj = {
+					answerText: topicRetObj.msgHdrs[i].field_list[fieldI].data,
+					numVotes: 0
+				};
+				if (topicRetObj.msgHdrs[i].hasOwnProperty("tally"))
+				{
+					if (tallyIdx < topicRetObj.msgHdrs[i].tally.length)
+						answerObj.numVotes = topicRetObj.msgHdrs[i].tally[tallyIdx];
+				}
+				answersAndNumVotes.push(answerObj);
+				++tallyIdx;
+			}
+		}
+		answersAndNumVotes.sort(function(pA, pB) {
+			if (pA.numVotes < pB.numVotes)
+				return 1;
+			else if (pA.numVotes == pB.numVotes)
+				return 0;
+			else if (pA.numVotes > pB.numVotes)
+				return -1;
+		});
+		console.print("\1n" + labelColor + "Option(s) with highest number of votes:\1n");
+		console.crlf();
+		for (var answerI = 0; answerI < answersAndNumVotes.length; ++answerI)
+		{
+			if (answersAndNumVotes[answerI].numVotes == 0)
+				continue;
+			console.print("\1n\1b\1h" + answersAndNumVotes[answerI].answerText + "\1w: \1m" + answersAndNumVotes[answerI].numVotes + "\1n");
+			console.crlf();
+			if (answerI > 0)
+			{
+				if (answersAndNumVotes[answerI].numVotes != answersAndNumVotes[answerI-1].numVotes)
+					break;
+			}
+		}
+		console.crlf();
 	}
 }
 
