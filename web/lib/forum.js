@@ -693,7 +693,7 @@ function submitPollAnswers(sub, number, answers) {
 function linkify(body) {
     urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
     body = body.replace(
-        urlRE, 
+        urlRE,
         function (str) {
             var ret=''
             var p=0;
@@ -730,7 +730,7 @@ function quotify(body) {
             var broken = false;
 
             line = lines[l];
-            
+
             // If the new length is smaller than the old one, close the extras
             for (p = new_prefixes.length; p < prefixes.length; p++) {
                 if (quote_depth < 1) continue;
@@ -881,7 +881,9 @@ function getMessageThreads(sub, max) {
 
     function addToThread(thread_id, header, subject) {
         if (typeof subject !== 'undefined') subjects[subject] = thread_id;
-        threads.thread[thread_id].newest = header.when_written_time;
+        if (header.when_written_time > threads.thread[thread_id].newest) {
+            threads.thread[thread_id].newest = header.when_written_time;
+        }
         threads.thread[thread_id].messages[header.number] = {
             attr : header.attr,
             auxattr : header.auxattr,
@@ -931,7 +933,7 @@ function getMessageThreads(sub, max) {
         if (start < msgBase.first_msg) start = msgBase.first_msg;
         var headers = {};
         var c = 0;
-        for (var m = start; m < msgBase.last_msg; m++) {
+        for (var m = start; m <= msgBase.last_msg; m++) {
             var header = msgBase.get_msg_header(m);
             if (header === null || header.attr&MSG_DELETE) continue;
             headers[header.number] = header;
