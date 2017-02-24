@@ -899,15 +899,16 @@ bool area_is_valid(uint areanum)
 	return areanum < cfg.areas;
 }
 
-/* Returns subnum */
+/* Returns subnum (INVALID_SUB if pass-through) or SUB_NOT_FOUND */
+#define SUB_NOT_FOUND ((uint)-2)
 uint find_linked_area(const char* echotag, fidoaddr_t addr)
 {
 	unsigned area;
 
 	if(area_is_valid(area = find_area(echotag)) && area_is_linked(area, &addr))
-			return cfg.area[area].sub;
+		return cfg.area[area].sub;
 
-	return INVALID_SUB;
+	return SUB_NOT_FOUND;
 }
 
 /******************************************************************************
@@ -1024,7 +1025,7 @@ void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 								tp=p;
 								FIND_WHITESPACE(tp);
 								*tp=0;
-								if(find_linked_area(p, addr) == INVALID_SUB) {
+								if(find_linked_area(p, addr) == SUB_NOT_FOUND) {
 									if(strListFind(area_list, p, /* case_sensitive */false) < 0)
 										strListPush(&area_list, p);
 								}
@@ -1520,8 +1521,10 @@ void areafix_command(char* instr, fidoaddr_t addr, const char* to)
 		char* p = instr + 7;
 		SKIP_WHITESPACE(p);
 		int subnum = find_linked_area(p, addr);
-		if(subnum == INVALID_SUB)
+		if(subnum == SUB_NOT_FOUND)
 			SAFEPRINTF(str, "Echo-tag '%s' not linked or not found.", p);
+		else if(subnum == INVALID_SUB)
+			SAFEPRINTF(str, "Connected area '%s' is pass-through: cannot be rescanned", p);
 		else {
 			export_echomail(scfg.sub[subnum]->code, nodecfg, true);
 			SAFEPRINTF(str, "Connected area '%s' has been rescanned.", p);
