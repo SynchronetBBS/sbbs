@@ -9,6 +9,8 @@
  * Date       Author            Description
  * 2016-12-29 Eric Oulashin     Version 0.01 Beta
  *                              Started
+ * 2017-02-26 Eric Oulashin     Version 0.17 Beta
+ *                              Mostly complete; continuing to make tweaks
  */
  
 // TODO:
@@ -58,8 +60,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.16 Beta";
-var SLYVOTE_DATE = "2017-02-20";
+var SLYVOTE_VERSION = "0.17 Beta";
+var SLYVOTE_DATE = "2017-02-26";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -436,7 +438,12 @@ function ChooseVoteTopic(pLetUserChoose)
 	else if (voteTopicInfo.msgHdrs.length == 0)
 	{
 		console.gotoxy(1, gMessageRow);
-		console.print("\1n\1gThere are no polls to vote on in this section\1n");
+		console.print("\1n\1g");
+		if (voteTopicInfo.pollsExist)
+			console.print("You have already voted on all polls in this section");
+		else
+			console.print("There are no polls to vote on in this section");
+		console.print("\1n");
 		console.crlf();
 		console.pause();
 		return MAIN_MENU;
@@ -1392,11 +1399,15 @@ function CenterText(pText, pFieldLen)
 // Return value: An object containing the following properties:
 //               errorMsg: A string containing an error message on failure or a blank string on success
 //               msgHdrs: An array containing message headers for voting topics
+//               pollsExist: Boolean - Whether polls exist in the sub-board.  This is useful when
+//                           this function doesn't return any headers because the the user voted
+//                           on all of them but polls do exist.
 function GetVoteTopicHdrs(pSubBoardCode, pCheckIfUserVoted)
 {
 	var retObj = {
 		errorMsg: "",
-		msgHdrs: []
+		msgHdrs: [],
+		pollsExist: false
 	};
 
 	// Open the chosen sub-board
@@ -1404,6 +1415,7 @@ function GetVoteTopicHdrs(pSubBoardCode, pCheckIfUserVoted)
 	if (msgbase.open())
 	{
 		var msgHdrs = msgbase.get_all_msg_headers(true);
+		retObj.pollsExist = (Object.keys(msgHdrs).length > 0);
 		for (var prop in msgHdrs)
 		{
 			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
@@ -1449,16 +1461,6 @@ function ViewVoteResults(pSubBoardCode)
 					currentMsgIdx = pollMsgIdx;
 				++pollMsgIdx;
 			}
-			/*
-			var msgIsDeleted = ((msgHdrs[prop].attr & MSG_DELETE) == MSG_DELETE);
-			if (!msgIsDeleted && (msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
-			{
-				pollMsgHdrs.push(msgHdrs[prop]);
-				if (msgHdrs[prop].number == msg_area.sub[pSubBoardCode].last_read)
-					currentMsgIdx = pollMsgIdx;
-				++pollMsgIdx;
-			}
-			*/
 		}
 		delete msgHdrs; // Free some memory
 		
@@ -1538,7 +1540,14 @@ function ViewVoteResults(pSubBoardCode)
 			displayFrame.putmsg(msgBodyText, "\1n");
 			displayFrame.scrollTo(0, 0);
 			if (drawMsg)
+			{
+				displayFrame.invalidate();
+				displayFrameScrollbar.cycle();
+				displayFrame.cycle();
 				displayFrame.draw();
+			}
+			// Let the user scroll the message, and take appropriate action based
+			// on the user input
 			var scrollRetObj = ScrollFrame(displayFrame, displayFrameScrollbar, 0, "\1n", false, 1, console.screen_rows);
 			drawMsg = true;
 			drawKeyHelpLine = false;
@@ -1735,12 +1744,9 @@ function ViewVoteResults(pSubBoardCode)
 			{
 				// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
 				// msgbase.last_msg)?
-				if (msgbase.get_all_msg_headers(false).length > 0)
-				{
-					if (pollMsgHdrs[currentMsgIdx].number > msg_area.sub[pSubBoardCode].scan_ptr)
-						msg_area.sub[pSubBoardCode].scan_ptr = pollMsgHdrs[currentMsgIdx].number;
-					msg_area.sub[pSubBoardCode].last_read = pollMsgHdrs[currentMsgIdx].number;
-				}
+				if (pollMsgHdrs[currentMsgIdx].number > msg_area.sub[pSubBoardCode].scan_ptr)
+					msg_area.sub[pSubBoardCode].scan_ptr = pollMsgHdrs[currentMsgIdx].number;
+				msg_area.sub[pSubBoardCode].last_read = pollMsgHdrs[currentMsgIdx].number;
 			}
 		}
 
@@ -2416,24 +2422,15 @@ function ScrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 		//pFrame.draw();
 	}
 
-	// Note: It seems that in order for the frame's scrollbar to be accurate,
-	// the frame & scrollbar must be cycled at least once initially.
-	var cycleFrame = true;
+	// Frame scroll cycle/user input loop
+	var cycleFrame = false;
 	var continueOn = true;
 	while (continueOn)
 	{
-		// If we are to write the text lines, then draw the frame.
-		// TODO: Do we really need this?  Will this be different from
-		// scrollTextLines()?
-		//if (writeTxtLines)
-		//	pFrame.draw();
-
 		if (cycleFrame)
 		{
 			// Invalidate the frame to force it to redraw everything, as a
 			// workaround to clear the background before writing again
-			// TODO: I might want to remove this invalidate() later when
-			// Frame is fixed to redraw better on scrolling.
 			pFrame.invalidate();
 			// Cycle the scrollbar & frame to get them to scroll
 			if (pScrollbar != null)
@@ -2937,18 +2934,6 @@ function DisplayErrorWithPause(pErrorMsg, pMessageRow, pMnemonicsRequired)
 //  pSubBoardCode: The internal code of the sub-board to view stats for
 function ViewStats(pSubBoardCode)
 {
-	/*
-	var msgbase = new MsgBase(pSubBoardCode);
-	if (msgbase.open())
-	{
-		console.clear("\1n");
-
-		msgbase.close();
-	}
-	*/
-	// Return value: An object containing the following properties:
-	//               errorMsg: A string containing an error message on failure or a blank string on success
-	//               msgHdrs: An array containing message headers for voting topics
 	var topicRetObj = GetVoteTopicHdrs(pSubBoardCode, false);
 	if (topicRetObj.errorMsg.length > 0)
 	{
@@ -2965,12 +2950,6 @@ function ViewStats(pSubBoardCode)
 		return;
 	}
 
-	console.clear("\1n");
-	//total_votes
-	//subject
-	//from
-	//tally: 1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0
-	//date (str)
 	// Sort the array by number of votes, with the highest first.
 	topicRetObj.msgHdrs.sort(function(pA, pB) {
 		if (pA.total_votes < pB.total_votes)
@@ -2981,6 +2960,9 @@ function ViewStats(pSubBoardCode)
 			return -1;
 	});
 	// Display the poll stats
+	console.clear("\1n");
+	console.print("\1h\1bTopic area: \1c" + msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name + "\1n");
+	console.crlf();
 	console.print("\1w\1hTopics ranked by number of votes (highest to lowest):\1n");
 	console.crlf();
 	console.crlf();
