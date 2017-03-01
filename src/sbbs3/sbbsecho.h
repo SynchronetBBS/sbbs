@@ -184,7 +184,7 @@ typedef struct {
 	struct zone_mapping *zone_map;	// 
 } sbbsecho_cfg_t;
 
-char* pktTypeStringList[PKT_TYPES_SUPPORTED];
+char* pktTypeStringList[PKT_TYPES_SUPPORTED+1];
 char* mailStatusStringList[4];
 
 /***********************/
