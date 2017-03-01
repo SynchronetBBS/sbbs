@@ -399,8 +399,8 @@ int main(int argc, char **argv)
 	"\r\n"
 	"`Packet Type` is the type of outbound packet generated for this node.\r\n"
 	"Incoming packet types are automatically detected from among the list\r\n"
-	"of supported packet types (2, 2.2, and 2+).\r\n"
-	"The default outbound packet type is type `2+`.\r\n"
+	"of supported packet types (`2`, `2.2`, `2e`, and `2+`).\r\n"
+	"The default outbound packet type is `Type-2+`.\r\n"
 	"\r\n"
 	"`Packet Password` is an optional password that may be added to outbound\r\n"
 	"packets for this node.  Incoming packets from this node must also have\r\n"
@@ -525,7 +525,13 @@ int main(int argc, char **argv)
 	uifc.helpbuf=
 	"~ Packet Type ~\r\n\r\n"
 	"This is the packet header type that will be used in mail packets\r\n"
-	"created for this node.  SBBSecho defaults to using packet type `2+`.\r\n";
+	"created for this node.  SBBSecho defaults to creating `Type-2+` packets.\r\n"
+	"\r\n"
+	"`Type-2  ` packets are defined in FTS-0001.16 (Stone Age)\r\n"
+	"`Type-2e ` packets are defined in FSC-0039.04 (Sometimes called 2+)\r\n"
+	"`Type-2+ ` packets are defined in FSC-0048.02 (4D address support)\r\n"
+	"`Type-2.2` packets are defined in FSC-0045.01 (5D address support)\r\n"
+	;
 								j=cfg.nodecfg[i].pkt_type;
 								k=uifc.list(WIN_RHT|WIN_SAV,0,0,0,&j,0,"Packet Type"
 									,pktTypeStringList);

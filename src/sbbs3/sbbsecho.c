@@ -592,7 +592,7 @@ bool parse_pkthdr(const fpkthdr_t* hdr, fidoaddr_t* orig_addr, fidoaddr_t* dest_
 {
 	fidoaddr_t	orig;
 	fidoaddr_t	dest;
-	enum pkt_type type = PKT_TYPE_2_0;
+	enum pkt_type type = PKT_TYPE_2;
 
 	if(hdr->type2.pkttype != 2)
 		return false;
@@ -607,13 +607,17 @@ bool parse_pkthdr(const fpkthdr_t* hdr, fidoaddr_t* orig_addr, fidoaddr_t* dest_
 	dest.node	= hdr->type2.destnode;
 	dest.point	= 0;				/* No point info in the 2.0 hdr! */
 
-	if(hdr->type2plus.cword == BYTE_SWAP_16(hdr->type2plus.cwcopy)  /* 2+ Packet Header (FSC-39) */
-		&& (hdr->type2plus.cword&1)) {
-		type = PKT_TYPE_2_PLUS;
+	if(hdr->type2plus.cword == BYTE_SWAP_16(hdr->type2plus.cwcopy)  /* 2e Packet Header (FSC-39) */
+		&& (hdr->type2plus.cword&1)) {	/* Some call this a Type-2+ packet, but it's not (yet) FSC-48 conforming */
+		type = PKT_TYPE_2_EXT;
+		orig.point = hdr->type2plus.origpoint;
 		dest.point = hdr->type2plus.destpoint;
-		if(hdr->type2plus.origpoint!=0 && orig.net == 0xffff) {	/* see FSC-0048 for details */
-			orig.net = hdr->type2plus.auxnet;
-			orig.point = hdr->type2plus.origpoint;
+		if(orig.zone == 0) orig.zone = hdr->type2plus.origzone;
+		if(dest.zone == 0) dest.zone = hdr->type2plus.destzone;
+		if(hdr->type2plus.auxnet != 0) {	/* strictly speaking, auxnet may be 0 and a valid 2+ packet */
+			type = PKT_TYPE_2_PLUS;
+			if(orig.point != 0 && orig.net == 0xffff) 	/* see FSC-0048 for details */
+				orig.net = hdr->type2plus.auxnet;
 		}
 	} else if(hdr->type2_2.subversion==2) {					/* Type 2.2 Packet Header (FSC-45) */
 		type = PKT_TYPE_2_2;
@@ -633,7 +637,7 @@ bool parse_pkthdr(const fpkthdr_t* hdr, fidoaddr_t* orig_addr, fidoaddr_t* dest_
 
 bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_t* nodecfg)
 {
-	enum pkt_type pkt_type = PKT_TYPE_2_0;
+	enum pkt_type pkt_type = PKT_TYPE_2;
 	struct tm* tm;
 	time_t now = time(NULL);
 
@@ -665,7 +669,7 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 	if(nodecfg != NULL && nodecfg->pktpwd[0] != 0)
 		strncpy((char*)hdr->type2.password, nodecfg->pktpwd, sizeof(hdr->type2.password));
 
-	if(pkt_type == PKT_TYPE_2_0)
+	if(pkt_type == PKT_TYPE_2)
 		return true;
 
 	if(pkt_type == PKT_TYPE_2_2) {
@@ -675,15 +679,16 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 		return true;
 	}
 	
-	/* 2+ */
-	if(pkt_type != PKT_TYPE_2_PLUS) {
+	/* 2e and 2+ */
+	if(pkt_type != PKT_TYPE_2_EXT && pkt_type != PKT_TYPE_2_PLUS) {
 		lprintf(LOG_ERR, "UNSUPPORTED PACKET TYPE: %u", pkt_type);
 		return false;
 	}
 
-	if(orig.point != 0) {
-		hdr->type2plus.orignet	= 0xffff;
-		hdr->type2plus.auxnet	= orig.net; 
+	if(pkt_type == PKT_TYPE_2_PLUS) {
+		if(orig.point != 0)
+			hdr->type2plus.orignet	= 0xffff;
+		hdr->type2plus.auxnet	= orig.net; /* Squish always copies the orignet here */
 	}
 	hdr->type2plus.cword		= 0x0001;
 	hdr->type2plus.cwcopy		= 0x0100;
@@ -5148,6 +5153,10 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Invalid node address: %s\n", argv[i]);
 		bail(1);
 	}
+
+#if defined(__unix__)
+	umask(cfg.umask);
+#endif
 
 	if((fidologfile=fopen(cfg.logfile,"a"))==NULL) {
 		fprintf(stderr,"ERROR %u (%s) line %d opening %s\n",errno,strerror(errno),__LINE__,cfg.logfile);
