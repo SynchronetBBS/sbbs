@@ -59,6 +59,7 @@ enum pkt_type {
 	,PKT_TYPE_2_EXT					/* Type-2e  Packet Header (FSC-39)		*/
 	,PKT_TYPE_2_2					/* Type-2.2 Packet Header (FSC-45)		*/
 	,PKT_TYPE_2	 					/* Type-2   Packet Header (FTS-1)		*/	
+	,PKT_TYPES_SUPPORTED
 };
 
 #define DFLT_PKT_SIZE   (250*1024L)
@@ -183,7 +184,7 @@ typedef struct {
 	struct zone_mapping *zone_map;	// 
 } sbbsecho_cfg_t;
 
-char* pktTypeStringList[];
+char* pktTypeStringList[PKT_TYPES_SUPPORTED];
 char* mailStatusStringList[4];
 
 /***********************/
