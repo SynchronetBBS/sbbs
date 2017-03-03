@@ -144,17 +144,21 @@ function can_delete(mnum)
 
 function clean_msg_headers(hdr,flags)
 {
-	if(hdr.subject=='')
-		hdr.subject="-- No Subject --";
-	if(hdr.attr&MSG_ANONYMOUS) {
-		if((!(flags&CLEAN_MSG_REPLY))) {
-			if(user.security.level>=90)
-				hdr.from='Anonymous ('+hdr.from+')';
+	if (hdr !== null) {
+
+		if(hdr.subject=='')
+			hdr.subject="-- No Subject --";
+		if(hdr.attr&MSG_ANONYMOUS) {
+			if((!(flags&CLEAN_MSG_REPLY))) {
+				if(user.security.level>=90)
+					hdr.from='Anonymous ('+hdr.from+')';
+				else
+					hdr.from="Anonymous";
+			}
 			else
-				hdr.from="Anonymous";
+				hdr.from="All";
 		}
-		else
-			hdr.from="All";
+
 	}
 
 	return(hdr);
