@@ -1,3 +1,5 @@
+// $Id$
+
 /* This is a message reader/lister door for Synchronet.  Features include:
  * - Listing messages in the user's current message area with the ability to
  *   navigate forwards & backwards through the list (and for ANSI users, a
