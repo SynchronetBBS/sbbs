@@ -687,6 +687,9 @@ int main(int argc, char **argv)
 					snprintf(opt[i++],MAX_OPLN-1,"%-30.30s %s","Log File"
 						,cfg.logfile[0] ? cfg.logfile
 						: "SCFG->data/sbbsecho.log");
+					snprintf(opt[i++],MAX_OPLN-1,"%-30.30s %s","Temporary File Directory"
+						,cfg.temp_dir[0] ? cfg.temp_dir
+						: "../temp/sbbsecho");
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"~ Paths and Filenames ~\r\n\r\n"
@@ -755,6 +758,17 @@ int main(int argc, char **argv)
 	;
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Log File"
 								,cfg.logfile,sizeof(cfg.logfile)-1
+								,K_EDIT);
+							break; 
+						case 5:
+	uifc.helpbuf=
+	"~ Temporary File Directory ~\r\n\r\n"
+	"This is the directory where SBBSecho will store temporary files that\r\n"
+	"it creates and uses during its run-time.\r\n"
+	"(default is `../temp/sbbsecho`)."
+	;
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Temp Dir"
+								,cfg.temp_dir,sizeof(cfg.temp_dir)-1
 								,K_EDIT);
 							break; 
 					} 
