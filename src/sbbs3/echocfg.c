@@ -810,6 +810,12 @@ int main(int argc, char **argv)
 	"    addresses (AKAs) and potentially import it.\r\n"
 	"    This setting defaults to `No`.\r\n"
 	"\r\n"
+	"`Ignore Netmail 'Sent' Attribute` will instruct SBBSecho to export\r\n"
+	"    NetMail messages even when their 'Sent' attribute flag is set.\r\n"
+	"    This setting `should not` be set to `Yes` when `Delete NetMail` is\r\n"
+	"    disabled.\r\n"
+	"    This setting defaults to `No`.\r\n"
+	"\r\n"
 	"`Ignore Netmail 'Received' Attribute` will instruct SBBSecho to import\r\n"
 	"    NetMail messages even when their 'Received' attribute flag is set.\r\n"
 	"    This setting defaults to `No`.\r\n"
@@ -835,6 +841,8 @@ int main(int argc, char **argv)
 						,cfg.delete_netmail ? "Yes":"No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-40.40s%-3.3s","Ignore NetMail Destination Address"
 						,cfg.ignore_netmail_dest_addr ? "Yes" : "No");
+					snprintf(opt[i++],MAX_OPLN-1,"%-40.40s%-3.3s","Ignore NetMail 'Sent' Attribute"
+						,cfg.ignore_netmail_sent_attr ? "Yes" : "No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-40.40s%-3.3s","Ignore NetMail 'Received' Attribute"
 						,cfg.ignore_netmail_recv_attr ? "Yes" : "No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-40.40s%-3.3s","Ignore NetMail 'Local' Attribute"
@@ -901,6 +909,14 @@ int main(int argc, char **argv)
 							}
 							break;
 						case 6:
+							k = !cfg.ignore_netmail_sent_attr;
+							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+								,"Ignore NetMail 'Sent' Attribute",uifcYesNoOpts)) {
+								case 0:	cfg.ignore_netmail_sent_attr = true;	break;
+								case 1:	cfg.ignore_netmail_sent_attr = false;	break;
+							}
+							break;
+						case 7:
 							k = !cfg.ignore_netmail_recv_attr;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 								,"Ignore NetMail 'Received' Attribute",uifcYesNoOpts)) {
@@ -908,7 +924,7 @@ int main(int argc, char **argv)
 								case 1:	cfg.ignore_netmail_recv_attr = false;	break;
 							}
 							break;
-						case 7:
+						case 8:
 							k = !cfg.ignore_netmail_local_attr;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 								,"Ignore NetMail 'Local' Attribute",uifcYesNoOpts)) {
@@ -916,7 +932,7 @@ int main(int argc, char **argv)
 								case 1:	cfg.ignore_netmail_local_attr = false;	break;
 							}
 							break;
-						case 8:
+						case 9:
 							uifc.helpbuf=
 							"~ Maximum Age of Imported NetMail ~\r\n\r\n"
 							"Maximum age (in days) of NetMail that may be imported. The age is based\r\n"
