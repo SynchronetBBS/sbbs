@@ -5144,6 +5144,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "ERROR %d (%s) reading %s\n", errno, strerror(errno), cfg.cfgfile);
 		bail(1);
 	}
+
 	if(!sbbsecho_read_ftn_domains(&cfg, scfg.ctrl_dir)) {
 		fprintf(stderr, "ERROR %d (%s) reading %sftn_domains.ini\n", errno, strerror(errno), scfg.ctrl_dir);
 		bail(1);
@@ -5180,6 +5181,7 @@ int main(int argc, char **argv)
 
 	truncsp(cmdline);
 	lprintf(LOG_DEBUG,"%s invoked with options: %s", sbbsecho_pid(), cmdline);
+	lprintf(LOG_DEBUG, "%u packers, %u linked-nodes, %u echolists configured", cfg.arcdefs, cfg.nodecfgs, cfg.listcfgs);
 
 	SAFEPRINTF(path,"%ssbbsecho.bsy", scfg.ctrl_dir);
 	if(!fmutex(path, program_id(), cfg.bsy_timeout)) {
