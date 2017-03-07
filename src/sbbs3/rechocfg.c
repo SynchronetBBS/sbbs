@@ -495,6 +495,8 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniRemoveSections(&ini, "archive:");
 	for(uint i=0; i<cfg->arcdefs; i++) {
 		arcdef_t* arc = &cfg->arcdef[i];
+		if(arc->name[0] == 0)
+			continue;
 		SAFEPRINTF(section,"archive:%s", arc->name);
 		iniSetString(&ini,	section,	"Sig"			,arc->hexid		,&style);
 		iniSetInteger(&ini,	section,	"SigOffset"		,arc->byteloc	,&style);
@@ -533,6 +535,8 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniRemoveSections(&ini, "echolist:");
 	for(uint i=0; i<cfg->listcfgs; i++) {
 		echolist_t* elist = &cfg->listcfg[i];
+		if(elist->listpath[0] == 0)
+			continue;
 		SAFEPRINTF(section,"echolist:%s", elist->listpath);
 		iniSetString(&ini	,section,	"Hub"		,faddrtoa(&elist->hub)				,&style);
 		iniSetString(&ini	,section,	"Pwd"		,elist->password					,&style);
