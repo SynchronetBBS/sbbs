@@ -301,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 33";
-var READER_DATE = "2017-02-20";
+var READER_VERSION = "1.17 Beta 34";
+var READER_DATE = "2017-03-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -484,8 +484,15 @@ gNetMsgAttrStrs[MSG_TYPELOCAL] = "ForLocal";
 gNetMsgAttrStrs[MSG_TYPEECHO] = "ForEcho";
 gNetMsgAttrStrs[MSG_TYPENET] = "ForNetmail";
 
+// A regular expression to check whether a string is an email address
 var gEmailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-
+// An array of regular expressions for checking for ANSI codes (globally in a string & ignore case)
+var gANSIRegexes = [ new RegExp(ascii(27) + "\[[0-9]+[mM]", "gi"),
+                     new RegExp(ascii(27) + "\[[0-9]+(;[0-9]+)+[mM]", "gi"),
+                     new RegExp(ascii(27) + "\[[0-9]+[aAbBcCdD]", "gi"),
+                     new RegExp(ascii(27) + "\[[0-9]+;[0-9]+[hHfF]", "gi"),
+                     new RegExp(ascii(27) + "\[[sSuUkK]", "gi"),
+                     new RegExp(ascii(27) + "\[2[jJ]", "gi") ];
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -12425,19 +12432,30 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	retObj.displayFrame = null;
 	retObj.displayFrameScrollbar = null;
 	var msgHasANSICodes = (typeof(pMsgHasANSICodes) == "boolean" ? pMsgHasANSICodes : textHasANSICodes(retObj.msgText));
-	// If the message has ANSI codes, then check to see if the ANSI codees are
-	// only on the first 2 lines (within 160 characters).  If so, then convert
-	// the ANSI color codes to Synchronet codes.  Some messages contain a couple
-	// extra lines at the beginning with a "By: <name> to <name>" and a date, and
-	// some of those messages contain ANSI codes in those lines, which will mess
-	// up the display of the message using the scrolling interface.
+	// If the message has ANSI codes, then check to see if the amount of ANSI is very low.
+	// If so, then convert the ANSI color codes to Synchronet codes and eliminate unwanted
+	// ANSI (such as cursor movement codes).  It seems that some messages have ANSI inserted
+	// into them that shouldn't be there (i.e., the author didn't intend to post an ANSI
+	// message), which is the reason for this check.  If the message contains such rogue
+	// ANSI codes, they could mess up the display of the message.
 	if (msgHasANSICodes)
 	{
-		var lastANSIIdx = idxOfLastANSICode(msgTextAltered);
-		if (lastANSIIdx <= 160)
+		// Count the number of ANSI codes in the message and find the percentage of
+		// ANSI in the message.
+		var ANSICodeCount = countANSICodes(msgTextAltered, gANSIRegexes);
+		var percentANSICodes = (ANSICodeCount / msgTextAltered.length) * 100;
+		// Older: It seems that some messages contain a couple
+		// extra lines at the beginning with a "By: <name> to <name>" and a date, and
+		// some of those messages contain ANSI codes in those lines, which will mess
+		// up the display of the message using the scrolling interface.
+		//var lastANSIIdx = idxOfLastANSICode(msgTextAltered, gANSIRegexes);
+		//if (lastANSIIdx <= 160)
+		// If less than 6% of the message is ANSI codes, then consider those ANSI
+		// codes unwanted and convert them to Synchronet and remove unwanted ANSI.
+		if (percentANSICodes < 6)
 		{
 			msgTextAltered = cvtANSIToSyncAndRemoveUnwantedANSI(msgTextAltered);
-			//msgTextAltered = removeANSIFromStr(msgTextAltered);
+			//msgTextAltered = removeANSIFromStr(msgTextAltered, gANSIRegexes);
 			msgHasANSICodes = false;
 		}
 	}
@@ -16879,50 +16897,56 @@ function textHasANSICodes(pText)
 // Returns the index of the last ANSI code in a string.
 //
 // Parameters:
-//  pStr: The string to search for
+//  pStr: The string to search in
+//  pANSIRegexes: An array of regular expressions to use for searching for ANSI codes
 //
 // Return value: The index of the last ANSI code in the string, or -1 if not found
-function idxOfLastANSICode(pStr)
+function idxOfLastANSICode(pStr, pANSIRegexes)
 {
-	var ANSIRegexes = [ new RegExp(ascii(27) + "\[[0-9]+[mM]"),
-	                    new RegExp(ascii(27) + "\[[0-9]+(;[0-9]+)+[mM]"),
-	                    new RegExp(ascii(27) + "\[[0-9]+[aAbBcCdD]"),
-	                    new RegExp(ascii(27) + "\[[0-9]+;[0-9]+[hHfF]"),
-	                    new RegExp(ascii(27) + "\[[sSuUkK]"),
-	                    new RegExp(ascii(27) + "\[2[jJ]") ];
-
 	var lastANSIIdx = -1;
-	for (var i = 0; i < ANSIRegexes.length; ++i)
+	for (var i = 0; i < pANSIRegexes.length; ++i)
 	{
-		ANSIRegexes[i].ignoreCase = true;
-		var lastANSIIdxTmp = regexLastIndexOf(pStr, ANSIRegexes[i]);
+		var lastANSIIdxTmp = regexLastIndexOf(pStr, pANSIRegexes[i]);
 		if (lastANSIIdxTmp > lastANSIIdx)
 			lastANSIIdx = lastANSIIdxTmp;
 	}
 	return lastANSIIdx;
 }
 
+// Returns the number of times an ANSI code is matched in a string.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pANSIRegexes: An array of regular expressions to use for searching for ANSI codes
+//
+// Return value: The number of ANSI code matches in the string
+function countANSICodes(pStr, pANSIRegexes)
+{
+	var ANSICount = 0;
+	for (var i = 0; i < pANSIRegexes.length; ++i)
+	{
+		var matches = pStr.match(pANSIRegexes[i]);
+		if (matches != null)
+			ANSICount += matches.length;
+	}
+	return ANSICount;
+}
+
 // Removes ANSI codes from a string.
 //
 // Parameters:
 //  pStr: The string to remove ANSI codes from
+//  pANSIRegexes: An array of regular expressions to use for searching for ANSI codes
 //
 // Return value: A version of the string without ANSI codes
-function removeANSIFromStr(pStr)
+function removeANSIFromStr(pStr, pANSIRegexes)
 {
 	if (typeof(pStr) != "string")
 		return "";
 
-	var ANSIRegexes = [ new RegExp(ascii(27) + "\[[0-9]+[mM]", "gi"),
-	                    new RegExp(ascii(27) + "\[[0-9]+(;[0-9]+)+[mM]", "gi"),
-	                    new RegExp(ascii(27) + "\[[0-9]+[aAbBcCdD]", "gi"),
-	                    new RegExp(ascii(27) + "\[[0-9]+;[0-9]+[hHfF]", "gi"),
-	                    new RegExp(ascii(27) + "\[[sSuUkK]", "gi"),
-	                    new RegExp(ascii(27) + "\[2[jJ]", "gi") ];
-
 	var theStr = pStr;
-	for (var i = 0; i < ANSIRegexes.length; ++i)
-		theStr = theStr.replace(ANSIRegexes[i], "");
+	for (var i = 0; i < pANSIRegexes.length; ++i)
+		theStr = theStr.replace(pANSIRegexes[i], "");
 	return theStr;
 }
 
