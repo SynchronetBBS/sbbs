@@ -3528,7 +3528,7 @@ void pkt_to_pkt(const char *fbuf, area_t area, const fidoaddr_t* faddr
 	}
 }
 
-int pkt_to_msg(FILE* fidomsg, const fmsghdr_t* hdr, const char* info)
+int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inbound)
 {
 	char path[MAX_PATH+1];
 	char* fmsgbuf;
@@ -3546,7 +3546,7 @@ int pkt_to_msg(FILE* fidomsg, const fmsghdr_t* hdr, const char* info)
 		printf("Exporting: ");
 		MKDIR(scfg.netmail_dir);
 		for(i=1;i;i++) {
-			sprintf(path,"%s%u.msg",scfg.netmail_dir,i);
+			SAFEPRINTF2(path, "%s%u.msg", scfg.netmail_dir, i);
 			if(!fexistcase(path))
 				break; 
 			if(terminated)
@@ -3559,6 +3559,11 @@ int pkt_to_msg(FILE* fidomsg, const fmsghdr_t* hdr, const char* info)
 		if((file=nopen(path,O_WRONLY|O_CREAT))==-1) {
 			lprintf(LOG_ERR,"ERROR %u (%s) line %d creating %s",errno,strerror(errno),__LINE__,path);
 			return(-1);
+		}
+		if(hdr->attr&FIDO_FILE) {	/* File attachment (only a single file supported) */
+			char fname[FIDO_SUBJ_LEN];
+			SAFECOPY(fname, getfname(hdr->subj));
+			SAFEPRINTF2(hdr->subj, "%s%s", inbound, fname);	/* Fix the file path in the subject */
 		}
 		write(file,hdr,sizeof(fmsghdr_t));
 		write(file,fmsgbuf,l+1); /* Write the '\0' terminator too */
@@ -3612,7 +3617,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fidomsg, const char* i
 		printf("Ignored");
 		if(!path[0]) {
 			printf(" - ");
-			pkt_to_msg(fidomsg,&hdr,info);
+			pkt_to_msg(fidomsg,&hdr,info,inbound);
 		} else
 			lprintf(LOG_INFO,"%s Ignored",info);
 
@@ -3623,7 +3628,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fidomsg, const char* i
 		printf("Foreign address");
 		if(!path[0]) {
 			printf(" - ");
-			pkt_to_msg(fidomsg,&hdr,info);
+			pkt_to_msg(fidomsg,&hdr,info,inbound);
 		}
 		return(2); 
 	}
@@ -3718,7 +3723,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fidomsg, const char* i
 
 		if(!path[0]) {
 			printf(" - ");
-			pkt_to_msg(fidomsg,&hdr,info);
+			pkt_to_msg(fidomsg,&hdr,info,inbound);
 		}
 		return(2); 
 	}
@@ -4791,7 +4796,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					printf("Skipped\n");
 					seektonull(fidomsg);
 					continue; 
-				} 
+				}
 			}
 
 			if(!parse_origin(fmsgbuf, &hdr))
