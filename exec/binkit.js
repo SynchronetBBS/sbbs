@@ -1,3 +1,5 @@
+// $Id$
+
 /*
  * Intentionally simple "Advanced BinkleyTerm Style Outbound"
  * mailer.
@@ -11,7 +13,7 @@
  *    zone.  That is, if the default zone is zone 1, and the outbound
  *    is "/path/to/outbound", it will not correctly handle the case
  *    where there is a "/path/to/outbound.001" directory.
- * 3) Flow files are processed in alphabetical order, not the reccomended
+ * 3) Flow files are processed in alphabetical order, not the recommended
  *    order from FTS-5005.
  * 
  * See FTS-5005 for details.

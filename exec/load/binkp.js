@@ -1,3 +1,5 @@
+// $Id$
+
 require('sockdefs.js', 'SOCK_STREAM');
 require('fido.js', 'FIDO');
 
