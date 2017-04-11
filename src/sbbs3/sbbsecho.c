@@ -64,6 +64,7 @@
 smb_t *smb,*email;
 bool opt_import_packets		= true;
 bool opt_import_netmail		= true;
+bool opt_delete_netmail		= true;		/* delete after importing (no effect on exported netmail) */
 bool opt_import_echomail	= true;
 bool opt_export_echomail	= true;
 bool opt_export_netmail		= true;
@@ -3677,7 +3678,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fidomsg, const char* i
 	if(!stricmp(hdr.to,"AREAFIX") || !stricmp(hdr.to,"SBBSECHO")) {
 		fmsgbuf=getfmsg(fidomsg,NULL);
 		if(path[0]) {
-			if(cfg.delete_netmail) {
+			if(cfg.delete_netmail && opt_delete_netmail) {
 				fclose(fidomsg);
 				delfile(path, __LINE__);
 			}
@@ -4971,6 +4972,7 @@ int main(int argc, char **argv)
 	"sbbsecho, by default, will:\n\n"
 	" * Process packets (*.pkt) from all inbound directories (-p to disable)\n"
 	" * Process netmail (*.msg) files and import netmail messages (-n to disable)\n"
+	" * Delete netmail messages/files after importing them (-d to disable)\n"
 	" * Import and forward packetized echomail messages (-i to disable)\n"
 	" * Export local netmail messages from SMB to *.msg (-c to disable)\n"
 	" * Export echomail messages from selected and linked sub(s) (-e to disable)\n"
@@ -5028,6 +5030,9 @@ int main(int argc, char **argv)
 					case 'C':
 						opt_export_netmail = false;
 						break;
+					case 'D':
+						opt_delete_netmail = false;
+						break;
 					case 'E':
 						opt_export_echomail = false;
 						break;
@@ -5074,7 +5079,6 @@ int main(int argc, char **argv)
 						printf("%s", usage);
 						bail(0); 
 					case 'B':
-					case 'D':
 					case 'F':
 					case 'J':
 					case 'L':
@@ -5408,7 +5412,7 @@ int main(int argc, char **argv)
 			/* Delete source netmail if specified */
 			/**************************************/
 			if(i==0) {
-				if(cfg.delete_netmail) {
+				if(cfg.delete_netmail && opt_delete_netmail) {
 					fclose(fidomsg);
 					delfile(path, __LINE__);
 				}
