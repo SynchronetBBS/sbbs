@@ -301,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 35";
-var READER_DATE = "2017-04-05";
+var READER_VERSION = "1.17 Beta 36";
+var READER_DATE = "2017-04-23";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2341,6 +2341,8 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 					this.msgbase.close();
 			}
 		}
+		// Pause for a short moment to avoid causing CPU usage going to 99%
+		mswait(10);
 	}
 	this.doingMultiSubBoardScan = false;
 
