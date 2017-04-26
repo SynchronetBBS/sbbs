@@ -62,8 +62,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.17 Beta";
-var SLYVOTE_DATE = "2017-02-26";
+var SLYVOTE_VERSION = "0.18 Beta";
+var SLYVOTE_DATE = "2017-04-25";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -958,7 +958,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 					// Get the line from text.dat for writing who voted & when.  It
 					// is a format string and should look something like this:
 					//"\r\n\1n\1" + "0\1hOn %s, in \1c%s \1n\1" + "0\1c%s\r\n\1h\1m%s voted in your poll: \1n\1" + "0\1h%s\r\n" 787 PollVoteNotice
-					var userVotedInYourPollText = bbs.text(PollVoteNotice);
+					var userVotedInYourPollText = "\1n\1w\1h" + bbs.text(PollVoteNotice);
 
 					// Pass true to get_all_msg_headers() to tell it to return vote messages
 					// (the parameter was introduced in Synchronet 3.17+)
