@@ -301,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 36";
-var READER_DATE = "2017-04-23";
+var READER_VERSION = "1.17 Beta 37";
+var READER_DATE = "2017-05-09";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -12442,19 +12442,22 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	// ANSI codes, they could mess up the display of the message.
 	if (msgHasANSICodes)
 	{
+		// ANSI content checking
+		var lastANSIIdx = idxOfLastANSICode(msgTextAltered, gANSIRegexes);
+		var numCharsAfterFirstANSI = msgTextAltered.length - idxOfFirstANSICode(msgTextAltered, gANSIRegexes) - 1;
 		// Count the number of ANSI codes in the message and find the percentage of
 		// ANSI in the message.
 		var ANSICodeCount = countANSICodes(msgTextAltered, gANSIRegexes);
 		var percentANSICodes = (ANSICodeCount / msgTextAltered.length) * 100;
-		// Older: It seems that some messages contain a couple
-		// extra lines at the beginning with a "By: <name> to <name>" and a date, and
-		// some of those messages contain ANSI codes in those lines, which will mess
-		// up the display of the message using the scrolling interface.
-		//var lastANSIIdx = idxOfLastANSICode(msgTextAltered, gANSIRegexes);
-		//if (lastANSIIdx <= 160)
-		// If less than 6% of the message is ANSI codes, then consider those ANSI
-		// codes unwanted and convert them to Synchronet and remove unwanted ANSI.
-		if (percentANSICodes < 7)
+		// It seems that some messages contain a couple extra lines at the beginning with
+		// a "By: <name> to <name>" and a date, and some of those messages contain ANSI
+		// codes in those lines, which will mess up the display of the message using the
+		// scrolling interface.  Also, some messages might have ANSI codes in the signature.
+		// If the last index of ANSI codes is <= 160 or there are <= 100 characters after
+		// the first ANSI code (possibly in the signature) or if less than 7% of the message
+		// is ANSI codes, then consider those ANSI codes unwanted and convert them to
+		// Synchronet codes and remove unwanted ANSI.
+		if ((percentANSICodes < 7) || (lastANSIIdx <= 160) || (numCharsAfterFirstANSI <= 100))
 		{
 			msgTextAltered = cvtANSIToSyncAndRemoveUnwantedANSI(msgTextAltered);
 			//msgTextAltered = removeANSIFromStr(msgTextAltered, gANSIRegexes);
@@ -16915,6 +16918,25 @@ function idxOfLastANSICode(pStr, pANSIRegexes)
 	return lastANSIIdx;
 }
 
+// Returns the index of the first ANSI code in a string.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pANSIRegexes: An array of regular expressions to use for searching for ANSI codes
+//
+// Return value: The index of the first ANSI code in the string, or -1 if not found
+function idxOfFirstANSICode(pStr, pANSIRegexes)
+{
+	var firstANSIIdx = -1;
+	for (var i = 0; i < pANSIRegexes.length; ++i)
+	{
+		var firstANSIIdxTmp = regexFirstIndexOf(pStr, pANSIRegexes[i]);
+		if (firstANSIIdxTmp > firstANSIIdx)
+			firstANSIIdx = firstANSIIdxTmp;
+	}
+	return firstANSIIdx;
+}
+
 // Returns the number of times an ANSI code is matched in a string.
 //
 // Parameters:
@@ -16979,6 +17001,26 @@ function regexLastIndexOf(pStr, pRegex, pStartPos)
 		pRegex.lastIndex = ++nextStop;
 	}
     return lastIndexOf;
+}
+
+// Returns the first index in a string where a regex is found.
+//
+// Parameters:
+//  pStr: The string to search
+//  pRegex: The regular expression to match in the string
+//
+// Return value: The first index in the string where the regex is found, or -1 if not found.
+function regexFirstIndexOf(pStr, pRegex)
+{
+	pRegex = (pRegex.global) ? pRegex : new RegExp(pRegex.source, "g" + (pRegex.ignoreCase ? "i" : "") + (pRegex.multiLine ? "m" : ""));
+	var indexOfRegex = -1;
+	var nextStop = 0;
+	while ((result = pRegex.exec(pStr)) != null)
+	{
+		indexOfRegex = result.index;
+		pRegex.lastIndex = ++nextStop;
+	}
+    return indexOfRegex;
 }
 
 // Converts ANSI ;-delimited modes (such as [Value;...;Valuem) to Synchronet
