@@ -301,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 37";
-var READER_DATE = "2017-05-09";
+var READER_VERSION = "1.17 Beta 38";
+var READER_DATE = "2017-05-21";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -14275,7 +14275,6 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 
 		if (pMsgHdr.hasOwnProperty("field_list"))
 		{
-			//var voteOptDescLen = 27;
 			// Figure out the longest length of the poll choices, with
 			// a maximum of 22 characters less than the terminal width.
 			// Use a minimum of 27 characters.
@@ -15840,15 +15839,58 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 	// Search the messages
 	if (matchFn != null)
 	{
-		for (var msgIdx = startMsgIndex; msgIdx < endMsgIndex; ++msgIdx)
+		// If get_all_msg_headers exists as a function, then use it.  Otherwise,
+		// iterate through all message offsets and get the headers.  We want to
+		// use get_all_msg_hdrs() if possible because that will include information
+		// about how many votes each message got (up/downvotes for regular
+		// messages or who voted for which options for poll messages).
+		if (typeof(pMsgbase.get_all_msg_headers) === "function")
 		{
-			var msgHeader = pMsgbase.get_msg_header(true, msgIdx, false);
-			// I've seen situations where the message header object is null for
-			// some reason, so check that before running the search function.
-			if (msgHeader != null)
+			// Pass false to get_all_msg_headers() to tell it not to include vote messages
+			// (the parameter was introduced in Synchronet 3.17+)
+			var tmpHdrs = pMsgbase.get_all_msg_headers(false);
+			// Re-do startMsgIndex and endMsgIndex based on the message headers we got
+			startMsgIndex = 0;
+			endMsgIndex = pMsgbase.total_msgs;
+			if (typeof(pStartIndex) == "number")
 			{
-				if (matchFn(pSearchString, msgHeader, pMsgbase, pSubCode))
-					msgHeaders.indexed.push(msgHeader);
+				if ((pStartIndex >= 0) && (pStartIndex < tmpHdrs.length))
+					startMsgIndex = pStartIndex;
+			}
+			if (typeof(pEndIndex) == "number")
+			{
+				if ((pEndIndex >= 0) && (pEndIndex > startMsgIndex) && (pEndIndex <= tmpHdrs.length))
+					endMsgIndex = pEndIndex;
+			}
+			// Search the message headers
+			var msgIdx = 0;
+			for (var prop in tmpHdrs)
+			{
+				// Only add the message header if the message is readable to the user
+				// and msgIdx is within bounds
+				if ((msgIdx >= startMsgIndex) && (msgIdx < endMsgIndex) && isReadableMsgHdr(tmpHdrs[prop], this.subBoardCode))
+				{
+					if (tmpHdrs[prop] != null)
+					{
+						if (matchFn(pSearchString, tmpHdrs[prop], pMsgbase, pSubCode))
+							msgHeaders.indexed.push(tmpHdrs[prop]);
+					}
+				}
+				++msgIdx;
+			}
+		}
+		else
+		{
+			for (var msgIdx = startMsgIndex; msgIdx < endMsgIndex; ++msgIdx)
+			{
+				var msgHeader = pMsgbase.get_msg_header(true, msgIdx, false);
+				// I've seen situations where the message header object is null for
+				// some reason, so check that before running the search function.
+				if (msgHeader != null)
+				{
+					if (matchFn(pSearchString, msgHeader, pMsgbase, pSubCode))
+						msgHeaders.indexed.push(msgHeader);
+				}
 			}
 		}
 	}
