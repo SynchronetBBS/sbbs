@@ -15712,6 +15712,7 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 	// Define a search function for the message field we're going to search
 	var readingPersonalEmailFromUser = (typeof(pListingPersonalEmailFromUser) == "boolean" ? pListingPersonalEmailFromUser : false);
 	var matchFn = null;
+	var useGetAllMsgHdrs = false;
 	switch (pSearchType)
 	{
 		// It might seem odd to have SEARCH_NONE in here, but it's here because
@@ -15739,6 +15740,7 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 			}
 			break;
 		case SEARCH_KEYWORD:
+			useGetAllMsgHdrs = true;
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number));
 				var keywordFound = ((pMsgHdr.subject.toUpperCase().indexOf(pSearchStr) > -1) || (msgText.toUpperCase().indexOf(pSearchStr) > -1));
@@ -15749,6 +15751,7 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 			}
 			break;
 		case SEARCH_FROM_NAME:
+			useGetAllMsgHdrs = true;
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				var fromNameFound = (pMsgHdr.from.toUpperCase() == pSearchStr.toUpperCase());
 				if (pSubBoardCode == "mail")
@@ -15758,11 +15761,13 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 			}
 			break;
 		case SEARCH_TO_NAME_CUR_MSG_AREA:
+			useGetAllMsgHdrs = true;
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				return (pMsgHdr.to.toUpperCase() == pSearchStr);
 			}
 			break;
 		case SEARCH_TO_USER_CUR_MSG_AREA:
+			useGetAllMsgHdrs = true;
 		case SEARCH_ALL_TO_USER_SCAN:
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				// See if the message is not marked as deleted and the 'To' name
@@ -15844,7 +15849,7 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 		// use get_all_msg_hdrs() if possible because that will include information
 		// about how many votes each message got (up/downvotes for regular
 		// messages or who voted for which options for poll messages).
-		if (typeof(pMsgbase.get_all_msg_headers) === "function")
+		if (useGetAllMsgHdrs && (typeof(pMsgbase.get_all_msg_headers) === "function"))
 		{
 			// Pass false to get_all_msg_headers() to tell it not to include vote messages
 			// (the parameter was introduced in Synchronet 3.17+)
