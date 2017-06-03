@@ -25,7 +25,9 @@ var color_cfg = {
 };
 
 var options=load({}, "modopts.js", "sbbslist");
-if(!options || !options.sub)
+if(!options)
+	options = {};
+if(!options.sub)
     options.sub="syncdata";
 if(options && options.list_format > 0)
 	list_format = options.list_format;
@@ -514,7 +516,7 @@ function upgrade_list(sbl_dab)
 {
     var dab = new File(sbl_dab);
     print("Upgrading from: " + sbl_dab);
-    if(!dab.open("rb")) {
+    if(!dab.open("rb", /* shareable: */true)) {
         alert("Error " + dab.error + " opening " + dab.name);
         exit();
     }
@@ -621,7 +623,7 @@ function verify_bbs(bbs)
     var error="N/A";
 
 	if(!bbs.entry.autoverify)
-		bbs.entry.autoverify = {attempts:0, successes:0};
+		bbs.entry.autoverify = {attempts:0, successes:0, last_failure: {result:'none'}};
     bbs.entry.autoverify.success=false;
     for(i in bbs.service) {
         if(js.terminated)
@@ -677,7 +679,7 @@ function verify_list(list)
         printf("Verifying BBS %u of %u: %s\n", Number(i)+1, list.length, bbs.name);
         if(verify_bbs(bbs))
             print("Success: " + bbs.entry.autoverify.last_success.result);
-        else
+        else if(bbs.entry.autoverify.last_failure)
             print("Failure: " + bbs.entry.autoverify.last_failure.result);
         if(js.terminated)
             break;
@@ -1101,11 +1103,13 @@ function main()
     var i,j;
     var list;
     var verbose = 0;
+	var quiet = false;
     var msgbase;
 	var optval={};
 	var cmds=[];
-
-    print(version_notice);
+	var count=0;
+	var exclude = [];
+	var filter;
 
     for(i in argv) {
 		var arg = argv[i];
@@ -1122,15 +1126,28 @@ function main()
             case "-v":
                 verbose++;
                 break;
+			case "-quiet":
+				quiet = true;
+				break;
+			case "-exclude":
+				exclude.push(val);
+				break;
+			case "-format":
+				list_format = parseInt(val);
+				break;
+			case "-filter":
+				filter = val;
+				break;
 			default:
 				cmds.push(arg);
 				break;
         }
     }
 
-    if(!file_exists(lib.list_fname) && !file_exists(sbl_dir + "sbl.dab"))
-        list=[];
-    else if(!file_exists(lib.list_fname))
+	if(!quiet)
+		print(version_notice);
+
+    if(!file_exists(lib.list_fname))
         list=upgrade_list(sbl_dir + "sbl.dab");
     else
         list=lib.read_list();
@@ -1163,6 +1180,7 @@ function main()
 				print(list.length + " BBS entries exported to: " + lib.syncterm_list(list));
 				break;
 			case "html":
+				file_backup("sbbslist.html");
 				var f = new File("sbbslist.html");
 				if(!f.open("wb")) {
 					log(LOG_ERR,"Error opening " + f.name);
@@ -1187,6 +1205,7 @@ function main()
 						bbs.entry.autoverify.last_success.other_services.tcp.sort()));
 				}
 				ibbs = unique_strings(ibbs, /* offset: */64);
+				file_backup("sbbsimsg.lst");
 				var f = new File("sbbsimsg.lst");
 				if(!f.open("w")) {
 					log(LOG_ERR,"Error opening " + f.name);
@@ -1199,6 +1218,9 @@ function main()
 			case "sort":
 				print("Sorting list by property: " + optval["sort"]);
 				lib.sort(list, optval["sort"]);
+				break;
+			case "randomize":
+				list.sort(function () { return 0.5 - Math.random() } );
 				break;
 			case "find":
 				print("Searching for " + optval["find"]);
@@ -1214,7 +1236,6 @@ function main()
 				break;
 			case "save":
 				lib.write_list(list);
-				murph();
 				break;
 			case "show":
 				for(i in list) {
@@ -1232,10 +1253,19 @@ function main()
 				print(list.length + " BBS entries");
 				break;
 			case "list":
-				list_format = parseInt(optval["list"]);
 				for(i in list) {
+					if(exclude.indexOf(list[i].name) >= 0)
+						continue;
+					if(filter) {
+						with(list[i]) {
+							if(!eval(filter))
+								continue;
+						}
+					}
 					list_bbs_entry(list[i], false);
 					writeln();
+					if(optval["list"] && ++count >= optval["list"])
+						break;
 				}
 				break;
 			case "add":
