@@ -724,7 +724,7 @@ int DLLCALL update_uldate(scfg_t* cfg, file_t* f)
 }
 
 /****************************************************************************/
-/* Returns full path to specified file										*/
+/* Returns full (case-corrected) path to specified file						*/
 /****************************************************************************/
 char* DLLCALL getfilepath(scfg_t* cfg, file_t* f, char* path)
 {
@@ -737,6 +737,6 @@ char* DLLCALL getfilepath(scfg_t* cfg, file_t* f, char* path)
 		safe_snprintf(path,MAX_PATH,"%s%s",f->altpath>0 && f->altpath<=cfg->altpaths 
 			? cfg->altpath[f->altpath-1] : cfg->dir[f->dir]->path
 			,fname);
-
+	fexistcase(path);
 	return(path);
 }
