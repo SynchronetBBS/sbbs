@@ -228,15 +228,14 @@ static int lputs(int level, char *str)
 
 #ifdef __unix__
 
-	if (is_daemon || syslog_always)  {
+	if (is_daemon)  {
 		if(str!=NULL) {
 			if (std_facilities)
 				syslog(level|LOG_AUTH,"%s",str);
 			else
 				syslog(level,"%s",str);
 		}
-		if(is_daemon)
-			return(0);
+		return(0);
 	}
 #endif
 	if(!mutex_initialized) {
@@ -946,6 +945,7 @@ static void terminate(void)
 {
 	ulong count=0;
 
+	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu  Errors: %lu] Terminating... ";
 	if(bbs_running)
 		bbs_terminate();
 	if(ftp_running)
@@ -966,11 +966,11 @@ static void terminate(void)
 			if(bbs_running)
 				lputs(LOG_INFO,"Terminal Server thread still running");
 			if(ftp_running)
-				lputs(LOG_INFO,"FTP Server thread still running");
+				lprintf(LOG_INFO,"FTP Server thread still running (inactivity timeout: %u seconds)", ftp_startup.max_inactivity);
 			if(web_running)
-				lputs(LOG_INFO,"Web Server thread still running");
+				lprintf(LOG_INFO,"Web Server thread still running (inactivity timeout: %u seconds)", web_startup.max_inactivity);
 			if(mail_running)
-				lputs(LOG_INFO,"Mail Server thread still running");
+				lprintf(LOG_INFO,"Mail Server thread still running (inactivity timeout: %u seconds)", mail_startup.max_inactivity);
 			if(services_running)
 				lputs(LOG_INFO,"Services thread still running");
 		}
@@ -2120,7 +2120,7 @@ int main(int argc, char** argv)
 						for(node=client_list.first; node!=NULL; node=node->next) {
 							client=node->data;
 							localtime32(&client->time,&tm);
-							printf("%04ld %s %s %s %s port %u since %u/%u %02u:%02u:%02u\n"
+							printf("%04ld %s %s [%s] %s port %u since %u/%u %02u:%02u:%02u\n"
 								,node->tag
 								,client->protocol
 								,client->user
