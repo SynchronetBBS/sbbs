@@ -887,7 +887,7 @@ static void pop3_thread(void* arg)
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&pop3.client_addr);
 	client.protocol="POP3";
-	client.user="<unknown>";
+	client.user=STR_UNKNOWN_USER;
 	client_on(socket,&client,FALSE /* update */);
 
 	SAFEPRINTF(str,"POP3: %s", host_ip);
@@ -2676,7 +2676,7 @@ static void smtp_thread(void* arg)
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&smtp.client_addr);
 	client.protocol="SMTP";
-	client.user="<unknown>";
+	client.user=STR_UNKNOWN_USER;
 	client_on(socket,&client,FALSE /* update */);
 
 	SAFEPRINTF(str,"SMTP: %s",host_ip);

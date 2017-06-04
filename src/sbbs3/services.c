@@ -615,7 +615,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	client.size=sizeof(client);
 	client.protocol=service_client->service->protocol;
 	client.time=time32(NULL);
-	client.user="<unknown>";
+	client.user=STR_UNKNOWN_USER;
 	SAFECOPY(client.host,client.user);
 
 	sock=js_socket(cx,argv[0]);
@@ -668,7 +668,7 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 	memset(&client,0,sizeof(client));
 	client.size=sizeof(client);
 	client.protocol=service_client->service->protocol;
-	client.user="<unknown>";
+	client.user=STR_UNKNOWN_USER;
 	SAFECOPY(client.host,client.user);
 
 	sock=js_socket(cx,argv[0]);
@@ -1064,7 +1064,7 @@ static void js_service_thread(void* arg)
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&service_client.addr);
 	client.protocol=service->protocol;
-	client.user="<unknown>";
+	client.user=STR_UNKNOWN_USER;
 	service_client.client=&client;
 
 	/* Initialize client display */
@@ -1401,7 +1401,7 @@ static void native_service_thread(void* arg)
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&service_client.addr);
 	client.protocol=service->protocol;
-	client.user="<unknown>";
+	client.user=STR_UNKNOWN_USER;
 
 #ifdef _WIN32
 	if(!DuplicateHandle(GetCurrentProcess(),

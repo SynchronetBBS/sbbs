@@ -2463,7 +2463,7 @@ static void ctrl_thread(void* arg)
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&ftp.client_addr);
 	client.protocol="FTP";
-	client.user="<unknown>";
+	client.user=STR_UNKNOWN_USER;
 	client_on(sock,&client,FALSE /* update */);
 
 	if(startup->login_attempt.throttle

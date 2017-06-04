@@ -5307,7 +5307,7 @@ NO_SSH:
 #else
 		client.protocol=rlogin ? "RLogin":"Telnet";
 #endif
-		client.user="<unknown>";
+		client.user=STR_UNKNOWN_USER;
 		client_on(client_socket,&client,FALSE /* update */);
 
 		for(i=first_node;i<=last_node;i++) {

@@ -1,6 +1,7 @@
 /* Synchronet constants, macros, and structure definitions */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -67,6 +68,8 @@
 
 #define BIND_FAILURE_HELP	"!Another application or service may be using this port"
 #define UNKNOWN_LOAD_ERROR	"Unknown load error - Library mismatch?"
+
+#define STR_UNKNOWN_USER	"<unknown user>"
 
 #define	JAVASCRIPT_MAX_BYTES		(8*1024*1024)
 #define JAVASCRIPT_CONTEXT_STACK	(16*1024)
