@@ -88,6 +88,7 @@ int main(int argc, char **argv)
     printf("\r\nSynchronet Configuration Utility (%s)  v%s  Copyright %s "
         "Rob Swindell\r\n",PLATFORM_DESC,VERSION,__DATE__+7);
 
+	xp_randomize();
 	cfg.size=sizeof(cfg);
 
     memset(&uifc,0,sizeof(uifc));

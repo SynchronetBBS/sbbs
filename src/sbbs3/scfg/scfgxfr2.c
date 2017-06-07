@@ -102,12 +102,21 @@ BOOL create_raw_dir_list(const char* list_file)
 	return(TRUE);
 }
 
+static char random_code_char(void)
+{
+	char ch = (char)xp_random(36);
+
+	if(ch < 10)
+		return '0' + ch;
+	else
+		return 'A' + (ch - 10);
+}
 
 void xfer_cfg()
 {
 	static int libs_dflt,libs_bar,dflt;
 	char str[256],str2[81],done=0,*p;
-	char tmp_code[32];
+	char tmp_code[MAX_PATH+1];
 	int file,j,k,q;
 	uint i;
 	uint u;
@@ -540,7 +549,9 @@ while(1) {
                     break; 
 				}
 				uifc.pop("Importing Areas...");
-				while(!feof(stream)) {
+				char duplicate_code[LEN_CODE+1]="";
+				uint duplicate_codes = 0;	// consecutive duplicate codes
+				while(!feof(stream) && cfg.total_dirs < MAX_DIRS) {
 					if(!fgets(str,sizeof(str),stream)) break;
 					truncsp(str);
 					if(!str[0])
@@ -555,10 +566,33 @@ while(1) {
 					while(*p && *p<=' ') p++;
 
 					if(k>=2) { /* raw */
+						int len = strlen(p);
+						if(len > LEN_DIR)
+							continue;
 						SAFECOPY(tmp_code,p);
-						SAFECOPY(tmpdir.lname,p);
-						SAFECOPY(tmpdir.sname,p);
 						SAFECOPY(tmpdir.path,p);
+						/* skip first sub-dir(s) */
+						char* tp = p;
+						while((len=strlen(tp)) > LEN_SLNAME) {
+							FIND_CHAR(tp, '/');
+							SKIP_CHAR(tp, '/');
+						}
+						if(*tp != 0)
+							p = tp;
+						if((len=strlen(p)) > LEN_SLNAME)
+							p += len - LEN_SLNAME;
+						SAFECOPY(tmpdir.lname,p);
+						/* skip first sub-dir(s) */
+						tp = p;
+						while((len=strlen(tp)) > LEN_SSNAME) {
+							FIND_CHAR(tp, '/');
+							SKIP_CHAR(tp, '/');
+						}
+						if(*tp != 0)
+							p = tp;
+						if((len=strlen(p)) > LEN_SSNAME)
+							p += len - LEN_SSNAME;
+						SAFECOPY(tmpdir.sname,p);
 						ported++;
 					}
 					else if(k==1) {
@@ -645,29 +679,38 @@ while(1) {
 
 					SAFECOPY(tmpdir.code_suffix, prep_code(tmp_code,cfg.lib[i]->code_prefix));
 
-					bool wrapped = false;
-					for(j=0;j<cfg.total_dirs;j++) {
-						if(cfg.dir[j]->lib!=i)
-							continue;
-						if(stricmp(cfg.dir[j]->code_suffix,tmpdir.code_suffix) == 0) {
-							if(k<2 || strcmp(cfg.dir[j]->lname, tmpdir.lname) != 0)	/* !raw dir import */
+					int attempts = 0;	// attempts to generate a unique internal code
+					if(stricmp(tmpdir.code_suffix, duplicate_code) == 0)
+						attempts = ++duplicate_codes;
+					else
+						duplicate_codes = 0;
+					for(j=0; j < cfg.total_dirs && attempts < (36*36*36); j++) {
+						if(cfg.dir[j]->lib == i) {	/* same lib */
+							if(strcmp(cfg.dir[j]->path, tmpdir.path) == 0)	/* same path? overwrite the dir entry */
 								break;
+						} else {
+							if((cfg.lib[i]->code_prefix[0] || cfg.lib[cfg.dir[j]->lib]->code_prefix[0]))
+								continue;
+						}
+						if(stricmp(cfg.dir[j]->code_suffix,tmpdir.code_suffix) == 0) {
+							if(k < 2)	/* !raw dir import */
+								break;
+							if(attempts == 0)
+								SAFECOPY(duplicate_code, tmpdir.code_suffix);
 							int code_len = strlen(tmpdir.code_suffix);
 							if(code_len < 1)
 								break;
-							if(toupper(tmpdir.code_suffix[code_len-1]) >= 'Z') {
-								if(wrapped)
-									break;
-								tmpdir.code_suffix[code_len-1] = '0';
-								wrapped = true;	// Prevent infinite loop
-							}
-							else if(tmpdir.code_suffix[code_len-1] == '9')
-								tmpdir.code_suffix[code_len-1] = 'A';
-							else
-								tmpdir.code_suffix[code_len-1]++;
+							tmpdir.code_suffix[code_len-1] = random_code_char();
+							if(attempts > 10 && code_len > 1)
+								tmpdir.code_suffix[code_len-2] = random_code_char();
+							if(attempts > 100 && code_len > 2)
+								tmpdir.code_suffix[code_len-3] = random_code_char();
 							j=0;
+							attempts++;
 						}
 					}
+					if(attempts >= (36*36*36))
+						break;
 					if(j==cfg.total_dirs) {
 
 						if((cfg.dir=(dir_t **)realloc(cfg.dir
