@@ -100,6 +100,9 @@ typedef struct js_callback {
 /************/
 
 #define MAX_NODES		250
+#define MAX_SUBS		65534
+#define MAX_DIRS		65534
+#define MAX_XTRNS		65534
 
 #define MAX_FILES	  10000 /* Maximum number of files per dir			*/
 #define MAX_USERXFER	500 /* Maximum number of dest. users of usrxfer */
