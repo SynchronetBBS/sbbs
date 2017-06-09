@@ -631,3 +631,47 @@ void DLLCALL strListFreeBlock(char* block)
 	if(block!=NULL)
 		free(block);	/* this must be done here for Windows-DLL reasons */
 }
+
+int DLLCALL strListTruncateTrailingWhitespaces(str_list_t list)
+{
+	size_t		i;
+
+	if(list==NULL)
+		return(0);
+
+	for(i=0; list[i]!=NULL; i++) {
+		truncsp(list[i]);
+	}
+	return i;
+}
+
+int DLLCALL strListTruncateTrailingLineEndings(str_list_t list)
+{
+	size_t		i;
+
+	if(list==NULL)
+		return(0);
+
+	for(i=0; list[i]!=NULL; i++) {
+		truncnl(list[i]);
+	}
+	return i;
+}
+
+
+/* Truncate strings in list at first occurrence of any char in 'set' */
+int DLLCALL	strListTruncateStrings(str_list_t list, const char* set)
+{
+	size_t		i;
+	char*		p;
+
+	if(list==NULL)
+		return(0);
+
+	for(i=0; list[i]!=NULL; i++) {
+		p=strpbrk(list[i], set);
+		if(p!=NULL && *p!=0)
+			*p=0;
+	}
+	return i;
+}
