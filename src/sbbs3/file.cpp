@@ -45,6 +45,7 @@ void sbbs_t::fileinfo(file_t* f)
 	char 	tmp[512];
 	char	path[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
+	char*	real_fname;
 	uint	i,j;
 
 	for(i=0;i<usrlibs;i++)
@@ -55,11 +56,13 @@ void sbbs_t::fileinfo(file_t* f)
 			break;
 
 	getfilepath(&cfg,f,path);
+	real_fname = getfname(path);
+	unpadfname(f->name, fname);
 	bprintf(text[FiLib],i+1,cfg.lib[cfg.dir[f->dir]->lib]->lname);
 	bprintf(text[FiDir],j+1,cfg.dir[f->dir]->lname);
-	bprintf(text[FiFilename],unpadfname(f->name, fname));
-	if(strcmp(getfname(path),fname) && strcmp(f->desc,getfname(path)))	/* Different "actual" filename */
-		bprintf(text[FiFilename],getfname(path));
+	bprintf(text[FiFilename],fname);
+	if(strcmp(real_fname, fname) && strcmp(f->desc, real_fname))	/* Different "actual" filename */
+		bprintf(text[FiFilename], real_fname);
 
 	if(f->size!=-1L)
 		bprintf(text[FiFileSize],ultoac(f->size,tmp));
