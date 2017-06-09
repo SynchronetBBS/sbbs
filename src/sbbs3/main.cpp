@@ -5146,11 +5146,11 @@ NO_SSH:
 			
 			if(connections - logins >= (int)startup->max_concurrent_connections
 				&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
-				lprintf(LOG_NOTICE, "%04d !Maximum concurrent connections (%u) reached from host: %s"
+				lprintf(LOG_NOTICE, "%04d !Maximum concurrent connections without login (%u) reached from host: %s"
  					,client_socket, startup->max_concurrent_connections, host_ip);
 				SSH_END();
 				close_socket(client_socket);
-				SAFEPRINTF(logstr, "Too many concurrent connections from host: %s",host_ip);
+				SAFEPRINTF(logstr, "Too many concurrent connections without login from host: %s",host_ip);
 				sbbs->syslog("@!",logstr);
 				continue;
 			}
