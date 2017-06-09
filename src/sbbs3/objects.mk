@@ -182,6 +182,7 @@ SBBSECHO_OBJS = \
 			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
 			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
 			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
+			$(OBJODIR)$(DIRSEP)scfgsave$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \

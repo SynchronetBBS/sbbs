@@ -222,6 +222,7 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->strict_packet_passwords	= true;
 	cfg->relay_filtered_msgs		= false;
 	cfg->umask						= 077;
+	cfg->areafile_backups			= 100;
 }
 
 char* pktTypeStringList[] = {"2+", "2e", "2.2", "2", NULL};		// Must match enum pkt_type
@@ -248,6 +249,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	SAFECOPY(cfg->secure_inbound, iniGetString(ini, ROOT_SECTION, "SecureInbound", "../fido/inbound", value));
 	SAFECOPY(cfg->outbound		, iniGetString(ini, ROOT_SECTION, "Outbound",		"../fido/outbound", value));
 	SAFECOPY(cfg->areafile		, iniGetString(ini, ROOT_SECTION, "AreaFile",		"../data/areas.bbs", value));
+	SAFECOPY(cfg->badareafile	, iniGetString(ini, ROOT_SECTION, "BadAreaFile",	"../data/badareas.lst", value));
 	SAFECOPY(cfg->logfile		, iniGetString(ini, ROOT_SECTION, "LogFile",		"../data/sbbsecho.log", value));
 	SAFECOPY(cfg->logtime		, iniGetString(ini, ROOT_SECTION, "LogTimeFormat",	"%Y-%m-%d %H:%M:%S", value));
 	SAFECOPY(cfg->temp_dir		, iniGetString(ini, ROOT_SECTION, "TempDirectory",	"../temp/sbbsecho", value));
@@ -262,6 +264,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->strict_packet_passwords= iniGetBool(ini, ROOT_SECTION, "StrictPacketPasswords", cfg->strict_packet_passwords);
 	cfg->relay_filtered_msgs	= iniGetBool(ini, ROOT_SECTION, "RelayFilteredMsgs", cfg->relay_filtered_msgs);
 	cfg->umask					= iniGetInteger(ini, ROOT_SECTION, "umask", cfg->umask);
+	cfg->areafile_backups		= iniGetInteger(ini, ROOT_SECTION, "AreaFileBackups", cfg->areafile_backups);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -450,6 +453,8 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetString(&ini,		ROOT_SECTION, "SecureInbound"			,cfg->secure_inbound			,NULL);
 	iniSetString(&ini,		ROOT_SECTION, "Outbound"				,cfg->outbound					,NULL);
 	iniSetString(&ini,		ROOT_SECTION, "AreaFile"				,cfg->areafile					,NULL);
+	iniSetInteger(&ini,		ROOT_SECTION, "AreaFileBackups"			,cfg->areafile_backups			,NULL);
+	iniSetString(&ini,		ROOT_SECTION, "BadAreaFile"				,cfg->badareafile				,NULL);
 	if(cfg->logfile[0])
 	iniSetString(&ini,		ROOT_SECTION, "LogFile"					,cfg->logfile					,NULL);
 	if(cfg->logtime[0])

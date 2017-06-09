@@ -86,6 +86,7 @@ ulong packed_netmail=0;
 int cur_smb=0;
 FILE *fidologfile=NULL;
 bool twit_list;
+str_list_t bad_areas;
 
 fidoaddr_t		sys_faddr = {1,1,1,0};		/* Default system address: 1:1/1.0 */
 sbbsecho_cfg_t	cfg;
@@ -1378,7 +1379,8 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		file_to_netmail(nmfile,"Area Change Request",addr,to);
 	fclose(nmfile);
 	fclose(afileout);
-	delfile(cfg.areafile, __LINE__);					/* Delete AREAS.BBS */
+	if(cfg.areafile_backups == 0 || !backup(cfg.areafile, cfg.areafile_backups, /* ren: */TRUE))
+		delfile(cfg.areafile, __LINE__);					/* Delete AREAS.BBS */
 	if(rename(outname,cfg.areafile))		   /* Rename new AREAS.BBS file */
 		lprintf(LOG_ERR,"ERROR line %d renaming %s to %s",__LINE__,outname,cfg.areafile);
 	free(outname);
@@ -2285,13 +2287,66 @@ ulong loadmsgs(post_t** post, ulong ptr)
 	return(l);
 }
 
+const char* area_desc(const char* areatag)
+{
+	char tag[FIDO_AREATAG_LEN+1];
+	static char desc[LEN_GLNAME+1];
+
+	for(int i=0; i<cfg.listcfgs; i++) {
+		FILE* fp = fopen(cfg.listcfg[i].listpath, "r");
+		if(fp == NULL) {
+			lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), cfg.listcfg[i].listpath);
+			continue;
+		}
+		str_list_t list = strListReadFile(fp, NULL, 0);
+		fclose(fp);
+		if(list == NULL)
+			continue;
+		strListTruncateTrailingWhitespaces(list);
+		for(int l=0; list[l] != NULL; l++) {
+			SAFECOPY(tag, list[l]);
+			truncstr(tag, " \t");
+			if(stricmp(tag, areatag))
+				continue;
+			char* p = list[l];
+			FIND_WHITESPACE(p);	// Skip the tag
+			if(*p == 0)
+				break;
+			SKIP_WHITESPACE(p);	// Find the desc
+			if(*p == 0)
+				break;
+			SAFECOPY(desc, p);
+			return desc;
+		}
+	}
+
+	return "";
+}
+
 void cleanup(void)
 {
 	char*		p;
 	char		path[MAX_PATH+1];
 
-	while((p=strListPop(&locked_bso_nodes)) != NULL)
+	if(bad_areas != NULL) {
+		lprintf(LOG_DEBUG, "Writing %u areas to %s", strListCount(bad_areas), cfg.badareafile);
+		FILE* fp = fopen(cfg.badareafile, "wt");
+		if(fp == NULL) {
+			lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), cfg.badareafile);
+		} else {
+			while((p=strListPop(&bad_areas)) != NULL) {
+				lprintf(LOG_DEBUG, "Writing '%s' (%p) to %s", p, p, cfg.badareafile);
+				fprintf(fp, "%-*s %s\n", FIDO_AREATAG_LEN, p, area_desc(p));
+				free(p);
+			}
+			fclose(fp);
+		}
+		strListFree(&bad_areas);
+	}
+	while((p=strListPop(&locked_bso_nodes)) != NULL) {
 		delfile(p, __LINE__);
+		free(p);
+	}
 
 	if(mtxfile_locked) {
 		SAFEPRINTF(path,"%ssbbsecho.bsy", scfg.ctrl_dir);
@@ -4396,7 +4451,7 @@ void pack_netmail(void)
 			else
 				SAFEPRINTF3(req,"%s%04x%04x.req",outbound,addr.net,addr.node);
 			if((fp=fopen(req,"a")) == NULL)
-				lprintf(LOG_ERR,"ERROR %d creating/opening %s", errno, req);
+				lprintf(LOG_ERR,"ERROR %d (%s) creating/opening %s", errno, strerror(errno), req);
 			else {
 				fprintf(fp,"%s\n",getfname(hdr.subj));
 				fclose(fp);
@@ -4559,8 +4614,10 @@ void find_stray_packets(void)
 		if(terminator == FIDO_PACKET_TERMINATOR)
 			lprintf(LOG_DEBUG, "Stray packet already finalized: %s", packet);
 		else
-			if((pkt->fp = fopen(pkt->filename, "ab")) == NULL)
+			if((pkt->fp = fopen(pkt->filename, "ab")) == NULL) {
+				lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), pkt->filename);
 				continue;
+			}
 		pkt->orig = pkt_orig;
 		pkt->dest = pkt_dest;
 		listAddNode(&outpkt_list, pkt, 0, LAST_NODE);
@@ -4784,6 +4841,8 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				gen_psb(&msg_seen,&msg_path,fmsgbuf,pkt_orig.zone);	/* was destzone */
 			} else {
 				printf("(Unknown) ");
+				if(bad_areas != NULL && strListFind(bad_areas, areatag, /* case_sensitive: */false) < 0)
+					strListPush(&bad_areas, areatag);
 				if(cfg.badecho>=0) {
 					i=cfg.badecho;
 					if(cfg.area[i].sub!=INVALID_SUB)
@@ -5312,6 +5371,31 @@ int main(int argc, char **argv)
 				printf("%s ", faddrtoa(&cfg.area[u].link[l]));
 			printf("\n");
 		}
+	}
+
+	if(cfg.badareafile[0]) {
+		int i;
+		int before, after;
+		FILE* fp;
+		printf("Reading bad area file: %s\n", cfg.badareafile);
+
+		fp = fopen(cfg.badareafile,"r");
+		bad_areas = strListReadFile(fp, NULL, 0);
+		before = strListCount(bad_areas);
+		printf("Read %u areas from %s\n", before, cfg.badareafile);
+		if(fp!=NULL)
+			fclose(fp);
+		strListTruncateStrings(bad_areas, " \t\r\n");
+		for(i=0; bad_areas[i] != NULL; i++) {
+			if(area_is_valid(find_area(bad_areas[i]))) {			/* Do we carry this area? */
+				lprintf(LOG_DEBUG, "Removing area '%s' from bad areas list (since it is now carried locally)", bad_areas[i]);
+				free(strListRemove(&bad_areas, i));
+				i--;
+			}
+		}
+		after = strListCount(bad_areas);
+		if(before != after)
+			lprintf(LOG_NOTICE, "Removed %d areas from bad area file: %s", before-after, cfg.badareafile);
 	}
 
 	if(opt_gen_notify_list && !terminated) {

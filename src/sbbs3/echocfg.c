@@ -1,5 +1,3 @@
-/* echocfg.c */
-
 /* SBBSecho configuration utility 											*/
 
 /* $Id$ */
@@ -263,9 +261,9 @@ int main(int argc, char **argv)
 	"directory and file paths used by SBBSecho.\r\n"
 	"\r\n"
 	"The `Additional EchoLists` sub-menu is for configuring additional\r\n"
-	"(optional) lists of FidoNet-style message areas in `FIDONET.NA` format.\r\n"
+	"(optional) lists of FidoNet-style message areas in `BACKBONE.NA` format.\r\n"
 	"These lists, if configured, are used in addition to your main\r\n"
-	"`Area File` (e.g. AREAS.BBS) for advanced AreaFix/AreaMgr operations."
+	"`Area File` (e.g. areas.bbs) for advanced AreaFix/AreaMgr operations."
 	;
 		i=0;
 		sprintf(opt[i++],"%-25s %s","Mailer Type"
@@ -407,12 +405,12 @@ int main(int argc, char **argv)
 	"the same password value if this password is configured (not blank).\r\n"
 	"Packet passwords are case insensitive.\r\n"
 	"\r\n"
-	"`Areafix Password` is an optional password used to enable Areafix\r\n"
+	"`AreaFix Password` is an optional password used to enable AreaFix\r\n"
 	"NetMail requests from this node.\r\n"
-	"Areafix Passwords are case insensitive.\r\n"
+	"AreaFix Passwords are case insensitive.\r\n"
 	"This setting may be managed by the node using NetMail/AreaFix requests.\r\n"
 	"\r\n"
-	"`Areafix Keys` is a list of keys which enable access to one or more\r\n"
+	"`AreaFix Keys` is a list of keys which enable access to one or more\r\n"
 	"Additional EchoLists.\r\n"
 	"\r\n"
 	"`Status` is the default mode for sending mail to this node: `Normal`, `Hold`\r\n"
@@ -452,9 +450,9 @@ int main(int argc, char **argv)
 							,pktTypeStringList[cfg.nodecfg[i].pkt_type]);
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Packet Password"
 							,cfg.nodecfg[i].pktpwd);
-						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Areafix Password"
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Password"
 							,cfg.nodecfg[i].password);
-						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Areafix Keys"
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Keys"
 							,strListCombine(cfg.nodecfg[i].keys,str,sizeof(str),","));
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Status"
 							,mailStatusStringList[cfg.nodecfg[i].status]);
@@ -552,17 +550,17 @@ int main(int argc, char **argv)
 								break;
 							case 5:
 	uifc.helpbuf=
-	"~ Areafix Password ~\r\n\r\n"
+	"~ AreaFix Password ~\r\n\r\n"
 	"This is the password that will be used by this node when doing remote\r\n"
-	"AreaManager / Areafix functions.\r\n";
+	"AreaManager / AreaFix functions.\r\n";
 								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Areafix Password"
+									,"AreaFix Password"
 									,cfg.nodecfg[i].password,sizeof(cfg.nodecfg[i].password)-1
 									,K_EDIT|K_UPPER);
 								break;
 							case 6:
 	uifc.helpbuf=
-	"~ Areafix Keys ~\r\n\r\n"
+	"~ AreaFix Keys ~\r\n\r\n"
 	"This is a named-key to to be given to this node allowing access to one or\r\n"
 	"more of the configured echolists\r\n";
 								while(1) {
@@ -571,13 +569,13 @@ int main(int argc, char **argv)
 									opt[j][0]=0;
 									k=uifc.list(WIN_SAV|WIN_INS|WIN_DEL|WIN_ACT|
 										WIN_XTR|WIN_INSACT|WIN_DELACT|WIN_RHT
-										,0,0,0,&k,0,"Areafix Keys",opt);
+										,0,0,0,&k,0,"AreaFix Keys",opt);
 									if(k==-1)
 										break;
 									if((k&MSK_ON)==MSK_INS) {
 										k&=MSK_OFF;
 										if(uifc.input(WIN_MID|WIN_SAV,0,0
-											,"Areafix Key",str,SBBSECHO_MAX_KEY_LEN
+											,"AreaFix Key",str,SBBSECHO_MAX_KEY_LEN
 											,K_UPPER)<1)
 											continue;
 										strListInsert(&cfg.nodecfg[i].keys, str, k);
@@ -592,7 +590,7 @@ int main(int argc, char **argv)
 										continue; 
 									}
 									SAFECOPY(str,cfg.nodecfg[i].keys[k]);
-									uifc.input(WIN_MID|WIN_SAV,0,0,"Areafix Key"
+									uifc.input(WIN_MID|WIN_SAV,0,0,"AreaFix Key"
 										,str,SBBSECHO_MAX_KEY_LEN,K_EDIT|K_UPPER);
 									strListReplace(cfg.nodecfg[i].keys, k, str);
 									uifc.changes=TRUE;
@@ -684,6 +682,8 @@ int main(int argc, char **argv)
 						,cfg.outbound);
 					snprintf(opt[i++],MAX_OPLN-1,"%-30.30s %s","Area File"
 						,cfg.areafile);
+					snprintf(opt[i++],MAX_OPLN-1,"%-30.30s %s","Bad Area File"
+						,cfg.badareafile);
 					snprintf(opt[i++],MAX_OPLN-1,"%-30.30s %s","Log File"
 						,cfg.logfile[0] ? cfg.logfile
 						: "SCFG->data/sbbsecho.log");
@@ -703,10 +703,10 @@ int main(int argc, char **argv)
 						case 0:
 	uifc.helpbuf=
 	"~ Non-secure Inbound Directory ~\r\n\r\n"
-	"This is the complete path (drive and directory) where your FTN\r\n"
-	"mailer stores, and where SBBSecho will look for, incoming files\r\n"
-	"(potentially including message bundles and packets) from unauthenticated\r\n"
-	"(non-secure) mailer sessions.";
+	"This is the path where your FTN mailer stores, and where SBBSecho will\r\n"
+	"look for, incoming files (potentially including message bundles and\r\n"
+	"packets) from unauthenticated (non-secure) mailer sessions."
+	;
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Non-secure Inbound Directory"
 								,cfg.inbound,sizeof(cfg.inbound)-1
 								,K_EDIT);
@@ -715,9 +715,9 @@ int main(int argc, char **argv)
 						case 1:
 	uifc.helpbuf=
 	"~ Secure Inbound Directory ~\r\n\r\n"
-	"This is the complete path (drive and directory) where your FTN\r\n"
-	"mailer stores, and where SBBSecho will look for, incoming message\r\n"
-	"bundles and packets for SECURE (password-protected) sessions.";
+	"This is the path where your FTN mailer stores, and where SBBSecho will\r\n"
+	"look for, incoming message bundles and packets for `Secure` (password\r\n"
+	"protected) sessions.";
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Secure Inbound Directory"
 								,cfg.secure_inbound,sizeof(cfg.secure_inbound)-1
 								,K_EDIT);
@@ -726,11 +726,10 @@ int main(int argc, char **argv)
 						case 2:
 	uifc.helpbuf=
 	"~ Outbound Directory ~\r\n\r\n"
-	"This is the complete path (drive and directory) where your FTN\r\n"
-	"mailer will look for, and where SBBSecho will place, outgoing\r\n"
-	"message bundles and packets."
+	"This is the path where your FTN mailer will look for, and where SBBSecho\r\n"
+	"will place, outgoing message bundles and packets.\r\n"
 	"\r\n"
-	"In Binkely-Style Outbound mode, this serves as the base directory\r\n"
+	"In Binkley-Style Outbound mode, this serves as the base directory\r\n"
 	"name for special foreign zone and point destination nodes as well."
 	;
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Outbound Directory"
@@ -741,9 +740,30 @@ int main(int argc, char **argv)
 						case 3:
 	uifc.helpbuf=
 	"~ Area File ~\r\n\r\n"
-	"This is the complete path (drive, directory, and filename) of the\r\n"
-	"file SBBSecho will use as your main FidoNet-style Area File (e.g.\r\n"
-	"`AREAS.BBS`).";
+	"This is the path of the file SBBSecho will use as your primary\r\n"
+	"list of FidoNet-style message areas (default is `data/areas.bbs`).\r\n"
+	"\r\n"
+	"Each line in the file defines an FTN message area (echo) of the format:\r\n"
+	"\r\n"
+	"   <`code`> <`tag`> [[`link`] [`link`] [...]]\r\n"
+	"\r\n"
+	"Each field is separated by one or more white-space characters:\r\n"
+	"\r\n"
+	"   `<code>` is the Synchronet `internal code` for the local sub-board\r\n"
+	"   `<tag>`  is the network's agreed-upon `echo tag` for the message area\r\n"
+	"   `[link]` is an `FTN address` to send and receive messages for this area\r\n"
+	"          (there may be many linked nodes for each area)\r\n"
+	"\r\n"
+	"Notes:\r\n"
+	"\r\n"
+	" * Only the `<code>` and `<tag>` fields are required\r\n"
+	" * The '`<`' and '`>`', '`[`' and '`]`' characters are not part of the syntax\r\n"
+	" * Lines beginning with a semicolon (`;`) are ignored (i.e. comments)\r\n"
+	" * Leading white-space characters are ignored\r\n"
+	" * Blank lines are ignored\r\n"
+	" * This file may be import/exported to/from your `Message Areas` in `SCFG`\r\n"
+	" * This file may be remotely modified by authorized nodes using `AreaFix`\r\n"
+	;
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Area File"
 								,cfg.areafile,sizeof(cfg.areafile)-1
 								,K_EDIT);
@@ -751,16 +771,38 @@ int main(int argc, char **argv)
 
 						case 4:
 	uifc.helpbuf=
+	"~ Bad Area File ~\r\n\r\n"
+	"This is the path of the file SBBSecho will use to record the names\r\n"
+	"(echo tags) and descriptions of FTN message areas (echoes) that your\r\n"
+	"system has received EchoMail for, but does not carry locally (default\r\n"
+	"is `data/badarea.lst`).\r\n"
+	"\r\n"
+	"The descriptions of the areas will only be included if the corresponding\r\n"
+	"echo tags can be located in one of your configured `Additional EchoLists`.\r\n"
+	"\r\n"
+	"The format of the file is the same as `BACKBONE.NA` and suitable for\r\n"
+	"importing into a Synchronet Message Group using `SCFG`.";
+	"\r\n"
+	"SBBSecho will automatically remove areas from this list when they\r\n"
+	"are added to your configuration (local message areas and Area File).\r\n"
+	;
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Bad Area File"
+								,cfg.badareafile,sizeof(cfg.badareafile)-1
+								,K_EDIT);
+							break;
+
+						case 5:
+	uifc.helpbuf=
 	"~ Log File ~\r\n\r\n"
-	"This is the complete path (drive, directory, and filename) of the\r\n"
-	"file SBBSecho will use to log information each time it is run\r\n"
-	"(default is `sbbsecho.log`)."
+	"This is the path of the file SBBSecho will use to log information each time\r\n"
+	"it is run (default is `data/sbbsecho.log`)."
 	;
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Log File"
 								,cfg.logfile,sizeof(cfg.logfile)-1
 								,K_EDIT);
 							break; 
-						case 5:
+
+						case 6:
 	uifc.helpbuf=
 	"~ Temporary File Directory ~\r\n\r\n"
 	"This is the directory where SBBSecho will store temporary files that\r\n"
@@ -970,7 +1012,7 @@ int main(int argc, char **argv)
 	"    normally create (in bytes).\r\n"
 	"    This settings defaults to `250K` (250 Kilobytes, or 256,000 bytes).\r\n"
 	"\r\n"
-	"`Secure Operation` tells SBBSecho to check the Area File (e.g. AREAS.BBS)\r\n"
+	"`Secure Operation` tells SBBSecho to check the Area File (e.g. areas.bbs)\r\n"
 	"    to insure that the packet origin (FTN address) of EchoMail messages\r\n"
 	"    is already linked to the EchoMail area where the message was posted.\r\n"
 	"    This setting defaults to `No`.\r\n"
@@ -985,7 +1027,7 @@ int main(int argc, char **argv)
 	"    This setting defaults to `No`.\r\n"
 	"\r\n"
 	"`Allow Nodes to Add Areas from Area File` when set to `Yes` allows linked\r\n"
-	"    nodes to add areas listed in your Area File (e.g. `AREAS.BBS`).\r\n"
+	"    nodes to add areas listed in your Area File (e.g. `areas.bbs`).\r\n"
 	"    This setting defaults to `Yes`.\r\n"
 	"\r\n"
 	"`Strip Line Feeds From Outgoing Messages` when set to `Yes` instructs\r\n"
@@ -1361,9 +1403,9 @@ int main(int argc, char **argv)
 			case 7:
 	uifc.helpbuf=
 	"~ Additional EchoLists ~\r\n\r\n"
-	"This feature allows you to specify lists of echoes, in FIDONET.NA format\r\n"
-	"which are utilized in addition to your Area File (e.g. `AREAS.BBS`)\r\n"
-	"for advanced AreaFix/AreaMgr operations.\r\n";
+	"This feature allows you to specify lists of echoes, in `BACKBONE.NA` format\r\n"
+	"which are utilized in addition to your Area File (e.g. `areas.bbs`)\r\n"
+	"for advanced AreaFix (Area Management) operations.\r\n";
 				i=0;
 				while(1) {
 					for(u=0;u<cfg.listcfgs;u++)
