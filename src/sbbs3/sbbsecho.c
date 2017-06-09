@@ -2334,10 +2334,11 @@ void cleanup(void)
 		if(fp == NULL) {
 			lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), cfg.badareafile);
 		} else {
-			while((p=strListPop(&bad_areas)) != NULL) {
+			strListSortAlpha(bad_areas);
+			for(int i=0; bad_areas[i] != NULL; i++) {
+				p = bad_areas[i];
 				lprintf(LOG_DEBUG, "Writing '%s' (%p) to %s", p, p, cfg.badareafile);
 				fprintf(fp, "%-*s %s\n", FIDO_AREATAG_LEN, p, area_desc(p));
-				free(p);
 			}
 			fclose(fp);
 		}
