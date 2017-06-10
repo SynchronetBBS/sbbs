@@ -301,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 39";
-var READER_DATE = "2017-06-01";
+var READER_VERSION = "1.17 Beta 40";
+var READER_DATE = "2017-06-09";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4553,8 +4553,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		}
 	}
 
-	// If not reading personal email, then update the scan & last read message pointers.
-	if (this.subBoardCode != "mail") // && !this.SearchTypePopulatesSearchResults()
+	// If not reading personal email and not doing a search, then update the
+	// scan & last read message pointers.
+	if ((this.subBoardCode != "mail") && (this.searchType == SEARCH_NONE))
 	{
 		// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
 		// msgbase.last_msg)?
