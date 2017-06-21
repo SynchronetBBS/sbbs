@@ -4,7 +4,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright ob Swindell - http://www.synchro.net/copyright.html			*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -252,8 +252,11 @@ while(1) {
 			,cfg.sub[i]->op_arstr);
 		sprintf(opt[n++],"%-27.27s%.40s","Moderated Posting User"
 			,cfg.sub[i]->mod_arstr);
-		sprintf(opt[n++],"%-27.27s%"PRIu32,"Maximum Messages"
-            ,cfg.sub[i]->maxmsgs);
+		if(cfg.sub[i]->maxmsgs)
+			sprintf(str, "%"PRIu32, cfg.sub[i]->maxmsgs);
+		else
+			strcpy(str, "Unlimited");
+		sprintf(opt[n++],"%-27.27s%s","Maximum Messages", str);
 		if(cfg.sub[i]->maxage)
             sprintf(str,"Enabled (%u days old)",cfg.sub[i]->maxage);
         else
@@ -372,9 +375,14 @@ while(1) {
 	                "`Maximum Number of Messages:`\n"
 	                "\n"
 	                "This value is the maximum number of messages that will be kept in the\n"
-	                "sub-board. Once this maximum number of messages is reached, the oldest\n"
-	                "messages will be automatically purged. Usually, 100 messages is a\n"
-	                "sufficient maximum.\n"
+	                "sub-board. It is possible for newly-posted or imported messages to\n"
+					"exceed this maximum (it is `not` an immediately imposed limit).\n"
+					"\n"
+					"Older messages that exceed this maximum count are purged using `smbutil`,\n"
+					"typically run as a timed event (e.g. `MSGMAINT`).\n"
+					"\n"
+					"A value of `0` means no maximum number of stored messages will be\n"
+					"imposed during message-base maintenance."
                 ;
                 uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of Messages"
                     ,str,9,K_EDIT|K_NUMBER);
@@ -388,6 +396,15 @@ while(1) {
 	                "\n"
 	                "This value is the maximum number of days that messages will be kept in\n"
 	                "the sub-board.\n"
+					"\n"
+					"Message age is calculated from the date and time of message import/post\n"
+					"and not necessarily the date/time the message was originally written.\n"
+					"\n"
+					"Old messages are purged using `smbutil`, typically run as a timed\n"
+					"event (e.g. `MSGMAINT`).\n"
+					"\n"
+					"A value of `0` means no maximum age of stored messages will be\n"
+					"imposed during message-base maintenance."
                 ;
                 uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Age of Messages (in days)"
                     ,str,5,K_EDIT|K_NUMBER);
@@ -402,6 +419,10 @@ while(1) {
 					"This value is the maximum number of CRCs that will be kept in the\n"
 					"sub-board for duplicate message checking. Once this maximum number of\n"
 					"CRCs is reached, the oldest CRCs will be automatically purged.\n"
+					"\n"
+					"A value of `0` means no CRCs (or other hashes) of message body text\n"
+					"or meta-data will be saved (i.e. for purposes of duplicate message\n"
+					"detection and rejection)."
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of CRCs"
 					,str,9,K_EDIT|K_NUMBER);
