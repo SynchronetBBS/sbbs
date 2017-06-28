@@ -401,18 +401,27 @@ while(1) {
 						}
 				}
                 break;
+#define DIRS_TXT_HELP_TEXT		"`DIRS.TXT` is a plain text file that includes all of the Synchronet\n" \
+								"configuration field values for each directory in the library.\n"
+#define FILEGATE_ZXX_HELP_TEXT	"`FILEGATE.ZXX` is a plain text file in the old RAID/FILEBONE.NA format\n" \
+								"which describes a list of file areas connected across a File\n" \
+								"Distribution Network (e.g. Fidonet)."
 			case 6:
 				k=0;
 				ported=0;
 				q=uifc.changes;
-				strcpy(opt[k++],"DIRS.TXT    (Synchronet)");
-				strcpy(opt[k++],"FILEBONE.NA (Fido)");
+				strcpy(opt[k++],"DIRS.TXT     (Synchronet)");
+				strcpy(opt[k++],"FILEGATE.ZXX (Fido)");
 				opt[k][0]=0;
 				uifc.helpbuf=
 					"`Export Area File Format:`\n"
 					"\n"
 					"This menu allows you to choose the format of the area file you wish to\n"
 					"export to.\n"
+					"\n"
+					DIRS_TXT_HELP_TEXT
+					"\n"
+					FILEGATE_ZXX_HELP_TEXT
 				;
 				k=0;
 				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -422,7 +431,7 @@ while(1) {
 				if(k==0)
 					sprintf(str,"%sDIRS.TXT",cfg.ctrl_dir);
 				else if(k==1)
-					sprintf(str,"FILEBONE.NA");
+					sprintf(str,"FILEGATE.ZXX");
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 					,str,sizeof(str)-1,K_EDIT)<=0) {
 					uifc.changes=q;
@@ -505,10 +514,17 @@ while(1) {
 					"\n"
 					"A \"raw\" directory listing can be created in Windows with the following\n"
 					"command: `dir /on /ad /b > dirs.raw`\n"
+					"\n"
+					"The `Directory Listing...` option will automatically generate and import\n"
+					"the raw directory listing for you.\n"
+					"\n"
+					DIRS_TXT_HELP_TEXT
+					"\n"
+					FILEGATE_ZXX_HELP_TEXT
 				;
-				strcpy(opt[k++],"DIRS.TXT    (Synchronet)");
-                strcpy(opt[k++],"FILEBONE.NA (Fido)");
-				strcpy(opt[k++],"DIRS.RAW    (Raw)");
+				strcpy(opt[k++],"DIRS.TXT     (Synchronet)");
+                strcpy(opt[k++],"FILEGATE.ZXX (Fido)");
+				strcpy(opt[k++],"DIRS.RAW     (Raw)");
 				strcpy(opt[k++],"Directory Listing...");
 				opt[k][0]=0;
 				k=0;
@@ -519,7 +535,7 @@ while(1) {
 				if(k==0)
 					sprintf(str,"%sDIRS.TXT",cfg.ctrl_dir);
 				else if(k==1)
-					sprintf(str,"FILEBONE.NA");
+					sprintf(str,"FILEGATE.ZXX");
 				else {
 					strcpy(str,cfg.lib[i]->parent_path);
 					backslash(str);
@@ -542,8 +558,6 @@ while(1) {
 							create_raw_dir_list(str);
 					}
 				}
-				if(!fexistcase(str))
-					break;
 				if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 					uifc.msg("Open Failure");
                     break; 
@@ -608,7 +622,7 @@ while(1) {
 						while(*p && *p<=' ') p++;	/* Skip space */
 						while(*p>' ') p++;			/* Skip flags */
 						while(*p && *p<=' ') p++;	/* Skip space */
-						SAFECOPY(tmpdir.sname,p); 
+						SAFECOPY(tmpdir.sname,tmp_code); 
 						SAFECOPY(tmpdir.lname,p); 
 						ported++;
 					}
@@ -679,6 +693,7 @@ while(1) {
 
 					SAFECOPY(tmpdir.code_suffix, prep_code(tmp_code,cfg.lib[i]->code_prefix));
 
+					int dupes = 0;
 					int attempts = 0;	// attempts to generate a unique internal code
 					if(stricmp(tmpdir.code_suffix, duplicate_code) == 0)
 						attempts = ++duplicate_codes;
@@ -686,14 +701,15 @@ while(1) {
 						duplicate_codes = 0;
 					for(j=0; j < cfg.total_dirs && attempts < (36*36*36); j++) {
 						if(cfg.dir[j]->lib == i) {	/* same lib */
-							if(strcmp(cfg.dir[j]->path, tmpdir.path) == 0)	/* same path? overwrite the dir entry */
+							if(tmpdir.path[0]
+								&& strcmp(cfg.dir[j]->path, tmpdir.path) == 0)	/* same path? overwrite the dir entry */
 								break;
 						} else {
 							if((cfg.lib[i]->code_prefix[0] || cfg.lib[cfg.dir[j]->lib]->code_prefix[0]))
 								continue;
 						}
 						if(stricmp(cfg.dir[j]->code_suffix,tmpdir.code_suffix) == 0) {
-							if(k < 2)	/* !raw dir import */
+							if(k < 1)	/* dirs.txt import (don't modify internal code) */
 								break;
 							if(attempts == 0)
 								SAFECOPY(duplicate_code, tmpdir.code_suffix);
@@ -728,10 +744,11 @@ while(1) {
 						}
 						memset(cfg.dir[j],0,sizeof(dir_t)); 
 						added++;
-					}
+					} else
+						dupes++;
 					if(k==1) {
 						SAFECOPY(cfg.dir[j]->code_suffix,tmpdir.code_suffix);
-						SAFECOPY(cfg.dir[j]->sname,tmpdir.code_suffix);
+						SAFECOPY(cfg.dir[j]->sname,tmpdir.sname);
 						SAFECOPY(cfg.dir[j]->lname,tmpdir.lname);
 						if(j==cfg.total_dirs) {
 							cfg.dir[j]->maxfiles=MAX_FILES;
