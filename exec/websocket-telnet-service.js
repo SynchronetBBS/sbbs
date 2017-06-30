@@ -1,5 +1,6 @@
 load('sbbsdefs.js');
 load('websocket-proxy.js');
+load('modopts.js');
 
 function log_err(msg) {
 	log(LOG_DEBUG, msg);
@@ -235,8 +236,22 @@ try {
     }
 
     var wss = new WebSocketProxy(client);
-    var telnet = new TelnetClient(telnet_addr, ini.TelnetPort);
- 
+	var wsspath = wss.headers.Path.split('/');
+	if (wsspath.length < 3 || isNaN(parseInt(wsspath[2]))) {
+		var telnet = new TelnetClient(telnet_addr, ini.TelnetPort);
+	} else {
+		var _settings = get_mod_options('web');
+		if (typeof _settings.allowed_ftelnet_targets !== 'string') {
+			throw 'Client supplied Path but no allowed_ftelnet_targets supplied in modopts.ini [web] section.';
+		}
+		var targets = _settings.allowed_ftelnet_targets.split(',');
+		if (!targets.some(function (e) { var target = e.split(':'); return target[0] === wsspath[1] && target[1] === wsspath[2]; })) {
+			throw 'Client supplied Path is not in allowed_ftelnet_targets list.';
+		}
+		log('Using client-supplied target ' + wsspath[1] + ':' + wsspath[2]);
+		var telnet = new TelnetClient(wsspath[1], parseInt(wsspath[2]));
+	}
+
 	while (client.socket.is_connected && telnet.connected) {
 
     	wss.cycle();
