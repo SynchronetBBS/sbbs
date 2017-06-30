@@ -201,7 +201,7 @@ The fTelnet embed on the home page is configured to automatically connect to a B
 - Edit *ctrl/modopts.ini*
 - In the *[web]* section, add the *allowed_ftelnet_targets* key if it doesn't already exist (see *Additional/advanced settings* above)
 - Add an entry to the list for each additional host you want to allow fTelnet to connect to
-- Create a new *.xjs* file in your *pages/* directory or in a subdirectory thereof.  In this example, I've created */sbbs/web/root/pages/More/006-some-other-bbs.xjs*, and populate it with the following content:
+- Create a new *.xjs* file in your *pages/* directory or in a subdirectory thereof.  (In this example, I've created */sbbs/web/root/pages/More/006-some-other-bbs.xjs*.)  Populate it with the following content:
 
 ```html
 <!--Some Other BBS-->
