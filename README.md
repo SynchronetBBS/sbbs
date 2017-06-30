@@ -118,11 +118,13 @@ The following *optional* settings can be added to the [web] section of your *ctr
 	; Connect to the websocket proxies on ports other than specified in ctrl/services.ini
 	websocket_telnet_port = 1124
 	websocket_rlogin_port = 1514
+	allowed_ftelnet_targets = some.other.bbs:23,yet.another.bbs:2323
 ```
 
 - Setting *forum_extended_ascii* to *false* may resolve problems with displaying UTF-8 encoded characters; character codes > 127 will not be assumed to be extended-ASCII references to CP437 characters.
 - Tweaking *max_messages* may improve forum performance or resolve 'Out of memory' errors, if you see any of those when browsing the forum
 - Normally, fTelnet will try to connect to the websocket proxies based on information from *ctrl/services.ini*.  In some situations (eg. when using an HTTPS reverse proxy) it may be necessary to connect to another port unknown to Synchronet.
+- The *allowed_ftelnet_targets* setting is only necessary if you will be adding additional pages through which users can connect to external systems via fTelnet (see below).  This is a comma-separated list of host:port entries.
 
 ### Customization
 
@@ -191,6 +193,52 @@ You can add drop-down menus to the navigation bar by adding subdirectories to th
 - You can nest additional subdirectories to create sub-menus.
 - Subdirectories with names beginning with *.* will be ignored.
 - Each subdirectory can contain a [webctrl.ini](http://wiki.synchro.net/server:web#webctrlini_per-directory_configuration_file) file for access control.
+
+#### Additional fTelnet targets
+
+The fTelnet embed on the home page is configured to automatically connect to a BBS on the same system that is hosting the website.  If you run another BBS or wish to allow users of your website to connect via fTelnet to some other BBS:
+
+- Edit *ctrl/modopts.ini*
+- In the *[web]* section, add the *allowed_ftelnet_targets* key if it doesn't already exist (see *Additional/advanced settings* above)
+- Add an entry to the list for each additional host you want to allow fTelnet to connect to
+- Create a new *.xjs* file in your *pages/* directory or in a subdirectory thereof.  In this example, I've created */sbbs/web/root/pages/More/006-some-other-bbs.xjs*, and populate it with the following content:
+
+```html
+<!--Some Other BBS-->
+<?xjs
+	if (typeof argv[0] != 'boolean' || !argv[0]) exit();
+	load(settings.web_lib + 'ftelnet.js');
+?>
+
+<script src="./ftelnet/ftelnet.min.js" id="fTelnetScript"></script>
+<div id="fTelnetContainer" style="margin-bottom:1em;clear:both;"></div>
+<div class="row">
+	<div class="center-block" style="width:200px;margin-bottom:1em;">
+		<button id="ftelnet-connect" class="btn btn-primary">Connect via Telnet</button>
+	</div>
+</div>
+<script type="text/javascript">
+	fTelnet.Hostname = 'valhalla.synchro.net';
+	fTelnet.Port = 23;
+    fTelnet.ProxyHostname = '<?xjs write(http_request.vhost); ?>';
+    fTelnet.ProxyPort = <?xjs write(settings.websocket_telnet_port || webSocket.Port); ?>;;
+    fTelnet.ProxyPortSecure = <?xjs write(settings.websocket_telnet_port || webSocket.Port); ?>;;
+	fTelnet.ConnectionType = 'telnet';
+	fTelnet.SplashScreen = '<?xjs write(getSplash()); ?>';
+	fTelnet.StatusBarVisible = false;
+	fTelnet.VirtualKeyboardVisible = (
+		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+			navigator.userAgent
+		)
+	);
+	fTelnet.Init();
+	$('#ftelnet-connect').click(function() { fTelnet.Connect(); });
+</script>
+```
+
+- Edit the first line so that the title of the page (*Some Other BBS*) is to your liking
+- Edit the *fTelnet.Hostname* line so that the text within the quotes points to the system you want to target
+- Edit the *fTelnet.Port* line if the target system's telnet server is listening on some port other than *23*
 
 ### Uninstall
 
