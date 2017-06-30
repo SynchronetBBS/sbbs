@@ -1,17 +1,17 @@
 # synchronet-web-v4
 A web interface for Synchronet BBS
 
-###Disclaimer
+### Disclaimer
 
 - Use this software at your own risk.  It's still being developed, and hasn't been thoroughly tested yet.
 
-###Requirements
+### Requirements
 
 - This web interface has been tested with Synchronet BBS 3.17a.  It will probably work with later versions.
 - In addition to updating your Synchronet build, be sure to update your the javascript modules in your *exec* and *exec/load* directories as well.  You can get them from [the Synchronet CVS repository](http://cvs.synchro.net/) or in the [sbbs_run.zip archive](http://vert.synchro.net/Synchronet/sbbs_run.zip).
 	- Do *not* simply unzip sbbs_run.zip overtop your existing sbbs directory structure.  This may overwrite much of your local configuration.  Extract the archive elsewhere and copy things over piecemeal as needed.
 
-###Quick start
+### Quick start
 
 - Back up your Synchronet installation (particularly 'ctrl' and 'web')
 - Shut down your BBS
@@ -101,12 +101,12 @@ if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (co
 
 - Start your BBS back up again
 
-###Configuration
+### Configuration
 
 - Ensure that the *guest* user specified in the [web] section of *ctrl/modopts.ini* exists and has only the permissions that you want an unauthenticated visitor from the web to have.  This user probably shouldn't be able to post messages, and definitely shouldn't be able to post to networked message areas.
 - Customise the *xtrn_blacklist* setting in the [web] section of *ctrl/modopts.ini*.  This is a comma-separated list of *internal codes* of any programs (or Online Program Sections) that you wish to *exclude* from your games page.
 
-####Additional / advanced settings
+#### Additional / advanced settings
 
 The following *optional* settings can be added to the [web] section of your *ctrl/modopts.ini* file:
 
@@ -124,13 +124,13 @@ The following *optional* settings can be added to the [web] section of your *ctr
 - Tweaking *max_messages* may improve forum performance or resolve 'Out of memory' errors, if you see any of those when browsing the forum
 - Normally, fTelnet will try to connect to the websocket proxies based on information from *ctrl/services.ini*.  In some situations (eg. when using an HTTPS reverse proxy) it may be necessary to connect to another port unknown to Synchronet.
 
-###Customization
+### Customization
 
 This web interface uses [Bootstrap 3.3.5](http://getbootstrap.com/).  It should be possible to use any compatible stylesheet.
 
 - You can place your own CSS overrides in *web/root/css/custom.css*.  Create this file and use it if you want to use fonts, colours, etc. other than the defaults.  It is not recommended that you modify any of the existing stylesheets.
 
-####Sidebar Modules
+#### Sidebar Modules
 
 Sidebar modules are the widgets displayed in the narrow column running down the right (or left) side of the page.  A sidebar module can be an SSJS, XJS, HTML, or TXT file.
 
@@ -139,7 +139,7 @@ Sidebar modules are the widgets displayed in the narrow column running down the 
 - TXT sidebar modules are displayed inside of \<pre\> tags to preserve fixed-width formatting.
 - Support for additional file formats can be added if necessary, but by using HTML and Javascript you should be able to display whatever you like.  (If you want to put an image in the sidebar, a simple HTML file containing an \<img\> tag will do the job, for example.)
 
-####Pages
+#### Pages
 
 Like sidebar modules, pages can be HTML, XJS, SSJS, or TXT files.
 
@@ -192,7 +192,7 @@ You can add drop-down menus to the navigation bar by adding subdirectories to th
 - Subdirectories with names beginning with *.* will be ignored.
 - Each subdirectory can contain a [webctrl.ini](http://wiki.synchro.net/server:web#webctrlini_per-directory_configuration_file) file for access control.
 
-###Uninstall
+### Uninstall
 
 To stop using this web interface, you can just revert to your previous *web* directory at any time.
 
@@ -200,21 +200,21 @@ To stop using this web interface, you can just revert to your previous *web* dir
 - Revert your *ctrl/services.ini* file to the backup you made prior to installing this web interface
 - Undo any changes you made to your firewall & router during the *Quick Start*
 
-###Support
+### Support
 
-####Via GitHub
+#### Via GitHub
 
 - Please browse the existing [issues](https://github.com/echicken/synchronet-web-v4/issues) for this project, including those marked as closed.  You may find that your question has already been asked (and hopefully answered).
 - Open a new [issue](https://github.com/echicken/synchronet-web-v4/issues) here on GitHub
 
-####On DOVE-Net
+#### On DOVE-Net
 
 - Post a message to *echicken* in [Synchronet Discussion](https://bbs.electronicchicken.com/?page=001-forum.ssjs&sub=sync).  I read this sub regularly and will respond to you there.
 
-####On IRC
+#### On IRC
 
 - You can find me in #synchronet on irc.synchro.net.  I may be AFK, but ask your question and idle for a while; I'll respond eventually.
 
-####Email
+#### Email
 
 - Please don't.  Public support discussions are better for everyone, especially those searching the web for answers in the future.
