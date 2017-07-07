@@ -60,6 +60,7 @@ char lib[LEN_GSNAME+1];
 #define SEARCH_DIR	(1L<<12)
 #define SYNC_LIST	(1L<<13)
 #define KEEP_SPACE	(1L<<14)
+#define CHECK_DATE	(1L<<15)
 
 /****************************************************************************/
 /* This is needed by load_cfg.c												*/
@@ -237,11 +238,14 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			f.misc=0;
 			f.desc[0]=0;
 			f.cdt=flength(filepath);
+			time_t file_timestamp = fdate(filepath);
 			padfname(getfname(filepath),f.name);
 			printf("%s  %10"PRIu32"  %s\n"
-				,f.name,f.cdt,unixtodstr(&scfg,(time32_t)fdate(filepath),str));
+				,f.name,f.cdt,unixtodstr(&scfg,(time32_t)file_timestamp,str));
 			exist=findfile(&scfg,f.dir,f.name);
 			if(exist) {
+				if((mode&CHECK_DATE) && file_timestamp <= f.dateuled)
+					continue;
 				if(mode&NO_UPDATE)
 					continue;
 				getfileixb(&scfg,&f);
@@ -253,7 +257,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			}
 
 			if(mode&FILE_DATE) {		/* get the file date and put into desc */
-				unixtodstr(&scfg,(time32_t)fdate(filepath),f.desc);
+				unixtodstr(&scfg,(time32_t)file_timestamp,f.desc);
 				strcat(f.desc,"  "); 
 			}
 
@@ -393,8 +397,11 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 
 		if(i<12)					/* Ctrl chars or EX-ASCII in filename? */
 			continue;
+		time_t file_timestamp = fdate(filepath);
 		exist=findfile(&scfg,f.dir,f.name);
 		if(exist) {
+			if((mode&CHECK_DATE) && file_timestamp <= f.dateuled)
+				continue;
 			if(mode&NO_UPDATE)
 				continue;
 			getfileixb(&scfg,&f);
@@ -406,8 +413,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		}
 
 		if(mode&FILE_DATE) {		/* get the file date and put into desc */
-			l=(time32_t)fdate(filepath);
-			unixtodstr(&scfg,l,f.desc);
+			unixtodstr(&scfg,(time32_t)file_timestamp,f.desc);
 			strcat(f.desc,"  "); 
 		}
 
@@ -659,6 +665,7 @@ char *usage="\nusage: addfiles code [.alt_path] [-opts] +list "
 	"\n      -i         include added files in upload statistics"
 	"\n      -n         do not update information for existing files"
 	"\n      -o         update upload date only for existing files"
+	"\n      -p         compare file date with upload date for existing files"
 	"\n      -u         do not update upload date for existing files"
 	"\n      -z         check for and import FILE_ID.DIZ and DESC.SDI"
 	"\n      -k         keep original short description (not DIZ)"
@@ -809,6 +816,9 @@ int main(int argc, char **argv)
 						break;
 					case 'O':
 						mode|=ULDATE_ONLY;
+						break;
+					case 'P':
+						mode|=CHECK_DATE;
 						break;
 					case 'U':
 						mode|=NO_NEWDATE;
