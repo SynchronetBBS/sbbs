@@ -301,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 40";
-var READER_DATE = "2017-06-09";
+var READER_VERSION = "1.17 Beta 41";
+var READER_DATE = "2017-07-06";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5386,14 +5386,6 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 								console.print("\1y\1h* Failed to save the vote\1n");
 								mswait(ERROR_PAUSE_WAIT_MS);
 							}
-
-							// Exit out of the reader and come back to read
-							// the same message again so that the voting results
-							// are re-loaded and displayed on the screen.
-							retObj.newMsgOffset = pOffset;
-							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
-							continueOn = false;
-							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 						}
 						else
 						{
@@ -5419,12 +5411,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 								msgHeader = voteRetObj.updatedHdr; // To get updated vote information
 							mswait(ERROR_PAUSE_WAIT_MS);
 
-							// Refresh the last 2 message lines on the screen, then display
-							// the key help line
-							this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 							writeMessage = false;
 						}
+						// Exit out of the reader and come back to read
+						// the same message again so that the voting results
+						// are re-loaded and displayed on the screen.
+						retObj.newMsgOffset = pOffset;
+						retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						continueOn = false;
+						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 					}
 					else
 					{
