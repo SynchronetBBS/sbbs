@@ -219,7 +219,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 	DIRENT*	dirent;
 
 	if(mode&SEARCH_DIR) {
-		strcpy(str,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[f.dir]->path);
+		SAFECOPY(str,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[f.dir]->path);
 		printf("Searching %s\n\n",str);
 		dir=opendir(str);
 
@@ -232,7 +232,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 #ifdef _WIN32
 			GetShortPathName(tmp, filepath, sizeof(filepath));
 #else
-			strcpy(filepath,tmp);
+			SAFECOPY(filepath,tmp);
 #endif
 			f.misc=0;
 			f.desc[0]=0;
@@ -327,7 +327,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 	}
 
 
-	strcpy(listpath,inpath);
+	SAFECOPY(listpath,inpath);
 	fexistcase(listpath);
 	if((stream=fopen(listpath,"r"))==NULL) {
 		fprintf(stderr,"Error %d (%s) opening %s\n"
@@ -349,14 +349,14 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 	do {
 		f.misc=0;
 		f.desc[0]=0;
-		strcpy(curline,nextline);
+		SAFECOPY(curline,nextline);
 		nextline[0]=0;
 		fgets(nextline,255,stream);
 		truncsp(curline);
 		if(curline[0]<=' ' || (mode&ASCII_ONLY && (uchar)curline[0]>=0x7e))
 			continue;
 		printf("%s\n",curline);
-		strcpy(fname,curline);
+		SAFECOPY(fname,curline);
 
 #if 0	/* Files without dots are valid on modern systems */
 		p=strchr(fname,'.');
@@ -370,7 +370,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 #if 0
 		strupr(fname);
 #endif
-		strcpy(fname,unpadfname(fname,tmp));
+		SAFECOPY(fname,unpadfname(fname,tmp));
 
 		sprintf(filepath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 			: scfg.dir[f.dir]->path,fname);
@@ -419,8 +419,9 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 
 		if(dskip && strlen(curline)>=dskip) p=curline+dskip;
 		else {
-			p++;
-			while(*p==' ') p++; 
+			p = curline;
+			FIND_WHITESPACE(p);
+			SKIP_WHITESPACE(p); 
 		}
 		SAFECOPY(tmp,p);
 		prep_desc(tmp);
@@ -434,7 +435,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			}
 
 			if(nextline[0]==' ') {
-				strcpy(str,nextline);				   /* tack on to end of desc */
+				SAFECOPY(str,nextline);				   /* tack on to end of desc */
 				p=str+dskip;
 				while(*p>0 && *p<=' ') p++;
 				i=LEN_FDESC-strlen(f.desc);
@@ -585,7 +586,7 @@ void synclist(char *inpath, int dirnum)
 	}
 	close(file);
 
-	strcpy(listpath,inpath);
+	SAFECOPY(listpath,inpath);
 	if((stream=fopen(listpath,"r"))==NULL) {
 		sprintf(listpath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 				: scfg.dir[dirnum]->path,inpath);
@@ -750,7 +751,7 @@ int main(int argc, char **argv)
 
 	memset(&f,0,sizeof(file_t));
 	f.dir=i;
-	strcpy(f.uler,"-> ADDFILES <-");
+	SAFECOPY(f.uler,"-> ADDFILES <-");
 
 	for(j=2;j<argc;j++) {
 		if(argv[j][0]=='*')     /* set the uploader name (legacy) */
@@ -877,7 +878,7 @@ int main(int argc, char **argv)
 			if(mode&TODAYS_DATE)
 				sprintf(f.desc,"%s  ",unixtodstr(&scfg,time32(NULL),tmp));
 			sprintf(tmp,"%.*s",(int)(LEN_FDESC-strlen(f.desc)),argv[++j]);
-			strcpy(f.desc,tmp);
+			SAFECOPY(f.desc,tmp);
 			l=flength(str);
 			if(l==-1) {
 				printf("%s not found.\n",str);
