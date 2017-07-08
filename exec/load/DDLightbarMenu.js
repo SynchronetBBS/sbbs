@@ -1,3 +1,5 @@
+// $Id$
+
 /* Digital Distortion Lightbar Menu library
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
@@ -10,9 +12,14 @@ text items for the user to choose from.  The user can naviate the list using
 the up & down arrows, PageUp, PageDown, Home, and End keys.  The enter key
 selects an item.  The ESC key will exit the menu and return null.
 This menu library requires the use of an ANSI terminal.
-This menu library does not display a borders around the menu, so if you
-desire a border around the menu, your script can draw the border in any
-style you like.
+By default, this menu library does not display a border around the menu.
+If you want this library to draw a border around the menu, you can set the
+borderStyle property to one of the following:
+BORDER_SINGLE: A single-line border
+BORDER_DOUBLE: A double-line border
+There is also BORDER_NONE, which specifies to not display a border around the
+menu.  Without a border, the menu gains 2 characters of width and 2 lines of
+height.
 
 This script provides an object, DDLightbarMenu.  Use the DDLightbarMenu
 constructor to create the object.  Some other notable methods:
@@ -29,10 +36,19 @@ itemColor: The color to use for non-selected items (current default is white
            on blue)
 selectedItemColor: The color to use for selected items (current default is blue
                    on white)
+itemTextCharHighlightColor: The color of a highlighted non-space character in an
+                            item text (specified by having a & in the item text).
+							It's important not to specify a "\1n" in here in case
+							the item text should have a background color.
+borderColor: The color for the borders (if borders are enabled)
 
 By default, the menu selection will wrap around to the beginning/end when using
 the down/up arrows.  That behavior can be disabled by setting the wrapNavigation
-property to false.
+property to false.  Also, by default, there will be no borders.
+
+If you want hotkeys to be case-sensitive, you can set the hotkeyCaseSensitive
+property to true (it is false by default).  For example:
+lbMenu.hotkeyCaseSensitive = true;
 
 Example usage:
 load("DDLightbarMenu.js");
@@ -56,16 +72,57 @@ lbMenu.colors.selectedItemColor = "\1n\1h\1g";
 
 // Disabling the navigation wrap behavior:
 lbMenu.wrapNavigation = false;
+
+// If you want a particular character in an item's text highlighted with
+// a different color, you can put a & character immediately before it, as
+// long as it's not a space.  For instance, to highlight the "x" in "Exit":
+lbMenu.Add("E&xit", -1);
 */
 
 load("sbbsdefs.js");
 
+// Keyboard keys
 var KEY_ESC = ascii(27);
 var KEY_ENTER = "\x0d";
 // PageUp & PageDown keys - Not real key codes, but codes defined
 // to be used & recognized in this script
 var KEY_PAGE_UP = "\1PgUp";
 var KEY_PAGE_DOWN = "\1PgDn";
+
+// Box-drawing/border characters: Single-line
+var UPPER_LEFT_SINGLE = "\xDA";
+var HORIZONTAL_SINGLE = "\xC4";
+var UPPER_RIGHT_SINGLE = "\xBF";
+var VERTICAL_SINGLE = "\xB3";
+var LOWER_LEFT_SINGLE = "\xC0";
+var LOWER_RIGHT_SINGLE = "\xD9";
+var T_SINGLE = "\xC2";
+var LEFT_T_SINGLE = "\xC3";
+var RIGHT_T_SINGLE = "\xB4";
+var BOTTOM_T_SINGLE = "\xC1";
+var CROSS_SINGLE = "\xC5";
+// Box-drawing/border characters: Double-line
+var UPPER_LEFT_DOUBLE = "\xC9";
+var HORIZONTAL_DOUBLE = "\xCD";
+var UPPER_RIGHT_DOUBLE = "\xBB";
+var VERTICAL_DOUBLE = "\xBA";
+var LOWER_LEFT_DOUBLE = "\xC8";
+var LOWER_RIGHT_DOUBLE = "\xBC";
+var T_DOUBLE = "\xCB";
+var LEFT_T_DOUBLE = "\xCC";
+var RIGHT_T_DOUBLE = "\xB9";
+var BOTTOM_T_DOUBLE = "\xCA";
+var CROSS_DOUBLE = "\xCE";
+// Box-drawing/border characters: Vertical single-line with horizontal double-line
+var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5";
+var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8";
+var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
+var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
+
+// Border types for a menu
+var BORDER_NONE = 0;
+var BORDER_SINGLE = 1;
+var BORDER_DOUBLE = 2;
 
 // DDLightbarMenu object contstructor
 //
@@ -87,13 +144,17 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 		height: 10
 	};
 	this.showScrollbar = false;
+	this.borderStyle = BORDER_NONE;
 	this.colors = {
 		itemColor: "\1n\1w\1" + "4",
-		selectedItemColor: "\1n\1b\1" + "7"
+		selectedItemColor: "\1n\1b\1" + "7",
+		itemTextCharHighlightColor: "\1y\1h",
+		borderColor: "\1n\1b"
 	};
 	this.selectedItemIdx = 0;
 	this.topItemIdx = 0;
 	this.wrapNavigation = true;
+	this.hotkeyCaseSensitive = false;
 
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
@@ -104,6 +165,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.SetWidth = DDLightbarMenu_SetWidth;
 	this.SetHeight = DDLightbarMenu_SetHeight;
 	this.Draw = DDLightbarMenu_Draw;
+	this.DrawBorder = DDLightbarMenu_DrawBorder;
 	this.WriteItem = DDLightbarMenu_WriteItem;
 	this.Erase = DDLightbarMenu_Erase;
 	this.SetItemHotkey = DDLightbarMenu_SetItemHotkey;
@@ -240,25 +302,95 @@ function DDLightbarMenu_SetHeight(pHeight)
 function DDLightbarMenu_Draw()
 {
 	var itemLen = (this.showScrollbar ? this.size.width - 1 : this.size.width);
-	var curPos = { x: this.pos.x, y: this.pos.y };
+	var curPos = { x: this.pos.x, y: this.pos.y }; // For writing the menu items
+	// If there is a border, then adjust the item length, starting x, and starting
+	// y accordingly, and draw the border.
+	if (this.borderStyle != BORDER_NONE)
+	{
+		itemLen -= 2;
+		++curPos.x;
+		++curPos.y;
+		this.DrawBorder();
+	}
+
 	// Write the menu items, only up to the height of the menu
 	var numItemsWritten = 0;
 	for (var idx = this.topItemIdx; (idx < this.items.length) && (numItemsWritten < this.size.height); ++idx)
 	{
 		console.gotoxy(curPos.x, curPos.y++);
-		var itemColor = (idx == this.selectedItemIdx ? this.colors.selectedItemColor : this.colors.itemColor);
-		printf("\1n" + itemColor + "%-" + itemLen + "s", this.items[idx].text.substr(0, itemLen));
+		this.WriteItem(idx, null, idx == this.selectedItemIdx);
 		++numItemsWritten;
 	}
 	// If there are fewer items than the height of the menu, then write blank lines to fill
 	// the rest of the height of the menu.
-	if (numItemsWritten < this.size.height)
+	var numPossibleItems = (this.borderStyle == BORDER_NONE ? this.size.height : this.size.height - 2);
+	if (numItemsWritten < numPossibleItems)
 	{
-		for (; numItemsWritten <= this.size.height; ++numItemsWritten)
+		for (; numItemsWritten <= numPossibleItems; ++numItemsWritten)
 		{
 			console.gotoxy(curPos.x, curPos.y++);
 			printf("\1n" + this.colors.itemColor + "%-" + itemLen + "s", "");
 		}
+	}
+}
+
+// Draws the border around the menu items
+function DDLightbarMenu_DrawBorder()
+{
+	if (this.borderStyle == BORDER_NONE)
+		return;
+
+	// Decide which characters to use for the border
+	var upperLeftCornerChar;
+	var upperRightCornerChar;
+	var lowerLeftCornerChar;
+	var lowerRightCornerChar;
+	var horizontalChar;
+	var verticalChar;
+	switch (this.borderStyle)
+	{
+		case BORDER_SINGLE:
+			upperLeftCornerChar = UPPER_LEFT_SINGLE;
+			upperRightCornerChar = UPPER_RIGHT_SINGLE;
+			lowerLeftCornerChar = LOWER_LEFT_SINGLE;
+			lowerRightCornerChar = LOWER_RIGHT_SINGLE;
+			horizontalChar = HORIZONTAL_SINGLE;
+			verticalChar = VERTICAL_SINGLE;
+			break;
+		case BORDER_DOUBLE:
+			upperLeftCornerChar = UPPER_LEFT_DOUBLE;
+			upperRightCornerChar = UPPER_RIGHT_DOUBLE;
+			lowerLeftCornerChar = LOWER_LEFT_DOUBLE;
+			lowerRightCornerChar = LOWER_RIGHT_DOUBLE;
+			horizontalChar = HORIZONTAL_DOUBLE;
+			verticalChar = VERTICAL_DOUBLE;
+			break;
+	}
+
+	// Draw the border around the menu options
+	// Upper border
+	console.gotoxy(this.pos.x, this.pos.y);
+	console.print("\1n" + this.colors.borderColor);
+	console.print(upperLeftCornerChar);
+	var lineLen = this.size.width - 2;
+	for (var i = 0; i < lineLen; ++i)
+		console.print(horizontalChar);
+	console.print(upperRightCornerChar);
+	// Lower border
+	console.gotoxy(this.pos.x, this.pos.y+this.size.height);
+	console.print(lowerLeftCornerChar);
+	for (var i = 0; i < lineLen; ++i)
+		console.print(horizontalChar);
+	console.print(lowerRightCornerChar);
+	// Side borders
+	lineLen = this.size.height - 1;
+	var lineNum = 1;
+	for (var lineNum = 1; lineNum <= lineLen; ++lineNum)
+	{
+		console.gotoxy(this.pos.x, this.pos.y+lineNum);
+		console.print(verticalChar);
+		console.gotoxy(this.pos.x+this.size.width-1, this.pos.y+lineNum);
+		console.print(verticalChar);
 	}
 }
 
@@ -279,13 +411,45 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight)
 		if (typeof(pItemLen) == "number")
 			itemLen = pItemLen;
 		else
+		{
 			itemLen = (this.showScrollbar ? this.size.width - 1 : this.size.width);
+			if (this.borderStyle != BORDER_NONE)
+				itemLen -= 2;
+		}
 		var itemColor = "";
 		if (typeof(pHighlight) == "boolean")
 			itemColor = (pHighlight ? this.colors.selectedItemColor : this.colors.itemColor);
 		else
 			itemColor = (pIdx == this.selectedItemIdx ? this.colors.selectedItemColor : this.colors.itemColor);
-		printf("\1n" + itemColor + "%-" + itemLen + "s", this.items[pIdx].text.substr(0, itemLen));
+
+		// Get the item text, and truncate it to the displayable item width
+		var itemText = this.items[pIdx].text;
+		if (itemTextDisplayableLen(itemText) > itemLen)
+			itemText = itemText.substr(0, itemLen);
+		// Add the item color to the text
+		itemText = itemColor + itemText;
+		// See if there's an ampersand in the item text.  If so, we'll want to highlight the
+		// next character with a different color.
+		var ampersandIndex = itemText.indexOf("&");
+		if (ampersandIndex > -1)
+		{
+			// See if the next character is a space character.  If not, then remove
+			// the ampersand and highlight the next character in the text.
+			if (itemText.length > ampersandIndex+1)
+			{
+				var nextChar = itemText.substr(ampersandIndex+1, 1);
+				if (nextChar != " ")
+				{
+					itemText = itemText.substr(0, ampersandIndex) + this.colors.itemTextCharHighlightColor
+					         + nextChar + "\1n" + itemColor + itemText.substr(ampersandIndex+2);
+				}
+			}
+		}
+		// Ensure the item text fills the width of the menu (if there's a background color,
+		// use it for the entire width of the item text).  Then write the item.
+		while (itemTextDisplayableLen(itemText) < itemLen)
+			itemText += " ";
+		console.print(itemText + "\1n");
 	}
 }
 
@@ -362,7 +526,10 @@ function DDLightbarMenu_GetVal(pDraw)
 			if (this.selectedItemIdx > 0)
 			{
 				// Draw the current item in regular colors
-				console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+				if (this.borderStyle == BORDER_NONE)
+					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+				else
+					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 				this.WriteItem(this.selectedItemIdx, null, false);
 				--this.selectedItemIdx;
 				// Draw the new current item in selected colors
@@ -377,7 +544,10 @@ function DDLightbarMenu_GetVal(pDraw)
 				{
 					// The selected item is not above the top of the menu, so we can
 					// just draw the selected item highlighted.
-					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					if (this.borderStyle == BORDER_NONE)
+						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					else
+						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 					this.WriteItem(this.selectedItemIdx, null, true);
 				}
 			}
@@ -388,7 +558,10 @@ function DDLightbarMenu_GetVal(pDraw)
 				if (this.wrapNavigation)
 				{
 					// Draw the current item in regular colors
-					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					if (this.borderStyle == BORDER_NONE)
+						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					else
+						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 					this.WriteItem(this.selectedItemIdx, null, false);
 					// Go to the last item and scroll to the bottom if necessary
 					this.selectedItemIdx = this.items.length - 1;
@@ -401,7 +574,10 @@ function DDLightbarMenu_GetVal(pDraw)
 					else
 					{
 						// Draw the new current item in selected colors
-						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+						if (this.borderStyle == BORDER_NONE)
+							console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+						else
+							console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 						this.WriteItem(this.selectedItemIdx, null, true);
 					}
 				}
@@ -412,7 +588,10 @@ function DDLightbarMenu_GetVal(pDraw)
 			if (this.selectedItemIdx < this.items.length-1)
 			{
 				// Draw the current item in regular colors
-				console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+				if (this.borderStyle == BORDER_NONE)
+					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+				else
+					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 				this.WriteItem(this.selectedItemIdx, null, false);
 				++this.selectedItemIdx;
 				// Draw the new current item in selected colors
@@ -427,7 +606,10 @@ function DDLightbarMenu_GetVal(pDraw)
 				{
 					// The selected item is not below the bottom of the menu, so we can
 					// just draw the selected item highlighted.
-					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					if (this.borderStyle == BORDER_NONE)
+						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					else
+						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 					this.WriteItem(this.selectedItemIdx, null, true);
 				}
 			}
@@ -438,7 +620,10 @@ function DDLightbarMenu_GetVal(pDraw)
 				if (this.wrapNavigation)
 				{
 					// Draw the current item in regular colors
-					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					if (this.borderStyle == BORDER_NONE)
+						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					else
+						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 					this.WriteItem(this.selectedItemIdx, null, false);
 					// Go to the first item and scroll to the top if necessary
 					this.selectedItemIdx = 0;
@@ -449,7 +634,10 @@ function DDLightbarMenu_GetVal(pDraw)
 					else
 					{
 						// Draw the new current item in selected colors
-						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+						if (this.borderStyle == BORDER_NONE)
+							console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+						else
+							console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 						this.WriteItem(this.selectedItemIdx, null, true);
 					}
 				}
@@ -457,13 +645,16 @@ function DDLightbarMenu_GetVal(pDraw)
 		}
 		else if (userInput == KEY_PAGE_UP)
 		{
-			var newTopItemIdx = this.topItemIdx - this.size.height;
+			var numItemsPerPage = this.size.height;
+			if (this.borderStyle != BORDER_NONE)
+				numItemsPerPage -= 2;
+			var newTopItemIdx = this.topItemIdx - numItemsPerPage;
 			if (newTopItemIdx < 0)
 				newTopItemIdx = 0;
 			if (newTopItemIdx != this.topItemIdx)
 			{
 				this.topItemIdx = newTopItemIdx;
-				this.selectedItemIdx -= this.size.height;
+				this.selectedItemIdx -= numItemsPerPage;
 				if (this.selectedItemIdx < 0)
 					this.selectedItemIdx = 0;
 				this.Draw();
@@ -471,11 +662,14 @@ function DDLightbarMenu_GetVal(pDraw)
 		}
 		else if (userInput == KEY_PAGE_DOWN)
 		{
+			var numItemsPerPage = this.size.height;
+			if (this.borderStyle != BORDER_NONE)
+				numItemsPerPage -= 2;
 			// Figure out how many pages are needed to list all the items
 			//var numPages = Math.ceil(this.items.length / this.size.height);
 			// Figure out the top index for the last page.
 			//var topIndexForLastPage = (this.size.height * numPages) - this.size.height;
-			var topIndexForLastPage = this.items.length - this.size.height;
+			var topIndexForLastPage = this.items.length - numItemsPerPage;
 			if (topIndexForLastPage < 0)
 				topIndexForLastPage = 0;
 			else if (topIndexForLastPage >= this.items.length)
@@ -483,8 +677,8 @@ function DDLightbarMenu_GetVal(pDraw)
 			if (topIndexForLastPage != this.topItemIdx)
 			{
 				// Update the selected & top item indexes
-				this.selectedItemIdx += this.size.height;
-				this.topItemIdx += this.size.height;
+				this.selectedItemIdx += numItemsPerPage;
+				this.topItemIdx += numItemsPerPage;
 				if (this.selectedItemIdx >= topIndexForLastPage)
 					this.selectedItemIdx = topIndexForLastPage;
 				if (this.topItemIdx > topIndexForLastPage)
@@ -508,13 +702,16 @@ function DDLightbarMenu_GetVal(pDraw)
 		}
 		else if (userInput == KEY_END)
 		{
+			var numItemsPerPage = this.size.height;
+			if (this.borderStyle != BORDER_NONE)
+				numItemsPerPage -= 2;
 			// Go to the last item on the current page
 			if (this.selectedItemIdx < this.items.length-1)
 			{
 				// Draw the current item in regular colors
 				console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
 				this.WriteItem(this.selectedItemIdx, null, false);
-				this.selectedItemIdx = this.topItemIdx + this.size.height - 1;
+				this.selectedItemIdx = this.topItemIdx + numItemsPerPage - 1;
 				if (this.selectedItemIdx >= this.items.length)
 					this.selectedItemIdx = this.items.length - 1;
 				// Draw the new current item in selected colors
@@ -537,7 +734,12 @@ function DDLightbarMenu_GetVal(pDraw)
 			{
 				if (this.items[i].hasOwnProperty("hotkey"))
 				{
-					if (userInput == this.items[i].hotkey)
+					var userPressedHotkey = false;
+					if (this.hotkeyCaseSensitive)
+						userPressedHotkey = (userInput == this.items[i].hotkey);
+					else
+						userPressedHotkey = (userInput.toUpperCase() == this.items[i].hotkey.toUpperCase());
+					if (userPressedHotkey)
 					{
 						retVal = this.items[i].retval;
 						this.selectedItemIdx = i;
@@ -613,4 +815,30 @@ function getKeyWithESCChars(pGetKeyMode)
    }
 
    return userInput;
+}
+
+// Returns the length of an item's text, not counting non-displayable
+// characters (such as Synchronet color attributes and an ampersand
+// immediately before a non-space)
+function itemTextDisplayableLen(pText)
+{
+	var textLen = strip_ctrl(pText).length;
+	// Look for ampersands immediately before a non-space and if found, don't
+	// count those
+	var startIdx = 0;
+	var ampersandIndex = pText.indexOf("&", startIdx);
+	while (ampersandIndex > -1)
+	{
+		// See if the next character is a space character.  If not, then
+		// don't count it in the length.
+		if (pText.length > ampersandIndex+1)
+		{
+			var nextChar = pText.substr(ampersandIndex+1, 1);
+			if (nextChar != " ")
+				--textLen;
+		}
+		startIdx = ampersandIndex+1;
+		ampersandIndex = pText.indexOf("&", startIdx);
+	}
+	return textLen;
 }
