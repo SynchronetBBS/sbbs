@@ -133,7 +133,8 @@
 #define FER 				0x2078		/* Fernando de Noronha	(-02:00) */
 #define AZO 				0x203C		/* Azores				(-01:00) */
 #define LON 				0x1000		/* London				(+00:00) */
-#define BER 				0x103C		/* Berlin				(+01:00) */
+#define CET 				0x103C		/* Central European		(+01:00) */
+#define CEST 				0x903C		/* CE Summer Time		(+02:00) */
 #define ATH 				0x1078		/* Athens				(+02:00) */
 #define MOS 				0x10B4		/* Moscow				(+03:00) */
 #define DUB 				0x10F0		/* Dubai				(+04:00) */
@@ -150,6 +151,8 @@
 #define WEL 				0x12D0		/* Wellington			(+12:00) */
 
 #define OTHER_ZONE(zone) (zone<=1000 && zone>=-1000)
+
+#define SMB_TZ_HAS_DST(zone)	((!OTHER_ZONE(zone)) && ((zone&(US_ZONE|DAYLIGHT)) || zone==CET))
 
 										/* Valid hfield_t.types */
 #define SENDER				0x00

@@ -1945,6 +1945,8 @@ int SMBCALL smb_tzutc(int16_t zone)
 			tz-=60;			/* ToDo: Daylight Saving Time adjustment is *not* always +60 minutes */
 		return(-tz);
 	}
+	if(zone&DAYLIGHT)
+		tz+=60;				/* ToDo: Daylight Saving Time adjustment is *not* always +60 minutes */
 	return(tz);
 }
 

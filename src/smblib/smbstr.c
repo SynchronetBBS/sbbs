@@ -211,7 +211,8 @@ char* SMBCALL smb_zonestr(int16_t zone, char* str)
 		case FER:   return("FER");
 		case AZO:   return("AZO");
 		case LON:   return("LON");
-		case BER:   return("BER");
+		case CET:   return("CET");
+		case CEST:	return("CEST");
 		case ATH:   return("ATH");
 		case MOS:   return("MOS");
 		case DUB:   return("DUB");
