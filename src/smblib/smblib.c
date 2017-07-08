@@ -1942,11 +1942,11 @@ int SMBCALL smb_tzutc(int16_t zone)
 	tz=zone&0xfff;
 	if(zone&(WESTERN_ZONE|US_ZONE)) {	/* West of UTC? */
 		if(zone&DAYLIGHT)
-			tz-=60;			/* ToDo: Daylight Saving Time adjustment is *not* always +60 minutes */
+			tz-=SMB_DST_OFFSET;			/* ToDo: Daylight Saving Time adjustment is *not* always +60 minutes */
 		return(-tz);
 	}
 	if(zone&DAYLIGHT)
-		tz+=60;				/* ToDo: Daylight Saving Time adjustment is *not* always +60 minutes */
+		tz+=SMB_DST_OFFSET;				/* ToDo: Daylight Saving Time adjustment is *not* always +60 minutes */
 	return(tz);
 }
 

@@ -69,9 +69,9 @@ short tz_val[]= {
     ,RIO
     ,FER
     ,AZO
-    ,LON
+    ,WET
     ,CET
-    ,ATH
+    ,EET
     ,MOS
     ,DUB
     ,KAB
@@ -106,9 +106,9 @@ char* tz_str[]={
     ,"Rio de Janeiro"
     ,"Fernando de Noronha"
     ,"Azores"
-    ,"London"
+    ,"Western Europe (WET)"
     ,"Central Europe (CET)"
-    ,"Athens"
+    ,"Eastern Europe (EET)"
     ,"Moscow"
     ,"Dubai"
     ,"Kabul"

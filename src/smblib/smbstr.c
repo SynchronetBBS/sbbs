@@ -210,10 +210,12 @@ char* SMBCALL smb_zonestr(int16_t zone, char* str)
 		case RIO:   return("RIO");
 		case FER:   return("FER");
 		case AZO:   return("AZO");
-		case LON:   return("LON");
+		case WET:   return("WET");
+		case WEST:  return("WEST");
 		case CET:   return("CET");
 		case CEST:	return("CEST");
-		case ATH:   return("ATH");
+		case EET:   return("EET");
+		case EEST:  return("EEST");
 		case MOS:   return("MOS");
 		case DUB:   return("DUB");
 		case KAB:   return("KAB");
@@ -227,7 +229,7 @@ char* SMBCALL smb_zonestr(int16_t zone, char* str)
 		case SYD:   return("SYD");
 		case NOU:   return("NOU");
 		case WEL:   return("WEL");
-		}
+	}
 
 	if(!OTHER_ZONE(zone)) {
 		if(zone&(WESTERN_ZONE|US_ZONE))	/* West of UTC? */
