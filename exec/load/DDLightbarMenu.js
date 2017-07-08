@@ -365,7 +365,7 @@ function DDLightbarMenu_Draw()
 	// Write the menu items, only up to the height of the menu
 	var numPossibleItems = (this.borderEnabled ? this.size.height - 2 : this.size.height);
 	var numItemsWritten = 0;
-	for (var idx = this.topItemIdx; (idx < this.items.length) && (numItemsWritten <= numPossibleItems); ++idx)
+	for (var idx = this.topItemIdx; (idx < this.items.length) && (numItemsWritten < numPossibleItems); ++idx)
 	{
 		console.gotoxy(curPos.x, curPos.y++);
 		this.WriteItem(idx, null, idx == this.selectedItemIdx);
@@ -413,7 +413,7 @@ function DDLightbarMenu_DrawBorder()
 	else
 		console.print(" ");
 	// Lower border
-	console.gotoxy(this.pos.x, this.pos.y+this.size.height);
+	console.gotoxy(this.pos.x, this.pos.y+this.size.height-1);
 	if (this.borderChars.hasOwnProperty("lowerLeft") && (typeof(this.borderChars.lowerLeft) == "string"))
 		console.print(this.borderChars.lowerLeft);
 	else
@@ -440,7 +440,7 @@ function DDLightbarMenu_DrawBorder()
 		leftSideChar = this.borderChars.left;
 	if (this.borderChars.hasOwnProperty("right") && (typeof(this.borderChars.right) == "string"))
 		rightSideChar = this.borderChars.right;
-	lineLen = this.size.height - 1;
+	lineLen = this.size.height - 2;
 	var lineNum = 1;
 	for (var lineNum = 1; lineNum <= lineLen; ++lineNum)
 	{
@@ -624,7 +624,7 @@ function DDLightbarMenu_GetVal(pDraw)
 					this.selectedItemIdx = this.items.length - 1;
 					var oldTopItemIdx = this.topItemIdx;
 					var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-					this.topItemIdx = this.items.length - numItemsPerPage - 1;
+					this.topItemIdx = this.items.length - numItemsPerPage;
 					if (this.topItemIdx < 0)
 						this.topItemIdx = 0;
 					if (this.topItemIdx != oldTopItemIdx)
@@ -656,7 +656,7 @@ function DDLightbarMenu_GetVal(pDraw)
 				// If the selected item is below the bottom of the menu, then we'll need to
 				// scroll the items up.
 				var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-				if (this.selectedItemIdx > this.topItemIdx+numItemsPerPage)
+				if (this.selectedItemIdx > this.topItemIdx+numItemsPerPage-1)
 				{
 					++this.topItemIdx;
 					this.Draw();
@@ -719,14 +719,12 @@ function DDLightbarMenu_GetVal(pDraw)
 		}
 		else if (userInput == KEY_PAGE_DOWN)
 		{
-			var numItemsPerPage = this.size.height;
-			if (this.borderEnabled)
-				numItemsPerPage -= 2;
+			var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
 			// Figure out how many pages are needed to list all the items
 			//var numPages = Math.ceil(this.items.length / this.size.height);
 			// Figure out the top index for the last page.
 			//var topIndexForLastPage = (this.size.height * numPages) - this.size.height;
-			var topIndexForLastPage = this.items.length - numItemsPerPage - 1;
+			var topIndexForLastPage = this.items.length - numItemsPerPage;
 			if (topIndexForLastPage < 0)
 				topIndexForLastPage = 0;
 			else if (topIndexForLastPage >= this.items.length)
