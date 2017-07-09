@@ -244,11 +244,14 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 				,f.name,f.cdt,unixtodstr(&scfg,(time32_t)file_timestamp,str));
 			exist=findfile(&scfg,f.dir,f.name);
 			if(exist) {
-				if((mode&CHECK_DATE) && file_timestamp <= f.dateuled)
-					continue;
 				if(mode&NO_UPDATE)
 					continue;
-				getfileixb(&scfg,&f);
+				if(!getfileixb(&scfg,&f)) {
+					fprintf(stderr, "!ERROR reading index of directory %u\n", f.dir);
+					continue;
+				}
+				if((mode&CHECK_DATE) && file_timestamp <= f.dateuled)
+					continue;
 				if(mode&ULDATE_ONLY) {
 					f.dateuled=time32(NULL);
 					update_uldate(&scfg, &f);
@@ -400,11 +403,14 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		time_t file_timestamp = fdate(filepath);
 		exist=findfile(&scfg,f.dir,f.name);
 		if(exist) {
-			if((mode&CHECK_DATE) && file_timestamp <= f.dateuled)
-				continue;
 			if(mode&NO_UPDATE)
 				continue;
-			getfileixb(&scfg,&f);
+			if(!getfileixb(&scfg,&f)) {
+				fprintf(stderr, "!ERROR reading index of directory %u\n", f.dir);
+				continue;
+			}
+			if((mode&CHECK_DATE) && file_timestamp <= f.dateuled)
+				continue;
 			if(mode&ULDATE_ONLY) {
 				f.dateuled=time32(NULL);
 				update_uldate(&scfg, &f);
@@ -632,7 +638,10 @@ void synclist(char *inpath, int dirnum)
 		printf("%s not found in list - ",f.name);
 		f.dir=dirnum;
 		f.datoffset=ixbbuf[m]|((long)ixbbuf[m+1]<<8)|((long)ixbbuf[m+2]<<16);
-		getfiledat(&scfg,&f);
+		if(!getfiledat(&scfg,&f)) {
+			fprintf(stderr, "!ERROR reading index of directory %u\n", f.dir);
+			continue;
+		}
 		if(f.opencount) {
 			printf("currently OPEN by %u users\n",f.opencount);
 			continue; 
@@ -898,7 +907,12 @@ int main(int argc, char **argv)
 			if(exist) {
 				if(mode&NO_UPDATE)
 					continue;
-				getfileixb(&scfg,&f);
+				if(!getfileixb(&scfg,&f)) {
+					fprintf(stderr, "!ERROR reading index of directory %u\n", f.dir);
+					continue;
+				}
+				if((mode&CHECK_DATE) && fdate(str) <= f.dateuled)
+					continue;
 				if(mode&ULDATE_ONLY) {
 					f.dateuled=time32(NULL);
 					update_uldate(&scfg, &f);
