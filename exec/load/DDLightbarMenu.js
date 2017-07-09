@@ -502,10 +502,12 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight)
 				}
 			}
 		}
-		// Ensure the item text fills the width of the menu (if there's a background color,
-		// use it for the entire width of the item text).  Then write the item.
-		while (itemTextDisplayableLen(itemText) < itemLen)
-			itemText += " ";
+		// Ensure the item text fills the width of the menu (in case there's a
+		// background color, it should be used for the entire width of the item
+		// text).  Then write the item.
+		var currentTextLen = itemTextDisplayableLen(itemText);
+		if (currentTextLen < itemLen)
+			itemText += format("%" + +(itemLen-currentTextLen) + "s", ""); // Append spaces to the end of itemText
 		console.print(itemText + "\1n");
 	}
 }
