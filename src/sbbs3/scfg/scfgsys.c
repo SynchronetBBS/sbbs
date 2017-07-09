@@ -489,7 +489,7 @@ while(1) {
 					,cfg.sys_misc&SM_NOCDTCVT ? "No" : "Yes");
 				sprintf(opt[i++],"%-33.33s%s","Allow Sysop Logins"
 					,cfg.sys_misc&SM_R_SYSOP ? "Yes" : "No");
-				sprintf(opt[i++],"%-33.33s%s","Echo Passwords Locally"
+				sprintf(opt[i++],"%-33.33s%s","Display/Log Passwords Locally"
 					,cfg.sys_misc&SM_ECHO_PW ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","Short Sysop Page"
 					,cfg.sys_misc&SM_SHRTPAGE ? "Yes" : "No");
@@ -620,13 +620,15 @@ while(1) {
 						opt[2][0]=0;
 						i=cfg.sys_misc&SM_ECHO_PW ? 0:1;
 						uifc.helpbuf=
-							"`Echo Passwords Locally:`\n"
+							"`Display/Log Passwords Locally:`\n"
 							"\n"
-							"If you want to passwords to be displayed locally, set this option to\n"
-							"`Yes`.\n"
+							"If you want to passwords to be displayed locally and/or logged to disk\n"
+							"(e.g. when there's a failed login attempt), set this option to `Yes`.\n"
+							"\n"
+							"For elevated security, set this option to `No`.\n"
 						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-							,"Echo Passwords Locally",opt);
+							,"Display/Log Passwords Locally",opt);
 						if(!i && !(cfg.sys_misc&SM_ECHO_PW)) {
 							cfg.sys_misc|=SM_ECHO_PW;
 							uifc.changes=1; 
