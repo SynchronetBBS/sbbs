@@ -238,8 +238,8 @@ The fTelnet embed on the home page is configured to automatically connect to a B
 ```
 
 - Edit the first line so that the title of the page (*Some Other BBS*) is to your liking
-- Edit the *fTelnet.Hostname* line so that the text within the quotes points to the system you want to target
-- Edit the *fTelnet.Port* line if the target system's telnet server is listening on some port other than *23*
+- Edit the *Options.Hostname* line so that the text within the quotes points to the system you want to target
+- Edit the *Options.Port* line if the target system's telnet server is listening on some port other than *23*
 
 ### Uninstall
 
