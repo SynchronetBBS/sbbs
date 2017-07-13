@@ -210,7 +210,8 @@ The fTelnet embed on the home page is configured to automatically connect to a B
 	load(settings.web_lib + 'ftelnet.js');
 ?>
 
-<script src="./ftelnet/ftelnet.min.js" id="fTelnetScript"></script>
+<script src="./ftelnet/ftelnet.norip.xfer.min.js" id="fTelnetScript"></script>
+<style>.fTelnetStatusBar { display : none; }</style>
 <div id="fTelnetContainer" style="margin-bottom:1em;clear:both;"></div>
 <div class="row">
 	<div class="center-block" style="width:200px;margin-bottom:1em;">
@@ -218,21 +219,21 @@ The fTelnet embed on the home page is configured to automatically connect to a B
 	</div>
 </div>
 <script type="text/javascript">
-	fTelnet.Hostname = 'valhalla.synchro.net';
-	fTelnet.Port = 23;
-    fTelnet.ProxyHostname = '<?xjs write(http_request.vhost); ?>';
-    fTelnet.ProxyPort = <?xjs write(settings.websocket_telnet_port || webSocket.Port); ?>;;
-    fTelnet.ProxyPortSecure = <?xjs write(settings.websocket_telnet_port || webSocket.Port); ?>;;
-	fTelnet.ConnectionType = 'telnet';
-	fTelnet.SplashScreen = '<?xjs write(getSplash()); ?>';
-	fTelnet.StatusBarVisible = false;
-	fTelnet.VirtualKeyboardVisible = (
+	Options.Hostname = 'valhalla.synchro.net';
+	Options.Port = 23;
+    Options.ProxyHostname = '<?xjs write(http_request.vhost); ?>';
+    Options.ProxyPort = <?xjs write(settings.websocket_telnet_port || webSocket.Port); ?>;;
+    Options.ProxyPortSecure = <?xjs write(settings.websocket_telnet_port || webSocket.Port); ?>;;
+	Options.ConnectionType = 'telnet';
+	Options.SplashScreen = '<?xjs write(getSplash()); ?>';
+	Options.StatusBarVisible = false;
+	Options.VirtualKeyboardVisible = (
 		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
 			navigator.userAgent
 		)
 	);
-	fTelnet.Init();
-	$('#ftelnet-connect').click(function() { fTelnet.Connect(); });
+	var ftClient = new fTelnetClient('fTelnetContainer', Options);
+	$('#ftelnet-connect').click(function() { ftClient.Connect(); });
 </script>
 ```
 
