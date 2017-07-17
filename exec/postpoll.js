@@ -23,12 +23,16 @@ for(i in argv) {
 	option[arg] = val;
 }
 
-if(js.global.bbs)
+if(!basecode && js.global.bbs)
 	basecode = bbs.cursub_code;
 
 while(!basecode)
         basecode = prompt("message base");
 
+if(msg_area.sub[basecode.toLowerCase()].settings&SUB_NOVOTING) {
+	alert("No voting allowed in sub-board: " + basecode);
+	exit();
+}
 var msgbase = MsgBase(basecode);
 if(!msgbase.open()) {
         alert("Error " + msgbase.last_error + " opening " + basecode);
