@@ -804,6 +804,9 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetShortInt(lp,section,"OutbufDrainTimeout",bbs->outbuf_drain_timeout,&style))
 			break;
+		if(!iniSetInteger(lp,section,"MaxConcurrentConnections",bbs->max_concurrent_connections,&style))
+			break;
+
 
 		if(bbs->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
