@@ -90,7 +90,6 @@ __published:
     TButton *RLoginIPallowButton;
         TCheckBox *QWKEventsCheckBox;
     TCheckBox *JavaScriptCheckBox;
-    TCheckBox *IdentityCheckBox;
 	TCheckBox *EventsCheckBox;
     TTabSheet *SshTabSheet;
     TLabel *SshPortLabel;
@@ -99,6 +98,9 @@ __published:
     TLabel *SshInterfaceLabel;
     TEdit *SshInterfaceEdit;
         TCheckBox *DosSupportCheckBox;
+    TCheckBox *IdentityCheckBox;
+    TLabel *MaxConConLabel;
+    TEdit *MaxConConEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);

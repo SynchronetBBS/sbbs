@@ -82,6 +82,7 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
 
 	FirstNodeEdit->Text=AnsiString((int)MainForm->bbs_startup.first_node);
 	LastNodeEdit->Text=AnsiString((int)MainForm->bbs_startup.last_node);
+    MaxConConEdit->Text=AnsiString((int)MainForm->bbs_startup.max_concurrent_connections);
     AutoStartCheckBox->Checked=MainForm->SysAutoStart;
     AnswerSoundEdit->Text=AnsiString(MainForm->bbs_startup.answer_sound);
     HangupSoundEdit->Text=AnsiString(MainForm->bbs_startup.hangup_sound);
@@ -92,8 +93,6 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
     AutoLogonCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_AUTO_LOGON;
     HostnameCheckBox->Checked
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_HOST_LOOKUP);
-    IdentityCheckBox->Checked
-        =MainForm->bbs_startup.options&BBS_OPT_GET_IDENT;
     DosSupportCheckBox->Checked
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_DOS);
 
@@ -132,6 +131,7 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
 
     MainForm->bbs_startup.first_node=FirstNodeEdit->Text.ToIntDef(1);
     MainForm->bbs_startup.last_node=LastNodeEdit->Text.ToIntDef(1);
+    MainForm->bbs_startup.max_concurrent_connections=MaxConConEdit->Text.ToIntDef(0);
 
     MainForm->SysAutoStart=AutoStartCheckBox->Checked;
     SAFECOPY(MainForm->bbs_startup.answer_sound
@@ -175,10 +175,6 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->bbs_startup.options|=BBS_OPT_NO_HOST_LOOKUP;
     else
 	    MainForm->bbs_startup.options&=~BBS_OPT_NO_HOST_LOOKUP;
-	if(IdentityCheckBox->Checked==true)
-    	MainForm->bbs_startup.options|=BBS_OPT_GET_IDENT;
-    else
-	    MainForm->bbs_startup.options&=~BBS_OPT_GET_IDENT;
 
 	if(RLoginEnabledCheckBox->Checked==true)
     	MainForm->bbs_startup.options|=BBS_OPT_ALLOW_RLOGIN;
@@ -246,6 +242,7 @@ void __fastcall TTelnetCfgDlg::SshEnabledCheckBoxClick(TObject *Sender)
     SshInterfaceLabel->Enabled = SshEnabledCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
+
 
 
 
