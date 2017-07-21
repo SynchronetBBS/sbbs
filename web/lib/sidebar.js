@@ -9,11 +9,8 @@ function getFileContents(file) {
 }
 
 function getSidebarModules() {
-	return directory(settings.web_root + 'sidebar/*').reduce(
-		function (a, c) {
-			if (!file_isdir(c)) a.push(file_getname(c));
-			return a;
-		}, []
+	return directory(settings.web_root + 'sidebar/*').filter(
+		function (e, i, a) { return (!file_isdir(e)); }
 	);
 }
 
@@ -52,7 +49,7 @@ function writeSidebarModules() {
 		function (module) {
 			if (module.search(/\.xjs\.ssjs$/i) >= 0) return;
 			write('<li class="list-group-item sidebar">');
-			var str = getSidebarModule(settings.web_root + "sidebar/" + module);
+			var str = getSidebarModule(module);
 			if (str !== '') write(str);
 			write('</li>');
 		}
