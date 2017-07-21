@@ -256,10 +256,6 @@ To stop using this web interface, you can just revert to your previous *web* dir
 - Please browse the existing [issues](https://github.com/echicken/synchronet-web-v4/issues) for this project, including those marked as closed.  You may find that your question has already been asked (and hopefully answered).
 - Open a new [issue](https://github.com/echicken/synchronet-web-v4/issues) here on GitHub
 
-#### On DOVE-Net
-
-- Post a message to *echicken* in [Synchronet Discussion](https://bbs.electronicchicken.com/?page=001-forum.ssjs&sub=sync).  I read this sub regularly and will respond to you there.
-
 #### On IRC
 
 - You can find me in #synchronet on irc.synchro.net.  I may be AFK, but ask your question and idle for a while; I'll respond eventually.
