@@ -222,7 +222,7 @@ var CallSign={
 			req.SendRequest();
 			req.ReadResponse();
 
-			var m=req.body.match(/Tell them you found it on HamCall.net, the world's largest callsign database!.*?<BR>\s*([\s\S]*?)\s*(?:<font size|<\/td>)/);
+			var m=req.body.match(/td colspan=2 valign=top>\s*.*?<\/br>\s*([\s\S]*?)\s*(?:<font size|<\/td>)/);
 			if(m) {
 				m[1]=m[1].replace(/<[^>]*>/g,' ');
 				m[1]=m[1].replace(/[\r\n]/g,' ');
