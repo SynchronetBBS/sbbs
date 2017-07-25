@@ -234,6 +234,59 @@ var CallSign={
 			throw("No match");
 		},
 
+		HamQTH:function(callsign) {
+			var ret={};
+			var config = js.global.load("modopts.js","hamqth");
+			default xml namespace='http://www.hamqth.com';
+
+			// Get Session ID
+			var result = new HTTPRequest().Get('http://www.hamqth.com/xml.php?u='+config.callsign+'&p='+config.password);
+			var m=result.match(/<session_id>(.*?)<\/session_id>/);
+			var sid;
+			if (m)
+				sid = m[1];
+			else
+				throw("No Session ID");
+			result = new HTTPRequest().Get('http://www.hamqth.com/xml.php?id='+sid+'&callsign='+callsign+'&prg=hambot');
+			if (result.search(/<search>/)==-1)
+				throw('No match');
+			var rx=new XML(result.replace(/<\?xml.*?\?>/,''));
+			if (rx.search.adr_name != undefined)
+				ret.name = rx.search.adr_name;
+			if (rx.search.callsign != undefined)
+				ret.callsign = rx.search.callsign;
+			if (rx.search.adr_street1 != undefined)
+				ret.addr1 = rx.search.adr_street1;
+			if (rx.search.adr_street2 != undefined)
+				ret.addr2 = rx.search.adr_street2;
+			if (rx.search.adr_street3 != undefined)
+				ret.addr3 = rx.search.adr_street3;
+			if (rx.search.district != undefined)
+				ret.provstate = rx.search.district;
+			if (rx.search.oblast != undefined)
+				ret.provstate = rx.search.oblast;
+			if (rx.search.us_state != undefined)
+				ret.provstate = rx.search.us_state;
+			if (rx.search.adr_country != undefined)
+				ret.country = rx.search.adr_country;
+			if (rx.search.adr_zip != undefined)
+				ret.postalzip = rx.search.adr_zip;
+			if (rx.search.CQ != undefined)
+				ret.cq = rx.search.CQ;
+			if (rx.search.itu != undefined)
+				ret.itu = rx.search.itu;
+			if (rx.search.continent != undefined)
+				ret.continent = rx.search.continent;
+			if (rx.search.latitude != undefined)
+				ret.lat = rx.search.latitude;
+			if (rx.search.longitude != undefined)
+				ret.lon = rx.search.longitude;
+			if (rx.search.utc_offset != undefined)
+				ret.GMToff = rx.search.utc_offset;
+			ret.note='Found on HamQTH.com';
+			return ret;
+		},
+
 		MagicQRZuri:undefined,
 		QRZ:function(callsign) {
 			var ret={};
@@ -326,6 +379,12 @@ var CallSign={
 			if(matched==undefined) {
 				try {
 					matched=CallSign.Lookup.QRZ(callsign);
+				}
+				catch(e) {log(e)}
+			}
+			if(matched==undefined) {
+				try {
+					matched=CallSign.Lookup.HamQTH(callsign);
 				}
 				catch(e) {log(e)}
 			}
