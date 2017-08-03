@@ -271,6 +271,7 @@ typedef struct js_callback {
 #define DIR_MOVENEW (1<<17)			/* Files marked as new when moved */
 #define DIR_QUIET	(1<<18)			/* Do not notify uploader of downloads */
 #define DIR_NOSTAT	(1<<19)			/* Do not include transfers in system stats */
+#define DIR_FILES	(1<<20)			/* List/access files not in database */
 
                                     /* Bit values for file_t.misc */
 #define FM_EXTDESC  (1<<0)          /* Extended description exists */

@@ -219,11 +219,8 @@ while(1) {
 			"library, select `Yes`.\n"
 		;
 		j=1;
-		strcpy(opt[0],"Yes");
-		strcpy(opt[1],"No");
-		opt[2][0]=0;
 		j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-			,"Delete All Library Data Files",opt);
+			,"Delete All Library Data Files",uifcYesNoOpts);
 		if(j==-1)
 			continue;
 		if(j==0)
@@ -358,9 +355,6 @@ while(1) {
 				break;
 			case 5: /* clone options */
 				j=0;
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				opt[2][0]=0;
 				uifc.helpbuf=
 					"`Clone Directory Options:`\n"
 					"\n"
@@ -374,7 +368,7 @@ while(1) {
 				;
 				j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
 					,"Clone Options of First Directory into All of Library"
-					,opt);
+					,uifcYesNoOpts);
 				if(j==0) {
 					k=-1;
 					for(j=0;j<cfg.total_dirs;j++)
@@ -549,12 +543,9 @@ while(1) {
 						,str,sizeof(str)-1,K_EDIT)<=0)
 						break;
 					if(k==2 && !fexistcase(str)) {
-						strcpy(opt[0],"Yes");
-						strcpy(opt[1],"No");
-						opt[2][0]=0;
 						j=0;
 						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-							,"File doesn't exist, create it?",opt)==0)
+							,"File doesn't exist, create it?",uifcYesNoOpts)==0)
 							create_raw_dir_list(str);
 					}
 				}
@@ -914,9 +905,6 @@ while(1) {
 			"select `Yes`.\n"
 		;
 		j=1;
-		strcpy(opt[0],"Yes");
-		strcpy(opt[1],"No");
-		opt[2][0]=0;
 		SAFEPRINTF2(str,"%s%s.*"
 			,cfg.lib[cfg.dir[dirnum[i]]->lib]->code_prefix
 			,cfg.dir[dirnum[i]]->code_suffix);
@@ -929,7 +917,7 @@ while(1) {
 		if(fexist(path)) {
 			SAFEPRINTF(str2,"Delete %s",path);
 			j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-				,str2,opt);
+				,str2,uifcYesNoOpts);
 			if(j==-1)
 				continue;
 			if(j==0)
@@ -1150,52 +1138,54 @@ uifc.helpbuf=
 			case 13:
 				while(1) {
 					n=0;
-					sprintf(opt[n++],"%-27.27s%s","Check for File Existence"
+					sprintf(opt[n++],"%-30.30s%s","Check for File Existence"
 						,cfg.dir[i]->misc&DIR_FCHK ? "Yes":"No");
 					strcpy(str,"Slow Media Device");
 					if(cfg.dir[i]->seqdev) {
 						sprintf(tmp," #%u",cfg.dir[i]->seqdev);
 						strcat(str,tmp);
 					}
-					sprintf(opt[n++],"%-27.27s%s",str
+					sprintf(opt[n++],"%-30.30s%s",str
 						,cfg.dir[i]->seqdev ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Force Content Ratings"
+					sprintf(opt[n++],"%-30.30s%s","Force Content Ratings"
 						,cfg.dir[i]->misc&DIR_RATE ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Upload Date in Listings"
+					sprintf(opt[n++],"%-30.30s%s","Upload Date in Listings"
 						,cfg.dir[i]->misc&DIR_ULDATE ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Multiple File Numberings"
+					sprintf(opt[n++],"%-30.30s%s","Multiple File Numberings"
 						,cfg.dir[i]->misc&DIR_MULT ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Search for Duplicates"
+					sprintf(opt[n++],"%-30.30s%s","Search for Duplicates"
 						,cfg.dir[i]->misc&DIR_DUPES ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Search for New Files"
+					sprintf(opt[n++],"%-30.30s%s","Search for New Files"
 						,cfg.dir[i]->misc&DIR_NOSCAN ? "No":"Yes");
-					sprintf(opt[n++],"%-27.27s%s","Search for Auto-ADDFILES"
+					sprintf(opt[n++],"%-30.30s%s","Search for Auto-ADDFILES"
 						,cfg.dir[i]->misc&DIR_NOAUTO ? "No":"Yes");
-					sprintf(opt[n++],"%-27.27s%s","Import FILE_ID.DIZ"
+					sprintf(opt[n++],"%-30.30s%s","Import FILE_ID.DIZ"
 						,cfg.dir[i]->misc&DIR_DIZ ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Free Downloads"
+					sprintf(opt[n++],"%-30.30s%s","Free Downloads"
 						,cfg.dir[i]->misc&DIR_FREE ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Free Download Time"
+					sprintf(opt[n++],"%-30.30s%s","Free Download Time"
 						,cfg.dir[i]->misc&DIR_TFREE ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Deduct Upload Time"
+					sprintf(opt[n++],"%-30.30s%s","Deduct Upload Time"
 						,cfg.dir[i]->misc&DIR_ULTIME ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Credit Uploads"
+					sprintf(opt[n++],"%-30.30s%s","Credit Uploads"
 						,cfg.dir[i]->misc&DIR_CDTUL ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Credit Downloads"
+					sprintf(opt[n++],"%-30.30s%s","Credit Downloads"
 						,cfg.dir[i]->misc&DIR_CDTDL ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Credit with Minutes"
+					sprintf(opt[n++],"%-30.30s%s","Credit with Minutes"
 						,cfg.dir[i]->misc&DIR_CDTMIN ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Download Notifications"
+					sprintf(opt[n++],"%-30.30s%s","Download Notifications"
 						,cfg.dir[i]->misc&DIR_QUIET ? "No":"Yes");
-					sprintf(opt[n++],"%-27.27s%s","Anonymous Uploads"
+					sprintf(opt[n++],"%-30.30s%s","Anonymous Uploads"
 						,cfg.dir[i]->misc&DIR_ANON ? cfg.dir[i]->misc&DIR_AONLY
 						? "Only":"Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Purge by Last Download"
+					sprintf(opt[n++],"%-30.30s%s","Purge by Last Download"
 						,cfg.dir[i]->misc&DIR_SINCEDL ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Mark Moved Files as New"
+					sprintf(opt[n++],"%-30.30s%s","Mark Moved Files as New"
 						,cfg.dir[i]->misc&DIR_MOVENEW ? "Yes":"No");
-					sprintf(opt[n++],"%-27.27s%s","Include Transfers In Stats"
+					sprintf(opt[n++],"%-30.30s%s","Include Transfers In Stats"
 						,cfg.dir[i]->misc&DIR_NOSTAT ? "No":"Yes");
+					sprintf(opt[n++],"%-30.30s%s","Access Files not in Database"
+						,cfg.dir[i]->misc&DIR_FILES ? "Yes":"No");
 					opt[n][0]=0;
 					uifc.helpbuf=
 						"`Directory Toggle Options:`\n"
@@ -1205,16 +1195,13 @@ uifc.helpbuf=
 						"The available options from this menu can all be toggled between two or\n"
 						"more states, such as `Yes` and `No`.\n"
 					;
-					n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,36,&tog_dflt
+					n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,0,&tog_dflt
 						,&tog_bar,"Toggle Options",opt);
 					if(n==-1)
                         break;
 					switch(n) {
 						case 0:
 							n=cfg.dir[i]->misc&DIR_FCHK ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Check for File Existence When Listing:`\n"
 								"\n"
@@ -1225,7 +1212,7 @@ uifc.helpbuf=
 								"this option set to `No`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Check for File Existence When Listing",opt);
+								,"Check for File Existence When Listing",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_FCHK)) {
 								cfg.dir[i]->misc|=DIR_FCHK;
 								uifc.changes=1;
@@ -1237,9 +1224,6 @@ uifc.helpbuf=
 							break;
 						case 1:
                             n=cfg.dir[i]->seqdev ? 0:1;
-                            strcpy(opt[0],"Yes");
-                            strcpy(opt[1],"No");
-                            opt[2][0]=0;
 							uifc.helpbuf=
 								"`Slow Media Device:`\n"
 								"\n"
@@ -1254,7 +1238,7 @@ uifc.helpbuf=
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
 								,"Slow Media Device"
-								,opt);
+								,uifcYesNoOpts);
 							if(n==0) {
 								if(!cfg.dir[i]->seqdev) {
 									uifc.changes=1;
@@ -1274,9 +1258,6 @@ uifc.helpbuf=
                             break;
 						case 2:
 							n=cfg.dir[i]->misc&DIR_RATE ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Force Content Ratings in Descriptions:`\n"
 								"\n"
@@ -1284,7 +1265,7 @@ uifc.helpbuf=
 								"content rating (G, R, or X), set this value to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Force Content Ratings in Descriptions",opt);
+								,"Force Content Ratings in Descriptions",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_RATE)) {
 								cfg.dir[i]->misc|=DIR_RATE;
 								uifc.changes=1;
@@ -1296,9 +1277,6 @@ uifc.helpbuf=
 							break;
 						case 3:
 							n=cfg.dir[i]->misc&DIR_ULDATE ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Include Upload Date in File Descriptions:`\n"
 								"\n"
@@ -1307,7 +1285,7 @@ uifc.helpbuf=
 								"`Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Include Upload Date in Descriptions",opt);
+								,"Include Upload Date in Descriptions",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_ULDATE)) {
 								cfg.dir[i]->misc|=DIR_ULDATE;
 								uifc.changes=1;
@@ -1319,9 +1297,6 @@ uifc.helpbuf=
                             break;
 						case 4:
 							n=cfg.dir[i]->misc&DIR_MULT ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Ask for Multiple File Numberings:`\n"
 								"\n"
@@ -1329,7 +1304,7 @@ uifc.helpbuf=
 								"file (disk) numbers, set this value to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Ask for Multiple File Numberings",opt);
+								,"Ask for Multiple File Numberings",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_MULT)) {
 								cfg.dir[i]->misc|=DIR_MULT;
 								uifc.changes=1;
@@ -1341,9 +1316,6 @@ uifc.helpbuf=
 							break;
 						case 5:
 							n=cfg.dir[i]->misc&DIR_DUPES ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Search Directory for Duplicate Filenames:`\n"
 								"\n"
@@ -1351,7 +1323,7 @@ uifc.helpbuf=
 								"filenames when a user attempts to upload a file, set this option to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Search for Duplicate Filenames",opt);
+								,"Search for Duplicate Filenames",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_DUPES)) {
 								cfg.dir[i]->misc|=DIR_DUPES;
 								uifc.changes=1;
@@ -1363,9 +1335,6 @@ uifc.helpbuf=
 							break;
 						case 6:
 							n=cfg.dir[i]->misc&DIR_NOSCAN ? 1:0;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Search Directory for New Files:`\n"
 								"\n"
@@ -1378,7 +1347,7 @@ uifc.helpbuf=
 								"if this option is set to `No`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Search for New files",opt);
+								,"Search for New files",uifcYesNoOpts);
 							if(n==0 && cfg.dir[i]->misc&DIR_NOSCAN) {
 								cfg.dir[i]->misc&=~DIR_NOSCAN;
 								uifc.changes=1;
@@ -1390,9 +1359,6 @@ uifc.helpbuf=
                             break;
 						case 7:
 							n=cfg.dir[i]->misc&DIR_NOAUTO ? 1:0;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Search Directory for Auto-ADDFILES:`\n"
 								"\n"
@@ -1401,7 +1367,7 @@ uifc.helpbuf=
 								"set this option to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Search for Auto-ADDFILES",opt);
+								,"Search for Auto-ADDFILES",uifcYesNoOpts);
 							if(n==0 && cfg.dir[i]->misc&DIR_NOAUTO) {
 								cfg.dir[i]->misc&=~DIR_NOAUTO;
 								uifc.changes=1;
@@ -1413,9 +1379,6 @@ uifc.helpbuf=
                             break;
 						case 8:
 							n=cfg.dir[i]->misc&DIR_DIZ ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Import FILE_ID.DIZ and DESC.SDI Descriptions:`\n"
 								"\n"
@@ -1424,7 +1387,7 @@ uifc.helpbuf=
 								"description, set this option to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Import FILE_ID.DIZ and DESC.SDI",opt);
+								,"Import FILE_ID.DIZ and DESC.SDI",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_DIZ)) {
 								cfg.dir[i]->misc|=DIR_DIZ;
 								uifc.changes=1;
@@ -1436,9 +1399,6 @@ uifc.helpbuf=
                             break;
 						case 9:
 							n=cfg.dir[i]->misc&DIR_FREE ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Downloads are Free:`\n"
 								"\n"
@@ -1446,7 +1406,7 @@ uifc.helpbuf=
 								"no credits), set this option to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Downloads are Free",opt);
+								,"Downloads are Free",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_FREE)) {
 								cfg.dir[i]->misc|=DIR_FREE;
 								uifc.changes=1;
@@ -1458,9 +1418,6 @@ uifc.helpbuf=
                             break;
 						case 10:
 							n=cfg.dir[i]->misc&DIR_TFREE ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Free Download Time:`\n"
 								"\n"
@@ -1468,7 +1425,7 @@ uifc.helpbuf=
 								"time from the user, set this option to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Free Download Time",opt);
+								,"Free Download Time",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_TFREE)) {
 								cfg.dir[i]->misc|=DIR_TFREE;
 								uifc.changes=1;
@@ -1480,9 +1437,6 @@ uifc.helpbuf=
                             break;
 						case 11:
 							n=cfg.dir[i]->misc&DIR_ULTIME ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Deduct Upload Time:`\n"
 								"\n"
@@ -1490,7 +1444,7 @@ uifc.helpbuf=
 								"uploading subtracted from their time online, set this option to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Deduct Upload Time",opt);
+								,"Deduct Upload Time",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_ULTIME)) {
 								cfg.dir[i]->misc|=DIR_ULTIME;
 								uifc.changes=1;
@@ -1502,9 +1456,6 @@ uifc.helpbuf=
                             break;
 						case 12:
 							n=cfg.dir[i]->misc&DIR_CDTUL ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Give Credit for Uploads:`\n"
 								"\n"
@@ -1512,7 +1463,7 @@ uifc.helpbuf=
 								"initial upload, set this option to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Give Credit for Uploads",opt);
+								,"Give Credit for Uploads",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_CDTUL)) {
 								cfg.dir[i]->misc|=DIR_CDTUL;
 								uifc.changes=1;
@@ -1524,9 +1475,6 @@ uifc.helpbuf=
                             break;
 						case 13:
 							n=cfg.dir[i]->misc&DIR_CDTDL ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Give Uploader Credit for Downloads:`\n"
 								"\n"
@@ -1534,7 +1482,7 @@ uifc.helpbuf=
 								"files are downloaded, set this optin to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Give Uploader Credit for Downloads",opt);
+								,"Give Uploader Credit for Downloads",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_CDTDL)) {
 								cfg.dir[i]->misc|=DIR_CDTDL;
 								uifc.changes=1;
@@ -1546,9 +1494,6 @@ uifc.helpbuf=
                             break;
 						case 14:
 							n=cfg.dir[i]->misc&DIR_CDTMIN ? 0:1;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Credit Uploader with Minutes instead of Credits:`\n"
 								"\n"
@@ -1556,7 +1501,7 @@ uifc.helpbuf=
 								"intead of credits, set this option to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Credit Uploader with Minutes",opt);
+								,"Credit Uploader with Minutes",uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_CDTMIN)) {
 								cfg.dir[i]->misc|=DIR_CDTMIN;
 								uifc.changes=1;
@@ -1568,9 +1513,6 @@ uifc.helpbuf=
                             break;
 						case 15:
 							n=cfg.dir[i]->misc&DIR_QUIET ? 1:0;
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							uifc.helpbuf=
 								"`Send Download Notifications:`\n"
 								"\n"
@@ -1578,7 +1520,7 @@ uifc.helpbuf=
 								"uploader of a file to this directory, set this option to `Yes`.\n"
 							;
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-								,"Send Download Notifications",opt);
+								,"Send Download Notifications",uifcYesNoOpts);
 							if(n==1 && !(cfg.dir[i]->misc&DIR_QUIET)) {
 								cfg.dir[i]->misc|=DIR_QUIET;
 								uifc.changes=1; 
@@ -1622,9 +1564,6 @@ uifc.helpbuf=
 							break;
 						case 17:
                             n=cfg.dir[i]->misc&DIR_SINCEDL ? 0:1;
-                            strcpy(opt[0],"Yes");
-                            strcpy(opt[1],"No");
-                            opt[2][0]=0;
                             uifc.helpbuf=
 	                            "`Purge Files Based on Date of Last Download:`\n"
 	                            "\n"
@@ -1635,7 +1574,7 @@ uifc.helpbuf=
                             ;
                             n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
 								,"Purge Files Based on Date of Last Download"
-                                ,opt);
+                                ,uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_SINCEDL)) {
 								cfg.dir[i]->misc|=DIR_SINCEDL;
                                 uifc.changes=1;
@@ -1647,9 +1586,6 @@ uifc.helpbuf=
                             break;
 						case 18:
                             n=cfg.dir[i]->misc&DIR_MOVENEW ? 0:1;
-                            strcpy(opt[0],"Yes");
-                            strcpy(opt[1],"No");
-                            opt[2][0]=0;
                             uifc.helpbuf=
 	                            "`Mark Moved Files as New:`\n"
 	                            "\n"
@@ -1659,7 +1595,7 @@ uifc.helpbuf=
                             ;
                             n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
 								,"Mark Moved Files as New"
-                                ,opt);
+                                ,uifcYesNoOpts);
 							if(n==0 && !(cfg.dir[i]->misc&DIR_MOVENEW)) {
 								cfg.dir[i]->misc|=DIR_MOVENEW;
                                 uifc.changes=1;
@@ -1671,9 +1607,6 @@ uifc.helpbuf=
                             break;
 						case 19:
                             n=cfg.dir[i]->misc&DIR_NOSTAT ? 1:0;
-                            strcpy(opt[0],"Yes");
-                            strcpy(opt[1],"No");
-                            opt[2][0]=0;
                             uifc.helpbuf=
 	                            "`Include Transfers In System Statistics:`\n"
 	                            "\n"
@@ -1683,12 +1616,32 @@ uifc.helpbuf=
                             ;
                             n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
 								,"Include Transfers In System Statistics"
-                                ,opt);
+                                ,uifcYesNoOpts);
 							if(n==1 && !(cfg.dir[i]->misc&DIR_NOSTAT)) {
 								cfg.dir[i]->misc|=DIR_NOSTAT;
 								uifc.changes=1; 
 							} else if(n==0 && cfg.dir[i]->misc&DIR_NOSTAT){
 								cfg.dir[i]->misc&=~DIR_NOSTAT;
+								uifc.changes=1; 
+							}
+                            break;
+						case 20:
+                            n=cfg.dir[i]->misc&DIR_FILES ? 0:1;
+                            uifc.helpbuf=
+	                            "`Allow Access to Files Not in Database:`\n"
+	                            "\n"
+	                            "If this option is set to ~Yes~, then all files in this directory's\n"
+								"`Transfer File Path` will be visible/downloadable by users with access to\n"
+	                            "this directory.\n"
+                            ;
+                            n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+								,"Allow Access to Files Not in Database"
+                                ,uifcYesNoOpts);
+							if(n==0 && !(cfg.dir[i]->misc&DIR_FILES)) {
+								cfg.dir[i]->misc|=DIR_FILES;
+								uifc.changes=1; 
+							} else if(n==1 && cfg.dir[i]->misc&DIR_FILES){
+								cfg.dir[i]->misc&=~DIR_FILES;
 								uifc.changes=1; 
 							}
                             break;

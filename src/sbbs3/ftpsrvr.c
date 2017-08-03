@@ -3732,7 +3732,8 @@ static void ctrl_thread(void* arg)
 					padfname(getfname(str),f.name);
 					f.dir=dir;
 					if((filedat=getfileixb(&scfg,&f))==FALSE
-						&& !(startup->options&FTP_OPT_DIR_FILES))
+						&& !(startup->options&FTP_OPT_DIR_FILES)
+						&& !(scfg.dir[dir]->misc&DIR_FILES))
 						continue;
 					if(detail) {
 						f.size=flength(g.gl_pathv[i]);
@@ -4183,7 +4184,7 @@ static void ctrl_thread(void* arg)
 				f.cdt=0;
 				f.size=-1;
 				filedat=getfileixb(&scfg,&f);
-				if(!filedat && !(startup->options&FTP_OPT_DIR_FILES)) {
+				if(!filedat && !(startup->options&FTP_OPT_DIR_FILES) && !(scfg.dir[dir]->misc&DIR_FILES)) {
 					sockprintf(sock,"550 File not found: %s",p);
 					lprintf(LOG_WARNING,"%04d !%s file (%s%s) not in database for %.4s command"
 						,sock,user.alias,genvpath(lib,dir,str),p,cmd);
