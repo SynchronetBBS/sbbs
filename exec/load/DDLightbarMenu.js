@@ -46,7 +46,12 @@ This menu object supports adding a hotkey to each menu item.  The hotkey can be
 specified in the Add() method a couple of different ways - Either by specifying
 a hotkey as the 3rd parameter or by putting a & in the menu item text just before
 the key you want to use as the hotkey.  For example, in the text "E&xit", "x"
-would be used as the hotkey for the item.
+would be used as the hotkey for the item.  If you want to disable the use of
+ampersands for hotkeys in menu items (for instance, if you want an item to
+literally display an ampersand before a character), set the ampersandHotkeysInItems
+property to false.  For instance:
+lbMenu.ampersandHotkeysInItems = false;
+Note that ampersandHotkeysInItems must be set before adding menu items.
 
 Example usage:
 load("DDLightbarMenu.js");
@@ -185,6 +190,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.topItemIdx = 0;
 	this.wrapNavigation = true;
 	this.hotkeyCaseSensitive = false;
+	this.ampersandHotkeysInItems = true;
 
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
@@ -227,23 +233,27 @@ function DDLightbarMenu_Add(pText, pRetval, pHotkey)
 	};
 	if (pRetval == undefined)
 		item.retval = this.items.length;
-	// If pHotkey is defined, then use it as the hotkey.  Otherwise, look for
-	// the first & in the item text and if there's a non-space after it, then
-	// use that character as the hotkey.
+	// If pHotkey is defined, then use it as the hotkey.  Otherwise, if
+	// ampersandHotkeysInItems is true, look for the first & in the item text
+	// and if there's a non-space after it, then use that character as the
+	// hotkey.
 	if (typeof(pHotkey) == "string")
 		item.hotkey = pHotkey;
 	else
 	{
-		var ampersandIndex = pText.indexOf("&");
-		if (ampersandIndex > -1)
+		if (this.ampersandHotkeysInItems)
 		{
-			// See if the next character is a space character.  If not, then
-			// don't count it in the length.
-			if (pText.length > ampersandIndex+1)
+			var ampersandIndex = pText.indexOf("&");
+			if (ampersandIndex > -1)
 			{
-				var nextChar = pText.substr(ampersandIndex+1, 1);
-				if (nextChar != " ")
-					item.hotkey = nextChar;
+				// See if the next character is a space character.  If not, then
+				// don't count it in the length.
+				if (pText.length > ampersandIndex+1)
+				{
+					var nextChar = pText.substr(ampersandIndex+1, 1);
+					if (nextChar != " ")
+						item.hotkey = nextChar;
+				}
 			}
 		}
 	}
@@ -375,7 +385,7 @@ function DDLightbarMenu_Draw()
 	// the rest of the height of the menu.
 	if (numItemsWritten < numPossibleItems)
 	{
-		for (; numItemsWritten <= numPossibleItems; ++numItemsWritten)
+		for (; numItemsWritten < numPossibleItems; ++numItemsWritten)
 		{
 			console.gotoxy(curPos.x, curPos.y++);
 			printf("\1n" + this.colors.itemColor + "%-" + itemLen + "s", "");
@@ -485,20 +495,24 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight)
 			itemText = itemText.substr(0, itemLen);
 		// Add the item color to the text
 		itemText = itemColor + itemText;
-		// See if there's an ampersand in the item text.  If so, we'll want to highlight the
-		// next character with a different color.
-		var ampersandIndex = itemText.indexOf("&");
-		if (ampersandIndex > -1)
+		// If ampersandHotkeysInItems is true, see if there's an ampersand in
+		// the item text.  If so, we'll want to highlight the next character
+		// with a different color.
+		if (this.ampersandHotkeysInItems)
 		{
-			// See if the next character is a space character.  If not, then remove
-			// the ampersand and highlight the next character in the text.
-			if (itemText.length > ampersandIndex+1)
+			var ampersandIndex = itemText.indexOf("&");
+			if (ampersandIndex > -1)
 			{
-				var nextChar = itemText.substr(ampersandIndex+1, 1);
-				if (nextChar != " ")
+				// See if the next character is a space character.  If not, then remove
+				// the ampersand and highlight the next character in the text.
+				if (itemText.length > ampersandIndex+1)
 				{
-					itemText = itemText.substr(0, ampersandIndex) + this.colors.itemTextCharHighlightColor
-					         + nextChar + "\1n" + itemColor + itemText.substr(ampersandIndex+2);
+					var nextChar = itemText.substr(ampersandIndex+1, 1);
+					if (nextChar != " ")
+					{
+						itemText = itemText.substr(0, ampersandIndex) + this.colors.itemTextCharHighlightColor
+								 + nextChar + "\1n" + itemColor + itemText.substr(ampersandIndex+2);
+					}
 				}
 			}
 		}
@@ -918,22 +932,25 @@ function getKeyWithESCChars(pGetKeyMode)
 function itemTextDisplayableLen(pText)
 {
 	var textLen = strip_ctrl(pText).length;
-	// Look for ampersands immediately before a non-space and if found, don't
-	// count those
-	var startIdx = 0;
-	var ampersandIndex = pText.indexOf("&", startIdx);
-	while (ampersandIndex > -1)
+	// If ampersandHotkeysInItems is true, look for ampersands immediately
+	// before a non-space and if found, don't count those.
+	if (this.ampersandHotkeysInItems)
 	{
-		// See if the next character is a space character.  If not, then
-		// don't count it in the length.
-		if (pText.length > ampersandIndex+1)
+		var startIdx = 0;
+		var ampersandIndex = pText.indexOf("&", startIdx);
+		while (ampersandIndex > -1)
 		{
-			var nextChar = pText.substr(ampersandIndex+1, 1);
-			if (nextChar != " ")
-				--textLen;
+			// See if the next character is a space character.  If not, then
+			// don't count it in the length.
+			if (pText.length > ampersandIndex+1)
+			{
+				var nextChar = pText.substr(ampersandIndex+1, 1);
+				if (nextChar != " ")
+					--textLen;
+			}
+			startIdx = ampersandIndex+1;
+			ampersandIndex = pText.indexOf("&", startIdx);
 		}
-		startIdx = ampersandIndex+1;
-		ampersandIndex = pText.indexOf("&", startIdx);
 	}
 	return textLen;
 }
