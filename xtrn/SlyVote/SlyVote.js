@@ -13,6 +13,19 @@
  *                              Started
  * 2017-02-26 Eric Oulashin     Version 0.17 Beta
  *                              Mostly complete; continuing to make tweaks
+ * 2017-04-26 Eric Oulashin     Version 0.18 Beta
+ *                              Fixed a coloring issue when outputting who voted
+ *                              on a poll when more than 1 person voted on it.
+ * 2017-08-03 Eric Oulashin     Version 0.19 Beta
+ *                              Added a configuration option, useAllAvailableSubBoards,
+ *                              which tells SlyVote to use all available sub-boards
+ *                              where voting is enabled.  Defaults to true.  Also,
+ *                              fixed an off-by-1 bug when displaying the list of
+ *                              sub-boards to choose from.  Also, set the (new)
+ *                              ampersandHotkeysInItems property in most of the
+ *                              DDLightbarMenu objects to false so that it won't
+ *                              interpret ampersands before a character in menu
+ *                              items as hotkeys.
  */
  
 // TODO:
@@ -62,8 +75,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.18 Beta";
-var SLYVOTE_DATE = "2017-04-25";
+var SLYVOTE_VERSION = "0.19 Beta";
+var SLYVOTE_DATE = "2017-08-03";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -291,6 +304,7 @@ function ChooseVotingSubBoard(pSubBoardCodes)
 	//console.print("\1n\1cChoose a topic area (\1hESC\1g=\1n\1cExit):");
 	console.print("\1n\1b\1hChoose a topic area (\1cESC\1g=\1n\1cExit\1h\1b):");
 	var subBoardMenu = new DDLightbarMenu(drawColRetObj.columnX1+drawColRetObj.colWidth-1, listTopRow, drawColRetObj.textLen, drawColRetObj.colHeight);
+	subBoardMenu.ampersandHotkeysInItems = false;
 	for (var idx = 0; idx < pSubBoardCodes.length; ++idx)
 	{
 		var subBoardGrpAndName = msg_area.sub[pSubBoardCodes[idx]].grp_name + " - " + msg_area.sub[pSubBoardCodes[idx]].name;
@@ -467,6 +481,7 @@ function ChooseVoteTopic(pLetUserChoose)
 	{
 		// Create the menu containing voting topics and get the user's choic
 		var topicsMenu = new DDLightbarMenu(startCol, listTopRow, drawColRetObj.textLen, menuHeight);
+		topicsMenu.ampersandHotkeysInItems = false;
 		for (var i = 0; i < voteTopicInfo.msgHdrs.length; ++i)
 			topicsMenu.Add(voteTopicInfo.msgHdrs[i].subject, voteTopicInfo.msgHdrs[i].number);
 		var drawTopicsMenu = true;
@@ -577,6 +592,7 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 				}
 				// Create the poll options menu, and show it and let the user choose an option
 				var optionsMenu = new DDLightbarMenu(pStartCol, pStartRow, pMenuWidth, pMenuHeight);
+				optionsMenu.ampersandHotkeysInItems = false;
 				for (i = 0; i < pollTextAndOpts.options.length; ++i)
 					optionsMenu.Add(pollTextAndOpts.options[i], i+1);
 				optionsMenu.colors.itemColor = "\1c";
@@ -688,11 +704,14 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 // Reads the configuration file (SlyVote.cfg).  Returns an object with the following
 // properties:
 //  cfgReadError: A string which will contain a message if failed to read the configuration file
+//  useAllAvailableSubBoards: Boolean - Whether or not to use all available sub-boards where
+//                            voting is allowed
 //  subBoardCodes: An array containing sub-board codes read from the configuration file
 function ReadConfigFile()
 {
 	var retObj = {
 		cfgReadError: "",
+		useAllAvailableSubBoards: true,
 		subBoardCodes: []
 	};
 
@@ -746,7 +765,16 @@ function ReadConfigFile()
 				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
 
 				// Set the appropriate value in the settings object.
-				if (settingUpper == "SUBBOARDCODES")
+				if (settingUpper == "USEALLAVAILABLESUBBOARDS")
+				{
+					retObj.useAllAvailableSubBoards = (value.toUpperCase() == "TRUE");
+					// If this setting is true, stop reading the config file - We'll populate
+					// the array of sub-board codes with all available sub-boards where voting
+					// is allowed.
+					if (retObj.useAllAvailableSubBoards)
+						break;
+				}
+				else if (settingUpper == "SUBBOARDCODES")
 				{
 					// Split the value on commas and add all sub-board codes to
 					// retObj.subBoardCodes, as long as they're valid sub-board codes.
@@ -769,6 +797,21 @@ function ReadConfigFile()
 	}
 	else // Unable to read the configuration file
 		retObj.cfgReadError = "Unable to open the configuration file: SlyVote.cfg";
+
+	// If we're set to use all available sub-boards, then populate the array
+	// of internal codes of all sub-boards where voting is enabled.
+	if (retObj.useAllAvailableSubBoards && retObj.cfgReadError.length == 0)
+	{
+		retObj.subBoardCodes = [];
+		for (var grp in msg_area.grp_list)
+		{
+			for (var sub in msg_area.grp_list[grp].sub_list)
+			{
+				if ((msg_area.grp_list[grp].sub_list[sub].settings & SUB_NOVOTING) == 0)
+					retObj.subBoardCodes.push(msg_area.grp_list[grp].sub_list[sub].code);
+			}
+		}
+	}
 
 	return retObj;
 }
@@ -2782,7 +2825,7 @@ function DrawVoteColumns(pTopRow)
 		colHeight: 0
 	};
 	retObj.textLen = retObj.columnX2 - retObj.columnX1 - 2;
-	retObj.colHeight = gBottomBorderRow - pTopRow - 1;
+	retObj.colHeight = gBottomBorderRow - pTopRow;
 
 	// Draw the columns
 	for (var posY = pTopRow; posY < gBottomBorderRow; ++posY)

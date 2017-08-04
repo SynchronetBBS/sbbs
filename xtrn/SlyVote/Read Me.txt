@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.17 Beta
-                           Release date: 2017-02-26
+                                 Version 0.19 Beta
+                           Release date: 2017-08-03
 
                                      by
 
@@ -165,6 +165,14 @@ settings:
 
 Setting                               Description
 -------                               -----------
+useAllAvailableSubBoards              Whether or not to use all available
+                                      sub-boards where voting is enabled.
+                                      Valid values are true and false.  This
+                                      defaults to true.  If this is set to
+                                      true, then any subBoardsCodes values
+                                      in the configuration file (described
+                                      below) will be ignored.
+
 subBoardCodes                         A comma-separated list of internal
                                       sub-board codes specifying which
                                       sub-board or sub-boards to use for voting
