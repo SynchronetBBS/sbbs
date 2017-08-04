@@ -1460,11 +1460,11 @@ function GetVoteTopicHdrs(pSubBoardCode, pCheckIfUserVoted)
 	if (msgbase.open())
 	{
 		var msgHdrs = msgbase.get_all_msg_headers(true);
-		retObj.pollsExist = (Object.keys(msgHdrs).length > 0);
 		for (var prop in msgHdrs)
 		{
 			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
 			{
+				retObj.pollsExist = true;
 				if (pCheckIfUserVoted)
 				{
 					if (!HasUserVotedOnMsg(msgHdrs[prop].number, pSubBoardCode, msgbase, user))
