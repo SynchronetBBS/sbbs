@@ -215,6 +215,10 @@
  *                              just return -1 if msgNum is not a number.  Also,
  *                              have been continuing to work on voting & message
  *                              filtering updates.
+ * 2017-08-05 Eric Oulashin     Version 1.17 beta 42
+ *                              When showing tally information for messages with
+ *                              upvotes & downvotes, it now shows who voted on
+ *                              the message (for sysops only).
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -301,8 +305,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 41";
-var READER_DATE = "2017-07-06";
+var READER_VERSION = "1.17 Beta 42";
+var READER_DATE = "2017-08-05";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1001,6 +1005,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.ForwardMessage = DigDistMsgReader_ForwardMessage;
 	this.VoteOnMessage = DigDistMsgReader_VoteOnMessage;
 	this.HasUserVotedOnMsg = DigDistMsgReader_HasUserVotedOnMsg;
+	this.GetUpvoteAndDownvoteInfo = DigDistMsgReader_GetUpvoteAndDownvoteInfo;
 	this.GetMsgBody = DigDistMsgReader_GetMsgBody;
 	this.RefreshMsgHdrInArrays = DigDistMsgReader_RefreshMsgHdrInArrays;
 
@@ -4516,6 +4521,13 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// the user is reading personal email.
 	if (userNameHandleAliasMatch(msgHeader.to))
 	{
+		// TODO: Occasionally seeing a failure  to save the header with the READ
+		// attribute set with the error "illegal header length increase" error:
+		// Failed to save message header with the READ attribute set!
+		// Group/sub-board num: 4, 446; AgoraNet - General Chat
+		// Message offset/index: 0, number: 2312
+		// Status: -101
+		// Error: smb_putmsghdr illegal header length increase: 780 (4 blocks) vs 762 (3 blocks)
 		msgHeader.attr |= MSG_READ;
 		var successfullySavedMsgHdr = this.msgbase.put_msg_header(false, msgHeader.number, msgHeader);
 		//var successfullySavedMsgHdr = this.msgbase.put_msg_header(msgHeader.number, msgHeader);
@@ -5440,15 +5452,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				var originalCurPos = console.getxy();
 				if (msgHeader.hasOwnProperty("total_votes") && msgHeader.hasOwnProperty("upvotes"))
 				{
-					var msgUpvotes = msgHeader.upvotes;
-					var msgDownvotes = msgHeader.total_votes - msgHeader.upvotes;
-					var msgVoteScore = msgHeader.upvotes - msgDownvotes;
-					var voteInfo = new Array();
-					voteInfo.push("Upvotes: " + msgUpvotes);
-					voteInfo.push("Downvotes: " + msgDownvotes);
-					voteInfo.push("Score: " + msgVoteScore);
-					if (msgHeader.hasOwnProperty("tally"))
-						voteInfo.push("Tally: " + msgHeader.tally);
+					var voteInfo = this.GetUpvoteAndDownvoteInfo(msgHeader);
 					// Display the vote info and let the user scroll through them
 					// (the console height should be enough, but do this just in case)
 					// Calculate information for the scrollbar for the vote info lines
@@ -5469,7 +5473,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
 						console.gotoxy(1, console.screen_rows);
 					}
-					// Display the kludge lines and let the user scroll through them
+					// Display the vote info lines and let the user scroll through them
 					this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
 					scrollTextLines(voteInfo, 0, this.colors["msgBodyColor"], true,
 					this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
@@ -6181,21 +6185,12 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 			case this.enhReaderKeys.showVotes: // Show votes
 				if (msgHeader.hasOwnProperty("total_votes") && msgHeader.hasOwnProperty("upvotes"))
 				{
-					var msgUpvotes = msgHeader.upvotes;
-					var msgDownvotes = msgHeader.total_votes - msgHeader.upvotes;
-					var msgVoteScore = msgHeader.upvotes - msgDownvotes;
-					var voteInfo = new Array();
 					console.print("\1n");
 					console.crlf();
-					console.print("Upvotes: " + msgUpvotes);
-					console.crlf();
-					console.print("Downvotes: " + msgDownvotes);
-					console.crlf();
-					console.print("Score: " + msgVoteScore);
-					console.crlf();
-					if (msgHeader.hasOwnProperty("tally"))
+					var voteInfo = this.GetUpvoteAndDownvoteInfo(msgHeader);
+					for (var voteInfoIdx = 0; voteInfoIdx < voteInfo.length; ++voteInfoIdx)
 					{
-						console.print("Tally: " + msgHeader.tally);
+						console.print(voteInfo[voteInfoIdx]);
 						console.crlf();
 					}
 				}
@@ -14240,6 +14235,64 @@ function DigDistMsgReader_HasUserVotedOnMsg(pMsgNum, pUser)
 		}
 	}
 	return userHasVotedOnMsg;
+}
+
+// Gets information about the upvotes and downvotes for a message.
+// If the user is a sysop, this will also get who voted on the message.
+//
+// Parameters:
+//  pMsgHdr: A header of a message that has upvotes & downvotes
+//
+// Return value: An array of strings containing information about the upvotes,
+//               downvotes, tally, and (if the user is a sysop) who submitted
+//               votes on the message.
+function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
+{
+	// If the message header doesn't have the "total_votes" or "upvotes" properties,
+	// then there's no vote information, so just return an empty array.
+	if (!pMsgHdr.hasOwnProperty("total_votes") || !pMsgHdr.hasOwnProperty("upvotes"))
+		return [];
+
+	var msgUpvotes = pMsgHdr.upvotes;
+	var msgDownvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
+	var msgVoteScore = pMsgHdr.upvotes - msgDownvotes;
+	var voteInfo = [];
+	voteInfo.push("Upvotes: " + msgUpvotes);
+	voteInfo.push("Downvotes: " + msgDownvotes);
+	voteInfo.push("Score: " + msgVoteScore);
+	if (pMsgHdr.hasOwnProperty("tally"))
+		voteInfo.push("Tally: " + pMsgHdr.tally);
+
+	if (gIsSysop)
+	{
+		// Check all the messages in the messagebase after the current one
+		// to find response messages
+		if (typeof(this.msgbase.get_all_msg_headers) === "function")
+		{
+			// Pass true to get_all_msg_headers() to tell it to return vote messages
+			// (the parameter was introduced in Synchronet 3.17+)
+			var tmpHdrs = this.msgbase.get_all_msg_headers(true);
+			for (var tmpProp in tmpHdrs)
+			{
+				if (tmpHdrs[tmpProp] == null)
+					continue;
+				// If this header's thread_back or reply_id matches the poll message
+				// number, then append the 'user voted' string to the message body.
+				if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.number))
+				{
+					var tmpMessageBody = this.msgbase.get_msg_body(false, tmpHdrs[tmpProp].number);
+					if ((tmpHdrs[tmpProp].field_list.length == 0) && (tmpMessageBody.length == 0))
+					{
+						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
+						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
+						voteInfo.push("\1n\1c\1h" + tmpHdrs[tmpProp].from + "\1n\1c voted on this message on " + voteDate + "\1n");
+					}
+				}
+			}
+		}
+	}
+
+	return voteInfo;
 }
 
 // For the DigDistMsgReader class: Gets the body (text) of a message.  If it's
