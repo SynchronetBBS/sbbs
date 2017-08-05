@@ -21,6 +21,7 @@ This script provides an object, DDLightbarMenu.  Use the DDLightbarMenu
 constructor to create the object.  Some other notable methods:
 Add()
 SetItemHotkey()
+AddItemHotkey()
 SetPos()
 SetSize()
 GetVal()
@@ -42,16 +43,20 @@ By default, the menu selection will wrap around to the beginning/end when using
 the down/up arrows.  That behavior can be disabled by setting the wrapNavigation
 property to false.
 
-This menu object supports adding a hotkey to each menu item.  The hotkey can be
-specified in the Add() method a couple of different ways - Either by specifying
-a hotkey as the 3rd parameter or by putting a & in the menu item text just before
-the key you want to use as the hotkey.  For example, in the text "E&xit", "x"
-would be used as the hotkey for the item.  If you want to disable the use of
+This menu object supports adding multiple hotkeys to each menu item.  A hotkey
+can be specified in the Add() method a couple of different ways - By specifying
+a hotkey as the 3rd parameter and/or by putting a & in the menu item text just
+before a key you want to use as the hotkey.  For example, in the text "E&xit",
+"x" would be used as the hotkey for the item.  If you want to disable the use of
 ampersands for hotkeys in menu items (for instance, if you want an item to
-literally display an ampersand before a character), set the ampersandHotkeysInItems
-property to false.  For instance:
+literally display an ampersand before a character), set the
+ampersandHotkeysInItems property to false.  For instance:
 lbMenu.ampersandHotkeysInItems = false;
 Note that ampersandHotkeysInItems must be set before adding menu items.
+
+You can call the SetItemHotkey() method to set a single hotkey to be used for
+a menu item or AddItemHotkey() to add an additional hotkey for an item in
+addition to any existing hotkeys it might already have.
 
 Example usage:
 load("DDLightbarMenu.js");
@@ -205,7 +210,9 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.WriteItem = DDLightbarMenu_WriteItem;
 	this.Erase = DDLightbarMenu_Erase;
 	this.SetItemHotkey = DDLightbarMenu_SetItemHotkey;
+	this.AddItemHotkey = DDLightbarMenu_AddItemHotkey;
 	this.RemoveItemHotkey = DDLightbarMenu_RemoveItemHotkey;
+	this.RemoveItemHotkeys = DDLightbarMenu_RemoveItemHotkeys;
 	this.RemoveAllItemHotkeys = DDLightbarMenu_RemoveAllItemHotkeys;
 	this.GetVal = DDLightbarMenu_GetVal;
 	this.SetBorderChars = DDLightbarMenu_SetBorderChars;
@@ -229,7 +236,8 @@ function DDLightbarMenu_Add(pText, pRetval, pHotkey)
 {
 	var item = {
 		text: pText,
-		retval: pRetval
+		retval: pRetval,
+		hotkeys: []
 	};
 	if (pRetval == undefined)
 		item.retval = this.items.length;
@@ -238,25 +246,24 @@ function DDLightbarMenu_Add(pText, pRetval, pHotkey)
 	// and if there's a non-space after it, then use that character as the
 	// hotkey.
 	if (typeof(pHotkey) == "string")
-		item.hotkey = pHotkey;
-	else
+		item.hotkeys.push(pHotkey);
+
+	if (this.ampersandHotkeysInItems)
 	{
-		if (this.ampersandHotkeysInItems)
+		var ampersandIndex = pText.indexOf("&");
+		if (ampersandIndex > -1)
 		{
-			var ampersandIndex = pText.indexOf("&");
-			if (ampersandIndex > -1)
+			// See if the next character is a space character.  If not, then
+			// don't count it in the length.
+			if (pText.length > ampersandIndex+1)
 			{
-				// See if the next character is a space character.  If not, then
-				// don't count it in the length.
-				if (pText.length > ampersandIndex+1)
-				{
-					var nextChar = pText.substr(ampersandIndex+1, 1);
-					if (nextChar != " ")
-						item.hotkey = nextChar;
-				}
+				var nextChar = pText.substr(ampersandIndex+1, 1);
+				if (nextChar != " ")
+					item.hotkeys.push(nextChar);
 			}
 		}
 	}
+
 	this.items.push(item);
 }
 
@@ -548,30 +555,55 @@ function DDLightbarMenu_Erase()
 function DDLightbarMenu_SetItemHotkey(pIdx, pHotkey)
 {
 	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length) && (typeof(pHotkey) == "string"))
-		this.items[pIdx].hotkey = pHotkey;
+	{
+		this.items[pIdx].hotkeys = [];
+		this.items[pIdx].hotkeys.push(pHotkey);
+	}
 }
 
-// Removes an item's hotkey
+// Adds a hotkey for a menu item (in addition to the item's other hotkeys)
+//
+// Parameters:
+//  pIdx: The index of the menu item
+//  pHotkey: The hotkey to add for the menu item
+function DDLightbarMenu_AddItemHotkey(pIdx, pHotkey)
+{
+	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length) && (typeof(pHotkey) == "string"))
+		this.items[pIdx].hotkeys.push(pHotkey);
+}
+
+// Removes a specific hotkey from an item.
 //
 // Parameters:
 //  pIdx: The index of the item
-function  DDLightbarMenu_RemoveItemHotkey(pIdx)
+//  pHotkey: The hotkey to remove from the item
+function DDLightbarMenu_RemoveItemHotkey(pIdx, pHotkey)
 {
 	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length))
 	{
-		if (this.items[pIdx].hasOwnProperty("hotkey"))
-			delete this.items[pIdx].hotkey;
+		for (var i = 0; i < this.items[pIdx].hotkeys.length; ++i)
+		{
+			if (this.items[pIdx].hotkeys[i] == pHotkey)
+				this.items[pIdx].hotkeys.splice(i, 1);
+		}
 	}
+}
+
+// Removes all hotkeys for an item
+//
+// Parameters:
+//  pIdx: The index of the item
+function  DDLightbarMenu_RemoveItemHotkeys(pIdx)
+{
+	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length))
+		this.items[pIdx].hotkeys = [];
 }
 
 // Removes the hotkeys from all items
 function DDLightbarMenu_RemoveAllItemHotkeys()
 {
 	for (var i = 0; i < this.items.length; ++i)
-	{
-		if (this.items[i].hasOwnProperty("hotkey"))
-			delete this.items[i].hotkey;
-	}
+		this.items[i].hotkeys = [];
 }
 
 // Waits for user input, optionally drawing the menu first.
@@ -815,13 +847,13 @@ function DDLightbarMenu_GetVal(pDraw)
 			// then choose that item.
 			for (var i = 0; i < this.items.length; ++i)
 			{
-				if (this.items[i].hasOwnProperty("hotkey"))
+				for (var h = 0; h < this.items[i].hotkeys.length; ++h)
 				{
 					var userPressedHotkey = false;
 					if (this.hotkeyCaseSensitive)
-						userPressedHotkey = (userInput == this.items[i].hotkey);
+						userPressedHotkey = (userInput == this.items[i].hotkeys[h]);
 					else
-						userPressedHotkey = (userInput.toUpperCase() == this.items[i].hotkey.toUpperCase());
+						userPressedHotkey = (userInput.toUpperCase() == this.items[i].hotkeys[h].toUpperCase());
 					if (userPressedHotkey)
 					{
 						retVal = this.items[i].retval;
