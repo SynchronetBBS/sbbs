@@ -26,6 +26,12 @@
  *                              DDLightbarMenu objects to false so that it won't
  *                              interpret ampersands before a character in menu
  *                              items as hotkeys.
+ * 2017-08-05 Eric Oulashin     Version 0.20 Beta
+ *                              Fixed a bug in the stats display where it was assigning
+ *                              the total_votes in the headers instead of comparing,
+ *                              using an = instead of ==.  Also, updated the stats view
+ *                              to display the stats in a scrollable frame rather than
+ *                              simply dumping out the stats to the screen.
  */
  
 // TODO:
@@ -75,8 +81,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.19 Beta";
-var SLYVOTE_DATE = "2017-08-03";
+var SLYVOTE_VERSION = "0.20 Beta";
+var SLYVOTE_DATE = "2017-08-05";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -223,6 +229,7 @@ if (gSlyVoteCfg.subBoardCodes.length == 0)
 
 // Determine which sub-board to use - If there is more than one, let the user choose.
 var gSubBoardCode = "";
+var gNumPollsInSubBoard = 0;
 if (gSlyVoteCfg.subBoardCodes.length == 1)
 	gSubBoardCode = gSlyVoteCfg.subBoardCodes[0];
 else
@@ -236,6 +243,7 @@ else
 	else
 		console.gotoxy(1, chooseSubRetObj.menuPos.y + chooseSubRetObj.menuSize.height + 1);
 }
+gNumPollsInSubBoard = countPollsInSubBoard(gSubBoardCode);
 
 // Program states
 var MAIN_MENU = 0;
@@ -341,18 +349,19 @@ function DoMainMenu()
 		if (gSlyVoteCfg.subBoardCodes.length > 1)
 			++mainMenuHeight;
 		gMainMenu = new DDLightbarMenu(mainScrRetObj.optMenuX, mainScrRetObj.optMenuY, 17, mainMenuHeight);
-		gMainMenu.Add("Vote On A Topic", voteOnTopicOpt, "1");
-		gMainMenu.Add("Answer All Topics", answerAllTopicsOpt, "2");
-		gMainMenu.Add("Create A Topic", createTopicOpt, "3");
-		gMainMenu.Add("View Results", viewResultsOpt, "4");
-		gMainMenu.Add("View stats", viewStatsOpt, "5");
+		gMainMenu.hotkeyCaseSensitive = false;
+		gMainMenu.Add("&Vote On A Topic", voteOnTopicOpt, "1");
+		gMainMenu.Add("&Answer All Topics", answerAllTopicsOpt, "2");
+		gMainMenu.Add("&Create A Topic", createTopicOpt, "3");
+		gMainMenu.Add("View &Results", viewResultsOpt, "4");
+		gMainMenu.Add("View &Stats", viewStatsOpt, "5");
 		if (gSlyVoteCfg.subBoardCodes.length > 1)
 		{
-			gMainMenu.Add("Change topic area", changeTopicAreaOpt, "6");
-			gMainMenu.Add("Quit To BBS", quitToBBSOpt, "7");
+			gMainMenu.Add("Change &Topic Area", changeTopicAreaOpt, "6");
+			gMainMenu.Add("&Quit To BBS", quitToBBSOpt, "7");
 		}
 		else
-			gMainMenu.Add("Quit To BBS", quitToBBSOpt, "6");
+			gMainMenu.Add("&Quit To BBS", quitToBBSOpt, "6");
 		gMainMenu.colors.itemColor = "\1n\1w";
 		gMainMenu.colors.selectedItemColor = "\1n\1" + "4\1w\1h";
 	}
@@ -415,7 +424,10 @@ function DoMainMenu()
 		var chosenSubBoardCode = chooseSubRetObj.subBoardChoice;
 		// If the user didn't abort choosing an area, then set gSubBoardCode.
 		if (chosenSubBoardCode != null)
+		{
 			gSubBoardCode = chosenSubBoardCode;
+			gNumPollsInSubBoard = countPollsInSubBoard(gSubBoardCode);
+		}
 	}
 	else if ((userChoice == quitToBBSOpt) || (userChoice == null))
 		nextProgramState = EXIT_SLYVOTE;
@@ -981,6 +993,9 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 			}
 			if (pollComment.length > 0)
 				msgBody = pollComment + "\r\n" + msgBody;
+			// Temporary
+			msgBody = "Total votes: " + pMsgHdr.total_votes + "\r\n\r\n" + msgBody;
+			// End Temporary
 
 			// If voting is allowed in this sub-board and the current logged-in
 			// user has not voted on this message, then append some text saying
@@ -1325,6 +1340,11 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	var subBoardTextX = (console.screen_columns/2) - (strip_ctrl(subBoardText).length/2);
 	console.gotoxy(subBoardTextX, 9);
 	console.print(subBoardText);
+	// Write the number of polls in the sub-board
+	var numPollsText = "\1n\1b\1hThere are \1w" + gNumPollsInSubBoard + " \1bpolls in this area";
+	var numPollsTextX = (console.screen_columns/2) - (strip_ctrl(numPollsText).length/2);
+	console.gotoxy(numPollsTextX, 10);
+	console.print(numPollsText);
 	// Write the SlyVote version centered
 	console.print("\1n");
 	var fieldWidth = 28;
@@ -2999,29 +3019,23 @@ function ViewStats(pSubBoardCode)
 	topicRetObj.msgHdrs.sort(function(pA, pB) {
 		if (pA.total_votes < pB.total_votes)
 			return 1;
-		else if (pA.total_votes = pB.total_votes)
+		else if (pA.total_votes == pB.total_votes)
 			return 0;
 		else if (pA.total_votes > pB.total_votes)
 			return -1;
 	});
-	// Display the poll stats
-	console.clear("\1n");
-	console.print("\1h\1bTopic area: \1c" + msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name + "\1n");
-	console.crlf();
-	console.print("\1w\1hTopics ranked by number of votes (highest to lowest):\1n");
-	console.crlf();
-	console.crlf();
+
+	// Create a text message with the poll stats to display in a scrollable
+	// frame
+	var statsText = "\1n\1h\1bTopic area: \1c" + msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name + "\1n\r\n";
+	statsText += "\1w\1hTopics ranked by number of votes (highest to lowest):\1n\r\n\r\n";
 	var labelColor = "\1w\1h";
 	for (var i = 0; i < topicRetObj.msgHdrs.length; ++i)
 	{
-		console.print("\1n" + labelColor + "Topic: \1n\1g" + topicRetObj.msgHdrs[i].subject);
-		console.crlf();
-		console.print("\1n" + labelColor + "By: \1n\1r\1h" + topicRetObj.msgHdrs[i].from);
-		console.crlf();
-		console.print("\1n" + labelColor + "Date: \1n\1b\1h" + topicRetObj.msgHdrs[i].date);
-		console.crlf();
-		console.print("\1n" + labelColor + "Number of votes: \1n\1m\1h" + topicRetObj.msgHdrs[i].total_votes);
-		console.crlf();
+		statsText += "\1n" + labelColor + "Topic: \1n\1g" + topicRetObj.msgHdrs[i].subject + "\r\n";
+		statsText += "\1n" + labelColor + "By: \1n\1r\1h" + topicRetObj.msgHdrs[i].from + "\r\n";
+		statsText += "\1n" + labelColor + "Date: \1n\1b\1h" + topicRetObj.msgHdrs[i].date + "\r\n";
+		statsText += "\1n" + labelColor + "Number of votes: \1n\1m\1h" + topicRetObj.msgHdrs[i].total_votes + "\r\n";
 		// Find the option(s) with the highest number(s) of votes
 		var tallyIdx = 0;
 		var answersAndNumVotes = [];
@@ -3050,21 +3064,65 @@ function ViewStats(pSubBoardCode)
 			else if (pA.numVotes > pB.numVotes)
 				return -1;
 		});
-		console.print("\1n" + labelColor + "Option(s) with highest number of votes:\1n");
-		console.crlf();
+		statsText += "\1n" + labelColor + "Option(s) with highest number of votes:\1n\r\n";
 		for (var answerI = 0; answerI < answersAndNumVotes.length; ++answerI)
 		{
 			if (answersAndNumVotes[answerI].numVotes == 0)
 				continue;
-			console.print("\1n\1b\1h" + answersAndNumVotes[answerI].answerText + "\1w: \1m" + answersAndNumVotes[answerI].numVotes + "\1n");
-			console.crlf();
+			statsText += "\1n\1b\1h" + answersAndNumVotes[answerI].answerText + "\1w: \1m" + answersAndNumVotes[answerI].numVotes + "\1n\r\n";
 			if (answerI > 0)
 			{
 				if (answersAndNumVotes[answerI].numVotes != answersAndNumVotes[answerI-1].numVotes)
 					break;
 			}
 		}
-		console.crlf();
+		statsText += "\r\n";
+	}
+
+	// Create a scrollable frame to display the stats in
+	var frameHeight = console.screen_rows - 1;
+	// Create the frame object to use for displaying the message
+	var displayFrame = new Frame(1, // x: Horizontal coordinate of top left
+								 1, // y: Vertical coordinate of top left
+								 console.screen_columns, // Width
+								 frameHeight, // Height
+								 BG_BLACK);
+	displayFrame.v_scroll = true;
+	displayFrame.h_scroll = false;
+	displayFrame.scrollbars = true;
+	var displayFrameScrollbar = new ScrollBar(displayFrame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
+	// Put the stats text in the frame
+	displayFrame.attr&=~HIGH;
+	displayFrame.putmsg(statsText, "\1n");
+	displayFrame.scrollTo(0, 0);
+
+	// Create the key help line to be displayed at the bottom of the screen
+	var keyText = "\1rUp\1b, \1rDn\1b, \1rPgUp\1b/\1rDn\1b, \1rHome\1b, \1rEnd\1b, \1rQ\1m)\1buit";
+	var keyHelpLine = "\1" + "7" + CenterText(keyText, console.screen_columns-1);
+
+	// Prepare the screen and display the key help line on the last row of the screen
+	console.clear("\1n");
+	console.gotoxy(1, console.screen_rows);
+	console.print(keyHelpLine);
+
+	// User input loop
+	var continueOn = true;
+	while (continueOn)
+	{
+		// Do garbage collection to ensure low memory usage
+		js.gc(true);
+
+		// Draw the frame
+		displayFrame.invalidate();
+		displayFrameScrollbar.cycle();
+		displayFrame.cycle();
+		displayFrame.draw();
+
+		// Let the user scroll the message, and take appropriate action based
+		// on the user input
+		var scrollRetObj = ScrollFrame(displayFrame, displayFrameScrollbar, 0, "\1n", false, 1, console.screen_rows);
+		if (scrollRetObj.lastKeypress == gReaderKeys.quit)
+			continueOn = false;
 	}
 }
 
@@ -3077,4 +3135,27 @@ function ViewStats(pSubBoardCode)
 function RemoveCRLFCodes(pText)
 {
 	return pText.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
+}
+
+// Counts the number of polls in a sub-board.
+//
+// Parameters:
+//  pSubBoardCode: The interna code of the sub-board to count polls in
+//
+// Return value: The number of polls in the sub-board
+function countPollsInSubBoard(pSubBoardCode)
+{
+	var numPolls = 0;
+	var msgbase = new MsgBase(pSubBoardCode);
+	if (msgbase.open())
+	{
+		var msgHdrs = msgbase.get_all_msg_headers(true);
+		for (var prop in msgHdrs)
+		{
+			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+				++numPolls;
+		}
+		msgbase.close();
+	}
+	return numPolls;
 }
