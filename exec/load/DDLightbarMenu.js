@@ -498,7 +498,7 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight)
 
 		// Get the item text, and truncate it to the displayable item width
 		var itemText = this.items[pIdx].text;
-		if (itemTextDisplayableLen(itemText) > itemLen)
+		if (itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems) > itemLen)
 			itemText = itemText.substr(0, itemLen);
 		// Add the item color to the text
 		itemText = itemColor + itemText;
@@ -526,7 +526,7 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight)
 		// Ensure the item text fills the width of the menu (in case there's a
 		// background color, it should be used for the entire width of the item
 		// text).  Then write the item.
-		var currentTextLen = itemTextDisplayableLen(itemText);
+		var currentTextLen = itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems);
 		if (currentTextLen < itemLen)
 			itemText += format("%" + +(itemLen-currentTextLen) + "s", ""); // Append spaces to the end of itemText
 		console.print(itemText + "\1n");
@@ -961,12 +961,16 @@ function getKeyWithESCChars(pGetKeyMode)
 // Returns the length of an item's text, not counting non-displayable
 // characters (such as Synchronet color attributes and an ampersand
 // immediately before a non-space)
-function itemTextDisplayableLen(pText)
+//
+// Parameters:
+//  pText: The text to test
+//  pAmpersandHotkeysInItems: Boolean - Whether or not ampersand hotkeys are enabled for the item text
+function itemTextDisplayableLen(pText, pAmpersandHotkeysInItems)
 {
 	var textLen = strip_ctrl(pText).length;
-	// If ampersandHotkeysInItems is true, look for ampersands immediately
+	// If pAmpersandHotkeysInItems is true, look for ampersands immediately
 	// before a non-space and if found, don't count those.
-	if (this.ampersandHotkeysInItems)
+	if (pAmpersandHotkeysInItems)
 	{
 		var startIdx = 0;
 		var ampersandIndex = pText.indexOf("&", startIdx);
