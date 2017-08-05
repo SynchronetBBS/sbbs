@@ -84,6 +84,10 @@
  *                              console.pause() instead of a custom pause routine
  *                              so that Synchronet can use a custom pause script
  *                              if one is configured in text.dat.
+ * 2017-08-05 Eric Oulashin     Version 1.50
+ *                              Added a user configuration option (accessible
+ *                              to the user via the Ctrl-U) to toggle whether
+ *                              or not to trim spaces from quote lines.
  */
 
 /* Command-line arguments:
@@ -161,8 +165,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.49";
-const EDITOR_VER_DATE = "2016-05-11";
+const EDITOR_VERSION = "1.50";
+const EDITOR_VER_DATE = "2016-08-05";
 
 
 // Program variables
@@ -483,64 +487,7 @@ if (postingInMsgSubBoard(gMsgArea))
 	gCrossPostMsgSubs.add(gMsgAreaInfo.subBoardCode);
 
 // Open the quote file / message file
-var inputFile = new File(gInputFilename);
-if (inputFile.open("r", false))
-{
-	// Read into the gQuoteLines or gEditLines array, depending on the value
-	// of gUseQuotes.  Use a buffer size that should be long enough.
-	if (gUseQuotes)
-	{
-		var textLine = null;  // Line of text read from the quotes file
-		while (!inputFile.eof)
-		{
-			textLine = inputFile.readln(2048);
-			// Only use textLine if it's actually a string.
-			if (typeof(textLine) == "string")
-			{
-				textLine = strip_ctrl(textLine);
-				// If the line has only whitespace and/or > characters,
-				// then make the line blank before putting it into
-				// gQuoteLines.
-				if (/^[\s>]+$/.test(textLine))
-				textLine = "";
-				gQuoteLines.push(textLine);
-			}
-		}
-	}
-	else
-	{
-		var textLine = null;
-		while (!inputFile.eof)
-		{
-			textLine = new TextLine();
-			textLine.text = inputFile.readln(2048);
-			if (typeof(textLine.text) == "string")
-				textLine.text = strip_ctrl(textLine.text);
-			else
-				textLine.text = "";
-			textLine.hardNewlineEnd = true;
-			// If there would still be room on the line for at least
-			// 1 more character, then add a space to the end of the
-			// line.
-			if (textLine.text.length < console.screen_columns-1)
-			textLine.text += " ";
-			gEditLines.push(textLine);
-		}
-
-		// If the last edit line is undefined (which is possible after reading the end
-		// of the quotes file), then remove it from gEditLines.
-		if (gEditLines.length > 0)
-		{
-			if (gEditLines.length > 0)
-			{
-				var lastQuoteLineIndex = gEditLines.length - 1;
-				if (gEditLines[lastQuoteLineIndex].text == undefined)
-					gEditLines.splice(lastQuoteLineIndex, 1);
-			}
-		}
-	}
-	inputFile.close();
-}
+readQuoteOrMessageFile();
 
 // If the subject is blank, set it to something.
 if (gMsgSubj == "")
@@ -579,178 +526,177 @@ if (gConfigSettings.displayEndInfoScreen)
 var savedTheMessage = false;
 if ((exitCode == 0) && (gEditLines.length > 0))
 {
-  // Store whether the user is still posting the message in the original sub-board
-  // and whether that's the only sub-board they're posting in.
-  var postingInOriginalSubBoard = gCrossPostMsgSubs.subCodeExists(gMsgAreaInfo.subBoardCode);
-  var postingOnlyInOriginalSubBoard = (postingInOriginalSubBoard && (gCrossPostMsgSubs.numSubBoards() == 1));
+	// Store whether the user is still posting the message in the original sub-board
+	// and whether that's the only sub-board they're posting in.
+	var postingInOriginalSubBoard = gCrossPostMsgSubs.subCodeExists(gMsgAreaInfo.subBoardCode);
+	var postingOnlyInOriginalSubBoard = (postingInOriginalSubBoard && (gCrossPostMsgSubs.numSubBoards() == 1));
 
-  // If some message areas have been selected for cross-posting, then otuput
-  // which areas will be cross-posted into, and do the cross-posting.
-  var crossPosted = false;
-  if (gCrossPostMsgSubs.numMsgGrps() > 0)
-  {
-    // If the will cross-post into other sub-boards, then create a string containing
-    // the user's entire message.
-    var msgContents = "";
-    if (!postingOnlyInOriginalSubBoard)
-    {
-      // Append each line to msgContents.  Then,
-      //  - If using Synchronet 3.15 or higher:
-      //    Depending on whether the line has a hard newline
-      //    or a soft newline, append a "\r\n" or a " \n", as
-      //    per Synchronet's standard as of 3.15.
-      //  - Otherwise (Synchronet 3.14 and below):
-      //    Just append a "\r\n" to the line
-      if (system.version_num >= 31500)
-      {
-        var useHardNewline = false;
-        for (var i = 0; i < gEditLines.length; ++i)
-        {
-          // Use a hard newline if the current edit line has one or if this is
-          // the last line of the message.
-          useHardNewline = (gEditLines[i].hardNewlineEnd || (i == gEditLines.length-1));
-          msgContents += gEditLines[i].text + (useHardNewline ? "\r\n" : " \n");
-        }
-      }
-      else // Synchronet 3.14 and below
-      {
-        for (var i = 0; i < gEditLines.length; ++i)
-          msgContents += gEditLines[i].text + "\r\n";
-      }
+	// If some message areas have been selected for cross-posting, then otuput
+	// which areas will be cross-posted into, and do the cross-posting.
+	var crossPosted = false;
+	if (gCrossPostMsgSubs.numMsgGrps() > 0)
+	{
+		// If the will cross-post into other sub-boards, then create a string containing
+		// the user's entire message.
+		var msgContents = "";
+		if (!postingOnlyInOriginalSubBoard)
+		{
+			// Append each line to msgContents.  Then,
+			//  - If using Synchronet 3.15 or higher:
+			//    Depending on whether the line has a hard newline
+			//    or a soft newline, append a "\r\n" or a " \n", as
+			//    per Synchronet's standard as of 3.15.
+			//  - Otherwise (Synchronet 3.14 and below):
+			//    Just append a "\r\n" to the line
+			if (system.version_num >= 31500)
+			{
+				var useHardNewline = false;
+				for (var i = 0; i < gEditLines.length; ++i)
+				{
+					// Use a hard newline if the current edit line has one or if this is
+					// the last line of the message.
+					useHardNewline = (gEditLines[i].hardNewlineEnd || (i == gEditLines.length-1));
+					msgContents += gEditLines[i].text + (useHardNewline ? "\r\n" : " \n");
+				}
+			}
+			else // Synchronet 3.14 and below
+			{
+				for (var i = 0; i < gEditLines.length; ++i)
+					msgContents += gEditLines[i].text + "\r\n";
+			}
 
-      // If the user has a signature file, then read it and append it to
-      // msgContents (with a blank line to separate the message & signature).
-      // Note: msgContents already has a newline at the end, so we don't have
-      // to append one here; just append the signature.
-      var msgSigInfo = readUserSigFile();
-      if (msgSigInfo.sigContents.length > 0)
-        msgContents += msgSigInfo.sigContents + "\r\n";
-    }
+			// If the user has a signature file, then read it and append it to
+			// msgContents (with a blank line to separate the message & signature).
+			// Note: msgContents already has a newline at the end, so we don't have
+			// to append one here; just append the signature.
+			var msgSigInfo = readUserSigFile();
+			if (msgSigInfo.sigContents.length > 0)
+				msgContents += msgSigInfo.sigContents + "\r\n";
+		}
 
-    console.print("\1n");
-    console.crlf();
-    console.print("\1n" + gConfigSettings.genColors.msgWillBePostedHdr + "Your message will be posted into the following area(s):");
-    console.crlf();
-    // If the user is posting in the originally-chosen sub-board and other sub-boards,
-    // then make a log in the BBS log that the user is posting a message (for
-    // cross-post logging).
-    if (postingInOriginalSubBoard && !postingOnlyInOriginalSubBoard)
-    {
-      log(LOG_INFO, "SlyEdit: " + user.alias + " is posting a message in " + msg_area.sub[gMsgAreaInfo.subBoardCode].grp_name +
-          " " + msg_area.sub[gMsgAreaInfo.subBoardCode].description + " (" + gMsgSubj + ")");
-      bbs.log_str("SlyEdit: " + user.alias + " is posting a message in " + msg_area.sub[gMsgAreaInfo.subBoardCode].grp_name +
-          " " + msg_area.sub[gMsgAreaInfo.subBoardCode].description + " (" + gMsgSubj + ")");
-    }
-    var postMsgErrStr = ""; // For storing errors related to saving the message
-    for (var grpIndex in gCrossPostMsgSubs)
-    {
-      // Skip the function names (we only want the group indexes)
-      if (gCrossPostMsgSubs.propIsFuncName(grpIndex))
-        continue;
+		console.print("\1n");
+		console.crlf();
+		console.print("\1n" + gConfigSettings.genColors.msgWillBePostedHdr + "Your message will be posted into the following area(s):");
+		console.crlf();
+		// If the user is posting in the originally-chosen sub-board and other sub-boards,
+		// then make a log in the BBS log that the user is posting a message (for
+		// cross-post logging).
+		if (postingInOriginalSubBoard && !postingOnlyInOriginalSubBoard)
+		{
+			log(LOG_INFO, "SlyEdit: " + user.alias + " is posting a message in " + msg_area.sub[gMsgAreaInfo.subBoardCode].grp_name +
+			    " " + msg_area.sub[gMsgAreaInfo.subBoardCode].description + " (" + gMsgSubj + ")");
+			bbs.log_str("SlyEdit: " + user.alias + " is posting a message in " + msg_area.sub[gMsgAreaInfo.subBoardCode].grp_name +
+			            " " + msg_area.sub[gMsgAreaInfo.subBoardCode].description + " (" + gMsgSubj + ")");
+		}
+		var postMsgErrStr = ""; // For storing errors related to saving the message
+		for (var grpIndex in gCrossPostMsgSubs)
+		{
+			// Skip the function names (we only want the group indexes)
+			if (gCrossPostMsgSubs.propIsFuncName(grpIndex))
+				continue;
 
-      console.print("n" + gConfigSettings.genColors.msgPostedGrpHdr + msg_area.grp_list[grpIndex].description + ":");
-      console.crlf();
-      for (var subCode in gCrossPostMsgSubs[grpIndex])
-      {
-        if (subCode == gMsgAreaInfo.subBoardCode)
-        {
-          printf("n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-48s", msg_area.sub[subCode].description.substr(0, 48));
-          console.print("n " + gConfigSettings.genColors.msgPostedOriginalAreaText + "(original message area)");
-        }
-        // If subCode is not the user's current sub, then if the user is allowed
-        // to post in that sub, then post the message there.
-        else
-        {
-          // Write a log in the BBS log about which message area the user is
-          // cross-posting into.
-          log(LOG_INFO, "SlyEdit: " + user.alias + " is cross-posting a message in " + msg_area.sub[subCode].grp_name +
-              " " + msg_area.sub[subCode].description + " (" + gMsgSubj + ")");
-          bbs.log_str("SlyEdit: " + user.alias + " is cross-posting a message in " + msg_area.sub[subCode].grp_name +
-              " " + msg_area.sub[subCode].description + " (" + gMsgSubj + ")");
+			console.print("n" + gConfigSettings.genColors.msgPostedGrpHdr + msg_area.grp_list[grpIndex].description + ":");
+			console.crlf();
+			for (var subCode in gCrossPostMsgSubs[grpIndex])
+			{
+				if (subCode == gMsgAreaInfo.subBoardCode)
+				{
+					printf("n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-48s", msg_area.sub[subCode].description.substr(0, 48));
+					console.print("n " + gConfigSettings.genColors.msgPostedOriginalAreaText + "(original message area)");
+				}
+				// If subCode is not the user's current sub, then if the user is allowed
+				// to post in that sub, then post the message there.
+				else
+				{
+					// Write a log in the BBS log about which message area the user is
+					// cross-posting into.
+					log(LOG_INFO, "SlyEdit: " + user.alias + " is cross-posting a message in " + msg_area.sub[subCode].grp_name +
+					    " " + msg_area.sub[subCode].description + " (" + gMsgSubj + ")");
+					bbs.log_str("SlyEdit: " + user.alias + " is cross-posting a message in " + msg_area.sub[subCode].grp_name +
+					            " " + msg_area.sub[subCode].description + " (" + gMsgSubj + ")");
 
-          // Write the cross-posting message area on the user's screen.
-          printf("n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
-          if (user.compare_ars(msg_area.sub[subCode].post_ars))
-          {
-             postMsgErrStr = postMsgToSubBoard(subCode, gToName, gMsgSubj, msgContents, user.number);
-             if (postMsgErrStr.length == 0)
-             {
-               savedTheMessage = true;
-               crossPosted = true;
-               console.print("nhb[ng" + CHECK_CHAR + "nhb]n");
-             }
-             else
-             {
-               console.print("nhb[rXb]n");
-               console.crlf();
-               console.print("   nhr*n " + postMsgErrStr);
-               console.crlf();
-             }
-          }
-          else
-          {
-             // The user isn't allowed to post in the sub.  Output a message
-             // saying so.
-             console.print("nhb[rXb]n");
-             console.crlf();
-             console.print("   nhr*n You're not allowed to post in this area.");
-             console.crlf();
-          }
-        }
-        console.crlf();
-      }
-    }
-    console.print("n");
-    console.crlf();
-  }
+					// Write the cross-posting message area on the user's screen.
+					printf("n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
+					if (user.compare_ars(msg_area.sub[subCode].post_ars))
+					{
+						postMsgErrStr = postMsgToSubBoard(subCode, gToName, gMsgSubj, msgContents, user.number);
+						if (postMsgErrStr.length == 0)
+						{
+							savedTheMessage = true;
+							crossPosted = true;
+							console.print("nhb[ng" + CHECK_CHAR + "nhb]n");
+						}
+						else
+						{
+							console.print("nhb[rXb]n");
+							console.crlf();
+							console.print("   nhr*n " + postMsgErrStr);
+							console.crlf();
+						}
+					}
+					else
+					{
+						// The user isn't allowed to post in the sub.  Output a message
+						// saying so.
+						console.print("nhb[rXb]n");
+						console.crlf();
+						console.print("   nhr*n You're not allowed to post in this area.");
+						console.crlf();
+					}
+				}
+				console.crlf();
+			}
+		}
+		console.print("n");
+		console.crlf();
+	}
 
-
-  // Determine whether or not to save the message to INPUT.MSG.  We want to
-  // save it by default, but if the user is posting in a sub-board, whether we
-  // want to save it will be determined by whether the user's current sub-board
-  // code is in the list of cross-post areas.
-  var saveMsgFile = true;
-  if (postingInMsgSubBoard(gMsgArea))
-  {
-    if (!gCrossPostMsgSubs.subCodeExists(gMsgAreaInfo.subBoardCode))
-    {
-      saveMsgFile = false;
-      // If the message was cross-posted to other message areas and not in the
-      // user's current message area, output a message to say that Synchronet
-      // will say the message was aborted, and that's normal.
-      if (crossPosted)
-      {
-        console.print("nc* Note: Your message has been cross-posted in areas other than your currently-");
-        console.crlf();
-        console.print("selected message area.  Because your message was not saved for your currently-");
-        console.crlf();
-        console.print("selected message area, the BBS will say the message was aborted, even");
-        console.crlf();
-        console.print("though it was posted in those other areas.  This is normal.n");
-        console.crlf();
-        console.crlf();
-      }
-    }
-  }
-  if (saveMsgFile)
-  {
-    // Open the output filename.  If no arguments were passed, then use
-    // INPUT.MSG in the node's temporary directory; otherwise, use the
-    // first program argument.
-    var msgFile = new File((argc == 0 ? system.temp_dir + "INPUT.MSG" : argv[0]));
-    if (msgFile.open("w"))
-    {
-      // Write each line of the message to the file.  Note: The
-      // "Expand Line Feeds to CRLF" option should be turned on
-      // in SCFG for this to work properly for all platforms.
-      for (var i = 0; i < gEditLines.length; ++i)
-        msgFile.writeln(gEditLines[i].text);
-      msgFile.close();
-      savedTheMessage = true;
-    }
-    else
-      console.print("nrh* Unable to save the message!n\r\n");
-  }
+	// Determine whether or not to save the message to INPUT.MSG.  We want to
+	// save it by default, but if the user is posting in a sub-board, whether we
+	// want to save it will be determined by whether the user's current sub-board
+	// code is in the list of cross-post areas.
+	var saveMsgFile = true;
+	if (postingInMsgSubBoard(gMsgArea))
+	{
+		if (!gCrossPostMsgSubs.subCodeExists(gMsgAreaInfo.subBoardCode))
+		{
+			saveMsgFile = false;
+			// If the message was cross-posted to other message areas and not in the
+			// user's current message area, output a message to say that Synchronet
+			// will say the message was aborted, and that's normal.
+			if (crossPosted)
+			{
+				console.print("nc* Note: Your message has been cross-posted in areas other than your currently-");
+				console.crlf();
+				console.print("selected message area.  Because your message was not saved for your currently-");
+				console.crlf();
+				console.print("selected message area, the BBS will say the message was aborted, even");
+				console.crlf();
+				console.print("though it was posted in those other areas.  This is normal.n");
+				console.crlf();
+				console.crlf();
+			}
+		}
+	}
+	if (saveMsgFile)
+	{
+		// Open the output filename.  If no arguments were passed, then use
+		// INPUT.MSG in the node's temporary directory; otherwise, use the
+		// first program argument.
+		var msgFile = new File((argc == 0 ? system.temp_dir + "INPUT.MSG" : argv[0]));
+		if (msgFile.open("w"))
+		{
+			// Write each line of the message to the file.  Note: The
+			// "Expand Line Feeds to CRLF" option should be turned on
+			// in SCFG for this to work properly for all platforms.
+			for (var i = 0; i < gEditLines.length; ++i)
+				msgFile.writeln(gEditLines[i].text);
+			msgFile.close();
+			savedTheMessage = true;
+		}
+		else
+			console.print("nrh* Unable to save the message!n\r\n");
+	}
 }
 
 /*
@@ -818,6 +764,69 @@ exit(exitCode);
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Functions
+
+// Reads the quote/message file (must be done on startup)
+function readQuoteOrMessageFile()
+{
+	var inputFile = new File(gInputFilename);
+	if (inputFile.open("r", false))
+	{
+		// Read into the gQuoteLines or gEditLines array, depending on the value
+		// of gUseQuotes.  Use a buffer size that should be long enough.
+		if (gUseQuotes)
+		{
+			var textLine = null;  // Line of text read from the quotes file
+			while (!inputFile.eof)
+			{
+				textLine = inputFile.readln(2048);
+				// Only use textLine if it's actually a string.
+				if (typeof(textLine) == "string")
+				{
+					textLine = strip_ctrl(textLine);
+					// If the line has only whitespace and/or > characters,
+					// then make the line blank before putting it into
+					// gQuoteLines.
+					if (/^[\s>]+$/.test(textLine))
+						textLine = "";
+					gQuoteLines.push(textLine);
+				}
+			}
+		}
+		else
+		{
+			var textLine = null;
+			while (!inputFile.eof)
+			{
+				textLine = new TextLine();
+				textLine.text = inputFile.readln(2048);
+				if (typeof(textLine.text) == "string")
+					textLine.text = strip_ctrl(textLine.text);
+				else
+					textLine.text = "";
+				textLine.hardNewlineEnd = true;
+				// If there would still be room on the line for at least
+				// 1 more character, then add a space to the end of the
+				// line.
+				if (textLine.text.length < console.screen_columns-1)
+					textLine.text += " ";
+				gEditLines.push(textLine);
+			}
+
+			// If the last edit line is undefined (which is possible after reading the end
+			// of the quotes file), then remove it from gEditLines.
+			if (gEditLines.length > 0)
+			{
+				if (gEditLines.length > 0)
+				{
+					var lastQuoteLineIndex = gEditLines.length - 1;
+					if (gEditLines[lastQuoteLineIndex].text == undefined)
+						gEditLines.splice(lastQuoteLineIndex, 1);
+				}
+			}
+		}
+		inputFile.close();
+	}
+}
 
 // Edit mode & input loop
 function doEditLoop()
@@ -2458,6 +2467,8 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 		doQuoteSelection.useQuoteLineInitials = gUserSettings.useQuoteLineInitials;
 	if (typeof(doQuoteSelection.indentQuoteLinesWithInitials) == "undefined")
 		doQuoteSelection.indentQuoteLinesWithInitials = gUserSettings.indentQuoteLinesWithInitials;
+	if (typeof(doQuoteSelection.trimSpacesFromQuoteLines) == "undefined")
+		doQuoteSelection.trimSpacesFromQuoteLines = gUserSettings.trimSpacesFromQuoteLines;
 	
 	// If the setting to re-wrap quote lines is enabled, then do it.
 	// We're re-wrapping the quote lines here in case the user changes their
@@ -2481,12 +2492,24 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 		// If this is the first time the user has opened the quote window or if the
 		// user has changed their settings for using author's initials in quote lines,
 		// then re-copy the original quote lines into gQuoteLines and re-wrap them.
-		if (!gUserHasOpenedQuoteWindow ||
-		    (doQuoteSelection.useQuoteLineInitials != gUserSettings.useQuoteLineInitials) ||
-		    (doQuoteSelection.indentQuoteLinesWithInitials != gUserSettings.indentQuoteLinesWithInitials))
+		var quoteLineInitialsSettingChanged = (doQuoteSelection.useQuoteLineInitials != gUserSettings.useQuoteLineInitials);
+		var indentQuoteLinesWithInitialsSettingChanged = (doQuoteSelection.indentQuoteLinesWithInitials != gUserSettings.indentQuoteLinesWithInitials);
+		var trimSpacesFromQuoteLinesSettingChanged = (doQuoteSelection.trimSpacesFromQuoteLines != gUserSettings.trimSpacesFromQuoteLines);
+		if (!gUserHasOpenedQuoteWindow || quoteLineInitialsSettingChanged || indentQuoteLinesWithInitialsSettingChanged || trimSpacesFromQuoteLinesSettingChanged)
 		{
 			doQuoteSelection.useQuoteLineInitials = gUserSettings.useQuoteLineInitials;
 			doQuoteSelection.indentQuoteLinesWithInitials = gUserSettings.indentQuoteLinesWithInitials;
+			doQuoteSelection.trimSpacesFromQuoteLines = gUserSettings.trimSpacesFromQuoteLines;
+
+			// If the user changed the setting for trimming spaces from quote lines,
+			// then re-populate gQuoteLines with the original quote lines.
+			if (trimSpacesFromQuoteLinesSettingChanged)
+			{
+				//readQuoteOrMessageFile();
+				gQuoteLines = [];
+				for (var i = 0; i < doQuoteSelection.backupQuoteLines.length; ++i)
+					gQuoteLines.push(doQuoteSelection.backupQuoteLines[i]);
+			}
 
 			// If the user has opened the quote window before, then empty gQuoteLines
 			// and re-copy the original quote lines back into it.
@@ -2506,9 +2529,10 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 			setQuotePrefix();
 			if (gConfigSettings.reWrapQuoteLines)
 			{
-				// TODO: This seem to never be finishing for certain messages - Entering
-				// an infinite loop?
-				wrapQuoteLines(gUserSettings.useQuoteLineInitials, gUserSettings.indentQuoteLinesWithInitials);
+				// TODO: This seemed to never be finishing for certain messages - Entering
+				// an infinite loop?  I believe this was fixed as of version 1.49.
+				wrapQuoteLines(gUserSettings.useQuoteLineInitials, gUserSettings.indentQuoteLinesWithInitials,
+				               gUserSettings.trimSpacesFromQuoteLines);
 			}
 			else if (gUserSettings.useQuoteLineInitials)
 			{
@@ -5631,127 +5655,134 @@ function listTextReplacements()
 //                              to its original position when done.
 function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 {
-   if (!gConfigSettings.allowUserSettings)
-      return;
+	if (!gConfigSettings.allowUserSettings)
+		return;
 
-   const originalCurpos = (typeof(pCurpos) == "object" ? pCurpos : console.getxy());
-   var returnCursorWhenDone = true;
-   if (typeof(pReturnCursorToOriginalPos) == "boolean")
-      returnCursorWhenDone = pReturnCursorToOriginalPos;
+	const originalCurpos = (typeof(pCurpos) == "object" ? pCurpos : console.getxy());
+	var returnCursorWhenDone = true;
+	if (typeof(pReturnCursorToOriginalPos) == "boolean")
+		returnCursorWhenDone = pReturnCursorToOriginalPos;
 
-   // Save the user's current settings so that we can check them later to see if any
-   // of them changed, in order to determine whether to save the user's settings file.
-   var originalSettings = new Object();
-   for (var prop in gUserSettings)
-   {
-      if (gUserSettings.hasOwnProperty(prop))
-         originalSettings[prop] = gUserSettings[prop];
-   }
+	// Save the user's current settings so that we can check them later to see if any
+	// of them changed, in order to determine whether to save the user's settings file.
+	var originalSettings = new Object();
+	for (var prop in gUserSettings)
+	{
+		if (gUserSettings.hasOwnProperty(prop))
+			originalSettings[prop] = gUserSettings[prop];
+	}
 
-   // Create the user settings box
-   var optBoxTitle = "Setting                                      Enabled";
-   var optBoxWidth = ChoiceScrollbox_MinWidth();
-   var optBoxHeight = 5;
-   var optBoxStartX = gEditLeft + Math.floor((gEditWidth/2) - (optBoxWidth/2));
-   if (optBoxStartX < gEditLeft)
-      optBoxStartX = gEditLeft;
-   var optionBox = new ChoiceScrollbox(optBoxStartX, gEditTop+1, optBoxWidth, optBoxHeight, optBoxTitle,
-                                        gConfigSettings, false, true);
-   optionBox.addInputLoopExitKey(CTRL_U);
-   // Update the bottom help text to be more specific to the user settings box
-   var bottomBorderText = "nhcb, cb, cEntery=bSelectnc/hbtoggle, "
-            + "cESCnc/hCtrl-Uy=bClose";
-   // This one contains the page navigation keys..  Don't really need to show those,
-   // since the settings box only has one page right now:
-   /*var bottomBorderText = "nhcb, cb, cNy)bext, cPy)brev, "
-            + "cFy)birst, cLy)bast, cEntery=bSelectnc/hbtoggle, "
-            + "cCtrl-Uy=bClose";*/
+	// Create the user settings box
+	var optBoxTitle = "Setting                                      Enabled";
+	var optBoxWidth = ChoiceScrollbox_MinWidth();
+	var optBoxHeight = 6;
+	var optBoxStartX = gEditLeft + Math.floor((gEditWidth/2) - (optBoxWidth/2));
+	if (optBoxStartX < gEditLeft)
+		optBoxStartX = gEditLeft;
+	var optionBox = new ChoiceScrollbox(optBoxStartX, gEditTop+1, optBoxWidth, optBoxHeight, optBoxTitle,
+	                                    gConfigSettings, false, true);
+	optionBox.addInputLoopExitKey(CTRL_U);
+	// Update the bottom help text to be more specific to the user settings box
+	var bottomBorderText = "\1n\1h\1c\1b, \1c\1b, \1cEnter\1y=\1bSelect\1n\1c/\1h\1btoggle, "
+	                      + "\1cESC\1n\1c/\1hQ\1n\1c/\1hCtrl-U\1y=\1bClose";
+	// This one contains the page navigation keys..  Don't really need to show those,
+	// since the settings box only has one page right now:
+	/*var bottomBorderText = "\1n\1h\1c\1b, \1c\1b, \1cN\1y)\1bext, \1cP\1y)\1brev, "
+	                       + "\1cF\1y)\1birst, \1cL\1y)\1bast, \1cEnter\1y=\1bSelect\1n\1c/\1h\1btoggle, "
+	                       + "\1cCtrl-U\1y=\1bClose";*/
 
-   optionBox.setBottomBorderText(bottomBorderText, true, false);
-   
-   // Add the options to the option box
-   const checkIdx = 48;
-   const TAGLINE_OPT_INDEX = optionBox.addTextItem("Taglines                                       [ ]");
-   const QUOTE_INITIALS_OPT_INDEX = optionBox.addTextItem("Quote with author's initials                   [ ]");
-   const QUOTE_INITIALS_INDENT_OPT_INDEX = optionBox.addTextItem("Indent quote lines containing initials         [ ]");
-   if (gUserSettings.enableTaglines)
-      optionBox.chgCharInTextItem(TAGLINE_OPT_INDEX, checkIdx, CHECK_CHAR);
-   if (gUserSettings.useQuoteLineInitials)
-      optionBox.chgCharInTextItem(QUOTE_INITIALS_OPT_INDEX, checkIdx, CHECK_CHAR);
-   if (gUserSettings.indentQuoteLinesWithInitials)
-      optionBox.chgCharInTextItem(QUOTE_INITIALS_INDENT_OPT_INDEX, checkIdx, CHECK_CHAR);
+	optionBox.setBottomBorderText(bottomBorderText, true, false);
 
-   // Create an object containing toggle values (true/false) for each option index
-   var optionToggles = new Object();
-   optionToggles[TAGLINE_OPT_INDEX] = gUserSettings.enableTaglines;
-   optionToggles[QUOTE_INITIALS_OPT_INDEX] = gUserSettings.useQuoteLineInitials;
-   optionToggles[QUOTE_INITIALS_INDENT_OPT_INDEX] = gUserSettings.indentQuoteLinesWithInitials;
+	// Add the options to the option box
+	const checkIdx = 48;
+	const TAGLINE_OPT_INDEX = optionBox.addTextItem("Taglines                                       [ ]");
+	const QUOTE_INITIALS_OPT_INDEX = optionBox.addTextItem("Quote with author's initials                   [ ]");
+	const QUOTE_INITIALS_INDENT_OPT_INDEX = optionBox.addTextItem("Indent quote lines containing initials         [ ]");
+	const TRIM_QUOTE_SPACES_OPT_INDEX = optionBox.addTextItem("Trim spaces from quote lines                   [ ]");
+	if (gUserSettings.enableTaglines)
+		optionBox.chgCharInTextItem(TAGLINE_OPT_INDEX, checkIdx, CHECK_CHAR);
+	if (gUserSettings.useQuoteLineInitials)
+		optionBox.chgCharInTextItem(QUOTE_INITIALS_OPT_INDEX, checkIdx, CHECK_CHAR);
+	if (gUserSettings.indentQuoteLinesWithInitials)
+		optionBox.chgCharInTextItem(QUOTE_INITIALS_INDENT_OPT_INDEX, checkIdx, CHECK_CHAR);
+	if (gUserSettings.trimSpacesFromQuoteLines)
+		optionBox.chgCharInTextItem(TRIM_QUOTE_SPACES_OPT_INDEX, checkIdx, CHECK_CHAR);
 
-   // Set up the enter key in the box to toggle the selected item.
-   optionBox.setEnterKeyOverrideFn(function(pBox) {
-      var itemIndex = pBox.getChosenTextItemIndex();
-      if (itemIndex > -1)
-      {
-         // If there's an option for the chosen item, then update the text on the
-         // screen depending on whether the option is enabled or not.
-         if (optionToggles.hasOwnProperty(itemIndex))
-         {
-            // Toggle the option and refresh it on the screen
-            optionToggles[itemIndex] = !optionToggles[itemIndex];
-            if (optionToggles[itemIndex])
-               optionBox.chgCharInTextItem(itemIndex, checkIdx, CHECK_CHAR);
-            else
-               optionBox.chgCharInTextItem(itemIndex, checkIdx, " ");
-            optionBox.refreshItemCharOnScreen(itemIndex, checkIdx);
+	// Create an object containing toggle values (true/false) for each option index
+	var optionToggles = new Object();
+	optionToggles[TAGLINE_OPT_INDEX] = gUserSettings.enableTaglines;
+	optionToggles[QUOTE_INITIALS_OPT_INDEX] = gUserSettings.useQuoteLineInitials;
+	optionToggles[QUOTE_INITIALS_INDENT_OPT_INDEX] = gUserSettings.indentQuoteLinesWithInitials;
+	optionToggles[TRIM_QUOTE_SPACES_OPT_INDEX] = gUserSettings.trimSpacesFromQuoteLines;
 
-            // Toggle the setting for the user in global user setting object.
-            switch (itemIndex)
-            {
-               case TAGLINE_OPT_INDEX:
-                  gUserSettings.enableTaglines = !gUserSettings.enableTaglines;
-                  break;
-               case QUOTE_INITIALS_OPT_INDEX:
-                  gUserSettings.useQuoteLineInitials = !gUserSettings.useQuoteLineInitials;
-                  break;
-               case QUOTE_INITIALS_INDENT_OPT_INDEX:
-                  gUserSettings.indentQuoteLinesWithInitials = !gUserSettings.indentQuoteLinesWithInitials;
-                  break;
-               default:
-                  break;
-            }
-         }
-      }
-   }); // Option box enter key override function
+	// Set up the enter key in the box to toggle the selected item.
+	optionBox.setEnterKeyOverrideFn(function(pBox) {
+		var itemIndex = pBox.getChosenTextItemIndex();
+		if (itemIndex > -1)
+		{
+			// If there's an option for the chosen item, then update the text on the
+			// screen depending on whether the option is enabled or not.
+			if (optionToggles.hasOwnProperty(itemIndex))
+			{
+				// Toggle the option and refresh it on the screen
+				optionToggles[itemIndex] = !optionToggles[itemIndex];
+				if (optionToggles[itemIndex])
+					optionBox.chgCharInTextItem(itemIndex, checkIdx, CHECK_CHAR);
+				else
+					optionBox.chgCharInTextItem(itemIndex, checkIdx, " ");
+				optionBox.refreshItemCharOnScreen(itemIndex, checkIdx);
 
-   // Display the option box and have it do its input loop
-   var boxRetObj = optionBox.doInputLoop(true);
+				// Toggle the setting for the user in global user setting object.
+				switch (itemIndex)
+				{
+					case TAGLINE_OPT_INDEX:
+						gUserSettings.enableTaglines = !gUserSettings.enableTaglines;
+						break;
+					case QUOTE_INITIALS_OPT_INDEX:
+						gUserSettings.useQuoteLineInitials = !gUserSettings.useQuoteLineInitials;
+						break;
+					case QUOTE_INITIALS_INDENT_OPT_INDEX:
+						gUserSettings.indentQuoteLinesWithInitials = !gUserSettings.indentQuoteLinesWithInitials;
+						break;
+					case TRIM_QUOTE_SPACES_OPT_INDEX:
+						gUserSettings.trimSpacesFromQuoteLines = !gUserSettings.trimSpacesFromQuoteLines;
+						break;
+					default:
+						break;
+				}
+			}
+		}
+	}); // Option box enter key override function
 
-   // If the user changed any of their settings, then save the user settings.
-   // If the save fails, then output an error message.
-   var settingsChanged = false;
-   for (var prop in gUserSettings)
-   {
-      if (gUserSettings.hasOwnProperty(prop))
-      {
-         settingsChanged = (originalSettings[prop] != gUserSettings[prop]);
-         if (settingsChanged)
-            break;
-      }
-   }
-   if (settingsChanged)
-   {
-      if (!WriteUserSettingsFile(gUserSettings))
-         writeMsgOntBtmHelpLineWithPause("nyhFailed to save settings!n", ERRORMSG_PAUSE_MS);
-   }
+	// Display the option box and have it do its input loop
+	var boxRetObj = optionBox.doInputLoop(true);
 
-   // We're done, so erase the option box.
-   var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (originalCurpos.y-optionBox.dimensions.topLeftY);
-   displayMessageRectangle(optionBox.dimensions.topLeftX, optionBox.dimensions.topLeftY,
-                           optionBox.dimensions.width, optionBox.dimensions.height,
-                           editLineIndexAtSelBoxTopRow, true);
+	// If the user changed any of their settings, then save the user settings.
+	// If the save fails, then output an error message.
+	var settingsChanged = false;
+	for (var prop in gUserSettings)
+	{
+		if (gUserSettings.hasOwnProperty(prop))
+		{
+			settingsChanged = (originalSettings[prop] != gUserSettings[prop]);
+			if (settingsChanged)
+				break;
+		}
+	}
+	if (settingsChanged)
+	{
+		if (!WriteUserSettingsFile(gUserSettings))
+			writeMsgOntBtmHelpLineWithPause("\1n\1y\1hFailed to save settings!\1n", ERRORMSG_PAUSE_MS);
+	}
 
-   if (returnCursorWhenDone)
-      console.gotoxy(originalCurpos);
+	// We're done, so erase the option box.
+	var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (originalCurpos.y-optionBox.dimensions.topLeftY);
+	displayMessageRectangle(optionBox.dimensions.topLeftX, optionBox.dimensions.topLeftY,
+	                        optionBox.dimensions.width, optionBox.dimensions.height,
+	                        editLineIndexAtSelBoxTopRow, true);
+
+	if (returnCursorWhenDone)
+		console.gotoxy(originalCurpos);
 }
 
 // Allows the user to select a tagline.  Returns an object with the following

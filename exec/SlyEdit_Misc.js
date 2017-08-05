@@ -54,10 +54,14 @@
  *                              wrapTextLines() if the maximum line length is
  *                              positive.
  * 2016-04-23 Eric Oulashin     Updated to load text.js for text.dat definitions.
- * 2016-04-23 Eric Oulashin     Updated displayCommandList() to use console.pause()
+ *                              Updated displayCommandList() to use console.pause()
  *                              instead of a custom pause routine so that
  *                              Synchronet can use a custom pause script if one
  *                              is configured in text.dat.
+ * 2017-08-04 Eric Oulashin     Updated wrapQuoteLines(), wrapQuoteLinesUsingAuthorInitials(),
+ *                              and wrapQuoteLines_NoAuthorInitials() - Added a
+ *                              parameter for whether or not to trim spaces from
+ *                              quote lines.
  */
  
  load("text.js");
@@ -2685,7 +2689,9 @@ function firstNonQuoteTxtIndex(pStr, pUseAuthorInitials, pIndentQuoteLinesWithIn
 //                                last author's initials, this parameter specifies
 //                                whether or not to also prefix the quote lines with
 //                                a space.
-function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
+//  pTrimSpacesFromQuoteLines: Whether or not to trim spaces from quote lines (for when people
+//                             indent the first line of their reply, etc.).  Defaults to true.
+function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials, pTrimSpacesFromQuoteLines)
 {
 	var useAuthorInitials = true;
 	var indentQuoteLinesWithInitials = false;
@@ -2694,10 +2700,11 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 	if (typeof(pIndentQuoteLinesWithInitials) != "undefined")
 		indentQuoteLinesWithInitials = pIndentQuoteLinesWithInitials;
 
+	var trimSpacesFromQuoteLines = (typeof(pTrimSpacesFromQuoteLines) == "boolean" ? pTrimSpacesFromQuoteLines : true);
 	if (useAuthorInitials)
-		wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLinesWithInitials);
+		wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLinesWithInitials, trimSpacesFromQuoteLines);
 	else
-		wrapQuoteLines_NoAuthorInitials();
+		wrapQuoteLines_NoAuthorInitials(trimSpacesFromQuoteLines);
 }
 
 // For wrapping quote lines: This function checks if a string has only > characters
@@ -2722,7 +2729,9 @@ function normalizeGTChars(pStr)
 //
 // Parameters:
 //  pIndentQuoteLines: Whether or not to indent the quote lines
-function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
+//  pTrimSpacesFromQuoteLines: Whether or not to trim spaces from quote lines (for when people
+//                             indent the first line of their reply, etc.).  Defaults to true.
+function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuoteLines)
 {
 	if (gQuoteLines.length == 0)
 		return;
@@ -2739,7 +2748,6 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
 
 	// 1. Get information for each line (quote level, beginning of line, etc.)
 	var lineInfos = new Array();
-	//displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter)
 	for (var quoteLineIndex = 0; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
 		lineInfos.push(firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], true, pIndentQuoteLines));
 
@@ -2823,6 +2831,7 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
 
 	// 3. Go through each section of the quote lines and wrap & quote appropriately
 	// TODO: This loop seems to be looping forever for certain messages
+	var trimSpacesFromQuoteLines = (typeof(pTrimSpacesFromQuoteLines) == "boolean" ? pTrimSpacesFromQuoteLines : true);
 	for (var sIndex = 0; sIndex < quoteSections.length; ++sIndex)
 	{
 		// If the section is not quoted text (in other words, it was written by
@@ -2834,7 +2843,8 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
 		{
 			for (var i = quoteSections[sIndex].startArrIndex; i < quoteSections[sIndex].endArrIndex; ++i)
 			{
-				gQuoteLines[i] = trimSpaces(gQuoteLines[i], true, true, false);
+				if (trimSpacesFromQuoteLines)
+					gQuoteLines[i] = trimSpaces(gQuoteLines[i], true, true, false);
 				lineInfos[i].startIndex = 0;
 				lineInfos[i].begOfLine = "";
 			}
@@ -2977,123 +2987,130 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
 // Wraps the quote lines without using the originals author's initials
 // (classic quoting).
 // Assumes gQuotePrefix does not contains the author's initials.
-function wrapQuoteLines_NoAuthorInitials()
+//
+// Parameters:
+//  pTrimSpacesFromQuoteLines: Whether or not to trim spaces from quote lines (for when people
+//                             indent the first line of their reply, etc.).  Defaults to true.
+function wrapQuoteLines_NoAuthorInitials(pTrimSpacesFromQuoteLines)
 {
-  if (gQuoteLines.length == 0)
-    return;
+	if (gQuoteLines.length == 0)
+		return;
 
-  // Create an array for line information objects.
-  var lineInfos = new Array();
-  for (var quoteLineIndex = 0; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
-    lineInfos.push(firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], false, false));
+	// Create an array for line information objects.
+	var lineInfos = new Array();
+	for (var quoteLineIndex = 0; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
+		lineInfos.push(firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], false, false));
 
-  // Set an initial value for lastQuoteLevel, which will be used to compare the
-  // quote levels of each line.
-  var lastQuoteLevel = lineInfos[0].quoteLevel;
+	// Set an initial value for lastQuoteLevel, which will be used to compare the
+	// quote levels of each line.
+	var lastQuoteLevel = lineInfos[0].quoteLevel;
 
-  // Loop through the array starting at the 2nd line and wrap the lines
-  var startArrIndex = 0;
-  var endArrIndex = 0;
-  var quoteStr = "";
-  var quoteLevel = 0;
-  var i = 0; // Index variable
-  for (var quoteLineIndex = 1; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
-  {
-    if (lineInfos[quoteLineIndex].quoteLevel != lastQuoteLevel)
-    {
-      endArrIndex = quoteLineIndex;
-      // Remove the quote strings from the lines we're about to wrap
-      for (i = startArrIndex; i < endArrIndex; ++i)
-      {
-        if (lineInfos[i] != null)
-        {
-          if (lineInfos[i].startIndex > -1)
-            gQuoteLines[i] = gQuoteLines[i].substr(lineInfos[i].startIndex);
-          else
-            gQuoteLines[i] = normalizeGTChars(gQuoteLines[i]);
-          // If the quote line now only consists of spaces after removing the quote
-          // characters, then make it blank.
-          if (/^ +$/.test(gQuoteLines[i])) gQuoteLines[i] = "";
-        }
-      }
-      // Wrap the text lines in the range we've seen.
-      // Note: 79 is assumed as the maximum line length because
-      // that seems to be a commonly-accepted message width for
-      // BBSes.  Also, the following length is subtracted from it:
-      // (2*(lastQuoteLevel+1) + gQuotePrefix.length)
-      // That is because we'll be prepending "> " to the quote lines,
-      // and then SlyEdit will prepend gQuotePrefix to them during quoting.
-      var numLinesAdded =  wrapTextLines(gQuoteLines, startArrIndex, endArrIndex,
-                                         79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
-      // If quote lines were added as a result of wrapping, then
-      // determine the number of lines added, and update endArrIndex
-      // and quoteLineIndex accordingly.
-      if (numLinesAdded > 0)
-      {
-        endArrIndex += numLinesAdded;
-        quoteLineIndex += (numLinesAdded-1); // - 1 because quoteLineIndex will be incremented by the for loop
-        // Splice new lineInfo objects into the lineInfos array at the end of this
-        // section for each new line added in this section.
-        for (var counter = 0; counter < numLinesAdded; ++counter)
-          lineInfos.splice(endArrIndex, 0, getDefaultQuoteStrObj());
-      }
-      // Put quote strings ("> ") back into the lines we just wrapped
-      if ((quoteLineIndex > 0) && (lastQuoteLevel > 0))
-      {
-        quoteStr = "";
-        for (i = 0; i < lastQuoteLevel; ++i)
-          quoteStr += "> ";
-        for (i = startArrIndex; i < endArrIndex; ++i)
-          gQuoteLines[i] = quoteStr + gQuoteLines[i].replace(/^\s*>/, ">");
-      }
-      lastQuoteLevel = lineInfos[quoteLineIndex].quoteLevel;
-      startArrIndex = quoteLineIndex;
-    }
-    // For lines with a quote level of 0, if this line's indentation differs from
-    // the previous line's indentation, then that marks a new section.
-    else if ((lineInfos[quoteLineIndex].quoteLevel == 0) && (lastQuoteLevel == 0) &&
-             (lineInfos[quoteLineIndex].startIndex > lineInfos[quoteLineIndex-1].startIndex))
-    {
-      endArrIndex = quoteLineIndex;
+	// Loop through the array starting at the 2nd line and wrap the lines
+	var startArrIndex = 0;
+	var endArrIndex = 0;
+	var quoteStr = "";
+	var quoteLevel = 0;
+	var i = 0; // Index variable
+	for (var quoteLineIndex = 1; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
+	{
+		if (lineInfos[quoteLineIndex].quoteLevel != lastQuoteLevel)
+		{
+			endArrIndex = quoteLineIndex;
+			// Remove the quote strings from the lines we're about to wrap
+			for (i = startArrIndex; i < endArrIndex; ++i)
+			{
+				if (lineInfos[i] != null)
+				{
+					if (lineInfos[i].startIndex > -1)
+						gQuoteLines[i] = gQuoteLines[i].substr(lineInfos[i].startIndex);
+					else
+						gQuoteLines[i] = normalizeGTChars(gQuoteLines[i]);
+					// If the quote line now only consists of spaces after removing the quote
+					// characters, then make it blank.
+					if (/^ +$/.test(gQuoteLines[i]))
+						gQuoteLines[i] = "";
+				}
+			}
+			// Wrap the text lines in the range we've seen.
+			// Note: 79 is assumed as the maximum line length because
+			// that seems to be a commonly-accepted message width for
+			// BBSes.  Also, the following length is subtracted from it:
+			// (2*(lastQuoteLevel+1) + gQuotePrefix.length)
+			// That is because we'll be prepending "> " to the quote lines,
+			// and then SlyEdit will prepend gQuotePrefix to them during quoting.
+			var numLinesAdded =  wrapTextLines(gQuoteLines, startArrIndex, endArrIndex,
+			                                   79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
+			// If quote lines were added as a result of wrapping, then
+			// determine the number of lines added, and update endArrIndex
+			// and quoteLineIndex accordingly.
+			if (numLinesAdded > 0)
+			{
+				endArrIndex += numLinesAdded;
+				quoteLineIndex += (numLinesAdded-1); // - 1 because quoteLineIndex will be incremented by the for loop
+				// Splice new lineInfo objects into the lineInfos array at the end of this
+				// section for each new line added in this section.
+				for (var counter = 0; counter < numLinesAdded; ++counter)
+					lineInfos.splice(endArrIndex, 0, getDefaultQuoteStrObj());
+			}
+			// Put quote strings ("> ") back into the lines we just wrapped
+			if ((quoteLineIndex > 0) && (lastQuoteLevel > 0))
+			{
+				quoteStr = "";
+				for (i = 0; i < lastQuoteLevel; ++i)
+					quoteStr += "> ";
+				for (i = startArrIndex; i < endArrIndex; ++i)
+					gQuoteLines[i] = quoteStr + gQuoteLines[i].replace(/^\s*>/, ">");
+			}
+			lastQuoteLevel = lineInfos[quoteLineIndex].quoteLevel;
+			startArrIndex = quoteLineIndex;
+		}
+		// For lines with a quote level of 0, if this line's indentation differs from
+		// the previous line's indentation, then that marks a new section.
+		else if ((lineInfos[quoteLineIndex].quoteLevel == 0) && (lastQuoteLevel == 0) &&
+		         (lineInfos[quoteLineIndex].startIndex > lineInfos[quoteLineIndex-1].startIndex))
+		{
+			endArrIndex = quoteLineIndex;
 
-      // Remove leading whitespace from the text lines in this section to leave
-      // more room for wrapping and so that we don't end up with a section of
-      // quote lines that all start with several spaces.
-      for (var i = startArrIndex; i < endArrIndex; ++i)
-      {
-         gQuoteLines[i] = trimSpaces(gQuoteLines[i], true, true, false);
-         lineInfos[i].startIndex = 0;
-         lineInfos[i].begOfLine = "";
-      }
+			// Remove leading whitespace from the text lines in this section to leave
+			// more room for wrapping and so that we don't end up with a section of
+			// quote lines that all start with several spaces.
+			var trimSpacesFromQuoteLines = (typeof(pTrimSpacesFromQuoteLines) == "boolean" ? pTrimSpacesFromQuoteLines : true);
+			for (var i = startArrIndex; i < endArrIndex; ++i)
+			{
+				if (trimSpacesFromQuoteLines)
+					gQuoteLines[i] = trimSpaces(gQuoteLines[i], true, true, false);
+				lineInfos[i].startIndex = 0;
+				lineInfos[i].begOfLine = "";
+			}
 
-      // Wrap the text lines in the range we've seen.
-      // Note: 79 is assumed as the maximum line length because
-      // that seems to be a commonly-accepted message width for
-      // BBSes.
-      var numLinesAdded =  wrapTextLines(gQuoteLines, startArrIndex, endArrIndex, 79);
-      // If quote lines were added as a result of wrapping, then
-      // determine the number of lines added, and update endArrIndex
-      // and quoteLineIndex accordingly.
-      if (numLinesAdded > 0)
-      {
-        endArrIndex += numLinesAdded;
-        quoteLineIndex += (numLinesAdded-1); // - 1 because quoteLineIndex will be incremented by the for loop
-        // Splice new lineInfo objects into the lineInfos array at the end of this
-        // section for each new line added in this section.
-        for (var counter = 0; counter < numLinesAdded; ++counter)
-          lineInfos.splice(endArrIndex, 0, getDefaultQuoteStrObj());
-      }
-      startArrIndex = quoteLineIndex;
-    }
-  }
-  // Wrap the last block of lines
-  wrapTextLines(gQuoteLines, startArrIndex, gQuoteLines.length, 79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
+			// Wrap the text lines in the range we've seen.
+			// Note: 79 is assumed as the maximum line length because
+			// that seems to be a commonly-accepted message width for
+			// BBSes.
+			var numLinesAdded = wrapTextLines(gQuoteLines, startArrIndex, endArrIndex, 79);
+			// If quote lines were added as a result of wrapping, then
+			// determine the number of lines added, and update endArrIndex
+			// and quoteLineIndex accordingly.
+			if (numLinesAdded > 0)
+			{
+				endArrIndex += numLinesAdded;
+				quoteLineIndex += (numLinesAdded-1); // - 1 because quoteLineIndex will be incremented by the for loop
+				// Splice new lineInfo objects into the lineInfos array at the end of this
+				// section for each new line added in this section.
+				for (var counter = 0; counter < numLinesAdded; ++counter)
+					lineInfos.splice(endArrIndex, 0, getDefaultQuoteStrObj());
+			}
+			startArrIndex = quoteLineIndex;
+		}
+	}
+	// Wrap the last block of lines
+	wrapTextLines(gQuoteLines, startArrIndex, gQuoteLines.length, 79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
 
-  // Go through the quote lines again, and for ones that start with " >", remove
-  // the leading whitespace.  This is because the quote string is " > ", so it
-  // would insert an extra space before the first > in the quote line.
-  for (i = 0; i < gQuoteLines.length; ++i)
-    gQuoteLines[i] = gQuoteLines[i].replace(/^\s*>/, ">");
+	// Go through the quote lines again, and for ones that start with " >", remove
+	// the leading whitespace.  This is because the quote string is " > ", so it
+	// would insert an extra space before the first > in the quote line.
+	for (i = 0; i < gQuoteLines.length; ++i)
+		gQuoteLines[i] = gQuoteLines[i].replace(/^\s*>/, ">");
 }
 
 // Returns an object containing the following properties:
@@ -4006,91 +4023,94 @@ function txtFileContainsLines(pFilename)
 // Return value: An object containing the user's settings as properties.
 function ReadUserSettingsFile(pSlyEdCfgObj)
 {
-   var userSettingsObj = new Object();
+	// Initialize the settings object with the default settings
+	var userSettingsObj = {
+		enableTaglines: pSlyEdCfgObj.enableTaglines,
+		useQuoteLineInitials: pSlyEdCfgObj.useQuoteLineInitials,
+		// The next setting specifies whether or not quote lines should be
+		// prefixed with a space when using author initials.
+		indentQuoteLinesWithInitials: pSlyEdCfgObj.indentQuoteLinesWithInitials,
+		// Whether or not to trim spaces from quoted lines
+		trimSpacesFromQuoteLines: true
+	};
 
-   // Default settings
-   userSettingsObj.enableTaglines = pSlyEdCfgObj.enableTaglines;
-   userSettingsObj.useQuoteLineInitials = pSlyEdCfgObj.useQuoteLineInitials;
-   // The next setting specifies whether or not quote lines
-   // should be prefixed with a space when using author
-   // initials.
-   userSettingsObj.indentQuoteLinesWithInitials = pSlyEdCfgObj.indentQuoteLinesWithInitials;
+	// Open the user settings file
+	var userSettingsFile = new File(gUserSettingsFilename);
+	if (userSettingsFile.open("r"))
+	{
+		var settingsMode = "behavior";
+		var fileLine = null;     // A line read from the file
+		var equalsPos = 0;       // Position of a = in the line
+		var commentPos = 0;      // Position of the start of a comment
+		var setting = null;      // A setting name (string)
+		var settingUpper = null; // Upper-case setting name
+		var value = null;        // A value for a setting (string)
+		var valueUpper = null;   // Upper-cased value
+		while (!userSettingsFile.eof)
+		{
+			// Read the next line from the config file.
+			fileLine = userSettingsFile.readln(2048);
 
-   // Open the user settings file
-   var userSettingsFile = new File(gUserSettingsFilename);
-   if (userSettingsFile.open("r"))
-   {
-      var settingsMode = "behavior";
-      var fileLine = null;     // A line read from the file
-      var equalsPos = 0;       // Position of a = in the line
-      var commentPos = 0;      // Position of the start of a comment
-      var setting = null;      // A setting name (string)
-      var settingUpper = null; // Upper-case setting name
-      var value = null;        // A value for a setting (string)
-      var valueUpper = null;   // Upper-cased value
-      while (!userSettingsFile.eof)
-      {
-         // Read the next line from the config file.
-         fileLine = userSettingsFile.readln(2048);
+			// fileLine should be a string, but I've seen some cases
+			// where for some reason it isn't.  If it's not a string,
+			// then continue onto the next line.
+			if (typeof(fileLine) != "string")
+				continue;
 
-         // fileLine should be a string, but I've seen some cases
-         // where for some reason it isn't.  If it's not a string,
-         // then continue onto the next line.
-         if (typeof(fileLine) != "string")
-            continue;
+			// If the line starts with with a semicolon (the comment
+			// character) or is blank, then skip it.
+			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+				continue;
 
-         // If the line starts with with a semicolon (the comment
-         // character) or is blank, then skip it.
-         if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-            continue;
+			// If in the "behavior" section, then set the behavior-related variables.
+			if (fileLine.toUpperCase() == "[BEHAVIOR]")
+			{
+				settingsMode = "behavior";
+				continue;
+			}
 
-         // If in the "behavior" section, then set the behavior-related variables.
-         if (fileLine.toUpperCase() == "[BEHAVIOR]")
-         {
-            settingsMode = "behavior";
-            continue;
-         }
+			// If the line has a semicolon anywhere in it, then remove
+			// everything from the semicolon onward.
+			commentPos = fileLine.indexOf(";");
+			if (commentPos > -1)
+				fileLine = fileLine.substr(0, commentPos);
 
-         // If the line has a semicolon anywhere in it, then remove
-         // everything from the semicolon onward.
-         commentPos = fileLine.indexOf(";");
-         if (commentPos > -1)
-            fileLine = fileLine.substr(0, commentPos);
+			// Look for an equals sign, and if found, separate the line
+			// into the setting name (before the =) and the value (after the
+			// equals sign).
+			equalsPos = fileLine.indexOf("=");
+			if (equalsPos > 0)
+			{
+				// Read the setting & value, and trim leading & trailing spaces.
+				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+				settingUpper = setting.toUpperCase();
+				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+				valueUpper = value.toUpperCase();
 
-         // Look for an equals sign, and if found, separate the line
-         // into the setting name (before the =) and the value (after the
-         // equals sign).
-         equalsPos = fileLine.indexOf("=");
-         if (equalsPos > 0)
-         {
-            // Read the setting & value, and trim leading & trailing spaces.
-            setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-            settingUpper = setting.toUpperCase();
-            value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
-            valueUpper = value.toUpperCase();
+				if (settingsMode == "behavior")
+				{
+					if (settingUpper == "ENABLETAGLINES")
+						userSettingsObj.enableTaglines = (valueUpper == "TRUE");
+					else if (settingUpper == "USEQUOTELINEINITIALS")
+						userSettingsObj.useQuoteLineInitials = (valueUpper == "TRUE");
+					else if (settingUpper == "INDENTQUOTELINESWITHINITIALS")
+						userSettingsObj.indentQuoteLinesWithInitials = (valueUpper == "TRUE");
+					else if (settingUpper == "TRIMSPACESFROMQUOTELINES")
+						userSettingsObj.trimSpacesFromQuoteLines = (valueUpper == "TRUE");
+				}
+			}
+		}
+		userSettingsFile.close();
+	}
+	else
+	{
+		// We couldn't read the user settings file - So this is probably the
+		// first time the user has run SlyEdit.  So, save the settings to the
+		// file.
+		var saveSucceeded = WriteUserSettingsFile(userSettingsObj);
+	}
 
-            if (settingsMode == "behavior")
-            {
-               if (settingUpper == "ENABLETAGLINES")
-                  userSettingsObj.enableTaglines = (valueUpper == "TRUE");
-               else if (settingUpper == "USEQUOTELINEINITIALS")
-                  userSettingsObj.useQuoteLineInitials = (valueUpper == "TRUE");
-               else if (settingUpper == "INDENTQUOTELINESWITHINITIALS")
-                  userSettingsObj.indentQuoteLinesWithInitials = (valueUpper == "TRUE");
-            }
-         }
-      }
-      userSettingsFile.close();
-   }
-   else
-   {
-      // We couldn't read the user settings file - So this is probably the
-      // first time the user has run SlyEdit.  So, save the settings to the
-      // file.
-      var saveSucceeded = WriteUserSettingsFile(userSettingsObj);
-   }
-
-   return userSettingsObj;
+	return userSettingsObj;
 }
 
 // Writes the user settings to the user settings file, overwriting the
@@ -4102,26 +4122,27 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 // Return value: Boolean - Whether or not this function succeeded in writing the file.
 function WriteUserSettingsFile(pUserSettingsObj)
 {
-   var writeSucceeded = false;
+	var writeSucceeded = false;
 
-   var userSettingsFile = new File(gUserSettingsFilename);
-   if (userSettingsFile.open("w"))
-   {
-      const behaviorBoolSettingNames = ["enableTaglines",
-                                         "useQuoteLineInitials",
-                                         "indentQuoteLinesWithInitials"];
-      userSettingsFile.writeln("[BEAVHIOR]");
-      for (var i = 0; i < behaviorBoolSettingNames.length; ++i)
-      {
-         if (pUserSettingsObj.hasOwnProperty(behaviorBoolSettingNames[i]))
-            userSettingsFile.writeln(behaviorBoolSettingNames[i] + "=" + (pUserSettingsObj[behaviorBoolSettingNames[i]] ? "true" : "false"));
-      }
+	var userSettingsFile = new File(gUserSettingsFilename);
+	if (userSettingsFile.open("w"))
+	{
+		const behaviorBoolSettingNames = ["enableTaglines",
+		                                  "useQuoteLineInitials",
+		                                  "indentQuoteLinesWithInitials",
+		                                  "trimSpacesFromQuoteLines"];
+		userSettingsFile.writeln("[BEHAVIOR]");
+		for (var i = 0; i < behaviorBoolSettingNames.length; ++i)
+		{
+			if (pUserSettingsObj.hasOwnProperty(behaviorBoolSettingNames[i]))
+				userSettingsFile.writeln(behaviorBoolSettingNames[i] + "=" + (pUserSettingsObj[behaviorBoolSettingNames[i]] ? "true" : "false"));
+		}
 
-      userSettingsFile.close();
-      writeSucceeded = true;
-   }
+		userSettingsFile.close();
+		writeSucceeded = true;
+	}
 
-   return writeSucceeded;
+	return writeSucceeded;
 }
 
 // Changes a character in a string, and returns the new string.  If any of the
