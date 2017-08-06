@@ -58,6 +58,21 @@ You can call the SetItemHotkey() method to set a single hotkey to be used for
 a menu item or AddItemHotkey() to add an additional hotkey for an item in
 addition to any existing hotkeys it might already have.
 
+This menu class also supports an optional "numbered mode", where each option is
+displayed with a number to the left (starting at 1), and the user is allowed to
+choose an option by typing the number of the item.  Numbered mode is disabled
+by default and can be enabled by setting the numberedMode property to true.
+For example:
+lbMenu.numberedMode = true;
+When numbered mode is enabled and the user starts typing a number, the menu will
+prompt the user for an item number.  Note that the prompt will be located on the
+line below the menu, so in addition to the menu's height, you'll also need an
+extra line on the screen to account for the item prompt.  In addition, when the
+user presses the enter key after the item number, a carriage return/line feed
+will be outputted, so in numbered mode, the menu's height should not go further
+than 2 lines below the console height.  Otherwise, the display of the menu will
+not be correct if the user decides not to enter a number.
+
 Example usage:
 load("DDLightbarMenu.js");
 // Create a menu at position 1, 3 with width 45 and height of 10
@@ -196,6 +211,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.wrapNavigation = true;
 	this.hotkeyCaseSensitive = false;
 	this.ampersandHotkeysInItems = true;
+	this.numberedMode = false;
+	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
 
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
@@ -378,6 +395,14 @@ function DDLightbarMenu_Draw()
 		++curPos.y;
 		this.DrawBorder();
 	}
+	// For numbered mode, we'll need to know the length of the longest item number
+	// so that we can use that space to display the item numbers.
+	if (this.numberedMode)
+	{
+		this.itemNumLen = this.items.length.toString().length;
+		itemLen -= this.itemNumLen;
+		--itemLen; // Have a space for separation between the numbers and items
+	}
 
 	// Write the menu items, only up to the height of the menu
 	var numPossibleItems = (this.borderEnabled ? this.size.height - 2 : this.size.height);
@@ -385,7 +410,7 @@ function DDLightbarMenu_Draw()
 	for (var idx = this.topItemIdx; (idx < this.items.length) && (numItemsWritten < numPossibleItems); ++idx)
 	{
 		console.gotoxy(curPos.x, curPos.y++);
-		this.WriteItem(idx, null, idx == this.selectedItemIdx);
+		this.WriteItem(idx, itemLen, idx == this.selectedItemIdx);
 		++numItemsWritten;
 	}
 	// If there are fewer items than the height of the menu, then write blank lines to fill
@@ -489,6 +514,14 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight)
 			itemLen = (this.showScrollbar ? this.size.width - 1 : this.size.width);
 			if (this.borderEnabled)
 				itemLen -= 2;
+			// For numbered mode, we'll need to know the length of the longest item number
+			// so that we can use that space to display the item numbers.
+			if (this.numberedMode)
+			{
+				this.itemNumLen = this.items.length.toString().length;
+				itemLen -= this.itemNumLen;
+				--itemLen; // Have a space for separation between the numbers and items
+			}
 		}
 		var itemColor = "";
 		if (typeof(pHighlight) == "boolean")
@@ -529,6 +562,9 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight)
 		var currentTextLen = itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems);
 		if (currentTextLen < itemLen)
 			itemText += format("%" + +(itemLen-currentTextLen) + "s", ""); // Append spaces to the end of itemText
+		// If in numbered mode, add the item number to the front of the item text.
+		if (this.numberedMode)
+			itemText = format("%" + this.itemNumLen + "d ", pIdx+1) + itemText;
 		console.print(itemText + "\1n");
 	}
 }
@@ -841,6 +877,38 @@ function DDLightbarMenu_GetVal(pDraw)
 		}
 		else if (userInput == KEY_ESC)
 			continueOn = false;
+		// For numbered mode, if the user enters a number, allow the user to
+		// choose an item by typing its number.
+		else if (/[0-9]/.test(userInput) && this.numberedMode)
+		{
+			var originalCurpos = console.getxy();
+
+			// Put the user's input back in the input buffer to
+			// be used for getting the rest of the message number.
+			console.ungetstr(userInput);
+			// Move the cursor to the bottom of the screen and
+			// prompt the user for the message number.
+			var promptX = this.pos.x;
+			var promptY = this.pos.y+this.size.height;
+			console.gotoxy(promptX, promptY);
+			printf("\1n%" + this.size.width + "s", ""); // Blank out what might be on the screen already
+			console.gotoxy(promptX, promptY);
+			console.print("\1cItem #: \1h");
+			var userEnteredItemNum = console.getnum(this.items.length);
+			// Blank out the input prompt
+			console.gotoxy(promptX, promptY);
+			printf("\1n%" + this.size.width + "s", "");
+			// If the user entered a number, then get that item's return value
+			// and stop the input loop.
+			if (userEnteredItemNum > 0)
+			{
+				this.selectedItemIdx = userEnteredItemNum-1;
+				retVal = this.items[this.selectedItemIdx].retval;
+				continueOn = false;
+			}
+			else
+				console.gotoxy(originalCurpos); // Move the cursor back where it was
+		}
 		else
 		{
 			// See if the user pressed a hotkey set for one of the items.  If so,
