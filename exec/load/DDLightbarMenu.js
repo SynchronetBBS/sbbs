@@ -420,7 +420,10 @@ function DDLightbarMenu_Draw()
 		for (; numItemsWritten < numPossibleItems; ++numItemsWritten)
 		{
 			console.gotoxy(curPos.x, curPos.y++);
-			printf("\1n" + this.colors.itemColor + "%-" + itemLen + "s", "");
+			console.print("\1n");
+			if (this.numberedMode)
+				printf("%" + this.itemNumLen + "s ", "");
+			printf(this.colors.itemColor + "%-" + itemLen + "s", "");
 		}
 	}
 }
