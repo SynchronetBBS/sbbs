@@ -32,6 +32,9 @@
  *                              using an = instead of ==.  Also, updated the stats view
  *                              to display the stats in a scrollable frame rather than
  *                              simply dumping out the stats to the screen.
+ * 2017-08-06 Eric Oulashin     Version 0.21 Beta
+ *                              Updated the area chooser list to include a check mark
+ *                              next to areas that have polls in them.
  */
  
 // TODO:
@@ -81,8 +84,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.20 Beta";
-var SLYVOTE_DATE = "2017-08-05";
+var SLYVOTE_VERSION = "0.21 Beta";
+var SLYVOTE_DATE = "2017-08-06";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -305,18 +308,20 @@ function ChooseVotingSubBoard(pSubBoardCodes)
 
 	// Draw columns to frame the topic area menu
 	var listTopRow = 8;
-	var drawColRetObj = DrawVoteColumns(listTopRow);
+	var drawColRetObj = DrawVoteColumns(listTopRow, gBottomBorderRow-1, 17, 63);
 
 	// Display the menu of topic areas
-	console.gotoxy(drawColRetObj.columnX1+7, listTopRow-1);
-	//console.print("\1n\1cChoose a topic area (\1hESC\1g=\1n\1cExit):");
-	console.print("\1n\1b\1hChoose a topic area (\1cESC\1g=\1n\1cExit\1h\1b):");
+	console.gotoxy(drawColRetObj.columnX1+2, listTopRow-1);
+	console.print("\1n\1b\1hChoose a topic area (\1cESC\1g=\1n\1cExit\1h\1b)   \1y\1h" + CHECK_CHAR + "\1n\1c=\1b\1hHas polls\1n");
+	var areaNameLen = drawColRetObj.textLen - 2;
 	var subBoardMenu = new DDLightbarMenu(drawColRetObj.columnX1+drawColRetObj.colWidth-1, listTopRow, drawColRetObj.textLen, drawColRetObj.colHeight);
 	subBoardMenu.ampersandHotkeysInItems = false;
 	for (var idx = 0; idx < pSubBoardCodes.length; ++idx)
 	{
 		var subBoardGrpAndName = msg_area.sub[pSubBoardCodes[idx]].grp_name + " - " + msg_area.sub[pSubBoardCodes[idx]].name;
-		subBoardMenu.Add(subBoardGrpAndName, pSubBoardCodes[idx]);
+		var hasPollsChar = (subBoardHasPolls(pSubBoardCodes[idx]) ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
+		var itemText = format("%-" + areaNameLen + "s %s", subBoardGrpAndName.substr(0, areaNameLen), hasPollsChar);
+		subBoardMenu.Add(itemText, pSubBoardCodes[idx]);
 	}
 	var retObj = new Object();
 	retObj.subBoardChoice = subBoardMenu.GetVal();
@@ -485,7 +490,7 @@ function ChooseVoteTopic(pLetUserChoose)
 
 	//var startCol = drawColRetObj.columnX1+2;
 	var startCol = drawColRetObj.columnX1+drawColRetObj.colWidth-1;
-	var menuHeight = gBottomBorderRow-listTopRow-1;
+	var menuHeight = gBottomBorderRow-listTopRow;
 
 	// If we are to let the user chooes a topic, then display the list of voting topics
 	var letUserChoose = (typeof(pLetUserChoose) == "boolean" ? pLetUserChoose : true);
@@ -506,7 +511,6 @@ function ChooseVoteTopic(pLetUserChoose)
 			var chosenMsgNum = topicsMenu.GetVal(drawTopicsMenu);
 			if (chosenMsgNum != null)
 			{
-				//topicsMenu.Erase();
 				console.gotoxy(18, pleaseSelectTextRow);
 				printf("%" + strip_ctrl(pleaseSectTopicText).length + "s", "");
 				var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, chosenMsgNum, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
@@ -526,7 +530,8 @@ function ChooseVoteTopic(pLetUserChoose)
 		for (var i = 0; i < voteTopicInfo.msgHdrs.length; ++i)
 		{
 			// Display the poll number
-			var pollNumText = format("\1n\1c%3d of %-3d", +(i+1), voteTopicInfo.msgHdrs.length);
+			//var pollNumText = format("\1n\1c%3d of %-3d", +(i+1), voteTopicInfo.msgHdrs.length);
+			var pollNumText = format("\1n\1c%3d/%-3d", +(i+1), voteTopicInfo.msgHdrs.length);
 			console.gotoxy(1, console.screen_rows-4);
 			console.print(pollNumText);
 			pollNumTextLen = strip_ctrl(pollNumText).length;
@@ -993,9 +998,6 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 			}
 			if (pollComment.length > 0)
 				msgBody = pollComment + "\r\n" + msgBody;
-			// Temporary
-			msgBody = "Total votes: " + pMsgHdr.total_votes + "\r\n\r\n" + msgBody;
-			// End Temporary
 
 			// If voting is allowed in this sub-board and the current logged-in
 			// user has not voted on this message, then append some text saying
@@ -2828,6 +2830,12 @@ function UserHandleAliasNameMatch(pName)
 //
 // Parameters:
 //  pTopRow: The row on the screen to use as the top row
+//  pBottomRow: The row on the screen to use as the bottom row.  Optional; defaults
+//              to one before gBottomBorderRow.
+//  pColumnX1: The X (horizontal) coordinate of the start of the first column.  Optional;
+//             defaults to 9.
+//  pColumnX2: The X (horizontal) coordinate of the start of the 2nd column.  Optional;
+//             defaults to 71.
 //
 // Return value: An object containing the following properties:
 //               columnX1: The X coordinate of the first (left) column
@@ -2835,20 +2843,22 @@ function UserHandleAliasNameMatch(pName)
 //               textLen: The length of text that can fit between the columns
 //               colWidth: The width of the columns
 //               colHeight: The height of the columns
-function DrawVoteColumns(pTopRow)
+function DrawVoteColumns(pTopRow, pBottomRow, pColumnX1, pColumnX2)
 {
 	var retObj = {
-		columnX1: 17,
-		columnX2: 63,
+		columnX1: (typeof(pColumnX1) == "number" ? pColumnX1 : 9), // 17
+		columnX2: (typeof(pColumnX2) == "number" ? pColumnX2 : 71), // 63
 		textLen: 0,
 		colWidth: 3,
 		colHeight: 0
 	};
 	retObj.textLen = retObj.columnX2 - retObj.columnX1 - 2;
-	retObj.colHeight = gBottomBorderRow - pTopRow;
 
 	// Draw the columns
-	for (var posY = pTopRow; posY < gBottomBorderRow; ++posY)
+	var bottomRow = (typeof(pBottomRow) == "number" ? pBottomRow : gBottomBorderRow-1);
+	retObj.colHeight = bottomRow - pTopRow + 1;
+	//for (var posY = pTopRow; posY < gBottomBorderRow; ++posY)
+	for (var posY = pTopRow; posY <= bottomRow; ++posY)
 	{
 		console.gotoxy(retObj.columnX1, posY);
 		console.print("\1" + "7\1h\1wÝ\1n\1k\1" + "7\1n\1" + "7\1k\1hÞ\1n");
@@ -3140,7 +3150,7 @@ function RemoveCRLFCodes(pText)
 // Counts the number of polls in a sub-board.
 //
 // Parameters:
-//  pSubBoardCode: The interna code of the sub-board to count polls in
+//  pSubBoardCode: The internal code of the sub-board to count polls in
 //
 // Return value: The number of polls in the sub-board
 function countPollsInSubBoard(pSubBoardCode)
@@ -3149,13 +3159,42 @@ function countPollsInSubBoard(pSubBoardCode)
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
 	{
-		var msgHdrs = msgbase.get_all_msg_headers(true);
-		for (var prop in msgHdrs)
+		for (var i = 0; i < msgbase.total_msgs; ++i)
 		{
-			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+			var msgIdx = msgbase.get_msg_index(true, i);
+			if ((msgIdx == null) || ((msgIdx.attr & MSG_DELETE) == MSG_DELETE))
+				continue;
+			if ((msgIdx.attr & MSG_POLL) == MSG_POLL)
 				++numPolls;
 		}
+		
 		msgbase.close();
 	}
 	return numPolls;
+}
+
+// Returns whether or not a sub-board has at least one poll in it.
+//
+// Parameters:
+//  pSubBoardCode: The internal code of the sub-board
+//
+// Return value: Boolean - Whether or not the sub-board has any poolls in it
+function subBoardHasPolls(pSubBoardCode)
+{
+	var subBoardHasPolls = false;
+	var msgbase = new MsgBase(pSubBoardCode);
+	if (msgbase.open())
+	{
+		for (var i = 0; !subBoardHasPolls && (i < msgbase.total_msgs); ++i)
+		{
+			var msgIdx = msgbase.get_msg_index(true, i);
+			if ((msgIdx == null) || ((msgIdx.attr & MSG_DELETE) == MSG_DELETE))
+				continue;
+			if ((msgIdx.attr & MSG_POLL) == MSG_POLL)
+				subBoardHasPolls = true;
+		}
+		
+		msgbase.close();
+	}
+	return subBoardHasPolls;
 }
