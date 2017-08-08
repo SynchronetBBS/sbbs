@@ -35,6 +35,10 @@
  * 2017-08-06 Eric Oulashin     Version 0.21 Beta
  *                              Updated the area chooser list to include a check mark
  *                              next to areas that have polls in them.
+ * 2017-08-07 Eric Oulashin     Version 0.22 Beta
+ *                              Updated to display "Loading areas..." when loading the
+ *                              message areas & looking to see which ones have polls.
+ *                              Also, changed "topic area" verbage to "voting area".
  */
  
 // TODO:
@@ -84,8 +88,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.21 Beta";
-var SLYVOTE_DATE = "2017-08-06";
+var SLYVOTE_VERSION = "0.22 Beta";
+var SLYVOTE_DATE = "2017-08-07";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -306,13 +310,15 @@ function ChooseVotingSubBoard(pSubBoardCodes)
 	console.clear("\1n");
 	DisplaySlyVoteText();
 
-	// Draw columns to frame the topic area menu
+	// Draw columns to frame the voting menu
 	var listTopRow = 8;
 	var drawColRetObj = DrawVoteColumns(listTopRow, gBottomBorderRow-1, 17, 63);
 
-	// Display the menu of topic areas
+	// Display the menu of voting areas
 	console.gotoxy(drawColRetObj.columnX1+2, listTopRow-1);
-	console.print("\1n\1b\1hChoose a topic area (\1cESC\1g=\1n\1cExit\1h\1b)   \1y\1h" + CHECK_CHAR + "\1n\1c=\1b\1hHas polls\1n");
+	console.print("\1n\1b\1hChoose a voting area (\1cESC\1g=\1n\1cExit\1h\1b)  \1y\1h" + CHECK_CHAR + "\1n\1c=\1b\1hHas polls\1n");
+	console.gotoxy(drawColRetObj.columnX1+2, listTopRow);
+	console.print("\1n\1cLoading areas\1i...\1n");
 	var areaNameLen = drawColRetObj.textLen - 2;
 	var subBoardMenu = new DDLightbarMenu(drawColRetObj.columnX1+drawColRetObj.colWidth-1, listTopRow, drawColRetObj.textLen, drawColRetObj.colHeight);
 	subBoardMenu.ampersandHotkeysInItems = false;
@@ -1338,7 +1344,7 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	DisplayBottomScreenBorder();
 	// Write the current sub-board
 	var subBoardText = msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name;
-	subBoardText = "\1n\1b\1hCurrent topic area: \1w" + subBoardText.substr(0, console.scren_columns);
+	subBoardText = "\1n\1b\1hCurrent voting area: \1w" + subBoardText.substr(0, console.scren_columns);
 	var subBoardTextX = (console.screen_columns/2) - (strip_ctrl(subBoardText).length/2);
 	console.gotoxy(subBoardTextX, 9);
 	console.print(subBoardText);
