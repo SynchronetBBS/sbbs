@@ -1683,9 +1683,9 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	char*		user_pw = NULL;
 	char*		sys_pw = NULL;
 	JSString*	js_name;
-	JSString*	js_pw_prompt;
-	JSString*	js_user_pw;
-	JSString*	js_sys_pw;
+	JSString*	js_pw_prompt = NULL;
+	JSString*	js_user_pw = NULL;
+	JSString*	js_sys_pw = NULL;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -1700,9 +1700,12 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if((js_name=JS_ValueToString(cx, argv[0]))==NULL) 
 		return(JS_FALSE);
 
-	js_pw_prompt = JS_ValueToString(cx, argv[1]);
-	js_user_pw = JS_ValueToString(cx, argv[2]);
-	js_sys_pw = JS_ValueToString(cx, argv[3]);
+	if(argc > 1)
+		js_pw_prompt = JS_ValueToString(cx, argv[1]);
+	if(argc > 2)
+		js_user_pw = JS_ValueToString(cx, argv[2]);
+	if(argc > 3)
+		js_sys_pw = JS_ValueToString(cx, argv[3]);
 
 	JSSTRING_TO_ASTRING(cx, js_name, name, (LEN_ALIAS > LEN_NAME) ? LEN_ALIAS+2 : LEN_NAME+2, NULL);
 	if(name==NULL) 
