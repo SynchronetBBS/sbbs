@@ -1195,7 +1195,9 @@ js_user_event(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_chksyspass(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval *argv = JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
+	char*		sys_pw = NULL;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1203,8 +1205,13 @@ js_chksyspass(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
+	if (argc) {
+		JSString* str = JS_ValueToString(cx, argv[0]);
+		JSSTRING_TO_ASTRING(cx, str, sys_pw, sizeof(sbbs->cfg.sys_pass)+2, NULL);
+	}
+
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->chksyspass()));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->chksyspass(sys_pw)));
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
@@ -3785,8 +3792,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,316
 	},		
 	/* security */
-	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("prompt for and verify system password")
+	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[sys_pw]")
+	,JSDOCSTR("verify system password, prompting for the password if not passed as an argument")
 	,310
 	},
 	{"good_password",	js_chkpass,			1,	JSTYPE_STRING,	JSDOCSTR("password")
