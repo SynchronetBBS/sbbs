@@ -36,7 +36,7 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
-int sbbs_t::login(char *username, char *pw)
+int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const char* sys_pw)
 {
 	char	str[128];
 	char 	tmp[512];
@@ -76,9 +76,9 @@ int sbbs_t::login(char *username, char *pw)
 	}
 
 	if(!useron.number) {
-		if(cfg.node_misc&NM_LOGON_P) {
+		if((cfg.node_misc&NM_LOGON_P) && pw_prompt != NULL) {
 			SAFECOPY(useron.alias,str);
-			bputs(pw);
+			bputs(pw_prompt);
 			console|=CON_R_ECHOX;
 			getstr(str,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);
@@ -107,10 +107,15 @@ int sbbs_t::login(char *username, char *pw)
 	}
 
 	if(useron.pass[0] || REALSYSOP) {
-		bputs(pw);
-		console|=CON_R_ECHOX;
-		getstr(str,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
-		console&=~(CON_R_ECHOX|CON_L_ECHOX);
+		if(user_pw != NULL)
+			SAFECOPY(str, user_pw);
+		else {
+			if(pw_prompt != NULL)
+				bputs(pw_prompt);
+			console |= CON_R_ECHOX;
+			getstr(str, LEN_PASS * 2, K_UPPER | K_LOWPRIO | K_TAB);
+			console &= ~(CON_R_ECHOX | CON_L_ECHOX);
+		}
 		if(!online) {
 			useron.number=0;
 			return(LOGIC_FALSE); 
@@ -129,7 +134,7 @@ int sbbs_t::login(char *username, char *pw)
 			useron.misc=useron_misc;
 			return(LOGIC_FALSE); 
 		}
-		if(REALSYSOP && !chksyspass()) {
+		if(REALSYSOP && !chksyspass(sys_pw)) {
 			bputs(text[InvalidLogon]);
 			useron.number=0;
 			useron.misc=useron_misc;
