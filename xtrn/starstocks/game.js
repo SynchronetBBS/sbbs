@@ -313,7 +313,8 @@ function 	playGame()
 	}
 	if(countCompanies(game.companies))
 	{
-		var score=new Score(user.alias,game.networth,difficulty,system.datestr());
+		var useralias = user.alias.replace(/\./g,"_");
+		var score=new Score(useralias,game.networth,difficulty,system.datestr());
 		storeScore(score);
 		game.completed=true;
 		displaySummary();

@@ -40,11 +40,12 @@ var calendar = new Calendar(58,4,"\1y","\0012\1g\1h");
 var lobby = new Lobby(1,1);
 var date = new Date();
 var data = new GameData();
+var useralias = user.alias.replace(/\./g,"_");
 
 function boggle() {
 	function init()
 	{
-		player=findUser(user.alias);
+		player=findUser(useralias);
 		current=calendar.selected;
 		today=calendar.selected;
 		updateCalendar();
@@ -368,7 +369,7 @@ function boggle() {
 		{
 			if(!playing_game) 
 				return;
-			var p=data.players[user.alias];
+			var p=data.players[useralias];
 			var points=info.score.points;
 			p.points+=points;
 			p.days.push(parseInt(current,10));
@@ -387,7 +388,7 @@ function boggle() {
 		
 		var scores=sortScores();
 		for(var s=0;s<scores.length;s++) {
-			if(scores[s].name == user.alias) {
+			if(scores[s].name == useralias) {
 				index = (s-5);
 				if(index < 0)
 					index = 0;
@@ -401,7 +402,7 @@ function boggle() {
 				break;
 			}
 			else if(score.points>0) {
-				if(score.name==user.alias) 
+				if(score.name==useralias) 
 					console.attributes=LIGHTGREEN;
 				else 
 					console.attributes=GREEN;
@@ -505,7 +506,7 @@ function processUpdates(update) {
 function open() {
 	client.callback=processUpdates;
 	client.subscribe(game_id,"players");
-	data.players[user.alias].laston = time();
+	data.players[useralias].laston = time();
 	data.storePlayer();
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
 	bbs.sys_status|=SS_MOFF;
@@ -561,8 +562,8 @@ function GameData() {
 		
 		if(!this.players)
 			this.players = {};
-		if(!this.players[user.alias]) {
-			this.players[user.alias] = new Player();
+		if(!this.players[useralias]) {
+			this.players[useralias] = new Player();
 			this.storePlayer();
 		}
 	}
@@ -575,7 +576,7 @@ function GameData() {
 	}
 	/* save current player data to database */
 	this.storePlayer = function() {
-		client.write(game_id,"players." + user.alias,this.players[user.alias],2);
+		client.write(game_id,"players." + useralias,this.players[useralias],2);
 	}
 	/* save this round's winner to the database */
 	this.storeRoundWinner=function() {
@@ -676,7 +677,7 @@ function Lobby(x,y) {
 }
 
 function Player(name,points,days,laston) {
-	this.name=name?name:user.alias;
+	this.name=name?name:useralias;
 	this.points=points?points:0;
 	this.days=days?days:[];
 	this.laston=laston?laston:time();

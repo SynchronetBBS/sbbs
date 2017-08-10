@@ -13,6 +13,7 @@ load("funclib.js");
  
 var oldpass = console.ctrl_key_passthru;
 var data = new GameData();
+var useralias = user.alias.replace(/\./g,"_");
 
 /* cycle client and check for updates */
 function cycle() {
@@ -236,8 +237,8 @@ function blox()
 	}
 	function endGame()
 	{
-		if(data.players[user.alias].score == undefined || data.players[user.alias].score < points) {
-			data.players[user.alias].score = points;
+		if(data.players[useralias].score == undefined || data.players[useralias].score < points) {
+			data.players[useralias].score = points;
 			data.storePlayer();
 			data.allTime();
 		}
@@ -251,7 +252,7 @@ function blox()
 	}
 	function init()
 	{
-		data.players[user.alias].laston = time();
+		data.players[useralias].laston = time();
 		logo=new Graphic(18,22);
 		logo.load(root + "blox.bin");
 		lobby=new Graphic(80,23);
@@ -468,7 +469,7 @@ function blox()
 	function showPlayer()
 	{
 		console.gotoxy(63,9);
-		console.putmsg("\1w\1h" + user.alias);
+		console.putmsg("\1w\1h" + useralias);
 	}
 	function showScore()
 	{
@@ -546,7 +547,7 @@ function blox()
 		
 		for(var s in scores) {
 			var score=scores[s];
-			if(score.name==user.alias) 
+			if(score.name==useralias) 
 				console.attributes=YELLOW;
 			else 
 				console.attributes=BROWN;
@@ -598,9 +599,9 @@ function GameData()
 		
 		if(!this.players)
 			this.players = {};
-		if(!this.players[user.alias]) {
-			this.players[user.alias] = new Player();
-			client.write("uberblox","players." + user.alias,this.players[user.alias],2);
+		if(!this.players[useralias]) {
+			this.players[useralias] = new Player();
+			client.write("uberblox","players." + useralias,this.players[useralias],2);
 		}
 	}
 	this.formatDate=function(timet)
@@ -623,18 +624,18 @@ function GameData()
 	}
 	this.storePlayer=function()
 	{
-		client.write("uberblox","players." + user.alias,this.players[user.alias],2);
+		client.write("uberblox","players." + useralias,this.players[useralias],2);
 	}
 	this.allTime=function() 
 	{
 		client.lock("uberblox","alltime",2);
-		if(this.players[user.alias].score > this.alltime.score) {
+		if(this.players[useralias].score > this.alltime.score) {
 			this.alltime=client.read("uberblox","alltime");
 			if(!this.alltime) 
 				this.alltime={name:"none",score:0};
-			if(this.players[user.alias].score > this.alltime.score) {
-				this.alltime.score = this.players[user.alias].score;
-				this.alltime.name = user.alias;
+			if(this.players[useralias].score > this.alltime.score) {
+				this.alltime.score = this.players[useralias].score;
+				this.alltime.name = useralias;
 				client.write("uberblox","alltime",this.alltime);
 			}
 		}
@@ -648,7 +649,7 @@ function GameData()
 }
 function Player(name,score,laston,sys)
 {
-	this.name=name?name:user.alias;
+	this.name=name?name:useralias;
 	this.score=score?score:0;
 	this.laston=laston?laston:time();
 	this.sys=sys?sys:system.name;
