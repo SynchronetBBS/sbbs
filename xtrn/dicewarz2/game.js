@@ -11,6 +11,7 @@ var inputFrame = new Frame(10,24,70,1,BG_LIGHTGRAY|BLACK,frame);
 var promptFrame = new Frame(10,24,70,1,BG_BROWN|WHITE,frame);
 var input = new InputLine(inputFrame);
 var	chat = new JSONChat(user.number,undefined,serverAddr,serverPort);
+var useralias = user.alias.replace(/\./g,"_");
 
 function open() {
 	console.clear();
@@ -210,7 +211,7 @@ function lobby() {
 		
 		for(var i in array) {
 			var game=array[i];
-			var in_game=findPlayer(game,user.alias);
+			var in_game=findPlayer(game,useralias);
 			
 			if(game.single_player) {
 				sorted.singleplayer.push(i);
@@ -269,7 +270,7 @@ function lobby() {
 			}
 			var score=scores[s];
 			var color="\1y\1h";
-			if(score.name==user.alias)
+			if(score.name==useralias)
 				color="\1g\1h";
 			wrap(scoreFrame,color+ " " + 
 				format("%-20s\1h "+color,score.name.substr(0,20)) + 
@@ -328,7 +329,7 @@ function lobby() {
 		}
 		infoFrame.draw();
 		
-		var player=findPlayer(game,user.alias);
+		var player=findPlayer(game,useralias);
 		if(player>=0) {
 			if(askRemove(game,player))
 				return;
@@ -375,7 +376,7 @@ function lobby() {
 			return;
 		}
 		var vote=menuPrompt("Vote to start? [y/N]",false,false,true);
-		addPlayer(game,user.alias,system.name,(vote=="Y"?true:false));
+		addPlayer(game,useralias,system.name,(vote=="Y"?true:false));
 	}
 	function canView(gameNumber) {
 		//todo
@@ -498,7 +499,7 @@ function lobby() {
 			gameNumber++;
 			
 		var game = new Game(gameNumber,hidden_names);
-		addPlayer(game,user.alias,system.name,start_now);
+		addPlayer(game,useralias,system.name,start_now);
 		data.games[gameNumber] = game;
 		
 		if(single_player) {
@@ -588,7 +589,7 @@ function playGame(gameNumber) {
 	var infoFrame=new Frame(67,3,13,7,undefined,frame);
 	var battleFrame=new Frame(30,8,20,8,BG_BLUE,frame);
 	var cursor=new Frame(1,1,1,1,BG_LIGHTGRAY|BLACK,frame);
-	var localPlayer=findPlayer(game,user.alias);
+	var localPlayer=findPlayer(game,useralias);
 	var channel="dicewarz2_" + gameNumber;
 	var menu;
 	

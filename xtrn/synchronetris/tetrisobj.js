@@ -16,8 +16,9 @@ function GameData()
 		this.profiles=client.read(game_id,"profiles",1);
 		if(!this.profiles)
 			this.profiles = {};
-		if(!this.profiles[user.alias]) {
-			var p = new Profile(user.alias);
+		var alias = user.alias.replace(/\./g,"_");
+		if(!this.profiles[alias]) {
+			var p = new Profile(alias);
 			this.profiles[p.name] = p;
 			client.write(game_id,"profiles."+p.name,p,2);
 		}
