@@ -116,7 +116,7 @@ bool sbbs_t::chksyspass(const char* sys_pw)
 		getstr(str, 40, K_UPPER | K_NOECHO);
 		CRLF;
 	}
-	if(strcmp(cfg.sys_pass,str)) {
+	if(stricmp(cfg.sys_pass,str)) {
 		if(cfg.sys_misc&SM_ECHO_PW) 
 			SAFEPRINTF3(str2,"%s #%u System password attempt: '%s'"
 				,useron.alias,useron.number,str);
