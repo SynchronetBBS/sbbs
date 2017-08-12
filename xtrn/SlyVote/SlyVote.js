@@ -3165,7 +3165,8 @@ function countPollsInSubBoard(pSubBoardCode)
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
 	{
-		for (var i = 0; i < msgbase.total_msgs; ++i)
+		var numMessages = msgbase.total_msgs;
+		for (var i = 0; i < numMessages; ++i)
 		{
 			var msgIdx = msgbase.get_msg_index(true, i);
 			if ((msgIdx == null) || ((msgIdx.attr & MSG_DELETE) == MSG_DELETE))
@@ -3191,7 +3192,8 @@ function subBoardHasPolls(pSubBoardCode)
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
 	{
-		for (var i = 0; !subBoardHasPolls && (i < msgbase.total_msgs); ++i)
+		var numMessages = msgbase.total_msgs;
+		for (var i = 0; !subBoardHasPolls && (i < numMessages); ++i)
 		{
 			var msgIdx = msgbase.get_msg_index(true, i);
 			if ((msgIdx == null) || ((msgIdx.attr & MSG_DELETE) == MSG_DELETE))
