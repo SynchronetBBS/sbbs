@@ -262,6 +262,10 @@ cmdkey P
 	msg_post
 	end_cmd
 
+cmdkey /P
+	exec_bin postpoll
+	end_cmd
+
 cmdkey Q
 	msg_qwk
 	end_cmd
