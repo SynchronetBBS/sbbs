@@ -98,6 +98,52 @@ int sbbs_t::uselect(int add, uint n, const char *title, const char *item, const 
 	return(uselect_num[i-1]);
 }
 
+unsigned count_set_bits(long val)
+{
+	unsigned count = 0;
+
+	while(val) {
+		val &= val-1;
+		count++;
+	}
+	return count;
+}
+
+long sbbs_t::mselect(const char *hdr, str_list_t list, unsigned max_selections, const char* item_fmt
+	,const char* selected_str, const char* unselected_str, const char* prompt_fmt)
+{
+	char	prompt[128];
+	int		i;
+	int		max_item_len = 0;
+	long	selected = 0;
+
+	for(i=0; list[i] != NULL; i++) {
+		int len = strlen(list[i]);
+		if(len > max_item_len)
+			max_item_len = len;
+	}
+	unsigned items = i;
+	if(max_selections > items)
+		max_selections = items;
+	while(online) {
+		bputs(hdr);
+		for(i=0; list[i] != NULL; i++)
+			bprintf(item_fmt, i+1, max_item_len, max_item_len, list[i]
+				, (selected & (1<<i)) ? selected_str : unselected_str);
+		SAFEPRINTF(prompt, prompt_fmt, max_selections);
+		mnemonics(prompt);
+		i=getnum(items);
+		if(i < 0)
+			return 0;
+		if(i == 0)
+			break;
+		if(i && i <= (int)items && (selected&(1<<(i-1)) || count_set_bits(selected) < max_selections))
+			selected ^= 1<<(i-1);
+	}
+	return selected;
+}
+
+
 /****************************************************************************/
 /* Prompts user for System Password. Returns 1 if user entered correct PW	*/
 /****************************************************************************/
