@@ -957,3 +957,7 @@
 "\1n\1c\1h%2u\1n\1c: "                  788 PollAnswerNumber
 "%-*.*s [%-4u %3.0f%%]"                 789 PollAnswerFmt
 " \251"                                 790 PollAnswerChecked
+"\1n\1l\1gBallot for \1h%s\r\n\r\n"     791 BallotHdr
+"\1n\1c\1h%2u\1n\1c: %-*.*s \1h%s\r\n"  792 BallotAnswerFmt
+"\r\nToggle which vote (up to %u), ~Quit or [Cast]: "           793 BallotVoteWhich
+

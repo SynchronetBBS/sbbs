@@ -799,3 +799,8 @@ var PollVoteNotice=787;
 var PollAnswerNumber=788;
 var PollAnswerFmt=789;
 var PollAnswerChecked=790;
+var BallotHdr=791;
+var BallotAnswerFmt=792;
+var BallotVoteWhich=793;
+
+var TOTAL_TEXT=794;
