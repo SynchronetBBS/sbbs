@@ -741,8 +741,8 @@
 "\1n\1h\1bName                    : \1c%s\r\n"             605 SubInfoShortName
 "\1n\1h\1bQWK Name                : \1c%s\r\n"             606 SubInfoQWKName
 "\1n\1h\1bMessages Retained       : \1c%u\r\n"             607 SubInfoMaxMsgs
-"\r\nQWK packet network using the tagline:\r\n%s\1n\r\n" 608 SubInfoTagLine
-"\r\n\1nFidoNet EchoMail Conference:\r\n%s (%s)\r\n"     609 SubInfoFidoNet
+"\1n\1h\1b\r\nQWK packet network conference using the tagline:\1n\r\n \254 %s\1n\r\n" 608 SubInfoTagLine
+"\1n\1h\1b\r\nFidoNet EchoMail conference using the origin line:\1n\r\n * Origin: %s (%s)\r\n"     609 SubInfoFidoNet
 "View sub-board information file"                       610 SubInfoViewFileQ
 "\r\n\1g\1hDirectory Information:\r\n\r\n\1n"              611 DirInfoHdr
 "\1n\1h\1bLong Name               : \1c%s\r\n"                      612 DirInfoLongName
