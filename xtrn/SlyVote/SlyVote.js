@@ -39,13 +39,13 @@
  *                              Updated to display "Loading areas..." when loading the
  *                              message areas & looking to see which ones have polls.
  *                              Also, changed "topic area" verbage to "voting area".
+ * 2017-08-15 Eric Oulashin     Version 0.23 Beta
+ *                              Started working on support for multi-answer polls.  Also,
+ *                              changed the "topic" verbage to "poll".
  */
  
-// TODO:
-// When Rob Swindell implements multiple-choice voting support, update
-// SlyVote to support that
-
-
+ // TODO: Add an option to close a poll
+ 
 load("sbbsdefs.js");
 
 // This script requires Synchronet version 3.17 or higher.
@@ -88,8 +88,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.22 Beta";
-var SLYVOTE_DATE = "2017-08-07";
+var SLYVOTE_VERSION = "0.23 Beta";
+var SLYVOTE_DATE = "2017-08-15";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -101,37 +101,37 @@ gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 
 // Characters for display
 // Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "Ú";
-var HORIZONTAL_SINGLE = "Ä";
-var UPPER_RIGHT_SINGLE = "¿";
-var VERTICAL_SINGLE = "³";
-var LOWER_LEFT_SINGLE = "À";
-var LOWER_RIGHT_SINGLE = "Ù";
-var T_SINGLE = "Â";
-var LEFT_T_SINGLE = "Ã";
-var RIGHT_T_SINGLE = "´";
-var BOTTOM_T_SINGLE = "Á";
-var CROSS_SINGLE = "Å";
+var UPPER_LEFT_SINGLE = "\xDA";
+var HORIZONTAL_SINGLE = "\xC4";
+var UPPER_RIGHT_SINGLE = "\xBF";
+var VERTICAL_SINGLE = "\xB3";
+var LOWER_LEFT_SINGLE = "\xC0";
+var LOWER_RIGHT_SINGLE = "\xD9";
+var T_SINGLE = "\xC2";
+var LEFT_T_SINGLE = "\xC3";
+var RIGHT_T_SINGLE = "\xB4";
+var BOTTOM_T_SINGLE = "\xC1";
+var CROSS_SINGLE = "\xC5";
 // Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "É";
-var HORIZONTAL_DOUBLE = "Í";
-var UPPER_RIGHT_DOUBLE = "»";
-var VERTICAL_DOUBLE = "º";
-var LOWER_LEFT_DOUBLE = "È";
-var LOWER_RIGHT_DOUBLE = "¼";
-var T_DOUBLE = "Ë";
-var LEFT_T_DOUBLE = "Ì";
-var RIGHT_T_DOUBLE = "¹";
-var BOTTOM_T_DOUBLE = "Ê";
-var CROSS_DOUBLE = "Î";
+var UPPER_LEFT_DOUBLE = "\xC9";
+var HORIZONTAL_DOUBLE = "\xCD";
+var UPPER_RIGHT_DOUBLE = "\xBB";
+var VERTICAL_DOUBLE = "\xBA";
+var LOWER_LEFT_DOUBLE = "\xC8";
+var LOWER_RIGHT_DOUBLE = "\xBC";
+var T_DOUBLE = "\xCB";
+var LEFT_T_DOUBLE = "\xCC";
+var RIGHT_T_DOUBLE = "\xB9";
+var BOTTOM_T_DOUBLE = "\xCA";
+var CROSS_DOUBLE = "\xCE";
 // Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "Õ";
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "¸";
-var LOWER_LEFT_VSINGLE_HDOUBLE = "Ô";
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "¾";
+var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5";
+var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8";
+var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
+var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
 // Other special characters
 var DOT_CHAR = "ú";
-var CHECK_CHAR = "û";
+var CHECK_CHAR = "\xFB";
 var THIN_RECTANGLE_LEFT = "Ý";
 var THIN_RECTANGLE_RIGHT = "Þ";
 var BLOCK1 = "°"; // Dimmest block
@@ -254,8 +254,8 @@ gNumPollsInSubBoard = countPollsInSubBoard(gSubBoardCode);
 
 // Program states
 var MAIN_MENU = 0;
-var VOTING_ON_A_TOPIC = 1;
-var VOTE_ON_ALL_TOPICS = 2;
+var VOTING_ON_A_POLL = 1;
+var VOTE_ON_ALL_POLLS = 2;
 var VIEWING_VOTE_RESULTS = 3;
 var EXIT_SLYVOTE = 999;
 
@@ -270,11 +270,11 @@ while (gContinueSlyVote)
 		case MAIN_MENU:
 			gProgramState = DoMainMenu();
 			break;
-		case VOTING_ON_A_TOPIC:
-			gProgramState = ChooseVoteTopic(true);
+		case VOTING_ON_A_POLL:
+			gProgramState = ChooseVotePoll(true);
 			break;
-		case VOTE_ON_ALL_TOPICS:
-			gProgramState = ChooseVoteTopic(false);
+		case VOTE_ON_ALL_POLLS:
+			gProgramState = ChooseVotePoll(false);
 			break;
 		case VIEWING_VOTE_RESULTS:
 			gProgramState = ViewVoteResults(gSubBoardCode);
@@ -343,12 +343,12 @@ function DoMainMenu()
 	var nextProgramState = MAIN_MENU;
 
 	// Menu option return values
-	var voteOnTopicOpt = 0;
-	var answerAllTopicsOpt = 1;
-	var createTopicOpt = 2;
+	var voteOnPollOpt = 0;
+	var answerAllPollsOpt = 1;
+	var createPollOpt = 2;
 	var viewResultsOpt = 3;
 	var viewStatsOpt = 4;
-	var changeTopicAreaOpt = 5;
+	var changeVotingAreaOpt = 5;
 	var quitToBBSOpt = 6;
 
 	// Display the SlyVote screen and menu of choices
@@ -361,14 +361,14 @@ function DoMainMenu()
 			++mainMenuHeight;
 		gMainMenu = new DDLightbarMenu(mainScrRetObj.optMenuX, mainScrRetObj.optMenuY, 17, mainMenuHeight);
 		gMainMenu.hotkeyCaseSensitive = false;
-		gMainMenu.Add("&Vote On A Topic", voteOnTopicOpt, "1");
-		gMainMenu.Add("&Answer All Topics", answerAllTopicsOpt, "2");
-		gMainMenu.Add("&Create A Topic", createTopicOpt, "3");
+		gMainMenu.Add("&Vote On A Poll", voteOnPollOpt, "1");
+		gMainMenu.Add("&Answer All Polls", answerAllPollsOpt, "2");
+		gMainMenu.Add("&Create A Poll", createPollOpt, "3");
 		gMainMenu.Add("View &Results", viewResultsOpt, "4");
 		gMainMenu.Add("View &Stats", viewStatsOpt, "5");
 		if (gSlyVoteCfg.subBoardCodes.length > 1)
 		{
-			gMainMenu.Add("Change &Topic Area", changeTopicAreaOpt, "6");
+			gMainMenu.Add("Change Area", changeVotingAreaOpt, "6");
 			gMainMenu.Add("&Quit To BBS", quitToBBSOpt, "7");
 		}
 		else
@@ -378,23 +378,23 @@ function DoMainMenu()
 	}
 	// Get the user's choice and take appropriate action
 	var userChoice = gMainMenu.GetVal(true);
-	if (userChoice == voteOnTopicOpt)
+	if (userChoice == voteOnPollOpt)
 	{
 		if (msg_area.sub[gSubBoardCode].can_post)
-			nextProgramState = VOTING_ON_A_TOPIC;
+			nextProgramState = VOTING_ON_A_POLL;
 		else
 			DisplayErrorWithPause("\1y\1h" + RemoveCRLFCodes(bbs.text(CantPostOnSub)), gMessageRow, false);
 	}
-	else if (userChoice == answerAllTopicsOpt)
+	else if (userChoice == answerAllPollsOpt)
 	{
 		if (msg_area.sub[gSubBoardCode].can_post)
-			nextProgramState = VOTE_ON_ALL_TOPICS;
+			nextProgramState = VOTE_ON_ALL_POLLS;
 		else
 			DisplayErrorWithPause("\1y\1h" + RemoveCRLFCodes(bbs.text(CantPostOnSub)), gMessageRow, false);
 	}
-	else if (userChoice == createTopicOpt)
+	else if (userChoice == createPollOpt)
 	{
-		// Only let the user create a topic if the user is allowed to post in
+		// Only let the user create a poll if the user is allowed to post in
 		// the sub-board.
 		if (msg_area.sub[gSubBoardCode].can_post)
 		{
@@ -429,7 +429,7 @@ function DoMainMenu()
 		ViewStats(gSubBoardCode);
 		nextProgramState = MAIN_MENU;
 	}
-	else if (userChoice == changeTopicAreaOpt)
+	else if (userChoice == changeVotingAreaOpt)
 	{
 		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.subBoardCodes);
 		var chosenSubBoardCode = chooseSubRetObj.subBoardChoice;
@@ -446,15 +446,15 @@ function DoMainMenu()
 	return nextProgramState;
 }
 
-// Lets the user choose a voting topic (poll) to vote on.
+// Lets the user choose a voting poll to vote on.
 //
 // Parameters:
-//  pLetUserChoose: Boolean - Whether or not to let the user choose a topic.  Defaults
-//                  to true.  If false, then all topics will be presented in order.
-function ChooseVoteTopic(pLetUserChoose)
+//  pLetUserChoose: Boolean - Whether or not to let the user choose a poll.  Defaults
+//                  to true.  If false, then all polls will be presented in order.
+function ChooseVotePoll(pLetUserChoose)
 {
-	gProgramState = VOTING_ON_A_TOPIC;
-	var nextProgramState = VOTING_ON_A_TOPIC;
+	gProgramState = VOTING_ON_A_POLL;
+	var nextProgramState = VOTING_ON_A_POLL;
 	// Clear the screen between the top & bottom borders
 	var formatStr = "%" + console.screen_columns + "s";
 	console.print("\1n");
@@ -465,20 +465,20 @@ function ChooseVoteTopic(pLetUserChoose)
 	}
 
 	// Get the list of polls for the selected sub-board
-	var voteTopicInfo = GetVoteTopicHdrs(gSubBoardCode, true);
-	if (voteTopicInfo.errorMsg.length > 0)
+	var votePollInfo = GetPollHdrs(gSubBoardCode, true);
+	if (votePollInfo.errorMsg.length > 0)
 	{
 		console.gotoxy(1, gMessageRow);
-		console.print("\1n\1y\1h" + voteTopicInfo.errorMsg + "\1n");
+		console.print("\1n\1y\1h" + votePollInfo.errorMsg + "\1n");
 		console.crlf();
 		console.pause();
 		return MAIN_MENU;
 	}
-	else if (voteTopicInfo.msgHdrs.length == 0)
+	else if (votePollInfo.msgHdrs.length == 0)
 	{
 		console.gotoxy(1, gMessageRow);
 		console.print("\1n\1g");
-		if (voteTopicInfo.pollsExist)
+		if (votePollInfo.pollsExist)
 			console.print("You have already voted on all polls in this section");
 		else
 			console.print("There are no polls to vote on in this section");
@@ -488,7 +488,7 @@ function ChooseVoteTopic(pLetUserChoose)
 		return MAIN_MENU;
 	}
 
-	// Draw the columns to frame the voting topics
+	// Draw the columns to frame the voting polls
 	console.print("\1n");
 	var pleaseSelectTextRow = 6;
 	listTopRow = pleaseSelectTextRow + 1;
@@ -498,51 +498,51 @@ function ChooseVoteTopic(pLetUserChoose)
 	var startCol = drawColRetObj.columnX1+drawColRetObj.colWidth-1;
 	var menuHeight = gBottomBorderRow-listTopRow;
 
-	// If we are to let the user chooes a topic, then display the list of voting topics
+	// If we are to let the user chooes a poll, then display the list of voting polls
 	var letUserChoose = (typeof(pLetUserChoose) == "boolean" ? pLetUserChoose : true);
 	if (letUserChoose)
 	{
-		// Create the menu containing voting topics and get the user's choic
-		var topicsMenu = new DDLightbarMenu(startCol, listTopRow, drawColRetObj.textLen, menuHeight);
-		topicsMenu.ampersandHotkeysInItems = false;
-		for (var i = 0; i < voteTopicInfo.msgHdrs.length; ++i)
-			topicsMenu.Add(voteTopicInfo.msgHdrs[i].subject, voteTopicInfo.msgHdrs[i].number);
-		var drawTopicsMenu = true;
-		while (nextProgramState == VOTING_ON_A_TOPIC)
+		// Create the menu containing voting polls and get the user's choic
+		var pollsMenu = new DDLightbarMenu(startCol, listTopRow, drawColRetObj.textLen, menuHeight);
+		pollsMenu.ampersandHotkeysInItems = false;
+		for (var i = 0; i < votePollInfo.msgHdrs.length; ++i)
+			pollsMenu.Add(votePollInfo.msgHdrs[i].subject, votePollInfo.msgHdrs[i].number);
+		var drawPollsMenu = true;
+		while (nextProgramState == VOTING_ON_A_POLL)
 		{
-			var pleaseSectTopicText = "\1n\1c\1hP\1n\1clease select a topic to vote on (\1hESC\1n\1g=\1cReturn)\1n";
+			var pleaseSectPollText = "\1n\1c\1hP\1n\1clease select a poll to vote on (\1hESC\1n\1g=\1cReturn)\1n";
 			console.gotoxy(18, pleaseSelectTextRow);
-			console.print(pleaseSectTopicText);
+			console.print(pleaseSectPollText);
 			console.print("\1n");
-			var chosenMsgNum = topicsMenu.GetVal(drawTopicsMenu);
+			var chosenMsgNum = pollsMenu.GetVal(drawPollsMenu);
 			if (chosenMsgNum != null)
 			{
 				console.gotoxy(18, pleaseSelectTextRow);
-				printf("%" + strip_ctrl(pleaseSectTopicText).length + "s", "");
-				var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, chosenMsgNum, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
-				drawTopicsMenu = true;
+				printf("%" + strip_ctrl(pleaseSectPollText).length + "s", "");
+				var voteRetObj = DisplayPollOptionsAndVote(gSubBoardCode, chosenMsgNum, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
+				drawPollsMenu = true;
 				if (voteRetObj.errorMsg.length > 0)
 					DisplayErrorWithPause(voteRetObj.errorMsg, gMessageRow, voteRetObj.mnemonicsRequiredForErrorMsg);
 			}
-			else // The user chose to exit the topics menu
+			else // The user chose to exit the polls menu
 				nextProgramState = MAIN_MENU;
 		}
 	}
 	else
 	{
-		// Vote on all topics
+		// Vote on all polls
 		var pollNumTextLen = 0; // To clear the poll # text later
 		nextProgramState = MAIN_MENU;
-		for (var i = 0; i < voteTopicInfo.msgHdrs.length; ++i)
+		for (var i = 0; i < votePollInfo.msgHdrs.length; ++i)
 		{
 			// Display the poll number
-			//var pollNumText = format("\1n\1c%3d of %-3d", +(i+1), voteTopicInfo.msgHdrs.length);
-			var pollNumText = format("\1n\1c%3d/%-3d", +(i+1), voteTopicInfo.msgHdrs.length);
+			//var pollNumText = format("\1n\1c%3d of %-3d", +(i+1), votePollInfo.msgHdrs.length);
+			var pollNumText = format("\1n\1c%3d/%-3d", +(i+1), votePollInfo.msgHdrs.length);
 			console.gotoxy(1, console.screen_rows-4);
 			console.print(pollNumText);
 			pollNumTextLen = strip_ctrl(pollNumText).length;
 			// Let the user vote on the poll
-			var voteRetObj = DisplayTopicOptionsAndVote(gSubBoardCode, voteTopicInfo.msgHdrs[i].number, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
+			var voteRetObj = DisplayPollOptionsAndVote(gSubBoardCode, votePollInfo.msgHdrs[i].number, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
 			if (voteRetObj.userExited)
 				break;
 			if (voteRetObj.errorMsg.length > 0)
@@ -561,27 +561,27 @@ function ChooseVoteTopic(pLetUserChoose)
 	return nextProgramState;
 }
 
-// Displays options for a topic and lets the user vote on it
+// Displays options for a poll and lets the user vote on it
 //
 // Parameters:
 //  pSubBoardCode: The internal code of the sub-board
 //  pMsgNum: The number of the message to vote on
 //  pStartCol: The starting column on the screen for the option list
 //  pStartRow: The starting row on the screen for the option list
-//  pMenuWidth: The width to use for the topic option menu
-//  pMenuHeight: The height to use for the topic option menu
+//  pMenuWidth: The width to use for the poll option menu
+//  pMenuHeight: The height to use for the poll option menu
 //
 // Return value: An object containing the following properties:
 //               userExited: Boolean - Whether or not the user exited without voting
 //               errorMsg: A string containing a message on error, or an empty string on success
 //               mnemonicsRequiredForErrorMsg: Whether or not mnemonics is required to display the error message
-function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, pMenuHeight)
+function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, pMenuHeight)
 {
 	var retObj = {
 		userExited: false,
 		errorMsg: "",
 		mnemonicsRequiredForErrorMsg: false,
-		nextProgramState: VOTING_ON_A_TOPIC
+		nextProgramState: VOTING_ON_A_POLL
 	};
 
 	// Open the chosen sub-board
@@ -594,7 +594,7 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 			console.gotoxy(1, console.screen_rows-3);
 			console.print("\1n\1c\1hESC\1g=\1n\1cQuit\1n");
 
-			// Get the topic options and let the user choose one
+			// Get the poll options and let the user choose one
 			var msgHdr = msgbase.get_msg_header(false, pMsgNum, true);
 			if ((msgHdr != null) && IsReadableMsgHdr(msgHdr, pSubBoardCode))
 			{
@@ -616,6 +616,9 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 				// Create the poll options menu, and show it and let the user choose an option
 				var optionsMenu = new DDLightbarMenu(pStartCol, pStartRow, pMenuWidth, pMenuHeight);
 				optionsMenu.ampersandHotkeysInItems = false;
+				// If the poll allows multiple answers, enable the multi-choice
+				// property for the menu.
+				optionsMenu.multiSelect = (msgHdr.votes > 1);
 				for (i = 0; i < pollTextAndOpts.options.length; ++i)
 					optionsMenu.Add(pollTextAndOpts.options[i], i+1);
 				optionsMenu.colors.itemColor = "\1c";
@@ -630,7 +633,17 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 				var firstLineEraseLength = 0;
 				if (userChoice != null)
 				{
-					var voteRetObj = VoteOnTopic(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
+					// Allow multiple choices for userChoice.
+					var voteRetObj;
+					if (optionsMenu.multiSelect)
+					{
+						var userVotes = 0;
+						for (var i = 0; i < userChoice.length; ++i)
+							userVotes |= (1 << (userChoice[i]-1));
+						voteRetObj = VoteOnPoll(pSubBoardCode, msgbase, msgHdr, user, userVotes, true);
+					}
+					else
+						var voteRetObj = VoteOnPoll(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
 					// If there was an error, then show it.  Otherwise, show a success message.
 					//var firstLineEraseLength = pollSubject.length;
 					console.gotoxy(1, pStartRow-4);
@@ -665,7 +678,7 @@ function DisplayTopicOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow
 				}
 			}
 			else
-				retObj.errorMsg = "Unable to retrieve the topic options";
+				retObj.errorMsg = "Unable to retrieve the poll options";
 
 			// Erase the ESC=Quit text
 			console.gotoxy(1, console.screen_rows-3);
@@ -876,31 +889,6 @@ function HasUserVotedOnMsg(pMsgNum, pSubBoardCode, pMsgbase, pUser)
 			else
 				votes = pMsgbase.how_user_voted(pMsgNum, (pMsgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
 			userHasVotedOnMsg = (votes > 0);
-			/*
-			if (votes > 0)
-			{
-				var userVotedMaxVotes = false;
-				if ((votes == 0) || (votes == 1))
-					userVotedMaxVotes = (votes == 3); // (1 << 0) | (1 << 1);
-				else
-				{
-					var msgHdr = pMsgbase.get_msg_header(false, pMsgNum);
-					if (msgHdr != null)
-					{
-						userVotedMaxVotes = true;
-						for (var voteIdx = 0; voteIdx <= numVotes; ++voteIdx)
-						{
-							if (votes && (1 << voteIdx) == 0)
-							{
-								userVotedMaxVotes = false;
-								break;
-							}
-						}
-					}
-				}
-				userHasVotedOnMsg = userVotedMaxVotes;
-			}
-			*/
 		}
 	}
 	return userHasVotedOnMsg;
@@ -1132,7 +1120,7 @@ function GetPollTextAndOpts(pMsgHdr)
 //  pUser: The user object representing the user voting on the poll
 //  pUserVoteNumber: Optional - A number inputted by the user representing their vote.
 //                   If this is not passed in or is null, etc., then this function will
-//                   prompt the user for their vote.
+//                   prompt the user for their vote with a traditional user interface.
 //  pRemoveNLsFromVoteText: Optional boolean - Whether or not to remove newlines
 //                          (and carriage returns) from the voting text from
 //                          text.dat.  Defaults to false.
@@ -1146,7 +1134,7 @@ function GetPollTextAndOpts(pMsgHdr)
 //               mnemonicsRequiredForErrorMsg: Boolean - Whether or not mnemonics is required to print the error message
 //               updatedHdr: The updated message header containing vote information.
 //                           If something went wrong, this will be null.
-function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pRemoveNLsFromVoteText)
+function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pRemoveNLsFromVoteText)
 {
 	var retObj = new Object();
 	retObj.BBSHasVoteFunction = (typeof(pMsgbase.vote_msg) === "function");
@@ -1189,6 +1177,13 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 		if (typeof(pMsgbase.how_user_voted) === "function")
 		{
 			var votes = pMsgbase.how_user_voted(pMsgHdr.number, (pMsgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
+			// TODO: I'm not sure if this 'if' section is correct anymore for
+			// the latest 3.17 build of Synchronet
+			// Digital Man said:
+			// In a poll message, the "votes" property specifies the maximum number of
+			// answers/votes per ballot (0 is the equivalent of 1).
+			// Max votes testing? :
+			// userVotedMaxVotes = (votes == pMsgHdr.votes);
 			if (votes >= 0)
 			{
 				if ((votes == 0) || (votes == 1))
@@ -1277,16 +1272,62 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 					}
 				}
 				console.crlf();
-				// Get the selection prompt text from text.dat and replace the %u or %d with
-				// the number 1 (default option)
-				var selectPromptText = bbs.text(SelectItemWhich);
-				selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
-				console.mnemonics(selectPromptText);
 				// Get & process the selection from the user
-				var maxNum = optionNum - 1;
-				// TODO: Update to support multiple answers from the user?
-				userInputNum = console.getnum(maxNum);
-				console.print("\1n");
+				if (pMsgHdr.votes > 1)
+				{
+					// Support multiple answers from the user
+					console.print("\1n\1gYour vote numbers, separated by commas (Q=quit):");
+					console.crlf();
+					console.print("\1c\1h");
+					var userInput = console.getstr();
+					if ((userInput.length > 0) && (userInput.toUpperCase() != "Q"))
+					{
+						var userAnswers = userInput.split(",");
+						if (userAnswers.length > 0)
+						{
+							// Generate confirmation text and an array of numbers
+							// representing the user's choices
+							var confirmText = "Vote ";
+							var voteNumbers = [];
+							for (var i = 0; i < userAnswers.length; ++i)
+							{
+								if (/^[0-9]+$/.test(userAnswers[i]))
+								{
+									voteNumbers.push(+userAnswers[i]);
+									confirmText += userAnswers[i] + ",";
+								}
+							}
+							// If the confirmation text has a trailing comma, remove it
+							if (/,$/.test(confirmText))
+								confirmText = confirmText.substr(0, confirmText.length-1);
+							// Confirm from the user and submit their vote if they say yes
+							if (voteNumbers.length > 0)
+							{
+								if (console.yesno(confirmText))
+								{
+									userInputNum = 0;
+									for (var i = 0; i < voteNumbers.length; ++i)
+										userInputNum |= (1 << (voteNumbers[i]-1));
+								}
+								else
+									retObj.userQuit = true;
+							}
+						}
+					}
+					else
+						retObj.userQuit = true;
+				}
+				else
+				{
+					// Get the selection prompt text from text.dat and replace the %u or %d with
+					// the number 1 (default option)
+					var selectPromptText = bbs.text(SelectItemWhich);
+					selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
+					console.mnemonics(selectPromptText);
+					var maxNum = optionNum - 1;
+					userInputNum = console.getnum(maxNum);
+					console.print("\1n");
+				}
 			}
 			else
 				userInputNum = pUserVoteNumber;
@@ -1296,6 +1337,11 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 				retObj.userQuit = true;
 			else
 			{
+				// New - For multi-answer voting:
+				voteMsgHdr.attr = MSG_VOTE;
+				voteMsgHdr.votes = userInputNum;
+				// Old, and for single-answer vote:
+				/*
 				// The user's answer is 0-based, so if userInputNum is positive,
 				// subtract 1 from it (if it's already 0, that means the user
 				// chose to keep the default first answer).
@@ -1304,6 +1350,7 @@ function VoteOnTopic(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, p
 				var votes = (1 << userInputNum);
 				voteMsgHdr.attr = MSG_VOTE;
 				voteMsgHdr.votes = votes;
+				*/
 			}
 		}
 	}
@@ -1463,19 +1510,19 @@ function CenterText(pText, pFieldLen)
 	return centeredText;
 }
 
-// Returns an array of message headers for voting topics
+// Returns an array of message headers for polls
 //
 // Parameters:
 //  pSubBoardCode: The internal code of the sub-board to open
-//  pCheckIfUserVoted: Boolean - Whether or not to check whether the user has voted on the topics
+//  pCheckIfUserVoted: Boolean - Whether or not to check whether the user has voted on the polls
 //
 // Return value: An object containing the following properties:
 //               errorMsg: A string containing an error message on failure or a blank string on success
-//               msgHdrs: An array containing message headers for voting topics
+//               msgHdrs: An array containing message headers for voting polls
 //               pollsExist: Boolean - Whether polls exist in the sub-board.  This is useful when
 //                           this function doesn't return any headers because the the user voted
 //                           on all of them but polls do exist.
-function GetVoteTopicHdrs(pSubBoardCode, pCheckIfUserVoted)
+function GetPollHdrs(pSubBoardCode, pCheckIfUserVoted)
 {
 	var retObj = {
 		errorMsg: "",
@@ -1490,6 +1537,10 @@ function GetVoteTopicHdrs(pSubBoardCode, pCheckIfUserVoted)
 		var msgHdrs = msgbase.get_all_msg_headers(true);
 		for (var prop in msgHdrs)
 		{
+			// Skip deleted messages
+			if ((msgHdrs[prop].attr & MSG_DELETE) == MSG_DELETE)
+				continue;
+
 			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
 			{
 				retObj.pollsExist = true;
@@ -1541,7 +1592,7 @@ function ViewVoteResults(pSubBoardCode)
 		if (pollMsgHdrs.length == 0)
 		{
 			msgbase.close();
-			DisplayErrorWithPause("\1n\1y\1hThere are no topics to view.\1n", gMessageRow, false);
+			DisplayErrorWithPause("\1n\1y\1hThere are no polls to view.\1n", gMessageRow, false);
 			return nextProgramState;
 		}
 
@@ -1626,7 +1677,7 @@ function ViewVoteResults(pSubBoardCode)
 			drawKeyHelpLine = false;
 			if (scrollRetObj.lastKeypress == KEY_LEFT)
 			{
-				// Go back one poll topic
+				// Go back one poll poll
 				if (currentMsgIdx > 0)
 					--currentMsgIdx;
 				else
@@ -1634,7 +1685,7 @@ function ViewVoteResults(pSubBoardCode)
 			}
 			else if (scrollRetObj.lastKeypress == KEY_RIGHT)
 			{
-				// Go to the next poll topic, if there is one
+				// Go to the next poll poll, if there is one
 				if (currentMsgIdx < pollMsgHdrs.length-1)
 					++currentMsgIdx;
 				else
@@ -1658,9 +1709,9 @@ function ViewVoteResults(pSubBoardCode)
 			}
 			else if (scrollRetObj.lastKeypress == gReaderKeys.vote)
 			{
-				// Let the user vote on the topic in interactive mode (this uses
+				// Let the user vote on the poll in interactive mode (this uses
 				// traditional style interaction rather than usinga lightbar).
-				var voteRetObj = VoteOnTopic(pSubBoardCode, msgbase, pollMsgHdrs[currentMsgIdx], user, null, true);
+				var voteRetObj = VoteOnPoll(pSubBoardCode, msgbase, pollMsgHdrs[currentMsgIdx], user, null, true);
 				drawKeyHelpLine = true;
 				// If the user's vote was saved, then update the message header so that it includes
 				// the user's vote information.
@@ -1708,7 +1759,7 @@ function ViewVoteResults(pSubBoardCode)
 				console.gotoxy(1, console.screen_rows);
 				// Prompt for the message number, and go to that message if it's
 				// different from the current message
-				var msgNumInput = PromptForMsgNum(pollMsgHdrs.length, {x: 1, y: console.screen_rows}, "\1n\1cTopic #\1g\1h: \1c", false, ERROR_PAUSE_WAIT_MS, false);
+				var msgNumInput = PromptForMsgNum(pollMsgHdrs.length, {x: 1, y: console.screen_rows}, "\1n\1cPoll #\1g\1h: \1c", false, ERROR_PAUSE_WAIT_MS, false);
 				if (msgNumInput-1 != currentMsgIdx)
 					currentMsgIdx = msgNumInput-1;
 				else
@@ -1723,7 +1774,7 @@ function ViewVoteResults(pSubBoardCode)
 					console.gotoxy(1, console.screen_rows);
 					printf("\1n%" + +(console.screen_columns-1) + "s", "");
 					console.gotoxy(1, console.screen_rows);
-					var deleteMsg = !console.noyes("\1n\1cDelete this topic\1n");
+					var deleteMsg = !console.noyes("\1n\1cDelete this poll\1n");
 					if (deleteMsg)
 					{
 						var delMsgRetObj = DeleteMessage(msgbase, pollMsgHdrs[currentMsgIdx].number, pSubBoardCode);
@@ -1761,7 +1812,7 @@ function ViewVoteResults(pSubBoardCode)
 								console.gotoxy(1, console.screen_rows);
 								console.print("\1n");
 								console.crlf();
-								console.print("\1nThere are no more vote topics.\1n");
+								console.print("\1nThere are no more polls.\1n");
 								console.pause();
 							}
 						}
@@ -2831,7 +2882,7 @@ function UserHandleAliasNameMatch(pName)
    return userMatch;
 }
 
-// Draws the colums that will be on either side of the voting topics
+// Draws the colums that will be on either side of the voting polls
 // & choices.
 //
 // Parameters:
@@ -3015,24 +3066,24 @@ function DisplayErrorWithPause(pErrorMsg, pMessageRow, pMnemonicsRequired)
 //  pSubBoardCode: The internal code of the sub-board to view stats for
 function ViewStats(pSubBoardCode)
 {
-	var topicRetObj = GetVoteTopicHdrs(pSubBoardCode, false);
-	if (topicRetObj.errorMsg.length > 0)
+	var pollRetObj = GetPollHdrs(pSubBoardCode, false);
+	if (pollRetObj.errorMsg.length > 0)
 	{
 		console.gotoxy(1, gMessageRow);
-		console.print("\1n\1h\1y" + topicRetObj.errorMsg + "\1n");
+		console.print("\1n\1h\1y" + pollRetObj.errorMsg + "\1n");
 		mswait(ERROR_PAUSE_WAIT_MS);
 		return;
 	}
-	if (topicRetObj.msgHdrs.length == 0)
+	if (pollRetObj.msgHdrs.length == 0)
 	{
 		console.gotoxy(1, gMessageRow);
-		console.print("\1n\1r\1yThere are no topics in this area.\1n");
+		console.print("\1n\1r\1yThere are no polls in this area.\1n");
 		mswait(ERROR_PAUSE_WAIT_MS);
 		return;
 	}
 
 	// Sort the array by number of votes, with the highest first.
-	topicRetObj.msgHdrs.sort(function(pA, pB) {
+	pollRetObj.msgHdrs.sort(function(pA, pB) {
 		if (pA.total_votes < pB.total_votes)
 			return 1;
 		else if (pA.total_votes == pB.total_votes)
@@ -3043,30 +3094,30 @@ function ViewStats(pSubBoardCode)
 
 	// Create a text message with the poll stats to display in a scrollable
 	// frame
-	var statsText = "\1n\1h\1bTopic area: \1c" + msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name + "\1n\r\n";
-	statsText += "\1w\1hTopics ranked by number of votes (highest to lowest):\1n\r\n\r\n";
+	var statsText = "\1n\1h\1bPoll area: \1c" + msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name + "\1n\r\n";
+	statsText += "\1w\1hPolls ranked by number of votes (highest to lowest):\1n\r\n\r\n";
 	var labelColor = "\1w\1h";
-	for (var i = 0; i < topicRetObj.msgHdrs.length; ++i)
+	for (var i = 0; i < pollRetObj.msgHdrs.length; ++i)
 	{
-		statsText += "\1n" + labelColor + "Topic: \1n\1g" + topicRetObj.msgHdrs[i].subject + "\r\n";
-		statsText += "\1n" + labelColor + "By: \1n\1r\1h" + topicRetObj.msgHdrs[i].from + "\r\n";
-		statsText += "\1n" + labelColor + "Date: \1n\1b\1h" + topicRetObj.msgHdrs[i].date + "\r\n";
-		statsText += "\1n" + labelColor + "Number of votes: \1n\1m\1h" + topicRetObj.msgHdrs[i].total_votes + "\r\n";
+		statsText += "\1n" + labelColor + "Poll: \1n\1g" + pollRetObj.msgHdrs[i].subject + "\r\n";
+		statsText += "\1n" + labelColor + "By: \1n\1r\1h" + pollRetObj.msgHdrs[i].from + "\r\n";
+		statsText += "\1n" + labelColor + "Date: \1n\1b\1h" + pollRetObj.msgHdrs[i].date + "\r\n";
+		statsText += "\1n" + labelColor + "Number of votes: \1n\1m\1h" + pollRetObj.msgHdrs[i].total_votes + "\r\n";
 		// Find the option(s) with the highest number(s) of votes
 		var tallyIdx = 0;
 		var answersAndNumVotes = [];
-		for (var fieldI = 0; fieldI < topicRetObj.msgHdrs[i].field_list.length; ++fieldI)
+		for (var fieldI = 0; fieldI < pollRetObj.msgHdrs[i].field_list.length; ++fieldI)
 		{
-			if (topicRetObj.msgHdrs[i].field_list[fieldI].type == SMB_POLL_ANSWER)
+			if (pollRetObj.msgHdrs[i].field_list[fieldI].type == SMB_POLL_ANSWER)
 			{
 				var answerObj = {
-					answerText: topicRetObj.msgHdrs[i].field_list[fieldI].data,
+					answerText: pollRetObj.msgHdrs[i].field_list[fieldI].data,
 					numVotes: 0
 				};
-				if (topicRetObj.msgHdrs[i].hasOwnProperty("tally"))
+				if (pollRetObj.msgHdrs[i].hasOwnProperty("tally"))
 				{
-					if (tallyIdx < topicRetObj.msgHdrs[i].tally.length)
-						answerObj.numVotes = topicRetObj.msgHdrs[i].tally[tallyIdx];
+					if (tallyIdx < pollRetObj.msgHdrs[i].tally.length)
+						answerObj.numVotes = pollRetObj.msgHdrs[i].tally[tallyIdx];
 				}
 				answersAndNumVotes.push(answerObj);
 				++tallyIdx;
