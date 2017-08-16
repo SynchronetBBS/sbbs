@@ -162,6 +162,8 @@ var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5";
 var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8";
 var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
 var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
+// Other characters
+var CHECK_CHAR = "\xFB";
 
 // Border types for a menu
 var BORDER_NONE = 0;
@@ -211,6 +213,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.wrapNavigation = true;
 	this.hotkeyCaseSensitive = false;
 	this.ampersandHotkeysInItems = true;
+	this.multiSelect = false;
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
 
@@ -505,7 +508,10 @@ function DDLightbarMenu_DrawBorder()
 //  pHighlight: Optional - Whether or not to highlight the item.  If this is not given,
 //              the item will be highlighted based on whether the current selected item
 //              matches the given index, pIdx.
-function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight)
+//  pSelected: Optional - Whether or not this item is selected (mainly intended for multi-select
+//             mode).  Defaults to false.  If true, then a mark character will be displayed
+//             at the end of the item's text.
+function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 {
 	if ((pIdx >= 0) && (pIdx < this.items.length))
 	{
@@ -531,6 +537,7 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight)
 			itemColor = (pHighlight ? this.colors.selectedItemColor : this.colors.itemColor);
 		else
 			itemColor = (pIdx == this.selectedItemIdx ? this.colors.selectedItemColor : this.colors.itemColor);
+		var selected = (typeof(pSelected) == "boolean" ? pSelected : false);
 
 		// Get the item text, and truncate it to the displayable item width
 		var itemText = this.items[pIdx].text;
@@ -559,6 +566,10 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight)
 				}
 			}
 		}
+		// If the item is selected, then display a check mark at the end of the item text.
+		// TODO: Is this right?
+		if (selected)
+			itemText = format("%-" + (itemLen-2) + "s %s", itemText.substr(0, itemLen-2), CHECK_CHAR);
 		// Ensure the item text fills the width of the menu (in case there's a
 		// background color, it should be used for the entire width of the item
 		// text).  Then write the item.
@@ -660,7 +671,9 @@ function DDLightbarMenu_GetVal(pDraw)
 		this.Draw();
 
 	// User input loop
-	var retVal = null;
+	var userChoices = null; // For multi-select mode
+	var selectedItemIndexes = { }; // For multi-select mode
+	var retVal = null; // For single-choice mode
 	var continueOn = true;
 	while (continueOn)
 	{
@@ -674,7 +687,7 @@ function DDLightbarMenu_GetVal(pDraw)
 					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 				else
 					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, false);
+				this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				--this.selectedItemIdx;
 				// Draw the new current item in selected colors
 				// If the selected item is above the top of the menu, then we'll need to
@@ -692,7 +705,7 @@ function DDLightbarMenu_GetVal(pDraw)
 						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 					else
 						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, true);
+					this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				}
 			}
 			else
@@ -706,7 +719,7 @@ function DDLightbarMenu_GetVal(pDraw)
 						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 					else
 						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, false);
+					this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					// Go to the last item and scroll to the bottom if necessary
 					this.selectedItemIdx = this.items.length - 1;
 					var oldTopItemIdx = this.topItemIdx;
@@ -723,7 +736,7 @@ function DDLightbarMenu_GetVal(pDraw)
 							console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 						else
 							console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-						this.WriteItem(this.selectedItemIdx, null, true);
+						this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					}
 				}
 			}
@@ -737,7 +750,7 @@ function DDLightbarMenu_GetVal(pDraw)
 					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 				else
 					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, false);
+				this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				++this.selectedItemIdx;
 				// Draw the new current item in selected colors
 				// If the selected item is below the bottom of the menu, then we'll need to
@@ -756,7 +769,7 @@ function DDLightbarMenu_GetVal(pDraw)
 						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 					else
 						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, true);
+					this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				}
 			}
 			else
@@ -770,7 +783,7 @@ function DDLightbarMenu_GetVal(pDraw)
 						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 					else
 						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, false);
+					this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					// Go to the first item and scroll to the top if necessary
 					this.selectedItemIdx = 0;
 					var oldTopItemIdx = this.topItemIdx;
@@ -784,7 +797,7 @@ function DDLightbarMenu_GetVal(pDraw)
 							console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 						else
 							console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-						this.WriteItem(this.selectedItemIdx, null, true);
+						this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					}
 				}
 			}
@@ -838,14 +851,14 @@ function DDLightbarMenu_GetVal(pDraw)
 					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 				else
 					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, false);
+				this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				this.selectedItemIdx = this.topItemIdx;
 				// Draw the new current item in selected colors
 				if (this.borderEnabled)
 					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 				else
 					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, true);
+				this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 			}
 		}
 		else if (userInput == KEY_END)
@@ -861,7 +874,7 @@ function DDLightbarMenu_GetVal(pDraw)
 					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 				else
 					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, false);
+				this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				this.selectedItemIdx = this.topItemIdx + numItemsPerPage - 1;
 				if (this.selectedItemIdx >= this.items.length)
 					this.selectedItemIdx = this.items.length - 1;
@@ -870,13 +883,34 @@ function DDLightbarMenu_GetVal(pDraw)
 					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
 				else
 					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, true);
+				this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 			}
 		}
 		else if (userInput == KEY_ENTER)
 		{
-			retVal = this.items[this.selectedItemIdx].retval;
+			// If multi-select is enabled and if the user hasn't made any choices,
+			// then add the current item to the user choices.  Otherwise, choose
+			// the current item.  Then exit.
+			if (this.multiSelect)
+			{
+				if (Object.keys(selectedItemIndexes).length == 0)
+					selectedItemIndexes[this.selectedItemIdx] = true;
+			}
+			else
+				retVal = this.items[this.selectedItemIdx].retval;
 			continueOn = false;
+		}
+		else if (userInput == " ")
+		{
+			// Select the current item
+			if (this.multiSelect)
+			{
+				if (selectedItemIndexes.hasOwnProperty(this.selectedItemIdx))
+					delete selectedItemIndexes[this.selectedItemIdx];
+				else
+					selectedItemIndexes[this.selectedItemIdx] = true;
+				// TODO: Draw a check-mark next to the item
+			}
 		}
 		else if (userInput == KEY_ESC)
 			continueOn = false;
@@ -906,8 +940,20 @@ function DDLightbarMenu_GetVal(pDraw)
 			if (userEnteredItemNum > 0)
 			{
 				this.selectedItemIdx = userEnteredItemNum-1;
-				retVal = this.items[this.selectedItemIdx].retval;
-				continueOn = false;
+				if (this.multiSelect)
+				{
+					if (selectedItemIndexes.hasOwnProperty(this.selectedItemIdx))
+						delete selectedItemIndexes[this.selectedItemIdx];
+					else
+						selectedItemIndexes[this.selectedItemIdx] = true;
+					// TODO: Put a check-mark next to the selected item
+					// TODO: Screen refresh?
+				}
+				else
+				{
+					retVal = this.items[this.selectedItemIdx].retval;
+					continueOn = false;
+				}
 			}
 			else
 				console.gotoxy(originalCurpos); // Move the cursor back where it was
@@ -927,9 +973,20 @@ function DDLightbarMenu_GetVal(pDraw)
 						userPressedHotkey = (userInput.toUpperCase() == this.items[i].hotkeys[h].toUpperCase());
 					if (userPressedHotkey)
 					{
-						retVal = this.items[i].retval;
-						this.selectedItemIdx = i;
-						continueOn = false;
+						if (this.multiSelect)
+						{
+							if (selectedItemIndexes.hasOwnProperty(i))
+								delete selectedItemIndexes[i];
+							else
+								selectedItemIndexes[i] = true;
+							// TODO: Screen refresh?
+						}
+						else
+						{
+							retVal = this.items[i].retval;
+							this.selectedItemIdx = i;
+							continueOn = false;
+						}
 						break;
 					}
 				}
@@ -940,8 +997,17 @@ function DDLightbarMenu_GetVal(pDraw)
 	// Set the screen color back to normal so that text written to the screen
 	// after this looks good.
 	console.print("\1n");
+	
+	// If in multi-select mode, populate userChoices with the choices
+	// that the user selected.
+	if (this.multiSelect && (Object.keys(selectedItemIndexes).length > 0))
+	{
+		userChoices = [];
+		for (var prop in selectedItemIndexes)
+			userChoices.push(this.items[prop].retval);
+	}
 
-	return retVal;
+	return (this.multiSelect ? userChoices : retVal);
 }
 
 // Sets the characters to use for drawing the border
