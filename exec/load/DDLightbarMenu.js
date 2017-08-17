@@ -73,6 +73,16 @@ will be outputted, so in numbered mode, the menu's height should not go further
 than 2 lines below the console height.  Otherwise, the display of the menu will
 not be correct if the user decides not to enter a number.
 
+This menu also supports multiple options selected (by default, that is not enabled).
+To enable that, set the multiSelect property to true.  When enabled, the GetVal()
+method will return an array of the user's selections rather than a string (or null if
+the user aborted).  You can also set a limit on the number of items selected in
+multi-select mode by setting the maxNumSelections property.  The default value is -1,
+which means no limit (0 also means no limit).
+Example, with a limit:
+lbMenu.multiSelect = true;
+lbMenu.maxNumSelections = 5;
+
 Example usage:
 load("DDLightbarMenu.js");
 // Create a menu at position 1, 3 with width 45 and height of 10
@@ -214,6 +224,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.hotkeyCaseSensitive = false;
 	this.ampersandHotkeysInItems = true;
 	this.multiSelect = false;
+	this.maxNumSelections = -1; // -1 or 0 means no limit on the number of selections
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
 
@@ -908,12 +919,25 @@ function DDLightbarMenu_GetVal(pDraw)
 				if (selectedItemIndexes.hasOwnProperty(this.selectedItemIdx))
 					delete selectedItemIndexes[this.selectedItemIdx];
 				else
-					selectedItemIndexes[this.selectedItemIdx] = true;
+				{
+					var addIt = true;
+					if (this.maxNumSelections > 0)
+						addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
+					if (addIt)
+						selectedItemIndexes[this.selectedItemIdx] = true;
+				}
 				// TODO: Draw a check-mark next to the item
 			}
 		}
 		else if (userInput == KEY_ESC)
+		{
 			continueOn = false;
+			// Ensure any returned choice objects are null/empty to signal
+			// that the user aborted
+			userChoices = null; // For multi-select mode
+			selectedItemIndexes = { }; // For multi-select mode
+			retVal = null; // For single-choice mode
+		}
 		// For numbered mode, if the user enters a number, allow the user to
 		// choose an item by typing its number.
 		else if (/[0-9]/.test(userInput) && this.numberedMode)
@@ -945,7 +969,13 @@ function DDLightbarMenu_GetVal(pDraw)
 					if (selectedItemIndexes.hasOwnProperty(this.selectedItemIdx))
 						delete selectedItemIndexes[this.selectedItemIdx];
 					else
-						selectedItemIndexes[this.selectedItemIdx] = true;
+					{
+						var addIt = true;
+						if (this.maxNumSelections > 0)
+							addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
+						if (addIt)
+							selectedItemIndexes[this.selectedItemIdx] = true;
+					}
 					// TODO: Put a check-mark next to the selected item
 					// TODO: Screen refresh?
 				}
@@ -978,7 +1008,13 @@ function DDLightbarMenu_GetVal(pDraw)
 							if (selectedItemIndexes.hasOwnProperty(i))
 								delete selectedItemIndexes[i];
 							else
-								selectedItemIndexes[i] = true;
+							{
+								var addIt = true;
+								if (this.maxNumSelections > 0)
+									addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
+								if (addIt)
+									selectedItemIndexes[i] = true;
+							}
 							// TODO: Screen refresh?
 						}
 						else
