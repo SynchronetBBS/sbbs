@@ -4,7 +4,7 @@ if uname -m | egrep -v "(i[3456789]*|x)86" > /dev/null
 	then
 	machine=`uname -m | tr "[A-Z]" "[a-z]" | tr " " "_"`
 fi
-if uname -m | egrep -v "64" > /dev/null
+if uname -m | egrep "64" > /dev/null
 	then
 	machine=`uname -m | tr "[A-Z]" "[a-z]" | tr " " "_"`
 fi
@@ -13,7 +13,7 @@ if [ $machine = "x86_64" ]
 	machine=x64
 fi
 os=$os.$machine
-
+echo $os
 exename=`basename $0`
 dirname=`dirname $0`
 if [ -x $dirname\/gcc.$os.exe.release/$exename ]
