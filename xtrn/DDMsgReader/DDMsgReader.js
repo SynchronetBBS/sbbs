@@ -219,7 +219,13 @@
  *                              When showing tally information for messages with
  *                              upvotes & downvotes, it now shows who voted on
  *                              the message (for sysops only).
+ * 2017-08-17 Eric Oulashin     Version 1.17 beta 43
+ *                              Updated to support multi-answer poll voting.  Works
+ *                              with Synchronet 3.17 builds from August 14, 2017 onward.
  */
+
+ // TODO: Add a command for closing a poll (only available to the user who opened the
+ // poll).
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
    option):
@@ -305,8 +311,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 42";
-var READER_DATE = "2017-08-05";
+var READER_VERSION = "1.17 Beta 43";
+var READER_DATE = "2017-08-16";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -14005,6 +14011,13 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 		if (typeof(this.msgbase.how_user_voted) === "function")
 		{
 			var votes = this.msgbase.how_user_voted(pMsgHdr.number, (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
+			// TODO: I'm not sure if this 'if' section is correct anymore for
+			// the latest 3.17 build of Synchronet (August 14, 2017)
+			// Digital Man said:
+			// In a poll message, the "votes" property specifies the maximum number of
+			// answers/votes per ballot (0 is the equivalent of 1).
+			// Max votes testing? :
+			// userVotedMaxVotes = (votes == pMsgHdr.votes);
 			if (votes >= 0)
 			{
 				if ((votes == 0) || (votes == 1))
@@ -14090,30 +14103,72 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 				}
 			}
 			console.crlf();
-			// Get the selection prompt text from text.dat and replace the %u or %d with
-			// the number 1 (default option)
-			var selectPromptText = bbs.text(typeof(SelectItemWhich) != "undefined" ? SelectItemWhich : 503);
-			selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
-			console.mnemonics(selectPromptText);
 			// Get & process the selection from the user
-			var maxNum = optionNum - 1;
-			// TODO: Update to support multiple answers from the user
-			var userInputNum = console.getnum(maxNum);
-			console.print("\1n");
-			//if (userInputNum == 0) // The user just pressed enter to choose the default
-			//	userInputNum = 1;
-			if (userInputNum == -1) // The user chose Q to quit
-				retObj.userQuit = true;
+			var userInputNum = 0;
+			if (pMsgHdr.votes > 1)
+			{
+				// Support multiple answers from the user
+				console.print("\1n\1gYour vote numbers, separated by commas, up to \1h" + pMsgHdr.votes + "\1n\1g (Q=quit):");
+				console.crlf();
+				console.print("\1c\1h");
+				var userInput = console.getstr();
+				if ((userInput.length > 0) && (userInput.toUpperCase() != "Q"))
+				{
+					var userAnswers = userInput.split(",");
+					if (userAnswers.length > 0)
+					{
+						// Generate confirmation text and an array of numbers
+						// representing the user's choices, up to the number
+						// of responses allowed
+						var confirmText = "Vote ";
+						var voteNumbers = [];
+						for (var i = 0; (i < userAnswers.length) && (i < pMsgHdr.votes); ++i)
+						{
+							// Trim any whitespace from the user's response
+							userAnswers[i] = trimSpaces(userAnswers[i], true, true, true);
+							if (/^[0-9]+$/.test(userAnswers[i]))
+							{
+								voteNumbers.push(+userAnswers[i]);
+								confirmText += userAnswers[i] + ",";
+							}
+						}
+						// If the confirmation text has a trailing comma, remove it
+						if (/,$/.test(confirmText))
+							confirmText = confirmText.substr(0, confirmText.length-1);
+						// Confirm from the user and submit their vote if they say yes
+						if (voteNumbers.length > 0)
+						{
+							if (console.yesno(confirmText))
+							{
+								userInputNum = 0;
+								for (var i = 0; i < voteNumbers.length; ++i)
+									userInputNum |= (1 << (voteNumbers[i]-1));
+							}
+							else
+								retObj.userQuit = true;
+						}
+					}
+				}
+				else
+					retObj.userQuit = true;
+			}
 			else
 			{
-				// The user's answer is 0-based, so if userInputNum is positive,
-				// subtract 1 from it (if it's already 0, that means the user
-				// chose to keep the default first answer).
-				if (userInputNum > 0)
-					--userInputNum;
-				var votes = (1 << userInputNum);
+				// Get the selection prompt text from text.dat and replace the %u or %d with
+				// the number 1 (default option)
+				var selectPromptText = bbs.text(SelectItemWhich);
+				selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
+				console.mnemonics(selectPromptText);
+				var maxNum = optionNum - 1;
+				userInputNum = console.getnum(maxNum);
+				if (userInputNum == -1) // The user chose Q to quit
+					retObj.userQuit = true;
+				console.print("\1n");
+			}
+			if (!retObj.userQuit)
+			{
 				voteMsgHdr.attr = MSG_VOTE;
-				voteMsgHdr.votes = votes;
+				voteMsgHdr.votes = userInputNum;
 			}
 		}
 	}
