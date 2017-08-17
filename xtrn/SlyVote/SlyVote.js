@@ -1206,7 +1206,7 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 		{
 			var votes = pMsgbase.how_user_voted(pMsgHdr.number, (pMsgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
 			// TODO: I'm not sure if this 'if' section is correct anymore for
-			// the latest 3.17 build of Synchronet
+			// the latest 3.17 build of Synchronet (August 14, 2017)
 			// Digital Man said:
 			// In a poll message, the "votes" property specifies the maximum number of
 			// answers/votes per ballot (0 is the equivalent of 1).
@@ -1357,6 +1357,8 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 					console.mnemonics(selectPromptText);
 					var maxNum = optionNum - 1;
 					userInputNum = console.getnum(maxNum);
+					if (userInputNum == -1) // The user chose Q to quit
+						retObj.userQuit = true;
 					console.print("\1n");
 				}
 			}
@@ -1364,24 +1366,10 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 				userInputNum = pUserVoteNumber;
 			//if (userInputNum == 0) // The user just pressed enter to choose the default
 			//	userInputNum = 1;
-			if (userInputNum == -1) // The user chose Q to quit
-				retObj.userQuit = true;
-			else
+			if (!retObj.userQuit)
 			{
-				// New - For multi-answer voting:
 				voteMsgHdr.attr = MSG_VOTE;
 				voteMsgHdr.votes = userInputNum;
-				// Old, and for single-answer vote:
-				/*
-				// The user's answer is 0-based, so if userInputNum is positive,
-				// subtract 1 from it (if it's already 0, that means the user
-				// chose to keep the default first answer).
-				if (userInputNum > 0)
-					--userInputNum;
-				var votes = (1 << userInputNum);
-				voteMsgHdr.attr = MSG_VOTE;
-				voteMsgHdr.votes = votes;
-				*/
 			}
 		}
 	}
@@ -1780,7 +1768,7 @@ function ViewVoteResults(pSubBoardCode)
 				var pollCloseMsg = "";
 				if ((pollMsgHdrs[currentMsgIdx].attr & POLL_CLOSED) == 0)
 				{
-					if (userHandleAliasNameMatch(pollMsgHdrs[currentMsgIdx].from))
+					if (gUserIsSysop || userHandleAliasNameMatch(pollMsgHdrs[currentMsgIdx].from))
 					{
 						// TODO: Close the poll
 						pollCloseMsg = "\1r\1hThis option isn't implemented yet.\1n";

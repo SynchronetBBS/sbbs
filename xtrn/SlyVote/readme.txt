@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.22 Beta
-                           Release date: 2017-08-07
+                                 Version 0.24 Beta
+                           Release date: 2017-08-17
 
                                      by
 
@@ -42,6 +42,10 @@ along with the latest JavaScript files for Synchronet, such as the following:
 - scrollbar.js
 - DDLightbarMenu.js
 - Possibly other JavaScript files
+
+If you are using a beta build of Synchronet 3.17, you must use one built on
+August 14, 2017 or newer.  (August 14, 2017 was when the multi-answer polls
+were added, and the functionality changed slightly.)
 
 SlyVote requires an ANSI terminal, since SlyVote makes use of lightbar menus
 which do cursor movement, etc.
