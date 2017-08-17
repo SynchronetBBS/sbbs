@@ -2290,7 +2290,7 @@ ulong loadmsgs(post_t** post, ulong ptr)
 const char* area_desc(const char* areatag)
 {
 	char tag[FIDO_AREATAG_LEN+1];
-	static char desc[LEN_GLNAME+1];
+	static char desc[128];
 
 	for(int i=0; i<cfg.listcfgs; i++) {
 		FILE* fp = fopen(cfg.listcfg[i].listpath, "r");
@@ -5247,7 +5247,11 @@ int main(int argc, char **argv)
 	backslash(cfg.inbound);
 	if(cfg.secure_inbound[0])
 		backslash(cfg.secure_inbound);
-
+	for(i=0; i<cfg.nodecfgs; i++) {
+		if(cfg.nodecfg[i].inbox[0])
+			backslash(cfg.nodecfg[i].inbox);
+	}
+	
 	truncsp(cmdline);
 	lprintf(LOG_DEBUG,"%s invoked with options: %s", sbbsecho_pid(), cmdline);
 	lprintf(LOG_DEBUG, "%u packers, %u linked-nodes, %u echolists configured", cfg.arcdefs, cfg.nodecfgs, cfg.listcfgs);
