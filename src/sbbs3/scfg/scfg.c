@@ -1,6 +1,7 @@
 /* Synchronet configuration utility 										*/
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -1882,7 +1883,7 @@ void bail(int code)
 /* information, function, action, object and access and then attempts to    */
 /* write the error information into the file ERROR.LOG in the text dir.     */
 /****************************************************************************/
-void errormsg(int line, char* function, char* source,  char* action, char* object, ulong access)
+void errormsg(int line, const char* function, const char *source, const char* action, const char *object, ulong access)
 {
 	char scrn_buf[MAX_BFLN];
     gettext(1,1,80,uifc.scrn_len,scrn_buf);
