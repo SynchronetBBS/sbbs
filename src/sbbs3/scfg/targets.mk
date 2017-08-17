@@ -15,6 +15,6 @@ all:		xpdev-mt \
 		$(EXEODIR) \
 		$(MTOBJODIR) \
 		$(LIBODIR) \
-		$(SCFG) $(SCFGHELP)
+		$(SCFG)
 
 $(SCFG):	$(XPDEV-MT_LIB) $(UIFCLIB-MT) $(CIOLIB-MT)
