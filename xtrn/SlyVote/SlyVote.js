@@ -42,6 +42,11 @@
  * 2017-08-15 Eric Oulashin     Version 0.23 Beta
  *                              Started working on support for multi-answer polls.  Also,
  *                              changed the "topic" verbage to "poll".
+ * 2017-08-16 Eric Oulashin     Version 0.24 Beta
+ *                              Updated to show the number of choices a user can submit for
+ *                              a poll, and restricted the user to choosing only that many.
+ *                              Also, started working on adding an option to let the user
+ *                              close a poll they created (while viewing poll results).
  */
  
  // TODO: Add an option to close a poll
@@ -88,8 +93,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.23 Beta";
-var SLYVOTE_DATE = "2017-08-15";
+var SLYVOTE_VERSION = "0.24 Beta";
+var SLYVOTE_DATE = "2017-08-16";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -204,6 +209,7 @@ var gReaderKeys = {
 	goToFirst: "F",
 	goToLast: "L",
 	vote: "V",
+	close: "C",
 	quit: "Q"
 }
 if (gUserIsSysop)
@@ -491,7 +497,9 @@ function ChooseVotePoll(pLetUserChoose)
 	// Draw the columns to frame the voting polls
 	console.print("\1n");
 	var pleaseSelectTextRow = 6;
-	listTopRow = pleaseSelectTextRow + 1;
+	//listTopRow = pleaseSelectTextRow + 1;
+	listTopRow = pleaseSelectTextRow + 2;
+	// DrawVoteColumns(pTopRow, pBottomRow, pColumnX1, pColumnX2)
 	var drawColRetObj = DrawVoteColumns(listTopRow);
 
 	//var startCol = drawColRetObj.columnX1+2;
@@ -602,8 +610,20 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 				// Print the poll question text centered on the screen
 				var pollSubject = msgHdr.subject.substr(0, console.screen_columns);
 				var pollSubjectStartCol = (console.screen_columns / 2) - (pollSubject.length / 2);
-				console.gotoxy(pollSubjectStartCol, pStartRow-4);
+				var subjectRow = pStartRow-5;
+				console.gotoxy(pollSubjectStartCol, subjectRow);
 				console.print("\1n\1g\1h" + pollSubject + "\1n");
+				// Write the maximum number of choices possible
+				var numChoicesRow = subjectRow+1;
+				var numChoicesPossibleText = "";
+				if (msgHdr.votes > 1)
+					numChoicesPossibleText = format("\1n\1gYou can submit up to \1h%d\1n\1g choices. Spacebar=Choose, Enter=Submit\1n", msgHdr.votes);
+				else
+					numChoicesPossibleText = format("\1n\1gYou can submit up to \1h%d\1n\1g choice. Enter=Submit\1n", msgHdr.votes);
+				var numChoicesPossibleTextLen = strip_ctrl(numChoicesPossibleText).length;
+				var numChoicesCol = (console.screen_columns / 2) - (numChoicesPossibleTextLen / 2);
+				console.gotoxy(numChoicesCol, numChoicesRow);
+				console.print(numChoicesPossibleText);
 				// Output up to the first 3 poll comment lines
 				//console.print("\1n");
 				var i = 0;
@@ -618,16 +638,22 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 				optionsMenu.ampersandHotkeysInItems = false;
 				// If the poll allows multiple answers, enable the multi-choice
 				// property for the menu.
-				optionsMenu.multiSelect = (msgHdr.votes > 1);
+				if (msgHdr.votes > 1)
+				{
+					optionsMenu.multiSelect = true;
+					optionsMenu.maxNumSelections = msgHdr.votes;
+				}
+				else
+					optionsMenu.multiSelect = false;
 				for (i = 0; i < pollTextAndOpts.options.length; ++i)
 					optionsMenu.Add(pollTextAndOpts.options[i], i+1);
 				optionsMenu.colors.itemColor = "\1c";
 				optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
-				// Get the user's choice of voting option
+				// Get the user's choice(s) on the poll
 				var userChoice = optionsMenu.GetVal(true);
-				// Erase the poll subject text so it doesn't look weird when the success/error
-				// message is displayed
-				console.gotoxy(pollSubjectStartCol, pStartRow-4);
+				// Erase the poll subject text so it doesn't look weird when the
+				// success/error message is displayed
+				console.gotoxy(pollSubjectStartCol, subjectRow);
 				printf("%" + strip_ctrl(pollSubject).length + "s", "");
 				// Submit the user's choice if they chose something
 				var firstLineEraseLength = 0;
@@ -643,12 +669,12 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 						voteRetObj = VoteOnPoll(pSubBoardCode, msgbase, msgHdr, user, userVotes, true);
 					}
 					else
-						var voteRetObj = VoteOnPoll(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
+						voteRetObj = VoteOnPoll(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
 					// If there was an error, then show it.  Otherwise, show a success message.
 					//var firstLineEraseLength = pollSubject.length;
-					console.gotoxy(1, pStartRow-4);
+					console.gotoxy(1, subjectRow);
 					printf("\1n%" + pollSubject.length + "s", "");
-					console.gotoxy(1, pStartRow-4);
+					console.gotoxy(1, subjectRow);
 					if (voteRetObj.errorMsg.length > 0)
 					{
 						var voteErrMsg = voteRetObj.errorMsg.substr(0, console.screen_columns - 2);
@@ -665,10 +691,12 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 				else
 					retObj.userExited = true;
 
-				// Before returning, erase the pcomment lines from the screen
+				// Before returning, erase the comment lines from the screen
 				console.print("\1n");
-				console.gotoxy(1, pStartRow-4);
+				console.gotoxy(1, subjectRow);
 				printf("%" + firstLineEraseLength + "s", "");
+				console.gotoxy(numChoicesCol, numChoicesRow);
+				printf("%" + numChoicesPossibleTextLen + "s", "");
 				i = 0;
 				for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
 				{
@@ -1276,7 +1304,7 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 				if (pMsgHdr.votes > 1)
 				{
 					// Support multiple answers from the user
-					console.print("\1n\1gYour vote numbers, separated by commas (Q=quit):");
+					console.print("\1n\1gYour vote numbers, separated by commas, up to \1h" + pMsgHdr.votes + "\1n\1g (Q=quit):");
 					console.crlf();
 					console.print("\1c\1h");
 					var userInput = console.getstr();
@@ -1286,11 +1314,14 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 						if (userAnswers.length > 0)
 						{
 							// Generate confirmation text and an array of numbers
-							// representing the user's choices
+							// representing the user's choices, up to the number
+							// of responses allowed
 							var confirmText = "Vote ";
 							var voteNumbers = [];
-							for (var i = 0; i < userAnswers.length; ++i)
+							for (var i = 0; (i < userAnswers.length) && (i < pMsgHdr.votes); ++i)
 							{
+								// Trim any whitespace from the user's response
+								userAnswers[i] = trimSpaces(userAnswers[i], true, true, true);
 								if (/^[0-9]+$/.test(userAnswers[i]))
 								{
 									voteNumbers.push(+userAnswers[i]);
@@ -1600,7 +1631,7 @@ function ViewVoteResults(pSubBoardCode)
 		var keyText = "\1rLeft\1b, \1rRight\1b, \1rUp\1b, \1rDn\1b, \1rPgUp\1b/\1rDn\1b, \1rF\1m)\1birst, \1rL\1m)\1bast, \1r#\1b, ";
 		if (PollDeleteAllowed(msgbase, pSubBoardCode))
 			keyText += "\1rDEL\1b, ";
-		keyText += "\1rQ\1m)\1buit, \1r?";
+		keyText += "\1rC\1m)\1blose, \1rQ\1m)\1buit, \1r?";
 		var keyHelpLine = "\1" + "7" + CenterText(keyText, console.screen_columns-1);
 
 		// Get the unmodified default header lines to be displayed
@@ -1742,6 +1773,36 @@ function ViewVoteResults(pSubBoardCode)
 					drawMsg = true;
 					drawKeyHelpLine = false;
 				}
+			}
+			else if (scrollRetObj.lastKeypress == gReaderKeys.close)
+			{
+				// Only let the user close the poll if they created it.
+				var pollCloseMsg = "";
+				if ((pollMsgHdrs[currentMsgIdx].attr & POLL_CLOSED) == 0)
+				{
+					if (userHandleAliasNameMatch(pollMsgHdrs[currentMsgIdx].from))
+					{
+						// TODO: Close the poll
+						pollCloseMsg = "\1r\1hThis option isn't implemented yet.\1n";
+					}
+					else
+						pollCloseMsg = "\1n\1y\1hCan't close this poll because it's not yours\1n";
+				}
+				else
+					pollCloseMsg = "\1n\1y\1hThe poll is already closed\1n";
+
+				// Write the poll close success/failure/status message
+				if (pollCloseMsg.length > 0)
+				{
+					console.gotoxy(1, console.screen_rows-1);
+					printf("\1n%" + +(console.screen_columns-1) + "s", "");
+					console.gotoxy(1, console.screen_rows-1);
+					console.print(pollCloseMsg + "\n");
+					mswait(ERROR_PAUSE_WAIT_MS);
+					console.gotoxy(1, console.screen_rows-1);
+					drawMsg = true;
+				}
+				drawKeyHelpLine = false;
 			}
 			else if (/[0-9]/.test(scrollRetObj.lastKeypress))
 			{
@@ -3256,4 +3317,28 @@ function subBoardHasPolls(pSubBoardCode)
 		msgbase.close();
 	}
 	return subBoardHasPolls;
+}
+
+// Returns whether a given name matches the logged-in user's handle, alias, or
+// name.
+//
+// Parameters:
+//  pName: A name to match against the logged-in user
+//
+// Return value: Boolean - Whether or not the given name matches the logged-in
+//               user's handle, alias, or name
+function userHandleAliasNameMatch(pName)
+{
+	if (typeof(pName) != "string")
+		return false;
+
+	var userMatch = false;
+	var nameUpper = pName.toUpperCase();
+	if (user.handle.length > 0)
+		userMatch = (nameUpper.indexOf(user.handle.toUpperCase()) > -1);
+	if (!userMatch && (user.alias.length > 0))
+		userMatch = (nameUpper.indexOf(user.alias.toUpperCase()) > -1);
+	if (!userMatch && (user.name.length > 0))
+		userMatch = (nameUpper.indexOf(user.name.toUpperCase()) > -1);
+	return userMatch;
 }
