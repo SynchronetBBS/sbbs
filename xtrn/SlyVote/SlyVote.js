@@ -1790,6 +1790,7 @@ function ViewVoteResults(pSubBoardCode)
 								if (closePollWithOpenMsgbase(msgbase, pollMsgHdrs[currentMsgIdx].number))
 								{
 									pollMsgHdrs[currentMsgIdx].auxattr |= POLL_CLOSED;
+									++gSubBoardPollCountObj.numClosedPolls;
 									pollCloseMsg = "\1n\1cThis poll was successfully closed.";
 								}
 								else
