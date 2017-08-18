@@ -47,10 +47,10 @@
  *                              a poll, and restricted the user to choosing only that many.
  *                              Also, started working on adding an option to let the user
  *                              close a poll they created (while viewing poll results).
+ * 2017-08-17 Eric Oulashin     Version 0.25 Beta
+ *                              Finished the code for closing a poll
  */
- 
- // TODO: Add an option to close a poll
- 
+
 load("sbbsdefs.js");
 
 // This script requires Synchronet version 3.17 or higher.
@@ -93,8 +93,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.24 Beta";
-var SLYVOTE_DATE = "2017-08-16";
+var SLYVOTE_VERSION = "0.25 Beta";
+var SLYVOTE_DATE = "2017-08-17";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -1766,18 +1766,36 @@ function ViewVoteResults(pSubBoardCode)
 			{
 				// Only let the user close the poll if they created it.
 				var pollCloseMsg = "";
-				if ((pollMsgHdrs[currentMsgIdx].attr & POLL_CLOSED) == 0)
+				if ((pollMsgHdrs[currentMsgIdx].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
 				{
-					if (gUserIsSysop || userHandleAliasNameMatch(pollMsgHdrs[currentMsgIdx].from))
+					if ((pollMsgHdrs[currentMsgIdx].auxattr & POLL_CLOSED) == 0)
 					{
-						// TODO: Close the poll
-						pollCloseMsg = "\1r\1hThis option isn't implemented yet.\1n";
+						if (gUserIsSysop || userHandleAliasNameMatch(pollMsgHdrs[currentMsgIdx].from))
+						{
+							// Prompt to confirm whether the user wants to close the poll
+							console.gotoxy(1, console.screen_rows-1);
+							printf("\1n%" + +(console.screen_columns-1) + "s", "");
+							console.gotoxy(1, console.screen_rows-1);
+							if (!console.noyes("Close poll"))
+							{
+								// Close the poll
+								if (closePollWithOpenMsgbase(msgbase, pollMsgHdrs[currentMsgIdx].number))
+								{
+									pollMsgHdrs[currentMsgIdx].auxattr |= POLL_CLOSED;
+									pollCloseMsg = "\1n\1cThis poll was successfully closed.";
+								}
+								else
+									pollCloseMsg = "\1n\1r\1h* Failed to close this poll!";
+							}
+						}
+						else
+							pollCloseMsg = "\1n\1y\1hCan't close this poll because it's not yours";
 					}
 					else
-						pollCloseMsg = "\1n\1y\1hCan't close this poll because it's not yours\1n";
+						pollCloseMsg = "\1n\1y\1hThis poll is already closed";
 				}
 				else
-					pollCloseMsg = "\1n\1y\1hThe poll is already closed\1n";
+					pollCloseMsg = "\1n\1y\1hThis message is not a poll";
 
 				// Write the poll close success/failure/status message
 				if (pollCloseMsg.length > 0)
@@ -1788,8 +1806,8 @@ function ViewVoteResults(pSubBoardCode)
 					console.print(pollCloseMsg + "\n");
 					mswait(ERROR_PAUSE_WAIT_MS);
 					console.gotoxy(1, console.screen_rows-1);
-					drawMsg = true;
 				}
+				drawMsg = true; // Always draw the message, at lest to overwrite the yes/no confirmation
 				drawKeyHelpLine = false;
 			}
 			else if (/[0-9]/.test(scrollRetObj.lastKeypress))
@@ -3329,4 +3347,46 @@ function userHandleAliasNameMatch(pName)
 	if (!userMatch && (user.name.length > 0))
 		userMatch = (nameUpper.indexOf(user.name.toUpperCase()) > -1);
 	return userMatch;
+}
+
+// Closes a poll, using an existing MessageBase object.
+//
+// Parameters:
+//  pMsgbase: A MessageBase object representing the current sub-board.  It
+//            must be open.
+//  pMsgNum: The message number (not the index)
+//
+// Return value: Boolean - Whether or not closing the poll succeeded
+function closePollWithOpenMsgbase(pMsgbase, pMsgNum)
+{
+	var pollClosed = false;
+	if ((pMsgbase !== null) && pMsgbase.is_open)
+	{
+		var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, false);
+		if ((msgHdr != null) && ((msgHdr.attr & MSG_POLL) == MSG_POLL))
+		{
+			msgHdr.auxattr |= POLL_CLOSED;
+			pollClosed = pMsgbase.put_msg_header(false, pMsgNum, msgHdr);
+		}
+	}
+	return pollClosed;
+}
+
+// Closes a poll.
+//
+// Parameters:
+//  pSubBoardCode: The internal code of the sub-board
+//  pMsgNum: The message number (not the index)
+//
+// Return value: Boolean - Whether or not closing the poll succeeded
+function closePoll(pSubBoardCode, pMsgNum)
+{
+	var pollClosed = false;
+	var msgbase = new MsgBase(pSubBoardCode);
+	if (msgbase.open())
+	{
+		pollClosed = closePollWithOpenMsgbase(msgbase, pMsgNum);
+		msgbase.close();
+	}
+	return pollClosed;
 }

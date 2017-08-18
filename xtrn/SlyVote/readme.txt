@@ -1,5 +1,5 @@
                                    SlyVote
-                                 Version 0.24 Beta
+                                 Version 0.25 Beta
                            Release date: 2017-08-17
 
                                      by
