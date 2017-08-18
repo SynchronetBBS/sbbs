@@ -242,7 +242,6 @@ if (gSlyVoteCfg.subBoardCodes.length == 0)
 
 // Determine which sub-board to use - If there is more than one, let the user choose.
 var gSubBoardCode = "";
-var gNumPollsInSubBoard = 0;
 if (gSlyVoteCfg.subBoardCodes.length == 1)
 	gSubBoardCode = gSlyVoteCfg.subBoardCodes[0];
 else
@@ -256,7 +255,7 @@ else
 	else
 		console.gotoxy(1, chooseSubRetObj.menuPos.y + chooseSubRetObj.menuSize.height + 1);
 }
-gNumPollsInSubBoard = countPollsInSubBoard(gSubBoardCode);
+var gSubBoardPollCountObj = countPollsInSubBoard(gSubBoardCode);
 
 // Program states
 var MAIN_MENU = 0;
@@ -443,7 +442,7 @@ function DoMainMenu()
 		if (chosenSubBoardCode != null)
 		{
 			gSubBoardCode = chosenSubBoardCode;
-			gNumPollsInSubBoard = countPollsInSubBoard(gSubBoardCode);
+			gSubBoardPollCountObj = countPollsInSubBoard(gSubBoardCode);
 		}
 	}
 	else if ((userChoice == quitToBBSOpt) || (userChoice == null))
@@ -470,8 +469,8 @@ function ChooseVotePoll(pLetUserChoose)
 		printf(formatStr, "");
 	}
 
-	// Get the list of polls for the selected sub-board
-	var votePollInfo = GetPollHdrs(gSubBoardCode, true);
+	// Get the list of open polls for the selected sub-board
+	var votePollInfo = GetPollHdrs(gSubBoardCode, true, true);
 	if (votePollInfo.errorMsg.length > 0)
 	{
 		console.gotoxy(1, gMessageRow);
@@ -485,7 +484,7 @@ function ChooseVotePoll(pLetUserChoose)
 		console.gotoxy(1, gMessageRow);
 		console.print("\1n\1g");
 		if (votePollInfo.pollsExist)
-			console.print("You have already voted on all polls in this section");
+			console.print("You have already voted on all polls in this section, or all polls are closed");
 		else
 			console.print("There are no polls to vote on in this section");
 		console.print("\1n");
@@ -1415,7 +1414,9 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	console.gotoxy(subBoardTextX, 9);
 	console.print(subBoardText);
 	// Write the number of polls in the sub-board
-	var numPollsText = "\1n\1b\1hThere are \1w" + gNumPollsInSubBoard + " \1bpolls in this area";
+	var numPollsText = format("\1n\1b\1hThere are \1w%d \1bpolls in this area (\1w%d\1b open)",
+	                          gSubBoardPollCountObj.numPolls,
+	                          gSubBoardPollCountObj.numPolls-gSubBoardPollCountObj.numClosedPolls);
 	var numPollsTextX = (console.screen_columns/2) - (strip_ctrl(numPollsText).length/2);
 	console.gotoxy(numPollsTextX, 10);
 	console.print(numPollsText);
@@ -1534,6 +1535,7 @@ function CenterText(pText, pFieldLen)
 // Parameters:
 //  pSubBoardCode: The internal code of the sub-board to open
 //  pCheckIfUserVoted: Boolean - Whether or not to check whether the user has voted on the polls
+//  pOnlyOpenPolls: Boolean - Whether or not to return only open polls.
 //
 // Return value: An object containing the following properties:
 //               errorMsg: A string containing an error message on failure or a blank string on success
@@ -1541,7 +1543,7 @@ function CenterText(pText, pFieldLen)
 //               pollsExist: Boolean - Whether polls exist in the sub-board.  This is useful when
 //                           this function doesn't return any headers because the the user voted
 //                           on all of them but polls do exist.
-function GetPollHdrs(pSubBoardCode, pCheckIfUserVoted)
+function GetPollHdrs(pSubBoardCode, pCheckIfUserVoted, pOnlyOpenPolls)
 {
 	var retObj = {
 		errorMsg: "",
@@ -1562,14 +1564,20 @@ function GetPollHdrs(pSubBoardCode, pCheckIfUserVoted)
 
 			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
 			{
-				retObj.pollsExist = true;
-				if (pCheckIfUserVoted)
+				var includeThisPoll = true;
+				if (pOnlyOpenPolls)
+					includeThisPoll = ((msgHdrs[prop].auxattr & POLL_CLOSED) == 0);
+				if (includeThisPoll)
 				{
-					if (!HasUserVotedOnMsg(msgHdrs[prop].number, pSubBoardCode, msgbase, user))
+					retObj.pollsExist = true;
+					if (pCheckIfUserVoted)
+					{
+						if (!HasUserVotedOnMsg(msgHdrs[prop].number, pSubBoardCode, msgbase, user))
+							retObj.msgHdrs.push(msgHdrs[prop]);
+					}
+					else
 						retObj.msgHdrs.push(msgHdrs[prop]);
 				}
-				else
-					retObj.msgHdrs.push(msgHdrs[prop]);
 			}
 		}
 
@@ -1764,7 +1772,7 @@ function ViewVoteResults(pSubBoardCode)
 			}
 			else if (scrollRetObj.lastKeypress == gReaderKeys.close)
 			{
-				// Only let the user close the poll if they created it.
+				// Only let the user close the poll if they created it or if they're a sysop.
 				var pollCloseMsg = "";
 				if ((pollMsgHdrs[currentMsgIdx].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
 				{
@@ -3133,7 +3141,7 @@ function DisplayErrorWithPause(pErrorMsg, pMessageRow, pMnemonicsRequired)
 //  pSubBoardCode: The internal code of the sub-board to view stats for
 function ViewStats(pSubBoardCode)
 {
-	var pollRetObj = GetPollHdrs(pSubBoardCode, false);
+	var pollRetObj = GetPollHdrs(pSubBoardCode, false, false);
 	if (pollRetObj.errorMsg.length > 0)
 	{
 		console.gotoxy(1, gMessageRow);
@@ -3276,26 +3284,34 @@ function RemoveCRLFCodes(pText)
 // Parameters:
 //  pSubBoardCode: The internal code of the sub-board to count polls in
 //
-// Return value: The number of polls in the sub-board
+// Return value: An object containing the following properties:
+//               numPolls: The total number of polls in the sub-board
+//               numClosedPolls: The number of polls in the sub-board that are closed
 function countPollsInSubBoard(pSubBoardCode)
 {
-	var numPolls = 0;
+	var retObj = {
+		numPolls: 0,
+		numClosedPolls: 0
+	};
+
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
 	{
 		var numMessages = msgbase.total_msgs;
 		for (var i = 0; i < numMessages; ++i)
 		{
-			var msgIdx = msgbase.get_msg_index(true, i);
-			if ((msgIdx == null) || ((msgIdx.attr & MSG_DELETE) == MSG_DELETE))
+			var msgHdr = msgbase.get_msg_header(true, i);
+			if ((msgHdr == null) || ((msgHdr.attr & MSG_DELETE) == MSG_DELETE))
 				continue;
-			if ((msgIdx.attr & MSG_POLL) == MSG_POLL)
-				++numPolls;
+			if ((msgHdr.attr & MSG_POLL) == MSG_POLL)
+				++retObj.numPolls;
+			if ((msgHdr.auxattr & POLL_CLOSED) == POLL_CLOSED)
+				++retObj.numClosedPolls;
 		}
-		
+
 		msgbase.close();
 	}
-	return numPolls;
+	return retObj;
 }
 
 // Returns whether or not a sub-board has at least one poll in it.
