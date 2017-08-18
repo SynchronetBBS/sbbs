@@ -289,9 +289,6 @@
 					 added in the future.
 */
 
-// TODO:
-// - Message validation (for the sysop) for boards that require validation
-
 load("sbbsdefs.js");
 load("text.js"); // Text string definitions (referencing text.dat)
 
@@ -311,8 +308,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 43";
-var READER_DATE = "2017-08-16";
+var READER_VERSION = "1.17 Beta 44";
+var READER_DATE = "2017-08-17";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -371,37 +368,37 @@ var KEY_ENTER = CTRL_M;
 
 // Characters for display
 // Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "Ú";
-var HORIZONTAL_SINGLE = "Ä";
-var UPPER_RIGHT_SINGLE = "¿";
-var VERTICAL_SINGLE = "³";
-var LOWER_LEFT_SINGLE = "À";
-var LOWER_RIGHT_SINGLE = "Ù";
-var T_SINGLE = "Â";
-var LEFT_T_SINGLE = "Ã";
-var RIGHT_T_SINGLE = "´";
-var BOTTOM_T_SINGLE = "Á";
-var CROSS_SINGLE = "Å";
+var UPPER_LEFT_SINGLE = "\xDA";
+var HORIZONTAL_SINGLE = "\xC4";
+var UPPER_RIGHT_SINGLE = "\xBF";
+var VERTICAL_SINGLE = "\xB3";
+var LOWER_LEFT_SINGLE = "\xC0";
+var LOWER_RIGHT_SINGLE = "\xD9";
+var T_SINGLE = "\xC2";
+var LEFT_T_SINGLE = "\xC3";
+var RIGHT_T_SINGLE = "\xB4";
+var BOTTOM_T_SINGLE = "\xC1";
+var CROSS_SINGLE = "\xC5";
 // Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "É";
-var HORIZONTAL_DOUBLE = "Í";
-var UPPER_RIGHT_DOUBLE = "»";
-var VERTICAL_DOUBLE = "º";
-var LOWER_LEFT_DOUBLE = "È";
-var LOWER_RIGHT_DOUBLE = "¼";
-var T_DOUBLE = "Ë";
-var LEFT_T_DOUBLE = "Ì";
-var RIGHT_T_DOUBLE = "¹";
-var BOTTOM_T_DOUBLE = "Ê";
-var CROSS_DOUBLE = "Î";
+var UPPER_LEFT_DOUBLE = "\xC9";
+var HORIZONTAL_DOUBLE = "\xCD";
+var UPPER_RIGHT_DOUBLE = "\xBB";
+var VERTICAL_DOUBLE = "\xBA";
+var LOWER_LEFT_DOUBLE = "\xC8";
+var LOWER_RIGHT_DOUBLE = "\xBC";
+var T_DOUBLE = "\xCB";
+var LEFT_T_DOUBLE = "\xCC";
+var RIGHT_T_DOUBLE = "\xB9";
+var BOTTOM_T_DOUBLE = "\xCA";
+var CROSS_DOUBLE = "\xCE";
 // Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "Õ";
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "¸";
-var LOWER_LEFT_VSINGLE_HDOUBLE = "Ô";
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "¾";
+var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5";
+var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8";
+var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
+var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
 // Other special characters
 var DOT_CHAR = "ú";
-var CHECK_CHAR = "û";
+var CHECK_CHAR = "\xFB";
 var THIN_RECTANGLE_LEFT = "Ý";
 var THIN_RECTANGLE_RIGHT = "Þ";
 var BLOCK1 = "°"; // Dimmest block
@@ -1068,7 +1065,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		batchDelete: CTRL_D,
 		forwardMsg: "O",
 		vote: "V",
-		showVotes: "T"
+		showVotes: "T",
+		closePoll: "!"
 	};
 	if (gIsSysop)
 		this.enhReaderKeys.validateMsg = "A";
@@ -5497,6 +5495,48 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					writeMessage = false;
 				}
 				break;
+			case this.enhReaderKeys.closePoll: // Close a poll message
+				// Save the original cursor position
+				var originalCurPos = console.getxy();
+				var pollCloseMsg = "";
+				// If this message is a poll, then allow closing it.
+				if ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+				{
+					if ((msgHeader.auxattr & POLL_CLOSED) == 0)
+					{
+						// Only let the user close the poll if they created it or if they're a sysop.
+						if (gIsSysop || userHandleAliasNameMatch(msgHeader.from))
+						{
+							// Prompt to confirm whether the user wants to close the poll
+							console.gotoxy(1, console.screen_rows-1);
+							printf("\1n%" + +(console.screen_columns-1) + "s", "");
+							console.gotoxy(1, console.screen_rows-1);
+							if (!console.noyes("Close poll"))
+							{
+								// Close the poll
+								if (closePollWithOpenMsgbase(this.msgbase, msgHeader.number))
+								{
+									msgHeader.auxattr |= POLL_CLOSED;
+									pollCloseMsg = "\1n\1cThis poll was successfully closed.";
+								}
+								else
+									pollCloseMsg = "\1n\1r\1h* Failed to close this poll!";
+							}
+						}
+						else
+							pollCloseMsg = "\1n\1y\1hCan't close this poll because it's not yours";
+					}
+					else
+						pollCloseMsg = "\1n\1y\1hThis poll is already closed";
+				}
+				else
+					pollCloseMsg = "This message is not a poll";
+
+				// Display the poll closing status message
+				this.DisplayEnhReaderError(pollCloseMsg, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+				console.gotoxy(originalCurPos);
+				writeMessage = false;
+				break;
 			case this.enhReaderKeys.validateMsg: // Validate the message
 				if (gIsSysop && (this.subBoardCode != "mail") && msg_area.sub[this.subBoardCode].is_moderated)
 				{
@@ -6173,7 +6213,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 							msgHeader = voteRetObj.updatedHdr; // To get updated vote information
 					}
 
-					// If this message is a poll vote, then exit out of the reader
+					// If this message is a poll, then exit out of the reader
 					// and come back to read the same message again so that the
 					// voting results are re-loaded and displayed on the screen.
 					if ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
@@ -6206,6 +6246,49 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					console.crlf();
 				}
 				console.pause();
+				writeMessage = true;
+				break;
+			case this.enhReaderKeys.closePoll: // Close a poll message
+				var pollCloseMsg = "";
+				console.print("\1n");
+				console.crlf();
+				// If this message is a poll, then allow closing it.
+				if ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+				{
+					if ((msgHeader.auxattr & POLL_CLOSED) == 0)
+					{
+						// Only let the user close the poll if they created it or if they're a sysop.
+						if (gIsSysop || userHandleAliasNameMatch(msgHeader.from))
+						{
+							// Prompt to confirm whether the user wants to close the poll
+							if (!console.noyes("Close poll"))
+							{
+								// Close the poll
+								if (closePollWithOpenMsgbase(this.msgbase, msgHeader.number))
+								{
+									msgHeader.auxattr |= POLL_CLOSED;
+									pollCloseMsg = "\1n\1cThis poll was successfully closed.";
+								}
+								else
+									pollCloseMsg = "\1n\1r\1h* Failed to close this poll!";
+							}
+						}
+						else
+							pollCloseMsg = "\1n\1y\1hCan't close this poll because it's not yours";
+					}
+					else
+						pollCloseMsg = "\1n\1y\1hThis poll is already closed";
+				}
+				else
+					pollCloseMsg = "This message is not a poll";
+
+				// Display the poll closing status message
+				if (strip_ctrl(pollCloseMsg).length > 0)
+				{
+					console.print("\1n" + pollCloseMsg + "\1n");
+					console.crlf();
+					console.pause();
+				}
 				writeMessage = true;
 				break;
 			case this.enhReaderKeys.validateMsg: // Validate the message
@@ -9492,7 +9575,10 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	keyHelpLines.push("                   \1n\1cFor batch delete, open the message list and use CTRL-D.");
 	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.forwardMsg + "                \1g: \1n\1cForward the message to user/email");
 	if (typeof(this.msgbase.vote_msg) === "function")
+	{
 		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.vote + "                \1g: \1n\1cVote on the message");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.closePoll + "                \1g: \1n\1cClose a poll");
+	}
 	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.showVotes + "                \1g: \1n\1cShow vote stats for the message");
 	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.quit + "                \1g: \1n\1cQuit back to the BBS");
 	for (var idx = 0; idx < keyHelpLines.length; ++idx)
@@ -18828,6 +18914,48 @@ function printMsgHdr(pMsgHdr)
 			console.print(prop + ": " + pMsgHdr[prop] + "\r\n");
 	}
 	console.pause();
+}
+
+// Closes a poll, using an existing MessageBase object.
+//
+// Parameters:
+//  pMsgbase: A MessageBase object representing the current sub-board.  It
+//            must be open.
+//  pMsgNum: The message number (not the index)
+//
+// Return value: Boolean - Whether or not closing the poll succeeded
+function closePollWithOpenMsgbase(pMsgbase, pMsgNum)
+{
+	var pollClosed = false;
+	if ((pMsgbase !== null) && pMsgbase.is_open)
+	{
+		var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, false);
+		if ((msgHdr != null) && ((msgHdr.attr & MSG_POLL) == MSG_POLL))
+		{
+			msgHdr.auxattr |= POLL_CLOSED;
+			pollClosed = pMsgbase.put_msg_header(false, pMsgNum, msgHdr);
+		}
+	}
+	return pollClosed;
+}
+
+// Closes a poll.
+//
+// Parameters:
+//  pSubBoardCode: The internal code of the sub-board
+//  pMsgNum: The message number (not the index)
+//
+// Return value: Boolean - Whether or not closing the poll succeeded
+function closePoll(pSubBoardCode, pMsgNum)
+{
+	var pollClosed = false;
+	var msgbase = new MsgBase(pSubBoardCode);
+	if (msgbase.open())
+	{
+		pollClosed = closePollWithOpenMsgbase(msgbase, pMsgNum);
+		msgbase.close();
+	}
+	return pollClosed;
 }
 
 // Writes some text on the screen at a given location with a given pause.

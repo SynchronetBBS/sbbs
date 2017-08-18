@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
                                  Version 1.17
-                           Release date: 2016-??-??
+                           Release date: 2017-??-??
 
                                      by
 
@@ -57,7 +57,10 @@ available.  This script requires Synchronet version 3.15 or newer.
 
 When using Synchronet 3.17, the message voting features added in Synchronet
 3.17 are supported.  For regular messages, users can vote a message up or down,
-and users can also vote in poll messages.
+and users can also vote in poll messages.  If you are using a beta build of
+Synchronet 3.17, you must be using a build from or newer than August 14, 2017
+due to the multi-answer poll feature that was added that day, which changed
+the poll voting behavior slightly.
 
 If the user's terminal does not support ANSI, the reader will fall back to a
 traditional user interface (which does not support scrolling).  The user
