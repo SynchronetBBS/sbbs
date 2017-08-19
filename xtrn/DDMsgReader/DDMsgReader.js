@@ -222,6 +222,9 @@
  * 2017-08-17 Eric Oulashin     Version 1.17 beta 43
  *                              Updated to support multi-answer poll voting.  Works
  *                              with Synchronet 3.17 builds from August 14, 2017 onward.
+ * 2017-08-19 Eric Oulashin     Version 1.17 beta 45
+ *                              Used the new Msgbase.close_poll() method in the August
+ *                              19, 2017 build of Synchronet 3.17
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -308,8 +311,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 44";
-var READER_DATE = "2017-08-17";
+var READER_VERSION = "1.17 Beta 45";
+var READER_DATE = "2017-08-19";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -14536,10 +14539,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 			// how to vote.
 			var votingAllowed = ((this.subBoardCode != "mail") && (((msg_area.sub[this.subBoardCode].settings & SUB_NOVOTING) == 0)));
 			if (votingAllowed && !this.HasUserVotedOnMsg(pMsgHdr.number))
-			{
-				msgBody += "\1n\r\n\1gTo vote in this poll, press \1w\1h"
-				        + this.enhReaderKeys.vote + "\1n\1g now.";
-			}
+				msgBody += "\1n\r\n\1gTo vote in this poll, press \1w\1h" + this.enhReaderKeys.vote + "\1n\1g now.\r\n";
 
 			// If the current logged-in user created this poll, then show the
 			// users who have voted on it so far.
@@ -18929,12 +18929,18 @@ function closePollWithOpenMsgbase(pMsgbase, pMsgNum)
 	var pollClosed = false;
 	if ((pMsgbase !== null) && pMsgbase.is_open)
 	{
+		var userNameOrAlias = user.alias;
+		// See if the poll was posted using the user's real name instead of
+		// their alias
 		var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, false);
 		if ((msgHdr != null) && ((msgHdr.attr & MSG_POLL) == MSG_POLL))
 		{
-			msgHdr.auxattr |= POLL_CLOSED;
-			pollClosed = pMsgbase.put_msg_header(false, pMsgNum, msgHdr);
+			if (msgHdr.from.toUpperCase() == user.name.toUpperCase())
+				userNameOrAlias = msgHdr.from;
 		}
+		// Close the poll (the close_poll() method was added in the Synchronet
+		// 3.17 build on August 19, 2017)
+		pollClosed = pMsgbase.close_poll(pMsgNum, userNameOrAlias);
 	}
 	return pollClosed;
 }
