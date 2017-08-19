@@ -93,8 +93,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.25 Beta";
-var SLYVOTE_DATE = "2017-08-17";
+var SLYVOTE_VERSION = "0.26 Beta";
+var SLYVOTE_DATE = "2017-08-18";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -598,7 +598,12 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 		if (!HasUserVotedOnMsg(pMsgNum, pSubBoardCode, msgbase, user))
 		{
 			// Display the ESC=Quit text
-			console.gotoxy(1, console.screen_rows-3);
+			var ESCQuitX = 1;
+			//var ESCQuitY = console.screen_rows-3;
+			//var ESCQuitX = 73;
+			//var ESCQuitY = console.screen_rows-17;
+			var ESCQuitY = console.screen_rows-10;
+			console.gotoxy(ESCQuitX, ESCQuitY);
 			console.print("\1n\1c\1hESC\1g=\1n\1cQuit\1n");
 
 			// Get the poll options and let the user choose one
@@ -616,9 +621,10 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 				var numChoicesRow = subjectRow+1;
 				var numChoicesPossibleText = "";
 				if (msgHdr.votes > 1)
-					numChoicesPossibleText = format("\1n\1gYou can submit up to \1h%d\1n\1g choices. Spacebar=Choose, Enter=Submit\1n", msgHdr.votes);
+					numChoicesPossibleText = format("\1n\1gYou can submit up to \1h%d\1n\1g choices. Spacebar=Choose, Enter=Submit", msgHdr.votes);
 				else
-					numChoicesPossibleText = format("\1n\1gYou can submit up to \1h%d\1n\1g choice. Enter=Submit\1n", msgHdr.votes);
+					numChoicesPossibleText = format("\1n\1gYou can submit up to \1h%d\1n\1g choice. Enter=Submit", msgHdr.votes);
+				numChoicesPossibleText += ", ESC=Quit\1n";
 				var numChoicesPossibleTextLen = strip_ctrl(numChoicesPossibleText).length;
 				var numChoicesCol = (console.screen_columns / 2) - (numChoicesPossibleTextLen / 2);
 				console.gotoxy(numChoicesCol, numChoicesRow);
@@ -708,7 +714,7 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 				retObj.errorMsg = "Unable to retrieve the poll options";
 
 			// Erase the ESC=Quit text
-			console.gotoxy(1, console.screen_rows-3);
+			console.gotoxy(ESCQuitX, ESCQuitY);
 			printf("\1n%8s", "");
 		}
 		else
@@ -3175,7 +3181,7 @@ function ViewStats(pSubBoardCode)
 	var labelColor = "\1w\1h";
 	for (var i = 0; i < pollRetObj.msgHdrs.length; ++i)
 	{
-		statsText += "\1n" + labelColor + "Poll: \1n\1g" + pollRetObj.msgHdrs[i].subject + "\r\n";
+		statsText += "\1n" + labelColor + "Poll " + +(i+1) + "/" + pollRetObj.msgHdrs.length + ": \1n\1g" + pollRetObj.msgHdrs[i].subject + "\r\n";
 		statsText += "\1n" + labelColor + "By: \1n\1r\1h" + pollRetObj.msgHdrs[i].from + "\r\n";
 		statsText += "\1n" + labelColor + "Date: \1n\1b\1h" + pollRetObj.msgHdrs[i].date + "\r\n";
 		statsText += "\1n" + labelColor + "Number of votes: \1n\1m\1h" + pollRetObj.msgHdrs[i].total_votes + "\r\n";
