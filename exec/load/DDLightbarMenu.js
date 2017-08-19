@@ -225,6 +225,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.ampersandHotkeysInItems = true;
 	this.multiSelect = false;
 	this.maxNumSelections = -1; // -1 or 0 means no limit on the number of selections
+	this.multiSelectItemChar = CHECK_CHAR; // The character to display for a selected item in multi-select mode
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
 
@@ -396,7 +397,12 @@ function DDLightbarMenu_SetHeight(pHeight)
 }
 
 // Draws the menu with all menu items.  The selected item will be highlighted.
-function DDLightbarMenu_Draw()
+//
+// Parameters:
+//  pSelectedItemIndexes: An object that can contain multiple indexes of selected
+//                        items.  Only for multi-select mode.  These are used
+//                        for drawing a marking character in the item text.
+function DDLightbarMenu_Draw(pSelectedItemIndexes)
 {
 	var itemLen = (this.showScrollbar ? this.size.width - 1 : this.size.width);
 	var curPos = { x: this.pos.x, y: this.pos.y }; // For writing the menu items
@@ -424,7 +430,8 @@ function DDLightbarMenu_Draw()
 	for (var idx = this.topItemIdx; (idx < this.items.length) && (numItemsWritten < numPossibleItems); ++idx)
 	{
 		console.gotoxy(curPos.x, curPos.y++);
-		this.WriteItem(idx, itemLen, idx == this.selectedItemIdx);
+		var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
+		this.WriteItem(idx, itemLen, idx == this.selectedItemIdx, showMultiSelectMark);
 		++numItemsWritten;
 	}
 	// If there are fewer items than the height of the menu, then write blank lines to fill
@@ -578,9 +585,11 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 			}
 		}
 		// If the item is selected, then display a check mark at the end of the item text.
-		// TODO: Is this right?
 		if (selected)
-			itemText = format("%-" + (itemLen-2) + "s %s", itemText.substr(0, itemLen-2), CHECK_CHAR);
+		{
+			var numSpaces = itemLen - strip_ctrl(itemText).length - 2;
+			itemText += format("%" + numSpaces + "s %s", "", this.multiSelectItemChar);
+		}
 		// Ensure the item text fills the width of the menu (in case there's a
 		// background color, it should be used for the entire width of the item
 		// text).  Then write the item.
@@ -675,7 +684,7 @@ function DDLightbarMenu_RemoveAllItemHotkeys()
 function DDLightbarMenu_GetVal(pDraw)
 {
 	if (this.items.length == 0)
-		return "No menu items";
+		return null;
 
 	var draw = (typeof(pDraw) == "boolean" ? pDraw : true);
 	if (draw)
@@ -706,7 +715,7 @@ function DDLightbarMenu_GetVal(pDraw)
 				if (this.selectedItemIdx < this.topItemIdx)
 				{
 					--this.topItemIdx;
-					this.Draw();
+					this.Draw(selectedItemIndexes);
 				}
 				else
 				{
@@ -739,7 +748,7 @@ function DDLightbarMenu_GetVal(pDraw)
 					if (this.topItemIdx < 0)
 						this.topItemIdx = 0;
 					if (this.topItemIdx != oldTopItemIdx)
-						this.Draw();
+						this.Draw(selectedItemIndexes);
 					else
 					{
 						// Draw the new current item in selected colors
@@ -770,7 +779,7 @@ function DDLightbarMenu_GetVal(pDraw)
 				if (this.selectedItemIdx > this.topItemIdx+numItemsPerPage-1)
 				{
 					++this.topItemIdx;
-					this.Draw();
+					this.Draw(selectedItemIndexes);
 				}
 				else
 				{
@@ -800,7 +809,7 @@ function DDLightbarMenu_GetVal(pDraw)
 					var oldTopItemIdx = this.topItemIdx;
 					this.topItemIdx = 0;
 					if (this.topItemIdx != oldTopItemIdx)
-						this.Draw();
+						this.Draw(selectedItemIndexes);
 					else
 					{
 						// Draw the new current item in selected colors
@@ -825,7 +834,7 @@ function DDLightbarMenu_GetVal(pDraw)
 				this.selectedItemIdx -= numItemsPerPage;
 				if (this.selectedItemIdx < 0)
 					this.selectedItemIdx = 0;
-				this.Draw();
+				this.Draw(selectedItemIndexes);
 			}
 		}
 		else if (userInput == KEY_PAGE_DOWN)
@@ -849,7 +858,7 @@ function DDLightbarMenu_GetVal(pDraw)
 					this.selectedItemIdx = topIndexForLastPage;
 				if (this.topItemIdx > topIndexForLastPage)
 					this.topItemIdx = topIndexForLastPage;
-				this.Draw();
+				this.Draw(selectedItemIndexes);
 			}
 		}
 		else if (userInput == KEY_HOME)
@@ -916,6 +925,7 @@ function DDLightbarMenu_GetVal(pDraw)
 			// Select the current item
 			if (this.multiSelect)
 			{
+				var added = false; // Will be true if added or false if deleted
 				if (selectedItemIndexes.hasOwnProperty(this.selectedItemIdx))
 					delete selectedItemIndexes[this.selectedItemIdx];
 				else
@@ -924,9 +934,20 @@ function DDLightbarMenu_GetVal(pDraw)
 					if (this.maxNumSelections > 0)
 						addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
 					if (addIt)
+					{
 						selectedItemIndexes[this.selectedItemIdx] = true;
+						added = true;
+					}
 				}
 				// TODO: Draw a check-mark next to the item
+				var XPos = this.pos.x + this.size.width - 2;
+				if (this.borderEnabled)
+					++XPos;
+				if (this.showScrollbar)
+					--XPos;
+				var YPos = this.pos.y+(this.selectedItemIdx-this.topItemIdx);
+				console.gotoxy(XPos, YPos);
+				console.print(this.colors.selectedItemColor + " " + (added ? this.multiSelectItemChar : " ") + "\1n");
 			}
 		}
 		else if (userInput == KEY_ESC)
