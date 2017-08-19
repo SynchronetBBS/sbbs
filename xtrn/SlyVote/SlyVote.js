@@ -49,6 +49,12 @@
  *                              close a poll they created (while viewing poll results).
  * 2017-08-17 Eric Oulashin     Version 0.25 Beta
  *                              Finished the code for closing a poll
+ * 2017-08-18 Eric Oulashin     Verison 0.26 Beta
+ *                              Made some minor changes, such as the hotkey text for
+ *                              submitting a vote in a poll
+ * 2017-08-19 Eric Oulashin     Version 0.27 Beta
+ *                              Used the new Msgbase.close_poll() method in the August
+ *                              19, 2017 build of Synchronet 3.17
  */
 
 load("sbbsdefs.js");
@@ -93,8 +99,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.26 Beta";
-var SLYVOTE_DATE = "2017-08-18";
+var SLYVOTE_VERSION = "0.27 Beta";
+var SLYVOTE_DATE = "2017-08-19";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -1031,7 +1037,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 			// how to vote.
 			var votingAllowed = ((pSubBoardCode != "mail") && (((msg_area.sub[pSubBoardCode].settings & SUB_NOVOTING) == 0)));
 			if (votingAllowed && !HasUserVotedOnMsg(pMsgHdr.number, pSubBoardCode, pMsgbase, pUser))
-				msgBody += "\1n\1" + "0\r\n\1gTo vote in this poll, press \1w\1h" + gReaderKeys.vote + "\1n\1" + "0\1g now.";
+				msgBody += "\1n\1" + "0\r\n\1gTo vote in this poll, press \1w\1h" + gReaderKeys.vote + "\1n\1" + "0\1g now.\r\n";
 
 			// If the current logged-in user created this poll, then show the
 			// users who have voted on it so far.
@@ -1564,8 +1570,10 @@ function GetPollHdrs(pSubBoardCode, pCheckIfUserVoted, pOnlyOpenPolls)
 		var msgHdrs = msgbase.get_all_msg_headers(true);
 		for (var prop in msgHdrs)
 		{
-			// Skip deleted messages
+			// Skip deleted and unreadable messages
 			if ((msgHdrs[prop].attr & MSG_DELETE) == MSG_DELETE)
+				continue;
+			if (!IsReadableMsgHdr(msgHdrs[prop], pSubBoardCode))
 				continue;
 
 			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
@@ -3308,7 +3316,7 @@ function countPollsInSubBoard(pSubBoardCode)
 		for (var i = 0; i < numMessages; ++i)
 		{
 			var msgHdr = msgbase.get_msg_header(true, i);
-			if ((msgHdr == null) || ((msgHdr.attr & MSG_DELETE) == MSG_DELETE))
+			if ((msgHdr == null) || ((msgHdr.attr & MSG_DELETE) == MSG_DELETE) || !IsReadableMsgHdr(msgHdr, pSubBoardCode))
 				continue;
 			if ((msgHdr.attr & MSG_POLL) == MSG_POLL)
 				++retObj.numPolls;
@@ -3385,12 +3393,18 @@ function closePollWithOpenMsgbase(pMsgbase, pMsgNum)
 	var pollClosed = false;
 	if ((pMsgbase !== null) && pMsgbase.is_open)
 	{
+		var userNameOrAlias = user.alias;
+		// See if the poll was posted using the user's real name instead of
+		// their alias
 		var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, false);
 		if ((msgHdr != null) && ((msgHdr.attr & MSG_POLL) == MSG_POLL))
 		{
-			msgHdr.auxattr |= POLL_CLOSED;
-			pollClosed = pMsgbase.put_msg_header(false, pMsgNum, msgHdr);
+			if (msgHdr.from.toUpperCase() == user.name.toUpperCase())
+				userNameOrAlias = msgHdr.from;
 		}
+		// Close the poll (the close_poll() method was added in the Synchronet
+		// 3.17 build on August 19, 2017)
+		pollClosed = pMsgbase.close_poll(pMsgNum, userNameOrAlias);
 	}
 	return pollClosed;
 }

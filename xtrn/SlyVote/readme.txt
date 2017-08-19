@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.25 Beta
-                           Release date: 2017-08-17
+                                 Version 0.27 Beta
+                           Release date: 2017-08-19
 
                                      by
 
@@ -44,8 +44,10 @@ along with the latest JavaScript files for Synchronet, such as the following:
 - Possibly other JavaScript files
 
 If you are using a beta build of Synchronet 3.17, you must use one built on
-August 14, 2017 or newer.  (August 14, 2017 was when the multi-answer polls
-were added, and the functionality changed slightly.)
+August 19, 2017 or newer.  On August 14, 2017, multi-answer polls were added,
+and the functionality changed slightly.  Also, the August 19, 2017 build of
+Synchronet 3.17 added a new messagebase function, close_poll(), which is used
+by SlyVote.
 
 SlyVote requires an ANSI terminal, since SlyVote makes use of lightbar menus
 which do cursor movement, etc.
