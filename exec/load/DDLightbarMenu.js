@@ -587,8 +587,18 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 		// If the item is selected, then display a check mark at the end of the item text.
 		if (selected)
 		{
-			var numSpaces = itemLen - strip_ctrl(itemText).length - 2;
-			itemText += format("%" + numSpaces + "s %s", "", this.multiSelectItemChar);
+			var itemTextLen = itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems);
+			if (itemTextLen < this.size.width)
+			{
+				var numSpaces = itemLen - itemTextLen - 2;
+				itemText += format("%" + numSpaces + "s %s", "", this.multiSelectItemChar);
+			}
+			else
+			{
+				// itemText should already be shortened to only the menu width, so
+				// take 2 characters off the end and add a space and mark character
+				itemText = itemText.substr(0, itemText.length-2) + " " + this.multiSelectItemChar;
+			}
 		}
 		// Ensure the item text fills the width of the menu (in case there's a
 		// background color, it should be used for the entire width of the item
@@ -939,7 +949,7 @@ function DDLightbarMenu_GetVal(pDraw)
 						added = true;
 					}
 				}
-				// TODO: Draw a check-mark next to the item
+				// Draw a character next to the item if it's selected, or nothing if it't not selected
 				var XPos = this.pos.x + this.size.width - 2;
 				if (this.borderEnabled)
 					++XPos;
@@ -947,7 +957,17 @@ function DDLightbarMenu_GetVal(pDraw)
 					--XPos;
 				var YPos = this.pos.y+(this.selectedItemIdx-this.topItemIdx);
 				console.gotoxy(XPos, YPos);
-				console.print(this.colors.selectedItemColor + " " + (added ? this.multiSelectItemChar : " ") + "\1n");
+				if (added)
+					console.print(this.colors.selectedItemColor + " " + this.multiSelectItemChar + "\1n");
+				else
+				{
+					// If any of the item text is right at the end, then display it.  Otherwise,
+					// display 2 spaces.
+					var textToPrint = "  ";
+					if (this.items[this.selectedItemIdx].text.length >= this.size.width)
+						textToPrint = this.items[this.selectedItemIdx].text.substr(this.size.width-2, 2);
+					console.print(this.colors.selectedItemColor + textToPrint + "\1n");
+				}
 			}
 		}
 		else if (userInput == KEY_ESC)
