@@ -311,8 +311,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 45";
-var READER_DATE = "2017-08-19";
+var READER_VERSION = "1.17 Beta 46";
+var READER_DATE = "2017-08-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -400,14 +400,14 @@ var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8";
 var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
 var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
 // Other special characters
-var DOT_CHAR = "ú";
+var DOT_CHAR = "\xF9";
 var CHECK_CHAR = "\xFB";
-var THIN_RECTANGLE_LEFT = "Ý";
-var THIN_RECTANGLE_RIGHT = "Þ";
-var BLOCK1 = "°"; // Dimmest block
-var BLOCK2 = "±";
-var BLOCK3 = "²";
-var BLOCK4 = "Û"; // Brightest block
+var THIN_RECTANGLE_LEFT = "\xDD";
+var THIN_RECTANGLE_RIGHT = "\xDE";
+var BLOCK1 = "\xB0"; // Dimmest block
+var BLOCK2 = "\xB1";
+var BLOCK3 = "\xB2";
+var BLOCK4 = "\xDB"; // Brightest block
 
 
 const ERROR_PAUSE_WAIT_MS = 1500;
@@ -5507,8 +5507,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				{
 					if ((msgHeader.auxattr & POLL_CLOSED) == 0)
 					{
-						// Only let the user close the poll if they created it or if they're a sysop.
-						if (gIsSysop || userHandleAliasNameMatch(msgHeader.from))
+						// Only let the user close the poll if they created it
+						if (userHandleAliasNameMatch(msgHeader.from))
 						{
 							// Prompt to confirm whether the user wants to close the poll
 							console.gotoxy(1, console.screen_rows-1);
@@ -6260,8 +6260,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				{
 					if ((msgHeader.auxattr & POLL_CLOSED) == 0)
 					{
-						// Only let the user close the poll if they created it or if they're a sysop.
-						if (gIsSysop || userHandleAliasNameMatch(msgHeader.from))
+						// Only let the user close the poll if they created it
+						if (userHandleAliasNameMatch(msgHeader.from))
 						{
 							// Prompt to confirm whether the user wants to close the poll
 							if (!console.noyes("Close poll"))
@@ -14200,7 +14200,8 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 				console.print("\1n\1gYour vote numbers, separated by commas, up to \1h" + pMsgHdr.votes + "\1n\1g (Q=quit):");
 				console.crlf();
 				console.print("\1c\1h");
-				var userInput = console.getstr();
+				//consoleGetStrWithValidKeys(pKeys, pMaxNumChars, pCaseSensitive)
+				var userInput = consoleGetStrWithValidKeys("0123456789,");
 				if ((userInput.length > 0) && (userInput.toUpperCase() != "Q"))
 				{
 					var userAnswers = userInput.split(",");
@@ -18962,6 +18963,91 @@ function closePoll(pSubBoardCode, pMsgNum)
 		msgbase.close();
 	}
 	return pollClosed;
+}
+
+// Inputs a string from the user, restricting their input to certain keys (optionally).
+//
+// Parameters:
+//  pKeys: A string containing valid characters for input.  Optional
+//  pMaxNumChars: The maximum number of characters to input.  Optional
+//  pCaseSensitive: Boolean - Whether or not the input should be case-sensitive.  Optional.
+//                  Defaults to true.  If false, then the user input will be uppercased.
+//
+// Return value: A string containing the user's input
+function consoleGetStrWithValidKeys(pKeys, pMaxNumChars, pCaseSensitive)
+{
+	var maxNumChars = 0;
+	if ((typeof(pMaxNumChars) == "number") && (pMaxNumChars > 0))
+		maxNumChars = pMaxNumChars;
+
+	var regexPattern = (typeof(pKeys) == "string" ? "[" + pKeys + "]" : ".");
+	var caseSensitive = (typeof(pCaseSensitive) == "boolean" ? pCaseSensitive : true);
+	var regex = new RegExp(regexPattern, (caseSensitive ? "" : "i"));
+
+	var CTRL_H = "\x08";
+	var BACKSPACE = CTRL_H;
+	var CTRL_M = "\x0d";
+	var KEY_ENTER = CTRL_M;
+
+	var modeBits = (caseSensitive ? K_NONE : K_UPPER);
+	var userInput = "";
+	var continueOn = true;
+	while (continueOn)
+	{
+		var userChar = console.getkey(K_NOECHO|modeBits);
+		if (regex.test(userChar) && isPrintableChar(userChar))
+		{
+			var appendChar = true;
+			if ((maxNumChars > 0) && (userInput.length >= maxNumChars))
+				appendChar = false;
+			if (appendChar)
+			{
+				userInput += userChar;
+				if ((modeBits & K_NOECHO) == 0)
+					console.print(userChar);
+			}
+		}
+		else if (userChar == BACKSPACE)
+		{
+			if (userInput.length > 0)
+			{
+				if ((modeBits & K_NOECHO) == 0)
+				{
+					console.print(BACKSPACE);
+					console.print(" ");
+					console.print(BACKSPACE);
+				}
+				userInput = userInput.substr(0, userInput.length-1);
+			}
+		}
+		else if (userChar == KEY_ENTER)
+		{
+			continueOn = false;
+			if ((modeBits & K_NOCRLF) == 0)
+				console.crlf();
+		}
+	}
+	return userInput;
+}
+
+// Returns whether or not a character is printable.
+//
+// Parameters:
+//  pChar: A character to test
+//
+// Return value: Boolean - Whether or not the character is printable
+function isPrintableChar(pChar)
+{
+	// Make sure pChar is valid and is a string.
+	if (typeof(pChar) != "string")
+		return false;
+	if (pChar.length == 0)
+		return false;
+
+	// Make sure the character is a printable ASCII character in the range of 32 to 254,
+	// except for 127 (delete).
+	var charCode = pChar.charCodeAt(0);
+	return ((charCode > 31) && (charCode < 255) && (charCode != 127));
 }
 
 // Writes some text on the screen at a given location with a given pause.
