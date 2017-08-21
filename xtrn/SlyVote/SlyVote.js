@@ -61,6 +61,9 @@
  *                              it only accepts numbers and a comma for input.  Also,
  *                              updated the close-poll behavior so that only the user
  *                              who created the poll can close it (removed the sysop).
+ *                              Added a configuration file option, startupSubBoardCode,
+ *                              which specifies which sub-board to automatically start
+ *                              in if there are multiple sub-board codes configured.
  */
 
 load("sbbsdefs.js");
@@ -258,14 +261,20 @@ if (gSlyVoteCfg.subBoardCodes.length == 1)
 	gSubBoardCode = gSlyVoteCfg.subBoardCodes[0];
 else
 {
-	// Let the user choose a sub-board
-	var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.subBoardCodes);
-	gSubBoardCode = chooseSubRetObj.subBoardChoice;
-	// Exit if the user pressed ESC rather than choosing an area
-	if (gSubBoardCode == null)
-		exit(0);
+	// If the startup sub-board code is set, then automatically start
+	// in that sub-board.  Otherwise, let the user choose a sub-board.
+	if (gSlyVoteCfg.startupSubBoardCode.length > 0)
+		gSubBoardCode = gSlyVoteCfg.startupSubBoardCode;
 	else
-		console.gotoxy(1, chooseSubRetObj.menuPos.y + chooseSubRetObj.menuSize.height + 1);
+	{
+		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.subBoardCodes);
+		gSubBoardCode = chooseSubRetObj.subBoardChoice;
+		// Exit if the user pressed ESC rather than choosing an area
+		if (gSubBoardCode == null)
+			exit(0);
+		else
+			console.gotoxy(1, chooseSubRetObj.menuPos.y + chooseSubRetObj.menuSize.height + 1);
+	}
 }
 var gSubBoardPollCountObj = countPollsInSubBoard(gSubBoardCode);
 
@@ -793,7 +802,8 @@ function ReadConfigFile()
 	var retObj = {
 		cfgReadError: "",
 		useAllAvailableSubBoards: true,
-		subBoardCodes: []
+		subBoardCodes: [],
+		startupSubBoardCode: ""
 	};
 
 	// Open the main configuration file.  First look for it in the sbbs/mods
@@ -847,14 +857,7 @@ function ReadConfigFile()
 
 				// Set the appropriate value in the settings object.
 				if (settingUpper == "USEALLAVAILABLESUBBOARDS")
-				{
 					retObj.useAllAvailableSubBoards = (value.toUpperCase() == "TRUE");
-					// If this setting is true, stop reading the config file - We'll populate
-					// the array of sub-board codes with all available sub-boards where voting
-					// is allowed.
-					if (retObj.useAllAvailableSubBoards)
-						break;
-				}
 				else if (settingUpper == "SUBBOARDCODES")
 				{
 					// Split the value on commas and add all sub-board codes to
@@ -871,6 +874,8 @@ function ReadConfigFile()
 						}
 					}
 				}
+				else if (settingUpper == "STARTUPSUBBOARDCODE")
+					retObj.startupSubBoardCode = value;
 			}
 		}
 
@@ -893,6 +898,27 @@ function ReadConfigFile()
 			}
 		}
 	}
+
+	// If the subBoardCodes array has only one code in it, then copy it to
+	// startupSubBoardCode (don't worry if it's different - It should be the same)
+	if (retObj.subBoardCodes.length == 1)
+		retObj.startupSubBoardCode = retObj.subBoardCodes[0];
+	// If there are multiple sub-board codes, make sure the startup code is in
+	// there.  Otherwise, set the startup sub-board code to a blank string.
+	else if (retObj.subBoardCodes.length > 1)
+	{
+		if (retObj.startupSubBoardCode.length > 0)
+		{
+			var sawStartupCode = false;
+			var startupCodeUpper = retObj.startupSubBoardCode.toUpperCase(); // For case-insensitive match
+			for (var i = 0; (i < retObj.subBoardCodes.length) && !sawStartupCode; ++i)
+				sawStartupCode = (retObj.subBoardCodes[i].toUpperCase() == startupCodeUpper);
+			if (!sawStartupCode)
+				retObj.startupSubBoardCode = "";
+		}
+	}
+	else // There are no sub-board codes, so ensure the startup code is blank.
+		retObj.startupSubBoardCode = "";
 
 	return retObj;
 }

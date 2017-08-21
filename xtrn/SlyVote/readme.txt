@@ -192,6 +192,14 @@ subBoardCodes                         A comma-separated list of internal
                                       refer to sub-boards that don't allow
                                       voting, then they will not be used.
 
+startupSubBoardCode                   Optional: An internal sub-board code for
+                                      a sub-board to automatically start in
+                                      if there are multiple sub-boards
+                                      configured.  If this is set, SlyVote
+                                      will not prompt the user for a sub-board
+                                      on startup and will start in the sub-board
+                                      specified by this setting.
+
 5. Notes for sysops
 ===================
 For sysops, polls can be deleted when viewing results from SlyVote.
