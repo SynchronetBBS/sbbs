@@ -300,6 +300,10 @@ void DLLCALL globfree(glob_t* glob)
 
 #endif /* !defined(__unix__) */
 
+/****************************************************************************/
+/* Returns number of files and/or sub-directories in directory (path)		*/
+/* Similar, but not identical, to getfilecount()							*/
+/****************************************************************************/
 long DLLCALL getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only)
 {
 	char		match[MAX_PATH+1];
@@ -733,6 +737,31 @@ ulong DLLCALL delfiles(const char *inpath, const char *spec)
 	}
 	globfree(&g);
 	return(files);
+}
+
+/****************************************************************************/
+/* Returns number of files in a directory (inpath) matching 'pattern'		*/
+/* Similar, but not identical, to getdirsize(), e.g. subdirs never counted	*/
+/****************************************************************************/
+ulong DLLCALL getfilecount(const char *inpath, const char* pattern)
+{
+	char path[MAX_PATH+1];
+	glob_t	g;
+	uint	gi;
+	ulong	count = 0;
+
+	SAFECOPY(path, inpath);
+	backslash(path);
+	strcat(path, pattern);
+	if(glob(path, GLOB_MARK, NULL, &g))
+		return 0;
+	for(gi = 0; gi < g.gl_pathc; ++gi) {
+		if(*lastchar(g.gl_pathv[gi]) == '/')
+			continue;
+		count++;
+	}
+	globfree(&g);
+	return count;
 }
 
 /****************************************************************************/
