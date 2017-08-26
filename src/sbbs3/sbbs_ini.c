@@ -562,6 +562,11 @@ void sbbs_read_ini(
 		SAFECOPY(mail->outbound_sound
 			,iniGetString(list,section,"OutboundSound",nulstr,value));
 
+		SAFECOPY(mail->newmail_notice
+			,iniGetString(list,section,"NewMailNotice","%.0s\1n\1mNew e-mail from \1h%s \1n<\1h%s\1n>\r\n", value));
+		SAFECOPY(mail->forward_notice
+			,iniGetString(list,section,"ForwardNotice","\1n\1mand it was automatically forwarded to: \1h%s\1n\r\n", value));
+	
 		/* JavaScript Operating Parameters */
 		sbbs_get_js_settings(list, section, &mail->js, &global->js);
 
@@ -1050,6 +1055,11 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,"InboundSound",mail->inbound_sound,&style))
 			break;
 		if(!iniSetString(lp,section,"OutboundSound",mail->outbound_sound,&style))
+			break;
+
+		if(!iniSetStringLiteral(lp,section,"NewMailNotice",mail->newmail_notice,&style))
+			break;
+		if(!iniSetStringLiteral(lp,section,"ForwardNotice",mail->forward_notice,&style))
 			break;
 
 		/* JavaScript Operating Parameters */

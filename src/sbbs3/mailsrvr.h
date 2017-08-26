@@ -1,6 +1,7 @@
 /* Synchronet Mail (SMTP/POP3/SendMail) server */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -100,6 +101,8 @@ typedef struct {
 	char	outbound_sound[128];
     char	pop3_sound[128];
 	char	default_charset[128];
+	char	newmail_notice[256];
+	char	forward_notice[256];
 
 	/* Misc */
     char	host_name[128];
