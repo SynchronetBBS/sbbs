@@ -213,6 +213,8 @@ char* DLLCALL c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_
 		if((!ctrl_only || (uchar)*s < ' ') && (e=c_escape_char(*s))!=NULL) {
 			strncpy(d,e,maxlen-(d-dst));
 			d+=strlen(d);
+		} else if((uchar)*s < ' ') {
+			d += snprintf(d, maxlen-(d-dst), "\\x%02X", *s);
 		} else *d++=*s;
 	}
 	*d=0;
