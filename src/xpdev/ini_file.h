@@ -1,8 +1,7 @@
-/* ini_file.h */
-
 /* Functions to parse ini (initialization / configuration) files */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -58,6 +57,7 @@ typedef struct {
 	const char* section_separator;
 	const char* value_separator;
 	const char*	bit_separator;
+	const char* literal_separator;
 } ini_style_t;
 
 #if defined(__cplusplus)
@@ -195,6 +195,8 @@ DLLEXPORT int DLLCALL			iniGetSocketOptions(str_list_t, const char* section
 DLLEXPORT void DLLCALL		iniSetDefaultStyle(ini_style_t);
 
 DLLEXPORT char* DLLCALL		iniSetString(str_list_t*, const char* section, const char* key, const char* value
+					,ini_style_t*);
+DLLEXPORT char* DLLCALL		iniSetStringLiteral(str_list_t*, const char* section, const char* key, const char* value
 					,ini_style_t*);
 DLLEXPORT char* DLLCALL		iniSetInteger(str_list_t*, const char* section, const char* key, long value
 					,ini_style_t*);
