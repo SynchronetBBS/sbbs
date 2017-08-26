@@ -409,6 +409,13 @@ typedef struct {
 #define SKIP_HEXDIGIT(p)                while(*(p) && isxdigit((unsigned char)*(p)))            (p)++;
 #define FIND_HEXDIGIT(p)                while(*(p) && !isxdigit((unsigned char)*(p)))           (p)++;
 
+#define HEX_CHAR_TO_INT(ch) 			(((ch)&0xf)+(((ch)>>6)&1)*9)
+#define DEC_CHAR_TO_INT(ch)				((ch)&0xf)
+#define OCT_CHAR_TO_INT(ch)				((ch)&0x7)
+#ifndef isodigit
+#define isodigit(ch)					((ch) >= '0' && (ch) <= '7')
+#endif
+
 /* Variable/buffer initialization (with zeros) */
 #define ZERO_VAR(var)                           memset(&(var),0,sizeof(var))
 #define ZERO_ARRAY(array)                       memset(array,0,sizeof(array))

@@ -1,8 +1,7 @@
-/* genwrap.c */
-
 /* General cross-platform development wrappers */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -112,25 +111,51 @@ char DLLCALL c_unescape_char(char ch)
 }
 
 /****************************************************************************/
-/* Return character value of C-escaped (\) character sequence				*/
-/* (supports \Xhh and \0ooo escape sequences)								*/
-/* This code currently has problems with sequences like: "\x01blue"			*/
+/* Return character value of C-escaped (\) character literal sequence		*/
+/* supports \x## (hex) and \### sequences (for octal or decimal)
 /****************************************************************************/
 char DLLCALL c_unescape_char_ptr(const char* str, char** endptr)
 {
 	char	ch;
 
-	if(toupper(*str)=='X')
-		ch=(char)strtol(++str,endptr,16);
-	else if(isdigit(*str))
-		ch=(char)strtol(++str,endptr,8);
-	else {
+	if(*str == 'x') {
+		int digits = 0;		// \x## for hexadecimal character literals (only 2 digits supported)
+		++str;
+		ch = 0;
+		while(digits < 2 && isxdigit(*str)) {
+			ch *= 0x10;	
+			ch += HEX_CHAR_TO_INT(*str);
+			str++;
+			digits++;
+		}
+#ifdef C_UNESCAPE_OCTAL_SUPPORT
+	} else if(isodigit(*str)) {
+		int digits = 0;		// \### for octal character literals (only 3 digits supported)
+		ch = 0;
+		while(digits < 3 && isodigit(*str)) {
+			ch *= 8;
+			ch += OCT_CHAR_TO_INT(*str);
+			str++;
+			digits++;
+		}
+#else
+	} else if(isdigit(*str)) {
+		int digits = 0;		// \### for decimal charater literals (only 3 digits supported)
+		ch = 0;
+		while(digits < 3 && isdigit(*str)) {
+			ch *= 10;
+			ch += DEC_CHAR_TO_INT(*str);
+			str++;
+			digits++;
+		}
+#endif
+	 } else
 		ch=c_unescape_char(*(str++));
-		if(endptr!=NULL)
-			*endptr=(char*)str;
-	}
 
-	return(ch);
+	if(endptr!=NULL)
+		*endptr=(char*)str;
+
+	return ch;
 }
 
 /****************************************************************************/
