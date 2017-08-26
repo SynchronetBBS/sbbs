@@ -187,6 +187,7 @@ static char* key_name(char* p, char** vp)
 {
 	char* equal;
 	char* colon;
+	char* tp;
 
     *vp=NULL;
 
@@ -220,7 +221,7 @@ static char* key_name(char* p, char** vp)
 		truncnl(*vp);		/* "key : value" - truncate new-line chars only */
 		if(*(*vp) == '"') {	/* handled quoted-strings here */
 			(*vp)++;
-			char* tp = strrchr(*vp, '"');
+			tp = strrchr(*vp, '"');
 			if(tp != NULL) {
 				*tp = 0;
 			}
