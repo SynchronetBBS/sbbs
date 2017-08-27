@@ -64,6 +64,12 @@
  *                              Added a configuration file option, startupSubBoardCode,
  *                              which specifies which sub-board to automatically start
  *                              in if there are multiple sub-board codes configured.
+ * 2017-08-27 Eric Oulashin     Version 0.29 beta
+ *                              Checked for the user's UFLAG_V restriction (not
+ *                              allowed to vote) in more places.  If the user is not
+ *                              allowed to vote, they can still view poll results.
+ *                              Also, updated the poll viewing & stats view to
+ *                              say if a poll is closed.
  */
 
 load("sbbsdefs.js");
@@ -92,24 +98,28 @@ if (!console.term_supports(USER_ANSI))
 	exit();
 }
 
-// Exit if the user has the V restriction (not allowed to vote)
+// If the user is not allowed to vote (has the V restriction), show the appropriate
+// error message and that the user can still view poll results.
+load("text.js"); // For text.dat line definitions
 if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
 {
 	console.crlf();
+	console.crlf();
 	// Use the line from text.dat that says the user is not allowed to vote
-	console.print("\1n" + bbs.text(R_Voting));
+	console.print("\1n" + RemoveCRLFCodes(bbs.text(R_Voting)) + "\1n");
+	console.crlf();
+	console.print("\1cYou can still view poll results.\1n");
+	console.crlf();
 	console.pause();
-	
 }
 
-load("text.js");
 load("frame.js");
 load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.28 Beta";
-var SLYVOTE_DATE = "2017-08-20";
+var SLYVOTE_VERSION = "0.29 Beta";
+var SLYVOTE_DATE = "2017-08-27";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -472,7 +482,7 @@ function DoMainMenu()
 	return nextProgramState;
 }
 
-// Lets the user choose a voting poll to vote on.
+// Lets the user choose a poll to vote on.
 //
 // Parameters:
 //  pLetUserChoose: Boolean - Whether or not to let the user choose a poll.  Defaults
@@ -513,13 +523,20 @@ function ChooseVotePoll(pLetUserChoose)
 		console.pause();
 		return MAIN_MENU;
 	}
+	// If the user isn't allowed to vote, then print the appropriate error and return to the main menu.
+	if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
+	{
+		console.gotoxy(1, gMessageRow);
+		console.print("\1n" + RemoveCRLFCodes(bbs.text(R_Voting)) + "\1n");
+		console.crlf();
+		console.pause();
+		return MAIN_MENU;
+	}
 
 	// Draw the columns to frame the voting polls
 	console.print("\1n");
 	var pleaseSelectTextRow = 6;
-	//listTopRow = pleaseSelectTextRow + 1;
 	listTopRow = pleaseSelectTextRow + 2;
-	// DrawVoteColumns(pTopRow, pBottomRow, pColumnX1, pColumnX2)
 	var drawColRetObj = DrawVoteColumns(listTopRow);
 
 	//var startCol = drawColRetObj.columnX1+2;
@@ -1064,12 +1081,19 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 			if (pollComment.length > 0)
 				msgBody = pollComment + "\r\n" + msgBody;
 
-			// If voting is allowed in this sub-board and the current logged-in
-			// user has not voted on this message, then append some text saying
-			// how to vote.
-			var votingAllowed = ((pSubBoardCode != "mail") && (((msg_area.sub[pSubBoardCode].settings & SUB_NOVOTING) == 0)));
-			if (votingAllowed && !HasUserVotedOnMsg(pMsgHdr.number, pSubBoardCode, pMsgbase, pUser))
-				msgBody += "\1n\1" + "0\r\n\1gTo vote in this poll, press \1w\1h" + gReaderKeys.vote + "\1n\1" + "0\1g now.\r\n";
+			// If the poll is closed, append some text saying it's closed.  Otherwise,
+			// if  voting is allowed in this sub-board and the current logged-in
+			// user has not voted on this message, then append some text saying how to vote.
+			if ((pMsgHdr.auxattr & POLL_CLOSED) == POLL_CLOSED) // If the poll is closed
+				msgBody += "\1n\1y\1hThis poll is closed for voting.\1n\r\n";
+			else
+			{
+				var votingAllowed = ((pSubBoardCode != "mail") &&
+				                     (((msg_area.sub[pSubBoardCode].settings & SUB_NOVOTING) == 0)) &&
+				                     ((user.security.restrictions & UFLAG_V) == 0)); // Would be UFLAG_V if the user isn't allowed to vote
+				if (votingAllowed && !HasUserVotedOnMsg(pMsgHdr.number, pSubBoardCode, pMsgbase, pUser))
+					msgBody += "\1n\1" + "0\r\n\1gTo vote in this poll, press \1w\1h" + gReaderKeys.vote + "\1n\1" + "0\1g now.\r\n";
+			}
 
 			// If the current logged-in user created this poll, then show the
 			// users who have voted on it so far.
@@ -1219,6 +1243,13 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 	if (pSubBoardCode == "mail")
 	{
 		retObj.errorMsg = "Can not vote on personal email";
+		return retObj;
+	}
+	// If the user isn't allowed to vote, then return with an error message
+	if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
+	{
+		// Use the line from text.dat that says the user is not allowed to vote
+		retObj.errorMsg = "\1n" + RemoveCRLFCodes(bbs.text(R_Voting));
 		return retObj;
 	}
 
@@ -1679,18 +1710,10 @@ function ViewVoteResults(pSubBoardCode)
 		// Get the unmodified default header lines to be displayed
 		var displayMsgHdrUnmodified = GetDefaultMsgDisplayHdr();
 
-		// Calculate the height of the frame to use
+		// Calculate the height of the frame to use and create the frame & scrollbar objects
 		var frameHeight = console.screen_rows - displayMsgHdrUnmodified.length - 1;
-		// Create the frame object to use for displaying the message
-		var displayFrame = new Frame(1, // x: Horizontal coordinate of top left
-		                             displayMsgHdrUnmodified.length + 1, // y: Vertical coordinate of top left
-		                             console.screen_columns, // Width
-		                             frameHeight, // Height
-		                             BG_BLACK);
-		displayFrame.v_scroll = true;
-		displayFrame.h_scroll = false;
-		displayFrame.scrollbars = true;
-		var displayFrameScrollbar = new ScrollBar(displayFrame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
+		var frameAndScrollbar = createFrameWithScrollbar(1, displayMsgHdrUnmodified.length + 1,
+		                                                 console.screen_columns, frameHeight);
 
 		// Prepare the screen and display the key help line on the last row of the screen
 		console.clear("\1n");
@@ -1732,20 +1755,20 @@ function ViewVoteResults(pSubBoardCode)
 				msgBodyText = "Unable to load poll";
 
 			// Load the poll text into the Frame object and draw the frame
-			displayFrame.clear();
-			displayFrame.attr&=~HIGH;
-			displayFrame.putmsg(msgBodyText, "\1n");
-			displayFrame.scrollTo(0, 0);
+			frameAndScrollbar.frame.clear();
+			frameAndScrollbar.frame.attr&=~HIGH;
+			frameAndScrollbar.frame.putmsg(msgBodyText, "\1n");
+			frameAndScrollbar.frame.scrollTo(0, 0);
 			if (drawMsg)
 			{
-				displayFrame.invalidate();
-				displayFrameScrollbar.cycle();
-				displayFrame.cycle();
-				displayFrame.draw();
+				frameAndScrollbar.frame.invalidate();
+				frameAndScrollbar.scrollbar.cycle();
+				frameAndScrollbar.frame.cycle();
+				frameAndScrollbar.frame.draw();
 			}
 			// Let the user scroll the message, and take appropriate action based
 			// on the user input
-			var scrollRetObj = ScrollFrame(displayFrame, displayFrameScrollbar, 0, "\1n", false, 1, console.screen_rows);
+			var scrollRetObj = ScrollFrame(frameAndScrollbar.frame, frameAndScrollbar.scrollbar, 0, "\1n", false, 1, console.screen_rows);
 			drawMsg = true;
 			drawKeyHelpLine = false;
 			if (scrollRetObj.lastKeypress == KEY_LEFT)
@@ -3225,6 +3248,8 @@ function ViewStats(pSubBoardCode)
 		statsText += "\1n" + labelColor + "By: \1n\1r\1h" + pollRetObj.msgHdrs[i].from + "\r\n";
 		statsText += "\1n" + labelColor + "Date: \1n\1b\1h" + pollRetObj.msgHdrs[i].date + "\r\n";
 		statsText += "\1n" + labelColor + "Number of votes: \1n\1m\1h" + pollRetObj.msgHdrs[i].total_votes + "\r\n";
+		if ((pollRetObj.msgHdrs[i].auxattr & POLL_CLOSED) == POLL_CLOSED)
+			statsText += "\1n\1y\1hThis poll is closed for voting.\r\n";
 		// Find the option(s) with the highest number(s) of votes
 		var tallyIdx = 0;
 		var answersAndNumVotes = [];
@@ -3269,21 +3294,10 @@ function ViewStats(pSubBoardCode)
 	}
 
 	// Create a scrollable frame to display the stats in
-	var frameHeight = console.screen_rows - 1;
-	// Create the frame object to use for displaying the message
-	var displayFrame = new Frame(1, // x: Horizontal coordinate of top left
-								 1, // y: Vertical coordinate of top left
-								 console.screen_columns, // Width
-								 frameHeight, // Height
-								 BG_BLACK);
-	displayFrame.v_scroll = true;
-	displayFrame.h_scroll = false;
-	displayFrame.scrollbars = true;
-	var displayFrameScrollbar = new ScrollBar(displayFrame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
+	var frameAndScrollbar = createFrameWithScrollbar(1, 1, console.screen_columns, console.screen_rows - 1);
 	// Put the stats text in the frame
-	displayFrame.attr&=~HIGH;
-	displayFrame.putmsg(statsText, "\1n");
-	displayFrame.scrollTo(0, 0);
+	frameAndScrollbar.frame.putmsg(statsText, "\1n");
+	frameAndScrollbar.frame.scrollTo(0, 0);
 
 	// Create the key help line to be displayed at the bottom of the screen
 	var keyText = "\1rUp\1b, \1rDn\1b, \1rPgUp\1b/\1rDn\1b, \1rHome\1b, \1rEnd\1b, \1rQ\1m)\1buit";
@@ -3302,14 +3316,14 @@ function ViewStats(pSubBoardCode)
 		js.gc(true);
 
 		// Draw the frame
-		displayFrame.invalidate();
-		displayFrameScrollbar.cycle();
-		displayFrame.cycle();
-		displayFrame.draw();
+		frameAndScrollbar.frame.invalidate();
+		frameAndScrollbar.scrollbar.cycle();
+		frameAndScrollbar.frame.cycle();
+		frameAndScrollbar.frame.draw();
 
 		// Let the user scroll the message, and take appropriate action based
 		// on the user input
-		var scrollRetObj = ScrollFrame(displayFrame, displayFrameScrollbar, 0, "\1n", false, 1, console.screen_rows);
+		var scrollRetObj = ScrollFrame(frameAndScrollbar.frame, frameAndScrollbar.scrollbar, 0, "\1n", false, 1, console.screen_rows);
 		if (scrollRetObj.lastKeypress == gReaderKeys.quit)
 			continueOn = false;
 	}
@@ -3543,4 +3557,30 @@ function isPrintableChar(pChar)
 	// except for 127 (delete).
 	var charCode = pChar.charCodeAt(0);
 	return ((charCode > 31) && (charCode < 255) && (charCode != 127));
+}
+
+// Creates a scrollable Frame object with a scrollbar
+//
+// Parameters:
+//  pX: The X (horizontal) component of the upper-left of the frame
+//  pY: The Y (vertical) component of the upper-left of the frame
+//  pWidth: The width of the frame
+//  pHeight: The height of the frame
+//
+// Return value: An object with the following properties:
+//               frame: The Frame object
+//               scrollbar: The ScrollBar object
+function createFrameWithScrollbar(pX, pY, pWidth, pHeight)
+{
+	var retObj = {
+		frame: null,
+		scrollbar: null
+	};
+	retObj.frame = new Frame(pX, pY, pWidth, pHeight, BG_BLACK);
+	retObj.frame.attr &=~ HIGH;
+	retObj.frame.v_scroll = true;
+	retObj.frame.h_scroll = false;
+	retObj.frame.scrollbars = true;
+	retObj.scrollbar = new ScrollBar(retObj.frame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
+	return retObj;
 }
