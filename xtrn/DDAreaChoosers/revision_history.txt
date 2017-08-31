@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.14     2017-08-30   Bug fix in the message area chooser: A function was not
+                      implemented (result of a copy & paste where I didn't
+                      include the missing function that was called).
 1.13     2016-12-11   Updated the message area chooser to show the number of
                       readable messages rather than the actual total number of
                       messages in the sub-boards (in case some messages are

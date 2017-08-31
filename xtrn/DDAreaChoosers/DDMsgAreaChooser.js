@@ -92,8 +92,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.13";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2016-12-11";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.14";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2017-08-30";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
@@ -2400,4 +2400,28 @@ function numReadableMsgs(pMsgbase, pSubBoardCode)
 		}
 	}
 	return numMsgs;
+}
+
+// Returns whether a given name matches the logged-in user's handle, alias, or
+// name.
+//
+// Parameters:
+//  pName: A name to match against the logged-in user
+//
+// Return value: Boolean - Whether or not the given name matches the logged-in
+//               user's handle, alias, or name
+function userHandleAliasNameMatch(pName)
+{
+	if (typeof(pName) != "string")
+		return false;
+
+	var userMatch = false;
+	var nameUpper = pName.toUpperCase();
+	if (user.handle.length > 0)
+		userMatch = (nameUpper.indexOf(user.handle.toUpperCase()) > -1);
+	if (!userMatch && (user.alias.length > 0))
+		userMatch = (nameUpper.indexOf(user.alias.toUpperCase()) > -1);
+	if (!userMatch && (user.name.length > 0))
+		userMatch = (nameUpper.indexOf(user.name.toUpperCase()) > -1);
+	return userMatch;
 }

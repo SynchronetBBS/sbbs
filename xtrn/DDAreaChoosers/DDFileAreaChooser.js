@@ -92,8 +92,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.13";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2016-12-11";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.14";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2017-08-30";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
