@@ -70,6 +70,15 @@
  *                              allowed to vote, they can still view poll results.
  *                              Also, updated the poll viewing & stats view to
  *                              say if a poll is closed.
+ * 2017-09-08 Eric Oulashin     Version 0.30 beta
+ *                              Implemented a user configuration file to store
+ *                              last-read message numbers separately from
+ *                              Synchronet's messagebase so that SlyVote won't
+ *                              mess with users' actual last-read message numbers.
+ *                              Also, updated so that when changing to another
+ *                              area, if the top item index is on the last page
+ *                              of the menu, then set the top item index to the
+ *                              first item on the last page.
  */
 
 load("sbbsdefs.js");
@@ -118,8 +127,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.29 Beta";
-var SLYVOTE_DATE = "2017-08-27";
+var SLYVOTE_VERSION = "0.30 Beta";
+var SLYVOTE_DATE = "2017-09-08";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -265,6 +274,11 @@ if (gSlyVoteCfg.subBoardCodes.length == 0)
 	exit();
 }
 
+// Read the user settings file
+// The name of the user's settings file for SlyVote
+var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".SlyVote.cfg";
+var gUserSettings = ReadUserSettingsFile(gUserSettingsFilename);
+
 // Determine which sub-board to use - If there is more than one, let the user choose.
 var gSubBoardCode = "";
 if (gSlyVoteCfg.subBoardCodes.length == 1)
@@ -321,7 +335,12 @@ while (gContinueSlyVote)
 	}
 }
 
-
+// Before exiting, update the user settings file
+if (!WriteUserSettingsFile(gUserSettings, gUserSettingsFilename))
+{
+	console.print("\1n\1y\1hFailed to update your user settings file!\1n");
+	mswait(ERROR_PAUSE_WAIT_MS);
+}
 
 
 
@@ -351,6 +370,8 @@ function ChooseVotingSubBoard(pSubBoardCodes)
 	var drawColRetObj = DrawVoteColumns(listTopRow, gBottomBorderRow-1, 17, 63);
 
 	// Display the menu of voting areas
+	var topItemIndex = 0;
+	var selectedItemIndex = 0;
 	console.gotoxy(drawColRetObj.columnX1+2, listTopRow-1);
 	console.print("\1n\1b\1hChoose a voting area (\1cESC\1g=\1n\1cExit\1h\1b)  \1y\1h" + CHECK_CHAR + "\1n\1c=\1b\1hHas polls\1n");
 	console.gotoxy(drawColRetObj.columnX1+2, listTopRow);
@@ -364,6 +385,21 @@ function ChooseVotingSubBoard(pSubBoardCodes)
 		var hasPollsChar = (subBoardHasPolls(pSubBoardCodes[idx]) ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
 		var itemText = format("%-" + areaNameLen + "s %s", subBoardGrpAndName.substr(0, areaNameLen), hasPollsChar);
 		subBoardMenu.Add(itemText, pSubBoardCodes[idx]);
+		if (pSubBoardCodes[idx] == gSubBoardCode)
+		{
+			topItemIndex = idx;
+			selectedItemIndex = idx;
+		}
+	}
+	// If the top item index is on the last page of the menu, then
+	// set the top item index to the first item on the last page.
+	if (subBoardMenu.items.length > subBoardMenu.GetNumItemsPerPage())
+	{
+		if ((topItemIndex <= subBoardMenu.items.length - 1) && (topItemIndex >= subBoardMenu.GetTopItemIdxToTopOfLastPage()))
+			subBoardMenu.SetTopItemIdxToTopOfLastPage();
+		else
+			subBoardMenu.topItemIdx = topItemIndex;
+		subBoardMenu.selectedItemIdx = selectedItemIndex;
 	}
 	var retObj = new Object();
 	retObj.subBoardChoice = subBoardMenu.GetVal();
@@ -938,6 +974,101 @@ function ReadConfigFile()
 		retObj.startupSubBoardCode = "";
 
 	return retObj;
+}
+
+// Reads the user settings file.
+//
+// Parameters:
+//  pFilename: The name of the file to read
+//
+// Return value: An object with the following properties:
+//  lastRead: An object specifying last-read message numbers, indexed by sub-board code
+function ReadUserSettingsFile(pFilename)
+{
+	var userSettingsObj = {
+		lastRead: { }
+	};
+
+	var userCfgFile = new File(pFilename);
+	if (userCfgFile.open("r"))
+	{
+		var fileLine = null;     // A line read from the file
+		var equalsPos = 0;       // Position of a = in the line
+		var commentPos = 0;      // Position of the start of a comment
+		var setting = null;      // A setting name (string)
+		var settingUpper = null; // Upper-case setting name
+		var value = null;        // To store a value for a setting (string)
+		while (!userCfgFile.eof)
+		{
+			// Read the next line from the config file.
+			fileLine = userCfgFile.readln(2048);
+
+			// fileLine should be a string, but I've seen some cases
+			// where it isn't, so check its type.
+			if (typeof(fileLine) != "string")
+				continue;
+
+			// If the line starts with with a semicolon (the comment
+			// character) or is blank, then skip it.
+			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+				continue;
+
+			// If the line has a semicolon anywhere in it, then remove
+			// everything from the semicolon onward.
+			commentPos = fileLine.indexOf(";");
+			if (commentPos > -1)
+				fileLine = fileLine.substr(0, commentPos);
+
+			// Look for an equals sign, and if found, separate the line
+			// into the setting name (before the =) and the value (after the
+			// equals sign).
+			equalsPos = fileLine.indexOf("=");
+			if (equalsPos > 0)
+			{
+				// Read the setting & value, and trim leading & trailing spaces.
+				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+				settingUpper = setting.toUpperCase();
+				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+
+				// Last-read message numbers.  Lines starting with lastread_
+				// should have a sub-board code after the "lastread_".  Add
+				// the message number to userSettingsObj.lastRead if the value
+				// is all digits and there is a sub-board code specified.
+				if ((settingUpper.indexOf("LASTREAD_") == 0) && /^[0-9]+$/.test(value))
+				{
+					var subBoardCode = setting.substr(9).toLowerCase();
+					if (subBoardCode.length > 0)
+						userSettingsObj.lastRead[subBoardCode] = +value; // + to make it a numeric type
+				}
+			}
+		}
+
+		userCfgFile.close();
+	}
+
+	return userSettingsObj;
+}
+
+// Writes the user settings file
+//
+// Parameters:
+//  pUserCfg: The object containing the user's configuration settings
+//  pFilename: The name of the file to write (should be gUserSettingsFilename)
+function WriteUserSettingsFile(pUserCfg, pFilename)
+{
+	var writeSucceeded = false;
+	var userCfgFile = new File(pFilename);
+	if (userCfgFile.open("w"))
+	{
+		for (var subBoardCode in pUserCfg.lastRead)
+		{
+			writeSucceeded = userCfgFile.writeln("lastread_" + subBoardCode + "=" + pUserCfg.lastRead[subBoardCode]);
+			if (!writeSucceeded)
+				break;
+		}
+		userCfgFile.close();
+	}
+	return writeSucceeded;
 }
 
 // Checks to see whether a user has voted on a message.
@@ -1685,8 +1816,24 @@ function ViewVoteResults(pSubBoardCode)
 			if (IsReadableMsgHdr(msgHdrs[prop], pSubBoardCode))
 			{
 				pollMsgHdrs.push(msgHdrs[prop]);
+				// If the user settings has a last-read message number, then use it.
+				// Otherwise, look in Synchronet's message area array for the user's
+				// last-read message number.
+				if (gUserSettings.lastRead.hasOwnProperty(pSubBoardCode))
+				{
+					if (msgHdrs[prop].number === gUserSettings.lastRead[pSubBoardCode])
+						currentMsgIdx = pollMsgIdx;
+				}
+				else
+				{
+					if (msgHdrs[prop].number == msg_area.sub[pSubBoardCode].last_read)
+						currentMsgIdx = pollMsgIdx;
+				}
+				// TODO: Remove - Older - Dealing with Synchronet last read pointers:
+				/*
 				if (msgHdrs[prop].number == msg_area.sub[pSubBoardCode].last_read)
 					currentMsgIdx = pollMsgIdx;
+				*/
 				++pollMsgIdx;
 			}
 		}
@@ -2008,6 +2155,10 @@ function ViewVoteResults(pSubBoardCode)
 			else if (scrollRetObj.lastKeypress == gReaderKeys.quit)
 				continueOn = false;
 
+			// Update the user's last read message number in their user settings
+			gUserSettings.lastRead[pSubBoardCode] = pollMsgHdrs[currentMsgIdx].number;
+			// TODO: Remove - Older - Dealing with Synchronet's scan pointer and last read pointer:
+			/*
 			// Update the user's scan pointer and last read message pointer
 			if (pSubBoardCode != "mail")
 			{
@@ -2017,6 +2168,7 @@ function ViewVoteResults(pSubBoardCode)
 					msg_area.sub[pSubBoardCode].scan_ptr = pollMsgHdrs[currentMsgIdx].number;
 				msg_area.sub[pSubBoardCode].last_read = pollMsgHdrs[currentMsgIdx].number;
 			}
+			*/
 		}
 
 		msgbase.close();
