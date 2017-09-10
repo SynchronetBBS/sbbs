@@ -1131,7 +1131,10 @@ function DDLightbarMenu_GetTopItemIdxToTopOfLastPage()
 	var numItemsPerPage = this.size.height;
 	if (this.borderEnabled)
 		numItemsPerPage -= 2;
-	return this.items.length - numItemsPerPage;
+	var topItemIndex = this.items.length - numItemsPerPage;
+	if (topItemIndex < 0)
+		topItemIndex = 0;
+	return topItemIndex;
 }
 
 // Sets the top item index to the top item of the last page of items
@@ -1141,6 +1144,8 @@ function DDLightbarMenu_SetTopItemIdxToTopOfLastPage()
 	if (this.borderEnabled)
 		numItemsPerPage -= 2;
 	this.topItemIdx = this.items.length - numItemsPerPage;
+	if (this.topItemIdx < 0)
+		this.topItemIdx = 0;
 }
 
 // Inputs a keypress from the user and handles some ESC-based
