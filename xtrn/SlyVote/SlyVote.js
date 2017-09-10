@@ -79,6 +79,11 @@
  *                              area, if the top item index is on the last page
  *                              of the menu, then set the top item index to the
  *                              first item on the last page.
+ * 2017-09-09 Eric Oulashin     Version 0.31 beta
+ *                              Optimization: Updated to only build the area
+ *                              selection menu once, the first time it's used.
+ *                              Also refactored a section of code there to go
+ *                              along with a bug fix in DDLIghtbarMenu.
  */
 
 load("sbbsdefs.js");
@@ -127,8 +132,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.30 Beta";
-var SLYVOTE_DATE = "2017-09-08";
+var SLYVOTE_VERSION = "0.31 Beta";
+var SLYVOTE_DATE = "2017-09-09";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -369,42 +374,45 @@ function ChooseVotingSubBoard(pSubBoardCodes)
 	var listTopRow = 8;
 	var drawColRetObj = DrawVoteColumns(listTopRow, gBottomBorderRow-1, 17, 63);
 
-	// Display the menu of voting areas
-	var topItemIndex = 0;
-	var selectedItemIndex = 0;
+	// Display the "choose a voting area" text
 	console.gotoxy(drawColRetObj.columnX1+2, listTopRow-1);
 	console.print("\1n\1b\1hChoose a voting area (\1cESC\1g=\1n\1cExit\1h\1b)  \1y\1h" + CHECK_CHAR + "\1n\1c=\1b\1hHas polls\1n");
-	console.gotoxy(drawColRetObj.columnX1+2, listTopRow);
-	console.print("\1n\1cLoading areas\1i...\1n");
-	var areaNameLen = drawColRetObj.textLen - 2;
-	var subBoardMenu = new DDLightbarMenu(drawColRetObj.columnX1+drawColRetObj.colWidth-1, listTopRow, drawColRetObj.textLen, drawColRetObj.colHeight);
-	subBoardMenu.ampersandHotkeysInItems = false;
-	for (var idx = 0; idx < pSubBoardCodes.length; ++idx)
+
+	// If the voting area menu hasn't been created yet, then create it
+	if (typeof(ChooseVotingSubBoard.areaMenu) != "object")
 	{
-		var subBoardGrpAndName = msg_area.sub[pSubBoardCodes[idx]].grp_name + " - " + msg_area.sub[pSubBoardCodes[idx]].name;
-		var hasPollsChar = (subBoardHasPolls(pSubBoardCodes[idx]) ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
-		var itemText = format("%-" + areaNameLen + "s %s", subBoardGrpAndName.substr(0, areaNameLen), hasPollsChar);
-		subBoardMenu.Add(itemText, pSubBoardCodes[idx]);
-		if (pSubBoardCodes[idx] == gSubBoardCode)
+		var topItemIndex = 0;
+		var selectedItemIndex = 0;
+		console.gotoxy(drawColRetObj.columnX1+2, listTopRow);
+		console.print("\1n\1cLoading areas\1i...\1n"); // In case loading areas takes a while
+		var areaNameLen = drawColRetObj.textLen - 2;
+		ChooseVotingSubBoard.areaMenu = new DDLightbarMenu(drawColRetObj.columnX1+drawColRetObj.colWidth-1, listTopRow, drawColRetObj.textLen, drawColRetObj.colHeight);
+		ChooseVotingSubBoard.areaMenu.ampersandHotkeysInItems = false;
+		for (var idx = 0; idx < pSubBoardCodes.length; ++idx)
 		{
-			topItemIndex = idx;
-			selectedItemIndex = idx;
+			var subBoardGrpAndName = msg_area.sub[pSubBoardCodes[idx]].grp_name + " - " + msg_area.sub[pSubBoardCodes[idx]].name;
+			var hasPollsChar = (subBoardHasPolls(pSubBoardCodes[idx]) ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
+			var itemText = format("%-" + areaNameLen + "s %s", subBoardGrpAndName.substr(0, areaNameLen), hasPollsChar);
+			ChooseVotingSubBoard.areaMenu.Add(itemText, pSubBoardCodes[idx]);
+			if (pSubBoardCodes[idx] == gSubBoardCode)
+			{
+				topItemIndex = idx;
+				selectedItemIndex = idx;
+			}
 		}
-	}
-	// If the top item index is on the last page of the menu, then
-	// set the top item index to the first item on the last page.
-	if (subBoardMenu.items.length > subBoardMenu.GetNumItemsPerPage())
-	{
-		if ((topItemIndex <= subBoardMenu.items.length - 1) && (topItemIndex >= subBoardMenu.GetTopItemIdxToTopOfLastPage()))
-			subBoardMenu.SetTopItemIdxToTopOfLastPage();
+		// If the top item index is on the last page of the menu, then
+		// set the top item index to the first item on the last page.
+		if ((topItemIndex <= ChooseVotingSubBoard.areaMenu.items.length - 1) && (topItemIndex >= ChooseVotingSubBoard.areaMenu.GetTopItemIdxToTopOfLastPage()))
+			ChooseVotingSubBoard.areaMenu.SetTopItemIdxToTopOfLastPage();
 		else
-			subBoardMenu.topItemIdx = topItemIndex;
-		subBoardMenu.selectedItemIdx = selectedItemIndex;
+			ChooseVotingSubBoard.areaMenu.topItemIdx = topItemIndex;
+		ChooseVotingSubBoard.areaMenu.selectedItemIdx = selectedItemIndex;
 	}
+	// Display the menu of voting areas, get the user's choice, and return it
 	var retObj = new Object();
-	retObj.subBoardChoice = subBoardMenu.GetVal();
-	retObj.menuPos = subBoardMenu.pos;
-	retObj.menuSize = subBoardMenu.size;
+	retObj.subBoardChoice = ChooseVotingSubBoard.areaMenu.GetVal();
+	retObj.menuPos = ChooseVotingSubBoard.areaMenu.pos;
+	retObj.menuSize = ChooseVotingSubBoard.areaMenu.size;
 	return retObj;
 }
 

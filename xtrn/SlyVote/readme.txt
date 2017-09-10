@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.30 Beta
-                           Release date: 2017-09-08
+                                 Version 0.31 Beta
+                           Release date: 2017-09-09
 
                                      by
 
@@ -64,6 +64,15 @@ to be networked only with other Synchronet BBSes (Dove-Net is a common one,
 although a few BBSes on Dove-Net are not Synchronet).  FidoNet networks and
 other message networks that might not have Synchronet BBSes should not support
 voting by default in Synchronet.
+
+SlyVote stores user configuration files, which stores the user's last-read
+message numbers in the message areas, which are used when the user is viwing
+poll results.  Even though Synchronet can keep track of the user's last-read
+message numbers, they are stored separately by SlyVote so that they don't
+interfere with the user's normal message reading.  The SlyVote user
+configuration files are stored in sbbs/data/user, with the filenames in the
+format <user number>.SlyVote.cfg.  The user number is 0-padded up to 4 digits.
+For example, user 1 would be 0001.SlyVote.cfg.
 
 SlyVote's look and feel was initially based on DCT Vote, a voting booth door
 which was available in the 1990s.
