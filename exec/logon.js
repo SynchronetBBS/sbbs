@@ -39,17 +39,25 @@ if(user.security.restrictions&UFLAG_G) {
 		email=console.getstr(LEN_NETMAIL);
 		if(!email || !email.length)
 			continue;
+		if(bbs.trashcan("email", email)) {
+			bbs.hangup();
+			exit();
+		}
 		bbs.log_str("  " + email);
 		user.netmail=email;
 		user.settings|=USER_NETMAIL;
 		break;
 	}
-		
+
 	while(bbs.online) {
 		printf("\1y\1hPlease enter your location (City, State): \1w");
 		location=console.getstr(LEN_LOCATION,K_UPRLWR);
 		if(!location || !location.length)
 			continue;
+		if(bbs.trashcan("location", email)) {
+			bbs.hangup();
+			exit();
+		}
 		bbs.log_str("  " + location);
 		user.location=location;
 		break;
