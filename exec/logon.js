@@ -54,7 +54,7 @@ if(user.security.restrictions&UFLAG_G) {
 		location=console.getstr(LEN_LOCATION,K_UPRLWR);
 		if(!location || !location.length)
 			continue;
-		if(bbs.trashcan("location", email)) {
+		if(bbs.trashcan("location", location)) {
 			bbs.hangup();
 			exit();
 		}
