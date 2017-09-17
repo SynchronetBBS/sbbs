@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.50
-                        Release date: 2017-08-05
+                              Version 1.51
+                        Release date: 2017-09-16
 
                                   by
 
@@ -772,13 +772,24 @@ replace), you would use $1 to refer to the word "darn".  For example, for
 
 11. User settings
 =================
-SlyEdit version 1.32 added the ability for each user to configure some settings
-for themselves.  The user settings include the following:
+Since version 1.32, SlyEdit has the ability for each user to configure some
+settings for themselves.  The user settings include the following:
 - Whether or not to enable the option to use taglines
 - Whether or not to add the original author's initials to quote lines
   (this was previously only configurable in SlyEdit.cfg)
 - Whether or not to indent quote lines that use author's intials (this was
   previously only configurable in SlyEdit.cfg)
+- Whether or not to trim spaces from quoted lines (when replying to messages).
+  Some users indent their paragraphs with spaces as a writing style.  When
+  this setting is enabled, this feature removes leading spaces from quoted
+  lines when replying to a message.  A user might want to disable this, for
+  example, when they want to ensure that a message is quoted exactly as-is.
+- Whether or not to auto-sign messages.  When this setting is enabled, the
+  user's messages are automatically signed with their alias or their real
+  name, depending on the sub-board's settings.  There is additionally a setting
+  to specify whehter to use only their first name when signing with their
+  real name, and also whether to sign emails with their real name (emails
+  don't have a configuration like sub-boards do).
 
 The user settings files will be stored in the sbbs/data/user directory with the
 filename <user number>.SlyEdit_Settings, and the user number will be 0-padded
