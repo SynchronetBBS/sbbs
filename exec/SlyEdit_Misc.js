@@ -1218,31 +1218,31 @@ function isPrintableChar(pText)
 // Return value: The trimmed string
 function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 {
-   // Make sure pString is a string.
-   if (typeof(pString) == "string")
-   {
-      var leading = true;
-      var multiple = true;
-      var trailing = true;
-      if(typeof(pLeading) != "undefined")
-         leading = pLeading;
-      if(typeof(pMultiple) != "undefined")
-         multiple = pMultiple;
-      if(typeof(pTrailing) != "undefined")
-         trailing = pTrailing;
+	// Make sure pString is a string.
+	if (typeof(pString) == "string")
+	{
+		var leading = true;
+		var multiple = true;
+		var trailing = true;
+		if(typeof(pLeading) != "undefined")
+			leading = pLeading;
+		if(typeof(pMultiple) != "undefined")
+			multiple = pMultiple;
+		if(typeof(pTrailing) != "undefined")
+			trailing = pTrailing;
 
-      // To remove both leading & trailing spaces:
-      //pString = pString.replace(/(^\s*)|(\s*$)/gi,"");
+		// To remove both leading & trailing spaces:
+		//pString = pString.replace(/(^\s*)|(\s*$)/gi,"");
 
-      if (leading)
-         pString = pString.replace(/(^\s*)/gi,"");
-      if (multiple)
-         pString = pString.replace(/[ ]{2,}/gi," ");
-      if (trailing)
-         pString = pString.replace(/(\s*$)/gi,"");
-   }
+		if (leading)
+			pString = pString.replace(/(^\s*)/gi,"");
+		if (multiple)
+			pString = pString.replace(/[ ]{2,}/gi," ");
+		if (trailing)
+			pString = pString.replace(/(\s*$)/gi,"");
+	}
 
-   return pString;
+	return pString;
 }
 
 // Displays the text to display above help screens.
@@ -3356,12 +3356,12 @@ function calcPageNum(pTopIndex, pNumPerPage)
 //  pMsgAreaName: The name of the message area.
 function postingInMsgSubBoard(pMsgAreaName)
 {
-  if (typeof(pMsgAreaName) != "string")
-    return false;
-  if (pMsgAreaName.length == 0)
-    return false;
+	if (typeof(pMsgAreaName) != "string")
+		return false;
+	if (pMsgAreaName.length == 0)
+		return false;
 
-  return ((pMsgAreaName != "Electronic Mail") && (pMsgAreaName != "NetMail"));
+	return ((pMsgAreaName != "Electronic Mail") && (pMsgAreaName != "NetMail"));
 }
 
 // Returns the number of properties of an object.
@@ -4031,7 +4031,10 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 		// prefixed with a space when using author initials.
 		indentQuoteLinesWithInitials: pSlyEdCfgObj.indentQuoteLinesWithInitials,
 		// Whether or not to trim spaces from quoted lines
-		trimSpacesFromQuoteLines: true
+		trimSpacesFromQuoteLines: true,
+		autoSignMessages: false,
+		autoSignRealNameOnlyFirst: true,
+		autoSignEmailsRealName: true
 	};
 
 	// Open the user settings file
@@ -4097,6 +4100,12 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 						userSettingsObj.indentQuoteLinesWithInitials = (valueUpper == "TRUE");
 					else if (settingUpper == "TRIMSPACESFROMQUOTELINES")
 						userSettingsObj.trimSpacesFromQuoteLines = (valueUpper == "TRUE");
+					else if (settingUpper == "AUTOSIGNMESSAGES")
+						userSettingsObj.autoSignMessages = (valueUpper == "TRUE");
+					else if (settingUpper == "AUTOSIGNREALNAMEONLYFIRST")
+						userSettingsObj.autoSignRealNameOnlyFirst = (valueUpper == "TRUE");
+					else if (settingUpper == "AUTOSIGNEMAILSREALNAME")
+						userSettingsObj.autoSignEmailsRealName = (valueUpper == "TRUE");
 				}
 			}
 		}
@@ -4130,7 +4139,10 @@ function WriteUserSettingsFile(pUserSettingsObj)
 		const behaviorBoolSettingNames = ["enableTaglines",
 		                                  "useQuoteLineInitials",
 		                                  "indentQuoteLinesWithInitials",
-		                                  "trimSpacesFromQuoteLines"];
+		                                  "trimSpacesFromQuoteLines",
+		                                  "autoSignMessages",
+		                                  "autoSignRealNameOnlyFirst",
+		                                  "autoSignEmailsRealName"];
 		userSettingsFile.writeln("[BEHAVIOR]");
 		for (var i = 0; i < behaviorBoolSettingNames.length; ++i)
 		{

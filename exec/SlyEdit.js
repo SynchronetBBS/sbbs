@@ -88,6 +88,16 @@
  *                              Added a user configuration option (accessible
  *                              to the user via the Ctrl-U) to toggle whether
  *                              or not to trim spaces from quote lines.
+ * 2017-09-16 Eric Oulashin     Version 1.51
+ *                              Added an auto-sign option to the user options
+ *                              (accessible via Ctrl-U, disabled by default).
+ *                              If enabled, SlyEdit will automatically sign
+ *                              users' messages with their handle or real
+ *                              name, depending on the sub-board's configuration.
+ *                              Also added a seting to use only their first name
+ *                              when signing with their real name and whether to
+ *                              sign emails with their real name (enabled by
+ *                              default).
  */
 
 /* Command-line arguments:
@@ -165,8 +175,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.50";
-const EDITOR_VER_DATE = "2016-08-05";
+const EDITOR_VERSION = "1.51";
+const EDITOR_VER_DATE = "2016-09-16";
 
 
 // Program variables
@@ -237,15 +247,15 @@ gCrossPostMsgSubs.subCodeExists = function(pSubCode) {
 // Parameters:
 //  pSubCode: The sub-code to add
 gCrossPostMsgSubs.add = function(pSubCode) {
-  if (typeof(pSubCode) != "string")
-    return;
-  if (this.subCodeExists(pSubCode))
-    return;
+	if (typeof(pSubCode) != "string")
+		return;
+	if (this.subCodeExists(pSubCode))
+		return;
 
-  var grpIndex = msg_area.sub[pSubCode].grp_index;
-  if (!this.hasOwnProperty(grpIndex))
-    this[grpIndex] = new Object();
-  this[grpIndex][pSubCode] = true;
+	var grpIndex = msg_area.sub[pSubCode].grp_index;
+	if (!this.hasOwnProperty(grpIndex))
+		this[grpIndex] = new Object();
+	this[grpIndex][pSubCode] = true;
 };
 // This function removes a sub-board code from gCrossPostMsgSubs.
 //
@@ -479,6 +489,7 @@ if (!setMsgAreaInfoObj)
 	gMsgAreaInfo = getCurMsgInfo(gMsgArea);
 	setMsgAreaInfoObj = true;
 }
+
 // Set a variable to store whether or not cross-posting can be done.
 var gCanCrossPost = (gConfigSettings.allowCrossPosting && postingInMsgSubBoard(gMsgArea));
 // If the user is posting in a message sub-board, then add its information
@@ -503,13 +514,13 @@ var exitCode = doEditLoop();
 // the message (in gEditLines).
 if ((exitCode == 0) && (gEditLines.length > 0))
 {
-   var lineIndex = gEditLines.length - 1;
-   while ((lineIndex > 0) && (lineIndex < gEditLines.length) &&
-           (gEditLines[lineIndex].length() == 0))
-   {
-      gEditLines.splice(lineIndex, 1);
-      --lineIndex;
-   }
+	var lineIndex = gEditLines.length - 1;
+	while ((lineIndex > 0) && (lineIndex < gEditLines.length) &&
+	   (gEditLines[lineIndex].length() == 0))
+	{
+		gEditLines.splice(lineIndex, 1);
+		--lineIndex;
+	}
 }
 
 // Clear the screen and display the end-of-program information (if the setting
@@ -565,13 +576,18 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 					msgContents += gEditLines[i].text + "\r\n";
 			}
 
-			// If the user has a signature file, then read it and append it to
-			// msgContents (with a blank line to separate the message & signature).
-			// Note: msgContents already has a newline at the end, so we don't have
-			// to append one here; just append the signature.
+			// Read the user's signature, in case they have one
 			var msgSigInfo = readUserSigFile();
-			if (msgSigInfo.sigContents.length > 0)
-				msgContents += msgSigInfo.sigContents + "\r\n";
+			// If the user has not chosen to auto-sign messages, then also append their
+			// signature to the message now.
+			if (!gUserSettings.autoSignMessages)
+			{
+				// Append a blank line to separate the message & signature.
+				// Note: msgContents already has a newline at the end, so we don't have
+				// to append one here; just append the signature.
+				if (msgSigInfo.sigContents.length > 0)
+					msgContents += msgSigInfo.sigContents + "\r\n";
+			}
 		}
 
 		console.print("\1n");
@@ -595,14 +611,14 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 			if (gCrossPostMsgSubs.propIsFuncName(grpIndex))
 				continue;
 
-			console.print("n" + gConfigSettings.genColors.msgPostedGrpHdr + msg_area.grp_list[grpIndex].description + ":");
+			console.print("\1n" + gConfigSettings.genColors.msgPostedGrpHdr + msg_area.grp_list[grpIndex].description + ":");
 			console.crlf();
 			for (var subCode in gCrossPostMsgSubs[grpIndex])
 			{
 				if (subCode == gMsgAreaInfo.subBoardCode)
 				{
-					printf("n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-48s", msg_area.sub[subCode].description.substr(0, 48));
-					console.print("n " + gConfigSettings.genColors.msgPostedOriginalAreaText + "(original message area)");
+					printf("\1n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-48s", msg_area.sub[subCode].description.substr(0, 48));
+					console.print("\1n " + gConfigSettings.genColors.msgPostedOriginalAreaText + "(original message area)");
 				}
 				// If subCode is not the user's current sub, then if the user is allowed
 				// to post in that sub, then post the message there.
@@ -616,21 +632,34 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 					            " " + msg_area.sub[subCode].description + " (" + gMsgSubj + ")");
 
 					// Write the cross-posting message area on the user's screen.
-					printf("n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
+					printf("\1n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
 					if (user.compare_ars(msg_area.sub[subCode].post_ars))
 					{
-						postMsgErrStr = postMsgToSubBoard(subCode, gToName, gMsgSubj, msgContents, user.number);
+						// If the user's auto-sign setting is enabled, then auto-sign
+						// the message and append their signature afterward.  Otherwise,
+						// don't auto-sign, and their signature has already been appended.
+						if (gUserSettings.autoSignMessages)
+						{
+							var msgContents2 = msgContents + "\r\n";
+							msgContents2 += getSignName(subCode, gUserSettings.autoSignRealNameOnlyFirst, gUserSettings.autoSignEmailsRealName);
+							msgContents2 += "\r\n\r\n";
+							if (msgSigInfo.sigContents.length > 0)
+								msgContents2 += msgSigInfo.sigContents + "\r\n";
+							postMsgErrStr = postMsgToSubBoard(subCode, gToName, gMsgSubj, msgContents2, user.number);
+						}
+						else
+							postMsgErrStr = postMsgToSubBoard(subCode, gToName, gMsgSubj, msgContents, user.number);
 						if (postMsgErrStr.length == 0)
 						{
 							savedTheMessage = true;
 							crossPosted = true;
-							console.print("nhb[ng" + CHECK_CHAR + "nhb]n");
+							console.print("\1n\1h\1b[\1n\1g" + CHECK_CHAR + "\1n\1h\1b]\1n");
 						}
 						else
 						{
-							console.print("nhb[rXb]n");
+							console.print("\1n\1h\1b[\1rX\1b]\1n");
 							console.crlf();
-							console.print("   nhr*n " + postMsgErrStr);
+							console.print("   \1n\1h\1r*\1n " + postMsgErrStr);
 							console.crlf();
 						}
 					}
@@ -638,16 +667,16 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 					{
 						// The user isn't allowed to post in the sub.  Output a message
 						// saying so.
-						console.print("nhb[rXb]n");
+						console.print("\1n\1h\1b[\1rX\1b]\1n");
 						console.crlf();
-						console.print("   nhr*n You're not allowed to post in this area.");
+						console.print("   \1n\1h\1r*\1n You're not allowed to post in this area.");
 						console.crlf();
 					}
 				}
 				console.crlf();
 			}
 		}
-		console.print("n");
+		console.print("\1n");
 		console.crlf();
 	}
 
@@ -666,7 +695,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 			// will say the message was aborted, and that's normal.
 			if (crossPosted)
 			{
-				console.print("nc* Note: Your message has been cross-posted in areas other than your currently-");
+				console.print("\1n\1c* Note: Your message has been cross-posted in areas other than your currently-");
 				console.crlf();
 				console.print("selected message area.  Because your message was not saved for your currently-");
 				console.crlf();
@@ -691,6 +720,13 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 			// in SCFG for this to work properly for all platforms.
 			for (var i = 0; i < gEditLines.length; ++i)
 				msgFile.writeln(gEditLines[i].text);
+			// Auto-sign the message if the user's setting to do so is enabled
+			if (gUserSettings.autoSignMessages)
+			{
+				msgFile.writeln("");
+				var subCode = (postingInMsgSubBoard(gMsgArea) ? gMsgAreaInfo.subBoardCode : "mail");
+				msgFile.writeln(getSignName(subCode, gUserSettings.autoSignRealNameOnlyFirst, gUserSettings.autoSignEmailsRealName));
+			}
 			msgFile.close();
 			savedTheMessage = true;
 		}
@@ -5675,7 +5711,8 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
-	var optBoxHeight = 6;
+	//var optBoxHeight = 6;
+	var optBoxHeight = 9;
 	var optBoxStartX = gEditLeft + Math.floor((gEditWidth/2) - (optBoxWidth/2));
 	if (optBoxStartX < gEditLeft)
 		optBoxStartX = gEditLeft;
@@ -5699,6 +5736,9 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	const QUOTE_INITIALS_OPT_INDEX = optionBox.addTextItem("Quote with author's initials                   [ ]");
 	const QUOTE_INITIALS_INDENT_OPT_INDEX = optionBox.addTextItem("Indent quote lines containing initials         [ ]");
 	const TRIM_QUOTE_SPACES_OPT_INDEX = optionBox.addTextItem("Trim spaces from quote lines                   [ ]");
+	const AUTO_SIGN_OPT_INDEX = optionBox.addTextItem("Auto-sign messages                             [ ]");
+	const SIGN_REAL_ONLY_FIRST_NAME_OPT_INDEX = optionBox.addTextItem("  When using real name, use only first name    [ ]");
+	const SIGN_EMAILS_REAL_NAME_OPT_INDEX = optionBox.addTextItem("  Sign emails with real name                   [ ]");
 	if (gUserSettings.enableTaglines)
 		optionBox.chgCharInTextItem(TAGLINE_OPT_INDEX, checkIdx, CHECK_CHAR);
 	if (gUserSettings.useQuoteLineInitials)
@@ -5707,6 +5747,12 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 		optionBox.chgCharInTextItem(QUOTE_INITIALS_INDENT_OPT_INDEX, checkIdx, CHECK_CHAR);
 	if (gUserSettings.trimSpacesFromQuoteLines)
 		optionBox.chgCharInTextItem(TRIM_QUOTE_SPACES_OPT_INDEX, checkIdx, CHECK_CHAR);
+	if (gUserSettings.autoSignMessages)
+		optionBox.chgCharInTextItem(AUTO_SIGN_OPT_INDEX, checkIdx, CHECK_CHAR);
+	if (gUserSettings.autoSignRealNameOnlyFirst)
+		optionBox.chgCharInTextItem(SIGN_REAL_ONLY_FIRST_NAME_OPT_INDEX, checkIdx, CHECK_CHAR);
+	if (gUserSettings.autoSignEmailsRealName)
+		optionBox.chgCharInTextItem(SIGN_EMAILS_REAL_NAME_OPT_INDEX, checkIdx, CHECK_CHAR);
 
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = new Object();
@@ -5714,6 +5760,9 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	optionToggles[QUOTE_INITIALS_OPT_INDEX] = gUserSettings.useQuoteLineInitials;
 	optionToggles[QUOTE_INITIALS_INDENT_OPT_INDEX] = gUserSettings.indentQuoteLinesWithInitials;
 	optionToggles[TRIM_QUOTE_SPACES_OPT_INDEX] = gUserSettings.trimSpacesFromQuoteLines;
+	optionToggles[AUTO_SIGN_OPT_INDEX] = gUserSettings.autoSignMessages;
+	optionToggles[SIGN_REAL_ONLY_FIRST_NAME_OPT_INDEX] = gUserSettings.autoSignRealNameOnlyFirst;
+	optionToggles[SIGN_EMAILS_REAL_NAME_OPT_INDEX] = gUserSettings.autoSignEmailsRealName;
 
 	// Set up the enter key in the box to toggle the selected item.
 	optionBox.setEnterKeyOverrideFn(function(pBox) {
@@ -5746,6 +5795,15 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 						break;
 					case TRIM_QUOTE_SPACES_OPT_INDEX:
 						gUserSettings.trimSpacesFromQuoteLines = !gUserSettings.trimSpacesFromQuoteLines;
+						break;
+					case AUTO_SIGN_OPT_INDEX:
+						gUserSettings.autoSignMessages = !gUserSettings.autoSignMessages;
+						break;
+					case SIGN_REAL_ONLY_FIRST_NAME_OPT_INDEX:
+						gUserSettings.autoSignRealNameOnlyFirst = !gUserSettings.autoSignRealNameOnlyFirst;
+						break;
+					case SIGN_EMAILS_REAL_NAME_OPT_INDEX:
+						gUserSettings.autoSignEmailsRealName = !gUserSettings.autoSignEmailsRealName;
 						break;
 					default:
 						break;
@@ -5850,53 +5908,53 @@ function doTaglineSelection()
 // Sets the quote prefix, gQuotePrefix (the text to use for prefixing quote lines).
 function setQuotePrefix()
 {
-   // To minimize disk reads in case the user changes their preference for author
-   // initials in quote lines, get the from name of the message being replied to
-   // and store it in a persistent variable.  This is done at the beginning of
-   // this function whether or not the user wants author initials in quote lines
-   // to ensure we get the correct name in case anything in the message base
-   // changes after this function is first called.
-   if (!setQuotePrefix.curMsgFromName)
-      setQuotePrefix.curMsgFromName = getFromNameForCurMsg(gMsgAreaInfo);
+	// To minimize disk reads in case the user changes their preference for author
+	// initials in quote lines, get the from name of the message being replied to
+	// and store it in a persistent variable.  This is done at the beginning of
+	// this function whether or not the user wants author initials in quote lines
+	// to ensure we get the correct name in case anything in the message base
+	// changes after this function is first called.
+	if (!setQuotePrefix.curMsgFromName)
+		setQuotePrefix.curMsgFromName = getFromNameForCurMsg(gMsgAreaInfo);
 
-   gQuotePrefix = " > "; // The default quote prefix
-   // If we're configured to use poster's initials in the
-   // quote lines, then do it.
-   if (gUserSettings.useQuoteLineInitials)
-   {
-     // For the name to use for quote line initials:
-     // If posting in a message sub-board, get the author's name from the
-     // header of the current message being read in the sub-board (in
-     // case the user changes the "To" name).  Otherwise (if not posting in
-     // a message sub-board), use the gToName value read from the drop file.
-     // Remove any leading, multiple, or trailing spaces.
-     var quotedName = "";
-     if (postingInMsgSubBoard(gMsgArea))
-     {
-       quotedName = trimSpaces(setQuotePrefix.curMsgFromName, true, true, true);
-       if (quotedName.length == 0)
-         quotedName = trimSpaces(gToName, true, true, true);
-     }
-     else
-       quotedName = trimSpaces(gToName, true, true, true);
-      // If configured to indent quote lines w/ initials with
-      // a space, then do it.
-      gQuotePrefix = "";
-      if (gUserSettings.indentQuoteLinesWithInitials)
-         gQuotePrefix = " ";
-      // Use the initials or first 2 characters from the
-      // quoted name for gQuotePrefix.
-      var spaceIndex = quotedName.indexOf(" ");
-      if (spaceIndex > -1) // If a space exists, use the initials
-      {
-         gQuotePrefix += quotedName.charAt(0).toUpperCase();
-         if (quotedName.length > spaceIndex+1)
-            gQuotePrefix += quotedName.charAt(spaceIndex+1).toUpperCase();
-         gQuotePrefix += "> ";
-      }
-      else // A space doesn't exist; use the first 2 letters
-         gQuotePrefix += quotedName.substr(0, 2) + "> ";
-   }
+	gQuotePrefix = " > "; // The default quote prefix
+	// If we're configured to use poster's initials in the
+	// quote lines, then do it.
+	if (gUserSettings.useQuoteLineInitials)
+	{
+		// For the name to use for quote line initials:
+		// If posting in a message sub-board, get the author's name from the
+		// header of the current message being read in the sub-board (in
+		// case the user changes the "To" name).  Otherwise (if not posting in
+		// a message sub-board), use the gToName value read from the drop file.
+		// Remove any leading, multiple, or trailing spaces.
+		var quotedName = "";
+		if (postingInMsgSubBoard(gMsgArea))
+		{
+			quotedName = trimSpaces(setQuotePrefix.curMsgFromName, true, true, true);
+			if (quotedName.length == 0)
+				quotedName = trimSpaces(gToName, true, true, true);
+		}
+		else
+			quotedName = trimSpaces(gToName, true, true, true);
+		// If configured to indent quote lines w/ initials with
+		// a space, then do it.
+		gQuotePrefix = "";
+		if (gUserSettings.indentQuoteLinesWithInitials)
+			gQuotePrefix = " ";
+		// Use the initials or first 2 characters from the
+		// quoted name for gQuotePrefix.
+		var spaceIndex = quotedName.indexOf(" ");
+		if (spaceIndex > -1) // If a space exists, use the initials
+		{
+			gQuotePrefix += quotedName.charAt(0).toUpperCase();
+			if (quotedName.length > spaceIndex+1)
+				gQuotePrefix += quotedName.charAt(spaceIndex+1).toUpperCase();
+			gQuotePrefix += "> ";
+		}
+		else // A space doesn't exist; use the first 2 letters
+			gQuotePrefix += quotedName.substr(0, 2) + "> ";
+	}
 }
 
 // Writes an array of strings to the message tagline file (editor.tag in the node's
@@ -5956,4 +6014,42 @@ function writeMsgOntBtmHelpLineWithPause(pMsg, pPauseMS)
    // bottom of the screen.
    writeWithPause(1, console.screen_rows, pMsg, pPauseMS);
    fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+}
+
+// Gets the user's alias/name to use for auto-signing the message.
+//
+// Parameters:
+//  pSubCode: The sub-board code ("mail" for email)
+//  pRealNameOnlyFirst: Whether or not to use the user's first name only when using their real name
+//  pRealNameForEmail: Whether or not to use the user's real name for email
+//
+// Return value: The user's name to use for auto-signing
+function getSignName(pSubCode, pRealNameOnlyFirst, pRealNameForEmail)
+{
+	var useRealName = false;
+	if (pSubCode.toUpperCase() == "MAIL")
+		useRealName = pRealNameForEmail;
+	else
+	{
+		var msgbase = new MsgBase(pSubCode);
+		if (msgbase.open())
+		{
+			useRealName = ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME);
+			msgbase.close();
+		}
+	}
+	var signName = "";
+	if (useRealName)
+	{
+		signName = trimSpaces(user.name, true, false, true);
+		if (pRealNameOnlyFirst)
+		{
+			var spacePos = signName.indexOf(" ");
+			if (spacePos > -1)
+				signName = signName.substr(0, spacePos);
+		}
+	}
+	else
+		signName = trimSpaces(user.alias, true, false, true);
+	return signName;
 }
