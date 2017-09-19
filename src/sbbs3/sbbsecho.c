@@ -577,11 +577,7 @@ bool parse_origin(const char* fmsgbuf, fmsghdr_t* hdr)
 		return false;
 	p++;
 	origaddr = atofaddr(p);
-	if(origaddr.zone == 0 
-		|| origaddr.zone == 0xffff
-		|| origaddr.net == 0xffff
-		|| origaddr.node == 0xffff
-		|| origaddr.point == 0xffff)
+	if(origaddr.zone == 0 || faddr_contains_wildcard(&origaddr.zone))
 		return false;
 	hdr->origzone	= origaddr.zone;
 	hdr->orignet	= origaddr.net;

@@ -197,6 +197,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t*);
 void bail(int code);
 fidoaddr_t atofaddr(const char *str);
 const char *faddrtoa(const fidoaddr_t*);
+bool faddr_contains_wildcard(const fidoaddr_t*);
 int  matchnode(sbbsecho_cfg_t*, fidoaddr_t, int exact);
 nodecfg_t* findnodecfg(sbbsecho_cfg_t*, fidoaddr_t, int exact);
 

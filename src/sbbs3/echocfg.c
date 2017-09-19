@@ -466,8 +466,10 @@ int main(int argc, char **argv)
 							snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Route To"
 								,cfg.nodecfg[i].route.zone
 								? faddrtoa(&cfg.nodecfg[i].route) : "Disabled");
-							snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s", "Inbox Directory", cfg.nodecfg[i].inbox);
-							snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s", "Outbox Directory", cfg.nodecfg[i].outbox);
+							if(!faddr_contains_wildcard(&cfg.nodecfg[i].addr)) {
+								snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s", "Inbox Directory", cfg.nodecfg[i].inbox);
+								snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s", "Outbox Directory", cfg.nodecfg[i].outbox);
+							}
 						}
 						opt[j][0]=0;
 						SAFEPRINTF(str, "Linked Node - %s"
