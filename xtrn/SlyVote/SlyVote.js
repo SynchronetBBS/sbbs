@@ -84,6 +84,13 @@
  *                              selection menu once, the first time it's used.
  *                              Also refactored a section of code there to go
  *                              along with a bug fix in DDLIghtbarMenu.
+ * 2017-09-24 Eric Oulashin     Version 0.32 beta
+ *                              Bug fix: After deleting the last poll in a sub-board,
+ *                              it now correctly goes to the main menu rather than
+ *                              reporting an error.
+ *                              Also, after creating or deleting a poll, the number
+ *                              of polls in the sub-board displayed on the main menu
+ *                              is now updated.
  */
 
 load("sbbsdefs.js");
@@ -132,8 +139,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.31 Beta";
-var SLYVOTE_DATE = "2017-09-09";
+var SLYVOTE_VERSION = "0.32 Beta";
+var SLYVOTE_DATE = "2017-09-24";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -488,6 +495,9 @@ function DoMainMenu()
 			bbs.exec("?postpoll.js");
 			// Restore the user's sub-board
 			bbs.cursub_code = curSubCodeBackup;
+			// Assuming the poll was posted successfully, update the poll count
+			// in the current sub-board.
+			gSubBoardPollCountObj = countPollsInSubBoard(gSubBoardCode);
 		}
 		else
 			DisplayErrorWithPause("\1y\1h" + RemoveCRLFCodes(bbs.text(CantPostOnSub)), gMessageRow, false);
@@ -1878,11 +1888,14 @@ function ViewVoteResults(pSubBoardCode)
 		// User input loop
 		var drawMsg = true;
 		var drawKeyHelpLine = false;
+		var pollDeleted = false; // Will need to check if the poll was deleted later
 		var continueOn = true;
 		while (continueOn)
 		{
 			// Do garbage collection to ensure low memory usage
 			js.gc(true);
+
+			pollDeleted = false;
 
 			// Display the key help line if specified to do so
 			if (drawKeyHelpLine)
@@ -2099,7 +2112,10 @@ function ViewVoteResults(pSubBoardCode)
 						// adjust the current message index if necessary
 						if (delMsgRetObj.messageDeleted)
 						{
+							pollDeleted = true;
 							pollMsgHdrs.splice(currentMsgIdx, 1);
+							// Update the poll count in the current sub-board
+							--gSubBoardPollCountObj.numPolls;
 							// Adjust the current message index
 							if (pollMsgHdrs.length > 0)
 							{
@@ -2113,6 +2129,7 @@ function ViewVoteResults(pSubBoardCode)
 								console.print("\1n");
 								console.crlf();
 								console.print("\1nThere are no more polls.\1n");
+								console.crlf();
 								console.pause();
 							}
 						}
@@ -2163,20 +2180,10 @@ function ViewVoteResults(pSubBoardCode)
 			else if (scrollRetObj.lastKeypress == gReaderKeys.quit)
 				continueOn = false;
 
-			// Update the user's last read message number in their user settings
-			gUserSettings.lastRead[pSubBoardCode] = pollMsgHdrs[currentMsgIdx].number;
-			// TODO: Remove - Older - Dealing with Synchronet's scan pointer and last read pointer:
-			/*
-			// Update the user's scan pointer and last read message pointer
-			if (pSubBoardCode != "mail")
-			{
-				// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
-				// msgbase.last_msg)?
-				if (pollMsgHdrs[currentMsgIdx].number > msg_area.sub[pSubBoardCode].scan_ptr)
-					msg_area.sub[pSubBoardCode].scan_ptr = pollMsgHdrs[currentMsgIdx].number;
-				msg_area.sub[pSubBoardCode].last_read = pollMsgHdrs[currentMsgIdx].number;
-			}
-			*/
+			// If the user didn't delete this message, update the user's last read
+			// message number in their user settings
+			if (!pollDeleted)
+				gUserSettings.lastRead[pSubBoardCode] = pollMsgHdrs[currentMsgIdx].number;
 		}
 
 		msgbase.close();
