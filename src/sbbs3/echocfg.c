@@ -410,8 +410,8 @@ int main(int argc, char **argv)
 	"AreaFix Passwords are case insensitive.\r\n"
 	"This setting may be managed by the node using NetMail/AreaFix requests.\r\n"
 	"\r\n"
-	"`AreaFix Keys` is a list of keys which enable access to one or more\r\n"
-	"Additional EchoLists.\r\n"
+	"`AreaFix Keys` is a list of keys which enable AreaFix access to one or\r\n"
+	"more Additional EchoLists.\r\n"
 	"\r\n"
 	"`Status` is the default mode for sending mail to this node: `Normal`, `Hold`\r\n"
 	"(wait for pickup) or `Crash` (immediate).\r\n"
@@ -563,8 +563,8 @@ int main(int argc, char **argv)
 							case 6:
 	uifc.helpbuf=
 	"~ AreaFix Keys ~\r\n\r\n"
-	"This is a named-key to to be given to this node allowing access to one or\r\n"
-	"more of the configured echolists\r\n";
+	"These are a named-keys to be given to this node allowing access to one or\r\n"
+	"more of the configured `Additional Echolists`\r\n";
 								while(1) {
 									for(j=0; cfg.nodecfg[i].keys!=NULL && cfg.nodecfg[i].keys[j]!=NULL ;j++)
 										strcpy(opt[j],cfg.nodecfg[i].keys[j]);
@@ -577,7 +577,7 @@ int main(int argc, char **argv)
 									if((k&MSK_ON)==MSK_INS) {
 										k&=MSK_OFF;
 										if(uifc.input(WIN_MID|WIN_SAV,0,0
-											,"AreaFix Key",str,SBBSECHO_MAX_KEY_LEN
+											,"AreaFix Keys",str,SBBSECHO_MAX_KEY_LEN
 											,K_UPPER)<1)
 											continue;
 										strListInsert(&cfg.nodecfg[i].keys, str, k);
@@ -1416,9 +1416,9 @@ int main(int argc, char **argv)
 			case 7:
 	uifc.helpbuf=
 	"~ Additional EchoLists ~\r\n\r\n"
-	"This feature allows you to specify lists of echoes, in `BACKBONE.NA` format\r\n"
-	"which are utilized in addition to your Area File (e.g. `areas.bbs`)\r\n"
-	"for advanced AreaFix (Area Management) operations.\r\n";
+	"This feature allows you to specify lists of echoes, in `BACKBONE.NA`\r\n"
+	"format, which are utilized in `addition` to your Area File (e.g. \r\n"
+	"`areas.bbs`) for advanced AreaFix (Area Management) operations.\r\n";
 				i=0;
 				while(1) {
 					for(u=0;u<cfg.listcfgs;u++)
@@ -1495,7 +1495,7 @@ int main(int argc, char **argv)
 							 cfg.listcfg[i].password : "None");
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Forward Requests"
 							,cfg.listcfg[i].forward ? "Yes" : "No");
-						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Areafix keys"
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Keys"
 							,strListCombine(cfg.listcfg[i].keys, str, sizeof(str), ","));
 						opt[j][0]=0;
 						SAFEPRINTF(str, "Additional EchoList - %s", getfname(cfg.listcfg[i].listpath));
@@ -1533,24 +1533,24 @@ int main(int argc, char **argv)
 								cfg.listcfg[i].forward = !cfg.listcfg[i].forward;
 								break;
 							case 4:
+								uifc.helpbuf=
+								"~ AreaFix Keys ~\r\n\r\n"
+								"These keys determine which linked nodes have access to the current\r\n"
+								"echolist file via AreaFix requests (e.g. query, add, remove).\r\n";
 								while(1) {
 									for(u=0; cfg.listcfg[i].keys!=NULL && cfg.listcfg[i].keys[u] != NULL;u++)
 										strcpy(opt[u],cfg.listcfg[i].keys[u]);
 									opt[u][0]=0;
 									x=uifc.list(WIN_SAV|WIN_INS|WIN_DEL|WIN_ACT|
 										WIN_XTR|WIN_INSACT|WIN_DELACT|WIN_RHT
-										,0,0,0,&x,0,"EchoList keys",opt);
+										,0,0,0,&x,0,"AreaFix keys",opt);
 									if(x==-1)
 										break;
 									if((x&MSK_ON)==MSK_INS) {
 										x&=MSK_OFF;
 										str[0]=0;
-	uifc.helpbuf=
-	"~ EchoList Keys ~\r\n\r\n"
-	"These keys determine which nodes have access to the current\r\n"
-	"echolist file via AreaFix requests.\r\n";
 										if(uifc.input(WIN_MID|WIN_SAV,0,0
-											,"EchoList Key",str,SBBSECHO_MAX_KEY_LEN
+											,"AreaFix Keys",str,SBBSECHO_MAX_KEY_LEN
 											,K_EDIT|K_UPPER)<1)
 											continue;
 										strListInsert(&cfg.listcfg[i].keys,str,x);
@@ -1563,11 +1563,7 @@ int main(int argc, char **argv)
 										continue; 
 									}
 									SAFECOPY(str,cfg.listcfg[i].keys[x]);
-	uifc.helpbuf=
-	"~ EchoList Keys ~\r\n\r\n"
-	"These keys determine which nodes have access to the current\r\n"
-	"echolist file via AreaFix requests.\r\n";
-										uifc.input(WIN_MID|WIN_SAV,0,0,"EchoList Key"
+										uifc.input(WIN_MID|WIN_SAV,0,0,"AreaFix Keys"
 											,str,SBBSECHO_MAX_KEY_LEN,K_EDIT|K_UPPER);
 										strListReplace(cfg.listcfg[i].keys,x,str);
 										continue; 
