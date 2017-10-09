@@ -10,7 +10,11 @@ Version  Date         Description
                       sysop to validate messages in moderated message areas.
                       Fixed various bugs related to doing a newscan, displaying
                       messages with ANSI content, out-of-bounds error when
-                      deleting a message, etc.
+                      deleting a message, etc.  Updated to set the message
+                      number field length dynamically based on the number of
+                      messages in the sub-board.  It will be at least 4 but
+                      can be more than 4 if there are 10000 messages or more
+                      in a sub-board.
 1.16     2016-09-11   Added a new feature that allows users to forward a
                       message to an email address or to another user on the
                       BBS (using the O key).  This can be useful, for
