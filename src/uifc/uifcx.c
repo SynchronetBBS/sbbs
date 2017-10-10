@@ -1,5 +1,3 @@
-/* uifcx.c */
-
 /* Standard I/O Implementation of UIFC (user interface) library */
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -63,6 +61,22 @@ static void upop(char *str);
 static void sethelp(int line, char* file);
 
 /****************************************************************************/
+/****************************************************************************/
+static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
+{
+	va_list argptr;
+	char str[MAX_COLS + 1];
+	int i;
+
+	va_start(argptr, fmat);
+	vsprintf(str, fmat, argptr);
+	va_end(argptr);
+	i = printf("%s", str);
+	return(i);
+}
+
+
+/****************************************************************************/
 /* Initialization function, see uifc.h for details.							*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
@@ -85,6 +99,7 @@ int UIFCCALL uifcinix(uifcapi_t* uifcapi)
     api->showhelp=help;
 	api->showbuf=NULL;
 	api->timedisplay=NULL;
+	api->printf = uprintf;
 
     setvbuf(stdin,NULL,_IONBF,0);
     setvbuf(stdout,NULL,_IONBF,0);
