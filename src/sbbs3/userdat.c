@@ -48,8 +48,8 @@ static const char* strIpFilterExemptConfigFile = "ipfilter_exempt.cfg";
 #define VALID_CFG(cfg)	(cfg!=NULL && cfg->size==sizeof(scfg_t))
 
 /****************************************************************************/
-/* Looks for a perfect match amoung all usernames (not deleted users)		*/
-/* Makes dots and underscores synomynous with spaces for comparisions		*/
+/* Looks for a perfect match among all usernames (not deleted users)		*/
+/* Makes dots and underscores synonymous with spaces for comparisons		*/
 /* Returns the number of the perfect matched username or 0 if no match		*/
 /****************************************************************************/
 uint DLLCALL matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
