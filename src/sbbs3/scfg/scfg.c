@@ -695,8 +695,11 @@ void txt_cfg()
 			uifc.changes=1;
 			continue; 
 		}
-		if((i&MSK_ON)==MSK_DEL) {
+		if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+			int msk = i&MSK_ON;
 			i&=MSK_OFF;
+			if(msk == MSK_CUT)
+				savtxtsec = *cfg.txtsec[i];
 			free(cfg.txtsec[i]);
 			cfg.total_txtsecs--;
 			for(j=i;j<cfg.total_txtsecs;j++)
@@ -869,8 +872,11 @@ void shell_cfg()
 			uifc.changes=1;
 			continue; 
 		}
-		if((i&MSK_ON)==MSK_DEL) {
+		if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+			int msk = i&MSK_ON;
 			i&=MSK_OFF;
+			if(msk == MSK_CUT)
+				savshell = *cfg.shell[i];
 			free(cfg.shell[i]);
 			cfg.total_shells--;
 			for(j=i;j<cfg.total_shells;j++)

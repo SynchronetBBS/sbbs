@@ -356,8 +356,11 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL) {
+	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+		int msk = i&MSK_ON;
 		i&=MSK_OFF;
+		if(msk == MSK_CUT)
+			savevent = *cfg.event[i];
 		free(cfg.event[i]);
 		cfg.total_events--;
 		for(j=i;j<cfg.total_events;j++)
@@ -845,8 +848,11 @@ while(1) {
 		uifc.changes=TRUE;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL) {
+	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+		int msk = i&MSK_ON;
 		i&=MSK_OFF;
+		if(msk == MSK_CUT)
+			savxtrn = *cfg.xtrn[xtrnnum[i]];
 		free(cfg.xtrn[xtrnnum[i]]);
 		cfg.total_xtrns--;
 		for(j=xtrnnum[i];j<cfg.total_xtrns;j++)
@@ -1534,8 +1540,11 @@ while(1) {
 		uifc.changes=TRUE;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL) {
+	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+		int msk = i&MSK_ON;
 		i&=MSK_OFF;
+		if(msk == MSK_CUT)
+			savxedit = *cfg.xedit[i];
 		free(cfg.xedit[i]);
 		cfg.total_xedits--;
 		for(j=i;j<cfg.total_xedits;j++)
@@ -2095,8 +2104,11 @@ while(1) {
 		uifc.changes=TRUE;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL) {
+	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+		int msk = i&MSK_ON;
 		i&=MSK_OFF;
+		if(msk == MSK_CUT)
+			savxtrnsec = *cfg.xtrnsec[i];
 		free(cfg.xtrnsec[i]);
 		for(j=0;j<cfg.total_xtrns;) {
 			if(cfg.xtrn[j]->sec==i) {	 /* delete xtrns of this group */
@@ -2258,8 +2270,11 @@ while(1) {
 		uifc.changes=TRUE;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL) {
+	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+		int msk = i&MSK_ON;
 		i&=MSK_OFF;
+		if(msk == MSK_CUT)
+			savhotkey = *cfg.hotkey[i];
 		free(cfg.hotkey[i]);
 		cfg.total_hotkeys--;
 		for(j=i;j<cfg.total_hotkeys;j++)

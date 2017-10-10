@@ -251,8 +251,11 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&fview_dflt,NULL,"Viewable File Types",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL) {
+				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+					int msk = i&MSK_ON;
 					i&=MSK_OFF;
+					if(msk == MSK_CUT)
+						savfview = *cfg.fview[i];
 					free(cfg.fview[i]);
 					cfg.total_fviews--;
 					while(i<cfg.total_fviews) {
@@ -375,8 +378,11 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&ftest_dflt,NULL,"Testable File Types",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL) {
+				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+					int msk = i&MSK_ON;
 					i&=MSK_OFF;
+					if(msk == MSK_CUT)
+						savftest = *cfg.ftest[i];
 					free(cfg.ftest[i]);
 					cfg.total_ftests--;
 					while(i<cfg.total_ftests) {
@@ -506,8 +512,11 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&dlevent_dflt,NULL,"Download Events",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL) {
+				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+					int msk = i&MSK_ON;
 					i&=MSK_OFF;
+					if(msk == MSK_CUT)
+						savdlevent = *cfg.dlevent[i];
 					free(cfg.dlevent[i]);
 					cfg.total_dlevents--;
 					while(i<cfg.total_dlevents) {
@@ -631,8 +640,11 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&fextr_dflt,NULL,"Extractable File Types",opt);
                 if(i==-1)
                     break;
-				if((i&MSK_ON)==MSK_DEL) {
+				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+					int msk = i&MSK_ON;
 					i&=MSK_OFF;
+					if(msk == MSK_CUT)
+						savfextr = *cfg.fextr[i];
                     free(cfg.fextr[i]);
                     cfg.total_fextrs--;
                     while(i<cfg.total_fextrs) {
@@ -747,8 +759,11 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&fcomp_dflt,NULL,"Compressable File Types",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL) {
+				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+					int msk = i&MSK_ON;
 					i&=MSK_OFF;
+					if(msk == MSK_CUT)
+						savfcomp = *cfg.fcomp[i];
 					free(cfg.fcomp[i]);
 					cfg.total_fcomps--;
 					while(i<cfg.total_fcomps) {
@@ -870,8 +885,11 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&prot_dflt,NULL,"File Transfer Protocols",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL) {
+				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+					int msk = i&MSK_ON;
 					i&=MSK_OFF;
+					if(msk == MSK_CUT)
+						savprot = *cfg.prot[i];
 					free(cfg.prot[i]);
 					cfg.total_prots--;
 					while(i<cfg.total_prots) {
@@ -1068,8 +1086,11 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&altpath_dflt,NULL,"Alternate File Paths",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL) {
+				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+					int msk = i&MSK_ON;
 					i&=MSK_OFF;
+					if(msk == MSK_CUT)
+						SAFECOPY(savaltpath, cfg.altpath[i]);
 					free(cfg.altpath[i]);
 					cfg.altpaths--;
 					while(i<cfg.altpaths) {
@@ -1114,7 +1135,7 @@ uifc.helpbuf=
 				}
 				if((i&MSK_ON)==MSK_GET) {
 					i&=MSK_OFF;
-					memcpy(savaltpath,cfg.altpath[i],LEN_DIR+1);
+					SAFECOPY(savaltpath,cfg.altpath[i]);
 					continue; 
 				}
 				if((i&MSK_ON)==MSK_PUT) {

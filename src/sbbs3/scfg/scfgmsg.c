@@ -221,7 +221,8 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL) {
+	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON)==MSK_CUT) {
+		int msk = i&MSK_ON;
 		i&=MSK_OFF;
 		uifc.helpbuf=
 			"`Delete All Data in Group:`\n"
@@ -250,6 +251,8 @@ while(1) {
 					delfiles(tmp,str);
 					clearptrs(j); 
 				}
+		if(msk == MSK_CUT)
+			savgrp = *cfg.grp[i];
 		free(cfg.grp[i]);
 		for(j=0;j<cfg.total_subs;) {
 			if(cfg.sub[j]->grp==i) {	/* delete subs of this group */

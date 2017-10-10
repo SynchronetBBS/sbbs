@@ -210,7 +210,8 @@ while(1) {
 		uifc.changes=1;
 		continue;
 	}
-	if((i&MSK_ON)==MSK_DEL) {
+	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+		int msk = i&MSK_ON;
 		i&=MSK_OFF;
 		uifc.helpbuf=
 			"`Delete All Data in Library:`\n"
@@ -236,6 +237,8 @@ while(1) {
 						strcpy(tmp,cfg.dir[j]->data_dir);
 					delfiles(tmp,str);
 				}
+		if(msk == MSK_CUT)
+			savlib = *cfg.lib[i];
 		free(cfg.lib[i]);
 		for(j=0;j<cfg.total_dirs;) {
 			if(cfg.dir[j]->lib==i) {
@@ -896,7 +899,8 @@ while(1) {
 		uifc.changes=1;
 		continue;
 	}
-	if((i&MSK_ON)==MSK_DEL) {
+	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+		int msk = i&MSK_ON;
 		i&=MSK_OFF;
 		uifc.helpbuf=
 			"`Delete Directory Data Files:`\n"
@@ -923,6 +927,8 @@ while(1) {
 			if(j==0)
 					delfiles(data_dir,str); 
 		}
+		if(msk == MSK_CUT)
+			savdir = *cfg.dir[dirnum[i]];
 		free(cfg.dir[dirnum[i]]);
 		cfg.total_dirs--;
 		for(j=dirnum[i];j<cfg.total_dirs;j++)
