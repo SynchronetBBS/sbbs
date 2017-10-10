@@ -1,5 +1,3 @@
-/* scfgnode.c */
-
 /* $Id$ */
 
 /****************************************************************************
@@ -72,8 +70,10 @@ uifc.helpbuf=
 	if(i==-1) {
 		if(savnode) {
 			free_node_cfg(&cfg);
-			savnode=0; }
-		return; }
+			savnode=0; 
+		}
+		return; 
+	}
 
 	if((i&MSK_ON)==MSK_DEL) {
 		sprintf(str,"Delete Node %d",cfg.sys_nodes);
@@ -91,7 +91,8 @@ uifc.helpbuf=
 			write_main_cfg(&cfg,backup_level);
             refresh_cfg(&cfg);
         }
-		continue; }
+		continue; 
+	}
 	if((i&MSK_ON)==MSK_INS) {
 		SAFECOPY(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
 		i=cfg.sys_nodes+1;
@@ -138,7 +139,8 @@ uifc.helpbuf=
 		read_node_cfg(&cfg,error);
 		uifc.pop(0);
 		savnode=1;
-		continue; }
+		continue; 
+	}
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		SAFECOPY(cfg.node_dir,cfg.node_path[i]);
@@ -151,19 +153,22 @@ uifc.helpbuf=
 
 	if(savnode) {
 		free_node_cfg(&cfg);
-		savnode=0; }
+		savnode=0; 
+	}
 	SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 	prep_dir(cfg.ctrl_dir, cfg.node_dir, sizeof(cfg.node_dir));
 
 	uifc.pop("Reading NODE.CNF...");
 	read_node_cfg(&cfg,error);
 	uifc.pop(0);
-	if(cfg.node_num!=i+1) { 	/* Node number isn't right? */
-		cfg.node_num=i+1;		/* so fix it */
-		write_node_cfg(&cfg,backup_level); } /* and write it back */
+	if (cfg.node_num != i + 1) { 	/* Node number isn't right? */
+		cfg.node_num = i + 1;		/* so fix it */
+		write_node_cfg(&cfg, backup_level); /* and write it back */
+	}
 	node_cfg();
 
-	free_node_cfg(&cfg); }
+	free_node_cfg(&cfg); 
+	}
 }
 
 void node_cfg()
@@ -255,10 +260,12 @@ uifc.helpbuf=
 							,"Allow Login by User Number",uifcYesNoOpts);
 						if(i==0 && cfg.node_misc&NM_NO_NUM) {
 							cfg.node_misc&=~NM_NO_NUM;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
 						else if(i==1 && !(cfg.node_misc&NM_NO_NUM)) {
 							cfg.node_misc|=NM_NO_NUM;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
                         break;
 					case 1:
 						i=cfg.node_misc&NM_LOGON_R ? 0:1;
@@ -272,10 +279,12 @@ uifc.helpbuf=
 							,"Allow Login by Real Name",uifcYesNoOpts);
 						if(i==0 && !(cfg.node_misc&NM_LOGON_R)) {
 							cfg.node_misc|=NM_LOGON_R;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
 						else if(i==1 && (cfg.node_misc&NM_LOGON_R)) {
 							cfg.node_misc&=~NM_LOGON_R;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
                         break;
 					case 2:
 						i=cfg.node_misc&NM_LOGON_P ? 0:1;
@@ -289,10 +298,12 @@ uifc.helpbuf=
 							,"Always Prompt for Password",uifcYesNoOpts);
 						if(i==0 && !(cfg.node_misc&NM_LOGON_P)) {
 							cfg.node_misc|=NM_LOGON_P;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
 						else if(i==1 && (cfg.node_misc&NM_LOGON_P)) {
 							cfg.node_misc&=~NM_LOGON_P;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
                         break;
 					case 3:
 						i=cfg.node_misc&NM_7BITONLY ? 0:1;
@@ -307,10 +318,12 @@ uifc.helpbuf=
 							,"Allow 8-bit Remote Input During Login",uifcYesNoOpts);
 						if(i==1 && !(cfg.node_misc&NM_7BITONLY)) {
 							cfg.node_misc|=NM_7BITONLY;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
 						else if(i==0 && (cfg.node_misc&NM_7BITONLY)) {
 							cfg.node_misc&=~NM_7BITONLY;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
                         break;
 					case 4:
 						i=cfg.node_misc&NM_NOPAUSESPIN ? 1:0;
@@ -324,10 +337,12 @@ uifc.helpbuf=
 							,"Spinning Cursor at Pause Prompt",uifcYesNoOpts);
 						if(i==0 && cfg.node_misc&NM_NOPAUSESPIN) {
 							cfg.node_misc&=~NM_NOPAUSESPIN;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
 						else if(i==1 && !(cfg.node_misc&NM_NOPAUSESPIN)) {
 							cfg.node_misc|=NM_NOPAUSESPIN;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
                         break;
 					case 5:
 						i=cfg.node_misc&NM_CLOSENODEDAB ? 1:0;
@@ -343,12 +358,15 @@ uifc.helpbuf=
 							,"Keep Node File Open",uifcYesNoOpts);
 						if(i==0 && cfg.node_misc&NM_CLOSENODEDAB) {
 							cfg.node_misc&=~NM_CLOSENODEDAB;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
 						else if(i==1 && !(cfg.node_misc&NM_CLOSENODEDAB)) {
 							cfg.node_misc|=NM_CLOSENODEDAB;
-							uifc.changes=1; }
+							uifc.changes=1; 
+						}
                         break;
-						} }
+					}
+				}
 			break;
 		case 3:
 			done=0;
