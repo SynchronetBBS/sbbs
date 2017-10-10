@@ -78,6 +78,10 @@ int main(int argc, char **argv)
 	char	sysop_aliases[256];
 	sbbsecho_cfg_t orig_cfg;
 
+	ZERO_VAR(savlistcfg);
+	ZERO_VAR(savnodecfg);
+	ZERO_VAR(savarcdef);
+
 	fprintf(stderr,"\nSBBSecho Configuration  Version %u.%02u  Copyright %s "
 		"Rob Swindell\n\n",SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR, __DATE__+7);
 
@@ -156,7 +160,7 @@ int main(int argc, char **argv)
         			exit(0);
 		}
 		else
-			strcpy(str,argv[1]);
+			strcpy(str,argv[i]);
 	}
 	if(str[0]==0) {
 		p=getenv("SBBSCTRL");
@@ -315,9 +319,11 @@ int main(int argc, char **argv)
 							,faddrtoa(&cfg.nodecfg[u].addr)
 							,cfg.nodecfg[u].comment);
 					opt[u][0]=0;
-					i=uifc.list(WIN_SAV|WIN_INS|WIN_DEL|WIN_ACT|WIN_GET|WIN_PUT
-						|WIN_INSACT|WIN_DELACT|WIN_XTR
-						,0,0,0,&i,0,"Linked Nodes",opt);
+					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT | WIN_GET 
+						| WIN_INSACT | WIN_DELACT | WIN_XTR;
+					if (savnodecfg.addr.zone)
+						mode |= WIN_PUT;
+					i=uifc.list(mode,0,0,0,&i,0,"Linked Nodes",opt);
 					if(i==-1)
 						break;
 					if((i&MSK_ON)==MSK_INS) {
@@ -345,8 +351,11 @@ int main(int argc, char **argv)
 						continue; 
 					}
 
-					if((i&MSK_ON)==MSK_DEL) {
+					if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+						int msk = i&MSK_ON;
 						i&=MSK_OFF;
+						if(msk == MSK_CUT)
+							memcpy(&savnodecfg, &cfg.nodecfg[i], sizeof(nodecfg_t));
 						cfg.nodecfgs--;
 						if(cfg.nodecfgs<=0) {
 							cfg.nodecfgs=0;
@@ -1244,9 +1253,11 @@ int main(int argc, char **argv)
 					for(u=0;u<cfg.arcdefs;u++)
 						snprintf(opt[u],MAX_OPLN-1,"%-30.30s",cfg.arcdef[u].name);
 					opt[u][0]=0;
-					i=uifc.list(WIN_SAV|WIN_INS|WIN_DEL|WIN_ACT|WIN_GET|WIN_PUT
-						|WIN_INSACT|WIN_DELACT|WIN_XTR
-						,0,0,0,&i,0,"Archive Types",opt);
+					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT | WIN_GET 
+						| WIN_INSACT | WIN_DELACT | WIN_XTR;
+					if(savarcdef.name[0])
+						mode |= WIN_PUT;
+					i=uifc.list(mode,0,0,0,&i,0,"Archive Types",opt);
 					if(i==-1)
 						break;
 					if((i&MSK_ON)==MSK_INS) {
@@ -1274,8 +1285,11 @@ int main(int argc, char **argv)
 						continue; 
 					}
 
-					if((i&MSK_ON)==MSK_DEL) {
+					if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+						int msk = i&MSK_ON;
 						i&=MSK_OFF;
+						if(msk == MSK_CUT)
+							memcpy(&savarcdef, &cfg.arcdef[i], sizeof(arcdef_t));
 						cfg.arcdefs--;
 						if(cfg.arcdefs<=0) {
 							cfg.arcdefs=0;
@@ -1424,9 +1438,11 @@ int main(int argc, char **argv)
 					for(u=0;u<cfg.listcfgs;u++)
 						snprintf(opt[u],MAX_OPLN-1,"%s",cfg.listcfg[u].listpath);
 					opt[u][0]=0;
-					i=uifc.list(WIN_SAV|WIN_INS|WIN_DEL|WIN_ACT|WIN_GET|WIN_PUT
-						|WIN_INSACT|WIN_DELACT|WIN_XTR
-						,0,0,0,&i,0,"Additional EchoLists",opt);
+					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT | WIN_GET 
+						| WIN_INSACT | WIN_DELACT | WIN_XTR;
+					if(savlistcfg.listpath[0])
+						mode |= WIN_PUT;
+					i=uifc.list(mode,0,0,0,&i,0,"Additional EchoLists",opt);
 					if(i==-1)
 						break;
 					if((i&MSK_ON)==MSK_INS) {
@@ -1453,8 +1469,11 @@ int main(int argc, char **argv)
 						continue; 
 					}
 
-					if((i&MSK_ON)==MSK_DEL) {
+					if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
+						int msk = i&MSK_ON;
 						i&=MSK_OFF;
+						if(msk == MSK_CUT)
+							memcpy(&savlistcfg, &cfg.listcfg[i], sizeof(echolist_t));
 						cfg.listcfgs--;
 						if(cfg.listcfgs<=0) {
 							cfg.listcfgs=0;
