@@ -53,7 +53,8 @@ while(1) {
 			else
 				sprintf(opt[j],"%s"
 					,cfg.sub[i]->lname);
-			j++; }
+			j++; 
+		}
 	subnum[j]=cfg.total_subs;
 	opt[j][0]=0;
 	sprintf(str,"%s Sub-boards",cfg.grp[grpnum]->sname);
@@ -139,14 +140,16 @@ while(1) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_subs+1);
 			cfg.total_subs=0;
 			bail(1);
-            continue; }
+            continue; 
+		}
 
 		for(ptridx=0;ptridx<USHRT_MAX;ptridx++) { /* Search for unused pointer indx */
             for(n=0;n<cfg.total_subs;n++)
 				if(cfg.sub[n]->ptridx==ptridx)
                     break;
             if(n==cfg.total_subs)
-                break; }
+                break; 
+		}
 
 		if(j) {
 			for(u=cfg.total_subs;u>subnum[i];u--)
@@ -154,11 +157,13 @@ while(1) {
 			for(q=0;q<cfg.total_qhubs;q++)
 				for(s=0;s<cfg.qhub[q]->subs;s++)
 					if(cfg.qhub[q]->sub[s]>=subnum[i])
-						cfg.qhub[q]->sub[s]++; }
+						cfg.qhub[q]->sub[s]++; 
+		}
 
 		if((cfg.sub[subnum[i]]=(sub_t *)malloc(sizeof(sub_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(sub_t));
-			continue; }
+			continue; 
+		}
 		memset((sub_t *)cfg.sub[subnum[i]],0,sizeof(sub_t));
 		cfg.sub[subnum[i]]->grp=grpnum;
 		if(cfg.total_faddrs)
@@ -177,7 +182,8 @@ while(1) {
 		cfg.sub[subnum[i]]->ptridx=ptridx;
 		cfg.total_subs++;
 		uifc.changes=1;
-		continue; }
+		continue; 
+}
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
 		uifc.helpbuf=
@@ -216,13 +222,16 @@ while(1) {
 				if(cfg.qhub[q]->sub[s]==subnum[i])
 					cfg.qhub[q]->sub[s]=INVALID_SUB;
 				else if(cfg.qhub[q]->sub[s]>subnum[i])
-					cfg.qhub[q]->sub[s]--; }
+					cfg.qhub[q]->sub[s]--; 
+			}
 		uifc.changes=1;
-		continue; }
+		continue; 
+	}
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
 		savsub=*cfg.sub[subnum[i]];
-		continue; }
+		continue; 
+	}
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		ptridx=cfg.sub[subnum[i]]->ptridx;
@@ -230,7 +239,8 @@ while(1) {
 		cfg.sub[subnum[i]]->ptridx=ptridx;
 		cfg.sub[subnum[i]]->grp=grpnum;
 		uifc.changes=1;
-        continue; }
+        continue; 
+	}
 	i=subnum[i];
 	j=0;
 	done=0;
@@ -508,15 +518,18 @@ while(1) {
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_PONLY;
 								cfg.sub[i]->misc|=SUB_PRIV;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_PRIV) {
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_PRIV;
-								break; }
+								break; 
+							}
 							if(n==2 && (cfg.sub[i]->misc&(SUB_PRIV|SUB_PONLY))
 								!=(SUB_PRIV|SUB_PONLY)) {
 								uifc.changes=1;
-								cfg.sub[i]->misc|=(SUB_PRIV|SUB_PONLY); }
+								cfg.sub[i]->misc|=(SUB_PRIV|SUB_PONLY); 
+							}
 							break;
 						case 1:
 							if(cfg.sub[i]->misc&SUB_AONLY)
@@ -544,15 +557,18 @@ while(1) {
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_AONLY;
 								cfg.sub[i]->misc|=SUB_ANON;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&(SUB_ANON|SUB_AONLY)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~(SUB_ANON|SUB_AONLY);
-								break; }
+								break; 
+							}
 							if(n==2 && (cfg.sub[i]->misc&(SUB_ANON|SUB_AONLY))
 								!=(SUB_ANON|SUB_AONLY)) {
 								uifc.changes=1;
-								cfg.sub[i]->misc|=(SUB_ANON|SUB_AONLY); }
+								cfg.sub[i]->misc|=(SUB_ANON|SUB_AONLY); 
+							}
                             break;
 						case 2:
 							n=(cfg.sub[i]->misc&SUB_NAME) ? 0:1;
@@ -570,10 +586,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_NAME)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_NAME;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_NAME) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_NAME; }
+								cfg.sub[i]->misc&=~SUB_NAME; 
+							}
 							break;
 						case 3:
 							if(cfg.sub[i]->misc&SUB_EDITLAST)
@@ -676,10 +694,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_NSDEF)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_NSDEF;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_NSDEF) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_NSDEF; }
+								cfg.sub[i]->misc&=~SUB_NSDEF; 
+							}
                             break;
 						case 6:
 							n=(cfg.sub[i]->misc&SUB_FORCED) ? 0:1;
@@ -697,10 +717,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_FORCED)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_FORCED;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_FORCED) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_FORCED; }
+								cfg.sub[i]->misc&=~SUB_FORCED; 
+							}
                             break;
 						case 7:
 							n=(cfg.sub[i]->misc&SUB_SSDEF) ? 0:1;
@@ -717,10 +739,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_SSDEF)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_SSDEF;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_SSDEF) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_SSDEF; }
+								cfg.sub[i]->misc&=~SUB_SSDEF; 
+							}
                             break;
 						case 8:
 							n=(cfg.sub[i]->misc&SUB_TOUSER) ? 0:1;
@@ -738,10 +762,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_TOUSER)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_TOUSER;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_TOUSER) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_TOUSER; }
+								cfg.sub[i]->misc&=~SUB_TOUSER; 
+							}
 							break;
 						case 9:
 							n=(cfg.sub[i]->misc&SUB_NOVOTING) ? 1:0;
@@ -780,10 +806,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_QUOTE)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_QUOTE;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_QUOTE) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_QUOTE; }
+								cfg.sub[i]->misc&=~SUB_QUOTE; 
+							}
                             break;
 						case 11:
 							n=(cfg.sub[i]->misc&SUB_NOUSERSIG) ? 0:1;
@@ -800,10 +828,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_NOUSERSIG)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_NOUSERSIG;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_NOUSERSIG) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_NOUSERSIG; }
+								cfg.sub[i]->misc&=~SUB_NOUSERSIG; 
+							}
                             break;
 						case 12:
 							n=(cfg.sub[i]->misc&SUB_SYSPERM) ? 0:1;
@@ -821,10 +851,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_SYSPERM)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_SYSPERM;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_SYSPERM) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_SYSPERM; }
+								cfg.sub[i]->misc&=~SUB_SYSPERM; 
+							}
                             break;
 #if 0 /* This is not actually imlemented (yet?) */
 						case 12:
@@ -851,15 +883,18 @@ while(1) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_KILL;
 								cfg.sub[i]->misc&=~SUB_KILLP;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&(SUB_KILL|SUB_KILLP)) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~(SUB_KILL|SUB_KILLP); }
+								cfg.sub[i]->misc&=~(SUB_KILL|SUB_KILLP); 
+							}
 							if(n==2 && !(cfg.sub[i]->misc&SUB_KILLP)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_KILLP;
 								cfg.sub[i]->misc&=~SUB_KILL;
-                                break; }
+                                break; 
+							}
                             break;
 #endif
 						case 13:
@@ -884,13 +919,15 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_LZH)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_LZH;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_LZH) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_LZH; }
+								cfg.sub[i]->misc&=~SUB_LZH; 
+							}
                             break;
-
-							} }
+						} 
+					}
 				break;
 			case 14:
 				while(1) {
@@ -941,10 +978,12 @@ while(1) {
 							if(!n && cfg.sub[i]->misc&SUB_NOTAG) {
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_NOTAG;
-								break; }
+								break; 
+							}
 							if(n==1 && !(cfg.sub[i]->misc&SUB_NOTAG)) {
 								uifc.changes=1;
-								cfg.sub[i]->misc|=SUB_NOTAG; }
+								cfg.sub[i]->misc|=SUB_NOTAG; 
+							}
                             break;
 						case 1:
 							n=0;
@@ -962,10 +1001,12 @@ while(1) {
 							if(n && cfg.sub[i]->misc&SUB_ASCII) {
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_ASCII;
-								break; }
+								break; 
+							}
 							if(!n && !(cfg.sub[i]->misc&SUB_ASCII)) {
 								uifc.changes=1;
-								cfg.sub[i]->misc|=SUB_ASCII; }
+								cfg.sub[i]->misc|=SUB_ASCII; 
+							}
                             break;
 						case 2:
 							n=1;
@@ -992,10 +1033,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_GATE)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_GATE;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_GATE) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_GATE; }
+								cfg.sub[i]->misc&=~SUB_GATE; 
+							}
                             break;
 						case 3:
 							n=1;
@@ -1015,10 +1058,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_QNET)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_QNET;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_QNET) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_QNET; }
+								cfg.sub[i]->misc&=~SUB_QNET; 
+							}
                             break;
 						case 4:
 							uifc.helpbuf=
@@ -1048,10 +1093,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_INET)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_INET;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_INET) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_INET; }
+								cfg.sub[i]->misc&=~SUB_INET; 
+							}
                             break;
 						case 6:
                             n=1;
@@ -1071,10 +1118,12 @@ while(1) {
                             if(!n && !(cfg.sub[i]->misc&SUB_PNET)) {
                                 uifc.changes=1;
                                 cfg.sub[i]->misc|=SUB_PNET;
-                                break; }
+                                break; 
+							}
                             if(n==1 && cfg.sub[i]->misc&SUB_PNET) {
                                 uifc.changes=1;
-                                cfg.sub[i]->misc&=~SUB_PNET; }
+                                cfg.sub[i]->misc&=~SUB_PNET; 
+							}
                             break;
 						case 7:
 							n=1;
@@ -1091,10 +1140,12 @@ while(1) {
 							if(!n && !(cfg.sub[i]->misc&SUB_FIDO)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_FIDO;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_FIDO) {
 								uifc.changes=1;
-								cfg.sub[i]->misc&=~SUB_FIDO; }
+								cfg.sub[i]->misc&=~SUB_FIDO; 
+							}
                             break;
 						case 8:
 							smb_faddrtoa(&cfg.sub[i]->faddr,str);
@@ -1211,7 +1262,8 @@ while(1) {
 								cfg.sub[i]->misc|=SUB_HYPER;
 								cfg.sub[i]->misc&=~SUB_FAST;
 								cfg.sub[i]->misc|=SUB_HDRMOD;
-								break; }
+								break; 
+							}
 							if(!n)
 								break;
 							if(cfg.sub[i]->misc&SUB_HYPER) {	/* Switching from hyper */
