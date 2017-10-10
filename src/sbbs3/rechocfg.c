@@ -1,5 +1,3 @@
-/* rechocfg.C */
-
 /* Synchronet FidoNet EchoMail Scanning/Tossing and NetMail Tossing Utility */
 
 /* $Id$ */
@@ -339,6 +337,20 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		if(!faddr_contains_wildcard(&ncfg->addr)) {
 			SAFECOPY(ncfg->inbox	, iniGetString(ini, node, "inbox", "", value));
 			SAFECOPY(ncfg->outbox	, iniGetString(ini, node, "outbox", "", value));
+			char		inbox[MAX_PATH + 1];
+			char		insec[MAX_PATH + 1];
+			char		inbound[MAX_PATH + 1];
+			char		outbox[MAX_PATH + 1];
+			char		outbound[MAX_PATH + 1];
+			FULLPATH(inbox, ncfg->inbox, sizeof(inbox))			, backslash(inbox);
+			FULLPATH(outbox, ncfg->outbox, sizeof(outbox))		, backslash(outbox);
+			FULLPATH(insec, cfg->secure_inbound, sizeof(insec))	, backslash(insec);
+			FULLPATH(inbound, cfg->inbound, sizeof(inbound))	, backslash(inbound);
+			FULLPATH(outbound, cfg->outbound, sizeof(outbound))	, backslash(outbound);
+			if (stricmp(inbound, inbox) == 0 || stricmp(insec, inbox) == 0)
+				ncfg->inbox[0] = 0;
+			if (stricmp(outbound, outbox) == 0)
+				ncfg->outbox[0] = 0;
 		}
 		ncfg->keys				= iniGetStringList(ini, node, "keys", ",", "");
 		ncfg->pkt_type			= iniGetEnum(ini, node, "PacketType", pktTypeStringList, ncfg->pkt_type);
