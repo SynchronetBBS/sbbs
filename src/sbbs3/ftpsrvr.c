@@ -2575,7 +2575,7 @@ static void ctrl_thread(void* arg)
 			truncsp(p);
 			SAFECOPY(user.alias,p);
 			user.number=matchuser(&scfg,user.alias,FALSE /*sysop_alias*/);
-			if(!user.number && !stricmp(user.alias,"anonymous"))	
+			if(!user.number && (stricmp(user.alias,"anonymous") == 0 || stricmp(user.alias, "ftp") == 0))
 				user.number=matchuser(&scfg,"guest",FALSE);
 			if(user.number && getuserdat(&scfg, &user)==0 && user.pass[0]==0) 
 				sockprintf(sock,"331 User name okay, give your full e-mail address as password.");
