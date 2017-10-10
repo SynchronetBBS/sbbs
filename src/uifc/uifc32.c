@@ -1,5 +1,3 @@
-/* uifc32.c */
-
 /* Curses implementation of UIFC (user interface) library based on uifc.c */
 
 /* $Id$ */
@@ -1583,7 +1581,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							return((*cur)|MSK_GET);
 						break;
 					case CIO_KEY_F(6):	/* F6 - Paste */
-						if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1))
+						if(mode&WIN_PUT && (mode&WIN_PUTXTR || !(mode&WIN_XTR && (*cur)==opts-1)))
 							return((*cur)|MSK_PUT);
 						break;
 					case CIO_KEY_IC:	/* insert */
