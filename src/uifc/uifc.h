@@ -101,9 +101,15 @@
 #define MSK_OFF 	0x0fffffff
 #define MSK_INS 	0x10000000
 #define MSK_DEL 	0x20000000
-#define MSK_GET 	0x30000000
-#define MSK_PUT 	0x40000000
-#define MSK_EDIT 	0x50000000
+#define MSK_COPY 	0x30000000
+#define MSK_CUT 	0x40000000
+#define MSK_PASTE 	0x50000000
+#define MSK_EDIT 	0x60000000
+
+/* Legacy terms (get/put instead of copy/paste) */
+#define MSK_GET		MSK_COPY
+#define MSK_PUT		MSK_PASTE
+
 /* Don't forget, negative return values are used for extended keys (if WIN_EXTKEYS used)! */
 #define MAX_OPLN	75		/* Maximum length of each option per menu call */
 #define MAX_BUFS	7		/* Maximum number of screen buffers to save */
@@ -124,7 +130,7 @@
 #define UIFC_MONO	(1<<2)	/* Force monochrome mode */
 #define UIFC_COLOR	(1<<3)	/* Force color mode */
 #define UIFC_IBM	(1<<4)	/* Force use of IBM charset	*/
-#define UIFC_NOCTRL	(1<<5)	/* Don't allow useage of CTRL keys for movement 
+#define UIFC_NOCTRL	(1<<5)	/* Don't allow usage of CTRL keys for movement 
 							 * etc in menus (Still available in text boxes) */
 #define UIFC_NHM	(1<<6)	/* Don't hide the mouse pointer */
 
