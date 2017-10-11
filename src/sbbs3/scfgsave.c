@@ -863,71 +863,82 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 
 	/* File Directories */
 
+	long total_dirs_offset = ftell(stream);
 	put_int(cfg->total_dirs,stream);
-	for(j=0;j<cfg->total_libs;j++)
-		for(i=0;i<cfg->total_dirs;i++)
-			if(cfg->dir[i]->lib==j) {
-				put_int(cfg->dir[i]->lib,stream);
-				put_str(cfg->dir[i]->lname,stream);
-				put_str(cfg->dir[i]->sname,stream);
-				put_str(cfg->dir[i]->code_suffix,stream);
+	uint16_t total_dirs = 0;
+	for (j = 0; j < cfg->total_libs; j++) {
+		for (i = 0; i < cfg->total_dirs; i++) {
+			if (cfg->dir[i]->lib == j) {
+				put_int(cfg->dir[i]->lib, stream);
+				put_str(cfg->dir[i]->lname, stream);
+				put_str(cfg->dir[i]->sname, stream);
+				put_str(cfg->dir[i]->code_suffix, stream);
 #if 1
-				if(cfg->dir[i]->data_dir[0]) {
+				if (cfg->dir[i]->data_dir[0]) {
 					backslash(cfg->dir[i]->data_dir);
 					md(cfg->dir[i]->data_dir);
 				}
 #endif
-				put_str(cfg->dir[i]->data_dir,stream);
-				put_str(cfg->dir[i]->arstr,stream);
-				put_str(cfg->dir[i]->ul_arstr,stream);
-				put_str(cfg->dir[i]->dl_arstr,stream);
-				put_str(cfg->dir[i]->op_arstr,stream);
+				put_str(cfg->dir[i]->data_dir, stream);
+				put_str(cfg->dir[i]->arstr, stream);
+				put_str(cfg->dir[i]->ul_arstr, stream);
+				put_str(cfg->dir[i]->dl_arstr, stream);
+				put_str(cfg->dir[i]->op_arstr, stream);
 				backslash(cfg->dir[i]->path);
-				put_str(cfg->dir[i]->path,stream);
+				put_str(cfg->dir[i]->path, stream);
 #if 1
-				if(cfg->dir[i]->misc&DIR_FCHK) {
-					SAFECOPY(path,cfg->dir[i]->path);
-					if(!path[0]) {		/* no file storage path specified */
-						SAFEPRINTF2(str,"%s%s"
-							,cfg->lib[cfg->dir[i]->lib]->code_prefix
-							,cfg->dir[i]->code_suffix);
+				if (cfg->dir[i]->misc&DIR_FCHK) {
+					SAFECOPY(path, cfg->dir[i]->path);
+					if (!path[0]) {		/* no file storage path specified */
+						SAFEPRINTF2(str, "%s%s"
+							, cfg->lib[cfg->dir[i]->lib]->code_prefix
+							, cfg->dir[i]->code_suffix);
 						strlwr(str);
-						safe_snprintf(path,sizeof(path),"%sdirs/%s/"
-							,cfg->data_dir
-							,str);
+						safe_snprintf(path, sizeof(path), "%sdirs/%s/"
+							, cfg->data_dir
+							, str);
 					}
-					else if(cfg->lib[cfg->dir[i]->lib]->parent_path[0]) {
-						SAFECOPY(path,cfg->lib[cfg->dir[i]->lib]->parent_path);
-						prep_dir(cfg->ctrl_dir,path,sizeof(path));
+					else if (cfg->lib[cfg->dir[i]->lib]->parent_path[0]) {
+						SAFECOPY(path, cfg->lib[cfg->dir[i]->lib]->parent_path);
+						prep_dir(cfg->ctrl_dir, path, sizeof(path));
 						md(path);
 						backslash(path);
-						strcat(path,cfg->dir[i]->path);
+						strcat(path, cfg->dir[i]->path);
 					}
 					else
-						prep_dir(cfg->ctrl_dir, path,sizeof(path));
-					md(path); 
+						prep_dir(cfg->ctrl_dir, path, sizeof(path));
+					md(path);
 				}
 #endif
 
-				put_str(cfg->dir[i]->upload_sem,stream);
-				put_int(cfg->dir[i]->maxfiles,stream);
-				put_str(cfg->dir[i]->exts,stream);
-				put_int(cfg->dir[i]->misc,stream);
-				put_int(cfg->dir[i]->seqdev,stream);
-				put_int(cfg->dir[i]->sort,stream);
-				put_str(cfg->dir[i]->ex_arstr,stream);
-				put_int(cfg->dir[i]->maxage,stream);
-				put_int(cfg->dir[i]->up_pct,stream);
-				put_int(cfg->dir[i]->dn_pct,stream);
-				c=0;
-				put_int(c,stream);
-				n=0;
-				for(k=0;k<8;k++)
-					put_int(n,stream);
-				n=0xffff;
-				for(k=0;k<16;k++)
-					put_int(n,stream);
-				}
+				put_str(cfg->dir[i]->upload_sem, stream);
+				put_int(cfg->dir[i]->maxfiles, stream);
+				put_str(cfg->dir[i]->exts, stream);
+				put_int(cfg->dir[i]->misc, stream);
+				put_int(cfg->dir[i]->seqdev, stream);
+				put_int(cfg->dir[i]->sort, stream);
+				put_str(cfg->dir[i]->ex_arstr, stream);
+				put_int(cfg->dir[i]->maxage, stream);
+				put_int(cfg->dir[i]->up_pct, stream);
+				put_int(cfg->dir[i]->dn_pct, stream);
+				c = 0;
+				put_int(c, stream);
+				n = 0;
+				for (k = 0; k < 8; k++)
+					put_int(n, stream);
+				n = 0xffff;
+				for (k = 0; k < 16; k++)
+					put_int(n, stream);
+				total_dirs++;
+			}
+		}
+	}
+
+	/* Write the actual number of directories */
+	long text_files_sec_offset = ftell(stream);
+	fseek(stream, total_dirs_offset, SEEK_SET);
+	put_int(total_dirs, stream);
+	fseek(stream, text_files_sec_offset, SEEK_SET);
 
 	/* Text File Sections */
 
