@@ -98,7 +98,7 @@ static char* section_name(char* p)
 	return(p);
 }
 
-static BOOL section_match(const char* name, const char* compare)
+static BOOL section_match(const char* name, const char* compare, BOOL case_sensitive)
 {
 	BOOL found=FALSE;
 	str_list_t names=strListSplitCopy(NULL,name,INI_SECTION_NAME_SEP);
@@ -107,7 +107,7 @@ static BOOL section_match(const char* name, const char* compare)
 	char*	n;
 	char*	c;
 
-	/* Ignore trailing whitepsace */
+	/* Ignore trailing whitespace */
 	for(i=0; names[i]!=NULL; i++)
 		truncsp(names[i]);
 	for(i=0; comps[i]!=NULL; i++)
@@ -120,8 +120,10 @@ static BOOL section_match(const char* name, const char* compare)
 			SKIP_WHITESPACE(n);
 			c=comps[j];
 			SKIP_WHITESPACE(c);
-			if(stricmp(n,c)==0)
-				found=TRUE;
+			if (case_sensitive)
+				found = strcmp(n, c) == 0;
+			else
+				found = stricmp(n, c) == 0;
 		}
 
 	strListFree(&names);
@@ -140,6 +142,7 @@ static BOOL seek_section(FILE* fp, const char* section)
 	if(section==ROOT_SECTION)
 		return(TRUE);
 
+	/* Perform case-sensitive search first */
 	while(!feof(fp)) {
 		if(fgets(str,sizeof(str),fp)==NULL)
 			break;
@@ -147,9 +150,23 @@ static BOOL seek_section(FILE* fp, const char* section)
 			break;
 		if((p=section_name(str))==NULL)
 			continue;
-		if(section_match(p,section))
+		if(section_match(p, section, /* case-sensitive */TRUE))
 			return(TRUE);
 	}
+
+	/* Then perform case-insensitive search */
+	rewind(fp);
+	while (!feof(fp)) {
+		if (fgets(str, sizeof(str), fp) == NULL)
+			break;
+		if (is_eof(str))
+			break;
+		if ((p = section_name(str)) == NULL)
+			continue;
+		if (section_match(p, section, /* case-sensitive */FALSE))
+			return(TRUE);
+	}
+
 	return(FALSE);
 }
 
@@ -159,11 +176,21 @@ static size_t find_section_index(str_list_t list, const char* section)
 	char	str[INI_MAX_VALUE_LEN];
 	size_t	i;
 
-	for(i=0; list[i]!=NULL; i++) {
-		SAFECOPY(str,list[i]);
+	/* Perform case-sensitive search first */
+	for (i = 0; list[i] != NULL; i++) {
+		SAFECOPY(str, list[i]);
 		if(is_eof(str))
 			return(strListCount(list));
-		if((p=section_name(str))!=NULL && section_match(p,section))
+		if((p=section_name(str))!=NULL && section_match(p, section, /* case-sensitive */TRUE))
+			return(i);
+	}
+
+	/* Then perform case-insensitive search */
+	for (i = 0; list[i] != NULL; i++) {
+		SAFECOPY(str, list[i]);
+		if (is_eof(str))
+			return(strListCount(list));
+		if ((p = section_name(str)) != NULL && section_match(p, section, /* case-sensitive */FALSE))
 			return(i);
 	}
 
