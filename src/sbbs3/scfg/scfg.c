@@ -112,6 +112,9 @@ int main(int argc, char **argv)
 					new_install=TRUE;
 					forcesave=TRUE;
                     continue;
+				case 'K':	/* Keyboard only (no mouse) */
+					uifc.mode |= UIFC_NOMOUSE;
+					break;
 		        case 'M':   /* Monochrome mode */
         			uifc.mode|=UIFC_MONO;
                     break;
@@ -188,11 +191,12 @@ int main(int argc, char **argv)
                     printf("\nusage: scfg [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
                         "-s  =  don't check directories\r\n"
-                        "-f  =  force save of config files\r\n"
+                        "-f  =  force save of configuration files\r\n"
                         "-a  =  update all message base status headers\r\n"
                         "-h  =  don't update message base status headers\r\n"
 						"-u# =  set file creation permissions mask (in octal)\n"
-                        "-c  =  force color mode\r\n"
+						"-k  =  keyboard mode only (no mouse support)\r\n"
+						"-c  =  force color mode\r\n"
 						"-m  =  force monochrome mode\r\n"
                         "-e# =  set escape delay to #msec\r\n"
 						"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
