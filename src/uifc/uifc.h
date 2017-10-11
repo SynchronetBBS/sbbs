@@ -96,19 +96,20 @@
 	#endif
 #endif
 
-#define MAX_OPTS	10000
-#define MSK_ON		0xf0000000
-#define MSK_OFF 	0x0fffffff
-#define MSK_INS 	0x10000000
-#define MSK_DEL 	0x20000000
-#define MSK_COPY 	0x30000000
-#define MSK_CUT 	0x40000000
-#define MSK_PASTE 	0x50000000
-#define MSK_EDIT 	0x60000000
+#define MAX_OPTS			10000
+#define MSK_ON				0xf0000000
+#define MSK_OFF 			0x0fffffff
+#define MSK_INS 			0x10000000
+#define MSK_DEL 			0x20000000
+#define MSK_COPY 			0x30000000
+#define MSK_CUT 			0x40000000
+#define MSK_PASTE_OVER		0x50000000	/* Overwrite selected item with previously copied item */
+#define MSK_PASTE_INSERT 	0x60000000	/* Insert new item (above) current item with previously copied item */
+#define MSK_EDIT			0x70000000
 
 /* Legacy terms (get/put instead of copy/paste) */
 #define MSK_GET		MSK_COPY
-#define MSK_PUT		MSK_PASTE
+#define MSK_PUT		MSK_PASTE_OVER
 
 /* Don't forget, negative return values are used for extended keys (if WIN_EXTKEYS used)! */
 #define MAX_OPLN	75		/* Maximum length of each option per menu call */
@@ -149,8 +150,8 @@
 #define WIN_ESC 	(1<<9)	/* Screen is active when escape is hit			 */
 #define WIN_RHT 	(1<<10) /* Place window against right side of screen */
 #define WIN_BOT 	(1<<11) /* Place window against bottom of screen */
-#define WIN_GET 	(1<<12) /* Allows F5 to Get (copy) a menu item */
-#define WIN_PUT 	(1<<13) /* Allows F6 to Put (paste) a menu item */
+#define WIN_COPY 	(1<<12) /* Allows F5 to Get (copy) a menu item */
+#define WIN_PASTE 	(1<<13) /* Allows F6 to Put (paste) a menu item */
 #define WIN_CHE 	(1<<14) /* Stay active after escape if changes */
 #define WIN_XTR 	(1<<15) /* Add extra line at end for inserting at end */
 #define WIN_DYN 	(1<<16) /* Dynamic window - return at least every second */
@@ -166,15 +167,17 @@
 #define WIN_FIXEDHEIGHT	(1<<25)	/* Use list_height from uifc struct */
 #define WIN_UNGETMOUSE  (1<<26) /* If the mouse is clicked outside the window, */
 								/* Put the mouse event back into the event queue */
-#define WIN_EDIT	(1<<27)	/* Allow F2 to edit a menu item */
-#define WIN_PUTXTR	(1<<28)	/* Allow paste into extra (blank) item */
-#define WIN_INACT	(1<<29)	/* Draw window inactive... intended for use with WIN_IMM */
-#define WIN_POP		(1<<30)	/* Exit the list. Act as though ESC was pressed. */
-							/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
-#define WIN_SEL		(1<<31)	/* Exit the list. Act as though ENTER was pressed. */
-							/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
+#define WIN_EDIT		(1<<27)	/* Allow F2 to edit a menu item */
+#define WIN_PASTEXTR	(1<<28)	/* Allow paste into extra (blank) item */
+#define WIN_INACT		(1<<29)	/* Draw window inactive... intended for use with WIN_IMM */
+#define WIN_POP			(1<<30)	/* Exit the list. Act as though ESC was pressed. */
+								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
+#define WIN_SEL			(1<<31)	/* Exit the list. Act as though ENTER was pressed. */
+								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
+#define WIN_GET	WIN_COPY
+#define WIN_PUT WIN_PASTE
 
 #define SCRN_TOP	3
 #define SCRN_LEFT	5

@@ -1591,10 +1591,13 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur) == opts - 1))
 							return((*cur) | MSK_CUT);
 						break;
-					case CIO_KEY_F(6):		/* F6 - Paste */
-					case CIO_KEY_SHIFT_IC:	/* Shift-Insert */
-						if(mode&WIN_PUT && (mode&WIN_PUTXTR || !(mode&WIN_XTR && (*cur)==opts-1)))
-							return((*cur)|MSK_PUT);
+					case CIO_KEY_SHIFT_IC:	/* Shift-Insert: Paste-Insert */
+						if(mode&WIN_PUT)
+							return((*cur) | MSK_PASTE_INSERT);
+						break;
+					case CIO_KEY_F(6):		/* F6 - Paste-Over */
+						if(mode&WIN_PUT && (mode&WIN_PASTEXTR || !(mode&WIN_PASTEXTR && (*cur)==opts-1)))
+							return((*cur)|MSK_PASTE_OVER);
 						break;
 					case CIO_KEY_IC:	/* insert */
 						if(mode&WIN_INS) {

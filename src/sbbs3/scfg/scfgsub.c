@@ -110,11 +110,11 @@ while(1) {
 	sprintf(str,"%s Sub-boards",cfg.grp[grpnum]->sname);
 	i=WIN_SAV|WIN_ACT;
 	if(j)
-		i|=WIN_DEL|WIN_GET|WIN_DELACT;
+		i|=WIN_DEL|WIN_COPY|WIN_DELACT;
 	if(j<MAX_OPTS)
-		i|=WIN_INS|WIN_XTR|WIN_PUTXTR|WIN_INSACT;
+		i|=WIN_INS|WIN_XTR|WIN_PASTEXTR|WIN_INSACT;
 	if(savsub.sname[0])
-		i|=WIN_PUT;
+		i|=WIN_PASTE;
 	uifc.helpbuf=
 		"`Message Sub-boards:`\n"
 		"\n"
@@ -244,15 +244,19 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_GET) {
+	if((i&MSK_ON)==MSK_COPY) {
 		i&=MSK_OFF;
 		savsub=*cfg.sub[subnum[i]];
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_PUT) {
+	if((i&MSK_ON)==MSK_PASTE_OVER || (i&MSK_ON) == MSK_PASTE_INSERT) {
+		int msk = i&MSK_ON;
 		i&=MSK_OFF;
-		if (opt[i][0] == 0) {	/* Paste-over extra/blank item */
+		if (msk == MSK_PASTE_INSERT) {
 			if (!new_sub(subnum[i], grpnum))
+				continue;
+		} else if (opt[i][0] == 0) {	/* Paste-over extra/blank item */
+			if (!new_sub(cfg.total_subs, grpnum))
 				continue;
 		}
 		ptridx=cfg.sub[subnum[i]]->ptridx;
