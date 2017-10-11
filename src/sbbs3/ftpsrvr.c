@@ -2973,7 +2973,7 @@ static void ctrl_thread(void* arg)
 		}
 
 		if(stricmp(cmd, "PASV")==0 || stricmp(cmd, "P@SW")==0	/* Kludge required for SMC Barricade V1.2 */
-			|| stricmp(cmd, "EPSV")==0 || stricmp(cmd, "LPSV")==0) {	
+			|| stricmp(cmd, "EPSV")==0 || strnicmp(cmd, "EPSV ", 5)==0 || stricmp(cmd, "LPSV")==0) {
 
 			if(pasv_sock!=INVALID_SOCKET) 
 				ftp_close_socket(&pasv_sock,__LINE__);
@@ -3036,7 +3036,7 @@ static void ctrl_thread(void* arg)
 			}
 
 			port=inet_addrport(&addr);
-			if(stricmp(cmd, "EPSV")==0)
+			if(strnicmp(cmd, "EPSV", 4)==0)
 				sockprintf(sock,"229 Entering Extended Passive Mode (|||%hu|)", port);
 			else if (stricmp(cmd,"LPSV")==0) {
 				switch(addr.addr.sa_family) {
