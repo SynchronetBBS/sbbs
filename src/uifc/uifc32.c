@@ -403,7 +403,7 @@ int UIFCCALL uifcini32(uifcapi_t* uifcapi)
     cursor=_NOCURSOR;
     _setcursortype(cursor);
 
-	if(cio_api.mouse) {
+	if(cio_api.mouse && !(api->mode&UIFC_NOMOUSE)) {
 		api->mode|=UIFC_MOUSE;
 		uifc_mouse_enable();
 	}
