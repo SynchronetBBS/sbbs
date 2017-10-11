@@ -128,6 +128,9 @@ int main(int argc, char **argv)
 							goto USAGE;
 					}
 					break;
+				case 'K':	/* Keyboard-only mode (no mouse support) */
+					uifc.mode |= UIFC_NOMOUSE;
+					break;
 		        case 'M':   /* Monochrome mode */
         			uifc.mode|=UIFC_MONO;
                     break;
@@ -141,6 +144,7 @@ int main(int argc, char **argv)
 					USAGE:
                     printf("\nusage: echocfg [path/to/sbbsecho.ini] [options]"
                         "\n\noptions:\n\n"
+						"-k  =  keyboard mode only (no mouse support)\r\n"
                         "-c  =  force color mode\r\n"
 						"-m  =  force monochrome mode\r\n"
                         "-e# =  set escape delay to #msec\r\n"
