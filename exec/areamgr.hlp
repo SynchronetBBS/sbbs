@@ -11,12 +11,13 @@ In the body of the message to Area Manager:
 %UNLINKED             Request a list of areas to which you are not connected
 %COMPRESSION <type>   Change the compression type (e.g. ARC/ARJ/LZH/PAK/SQZ/ZIP/ZOO)
 %PASSWORD <password>  Change your AreaMgr password
-%RESCAN 	      Request a rescan of all connected areas
+%RESCAN               Request a rescan of all connected areas
 %RESCAN <areaname>    Request a rescan of a single connected area
-%ACTIVE 	      Reconnect all temporarily disconnected areas
-%PASSIVE	      Temporarily disconnect all connected areas
-%+ALL		      Connect all available areas
-%-ALL		      Disconnect all areas
+%ACTIVE               Reconnect all temporarily disconnected areas
+%PASSIVE              Temporarily disconnect all connected areas
+%FROM <address>       Remote maintenance, must be the first command
+%+ALL                 Connect all available areas
+%-ALL                 Disconnect all areas
 [---]                 Everything below the tear line is ignored
 
 NOTE: A compression type of NONE is also supported for uncompressed packets.
