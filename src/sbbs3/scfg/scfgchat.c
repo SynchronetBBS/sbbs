@@ -48,11 +48,11 @@ while(1) {
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
 	if(cfg.total_pages)
-		j|=WIN_DEL|WIN_GET;
+		j|=WIN_DEL|WIN_COPY;
 	if(cfg.total_pages<MAX_OPTS)
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savpage.cmd[0])
-		j|=WIN_PUT;
+		j|=WIN_PASTE;
 	uifc.helpbuf=
 		"`External Sysop Chat Pagers:`\n"
 		"\n"
@@ -67,8 +67,9 @@ while(1) {
 	i=uifc.list(j,0,0,45,&dflt,&bar,"External Sysop Chat Pagers",opt);
 	if((signed)i==-1)
 		return;
-	if((i&MSK_ON)==MSK_INS) {
-		i&=MSK_OFF;
+	int msk = i & MSK_ON;
+	i &= MSK_OFF;
+	if (msk == MSK_INS) {
 		sprintf(str,"%%!tone +chatpage.ton");
 		uifc.helpbuf=
 			"`External Chat Pager Command Line:`\n"
@@ -98,9 +99,7 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-		int msk = i&MSK_ON;
-		i&=MSK_OFF;
+	if (msk == MSK_DEL || msk == MSK_CUT) {
 		if(msk == MSK_CUT)
 			savpage = *cfg.page[i];
 		free(cfg.page[i]);
@@ -110,17 +109,17 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_GET) {
-		i&=MSK_OFF;
+	if (msk == MSK_COPY) {
 		savpage=*cfg.page[i];
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_PUT) {
-		i&=MSK_OFF;
+	if (msk == MSK_PASTE_OVER) {
 		*cfg.page[i]=savpage;
 		uifc.changes=1;
         continue; 
 	}
+	if (msk != 0)
+		continue;
 	j=0;
 	done=0;
 	while(!done) {
@@ -214,11 +213,11 @@ while(1) {
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_SAV|WIN_BOT|WIN_RHT;
 	if(cfg.total_chans)
-		j|=WIN_DEL|WIN_GET;
+		j|=WIN_DEL|WIN_COPY;
 	if(cfg.total_chans<MAX_OPTS)
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savchan.name[0])
-		j|=WIN_PUT;
+		j|=WIN_PASTE;
 	uifc.helpbuf=
 		"`Multinode Chat Channels:`\n"
 		"\n"
@@ -234,8 +233,9 @@ while(1) {
 	i=uifc.list(j,0,0,45,&chan_dflt,&chan_bar,"Multinode Chat Channels",opt);
 	if((signed)i==-1)
 		return;
-	if((i&MSK_ON)==MSK_INS) {
-		i&=MSK_OFF;
+	int msk = i & MSK_ON;
+	i &= MSK_OFF;
+	if (msk == MSK_INS) {
 		strcpy(str,"Open");
 		uifc.helpbuf=
 			"`Channel Name:`\n"
@@ -284,9 +284,7 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-		int msk = i&MSK_ON;
-		i&=MSK_OFF;
+	if (msk == MSK_DEL || msk == MSK_CUT) {
 		if(msk == MSK_CUT)
 			savchan = *cfg.chan[i];
 		free(cfg.chan[i]);
@@ -296,17 +294,17 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_GET) {
-		i&=MSK_OFF;
+	if (msk == MSK_COPY) {
 		savchan=*cfg.chan[i];
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_PUT) {
-		i&=MSK_OFF;
+	if (msk == MSK_PASTE_OVER) {
 		*cfg.chan[i]=savchan;
 		uifc.changes=1;
         continue; 
 	}
+	if (msk != 0)
+		continue;
     j=0;
 	done=0;
 	while(!done) {
@@ -482,11 +480,11 @@ while(1) {
 	opt[j][0]=0;
 	i=WIN_ACT|WIN_SAV;
 	if(j)
-		i|=WIN_DEL|WIN_GET;
+		i|=WIN_DEL|WIN_COPY;
 	if(j<MAX_OPTS)
 		i|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savchatact.cmd[0])
-		i|=WIN_PUT;
+		i|=WIN_PASTE;
 	uifc.helpbuf=
 		"`Multinode Chat Actions:`\n"
 		"\n"
@@ -509,8 +507,9 @@ while(1) {
 	i=uifc.list(i,0,0,70,&chatact_dflt,&chatact_bar,str,opt);
 	if((signed)i==-1)
 		return;
-	if((i&MSK_ON)==MSK_INS) {
-		i&=MSK_OFF;
+	int msk = i & MSK_ON;
+	i &= MSK_OFF;
+	if (msk == MSK_INS) {
 		uifc.helpbuf=
 			"`Chat Action Command:`\n"
 			"\n"
@@ -549,9 +548,7 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-		int msk = i&MSK_ON;
-		i&=MSK_OFF;
+	if (msk == MSK_DEL || msk == MSK_CUT) {
 		if(msk == MSK_CUT)
 			savchatact = *cfg.chatact[chatnum[i]];
 		free(cfg.chatact[chatnum[i]]);
@@ -561,18 +558,18 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_GET) {
-		i&=MSK_OFF;
+	if (msk == MSK_COPY) {
 		savchatact=*cfg.chatact[chatnum[i]];
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_PUT) {
-		i&=MSK_OFF;
+	if (msk == MSK_PASTE_OVER) {
 		*cfg.chatact[chatnum[i]]=savchatact;
 		cfg.chatact[chatnum[i]]->actset=setnum;
 		uifc.changes=1;
         continue; 
 	}
+	if (msk != 0)
+		continue;
 	uifc.helpbuf=
 		"`Chat Action Command:`\n"
 		"\n"
@@ -610,11 +607,11 @@ while(1) {
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
 	if(cfg.total_gurus)
-		j|=WIN_DEL|WIN_GET;
+		j|=WIN_DEL|WIN_COPY;
 	if(cfg.total_gurus<MAX_OPTS)
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savguru.name[0])
-		j|=WIN_PUT;
+		j|=WIN_PASTE;
 	uifc.helpbuf=
 		"`Gurus:`\n"
 		"\n"
@@ -630,8 +627,9 @@ while(1) {
 	i=uifc.list(j,0,0,45,&guru_dflt,&guru_bar,"Artificial Gurus",opt);
 	if((signed)i==-1)
 		return;
-	if((i&MSK_ON)==MSK_INS) {
-		i&=MSK_OFF;
+	int msk = i & MSK_ON;
+	i &= MSK_OFF;
+	if (msk == MSK_INS) {
 		uifc.helpbuf=
 			"`Guru Name:`\n"
 			"\n"
@@ -678,9 +676,7 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-		int msk = i&MSK_ON;
-		i&=MSK_OFF;
+	if (msk == MSK_DEL || msk == MSK_CUT) {
 		if(msk == MSK_CUT)
 			savguru = *cfg.guru[i];
 		free(cfg.guru[i]);
@@ -690,17 +686,17 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_GET) {
-		i&=MSK_OFF;
+	if (msk == MSK_COPY) {
 		savguru=*cfg.guru[i];
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_PUT) {
-		i&=MSK_OFF;
+	if (msk == MSK_PASTE_OVER) {
 		*cfg.guru[i]=savguru;
 		uifc.changes=1;
         continue; 
 	}
+	if (msk != 0)
+		continue;
     j=0;
 	done=0;
 	while(!done) {
@@ -771,11 +767,11 @@ while(1) {
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_RHT|WIN_BOT|WIN_SAV;
     if(cfg.total_actsets)
-        j|=WIN_DEL|WIN_GET;
+        j|=WIN_DEL|WIN_COPY;
 	if(cfg.total_actsets<MAX_OPTS)
         j|=WIN_INS|WIN_INSACT|WIN_XTR;
     if(savactset.name[0])
-        j|=WIN_PUT;
+        j|=WIN_PASTE;
     uifc.helpbuf=
 	    "`Chat Action Sets:`\n"
 	    "\n"
@@ -792,8 +788,9 @@ while(1) {
 	i=uifc.list(j,0,0,45,&actset_dflt,&actset_bar,"Chat Action Sets",opt);
 	if((signed)i==-1)
 		return;
-	if((i&MSK_ON)==MSK_INS) {
-		i&=MSK_OFF;
+	int msk = i & MSK_ON;
+	i &= MSK_OFF;
+	if (msk == MSK_INS) {
         uifc.helpbuf=
 	        "`Chat Action Set Name:`\n"
 	        "\n"
@@ -822,9 +819,7 @@ while(1) {
         uifc.changes=1;
         continue; 
 	}
-	if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-		int msk = i&MSK_ON;
-		i&=MSK_OFF;
+	if (msk == MSK_DEL || msk == MSK_CUT) {
 		if(msk == MSK_CUT)
 			savactset = *cfg.actset[i];
         free(cfg.actset[i]);
@@ -834,17 +829,18 @@ while(1) {
         uifc.changes=1;
         continue; 
 	}
-	if((i&MSK_ON)==MSK_GET) {
-		i&=MSK_OFF;
+	if (msk == MSK_COPY) {
         savactset=*cfg.actset[i];
         continue; 
 	}
-	if((i&MSK_ON)==MSK_PUT) {
-		i&=MSK_OFF;
+	if (msk == MSK_PASTE_OVER) {
         *cfg.actset[i]=savactset;
         uifc.changes=1;
         continue; 
 	}
+	if (msk != 0)
+		continue;
+
     j=0;
     done=0;
     while(!done) {

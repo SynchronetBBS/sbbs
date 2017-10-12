@@ -131,8 +131,9 @@ while(1) {
 	i=uifc.list(i,24,1,LEN_SLNAME+5,&dflt,&bar,str,opt);
 	if((signed)i==-1)
 		return;
-	if((i&MSK_ON)==MSK_INS) {
-		i&=MSK_OFF;
+	int msk = i & MSK_ON;
+	i &= MSK_OFF;
+	if(msk==MSK_INS) {
 		strcpy(str,"General");
 		uifc.helpbuf=
 			"`Sub-board Long Name:`\n"
@@ -198,9 +199,7 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON) == MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-		int msk = (i&MSK_ON);
-		i&=MSK_OFF;
+	if(msk == MSK_DEL || msk == MSK_CUT) {
 		uifc.helpbuf=
 			"`Delete Data in Sub-board:`\n"
 			"\n"
@@ -244,14 +243,11 @@ while(1) {
 		uifc.changes=1;
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_COPY) {
-		i&=MSK_OFF;
+	if(msk==MSK_COPY) {
 		savsub=*cfg.sub[subnum[i]];
 		continue; 
 	}
-	if((i&MSK_ON)==MSK_PASTE_OVER || (i&MSK_ON) == MSK_PASTE_INSERT) {
-		int msk = i&MSK_ON;
-		i&=MSK_OFF;
+	if(msk == MSK_PASTE_OVER || msk == MSK_PASTE_INSERT) {
 		if (msk == MSK_PASTE_INSERT) {
 			if (!new_sub(subnum[i], grpnum))
 				continue;

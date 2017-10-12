@@ -238,9 +238,9 @@ uifc.helpbuf=
 				if(cfg.total_fviews<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_fviews)
-					i|=WIN_DEL|WIN_GET;
+					i|=WIN_DEL|WIN_COPY;
 				if(savfview.cmd[0])
-					i|=WIN_PUT;
+					i|=WIN_PASTE;
 				uifc.helpbuf=
 					"Viewable File Types:\n"
 					"\n"
@@ -251,9 +251,9 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&fview_dflt,NULL,"Viewable File Types",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-					int msk = i&MSK_ON;
-					i&=MSK_OFF;
+				int msk = i & MSK_ON;
+				i &= MSK_OFF;
+				if(msk == MSK_DEL || msk == MSK_CUT) {
 					if(msk == MSK_CUT)
 						savfview = *cfg.fview[i];
 					free(cfg.fview[i]);
@@ -265,8 +265,7 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_INS) {
-					i&=MSK_OFF;
+				if(msk == MSK_INS) {
 					if((cfg.fview=(fview_t **)realloc(cfg.fview
 						,sizeof(fview_t *)*(cfg.total_fviews+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fviews+1);
@@ -302,17 +301,17 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_GET) {
-					i&=MSK_OFF;
+				if(msk == MSK_COPY) {
 					savfview=*cfg.fview[i];
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_PUT) {
-					i&=MSK_OFF;
+				if(msk == MSK_PASTE_OVER) {
 					*cfg.fview[i]=savfview;
 					uifc.changes=1;
 					continue; 
 				}
+				if (msk != 0)
+					continue;
 				done=0;
 				while(!done) {
 					j=0;
@@ -356,9 +355,9 @@ uifc.helpbuf=
 				if(cfg.total_ftests<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_ftests)
-					i|=WIN_DEL|WIN_GET;
+					i|=WIN_DEL|WIN_COPY;
 				if(savftest.cmd[0])
-					i|=WIN_PUT;
+					i|=WIN_PASTE;
 				uifc.helpbuf=
 					"Testable File Types:\n"
 					"\n"
@@ -378,9 +377,9 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&ftest_dflt,NULL,"Testable File Types",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-					int msk = i&MSK_ON;
-					i&=MSK_OFF;
+				int msk = i & MSK_ON;
+				i &= MSK_OFF;
+				if(msk == MSK_DEL || msk == MSK_CUT) {
 					if(msk == MSK_CUT)
 						savftest = *cfg.ftest[i];
 					free(cfg.ftest[i]);
@@ -392,8 +391,7 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_INS) {
-					i&=MSK_OFF;
+				if(msk == MSK_INS) {
 					if((cfg.ftest=(ftest_t **)realloc(cfg.ftest
 						,sizeof(ftest_t *)*(cfg.total_ftests+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_ftests+1);
@@ -431,17 +429,17 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_GET) {
-					i&=MSK_OFF;
+				if(msk == MSK_COPY) {
 					savftest=*cfg.ftest[i];
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_PUT) {
-					i&=MSK_OFF;
+				if(msk == MSK_PASTE_OVER) {
 					*cfg.ftest[i]=savftest;
 					uifc.changes=1;
 					continue; 
 				}
+				if (msk != 0)
+					continue;
 				done=0;
 				while(!done) {
 					j=0;
@@ -491,9 +489,9 @@ uifc.helpbuf=
 				if(cfg.total_dlevents<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_dlevents)
-					i|=WIN_DEL|WIN_GET;
+					i|=WIN_DEL|WIN_COPY;
 				if(savdlevent.cmd[0])
-					i|=WIN_PUT;
+					i|=WIN_PASTE;
 				uifc.helpbuf=
 					"Download Events:\n"
 					"\n"
@@ -512,9 +510,9 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&dlevent_dflt,NULL,"Download Events",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-					int msk = i&MSK_ON;
-					i&=MSK_OFF;
+				int msk = i & MSK_ON;
+				i &= MSK_OFF;
+				if(msk == MSK_DEL || msk == MSK_CUT) {
 					if(msk == MSK_CUT)
 						savdlevent = *cfg.dlevent[i];
 					free(cfg.dlevent[i]);
@@ -526,8 +524,7 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_INS) {
-					i&=MSK_OFF;
+				if(msk == MSK_INS) {
 					if((cfg.dlevent=(dlevent_t **)realloc(cfg.dlevent
 						,sizeof(dlevent_t *)*(cfg.total_dlevents+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_dlevents+1);
@@ -565,17 +562,17 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_GET) {
-					i&=MSK_OFF;
+				if(msk == MSK_COPY) {
 					savdlevent=*cfg.dlevent[i];
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_PUT) {
-					i&=MSK_OFF;
+				if(msk == MSK_PASTE_OVER) {
 					*cfg.dlevent[i]=savdlevent;
 					uifc.changes=1;
 					continue; 
 				}
+				if (msk != 0)
+					continue;
 				done=0;
 				while(!done) {
 					j=0;
@@ -626,9 +623,9 @@ uifc.helpbuf=
 				if(cfg.total_fextrs<MAX_OPTS)
                     i|=WIN_INS|WIN_XTR;
                 if(cfg.total_fextrs)
-                    i|=WIN_DEL|WIN_GET;
+                    i|=WIN_DEL|WIN_COPY;
 				if(savfextr.cmd[0])
-                    i|=WIN_PUT;
+                    i|=WIN_PASTE;
                 uifc.helpbuf=
 	                "Extractable File Types:\n"
 	                "\n"
@@ -640,9 +637,9 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&fextr_dflt,NULL,"Extractable File Types",opt);
                 if(i==-1)
                     break;
-				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-					int msk = i&MSK_ON;
-					i&=MSK_OFF;
+				int msk = i & MSK_ON;
+				i &= MSK_OFF;
+				if(msk == MSK_DEL || msk == MSK_CUT) {
 					if(msk == MSK_CUT)
 						savfextr = *cfg.fextr[i];
                     free(cfg.fextr[i]);
@@ -654,8 +651,7 @@ uifc.helpbuf=
                     uifc.changes=1;
                     continue; 
 				}
-				if((i&MSK_ON)==MSK_INS) {
-					i&=MSK_OFF;
+				if(msk == MSK_INS) {
 					if((cfg.fextr=(fextr_t **)realloc(cfg.fextr
 						,sizeof(fextr_t *)*(cfg.total_fextrs+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fextrs+1);
@@ -692,17 +688,17 @@ uifc.helpbuf=
                     uifc.changes=1;
                     continue; 
 				}
-				if((i&MSK_ON)==MSK_GET) {
-					i&=MSK_OFF;
+				if(msk == MSK_COPY) {
                     savfextr=*cfg.fextr[i];
                     continue; 
 				}
-				if((i&MSK_ON)==MSK_PUT) {
-					i&=MSK_OFF;
+				if(msk == MSK_PASTE_OVER) {
                     *cfg.fextr[i]=savfextr;
                     uifc.changes=1;
                     continue; 
 				}
+				if (msk != 0)
+					continue;
 				done=0;
 				while(!done) {
 					j=0;
@@ -746,9 +742,9 @@ uifc.helpbuf=
 				if(cfg.total_fcomps<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_fcomps)
-					i|=WIN_DEL|WIN_GET;
+					i|=WIN_DEL|WIN_COPY;
 				if(savfcomp.cmd[0])
-					i|=WIN_PUT;
+					i|=WIN_PASTE;
 				uifc.helpbuf=
 					"Compressable File Types:\n"
 					"\n"
@@ -759,9 +755,9 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&fcomp_dflt,NULL,"Compressable File Types",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-					int msk = i&MSK_ON;
-					i&=MSK_OFF;
+				int msk = i & MSK_ON;
+				i &= MSK_OFF;
+				if(msk == MSK_DEL || msk == MSK_CUT) {
 					if(msk == MSK_CUT)
 						savfcomp = *cfg.fcomp[i];
 					free(cfg.fcomp[i]);
@@ -773,8 +769,7 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_INS) {
-					i&=MSK_OFF;
+				if(msk == MSK_INS) {
 					if((cfg.fcomp=(fcomp_t **)realloc(cfg.fcomp
 						,sizeof(fcomp_t *)*(cfg.total_fcomps+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fcomps+1);
@@ -810,17 +805,17 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_GET) {
-					i&=MSK_OFF;
+				if(msk == MSK_COPY) {
 					savfcomp=*cfg.fcomp[i];
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_PUT) {
-					i&=MSK_OFF;
+				if(msk == MSK_PASTE_OVER) {
 					*cfg.fcomp[i]=savfcomp;
 					uifc.changes=1;
 					continue; 
 				}
+				if (msk != 0)
+					continue;
 				done=0;
 				while(!done) {
 					j=0;
@@ -865,9 +860,9 @@ uifc.helpbuf=
 				if(cfg.total_prots<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_prots)
-					i|=WIN_DEL|WIN_GET;
+					i|=WIN_DEL|WIN_COPY;
 				if(savprot.mnemonic)
-					i|=WIN_PUT;
+					i|=WIN_PASTE;
 				uifc.helpbuf=
 					"File Transfer Protocols:\n"
 					"\n"
@@ -885,9 +880,9 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&prot_dflt,NULL,"File Transfer Protocols",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-					int msk = i&MSK_ON;
-					i&=MSK_OFF;
+				int msk = i & MSK_ON;
+				i &= MSK_OFF;
+				if(msk == MSK_DEL || msk == MSK_CUT) {
 					if(msk == MSK_CUT)
 						savprot = *cfg.prot[i];
 					free(cfg.prot[i]);
@@ -899,8 +894,7 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_INS) {
-					i&=MSK_OFF;
+				if(msk == MSK_INS) {
 					if((cfg.prot=(prot_t **)realloc(cfg.prot
 						,sizeof(prot_t *)*(cfg.total_prots+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_prots+1);
@@ -934,17 +928,17 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_GET) {
-					i&=MSK_OFF;
+				if(msk == MSK_COPY) {
 					savprot=*cfg.prot[i];
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_PUT) {
-					i&=MSK_OFF;
+				if(msk == MSK_PASTE_OVER) {
 					*cfg.prot[i]=savprot;
 					uifc.changes=1;
 					continue; 
 				}
+				if (msk != 0)
+					continue;
 				done=0;
 				while(!done) {
 					j=0;
@@ -1071,9 +1065,9 @@ uifc.helpbuf=
 				if((int)cfg.altpaths<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.altpaths)
-					i|=WIN_DEL|WIN_GET;
+					i|=WIN_DEL|WIN_COPY;
 				if(savaltpath[0])
-					i|=WIN_PUT;
+					i|=WIN_PASTE;
 				uifc.helpbuf=
 					"Alternate File Paths:\n"
 					"\n"
@@ -1086,9 +1080,9 @@ uifc.helpbuf=
 				i=uifc.list(i,0,0,50,&altpath_dflt,NULL,"Alternate File Paths",opt);
 				if(i==-1)
 					break;
-				if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-					int msk = i&MSK_ON;
-					i&=MSK_OFF;
+				int msk = i & MSK_ON;
+				i &= MSK_OFF;
+				if(msk == MSK_DEL || msk == MSK_CUT) {
 					if(msk == MSK_CUT)
 						SAFECOPY(savaltpath, cfg.altpath[i]);
 					free(cfg.altpath[i]);
@@ -1100,8 +1094,7 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_INS) {
-					i&=MSK_OFF;
+				if(msk == MSK_INS) {
 					if((cfg.altpath=(char **)realloc(cfg.altpath
 						,sizeof(char *)*(cfg.altpaths+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.altpaths+1);
@@ -1133,17 +1126,17 @@ uifc.helpbuf=
 					uifc.changes=1;
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_GET) {
-					i&=MSK_OFF;
+				if(msk == MSK_COPY) {
 					SAFECOPY(savaltpath,cfg.altpath[i]);
 					continue; 
 				}
-				if((i&MSK_ON)==MSK_PUT) {
-					i&=MSK_OFF;
+				if(msk == MSK_PASTE_OVER) {
 					memcpy(cfg.altpath[i],savaltpath,LEN_DIR+1);
 					uifc.changes=1;
 					continue; 
 				}
+				if (msk != 0)
+					continue;
 				sprintf(str,"Path %d",i+1);
 				uifc.input(WIN_MID|WIN_SAV,0,0,str,cfg.altpath[i],LEN_DIR,K_EDIT); 
 			}

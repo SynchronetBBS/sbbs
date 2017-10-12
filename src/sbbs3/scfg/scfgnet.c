@@ -183,8 +183,9 @@ while(1) {
 							,"QWK Network Hubs",opt);
 						if(i==-1)
 							break;
-						if((i&MSK_ON)==MSK_INS) {
-							i&=MSK_OFF;
+						int msk = i & MSK_ON;
+						i &= MSK_OFF;
+						if (msk == MSK_INS) {
 							if((cfg.qhub=(qhub_t **)realloc(cfg.qhub
                                 ,sizeof(qhub_t *)*(cfg.total_qhubs+1)))==NULL) {
                                 errormsg(WHERE,ERR_ALLOC,nulstr
@@ -223,8 +224,7 @@ while(1) {
 							uifc.changes=1;
 							continue; 
 						}
-						if((i&MSK_ON)==MSK_DEL) {
-							i&=MSK_OFF;
+						if (msk == MSK_DEL) {
 							free(cfg.qhub[i]->mode);
 							free(cfg.qhub[i]->conf);
 							free(cfg.qhub[i]->sub);
@@ -328,9 +328,9 @@ while(1) {
 							,"System Addresses",opt);
 						if(i==-1)
 							break;
-						if((i&MSK_ON)==MSK_INS) {
-							i&=MSK_OFF;
-
+						int msk = i & MSK_ON;
+						i &= MSK_OFF;
+						if (msk == MSK_INS) {
 							if(!cfg.total_faddrs)
 								strcpy(str,"1:1/0");
 							else
@@ -356,8 +356,7 @@ while(1) {
 							uifc.changes=1;
 							continue; 
 						}
-						if((i&MSK_ON)==MSK_DEL) {
-							i&=MSK_OFF;
+						if (msk == MSK_DEL) {
 							cfg.total_faddrs--;
 							while(i<cfg.total_faddrs) {
 								cfg.faddr[i]=cfg.faddr[i+1];
@@ -672,8 +671,9 @@ while(1) {
 							,"PostLink Hubs",opt);
 						if(i==-1)
 							break;
-						if((i&MSK_ON)==MSK_INS) {
-							i&=MSK_OFF;
+						int msk = i & MSK_ON;
+						i &= MSK_OFF;
+						if (msk == MSK_INS) {
 							if((cfg.phub=(phub_t **)realloc(cfg.phub
                                 ,sizeof(phub_t *)*(cfg.total_phubs+1)))==NULL) {
                                 errormsg(WHERE,ERR_ALLOC,nulstr
@@ -710,8 +710,7 @@ while(1) {
 							uifc.changes=1;
 							continue; 
 						}
-						if((i&MSK_ON)==MSK_DEL) {
-							i&=MSK_OFF;
+						if (msk == MSK_DEL) {
 							free(cfg.phub[i]);
 							cfg.total_phubs--;
 							while(i<cfg.total_phubs) {

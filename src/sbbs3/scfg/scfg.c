@@ -617,11 +617,11 @@ void txt_cfg()
 		opt[i][0]=0;
 		j=WIN_ORG|WIN_ACT|WIN_CHE;
 		if(cfg.total_txtsecs)
-			j|=WIN_DEL|WIN_GET;
+			j|=WIN_DEL | WIN_COPY;
 		if(cfg.total_txtsecs<MAX_OPTS)
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savtxtsec.name[0])
-			j|=WIN_PUT;
+			j|=WIN_PASTE;
 		uifc.helpbuf=
 			"`Text File Sections:`\n"
 			"\n"
@@ -649,8 +649,9 @@ void txt_cfg()
 			}
 			return;
 		}
-		if((i&MSK_ON)==MSK_INS) {
-			i&=MSK_OFF;
+		int msk = i & MSK_ON;
+		i &= MSK_OFF;
+		if (msk == MSK_INS) {
 			strcpy(str,"ANSI Artwork");
 			uifc.helpbuf=
 				"`Text Section Name:`\n"
@@ -699,9 +700,7 @@ void txt_cfg()
 			uifc.changes=1;
 			continue; 
 		}
-		if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-			int msk = i&MSK_ON;
-			i&=MSK_OFF;
+		if (msk == MSK_DEL || msk == MSK_CUT) {
 			if(msk == MSK_CUT)
 				savtxtsec = *cfg.txtsec[i];
 			free(cfg.txtsec[i]);
@@ -711,17 +710,17 @@ void txt_cfg()
 			uifc.changes=1;
 			continue; 
 		}
-		if((i&MSK_ON)==MSK_GET) {
-			i&=MSK_OFF;
+		if (msk == MSK_COPY) {
 			savtxtsec=*cfg.txtsec[i];
 			continue; 
 		}
-		if((i&MSK_ON)==MSK_PUT) {
-			i&=MSK_OFF;
+		if (msk == MSK_PASTE_OVER) {
 			*cfg.txtsec[i]=savtxtsec;
 			uifc.changes=1;
 			continue; 
 		}
+		if (msk != 0)
+			continue;
 		i=txt_dflt;
 		j=0;
 		done=0;
@@ -791,11 +790,11 @@ void shell_cfg()
 		opt[i][0]=0;
 		j=WIN_ORG|WIN_ACT|WIN_CHE;
 		if(cfg.total_shells)
-			j|=WIN_DEL|WIN_GET;
+			j|=WIN_DEL|WIN_COPY;
 		if(cfg.total_shells<MAX_OPTS)
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savshell.name[0])
-			j|=WIN_PUT;
+			j|=WIN_PASTE;
 		uifc.helpbuf=
 			"`Command Shells:`\n"
 			"\n"
@@ -822,8 +821,9 @@ void shell_cfg()
 			}
 			return;
 		}
-		if((i&MSK_ON)==MSK_INS) {
-			i&=MSK_OFF;
+		int msk = i & MSK_ON;
+		i &= MSK_OFF;
+		if (msk == MSK_INS) {
 			strcpy(str,"Menu Shell");
 			uifc.helpbuf=
 				"`Command Shell Name:`\n"
@@ -876,9 +876,7 @@ void shell_cfg()
 			uifc.changes=1;
 			continue; 
 		}
-		if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-			int msk = i&MSK_ON;
-			i&=MSK_OFF;
+		if (msk == MSK_DEL || msk == MSK_CUT) {
 			if(msk == MSK_CUT)
 				savshell = *cfg.shell[i];
 			free(cfg.shell[i]);
@@ -888,17 +886,17 @@ void shell_cfg()
 			uifc.changes=1;
 			continue; 
 		}
-		if((i&MSK_ON)==MSK_GET) {
-			i&=MSK_OFF;
+		if (msk == MSK_COPY) {
 			savshell=*cfg.shell[i];
 			continue; 
 		}
-		if((i&MSK_ON)==MSK_PUT) {
-			i&=MSK_OFF;
+		if (msk == MSK_PASTE_OVER) {
 			*cfg.shell[i]=savshell;
 			uifc.changes=1;
 			continue; 
 		}
+		if (msk != 0)
+			continue;
 		i=shell_dflt;
 		j=0;
 		done=0;
