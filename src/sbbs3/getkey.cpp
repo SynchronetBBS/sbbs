@@ -44,7 +44,7 @@
 /****************************************************************************/
 char sbbs_t::getkey(long mode)
 {
-	char	ch,coldkey,c=0,spin=sbbs_random(5);
+	uchar	ch,coldkey,c=0,spin=sbbs_random(5);
 	time_t	last_telnet_cmd=0;
 
 	if(online==ON_REMOTE && !input_thread_running)
