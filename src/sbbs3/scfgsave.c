@@ -492,12 +492,14 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	backslash(cfg->echomail_dir);
 
 	str[0]=0;
-	for(i=n=0;i<cfg->total_subs;i++)
-		if(cfg->sub[i]->grp<cfg->total_grps)		/* total VALID sub-boards */
+	/* Calculate and save the actual number (total) of sub-boards that will be written */
+	n = 0;
+	for(i=0; i<cfg->total_subs; i++)
+		if(cfg->sub[i]->grp < cfg->total_grps)	/* total VALID sub-boards */
 			n++;
 	put_int(n,stream);
 	for(i=0;i<cfg->total_subs;i++) {
-		if(cfg->sub[i]->grp>=cfg->total_grps) 	/* skip bogus group numbers */
+		if(cfg->sub[i]->grp >= cfg->total_grps) 	/* skip bogus group numbers */
 			continue;
 		put_int(cfg->sub[i]->grp,stream);
 		put_str(cfg->sub[i]->lname,stream);
@@ -863,9 +865,12 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 
 	/* File Directories */
 
-	long total_dirs_offset = ftell(stream);
-	put_int(cfg->total_dirs,stream);
-	uint16_t total_dirs = 0;
+	/* Calculate and save the actual number (total) of dirs that will be written */
+	n = 0;
+	for (i = 0; i < cfg->total_dirs; i++)
+		if (cfg->dir[i]->lib < cfg->total_libs)	/* total VALID file dirs */
+			n++;
+	put_int(n,stream);
 	for (j = 0; j < cfg->total_libs; j++) {
 		for (i = 0; i < cfg->total_dirs; i++) {
 			if (cfg->dir[i]->lib == j) {
@@ -929,16 +934,9 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				n = 0xffff;
 				for (k = 0; k < 16; k++)
 					put_int(n, stream);
-				total_dirs++;
 			}
 		}
 	}
-
-	/* Write the actual number of directories */
-	long text_files_sec_offset = ftell(stream);
-	fseek(stream, total_dirs_offset, SEEK_SET);
-	put_int(total_dirs, stream);
-	fseek(stream, text_files_sec_offset, SEEK_SET);
 
 	/* Text File Sections */
 
@@ -1092,7 +1090,12 @@ BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 			put_int(n,stream);
 		}
 
-	put_int(cfg->total_xtrns,stream);
+	/* Calculate and save the actual number (total) of xtrn programs that will be written */
+	n = 0;
+	for (i = 0; i < cfg->total_xtrns; i++)
+		if (cfg->xtrn[i]->sec < cfg->total_xtrnsecs)	/* Total VALID xtrn progs */
+			n++;
+	put_int(n,stream);
 	for(sec=0;sec<cfg->total_xtrnsecs;sec++)
 		for(i=0;i<cfg->total_xtrns;i++) {
 			if(cfg->xtrn[i]->sec!=sec)
