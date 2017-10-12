@@ -254,10 +254,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
                 }
             }
             str[0]=0;
-            if(mode&WIN_GET)
-                strcat(str,", Copy");
-            if(mode&WIN_PUT)
-                strcat(str,", Paste");
+            if(mode&WIN_COPY)
+                strcat(str,", Copy, X-Cut");
+            if(mode&WIN_PASTE)
+                strcat(str,", Paste, Insert");
             if(mode&WIN_INS)
                 strcat(str,", Add");
             if(mode&WIN_DEL)
@@ -313,30 +313,49 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
                 if(opts==1)
                     return(MSK_DEL);
                 return(which("Delete",opts)|MSK_DEL);
-            case 'C':   /* Copy/Get */
-				if(!(mode&WIN_GET))
+            case 'C':   /* Copy */
+				if(!(mode&WIN_COPY))
 					break;
 				if(!opts)
     				break;
                 if(i>0 && i<=opts)
-        			return((i-1)|MSK_GET);
+        			return((i-1)|MSK_COPY);
                 if(opts==1)
-                    return(MSK_GET);
-                return(which("Copy",opts)|MSK_GET);
-            case 'P':   /* Paste/Put */
-				if(!(mode&WIN_PUT))
+                    return(MSK_COPY);
+                return(which("Copy",opts)|MSK_COPY);
+            case 'X':   /* Cut */
+				if(!(mode&WIN_COPY))
 					break;
 				if(!opts)
     				break;
                 if(i>0 && i<=opts)
-        			return((i-1)|MSK_PUT);
+        			return((i-1)|MSK_CUT);
                 if(opts==1)
-                    return(MSK_PUT);
-                return(which("Paste",opts)|MSK_PUT);
+                    return(MSK_CUT);
+                return(which("Cut",opts)|MSK_CUT);
+            case 'P':   /* Paste-Over */
+				if(!(mode&WIN_PASTE))
+					break;
+				if(!opts)
+    				break;
+                if(i>0 && i<=opts)
+        			return((i-1)|MSK_PASTE_OVER);
+                if(opts==1)
+                    return(MSK_PASTE_OVER);
+                return(which("Paste over",opts)|MSK_PASTE_OVER);
+            case 'I':   /* Paste-Insert */
+				if(!(mode&WIN_PASTE))
+					break;
+				if(!opts)
+    				break;
+                if(i>0 && i<=opts+1)
+        			return((i-1)|MSK_PASTE_INSERT);
+                if(opts==1)
+                    return(MSK_PASTE_INSERT);
+                return(which("Insert pasted item before",opts+1)|MSK_PASTE_INSERT);
         }
     }
 }
-
 
 /*************************************************************************/
 /* This function is a windowed input string input routine.               */

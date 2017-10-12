@@ -695,12 +695,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(api->helpbuf!=NULL || api->helpixbfile[0]!=0) bline|=BL_HELP;
 	if(mode&WIN_INS) bline|=BL_INS;
 	if(mode&WIN_DEL) bline|=BL_DEL;
-	if(mode&WIN_GET) bline|=BL_GET;
-	if(mode&WIN_PUT) bline|=BL_PUT;
+	if(mode&WIN_COPY) bline|=BL_COPY;
+	if(mode&WIN_PASTE) bline|=BL_PASTE;
 	if(mode&WIN_EDIT) bline|=BL_EDIT;
 	if (api->bottomline != NULL) {
 		if ((mode&(WIN_XTR | WIN_PASTEXTR)) == WIN_XTR && (*cur) == opts - 1)
-			api->bottomline(bline & ~BL_PUT);
+			api->bottomline(bline & ~BL_PASTE);
 		else
 			api->bottomline(bline);
 	}
@@ -1593,19 +1593,19 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						break;
 					case CIO_KEY_F(5):		/* F5 - Copy */
 					case CIO_KEY_CTRL_IC:	/* Ctrl-Insert */
-						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1))
+						if(mode&WIN_COPY && !(mode&WIN_XTR && (*cur)==opts-1))
 							return((*cur)|MSK_GET);
 						break;
 					case CIO_KEY_SHIFT_DC:	/* Shift-Del: Cut */
-						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur) == opts - 1))
+						if(mode&WIN_COPY && !(mode&WIN_XTR && (*cur) == opts - 1))
 							return((*cur) | MSK_CUT);
 						break;
 					case CIO_KEY_SHIFT_IC:	/* Shift-Insert: Paste-Insert */
-						if(mode&WIN_PUT)
+						if(mode&WIN_PASTE)
 							return((*cur) | MSK_PASTE_INSERT);
 						break;
 					case CIO_KEY_F(6):		/* F6 - Paste-Over */
-						if(mode&WIN_PUT && (mode&WIN_PASTEXTR || !(mode&WIN_XTR && (*cur)==opts-1)))
+						if(mode&WIN_PASTE && (mode&WIN_PASTEXTR || !(mode&WIN_XTR && (*cur)==opts-1)))
 							return((*cur)|MSK_PASTE_OVER);
 						break;
 					case CIO_KEY_IC:	/* insert */
@@ -1825,9 +1825,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				}
 			}
 			/* Update the status bar to reflect the Put/Paste option applicability */
-			if (bline&BL_PUT && api->bottomline != NULL) {
+			if (bline&BL_PASTE && api->bottomline != NULL) {
 				if ((mode&(WIN_XTR | WIN_PASTEXTR)) == WIN_XTR && (*cur) == opts - 1)
-					api->bottomline(bline & ~BL_PUT);
+					api->bottomline(bline & ~BL_PASTE);
 				else
 					api->bottomline(bline);
 			}
@@ -2428,13 +2428,13 @@ void bottomline(int line)
 		uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Edit Item  ");
 		i+=11; 
 	}
-	if(line&BL_GET) {
+	if(line&BL_COPY) {
 		uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F5 ");
 		i+=3;
 		uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Copy Item  ");
 		i+=11; 
 	}
-	if(line&BL_PUT) {
+	if(line&BL_PASTE) {
 		uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F6 ");
 		i+=3;
 		uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Paste  ");
