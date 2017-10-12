@@ -752,7 +752,7 @@ uint sbbs_t::getusrsub(uint subnum)
 
 int sbbs_t::dir_op(uint dirnum)
 {
-	return(SYSOP || (cfg.dir[dirnum]->op_ar[0] && chk_ar(cfg.dir[dirnum]->op_ar,&useron,&client)));
+	return(SYSOP || (cfg.dir[dirnum]->op_ar!=NULL && cfg.dir[dirnum]->op_ar[0] && chk_ar(cfg.dir[dirnum]->op_ar,&useron,&client)));
 }
 
 
