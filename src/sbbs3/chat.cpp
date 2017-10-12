@@ -897,14 +897,14 @@ void sbbs_t::privchat(bool local)
 		mswait(2000);
 	if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,DEFFILEMODE))==-1) {
 		close(out);
-		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE|O_CREAT);
+		errormsg(WHERE,ERR_OPEN,inpath,O_RDWR|O_DENYNONE|O_CREAT);
 		return; 
 	}
 
 	if((p=(char *)malloc(PCHAT_LEN))==NULL) {
 		close(in);
 		close(out);
-		errormsg(WHERE,ERR_ALLOC,str,PCHAT_LEN);
+		errormsg(WHERE,ERR_ALLOC,nulstr,PCHAT_LEN);
 		return; 
 	}
 	memset(p,0,PCHAT_LEN);
