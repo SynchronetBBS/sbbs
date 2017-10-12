@@ -330,8 +330,9 @@ int main(int argc, char **argv)
 					i=uifc.list(mode,0,0,0,&i,0,"Linked Nodes",opt);
 					if(i==-1)
 						break;
-					if((i&MSK_ON)==MSK_INS) {
-						i&=MSK_OFF;
+					int msk = i&MSK_ON;
+					i &= MSK_OFF;
+					if (msk == MSK_INS) {
 						str[0]=0;
 	uifc.helpbuf=
 	"~ Address ~\r\n\r\n"
@@ -355,9 +356,7 @@ int main(int argc, char **argv)
 						continue; 
 					}
 
-					if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-						int msk = i&MSK_ON;
-						i&=MSK_OFF;
+					if (msk == MSK_DEL || msk == MSK_CUT) {
 						if(msk == MSK_CUT)
 							memcpy(&savnodecfg, &cfg.nodecfg[i], sizeof(nodecfg_t));
 						cfg.nodecfgs--;
@@ -376,13 +375,11 @@ int main(int argc, char **argv)
 						uifc.changes=TRUE;
 						continue; 
 					}
-					if((i&MSK_ON)==MSK_GET) {
-						i&=MSK_OFF;
+					if (msk == MSK_GET) {
 						memcpy(&savnodecfg,&cfg.nodecfg[i],sizeof(nodecfg_t));
 						continue; 
 					}
-					if((i&MSK_ON)==MSK_PUT) {
-						i&=MSK_OFF;
+					if (msk == MSK_PUT) {
 						memcpy(&cfg.nodecfg[i],&savnodecfg,sizeof(nodecfg_t));
 						uifc.changes=TRUE;
 						continue; 
@@ -1264,8 +1261,9 @@ int main(int argc, char **argv)
 					i=uifc.list(mode,0,0,0,&i,0,"Archive Types",opt);
 					if(i==-1)
 						break;
-					if((i&MSK_ON)==MSK_INS) {
-						i&=MSK_OFF;
+					int msk = i & MSK_ON;
+					i &= MSK_OFF;
+					if (msk == MSK_INS) {
 						str[0]=0;
 	uifc.helpbuf=
 	"~ Archive Type ~\r\n\r\n"
@@ -1289,10 +1287,8 @@ int main(int argc, char **argv)
 						continue; 
 					}
 
-					if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-						int msk = i&MSK_ON;
-						i&=MSK_OFF;
-						if(msk == MSK_CUT)
+					if (msk == MSK_DEL || msk == MSK_CUT) {
+						if (msk == MSK_CUT)
 							memcpy(&savarcdef, &cfg.arcdef[i], sizeof(arcdef_t));
 						cfg.arcdefs--;
 						if(cfg.arcdefs<=0) {
@@ -1309,16 +1305,16 @@ int main(int argc, char **argv)
 						}
 						continue; 
 					}
-					if((i&MSK_ON)==MSK_GET) {
-						i&=MSK_OFF;
+					if (msk == MSK_GET) {
 						memcpy(&savarcdef,&cfg.arcdef[i],sizeof(arcdef_t));
 						continue; 
 					}
-					if((i&MSK_ON)==MSK_PUT) {
-						i&=MSK_OFF;
+					if (msk == MSK_PUT) {
 						memcpy(&cfg.arcdef[i],&savarcdef,sizeof(arcdef_t));
 						continue; 
 					}
+					if (msk != 0)
+						continue;
 					while(1) {
 						uifc.helpbuf=
 	"Archive Type and Program configuration";
@@ -1449,8 +1445,9 @@ int main(int argc, char **argv)
 					i=uifc.list(mode,0,0,0,&i,0,"Additional EchoLists",opt);
 					if(i==-1)
 						break;
-					if((i&MSK_ON)==MSK_INS) {
-						i&=MSK_OFF;
+					int msk = i&MSK_ON;
+					i &= MSK_OFF;
+					if (msk == MSK_INS) {
 						str[0]=0;
 	uifc.helpbuf=
 	"~ EchoList ~\r\n\r\n"
@@ -1473,9 +1470,7 @@ int main(int argc, char **argv)
 						continue; 
 					}
 
-					if((i&MSK_ON)==MSK_DEL || (i&MSK_ON) == MSK_CUT) {
-						int msk = i&MSK_ON;
-						i&=MSK_OFF;
+					if (msk == MSK_DEL || msk == MSK_CUT) {
 						if(msk == MSK_CUT)
 							memcpy(&savlistcfg, &cfg.listcfg[i], sizeof(echolist_t));
 						cfg.listcfgs--;
@@ -1493,16 +1488,16 @@ int main(int argc, char **argv)
 						}
 						continue; 
 					}
-					if((i&MSK_ON)==MSK_GET) {
-						i&=MSK_OFF;
+					if (msk == MSK_GET) {
 						memcpy(&savlistcfg,&cfg.listcfg[i],sizeof(echolist_t));
 						continue; 
 					}
-					if((i&MSK_ON)==MSK_PUT) {
-						i&=MSK_OFF;
+					if (msk == MSK_PUT) {
 						memcpy(&cfg.listcfg[i],&savlistcfg,sizeof(echolist_t));
 						continue; 
 					}
+					if (msk != 0)
+						continue;
 					while(1) {
 						j=0;
 						uifc.helpbuf=
