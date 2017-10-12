@@ -125,7 +125,7 @@ BOOL direxist(char *dir)
 BOOL dir_op(scfg_t* cfg, user_t* user, client_t* client, uint dirnum)
 {
 	return(user->level>=SYSOP_LEVEL
-		|| (cfg->dir[dirnum]->op_ar[0] && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client)));
+		|| (cfg->dir[dirnum]->op_ar!=NULL && cfg->dir[dirnum]->op_ar[0] && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client)));
 }
 
 static int lprintf(int level, const char *fmt, ...)
@@ -1193,8 +1193,10 @@ int ftp_remove(SOCKET sock, int line, const char* fname)
 {
 	int ret=0;
 
-	if(fexist(fname) && (ret=remove(fname))!=0)
-		lprintf(LOG_ERR,"%04d !ERROR %d (line %d) removing file: %s", sock, ret, line, fname);
+	if(fexist(fname) && (ret=remove(fname))!=0) {
+		if(fexist(fname))	// In case there was a race condition (other host deleted file first)
+			lprintf(LOG_ERR,"%04d !ERROR %d (%s) (line %d) removing file: %s", sock, errno, STRERROR(errno), line, fname);
+	}
 	return ret;
 }
 
