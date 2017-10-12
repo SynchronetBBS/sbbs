@@ -237,7 +237,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 		(hdrblk[0]=='*' || hdrblk[0]=='-' || hdrblk[0]=='`'))
 		msg->hdr.attr|=MSG_READ;
 
-	if(subnum!=INVALID_SUB && !fromhub && cfg.sub[subnum]->mod_ar[0]
+	if(subnum!=INVALID_SUB && !fromhub && cfg.sub[subnum]->mod_ar!=NULL && cfg.sub[subnum]->mod_ar[0]
 		&& chk_ar(cfg.sub[subnum]->mod_ar,&useron,&client))
 		msg->hdr.attr|=MSG_MODERATED;
 	if(subnum!=INVALID_SUB && !fromhub && cfg.sub[subnum]->misc&SUB_SYSPERM
