@@ -76,6 +76,7 @@ extern char* crlf;
 extern char* nulstr;
 
 DLLEXPORT int	DLLCALL openuserdat(scfg_t*, BOOL for_modify);
+DLLEXPORT int	DLLCALL closeuserdat(int);
 DLLEXPORT int	DLLCALL readuserdat(scfg_t*, unsigned user_number, char* userdat, int infile);
 DLLEXPORT int	DLLCALL parseuserdat(scfg_t*, char* userdat, user_t*);
 DLLEXPORT int	DLLCALL getuserdat(scfg_t*, user_t*); 	/* Fill userdat struct with user data   */

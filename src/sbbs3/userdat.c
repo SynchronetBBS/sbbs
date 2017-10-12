@@ -204,6 +204,11 @@ int DLLCALL openuserdat(scfg_t* cfg, BOOL for_modify)
 	return nopen(path, for_modify ? (O_RDWR|O_CREAT|O_DENYNONE) : (O_RDONLY|O_DENYNONE)); 
 }
 
+int DLLCALL closeuserdat(int file)
+{
+	return close(file);
+}
+
 /****************************************************************************/
 /* Locks and reads a single user record from an open user.dat file into a	*/
 /* buffer of U_LEN+1 in size.												*/
@@ -2687,7 +2692,7 @@ BOOL DLLCALL is_user_subop(scfg_t* cfg, uint subnum, user_t* user, client_t* cli
 	if(user->level>=SYSOP_LEVEL)
 		return TRUE;
 
-	return cfg->sub[subnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[subnum]->op_ar,user,client);
+	return cfg->sub[subnum]->op_ar!=NULL && cfg->sub[subnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[subnum]->op_ar,user,client);
 }
 
 /****************************************************************************/
