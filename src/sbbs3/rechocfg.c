@@ -305,7 +305,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		return false;
 	cfg->arcdefs = 0;
 	char* archive;
-	while((archive=strListPop(&archivelist)) != NULL) {
+	while((archive=strListRemove(&archivelist, 0)) != NULL) {
 		arcdef_t* arc = &cfg->arcdef[cfg->arcdefs++];
 		memset(arc, 0, sizeof(arcdef_t));
 		SAFECOPY(arc->name, truncsp(archive+8));
@@ -325,7 +325,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		return false;
 	cfg->nodecfgs = 0;
 	char* node;
-	while((node=strListPop(&nodelist)) != NULL) {
+	while((node=strListRemove(&nodelist, 0)) != NULL) {
 		nodecfg_t* ncfg = &cfg->nodecfg[cfg->nodecfgs++];
 		memset(ncfg, 0, sizeof(nodecfg_t));
 		ncfg->addr = atofaddr(node+5);
@@ -377,7 +377,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		return false;
 	cfg->listcfgs = 0;
 	char* echolist;
-	while((echolist=strListPop(&echolists)) != NULL) {
+	while((echolist=strListRemove(&echolists, 0)) != NULL) {
 		echolist_t* elist = &cfg->listcfg[cfg->listcfgs++];
 		memset(elist, 0, sizeof(echolist_t));
 		SAFECOPY(elist->listpath, echolist + 9);
@@ -428,9 +428,9 @@ bool sbbsecho_read_ftn_domains(sbbsecho_cfg_t* cfg, const char * ctrl_dir)
 		ini = iniReadFile(fp);
 		iniCloseFile(fp);
 		domains = iniGetSectionList(ini, NULL);
-		while((domain = strListPop(&domains)) != NULL) {
+		while((domain = strListRemove(&domains, 0)) != NULL) {
 			zones = iniGetStringList(ini, domain, "Zones", ",", NULL);
-			while((zone = strListPop(&zones)) != NULL) {
+			while((zone = strListRemove(&zones, 0)) != NULL) {
 				mapping = (struct zone_mapping *)malloc(sizeof(struct zone_mapping));
 
 				if (mapping == NULL) {
