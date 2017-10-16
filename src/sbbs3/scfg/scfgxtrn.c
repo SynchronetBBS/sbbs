@@ -533,7 +533,7 @@ void tevents_cfg()
 						"`Timed Event Internal Code:`\n"
 						"\n"
 						"Every timed event must have its own unique internal code for Synchronet\n"
-						"to reference it by. It is helpful if this code is an abreviation of the\n"
+						"to reference it by. It is helpful if this code is an abbreviation of the\n"
 						"command line.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
@@ -791,10 +791,10 @@ void tevents_cfg()
 						"`Use Shell to Execute Command:`\n"
 						"\n"
 						"If this command-line requires the system command shell to execute, (Unix \n"
-						"shell script or DOS batch file), set this option to ~Yes~.\n"
+						"shell script or DOS/Windows batch/command file), set this option to ~Yes~.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Use Shell",uifcYesNoOpts);
+						,"Use System Command Shell",uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&XTRN_SH)) {
 						cfg.event[i]->misc|=XTRN_SH;
 						uifc.changes=TRUE;
@@ -909,7 +909,7 @@ void xtrn_cfg(uint section)
 				"`Online Program Internal Code:`\n"
 				"\n"
 				"Every online program must have its own unique code for Synchronet to\n"
-				"refer to it internally. This code is usually an abreviation of the\n"
+				"refer to it internally. This code is usually an abbreviation of the\n"
 				"online program name.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
@@ -925,7 +925,6 @@ void xtrn_cfg(uint section)
 				continue;
 			SAFECOPY(cfg.xtrn[xtrnnum[i]]->name,str);
 			SAFECOPY(cfg.xtrn[xtrnnum[i]]->code,code);
-			cfg.total_xtrns++;
 			uifc.changes=TRUE;
 			continue; 
 		}
@@ -1058,7 +1057,7 @@ void xtrn_cfg(uint section)
 						"`Online Program Internal Code:`\n"
 						"\n"
 						"Every online program must have its own unique code for Synchronet to\n"
-						"refer to it internally. This code is usually an abreviation of the\n"
+						"refer to it internally. This code is usually an abbreviation of the\n"
 						"online program name.\n"
 					;
 					strcpy(str,cfg.xtrn[i]->code);
@@ -1704,7 +1703,7 @@ void xedit_cfg()
 						"\n"
 						"Every external editor must have its own unique internal code for\n"
 						"Synchronet to reference it by. It is helpful if this code is an\n"
-						"abreviation of the name.\n"
+						"abbreviation of the name.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
@@ -2147,7 +2146,7 @@ void xtrnsec_cfg()
 				"\n"
 				"Every online program section must have its own unique internal code\n"
 				"for Synchronet to reference it by. It is helpful if this code is an\n"
-				"abreviation of the name.\n"
+				"abbreviation of the name.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Section Internal Code"
 				,code,LEN_CODE,K_EDIT|K_UPPER)<1)
@@ -2257,7 +2256,7 @@ void xtrnsec_cfg()
 						"\n"
 						"Every online program section must have its own unique internal code\n"
 						"for Synchronet to reference it by. It is helpful if this code is an\n"
-						"abreviation of the name.\n"
+						"abbreviation of the name.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
