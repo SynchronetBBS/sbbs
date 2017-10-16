@@ -90,7 +90,7 @@ while(1) {
 	strcpy(opt[i++],"Alternate File Paths...");
 	opt[i][0]=0;
 	uifc.helpbuf=
-		"File Transfer Configuration:\n"
+		"`File Transfer Configuration:`\n"
 		"\n"
 		"This menu has options and sub-menus that pertain specifically to the\n"
 		"file transfer section of the BBS.\n"
@@ -108,7 +108,7 @@ while(1) {
             return;
 		case 0:
 			uifc.helpbuf=
-				"Minimum Kilobytes Free Disk Space to Allow Uploads:\n"
+				"`Minimum Kilobytes Free Disk Space to Allow Uploads:`\n"
 				"\n"
 				"This is the minimum free space in a file directory to allow user\n"
 				"uploads.\n"
@@ -120,7 +120,7 @@ while(1) {
 			break;
 		case 1:
 			uifc.helpbuf=
-				"Maximum Files in Batch Upload Queue:\n"
+				"`Maximum Files in Batch Upload Queue:`\n"
 				"\n"
 				"This is the maximum number of files that can be placed in the batch\n"
 				"upload queue.\n"
@@ -131,7 +131,7 @@ while(1) {
             break;
 		case 2:
 			uifc.helpbuf=
-				"Maximum Files in Batch Download Queue:\n"
+				"`Maximum Files in Batch Download Queue:`\n"
 				"\n"
 				"This is the maximum number of files that can be placed in the batch\n"
 				"download queue.\n"
@@ -142,7 +142,7 @@ while(1) {
             break;
 		case 3:
 			uifc.helpbuf=
-				"Maximum Destination Users in User to User Transfer:\n"
+				"`Maximum Destination Users in User to User Transfer:`\n"
 				"\n"
 				"This is the maximum number of users allowed in the destination user list\n"
 				"of a user to user upload.\n"
@@ -154,7 +154,7 @@ while(1) {
 			break;
 		case 4:
 uifc.helpbuf=
-	"Default Percentage of Credits to Credit Uploader on Upload:\n"
+	"`Default Percentage of Credits to Credit Uploader on Upload:`\n"
 	"\n"
 	"This is the default setting that will be used when new file\n"
 	"directories are created.\n"
@@ -166,7 +166,7 @@ uifc.helpbuf=
 			break;
 		case 5:
 uifc.helpbuf=
-	"Default Percentage of Credits to Credit Uploader on Download:\n"
+	"`Default Percentage of Credits to Credit Uploader on Download:`\n"
 	"\n"
 	"This is the default setting that will be used when new file\n"
 	"directories are created.\n"
@@ -182,10 +182,10 @@ uifc.helpbuf=
             opt[2][0]=0;
             i=0;
             uifc.helpbuf=
-	            "Long Filenames in File Listings:\n"
+	            "`Long Filenames in File Listings:`\n"
 	            "\n"
 	            "If you want long filenames to be displayed in the BBS file listings, set\n"
-	            "this option to Yes. Note: This feature requires Windows 98, Windows 2000\n"
+	            "this option to `Yes`. Note: This feature requires Windows 98, Windows 2000\n"
 	            "or later.\n"
             ;
             i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
@@ -201,14 +201,14 @@ uifc.helpbuf=
 
 		case 7:
 			uifc.helpbuf=
-				"Leech Protocol Detection Percentage:\n"
+				"`Leech Protocol Detection Percentage:`\n"
 				"\n"
 				"This value is the sensitivity of the leech protocol detection feature of\n"
 				"Synchronet. If the transfer is apparently unsuccessful, but the transfer\n"
 				"time was at least this percentage of the estimated transfer time (based\n"
 				"on the estimated CPS of the connection result code), then a leech\n"
 				"protocol error is issued and the user's leech download counter is\n"
-				"incremented. Setting this value to 0 disables leech protocol detection.\n"
+				"incremented. Setting this value to `0` disables leech protocol detection.\n"
 			;
 			uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Leech Protocol Detection Percentage (0=Disabled)"
@@ -217,7 +217,7 @@ uifc.helpbuf=
 			if(!cfg.leech_pct)
 				break;
 			uifc.helpbuf=
-				"Leech Protocol Minimum Time (in Seconds):\n"
+				"`Leech Protocol Minimum Time (in Seconds):`\n"
 				"\n"
 				"This option allows you to adjust the sensitivity of the leech protocol\n"
 				"detection feature. This value is the minimum length of transfer time\n"
@@ -242,7 +242,7 @@ uifc.helpbuf=
 				if(savfview.cmd[0])
 					i|=WIN_PASTE;
 				uifc.helpbuf=
-					"Viewable File Types:\n"
+					"`Viewable File Types:`\n"
 					"\n"
 					"This is a list of file types that have content information that can be\n"
 					"viewed through the execution of an external program. Here are a couple of\n"
@@ -359,11 +359,11 @@ uifc.helpbuf=
 				if(savftest.cmd[0])
 					i|=WIN_PASTE;
 				uifc.helpbuf=
-					"Testable File Types:\n"
+					"`Testable File Types:`\n"
 					"\n"
 					"This is a list of file types that will have a command line executed to\n"
 					"test the file integrity upon their upload. The file types are specified\n"
-					"by extension and if one file extension is listed more than once, each\n"
+					"by `extension` and if one file extension is listed more than once, each\n"
 					"command line will be executed. The command lines must return a DOS error\n"
 					"code of 0 (no error) in order for the file to pass the test. This method\n"
 					"of file testing upon upload is also known as an upload event. This test\n"
@@ -371,7 +371,7 @@ uifc.helpbuf=
 					"function that the sysop wishes. Such as adding comments to an archived\n"
 					"file, or extracting an archive and performing a virus scan. While the\n"
 					"external program is executing, a text string is displayed to the user.\n"
-					"This working string can be set for each file type and command line\n"
+					"This `working string` can be set for each file type and command line\n"
 					"listed.\n"
 				;
 				i=uifc.list(i,0,0,50,&ftest_dflt,NULL,"Testable File Types",opt);
@@ -493,18 +493,18 @@ uifc.helpbuf=
 				if(savdlevent.cmd[0])
 					i|=WIN_PASTE;
 				uifc.helpbuf=
-					"Download Events:\n"
+					"`Download Events:`\n"
 					"\n"
 					"This is a list of file types that will have a command line executed to\n"
 					"perform an event upon their download (e.g. trigger a download event).\n"
-					"The file types are specified by extension and if one file extension\n"
+					"The file types are specified by `extension` and if one file extension\n"
 					"is listed more than once, each command line will be executed. The\n"
 					"command lines must return a DOS error code of 0 (no error) in order\n"
 					"for the file to pass the test. This test or event, can do more than\n"
 					"just test the file, it can perform any function that the sysop wishes.\n"
 					"Such as adding comments to an archived file, or extracting an archive\n"
 					"and performing a virus scan. While the external program is executing,\n"
-					"a text string is displayed to the user. This working string can be set\n"
+					"a text string is displayed to the user. This `working string` can be set\n"
 					"for each file type and command line listed.\n"
 				;
 				i=uifc.list(i,0,0,50,&dlevent_dflt,NULL,"Download Events",opt);
@@ -627,7 +627,7 @@ uifc.helpbuf=
 				if(savfextr.cmd[0])
                     i|=WIN_PASTE;
                 uifc.helpbuf=
-	                "Extractable File Types:\n"
+	                "`Extractable File Types:`\n"
 	                "\n"
 	                "This is a list of archive file types that can be extracted to the temp\n"
 	                "directory by an external program. The file types are specified by their\n"
@@ -746,7 +746,7 @@ uifc.helpbuf=
 				if(savfcomp.cmd[0])
 					i|=WIN_PASTE;
 				uifc.helpbuf=
-					"Compressable File Types:\n"
+					"`Compressable File Types:`\n"
 					"\n"
 					"This is a list of compression methods available for different file types.\n"
 					"These will be used for items such as creating QWK packets, temporary\n"
@@ -864,7 +864,7 @@ uifc.helpbuf=
 				if(savprot.mnemonic)
 					i|=WIN_PASTE;
 				uifc.helpbuf=
-					"File Transfer Protocols:\n"
+					"`File Transfer Protocols:`\n"
 					"\n"
 					"This is a list of file transfer protocols that can be used to transfer\n"
 					"files either to or from a remote user. For each protocol, you can\n"
@@ -1069,7 +1069,7 @@ uifc.helpbuf=
 				if(savaltpath[0])
 					i|=WIN_PASTE;
 				uifc.helpbuf=
-					"Alternate File Paths:\n"
+					"`Alternate File Paths:`\n"
 					"\n"
 					"This option allows the sysop to add and configure alternate file paths\n"
 					"for files stored on drives and directories other than the configured\n"
