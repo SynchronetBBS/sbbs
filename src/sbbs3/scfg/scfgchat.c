@@ -251,7 +251,7 @@ while(1) {
 			"`Chat Channel Internal Code:`\n"
 			"\n"
 			"Every chat channel must have its own unique code for Synchronet to refer\n"
-			"to it internally. This code is usually an abreviation of the chat\n"
+			"to it internally. This code is usually an abbreviation of the chat\n"
 			"channel name.\n"
 		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
@@ -349,7 +349,7 @@ while(1) {
 					"`Chat Channel Internal Code:`\n"
 					"\n"
 					"Every chat channel must have its own unique code for Synchronet to refer\n"
-					"to it internally. This code is usually an abreviation of the chat\n"
+					"to it internally. This code is usually an abbreviation of the chat\n"
 					"channel name.\n"
 				;
 				strcpy(str,cfg.chan[i]->code);
@@ -644,7 +644,7 @@ while(1) {
 			"`Guru Internal Code:`\n"
 			"\n"
 			"Every Guru must have its own unique code for Synchronet to refer to\n"
-			"it internally. This code is usually an abreviation of the Guru name.\n"
+			"it internally. This code is usually an abbreviation of the Guru name.\n"
 		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
 			,code,LEN_CODE,K_EDIT|K_UPPER)<1)
@@ -731,7 +731,7 @@ uifc.helpbuf=
 	"`Guru Internal Code:`\n"
 	"\n"
 	"Every Guru must have its own unique code for Synchronet to refer to\n"
-	"it internally. This code is usually an abreviation of the Guru name.\n"
+	"it internally. This code is usually an abbreviation of the Guru name.\n"
 ;
 				strcpy(str,cfg.guru[i]->code);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Guru Internal Code"
