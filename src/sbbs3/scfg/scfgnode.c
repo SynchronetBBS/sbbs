@@ -51,19 +51,19 @@ void node_menu()
 		if(savnode)
 			j|=WIN_PASTE;
 		uifc.helpbuf=
-			"Node List:\n"
+			"`Node List:`\n"
 			"\n"
 			"This is the list of configured nodes in your system.\n"
 			"\n"
-			"To add a node, hit  INS .\n"
+			"To add a node, hit ~ INS ~.\n"
 			"\n"
-			"To delete a node, hit  DEL .\n"
+			"To delete a node, hit ~ DEL ~.\n"
 			"\n"
-			"To configure a node, select it using the arrow keys and hit  ENTER .\n"
+			"To configure a node, select it using the arrow keys and hit ~ ENTER ~.\n"
 			"\n"
 			"To copy a node's configuration to another node, first select the source\n"
-			"node with the arrow keys and hit  F5 . Then select the destination\n"
-			"node and hit  F6 .\n"
+			"node with the arrow keys and hit ~ F5 ~. Then select the destination\n"
+			"node and hit ~ F6 ~.\n"
 		;
 
 		i=uifc.list(j,0,0,13,&node_menu_dflt,&node_bar,"Nodes",opt);
@@ -79,10 +79,10 @@ void node_menu()
 			sprintf(str,"Delete Node %d",cfg.sys_nodes);
 			i=1;
 			uifc.helpbuf=
-				"Delete Node:\n"
+				"`Delete Node:`\n"
 				"\n"
-				"If you are positive you want to delete this node, select Yes. Otherwise,\n"
-				"select No or hit  ESC .\n"
+				"If you are positive you want to delete this node, select `Yes`. Otherwise,\n"
+				"select `No` or hit ~ ESC ~.\n"
 			;
 			i=uifc.list(WIN_MID,0,0,0,&i,0,str,uifcYesNoOpts);
 			if(!i) {
@@ -102,16 +102,16 @@ void node_menu()
 			sprintf(str,"../node%d/",i);
 			sprintf(tmp,"Node %d Path",i);
 			uifc.helpbuf=
-				"Node Path:\n"
+				"`Node Path:`\n"
 				"\n"
 				"This is the path to this node's private directory where its separate\n"
 				"configuration and data files are stored.\n"
 				"\n"
 				"The drive and directory of this path can be set to any valid DOS\n"
-				"directory that can be accessed by ALL nodes and MUST NOT be on a RAM disk\n"
+				"directory that can be accessed by `ALL` nodes and `MUST NOT` be on a RAM disk\n"
 				"or other volatile media.\n"
 				"\n"
-				"If you want to abort the creation of this new node, hit  ESC .\n"
+				"If you want to abort the creation of this new node, hit ~ ESC ~.\n"
 			;
 			j=uifc.input(WIN_MID,0,0,tmp,str,50,K_EDIT);
 			uifc.changes=0;
@@ -187,12 +187,12 @@ void node_cfg()
 		opt[i][0]=0;
 		sprintf(str,"Node %d Configuration",cfg.node_num);
 		uifc.helpbuf=
-			"Node Configuration Menu:\n"
+			"`Node Configuration Menu:`\n"
 			"\n"
 			"This is the node configuration menu. The options available from this\n"
 			"menu will only affect the selected node's configuration.\n"
 			"\n"
-			"Options with a trailing ... will produce a sub-menu of more options.\n"
+			"Options with a trailing `...` will produce a sub-menu of more options.\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&node_dflt,0
 			,str,opt)) {
@@ -236,12 +236,12 @@ void node_cfg()
 
 					opt[i][0]=0;
 					uifc.helpbuf=
-						"Node Toggle Options:\n"
+						"`Node Toggle Options:`\n"
 						"\n"
 						"This is the toggle options menu for the selected node's configuration.\n"
 						"\n"
 						"The available options from this menu can all be toggled between two or\n"
-						"more states, such as Yes and No.\n"
+						"more states, such as `Yes` and `No``\n"
 					;
 					switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT|WIN_SAV,3,2,35,&tog_dflt
 						,&tog_bar,"Toggle Options",opt)) {
@@ -251,10 +251,10 @@ void node_cfg()
 						case 0:
 							i=cfg.node_misc&NM_NO_NUM ? 1:0;
 							uifc.helpbuf=
-								"Allow Login by User Number:\n"
+								"`Allow Login by User Number:`\n"
 								"\n"
-								"If you want users to be able login using their user number at the NN:\n"
-								"set this option to Yes.\n"
+								"If you want users to be able login using their user number at the `NN:`\n"
+								"set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 								,"Allow Login by User Number",uifcYesNoOpts);
@@ -270,10 +270,10 @@ void node_cfg()
 						case 1:
 							i=cfg.node_misc&NM_LOGON_R ? 0:1;
 							uifc.helpbuf=
-								"Allow Login by Real Name:\n"
+								"`Allow Login by Real Name:`\n"
 								"\n"
 								"If you want users to be able login using their real name as well as\n"
-								"their alias, set this option to Yes.\n"
+								"their alias, set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 								,"Allow Login by Real Name",uifcYesNoOpts);
@@ -289,10 +289,10 @@ void node_cfg()
 						case 2:
 							i=cfg.node_misc&NM_LOGON_P ? 0:1;
 							uifc.helpbuf=
-								"Always Prompt for Password:\n"
+								"`Always Prompt for Password:`\n"
 								"\n"
 								"If you want to have attempted logins using an unknown user name still\n"
-								"prompt for a password, set this option to Yes.\n"
+								"prompt for a password, set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 								,"Always Prompt for Password",uifcYesNoOpts);
@@ -308,10 +308,10 @@ void node_cfg()
 						case 3:
 							i=cfg.node_misc&NM_7BITONLY ? 0:1;
 							uifc.helpbuf=
-								"Allow 8-bit Remote Input During Login:\n"
+								"`Allow 8-bit Remote Input During Login:`\n"
 								"\n"
 								"If you wish to allow E-7-1 terminals to use this node, you must set this\n"
-								"option to No. This will also eliminate the ability of 8-bit remote users\n"
+								"option to `No`. This will also eliminate the ability of 8-bit remote users\n"
 								"to send IBM extended ASCII characters during the login sequence.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
@@ -328,10 +328,10 @@ void node_cfg()
 						case 4:
 							i=cfg.node_misc&NM_NOPAUSESPIN ? 1:0;
 							uifc.helpbuf=
-								"Spinning Pause Prompt:\n"
+								"`Spinning Pause Prompt:`\n"
 								"\n"
 								"If you want to have a spinning cursor at the [Hit a key] prompt, set\n"
-								"this option to Yes.\n"
+								"this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 								,"Spinning Cursor at Pause Prompt",uifcYesNoOpts);
@@ -347,12 +347,12 @@ void node_cfg()
 						case 5:
 							i=cfg.node_misc&NM_CLOSENODEDAB ? 1:0;
 							uifc.helpbuf=
-								"Keep Node File Open:\n"
+								"`Keep Node File Open:`\n"
 								"\n"
-								"If you want to keep the shared node file (ctrl/node.dab) open,\n"
-								"(for better performance and reliability) set this option to Yes.\n"
-								"If want to keep the file closed (for Samba compatiblity), set this\n"
-								"option to No.\n"
+								"If you want to keep the shared node file (`ctrl/node.dab`) open,\n"
+								"(for better performance and reliability) set this option to `Yes`.\n"
+								"If want to keep the file closed (for `Samba` compatibility), set this\n"
+								"option to `No`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 								,"Keep Node File Open",uifcYesNoOpts);
@@ -386,7 +386,7 @@ void node_cfg()
 					sprintf(opt[i++],"%-27.27s%.40s","Text Directory",cfg.text_dir);
 					opt[i][0]=0;
 					uifc.helpbuf=
-						"Node Advanced Options:\n"
+						"`Node Advanced Options:`\n"
 						"\n"
 						"This is the advanced options menu for the selected node. The available\n"
 						"options are of an advanced nature and should not be modified unless you\n"
@@ -400,14 +400,14 @@ void node_cfg()
 						case 0:
 							ultoa(cfg.node_valuser,str,10);
 							uifc.helpbuf=
-								"Validation User Number:\n"
+								"`Validation User Number:`\n"
 								"\n"
-								"When a caller logs onto the system as New, he or she must send\n"
+								"When a caller logs onto the system as `New`, he or she must send\n"
 								"validation feedback to the sysop. This feature can be disabled by\n"
-								"setting this value to 0, allowing new users to logon without sending\n"
+								"setting this value to `0`, allowing new users to logon without sending\n"
 								"validation feedback. If you want new users on this node to be forced to\n"
 								"send validation feedback, set this value to the number of the user to\n"
-								"whom the feedback is sent. The normal value of this option is 1 for\n"
+								"whom the feedback is sent. The normal value of this option is `1` for\n"
 								"user number one.\n"
 							;
 							uifc.input(WIN_MID,0,13,"Validation User Number (0=Nobody)"
@@ -417,10 +417,10 @@ void node_cfg()
 						case 1:
 							ultoa(cfg.node_sem_check,str,10);
 							uifc.helpbuf=
-								"Semaphore Check Frequency While Waiting for Call (in seconds):\n"
+								"`Semaphore Check Frequency While Waiting for Call (in seconds):`\n"
 								"\n"
 								"This is the number of seconds between semaphore checks while this node\n"
-								"is waiting for a caller. Default is 60 seconds.\n"
+								"is waiting for a caller. Default is `60` seconds.\n"
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,14
 								,"Seconds Between Semaphore Checks"
@@ -430,10 +430,10 @@ void node_cfg()
 						case 2:
 							ultoa(cfg.node_stat_check,str,10);
 							uifc.helpbuf=
-								"Statistics Check Frequency While Waiting for Call (in seconds):\n"
+								"`Statistics Check Frequency While Waiting for Call (in seconds):`\n"
 								"\n"
 								"This is the number of seconds between static checks while this node\n"
-								"is waiting for a caller. Default is 10 seconds.\n"
+								"is waiting for a caller. Default is `10` seconds.\n"
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,14
 								,"Seconds Between Statistic Checks"
@@ -443,10 +443,10 @@ void node_cfg()
 						case 3:
 							ultoa(cfg.sec_warn,str,10);
 							uifc.helpbuf=
-								"Seconds Before Inactivity Warning:\n"
+								"`Seconds Before Inactivity Warning:`\n"
 								"\n"
 								"This is the number of seconds the user must be inactive before a\n"
-								"warning will be given. Default is 180 seconds.\n"
+								"warning will be given. Default is `180` seconds.\n"
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,14
 								,"Seconds Before Inactivity Warning"
@@ -456,10 +456,10 @@ void node_cfg()
 						case 4:
 							ultoa(cfg.sec_hangup,str,10);
 							uifc.helpbuf=
-								"Seconds Before Inactivity Disconnection:\n"
+								"`Seconds Before Inactivity Disconnection:`\n"
 								"\n"
 								"This is the number of seconds the user must be inactive before they\n"
-								"will be automatically disconnected. Default is 300 seconds.\n"
+								"will be automatically disconnected. Default is `300` seconds.\n"
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,14
 								,"Seconds Before Inactivity Disconnection"
@@ -468,7 +468,7 @@ void node_cfg()
 							break;
 						case 5:
 							uifc.helpbuf=
-								"Daily Event:\n"
+								"`Daily Event:`\n"
 								"\n"
 								"If you have an event that this node should run every day, enter the\n"
 								"command line for that event here.\n"
@@ -476,24 +476,24 @@ void node_cfg()
 								"An event can be any valid DOS command line. If multiple programs or\n"
 								"commands are required, use a batch file.\n"
 								"\n"
-								"Remember: The %! command line specifier is an abreviation for your\n"
-								"         configured EXEC directory path.\n"
+								"Remember: The `%!` command line specifier is an abbreviation for your\n"
+								"         configured `EXEC` directory path.\n"
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
 								,cfg.node_daily,sizeof(cfg.node_daily)-1,K_EDIT);
 							break;
 						case 6:
 							uifc.helpbuf=
-								"Text Directory:\n"
+								"`Text Directory:`\n"
 								"\n"
-								"Your text directory contains read-only text files. Synchronet never\n"
-								"writes to any files in this directory so it CAN be placed on a RAM\n"
+								"Your text directory contains `read-only` text files. Synchronet never\n"
+								"`writes` to any files in this directory so it `CAN` be placed on a RAM\n"
 								"disk or other volatile media. This directory contains the system's menus\n"
 								"and other important text files, so be sure the files and directories are\n"
 								"moved to this directory if you decide to change it.\n"
 								"\n"
 								"This option allows you to change the location of your control directory.\n"
-								"The \\TEXT\\ suffix (sub-directory) cannot be changed or removed.\n"
+								"The `/text/`` suffix (sub-directory) cannot be changed or removed.\n"
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,10,"Text Directory"
 								,cfg.text_dir,sizeof(cfg.text_dir)-1,K_EDIT);
