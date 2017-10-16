@@ -400,7 +400,7 @@ void msgs_cfg()
 						"into all sub-boards of this group, select `Yes`.\n"
 						"\n"
 						"The options cloned are posting requirements, reading requirements,\n"
-						"operator requirments, moderated user requirments, toggle options,\n"
+						"operator requirements, moderated user requirements, toggle options,\n"
 						"network options (including EchoMail origin line, EchoMail address,\n"
 						"and QWK Network tagline), maximum number of messages, maximum number\n"
 						"of CRCs, maximum age of messages, storage method, and data directory.\n"
@@ -937,7 +937,7 @@ void msg_opts()
 				uifc.helpbuf=
 					"`Pre-pack QWK Requirements:`\n"
 					"\n"
-					"ALL user accounts on the BBS meeting this requirmenet will have a QWK\n"
+					"ALL user accounts on the BBS meeting this requirement will have a QWK\n"
 					"packet automatically created for them every day after midnight\n"
 					"(during the internal daily event).\n"
 					"\n"
@@ -1223,7 +1223,7 @@ void msg_opts()
 				uifc.helpbuf=
 					"`Extra Attribute Codes...`\n"
 					"\n"
-					"Synchronet can suppport the native text attribute codes of other BBS\n"
+					"Synchronet can support the native text attribute codes of other BBS\n"
 					"programs in messages (menus, posts, e-mail, etc.) To enable the extra\n"
 					"attribute codes for another BBS program, set the corresponding option\n"
 					"to `Yes`.\n"
