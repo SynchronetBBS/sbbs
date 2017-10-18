@@ -151,7 +151,6 @@ int main(int argc, char **argv)
 						for(i=0;i<ni;i++) {
 							fputc(1,out);				/* ctrl-ax */
 							switch(n[i]) {
-								default:
 								case 0:
 								case 2: 				/* no attribute */
 									fputc('n',out);
@@ -216,7 +215,12 @@ int main(int argc, char **argv)
 									break;
 								case 47:
 									fputc('7',out);
-									break; } }
+									break; 
+								default:
+									fprintf(stderr,"Unsupported ANSI color code: %u\n", (unsigned int)n[i]);
+									break;
+							} 
+						}
 						break;
 					case 'B':	/* cursor down */
 						while(n[0]) {
