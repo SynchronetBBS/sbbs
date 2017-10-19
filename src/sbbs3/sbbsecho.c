@@ -1542,6 +1542,30 @@ void areafix_command(char* instr, fidoaddr_t addr, const char* to)
 		return; 
 	}
 
+	if(strnicmp(instr, "TICPWD ", 7) == 0) {
+		char ticpwd[FIDO_PASS_LEN + 1];	/* TIC File password for this node */
+		char* p = instr;
+		FIND_WHITESPACE(p);
+		SKIP_WHITESPACE(p);
+		SAFECOPY(ticpwd, p);
+		if(!stricmp(ticpwd, nodecfg->ticpwd)) {
+			sprintf(str,"Your TIC File password was already set to '%s'."
+				,nodecfg->ticpwd);
+			create_netmail(to,/* msg: */NULL,"TIC File Password Change Request",str,addr,/* attachment: */false);
+			return; 
+		}
+		if(alter_config(addr,"TicFilePwd", ticpwd)) {
+			SAFEPRINTF2(str,"Your TIC File password has been changed from '%s' to '%s'."
+				,nodecfg->ticpwd, ticpwd);
+			SAFECOPY(nodecfg->ticpwd, ticpwd);
+		} else {
+			SAFECOPY(str,"Error changing TIC File password");
+		}
+		create_netmail(to,/* msg: */NULL,"TIC File Password Change Request",str,addr,/* attachment: */false);
+		return; 
+	}
+
+
 	if(stricmp(instr, "RESCAN") == 0) {
 		export_echomail(NULL, nodecfg, true);
 		create_netmail(to,/* msg: */NULL, "Rescan Areas"

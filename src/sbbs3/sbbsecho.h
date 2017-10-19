@@ -95,6 +95,7 @@ typedef struct {
 	enum pkt_type pkt_type;		/* Packet type to use for outgoing PKTs */
 	char		password[FIDO_SUBJ_LEN];	/* Areafix password for this node */
 	char		pktpwd[FIDO_PASS_LEN+1];	/* Packet password for this node */
+	char		ticpwd[FIDO_PASS_LEN+1];	/* TIC File password for this node */
 	char		comment[64];	/* Comment for this node */
 	char		inbox[MAX_PATH+1];
 	char		outbox[MAX_PATH+1];

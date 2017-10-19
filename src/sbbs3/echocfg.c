@@ -414,9 +414,15 @@ int main(int argc, char **argv)
 	"packets for this node.  Incoming packets from this node must also have\r\n"
 	"the same password value if this password is configured (not blank).\r\n"
 	"Packet passwords are case insensitive.\r\n"
+	"This setting may be managed by the node using NetMail/AreaFix requests.\r\n"
+	"\r\n"
+	"`TIC File Password` is an optional password that may be configured here\r\n"
+	"(and in your `sbbsecho.ini` file) for use by `ticket.js` when creating\r\n"
+	"or authenticating `.TIC` files.\r\n"
+	"This setting may be managed by the node using NetMail/AreaFix requests.\r\n"
 	"\r\n"
 	"`AreaFix Password` is an optional password used to enable AreaFix\r\n"
-	"NetMail requests from this node.\r\n"
+	"NetMail requests (remote Area Management) from this node.\r\n"
 	"AreaFix Passwords are case insensitive.\r\n"
 	"This setting may be managed by the node using NetMail/AreaFix requests.\r\n"
 	"\r\n"
@@ -460,6 +466,8 @@ int main(int argc, char **argv)
 							,pktTypeStringList[cfg.nodecfg[i].pkt_type]);
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Packet Password"
 							,cfg.nodecfg[i].pktpwd);
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","TIC File Password"
+							,cfg.nodecfg[i].ticpwd);
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Password"
 							,cfg.nodecfg[i].password);
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Keys"
@@ -562,6 +570,16 @@ int main(int argc, char **argv)
 								break;
 							case 5:
 	uifc.helpbuf=
+	"~ TIC File Password ~\r\n\r\n"
+	"This is an optional password that ticket.js will use for creating\r\n"
+	"and authenticating `.TIC` files to/from this node.\r\n";
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"TIC File Password (optional)"
+									,cfg.nodecfg[i].ticpwd,sizeof(cfg.nodecfg[i].ticpwd)-1
+									,K_EDIT|K_UPPER);
+								break;
+							case 6:
+	uifc.helpbuf=
 	"~ AreaFix Password ~\r\n\r\n"
 	"This is the password that will be used by this node when doing remote\r\n"
 	"AreaManager / AreaFix functions.\r\n";
@@ -570,7 +588,7 @@ int main(int argc, char **argv)
 									,cfg.nodecfg[i].password,sizeof(cfg.nodecfg[i].password)-1
 									,K_EDIT|K_UPPER);
 								break;
-							case 6:
+							case 7:
 	uifc.helpbuf=
 	"~ AreaFix Keys ~\r\n\r\n"
 	"These are a named-keys to be given to this node allowing access to one or\r\n"
@@ -609,7 +627,7 @@ int main(int argc, char **argv)
 									continue; 
 								}
 								break;
-							case 7:
+							case 8:
 	uifc.helpbuf=
 	"~ Mail Status ~\r\n\r\n"
 	"Set the mail status for this node: `Normal`, `Hold`, or `Crash`.\r\n";
@@ -623,7 +641,7 @@ int main(int argc, char **argv)
 									uifc.changes=TRUE;
 								}
 								break;
-							case 8:
+							case 9:
 								k = !cfg.nodecfg[i].direct;
 								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 									,"Direct Delivery",uifcYesNoOpts)) {
@@ -631,7 +649,7 @@ int main(int argc, char **argv)
 									case 1:	cfg.nodecfg[i].direct = false;	uifc.changes=TRUE; break;
 								}
 								break;
-							case 9:
+							case 10:
 								k = !cfg.nodecfg[i].passive;
 								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 									,"Passive Node",uifcYesNoOpts)) {
@@ -639,7 +657,7 @@ int main(int argc, char **argv)
 									case 1:	cfg.nodecfg[i].passive = false;	uifc.changes=TRUE; break;
 								}
 								break;
-							case 10:
+							case 11:
 								k = !cfg.nodecfg[i].send_notify;
 								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 									,"Send AreaFix Notifications",uifcYesNoOpts)) {
@@ -647,7 +665,7 @@ int main(int argc, char **argv)
 									case 1:	cfg.nodecfg[i].send_notify = false;	uifc.changes=TRUE; break;
 								}
 								break;
-							case 11:
+							case 12:
 	uifc.helpbuf=
 	"~ Route To ~\r\n\r\n"
 	"When using a BSO/FLO type mailer, this is the Fido address to route mail\r\n"
@@ -667,12 +685,12 @@ int main(int argc, char **argv)
 									uifc.changes=TRUE;
 								}
 								break;
-							case 12:
+							case 13:
 								uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound FileBox Directory"
 									,cfg.nodecfg[i].inbox, sizeof(cfg.nodecfg[i].inbox)-1
 									,K_EDIT);
 								break;
-							case 13:
+							case 14:
 								uifc.input(WIN_MID|WIN_SAV,0,0,"Outbound FileBox Directory"
 									,cfg.nodecfg[i].outbox, sizeof(cfg.nodecfg[i].outbox)-1
 									,K_EDIT);
