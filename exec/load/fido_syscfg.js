@@ -25,6 +25,7 @@ function SBBSEchoCfg ()
 
 	this.inb = [];
 	this.pktpass = {};
+	this.ticpass = {};
 	this.packer = {};
 	this.is_flo = false;
 	this.outbound = undefined;
@@ -45,6 +46,9 @@ function SBBSEchoCfg ()
 		this.is_flo = ecfg.iniGetValue(null, "BinkleyStyleOutbound", false);
 		ecfg.iniGetSections('node:').forEach(function(section) {
 			this.pktpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'PacketPwd', '');
+		}, this);
+		ecfg.iniGetSections('node:').forEach(function(section) {
+			this.ticpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'TicFilePwd', '');
 		}, this);
 		ecfg.iniGetSections('archive:').forEach(function(packer) {
 			this.packer[packer] = {};
@@ -75,6 +79,10 @@ function SBBSEchoCfg ()
 				if (m !== null)
 					this.pktpass[m[1].toUpperCase()] = m[2].toUpperCase();
 
+				m = line.match(/^\s*ticpwd\s+(.*?)\s+(.*)\s*$/i);
+				if (m !== null)
+					this.ticpass[m[1].toUpperCase()] = m[2].toUpperCase();
+
 				m = line.match(/^\s*outbound\s+(.*?)\s*$/i);
 				if (m !== null)
 					this.outbound = m[1];
@@ -95,6 +103,22 @@ function SBBSEchoCfg ()
 	}
 	ecfg.close();
 }
+SBBSEchoCfg.prototype.get_ticpw = function(node)
+{
+	var n = node;
+
+	while(n) {
+		if (this.ticpass[n] !== undefined)
+			return this.ticpass[n];
+		if (n === 'ALL')
+			break;
+		if (n.indexOf('ALL') !== -1)
+			n = n.replace(/[0-9]+[^0-9]ALL$/, 'ALL');
+		else
+			n = n.replace(/[0-9]+$/, 'ALL');
+	}
+	return undefined;
+};
 SBBSEchoCfg.prototype.get_pw = function(node)
 {
 	var n = node;
@@ -110,6 +134,27 @@ SBBSEchoCfg.prototype.get_pw = function(node)
 			n = n.replace(/[0-9]+$/, 'ALL');
 	}
 	return undefined;
+};
+
+SBBSEchoCfg.prototype.match_ticpw = function(node, pw)
+{
+	var ticpw = this.get_ticpw(node);
+
+	if (ticpw === undefined || ticpw == '') {
+		if (pw === '' || pw === undefined)
+			return true;
+		log(LOG_WARNING, "Packet password is empty, but TIC has a password");
+		return false;
+	}
+	if (pw === undefined || pw === '') {
+		log(LOG_WARNING, "Packet password ("+ticpw+") configured, but TIC has no password");
+		return false;
+	}
+	if (pw.toUpperCase() === ticpw.toUpperCase())
+		return true;
+
+	log(LOG_WARNING, "Incorrect password "+pw+" (expected "+ticpw+")");
+	return false;
 };
 SBBSEchoCfg.prototype.match_pw = function(node, pw)
 {
