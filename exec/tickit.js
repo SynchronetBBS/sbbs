@@ -337,7 +337,7 @@ function forward_tic(tic)
 			return false;
 		}
 
-		pw = sbbsecho.get_pw(link);
+		pw = sbbsecho.get_ticpw(link);
 		if (pw===undefined)
 			pw = '';
 
@@ -528,7 +528,7 @@ function parse_ticfile(fname)
 	}
 
 	if (!tickit.gcfg.ignorepassword) {
-		if (!sbbsecho.match_pw(tic.from, tic.pw))
+		if (!sbbsecho.match_ticpw(tic.from, tic.pw))
 			return false;
 	}
 
