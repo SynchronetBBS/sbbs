@@ -1363,7 +1363,7 @@ while(1) {
 							"`New User Magic Word:`\n"
 							"\n"
 							"If this field has a value, it is assumed the sysop has placed some\n"
-							"reference to this `magic word` in TEXT\\NEWUSER.MSG and new users\n"
+							"reference to this `magic word` in `text/newuser.msg` and new users\n"
 							"will be prompted for the magic word after they enter their password.\n"
 							"If they do not enter it correctly, it is assumed they didn't read the\n"
 							"new user information displayed to them and they are disconnected.\n"

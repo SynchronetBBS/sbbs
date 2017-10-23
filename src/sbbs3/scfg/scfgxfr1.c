@@ -238,7 +238,7 @@ uifc.helpbuf=
 				if(cfg.total_fviews<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_fviews)
-					i|=WIN_DEL|WIN_COPY;
+					i|=WIN_DEL|WIN_COPY|WIN_CUT;
 				if(savfview.cmd[0])
 					i|=WIN_PASTE;
 				uifc.helpbuf=
@@ -305,7 +305,7 @@ uifc.helpbuf=
 					savfview=*cfg.fview[i];
 					continue; 
 				}
-				if(msk == MSK_PASTE_OVER) {
+				if(msk == MSK_PASTE) {
 					*cfg.fview[i]=savfview;
 					uifc.changes=1;
 					continue; 
@@ -355,7 +355,7 @@ uifc.helpbuf=
 				if(cfg.total_ftests<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_ftests)
-					i|=WIN_DEL|WIN_COPY;
+					i|=WIN_DEL|WIN_COPY|WIN_CUT;
 				if(savftest.cmd[0])
 					i|=WIN_PASTE;
 				uifc.helpbuf=
@@ -433,7 +433,7 @@ uifc.helpbuf=
 					savftest=*cfg.ftest[i];
 					continue; 
 				}
-				if(msk == MSK_PASTE_OVER) {
+				if(msk == MSK_PASTE) {
 					*cfg.ftest[i]=savftest;
 					uifc.changes=1;
 					continue; 
@@ -489,7 +489,7 @@ uifc.helpbuf=
 				if(cfg.total_dlevents<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_dlevents)
-					i|=WIN_DEL|WIN_COPY;
+					i|=WIN_DEL|WIN_COPY|WIN_CUT;
 				if(savdlevent.cmd[0])
 					i|=WIN_PASTE;
 				uifc.helpbuf=
@@ -566,7 +566,7 @@ uifc.helpbuf=
 					savdlevent=*cfg.dlevent[i];
 					continue; 
 				}
-				if(msk == MSK_PASTE_OVER) {
+				if(msk == MSK_PASTE) {
 					*cfg.dlevent[i]=savdlevent;
 					uifc.changes=1;
 					continue; 
@@ -623,7 +623,7 @@ uifc.helpbuf=
 				if(cfg.total_fextrs<MAX_OPTS)
                     i|=WIN_INS|WIN_XTR;
                 if(cfg.total_fextrs)
-                    i|=WIN_DEL|WIN_COPY;
+                    i|=WIN_DEL|WIN_COPY|WIN_CUT;
 				if(savfextr.cmd[0])
                     i|=WIN_PASTE;
                 uifc.helpbuf=
@@ -692,7 +692,7 @@ uifc.helpbuf=
                     savfextr=*cfg.fextr[i];
                     continue; 
 				}
-				if(msk == MSK_PASTE_OVER) {
+				if(msk == MSK_PASTE) {
                     *cfg.fextr[i]=savfextr;
                     uifc.changes=1;
                     continue; 
@@ -742,7 +742,7 @@ uifc.helpbuf=
 				if(cfg.total_fcomps<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_fcomps)
-					i|=WIN_DEL|WIN_COPY;
+					i|=WIN_DEL|WIN_COPY|WIN_CUT;
 				if(savfcomp.cmd[0])
 					i|=WIN_PASTE;
 				uifc.helpbuf=
@@ -809,7 +809,7 @@ uifc.helpbuf=
 					savfcomp=*cfg.fcomp[i];
 					continue; 
 				}
-				if(msk == MSK_PASTE_OVER) {
+				if(msk == MSK_PASTE) {
 					*cfg.fcomp[i]=savfcomp;
 					uifc.changes=1;
 					continue; 
@@ -860,7 +860,7 @@ uifc.helpbuf=
 				if(cfg.total_prots<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_prots)
-					i|=WIN_DEL|WIN_COPY;
+					i|=WIN_DEL|WIN_COPY|WIN_CUT;
 				if(savprot.mnemonic)
 					i|=WIN_PASTE;
 				uifc.helpbuf=
@@ -932,7 +932,7 @@ uifc.helpbuf=
 					savprot=*cfg.prot[i];
 					continue; 
 				}
-				if(msk == MSK_PASTE_OVER) {
+				if(msk == MSK_PASTE) {
 					*cfg.prot[i]=savprot;
 					uifc.changes=1;
 					continue; 
@@ -1065,7 +1065,7 @@ uifc.helpbuf=
 				if((int)cfg.altpaths<MAX_OPTS)
 					i|=WIN_INS|WIN_XTR;
 				if(cfg.altpaths)
-					i|=WIN_DEL|WIN_COPY;
+					i|=WIN_DEL|WIN_COPY|WIN_CUT;
 				if(savaltpath[0])
 					i|=WIN_PASTE;
 				uifc.helpbuf=
@@ -1130,7 +1130,7 @@ uifc.helpbuf=
 					SAFECOPY(savaltpath,cfg.altpath[i]);
 					continue; 
 				}
-				if(msk == MSK_PASTE_OVER) {
+				if(msk == MSK_PASTE) {
 					memcpy(cfg.altpath[i],savaltpath,LEN_DIR+1);
 					uifc.changes=1;
 					continue; 

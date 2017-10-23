@@ -48,7 +48,7 @@ while(1) {
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
 	if(cfg.total_pages)
-		j|=WIN_DEL|WIN_COPY;
+		j|=WIN_DEL|WIN_COPY|WIN_CUT;
 	if(cfg.total_pages<MAX_OPTS)
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savpage.cmd[0])
@@ -113,7 +113,7 @@ while(1) {
 		savpage=*cfg.page[i];
 		continue; 
 	}
-	if (msk == MSK_PASTE_OVER) {
+	if (msk == MSK_PASTE) {
 		*cfg.page[i]=savpage;
 		uifc.changes=1;
         continue; 
@@ -213,7 +213,7 @@ while(1) {
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_SAV|WIN_BOT|WIN_RHT;
 	if(cfg.total_chans)
-		j|=WIN_DEL|WIN_COPY;
+		j|=WIN_DEL|WIN_COPY|WIN_CUT;
 	if(cfg.total_chans<MAX_OPTS)
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savchan.name[0])
@@ -298,7 +298,7 @@ while(1) {
 		savchan=*cfg.chan[i];
 		continue; 
 	}
-	if (msk == MSK_PASTE_OVER) {
+	if (msk == MSK_PASTE) {
 		*cfg.chan[i]=savchan;
 		uifc.changes=1;
         continue; 
@@ -480,7 +480,7 @@ while(1) {
 	opt[j][0]=0;
 	i=WIN_ACT|WIN_SAV;
 	if(j)
-		i|=WIN_DEL|WIN_COPY;
+		i|=WIN_DEL|WIN_COPY|WIN_CUT;
 	if(j<MAX_OPTS)
 		i|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savchatact.cmd[0])
@@ -562,7 +562,7 @@ while(1) {
 		savchatact=*cfg.chatact[chatnum[i]];
 		continue; 
 	}
-	if (msk == MSK_PASTE_OVER) {
+	if (msk == MSK_PASTE) {
 		*cfg.chatact[chatnum[i]]=savchatact;
 		cfg.chatact[chatnum[i]]->actset=setnum;
 		uifc.changes=1;
@@ -607,7 +607,7 @@ while(1) {
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
 	if(cfg.total_gurus)
-		j|=WIN_DEL|WIN_COPY;
+		j|=WIN_DEL|WIN_COPY|WIN_CUT;
 	if(cfg.total_gurus<MAX_OPTS)
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savguru.name[0])
@@ -690,7 +690,7 @@ while(1) {
 		savguru=*cfg.guru[i];
 		continue; 
 	}
-	if (msk == MSK_PASTE_OVER) {
+	if (msk == MSK_PASTE) {
 		*cfg.guru[i]=savguru;
 		uifc.changes=1;
         continue; 
@@ -767,7 +767,7 @@ while(1) {
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_RHT|WIN_BOT|WIN_SAV;
     if(cfg.total_actsets)
-        j|=WIN_DEL|WIN_COPY;
+        j|=WIN_DEL|WIN_COPY|WIN_CUT;
 	if(cfg.total_actsets<MAX_OPTS)
         j|=WIN_INS|WIN_INSACT|WIN_XTR;
     if(savactset.name[0])
@@ -833,7 +833,7 @@ while(1) {
         savactset=*cfg.actset[i];
         continue; 
 	}
-	if (msk == MSK_PASTE_OVER) {
+	if (msk == MSK_PASTE) {
         *cfg.actset[i]=savactset;
         uifc.changes=1;
         continue; 

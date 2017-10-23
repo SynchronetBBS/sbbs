@@ -151,34 +151,310 @@ static bool new_grp(unsigned new_grpnum)
 	return true;
 }
 
+long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
+	, int min_confnum, int max_confnum, qhub_t* qhub
+	, long* added)
+{
+	char		str[256];
+	sub_t		tmpsub;
+	char		tmp_code[128];
+	long		ported = 0;
+	int			total_qwk_confs = 0;
+	int			read_qwk_confs = 0;
+	int			qwk_confnum;
+	size_t		grpname_len = strlen(cfg.grp[grpnum]->sname);
+
+	if(added != NULL)
+		*added = 0;
+	if(grpnum >= cfg.total_grps)
+		return -1;
+
+	if(type == IMPORT_LIST_TYPE_QWK_CONTROL_DAT) {
+		/* Skip/ignore the first 10 lines */
+		for(int i = 0; i < 10; i++) {
+			if(!fgets(str,sizeof(str),stream))
+				break;
+		}
+		str[0] = 0;
+		fgets(str,sizeof(str),stream);
+		total_qwk_confs = atoi(str) + 1;
+	}
+
+	while(!feof(stream)) {
+		if(!fgets(str,sizeof(str),stream)) break;
+		truncsp(str);
+		if(!str[0])
+			continue;
+		memset(&tmpsub,0,sizeof(tmpsub));
+//		tmpsub.misc = (SUB_FIDO|SUB_NAME|SUB_TOUSER|SUB_QUOTE|SUB_HYPER);
+		tmpsub.grp = grpnum;
+		if(type == IMPORT_LIST_TYPE_SUBS_TXT) {
+			sprintf(tmpsub.lname,"%.*s",LEN_SLNAME,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.qwkname,"%.*s",10,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			SAFECOPY(tmp_code,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.data_dir,"%.*s",LEN_DIR,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.arstr,"%.*s",LEN_ARSTR,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.read_arstr,"%.*s",LEN_ARSTR,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.post_arstr,"%.*s",LEN_ARSTR,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.op_arstr,"%.*s",LEN_ARSTR,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			tmpsub.misc=ahtoul(str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.tagline,"%.*s",80,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.origline,"%.*s",50,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.post_sem,"%.*s",LEN_DIR,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			SAFECOPY(tmpsub.newsgroup,str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			tmpsub.faddr=atofaddr(str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			tmpsub.maxmsgs=atol(str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			tmpsub.maxcrcs=atol(str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			tmpsub.maxage=atoi(str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			tmpsub.ptridx=atoi(str);
+			if(!fgets(str,128,stream)) break;
+			truncsp(str);
+			sprintf(tmpsub.mod_arstr,"%.*s",LEN_ARSTR,str);
+
+			while(!feof(stream)
+				&& strcmp(str,"***END-OF-SUB***")) {
+				if(!fgets(str,128,stream)) break;
+				truncsp(str); 
+			} 
+		}
+		else if(type == IMPORT_LIST_TYPE_QWK_CONTROL_DAT) {
+			if(read_qwk_confs >= total_qwk_confs)
+				break;
+			read_qwk_confs++;
+			qwk_confnum = atoi(str);
+			if(!fgets(str,128,stream)) break;
+			if (qwk_confnum < min_confnum || qwk_confnum > max_confnum)
+				continue;
+			truncsp(str);
+			char* p=str;
+			SKIP_WHITESPACE(p);
+			if(*p == 0)
+				continue;
+			if(strlen(p) > grpname_len && strnicmp(p, cfg.grp[grpnum]->sname, grpname_len) == 0)
+				p += grpname_len;
+			SKIP_WHITESPACE(p);
+			SAFECOPY(tmp_code, p);
+			SAFECOPY(tmpsub.lname, p);
+			SAFECOPY(tmpsub.sname, p);
+			SAFECOPY(tmpsub.qwkname, p);
+		}
+		else {
+			char* p=str;
+			SKIP_WHITESPACE(p);
+			if(!*p || *p==';')
+				continue;
+			if(type == IMPORT_LIST_TYPE_GENERIC_AREAS_BBS) {		/* AREAS.BBS Generic/.MSG */
+				p=str;
+				SKIP_WHITESPACE(p);			/* Find path	*/
+				FIND_WHITESPACE(p);			/* Skip path	*/
+				SKIP_WHITESPACE(p);			/* Find tag		*/
+				truncstr(p," \t");			/* Truncate tag */
+				SAFECOPY(tmp_code,p);		/* Copy tag to internal code */
+				SAFECOPY(tmpsub.lname,utos(p));
+				SAFECOPY(tmpsub.sname,tmpsub.lname);
+			}
+			else if(type == IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS) { /* AREAS.BBS SBBSecho */
+				p=str;
+				SKIP_WHITESPACE(p);			/* Find internal code */
+				char* tp=p;
+				FIND_WHITESPACE(tp);
+				*tp=0;						/* Truncate internal code */
+				SAFECOPY(tmp_code,p);		/* Copy internal code suffix */
+				p=tp+1;
+				SKIP_WHITESPACE(p);			/* Find echo tag */
+				truncstr(p," \t");			/* Truncate tag */
+				SAFECOPY(tmpsub.lname,utos(p));
+				SAFECOPY(tmpsub.sname,tmpsub.lname);
+			}
+			else if(type == IMPORT_LIST_TYPE_BACKBONE_NA) { /* BACKBONE.NA */
+				p=str;
+				SKIP_WHITESPACE(p);			/* Find echo tag */
+				char* tp=p;
+				FIND_WHITESPACE(tp);		/* Find end of tag */
+				*tp=0;						/* Truncate echo tag */
+				SAFECOPY(tmp_code,p);		/* Copy tag to internal code suffix */
+				SAFECOPY(tmpsub.sname,utos(p));	/* ... to short name, converting underscores to spaces */
+				p=tp+1;
+				SKIP_WHITESPACE(p);			/* Find description */
+				SAFECOPY(tmpsub.lname,p);	/* Copy description to long name */
+			}
+		}
+
+		SAFECOPY(tmpsub.code_suffix, prep_code(tmp_code,cfg.grp[grpnum]->code_prefix));
+		truncsp(tmpsub.sname);
+		truncsp(tmpsub.lname);
+		truncsp(tmpsub.qwkname);
+		SAFECOPY(tmpsub.qwkname,tmpsub.sname);
+
+		if(tmpsub.code_suffix[0]==0	|| tmpsub.sname[0]==0)
+			continue;
+
+		if(tmpsub.lname[0] == 0)
+			SAFECOPY(tmpsub.lname, tmpsub.sname);
+
+		uint j;
+		int mod_offset = LEN_CODE-1;
+		for(j=0; j < cfg.total_subs && mod_offset >= 0; j++) {
+			/* same group and duplicate name/echotag or QWK confname? overwrite the sub entry */
+			if(cfg.sub[j]->grp == grpnum && stricmp(cfg.sub[j]->sname, tmpsub.sname) == 0)  {
+				break;
+			} else {
+				if((cfg.grp[grpnum]->code_prefix[0] || cfg.grp[cfg.sub[j]->grp]->code_prefix[0]))
+					continue;
+			}
+			if(stricmp(cfg.sub[j]->code_suffix, tmpsub.code_suffix) == 0) {
+				if(type == IMPORT_LIST_TYPE_SUBS_TXT)	/* subs.txt import (don't modify internal code) */
+					break;
+				int code_len = strlen(tmpsub.code_suffix);
+				if(code_len < 1)
+					break;
+				if(code_len < LEN_CODE)
+					memset(tmpsub.code_suffix + code_len, '0', LEN_CODE - code_len);
+				else if(tmpsub.code_suffix[mod_offset] == 'Z')
+					tmpsub.code_suffix[mod_offset] = '0';
+				else if(tmpsub.code_suffix[mod_offset] == '9')
+					mod_offset--;
+				else 
+					tmpsub.code_suffix[mod_offset]++;
+				j=0;
+			}
+		}
+		if(mod_offset < 0)
+			break;
+
+		if(j==cfg.total_subs) {
+			if(!new_sub(j, grpnum))
+				break;
+			if(added != NULL)
+				(*added)++;
+		}
+		if(type == IMPORT_LIST_TYPE_SUBS_TXT) {
+			uint16_t sav_ptridx=cfg.sub[j]->ptridx;	/* save original ptridx */
+			memcpy(cfg.sub[j],&tmpsub,sizeof(sub_t));
+			cfg.sub[j]->ptridx=sav_ptridx;	/* restore original ptridx */
+		} else {
+			cfg.sub[j]->grp=grpnum;
+			if(cfg.total_faddrs)
+				cfg.sub[j]->faddr=cfg.faddr[0];
+			SAFECOPY(cfg.sub[j]->code_suffix,tmpsub.code_suffix);
+			SAFECOPY(cfg.sub[j]->sname,tmpsub.sname);
+			SAFECOPY(cfg.sub[j]->lname,tmpsub.lname);
+			SAFECOPY(cfg.sub[j]->qwkname,tmpsub.qwkname);
+			SAFECOPY(cfg.sub[j]->data_dir,tmpsub.data_dir);
+			if(j==cfg.total_subs)
+				cfg.sub[j]->maxmsgs=1000;
+		}
+		if(qhub != NULL)
+			new_qhub_sub(qhub, qhub->subs, cfg.sub[j], qwk_confnum);
+		ported++;
+	}
+	if(ported && cfg.grp[grpnum]->sort)
+		sort_subs(grpnum);
+
+	return ported;
+}
+
+unsigned subs_in_group(unsigned grpnum)
+{
+	unsigned total = 0;
+
+	for(unsigned u=0; u<cfg.total_subs; u++)
+		if(cfg.sub[u]->grp == grpnum)
+			total++;
+
+	return total;
+}
+
 void msgs_cfg()
 {
 	static int dflt,msgs_dflt,bar;
+	static int import_list_type;
+	static int export_list_type;
 	char	str[256],str2[256],done=0;
-	char*	p;
-	char*	tp;
     char	tmp[128];
-	char	tmp_code[32];
 	int		j,k,q,s;
-	int		i,file,ptridx,n;
-	unsigned u;
-	unsigned total_subs;
+	int		i,file;
 	long	ported;
-	sub_t	tmpsub;
 	static grp_t savgrp;
 	FILE*	stream;
 
+	char* grp_short_name_help =
+		"`Group Short Name:`\n"
+		"\n"
+		"This is a short description of the message group which is used for the\n"
+		"main menu and reading message prompts.\n"
+		;
+	char* grp_long_name_help = 
+		"`Group Long Name:`\n"
+		"\n"
+		"This is a description of the message group which is displayed when a\n"
+		"user of the system uses the `/*` command from the main menu.\n"
+		;
+	char* grp_code_prefix_help =
+		"`Internal Code Prefix:`\n"
+		"\n"
+		"This is an `optional`, but highly recommended `code prefix` used to help\n"
+		"generate `unique` internal codes for the sub-boards in this message group.\n"
+		"When code prefixes are used, sub-board `internal codes` will be\n"
+		"constructed from a combination of the prefix and the specified code \n"
+		"suffix for each sub-board.\n"
+		"\n"
+		"Code prefixes may contain up to 8 legal filename characters.\n"
+		"\n"
+		"Code prefixes should be unique among the message groups on the system.\n"
+		"\n"
+		"Changing a group's code prefix implicitly changes all the internal codes\n"
+		"of the sub-boards within the group, so change this value with caution.\n"
+		;
+
 	while(1) {
 		for(i=0;i<cfg.total_grps && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-25s",cfg.grp[i]->lname);
+			sprintf(opt[i],"%-*s %5u", LEN_GLNAME, cfg.grp[i]->lname, subs_in_group(i));
 		opt[i][0]=0;
-		j=WIN_ORG|WIN_ACT|WIN_CHE;
+		int mode = WIN_ORG|WIN_ACT|WIN_CHE;
 		if(cfg.total_grps)
-			j|=WIN_DEL|WIN_DELACT|WIN_COPY;
+			mode |= WIN_DEL|WIN_DELACT|WIN_COPY|WIN_CUT;
 		if(cfg.total_grps<MAX_OPTS)
-			j|=WIN_INS|WIN_INSACT|WIN_XTR;
+			mode |= WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savgrp.sname[0])
-			j |= WIN_PASTE | WIN_PASTEXTR;
+			mode |= WIN_PASTE | WIN_PASTEXTR;
 		uifc.helpbuf=
 			"`Message Groups:`\n"
 			"\n"
@@ -196,7 +472,7 @@ void msgs_cfg()
 			"subject denominator, you may want to have a separate message group for\n"
 			"those sub-boards for a more organized message structure.\n"
 		;
-		i=uifc.list(j,0,0,45,&msgs_dflt,&bar,"Message Groups",opt);
+		i=uifc.list(mode,0,0,0,&msgs_dflt,&bar,"Message Groups                      Sub-boards", opt);
 		if(i==-1) {
 			j=save_changes(WIN_MID);
 			if(j==-1)
@@ -210,30 +486,37 @@ void msgs_cfg()
 		int grpnum = i & MSK_OFF;
 		int msk = i & MSK_ON;
 		if(msk == MSK_INS) {
-			uifc.helpbuf=
-				"`Group Long Name:`\n"
-				"\n"
-				"This is a description of the message group which is displayed when a\n"
-				"user of the system uses the `/*` command from the main menu.\n"
-			;
-			strcpy(str,"Main");
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Group Long Name",str,LEN_GLNAME
-				,K_EDIT)<1)
+			char long_name[LEN_GLNAME+1];
+			uifc.helpbuf=grp_long_name_help;
+			strcpy(long_name,"Main");
+			if(uifc.input(WIN_MID|WIN_SAV,0,0, "Group Long Name", long_name, sizeof(long_name)-1, K_EDIT)<1)
 				continue;
-			uifc.helpbuf=
-				"`Group Short Name:`\n"
-				"\n"
-				"This is a short description of the message group which is used for the\n"
-				"main menu and reading message prompts.\n"
-			;
-			sprintf(str2,"%.*s",LEN_GSNAME,str);
-			if(uifc.input(WIN_MID,0,0,"Group Short Name",str2,LEN_GSNAME,K_EDIT)<1)
+
+			char short_name[LEN_GSNAME+1];
+			uifc.helpbuf=grp_short_name_help;
+			SAFECOPY(short_name, long_name);
+			if(uifc.input(WIN_MID|WIN_SAV,0,0, "Group Short Name", short_name, sizeof(short_name)-1 ,K_EDIT)<1)
 				continue;
+
+			char code_prefix[LEN_GSNAME+1];	/* purposely extra-long */
+			SAFECOPY(code_prefix, short_name);
+			prep_code(code_prefix, NULL);
+			if(strlen(code_prefix) < LEN_CODE)
+				strcat(code_prefix, "_");
+			uifc.helpbuf=grp_code_prefix_help;
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code Prefix", code_prefix, LEN_CODE, K_EDIT|K_UPPER) < 0)
+				continue;
+			if (code_prefix[0] != 0 && !code_ok(code_prefix)) {
+				uifc.helpbuf=invalid_code;
+				uifc.msg("Invalid Code Prefix");
+				continue;
+			}
 			if (!new_grp(grpnum))
 				continue;
-			SAFECOPY(cfg.grp[grpnum]->lname,str);
-			SAFECOPY(cfg.grp[grpnum]->sname,str2);
-			uifc.changes=1;
+			SAFECOPY(cfg.grp[grpnum]->lname, long_name);
+			SAFECOPY(cfg.grp[grpnum]->sname, short_name);
+			SAFECOPY(cfg.grp[grpnum]->code_prefix, code_prefix);
+			uifc.changes = TRUE;
 			continue; 
 		}
 		if(msk == MSK_DEL || msk == MSK_CUT) {
@@ -281,8 +564,8 @@ void msgs_cfg()
 							cfg.sub[k] = cfg.sub[k + 1];
 							for (q = 0; q < cfg.total_qhubs; q++)
 								for (s = 0; s < cfg.qhub[q]->subs; s++)
-									if (cfg.qhub[q]->sub[s] == k)
-										cfg.qhub[q]->sub[s]--;
+									if (cfg.qhub[q]->sub[s] == cfg.sub[j])
+										cfg.qhub[q]->sub[s] = NULL;
 							k++;
 						}
 					}
@@ -310,11 +593,9 @@ void msgs_cfg()
 			savgrp=*cfg.grp[grpnum];
 			continue; 
 		}
-		if (msk == MSK_PASTE_OVER || msk == MSK_PASTE_INSERT) {
-			if (msk == MSK_PASTE_INSERT || opt[grpnum][0] == 0) {
-				if (!new_grp(grpnum))
-					continue;
-			}
+		if (msk == MSK_PASTE) {
+			if (!new_grp(grpnum))
+				continue;
 			/* Restore previously cut sub-boards to newly-pasted group */
 			for (i = 0; i < cfg.total_subs; i++)
 				if (cfg.sub[i]->grp == CUT_GROUPNUM)
@@ -333,6 +614,7 @@ void msgs_cfg()
 			sprintf(opt[j++],"%-27.27s%s","Internal Code Prefix",cfg.grp[grpnum]->code_prefix);
 			sprintf(opt[j++],"%-27.27s%.40s","Access Requirements"
 				,cfg.grp[grpnum]->arstr);
+			sprintf(opt[j++],"%-27.27s%s","Sort Group by Sub-board", area_sort_desc[cfg.grp[grpnum]->sort]);
 			strcpy(opt[j++],"Clone Options");
 			strcpy(opt[j++],"Export Areas...");
 			strcpy(opt[j++],"Import Areas...");
@@ -346,118 +628,151 @@ void msgs_cfg()
 				"to this message group. You can also add, delete, and configure the\n"
 				"sub-boards of this group by selecting the `Messages Sub-boards...` option.\n"
 			;
-			switch(uifc.list(WIN_ACT,6,4,60,&dflt,0,str,opt)) {
+			switch(uifc.list(WIN_ACT|WIN_T2B,6,0,60,&dflt,0,str,opt)) {
 				case -1:
 					done=1;
 					break;
-				case 0:
-					uifc.helpbuf=
-						"`Group Long Name:`\n"
-						"\n"
-						"This is a description of the message group which is displayed when a\n"
-						"user of the system uses the `/*` command from the main menu.\n"
-					;
+				case __COUNTER__:
+					uifc.helpbuf=grp_long_name_help;
 					strcpy(str,cfg.grp[grpnum]->lname);	/* save incase setting to null */
 					if(!uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Listings"
 						,cfg.grp[grpnum]->lname,LEN_GLNAME,K_EDIT))
 						strcpy(cfg.grp[grpnum]->lname,str);
 					break;
-				case 1:
-					uifc.helpbuf=
-						"`Group Short Name:`\n"
-						"\n"
-						"This is a short description of the message group which is used for\n"
-						"main menu and reading messages prompts.\n"
-					;
+				case __COUNTER__:
+					uifc.helpbuf=grp_short_name_help;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Prompts"
 						,cfg.grp[grpnum]->sname,LEN_GSNAME,K_EDIT);
 					break;
-				case 2:
-					uifc.helpbuf=
-						"`Internal Code Prefix:`\n"
-						"\n"
-						"This is an `optional` code prefix used to help generate unique internal\n"
-						"codes for the sub-boards in this message group. If this option\n"
-						"is used, sub-board internal codes will be constructed from this prefix\n"
-						"and the specified code suffix for each sub-board.\n"
-					;
-					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
-						,cfg.grp[grpnum]->code_prefix,LEN_CODE,K_EDIT|K_UPPER);
+				case __COUNTER__:
+				{
+					char code_prefix[LEN_CODE+1];
+					SAFECOPY(code_prefix, cfg.grp[grpnum]->code_prefix);
+					uifc.helpbuf=grp_code_prefix_help;
+					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
+						,code_prefix,LEN_CODE,K_EDIT|K_UPPER) < 0)
+						continue;
+					if(code_prefix[0] == 0 || code_ok(code_prefix)) {
+						SAFECOPY(cfg.grp[grpnum]->code_prefix, code_prefix);
+					} else {
+						uifc.helpbuf = invalid_code;
+						uifc.msg("Invalid Code Prefix");
+					}
 					break;
-				case 3:
+				}
+				case __COUNTER__:
 					sprintf(str,"%s Group",cfg.grp[grpnum]->sname);
 					getar(str,cfg.grp[grpnum]->arstr);
 					break;
-				case 4: 	/* Clone Options */
+				case __COUNTER__:
+					uifc.helpbuf="`Sort Group By Sub-board:`\n"
+						"\n"
+						"Normally, the sub-boards within a message group are listed in the order\n"
+						"that the sysop created them or a logical order determined by the sysop.\n"
+						"\n"
+						"Optionally, you can have the group sorted by sub-board `Long Name`,\n"
+						"`Short Name`, or `Internal Code`.\n"
+						"\n"
+						"The group will be automatically re-sorted when new sub-boards\n"
+						"are added via `SCFG` or when existing sub-boards are modified.\n"
+						;
+					j = cfg.grp[grpnum]->sort;
+					j = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &j, 0, "Sort Group by Sub-board", area_sort_desc);
+					if(j >= 0) {
+						cfg.grp[grpnum]->sort = j;
+						sort_subs(grpnum);
+						uifc.changes = TRUE;
+					}
+					break;
+				case __COUNTER__: 	/* Clone Options */
 					j=0;
-					strcpy(opt[0],"Yes");
-					strcpy(opt[1],"No");
-					opt[2][0]=0;
 					uifc.helpbuf=
 						"`Clone Sub-board Options:`\n"
 						"\n"
-						"If you want to clone the options of the first sub-board of this group\n"
+						"If you want to clone the options of the template sub-board of this group\n"
 						"into all sub-boards of this group, select `Yes`.\n"
 						"\n"
-						"The options cloned are posting requirements, reading requirements,\n"
+						"If no template sub-board is found, then the first sub-board in the group\n"
+						"is used as the default template.  A sub-board is marked as the template\n"
+						"for the group in its `Toggle Options` menu.\n"
+						"\n"
+						"The options cloned are: posting requirements, reading requirements,\n"
 						"operator requirements, moderated user requirements, toggle options,\n"
 						"network options (including EchoMail origin line, EchoMail address,\n"
 						"and QWK Network tagline), maximum number of messages, maximum number\n"
 						"of CRCs, maximum age of messages, storage method, and data directory.\n"
 					;
 					j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-						,"Clone Options of First Sub-board into All of Group",opt);
+						,"Clone Options of Template Sub-board into All of Group",uifcYesNoOpts);
 					if(j==0) {
-						k=-1;
+						sub_t* template = NULL;
+						for(j=0;j<cfg.total_subs;j++) {
+							if(cfg.sub[j]->grp == i && cfg.sub[j]->misc&SUB_TEMPLATE) {
+								template = cfg.sub[j];
+								break;
+							}
+						}
 						for(j=0;j<cfg.total_subs;j++)
 							if(cfg.sub[j]->grp==i) {
-								if(k==-1)
-									k=j;
-								else {
+								if(template == NULL)
+									template = cfg.sub[j];
+								else if(cfg.sub[j] != template) {
 									uifc.changes=1;
-									cfg.sub[j]->misc=(cfg.sub[k]->misc|SUB_HDRMOD);
-									strcpy(cfg.sub[j]->post_arstr,cfg.sub[k]->post_arstr);
-									strcpy(cfg.sub[j]->read_arstr,cfg.sub[k]->read_arstr);
-									strcpy(cfg.sub[j]->op_arstr,cfg.sub[k]->op_arstr);
-									strcpy(cfg.sub[j]->mod_arstr,cfg.sub[k]->mod_arstr);
-									strcpy(cfg.sub[j]->origline,cfg.sub[k]->origline);
-									strcpy(cfg.sub[j]->tagline,cfg.sub[k]->tagline);
-									strcpy(cfg.sub[j]->data_dir,cfg.sub[k]->data_dir);
-									strcpy(cfg.sub[j]->post_sem,cfg.sub[k]->post_sem);
-									cfg.sub[j]->maxmsgs=cfg.sub[k]->maxmsgs;
-									cfg.sub[j]->maxcrcs=cfg.sub[k]->maxcrcs;
-									cfg.sub[j]->maxage=cfg.sub[k]->maxage;
-
-									cfg.sub[j]->faddr=cfg.sub[k]->faddr; 
+									cfg.sub[j]->misc = template->misc|SUB_HDRMOD;
+									cfg.sub[j]->misc &= ~SUB_TEMPLATE;
+									SAFECOPY(cfg.sub[j]->post_arstr	,template->post_arstr);
+									SAFECOPY(cfg.sub[j]->read_arstr	,template->read_arstr);
+									SAFECOPY(cfg.sub[j]->op_arstr	,template->op_arstr);
+									SAFECOPY(cfg.sub[j]->mod_arstr	,template->mod_arstr);
+									SAFECOPY(cfg.sub[j]->origline	,template->origline);
+									SAFECOPY(cfg.sub[j]->tagline	,template->tagline);
+									SAFECOPY(cfg.sub[j]->data_dir	,template->data_dir);
+									SAFECOPY(cfg.sub[j]->post_sem	,template->post_sem);
+									cfg.sub[j]->maxmsgs = template->maxmsgs;
+									cfg.sub[j]->maxcrcs = template->maxcrcs;
+									cfg.sub[j]->maxage	= template->maxage;
+									cfg.sub[j]->faddr	= template->faddr; 
 								} 
 							} 
 					}
 					break;
-				case 5:
+				case __COUNTER__:
 					k=0;
 					ported=0;
 					q=uifc.changes;
-					strcpy(opt[k++],"SUBS.TXT    (Synchronet)");
-					strcpy(opt[k++],"AREAS.BBS   (SBBSecho)");
-					strcpy(opt[k++],"FIDONET.NA  (Fido)");
+					strcpy(opt[k++],"subs.txt       Synchronet Sub-boards");
+					strcpy(opt[k++],"areas.bbs      SBBSecho Area File");
+					strcpy(opt[k++],"backbone.na    FidoNet EchoList");
 					opt[k][0]=0;
 					uifc.helpbuf=
 						"`Export Area File Format:`\n"
 						"\n"
 						"This menu allows you to choose the format of the area file you wish to\n"
 						"export the current message group into.\n"
+						"\n"
+						"The supported message area list file formats to be exported are:\n"
+						"\n"
+						"`subs.txt`\n"
+						"  Complete details of a group of `Synchronet sub-boards` in text format.\n"
+						"\n"
+						"`areas.bbs`\n"
+						"  Area File as used by the Synchronet Fido EchoMail program, `SBBSecho`.\n"
+						"\n"
+						"`backbone.na` (also `fidonet.na` and `badareas.lst`)\n"
+						"  FidoNet standard EchoList containing standardized echo `Area Tags`\n"
+						"  and (optional) descriptions.\n"
+
 					;
-					k=0;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					k = uifc.list(WIN_MID|WIN_SAV,0,0,0,&export_list_type,0
 						,"Export Area File Format",opt);
 					if(k==-1)
 						break;
 					if(k==0)
-						sprintf(str,"%sSUBS.TXT",cfg.ctrl_dir);
+						sprintf(str,"%ssubs.txt",cfg.ctrl_dir);
 					else if(k==1)
-						sprintf(str,"%sAREAS.BBS",cfg.data_dir);
+						sprintf(str,"%sareas.bbs",cfg.data_dir);
 					else if(k==2)
-						sprintf(str,"FIDONET.NA");
+						sprintf(str,"backbone.na");
 					if(k==1)
 						if(uifc.input(WIN_MID|WIN_SAV,0,0,"Uplinks"
 							,str2,sizeof(str2)-1,0)<=0) {
@@ -507,7 +822,7 @@ void msgs_cfg()
 								,str2);
 							continue; 
 						}
-						if(k==2) {		/* FIDONET.NA */
+						if(k==2) {		/* BACKBONE.NA */
 							fprintf(stream,"%-*s %s\r\n"
 								,FIDO_AREATAG_LEN, stou(cfg.sub[j]->sname),cfg.sub[j]->lname);
 							continue; 
@@ -547,238 +862,105 @@ void msgs_cfg()
 					uifc.msg(str);
 					uifc.changes=q;
 					break;
-				case 6:
+				case __COUNTER__:
 					ported=0;
 					k=0;
-					strcpy(opt[k++],"SUBS.TXT    (Synchronet)");
-					strcpy(opt[k++],"AREAS.BBS   (Generic)");
-					strcpy(opt[k++],"AREAS.BBS   (SBBSecho)");
-					strcpy(opt[k++],"FIDONET.NA  (Fido)");
+					strcpy(opt[k++],"subs.txt        Synchronet Sub-boards");
+					strcpy(opt[k++],"control.dat     QWK Conference List");
+					strcpy(opt[k++],"areas.bbs       Generic Area File");
+					strcpy(opt[k++],"areas.bbs       SBBSecho Area File");
+					strcpy(opt[k++],"backbone.na     FidoNet EchoList");
+					strcpy(opt[k++],"badareas.lst    SBBSecho Bad Area List");
 					opt[k][0]=0;
 					uifc.helpbuf=
 						"`Import Area File Format:`\n"
 						"\n"
 						"This menu allows you to choose the format of the area file you wish to\n"
 						"import into the current message group.\n"
+						"\n"
+						"The supported message area list file formats to be imported are:\n"
+						"\n"
+						"`subs.txt`\n"
+						"  Complete details of a group of sub-boards as exported from `SCFG`.\n"
+						"\n"
+						"`areas.bbs`\n"
+						"  FidoNet EchoMail Area File, in either `Generic` or `SBBSecho` flavors,\n"
+						"  as used by most FidoNet EchoMail Programs or SBBSecho.\n"
+						"\n"
+						"`backbone.na` (also `fidonet.na` and `badareas.lst`)\n"
+						"  FidoNet standard EchoList containing standardized echo `Area Tags`\n"
+						"  and (optional) descriptions.\n"
 					;
-					k=0;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&import_list_type,0
 						,"Import Area File Format",opt);
-					if(k==-1)
+					if(k < 0)
 						break;
-					if(k==0)
-						sprintf(str,"%sSUBS.TXT",cfg.ctrl_dir);
-					else if(k==1)
-						sprintf(str,"AREAS.BBS");
-					else if(k==2)
-						sprintf(str,"%sAREAS.BBS",cfg.data_dir);
-					else if(k==3)
-						sprintf(str,"FIDONET.NA");
+					char filename[MAX_PATH+1];
+					switch(k) {
+						case IMPORT_LIST_TYPE_SUBS_TXT:
+							sprintf(filename, "%ssubs.txt", cfg.ctrl_dir);
+							break;
+						case IMPORT_LIST_TYPE_QWK_CONTROL_DAT:
+							sprintf(filename, "control.dat");
+							break;
+						case IMPORT_LIST_TYPE_GENERIC_AREAS_BBS:
+							sprintf(filename, "areas.bbs");
+							break;
+						case IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS:
+							sprintf(filename, "%sareas.bbs", cfg.data_dir);
+							break;
+						case IMPORT_LIST_TYPE_BACKBONE_NA:
+							sprintf(filename, "backbone.na");
+							break;
+						default:
+							sprintf(filename,"%sbadareas.lst", cfg.data_dir);
+							k = IMPORT_LIST_TYPE_BACKBONE_NA;
+							break;
+					}
+
+					/* QWK Conference number range */
+					int min_confnum, max_confnum;
+					if(k == IMPORT_LIST_TYPE_QWK_CONTROL_DAT) {
+						strcpy(str, "1000");
+						uifc.helpbuf = "`Minimum / Maximum QWK Conference Number:`\n"
+							"\n"
+							"This setting allows you to control the range of QWK conference numbers\n"
+							"that will be imported from the `control.dat` file.";
+						if(uifc.input(WIN_MID|WIN_SAV,0,0,"Minimum QWK Conference Number"
+							,str,5,K_EDIT|K_NUMBER) < 1)
+							break;
+						min_confnum = atoi(str);
+						sprintf(str, "%u", min_confnum + 999);
+						if(uifc.input(WIN_MID|WIN_SAV,0,0,"Maximum QWK Conference Number"
+							,str,5,K_EDIT|K_NUMBER) < 1)
+							break;
+						max_confnum = atoi(str);
+					}
+					uifc.helpbuf = "Enter the path to the Area List file to import";
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
-						,str,sizeof(str)-1,K_EDIT)<=0)
+						,filename,sizeof(filename)-1,K_EDIT)<=0)
 						break;
-					if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
+					fexistcase(filename);
+					if((stream=fnopen(&file,filename,O_RDONLY))==NULL) {
 						uifc.msg("Open Failure");
 						break; 
 					}
 					uifc.pop("Importing Areas...");
-					total_subs = cfg.total_subs;	 /* Save original number of subs */
-					ptridx = 0;
-					while(!feof(stream)) {
-						if(!fgets(str,sizeof(str),stream)) break;
-						truncsp(str);
-						if(!str[0])
-							continue;
-						if(k) {
-							p=str;
-							while(*p && *p<=' ') p++;
-							if(!*p || *p==';')
-								continue;
-							memset(&tmpsub,0,sizeof(sub_t));
-							tmpsub.misc|=
-								(SUB_FIDO|SUB_NAME|SUB_TOUSER|SUB_QUOTE|SUB_HYPER);
-							if(k==1) {		/* AREAS.BBS Generic/.MSG */
-								p=str;
-								SKIP_WHITESPACE(p);			/* Find path	*/
-								FIND_WHITESPACE(p);			/* Skip path	*/
-								SKIP_WHITESPACE(p);			/* Find tag		*/
-								truncstr(p," \t");			/* Truncate tag */
-								SAFECOPY(tmp_code,p);		/* Copy tag to internal code */
-								SAFECOPY(tmpsub.lname,utos(p));
-								SAFECOPY(tmpsub.sname,tmpsub.lname);
-								SAFECOPY(tmpsub.qwkname,tmpsub.qwkname);
-							}
-							else if(k==2) { /* AREAS.BBS SBBSecho */
-								p=str;
-								SKIP_WHITESPACE(p);			/* Find internal code */
-								tp=p;
-								FIND_WHITESPACE(tp);
-								*tp=0;						/* Truncate internal code */
-								SAFECOPY(tmp_code,p);		/* Copy internal code suffix */
-								p=tp+1;
-								SKIP_WHITESPACE(p);			/* Find echo tag */
-								truncstr(p," \t");			/* Truncate tag */
-								SAFECOPY(tmpsub.lname,utos(p));
-								SAFECOPY(tmpsub.sname,tmpsub.lname);
-								SAFECOPY(tmpsub.qwkname,tmpsub.sname);
-							}
-							else if(k==3) { /* FIDONET.NA */
-								p=str;
-								SKIP_WHITESPACE(p);			/* Find echo tag */
-								tp=p;
-								FIND_WHITESPACE(tp);		/* Find end of tag */
-								*tp=0;						/* Truncate echo tag */
-								SAFECOPY(tmp_code,p);		/* Copy tag to internal code suffix */
-								SAFECOPY(tmpsub.sname,utos(p));	/* ... to short name, converting underscores to spaces */
-								SAFECOPY(tmpsub.qwkname,tmpsub.sname);	/* ... to QWK name .... */
-								p=tp+1;
-								SKIP_WHITESPACE(p);			/* Find description */
-								SAFECOPY(tmpsub.lname,p);	/* Copy description to long name */
-							}
-						}
-						else {
-							memset(&tmpsub,0,sizeof(sub_t));
-							tmpsub.grp=i;
-							sprintf(tmpsub.lname,"%.*s",LEN_SLNAME,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.qwkname,"%.*s",10,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							SAFECOPY(tmp_code,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.data_dir,"%.*s",LEN_DIR,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.arstr,"%.*s",LEN_ARSTR,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.read_arstr,"%.*s",LEN_ARSTR,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.post_arstr,"%.*s",LEN_ARSTR,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.op_arstr,"%.*s",LEN_ARSTR,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							tmpsub.misc=ahtoul(str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.tagline,"%.*s",80,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.origline,"%.*s",50,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.post_sem,"%.*s",LEN_DIR,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							SAFECOPY(tmpsub.newsgroup,str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							tmpsub.faddr=atofaddr(str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							tmpsub.maxmsgs=atol(str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							tmpsub.maxcrcs=atol(str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							tmpsub.maxage=atoi(str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							tmpsub.ptridx=atoi(str);
-							if(!fgets(str,128,stream)) break;
-							truncsp(str);
-							sprintf(tmpsub.mod_arstr,"%.*s",LEN_ARSTR,str);
-
-							while(!feof(stream)
-								&& strcmp(str,"***END-OF-SUB***")) {
-								if(!fgets(str,128,stream)) break;
-								truncsp(str); 
-							} 
-						}
-
-						SAFECOPY(tmpsub.code_suffix, prep_code(tmp_code,cfg.grp[grpnum]->code_prefix));
-						truncsp(tmpsub.sname);
-						truncsp(tmpsub.lname);
-						truncsp(tmpsub.qwkname);
-
-						if(tmpsub.code_suffix[0]==0
-							|| tmpsub.sname[0]==0
-							|| tmpsub.lname[0]==0
-							|| tmpsub.qwkname[0]==0)
-							continue;
-
-						for(u=0;u<total_subs;u++) {
-							if(cfg.sub[u]->grp!=i)
-								continue;
-							if(!stricmp(cfg.sub[u]->code_suffix,tmpsub.code_suffix))
-								break; 
-						}
-						j=u;
-						if(j==total_subs) {
-							j=cfg.total_subs;
-							if((cfg.sub=(sub_t **)realloc(cfg.sub
-								,sizeof(sub_t *)*(cfg.total_subs+1)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_subs+1);
-								cfg.total_subs=0;
-								bail(1);
-								break; 
-							}
-
-							if((cfg.sub[j]=(sub_t *)malloc(sizeof(sub_t)))
-								==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(sub_t));
-								break; 
-							}
-							memset(cfg.sub[j],0,sizeof(sub_t)); 
-						}
-						if(!k) {
-							n=cfg.sub[j]->ptridx;	/* save original ptridx */
-							memcpy(cfg.sub[j],&tmpsub,sizeof(sub_t));
-							cfg.sub[j]->ptridx=n;	/* restore original ptridx */
-						} else {
-							cfg.sub[j]->grp=i;
-							if(cfg.total_faddrs)
-								cfg.sub[j]->faddr=cfg.faddr[0];
-							strcpy(cfg.sub[j]->code_suffix,tmpsub.code_suffix);
-							strcpy(cfg.sub[j]->sname,tmpsub.sname);
-							strcpy(cfg.sub[j]->lname,tmpsub.lname);
-							strcpy(cfg.sub[j]->qwkname,tmpsub.qwkname);
-							strcpy(cfg.sub[j]->data_dir,tmpsub.data_dir);
-							if(j==cfg.total_subs)
-								cfg.sub[j]->maxmsgs=1000;
-						}
-						if(j==cfg.total_subs) {	/* adding new sub-board */
-							for(;ptridx<USHRT_MAX;ptridx++) {
-								for(u=0;u<total_subs;u++)
-									if(cfg.sub[u]->ptridx==ptridx)
-										break;
-								if(u==total_subs)
-									break; 
-							}
-							cfg.sub[j]->ptridx=ptridx;	/* use new ptridx */
-							cfg.sub[j]->misc=tmpsub.misc;
-							cfg.total_subs++; 
-							ptridx++;	/* don't use the same ptridx for next sub */
-						}
-						uifc.changes=1; 
-						ported++;
-					}
+					long added = 0;
+					ported = import_msg_areas(k, stream, i, min_confnum, max_confnum, /* qhub: */NULL, &added);
 					fclose(stream);
 					uifc.pop(0);
-					sprintf(str,"%lu Message Areas Imported Successfully",ported);
+					if(ported < 0)
+						sprintf(str, "!ERROR %ld imported message areas", ported);
+					else {
+						sprintf(str, "%ld Message Areas Imported Successfully (%ld added)",ported, added);
+						if(ported > 0)
+							uifc.changes = TRUE;
+					}
 					uifc.msg(str);
 					break;
 
-				case 7:
+				case __COUNTER__:
 					sub_cfg(i);
 					break; 
 			} 

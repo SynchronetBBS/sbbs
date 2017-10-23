@@ -141,7 +141,7 @@ void node_menu()
 			savnode=1;
 			continue; 
 		}
-		if(msk == MSK_PASTE_OVER) {
+		if(msk == MSK_PASTE) {
 			i&=MSK_OFF;
 			SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 			cfg.node_num=i+1;

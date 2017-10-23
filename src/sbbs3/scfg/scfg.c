@@ -55,6 +55,7 @@ char **opt;
 char tmp[256];
 char error[256];
 int  backup_level=5;
+char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code", NULL };
 
 char *invalid_code=
 	"`Invalid Internal Code:`\n\n"
@@ -75,6 +76,85 @@ void allocfail(uint size)
     printf("\7Error allocating %u bytes of memory.\r\n",size);
     bail(1);
 }
+
+enum import_list_type determine_msg_list_type(const char* path)
+{
+	const char* fname = getfname(path);
+
+	if(stricmp(fname, "subs.txt") == 0)
+		return IMPORT_LIST_TYPE_SUBS_TXT;
+	if(stricmp(fname, "areas.bbs") == 0)
+		return IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS;
+	if(stricmp(fname, "control.dat") == 0)
+		return IMPORT_LIST_TYPE_QWK_CONTROL_DAT;
+	return IMPORT_LIST_TYPE_BACKBONE_NA;
+}
+
+uint group_num_from_name(const char* name)
+{
+	uint u;
+
+	for(u=0; u<cfg.total_grps; u++)
+		if(stricmp(cfg.grp[u]->sname, name) == 0)
+			return u;
+
+	return u;
+}
+
+static int sort_group = 0;
+
+int sub_compare(const void* c1, const void* c2)
+{
+	sub_t* sub1 = *(sub_t**)c1;
+	sub_t* sub2 = *(sub_t**)c2;
+
+	if(sub1->grp != sort_group && sub2->grp != sort_group)
+		return 0;
+
+	if(sub1->grp != sort_group || sub2->grp != sort_group)
+		return sub1->grp - sub2->grp;
+	if(cfg.grp[sort_group]->sort == AREA_SORT_LNAME)
+		return stricmp(sub1->lname, sub2->lname);
+	if(cfg.grp[sort_group]->sort == AREA_SORT_SNAME)
+		return stricmp(sub1->sname, sub2->sname);
+	if(cfg.grp[sort_group]->sort == AREA_SORT_CODE)
+		return stricmp(sub1->code_suffix, sub2->code_suffix);
+	return sub1->subnum - sub2->subnum;
+}
+
+void sort_subs(int grpnum)
+{
+	sort_group = grpnum;
+	qsort(cfg.sub, cfg.total_subs, sizeof(sub_t*), sub_compare);
+}
+
+static int sort_lib = 0;
+
+int dir_compare(const void* c1, const void* c2)
+{
+	dir_t* dir1 = *(dir_t**)c1;
+	dir_t* dir2 = *(dir_t**)c2;
+
+	if(dir1->lib != sort_lib && dir2->lib != sort_lib)
+		return 0;
+
+	if(dir1->lib != sort_lib || dir2->lib != sort_lib)
+		return dir1->lib - dir2->lib;
+	if(cfg.lib[sort_lib]->sort == AREA_SORT_LNAME)
+		return stricmp(dir1->lname, dir2->lname);
+	if(cfg.lib[sort_lib]->sort == AREA_SORT_SNAME)
+		return stricmp(dir1->sname, dir2->sname);
+	if(cfg.lib[sort_lib]->sort == AREA_SORT_CODE)
+		return stricmp(dir1->code_suffix, dir2->code_suffix);
+	return dir1->dirnum - dir2->dirnum;
+}
+
+void sort_dirs(int libnum)
+{
+	sort_lib = libnum;
+	qsort(cfg.dir, cfg.total_dirs, sizeof(dir_t*), dir_compare);
+}
+
 
 int main(int argc, char **argv)
 {
@@ -101,12 +181,19 @@ int main(int argc, char **argv)
 
 	uifc.esc_delay=25;
 
+	const char* import = NULL;
+	const char* grpname = NULL;
+	unsigned int grpnum = 0;
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
 #ifndef __unix__
             || argv[i][0]=='/'
 #endif
-            )
+            ) {
+			if(strncmp(argv[i]+1, "import=", 7) == 0) {
+				import = argv[i] + 8;
+				continue;
+			}
             switch(toupper(argv[i][1])) {
                 case 'N':   /* Set "New Installation" flag */
 					new_install=TRUE;
@@ -135,6 +222,12 @@ int main(int argc, char **argv)
                 case 'S':
         			no_dirchk=!no_dirchk;
                     break;
+				case 'G':
+					if(isalpha(argv[i][2]))
+						grpname = argv[i]+2;
+					else
+						grpnum = atoi(argv[i]+2);
+					break;
                 case 'H':
         			no_msghdr=!no_msghdr;
                     break;
@@ -199,6 +292,7 @@ int main(int argc, char **argv)
 						"-c  =  force color mode\r\n"
 						"-m  =  force monochrome mode\r\n"
                         "-e# =  set escape delay to #msec\r\n"
+						"-g# =  set group number to import into\r\n"
 						"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
 #ifdef __unix__
 						"       X = X11 mode\r\n"
@@ -216,9 +310,10 @@ int main(int argc, char **argv)
 						,backup_level
                         );
         			exit(0);
-           }
-        else
-            SAFECOPY(cfg.ctrl_dir,argv[i]);
+			}
+		}
+		else
+			SAFECOPY(cfg.ctrl_dir,argv[i]);
     }
 
 #ifdef _WIN32
@@ -235,6 +330,63 @@ int main(int argc, char **argv)
 	FULLPATH(cfg.ctrl_dir,".",sizeof(cfg.ctrl_dir));
 	backslashcolon(cfg.ctrl_dir);
 
+	if(import != NULL && *import != 0) {
+		enum { msgbase = 'M', filebase = 'F', xtrns = 'X' } base = msgbase;
+		char fname[MAX_PATH+1];
+		SAFECOPY(fname, import);
+		p = strchr(fname, ',');
+		if(p != NULL) {
+			*p = 0;
+			p++;
+			base = toupper(*p);
+		}
+		FILE* fp = fopen(fname, "r");
+		if(fp == NULL) {
+			perror(fname);
+			return EXIT_FAILURE;
+		}
+
+		printf("Reading MAIN.CNF...\n");
+		if(!read_main_cfg(&cfg,error)) {
+			printf("ERROR: %s",error);
+			return EXIT_FAILURE;
+		}
+		printf("Reading MSGS.CNF...");
+		if(!read_msgs_cfg(&cfg,error)) {
+			printf("ERROR: %s",error);
+			return EXIT_FAILURE;
+		}
+
+		if(grpname != NULL)
+			grpnum = group_num_from_name(grpname);
+
+		if(grpnum >= cfg.total_grps) {
+			printf("!Invalid group specified!\n");
+			return EXIT_FAILURE;
+		}
+		printf("Importing %s from %s\n", "Areas", fname);
+		long ported = 0;
+		long added = 0;
+		switch(base) {
+			case msgbase:
+			{
+				enum import_list_type list_type = determine_msg_list_type(fname);
+				ported = import_msg_areas(list_type, fp, grpnum, 1, 99999, /* qhub: */NULL, &added);
+				break;
+			}
+		}
+		fclose(fp);
+		if(ported < 0)
+			printf("!ERROR %ld importing areas from %s\n", ported, fname);
+		else {
+			printf("Imported %ld areas (%ld added) from %s\n", ported, added, fname);
+			write_msgs_cfg(&cfg,backup_level);
+			refresh_cfg(&cfg);
+		}
+		free_msgs_cfg(&cfg);
+		free_main_cfg(&cfg);
+		return EXIT_SUCCESS;
+	}
 	uifc.size=sizeof(uifc);
 	if(!door_mode) {
 		i=initciolib(ciolib_mode);
@@ -617,7 +769,7 @@ void txt_cfg()
 		opt[i][0]=0;
 		j=WIN_ORG|WIN_ACT|WIN_CHE;
 		if(cfg.total_txtsecs)
-			j|=WIN_DEL | WIN_COPY;
+			j|=WIN_DEL | WIN_COPY | WIN_CUT;
 		if(cfg.total_txtsecs<MAX_OPTS)
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savtxtsec.name[0])
@@ -668,7 +820,7 @@ void txt_cfg()
 				"\n"
 				"Every text file section must have its own unique internal code for\n"
 				"Synchronet to reference it by. It is helpful if this code is an\n"
-				"abreviation of the name.\n"
+				"abbreviation of the name.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Internal Code",code,LEN_CODE
 				,K_EDIT)<1)
@@ -714,7 +866,7 @@ void txt_cfg()
 			savtxtsec=*cfg.txtsec[i];
 			continue; 
 		}
-		if (msk == MSK_PASTE_OVER) {
+		if (msk == MSK_PASTE) {
 			*cfg.txtsec[i]=savtxtsec;
 			uifc.changes=1;
 			continue; 
@@ -759,7 +911,7 @@ void txt_cfg()
 						"\n"
 						"Every text file section must have its own unique internal code for\n"
 						"Synchronet to reference it by. It is helpful if this code is an\n"
-						"abreviation of the name.\n"
+						"abbreviation of the name.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT);
@@ -790,7 +942,7 @@ void shell_cfg()
 		opt[i][0]=0;
 		j=WIN_ORG|WIN_ACT|WIN_CHE;
 		if(cfg.total_shells)
-			j|=WIN_DEL|WIN_COPY;
+			j |= WIN_DEL | WIN_COPY | WIN_CUT;
 		if(cfg.total_shells<MAX_OPTS)
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savshell.name[0])
@@ -840,11 +992,11 @@ void shell_cfg()
 				"\n"
 				"Every command shell must have its own unique internal code for\n"
 				"Synchronet to reference it by. It is helpful if this code is an\n"
-				"abreviation of the name.\n"
+				"abbreviation of the name.\n"
 				"\n"
 				"This code will be the base filename used to load the shell from your\n"
-				"EXEC directory. e.g. A shell with an internal code of `MYBBS` would\n"
-				"indicate a Baja shell file named `MYBBS.BIN` in your EXEC directory.\n"
+				"`exec` directory. e.g. A shell with an internal code of `MYBBS` would\n"
+				"indicate a Baja shell file named `mybbs.bin` in your exec directory.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Internal Code",code,LEN_CODE
 				,K_EDIT)<1)
@@ -890,7 +1042,7 @@ void shell_cfg()
 			savshell=*cfg.shell[i];
 			continue; 
 		}
-		if (msk == MSK_PASTE_OVER) {
+		if (msk == MSK_PASTE) {
 			*cfg.shell[i]=savshell;
 			uifc.changes=1;
 			continue; 
@@ -912,12 +1064,12 @@ void shell_cfg()
 				"\n"
 				"A command shell is a programmed command and menu structure that you or\n"
 				"your users can use to navigate the BBS. For every command shell\n"
-				"configured here, there must be an associated .BIN file in your EXEC\n"
+				"configured here, there must be an associated `.bin` file in your `exec`\n"
 				"directory for Synchronet to execute.\n"
 				"\n"
 				"Command shell files are created by using the Baja command shell compiler\n"
-				"to turn Baja source code (.SRC) files into binary files (.BIN) for\n"
-				"Synchronet to interpret. See the example .SRC files in the TEXT\n"
+				"to turn Baja source code (`.src`) files into binary files (`.bin`) for\n"
+				"Synchronet to interpret. See the example `.src` files in the `exec`\n"
 				"directory and the documentation for the Baja compiler for more details.\n"
 			;
 			switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.shell[i]->name
@@ -948,11 +1100,11 @@ void shell_cfg()
 						"\n"
 						"Every command shell must have its own unique internal code for\n"
 						"Synchronet to reference it by. It is helpful if this code is an\n"
-						"abreviation of the name.\n"
+						"abbreviation of the name.\n"
 						"\n"
 						"This code will be the base filename used to load the shell from your\n"
-						"EXEC directory. e.g. A shell with an internal code of `MYBBS` would\n"
-						"indicate a Baja shell file named `MYBBS.BIN` in your EXEC directory.\n"
+						"`exec` directory. e.g. A shell with an internal code of `MYBBS` would\n"
+						"indicate a Baja shell file named `mybbs.bin` in your exec directory.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT);
@@ -1009,7 +1161,7 @@ int whichcond(void)
 		"\n"
 		"If you wish this new parameter to be required along with the other\n"
 		"parameters, select `AND` to specify that `both` or `all` of the\n"
-		"parameter requirments must be met.\n"
+		"parameter requirements must be met.\n"
 		"\n"
 		"If you wish this new parameter to only be required if the other\n"
 		"parameter requirements aren't met, select `OR` to specify that `either`\n"
@@ -1279,23 +1431,23 @@ void getar(char *desc, char *inar)
 			break;
 		case 0:
 			uifc.helpbuf=
-				"Key wor    Symbo       Description\n"
+				"Key word   Symbol      Description\n"
 				"컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴\n"
 				"AND          &         More than one requirement (optional)\n"
 				"NOT          !         Logical negation (i.e. NOT EQUAL)\n"
-				"EQUA         =         Equality required\n"
-				"O            |         Either of two or more parameters is required\n"
-				"AGE          $         User's age (years since birthdate, 0-255)\n"
+				"EQUAL        =         Equality required\n"
+				"OR           |         Either of two or more parameters is required\n"
+				"AGE          $         User's age (years since birth date, 0-255)\n"
 				"BPS          $         User's current connect rate (bps)\n"
-				"FLA          $         User's flag (A-Z)\n"
-				"LEVE         $         User's level (0-99)\n"
-				"NOD          $         Current node (1-250)\n"
+				"FLAG         $         User's flag (A-Z)\n"
+				"LEVEL        $         User's level (0-99)\n"
+				"NODE         $         Current node (1-250)\n"
 				"PCR          $         User's post/call ratio (0-100)\n"
 				"SEX          $         User's sex/gender (M or F)\n"
-				"TIM          $         Time of day (HH:MM, 00:00-23:59)\n"
-				"TLEF         $         User's time left online (minutes, 0-255)\n"
-				"TUSE         $         User's time online this call (minutes, 0-255)\n"
-				"USE          $         User's number (1-xxxx)\n"
+				"TIME         $         Time of day (HH:MM, 00:00-23:59)\n"
+				"TLEFT        $         User's time left online (minutes, 0-255)\n"
+				"TUSED        $         User's time online this call (minutes, 0-255)\n"
+				"USER         $         User's number (1-xxxx)\n"
 			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Requirement String",ar,LEN_ARSTR
                 ,K_EDIT|K_UPPER);
@@ -1942,14 +2094,24 @@ void getar(char *desc, char *inar)
 	sprintf(inar,"%.*s",LEN_ARSTR,ar);
 }
 
-int code_ok(char *str)
+BOOL code_ok(char *str)
 {
 
-	if(!strlen(str))
-		return(0);
+	if(*str == 0)
+		return FALSE;
 	if(strcspn(str," \\/|<>*?+[]:=\";,")!=strlen(str))
-		return(0);
-	return(1);
+		return FALSE;
+	return TRUE;
+}
+
+char random_code_char(void)
+{
+	char ch = (char)xp_random(36);
+
+	if(ch < 10)
+		return '0' + ch;
+	else
+		return 'A' + (ch - 10);
 }
 
 #ifdef __BORLANDC__
@@ -2015,35 +2177,6 @@ void errormsg(int line, const char* function, const char *source, const char* ac
     printf("\nHit enter to continue...");
     getchar();
     puttext(1,1,80,uifc.scrn_len,scrn_buf);
-}
-
-/* Prepare a string to be used as an internal code */
-/* Return the usable code */
-char* prep_code(char *str, const char* prefix)
-{
-	char tmp[1024];
-	int i,j;
-
-	if(prefix!=NULL) {	/* skip the grp/lib prefix, if specified */
-		i=strlen(prefix);
-		if(i && strnicmp(str,prefix,i)==0 && strlen(str)!=i)
-			str+=i;
-	}
-	for(i=j=0;str[i] && i<sizeof(tmp);i++)
-		if(str[i]>' ' && !(str[i]&0x80) && str[i]!='*' && str[i]!='?'
-			&& strchr(ILLEGAL_FILENAME_CHARS,str[i])==NULL)
-			tmp[j++]=toupper(str[i]);
-	tmp[j]=0;
-	strcpy(str,tmp);
-	if(j>LEN_CODE) {	/* Extra chars? Strip symbolic chars */
-		for(i=j=0;str[i];i++)
-			if(isalnum(str[i]))
-				tmp[j++]=str[i];
-		tmp[j]=0;
-		strcpy(str,tmp);
-	}
-	str[LEN_CODE]=0;
-	return(str);
 }
 
 /* End of SCFG.C */

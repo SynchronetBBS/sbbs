@@ -70,6 +70,7 @@ extern char *nulstr;
 extern char *invalid_code,*num_flags;
 extern int	backup_level;
 extern BOOL new_install;
+char* area_sort_desc[];
 
 /***********************/
 /* Function Prototypes */
@@ -111,6 +112,24 @@ int export_mdm(char *fname);
 int code_ok(char *str);
 int  bits(long l);
 void getar(char *desc, char *ar);
+bool new_sub(unsigned new_subnum, unsigned group_num);
+bool new_qhub_sub(qhub_t*, unsigned qsubnum, sub_t*, unsigned confnum);
+void sort_subs(int grpnum);
+void sort_dirs(int libnum);
+unsigned subs_in_group(unsigned grpnum);
+char random_code_char(void);
+
+#define MAX_UNIQUE_CODE_ATTEMPTS (36*36*36)
+
+enum import_list_type {
+	IMPORT_LIST_TYPE_SUBS_TXT,
+	IMPORT_LIST_TYPE_QWK_CONTROL_DAT,
+	IMPORT_LIST_TYPE_GENERIC_AREAS_BBS,
+	IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS,
+	IMPORT_LIST_TYPE_BACKBONE_NA,
+};
+	
+long import_msg_areas(enum import_list_type, FILE*, unsigned grpnum, int min_confnum, int max_confnum, qhub_t*, long* added);
 
 /* Prepare a string to be used as an internal code; Note: use the return value, Luke */
 char* prep_code(char *str, const char* prefix);

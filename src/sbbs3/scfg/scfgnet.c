@@ -37,6 +37,52 @@ void qhub_edit(int num);
 void phub_edit(int num);
 char *daystr(char days);
 void qhub_sub_edit(uint num);
+BOOL import_qwk_conferences(uint num);
+
+bool new_qhub(unsigned new_qhubnum)
+{
+	qhub_t* new_qhub = malloc(sizeof(qhub_t));
+	if(new_qhub == NULL) {
+		/* ToDo: report error */
+		return false;
+	}
+	memset(new_qhub, 0, sizeof(*new_qhub));
+
+	qhub_t** new_qhub_list = realloc(cfg.qhub, sizeof(qhub_t*) * (cfg.total_qhubs + 1));
+	if(new_qhub_list == NULL) {
+		/* ToDo: report error */
+		return false;
+	}
+	cfg.qhub = new_qhub_list;
+
+	for(unsigned u = cfg.total_qhubs; u > new_qhubnum; u--)
+		cfg.qhub[u] = cfg.qhub[u - 1];
+
+	cfg.qhub[new_qhubnum] = new_qhub;
+	cfg.total_qhubs++;
+	return true;
+}
+
+bool new_qhub_sub(qhub_t* qhub, unsigned subnum, sub_t* sub, unsigned confnum)
+{
+	if((qhub->sub=realloc(qhub->sub, sizeof(sub_t *)*(qhub->subs+1)))==NULL
+		|| (qhub->conf=(ushort *)realloc(qhub->conf, sizeof(ushort *)*(qhub->subs+1)))==NULL
+		|| (qhub->mode=(char *)realloc(qhub->mode, sizeof(uchar *)*(qhub->subs+1)))==NULL) {
+		/* ToDo: report error */
+		return false;
+	}
+	for(unsigned u = qhub->subs; u > subnum; u--) {
+		qhub->sub[u]=qhub->sub[u-1];
+		qhub->conf[u]=qhub->conf[u-1];
+		qhub->mode[u]=qhub->mode[u-1]; 
+	}
+	qhub->sub[subnum] = sub;
+	qhub->conf[subnum] = confnum;
+	qhub->mode[subnum] = qhub->misc&QHUB_CTRL_A;
+	qhub->subs++;
+	return true;
+}
+
 /****************************************************************************/
 /* Returns the FidoNet address kept in str as ASCII.                        */
 /****************************************************************************/
@@ -73,20 +119,26 @@ faddr_t atofaddr(char *str)
 	return(addr);
 }
 
+uint getgrp(char* title)
+{
+	static int grp_dflt,grp_bar;
+	int i;
+
+	for(i=0;i<cfg.total_grps && i<MAX_OPTS;i++)
+		sprintf(opt[i], "%-25s", cfg.grp[i]->lname);
+	opt[i][0]=0;
+	return uifc.list(WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&grp_dflt,&grp_bar, title, opt);
+}
+
 uint getsub(void)
 {
-	static int grp_dflt,sub_dflt,grp_bar,sub_bar;
+	static int sub_dflt,sub_bar;
 	char str[81];
 	int i,j,k;
 	uint subnum[MAX_OPTS+1];
 
 	while(1) {
-		for(i=0;i<cfg.total_grps && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-25s",cfg.grp[i]->lname);
-		opt[i][0]=0;
-		i=uifc.list(WIN_SAV|WIN_RHT|WIN_BOT,0,0,45,&grp_dflt,&grp_bar
-			,"Message Groups"
-			,opt);
+		i = getgrp("Select Message Group");
 		if(i==-1)
 			return(-1);
 		for(j=k=0;j<cfg.total_subs && k<MAX_OPTS;j++)
@@ -95,7 +147,7 @@ uint getsub(void)
 				subnum[k++]=j; 
 			}
 		opt[k][0]=0;
-		sprintf(str,"%s Sub-boards",cfg.grp[i]->sname);
+		sprintf(str,"Select %s Sub-board",cfg.grp[i]->sname);
 		j=uifc.list(WIN_RHT|WIN_BOT|WIN_SAV,0,0,45,&sub_dflt,&sub_bar,str,opt);
 		if(j==-1)
 			continue;
@@ -186,15 +238,6 @@ while(1) {
 						int msk = i & MSK_ON;
 						i &= MSK_OFF;
 						if (msk == MSK_INS) {
-							if((cfg.qhub=(qhub_t **)realloc(cfg.qhub
-                                ,sizeof(qhub_t *)*(cfg.total_qhubs+1)))==NULL) {
-                                errormsg(WHERE,ERR_ALLOC,nulstr
-                                    ,sizeof(qhub_t *)*(cfg.total_qhubs+1));
-								cfg.total_qhubs=0;
-								bail(1);
-                                continue; 
-							}
-
 							uifc.helpbuf=
 								"`QWK Network Hub System ID:`\n"
 								"\n"
@@ -204,23 +247,14 @@ while(1) {
 							if(uifc.input(WIN_MID|WIN_SAV,0,0
 								,"System ID",str,LEN_QWKID,K_UPPER)<1)
 								continue;
-
-							for(j=cfg.total_qhubs;j>i;j--)
-                                cfg.qhub[j]=cfg.qhub[j-1];
-							if((cfg.qhub[i]=(qhub_t *)malloc(sizeof(qhub_t)))
-								==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr
-									,sizeof(qhub_t));
-								continue; 
-							}
-							memset(cfg.qhub[i],0,sizeof(qhub_t));
-							strcpy(cfg.qhub[i]->id,str);
-							strcpy(cfg.qhub[i]->pack,"%@zip -jD %f %s");
-							strcpy(cfg.qhub[i]->unpack,"%@unzip -Coj %f %s -d %g");
-							strcpy(cfg.qhub[i]->call,"*qnet-ftp VERT vert.synchro.net YOURPASS");
+							if(!new_qhub(i))
+								continue;
+							SAFECOPY(cfg.qhub[i]->id,str);
+							SAFECOPY(cfg.qhub[i]->pack,"%@zip -jD %f %s");
+							SAFECOPY(cfg.qhub[i]->unpack,"%@unzip -Coj %f %s -d %g");
+							SAFECOPY(cfg.qhub[i]->call,"*qnet-ftp %s hub.address YOURPASS");
 							cfg.qhub[i]->node=1;
 							cfg.qhub[i]->days=(uchar)0xff; /* all days */
-							cfg.total_qhubs++;
 							uifc.changes=1;
 							continue; 
 						}
@@ -911,9 +945,10 @@ while(!done) {
 	sprintf(opt[i++],"%-27.27s%s","Extended (QWKE) Packets", cfg.qhub[num]->misc&QHUB_EXT ? "Yes":"No");
 	sprintf(opt[i++],"%-27.27s%s","Exported Ctrl-A Codes"
 		,cfg.qhub[num]->misc&QHUB_EXPCTLA ? "Expand" : cfg.qhub[num]->misc&QHUB_RETCTLA ? "Leave in" : "Strip");
+	strcpy(opt[i++],"Import Conferences...");
 	strcpy(opt[i++],"Networked Sub-boards...");
 	opt[i][0]=0;
-	sprintf(str,"%s Network Hub",cfg.qhub[num]->id);
+	sprintf(str,"%s QWK Network Hub",cfg.qhub[num]->id);
 	uifc.helpbuf=
 		"`QWK Network Hub Configuration:`\n"
 		"\n"
@@ -946,7 +981,15 @@ while(!done) {
 		"codes in messages are exported into the QWK network packets. This\n"
 		"may be set to `Leave in` (retain), `Expand` (to ANSI), or `Strip` (remove).\n"
 		"This setting is used for QWKnet NetMail messages and may over-ride the\n"
-		"equivalent setting for each sub-board."
+		"equivalent setting for each sub-board.\n"
+		"\n"
+		"`Import Conferences...` allows you to import a QWK `control.dat` file which\n"
+		"can both create new sub-boards in a target message group of your choice\n"
+		"and set the `Networked Sub-boards` with QWK conference numbers correlating\n"
+		"with the hub system.\n"
+		"\n"
+		"`Networked Sub-boards...` allows you to manually add, remove, or modify\n"
+		"local sub-board associations with conferences on this QWK network hub.\n"
 	;
 	switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&qhub_dflt,0
 		,str,opt)) {
@@ -1107,6 +1150,9 @@ while(!done) {
 			uifc.changes=1;
 			break;
 		case 12:
+			import_qwk_conferences(num);
+			break;
+		case 13:
 			qhub_sub_edit(num);
 			break; 
 		} 
@@ -1118,21 +1164,51 @@ void qhub_sub_edit(uint num)
 	char str[256];
 	int j,k,l,m,n,bar=0;
 
+	char* qwk_conf_num_help =
+		"`Conference Number on Hub:`\n"
+		"\n"
+		"This is the number of the conference on the QWK network hub.\n"
+		"\n"
+		"It is important to understand that this is `NOT` necessarily the\n"
+		"conference number of this sub-board on your system. It is the number\n"
+		"of the conference this sub-board is networked with on this `QWK\n"
+		"network hub`.\n"
+		"\n"
+		"The most reliable source of conference numbers would be taken from\n"
+		"a `CONTROL.DAT` file extracted from a `.QWK` packet downloaded from\n"
+		"the QWK network hub."
+		;
+	char* qwk_ctrl_a_help = 
+		"`Ctrl-A Codes:`\n"
+		"\n"
+		"You are being prompted for the method of handling Ctrl-A attribute codes\n"
+		"generated by Synchronet. If this QWK network hub is a Synchronet BBS,\n"
+		"set this option to `Leave in`. If the QWK network hub is not a Synchronet\n"
+		"BBS, but allows ANSI escape sequences in messages, set this option to\n"
+		"`Expand to ANSI`. If the QWK network hub is not a Synchronet BBS and does\n"
+		"not support ANSI escape sequences in messages (or you're not sure), set\n"
+		"this option to `Strip out`.\n"
+		;
+
 k=0;
 while(1) {
-	for(j=0;j<cfg.qhub[num]->subs;j++)
-		sprintf(opt[j],"%-5u %-*.*s %-*.*s"
+	unsigned opts = 0;
+	for(j=0;j<cfg.qhub[num]->subs;j++) {
+		if(cfg.qhub[num]->sub[j] == NULL)
+			continue;
+		sprintf(opt[opts++],"%-5u %-*.*s %-*.*s"
 			,cfg.qhub[num]->conf[j]
 			,LEN_GSNAME,LEN_GSNAME
-			,cfg.grp[cfg.sub[cfg.qhub[num]->sub[j]]->grp]->sname
+			,cfg.grp[cfg.qhub[num]->sub[j]->grp]->sname
 			,LEN_SSNAME,LEN_SSNAME
-			,cfg.sub[cfg.qhub[num]->sub[j]]->sname);
-	opt[j][0]=0;
-	j=WIN_BOT|WIN_SAV|WIN_ACT;
+			,cfg.qhub[num]->sub[j]->sname);
+	}
+	opt[opts][0]=0;
+	int mode =WIN_BOT|WIN_SAV|WIN_ACT;
 	if(cfg.qhub[num]->subs<MAX_OPTS)
-		j|=WIN_INS|WIN_INSACT|WIN_XTR;
+		mode |= WIN_INS|WIN_INSACT|WIN_XTR;
 	if(cfg.qhub[num]->subs)
-		j|=WIN_DEL;
+		mode |= WIN_DEL;
 	uifc.helpbuf=
 		"`QWK Networked Sub-boards:`\n"
 		"\n"
@@ -1146,7 +1222,7 @@ while(1) {
 		"To configure a sub-board for this QWK network hub, select it and hit\n"
 		"~ ENTER ~.\n"
 	;
-	j=uifc.list(j,0,0,0,&k,&bar
+	j=uifc.list(mode,0,0,0,&k,&bar
 		,"Networked Sub-boards",opt);
 	if(j==-1)
 		break;
@@ -1154,18 +1230,7 @@ while(1) {
 		j&=MSK_OFF;
 		if((l=getsub())==-1)
 			continue;
-		uifc.helpbuf=
-			"`Conference Number on Hub:`\n"
-			"\n"
-			"This is the number of the conference on the QWK network hub, that this\n"
-			"sub-board is networked with. On Synchronet systems, this number is\n"
-			"derived by multiplying the group number by 10 and adding the sub-board\n"
-			"number. For example, group 2, sub-board 3, is conference number 203.\n"
-			"\n"
-			"It is important to understand that this is `NOT` the conference number of\n"
-			"this sub-board on your system. It is the number of the conference this\n"
-			"sub-board is networked with on this `QWK network hub`.\n"
-		;
+		uifc.helpbuf=qwk_conf_num_help;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0
 			,"Conference Number on Hub"
 			,str,5,K_NUMBER)<1)
@@ -1175,44 +1240,18 @@ while(1) {
 		strcpy(opt[2],"Expand to ANSI");
 		opt[3][0]=0;
 		m=0;
-		uifc.helpbuf=
-			"`Ctrl-A Codes:`\n"
-			"\n"
-			"You are being prompted for the method of handling Ctrl-A attribute codes\n"
-			"generated by Synchronet. If this QWK network hub is a Synchronet BBS,\n"
-			"set this option to `Leave in`. If the QWK network hub is not a Synchronet\n"
-			"BBS, but allows ANSI escape sequences in messages, set this option to\n"
-			"`Expand to ANSI`. If the QWK network hub is not a Synchronet BBS and does\n"
-			"not support ANSI escape sequences in messages (or you're not sure), set\n"
-			"this option to `Strip out`.\n"
-		;
+		uifc.helpbuf=qwk_ctrl_a_help;
 		if((m=uifc.list(WIN_MID|WIN_SAV,0,0,0,&m,0
 			,"Ctrl-A Codes",opt))==-1)
 			continue;
-		if((cfg.qhub[num]->sub=(ulong *)realloc(cfg.qhub[num]->sub
-			,sizeof(ulong *)*(cfg.qhub[num]->subs+1)))==NULL
-		|| (cfg.qhub[num]->conf=(ushort *)realloc(cfg.qhub[num]->conf
-            ,sizeof(ushort *)*(cfg.qhub[num]->subs+1)))==NULL
-		|| (cfg.qhub[num]->mode=(char *)realloc(cfg.qhub[num]->mode
-			,sizeof(uchar *)*(cfg.qhub[num]->subs+1)))==NULL) {
-			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.qhub[num]->subs+1);
-			continue; 
-		}
-		if(cfg.qhub[num]->subs) 			  /* insert */
-			for(n=cfg.qhub[num]->subs;n>j;n--) {
-				cfg.qhub[num]->sub[n]=cfg.qhub[num]->sub[n-1];
-				cfg.qhub[num]->conf[n]=cfg.qhub[num]->conf[n-1];
-				cfg.qhub[num]->mode[n]=cfg.qhub[num]->mode[n-1]; 
-			}
+		if(!new_qhub_sub(cfg.qhub[num], j, cfg.sub[l], atoi(str)))
+			continue;
 		if(!m)
 			cfg.qhub[num]->mode[j]=QHUB_STRIP;
 		else if(m==1)
 			cfg.qhub[num]->mode[j]=QHUB_RETCTLA;
 		else
 			cfg.qhub[num]->mode[j]=QHUB_EXPCTLA;
-		cfg.qhub[num]->sub[j]=l;
-		cfg.qhub[num]->conf[j]=atoi(str);
-		cfg.qhub[num]->subs++;
 		uifc.changes=1;
 		continue; 
 	}
@@ -1234,9 +1273,9 @@ while(1) {
 		sprintf(opt[n++],"%-22.22s%.*s %.*s"
 			,"Sub-board"
 			,LEN_GSNAME
-			,cfg.grp[cfg.sub[cfg.qhub[num]->sub[j]]->grp]->sname
+			,cfg.grp[cfg.qhub[num]->sub[j]->grp]->sname
 			,LEN_SSNAME
-			,cfg.sub[cfg.qhub[num]->sub[j]]->sname);
+			,cfg.qhub[num]->sub[j]->sname);
 		sprintf(opt[n++],"%-22.22s%u"
 			,"Conference Number",cfg.qhub[num]->conf[j]);
 		sprintf(opt[n++],"%-22.22s%s"
@@ -1245,40 +1284,30 @@ while(1) {
 			"Leave in" : "Expand to ANSI");
 		opt[n][0]=0;
 		uifc.helpbuf=
-			"`QWK Netted Sub-board:`\n"
+			"`QWK Networked Sub-board:`\n"
 			"\n"
 			"You are configuring the options for this sub-board for this QWK network\n"
 			"hub.\n"
 		;
 		l=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,
 			22+LEN_GSNAME+LEN_SSNAME,&l,0
-			,"Netted Sub-board",opt);
+			,"Networked Sub-board",opt);
 		if(l==-1)
 			break;
 		if(!l) {
 			m=getsub();
 			if(m!=-1) {
-				cfg.qhub[num]->sub[j]=m;
+				cfg.qhub[num]->sub[j]=cfg.sub[m];
 				uifc.changes=1; 
 			} 
 		}
 		else if(l==1) {
-			uifc.helpbuf=
-				"`Conference Number on Hub:`\n"
-				"\n"
-				"This is the number of the conference on the QWK network hub, that this\n"
-				"sub-board is networked with. On Synchronet systems, this number is\n"
-				"derived by multiplying the group number by 10 and adding the sub-board\n"
-				"number. For example, group 2, sub-board 3, is conference number 203.\n"
-				"\n"
-				"It is important to understand that this is `NOT` the conference number of\n"
-				"this sub-board on your system. It is the number of the conference this\n"
-				"sub-board is networked with on this `QWK network hub`.\n"
-			;
+			uifc.helpbuf=qwk_conf_num_help;
+			sprintf(str, "%u", cfg.qhub[num]->conf[j]);
 			if(uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Conference Number on Hub"
-				,str,5,K_NUMBER)>0)
-				cfg.qhub[num]->conf[j]=atoi(str); 
+				,str,5,K_NUMBER|K_EDIT) > 0)
+				cfg.qhub[num]->conf[j] = atoi(str); 
 		}
 		else if(l==2) {
 			strcpy(opt[0],"Strip out");
@@ -1286,17 +1315,7 @@ while(1) {
 			strcpy(opt[2],"Expand to ANSI");
 			opt[3][0]=0;
 			m=0;
-			uifc.helpbuf=
-				"`Ctrl-A Codes:`\n"
-				"\n"
-				"You are being prompted for the method of handling Ctrl-A attribute codes\n"
-				"generated by Synchronet. If this QWK network hub is a Synchronet BBS,\n"
-				"set this option to `Leave in`. If the QWK network hub is not a Synchronet\n"
-				"BBS, but allows ANSI escape sequences in messages, set this option to\n"
-				"`Expand to ANSI`. If the QWK network hub is not a Synchronet BBS and does\n"
-				"not support ANSI escape sequences in messages (or you're not sure), set\n"
-				"this option to `Strip out`.\n"
-			;
+			uifc.helpbuf = qwk_ctrl_a_help;
 			m=uifc.list(WIN_MID|WIN_SAV,0,0,0,&m,0
 				,"Ctrl-A Codes",opt);
 			uifc.changes=1;
@@ -1309,6 +1328,58 @@ while(1) {
 			} 
 		} 
 	}
+}
+
+BOOL import_qwk_conferences(uint qhubnum)
+{
+	char str[256];
+
+	int grpnum = getgrp("Target Message Group");
+	if(grpnum < 0)
+		return FALSE;
+
+	/* QWK Conference number range */
+	int min_confnum, max_confnum;
+	strcpy(str, "1000");
+	uifc.helpbuf = "`Minimum / Maximum QWK Conference Number`:\n"
+		"\n"
+		"This setting allows you to control the range of QWK conference numbers\n"
+		"that will be imported from the `control.dat` file.";
+	if(uifc.input(WIN_MID|WIN_SAV,0,0,"Minimum QWK Conference Number"
+		,str,5,K_EDIT|K_NUMBER) < 1)
+		return FALSE;
+	min_confnum = atoi(str);
+	sprintf(str, "%u", min_confnum + 999);
+	if(uifc.input(WIN_MID|WIN_SAV,0,0,"Maximum QWK Conference Number"
+		,str,5,K_EDIT|K_NUMBER) < 1)
+		return FALSE;
+	max_confnum = atoi(str);
+
+	char filename[MAX_PATH+1] = "control.dat";
+	uifc.helpbuf = "Enter the path to the QWK control.dat file to import";
+	if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
+		,filename,sizeof(filename)-1,K_EDIT)<=0)
+		return FALSE;
+	fexistcase(filename);
+	FILE *fp;
+	if((fp = fopen(filename, "rt"))==NULL) {
+		uifc.msg("File Open Failure");
+		return FALSE; 
+	}
+	uifc.pop("Importing Areas...");
+	long added = 0;
+	long ported = import_msg_areas(IMPORT_LIST_TYPE_QWK_CONTROL_DAT, fp, grpnum, min_confnum, max_confnum, cfg.qhub[qhubnum], &added);
+	fclose(fp);
+	uifc.pop(0);
+	if(ported < 0)
+		sprintf(str, "!ERROR %ld imported message areas", ported);
+	else {
+		sprintf(str, "%ld Message Areas Imported Successfully (%ld added)",ported, added);
+		if(ported > 0)
+			uifc.changes = TRUE;
+	}
+	uifc.msg(str);
+	return TRUE;
 }
 
 void phub_edit(int num)

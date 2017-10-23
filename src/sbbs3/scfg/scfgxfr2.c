@@ -51,6 +51,16 @@ static bool new_dir(unsigned new_dirnum, unsigned libnum)
 	new_directory->up_pct = cfg.cdt_up_pct;
 	new_directory->dn_pct = cfg.cdt_dn_pct;
 
+	/* Use last dir in lib (if exists) as a template for new dirs */
+	for (unsigned u = 0; u < cfg.total_dirs; u++) {
+		if(cfg.dir[u]->lib == libnum) {
+			*new_directory = *cfg.dir[u];
+			new_directory->misc &= ~DIR_TEMPLATE;
+			if(cfg.dir[u]->misc & DIR_TEMPLATE)	/* Use this dir (not last) if marked as template */
+				break;
+		}
+	}
+
 	dir_t** new_dir_list;
 	if ((new_dir_list = (dir_t **)realloc(cfg.dir, sizeof(dir_t *)*(cfg.total_dirs + 1))) == NULL) {
 		errormsg(WHERE, ERR_ALLOC, "directory list", cfg.total_dirs + 1);
@@ -163,20 +173,20 @@ BOOL create_raw_dir_list(const char* list_file)
 	return(TRUE);
 }
 
-static char random_code_char(void)
+unsigned dirs_in_lib(unsigned libnum)
 {
-	char ch = (char)xp_random(36);
+	unsigned total = 0;
 
-	if(ch < 10)
-		return '0' + ch;
-	else
-		return 'A' + (ch - 10);
+	for(unsigned u = 0; u < cfg.total_dirs; u++)
+		if(cfg.dir[u]->lib == libnum)
+			total++;
+	return total;
 }
 
 void xfer_cfg()
 {
 	static int libs_dflt,libs_bar,dflt;
-	char str[256],str2[81],done=0,*p;
+	char str[256], done=0, *p;
 	char tmp_code[MAX_PATH+1];
 	int file,j,k,q;
 	uint i;
@@ -185,13 +195,43 @@ void xfer_cfg()
 	dir_t tmpdir;
 	FILE *stream;
 
+	char* lib_long_name_help =
+		"`Library Long Name:`\n"
+		"\n"
+		"This is a description of the file library which is displayed when a\n"
+		"user of the system uses the `/*` command from the file transfer menu.\n"
+		;
+	char* lib_short_name_help =
+		"`Library Short Name:`\n"
+		"\n"
+		"This is a short description of the file library which is used for the\n"
+		"file transfer menu prompt.\n"
+		;
+	char* lib_code_prefix_help =
+		"`Internal Code Prefix:`\n"
+		"\n"
+		"This is an `optional`, but highly recommended `code prefix` used to help\n"
+		"generate `unique` internal codes for the directories in this file library.\n"
+		"When code prefixes are used, directory `internal codes` will be\n"
+		"constructed from a combination of the prefix and the specified code\n"
+		"suffix for each directory.\n"
+		"\n"
+		"Code prefixes may contain up to 8 legal filename characters.\n"
+		"\n"
+		"Code prefixes should be unique among the file libraries on the system.\n"
+		"\n"
+		"Changing a library's code prefix implicitly changes all the internal\n"
+		"code of the directories within the library, so change this value with\n"
+		"caution.\n"
+		;
+
 	while(1) {
 		for(i=0;i<cfg.total_libs && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-25s",cfg.lib[i]->lname);
+			sprintf(opt[i],"%-*s %5u", LEN_GLNAME, cfg.lib[i]->lname, dirs_in_lib(i));
 		opt[i][0]=0;
 		j=WIN_ACT|WIN_CHE|WIN_ORG;
 		if(cfg.total_libs)
-			j|=WIN_DEL|WIN_COPY|WIN_DELACT;
+			j|=WIN_DEL|WIN_COPY|WIN_CUT|WIN_DELACT;
 		if(cfg.total_libs<MAX_OPTS)
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savlib.sname[0])
@@ -212,7 +252,7 @@ void xfer_cfg()
 			"denominator, you may want to have a separate file library for those\n"
 			"directories for a more organized file structure.\n"
 		;
-		i=uifc.list(j,0,0,45,&libs_dflt,&libs_bar,"File Libraries",opt);
+		i=uifc.list(j,0,0,0,&libs_dflt,&libs_bar,"File Libraries                     Directories", opt);
 		if((signed)i==-1) {
 			j=save_changes(WIN_MID);
 			if(j==-1)
@@ -226,31 +266,38 @@ void xfer_cfg()
 		int libnum = i & MSK_OFF;
 		int msk = i & MSK_ON;
 		if(msk == MSK_INS) {
-			strcpy(str,"Main");
-			uifc.helpbuf=
-				"`Library Long Name:`\n"
-				"\n"
-				"This is a description of the file library which is displayed when a\n"
-				"user of the system uses the `/*` command from the file transfer menu.\n"
-			;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Library Long Name",str,LEN_GLNAME
-				,K_EDIT)<1)
+			char long_name[LEN_GLNAME+1];
+			strcpy(long_name,"Main");
+			uifc.helpbuf=lib_long_name_help;
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Library Long Name",long_name,LEN_GLNAME,K_EDIT) < 1)
 				continue;
-			sprintf(str2,"%.*s",LEN_GSNAME,str);
-			uifc.helpbuf=
-				"`Library Short Name:`\n"
-				"\n"
-				"This is a short description of the file library which is used for the\n"
-				"file transfer menu prompt.\n"
-			;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Library Short Name",str2,LEN_GSNAME
-				,K_EDIT)<1)
+
+			char short_name[LEN_GSNAME+1];
+			SAFECOPY(short_name, long_name);
+			uifc.helpbuf=lib_short_name_help;
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Library Short Name",short_name,LEN_GSNAME, K_EDIT)<1)
 				continue;
+
+			char code_prefix[LEN_GSNAME+1];	/* purposely extra-long */
+			SAFECOPY(code_prefix, short_name);
+			prep_code(code_prefix, NULL);
+			if(strlen(code_prefix) < LEN_CODE)
+				strcat(code_prefix, "_");
+			uifc.helpbuf=lib_code_prefix_help;
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code Prefix", code_prefix, LEN_CODE, K_EDIT|K_UPPER) < 0)
+				continue;
+			if (code_prefix[0] != 0 && !code_ok(code_prefix)) {
+				uifc.helpbuf=invalid_code;
+				uifc.msg("Invalid Code Prefix");
+				continue;
+			}
+
 			if (!new_lib(libnum))
 				continue;
-			SAFECOPY(cfg.lib[libnum]->lname,str);
-			SAFECOPY(cfg.lib[libnum]->sname,str2);
-			uifc.changes=1;
+			SAFECOPY(cfg.lib[libnum]->lname, long_name);
+			SAFECOPY(cfg.lib[libnum]->sname, short_name);
+			SAFECOPY(cfg.lib[libnum]->code_prefix, code_prefix);
+			uifc.changes = TRUE;
 			continue;
 		}
 		if(msk == MSK_DEL || msk == MSK_CUT) {
@@ -321,11 +368,9 @@ void xfer_cfg()
 			savlib=*cfg.lib[libnum];
 			continue;
 		}
-		if (msk == MSK_PASTE_OVER || msk == MSK_PASTE_INSERT) {
-			if (msk == MSK_PASTE_INSERT || opt[libnum][0] == 0) {
-				if (!new_lib(libnum))
-					continue;
-			}
+		if (msk == MSK_PASTE) {
+			if (!new_lib(libnum))
+				continue;
 			/* Restore previously cut directories to newly-pasted library */
 			for (i = 0; i < cfg.total_dirs; i++)
 				if (cfg.dir[i]->lib == CUT_LIBNUM)
@@ -344,6 +389,9 @@ void xfer_cfg()
 				,cfg.lib[i]->parent_path);
 			sprintf(opt[j++],"%-27.27s%.40s","Access Requirements"
 				,cfg.lib[i]->arstr);
+			sprintf(opt[j++],"%-27.27s%.40s","Access to Sub-directories"
+				,cfg.lib[i]->misc&LIB_DIRS ? "Yes":"No");
+			sprintf(opt[j++],"%-27.27s%s","Sort Library By Directory", area_sort_desc[cfg.lib[i]->sort]);
 			strcpy(opt[j++],"Clone Options");
 			strcpy(opt[j++],"Export Areas...");
 			strcpy(opt[j++],"Import Areas...");
@@ -353,7 +401,7 @@ void xfer_cfg()
 			uifc.helpbuf=
 				"`File Library Configuration:`\n"
 				"\n"
-				"This menu allows you to configure the security requirments for access\n"
+				"This menu allows you to configure the security requirements for access\n"
 				"to this file library. You can also add, delete, and configure the\n"
 				"directories of this library by selecting the `File Directories...` option.\n"
 			;
@@ -361,41 +409,24 @@ void xfer_cfg()
 				case -1:
 					done=1;
 					break;
-				case 0:
-					uifc.helpbuf=
-						"`Library Long Name:`\n"
-						"\n"
-						"This is a description of the file library which is displayed when a\n"
-						"user of the system uses the `/*` command from the file transfer menu.\n"
-					;
+				case __COUNTER__:
+					uifc.helpbuf=lib_long_name_help;
 					strcpy(str,cfg.lib[i]->lname);	/* save */
 					if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Name to use for Listings"
 						,cfg.lib[i]->lname,LEN_GLNAME,K_EDIT))
 						strcpy(cfg.lib[i]->lname,str);	/* restore */
 					break;
-				case 1:
-					uifc.helpbuf=
-						"`Library Short Name:`\n"
-						"\n"
-						"This is a short description of the file librarly which is used for the\n"
-						"file transfer menu prompt.\n"
-					;
+				case __COUNTER__:
+					uifc.helpbuf=lib_short_name_help;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Name to use for Prompts"
 						,cfg.lib[i]->sname,LEN_GSNAME,K_EDIT);
 					break;
-				case 2:
-					uifc.helpbuf=
-						"`Internal Code Prefix:`\n"
-						"\n"
-						"This is an `optional` code prefix that may be used to help generate unique\n"
-						"internal codes for the directories in this file library. If this option\n"
-						"is used, directory internal codes will be constructed from this prefix and\n"
-						"the specified code suffix for each directory.\n"
-					;
+				case __COUNTER__:
+					uifc.helpbuf=lib_code_prefix_help;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
 						,cfg.lib[i]->code_prefix,LEN_CODE,K_EDIT|K_UPPER);
 					break;
-				case 3:
+				case __COUNTER__:
 					uifc.helpbuf=
 						"`Parent Directory:`\n"
 						"\n"
@@ -412,50 +443,94 @@ void xfer_cfg()
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Parent Directory"
 						,cfg.lib[i]->parent_path,sizeof(cfg.lib[i]->parent_path)-1,K_EDIT);
 					break;
-				case 4:
+				case __COUNTER__:
 					sprintf(str,"%s Library",cfg.lib[i]->sname);
 					getar(str,cfg.lib[i]->arstr);
 					break;
-				case 5: /* clone options */
+				case __COUNTER__:
+					uifc.helpbuf=
+						"`Access to Sub-directories:`\n"
+						"\n"
+					;
+					j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
+						,"Allow Access to Sub-directories of Parent Directory"
+						,uifcYesNoOpts);
+					if(j==0 && (cfg.lib[i]->misc&LIB_DIRS) == 0) {
+						cfg.lib[i]->misc|=LIB_DIRS;
+						uifc.changes = true;
+					} else if(j==1 && (cfg.lib[i]->misc&LIB_DIRS) != 0) {
+						cfg.lib[i]->misc &= ~LIB_DIRS;
+						uifc.changes = true;
+					}
+					break;
+				case __COUNTER__:
+					uifc.helpbuf="`Sort Library By Directory:`\n"
+						"\n"
+						"Normally, the directories within a file library are listed in the order\n"
+						"that the sysop created them or a logical order determined by the sysop.\n"
+						"\n"
+						"Optionally, you can have the library sorted by directory `Long Name`,\n"
+						"`Short Name`, or `Internal Code`.\n"
+						"\n"
+						"The library will be automatically re-sorted when new directories\n"
+						"are added via `SCFG` or when existing directories are modified.\n"
+						;
+					j = cfg.lib[i]->sort;
+					j = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &j, 0, "Sort Library By Directory", area_sort_desc);
+					if(j >= 0) {
+						cfg.lib[i]->sort = j;
+						sort_dirs(i);
+						uifc.changes = TRUE;
+					}
+					break;
+				case __COUNTER__: /* clone options */
 					j=0;
 					uifc.helpbuf=
 						"`Clone Directory Options:`\n"
 						"\n"
-						"If you want to clone the options of the first directory of this library\n"
-						"into all directories of this library, select `Yes`.\n"
+						"If you want to clone the options of the template directory of this\n"
+						"library into all directories of this library, select `Yes`.\n"
 						"\n"
-						"The options cloned are upload requirments, download requirments,\n"
+						"The options cloned are upload requirements, download requirements,\n"
 						"operator requirements, exempted user requirements, toggle options,\n"
 						"maximum number of files, allowed file extensions, default file\n"
 						"extension, and sort type.\n"
 					;
 					j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-						,"Clone Options of First Directory into All of Library"
+						,"Clone Options of Template Directory into All of Library"
 						,uifcYesNoOpts);
 					if(j==0) {
-						k=-1;
-						for(j=0;j<cfg.total_dirs;j++)
-							if(cfg.dir[j]->lib==i) {
-								if(k==-1)
-									k=j;
-								else {
-									uifc.changes=1;
-									cfg.dir[j]->misc=cfg.dir[k]->misc;
-									strcpy(cfg.dir[j]->ul_arstr,cfg.dir[k]->ul_arstr);
-									strcpy(cfg.dir[j]->dl_arstr,cfg.dir[k]->dl_arstr);
-									strcpy(cfg.dir[j]->op_arstr,cfg.dir[k]->op_arstr);
-									strcpy(cfg.dir[j]->ex_arstr,cfg.dir[k]->ex_arstr);
-									strcpy(cfg.dir[j]->exts,cfg.dir[k]->exts);
-									strcpy(cfg.dir[j]->data_dir,cfg.dir[k]->data_dir);
-									strcpy(cfg.dir[j]->upload_sem,cfg.dir[k]->upload_sem);
-									cfg.dir[j]->maxfiles=cfg.dir[k]->maxfiles;
-									cfg.dir[j]->maxage=cfg.dir[k]->maxage;
-									cfg.dir[j]->up_pct=cfg.dir[k]->up_pct;
-									cfg.dir[j]->dn_pct=cfg.dir[k]->dn_pct;
-									cfg.dir[j]->seqdev=cfg.dir[k]->seqdev;
-									cfg.dir[j]->sort=cfg.dir[k]->sort;
-								}
+						dir_t* template = NULL;
+						for(j=0;j<cfg.total_dirs;j++) {
+							if(cfg.dir[j]->lib == i && cfg.dir[j]->misc&DIR_TEMPLATE) {
+								template = cfg.dir[j];
+								break;
 							}
+						}
+						for(j=0;j<cfg.total_dirs;j++) {
+							if(cfg.dir[j]->lib != i)
+								continue;
+							if(template == NULL)
+								template = cfg.dir[j];
+							else if(cfg.dir[j] != template) {
+								uifc.changes=1;
+								cfg.dir[j]->misc = template->misc;
+								cfg.dir[j]->misc &= ~DIR_TEMPLATE;
+								strcpy(cfg.dir[j]->ul_arstr		, template->ul_arstr);
+								strcpy(cfg.dir[j]->dl_arstr		, template->dl_arstr);
+								strcpy(cfg.dir[j]->op_arstr		, template->op_arstr);
+								strcpy(cfg.dir[j]->ex_arstr		, template->ex_arstr);
+								strcpy(cfg.dir[j]->exts			, template->exts);
+								strcpy(cfg.dir[j]->data_dir		, template->data_dir);
+								strcpy(cfg.dir[j]->upload_sem	, template->upload_sem);
+								cfg.dir[j]->maxfiles			= template->maxfiles;
+								cfg.dir[j]->maxage				= template->maxage;
+								cfg.dir[j]->up_pct				= template->up_pct;
+								cfg.dir[j]->dn_pct				= template->dn_pct;
+								cfg.dir[j]->seqdev				= template->seqdev;
+								cfg.dir[j]->sort				= template->sort;
+							}
+						}
 					}
 					break;
 	#define DIRS_TXT_HELP_TEXT		"`DIRS.TXT` is a plain text file that includes all of the Synchronet\n" \
@@ -463,7 +538,7 @@ void xfer_cfg()
 	#define FILEGATE_ZXX_HELP_TEXT	"`FILEGATE.ZXX` is a plain text file in the old RAID/FILEBONE.NA format\n" \
 									"which describes a list of file areas connected across a File\n" \
 									"Distribution Network (e.g. Fidonet)."
-				case 6:
+				case __COUNTER__:
 					k=0;
 					ported=0;
 					q=uifc.changes;
@@ -558,7 +633,7 @@ void xfer_cfg()
 					uifc.changes=q;
 					break;
 
-				case 7:
+				case __COUNTER__:
 					ported=added=0;
 					k=0;
 					uifc.helpbuf=
@@ -819,12 +894,14 @@ void xfer_cfg()
 						uifc.changes=1; 
 					}
 					fclose(stream);
+					if(ported)
+						sort_dirs(i);
 					uifc.pop(0);
 					sprintf(str,"%lu File Areas Imported Successfully (%lu added)",ported, added);
 					uifc.msg(str);
 					break;
 
-				case 8:
+				case __COUNTER__:
 					dir_cfg(libnum);
 					break;
 			}
@@ -841,22 +918,65 @@ void dir_cfg(uint libnum)
 	uint i,dirnum[MAX_OPTS+1];
 	static dir_t savdir;
 
+	char* dir_long_name_help =
+		"`Directory Long Name:`\n"
+		"\n"
+		"This is a description of the file directory which is displayed in all\n"
+		"directory listings.\n"
+		;
+	char* dir_short_name_help =
+		"`Directory Short Name:`\n"
+		"\n"
+		"This is a short description of the file directory which is displayed at\n"
+		"the file transfer prompt.\n"
+		;
+	char* dir_code_help =
+		"`Directory Internal Code Suffix:`\n"
+		"\n"
+		"Every directory must have its own unique code for Synchronet to refer to\n"
+		"it internally. This code should be descriptive of the directory's\n"
+		"contents, usually an abbreviation of the directory's name.\n"
+		"\n"
+		"`Note:` The internal code is constructed from the file library's code prefix\n"
+		"(if present) and the directory's code suffix.\n"
+		;
+
 	while(1) {
-		for(i=0,j=0;i<cfg.total_dirs && j<MAX_OPTS;i++)
-			if(cfg.dir[i]->lib==libnum) {
-				sprintf(opt[j],"%-25s",cfg.dir[i]->lname);
-				dirnum[j++]=i;
+		if(uifc.changes && cfg.lib[libnum]->sort)
+			sort_dirs(libnum);
+		int maxlen = 0;
+		for(i=0,j=0;i<cfg.total_dirs && j<MAX_OPTS;i++) {
+			if(cfg.dir[i]->lib != libnum)
+				continue;
+			char* name = cfg.dir[i]->lname;
+			int name_len = LEN_SLNAME;
+			switch(cfg.lib[libnum]->sort) {
+				case AREA_SORT_SNAME:
+					name = cfg.dir[i]->sname;
+					name_len = LEN_SSNAME;
+					break;
+				case AREA_SORT_CODE:
+					name = cfg.dir[i]->code_suffix;
+					name_len = LEN_CODE;
+					break;
 			}
+			sprintf(str, "%-*s %c", name_len, name, cfg.dir[i]->misc&DIR_TEMPLATE ? '*' : ' ');
+			truncsp(str);
+			int len = sprintf(opt[j], "%s", str);
+			if(len > maxlen)
+				maxlen = len;
+			dirnum[j++]=i;
+		}
 		dirnum[j]=cfg.total_dirs;
 		opt[j][0]=0;
-		sprintf(str,"%s Directories",cfg.lib[libnum]->sname);
-		i=WIN_SAV|WIN_ACT;
+		sprintf(str,"%s Directories (%u)",cfg.lib[libnum]->sname, j);
+		int mode = WIN_SAV|WIN_ACT|WIN_RHT;
 		if(j)
-			i|=WIN_DEL|WIN_COPY|WIN_DELACT;
+			mode |= WIN_DEL|WIN_COPY|WIN_CUT|WIN_DELACT;
 		if(j<MAX_OPTS)
-			i|=WIN_INS|WIN_INSACT|WIN_XTR;
+			mode |= WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savdir.sname[0])
-			i|=WIN_PASTE | WIN_PASTEXTR;
+			mode |= WIN_PASTE | WIN_PASTEXTR;
 		uifc.helpbuf=
 			"`File Directories:`\n"
 			"\n"
@@ -870,44 +990,25 @@ void dir_cfg(uint libnum)
 			"\n"
 			"To configure a directory, select it with the arrow keys and hit ~ ENTER ~.\n"
 		;
-		i=uifc.list(i,24,1,45,&dflt,&bar,str,opt);
+		i = uifc.list(mode, 0, 0, maxlen=5, &dflt, &bar, str, opt);
 		if((signed)i==-1)
 			return;
 		int msk = i & MSK_ON;
 		i &= MSK_OFF;
 		if(msk == MSK_INS) {
 			strcpy(str,"My Brand-New File Directory");
-			uifc.helpbuf=
-				"`Directory Long Name:`\n"
-				"\n"
-				"This is a description of the file directory which is displayed in all\n"
-				"directory listings.\n"
-			;
+			uifc.helpbuf=dir_long_name_help;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Directory Long Name",str,LEN_SLNAME
 				,K_EDIT)<1)
 				continue;
 			sprintf(str2,"%.*s",LEN_SSNAME,str);
-			uifc.helpbuf=
-				"`Directory Short Name:`\n"
-				"\n"
-				"This is a short description of the file directory which is displayed at\n"
-				"the file transfer prompt.\n"
-			;
+			uifc.helpbuf=dir_short_name_help;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Directory Short Name",str2,LEN_SSNAME
 				,K_EDIT)<1)
 				continue;
 			SAFECOPY(code,str2);
 			prep_code(code,/* prefix: */NULL);
-			uifc.helpbuf=
-				"`Directory Internal Code Suffix:`\n"
-				"\n"
-				"Every directory must have its own unique code for Synchronet to refer to\n"
-				"it internally. This code should be descriptive of the directory's\n"
-				"contents, usually an abreviation of the directory's name.\n"
-				"\n"
-				"`Note:` The internal code is onstructed from the file library's code prefix\n"
-				"(if present) and the directory's code suffix.\n"
-			;
+			uifc.helpbuf=dir_code_help;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Directory Internal Code Suffix",code,LEN_CODE
 				,K_EDIT|K_UPPER)<1)
 				continue;
@@ -984,15 +1085,9 @@ void dir_cfg(uint libnum)
 			savdir=*cfg.dir[dirnum[i]];
 			continue;
 		}
-		if (msk == MSK_PASTE_OVER || msk == MSK_PASTE_INSERT) {
-			if (msk == MSK_PASTE_INSERT) {
-				if (!new_dir(dirnum[i], libnum))
-					continue;
-			}
-			else if (opt[i][0] == 0) {	/* Paste-over extra/blank item */
-				if (!new_dir(cfg.total_dirs, libnum))
-					continue;
-			}
+		if (msk == MSK_PASTE) {
+			if (!new_dir(dirnum[i], libnum))
+				continue;
 			*cfg.dir[dirnum[i]]=savdir;
 			cfg.dir[dirnum[i]]->lib=libnum;
 			uifc.changes=1;
@@ -1046,39 +1141,19 @@ void dir_cfg(uint libnum)
 					done=1;
 					break;
 				case 0:
-					uifc.helpbuf=
-						"`Directory Long Name:`\n"
-						"\n"
-						"This is a description of the file directory which is displayed in all\n"
-						"directory listings.\n"
-					;
+					uifc.helpbuf=dir_long_name_help;
 					strcpy(str,cfg.dir[i]->lname);	/* save */
 					if(!uifc.input(WIN_L2R|WIN_SAV,0,17,"Name to use for Listings"
 						,cfg.dir[i]->lname,LEN_SLNAME,K_EDIT))
 						strcpy(cfg.dir[i]->lname,str);
 					break;
 				case 1:
-					uifc.helpbuf=
-						"`Directory Short Name:`\n"
-						"\n"
-						"This is a short description of the file directory which is displayed at\n"
-						"the file transfer prompt.\n"
-					;
+					uifc.helpbuf=dir_short_name_help;
 					uifc.input(WIN_L2R|WIN_SAV,0,17,"Name to use for Prompts"
 						,cfg.dir[i]->sname,LEN_SSNAME,K_EDIT);
 					break;
 				case 2:
-					uifc.helpbuf=
-						"`Directory Internal Code Suffix:`\n"
-						"\n"
-						"Every directory must have its own unique code for Synchronet to refer to\n"
-						"it internally. This code should be descriptive of the directory's\n"
-						"contents, usually an abreviation of the directory's name.\n"
-						"\n"
-						"`Note:` The internal code displayed is the complete internal code\n"
-						"constructed from the file library's code prefix and the directory's code\n"
-						"suffix.\n"
-					;
+					uifc.helpbuf=dir_code_help;
 					strcpy(str,cfg.dir[i]->code_suffix);
 					uifc.input(WIN_L2R|WIN_SAV,0,17,"Internal Code Suffix (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
@@ -1116,8 +1191,8 @@ void dir_cfg(uint libnum)
 						"\n"
 						"This is the default storage path for files uploaded to this directory.\n"
 						"If this path is blank, files are stored in a directory off of the\n"
-						"DATA\\DIRS directory using the internal code of this directory as the\n"
-						"name of the dirdirectory (i.e. DATA\\DIRS\\<CODE>).\n"
+						"`data/dirs` directory using the internal code of this directory as the\n"
+						"name of the sub-directory (i.e. `data/dirs/<CODE>`).\n"
 						"\n"
 						"This path can be overridden on a per file basis using `Alternate File\n"
 						"Paths`.\n"
@@ -1242,6 +1317,8 @@ void dir_cfg(uint libnum)
 							,cfg.dir[i]->misc&DIR_NOSTAT ? "No":"Yes");
 						sprintf(opt[n++],"%-30.30s%s","Access Files not in Database"
 							,cfg.dir[i]->misc&DIR_FILES ? "Yes":"No");
+						sprintf(opt[n++],"%-30.30s%s","Template for New Directories"
+							,cfg.dir[i]->misc&DIR_TEMPLATE ? "Yes" : "No");
 						opt[n][0]=0;
 						uifc.helpbuf=
 							"`Directory Toggle Options:`\n"
@@ -1288,7 +1365,7 @@ void dir_cfg(uint libnum)
 									"your system should have a unique `Device Number`. If you only have one\n"
 									"slow media device, then this number should be set to `1`.\n"
 									"\n"
-									"`CD-ROM multidisk changers` are considered `one` device and all the\n"
+									"`CD-ROM multi-disk changers` are considered `one` device and all the\n"
 									"directories on all the CD-ROMs in each changer should be set to the same\n"
 									"device number.\n"
 								;
@@ -1535,7 +1612,7 @@ void dir_cfg(uint libnum)
 									"`Give Uploader Credit for Downloads:`\n"
 									"\n"
 									"If you want users who upload to this directory to get credit when their\n"
-									"files are downloaded, set this optin to `Yes`.\n"
+									"files are downloaded, set this option to `Yes`.\n"
 								;
 								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
 									,"Give Uploader Credit for Downloads",uifcYesNoOpts);
@@ -1554,7 +1631,7 @@ void dir_cfg(uint libnum)
 									"`Credit Uploader with Minutes instead of Credits:`\n"
 									"\n"
 									"If you wish to give the uploader of files to this directory minutes,\n"
-									"intead of credits, set this option to `Yes`.\n"
+									"instead of credits, set this option to `Yes`.\n"
 								;
 								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
 									,"Credit Uploader with Minutes",uifcYesNoOpts);
@@ -1701,6 +1778,32 @@ void dir_cfg(uint libnum)
 									uifc.changes=1; 
 								}
 								break;
+							case 21:
+								n=(cfg.dir[i]->misc&DIR_TEMPLATE) ? 0:1;
+								uifc.helpbuf=
+									"`Use this Directory as a Template for New Dirs:`\n"
+									"\n"
+									"If you want this directory's options / settings to be used as the\n"
+									"template for newly-created or cloned directories in this file library,\n"
+									"set this option to `Yes`.\n"
+									"\n"
+									"If multiple directories have this option enabled, only the first will be\n"
+									"used as the template."
+								;
+								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
+									,"Use this Directory as a Template for New Dirs",uifcYesNoOpts);
+								if(n==-1)
+									break;
+								if(!n && !(cfg.dir[i]->misc&DIR_TEMPLATE)) {
+									uifc.changes = TRUE;
+									cfg.dir[i]->misc|=DIR_TEMPLATE;
+									break; 
+								}
+								if(n==1 && cfg.dir[i]->misc&DIR_TEMPLATE) {
+									uifc.changes = TRUE;
+									cfg.dir[i]->misc&=~DIR_TEMPLATE; 
+								}
+								break;
 						} 
 					}
 					break;
@@ -1747,22 +1850,22 @@ void dir_cfg(uint libnum)
 									,cfg.dir[i]->exts,sizeof(cfg.dir[i]->exts)-1,K_EDIT);
 								break;
 							case 1:
-	uifc.helpbuf=
-		"`Data Directory:`\n"
-		"\n"
-		"Use this if you wish to place the data directory for this directory\n"
-		"on another drive or in another directory besides the default setting.\n"
-	;
+								uifc.helpbuf=
+									"`Data Directory:`\n"
+									"\n"
+									"Use this if you wish to place the data directory for this directory\n"
+									"on another drive or in another directory besides the default setting.\n"
+								;
 								uifc.input(WIN_MID|WIN_SAV,0,17,"Data"
 									,cfg.dir[i]->data_dir,sizeof(cfg.dir[i]->data_dir)-1,K_EDIT);
 								break;
 							case 2:
-	uifc.helpbuf=
-		"`Upload Semaphore File:`\n"
-		"\n"
-		"This is a filename that will be used as a semaphore (signal) to your\n"
-		"FidoNet front-end that new files are ready to be hatched for export.\n"
-	;
+								uifc.helpbuf=
+									"`Upload Semaphore File:`\n"
+									"\n"
+									"This is a filename that will be used as a semaphore (signal) to your\n"
+									"FidoNet front-end that new files are ready to be hatched for export.\n"
+								;
 								uifc.input(WIN_MID|WIN_SAV,0,17,"Upload Semaphore"
 									,cfg.dir[i]->upload_sem,sizeof(cfg.dir[i]->upload_sem)-1,K_EDIT);
 								break;

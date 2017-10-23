@@ -408,7 +408,7 @@ void tevents_cfg()
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
 		if(cfg.total_events)
-			j|=WIN_DEL|WIN_COPY;
+			j|=WIN_DEL|WIN_COPY|WIN_CUT;
 		if(cfg.total_events<MAX_OPTS)
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savevent.code[0])
@@ -458,15 +458,9 @@ void tevents_cfg()
 			savevent=*cfg.event[i];
 			continue; 
 		}
-		if(msk == MSK_PASTE_OVER || msk == MSK_PASTE_INSERT) {
-			if (msk == MSK_PASTE_INSERT) {
-				if (!new_timed_event(i))
-					continue;
-			}
-			else if (opt[i][0] == 0) {	/* Paste-over extra/blank item */
-				if (!new_timed_event(cfg.total_events))
-					continue;
-			}
+		if(msk == MSK_PASTE) {
+			if (!new_timed_event(i))
+				continue;
 			*cfg.event[i]=savevent;
 			uifc.changes=1;
 			continue; 
@@ -871,7 +865,7 @@ void xtrn_cfg(uint section)
 		opt[j][0]=0;
 		i=WIN_ACT|WIN_CHE|WIN_SAV|WIN_RHT;
 		if(j)
-			i|=WIN_DEL | WIN_COPY;
+			i|=WIN_DEL | WIN_COPY | WIN_CUT;
 		if(cfg.total_xtrns<MAX_OPTS)
 			i|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savxtrn.name[0])
@@ -942,15 +936,9 @@ void xtrn_cfg(uint section)
 			savxtrn=*cfg.xtrn[xtrnnum[i]];
 			continue; 
 		}
-		if(msk == MSK_PASTE_OVER || msk == MSK_PASTE_INSERT) {
-			if (msk == MSK_PASTE_INSERT) {
-				if (!new_external_program(xtrnnum[i], section))
-					continue;
-			}
-			else if (opt[i][0] == 0) {	/* Paste-over extra/blank item */
-				if (!new_external_program(cfg.total_xtrns, section))
-					continue;
-			}
+		if(msk == MSK_PASTE) {
+			if (!new_external_program(xtrnnum[i], section))
+				continue;
 			*cfg.xtrn[xtrnnum[i]]=savxtrn;
 			cfg.xtrn[xtrnnum[i]]->sec=section;
 			uifc.changes=TRUE;
@@ -1558,7 +1546,7 @@ void xedit_cfg()
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
 		if(cfg.total_xedits)
-			j|=WIN_DEL | WIN_COPY;
+			j|=WIN_DEL | WIN_COPY | WIN_CUT;
 		if(cfg.total_xedits<MAX_OPTS)
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savxedit.name[0])
@@ -1625,15 +1613,9 @@ void xedit_cfg()
 			savxedit=*cfg.xedit[i];
 			continue; 
 		}
-		if(msk == MSK_PASTE_OVER || msk == MSK_PASTE_INSERT) {
-			if (msk == MSK_PASTE_INSERT) {
-				if (!new_external_editor(i))
-					continue;
-			}
-			else if (opt[i][0] == 0) {	/* Paste-over extra/blank item */
-				if (!new_external_editor(cfg.total_xedits))
-					continue;
-			}
+		if(msk == MSK_PASTE) {
+			if (!new_external_editor(i))
+				continue;
 			*cfg.xedit[i]=savxedit;
 			uifc.changes=TRUE;
 			continue; 
@@ -2107,7 +2089,7 @@ void xtrnsec_cfg()
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_BOT;
 		if(cfg.total_xtrnsecs)
-			j|=WIN_DEL | WIN_COPY;
+			j|=WIN_DEL | WIN_COPY | WIN_CUT;
 		if(cfg.total_xtrnsecs<MAX_OPTS)
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savxtrnsec.name[0])
@@ -2203,15 +2185,9 @@ void xtrnsec_cfg()
 			savxtrnsec=*cfg.xtrnsec[xtrnsec_num];
 			continue; 
 		}
-		if(msk == MSK_PASTE_OVER || msk == MSK_PASTE_INSERT) {
-			if (msk == MSK_PASTE_INSERT) {
-				if (!new_external_program_section(xtrnsec_num))
-					continue;
-			}
-			else if (opt[xtrnsec_num][0] == 0) {	/* Paste-over extra/blank item */
-				if (!new_external_program_section(cfg.total_xtrnsecs))
-					continue;
-			}
+		if(msk == MSK_PASTE) {
+			if (!new_external_program_section(xtrnsec_num))
+				continue;
 			/* Restore previously cut xtrns to newly-pasted xtrn_sec */
 			for (unsigned u = 0; u < cfg.total_xtrns; u++)
 				if (cfg.xtrn[u]->sec == CUT_XTRNSEC_NUM)
@@ -2296,7 +2272,7 @@ void hotkey_cfg(void)
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
 		if(cfg.total_hotkeys)
-			j|=WIN_DEL | WIN_COPY;
+			j|=WIN_DEL | WIN_COPY | WIN_CUT;
 		if(cfg.total_hotkeys<MAX_OPTS)
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savhotkey.cmd[0])
@@ -2363,7 +2339,7 @@ void hotkey_cfg(void)
 			savhotkey=*cfg.hotkey[i];
 			continue; 
 		}
-		if(msk == MSK_PASTE_OVER) {
+		if(msk == MSK_PASTE) {
 			*cfg.hotkey[i]=savhotkey;
 			uifc.changes=TRUE;
 			continue; 
