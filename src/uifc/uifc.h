@@ -103,13 +103,12 @@
 #define MSK_DEL 			0x20000000
 #define MSK_COPY 			0x30000000
 #define MSK_CUT 			0x40000000
-#define MSK_PASTE_OVER		0x50000000	/* Overwrite selected item with previously copied item */
-#define MSK_PASTE_INSERT 	0x60000000	/* Insert new item (above) current item with previously copied item */
-#define MSK_EDIT			0x70000000
+#define MSK_PASTE			0x50000000	/* Overwrite selected item with previously copied item */
+#define MSK_EDIT			0x60000000
 
 /* Legacy terms (get/put instead of copy/paste) */
 #define MSK_GET		MSK_COPY
-#define MSK_PUT		MSK_PASTE_OVER
+#define MSK_PUT		MSK_PASTE
 
 /* Don't forget, negative return values are used for extended keys (if WIN_EXTKEYS used)! */
 #define MAX_OPLN	75		/* Maximum length of each option per menu call */
@@ -156,8 +155,9 @@
 #define WIN_CHE 	(1<<14) /* Stay active after escape if changes */
 #define WIN_XTR 	(1<<15) /* Add extra line at end for inserting at end */
 #define WIN_DYN 	(1<<16) /* Dynamic window - return at least every second */
-#define WIN_HLP 	(1<<17) /* Parse 'Help codes' */
-#define WIN_PACK 	(1<<18) /* Pack text in window (No padding) */
+#define WIN_CUT		(1<<17)	/* Allow ^X (cut) a menu item */
+#define WIN_HLP 	(1<<17) /* Parse 'Help codes' - showbuf() and bottomline */
+#define WIN_PACK 	(1<<18) /* Pack text in window (No padding) - showbuf() */
 #define WIN_IMM 	(1<<19) /* Draw window and return immediately */
 #define WIN_FAT		(1<<20)	/* Do not pad outside borders */
 #define WIN_REDRAW	(1<<21) /* Force redraw on dynamic window */
@@ -206,13 +206,6 @@
 								/* And ungets the mouse event.				*/
 #define K_PASSWORD	(1L<<16)	/* Does not display text while editing		*/
 
-							/* Bottom line elements */
-#define BL_INS      (1<<0)  /* INS key */
-#define BL_DEL      (1<<1)  /* DEL key */
-#define BL_COPY     (1<<2)  /* Copy operation */
-#define BL_PASTE    (1<<3)  /* Paste operation */
-#define BL_EDIT     (1<<4)  /* Edit key */
-#define BL_HELP     (1<<5)  /* Help key */
 
 						/* Extra exit flags */
 #define UIFC_XF_QUIT	(1<<0)	/* Returned -1 due to CIO_KEY_QUIT */
@@ -384,6 +377,7 @@ typedef struct {
 /****************************************************************************/
     char    helpdatfile[MAX_PATH+1];
     char    helpixbfile[MAX_PATH+1];
+	BOOL	help_available;
 /****************************************************************************/
 /* Help and exit button locations for current/last window					*/
 /****************************************************************************/
@@ -489,9 +483,9 @@ typedef struct {
 	void	(*timedisplay)(BOOL force);
 
 /****************************************************************************/
-/* Displays the bottom line using the BL_* macros							*/
+/* Displays the bottom line using the WIN_* mode flags						*/
 /****************************************************************************/
-    void	(*bottomline)(int line);
+    void	(*bottomline)(int mode);
 
 /****************************************************************************/
 /* String input/exit box at a specified position							*/
