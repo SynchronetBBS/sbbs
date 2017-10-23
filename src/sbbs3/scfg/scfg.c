@@ -55,7 +55,7 @@ char **opt;
 char tmp[256];
 char error[256];
 int  backup_level=5;
-char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code", NULL };
+char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code" };
 
 char *invalid_code=
 	"`Invalid Internal Code:`\n\n"
@@ -292,6 +292,7 @@ int main(int argc, char **argv)
 						"-c  =  force color mode\r\n"
 						"-m  =  force monochrome mode\r\n"
                         "-e# =  set escape delay to #msec\r\n"
+						"-import=<filename> = import a message area list file\r\n"
 						"-g# =  set group number to import into\r\n"
 						"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
 #ifdef __unix__
@@ -331,7 +332,7 @@ int main(int argc, char **argv)
 	backslashcolon(cfg.ctrl_dir);
 
 	if(import != NULL && *import != 0) {
-		enum { msgbase = 'M', filebase = 'F', xtrns = 'X' } base = msgbase;
+		enum { msgbase = 'M', filebase = 'F' } base = msgbase;
 		char fname[MAX_PATH+1];
 		SAFECOPY(fname, import);
 		p = strchr(fname, ',');
@@ -372,6 +373,11 @@ int main(int argc, char **argv)
 			{
 				enum import_list_type list_type = determine_msg_list_type(fname);
 				ported = import_msg_areas(list_type, fp, grpnum, 1, 99999, /* qhub: */NULL, &added);
+				break;
+			}
+			case filebase:
+			{
+				fprintf(stderr, "!Not yet supported\n");
 				break;
 			}
 		}

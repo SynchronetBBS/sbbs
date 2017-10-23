@@ -959,6 +959,8 @@ void dir_cfg(uint libnum)
 					name = cfg.dir[i]->code_suffix;
 					name_len = LEN_CODE;
 					break;
+				default:	/* Defeat stupid GCC warning */
+					break;
 			}
 			sprintf(str, "%-*s %c", name_len, name, cfg.dir[i]->misc&DIR_TEMPLATE ? '*' : ' ');
 			truncsp(str);

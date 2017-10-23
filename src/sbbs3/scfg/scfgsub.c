@@ -169,6 +169,8 @@ while(1) {
 					name = cfg.sub[i]->code_suffix;
 					name_len = LEN_CODE;
 					break;
+				default:	/* Defeat stupid GCC warning */
+					break;
 			}
 			sprintf(str, "%-*s %c", name_len, name, cfg.sub[i]->misc&SUB_TEMPLATE ? '*' : ' ');
 			truncsp(str);

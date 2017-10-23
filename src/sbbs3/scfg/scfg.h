@@ -53,6 +53,16 @@
 
 #define SUB_HDRMOD	(1L<<31)		/* Modified sub-board header info */
 
+#define MAX_UNIQUE_CODE_ATTEMPTS (36*36*36)
+
+enum import_list_type {
+	IMPORT_LIST_TYPE_SUBS_TXT,
+	IMPORT_LIST_TYPE_QWK_CONTROL_DAT,
+	IMPORT_LIST_TYPE_GENERIC_AREAS_BBS,
+	IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS,
+	IMPORT_LIST_TYPE_BACKBONE_NA,
+};
+
 /************/
 /* Typedefs */
 /************/
@@ -70,7 +80,7 @@ extern char *nulstr;
 extern char *invalid_code,*num_flags;
 extern int	backup_level;
 extern BOOL new_install;
-char* area_sort_desc[];
+char* area_sort_desc[AREA_SORT_TYPES];
 
 /***********************/
 /* Function Prototypes */
@@ -119,15 +129,6 @@ void sort_dirs(int libnum);
 unsigned subs_in_group(unsigned grpnum);
 char random_code_char(void);
 
-#define MAX_UNIQUE_CODE_ATTEMPTS (36*36*36)
-
-enum import_list_type {
-	IMPORT_LIST_TYPE_SUBS_TXT,
-	IMPORT_LIST_TYPE_QWK_CONTROL_DAT,
-	IMPORT_LIST_TYPE_GENERIC_AREAS_BBS,
-	IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS,
-	IMPORT_LIST_TYPE_BACKBONE_NA,
-};
 	
 long import_msg_areas(enum import_list_type, FILE*, unsigned grpnum, int min_confnum, int max_confnum, qhub_t*, long* added);
 
