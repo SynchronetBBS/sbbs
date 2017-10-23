@@ -54,6 +54,7 @@ int sbbs_t::show_atcode(const char *instr)
 	bool	padded_left=false;
 	bool	padded_right=false;
 	bool	centered=false;
+	bool	zero_padded=false;
 	const char *cp;
 
 	SAFECOPY(str,instr);
@@ -74,6 +75,8 @@ int sbbs_t::show_atcode(const char *instr)
 		padded_right=true;
 	else if((p=strstr(sp,"-C"))!=NULL)
 		centered=true;
+	else if((p=strstr(sp,"-Z"))!=NULL)
+		zero_padded=true;
 	if(p!=NULL) {
 		if(*(p+2) && isdigit(*(p+2)))
 			disp_len=atoi(p+2);
@@ -95,6 +98,8 @@ int sbbs_t::show_atcode(const char *instr)
 			bprintf("%*s%-*s", left, "", disp_len - left, cp);
 		} else
 			bputs(cp);
+	} else if(zero_padded) {
+		bprintf("%-.*s%s", disp_len - strlen(cp), "0000000000", cp);
 	} else
 		bputs(cp);
 
