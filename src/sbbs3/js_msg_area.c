@@ -553,7 +553,7 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				if(!JS_SetProperty(cx, subobj, "is_operator", &val))
 					return JS_FALSE;
 
-				if(p->cfg->sub[d]->mod_ar[0]!=0 && p->user!=NULL 
+				if(p->cfg->sub[d]->mod_ar!=NULL && p->cfg->sub[d]->mod_ar[0]!=0 && p->user!=NULL 
 					&& chk_ar(p->cfg,p->cfg->sub[d]->mod_ar,p->user,p->client))
 					val=BOOLEAN_TO_JSVAL(JS_TRUE);
 				else
