@@ -220,6 +220,7 @@ typedef struct js_callback {
 
 									/* Bit values for sub[x].misc */
 #define SUB_NOVOTING	(1L<<0)		/* No voting allowed in this sub-board */
+#define SUB_TEMPLATE	(1L<<1)		/* Use this sub as template for new subs (in this group) */
 #define SUB_QNET		(1L<<3) 	/* Sub-board is netted via QWK network */
 #define SUB_PNET		(1L<<4) 	/* Sub-board is netted via PostLink */
 #define SUB_FIDO		(1L<<5) 	/* Sub-board is netted via FidoNet */
@@ -250,28 +251,32 @@ typedef struct js_callback {
 #define SUB_NOUSERSIG	(1L<<30)	/* Suppress user signatures */
 #define SUB_HDRMOD		(1L<<31)	/* Modified sub-board header info (SCFG) */
 
+                                    /* Bit values for lib[x].misc */
+#define LIB_DIRS	(1<<0) 			/* Local directory (sub-directory of lib parent) access */
+
                                     /* Bit values for dir[x].misc */
-#define DIR_FCHK	(1<<0) 			/* Check for file existence */
-#define DIR_RATE	(1<<1) 			/* Force uploads to be rated G,R, or X */
-#define DIR_MULT	(1<<2) 			/* Ask for multi-disk numbering */
-#define DIR_DUPES	(1<<3) 			/* Search this dir for upload dupes */
-#define DIR_FREE	(1<<4) 			/* Free downloads */
-#define DIR_TFREE	(1<<5) 			/* Time to download is free */
-#define DIR_CDTUL	(1<<6) 			/* Credit Uploads */
-#define DIR_CDTDL	(1<<7) 			/* Credit Downloads */
-#define DIR_ANON	(1<<8) 			/* Anonymous uploads */
-#define DIR_AONLY	(1<<9) 			/* Anonymous only */
-#define DIR_ULDATE	(1<<10)			/* Include upload date in listing */
-#define DIR_DIZ 	(1<<11)			/* FILE_ID.DIZ and DESC.SDI support */
-#define DIR_NOSCAN	(1<<12)			/* Don't new-scan this directory */
-#define DIR_NOAUTO	(1<<13)			/* Don't auto-add this directory */
-#define DIR_ULTIME	(1<<14)			/* Deduct time during uploads */
-#define DIR_CDTMIN	(1<<15)			/* Give uploader minutes instead of cdt */
-#define DIR_SINCEDL (1<<16)			/* Purge based on days since last dl */
-#define DIR_MOVENEW (1<<17)			/* Files marked as new when moved */
-#define DIR_QUIET	(1<<18)			/* Do not notify uploader of downloads */
-#define DIR_NOSTAT	(1<<19)			/* Do not include transfers in system stats */
-#define DIR_FILES	(1<<20)			/* List/access files not in database */
+#define DIR_FCHK		(1<<0) 		/* Check for file existence */
+#define DIR_RATE		(1<<1) 		/* Force uploads to be rated G,R, or X */
+#define DIR_MULT		(1<<2) 		/* Ask for multi-disk numbering */
+#define DIR_DUPES		(1<<3) 		/* Search this dir for upload dupes */
+#define DIR_FREE		(1<<4) 		/* Free downloads */
+#define DIR_TFREE		(1<<5) 		/* Time to download is free */
+#define DIR_CDTUL		(1<<6) 		/* Credit Uploads */
+#define DIR_CDTDL		(1<<7) 		/* Credit Downloads */
+#define DIR_ANON		(1<<8) 		/* Anonymous uploads */
+#define DIR_AONLY		(1<<9) 		/* Anonymous only */
+#define DIR_ULDATE		(1<<10)		/* Include upload date in listing */
+#define DIR_DIZ 		(1<<11)		/* FILE_ID.DIZ and DESC.SDI support */
+#define DIR_NOSCAN		(1<<12)		/* Don't new-scan this directory */
+#define DIR_NOAUTO		(1<<13)		/* Don't auto-add this directory */
+#define DIR_ULTIME		(1<<14)		/* Deduct time during uploads */
+#define DIR_CDTMIN		(1<<15)		/* Give uploader minutes instead of cdt */
+#define DIR_SINCEDL		(1<<16)		/* Purge based on days since last dl */
+#define DIR_MOVENEW		(1<<17)		/* Files marked as new when moved */
+#define DIR_QUIET		(1<<18)		/* Do not notify uploader of downloads */
+#define DIR_NOSTAT		(1<<19)		/* Do not include transfers in system stats */
+#define DIR_FILES		(1<<20)		/* List/access files not in database */
+#define DIR_TEMPLATE	(1<<21)		/* Use this dir as template for new dirs (in this lib) */
 
                                     /* Bit values for file_t.misc */
 #define FM_EXTDESC  (1<<0)          /* Extended description exists */
@@ -309,6 +314,14 @@ enum {                              /* Values for dir[x].sort */
     ,SORT_DATE_A                    /* Sort by upload date, ascending */
     ,SORT_DATE_D                    /* Sort by upload date, descending */
     };
+
+/* Values for grp[x].sort */
+enum area_sort {
+	AREA_SORT_NONE,
+	AREA_SORT_LNAME,
+	AREA_SORT_SNAME,
+	AREA_SORT_CODE,
+};
 
 enum {
 	 clr_mnehigh

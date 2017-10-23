@@ -165,7 +165,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		free(mail);
 
 	for(i=0;i<cfg.qhub[hubnum]->subs;i++) {
-		j=cfg.qhub[hubnum]->sub[i]; 			/* j now equals the real sub num */
+		j=cfg.qhub[hubnum]->sub[i]->subnum; 			/* j now equals the real sub num */
 		msgs=getlastmsg(j,&last,0);
 		lncntr=0;						/* defeat pause */
 		if(!msgs || last<=subscan[j].ptr) {

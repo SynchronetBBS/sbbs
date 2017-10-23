@@ -310,8 +310,11 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->lib[i]->code_prefix,instream);
 
 		get_int(c,instream);
+		cfg->lib[i]->sort = c;
 
-		for(j=0;j<3;j++)
+		get_int(cfg->lib[i]->misc, instream);
+		
+		for(j=0;j<1;j++)
 			get_int(n,instream);	/* 0x0000 */
 
 		for(j=0;j<16;j++)
@@ -337,6 +340,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		if((cfg->dir[i]=(dir_t *)malloc(sizeof(dir_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(dir_t));
 		memset(cfg->dir[i],0,sizeof(dir_t));
+
+		cfg->dir[i]->dirnum = i;
 
 		get_int(cfg->dir[i]->lib,instream);
 		get_str(cfg->dir[i]->lname,instream);

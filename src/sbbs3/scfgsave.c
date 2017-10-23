@@ -477,7 +477,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		put_str(cfg->grp[i]->sname,stream);
 		put_str(cfg->grp[i]->arstr,stream);
 		put_str(cfg->grp[i]->code_prefix,stream);
-		c=0;
+		c=cfg->grp[i]->sort;
 		put_int(c,stream);
 		n=0;
 		for(j=0;j<27;j++)
@@ -498,97 +498,101 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		if(cfg->sub[i]->grp < cfg->total_grps)	/* total VALID sub-boards */
 			n++;
 	put_int(n,stream);
-	for(i=0;i<cfg->total_subs;i++) {
-		if(cfg->sub[i]->grp >= cfg->total_grps) 	/* skip bogus group numbers */
-			continue;
-		put_int(cfg->sub[i]->grp,stream);
-		put_str(cfg->sub[i]->lname,stream);
-		put_str(cfg->sub[i]->sname,stream);
-		put_str(cfg->sub[i]->qwkname,stream);
-		put_str(cfg->sub[i]->code_suffix,stream);
-#if 1
-		if(cfg->sub[i]->data_dir[0]) {
-			backslash(cfg->sub[i]->data_dir);
-			md(cfg->sub[i]->data_dir);
-		}
-#endif
-		put_str(cfg->sub[i]->data_dir,stream);
-		put_str(cfg->sub[i]->arstr,stream);
-		put_str(cfg->sub[i]->read_arstr,stream);
-		put_str(cfg->sub[i]->post_arstr,stream);
-		put_str(cfg->sub[i]->op_arstr,stream);
-		l=(cfg->sub[i]->misc&(~SUB_HDRMOD));    /* Don't write mod bit */
-		put_int(l,stream);
-		put_str(cfg->sub[i]->tagline,stream);
-		put_str(cfg->sub[i]->origline,stream);
-		put_str(cfg->sub[i]->post_sem,stream);
-		put_str(cfg->sub[i]->newsgroup,stream);
-		put_int(cfg->sub[i]->faddr,stream);
-		put_int(cfg->sub[i]->maxmsgs,stream);
-		put_int(cfg->sub[i]->maxcrcs,stream);
-		put_int(cfg->sub[i]->maxage,stream);
-		put_int(cfg->sub[i]->ptridx,stream);
-		put_str(cfg->sub[i]->mod_arstr,stream);
-		put_int(cfg->sub[i]->qwkconf,stream);
-		c=0;
-		put_int(c,stream);
-		n=0;
-		for(k=0;k<26;k++)
-			put_int(n,stream);
+	unsigned int subnum = 0;	/* New sub-board numbering (as saved) */
+	for(unsigned grp = 0; grp < cfg->total_grps; grp++) {
+		for(i=0;i<cfg->total_subs;i++) {
+			if(cfg->sub[i]->grp != grp)
+				continue;
+			cfg->sub[i]->subnum = subnum++;
+			put_int(cfg->sub[i]->grp,stream);
+			put_str(cfg->sub[i]->lname,stream);
+			put_str(cfg->sub[i]->sname,stream);
+			put_str(cfg->sub[i]->qwkname,stream);
+			put_str(cfg->sub[i]->code_suffix,stream);
+	#if 1
+			if(cfg->sub[i]->data_dir[0]) {
+				backslash(cfg->sub[i]->data_dir);
+				md(cfg->sub[i]->data_dir);
+			}
+	#endif
+			put_str(cfg->sub[i]->data_dir,stream);
+			put_str(cfg->sub[i]->arstr,stream);
+			put_str(cfg->sub[i]->read_arstr,stream);
+			put_str(cfg->sub[i]->post_arstr,stream);
+			put_str(cfg->sub[i]->op_arstr,stream);
+			l=(cfg->sub[i]->misc&(~SUB_HDRMOD));    /* Don't write mod bit */
+			put_int(l,stream);
+			put_str(cfg->sub[i]->tagline,stream);
+			put_str(cfg->sub[i]->origline,stream);
+			put_str(cfg->sub[i]->post_sem,stream);
+			put_str(cfg->sub[i]->newsgroup,stream);
+			put_int(cfg->sub[i]->faddr,stream);
+			put_int(cfg->sub[i]->maxmsgs,stream);
+			put_int(cfg->sub[i]->maxcrcs,stream);
+			put_int(cfg->sub[i]->maxage,stream);
+			put_int(cfg->sub[i]->ptridx,stream);
+			put_str(cfg->sub[i]->mod_arstr,stream);
+			put_int(cfg->sub[i]->qwkconf,stream);
+			c=0;
+			put_int(c,stream);
+			n=0;
+			for(k=0;k<26;k++)
+				put_int(n,stream);
 
-		if(all_msghdr || (cfg->sub[i]->misc&SUB_HDRMOD && !no_msghdr)) {
-			if(!cfg->sub[i]->data_dir[0])
-				SAFEPRINTF(smb.file,"%ssubs",cfg->data_dir);
-			else
-				SAFECOPY(smb.file,cfg->sub[i]->data_dir);
-			prep_dir(cfg->ctrl_dir,smb.file,sizeof(smb.file));
-			SAFEPRINTF2(str,"%s%s"
-				,cfg->grp[cfg->sub[i]->grp]->code_prefix
-				,cfg->sub[i]->code_suffix);
-			strlwr(str);
-			strcat(smb.file,str);
-			if(smb_open(&smb)!=0) {
-				/* errormsg(WHERE,ERR_OPEN,smb.file,x); */
-				continue; 
-			}
-			if(!filelength(fileno(smb.shd_fp))) {
-				smb.status.max_crcs=cfg->sub[i]->maxcrcs;
+			if(all_msghdr || (cfg->sub[i]->misc&SUB_HDRMOD && !no_msghdr)) {
+				if(!cfg->sub[i]->data_dir[0])
+					SAFEPRINTF(smb.file,"%ssubs",cfg->data_dir);
+				else
+					SAFECOPY(smb.file,cfg->sub[i]->data_dir);
+				prep_dir(cfg->ctrl_dir,smb.file,sizeof(smb.file));
+				SAFEPRINTF2(str,"%s%s"
+					,cfg->grp[cfg->sub[i]->grp]->code_prefix
+					,cfg->sub[i]->code_suffix);
+				strlwr(str);
+				strcat(smb.file,str);
+				if(smb_open(&smb)!=0) {
+					/* errormsg(WHERE,ERR_OPEN,smb.file,x); */
+					continue; 
+				}
+				if(!filelength(fileno(smb.shd_fp))) {
+					smb.status.max_crcs=cfg->sub[i]->maxcrcs;
+					smb.status.max_msgs=cfg->sub[i]->maxmsgs;
+					smb.status.max_age=cfg->sub[i]->maxage;
+					smb.status.attr=cfg->sub[i]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
+					if(smb_create(&smb)!=0)
+						/* errormsg(WHERE,ERR_CREATE,smb.file,x) */;
+					smb_close(&smb);
+					continue; 
+				}
+				if(smb_locksmbhdr(&smb)!=0) {
+					smb_close(&smb);
+					/* errormsg(WHERE,ERR_LOCK,smb.file,x) */;
+					continue; 
+				}
+				if(smb_getstatus(&smb)!=0) {
+					smb_close(&smb);
+					/* errormsg(WHERE,ERR_READ,smb.file,x) */;
+					continue; 
+				}
+				if((!(cfg->sub[i]->misc&SUB_HYPER) || smb.status.attr&SMB_HYPERALLOC)
+					&& smb.status.max_msgs==cfg->sub[i]->maxmsgs
+					&& smb.status.max_crcs==cfg->sub[i]->maxcrcs
+					&& smb.status.max_age==cfg->sub[i]->maxage) {	/* No change */
+					smb_close(&smb);
+					continue; 
+				}
 				smb.status.max_msgs=cfg->sub[i]->maxmsgs;
+				smb.status.max_crcs=cfg->sub[i]->maxcrcs;
 				smb.status.max_age=cfg->sub[i]->maxage;
-				smb.status.attr=cfg->sub[i]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
-				if(smb_create(&smb)!=0)
-					/* errormsg(WHERE,ERR_CREATE,smb.file,x) */;
-				smb_close(&smb);
-				continue; 
+				if(cfg->sub[i]->misc&SUB_HYPER)
+					smb.status.attr|=SMB_HYPERALLOC;
+				if(smb_putstatus(&smb)!=0) {
+					smb_close(&smb);
+					/* errormsg(WHERE,ERR_WRITE,smb.file,x); */
+					continue; 
+				}
+				smb_close(&smb); 
 			}
-			if(smb_locksmbhdr(&smb)!=0) {
-				smb_close(&smb);
-				/* errormsg(WHERE,ERR_LOCK,smb.file,x) */;
-				continue; 
-			}
-			if(smb_getstatus(&smb)!=0) {
-				smb_close(&smb);
-				/* errormsg(WHERE,ERR_READ,smb.file,x) */;
-				continue; 
-			}
-			if((!(cfg->sub[i]->misc&SUB_HYPER) || smb.status.attr&SMB_HYPERALLOC)
-				&& smb.status.max_msgs==cfg->sub[i]->maxmsgs
-				&& smb.status.max_crcs==cfg->sub[i]->maxcrcs
-				&& smb.status.max_age==cfg->sub[i]->maxage) {	/* No change */
-				smb_close(&smb);
-				continue; 
-			}
-			smb.status.max_msgs=cfg->sub[i]->maxmsgs;
-			smb.status.max_crcs=cfg->sub[i]->maxcrcs;
-			smb.status.max_age=cfg->sub[i]->maxage;
-			if(cfg->sub[i]->misc&SUB_HYPER)
-				smb.status.attr|=SMB_HYPERALLOC;
-			if(smb_putstatus(&smb)!=0) {
-				smb_close(&smb);
-				/* errormsg(WHERE,ERR_WRITE,smb.file,x); */
-				continue; 
-			}
-			smb_close(&smb); 
 		}
 	}
 
@@ -631,10 +635,15 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		put_str(cfg->qhub[i]->call,stream);
 		put_str(cfg->qhub[i]->pack,stream);
 		put_str(cfg->qhub[i]->unpack,stream);
-		put_int(cfg->qhub[i]->subs,stream);
+		n = 0;
+		for(j=0;j<cfg->qhub[i]->subs;j++)
+			if(cfg->qhub[j]->sub[i] != NULL) n++;
+		put_int(n,stream);
 		for(j=0;j<cfg->qhub[i]->subs;j++) {
+			if(cfg->qhub[j]->sub[i] == NULL)
+				continue;
 			put_int(cfg->qhub[i]->conf[j],stream);
-			n=(uint16_t)cfg->qhub[i]->sub[j];
+			n=(uint16_t)cfg->qhub[i]->sub[j]->subnum;
 			put_int(n,stream);
 			put_int(cfg->qhub[i]->mode[j],stream); 
 		}
@@ -852,10 +861,11 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 		put_str(cfg->lib[i]->parent_path,stream);
 		put_str(cfg->lib[i]->code_prefix,stream);
 
-		c=0;
+		c = cfg->lib[i]->sort;
 		put_int(c,stream);
+		put_int(cfg->lib[i]->misc,stream);
 		n=0x0000;
-		for(j=0;j<3;j++)
+		for(j=0;j<1;j++)
 			put_int(n,stream); 
 
 		n=0xffff;
@@ -871,9 +881,11 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 		if (cfg->dir[i]->lib < cfg->total_libs)	/* total VALID file dirs */
 			n++;
 	put_int(n,stream);
+	unsigned int dirnum = 0;	/* New directory numbering (as saved) */
 	for (j = 0; j < cfg->total_libs; j++) {
 		for (i = 0; i < cfg->total_dirs; i++) {
 			if (cfg->dir[i]->lib == j) {
+				cfg->dir[i]->dirnum = dirnum++;
 				put_int(cfg->dir[i]->lib, stream);
 				put_str(cfg->dir[i]->lname, stream);
 				put_str(cfg->dir[i]->sname, stream);

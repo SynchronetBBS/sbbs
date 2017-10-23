@@ -1016,7 +1016,7 @@ uint sbbs_t::resolve_qwkconf(uint n, int hubnum)
 	if(hubnum >= 0 && hubnum < cfg.total_qhubs) {
 		for(j=0;j<cfg.qhub[hubnum]->subs;j++)
 			if(cfg.qhub[hubnum]->conf[j] == n)
-				return cfg.qhub[hubnum]->sub[j];
+				return cfg.qhub[hubnum]->sub[j]->subnum;
 		return INVALID_SUB;
 	}
 

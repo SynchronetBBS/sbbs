@@ -1,5 +1,3 @@
-/* load_cfg.c */
-
 /* Synchronet configuration load routines (exported) */
 
 /* $Id$ */
@@ -139,13 +137,6 @@ void prep_cfg(scfg_t* cfg)
 {
 	int i;
 
-#if 0 /* def __unix__ */
-	strlwr(cfg->text_dir);	/* temporary Unix-compatibility hack */
-	strlwr(cfg->temp_dir);	/* temporary Unix-compatibility hack */
-	strlwr(cfg->data_dir);	/* temporary Unix-compatibility hack */
-	strlwr(cfg->exec_dir);	/* temporary Unix-compatibility hack */
-#endif
-
 	/* Fix-up paths */
 	prep_dir(cfg->ctrl_dir, cfg->data_dir, sizeof(cfg->data_dir));
 	prep_dir(cfg->ctrl_dir, cfg->logs_dir, sizeof(cfg->logs_dir));
@@ -160,17 +151,6 @@ void prep_cfg(scfg_t* cfg)
 	prep_path(cfg->netmail_sem);
 	prep_path(cfg->echomail_sem);
 	prep_path(cfg->inetmail_sem);
-
-#if 0 /* def __unix__ */
-	/* temporary hack for Unix compatibility */
-	strlwr(cfg->logon_mod);
-	strlwr(cfg->logoff_mod);
-	strlwr(cfg->newuser_mod);
-	strlwr(cfg->login_mod);
-	strlwr(cfg->logout_mod);
-	strlwr(cfg->sync_mod);
-	strlwr(cfg->expire_mod);
-#endif
 
 	for(i=0;i<cfg->total_subs;i++) {
 
@@ -222,6 +202,48 @@ void prep_cfg(scfg_t* cfg)
 			prep_dir(cfg->ctrl_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 
 		prep_path(cfg->dir[i]->upload_sem);
+	}
+
+	for(i=0;i<cfg->total_libs;i++) {
+		if((cfg->lib[i]->misc&LIB_DIRS) == 0 || cfg->lib[i]->parent_path[0] == 0)
+			continue;
+		char path[MAX_PATH+1];
+		SAFECOPY(path, cfg->lib[i]->parent_path);
+		backslash(path);
+		strcat(path, ALLFILES);
+		glob_t g;
+		if(glob(path, GLOB_MARK, NULL, &g))
+			continue;
+   		for(uint gi=0;gi<g.gl_pathc;gi++) {
+			char* p = g.gl_pathv[gi];
+			char* tp = lastchar(p);
+			if(*tp != '/')
+				continue;
+			*tp = 0;
+			dir_t dir;
+			memset(&dir, 0, sizeof(dir));
+			dir.lib = i;
+			dir.misc = DIR_FILES;
+			SAFECOPY(dir.path, p);
+			backslash(dir.path);
+			SAFECOPY(dir.lname, getfname(p));
+			SAFECOPY(dir.sname, dir.lname);
+			char code_suffix[LEN_EXTCODE+1];
+			SAFECOPY(code_suffix, dir.lname);
+			prep_code(code_suffix, cfg->lib[i]->code_prefix);
+			SAFECOPY(dir.code_suffix, code_suffix);
+			SAFEPRINTF2(dir.code,"%s%s"
+				,cfg->lib[i]->code_prefix
+				,dir.code_suffix);
+
+			dir_t** new_dirs;
+			if((new_dirs=(dir_t **)realloc(cfg->dir, sizeof(dir_t *)*(cfg->total_dirs+2)))==NULL)
+				continue;
+			cfg->dir  = new_dirs;
+			if((cfg->dir[cfg->total_dirs] = malloc(sizeof(dir_t))) == NULL)
+				continue;
+			*cfg->dir[cfg->total_dirs++] = dir;
+		}
 	}
 
 
@@ -402,6 +424,35 @@ char* prep_path(char* path)
 #endif
 
 	return(path);
+}
+
+/* Prepare a string to be used as an internal code */
+/* Return the usable code */
+char* prep_code(char *str, const char* prefix)
+{
+	char tmp[1024];
+	int i,j;
+
+	if(prefix!=NULL) {	/* skip the grp/lib prefix, if specified */
+		i=strlen(prefix);
+		if(i && strnicmp(str,prefix,i)==0 && strlen(str)!=i)
+			str+=i;
+	}
+	for(i=j=0;str[i] && i<sizeof(tmp);i++)
+		if(str[i]>' ' && !(str[i]&0x80) && str[i]!='*' && str[i]!='?'
+			&& strchr(ILLEGAL_FILENAME_CHARS,str[i])==NULL)
+			tmp[j++]=toupper(str[i]);
+	tmp[j]=0;
+	strcpy(str,tmp);
+	if(j>LEN_CODE) {	/* Extra chars? Strip symbolic chars */
+		for(i=j=0;str[i];i++)
+			if(isalnum(str[i]))
+				tmp[j++]=str[i];
+		tmp[j]=0;
+		strcpy(str,tmp);
+	}
+	str[LEN_CODE]=0;
+	return(str);
 }
 
 /****************************************************************************/
