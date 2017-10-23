@@ -3139,7 +3139,7 @@ static void smtp_thread(void* arg)
 					if(!can_user_post(&scfg,subnum,&relay_user,&client,&reason)) {
 						lprintf(LOG_WARNING,"%04d !SMTP %s (user #%u) cannot post on %s (reason: %u)"
 							,socket, sender_addr, relay_user.number
-							,scfg.sub[subnum]->sname, reason);
+							,scfg.sub[subnum]->sname, reason + 1);
 						sockprintf(socket,"550 Insufficient access");
 						subnum=INVALID_SUB;
 						stats.msgs_refused++;
