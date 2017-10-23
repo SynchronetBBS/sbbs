@@ -321,6 +321,7 @@ enum area_sort {
 	AREA_SORT_LNAME,
 	AREA_SORT_SNAME,
 	AREA_SORT_CODE,
+	AREA_SORT_TYPES,
 };
 
 enum {
