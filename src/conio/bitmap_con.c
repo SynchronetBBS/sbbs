@@ -184,8 +184,17 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	cio_textinfo.attribute=7;
 	cio_textinfo.normattr=7;
 	cio_textinfo.currmode=mode;
-	cio_textinfo.screenheight=vstat.rows;
-	cio_textinfo.screenwidth=vstat.cols;
+
+	if (vstat.rows > 0xff)
+		cio_textinfo.screenheight = 0xff;
+	else
+		cio_textinfo.screenheight = vstat.rows;
+
+	if (vstat.cols > 0xff)
+		cio_textinfo.screenwidth = 0xff;
+	else
+		cio_textinfo.screenwidth = vstat.cols;
+
 	cio_textinfo.curx=1;
 	cio_textinfo.cury=1;
 	cio_textinfo.winleft=1;
