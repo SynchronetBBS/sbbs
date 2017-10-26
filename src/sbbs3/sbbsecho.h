@@ -1,4 +1,4 @@
-/* Synchronet FidoNet Echomail tosser/scanner/areafix program */
+/* Synchronet FidoNet EchoMail tosser/scanner/areafix program */
 
 /* $Id$ */
 
@@ -67,7 +67,7 @@ enum pkt_type {
 
 typedef struct {
     uint		sub;						/* Set to INVALID_SUB if pass-thru */
-    char*		name;						/* Area tag name */
+    char*		tag;						/* AreaTag, a.k.a. 'EchoTag' */
 	uint		imported; 					/* Total messages imported this run */
 	uint		exported; 					/* Total messages exported this run */
 	uint		circular; 					/* Total circular paths detected */
