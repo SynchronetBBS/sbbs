@@ -356,7 +356,7 @@ const char* iniTimeStr(time_t t)
 	if(t == 0)
 		return "Never";
 	if((p = ctime_r(&t, tmp)) == NULL)
-		sprintf(tstr, "0x%lx", t);
+		sprintf(tstr, "0x%lx", (ulong)t);
 	else
 		sprintf(tstr, "%.3s %.2s %.4s %.8s", p+4, p+8, p+20, p+11);
 	
@@ -1458,9 +1458,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		FIND_WHITESPACE(p);
 		SKIP_WHITESPACE(p);
 		if((tp=strchr(p,';'))!=NULL) {
-			SAFECOPY(field3,p);     /* Comment Field (if any) */
-			FIND_WHITESPACE(tp);
-			*tp=0; 
+			SAFECOPY(field3,tp);     /* Comment Field (if any), follows links */
 		}
 		else
 			field3[0]=0;
