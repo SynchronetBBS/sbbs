@@ -309,8 +309,14 @@ static void ciolib_gettextinfo(struct cterminal *cterm,struct text_info *ti)
 	ti->attribute=BD->attr;
 	ti->normattr=7;
 	ti->currmode=BD->currmode;
-	ti->screenheight=cterm->height;
-	ti->screenwidth=cterm->width;
+	if (cterm->height > 0xff)
+		ti->screenheight = 0xff;
+	else
+		ti->screenheight = cterm->height;
+	if (cterm->width > 0xff)
+		ti->screenwidth = 0xff;
+	else
+		ti->screenwidth = cterm->width;
 	ti->curx=BD->x;
 	ti->cury=BD->y;
 }
