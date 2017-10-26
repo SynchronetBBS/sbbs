@@ -106,6 +106,7 @@ bool terminated=false;
 str_list_t	locked_bso_nodes;
 
 int mv(const char *insrc, const char *indest, bool copy);
+time32_t fmsgtime(const char *str);
 void export_echomail(const char *sub_code, const nodecfg_t*, bool rescan);
 
 const char default_domain[] = "fidonet";
@@ -136,6 +137,287 @@ const char* zone_root_outbound(uint16_t zone)
 			return i->root;
 
 	return cfg.outbound;
+}
+
+/* Allocates the buffer and returns the data (or NULL) */
+char* parse_control_line(const char* fmsgbuf, const char* kludge)
+{
+	char*	p;
+	char	str[128];
+
+	if(fmsgbuf == NULL)
+		return NULL;
+	sprintf(str, "\1%s", kludge);
+	p = strstr(fmsgbuf, str);
+	if(p == NULL)
+		return NULL;
+	if(p != fmsgbuf && *(p-1) != '\r' && *(p-1) != '\n')	/* Kludge must start new-line */
+		return NULL;
+	SAFECOPY(str, p);
+
+	/* Terminate at the CR */
+	p = strchr(str, '\r');
+	if(p == NULL)
+		return NULL;
+	*p = 0;
+
+	/* Only return the data portion */
+	p = str + strlen(kludge) + 1;
+	SKIP_WHITESPACE(p);
+	return strdup(p);
+}
+
+typedef struct echostat_msg {
+	char msg_id[128];
+	char reply_id[128];
+	char pid[128];
+	char tid[128];
+	char to[FIDO_NAME_LEN];
+	char from[FIDO_NAME_LEN];
+	char subj[FIDO_SUBJ_LEN];
+	time_t msgtime;
+	time_t localtime;
+	size_t length;
+	fidoaddr_t origaddr;
+	fidoaddr_t pkt_orig;
+} echostat_msg_t;
+
+enum echostat_msg_type {
+	ECHOSTAT_MSG_RECEIVED,
+	ECHOSTAT_MSG_IMPORTED,
+	ECHOSTAT_MSG_EXPORTED,
+	ECHOSTAT_MSG_DUPLICATE,
+	ECHOSTAT_MSG_CIRCULAR,
+	ECHOSTAT_MSG_TYPES
+};
+
+const char* echostat_msg_type[ECHOSTAT_MSG_TYPES] = {
+	"Received",
+	"Imported",
+	"Exported",
+	"Duplicate",
+	"Circular",
+};
+
+typedef struct echostat {
+	char tag[FIDO_AREATAG_LEN + 1];
+	echostat_msg_t last[ECHOSTAT_MSG_TYPES];
+	echostat_msg_t first[ECHOSTAT_MSG_TYPES];
+	ulong total[ECHOSTAT_MSG_TYPES];
+} echostat_t;
+
+echostat_t* echostat;
+size_t echostat_count;
+
+echostat_msg_t parse_echostat_msg(str_list_t ini, const char* section, const char* prefix)
+{
+	char str[128];
+	char key[128];
+	echostat_msg_t msg = {0};
+
+	sprintf(key, "%s.to", prefix),			iniGetString(ini, section, key, NULL, msg.to);
+	sprintf(key, "%s.from", prefix),		iniGetString(ini, section, key, NULL, msg.from);
+	sprintf(key, "%s.subj", prefix),		iniGetString(ini, section, key, NULL, msg.subj);
+	sprintf(key, "%s.msg_id", prefix),		iniGetString(ini, section, key, NULL, msg.msg_id);
+	sprintf(key, "%s.reply_id", prefix),	iniGetString(ini, section, key, NULL, msg.reply_id);
+	sprintf(key, "%s.pid", prefix),			iniGetString(ini, section, key, NULL, msg.pid);
+	sprintf(key, "%s.tid", prefix),			iniGetString(ini, section, key, NULL, msg.tid);
+	sprintf(key, "%s.msgtime", prefix),		msg.msgtime = iniGetDateTime(ini, section, key, 0);
+	sprintf(key, "%s.localtime", prefix),	msg.localtime = iniGetDateTime(ini, section, key, 0);
+	sprintf(key, "%s.length", prefix),		msg.length = (size_t)iniGetBytes(ini, section, key, 1, 0);
+	sprintf(key, "%s.origaddr", prefix),	iniGetString(ini, section, key, NULL, str);
+	if(str[0])	 msg.origaddr = atofaddr(str);
+	sprintf(key, "%s.pkt_orig", prefix),	iniGetString(ini, section, key, NULL, str);
+	if(str[0])	 msg.pkt_orig = atofaddr(str);
+
+	return msg;
+}
+
+echostat_msg_t fidomsg_to_echostat_msg(fmsghdr_t fmsghdr, fidoaddr_t* pkt_orig, const char* fmsgbuf)
+{
+	char* p;
+	echostat_msg_t msg = {0};
+
+	SAFECOPY(msg.to		, fmsghdr.to);
+	SAFECOPY(msg.from	, fmsghdr.from);
+	SAFECOPY(msg.subj	, fmsghdr.subj);
+	msg.msgtime			= fmsgtime(fmsghdr.time);
+	msg.localtime		= time(NULL);
+	msg.origaddr.zone	= fmsghdr.origzone;
+	msg.origaddr.net	= fmsghdr.orignet;
+	msg.origaddr.node	= fmsghdr.orignode;
+	msg.origaddr.point	= fmsghdr.origpoint;
+	if(pkt_orig != NULL)
+		msg.pkt_orig	= *pkt_orig;
+	if((p = parse_control_line(fmsgbuf, "MSGID:")) != NULL) {
+		SAFECOPY(msg.msg_id, p);
+		free(p);
+	}
+	if((p = parse_control_line(fmsgbuf, "REPLY:")) != NULL) {
+		SAFECOPY(msg.reply_id, p);
+		free(p);
+	}
+	if((p = parse_control_line(fmsgbuf, "PID:")) != NULL) {
+		SAFECOPY(msg.pid, p);
+		free(p);
+	}
+	if((p = parse_control_line(fmsgbuf, "TID:")) != NULL) {
+		SAFECOPY(msg.tid, p);
+		free(p);
+	}
+	if(fmsgbuf != NULL)
+		msg.length = strlen(fmsgbuf);
+
+	return msg;
+}
+
+echostat_msg_t smsg_to_echostat_msg(smbmsg_t smsg, size_t msglen)
+{
+	char* p;
+	echostat_msg_t emsg = {0};
+
+	SAFECOPY(emsg.to	, smsg.to);
+	SAFECOPY(emsg.from	, smsg.from);
+	SAFECOPY(emsg.subj	, smsg.subj);
+	emsg.msgtime		= smsg.hdr.when_written.time;
+	emsg.localtime		= time(NULL);
+	if(smsg.from_net.type == NET_FIDO && smsg.from_net.addr != NULL)
+		emsg.origaddr	= atofaddr(smsg.from_net.addr);
+	if((p = smsg.ftn_msgid) != NULL)
+		SAFECOPY(emsg.msg_id, p);
+	if((p = smsg.ftn_reply) != NULL)
+		SAFECOPY(emsg.reply_id, p);
+	if((p = smsg.ftn_pid) != NULL)
+		SAFECOPY(emsg.pid, p);
+	if((p = smsg.ftn_tid) != NULL)
+		SAFECOPY(emsg.tid, p);
+	emsg.length = msglen;
+
+	return emsg;
+}
+
+void new_echostat_msg(echostat_t* stat, enum echostat_msg_type type, echostat_msg_t msg)
+{
+	stat->last[type] = msg;
+	if(stat->first[type].localtime == 0)
+		stat->first[type] = msg;
+	stat->total[type]++;
+}
+
+size_t read_echostats(const char* fname, echostat_t **echostat)
+{
+	str_list_t ini;
+	FILE* fp = iniOpenFile(fname, FALSE);
+	if(fp == NULL)
+		return 0;
+
+	ini = iniReadFile(fp);
+	iniCloseFile(fp);
+
+	str_list_t echoes = iniGetSectionList(ini, NULL);
+	if(echoes == NULL) {
+		iniFreeStringList(ini);
+		return 0;
+	}
+
+	size_t echo_count = strListCount(echoes);
+	*echostat = malloc(sizeof(echostat_t) * echo_count);
+	if(*echostat == NULL) {
+		iniFreeStringList(echoes);
+		iniFreeStringList(ini);
+		return 0;
+	}
+	for(unsigned i = 0; i < echo_count; i++) {
+		echostat_t* stat = &(*echostat)[i];
+		SAFECOPY(stat->tag, echoes[i]);
+		for(int type = 0; type < ECHOSTAT_MSG_TYPES; type++) {
+			char prefix[32];
+			sprintf(prefix, "First%s", echostat_msg_type[type])
+				,stat->first[type]	= parse_echostat_msg(ini, stat->tag, prefix);
+			sprintf(prefix, "Last%s", echostat_msg_type[type])
+				,stat->last[type]	= parse_echostat_msg(ini, stat->tag, prefix);
+			sprintf(prefix, "Total%s", echostat_msg_type[type])
+				,stat->total[type] = iniGetLongInt(ini, stat->tag, prefix, 0);
+		}
+	}
+	iniFreeStringList(echoes);
+	iniFreeStringList(ini);
+
+	return echo_count;
+}
+
+/* Mimic iniSetDateTime() */
+const char* iniTimeStr(time_t t)
+{
+	static char	tstr[32];
+	char	tmp[32];
+	char*	p;
+
+	if(t == 0)
+		return "Never";
+	if((p = ctime_r(&t, tmp)) == NULL)
+		sprintf(tstr, "0x%lx", t);
+	else
+		sprintf(tstr, "%.3s %.2s %.4s %.8s", p+4, p+8, p+20, p+11);
+	
+	return tstr;
+}
+
+void write_echostat_msg(FILE* fp, echostat_msg_t msg, const char* prefix)
+{
+	echostat_msg_t zero = {0};
+	if(memcmp(&msg, &zero, sizeof(msg)) == 0)
+		return;
+	if(msg.to[0])		fprintf(fp, "%s.to = %s\n"			, prefix, msg.to);
+	if(msg.from[0])		fprintf(fp, "%s.from = %s\n"		, prefix, msg.from);
+	if(msg.subj[0])		fprintf(fp, "%s.subj = %s\n"		, prefix, msg.subj);
+	if(msg.msg_id[0])	fprintf(fp, "%s.msg_id = %s\n"		, prefix, msg.msg_id);
+	if(msg.reply_id[0])	fprintf(fp, "%s.reply_id = %s\n"	, prefix, msg.reply_id);
+	if(msg.pid[0])		fprintf(fp, "%s.pid = %s\n"			, prefix, msg.pid);
+	if(msg.tid[0])		fprintf(fp, "%s.tid = %s\n"			, prefix, msg.tid);
+	fprintf(fp, "%s.length = %lu\n"							, prefix, msg.length);
+	fprintf(fp, "%s.msgtime = %s\n"							, prefix, iniTimeStr(msg.msgtime));
+	fprintf(fp, "%s.localtime = %s\n"						, prefix, iniTimeStr(msg.localtime));
+	fprintf(fp, "%s.origaddr = %s\n"						, prefix, faddrtoa(&msg.origaddr));
+	fprintf(fp, "%s.pkt_orig = %s\n"						, prefix, faddrtoa(&msg.pkt_orig));
+}
+
+bool write_echostats(const char* fname, echostat_t* echostat, size_t echo_count)
+{
+	FILE* fp;
+
+	if((fp=fopen(fname, "w"))==NULL)
+		return false;
+
+	for(unsigned i = 0; i < echo_count; i++) {
+		echostat_t* stat = &echostat[i];
+		fprintf(fp, "[%s]\n"						, stat->tag);
+		for(int type = 0; type < ECHOSTAT_MSG_TYPES; type++) {
+			char prefix[32];
+			sprintf(prefix, "First%s", echostat_msg_type[type])	, write_echostat_msg(fp, stat->first[type], prefix);
+			sprintf(prefix, "Last%s", echostat_msg_type[type])	, write_echostat_msg(fp, stat->last[type], prefix);
+			fprintf(fp,		"Total%s = %lu\n"					, echostat_msg_type[type], stat->total[type]);
+		}
+		fprintf(fp, "\n");
+	}
+	fclose(fp);
+	return true;
+}
+
+echostat_t* get_echostat(const char* tag)
+{
+	for(unsigned int i = 0; i < echostat_count; i++) {
+		if(stricmp(echostat[i].tag, tag) == 0)
+			return &echostat[i];
+	}
+	echostat_t* new_echostat = realloc(echostat, sizeof(echostat_t) * (echostat_count + 1));
+	if(new_echostat == NULL)
+		return NULL;
+	echostat = new_echostat;
+	memset(&echostat[echostat_count], 0, sizeof(echostat_t));
+	SAFECOPY(echostat[echostat_count].tag, tag);
+
+	return &echostat[echostat_count++];
 }
 
 /* FTN-compliant "Program Identifier"/PID (also used as a "Tosser Identifier"/TID) */
@@ -2346,7 +2628,7 @@ const char* area_desc(const char* areatag)
 	char tag[FIDO_AREATAG_LEN+1];
 	static char desc[128];
 
-	for(int i=0; i<cfg.listcfgs; i++) {
+	for(uint i=0; i<cfg.listcfgs; i++) {
 		FILE* fp = fopen(cfg.listcfg[i].listpath, "r");
 		if(fp == NULL) {
 			lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), cfg.listcfg[i].listpath);
@@ -4065,6 +4347,12 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			FREE_AND_NULL(post);
 			continue; 
 		}
+		
+		echostat_t* stat = get_echostat(tag);
+		if(stat == NULL) {
+			lprintf(LOG_CRIT, "Failed to allocated memory for echostats!");
+			break;
+		}
 
 		for(m=exp=0;m<posts && !terminated;m++) {
 			printf("\r%*s %5lu of %-5"PRIu32"  "
@@ -4269,17 +4557,18 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 				strcat((char *)fmsgbuf,str); 
 			}
 
-			for(k=0;k<cfg.areas;k++)
-				if(cfg.area[k].sub==i) {
-					cfg.area[k].exported++;
-					pkt_to_pkt(fmsgbuf,cfg.area[k]
-						,nodecfg ? &nodecfg->addr : NULL,hdr,msg_seen
-						,msg_path);
+			for(uint u=0; u < cfg.areas; u++) {
+				if(cfg.area[u].sub == i) {
+					cfg.area[u].exported++;
+					pkt_to_pkt(fmsgbuf, cfg.area[u]
+						,nodecfg ? &nodecfg->addr : NULL, hdr, msg_seen, msg_path);
 					break; 
 				}
-			FREE_AND_NULL(fmsgbuf);
+			}
 			exported++;
 			exp++;
+			new_echostat_msg(stat, ECHOSTAT_MSG_EXPORTED, smsg_to_echostat_msg(msg, strlen(fmsgbuf)));
+			FREE_AND_NULL(fmsgbuf);
 			printf("Exp: %lu ",exp);
 			smb_unlockmsghdr(&smb[cur_smb],&msg);
 			smb_freemsgmem(&msg); 
@@ -4294,11 +4583,11 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 
 	printf("\r%*s\r", 70, "");
 
-	for(i=0;i<cfg.areas;i++)
-		if(cfg.area[i].exported)
+	for(unsigned u=0; u<cfg.areas; u++)
+		if(cfg.area[u].exported)
 			lprintf(LOG_INFO,"Exported: %5u msgs %*s -> %s"
-				,cfg.area[i].exported,LEN_EXTCODE,scfg.sub[cfg.area[i].sub]->code
-				,cfg.area[i].name);
+				,cfg.area[u].exported,LEN_EXTCODE,scfg.sub[cfg.area[u].sub]->code
+				,cfg.area[u].name);
 
 	if(exported)
 		lprintf(LOG_INFO,"Exported: %5lu msgs total", exported);
@@ -4881,17 +5170,24 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				continue; 
 			}
 
+			p+=5;								/* Skip "AREA:" */
+			SKIP_WHITESPACE(p);					/* Skip any white space */
+			printf("%21s: ",p);                 /* Show areaname: */
+			SAFECOPY(areatag,p);
+
+			echostat_t* stat = get_echostat(areatag);
+			if(stat == NULL) {
+				lprintf(LOG_CRIT, "Failed to allocate memory for echostats!");
+				break;
+			}
+			new_echostat_msg(stat, ECHOSTAT_MSG_RECEIVED, fidomsg_to_echostat_msg(hdr, &pkt_orig, NULL));
+
 			if(!opt_import_echomail) {
 				printf("EchoMail Ignored");
 				seektonull(fidomsg);
 				printf("\n");
 				continue; 
 			}
-
-			p+=5;								/* Skip "AREA:" */
-			SKIP_WHITESPACE(p);					/* Skip any white space */
-			printf("%21s: ",p);                 /* Show areaname: */
-			SAFECOPY(areatag,p);
 
 			if(!secure && (nodecfg == NULL || nodecfg->pktpwd[0] == 0)) {
 				lprintf(LOG_WARNING, "Unauthenticated %s EchoMail from %s ignored"
@@ -4932,7 +5228,6 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			if(!parse_origin(fmsgbuf, &hdr))
 				lprintf(LOG_WARNING, "%s: Failed to parse Origin Line in message from %s (%s) in packet from %s: %s"
 					,areatag, hdr.from, fmsghdr_srcaddr_str(&hdr), smb_faddrtoa(&pkt_orig,NULL), packet);
-
 			if(cfg.secure_echomail && cfg.area[i].sub!=INVALID_SUB) {
 				if(!area_is_linked(i,&pkt_orig)) {
 					lprintf(LOG_WARNING, "%s: Security violation - %s not in AREAS.BBS"
@@ -4967,6 +5262,8 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					lprintf(LOG_NOTICE, "%s: Circular path detected for %s in message from %s (%s)"
 						,areatag,smb_faddrtoa(&scfg.faddr[j],NULL), hdr.from, fmsghdr_srcaddr_str(&hdr));
 					printf("\n");
+					new_echostat_msg(stat, ECHOSTAT_MSG_CIRCULAR
+						,fidomsg_to_echostat_msg(hdr, &pkt_orig, fmsgbuf));
 					continue; 
 				}
 			}
@@ -5039,6 +5336,8 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				lprintf(LOG_NOTICE, "%s Duplicate message from %s (%s) to %s, subject: %s"
 					,areatag, hdr.from, fmsghdr_srcaddr_str(&hdr), hdr.to, hdr.subj);
 				cfg.area[i].dupes++; 
+				new_echostat_msg(stat, ECHOSTAT_MSG_DUPLICATE
+					,fidomsg_to_echostat_msg(hdr, &pkt_orig, fmsgbuf));
 			}
 			else if(result==IMPORT_SUCCESS || (result==IMPORT_FILTERED_AGE && cfg.relay_filtered_msgs)) {	   /* Not a dupe */
 				strip_psb(fmsgbuf);
@@ -5060,10 +5359,13 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				} 
 				echomail++;
 				cfg.area[i].imported++;
+				new_echostat_msg(stat, ECHOSTAT_MSG_IMPORTED
+					,fidomsg_to_echostat_msg(hdr, &pkt_orig, fmsgbuf));
 			}
 			printf("\n");
 		}
 		fclose(fidomsg);
+		FREE_AND_NULL(fmsgbuf);
 
 		if(bad_packet)
 			rename_bad_packet(packet);
@@ -5336,9 +5638,9 @@ int main(int argc, char **argv)
 		SAFECOPY(cfg.outbound, outbound);
 		free(outbound);
 	}
-	for(i=0; i<cfg.nodecfgs; i++) {
-		if(cfg.nodecfg[i].inbox[0])
-			backslash(cfg.nodecfg[i].inbox);
+	for(uint u=0; u<cfg.nodecfgs; u++) {
+		if(cfg.nodecfg[u].inbox[0])
+			backslash(cfg.nodecfg[u].inbox);
 	}
 	
 	truncsp(cmdline);
@@ -5501,6 +5803,8 @@ int main(int argc, char **argv)
 		gen_notify_list(); 
 	}
 
+	echostat_count = read_echostats("../data/echostats.ini", &echostat);
+
 	find_stray_packets();
 
 	if(opt_import_packets) {
@@ -5511,13 +5815,13 @@ int main(int argc, char **argv)
 		/* to take care of any packets that may already be hanging around for some	 */
 		/* reason or another (thus the do/while loop) */
 
-		for(i=0; i<cfg.nodecfgs && !terminated; i++) {
-			if(cfg.nodecfg[i].inbox[0] == 0)
+		for(uint u=0; u<cfg.nodecfgs && !terminated; u++) {
+			if(cfg.nodecfg[u].inbox[0] == 0)
 				continue;
-			printf("Scanning %s inbox: %s\n", faddrtoa(&cfg.nodecfg[i].addr), cfg.nodecfg[i].inbox);
+			printf("Scanning %s inbox: %s\n", faddrtoa(&cfg.nodecfg[u].addr), cfg.nodecfg[u].inbox);
 			do {
-				import_packets(cfg.nodecfg[i].inbox, &cfg.nodecfg[i], /* secure: */true);
-			} while(unpack_bundle(cfg.nodecfg[i].inbox));
+				import_packets(cfg.nodecfg[u].inbox, &cfg.nodecfg[u], /* secure: */true);
+			} while(unpack_bundle(cfg.nodecfg[u].inbox));
 		}
 		if(cfg.secure_inbound[0] && !terminated) {
 			printf("Scanning secure inbound: %s\n", cfg.secure_inbound);
@@ -5538,21 +5842,21 @@ int main(int argc, char **argv)
 
 		/******* END OF IMPORT PKT ROUTINE *******/
 
-		for(i=0;i<cfg.areas;i++) {
-			if(cfg.area[i].imported)
+		for(uint u=0; u<cfg.areas; u++) {
+			if(cfg.area[u].imported)
 				lprintf(LOG_INFO,"Imported: %5u msgs %*s <- %s"
-					,cfg.area[i].imported,LEN_EXTCODE,scfg.sub[cfg.area[i].sub]->code
-					,cfg.area[i].name); 
+					,cfg.area[u].imported,LEN_EXTCODE,scfg.sub[cfg.area[u].sub]->code
+					,cfg.area[u].name); 
 		}
-		for(i=0;i<cfg.areas;i++) {
-			if(cfg.area[i].circular)
+		for(uint u=0; u<cfg.areas; u++) {
+			if(cfg.area[u].circular)
 				lprintf(LOG_INFO,"Circular: %5u detected in %s"
-					,cfg.area[i].circular,cfg.area[i].name); 
+					,cfg.area[u].circular, cfg.area[u].name); 
 		}
-		for(i=0;i<cfg.areas;i++) {
-			if(cfg.area[i].dupes)
+		for(uint u=0; u<cfg.areas; u++) {
+			if(cfg.area[u].dupes)
 				lprintf(LOG_INFO,"Duplicate: %4u detected in %s"
-					,cfg.area[i].dupes,cfg.area[i].name); 
+					,cfg.area[u].dupes, cfg.area[u].name); 
 		} 
 
 		if(echomail)
@@ -5625,23 +5929,25 @@ int main(int argc, char **argv)
 
 		lprintf(LOG_DEBUG,"Updating Message Pointers to Last Posted Message...");
 
-		for(j=0; j<cfg.areas; j++) {
+		for(uint u=0; u<cfg.areas; u++) {
 			uint32_t lastmsg;
-			if(j==cfg.badecho)	/* Don't scan the bad-echo area */
+			if(u==cfg.badecho)	/* Don't scan the bad-echo area */
 				continue;
-			i=cfg.area[j].sub;
+			i=cfg.area[u].sub;
 			if(i<0 || i>=scfg.total_subs)	/* Don't scan pass-through areas */
 				continue;
 			lprintf(LOG_DEBUG,"\n%-*.*s -> %s"
-				,LEN_EXTCODE, LEN_EXTCODE, scfg.sub[i]->code, cfg.area[j].name);
+				,LEN_EXTCODE, LEN_EXTCODE, scfg.sub[i]->code, cfg.area[u].name);
 			if(getlastmsg(i,&lastmsg,0) >= 0)
-				write_export_ptr(i, lastmsg, cfg.area[j].name);
+				write_export_ptr(i, lastmsg, cfg.area[u].name);
 		}
 	}
 
 	move_echomail_packets();
 	if(nodecfg != NULL)
 		attachment(NULL,nodecfg->addr,ATTACHMENT_NETMAIL);
+
+	write_echostats("../data/echostats.ini", echostat, echostat_count);
 
 	if(email->shd_fp)
 		smb_close(email);
