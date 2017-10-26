@@ -342,14 +342,16 @@ int UIFCCALL uifcini32(uifcapi_t* uifcapi)
 
     api->scrn_len=txtinfo.screenheight;
     if(api->scrn_len<MIN_LINES) {
-        cprintf("\7UIFC: Screen length (%u) must be %d lines or greater\r\n"
+		uifcbail();
+		printf("\r\nUIFC: Screen length (%u) must be %d lines or greater\r\n"
             ,api->scrn_len,MIN_LINES);
         return(-2);
     }
     api->scrn_len--; /* account for status line */
 
     if(txtinfo.screenwidth<40) {
-        cprintf("\7UIFC: Screen width (%u) must be at least 40 characters\r\n"
+		uifcbail();
+        printf("\r\nUIFC: Screen width (%u) must be at least 40 characters\r\n"
             ,txtinfo.screenwidth);
         return(-3);
     }
