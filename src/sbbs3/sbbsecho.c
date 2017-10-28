@@ -213,8 +213,8 @@ size_t echostat_count;
 
 int echostat_compare(const void* c1, const void* c2)
 {
-	echostat_t* stat1 = *(echostat_t**)c1;
-	echostat_t* stat2 = *(echostat_t**)c2;
+	echostat_t* stat1 = (echostat_t*)c1;
+	echostat_t* stat2 = (echostat_t*)c2;
 
 	return stricmp(stat1->tag, stat2->tag);
 }
@@ -1222,7 +1222,7 @@ uint find_area(const char* echotag)
 	unsigned u;
 
 	for(u=0; u < cfg.areas; u++)
-		if(stricmp(cfg.area[u].tag, echotag) == 0)
+		if(cfg.area[u].tag != NULL && stricmp(cfg.area[u].tag, echotag) == 0)
 			break;
 
 	return u;
@@ -1715,6 +1715,8 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 
 bool add_sub_to_areafile(sub_t* sub, fidoaddr_t uplink)
 {
+	FILE* fp;
+
 	lprintf(LOG_INFO, "Adding sub-board to Area File with uplink (%s): %s"
 		,smb_faddrtoa(&uplink, NULL), sub->code);
 
@@ -1723,7 +1725,7 @@ bool add_sub_to_areafile(sub_t* sub, fidoaddr_t uplink)
 	if(added++ == 0)
 		backup(cfg.areafile, cfg.areafile_backups, /* ren: */FALSE);
 
-	FILE* fp = fopen(cfg.areafile, "r+");
+	fp = fopen(cfg.areafile, "r+");
 	if(fp == NULL) {
 		lprintf(LOG_ERR, "Error %d opening %s", errno, cfg.areafile);
 		return false;
@@ -5756,7 +5758,7 @@ int main(int argc, char **argv)
 		strupr(area_tag);
 		if(area_tag[0]=='*')         /* UNKNOWN-ECHO area */
 			cfg.badecho=areanum;
-		if(area_is_valid(find_area(area_tag))) {
+		if(areanum > 0 && area_is_valid(find_area(area_tag))) {
 			printf("\n");
 			lprintf(LOG_WARNING, "DUPLICATE AREA (%s) in area file (%s), IGNORED!", area_tag, cfg.areafile);
 			cfg.areas--;
@@ -5765,7 +5767,7 @@ int main(int argc, char **argv)
 		if((cfg.area[areanum].tag=strdup(area_tag))==NULL) {
 			printf("\n");
 			lprintf(LOG_ERR,"ERROR allocating memory for area #%u tag."
-				,cfg.areas+1);
+				,areanum+1);
 			bail(1); 
 			return -1;
 		}
@@ -5779,29 +5781,29 @@ int main(int argc, char **argv)
 				lprintf(LOG_WARNING, "Invalid Area File line, expected link address(es) after echo-tag: '%s'", str);
 				break;
 			}
-			if((cfg.area[cfg.areas].link=(fidoaddr_t *)
-				realloc(cfg.area[cfg.areas].link
-				,sizeof(fidoaddr_t)*(cfg.area[cfg.areas].links+1)))==NULL) {
+			if((cfg.area[areanum].link=(fidoaddr_t *)
+				realloc(cfg.area[areanum].link
+				,sizeof(fidoaddr_t)*(cfg.area[areanum].links+1)))==NULL) {
 				printf("\n");
 				lprintf(LOG_ERR,"ERROR allocating memory for area #%u links."
-					,cfg.areas+1);
+					,areanum+1);
 				bail(1); 
 				return -1;
 			}
 			fidoaddr_t link = atofaddr(p);
-			cfg.area[cfg.areas].link[cfg.area[cfg.areas].links] = link;
+			cfg.area[areanum].link[cfg.area[areanum].links] = link;
 			if(findnodecfg(&cfg, link, /* exact: */false) == NULL) {
 				printf("\n");
 				lprintf(LOG_WARNING, "Configuration for %s-linked-node (%s) not found in %s"
-					,cfg.area[cfg.areas].tag, faddrtoa(&link), cfg.cfgfile);
+					,cfg.area[areanum].tag, faddrtoa(&link), cfg.cfgfile);
 			} else
-				cfg.area[cfg.areas].links++; 
+				cfg.area[areanum].links++; 
 			FIND_WHITESPACE(p);	/* Skip address */
 			SKIP_WHITESPACE(p);	/* Skip white space */
 		}
 
 #if 0
-		if(cfg.area[cfg.areas].sub!=INVALID_SUB || cfg.area[cfg.areas].links)
+		if(cfg.area[areanum].sub!=INVALID_SUB || cfg.area[areanum].links)
 			cfg.areas++;		/* Don't allocate if no tossing */
 #endif
 	}
