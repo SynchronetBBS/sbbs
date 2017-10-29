@@ -162,9 +162,18 @@ BOOL DLLCALL backup(char *fname, int backup_level, BOOL ren)
 			if(ren == TRUE) {
 				if(rename(fname,newname)!=0)
 					return(FALSE);
-			} else 
+			} else {
+				struct utimbuf ut;
+
+				/* preserve the original time stamp */
+				ut.modtime = fdate(fname);
+
 				if(!fcopy(fname,newname))
 					return(FALSE);
+
+				ut.actime = time(NULL);
+				utime(newname, &ut);
+			}
 			continue; 
 		}
 		safe_snprintf(oldname,sizeof(oldname),"%.*s.%d%s",len,fname,i-2,ext);
