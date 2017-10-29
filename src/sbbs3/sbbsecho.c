@@ -245,7 +245,7 @@ echostat_msg_t parse_echostat_msg(str_list_t ini, const char* section, const cha
 {
 	char str[128];
 	char key[128];
-	echostat_msg_t msg = {0};
+	echostat_msg_t msg = {{0}};
 
 	sprintf(key, "%s.to", prefix),			iniGetString(ini, section, key, NULL, msg.to);
 	sprintf(key, "%s.from", prefix),		iniGetString(ini, section, key, NULL, msg.from);
@@ -269,7 +269,7 @@ echostat_msg_t parse_echostat_msg(str_list_t ini, const char* section, const cha
 echostat_msg_t fidomsg_to_echostat_msg(fmsghdr_t fmsghdr, fidoaddr_t* pkt_orig, const char* fmsgbuf)
 {
 	char* p;
-	echostat_msg_t msg = {0};
+	echostat_msg_t msg = {{0}};
 
 	SAFECOPY(msg.to		, fmsghdr.to);
 	SAFECOPY(msg.from	, fmsghdr.from);
@@ -312,7 +312,7 @@ echostat_msg_t fidomsg_to_echostat_msg(fmsghdr_t fmsghdr, fidoaddr_t* pkt_orig, 
 echostat_msg_t smsg_to_echostat_msg(smbmsg_t smsg, size_t msglen, fidoaddr_t addr)
 {
 	char* p;
-	echostat_msg_t emsg = {0};
+	echostat_msg_t emsg = {{0}};
 
 	SAFECOPY(emsg.to	, smsg.to);
 	SAFECOPY(emsg.from	, smsg.from);
@@ -408,7 +408,7 @@ const char* iniTimeStr(time_t t)
 
 void write_echostat_msg(FILE* fp, echostat_msg_t msg, const char* prefix)
 {
-	echostat_msg_t zero = {0};
+	echostat_msg_t zero = {{0}};
 	if(memcmp(&msg, &zero, sizeof(msg)) == 0)
 		return;
 	if(msg.to[0])		fprintf(fp, "%s.to = %s\n"			, prefix, msg.to);
@@ -2668,7 +2668,6 @@ ulong loadmsgs(smb_t* smb, post_t** post, ulong ptr)
 	long l,total;
 	idxrec_t idx;
 
-
 	if((i=smb_locksmbhdr(smb))!=SMB_SUCCESS) {
 		lprintf(LOG_ERR,"ERROR %d (%s) line %d locking %s",i,smb->last_error,__LINE__,smb->file);
 		return(0); 
@@ -2796,14 +2795,14 @@ void bail(int error_level)
 		char signoff[1024];
 		sprintf(signoff, "SBBSecho exiting with error level %d", error_level);
 		if(bundles_unpacked || bundles_sent)
-			sprintf(signoff+strlen(signoff), ", Bundles(%u unpacked, %u sent)", bundles_unpacked, bundles_sent);
+			sprintf(signoff+strlen(signoff), ", Bundles(%lu unpacked, %lu sent)", bundles_unpacked, bundles_sent);
 		if(packets_imported || packets_sent)
-			sprintf(signoff+strlen(signoff), ", Packets(%u imported, %u sent)", packets_imported, packets_sent);
+			sprintf(signoff+strlen(signoff), ", Packets(%lu imported, %lu sent)", packets_imported, packets_sent);
 		if(netmail || exported_netmail || packed_netmail)
-			sprintf(signoff+strlen(signoff), ", NetMail(%u imported, %u exported, %u packed)"
+			sprintf(signoff+strlen(signoff), ", NetMail(%lu imported, %lu exported, %lu packed)"
 				,netmail, exported_netmail, packed_netmail);
 		if(echomail || exported_echomail)
-			sprintf(signoff+strlen(signoff), ", EchoMail(%u imported, %u exported)"
+			sprintf(signoff+strlen(signoff), ", EchoMail(%lu imported, %lu exported)"
 				,echomail, exported_echomail);
 		lprintf(LOG_INFO, "%s", signoff);
 	}
@@ -3049,7 +3048,7 @@ char* getfmsg(FILE* stream, ulong* outlen)
 		length++;	 							/* Increment the Length */
 	}
 
-	if((fbuf=(char *)malloc(length+1))==NULL) {
+	if((fbuf = malloc(length+1)) == NULL) {
 		lprintf(LOG_ERR,"ERROR line %d allocating %lu bytes of memory",__LINE__,length+1);
 		bail(1); 
 		return(NULL);
@@ -4779,7 +4778,7 @@ bool retoss_bad_echomail(void)
 			continue;
 		}
 		truncsp(body);
-		char* tail = smb_getmsgtxt(&badsmb, &badmsg, GETMSGTXT_TAIL_ONLY);
+		uchar* tail = smb_getmsgtxt(&badsmb, &badmsg, GETMSGTXT_TAIL_ONLY);
 		if(tail != NULL)
 			truncsp(tail);
 
@@ -4801,7 +4800,7 @@ bool retoss_bad_echomail(void)
 			long	dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 			if(smb.status.max_crcs == 0)
 				dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
-			char* body_start = body;
+			uchar* body_start = body;
 			if(strncmp(body_start, "AREA:", 5) == 0) {
 				FIND_CHAR(body_start, '\r');
 				SKIP_CHARSET(body_start, "\r\n");
