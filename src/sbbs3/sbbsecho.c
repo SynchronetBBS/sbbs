@@ -75,6 +75,7 @@ bool opt_update_msgptrs		= false;
 bool opt_ignore_msgptrs		= false;
 bool opt_leave_msgptrs		= false;
 bool opt_dump_area_file		= false;
+bool opt_retoss_badmail		= false;	/* Re-toss from the badecho/unknown msg sub */
 
 /* statistics */
 ulong netmail=0;	/* imported */
@@ -108,6 +109,27 @@ str_list_t	locked_bso_nodes;
 int mv(const char *insrc, const char *indest, bool copy);
 time32_t fmsgtime(const char *str);
 void export_echomail(const char *sub_code, const nodecfg_t*, bool rescan);
+
+/* FTN-compliant "Program Identifier"/PID (also used as a "Tosser Identifier"/TID) */
+const char* sbbsecho_pid(void)
+{
+	static char str[256];
+	
+	sprintf(str, "SBBSecho %u.%02u-%s r%s %s %s"
+		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,revision,__DATE__,compiler);
+
+	return str;
+}
+
+/* for *.bsy file contents: */
+const char* program_id(void)
+{
+	static char str[256];
+	
+	SAFEPRINTF2(str, "%u %s", getpid(), sbbsecho_pid());
+
+	return str;
+}
 
 const char default_domain[] = "fidonet";
 
@@ -276,7 +298,8 @@ echostat_msg_t fidomsg_to_echostat_msg(fmsghdr_t fmsghdr, fidoaddr_t* pkt_orig, 
 		SAFECOPY(msg.tid, p);
 		free(p);
 	}
-	if((p = parse_control_line(fmsgbuf, "TZUTC:")) != NULL) {
+	if((p = parse_control_line(fmsgbuf, "TZUTC:")) != NULL
+		|| (p = parse_control_line(fmsgbuf, "TZUTCINFO:")) != NULL) {
 		SAFECOPY(msg.msg_tz, p);
 		free(p);
 	}
@@ -307,6 +330,8 @@ echostat_msg_t smsg_to_echostat_msg(smbmsg_t smsg, size_t msglen, fidoaddr_t add
 		SAFECOPY(emsg.pid, p);
 	if((p = smsg.ftn_tid) != NULL)
 		SAFECOPY(emsg.tid, p);
+	else
+		SAFECOPY(emsg.tid, sbbsecho_pid());
 	emsg.length = msglen;
 	emsg.pkt_orig = addr;
 
@@ -397,7 +422,8 @@ void write_echostat_msg(FILE* fp, echostat_msg_t msg, const char* prefix)
 	fprintf(fp, "%s.msg_time = %s\n"						, prefix, iniTimeStr(msg.msg_time));
 	if(msg.msg_tz[0])	fprintf(fp, "%s.msg_tz = %s\n"		, prefix, msg.msg_tz);
 	fprintf(fp, "%s.localtime = %s\n"						, prefix, iniTimeStr(msg.localtime));
-	fprintf(fp, "%s.origaddr = %s\n"						, prefix, faddrtoa(&msg.origaddr));
+	if(msg.origaddr.zone)
+		fprintf(fp, "%s.origaddr = %s\n"					, prefix, faddrtoa(&msg.origaddr));
 	fprintf(fp, "%s.pkt_orig = %s\n"						, prefix, faddrtoa(&msg.pkt_orig));
 }
 
@@ -418,7 +444,8 @@ bool write_echostats(const char* fname, echostat_t* echostat, size_t echo_count)
 			char prefix[32];
 			sprintf(prefix, "First%s", echostat_msg_type[type])	, write_echostat_msg(fp, stat->first[type], prefix);
 			sprintf(prefix, "Last%s", echostat_msg_type[type])	, write_echostat_msg(fp, stat->last[type], prefix);
-			fprintf(fp,		"Total%s = %lu\n"					, echostat_msg_type[type], stat->total[type]);
+			if(stat->total[type] != 0)
+				fprintf(fp,	"Total%s = %lu\n"					, echostat_msg_type[type], stat->total[type]);
 		}
 		fprintf(fp, "\n");
 	}
@@ -440,27 +467,6 @@ echostat_t* get_echostat(const char* tag)
 	SAFECOPY(echostat[echostat_count].tag, tag);
 
 	return &echostat[echostat_count++];
-}
-
-/* FTN-compliant "Program Identifier"/PID (also used as a "Tosser Identifier"/TID) */
-const char* sbbsecho_pid(void)
-{
-	static char str[256];
-	
-	sprintf(str, "SBBSecho %u.%02u-%s r%s %s %s"
-		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,revision,__DATE__,compiler);
-
-	return str;
-}
-
-/* for *.bsy file contents: */
-const char* program_id(void)
-{
-	static char str[256];
-	
-	SAFEPRINTF2(str, "%u %s", getpid(), sbbsecho_pid());
-
-	return str;
 }
 
 /**********************/
@@ -1745,6 +1751,7 @@ bool add_sub_to_areafile(sub_t* sub, fidoaddr_t uplink)
 	SAFECOPY(echotag, sub->sname);
 	char* p;
 	REPLACE_CHARS(echotag, ' ', '_', p);
+	strupr(echotag);
 	fprintf(fp, "%-*s %-*s %s\n"
 		,LEN_EXTCODE, sub->code, FIDO_AREATAG_LEN, echotag, smb_faddrtoa(&uplink, NULL));
 	fclose(fp);
@@ -2655,37 +2662,37 @@ long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */time_t *t)
 }
 
 
-ulong loadmsgs(post_t** post, ulong ptr)
+ulong loadmsgs(smb_t* smb, post_t** post, ulong ptr)
 {
 	int i;
 	long l,total;
 	idxrec_t idx;
 
 
-	if((i=smb_locksmbhdr(&smb[cur_smb]))!=SMB_SUCCESS) {
-		lprintf(LOG_ERR,"ERROR %d (%s) line %d locking %s",i,smb[cur_smb].last_error,__LINE__,smb[cur_smb].file);
+	if((i=smb_locksmbhdr(smb))!=SMB_SUCCESS) {
+		lprintf(LOG_ERR,"ERROR %d (%s) line %d locking %s",i,smb->last_error,__LINE__,smb->file);
 		return(0); 
 	}
 
 	/* total msgs in sub */
-	total=filelength(fileno(smb[cur_smb].sid_fp))/sizeof(idxrec_t);
+	total=filelength(fileno(smb->sid_fp))/sizeof(idxrec_t);
 
 	if(!total) {			/* empty */
-		smb_unlocksmbhdr(&smb[cur_smb]);
+		smb_unlocksmbhdr(smb);
 		return(0); 
 	}
 
 	if(((*post)=(post_t*)malloc(sizeof(post_t)*total))    /* alloc for max */
 		==NULL) {
-		smb_unlocksmbhdr(&smb[cur_smb]);
+		smb_unlocksmbhdr(smb);
 		lprintf(LOG_ERR,"ERROR line %d allocating %lu bytes for %s",__LINE__
-			,sizeof(post_t *)*total,smb[cur_smb].file);
+			,sizeof(post_t *)*total,smb->file);
 		return(0); 
 	}
 
-	fseek(smb[cur_smb].sid_fp,0L,SEEK_SET);
-	for(l=0;l<total && !feof(smb[cur_smb].sid_fp); ) {
-		if(smb_fread(&smb[cur_smb], &idx,sizeof(idx),smb[cur_smb].sid_fp) != sizeof(idx))
+	fseek(smb->sid_fp,0L,SEEK_SET);
+	for(l=0;l<total && !feof(smb->sid_fp); ) {
+		if(smb_fread(smb, &idx,sizeof(idx),smb->sid_fp) != sizeof(idx))
 			break;
 
 		if(idx.number==0)	/* invalid message number, ignore */
@@ -2702,7 +2709,7 @@ ulong loadmsgs(post_t** post, ulong ptr)
 
 		(*post)[l++].idx=idx;
 	}
-	smb_unlocksmbhdr(&smb[cur_smb]);
+	smb_unlocksmbhdr(smb);
 	if(!l)
 		FREE_AND_NULL(*post);
 	return(l);
@@ -4401,17 +4408,17 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			continue; 
 		}
 
-		sprintf(smb[cur_smb].file,"%s%s"
+		sprintf(smb->file,"%s%s"
 			,scfg.sub[i]->data_dir,scfg.sub[i]->code);
-		smb[cur_smb].retry_time=scfg.smb_retry_time;
+		smb->retry_time=scfg.smb_retry_time;
 		if((j=smb_open(&smb[cur_smb]))!=SMB_SUCCESS) {
-			lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s",j,smb[cur_smb].last_error,__LINE__
-				,smb[cur_smb].file);
+			lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s",j,smb->last_error,__LINE__
+				,smb->file);
 			continue; 
 		}
 
 		post=NULL;
-		posts=loadmsgs(&post,ptr);
+		posts=loadmsgs(&smb[cur_smb], &post, ptr);
 
 		if(!posts)	{ /* no new messages */
 			smb_close(&smb[cur_smb]);
@@ -4424,6 +4431,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			lprintf(LOG_CRIT, "Failed to allocated memory for echostats!");
 			break;
 		}
+		stat->known = true;
 
 		for(m=exp=0;m<posts && !terminated;m++) {
 			printf("\r%*s %5lu of %-5"PRIu32"  "
@@ -4475,8 +4483,11 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 				continue; 
 			}
 
-			if(msg.hdr.type != SMB_MSG_TYPE_NORMAL)
+			if(msg.hdr.type != SMB_MSG_TYPE_NORMAL) {
+				smb_unlockmsghdr(&smb[cur_smb],&msg);
+				smb_freemsgmem(&msg);
 				continue;
+			}
 
 			memset(&hdr,0,sizeof(fmsghdr_t));	 /* Zero the header */
 			hdr.origzone=scfg.sub[i]->faddr.zone;
@@ -4515,6 +4526,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 					,__LINE__,fmsgbuflen);
 				smb_unlockmsghdr(&smb[cur_smb],&msg);
 				smb_freemsgmem(&msg);
+				free(buf);
 				continue; 
 			}
 			fmsgbuflen-=1024;	/* give us a bit of a guard band here */
@@ -4666,6 +4678,165 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 	exported_echomail += exported;
 }
 
+bool retoss_bad_echomail(void)
+{
+	area_t* badarea;
+
+	if(cfg.badecho < 0 || (uint)cfg.badecho >= cfg.areas)
+		return false;
+
+	badarea = &cfg.area[cfg.badecho];
+
+	int badsub = badarea->sub;
+	if(badsub < 0 || badsub >= scfg.total_subs)
+		return false;
+
+	printf("\nRe-tossing Bad EchoMail from %s...\n", scfg.sub[badsub]->code);
+
+	smb_t badsmb;
+	int retval = smb_open_sub(&scfg, &badsmb, badsub);
+	if(retval != SMB_SUCCESS) {
+		lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s", retval, badsmb.last_error,__LINE__
+			,badsmb.file);
+		return false; 
+	}
+
+	post_t *post = NULL;
+	ulong posts	= loadmsgs(&badsmb, &post, /* ptr: */0);
+
+	if(posts < 1) { /* no messages */
+		smb_close(&badsmb);
+		FREE_AND_NULL(post);
+		return false; 
+	}
+		
+	for(ulong m=0; m<posts && !terminated; m++) {
+		printf("\r%*s %5lu of %-5"PRIu32"  "
+			,LEN_EXTCODE,scfg.sub[badsub]->code,m+1,posts);
+		smbmsg_t badmsg;
+		memset(&badmsg, 0, sizeof(badmsg));
+		badmsg.idx = post[m].idx;
+		if((retval=smb_lockmsghdr(&badsmb, &badmsg))!=SMB_SUCCESS) {
+			lprintf(LOG_ERR,"ERROR %d (%s) line %d locking %s msghdr"
+				,retval,badsmb.last_error,__LINE__,badsmb.file);
+			continue; 
+		}
+		retval = smb_getmsghdr(&badsmb, &badmsg);
+		if(retval || badmsg.hdr.number != post[m].idx.number) {
+			smb_unlockmsghdr(&badsmb,&badmsg);
+			smb_freemsgmem(&badmsg);
+
+			badmsg.hdr.number=post[m].idx.number;
+			if((retval=smb_getmsgidx(&badsmb, &badmsg))!=SMB_SUCCESS) {
+				lprintf(LOG_ERR,"ERROR %d line %d reading %s index",retval,__LINE__
+					,badsmb.file);
+				continue; 
+			}
+			if((retval=smb_lockmsghdr(&badsmb,&badmsg))!=SMB_SUCCESS) {
+				lprintf(LOG_ERR,"ERROR %d line %d locking %s msghdr",retval,__LINE__
+					,badsmb.file);
+				continue; 
+			}
+			if((retval=smb_getmsghdr(&badsmb,&badmsg))!=SMB_SUCCESS) {
+				smb_unlockmsghdr(&badsmb,&badmsg);
+				lprintf(LOG_ERR,"ERROR %d line %d reading %s msghdr",retval,__LINE__
+					,badsmb.file);
+				continue; 
+			} 
+		}
+
+		if(badmsg.from_net.type != NET_FIDO 
+			|| badmsg.ftn_area == NULL
+			|| badmsg.hdr.type != SMB_MSG_TYPE_NORMAL) {
+			smb_unlockmsghdr(&badsmb,&badmsg);
+			smb_freemsgmem(&badmsg);
+			continue; 
+		}
+
+		uint areanum = find_area(badmsg.ftn_area);
+		if(!area_is_valid(areanum) || cfg.area[areanum].sub >= scfg.total_subs) {
+			smb_unlockmsghdr(&badsmb,&badmsg);
+			smb_freemsgmem(&badmsg);
+			continue; 
+		}
+		int subnum = cfg.area[areanum].sub;
+		printf("-> %s\n", scfg.sub[subnum]->code);
+		lprintf(LOG_DEBUG,"Moving %s message #%u to sub-board %s"
+			,scfg.sub[badsub]->code, badmsg.hdr.number, scfg.sub[subnum]->code);
+
+		smbmsg_t newmsg;
+		if((retval = smb_copymsgmem(NULL, &newmsg, &badmsg)) != SMB_SUCCESS) {
+			smb_unlockmsghdr(&badsmb,&badmsg);
+			smb_freemsgmem(&badmsg);
+			continue; 
+		}
+
+		char* body = smb_getmsgtxt(&badsmb, &badmsg, GETMSGTXT_BODY_ONLY);
+		if(body == NULL) {
+			smb_unlockmsghdr(&badsmb,&badmsg);
+			smb_freemsgmem(&badmsg);
+			smb_freemsgmem(&newmsg);
+			continue;
+		}
+		truncsp(body);
+		char* tail = smb_getmsgtxt(&badsmb, &badmsg, GETMSGTXT_TAIL_ONLY);
+		if(tail != NULL)
+			truncsp(tail);
+
+		/* Target sub-board: */
+		{
+			smb_t smb;
+			retval = smb_open_sub(&scfg, &smb, subnum);
+			if(retval != SMB_SUCCESS) {
+				lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s", retval, smb.last_error,__LINE__
+					,smb.file);
+				smb_unlockmsghdr(&badsmb,&badmsg);
+				smb_freemsgmem(&badmsg);
+				smb_freemsgmem(&newmsg);
+				FREE_AND_NULL(body);
+				FREE_AND_NULL(tail);
+				continue;
+			}
+
+			long	dupechk_hashes=SMB_HASH_SOURCE_DUPE;
+			if(smb.status.max_crcs == 0)
+				dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
+			char* body_start = body;
+			if(strncmp(body_start, "AREA:", 5) == 0) {
+				FIND_CHAR(body_start, '\r');
+				SKIP_CHARSET(body_start, "\r\n");
+			}
+			retval = smb_addmsg(&smb, &newmsg, smb.status.attr&SMB_HYPERALLOC, dupechk_hashes, XLAT_NONE
+				,body_start, tail);
+			FREE_AND_NULL(body);
+			FREE_AND_NULL(tail);
+
+			if(retval != SMB_SUCCESS) {
+				lprintf(LOG_ERR,"ERROR smb_addmsg(%s) returned %d: %s"
+					,scfg.sub[subnum]->code, retval, smb.last_error);
+			} else {
+				badmsg.hdr.attr |= MSG_DELETE;
+				if((retval = smb_updatemsg(&badsmb, &badmsg)) != SMB_SUCCESS)
+					lprintf(LOG_ERR,"!ERROR %d (%s) deleting msg #%u in bad echo sub"
+						,retval, badsmb.last_error, badmsg.hdr.number);
+				if(badmsg.hdr.auxattr&MSG_FILEATTACH)
+					delfattach(&scfg,&badmsg);
+			}
+			smb_close(&smb);
+		}
+		smb_unlockmsghdr(&badsmb,&badmsg);
+		smb_freemsgmem(&badmsg);
+		smb_freemsgmem(&newmsg);
+	}
+
+	smb_close(&badsmb);
+	FREE_AND_NULL(post);
+
+	printf("\r%*s\r", 70, "");
+	return true;
+}
+
+
 /* New Feature (as of Nov-22-2015):
    Export NetMail from SMB (data/mail) to .msg format
 */
@@ -4727,9 +4898,9 @@ int export_netmail(void)
 		if(cfg.delete_netmail || (msg.hdr.netattr&MSG_KILLSENT)) {
 			/* Delete exported netmail */
 			msg.hdr.attr |= MSG_DELETE;
-			if(smb_updatemsg(email, &msg) != SMB_SUCCESS)
-				lprintf(LOG_ERR,"!ERROR %d deleting mail msg #%u"
-					,email->last_error, msg.hdr.number);
+			if((i = smb_updatemsg(email, &msg)) != SMB_SUCCESS)
+				lprintf(LOG_ERR,"!ERROR %d (%s) deleting mail msg #%u"
+					,i, email->last_error, msg.hdr.number);
 			if(msg.hdr.auxattr&MSG_FILEATTACH)
 				delfattach(&scfg,&msg);
 			fseek(email->sid_fp, (msg.offset+1)*sizeof(msg.idx), SEEK_SET);
@@ -5469,9 +5640,10 @@ int main(int argc, char **argv)
 	"sbbsecho, by default, will NOT:\n\n"
 	" * Export echomail previously imported from FTN (-h to enable)\n"
 	" * Update echomail export pointers without exporting messages (-u to enable)\n"
+	" * Import echomail (re-toss) from the 'bad echo' sub-board (-r to enable)\n"
 	" * Generate AreaFix netmail reports/notifications for links (-g to enable)\n"
 	" * Display the parsed area file (e.g. AREAS.BBS) for debugging (-a to enable)\n"
-	" * Prompt for key-press upon normal exit (-@ to enable)\n"
+	" * Prompt for key-press upon exit (-@ to enable)\n"
 	" * Prompt for key-press upon abnormal exit (-w to enable)\n"
 	;
 
@@ -5559,6 +5731,9 @@ int main(int argc, char **argv)
 					case 'A':
 						opt_dump_area_file=true;
 						break;
+					case 'R':
+						opt_retoss_badmail=true;
+						break;
 					default:
 						fprintf(stderr, "Unsupported option: %c\n", argv[i][j]);
 					case '?':
@@ -5569,7 +5744,6 @@ int main(int argc, char **argv)
 					case 'J':
 					case 'L':
 					case 'O':
-					case 'R':
 					case 'S':
 					case 'X':
 					case 'Y':
@@ -5856,6 +6030,7 @@ int main(int argc, char **argv)
 		lprintf(LOG_DEBUG, "Read %u areas from %s", before, cfg.badareafile);
 		if(fp!=NULL)
 			fclose(fp);
+		lprintf(LOG_DEBUG, "Checking bad areas for areas we now carry - begin");
 		strListTruncateStrings(bad_areas, " \t\r\n");
 		for(i=0; bad_areas[i] != NULL; i++) {
 			if(area_is_valid(find_area(bad_areas[i]))) {			/* Do we carry this area? */
@@ -5864,6 +6039,7 @@ int main(int argc, char **argv)
 				i--;
 			}
 		}
+		lprintf(LOG_DEBUG, "Checking bad areas for areas we now carry - end");
 		after = strListCount(bad_areas);
 		if(before != after)
 			lprintf(LOG_NOTICE, "Removed %d areas from bad area file: %s", before-after, cfg.badareafile);
@@ -5876,6 +6052,9 @@ int main(int argc, char **argv)
 
 	if(cfg.echostats[0])
 		echostat_count = read_echostats(cfg.echostats, &echostat);
+
+	if(opt_retoss_badmail)
+		retoss_bad_echomail();
 
 	find_stray_packets();
 
