@@ -4810,10 +4810,10 @@ bool retoss_bad_echomail(void)
 			FREE_AND_NULL(body);
 			FREE_AND_NULL(tail);
 
-			if(retval != SMB_SUCCESS) {
+			if(retval != SMB_SUCCESS)
 				lprintf(LOG_ERR,"ERROR smb_addmsg(%s) returned %d: %s"
 					,scfg.sub[subnum]->code, retval, smb.last_error);
-			} else {
+			if(retval == SMB_SUCCESS || retval == SMB_DUPE_MSG) {
 				badmsg.hdr.attr |= MSG_DELETE;
 				if((retval = smb_updatemsg(&badsmb, &badmsg)) != SMB_SUCCESS)
 					lprintf(LOG_ERR,"!ERROR %d (%s) deleting msg #%u in bad echo sub"
@@ -5989,6 +5989,8 @@ int main(int argc, char **argv)
 		for(unsigned subnum = 0; subnum < scfg.total_subs; subnum++) {
 			if(cfg.badecho >=0 && cfg.area[cfg.badecho].sub == subnum)
 				continue;	/* No need to auto-add the badecho sub */
+			if(!(scfg.sub[subnum]->misc&SUB_FIDO))
+				continue;
 			unsigned area;
 			for(area = 0; area < cfg.areas; area++)
 				if(cfg.area[area].sub == subnum)
@@ -6029,7 +6031,7 @@ int main(int argc, char **argv)
 		lprintf(LOG_DEBUG, "Read %u areas from %s", before, cfg.badareafile);
 		if(fp!=NULL)
 			fclose(fp);
-		lprintf(LOG_DEBUG, "Checking bad areas for areas we now carry - begin");
+//		lprintf(LOG_DEBUG, "Checking bad areas for areas we now carry - begin");
 		strListTruncateStrings(bad_areas, " \t\r\n");
 		for(i=0; bad_areas[i] != NULL; i++) {
 			if(area_is_valid(find_area(bad_areas[i]))) {			/* Do we carry this area? */
@@ -6038,7 +6040,7 @@ int main(int argc, char **argv)
 				i--;
 			}
 		}
-		lprintf(LOG_DEBUG, "Checking bad areas for areas we now carry - end");
+//		lprintf(LOG_DEBUG, "Checking bad areas for areas we now carry - end");
 		after = strListCount(bad_areas);
 		if(before != after)
 			lprintf(LOG_NOTICE, "Removed %d areas from bad area file: %s", before-after, cfg.badareafile);
