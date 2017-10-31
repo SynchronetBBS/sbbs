@@ -8,9 +8,11 @@
 if(!js.global || js.global.mail_get_name==undefined)
 	load("mailutil.js");
 
-FIDOCTRL     = 0xa0     // from smbdefs.h
+FIDOCTRL     = 0xa0	// from smbdefs.h
+FIDOSEENBY	 = 0xa2	// from smbdefs.h
+FIDOPATH     = 0xa3 // from smbdefs.h
 RFC822HEADER = 0xb0	// from smbdefs.h
-
+					
 function write_news_header(hdr,writeln)
 {
 	/* Required header fields */
@@ -58,8 +60,13 @@ function write_news_header(hdr,writeln)
 				if(hdr.field_list[i].data.toLowerCase().indexOf("content-type:")==0)
 					content_type = hdr.field_list[i].data;
 				writeln(hdr.field_list[i].data);
-			} else if(hdr.field_list[i].type==FIDOCTRL)
+			} else if(hdr.field_list[i].type==FIDOCTRL) {
 				writeln("X-FTN-Kludge: " + hdr.field_list[i].data);
+			} else if(hdr.field_list[i].type==FIDOSEENBY) {
+				writeln("X-FTN-SEEN-BY: " + hdr.field_list[i].data);
+			} else if(hdr.field_list[i].type==FIDOPATH) {
+				writeln("X-FTN-PATH: " + hdr.field_list[i].data);
+			}
 		}
 	}
 	if(content_type==undefined) {
