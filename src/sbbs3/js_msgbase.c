@@ -58,6 +58,16 @@ typedef struct
 
 static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 
+JSBool JS_ValueToUint32(JSContext *cx, jsval v, uint32 *ip)
+{
+	jsdouble d;
+
+	if(!JS_ValueToNumber(cx, v, &d))
+		return JS_FALSE;
+	*ip = (uint32)d;
+	return JS_TRUE;
+}
+
 /* Destructor */
 
 static void js_finalize_msgbase(JSContext *cx, JSObject *obj)
@@ -747,7 +757,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			msg->idx.votes=msg->hdr.votes;
 	}
 	if(JS_GetProperty(cx, hdr, "auxattr", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToUint32(cx,val,&i32))
 			goto err;
 		msg->hdr.auxattr=i32;
 	}
