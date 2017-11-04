@@ -2276,7 +2276,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						}
 						continue;
 					}
-					/* Fall-through at beginning of string */
+					break;
 				case CIO_KEY_DC:	/* delete */
 				case DEL:			/* sdl_getch() is returning 127 when keypad "Del" is hit */
 					if(i<j)
