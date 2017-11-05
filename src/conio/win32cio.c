@@ -813,7 +813,7 @@ char *win32_getcliptext(void)
 {
 	HGLOBAL	clipbuf;
 	LPTSTR	clip;
-	char *ret;
+	char *ret = NULL;
 
 	if(!IsClipboardFormatAvailable(CF_OEMTEXT))
 		return(NULL);
