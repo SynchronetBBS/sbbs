@@ -143,7 +143,7 @@
 #define WIN_ACT 	(1<<2)	/* Menu remains active after a selection */
 #define WIN_L2R 	(1<<3)	/* Center the window based on 'width'   */
 #define WIN_T2B 	(1<<4)	/* Center the window based on 'height'  */
-#define WIN_INS 	(1<<5)	/* Allows user to user insert key */
+#define WIN_INS 	(1<<5)	/* Allows user to use insert key */
 #define WIN_INSACT	(1<<6)	/* Remains active after insert key */
 #define WIN_DEL 	(1<<7)	/* Allows user to use delete key */
 #define WIN_DELACT	(1<<8)	/* Remains active after delete key */
@@ -156,7 +156,7 @@
 #define WIN_XTR 	(1<<15) /* Add extra line at end for inserting at end */
 #define WIN_DYN 	(1<<16) /* Dynamic window - return at least every second */
 #define WIN_CUT		(1<<17)	/* Allow ^X (cut) a menu item */
-#define WIN_HLP 	(1<<17) /* Parse 'Help codes' - showbuf() and bottomline */
+#define WIN_HLP 	(1<<17) /* Parse 'Help codes' - showbuf() */
 #define WIN_PACK 	(1<<18) /* Pack text in window (No padding) - showbuf() */
 #define WIN_IMM 	(1<<19) /* Draw window and return immediately */
 #define WIN_FAT		(1<<20)	/* Do not pad outside borders */
