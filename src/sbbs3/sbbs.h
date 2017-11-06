@@ -1093,9 +1093,6 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL write_file_cfg(scfg_t* cfg, int backup_level);
 	DLLEXPORT BOOL		DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level);
 	DLLEXPORT BOOL		DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level);
-	DLLEXPORT BOOL		DLLCALL fcopy(char* src, char* dest);
-	DLLEXPORT BOOL		DLLCALL fcompare(char* fn1, char* fn2);
-	DLLEXPORT BOOL		DLLCALL backup(char *org, int backup_level, BOOL ren);
 	DLLEXPORT void		DLLCALL refresh_cfg(scfg_t* cfg);
 
 

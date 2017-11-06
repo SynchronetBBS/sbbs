@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -37,7 +37,7 @@
 #define _NOPEN_H
 
 #include <stdio.h>			/* FILE */
-#include "gen_defs.h"		/* BOOL */
+#include "gen_defs.h"		/* BOOL (switch to stdbool when we stop using BCB6) */
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +47,9 @@ int		nopen(const char* str, int access);
 FILE *	fnopen(int* file, const char* str, int access);
 BOOL	ftouch(const char* fname);
 BOOL	fmutex(const char* fname, const char* text, long max_age);
+BOOL	fcopy(const char* src, const char* dest);
+BOOL	fcompare(const char* fn1, const char* fn2);
+BOOL	backup(const char* org, int backup_level, BOOL ren);
 
 #ifdef __cplusplus
 }

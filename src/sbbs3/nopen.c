@@ -1,6 +1,6 @@
 /* nopen.c */
 
-/* Network open functions (nopen and fnopen) */
+/* Network open functions (nopen and fnopen) and friends */
 
 /* $Id$ */
 
@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -117,13 +117,13 @@ BOOL ftouch(const char* fname)
 	/* update the time stamp */
 	ut.actime = ut.modtime = time(NULL);
 	if(utime(fname, &ut)==0)
-		return(TRUE);
+		return TRUE;
 
 	/* create the file */
 	if((file=nopen(fname,O_WRONLY|O_CREAT))<0)
-		return(FALSE);
+		return FALSE;
 	close(file);
-	return(TRUE);
+	return TRUE;
 }
 
 BOOL fmutex(const char* fname, const char* text, long max_age)
@@ -138,12 +138,120 @@ BOOL fmutex(const char* fname, const char* text, long max_age)
 
 	if(max_age && (t=fdate(fname)) >= 0 && (time(NULL)-t) > max_age) {
 		if(remove(fname)!=0)
-			return(FALSE);
+			return FALSE;
 	}
 	if((file=open(fname,O_CREAT|O_WRONLY|O_EXCL,DEFFILEMODE))<0)
-		return(FALSE);
+		return FALSE;
 	if(text!=NULL)
 		write(file,text,strlen(text));
 	close(file);
-	return(TRUE);
+	return TRUE;
+}
+
+BOOL fcopy(const char* src, const char* dest)
+{
+	int		ch;
+	ulong	count=0;
+	FILE*	in;
+	FILE*	out;
+	BOOL	success=TRUE;
+
+	if((in=fopen(src,"rb"))==NULL)
+		return FALSE;
+	if((out=fopen(dest,"wb"))==NULL) {
+		fclose(in);
+		return FALSE;
+	}
+
+	while(!feof(in)) {
+		if((ch=fgetc(in))==EOF)
+			break;
+		if(fputc(ch,out)==EOF) {
+			success=FALSE;
+			break;
+		}
+		if(((count++)%(32*1024))==0)
+			YIELD();
+	}
+
+	fclose(in);
+	fclose(out);
+
+	return(success);
+}
+
+BOOL fcompare(const char* fn1, const char* fn2)
+{
+	FILE*	fp1;
+	FILE*	fp2;
+	BOOL	success=TRUE;
+
+	if(flength(fn1) != flength(fn2))
+		return FALSE;
+	if((fp1=fopen(fn1,"rb"))==NULL)
+		return FALSE;
+	if((fp2=fopen(fn2,"rb"))==NULL) {
+		fclose(fp1);
+		return FALSE;
+	}
+
+	while(!feof(fp1) && success) {
+		if(fgetc(fp1) != fgetc(fp2))
+			success=FALSE;
+	}
+
+	fclose(fp1);
+	fclose(fp2);
+
+	return(success);
+}
+
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL backup(const char *fname, int backup_level, BOOL ren)
+{
+	char	oldname[MAX_PATH+1];
+	char	newname[MAX_PATH+1];
+	char*	ext;
+	int		i;
+	int		len;
+
+	if(flength(fname) < 1)	/* no need to backup a 0-byte (or non-existent) file */
+		return FALSE;
+
+	if((ext=strrchr(fname,'.'))==NULL)
+		ext="";
+
+	len=strlen(fname)-strlen(ext);
+
+	for(i=backup_level;i;i--) {
+		safe_snprintf(newname,sizeof(newname),"%.*s.%d%s",len,fname,i-1,ext);
+		if(i==backup_level)
+			if(fexist(newname) && remove(newname)!=0)
+				return FALSE;
+		if(i==1) {
+			if(ren == TRUE) {
+				if(rename(fname,newname)!=0)
+					return FALSE;
+			} else {
+				struct utimbuf ut;
+
+				/* preserve the original time stamp */
+				ut.modtime = fdate(fname);
+
+				if(!fcopy(fname,newname))
+					return FALSE;
+
+				ut.actime = time(NULL);
+				utime(newname, &ut);
+			}
+			continue; 
+		}
+		safe_snprintf(oldname,sizeof(oldname),"%.*s.%d%s",len,fname,i-2,ext);
+		if(fexist(oldname) && rename(oldname,newname)!=0)
+			return FALSE;
+	}
+
+	return TRUE;
 }
