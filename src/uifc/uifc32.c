@@ -1999,6 +1999,8 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 		}
 	}
 
+	if(api->bottomline != NULL)
+		api->bottomline(WIN_COPY|WIN_CUT|WIN_PASTE);
 	textattr(api->lclr|(api->bclr<<4));
 	if(!plen)
 		i=ugetstr(s_left+left+2,s_top+top+tbrdrwidth,iwidth,str,max,kmode,NULL);
@@ -2142,8 +2144,9 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				|| (f == '%' && mode&K_SCANNING)
 				|| f==CTRL_B
 				|| f==CTRL_E
-				|| f==CTRL_V
 				|| f==CTRL_Z
+				|| f==CTRL_X	/* Cut */
+				|| f==CTRL_C	/* Copy */
 				|| f==0)
 		{
 			getstrupd(left, top, width, str, i, &soffset, mode);
@@ -2250,6 +2253,10 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					}
 					continue;
 				case CTRL_V:
+				case CIO_KEY_SHIFT_IC:	/* Shift-Insert: Paste */
+					if((pastebuf=getcliptext()) != NULL)
+						pb=(unsigned char *)pastebuf;
+					continue;
 				case CIO_KEY_IC:	/* insert */
 					ins=!ins;
 					if(ins)
@@ -2291,7 +2298,6 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				case CIO_KEY_QUIT:
 					api->exit_flags |= UIFC_XF_QUIT;
 				case CIO_KEY_ABORTED:
-				case CTRL_C:
 				case ESC:
 					{
 						cursor=_NOCURSOR;
@@ -2319,9 +2325,15 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						break;
 					}
 					continue;
+				case CTRL_C:
+				case CIO_KEY_CTRL_IC:	/* Ctrl-Insert */
+					copytext(str, j);
+					continue;
 				case CTRL_X:
+				case CIO_KEY_SHIFT_DC:
 					if(j)
 					{
+						copytext(str, j);
 						i=j=0;
 					}
 					continue;
@@ -2735,6 +2747,14 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			j=k;
 		}
 	    tmp_buffer2[j]=api->chars->help_bottom_right;
+		tmp_buffer2[j-2]=api->chars->button_right;
+		tmp_buffer2[j-4]=' ';
+		tmp_buffer2[j-6]=' ';
+		tmp_buffer2[j-8]=api->chars->button_left;
+#define SCROLL_UP_BUTTON_X	left + (width - 4)
+#define SCROLL_UP_BUTTON_Y	top + height
+#define SCROLL_DN_BUTTON_X	left + (width - 3)
+#define SCROLL_DN_BUTTON_Y	top + height
 		puttext(left,top+1,left+width-1,top+height,tmp_buffer2);
 	}
 	len=strlen(hbuf);
@@ -2794,20 +2814,25 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	}
 	i=0;
 	p=textbuf;
+	char* textend = textbuf + (lines-(height-2-pad-pad))*(width-2-pad-pad)*2;
 	if(mode&WIN_DYN) {
 		puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
 	}
 	else {
 		while(i==0) {
 			if(p!=oldp) {
-				if(p > textbuf+(lines-(height-2-pad-pad))*(width-2-pad-pad)*2)
-					p=textbuf+(lines-(height-2-pad-pad))*(width-2-pad-pad)*2;
+				if(p > textend)
+					p=textend;
 				if(p<textbuf)
 					p=textbuf;
 				if(p!=oldp) {
 					puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
 					oldp=p;
 				}
+				gotoxy(SCROLL_UP_BUTTON_X, SCROLL_UP_BUTTON_Y);
+				textattr(api->lclr|(api->bclr<<4));
+				putch(p > textbuf ? api->chars->up_arrow : ' ');
+				putch(p < textend ? api->chars->down_arrow : ' ');
 			}
 			if(kbwait()) {
 				j=inkey();
@@ -2820,20 +2845,30 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 								&& mevnt.starty>=top+pad+1
 								&& mevnt.starty<=top+pad+(height/2)-2
 								&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
-							p = p-((width-2-pad-pad)*2*(height-5));
+							p -= ((width-2-pad-pad)*2*(height-5));
+							continue;
+						}
+						if(mevnt.startx == SCROLL_UP_BUTTON_X && mevnt.starty == SCROLL_UP_BUTTON_Y
+							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
+							p -= ((width-2-pad-pad)*2);
 							continue;
 						}
 						/* Clicked Scroll Down */
-						else if(mevnt.startx>=left+pad
+						if(mevnt.startx>=left+pad
 								&& mevnt.startx<=left+pad+width
 								&& mevnt.starty<=top+pad+height-2
 								&& mevnt.starty>=top+pad+height-(height/2+1)-2
 								&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
-							p=p+(width-2-pad-pad)*2*(height-5);
+							p += (width-2-pad-pad)*2*(height-5);
+							continue;
+						}
+						if(mevnt.startx == SCROLL_DN_BUTTON_X && mevnt.starty == SCROLL_DN_BUTTON_Y
+							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
+							p += ((width-2-pad-pad)*2);
 							continue;
 						}
 						/* Non-click events (drag, move, multiclick, etc) */
-						else if(mevnt.event!=CIOLIB_BUTTON_CLICK(CIOLIB_BUTTON_NUMBER(mevnt.event)))
+						if(mevnt.event!=CIOLIB_BUTTON_CLICK(CIOLIB_BUTTON_NUMBER(mevnt.event)))
 							continue;
 						i=1;
 					}
@@ -2841,7 +2876,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 				}
 				switch(j) {
 					case CIO_KEY_HOME:	/* home */
-						p=textbuf;
+						p = textbuf;
 						break;
 
 					case CIO_KEY_UP:	/* up arrow */
@@ -2853,15 +2888,15 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 						break;
 
 					case CIO_KEY_NPAGE:	/* PgDn */
-						p=p+(width-2-pad-pad)*2*(height-5);
+						p += (width-2-pad-pad)*2*(height-5);
 						break;
 
 					case CIO_KEY_END:	/* end */
-						p=textbuf+(lines-height+1)*(width-2-pad-pad)*2;
+						p = textend;
 						break;
 
 					case CIO_KEY_DOWN:	/* dn arrow */
-						p = p+((width-2-pad-pad)*2);
+						p += ((width-2-pad-pad)*2);
 						break;
 
 					case CIO_KEY_QUIT:
