@@ -287,6 +287,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	ushort		type;
 	ushort		agent;
 	int32		i32;
+	uint32		u32;
 	jsval		val;
 	JSObject*	array;
 	JSObject*	field;
@@ -757,9 +758,9 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			msg->idx.votes=msg->hdr.votes;
 	}
 	if(JS_GetProperty(cx, hdr, "auxattr", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToUint32(cx,val,&i32))
+		if(!JS_ValueToUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.auxattr=i32;
+		msg->hdr.auxattr=u32;
 	}
 	if(JS_GetProperty(cx, hdr, "netattr", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToInt32(cx,val,&i32))

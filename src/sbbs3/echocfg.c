@@ -81,7 +81,7 @@ void global_settings(void)
 		sprintf(opt[i++], "%-25s %s", "Use FTN Domain/Zone Map", cfg.use_ftn_domains ? "Enabled" : "Disabled");
 		sprintf(opt[i++], "%-25s %s", "BSY Mutex File Timeout", duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration)));
 		sprintf(opt[i++], "%-25s %s", "BSO Lock Attempt Delay", duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration)));
-		sprintf(opt[i++], "%-25s %u", "BSO Lock Attempt Limit", cfg.bso_lock_attempts);
+		sprintf(opt[i++], "%-25s %lu", "BSO Lock Attempt Limit", cfg.bso_lock_attempts);
 		sprintf(opt[i++], "%-25s %u", "Config File Backups", cfg.cfgfile_backups);
 		opt[i][0] = 0;
 		uifc.helpbuf=
@@ -189,7 +189,7 @@ void global_settings(void)
 				break;
 
 			case 7:
-				sprintf(str, "%u", cfg.bso_lock_attempts);
+				sprintf(str, "%lu", cfg.bso_lock_attempts);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum BSO Lock Attempts", str, 5, K_EDIT|K_NUMBER) > 0)
 					cfg.bso_lock_attempts = atoi(str);
 				break;

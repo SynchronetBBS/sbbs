@@ -112,7 +112,7 @@ char DLLCALL c_unescape_char(char ch)
 
 /****************************************************************************/
 /* Return character value of C-escaped (\) character literal sequence		*/
-/* supports \x## (hex) and \### sequences (for octal or decimal)
+/* supports \x## (hex) and \### sequences (for octal or decimal)			*/
 /****************************************************************************/
 char DLLCALL c_unescape_char_ptr(const char* str, char** endptr)
 {
@@ -266,13 +266,13 @@ int64_t DLLCALL parse_byte_count(const char* str, ulong unit)
 */
 char* DLLCALL byte_count_to_str(int64_t bytes, char* str, size_t size)
 {
-	if(fmod((double)bytes,1024.0*1024.0*1024.0*1024.0)==0)
+	if(bytes && fmod((double)bytes,1024.0*1024.0*1024.0*1024.0)==0)
 		safe_snprintf(str, size, "%gT",bytes/(1024.0*1024.0*1024.0*1024.0));
-	else if(fmod((double)bytes,1024.0*1024.0*1024.0)==0)
+	else if(bytes && fmod((double)bytes,1024.0*1024.0*1024.0)==0)
 		safe_snprintf(str, size, "%gG",bytes/(1024.0*1024.0*1024.0));
-	else if(fmod((double)bytes,1024.0*1024.0)==0)
+	else if(bytes && fmod((double)bytes,1024.0*1024.0)==0)
 		safe_snprintf(str, size, "%gM",bytes/(1024.0*1024.0));
-	else if(fmod((double)bytes,1024.0)==0)
+	else if(bytes && fmod((double)bytes,1024.0)==0)
 		safe_snprintf(str, size, "%gK",bytes/1024.0);
 	else
 		safe_snprintf(str, size, "%"PRIi64, bytes);
@@ -309,15 +309,15 @@ double DLLCALL parse_duration(const char* str)
  */
 char* DLLCALL duration_to_str(double value, char* str, size_t size)
 {
-	if(fmod(value,365.0*24.0*60.0*60.0)==0)
+	if(value && fmod(value,365.0*24.0*60.0*60.0)==0)
 		safe_snprintf(str, size, "%gY",value/(365.0*24.0*60.0*60.0));
-	else if(fmod(value,7.0*24.0*60.0*60.0)==0)
+	else if(value && fmod(value,7.0*24.0*60.0*60.0)==0)
 		safe_snprintf(str, size, "%gW",value/(7.0*24.0*60.0*60.0));
-	else if(fmod(value,24.0*60.0*60.0)==0)
+	else if(value && fmod(value,24.0*60.0*60.0)==0)
 		safe_snprintf(str, size, "%gD",value/(24.0*60.0*60.0));
-	else if(fmod(value,60.0*60.0)==0)
+	else if(value && fmod(value,60.0*60.0)==0)
 		safe_snprintf(str, size, "%gH",value/(60.0*60.0));
-	else if(fmod(value,60.0)==0)
+	else if(value && fmod(value,60.0)==0)
 		safe_snprintf(str, size, "%gM",value/60.0);
 	else
 		safe_snprintf(str, size, "%gS",value);
@@ -331,28 +331,28 @@ char* DLLCALL duration_to_str(double value, char* str, size_t size)
  */
 char* DLLCALL duration_to_vstr(double value, char* str, size_t size)
 {
-	if(fmod(value,365.0*24.0*60.0*60.0)==0) {
+	if(value && fmod(value,365.0*24.0*60.0*60.0)==0) {
 		value /= (365.0*24.0*60.0*60.0);
-		safe_snprintf(str, size, "%g year%s", value, value > 1 ? "s":"");
+		safe_snprintf(str, size, "%g year%s", value, value == 1 ? "":"s");
 	}
-	else if(fmod(value,7.0*24.0*60.0*60.0)==0) {
+	else if(value && fmod(value,7.0*24.0*60.0*60.0)==0) {
 		value /= (7.0*24.0*60.0*60.0);
-		safe_snprintf(str, size, "%g week%s", value, value > 1 ? "s":"");
+		safe_snprintf(str, size, "%g week%s", value, value == 1 ? "":"s");
 	}
-	else if(fmod(value,24.0*60.0*60.0)==0) {
+	else if(value && fmod(value,24.0*60.0*60.0)==0) {
 		value /= (24.0*60.0*60.0);
-		safe_snprintf(str, size, "%g day%s", value, value > 1 ? "s":"");
+		safe_snprintf(str, size, "%g day%s", value, value == 1 ? "":"s");
 	}
-	else if(fmod(value,60.0*60.0)==0) {
+	else if(value && fmod(value,60.0*60.0)==0) {
 		value /= (60.0*60.0);
-		safe_snprintf(str, size, "%g hour%s", value, value > 1 ? "s":"");
+		safe_snprintf(str, size, "%g hour%s", value, value == 1 ? "":"s");
 	}
-	else if(fmod(value,60.0)==0) {
+	else if(value && fmod(value,60.0)==0) {
 		value /= 60.0;
-		safe_snprintf(str, size, "%g minute%s", value, value > 1 ? "s":"");
+		safe_snprintf(str, size, "%g minute%s", value, value == 1 ? "":"s");
 	}
 	else
-		safe_snprintf(str, size, "%g second%s", value, value > 1 ? "s":"");
+		safe_snprintf(str, size, "%g second%s", value, value == 1 ? "":"s");
 
 	return str;
 }
