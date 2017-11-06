@@ -226,6 +226,8 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->relay_filtered_msgs		= false;
 	cfg->umask						= 077;
 	cfg->areafile_backups			= 100;
+	cfg->cfgfile_backups			= 100;
+	cfg->auto_add_subs				= true;
 }
 
 char* pktTypeStringList[] = {"2+", "2e", "2.2", "2", NULL};		// Must match enum pkt_type
@@ -248,15 +250,15 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/* Global/root section: */
 	/************************/
 	iniFreeStringList(cfg->sysop_alias_list);
-	SAFECOPY(cfg->inbound		, iniGetString(ini, ROOT_SECTION, "Inbound",		"../fido/nonsecure", value));
-	SAFECOPY(cfg->secure_inbound, iniGetString(ini, ROOT_SECTION, "SecureInbound", "../fido/inbound", value));
-	SAFECOPY(cfg->outbound		, iniGetString(ini, ROOT_SECTION, "Outbound",		"../fido/outbound", value));
-	SAFECOPY(cfg->areafile		, iniGetString(ini, ROOT_SECTION, "AreaFile",		"../data/areas.bbs", value));
-	SAFECOPY(cfg->badareafile	, iniGetString(ini, ROOT_SECTION, "BadAreaFile",	"../data/badareas.lst", value));
-	SAFECOPY(cfg->echostats		, iniGetString(ini, ROOT_SECTION, "EchoStats", "../data/echostats.ini", value));
-	SAFECOPY(cfg->logfile		, iniGetString(ini, ROOT_SECTION, "LogFile",		"../data/sbbsecho.log", value));
-	SAFECOPY(cfg->logtime		, iniGetString(ini, ROOT_SECTION, "LogTimeFormat",	"%Y-%m-%d %H:%M:%S", value));
-	SAFECOPY(cfg->temp_dir		, iniGetString(ini, ROOT_SECTION, "TempDirectory",	"../temp/sbbsecho", value));
+	SAFECOPY(cfg->inbound		, iniGetString(ini, ROOT_SECTION, "Inbound"			,DEFAULT_INBOUND		, value));
+	SAFECOPY(cfg->secure_inbound, iniGetString(ini, ROOT_SECTION, "SecureInbound"	,DEFAULT_SECURE_INBOUND	, value));
+	SAFECOPY(cfg->outbound		, iniGetString(ini, ROOT_SECTION, "Outbound"		,DEFAULT_OUTBOUND		, value));
+	SAFECOPY(cfg->areafile		, iniGetString(ini, ROOT_SECTION, "AreaFile"		,DEFAULT_AREA_FILE		, value));
+	SAFECOPY(cfg->badareafile	, iniGetString(ini, ROOT_SECTION, "BadAreaFile"		,DEFAULT_BAD_AREA_FILE	, value));
+	SAFECOPY(cfg->echostats		, iniGetString(ini, ROOT_SECTION, "EchoStats"		,DEFAULT_ECHOSTATS_FILE	, value));
+	SAFECOPY(cfg->logfile		, iniGetString(ini, ROOT_SECTION, "LogFile"			,DEFAULT_LOG_FILE		, value));
+	SAFECOPY(cfg->logtime		, iniGetString(ini, ROOT_SECTION, "LogTimeFormat"	,DEFAULT_LOG_TIME_FMT	, value));
+	SAFECOPY(cfg->temp_dir		, iniGetString(ini, ROOT_SECTION, "TempDirectory"	,DEFAULT_TEMP_DIR		, value));
 	SAFECOPY(cfg->outgoing_sem	, iniGetString(ini, ROOT_SECTION, "OutgoingSemaphore",	"", value));
 	cfg->log_level				= iniGetLogLevel(ini, ROOT_SECTION, "LogLevel", cfg->log_level);
 	cfg->strip_lf				= iniGetBool(ini, ROOT_SECTION, "StripLineFeeds", cfg->strip_lf);
@@ -269,6 +271,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->relay_filtered_msgs	= iniGetBool(ini, ROOT_SECTION, "RelayFilteredMsgs", cfg->relay_filtered_msgs);
 	cfg->umask					= iniGetInteger(ini, ROOT_SECTION, "umask", cfg->umask);
 	cfg->areafile_backups		= iniGetInteger(ini, ROOT_SECTION, "AreaFileBackups", cfg->areafile_backups);
+	cfg->cfgfile_backups		= iniGetInteger(ini, ROOT_SECTION, "CfgFileBackups", cfg->cfgfile_backups);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -462,6 +465,9 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	FILE* fp;
 	str_list_t	ini;
 
+	if(cfg->cfgfile_backups)
+		backup(cfg->cfgfile, cfg->cfgfile_backups, /* ren: */false);
+
 	if((fp=iniOpenFile(cfg->cfgfile, /* create: */true))==NULL)
 		return false;
 	ini = iniReadFile(fp);
@@ -477,6 +483,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetString(&ini,		ROOT_SECTION, "Outbound"				,cfg->outbound					,NULL);
 	iniSetString(&ini,		ROOT_SECTION, "AreaFile"				,cfg->areafile					,NULL);
 	iniSetInteger(&ini,		ROOT_SECTION, "AreaFileBackups"			,cfg->areafile_backups			,NULL);
+	iniSetInteger(&ini,		ROOT_SECTION, "CfgFileBackups"			,cfg->cfgfile_backups			,NULL);
 	iniSetString(&ini,		ROOT_SECTION, "BadAreaFile"				,cfg->badareafile				,NULL);
 	iniSetString(&ini,		ROOT_SECTION, "EchoStats"				,cfg->echostats					,NULL);
 	if(cfg->logfile[0])

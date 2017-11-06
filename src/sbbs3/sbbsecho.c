@@ -1766,6 +1766,10 @@ bool alter_config(fidoaddr_t addr, const char* key, const char* value)
 {
 	FILE* fp;
 
+	static ulong alterations;
+	if(alterations++ == 0)
+		backup(cfg.cfgfile, cfg.cfgfile_backups, /* ren: */false);
+
 	if((fp=iniOpenFile(cfg.cfgfile, false)) == NULL) {
 		lprintf(LOG_ERR, "ERROR %d (%s) opening %s for altering configuration of node %s"
 			,errno, strerror(errno), cfg.cfgfile, smb_faddrtoa(&addr, NULL));
