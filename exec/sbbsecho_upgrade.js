@@ -9,8 +9,9 @@ const REVISION = "$Revision$".split(' ')[1];
 
 var debug =  false;
 
-function newnode()
+function newnode(addr)
 {
+	if(debug) print("New node: " + addr);
 	return { keys: [] };
 }
 
@@ -33,8 +34,8 @@ var nodelist = [];
 var echolist = [];
 var packer = [];
 for(line_num in cfg) {
-	var line = cfg[line_num].trimLeft();
-	if(debug) print(line);
+	var line = cfg[line_num].trimLeft().trimRight();
+	if(debug) print('"' + line + '"');
 	if(line.charAt(0)==';')
 		continue;
 	var word = line.split(/\s+/);
@@ -58,13 +59,13 @@ for(line_num in cfg) {
 		case "route_to":
 			for(var i = 2; i < word.length; i++) {
 				if(!nodelist[word[i]])
-					nodelist[word[i]] = newnode();
+					nodelist[word[i]] = newnode(word[i]);
 				nodelist[word[i]][key] = word[1];
 			}
 			break;
 		case "pktpwd":
 			if(!nodelist[word[1]])
-				nodelist[word[1]] = newnode();
+				nodelist[word[1]] = newnode(word[1]);
 			nodelist[word[1]][key] = word[2];
 			break;
 		case "send_notify":
@@ -74,13 +75,13 @@ for(line_num in cfg) {
 		case "direct":
 			for(var i = 1; i < word.length; i++) {
 				if(!nodelist[word[i]])
-					nodelist[word[i]] = newnode();
+					nodelist[word[i]] = newnode(word[i]);
 				nodelist[word[i]][key] = true;
 			}
 			break;
 		case "areafix":
 			if(!nodelist[word[1]])
-				nodelist[word[1]] = newnode();
+				nodelist[word[1]] = newnode(word[1]);
 			nodelist[word[1]].areafix_pwd = word[2];
 			nodelist[word[1]].keys = word.slice(3);
 			break;
@@ -220,9 +221,14 @@ for(var i in echolist) {
 }
 
 file.close();
+print(Object.keys(nodelist).length + " Nodes");
+print(packer.length + " Packers");
+print(Object.keys(echolist).length + " EchoLists");
 print(cfgfile + " successfully converted to " + inifile);
-var oldcfg = cfgfile + ".old";
-if(file_rename(cfgfile,oldcfg))
-	print(cfgfile + " renamed to " + oldcfg);
-else
-	alert("Error renaming " + cfgfile + " to " + oldcfg);
+if(file_getext(cfgfile).toLowerCase() == ".cfg") {
+	var oldcfg = cfgfile + ".old";
+	if(file_rename(cfgfile,oldcfg))
+		print(cfgfile + " renamed to " + oldcfg);
+	else
+		alert("Error renaming " + cfgfile + " to " + oldcfg);
+}
