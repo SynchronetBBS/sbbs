@@ -87,9 +87,7 @@ typedef struct link_list {
 	long				refs;			/* reference counter (attached clients) */
 	long				locks;			/* recursive lock counter */
 #if defined(LINK_LIST_THREADSAFE)
-	pthread_mutex_t		mmutex;
 	pthread_mutex_t		mutex;
-	pthread_t			tid;
 	sem_t				sem;
 #endif
 } link_list_t;
