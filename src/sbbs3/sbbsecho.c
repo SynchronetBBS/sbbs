@@ -5990,7 +5990,7 @@ int main(int argc, char **argv)
 	printf("\n");
 	lprintf(LOG_DEBUG, "Read %u areas from %s", cfg.areas, cfg.areafile);
 	if(cfg.badecho >= 0)
-		lprintf(LOG_DEBUG, "Bad-echo area: %s", scfg.sub[cfg.badecho]->code);
+		lprintf(LOG_DEBUG, "Bad-echo area: %s", scfg.sub[cfg.area[cfg.badecho].sub]->code);
 
 	if(cfg.auto_add_subs) {
 		for(unsigned subnum = 0; subnum < scfg.total_subs; subnum++) {
