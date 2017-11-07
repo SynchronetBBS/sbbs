@@ -10,5 +10,7 @@ graphic = new Graphic(argv[1],argv[2]);
 
 if(!graphic.load(fname))
 	alert("Load failure");
-else
+else {
+	console.clear();
 	graphic.draw();
+}
