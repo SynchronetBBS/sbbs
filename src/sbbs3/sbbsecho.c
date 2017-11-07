@@ -106,6 +106,7 @@ bool terminated=false;
 
 str_list_t	locked_bso_nodes;
 
+int lprintf(int level, char *fmt, ...);
 int mv(const char *insrc, const char *indest, bool copy);
 time32_t fmsgtime(const char *str);
 void export_echomail(const char *sub_code, const nodecfg_t*, bool rescan);
@@ -372,20 +373,25 @@ size_t read_echostats(const char* fname, echostat_t **echostat)
 	for(unsigned i = 0; i < echo_count; i++) {
 		echostat_t* stat = &(*echostat)[i];
 		SAFECOPY(stat->tag, echoes[i]);
+		str_list_t keys = iniGetSection(ini, stat->tag);
+		if(keys == NULL)
+			continue;
 		for(int type = 0; type < ECHOSTAT_MSG_TYPES; type++) {
 			char prefix[32];
 			sprintf(prefix, "First%s", echostat_msg_type[type])
-				,stat->first[type]	= parse_echostat_msg(ini, stat->tag, prefix);
+				,stat->first[type]	= parse_echostat_msg(keys, NULL, prefix);
 			sprintf(prefix, "Last%s", echostat_msg_type[type])
-				,stat->last[type]	= parse_echostat_msg(ini, stat->tag, prefix);
+				,stat->last[type]	= parse_echostat_msg(keys, NULL, prefix);
 			sprintf(prefix, "Total%s", echostat_msg_type[type])
-				,stat->total[type] = iniGetLongInt(ini, stat->tag, prefix, 0);
+				,stat->total[type] = iniGetLongInt(keys, NULL, prefix, 0);
 		}
-		stat->known = iniGetBool(ini, stat->tag, "Known", false);
+		stat->known = iniGetBool(keys, NULL, "Known", false);
+		iniFreeStringList(keys);
 	}
 	iniFreeStringList(echoes);
 	iniFreeStringList(ini);
 
+	lprintf(LOG_DEBUG, "Read %u echo statistics from %s", echo_count, fname);
 	return echo_count;
 }
 
