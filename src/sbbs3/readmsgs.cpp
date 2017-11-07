@@ -1674,6 +1674,8 @@ long sbbs_t::listsub(uint subnum, long mode, long start, const char* search)
 		lp_mode = 0;
 	if(mode&SCAN_UNREAD)
 		lp_mode |= LP_UNREAD;
+	if(!(cfg.sub[subnum]->misc&SUB_NOVOTING))
+		lp_mode |= LP_POLLS;
 	post=loadposts(&posts,subnum,0,lp_mode,NULL,&total);
 	bprintf(text[SearchSubFmt]
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,total);
