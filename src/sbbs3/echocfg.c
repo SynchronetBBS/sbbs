@@ -1678,7 +1678,7 @@ int main(int argc, char **argv)
 								"dynamic variable replacement:\n"
 								"\n"
 								"  `%f`  The path/filename of the archive file to be extracted\n"
-								"  `%s`  The path/filename of the file(s) to extracted from the archive\n"
+								"  `%s`  The destination directory for files extracted from the archive\n"
 								"  `%!`  The Synchronet `exec` directory\n"
 								"  `%@`  The Synchronet `exec` directory only for non-Unix systems\n"
 								"  `%.`  Blank for Unix systems, '`.exe`' otherwise\n"
