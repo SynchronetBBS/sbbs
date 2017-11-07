@@ -27,7 +27,7 @@ inc_main_cmds
 call display_prompt
 print ">n"
 getstr 128
-logstr
+log "%s, "
 
 compare_word "cd"
 if_true
@@ -315,7 +315,7 @@ call display_prompt
 
 print "FILES>n"
 getstr 128
-logstr
+log "%s, "
 
 compare_word "cd"
 if_true
@@ -516,7 +516,7 @@ call display_prompt
 
 print "MAIL>n"
 getstr 128
-logstr
+log "%s, "
 
 compare_word "cd"
 if_true
