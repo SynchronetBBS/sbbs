@@ -161,8 +161,10 @@ if(value_opts["log_level"])
 	file.writeln("LogLevel = " + value_opts["log_level"]), delete value_opts["log_level"];
 if(!value_opts["inbound"] && value_opts["outbound"]) {
 	var inbound = value_opts["outbound"].replace("out","in");
-	alert("Setting inbound dir to best guess (no longer using SCFG setting): " + inbound);
+	alert("Setting non-secure inbound dir to best guess (no longer using SCFG setting): " + inbound);
 	file.writeln("inbound = " + inbound);
+	if(!file_isdir(inbound))
+		alert("Non-secure inbound directory (" + inbound + ") does not appear to exist.");
 }
 if(value_opts["secure_inbound"])
 	file.writeln("SecureInbound = " + value_opts["secure_inbound"]), delete value_opts["secure_inbound"];
