@@ -1,12 +1,12 @@
-Address all requests to 'SBBSecho' or 'AreaFix' (without quotes).
+Address all Area Management requests to 'AreaFix' (without quotes).
 Your Area Manager password goes on the subject line.
 
-In the body of the message to Area Manager:
+In the body of the message:
 
 [+]<areaname>         Connect an area
 -<areaname>           Disconnect an area
 %HELP                 Request this message
-%LIST                 Request a list of areas available to you
+%LIST                 Request a list of areas (tags) available to you
 %QUERY                Request a list of areas to which you are connected
 %UNLINKED             Request a list of areas to which you are not connected
 %COMPRESSION <type>   Change the compression type (e.g. ARC, ARJ, LZH, ZIP)
@@ -14,7 +14,7 @@ In the body of the message to Area Manager:
 %PKTPWD <password>    Set or change your Packet password
 %TICPWD <password>    Set or change your TIC File password
 %RESCAN               Request a rescan of all connected areas
-%RESCAN <areaname>    Request a rescan of a single connected area
+%RESCAN <areatag>     Request a rescan of a single connected area
 %ACTIVE               Reconnect (resume) all temporarily disconnected areas
 %PASSIVE              Temporarily disconnect (pause) all connected areas
 %FROM <address>       Remote/proxy Area Management, must be the first command
