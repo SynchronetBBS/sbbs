@@ -9,7 +9,7 @@ In the body of the message to Area Manager:
 %LIST                 Request a list of areas available to you
 %QUERY                Request a list of areas to which you are connected
 %UNLINKED             Request a list of areas to which you are not connected
-%COMPRESSION <type>   Change the compression type (e.g. ARC/ARJ/LZH/PAK/SQZ/ZIP/ZOO)
+%COMPRESSION <type>   Change the compression type (e.g. ARC, ARJ, LZH, ZIP)
 %PASSWORD <password>  Change your Area Manager password
 %PKTPWD <password>    Set or change your Packet password
 %TICPWD <password>    Set or change your TIC File password
