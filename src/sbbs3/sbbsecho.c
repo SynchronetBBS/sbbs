@@ -732,14 +732,18 @@ bool bso_lock_node(fidoaddr_t dest)
 	return true;
 }
 
-const char* bso_flo_filename(fidoaddr_t dest)
+const char* bso_flo_filename(fidoaddr_t dest, uint16_t attr)
 {
 	nodecfg_t* nodecfg;
 	char ch='f';
 	const char* outbound;
 	static char filename[MAX_PATH+1];
 
-	if((nodecfg=findnodecfg(&cfg, dest, /* exact: */false)) != NULL) {
+	if(attr&FIDO_CRASH)
+		ch='c';
+	else if(attr&FIDO_HOLD)
+		ch='h';
+	else if((nodecfg=findnodecfg(&cfg, dest, /* exact: */false)) != NULL) {
 		switch(nodecfg->status) {
 			case MAIL_STATUS_CRASH:	ch='c';	break;
 			case MAIL_STATUS_HOLD:	ch='h';	break;
@@ -758,19 +762,12 @@ const char* bso_flo_filename(fidoaddr_t dest)
 	return filename;
 }
 
-bool bso_file_attached_to_flo(const char* attachment, fidoaddr_t dest, bool bundle)
-{
-	char searchstr[MAX_PATH+1];
-	SAFEPRINTF2(searchstr,"%c%s",(bundle && cfg.trunc_bundles) ? '#':'^', attachment);
-	return findstr(searchstr, bso_flo_filename(dest));
-}
-
 /******************************************************************************
  This function creates or appends on existing Binkley compatible .?LO file
  attach file.
  Returns 0 on success.
 ******************************************************************************/
-int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_outbox)
+int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_outbox, uint16_t attr)
 {
 	const char* flo_filename;
 	char attachment[MAX_PATH+1];
@@ -786,7 +783,7 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	if(!bso_lock_node(dest))
 		return 1;
 
-	flo_filename = bso_flo_filename(dest);
+	flo_filename = bso_flo_filename(dest, attr);
 	SAFECOPY(attachment, infile);
 	if(!fexistcase(attachment))	{ /* just in-case it's the wrong case for a Unix file system */
 		lprintf(LOG_ERR, "ERROR line %u, attachment file not found: %s", __LINE__, attachment);
@@ -2233,7 +2230,7 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 	if(cfg.flo_mailer) { 
 		switch(mode) {
 			case ATTACHMENT_ADD:
-				return write_flofile(bundlename,dest,/* bundle: */true,/* use_outbox: */true);
+				return write_flofile(bundlename,dest,/* bundle: */true,/* use_outbox: */true,/* attr: */0);
 			case ATTACHMENT_NETMAIL:
 				return 0; /* Do nothing */
 		}
@@ -2411,7 +2408,7 @@ bool pack_bundle(const char *tmp_pkt, fidoaddr_t orig, fidoaddr_t dest)
 	if(nodecfg != NULL)
 		if(nodecfg->archive==SBBSECHO_ARCHIVE_NONE) {    /* Uncompressed! */
 			if(cfg.flo_mailer)
-				i=write_flofile(packet,dest,/* bundle: */true,/* use_outbox: */true);
+				i=write_flofile(packet,dest,/* bundle: */true,/* use_outbox: */true,/* attr: */0);
 			else
 				i=create_netmail(/* To: */NULL,/* msg: */NULL,packet
 					,(cfg.trunc_bundles) ? "\1FLAGS TFS\r" : "\1FLAGS KFS\r"
@@ -5067,7 +5064,7 @@ void pack_netmail(void)
 			else {
 				fprintf(fp,"%s\n",getfname(hdr.subj));
 				fclose(fp);
-				if(write_flofile(req, addr,/* bundle: */false,/* use_outbox: */true))
+				if(write_flofile(req, addr,/* bundle: */false,/* use_outbox: */true, hdr.attr))
 					bail(1);
 				netmail_sent(path);
 			}
@@ -5089,7 +5086,8 @@ void pack_netmail(void)
 		}
 
 		nodecfg=findnodecfg(&cfg, addr, 0);
-		if(nodecfg!=NULL && nodecfg->route.zone	&& nodecfg->status==MAIL_STATUS_NORMAL && !(hdr.attr&FIDO_CRASH)) {
+		if(nodecfg!=NULL && nodecfg->route.zone	&& nodecfg->status==MAIL_STATUS_NORMAL 
+			&& !(hdr.attr&(FIDO_CRASH|FIDO_HOLD))) {
 			addr=nodecfg->route;		/* Routed */
 			lprintf(LOG_INFO, "Routing NetMail (%s) to %s",getfname(path),smb_faddrtoa(&addr,NULL));
 			nodecfg=findnodecfg(&cfg, addr,0); 
@@ -5103,7 +5101,11 @@ void pack_netmail(void)
 				SAFECOPY(packet, pktname(outbound));
 			else {
 				ch='o';
-				if(nodecfg!=NULL) {
+				if(hdr.attr&FIDO_CRASH)
+					ch='c';
+				else if(hdr.attr&FIDO_HOLD)
+					ch='h';
+				else if(nodecfg!=NULL) {
 					switch(nodecfg->status) {
 						case MAIL_STATUS_CRASH:	ch='c';	break;
 						case MAIL_STATUS_HOLD:	ch='h'; break;
@@ -5119,7 +5121,7 @@ void pack_netmail(void)
 					SAFEPRINTF4(packet,"%s%04x%04x.%cut",outbound,addr.net,addr.node,ch);
 			}
 			if(hdr.attr&FIDO_FILE) {
-				if(write_flofile(hdr.subj,addr,/* bundle: */false,/* use_outbox: */false))
+				if(write_flofile(hdr.subj,addr,/* bundle: */false,/* use_outbox: */false, hdr.attr))
 					bail(1);
 			}
 		}
