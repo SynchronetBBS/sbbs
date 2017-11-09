@@ -1242,6 +1242,22 @@ bool area_is_valid(uint areanum)
 	return areanum < cfg.areas;
 }
 
+uint find_sysfaddr(faddr_t addr)
+{
+	unsigned u;
+
+	for(u=0; u < scfg.total_faddrs; u++)
+		if(memcmp(&scfg.faddr[u], &addr, sizeof(addr)) == 0)
+			break;
+
+	return u;
+}
+
+bool sysfaddr_is_valid(uint faddr_num)
+{
+	return faddr_num < scfg.total_faddrs;
+}
+
 /* Returns subnum (INVALID_SUB if pass-through) or SUB_NOT_FOUND */
 #define SUB_NOT_FOUND ((uint)-2)
 uint find_linked_area(const char* echotag, fidoaddr_t addr)
@@ -4116,7 +4132,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 		return(-1); 
 	}
 
-	if(match>=scfg.total_faddrs && !cfg.ignore_netmail_dest_addr) {
+	if(!sysfaddr_is_valid(match) && !cfg.ignore_netmail_dest_addr) {
 		printf("Foreign address");
 		if(!path[0]) {
 			printf(" - ");
@@ -4981,7 +4997,6 @@ void pack_netmail(void)
 	const char*	outbound;
 	char*	fmsgbuf=NULL;
 	char	ch;
-	int		i;
 	int		file;
 	int		fmsg;
 	size_t	f;
@@ -5031,10 +5046,7 @@ void pack_netmail(void)
 		addr.net		= hdr.destnet;
 		addr.node		= hdr.destnode;
 		addr.point		= hdr.destpoint;
-		for(i=0;i<scfg.total_faddrs;i++)
-			if(!memcmp(&addr,&scfg.faddr[i],sizeof(fidoaddr_t)))
-				break;
-		if(i<scfg.total_faddrs)	{				  /* In-bound, so ignore */
+		if(sysfaddr_is_valid(find_sysfaddr(addr)))	{				  /* In-bound, so ignore */
 			fclose(fidomsg);
 			continue;
 		}
@@ -5139,7 +5151,7 @@ void pack_netmail(void)
 			newpkt="new ";
 			chsize(file,0);
 			rewind(stream);
-			new_pkthdr(&pkthdr, fmsghdr_srcaddr(&hdr), addr, nodecfg);
+			new_pkthdr(&pkthdr, getsysfaddr(addr.zone), addr, nodecfg);
 			fwrite(&pkthdr,sizeof(pkthdr),1,stream); 
 		} else
 			fseek(stream,find_packet_terminator(stream),SEEK_SET);
@@ -5218,8 +5230,12 @@ void find_stray_packets(void)
 			delfile(packet, __LINE__);
 			continue;
 		}
-		lprintf(LOG_WARNING,"Stray Outbound Packet (type %s) found, from %s to %s: %s"
-			,pktTypeStringList[pkt_type], smb_faddrtoa(&pkt_orig, NULL), smb_faddrtoa(&pkt_dest, str), packet); 
+		uint sysfaddr = find_sysfaddr(pkt_orig);
+		lprintf(LOG_WARNING,"Stray Outbound Packet (type %s) found, from %s address %s to %s: %s"
+			,pktTypeStringList[pkt_type], sysfaddr_is_valid(sysfaddr) ? "local" : "FOREIGN"
+			,smb_faddrtoa(&pkt_orig, NULL), smb_faddrtoa(&pkt_dest, str), packet);
+		if(!sysfaddr_is_valid(sysfaddr))
+			continue;
 		outpkt_t* pkt;
 		if((pkt = calloc(1, sizeof(outpkt_t))) == NULL)
 			continue;
