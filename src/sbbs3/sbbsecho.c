@@ -5089,7 +5089,7 @@ void pack_netmail(void)
 		}
 
 		nodecfg=findnodecfg(&cfg, addr, 0);
-		if(nodecfg!=NULL && nodecfg->route.zone	&& nodecfg->status==MAIL_STATUS_NORMAL) {
+		if(nodecfg!=NULL && nodecfg->route.zone	&& nodecfg->status==MAIL_STATUS_NORMAL && !(hdr.attr&FIDO_CRASH)) {
 			addr=nodecfg->route;		/* Routed */
 			lprintf(LOG_INFO, "Routing NetMail (%s) to %s",getfname(path),smb_faddrtoa(&addr,NULL));
 			nodecfg=findnodecfg(&cfg, addr,0); 
