@@ -102,7 +102,7 @@ function getTelegram() {
 	);
 }
 
-window.onload =	function () { 
+window.onload =	function () {
 
 	$('#button-logout').click(logout);
 	$('#button-login').click(login);
@@ -122,13 +122,17 @@ window.onload =	function () {
 		}
 	);
 
-	setTimeout(scrollUp, 25); 
+	setTimeout(scrollUp, 25);
 	window.onhashchange = scrollUp;
 
-	getMailUnreadCount();
-	setInterval(getMailUnreadCount, updateInterval);
+	if ($('#button-logout').length > 0) {
 
-	getTelegram();
-	setInterval(getTelegram, updateInterval);
+        getMailUnreadCount();
+        setInterval(getMailUnreadCount, updateInterval);
+
+        getTelegram();
+        setInterval(getTelegram, updateInterval);
+
+    }
 
 }
