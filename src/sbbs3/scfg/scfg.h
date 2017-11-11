@@ -80,7 +80,7 @@ extern char *nulstr;
 extern char *invalid_code,*num_flags;
 extern int	backup_level;
 extern BOOL new_install;
-char* area_sort_desc[AREA_SORT_TYPES];
+char* area_sort_desc[AREA_SORT_TYPES+1];
 
 /***********************/
 /* Function Prototypes */

@@ -55,7 +55,7 @@ char **opt;
 char tmp[256];
 char error[256];
 int  backup_level=5;
-char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code" };
+char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code", NULL };
 
 char *invalid_code=
 	"`Invalid Internal Code:`\n\n"
