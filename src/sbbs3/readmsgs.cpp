@@ -1724,7 +1724,7 @@ long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 		strupr(subj);
 		if(strstr(buf,search) || strstr(subj,search)) {
 			if(!found)
-				CRLF;
+				bputs(text[MailOnSystemLstHdr]);
 			bprintf(text[SubMsgLstFmt],l+1
 				,(msg.hdr.attr&MSG_ANONYMOUS) && !sub_op(subnum) ? text[Anonymous]
 				: msg.from
