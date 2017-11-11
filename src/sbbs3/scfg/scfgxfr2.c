@@ -583,7 +583,7 @@ void xfer_cfg()
 					}
 					else
 						j=O_WRONLY|O_CREAT;
-					if((stream=fnopen(&file,str,j))==NULL) {
+					if((stream=fnopen(&file,str,j|O_TEXT))==NULL) {
 						uifc.msg("Open Failure");
 						break;
 					}
@@ -593,12 +593,12 @@ void xfer_cfg()
 							continue;
 						ported++;
 						if(k==1) {
-							fprintf(stream,"Area %-8s  0     !      %s\r\n"
+							fprintf(stream,"Area %-8s  0     !      %s\n"
 								,cfg.dir[j]->code_suffix,cfg.dir[j]->lname);
 							continue;
 						}
-						fprintf(stream,"%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n"
-								"%s\r\n%s\r\n"
+						fprintf(stream,"%s\n%s\n%s\n%s\n%s\n%s\n"
+								"%s\n%s\n"
 							,cfg.dir[j]->lname
 							,cfg.dir[j]->sname
 							,cfg.dir[j]->code_suffix
@@ -608,8 +608,8 @@ void xfer_cfg()
 							,cfg.dir[j]->dl_arstr
 							,cfg.dir[j]->op_arstr
 							);
-						fprintf(stream,"%s\r\n%s\r\n%u\r\n%s\r\n%"PRIX32"\r\n%u\r\n"
-								"%u\r\n"
+						fprintf(stream,"%s\n%s\n%u\n%s\n%"PRIX32"\n%u\n"
+								"%u\n"
 							,cfg.dir[j]->path
 							,cfg.dir[j]->upload_sem
 							,cfg.dir[j]->maxfiles
@@ -618,13 +618,13 @@ void xfer_cfg()
 							,cfg.dir[j]->seqdev
 							,cfg.dir[j]->sort
 							);
-						fprintf(stream,"%s\r\n%u\r\n%u\r\n%u\r\n"
+						fprintf(stream,"%s\n%u\n%u\n%u\n"
 							,cfg.dir[j]->ex_arstr
 							,cfg.dir[j]->maxage
 							,cfg.dir[j]->up_pct
 							,cfg.dir[j]->dn_pct
 							);
-						fprintf(stream,"***END-OF-DIR***\r\n\r\n");
+						fprintf(stream,"***END-OF-DIR***\n\n");
 					}
 					fclose(stream);
 					uifc.pop(0);
