@@ -799,7 +799,7 @@ void msgs_cfg()
 					}
 					else
 						j=O_WRONLY|O_CREAT;
-					if((stream=fnopen(&file,str,j))==NULL) {
+					if((stream=fnopen(&file,str,j|O_TEXT))==NULL) {
 						sprintf(str,"Open Failure: %d (%s)"
 							,errno,strerror(errno));
 						uifc.msg(str);
@@ -817,19 +817,19 @@ void msgs_cfg()
 								,cfg.grp[cfg.sub[j]->grp]->code_prefix
 								,cfg.sub[j]->code_suffix);
 
-							fprintf(stream,"%-*s %-*s %s\r\n"
+							fprintf(stream,"%-*s %-*s %s\n"
 								,LEN_EXTCODE, extcode
 								,FIDO_AREATAG_LEN, stou(cfg.sub[j]->sname)
 								,str2);
 							continue; 
 						}
 						if(k==2) {		/* BACKBONE.NA */
-							fprintf(stream,"%-*s %s\r\n"
+							fprintf(stream,"%-*s %s\n"
 								,FIDO_AREATAG_LEN, stou(cfg.sub[j]->sname),cfg.sub[j]->lname);
 							continue; 
 						}
-						fprintf(stream,"%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n"
-								"%s\r\n%s\r\n%s\r\n"
+						fprintf(stream,"%s\n%s\n%s\n%s\n%s\n%s\n"
+								"%s\n%s\n%s\n"
 							,cfg.sub[j]->lname
 							,cfg.sub[j]->sname
 							,cfg.sub[j]->qwkname
@@ -840,7 +840,7 @@ void msgs_cfg()
 							,cfg.sub[j]->post_arstr
 							,cfg.sub[j]->op_arstr
 							);
-						fprintf(stream,"%"PRIX32"\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n"
+						fprintf(stream,"%"PRIX32"\n%s\n%s\n%s\n%s\n%s\n"
 							,cfg.sub[j]->misc
 							,cfg.sub[j]->tagline
 							,cfg.sub[j]->origline
@@ -848,14 +848,14 @@ void msgs_cfg()
 							,cfg.sub[j]->newsgroup
 							,smb_faddrtoa(&cfg.sub[j]->faddr,tmp)
 							);
-						fprintf(stream,"%"PRIu32"\r\n%"PRIu32"\r\n%u\r\n%u\r\n%s\r\n"
+						fprintf(stream,"%"PRIu32"\n%"PRIu32"\n%u\n%u\n%s\n"
 							,cfg.sub[j]->maxmsgs
 							,cfg.sub[j]->maxcrcs
 							,cfg.sub[j]->maxage
 							,cfg.sub[j]->ptridx
 							,cfg.sub[j]->mod_arstr
 							);
-						fprintf(stream,"***END-OF-SUB***\r\n\r\n"); 
+						fprintf(stream,"***END-OF-SUB***\n\n"); 
 					}
 					fclose(stream);
 					uifc.pop(0);
