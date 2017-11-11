@@ -177,9 +177,6 @@ void xfer_opts()
 				cfg.cdt_dn_pct=atoi(tmp);
 				break;
 			case 6:
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				opt[2][0]=0;
 				i=0;
 				uifc.helpbuf=
 					"`Long Filenames in File Listings:`\n"
@@ -189,7 +186,7 @@ void xfer_opts()
 					"or later.\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Long Filenames in Listings (Win98/Win2K)",opt);
+					,"Long Filenames in Listings (Win98/Win2K)",uifcYesNoOpts);
 				if(!i && cfg.file_misc&FM_NO_LFN) {
 					cfg.file_misc&=~FM_NO_LFN;
 					uifc.changes=1;
@@ -1015,11 +1012,8 @@ void xfer_opts()
 								break;
 							case 8:
 								l=cfg.prot[i]->misc&PROT_NATIVE ? 0:1;
-								strcpy(opt[0],"Yes");
-								strcpy(opt[1],"No");
-								opt[2][0]=0;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
-									,"Native (32-bit) Executable",opt);
+									,"Native (32-bit) Executable",uifcYesNoOpts);
 								if((l==0 && !(cfg.prot[i]->misc&PROT_NATIVE))
 									|| (l==1 && cfg.prot[i]->misc&PROT_NATIVE)) {
 									cfg.prot[i]->misc^=PROT_NATIVE;
@@ -1028,11 +1022,8 @@ void xfer_opts()
 								break; 
 							case 9:
 								l=cfg.prot[i]->misc&PROT_DSZLOG ? 0:1;
-								strcpy(opt[0],"Yes");
-								strcpy(opt[1],"No");
-								opt[2][0]=0;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
-									,"Uses DSZLOG",opt);
+									,"Uses DSZLOG",uifcYesNoOpts);
 								if((l==0 && !(cfg.prot[i]->misc&PROT_DSZLOG))
 									|| (l==1 && cfg.prot[i]->misc&PROT_DSZLOG)) {
 									cfg.prot[i]->misc^=PROT_DSZLOG;
@@ -1041,11 +1032,8 @@ void xfer_opts()
 								break; 
 							case 10:
 								l=cfg.prot[i]->misc&PROT_SOCKET ? 0:1l;
-								strcpy(opt[0],"Yes");
-								strcpy(opt[1],"No");
-								opt[2][0]=0;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
-									,"Uses Socket I/O",opt);
+									,"Uses Socket I/O",uifcYesNoOpts);
 								if((l==0 && !(cfg.prot[i]->misc&PROT_SOCKET))
 									|| (l==1 && cfg.prot[i]->misc&PROT_SOCKET)) {
 									cfg.prot[i]->misc^=PROT_SOCKET;
