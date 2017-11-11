@@ -543,7 +543,7 @@ void msgs_cfg()
 								, cfg.sub[j]->code_suffix);
 							strlwr(str);
 							if (!cfg.sub[j]->data_dir[0])
-								sprintf(tmp, "%ssubs/", cfg.data_dir);
+								sprintf(tmp, "[%ssubs/]", cfg.data_dir);
 							else
 								strcpy(tmp, cfg.sub[j]->data_dir);
 							delfiles(tmp, str);

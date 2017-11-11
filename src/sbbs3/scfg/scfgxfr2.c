@@ -1815,7 +1815,7 @@ void dir_cfg(uint libnum)
 					sprintf(opt[n++],"%-27.27s%s","Extensions Allowed"
 						,cfg.dir[i]->exts);
 					if(!cfg.dir[i]->data_dir[0])
-						sprintf(str,"%sdirs/",cfg.data_dir);
+						sprintf(str,"[%sdirs/]",cfg.data_dir);
 					else
 						strcpy(str,cfg.dir[i]->data_dir);
 					sprintf(opt[n++],"%-27.27s%.40s","Data Directory"
