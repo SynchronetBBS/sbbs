@@ -75,6 +75,7 @@ void page_cfg()
 				"`External Chat Pager Command Line:`\n"
 				"\n"
 				"This is the command line to execute for this external chat pager.\n"
+				SCFG_CMDLINE_SPEC_HELP
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Line",str,50
 				,K_EDIT)<1)
@@ -140,6 +141,7 @@ void page_cfg()
 						"`External Chat Pager Command Line:`\n"
 						"\n"
 						"This is the command line to execute for this external chat pager.\n"
+						SCFG_CMDLINE_SPEC_HELP
 					;
 					strcpy(str,cfg.page[i]->cmd);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Command Line"
