@@ -2056,7 +2056,7 @@ void getstrupd(int left, int top, int width, char *outstr, int cursoffset, int *
 /****************************************************************************/
 int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int *lastkey)
 {
-	char   *str,ins=0;
+	char   *str;
 	int	ch;
 	int     i,j,k,f=0;	/* i=offset, j=length */
 	BOOL	gotdecimal=FALSE;
@@ -2073,8 +2073,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		return(-1); 
 	}
 	gotoxy(left,top);
-	cursor=_NORMALCURSOR;
-	_setcursortype(cursor);
+	_setcursortype(cursor = api->insert_mode ? _SOLIDCURSOR : _NORMALCURSOR);
 	str[0]=0;
 	if(mode&K_EDIT && outstr[0]) {
 	/***
@@ -2258,12 +2257,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						pb=(unsigned char *)pastebuf;
 					continue;
 				case CIO_KEY_IC:	/* insert */
-					ins=!ins;
-					if(ins)
-						cursor=_SOLIDCURSOR;
-					else
-						cursor=_NORMALCURSOR;
-					_setcursortype(cursor);
+					api->insert_mode = !api->insert_mode;
+					_setcursortype(cursor = api->insert_mode ? _SOLIDCURSOR : _NORMALCURSOR);
 					continue;
 				case BS:
 					if(i)
@@ -2355,16 +2350,11 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 			}
 			if(mode&K_ALPHA && !isalpha(ch))
 				continue;
-#if 0
-			/* This broke swedish chars... */
-			if((ch>=' ' || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max) && isprint(ch))
-#else
-			if((ch>=' ' || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max) && ch < 256)
-#endif
+			if((ch>=' ' || (ch==1 && mode&K_MSG)) && i<max && (!api->insert_mode || j<max) && ch < 256)
 			{
 				if(mode&K_UPPER)
 					ch=toupper(ch);
-				if(ins)
+				if(api->insert_mode)
 				{
 					for(k=++j;k>i;k--)
 						str[k]=str[k-1];
