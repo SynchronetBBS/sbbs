@@ -194,6 +194,10 @@ int main(int argc, char **argv)
 				import = argv[i] + 8;
 				continue;
 			}
+			if(strcmp(argv[i]+1, "insert") == 0) {
+				uifc.insert_mode = TRUE;
+				continue;
+			}
             switch(toupper(argv[i][1])) {
                 case 'N':   /* Set "New Installation" flag */
 					new_install=TRUE;
