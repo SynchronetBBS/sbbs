@@ -333,8 +333,9 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 		int mod_offset = LEN_CODE-1;
 		for(j=0; j < cfg.total_subs && mod_offset >= 0; j++) {
 			/* same group and duplicate name/echotag or QWK confname? overwrite the sub entry */
-			if(cfg.sub[j]->grp == grpnum && stricmp(cfg.sub[j]->sname, tmpsub.sname) == 0)  {
-				break;
+			if(cfg.sub[j]->grp == grpnum) {
+				if(stricmp(cfg.sub[j]->sname, tmpsub.sname) == 0)
+					break;
 			} else {
 				if((cfg.grp[grpnum]->code_prefix[0] || cfg.grp[cfg.sub[j]->grp]->code_prefix[0]))
 					continue;
