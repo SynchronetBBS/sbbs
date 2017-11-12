@@ -322,6 +322,7 @@
 #define MSG_UPVOTE			(1<<11)		/* This message is an upvote */
 #define MSG_DOWNVOTE		(1<<12)		/* This message is a downvote */
 #define MSG_POLL			(1<<13)		/* This message is a poll */
+#define MSG_SPAM			(1<<14)		/* This message has been flagged as SPAM */
 
 #define MSG_VOTE			(MSG_UPVOTE|MSG_DOWNVOTE)	/* This message is a poll-vote */
 #define MSG_POLL_CLOSURE	(MSG_POLL|MSG_VOTE)			/* This message is a poll-closure */
