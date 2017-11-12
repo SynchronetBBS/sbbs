@@ -4385,16 +4385,17 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		return(TRUE);
 	}
 	
-	lprintf(LOG_WARNING,"%04d !SEND Bouncing message back to %s", sock, msg->from);
-
 	newmsg.hfield=NULL;
 	newmsg.hfield_dat=NULL;
 	newmsg.total_hfields=0;
 	newmsg.hdr.delivery_attempts=0;
+	char* reverse_path = msg->reverse_path==NULL ? msg->from : msg->reverse_path;
+
+	lprintf(LOG_WARNING,"%04d !SEND Bouncing message back to %s", sock, reverse_path);
 
 	SAFEPRINTF(str,"Delivery failure: %s",newmsg.subj);
 	smb_hfield_str(&newmsg, SUBJECT, str);
-	smb_hfield_str(&newmsg, RECIPIENT, newmsg.from);
+	smb_hfield_str(&newmsg, RECIPIENT, reverse_path);
 	if(msg->from_agent==AGENT_PERSON) {
 
 		if(newmsg.from_ext!=NULL) { /* Back to sender */
@@ -4424,7 +4425,7 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		,startup->host_name, attempts);
 	smb_hfield_str(&newmsg, SMB_COMMENT, str);
 	SAFEPRINTF2(str,"from %s to %s\r\n"
-		,msg->reverse_path==NULL ? msg->from : msg->reverse_path
+		,msg->from
 		,(char*)msg->to_net.addr);
 	smb_hfield_str(&newmsg, SMB_COMMENT, str);
 	strcpy(str,"Reason:");
@@ -4437,7 +4438,7 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 			,sock,i,smb->last_error);
 	else {
 		lprintf(LOG_WARNING,"%04d !SEND Delivery failure notification (message #%ld) created for %s"
-			,sock, newmsg.hdr.number, newmsg.from);
+			,sock, newmsg.hdr.number, reverse_path);
 		if((i=smb_incmsg_dfields(smb,&newmsg,1))!=SMB_SUCCESS)
 			lprintf(LOG_ERR,"%04d !SEND BOUNCE ERROR %d (%s) incrementing data allocation units"
 				,sock, i,smb->last_error);
