@@ -48,7 +48,7 @@
 "\1b\1hAuto message by: \1c%s\1b on %s\1n\r\n\r\n"           042 AutoMsgBy
 "\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
 "\1n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
-"\1n\r\nYou have no mail.\r\n"                           045 NoMailWaiting
+"\1n\r\nYou have no %s.\r\n"                           045 NoMailWaiting
 "\1_\r\n\1q\1g\1hMail Waiting:\r\n\r\n"                       046 MailWaitingLstHdr
 "\1g\1h%3d: \1n\1g%-25.25s \1h%c\1n\1g %.46s\r\n"              047 MailWaitingLstFmt
 "\1_\r\n\1y\1hStart with number [\1w%u\1y]: \1w"             048 StartWithN
@@ -960,4 +960,5 @@
 "\1n\1l\1gBallot for \1h%s\r\n\r\n"     791 BallotHdr
 "\1n\1c\1h%2u\1n\1c: %-*.*s \1h%s\r\n"  792 BallotAnswerFmt
 "\r\nToggle which vote (up to %u), ~Quit or [Cast]: "           793 BallotVoteWhich
-
+"Only"									794 Only
+"\1n\1h\1c\r\nSPAM Visibility is now: \1w"	795 SPAMVisibilityIsNow
