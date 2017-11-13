@@ -4332,7 +4332,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 						,hdr.attr
 						,hdr.to, smb_faddrtoa(&scfg.faddr[match], NULL)
 						,hdr.from, faddrtoa(&addr)
-						,hdr.time, (uint32_t)t, ctime(&t));
+						,hdr.time, (ulong)t, ctime(&t));
 					bodylen += sprintf(body+bodylen,"\r======[ Received message text ]======\r%s"
 													"\r======[ End received msg text ]======\r", fmsgbuf);
 				}
@@ -4652,8 +4652,8 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			}
 
 			if(!rescan && cfg.max_echomail_age != 0 
-				&& (now > msg.hdr.when_written.time && (now - msg.hdr.when_written.time) > cfg.max_echomail_age)
-				|| (now > msg.hdr.when_imported.time && (now - msg.hdr.when_imported.time) > cfg.max_echomail_age)) {
+				&& ((now > msg.hdr.when_written.time && (now - msg.hdr.when_written.time) > cfg.max_echomail_age)
+				|| (now > msg.hdr.when_imported.time && (now - msg.hdr.when_imported.time) > cfg.max_echomail_age))) {
 				smb_unlockmsghdr(&smb, &msg);
 				smb_freemsgmem(&msg);
 				continue;
