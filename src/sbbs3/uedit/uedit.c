@@ -783,7 +783,7 @@ int edit_proto(scfg_t *cfg, user_t *user)
 		default:
 			if(user->prot != cfg->prot[j-1]->mnemonic) {
 				user->prot=cfg->prot[j-1]->mnemonic;
-				putuserrec(cfg,user->number,U_PROT,1,&user->prot);
+				putuserrec(cfg,user->number,U_PROT,1,(char*)&user->prot);
 			}
 			break;
 	}
