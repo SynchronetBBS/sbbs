@@ -339,6 +339,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		SAFECOPY(ncfg->password	, iniGetString(ini, node, "AreaFixPwd", "", value));
 		SAFECOPY(ncfg->pktpwd	, iniGetString(ini, node, "PacketPwd", "", value));
 		SAFECOPY(ncfg->ticpwd	, iniGetString(ini, node, "TicFilePwd", "", value));
+		SAFECOPY(ncfg->name		, iniGetString(ini, node, "Name", "Sysop", value));
 		SAFECOPY(ncfg->comment	, iniGetString(ini, node, "Comment", "", value));
 		if(!faddr_contains_wildcard(&ncfg->addr)) {
 			SAFECOPY(ncfg->inbox	, iniGetString(ini, node, "inbox", "", value));
@@ -361,6 +362,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		ncfg->grphub			= iniGetStringList(ini, node, "GroupHub", ",", "");
 		ncfg->keys				= iniGetStringList(ini, node, "keys", ",", "");
 		ncfg->pkt_type			= iniGetEnum(ini, node, "PacketType", pktTypeStringList, ncfg->pkt_type);
+		ncfg->areafix			= iniGetBool(ini, node, "AreaFix", ncfg->password[0] ? true : false);
 		ncfg->send_notify		= iniGetBool(ini, node, "notify", ncfg->send_notify);
 		ncfg->passive			= iniGetBool(ini, node, "passive", ncfg->passive);
 		ncfg->direct			= iniGetBool(ini, node, "direct", ncfg->direct);
@@ -393,6 +395,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 			elist->hub = atofaddr(value);
 		elist->forward = iniGetBool(ini, echolist, "fwd", false);
 		SAFECOPY(elist->password, iniGetString(ini,echolist, "pwd", "", value));
+		SAFECOPY(elist->areamgr, iniGetString(ini, echolist, "AreaMgr", FIDO_AREAMGR_NAME, value));
 	}
 	strListFree(&echolists);
 
@@ -552,10 +555,12 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	for(uint i=0; i<cfg->nodecfgs; i++) {
 		nodecfg_t*	node = &cfg->nodecfg[i];
 		SAFEPRINTF(section,"node:%s", faddrtoa(&node->addr));
+		iniSetString(&ini	,section,	"Name"			,node->name			,&style);
 		iniSetString(&ini	,section,	"Comment"		,node->comment		,&style);
 		iniSetString(&ini	,section,	"Archive"		,node->archive == SBBSECHO_ARCHIVE_NONE ? "None" : node->archive->name, &style);
 		iniSetEnum(&ini		,section,	"PacketType"	,pktTypeStringList, node->pkt_type, &style);
 		iniSetString(&ini	,section,	"PacketPwd"		,node->pktpwd		,&style);
+		iniSetBool(&ini		,section,	"AreaFix"		,node->areafix		,&style);
 		iniSetString(&ini	,section,	"AreaFixPwd"	,node->password		,&style);
 		iniSetString(&ini	,section,	"TicFilePwd"	,node->ticpwd		,&style);
 		iniSetString(&ini	,section,	"Inbox"			,node->inbox		,&style);
@@ -582,6 +587,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 			continue;
 		SAFEPRINTF(section,"echolist:%s", elist->listpath);
 		iniSetString(&ini	,section,	"Hub"		,faddrtoa(&elist->hub)				,&style);
+		iniSetString(&ini	,section,	"AreaMgr"	,elist->areamgr						,&style);
 		iniSetString(&ini	,section,	"Pwd"		,elist->password					,&style);
 		iniSetBool(&ini		,section,	"Fwd"		,elist->forward						,&style);
 		iniSetStringList(&ini,section,	"Keys", ","	,elist->keys						,&style);

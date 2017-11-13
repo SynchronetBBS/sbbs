@@ -42,9 +42,11 @@
 #include "fidodefs.h"
 
 #define SBBSECHO_VERSION_MAJOR		3
-#define SBBSECHO_VERSION_MINOR		2
+#define SBBSECHO_VERSION_MINOR		3
 
 #define SBBSECHO_PRODUCT_CODE		0x12FF	/* from http://ftsc.org/docs/ftscprod.013 */
+
+#define SBBSECHO_AREAMGR_NAME		"AreaFix"
 
 #define DEFAULT_INBOUND				"../fido/nonsecure"
 #define DEFAULT_SECURE_INBOUND		"../fido/inbound"
@@ -107,9 +109,11 @@ typedef struct {
 	char		pktpwd[FIDO_PASS_LEN+1];	/* Packet password for this node */
 	char		ticpwd[FIDO_PASS_LEN+1];	/* TIC File password for this node */
 	char		comment[64];	/* Comment for this node */
+	char		name[FIDO_NAME_LEN];
 	char		inbox[MAX_PATH+1];
 	char		outbox[MAX_PATH+1];
 	str_list_t	keys;
+	bool		areafix;
 	bool		send_notify;
 	bool		passive;
 	bool		direct;
@@ -125,6 +129,7 @@ typedef struct {
 	fidoaddr_t 	hub;			/* Where to forward requests */
 	bool		forward;
 	char		password[FIDO_SUBJ_LEN];	/* Password to use for forwarding req's */
+	char		areamgr[FIDO_NAME_LEN];		/* Destination name for Area Manager req's */
 } echolist_t;
 
 typedef struct {

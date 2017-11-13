@@ -41,6 +41,8 @@
 #define FIDO_TLD		".fidonet"	/* Fake TLD for gating netmail through SMTP  */
 #define FIDO_ORIGIN_PREFIX_FORM_1	"\r * Origin: "
 #define FIDO_ORIGIN_PREFIX_FORM_2	"\n * Origin: "
+#define FIDO_PING_NAME		"PING"		/* 'To' username for PING netmail (FTS-5001) */
+#define FIDO_AREAMGR_NAME	"AreaFix"	/* Defacto psuedo-standard */
 
 #define FIDO_NAME_LEN			36	/* Includes '\0' terminator				*/
 #define FIDO_SUBJ_LEN			72	/* Includes '\0' terminator				*/
