@@ -350,14 +350,14 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 		getnumstr(str[1][1],sstats.logons);
 		snprintf(str[1][2],12,"%s/%s",getnumstr(str[3][2],nstats.ttoday),getnumstr(str[3][3],sstats.ttoday));
 		getnumstr(str[1][3],sstats.timeon);
-		snprintf(str[2][0],12,"%s/%s",getnumstr(str[3][2],sstats.etoday),getnumstr(str[3][3],getmail(cfg,0,0)));
+		snprintf(str[2][0],12,"%s/%s",getnumstr(str[3][2],sstats.etoday),getnumstr(str[3][3],getmail(cfg,0,0,0)));
 		l=m=0;
 		for(i=0;i<cfg->total_subs;i++)
 			l+=getposts(cfg,i); 			/* l=total posts */
 		for(i=0;i<cfg->total_dirs;i++)
 			m+=getfiles(cfg,i); 			/* m=total files */
 		snprintf(str[2][1],12,"%s/%s",getnumstr(str[3][2],sstats.ptoday),getnumstr(str[3][3],l));
-		snprintf(str[2][2],12,"%s/%s",getnumstr(str[3][2],sstats.ftoday),getnumstr(str[3][3],getmail(cfg,1,0)));
+		snprintf(str[2][2],12,"%s/%s",getnumstr(str[3][2],sstats.ftoday),getnumstr(str[3][3],getmail(cfg,1,0,0)));
 		snprintf(str[2][3],12,"%s/%s",getnumstr(str[3][2],sstats.nusers),getnumstr(str[3][3],total_users(cfg)));
 		getsizestr(str[3][0],sstats.ulb,TRUE);
 		snprintf(str[3][1],12,"%s/%s",getnumstr(str[3][2],sstats.uls),getnumstr(str[3][3],m));
@@ -369,14 +369,14 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 		getnumstr(str[1][1],sstats.logons);
 		snprintf(str[1][2],12,"%s",getnumstr(str[3][3],sstats.ttoday));
 		getnumstr(str[1][3],sstats.timeon);
-		snprintf(str[2][0],12,"%s/%s",getnumstr(str[3][2],sstats.etoday),getnumstr(str[3][3],getmail(cfg,0,0)));
+		snprintf(str[2][0],12,"%s/%s",getnumstr(str[3][2],sstats.etoday),getnumstr(str[3][3],getmail(cfg,0,0,0)));
 		l=m=0;
 		for(i=0;i<cfg->total_subs;i++)
 			l+=getposts(cfg,i); 			/* l=total posts */
 		for(i=0;i<cfg->total_dirs;i++)
 			m+=getfiles(cfg,i); 			/* m=total files */
 		snprintf(str[2][1],12,"%s/%s",getnumstr(str[3][2],sstats.ptoday),getnumstr(str[3][3],l));
-		snprintf(str[2][2],12,"%s/%s",getnumstr(str[3][2],sstats.ftoday),getnumstr(str[3][3],getmail(cfg,1,0)));
+		snprintf(str[2][2],12,"%s/%s",getnumstr(str[3][2],sstats.ftoday),getnumstr(str[3][3],getmail(cfg,1,0,0)));
 		snprintf(str[2][3],12,"%s/%s",getnumstr(str[3][2],sstats.nusers),getnumstr(str[3][3],total_users(cfg)));
 		getsizestr(str[3][0],sstats.ulb,TRUE);
 		snprintf(str[3][1],12,"%s/%s",getnumstr(str[3][2],sstats.uls),getnumstr(str[3][3],m));
