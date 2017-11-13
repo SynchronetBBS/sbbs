@@ -1509,9 +1509,9 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
     StatsForm->LogonsToday->Caption=AnsiString(stats.ltoday);
     StatsForm->TotalTimeOn->Caption=AnsiString(stats.timeon);
     StatsForm->TimeToday->Caption=AnsiString(stats.ttoday);
-    StatsForm->TotalEMail->Caption=AnsiString(getmail(&cfg,0,0));
+    StatsForm->TotalEMail->Caption=AnsiString(getmail(&cfg,0,0,0));
 	StatsForm->EMailToday->Caption=AnsiString(stats.etoday);
-	StatsForm->TotalFeedback->Caption=AnsiString(getmail(&cfg,1,0));
+	StatsForm->TotalFeedback->Caption=AnsiString(getmail(&cfg,1,0,0));
 	StatsForm->FeedbackToday->Caption=AnsiString(stats.ftoday);
 	/* Don't scan a large user database more often than necessary */
 	if(!counter || users<100 || (counter%(users/100))==0 || stats.nusers!=newusers)
