@@ -190,6 +190,14 @@ char* parse_control_line(const char* fmsgbuf, const char* kludge)
 	return strdup(p);
 }
 
+
+int fwrite_intl_control_line(FILE* fp, fmsghdr_t* hdr)
+{
+	return fprintf(fp,"\1INTL %hu:%hu/%hu %hu:%hu/%hu\r"
+		,hdr->destzone,hdr->destnet,hdr->destnode
+		,hdr->origzone,hdr->orignet,hdr->orignode);
+}
+
 typedef struct echostat_msg {
 	char msg_id[128];
 	char reply_id[128];
@@ -1107,9 +1115,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	SAFECOPY(hdr.subj,subject);
 
 	fwrite(&hdr,sizeof(fmsghdr_t),1,fp);
-	fprintf(fp,"\1INTL %hu:%hu/%hu %hu:%hu/%hu\r"
-		,hdr.destzone,hdr.destnet,hdr.destnode
-		,hdr.origzone,hdr.orignet,hdr.orignode);
+	fwrite_intl_control_line(fp, &hdr);
 
 	if(!fidoctrl_line_exists(msg, "TZUTC:")) {
 		/* TZUTC (FSP-1001) */
@@ -3532,6 +3538,9 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t fmsghdr, area_t area
 	fwrite(fmsghdr.to	,strlen(fmsghdr.to)+1	,1,stream);
 	fwrite(fmsghdr.from	,strlen(fmsghdr.from)+1	,1,stream);
 	fwrite(fmsghdr.subj	,strlen(fmsghdr.subj)+1	,1,stream);
+
+	if(area.tag == NULL) /* NetMail, so add FSC-0004 INTL kludge */
+		fwrite_intl_control_line(stream, &fmsghdr);
 
 	len = strlen((char *)fbuf);
 
