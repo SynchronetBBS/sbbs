@@ -378,7 +378,7 @@ gtk_widget_set_sensitive(w, TRUE);
 	if(w==NULL)
 		fprintf(stderr,"Cannot get email total widget\n");
 	else {
-		sprintf(str,"%s",getnumstr(str2,getmail(&cfg,0,0)));
+		sprintf(str,"%s",getnumstr(str2,getmail(&cfg,0,0,0)));
 		gtk_entry_set_text(GTK_ENTRY(w),str);
 	}
 
@@ -386,7 +386,7 @@ gtk_widget_set_sensitive(w, TRUE);
 	if(w==NULL)
 		fprintf(stderr,"Cannot get feedback total widget\n");
 	else {
-		sprintf(str,"%s",getnumstr(str2,getmail(&cfg,1,0)));
+		sprintf(str,"%s",getnumstr(str2,getmail(&cfg,1,0,0)));
 		gtk_entry_set_text(GTK_ENTRY(w),str);
 	}
 
