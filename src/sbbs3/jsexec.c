@@ -298,8 +298,8 @@ static int do_bail(int code)
 	if(code)
 		fprintf(statfp,"\nReturning error code: %d\n",code);
 #ifdef __unix__
-//	if(isatty(fileno(stdin)))
-//		tcsetattr(STDIN_FILENO, TCSANOW, &orig_term);
+	if(isatty(fileno(stdin)))
+		tcsetattr(STDIN_FILENO, TCSANOW, &orig_term);
 #endif
 	return(code);
 }
@@ -1089,10 +1089,10 @@ int main(int argc, char **argv, char** environ)
 #ifdef __unix__
 		struct termios term;
 
-//		tcgetattr(fileno(stdin), &orig_term);
-//		term = orig_term;
-//		raw_input(&term);
-//		tcsetattr(fileno(stdin), TCSANOW, &term);
+		tcgetattr(fileno(stdin), &orig_term);
+		term = orig_term;
+		raw_input(&term);
+		tcsetattr(fileno(stdin), TCSANOW, &term);
 #else
 	//	This completely disabled console input on Windows:
 	//	SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0);
