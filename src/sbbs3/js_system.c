@@ -638,12 +638,12 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SYSSTAT_PROP_TOTALMAIL:
 			rc=JS_SUSPENDREQUEST(cx);
-			*vp = INT_TO_JSVAL(getmail(cfg, 0,0));
+			*vp = INT_TO_JSVAL(getmail(cfg, /* user: */0, /* Sent: */FALSE, /* SPAM: */FALSE));
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case SYSSTAT_PROP_FEEDBACK:
 			rc=JS_SUSPENDREQUEST(cx);
-			*vp = INT_TO_JSVAL(getmail(cfg, 1,0));
+			*vp = INT_TO_JSVAL(getmail(cfg, /* user: */1, /* Sent: */FALSE, /* SPAM: */FALSE));
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 	}

@@ -886,22 +886,32 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 	}
 
 	if(!strcmp(sp,"MAILW")) {
-		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number,0));
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number, /* Sent: */FALSE, /* SPAM */FALSE));
 		return(str);
 	}
 
 	if(!strcmp(sp,"MAILP")) {
-		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number,1));
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number,/* Sent: */TRUE, /* SPAM: */FALSE));
+		return(str);
+	}
+
+	if(!strcmp(sp,"SPAMW")) {
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number, /* Sent: */FALSE, /* SPAM: */TRUE));
 		return(str);
 	}
 
 	if(!strncmp(sp,"MAILW:",6)) {
-		safe_snprintf(str,maxlen,"%u",getmail(&cfg,atoi(sp+6),0));
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,atoi(sp+6), /* Sent: */FALSE, /* SPAM: */FALSE));
 		return(str);
 	}
 
 	if(!strncmp(sp,"MAILP:",6)) {
-		safe_snprintf(str,maxlen,"%u",getmail(&cfg,atoi(sp+6),1));
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,atoi(sp+6), /* Sent: */TRUE, /* SPAM: */FALSE));
+		return(str);
+	}
+
+	if(!strncmp(sp,"SPAMW:",6)) {
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,atoi(sp+6), /* Sent: */FALSE, /* SPAM: */TRUE));
 		return(str);
 	}
 

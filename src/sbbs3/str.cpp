@@ -915,7 +915,7 @@ void sbbs_t::user_info()
 		,useron.ptoday);
 	bprintf(text[UserEmails]
 		,useron.emails,useron.fbacks
-		,getmail(&cfg,useron.number,0),useron.etoday);
+		,getmail(&cfg,useron.number,/* Sent: */FALSE, /* SPAM: */FALSE),useron.etoday);
 	CRLF;
 	bprintf(text[UserUploads]
 		,ultoac(useron.ulb,tmp),useron.uls);

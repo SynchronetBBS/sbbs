@@ -374,10 +374,10 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val=scfg->level_freecdtperday[p->user->level];
 			break;
 		case USER_PROP_MAIL_WAITING:
-			val=getmail(scfg,p->user->number,/* sent? */FALSE);
+			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* SPAM: */FALSE);
 			break;
 		case USER_PROP_MAIL_PENDING:
-			val=getmail(scfg,p->user->number,/* sent? */TRUE);
+			val=getmail(scfg,p->user->number,/* sent? */TRUE, /* SPAM: */FALSE);
 			break;
 
 		case USER_PROP_CACHED:

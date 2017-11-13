@@ -1,5 +1,3 @@
-/* useredit.cpp */
-
 /* Synchronet online sysop user editor */
 
 /* $Id$ */
@@ -143,7 +141,7 @@ void sbbs_t::useredit(int usernumber)
 			,f ? (uint)(100/f) : user.posts>user.logons ? 100 : 0
 			,user.ptoday);
 		bprintf(text[UserEmails]
-			,user.emails,user.fbacks,getmail(&cfg,user.number,0),user.etoday);
+			,user.emails,user.fbacks,getmail(&cfg,user.number,/* Sent: */FALSE, /* SPAM: */FALSE),user.etoday);
 
 		bprintf(text[UserUploads],ultoac(user.ulb,tmp),user.uls);
 		if(user.leech)
@@ -217,11 +215,11 @@ void sbbs_t::useredit(int usernumber)
 				}
 				if(!noyes(text[UeditDeleteQ])) {
 					getsmsg(user.number);
-					if(getmail(&cfg,user.number,0)) {
+					if(getmail(&cfg,user.number, /* Sent: */FALSE, /* SPAM: */FALSE)) {
 						if(yesno(text[UeditReadUserMailWQ]))
 							readmail(user.number,MAIL_YOUR); 
 					}
-					if(getmail(&cfg,user.number,1)) {
+					if(getmail(&cfg,user.number, /* Sent: */TRUE, /* SPAM: */FALSE)) {
 						if(yesno(text[UeditReadUserMailSQ]))
 							readmail(user.number,MAIL_SENT); 
 					}
@@ -231,11 +229,11 @@ void sbbs_t::useredit(int usernumber)
 					break; 
 				}
 				if(!noyes(text[UeditDeactivateUserQ])) {
-					if(getmail(&cfg,user.number,0)) {
+					if(getmail(&cfg,user.number, /* Sent: */FALSE, /* SPAM: */FALSE)) {
 						if(yesno(text[UeditReadUserMailWQ]))
 							readmail(user.number,MAIL_YOUR); 
 					}
-					if(getmail(&cfg,user.number,1)) {
+					if(getmail(&cfg,user.number, /* Sent: */TRUE, /* SPAM: */FALSE)) {
 						if(yesno(text[UeditReadUserMailSQ]))
 							readmail(user.number,MAIL_SENT); 
 					}
@@ -984,14 +982,14 @@ void sbbs_t::maindflts(user_t* user)
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 'M':   /* NetMail address */
-				if(noyes(text[ForwardMailQ]))
+				bputs(text[EnterNetMailAddress]);
+				if(getstr(user->netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE) < 0)
+					break;
+				putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
+				if(user->netmail[0] == 0 || noyes(text[ForwardMailQ]))
 					user->misc&=~NETMAIL;
 				else {
 					user->misc|=NETMAIL;
-					bputs(text[EnterNetMailAddress]);
-					if(!getstr(user->netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE))
-						break;
-					putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
 				}
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;

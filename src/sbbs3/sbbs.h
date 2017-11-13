@@ -637,7 +637,7 @@ public:
 	/* mail.cpp */
 	int		delmail(uint usernumber,int which);
 	void	telluser(smbmsg_t* msg);
-	void	delallmail(uint usernumber, int which, bool permanent=true);
+	void	delallmail(uint usernumber, int which, bool permanent=true, long lm_mode = 0);
 
 	/* getmsg.cpp */
 	int		loadmsg(smbmsg_t *msg, ulong number);
@@ -650,8 +650,9 @@ public:
 	ulong	getmsgnum(uint subnum, time_t t);
 
 	/* readmail.cpp */
-	void	readmail(uint usernumber, int sent);
+	void	readmail(uint usernumber, int which);
 	bool	readmail_inside;
+	long	searchmail(mail_t*, long start, long msgss, int which, const char *search);
 
 	/* bulkmail.cpp */
 	bool	bulkmail(uchar *ar);
@@ -762,6 +763,7 @@ public:
 	void	show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thread_depth = 0, uint64_t reply_mask = 0);
 	void	msghdr(smbmsg_t* msg);
 	uchar	msg_listing_flag(uint subnum, smbmsg_t*, post_t*);
+	int64_t get_start_msgnum(smb_t*, int next=0);
 
 	/* chat.cpp */
 	void	chatsection(void);
@@ -1004,7 +1006,7 @@ extern "C" {
 	DLLEXPORT long		DLLCALL getfiles(scfg_t* cfg, uint dirnum);
 
 	/* getmail.c */
-	DLLEXPORT int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent);
+	DLLEXPORT int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, BOOL spam_only);
 	DLLEXPORT mail_t *	DLLCALL loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 										,int which, long mode);
 	DLLEXPORT void		DLLCALL freemail(mail_t* mail);

@@ -3029,6 +3029,8 @@ static void smtp_thread(void* arg)
 							smb_error=SMB_FAILURE;
 							break;
 						}
+						if(stricmp(field, "X-Spam-Flag") == 0 && stricmp(p, "Yes") == 0)
+							msg.hdr.attr |= MSG_SPAM;	/* e.g. flagged by SpamAssasin */
 					}
 					if((smb_error=parse_header_field((char*)buf,&msg,&hfield_type))!=SMB_SUCCESS) {
 						if(smb_error==SMB_ERR_HDR_LEN)
@@ -3866,7 +3868,7 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 				if(relay_user.number!=0 && !(relay_user.exempt&FLAG('M'))
-					&& rcpt_count+(waiting=getmail(&scfg,relay_user.number,/* sent: */TRUE)) > startup->max_recipients) {
+					&& rcpt_count+(waiting=getmail(&scfg,relay_user.number,/* sent: */TRUE, /* SPAM: */FALSE)) > startup->max_recipients) {
 					lprintf(LOG_NOTICE,"%04d !SMTP MAXIMUM PENDING SENT EMAILS (%u) REACHED for User #%u (%s)"
 						,socket, waiting, relay_user.number, relay_user.alias);
 					sockprintf(socket, "452 Too many pending emails sent");
@@ -4205,7 +4207,7 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 				if(startup->max_msgs_waiting && !(user.exempt&FLAG('W')) 
-					&& (waiting=getmail(&scfg, user.number, /* sent: */FALSE)) > startup->max_msgs_waiting) {
+					&& (waiting=getmail(&scfg, user.number, /* sent: */FALSE, /* spam: */FALSE)) > startup->max_msgs_waiting) {
 					lprintf(LOG_NOTICE,"%04d !SMTP User #%u (%s) mailbox (%u msgs) exceeds the maximum (%u) msgs waiting"
 						,socket, user.number, user.alias, waiting, startup->max_msgs_waiting);
 					sockprintf(socket, "450 Mailbox full: %s", rcpt_to);

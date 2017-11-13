@@ -771,6 +771,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 								/* Bits in the mode of loadmail()			*/
 #define LM_UNREAD	(1<<0)		/* Include un-read mail only				*/
 #define LM_INCDEL	(1<<1)		/* Include deleted mail		 				*/
+#define LM_NOSPAM	(1<<2)		/* Exclude SPAM								*/
+#define LM_SPAMONLY	(1<<3)		/* Load SPAM only							*/
 								
 enum {							/* readmail and delmailidx which types		*/
 	 MAIL_YOUR					/* mail sent to you							*/

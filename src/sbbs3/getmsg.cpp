@@ -97,6 +97,7 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 
 	bprintf(text[MsgAttr]
 		,attr&MSG_PRIVATE	? "Private  "   :nulstr
+		,attr&MSG_SPAM		? "SPAM  "      :nulstr
 		,attr&MSG_READ		? "Read  "      :nulstr
 		,attr&MSG_DELETE	? "Deleted  "   :nulstr
 		,attr&MSG_KILLREAD	? "Kill  "      :nulstr
@@ -109,7 +110,6 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 		,attr&MSG_NOREPLY	? "NoReply  "	:nulstr
 		,poll == MSG_POLL	? "Poll  "		:nulstr
 		,poll == MSG_POLL && auxattr&POLL_CLOSED ? "(Closed)  "	:nulstr
-		,nulstr
 		,nulstr
 		,nulstr
 		,nulstr

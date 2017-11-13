@@ -159,7 +159,7 @@ void sbbs_t::telluser(smbmsg_t* msg)
 /************************************************************************/
 /* Deletes all mail waiting for user number 'usernumber'                */
 /************************************************************************/
-void sbbs_t::delallmail(uint usernumber, int which, bool permanent)
+void sbbs_t::delallmail(uint usernumber, int which, bool permanent, long lm_mode)
 {
 	int 		i;
 	long		deleted=0;
@@ -180,7 +180,7 @@ void sbbs_t::delallmail(uint usernumber, int which, bool permanent)
 		return; 
 	}
 
-	mail=loadmail(&smb,&msgs,usernumber,which,0);
+	mail=loadmail(&smb,&msgs,usernumber,which,lm_mode);
 	if(!msgs) {
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);

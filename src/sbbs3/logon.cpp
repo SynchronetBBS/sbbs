@@ -442,7 +442,7 @@ bool sbbs_t::logon()
 		return(true);
 
 	sys_status|=SS_PAUSEON;	/* always force pause on during this section */
-	mailw=getmail(&cfg,useron.number,0);
+	mailw=getmail(&cfg,useron.number,/* Sent: */FALSE, /* SPAM: */FALSE);
 
 	if(!(cfg.sys_misc&SM_NOSYSINFO)) {
 		bprintf(text[SiSysName],cfg.sys_name);

@@ -390,17 +390,17 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 	return(post);
 }
 
-static int64_t get_start_msg(sbbs_t* sbbs, smb_t* smb)
+int64_t sbbs_t::get_start_msgnum(smb_t* smb, int next)
 {
-	uint32_t	j=smb->curmsg+1;
+	uint32_t	j=smb->curmsg + next;
 	int64_t		i;
 
 	if(j<smb->msgs)
 		j++;
 	else
 		j=1;
-	sbbs->bprintf(sbbs->text[StartWithN],j);
-	if((i=sbbs->getnum(smb->msgs))<0)
+	bprintf(text[StartWithN],j);
+	if((i = getnum(smb->msgs)) < 0)
 		return(i);
 	if(i==0)
 		return(j-1);
@@ -1050,7 +1050,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			case 'F':   /* find text in messages */
 				domsg=0;
 				mode&=~SCAN_FIND;	/* turn off find mode */
-				if((i64=get_start_msg(this,&smb))<0)
+				if((i64=get_start_msgnum(&smb, 1))<0)
 					break;
 				i=(int)i64;
 				bputs(text[SearchStringPrompt]);
@@ -1085,7 +1085,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				break;
 			case 'L':   /* List messages */
 				domsg=0;
-				if((i64=get_start_msg(this,&smb))<0)
+				if((i64=get_start_msgnum(&smb, 1))<0)
 					break;
 				i=(int)i64;
 				listmsgs(subnum,0,post,i,smb.msgs);
@@ -1694,7 +1694,7 @@ long sbbs_t::listsub(uint subnum, long mode, long start, const char* search)
 }
 
 /****************************************************************************/
-/* Will search the messages pointed to by 'msg' for the occurance of the    */
+/* Will search the messages pointed to by 'msg' for the occurrence of the   */
 /* string 'search' and display any messages (number of message, author and  */
 /* title). 'msgs' is the total number of valid messages.                    */
 /* Returns number of messages found.                                        */
