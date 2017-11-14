@@ -1616,7 +1616,7 @@ static void signal_smtp_sem(void)
 }
 
 /*****************************************************************************/
-/* Returns command line generated from instr with %c replacments             */
+/* Returns command line generated from instr with %c replacements            */
 /*****************************************************************************/
 static char* mailcmdstr(char* instr, char* msgpath, char* newpath, char* logpath
 						,char* lstpath, char* errpath
@@ -2447,7 +2447,7 @@ static void smtp_thread(void* arg)
 	FILE*		rcptlst;
 	char		rcptlst_fname[MAX_PATH+1];
 	ushort		rcpt_count=0;
-	FILE*		proc_err;
+	FILE*		proc_out;
 	char		proc_err_fname[MAX_PATH+1];
 	char		session_id[MAX_PATH+1];
 	FILE*		spy=NULL;
@@ -2893,6 +2893,18 @@ static void smtp_thread(void* arg)
 #endif
 							}
 						}
+						/* Log debug output (file) from mailproc: */
+						if(flength(logtxt_fname) > 0 && (proc_out=fopen(logtxt_fname,"r"))!=NULL) {
+							while(!feof(proc_out)) {
+								if(!fgets(str,sizeof(str),proc_out))
+									break;
+								truncsp(str);
+								lprintf(LOG_DEBUG,"%04d SMTP External mail processor (%s) debug: %s"
+									,socket, mp->name, str);
+							}
+							fclose(proc_out);
+						}
+						remove(logtxt_fname);
 						if(!mp->passthru || flength(proc_err_fname)>0 || !fexist(msgtxt_fname) || !fexist(rcptlst_fname)) {
 							mailproc=mp;
 							msg_handled=TRUE;
@@ -2900,12 +2912,12 @@ static void smtp_thread(void* arg)
 						}
 					}
 					if(flength(proc_err_fname)>0 
-						&& (proc_err=fopen(proc_err_fname,"r"))!=NULL) {
+						&& (proc_out=fopen(proc_err_fname,"r"))!=NULL) {
 						lprintf(LOG_WARNING,"%04d !SMTP External mail processor (%s) created: %s"
 								,socket, mailproc->name, proc_err_fname);
-						while(!feof(proc_err)) {
+						while(!feof(proc_out)) {
 							int n;
-							if(!fgets(str,sizeof(str),proc_err))
+							if(!fgets(str,sizeof(str),proc_out))
 								break;
 							truncsp(str);
 							lprintf(LOG_WARNING,"%04d !SMTP External mail processor (%s) error: %s"
@@ -2915,10 +2927,10 @@ static void smtp_thread(void* arg)
 								sockprintf(socket,"%s", str);
 							else
 								sockprintf(socket,"554%c%s"
-									,ftell(proc_err)<filelength(fileno(proc_err)) ? '-' : ' '
+									,ftell(proc_out)<filelength(fileno(proc_out)) ? '-' : ' '
 									,str);
 						}
-						fclose(proc_err);
+						fclose(proc_out);
 						msg_handled=TRUE;
 					}
 					else if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname)) {
