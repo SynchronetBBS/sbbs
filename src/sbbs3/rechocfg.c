@@ -339,7 +339,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		SAFECOPY(ncfg->password	, iniGetString(ini, node, "AreaFixPwd", "", value));
 		SAFECOPY(ncfg->pktpwd	, iniGetString(ini, node, "PacketPwd", "", value));
 		SAFECOPY(ncfg->ticpwd	, iniGetString(ini, node, "TicFilePwd", "", value));
-		SAFECOPY(ncfg->name		, iniGetString(ini, node, "Name", "Sysop", value));
+		SAFECOPY(ncfg->name		, iniGetString(ini, node, "Name", "", value));
 		SAFECOPY(ncfg->comment	, iniGetString(ini, node, "Comment", "", value));
 		if(!faddr_contains_wildcard(&ncfg->addr)) {
 			SAFECOPY(ncfg->inbox	, iniGetString(ini, node, "inbox", "", value));
