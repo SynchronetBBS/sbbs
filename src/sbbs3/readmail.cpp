@@ -764,12 +764,12 @@ void sbbs_t::readmail(uint usernumber, int which)
 			case 'V':	/* View SPAM (toggle) */
 			{
 				domsg = false;
-				int spam = getmail(&cfg, usernumber, /* Sent: */FALSE, /* SPAM */TRUE);
+				int spam = getmail(&cfg, usernumber, /* Sent: */FALSE, /* SPAM-ONLY */TRUE);
 				if(!spam) {
 					bprintf(text[NoMailWaiting], "SPAM");
 					break;
 				}
-				if(spam >= (int)smb.msgs) {
+				if(spam >= getmail(&cfg, usernumber, /* Sent: */FALSE, /* SPAM-ONLY */FALSE)) {
 					bprintf(text[NoMailWaiting], "HAM");
 					break;
 				}
