@@ -229,12 +229,16 @@ void sbbs_t::readmail(uint usernumber, int which)
 			mail=loadmail(&smb,&smb.msgs,usernumber,which,lm_mode);   /* So re-load */
 			if(!smb.msgs)
 				break;
+			if(lm_mode != last_mode)
+				smb.curmsg = 0;
+			else {
+				for(smb.curmsg=0;smb.curmsg<smb.msgs;smb.curmsg++)
+					if(mail[smb.curmsg].number==msg.idx.number)
+						break;
+				if(smb.curmsg>=smb.msgs)
+					smb.curmsg=(smb.msgs-1);
+			}
 			last_mode = lm_mode;
-			for(smb.curmsg=0;smb.curmsg<smb.msgs;smb.curmsg++)
-				if(mail[smb.curmsg].number==msg.idx.number)
-					break;
-			if(smb.curmsg>=smb.msgs)
-				smb.curmsg=(smb.msgs-1);
 			continue; 
 		}
 
@@ -764,12 +768,12 @@ void sbbs_t::readmail(uint usernumber, int which)
 			case 'V':	/* View SPAM (toggle) */
 			{
 				domsg = false;
-				int spam = getmail(&cfg, usernumber, /* Sent: */FALSE, /* SPAM-ONLY */TRUE);
+				int spam = getmail(&cfg, usernumber, /* Sent: */FALSE, /* attr: */MSG_SPAM);
 				if(!spam) {
 					bprintf(text[NoMailWaiting], "SPAM");
 					break;
 				}
-				if(spam >= getmail(&cfg, usernumber, /* Sent: */FALSE, /* SPAM-ONLY */FALSE)) {
+				if(spam >= getmail(&cfg, usernumber, /* Sent: */FALSE, /* attr: */0)) {
 					bprintf(text[NoMailWaiting], "HAM");
 					break;
 				}
