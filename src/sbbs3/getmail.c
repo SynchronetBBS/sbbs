@@ -40,7 +40,7 @@
 /* If sent is non-zero, it returns the number of mail sent by usernumber    */
 /* If usernumber is 0, it returns all mail on the system                    */
 /****************************************************************************/
-int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, BOOL spam_only)
+int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr)
 {
     char    path[MAX_PATH+1];
     int     i=0;
@@ -55,7 +55,7 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, BOOL spam_only)
 	l=(long)flength(path);
 	if(l<(long)sizeof(idxrec_t))
 		return(0);
-	if(!usernumber) 
+	if(usernumber == 0 && attr == 0) 
 		return(l/sizeof(idxrec_t)); 	/* Total system e-mail */
 	smb.subnum=INVALID_SUB;
 
@@ -69,10 +69,11 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, BOOL spam_only)
 			continue;
 		if(idx.attr&MSG_DELETE)
 			continue;
-		if(spam_only && !(idx.attr&MSG_SPAM))
+		if((idx.attr&attr) != attr)
 			continue;
-		if((!sent && idx.to==usernumber)
-		 || (sent && idx.from==usernumber))
+		if(usernumber == 0
+			|| (!sent && idx.to==usernumber)
+			|| (sent && idx.from==usernumber))
 			i++; 
 	}
 	smb_close(&smb);

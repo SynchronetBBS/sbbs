@@ -166,6 +166,20 @@ int lputs(int level, const char* str)
     return(startup->lputs(startup->cbdata,level,str));
 }
 
+int eputs(int level, const char *str)
+{
+	if(level <= LOG_ERR) {
+		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, str);
+		if(startup!=NULL && startup->errormsg!=NULL)
+			startup->errormsg(startup->cbdata,level,str);
+	}
+
+    if(startup==NULL || startup->event_lputs==NULL || level > startup->log_level)
+        return(0);
+
+    return(startup->event_lputs(startup->event_cbdata,level,str));
+}
+
 int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
@@ -188,17 +202,17 @@ int eprintf(int level, const char *fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
 
-	if(level <= LOG_ERR) {
-		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, sbuf);
-		if(startup!=NULL && startup->errormsg!=NULL)
-			startup->errormsg(startup->cbdata,level,sbuf);
-	}
-
-    if(startup==NULL || startup->event_lputs==NULL || level > startup->log_level)
-        return(0);
-
 	strip_ctrl(sbuf, sbuf);
-    return(startup->event_lputs(startup->event_cbdata,level,sbuf));
+
+    return(eputs(level,sbuf));
+}
+
+/* Picks the right log callback function (event or term) based on the sbbs->cfg.node_num value */
+int sbbs_t::lputs(int level, const char* str)
+{
+	if(cfg.node_num == 0)
+		return ::eputs(level, str);
+	return ::lputs(level, str);
 }
 
 struct main_sock_cb_data {
@@ -1803,7 +1817,7 @@ void input_thread(void *arg)
 				if(err==CRYPT_ERROR_TIMEOUT)
 					continue;
 				/* Handle the SSH error here... */
-				lprintf(LOG_WARNING,"Node %d !ERROR %d receiving on Cryptlib session", sbbs->cfg.node_num, err);
+				lprintf(LOG_WARNING,"Node %d SSH ERROR %d receiving on Cryptlib session", sbbs->cfg.node_num, err);
 				break;
 			}
 			else {
@@ -1984,7 +1998,6 @@ void passthru_output_thread(void* arg)
 
     	rd=sizeof(inbuf);
 
-#ifdef USE_CRYPTLIB
 		if(sbbs->ssh_mode) {
 			pthread_mutex_lock(&sbbs->ssh_mutex);
 			if(!cryptStatusOK(cryptPopData(sbbs->ssh_session, (char*)inbuf, rd, &i)))
@@ -1999,7 +2012,6 @@ void passthru_output_thread(void* arg)
 			pthread_mutex_unlock(&sbbs->ssh_mutex);
 		}
 		else
-#endif
     	rd = recv(sbbs->client_socket, (char*)inbuf, rd, 0);
 
 		if(rd == SOCKET_ERROR)
@@ -2109,7 +2121,7 @@ void passthru_input_thread(void* arg)
 
 		if(i == 0)
 		{
-			lprintf(LOG_NOTICE,"Node %d SSH passthru disconnected", sbbs->cfg.node_num);
+			lprintf(LOG_DEBUG,"Node %d SSH passthru disconnected", sbbs->cfg.node_num);
 			break;
 		}
 
@@ -2144,6 +2156,7 @@ void output_thread(void* arg)
 	fd_set		socket_set;
 	struct timeval tv;
 	ulong		mss=IO_THREAD_BUF_SIZE;
+	ulong		ssh_errors = 0;
 
 	SetThreadName("sbbs/termOutput");
 	thread_up(TRUE /* setuid */);
@@ -2265,29 +2278,16 @@ void output_thread(void* arg)
 #ifdef USE_CRYPTLIB
 		if(sbbs->ssh_mode) {
 			int err;
-			pthread_mutex_lock(&sbbs->ssh_mutex);	/* exception here May-22-2013:
- 	sbbs.dll!pthread_mutex_lock(_RTL_CRITICAL_SECTION * mutex=0x0a45e95c)  Line 147 + 0xc bytes	C
->	sbbs.dll!output_thread(void * arg=0x0a458c68)  Line 2126 + 0x11 bytes	C++
- 	sbbs.dll!_callthreadstart()  Line 259 + 0xf bytes	C
- 	sbbs.dll!_threadstart(void * ptd=0x04b20c40)  Line 243	C
-
--		sbbs->ssh_mutex	{DebugInfo=0x00000000 LockCount=-4 RecursionCount=0 ...}	_RTL_CRITICAL_SECTION
-+		DebugInfo	0x00000000 {Type=??? CreatorBackTraceIndex=??? CriticalSection=??? ...}	_RTL_CRITICAL_SECTION_DEBUG *
-		LockCount	-4	long
-		RecursionCount	0	long
-		OwningThread	0x00000000	void *
-		LockSemaphore	0x00006354	void *
-		SpinCount	0	unsigned long
-*/
+			pthread_mutex_lock(&sbbs->ssh_mutex);
 			if(!cryptStatusOK((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
 				/* Handle the SSH error here... */
-				lprintf(LOG_WARNING,"%s !ERROR %d sending on Cryptlib session", node, err);
+				lprintf(ssh_errors++ ? LOG_DEBUG : LOG_WARNING,"%s SSH ERROR %d sending on Cryptlib session", node, err);
 				sbbs->online=FALSE;
 				i=buftop-bufbot;	// Pretend we sent it all
 			}
 			else {
 				if(!cryptStatusOK((err=cryptFlushData(sbbs->ssh_session)))) {
-					lprintf(LOG_WARNING,"%s !ERROR %d flushing Cryptlib session", node, err);
+					lprintf(ssh_errors++ ? LOG_DEBUG : LOG_WARNING,"%s SSH ERROR %d flushing Cryptlib session", node, err);
 					sbbs->online=FALSE;
 					i=buftop-bufbot;	// Pretend we sent it all
 				}
@@ -4321,117 +4321,117 @@ void sbbs_t::daily_maint(void)
 	uint			lastusernum;
 	user_t			user;
 
+	lputs(LOG_INFO, "DAILY: System maintenance begun");
 	now=time(NULL);
 
-	if(sbbs->cfg.node_num) {
-		if((i=sbbs->getnodedat(sbbs->cfg.node_num,&sbbs->thisnode,true)) != 0)
-			sbbs->errormsg(WHERE,ERR_LOCK,"node file",i);
+	if(cfg.node_num) {
+		if((i=getnodedat(cfg.node_num,&thisnode,true)) != 0)
+			errormsg(WHERE,ERR_LOCK,"node file",i);
 		else {
-			sbbs->thisnode.status=NODE_EVENT_RUNNING;
-			sbbs->putnodedat(sbbs->cfg.node_num,&sbbs->thisnode);
+			thisnode.status=NODE_EVENT_RUNNING;
+			putnodedat(cfg.node_num,&thisnode);
 		}
 	}
-	sbbs->logentry("!:","Ran system daily maintenance");
 
-	if(sbbs->cfg.user_backup_level) {
-		lputs(LOG_INFO,"Backing-up user data...");
-		SAFEPRINTF(str,"%suser/user.dat",sbbs->cfg.data_dir);
-		backup(str,sbbs->cfg.user_backup_level,FALSE);
-		SAFEPRINTF(str,"%suser/name.dat",sbbs->cfg.data_dir);
-		backup(str,sbbs->cfg.user_backup_level,FALSE);
+	if(cfg.user_backup_level) {
+		lputs(LOG_INFO,"DAILY: Backing-up user data...");
+		SAFEPRINTF(str,"%suser/user.dat",cfg.data_dir);
+		backup(str,cfg.user_backup_level,FALSE);
+		SAFEPRINTF(str,"%suser/name.dat",cfg.data_dir);
+		backup(str,cfg.user_backup_level,FALSE);
 	}
 
-	if(sbbs->cfg.mail_backup_level) {
-		lputs(LOG_INFO,"Backing-up mail data...");
-		SAFEPRINTF(str,"%smail.shd",sbbs->cfg.data_dir);
-		backup(str,sbbs->cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.sha",sbbs->cfg.data_dir);
-		backup(str,sbbs->cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.sdt",sbbs->cfg.data_dir);
-		backup(str,sbbs->cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.sda",sbbs->cfg.data_dir);
-		backup(str,sbbs->cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.sid",sbbs->cfg.data_dir);
-		backup(str,sbbs->cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.sch",sbbs->cfg.data_dir);
-		backup(str,sbbs->cfg.mail_backup_level,FALSE);
+	if(cfg.mail_backup_level) {
+		lputs(LOG_INFO,"DAILY: Backing-up mail data...");
+		SAFEPRINTF(str,"%smail.shd",cfg.data_dir);
+		backup(str,cfg.mail_backup_level,FALSE);
+		SAFEPRINTF(str,"%smail.sha",cfg.data_dir);
+		backup(str,cfg.mail_backup_level,FALSE);
+		SAFEPRINTF(str,"%smail.sdt",cfg.data_dir);
+		backup(str,cfg.mail_backup_level,FALSE);
+		SAFEPRINTF(str,"%smail.sda",cfg.data_dir);
+		backup(str,cfg.mail_backup_level,FALSE);
+		SAFEPRINTF(str,"%smail.sid",cfg.data_dir);
+		backup(str,cfg.mail_backup_level,FALSE);
+		SAFEPRINTF(str,"%smail.sch",cfg.data_dir);
+		backup(str,cfg.mail_backup_level,FALSE);
 	}
 
-	lputs(LOG_INFO,status("Checking for inactive/expired user records..."));
-	lastusernum=lastuser(&sbbs->cfg);
-	int userfile=openuserdat(&sbbs->cfg, /* for_modify: */FALSE);
+	lputs(LOG_INFO, "DAILY: Checking for inactive/expired user records...");
+	lastusernum=lastuser(&cfg);
+	int userfile=openuserdat(&cfg, /* for_modify: */FALSE);
 	for(usernum=1;usernum<=lastusernum;usernum++) {
 		SAFEPRINTF2(str,"%5u of %-5u",usernum,lastusernum);
 		status(str);
 		user.number = usernum;
-		if((i=fgetuserdat(&sbbs->cfg, &user, userfile)) != 0) {
+		if((i=fgetuserdat(&cfg, &user, userfile)) != 0) {
 			SAFEPRINTF(str,"user record %u",usernum);
-			sbbs->errormsg(WHERE, ERR_READ, str, i);
+			errormsg(WHERE, ERR_READ, str, i);
 			continue;
 		}
 
 		/***********************************************/
 		/* Fix name (name.dat and user.dat) mismatches */
 		/***********************************************/
-		username(&sbbs->cfg,user.number,uname);
+		username(&cfg,user.number,uname);
 		if(user.misc&DELETED) {
 			if(strcmp(uname,"DELETED USER"))
-				putusername(&sbbs->cfg,user.number,nulstr);
+				putusername(&cfg,user.number,nulstr);
 			continue; 
 		}
 
 		if(strcmp(user.alias,uname))
-			putusername(&sbbs->cfg,user.number,user.alias);
+			putusername(&cfg,user.number,user.alias);
 
 		if(user.number==1)
 			continue;	/* skip expiration/inactivity checks for user #1 */
 
 		if(!(user.misc&(DELETED|INACTIVE))
 			&& user.expire && (ulong)user.expire<=(ulong)now) {
-			putsmsg(&sbbs->cfg,user.number,sbbs->text[AccountHasExpired]);
-			SAFEPRINTF2(str,"%s #%u Expired",user.alias,user.number);
-			sbbs->logentry("!%",str);
-			if(sbbs->cfg.level_misc[user.level]&LEVEL_EXPTOVAL
-				&& sbbs->cfg.level_expireto[user.level]<10) {
-				user.flags1=sbbs->cfg.val_flags1[sbbs->cfg.level_expireto[user.level]];
-				user.flags2=sbbs->cfg.val_flags2[sbbs->cfg.level_expireto[user.level]];
-				user.flags3=sbbs->cfg.val_flags3[sbbs->cfg.level_expireto[user.level]];
-				user.flags4=sbbs->cfg.val_flags4[sbbs->cfg.level_expireto[user.level]];
-				user.exempt=sbbs->cfg.val_exempt[sbbs->cfg.level_expireto[user.level]];
-				user.rest=sbbs->cfg.val_rest[sbbs->cfg.level_expireto[user.level]];
-				if(sbbs->cfg.val_expire[sbbs->cfg.level_expireto[user.level]])
+			putsmsg(&cfg,user.number,text[AccountHasExpired]);
+			SAFEPRINTF2(str,"DAILY: %s #%u Expired",user.alias,user.number);
+			lputs(LOG_NOTICE, str);
+			if(cfg.level_misc[user.level]&LEVEL_EXPTOVAL
+				&& cfg.level_expireto[user.level]<10) {
+				user.flags1=cfg.val_flags1[cfg.level_expireto[user.level]];
+				user.flags2=cfg.val_flags2[cfg.level_expireto[user.level]];
+				user.flags3=cfg.val_flags3[cfg.level_expireto[user.level]];
+				user.flags4=cfg.val_flags4[cfg.level_expireto[user.level]];
+				user.exempt=cfg.val_exempt[cfg.level_expireto[user.level]];
+				user.rest=cfg.val_rest[cfg.level_expireto[user.level]];
+				if(cfg.val_expire[cfg.level_expireto[user.level]])
 					user.expire=(time32_t)now
-						+(sbbs->cfg.val_expire[sbbs->cfg.level_expireto[user.level]]*24*60*60);
+						+(cfg.val_expire[cfg.level_expireto[user.level]]*24*60*60);
 				else
 					user.expire=0;
-				user.level=sbbs->cfg.val_level[sbbs->cfg.level_expireto[user.level]]; 
+				user.level=cfg.val_level[cfg.level_expireto[user.level]]; 
 			}
 			else {
-				if(sbbs->cfg.level_misc[user.level]&LEVEL_EXPTOLVL)
-					user.level=sbbs->cfg.level_expireto[user.level];
+				if(cfg.level_misc[user.level]&LEVEL_EXPTOLVL)
+					user.level=cfg.level_expireto[user.level];
 				else
-					user.level=sbbs->cfg.expired_level;
-				user.flags1&=~sbbs->cfg.expired_flags1; /* expired status */
-				user.flags2&=~sbbs->cfg.expired_flags2; /* expired status */
-				user.flags3&=~sbbs->cfg.expired_flags3; /* expired status */
-				user.flags4&=~sbbs->cfg.expired_flags4; /* expired status */
-				user.exempt&=~sbbs->cfg.expired_exempt;
-				user.rest|=sbbs->cfg.expired_rest;
+					user.level=cfg.expired_level;
+				user.flags1&=~cfg.expired_flags1; /* expired status */
+				user.flags2&=~cfg.expired_flags2; /* expired status */
+				user.flags3&=~cfg.expired_flags3; /* expired status */
+				user.flags4&=~cfg.expired_flags4; /* expired status */
+				user.exempt&=~cfg.expired_exempt;
+				user.rest|=cfg.expired_rest;
 				user.expire=0; 
 			}
-			putuserrec(&sbbs->cfg,user.number,U_LEVEL,2,ultoa(user.level,str,10));
-			putuserrec(&sbbs->cfg,user.number,U_FLAGS1,8,ultoa(user.flags1,str,16));
-			putuserrec(&sbbs->cfg,user.number,U_FLAGS2,8,ultoa(user.flags2,str,16));
-			putuserrec(&sbbs->cfg,user.number,U_FLAGS3,8,ultoa(user.flags3,str,16));
-			putuserrec(&sbbs->cfg,user.number,U_FLAGS4,8,ultoa(user.flags4,str,16));
-			putuserrec(&sbbs->cfg,user.number,U_EXPIRE,8,ultoa((ulong)user.expire,str,16));
-			putuserrec(&sbbs->cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,str,16));
-			putuserrec(&sbbs->cfg,user.number,U_REST,8,ultoa(user.rest,str,16));
-			if(sbbs->cfg.expire_mod[0]) {
-				sbbs->useron=user;
-				sbbs->online=ON_LOCAL;
-				sbbs->exec_bin(sbbs->cfg.expire_mod,&sbbs->main_csi);
-				sbbs->online=FALSE; 
+			putuserrec(&cfg,user.number,U_LEVEL,2,ultoa(user.level,str,10));
+			putuserrec(&cfg,user.number,U_FLAGS1,8,ultoa(user.flags1,str,16));
+			putuserrec(&cfg,user.number,U_FLAGS2,8,ultoa(user.flags2,str,16));
+			putuserrec(&cfg,user.number,U_FLAGS3,8,ultoa(user.flags3,str,16));
+			putuserrec(&cfg,user.number,U_FLAGS4,8,ultoa(user.flags4,str,16));
+			putuserrec(&cfg,user.number,U_EXPIRE,8,ultoa((ulong)user.expire,str,16));
+			putuserrec(&cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,str,16));
+			putuserrec(&cfg,user.number,U_REST,8,ultoa(user.rest,str,16));
+			if(cfg.expire_mod[0]) {
+				useron=user;
+				online=ON_LOCAL;
+				exec_bin(cfg.expire_mod,&main_csi);
+				online=FALSE; 
 			}
 		}
 
@@ -4440,41 +4440,41 @@ void sbbs_t::daily_maint(void)
 		/***********************************************************/
 		if(!(user.exempt&FLAG('P'))     /* Not a permanent account */
 			&& !(user.misc&(DELETED|INACTIVE))	 /* alive */
-			&& (sbbs->cfg.sys_autodel && (now-user.laston)/(long)(24L*60L*60L)
-			> sbbs->cfg.sys_autodel)) {			/* Inactive too long */
-			SAFEPRINTF2(str,"Auto-Deleted %s #%u",user.alias,user.number);
-			sbbs->logentry("!*",str);
-			sbbs->delallmail(user.number, MAIL_ANY);
-			putusername(&sbbs->cfg,user.number,nulstr);
-			putuserrec(&sbbs->cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16)); 
+			&& (cfg.sys_autodel && (now-user.laston)/(long)(24L*60L*60L)
+			> cfg.sys_autodel)) {			/* Inactive too long */
+			SAFEPRINTF3(str,"DAILY: Auto-Deleted %s #%u due to inactivity > %u days"
+				,user.alias, user.number, cfg.sys_autodel);
+			lputs(LOG_NOTICE, str);
+			delallmail(user.number, MAIL_ANY);
+			putusername(&cfg,user.number,nulstr);
+			putuserrec(&cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16)); 
 		}
 	}
 	close(userfile);
 
-	lputs(LOG_INFO,status("Purging deleted/expired e-mail"));
-	SAFEPRINTF(sbbs->smb.file,"%smail",sbbs->cfg.data_dir);
-	sbbs->smb.retry_time=sbbs->cfg.smb_retry_time;
-	sbbs->smb.subnum=INVALID_SUB;
-	if((i=smb_open(&sbbs->smb))!=0)
-		sbbs->errormsg(WHERE,ERR_OPEN,sbbs->smb.file,i,sbbs->smb.last_error);
+	lputs(LOG_INFO,"DAILY: Purging deleted/expired e-mail");
+	SAFEPRINTF(smb.file,"%smail",cfg.data_dir);
+	smb.retry_time=cfg.smb_retry_time;
+	smb.subnum=INVALID_SUB;
+	if((i=smb_open(&smb))!=0)
+		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 	else {
-		if(filelength(fileno(sbbs->smb.shd_fp))>0) {
-			if((i=smb_locksmbhdr(&sbbs->smb))!=0)
-				sbbs->errormsg(WHERE,ERR_LOCK,sbbs->smb.file,i,sbbs->smb.last_error);
+		if(filelength(fileno(smb.shd_fp))>0) {
+			if((i=smb_locksmbhdr(&smb))!=0)
+				errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
 			else
-				sbbs->delmail(0,MAIL_ALL);
+				delmail(0,MAIL_ALL);
 		}
-		smb_close(&sbbs->smb); 
+		smb_close(&smb); 
 	}
 
-	sbbs->sys_status&=~SS_DAILY;
-	if(sbbs->cfg.sys_daily[0]) {
-//			status("Running system daily event");
-		sbbs->logentry("!:","Ran system daily event");
-		sbbs->external(sbbs->cmdstr(sbbs->cfg.sys_daily,nulstr,nulstr,NULL)
-			,EX_OFFLINE); 
+	sys_status&=~SS_DAILY;
+	if(cfg.sys_daily[0]) {
+		lputs(LOG_INFO, "DAILY: Running system event");
+		external(cmdstr(cfg.sys_daily,nulstr,nulstr,NULL), EX_OFFLINE); 
 	}
 	status(STATUS_WFC);
+	lputs(LOG_INFO, "DAILY: System maintenance ended");
 }
 
 const char* DLLCALL js_ver(void)
@@ -5157,7 +5157,8 @@ NO_SSH:
 		}
 
 		sbbs->client_socket=client_socket;	// required for output to the user
-		sbbs->online=ON_REMOTE;
+		if(!ssh)
+			sbbs->online=ON_REMOTE;
 
 		login_attempt_t attempted;
 		ulong banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */NULL, startup->login_attempt, &attempted);
@@ -5192,6 +5193,10 @@ NO_SSH:
 				close_socket(client_socket);
 				continue;
 			}
+			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d", client_socket, sbbs->ssh_session);
+			if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_CONNECTTIMEOUT, startup->ssh_connect_timeout)))
+				lprintf(LOG_ERR, "%04d SSH Error %d setting CRYPT_OPTION_NET_CONNECTTIMEOUT", client_socket, i);
+
 			if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_PRIVATEKEY, ssh_context))) {
 				lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d setting private key",client_socket, i);
 				cryptDestroySession(sbbs->ssh_session);
@@ -5206,10 +5211,12 @@ NO_SSH:
 			}
 			for(ssh_failed=0; ssh_failed < 2; ssh_failed++) {
 				/* Accept any credentials */
+				lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_AUTHRESPONSE", client_socket);
 				if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_AUTHRESPONSE, 1))) {
 					ssh_failed=1;
 					break;
 				}
+				lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket);
 				if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_ACTIVE, 1))) {
 					if(i != CRYPT_ENVELOPE_RESOURCE) {
 						ssh_failed=2;
@@ -5236,6 +5243,9 @@ NO_SSH:
 						case CRYPT_ERROR_WRITE:
 							lprintf(LOG_WARNING,"%04d SSH Write failure", client_socket);
 							break;
+						case CRYPT_ERROR_TIMEOUT:
+							lprintf(LOG_WARNING,"%04d SSH Connect timeout", client_socket);
+							break;
 						default:
 							lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d setting session active",client_socket, i);
 							break;
@@ -5251,6 +5261,7 @@ NO_SSH:
 				lprintf(LOG_WARNING,"Node %d !ERROR %d receiving on Cryptlib session", sbbs->cfg.node_num, err);
 				i=0;
 			}
+			sbbs->online=ON_REMOTE;
 		}
 #endif
 
@@ -5352,14 +5363,14 @@ NO_SSH:
 
         node_socket[i-1]=client_socket;
 
-		sbbs_t* new_node = new sbbs_t(i, &client_addr, client_addr_len, host_name
+		sbbs_t* new_node = new sbbs_t(/* node_num: */i, &client_addr, client_addr_len, host_name
         	,client_socket
 			,&scfg, text, &client);
 
 		new_node->client=client;
 #ifdef USE_CRYPTLIB
-		if(ssh) {
-			new_node->ssh_session=sbbs->ssh_session;
+		if(ssh) {	
+			new_node->ssh_session=sbbs->ssh_session;	// This is done again later, after NO_PASSTHRU: Why?
 			new_node->ssh_mode=true;
 		}
 #endif
@@ -5435,7 +5446,8 @@ NO_SSH:
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;
 			}
-			lprintf(LOG_INFO,"Listening passthru socket listening on port %u",htons(tmp_addr.sin_port));
+			lprintf(LOG_INFO,"Node %d SSH passthru socket listening on port %u"
+				,new_node->cfg.node_num, htons(tmp_addr.sin_port));
 
     		new_node->passthru_socket = open_socket(SOCK_STREAM, "passthru");
 
@@ -5492,7 +5504,7 @@ NO_PASSTHRU:
 			while(sbbs->output_thread_running && RingBufFull(&sbbs->outbuf))
 				SLEEP(1);
 			if(!cryptStatusOK(err=cryptPopData(sbbs->ssh_session, str, sizeof(str), &i))) {
-				lprintf(LOG_WARNING,"Node %d !ERROR %d receiving on Cryptlib session", sbbs->cfg.node_num, err);
+				lprintf(LOG_WARNING,"Node %d SSH ERROR %d receiving on Cryptlib session", new_node->cfg.node_num, err);
 				i=0;
 			}
 			sbbs->ssh_mode=false;

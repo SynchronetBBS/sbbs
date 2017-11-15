@@ -1550,6 +1550,9 @@ ushort sbbs_t::chmsgattr(smbmsg_t msg)
 			case 'P':
 				msg.hdr.attr^=MSG_PRIVATE;
 				break;
+			case 'S':
+				msg.hdr.attr^=MSG_SPAM;
+				break;
 			case 'R':
 				msg.hdr.attr^=MSG_READ;
 				break;

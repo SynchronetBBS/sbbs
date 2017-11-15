@@ -92,6 +92,7 @@ typedef struct {
 	WORD	telnet_port;
 	WORD	rlogin_port;
 	WORD	ssh_port;
+	WORD	ssh_connect_timeout;
 	WORD	outbuf_highwater_mark;	/* output block size control */
 	WORD	outbuf_drain_timeout;
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */

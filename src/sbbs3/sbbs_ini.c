@@ -335,6 +335,8 @@ void sbbs_read_ini(
 
 		bbs->ssh_port
 			=iniGetShortInt(list,section,"SSHPort",22);
+		bbs->ssh_connect_timeout
+			=iniGetShortInt(list,section,"SSHConnectTimeout",10);
 		iniFreeStringList(bbs->ssh_interfaces);
 		bbs->ssh_interfaces
 			=iniGetStringList(list,section,"SSHInterface",",",global_interfaces);
@@ -800,6 +802,8 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetShortInt(lp,section,"SSHPort",bbs->ssh_port,&style))
 			break;
+		if(!iniSetShortInt(lp,section,"SSHConnectTimeout",bbs->ssh_connect_timeout,&style))
+			break;
 
 		if(!iniSetShortInt(lp,section,"FirstNode",bbs->first_node,&style))
 			break;
@@ -1056,12 +1060,12 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetString(lp,section,"OutboundSound",mail->outbound_sound,&style))
 			break;
-
+#if 0
 		if(!iniSetStringLiteral(lp,section,"NewMailNotice",mail->newmail_notice,&style))
 			break;
 		if(!iniSetStringLiteral(lp,section,"ForwardNotice",mail->forward_notice,&style))
 			break;
-
+#endif
 		/* JavaScript Operating Parameters */
 		if(!sbbs_set_js_settings(lp,section,&mail->js,&global->js,&style))
 			break;

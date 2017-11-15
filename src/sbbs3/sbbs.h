@@ -784,6 +784,7 @@ public:
 	int		getnodetopage(int all, int telegram);
 
 	/* main.cpp */
+	int		lputs(int level, const char* str);
 	void	printstatslog(uint node);
 	ulong	logonstats(void);
 	void	logoffstats(void);
@@ -1006,7 +1007,7 @@ extern "C" {
 	DLLEXPORT long		DLLCALL getfiles(scfg_t* cfg, uint dirnum);
 
 	/* getmail.c */
-	DLLEXPORT int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, BOOL spam_only);
+	DLLEXPORT int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr);
 	DLLEXPORT mail_t *	DLLCALL loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 										,int which, long mode);
 	DLLEXPORT void		DLLCALL freemail(mail_t* mail);
