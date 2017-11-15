@@ -1,6 +1,5 @@
-/* node.c */
-
 /* Synchronet BBS Node control program */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -534,28 +533,28 @@ int main(int argc, char **argv)
 				onoff=2;
 			else if(!strnicmp(argv[i],"STATUS=",7)) {
 				mode=MODE_STATUS;
-				value=atoi(argv[i]+7); }
+				value=strtoul(argv[i]+7, NULL, 0); }
 			else if(!strnicmp(argv[i],"ERRORS=",7)) {
 				mode=MODE_ERRORS;
-				value=atoi(argv[i]+7); }
+				value=strtoul(argv[i]+7, NULL, 0); }
 			else if(!strnicmp(argv[i],"USERON=",7)) {
 				mode=MODE_USERON;
-				value=atoi(argv[i]+7); }
+				value=strtoul(argv[i]+7, NULL, 0); }
 			else if(!strnicmp(argv[i],"ACTION=",7)) {
 				mode=MODE_ACTION;
-				value=atoi(argv[i]+7); }
+				value=strtoul(argv[i]+7, NULL, 0); }
 			else if(!strnicmp(argv[i],"CONN=",5)) {
 				mode=MODE_CONN;
-				value=atoi(argv[i]+5); }
+				value=strtoul(argv[i]+5, NULL, 0); }
 			else if(!strnicmp(argv[i],"MISC=",5)) {
 				mode=MODE_MISC;
-				value=atoi(argv[i]+5); }
+				value=strtoul(argv[i]+5, NULL, 0); }
 			else if(!strnicmp(argv[i],"AUX=",4)) {
 				mode=MODE_AUX;
-				value=atoi(argv[i]+4); }
+				value=strtoul(argv[i]+4, NULL, 0); }
 			else if(!strnicmp(argv[i],"EXTAUX=",7)) {
 				mode=MODE_EXTAUX;
-				value=atoi(argv[i]+7); }
+				value=strtoul(argv[i]+7, NULL, 0); }
 			}
 		if(mode!=MODE_LIST)
 			modify=1;
@@ -604,16 +603,16 @@ int main(int argc, char **argv)
 								node.action=(uchar)value;
 								break;
 							case MODE_USERON:
-								node.useron=(uchar)value;
+								node.useron=(uint16_t)value;
 								break;
 							case MODE_MISC:
-								node.misc=(uchar)value;
+								node.misc=(uint16_t)value;
 								break;
 							case MODE_CONN:
-								node.connection=(uchar)value;
+								node.connection=(uint16_t)value;
 								break;
 							case MODE_AUX:
-								node.aux=(uchar)value;
+								node.aux=(uint16_t)value;
 								break;
 							case MODE_EXTAUX:
 								node.extaux=value;
