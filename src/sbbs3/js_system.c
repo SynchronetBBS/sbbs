@@ -1,6 +1,5 @@
-/* js_system.c */
-
 /* Synchronet JavaScript "system" Object */
+// vi: tabstop=4
 
 /* $Id$ */
 
