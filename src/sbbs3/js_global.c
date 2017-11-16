@@ -3175,6 +3175,32 @@ js_fdate(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_fcdate(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		p;
+	time_t		fd;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+		return(JS_TRUE);
+
+	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
+	HANDLE_PENDING(cx);
+	if(p==NULL) 
+		return(JS_TRUE);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	fd=fcdate(p);
+	free(p);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist,DOUBLE_TO_JSVAL((double)fd));
+	return(JS_TRUE);
+}
+
+static JSBool
 js_utime(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -4142,6 +4168,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"file_date",		js_fdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
 	,JSDOCSTR("get a file's last modified date/time (in time_t format)")
 	,310
+	},
+	{"file_cdate",		js_fcdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
+	,JSDOCSTR("get a file's creation date/time (in time_t format)")
+	,317
 	},
 	{"file_size",		js_flength,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
 	,JSDOCSTR("get a file's length (in bytes)")
