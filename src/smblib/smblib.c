@@ -1865,6 +1865,7 @@ int SMBCALL smb_create(smb_t* smb)
 {
     char        str[MAX_PATH+1];
 	smbhdr_t	hdr;
+	FILE*		fp;
 
 	if(smb->shd_fp==NULL || smb->sdt_fp==NULL || smb->sid_fp==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s msgbase not open", __FUNCTION__);
@@ -1891,6 +1892,11 @@ int SMBCALL smb_create(smb_t* smb)
 	rewind(smb->sid_fp);
 	chsize(fileno(smb->sid_fp),0L);
 
+	SAFEPRINTF(str,"%s.ini",smb->file);
+	if((fp = fopen(str, "w")) != NULL) {
+		fprintf(fp, "Created = 0x%lx\n", (long)time(NULL));
+		fclose(fp);
+	}
 	SAFEPRINTF(str,"%s.sda",smb->file);
 	remove(str);						/* if it exists, delete it */
 	SAFEPRINTF(str,"%s.sha",smb->file);
