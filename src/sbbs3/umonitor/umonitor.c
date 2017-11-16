@@ -795,6 +795,7 @@ int main(int argc, char** argv)  {
 	scfg_t	cfg;
 	int		done;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
+	time_t	last_semfile_check = time(NULL);
 
 	/******************/
 	/* Ini file stuff */
@@ -994,11 +995,26 @@ int main(int argc, char** argv)  {
 
 		drawstats(&cfg, main_dflt, &node, &main_dflt, &main_bar);
 
+		if(time(NULL) - last_semfile_check > bbs_startup.sem_chk_freq * 2) {
+			SAFEPRINTF(str, "%ssyspage.*", cfg.ctrl_dir);
+			if(fexistcase(str)) {
+				putch(BEL);
+				char msg[128];
+				SAFEPRINTF(msg, "Node %s is paging you to chat", getfext(str) + 1);
+				uifc.pop(msg);
+				SLEEP(1500);
+				uifc.pop(NULL);
+			}
+			last_semfile_check = time(NULL);
+		}
+
 		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN,0,5,70,&main_dflt,&main_bar
 			,title,mopt);
 
 		if(j == -2)
 			continue;
+
+		last_semfile_check = time(NULL);
 
 		if(j==-7) {	/* CTRL-E */
 			sprintf(str,"%s/error.log",cfg.data_dir);
@@ -1100,7 +1116,7 @@ int main(int argc, char** argv)  {
 							"\n"
 							"\nIf you want to exit the Synchronet UNIX monitor utility,"
 							"\nselect `Yes`. Otherwise, select `No` or hit ~ ESC ~.";
-			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit Synchronet Monitor",opt);
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Exit Synchronet Monitor",opt);
 			if(!i)
 				bail(0);
 			continue;
