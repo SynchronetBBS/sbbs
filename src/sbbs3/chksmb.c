@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 				,lzhmsg,extinfo=FALSE,msgerr;
 	uint16_t	xlat;
 	uint32_t	m;
-	ulong		l,n,length,size,total=0,orphan,deleted,headers
+	ulong		l,n,size,total=0,orphan,deleted,headers
 				,*offset,*number,xlaterr
 				,delidx
 				,delhdrblocks,deldatblocks,hdrerr,lockerr,hdrnumerr,hdrlenerr
@@ -153,6 +153,8 @@ int main(int argc, char **argv)
 				,totalmsgs=0,totallzhmsgs=0,totaldelmsgs=0,totalmsgbytes=0L
 				,lzhblocks,lzhsaved
 				,ctrl_chars;
+	off_t		shd_length;
+	ulong		oldest=0;
 	ulong		msgids = 0;
 	smb_t		smb;
 	idxrec_t	idx;
@@ -240,12 +242,25 @@ int main(int argc, char **argv)
 		continue; 
 	}
 
-	length=filelength(fileno(smb.shd_fp));
-	if(length<sizeof(smbhdr_t)) {
+	/* File size sanity checks here: */
+
+	shd_length=filelength(fileno(smb.shd_fp));
+	if(shd_length < sizeof(smbhdr_t)) {
 		printf("Empty\n");
 		smb_close(&smb);
 		continue; 
 	}
+
+	if(shd_length < smb.status.header_offset) {
+		printf("!Status header corruption (header offset: %lu)\n", (ulong)smb.status.header_offset);
+		smb_close(&smb);
+		continue;
+	}
+
+	off_t shd_hdrs = shd_length - smb.status.header_offset;
+
+	if(shd_hdrs && (shd_hdrs%SHD_BLOCK_LEN) != 0)
+		printf("!Size of msg header records in SHD file incorrect: %lu\n", shd_hdrs);
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
@@ -254,27 +269,41 @@ int main(int argc, char **argv)
 		continue; 
 	}
 
-	if((length/SHD_BLOCK_LEN)*sizeof(ulong)) {
-		if((number=(ulong *)malloc(((length/SHD_BLOCK_LEN)+2)*sizeof(ulong)))
+	if((shd_hdrs/SHD_BLOCK_LEN)*sizeof(ulong)) {
+		if((number=malloc(((shd_hdrs/SHD_BLOCK_LEN)+2)*sizeof(ulong)))
 			==NULL) {
 			printf("Error allocating %lu bytes of memory\n"
-				,(length/SHD_BLOCK_LEN)*sizeof(ulong));
+				,(shd_hdrs/SHD_BLOCK_LEN)*sizeof(ulong));
 			return(++errors); 
 		} 
 	}
 	else
 		number=NULL;
 
+	off_t sdt_length = filelength(fileno(smb.sdt_fp));
+	if(sdt_length && (sdt_length % SDT_BLOCK_LEN) != 0)
+		printf("!Size of SDT file (%lu) not evenly divisble by block length (%u)\n"
+			,sdt_length, SDT_BLOCK_LEN);
+
 	if(chkalloc && !(smb.status.attr&SMB_HYPERALLOC)) {
 		if((i=smb_open_ha(&smb))!=0) {
 			printf("smb_open_ha returned %d: %s\n",i,smb.last_error);
 			return(++errors); 
 		}
+		if(filelength(fileno(smb.shd_fp)) != smb.status.header_offset
+			+ (filelength(fileno(smb.sha_fp)) * SHD_BLOCK_LEN))
+			printf("!Size of SHA file (%lu) does not match SHD file (%lu)\n"
+				,filelength(fileno(smb.sha_fp))
+				,filelength(fileno(smb.shd_fp)));
 
 		if((i=smb_open_da(&smb))!=0) {
 			printf("smb_open_da returned %d: %s\n",i,smb.last_error);
 			return(++errors); 
 		} 
+		if((filelength(fileno(smb.sda_fp)))/sizeof(uint16_t) != filelength(fileno(smb.sdt_fp))/SDT_BLOCK_LEN)
+			printf("!Size of SDA file (%lu) does not match SDT file (%lu)\n"
+				,filelength(fileno(smb.sda_fp))
+				,filelength(fileno(smb.sdt_fp)));
 	}
 
 	headers=deleted=orphan=dupenumhdr=attr=zeronum=timeerr=lockerr=hdrerr=0;
@@ -291,9 +320,9 @@ int main(int argc, char **argv)
 	msgids = 0;
 	ctrl_chars = 0;
 
-	for(l=smb.status.header_offset;l<length;l+=size) {
+	for(l=smb.status.header_offset;l<shd_length;l+=size) {
 		size=SHD_BLOCK_LEN;
-		fprintf(stderr,"\r%2lu%%  ",(long)(100.0/((float)length/l)));
+		fprintf(stderr,"\r%2lu%%  ",(long)(100.0/((float)shd_length/l)));
 		fflush(stderr);
 		memset(&msg,0,sizeof(msg));
 		msg.idx.offset=l;
@@ -357,6 +386,10 @@ int main(int argc, char **argv)
 				printf("MSGERR: Header missing Message-ID\n");
 			msgids++;
 		}
+
+		long age = now - msg.hdr.when_imported.time;
+		if(!(msg.hdr.attr&MSG_DELETE) && age  > oldest)
+			oldest = age;
 
 		/* Test reading of the message text (body and tails) */
 		if(msg.hdr.attr&MSG_DELETE)
@@ -681,12 +714,12 @@ int main(int argc, char **argv)
 
 		fprintf(stderr,"\nChecking %s Data Blocks\n\n",smb.file);
 
-		length=filelength(fileno(smb.sda_fp));
+		off_t sda_length=filelength(fileno(smb.sda_fp));
 
 		fseek(smb.sda_fp,0L,SEEK_SET);
-		for(l=0;l<length;l+=2) {
+		for(l=0;l<sda_length;l+=2) {
 			if((l%10)==0)
-				fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)length/l)) : 0);
+				fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)sda_length/l)) : 0);
 			/* TODO: LE Only */
 			i=0;
 			if(!fread(&i,2,1,smb.sda_fp))
@@ -789,12 +822,12 @@ int main(int argc, char **argv)
 
 		fprintf(stderr,"\nChecking %s Hashes\n\n",smb.file);
 
-		length=filelength(fileno(smb.hash_fp));
+		off_t hash_length=filelength(fileno(smb.hash_fp));
 
 		fseek(smb.hash_fp,0L,SEEK_SET);
-		for(l=0;l<length;l+=sizeof(hash_t)) {
+		for(l=0;l<hash_length;l+=sizeof(hash_t)) {
 			if(((l/sizeof(hash_t))%10)==0)
-				fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)length/l)) : 0);
+				fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)hash_length/l)) : 0);
 			if(!fread(&hash,sizeof(hash),1,smb.hash_fp))
 				break;
 			if(hash.number==0 || hash.number > smb.status.last_msg)
@@ -857,6 +890,10 @@ int main(int argc, char **argv)
 		,"Deleted Data Blocks"
 		,deldatblocks,ultoac(deldatblocks*SDT_BLOCK_LEN,str));
 	packable+=(deldatblocks*SDT_BLOCK_LEN);
+	if(oldest)
+		printf("%-35.35s ( ): %lu days (%u max)\n"
+			,"Oldest Message (import)"
+			,oldest/(24*60*60), smb.status.max_age);
 
 	if(orphan)
 		printf("%-35.35s (!): %lu\n"
