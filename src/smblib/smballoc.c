@@ -210,7 +210,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 		}
 	}
 	fflush(smb->sda_fp);
-	if(filelength(fileno(smb->sdt_fp)) / SDT_BLOCK_LEN > filelength(fileno(smb->sda_fp)) /  sizeof(uint16_t))
+	if(filelength(fileno(smb->sdt_fp)) / SDT_BLOCK_LEN > (long)(filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)))
 		chsize(fileno(smb->sdt_fp), (filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)) * SDT_BLOCK_LEN);
 	if(da_opened)
 		smb_close_da(smb);
@@ -418,7 +418,7 @@ long SMBCALL smb_allochdr(smb_t* smb, ulong length)
 }
 
 /****************************************************************************/
-/* Allocates space for index, but doesn't search for unused blocks          */
+/* Allocates space for header, but doesn't search for unused blocks          */
 /* Returns negative value on error 											*/
 /****************************************************************************/
 long SMBCALL smb_fallochdr(smb_t* smb, ulong length)
