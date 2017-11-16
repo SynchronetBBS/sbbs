@@ -1,4 +1,5 @@
 /* Curses implementation of UIFC (user interface) library based on uifc.c */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -2554,44 +2555,47 @@ char *utimestr(time_t *intime)
 /****************************************************************************/
 void upop(char *str)
 {
-	static char sav[26*3*2];
-	char buf[26*3*2];
+	static char sav[80*3*2];
+	char buf[80*3*2];
 	int i,j,k;
+	static int width;
 
-	if(!str) {
-		/* puttext(28,12,53,14,sav); */
-		puttext((api->scrn_width-26+1)/2+1,(api->scrn_len-3+1)/2+1
-			,(api->scrn_width+26-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
+	if(str == NULL) {
+		puttext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
+			,(api->scrn_width+width-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
 		return;
 	}
-	/* gettext(28,12,53,14,sav); */
-	gettext((api->scrn_width-26+1)/2+1,(api->scrn_len-3+1)/2+1
-			,(api->scrn_width+26-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
-	memset(buf,' ',25*3*2);
-	for(i=1;i<26*3*2;i+=2)
+
+	width = strlen(str);
+	if(!width)
+		return;
+	width += 7;
+	gettext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
+			,(api->scrn_width+width-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
+	memset(buf,' ',(width-1)*3*2);
+	for(i=1;i<width*3*2;i+=2)
 		buf[i]=(api->hclr|(api->bclr<<4));
 	buf[0]=api->chars->popup_top_left;
-	for(i=2;i<25*2;i+=2)
+	for(i=2;i<(width-1)*2;i+=2)
 		buf[i]=api->chars->popup_top;
 	buf[i]=api->chars->popup_top_right; i+=2;
 	buf[i]=api->chars->popup_left; i+=2;
 	i+=2;
 	k=strlen(str);
-	i+=(((23-k)/2)*2);
+	i+=((((width-3)-k)/2)*2);
 	for(j=0;j<k;j++,i+=2) {
 		buf[i]=str[j];
 		buf[i+1]|=BLINK;
 	}
-	i=((25*2)+1)*2;
+	i=(((width-1)*2)+1)*2;
 	buf[i]=api->chars->popup_right; i+=2;
 	buf[i]=api->chars->popup_bottom_left; i+=2;
-	for(;i<((26*3)-1)*2;i+=2)
+	for(;i<(((width-1)*3)-1)*2;i+=2)
 		buf[i]=api->chars->popup_bottom;
 	buf[i]=api->chars->popup_bottom_right;
 
-	/* puttext(28,12,53,14,buf); */
-	puttext((api->scrn_width-26+1)/2+1,(api->scrn_len-3+1)/2+1
-			,(api->scrn_width+26-1)/2+1,(api->scrn_len+3-1)/2+1,buf);
+	puttext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
+			,(api->scrn_width+width-1)/2+1,(api->scrn_len+3-1)/2+1,buf);
 }
 
 /****************************************************************************/
