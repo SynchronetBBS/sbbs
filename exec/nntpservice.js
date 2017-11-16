@@ -329,7 +329,50 @@ while(client.socket.is_connected && !quit) {
 			break;
 
 		case "NEWGROUPS":
-			writeln("231 list of new newsgroups follows");
+			var date = cmd[1];
+			var time = cmd[2];
+			if(js.global.file_cdate == undefined) {
+				writeln("500 Command Unsupported");
+				break;
+			}
+			if(!date || !time) {
+				writeln("411 no date or time specified");
+				break;
+			}	
+			var zone = cmd[3];
+			var year, month, day, hour, minute, second;
+			if(date.length == 6) {
+				year = 2000 + parseInt(date.substr(0, 2));
+				month = parseInt(date.substr(2, 2)) - 1;
+				day = parseInt(date.substr(4, 2));
+			} else {
+				year = parseInt(date.substr(0, 4));
+				month = parseInt(date.substr(4, 2)) - 1;
+				day = parseInt(date.substr(6, 2));
+			}
+			var compare = new Date(Date.UTC(year, month, day,
+											/* hour: */parseInt(time.substr(0, 2)),
+											/* minute: */parseInt(time.substr(2, 2)),
+											/* seconds: */parseInt(time.substr(4, 2))
+											));
+			writeln("231 list of new newsgroups since " + compare.toISOString() + " follows");
+			for(g in msg_area.grp_list) {
+				for(s in msg_area.grp_list[g].sub_list) {
+					msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
+					if(file_cdate(msgbase.file + ".shd") < compare.getTime()/1000)
+						continue;
+					if(msgbase.open!=undefined && msgbase.open()==false)
+						continue;
+					writeln(format("%s %u %u %s"
+						,msg_area.grp_list[g].sub_list[s].newsgroup
+						,msgbase.last_msg
+						,msgbase.first_msg
+						,msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n"
+						));
+					msgbase.close();
+				}
+			}
+
 			writeln(".");	// end of list
 			break;
 
