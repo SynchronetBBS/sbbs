@@ -1,6 +1,5 @@
-/* dirwrap.c */
-
 /* Directory-related system-call wrappers */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -388,6 +387,22 @@ void DLLCALL rewinddir(DIR* dir)
 	dir->handle=_findfirst(dir->filespec,&dir->finddata);
 }
 #endif /* defined(_MSC_VER) */
+
+/****************************************************************************/
+/* Returns the creation time of the file 'filename' in time_t format		*/
+/****************************************************************************/
+time_t DLLCALL fcdate(const char* filename)
+{
+	struct stat st;
+
+	if(access(filename, 0) < 0)
+		return -1;
+
+	if(stat(filename, &st) != 0)
+		return -1;
+
+	return st.st_ctime;
+}
 
 /****************************************************************************/
 /* Returns the time/date of the file in 'filename' in time_t (unix) format  */
