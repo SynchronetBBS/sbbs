@@ -20,6 +20,8 @@
 
 load("mailproc_util.js");
 
+log("Hello from mailproc_example.js");
+
 // Set to false at any time to indicate a processing failure
 var success=true;
 
@@ -27,21 +29,39 @@ var success=true;
 // If there are any processing errors (e.g. filtered context, blocked sender),
 // you can reject the message by simply writing some text to 'errfile'.
 var errfile = new File(processing_error_filename);
-if(!errfile.open("w"))
+if(!errfile.open("w")) {
+	alert("Failed to open " + processing_error_filename);
 	exit();
+}
+
+// This block opens a log debug output file, which is a bit unnecessary
+// in a JS mailproc since you could/should just use the log() function
+// directly, but for native mailprocs, it could be handy for debugging
+var logfile = new File(log_text_filename);
+if(!logfile.open("w")) {
+	alert("Failed to open " + log_text_filename);
+	exit();
+}
+logfile.writeln("1");
+logfile.writeln("2");
+logfile.writeln("3");
 
 // These lines read the recipient list into a new 'recipient' object array.
 var rcptlst = new File(recipient_list_filename);
-if(!rcptlst.open("r"))
+if(!rcptlst.open("r")) {
+	alert("Failed to open " + recipient_list_filename);
 	exit();
+}
 var recipient=rcptlst.iniGetAllObjects("number");
 // At this point we can access the list of recipients very easily
 // using the 'recipient' object array.
 
 // These lines open the message text file in append mode (writing to the end)
 var msgtxt = new File(message_text_filename);
-if(!msgtxt.open("a+"))	// Change the mode to "r+" for "read/update" access
+if(!msgtxt.open("a+")) {	// Change the mode to "r+" for "read/update" access
+	alert("Failed to open " + message_text_filename);
 	exit();
+}
 
 // Create an object (associative array) of header field strings
 var header = parse_msg_header(msgtxt.readAll());
