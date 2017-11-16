@@ -1,5 +1,5 @@
 /* Synchronet class (sbbs_t) definition and exported function prototypes */
-
+// vi: tabstop=4
 /* $Id$ */
 
 /****************************************************************************
@@ -379,6 +379,7 @@ public:
 
 #endif
 
+	char	syspage_semfile[MAX_PATH+1];	/* Sysop page semaphore file */
 	char 	menu_dir[128];	/* Over-ride default menu dir */
 	char 	menu_file[128]; /* Over-ride menu file */
 

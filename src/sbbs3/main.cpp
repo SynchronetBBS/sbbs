@@ -3059,6 +3059,8 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	if(node_num>0) {
 		strcpy(cfg.node_dir, cfg.node_path[node_num-1]);
 		prep_dir(cfg.node_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
+		SAFEPRINTF2(syspage_semfile, "%ssyspage.%u", cfg.ctrl_dir, node_num);
+		remove(syspage_semfile);
 	} else {	/* event thread needs exclusive-use temp_dir */
 		if(startup->temp_dir[0])
 			SAFECOPY(cfg.temp_dir,startup->temp_dir);
@@ -3562,6 +3564,9 @@ sbbs_t::~sbbs_t()
 		fclose(logfile_fp);
 		logfile_fp=NULL;
 	}
+
+	if(syspage_semfile[0])
+		remove(syspage_semfile);
 
 	/********************************/
 	/* Free allocated class members */
