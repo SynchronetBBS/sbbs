@@ -44,22 +44,24 @@ while(1) {
 
 	switch(cmdkey=console.getkeys("ACDFIJPQRST?\r",K_UPPER)) {
 		case "S":
-			user.chat_settings ^= CHAT_SPLITP;
+			var val = user.chat_settings ^= CHAT_SPLITP;
 			write("\001n\r\nPrivate split-screen chat is now: \001h");
-			write((user.chat_settings & CHAT_SPLITP)?"ON\001n":"OFF\001n");
+			write((val & CHAT_SPLITP)?"ON\001n":"OFF\001n");
 			writeln("");
 			break;
 		case "A":
-			writeln("");
-			user.chat_settings ^= CHAT_NOACT;
+			var val = user.chat_settings ^= CHAT_NOACT;
+			write("\001n\r\nNode activity alerts are now: \001h");
+			write((val & CHAT_NOACT)?"OFF\001n":"ON\001n");
 			system.node_list[bbs.node_num-1].misc ^= NODE_AOFF;
-			bbs.whos_online();
+			writeln("");
 			break;
 		case 'D':
-			writeln("");
-			user.chat_settings ^= CHAT_NOPAGE;
+			var val = user.chat_settings ^= CHAT_NOPAGE;
+			write("\001n\r\nNode chat-page ability is now: \001h");
+			write((val & CHAT_NOPAGE)?"OFF\001n":"ON\001n");
 			system.node_list[bbs.node_num-1].misc ^= NODE_POFF;
-			bbs.whos_online();
+			writeln("");
 			break;
 		case 'F':
 			writeln("");
