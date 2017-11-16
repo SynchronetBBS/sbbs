@@ -101,6 +101,8 @@ __published:
     TCheckBox *IdentityCheckBox;
     TLabel *MaxConConLabel;
     TEdit *MaxConConEdit;
+    TLabel *SshConnectTimeoutLabel;
+    TEdit *SshConnTimeoutEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);

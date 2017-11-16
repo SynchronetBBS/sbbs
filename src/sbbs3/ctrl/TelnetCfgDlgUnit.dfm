@@ -1,6 +1,6 @@
 object TelnetCfgDlg: TTelnetCfgDlg
-  Left = 377
-  Top = 354
+  Left = 1133
+  Top = 475
   BorderStyle = bsDialog
   Caption = 'Terminal Server Configuration'
   ClientHeight = 234
@@ -17,8 +17,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 3
     Width = 278
     Height = 186
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = SshTabSheet
+    TabIndex = 3
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -44,7 +44,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Width = 74
         Height = 20
         AutoSize = False
-        Caption = 'Max Con-Con'
+        Caption = 'Max Con-Conn'
       end
       object AutoStartCheckBox: TCheckBox
         Left = 148
@@ -331,6 +331,14 @@ object TelnetCfgDlg: TTelnetCfgDlg
         AutoSize = False
         Caption = 'Interfaces (IPs)'
       end
+      object SshConnectTimeoutLabel: TLabel
+        Left = 7
+        Top = 62
+        Width = 78
+        Height = 21
+        AutoSize = False
+        Caption = 'Conn Timeout'
+      end
       object SshPortEdit: TEdit
         Left = 85
         Top = 10
@@ -364,6 +372,16 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
+      end
+      object SshConnTimeoutEdit: TEdit
+        Left = 85
+        Top = 62
+        Width = 39
+        Height = 21
+        Hint = 'SSH Connection Timeout (in seconds)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 3
       end
     end
     object SoundTabSheet: TTabSheet

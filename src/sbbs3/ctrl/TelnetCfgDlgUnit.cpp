@@ -75,6 +75,7 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
         strListCombine(MainForm->bbs_startup.ssh_interfaces, str, sizeof(str)-1, ",");
         SshInterfaceEdit->Text=AnsiString(str);
     }
+    SshConnTimeoutEdit->Text=AnsiString((int)MainForm->bbs_startup.ssh_connect_timeout);
 
 	TelnetPortEdit->Text=AnsiString((int)MainForm->bbs_startup.telnet_port);
 	RLoginPortEdit->Text=AnsiString((int)MainForm->bbs_startup.rlogin_port);
@@ -124,6 +125,7 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
 
     iniFreeStringList(MainForm->bbs_startup.ssh_interfaces);
     MainForm->bbs_startup.ssh_interfaces = strListSplitCopy(NULL, SshInterfaceEdit->Text.c_str(), ",");
+    MainForm->bbs_startup.ssh_connect_timeout=SshConnTimeoutEdit->Text.ToIntDef(0);
 
     MainForm->bbs_startup.telnet_port=TelnetPortEdit->Text.ToIntDef(23);
     MainForm->bbs_startup.rlogin_port=RLoginPortEdit->Text.ToIntDef(513);
