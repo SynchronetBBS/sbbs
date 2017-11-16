@@ -88,6 +88,7 @@ bool new_sub(unsigned new_subnum, unsigned group_num)
 				cfg.qhub[q]->sub[s]++;
 #endif
 
+	new_subboard->subnum = new_subnum;
 	cfg.sub[new_subnum] = new_subboard;
 	cfg.total_subs++;
 	return true;

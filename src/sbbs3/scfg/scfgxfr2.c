@@ -72,6 +72,7 @@ static bool new_dir(unsigned new_dirnum, unsigned libnum)
 	for (unsigned u = cfg.total_dirs; u > new_dirnum; u--)
 		cfg.dir[u] = cfg.dir[u - 1];
 
+	new_directory->dirnum = new_dirnum;
 	cfg.dir[new_dirnum] = new_directory;
 	cfg.total_dirs++;
 	return true;
@@ -900,7 +901,7 @@ void xfer_cfg()
 						uifc.changes=1; 
 					}
 					fclose(stream);
-					if(ported)
+					if(ported && cfg.lib[i]->sort)
 						sort_dirs(i);
 					uifc.pop(0);
 					sprintf(str,"%lu File Areas Imported Successfully (%lu added)",ported, added);
