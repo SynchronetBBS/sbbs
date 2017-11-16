@@ -4358,6 +4358,7 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 {
 	char		str[128];
 	char		attempts[64];
+	char		msgid[256];
 	int			i;
 	ushort		agent=AGENT_SMTPSYSMSG;
 	smbmsg_t	newmsg;
@@ -4431,6 +4432,7 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	strcpy(str,"Mail Delivery Subsystem");
 	smb_hfield_str(&newmsg, SENDER, str);
 	smb_hfield(&newmsg, SENDERAGENT, sizeof(agent), &agent);
+	smb_hfield_str(&newmsg, RFC822MSGID, get_msgid(&scfg, INVALID_SUB, &newmsg, msgid, sizeof(msgid)));
 	
 	/* Put error message in subject for now */
 	if(msg->hdr.delivery_attempts>1)
