@@ -1,4 +1,5 @@
 /* Synchronet message base (SMB) alloc/free routines */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -138,22 +139,30 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 	BOOL	da_opened=FALSE;
 	int		retval=SMB_SUCCESS;
 	uint16_t	i;
-	ulong	l,blocks;
+	long	l,blocks;
 	ulong	sda_offset;
+	off_t	flen;
 
 	if(smb->status.attr&SMB_HYPERALLOC)	/* do nothing */
 		return(SMB_SUCCESS);
 
-	blocks=smb_datblocks(length);
+	blocks = smb_datblocks(length);
+
+	if(blocks < 1)
+		return SMB_SUCCESS;	// Nothing to do
 
 	if(smb->sda_fp==NULL) {
 		if((i=smb_open_da(smb))!=SMB_SUCCESS)
 			return(i);
 		da_opened=TRUE;
 	}
+	flen = filelength(fileno(smb->sda_fp));
+	if(flen < sizeof(uint16_t))
+		return 0;	// Nothing to do
 
 	clearerr(smb->sda_fp);
-	for(l=0;l<blocks;l++) {
+	// Free from the last block first
+	for(l=blocks-1; l >= 0; l--) {
 		sda_offset=((offset/SDT_BLOCK_LEN)+l)*sizeof(i);
 		if(fseek(smb->sda_fp,sda_offset,SEEK_SET)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -175,6 +184,15 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 			i=0;			/* don't want to go negative */
 		else
 			i-=refs;
+
+		// Completely free? and at end of SDA? Just truncate record from end of file
+		if(i == 0 && ftell(smb->sda_fp) == flen) {
+			if(chsize(fileno(smb->sda_fp), sda_offset) == 0) {
+				flen = sda_offset;
+				continue;
+			}
+		}
+		
 		if(fseek(smb->sda_fp,-(int)sizeof(i),SEEK_CUR)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' seeking backwards 2 bytes in allocation file", __FUNCTION__
@@ -192,6 +210,8 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 		}
 	}
 	fflush(smb->sda_fp);
+	if(filelength(fileno(smb->sdt_fp)) / SDT_BLOCK_LEN > filelength(fileno(smb->sda_fp)) /  sizeof(uint16_t))
+		chsize(fileno(smb->sdt_fp), (filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)) * SDT_BLOCK_LEN);
 	if(da_opened)
 		smb_close_da(smb);
 	return(retval);
@@ -279,16 +299,28 @@ int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 {
 	uchar	c=0;
-	ulong	l,blocks;
+	long	l,blocks;
+	off_t	sha_offset;
 
 	if(smb->sha_fp==NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
 		return(SMB_ERR_NOT_OPEN);
 	}
 	clearerr(smb->sha_fp);
-	blocks=smb_hdrblocks(length);
-	if(fseek(smb->sha_fp,offset/SHD_BLOCK_LEN,SEEK_SET)) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to %ld", __FUNCTION__, offset/SHD_BLOCK_LEN);
+	blocks = smb_hdrblocks(length);
+	if(blocks < 1)
+		return SMB_ERR_HDR_LEN;
+
+	sha_offset = offset/SHD_BLOCK_LEN;
+	if(filelength(fileno(smb->sha_fp)) <= (sha_offset + blocks)) {
+		if(chsize(fileno(smb->sha_fp), sha_offset) == 0) {
+			chsize(fileno(smb->shd_fp), smb->status.header_offset + offset);
+			return SMB_SUCCESS;
+		}
+	}
+
+	if(fseek(smb->sha_fp, sha_offset, SEEK_SET)) {
+		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to %ld", __FUNCTION__, sha_offset);
 		return(SMB_ERR_SEEK);
 	}
 	for(l=0;l<blocks;l++)
