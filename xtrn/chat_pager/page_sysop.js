@@ -45,7 +45,7 @@ function await_page_response(settings, frame) {
         if (frame.cycle()) {
             console.gotoxy(console.screen_columns, console.screen_rows);
         }
-        bbs.node_sync();
+        bbs.nodesync();
         yield();
     }
 
