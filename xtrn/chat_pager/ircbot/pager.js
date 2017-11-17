@@ -27,7 +27,7 @@ if (bot_cfg !== null && settings !== null) {
 		var queue = new Queue(settings.queue.queue_name);
 	}
 	var timer = new Timer();
-	var scanner = new Scanner(settings.scanner);
+	var scanner = new Scanner();
 	var messages = [];
 
 	function scan_nodes() {
@@ -47,7 +47,7 @@ if (bot_cfg !== null && settings !== null) {
 		);
 	}
 
-	timer.addEvent(settings.scanner.semaphore_scan_interval, true, scan_nodes);
+	timer.addEvent(settings.ircbot.semaphore_scan_interval, true, scan_nodes);
 
 	function main(srv, target) {
 		timer.cycle();

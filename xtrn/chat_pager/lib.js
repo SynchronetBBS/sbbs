@@ -42,7 +42,7 @@ function nodes_paging() {
     );
 }
 
-var Scanner = function (settings) {
+var Scanner = function () {
 
     var node_stat;
 
