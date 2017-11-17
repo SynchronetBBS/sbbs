@@ -3,16 +3,6 @@ load('frame.js');
 load('progress-bar.js');
 load(js.exec_dir + 'lib.js');
 
-// Flush any existing named values (valname) and return the last one
-// (I haven't checked yet, but I assume Queue is FIFO)
-function get_last_queued_value(queue, valname) {
-    var val, temp_val;
-    while (typeof (temp_val = queue.read(valname)) !== 'undefined') {
-        val = temp_val;
-    }
-    return val;
-}
-
 function get_node_response_time(filename) {
     return (file_exists(filename) ? file_date(filename) : null);
 }

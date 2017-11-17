@@ -20,6 +20,16 @@ function load_settings(fp) {
     return ret;
 }
 
+// Flush any existing named values (valname) and return the last one
+// (I haven't checked yet, but I assume Queue is FIFO)
+function get_last_queued_value(queue, valname) {
+    var val, temp_val;
+    while (typeof (temp_val = queue.read(valname)) !== 'undefined') {
+        val = temp_val;
+    }
+    return val;
+}
+
 function user_online(n) {
 	return (
 		system.node_list[n].status == 3 || system.node_list[n].status == 4
