@@ -796,6 +796,7 @@ int main(int argc, char** argv)  {
 	int		done;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
 	time_t	last_semfile_check = time(NULL);
+	int		idle_sleep=100;
 
 	/******************/
 	/* Ini file stuff */
@@ -886,6 +887,9 @@ int main(int argc, char** argv)  {
                 case 'E':
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
+				case 'S':
+					idle_sleep=atoi(argv[i]+2);
+					break;
 				case 'I':
 					switch(toupper(argv[i][2])) {
 						case 'A':
@@ -926,7 +930,9 @@ int main(int argc, char** argv)  {
 #endif
 						"       A = ANSI mode\r\n"
                         "-l# =  set screen lines to #\n"
+						"-s# =  set idle slsep to # milliseconds (defualt: %d)\n"
 						,argv[0]
+						,idle_sleep
                         );
         			exit(0);
            }
@@ -1012,7 +1018,7 @@ int main(int argc, char** argv)  {
 			,title,mopt);
 
 		if(j == -2) {
-			SLEEP(100);
+			SLEEP(idle_sleep);
 			continue;
 		}
 
