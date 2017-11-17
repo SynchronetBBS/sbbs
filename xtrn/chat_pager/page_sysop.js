@@ -47,13 +47,16 @@ function await_page_response(settings, frame) {
             : get_node_response_time(valname)
         );
         if (typeof val == 'number' && val > stime) answered = true;
-        frame.cycle();
+        if (frame.cycle()) {
+            console.gotoxy(console.screen_columns, console.screen_rows);
+        }
         bbs.node_sync();
         yield();
     }
     progress_bar.set_progress(100);
-    progress_bar.cycle();
-    progress_bar.close();
+    if (frame.cycle()) {
+        console.gotoxy(console.screen_columns, console.screen_rows);
+    }
     return answered;
 }
 
@@ -81,8 +84,10 @@ function main() {
     } else {
         frame.gotoxy(1, 3);
         frame.center(format(bbs.text(522).trim(), system.operator));
-        console.pause();
+        frame.cycle();
         frame.close();
+        console.gotoxy(1, frame.y + frame.height);
+        console.pause();
     }
     bbs.sys_status = sys_stat;
 }
