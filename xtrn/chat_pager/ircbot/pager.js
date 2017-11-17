@@ -65,14 +65,31 @@ if (bot_cfg !== null && settings !== null) {
 	Bot_Commands["CHAT"].command = function (target, onick, ouh, srv, lbl, cmd) {
 		if (cmd.length > 0) {
 			var nn = parseInt(cmd[1]);
+			var semfile = system.ctrl_dir + 'syspage.' + cmd[1];
 			if (isNaN(nn) || nn < 1 || nn > system.node_list.length) {
 				return;
+			} else if (
+				!file_exists(semfile) ||
+				((time() - file_date(semfile)) * 1000) > settings.terminal.wait_time
+			) {
+				var un = user_online(nn - 1);
+				var usr = new User(un);
+				if (un > 0) {
+					system.put_telegram(
+						un, format(
+							settings.ircbot.request_page_format + '\r\n',
+							usr.alias, system.operator
+						)
+					);
+				}
 			} else if (!settings.queue.disabled) {
+				var rtime = system.timer;
 				var valname = "chat_" + cmd[1];
-				queue.write(system.timer, valname);
+				queue.write(rtime, valname);
 			} else {
 				var valname = system.ctrl_dir + "syspage_response." + cmd[1];
 				file_touch(valname);
+				var rtime = file_date(valname);
 			}
 		}
 	}
