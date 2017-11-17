@@ -104,12 +104,14 @@ if(uifc == undefined) {
 	exit(1);
 }
 
-uifc.init("TradeWars 2 Initialization");
+uifc.init("TradeWars 2 Initialization", /* ciolibmode: */argv[0]);
 ConfigureSettings();
 
 if(js.global.db != undefined) {
-	if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Reset Game?", ["No", "Yes"])!=1)
+	if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Reset Game?", ["No", "Yes"])!=1) {
+		uifc.bail();
 		exit(1);
+	}
 }
 
 load(fname("ports.js"));
