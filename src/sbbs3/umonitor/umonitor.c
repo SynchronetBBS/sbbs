@@ -1011,8 +1011,10 @@ int main(int argc, char** argv)  {
 		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN,0,5,70,&main_dflt,&main_bar
 			,title,mopt);
 
-		if(j == -2)
+		if(j == -2) {
+			SLEEP(100);
 			continue;
+		}
 
 		last_semfile_check = time(NULL);
 
