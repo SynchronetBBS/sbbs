@@ -3,6 +3,8 @@ load('frame.js');
 load('progress-bar.js');
 load(js.exec_dir + 'lib.js');
 
+// Flush any existing named values (valname) and return the last one
+// (I haven't checked yet, but I assume Queue is FIFO)
 function get_last_queued_value(queue, valname) {
     var val, temp_val;
     while (typeof (temp_val = queue.read(valname)) !== 'undefined') {
@@ -11,9 +13,17 @@ function get_last_queued_value(queue, valname) {
     return val;
 }
 
+function get_node_response_time(filename) {
+    return (file_exists(filename) ? (file_date(filename) * 1000) : null);
+}
+
 function await_page_response(settings, frame) {
-    var queue = new Queue(settings.queue.queue_name);
-    var valname = "chat_" + bbs.node_num;
+    if (!settings.queue.disabled) {
+        var queue = new Queue(settings.queue.queue_name);
+        var valname = "chat_" + bbs.node_num;
+    } else {
+        var valname = system.temp_dir + 'syspage_response.' + bbs.node_num;
+    }
     var answered = false;
     var stime = system.timer;
     var utime = system.timer;
@@ -29,10 +39,13 @@ function await_page_response(settings, frame) {
             progress_bar.set_progress(
                 (((now - stime) * 1000) / settings.terminal.wait_time) * 100
             );
-            progress_bar.cycle();
             utime = now;
         }
-        var val = get_last_queued_value(queue, valname);
+        var val = (
+            !settings.queue.disabled
+            ? get_last_queued_value(queue, valname)
+            : get_node_response_time(valname)
+        );
         if (typeof val == 'number' && val > stime) answered = true;
         frame.cycle();
         bbs.node_sync();

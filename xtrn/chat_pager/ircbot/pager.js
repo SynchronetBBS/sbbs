@@ -23,7 +23,9 @@ var settings = load_settings(fullpath(this.dir + '../settings.ini'));
 
 if (bot_cfg !== null && settings !== null) {
 
-	var queue = new Queue(settings.queue.queue_name);
+	if (!settings.queue.disabled) {
+		var queue = new Queue(settings.queue.queue_name);
+	}
 	var timer = new Timer();
 	var scanner = new Scanner(settings.scanner);
 	var messages = [];
@@ -58,11 +60,21 @@ if (bot_cfg !== null && settings !== null) {
 		}
 	}
 
-	Bot_Commands["CHAT"] = new Bot_Command(0, false, false);
+	Bot_Commands["CHAT"] = new Bot_Command(90, false, false);
 	Bot_Commands["CHAT"].usage = get_cmd_prefix() + "!chat [node]";
 	Bot_Commands["CHAT"].command = function (target, onick, ouh, srv, lbl, cmd) {
-		var valname = "chat_" + cmd[1];
-		queue.write(system.timer, valname);
+		if (cmd.length > 0) {
+			var nn = parseInt(cmd[1]);
+			if (isNaN(nn) || nn < 1 || nn > system.node_list.length) {
+				return;
+			} else if (!settings.queue.disabled) {
+				var valname = "chat_" + cmd[1];
+				queue.write(system.timer, valname);
+			} else {
+				var valname = system.temp_dir + "syspage_response." + cmd[1];
+				file_touch(valname);
+			}
+		}
 	}
 
 } else {
