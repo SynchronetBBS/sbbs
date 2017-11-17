@@ -14,7 +14,7 @@ function get_last_queued_value(queue, valname) {
 }
 
 function get_node_response_time(filename) {
-    return (file_exists(filename) ? (file_date(filename) * 1000) : null);
+    return (file_exists(filename) ? file_date(filename) : null);
 }
 
 function await_page_response(settings, frame) {
@@ -22,7 +22,7 @@ function await_page_response(settings, frame) {
         var queue = new Queue(settings.queue.queue_name);
         var valname = "chat_" + bbs.node_num;
     } else {
-        var valname = system.temp_dir + 'syspage_response.' + bbs.node_num;
+        var valname = system.ctrl_dir + 'syspage_response.' + bbs.node_num;
     }
     var answered = false;
     var stime = system.timer;
@@ -57,6 +57,7 @@ function await_page_response(settings, frame) {
     if (frame.cycle()) {
         console.gotoxy(console.screen_columns, console.screen_rows);
     }
+    if (settings.queue.disabled && file_exists(valname)) file_remove(valname);
     return answered;
 }
 

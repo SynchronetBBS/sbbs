@@ -71,7 +71,7 @@ if (bot_cfg !== null && settings !== null) {
 				var valname = "chat_" + cmd[1];
 				queue.write(system.timer, valname);
 			} else {
-				var valname = system.temp_dir + "syspage_response." + cmd[1];
+				var valname = system.ctrl_dir + "syspage_response." + cmd[1];
 				file_touch(valname);
 			}
 		}
