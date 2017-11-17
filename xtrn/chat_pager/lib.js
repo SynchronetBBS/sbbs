@@ -92,12 +92,8 @@ function notify_via_email(settings, un) {
     );
     var header = {
         from : settings.from,
-        subject : subject,
-        to : rcpt_list[0].to,
-        to_net_type : 5,
-        to_net_addr : rcpt_list[0].to_net_addr
+        subject : subject
     };
-    rcpt_list.shift();
     var mb = new MsgBase('mail');
     mb.open();
     mb.save_msg(header, body, rcpt_list);
