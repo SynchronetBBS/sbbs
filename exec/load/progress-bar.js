@@ -14,7 +14,7 @@ var ProgressBar = function (x, y, w, pframe) {
 
     if (typeof w === 'undefined') w = console.screen_columns;
     var frame = new Frame(x, y, w, 1, this.fg, pframe);
-    var subframe = new Frame(frame.x + 1, frame.y, frame.width - 2, 1, this.bg|this.fg, frame);
+    var subframe = new Frame(x + 1, y, 1, 1, this.bg|this.fg, frame);
     frame.putmsg(format('[%-' + (w - 2) + 's]', ''));
 
     this.init = function () {
@@ -22,13 +22,12 @@ var ProgressBar = function (x, y, w, pframe) {
     }
 
     this.set_progress = function (percent) {
+        subframe.width = Math.max(5, Math.floor((w - 2) * (percent * .01)));
         subframe.clear();
-        subframe.width = Math.floor((w - 2) * (percent * .01));
         subframe.center(Math.round(percent) + '%');
     }
 
     this.cycle = function () {
-        frame.invalidate();
         frame.cycle();
     }
 
