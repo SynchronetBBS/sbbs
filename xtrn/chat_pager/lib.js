@@ -82,3 +82,24 @@ var Scanner = function () {
     this.reset();
 
 }
+
+function notify_via_email(settings, un) {
+    var usr = new User(un);
+    var subject = format(settings.subject_format, usr.alias);
+    var body = format(settings.body_format, usr.alias, system.name);
+    var rcpt_list = settings.recipients.split(',').map(
+        function (e) { return { to : e, to_net_type : 5, to_net_addr : e }; }
+    );
+    var header = {
+        from : settings.from,
+        subject : subject,
+        to : rcpt_list[0].to,
+        to_net_type : 5,
+        to_net_addr : rcpt_list[0].to_net_addr
+    };
+    rcpt_list.shift();
+    var mb = new MsgBase('mail');
+    mb.open();
+    mb.save_msg(header, body, rcpt_list);
+    mb.close();
+}

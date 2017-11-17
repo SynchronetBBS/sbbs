@@ -8,17 +8,22 @@ function get_node_response_time(filename) {
 }
 
 function await_page_response(settings, frame) {
+
     if (!settings.queue.disabled) {
         var queue = new Queue(settings.queue.queue_name);
         var valname = "chat_" + bbs.node_num;
     } else {
         var valname = system.ctrl_dir + 'syspage_response.' + bbs.node_num;
     }
+
+    if (settings.email.enabled) notify_via_email(settings.email, user.number);
+
     var answered = false;
     var stime = system.timer;
     var utime = system.timer;
     var progress_bar = new ProgressBar(1, 2, frame.width, frame);
     progress_bar.init();
+
     while (
         (system.timer - stime) * 1000 < settings.terminal.wait_time &&
         console.inkey(K_NONE, 5) == '' &&
@@ -43,12 +48,16 @@ function await_page_response(settings, frame) {
         bbs.node_sync();
         yield();
     }
+
     progress_bar.set_progress(100);
     if (frame.cycle()) {
         console.gotoxy(console.screen_columns, console.screen_rows);
     }
+
     if (settings.queue.disabled && file_exists(valname)) file_remove(valname);
+
     return answered;
+
 }
 
 function main() {
