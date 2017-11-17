@@ -5,7 +5,7 @@ var ProgressBar = function (x, y, w, pframe) {
 
     if (x < 1 || x > console.screen_columns) throw 'Invalid x: ' + x;
     if (y < 1 || y > console.screen_rows) throw 'Invalid y: ' + y;
-    if (typeof w == 'number' && w < 5 || w > console.screen_columns) {
+    if (typeof w !== 'number' || w < 5 || w > console.screen_columns) {
         throw 'Invalid width: ' + w;
     }
 
