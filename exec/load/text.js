@@ -802,5 +802,7 @@ var PollAnswerChecked=790;
 var BallotHdr=791;
 var BallotAnswerFmt=792;
 var BallotVoteWhich=793;
+var Only=794;
+var SPAMVisibilityIsNow=795;
 
-var TOTAL_TEXT=794;
+var TOTAL_TEXT=796;
