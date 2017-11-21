@@ -133,6 +133,7 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, uint16_t refs)
 /****************************************************************************/
 /* De-allocates space for data												*/
 /* Returns non-zero on error												*/
+/* Always unlocks the SMB header (when not hyper-alloc)						*/
 /****************************************************************************/
 int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 {
@@ -159,6 +160,9 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 	flen = filelength(fileno(smb->sda_fp));
 	if(flen < sizeof(uint16_t))
 		return 0;	// Nothing to do
+	
+	if(!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+		return SMB_ERR_LOCK;
 
 	clearerr(smb->sda_fp);
 	// Free from the last block first
@@ -174,7 +178,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 		}
 		if(smb_fread(smb,&i,sizeof(i),smb->sda_fp)!=sizeof(i)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%s %d '%s' reading allocation bytes at offset %ld", __FUNCTION__
+				,"%s %d '%s' reading allocation record at offset %ld", __FUNCTION__
 				,get_errno(),STRERROR(get_errno())
 				,sda_offset);
 			retval=SMB_ERR_READ;
@@ -214,11 +218,13 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 		chsize(fileno(smb->sdt_fp), (filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)) * SDT_BLOCK_LEN);
 	if(da_opened)
 		smb_close_da(smb);
+	smb_unlocksmbhdr(smb);
 	return(retval);
 }
 
 /****************************************************************************/
 /* Adds to data allocation records for blocks starting at 'offset'          */
+/* SMB header should be locked before calling this function					*/
 /* Returns non-zero on error												*/
 /****************************************************************************/
 int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
@@ -265,6 +271,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 /* Increments data allocation records (message references) by number of		*/
 /* header references specified (usually 1)									*/
 /* The opposite function of smb_freemsg()									*/
+/* Always unlocks the SMB header (when not hyper-alloc)						*/
 /****************************************************************************/
 int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
@@ -281,14 +288,19 @@ int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 		da_opened=TRUE;
 	}
 
+	if(!smb->locked && smb_locksmbhdr(smb)!=SMB_SUCCESS)
+		return SMB_ERR_LOCK;
+
 	for(x=0;x<msg->hdr.total_dfields;x++) {
 		if((i=smb_incdat(smb,msg->hdr.offset+msg->dfield[x].offset
 			,msg->dfield[x].length,refs))!=SMB_SUCCESS)
 			break; 
 	}
+	smb_unlocksmbhdr(smb);
 
 	if(da_opened)
 		smb_close_da(smb);
+
 	return(i);
 }
 
