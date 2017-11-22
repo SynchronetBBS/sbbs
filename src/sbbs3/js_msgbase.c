@@ -2185,7 +2185,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 	char*		body=NULL;
 	uintN		n;
     jsuint      i;
-    jsuint      rcpt_list_length;
+    jsuint      rcpt_list_length=0;
 	jsval       val;
 	JSObject*	hdr=NULL;
 	JSObject*	objarg;
@@ -2205,7 +2205,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc<2)
 		return JS_TRUE;
-	
+
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return JS_FALSE;
@@ -2289,7 +2289,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 					if(!JS_GetElement(cx, rcpt_list, i, &val))
 						break;
-					
+
 					if(!JSVAL_IS_OBJECT(val))
 						break;
 
@@ -2316,6 +2316,8 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 				if(i==rcpt_list_length)
 					JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+				if(i > 1)
+					smb_incmsg_dfields(&(p->smb), &msg, (uint16_t)(i - 1));
 			}
 		}
 		else
