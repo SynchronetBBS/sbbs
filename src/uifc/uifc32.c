@@ -2590,7 +2590,7 @@ void upop(char *str)
 	i=(((width-1)*2)+1)*2;
 	buf[i]=api->chars->popup_right; i+=2;
 	buf[i]=api->chars->popup_bottom_left; i+=2;
-	for(;i<(((width-1)*3)-1)*2;i+=2)
+	for(;i<((width*3)-1)*2;i+=2)
 		buf[i]=api->chars->popup_bottom;
 	buf[i]=api->chars->popup_bottom_right;
 
