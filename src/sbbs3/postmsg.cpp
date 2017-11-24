@@ -59,7 +59,6 @@ int msgbase_open(scfg_t* cfg, smb_t* smb, int* storage, long* dupechk_hashes, ui
 {
 	int i;
 
-	*storage=SMB_SELFPACK;
 	*dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 	*xlat=XLAT_NONE;
 
@@ -70,8 +69,6 @@ int msgbase_open(scfg_t* cfg, smb_t* smb, int* storage, long* dupechk_hashes, ui
 		smb->status.max_age=cfg->mail_maxage;
 		smb->status.max_msgs=0;	/* unlimited */
 		smb->status.attr=SMB_EMAIL;
-		if(cfg->sys_misc&SM_FASTMAIL)
-			*storage = SMB_FASTALLOC;
 		/* duplicate message-IDs must be allowed in mail database */
 		*dupechk_hashes&=~(1<<SMB_HASH_SOURCE_MSG_ID);
 	} else {
@@ -80,11 +77,6 @@ int msgbase_open(scfg_t* cfg, smb_t* smb, int* storage, long* dupechk_hashes, ui
 		smb->status.max_msgs=cfg->sub[smb->subnum]->maxmsgs;
 		smb->status.max_age=cfg->sub[smb->subnum]->maxage;
 		smb->status.attr=0;
-		if(cfg->sub[smb->subnum]->misc&SUB_HYPER)
-			*storage = smb->status.attr = SMB_HYPERALLOC;
-		else if(cfg->sub[smb->subnum]->misc&SUB_FAST)
-			*storage = SMB_FASTALLOC;
-
 		if(cfg->sub[smb->subnum]->misc&SUB_LZH)
 			*xlat=XLAT_LZH;
 	}
@@ -96,6 +88,8 @@ int msgbase_open(scfg_t* cfg, smb_t* smb, int* storage, long* dupechk_hashes, ui
 
 	if(filelength(fileno(smb->shd_fp)) < 1) /* MsgBase doesn't exist yet, create it */
 		i=smb_create(smb);
+
+	*storage=smb_storage_mode(cfg, smb);
 
 	return i;
 }
@@ -420,13 +414,13 @@ extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
 	return smb_hfield_str(msg,SENDERPORT,port);
 }
 
+/* Note: support MSG_BODY only, no tails or other data fields (dfields) */
 extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client, const char* server, char* msgbuf)
 {
 	char	pid[128];
 	char	msg_id[256];
 	ushort	xlat=XLAT_NONE;
 	int 	i;
-	int		storage=SMB_SELFPACK;
 	long	dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 
 	if(msg==NULL)
@@ -454,28 +448,10 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 
 	if(smb->subnum==INVALID_SUB) {	/* e-mail */
 
-		/* exception here during recycle:
-
-	sbbs.dll!savemsg(scfg_t * cfg, smb_t * smb, smbmsg_t * msg, client_t * client, char * msgbuf)  Line 473 + 0xf bytes	C++
- 	sbbs.dll!js_save_msg(JSContext * cx, JSObject * obj, unsigned int argc, long * argv, long * rval)  Line 1519 + 0x25 bytes	C
- 	js32.dll!js_Invoke(JSContext * cx, unsigned int argc, unsigned int flags)  Line 1375 + 0x17 bytes	C
- 	js32.dll!js_Interpret(JSContext * cx, unsigned char * pc, long * result)  Line 3944 + 0xf bytes	C
- 	js32.dll!js_Execute(JSContext * cx, JSObject * chain, JSObject * script, JSStackFrame * down, unsigned int flags, long * result)  Line 1633 + 0x13 bytes	C
- 	js32.dll!JS_ExecuteScript(JSContext * cx, JSObject * obj, JSObject * script, long * rval)  Line 4188 + 0x19 bytes	C
- 	sbbs.dll!sbbs_t::js_execfile(const char * cmd, const char * startup_dir)  Line 686 + 0x27 bytes	C++
- 	sbbs.dll!sbbs_t::external(const char * cmdline, long mode, const char * startup_dir)  Line 413 + 0x1e bytes	C++
- 	sbbs.dll!event_thread(void * arg)  Line 2745 + 0x71 bytes	C++
-
-	apparently the event_thread is sharing an scfg_t* with another thread! */
-
-
 		smb->status.max_crcs=cfg->mail_maxcrcs;
 		smb->status.max_age=cfg->mail_maxage;
 		smb->status.max_msgs=0;	/* unlimited */
 		smb->status.attr=SMB_EMAIL;
-
-		if(cfg->sys_misc&SM_FASTMAIL)
-			storage=SMB_FASTALLOC;
 
 		/* duplicate message-IDs must be allowed in mail database */
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_MSG_ID);
@@ -486,11 +462,6 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 		smb->status.max_msgs=cfg->sub[smb->subnum]->maxmsgs;
 		smb->status.max_age=cfg->sub[smb->subnum]->maxage;
 		smb->status.attr=0;
-
-		if(cfg->sub[smb->subnum]->misc&SUB_HYPER)
-			storage = smb->status.attr = SMB_HYPERALLOC;
-		else if(cfg->sub[smb->subnum]->misc&SUB_FAST)
-			storage = SMB_FASTALLOC;
 
 		if(cfg->sub[smb->subnum]->misc&SUB_LZH)
 			xlat=XLAT_LZH;
@@ -536,7 +507,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
  	if(msg->ftn_pid==NULL) 	
  		smb_hfield_str(msg,FIDOPID,msg_program_id(pid));
 
-	if((i=smb_addmsg(smb,msg,storage,dupechk_hashes,xlat,(uchar*)msgbuf,NULL))==SMB_SUCCESS
+	if((i=smb_addmsg(smb,msg,smb_storage_mode(cfg, smb),dupechk_hashes,xlat,(uchar*)msgbuf, /* tail: */NULL))==SMB_SUCCESS
 		&& msg->to!=NULL	/* no recipient means no header created at this stage */) {
 		if(smb->subnum == INVALID_SUB) {
 			if(msg->to_net.type == NET_FIDO)

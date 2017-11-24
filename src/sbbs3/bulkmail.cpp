@@ -205,7 +205,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 		smb_hfield_str(&newmsg,RECIPIENTEXT,str);
 	}
 
-	j=smb_addmsghdr(smb,&newmsg,SMB_SELFPACK);
+	j=smb_addmsghdr(smb,&newmsg,smb_storage_mode(&cfg, smb));
 	smb_freemsgmem(&newmsg);
 	if(j!=SMB_SUCCESS)
 		return(j);
