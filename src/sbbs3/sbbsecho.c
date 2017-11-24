@@ -2143,19 +2143,21 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 	return false;
 }
 /******************************************************************************
- This is where we're gonna process any netmail that comes in for areafix.
- Returns text for message body for the local sysop if necessary.
+ This is where we're gonna process any netmail that comes in for AreaFix.
+ Returns text for message body for the local Area Mgr (sysop) upon failure.
 ******************************************************************************/
-char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const char* to)
+char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const char* name)
 {
-	static char body[512];
+	static char body[1024];
 	char str[128];
 	char *p,*tp,action,cmds=0;
 	ulong l,m;
 	str_list_t add_area,del_area;
 
 	lprintf(LOG_INFO,"AreaFix (for %s) Request received from %s"
-			,smb_faddrtoa(&addr,NULL), to);
+			,smb_faddrtoa(&addr,NULL), name);
+
+	sprintf(body,"%s (%s) attempted an Area Management (AreaFix) request.\r\n", name, faddrtoa(&addr));
 	
 	p=(char *)inbuf;
 
@@ -2183,20 +2185,17 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 	nodecfg_t* nodecfg = findnodecfg(&cfg, addr,0);
 	if(nodecfg==NULL || !nodecfg->areafix) {
 		lprintf(LOG_NOTICE,"AreaFix (for %s) Request received, but AreaFix not enabled for this node!", smb_faddrtoa(&addr,NULL));
-		create_netmail(to,/* msg: */NULL,"Area Management Request"
+		create_netmail(name,/* msg: */NULL,"Area Management Request"
 			,"Your node is not configured for AreaFix, please contact your hub sysop.\r\n",addr,/* attachment: */false);
-		SAFEPRINTF(body,"An Area Management request was made by node %s.\r\n"
-			"This node is not configured for AreaFix operations .\r\n"
-			,smb_faddrtoa(&addr,NULL));
+		strcat(body,"This node is not configured for AreaFix operations.\r\n");
 		return(body); 
 	}
 
 	if(stricmp(nodecfg->password,password)) {
-		create_netmail(to,/* msg: */NULL,"Area Management Request","Invalid Password.",addr,/* attachment: */false);
-		sprintf(body,"Node %s attempted an Area Management (AreaFix) request using an\r\n"
-			"invalid password.  The password attempted was: %s\r\n"
+		create_netmail(name,/* msg: */NULL,"Area Management Request","Invalid Password.",addr,/* attachment: */false);
+		sprintf(body+strlen(body), "An invalid password (%s) was supplied in the message subject.\r\n"
 			"The correct Area Manager password for this node is: %s\r\n"
-			,smb_faddrtoa(&addr,NULL),password
+			,password
 			,(nodecfg->password[0]) ? nodecfg->password
 			 : "[None Defined]");
 		return(body); 
@@ -2229,7 +2228,7 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 				strListPush(&del_area, str);
 				break;
 			case '%':                       /* Process Command */
-				if(areafix_command(str, nodecfg, to))
+				if(areafix_command(str, nodecfg, name))
 					cmds++;
 				break; 
 		}
@@ -2238,17 +2237,16 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 	}
 
 	if(!cmds && !strListCount(add_area) && !strListCount(del_area)) {
-		create_netmail(to,/* msg: */NULL,"Area Management Request"
+		create_netmail(name,/* msg: */NULL,"Area Management Request"
 			,"No commands to process.\r\nSend %HELP for help.\r\n"
 			,addr,/* attachment: */false);
-		sprintf(body,"Node %s attempted a remote area management (AreaFix) request with\r\n"
-			"an empty message body or with no valid commands.\r\n",smb_faddrtoa(&addr,NULL));
+		strcat(body, "No valid AreaFix commands were detected.\r\n");
 		strListFree(&add_area);
 		strListFree(&del_area);
 		return(body); 
 	}
 	if(strListCount(add_area) || strListCount(del_area))
-		alter_areas(add_area,del_area,addr,to);
+		alter_areas(add_area,del_area,addr,name);
 	strListFree(&add_area);
 	strListFree(&del_area);
 
@@ -3221,7 +3219,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	uchar	ch,stail[MAX_TAILLEN+1],*sbody;
 	char	msg_id[256],str[128],*p;
 	bool	done,esc,cr;
-	int 	i,storage=SMB_SELFPACK;
+	int 	i;
 	uint	col;
 	ushort	xlat=XLAT_NONE,net;
 	ulong	l,m,length,bodylen,taillen;
@@ -3244,9 +3242,9 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 
 	memset(&msg,0,sizeof(smbmsg_t));
 	if(fmsghdr.attr&FIDO_PRIVATE)
-		msg.idx.attr|=MSG_PRIVATE;
-	msg.hdr.attr=msg.idx.attr;
-
+		msg.hdr.attr|=MSG_PRIVATE;
+	if(scfg.sys_misc&SM_DELREADM)
+		msg.hdr.attr|=MSG_KILLREAD;
 	if(fmsghdr.attr&FIDO_FILE)
 		msg.hdr.auxattr|=MSG_FILEATTACH;
 
@@ -3520,17 +3518,11 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		smbfile->status.attr = SMB_EMAIL;
 		smbfile->status.max_age = scfg.mail_maxage;
 		smbfile->status.max_crcs = scfg.mail_maxcrcs;
-		if(scfg.sys_misc&SM_FASTMAIL)
-			storage= SMB_FASTALLOC;
 	} else {
 		smbfile=&smb[cur_smb];
 		smbfile->status.max_age	 = scfg.sub[subnum]->maxage;
 		smbfile->status.max_crcs = scfg.sub[subnum]->maxcrcs;
 		smbfile->status.max_msgs = scfg.sub[subnum]->maxmsgs;
-		if(scfg.sub[subnum]->misc&SUB_HYPER)
-			storage = smbfile->status.attr = SMB_HYPERALLOC;
-		else if(scfg.sub[subnum]->misc&SUB_FAST)
-			storage = SMB_FASTALLOC;
 		if(scfg.sub[subnum]->misc&SUB_LZH)
 			xlat=XLAT_LZH;
 
@@ -3547,7 +3539,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	if(cfg.badecho>=0 && subnum==cfg.area[cfg.badecho].sub)
 		dupechk_hashes=SMB_HASH_SOURCE_NONE;
 
-	i=smb_addmsg(smbfile, &msg, storage, dupechk_hashes, xlat, sbody, stail);
+	i=smb_addmsg(smbfile, &msg, smb_storage_mode(&scfg, smbfile), dupechk_hashes, xlat, sbody, stail);
 
 	if(i!=SMB_SUCCESS) {
 		lprintf(LOG_ERR,"ERROR smb_addmsg(%s) returned %d: %s"
@@ -4341,19 +4333,20 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 				FREE_AND_NULL(body);
 			} else {	/* AreaFix */
 				p=process_areafix(addr,fmsgbuf,/* Password: */hdr.subj, /* To: */hdr.from);
-				if(p) {
+				if(p != NULL && cfg.areamgr[0] != 0) {
 					uint notify = matchuser(&scfg, cfg.areamgr, TRUE);
 					if(notify) {
-						SAFECOPY(hdr.to,scfg.sys_op);
-						SAFECOPY(hdr.from,"SBBSecho");
-						SAFECOPY(hdr.subj,"Area Management Request");
+						SAFEPRINTF(hdr.subj, "FAILED Area Management Request from %s", faddrtoa(&addr));
+						SAFECOPY(hdr.to, cfg.areamgr);
+						SAFECOPY(hdr.from, "SBBSecho");
 						hdr.origzone=hdr.orignet=hdr.orignode=hdr.origpoint=0;
 						hdr.time[0] = 0;	/* Generate a new timestamp */
 						if(fmsgtosmsg(p,hdr,notify,INVALID_SUB) == IMPORT_SUCCESS) {
 							sprintf(str,"\7\1n\1hSBBSecho \1n\1msent you mail\r\n");
 							putsmsg(&scfg,notify,str); 
 						}
-					}
+					} else
+						lprintf(LOG_ERR, "Configured Area Manager, user not found: %s", cfg.areamgr);
 				}
 			}
 		}
@@ -5135,7 +5128,7 @@ bool netmail_sent(const char* fname)
 	rewind(fp);
 	fwrite(&hdr, sizeof(hdr), 1, fp);
 	fclose(fp);
-	if(hdr.attr&FIDO_KILLSENT)
+	if(!cfg.ignore_netmail_kill_attr && (hdr.attr&FIDO_KILLSENT))
 		return delfile(fname, __LINE__);
 	return true;
 }

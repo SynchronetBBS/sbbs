@@ -441,10 +441,14 @@ int main(int argc, char **argv)
 	"of nodes, by using the `ALL` wildcard word."
 	;
 
-					for(u=0;u<cfg.nodecfgs;u++)
-						snprintf(opt[u], MAX_OPLN-1, "%-23s %s"
-							,faddrtoa(&cfg.nodecfg[u].addr)
-							,cfg.nodecfg[u].comment);
+					for(u=0;u<cfg.nodecfgs;u++) {
+						char hexaddr[16] = "";
+						if(!faddr_contains_wildcard(&cfg.nodecfg[u].addr))
+							sprintf(hexaddr, "(%04hx%04hx)", cfg.nodecfg[u].addr.net,cfg.nodecfg[u].addr.node);
+						snprintf(opt[u], MAX_OPLN-1, "%-16s %10s  %s"
+							,faddrtoa(&cfg.nodecfg[u].addr), hexaddr
+							,cfg.nodecfg[u].name[0] ? cfg.nodecfg[u].name : cfg.nodecfg[u].comment);
+					}
 					opt[u][0]=0;
 					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT | WIN_GET 
 						| WIN_INSACT | WIN_DELACT | WIN_XTR;
@@ -519,9 +523,12 @@ int main(int argc, char **argv)
 	"    will apply to *all* nodes matching that address pattern.\n"
 	"    e.g. '`1:ALL`' matches all nodes within FidoNet Zone 1.\n"
 	"\n"
+	"`Name` is name of the system operator of the configured node. This is\n"
+	"    as the destination name for AreaFix Notification NetMail messages.\n"
+	"\n"
 	"`Comment` is a note to yourself about this node. Setting this to the\n"
-	"    user or sysop name corresponding with the configured node can be\n"
-	"    a helpful reminder to yourself later.\n"
+	"    BBS name or official FidoNet title corresponding with the configured\n"
+	"    node can be a helpful reminder to yourself later.\n"
 	"\n"
 	"`Archive Type` is the name of an archive type corresponding with one of\n"
 	"    your configured archive types or '`None`'.  This archive type will\n"
@@ -546,12 +553,16 @@ int main(int argc, char **argv)
 	"    or authenticating `.TIC` files.\n"
 	"    This setting may be managed by the node using AreaFix requests.\n"
 	"\n"
-	"`AreaFix Password` is an optional password used to enable AreaFix\n"
-	"    NetMail requests (Remote Area Management) from this node.\n"
+	"`AreaFix Support` is a toggle that determines whether or not this node\n"
+	"    may send AreaFix NetMail requests to your system to perform remote\n"
+	"    area management.\n"
+	"\n"
+	"`AreaFix Password` is an optional password used to authenticate inbound\n"
+	"    AreaFix NetMail requests (Remote Area Management) from this node.\n"
 	"    AreaFix Passwords are case insensitive.\n"
 	"    This setting may be managed by the node using AreaFix requests.\n"
 	"\n"
-	"`AreaFix Keys` is a list of keys which enable AreaFix access to one or\n"
+	"`EchoList Keys` is a list of keys which enable AreaFix access to one or\n"
 	"    more additional EchoLists.\n"
 	"\n"
 	"`Status` is the default mode for sending mail to this node: `Normal`, `Hold`\n"
@@ -587,6 +598,8 @@ int main(int argc, char **argv)
 						j=0;
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Address"
 							,faddrtoa(&cfg.nodecfg[i].addr));
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Name"
+							,cfg.nodecfg[i].name);
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Comment"
 							,cfg.nodecfg[i].comment);
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Archive Type"
@@ -598,9 +611,11 @@ int main(int argc, char **argv)
 							,cfg.nodecfg[i].pktpwd);
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","TIC File Password"
 							,cfg.nodecfg[i].ticpwd);
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Support"
+							,cfg.nodecfg[i].areafix ? "Yes" : "No");
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Password"
 							,cfg.nodecfg[i].password);
-						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Keys"
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","EchoList Keys"
 							,strListCombine(cfg.nodecfg[i].keys,str,sizeof(str),","));
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Status"
 							,mailStatusStringList[cfg.nodecfg[i].status]);
@@ -623,12 +638,12 @@ int main(int argc, char **argv)
 						}
 						opt[j][0]=0;
 						SAFEPRINTF(str, "Linked Node - %s"
-							,cfg.nodecfg[i].comment[0] ? cfg.nodecfg[i].comment : faddrtoa(&cfg.nodecfg[i].addr));
+							,cfg.nodecfg[i].name[0] ? cfg.nodecfg[i].name : faddrtoa(&cfg.nodecfg[i].addr));
 						k=uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&nodeop,0,str,opt);
 						if(k==-1)
 							break;
 						switch(k) {
-							case 0:
+							case __COUNTER__:
 	uifc.helpbuf=
 	"~ Address ~\n\n"
 	"This is the FidoNet style address of this linked node.\n";
@@ -638,7 +653,17 @@ int main(int argc, char **argv)
 									,25,K_EDIT|K_UPPER)>0)
 									cfg.nodecfg[i].addr=atofaddr(str);
 								break;
-							case 1:
+							case __COUNTER__:
+	uifc.helpbuf=
+	"~ Name ~\n\n"
+	"This is an optional NetMail destination name for the node (e.g. the sysop's name).\n"
+	"This is used for AreaFix Notification NetMail messages.\n";
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Name"
+									,cfg.nodecfg[i].name,sizeof(cfg.nodecfg[i].name)-1
+									,K_EDIT);
+								break;
+							case __COUNTER__:
 	uifc.helpbuf=
 	"~ Comment ~\n\n"
 	"This is an optional comment for the node (e.g. the sysop's name).\n"
@@ -648,7 +673,7 @@ int main(int argc, char **argv)
 									,cfg.nodecfg[i].comment,sizeof(cfg.nodecfg[i].comment)-1
 									,K_EDIT);
 								break;
-							case 2:
+							case __COUNTER__:
 	uifc.helpbuf=
 	"~ Archive Type ~\n\n"
 	"This is the archive type that will be used for compressing packets\n"
@@ -671,7 +696,7 @@ int main(int argc, char **argv)
 									cfg.nodecfg[i].archive = &cfg.arcdef[k];
 								uifc.changes=TRUE;
 								break;
-							case 3:
+							case __COUNTER__:
 	uifc.helpbuf=
 	"~ Packet Type ~\n\n"
 	"This is the packet header type that will be used in mail packets\n"
@@ -690,7 +715,7 @@ int main(int argc, char **argv)
 								cfg.nodecfg[i].pkt_type=k;
 								uifc.changes=TRUE;
 								break;
-							case 4:
+							case __COUNTER__:
 	uifc.helpbuf=
 	"~ Packet Password ~\n\n"
 	"This is an optional password that SBBSecho will place into packets\n"
@@ -700,7 +725,7 @@ int main(int argc, char **argv)
 									,cfg.nodecfg[i].pktpwd,sizeof(cfg.nodecfg[i].pktpwd)-1
 									,K_EDIT|K_UPPER);
 								break;
-							case 5:
+							case __COUNTER__:
 	uifc.helpbuf=
 	"~ TIC File Password ~\n\n"
 	"This is an optional password that ticket.js will use for creating\n"
@@ -710,7 +735,19 @@ int main(int argc, char **argv)
 									,cfg.nodecfg[i].ticpwd,sizeof(cfg.nodecfg[i].ticpwd)-1
 									,K_EDIT|K_UPPER);
 								break;
-							case 6:
+							case __COUNTER__:
+	uifc.helpbuf=
+	"~ AreaFix Support ~\n\n"
+	"If you wish for this node to be able to remotely configure their configuration\n"
+	"via `AreaFix` NetMail messages, set to option to `Yes`.\n";
+								k = cfg.nodecfg[i].areafix;
+								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+									,"AreaFix Support",uifcYesNoOpts)) {
+									case 0:	cfg.nodecfg[i].areafix = true;	uifc.changes=TRUE; break;
+									case 1:	cfg.nodecfg[i].areafix = false;	uifc.changes=TRUE; break;
+								}
+								break;
+							case __COUNTER__:
 	uifc.helpbuf=
 	"~ AreaFix Password ~\n\n"
 	"This is the password that will be used by this node when doing remote\n"
@@ -720,9 +757,9 @@ int main(int argc, char **argv)
 									,cfg.nodecfg[i].password,sizeof(cfg.nodecfg[i].password)-1
 									,K_EDIT|K_UPPER);
 								break;
-							case 7:
+							case __COUNTER__:
 	uifc.helpbuf=
-	"~ AreaFix Keys ~\n\n"
+	"~ EchoList Keys ~\n\n"
 	"These are a named-keys to be given to this node allowing access to one or\n"
 	"more of the configured `EchoLists`\n";
 								while(1) {
@@ -731,13 +768,13 @@ int main(int argc, char **argv)
 									opt[j][0]=0;
 									k=uifc.list(WIN_SAV|WIN_INS|WIN_DEL|WIN_ACT|
 										WIN_XTR|WIN_INSACT|WIN_DELACT|WIN_RHT
-										,0,0,0,&k,0,"AreaFix Keys",opt);
+										,0,0,0,&k,0,"EchoList Keys",opt);
 									if(k==-1)
 										break;
 									if((k&MSK_ON)==MSK_INS) {
 										k&=MSK_OFF;
 										if(uifc.input(WIN_MID|WIN_SAV,0,0
-											,"AreaFix Key",str,SBBSECHO_MAX_KEY_LEN
+											,"EchoList Key",str,SBBSECHO_MAX_KEY_LEN
 											,K_UPPER)<1)
 											continue;
 										strListInsert(&cfg.nodecfg[i].keys, str, k);
@@ -752,14 +789,14 @@ int main(int argc, char **argv)
 										continue; 
 									}
 									SAFECOPY(str,cfg.nodecfg[i].keys[k]);
-									uifc.input(WIN_MID|WIN_SAV,0,0,"AreaFix Key"
+									uifc.input(WIN_MID|WIN_SAV,0,0,"EchoList Key"
 										,str,SBBSECHO_MAX_KEY_LEN,K_EDIT|K_UPPER);
 									strListReplace(cfg.nodecfg[i].keys, k, str);
 									uifc.changes=TRUE;
 									continue; 
 								}
 								break;
-							case 8:
+							case __COUNTER__:
 	uifc.helpbuf=
 	"~ Mail Status ~\n\n"
 	"Set the mail status for this node: `Normal`, `Hold`, or `Crash`.\n";
@@ -773,7 +810,7 @@ int main(int argc, char **argv)
 									uifc.changes=TRUE;
 								}
 								break;
-							case 9:
+							case __COUNTER__:
 								k = !cfg.nodecfg[i].direct;
 								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 									,"Direct Delivery",uifcYesNoOpts)) {
@@ -781,7 +818,7 @@ int main(int argc, char **argv)
 									case 1:	cfg.nodecfg[i].direct = false;	uifc.changes=TRUE; break;
 								}
 								break;
-							case 10:
+							case __COUNTER__:
 								k = !cfg.nodecfg[i].passive;
 								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 									,"Passive Node",uifcYesNoOpts)) {
@@ -789,7 +826,7 @@ int main(int argc, char **argv)
 									case 1:	cfg.nodecfg[i].passive = false;	uifc.changes=TRUE; break;
 								}
 								break;
-							case 11:
+							case __COUNTER__:
 								k = !cfg.nodecfg[i].send_notify;
 								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 									,"Send AreaFix Notifications",uifcYesNoOpts)) {
@@ -797,7 +834,7 @@ int main(int argc, char **argv)
 									case 1:	cfg.nodecfg[i].send_notify = false;	uifc.changes=TRUE; break;
 								}
 								break;
-							case 12:
+							case __COUNTER__:
 	uifc.helpbuf=
 	"~ Uplink for Message Groups ~\n\n"
 	"These are Message Group short names (as configured in SCFG) for which\n"
@@ -841,7 +878,7 @@ int main(int argc, char **argv)
 									continue; 
 								}
 								break;
-							case 13:
+							case __COUNTER__:
 	uifc.helpbuf=
 	"~ Route To ~\n\n"
 	"When using a BSO/FLO type mailer, this is the Fido address to route mail\n"
@@ -861,12 +898,12 @@ int main(int argc, char **argv)
 									uifc.changes=TRUE;
 								}
 								break;
-							case 14:
+							case __COUNTER__:
 								uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound FileBox Directory"
 									,cfg.nodecfg[i].inbox, sizeof(cfg.nodecfg[i].inbox)-1
 									,K_EDIT);
 								break;
-							case 15:
+							case __COUNTER__:
 								uifc.input(WIN_MID|WIN_SAV,0,0,"Outbound FileBox Directory"
 									,cfg.nodecfg[i].outbox, sizeof(cfg.nodecfg[i].outbox)-1
 									,K_EDIT);
@@ -1109,6 +1146,10 @@ int main(int argc, char **argv)
 	"    disabled.\n"
 	"    This setting defaults to `No`.\n"
 	"\n"
+	"`Ignore Netmail 'KillSent' Attribute` will instruct SBBSecho to ignore\n"
+	"    this attribute flag and will `not` delete Sent NetMail.\n"
+	"    This setting defaults to `No`.\n"
+	"\n"
 	"`Ignore Netmail 'Received' Attribute` will instruct SBBSecho to import\n"
 	"    NetMail messages even when their 'Received' attribute flag is set.\n"
 	"    This setting defaults to `No`.\n"
@@ -1136,6 +1177,8 @@ int main(int argc, char **argv)
 						,cfg.ignore_netmail_dest_addr ? "Yes" : "No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-40.40s%-3.3s","Ignore NetMail 'Sent' Attribute"
 						,cfg.ignore_netmail_sent_attr ? "Yes" : "No");
+					snprintf(opt[i++],MAX_OPLN-1,"%-40.40s%-3.3s","Ignore NetMail 'KillSent' Attribute"
+						,cfg.ignore_netmail_kill_attr ? "Yes" : "No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-40.40s%-3.3s","Ignore NetMail 'Received' Attribute"
 						,cfg.ignore_netmail_recv_attr ? "Yes" : "No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-40.40s%-3.3s","Ignore NetMail 'Local' Attribute"
@@ -1210,6 +1253,14 @@ int main(int argc, char **argv)
 							}
 							break;
 						case 7:
+							k = !cfg.ignore_netmail_kill_attr;
+							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+								,"Ignore NetMail 'KillSent' Attribute",uifcYesNoOpts)) {
+								case 0:	cfg.ignore_netmail_kill_attr = true;	break;
+								case 1:	cfg.ignore_netmail_kill_attr = false;	break;
+							}
+							break;
+						case 8:
 							k = !cfg.ignore_netmail_recv_attr;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 								,"Ignore NetMail 'Received' Attribute",uifcYesNoOpts)) {
@@ -1217,7 +1268,7 @@ int main(int argc, char **argv)
 								case 1:	cfg.ignore_netmail_recv_attr = false;	break;
 							}
 							break;
-						case 8:
+						case 9:
 							k = !cfg.ignore_netmail_local_attr;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 								,"Ignore NetMail 'Local' Attribute",uifcYesNoOpts)) {
@@ -1225,7 +1276,7 @@ int main(int argc, char **argv)
 								case 1:	cfg.ignore_netmail_local_attr = false;	break;
 							}
 							break;
-						case 9:
+						case 10:
 							uifc.helpbuf=
 							"~ Maximum Age of Imported NetMail ~\n\n"
 							"Maximum age of NetMail that may be imported. The age is based\n"
@@ -1365,7 +1416,7 @@ int main(int argc, char **argv)
 						case 0:
 				uifc.helpbuf=
 				"~ Area Manager ~\n\n"
-				"User to notify of AreaFix activity and errors.\n";
+				"Local user to notify of AreaFix activity and errors.\n";
 							uifc.input(WIN_MID|WIN_BOT|WIN_SAV,0,0,"Area Manager (user name or alias)"
 								,cfg.areamgr
 								,LEN_ALIAS,K_EDIT);
@@ -1777,16 +1828,19 @@ int main(int argc, char **argv)
 						;
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","EchoList Path/Name"
 							,cfg.listcfg[i].listpath);
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Required Key"
+							,strListCombine(cfg.listcfg[i].keys, str, sizeof(str), ","));
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Hub Address"
 							,(cfg.listcfg[i].hub.zone) ?
 							 faddrtoa(&cfg.listcfg[i].hub) : "None");
-						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Forward Password"
-							,(cfg.listcfg[i].password[0]) ?
-							 cfg.listcfg[i].password : "None");
-						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Forward Requests"
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Forward AreaMgr Requests"
 							,cfg.listcfg[i].forward ? "Yes" : "No");
-						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Keys"
-							,strListCombine(cfg.listcfg[i].keys, str, sizeof(str), ","));
+						if(cfg.listcfg[i].forward) {
+							snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaMgr Name"
+								,cfg.listcfg[i].areamgr);
+							snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaMgr Password"
+								,cfg.listcfg[i].password);
+						}
 						opt[j][0]=0;
 						SAFEPRINTF(str, "EchoList - %s", getfname(cfg.listcfg[i].listpath));
 						k=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&listop,0,str,opt);
@@ -1800,6 +1854,47 @@ int main(int argc, char **argv)
 									,K_EDIT);
 								break;
 							case 1:
+								uifc.helpbuf=
+								"~ Required Key ~\n\n"
+								"These keys determine which linked nodes have access to the selected\n"
+								"echolist file via AreaFix requests (e.g. query, add, remove).\n"
+								"\n"
+								"A linked node need only have one of the required keys to have access\n"
+								"the echolist."
+								;
+								while(1) {
+									for(u=0; cfg.listcfg[i].keys!=NULL && cfg.listcfg[i].keys[u] != NULL;u++)
+										strcpy(opt[u],cfg.listcfg[i].keys[u]);
+									opt[u][0]=0;
+									x=uifc.list(WIN_SAV|WIN_INS|WIN_DEL|WIN_ACT|
+										WIN_XTR|WIN_INSACT|WIN_DELACT|WIN_RHT
+										,0,0,0,&x,0,"Required Key (any one of)",opt);
+									if(x==-1)
+										break;
+									if((x&MSK_ON)==MSK_INS) {
+										x&=MSK_OFF;
+										str[0]=0;
+										if(uifc.input(WIN_MID|WIN_SAV,0,0
+											,"EchoList Key",str,SBBSECHO_MAX_KEY_LEN
+											,K_EDIT|K_UPPER)<1)
+											continue;
+										strListInsert(&cfg.listcfg[i].keys,str,x);
+										continue; 
+									}
+
+									if((x&MSK_ON)==MSK_DEL) {
+										x&=MSK_OFF;
+										strListRemove(&cfg.listcfg[i].keys,x);
+										continue; 
+									}
+									SAFECOPY(str,cfg.listcfg[i].keys[x]);
+										uifc.input(WIN_MID|WIN_SAV,0,0,"EchoList Keys"
+											,str,SBBSECHO_MAX_KEY_LEN,K_EDIT|K_UPPER);
+										strListReplace(cfg.listcfg[i].keys,x,str);
+										continue; 
+								}
+								break;
+							case 2:
 								if(cfg.listcfg[i].hub.zone)
 									strcpy(str,faddrtoa(&cfg.listcfg[i].hub));
 								else
@@ -1813,51 +1908,20 @@ int main(int argc, char **argv)
 									memset(&cfg.listcfg[i].hub,0
 										,sizeof(faddr_t));
 								break;
-							case 2:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Password to use when forwarding requests"
-									,cfg.listcfg[i].password,sizeof(cfg.listcfg[i].password)-1
-									,K_EDIT|K_UPPER);
-								break;
 							case 3:
 								cfg.listcfg[i].forward = !cfg.listcfg[i].forward;
 								break;
 							case 4:
-								uifc.helpbuf=
-								"~ AreaFix Keys ~\n\n"
-								"These keys determine which linked nodes have access to the current\n"
-								"echolist file via AreaFix requests (e.g. query, add, remove).\n";
-								while(1) {
-									for(u=0; cfg.listcfg[i].keys!=NULL && cfg.listcfg[i].keys[u] != NULL;u++)
-										strcpy(opt[u],cfg.listcfg[i].keys[u]);
-									opt[u][0]=0;
-									x=uifc.list(WIN_SAV|WIN_INS|WIN_DEL|WIN_ACT|
-										WIN_XTR|WIN_INSACT|WIN_DELACT|WIN_RHT
-										,0,0,0,&x,0,"AreaFix keys",opt);
-									if(x==-1)
-										break;
-									if((x&MSK_ON)==MSK_INS) {
-										x&=MSK_OFF;
-										str[0]=0;
-										if(uifc.input(WIN_MID|WIN_SAV,0,0
-											,"AreaFix Key",str,SBBSECHO_MAX_KEY_LEN
-											,K_EDIT|K_UPPER)<1)
-											continue;
-										strListInsert(&cfg.listcfg[i].keys,str,x);
-										continue; 
-									}
-
-									if((x&MSK_ON)==MSK_DEL) {
-										x&=MSK_OFF;
-										strListRemove(&cfg.listcfg[i].keys,x);
-										continue; 
-									}
-									SAFECOPY(str,cfg.listcfg[i].keys[x]);
-										uifc.input(WIN_MID|WIN_SAV,0,0,"AreaFix Keys"
-											,str,SBBSECHO_MAX_KEY_LEN,K_EDIT|K_UPPER);
-										strListReplace(cfg.listcfg[i].keys,x,str);
-										continue; 
-								}
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Name to use when forwarding AreaMgr requests"
+									,cfg.listcfg[i].areamgr,sizeof(cfg.listcfg[i].areamgr)-1
+									,K_EDIT);
+								break;
+							case 5:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Password to use when forwarding AreaMgr requests"
+									,cfg.listcfg[i].password,sizeof(cfg.listcfg[i].password)-1
+									,K_EDIT|K_UPPER);
 								break;
 						} 
 					} 

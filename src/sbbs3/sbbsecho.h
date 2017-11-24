@@ -192,6 +192,7 @@ typedef struct {
 	bool		echomail_notify;
 	bool		ignore_netmail_dest_addr;
 	bool		ignore_netmail_sent_attr;
+	bool		ignore_netmail_kill_attr;
 	bool		ignore_netmail_recv_attr;
 	bool		ignore_netmail_local_attr;
 	bool		use_ftn_domains;
