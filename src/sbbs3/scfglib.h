@@ -86,9 +86,6 @@ long	aftol(char *str);              /* Converts flag string to long */
 char*	ltoaf(long l, char *str);     /* Converts long to flag string */
 uchar	attrstr(char *str);		/* Convert ATTR string into attribute int */
 
-int		smb_storage_mode(scfg_t*, smb_t*);
-int		smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
-
 #ifdef __cplusplus
 }
 #endif

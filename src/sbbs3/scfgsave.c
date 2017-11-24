@@ -1087,12 +1087,12 @@ void DLLCALL refresh_cfg(scfg_t* cfg)
 	SAFEPRINTF(str,"%srecycle",cfg->ctrl_dir);		ftouch(str);
 }
 
-int smb_storage_mode(scfg_t* cfg, smb_t* smb)
+int DLLCALL smb_storage_mode(scfg_t* cfg, smb_t* smb)
 {
-	if(smb->subnum == INVALID_SUB)
+	if(smb == NULL || smb->subnum == INVALID_SUB || (smb->status.attr&SMB_EMAIL))
 		return (cfg->sys_misc&SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
 	if(smb->subnum >= cfg->total_subs)
-		return -1;
+		return (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_FASTALLOC;
 	if(cfg->sub[smb->subnum]->misc&SUB_HYPER) {
 		smb->status.attr |= SMB_HYPERALLOC;
 		return SMB_HYPERALLOC;
@@ -1102,7 +1102,7 @@ int smb_storage_mode(scfg_t* cfg, smb_t* smb)
 	return SMB_SELFPACK;
 }
 
-int smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
+int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
 {
 	int retval;
 

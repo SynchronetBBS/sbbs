@@ -215,6 +215,18 @@ int sbbs_t::lputs(int level, const char* str)
 	return ::lputs(level, str);
 }
 
+int sbbs_t::lprintf(int level, const char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+    va_start(argptr,fmt);
+    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+    va_end(argptr);
+    return(lputs(level,sbuf));
+}
+
 struct main_sock_cb_data {
 	bbs_startup_t	*startup;
 	const char		*protocol;
@@ -4317,6 +4329,15 @@ void node_thread(void* arg)
 	thread_down();
 }
 
+bool sbbs_t::backup(const char* fname, int backup_level, bool rename)
+{
+	if(!fexist(fname))
+		return false;
+
+	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, flength(fname));
+	return ::backup(fname, backup_level, rename) ? true : false;
+}
+
 void sbbs_t::daily_maint(void)
 {
 	char			str[128];
@@ -4359,6 +4380,10 @@ void sbbs_t::daily_maint(void)
 		SAFEPRINTF(str,"%smail.sid",cfg.data_dir);
 		backup(str,cfg.mail_backup_level,FALSE);
 		SAFEPRINTF(str,"%smail.sch",cfg.data_dir);
+		backup(str,cfg.mail_backup_level,FALSE);
+		SAFEPRINTF(str,"%smail.hash",cfg.data_dir);
+		backup(str,cfg.mail_backup_level,FALSE);
+		SAFEPRINTF(str,"%smail.ini",cfg.data_dir);
 		backup(str,cfg.mail_backup_level,FALSE);
 	}
 
@@ -4468,18 +4493,18 @@ void sbbs_t::daily_maint(void)
 			if((i=smb_locksmbhdr(&smb))!=0)
 				errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
 			else
-				delmail(0,MAIL_ALL);
+				lprintf(LOG_INFO, "DAILY: Removed %d messages", delmail(0, MAIL_ALL));
 		}
 		smb_close(&smb); 
 	}
 
-	sys_status&=~SS_DAILY;
 	if(cfg.sys_daily[0]) {
 		lputs(LOG_INFO, "DAILY: Running system event");
 		external(cmdstr(cfg.sys_daily,nulstr,nulstr,NULL), EX_OFFLINE); 
 	}
 	status(STATUS_WFC);
 	lputs(LOG_INFO, "DAILY: System maintenance ended");
+	sys_status&=~SS_DAILY;
 }
 
 const char* DLLCALL js_ver(void)

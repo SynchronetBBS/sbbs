@@ -786,6 +786,7 @@ public:
 
 	/* main.cpp */
 	int		lputs(int level, const char* str);
+	int		lprintf(int level, const char *fmt, ...);
 	void	printstatslog(uint node);
 	ulong	logonstats(void);
 	void	logoffstats(void);
@@ -795,6 +796,7 @@ public:
 	bool	chk_ar(const uchar * str, user_t* user, client_t* client); /* checks access requirements */
 	bool	ar_exp(const uchar ** ptrptr, user_t*, client_t*);
 	void	daily_maint(void);
+	bool	backup(const char* fname, int backup_level, bool rename);
 
 	/* upload.cpp */
 	bool	uploadfile(file_t* f);
@@ -1098,7 +1100,8 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level);
 	DLLEXPORT BOOL		DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level);
 	DLLEXPORT void		DLLCALL refresh_cfg(scfg_t* cfg);
-
+	DLLEXPORT int		DLLCALL smb_storage_mode(scfg_t*, smb_t*);
+	DLLEXPORT int		DLLCALL smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
 
 	/* logfile.cpp */
 	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, const char* host, const char* text);
