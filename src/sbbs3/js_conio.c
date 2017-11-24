@@ -338,9 +338,10 @@ js_conio_init(JSContext *cx, uintN argc, jsval *arglist)
 			ciolib_mode=CIOLIB_MODE_SDL_YUV;
 		else if(!stricmp(mode,"SDL_YUV_FULLSCREEN"))
 			ciolib_mode=CIOLIB_MODE_SDL_YUV_FULLSCREEN;
-		else
+		else {
 			JS_ReportError(cx, "Unhandled ciolib mode \"%s\"", mode);
 			return JS_FALSE;
+		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
