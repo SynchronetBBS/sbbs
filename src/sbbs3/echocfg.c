@@ -1602,8 +1602,6 @@ int main(int argc, char **argv)
 						for(j=cfg.arcdefs;j>i;j--)
 							memcpy(&cfg.arcdef[j],&cfg.arcdef[j-1]
 								,sizeof(arcdef_t));
-							strcpy(cfg.arcdef[j].name
-								,cfg.arcdef[j-1].name);
 						cfg.arcdefs++;
 						memset(&cfg.arcdef[i],0,sizeof(arcdef_t));
 						strcpy(cfg.arcdef[i].name,str);

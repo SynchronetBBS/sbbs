@@ -3899,7 +3899,7 @@ int sbbs_t::putcom(const char *str, size_t len)
 	if(!len)
 		len=strlen(str);
     for(i=0;i<len && online;i++)
-        if(outcom(str[i])!=0)
+		if(outcom(str[i])!=0)
 			break;
 	return i;
 }
@@ -4015,10 +4015,10 @@ void sbbs_t::reset_logon_vars(void)
     batdn_total=batup_total=0;
     usrgrps=usrlibs=0;
     curgrp=curlib=0;
-    for(i=0;i<cfg.total_libs;i++)
-        curdir[i]=0;
-    for(i=0;i<cfg.total_grps;i++)
-        cursub[i]=0;
+	for(i=0;i<cfg.total_libs;i++)
+		curdir[i]=0;
+	for(i=0;i<cfg.total_grps;i++)
+		cursub[i]=0;
 	cur_cps=3000;
     cur_rate=30000;
     dte_rate=38400;
@@ -5014,8 +5014,8 @@ NO_SSH:
 #endif // __unix__ (unix-domain spy sockets)
 
 	/* signal caller that we've started up successfully */
-    if(startup->started!=NULL)
-    	startup->started(startup->cbdata);
+	if(startup->started!=NULL)
+		startup->started(startup->cbdata);
 
 	lprintf(LOG_INFO,"Terminal Server thread started for nodes %d through %d", first_node, last_node);
 

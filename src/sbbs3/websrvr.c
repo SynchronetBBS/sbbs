@@ -5184,8 +5184,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-    if(startup==NULL || startup->lputs==NULL)
-        return(JS_FALSE);
+	if(startup==NULL || startup->lputs==NULL)
+		return(JS_FALSE);
 
 	if(argc > 1 && JSVAL_IS_NUMBER(argv[i])) {
 		if(!JS_ValueToInt32(cx,argv[i++],&level))

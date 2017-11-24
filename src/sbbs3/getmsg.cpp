@@ -79,7 +79,7 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 		return i;
 	}
 	if((i=smb_getmsghdr(&smb,msg))!=SMB_SUCCESS) {
-		SAFEPRINTF4(str,"(%06"PRIX32") #%"PRIu32"/%lu %s",msg->idx.offset,msg->idx.number
+		SAFEPRINTF4(str,"(%06" PRIX32 ") #%" PRIu32 "/%lu %s",msg->idx.offset,msg->idx.number
 			,number,smb.file);
 		smb_unlockmsghdr(&smb,msg);
 		errormsg(WHERE,ERR_READ,str,i,smb.last_error);

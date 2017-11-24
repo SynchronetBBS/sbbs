@@ -1,4 +1,5 @@
 /* Synchronet user data-related routines (exported) */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -1128,8 +1129,8 @@ char* DLLCALL nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen)
             strcat(str,"C");
         strcat(str,"]"); 
 	}
-    if(node->errors)
-        sprintf(str+strlen(str)
+	if(node->errors)
+		sprintf(str+strlen(str)
 			," %d error%c",node->errors, node->errors>1 ? 's' : '\0' );
 
 	strncpy(buf,str,buflen);

@@ -105,8 +105,12 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #if defined(JAVASCRIPT)
 #include "comio.h"			/* needed for COM_HANDLE definition only */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#pragma GCC diagnostic ignored "-Wignored-attributes"
 #include <jsversion.h>
 #include <jsapi.h>
+#pragma GCC diagnostic pop
 #define JS_DestroyScript(cx,script)
 
 #define JSSTRING_TO_RASTRING(cx, str, ret, sizeptr, lenptr) \

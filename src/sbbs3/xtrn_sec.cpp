@@ -430,7 +430,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,str,strlen(str));
 
 		sprintf(str,"%s\n%s\n%d\n%s\n%lu\n%s\n%s\n%s\n%s\n"
-			"%"PRIx32"\n%d\n"
+			"%" PRIx32 "\n%d\n"
 			,ltoaf(useron.flags3,tmp)			/* Flag set #3 */
 			,ltoaf(useron.flags4,tmp2)			/* Flag set #4 */
 			,0									/* Time-slice type */
@@ -1161,7 +1161,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if((p=strchr(tmp,' '))!=NULL)
 			*p=0;
 
-		sprintf(str,"%u\n%s\n%s\n%s\n%lu\n%u\n%lu\n%"PRId32"\n"
+		sprintf(str,"%u\n%s\n%s\n%s\n%lu\n%u\n%lu\n%" PRId32 "\n"
 			,useron.number						/* User number */
 			,name								/* User name */
 			,useron.pass						/* Password */
@@ -1180,7 +1180,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			l=((((long)tm.tm_hour*60L)+(long)tm.tm_min)*60L)
 				+(long)tm.tm_sec;
 
-		sprintf(str,"%s\n%s\n%u\n%u\n%u\n%u\n%"PRId32"\n%lu\n%s\n"
+		sprintf(str,"%s\n%s\n%u\n%u\n%u\n%u\n%" PRId32 "\n%lu\n%s\n"
 			"%s\n%s\n%lu\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
 			"%lu\n%lu\n%s\n%s\n"
 			,dropdir
