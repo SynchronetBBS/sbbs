@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -36,8 +36,9 @@
 #include "sbbs.h"
 
 /****************************************************************************/
-/* Deletes all mail messages for usernumber that have been marked 'deleted' */
+/* Removes all mail messages for usernumber that have been marked 'deleted' */
 /* smb_locksmbhdr() should be called prior to this function 				*/
+/* Returns the nubmer of messages removed									*/
 /****************************************************************************/
 int sbbs_t::delmail(uint usernumber, int which)
 {
@@ -45,28 +46,29 @@ int sbbs_t::delmail(uint usernumber, int which)
 	time_t	now;
 	idxrec_t *idxbuf;
 	smbmsg_t msg;
+	int		removed = 0;
 
 	now=time(NULL);
 	if((i=smb_getstatus(&smb))!=0) {
 		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
-		return(2); 
+		return 0;
 	}
 	if(!smb.status.total_msgs)
-		return(0);
+		return 0;
 	if((idxbuf=(idxrec_t *)malloc(smb.status.total_msgs*sizeof(idxrec_t)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,smb.file,smb.status.total_msgs*sizeof(idxrec_t));
-		return(-1); 
+		return 0;
 	}
 	if((i=smb_open_da(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		free(idxbuf);
-		return(i); 
+		return 0;
 	}
 	if((i=smb_open_ha(&smb))!=0) {
 		smb_close_da(&smb);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		free(idxbuf);
-		return(i); 
+		return 0;
 	}
 	smb_rewind(smb.sid_fp);
 	for(l=0;l<smb.status.total_msgs;) {
@@ -98,6 +100,7 @@ int sbbs_t::delmail(uint usernumber, int which)
 						delfattach(&cfg,&msg);
 					smb_freemsgmem(&msg); 
 				}
+				removed++;
 				continue; 
 			}
 		}
@@ -114,7 +117,7 @@ int sbbs_t::delmail(uint usernumber, int which)
 	smb_fflush(smb.sid_fp);
 	smb_close_ha(&smb);
 	smb_close_da(&smb);
-	return(0);
+	return removed;
 }
 
 
