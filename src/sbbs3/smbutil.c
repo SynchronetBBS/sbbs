@@ -34,7 +34,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define SMBUTIL_VER "2.33"
+#define SMBUTIL_VER "2.34"
 char	revision[16];
 char	compiler[32];
 
@@ -113,27 +113,29 @@ char *usage=
 "       h    = dump hash file\n"
 "       s    = display msg base status\n"
 "       c    = change msg base status\n"
+"       R    = re-initialize/repair SMB/status headers\n"
 "       d    = delete all msgs\n"
 "       m    = maintain msg base - delete old msgs and msgs over max\n"
 "       p[k] = pack msg base (k specifies minimum packable Kbytes)\n"
 "opts:\n"
-"       c[m] = create message base if it doesn't exist (m=max msgs)\n"
-"       a    = always pack msg base (disable compression analysis)\n"
-"       i    = ignore dupes (do not store CRCs or search for duplicate hashes)\n"
-"       d    = use default values (no prompt) for to, from, and subject\n"
-"       l    = LZH-compress message text\n"
-"       o    = print errors on stdout (instead of stderr)\n"
-"       p    = wait for keypress (pause) on exit\n"
-"       !    = wait for keypress (pause) on error\n"
-"       b    = beep on error\n"
-"       t<s> = set 'to' user name for imported message\n"
-"       n<s> = set 'to' netmail address for imported message\n"
-"       u<s> = set 'to' user number for imported message\n"
-"       f<s> = set 'from' user name for imported message\n"
-"       e<s> = set 'from' user number for imported message\n"
-"       s<s> = set 'subject' for imported message\n"
-"       z[n] = set time zone (n=min +/- from UT or 'EST','EDT','CST',etc)\n"
-"       #    = set number of messages to view/list (e.g. -1)\n"
+"      -c[m] = create message base if it doesn't exist (m=max msgs)\n"
+"      -a    = always pack msg base (disable compression analysis)\n"
+"      -i    = ignore dupes (do not store CRCs or search for duplicate hashes)\n"
+"      -d    = use default values (no prompt) for to, from, and subject\n"
+"      -l    = LZH-compress message text\n"
+"      -o    = print errors on stdout (instead of stderr)\n"
+"      -p    = wait for keypress (pause) on exit\n"
+"      -!    = wait for keypress (pause) on error\n"
+"      -b    = beep on error\n"
+"      -C    = continue after some (normally fatal) error conditions\n"
+"      -t<s> = set 'to' user name for imported message\n"
+"      -n<s> = set 'to' netmail address for imported message\n"
+"      -u<s> = set 'to' user number for imported message\n"
+"      -f<s> = set 'from' user name for imported message\n"
+"      -e<s> = set 'from' user number for imported message\n"
+"      -s<s> = set 'subject' for imported message\n"
+"      -z[n] = set time zone (n=min +/- from UT or 'EST','EDT','CST',etc)\n"
+"      -#    = set number of messages to view/list (e.g. -1)\n"
 ;
 
 void bail(int code)
@@ -1567,13 +1569,16 @@ int main(int argc, char **argv)
 				continue;
 			}
 			for(j=1;argv[x][j];j++)
-				switch(toupper(argv[x][j])) {
+				switch(argv[x][j]) {
+					case 'a':
 					case 'A':
 						mode|=NOANALYSIS;
 						break;
+					case 'i':
 					case 'I':
 						mode|=NOCRC;
 						break;
+					case 'd':
 					case 'D':
 						to="All";
 						to_number="1";
@@ -1581,52 +1586,62 @@ int main(int argc, char **argv)
 						from_number="1";
 						subj="Announcement";
 						break;
-					case 'Z':
+					case 'z':
 						tzone=str2tzone(argv[x]+j+1);
 						j=strlen(argv[x])-1;
 						break;
-					case 'C':
+					case 'c':
 						create=TRUE;
 						max_msgs=strtoul(argv[x]+j+1,NULL,10);
 						j=strlen(argv[x])-1;
 						break;
+					case 'C':
+						smb.continue_on_error = TRUE;
+						break;
 					case 'T':
+					case 't':
 						to=argv[x]+j+1;
 						j=strlen(argv[x])-1;
 						break;
 					case 'U':
+					case 'u':
 						to_number=argv[x]+j+1;
 						j=strlen(argv[x])-1;
 						break;
 					case 'N':
+					case 'n':
 						to_address=argv[x]+j+1;
 						j=strlen(argv[x])-1;
 						break;
 					case 'F':
+					case 'f':
 						from=argv[x]+j+1;
 						j=strlen(argv[x])-1;
 						break;
 					case 'E':
+					case 'e':
 						from_number=argv[x]+j+1;
 						j=strlen(argv[x])-1;
 						break;
 					case 'S':
+					case 's':
 						subj=argv[x]+j+1;
 						j=strlen(argv[x])-1;
 						break;
 					case 'O':
+					case 'o':
 						errfp=stdout;
 						break;
-					case 'L':
+					case 'l':
 						xlat=XLAT_LZH;
 						break;
-					case 'P':
+					case 'p':
 						pause_on_exit=TRUE;
 						break;
 					case '!':
 						pause_on_error=TRUE;
 						break;
-					case 'B':
+					case 'b':
 						beep="\a";
 						break;
 					default:
@@ -1732,6 +1747,35 @@ int main(int argc, char **argv)
 						case 'r':
 							readmsgs(atol(cmd+1));
 							y=strlen(cmd)-1;
+							break;
+						case 'R':
+							printf("Re-initialzing %s SMB/status header\n", smb.file);
+							if((i=smb_initsmbhdr(&smb)) != SMB_SUCCESS) {
+								fprintf(errfp, "\n%s!error %d: %s\n", beep, i, smb.last_error);
+								return i;
+							}
+							memset(&smb.status, 0, sizeof(smb.status));
+							smb.status.header_offset = sizeof(smbhdr_t) + sizeof(smb.status);
+							smb.status.total_msgs = filelength(fileno(smb.sid_fp)) / sizeof(idxrec_t);
+							idxrec_t idx;
+							if((i=smb_getlastidx(&smb, &idx)) != SMB_SUCCESS) {
+								fprintf(errfp, "\n%s!error %d: %s\n", beep, i, smb.last_error);
+								return i;
+							}
+							smb.status.last_msg = idx.number;
+							if(stricmp(getfname(smb.file), "mail") == 0)
+								smb.status.attr = SMB_EMAIL;
+							else {
+								char sha[MAX_PATH+1];
+								SAFEPRINTF(sha, "%s.sha", smb.file);
+								if(!fexist(sha))
+									smb.status.attr = SMB_HYPERALLOC;
+							}
+							if((i=smb_putstatus(&smb)) != SMB_SUCCESS) {
+								fprintf(errfp, "\n%s!error %d: %s\n", beep, i, smb.last_error);
+								return i;
+							}
+							showstatus();
 							break;
 						case 'v':
 						case 'V':
