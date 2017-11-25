@@ -116,14 +116,14 @@ int SMBCALL smb_open(smb_t* smb)
 			smb_close(smb);
 			return(SMB_ERR_READ);
 		}
-		if(memcmp(hdr.id,SMB_HEADER_ID,LEN_HEADER_ID)) {
+		if(memcmp(hdr.id,SMB_HEADER_ID,LEN_HEADER_ID) && !smb->continue_on_error) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s corrupt SMB header ID: %.*s", __FUNCTION__
 				,LEN_HEADER_ID,hdr.id);
 			smb_close(smb);
 			return(SMB_ERR_HDR_ID); 
 		}
-		if(hdr.version<0x110) {         /* Compatibility check */
+		if(hdr.version<0x110 && !smb->continue_on_error) {         /* Compatibility check */
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s insufficient header version: %X", __FUNCTION__
 				,hdr.version);
@@ -1858,14 +1858,11 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 }
 
 /****************************************************************************/
-/* Creates a sub-board's initial header file                                */
-/* Truncates and deletes other associated SMB files 						*/
+/* Initializes a message base's header (SMBHDR) record 						*/
 /****************************************************************************/
-int SMBCALL smb_create(smb_t* smb)
+int SMBCALL smb_initsmbhdr(smb_t* smb)
 {
-    char        str[MAX_PATH+1];
 	smbhdr_t	hdr;
-	FILE*		fp;
 
 	if(smb->shd_fp==NULL || smb->sdt_fp==NULL || smb->sid_fp==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s msgbase not open", __FUNCTION__);
@@ -1875,14 +1872,33 @@ int SMBCALL smb_create(smb_t* smb)
 		&& smb_locksmbhdr(smb)!=SMB_SUCCESS)  /* header exists, so lock it */
 		return(SMB_ERR_LOCK);
 	memset(&hdr,0,sizeof(smbhdr_t));
-	memcpy(hdr.id,SMB_HEADER_ID,LEN_HEADER_ID);     
+	memcpy(hdr.id,SMB_HEADER_ID,LEN_HEADER_ID);
 	hdr.version=SMB_VERSION;
 	hdr.length=sizeof(smbhdr_t)+sizeof(smbstatus_t);
 	smb->status.last_msg=smb->status.total_msgs=0;
 	smb->status.header_offset=sizeof(smbhdr_t)+sizeof(smbstatus_t);
 	rewind(smb->shd_fp);
-	fwrite(&hdr,1,sizeof(smbhdr_t),smb->shd_fp);
-	fwrite(&(smb->status),1,sizeof(smbstatus_t),smb->shd_fp);
+	if(!fwrite(&hdr,sizeof(smbhdr_t),1,smb->shd_fp))
+		return SMB_ERR_WRITE;
+	if(!fwrite(&(smb->status),1,sizeof(smbstatus_t),smb->shd_fp))
+		return SMB_ERR_WRITE;
+
+	return SMB_SUCCESS;
+}
+
+/****************************************************************************/
+/* Creates a sub-board's initial header file                                */
+/* Truncates and deletes other associated SMB files 						*/
+/****************************************************************************/
+int SMBCALL smb_create(smb_t* smb)
+{
+    char        str[MAX_PATH+1];
+	FILE*		fp;
+	int			retval;
+
+	if((retval = smb_initsmbhdr(smb)) != SMB_SUCCESS)
+		return retval;
+
 	rewind(smb->shd_fp);
 	chsize(fileno(smb->shd_fp),sizeof(smbhdr_t)+sizeof(smbstatus_t));
 	fflush(smb->shd_fp);
