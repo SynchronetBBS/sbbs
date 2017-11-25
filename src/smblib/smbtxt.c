@@ -194,25 +194,17 @@ void SMBCALL smb_freemsgtxt(char* buf)
 		free(buf);
 }
 
-/* Get just the plain-text portion of a MIME-encoded message body */
-char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
+/* Get just the plain-text portion of a MIME-encoded message body, recursively */
+static char* mime_getplaintext(char* buf, const char* content_type, int depth)
 {
-	int		i;
 	char*	txt;
 	char*	p;
-	char*	content_type = NULL;
 	char	boundary[256];
 
-	for(i=0;i<msg->total_hfields;i++) { 
-		if(msg->hfield[i].type==RFC822HEADER) { 
-			if(strnicmp((char*)msg->hfield_dat[i],"Content-Type:",13)==0) {
-				content_type=msg->hfield_dat[i];
-				break;
-			}
-        }
-    }
+	if(depth > 2)
+		return NULL;
 	if(content_type == NULL)	/* Not MIME-encoded */
-		return buf;
+		return NULL;
 	content_type += 13;
 	SKIP_WHITESPACE(content_type);
 	if(strstr(content_type, "multipart/alternative;") == content_type)
@@ -220,10 +212,10 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 	else if(strstr(content_type, "multipart/mixed;") == content_type)
 		content_type +=16;
 	else
-		return buf;
+		return NULL;
 	p = strstr(content_type, "boundary=");
 	if(p == NULL)
-		return buf;
+		return NULL;
 	p += 9;
 	if(*p == '"')
 		p++;
@@ -234,18 +226,44 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 	while((p = strstr(txt, boundary)) != NULL) {
 		txt = p+strlen(boundary);
 		SKIP_WHITESPACE(txt);
-		if(strncmp(txt, "Content-Type: text/plain;", 25) 
-			&& strncmp(txt,"Content-Type: text/plain\r", 25))
+		if(strncmp(txt, "Content-Type:", 13) != 0)
 			continue;
 		p = strstr(txt, "\r\n\r\n");	/* End of header */
 		if(p==NULL)
 			continue;
+		if(strncmp(txt, "Content-Type: text/plain;", 25) 
+			&& strncmp(txt,"Content-Type: text/plain\r", 25)) {
+			if((p = mime_getplaintext(p, txt, depth + 1)) != NULL)
+				return p;
+			continue;
+		}
 		txt = p;
 		SKIP_WHITESPACE(txt);
 		if((p = strstr(txt, boundary)) != NULL)
 			*p = 0;
-		memmove(buf, txt, strlen(txt)+1);
-		break;
+		return txt;
 	}
+	return NULL;
+}
+
+
+/* Get just the plain-text portion of a MIME-encoded message body */
+char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
+{
+	int		i;
+	char*	txt;
+	char*	content_type = NULL;
+
+	for(i=0;i<msg->total_hfields;i++) { 
+		if(msg->hfield[i].type==RFC822HEADER) { 
+			if(strnicmp((char*)msg->hfield_dat[i],"Content-Type:",13)==0) {
+				content_type=msg->hfield_dat[i];
+				break;
+			}
+        }
+    }
+	txt = mime_getplaintext(buf, content_type, 0);
+	if(txt != NULL)
+		memmove(buf, txt, strlen(txt)+1);
 	return buf;
 }
