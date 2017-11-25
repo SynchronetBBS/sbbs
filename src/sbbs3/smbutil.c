@@ -1775,7 +1775,6 @@ int main(int argc, char **argv)
 								fprintf(errfp, "\n%s!error %d: %s\n", beep, i, smb.last_error);
 								return i;
 							}
-							showstatus();
 							break;
 						case 'v':
 						case 'V':
