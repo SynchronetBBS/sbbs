@@ -5160,13 +5160,13 @@ NO_SSH:
 			continue;
 		}
 
-		lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
-			,client_socket
 #ifdef USE_CRYPTLIB
-			,rlogin ? "RLogin" : (ssh ? "SSH" : "Telnet")
+		client.protocol=rlogin ? "RLogin":(ssh ? "SSH" : "Telnet");
 #else
-			,rlogin ? "RLogin" : "Telnet"
+		client.protocol=rlogin ? "RLogin":"Telnet";
 #endif
+		lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
+			,client_socket, client.protocol
 			, host_ip, inet_addrport(&client_addr));
 
 		if(startup->max_concurrent_connections > 0) {
@@ -5302,7 +5302,7 @@ NO_SSH:
 		sbbs->putcom(VERSION_NOTICE);
 		sbbs->putcom(crlf);
 
-		sbbs->bprintf("Connection from: %s\r\n", host_ip);
+		sbbs->bprintf("%s connection from: %s\r\n", client.protocol, host_ip);
 
 		SAFECOPY(host_name, "<no name>");
 		if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
@@ -5344,11 +5344,6 @@ NO_SSH:
 		SAFECOPY(client.addr,host_ip);
 		SAFECOPY(client.host,host_name);
 		client.port=inet_addrport(&client_addr);
-#ifdef USE_CRYPTLIB
-		client.protocol=rlogin ? "RLogin":(ssh ? "SSH" : "Telnet");
-#else
-		client.protocol=rlogin ? "RLogin":"Telnet";
-#endif
 		client.user=STR_UNKNOWN_USER;
 		client_on(client_socket,&client,FALSE /* update */);
 
