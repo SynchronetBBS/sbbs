@@ -60,6 +60,8 @@ int b64_decode(char *target, size_t tlen, const char *source, size_t slen)
 	outend=target+tlen;
 	inend=source+slen;
 	for(;outp<outend && inp<inend;inp++) {
+		if(isspace(*inp))
+			continue;
 		working<<=6;
 		i=strchr(base64alphabet,(char)*inp);
 		if(i==NULL) {
