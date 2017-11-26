@@ -487,7 +487,7 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc)
 		ultoac(length, bytes);
 		bprintf(text[FileNBytesSent], getfname(fname), bytes);
 		char str[128];
-		SAFEPRINTF3(str, "%s downloaded %s: %s (%s bytes)"
+		SAFEPRINTF4(str, "%s downloaded %s: %s (%s bytes)"
 			,useron.alias, desc == NULL ? "file" : desc, fname, bytes);
 		logline("D-",str); 
 		autohangup(); 
