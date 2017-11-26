@@ -822,7 +822,7 @@ public:
 	void	autohangup(void);
 	bool	checkdszlog(file_t*);
 	bool	checkprotresult(prot_t*, int error, file_t*);
-	bool	sendfile(char* fname, char prot=0);
+	bool	sendfile(char* fname, char prot=0, const char* description = NULL);
 	bool	recvfile(char* fname, char prot=0);
 
 	/* file.cpp */
