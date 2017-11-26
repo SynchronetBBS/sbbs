@@ -268,6 +268,34 @@ void sbbs_t::readmail(uint usernumber, int which)
 				,msg.from_ext && msg.idx.from==1 && !msg.from_net.type
 					? 0:P_NOATCODES);
 
+			char* txt;
+			if((txt=smb_getmsgtxt(&smb,&msg, 0)) != NULL) {
+				char filename[MAX_PATH+1] = {0};
+				uint32_t filelen = 0;
+				uint8_t* filedata;
+				if((filedata = smb_getattachment(&msg, txt, filename, &filelen)) != NULL 
+					&& filename[0] != 0 && filelen > 0) {
+					char tmp[32];
+					sprintf(str3, text[DownloadAttachedFileQ], filename, ultoac(filelen,tmp));
+					if(yesno(str3)) {
+						char fpath[MAX_PATH+1];
+						SAFEPRINTF2(fpath, "%s%s", cfg.temp_dir, filename);
+						FILE* fp = fopen(fpath, "wb");
+						if(fp == NULL)
+							errormsg(WHERE, ERR_OPEN, fpath, 0);
+						else {
+							int result = fwrite(filedata, filelen, 1, fp);
+							fclose(fp);
+							if(!result)
+								errormsg(WHERE, ERR_WRITE, fpath, filelen);
+							else
+								sendfile(fpath, useron.prot, "attachment");
+						}
+					}
+				}
+				smb_freemsgtxt(txt);
+			}
+
 			if(msg.hdr.auxattr&MSG_FILEATTACH) {  /* Attached file */
 				smb_getmsgidx(&smb,&msg);
 				SAFECOPY(str, msg.subj);					/* filenames (multiple?) in title */
