@@ -457,7 +457,7 @@ bool sbbs_t::sendfile(char* fname, char prot)
 	size_t	i;
 	bool	result=false;
 
-	if(prot)
+	if(prot > ' ')
 		ch=toupper(prot);
 	else {
 		xfer_prot_menu(XFER_DOWNLOAD);
