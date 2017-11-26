@@ -638,7 +638,7 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
         sockprintf(socket,"");
         mimeblurb(socket,mime_boundary);
         sockprintf(socket,"");
-        mimetextpartheader(socket,mime_boundary);
+        mimetextpartheader(socket, mime_boundary, startup->default_charset);
 	}
 	if(!sockprintf(socket,""))	/* Header Terminator */
 		return(0);
