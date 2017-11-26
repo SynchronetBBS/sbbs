@@ -11,7 +11,6 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)ars$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)atcodes$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)bat_xfer$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)base64$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)bulkmail$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)chat$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)chk_ar$(OFILE)\
@@ -130,12 +129,10 @@ MAIL_OBJS	= $(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)mxlookup$(OFILE) \
  		  	$(MTOBJODIR)$(DIRSEP)mime$(OFILE) \
  		  	$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
- 		  	$(MTOBJODIR)$(DIRSEP)ars$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)base64$(OFILE)
+ 		  	$(MTOBJODIR)$(DIRSEP)ars$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
 WEB_OBJS	= $(MTOBJODIR)$(DIRSEP)websrvr$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)base64$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE)
 			
@@ -243,7 +240,6 @@ JSEXEC_OBJS = \
 
 JSDOOR_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)ars$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)base64$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)date_str$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)jsdoor$(OFILE) \
