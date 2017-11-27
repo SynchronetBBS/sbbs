@@ -58,6 +58,16 @@ function external_program_menu(xsec)
 			break; 
 		}
 
+		// If there's only one program available to the user in the section, just run it (or try to)
+		if(options.autoexec && prog_list.length == 1) {
+			if(options.clear_screen_on_exec)
+				console.clear();
+			bbs.exec_xtrn(prog_list[0].code); 
+			if(prog_list[0].settings&XTRN_PAUSE)
+				console.pause();
+			break;
+		}
+
 		if(file_exists(system.text_dir + "menu/xtrn" + (xtrn_area.sec_list[xsec].number+1) + ".asc")) {
 			bbs.menu("xtrn" + (xtrn_area.sec_list[xsec].number+1)); 
 		}
@@ -119,7 +129,7 @@ function external_program_menu(xsec)
 		bbs.exec_xtrn(prog_list[i].code); 
 
 		if(prog_list[i].settings&XTRN_PAUSE)
-			bbs.line_counter=2;	/* force a pause before CLS */
+			console.pause();
 	}
 }
 
