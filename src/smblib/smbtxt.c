@@ -440,7 +440,7 @@ uint8_t* SMBCALL smb_getattachment(smbmsg_t* msg, char* buf, char* filename, uin
 		if(result < 1)
 			return NULL;
 		*filelen = result;
-		return buf;
+		return (uint8_t*)buf;
 	}
 
 	return NULL;	/* No attachment */
