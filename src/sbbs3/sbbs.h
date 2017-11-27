@@ -105,14 +105,14 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #if defined(JAVASCRIPT)
 #include "comio.h"			/* needed for COM_HANDLE definition only */
-#if defined(__GNUC__)
+#if __GNUC__ > 5
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wmisleading-indentation"
 	#pragma GCC diagnostic ignored "-Wignored-attributes"
 #endif
 #include <jsversion.h>
 #include <jsapi.h>
-#if defined(__GNUC_)
+#if __GNUC_ > 5
 	#pragma GCC diagnostic pop
 #endif
 #define JS_DestroyScript(cx,script)
