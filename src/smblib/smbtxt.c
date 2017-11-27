@@ -216,7 +216,7 @@ char* qp_decode(char* buf)
 			*dest++='\n';
 			break;
 		}
-		if(*p==' ' || (*p>='!' && *p<='~' && *p!='=') || *p=='\t')
+		if(*p==' ' || (*p>='!' && *p<='~' && *p!='=') || *p=='\t'|| *p=='\r'|| *p=='\n')
 			*dest++=*p;
 		else if(*p=='=') {
 			p++;
@@ -390,8 +390,14 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 		memmove(buf, txt, strlen(txt)+1);
 		if(xfer_encoding == CONTENT_TRANFER_ENCODING_QUOTED_PRINTABLE)
 			qp_decode(buf);
-		else if(xfer_encoding == CONTENT_TRANFER_ENCODING_BASE64)
-			b64_decode(buf, strlen(buf), buf, strlen(buf));
+		else if(xfer_encoding == CONTENT_TRANFER_ENCODING_BASE64) {
+			char* decoded = strdup(buf);
+			if(decoded == NULL)
+				return buf;
+			if(b64_decode(decoded, strlen(decoded), buf, strlen(buf)) > 0)
+				strcpy(buf, decoded);
+			free(decoded);
+		}
 	}
 
 	return buf;
@@ -418,7 +424,10 @@ uint8_t* SMBCALL smb_getattachment(smbmsg_t* msg, char* buf, char* filename, uin
 	txt = mime_getcontent(buf, content_type, /* match-type: */NULL, 0, &xfer_encoding, /* attachment: */filename);
 	if(txt != NULL && xfer_encoding == CONTENT_TRANFER_ENCODING_BASE64) {
 		memmove(buf, txt, strlen(txt)+1);
-		*filelen = b64_decode(buf, strlen(buf), buf, strlen(buf));
+		int result = b64_decode(buf, strlen(buf), buf, strlen(buf));
+		if(result < 1)
+			return NULL;
+		*filelen = result;
 		return buf;
 	}
 
