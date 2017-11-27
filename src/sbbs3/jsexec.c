@@ -876,6 +876,7 @@ long js_exec(const char *fname, char** args)
 	int32		result=0;
 	long double	start;
 	long double	diff;
+	JSBool		exec_result;
 
 	if(fname!=NULL) {
 		if(isfullpath(fname)) {
@@ -981,7 +982,7 @@ long js_exec(const char *fname, char** args)
 	start=xp_timer();
 	if(debugger)
 		debug_prompt(js_cx, js_script);
-	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+	exec_result = JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 	if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
 		char	*p;
@@ -1003,6 +1004,8 @@ long js_exec(const char *fname, char** args)
 	if(js_buf!=NULL)
 		free(js_buf);
 
+	if(result == 0 && !exec_result)
+		return EXIT_FAILURE;
 	return(result);
 }
 
