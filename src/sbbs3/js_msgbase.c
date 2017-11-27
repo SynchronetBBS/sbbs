@@ -1468,11 +1468,11 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 	/* Now parse message offset/id and get message */
 	if(JSVAL_IS_NUMBER(argv[n])) {
 		if(by_offset) {							/* Get by offset */
-			if(!JS_ValueToInt32(cx,argv[n],(int32*)&(p->msg).offset))
+			if(!JS_ValueToInt32(cx,argv[n++],(int32*)&(p->msg).offset))
 				return JS_FALSE;
 		}
 		else {									/* Get by number */
-			if(!JS_ValueToInt32(cx,argv[n],(int32*)&(p->msg).hdr.number))
+			if(!JS_ValueToInt32(cx,argv[n++],(int32*)&(p->msg).hdr.number))
 				return JS_FALSE;
 		}
 
@@ -1496,7 +1496,7 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 		smb_unlockmsghdr(&(p->p->smb),&(p->msg)); 
 		JS_RESUMEREQUEST(cx, rc);
 	} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[n]), cstr, NULL);
+		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[n++]), cstr, NULL);
 		HANDLE_PENDING(cx);
 		rc=JS_SUSPENDREQUEST(cx);
 		if((p->p->status=smb_getmsghdr_by_msgid(&(p->p->smb),&(p->msg)
@@ -1787,6 +1787,13 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	hdr = JSVAL_TO_OBJECT(argv[n++]);
+
+	privatemsg_t* mp;
+	mp=(privatemsg_t*)JS_GetPrivate(cx,hdr);
+	if(mp->expand_fields) {
+		JS_ReportError(cx, "Message header has 'expanded fields'", WHERE);
+		return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if((p->status=smb_getmsgidx(&(p->smb), &msg))!=SMB_SUCCESS) {
