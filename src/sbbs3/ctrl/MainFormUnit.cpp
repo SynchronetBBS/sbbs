@@ -1114,8 +1114,8 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
         TrayIcon->Visible=false;    /* restore to avoid crash */
         
     /* This is necessary to save form sizes/positions */
-    if(Initialized) /* Don't overwrite registry settings with defaults */
-        SaveRegistrySettings(Sender);
+    if(Initialized) /* Don't overwrite registry and .ini settings with defaults */
+        SaveSettings(Sender);
 
 	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Terminating servers...";
     time_t start=time(NULL);

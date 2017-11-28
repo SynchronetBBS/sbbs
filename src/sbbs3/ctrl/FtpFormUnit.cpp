@@ -63,7 +63,6 @@ void __fastcall TFtpForm::LogLevelUpDownChangingEx(TObject *Sender,
     else {
         MainForm->ftp_startup.log_level = NewValue;
         LogLevelText->Caption = LogLevelDesc[NewValue];
-        MainForm->SaveIniSettings(Sender);
     }
 }
 //---------------------------------------------------------------------------
