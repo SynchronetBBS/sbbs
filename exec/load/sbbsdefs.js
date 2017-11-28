@@ -663,6 +663,7 @@ var MSG_NOREPLY			=(1<<10);	// No replies (or bounces) should be sent to the sen
 var MSG_UPVOTE			=(1<<11);	// This message is an upvote
 var MSG_DOWNVOTE		=(1<<12);	// This message is a downvote */
 var MSG_POLL			=(1<<13);	// This message is a poll
+var MSG_SPAM			=(1<<14);	// This message has been flagged as SPAM
 
 var MSG_VOTE			=(MSG_UPVOTE|MSG_DOWNVOTE);	/* This message is a poll-vote */
 var MSG_POLL_CLOSURE	=(MSG_POLL|MSG_VOTE);		/* This message is a poll-closure */
