@@ -1790,7 +1790,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 
 	privatemsg_t* mp;
 	mp=(privatemsg_t*)JS_GetPrivate(cx,hdr);
-	if(mp->expand_fields) {
+	if(mp != NULL && mp->expand_fields) {
 		JS_ReportError(cx, "Message header has 'expanded fields'", WHERE);
 		return JS_FALSE;
 	}
