@@ -962,3 +962,5 @@
 "\r\nToggle which vote (up to %u), ~Quit or [Cast]: "           793 BallotVoteWhich
 "Only"									794 Only
 "\1n\1h\1c\r\nSPAM Visibility is now: \1w"	795 SPAMVisibilityIsNow
+"\r\nTo vote in this poll, hit ~V now.\r\n" 796 VoteInThisPollNow
+"\1n\1mMIME-decoded plain-text:\1n\r\n"     797 MIMEDecodedPlainText

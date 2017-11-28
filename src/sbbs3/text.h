@@ -806,6 +806,8 @@ enum {
 	,BallotVoteWhich
 	,Only
 	,SPAMVisibilityIsNow
+	,VoteInThisPollNow
+	,MIMEDecodedPlainText
 
 	,TOTAL_TEXT
 };

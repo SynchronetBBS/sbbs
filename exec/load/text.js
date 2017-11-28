@@ -804,5 +804,7 @@ var BallotAnswerFmt=792;
 var BallotVoteWhich=793;
 var Only=794;
 var SPAMVisibilityIsNow=795;
+var VoteInThisPollNow=796;
+var MIMEDecodedPlainText=797;
 
-var TOTAL_TEXT=796;
+var TOTAL_TEXT=798;

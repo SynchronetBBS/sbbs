@@ -248,13 +248,19 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 			answers++;
 		}
 		if(!msg->user_voted && !(useron.misc&EXPERT) && !(msg->hdr.auxattr&POLL_CLOSED) && !(useron.rest&FLAG('V')))
-			mnemonics("\r\nTo vote in this poll, hit ~V now.\r\n");
+			mnemonics(text[VoteInThisPollNow]);
 		return;
 	}
-	if((txt=smb_getmsgtxt(&smb,msg,(console&CON_RAW_IN) ? 0:GETMSGTXT_PLAIN)) != NULL) {
-		if(!(console&CON_RAW_IN))
-			mode|=P_WORDWRAP;
+	if((txt=smb_getmsgtxt(&smb, msg, 0)) != NULL) {
 		char* p = txt;
+		if(!(console&CON_RAW_IN)) {
+			mode|=P_WORDWRAP;
+			p = smb_getplaintext(msg, txt);
+			if(p == NULL)
+				p = txt;
+			else
+				bputs(text[MIMEDecodedPlainText]);
+		}
 		truncsp(p);
 		SKIP_WHITESPACE(p);
 		putmsg(p, mode);
