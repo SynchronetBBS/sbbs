@@ -210,32 +210,31 @@ char* qp_decode(char* buf)
 	uchar*	p=(uchar*)buf;
 	uchar*	dest=p;
 
-	for(;;p++) {
-		if(*p==0) {
-			*dest++='\r';
-			*dest++='\n';
-			break;
-		}
+	for(;*p != 0; p++) {
 		if(*p==' ' || (*p>='!' && *p<='~' && *p!='=') || *p=='\t'|| *p=='\r'|| *p=='\n')
 			*dest++=*p;
 		else if(*p=='=') {
 			p++;
-			if(*p==0) 	/* soft link break */
-				break;
-			if(isxdigit(*p) && isxdigit(*(p+1))) {
-				char hex[3];
-				hex[0]=*p;
-				hex[1]=*(p+1);
-				hex[2]=0;
-				/* ToDo: what about encoded NULs and the like? */
-				*dest++=(uchar)strtoul(hex,NULL,16);
+			if(*p == '\r')	/* soft link break */
 				p++;
+			if(*p == 0)
+				break;
+			if(*p == '\n')
+				continue;
+			if(isxdigit(*p) && isxdigit(*(p+1))) {
+				uchar ch = HEX_CHAR_TO_INT(*p) << 4;
+				p++;
+				ch |= HEX_CHAR_TO_INT(*p);
+				if(ch == '\t' || ch >= ' ')
+					*dest++=ch;
 			} else {	/* bad encoding */
 				*dest++='=';
 				*dest++=*p;
 			}
 		}
 	}
+	*dest++='\r';
+	*dest++='\n';
 	*dest=0;
 	return buf;
 }
@@ -348,19 +347,25 @@ static char* mime_getcontent(char* buf, const char* content_type, const char* co
 	while((p = strstr(txt, boundary)) != NULL) {
 		txt = p+strlen(boundary);
 		SKIP_WHITESPACE(txt);
-		if(strncmp(txt, "Content-Type:", 13) != 0)
-			continue;
 		p = strstr(txt, "\r\n\r\n");	/* End of header */
 		if(p==NULL)
 			continue;
-		if((match_len && strncmp(txt, match1, match_len) && strncmp(txt, match2, match_len))
+		for(content_type = txt; content_type < p; content_type++) {
+			SKIP_WHITESPACE(content_type);
+			if(strnicmp(content_type, "Content-Type:", 13) == 0)
+				break;
+			FIND_CHAR(content_type, '\r');
+		}
+		if(content_type >= p)
+			continue;
+		if((match_len && strnicmp(content_type, match1, match_len) && strnicmp(content_type, match2, match_len))
 			|| (attachment != NULL && !mime_getattachment(txt, p, attachment))) {
-			if((p = mime_getcontent(p, txt, content_match, depth + 1, encoding, attachment, index)) != NULL)
+			if((p = mime_getcontent(p, content_type, content_match, depth + 1, encoding, attachment, index)) != NULL)
 				return p;
 			continue;
 		}
 		if(found++ != index) {
-			if((p = mime_getcontent(p, txt, content_match, depth + 1, encoding, attachment, index)) != NULL)
+			if((p = mime_getcontent(p, content_type, content_match, depth + 1, encoding, attachment, index)) != NULL)
 				return p;
 			continue;
 		}
