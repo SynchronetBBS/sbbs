@@ -254,8 +254,13 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 	if((txt=smb_getmsgtxt(&smb,msg,(console&CON_RAW_IN) ? 0:GETMSGTXT_PLAIN)) != NULL) {
 		if(!(console&CON_RAW_IN))
 			mode|=P_WORDWRAP;
-		putmsg(txt, mode);
+		char* p = txt;
+		truncsp(p);
+		SKIP_WHITESPACE(p);
+		putmsg(p, mode);
 		smb_freemsgtxt(txt);
+		if(column)
+			CRLF;
 	}
 	if((txt=smb_getmsgtxt(&smb,msg,GETMSGTXT_TAIL_ONLY))!=NULL) {
 		putmsg(txt, mode&(~P_WORDWRAP));
