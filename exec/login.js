@@ -98,15 +98,17 @@ for(var c=0; c < options.login_prompts; c++) {
 							client.protocol + " (TCP port " + client.port + "):\r\n\r\n";
 
 						msgtxt += "Account Number: " + u.number + "\r\n";
-						msgtxt += "Created: " + system.timestr(u.stats.firston_date) + "\r\n";
-						msgtxt += "Last on: " + system.timestr(u.stats.laston_date) + "\r\n";
-						msgtxt += "Connect: " + u.host_name + " [" + u.ip_address + "]" +
+						msgtxt += "Account Created: " + system.timestr(u.stats.firston_date) + "\r\n";
+						msgtxt += "Last Login: " + system.timestr(u.stats.laston_date) + "\r\n";
+						msgtxt += "Last Login From: " + u.host_name + " [" + u.ip_address + "]" +
 										" via " + u.connection + "\r\n";
 						msgtxt += "Password: " + u.security.password + "\r\n";
+						msgtxt += "Password Last Modified: " + system.datestr(u.security.password_date) + "\r\n";
 
-						if(msgbase.save_msg(hdr, msgtxt))
+						if(msgbase.save_msg(hdr, msgtxt)) {
 							console.print("\r\n\1n\1h\1yAccount information e-mailed to: \1w" + u.netmail + "\r\n");
-						else
+							log(LOG_NOTICE, "Account information (i.e. password) e-mailed to: " + u.netmail);
+						} else
 							alert(log(LOG_ERR,"!ERROR " + msgbase.last_error + "saving bulkmail message"));
 
 						msgbase.close();
