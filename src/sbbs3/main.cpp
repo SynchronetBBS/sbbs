@@ -4627,7 +4627,6 @@ void DLLCALL bbs_thread(void* arg)
 	startup=(bbs_startup_t*)arg;
 	BOOL			is_client=FALSE;
 #ifdef __unix__
-	SOCKET	uspy_listen_socket[MAX_NODES];
 	struct main_sock_cb_data	uspy_cb[MAX_NODES]={};
 	union xp_sockaddr uspy_addr;
 #endif
@@ -4825,7 +4824,6 @@ void DLLCALL bbs_thread(void* arg)
 		spy_socket[i]=INVALID_SOCKET;
 #ifdef __unix__
 		uspy_socket[i]=INVALID_SOCKET;
-		uspy_listen_socket[i]=INVALID_SOCKET;
 #endif
 	}
 
@@ -5554,17 +5552,13 @@ NO_PASSTHRU:
 			node_socket[i]=INVALID_SOCKET;
         }
 #ifdef __unix__
-		if(uspy_listen_socket[i]!=INVALID_SOCKET) {
-			close_socket(uspy_listen_socket[i]);
-			uspy_listen_socket[i]=INVALID_SOCKET;
-			snprintf(str,sizeof(uspy_addr.un.sun_path),"%slocalspy%d.sock", startup->temp_dir, i+1);
-			if(fexist(str))
-				unlink(str);
-		}
 		if(uspy_socket[i]!=INVALID_SOCKET) {
 			close_socket(uspy_socket[i]);
 			uspy_socket[i]=INVALID_SOCKET;
-		}		
+		}
+		snprintf(str,sizeof(uspy_addr.un.sun_path),"%slocalspy%d.sock", startup->temp_dir, i+1);
+		if(fexist(str))
+			unlink(str);
 #endif
 	}
 
