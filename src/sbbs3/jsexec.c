@@ -991,7 +991,8 @@ long js_exec(const char *fname, char** args)
 		mfprintf(statfp,"Using JavaScript exit_code: %s",p);
 		free(p);
 		JS_ValueToInt32(js_cx,rval,&result);
-	}
+	} else if(!exec_result)
+		result = EXIT_FAILURE;
 	js_EvalOnExit(js_cx, js_glob, &cb);
 
 	JS_ReportPendingException(js_cx);
@@ -1004,8 +1005,6 @@ long js_exec(const char *fname, char** args)
 	if(js_buf!=NULL)
 		free(js_buf);
 
-	if(result == 0 && !exec_result)
-		return EXIT_FAILURE;
 	return(result);
 }
 
