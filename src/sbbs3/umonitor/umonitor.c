@@ -972,13 +972,20 @@ int main(int argc, char** argv)  {
 		bail(1);
 	}
 
+	int paging_node = 0;
 	while(1) {
 		strcpy(mopt[0],"System Options");
 		for(i=1;i<=cfg.sys_nodes;i++) {
 			if((j=getnodedat(&cfg,i,&node,NULL)))
 				sprintf(mopt[i],"Error reading node data (%d)!",j);
-			else
-				sprintf(mopt[i],"%3d: %s",i,nodestatus(&cfg,&node,str,71));
+			else {
+				nodestatus(&cfg, &node, str, 71);
+				if(i == paging_node) {
+					strupr(str);
+					strcat(str,  " <PAGING>");
+				}
+				sprintf(mopt[i],"%3d: %s", i, str);
+			}
 		}
 		mopt[i][0]=0;
 
@@ -1002,11 +1009,12 @@ int main(int argc, char** argv)  {
 		drawstats(&cfg, main_dflt, &node, &main_dflt, &main_bar);
 
 		if(time(NULL) - last_semfile_check > bbs_startup.sem_chk_freq * 2) {
+			paging_node = 0;
 			SAFEPRINTF(str, "%ssyspage.*", cfg.ctrl_dir);
-			if(fexistcase(str)) {
+			if(fexistcase(str) && (paging_node = atoi(getfext(str) + 1)) > 0) {
 				putch(BEL);
 				char msg[128];
-				SAFEPRINTF(msg, "Node %s is paging you to chat", getfext(str) + 1);
+				SAFEPRINTF(msg, "Node %u is paging you to chat", paging_node);
 				uifc.pop(msg);
 				SLEEP(1500);
 				uifc.pop(NULL);
