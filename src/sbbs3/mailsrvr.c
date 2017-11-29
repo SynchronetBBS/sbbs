@@ -3328,6 +3328,11 @@ static void smtp_thread(void* arg)
 						,reverse_path);
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */TRUE);
 
+					if(nettype == NET_FIDO) {
+						char* tp = strchr(rcpt_name, '@');
+						if(tp != NULL)
+							*tp = 0;
+					}
 					smb_hfield_str(&newmsg, RECIPIENT, rcpt_name);
 
 					if(usernum && nettype!=NET_INTERNET) {	/* Local destination or QWKnet routed */
