@@ -5051,7 +5051,7 @@ int export_netmail(void)
 			continue;
 		}
 
-		if((txt=smb_getmsgtxt(email,&msg,GETMSGTXT_ALL)) == NULL) {
+		if((txt=smb_getmsgtxt(email,&msg,GETMSGTXT_ALL|GETMSGTXT_PLAIN)) == NULL) {
 			lprintf(LOG_ERR,"!ERROR %d getting message text for mail msg #%u"
 				, email->last_error, msg.hdr.number);
 			continue;
