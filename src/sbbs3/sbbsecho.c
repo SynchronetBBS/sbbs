@@ -5279,6 +5279,7 @@ void pack_netmail(void)
 			if(hdr.attr&FIDO_FILE) {
 				if(write_flofile(hdr.subj,addr,/* bundle: */false,/* use_outbox: */false, hdr.attr))
 					bail(1);
+				SAFECOPY(hdr.subj, getfname(hdr.subj));	/* Don't include the file path in the subject */
 			}
 		}
 		else {
