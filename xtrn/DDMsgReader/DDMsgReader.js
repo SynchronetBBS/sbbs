@@ -225,7 +225,7 @@
  * 2017-08-19 Eric Oulashin     Version 1.17 beta 45
  *                              Used the new Msgbase.close_poll() method in the August
  *                              19, 2017 build of Synchronet 3.17
- * 2017-09-27                   Version 1.17 beta 47
+ * 2017-09-27 Eric Oulashin     Version 1.17 beta 47
  *                              Removed this.msgbase in the DigDistMsgReader class and
  *                              updated any functions requiring it to open the
  *                              sub-board using a new MsgBase class with this.subBoardCode.
@@ -234,6 +234,15 @@
  *                              replying to a message, etc.
  *                              Updated to set the message number length field length dynamically,
  *                              more than 4 digits if necessary.
+ * 2017-11-28 Eric Oulashin     Version 1.17 beta 48
+ *                              Bug fix: When listing messages in reverse order in
+ *                              lightbar mode and all messages are selected/de-selected,
+ *                              the checkmarks on the screen now update properly.
+ *                              Also, updated so that when listing personal email, it
+ *                              will use the regular formatting colors rather than the
+ *                              colors for messages to the user, since all personal
+ *                              emails are to the user (the 'to user' colors for each
+ *                              email might be obnoxious).
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -320,8 +329,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 47";
-var READER_DATE = "2017-10-08";
+var READER_VERSION = "1.17 Beta 48";
+var READER_DATE = "2017-11-28";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1437,7 +1446,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 function DigDistMsgReader_SetSubBoardCode(pSubCode)
 {
 	this.subBoardCode = pSubCode;
-	this.readingPersonalEmail = (this.subBoardCode == "mail");
+	this.readingPersonalEmail = (this.subBoardCode.toLowerCase() == "mail");
 }
 
 // For the DigDistMsgReader class: Populates the hdrsForCurrentSubBoard
@@ -3977,6 +3986,14 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		// Ctrl-A: Select/de-select all messages
 		else if (userInput == CTRL_A)
 		{
+			//this.reverseListOrder
+			/*
+			this.lightbarListTopMsgIdx = -1;
+			this.lightbarMsgListNumLines = console.screen_rows-2;
+			this.lightbarMsgListStartScreenRow = 2; // The first line number on the screen for the message list
+			this.lightbarListSelectedMsgIdx = -1;
+			this.lightbarListCurPos = null;
+			*/
 			var originalCurpos = console.getxy();
 			console.gotoxy(1, console.screen_rows);
 			console.print("\1n");
@@ -3994,26 +4011,41 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				var messageIndex = 0;
 				for (messageIndex = 0; messageIndex < totalNumMessages; ++messageIndex)
 					this.ToggleSelectedMessage(this.subBoardCode, messageIndex, messageSelectToggle);
-				// Refresh the selected message checkmarks on the screen - Add the
-				// checkmarks for messages that are selected, and write a blank space
-				// (no checkmark) for messages that are not selected.
-				var currentRow = this.lightbarMsgListStartScreenRow;
-				var messageIndexEnd = this.lightbarListTopMsgIdx + this.lightbarMsgListNumLines;
-				for (messageIndex = this.lightbarListTopMsgIdx; messageIndex < messageIndexEnd; ++messageIndex)
+
+				// A unction to display a checkmark on the screen
+				function displayScreenMark(pMsgIdx, pCurrentRow, pReaderObj)
 				{
 					// Skip the current selected message because that one's checkmark
 					// will be refreshed.  Also skip this one if the message has been
 					// marked as deleted already.
-					if (!this.MessageIsDeleted(messageIndex) && (messageIndex != this.lightbarListSelectedMsgIdx))
+					if (!pReaderObj.MessageIsDeleted(pMsgIdx) && (pMsgIdx != pReaderObj.lightbarListSelectedMsgIdx))
 					{
-						console.gotoxy(this.MSGNUM_LEN+1, currentRow);
+						console.gotoxy(pReaderObj.MSGNUM_LEN+1, pCurrentRow);
 						console.print("\1n");
-						if (this.MessageIsSelected(this.subBoardCode, messageIndex))
-							console.print(this.colors.selectedMsgMarkColor + CHECK_CHAR + "\1n");
+						if (pReaderObj.MessageIsSelected(pReaderObj.subBoardCode, pMsgIdx))
+							console.print(pReaderObj.colors.selectedMsgMarkColor + CHECK_CHAR + "\1n");
 						else
 							console.print(" \1n");
 					}
-					++currentRow;
+				}
+				// Refresh the selected message checkmarks on the screen - Add the
+				// checkmarks for messages that are selected, and write a blank space
+				// (no checkmark) for messages that are not selected.
+				var currentRow = this.lightbarMsgListStartScreenRow;
+				var messageIndexEnd = 0;
+				if (!this.reverseListOrder) // The message list is forward-order
+				{
+					messageIndexEnd = this.lightbarListTopMsgIdx + this.lightbarMsgListNumLines;
+					for (messageIndex = this.lightbarListTopMsgIdx; messageIndex < messageIndexEnd; ++messageIndex)
+						displayScreenMark(messageIndex, currentRow++, this);
+				}
+				else // The message list is reverse-order
+				{
+					messageIndexEnd = this.lightbarListTopMsgIdx - this.lightbarMsgListNumLines + 1;
+					if (messageIndexEnd < 0)
+						messageIndexEnd = 0;
+					for (messageIndex = this.lightbarListTopMsgIdx; (messageIndex >= messageIndexEnd) && (messageIndex >= 0); --messageIndex)
+						displayScreenMark(messageIndex, currentRow++, this);
 				}
 			}
 
@@ -4178,12 +4210,13 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 		var msgToUser = ((toNameUpper == user.alias.toUpperCase()) || (toNameUpper == user.name.toUpperCase()) || (toNameUpper == user.handle.toUpperCase()));
 		var fromNameUpper = pMsgHeader.from.toUpperCase();
 		var msgIsFromUser = ((fromNameUpper == user.alias.toUpperCase()) || (fromNameUpper == user.name.toUpperCase()) || (fromNameUpper == user.handle.toUpperCase()));
-		printf((msgToUser ? this.sMsgInfoToUserFormatStr : (msgIsFromUser ? this.sMsgInfoFromUserFormatStr : this.sMsgInfoFormatStr)),
-		       msgNum,
-		       msgIndicatorChar,
-		       pMsgHeader.from.substr(0, this.FROM_LEN),
-		       pMsgHeader.to.substr(0, this.TO_LEN),
-		       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+		var formatStr = ""; // Format string for printing the message information
+		if (this.readingPersonalEmail)
+			formatStr = this.sMsgInfoFormatStr;
+		else
+			formatStr = (msgToUser ? this.sMsgInfoToUserFormatStr : (msgIsFromUser ? this.sMsgInfoFromUserFormatStr : this.sMsgInfoFormatStr));
+		printf(formatStr, msgNum, msgIndicatorChar, pMsgHeader.from.substr(0, this.FROM_LEN),
+		       pMsgHeader.to.substr(0, this.TO_LEN), pMsgHeader.subject.substr(0, this.SUBJ_LEN),
 		       sDate, sTime);
 	}
 	console.cleartoeol("\1n"); // To clear away any extra text that may have been entered by the user
@@ -15050,47 +15083,47 @@ function getGreatestNumMsgs(pGrpIndex)
 // Return value: The user's keypress
 function getKeyWithESCChars(pGetKeyMode)
 {
-   var getKeyMode = K_NONE;
-   if (typeof(pGetKeyMode) == "number")
-      getKeyMode = pGetKeyMode;
+	var getKeyMode = K_NONE;
+	if (typeof(pGetKeyMode) == "number")
+		getKeyMode = pGetKeyMode;
 
-   var userInput = console.getkey(getKeyMode);
-   if (userInput == KEY_ESC) {
-      switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-         case '[':
-            switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-               case 'V':
-                  userInput = KEY_PAGE_UP;
-                  break;
-               case 'U':
-                  userInput = KEY_PAGE_DOWN;
-                  break;
-           }
-           break;
-         case 'O':
-           switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-              case 'P':
-                 userInput = "\1F1";
-                 break;
-              case 'Q':
-                 userInput = "\1F2";
-                 break;
-              case 'R':
-                 userInput = "\1F3";
-                 break;
-              case 'S':
-                 userInput = "\1F4";
-                 break;
-              case 't':
-                 userInput = "\1F5";
-                 break;
-           }
-         default:
-           break;
-      }
-   }
+	var userInput = console.getkey(getKeyMode);
+	if (userInput == KEY_ESC) {
+		switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
+			case '[':
+				switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
+					case 'V':
+						userInput = KEY_PAGE_UP;
+						break;
+					case 'U':
+						userInput = KEY_PAGE_DOWN;
+						break;
+				}
+				break;
+			case 'O':
+				switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
+					case 'P':
+						userInput = "\1F1";
+						break;
+					case 'Q':
+						userInput = "\1F2";
+						break;
+					case 'R':
+						userInput = "\1F3";
+						break;
+					case 'S':
+						userInput = "\1F4";
+						break;
+					case 't':
+						userInput = "\1F5";
+						break;
+				}
+			default:
+				break;
+		}
+	}
 
-   return userInput;
+	return userInput;
 }
 
 // Finds the next or previous non-empty message sub-board.  Returns an

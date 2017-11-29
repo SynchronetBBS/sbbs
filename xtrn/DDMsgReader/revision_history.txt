@@ -14,7 +14,12 @@ Version  Date         Description
                       number field length dynamically based on the number of
                       messages in the sub-board.  It will be at least 4 but
                       can be more than 4 if there are 10000 messages or more
-                      in a sub-board.
+                      in a sub-board.  Updated so that when listing personal
+                      email, it will use the regular formatting colors rather
+                      than the colors for messages to the user, since all
+                      personal emails are to the user (the 'to user' colors for
+                      each email might be obnoxious).
+                      Also contains various bug fixes.
 1.16     2016-09-11   Added a new feature that allows users to forward a
                       message to an email address or to another user on the
                       BBS (using the O key).  This can be useful, for
