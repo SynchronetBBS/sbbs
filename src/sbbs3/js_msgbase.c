@@ -1496,7 +1496,8 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 		smb_unlockmsghdr(&(p->p->smb),&(p->msg)); 
 		JS_RESUMEREQUEST(cx, rc);
 	} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[n++]), cstr, NULL);
+		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[n]), cstr, NULL);
+		n++;
 		HANDLE_PENDING(cx);
 		rc=JS_SUSPENDREQUEST(cx);
 		if((p->p->status=smb_getmsghdr_by_msgid(&(p->p->smb),&(p->msg)
