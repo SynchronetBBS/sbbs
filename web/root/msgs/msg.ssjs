@@ -24,7 +24,7 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 /* Check author info if message base is local and display it */
 /*    on the new expanded message read page for new theme    */
 
-var hdr=msgbase.get_msg_header(false,m);
+var hdr=msgbase.get_msg_header(false,m, /* expand headers: */false);
 if(hdr==null)
 	error(msgbase.last_error);
 if(hdr.attr&MSG_DELETE)
