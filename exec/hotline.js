@@ -1521,7 +1521,7 @@ function delete_message(msg)
 		send_response(msg.hdr, [{id:100, value:"Missing Message ID"}], 1);
 		return;
 	}
-	hdr = mb.get_msg_header(msg.params[326].data);
+	hdr = mb.get_msg_header(msg.params[326].data, /* expand_fields: */false);
 	if (hdr == undefined) {
 		send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 		return;

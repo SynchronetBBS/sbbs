@@ -223,7 +223,7 @@ function send_fetch_response(msgnum, fmat, uid)
 	 */
 	function get_header() {
 		if(hdr == undefined) {
-			hdr=base.get_msg_header(msgnum);
+			hdr=base.get_msg_header(msgnum, /* expand_fields: */false);
 		}
 	}
 

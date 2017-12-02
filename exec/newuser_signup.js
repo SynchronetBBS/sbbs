@@ -67,7 +67,7 @@ function create_newuser()
 		if (!mail.open())
 			return;
 		for (i=mail.first_msg; i<=mail.last_msg; i++) {
-			hdr = mail.get_msg_header(i);
+			hdr = mail.get_msg_header(i, /* expand_fields: */false);
 			if (hdr === null || hdr.number == 0)
 				continue;
 			if (hdr.addr & MSG_DELETE)
