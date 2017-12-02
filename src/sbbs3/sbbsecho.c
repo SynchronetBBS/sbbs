@@ -1164,17 +1164,19 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		}
 		fprintf(fp,"\1TZUTC: %s%02d%02u\r", minus, tzone/60, tzone%60);
 	}
-	/* Add FSC-53 FLAGS kludge */
-	fprintf(fp,"\1FLAGS");
-	if(direct)
-		fprintf(fp," DIR");
-	if(file_attached) {
-		if(cfg.trunc_bundles)
-			fprintf(fp," TFS");
-		else
-			fprintf(fp," KFS");
+	if(!cfg.flo_mailer) {
+		/* Add FSC-53 FLAGS kludge */
+		fprintf(fp,"\1FLAGS");
+		if(direct)
+			fprintf(fp," DIR");
+		if(file_attached) {
+			if(cfg.trunc_bundles)
+				fprintf(fp," TFS");
+			else
+				fprintf(fp," KFS");
+		}
+		fprintf(fp,"\r");
 	}
-	fprintf(fp,"\r");
 
 	if(hdr.destpoint)
 		fprintf(fp,"\1TOPT %hu\r",hdr.destpoint);
@@ -1186,15 +1188,22 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		for(int i=0; i<msg->total_hfields; i++)
 			if(msg->hfield[i].type == FIDOCTRL)
 				fprintf(fp,"\1%.512s\r",(char*)msg->hfield_dat[i]);
+		/* comment headers are part of text */
+		for(i=0; i<msg->total_hfields; i++)
+			if(msg->hfield[i].type == SMB_COMMENT)
+				fprintf(fp, "%s\r", (char*)msg->hfield_dat[i]);
+		if(subject != msg->subj)
+			fprintf(fp, "Subject: %s\r\r", msg->subj);
 	}
 	/* Write the body text */
-	int bodylen = strlen(body);
-	if(!file_attached || (!direct && file_attached))
+	if(body != NULL) {
+		int bodylen = strlen(body);
 		fwrite_crlf(body, bodylen, fp);
-	/* Write the tear line */
-	if(bodylen > 0 && body[bodylen-1] != '\r' && body[bodylen-1] != '\n')
-		fputc('\r', fp);
-	fprintf(fp, "%s", tear_line());
+		/* Write the tear line */
+		if(bodylen > 0 && body[bodylen-1] != '\r' && body[bodylen-1] != '\n')
+			fputc('\r', fp);
+		fprintf(fp, "%s", tear_line());
+	}
 	fputc(FIDO_STORED_MSG_TERMINATOR, fp);
 	lprintf(LOG_INFO, "Created NetMail (%s)%s from %s (%s) to %s (%s), attr: %04hX, subject: %s"
 		,getfname(fname), file_attached ? " with attachment" : ""
@@ -4402,9 +4411,10 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 	addr.net=hdr.orignet;
 	addr.node=hdr.orignode;
 	addr.point=hdr.origpoint;
-	sprintf(str,"\7\1n\1hSBBSecho: \1m%.*s \1n\1msent you NetMail from \1h%s\1n\r\n"
+	sprintf(str,"\7\1n\1hSBBSecho: \1m%.*s \1n\1msent you NetMail%s from \1h%s\1n\r\n"
 		,FIDO_NAME_LEN-1
 		,hdr.from
+		,hdr.attr&FIDO_FILE ? " with attachment" : ""
 		,smb_faddrtoa(&addr,NULL));
 	putsmsg(&scfg,usernumber,str);
 
@@ -5051,13 +5061,45 @@ int export_netmail(void)
 			continue;
 		}
 
+		char* msg_subj = msg.subj;
+		bool file_attached = false;
+		if((txt=smb_getmsgtxt(email, &msg, GETMSGTXT_BODY_ONLY)) != NULL) {
+			char filename[MAX_PATH+1] = {0};
+			uint32_t filelen = 0;
+			uint8_t* filedata;
+			if((filedata = smb_getattachment(&msg, txt, filename, &filelen, /* attachment_index */0)) != NULL 
+				&& filename[0] != 0 && filelen > 0) {
+				lprintf(LOG_DEBUG, "MIME attachment decoded: %s (%lu bytes)", filename, (ulong)filelen);
+				char outdir[MAX_PATH+1];
+				SAFEPRINTF2(outdir, "%sfile/%04u.out", scfg.data_dir, msg.idx.from);
+				MKDIR(outdir);
+				char fpath[MAX_PATH+1];
+				SAFEPRINTF2(fpath, "%s/%s", outdir, filename);
+				FILE* fp = fopen(fpath, "wb");
+				if(fp == NULL)
+					lprintf(LOG_ERR, "!ERROR %d (%s) opening/creating %s", errno, strerror(errno), fpath);
+				else {
+					int result = fwrite(filedata, filelen, 1, fp);
+					fclose(fp);
+					if(!result)
+						lprintf(LOG_ERR, "!ERROR %d (%s) writing %lu bytes to %s", errno, strerror(errno), filelen, fpath);
+					else {
+						lprintf(LOG_DEBUG, "Decoded MIME attachment stored as: %s", fpath);
+						file_attached = true;
+						msg_subj = fpath;
+					}
+				}
+			}
+			smb_freemsgtxt(txt);
+		}
+
 		if((txt=smb_getmsgtxt(email,&msg,GETMSGTXT_ALL|GETMSGTXT_PLAIN)) == NULL) {
 			lprintf(LOG_ERR,"!ERROR %d getting message text for mail msg #%u"
 				, email->last_error, msg.hdr.number);
 			continue;
 		}
 
-		create_netmail(msg.to, &msg, msg.subj, txt, *(fidoaddr_t*)msg.to_net.addr,/* file_attached */false);
+		create_netmail(msg.to, &msg, msg_subj, txt, *(fidoaddr_t*)msg.to_net.addr, file_attached);
 		FREE_AND_NULL(txt);
 
 		if(cfg.delete_netmail || (msg.hdr.netattr&MSG_KILLSENT)) {
