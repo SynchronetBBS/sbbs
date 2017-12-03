@@ -24,7 +24,7 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 /* Check author info if message base is local and display it */
 /*    on the new expanded message read page for new theme    */
 
-var hdr=msgbase.get_msg_header(false,m, /* expand headers: */false);
+var hdr=msgbase.get_msg_header(false,m);
 if(hdr==null)
 	error(msgbase.last_error);
 if(hdr.attr&MSG_DELETE)
@@ -96,7 +96,7 @@ start_num = m;
 template.idx=msgbase.get_msg_index(false,m);
 if(sub=='mail' && template.idx.to!=user.number)
     error("You can only read e-mail messages addressed to yourself!");
-template.hdr=msgbase.get_msg_header(false,m);
+template.hdr=msgbase.get_msg_header(false,m, /* expand_fields: */false);
 if(idx_to_user(template.idx)) {
     template.hdr.attr|=MSG_READ;
     if(template.hdr.attr&MSG_KILLREAD)
