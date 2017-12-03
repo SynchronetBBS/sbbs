@@ -113,7 +113,7 @@ if(!msgbase.save_msg(hdrs,client,body)) {
 if(hdrs.thread_orig!=undefined)  {
 	var orig_idx=msgbase.get_msg_index(false,hdrs.thread_orig);
 	if(idx_to_user(orig_idx)) {
-		var orig_hdrs=msgbase.get_msg_header(false,hdrs.thread_orig);
+		var orig_hdrs=msgbase.get_msg_header(false,hdrs.thread_orig, /* expand_fields: */false);
 		orig_hdrs.attr|=MSG_REPLIED;
 		msgbase.put_msg_header(false,hdrs.thread_orig,orig_hdrs);
 	}
