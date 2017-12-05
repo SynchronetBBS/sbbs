@@ -20,180 +20,7 @@
  *
  * Date       Author            Description
  * 2014-09-13 Eric Oulashin     Started (based on my message lister script)
- * 2015-05-06 Eric Oulashin     Version 1.0
- *                              Finally releasing it, as it seems fairly stable
- *                              and has the basic features implemented.
- * 2015-05-17 Eric Oulashin     Version 1.01
- *                              Bug fix: Updated the setting of the enhanced reader
- *                              header width to use the longest line in the header
- *                              (rather than the length of only the first line) to
- *                              ensure that the header displays correctly.
- * 2015-06-10 Eric Oulashin     Version 1.02
- *                              Updated the version to reflect a bug fix in
- *                              DDScanMsgs.js.  No change to the actual reader.
- * 2015-07-11 Eric Oulashin     Version 1.03 Beta
- *                              Started looking into & fixing an issue in Linux
- *                              where after replying to a message, the number of
- *                              messages was not immediately refreshed, so for
- *                              instance, replying to the last message in read
- *                              mode, the reader would not be able to navigate
- *                              to the next message without first going to the
- *                              previous message.
- * 2015-07-12 Eric Oulashin     Version 1.03
- *                              Releasing this version after having done more testing.
- * 2015-07-19 Eric Oulashin     Version 1.04 Beta
- *                              Updated to pause (wait for user keypress) after saving
- *                              a reply message to allow the user to see Synchronet's
- *                              success/fail message on saving a message.
- * 2015-08-09 Eric Oulashin     Adding the ability for the sysop to save a message
- *                              to a file on the BBS machine
- * 2015-09-07 Eric Oulashin     Updated so that in lightbar mode, pressing PageDown
- *                              on the last page will go to the last message, and
- *                              pressing PageUp on the first page will go to the
- *                              first message.  Also, in the enhanced reader mode,
- *                              added a console pause after posting a message in
- *                              the sub-board so that the user can see the info
- *                              screen that Synchronet displays after saving a
- *                              message.
- * 2015-09-19 Eric Oulashin     Started working on adding the ability to download file
- *                              attachments.  Started working on a new function,
- *                              determineMsgAttachments(), which can parse message text
- *                              to save any base64-encoded attachments that might be
- *                              present, and also to check the message subject for a
- *                              filename for a file uploaded to the user's inbox.
- * 2015-10-10 Eric Oulashin     Version 1.04
- *                              Releasing this version after development & testing,
- *                              since attachment downloading and the other new features
- *                              seem to be working fairly well.
- * 2015-10-25 Eric Oulashin     Version 1.05 Beta
- *                              Started updating the reader to display more header &
- *                              kludge lines.
- * 2015-10-28 Eric Oulashin     Started working on updating the ANSIAttrsToSyncAttrs()
- *                              function to use Synchronet's ans2asc tool to convert
- *                              from ANSI to Synchronet codes, to get ANSI messsages
- *                              to look better.
- * 2015-11-07 Eric Oulashin     Expanded the list of @-codes interpreted for message
- *                              headers.  Also, renamed that method to ParseMsgAtCodes().
- *                              Updated the ReadMessageEnhanced method to interpret
- *                              @-codes, but only when reading personal mail, to avoid
- *                              weird behavior on message networks from malicious users
- *                              on other BBSes.
- * 2015-11-24 Eric Oulashin     Started working on using the Frame class (in frame.js)
- *                              to display messages with ANSI codes using a scrollable
- *                              user interface
- * 2015-12-06 Eric Oulashin     Version 1.05
- *                              Officially releasing this version, as it seems to be
- *                              fairly stable after testing.
- * 2015-12-10 Eric Oulashin     Version 1.06 beta
- *                              Bug fix: The scriptFilename command-line argument was
- *                              not being referenced properly in the DigDistMsgReader
- *                              constructor; that has been fixed.
- * 2015-12-11 Eric Oulashin     Updated DigDistMsgReader_MessageAreaScan() so that
- *                              the current sub-board newscan functionality can make
- *                              use of the -subBoard command-line option to scan a
- *                              specific sub-board, which may be different than the
- *                              user's current sub-board.
- *                              Bug fix: Updated DigDistMsgReader_MessageAreaScan()
- *                              to temporarily set bbs.curgrp and bbs.cursub so that
- *                              all @-codes for the sub-boards will be displayed
- *                              correctly by Synchronet.
- * 2015-12-12 Eric Oulashin     Added a new configuration options, pauseAfterNewMsgScan,
- *                              which specifies whether or not to pause after doing
- *                              a new message scan.
- * 2015-12-13 Eric Oulashin     Version 1.06
- *                              Releasing this version after testing showed it's
- *                              working as expected
- * 2015-12-19 Eric Oulashin     Version 1.07 Beta
- *                              Started working on a way of tagging message (i.e., to
- *                              do a batch delete).
- * 2015-12-24 Eric Oulashin     Version 1.07
- *                              Releasing this version, as it seems to be working as
- *                              it should after testing & development.
- * 2016-01-10 Eric Oulashin     Version 1.08
- *                              Bug fix: When scanning message sub-boards, it wasn't
- *                              always closing the sub-board when there were no new
- *                              messages, resulting in further sub-boards failing to
- *                              open after a while.  That has been fixed.
- * 2016-01-15 Eric Oulashin     Version 1.09
- *                              Updated DigDistMsgReader_DisplayEnhancedMsgHdr() to
- *                              not center the enhanced reader header lines horizontally.
- *                              Now, it displays it in column 1.  This was done to fix
- *                              a display issue in some terminal software.
- * 2016-02-05 Eric Oulashin     Version 1.10 beta
- *                              Added the ability to prompt the user to post a message
- *                              on a sub-board and quit after reading the last message
- *                              in a sub-board rather than going to the next sub-board.
- * 2016-02-06 Eric Oulashin     Started working on the ability to display a custom header
- *                              above the message area chooser lists.
- * 2016-02-19 Eric Oulashin     Version 1.10
- *                              Releasing this version.
- * 2016-02-22 Eric Oulashin     Version 1.11 beta 1
- *                              Refactoring: Removed the old-style message read function
- *                              and updated to support only the enhanced read function,
- *                              since for all practical purposes, I don't see a reason to
- *                              have the old-style message read function anymore.
- * 2016-03-19 Eric Oulashin     Now updates bbs.posts_read when a user reads a message.
- * 2016-03-25 Eric Oulashin     Version 1.11
- *                              Releasing this version
- * 2016-04-23 Eric Oulashin     Version 1.12 Beta
- *                              Updated the way the pause prompt is shown in the
- *                              help screen, in case the sysop has configured an
- *                              external module (Baja/JS) to run for a pause prompt.
- *                              A check was added to absMsgNumToIdx() to check
- *                              to ensure pMsgNum is a number.  If the user's
- *                              scan pointer is not valid (i.e., perhaps the
- *                              first time the user does a newscan), the reader
- *                              was crashing due to pMsgNum being invalid.
- * 2016-05-11 Eric Oulashin     Version 1.12
- *                              Releasing the non-beta version of 1.12
- * 2016-07-23 Eric Oulashin     Version 1.13 Beta
- *                              Bug fix: Message number error when a new user
- *                              starts reading messages.
- * 2016-08-06 Eric Oulashin     Continued working on the new-user reading
- *                              issue based on information from Digital Man
- *                              about the special value 4294967295 of the
- *                              scan pointer.
- * 2016-08-16 Eric Oulashin     Version 1.13
- *                              Fixed the bug where it wasn't successfully
- *                              saving message headers after setting the READ
- *                              attribute.  When getting a message header, the
- *                              parameter to expand headers in get_msg_header()
- *                              must be false in order to successfully save a
- *                              message header later.
- *                              Releasing this verison now that I've fixed the
- *                              2 issues I wanted to fix.
- * 2016-08-17 Eric Oulashin     Version 1.14
- *                              Bug fix: Version 1.13 was failing to reply to
- *                              private emails
- * 2014-09-13 to 2016-08-07     Removed previous comments
- * 2016-08-17 Eric Oulashin     Version 1.15 Beta 1
- *                              Updated DigDistMsgReader_ParseMsgAtCodes() to
- *                              check whether the file libs array and file dir
- *                              array is an object before accessing them, to
- *                              prevent crashing if they're unavailable to the
- *                              current user (i.e., if the sysop makes their
- *                              current file directory for sysops only).
- *                              Also, started working on the ability for the
- *                              sysop to edit the user who wrote the message
- *                              (using the U key) while reading a message.
- * 2016-08-18 Eric Oulashin     Version 1.15 Beta 2
- *                              Refactored the ReadMessageEnhanced() method
- *                              into 2 additional methods to handle the scrollable
- *                              & traditional user interfaces.
- * 2016-08-27 Eric Oulashin     Version 1.15 Beta
- *                              Bug fix: Replying to a message privately was broken
- *                              due to the previous bug fix related to saving a
- *                              message with the READ attribute.
- * 2016-08-29 Eric Oulashin     Version 1.15
- *                              Refactored enhReaderKeys into the object itself
- *                              (this.enhReaderKeys).
- *                              Officially releasing this version, as it seems stable
- * 2016-09-05 Eric Oulashin     Version 1.16 Beta 1
- *                              Refactor: Added lots more keys to this.enhReaderKeys.
- *                              Started working on a way to forward a message to
- *                              an email address, etc.
- * 2016-09-11 Eric Oulashin     Version 1.16
- *                              Message forwarding complete.  Releasing this version.
+ * ... Comments trimmed ...
  * 2016-11-19 Eric Oulashin     Version 1.17 Beta 1
  *                              Looked into handling null message headers, which is
  *                              more likely now with the introduction of vote messages
@@ -243,6 +70,12 @@
  *                              colors for messages to the user, since all personal
  *                              emails are to the user (the 'to user' colors for each
  *                              email might be obnoxious).
+ * 2017-12-04 Eric Oulashin     Version 1.17 beta 49
+ *                              Bug fixed (revealed with the 12/1/2017 Synchronet build):
+ *                              When adding the 'read' message attribute to a message
+ *                              to a user read in a new-message scan, it now uses a
+ *                              message header without expanded fields so that it can
+ *                              save properly.
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -329,8 +162,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 48";
-var READER_DATE = "2017-11-28";
+var READER_VERSION = "1.17 Beta 49";
+var READER_DATE = "2017-12-04";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4480,19 +4313,13 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// the user is reading personal email.
 	if (userNameHandleAliasMatch(msgHeader.to))
 	{
-		// TODO: Occasionally seeing a failure  to save the header with the READ
-		// attribute set with the error "illegal header length increase" error:
-		// Failed to save message header with the READ attribute set!
-		// Group/sub-board num: 4, 446; AgoraNet - General Chat
-		// Message offset/index: 0, number: 2312
-		// Status: -101
-		// Error: smb_putmsghdr illegal header length increase: 780 (4 blocks) vs 762 (3 blocks)
 		var msgbase = new MsgBase(this.subBoardCode);
 		if (msgbase.open())
 		{
+			// Could also do this: var saveRetObj = applyAttrsInMsgHdrInMessagbase(msgbase, msgHeader.number, MSG_READ);
+
 			msgHeader.attr |= MSG_READ;
 			var successfullySavedMsgHdr = msgbase.put_msg_header(false, msgHeader.number, msgHeader);
-			//var successfullySavedMsgHdr = msgbase.put_msg_header(msgHeader.number, msgHeader);
 			if (this.SearchTypePopulatesSearchResults() && successfullySavedMsgHdr)
 				this.RefreshHdrInSavedArrays(pOffset, MSG_READ);
 
@@ -8173,43 +8000,32 @@ function DigDistMsgReader_IsValidMessageNum(pMsgNum)
 //  pMsgbase: Optional - An open MsgBase object.  If not passed, the sub-board will be opened in this method.
 function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields, pMsgbase)
 {
+	var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
+
 	var msgHdr = null;
 	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
 	    (this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
 	{
 		if ((pMsgIdx >= 0) && (pMsgIdx < this.msgSearchHdrs[this.subBoardCode].indexed.length))
-			msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIdx];
+		{
+			if (expandFields)
+				msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIdx];
+			else
+				msgHdr = getHdrFromMsgbase(pMsgbase, this.subBoardCode, false, this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIdx].number, expandFields);
+		}
 	}
 	else if (this.hdrsForCurrentSubBoard.length > 0)
 	{
 		if ((pMsgIdx >= 0) && (pMsgIdx < this.hdrsForCurrentSubBoard.length))
-			msgHdr = this.hdrsForCurrentSubBoard[pMsgIdx];
+		{
+			if (expandFields)
+				msgHdr = this.hdrsForCurrentSubBoard[pMsgIdx];
+			else
+				msgHdr = getHdrFromMsgbase(pMsgbase, this.subBoardCode, false, this.hdrsForCurrentSubBoard[pMsgIdx].number, expandFields);
+		}
 	}
 	else
-	{
-		var msgbaseIsOpen = false;
-		var msgbase = null;
-		if (pMsgbase == null)
-		{
-			msgbase = new MsgBase(this.subBoardCode);
-			msgbaseIsOpen = msgbase.open();
-		}
-		else
-		{
-			msgbase = pMsgbase;
-			msgbaseIsOpen = pMsgbase.is_open;
-		}
-		if (msgbaseIsOpen)
-		{
-			if ((pMsgIdx >= 0) && (pMsgIdx < msgbase.total_msgs))
-			{
-				var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
-				msgHdr = msgbase.get_msg_header(true, pMsgIdx, expandFields);
-			}
-			if (pMsgbase == null)
-				msgbase.close();
-		}
-	}
+		msgHdr = getHdrFromMsgbase(pMsgbase, this.subBoardCode, true, pMsgIdx, pExpandFields);
 	if (msgHdr == null)
 		msgHdr = getBogusMsgHdr();
 	return msgHdr;
@@ -18956,6 +18772,42 @@ function closePoll(pSubBoardCode, pMsgNum)
 	return pollClosed;
 }
 
+// Gets a message header from the messagebase, either by index (offset) or number.
+//
+// Parameters:
+//  pMsgbase: Optional messagebase object.  If this is provided, then pSubBoardCode is not used.
+//  pSubBoardCode: The messagebase sub-board code
+//  pByIdx: Boolean - Whether or not to get the message header by index (if false, then by number)
+//  pMsgIdxOrNum: The message index or number of the message header to retrieve
+//  pExpandFields: Boolean - Whether or not to expand fields for the message header
+function getHdrFromMsgbase(pMsgbase, pSubBoardCode, pByIdx, pMsgIdxOrNum, pExpandFields)
+{
+	var msgbaseIsOpen = false;
+	var msgbase = null;
+	var msgHdr = null;
+	if (pMsgbase == null)
+	{
+		msgbase = new MsgBase(pSubBoardCode);
+		msgbaseIsOpen = msgbase.open();
+	}
+	else
+	{
+		msgbase = pMsgbase;
+		msgbaseIsOpen = pMsgbase.is_open;
+	}
+	if (msgbaseIsOpen)
+	{
+		var getMsgHdr = true;
+		if (pByIdx)
+			getMsgHdr = ((pMsgIdxOrNum >= 0) && (pMsgIdxOrNum < msgbase.total_msgs))
+		if (getMsgHdr)
+			msgHdr = msgbase.get_msg_header(pByIdx, pMsgIdxOrNum, pExpandFields);
+		if (pMsgbase == null)
+			msgbase.close();
+	}
+	return msgHdr;
+}
+
 // Inputs a string from the user, restricting their input to certain keys (optionally).
 //
 // Parameters:
@@ -19039,6 +18891,42 @@ function isPrintableChar(pChar)
 	// except for 127 (delete).
 	var charCode = pChar.charCodeAt(0);
 	return ((charCode > 31) && (charCode < 255) && (charCode != 127));
+}
+
+// Adds message attributes to a message header and saves it in the messagebase.
+// To do that, this function first loads the messag header from the messagebase
+// without expanded fields, applies the attributes, and then saves the header
+// back to the messagebase.
+//
+// Parameters:
+//  pMsgbase: An open MessageBase object
+//  pMsgNum: The number of the message to update
+//  pMsgAttrs: The message attributes to apply to the message (numeric bitfield)
+//
+// Return value: An object containing the following properties:
+//               saveSucceeded: Boolean - Whether or not the message header was successfully saved
+//               msgAttrs: A numeric bitfield containing the updated attributes of the message header
+function applyAttrsInMsgHdrInMessagbase(pMsgbase, pMsgNum, pMsgAttrs)
+{
+	var retObj = {
+		saveSucceeded: false,
+		msgAttrs: 0
+	};
+
+	if ((pMsgbase == null) || !pMsgbase.is_open)
+		return retObj;
+
+	// Get the message header without expanded fields (we can't save it with
+	// expanded fields), then add the 'read' attribute and save it back to the messagebase.
+	var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, false);
+	if (msgHdr != null)
+	{
+		msgHdr.attr |= pMsgAttrs;
+		retObj.saveSucceeded = pMsgbase.put_msg_header(false, pMsgNum, msgHdr);
+		if (retObj.saveSucceeded)
+			retObj.msgAttrs = msgHdr.attr;
+	}
+	return retObj;
 }
 
 // Writes some text on the screen at a given location with a given pause.
