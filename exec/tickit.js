@@ -419,7 +419,7 @@ function parse_ticfile(fname)
 	var val;
 	var m;
 	var line;
-	var tic={seenby:[], path:[], tic_filename:fname};
+	var tic={seenby:[], path:[], tic_filename:fname, desc:''};
 	var outtic=[];
 	var f=new File(fname);
 	var dir = fullpath(fname).replace(/([\/\\])[^\/\\]*$/,'$1');
