@@ -431,11 +431,13 @@ function parse_ticfile(fname)
 		return false;
 	}
 	while ((line = f.readln(65535)) != undefined) {
-		m = line.match(/^\s*([^\s]+)\s+(.*)$/);
+		m = line.match(/^\s*([^\s]+)\s(.*)$/);
 		if (m !== null) {
 			key = m[1].toLowerCase();
 			val = m[2];
 
+			if (key !== 'desc' && key !== 'ldesc')
+				key = key.replace(/^\s*/,'');
 			switch(key) {
 				// These are not passed unmodified.
 				// Single value, single line...
