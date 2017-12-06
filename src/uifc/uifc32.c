@@ -2741,14 +2741,16 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			j=k;
 		}
 	    tmp_buffer2[j]=api->chars->help_bottom_right;
-		tmp_buffer2[j-2]=api->chars->button_right;
-		tmp_buffer2[j-4]=' ';
-		tmp_buffer2[j-6]=' ';
-		tmp_buffer2[j-8]=api->chars->button_left;
+		if(!(mode&WIN_DYN)) {
+			tmp_buffer2[j-2]=api->chars->button_right;
+			tmp_buffer2[j-4]=' ';
+			tmp_buffer2[j-6]=' ';
+			tmp_buffer2[j-8]=api->chars->button_left;
 #define SCROLL_UP_BUTTON_X	left + (width - 4)
 #define SCROLL_UP_BUTTON_Y	top + height
 #define SCROLL_DN_BUTTON_X	left + (width - 3)
 #define SCROLL_DN_BUTTON_Y	top + height
+		}
 		puttext(left,top+1,left+width-1,top+height,tmp_buffer2);
 	}
 	len=strlen(hbuf);
@@ -2786,7 +2788,9 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	for(j=i;j<len;j++,i+=2) {
 		if(hbuf[j]==LF) {
 			i+=2;
-			while(i%((width-2-pad-pad)*2)) i++; i-=2;
+			while(i%((width-2-pad-pad)*2))	
+				i++;
+			i-=2;
 		}
 		else if(mode&WIN_HLP && (hbuf[j]==2 || hbuf[j]=='~')) {		 /* Ctrl-b toggles inverse */
 			inverse=!inverse;
