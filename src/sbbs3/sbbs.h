@@ -1012,6 +1012,10 @@ extern "C" {
 	DLLEXPORT int		DLLCALL sbbs_random(int);
 	DLLEXPORT void		DLLCALL sbbs_srand(void);
 
+	/* chat.cpp */
+	DLLEXPORT BOOL		DLLCALL sysop_available(scfg_t*);
+	DLLEXPORT BOOL		DLLCALL set_sysop_availability(scfg_t*, BOOL available);
+
 	/* getstats.c */
 	DLLEXPORT BOOL		DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats);
 	DLLEXPORT ulong		DLLCALL	getposts(scfg_t* cfg, uint subnum);

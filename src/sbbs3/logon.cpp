@@ -454,8 +454,7 @@ bool sbbs_t::logon()
 			,cfg.level_timeperday[useron.level]+useron.min);
 		bprintf(text[LiMailWaiting],mailw);
 		strcpy(str,text[LiSysopIs]);
-		if(startup->options&BBS_OPT_SYSOP_AVAILABLE 
-			|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron,&client)))
+		if(sysop_available(&cfg))
 			strcat(str,text[LiSysopAvailable]);
 		else
 			strcat(str,text[LiSysopNotAvailable]);

@@ -695,6 +695,25 @@ void sbbs_t::chatsection()
 //		free(gurubuf);
 }
 
+static char* sysop_available_semfile(scfg_t* scfg)
+{
+	static char semfile[MAX_PATH+1];
+	SAFEPRINTF(semfile, "%ssysavail.chat", scfg->ctrl_dir);
+	return semfile;
+}
+
+extern "C" BOOL DLLCALL sysop_available(scfg_t* scfg)
+{
+	return fexist(sysop_available_semfile(scfg));
+}
+
+extern "C" BOOL DLLCALL set_sysop_availability(scfg_t* scfg, BOOL available)
+{
+	if(available)
+		return ftouch(sysop_available_semfile(scfg));
+	return remove(sysop_available_semfile(scfg)) == 0;
+}
+
 /****************************************************************************/
 /****************************************************************************/
 bool sbbs_t::sysop_page(void)
@@ -707,7 +726,7 @@ bool sbbs_t::sysop_page(void)
 		return(false); 
 	}
 
-	if(startup->options&BBS_OPT_SYSOP_AVAILABLE 
+	if(sysop_available(&cfg)
 		|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron,&client))
 		|| useron.exempt&FLAG('C')) {
 
