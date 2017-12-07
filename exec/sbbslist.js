@@ -57,8 +57,8 @@ function export_entry(bbs, msgbase)
     body += "Name:          " + bbs.name + "\r\n";
 	if(bbs.first_online)
 		body += "Birth:         " + date_to_str(new Date(bbs.first_online)) + "\r\n";
-    if(bbs.software.bbs)
-        body += "Software:      " + bbs.software.bbs + "\r\n";
+    if(bbs.software)
+        body += "Software:      " + bbs.software + "\r\n";
     for(i in bbs.sysop) {
         body += "Sysop:         " + bbs.sysop[i].name + "\r\n";
         if(i==0 && bbs.sysop[i].email)
@@ -87,8 +87,8 @@ function export_entry(bbs, msgbase)
         body += "Network:       " + bbs.network[i].name + "\r\n";
         body += "Address:       " + bbs.network[i].address + "\r\n";
     }
-    for(i in bbs.terminal.support)
-        body += "Terminal:      " + bbs.terminal.support[i].type + "\r\n";
+    for(i in bbs.terminal.types)
+        body += "Terminal:      " + bbs.terminal.types[i] + "\r\n";
     if(bbs.terminal.nodes)
         body += "Nodes:         " + bbs.terminal.nodes + "\r\n";
     if(bbs.total.storage)
@@ -103,8 +103,8 @@ function export_entry(bbs, msgbase)
         body += "Subs:          " + bbs.total.subs + "\r\n";
     if(bbs.total.dirs)
         body += "Dirs:          " + bbs.total.dirs + "\r\n";
-    if(bbs.total.xtrns)
-        body += "Xtrns:         " + bbs.total.xtrns + "\r\n";
+    if(bbs.total.doors)
+        body += "Xtrns:         " + bbs.total.doors + "\r\n";
     for(i in bbs.description)
         body += "Desc:          " + bbs.description[i] + "\r\n";
 
@@ -147,9 +147,9 @@ function export_to_msgbase(list, msgbase)
             break;
         if(list[i].imported)
             continue;
-        if(list[i].entry.created.on < last_export
-            && list[i].entry.updated.on < last_export
-            && list[i].entry.verified.on < last_export)
+        if(new Date(list[i].entry.created.on).valueOf() < last_export
+            && new Date(list[i].entry.updated.on).valueOf() < last_export
+            && new Date(list[i].entry.verified.on).valueOf() < last_export)
             continue;
         if(!export_entry(list[i], msgbase))
             break;
@@ -205,7 +205,7 @@ function import_entry(bbs, text)
 
     bbs.sysop = [];
     bbs.network = [];
-    bbs.terminal = { nodes:0, support:[] };
+    bbs.terminal = { nodes:0, types:[] };
     bbs.description = [];
     bbs.service = [];
     bbs.total = {};
@@ -225,7 +225,7 @@ function import_entry(bbs, text)
                 bbs.first_online = date_from_str(match[2]);
                 break;
             case 'software':
-                bbs.software = {bbs: match[2]};
+                bbs.software = match[2];
                 break;
             case 'sysop':
                 if(bbs.sysop.length)
@@ -283,9 +283,9 @@ function import_entry(bbs, text)
                 bbs.network[network].address = match[2];
                 break;
             case 'terminal':
-                if(bbs.terminal.support.length)
+                if(bbs.terminal.types.length)
                     terminal++;
-                bbs.terminal.support[terminal] = {type: match[2]};
+                bbs.terminal.types[terminal] = match[2];
                 break;
             case 'desc':
                 if(bbs.description.length)
@@ -300,9 +300,9 @@ function import_entry(bbs, text)
             case 'users':
             case 'subs':
             case 'dirs':
-            case 'xtrns':
-                bbs.total[match[1].toLowerCase()] = parseInt(match[2], 10);
                 break;
+            case 'xtrns':
+                bbs.total.doors = parseInt(match[2], 10);
             case 'nodes':
                 bbs.terminal.nodes = parseInt(match[2], 10);
                 break;
@@ -369,18 +369,21 @@ function import_from_msgbase(list, msgbase)
         if(list.length && list[l]) {
             if(!list[l].entry)
                 continue;
-            if(list[l].entry.created.by.toLowerCase() != msg_from.toLowerCase()) {
-                print(msg_from + " did not create entry: " + bbs_name + " (" + list[l].entry.created.by + " did)");
-                continue;
-            }
             if(list[l].imported == false) {
-                print(msg_from + " attempting to update/over-write local entry: " + bbs_name);
+                print(msg_from + "@" + msg_from_addr + " attempted to update/over-write local entry: " + bbs_name);
                 continue;
             }
-            print("Updating existing entry: " + bbs_name + " (by " + list[l].entry.created.by + ")");
+			var entry = list[l].entry;
+            if(entry.created.by.toLowerCase() != msg_from.toLowerCase()
+				|| (enctry.created.at && entry.created.at != msg_from_addr)) {
+                print(msg_from + "@" + msg_from_addr  + " did not create entry: " 
+					+ bbs_name + " (" + entry.created.by + "@" + entry.created.at + " did)");
+                continue;
+            }
+            print("Updating existing entry: " + bbs_name + " (by " + entry.created.by + ")");
         } else {
             print(msg_from + " creating new entry: " + bbs_name);
-            list[l] = {name: bbs_name, entry: {created: {by:msg_from, at:msg_from_addr, on:new Date() } } };
+            list[l] = {name: bbs_name, entry: {created: {by:msg_from, at:msg_from_addr, on:new Date().toISOString() } } };
         }
         var body = msgbase.get_msg_body(/* by_offset: */true, i
             ,/* strip Ctrl-A */true, /* rfc822-encoded: */false, /* include tails: */false);
@@ -388,7 +391,7 @@ function import_from_msgbase(list, msgbase)
         list[l].imported = true;
 //        if(!list[l].birth)
 //            list[l].birth=list[l].entry.created.on;
-        list[l].entry.updated= { on: new Date(), by:msg_from };
+        list[l].entry.updated= { on: new Date().toISOString, by:msg_from, at:msg_from_addr };
         count++;
     }
 
@@ -424,7 +427,7 @@ function read_dab_entry(f)
     if(f.eof)
         return null;
     obj.entry.created = { on:null, by:truncsp(f.read(26)) };
-    obj.software = { bbs: truncsp(f.read(16)) };
+    obj.software = truncsp(f.read(16));
     total = f.readBin(1);
     for(i=0;i<sbl_defs.MAX_SYSOPS;i++)
         obj.sysop[i] = { name: truncsp(f.read(26)) };
@@ -439,10 +442,10 @@ function read_dab_entry(f)
         obj.network[i].address = truncsp(f.read(26));
     obj.network.length = total;
     total = f.readBin(1);
-    obj.terminal.support = [];
+    obj.terminal.types = [];
     for(i=0;i<sbl_defs.MAX_TERMS;i++)
-        obj.terminal.support[i] = { type: truncsp(f.read(16)) };
-    obj.terminal.support.length = total;
+        obj.terminal.types[i] = truncsp(f.read(16));
+    obj.terminal.types.length = total;
     for(i=0;i<sbl_defs.DESC_LINES;i++)
         obj.description.push(truncsp(f.read(51)));
     for(i in obj.description) {
@@ -454,14 +457,14 @@ function read_dab_entry(f)
     obj.total.users = f.readBin(2);
     obj.total.subs = f.readBin(2);
     obj.total.dirs = f.readBin(2);
-    obj.total.xtrns = f.readBin(2);
-    obj.entry.created.on = new Date(f.readBin(4)*1000);
+    obj.total.doors = f.readBin(2);
+    obj.entry.created.on = new Date(f.readBin(4)*1000).toISOString();
     var updated = f.readBin(4);
     if(updated)
-        obj.entry.updated = { on: new Date(updated*1000) };
+        obj.entry.updated = { on: new Date(updated*1000).toISOString() };
     var first_online = f.readBin(4);
     if(first_online)
-        obj.first_online = new Date(first_online*1000);
+        obj.first_online = new Date(first_online*1000).toISOString();
     obj.total.storage = f.readBin(4)*1024*1024;
     obj.total.msgs = f.readBin(4);
     obj.total.files = f.readBin(4);
@@ -499,7 +502,7 @@ function read_dab_entry(f)
     var verified_date = f.readBin(4);
     var verified_by = f.read(26);
     if(verified_date)
-        obj.entry.verified = { on: new Date(verified_date*1000), by: truncsp(verified_by) };
+        obj.entry.verified = { on: new Date(verified_date*1000).toISOString(), by: truncsp(verified_by) };
     obj.web_site = truncsp(f.read(61));
     var sysop_email = truncsp(f.read(61));
     if(obj.sysop.length)
@@ -702,14 +705,20 @@ function console_color(arg, selected)
 		console.attributes = arg;
 }
 
+function console_beep()
+{
+	if(js.global.console != undefined && options.beep !== false)
+		console.beep();
+}
+
 /* Supported list formats (the property values for 2nd & 3rd columns) */
 const list_formats = [
 	[ "sysop_name", "location" ],
 	[ "phone_number", "service_address" ],
-	[ "since", "bbs_software", "web_site" ],
+	[ "since", "software", "web_site" ],
 	[ "description" ],
 	[ "networks"],
-	[ "nodes", "users", "subs", "dirs", "xtrns", "msgs", "files", "storage"],
+	[ "nodes", "users", "subs", "dirs", "doors", "msgs", "files", "storage"],
 	[ "protocols"],
 	[ "created_by", "created_on" ],
 	[ "updated_by", "updated_on" ],
@@ -761,6 +770,32 @@ function help()
 	console.clear();
 }
 
+function this_bbs()
+{
+	var bbs = lib.new_system(system.name, system.nodes, lib.system_stats());
+	bbs.sysop.push({ name: system.operator, email: system.operator.replace(' ', '.') +'@'+ system.inet_addr });
+	bbs.software = "Synchronet " + system.version;
+	bbs.location = system.location;
+	bbs.web_site = system.inet_addr;
+	bbs.terminal.types.push("TTY", "ANSI");
+	bbs.service.push({ protocol: 'telnet', address: system.inet_addr, port: standard_service_port['telnet'] });
+	if(msg_area.grp["DOVE-Net"])
+		bbs.network.push({ name: "DOVE-Net", address: system.qwk_id});
+	if(msg_area.grp["FidoNet"] || msg_area.grp["Fidonet"])
+		bbs.network.push({ name: "FidoNet", address: system.fido_addr_list[0] });
+	return bbs;
+}
+
+function get_description()
+{
+	var description = [];
+	while(description.length < sbl_defs.DESC_LINES
+		&& (str=prompt("Description [" + (sbl_defs.DESC_LINES - description.length -1) + "]"))) {
+		description.push(str);
+	}
+	return description;
+}
+
 function browse(list)
 {
 	var top=0;
@@ -781,6 +816,8 @@ function browse(list)
 		console.current_column = 0;
 		console.attributes = color_cfg.header;
 		console.print(version_notice);
+		if(0)
+			console.print(format(" sort='%s'", sort));
 		if(console.screen_columns >= 80)
 			right_justify(format("[%u BBS entries]", list.length));
 		console.cleartoeol();
@@ -811,10 +848,10 @@ function browse(list)
 
 		/* Bounds checking: */
 		if(current < 0) {
-			console.beep();
+			console_beep();
 			current = 0;
 		} else if(current >= list.length) {
-			console.beep();
+			console_beep();
 			current = list.length-1;
 		}
 		if(top > current)
@@ -840,13 +877,58 @@ function browse(list)
 		if(!options.add_ars || user.compare_ars(options.add_ars))
 			console.mnemonics("~Add, ");
 		console.mnemonics(format("~Up/~Down, ~Next/~Prev, ~Sort, ~Reverse, ~Find, fmt(~0-~%u), ~Quit, ~More, or [~View] ~?", list_formats.length-1));
-		var key = console.getkey(K_UPPER);
-		switch(key) {
+		var key = console.getkey(0);
+		switch(key.toUpperCase()) {
 			case 'A':
+				console.clear();
 				if(options.add_ars && !user.compare_ars(options.add_ars)) {
-					console.beep();
+					console_beep();
+					alert("Sorry, you cannot do that");
+					console.pause();
 					continue;
 				}
+				var bbs_name = prompt("BBS Name");
+				if(!bbs_name)
+					continue;
+				if(lib.system_exists(list, bbs_name)) {
+					alert("System '" + bbs_name + "' already exists");
+					console.pause();
+					continue;
+				}
+				var bbs = lib.new_system(bbs_name);
+				bbs.sysop.push({ name: user.alias, email: user.email });
+				bbs.location = user.location;
+				bbs.software = prompt("BBS Software");
+				bbs.terminal.types.push("TTY", "ANSI");
+				bbs.description = get_description();
+				if(!bbs.description.length) {
+					alert("You need to provide a description");
+					console.pause();
+					continue;
+				}
+				bbs.service.push({ protocol: 'telnet', address: client.host_name, port: standard_service_port['telnet'] });
+				if(!edit(bbs)) {
+					alert("Edit aborted");
+					console.pause();
+					continue;
+				}
+				lib.add_system(list, bbs, user.alias);
+				lib.write_list(list);
+				print("System added successfully");
+				console.pause();
+				continue;
+			case 'E':
+				console.clear();
+				/* Edit a clone, not the original (allowing the user to abort the edit) */
+				var bbs = edit(JSON.parse(JSON.stringify(list[current])));
+				if(!bbs) {
+					alert("Edit aborted");
+					console.pause();
+					continue;
+				}
+				list[current] = bbs;
+				lib.write_list(list);
+				console.pause();
 				continue;
 			case 'V':
 			case '\r':
@@ -877,20 +959,20 @@ function browse(list)
 				top -= pagesize;
 				break;
 			case 'F':
-				list = orglist;
+				list = orglist.slice();
 				console.clearline();
 				console.print("\1n\1y\1hFind: ");
 				find=console.getstr(60,K_LINE|K_UPPER|K_NOCRLF);
 				console.clearline(LIGHTGRAY);
 				if(find && find.length)
-					list = lib.find(list, find);
+					list = lib.find(list.slice(), find);
 				break;
 			case 'R':
 				list.reverse();
 				break;
 			case 'M':	/* More */
 				console.clearline();
-				console.mnemonics(format("~Download SyncTERM.lst file, ~Sort, ~Format, ~Quit, ~?"));
+				console.mnemonics(format("~Download SyncTERM.lst file, ~Sort, ~Format, ~Remove, ~Quit, ~?"));
 				var key = console.getkey(K_UPPER);
 				switch(key) {
 					case 'Q':
@@ -902,8 +984,14 @@ function browse(list)
 							alert("Error generating list file");
 						else {
 							print("Downloading " + file_getname(fname));
-							bbs.send_file(fname);
+							js.global.bbs.send_file(fname);
 						}
+						break;
+					case 'J':
+						console.clear();
+						console.write(lfexpand(JSON.stringify(list, null, 4)));
+						console.crlf();
+						console.pause();
 						break;
 					case 'S':
 					{
@@ -915,7 +1003,7 @@ function browse(list)
 							console.uselect(Number(i), "Sort Field", sort_fields[i]);
 						var sort_field = console.uselect();
 						if(sort_field == 0)
-							list = orglist, sort = undefined;
+							list = orglist.slice(), sort = undefined;
 						else if(sort_field > 0)
 							lib.sort(list, sort = sort_fields[sort_field]);
 						break;
@@ -926,6 +1014,22 @@ function browse(list)
 						var choice = console.uselect();
 						if(choice >= 0)
 							list_format = choice;
+						break;
+					case 'R':
+						console.clear();
+						if(!user.is_sysop && list[current].created.by != user.alias) {
+							alert("Sorry, you cannot remove this entry");
+							console.pause();
+							continue;
+						}
+						var entry_name = list[current].name;
+						if(console.noyes("Remove BBS entry: " + entry_name))
+							break;
+						list.splice(current, 1);
+						lib.write_list(list);
+						alert(entry_name + " removed successfully");
+						orglist = list.slice();
+						console.pause();
 						break;
 					case '?':
 						help();
@@ -939,13 +1043,22 @@ function browse(list)
 					var sort_field = list_formats[list_format].indexOf(sort);
 					if(sort_field >= list_formats[list_format].length)
 						sort = undefined;
-					else if(sort_field < 0)
-						sort = list_formats[list_format][0];
-					else 
-						sort = list_formats[list_format][sort_field+1];
+					else if(key == 'S')	{ /* capital 'S', move backwards through sort fields */
+						if(sort == "name")
+							sort = undefined;
+						else if(sort_field)
+							sort = list_formats[list_format][sort_field-1];
+						else
+							sort = "name";
+					} else {
+						if(sort_field < 0)
+							sort = list_formats[list_format][0];
+						else
+							sort = list_formats[list_format][sort_field+1];
+					}
 				}
 				if(sort == undefined)
-					list = orglist;
+					list = orglist.slice();
 				else
 					lib.sort(list, sort);
 				break;
@@ -966,7 +1079,7 @@ function browse(list)
 						lib.sort(list, "location");
 						break;
 					default:
-						list = orglist;
+						list = orglist.slice();
 						break;
 				}
 				break;
@@ -1000,7 +1113,8 @@ function view(list, current)
 		console.crlf();
 
 		var fmt = "\1n\1g%11s \1h%-*.*s";
-		printf(fmt, "BBS", lib.max_len.name, lib.max_len.name, bbs.name);
+		printf("\1n  ");
+		printf(fmt, "BBS\1w", lib.max_len.name, lib.max_len.name, bbs.name);
 		if(bbs.first_online)
 			printf("\1n\1g since \1h%s", bbs.first_online.substring(0,10));
 		console.crlf();
@@ -1013,8 +1127,8 @@ function view(list, current)
 		if(bbs.location) {
 			printf(fmt, "Location", lib.max_len.location, lib.max_len.location, bbs.location);
 		}
-		if(bbs.software && bbs.software.bbs) {
-			printf(fmt, " Software", lib.max_len.bbs_software, lib.max_len.bbs_software, bbs.software.bbs);
+		if(bbs.software) {
+			printf(fmt, " Software", lib.max_len.software, lib.max_len.software, bbs.software);
 		}
 		console.crlf();
 		if(bbs.web_site) {
@@ -1042,7 +1156,7 @@ function view(list, current)
 		var networks="";
 		for(i in bbs.network) {
 			if(i > 0)
-				networks += ",";
+				networks += ", ";
 			networks += bbs.network[i].name;
 			if(bbs.network[i].address)
 				networks += format("[%s]", bbs.network[i].address);
@@ -1050,14 +1164,26 @@ function view(list, current)
 		if(networks)
 			printf("\1n\1g%11s \1h%s\r\n", "Networks", networks);
 		if(bbs.entry) {
-			if(bbs.entry.created)
+			if(bbs.entry.created) {
+				var created_by = bbs.entry.created.by;
+				if(bbs.entry.created.at)
+					created_by += ("@" + bbs.entry.created.at);
 				printf("\1n\1g%11s \1h%s\1n\1g on \1h%s \1n\1g%s\r\n", "Created by"
-					,bbs.entry.created.by, bbs.entry.created.on.substr(0,10)
+					,created_by, bbs.entry.created.on.substr(0,10)
 					,bbs.imported ? "from msg-network" : "locally");
-			if(bbs.entry.updated)
-				printf("\1n\1g%11s \1h%s\1n\1g on \1h%s\r\n", "Updated by", bbs.entry.updated.by, bbs.entry.updated.on.substr(0,10));
-			if(bbs.entry.verified)
-				printf("\1n\1g%11s \1h%s\1n\1g on \1h%s\r\n", "Verified by", bbs.entry.verified.by, bbs.entry.verified.on.substr(0,10));
+			}
+			if(bbs.entry.updated) {
+				var updated_by = bbs.entry.updated.by;
+				if(bbs.entry.updated.at)
+					updated_by += ("@" + bbs.entry.updated.at);
+				printf("\1n\1g%11s \1h%s\1n\1g on \1h%s\r\n", "Updated by", updated_by, bbs.entry.updated.on.substr(0,10));
+			}
+			if(bbs.entry.verified) {
+				var verified_by = bbs.entry.verified.by;
+				if(bbs.entry.verified.at)	// Not actually supported
+					verified_by += ("@" + bbs.entry.verified.at);
+				printf("\1n\1g%11s \1h%s\1n\1g on \1h%s\r\n", "Verified by", verified_by, bbs.entry.verified.on.substr(0,10));
+			}
 		}
 		
 		while(console.line_counter < console.screen_rows - 2)
@@ -1065,12 +1191,12 @@ function view(list, current)
 
 		if(bbs.preview)
 			console.mnemonics("~Preview, ");
-		console.mnemonics("~Edit, ~Verify, ~Delete, ~Forward/~Back or ~Quit: ");
+		console.mnemonics("~Edit, ~Verify, ~Remove, ~Forward/~Back, ~JSON or ~Quit: ");
 		var key = console.getkey(K_UPPER);
 		switch(key) {
 			case 'P':
 				if(!bbs.preview) {
-					console.beep();
+					console_beep();
 					break;
 				}
 				console.clear();
@@ -1084,18 +1210,127 @@ function view(list, current)
 				if(current < list.length - 1)
 					current++;
 				else
-					console.beep();
+					console_beep();
 				break;
 			case 'B':
 				if(current)
 					current--;
 				else
-					console.beep();
+					console_beep();
+				break;
+			case 'E':
+				console.clear();
+				/* Edit a clone, not the original (allowing the user to abort the edit) */
+				var edited = edit(JSON.parse(JSON.stringify(bbs)));
+				if(!edited) {
+					alert("Edit aborted");
+					console.pause();
+					continue;
+				}
+				list[current] = edited;
+				lib.write_list(list);
+				break;
+			case 'J':
+				console.clear();
+				console.write(lfexpand(JSON.stringify(bbs, null, 4)));
+				console.crlf();
+				console.pause();
 				break;
 			case 'Q':
 				return;
 		}
 	}
+}
+
+function edit_field(obj, field)
+{
+	printf("\1h\1y" + field + ": ");
+	field = field.toLowerCase().replace('-', '_');
+	var str = console.getstr(obj[field], lib.max_len[field], K_EDIT|K_LINE|K_AUTODEL);
+	if(str !== false)
+		obj[field] = str;
+}
+
+function edit(bbs)
+{
+	if(bbs.imported) {
+		alert("Cannot edit imported entries");
+		return false;
+	}
+	if(bbs.entry.created.by
+		&& bbs.entry.created.by.toLowerCase() != user.alias.toLowerCase()) {
+		alert("Sorry, this entry was created by: " + bbs.entry.created.by);
+		return false;
+	}
+	if(!bbs.first_online)
+			bbs.first_online="";
+	while(js.global.bbs.online) {
+		console.clear();
+		printf("\1nEditing: \1h%s\r\n", bbs.name);
+		console.crlf();
+		var opts = 1;
+		var optlen = 15;
+		var optmax = console.screen_columns - 30;
+		var sysop = format("%s <%s>", bbs.sysop[0].name, bbs.sysop[0].email);
+		printf("\1n%2u \1h%-*s : %s\r\n"	, opts++, optlen, "Since", bbs.first_online.substring(0,10));
+		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Sysop", optmax, sysop);
+		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Location", optmax, bbs.location);
+		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Web-site", optmax, bbs.web_site);
+		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Software", optmax, bbs.software);
+		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Description", optmax, bbs.description.join(" "));
+		printf("\1n%2u \1h%-*s : %u\r\n"	, opts++, optlen, "Terminal Nodes", bbs.terminal.nodes);
+		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Terminal Types", optmax, bbs.terminal.types.join(", "));
+		printf("\1n%2u \1hTotals...\r\n"	, opts++);
+		printf("\1n%2u \1hNetworks...\r\n"	, opts++);
+		printf("\1n%2u \1hServices...\r\n"	, opts++);
+
+		console.mnemonics("\r\nWhich, ~Save or ~Abort: ");
+		var which = console.getkeys("SQA", opts);
+		if(!which || which == 'A')
+			return false;
+		if(which == 'S')
+			break;
+		switch(which) {
+			case 1:
+				var value = prompt("Since (YYYY-MM-DD)");
+				if(value)
+					bbs.first_online = new Date(value).toISOString();
+				break;
+			case 3:
+				edit_field(bbs, "Location");
+				break;
+			case 4:
+				edit_field(bbs, "Web-site");
+				break;
+			case 5:
+				edit_field(bbs, "Software");
+				break;
+			case 9:
+				while(js.global.bbs.online)
+				{
+					console.clear();
+					opts = 1;
+					optlen = 8;
+					var prop = [];
+					for(var i in bbs.total) {
+						prop[opts] = i;
+						printf("\1n%2u \1h%-*s : ", opts++, optlen, i);
+						print(bbs.total[i]);
+					}
+					console.mnemonics("\r\nWhich or ~Quit: ");
+					var which = console.getnum(opts);
+					if(which < 1)
+						break;
+					printf("\1h\1y%s\1w: ", prop[which]);
+					var newval = console.getstr(20);
+					if(newval !== false && newval.length)
+						bbs.total[prop[which]] = newval;
+				}
+				break;
+		}
+	}
+	lib.update_system(bbs, user.alias);
+	return bbs;
 }
 
 function main()
@@ -1232,6 +1467,14 @@ function main()
 		        lib.write_list(list);
 				break;
 			case "browse":
+				if(user.number == 1 && !lib.system_exists(list, system.name) 
+					&& !console.noyes(system.name + " is not listed. Add it")) {
+					var bbs = this_bbs();
+					bbs.description = get_description();
+					lib.add_system(list, bbs, system.operator);
+					lib.write_list(list);
+					print("System added successfully");
+				}
 				browse(list);
 				break;
 			case "save":
@@ -1273,14 +1516,8 @@ function main()
 					alert("System '" + system.name + "' already exists");
 					exit(-1);
 				}
-				var bbs = lib.new_system(system.name, system.nodes, lib.system_stats());
-				bbs.sysop.push({ name: system.operator, email: 'sysop@'+system.inet_addr });
-				bbs.software = { bbs: "Synchronet " + system.version} ;
-				bbs.terminal.support.push("TTY", "ANSI");
-				while((str=prompt("Description"))) {
-					bbs.description.push(str);
-				}
-				bbs.service.push({ protocol: 'telnet', address: system.inet_addr, port: standard_service_port['telnet'] });
+				var bbs = this_bbs();
+				bbs.description = get_description();
 				lib.add_system(list, bbs, system.operator);
 				lib.write_list(list);
 				print("System added successfully");
@@ -1292,7 +1529,7 @@ function main()
 					exit(-1);
 				}
 				var bbs=list[i];
-				bbs.software = { bbs: "Synchronet " + system.version} ;
+				bbs.software = "Synchronet " + system.version;
 				bbs.total = lib.system_stats();
 				bbs.terminal.nodes = system.nodes;
 				lib.update_system(bbs, js.exec_file + " " + REVISION);

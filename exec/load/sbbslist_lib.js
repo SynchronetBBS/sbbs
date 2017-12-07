@@ -10,7 +10,7 @@ var sort_property = 'name';
 
 // These max lengths are derived from the bbs_t structure definition in xtrn/sbl/sbldefs.h:
 const max_len = {
-	name:				25,
+	name:				25,		/* Synchronet allows 40, I think this restricted by 25-char QWK msg subjs in sbldefs.h */
 	phone_number:		25,		/* only the first 12 chars are backwards compatible with SBL v3 */
 	location:			30,
 	sysop_name:			25,
@@ -21,13 +21,13 @@ const max_len = {
 	updated_on:			28,
 	verified_on:		28,
 	service_address:	28,
-	bbs_software:		15,
+	software:			15,
 	since:				4,		/* just the year portion of the first_online date */
 	nodes:				4,
 	users:				5,
 	subs:				5,
 	dirs:				5,
-	xtrns:				5,
+	doors:				5,		// was xtrns
 	msgs:				8,
 	files:				7,
 	storage:			7,
@@ -154,17 +154,23 @@ function property_value(bbs, property)
 			if(bbs.total && bbs.total.dirs)
 				value = bbs.total.dirs;
 			break;
-		case "xtrns":
-			if(bbs.total && bbs.total.xtrns)
-				value = bbs.total.xtrns;
+		case "doors":
+			if(bbs.total && bbs.total.doors)
+				value = bbs.total.doors;
 			break;
 		case "msgs":
-			if(bbs.total && bbs.total.msgs)
+			if(bbs.total && bbs.total.msgs) {
 				value = bbs.total.msgs;
+				if(value >= 1000000)
+					value = Math.ceil(value / 1000000) + "M";
+			}
 			break;
 		case "files":
-			if(bbs.total && bbs.total.files)
+			if(bbs.total && bbs.total.files) {
 				value = bbs.total.files;
+				if(value >= 1000000)
+					value = Math.ceil(value / 1000000) + "M";
+			}
 			break;
 		case "storage":
 			if(bbs.total && bbs.total.storage) {
@@ -180,10 +186,6 @@ function property_value(bbs, property)
 			break;				
 		case "description":
 			value = bbs.description.join(" ");
-			break;
-		case "bbs_software":
-			if(bbs.software && bbs.software.bbs)
-				value = bbs.software.bbs;
 			break;
 		case "networks":
 			if(bbs.network && bbs.network.length) {
@@ -252,15 +254,23 @@ function property_sort_value(bbs, property)
 			if(bbs.total)
 				return bbs.total.storage;
 			break;
+		case "files":
+			if(bbs.total)
+				return bbs.total.files;
+			brak;
+		case "msgs":
+			if(bbs.total)
+				return bbs.total.msgs;
+			break;
 		case "created_on":
-			return bbs.entry.created.on;
+			return new Date(bbs.entry.created.on).valueOf();
 		case "updated_on":
 			if(bbs.entry.updated)
-				return bbs.entry.updated.on;
+				return new Date(bbs.entry.updated.on).valueOf();
 			break;
 		case "verified_on":
 			if(bbs.entry.verified)
-				return bbs.entry.verified.on;
+				return new Date(bbs.entry.verified.on).valueOf();
 			break;
 	}
 	return property_value(bbs, property);
@@ -268,13 +278,13 @@ function property_sort_value(bbs, property)
 
 function sort(list, property)
 {
-	if(property=="verify")
-		list.sort(verify_compare);
-	else {	
+//	if(property=="verify")
+//		list.sort(verify_compare);
+//	else {	
 		if(property)
 			sort_property=property;
 		list.sort(compare);
-	}
+//	}
 }
 
 function find(list, text)
@@ -378,7 +388,7 @@ function new_system(name, nodes, stats)
 		entry:{}, 
 		sysop:[], 
 		service:[], 
-		terminal:{ nodes: nodes, support: [] }, 
+		terminal:{ nodes: nodes, types: [] }, 
 		network:[], 
 		description:[], 
 		total: stats
@@ -391,7 +401,7 @@ function system_stats()
 		users: system.stats.total_users, 
 		subs: Object.keys(msg_area.sub).length, 
 		dirs: Object.keys(file_area.dir).length, 
-		xtrns: Object.keys(xtrn_area.prog).length, 
+		doors: Object.keys(xtrn_area.prog).length, 
 		storage:disk_size(system.data_dir, 1024*1024)*1024*1024, 
 		msgs: system.stats.total_messages, 
 		files: system.stats.total_files
@@ -400,18 +410,18 @@ function system_stats()
 
 function add_system(list, bbs, by)
 {
-	bbs.entry.created = { by: by, on: new Date() };
+	bbs.entry.created = { by: by, on: new Date().toISOString() };
 	list.push(bbs);
 }
 
 function update_system(bbs, by)
 {
-	bbs.entry.updated = { by: by, on: new Date() };
+	bbs.entry.updated = { by: by, on: new Date().toISOString() };
 }
 
 function syncterm_list(list)
 {
-    var f = new File("syncterm.lst");
+    var f = new File(system.temp_dir + "syncterm.lst");
     if(!f.open("w")) {
 		return false;
     }
