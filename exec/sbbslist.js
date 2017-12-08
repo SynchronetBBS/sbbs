@@ -17,7 +17,7 @@ load("portdefs.js");
 
 var sbl_dir = "../xtrn/sbl/";
 var list_format = 0;
-var color_cfg = { 
+var color_cfg = {
 	header: BLACK | BG_LIGHTGRAY,
 	selection: BG_BLUE,
 	column: [ WHITE ],
@@ -375,8 +375,8 @@ function import_from_msgbase(list, msgbase)
             }
 			var entry = list[l].entry;
             if(entry.created.by.toLowerCase() != msg_from.toLowerCase()
-				|| (enctry.created.at && entry.created.at != msg_from_addr)) {
-                print(msg_from + "@" + msg_from_addr  + " did not create entry: " 
+				|| (entry.created.at && entry.created.at != msg_from_addr)) {
+                print(msg_from + "@" + msg_from_addr  + " did not create entry: "
 					+ bbs_name + " (" + entry.created.by + "@" + entry.created.at + " did)");
                 continue;
             }
@@ -507,7 +507,7 @@ function read_dab_entry(f)
     var sysop_email = truncsp(f.read(61));
     if(obj.sysop.length)
         obj.sysop[0].email = sysop_email;
-    f.readBin(4);   // 'exported' not used, always zero 
+    f.readBin(4);   // 'exported' not used, always zero
     obj.entry.autoverify = { successes: f.readBin(4), attempts: f.readBin(4) };
     f.read(310);    // unused padding
 
@@ -559,9 +559,9 @@ function verify_services(address, timeout)
 {
     var i;
     var tcp_services=[
-        "ftp", 
-        "msp", 
-        "nntp", 
+        "ftp",
+        "msp",
+        "nntp",
 		"smtp",
 //		"submission",
 		"pop3",
@@ -581,7 +581,7 @@ function verify_services(address, timeout)
         printf("Verifying %-10s UDP connection at %s\r\n", service, address);
         if(!udp_socket.sendto("\r\n", address, standard_service_port[service]))
             log(LOG_ERR,format("FAILED Send to %s UDP service at %s", service, address));
-    }            
+    }
 
     for(i in tcp_services) {
         if(js.terminated)
@@ -636,9 +636,9 @@ function verify_bbs(bbs)
             continue;
         bbs.entry.autoverify.attempts++;
         var result = verify_terminal_service(bbs.service[i]);
-        var failure = { 
+        var failure = {
             on: new Date(),
-            result: capture.error, 
+            result: capture.error,
             service: bbs.service[i],
             ip_address: result.ip_address,
         };
@@ -866,7 +866,7 @@ function browse(list)
 		for(var i=top; i-top < pagesize; i++) {
 			console.line_counter = 0;
 			if(list[i]) {
-				list_bbs_entry(list[i], i==current, sort);	
+				list_bbs_entry(list[i], i==current, sort);
 				console.cleartoeol(i==current ? color_cfg.selection : LIGHTGRAY);
 			} else
 				console.clearline(LIGHTGRAY);
@@ -1185,7 +1185,7 @@ function view(list, current)
 				printf("\1n\1g%11s \1h%s\1n\1g on \1h%s\r\n", "Verified by", verified_by, bbs.entry.verified.on.substr(0,10));
 			}
 		}
-		
+
 		while(console.line_counter < console.screen_rows - 2)
 			console.clearline(), console.crlf();
 
@@ -1356,7 +1356,7 @@ function main()
 			arg = arg.substring(0,eq);
 		}
 		optval[arg] = val;
-			
+
         switch(arg) {
             case "-v":
                 verbose++;
@@ -1433,8 +1433,8 @@ function main()
 						continue;
 					if(!lib.imsg_capable_system(bbs))
 						continue;
-					ibbs.push(format("%-63s %s\t%s\t%s", 
-						bbs.entry.autoverify.last_success.service.address, 
+					ibbs.push(format("%-63s %s\t%s\t%s",
+						bbs.entry.autoverify.last_success.service.address,
 						bbs.entry.autoverify.last_success.ip_address,
 						bbs.entry.autoverify.last_success.other_services.udp.sort(),
 						bbs.entry.autoverify.last_success.other_services.tcp.sort()));
@@ -1467,7 +1467,7 @@ function main()
 		        lib.write_list(list);
 				break;
 			case "browse":
-				if(user.number == 1 && !lib.system_exists(list, system.name) 
+				if(user.number == 1 && !lib.system_exists(list, system.name)
 					&& !console.noyes(system.name + " is not listed. Add it")) {
 					var bbs = this_bbs();
 					bbs.description = get_description();
