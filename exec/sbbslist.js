@@ -375,13 +375,8 @@ function import_from_msgbase(list, msgbase)
             }
 			var entry = list[l].entry;
             if(entry.created.by.toLowerCase() != msg_from.toLowerCase()
-<<<<<<< sbbslist.js
 				|| (entry.created.at && entry.created.at != msg_from_addr)) {
                 print(msg_from + "@" + msg_from_addr  + " did not create entry: " 
-=======
-				|| (entry.created.at && entry.created.at != msg_from_addr)) {
-                print(msg_from + "@" + msg_from_addr  + " did not create entry: "
->>>>>>> 1.12
 					+ bbs_name + " (" + entry.created.by + "@" + entry.created.at + " did)");
                 continue;
             }
@@ -1330,15 +1325,8 @@ function view(list, current)
 				printf("\1n\1g%11s \1h%s\1n\1g on \1h%s\r\n", "Verified by", verified_by, bbs.entry.verified.on.substr(0,10));
 			}
 		}
-<<<<<<< sbbslist.js
-		
 //		while(console.line_counter < console.screen_rows - 2)
 		console.clearline(), console.crlf();
-=======
-
-		while(console.line_counter < console.screen_rows - 2)
-			console.clearline(), console.crlf();
->>>>>>> 1.12
 
 		if(bbs.preview)
 			console.mnemonics("~Preview, ");
@@ -1635,17 +1623,6 @@ function main()
 		        lib.write_list(list);
 				break;
 			case "browse":
-<<<<<<< sbbslist.js
-=======
-				if(user.number == 1 && !lib.system_exists(list, system.name)
-					&& !console.noyes(system.name + " is not listed. Add it")) {
-					var bbs = this_bbs();
-					bbs.description = get_description();
-					lib.add_system(list, bbs, system.operator);
-					lib.write_list(list);
-					print("System added successfully");
-				}
->>>>>>> 1.12
 				browse(list);
 				break;
 			case "save":
