@@ -262,7 +262,7 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 				bputs(text[MIMEDecodedPlainText]);
 		}
 		truncsp(p);
-		SKIP_WHITESPACE(p);
+		SKIP_CRLF(p);
 		putmsg(p, mode);
 		smb_freemsgtxt(txt);
 		if(column)
