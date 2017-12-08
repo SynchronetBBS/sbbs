@@ -748,15 +748,15 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 
 /*
  * Returns an array of base 64 encoded strings.
- * Previously, each string was a row (or "line") in the graphic.
- * Now, it's a set of 74-byte strings to avoid terminal padding on each
- * line when the line length isn't a multiple of three.
+ * Argument: the maximum length of the encoded lines (default: 76 chars)
  *
  * TODO: Delete
  */
-Graphic.prototype.base64_encode = function()
+Graphic.prototype.base64_encode = function(max_line_len)
 {
-	return base64_encode(this.BIN).match(/([\x00-\xff]{0,76})/g);
+	if(!max_line_len)
+		max_line_len = 76;
+	return base64_encode(this.BIN).match(new RegExp('([\x00-\xff]{0,' + max_line_len + '})', 'g'));
 };
 
 /*
