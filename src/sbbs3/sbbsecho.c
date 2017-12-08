@@ -3643,8 +3643,8 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t fmsghdr, area_t area
 	fwrite(fmsghdr.from	,strlen(fmsghdr.from)+1	,1,stream);
 	fwrite(fmsghdr.subj	,strlen(fmsghdr.subj)+1	,1,stream);
 
-	if(area.tag == NULL) /* NetMail, so add FSC-0004 INTL kludge */
-		fwrite_intl_control_line(stream, &fmsghdr);
+	if(area.tag == NULL && strstr(fbuf, "\1INTL ") == NULL)	/* NetMail, so add FSC-0004 INTL kludge */
+		fwrite_intl_control_line(stream, &fmsghdr);			/* If not already present */
 
 	len = strlen((char *)fbuf);
 
