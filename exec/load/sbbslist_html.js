@@ -111,7 +111,7 @@ function bbs_service(service)
 
         uri=format('%s:%s%s%s', protocol, sep, service.address, port);
     }
-    return encode_text(service.address + port).link(encodeURI(uri)) + " ("+encode_text(service.protocol)+")";
+    return encode_text(service.address).link(encodeURI(uri)) + " ("+encode_text(service.protocol)+")";
 }
 
 function bbs_sysop(sysop)
