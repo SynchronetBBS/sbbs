@@ -1,0 +1,117 @@
+<!--HIDDEN:Synchronet BBS List-->
+
+<style>
+	.zoomedIn {
+		font-size : 10pt;
+		cursor : zoom-out;
+		line-height : 99%;
+		letter-spacing : -1px;
+	}
+	.zoomedOut {
+		font-size : 2pt;
+		cursor : zoom-in;
+	}
+	pre.ansi {
+		background-color : black;
+	}
+</style>
+
+<script type="text/javascript">
+
+	function zoom(elem) {
+		if ($(elem).hasClass('zoomedIn')) {
+			$(elem).removeClass('zoomedIn');
+			$(elem).addClass('zoomedOut');
+		} else {
+			$(elem).removeClass('zoomedOut');
+			$(elem).addClass('zoomedIn');
+		}
+	}
+
+</script>
+
+<div class="well well-sm"><h3>Synchronet BBS List</h3></div>
+
+<div class="list-group" style="margin-top:1em;">
+<?xjs
+
+	load('graphic.js');
+	var lib = load({}, "sbbslist_lib.js");
+
+	function bbs_preview(bbs) {
+	    var graphic=new Graphic();
+	    graphic.base64_decode(bbs.preview);
+		writeln(
+			'<div class="pull-left" ' +
+			'style="margin-right:5px;" ' +
+			'title="Click to Zoom in">'
+		);
+	    write(
+	    	'<pre class="ansi zoomedOut" onclick="zoom(this)">'
+	    );
+		var html = graphic.HTML;
+		html = html.replace(/background-color: black;/g, '');
+		html = html.replace(/\"color: #a8a8a8;/g, '"');
+		html = html.replace(/\ style=\" \"/g, '');
+		html = html.replace(/<span>([^<]*)<\/span>/g,'$1');
+		write(html);
+	    writeln('</pre>');
+	    writeln('</div>');
+	}
+
+	var list = lib.read_list();
+	if (list === null) list = [];
+	lib.sort(list, "verified_on");
+	list.reverse();
+
+	list.forEach(
+		function (e) {
+			var items = {
+				Location : (typeof e.location === 'string' ? e.location : ''),
+				Sysops : e.sysop.map(function (ee) { return ee.name; }).join(', '),
+				Services : e.service.map(
+					function (ee) {
+						var r = ee.protocol[0].toUpperCase() + ee.protocol.slice(1) + ': ' + ee.address;
+						if (typeof ee.port === 'number') r += ':' + ee.port;
+						return r;
+					}
+				).join ('<br>'),
+				Networks : e.network.map(
+					function (ee) {
+						var r = ee.name;
+						if (typeof ee.address === 'string' && ee.address !== '') {
+							r += ' (' + ee.address + ')';
+						}
+						return r;
+					}
+				).join('<br>'),
+				Software : (typeof e.software !== 'string' ? '' : e.software)
+
+			};
+			writeln('<li class="list-group-item striped">');
+			writeln('<p class="h4">');
+			if (typeof e.web_site === 'string' && e.web_site !== '') {
+				writeln('<a href="http://' + e.web_site + '">' + e.name + '</a>');
+			} else {
+				writeln(e.name);
+			}
+			writeln('</p>');
+			if (e.preview) bbs_preview(e);
+			writeln('<div>' + e.description.join(' ') + '</div><p>');
+			writeln('<table class="table table-condensed table-responsive">');
+			Object.keys(items).forEach(
+				function (ee) {
+					if (items[ee].length < 1) return;
+					writeln(
+						'<tr><td>' + ee + '</td><td>' + items[ee] + '</td></tr>'
+					);
+				}
+			);
+			writeln('</table>');
+			writeln('</li>');
+
+		}
+	);
+
+?>
+</div>
