@@ -34,7 +34,8 @@ const max_len = {
 	protocols:			60,
 	tcp_services:		33,
 	udp_services:		20,
-	web_site:			60,
+	web_site:			40,		// Decreased from 60
+	email_addr:			40,		// Decreased from 60
 	networks:			60,
 	description:		250,
 };
@@ -298,17 +299,19 @@ function find(list, text)
 	return new_list;
 }
 
-function read_list()
+function find_value(list, prop, value)
 {
-    var f = new File(list_fname);
-    log(LOG_INFO, "Opening list file: " + f.name);
-    if(!f.open("r")) {
-        log(LOG_ERR, "SBBSLIST: Error " + f.error + " opening " + f.name);
-        return [];
-    }
+	for(var i = 0; i < list.length; i++) {
+		if(list[i][prop] == value)
+			return i;
+	}
+	return -1;
+}
 
+// Parse the list from the JSON database file
+function parse(f)
+{
     var buf = f.read();
-    f.close();
 	truncsp(buf);
     var list = [];
 	if(buf.length) {
@@ -318,6 +321,19 @@ function read_list()
 			log(LOG_ERR, "SBBSLIST: JSON.parse exception: " + e);
 		}
 	}
+	return list;
+}
+
+function read_list()
+{
+    var f = new File(list_fname);
+    log(LOG_INFO, "Opening list file: " + f.name);
+    if(!f.open("r")) {
+        log(LOG_ERR, "SBBSLIST: Error " + f.error + " opening " + f.name);
+        return [];
+    }
+	var list = parse(f);
+    f.close();
     return list;
 }
 
@@ -329,10 +345,70 @@ function write_list(list)
         log(LOG_ERR, "SBBSLIST: Error " + out.error + " creating " + out.name);
         return false;
     }
-
     log(LOG_INFO, "SBBSLIST: Writing list file: " + out.name + " (" + list.length + " BBS entries)");
     out.write(JSON.stringify(list, null, 4));
     out.close();
+    return true;
+}
+
+function append(bbs)
+{
+    var f = new File(list_fname);
+    log(LOG_INFO, "SBBSLIST: Opening / creating list file: " + list_fname);
+    if(!f.open(f.exists ? 'r+':'w+')) {
+        log(LOG_ERR, "SBBSLIST: Error " + f.error + " creating " + f.name);
+        return false;
+    }
+	var list = parse(f);
+	list.push(bbs);
+    log(LOG_INFO, "SBBSLIST: Writing list file: " + f.name + " (" + list.length + " BBS entries)");
+	f.truncate();
+    f.write(JSON.stringify(list, null, 4));
+    f.close();
+    return true;
+}
+
+function remove(bbs)
+{
+    var f = new File(list_fname);
+    log(LOG_INFO, "SBBSLIST: Opening / creating list file: " + list_fname);
+    if(!f.open('r+')) {
+        log(LOG_ERR, "SBBSLIST: Error " + f.error + " opening " + f.name);
+        return false;
+    }
+    var list = parse(f);
+	var index = find_value(list, "name", bbs.name); 
+	if(index < 0 ) {
+		f.close();
+		return false;
+	}
+	list.splice(index, 1);
+    log(LOG_INFO, "SBBSLIST: Writing list file: " + f.name + " (" + list.length + " BBS entries)");
+	f.truncate();
+    f.write(JSON.stringify(list, null, 4));
+    f.close();
+    return true;
+}
+
+function replace(bbs)
+{
+    var f = new File(list_fname);
+    log(LOG_INFO, "SBBSLIST: Opening / creating list file: " + list_fname);
+    if(!f.open('r+')) {
+        log(LOG_ERR, "SBBSLIST: Error " + f.error + " opening " + f.name);
+        return false;
+    }
+    var list = parse(f);
+	var index = find_value(list, "name", bbs.name); 
+	if(index < 0 ) {
+		f.close();
+		return false;
+	}
+	list[index] = bbs;
+    log(LOG_INFO, "SBBSLIST: Writing list file: " + f.name + " (" + list.length + " BBS entries)");
+	f.truncate();
+    f.write(JSON.stringify(list, null, 4));
+    f.close();
     return true;
 }
 
@@ -411,6 +487,8 @@ function system_stats()
 function add_system(list, bbs, by)
 {
 	bbs.entry.created = { by: by, on: new Date().toISOString() };
+	if(!bbs.first_online)
+		bbs.first_online = new Date().toISOString();
 	list.push(bbs);
 }
 
@@ -419,9 +497,9 @@ function update_system(bbs, by)
 	bbs.entry.updated = { by: by, on: new Date().toISOString() };
 }
 
-function syncterm_list(list)
+function syncterm_list(list, dir)
 {
-    var f = new File(system.temp_dir + "syncterm.lst");
+    var f = new File(dir + "syncterm.lst");
     if(!f.open("w")) {
 		return false;
     }
