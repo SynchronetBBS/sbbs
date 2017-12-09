@@ -38,7 +38,8 @@ if(options && options.format > 0)
 var lib = load({}, "sbbslist_lib.js");
 load("graphic.js");
 var capture = load({}, "termcapture_lib.js");
-capture.timeout=5;	// was 15
+capture.timeout=15;
+capture.poll_timeout=5;
 
 // This date format is required for backwards compatibility with SMB2SBL
 function date_to_str(date)
@@ -111,6 +112,7 @@ function export_entry(bbs, msgbase)
     for(i in bbs.description)
         body += "Desc:          " + bbs.description[i] + "\r\n";
 
+	delete bbs.entry;
     body += "\r\njson-begin\r\n";
     body += JSON.stringify(bbs, null, 1) + "\r\n";
     body += "json-end\r\n";
@@ -120,14 +122,14 @@ function export_entry(bbs, msgbase)
     return msgbase.save_msg(hdr, body);
 }
 
-function export_to_msgbase(list, msgbase, last_export, limit)
+function export_to_msgbase(list, msgbase, last_export, limit, all)
 {
     var i;
     var count=0;
 	var errors=0;
 
+	var ini = new File(msgbase.file + ".ini");
 	if(last_export == undefined) {
-		var ini = new File(msgbase.file + ".ini");
 		print("Opening " + ini.name);
 		if(ini.open("r")) {
 			last_export=ini.iniGetValue("sbbslist","last_export", new Date(0));
@@ -136,7 +138,7 @@ function export_to_msgbase(list, msgbase, last_export, limit)
 		} else
 			print("Error " + ini.error + " opening " + ini.name);
 		/* Fallback to using old SBL export pointer (time_t) storage file/format */
-		if(!last_export) {
+		if(!last_export || !last_export.valueOf()) {
 			var f = new File(sbl_dir + "sbl2smb.dab");
 			print("Opening " + f.name);
 			if(f.open("rb")) {
@@ -162,17 +164,25 @@ function export_to_msgbase(list, msgbase, last_export, limit)
 			var verified = 0;
 			if(list[i].entry.verified)
 				verified = new Date(list[i].entry.verified.on).valueOf();
-			if(created < last_export
-				&& updated < last_export
-				&& verified < last_export)
+			if(created <= last_export
+				&& updated <= last_export
+				&& verified <= last_export)
 				continue;
 		}
-        if(!export_entry(list[i], msgbase)) {
+        if(!export_entry(JSON.parse(JSON.stringify(list[i])), msgbase)) {
 			alert("MsgBase error: " + msgbase.last_error);
 			errors++;
 		}
-		else
+		else {
+			if(!list[i].entry.exported)
+				list[i].entry.exported = { on: null, by: null, to: null, count: 1 };
+			else
+				list[i].entry.exported.count++;
+			list[i].entry.exported.on = new Date().toISOString();
+			list[i].entry.exported.by = js.exec_file + " " + REVISION;
+			list[i].entry.exported.to = file_getname(msgbase.file);
 			count++;
+		}
 		if(limit && count >= limit)
 			break;
     }
@@ -183,6 +193,8 @@ function export_to_msgbase(list, msgbase, last_export, limit)
         ini.close();
     } else
         print("Error " + ini.error + " opening " + ini.name);
+	if(count)
+		lib.write_list(list);
 }
 
 function import_entry(name, text)
@@ -190,7 +202,7 @@ function import_entry(name, text)
     var i;
     var json_begin;
     var json_end;
-	var bbs = lib.new_system(name, /* nodes: */0, /* total: */{});
+	var bbs = lib.new_system(name, /* nodes: */0);
 
     text=text.split("\r\n");
     for(i=0; i<text.length; i++) {
@@ -338,8 +350,8 @@ function import_from_msgbase(list, msgbase, import_ptr, limit, all)
     var sbl_crc=crc16_calc("sbl");
 
     var ini = new File(msgbase.file + ".ini");
-    print("Opening " + ini.name);
 	if(import_ptr == undefined) {
+	    print("Opening " + ini.name);
 		if(ini.open("r")) {
 			import_ptr=ini.iniGetValue("sbbslist","import_ptr", 0);
 			ini.close();
@@ -859,11 +871,11 @@ function this_bbs()
 	return bbs;
 }
 
-function getstr(str, maxlen, mode)
+function getstr(prmpt, maxlen, mode)
 {
 	if(!js.global.console)
-		return prompt(str);
-	printf("\1n\1y\1h%s\1w: ", str);
+		return prompt(prmpt);
+	printf("\1n\1y\1h%s\1w: ", prmpt);
 	return console.getstr(maxlen, mode !==undefined ? mode : K_LINE);
 }
 
@@ -894,7 +906,7 @@ function add_entry(list)
 		alert("System '" + bbs_name + "' already exists");
 		return true;
 	}
-	var bbs = lib.new_system(bbs_name, /* nodes: * /1, /* total: */{});
+	var bbs = lib.new_system(bbs_name, /* nodes: */1);
 	bbs.sysop.push({ name: user.alias, email: user.email });
 	bbs.location = user.location;
 	bbs.software = getstr("BBS Software", lib.max_len.software);
@@ -952,8 +964,18 @@ function browse(list)
 		console.print(version_notice);
 		if(0)
 			console.print(format(" sort='%s'", sort));
+
+		/* Bounds checking: */
+		if(current < 0) {
+			console_beep();
+			current = 0;
+		} else if(current >= list.length) {
+			console_beep();
+			current = list.length-1;
+		}
+
 		if(console.screen_columns >= 80)
-			right_justify(format("[%u BBS entries]", list.length));
+			right_justify(format("[BBS entry %u of %u]", current + 1, list.length));
 		console.cleartoeol();
 		console.crlf();
 		if(list_format >= list_formats.length)
@@ -980,14 +1002,6 @@ function browse(list)
 		console.cleartoeol();
 		console.crlf();
 
-		/* Bounds checking: */
-		if(current < 0) {
-			console_beep();
-			current = 0;
-		} else if(current >= list.length) {
-			console_beep();
-			current = list.length-1;
-		}
 		if(top > current)
 			top = current;
 		else if(top < 0)
@@ -1008,7 +1022,7 @@ function browse(list)
 		}
 
 		console.attributes=LIGHTGRAY;
-		console.mnemonics(format("pg:~Next/~Prev, ~Sort, ~Rev, ~Find, fmt:0-%u, ~More, ~Quit, or [View] ~?"
+		console.mnemonics(format("pg:~Next/~Prev, ~Sort, ~Rev, ~GoTo, ~Find, fmt:0-%u, ~More, ~Quit, or [View] ~?"
 			,list_formats.length-1));
 		var key = console.getkey(0);
 		switch(key.toUpperCase()) {
@@ -1049,8 +1063,43 @@ function browse(list)
 				console.print("\1n\1y\1hFind: ");
 				find=console.getstr(60,K_LINE|K_UPPER|K_NOCRLF);
 				console.clearline(LIGHTGRAY);
-				if(find && find.length)
-					list = lib.find(list.slice(), find);
+				if(find && find.length) {
+					var found = lib.find(list.slice(), find);
+					if(found.length)
+						list = found;
+					else
+						console_beep();
+				}
+				break;
+			case 'G':
+				console.clearline();
+				console.print("\1n\1y\1hGo to BBS Name or Address: ");
+				var name=console.getstr(lib.max_len.name,K_LINE|K_UPPER|K_NOCRLF);
+				console.clearline(LIGHTGRAY);
+				var index = lib.system_index(list, name);
+				if(index >= 0)
+					current = index;
+				else {
+					for(index = 0; index < list.length; index++) {
+						var n;
+						for(n = 0; n < list[index].network.length; n++) {
+							if(list[index].network[n].address.toUpperCase() == name)
+								break;
+						}
+						if(n < list[index].network.length)
+							break;
+						for(n = 0; n < list[index].service.length; n++) {
+							if(list[index].service[n].address.toUpperCase() == name)
+								break;
+						}
+						if(n < list[index].service.length)
+							break;
+					}
+					if(index < list.length)
+						current = index;
+					else
+						console_beep();
+				}
 				break;
 			case 'R':
 				list.reverse();
@@ -1060,7 +1109,9 @@ function browse(list)
 				console.clearline();
 				if(!options.add_ars || user.compare_ars(options.add_ars))
 					console.mnemonics("~Add, ");
-				console.mnemonics(format("~Edit, ~Remove, ~Download, ~Sort, ~Format, ~Quit, ~Help ~?"));
+				if(can_edit(list[current]))
+					console.mnemonics("~Edit, ~Remove, ");
+				console.mnemonics(format("~Download, ~Sort, ~Format, ~Quit, ~Help ~?"));
 				var key = console.getkey(K_UPPER);
 				switch(key) {
 					case 'A':
@@ -1082,13 +1133,12 @@ function browse(list)
 						console.pause();
 						continue;
 					case 'R':
-						list = orglist.slice();
-						console.clear();
-						if(!user.is_sysop && list[current].created.by != user.alias) {
-							alert("Sorry, you cannot remove this entry");
-							console.pause();
+						if(!can_edit(list[current])) {
+							console_beep();
 							continue;
 						}
+						list = orglist.slice();
+						console.clear();
 						var entry_name = list[current].name;
 						if(console.noyes("Remove BBS entry: " + entry_name))
 							break;
@@ -1246,6 +1296,33 @@ function print_additional_services(bbs, addr, start)
 	}
 }  
 
+function edit_json(bbs)
+{
+	var bbs_name = bbs.name;
+	var f = new File(system.temp_dir + "json.txt");
+	if(!f.open("w"))
+		return false;
+	f.write(lfexpand(JSON.stringify(bbs, null, 4)));
+	f.close();
+	if(!console.editfile(f.name))
+		return false;
+	if(!f.open("r"))
+		return false;
+	var buf = f.read();
+	f.close();
+	try {
+		bbs=JSON.parse(buf);
+	} catch(e) {
+		alert("JSON.parse exception: " + e);
+		return false;
+	}
+	if(bbs.name != bbs_name) {
+		alert("Cannot change BBS name");
+		return false;
+	}
+	return bbs;
+}
+
 function view(list, current)
 {
 	console.line_counter = 0;
@@ -1349,7 +1426,7 @@ function view(list, current)
 				var created_by = bbs.entry.created.by;
 				if(bbs.entry.created.at)
 					created_by += ("@" + bbs.entry.created.at);
-				printf("\1n\1c%11s \1g\1h%s\1n\1g on \1h%s \1n\1g%s\r\n", "Created by"
+				printf("\1n\1c%11s \1m\1h%s\1n\1m on \1h%s \1n\1m%s\r\n", "Created by"
 					,created_by, bbs.entry.created.on.substr(0,10)
 					,bbs.imported ? "via msg-network" : "locally");
 			}
@@ -1357,13 +1434,13 @@ function view(list, current)
 				var updated_by = bbs.entry.updated.by;
 				if(bbs.entry.updated.at)
 					updated_by += ("@" + bbs.entry.updated.at);
-				printf("\1n\1c%11s \1g\1h%s\1n\1g on \1h%s\r\n", "Updated by", updated_by, bbs.entry.updated.on.substr(0,10));
+				printf("\1n\1c%11s \1m\1h%s\1n\1m on \1h%s\r\n", "Updated by", updated_by, bbs.entry.updated.on.substr(0,10));
 			}
 			if(bbs.entry.verified && bbs.entry.verified.on) {
 				var verified_by = bbs.entry.verified.by;
 				if(bbs.entry.verified.at)	// Not actually supported
 					verified_by += ("@" + bbs.entry.verified.at);
-				printf("\1n\1c%11s \1g\1h%s\1n\1g on \1h%s\r\n", "Verified by", verified_by, bbs.entry.verified.on.substr(0,10));
+				printf("\1n\1c%11s \1m\1h%s\1n\1m on \1h%s\r\n", "Verified by", verified_by, bbs.entry.verified.on.substr(0,10));
 			}
 		}
 //		while(console.line_counter < console.screen_rows - 2)
@@ -1372,9 +1449,14 @@ function view(list, current)
 		else
 			console.clearline(), console.crlf();
 
+		console.mnemonics("mv:~Forward/~Back, ");
 		if(bbs.preview)
 			console.mnemonics("~Preview, ");
-		console.mnemonics("~Edit, ~Verify, ~Remove, ~Forward/~Back, ~JSON or ~Quit: ");
+		if(can_edit(bbs))
+			console.mnemonics("~Edit, ~Remove, ");
+		if(user.is_sysop)
+			console.mnemonics("~JSON, ")
+		console.mnemonics("~Verify or ~Quit: ");
 		var key = console.getkey(K_UPPER);
 		switch(key) {
 			case 'P':
@@ -1417,11 +1499,36 @@ function view(list, current)
 				list[current] = edited;
 				lib.replace(edited);
 				break;
-			case 'J':
+			case 'R':
+				if(!can_edit(list[current])) {
+					console_beep();
+					continue;
+				}
 				console.clear();
-				console.write(lfexpand(JSON.stringify(bbs, null, 4)));
-				console.crlf();
+				var entry_name = list[current].name;
+				if(console.noyes("Remove BBS entry: " + entry_name))
+					break;
+				if(lib.remove(list[current])) {
+					list.splice(current, 1);
+					alert(entry_name + " removed successfully");
+				}
 				console.pause();
+				break;
+			case 'J':
+				if(user.is_sysop) {
+					var edited = edit_json(JSON.parse(JSON.stringify(bbs)));
+					if(edited) {
+						list[current] = edited;
+						if(lib.replace(edited))
+							alert(edited.name + " updated successfully");
+					} else
+						alert("Edit aborted");
+					console.pause();
+				}
+				break;
+			case 'V':
+				list[current].entry.verified = { on: new Date().toISOString(), by: user.alias };
+				lib.replace(list[current]);
 				break;
 			case 'Q':
 				return;
@@ -1438,16 +1545,24 @@ function edit_field(obj, field)
 		obj[field] = str;
 }
 
-function edit(bbs)
+function can_edit(bbs)
 {
 	if(bbs.imported) {
-		alert("Cannot edit imported entries");
-		return false;
+		return "Cannot edit imported entries";
 	}
 	if(bbs.entry.created
 		&& bbs.entry.created.by
 		&& bbs.entry.created.by.toLowerCase() != user.alias.toLowerCase()) {
-		alert("Sorry, this entry was created by: " + bbs.entry.created.by);
+		return "Sorry, this entry was created by: " + bbs.entry.created.by;
+	}
+	return true;
+}
+
+function edit(bbs)
+{
+	var allowed = can_edit(bbs);
+	if(allowed != true) {
+		alert(allowed);
 		return false;
 	}
 	if(!bbs.first_online)
@@ -1637,7 +1752,7 @@ function main()
 				if(cmd == "import")
 					import_from_msgbase(list, msgbase, ptr, limit, all);
 				else
-					export_to_msgbase(list, msgbase, ptr, limit);
+					export_to_msgbase(list, msgbase, ptr, limit, all);
 				msgbase.close();
 				break;
 			case "syncterm":
@@ -1797,13 +1912,14 @@ function main()
 					alert("System '" + system.name + "' does not exist");
 					exit(-1);
 				}
-				var bbs=list[i];
+				var bbs=list[index];
 				bbs.software = "Synchronet";
 				bbs.total = lib.system_stats();
 				bbs.terminal.nodes = system.nodes;
 				lib.update_system(bbs, js.exec_file + " " + REVISION);
-				lib.replace(bbs);
-				print(system.name + " updated successfully");
+				if(debug) print(JSON.stringify(bbs, null, 1));
+				if(lib.replace(bbs))
+					print(system.name + " updated successfully");
 				break;
 			case "dedupe":
 				print(list.length + " BBS entries before de-duplication");
@@ -1818,6 +1934,12 @@ function main()
 						if(debug) print(JSON.stringify(entry, null, 1));
 					}
 				}
+				break;
+			case "clean":
+				for(var i=0; i< list.length; i++) {
+					delete list[i].entry.exported;
+				}
+				lib.write_list(list);
 				break;
 		}
     }

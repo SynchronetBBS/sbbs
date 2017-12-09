@@ -460,7 +460,7 @@ function imsg_capable_system(bbs)
 function system_index(list, name)
 {
     name = name.toLowerCase();
-    for(var i in list)
+    for(var i=0; i < list.length; i++)
         if(list[i].name.toLowerCase() == name)
             return i;
 
@@ -475,14 +475,16 @@ function system_exists(list, name)
 
 function new_system(name, nodes, stats)
 {
+	if(!stats)
+		stats = { users:1, doors:0, dirs:0, subs:0, files:0, msgs:0, storage:0 };
 	return {
 		name: name, 
-		entry:{ created: {}, updated: {} }, 
+		entry:{ created:{}, updated:{} }, 
 		sysop:[], 
 		service:[], 
-		terminal:{ nodes: nodes, types: [] }, 
+		terminal:{ nodes: nodes, types:[] }, 
 		network:[], 
-		description:[], 
+		description:[],
 		total: stats
 	};
 }
@@ -525,7 +527,7 @@ function system_stats()
 
 function add_system(list, bbs, by)
 {
-	bbs.entry.created = { by: by, on: new Date().toISOString() };
+	bbs.entry.created = { on: new Date().toISOString(), by: by };
 	if(!bbs.first_online)
 		bbs.first_online = new Date().toISOString();
 	list.push(bbs);
@@ -533,7 +535,7 @@ function add_system(list, bbs, by)
 
 function update_system(bbs, by)
 {
-	bbs.entry.updated = { by: by, on: new Date().toISOString() };
+	bbs.entry.updated = { on: new Date().toISOString(), by: by };
 }
 
 function syncterm_list(list, dir)
