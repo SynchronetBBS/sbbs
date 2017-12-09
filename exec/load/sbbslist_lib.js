@@ -52,7 +52,11 @@ function compare(a, b)
 		val1=val1.toLowerCase();
 	if(typeof(val2) == "string")
 		val2=val2.toLowerCase();
-
+	else { /* Sort numbers backwards on purpose */
+		var tmp = val1;
+		val1 = val2;
+		val2 = tmp;
+	}
 	if(val1>val2) return 1;
 	if(val1<val2) return -1;
 	return 0;
@@ -251,6 +255,10 @@ function property_sort_value(bbs, property)
 	var value="";
 
 	switch(property) {
+		case "name":
+			if(bbs.name.toLowerCase().slice(0, 4) == "the ")
+				return bbs.name.slice(4);
+			return bbs.name;
 		case "storage":
 			if(bbs.total)
 				return bbs.total.storage;
@@ -279,13 +287,13 @@ function property_sort_value(bbs, property)
 
 function sort(list, property)
 {
-//	if(property=="verify")
-//		list.sort(verify_compare);
-//	else {	
+	if(property=="verify")
+		list.sort(verify_compare);
+	else {	
 		if(property)
 			sort_property=property;
 		list.sort(compare);
-//	}
+	}
 }
 
 function find(list, text)
@@ -419,13 +427,21 @@ function remove_dupes(list)
     var address=[];
     var i;
 
-    for(i in list)
-        if(names.indexOf(list[i].name.toLowerCase()) < 0 && address.indexOf(list[i].service[0].address.toLowerCase()) < 0) {
-            names.push(list[i].name.toLowerCase());
-            address.push(list[i].service[0].address.toLowerCase());
-            new_list.push(list[i]);
-        }
-
+    for(i in list) {
+		var name = list[i].name.toLowerCase();
+		if(name.slice(-4) == " bbs")
+			name = name.slice(0, -4);
+		if(name.slice(0, 4) == "the ")
+			name = name.slice(4);
+		if(names.indexOf(name) >= 0)
+			continue;
+		if(list[i].service.length
+			&& address.indexOf(list[i].service[0].address.toLowerCase()) >= 0)
+			continue;
+		names.push(name);
+		address.push(list[i].service[0].address.toLowerCase());
+		new_list.push(list[i]);
+	}
     return new_list;
 }
 
@@ -461,7 +477,7 @@ function new_system(name, nodes, stats)
 {
 	return {
 		name: name, 
-		entry:{}, 
+		entry:{ created: {}, updated: {} }, 
 		sysop:[], 
 		service:[], 
 		terminal:{ nodes: nodes, types: [] }, 
@@ -469,6 +485,29 @@ function new_system(name, nodes, stats)
 		description:[], 
 		total: stats
 	};
+}
+
+function check_entry(bbs)
+{
+	if(!bbs.name || !bbs.name.length || bbs.name.length > max_len.name) {
+		log("Problem with BBS name: " + bbs.name);
+		return false;
+	}
+	if(!bbs.service || !bbs.service.length) {
+		log(bbs.name + " has no services");
+		return false;
+	}
+/** this is valid in SBL
+	if(!bbs.sysop || !bbs.sysop.length || !bbs.sysop[0].name || !bbs.sysop[0].name.length) {
+		log(bbs.name + " has no sysop");
+		return false;
+	}
+**/
+	if(!bbs.entry || !bbs.entry.created || !bbs.entry.created.by) {
+		log(bbs.name + " has no entry.created.by property");
+		return false;
+	}
+	return true;	// All is good
 }
 
 function system_stats()
