@@ -300,6 +300,10 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 							return(TERM_KEY_LEFT);
 						case 'H':	/* ANSI:  home cursor */
 							return(TERM_KEY_HOME);
+						case 'V':
+							return TERM_KEY_PAGEUP;
+						case 'U':
+							return TERM_KEY_PAGEDN;
 						case 'F':	/* Xterm: cursor preceding line */
 						case 'K':	/* ANSI:  clear-to-end-of-line */
 							return(TERM_KEY_END);
