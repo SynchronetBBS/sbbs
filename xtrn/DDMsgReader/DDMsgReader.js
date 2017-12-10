@@ -76,6 +76,9 @@
  *                              to a user read in a new-message scan, it now uses a
  *                              message header without expanded fields so that it can
  *                              save properly.
+ * 2017-12-09 Eric Oulashin     Version 1.17 beta 50
+ *                              Fixed a bug introduced in the previous version: It
+ *                              was no longer showing voting stats for messages.
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -162,8 +165,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 49";
-var READER_DATE = "2017-12-04";
+var READER_VERSION = "1.17 Beta 50";
+var READER_DATE = "2017-12-09";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4248,7 +4251,10 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 
 	// Get the message header.  Don't expand fields since we may need to save
 	// the header later with the MSG_READ attribute.
-	var msgHeader = this.GetMsgHdrByIdx(pOffset, false);
+	//var msgHeader = this.GetMsgHdrByIdx(pOffset, false);
+	// Get the message header.  Get expanded fields so that we can show any
+	// voting stats/responses that may be included with the message.
+	var msgHeader = this.GetMsgHdrByIdx(pOffset, true);
 	if (msgHeader == null)
 	{
 		console.print("\1n" + this.text.invalidMsgNumText.replace("%d", +(pOffset+1)) + "\1n");
@@ -4309,51 +4315,14 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	else
 		retObj = this.ReadMessageEnhanced_Traditional(msgHeader, allowChgMsgArea, messageText, msgHasANSICodes, pOffset);
 
-	// Mark the message as read if it was written to the current user or if
-	// the user is reading personal email.
-	if (userNameHandleAliasMatch(msgHeader.to))
+	// Mark the message as read if it was written to the current user
+	if (userNameHandleAliasMatch(msgHeader.to) && ((msgHeader.attr & MSG_READ) == 0))
 	{
-		var msgbase = new MsgBase(this.subBoardCode);
-		if (msgbase.open())
-		{
-			// Could also do this: var saveRetObj = applyAttrsInMsgHdrInMessagbase(msgbase, msgHeader.number, MSG_READ);
-
-			msgHeader.attr |= MSG_READ;
-			var successfullySavedMsgHdr = msgbase.put_msg_header(false, msgHeader.number, msgHeader);
-			if (this.SearchTypePopulatesSearchResults() && successfullySavedMsgHdr)
-				this.RefreshHdrInSavedArrays(pOffset, MSG_READ);
-
-			// If failed to save the header, then write some error messages in the system & node log.
-			if (!successfullySavedMsgHdr)
-			{
-				writeToSysAndNodeLog("Failed to save message header with the READ attribute set!", LOG_ERR);
-				writeToSysAndNodeLog(getMsgAreaDescStr(msgbase), LOG_ERR);
-				//writeToSysAndNodeLog(format("Message offset: %d, number: %d", msgHeader.offset, msgHeader.number), LOG_ERR);
-				writeToSysAndNodeLog(format("Message offset/index: %d, number: %d", this.GetMsgIdx(msgHeader.number), msgHeader.number), LOG_ERR);
-				writeToSysAndNodeLog("Status: " + msgbase.status, LOG_ERR);
-				writeToSysAndNodeLog("Error: " + msgbase.error, LOG_ERR);
-				/*
-				// For sysops, output a debug message
-				if (gIsSysop)
-				{
-					console.print("\1n");
-					console.crlf();
-					console.print("* Failed to save msg header the with 'read' attribute set!");
-					console.crlf();
-					console.print("Status: " + msgbase.status);
-					console.crlf();
-					console.print("Error: " + msgbase.error);
-					console.crlf();
-					console.crlf();
-					//console.print("put_msg_header params: false, " + msgHeader.number + ", header:\r\n");
-					//console.print("put_msg_header params: true, " + msgHeader.offset + ", header:\r\n");
-					//console.print("put_msg_header params: " + msgHeader.number + ", header:\r\n");
-					printMsgHdr(msgHeader);
-				}
-				*/
-			}
-			msgbase.close();
-		}
+		// Using applyAttrsInMsgHdrInMessagbase(), which loads the header without
+		// expanded fields and saves the attributes with that header.
+		var saveRetObj = applyAttrsInMsgHdrInMessagbase(this.subBoardCode, msgHeader.number, MSG_READ);
+		if (this.SearchTypePopulatesSearchResults() && saveRetObj.saveSucceeded)
+			this.RefreshHdrInSavedArrays(pOffset, MSG_READ);
 	}
 
 	// If not reading personal email and not doing a search, then update the
@@ -18899,34 +18868,181 @@ function isPrintableChar(pChar)
 // back to the messagebase.
 //
 // Parameters:
-//  pMsgbase: An open MessageBase object
+//  pMsgbaseOrSubCode: An open MessageBase object or a sub-board code (string)
 //  pMsgNum: The number of the message to update
 //  pMsgAttrs: The message attributes to apply to the message (numeric bitfield)
 //
 // Return value: An object containing the following properties:
 //               saveSucceeded: Boolean - Whether or not the message header was successfully saved
 //               msgAttrs: A numeric bitfield containing the updated attributes of the message header
-function applyAttrsInMsgHdrInMessagbase(pMsgbase, pMsgNum, pMsgAttrs)
+function applyAttrsInMsgHdrInMessagbase(pMsgbaseOrSubCode, pMsgNum, pMsgAttrs)
 {
 	var retObj = {
 		saveSucceeded: false,
 		msgAttrs: 0
 	};
 
-	if ((pMsgbase == null) || !pMsgbase.is_open)
+	var msgbaseOpen = false;
+	var msgbase = null;
+	if (typeof(pMsgbaseOrSubCode) == "object")
+	{
+		msgbase = pMsgbaseOrSubCode;
+		msgbaseOpen = msgbase.is_open;
+	}
+	else if (typeof(pMsgbaseOrSubCode) == "string")
+	{
+		msgbase = new MsgBase(pMsgbaseOrSubCode);
+		msgbaseOpen = msgbase.open();
+	}
+	else
 		return retObj;
 
-	// Get the message header without expanded fields (we can't save it with
-	// expanded fields), then add the 'read' attribute and save it back to the messagebase.
-	var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, false);
-	if (msgHdr != null)
+	if (msgbaseOpen)
 	{
-		msgHdr.attr |= pMsgAttrs;
-		retObj.saveSucceeded = pMsgbase.put_msg_header(false, pMsgNum, msgHdr);
-		if (retObj.saveSucceeded)
-			retObj.msgAttrs = msgHdr.attr;
+		// Get the message header without expanded fields (we can't save it with
+		// expanded fields), then add the 'read' attribute and save it back to the messagebase.
+		var msgHdr = msgbase.get_msg_header(false, pMsgNum, false);
+		if (msgHdr != null)
+		{
+			msgHdr.attr |= pMsgAttrs;
+			retObj.saveSucceeded = msgbase.put_msg_header(false, pMsgNum, msgHdr);
+			if (retObj.saveSucceeded)
+				retObj.msgAttrs = msgHdr.attr;
+			else
+			{
+				writeToSysAndNodeLog("Failed to save message header with the following attributes: " + msgAttrsToString(pMsgAttrs), LOG_ERR);
+				writeToSysAndNodeLog(getMsgAreaDescStr(msgbase), LOG_ERR);
+				writeToSysAndNodeLog(format("Message offset: %d, number: %d", msgHdr.offset, msgHdr.number), LOG_ERR);
+				writeToSysAndNodeLog("Status: " + msgbase.status, LOG_ERR);
+				writeToSysAndNodeLog("Error: " + msgbase.error, LOG_ERR);
+				/*
+				// For sysops, output a debug message
+				if (gIsSysop)
+				{
+					console.print("\1n");
+					console.crlf();
+					console.print("* Failed to save msg header the with the following attributes: " + msgAttrsToString(pMsgAttrs));
+					console.crlf();
+					console.print("Status: " + msgbase.status);
+					console.crlf();
+					console.print("Error: " + msgbase.error);
+					console.crlf();
+					console.crlf();
+					//console.print("put_msg_header params: false, " + msgHdr.number + ", header:\r\n");
+					//console.print("put_msg_header params: true, " + msgHdr.offset + ", header:\r\n");
+					//console.print("put_msg_header params: " + msgHdr.number + ", header:\r\n");
+					printMsgHdr(msgHdr);
+				}
+				*/
+			}
+		}
+
+		// If a sub-board code was passed in, then close the messagebase object
+		// that we created here.
+		if (typeof(pMsgbaseOrSubCode) == "string")
+			msgbase.close();
 	}
+
 	return retObj;
+}
+
+// Converts a message attributes bitfield to a string.
+//
+// Parameters:
+//  pMsgAttrs: A numeric type with message attribute bits
+//
+// Return value: A string containing a list of the message attributes
+function msgAttrsToString(pMsgAttrs)
+{
+	if (typeof(pMsgAttrs) != "number")
+		return "";
+
+	var attrsStr = "";
+	if ((pMsgAttrs & MSG_PRIVATE) == MSG_PRIVATE)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_PRIVATE";
+	}
+	if ((pMsgAttrs & MSG_READ) == MSG_READ)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_READ";
+	}
+	if ((pMsgAttrs & MSG_PERMANENT) == MSG_PERMANENT)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_PERMANENT";
+	}
+	if ((pMsgAttrs & MSG_LOCKED) == MSG_LOCKED)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_LOCKED";
+	}
+	if ((pMsgAttrs & MSG_DELETE) == MSG_DELETE)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_DELETE";
+	}
+	if ((pMsgAttrs & MSG_ANONYMOUS) == MSG_ANONYMOUS)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_ANONYMOUS";
+	}
+	if ((pMsgAttrs & MSG_KILLREAD) == MSG_KILLREAD)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_KILLREAD";
+	}
+	if ((pMsgAttrs & MSG_MODERATED) == MSG_MODERATED)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_MODERATED";
+	}
+	if ((pMsgAttrs & MSG_VALIDATED) == MSG_VALIDATED)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_VALIDATED";
+	}
+	if ((pMsgAttrs & MSG_REPLIED) == MSG_REPLIED)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_REPLIED";
+	}
+	if ((pMsgAttrs & MSG_NOREPLY) == MSG_NOREPLY)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_NOREPLY";
+	}
+	if ((pMsgAttrs & MSG_UPVOTE) == MSG_UPVOTE)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_UPVOTE";
+	}
+	if ((pMsgAttrs & MSG_DOWNVOTE) == MSG_DOWNVOTE)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_DOWNVOTE";
+	}
+	if ((pMsgAttrs & MSG_POLL) == MSG_POLL)
+	{
+		if (attrsStr.length > 0)
+			attrsStr += ", ";
+		attrsStr += "MSG_POLL";
+	}
+	return attrsStr;
 }
 
 // Writes some text on the screen at a given location with a given pause.
