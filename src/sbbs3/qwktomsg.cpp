@@ -302,7 +302,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 			continue;
 		if(bodylen==0 
 			&& (qwkbuf[k]=='@' 
-				|| (((useron.qwk&QWK_EXT) || subnum==INVALID_SUB)
+				|| ((fromhub || (useron.qwk&QWK_EXT) || subnum==INVALID_SUB)
 					&& (strnicmp(qwkbuf+k,"To:",3)==0 
 					||  strnicmp(qwkbuf+k,"From:",5)==0 
 					||  strnicmp(qwkbuf+k,"Subject:",8)==0)))) {
