@@ -25,6 +25,9 @@ var color_cfg = {
 	column: [ WHITE ],
 	sorted: BG_RED,
 };
+var cmd_prompt_fmt = "\1n\1c\xfe \1h%s \1n\1c\xfe ";
+
+const base64_max_line_len = 72;
 var debug = false;
 
 var options=load({}, "modopts.js", "sbbslist");
@@ -40,6 +43,11 @@ load("graphic.js");
 var capture = load({}, "termcapture_lib.js");
 capture.timeout=15;
 capture.poll_timeout=5;
+
+function objcopy(obj)
+{
+	return JSON.parse(JSON.stringify(obj));
+}
 
 // This date format is required for backwards compatibility with SMB2SBL
 function date_to_str(date)
@@ -73,7 +81,7 @@ function export_entry(bbs, msgbase)
     if(bbs.location)
         body += "Location:      " + bbs.location + "\r\n";
     for(i in bbs.service) {
-        switch(bbs.service[i].protocol) {
+        switch(bbs.service[i].protocol.toLowerCase()) {
             case 'modem':
                 body += "Number:        " + bbs.service[i].address + "\r\n";
                 body += "MinRate:       " + bbs.service[i].min_rate + "\r\n";
@@ -169,7 +177,7 @@ function export_to_msgbase(list, msgbase, last_export, limit, all)
 				&& verified <= last_export)
 				continue;
 		}
-        if(!export_entry(JSON.parse(JSON.stringify(list[i])), msgbase)) {
+        if(!export_entry(objcopy(list[i]), msgbase)) {
 			alert("MsgBase error: " + msgbase.last_error);
 			errors++;
 		}
@@ -528,7 +536,7 @@ function read_dab_entry(f)
 			service.protocol = 'telnet';
 			var uri=service.address.match(/^(\S+)\:\/\/(\S+)/);
 			if(uri) {
-				service.protocol = uri[1];
+				service.protocol = uri[1].toLowerCase();
 				service.address = uri[2];
 			}
             service.port = port;
@@ -550,7 +558,7 @@ function read_dab_entry(f)
     var verified_date = f.readBin(4);
     var verified_by = f.read(26);
     if(verified_date)
-        obj.entry.verified = { on: new Date(verified_date*1000).toISOString(), by: truncsp(verified_by) };
+        obj.entry.verified = { on: new Date(verified_date*1000).toISOString(), by: truncsp(verified_by), count: 1 };
     obj.web_site = truncsp(f.read(61));
     var sysop_email = truncsp(f.read(61));
     if(obj.sysop.length)
@@ -590,6 +598,33 @@ function upgrade_list(sbl_dab)
     return list;
 }
 
+function capture_preview(bbs, addr)
+{
+    for(var i in bbs.service) {
+        if(js.terminated)
+            break;
+		var service = bbs.service[i];
+        var protocol = service.protocol.toLowerCase();
+        if(protocol != "telnet" && protocol != "rlogin")
+            continue;
+	    capture.protocol = protocol;
+		if(addr)
+			capture.address = addr;
+		else
+			capture.address = service.address;
+	    capture.port = service.port;
+		var result = capture.capture();
+        if(result == false)
+            return capture.error;
+        graphic = new Graphic();
+        graphic.ANSI = result.preview.join("\r\n");
+        bbs.preview = graphic.base64_encode(base64_max_line_len);
+        return true;
+	}
+
+    return false;
+}
+
 function verify_terminal_service(service)
 {
     print("Verifying terminal service: " + service.protocol);
@@ -617,7 +652,6 @@ function verify_services(address, timeout)
 		"irc",
     ];
     var udp_services=[
-        "finger",
         "systat",
     ];
 
@@ -707,10 +741,10 @@ function verify_bbs(bbs)
                     ip_address: result.ip_address,
                     other_services: verify_services(result.ip_address, 5)
                 };
-                bbs.entry.verified = { on: new Date().toISOString(), by: js.exec_file + " " + REVISION };
+                lib.verify_system(bbs, js.exec_file + " " + REVISION);
                 graphic = new Graphic();
                 graphic.ANSI = result.preview.join("\r\n");
-                bbs.preview = graphic.base64_encode(72);
+                bbs.preview = graphic.base64_encode(base64_max_line_len);
                 return true;
             }
             log(LOG_DEBUG,"Non-Synchronet identification: " + result.hello[0]);
@@ -763,7 +797,7 @@ function console_beep()
 
 /* Supported list formats (the property values for 2nd & 3rd columns) */
 const list_formats = [
-	[ "sysop_name", "location" ],
+	[ "sysops", "location" ],
 	[ "phone_number", "service_address" ],
 	[ "since", "software", "web_site" ],
 	[ "description" ],
@@ -913,7 +947,7 @@ function add_entry(list)
 	bbs.web_site = getstr("Web-Site (address/URL)", lib.max_len.web_site);
 	bbs.terminal.types.push("TTY", "ANSI");
 	// Automatically test ports here?
-	var host_name = getstr("Host name or IP address", client.host_name);
+	var host_name = getstr("Terminal server host name or IP address", lib.max_len.service_address);
 	bbs.service.push({ protocol: 'telnet', address: host_name, port: standard_service_port['telnet'] });
 	bbs.description = get_description();
 	if(!bbs.description.length) {
@@ -945,6 +979,9 @@ function browse(list)
 		alert("This feature requires the Synchronet terminal server (and console object)");
 		return false;
 	}
+
+	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+	console.ctrlkey_passthru|=(1<<21);      // Disable Ctrl-U handling in sbbs
 
 	if(user.number == 1 && !lib.system_exists(list, system.name) 
 		&& !console.noyes(system.name + " is not listed. Add it")) {
@@ -984,7 +1021,7 @@ function browse(list)
 			list_format = list_formats.length-1;
 
 		/* Column headings */
-		printf("%-*s", lib.max_len.name, sort=="name" ? "NAME":"name");
+		printf("%-*s", lib.max_len.name, sort=="name" ? "NAME":"Name");
 		for(var i in list_formats[list_format]) {
 			var fmt = "%-*s";
 			var heading = list_formats[list_format][i];
@@ -994,7 +1031,7 @@ function browse(list)
 				if(i > 0)
 					fmt = "%*s";
 			}
-			heading = heading.replace("_", " ");
+			heading = heading.replace("_", " ").capitalize();
 			printf(fmt
 				,Math.min(lib.max_len[list_formats[list_format][i]], console.screen_columns - console.current_column -1)
 				,sort==list_formats[list_format][i] ? heading.toUpperCase() : heading);
@@ -1021,11 +1058,14 @@ function browse(list)
 			console.crlf();
 		}
 
-		console.attributes=LIGHTGRAY;
-		console.mnemonics(format("pg:~Next/~Prev, ~Sort, ~Rev, ~GoTo, ~Find, fmt:0-%u, ~More, ~Quit, or [View] ~?"
+//		console.attributes=LIGHTGRAY;
+		console.print(format(cmd_prompt_fmt, "List"));
+		console.mnemonics(format("~Sort, ~Reverse, ~GoTo, ~Find, fmt:0-%u, ~More, ~Quit, or [View] ~?"
 			,list_formats.length-1));
+		console.cleartoeol();
 		var key = console.getkey(0);
 		switch(key.toUpperCase()) {
+			case KEY_INSERT:
 			case 'A':
 				if(add_entry(orglist))
 					console.pause();
@@ -1049,10 +1089,12 @@ function browse(list)
 			case KEY_DOWN:
 				current++;
 				break;
+			case KEY_PAGEDN:
 			case 'N':
 				current += pagesize;
 				top += pagesize;
 				break;
+			case KEY_PAGEUP:
 			case 'P':
 				current -= pagesize;
 				top -= pagesize;
@@ -1107,13 +1149,16 @@ function browse(list)
 				break;
 			case 'M':	/* More */
 				console.clearline();
+				console.print(format(cmd_prompt_fmt, "More"));
+				var prompt = "";
 				if(!options.add_ars || user.compare_ars(options.add_ars))
-					console.mnemonics("~Add, ");
+					prompt += "~Add, ";
 				if(can_edit(list[current]))
-					console.mnemonics("~Edit, ~Remove, ");
-				console.mnemonics(format("~Download, ~Sort, ~Format, ~Quit, ~Help ~?"));
+					prompt += "~Edit, ~Remove, ";
+				console.mnemonics(prompt + "~Download, ~Sort, ~Format, ~Quit, ~Help ~?");
 				var key = console.getkey(K_UPPER);
 				switch(key) {
+					case KEY_INSERT:
 					case 'A':
 						if(add_entry(orglist))
 							console.pause();
@@ -1122,7 +1167,7 @@ function browse(list)
 					case 'E':
 						console.clear();
 						/* Edit a clone, not the original (allowing the user to abort the edit) */
-						var bbs = edit(JSON.parse(JSON.stringify(list[current])));
+						var bbs = edit(objcopy(list[current]));
 						if(!bbs) {
 							alert("Edit aborted");
 							console.pause();
@@ -1132,6 +1177,7 @@ function browse(list)
 						lib.replace(bbs);
 						console.pause();
 						continue;
+					case KEY_DEL:
 					case 'R':
 						if(!can_edit(list[current])) {
 							console_beep();
@@ -1153,8 +1199,8 @@ function browse(list)
 						break;
 					case 'D':
 						console.clear();
-						console.uselect(1, "Download List", "SyncTERM");
-						console.uselect(2, "Download List", "JSON");
+						console.uselect(1, "Download List Format", "SyncTERM");
+						console.uselect(2, "", "JSON");
 						switch(console.uselect()) {
 							case 1:
 								printf("\r\nGenerating list file... ");
@@ -1252,7 +1298,7 @@ function browse(list)
 						lib.sort(list, "name");
 						break;
 					case 'S':
-						lib.sort(list, "sysop_name");
+						lib.sort(list, "sysops");
 						break;
 					case 'A':
 						lib.sort(list, "service_address");
@@ -1291,7 +1337,7 @@ function print_additional_services(bbs, addr, start)
 		if(!bbs.service[i] || bbs.service[i].address != addr)
 			continue;
 		printf(", %s", bbs.service[i].protocol);
-		if(bbs.service[i].port != standard_service_port[bbs.service[i].protocol])
+		if(bbs.service[i].port != standard_service_port[bbs.service[i].protocol.toLowerCase()])
 			printf(":%u", bbs.service[i].port);
 	}
 }  
@@ -1396,16 +1442,16 @@ function view(list, current)
 			if(listed_hosts.indexOf(bbs.service[i].address) >= 0)	// Already listed
 				continue;
 			printf("\1n\1c%11s \1h%s\1n\1c", bbs.service[i].protocol, bbs.service[i].address);
-			if(bbs.service[i].protocol != 'modem' && bbs.service[i].port != standard_service_port[bbs.service[i].protocol])
+			if(bbs.service[i].protocol != 'modem' && bbs.service[i].port != standard_service_port[bbs.service[i].protocol.toLowerCase()])
 				printf(":%u", bbs.service[i].port);
 			if(bbs.service[i].description)
 				printf(" %s", bbs.service[i].description);
 			if(bbs.service[i].min_rate && bbs.service[i].max_rate)
 				printf(" %u-%ubps", bbs.service[i].min_rate, bbs.service[i].max_rate);
 			else if(bbs.service[i].min_rate)
-				printf(" %u+bps");
+				printf(" %u+bps", bbs.service[i].min_rate);
 			else if(bbs.service[i].max_rate)
-				printf(" %ubps");
+				printf(" %ubps", bbs.service[i].max_rate);
 			print_additional_services(bbs, bbs.service[i].address, i+1);
 			listed_hosts.push(bbs.service[i].address);
 			console.crlf();
@@ -1427,20 +1473,22 @@ function view(list, current)
 				if(bbs.entry.created.at)
 					created_by += ("@" + bbs.entry.created.at);
 				printf("\1n\1c%11s \1m\1h%s\1n\1m on \1h%s \1n\1m%s\r\n", "Created by"
-					,created_by, bbs.entry.created.on.substr(0,10)
+					,created_by, new Date(bbs.entry.created.on).toDateString().substr(4)
 					,bbs.imported ? "via msg-network" : "locally");
 			}
 			if(bbs.entry.updated && bbs.entry.updated.on) {
 				var updated_by = bbs.entry.updated.by;
 				if(bbs.entry.updated.at)
 					updated_by += ("@" + bbs.entry.updated.at);
-				printf("\1n\1c%11s \1m\1h%s\1n\1m on \1h%s\r\n", "Updated by", updated_by, bbs.entry.updated.on.substr(0,10));
+				printf("\1n\1c%11s \1m\1h%s\1n\1m on \1h%s\r\n", "Updated by"
+					, updated_by, new Date(bbs.entry.updated.on).toDateString().substr(4));
 			}
 			if(bbs.entry.verified && bbs.entry.verified.on) {
 				var verified_by = bbs.entry.verified.by;
 				if(bbs.entry.verified.at)	// Not actually supported
 					verified_by += ("@" + bbs.entry.verified.at);
-				printf("\1n\1c%11s \1m\1h%s\1n\1m on \1h%s\r\n", "Verified by", verified_by, bbs.entry.verified.on.substr(0,10));
+				printf("\1n\1c%11s \1m\1h%s\1n\1m on \1h%s\r\n", "Verified by"
+					, verified_by, new Date(bbs.entry.verified.on).toDateString().substr(4));
 			}
 		}
 //		while(console.line_counter < console.screen_rows - 2)
@@ -1449,17 +1497,27 @@ function view(list, current)
 		else
 			console.clearline(), console.crlf();
 
-		console.mnemonics("mv:~Forward/~Back, ");
-		if(bbs.preview)
-			console.mnemonics("~Preview, ");
+		console.print(format(cmd_prompt_fmt, "Detail"));
+		var prompt="";
+		if(options.live_preview || bbs.preview) {
+			prompt += "preview:";
+			if(options.live_preview)
+				prompt+= "~Live";
+			if(bbs.preview) {
+				if(options.live_preview)
+					prompt += "/";
+				prompt += "~Cap";
+			}
+			prompt += ", ";
+		}
 		if(can_edit(bbs))
-			console.mnemonics("~Edit, ~Remove, ");
+			prompt += "~Edit, ~Remove, ";
 		if(user.is_sysop)
-			console.mnemonics("~JSON, ")
-		console.mnemonics("~Verify or ~Quit: ");
+			prompt += "~JSON, ";
+		console.mnemonics(prompt + "~Verify or ~Quit: ");
 		var key = console.getkey(K_UPPER);
 		switch(key) {
-			case 'P':
+			case 'C':
 				if(!bbs.preview) {
 					console_beep();
 					break;
@@ -1471,6 +1529,26 @@ function view(list, current)
 				console.getkey();
 				console.clear();
 				break;
+			case 'L':
+				{
+					console.clear();
+					printf("\1n\1hConnecting to \1y%s \1w\1i...", bbs.name);
+					var copy = objcopy(bbs);
+					var result = capture_preview(copy);
+					if(result == true) {
+						console.clear();
+						var graphic=new Graphic();
+						graphic.base64_decode(copy.preview);
+						graphic.draw();
+						console.getkey();
+					} else {
+						console.crlf();
+						alert("Result: " + result);
+						console.pause();
+					}
+					console.clear();
+				}
+				break;
 			case KEY_HOME:
 				current=top=0;
 				continue;
@@ -1480,17 +1558,19 @@ function view(list, current)
 			case 'B':
 			case KEY_UP:
 			case KEY_LEFT:
+			case KEY_PAGEUP:
 				current--;
 				break;
 			case 'F':
 			case KEY_DOWN:
 			case KEY_RIGHT:
+			case KEY_PAGEDN:
 				current++;
 				break;
 			case 'E':
 				console.clear();
 				/* Edit a clone, not the original (allowing the user to abort the edit) */
-				var edited = edit(JSON.parse(JSON.stringify(bbs)));
+				var edited = edit(objcopy(bbs));
 				if(!edited) {
 					alert("Edit aborted");
 					console.pause();
@@ -1499,6 +1579,7 @@ function view(list, current)
 				list[current] = edited;
 				lib.replace(edited);
 				break;
+			case KEY_DEL:
 			case 'R':
 				if(!can_edit(list[current])) {
 					console_beep();
@@ -1516,7 +1597,7 @@ function view(list, current)
 				break;
 			case 'J':
 				if(user.is_sysop) {
-					var edited = edit_json(JSON.parse(JSON.stringify(bbs)));
+					var edited = edit_json(objcopy(bbs));
 					if(edited) {
 						list[current] = edited;
 						if(lib.replace(edited))
@@ -1527,8 +1608,12 @@ function view(list, current)
 				}
 				break;
 			case 'V':
-				list[current].entry.verified = { on: new Date().toISOString(), by: user.alias };
+				lib.verify_system(list[current], user.alias);
 				lib.replace(list[current]);
+				break;
+			case 'H':
+			case '?':
+				help();
 				break;
 			case 'Q':
 				return;
@@ -1536,11 +1621,19 @@ function view(list, current)
 	}
 }
 
-function edit_field(obj, field)
+String.prototype.capitalize = function(){
+   return this.replace( /(^|\s)([a-z])/g , function(m,p1,p2){ return p1+p2.toUpperCase(); } );
+  };
+
+function edit_field(obj, field, max_len)
 {
-	printf("\1h\1y" + field + ": ");
+	printf("\1h\1y" + field.capitalize().replace('_', '-') + ": ");
 	field = field.toLowerCase().replace('-', '_');
-	var str = console.getstr(obj[field], lib.max_len[field], K_EDIT|K_LINE|K_AUTODEL);
+	if(max_len == undefined)
+		max_len = lib.max_len[field];
+	if(max_len == undefined)
+		max_len = 3;
+	var str = console.getstr(obj[field], max_len, K_EDIT|K_LINE|K_AUTODEL);
 	if(str !== false)
 		obj[field] = str;
 }
@@ -1558,6 +1651,78 @@ function can_edit(bbs)
 	return true;
 }
 
+function edit_object(title, obj, props, max_lens, prop_descs)
+{
+	while(bbs.online) {
+		console.clear(LIGHTGRAY);
+		print("Editing " + title + ": " + obj[props[0]]);
+		console.crlf();
+		for(var i in props)
+			print(format("%2u %-12s : %s", Number(i)+1, props[i].capitalize(), obj[props[i]]));
+		console.mnemonics("\r\nWhich or ~Quit: ");
+		var which = console.getnum(props.length);
+		if(which < 1)
+			break;
+		var i = Number(which) - 1;
+		printf("\r\n%s\r\n", prop_descs[i]);
+		edit_field(obj, props[i], max_lens[i]);
+	}
+}
+
+function edit_array(title, arr, props, max_lens, prop_descs, max_array_len)
+{
+	while(bbs.online) {
+		console.clear(LIGHTGRAY);
+		print("Editing " + title + " List");
+		console.crlf();
+		for(var i in arr)
+			print(format("%2u %-*s %s", Number(i)+1, max_lens[0], arr[i][props[0]], arr[i][props[1]]));
+
+		var keys = "Q";
+		var prompt = "\r\nWhich";
+		if(arr.length < max_array_len)
+			prompt += ", ~Add", keys += 'A';
+		if(arr.length > 0)
+			prompt += ", ~Insert, ~Delete", keys += 'ID';
+		prompt += " or ~Quit: ";
+		console.mnemonics(prompt);
+		var which = console.getkeys(keys, arr.length);
+		if(which == 'A' || which == 'I') {
+			print("\r\nAdding " + title);
+			if(which == 'I') {
+				printf("Before which: ");
+				which = console.getnum(arr.length);
+				if(which < 1)
+					continue;
+			}
+			var obj = {};
+			for(var i in props) {
+				printf("\r\n%s\r\n", prop_descs[i]);
+				obj[props[i]] = getstr(props[i].capitalize(), max_lens[i]);
+			}
+			if(which == 'A')
+				arr.push(obj);
+			else
+				arr.splice(which - 1, 0, obj);
+			continue;
+		}
+		if(which == 'D') {
+			if(arr.length == 1)
+				which = 1;
+			else {
+				printf("Delete which: ");
+				which = console.getnum(arr.length);
+			}
+			if(which > 0)
+				arr.splice(which - 1, 1);
+			continue;
+		}
+		if(which == false || which == 'Q' || which < 1)
+			return false;
+		edit_object(title, arr[Number(which)-1], props, max_lens, prop_descs);
+	}
+}
+
 function edit(bbs)
 {
 	var allowed = can_edit(bbs);
@@ -1569,12 +1734,14 @@ function edit(bbs)
 			bbs.first_online="";
 	while(js.global.bbs.online) {
 		console.clear();
-		printf("\1nEditing: \1h%s\r\n", bbs.name);
+		printf("\1nEditing BBS entry: \1h%s\r\n", bbs.name);
 		console.crlf();
 		var opts = 1;
 		var optlen = 15;
 		var optmax = console.screen_columns - 30;
-		var sysop = format("%s <%s>", bbs.sysop[0].name, bbs.sysop[0].email);
+		var sysop = "";
+		if(bbs.sysop.length)
+			sysop = format("%s <%s>", bbs.sysop[0].name, bbs.sysop[0].email);
 		printf("\1n%2u \1h%-*s : %s\r\n"	, opts++, optlen, "Since", bbs.first_online.substring(0,10));
 		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Sysop", optmax, sysop);
 		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Location", optmax, bbs.location);
@@ -1595,9 +1762,17 @@ function edit(bbs)
 			break;
 		switch(which) {
 			case 1:
-				var value = getstr("Since (YYYY-MM-DD)");
+				printf("\1n\1h\1ySince (\1cYYYY\1y-\1cMM\1y-\1cDD\1y)\1w: ");
+				var value = console.gettemplate("NNNN-NN-NN", bbs.first_online.substring(0,10), K_LINE|K_EDIT);
 				if(value)
 					bbs.first_online = new Date(value).toISOString();
+				break;
+			case 2:
+				edit_array("Operator"
+					,bbs.sysop, [ "name", "email" ]
+					,[ lib.max_len.sysop_name, lib.max_len.email_addr ]
+					,[ "Sysop's name or alias", "Sysop's e-Mail address (optional)" ]
+					,sbl_defs.MAX_SYSOPS);
 				break;
 			case 3:
 				edit_field(bbs, "Location");
@@ -1618,30 +1793,67 @@ function edit(bbs)
 					print(bbs.description[i]);
 				console.home();
 				for(var i=0; i < sbl_defs.DESC_LINES && !console.aborted; i++)
-					bbs.description[i] = console.getstr(bbs.description[i], sbl_defs.DESC_LINE_LEN, K_EDIT|K_LINE|K_MSG);
+					bbs.description[i] = console.getstr(bbs.description[i], sbl_defs.DESC_LINE_LEN, K_EDIT|K_MSG);
+				break;
+			case 7:
+				printf("\1n\1h\1yTerminal server nodes\1w: ");
+				var nodes = console.getstr(String(bbs.terminal.nodes), 3, K_NUMBER|K_EDIT|K_AUTODEL);
+				if(nodes > 0)
+					bbs.terminal.nodes = nodes;
+				break;
+			case 8:
+				printf("\1n\1h\1yTerminal types supported\1w: ");
+				var terms = bbs.terminal.types.join(", ");
+				terms = console.getstr(terms, 40, K_EDIT|K_LINE|K_UPPER);
+				if(terms)
+					bbs.terminal.types = terms.split(/\s*,\s*/, sbl_defs.MAX_TERMS);
 				break;
 			case 9:
 				while(js.global.bbs.online)
 				{
 					console.clear();
+					printf("\1nEditing BBS totals for: \1h%s\r\n\r\n", bbs.name);
 					opts = 1;
 					optlen = 8;
 					var prop = [];
 					for(var i in bbs.total) {
 						prop[opts] = i;
-						printf("\1n%2u \1h%-*s : ", opts++, optlen, i);
+						printf("\1n%2u \1h%-*s : ", opts++, optlen, i.capitalize());
 						print(bbs.total[i]);
 					}
 					console.mnemonics("\r\nWhich or ~Quit: ");
 					var which = console.getnum(opts);
 					if(which < 1)
 						break;
-					printf("\1h\1y%s\1w: ", prop[which]);
+					printf("\1h\1yTotal %s\1w: ", prop[which]);
 					var newval = console.getstr(20);
 					if(newval !== false && newval.length)
 						bbs.total[prop[which]] = newval;
 				}
 				break;
+			case 10:
+				edit_array("Network"
+					,bbs.network
+					,[ "name", "address" ]
+					,[ lib.max_len.network_name, lib.max_len.network_address ]
+					,[ "Network name" ,"Network node address (e.g. QWK-ID or FTN node address)" ]
+					,sbl_defs.MAX_NETS);
+				break;
+			case 11:
+				edit_array("Service"
+					,bbs.service
+					,[ "address", "protocol", "port", "min_rate", "max_rate", "description" ]
+					,[ lib.max_len.service_address, 15, 5, 5, 5, 15 ]
+					,[ "Terminal service host name, IP address (excluding port number), or phone number" 
+					  ,"TCP protocol name (e.g. telnet, ssh, rlogin) or 'modem' for traditional dial-up"
+					  ,"TCP Port number, if non-standard"
+					  ,"Minimum connection bit-rate (for dial-up modem)"
+					  ,"Maximum connection bit-rate (for dial-up modem)"
+					  ,"Service/modem description (optional)"
+					 ]
+					,sbl_defs.MAX_NUMBERS);
+				break;
+
 		}
 	}
 	lib.update_system(bbs, user.alias);
@@ -1663,6 +1875,8 @@ function main()
 	var all;
 	var ptr;
 	var limit;
+	var addr;
+	var preview;
 
     for(i in argv) {
 		var arg = argv[i];
@@ -1703,8 +1917,18 @@ function main()
 			case "-ptr":
 				ptr = val;
 				break;
+			case "-addr":
+				addr = val;
+				break;
+			case "-preview":
+				if(val)
+					addr = val;
+				break;
 			case "-sort":
 				options.sort = val;
+				break;
+			case "-reverse":
+				options.reverse = !options.reverse;
 				break;
 			case "-debug":
 				debug = true;
@@ -1727,6 +1951,8 @@ function main()
         list=lib.read_list();
 	if(options && options.sort)
 		lib.sort(list, options.sort);
+	if(options && options.reverse)
+		list.reverse();
 
 	for(var c in cmds) {
 		var cmd = cmds[c].toLowerCase();
@@ -1739,7 +1965,7 @@ function main()
                 print(list.length + " BBS entries upgraded from " + sbl_dir + "sbl.dab");
 				break;
 			case "backup":
-				file_backup(lib.list_fname);
+				file_backup(lib.list_fname, limit ? limit : options.backup_level);
 				break;
 			case "import":
 			case "export":
@@ -1759,7 +1985,7 @@ function main()
 				print(list.length + " BBS entries exported to: " + lib.syncterm_list(list, system.data_dir));
 				break;
 			case "html":
-				file_backup("sbbslist.html");
+				file_backup("sbbslist.html", limit ? limit : options.backup_level);
 				var f = new File("sbbslist.html");
 				if(!f.open("wb")) {
 					log(LOG_ERR,"Error opening " + f.name);
@@ -1777,14 +2003,13 @@ function main()
 						continue;
 					if(!lib.imsg_capable_system(bbs))
 						continue;
-					ibbs.push(format("%-63s %s\t%s\t%s",
+					ibbs.push(format("%-63s\t%s\t%s",
 						bbs.entry.autoverify.last_success.service.address,
 						bbs.entry.autoverify.last_success.ip_address,
-						bbs.entry.autoverify.last_success.other_services.udp.sort(),
-						bbs.entry.autoverify.last_success.other_services.tcp.sort()));
+						bbs.name));
 				}
 				ibbs = unique_strings(ibbs, /* offset: */64);
-				file_backup("sbbsimsg.lst");
+				file_backup("sbbsimsg.lst", limit ? limit : options.backup_level);
 				var f = new File("sbbsimsg.lst");
 				if(!f.open("w")) {
 					log(LOG_ERR,"Error opening " + f.name);
@@ -1916,10 +2141,28 @@ function main()
 				bbs.software = "Synchronet";
 				bbs.total = lib.system_stats();
 				bbs.terminal.nodes = system.nodes;
+				if(preview)
+					capture_preview(bbs, addr);
 				lib.update_system(bbs, js.exec_file + " " + REVISION);
 				if(debug) print(JSON.stringify(bbs, null, 1));
 				if(lib.replace(bbs))
 					print(system.name + " updated successfully");
+				break;
+			case "preview":
+				var index = lib.system_index(list, optval[cmd]);
+				if(index < 0) {
+					alert("System '" + system.name + "' does not exist");
+					exit(-1);
+				}
+				var result = capture_preview(list[index], addr);
+				if(result == true) {
+					if(js.global.console) {
+						var graphic=new Graphic();
+						graphic.base64_decode(list[index].preview);
+						graphic.draw();
+					}
+				} else
+					print(result);
 				break;
 			case "dedupe":
 				print(list.length + " BBS entries before de-duplication");

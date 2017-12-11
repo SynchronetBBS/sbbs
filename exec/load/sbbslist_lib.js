@@ -14,6 +14,9 @@ const max_len = {
 	phone_number:		25,		/* only the first 12 chars are backwards compatible with SBL v3 */
 	location:			30,
 	sysop_name:			25,
+	sysops:				30,
+	network_name:		15,
+	network_address:	25,
 	created_by:			25,
 	updated_by:			25,
 	verified_by:		25,
@@ -113,9 +116,11 @@ function property_value(bbs, property)
 				}
 			}
 			break;
-		case "sysop_name":
-			if(bbs.sysop && bbs.sysop.length)
-				value = bbs.sysop[0].name;
+		case "sysops":
+			for(var i in bbs.sysop) {
+				if(value.length) value += ", ";
+				value += bbs.sysop[i].name;
+			}
 			break;
 		case "created_by":
 			value = bbs.entry.created.by;
@@ -535,7 +540,18 @@ function add_system(list, bbs, by)
 
 function update_system(bbs, by)
 {
-	bbs.entry.updated = { on: new Date().toISOString(), by: by };
+	var update_count = 0;
+	if(bbs.entry.updated)
+		update_count = Number(bbs.entry.updated.count);
+	bbs.entry.updated = { on: new Date().toISOString(), by: by, count: update_count + 1 };
+}
+
+function verify_system(bbs, by)
+{
+	var verify_count = 0;
+	if(bbs.entry.verified)
+		verify_count = Number(bbs.entry.verified.count);
+	bbs.entry.verified = { on: new Date().toISOString(), by: by, count: verify_count + 1 };
 }
 
 function syncterm_list(list, dir)
