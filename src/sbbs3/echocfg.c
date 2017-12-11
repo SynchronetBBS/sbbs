@@ -438,14 +438,21 @@ int main(int argc, char **argv)
 	"FidoNet-style nodes (uplinks and downlinks).\n"
 	"\n"
 	"A single node configuration can represent one node or a collection\n"
-	"of nodes, by using the `ALL` wildcard word."
+	"of nodes, by using the `ALL` wildcard word.\n"
+	"\n"
+	"The hexadecimal numbers in parentheses are provided as an aide when\n"
+	"correlating FidoNet files and BSO directories with node numbers."
 	;
 
 					for(u=0;u<cfg.nodecfgs;u++) {
 						char hexaddr[16] = "";
-						if(!faddr_contains_wildcard(&cfg.nodecfg[u].addr))
-							sprintf(hexaddr, "(%04hx%04hx)", cfg.nodecfg[u].addr.net,cfg.nodecfg[u].addr.node);
-						snprintf(opt[u], MAX_OPLN-1, "%-16s %10s  %s"
+						if(cfg.nodecfg[u].addr.zone != 0xffff) {
+							if(!faddr_contains_wildcard(&cfg.nodecfg[u].addr))
+								sprintf(hexaddr, "(%04hx%04hx)", cfg.nodecfg[u].addr.net,cfg.nodecfg[u].addr.node);
+							else
+								sprintf(hexaddr, "(.%03X)", cfg.nodecfg[u].addr.zone);
+						}
+						snprintf(opt[u], MAX_OPLN-1, "%-16s %-10s  %s"
 							,faddrtoa(&cfg.nodecfg[u].addr), hexaddr
 							,cfg.nodecfg[u].name[0] ? cfg.nodecfg[u].name : cfg.nodecfg[u].comment);
 					}
