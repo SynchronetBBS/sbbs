@@ -190,6 +190,8 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         =(MainForm->mail_startup.options&MAIL_OPT_DNSBL_THROTTLE);
     AdvancedCheckListBox->Checked[i++]
         =!(MainForm->mail_startup.options&MAIL_OPT_NO_AUTO_EXEMPT);
+    AdvancedCheckListBox->Checked[i++]
+        =(MainForm->mail_startup.options&MAIL_OPT_KILL_READ_SPAM);
 
     DNSBLRadioButtonClick(Sender);
     DNSRadioButtonClick(Sender);
@@ -351,6 +353,9 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     setBit(&MainForm->mail_startup.options
         ,MAIL_OPT_NO_AUTO_EXEMPT
         ,!AdvancedCheckListBox->Checked[i++]);
+    setBit(&MainForm->mail_startup.options
+        ,MAIL_OPT_KILL_READ_SPAM
+        ,AdvancedCheckListBox->Checked[i++]);
 
     MainForm->MailAutoStart=AutoStartCheckBox->Checked;
     MainForm->MailLogFile=LogFileCheckBox->Checked;
@@ -483,4 +488,5 @@ void __fastcall TMailCfgDlg::UseSubPortCheckBoxClick(TObject *Sender)
     SubPortEdit->Enabled = enabled;
 }
 //---------------------------------------------------------------------------
+
 

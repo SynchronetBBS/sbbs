@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 3
     Width = 278
     Height = 199
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = AdvancedTabSheet
+    TabIndex = 7
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -918,7 +918,8 @@ object MailCfgDlg: TMailCfgDlg
           'Allow receipt of mail to '#39'sysop'#39' and '#39'postmaster'#39
           'Check '#39'Received'#39' header fields against DNSBL'
           'Throttle DNS blacklisted server sessions'
-          'Auto-exempt sent-mail recipients from DNSBL')
+          'Auto-exempt sent-mail recipients from DNSBL'
+          'Set Kill-Read attribute on received SPAM')
         TabOrder = 0
       end
     end
