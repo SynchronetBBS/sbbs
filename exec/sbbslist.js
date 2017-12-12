@@ -1754,7 +1754,10 @@ function edit(bbs)
 		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Software", optmax, bbs.software);
 		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Description", optmax, bbs.description.join(" "));
 		printf("\1n%2u \1h%-*s : %u\r\n"	, opts++, optlen, "Terminal Nodes", bbs.terminal.nodes);
-		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Terminal Types", optmax, bbs.terminal.types.join(", "));
+		var term_types = "";
+		if(bbs.terminal.types)
+			term_types = bbs.terminal.types.join(", ");
+		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Terminal Types", optmax, term_types);
 		printf("\1n%2u \1hTotals...\r\n"	, opts++);
 		printf("\1n%2u \1hNetworks...\r\n"	, opts++);
 		printf("\1n%2u \1hServices...\r\n"	, opts++);
