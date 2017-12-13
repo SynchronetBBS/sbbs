@@ -18,11 +18,11 @@ all:		xpdev-mt \
 
 ifdef SBBSEXEC
 .PHONY: install
-install:
+install: all
 	install $(EXEODIR)/* $(SBBSEXEC)
 
 .PHONY: symlinks
-symlinks:
+symlinks: all
 	ln -sfr $(EXEODIR)/* $(SBBSEXEC)
 endif
 

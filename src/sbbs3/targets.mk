@@ -67,12 +67,12 @@ mono:	xpdev-mt smblib \
 
 ifdef SBBSEXEC
 .PHONY: install
-install:
+install: all
 	install $(EXEODIR)/* $(SBBSEXEC)
 	install $(LIBODIR)/* $(SBBSEXEC)
 
 .PHONY: symlinks
-symlinks:
+symlinks: all
 	ln -sfr $(EXEODIR)/* $(SBBSEXEC)
 	ln -sfr $(LIBODIR)/* $(SBBSEXEC)
 endif
