@@ -336,7 +336,7 @@ function getMailBody(number) {
 
     var msgBase = new MsgBase('mail');
     if (!msgBase.open()) return ret;
-    var header = msgBase.get_msg_header(number);
+    var header = msgBase.get_msg_header(false, number, false);
     if (header !== null &&
         (   header.to_ext == user.number ||
             header.from_ext == user.number
