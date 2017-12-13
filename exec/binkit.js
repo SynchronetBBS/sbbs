@@ -254,7 +254,7 @@ function tx_callback(fname, bp)
 {
 	var j;
 
-	// Remove flow files that have been completly processed.
+	// Remove flow files that have been completely processed.
 	Object.keys(bp.cb_data.binkit_flow_contents).forEach(function(flo) {
 		if (file_exists(flo)) {
 			while ((j = bp.cb_data.binkit_flow_contents[flo].indexOf(fname)) !== -1)
@@ -370,7 +370,7 @@ function rx_callback(fname, bp)
 		}
 		else {
 			if (inbound === undefined)
-				log(LOG_ERROR, "No inbound configured in sbbsecho!  Leaving inseucre file as '"+fname+"'.");
+				log(LOG_ERROR, "No inbound configured in sbbsecho!  Leaving insecure file as '"+fname+"'.");
 			else {
 				log(LOG_INFO, "Moving '"+fname+"' to '"+inbound+file_getname(fname)+"'.");
 				if (!rename_or_move(fname, inbound+file_getname(fname)))
@@ -482,7 +482,7 @@ function callout_done(bp, semaphores)
 		}
 	});
 
-	// Remove flow files that have been completly processed.
+	// Remove flow files that have been completely processed.
 	Object.keys(bp.cb_data.binkit_flow_contents).forEach(function(flo) {
 		if (file_exists(flo)) {
 			if (bp.cb_data.binkit_flow_contents[flo].length == 0)
