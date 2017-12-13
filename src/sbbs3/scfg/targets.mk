@@ -14,7 +14,16 @@ all:		xpdev-mt \
 		smblib \
 		$(EXEODIR) \
 		$(MTOBJODIR) \
-		$(LIBODIR) \
 		$(SCFG)
+
+ifdef SBBSEXEC
+.PHONY: install
+install:
+	install $(EXEODIR)/* $(SBBSEXEC)
+
+.PHONY: symlinks
+symlinks:
+	ln -sfr $(EXEODIR)/* $(SBBSEXEC)
+endif
 
 $(SCFG):	$(XPDEV-MT_LIB) $(UIFCLIB-MT) $(CIOLIB-MT)

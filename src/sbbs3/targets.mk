@@ -65,6 +65,18 @@ mono:	xpdev-mt smblib \
 		$(MTOBJODIR) $(EXEODIR) \
 		$(SBBSMONO)
 
+ifdef SBBSEXEC
+.PHONY: install
+install:
+	install $(EXEODIR)/* $(SBBSEXEC)
+	install $(LIBODIR)/* $(SBBSEXEC)
+
+.PHONY: symlinks
+symlinks:
+	ln -sfr $(EXEODIR)/* $(SBBSEXEC)
+	ln -sfr $(LIBODIR)/* $(SBBSEXEC)
+endif
+
 .PHONY: sexyz
 sexyz:	$(SEXYZ)
 
