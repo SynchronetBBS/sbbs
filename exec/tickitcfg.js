@@ -214,7 +214,7 @@ function import_areas(libname)
 		print(dir.name);
 		file.printf("[%s]\n", dir.name);
 		file.printf("Dir=%s\n", dir.code);
-		file.printf("Links=%s\n", dir.links);
+		file.printf("Links=%s\n", links);
 	}
 	file.close();
 }
