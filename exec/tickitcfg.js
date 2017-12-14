@@ -198,8 +198,34 @@ function edit_areas()
 	}
 }
 
+function import_areas(libname)
+{
+	var links = prompt("Links");
+	print("Import File Areas from library: " + libname);
+
+	var file = new File(tickit.tcfg);
+	if(!file.open("at"))
+		return alert("Cannot open " + file.name);
+	print("Appending to " + file.name);
+	for(var d in file_area.dir) {
+		if(file_area.dir[d].lib_name != libname)
+			continue;
+		var dir = file_area.dir[d];
+		print(dir.name);
+		file.printf("[%s]\n", dir.name);
+		file.printf("Dir=%s\n", dir.code);
+		file.printf("Links=%s\n", dir.links);
+	}
+	file.close();
+}
+
 function main()
 {
+
+	for(var i = 0; i < argc; i++)
+		if(argv[i].substr(0, 7) == "import=")
+			return import_areas(argv[i].substr(7));
+
 	uifc.init("TickIT Config Program");
 
 	var cmd = 0;
