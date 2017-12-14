@@ -203,7 +203,7 @@ function import_areas(libname)
 	var links = prompt("Links");
 	print("Import File Areas from library: " + libname);
 
-	var file = new File(tickit.tcfg);
+	var file = new File(tickit.cfgfile);
 	if(!file.open("at"))
 		return alert("Cannot open " + file.name);
 	print("Appending to " + file.name);

@@ -39,6 +39,7 @@ function TickITCfg() {
 	var i;
 	var tmp;
 
+	this.cfgfile = tcfg.name;
 	function get_bool(val) {
 		if (val === undefined)
 			return false;
