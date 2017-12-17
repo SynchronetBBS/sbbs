@@ -1,3 +1,5 @@
+// $Id$
+
 /* This file contains DCTEdit-specific functions for SlyEdit.
  *
  * Author: Eric Oulashin (AKA Nightfox)

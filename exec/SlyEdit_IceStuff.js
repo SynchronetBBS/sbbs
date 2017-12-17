@@ -1,3 +1,5 @@
+// $Id$
+
 /* This contains IceEdit-specific functions for SlyEdit.
  *
  * Author: Eric Oulashin (AKA Nightfox)
