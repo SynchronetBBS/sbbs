@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.51
-                        Release date: 2017-09-16
+                              Version 1.52
+                        Release date: 2017-12-17
 
                                   by
 
@@ -263,30 +263,6 @@ reWrapQuoteLines                  Whether or not to re-wrap quote lines. Valid
                                   be trimmed to make room for the quote prefix
                                   character to be added to the front.
 
-add3rdPartyStartupScript          Add a 3rd-party JavaScript script to execute
-                                  (via loading) upon startup of SlyEdit.  The
-                                  parameter must specify the full path & filename
-                                  of the JavaScript script.  For example (using
-                                  the excellent Desafortunadamente add-on by Art
-                                  of Fat Cats BBS):
-                                  add3rdPartyStartupScript=D:/BBS/sbbs/xtrn/desafortunadamente/desafortunadamente.js
-
-addJSOnStart                      Add a JavaScript command to run on startup.  Any
-                                  commands added this way will be executed after
-                                  3rd-party scripts are loaded.
-                                  Example (using the excellent Desafortunadamente
-                                  add-on by Art of Fat Cats BBS):
-                                  addJSOnStart=fortune_load();
-
-add3rdPartyExitScript             Add a 3rd-party JavaScript script to execute
-                                  (via loading) upon exit of SlyEdit.  The
-                                  parameter must specify the full path & filename
-                                  of the JavaScript script.
-
-addJSOnExit                       Add a JavaScript command to run on exit.
-                                  Example (don't actually do this):
-                                  addJSOnStart=console.print("Hello\r\n\1p");
-
 allowCrossPosting                 Whether or not to allow cross-posting
                                   messages into different/multiple message
                                   sub-boards.  Valid values are true and false.
@@ -331,6 +307,11 @@ shuffleTaglines                   Whether or not to shuffle (randomize) the
 allowUserSettings                 Whether or not to allow users to configure
                                   their own user settings.  This defaults to
                                   true.
+
+allowEditQuoteLines               Whether or not to allow the user to edit
+                                  quote lines.  Valid values are true and
+                                  false.  If this option is not specified, the
+                                  default value is true.
 
 useQuoteLineInitials              Whether or not to prefix quoted message lines
                                   with the previous author's initials when
