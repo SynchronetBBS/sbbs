@@ -79,6 +79,12 @@
  * 2017-12-09 Eric Oulashin     Version 1.17 beta 50
  *                              Fixed a bug introduced in the previous version: It
  *                              was no longer showing voting stats for messages.
+ * 2017-12-18 Eric Oulashin     Version 1.17 beta 51
+ *                              Updated the definitions of the KEY_PAGE_UP and KEY_PAGE_DOWN
+ *                              veriables to match what they are in sbbsdefs.js (if defined)
+ *                              from December 18, 2017 so that the PageUp and PageDown keys
+ *                              continue to work properly.  This script should still also
+ *                              work with older builds of Synchronet.
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -165,18 +171,14 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 50";
-var READER_DATE = "2017-12-09";
+var READER_VERSION = "1.17 Beta 51";
+var READER_DATE = "2017-12-18";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
 var LEFT_ARROW = ascii(17);
 var RIGHT_ARROW = ascii(16);
-// PageUp & PageDown keys - Not real key codes, but codes defined
-// to be used & recognized in this script
-var KEY_PAGE_UP = "\1PgUp";
-var KEY_PAGE_DOWN = "\1PgDn";
 // Ctrl keys for input
 var CTRL_A = "\x01";
 var CTRL_B = "\x02";
@@ -213,6 +215,20 @@ var CTRL_Z = "\x1a";
 //var KEY_ESC = "\x1b";
 var KEY_ESC = ascii(27);
 var KEY_ENTER = CTRL_M;
+// PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
+// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
+// defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
+// in this script so that this script will work with Synchronet systems before
+// and after the update containing those key definitions.
+var KEY_PAGE_UP = CTRL_P;
+var KEY_PAGE_DOWN = CTRL_N;
+// Ensure KEY_PAGE_UP and KEY_PAGE_DOWN are set to what's defined in sbbs.js
+// for KEY_PAGEUP and KEY_PAGEDN in case they change
+if (typeof(KEY_PAGEUP) === "string")
+	KEY_PAGE_UP = KEY_PAGEUP;
+if (typeof(KEY_PAGEDN) === "string")
+	KEY_PAGE_DOWN = KEY_PAGEDN;
+	
 // These are defined in sbbsdefs.js:
 //var	  KEY_UP		='\x1e';	// ctrl-^ (up arrow)
 //var	  KEY_DOWN		='\x0a';	// ctrl-j (dn arrow)
@@ -221,7 +237,9 @@ var KEY_ENTER = CTRL_M;
 //var	  KEY_HOME		='\x02';	// ctrl-b (home)
 //var   KEY_END       ='\x05';	// ctrl-e (end)
 //var   KEY_DEL       ='\x7f';    // (del)
-
+// These were added to sbbsdef.js around December 17, 2017:
+//var		KEY_PAGEUP	='\x10';	/* ctrl-p (Page Up)							*/
+//var		KEY_PAGEDN	='\x0e';	/* ctrl-n (Page Down)						*/
 
 // Characters for display
 // Box-drawing/border characters: Single-line
@@ -2609,10 +2627,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		// Go to specific message & new message offset is valid: Read the new
 		// message
 		else if ((readMsgRetObj.nextAction == ACTION_GO_SPECIFIC_MSG) && (readMsgRetObj.newMsgOffset > -1))
-		{
-			// The user selected a different message in this sub-board
 			msgIndex = readMsgRetObj.newMsgOffset;
-		}
 
 		// Save this iteration's next action for the "previous" next action for the next iteration
 		previousNextAction = readMsgRetObj.nextAction;
@@ -8905,6 +8920,8 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		else
 		{
 			// Not a private message - Post as a public message
+			// TODO: Saw this error message once on the next line:
+			// Error: Error -300 adding RFC822MSGID field to message header
 			retObj.postSucceeded = bbs.post_msg(this.subBoardCode, replyMode, pMsgHdr);
 			console.pause();
 		}
@@ -13987,6 +14004,7 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	// message header
 	if (!retObj.userQuit && (retObj.errorMsg.length == 0))
 	{
+		console.print("\1n  Submitting.."); // TODO: Does this look good?
 		retObj.savedVote = msgbase.vote_msg(voteMsgHdr);
 		// If the save was successful, then update
 		// this.hdrsForCurrentSubBoard with the updated
@@ -14855,7 +14873,7 @@ function getGreatestNumMsgs(pGrpIndex)
 // Inputs a keypress from the user and handles some ESC-based
 // characters such as PageUp, PageDown, and ESC.  If PageUp
 // or PageDown are pressed, this function will return the
-// string "\1PgUp" (KEY_PAGE_UP) or "\1Pgdn" (KEY_PAGE_DOWN),
+// string defined by KEY_PAGE_UP or KEY_PAGE_DOWN,
 // respectively.  Also, F1-F5 will be returned as "\1F1"
 // through "\1F5", respectively.
 // Thanks goes to Psi-Jack for the original impementation
