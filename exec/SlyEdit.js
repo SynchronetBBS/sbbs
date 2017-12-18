@@ -1,3 +1,5 @@
+// $Id$
+
 /* This is a text editor for Synchronet designed to mimic the look & feel of
  * DCTEdit and IceEdit, since neither of those editors have been developed
  * for quite a while and still exist only as 16-bit DOS applications.
@@ -13,91 +15,12 @@
  * 2009-08-22 Eric Oulashin     Version 1.00
  *                              Initial public release
  * ....Removed some comments...
- * 2014-11-01 Eric Oulashin     Version 1.41 Beta
- *                              Added support for PageUp & PageDown keys for
- *                              message & quote line scrolling
- * 2014-11-08 Eric Oulashin     Started working on improved paragraph detection
- *                              for paragraphs where the first line is indented
- *                              when wrapping non-quoted text in reply messages
- * 2014-11-09 Eric Oulashin     Bug fix in doQuoteSelection(): Reset gQuoteLinesIndex
- *                              to 0 when re-formatting the quote lines to ensure
- *                              valid behavior.  gQuoteLinesTopIndex was already
- *                              being reset to 0.
- * 2014-11-15 Eric Oulashin     Version 1.41
- *                              Decided to release this version with the PageUp/PageDown
- *                              key support, improved paragraph detetion & wrapping
- *                              for quote lines, backspace fix, and fixed DCT quote
- *                              window top border for wide terminals.
- * 2014-11-15 Eric Oulashin     Version 1.42
- *                              Updated the cross-post selection box to use the
- *                              PageUp & PageDown keys for paging instead of P
- *                              and N.
- * 2015-01-11 Eric Oulashin     Version 1.43 Beta
- *                              Bug fixes in wrapTextLines() in SlyEdit_Misc:
- *                              No more extra blank lines added to quote lines,
- *                              and no more leading spaces added to quote lines.
- * 2015-01-16 Eric Oulashin     Version 1.43
- *                              Releasing this version after several days of testing.
- * 2015-04-30 Eric Oulashin     Version 1.44
- *                              Bug fix: When cross-posting a message in other
- *                              message areas, the message area settings are now
- *                              checked to see whether the user's real name
- *                              should be used for the 'From' name.  Previously,
- *                              SlyEdit was always using the user's alias as
- *                              the 'From' name when cross-posting.
- * 2015-06-22 Eric Oulashin     Version 1.45
- *                              Added support for writing a tagline to editor.tag
- *                              in the node's temp directory, for Synchronet 3.16b.
- *                              If editor.tag exists in the node's temp directory,
- *                              Synchronet will append the tag line(s) from that
- *                              file after the user's signature.
- * 2015-06-25 Eric Oulashin     Version 1.46
- *                              If the user is editing their signature file, now
- *                              SlyEdit won't ask the user if they want to add
- *                              a tagline, even if their tagline setting is
- *                              enabled.
- * 2015-07-05 Eric Oulashin     Version 1.47
- *                              Updated to read the tagline filename from line 7
- *                              of the MSGINF dropfile.  If that line in MSGINF
- *                              is available (starting with Synchronet 3.16 beta
- *                              builds on July 5, 2015), then the user's chosen
- *                              tagline will be written to the tagline file, and
- *                              Synchronet will read that and append the tagline
- *                              after the user's signature. If the MSGINF file
- *                              doesn't have the 7th line, then SlyEdit will write
- *                              the user's chosen tagline to the end of the message
- *                              (thus the tagline will appear before the user's
- *                              signature).
- *                              Also, updated so that if the user is editing an
- *                              existing message, SlyEdit won't prompt to add a
- *                              tagline.
- * 2015-07-09 Eric Oulashin     Version 1.48 beta
- *                              Started working on this version to fix an issue
- *                              where SlyEdit is freezing up when replying to
- *                              certain emails & opening the quote window using
- *                              author initials in quote lines.
- * 2015-07-10 Eric Oulashin     Version 1.48
- *                              Fixed the quote freezing bug and releasing this
- *                              version.
- * 2016-05-11 Eric Oulashin     Version 1.49
- *                              Bug fix: Updated displayCommandList() to use
- *                              console.pause() instead of a custom pause routine
- *                              so that Synchronet can use a custom pause script
- *                              if one is configured in text.dat.
- * 2017-08-05 Eric Oulashin     Version 1.50
- *                              Added a user configuration option (accessible
- *                              to the user via the Ctrl-U) to toggle whether
- *                              or not to trim spaces from quote lines.
- * 2017-09-16 Eric Oulashin     Version 1.51
- *                              Added an auto-sign option to the user options
- *                              (accessible via Ctrl-U, disabled by default).
- *                              If enabled, SlyEdit will automatically sign
- *                              users' messages with their handle or real
- *                              name, depending on the sub-board's configuration.
- *                              Also added a seting to use only their first name
- *                              when signing with their real name and whether to
- *                              sign emails with their real name (enabled by
- *                              default).
+ * 2017-12-16 Eric Oulashin     Version 1.52 beta
+ *                              Added the ability for the sysop to toggle whether or
+ *                              not to allow users to edit quote lines, using the
+ *                              configuration option allowEditQuoteLines.
+ * 2017-12-17 Eric Oulashin     Version 1.52
+ *                              Releasing this version
  */
 
 /* Command-line arguments:
@@ -155,28 +78,28 @@ const ERRORMSG_PAUSE_MS = 1500;
 // Exit if the Synchronet version is below the minimum.
 if (system.version_num < 31400)
 {
-  console.print("n");
-   console.crlf();
-   console.print("nhyi* Warning:nhw " + EDITOR_PROGRAM_NAME);
-   console.print(" " + "requires version g3.14w or");
-   console.crlf();
-   console.print("higher of Synchronet.  This BBS is using version g");
-   console.print(system.version + "w.  Please notify the sysop.");
-   console.crlf();
-   console.pause();
-   exit(1); // 1: Aborted
+	console.print("\1n");
+	console.crlf();
+	console.print("\1n\1h\1y\1i* Warning:\1n\1h\1w " + EDITOR_PROGRAM_NAME);
+	console.print(" " + "requires version \1g3.14\1w or");
+	console.crlf();
+	console.print("higher of Synchronet.  This BBS is using version \1g");
+	console.print(system.version + "\1w.  Please notify the sysop.");
+	console.crlf();
+	console.pause();
+	exit(1); // 1: Aborted
 }
 // If the user's terminal doesn't support ANSI, then exit.
 if (!console.term_supports(USER_ANSI))
 {
-   console.print("n\r\nhyERROR: w" + EDITOR_PROGRAM_NAME +
-                 " requires an ANSI terminal.n\r\np");
-   exit(1); // 1: Aborted
+	console.print("\1n\r\n\1h\1yERROR: \1w" + EDITOR_PROGRAM_NAME +
+	              " requires an ANSI terminal.\1n\r\n\1p");
+	exit(1); // 1: Aborted
 }
 
 // Constants
-const EDITOR_VERSION = "1.51";
-const EDITOR_VER_DATE = "2016-09-16";
+const EDITOR_VERSION = "1.52";
+const EDITOR_VER_DATE = "2016-12-17";
 
 
 // Program variables
@@ -197,10 +120,10 @@ if (console.screen_columns < 80)
 }
 
 // Colors
-var gQuoteWinTextColor = "n7k";   // Normal text color for the quote window (DCT default)
-var gQuoteLineHighlightColor = "nw"; // Highlighted text color for the quote window (DCT default)
-var gTextAttrs = "nw";               // The text color for edit mode
-var gQuoteLineColor = "nc";          // The text color for quote lines
+var gQuoteWinTextColor = "\1n\1" + "7\1k";   // Normal text color for the quote window (DCT default)
+var gQuoteLineHighlightColor = "\1n\1w"; // Highlighted text color for the quote window (DCT default)
+var gTextAttrs = "\1n\1w";               // The text color for edit mode
+var gQuoteLineColor = "\1n\1c";          // The text color for quote lines
 var gUseTextAttribs = false;              // Will be set to true if text colors start to be used
 
 // gQuotePrefix contains the text to prepend to quote lines.
@@ -867,655 +790,666 @@ function readQuoteOrMessageFile()
 // Edit mode & input loop
 function doEditLoop()
 {
-   // Return codes:
-   // 0: Success
-   // 1: Aborted
-   var returnCode = 0;
+	// Return codes:
+	// 0: Success
+	// 1: Aborted
+	var returnCode = 0;
 
-   // Set the shortcut keys.  Note: Avoid CTRL_H because that
-   // is backspace.
-   const ABORT_KEY                 = CTRL_A;
-   const CROSSPOST_KEY             = CTRL_C;
-   const DELETE_LINE_KEY           = CTRL_D;
-   const GENERAL_HELP_KEY          = CTRL_G;
-   const TOGGLE_INSERT_KEY         = CTRL_I;
-   const CHANGE_COLOR_KEY          = CTRL_K;
-   const FIND_TEXT_KEY             = CTRL_N;
-   const IMPORT_FILE_KEY           = CTRL_O;
-   const CMDLIST_HELP_KEY          = CTRL_P;
-   const QUOTE_KEY                 = CTRL_Q;
-   const PROGRAM_INFO_HELP_KEY     = CTRL_R;
-   const LIST_TXT_REPLACEMENTS_KEY = CTRL_T;
-   const USER_SETTINGS_KEY         = CTRL_U;
-   const EXPORT_FILE_KEY           = CTRL_X;
-   const SAVE_KEY                  = CTRL_Z;
+	// Set the shortcut keys.  Note: Avoid CTRL_H because that
+	// is backspace.
+	const ABORT_KEY                 = CTRL_A;
+	const CROSSPOST_KEY             = CTRL_C;
+	const DELETE_LINE_KEY           = CTRL_D;
+	const GENERAL_HELP_KEY          = CTRL_G;
+	const TOGGLE_INSERT_KEY         = CTRL_I;
+	const CHANGE_COLOR_KEY          = CTRL_K;
+	const FIND_TEXT_KEY             = CTRL_N;
+	const IMPORT_FILE_KEY           = CTRL_O;
+	const CMDLIST_HELP_KEY          = CTRL_P;
+	const QUOTE_KEY                 = CTRL_Q;
+	const PROGRAM_INFO_HELP_KEY     = CTRL_R;
+	const LIST_TXT_REPLACEMENTS_KEY = CTRL_T;
+	const USER_SETTINGS_KEY         = CTRL_U;
+	const EXPORT_FILE_KEY           = CTRL_X;
+	const SAVE_KEY                  = CTRL_Z;
 
-   // Draw the screen.
-   // Note: This is purposefully drawing the top of the message.  We
-   // want to place the cursor at the first character on the top line,
-   // too.  This is for the case where we're editing an existing message -
-   // we want to start editigng it at the top.
-   fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-                   gInsertMode, gUseQuotes, 0, displayEditLines);
+	// Draw the screen.
+	// Note: This is purposefully drawing the top of the message.  We
+	// want to place the cursor at the first character on the top line,
+	// too.  This is for the case where we're editing an existing message -
+	// we want to start editigng it at the top.
+	fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes, 0, displayEditLines);
 
-   var curpos = new Object();
-   curpos.x = gEditLeft;
-   curpos.y = gEditTop;
-   console.gotoxy(curpos);
+	var curpos = new Object();
+	curpos.x = gEditLeft;
+	curpos.y = gEditTop;
+	console.gotoxy(curpos);
 
-   // initialTimeLeft and updateTimeLeft will be used to keep track of the user's
-   // time remaining so that we can update the user's time left on the screen.
-   var initialTimeLeft = bbs.time_left;
-   var updateTimeLeft = false;
+	// initialTimeLeft and updateTimeLeft will be used to keep track of the user's
+	// time remaining so that we can update the user's time left on the screen.
+	var initialTimeLeft = bbs.time_left;
+	var updateTimeLeft = false;
 
-   // Input loop
-   var userInput = "";
-   var currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-   var numKeysPressed = 0; // Used only to determine when to call updateTime()
-   var continueOn = true;
-   while (continueOn)
-   {
-      userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
-      // If userInput is blank, then the input timeout was probably
-      // reached, so abort.
-      if (userInput == "")
-      {
-         returnCode = 1; // Aborted
-         continueOn = false;
-         console.crlf();
-         console.print("nhr" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
-         continue;
-      }
+	// Input loop
+	var userInput = "";
+	var currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+	var numKeysPressed = 0; // Used only to determine when to call updateTime()
+	var continueOn = true;
+	while (continueOn)
+	{
+		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
+		// If userInput is blank, then the input timeout was probably
+		// reached, so abort.
+		if (userInput == "")
+		{
+			returnCode = 1; // Aborted
+			continueOn = false;
+			console.crlf();
+			console.print("\1n\1h\1r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
+			continue;
+		}
 
-      // If we get here, that means the timeout wasn't reached.
-      ++numKeysPressed;
+		// If we get here, that means the timeout wasn't reached.
+		++numKeysPressed;
 
-      // If gEditLines currently has 1 less line than we need,
-      // then add a new line to gEditLines.
-      if (gEditLines.length == gEditLinesIndex)
-         gEditLines.push(new TextLine());
+		// If gEditLines currently has 1 less line than we need,
+		// then add a new line to gEditLines.
+		if (gEditLines.length == gEditLinesIndex)
+		gEditLines.push(new TextLine());
 
-      // Take the appropriate action for the key pressed.
-      switch (userInput)
-      {
-         case ABORT_KEY:
-            // Before aborting, ask they user if they really want to abort.
-            if (promptYesNo("Abort message", false, "Abort", false))
-            {
-               returnCode = 1; // Aborted
-               continueOn = false;
-            }
-            else
-            {
-               // Make sure the edit color attribute is set.
-               //console.print("n" + gTextAttrs);
-               console.print(chooseEditColor());
-            }
-            break;
-         case SAVE_KEY:
-            returnCode = 0; // Save
-            continueOn = false;
-            break;
-         case KEY_F1:
-         case CMDLIST_HELP_KEY:
-            displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
-                               gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
-            clearEditAreaBuffer();
-            fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-                           gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
-                           displayEditLines);
-            break;
-         case GENERAL_HELP_KEY:
-            displayGeneralHelp(true, true, true);
-            clearEditAreaBuffer();
-            fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-                           gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
-                           displayEditLines);
-            break;
-         case PROGRAM_INFO_HELP_KEY:
-            displayProgramInfo(true, true);
-            clearEditAreaBuffer();
-            fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-                           gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
-                           displayEditLines);
-            break;
-         case QUOTE_KEY:
-            // Let the user choose & insert quote lines into the message.
-            if (gUseQuotes)
-            {
-               var retObject = doQuoteSelection(curpos, currentWordLength);
-               curpos.x = retObject.x;
-               curpos.y = retObject.y;
-               currentWordLength = retObject.currentWordLength;
-               // If user input timed out, then abort.
-               if (retObject.timedOut)
-               {
-                  returnCode = 1; // Aborted
-                  continueOn = false;
-                  console.crlf();
-                  console.print("nhr" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
-                  continue;
-               }
-            }
-            break;
-         case CHANGE_COLOR_KEY:
-            // Let the user change the text color.
-            /*if (gConfigSettings.allowColorSelection)
-            {
-               var retObj = doColorSelection(gTextAttrs, curpos, currentWordLength);
-               if (!retObj.timedOut)
-               {
-                  // Note: DoColorSelection() will prefix the color with the normal
-                  // attribute.
-                  gTextAttrs = retObj.txtAttrs;
-                  console.print(gTextAttrs);
-                  curpos.x = retObj.x;
-                  curpos.y = retObj.y;
-                  currentWordLength = retObj.currentWordLength;
-               }
-               else
-               {
-                  // User input timed out, so abort.
-                  returnCode = 1; // Aborted
-                  continueOn = false;
-                  console.crlf();
-                  console.print("nhr" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
-                  continue;
-               }
-            }*/
-            break;
-         case KEY_UP:
-            // Move the cursor up one line.
-            if (gEditLinesIndex > 0)
-            {
-               --gEditLinesIndex;
+		// Take the appropriate action for the key pressed.
+		switch (userInput)
+		{
+			case ABORT_KEY:
+				// Before aborting, ask they user if they really want to abort.
+				if (promptYesNo("Abort message", false, "Abort", false))
+				{
+					returnCode = 1; // Aborted
+					continueOn = false;
+				}
+				else
+				{
+					// Make sure the edit color attribute is set.
+					//console.print("\1n" + gTextAttrs);
+					console.print(chooseEditColor());
+				}
+				break;
+			case SAVE_KEY:
+				returnCode = 0; // Save
+				continueOn = false;
+				break;
+			case KEY_F1:
+			case CMDLIST_HELP_KEY:
+				displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
+				                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
+				clearEditAreaBuffer();
+				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
+				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
+				               displayEditLines);
+				break;
+			case GENERAL_HELP_KEY:
+				displayGeneralHelp(true, true, true);
+				clearEditAreaBuffer();
+				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
+				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
+				               displayEditLines);
+				break;
+			case PROGRAM_INFO_HELP_KEY:
+				displayProgramInfo(true, true);
+				clearEditAreaBuffer();
+				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
+				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
+				               displayEditLines);
+				break;
+			case QUOTE_KEY:
+				// Let the user choose & insert quote lines into the message.
+				if (gUseQuotes)
+				{
+					var retObject = doQuoteSelection(curpos, currentWordLength);
+					curpos.x = retObject.x;
+					curpos.y = retObject.y;
+					currentWordLength = retObject.currentWordLength;
+					// If user input timed out, then abort.
+					if (retObject.timedOut)
+					{
+						returnCode = 1; // Aborted
+						continueOn = false;
+						console.crlf();
+						console.print("\1n\1h\1r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
+						continue;
+					}
+				}
+				break;
+			case CHANGE_COLOR_KEY:
+				// Let the user change the text color.
+				/*if (gConfigSettings.allowColorSelection)
+				{
+					var retObj = doColorSelection(gTextAttrs, curpos, currentWordLength);
+					if (!retObj.timedOut)
+					{
+						// Note: DoColorSelection() will prefix the color with the normal
+						// attribute.
+						gTextAttrs = retObj.txtAttrs;
+						console.print(gTextAttrs);
+						curpos.x = retObj.x;
+						curpos.y = retObj.y;
+						currentWordLength = retObj.currentWordLength;
+					}
+					else
+					{
+						// User input timed out, so abort.
+						returnCode = 1; // Aborted
+						continueOn = false;
+						console.crlf();
+						console.print("\1n\1h\1r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
+						continue;
+					}
+				}*/
+				break;
+			case KEY_UP:
+				// Move the cursor up one line.
+				if (gEditLinesIndex > 0)
+				{
+					--gEditLinesIndex;
 
-               // gTextLineIndex should containg the index in the text
-               // line where the cursor would add text.  If the previous
-               // line is shorter than the one we just left, then
-               // gTextLineIndex and curpos.x need to be adjusted.
-               if (gTextLineIndex > gEditLines[gEditLinesIndex].length())
-               {
-                  gTextLineIndex = gEditLines[gEditLinesIndex].length();
-                  curpos.x = gEditLeft + gEditLines[gEditLinesIndex].length();
-               }
-               // Figure out the vertical coordinate of where the
-               // cursor should be.
-               // If the cursor is at the top of the edit area,
-               // then scroll up through the message by 1 line.
-               if (curpos.y == gEditTop)
-                  displayEditLines(gEditTop, gEditLinesIndex, gEditBottom, true, /*true*/false);
-               else
-                  --curpos.y;
+					// gTextLineIndex should containg the index in the text
+					// line where the cursor would add text.  If the previous
+					// line is shorter than the one we just left, then
+					// gTextLineIndex and curpos.x need to be adjusted.
+					if (gTextLineIndex > gEditLines[gEditLinesIndex].length())
+					{
+						gTextLineIndex = gEditLines[gEditLinesIndex].length();
+						curpos.x = gEditLeft + gEditLines[gEditLinesIndex].length();
+					}
+					// Figure out the vertical coordinate of where the
+					// cursor should be.
+					// If the cursor is at the top of the edit area,
+					// then scroll up through the message by 1 line.
+					if (curpos.y == gEditTop)
+						displayEditLines(gEditTop, gEditLinesIndex, gEditBottom, true, /*true*/false);
+					else
+						--curpos.y;
 
-               console.gotoxy(curpos);
-               currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-               console.print(chooseEditColor()); // Make sure the edit color is correct
-            }
-            break;
-         case KEY_DOWN:
-            // Move the cursor down one line.
-            if (gEditLinesIndex < gEditLines.length-1)
-            {
-               ++gEditLinesIndex;
-               // gTextLineIndex should containg the index in the text
-               // line where the cursor would add text.  If the next
-               // line is shorter than the one we just left, then
-               // gTextLineIndex and curpos.x need to be adjusted.
-               if (gTextLineIndex > gEditLines[gEditLinesIndex].length())
-               {
-                  gTextLineIndex = gEditLines[gEditLinesIndex].length();
-                  curpos.x = gEditLeft + gEditLines[gEditLinesIndex].length();
-               }
-               // Figure out the vertical coordinate of where the
-               // cursor should be.
-               // If the cursor is at the bottom of the edit area,
-               // then scroll down through the message by 1 line.
-               if (curpos.y == gEditBottom)
-               {
-                  displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop),
-                                   gEditBottom, true, /*true*/false);
-               }
-               else
-                  ++curpos.y;
+					console.gotoxy(curpos);
+					currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+					console.print(chooseEditColor()); // Make sure the edit color is correct
+				}
+				break;
+			case KEY_DOWN:
+				// Move the cursor down one line.
+				if (gEditLinesIndex < gEditLines.length-1)
+				{
+					++gEditLinesIndex;
+					// gTextLineIndex should containg the index in the text
+					// line where the cursor would add text.  If the next
+					// line is shorter than the one we just left, then
+					// gTextLineIndex and curpos.x need to be adjusted.
+					if (gTextLineIndex > gEditLines[gEditLinesIndex].length())
+					{
+						gTextLineIndex = gEditLines[gEditLinesIndex].length();
+						curpos.x = gEditLeft + gEditLines[gEditLinesIndex].length();
+					}
+					// Figure out the vertical coordinate of where the
+					// cursor should be.
+					// If the cursor is at the bottom of the edit area,
+					// then scroll down through the message by 1 line.
+					if (curpos.y == gEditBottom)
+					{
+						displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop),
+						gEditBottom, true, /*true*/false);
+					}
+					else
+						++curpos.y;
 
-               console.gotoxy(curpos);
-               currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-               console.print(chooseEditColor()); // Make sure the edit color is correct
-            }
-            break;
-         case KEY_LEFT:
-            // If the horizontal cursor position is right of the
-            // leftmost edit position, then let it move left.
-            if (curpos.x > gEditLeft)
-            {
-               --curpos.x;
-               console.gotoxy(curpos);
-               if (gTextLineIndex > 0)
-                  --gTextLineIndex;
-            }
-            else
-            {
-               // The cursor is at the leftmost position in the
-               // edit area.  If there are text lines above the
-               // current line, then move the cursor to the end
-               // of the previous line.
-               if (gEditLinesIndex > 0)
-               {
-                  --gEditLinesIndex;
-                  curpos.x = gEditLeft + gEditLines[gEditLinesIndex].length();
-                  // Move the cursor up or scroll up by one line
-                  if (curpos.y > 1)
-                     --curpos.y;
-                  else
-                     displayEditLines(gEditTop, gEditLinesIndex, gEditBottom, true, /*true*/false);
-                  gTextLineIndex = gEditLines[gEditLinesIndex].length();
-                  console.gotoxy(curpos);
-               }
-            }
-            console.print(chooseEditColor());
+					console.gotoxy(curpos);
+					currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+					console.print(chooseEditColor()); // Make sure the edit color is correct
+				}
+				break;
+			case KEY_LEFT:
+				// If the horizontal cursor position is right of the
+				// leftmost edit position, then let it move left.
+				if (curpos.x > gEditLeft)
+				{
+					--curpos.x;
+					console.gotoxy(curpos);
+					if (gTextLineIndex > 0)
+						--gTextLineIndex;
+				}
+				else
+				{
+					// The cursor is at the leftmost position in the
+					// edit area.  If there are text lines above the
+					// current line, then move the cursor to the end
+					// of the previous line.
+					if (gEditLinesIndex > 0)
+					{
+						--gEditLinesIndex;
+						curpos.x = gEditLeft + gEditLines[gEditLinesIndex].length();
+						// Move the cursor up or scroll up by one line
+						if (curpos.y > 1)
+							--curpos.y;
+						else
+							displayEditLines(gEditTop, gEditLinesIndex, gEditBottom, true, /*true*/false);
+						gTextLineIndex = gEditLines[gEditLinesIndex].length();
+						console.gotoxy(curpos);
+					}
+				}
+				console.print(chooseEditColor());
 
-            // Update the current word length.
-            currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-            // Make sure the edit color is correct
-            console.print(chooseEditColor());
-            break;
-         case KEY_RIGHT:
-            // If the horizontal cursor position is left of the
-            // rightmost edit position, then the cursor can move
-            // to the right.
-            if (curpos.x < gEditRight)
-            {
-               // The current line index must be within bounds
-               // before we can move the cursor to the right.
-               if (gTextLineIndex < gEditLines[gEditLinesIndex].length())
-               {
-                  ++curpos.x;
-                  console.gotoxy(curpos);
-                  ++gTextLineIndex;
-               }
-               else
-               {
-                  // The cursor is at the rightmost position on the
-                  // line.  If there are text lines below the current
-                  // line, then move the cursor to the start of the
-                  // next line.
-                  if (gEditLinesIndex < gEditLines.length-1)
-                  {
-                     ++gEditLinesIndex;
-                     curpos.x = gEditLeft;
-                     // Move the cursor down or scroll down by one line
-                     if (curpos.y < gEditBottom)
-                        ++curpos.y;
-                     else
-                        displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop),
-                                         gEditBottom, true, /*true*/false);
-                     gTextLineIndex = 0;
-                     console.gotoxy(curpos);
-                  }
-               }
-            }
-            else
-            {
-               // The cursor is at the rightmost position in the
-               // edit area.  If there are text lines below the
-               // current line, then move the cursor to the start
-               // of the next line.
-               if (gEditLinesIndex < gEditLines.length-1)
-               {
-                  ++gEditLinesIndex;
-                  curpos.x = gEditLeft;
-                  // Move the cursor down or scroll down by one line
-                  if (curpos.y < gEditBottom)
-                     ++curpos.y;
-                  else
-                     displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop),
-                                      gEditBottom, true, false);
-                  gTextLineIndex = 0;
-                  console.gotoxy(curpos);
-               }
-            }
-            console.print(chooseEditColor());
+				// Update the current word length.
+				currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+				// Make sure the edit color is correct
+				console.print(chooseEditColor());
+				break;
+			case KEY_RIGHT:
+				// If the horizontal cursor position is left of the
+				// rightmost edit position, then the cursor can move
+				// to the right.
+				if (curpos.x < gEditRight)
+				{
+					// The current line index must be within bounds
+					// before we can move the cursor to the right.
+					if (gTextLineIndex < gEditLines[gEditLinesIndex].length())
+					{
+						++curpos.x;
+						console.gotoxy(curpos);
+						++gTextLineIndex;
+					}
+					else
+					{
+						// The cursor is at the rightmost position on the
+						// line.  If there are text lines below the current
+						// line, then move the cursor to the start of the
+						// next line.
+						if (gEditLinesIndex < gEditLines.length-1)
+						{
+							++gEditLinesIndex;
+							curpos.x = gEditLeft;
+							// Move the cursor down or scroll down by one line
+							if (curpos.y < gEditBottom)
+								++curpos.y;
+							else
+								displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop),
+							gEditBottom, true, /*true*/false);
+							gTextLineIndex = 0;
+							console.gotoxy(curpos);
+						}
+					}
+				}
+				else
+				{
+					// The cursor is at the rightmost position in the
+					// edit area.  If there are text lines below the
+					// current line, then move the cursor to the start
+					// of the next line.
+					if (gEditLinesIndex < gEditLines.length-1)
+					{
+						++gEditLinesIndex;
+						curpos.x = gEditLeft;
+						// Move the cursor down or scroll down by one line
+						if (curpos.y < gEditBottom)
+							++curpos.y;
+						else
+							displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop), gEditBottom, true, false);
+						gTextLineIndex = 0;
+						console.gotoxy(curpos);
+					}
+				}
+				console.print(chooseEditColor());
 
-            // Update the current word length.
-            currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-            // Make sure the edit color is correct
-            console.print(chooseEditColor());
-            break;
-         case KEY_HOME:
-            // Go to the beginning of the line
-            gTextLineIndex = 0;
-            curpos.x = gEditLeft;
-            console.gotoxy(curpos);
-            // Update the current word length.
-            currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-            break;
-         case KEY_END:
-            // Go to the end of the line
-            if (gEditLinesIndex < gEditLines.length)
-            {
-               gTextLineIndex = gEditLines[gEditLinesIndex].length();
-               curpos.x = gEditLeft + gTextLineIndex;
-               // If the cursor position would be to the right of the edit
-               // area, then place it at gEditRight.
-               if (curpos.x > gEditRight)
-               {
-                  var difference = curpos.x - gEditRight;
-                  curpos.x -= difference;
-                  gTextLineIndex -= difference;
-               }
-               // Place the cursor where it should be.
-               console.gotoxy(curpos);
+				// Update the current word length.
+				currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+				// Make sure the edit color is correct
+				console.print(chooseEditColor());
+				break;
+			case KEY_HOME:
+				// Go to the beginning of the line
+				gTextLineIndex = 0;
+				curpos.x = gEditLeft;
+				console.gotoxy(curpos);
+				// Update the current word length.
+				currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+				break;
+			case KEY_END:
+				// Go to the end of the line
+				if (gEditLinesIndex < gEditLines.length)
+				{
+					gTextLineIndex = gEditLines[gEditLinesIndex].length();
+					curpos.x = gEditLeft + gTextLineIndex;
+					// If the cursor position would be to the right of the edit
+					// area, then place it at gEditRight.
+					if (curpos.x > gEditRight)
+					{
+						var difference = curpos.x - gEditRight;
+						curpos.x -= difference;
+						gTextLineIndex -= difference;
+					}
+					// Place the cursor where it should be.
+					console.gotoxy(curpos);
 
-               // Update the current word length.
-               currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-            }
-            break;
-         case BACKSPACE:
-            // Delete the previous character
-            var retObject = doBackspace(curpos, currentWordLength);
-            curpos.x = retObject.x;
-            curpos.y = retObject.y;
-            currentWordLength = retObject.currentWordLength;
-            // Make sure the edit color is correct
-            console.print(chooseEditColor());
-            break;
-         case KEY_DEL:
-            // Delete the next character
-            var retObject = doDeleteKey(curpos, currentWordLength);
-            curpos.x = retObject.x;
-            curpos.y = retObject.y;
-            currentWordLength = retObject.currentWordLength;
-            // Make sure the edit color is correct
-            console.print(chooseEditColor());
-            break;
-         case KEY_ENTER:
-            var retObject = doEnterKey(curpos, currentWordLength);
-            curpos.x = retObject.x;
-            curpos.y = retObject.y;
-            currentWordLength = retObject.currentWordLength;
-            returnCode = retObject.returnCode;
-            continueOn = retObject.continueOn;
-            // Check for whether we should do quote selection or
-            // show the help screen (if the user entered /Q or /?)
-            if (continueOn)
-            {
-               if (retObject.doQuoteSelection)
-               {
-                  if (gUseQuotes)
-                  {
-                     retObject = doQuoteSelection(curpos, currentWordLength);
-                     curpos.x = retObject.x;
-                     curpos.y = retObject.y;
-                     currentWordLength = retObject.currentWordLength;
-                     // If user input timed out, then abort.
-                     if (retObject.timedOut)
-                     {
-                        returnCode = 1; // Aborted
-                        continueOn = false;
-                        console.crlf();
-                        console.print("nhr" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
-                        continue;
-                     }
-                  }
-               }
-               else if (retObject.showHelp)
-               {
-                  displayProgramInfo(true, false);
-                  displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop,
-                                     gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
-                  clearEditAreaBuffer();
-                  fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-                                gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
-                                displayEditLines);
-                  console.gotoxy(curpos);
-               }
-               else if (retObject.doCrossPostSelection)
-               {
-                  if (gCanCrossPost)
-                     doCrossPosting();
-               }
-            }
-            // Make sure the edit color is correct
-            console.print(chooseEditColor());
-            break;
-         // Insert/overwrite mode toggle
-         case KEY_INSERT:
-         case TOGGLE_INSERT_KEY:
-            toggleInsertMode(null);
-            //console.print("n" + gTextAttrs);
-            console.print(chooseEditColor());
-            console.gotoxy(curpos);
-            break;
-         case KEY_ESC:
-            // Do the ESC menu
-            var retObj = fpHandleESCMenu(curpos, currentWordLength);
-            returnCode = retObj.returnCode;
-            continueOn = retObj.continueOn;
-            curpos.x = retObj.x;
-            curpos.y = retObj.y;
-            currentWordLength = retObj.currentWordLength;
-            // If we can continue on, put the cursor back
-            // where it should be.
-            if (continueOn)
-            {
-               //console.print("n" + gTextAttrs);
-               console.print(chooseEditColor());
-               console.gotoxy(curpos);
-            }
-            break;
-         case FIND_TEXT_KEY:
-            var retObj = findText(curpos);
-            curpos.x = retObj.x;
-            curpos.y = retObj.y;
-            console.print(chooseEditColor()); // Make sure the edit color is correct
-            break;
-         case IMPORT_FILE_KEY:
-            // Only let sysops import files.
-            if (gConfigSettings.userIsSysop)
-            {
-               var retObj = importFile(gConfigSettings.userIsSysop, curpos);
-               curpos.x = retObj.x;
-               curpos.y = retObj.y;
-               currentWordLength = retObj.currentWordLength;
-               console.print(chooseEditColor()); // Make sure the edit color is correct
-            }
-            break;
-         case EXPORT_FILE_KEY:
-            // Only let sysops export files.
-            if (gConfigSettings.userIsSysop)
-            {
-               exportToFile(gConfigSettings.userIsSysop);
-               console.gotoxy(curpos);
-            }
-            break;
-         case DELETE_LINE_KEY:
-            var retObj = doDeleteLine(curpos);
-            curpos.x = retObj.x;
-            curpos.y = retObj.y;
-            currentWordLength = retObj.currentWordLength;
-            console.print(chooseEditColor()); // Make sure the edit color is correct
-            break;
-         case KEY_PAGE_UP: // Move 1 page up in the message
-            // Calculate the index of the message line shown at the top
-            // of the edit area.
-            var topEditIndex = gEditLinesIndex-(curpos.y-gEditTop);
-            // If topEditIndex is > 0, then we can page up.
-            if (topEditIndex > 0)
-            {
-               // Calculate the new top edit line index.
-               // If there is a screenful or more of lines above the top,
-               // then set topEditIndex to what it would need to be for the
-               // previous page.  Otherwise, set topEditIndex to 0.
-               if (topEditIndex >= gEditHeight)
-                  topEditIndex -= gEditHeight;
-               else
-                  topEditIndex = 0;
-               // Refresh the edit area
-               displayEditLines(gEditTop, topEditIndex, gEditBottom, true, /*true*/false);
-               // Set the cursor to the last place on the last line.
-               gEditLinesIndex = topEditIndex + gEditHeight - 1;
-               gTextLineIndex = gEditLines[gEditLinesIndex].length();
-               if ((gTextLineIndex > 0) && (gEditLines[gEditLinesIndex].length == gEditWidth))
-                  --gTextLineIndex;
-               curpos.x = gEditLeft + gTextLineIndex;
-               curpos.y = gEditBottom;
-               console.gotoxy(curpos);
+					// Update the current word length.
+					currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+				}
+				break;
+			case BACKSPACE:
+				// Delete the previous character
+				if (textLineIsEditable(gEditLinesIndex))
+				{
+					var retObject = doBackspace(curpos, currentWordLength);
+					curpos.x = retObject.x;
+					curpos.y = retObject.y;
+					currentWordLength = retObject.currentWordLength;
+					// Make sure the edit color is correct
+					console.print(chooseEditColor());
+				}
+				break;
+			case KEY_DEL:
+				// Delete the next character
+				if (textLineIsEditable(gEditLinesIndex))
+				{
+					var retObject = doDeleteKey(curpos, currentWordLength);
+					curpos.x = retObject.x;
+					curpos.y = retObject.y;
+					currentWordLength = retObject.currentWordLength;
+					// Make sure the edit color is correct
+					console.print(chooseEditColor());
+				}
+				break;
+			case KEY_ENTER:
+				var cursorAtBeginningOrEnd = ((curpos.x == 1) || (curpos.x >= gEditLines[gEditLinesIndex].length()));
+				var letUserEditLine = (cursorAtBeginningOrEnd ? true : textLineIsEditable(gEditLinesIndex));
+				if (letUserEditLine)
+				{
+					var retObject = doEnterKey(curpos, currentWordLength);
+					curpos.x = retObject.x;
+					curpos.y = retObject.y;
+					currentWordLength = retObject.currentWordLength;
+					returnCode = retObject.returnCode;
+					continueOn = retObject.continueOn;
+					// Check for whether we should do quote selection or
+					// show the help screen (if the user entered /Q or /?)
+					if (continueOn)
+					{
+						if (retObject.doQuoteSelection)
+						{
+							if (gUseQuotes)
+							{
+								retObject = doQuoteSelection(curpos, currentWordLength);
+								curpos.x = retObject.x;
+								curpos.y = retObject.y;
+								currentWordLength = retObject.currentWordLength;
+								// If user input timed out, then abort.
+								if (retObject.timedOut)
+								{
+									returnCode = 1; // Aborted
+									continueOn = false;
+									console.crlf();
+									console.print("\1n\1h\1r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
+									continue;
+								}
+							}
+						}
+						else if (retObject.showHelp)
+						{
+							displayProgramInfo(true, false);
+							displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop,
+							                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
+							clearEditAreaBuffer();
+							fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
+							               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
+							displayEditLines);
+							console.gotoxy(curpos);
+						}
+						else if (retObject.doCrossPostSelection)
+						{
+							if (gCanCrossPost)
+								doCrossPosting();
+						}
+					}
+					// Make sure the edit color is correct
+					console.print(chooseEditColor());
+				}
+				break;
+				// Insert/overwrite mode toggle
+			case KEY_INSERT:
+			case TOGGLE_INSERT_KEY:
+				toggleInsertMode(null);
+				//console.print("\1n" + gTextAttrs);
+				console.print(chooseEditColor());
+				console.gotoxy(curpos);
+				break;
+			case KEY_ESC:
+				// Do the ESC menu
+				var retObj = fpHandleESCMenu(curpos, currentWordLength);
+				returnCode = retObj.returnCode;
+				continueOn = retObj.continueOn;
+				curpos.x = retObj.x;
+				curpos.y = retObj.y;
+				currentWordLength = retObj.currentWordLength;
+				// If we can continue on, put the cursor back
+				// where it should be.
+				if (continueOn)
+				{
+					//console.print("\1n" + gTextAttrs);
+					console.print(chooseEditColor());
+					console.gotoxy(curpos);
+				}
+				break;
+			case FIND_TEXT_KEY:
+				var retObj = findText(curpos);
+				curpos.x = retObj.x;
+				curpos.y = retObj.y;
+				console.print(chooseEditColor()); // Make sure the edit color is correct
+				break;
+			case IMPORT_FILE_KEY:
+				// Only let sysops import files.
+				if (gConfigSettings.userIsSysop)
+				{
+					var retObj = importFile(gConfigSettings.userIsSysop, curpos);
+					curpos.x = retObj.x;
+					curpos.y = retObj.y;
+					currentWordLength = retObj.currentWordLength;
+					console.print(chooseEditColor()); // Make sure the edit color is correct
+				}
+				break;
+			case EXPORT_FILE_KEY:
+				// Only let sysops export files.
+				if (gConfigSettings.userIsSysop)
+				{
+					exportToFile(gConfigSettings.userIsSysop);
+					console.gotoxy(curpos);
+				}
+				break;
+			case DELETE_LINE_KEY:
+				var retObj = doDeleteLine(curpos);
+				curpos.x = retObj.x;
+				curpos.y = retObj.y;
+				currentWordLength = retObj.currentWordLength;
+				console.print(chooseEditColor()); // Make sure the edit color is correct
+				break;
+			case KEY_PAGE_UP: // Move 1 page up in the message
+				// Calculate the index of the message line shown at the top
+				// of the edit area.
+				var topEditIndex = gEditLinesIndex-(curpos.y-gEditTop);
+				// If topEditIndex is > 0, then we can page up.
+				if (topEditIndex > 0)
+				{
+					// Calculate the new top edit line index.
+					// If there is a screenful or more of lines above the top,
+					// then set topEditIndex to what it would need to be for the
+					// previous page.  Otherwise, set topEditIndex to 0.
+					if (topEditIndex >= gEditHeight)
+						topEditIndex -= gEditHeight;
+					else
+						topEditIndex = 0;
+					// Refresh the edit area
+					displayEditLines(gEditTop, topEditIndex, gEditBottom, true, /*true*/false);
+					// Set the cursor to the last place on the last line.
+					gEditLinesIndex = topEditIndex + gEditHeight - 1;
+					gTextLineIndex = gEditLines[gEditLinesIndex].length();
+					if ((gTextLineIndex > 0) && (gEditLines[gEditLinesIndex].length == gEditWidth))
+						--gTextLineIndex;
+					curpos.x = gEditLeft + gTextLineIndex;
+					curpos.y = gEditBottom;
+					console.gotoxy(curpos);
 
-               // Update the current word length.
-               currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-            }
-            else
-            {
-               // topEditIndex is 0.  If gEditLinesIndex is not already 0,
-               // then make it 0 and place the cursor at the first line.
-               if (gEditLinesIndex > 0)
-               {
-                  gEditLinesIndex = 0;
-                  gTextLineIndex = 0;
-                  curpos.x = gEditLeft;
-                  curpos.y = gEditTop;
-                  console.gotoxy(curpos);
+					// Update the current word length.
+					currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+				}
+				else
+				{
+					// topEditIndex is 0.  If gEditLinesIndex is not already 0,
+					// then make it 0 and place the cursor at the first line.
+					if (gEditLinesIndex > 0)
+					{
+						gEditLinesIndex = 0;
+						gTextLineIndex = 0;
+						curpos.x = gEditLeft;
+						curpos.y = gEditTop;
+						console.gotoxy(curpos);
 
-                  // Update the current word length.
-                  currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-               }
-            }
-            console.print(chooseEditColor()); // Make sure the edit color is correct
-            break;
-         case KEY_PAGE_DOWN: // Move 1 page down in the message
-            // Calculate the index of the message line shown at the top
-            // of the edit area, and the index of the line that would be
-            // shown at the bottom of the edit area.
-            var topEditIndex = gEditLinesIndex-(curpos.y-gEditTop);
-            var bottomEditIndex = topEditIndex + gEditHeight - 1;
-            // If bottomEditIndex is less than the last index, then we can
-            // page down.
-            var lastEditLineIndex = gEditLines.length-1;
-            if (bottomEditIndex < lastEditLineIndex)
-            {
-               // Calculate the new top edit line index.
-               // If there is a screenful or more of lines below the bottom,
-               // then set topEditIndex to what it would need to be for the
-               // next page.  Otherwise, set topEditIndex to the right
-               // index to display the last full page.
-               if (gEditLines.length - gEditHeight > bottomEditIndex)
-                  topEditIndex += gEditHeight;
-               else
-                  topEditIndex = gEditLines.length - gEditHeight;
-               // Refresh the edit area
-               displayEditLines(gEditTop, topEditIndex, gEditBottom, true, /*true*/false);
-               // Set the cursor to the first place on the first line.
-               gEditLinesIndex = topEditIndex;
-               gTextLineIndex = 0;
-               curpos.x = gEditLeft;
-               curpos.y = gEditTop;
-               console.gotoxy(curpos);
+						// Update the current word length.
+						currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+					}
+				}
+				console.print(chooseEditColor()); // Make sure the edit color is correct
+				break;
+			case KEY_PAGE_DOWN: // Move 1 page down in the message
+				// Calculate the index of the message line shown at the top
+				// of the edit area, and the index of the line that would be
+				// shown at the bottom of the edit area.
+				var topEditIndex = gEditLinesIndex-(curpos.y-gEditTop);
+				var bottomEditIndex = topEditIndex + gEditHeight - 1;
+				// If bottomEditIndex is less than the last index, then we can
+				// page down.
+				var lastEditLineIndex = gEditLines.length-1;
+				if (bottomEditIndex < lastEditLineIndex)
+				{
+					// Calculate the new top edit line index.
+					// If there is a screenful or more of lines below the bottom,
+					// then set topEditIndex to what it would need to be for the
+					// next page.  Otherwise, set topEditIndex to the right
+					// index to display the last full page.
+					if (gEditLines.length - gEditHeight > bottomEditIndex)
+						topEditIndex += gEditHeight;
+					else
+						topEditIndex = gEditLines.length - gEditHeight;
+					// Refresh the edit area
+					displayEditLines(gEditTop, topEditIndex, gEditBottom, true, /*true*/false);
+					// Set the cursor to the first place on the first line.
+					gEditLinesIndex = topEditIndex;
+					gTextLineIndex = 0;
+					curpos.x = gEditLeft;
+					curpos.y = gEditTop;
+					console.gotoxy(curpos);
 
-               // Update the current word length.
-               currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-            }
-            else
-            {
-               // bottomEditIndex >= the last edit line index.
-               // If gEditLinesIndex is not already equal to bottomEditIndex,
-               // make it so and put the cursor at the end of the last line.
-               if (gEditLinesIndex < bottomEditIndex)
-               {
-                  var oldEditLinesIndex = gEditLinesIndex;
+					// Update the current word length.
+					currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+				}
+				else
+				{
+					// bottomEditIndex >= the last edit line index.
+					// If gEditLinesIndex is not already equal to bottomEditIndex,
+					// make it so and put the cursor at the end of the last line.
+					if (gEditLinesIndex < bottomEditIndex)
+					{
+						var oldEditLinesIndex = gEditLinesIndex;
 
-                  // Make sure gEditLinesIndex is valid.  It should be set to the
-                  // last edit line index.  It's possible that bottomEditIndex is
-                  // beyond the last edit line index, so we need to be careful here.
-                  if (bottomEditIndex == lastEditLineIndex)
-                     gEditLinesIndex = bottomEditIndex;
-                  else
-                     gEditLinesIndex = lastEditLineIndex;
-                  gTextLineIndex = gEditLines[gEditLinesIndex].length();
-                  if ((gTextLineIndex > 0) && (gEditLines[gEditLinesIndex].length == gEditWidth))
-                     --gTextLineIndex;
-                  curpos.x = gEditLeft + gTextLineIndex;
-                  curpos.y += (gEditLinesIndex-oldEditLinesIndex);
-                  console.gotoxy(curpos);
+						// Make sure gEditLinesIndex is valid.  It should be set to the
+						// last edit line index.  It's possible that bottomEditIndex is
+						// beyond the last edit line index, so we need to be careful here.
+						if (bottomEditIndex == lastEditLineIndex)
+							gEditLinesIndex = bottomEditIndex;
+						else
+							gEditLinesIndex = lastEditLineIndex;
+						gTextLineIndex = gEditLines[gEditLinesIndex].length();
+						if ((gTextLineIndex > 0) && (gEditLines[gEditLinesIndex].length == gEditWidth))
+							--gTextLineIndex;
+						curpos.x = gEditLeft + gTextLineIndex;
+						curpos.y += (gEditLinesIndex-oldEditLinesIndex);
+						console.gotoxy(curpos);
 
-                  // Update the current word length.
-                  currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-               }
-            }
-            console.print(chooseEditColor()); // Make sure the edit color is correct
-            break;
-         case CROSSPOST_KEY:
-            if (gCanCrossPost)
-               doCrossPosting();
-            break;
-         case LIST_TXT_REPLACEMENTS_KEY:
-            if (gConfigSettings.enableTextReplacements)
-               listTextReplacements();
-            break;
-         case USER_SETTINGS_KEY:
-            doUserSettings(curpos, true);
-            break;
-         default:
-            // For the tab character, insert 3 spaces.  Otherwise,
-            // if it's a printable character, add the character.
-            if (/\t/.test(userInput))
-            {
-               var retObject;
-               for (var i = 0; i < 3; ++i)
-               {
-                  retObject = doPrintableChar(" ", curpos, currentWordLength);
-                  curpos.x = retObject.x;
-                  curpos.y = retObject.y;
-                  currentWordLength = retObject.currentWordLength;
-               }
-            }
-            else
-            {
-               if (isPrintableChar(userInput))
-               {
-                  var retObject = doPrintableChar(userInput, curpos, currentWordLength);
-                  curpos.x = retObject.x;
-                  curpos.y = retObject.y;
-                  currentWordLength = retObject.currentWordLength;
-               }
-            }
-            break;
-      }
+						// Update the current word length.
+						currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+					}
+				}
+				console.print(chooseEditColor()); // Make sure the edit color is correct
+				break;
+			case CROSSPOST_KEY:
+				if (gCanCrossPost)
+					doCrossPosting();
+				break;
+			case LIST_TXT_REPLACEMENTS_KEY:
+				if (gConfigSettings.enableTextReplacements)
+					listTextReplacements();
+				break;
+			case USER_SETTINGS_KEY:
+				doUserSettings(curpos, true);
+				break;
+			default:
+				// For the tab character, insert 3 spaces.  Otherwise,
+				// if it's a printable character, add the character.
+				if (textLineIsEditable(gEditLinesIndex))
+				{
+					if (/\t/.test(userInput))
+					{
+						var retObject;
+						for (var i = 0; i < 3; ++i)
+						{
+							retObject = doPrintableChar(" ", curpos, currentWordLength);
+							curpos.x = retObject.x;
+							curpos.y = retObject.y;
+							currentWordLength = retObject.currentWordLength;
+						}
+					}
+					else
+					{
+						if (isPrintableChar(userInput))
+						{
+							var retObject = doPrintableChar(userInput, curpos, currentWordLength);
+							curpos.x = retObject.x;
+							curpos.y = retObject.y;
+							currentWordLength = retObject.currentWordLength;
+						}
+					}
+				}
+				break;
+		}
 
-      // Update the time strings on the screen
-      updateTimeLeft = (initialTimeLeft - bbs.time_left >= 60);
-      // For every 5 keys pressed, check the current time and update
-      // it on the screen if necessary.  updateTime() is also being
-      // called when the first key is pressed so that the function's
-      // time string variable gets initially set.
-      // Note: The 2nd parameter to updateTime() is whether or not to move the
-      // cursor back to the original location after updating the time on the
-      // screen.  For optimization, we don't want to do that if we'll also be
-      // updating the time left on the screen.
-      if ((numKeysPressed == 1) || (numKeysPressed % 5 == 0))
-         updateTime(curpos, !updateTimeLeft);
-      // If the user's time left has gone down by at least 60 seconds, then
-      // update the time & user's time left on the screen.
-      if (updateTimeLeft)
-      {
-         fpDisplayTimeRemaining();
-         // Change back to the edit color and place the cursor back
-         // where it needs to be.
-         console.print(chooseEditColor());
-         console.gotoxy(curpos); // Place the cursor back where it needs to be
+		// Update the time strings on the screen
+		updateTimeLeft = (initialTimeLeft - bbs.time_left >= 60);
+		// For every 5 keys pressed, check the current time and update
+		// it on the screen if necessary.  updateTime() is also being
+		// called when the first key is pressed so that the function's
+		// time string variable gets initially set.
+		// Note: The 2nd parameter to updateTime() is whether or not to move the
+		// cursor back to the original location after updating the time on the
+		// screen.  For optimization, we don't want to do that if we'll also be
+		// updating the time left on the screen.
+		if ((numKeysPressed == 1) || (numKeysPressed % 5 == 0))
+			updateTime(curpos, !updateTimeLeft);
+		// If the user's time left has gone down by at least 60 seconds, then
+		// update the time & user's time left on the screen.
+		if (updateTimeLeft)
+		{
+			fpDisplayTimeRemaining();
+			// Change back to the edit color and place the cursor back
+			// where it needs to be.
+			console.print(chooseEditColor());
+			console.gotoxy(curpos); // Place the cursor back where it needs to be
 
-         initialTimeLeft = bbs.time_left;
-      }
-   }
+			initialTimeLeft = bbs.time_left;
+		}
+	}
 
-   // If the user has not aborted the message and taglines is enabled in their user settings
-   // and the user is not editing their signature & is not editing an existing message, then
-   // prompt the user for a tag line to be appended to the message.
-   var isEditingSignature = (gMsgSubj == format("%04d.sig", user.number));
-   var isEditingExistingMsg = !isEditingSignature && ((gMsgSubj == "MSGTMP") || (gMsgSubj == "DDMsgReader_message.txt") || (gMsgSubj == "DDMsgLister_message.txt"));
-   if ((returnCode == 0) && gUserSettings.enableTaglines && !isEditingSignature && !isEditingExistingMsg &&
-       txtFileContainsLines(gConfigSettings.tagLineFilename))
-   {
+	// If the user has not aborted the message and taglines is enabled in their user settings
+	// and the user is not editing their signature & is not editing an existing message, then
+	// prompt the user for a tag line to be appended to the message.
+	var isEditingSignature = (gMsgSubj == format("%04d.sig", user.number));
+	var isEditingExistingMsg = !isEditingSignature && ((gMsgSubj == "MSGTMP") || (gMsgSubj == "DDMsgReader_message.txt") || (gMsgSubj == "DDMsgLister_message.txt"));
+	if ((returnCode == 0) && gUserSettings.enableTaglines && !isEditingSignature && !isEditingExistingMsg && txtFileContainsLines(gConfigSettings.tagLineFilename))
+	{
 		if (promptYesNo("Add a tagline", true, "Add tagline", true))
 		{
 			var taglineRetObj = doTaglineSelection();
@@ -1538,17 +1472,17 @@ function doEditLoop()
 				}
 			}
 		}
-   }
+	}
 
-   // If gEditLines has only 1 line in it and it's blank, then
-   // remove it so that we can test to see if the message is empty.
-   if (gEditLines.length == 1)
-   {
-      if (gEditLines[0].length() == 0)
-         gEditLines.splice(0, 1);
-   }
+	// If gEditLines has only 1 line in it and it's blank, then
+	// remove it so that we can test to see if the message is empty.
+	if (gEditLines.length == 1)
+	{
+		if (gEditLines[0].length() == 0)
+			gEditLines.splice(0, 1);
+	}
 
-   return returnCode;
+	return returnCode;
 }
 // Helper function for doEditLoop(): Handles the backspace behavior.
 //
@@ -1771,122 +1705,113 @@ function doBackspace(pCurpos, pCurrentWordLength)
 //               position and currentLength, the current word length.
 function doDeleteKey(pCurpos, pCurrentWordLength)
 {
-   // Create the return object
-  var returnObject = new Object();
-   returnObject.x = pCurpos.x;
-   returnObject.y = pCurpos.y;
-   returnObject.currentWordLength = pCurrentWordLength;
+	// Create the return object
+	var returnObject = new Object();
+	returnObject.x = pCurpos.x;
+	returnObject.y = pCurpos.y;
+	returnObject.currentWordLength = pCurrentWordLength;
 
-  // Store the original line text (for testing to see if we should update the screen).
-  var originalLineText = gEditLines[gEditLinesIndex].text;
+	// If gEditLinesIndex is invalid, then return without doing anything.
+	if ((gEditLinesIndex < 0) || (gEditLinesIndex >= gEditLines.length))
+		return returnObject;
 
-  // If gEditLinesIndex is invalid, then return without doing anything.
-  if ((gEditLinesIndex < 0) || (gEditLinesIndex >= gEditLines.length))
-     return returnObject;
+	// Store the original line text (for testing to see if we should update the screen).
+	var originalLineText = gEditLines[gEditLinesIndex].text;
 
-  // If the text line index is within bounds, then we can
-  // delete the next character and refresh the screen.
-  if (gTextLineIndex < gEditLines[gEditLinesIndex].length())
-  {
-     var lineText = gEditLines[gEditLinesIndex].text.substr(0, gTextLineIndex)
-                   + gEditLines[gEditLinesIndex].text.substr(gTextLineIndex+1);
-     gEditLines[gEditLinesIndex].text = lineText;
-     // If the current character is a space, then reset the current word length.
-     // to 0.  Otherwise, set it to the current word length.
-     if (gTextLineIndex < gEditLines[gEditLinesIndex].length())
-     {
-        if (gEditLines[gEditLinesIndex].text.charAt(gTextLineIndex) == " ")
-           returnObject.currentWordLength = 0;
-        else
-        {
-           var spacePos = gEditLines[gEditLinesIndex].text.indexOf(" ", gTextLineIndex);
-           if (spacePos > -1)
-              returnObject.currentWordLength = spacePos - gTextLineIndex;
-           else
-              returnObject.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-        }
-     }
+	// If the text line index is within bounds, then we can
+	// delete the next character and refresh the screen.
+	if (gTextLineIndex < gEditLines[gEditLinesIndex].length())
+	{
+		var lineText = gEditLines[gEditLinesIndex].text.substr(0, gTextLineIndex)
+		             + gEditLines[gEditLinesIndex].text.substr(gTextLineIndex+1);
+		gEditLines[gEditLinesIndex].text = lineText;
+		// If the current character is a space, then reset the current word length.
+		// to 0.  Otherwise, set it to the current word length.
+		if (gTextLineIndex < gEditLines[gEditLinesIndex].length())
+		{
+			if (gEditLines[gEditLinesIndex].text.charAt(gTextLineIndex) == " ")
+				returnObject.currentWordLength = 0;
+			else
+			{
+				var spacePos = gEditLines[gEditLinesIndex].text.indexOf(" ", gTextLineIndex);
+				if (spacePos > -1)
+					returnObject.currentWordLength = spacePos - gTextLineIndex;
+				else
+					returnObject.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+			}
+		}
 
-     // Re-adjust the line lengths and refresh the edit area.
-     var textChanged = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length,
-                                         gEditWidth);
+		// Re-adjust the line lengths and refresh the edit area.
+		var textChanged = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth);
 
-     // If the line text changed, then update the message area from the
-     // current line on down.
-     textChanged = textChanged || (gEditLines[gEditLinesIndex].text != originalLineText);
-     if (textChanged)
-     {
-        // Calculate the bottommost edit area row to update, and then
-        // refresh the edit area.
-        var bottommostRow = calcBottomUpdateRow(returnObject.y, gEditLinesIndex);
-        displayEditLines(returnObject.y, gEditLinesIndex, bottommostRow, true, true);
-     }
-  }
-  else
-  {
-     // The textChanged variable will be used by this code to store whether or
-     // not any text changed so we'll know if the screen needs to be refreshed.
-     var textChanged = false;
+		// If the line text changed, then update the message area from the
+		// current line on down.
+		textChanged = textChanged || (gEditLines[gEditLinesIndex].text != originalLineText);
+		if (textChanged)
+		{
+			// Calculate the bottommost edit area row to update, and then
+			// refresh the edit area.
+			var bottommostRow = calcBottomUpdateRow(returnObject.y, gEditLinesIndex);
+			displayEditLines(returnObject.y, gEditLinesIndex, bottommostRow, true, true);
+		}
+	}
+	else
+	{
+		// The textChanged variable will be used by this code to store whether or
+		// not any text changed so we'll know if the screen needs to be refreshed.
+		var textChanged = false;
 
-     // The text line index is at the end of the line.
-     // Set the current line's hardNewlineEnd property to false
-     // so that we can bring up text from the next line,
-     // if possible.
-     gEditLines[gEditLinesIndex].hardNewlineEnd = false;
-     // Also, temporarily set the line's isQuoteLine property to false
-     // so that text from the next line can be brought up.  Store the
-     // current isQuoteLine value so it can be restored later.
-     var lineIsQuoteLine = gEditLines[gEditLinesIndex].isQuoteLine;
-     gEditLines[gEditLinesIndex].isQuoteLine = false;
+		// The text line index is at the end of the line.
+		// Set the current line's hardNewlineEnd property to false
+		// so that we can bring up text from the next line,
+		// if possible.
+		gEditLines[gEditLinesIndex].hardNewlineEnd = false;
 
-     // If the current line is blank and is not the last line, then remove it.
-     if (gEditLines[gEditLinesIndex].length() == 0)
-     {
-        if (gEditLinesIndex < gEditLines.length-1)
-        {
-           gEditLines.splice(gEditLinesIndex, 1);
-           textChanged = true;
-        }
-     }
-     // If the next line is blank, then set its
-     // hardNewlineEnd to false too, so that lower
-     // text lines can be brought up.
-     else if (gEditLinesIndex < gEditLines.length-1)
-     {
-        var nextLineIndex = gEditLinesIndex + 1;
-        if (gEditLines[nextLineIndex].length() == 0)
-           gEditLines[nextLineIndex].hardNewlineEnd = false;
-     }
+		// If the current line is blank and is not the last line, then remove it.
+		if (gEditLines[gEditLinesIndex].length() == 0)
+		{
+			if (gEditLinesIndex < gEditLines.length-1)
+			{
+				gEditLines.splice(gEditLinesIndex, 1);
+				textChanged = true;
+			}
+		}
+		// If the next line is blank, then set its
+		// hardNewlineEnd to false too, so that lower
+		// text lines can be brought up.
+		else if (gEditLinesIndex < gEditLines.length-1)
+		{
+			var nextLineIndex = gEditLinesIndex + 1;
+			if (gEditLines[nextLineIndex].length() == 0)
+				gEditLines[nextLineIndex].hardNewlineEnd = false;
+		}
 
-     // Re-adjust the text lines, update textChanged, restore the line's
-     // isQuoteLine property, and set a few other things.
-     textChanged = textChanged || reAdjustTextLines(gEditLines, gEditLinesIndex,
-                                                    gEditLines.length, gEditWidth);
-     gEditLines[gEditLinesIndex].isQuoteLine = lineIsQuoteLine;
-     returnObject.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-     var startRow = returnObject.y;
-     var startEditLinesIndex = gEditLinesIndex;
-     if (returnObject.y > gEditTop)
-     {
-       --startRow;
-       --startEditLinesIndex;
-     }
+		// Re-adjust the text lines, update textChanged & set a few other things
+		textChanged = textChanged || reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth);
+		returnObject.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+		var startRow = returnObject.y;
+		var startEditLinesIndex = gEditLinesIndex;
+		if (returnObject.y > gEditTop)
+		{
+			--startRow;
+			--startEditLinesIndex;
+		}
 
-     // If text changed, then refresh the edit area.
-     textChanged = textChanged || (gEditLines[gEditLinesIndex].text != originalLineText);
-     if (textChanged)
-     {
-        // Calculate the bottommost edit area row to update, and then
-        // refresh the edit area.
-        var bottommostRow = calcBottomUpdateRow(startRow, startEditLinesIndex);
-        displayEditLines(startRow, startEditLinesIndex, bottommostRow, true, true);
-     }
-  }
+		// If text changed, then refresh the edit area.
+		textChanged = textChanged || (gEditLines[gEditLinesIndex].text != originalLineText);
+		if (textChanged)
+		{
+			// Calculate the bottommost edit area row to update, and then
+			// refresh the edit area.
+			var bottommostRow = calcBottomUpdateRow(startRow, startEditLinesIndex);
+			displayEditLines(startRow, startEditLinesIndex, bottommostRow, true, true);
+		}
+	}
 
-  // Move the cursor where it should be.
-  console.gotoxy(returnObject.x, returnObject.y);
+	// Move the cursor where it should be.
+	console.gotoxy(returnObject.x, returnObject.y);
 
-  return returnObject;
+	return returnObject;
 }
 
 // Helper function for doEditLoop(): Handles printable characters.
@@ -2087,246 +2012,246 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 //               showHelp: Whether or not the user wants to show the help screen
 function doEnterKey(pCurpos, pCurrentWordLength)
 {
-   // Create the return object
-   var retObj = new Object();
-   retObj.x = pCurpos.x;
-   retObj.y = pCurpos.y;
-   retObj.currentWordLength = pCurrentWordLength;
-   retObj.returnCode = 0;
-   retObj.continueOn = true;
-   retObj.doQuoteSelection = false;
-   retObj.doCrossPostSelection = false;
-   retObj.showHelp = false;
+	// Create the return object
+	var retObj = new Object();
+	retObj.x = pCurpos.x;
+	retObj.y = pCurpos.y;
+	retObj.currentWordLength = pCurrentWordLength;
+	retObj.returnCode = 0;
+	retObj.continueOn = true;
+	retObj.doQuoteSelection = false;
+	retObj.doCrossPostSelection = false;
+	retObj.showHelp = false;
 
-   // Store the current screen row position and gEditLines index.
-   var initialScreenLine = pCurpos.y;
-   var initialEditLinesIndex = gEditLinesIndex;
+	// Store the current screen row position and gEditLines index.
+	var initialScreenLine = pCurpos.y;
+	var initialEditLinesIndex = gEditLinesIndex;
 
-   // Check for slash commands (/S, /A, /?).  If the user has
-   // typed one of them by itself at the beginning of the line,
-   // then save, abort, or show help, respectively.
-   if (gEditLines[gEditLinesIndex].length() == 2)
-   {
-      var lineUpper = gEditLines[gEditLinesIndex].text.toUpperCase();
-      // /S: Save
-      if (lineUpper == "/S")
-      {
-         // If the current text line is the last one, remove it; otherwise,
-         // blank it out.
-         if (gEditLinesIndex == gEditLines.length-1)
-            gEditLines.splice(gEditLinesIndex, 1);
-         else
-            gEditLines[gEditLinesIndex].text = "";
+	// Check for slash commands (/S, /A, /?).  If the user has
+	// typed one of them by itself at the beginning of the line,
+	// then save, abort, or show help, respectively.
+	if (gEditLines[gEditLinesIndex].length() == 2)
+	{
+		var lineUpper = gEditLines[gEditLinesIndex].text.toUpperCase();
+		// /S: Save
+		if (lineUpper == "/S")
+		{
+			// If the current text line is the last one, remove it; otherwise,
+			// blank it out.
+			if (gEditLinesIndex == gEditLines.length-1)
+				gEditLines.splice(gEditLinesIndex, 1);
+			else
+				gEditLines[gEditLinesIndex].text = "";
 
-         retObj.continueOn = false;
-         return(retObj);
-      }
-      // /A: Abort
-      else if (lineUpper == "/A")
-      {
-         // Confirm with the user
-         if (promptYesNo("Abort message", false, "Abort", false))
-         {
-            retObj.returnCode = 1; // 1: Abort
-            retObj.continueOn = false;
-            return(retObj);
-         }
-         else
-         {
-            // Make sure the edit color attribute is set back.
-            //console.print("n" + gTextAttrs);
-            console.print(chooseEditColor());
+			retObj.continueOn = false;
+			return(retObj);
+		}
+		// /A: Abort
+		else if (lineUpper == "/A")
+		{
+			// Confirm with the user
+			if (promptYesNo("Abort message", false, "Abort", false))
+			{
+				retObj.returnCode = 1; // 1: Abort
+				retObj.continueOn = false;
+				return(retObj);
+			}
+			else
+			{
+				// Make sure the edit color attribute is set back.
+				//console.print("\1n" + gTextAttrs);
+				console.print(chooseEditColor());
 
-            // Blank out the data in the text line, set the data in
-            // retObj, and return it.
-            gEditLines[gEditLinesIndex].text = "";
-            retObj.currentWordLength = 0;
-            gTextLineIndex = 0;
-            retObj.x = gEditLeft;
-            retObj.y = pCurpos.y;
-            // Blank out the /A on the screen
-            //console.print("n" + gTextAttrs);
-            console.print(chooseEditColor());
-            console.gotoxy(retObj.x, retObj.y);
-            console.print("  ");
-            // Put the cursor where it should be and return.
-            console.gotoxy(retObj.x, retObj.y);
-            return(retObj);
-         }
-      }
-      // /Q: Do quote selection, and /?: Show help
-      else if ((lineUpper == "/Q") || (lineUpper == "/?"))
-      {
-         retObj.doQuoteSelection = (lineUpper == "/Q");
-         retObj.showHelp = (lineUpper == "/?");
-         retObj.currentWordLength = 0;
-         gTextLineIndex = 0;
-         gEditLines[gEditLinesIndex].text = "";
-         // Blank out the /? on the screen
-         //console.print("n" + gTextAttrs);
-         console.print(chooseEditColor());
-         retObj.x = gEditLeft;
-         console.gotoxy(retObj.x, retObj.y);
-         console.print("  ");
-         // Put the cursor where it should be and return.
-         console.gotoxy(retObj.x, retObj.y);
-         return(retObj);
-      }
-      else if (lineUpper == "/C")
-      {
-         retObj.doCrossPostSelection = true;
+				// Blank out the data in the text line, set the data in
+				// retObj, and return it.
+				gEditLines[gEditLinesIndex].text = "";
+				retObj.currentWordLength = 0;
+				gTextLineIndex = 0;
+				retObj.x = gEditLeft;
+				retObj.y = pCurpos.y;
+				// Blank out the /A on the screen
+				//console.print("1n" + gTextAttrs);
+				console.print(chooseEditColor());
+				console.gotoxy(retObj.x, retObj.y);
+				console.print("  ");
+				// Put the cursor where it should be and return.
+				console.gotoxy(retObj.x, retObj.y);
+				return(retObj);
+			}
+		}
+		// /Q: Do quote selection, and /?: Show help
+		else if ((lineUpper == "/Q") || (lineUpper == "/?"))
+		{
+			retObj.doQuoteSelection = (lineUpper == "/Q");
+			retObj.showHelp = (lineUpper == "/?");
+			retObj.currentWordLength = 0;
+			gTextLineIndex = 0;
+			gEditLines[gEditLinesIndex].text = "";
+			// Blank out the /? on the screen
+			//console.print("n" + gTextAttrs);
+			console.print(chooseEditColor());
+			retObj.x = gEditLeft;
+			console.gotoxy(retObj.x, retObj.y);
+			console.print("  ");
+			// Put the cursor where it should be and return.
+			console.gotoxy(retObj.x, retObj.y);
+			return(retObj);
+		}
+		else if (lineUpper == "/C")
+		{
+			retObj.doCrossPostSelection = true;
 
-         // Blank out the data in the text line, set the data in
-         // retObj, and return it.
-         gEditLines[gEditLinesIndex].text = "";
-         retObj.currentWordLength = 0;
-         gTextLineIndex = 0;
-         retObj.x = gEditLeft;
-         retObj.y = pCurpos.y;
-         // Blank out the /C on the screen
-         //console.print("n" + gTextAttrs);
-         console.print(chooseEditColor());
-         retObj.x = gEditLeft;
-         console.gotoxy(retObj.x, retObj.y);
-         console.print("  ");
-         // Put the cursor where it should be and return.
-         console.gotoxy(retObj.x, retObj.y);
-         return(retObj);
-      }
-      else if (lineUpper == "/T")
-      {
-         if (gConfigSettings.enableTextReplacements)
-            listTextReplacements();
-         // Blank out the data in the text line, set the data in
-         // retObj, and return it.
-         gEditLines[gEditLinesIndex].text = "";
-         retObj.currentWordLength = 0;
-         gTextLineIndex = 0;
-         retObj.x = gEditLeft;
-         retObj.y = pCurpos.y;
-         // Blank out the /T on the screen
-         //console.print("n" + gTextAttrs);
-         console.print(chooseEditColor());
-         retObj.x = gEditLeft;
-         console.gotoxy(retObj.x, retObj.y);
-         console.print("  ");
-         // Put the cursor where it should be and return.
-         console.gotoxy(retObj.x, retObj.y);
-         return(retObj);
-      }
-      else if (lineUpper == "/U")
-      {
-         var currentCursorPos = new Object();
-         currentCursorPos.x = retObj.x;
-         currentCursorPos.y = retObj.y;
-         doUserSettings(currentCursorPos, false);
-         // Blank out the data in the text line, set the data in
-         // retObj, and return it.
-         gEditLines[gEditLinesIndex].text = "";
-         retObj.currentWordLength = 0;
-         gTextLineIndex = 0;
-         retObj.x = gEditLeft;
-         retObj.y = pCurpos.y;
-         // Blank out the /T on the screen
-         //console.print("n" + gTextAttrs);
-         console.print(chooseEditColor());
-         retObj.x = gEditLeft;
-         console.gotoxy(retObj.x, retObj.y);
-         console.print("  ");
-         // Put the cursor where it should be and return.
-         console.gotoxy(retObj.x, retObj.y);
-         return(retObj);
-      }
-   }
+			// Blank out the data in the text line, set the data in
+			// retObj, and return it.
+			gEditLines[gEditLinesIndex].text = "";
+			retObj.currentWordLength = 0;
+			gTextLineIndex = 0;
+			retObj.x = gEditLeft;
+			retObj.y = pCurpos.y;
+			// Blank out the /C on the screen
+			//console.print("\1n" + gTextAttrs);
+			console.print(chooseEditColor());
+			retObj.x = gEditLeft;
+			console.gotoxy(retObj.x, retObj.y);
+			console.print("  ");
+			// Put the cursor where it should be and return.
+			console.gotoxy(retObj.x, retObj.y);
+			return(retObj);
+		}
+		else if (lineUpper == "/T")
+		{
+			if (gConfigSettings.enableTextReplacements)
+				listTextReplacements();
+			// Blank out the data in the text line, set the data in
+			// retObj, and return it.
+			gEditLines[gEditLinesIndex].text = "";
+			retObj.currentWordLength = 0;
+			gTextLineIndex = 0;
+			retObj.x = gEditLeft;
+			retObj.y = pCurpos.y;
+			// Blank out the /T on the screen
+			//console.print("n" + gTextAttrs);
+			console.print(chooseEditColor());
+			retObj.x = gEditLeft;
+			console.gotoxy(retObj.x, retObj.y);
+			console.print("  ");
+			// Put the cursor where it should be and return.
+			console.gotoxy(retObj.x, retObj.y);
+			return(retObj);
+		}
+		else if (lineUpper == "/U")
+		{
+			var currentCursorPos = new Object();
+			currentCursorPos.x = retObj.x;
+			currentCursorPos.y = retObj.y;
+			doUserSettings(currentCursorPos, false);
+			// Blank out the data in the text line, set the data in
+			// retObj, and return it.
+			gEditLines[gEditLinesIndex].text = "";
+			retObj.currentWordLength = 0;
+			gTextLineIndex = 0;
+			retObj.x = gEditLeft;
+			retObj.y = pCurpos.y;
+			// Blank out the /T on the screen
+			//console.print("\1n" + gTextAttrs);
+			console.print(chooseEditColor());
+			retObj.x = gEditLeft;
+			console.gotoxy(retObj.x, retObj.y);
+			console.print("  ");
+			// Put the cursor where it should be and return.
+			console.gotoxy(retObj.x, retObj.y);
+			return(retObj);
+		}
+	}
 
-   // Handle text replacement (AKA macros).  Added 2013-08-31.
-   var reAdjustedTxtLines = false; // For screen refresh purposes
-   // cursorHorizDiff will be set if the replaced word is too long to fit on
-   // the end of the line - In that case, the cursor and line index will have
-   // to be adjusted since the new word will be moved to the next line.
-   var cursorHorizDiff = 0;
-   if (gConfigSettings.enableTextReplacements)
-   {
-      var txtReplaceObj = gEditLines[gEditLinesIndex].doMacroTxtReplacement(gTxtReplacements, gTextLineIndex-1,
-                                                             gConfigSettings.textReplacementsUseRegex);
-      if (txtReplaceObj.madeTxtReplacement)
-      {
-         gTextLineIndex += txtReplaceObj.wordLenDiff;
-         retObj.x += txtReplaceObj.wordLenDiff;
-         retObj.currentWordLength += txtReplaceObj.wordLenDiff;
+	// Handle text replacement (AKA macros).  Added 2013-08-31.
+	var reAdjustedTxtLines = false; // For screen refresh purposes
+	// cursorHorizDiff will be set if the replaced word is too long to fit on
+	// the end of the line - In that case, the cursor and line index will have
+	// to be adjusted since the new word will be moved to the next line.
+	var cursorHorizDiff = 0;
+	if (gConfigSettings.enableTextReplacements)
+	{
+		var txtReplaceObj = gEditLines[gEditLinesIndex].doMacroTxtReplacement(gTxtReplacements, gTextLineIndex-1,
+		gConfigSettings.textReplacementsUseRegex);
+		if (txtReplaceObj.madeTxtReplacement)
+		{
+			gTextLineIndex += txtReplaceObj.wordLenDiff;
+			retObj.x += txtReplaceObj.wordLenDiff;
+			retObj.currentWordLength += txtReplaceObj.wordLenDiff;
 
-         // If the replaced text on the line is too long to print on the screen,then
-         // then we'll need to wrap the line.
-         // If the logical screen column of the last character of the last word
-         // is beyond the rightmost colum of the edit area, then wrap the line.
-         if (gEditLeft + txtReplaceObj.newTextEndIdx - 1 >= gEditRight - 1)
-         {
-            //reAdjustedTxtLines = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth);
-            // If the replaced text contains at least one space, then look for
-            // the last space that can appear within the edit area on the screen.
-            if (gEditLines[gEditLinesIndex].text.indexOf(" ", txtReplaceObj.wordStartIdx) > -1)
-            {
-               var spaceIdx = gEditLines[gEditLinesIndex].text.lastIndexOf(" ", txtReplaceObj.textLineIndex);
-               while ((spaceIdx > -1) && (spaceIdx > gEditWidth-2)) // To split lines at the 79th column
-                  spaceIdx = gEditLines[gEditLinesIndex].text.lastIndexOf(" ", spaceIdx-1);
-               // If a space was found after the start of the new text, then
-               // set gTextLineIndex to the first character of the word we want
-               // to split the line at, and the horizontal cursor offset based on
-               // the difference.
-               if (spaceIdx > txtReplaceObj.wordStartIdx)
-               {
-                  gTextLineIndex = spaceIdx + 1;
-                  cursorHorizDiff = txtReplaceObj.newTextEndIdx - spaceIdx;
-               }
-               else
-               {
-                  gTextLineIndex = txtReplaceObj.wordStartIdx;
-                  cursorHorizDiff = txtReplaceObj.newTextLen;
-               }
-            }
-            else
-            {
-               // The new text doesn't contain a space, so set gTextLineIndex
-               // to the start of the new word so that
-               // enterKey_InsertOrAppendNewLine() will split the line there.
-               gTextLineIndex = txtReplaceObj.wordStartIdx;
-               cursorHorizDiff = txtReplaceObj.newTextLen;
-            }
-         }
-      }
-   }
+			// If the replaced text on the line is too long to print on the screen,then
+			// then we'll need to wrap the line.
+			// If the logical screen column of the last character of the last word
+			// is beyond the rightmost colum of the edit area, then wrap the line.
+			if (gEditLeft + txtReplaceObj.newTextEndIdx - 1 >= gEditRight - 1)
+			{
+				//reAdjustedTxtLines = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth);
+				// If the replaced text contains at least one space, then look for
+				// the last space that can appear within the edit area on the screen.
+				if (gEditLines[gEditLinesIndex].text.indexOf(" ", txtReplaceObj.wordStartIdx) > -1)
+				{
+					var spaceIdx = gEditLines[gEditLinesIndex].text.lastIndexOf(" ", txtReplaceObj.textLineIndex);
+					while ((spaceIdx > -1) && (spaceIdx > gEditWidth-2)) // To split lines at the 79th column
+						spaceIdx = gEditLines[gEditLinesIndex].text.lastIndexOf(" ", spaceIdx-1);
+					// If a space was found after the start of the new text, then
+					// set gTextLineIndex to the first character of the word we want
+					// to split the line at, and the horizontal cursor offset based on
+					// the difference.
+					if (spaceIdx > txtReplaceObj.wordStartIdx)
+					{
+						gTextLineIndex = spaceIdx + 1;
+						cursorHorizDiff = txtReplaceObj.newTextEndIdx - spaceIdx;
+					}
+					else
+					{
+						gTextLineIndex = txtReplaceObj.wordStartIdx;
+						cursorHorizDiff = txtReplaceObj.newTextLen;
+					}
+				}
+				else
+				{
+					// The new text doesn't contain a space, so set gTextLineIndex
+					// to the start of the new word so that
+					// enterKey_InsertOrAppendNewLine() will split the line there.
+					gTextLineIndex = txtReplaceObj.wordStartIdx;
+					cursorHorizDiff = txtReplaceObj.newTextLen;
+				}
+			}
+		}
+	}
 
-   // If we're currently on the last line, then we'll need to append
-   // a new line.  Otherwise, we'll need to splice a new line into
-   // gEditLines where appropriate.
+	// If we're currently on the last line, then we'll need to append
+	// a new line.  Otherwise, we'll need to splice a new line into
+	// gEditLines where appropriate.
 
-   var appendLineToEnd = (gEditLinesIndex == gEditLines.length-1);
-   var retObject = enterKey_InsertOrAppendNewLine(pCurpos, pCurrentWordLength, appendLineToEnd);
-   retObj.x = retObject.x;
-   retObj.y = retObject.y;
-   retObj.currentWordLength = retObject.currentWordLength;
+	var appendLineToEnd = (gEditLinesIndex == gEditLines.length-1);
+	var retObject = enterKey_InsertOrAppendNewLine(pCurpos, pCurrentWordLength, appendLineToEnd);
+	retObj.x = retObject.x;
+	retObj.y = retObject.y;
+	retObj.currentWordLength = retObject.currentWordLength;
 
-   // If a line was added to gEditLines, then set the hardNewlineEnd property
-   // to true for both lines.
-   if (retObject.addedATextLine)
-   {
-      gEditLines[initialEditLinesIndex].hardNewlineEnd = true;
-      gEditLines[gEditLinesIndex].hardNewlineEnd = true;
-   }
+	// If a line was added to gEditLines, then set the hardNewlineEnd property
+	// to true for both lines.
+	if (retObject.addedATextLine)
+	{
+		gEditLines[initialEditLinesIndex].hardNewlineEnd = true;
+		gEditLines[gEditLinesIndex].hardNewlineEnd = true;
+	}
 
-   // Refresh the message text on the screen if that wasn't done by
-   // enterKey_InsertOrAppendNewLine().
-   if (!retObject.displayedEditlines)
-      displayEditLines(initialScreenLine, initialEditLinesIndex, gEditBottom, true, true);
+	// Refresh the message text on the screen if that wasn't done by
+	// enterKey_InsertOrAppendNewLine().
+	if (!retObject.displayedEditlines)
+		displayEditLines(initialScreenLine, initialEditLinesIndex, gEditBottom, true, true);
 
-   // Note: cursorHorizDiff is set if a word was replaced and the line was
-   // wrapped because the new word wastoo long to fit on the end of the line.
-   retObj.x += cursorHorizDiff;
-   gTextLineIndex += cursorHorizDiff;
+	// Note: cursorHorizDiff is set if a word was replaced and the line was
+	// wrapped because the new word wastoo long to fit on the end of the line.
+	retObj.x += cursorHorizDiff;
+	gTextLineIndex += cursorHorizDiff;
 
-   console.gotoxy(retObj.x, retObj.y);
+	console.gotoxy(retObj.x, retObj.y);
 
-   return retObj;
+	return retObj;
 }
 
 // Helper function for doEnterKey(): Appends/inserts a line to gEditLines
@@ -2467,6 +2392,27 @@ function enterKey_InsertOrAppendNewLine(pCurpos, pCurrentWordLength, pAppendLine
    return returnObject;
 }
 
+// Helper function for doEditLoop(): Returns whether a text line is editable
+// (for instance, quote lines might not be editable).
+//
+// Parameters:
+//  pLineIdx: The index of the text line
+//
+// Return value: Boolean - Whether or not the text line is editable
+function textLineIsEditable(pLineIdx)
+{
+	if (typeof(pLineIdx) != "number")
+		return true;
+	if ((pLineIdx < 0) || (pLineIdx >= gEditLines.length))
+		return true;
+
+	// The main concern is whether quote lines are editable.
+	var lineIsEditable = true;
+	if (!gConfigSettings.allowEditQuoteLines)
+		lineIsEditable = !(gEditLines[pLineIdx].isQuoteLine);
+	return lineIsEditable;
+}
+
 // This function handles quote selection and is called by doEditLoop().
 //
 // Parameters:
@@ -2498,7 +2444,6 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 	// in quote lines and whether or not to indent quote lines containing initials.
 	// These will be checked against the user's current settings to see if we need
 	// to wrap the quote lines again in case the user changed these settings.
-	//displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter)
 	if (typeof(doQuoteSelection.useQuoteLineInitials) == "undefined")
 		doQuoteSelection.useQuoteLineInitials = gUserSettings.useQuoteLineInitials;
 	if (typeof(doQuoteSelection.indentQuoteLinesWithInitials) == "undefined")
@@ -3464,61 +3409,61 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
 //                 currentWordLength: The length of the current word
 function handleIceESCMenu(pCurpos, pCurrentWordLength)
 {
-   var returnObj = new Object();
-   returnObj.returnCode = 0;
-   returnObj.continueOn = true;
-   returnObj.x = pCurpos.x;
-   returnObj.y = pCurpos.y;
-   returnObj.currentWordLength = pCurrentWordLength;
+	var returnObj = new Object();
+	returnObj.returnCode = 0;
+	returnObj.continueOn = true;
+	returnObj.x = pCurpos.x;
+	returnObj.y = pCurpos.y;
+	returnObj.currentWordLength = pCurrentWordLength;
 
-   // Call doIceESCMenu() to display the choices, and then take the
-   // chosen action.
-   var userChoice = doIceESCMenu(console.screen_rows, gCanCrossPost);
-   switch (userChoice)
-   {
-      case ICE_ESC_MENU_SAVE:
-         returnObj.returnCode = 0;
-         returnObj.continueOn = false;
-         break;
-      case ICE_ESC_MENU_ABORT:
-         // Before aborting, ask they user if they really want to abort.
-         if (promptYesNo("Abort message", false, "Abort", false))
-         {
-            returnObj.returnCode = 1; // Aborted
-            returnObj.continueOn = false;
-         }
-         break;
-      case ICE_ESC_MENU_EDIT:
-         // Nothing needs to be done for this option.
-         break;
-      case ICE_ESC_MENU_SETTINGS:
-         doUserSettings(pCurpos, true);
-         break;
-      case ICE_ESC_MENU_HELP:
-         displayProgramInfo(true, false);
-         displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop,
-                            gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
-         clearEditAreaBuffer();
-         fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-                        gInsertMode, gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop),
-                        displayEditLines);
-         break;
-      case ICE_ESC_MENU_CROSS_POST:
-         if (gCanCrossPost)
-            doCrossPosting(pCurpos);
-         break;
-   }
+	// Call doIceESCMenu() to display the choices, and then take the
+	// chosen action.
+	var userChoice = doIceESCMenu(console.screen_rows, gCanCrossPost);
+	switch (userChoice)
+	{
+		case ICE_ESC_MENU_SAVE:
+			returnObj.returnCode = 0;
+			returnObj.continueOn = false;
+			break;
+		case ICE_ESC_MENU_ABORT:
+			// Before aborting, ask they user if they really want to abort.
+			if (promptYesNo("Abort message", false, "Abort", false))
+			{
+				returnObj.returnCode = 1; // Aborted
+				returnObj.continueOn = false;
+			}
+			break;
+		case ICE_ESC_MENU_EDIT:
+			// Nothing needs to be done for this option.
+			break;
+		case ICE_ESC_MENU_SETTINGS:
+			doUserSettings(pCurpos, true);
+			break;
+		case ICE_ESC_MENU_HELP:
+			displayProgramInfo(true, false);
+			displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop,
+			                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
+			clearEditAreaBuffer();
+			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
+			               gInsertMode, gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop),
+			displayEditLines);
+			break;
+		case ICE_ESC_MENU_CROSS_POST:
+			if (gCanCrossPost)
+				doCrossPosting(pCurpos);
+			break;
+	}
 
-   // If the user didn't choose help, then we only need to refresh the bottom
-   // row on the screen.
-   if (userChoice != ICE_ESC_MENU_HELP)
-      fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+	// If the user didn't choose help, then we only need to refresh the bottom
+	// row on the screen.
+	if (userChoice != ICE_ESC_MENU_HELP)
+		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
 
-   // Make sure the edit color attribute is set back.
-   //console.print("n" + gTextAttrs);
-   console.print(chooseEditColor());
+	// Make sure the edit color attribute is set back.
+	//console.print("n" + gTextAttrs);
+	console.print(chooseEditColor());
 
-   return returnObj;
+	return returnObj;
 }
 
 // Figures out and returns the length of a word in the message text,based on
