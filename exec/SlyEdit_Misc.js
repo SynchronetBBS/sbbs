@@ -66,10 +66,12 @@
  *                              quote lines.
  * 2017-12-16 Eric Oulashin     Updated ReadSlyEditConfigFile() to include the
  *                              allowEditQuoteLines option.
+ * 2017-12-18 Eric Oulashin     Update the KEY_PAGE_UP and KEY_PAGE_DOWN keys to
+ *                              ensure they mat what's in sbbsdef.js
  */
  
  load("text.js");
-
+ 
 // Note: These variables are declared with "var" instead of "const" to avoid
 // multiple declaration errors when this file is loaded more than once.
 
@@ -161,15 +163,26 @@ var CTRL_X = "\x18";
 var CTRL_Y = "\x19";
 var CTRL_Z = "\x1a";
 var KEY_ESC = "\x1b";
-// Key code strings returned by getKeyWithESCChars() - Not real key codes, as
-// the keys they represent are returned as multiple key captures.
-var KEY_PAGE_UP = "\1PgUp";
-var KEY_PAGE_DOWN = "\1PgDn";
 var KEY_F1 = "\1F1";
 var KEY_F2 = "\1F2";
 var KEY_F3 = "\1F3";
 var KEY_F4 = "\1F4";
 var KEY_F5 = "\1F5";
+// PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
+// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
+// defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
+// in this script so that this script will work with Synchronet systems before
+// and after the update containing those key definitions.
+var KEY_PAGE_UP = CTRL_P;
+var KEY_PAGE_DOWN = CTRL_N;
+// Ensure KEY_PAGE_UP and KEY_PAGE_DOWN are set to what's defined in sbbs.js
+// for KEY_PAGEUP and KEY_PAGEDN in case they change.  Note that this relies
+// on sbbsdefs.js being loaded; SlyEdit.js loads sbbsdefs.js before this file,
+// so this should work.
+if (typeof(KEY_PAGEUP) === "string")
+	KEY_PAGE_UP = KEY_PAGEUP;
+if (typeof(KEY_PAGEDN) === "string")
+	KEY_PAGE_DOWN = KEY_PAGEDN;
 
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.
@@ -434,7 +447,7 @@ function ChoiceScrollbox_MinWidth()
 //                           spaces in the top border text with border characters.
 //                           Defaults to false.
 function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdCfgObj,
-                          pAddTCharsAroundTopText, pReplaceTopTextSpacesWithBorderChars)
+                         pAddTCharsAroundTopText, pReplaceTopTextSpacesWithBorderChars)
 {
    // The default is to add left & right T characters around the top border
    // text.  But also use pAddTCharsAroundTopText if it's a boolean.
@@ -821,295 +834,298 @@ function ChoiceScrollbox_RefreshItemCharOnScreen(pItemIndex, pCharIndex)
 }
 function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 {
-   var retObj = new Object();
-   retObj.itemWasSelected = false;
-   retObj.selectedIndex = -1;
-   retObj.selectedItem = "";
-   retObj.lastKeypress = "";
+	var retObj = {
+		itemWasSelected: false,
+		selectedIndex: -1,
+		selectedItem: "",
+		lastKeypress: ""
+	};
 
-   // Don't do anything if the item list doesn't contain any items
-   if (this.txtItemList.length == 0)
-      return retObj;
+	// Don't do anything if the item list doesn't contain any items
+	if (this.txtItemList.length == 0)
+		return retObj;
 
-   //////////////////////////////////
-   // Locally-defined functions
+	//////////////////////////////////
+	// Locally-defined functions
 
-   // This function returns the index of the bottommost item that
-   // can be displayed in the box.
-   //
-   // Parameters:
-   //  pArray: The array containing the items
-   //  pTopindex: The index of the topmost item displayed in the box
-   //  pNumItemsPerPage: The number of items per page
-   function getBottommostItemIndex(pArray, pTopIndex, pNumItemsPerPage)
-   {
-      var bottomIndex = pTopIndex + pNumItemsPerPage - 1;
-      // If bottomIndex is beyond the last index, then adjust it.
-      if (bottomIndex >= pArray.length)
-         bottomIndex = pArray.length - 1;
-      return bottomIndex;
-   }
+	// This function returns the index of the bottommost item that
+	// can be displayed in the box.
+	//
+	// Parameters:
+	//  pArray: The array containing the items
+	//  pTopindex: The index of the topmost item displayed in the box
+	//  pNumItemsPerPage: The number of items per page
+	function getBottommostItemIndex(pArray, pTopIndex, pNumItemsPerPage)
+	{
+		var bottomIndex = pTopIndex + pNumItemsPerPage - 1;
+		// If bottomIndex is beyond the last index, then adjust it.
+		if (bottomIndex >= pArray.length)
+			bottomIndex = pArray.length - 1;
+		return bottomIndex;
+	}
 
 
 
-   //////////////////////////////////
-   // Code
+	//////////////////////////////////
+	// Code
 
-   // Variables for keeping track of the item list
-   const numItemsPerPage = this.dimensions.height - 2;
-   this.topItemIndex = 0;    // The index of the message group at the top of the list
-   // Figure out the index of the last message group to appear on the screen.
-   this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, numItemsPerPage);
-   const numPages = Math.ceil(this.txtItemList.length / numItemsPerPage);
-   const topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
+	// Variables for keeping track of the item list
+	const numItemsPerPage = this.dimensions.height - 2;
+	this.topItemIndex = 0;    // The index of the message group at the top of the list
+	// Figure out the index of the last message group to appear on the screen.
+	this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, numItemsPerPage);
+	const numPages = Math.ceil(this.txtItemList.length / numItemsPerPage);
+	const topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
 
-   if (pDrawBorder)
-      this.drawBorder();
+	if (pDrawBorder)
+		this.drawBorder();
 
-   // User input loop
-   // For the horizontal location of the page number text for the box border:
-   // Based on the fact that there can be up to 9999 text replacements and 10
-   // per page, there will be up to 1000 pages of replacements.  To write the
-   // text, we'll want to be 20 characters to the left of the end of the border
-   // of the box.
-   const pageNumTxtStartX = this.dimensions.topLeftX + this.dimensions.width - 19;
-   const maxItemWidth = this.dimensions.width - 2;
-   var pageNum = 0;
-   var startArrIndex = 0;
-   this.chosenTextItemIndex = retObj.selectedIndex = 0;
-   var endArrIndex = 0; // One past the last array item
-   var screenY = 0;
-   var curpos = new Object(); // For keeping track of the current cursor position
-   curpos.x = 0;
-   curpos.y = 0;
-   var refreshList = true; // For screen redraw optimizations
-   var continueOn = true;
-   while (continueOn)
-   {
-      if (refreshList)
-      {
-         this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, numItemsPerPage);
+	// User input loop
+	// For the horizontal location of the page number text for the box border:
+	// Based on the fact that there can be up to 9999 text replacements and 10
+	// per page, there will be up to 1000 pages of replacements.  To write the
+	// text, we'll want to be 20 characters to the left of the end of the border
+	// of the box.
+	const pageNumTxtStartX = this.dimensions.topLeftX + this.dimensions.width - 19;
+	const maxItemWidth = this.dimensions.width - 2;
+	var pageNum = 0;
+	var startArrIndex = 0;
+	this.chosenTextItemIndex = retObj.selectedIndex = 0;
+	var endArrIndex = 0; // One past the last array item
+	var screenY = 0;
+	var curpos = new Object(); // For keeping track of the current cursor position
+	curpos.x = 0;
+	curpos.y = 0;
+	var refreshList = true; // For screen redraw optimizations
+	var continueOn = true;
+	while (continueOn)
+	{
+		if (refreshList)
+		{
+			this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, numItemsPerPage);
 
-         // Write the list of items for the current page
-         startArrIndex = pageNum * numItemsPerPage;
-         endArrIndex = startArrIndex + numItemsPerPage;
-         if (endArrIndex > this.txtItemList.length)
-            endArrIndex = this.txtItemList.length;
-         var selectedItemRow = this.dimensions.topLeftY+1;
-         screenY = this.dimensions.topLeftY + 1;
-         for (var i = startArrIndex; i < endArrIndex; ++i)
-         {
-            console.gotoxy(this.dimensions.topLeftX+1, screenY);
-            if (i == retObj.selectedIndex)
-            {
-               printf(this.listIemHighlightFormatStr, this.txtItemList[i].substr(0, maxItemWidth));
-               selectedItemRow = screenY;
-            }
-            else
-               printf(this.listIemFormatStr, this.txtItemList[i].substr(0, maxItemWidth));
-            ++screenY;
-         }
-         // If the current screen row is below the bottom row inside the box,
-         // continue and write blank lines to the bottom of the inside of the box
-         // to blank out any text that might still be there.
-         while (screenY < this.dimensions.topLeftY+this.dimensions.height-1)
-         {
-            console.gotoxy(this.dimensions.topLeftX+1, screenY);
-            printf(this.listIemFormatStr, "");
-            ++screenY;
-         }
+			// Write the list of items for the current page
+			startArrIndex = pageNum * numItemsPerPage;
+			endArrIndex = startArrIndex + numItemsPerPage;
+			if (endArrIndex > this.txtItemList.length)
+				endArrIndex = this.txtItemList.length;
+			var selectedItemRow = this.dimensions.topLeftY+1;
+			screenY = this.dimensions.topLeftY + 1;
+			for (var i = startArrIndex; i < endArrIndex; ++i)
+			{
+				console.gotoxy(this.dimensions.topLeftX+1, screenY);
+				if (i == retObj.selectedIndex)
+				{
+					printf(this.listIemHighlightFormatStr, this.txtItemList[i].substr(0, maxItemWidth));
+					selectedItemRow = screenY;
+				}
+				else
+					printf(this.listIemFormatStr, this.txtItemList[i].substr(0, maxItemWidth));
+				++screenY;
+			}
+			// If the current screen row is below the bottom row inside the box,
+			// continue and write blank lines to the bottom of the inside of the box
+			// to blank out any text that might still be there.
+			while (screenY < this.dimensions.topLeftY+this.dimensions.height-1)
+			{
+				console.gotoxy(this.dimensions.topLeftX+1, screenY);
+				printf(this.listIemFormatStr, "");
+				++screenY;
+			}
 
-         // Update the page number in the top border of the box.
-         console.gotoxy(pageNumTxtStartX, this.dimensions.topLeftY);
-         printf("n" + this.SlyEdCfgObj.genColors.listBoxBorderText + "Page %4d of %4d", pageNum+1, numPages);
+			// Update the page number in the top border of the box.
+			console.gotoxy(pageNumTxtStartX, this.dimensions.topLeftY);
+			printf("\1n" + this.SlyEdCfgObj.genColors.listBoxBorderText + "Page %4d of %4d", pageNum+1, numPages);
 
-         // Just for sane appearance: Move the cursor to the first character of
-         // the currently-selected row and set the appropriate color.
-         curpos.x = this.dimensions.topLeftX+1;
-         curpos.y = selectedItemRow;
-         console.gotoxy(curpos.x, curpos.y);
-         console.print(this.SlyEdCfgObj.genColors.listBoxItemHighlight);
+			// Just for sane appearance: Move the cursor to the first character of
+			// the currently-selected row and set the appropriate color.
+			curpos.x = this.dimensions.topLeftX+1;
+			curpos.y = selectedItemRow;
+			console.gotoxy(curpos.x, curpos.y);
+			console.print(this.SlyEdCfgObj.genColors.listBoxItemHighlight);
 
-         refreshList = false;
-      }
+			refreshList = false;
+		}
 
-      // Get a key from the user (upper-case) and take action based upon it.
-      retObj.lastKeypress = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, this.SlyEdCfgObj);
-      switch (retObj.lastKeypress)
-      {
-         case 'N': // Next page
-            refreshList = (pageNum < numPages-1);
-            if (refreshList)
-            {
-               ++pageNum;
-               this.topItemIndex += numItemsPerPage;
-               this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
-               // Note: this.bottomItemIndex is refreshed at the top of the loop
-            }
-            break;
-         case 'P': // Previous page
-            refreshList = (pageNum > 0);
-            if (refreshList)
-            {
-               --pageNum;
-               this.topItemIndex -= numItemsPerPage;
-               this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
-               // Note: this.bottomItemIndex is refreshed at the top of the loop
-            }
-            break;
-         case 'F': // First page
-            refreshList = (pageNum > 0);
-            if (refreshList)
-            {
-               pageNum = 0;
-               this.topItemIndex = 0;
-               this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
-               // Note: this.bottomItemIndex is refreshed at the top of the loop
-            }
-            break;
-         case 'L': // Last page
-            refreshList = (pageNum < numPages-1);
-            if (refreshList)
-            {
-               pageNum = numPages-1;
-               this.topItemIndex = topIndexForLastPage;
-               this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
-               // Note: this.bottomItemIndex is refreshed at the top of the loop
-            }
-            break;
-         case KEY_UP:
-            // Move the cursor up one item
-            if (retObj.selectedIndex > 0)
-            {
-               // If the previous item index is on the previous page, then we'll
-               // want to display the previous page.
-               var previousItemIndex = retObj.selectedIndex - 1;
-               if (previousItemIndex < this.topItemIndex)
-               {
-                  --pageNum;
-                  this.topItemIndex -= numItemsPerPage;
-                  // Note: this.bottomItemIndex is refreshed at the top of the loop
-                  refreshList = true;
-               }
-               else
-               {
-                  // Display the current line un-highlighted
-                  console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
-                  printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
-                  // Display the previous line highlighted
-                  curpos.x = this.dimensions.topLeftX+1;
-                  --curpos.y;
-                  console.gotoxy(curpos);
-                  printf(this.listIemHighlightFormatStr, this.txtItemList[previousItemIndex].substr(0, maxItemWidth));
-                  console.gotoxy(curpos); // Move the cursor into place where it should be
-                  refreshList = false;
-               }
-               this.chosenTextItemIndex = retObj.selectedIndex = previousItemIndex;
-            }
-            break;
-         case KEY_DOWN:
-            // Move the cursor down one item
-            if (retObj.selectedIndex < this.txtItemList.length - 1)
-            {
-               // If the next item index is on the next page, then we'll want to
-               // display the next page.
-               var nextItemIndex = retObj.selectedIndex + 1;
-               if (nextItemIndex > this.bottomItemIndex)
-               {
-                  ++pageNum;
-                  this.topItemIndex += numItemsPerPage;
-                  // Note: this.bottomItemIndex is refreshed at the top of the loop
-                  refreshList = true;
-               }
-               else
-               {
-                  // Display the current line un-highlighted
-                  console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
-                  printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
-                  // Display the previous line highlighted
-                  curpos.x = this.dimensions.topLeftX+1;
-                  ++curpos.y;
-                  console.gotoxy(curpos);
-                  printf(this.listIemHighlightFormatStr, this.txtItemList[nextItemIndex].substr(0, maxItemWidth));
-                  console.gotoxy(curpos); // Move the cursor into place where it should be
-                  refreshList = false;
-               }
-               this.chosenTextItemIndex = retObj.selectedIndex = nextItemIndex;
-            }
-            break;
-         case KEY_HOME: // Go to the first row in the box
-            if (retObj.selectedIndex > this.topItemIndex)
-            {
-               // Display the current line un-highlighted
-               console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
-               printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
-               // Select the top item, and display it highlighted.
-               this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
-               curpos.x = this.dimensions.topLeftX+1;
-               curpos.y = this.dimensions.topLeftY+1;
-               console.gotoxy(curpos);
-               printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
-               console.gotoxy(curpos); // Move the cursor into place where it should be
-               refreshList = false;
-            }
-            break;
-         case KEY_END: // Go to the last row in the box
-            if (retObj.selectedIndex < this.bottomItemIndex)
-            {
-               // Display the current line un-highlighted
-               console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
-               printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
-               // Select the bottommost item, and display it highlighted.
-               this.chosenTextItemIndex = retObj.selectedIndex = this.bottomItemIndex;
-               curpos.x = this.dimensions.topLeftX+1;
-               curpos.y = this.dimensions.bottomRightY-1;
-               console.gotoxy(curpos);
-               printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
-               console.gotoxy(curpos); // Move the cursor into place where it should be
-               refreshList = false;
-            }
-            break;
-         case KEY_ENTER:
-            // If the enter key override function is set, then call it and pass
-            // this object into it.  Otherwise, just select the item and quit.
-            if (this.enterKeyOverrideFn !== null)
-               this.enterKeyOverrideFn(this);
-            else
-            {
-               retObj.itemWasSelected = true;
-               // Note: retObj.selectedIndex is already set.
-               retObj.selectedItem = this.txtItemList[retObj.selectedIndex];
-               refreshList = false;
-               continueOn = false;
-            }
-            break;
-         case KEY_ESC: // Quit
-         case CTRL_A:  // Quit
-         case 'Q':     // Quit
-            this.chosenTextItemIndex = retObj.selectedIndex = -1;
-            refreshList = false;
-            continueOn = false;
-            break;
-         default:
-            // If the keypress is an additional key to exit the input loop, then
-            // do so.
-            if (this.inputLoopExitKeys.hasOwnProperty(retObj.lastKeypress))
-            {
-               this.chosenTextItemIndex = retObj.selectedIndex = -1;
-               refreshList = false;
-               continueOn = false;
-            }
-            else
-            {
-               // Unrecognized command.  Don't refresh the list of the screen.
-               refreshList = false;
-            }
-            break;
-      }
-   }
+		// Get a key from the user (upper-case) and take action based upon it.
+		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, this.SlyEdCfgObj);
+		switch (retObj.lastKeypress)
+		{
+			case 'N': // Next page
+			case KEY_PAGE_DOWN:
+				refreshList = (pageNum < numPages-1);
+				if (refreshList)
+				{
+					++pageNum;
+					this.topItemIndex += numItemsPerPage;
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					// Note: this.bottomItemIndex is refreshed at the top of the loop
+				}
+				break;
+			case 'P': // Previous page
+			case KEY_PAGE_UP:
+				refreshList = (pageNum > 0);
+				if (refreshList)
+				{
+					--pageNum;
+					this.topItemIndex -= numItemsPerPage;
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					// Note: this.bottomItemIndex is refreshed at the top of the loop
+				}
+				break;
+			case 'F': // First page
+				refreshList = (pageNum > 0);
+				if (refreshList)
+				{
+					pageNum = 0;
+					this.topItemIndex = 0;
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					// Note: this.bottomItemIndex is refreshed at the top of the loop
+				}
+				break;
+			case 'L': // Last page
+				refreshList = (pageNum < numPages-1);
+				if (refreshList)
+				{
+					pageNum = numPages-1;
+					this.topItemIndex = topIndexForLastPage;
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					// Note: this.bottomItemIndex is refreshed at the top of the loop
+				}
+				break;
+			case KEY_UP:
+				// Move the cursor up one item
+				if (retObj.selectedIndex > 0)
+				{
+					// If the previous item index is on the previous page, then we'll
+					// want to display the previous page.
+					var previousItemIndex = retObj.selectedIndex - 1;
+					if (previousItemIndex < this.topItemIndex)
+					{
+						--pageNum;
+						this.topItemIndex -= numItemsPerPage;
+						// Note: this.bottomItemIndex is refreshed at the top of the loop
+						refreshList = true;
+					}
+					else
+					{
+						// Display the current line un-highlighted
+						console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+						printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+						// Display the previous line highlighted
+						curpos.x = this.dimensions.topLeftX+1;
+						--curpos.y;
+						console.gotoxy(curpos);
+						printf(this.listIemHighlightFormatStr, this.txtItemList[previousItemIndex].substr(0, maxItemWidth));
+						console.gotoxy(curpos); // Move the cursor into place where it should be
+						refreshList = false;
+					}
+					this.chosenTextItemIndex = retObj.selectedIndex = previousItemIndex;
+				}
+				break;
+			case KEY_DOWN:
+				// Move the cursor down one item
+				if (retObj.selectedIndex < this.txtItemList.length - 1)
+				{
+					// If the next item index is on the next page, then we'll want to
+					// display the next page.
+					var nextItemIndex = retObj.selectedIndex + 1;
+					if (nextItemIndex > this.bottomItemIndex)
+					{
+						++pageNum;
+						this.topItemIndex += numItemsPerPage;
+						// Note: this.bottomItemIndex is refreshed at the top of the loop
+						refreshList = true;
+					}
+					else
+					{
+						// Display the current line un-highlighted
+						console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+						printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+						// Display the previous line highlighted
+						curpos.x = this.dimensions.topLeftX+1;
+						++curpos.y;
+						console.gotoxy(curpos);
+						printf(this.listIemHighlightFormatStr, this.txtItemList[nextItemIndex].substr(0, maxItemWidth));
+						console.gotoxy(curpos); // Move the cursor into place where it should be
+						refreshList = false;
+					}
+					this.chosenTextItemIndex = retObj.selectedIndex = nextItemIndex;
+				}
+				break;
+			case KEY_HOME: // Go to the first row in the box
+				if (retObj.selectedIndex > this.topItemIndex)
+				{
+					// Display the current line un-highlighted
+					console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+					printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+					// Select the top item, and display it highlighted.
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					curpos.x = this.dimensions.topLeftX+1;
+					curpos.y = this.dimensions.topLeftY+1;
+					console.gotoxy(curpos);
+					printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+					console.gotoxy(curpos); // Move the cursor into place where it should be
+					refreshList = false;
+				}
+				break;
+			case KEY_END: // Go to the last row in the box
+				if (retObj.selectedIndex < this.bottomItemIndex)
+				{
+					// Display the current line un-highlighted
+					console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+					printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+					// Select the bottommost item, and display it highlighted.
+					this.chosenTextItemIndex = retObj.selectedIndex = this.bottomItemIndex;
+					curpos.x = this.dimensions.topLeftX+1;
+					curpos.y = this.dimensions.bottomRightY-1;
+					console.gotoxy(curpos);
+					printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+					console.gotoxy(curpos); // Move the cursor into place where it should be
+					refreshList = false;
+				}
+				break;
+			case KEY_ENTER:
+				// If the enter key override function is set, then call it and pass
+				// this object into it.  Otherwise, just select the item and quit.
+				if (this.enterKeyOverrideFn !== null)
+				this.enterKeyOverrideFn(this);
+				else
+				{
+					retObj.itemWasSelected = true;
+					// Note: retObj.selectedIndex is already set.
+					retObj.selectedItem = this.txtItemList[retObj.selectedIndex];
+					refreshList = false;
+					continueOn = false;
+				}
+				break;
+			case KEY_ESC: // Quit
+			case CTRL_A:  // Quit
+			case 'Q':     // Quit
+				this.chosenTextItemIndex = retObj.selectedIndex = -1;
+				refreshList = false;
+				continueOn = false;
+				break;
+			default:
+				// If the keypress is an additional key to exit the input loop, then
+				// do so.
+				if (this.inputLoopExitKeys.hasOwnProperty(retObj.lastKeypress))
+				{
+					this.chosenTextItemIndex = retObj.selectedIndex = -1;
+					refreshList = false;
+					continueOn = false;
+				}
+				else
+				{
+					// Unrecognized command.  Don't refresh the list of the screen.
+					refreshList = false;
+				}
+				break;
+		}
+	}
 
-   console.print("n"); // To prevent outputting highlight colors, etc..
-   return retObj;
+	console.print("\1n"); // To prevent outputting highlight colors, etc..
+	return retObj;
 }
 
 
@@ -4232,7 +4248,7 @@ function consolePauseWithESCChars(pCfgObj)
 // Inputs a keypress from the user and handles some ESC-based
 // characters such as PageUp, PageDown, and ESC.  If PageUp
 // or PageDown are pressed, this function will return the
-// string "\1PgUp" (KEY_PAGE_UP) or "\1Pgdn" (KEY_PAGE_DOWN),
+// string defined by KEY_PAGE_UP or EY_PAGE_DOWN,
 // respectively.  Also, F1-F5 will be returned as "\1F1"
 // through "\1F5", respectively.
 // Thanks goes to Psi-Jack for the original impementation

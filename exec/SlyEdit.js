@@ -21,6 +21,12 @@
  *                              configuration option allowEditQuoteLines.
  * 2017-12-17 Eric Oulashin     Version 1.52
  *                              Releasing this version
+ * 2017-12-18 Eric Oulashin     Version 1.53
+ *                              Updated the PageUp and PageDown keys to ensure they
+ *                              match what's in sbbsdefs.js, since Synchronet added
+ *                              key codes for those keys on December 17, 2018.  SlyEdit
+ *                              should still work with older and newer builds of
+ *                              Synchronet, with or without the updated sbbsdefs.js.
  */
 
 /* Command-line arguments:
@@ -98,8 +104,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.52";
-const EDITOR_VER_DATE = "2016-12-17";
+const EDITOR_VERSION = "1.53";
+const EDITOR_VER_DATE = "2016-12-18";
 
 
 // Program variables
@@ -5794,60 +5800,60 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 //  tagline: String - The tag line that was selected
 function doTaglineSelection()
 {
-   var retObj = new Object();
-   retObj.taglineWasSelected = false;
-   retObj.tagline = "";
+	var retObj = {
+		taglineWasSelected: false,
+		tagline: ""
+	};
 
-   // Read the tagline file
-   var taglines = readTxtFileIntoArray(gConfigSettings.tagLineFilename, true, true, 5000);
-   if (taglines.length == 0)
-      return;
+	// Read the tagline file
+	var taglines = readTxtFileIntoArray(gConfigSettings.tagLineFilename, true, true, 5000);
+	if (taglines.length == 0)
+		return retObj;
 
-   // If the configuration option to shuffle the taglines is enabled, then
-   // shuffle them.
-   if (gConfigSettings.shuffleTaglines)
-      shuffleArray(taglines);
+	// If the configuration option to shuffle the taglines is enabled, then
+	// shuffle them.
+	if (gConfigSettings.shuffleTaglines)
+		shuffleArray(taglines);
 
-   // Create the list box for the taglines.  Make the box up to 14 lines tall.
-   var boxHeight = (taglines.length > 12 ? 14 : taglines.length+2);
-   var boxTopRow = gEditTop + Math.floor((gEditHeight/2) - (boxHeight/2));
-   var taglineBox = new ChoiceScrollbox(gEditLeft, boxTopRow, gEditWidth, boxHeight,
-                                         "Taglines", gConfigSettings, true, false);
-   var bottomBorderText = "nhcb, cb, cNy)bext, cPy)brev, "
-     + "cFy)birst, cLy)bast, cHOMEb, cENDb, cEntery=bSelect, "
-     + "cRy)bandom, cESCnc/hcQy=bEnd";
-   taglineBox.setBottomBorderText(bottomBorderText, false, false);
-   // Add R as an input loop exit key, to choose a random tagline.
-   taglineBox.addInputLoopExitKey("R");
-   taglineBox.addInputLoopExitKey("r");
+	// Create the list box for the taglines.  Make the box up to 14 lines tall.
+	var boxHeight = (taglines.length > 12 ? 14 : taglines.length+2);
+	var boxTopRow = gEditTop + Math.floor((gEditHeight/2) - (boxHeight/2));
+	var taglineBox = new ChoiceScrollbox(gEditLeft, boxTopRow, gEditWidth, boxHeight, "Taglines", gConfigSettings, true, false);
+	var bottomBorderText = "nhcb, cb, cNy)bext, cPy)brev, "
+	                     + "cFy)birst, cLy)bast, cHOMEb, cENDb, cEntery=bSelect, "
+	                     + "cRy)bandom, cESCnc/hcQy=bEnd";
+	taglineBox.setBottomBorderText(bottomBorderText, false, false);
+	// Add R as an input loop exit key, to choose a random tagline.
+	taglineBox.addInputLoopExitKey("R");
+	taglineBox.addInputLoopExitKey("r");
 
-   // Set the tagline item array in the list box.  Don't strip control characters
-   // because we've already done that when we read the file.
-   taglineBox.setItemArray(taglines, false);
-   // Let the user choose a tagline
-   var taglineRetObj = taglineBox.doInputLoop(true);
-   retObj.taglineWasSelected = taglineRetObj.itemWasSelected;
-   if (retObj.taglineWasSelected)
-      retObj.tagline = taglineRetObj.selectedItem;
-   // If the R key was pressed, then choose a random tagline.
-   else if ((taglineRetObj.lastKeypress == "R") || (taglineRetObj.lastKeypress == "r"))
-   {
-      retObj.tagline = taglines[random(taglines.length)];
-      retObj.taglineWasSelected = true;
-   }
+	// Set the tagline item array in the list box.  Don't strip control characters
+	// because we've already done that when we read the file.
+	taglineBox.setItemArray(taglines, false);
+	// Let the user choose a tagline
+	var taglineRetObj = taglineBox.doInputLoop(true);
+	retObj.taglineWasSelected = taglineRetObj.itemWasSelected;
+	if (retObj.taglineWasSelected)
+		retObj.tagline = taglineRetObj.selectedItem;
+	// If the R key was pressed, then choose a random tagline.
+	else if ((taglineRetObj.lastKeypress == "R") || (taglineRetObj.lastKeypress == "r"))
+	{
+		retObj.tagline = taglines[random(taglines.length)];
+		retObj.taglineWasSelected = true;
+	}
 
-   // If a tagline was selected, then add the tagline prefix in front of it, and
-   // also quote the tagline if the option to do so is enabled.
-   if (retObj.taglineWasSelected)
-   {
-      if (gConfigSettings.taglinePrefix.length > 0)
-         retObj.tagline = gConfigSettings.taglinePrefix + retObj.tagline;
-      // If the option to quote taglines is enabled, then do it.
-      if (gConfigSettings.quoteTaglines)
-         retObj.tagline = "\"" + retObj.tagline + "\"";
-   }
+	// If a tagline was selected, then add the tagline prefix in front of it, and
+	// also quote the tagline if the option to do so is enabled.
+	if (retObj.taglineWasSelected)
+	{
+		if (gConfigSettings.taglinePrefix.length > 0)
+			retObj.tagline = gConfigSettings.taglinePrefix + retObj.tagline;
+		// If the option to quote taglines is enabled, then do it.
+		if (gConfigSettings.quoteTaglines)
+			retObj.tagline = "\"" + retObj.tagline + "\"";
+	}
 
-   return retObj;
+	return retObj;
 }
 
 // Sets the quote prefix, gQuotePrefix (the text to use for prefixing quote lines).
