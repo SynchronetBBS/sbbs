@@ -1331,12 +1331,12 @@ function quote_mode()
 			case '\x1f':
 			case '\x11':	/* CTRL-Q (XOff) (Quick Abort in SyncEdit) */
 				return(true);
-			case '\x10':    /* CTRL-P */
+			case KEY_PAGEDN:
 				quote_ypos+=quote_height-1;
 				quote_topline+=quote_height-1;
 				draw_quote_window();
 				break;
-			case '\x0f':	/* CTRL-O */
+			case KEY_PAGEUP:
 				quote_ypos-=quote_height-1;
 				quote_topline-=quote_height-1;
 				draw_quote_window();
@@ -1355,9 +1355,9 @@ function quote_mode()
 				console.cleartoeol();
 				console.write("\r\n CTRL-J - Move down one line             SPACE  - Select/Unselect current line");
 				console.cleartoeol();
-				console.write("\r\n CTRL-O - Move up one page               ENTER  - Paste lines into message");
+				console.write("\r\n CTRL-N - Move down one page             ENTER  - Paste lines into message");
 				console.cleartoeol();
-				console.write("\r\n CTRL-P - Move down one page             A      - Select all");
+				console.write("\r\n CTRL-P - Move up one page               A      - Select all");
 				console.cleartoeol();
 				console.write("\r\n CTRL-Q - Quick exit (no save)           B      - Toggle block select mode");
 				console.cleartoeol();
@@ -1612,9 +1612,9 @@ function edit(quote_first)
 				console.cleartoeol();
 				console.write("\r\n CTRL-L - Insert Line                    CTRL-] - Move left one character");
 				console.cleartoeol();
-				console.write("\r\n CTRL-O - Page Up                        CTRL-^ - Move up one line");
+				console.write("\r\n CTRL-N - Page Down                      CTRL-^ - Move up one line");
 				console.cleartoeol();
-				console.write("\r\n CTRL-P - Page Down                      CTRL-_ - Quick Abort (no save)");
+				console.write("\r\n CTRL-P - Page Up                        CTRL-_ - Quick Abort (no save)");
 				console.cleartoeol();
 				console.write('\r\n');
 				console.cleartoeol();
@@ -1655,9 +1655,7 @@ function edit(quote_first)
 				xpos=0;
 				rewrap();
 				break;
-			case '\x0e':	/* CTRL-N */
-				break;
-			case '\x0f':	/* CTRL-O (Quick Save/exit in SyncEdit) */
+			case KEY_PAGEUP:
 				if(last_xpos==-1)
 					last_xpos=xpos;
 				if(ypos==0) {
@@ -1676,7 +1674,7 @@ function edit(quote_first)
 				if(xpos>line[ypos].text.length)
 					xpos=line[ypos].text.length;
 				break;
-			case '\x10':	/* CTRL-P */
+			case KEY_PAGEDN:
 				if(last_xpos==-1)
 					last_xpos=xpos;
 				if(ypos>=line.length-1) {
