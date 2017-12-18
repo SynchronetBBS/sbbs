@@ -91,6 +91,13 @@
  *                              Also, after creating or deleting a poll, the number
  *                              of polls in the sub-board displayed on the main menu
  *                              is now updated.
+ * 2017-12-18 Eric Oulashin     Version 0.33 beta
+ *                              Updated the definitions of the KEY_PAGE_UP and
+ *                              KEY_PAGE_DOWN veriables to match what they are in
+ *                              sbbsdefs.js (if defined) from December 18, 2017 so
+ *                              that the PageUp and PageDown keys continue to work
+ *                              properly.  This script should still also work with
+ *                              older 3.17 builds of Synchronet.
  */
 
 load("sbbsdefs.js");
@@ -139,8 +146,8 @@ load("scrollbar.js");
 load("DDLightbarMenu.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.32 Beta";
-var SLYVOTE_DATE = "2017-09-24";
+var SLYVOTE_VERSION = "0.33 Beta";
+var SLYVOTE_DATE = "2017-12-18";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -245,10 +252,19 @@ var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
 var LEFT_ARROW = ascii(17);
 var RIGHT_ARROW = ascii(16);
-// PageUp & PageDown keys - Not real key codes, but codes defined
-// to be used & recognized in this script
-var KEY_PAGE_UP = "\1PgUp";
-var KEY_PAGE_DOWN = "\1PgDn";
+// PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
+// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
+// defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
+// in this script so that this script will work with Synchronet systems before
+// and after the update containing those key definitions.
+var KEY_PAGE_UP = "\x10"; // Ctrl-P
+var KEY_PAGE_DOWN = "\x0e"; // Ctrl-N
+// Ensure KEY_PAGE_UP and KEY_PAGE_DOWN are set to what's defined in sbbs.js
+// for KEY_PAGEUP and KEY_PAGEDN in case they change
+if (typeof(KEY_PAGEUP) === "string")
+	KEY_PAGE_UP = KEY_PAGEUP;
+if (typeof(KEY_PAGEDN) === "string")
+	KEY_PAGE_DOWN = KEY_PAGEDN;
 
 // An object containing keypresses for the vote results reader
 var gReaderKeys = {
