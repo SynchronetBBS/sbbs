@@ -64,6 +64,11 @@
  *                                  be more common with Synchronet 3.17+ (the
  *                                  message voting feature was introduced in 3.17).
  * 2016-12-11 Eric Oulashin 1.13    Updated the version to match the message area chooser
+ * 2017-12-18 Eric Oulashin 1.15    Updated the definitions of the KEY_PAGE_UP and KEY_PAGE_DOWN
+ *                                  variables to match what they are in sbbsdefs.js (if defined)
+ *                                  from December 18, 2017 so that the PageUp and PageDown keys
+ *                                  continue to work properly.  This script should still also work
+ *                                  with older builds of Synchronet.
  */
 
 /* Command-line arguments:
@@ -92,18 +97,26 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.14";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2017-08-30";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.15";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2017-12-18";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
 var KEY_ENTER = CTRL_M;
 var KEY_ESC = ascii(27);
-
-// PageUp & PageDown keys - Not real key codes, but codes defined
-// to be used & recognized in this script
-var KEY_PAGE_UP = "\1PgUp";
-var KEY_PAGE_DOWN = "\1PgDn";
+// PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
+// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
+// defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
+// in this script so that this script will work with Synchronet systems before
+// and after the update containing those key definitions.
+var KEY_PAGE_UP = "\x10"; // Ctrl-P
+var KEY_PAGE_DOWN = "\x0e"; // Ctrl-N
+// Ensure KEY_PAGE_UP and KEY_PAGE_DOWN are set to what's defined in sbbs.js
+// for KEY_PAGEUP and KEY_PAGEDN in case they change
+if (typeof(KEY_PAGEUP) === "string")
+	KEY_PAGE_UP = KEY_PAGEUP;
+if (typeof(KEY_PAGEDN) === "string")
+	KEY_PAGE_DOWN = KEY_PAGEDN;
 
 // Key codes for display
 var UP_ARROW = ascii(24);
