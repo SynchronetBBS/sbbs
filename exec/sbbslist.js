@@ -55,9 +55,17 @@ function date_to_str(date)
     return format("%02u/%02u/%02u", date.getUTCMonth()+1, date.getUTCDate(), date.getUTCFullYear()%100);
 }
 
-function date_from_str(str)
+function date_from_str(datestrStr)
 {
-    return new Date(system.datestr(str) * 1000);
+   
+	var a = str.split("/");
+	var month = parseInt(a[0]);
+	var day = parseInt(a[1]);
+	var year = parseInt(a[2]);
+	year += 1900;
+	if(year < 1970)
+		year += 100;
+    return new Date(year, month - 1, day);
 }
 
 function export_entry(bbs, msgbase)
