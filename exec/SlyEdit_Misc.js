@@ -1358,7 +1358,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	printf("\1n\1g%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
 	printf("\1k\1h%-44s  %-33s\r\n", "컴컴컴컴�", "컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴");
 	displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
-	displayCmdKeyFormattedDouble("Ctrl-P", "Command key help", "/S", "Save", true);
+	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
 	displayCmdKeyFormattedDouble("Ctrl-R", "Program information", "/Q", "Quote message", true);
 	if (pTxtReplacments)
 		displayCmdKeyFormattedDouble("Ctrl-T", "List text replacements", "/T", "List text replacements", true);
@@ -1372,7 +1372,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	console.print("\1n\1gCommand/edit keys\r\n\1k\1h컴컴컴컴컴컴컴컴�\r\n");
 	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
 	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
-	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-N", "Find text", true);
+	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-S", "Search for text", true);
 	displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
 	                             "Ctrl-D", "Delete line", true);
 	if (pCanCrossPost)
@@ -4262,47 +4262,48 @@ function consolePauseWithESCChars(pCfgObj)
 // Return value: The user's keypress
 function getKeyWithESCChars(pGetKeyMode, pCfgObj)
 {
-   var getKeyMode = K_NONE;
-   if (typeof(pGetKeyMode) == "number")
-      getKeyMode = pGetKeyMode;
+	var getKeyMode = (typeof(pGetKeyMode) == "number" ? pGetKeyMode : K_NONE);
+	var userInput = getUserKey(getKeyMode, pCfgObj);
+	if (userInput == KEY_ESC)
+	{
+		switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
+		{
+			case '[':
+				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
+				{
+					case 'V':
+						userInput = KEY_PAGE_UP;
+						break;
+					case 'U':
+						userInput = KEY_PAGE_DOWN;
+						break;
+				}
+				break;
+			case 'O':
+				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
+				{
+					case 'P':
+						userInput = KEY_F1;
+						break;
+					case 'Q':
+						userInput = KEY_F2;
+						break;
+					case 'R':
+						userInput = KEY_F3;
+						break;
+					case 'S':
+						userInput = KEY_F4;
+						break;
+					case 't':
+						userInput = KEY_F5;
+						break;
+				}
+			default:
+				break;
+		}
+	}
 
-   var userInput = getUserKey(getKeyMode, pCfgObj);
-   if (userInput == KEY_ESC) {
-      switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-         case '[':
-            switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-               case 'V':
-                  userInput = KEY_PAGE_UP;
-                  break;
-               case 'U':
-                  userInput = KEY_PAGE_DOWN;
-                  break;
-           }
-           break;
-         case 'O':
-           switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-              case 'P':
-                 userInput = KEY_F1;
-                 break;
-              case 'Q':
-                 userInput = KEY_F2;
-                 break;
-              case 'R':
-                 userInput = KEY_F3;
-                 break;
-              case 'S':
-                 userInput = KEY_F4;
-                 break;
-              case 't':
-                 userInput = KEY_F5;
-                 break;
-           }
-         default:
-           break;
-      }
-   }
-
-   return userInput;
+	return userInput;
 }
 
 // This function displays debug text at a given location on the screen, then

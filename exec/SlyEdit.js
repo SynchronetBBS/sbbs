@@ -21,7 +21,7 @@
  *                              configuration option allowEditQuoteLines.
  * 2017-12-17 Eric Oulashin     Version 1.52
  *                              Releasing this version
- * 2017-12-18 Eric Oulashin     Version 1.53
+ * 2017-12-19 Eric Oulashin     Version 1.53
  *                              Updated the PageUp and PageDown keys to ensure they
  *                              match what's in sbbsdefs.js, since Synchronet added
  *                              key codes for those keys on December 17, 2018.  SlyEdit
@@ -105,7 +105,7 @@ if (!console.term_supports(USER_ANSI))
 
 // Constants
 const EDITOR_VERSION = "1.53";
-const EDITOR_VER_DATE = "2016-12-18";
+const EDITOR_VER_DATE = "2017-12-19";
 
 
 // Program variables
@@ -801,22 +801,31 @@ function doEditLoop()
 	// 1: Aborted
 	var returnCode = 0;
 
-	// Set the shortcut keys.  Note: Avoid CTRL_H because that
-	// is backspace.
+	// Set the shortcut keys.  Note - Avoid the following:
+	// CTRL_B: Home key
+	// CTRL_E: End key
+	// CTRL_F: Right arrow key
+	// CTRL_H: Backspace
+	// CTRL_J: Down arrow key
+	// CTRL_M: Enter key
+	// CTRL_N: PageDown
+	// CTRL_P: PageUp
+	// CTRL_V: Insert key
 	const ABORT_KEY                 = CTRL_A;
 	const CROSSPOST_KEY             = CTRL_C;
 	const DELETE_LINE_KEY           = CTRL_D;
 	const GENERAL_HELP_KEY          = CTRL_G;
 	const TOGGLE_INSERT_KEY         = CTRL_I;
 	const CHANGE_COLOR_KEY          = CTRL_K;
-	const FIND_TEXT_KEY             = CTRL_N;
+	const CMDLIST_HELP_KEY          = CTRL_L;
+	const CMDLIST_HELP_KEY_2        = KEY_F1;
 	const IMPORT_FILE_KEY           = CTRL_O;
-	const CMDLIST_HELP_KEY          = CTRL_P;
 	const QUOTE_KEY                 = CTRL_Q;
 	const PROGRAM_INFO_HELP_KEY     = CTRL_R;
+	const SEARCH_TEXT_KEY           = CTRL_S;
 	const LIST_TXT_REPLACEMENTS_KEY = CTRL_T;
 	const USER_SETTINGS_KEY         = CTRL_U;
-	const EXPORT_FILE_KEY           = CTRL_X;
+	const EXPORT_TO_FILE_KEY        = CTRL_X;
 	const SAVE_KEY                  = CTRL_Z;
 
 	// Draw the screen.
@@ -884,8 +893,8 @@ function doEditLoop()
 				returnCode = 0; // Save
 				continueOn = false;
 				break;
-			case KEY_F1:
 			case CMDLIST_HELP_KEY:
+			case CMDLIST_HELP_KEY_2:
 				displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
 				                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
 				clearEditAreaBuffer();
@@ -1242,7 +1251,7 @@ function doEditLoop()
 					console.gotoxy(curpos);
 				}
 				break;
-			case FIND_TEXT_KEY:
+			case SEARCH_TEXT_KEY:
 				var retObj = findText(curpos);
 				curpos.x = retObj.x;
 				curpos.y = retObj.y;
@@ -1259,8 +1268,8 @@ function doEditLoop()
 					console.print(chooseEditColor()); // Make sure the edit color is correct
 				}
 				break;
-			case EXPORT_FILE_KEY:
-				// Only let sysops export files.
+			case EXPORT_TO_FILE_KEY:
+				// Only let sysops export/save the message to a file.
 				if (gConfigSettings.userIsSysop)
 				{
 					exportToFile(gConfigSettings.userIsSysop);
