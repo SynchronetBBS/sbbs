@@ -23,13 +23,17 @@
  *                              not consider those sequences a quote when using
  *                              author initials.  When using author initials,
  *                              SlyEdit considers a quote sequence to only have 2
- *                              non-space characters (such as "EO>").  Also
- *                              updated wrapQuoteLines() - Added an optional
+ *                              non-space characters (such as "EO>").
+ * 2017-12-25 Eric Oulashin     Updated wrapTextLines() - Added an optional
  *                              parameter for the lineInfo object array so it
  *                              can be updated when lines are split (for quoting
  *                              with author initials).  That should fix an
  *                              issue where some wrapped/split quote lines
  *                              were missing the quote line prefix.
+ * 2017-12-26 Eric Oulashin     Updated wrapTextLines() to (hopefully) better
+ *                              handle situations when it wraps text into the
+ *                              next line when that next line is blank - Ensuring
+ *                              it adds a blank line below that.
  */
  
  load("text.js");
@@ -2389,7 +2393,10 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
 				// add the text to the new line.
 				if (i+1 < pEndIndex)
 				{
+					var nextLineWasBlank = (pLineArr[i+1].length == 0);
 					pLineArr[i+1] = trimmedText + pLineArr[i+1];
+					if (nextLineWasBlank)
+						pLineArr.splice(i+2, 0, "");
 					// Copy the current line's lineInfo object to the next
 					// one in the array
 					if (typeof(pLineInfos) == "object")
@@ -2399,6 +2406,25 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
 							pLineInfos[i+1].startIndex = pLineInfos[i].startIndex;
 							pLineInfos[i+1].quoteLevel = pLineInfos[i].quoteLevel;
 							pLineInfos[i+1].begOfLine = pLineInfos[i].begOfLine;
+						}
+						else
+						{
+							// pLineInfos doesn't have enough objects..  This probably
+							// shouldn't happen, as the caller should fill it up to
+							// the correct number of objects.
+							var numToAdd = (i+1) - pLineInfos.length + 1;
+							for (var idx = 0; idx < numToAdd; ++idx)
+								pLineInfos.push(getDefaultQuoteStrObj());
+						}
+						// If the next line was blank before adding text to it,
+						// then splice a new lineInfo object into pLineInfos as
+						// a copy of the lineInfo object before it.
+						if (nextLineWasBlank)
+						{
+							pLineInfos.splice(i+2, 0, getDefaultQuoteStrObj());
+							pLineInfos[i+2].startIndex = pLineInfos[i+1].startIndex;
+							pLineInfos[i+2].quoteLevel = pLineInfos[i+1].quoteLevel;
+							pLineInfos[i+2].begOfLine = pLineInfos[i+1].begOfLine;
 						}
 					}
 				}
@@ -2420,7 +2446,20 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
 					// Append a lineInfo object to pLineInfos as a copy of the
 					// last one in the array.
 					if (typeof(pLineInfos) == "object")
-						pLineInfos.push(pLineInfos[pLineInfos.length-1]);
+					{
+						// Save the last lineInfo object's values
+						var lastLineInfoObj = {
+							startIndex: pLineInfos[pLineInfos.length-1].startIndex,
+							quoteLevel: pLineInfos[pLineInfos.length-1].quoteLevel,
+							begOfLine: pLineInfos[pLineInfos.length-1].begOfLine
+						};
+						// Append a new lineInfo object to pLineInfos and copy
+						// the last one's values into it
+						pLineInfos.push(getDefaultQuoteStrObj());
+						pLineInfos[pLineInfos.length-1].startIndex = lastLineInfoObj.startIndex;
+						pLineInfos[pLineInfos.length-1].quoteLevel = lastLineInfoObj.quoteLevel;
+						pLineInfos[pLineInfos.length-1].begOfLine = lastLineInfoObj.begOfLine;
+					}
 				}
 			}
 			else

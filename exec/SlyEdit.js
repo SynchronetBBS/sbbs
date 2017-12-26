@@ -27,7 +27,7 @@
  *                              key codes for those keys on December 17, 2018.  SlyEdit
  *                              should still work with older and newer builds of
  *                              Synchronet, with or without the updated sbbsdefs.js.
- * 2017-12-25 Eric Oulashin     Version 1.54
+ * 2017-12-26 Eric Oulashin     Version 1.54
  *                              Improved quoting with author initials when a >
  *                              character exists in the quote lines: Not mistaking
  *                              the preceding text as a quote prefix if it has 3
@@ -112,7 +112,7 @@ if (!console.term_supports(USER_ANSI))
 
 // Constants
 const EDITOR_VERSION = "1.54";
-const EDITOR_VER_DATE = "2017-12-25";
+const EDITOR_VER_DATE = "2017-12-26";
 
 
 // Program variables
