@@ -27,6 +27,13 @@
  *                              key codes for those keys on December 17, 2018.  SlyEdit
  *                              should still work with older and newer builds of
  *                              Synchronet, with or without the updated sbbsdefs.js.
+ * 2017-12-25 Eric Oulashin     Version 1.54
+ *                              Improved quoting with author initials when a >
+ *                              character exists in the quote lines: Not mistaking
+ *                              the preceding text as a quote prefix if it has 3
+ *                              or more non-space characters before the >.  Also
+ *                              fixed an issue where wrapped quote lines were
+ *                              sometimes missing the quote line prefix.
  */
 
 /* Command-line arguments:
@@ -50,14 +57,14 @@ var EDITOR_STYLE = "DCT";
 // The second command-line argument (argv[1]) can change this.
 if (typeof(argv[1]) != "undefined")
 {
-   var styleUpper = argv[1].toUpperCase();
-   // Make sure styleUpper is valid before setting EDITOR_STYLE.
-   if (styleUpper == "DCT")
-      EDITOR_STYLE = "DCT";
-   else if (styleUpper == "ICE")
-      EDITOR_STYLE = "ICE";
-   else if (styleUpper == "RANDOM")
-      EDITOR_STYLE = (Math.floor(Math.random()*2) == 0) ? "DCT" : "ICE";
+	var styleUpper = argv[1].toUpperCase();
+	// Make sure styleUpper is valid before setting EDITOR_STYLE.
+	if (styleUpper == "DCT")
+		EDITOR_STYLE = "DCT";
+	else if (styleUpper == "ICE")
+		EDITOR_STYLE = "ICE";
+	else if (styleUpper == "RANDOM")
+		EDITOR_STYLE = (Math.floor(Math.random()*2) == 0) ? "DCT" : "ICE";
 }
 
 // Load sbbsdefs.js and SlyEdit's misc. defs first
@@ -104,8 +111,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.53";
-const EDITOR_VER_DATE = "2017-12-19";
+const EDITOR_VERSION = "1.54";
+const EDITOR_VER_DATE = "2017-12-25";
 
 
 // Program variables

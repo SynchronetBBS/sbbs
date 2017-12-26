@@ -14,60 +14,22 @@
  * 2009-08-22 Eric Oulashin     Version 1.00
  *                              Initial public release
  * ....Removed some comments...
- * 2014-11-01 Eric Oulashin     Added getKeyWithESCChars(), along with the key definitions
- *                              KEY_PAGE_UP and KEY_PAGE_DOWN, to support inputting the
- *                              PageUp & PageDown keys from the user.
- * 2014-11-08 Eric Oulashin     Updated wrapQuoteLinesUsingAuthorInitials() and
- *                              wrapQuoteLines_NoAuthorInitials() so that if the
- *                              current line's indentation differs from the previous
- *                              line's indentation, it will mark a new section for
- *                              the quote lines so that lines of different paragraphs
- *                              don't get wrapped together.
- * 2014-11-09 Eric Oulashin     Bug fix in wrapTextLines(): For the edge case when
- *                              text is trimmed from the end of the last line in
- *                              the paragraph, it will insert a new line in the
- *                              array at the end of the paragraph for the trimmed
- *                              text.  For lines before the last line in the
- *                              paragraph, it will just prepend the text to the
- *                              next line in the array.  Also, updated
- *                              wrapQuoteLinesUsingAuthorInitials() to trim leading
- *                              spaces from non-quote text sections to leave more
- *                              room for wrapping the lines and to avoid having
- *                              whole sections of quote lines that start with
- *                              several spaces.  Also made a similar update to
- *                              wrapQuoteLines_NoAuthorInitials().
- * 2014-11-11 Eric Oulashin     Bug fix in wrapTextLines(): After wrapping a line
- *                              of text, there was a section of code that would
- *                              check to see if the next line is blank and add
- *                              another line if so, which was causing an extra
- *                              blank line to be added in some situations where
- *                              that shouldn't happen.  Seems to be fixed after
- *                              an update.  Also, made another bug fix in that
- *                              function where sometimes a leading space would
- *                              be added to wrapped text on a new line.  That
- *                              seems to be fixed as well.
- * 2015-07-10 Eric Oulashin     Bug fix in wrapTextLines(): If the pLineWidth
- *                              parameter is less than 0 or not a number, then
- *                              the function will simply return, to avoid bad
- *                              behavior.  I noticed what looked like an infinite
- *                              loop if pLineWidth was negative.
- *                              Bug fix in wrapQuoteLinesUsingAuthorInitials():
- *                              When wrapping text lines, it will only call
- *                              wrapTextLines() if the maximum line length is
- *                              positive.
- * 2016-04-23 Eric Oulashin     Updated to load text.js for text.dat definitions.
- *                              Updated displayCommandList() to use console.pause()
- *                              instead of a custom pause routine so that
- *                              Synchronet can use a custom pause script if one
- *                              is configured in text.dat.
- * 2017-08-04 Eric Oulashin     Updated wrapQuoteLines(), wrapQuoteLinesUsingAuthorInitials(),
- *                              and wrapQuoteLines_NoAuthorInitials() - Added a
- *                              parameter for whether or not to trim spaces from
- *                              quote lines.
  * 2017-12-16 Eric Oulashin     Updated ReadSlyEditConfigFile() to include the
  *                              allowEditQuoteLines option.
  * 2017-12-18 Eric Oulashin     Update the KEY_PAGE_UP and KEY_PAGE_DOWN keys to
  *                              ensure they mat what's in sbbsdef.js
+ * 2017-12-24 Eric Oulashin     Updated firstNonQuoteTxtIndex() to better handle
+ *                              lines with 3 non-space characters before a >, to
+ *                              not consider those sequences a quote when using
+ *                              author initials.  When using author initials,
+ *                              SlyEdit considers a quote sequence to only have 2
+ *                              non-space characters (such as "EO>").  Also
+ *                              updated wrapQuoteLines() - Added an optional
+ *                              parameter for the lineInfo object array so it
+ *                              can be updated when lines are split (for quoting
+ *                              with author initials).  That should fix an
+ *                              issue where some wrapped/split quote lines
+ *                              were missing the quote line prefix.
  */
  
  load("text.js");
@@ -211,27 +173,27 @@ function TextLine(pText, pHardNewlineEnd, pIsQuoteLine)
 	this.text = "";               // The line text
 	this.hardNewlineEnd = false; // Whether or not the line has a hard newline at the end
 	this.isQuoteLine = false;    // Whether or not this is a quote line
-   // Copy the parameters if they are valid.
-   if ((pText != null) && (typeof(pText) == "string"))
-      this.text = pText;
-   if ((pHardNewlineEnd != null) && (typeof(pHardNewlineEnd) == "boolean"))
-      this.hardNewlineEnd = pHardNewlineEnd;
-   if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) == "boolean"))
-      this.isQuoteLine = pIsQuoteLine;
+	// Copy the parameters if they are valid.
+	if ((pText != null) && (typeof(pText) == "string"))
+		this.text = pText;
+	if ((pHardNewlineEnd != null) && (typeof(pHardNewlineEnd) == "boolean"))
+		this.hardNewlineEnd = pHardNewlineEnd;
+	if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) == "boolean"))
+		this.isQuoteLine = pIsQuoteLine;
 
 	// NEW & EXPERIMENTAL:
-   // For color support
-   this.attrs = new Array(); // An array of attributes for the line
-   // Functions
-   this.length = TextLine_Length;
-   this.print = TextLine_Print;
-   this.doMacroTxtReplacement = TextLine_doMacroTxtReplacement;
-   this.getWord = TextLine_getWord;
+	// For color support
+	this.attrs = new Array(); // An array of attributes for the line
+	// Functions
+	this.length = TextLine_Length;
+	this.print = TextLine_Print;
+	this.doMacroTxtReplacement = TextLine_doMacroTxtReplacement;
+	this.getWord = TextLine_getWord;
 }
 // For the TextLine class: Returns the length of the text.
 function TextLine_Length()
 {
-   return this.text.length;
+	return this.text.length;
 }
 // For  the TextLine class: Prints the text line, using its text attributes.
 //
@@ -239,10 +201,10 @@ function TextLine_Length()
 //  pClearToEOL: Boolean - Whether or not to clear to the end of the line
 function TextLine_Print(pClearToEOL)
 {
-   console.print(this.text);
+	console.print(this.text);
 
-   if (pClearToEOL)
-      console.cleartoeol();
+	if (pClearToEOL)
+		console.cleartoeol();
 }
 // Performs text replacement (AKA macro replacement) in the text line.
 //
@@ -270,89 +232,88 @@ function TextLine_Print(pClearToEOL)
 //                                   (boolean)
 function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
 {
-   var retObj = new Object();
-   retObj.textLineIndex = pCharIndex;
-   retObj.wordLenDiff = 0;
-   retObj.wordStartIdx = 0;
-   retObj.newTextEndIdx = 0;
-   retObj.newTextLen = 0;
-   retObj.madeTxtReplacement = false;
+	var retObj = new Object();
+	retObj.textLineIndex = pCharIndex;
+	retObj.wordLenDiff = 0;
+	retObj.wordStartIdx = 0;
+	retObj.newTextEndIdx = 0;
+	retObj.newTextLen = 0;
+	retObj.madeTxtReplacement = false;
 
-   var wordObj = this.getWord(retObj.textLineIndex);
-   if (wordObj.foundWord)
-   {
-      retObj.wordStartIdx = wordObj.startIdx;
-      retObj.newTextLen = wordObj.word.length;
+	var wordObj = this.getWord(retObj.textLineIndex);
+	if (wordObj.foundWord)
+	{
+		retObj.wordStartIdx = wordObj.startIdx;
+		retObj.newTextLen = wordObj.word.length;
 
-      // See if the word starts with a capital letter; if so, we'll capitalize
-      // the replacement word.
-      var firstCharUpper = false;
-      var txtReplacement = "";
-      if (pUseRegex)
-      {
-         // Since a regular expression might have more characters in addition
-         // to the actual word, we need to go through all the replacement strings
-         // in pTxtReplacements and use the first one that changes the text.
-         for (var prop in pTxtReplacements)
-         {
-            if (pTxtReplacements.hasOwnProperty(prop))
-            {
-               var regex = new RegExp(prop);
-               txtReplacement = wordObj.word.replace(regex, pTxtReplacements[prop]);
-               retObj.madeTxtReplacement = (txtReplacement != wordObj.word);
-               // If a text replacement was made, then check and see if the first
-               // letter in the original text was uppercase, and if so, make the
-               // first letter in the new text (txtReplacement) uppercase.
-               if (retObj.madeTxtReplacement)
-               {
-                  if (firstLetterIsUppercase(wordObj.word))
-                  {
-                     var letterInfo = getFirstLetterFromStr(txtReplacement);
-                     if (letterInfo.idx > -1)
-                     {
-                        txtReplacement = txtReplacement.substr(0, letterInfo.idx)
-                                       + letterInfo.letter.toUpperCase()
-                                       + txtReplacement.substr(letterInfo.idx+1);
-                     }
-                  }
-                  // Now that we've made a text replacement, stop going through
-                  // pTxtReplacements looking for a matching regex.
-                  break;
-               }
-            }
-         }
-      }
-      else
-      {
-         // Not using a regular expression.
-         firstCharUpper = (wordObj.word.charAt(0) == wordObj.word.charAt(0).toUpperCase());
-         // Convert the word to all uppercase to do the case-insensitive lookup
-         // in pTxtReplacements.
-         wordObj.word = wordObj.word.toUpperCase();
-         if (pTxtReplacements.hasOwnProperty(wordObj.word))
-         {
-            txtReplacement = pTxtReplacements[wordObj.word];
-            retObj.madeTxtReplacement = true;
-         }
-      }
-      if (retObj.madeTxtReplacement)
-      {
-         if (firstCharUpper)
-            txtReplacement = txtReplacement.charAt(0).toUpperCase() + txtReplacement.substr(1);
-         this.text = this.text.substr(0, wordObj.startIdx) + txtReplacement
-                   + this.text.substr(wordObj.endIndex+1);
-         // Based on the difference in word length, update the data that
-         // matters (retObj.textLineIndex, which keeps track of the index of the current line).
-         // Note: The horizontal cursor position variable should be replaced after calling this
-         // function.
-         retObj.wordLenDiff = txtReplacement.length - wordObj.word.length;
-         retObj.textLineIndex += retObj.wordLenDiff;
-         retObj.newTextEndIdx = wordObj.endIndex + retObj.wordLenDiff;
-         retObj.newTextLen = txtReplacement.length;
-      }
-   }
+		// See if the word starts with a capital letter; if so, we'll capitalize
+		// the replacement word.
+		var firstCharUpper = false;
+		var txtReplacement = "";
+		if (pUseRegex)
+		{
+			// Since a regular expression might have more characters in addition
+			// to the actual word, we need to go through all the replacement strings
+			// in pTxtReplacements and use the first one that changes the text.
+			for (var prop in pTxtReplacements)
+			{
+				if (pTxtReplacements.hasOwnProperty(prop))
+				{
+					var regex = new RegExp(prop);
+					txtReplacement = wordObj.word.replace(regex, pTxtReplacements[prop]);
+					retObj.madeTxtReplacement = (txtReplacement != wordObj.word);
+					// If a text replacement was made, then check and see if the first
+					// letter in the original text was uppercase, and if so, make the
+					// first letter in the new text (txtReplacement) uppercase.
+					if (retObj.madeTxtReplacement)
+					{
+						if (firstLetterIsUppercase(wordObj.word))
+						{
+							var letterInfo = getFirstLetterFromStr(txtReplacement);
+							if (letterInfo.idx > -1)
+							{
+								txtReplacement = txtReplacement.substr(0, letterInfo.idx)
+								               + letterInfo.letter.toUpperCase()
+								               + txtReplacement.substr(letterInfo.idx+1);
+							}
+						}
+						// Now that we've made a text replacement, stop going through
+						// pTxtReplacements looking for a matching regex.
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			// Not using a regular expression.
+			firstCharUpper = (wordObj.word.charAt(0) == wordObj.word.charAt(0).toUpperCase());
+			// Convert the word to all uppercase to do the case-insensitive lookup
+			// in pTxtReplacements.
+			wordObj.word = wordObj.word.toUpperCase();
+			if (pTxtReplacements.hasOwnProperty(wordObj.word))
+			{
+				txtReplacement = pTxtReplacements[wordObj.word];
+				retObj.madeTxtReplacement = true;
+			}
+		}
+		if (retObj.madeTxtReplacement)
+		{
+			if (firstCharUpper)
+			txtReplacement = txtReplacement.charAt(0).toUpperCase() + txtReplacement.substr(1);
+			this.text = this.text.substr(0, wordObj.startIdx) + txtReplacement + this.text.substr(wordObj.endIndex+1);
+			// Based on the difference in word length, update the data that
+			// matters (retObj.textLineIndex, which keeps track of the index of the current line).
+			// Note: The horizontal cursor position variable should be replaced after calling this
+			// function.
+			retObj.wordLenDiff = txtReplacement.length - wordObj.word.length;
+			retObj.textLineIndex += retObj.wordLenDiff;
+			retObj.newTextEndIdx = wordObj.endIndex + retObj.wordLenDiff;
+			retObj.newTextLen = txtReplacement.length;
+		}
+	}
 
-   return retObj;
+	return retObj;
 }
 // Returns the word in a text line at a given index.  If the index
 // is at a space, then this function will return the word before
@@ -374,39 +335,40 @@ function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
 //                         This includes any control/color codes, etc.
 function TextLine_getWord(pCharIndex)
 {
-   var retObj = new Object();
-   retObj.foundWord = false;
-   retObj.word = "";
-   retObj.plainWord = "";
-   retObj.startIdx = 0;
-   retObj.endIndex = 0;
+	var retObj = {
+		foundWord: false,
+		word: "",
+		plainWord: "",
+		startIdx: 0,
+		endIndex: 0
+	};
 
-   // Parameter checking
-   if ((pCharIndex < 0) || (pCharIndex >= this.text.length))
-      return retObj;
+	// Parameter checking
+	if ((pCharIndex < 0) || (pCharIndex >= this.text.length))
+		return retObj;
 
-   // If pCharIndex specifies the index of a space, then look for a non-space
-   // character before it.
-   var charIndex = pCharIndex;
-   while (this.text.charAt(charIndex) == " ")
-      --charIndex;
-   // Look for the start & end of the word based on the indexes of a space
-   // before and at/after the given character index.
-   var wordStartIdx = charIndex;
-   var wordEndIdx = charIndex;
-   while ((this.text.charAt(wordStartIdx) != " ") && (wordStartIdx >= 0))
-      --wordStartIdx;
-   ++wordStartIdx;
-   while ((this.text.charAt(wordEndIdx) != " ") && (wordEndIdx < this.text.length))
-      ++wordEndIdx;
-   --wordEndIdx;
+	// If pCharIndex specifies the index of a space, then look for a non-space
+	// character before it.
+	var charIndex = pCharIndex;
+	while (this.text.charAt(charIndex) == " ")
+		--charIndex;
+	// Look for the start & end of the word based on the indexes of a space
+	// before and at/after the given character index.
+	var wordStartIdx = charIndex;
+	var wordEndIdx = charIndex;
+	while ((this.text.charAt(wordStartIdx) != " ") && (wordStartIdx >= 0))
+		--wordStartIdx;
+	++wordStartIdx;
+	while ((this.text.charAt(wordEndIdx) != " ") && (wordEndIdx < this.text.length))
+		++wordEndIdx;
+	--wordEndIdx;
 
-   retObj.foundWord = true;
-   retObj.startIdx = wordStartIdx;
-   retObj.endIndex = wordEndIdx;
-   retObj.word = this.text.substring(wordStartIdx, wordEndIdx+1);
-   retObj.plainWord = strip_ctrl(retObj.word);
-   return retObj;
+	retObj.foundWord = true;
+	retObj.startIdx = wordStartIdx;
+	retObj.endIndex = wordEndIdx;
+	retObj.word = this.text.substring(wordStartIdx, wordEndIdx+1);
+	retObj.plainWord = strip_ctrl(retObj.word);
+	return retObj;
 }
 
 
@@ -415,12 +377,12 @@ function TextLine_getWord(pCharIndex)
 // IceEdit and DCT Edit styles).
 function AbortConfirmFuncParams()
 {
-   this.editTop = gEditTop;
-   this.editBottom = gEditBottom;
-   this.editWidth = gEditWidth;
-   this.editHeight = gEditHeight;
-   this.editLinesIndex = gEditLinesIndex;
-   this.displayMessageRectangle = displayMessageRectangle;
+	this.editTop = gEditTop;
+	this.editBottom = gEditBottom;
+	this.editWidth = gEditWidth;
+	this.editHeight = gEditHeight;
+	this.editLinesIndex = gEditLinesIndex;
+	this.displayMessageRectangle = displayMessageRectangle;
 }
 
 //////
@@ -429,7 +391,7 @@ function AbortConfirmFuncParams()
 // Returns the minimum width for a ChoiceScrollbox
 function ChoiceScrollbox_MinWidth()
 {
-   return 73; // To leave room for the navigation text in the bottom border
+	return 73; // To leave room for the navigation text in the bottom border
 }
 
 // ChoiceScrollbox constructor
@@ -2370,9 +2332,12 @@ function toggleAttr(pAttrType, pAttrs, pNewAttr)
 //  pLineWidth: The maximum width of each line
 //  pIdxesRequiringNL (OUT): Optional - An array to contain the indexes of original
 //                           wrapped lines that required a new line to be added.
+//  pLineInfos (IN/OUT): Optional - An array of lineInfo objects previously generated
+//                       for the unwrapped lines - This will be updated if lines are
+//                       wrapped.
 //
 // Return value: The number of new lines added
-function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesRequiringNL)
+function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesRequiringNL, pLineInfos)
 {
 	// Validate parameters
 	if (pLineArr == null)
@@ -2418,38 +2383,25 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
 				// Append a space to the end of the trimmed text if it doesn't have one.
 				if ((trimmedText.length > 0) && (trimmedText.charAt(trimmedText.length-1) != " "))
 					trimmedText += " "
-				// 2015-01-11: The following commented-out code is older - It has a bug
-				// that would sometimes cause an extra empty line to be inserted.
-				/*
-				// If the next line is blank, then append another blank
-				// line there to preserve the message's formatting.
-				//if (pLineArr[i+1].length == 0)
-				if (false) // For testing, to see if the above check really isn't necessary
-				{
-					pLineArr.splice(i+1, 0, "");
-					// If the current line index is before the specified end index, then
-					// increment the end index since we've added a line in order to continue
-					// wrapping the lines.
-					if (i < pEndIndex-1)
-						++pEndIndex;
-
-					if (pNewLineIndexesIsArray)
-						pIdxesRequiringNL.push(i);
-				}
-				else
-				{
-					// Since the next line is not blank, then append a space
-					// to the end of the trimmed text if it doesn't have one.
-					if ((trimmedText.length > 0) && (trimmedText.charAt(trimmedText.length-1) != " "))
-						trimmedText += " "
-				}
-				*/
 				// Prepend the trimmed text to the next line.  If the next line's index
 				// is within the paragraph we're wrapping, then go ahead and prepend the
 				// text to the next line.  Otherwise, add a new line to the array and
 				// add the text to the new line.
 				if (i+1 < pEndIndex)
+				{
 					pLineArr[i+1] = trimmedText + pLineArr[i+1];
+					// Copy the current line's lineInfo object to the next
+					// one in the array
+					if (typeof(pLineInfos) == "object")
+					{
+						if (pLineInfos.length > i+1)
+						{
+							pLineInfos[i+1].startIndex = pLineInfos[i].startIndex;
+							pLineInfos[i+1].quoteLevel = pLineInfos[i].quoteLevel;
+							pLineInfos[i+1].begOfLine = pLineInfos[i].begOfLine;
+						}
+					}
+				}
 				else
 				{
 					// Add the trimmed text on a new line in the array.  Then, if the
@@ -2463,8 +2415,12 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
 					else
 					{
 						if (pNewLineIndexesIsArray)
-						pIdxesRequiringNL.push(i);
+							pIdxesRequiringNL.push(i);
 					}
+					// Append a lineInfo object to pLineInfos as a copy of the
+					// last one in the array.
+					if (typeof(pLineInfos) == "object")
+						pLineInfos.push(pLineInfos[pLineInfos.length-1]);
 				}
 			}
 			else
@@ -2482,6 +2438,7 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
 			}
 		}
 	}
+
 	return(pLineArr.length - origNumLines);
 }
 
@@ -2495,16 +2452,17 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
 //                          This defaults to a blank string.
 function getDefaultQuoteStrObj()
 {
-  var retObj = new Object();
-  retObj.startIndex = -1;
-  retObj.quoteLevel = 0;
-  retObj.begOfLine = ""; // Will store the beginning of the line, before the >
-  retObj.copy = function(pThatQuoteStrObj) {
-    this.startIndex = pThatQuoteStrObj.startIndex;
-    this.quoteLevel = pThatQuoteStrObj.quoteLevel;
-    this.begOfLine = pThatQuoteStrObj.begOfLine;
-  };
-  return retObj;
+	var retObj = {
+		startIndex: -1,
+		quoteLevel: 0,
+		begOfLine: "", // Will store the beginning of the line, before the >
+		copy: function(pThatQuoteStrObj) {
+			this.startIndex = pThatQuoteStrObj.startIndex;
+			this.quoteLevel = pThatQuoteStrObj.quoteLevel;
+			this.begOfLine = pThatQuoteStrObj.begOfLine;
+		}
+	};
+	return retObj;
 }
 
 // Searches a string for the index of the first non-quote character; also finds
@@ -2523,184 +2481,235 @@ function getDefaultQuoteStrObj()
 //                           If pStr is an invalid string, or if a non-quote character
 //                           is not found, this will be -1.
 //               quoteLevel: The number of > characters at the start of the string
-//               begOfLine: The quote text at the beginng of the line
+//               begOfLine: The quote text at the beginning of the line
 function firstNonQuoteTxtIndex(pStr, pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 {
-  // Create the return object with initial values.
-  var retObj = getDefaultQuoteStrObj();  
+	// Create the return object with initial values.
+	var retObj = getDefaultQuoteStrObj();  
 
-  // If pStr is not a valid positive-length string, then just return.
-  if ((pStr == null) || (typeof(pStr) != "string") || (pStr.length == 0))
-    return retObj;
+	// If pStr is not a valid positive-length string, then just return.
+	if ((pStr == null) || (typeof(pStr) != "string") || (pStr.length == 0))
+		return retObj;
 
-  // If using author initials, then do some special checking: If the first >
-  // character is preceded by something other than spaces or 3 non-space characters,
-  // then this string is probably not quoted, so return an object that signifies
-  // such.
-  if (pUseAuthorInitials)
-  {
-    var firstGTCharIdx = pStr.indexOf(">");
-    if (firstGTCharIdx > -1)
-    {
-      // double-quoted text: If there are only spaces, > characters, or
-      // up to 3 characters directly before the >> (without spaces), then
-      // take this as a valid instance of double-quoted text.
-      var upToThreeNonSpacesBefore = false;
-      var onlySpaces = true;
-      var currentChar;
-      for (var srchIdx = 0; (srchIdx < pStr.length) && onlySpaces; ++srchIdx)
-        onlySpaces = (pStr.charAt(srchIdx) == " ");
-      if (!onlySpaces)
-      {
-        var startIdxBeforeGT = firstGTCharIdx - 4;
-        if (startIdxBeforeGT < 0)
-          startIdxBeforeGT = 0;
-        // If the string don't contain a non > followed by a space before the >, then
-        // go ahead and check the first 3 characters before the >.  Otherwise, it's
-        // already disqualified.
-        if (!/[^>] /.test(pStr.substr(startIdxBeforeGT, firstGTCharIdx-startIdxBeforeGT)))
-        {
-          upToThreeNonSpacesBefore = true;
-          var numNonSpaceChars = 0;
-          for (var srchIdx = firstGTCharIdx-1; srchIdx >= startIdxBeforeGT; --srchIdx)
-          {
-            if (pStr.charAt(srchIdx) != " ")
-              ++numNonSpaceChars;
-          }
-          upToThreeNonSpacesBefore = (numNonSpaceChars < 4);
-        }
-      }
+	// If using author initials, then do some special checking: If the first >
+	// character is preceded by something other than spaces or 3 non-space characters,
+	// then this string is probably not quoted, so return an object that signifies
+	// such.
+	if (pUseAuthorInitials)
+	{
+		var firstGTCharIdx = pStr.indexOf(">");
+		if (firstGTCharIdx > -1)
+		{
+			// double-quoted text: If there are only spaces, > characters, or
+			// up to 3 characters directly before the >> (without spaces), then
+			// take this as a valid instance of double-quoted text.
+			var upToThreeNonSpacesBefore = false;
+			var onlySpaces = true;
+			var currentChar;
+			for (var srchIdx = 0; (srchIdx < pStr.length) && onlySpaces; ++srchIdx)
+				onlySpaces = (pStr.charAt(srchIdx) == " ");
+			if (!onlySpaces)
+			{
+				var startIdxBeforeGT = firstGTCharIdx - 4;
+				if (startIdxBeforeGT < 0)
+					startIdxBeforeGT = 0;
+				// If the string don't contain a non > followed by a space before the >, then
+				// go ahead and check the first 3 characters before the >.  Otherwise, it's
+				// already disqualified.
+				if (!/[^>] /.test(pStr.substr(startIdxBeforeGT, firstGTCharIdx-startIdxBeforeGT)))
+				{
+					upToThreeNonSpacesBefore = true;
+					var numNonSpaceChars = 0;
+					for (var srchIdx = firstGTCharIdx-1; srchIdx >= startIdxBeforeGT; --srchIdx)
+					{
+						if (pStr.charAt(srchIdx) != " ")
+							++numNonSpaceChars;
+					}
+					upToThreeNonSpacesBefore = (numNonSpaceChars < 4);
+				}
+			}
 
-      // If there aren't just spaces or up to 3 non-space characters just before
-      // the first >, then return an object that signifies this situation properly.
-      if (!onlySpaces && !upToThreeNonSpacesBefore)
-      {
-        retObj.startIndex = 0;
-        retObj.quoteLevel = 0;
-        retObj.begOfLine = "";
-        return retObj;
-      }
-    }
-  }
+			// If there aren't just spaces or up to 3 non-space characters just before
+			// the first >, then return an object that signifies this situation properly.
+			if (!onlySpaces && !upToThreeNonSpacesBefore)
+			{
+				retObj.startIndex = 0;
+				retObj.quoteLevel = 0;
+				retObj.begOfLine = "";
+				return retObj;
+			}
+		}
+	}
 
-  // Look for quote lines that begin with 1 or 2 initials followed by a > (i.e.,
-  // "EO>" or "E>" at the start of the line.  If found, set an index to look for
-  // & count the > characters from the >.
-  var searchStartIndex = 0;
-  // Regex notes:
-  //  \w: Matches any alphanumeric character (word characters) including underscore (short for [a-zA-Z0-9_])
-  //  ?: Supposed to match 0 or 1 occurance, but seems to match 1 or 2
-  // First, look for spaces then 1 or 2 initials followed by a non-space followed
-  // by a >.  If not found, then look for ">>".  If that isn't found, then look
-  // for just 2 characters followed by a >.
-  var lineStartsWithQuoteText = /^ *\w?[^ ]>/.test(pStr);
-  if (pUseAuthorInitials)
-  {
-    if (!lineStartsWithQuoteText)
-      lineStartsWithQuoteText = (pStr.lastIndexOf(">>") > -1);
-    if (!lineStartsWithQuoteText)
-      lineStartsWithQuoteText = /\w{2}>/.test(pStr);
-  }
-  if (lineStartsWithQuoteText)
-  {
-    if (pUseAuthorInitials)
-    {
-      // If the string is an origin line (starting with " * Origin:"), then don't
-      // do much with this line..  Just set the first non-space character in retObj.
-      if (/^ \* Origin:/.test(pStr))
-        retObj.startIndex = 1;
-      else
-      {
-         // First, look for the last instance of ">> " (signifying a multi-quoted line).
-         // If found, increment searchStartIndex by 2 to get past the ">>".
-         var validDoubleQuoteChars = false;
-         searchStartIndex = pStr.lastIndexOf(">> ");
-         if (searchStartIndex > -1)
-           searchStartIndex += 2;
-         else
-         {
-           // If pStr is at least 3 characters long, then starting with the
-           // last 3 characters in pStr, look for an instance of 2 letters
-           // or numbers or underscores followed by a >.  Keep moving back
-           // 1 character at a time until found or until the beginning of
-           // the string is reached.
-           if (pStr.length >= 3)
-           {
-             // Regex notes:
-             //  \w: Matches any alphanumeric character (word characters) including underscore (short for [a-zA-Z0-9_])
-             var substrStartIndex = pStr.length - 3;
-             for (; (substrStartIndex >= 0) && (searchStartIndex < 0); --substrStartIndex)
-               searchStartIndex = pStr.substr(substrStartIndex, 3).search(/\w{2}>/);
-             ++substrStartIndex; // To fix off-by-one
-             if (searchStartIndex > -1)
-               searchStartIndex += substrStartIndex + 3; // To get past the "..>"
-                                                         // Note: I originally had + 4 here..
-             if (searchStartIndex < 0)
-             {
-               searchStartIndex = pStr.indexOf(">");
-               if (searchStartIndex < 0)
-                 searchStartIndex = 0;
-             }
-           }
-           else
-           {
-             searchStartIndex = pStr.indexOf(">");
-             if (searchStartIndex < 0)
-               searchStartIndex = 0;
-           }
-        }
-      }
-    }
-    else
-    {
-      // SlyEdit is not prefixing quote lines with author's initials.
-      searchStartIndex = pStr.indexOf(">");
-      if (searchStartIndex < 0)
-        searchStartIndex = 0;
-    }
-  }
+	// Look for quote lines that begin with 1 or 2 initials followed by a > (i.e.,
+	// "EO>" or "E>" at the start of the line.  If found, set an index to look for
+	// & count the > characters from the >.
+	var searchStartIndex = 0;
+	// Regex notes:
+	//  \w: Matches any alphanumeric character (word characters) including underscore (short for [a-zA-Z0-9_])
+	//  ?: Supposed to match 0 or 1 occurance, but seems to match 1 or 2
+	// First, look for spaces then 1 or 2 initials followed by a non-space followed
+	// by a >.  If not found, then look for ">>".  If that isn't found, then look
+	// for just 2 characters followed by a >.
+	var lineStartsWithQuoteText = /^ *\w?[^ ]>/.test(pStr);
+	if (pUseAuthorInitials)
+	{
+		if (!lineStartsWithQuoteText)
+			lineStartsWithQuoteText = (pStr.lastIndexOf(">>") > -1);
+		if (!lineStartsWithQuoteText)
+			lineStartsWithQuoteText = /\w{2}>/.test(pStr);
+	}
+	if (lineStartsWithQuoteText)
+	{
+		if (pUseAuthorInitials)
+		{
+			// If the string is an origin line (starting with " * Origin:"), then don't
+			// do much with this line..  Just set the first non-space character in retObj.
+			if (/^ \* Origin:/.test(pStr))
+				retObj.startIndex = 1;
+			else
+			{
+				// First, look for the last instance of ">> " (signifying a multi-quoted line).
+				// If found, increment searchStartIndex by 2 to get past the ">>".
+				var validDoubleQuoteChars = false;
+				searchStartIndex = pStr.lastIndexOf(">> ");
+				if (searchStartIndex > -1)
+					searchStartIndex += 2;
+				else
+				{
+					// If pStr is at least 3 characters long, then starting with the
+					// last 3 characters in pStr, look for an instance of 2 letters
+					// or numbers or underscores followed by a >.  Keep moving back
+					// 1 character at a time until found or until the beginning of
+					// the string is reached.
+					if (pStr.length >= 3)
+					{
+						// Regex notes:
+						//  \w: Matches any alphanumeric character (word characters) including underscore (short for [a-zA-Z0-9_])
+						var substrStartIndex = pStr.length - 3;
+						for (; (substrStartIndex >= 0) && (searchStartIndex < 0); --substrStartIndex)
+							searchStartIndex = pStr.substr(substrStartIndex, 3).search(/^\w{2}>$/);
+						++substrStartIndex; // To fix off-by-one
+						if (searchStartIndex > -1)
+						{
+							searchStartIndex += substrStartIndex + 3; // To get past the "..>"
+							// New (2017-12-24):
+							// If the instance(s) of a > has 3 non-space characters
+							// before it, then assume the > is not part of a quote
+							// prefix, and look for another > earlier in the text string.
+							// When using author initials, SlyEdit assumes a quote prefix
+							// has up to 2 characters before the >.
+							while ((searchStartIndex >= 4) && (pStr.substr(searchStartIndex-4, 4).search(/^[^\s]{3}>$/) >= 0))
+							{
+								searchStartIndex = pStr.lastIndexOf(">", searchStartIndex-2);
+								if (searchStartIndex == -1)
+									searchStartIndex = 0;
+								else
+									++searchStartIndex; // To fix off-by-one
+							}
+						}
+						// Note: I originally had + 4 here..
+						if (searchStartIndex < 0)
+						{
+							searchStartIndex = pStr.indexOf(">");
+							if (searchStartIndex < 0)
+								searchStartIndex = 0;
+						}
+					}
+					else
+					{
+						searchStartIndex = pStr.indexOf(">");
+						if (searchStartIndex < 0)
+							searchStartIndex = 0;
+					}
+				}
+			}
+		}
+		else
+		{
+			// SlyEdit is not prefixing quote lines with author's initials.
+			searchStartIndex = pStr.indexOf(">");
+			if (searchStartIndex < 0)
+				searchStartIndex = 0;
+		}
+	}
 
-  // Find the quote level and the beginning of the line.
-  // Look for the first non-quote text and quote level in the string.
-  var strChar = "";
-  var j = 0;
-  for (var i = searchStartIndex; i < pStr.length; ++i)
-  {
-    strChar = pStr.charAt(i);
-    if ((strChar != " ") && (strChar != ">"))
-    {
-      // We've found the first non-quote character.
-      retObj.startIndex = i;
-      // Count the number of times the > character appears at the start of
-      // the line, and set quoteLevel to that.
-      if (i >= 0)
-      {
-        for (j = 0; j < i; ++j)
-        {
-          if (pStr.charAt(j) == ">")
-            ++retObj.quoteLevel;
-        }
-      }
-      // Store the beginning of the line in retObj.begOfLine.  And if
-      // SlyEdit is configured to indent quote lines with author initials,
-      // and if the beginning of the line doesn't begin with a space,
-      // then add a space to the beginning of it.
-      retObj.begOfLine = pStr.substr(0, retObj.startIndex);
-      if (pUseAuthorInitials && pIndentQuoteLinesWithInitials && (retObj.begOfLine.length > 0) && (retObj.begOfLine.charAt(0) != " "))
-        retObj.begOfLine = " " + retObj.begOfLine;
-      break;
-    }
-  }
+	// Find the quote level and the beginning of the line.
+	// Look for the first non-quote text and quote level in the string.
+	var strChar = "";
+	var j = 0;
+	for (var i = searchStartIndex; i < pStr.length; ++i)
+	{
+		strChar = pStr.charAt(i);
+		if ((strChar != " ") && (strChar != ">"))
+		{
+			// New (2017-12-24):
+			// If using author initials and there are 3 non-space characters
+			// before the >, then continue to the next character.
+			if (i >= 3)
+			{
+				if (pUseAuthorInitials && (pStr.substr(i-3, 4).search(/^[^\s]{3}>$/) >= 0))
+					continue;
+			}
 
-  // If we haven't found non-quote text but the line starts with quote text,
-  // then set the starting index & quote level in retObj.
-  if (lineStartsWithQuoteText && ((retObj.startIndex == -1) || (retObj.quoteLevel == 0)))
-  {
-    retObj.startIndex = pStr.indexOf(">") + 1;
-    retObj.quoteLevel = 1;
-  }
+			// We've found the first non-quote character.
+			retObj.startIndex = i;
+			// Count the number of times the > character appears at the start of
+			// the line, and set quoteLevel to that.
+			if (i >= 0)
+			{
+				for (j = 0; j < i; ++j)
+				{
+					if (pStr.charAt(j) == ">")
+					{
+						// New (2017-12-24):
+						// If using author initials, then increment the quote level
+						// only if there are not 3 non-space characters before the >
+						if (pUseAuthorInitials && (j >= 3))
+						{
+							if (pStr.substr(j-3, 4).search(/^[^\s]{3}>$/) < 0)
+								++retObj.quoteLevel;
+						}
+						else
+							++retObj.quoteLevel;
+					}
+				}
+			}
+			// Store the beginning of the line in retObj.begOfLine.  And if
+			// SlyEdit is configured to indent quote lines with author initials,
+			// and if the beginning of the line doesn't begin with a space,
+			// then add a space to the beginning of it.
+			retObj.begOfLine = pStr.substr(0, retObj.startIndex);
+			if (pUseAuthorInitials && pIndentQuoteLinesWithInitials && (retObj.begOfLine.length > 0) && (retObj.begOfLine.charAt(0) != " "))
+				retObj.begOfLine = " " + retObj.begOfLine;
+			break;
+		}
+	}
 
-  return retObj;
+	// If we haven't found non-quote text but the line starts with quote text,
+	// then set the starting index & quote level in retObj.
+	if (lineStartsWithQuoteText && ((retObj.startIndex == -1) || (retObj.quoteLevel == 0)))
+	{
+		retObj.startIndex = pStr.indexOf(">") + 1;
+		// New (2017-12-24):
+		var setQuoteLevel = true;
+		// When using author initials in quote lines: If there are 3 non-space
+		// characters before the >, then it's not an actual quote (SlyEdit
+		// considers quote lines with initials to have only 2 characters before
+		// the >).
+		if (pUseAuthorInitials && retObj.startIndex >= 4)
+		{
+			if (pStr.substr(retObj.startIndex-4, 4).search(/^[^\s]{3}>$/) >= 0)
+			{
+				retObj.startIndex = 0;
+				setQuoteLevel = false;
+			}
+		}
+		if (setQuoteLevel)
+			retObj.quoteLevel = 1;
+	}
+
+	return retObj;
 }
 
 // Performs text wrapping on the quote lines.
@@ -2736,15 +2745,15 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials, pTrim
 // will be removed.
 function normalizeGTChars(pStr)
 {
-  if (/^\s*>\s*$/.test(pStr))
-    pStr = ">";
-  else
-  {
-    pStr = pStr.replace(/>\s*>/g, "> >")
-               .replace(/^\s>/, ">")
-               .replace(/^\s*$/, "");
-  }
-  return pStr;
+	if (/^\s*>\s*$/.test(pStr))
+		pStr = ">";
+	else
+	{
+		pStr = pStr.replace(/>\s*>/g, "> >")
+		           .replace(/^\s>/, ">")
+		           .replace(/^\s*$/, "");
+	}
+	return pStr;
 }
 
 // Wraps quote lines and prefixes them with the original author's initials.
@@ -2853,7 +2862,6 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuo
 	}
 
 	// 3. Go through each section of the quote lines and wrap & quote appropriately
-	// TODO: This loop seems to be looping forever for certain messages
 	var trimSpacesFromQuoteLines = (typeof(pTrimSpacesFromQuoteLines) == "boolean" ? pTrimSpacesFromQuoteLines : true);
 	for (var sIndex = 0; sIndex < quoteSections.length; ++sIndex)
 	{
@@ -2922,7 +2930,7 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuo
 		{
 			numLinesAdded = wrapTextLines(gQuoteLines, quoteSections[sIndex].startArrIndex,
 			                              quoteSections[sIndex].endArrIndex, maxLineWidth,
-			                              idxesAddedNL);
+			                              idxesAddedNL, lineInfos);
 		}
 
 		// If quote lines were added as a result of wrapping, then determine the
