@@ -1810,8 +1810,8 @@ static unsigned parseEnum(const char* value, str_list_t names)
 	FIND_WHITESPACE(p);
 	*p=0;
 
-    if((count=strListCount(names)) == 0)
-        return 0;
+	if((count=strListCount(names)) == 0)
+		return 0;
 
 	/* Look for exact matches first */
 	for(i=0; i<count; i++)
@@ -1824,8 +1824,8 @@ static unsigned parseEnum(const char* value, str_list_t names)
 			return(i);
 
     i=strtoul(val,NULL,0);
-    if(i>=count)
-        i=count-1;
+	if(i>=count)
+		i=count-1;
 	return i;
 }
 

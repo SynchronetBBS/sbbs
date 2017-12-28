@@ -886,7 +886,7 @@ static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
 	struct statfs fs;
 	unsigned long blocks;
 
-    if (statfs(path, &fs) < 0)
+	if(statfs(path, &fs) < 0)
     	return 0;
 
 	if(freespace)

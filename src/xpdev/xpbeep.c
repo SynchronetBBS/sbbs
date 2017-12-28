@@ -12,6 +12,7 @@
 	#include <mmsystem.h>
 #elif defined(__unix__)
 	#include <fcntl.h>
+	#include <sys/ioctl.h>
 	#if SOUNDCARD_H_IN==1
 		#include <sys/soundcard.h>
 	#elif SOUNDCARD_H_IN==2
