@@ -63,6 +63,7 @@
 static const char*	server_name="Synchronet Mail Server";
 #define FORWARD			"forward:"
 #define NO_FORWARD		"local:"
+#define NO_SPAM			"#nospam"
 
 int dns_getmx(char* name, char* mx, char* mx2
 			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout);
@@ -811,6 +812,7 @@ static void pop3_thread(void* arg)
 	BOOL		activity=TRUE;
 	BOOL		apop=FALSE;
 	uint32_t	l;
+	long		lm_mode = 0;
 	ulong		lines;
 	ulong		lines_sent;
 	ulong		login_attempts;
@@ -940,6 +942,11 @@ static void pop3_thread(void* arg)
 				response=p;
 		}
 		SAFECOPY(username,p);
+		if((p = strstr(username, NO_SPAM)) != NULL) {
+			*p = 0;
+			lm_mode = LM_NOSPAM;
+		} else
+			lm_mode = 0;
 		if(!apop) {
 			sockprintf(socket,"+OK");
 			if(!sockgetrsp(socket,"PASS ",buf,sizeof(buf))) {
@@ -1030,7 +1037,7 @@ static void pop3_thread(void* arg)
 			break;
 		}
 
-		mail=loadmail(&smb,&msgs,user.number,MAIL_YOUR,0);
+		mail=loadmail(&smb,&msgs,user.number,MAIL_YOUR,lm_mode);
 
 		for(l=bytes=0;l<msgs;l++) {
 			msg.hdr.number=mail[l].number;
