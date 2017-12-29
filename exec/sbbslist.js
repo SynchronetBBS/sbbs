@@ -19,6 +19,7 @@ load("portdefs.js");
 
 var sbl_dir = "../xtrn/sbl/";
 var list_format = 0;
+var export_freq = 7;	// minimum days between exports
 var color_cfg = {
 	header: BLACK | BG_LIGHTGRAY,
 	selection: BG_BLUE,
@@ -37,6 +38,8 @@ if(!options.sub)
     options.sub="syncdata";
 if(options && options.format > 0)
 	list_format = options.format;
+if(options && options.export_freq > 0)
+	export_freq = options.export_freq;
 
 var lib = load({}, "sbbslist_lib.js");
 load("graphic.js");
@@ -57,7 +60,6 @@ function date_to_str(date)
 
 function date_from_str(datestrStr)
 {
-   
 	var a = str.split("/");
 	var month = parseInt(a[0]);
 	var day = parseInt(a[1]);
@@ -138,39 +140,21 @@ function export_entry(bbs, msgbase)
     return msgbase.save_msg(hdr, body);
 }
 
-function export_to_msgbase(list, msgbase, last_export, limit, all)
+function export_to_msgbase(list, msgbase, limit, all)
 {
     var i;
     var count=0;
 	var errors=0;
 
-	var ini = new File(msgbase.file + ".ini");
-	if(last_export == undefined) {
-		print("Opening " + ini.name);
-		if(ini.open("r")) {
-			last_export=ini.iniGetValue("sbbslist","last_export", new Date(0));
-			print("last export = " + last_export);
-			ini.close();
-		} else if(debug)
-			print("Error " + ini.error + " opening " + ini.name);
-		/* Fallback to using old SBL export pointer (time_t) storage file/format */
-		if(!last_export || !last_export.valueOf()) {
-			var f = new File(sbl_dir + "sbl2smb.dab");
-			print("Opening " + f.name);
-			if(f.open("rb")) {
-				last_export = new Date(f.readBin(4)*1000);
-				f.close();
-			} else
-				print("Error " + f.error + " opening " + f.name);
-		}
-	}
-	print("Exporting entries created/modified/verified since " + last_export.toString());
     for(i in list) {
         if(js.terminated)
             break;
 		if(all != true) {
 			if(list[i].imported)
 				continue;
+			var last_export = 0;
+			if(list[i].entry.exported)
+				last_export = new Date(list[i].entry.exported.on).valueOf();
 			var created = 0;
 			if(list[i].entry.created)
 				created = new Date(list[i].entry.created.on).valueOf();
@@ -183,6 +167,8 @@ function export_to_msgbase(list, msgbase, last_export, limit, all)
 			if(created <= last_export
 				&& updated <= last_export
 				&& verified <= last_export)
+				continue;
+			if((new Date().valueOf() - last_export) < export_freq * (24*60*60*1000))
 				continue;
 		}
         if(!export_entry(objcopy(list[i]), msgbase)) {
@@ -203,12 +189,6 @@ function export_to_msgbase(list, msgbase, last_export, limit, all)
 			break;
     }
     print("Exported " + count + " entries (" + errors + " errors)");
-    print("Opening " + ini.name);
-    if(ini.open(file_exists(ini.name) ? 'r+':'w+')) {
-        ini.iniSetValue("sbbslist","last_export",new Date());
-        ini.close();
-    } else
-        print("Error " + ini.error + " opening " + ini.name);
 	if(count)
 		lib.write_list(list);
 }
@@ -989,7 +969,7 @@ function browse(list)
 	}
 
 	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
-	console.ctrlkey_passthru|=(1<<21);      // Disable Ctrl-U handling in sbbs
+	console.ctrlkey_passthru|=(1<<16);      // Disable Ctrl-P handling in sbbs
 
 	if(user.number == 1 && !lib.system_exists(list, system.name) 
 		&& !console.noyes(system.name + " is not listed. Add it")) {
@@ -1247,7 +1227,7 @@ function browse(list)
 							for(var j in list_formats[i])
 								sort_fields.push(list_formats[i][j]);
 						for(var i in sort_fields)
-							console.uselect(Number(i), "Sort Field", sort_fields[i]);
+							console.uselect(Number(i), "Sort Field", sort_fields[i].replace('_', ' ').capitalize());
 						var sort_field = console.uselect();
 						if(sort_field == 0)
 							list = orglist.slice(), sort = undefined;
@@ -1258,12 +1238,17 @@ function browse(list)
 						break;
 					}
 					case 'F':
-						for(var i in list_formats)
-							console.uselect(Number(i), "List Format", list_formats[i]);
+					{
+						var formats = objcopy(list_formats);
+						for(var i in formats) {
+							formats[i].forEach(function(v, i, a) { a[i] = v.replace('_', ' ').capitalize() });
+							console.uselect(Number(i), "List Format", formats[i].join(", "));
+						}
 						var choice = console.uselect();
 						if(choice >= 0)
 							list_format = choice;
 						break;
+					}
 					case 'H':
 					case '?':
 						help();
@@ -1994,7 +1979,7 @@ function main()
 				if(cmd == "import")
 					import_from_msgbase(list, msgbase, ptr, limit, all);
 				else
-					export_to_msgbase(list, msgbase, ptr, limit, all);
+					export_to_msgbase(list, msgbase, limit, all);
 				msgbase.close();
 				break;
 			case "syncterm":
