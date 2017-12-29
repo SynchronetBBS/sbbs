@@ -441,7 +441,8 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 	if(!cfg->smb_retry_time)
 		cfg->smb_retry_time=30;
 	get_int(cfg->max_qwkmsgage, instream);
-	for(i=0;i<233;i++)	/* NULL */
+	get_int(cfg->max_spamage, instream);
+	for(i=0;i<232;i++)	/* NULL */
 		get_int(n,instream);
 	get_int(cfg->msg_misc,instream);
 	for(i=0;i<255;i++)	/* 0xff */
