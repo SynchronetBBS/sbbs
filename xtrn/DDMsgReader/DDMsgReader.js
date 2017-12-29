@@ -85,6 +85,10 @@
  *                              from December 18, 2017 so that the PageUp and PageDown keys
  *                              continue to work properly.  This script should still also
  *                              work with older builds of Synchronet.
+ * 2017-12-29 Eric Oulashin     Version 1.17 beta 52
+ *                              Bug fix: When using the scrolling interface to read a
+ *                              message, any message color codes that might appear in
+ *                              the message lines are preserved across lines.
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -171,8 +175,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 51";
-var READER_DATE = "2017-12-18";
+var READER_VERSION = "1.17 Beta 52";
+var READER_DATE = "2017-12-29";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4384,11 +4388,13 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	if (topMsgLineIdxForLastPage != 0)
 		fractionToLastPage = topMsgLineIdx / topMsgLineIdxForLastPage;
 
-	// Draw an initial scrollbar on the rightmost column of the message area
-	// showing the fraction of the message shown and what part of the message
-	// is currently being shown.  The scrollbar will be updated minimally in
-	// the input loop to minimize screen redraws.
-	this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+	// If not using a display frame (which has its own scrollbar), draw an
+	// initial scrollbar on the rightmost column of the message area showing
+	// the fraction of the message shown and what part of the message is
+	// currently being shown.  The scrollbar will be updated minimally in the
+	// input loop to minimize screen redraws.
+	if (msgInfo.displayFrame == null)
+		this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
 
 	// Input loop (for scrolling the message up & down)
 	var msgLineFormatStr = "%-" + this.msgAreaWidth + "s";
@@ -12122,12 +12128,8 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 		errorMsg: ""
 	};
 
-	var determineAttachments = true;
-	if (typeof(pDetermineAttachments) == "boolean")
-		determineAttachments = pDetermineAttachments;
-	var getB64Data = true;
-	if (typeof(pGetB64Data) == "boolean")
-		getB64Data = pGetB64Data;
+	var determineAttachments = (typeof(pDetermineAttachments) == "boolean" ? pDetermineAttachments : true);
+	var getB64Data = (typeof(pGetB64Data) == "boolean" ? pGetB64Data : true);
 	var msgBody = "";
 	if (typeof(pMsgBody) == "string")
 		msgBody = pMsgBody;
@@ -12264,8 +12266,8 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 					// Frame object and have it read the file.
 					if (tmpANSIFileWritten)
 					{
-						// Create the Frame object and 
-						// TODO: Should this use 79 or 80 columns?
+						// Create the Frame object and scrollbar object, if the
+						// scrollbar JS is available on the system
 						retObj.displayFrame = new Frame(1, // x: Horizontal coordinate of top left
 						                                this.enhMsgHeaderLines.length+1, // y: Vertical coordinate of top left
 						                                80, // Width
@@ -15230,9 +15232,22 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 	var lastTxtRow = pTopLeftY + pHeight - 1;
 	var txtLineFormatStr = "%-" + pWidth + "s";
 
-	var retObj = new Object();
-	retObj.lastKeypress = "";
-	retObj.topLineIdx = pTopLineIdx;
+	var retObj = {
+		lastKeypress: "",
+		topLineIdx: pTopLineIdx
+	};
+
+	// Create an array of color/attribute codes for each line of
+	// text, in case there are any such codes in the text lines,
+	// so that the colors in the message are displayed properly.
+	// First, get the last color/attribute codes from first text
+	// line and apply them to the next line, and so on.
+	var attrCodes = getAttrsBeforeStrIdx(pTxtLines[0], pTxtLines[0].length-1);
+	for (var lineIdx = 1; lineIdx < pTxtLines.length; ++lineIdx)
+	{
+		pTxtLines[lineIdx] = attrCodes + pTxtLines[lineIdx];
+		attrCodes = getAttrsBeforeStrIdx(pTxtLines[lineIdx], pTxtLines[lineIdx].length-1);
+	}
 
 	var writeTxtLines = pWriteTxtLines;
 	var continueOn = true;
@@ -19060,6 +19075,92 @@ function msgAttrsToString(pMsgAttrs)
 			attrsStr += ", ";
 		attrsStr += "MSG_POLL";
 	}
+	return attrsStr;
+}
+
+// Returns the index of the first Synchronet attribute code before a given index
+// in a string.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pIdx: The index to search back from
+//  pSeriesOfAttrs: Optional boolean - Whether or not to look for a series of
+//                  attributes.  Defaults to false (look for just one attribute).
+//  pOnlyInWord: Optional boolean - Whether or not to look only in the current word
+//               (with words separated by whitespace).  Defaults to false.
+//
+// Return value: The index of the first Synchronet attribute code before the given
+//               index in the string, or -1 if there is none or if the parameters
+//               are invalid
+function strIdxOfSyncAttrBefore(pStr, pIdx, pSeriesOfAttrs, pOnlyInWord)
+{
+	if (typeof(pStr) != "string")
+		return -1;
+	if (typeof(pIdx) != "number")
+		return -1;
+	if ((pIdx < 0) || (pIdx >= pStr.length))
+		return -1;
+
+	var seriesOfAttrs = (typeof(pSeriesOfAttrs) == "boolean" ? pSeriesOfAttrs : false);
+	var onlyInWord = (typeof(pOnlyInWord) == "boolean" ? pOnlyInWord : false);
+
+	var attrCodeIdx = pStr.lastIndexOf("\1", pIdx-1);
+	if (attrCodeIdx > -1)
+	{
+		// If we are to only check the current word, then continue only if
+		// there isn't a space between the attribute code and the given index.
+		if (onlyInWord)
+		{
+			if (pStr.lastIndexOf(" ", pIdx-1) >= attrCodeIdx)
+				attrCodeIdx = -1;
+		}
+	}
+	if (attrCodeIdx > -1)
+	{
+		var syncAttrRegexWholeWord = /^\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i;
+		if (syncAttrRegexWholeWord.test(pStr.substr(attrCodeIdx, 2)))
+		{
+			if (seriesOfAttrs)
+			{
+				for (var i = attrCodeIdx - 2; i >= 0; i -= 2)
+				{
+					if (syncAttrRegexWholeWord.test(pStr.substr(i, 2)))
+						attrCodeIdx = i;
+					else
+						break;
+				}
+			}
+		}
+		else
+			attrCodeIdx = -1;
+	}
+	return attrCodeIdx;
+}
+
+// Returns a string with any Synchronet color/attribute codes found in a string
+// before a given index.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pIdx: The index in the string to search before
+//
+// Return value: A string containing any Synchronet attribute codes found before
+//               the given index in the given string
+function getAttrsBeforeStrIdx(pStr, pIdx)
+{
+	if (typeof(pStr) != "string")
+		return "";
+	if (typeof(pIdx) != "number")
+		return "";
+	if (pIdx < 0)
+		return "";
+
+	var idx = (pIdx < pStr.length ? pIdx : pStr.length-1);
+	var attrStartIdx = strIdxOfSyncAttrBefore(pStr, idx, true, false);
+	var attrEndIdx = strIdxOfSyncAttrBefore(pStr, idx, false, false); // Start of 2-character code
+	var attrsStr = "";
+	if ((attrStartIdx > -1) && (attrEndIdx > -1))
+		attrsStr = pStr.substring(attrStartIdx, attrEndIdx+2);
 	return attrsStr;
 }
 

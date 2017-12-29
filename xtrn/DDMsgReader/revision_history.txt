@@ -5,7 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.17     2017-??-??   Added support for Synchronet's new voting feature that
+1.17     2018-??-??   Added support for Synchronet's new voting feature that
                       was added in Synchronet 1.17.  Added support to allow the
                       sysop to validate messages in moderated message areas.
                       Fixed various bugs related to doing a newscan, displaying
