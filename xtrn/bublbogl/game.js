@@ -38,9 +38,9 @@ var playing_game=false;
 var clearalert=false;
 var calendar = new Calendar(58,4,"\1y","\0012\1g\1h");
 var lobby = new Lobby(1,1);
+var useralias = user.alias.replace(/\./g,"_");
 var date = new Date();
 var data = new GameData();
-var useralias = user.alias.replace(/\./g,"_");
 
 function boggle() {
 	function init()
