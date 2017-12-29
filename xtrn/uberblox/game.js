@@ -12,8 +12,8 @@ load("sbbsdefs.js")
 load("funclib.js");
  
 var oldpass = console.ctrl_key_passthru;
-var data = new GameData();
 var useralias = user.alias.replace(/\./g,"_");
+var data = new GameData();
 
 /* cycle client and check for updates */
 function cycle() {
