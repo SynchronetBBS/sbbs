@@ -16,6 +16,7 @@ var version_notice = "Synchronet BBS List v4(" + REVISION + ")";
 load("sbbsdefs.js");
 load("sockdefs.js");
 load("portdefs.js");
+load("hexdump_lib.js");
 
 var sbl_dir = "../xtrn/sbl/";
 var list_format = 0;
@@ -28,7 +29,6 @@ var color_cfg = {
 };
 var cmd_prompt_fmt = "\1n\1c\xfe \1h%s \1n\1c\xfe ";
 
-const base64_max_line_len = 72;
 var debug = false;
 
 var options=load({}, "modopts.js", "sbbslist");
@@ -42,10 +42,9 @@ if(options && options.export_freq > 0)
 	export_freq = options.export_freq;
 
 var lib = load({}, "sbbslist_lib.js");
-load("graphic.js");
 var capture = load({}, "termcapture_lib.js");
 capture.timeout=15;
-capture.poll_timeout=5;
+capture.poll_timeout=10;
 
 function objcopy(obj)
 {
@@ -604,9 +603,7 @@ function capture_preview(bbs, addr)
 		var result = capture.capture();
         if(result == false)
             return capture.error;
-        graphic = new Graphic();
-        graphic.ANSI = result.preview.join("\r\n");
-        bbs.preview = graphic.base64_encode(base64_max_line_len);
+        bbs.preview = lib.encode_preview(result.preview);
         return true;
 	}
 
@@ -730,9 +727,7 @@ function verify_bbs(bbs)
                     other_services: verify_services(result.ip_address, 5)
                 };
                 lib.verify_system(bbs, js.exec_file + " " + REVISION);
-                graphic = new Graphic();
-                graphic.ANSI = result.preview.join("\r\n");
-                bbs.preview = graphic.base64_encode(base64_max_line_len);
+				bbs.preview = lib.encode_preview(result.preview);
                 return true;
             }
             log(LOG_DEBUG,"Non-Synchronet identification: " + result.hello[0]);
@@ -1516,9 +1511,7 @@ function view(list, current)
 					break;
 				}
 				console.clear();
-				var graphic=new Graphic();
-				graphic.base64_decode(bbs.preview);
-				graphic.draw();
+				lib.draw_preview(bbs);
 				console.getkey();
 				console.clear();
 				break;
@@ -1530,9 +1523,7 @@ function view(list, current)
 					var result = capture_preview(copy);
 					if(result == true) {
 						console.clear();
-						var graphic=new Graphic();
-						graphic.base64_decode(copy.preview);
-						graphic.draw();
+						lib.draw_preview(copy);
 						console.getkey();
 					} else {
 						console.crlf();
@@ -1924,6 +1915,7 @@ function main()
 			case "-preview":
 				if(val)
 					addr = val;
+				preview = true;
 				break;
 			case "-sort":
 				options.sort = val;
@@ -2090,8 +2082,10 @@ function main()
 					var index = lib.system_index(list, optval[cmd]);
 					if(index < 0)
 						alert(optval[cmd] + " not found");
-					else
+					else {
 						print(JSON.stringify(list[index], null, 1));
+						hexdump("compressed preview", base64_decode(list[index].preview.join("")));
+					}
 					break;
 				}
 				for(i in list) {
@@ -2142,8 +2136,12 @@ function main()
 				bbs.software = "Synchronet";
 				bbs.total = lib.system_stats();
 				bbs.terminal.nodes = system.nodes;
-				if(preview)
-					capture_preview(bbs, addr);
+				if(preview) {
+					log("Capturing preview from: " + bbs.name);
+					var result = capture_preview(bbs, addr);
+					if(result != true)
+						alert(result);
+				}
 				lib.update_system(bbs, js.exec_file + " " + REVISION);
 				if(debug) print(JSON.stringify(bbs, null, 1));
 				if(lib.replace(bbs))
@@ -2158,9 +2156,7 @@ function main()
 				var result = capture_preview(list[index], addr);
 				if(result == true) {
 					if(js.global.console) {
-						var graphic=new Graphic();
-						graphic.base64_decode(list[index].preview);
-						graphic.draw();
+						lib.draw_preview(list[index].preview);
 					}
 				} else
 					print(result);
@@ -2180,10 +2176,45 @@ function main()
 				}
 				break;
 			case "clean":
-				for(var i=0; i< list.length; i++) {
+				for(var i=0; i < list.length; i++) {
 					delete list[i].entry.exported;
 				}
 				lib.write_list(list);
+				break;
+			case "compress":
+				if(optval[cmd]) {
+					var index = lib.system_index(list, optval[cmd]);
+					if(index < 0)
+						alert(optval[cmd] + " not found");
+					else {
+						var bbs = list[index];
+						bbs.preview = lib.compress_preview(bbs.preview);
+						if(debug) print(JSON.stringify(bbs, null, 1));
+						if(lib.replace(bbs))
+							print(bbs.name + " updated successfully");
+					}
+				} else {
+					for(var i=0; i < list.length; i++) {
+						if(list[i].preview) {
+							printf("%-25s ", list[i].name);
+							list[i].preview = lib.compress_preview(list[i].preview);
+						}
+					}
+					lib.write_list(list);
+				}
+				break;
+			case "decode":
+				if(optval[cmd]) {
+					var index = lib.system_index(list, optval[cmd]);
+					if(index < 0)
+						alert(optval[cmd] + " not found");
+					else {
+						var bbs = list[index];
+						if(debug) print(JSON.stringify(bbs.preview, null, 1));
+						var preview = lib.decode_preview(bbs.preview);
+						hexdump("preview", preview);
+					}
+				}
 				break;
 		}
     }
