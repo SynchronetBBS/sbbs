@@ -80,6 +80,7 @@ int  		err_level=DEFAULT_ERR_LOG_LVL;
 pthread_mutex_t output_mutex;
 #if defined(__unix__)
 BOOL		daemonize=FALSE;
+struct termios	orig_term;
 #endif
 char		orig_cwd[MAX_PATH+1];
 BOOL		debugger=FALSE;
@@ -159,6 +160,51 @@ void usage(FILE* fp)
 		,_PATH_DEVNULL
 		,_PATH_DEVNULL
 		);
+}
+
+static void
+cooked_tty(void)
+{
+	if (isatty(fileno(stdin))) {
+#ifdef __unix__
+		tcsetattr(STDIN_FILENO, TCSANOW, &orig_term);
+#elif defined _WIN32
+		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), ENABLE_ECHO_INPUT
+		    | ENABLE_EXTENDED_FLAGS | ENABLE_INSERT_MODE | ENABLE_LINE_INPUT
+		    | ENABLE_MOUSE_INPUT | ENABLE_PROCESSED_INPUT | ENABLE_QUICK_EDIT_MODE
+		    | ENABLE_VIRTUAL_TERMINAL_INPUT);
+#else
+		#warning Can't cook the tty on this platform
+#endif
+	}
+}
+
+#ifdef __unix__
+static void raw_input(struct termios *t)
+{
+#ifdef JSDOOR
+	t->c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+	t->c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
+#else
+	t->c_iflag &= ~(IMAXBEL|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+	t->c_lflag &= ~(ECHO|ECHONL|ICANON|IEXTEN);
+#endif
+}
+#endif
+
+static void
+raw_tty(void)
+{
+	if (isatty(fileno(stdin))) {
+#ifdef __unix__
+		struct termios term = orig_term;
+
+		raw_input(&term);
+		tcsetattr(fileno(stdin), TCSANOW, &term);
+#elif defined _WIN32
+		#warning Can't set the tty as raw on this platform
+#endif
+	}
 }
 
 int mfprintf(FILE* fp, char *fmt, ...)
@@ -279,10 +325,6 @@ static BOOL winsock_startup(void)
 
 #endif
 
-#ifdef __unix__
-struct termios orig_term;
-#endif
-
 static int do_bail(int code)
 {
 #if defined(_WINSOCKAPI_)
@@ -297,10 +339,7 @@ static int do_bail(int code)
 
 	if(code)
 		fprintf(statfp,"\nReturning error code: %d\n",code);
-#ifdef __unix__
-	if(isatty(fileno(stdin)))
-		tcsetattr(STDIN_FILENO, TCSANOW, &orig_term);
-#endif
+	cooked_tty();
 	return(code);
 }
 
@@ -395,7 +434,9 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
+	cooked_tty();
 	p=fgets(buf,len+1,stdin);
+	raw_tty();
 	JS_RESUMEREQUEST(cx, rc);
 
 	if(p!=NULL)
@@ -523,7 +564,9 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	printf("%s (Y/n)? ", cstr);
 	free(cstr);
+	cooked_tty();
 	fgets(instr,sizeof(instr),stdin);
+	raw_tty();
 	JS_RESUMEREQUEST(cx, rc);
 
 	p=instr;
@@ -554,7 +597,9 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	printf("%s (N/y)? ", cstr);
 	free(cstr);
+	cooked_tty();
 	fgets(instr,sizeof(instr),stdin);
+	raw_tty();
 	JS_RESUMEREQUEST(cx, rc);
 
 	p=instr;
@@ -592,10 +637,13 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 		instr[0]=0;
 
 	rc=JS_SUSPENDREQUEST(cx);
+	cooked_tty();
 	if(!fgets(instr,sizeof(instr),stdin)) {
+		raw_tty();
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
+	raw_tty();
 	JS_RESUMEREQUEST(cx, rc);
 
 	if((str=JS_NewStringCopyZ(cx, truncnl(instr)))==NULL)
@@ -842,8 +890,12 @@ char *dbg_getline(void)
 	char	*line=NULL;
 	size_t	linecap=0;
 
-	if(getline(&line, &linecap, stdin)>=0)
+	cooked_tty();
+	if(getline(&line, &linecap, stdin)>=0) {
+		raw_tty();
 		return line;
+	}
+	raw_tty();
 	if(line)
 		free(line);
 	return NULL;
@@ -851,8 +903,12 @@ char *dbg_getline(void)
 	// I assume Windows sucks.
 	char	buf[1025];
 
-	if(fgets(buf,sizeof(buf),stdin))
+	cooked_tty();
+	if(fgets(buf,sizeof(buf),stdin)) {
+		raw_tty();
 		return strdup(buf);
+	}
+	raw_tty();
 	return NULL;
 #endif
 }
@@ -1051,19 +1107,6 @@ int parseLogLevel(const char* p)
 	return DEFAULT_LOG_LEVEL;
 }
 
-#ifdef __unix__
-void raw_input(struct termios *t)
-{
-#ifdef JSDOOR
-	t->c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
-	t->c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
-#else
-	t->c_iflag &= ~(IMAXBEL|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
-	t->c_lflag &= ~(ECHO|ECHONL|ICANON|IEXTEN);
-#endif
-}
-#endif
-
 /*********************/
 /* Entry point (duh) */
 /*********************/
@@ -1089,15 +1132,10 @@ int main(int argc, char **argv, char** environ)
 	}
 	if(isatty(fileno(stdin))) {
 #ifdef __unix__
-		struct termios term;
-
 		tcgetattr(fileno(stdin), &orig_term);
-		term = orig_term;
-		raw_input(&term);
-		tcsetattr(fileno(stdin), TCSANOW, &term);
+		raw_tty();
 #else
-	//	This completely disabled console input on Windows:
-	//	SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0);
+		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0);
 #endif
 		statfp=stderr;
 	}
