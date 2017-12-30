@@ -319,6 +319,10 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 									return(TERM_KEY_DELETE);
 								case 4:
 									return(TERM_KEY_END);
+								case 5:
+									return TERM_KEY_PAGEUP;
+								case 6:
+									return TERM_KEY_PAGEDN;
 							}
 							break;
 					}
