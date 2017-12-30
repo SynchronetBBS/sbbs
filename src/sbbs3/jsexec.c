@@ -202,6 +202,8 @@ raw_tty(void)
 		raw_input(&term);
 		tcsetattr(fileno(stdin), TCSANOW, &term);
 #elif defined _WIN32
+		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0);
+#else
 		#warning Can't set the tty as raw on this platform
 #endif
 	}
@@ -1133,10 +1135,8 @@ int main(int argc, char **argv, char** environ)
 	if(isatty(fileno(stdin))) {
 #ifdef __unix__
 		tcgetattr(fileno(stdin), &orig_term);
-		raw_tty();
-#else
-		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0);
 #endif
+		raw_tty();
 		statfp=stderr;
 	}
 	else	/* if redirected, don't send status messages to stderr */
