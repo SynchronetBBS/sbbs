@@ -136,7 +136,7 @@ function bbs_preview(num, bbs)
     **/
 //    log(LOG_DEBUG,bbs.preview.join("\r\n"));
     var graphic=new Graphic();
-    graphic.base64_decode(bbs.preview);
+	graphic.BIN = lib.decode_preview(bbs.preview);
     write('<pre title="Click to Zoom-In" onclick="onClick(this)">'); // onmouseout="this.className=\'zoomOut\'">');
 	var html = graphic.HTML;
 	/* HTML Optimization: */
