@@ -57,7 +57,7 @@ function date_to_str(date)
     return format("%02u/%02u/%02u", date.getUTCMonth()+1, date.getUTCDate(), date.getUTCFullYear()%100);
 }
 
-function date_from_str(datestrStr)
+function date_from_str(str)
 {
 	var a = str.split("/");
 	var month = parseInt(a[0]);
