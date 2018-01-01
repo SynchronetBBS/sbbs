@@ -136,7 +136,10 @@ function bbs_preview(num, bbs)
     **/
 //    log(LOG_DEBUG,bbs.preview.join("\r\n"));
     var graphic=new Graphic();
-	graphic.BIN = lib.decode_preview(bbs.preview);
+	var bin = lib.decode_preview(bbs.preview);
+	if(!bin || !bin.length)
+		return false;
+	graphic.BIN = bin;
     write('<pre title="Click to Zoom-In" onclick="onClick(this)">'); // onmouseout="this.className=\'zoomOut\'">');
 	var html = graphic.HTML;
 	/* HTML Optimization: */
