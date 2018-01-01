@@ -1357,6 +1357,20 @@ function edit_json(bbs)
 	return bbs;
 }
 
+function is_nav_key(key)
+{
+	switch(key) {
+		case KEY_UP:
+		case KEY_LEFT:
+		case KEY_PAGEUP:
+		case KEY_DOWN:
+		case KEY_RIGHT:
+		case KEY_PAGEDN:
+			return true;
+	}
+	return false;
+}
+
 function view(list, current)
 {
 	console.line_counter = 0;
@@ -1506,14 +1520,35 @@ function view(list, current)
 		var key = console.getkey(K_UPPER);
 		switch(key) {
 			case 'C':
-				if(!bbs.preview) {
-					console_beep();
-					break;
+				while(js.global.bbs.online) {
+					if(!bbs.preview) {
+						console_beep();
+						break;
+					}
+					console.clear();
+					lib.draw_preview(bbs);
+					key = console.getkey();
+					console.clear();
+					if(!is_nav_key(key))
+						break;
+					do {
+						switch(key) {
+							case KEY_UP:
+							case KEY_LEFT:
+							case KEY_PAGEUP:
+								current--;
+								break;
+							case KEY_DOWN:
+							case KEY_RIGHT:
+							case KEY_PAGEDN:
+								current++;
+								break;
+						}
+						if(current >= list.length)
+							break;
+						bbs = list[current];
+					} while(!bbs.preview);
 				}
-				console.clear();
-				lib.draw_preview(bbs);
-				console.getkey();
-				console.clear();
 				break;
 			case 'L':
 				{
@@ -2172,47 +2207,6 @@ function main()
 					var entry = list[i];
 					if(!lib.check_entry(entry)) {
 						if(debug) print(JSON.stringify(entry, null, 1));
-					}
-				}
-				break;
-			case "clean":
-				for(var i=0; i < list.length; i++) {
-					delete list[i].entry.exported;
-				}
-				lib.write_list(list);
-				break;
-			case "compress":
-				if(optval[cmd]) {
-					var index = lib.system_index(list, optval[cmd]);
-					if(index < 0)
-						alert(optval[cmd] + " not found");
-					else {
-						var bbs = list[index];
-						bbs.preview = lib.compress_preview(bbs.preview);
-						if(debug) print(JSON.stringify(bbs, null, 1));
-						if(lib.replace(bbs))
-							print(bbs.name + " updated successfully");
-					}
-				} else {
-					for(var i=0; i < list.length; i++) {
-						if(list[i].preview) {
-							printf("%-25s ", list[i].name);
-							list[i].preview = lib.compress_preview(list[i].preview);
-						}
-					}
-					lib.write_list(list);
-				}
-				break;
-			case "decode":
-				if(optval[cmd]) {
-					var index = lib.system_index(list, optval[cmd]);
-					if(index < 0)
-						alert(optval[cmd] + " not found");
-					else {
-						var bbs = list[index];
-						if(debug) print(JSON.stringify(bbs.preview, null, 1));
-						var preview = lib.decode_preview(bbs.preview);
-						hexdump("preview", preview);
 					}
 				}
 				break;
