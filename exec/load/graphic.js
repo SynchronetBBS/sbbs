@@ -756,7 +756,7 @@ Graphic.prototype.base64_encode = function(max_line_len)
 {
 	if(!max_line_len)
 		max_line_len = 76;
-	return base64_encode(this.BIN).match(new RegExp('([\x00-\xff]{0,' + max_line_len + '})', 'g'));
+	return base64_encode(this.BIN).match(new RegExp('([\x00-\xff]{1,' + max_line_len + '})', 'g'));
 };
 
 /*
