@@ -1,0 +1,28 @@
+--- misc/os_spec.h.orig	2017-07-11 01:49:00.000000000 -0400
++++ misc/os_spec.h	2018-01-03 03:19:26.025930000 -0500
+@@ -222,10 +222,11 @@
+      preprocessors get confused if they aren't defined */
+   #define VC_16BIT( version )		0
+   #define VC_LE_VC6( version )		0
+-  #define VC_GE_2002( version )		0
+-  #define VC_LT_2005( version )		0
++  #define VC_GE_2002( version )		1
++  #define VC_LT_2005( version )		1
+   #define VC_GE_2005( version )		0
+   #define VC_GE_2008( version )		0
++  #define VC_LT_2010( version )		1
+   #define VC_GE_2010( version )		0
+   #define VC_GE_2012( version )		0
+   #define VC_GE_2013( version )		0
+@@ -933,7 +934,10 @@
+    test will tell us the endianness under Unix */
+ 
+ #ifdef __GNUC__
+-  #include <endian.h>
++  /* I suspect the above was supposed to be #ifndef */
++  #if !(defined(BIG_ENDIAN) || defined(__BYTE_ORDER__) || defined(__LITTLE_ENDIAN__) || defined(BYTES_BIG_ENDIAN))
++    #include <endian.h>
++  #endif
+ #endif /* GCC */
+ 
+ #if defined( CONFIG_DATA_LITTLEENDIAN ) || defined( CONFIG_DATA_BIGENDIAN )

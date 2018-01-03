@@ -1,15 +1,23 @@
---- tools/ccopts.sh.orig	2016-11-28 21:51:58.000000000 -0500
-+++ tools/ccopts.sh	2018-01-03 00:57:50.798887000 -0500
-@@ -150,7 +150,7 @@
- 			HASDYNLOAD=1 ;
- 		fi ;;
- esac
--if [ $HASDYNLOAD -gt 0 ] ; then
-+if [ $HASDYNLOAD -gt 0 -a 1 = 2 ] ; then
- 	if [ -f /usr/include/sql.h ] ; then
- 		echo "ODBC interface detected, enabling ODBC support." >&2 ;
- 		CCARGS="$CCARGS -DHAS_ODBC" ;
-@@ -279,7 +279,6 @@
+--- tools/ccopts.sh.orig	2017-07-11 01:21:48.000000000 -0400
++++ tools/ccopts.sh	2018-01-03 02:46:02.958592000 -0500
+@@ -159,6 +159,7 @@
+ # checking if this is set.
+ 
+ HASDYNLOAD=0
++DISABLE_AUTODETECT=1
+ case $OSNAME in
+ 	'Darwin'|'Linux'|'FreeBSD')
+ 		HASDYNLOAD=1 ;;
+@@ -204,7 +205,7 @@
+ 		CCARGS="$CCARGS -DNCIPHER_PKCS11" ;
+ 	fi
+ fi
+-if [ -f /usr/include/zlib.h ] ; then
++if [ -f /usr/include/zlib.h -a 0 = 3] ; then
+ 	echo "  (Enabling use of system zlib)." >&2 ;
+ 	CCARGS="$CCARGS -DHAS_ZLIB" ;
+ fi
+@@ -302,7 +303,6 @@
  # of large-displacement jumps, so if you're tuning the code for size/speed
  # you can try -fpic to see if you get any improvement.
  
@@ -17,7 +25,7 @@
  	case $OSNAME in
  		'Darwin')
  			CCARGS="$CCARGS -fPIC -fno-common" ;;
-@@ -306,7 +305,6 @@
+@@ -329,7 +329,6 @@
  		*)
  			CCARGS="$CCARGS -fPIC" ;;
  	esac ;
@@ -25,7 +33,7 @@
  
  # Conversely, if we're building a static lib and the system requires it, set
  # up static lib-specific options.
-@@ -612,9 +610,9 @@
+@@ -643,9 +642,9 @@
  # '--param=ssp-buffer-size=4' (the default size is 8), but this isn't
  # necessary for cryptlib since it doesn't allocate any 4-byte buffers.
  

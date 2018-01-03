@@ -67,10 +67,10 @@ diff -ur ../cl.patched/session/sess_attr.c ./session/sess_attr.c
  			}
  
 +		case CRYPT_SESSINFO_SSH_WIDTH:
-+			return( addSessionInfo( &sessionInfoPtr->attributeList,
++			return( addSessionInfo( sessionInfoPtr,
 +									CRYPT_SESSINFO_SSH_WIDTH, value ) );
 +		case CRYPT_SESSINFO_SSH_HEIGHT:
-+			return( addSessionInfo( &sessionInfoPtr->attributeList,
++			return( addSessionInfo( sessionInfoPtr,
 +									CRYPT_SESSINFO_SSH_HEIGHT, value ) );
 +
  		case CRYPT_SESSINFO_SERVER_PORT:
@@ -83,7 +83,7 @@ diff -ur ../cl.patched/session/sess_attr.c ./session/sess_attr.c
 +		case CRYPT_SESSINFO_SSH_TERMINAL:
  		case CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1:
  			/* Remember the value */
- 			return( addSessionInfoS( &sessionInfoPtr->attributeList,
+ 			return( addSessionInfoS( sessionInfoPtr,
 @@ -938,6 +949,9 @@
  			sessionInfoPtr->writeTimeout = CRYPT_ERROR;
  			return( CRYPT_OK );

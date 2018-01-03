@@ -1,0 +1,11 @@
+--- test/ssh.c.orig	2018-01-03 02:55:55.133827000 -0500
++++ test/ssh.c	2018-01-03 02:56:03.891978000 -0500
+@@ -17,7 +17,7 @@
+   #define _OSSPEC_DEFINED
+   #if !defined( __WIN32__ ) && ( defined( WIN32 ) || defined( _WIN32 ) )
+ 	#define __WIN32__
+-  #elif !defined( __WIN64__ ) defined( _M_X64 )
++  #elif !defined( __WIN64__ ) && defined( _M_X64 )
+ 	#define __WIN64__
+   #endif /* Win32/Win64 */
+   #define VC_16BIT( version )		( version <= 800 )
