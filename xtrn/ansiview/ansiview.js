@@ -85,13 +85,13 @@ var printFile = function(file) {
 
 		console.putmsg("\x1B[0;" + state.speed + "*r");
 		mswait(500);
-		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE));
+		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
 		console.pause();
 		console.putmsg("\x1B[0;0*r");
 
 	} else if(state.speed == 0) {
 
-		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE));
+		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
 		console.pause();
 
 	} else {
