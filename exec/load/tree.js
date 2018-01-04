@@ -93,10 +93,10 @@ function Tree(frame,text,tree) {
 		UP:KEY_UP,
 		HOME:KEY_HOME,
 		END:KEY_END,
-		PGDN:"]",
-		PGUP:"[",
+		PGDN:KEY_PAGEDN,
+		PGUP:KEY_PAGEUP,
 		SELECT:"\r",
-		DELETE:"\x7f"
+		DELETE:KEY_DEL
 	}
 
 	/* public properties */
