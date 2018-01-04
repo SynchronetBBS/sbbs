@@ -342,6 +342,7 @@ var   P_NOPAUSE		=(1<<4);	/* Disable screen pause						*/
 var   P_HTML		=(1<<5);	/* Message is HTML							*/
 var   P_NOCRLF		=(1<<6);	/* Don't prepend a CRLF	in printfile()		*/
 var   P_WORDWRAP	=(1<<7);	/* Word-wrap long lines for user's terminal	*/
+var   P_CPM_EOF		=(1<<8);	/* Treat Ctrl-Z as End-of-file				*/
 							    /********************************************/
 
     							/********************************************/
