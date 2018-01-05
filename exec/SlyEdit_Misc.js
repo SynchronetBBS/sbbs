@@ -156,6 +156,11 @@ var gDDML_DROP_FILE_NAME = system.node_dir + "DDML_SyncSMBInfo.txt";
 
 var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".SlyEdit_Settings";
 
+// A regular expression for matching a Synchronet color/attribute code (case-insensitive)
+var gSyncAttrRegex = /[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]/i;
+// A regular expression to match all only Synchronet attribute codes in a string
+var gOnlySyncAttrsInStrRegex = /^([krgybmcw01234567hinpq,;\.dtl<>\[\]asz])+$/i;
+
 ///////////////////////////////////////////////////////////////////////////////////
 // Object/class stuff
 
@@ -185,19 +190,21 @@ function TextLine(pText, pHardNewlineEnd, pIsQuoteLine)
 	if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) == "boolean"))
 		this.isQuoteLine = pIsQuoteLine;
 
-	// NEW & EXPERIMENTAL:
-	// For color support
-	this.attrs = new Array(); // An array of attributes for the line
 	// Functions
-	this.length = TextLine_Length;
+	this.displayLength = TextLine_DisplayLength;
 	this.print = TextLine_Print;
-	this.doMacroTxtReplacement = TextLine_doMacroTxtReplacement;
-	this.getWord = TextLine_getWord;
+	this.doMacroTxtReplacement = TextLine_DoMacroTxtReplacement;
+	this.getWord = TextLine_GetWord;
+	this.substrWithSyncColorCodes = TextLine_SubstrWithSyncColorCodes;
+	this.getLastAttrCodes = TextLine_GetLastAttrCodes;
+	this.getAttrsAndIndexesBeforeIdx = TextLine_GetAttrsAndIndexesBeforeIdx;
+	this.displayIdxToActualIdx = TextLine_DisplayIdxToActualIdx;
 }
 // For the TextLine class: Returns the length of the text.
-function TextLine_Length()
+function TextLine_DisplayLength()
 {
-	return this.text.length;
+	//return this.text.length;
+	return strip_ctrl(this.text).length;
 }
 // For  the TextLine class: Prints the text line, using its text attributes.
 //
@@ -218,11 +225,19 @@ function TextLine_Print(pClearToEOL)
 //  pCharIndex: The current character index in the text line
 //  pUseRegex: Whether or not to treat the text replacement search string as a
 //             regular expression.
+//  pAllowAttrCodes: Boolean - Whether or not to allow attribute codes in
+//                   the replacement strings
+//  pTextAttrs: The text attribute(s) for the message text.  If there are
+//              any color/attribute codes in a replacement text, this will
+//              be appended to the end so the rest of the message will be
+//              the color it should be.
 //
 // Return value: An object containing the following properties:
 //               textLineIndex: The updated text line index (integer)
 //               wordLenDiff: The change in length of the word that
 //                            was replaced (integer)
+//               displayableWordLenDiff: The change in display length of the
+//                                       word that was replaced (integer)
 //               wordStartIdx: The index of the first character in the word.
 //                             Only valid if a word was found.  Otherwise, this
 //                             will be 0.
@@ -234,15 +249,19 @@ function TextLine_Print(pClearToEOL)
 //                           replaced or 0 if no word was found.
 //               madeTxtReplacement: Whether or not a text replacement was made
 //                                   (boolean)
-function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
+function TextLine_DoMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex, pAllowAttrCodes, pTextAttrs)
 {
-	var retObj = new Object();
-	retObj.textLineIndex = pCharIndex;
-	retObj.wordLenDiff = 0;
-	retObj.wordStartIdx = 0;
-	retObj.newTextEndIdx = 0;
-	retObj.newTextLen = 0;
-	retObj.madeTxtReplacement = false;
+	var retObj = {
+		textLineIndex: pCharIndex,
+		wordLenDiff: 0,
+		displayableWordLenDiff: 0,
+		wordStartIdx: 0,
+		newTextEndIdx: 0,
+		newTextLen: 0,
+		madeTxtReplacement: false
+	};
+
+	var allowAttrCodes = (typeof(pAllowAttrCodes) == "boolean" ? pAllowAttrCodes : false);
 
 	var wordObj = this.getWord(retObj.textLineIndex);
 	if (wordObj.foundWord)
@@ -264,7 +283,17 @@ function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
 				if (pTxtReplacements.hasOwnProperty(prop))
 				{
 					var regex = new RegExp(prop);
-					txtReplacement = wordObj.word.replace(regex, pTxtReplacements[prop]);
+					if (allowAttrCodes)
+					{
+						txtReplacement = wordObj.word.replace(regex, pTxtReplacements[prop]);
+						// If the replacement has any Synchronet attribute codes, append the
+						// given text attributes to it so the rest of the message is back to
+						// normal colors.  // TODO: Dealing with high vs. normal?
+						if (gSyncAttrRegex.test(txtReplacement))
+							txtReplacement += "\1n" + pTextAttrs;
+					}
+					else
+						txtReplacement = wordObj.word.replace(regex, strip_ctrl(pTxtReplacements[prop]));
 					retObj.madeTxtReplacement = (txtReplacement != wordObj.word);
 					// If a text replacement was made, then check and see if the first
 					// letter in the original text was uppercase, and if so, make the
@@ -297,20 +326,31 @@ function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
 			wordObj.word = wordObj.word.toUpperCase();
 			if (pTxtReplacements.hasOwnProperty(wordObj.word))
 			{
-				txtReplacement = pTxtReplacements[wordObj.word];
+				if (allowAttrCodes)
+				{
+					txtReplacement = pTxtReplacements[wordObj.word];
+					// If the replacement has any Synchronet attribute codes, append the
+					// given text attributes to it so the rest of the message is back to
+					// normal colors.  // TODO: Dealing with high vs. normal?
+					if (gSyncAttrRegex.test(txtReplacement))
+						txtReplacement += "\1n" + pTextAttrs;
+				}
+				else
+					txtReplacement = strip_ctrl(pTxtReplacements[wordObj.word]);
 				retObj.madeTxtReplacement = true;
 			}
 		}
 		if (retObj.madeTxtReplacement)
 		{
 			if (firstCharUpper)
-			txtReplacement = txtReplacement.charAt(0).toUpperCase() + txtReplacement.substr(1);
+				txtReplacement = txtReplacement.charAt(0).toUpperCase() + txtReplacement.substr(1);
 			this.text = this.text.substr(0, wordObj.startIdx) + txtReplacement + this.text.substr(wordObj.endIndex+1);
 			// Based on the difference in word length, update the data that
 			// matters (retObj.textLineIndex, which keeps track of the index of the current line).
 			// Note: The horizontal cursor position variable should be replaced after calling this
 			// function.
 			retObj.wordLenDiff = txtReplacement.length - wordObj.word.length;
+			retObj.displayableWordLenDiff = strip_ctrl(txtReplacement).length - strip_ctrl(wordObj.word).length;
 			retObj.textLineIndex += retObj.wordLenDiff;
 			retObj.newTextEndIdx = wordObj.endIndex + retObj.wordLenDiff;
 			retObj.newTextLen = txtReplacement.length;
@@ -337,7 +377,7 @@ function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
 //               startIdx: The index of the first character of the word (integer)
 //               endIndex: The index of the last character of the word (integer)
 //                         This includes any control/color codes, etc.
-function TextLine_getWord(pCharIndex)
+function TextLine_GetWord(pCharIndex)
 {
 	var retObj = {
 		foundWord: false,
@@ -374,7 +414,85 @@ function TextLine_getWord(pCharIndex)
 	retObj.plainWord = strip_ctrl(retObj.word);
 	return retObj;
 }
+// For the TextLine class: Gets a substring, handling Synchronet color codes.
+// This calls substrWithSyncColorCodes() with the object's text line and
+// returns the same value as that function.
+//
+// Parameters:
+//  pStartIdx: The index of where to start in the string, as it appears
+//             on the screen
+//  pLen: The length of the substring to get.  Optional - If not specified,
+//        the rest of the string will be used.
+//
+// Return value: An object with the following properties:
+//               strSub: The substring from the string, including any Synchronet
+//                       color codes that may exist preceding the word at pStartIdx
+//               startIdx: The actual index in the string where the substring starts
+//                         (-1 if an error occurred)
+//               endIdx: The actual index in the string where the substring ends.
+//                       This is the index of the last character in the substring.
+//                       Will be -1 if an error occurred.
+//               len: The actual length of the substring
+//               printableLen: The length of the string as it would appear on the screen
+//                             (i.e., its length without Synchronet attribute codes)
+//               syncAttrStartIdx: The starting index of Synchronet attributes
+//                                 (-1 if not found or an error occurred)
+//               syncAttrEndIdx: The ending index of Synchronet attributes, including
+//                               the last character (-1 if not found or an error occurred)
+function TextLine_SubstrWithSyncColorCodes(pStartIdx, pLen)
+{
+	return substrWithSyncColorCodes(this.text, pStartIdx, pLen);
+}
+// For the TextLine class: Returns the last attribute codes appearing in the line
+// before a given index, as a string.  If there are none, it will just be a
+// blank string.  The index is optional - If not provided, this method will use
+// the end index of the string.
+//
+// Parameters:
+//  pIdx: Optional - The end index of the string to use.  If not provided, this will
+//        use the last index of the string.
+//
+// Return value: Any attribute codes appearing before the given index (or last index)
+//               of the string, as a string.
+function TextLine_GetLastAttrCodes(pIdx)
+{
+	var endIdx = (typeof(pIdx) == "number" ? pIdx : this.text.length-1);
+	if (endIdx < 0)
+		return "";
+	if (endIdx >= this.text.length)
+		endIdx =  this.text.length - 1;
+	return getAttrsBeforeStrIdx(this.text, endIdx);
+}
+// For the TextLine class: Returns an object with information about any Synchronet
+// color/attribute codes found in the text line before a given index.
+//
+// Parameters:
+//  pIdx: The index in the text line to search before
+//
+// Return value: An object containing the following properties:
+//               attrStr: A string containing any Synchronet attribute codes
+//                        found before the given index in the given string.  If
+//                        none are found, this string will be empty.
+//               syncAttrStartIdx: The index of where the attribute codes start, or
+//                                 -1 if none were found
+//               syncAttrEndIdx: The index of the last character of the attribute
+//                               codes, or -1 if none were found
+function TextLine_GetAttrsAndIndexesBeforeIdx(pIdx)
+{
+	return getAttrsAndIndexesBeforeStrIdx(this.text, pIdx);
+}
 
+// For the TextLine class: Converts a printable display index to the actual index
+// of the text line, ignoring Synchronet attribute codes in the string.
+//
+// Parameters:
+//  pDisplayIdx: The string index as displayed on the screen
+//
+// Return value: The index in the actual string.  0 on error
+function TextLine_DisplayIdxToActualIdx(pDisplayIdx)
+{
+	return strDisplayIdxToActualIdx(this.text, pDisplayIdx);
+}
 
 // AbortConfirmFuncParams constructor: This object contains parameters used by
 // the abort confirmation function (actually, there are separate ones for
@@ -415,202 +533,200 @@ function ChoiceScrollbox_MinWidth()
 function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdCfgObj,
                          pAddTCharsAroundTopText, pReplaceTopTextSpacesWithBorderChars)
 {
-   // The default is to add left & right T characters around the top border
-   // text.  But also use pAddTCharsAroundTopText if it's a boolean.
-   var addTopTCharsAroundText = true;
-   if (typeof(pAddTCharsAroundTopText) == "boolean")
-      addTopTCharsAroundText = pAddTCharsAroundTopText;
-   // If pReplaceTopTextSpacesWithBorderChars is true, then replace the spaces
-   // in pTopBorderText with border characters.
-   if (pReplaceTopTextSpacesWithBorderChars)
-   {
-      var startIdx = 0;
-      var firstSpcIdx = pTopBorderText.indexOf(" ", 0);
-      // Look for the first non-space after firstSpaceIdx
-      var nonSpcIdx = -1;
-      for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
-      {
-         if (pTopBorderText.charAt(i) != " ")
-            nonSpcIdx = i;
-      }
-      var firstStrPart = "";
-      var lastStrPart = "";
-      numSpaces = 0;
-      while ((firstSpcIdx > -1) && (nonSpcIdx > -1))
-      {
-         firstStrPart = pTopBorderText.substr(startIdx, (firstSpcIdx-startIdx));
-         lastStrPart = pTopBorderText.substr(nonSpcIdx);
-         numSpaces = nonSpcIdx - firstSpcIdx;
-         if (numSpaces > 0)
-         {
-            pTopBorderText = firstStrPart + "n" + pSlyEdCfgObj.genColors.listBoxBorder;
-            for (var i = 0; i < numSpaces; ++i)
-               pTopBorderText += HORIZONTAL_SINGLE;
-            pTopBorderText += "n" + pSlyEdCfgObj.genColors.listBoxBorderText + lastStrPart;
-         }
+	// The default is to add left & right T characters around the top border
+	// text.  But also use pAddTCharsAroundTopText if it's a boolean.
+	var addTopTCharsAroundText = true;
+	if (typeof(pAddTCharsAroundTopText) == "boolean")
+		addTopTCharsAroundText = pAddTCharsAroundTopText;
+	// If pReplaceTopTextSpacesWithBorderChars is true, then replace the spaces
+	// in pTopBorderText with border characters.
+	if (pReplaceTopTextSpacesWithBorderChars)
+	{
+		var startIdx = 0;
+		var firstSpcIdx = pTopBorderText.indexOf(" ", 0);
+		// Look for the first non-space after firstSpaceIdx
+		var nonSpcIdx = -1;
+		for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
+		{
+			if (pTopBorderText.charAt(i) != " ")
+				nonSpcIdx = i;
+		}
+		var firstStrPart = "";
+		var lastStrPart = "";
+		var numSpaces = 0;
+		while ((firstSpcIdx > -1) && (nonSpcIdx > -1))
+		{
+			firstStrPart = pTopBorderText.substr(startIdx, (firstSpcIdx-startIdx));
+			lastStrPart = pTopBorderText.substr(nonSpcIdx);
+			numSpaces = nonSpcIdx - firstSpcIdx;
+			if (numSpaces > 0)
+			{
+				pTopBorderText = firstStrPart + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder;
+				for (var i = 0; i < numSpaces; ++i)
+					pTopBorderText += HORIZONTAL_SINGLE;
+				pTopBorderText += "\1n" + pSlyEdCfgObj.genColors.listBoxBorderText + lastStrPart;
+			}
 
-         // Look for the next space and non-space character after that.
-         firstSpcIdx = pTopBorderText.indexOf(" ", nonSpcIdx);
-         // Look for the first non-space after firstSpaceIdx
-         nonSpcIdx = -1;
-         for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
-         {
-            if (pTopBorderText.charAt(i) != " ")
-               nonSpcIdx = i;
-         }
-      }
-   }
+			// Look for the next space and non-space character after that.
+			firstSpcIdx = pTopBorderText.indexOf(" ", nonSpcIdx);
+			// Look for the first non-space after firstSpaceIdx
+			nonSpcIdx = -1;
+			for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
+			{
+				if (pTopBorderText.charAt(i) != " ")
+					nonSpcIdx = i;
+			}
+		}
+	}
 
-   this.SlyEdCfgObj = pSlyEdCfgObj;
+	this.SlyEdCfgObj = pSlyEdCfgObj;
 
-   var minWidth = ChoiceScrollbox_MinWidth();
+	var minWidth = ChoiceScrollbox_MinWidth();
 
-   this.dimensions = new Object();
-   this.dimensions.topLeftX = pLeftX;
-   this.dimensions.topLeftY = pTopY;
-   // Make sure the width is the minimum width
-   if ((pWidth < 0) || (pWidth < minWidth))
-      this.dimensions.width = minWidth;
-   else
-      this.dimensions.width = pWidth;
-   this.dimensions.height = pHeight;
-   this.dimensions.bottomRightX = this.dimensions.topLeftX + this.dimensions.width - 1;
-   this.dimensions.bottomRightY = this.dimensions.topLeftY + this.dimensions.height - 1;
+	this.dimensions = new Object();
+	this.dimensions.topLeftX = pLeftX;
+	this.dimensions.topLeftY = pTopY;
+	// Make sure the width is the minimum width
+	if ((pWidth < 0) || (pWidth < minWidth))
+		this.dimensions.width = minWidth;
+	else
+		this.dimensions.width = pWidth;
+	this.dimensions.height = pHeight;
+	this.dimensions.bottomRightX = this.dimensions.topLeftX + this.dimensions.width - 1;
+	this.dimensions.bottomRightY = this.dimensions.topLeftY + this.dimensions.height - 1;
 
-   // The text item array and member variables relating to it and the items
-   // displayed on the screen during the input loop
-   this.txtItemList = new Array();
-   this.chosenTextItemIndex = -1;
-   this.topItemIndex = 0;
-   this.bottomItemIndex = 0;
+	// The text item array and member variables relating to it and the items
+	// displayed on the screen during the input loop
+	this.txtItemList = new Array();
+	this.chosenTextItemIndex = -1;
+	this.topItemIndex = 0;
+	this.bottomItemIndex = 0;
 
-   // Top border string
-   var innerBorderWidth = this.dimensions.width - 2;
-   // Calculate the maximum top border text length to account for the left/right
-   // T chars and "Page #### of ####" text
-   var maxTopBorderTextLen = innerBorderWidth - (pAddTCharsAroundTopText ? 21 : 19);
-   if (strip_ctrl(pTopBorderText).length > maxTopBorderTextLen)
-      pTopBorderText = pTopBorderText.substr(0, maxTopBorderTextLen);
-   this.topBorder = "n" + pSlyEdCfgObj.genColors.listBoxBorder + UPPER_LEFT_SINGLE;
-   if (addTopTCharsAroundText)
-      this.topBorder += RIGHT_T_SINGLE;
-   this.topBorder += "n" + pSlyEdCfgObj.genColors.listBoxBorderText
-     + pTopBorderText + "n" + pSlyEdCfgObj.genColors.listBoxBorder;
-   if (addTopTCharsAroundText)
-      this.topBorder += LEFT_T_SINGLE;
-   const topBorderTextLen = strip_ctrl(pTopBorderText).length;
-   var numHorizBorderChars = innerBorderWidth - topBorderTextLen - 20;
-   if (addTopTCharsAroundText)
-      numHorizBorderChars -= 2;
-   for (var i = 0; i <= numHorizBorderChars; ++i)
-      this.topBorder += HORIZONTAL_SINGLE;
-   this.topBorder += RIGHT_T_SINGLE + "n" + pSlyEdCfgObj.genColors.listBoxBorderText
-     + "Page    1 of    1" + "n" + pSlyEdCfgObj.genColors.listBoxBorder + LEFT_T_SINGLE
-     + UPPER_RIGHT_SINGLE;
+	// Top border string
+	var innerBorderWidth = this.dimensions.width - 2;
+	// Calculate the maximum top border text length to account for the left/right
+	// T chars and "Page #### of ####" text
+	var maxTopBorderTextLen = innerBorderWidth - (pAddTCharsAroundTopText ? 21 : 19);
+	if (strip_ctrl(pTopBorderText).length > maxTopBorderTextLen)
+	pTopBorderText = pTopBorderText.substr(0, maxTopBorderTextLen);
+		this.topBorder = "\1n" + pSlyEdCfgObj.genColors.listBoxBorder + UPPER_LEFT_SINGLE;
+	if (addTopTCharsAroundText)
+		this.topBorder += RIGHT_T_SINGLE;
+	this.topBorder += "\1n" + pSlyEdCfgObj.genColors.listBoxBorderText
+	               + pTopBorderText + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder;
+	if (addTopTCharsAroundText)
+		this.topBorder += LEFT_T_SINGLE;
+	const topBorderTextLen = strip_ctrl(pTopBorderText).length;
+	var numHorizBorderChars = innerBorderWidth - topBorderTextLen - 20;
+	if (addTopTCharsAroundText)
+		numHorizBorderChars -= 2;
+	for (var i = 0; i <= numHorizBorderChars; ++i)
+		this.topBorder += HORIZONTAL_SINGLE;
+	this.topBorder += RIGHT_T_SINGLE + "\1n" + pSlyEdCfgObj.genColors.listBoxBorderText
+	               + "Page    1 of    1" + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder + LEFT_T_SINGLE
+	               + UPPER_RIGHT_SINGLE;
 
-   // Bottom border string
-   this.btmBorderNavText = "nhcb, cb, cNy)bext, cPy)brev, "
-     + "cFy)birst, cLy)bast, cHOMEb, cENDb, cEntery=bSelect, "
-     + "cESCnc/hcQy=bEnd";
-   this.bottomBorder = "n" + pSlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE
-     + RIGHT_T_SINGLE + this.btmBorderNavText + "n" + pSlyEdCfgObj.genColors.listBoxBorder
-     + LEFT_T_SINGLE;
-   var numCharsRemaining = this.dimensions.width - strip_ctrl(this.btmBorderNavText).length - 6;
-   for (var i = 0; i < numCharsRemaining; ++i)
-      this.bottomBorder += HORIZONTAL_SINGLE;
-   this.bottomBorder += LOWER_RIGHT_SINGLE;
+	// Bottom border string
+	this.btmBorderNavText = "nhcb, cb, cNy)bext, cPy)brev, "
+	                      + "cFy)birst, cLy)bast, cHOMEb, cENDb, cEntery=bSelect, "
+	                      + "cESCnc/hcQy=bEnd";
+	this.bottomBorder = "n" + pSlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE
+	                  + RIGHT_T_SINGLE + this.btmBorderNavText + "n" + pSlyEdCfgObj.genColors.listBoxBorder
+	                  + LEFT_T_SINGLE;
+	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.btmBorderNavText).length - 6;
+	for (var i = 0; i < numCharsRemaining; ++i)
+		this.bottomBorder += HORIZONTAL_SINGLE;
+	this.bottomBorder += LOWER_RIGHT_SINGLE;
 
-   // Item format strings
-   this.listIemFormatStr = "n" + pSlyEdCfgObj.genColors.listBoxItemText + "%-"
-                          + +(this.dimensions.width-2) + "s";
-   this.listIemHighlightFormatStr = "n" + pSlyEdCfgObj.genColors.listBoxItemHighlight + "%-"
-                          + +(this.dimensions.width-2) + "s";
+	// Item format strings
+	this.listIemFormatStr = "n" + pSlyEdCfgObj.genColors.listBoxItemText + "%-" + +(this.dimensions.width-2) + "s";
+	this.listIemHighlightFormatStr = "n" + pSlyEdCfgObj.genColors.listBoxItemHighlight + "%-" + +(this.dimensions.width-2) + "s";
 
-   // Key functionality override function pointers
-   this.enterKeyOverrideFn = null;
+	// Key functionality override function pointers
+	this.enterKeyOverrideFn = null;
 
-   // inputLoopeExitKeys is an object containing additional keypresses that will
-   // exit the input loop.
-   this.inputLoopExitKeys = new Object();
+	// inputLoopeExitKeys is an object containing additional keypresses that will
+	// exit the input loop.
+	this.inputLoopExitKeys = new Object();
 
-   // "Class" functions
-   this.addTextItem = ChoiceScrollbox_AddTextItem; // Returns the index of the item
-   this.getTextItem = ChoiceScrollbox_GetTextIem;
-   this.replaceTextItem = ChoiceScrollbox_ReplaceTextItem;
-   this.delTextItem = ChoiceScrollbox_DelTextItem;
-   this.chgCharInTextItem = ChoiceScrollbox_ChgCharInTextItem;
-   this.getChosenTextItemIndex = ChoiceScrollbox_GetChosenTextItemIndex;
-   this.setItemArray = ChoiceScrollbox_SetItemArray; // Sets the item array; returns whether or not it was set.
-   this.clearItems = ChoiceScrollbox_ClearItems; // Empties the array of items
-   this.setEnterKeyOverrideFn = ChoiceScrollbox_SetEnterKeyOverrideFn;
-   this.clearEnterKeyOverrideFn = ChoiceScrollbox_ClearEnterKeyOverrideFn;
-   this.addInputLoopExitKey = ChoiceScrollbox_AddInputLoopExitKey;
-   this.setBottomBorderText = ChoiceScrollbox_SetBottomBorderText;
-   this.drawBorder = ChoiceScrollbox_DrawBorder;
-   this.refreshItemCharOnScreen = ChoiceScrollbox_RefreshItemCharOnScreen;
-   // Does the input loop.  Returns an object with the following properties:
-   //  itemWasSelected: Boolean - Whether or not an item was selected
-   //  selectedIndex: The index of the selected item
-   //  selectedItem: The text of the selected item
-   //  lastKeypress: The last key pressed by the user
-   this.doInputLoop = ChoiceScrollbox_DoInputLoop;
+	// "Class" functions
+	this.addTextItem = ChoiceScrollbox_AddTextItem; // Returns the index of the item
+	this.getTextItem = ChoiceScrollbox_GetTextIem;
+	this.replaceTextItem = ChoiceScrollbox_ReplaceTextItem;
+	this.delTextItem = ChoiceScrollbox_DelTextItem;
+	this.chgCharInTextItem = ChoiceScrollbox_ChgCharInTextItem;
+	this.getChosenTextItemIndex = ChoiceScrollbox_GetChosenTextItemIndex;
+	this.setItemArray = ChoiceScrollbox_SetItemArray; // Sets the item array; returns whether or not it was set.
+	this.clearItems = ChoiceScrollbox_ClearItems; // Empties the array of items
+	this.setEnterKeyOverrideFn = ChoiceScrollbox_SetEnterKeyOverrideFn;
+	this.clearEnterKeyOverrideFn = ChoiceScrollbox_ClearEnterKeyOverrideFn;
+	this.addInputLoopExitKey = ChoiceScrollbox_AddInputLoopExitKey;
+	this.setBottomBorderText = ChoiceScrollbox_SetBottomBorderText;
+	this.drawBorder = ChoiceScrollbox_DrawBorder;
+	this.refreshItemCharOnScreen = ChoiceScrollbox_RefreshItemCharOnScreen;
+	// Does the input loop.  Returns an object with the following properties:
+	//  itemWasSelected: Boolean - Whether or not an item was selected
+	//  selectedIndex: The index of the selected item
+	//  selectedItem: The text of the selected item
+	//  lastKeypress: The last key pressed by the user
+	this.doInputLoop = ChoiceScrollbox_DoInputLoop;
 }
 function ChoiceScrollbox_AddTextItem(pTextLine, pStripCtrl)
 {
-   var stripCtrl = true;
-   if (typeof(pStripCtrl) == "boolean")
-      stripCtrl = pStripCtrl;
+	var stripCtrl = true;
+	if (typeof(pStripCtrl) == "boolean")
+		stripCtrl = pStripCtrl;
 
-   if (stripCtrl)
-      this.txtItemList.push(strip_ctrl(pTextLine));
-   else
-      this.txtItemList.push(pTextLine);
-   // Return the index of the added item
-   return this.txtItemList.length-1;
+	if (stripCtrl)
+		this.txtItemList.push(strip_ctrl(pTextLine));
+	else
+		this.txtItemList.push(pTextLine);
+	// Return the index of the added item
+	return this.txtItemList.length-1;
 }
 function ChoiceScrollbox_GetTextIem(pItemIndex)
 {
-   if (typeof(pItemIndex) != "number")
-      return "";
-   if ((pItemIndex < 0) || (pItemIndex >= this.txtItemList.length))
-      return "";
+	if (typeof(pItemIndex) != "number")
+		return "";
+	if ((pItemIndex < 0) || (pItemIndex >= this.txtItemList.length))
+		return "";
 
-   return this.txtItemList[pItemIndex];
+	return this.txtItemList[pItemIndex];
 }
 function ChoiceScrollbox_ReplaceTextItem(pItemIndexOrStr, pNewItem)
 {
-   if (typeof(pNewItem) != "string")
-      return false;
+	if (typeof(pNewItem) != "string")
+		return false;
 
-   // Find the item index
-   var itemIndex = -1;
-   if (typeof(pItemIndexOrStr) == "number")
-   {
-      if ((pItemIndexOrStr < 0) || (pItemIndexOrStr >= this.txtItemList.length))
-         return false;
-      else
-         itemIndex = pItemIndexOrStr;
-   }
-   else if (typeof(pItemIndexOrStr) == "string")
-   {
-      itemIndex = -1;
-      for (var i = 0; (i < this.txtItemList.length) && (itemIndex == -1); ++i)
-      {
-         if (this.txtItemList[i] == pItemIndexOrStr)
-            itemIndex = i;
-      }
-   }
-   else
-      return false;
+	// Find the item index
+	var itemIndex = -1;
+	if (typeof(pItemIndexOrStr) == "number")
+	{
+		if ((pItemIndexOrStr < 0) || (pItemIndexOrStr >= this.txtItemList.length))
+			return false;
+		else
+			itemIndex = pItemIndexOrStr;
+	}
+	else if (typeof(pItemIndexOrStr) == "string")
+	{
+		itemIndex = -1;
+		for (var i = 0; (i < this.txtItemList.length) && (itemIndex == -1); ++i)
+		{
+			if (this.txtItemList[i] == pItemIndexOrStr)
+				itemIndex = i;
+		}
+	}
+	else
+		return false;
 
-   // Replace the item
-   var replacedIt = false;
-   if ((itemIndex > -1) && (itemIndex < this.txtItemList.length))
-   {
-      this.txtItemList[itemIndex] = pNewItem;
-      replacedIt = true;
-   }
-   return replacedIt;
+	// Replace the item
+	var replacedIt = false;
+	if ((itemIndex > -1) && (itemIndex < this.txtItemList.length))
+	{
+		this.txtItemList[itemIndex] = pNewItem;
+			replacedIt = true;
+	}
+	return replacedIt;
 }
 function ChoiceScrollbox_DelTextItem(pItemIndexOrStr)
 {
@@ -728,75 +844,75 @@ function ChoiceScrollbox_AddInputLoopExitKey(pKeypress)
 }
 function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooLong)
 {
-   if (typeof(pText) != "string")
-      return;
+	if (typeof(pText) != "string")
+		return;
 
-   const innerWidth = (pAddTChars ? this.dimensions.width-4 : this.dimensions.width-2);
+	const innerWidth = (pAddTChars ? this.dimensions.width-4 : this.dimensions.width-2);
 
-   if (pAutoStripIfTooLong)
-   {
-      if (strip_ctrl(pText).length > innerWidth)
-         pText = pText.substr(0, innerWidth);
-   }
+	if (pAutoStripIfTooLong)
+	{
+		if (strip_ctrl(pText).length > innerWidth)
+			pText = pText.substr(0, innerWidth);
+	}
 
-   // Re-build the bottom border string based on the new text
-   this.bottomBorder = "n" + this.SlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE;
-   if (pAddTChars)
-      this.bottomBorder += RIGHT_T_SINGLE;
-   if (pText.indexOf("n") != 0)
-      this.bottomBorder += "n";
-   this.bottomBorder += pText + "n" + this.SlyEdCfgObj.genColors.listBoxBorder;
-   if (pAddTChars)
-      this.bottomBorder += LEFT_T_SINGLE;
-   var numCharsRemaining = this.dimensions.width - strip_ctrl(this.bottomBorder).length - 3;
-   for (var i = 0; i < numCharsRemaining; ++i)
-      this.bottomBorder += HORIZONTAL_SINGLE;
-   this.bottomBorder += LOWER_RIGHT_SINGLE;
+	// Re-build the bottom border string based on the new text
+	this.bottomBorder = "n" + this.SlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE;
+	if (pAddTChars)
+		this.bottomBorder += RIGHT_T_SINGLE;
+	if (pText.indexOf("n") != 0)
+		this.bottomBorder += "n";
+	this.bottomBorder += pText + "n" + this.SlyEdCfgObj.genColors.listBoxBorder;
+		if (pAddTChars)
+	this.bottomBorder += LEFT_T_SINGLE;
+	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.bottomBorder).length - 3;
+	for (var i = 0; i < numCharsRemaining; ++i)
+		this.bottomBorder += HORIZONTAL_SINGLE;
+	this.bottomBorder += LOWER_RIGHT_SINGLE;
 }
 function ChoiceScrollbox_DrawBorder()
 {
-   console.gotoxy(this.dimensions.topLeftX, this.dimensions.topLeftY);
-   console.print(this.topBorder);
-   // Draw the side border characters
-   var screenRow = this.dimensions.topLeftY + 1;
-   for (var screenRow = this.dimensions.topLeftY+1; screenRow <= this.dimensions.bottomRightY-1; ++screenRow)
-   {
-      console.gotoxy(this.dimensions.topLeftX, screenRow);
-      console.print(VERTICAL_SINGLE);
-      console.gotoxy(this.dimensions.bottomRightX, screenRow);
-      console.print(VERTICAL_SINGLE);
-   }
-   // Draw the bottom border
-   console.gotoxy(this.dimensions.topLeftX, this.dimensions.bottomRightY);
-   console.print(this.bottomBorder);
+	console.gotoxy(this.dimensions.topLeftX, this.dimensions.topLeftY);
+	console.print(this.topBorder);
+	// Draw the side border characters
+	var screenRow = this.dimensions.topLeftY + 1;
+	for (var screenRow = this.dimensions.topLeftY+1; screenRow <= this.dimensions.bottomRightY-1; ++screenRow)
+	{
+		console.gotoxy(this.dimensions.topLeftX, screenRow);
+		console.print(VERTICAL_SINGLE);
+		console.gotoxy(this.dimensions.bottomRightX, screenRow);
+		console.print(VERTICAL_SINGLE);
+	}
+	// Draw the bottom border
+	console.gotoxy(this.dimensions.topLeftX, this.dimensions.bottomRightY);
+	console.print(this.bottomBorder);
 }
 function ChoiceScrollbox_RefreshItemCharOnScreen(pItemIndex, pCharIndex)
 {
-   if ((typeof(pItemIndex) != "number") || (typeof(pCharIndex) != "number"))
-      return;
-   if ((pItemIndex < 0) || (pItemIndex >= this.txtItemList.length) ||
-       (pItemIndex < this.topItemIndex) || (pItemIndex > this.bottomItemIndex))
-   {
-      return;
-   }
-   if ((pCharIndex < 0) || (pCharIndex >= this.txtItemList[pItemIndex].length))
-      return;
+	if ((typeof(pItemIndex) != "number") || (typeof(pCharIndex) != "number"))
+		return;
+	if ((pItemIndex < 0) || (pItemIndex >= this.txtItemList.length) ||
+	    (pItemIndex < this.topItemIndex) || (pItemIndex > this.bottomItemIndex))
+	{
+		return;
+	}
+	if ((pCharIndex < 0) || (pCharIndex >= this.txtItemList[pItemIndex].length))
+		return;
 
-   // Save the current cursor position so that we can restore it later
-   const originalCurpos = console.getxy();
-   // Go to the character's position on the screen and set the highlight or
-   // normal color, depending on whether the item is the currently selected item,
-   // then print the character on the screen.
-   const charScreenX = this.dimensions.topLeftX + 1 + pCharIndex;
-   const itemScreenY = this.dimensions.topLeftY + 1 + (pItemIndex - this.topItemIndex);
-   console.gotoxy(charScreenX, itemScreenY);
-   if (pItemIndex == this.chosenTextItemIndex)
-      console.print(this.SlyEdCfgObj.genColors.listBoxItemHighlight);
-   else
-      console.print(this.SlyEdCfgObj.genColors.listBoxItemText);
-   console.print(this.txtItemList[pItemIndex].charAt(pCharIndex));
-   // Move the cursor back to where it was originally
-   console.gotoxy(originalCurpos);
+	// Save the current cursor position so that we can restore it later
+	const originalCurpos = console.getxy();
+	// Go to the character's position on the screen and set the highlight or
+	// normal color, depending on whether the item is the currently selected item,
+	// then print the character on the screen.
+	const charScreenX = this.dimensions.topLeftX + 1 + pCharIndex;
+	const itemScreenY = this.dimensions.topLeftY + 1 + (pItemIndex - this.topItemIndex);
+	console.gotoxy(charScreenX, itemScreenY);
+	if (pItemIndex == this.chosenTextItemIndex)
+		console.print(this.SlyEdCfgObj.genColors.listBoxItemHighlight);
+	else
+		console.print(this.SlyEdCfgObj.genColors.listBoxItemText);
+	console.print(this.txtItemList[pItemIndex].charAt(pCharIndex));
+	// Move the cursor back to where it was originally
+	console.gotoxy(originalCurpos);
 }
 function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 {
@@ -1107,17 +1223,12 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 function randomDimBrightString(pString, pColor)
 {
 	// Return if an invalid string is passed in.
-	if (pString == null)
-		return "";
 	if (typeof(pString) != "string")
 		return "";
 
-   // Set the color.  Default to green.
-	var color = "g";
-	if ((pColor != null) && (typeof(pColor) != "undefined"))
-      color = pColor;
-
-   return(randomTwoColorString(pString, "n" + color, "nh" + color));
+	// Set the color.  Default to green.
+	var color = (typeof(pColor) == "string" ? pColor : "\1g");
+	return(randomTwoColorString(pString, "\1n" + color, "\1n\1h" + color));
 }
 
 // This function takes a string and returns a copy of the string
@@ -1127,21 +1238,18 @@ function randomDimBrightString(pString, pColor)
 //  pString: The string to convert
 //  pColor11: The first color to use (Synchronet color code)
 //  pColor12: The second color to use (Synchronet color code)
+//
+// Return value: The string passed in, with the 2 colors used randomly for
+//               each character
 function randomTwoColorString(pString, pColor1, pColor2)
 {
 	// Return if an invalid string is passed in.
-	if (pString == null)
-		return "";
 	if (typeof(pString) != "string")
 		return "";
 
 	// Set the colors.  Default to green.
-	var color1 = "ng";
-	if ((pColor1 != null) && (typeof(pColor1) != "undefined"))
-      color1 = pColor1;
-   var color2 = "ngh";
-	if ((pColor2 != null) && (typeof(pColor2) != "undefined"))
-      color2 = pColor2;
+	var color1 = (typeof(pColor1) == "string" ? pColor1 : "\1n\1g");
+	var color2 = (typeof(pColor2) == "string" ? pColor2 : "\1n\1g\1h");
 
 	// Create a copy of the string without any control characters,
 	// and then add our coloring to it.
@@ -1154,7 +1262,7 @@ function randomTwoColorString(pString, pColor1, pColor2)
 		// Determine if this character should be useColor1
 		useColor1 = (Math.floor(Math.random()*2) == 1);
 		if (useColor1 != oldUseColor1)
-         returnString += (useColor1 ? color1 : color2);
+			returnString += (useColor1 ? color1 : color2);
 
 		// Append the character from pString.
 		returnString += pString.charAt(i);
@@ -1168,26 +1276,22 @@ function randomTwoColorString(pString, pColor1, pColor2)
 // Returns the current time as a string, to be displayed on the screen.
 function getCurrentTimeStr()
 {
-	var timeStr = strftime("%I:%M%p", time());
-	timeStr = timeStr.replace("AM", "a");
-	timeStr = timeStr.replace("PM", "p");
-	
-	return timeStr;
+	return strftime("%I:%M%p", time()).replace("AM", "a").replace("PM", "p");
 }
 
 // Returns whether or not a character is printable.
 function isPrintableChar(pText)
 {
-   // Make sure pText is valid and is a string.
-   if (typeof(pText) != "string")
-      return false;
-   if (pText.length == 0)
-      return false;
+	// Make sure pText is valid and is a string.
+	if (typeof(pText) != "string")
+		return false;
+	if (pText.length == 0)
+		return false;
 
-   // Make sure the character is a printable ASCII character in the range of 32 to 254,
-   // except for 127 (delete).
-   var charCode = pText.charCodeAt(0);
-   return ((charCode > 31) && (charCode < 255) && (charCode != 127));
+	// Make sure the character is a printable ASCII character in the range of 32 to 254,
+	// except for 127 (delete).
+	var charCode = pText.charCodeAt(0);
+	return ((charCode > 31) && (charCode < 255) && (charCode != 127));
 }
 
 // Removes multiple, leading, and/or trailing spaces
@@ -1276,11 +1380,8 @@ function displayHelpHeader()
 //  pClear: Whether or not to clear the screen first
 //  pPause: Whether or not to pause at the end
 //  pCanCrossPost: Whether or not cross-posting is enabled
-//  pIsSysop: Whether or not the user is the sysop.
-//  pTxtReplacments: Whether or not the text replacements feature is enabled
-//  pUserSettings: Whether or not the user settings feature is enabled
-function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSysop,
-                             pTxtReplacments, pUserSettings)
+//  pConfigSettings: The SlyEdit configuration settings object
+function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pConfigSettings)
 {
 	if (pClear)
 		console.clear("\1n");
@@ -1290,7 +1391,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 		console.crlf();
 	}
 
-	var isSysop = (pIsSysop != null ? pIsSysop : user.compare_ars("SYSOP"));
+	var isSysop = (pConfigSettings.userIsSysop != null ? pConfigSettings.userIsSysop : user.compare_ars("SYSOP"));
 
 	// This function displays a key and its description with formatting & colors.
 	//
@@ -1326,9 +1427,9 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
 	displayCmdKeyFormattedDouble("Ctrl-R", "Program information", "/Q", "Quote message", true);
-	if (pTxtReplacments)
+	if (pConfigSettings.enableTextReplacements)
 		displayCmdKeyFormattedDouble("Ctrl-T", "List text replacements", "/T", "List text replacements", true);
-	if (pUserSettings)
+	if (pConfigSettings.allowUserSettings)
 		displayCmdKeyFormattedDouble("", "", "/U", "Your settings", true);
 	if (pCanCrossPost)
 		displayCmdKeyFormattedDouble("", "", "/C", "Cross-post selection", true);
@@ -1345,11 +1446,17 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 		displayCmdKeyFormattedDouble("ESC", "Command menu", "Ctrl-C", "Cross-post selection", true);
 	else
 		displayCmdKeyFormatted("ESC", "Command menu", true);
+	var nextKeys = [];
+	if (pConfigSettings.allowUserSettings)
+		nextKeys.push({keyStr: "Ctrl-U", desc: "Your settings"});
+	if (gConfigSettings.allowColorSelection)
+		nextKeys.push({keyStr: "Ctrl-K", desc: "Choose text color"});
+	if (nextKeys.length == 1)
+		displayCmdKeyFormatted(nextKeys[0].keyStr, nextKeys[0].desc, true);
+	else if (nextKeys.length == 2)
+		displayCmdKeyFormattedDouble(nextKeys[0].keyStr, nextKeys[0].desc, nextKeys[1].keyStr, nextKeys[1].desc, true);
 	if (isSysop)
 		displayCmdKeyFormattedDouble("Ctrl-O", "Import a file", "Ctrl-X", "Export to file", true);
-
-	if (pUserSettings)
-		displayCmdKeyFormatted("Ctrl-U", "Your settings", true);
 
 	if (pPause)
 	{
@@ -1531,6 +1638,10 @@ function ReadSlyEditConfigFile()
 	cfgObj.inputTimeoutMS = 300000;
 	cfgObj.reWrapQuoteLines = true;
 	cfgObj.allowColorSelection = true;
+	cfgObj.noColorSelectionGrpNames = [];
+	cfgObj.noColorSelectionSubBoardCodes = [];
+	cfgObj.cvtColorToANSIGrpNames = [];
+	cfgObj.cvtColorToANSISubBoardCodes = [];
 	cfgObj.useQuoteLineInitials = true;
 	cfgObj.indentQuoteLinesWithInitials = true;
 	cfgObj.allowCrossPosting = true;
@@ -1740,6 +1851,50 @@ function ReadSlyEditConfigFile()
 						cfgObj.reWrapQuoteLines = (valueUpper == "TRUE");
 					else if (settingUpper == "ALLOWCOLORSELECTION")
 						cfgObj.allowColorSelection = (valueUpper == "TRUE");
+					else if (settingUpper == "NOCOLORSELECTIONGRPNAMES")
+					{
+						// Message group names for message groups where text
+						// color selection isn't allowed.  Split on commas and
+						// spaces.
+						// I was originally going to have this be a list of
+						// numbers for the group numbers/indexes and check
+						// against msg_area.grp_list, but that group list could
+						// be different for different users, depending on access
+						// requirements.
+						cfgObj.noColorSelectionGrpNames = valueUpper.split(/[, ]/);
+					}
+					else if (settingUpper == "NOCOLORSELECTIONSUBBOARDCODES")
+					{
+						// Sub-board codes for sub-boards where text color selection
+						// isn't allowed.  Split on commas and spaces, and convert
+						// all to lowercase, since sub-board codes need to be lowercase.
+						var values = value.toLowerCase().split(/[, ]/);
+						for (var i = 0; i < values.length; ++i)
+						{
+							if (msg_area.sub.hasOwnProperty(values[i]))
+								cfgObj.noColorSelectionSubBoardCodes.push(values[i]);
+						}
+					}
+					else if (settingUpper == "CVTCOLORTOANSIGRPNAMES")
+					{
+						if ((value == "*") || (valueUpper == "ALL"))
+						{
+							for (var i = 0; i < msg_area.grp_list.length; ++i)
+								cfgObj.cvtColorToANSIGrpNames.push(msg_area.grp_list[i].name.toUpperCase());
+							cfgObj.cvtColorToANSIGrpNames.push("ELECTRONIC MAIL");
+						}
+						else
+							cfgObj.cvtColorToANSIGrpNames = valueUpper.split(/[, ]/);
+					}
+					else if (settingUpper == "CVTCOLORTOANSISUBBOARDCODES")
+					{
+						var values = value.toLowerCase().split(/[, ]/);
+						for (var i = 0; i < values.length; ++i)
+						{
+							if (msg_area.sub.hasOwnProperty(values[i]))
+								cfgObj.cvtColorToANSISubBoardCodes.push(values[i]);
+						}
+					}
 					else if (settingUpper == "USEQUOTELINEINITIALS")
 						cfgObj.useQuoteLineInitials = (valueUpper == "TRUE");
 					else if (settingUpper == "INDENTQUOTELINESWITHINITIALS")
@@ -1815,73 +1970,75 @@ function ReadSlyEditConfigFile()
 //  pFilename: The name of the configuration file.
 //  pLineReadLen: The maximum number of characters to read from each
 //                line.  This is optional; if not specified, then up
-//                to 512 characters will be read from each line.
+//                to 2048 characters will be read from each line.
+//  pCvtSyncColorAttrChar: Optional boolean - Whether or not to convert
+//                         \1 in color values to ASCII char 1 in color values
 //
 // Return value: An Object containing the value=setting pairs.  If the
 //               file can't be opened or no settings can be read, then
 //               this function will return null.
-function readValueSettingConfigFile(pFilename, pLineReadLen)
+function readValueSettingConfigFile(pFilename, pLineReadLen, pCvtSyncColorAttrChar)
 {
-   var retObj = null;
+	var retObj = null;
 
-   var cfgFile = new File(pFilename);
-   if (cfgFile.open("r"))
-   {
-      // Set the number of characters to read per line.
-      var numCharsPerLine = 512;
-      if (pLineReadLen != null)
-         numCharsPerLine = pLineReadLen;
+	var cfgFile = new File(pFilename);
+	if (cfgFile.open("r"))
+	{
+		var cvtSyncColorAttrChar = (typeof(pCvtSyncColorAttrChar) == "boolean" ? pCvtSyncColorAttrChar : false);
+		var numCharsPerLine = (typeof(pLineReadLen) == "number" ? pLineReadLen : 2048);
 
-      var fileLine = null;     // A line read from the file
-      var equalsPos = 0;       // Position of a = in the line
-      var commentPos = 0;      // Position of the start of a comment
-      var setting = null;      // A setting name (string)
-      var settingUpper = null; // Upper-case setting name
-      var value = null;        // A value for a setting (string)
-      var valueUpper = null;   // Upper-cased value
-      while (!cfgFile.eof)
-      {
-         // Read the next line from the config file.
-         fileLine = cfgFile.readln(numCharsPerLine);
+		var fileLine = null;     // A line read from the file
+		var equalsPos = 0;       // Position of a = in the line
+		var commentPos = 0;      // Position of the start of a comment
+		var setting = null;      // A setting name (string)
+		var settingUpper = null; // Upper-case setting name
+		var value = null;        // A value for a setting (string)
+		var valueUpper = null;   // Upper-cased value
+		while (!cfgFile.eof)
+		{
+			// Read the next line from the config file.
+			fileLine = cfgFile.readln(numCharsPerLine);
 
-         // fileLine should be a string, but I've seen some cases
-         // where it isn't, so check its type.
-         if (typeof(fileLine) != "string")
-            continue;
+			// fileLine should be a string, but I've seen some cases
+			// where it isn't, so check its type.
+			if (typeof(fileLine) != "string")
+				continue;
 
-         // If the line starts with with a semicolon (the comment
-         // character) or is blank, then skip it.
-         if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-            continue;
+			// If the line starts with with a semicolon (the comment
+			// character) or is blank, then skip it.
+			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+				continue;
 
-         // If the line has a semicolon anywhere in it, then remove
-         // everything from the semicolon onward.
-         commentPos = fileLine.indexOf(";");
-         if (commentPos > -1)
-            fileLine = fileLine.substr(0, commentPos);
+			// If the line has a semicolon anywhere in it, then remove
+			// everything from the semicolon onward.
+			commentPos = fileLine.indexOf(";");
+			if (commentPos > -1)
+				fileLine = fileLine.substr(0, commentPos);
 
-         // Look for an equals sign, and if found, separate the line
-         // into the setting name (before the =) and the value (after the
-         // equals sign).
-         equalsPos = fileLine.indexOf("=");
-         if (equalsPos > 0)
-         {
-            // If retObj hasn't been created yet, then create it.
-            if (retObj == null)
-               retObj = new Object();
+			// Look for an equals sign, and if found, separate the line
+			// into the setting name (before the =) and the value (after the
+			// equals sign).
+			equalsPos = fileLine.indexOf("=");
+			if (equalsPos > 0)
+			{
+				// If retObj hasn't been created yet, then create it.
+				if (retObj == null)
+					retObj = new Object();
 
-            // Read the setting & value, and trim leading & trailing spaces.  Then
-            // set the value in retObj.
-            setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-            value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
-            retObj[setting] = value;
-         }
-      }
+				// Read the setting & value, and trim leading & trailing spaces.  Then
+				// set the value in retObj.
+				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+				if (cvtSyncColorAttrChar) // Replace \1 with the SOH character, for Sync color codes
+					value = value.replace(/\\1/g, "\1");
+				retObj[setting] = value;
+			}
+		}
 
-      cfgFile.close();
-   }
+		cfgFile.close();
+	}
 
-   return retObj;
+	return retObj;
 }
 
 // Splits a string up by a maximum length, preserving whole words.
@@ -1959,24 +2116,25 @@ function splitStrStable(pStr, pMaxLen)
 // Return value: The spliced string
 function spliceIntoStr(pStr, pIndex, pStr2)
 {
-   // Error checking
-   var typeofPStr = typeof(pStr);
-   var typeofPStr2 = typeof(pStr2);
-   if ((typeofPStr != "string") && (typeofPStr2 != "string"))
-      return "";
-   else if ((typeofPStr == "string") && (typeofPStr2 != "string"))
-      return pStr;
-   else if ((typeofPStr != "string") && (typeofPStr2 == "string"))
-      return pStr2;
-   // If pIndex is beyond the last index of pStr, then just return the
-   // two strings concatenated.
-   if (pIndex >= pStr.length)
-      return (pStr + pStr2);
-   // If pIndex is below 0, then just return pStr2 + pStr.
-   else if (pIndex < 0)
-      return (pStr2 + pStr);
+	// Error checking
+	var typeofPStr = typeof(pStr);
+	var typeofPStr2 = typeof(pStr2);
+	if ((typeofPStr != "string") && (typeofPStr2 != "string"))
+		return "";
+	else if ((typeofPStr == "string") && (typeofPStr2 != "string"))
+		return pStr;
+	else if ((typeofPStr != "string") && (typeofPStr2 == "string"))
+		return pStr2;
+	// If pIndex is beyond the last index of pStr, then just return the
+	// two strings concatenated.
+	if (pIndex >= pStr.length)
+		return (pStr + pStr2);
+	// If pIndex is below 0, then just return pStr2 + pStr.
+	else if (pIndex < 0)
+		return (pStr2 + pStr);
 
-   return (pStr.substr(0, pIndex) + pStr2 + pStr.substr(pIndex));
+	//return (pStr.substr(0, pIndex) + pStr2 + pStr.substr(pIndex));
+	return (pStr.substr(0, pIndex) + pStr2 + pStr.substr(pIndex));
 }
 
 // Fixes the text lines in the gEditLines array so that they all
@@ -1991,170 +2149,177 @@ function spliceIntoStr(pStr, pIndex, pStr2)
 // Return value: Boolean - Whether or not any text was changed.
 function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth)
 {
-   // Returns without doing anything if any of the parameters are not
-   // what they should be. (Note: Not checking pTextLineArray for now..)
-   if (typeof(pStartIndex) != "number")
-      return false;
-   if (typeof(pEndIndex) != "number")
-      return false;
-   if (typeof(pEditWidth) != "number")
-      return false;
-   // Range checking
-   if ((pStartIndex < 0) || (pStartIndex >= pTextLineArray.length))
-      return false;
-   if ((pEndIndex <= pStartIndex) || (pEndIndex < 0))
-      return false;
-   if (pEndIndex > pTextLineArray.length)
-      pEndIndex = pTextLineArray.length;
-   if (pEditWidth <= 5)
-      return false;
+	// Returns without doing anything if any of the parameters are not
+	// what they should be. (Note: Not checking pTextLineArray for now..)
+	if ((typeof(pStartIndex) != "number") || (typeof(pEndIndex) != "number") || (typeof(pEditWidth) != "number"))
+		return false;
+	// Range checking
+	if ((pStartIndex < 0) || (pStartIndex >= pTextLineArray.length))
+		return false;
+	if ((pEndIndex <= pStartIndex) || (pEndIndex < 0))
+		return false;
+	if (pEndIndex > pTextLineArray.length)
+		pEndIndex = pTextLineArray.length;
+	if (pEditWidth <= 5)
+		return false;
 
-   var textChanged = false; // We'll return this upon function exit.
+	var textChanged = false; // We'll return this at the end of the function
 
-   var nextLineIndex = 0;
-   var charsToRemove = 0;
-   var splitIndex = 0;
-   var spaceFound = false;      // Whether or not a space was found in a text line
-   var splitIndexOriginal = 0;
-   var tempText = null;
-   var appendedNewLine = false; // If we appended another line
-   for (var i = pStartIndex; i < pEndIndex; ++i)
-   {
-      // As an extra precaution, check to make sure this array element is defined.
-      if (pTextLineArray[i] == undefined)
-         continue;
+	var nextLineIndex = 0;
+	var numCharsToRemove = 0;
+	var splitIndex = 0;
+	var spaceFound = false;      // Whether or not a space was found in a text line
+	var splitIndexOriginal = 0;
+	var tempText = null;
+	var appendedNewLine = false; // If we appended another line
+	for (var i = pStartIndex; i < pEndIndex; ++i)
+	{
+		// As an extra precaution, check to make sure this array element is defined.
+		if (pTextLineArray[i] == undefined)
+			continue;
 
-      nextLineIndex = i + 1;
-      // If the line's text is longer or equal to the edit width, then if
-      // possible, move the last word to the beginning of the next line.
-      if (pTextLineArray[i].text.length >= pEditWidth)
-      {
-         charsToRemove = pTextLineArray[i].text.length - pEditWidth + 1;
-         splitIndex = pTextLineArray[i].text.length - charsToRemove;
-         splitIndexOriginal = splitIndex;
-         // If the character in the text line at splitIndex is not a space,
-         // then look for a space before splitIndex.
-         spaceFound = (pTextLineArray[i].text.charAt(splitIndex) == " ");
-         if (!spaceFound)
-         {
-            splitIndex = pTextLineArray[i].text.lastIndexOf(" ", splitIndex-1);
-            spaceFound = (splitIndex > -1);
-            if (!spaceFound)
-               splitIndex = splitIndexOriginal;
-         }
-         tempText = pTextLineArray[i].text.substr(spaceFound ? splitIndex+1 : splitIndex);
-         pTextLineArray[i].text = pTextLineArray[i].text.substr(0, splitIndex);
-         textChanged = true;
-         // If we're on the last line, or if the current line has a hard
-         // newline or is a quote line, then append a new line below.
-         appendedNewLine = false;
-         if ((nextLineIndex == pTextLineArray.length) || pTextLineArray[i].hardNewlineEnd ||
-             isQuoteLine(pTextLineArray, i))
-         {
-            pTextLineArray.splice(nextLineIndex, 0, new TextLine());
-            pTextLineArray[nextLineIndex].hardNewlineEnd = pTextLineArray[i].hardNewlineEnd;
-            pTextLineArray[i].hardNewlineEnd = false;
-            pTextLineArray[nextLineIndex].isQuoteLine = pTextLineArray[i].isQuoteLine;
-            appendedNewLine = true;
-         }
+		nextLineIndex = i + 1;
+		// If the line's text is longer or equal to the edit width, then if
+		// possible, move the last word to the beginning of the next line.
+		if (pTextLineArray[i].displayLength() >= pEditWidth)
+		{
+			numCharsToRemove = pTextLineArray[i].displayLength() - pEditWidth + 1;
+			splitIndex = pTextLineArray[i].displayIdxToActualIdx(pTextLineArray[i].displayLength() - numCharsToRemove);
+			splitIndexOriginal = splitIndex;
+			// If the character in the text line at splitIndex is not a space,
+			// then look for a space before splitIndex.
+			spaceFound = (pTextLineArray[i].text.charAt(splitIndex) == " ");
+			if (!spaceFound)
+			{
+				splitIndex = pTextLineArray[i].text.lastIndexOf(" ", splitIndex-1);
+				spaceFound = (splitIndex > -1);
+				if (!spaceFound)
+					splitIndex = splitIndexOriginal;
+				// If the character at splitIndex is the 2nd character in a Synchronet
+				// attribute code, then adjust splitIndex accordingly.
+				if ((splitIndex > 0) && gSyncAttrRegex.test(pTextLineArray[i].text.substr(splitIndex-1, 2)))
+					--splitIndex;
+			}
 
-         // Move the text around and adjust the line properties.
-         if (appendedNewLine)
-            pTextLineArray[nextLineIndex].text = tempText;
-         else
-         {
-            // If we're in insert mode, then insert the text at the beginning of
-            // the next line.  Otherwise, overwrite the text in the next line.
-            if (inInsertMode())
-               pTextLineArray[nextLineIndex].text = tempText + " " + pTextLineArray[nextLineIndex].text;
-            else
-            {
-               // We're in overwrite mode, so overwite the first part of the next
-               // line with tempText.
-               if (pTextLineArray[nextLineIndex].text.length < tempText.length)
-                  pTextLineArray[nextLineIndex].text = tempText;
-               else
-               {
-                  pTextLineArray[nextLineIndex].text = tempText
-                                           + pTextLineArray[nextLineIndex].text.substr(tempText.length);
-               }
-            }
-         }
-      }
-      else
-      {
-         // pTextLineArray[i].text.length is < pEditWidth, so try to bring up text
-         // from the next line.
+			var tempText = pTextLineArray[i].text.substr(splitIndex);
+			// If the substring contains a space at the beginning or the end, then
+			// remove the space.
+			if (tempText.search(/^ /) == 0)
+				tempText = tempText.substr(1);
+			else if (tempText.search(/ $/) == tempText.length-1)
+				tempText = tempText.substr(0, tempText.length-1);
+			pTextLineArray[i].text = pTextLineArray[i].text.substr(0, splitIndex);
 
-         // Only do it if the line doesn't have a hard newline and it's not a
-         // quote line and there is a next line.
-         if (!pTextLineArray[i].hardNewlineEnd && !isQuoteLine(pTextLineArray, i) &&
-             (i < pTextLineArray.length-1))
-         {
-            if (pTextLineArray[nextLineIndex].text.length > 0)
-            {
-               splitIndex = pEditWidth - pTextLineArray[i].text.length - 2;
-               // If splitIndex is negative, that means the entire next line
-               // can fit on the current line.
-               if ((splitIndex < 0) || (splitIndex > pTextLineArray[nextLineIndex].text.length))
-                  splitIndex = pTextLineArray[nextLineIndex].text.length;
-               else
-               {
-                  // If the character in the next line at splitIndex is not a
-                  // space, then look for a space before it.
-                  if (pTextLineArray[nextLineIndex].text.charAt(splitIndex) != " ")
-                     splitIndex = pTextLineArray[nextLineIndex].text.lastIndexOf(" ", splitIndex);
-                  // If no space was found, then skip to the next line (we don't
-                  // want to break up words from the next line).
-                  if (splitIndex == -1)
-                     continue;
-               }
+			textChanged = true;
+			// If we're on the last line, or if the current line has a hard
+			// newline or is a quote line, then append a new line below.
+			appendedNewLine = false;
+			if ((nextLineIndex == pTextLineArray.length) || pTextLineArray[i].hardNewlineEnd || isQuoteLine(pTextLineArray, i))
+			{
+				pTextLineArray.splice(nextLineIndex, 0, new TextLine());
+				pTextLineArray[nextLineIndex].hardNewlineEnd = pTextLineArray[i].hardNewlineEnd;
+				pTextLineArray[i].hardNewlineEnd = false;
+				pTextLineArray[nextLineIndex].isQuoteLine = pTextLineArray[i].isQuoteLine;
+				appendedNewLine = true;
+			}
 
-               // Get the text to bring up to the current line.
-               // If the current line does not end with a space and the next line
-               // does not start with a space, then add a space between this line
-               // and the next line's text.  This is done to avoid joining words
-               // accidentally.
-               tempText = "";
-               if ((pTextLineArray[i].text.charAt(pTextLineArray[i].text.length-1) != " ") &&
-                   (pTextLineArray[nextLineIndex].text.substr(0, 1) != " "))
-               {
-                  tempText = " ";
-               }
-               tempText += pTextLineArray[nextLineIndex].text.substr(0, splitIndex);
-               // Move the text from the next line to the current line, if the current
-               // line has room for it.
-               if (pTextLineArray[i].text.length + tempText.length < pEditWidth)
-               {
-                  pTextLineArray[i].text += tempText;
-                  pTextLineArray[nextLineIndex].text = pTextLineArray[nextLineIndex].text.substr(splitIndex+1);
-                  textChanged = true;
+			// Move the text around and adjust the line properties.
+			if (appendedNewLine)
+				pTextLineArray[nextLineIndex].text = tempText;
+			else
+			{
+				// If we're in insert mode, then insert the text at the beginning of
+				// the next line.  Otherwise, overwrite the text in the next line.
+				if (inInsertMode())
+					pTextLineArray[nextLineIndex].text = tempText + " " + pTextLineArray[nextLineIndex].text;
+				else
+				{
+					// We're in overwrite mode, so overwrite the first part of the next
+					// line with tempText.
+					if (pTextLineArray[nextLineIndex].text.length < tempText.length)
+						pTextLineArray[nextLineIndex].text = tempText;
+					else
+						pTextLineArray[nextLineIndex].text = tempText + pTextLineArray[nextLineIndex].text.substr(tempText.length);
+				}
+			}
+		}
+		else
+		{
+			// pTextLineArray[i].text.length is < pEditWidth, so try to bring up text
+			// from the next line.
 
-                  // If the next line is now blank, then remove it.
-                  if (pTextLineArray[nextLineIndex].text.length == 0)
-                  {
-                     // The current line should take on the next line's
-                     // hardnewlineEnd property before removing the next line.
-                     pTextLineArray[i].hardNewlineEnd = pTextLineArray[nextLineIndex].hardNewlineEnd;
-                     pTextLineArray.splice(nextLineIndex, 1);
-                  }
-               }
-            }
-            else
-            {
-               // The next line's text string is blank.  If its hardNewlineEnd
-               // property is false, then remove the line.
-               if (!pTextLineArray[nextLineIndex].hardNewlineEnd)
-               {
-                  pTextLineArray.splice(nextLineIndex, 1);
-                  textChanged = true;
-               }
-            }
-         }
-      }
-   }
+			// Only do it if the line doesn't have a hard newline and it's not a
+			// quote line and there is a next line.
+			if (!pTextLineArray[i].hardNewlineEnd && !isQuoteLine(pTextLineArray, i) && (i < pTextLineArray.length-1))
+			{
+				if (pTextLineArray[nextLineIndex].text.length > 0)
+				{
+					splitIndex = pEditWidth - pTextLineArray[i].text.length - 2;
+					// If splitIndex is negative, that means the entire next line
+					// can fit on the current line.
+					if ((splitIndex < 0) || (splitIndex > pTextLineArray[nextLineIndex].text.length))
+						splitIndex = pTextLineArray[nextLineIndex].text.length;
+					else
+					{
+						// If the character in the next line at splitIndex is not a
+						// space, then look for a space before it.
+						if (pTextLineArray[nextLineIndex].text.charAt(splitIndex) != " ")
+							splitIndex = pTextLineArray[nextLineIndex].text.lastIndexOf(" ", splitIndex);
+						// If no space was found, then skip to the next line (we don't
+						// want to break up words from the next line).
+						if (splitIndex == -1)
+							continue;
+					}
+					// If the character at splitIndex is the 2nd character in a Synchronet
+					// attribute code, then adjust splitIndex accordingly.
+					if ((splitIndex > 0) && gSyncAttrRegex.test(pTextLineArray[nextLineIndex].text.substr(splitIndex-1, 2)))
+						--splitIndex;
 
-   return textChanged;
+					// Get the text to bring up to the current line.
+					// If the current line does not end with a space and the next line
+					// does not start with a space, then add a space between this line
+					// and the next line's text.  This is done to avoid joining words
+					// accidentally.
+					var tempText = "";
+					if ((pTextLineArray[i].text.charAt(pTextLineArray[i].text.length-1) != " ") &&
+					    (pTextLineArray[nextLineIndex].text.substr(0, 1) != " "))
+					{
+						tempText = " ";
+					}
+					tempText += pTextLineArray[nextLineIndex].text.substr(0, splitIndex);
+					// Move the text from the next line to the current line, if the current
+					// line has room for it.
+					if (pTextLineArray[i].text.length + tempText.length < pEditWidth)
+					{
+						pTextLineArray[i].text += tempText;
+						pTextLineArray[nextLineIndex].text = pTextLineArray[nextLineIndex].text.substr(splitIndex+1);
+						textChanged = true;
+
+						// If the next line is now blank, then remove it.
+						if (pTextLineArray[nextLineIndex].text.length == 0)
+						{
+							// The current line should take on the next line's
+							// hardnewlineEnd property before removing the next line.
+							pTextLineArray[i].hardNewlineEnd = pTextLineArray[nextLineIndex].hardNewlineEnd;
+							pTextLineArray.splice(nextLineIndex, 1);
+						}
+					}
+				}
+				else
+				{
+					// The next line's text string is blank.  If its hardNewlineEnd
+					// property is false, then remove the line.
+					if (!pTextLineArray[nextLineIndex].hardNewlineEnd)
+					{
+						pTextLineArray.splice(nextLineIndex, 1);
+						textChanged = true;
+					}
+				}
+			}
+		}
+	}
+
+	return textChanged;
 }
 
 // Returns indexes of the first unquoted text line and the next
@@ -2255,73 +2420,73 @@ function isQuoteLine(pLineArray, pLineIndex)
 //            control character)
 function toggleAttr(pAttrType, pAttrs, pNewAttr)
 {
-   // Removes an attribute from an attribute string, if it
-   // exists.  Returns the new attribute string.
-   function removeAttrIfExists(pAttrs, pNewAttr)
-   {
-      var index = pAttrs.search(pNewAttr);
-      if (index > -1)
-         pAttrs = pAttrs.replace(pNewAttr, "");
-      return pAttrs;
-   }
+	// Removes an attribute from an attribute string, if it
+	// exists.  Returns the new attribute string.
+	function removeAttrIfExists(pAttrs, pNewAttr)
+	{
+		var index = pAttrs.search(pNewAttr);
+		if (index > -1)
+			pAttrs = pAttrs.replace(pNewAttr, "");
+		return pAttrs;
+	}
 
-   // Convert pAttrs and pNewAttr to all uppercase for ease of searching
-   pAttrs = pAttrs.toUpperCase();
-   pNewAttr = pNewAttr.toUpperCase();
+	// Convert pAttrs and pNewAttr to all uppercase for ease of searching
+	pAttrs = pAttrs.toUpperCase();
+	pNewAttr = pNewAttr.toUpperCase();
 
-   // If pAttrs starts with the normal attribute, then
-   // remove it (we'll put it back on later).
-   var normalAtStart = false;
-   if (pAttrs.search(/^N/) == 0)
-   {
-      normalAtStart = true;
-      pAttrs = pAttrs.substr(2);
-   }
+	// If pAttrs starts with the normal attribute, then
+	// remove it (we'll put it back on later).
+	var normalAtStart = false;
+	if (pAttrs.search(/^N/) == 0)
+	{
+		normalAtStart = true;
+		pAttrs = pAttrs.substr(2);
+	}
 
-   // Prepend the attribute control character to the new attribute
-   var newAttr = "" + pNewAttr;
+	// Prepend the attribute control character to the new attribute
+	var newAttr = "" + pNewAttr;
 
-   // Set a regex for searching & replacing
-   var regex = "";
-   switch (pAttrType)
-   {
-      case FORE_ATTR: // Foreground attribute
-         regex = /K|R|G|Y|B|M|C|W/g;
-         break;
-      case BKG_ATTR: // Background attribute
-         regex = /0|1|2|3|4|5|6|7/g;
-         break;
-      case SPECIAL_ATTR: // Special attribute
-         //regex = /H|I|N/g;
-         index = pAttrs.search(newAttr);
-         if (index > -1)
-            pAttrs = pAttrs.replace(newAttr, "");
-         else
-            pAttrs += newAttr;
-         break;
-      default:
-         break;
-   }
+	// Set a regex for searching & replacing
+	var regex = "";
+	switch (pAttrType)
+	{
+		case FORE_ATTR: // Foreground attribute
+			regex = /K|R|G|Y|B|M|C|W/g;
+			break;
+		case BKG_ATTR: // Background attribute
+			regex = /0|1|2|3|4|5|6|7/g;
+			break;
+		case SPECIAL_ATTR: // Special attribute
+			//regex = /H|I|N/g;
+			index = pAttrs.search(newAttr);
+			if (index > -1)
+			pAttrs = pAttrs.replace(newAttr, "");
+			else
+			pAttrs += newAttr;
+			break;
+		default:
+			break;
+	}
 
-   // If regex is not blank, then search & replace on it in
-   // pAttrs.
-   if (regex != "")
-   {
-      pAttrs = removeAttrIfExists(pAttrs, newAttr);
-      // If the regex is found, then replace it.  Otherwise,
-      // add pNewAttr to the attribute string.
-      if (pAttrs.search(regex) > -1)
-         pAttrs = pAttrs.replace(regex, "" + pNewAttr);
-      else
-         pAttrs += "" + pNewAttr;
-   }
+	// If regex is not blank, then search & replace on it in
+	// pAttrs.
+	if (regex != "")
+	{
+		pAttrs = removeAttrIfExists(pAttrs, newAttr);
+		// If the regex is found, then replace it.  Otherwise,
+		// add pNewAttr to the attribute string.
+		if (pAttrs.search(regex) > -1)
+			pAttrs = pAttrs.replace(regex, "" + pNewAttr);
+		else
+			pAttrs += "" + pNewAttr;
+	}
 
-   // If pAttrs started with the normal attribute, then
-   // put it back on.
-   if (normalAtStart)
-      pAttrs = "N" + pAttrs;
+	// If pAttrs started with the normal attribute, then
+	// put it back on.
+	if (normalAtStart)
+		pAttrs = "N" + pAttrs;
 
-   return pAttrs;
+	return pAttrs;
 }
 
 // This function wraps an array of strings based on a line width.
@@ -3525,37 +3690,38 @@ function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
 //               sigContents: String - The user's message signature
 function readUserSigFile()
 {
-  var retObj = new Object();
-  retObj.sigFileExists = false;
-  retObj.sigContents = "";
+	var retObj = {
+		sigFileExists: false,
+		sigContents: ""
+	};
 
-  // The user signature files are located in sbbs/data/user, and the filename
-  // is the user number (zero-padded up to 4 digits) + .sig
-  var userSigFilename = backslash(system.data_dir + "user") + format("%04d.sig", user.number);
-  retObj.sigFileExists = file_exists(userSigFilename);
-  if (retObj.sigFileExists)
-  {
-    var msgSigFile = new File(userSigFilename);
-    if (msgSigFile.open("r"))
-    {
-      var fileLine = ""; // A line read from the file
-      while (!msgSigFile.eof)
-      {
-        fileLine = msgSigFile.readln(2048);
-        // fileLine should be a string, but I've seen some cases
-        // where for some reason it isn't.  If it's not a string,
-        // then continue onto the next line.
-        if (typeof(fileLine) != "string")
-          continue;
+	// The user signature files are located in sbbs/data/user, and the filename
+	// is the user number (zero-padded up to 4 digits) + .sig
+	var userSigFilename = backslash(system.data_dir + "user") + format("%04d.sig", user.number);
+	retObj.sigFileExists = file_exists(userSigFilename);
+	if (retObj.sigFileExists)
+	{
+		var msgSigFile = new File(userSigFilename);
+		if (msgSigFile.open("r"))
+		{
+			var fileLine = ""; // A line read from the file
+			while (!msgSigFile.eof)
+			{
+				fileLine = msgSigFile.readln(2048);
+				// fileLine should be a string, but I've seen some cases
+				// where for some reason it isn't.  If it's not a string,
+				// then continue onto the next line.
+				if (typeof(fileLine) != "string")
+					continue;
 
-        retObj.sigContents += fileLine + "\r\n";
-      }
+				retObj.sigContents += fileLine + "\r\n";
+			}
 
-      msgSigFile.close();
-    }
-  }
+			msgSigFile.close();
+		}
+	}
 
-  return retObj;
+	return retObj;
 }
 
 // Returns the sub-board code and group index for the first sub-board
@@ -3605,73 +3771,80 @@ function getFirstPostableSubInfo()
 // Return value: The number of text replacements added to the array.
 function populateTxtReplacements(pArray, pRegex)
 {
-   var numTxtReplacements = 0;
+	var numTxtReplacements = 0;
 
-   // Note: Limited to words without spaces.
-   // Open the word replacements configuration file
-   var wordReplacementsFilename = genFullPathCfgFilename("SlyEdit_TextReplacements.cfg", gStartupPath);
-   var arrayPopulated = false;
-   var wordFile = new File(wordReplacementsFilename);
-   if (wordFile.open("r"))
-   {
-      var fileLine = null;      // A line read from the file
-      var equalsPos = 0;        // Position of a = in the line
-      var wordToSearch = null; // A word to be replaced
-      var wordToSearchUpper = null;
-      var substWord = null;    // The word to substitue
-      // This tests numTxtReplacements < 9999 so that the 9999th one is the last
-      // one read.
-      while (!wordFile.eof && (numTxtReplacements < 9999))
-      {
-         // Read the next line from the config file.
-         fileLine = wordFile.readln(2048);
+	// Note: Limited to words without spaces.
+	// Open the word replacements configuration file
+	var wordReplacementsFilename = genFullPathCfgFilename("SlyEdit_TextReplacements.cfg", gStartupPath);
+	var arrayPopulated = false;
+	var wordFile = new File(wordReplacementsFilename);
+	if (wordFile.open("r"))
+	{
+		var fileLine = null;      // A line read from the file
+		var equalsPos = 0;        // Position of a = in the line
+		var wordToSearch = null; // A word to be replaced
+		var wordToSearchUpper = null;
+		var substWord = null;    // The word to substitute
+		// This tests numTxtReplacements < 9999 so that the 9999th one is the last
+		// one read.
+		while (!wordFile.eof && (numTxtReplacements < 9999))
+		{
+			// Read the next line from the file.
+			fileLine = wordFile.readln(2048);
 
-         // fileLine should be a string, but I've seen some cases
-         // where for some reason it isn't.  If it's not a string,
-         // then continue onto the next line.
-         if (typeof(fileLine) != "string")
-            continue;
-         // If the line starts with with a semicolon (the comment
-         // character) or is blank, then skip it.
-         if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-            continue;
+			// fileLine should be a string, but I've seen some cases
+			// where for some reason it isn't.  If it's not a string,
+			// then continue onto the next line.
+			if (typeof(fileLine) != "string")
+				continue;
+			// If the line starts with with a semicolon (the comment
+			// character) or is blank, then skip it.
+			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+				continue;
 
-         // Look for an equals sign, and if found, separate the line
-         // into the setting name (before the =) and the value (after the
-         // equals sign).
-         equalsPos = fileLine.indexOf("=");
-         if (equalsPos <= 0)
-            continue; // = not found or is at the beginning, so go on to the next line
+			// Look for an equals sign, and if found, separate the line
+			// into the setting name (before the =) and the value (after the
+			// equals sign).
+			equalsPos = fileLine.indexOf("=");
+			if (equalsPos <= 0)
+				continue; // = not found or is at the beginning, so go on to the next line
 
-         // Extract the word to search and substitution word from the line.  If
-         // not using regular expressions, then convert the word to search to
-         // all uppercase for case-insensitive searching.
-         wordToSearch = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-         wordToSearchUpper = wordToSearch.toUpperCase();
-         substWord = strip_ctrl(trimSpaces(fileLine.substr(equalsPos+1), true, false, true));
-         // Make sure substWord only contains printable characters.  If not, then
-         // skip this one.
-         var substIsPrintable = true;
-         for (var i = 0; (i < substWord.length) && substIsPrintable; ++i)
-            substIsPrintable = isPrintableChar(substWord.charAt(i));
-         if (!substIsPrintable)
-            continue;
+			// Replace \1 with the SOH character so it can be used for
+			// Synchronet color/attribute codes
+			fileLine = fileLine.replace(/\\1/g, "\1");
 
-         // And add the search word and replacement text to pArray.
-         if (wordToSearchUpper != substWord.toUpperCase())
-         {
-            if (pRegex)
-               pArray[wordToSearch] = substWord;
-            else
-               pArray[wordToSearchUpper] = substWord;
-            ++numTxtReplacements;
-         }
-      }
+			// Extract the word to search and substitution word from the line.  If
+			// not using regular expressions, then convert the word to search to
+			// all uppercase for case-insensitive searching.
+			wordToSearch = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+			wordToSearchUpper = wordToSearch.toUpperCase();
+			substWord = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+			// Make sure substWord only contains printable characters.  If not, then
+			// skip this one.
+			var substIsPrintable = true;
+			for (var i = 0; (i < substWord.length) && substIsPrintable; ++i)
+			{
+				var currentChar = substWord.charAt(i);
+				substIsPrintable = (isPrintableChar(currentChar) || (currentChar == "\1"));
+			}
+			if (!substIsPrintable)
+				continue;
 
-      wordFile.close();
-   }
+			// And add the search word and replacement text to pArray.
+			if (wordToSearchUpper != substWord.toUpperCase())
+			{
+				if (pRegex)
+					pArray[wordToSearch] = substWord;
+				else
+					pArray[wordToSearchUpper] = substWord;
+				++numTxtReplacements;
+			}
+		}
 
-   return numTxtReplacements;
+		wordFile.close();
+	}
+
+	return numTxtReplacements;
 }
 
 function moveGenColorsToGenSettings(pColorsArray, pCfgObj)
@@ -4353,25 +4526,610 @@ function getKeyWithESCChars(pGetKeyMode, pCfgObj)
 	return userInput;
 }
 
+// Returns the index of the first Synchronet attribute code before a given index
+// in a string.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pIdx: The index to search back from
+//  pSeriesOfAttrs: Optional boolean - Whether or not to look for a series of
+//                  attributes.  Defaults to false (look for just one attribute).
+//  pOnlyInWord: Optional boolean - Whether or not to look only in the current word
+//               (with words separated by whitespace).  Defaults to false.
+//
+// Return value: The index of the first Synchronet attribute code before the given
+//               index in the string, or -1 if there is none or if the parameters
+//               are invalid
+function strIdxOfSyncAttrBefore(pStr, pIdx, pSeriesOfAttrs, pOnlyInWord)
+{
+	if (typeof(pStr) != "string")
+		return -1;
+	if (typeof(pIdx) != "number")
+		return -1;
+	if ((pIdx < 0) || (pIdx >= pStr.length))
+		return -1;
+
+	var seriesOfAttrs = (typeof(pSeriesOfAttrs) == "boolean" ? pSeriesOfAttrs : false);
+	var onlyInWord = (typeof(pOnlyInWord) == "boolean" ? pOnlyInWord : false);
+
+	var attrCodeIdx = pStr.lastIndexOf("\1", pIdx-1);
+	if (attrCodeIdx > -1)
+	{
+		// If we are to only check the current word, then continue only if
+		// there isn't a space between the attribute code and the given index.
+		if (onlyInWord)
+		{
+			if (pStr.lastIndexOf(" ", pIdx-1) >= attrCodeIdx)
+				attrCodeIdx = -1;
+		}
+	}
+	if (attrCodeIdx > -1)
+	{
+		var syncAttrRegexWholeWord = /^\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i;
+		if (syncAttrRegexWholeWord.test(pStr.substr(attrCodeIdx, 2)))
+		{
+			if (seriesOfAttrs)
+			{
+				for (var i = attrCodeIdx - 2; i >= 0; i -= 2)
+				{
+					if (syncAttrRegexWholeWord.test(pStr.substr(i, 2)))
+						attrCodeIdx = i;
+					else
+						break;
+				}
+			}
+		}
+		else
+			attrCodeIdx = -1;
+	}
+	return attrCodeIdx;
+}
+
+// Gets a substring for a string, including preceding Synchronet color codes
+// for the word at the given start index.
+//
+// Parameters:
+//  pStr: The string to get the substring from
+//  pStartIdx: The index in the string where the substring should start
+//  pLen: The length of the substring to get.  Optional - If not specified,
+//        the rest of the string will be used.
+//
+// Return value: An object with the following properties:
+//               strSub: The substring from the string, including any Synchronet
+//                       color codes that may exist preceding the word at pStartIdx
+//               startIdx: The actual index in the string where the substring starts
+//                         (-1 if an error occurred)
+//               endIdx: The actual index in the string where the substring ends.
+//                       This is the index of the last character in the substring.
+//                       Will be -1 if an error occurred.
+//               len: The actual length of the substring
+//               printableLen: The length of the string as it would appear on the screen
+//                             (i.e., its length without Synchronet attribute codes)
+//               syncAttrStartIdx: The starting index of Synchronet attributes
+//                                 (-1 if not found or an error occurred)
+//               syncAttrEndIdx: The ending index of Synchronet attributes, including
+//                               the last character (-1 if not found or an error occurred)
+function substrWithSyncColorCodes(pStr, pStartIdx, pLen)
+{
+	var retObj = {
+		strSub: "",
+		startIdx: -1,
+		endIdx: -1,
+		len: 0,
+		printableLen: 0,
+		syncAttrStartIdx: -1,
+		syncAttrEndIdx: -1,
+		clear: function() {
+			this.strSub = "";
+			this.startIdx = -1;
+			this.endIdx = -1;
+			this.len = 0;
+			this.printableLen = 0;
+			this.syncAttrStartIdx = -1;
+			this.syncAttrEndIdx = -1;
+		}
+	};
+
+	if (typeof(pStr) != "string")
+		return retObj;
+	if (typeof(pStartIdx) != "number")
+		return retObj;
+	if ((pStartIdx < 0) || (pStartIdx >= pStr.length))
+		return retObj;
+
+	var substrLen = (typeof(pLen) == "number" ? pLen : pStr.length-pStartIdx);
+	if (substrLen > pStr.length)
+		substrLen = pStr.length - pStartIdx + 1;
+
+	// If there are Synchronet attribute codes at the given index, then find out
+	// where the attribute codes end and extend the length to include those with
+	// the printable text.
+	retObj.startIdx = pStartIdx;
+	retObj.len = substrLen;
+	if (pStr.substr(pStartIdx).search(gSyncAttrRegex) == 0)
+	{
+		retObj.syncAttrStartIdx = pStartIdx;
+		retObj.syncAttrEndIdx = regexLastIndexOf(pStr, gSyncAttrRegex, pStartIdx, pStartIdx+substrLen);
+		if (retObj.syncAttrEndIdx > -1)
+		{
+			++retObj.syncAttrEndIdx; // This index should be the last character in the Sync attributes
+			retObj.len += (retObj.syncAttrEndIdx - pStartIdx + 1);
+		}
+	}
+	else
+	{
+		var attrInfo = getAttrsAndIndexesBeforeStrIdx(pStr, pStartIdx);
+		retObj.syncAttrStartIdx = attrInfo.syncAttrStartIdx;
+		retObj.syncAttrEndIdx = attrInfo.syncAttrEndIdx;
+		if ((retObj.syncAttrStartIdx > -1) && (retObj.syncAttrEndIdx > -1))
+		{
+			// Map the given start index to the actual index in the string
+			retObj.startIdx = strDisplayIdxToActualIdx(pStr, pStartIdx);
+			// Older code which has a bug - Doesn't map a 'on-screen' string
+			// index to an actual string index correctly if an attribute code
+			// happens to appear in the string right before pStartIdx:
+			/*
+			if (retObj.syncAttrEndIdx == pStartIdx-1)
+			{
+				var lenDiff = retObj.syncAttrEndIdx - retObj.syncAttrStartIdx + 1;
+				retObj.startIdx -= lenDiff;
+				retObj.len += lenDiff;
+			}
+			else
+				retObj.startIdx = strDisplayIdxToActualIdx(pStr, pStartIdx);
+			*/
+		}
+		else
+		{
+			// Found no attribute codes before the start index.
+			// See if there are any Synchronet attribute codes between the
+			// start index & within the length.  If so, then adjust the length
+			// accordingly: Add Synchronet attribute code lengths to the substring
+			// length to account for them in the string.
+			var endIdx = pStartIdx + substrLen;
+			var i = pStartIdx;
+			while (i < endIdx)
+			{
+				if (gSyncAttrRegex.test(pStr.substr(i, 2)))
+				{
+					i += 2;
+					retObj.len += 2;
+				}
+				else
+					++i;
+			}
+		}
+	}
+	retObj.endIdx = retObj.startIdx + retObj.len - 1;
+	retObj.strSub = pStr.substr(retObj.startIdx, retObj.len);
+	retObj.printableLen = strip_ctrl(retObj.strSub).length;
+	return retObj;
+}
+
+// Returns the index of the last-occurring instance of a given regular expression
+// in a string.
+//
+// Parameters:
+//  pStr: The string to look in
+//  pRegex: The regular expression to look for
+//  pStartIdx: Optional - The index of the starting character in the string
+//  pEndIdx: Optional - The index of the last character in the string to check
+//
+// Return value: The index of the last-occuring instance of the given regular
+//               expression, or -1 if not found.
+function regexLastIndexOf(pStr, pRegex, pStartIdx, pEndIdx)
+{
+	if (typeof(pStr) != "string")
+		return -1;
+	var startIdx = (typeof(pEndIdx) == "number" ? pStartIdx : 0);
+	if ((startIdx < 0) || (startIdx >= pStr.length))
+		return -1;
+	var endIdx = (typeof(pEndIdx) == "number" ? pEndIdx : pStr.length-1);
+	if ((endIdx < 0) || (endIdx >= pStr.length))
+		return -1;
+
+	var lastIdx = -1;
+	for (var i = endIdx; (i >= startIdx) && (lastIdx == -1); --i)
+	{
+		if (pStr.substr(i).search(pRegex) == 0)
+			lastIdx = i;
+	}
+	return lastIdx;
+}
+
+// Finds the index of the next occurrance of a regular expression in
+// a string.
+//
+// Parameters:
+//  pStr: The string to search
+//  pRegex: The regular expression to search for
+//  pStartIdx: Optional - The index of where to start in the string.
+//             If not specified, this value will be 0.
+//
+// Return value: The index of the next occurance of the regular expression, or
+//               -1 if not found
+function strSearchNext(pStr, pRegex, pStartIdx)
+{
+	if (typeof(pStr) != "string")
+		return -1;
+	var startIdx = (typeof(pStartIdx) == "number" ? pStartIdx : 0);
+	if ((startIdx < 0) || (startIdx >= pStr.length))
+		return -1;
+
+	var subStr = (startIdx == 0 ? pStr : pStr.substr(startIdx));
+	var searchIdx = subStr.search(pRegex);
+	if (searchIdx > -1)
+		searchIdx += startIdx;
+	return searchIdx;
+}
+
+// Returns a string with any Synchronet color/attribute codes found in a string
+// before a given index.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pIdx: The index in the string to search before
+//
+// Return value: A string containing any Synchronet attribute codes found before
+//               the given index in the given string
+function getAttrsBeforeStrIdx(pStr, pIdx)
+{
+	if (typeof(pStr) != "string")
+		return "";
+	if (typeof(pIdx) != "number")
+		return "";
+	if (pIdx < 0)
+		return "";
+
+	var idx = (pIdx < pStr.length ? pIdx : pStr.length-1);
+	var attrStartIdx = strIdxOfSyncAttrBefore(pStr, idx, true, false);
+	var attrEndIdx = strIdxOfSyncAttrBefore(pStr, idx, false, false); // Start of 2-character code
+	var attrsStr = "";
+	if ((attrStartIdx > -1) && (attrEndIdx > -1))
+		attrsStr = pStr.substring(attrStartIdx, attrEndIdx+2);
+	return attrsStr;
+}
+
+// Returns an object with information about any group of Synchronet color/attribute codes
+// found in a string before a given index.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pIdx: The index in the string to search before
+//
+// Return value: An object containing the following properties:
+//               attrStr: A string containing any Synchronet attribute codes
+//                        found before the given index in the given string.  If
+//                        none are found, this string will be empty.
+//               syncAttrStartIdx: The index of where the attribute codes start, or
+//                                 -1 if none were found
+//               syncAttrEndIdx: The index of the last character of the attribute
+//                               codes, or -1 if none were found
+function getAttrsAndIndexesBeforeStrIdx(pStr, pIdx)
+{
+	var retObj = {
+		attrStr: "",
+		syncAttrStartIdx: -1,
+		syncAttrEndIdx: -1
+	};
+
+	if ((typeof(pStr) != "string") || (typeof(pIdx) != "number"))
+		return retObj;
+	if (pIdx < 0)
+		return retObj;
+
+	var idx = (pIdx < pStr.length ? pIdx : pStr.length-1);
+
+	// Look for indexes of any Synchronet attribute codes before the given
+	// index.  If there are some, then set the start index after the attribute
+	// codes end.
+	retObj.syncAttrStartIdx = strIdxOfSyncAttrBefore(pStr, idx, false, false);
+	if ((retObj.syncAttrStartIdx > -1) && (retObj.syncAttrStartIdx < idx))
+	{
+		retObj.syncAttrEndIdx = regexLastIndexOf(pStr, gSyncAttrRegex, retObj.syncAttrStartIdx, idx);
+		if (retObj.syncAttrEndIdx == -1)
+			retObj.syncAttrEndIdx = regexLastIndexOf(pStr, gSyncAttrRegex, retObj.syncAttrStartIdx, retObj.syncAttrStartIdx+substrLen);
+		if (retObj.syncAttrEndIdx > -1)
+		{
+			++retObj.syncAttrEndIdx; // This index should be the last character in the Sync attributes
+			retObj.attrStr = pStr.substring(retObj.syncAttrStartIdx, retObj.syncAttrEndIdx+1);
+		}
+	}
+
+	if (retObj.attrStr.length == 0)
+	{
+		retObj.syncAttrStartIdx = -1;
+		retObj.syncAttrEndIdx = -1;
+	}
+
+	return retObj;
+}
+
+// Converts a printable display index to an actual index of a string,
+// ignoring Synchronet attribute codes in the string.
+//
+// Parameters:
+//  pStr: The string to check
+//  pDisplayIdx: The string index as displayed on the screen
+//
+// Return value: The index in the actual string.  0 on error
+function strDisplayIdxToActualIdx(pStr, pDisplayIdx)
+{
+	if (typeof(pStr) != "string")
+		return 0;
+	if (typeof(pDisplayIdx) != "number")
+		return 0;
+
+	var actualIdx = 0;
+	var strWithoutCtrlChars = strip_ctrl(pStr);
+	// If the given index is one past the last actual index in the string
+	// without control characters, then put actualIndex one past the last
+	// index of the string.
+	if (pDisplayIdx == strWithoutCtrlChars.length)
+		actualIdx = pStr.length;
+	else
+	{
+		var syncAttrIdx = pStr.search(gSyncAttrRegex);
+		if (syncAttrIdx > -1)
+		{
+			// Count the printable characters, ignoring Synchronet attribute codes
+			// I suspect there may be a more efficient way to do this..
+			var numDisplayChars = pDisplayIdx + 1;
+			var numDisplayableCharsSeen = 0;
+			var i = 0;
+			while ((i < pStr.length) && (numDisplayableCharsSeen < numDisplayChars))
+			{
+				if (gSyncAttrRegex.test(pStr.substr(i, 2)))
+					i += 2;
+				else
+				{
+					actualIdx = i;
+					++numDisplayableCharsSeen;
+					++i;
+				}
+			}
+			// Edge case: If pDisplayIdx was one past the last index of the string
+			// displayed on the screen, then increment actualIdx by 1 to fix off-by-one
+			if ((actualIdx == pStr.length-1) && (pDisplayIdx == strWithoutCtrlChars.length))
+				++actualIdx;
+			else if (pDisplayIdx == strWithoutCtrlChars.length - 1)
+				++actualIdx;
+		}
+		else
+			actualIdx = pDisplayIdx;
+	}
+
+	return actualIdx;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+// Color/attribute code conversion functions
+
+// Converts Synchronet attribute codes to ANSI
+//
+// Parameters:
+//  pText: A string containing the text to convert
+//
+// Return value: The text with the color codes converted
+function SyncAttrsToANSI(pText)
+{
+	// Attributes
+	var txt = pText.replace(/n/gi, "[0m"); // All attributes off
+	txt = txt.replace(/h/gi, "[1m"); // Bold on (use high intensity)
+	txt = txt.replace(/i/gi, "[5m"); // Blink on
+	// Foreground colors
+	txt = txt.replace(/k/gi, "[30m"); // Black foreground
+	txt = txt.replace(/r/gi, "[31m"); // Red foreground
+	txt = txt.replace(/g/gi, "[32m"); // Green foreground
+	txt = txt.replace(/y/gi, "[33m"); // Yellow foreground
+	txt = txt.replace(/b/gi, "[34m"); // Blue foreground
+	txt = txt.replace(/m/gi, "[35m"); // Magenta foreground
+	txt = txt.replace(/c/gi, "[36m"); // Cyan foreground
+	txt = txt.replace(/w/gi, "[37m"); // White foreground
+	// Background colors
+	txt = txt.replace(/0/g, "[40m"); // Black background
+	txt = txt.replace(/1/g, "[41m"); // Red background
+	txt = txt.replace(/2/g, "[42m"); // Green background
+	txt = txt.replace(/3/g, "[43m"); // Yellow background
+	txt = txt.replace(/4/g, "[44m"); // Blue background
+	txt = txt.replace(/5/g, "[45m"); // Magenta background
+	txt = txt.replace(/6/g, "[46m"); // Cyan background
+	txt = txt.replace(/7/g, "[47m"); // White background
+	return txt;
+}
+
+// Given some text, this converts ANSI color codes to Synchronet codes and
+// removes unwanted ANSI codes (such as cursor movement codes, etc.).
+//
+// Parameters:
+//  pText: A string to process
+//
+// Return value: A version of the string with Synchronet color codes converted to
+//               Synchronet attribute codes and unwanted ANSI codes removed
+function cvtANSIToSyncAndRemoveUnwantedANSI(pText)
+{
+	// Attributes
+	var txt = pText.replace(/\[0[mM]/g, "\1n"); // All attributes off
+	txt = txt.replace(/\[1m/gi, "\1h"); // Bold on (use high intensity)
+	txt = txt.replace(/\[5m/gi, "\1i"); // Blink on
+	// Foreground colors
+	txt = txt.replace(/\[30m/gi, "\1k"); // Black foreground
+	txt = txt.replace(/\[31m/gi, "\1r"); // Red foreground
+	txt = txt.replace(/\[32m/gi, "\1g"); // Green foreground
+	txt = txt.replace(/\[33m/gi, "\1y"); // Yellow foreground
+	txt = txt.replace(/\[34m/gi, "\1b"); // Blue foreground
+	txt = txt.replace(/\[35m/gi, "\1m"); // Magenta foreground
+	txt = txt.replace(/\[36m/gi, "\1c"); // Cyan foreground
+	txt = txt.replace(/\[37m/gi, "\1w"); // White foreground
+	// Background colors
+	txt = txt.replace(/\[40m/gi, "\1" + "0"); // Black background
+	txt = txt.replace(/\[41m/gi, "\1" + "1"); // Red background
+	txt = txt.replace(/\[42m/gi, "\1" + "2"); // Green background
+	txt = txt.replace(/\[43m/gi, "\1" + "3"); // Yellow background
+	txt = txt.replace(/\[44m/gi, "\1" + "4"); // Blue background
+	txt = txt.replace(/\[45m/gi, "\1" + "5"); // Magenta background
+	txt = txt.replace(/\[46m/gi, "\1" + "6"); // Cyan background
+	txt = txt.replace(/\[47m/gi, "\1" + "7"); // White background
+	// Convert ;-delimited modes (such as [Value;...;Valuem)
+	txt = ANSIMultiConvertToSyncCodes(txt);
+	// Remove ANSI codes that are not wanted (such as moving the cursor, etc.)
+	txt = txt.replace(/\[[0-9]+a/gi, ""); // Cursor up
+	txt = txt.replace(/\[[0-9]+b/gi, ""); // Cursor down
+	txt = txt.replace(/\[[0-9]+c/gi, ""); // Cursor forward
+	txt = txt.replace(/\[[0-9]+d/gi, ""); // Cursor backward
+	txt = txt.replace(/\[[0-9]+;[0-9]+h/gi, ""); // Cursor position
+	txt = txt.replace(/\[[0-9]+;[0-9]+f/gi, ""); // Cursor position
+	txt = txt.replace(/\[s/gi, ""); // Restore cursor position
+	txt = txt.replace(/\[2j/gi, ""); // Erase display
+	txt = txt.replace(/\[k/gi, ""); // Erase line
+	txt = txt.replace(/\[=[0-9]+h/gi, ""); // Set various screen modes
+	txt = txt.replace(/\[=[0-9]+l/gi, ""); // Reset various screen modes
+	return txt;
+}
+
+// Converts ANSI ;-delimited modes (such as [Value;...;Valuem) to Synchronet
+// attribute codes
+//
+// Parameters:
+//  pText: The text with ANSI ;-delimited modes to convert
+//
+// Return value: The text with ANSI ;-delimited modes converted to Synchronet attributes
+function ANSIMultiConvertToSyncCodes(pText)
+{
+	var multiMatches = pText.match(/\[[0-9]+(;[0-9]+)+m/g);
+	if (multiMatches == null)
+		return pText;
+	var updatedText = pText;
+	for (var i = 0; i < multiMatches.length; ++i)
+	{
+		// Copy the string, with the [ removed from the beginning and the
+		// trailing 'm' removed
+		var text = multiMatches[i].substr(2);
+		text = text.substr(0, text.length-1);
+		var codes = text.split(";");
+		var syncCodes = "";
+		for (var idx = 0; idx < codes.length; ++idx)
+		{
+			if (codes[idx] == "0") // All attributes off
+				syncCodes += "\1n";
+			else if (codes[idx] == "1") // Bold on (high intensity)
+				syncCodes += "\1h";
+			else if (codes[idx] == "5") // Blink on
+				syncCodes += "\1i";
+			else if (codes[idx] == "30") // Black foreground
+				syncCodes += "\1k";
+			else if (codes[idx] == "31") // Red foreground
+				syncCodes += "\1r";
+			else if (codes[idx] == "32") // Green foreground
+				syncCodes += "\1g";
+			else if (codes[idx] == "33") // Yellow foreground
+				syncCodes += "\1y";
+			else if (codes[idx] == "34") // Blue foreground
+				syncCodes += "\1b";
+			else if (codes[idx] == "35") // Magenta foreground
+				syncCodes += "\1m";
+			else if (codes[idx] == "36") // Cyan foreground
+				syncCodes += "\1c";
+			else if (codes[idx] == "37") // White foreground
+				syncCodes += "\1w";
+			else if (codes[idx] == "40") // Black background
+				syncCodes += "\1" + "0";
+			else if (codes[idx] == "41") // Red background
+				syncCodes += "\1" + "1";
+			else if (codes[idx] == "42") // Green background
+				syncCodes += "\1" + "2";
+			else if (codes[idx] == "43") // Yellow background
+				syncCodes += "\1" + "3";
+			else if (codes[idx] == "44") // Blue background
+				syncCodes += "\1" + "4";
+			else if (codes[idx] == "45") // Magenta background
+				syncCodes += "\1" + "5";
+			else if (codes[idx] == "46") // Cyan background
+				syncCodes += "\1" + "6";
+			else if (codes[idx] == "47") // White background
+				syncCodes += "\1" + "7";
+		}
+		updatedText = updatedText.replace(multiMatches[i], syncCodes);
+	}
+	return updatedText;
+}
+
+// Color/attribute code conversion functions end
+///////////////////////////////////////////////////////////////////////////////////////
+
+// Finds any Synchronet attributes in an array of TextLine objects before a given
+// text line index and edit line index in the array of lines.
+//
+// Parameters:
+//  pEditLines: An array of TextLine objects
+//  pEditLineIdx: The starting edit line index in the array
+//  pTextLineIdx: The ending text line index in the starting line
+//
+// Return value: A string containing any Synchronet attribute codes found in the
+//               array of text lines before the given indexes
+function findAttrCodesInLinesBeforeIdx(pEditLines, pEditLineIdx, pTextLineIdx)
+{
+	if ((pEditLineIdx < 0) || (pEditLineIdx >= pEditLines.length))
+		return "";
+	if ((pTextLineIdx < 0) || (pTextLineIdx >= pEditLines[pEditLineIdx].text.length))
+		return "";
+
+	var attrCodes = "";
+	var attrCodeObj = getAttrsAndIndexesBeforeStrIdx(pEditLines[pEditLineIdx].text, pTextLineIdx-1);
+	var startIdx = attrCodeObj.syncAttrStartIdx;
+	while (startIdx > -1)
+	{
+		attrCodes = attrCodeObj.attrStr + attrCodes;
+		attrCodeObj = getAttrsAndIndexesBeforeStrIdx(pEditLines[pEditLineIdx].text, startIdx);
+		startIdx = attrCodeObj.syncAttrStartIdx;
+	}
+	for (var i = pEditLineIdx - 1; i >= 0; --i)
+	{
+		attrCodeObj = getAttrsAndIndexesBeforeStrIdx(pEditLines[i].text, pEditLines[i].text.length-1);
+		startIdx = attrCodeObj.syncAttrStartIdx;
+		while (startIdx > -1)
+		{
+			attrCodes = attrCodeObj.attrStr + attrCodes;
+			attrCodeObj = getAttrsAndIndexesBeforeStrIdx(pEditLines[i].text, startIdx);
+			startIdx = attrCodeObj.syncAttrStartIdx;
+		}
+	}
+	// TODO: Remove redundancies in attrCodes?
+	return attrCodes;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+// Debugging
+
 // This function displays debug text at a given location on the screen, then
 // moves the cursor back to a given location.
 //
 // Parameters:
-//  pDebugX: The X lcoation of where to write the debug text
-//  pDebugY: The Y lcoation of where to write the debug text
+//  pDebugX: The X location of where to write the debug text
+//  pDebugY: The Y location of where to write the debug text
 //  pText: The text to write at the debug location
 //  pOriginalPos: An object with x and y properties containing the original cursor position
 //  pClearDebugLineFirst: Whether or not to clear the debug line before writing the text
 //  pPauseAfter: Whether or not to pause after displaying the text
-function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter)
+//  pClearLineAfter: Optional - Whether or not to clear the line after displaying the text
+function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter, pClearLineAfter)
 {
 	console.gotoxy(pDebugX, pDebugY);
 	if (pClearDebugLineFirst)
-		console.clearline();
+	{
+		//console.clearline("\1n");
+		console.cleartoeol("\1n");
+	}
 	// Output the text
 	console.print(pText);
 	if (pPauseAfter)
-      console.pause();
+		console.pause();
+	var clearLineAfter = (typeof(pClearLineAfter) == "boolean" ? pClearLineAfter : false);
+	if (clearLineAfter)
+	{
+		console.gotoxy(pDebugX, pDebugY);
+		console.cleartoeol("\1n");
+	}
 	if ((typeof(pOriginalPos) != "undefined") && (pOriginalPos != null))
 		console.gotoxy(pOriginalPos);
 }

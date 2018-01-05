@@ -13,7 +13,7 @@
  *                              Initial public release
  * 2009-12-03 Eric Oulashin     Added support for color schemes.
  *                              Added displayIceYesNoText() and
- *                              readColorConfig().
+ *                              readIceColorConfig().
  * 2010-01-02 Eric Oulashin     Removed abortConfirm_DCTStyle(),
  *                              since it's no longer used anymore.
  * 2011-02-02 Eric Oulashin     Moved the time displaying code into
@@ -23,13 +23,13 @@
  *                              of the theme filename, since the path is
  *                              now set in ReadSlyEditConfigFile() in
  *                              SlyEdit_Misc.js.
- * 2013-01-19 Eric Oulashin     Updated readColorConfig() to move the
+ * 2013-01-19 Eric Oulashin     Updated readIceColorConfig() to move the
  *                              general color settings to gConfigSettings.genColors.*
  * 2013-01-25 Eric Oulashin     Updated doIceESCMenu() to include an option
  *                              for cross-posting, when allowed.
- * 2013-08-23 Eric Oulashin     Updated readColorConfig() with the new general color
+ * 2013-08-23 Eric Oulashin     Updated readIceColorConfig() with the new general color
  *                              configuration settings.
- * 2013-08-28 Eric Oulashin     Simplified readColorConfig() by having it call
+ * 2013-08-28 Eric Oulashin     Simplified readIceColorConfig() by having it call
  *                              moveGenColorsToGenSettings() (defined in
  *                              SlyEdit_Misc.js) to move the general colors
  *                              into the genColors array in the configuration
@@ -48,7 +48,7 @@
  *                              to use the new gConfigSettings.iceColors.menuOptClassicColors
  *                              configuration setting for new vs. classic Ice-style
  *                              menu option colors.
- * 2013-10-17 Eric Oulashin     Bug fix: Updated readColorConfig() to make a backup of
+ * 2013-10-17 Eric Oulashin     Bug fix: Updated readIceColorConfig() to make a backup of
  *                              the menuOptClassicColors setting and set it back in the
  *                              iceColors object after reading & setting the colors.
  *                              Bug fix in DisplayTextAreaBottomBorder_IceStyle() in
@@ -70,7 +70,7 @@ var ICE_ESC_MENU_HELP = 4;
 var ICE_ESC_MENU_CROSS_POST = 5;
 
 // Read the color configuration file
-readColorConfig(gConfigSettings.iceColors.ThemeFilename);
+readIceColorConfig(gConfigSettings.iceColors.ThemeFilename);
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -80,20 +80,20 @@ readColorConfig(gConfigSettings.iceColors.ThemeFilename);
 //
 // Parameters:
 //  pFilename: The name of the color configuration file
-function readColorConfig(pFilename)
+function readIceColorConfig(pFilename)
 {
-   var colors = readValueSettingConfigFile(pFilename, 512);
-   if (colors != null)
-   {
-      // Make a backup of the menuOptClassicColors setting so we can set it
-      // back in the Ice color settings object after setting the colors.
-      var useClassicColorsBackup = gConfigSettings.iceColors.menuOptClassicColors;
-      gConfigSettings.iceColors = colors;
-      // Move the general color settings into gConfigSettings.genColors.*
-      if (EDITOR_STYLE == "ICE")
-         moveGenColorsToGenSettings(gConfigSettings.iceColors, gConfigSettings);
-      gConfigSettings.iceColors.menuOptClassicColors = useClassicColorsBackup;
-   }
+	var colors = readValueSettingConfigFile(pFilename, 512, true);
+	if (colors != null)
+	{
+		// Make a backup of the menuOptClassicColors setting so we can set it
+		// back in the Ice color settings object after setting the colors.
+		var useClassicColorsBackup = gConfigSettings.iceColors.menuOptClassicColors;
+		gConfigSettings.iceColors = colors;
+		// Move the general color settings into gConfigSettings.genColors.*
+		if (EDITOR_STYLE == "ICE")
+			moveGenColorsToGenSettings(gConfigSettings.iceColors, gConfigSettings);
+		gConfigSettings.iceColors.menuOptClassicColors = useClassicColorsBackup;
+	}
 }
 
 // Re-draws the screen, in the style of IceEdit.
@@ -109,7 +109,7 @@ function readColorConfig(pFilename)
 //  pEditLinesIndex: The index of the message line at the top of the edit area
 //  pDisplayEditLines: The function that displays the edit lines
 function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEditColor,
-                                pInsertMode, pUseQuotes, pEditLinesIndex, pDisplayEditLines)
+                               pInsertMode, pUseQuotes, pEditLinesIndex, pDisplayEditLines)
 {
 	// Top header
 	// Generate & display the top border line (Note: Generate this
@@ -235,8 +235,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
       // The message area name should be centered on the line.  So, based on its
       // length (up to 35 characters), figure out its starting position before
       // printing it.
-      //var msgAreaName = gMsgArea.substr(0, 20); // Used to be 20 characters
-      var msgAreaName = gMsgArea.substr(0, 35);
+      var msgAreaName = gMsgAreaName.substr(0, 35); // The 35 used to be 20
       // 2 is subtracted from the starting position to leave room for the
       // block character and the space.
       var startPos = (console.screen_columns/2).toFixed(0) - (msgAreaName.length/2).toFixed(0) - 2;

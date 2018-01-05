@@ -12,7 +12,7 @@
  * 2009-08-22 Eric Oulashin     Version 1.00
  *                              Initial public release
  * 2009-12-03 Eric Oulashin     Added support for color schemes.
- *                              Added readColorConfig().
+ *                              Added readDCTColorConfig().
  * 2009-12-31 Eric Oulashin     Updated promptYesNo_DCTStyle()
  *                              so that the return variable,
  *                              userResponse, defaults to the
@@ -37,13 +37,13 @@
  *                              of the theme filename, since the path is
  *                              now set in ReadSlyEditConfigFile() in
  *                              SlyEdit_Misc.js.
- * 2013-01-19 Eric Oulashin     Updated readColorConfig() to move the
+ * 2013-01-19 Eric Oulashin     Updated readDCTColorConfig() to move the
  *                              general color settings to gConfigSettings.genColors.*
  * 2013-01-24 Eric Oulashin     Updated doDCTMenu() to include an option
  *                              for cross-posting on the File menu.
- * 2013-08-23 Eric Oulashin     Updated readColorConfig() with the new general color
+ * 2013-08-23 Eric Oulashin     Updated readDCTColorConfig() with the new general color
  *                              configuration settings.
- * 2013-08-28 Eric Oulashin     Simplified readColorConfig() by having it call
+ * 2013-08-28 Eric Oulashin     Simplified readDCTColorConfig() by having it call
  *                              moveGenColorsToGenSettings() (defined in
  *                              SlyEdit_Misc.js) to move the general colors
  *                              into the genColors array in the configuration
@@ -86,7 +86,7 @@ var DCTMENU_CROSS_POST = 12;
 var DCTMENU_LIST_TXT_REPLACEMENTS = 13;
 
 // Read the color configuration file
-readColorConfig(gConfigSettings.DCTColors.ThemeFilename);
+readDCTColorConfig(gConfigSettings.DCTColors.ThemeFilename);
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -95,16 +95,16 @@ readColorConfig(gConfigSettings.DCTColors.ThemeFilename);
 //
 // Parameters:
 //  pFilename: The name of the color configuration file
-function readColorConfig(pFilename)
+function readDCTColorConfig(pFilename)
 {
-   var colors = readValueSettingConfigFile(pFilename, 512);
-   if (colors != null)
-   {
-      gConfigSettings.DCTColors = colors;
-      // Move the general color settings into gConfigSettings.genColors.*
-      if (EDITOR_STYLE == "DCT")
-        moveGenColorsToGenSettings(gConfigSettings.DCTColors, gConfigSettings);
-   }
+	var colors = readValueSettingConfigFile(pFilename, 512, true);
+	if (colors != null)
+	{
+		gConfigSettings.DCTColors = colors;
+		// Move the general color settings into gConfigSettings.genColors.*
+		if (EDITOR_STYLE == "DCT")
+			moveGenColorsToGenSettings(gConfigSettings.DCTColors, gConfigSettings);
+	}
 }
 
 // Re-draws the screen, in the style of DCTEdit.
@@ -163,7 +163,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 
 	// Message area
 	fieldWidth = (console.screen_columns * (27/80)).toFixed(0);
-	screenText = gMsgArea.substr(0, fieldWidth);
+	screenText = gMsgAreaName.substr(0, fieldWidth);
 	var startX = console.screen_columns - fieldWidth - 9;
 	console.gotoxy(startX, lineNum);
 	console.print(gConfigSettings.DCTColors.TopLabelColor + "Area" +
