@@ -9,12 +9,13 @@ const defs = {
 		bitmap:		2,
 		vector:		3,
 		audio:		4,
-		bintext:	5,
+		bin:		5,
 		xbin:		6,
 		archive:	7,
 		exe:		8,
 	},
 
+	// only 'character' data files are supported here:
 	filetype: {
 		ascii:		0,
 		ansi:		1,
@@ -28,8 +29,8 @@ const defs = {
 	},
 
 	ansiflag: {
-		nonblink:		(1<<0),	// high intensity BG, aka iCE colors
-		spacing_mask:	(3<<1),	// letter spacing
+		nonblink:		(1<<0),	// High intensity BG, aka iCE colors
+		spacing_mask:	(3<<1),	// Letter spacing
 		spacing_legacy:	(0<<1),	// Legacy value. No preference.
 		spacing_8pix:	(1<<1),	// 8-pixel font
 		spacing_9pix:	(2<<1), // 9-pixel font
@@ -39,7 +40,10 @@ const defs = {
 		ratio_square:	(2<<3),	// Square pixels
 	},
 
-	trailer_length: 128
+	id_length: 5,
+	version_length: 2,
+	trailer_length: 128,
+	comment_length: 64,
 };
 
 // Pass either a filename or a File instance
@@ -59,10 +63,10 @@ function read(fname)
 		return false;
 
 	file.position = file.length - defs.trailer_length;
-	if(file.read(7) != 'SAUCE00')
+	if(file.read(defs.id_length + defs.version_length) != 'SAUCE00')
 		return false;
 
-	var obj = {};
+	var obj = { comment:[], cols:0, rows:0, ice_color:false };
 	obj.title = file.read(35).trim();
 	obj.author = file.read(20).trim();
 	obj.group = file.read(20).trim();
@@ -74,14 +78,38 @@ function read(fname)
 	obj.tinfo2 = file.readBin(2);
 	obj.tinfo3 = file.readBin(2);
 	obj.tinfo4 = file.readBin(2);
-	obj.comments = file.readBin(1);
+	var comments = file.readBin(1);
 	obj.tflags = file.readBin(1);
 	obj.tinfos = truncsp(file.read(22));
-	obj.ice_color = function ()  {
-		return this.filetype == defs.filetype.ansi && this.tflags&defs.ansiflag.nonblink;
+
+	// Do some convenience field parsing/conversions here
+	if(obj.datatype == defs.datatype.bin ||
+		(obj.datatype == defs.datatype.character
+			&& obj.filetype <= defs.filetype.ansimation)) {
+		if(obj.tflags&defs.ansiflag.nonblink)
+			obj.ice_color = true;
+		if(obj.datatype == defs.datatype.bin) {
+			obj.cols = obj.filetype * 2;
+			obj.rows = obj.filesize / (obj.cols * 2);
+		} else {
+			obj.cols = obj.tinfo1;
+			obj.rows = obj.tinfo2;
+		}
+		obj.fontname = obj.tinfos;
+	}
+
+	// Read the Comment Block here
+	if(comments) {
+		file.position -= defs.trailer_length + defs.id_length + (comments * defs.comment_length);
+		if(file.read(defs.id_length) == 'COMNT') {
+			while(comments--) {
+				var line = file.read(defs.comment_length);
+				if(line)
+					obj.comment.push(line.trimRight());
+			}
+		}
 	}
 	return obj;
 }
-
 
 this;
