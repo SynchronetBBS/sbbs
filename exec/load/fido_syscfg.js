@@ -143,17 +143,17 @@ SBBSEchoCfg.prototype.match_ticpw = function(node, pw)
 	if (ticpw === undefined || ticpw == '') {
 		if (pw === '' || pw === undefined)
 			return true;
-		log(LOG_WARNING, "Packet password is empty, but TIC has a password");
+		log(LOG_WARNING, "Configued TicFilePwd is empty, but TIC file has a password");
 		return false;
 	}
 	if (pw === undefined || pw === '') {
-		log(LOG_WARNING, "Packet password ("+ticpw+") configured, but TIC has no password");
+		log(LOG_WARNING, "TicFilePwd ("+ticpw+") configured, but TIC file has no password");
 		return false;
 	}
 	if (pw.toUpperCase() === ticpw.toUpperCase())
 		return true;
 
-	log(LOG_WARNING, "Incorrect password "+pw+" (expected "+ticpw+")");
+	log(LOG_WARNING, "Incorrect TIC password "+pw+" (expected "+ticpw+")");
 	return false;
 };
 SBBSEchoCfg.prototype.match_pw = function(node, pw)
@@ -163,17 +163,17 @@ SBBSEchoCfg.prototype.match_pw = function(node, pw)
 	if (pktpw === undefined || pktpw == '') {
 		if (pw === '' || pw === undefined)
 			return true;
-		log(LOG_WARNING, "Packet password is empty, but TIC has a password");
+		log(LOG_WARNING, "Configured packet password is empty, but packet has a password");
 		return false;
 	}
 	if (pw === undefined || pw === '') {
-		log(LOG_WARNING, "Packet password ("+pktpw+") configured, but TIC has no password");
+		log(LOG_WARNING, "Configured packet password ("+pktpw+") configured, but packet has no password");
 		return false;
 	}
 	if (pw.toUpperCase() === pktpw.toUpperCase())
 		return true;
 
-	log(LOG_WARNING, "Incorrect password "+pw+" (expected "+pktpw+")");
+	log(LOG_WARNING, "Incorrect packet password "+pw+" (expected "+pktpw+")");
 	return false;
 };
 
