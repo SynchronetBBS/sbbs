@@ -4,6 +4,8 @@ load("tree.js");
 load("scrollbar.js");
 load("funclib.js");
 load("filebrowser.js");
+var Ansi = load({}, "ansiterm_lib.js");
+var Sauce = load({}, "sauce_lib.js");
 
 Frame.prototype.drawBorder = function(color) {
 	var theColor = color;
@@ -83,18 +85,22 @@ var printFile = function(file) {
 
 	if(state.syncTerm) {
 
-		console.putmsg("\x1B[0;" + state.speed + "*r");
+		Ansi.send("speed", "set", state.speed);
+		var sauce = Sauce.read(file);
+		if(sauce.ice_color)
+			Ansi.send("ext_mode", "set", "bg_bright_intensity");
 		mswait(500);
 		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
 		console.pause();
-		console.putmsg("\x1B[0;0*r");
+		Ansi.send("ext_mode", "clear", "bg_bright_intensity");
+		Ansi.send("speed", "clear");
 
 	} else if(state.speed == 0) {
 
 		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
 		console.pause();
 
-	} else {
+	} else {	// TODO: terminate on Ctrl-Z char (CPM EOF)
 
 		var f = new File(file);
 		f.open("r");
