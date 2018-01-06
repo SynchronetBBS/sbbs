@@ -247,7 +247,8 @@ function import_entry(name, text)
         if(debug) print(match[1] + " = " + match[2]);
         switch(match[1].toLowerCase()) {
             case 'birth':
-                bbs.first_online = date_from_str(match[2]);
+		if(match[2] && match[2].length)
+                	bbs.first_online = date_from_str(match[2]);
                 break;
             case 'software':
                 bbs.software = match[2];
