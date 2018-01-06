@@ -50,6 +50,11 @@ const defs = {
 		up:						'S',
 		down:					'T',
 	},
+	portion: {
+		to_end:					0,
+		to_start:				1,
+		entire:					2,
+	},
 };
 
 function attr(atr, curatr, color)
@@ -170,7 +175,13 @@ var cursor_position = {
 
 var screen = {
 	scroll: function(dir,n)	{ return format("\x1b[%s%s", n ? n : "", defs.scroll_dir[dir]); },
-	clear: function()		{ return "\x1b[2J"; }
+	clear: function(p)		{ return format("\x1b[%uJ", p ? defs.portion[p] : defs.portion.entire); }
+}
+
+var line = {
+	clear: function(p)		{ return format("\x1b[%uK", p ? defs.portion[p] : defs.portion.entire); },
+	insert: function(n)		{ return format("\x1b[%sL", n ? n : ""); },
+	remove: function(n)		{ return format("\x1b[%sM", n ? n : ""); }
 }
 
 var attributes = {
