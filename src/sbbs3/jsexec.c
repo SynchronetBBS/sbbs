@@ -173,7 +173,7 @@ cooked_tty(void)
 		    | ENABLE_EXTENDED_FLAGS | ENABLE_INSERT_MODE | ENABLE_LINE_INPUT
 		    | ENABLE_MOUSE_INPUT | ENABLE_PROCESSED_INPUT | ENABLE_QUICK_EDIT_MODE);
 #else
-		#warning Can't cook the tty on this platform
+		#warning "Can't cook the tty on this platform"
 #endif
 	}
 }
@@ -203,7 +203,7 @@ raw_tty(void)
 #elif defined _WIN32
 		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0);
 #else
-		#warning Can't set the tty as raw on this platform
+		#warning "Can't set the tty as raw on this platform"
 #endif
 	}
 }
