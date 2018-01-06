@@ -1,6 +1,56 @@
 // $Id$
+// vi: tabstop=4
+
+/* Example usage:
+	var ansi = load({}, 'ansiterm_lib.js');
+	ansi.send('ext_mode', 'set', 'bg_bright_intensity');
+	ansi.send('attributes', 'set', ansi.BG_RED|ansi.BLINK);
+	ansi.send('screen', 'clear');
+*/
 
 load("sbbsdefs.js");
+
+const defs = {
+	// SyncTerm extended modes
+	ext_mode: {
+		origin: 				6,
+		autowrap: 				7,
+		cursor:					25,
+		brght_alt_charset:		31,
+		no_bright_intensity:	32,
+		bg_bright_intensity:	33,
+		blink_alt_charset:		34,
+		no_blink:				35,
+	},
+
+	// SyncTerm emulation speed map
+	speed_map: {
+		unlimited:				0,
+		300:					1,
+		600:					2,
+		1200:					3,
+		2400:					4,
+		4800:					5,
+		9600:					6,
+		19200:					7,
+		38400:					8,
+		57600:					9,
+		76800:					10,
+		115200:					11,
+	},
+
+	// standard
+	cursor_move: {
+		up:						'A',
+		down:					'B',
+		right:					'C',
+		left:					'D',
+	},
+	scroll_dir: {
+		up:						'S',
+		down:					'T',
+	},
+};
 
 function attr(atr, curatr, color)
 {
@@ -34,7 +84,7 @@ function attr(atr, curatr, color)
 	}
 	if(atr&HIGH) {
 		if(!(curatr&HIGH))
-			str += "1;"; 
+			str += "1;";
 	}
 	if((atr&0x07) != (curatr&0x07)) {
 		switch(atr&0x07) {
@@ -67,7 +117,7 @@ function attr(atr, curatr, color)
 	if((atr&0x70) != (curatr&0x70)) {
 		switch(atr&0x70) {
 			/* The BG_BLACK macro is 0x200, so isn't in the mask */
-			case 0 /* BG_BLACK */:	
+			case 0 /* BG_BLACK */:
 				str += "40;";
 				break;
 			case BG_RED:
@@ -96,6 +146,50 @@ function attr(atr, curatr, color)
 	if(str.length <= 2)	/* Convert <ESC>[ to blank */
 		return "";
 	return str.substring(0, str.length-1) + 'm';
+}
+
+var ext_mode = {
+	set: 	function(mode) 	{ return format("\x1b[?%uh", defs.ext_mode[mode]); },
+	clear:	function(mode) 	{ return format("\x1b[?%ul", defs.ext_mode[mode]); },
+	save:	function(mode)	{ return format("\x1b[?%us", defs.ext_mode[mode]); },
+	restore: function(mode) { return format("\x1b[?%uu", defs.ext_mode[mode]); }
+}
+
+var speed = {
+	set: 	function(rate)	{ return format("\x1b[;%u*r", rate < 300 ? rate : defs.speed_map[rate]); },
+	clear:	function()		{ return "\x1b[*r"; }
+}
+
+var cursor_position = {
+	move:	function(dir,n)	{ return format("\x1b[%s%s", n ? n : "", defs.cursor_move[dir]); },
+	set:	function(x,y)	{ return format("\x1b[%u;%uH", y, x); },
+	home:	function()		{ return "\x1b[H"; },
+	save:	function()		{ return "\x1b[s"; },
+	restore: function()		{ return "\x1b[u"; }
+}
+
+var screen = {
+	scroll: function(dir,n)	{ return format("\x1b[%s%s", n ? n : "", defs.scroll_dir[dir]); },
+	clear: function()		{ return "\x1b[2J"; }
+}
+
+var attributes = {
+	current: 0,
+	set: function(a) 		{ return set_attributes(a); }
+}
+
+var color = true;
+
+function set_attributes(a)
+{
+	var str = attr(a, this.attributes.current, this.color);
+	this.attributes.current = a;
+	return str;
+}
+
+function send(a,b,c,d)
+{
+	console.write(this[a][b](c,d));
 }
 
 /* Leave as last line for convenient load() usage: */
