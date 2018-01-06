@@ -39,6 +39,10 @@
  * 2018-01-04 Eric Oulashin     Version 1.55
  *                              Releasing this version, with text color support.
  *                              It seems to be working fairly well overall.
+ * 2018-01-05 Eric Oulashin     Version 1.56
+ *                              Fixed a bug reported by Al: When saving a message
+ *                              with /s on a blank line, SlyEdit was quitting with
+ *                              an error due to a non-existent edit line.
  */
 
 /* Command-line arguments:
@@ -116,8 +120,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.55";
-const EDITOR_VER_DATE = "2018-01-04";
+const EDITOR_VERSION = "1.56";
+const EDITOR_VER_DATE = "2018-01-05";
 
 
 // Program variables
@@ -1373,16 +1377,16 @@ function doEditLoop()
 				if (letUserEditLine)
 				{
 					var retObject = doEnterKey(curpos, currentWordLength);
-					curpos.x = retObject.x;
-					curpos.y = retObject.y;
-					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
-					currentWordLength = retObject.currentWordLength;
 					returnCode = retObject.returnCode;
 					continueOn = retObject.continueOn;
 					// Check for whether we should do quote selection or
 					// show the help screen (if the user entered /Q or /?)
 					if (continueOn)
 					{
+						curpos.x = retObject.x;
+						curpos.y = retObject.y;
+						gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+						currentWordLength = retObject.currentWordLength;
 						if (retObject.doQuoteSelection)
 						{
 							if (gUseQuotes)
@@ -1418,9 +1422,9 @@ function doEditLoop()
 							if (gCanCrossPost)
 								doCrossPosting();
 						}
+						// Make sure the edit color is correct
+						console.print(chooseEditColor());
 					}
-					// Make sure the edit color is correct
-					console.print(chooseEditColor());
 				}
 				break;
 				// Insert/overwrite mode toggle
@@ -2349,14 +2353,7 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 		// /S: Save
 		if (lineUpper == "/S")
 		{
-			// If the current text line is the last one, remove it; otherwise,
-			// blank it out (and ensure it has any color/attribute codes the
-			// user has set).
-			if (gEditLinesIndex == gEditLines.length-1)
-				gEditLines.splice(gEditLinesIndex, 1);
-			else
-				gEditLines[gEditLinesIndex].text = gTextAttrs;
-
+			gEditLines[gEditLinesIndex].text = "";
 			retObj.continueOn = false;
 			return(retObj);
 		}
