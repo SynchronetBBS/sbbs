@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.56
-                        Release date: 2018-01-05
+                              Version 1.57
+                        Release date: 2018-01-07
 
                                   by
 
@@ -345,28 +345,26 @@ allowColorSelection               Whether or not to allow users to select text
                                   colors for their message.  Valid values are
                                   true and false.
 
-noColorSelectionGrpNames          A list of message group names where users are
-                                  not allowed to select colors for their
-                                  message.  The names in this list must be
-                                  separated by commas or spaces.  These can be
-                                  the group's short names or their descriptions.
-
-noColorSelectionSubBoardCodes     A list of message sub-board internal codes
+noColorSelectionGrpNames          A comma-separated list of message group names
                                   where users are not allowed to select colors
-                                  for their message.  The names in this list
-                                  must be separated by commas or spaces.
+                                  for their message.  These can be the group's
+                                  short names or their descriptions.
 
-cvtColorToANSIGrpNames            A list of group names for message groups where
-                                  text color codes should be converted to ANSI
-                                  codes.  The names in this list must be
-                                  separated by commas or spaces.  These can be
-                                  the group's short names or their descriptions.
+noColorSelectionSubBoardCodes     A comma-separated list of message sub-board
+                                  internal codes where users are not allowed
+                                  to select colors for their message.
+
+cvtColorToANSIGrpNames            A comma-separated list of group names for
+                                  message groups where  text color codes should
+                                  be converted to ANSI codes.  These can be the
+                                  group's short names or their descriptions.
+                                  This can also be "All" to have SlyEdit
+                                  convert to ANSI for all message groups.
 
 
-cvtColorToANSISubBoardCodes       A list of sub-board internal codes where text
-                                  color codes should be converted to ANSI codes.
-                                  The names in this list must be separated by
-                                  commas or spaces.
+cvtColorToANSISubBoardCodes       A comma-separated list of sub-board internal
+                                  codes where text color codes should be
+                                  converted to ANSI codes.
 
 Ice colors
 ----------
