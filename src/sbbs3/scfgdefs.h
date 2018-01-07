@@ -586,7 +586,7 @@ typedef struct
 	char			readmail_mod[LEN_CMD+1];	/* Reading mail module */
 	char			scanposts_mod[LEN_CMD+1];	/* Scanning posts (in a single sub) module */
 	char			scansubs_mod[LEN_CMD+1];	/* Scanning sub-boards module */
-	char			scfg_cmd[LEN_CMD+1];	/* SCFG command line */
+	char			scfg_cmd[LEN_CMD+1];	/* SCFG command line - unused! */
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
 	uint16_t		sec_warn;				/* Seconds before inactivity warning */
 	uint16_t		sec_hangup; 			/* Seconds before inactivity hang-up */
