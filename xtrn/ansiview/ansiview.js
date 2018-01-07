@@ -9,34 +9,36 @@ var Sauce = load({}, "sauce_lib.js");
 
 Frame.prototype.drawBorder = function(color) {
 	var theColor = color;
-	if(Array.isArray(color));
+	if (Array.isArray(color)) {
 		var sectionLength = Math.round(this.width / color.length);
+	}
 	this.pushxy();
-	for(var y = 1; y <= this.height; y++) {
-		for(var x = 1; x <= this.width; x++) {
-			if(x > 1 && x < this.width && y > 1 && y < this.height)
-				continue;
+	for (var y = 1; y <= this.height; y++) {
+		for (var x = 1; x <= this.width; x++) {
+			if (x > 1 && x < this.width && y > 1 && y < this.height) continue;
 			var msg;
 			this.gotoxy(x, y);
-			if(y == 1 && x == 1)
+			if (y == 1 && x == 1) {
 				msg = ascii(218);
-			else if(y == 1 && x == this.width)
+			} else if (y == 1 && x == this.width) {
 				msg = ascii(191);
-			else if(y == this.height && x == 1)
+			} else if (y == this.height && x == 1) {
 				msg = ascii(192);
-			else if(y == this.height && x == this.width)
+			} else if (y == this.height && x == this.width) {
 				msg = ascii(217);
-			else if(x == 1 || x == this.width)
+			} else if (x == 1 || x == this.width) {
 				msg = ascii(179);
-			else
+			} else {
 				msg = ascii(196);
-			if(Array.isArray(color)) {
-				if(x == 1)
+			}
+			if (Array.isArray(color)) {
+				if (x == 1) {
 					theColor = color[0];
-				else if(x % sectionLength == 0 && x < this.width)
+				} else if (x % sectionLength == 0 && x < this.width) {
 					theColor = color[x / sectionLength];
-				else if(x == this.width)
+				} else if (x == this.width) {
 					theColor = color[color.length - 1];
+				}
 			}
 			this.putmsg(msg, theColor);
 		}
@@ -54,13 +56,13 @@ var root = js.exec_dir,
 	pauseFrame;
 
 var state = {
-	'status' : bbs.sys_status,
-	'attr' : console.attributes,
-	'syncTerm' : false,
-	'fileList' : [],
-	'pausing' : false,
-	'speed' : 0,
-	'browser' : null
+	status : bbs.sys_status,
+	attr : console.attributes,
+	syncTerm : false,
+	fileList : [],
+	pausing : false,
+	speed : 0,
+	browser : null
 };
 
 var speedMap = [
@@ -78,24 +80,25 @@ var speedMap = [
 	115200	// 11
 ];
 
-var printFile = function(file) {
+function printFile(file) {
 
 	console.clear(BG_BLACK|LIGHTGRAY);
 	frame.invalidate();
 
-	if(state.syncTerm) {
+	if (state.syncTerm) {
 
 		Ansi.send("speed", "set", state.speed);
 		var sauce = Sauce.read(file);
-		if(sauce.ice_color)
+		if (sauce.ice_color) {
 			Ansi.send("ext_mode", "set", "bg_bright_intensity");
+		}
 		mswait(500);
 		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
 		console.pause();
 		Ansi.send("ext_mode", "clear", "bg_bright_intensity");
 		Ansi.send("speed", "clear");
 
-	} else if(state.speed == 0) {
+	} else if (state.speed == 0) {
 
 		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
 		console.pause();
@@ -106,18 +109,17 @@ var printFile = function(file) {
 		f.open("r");
 		var contents = f.read().split("");
 		f.close();
-		
+
 		var buf = Math.ceil((speedMap[state.speed] / 8) / 1000);
 
-		if(!state.pausing) {
+		if (!state.pausing) {
 			bbs.sys_status&=(~SS_PAUSEON);
 			bbs.sys_status|=SS_PAUSEOFF;
 		}
-		
-		while(contents.length > 0) {
+
+		while (contents.length > 0) {
 			console.write(contents.splice(0, buf).join(""));
-			if(console.inkey(K_NONE, 1) != "")
-				break;
+			if (console.inkey(K_NONE, 1) != "") break;
 		}
 		console.pause();
 
@@ -131,7 +133,7 @@ var printFile = function(file) {
 }
 
 // Basic check for SyncTERM; we don't really care which version it is
-var isSyncTerm = function() {
+function isSyncTerm() {
 
 	console.clear(BG_BLACK|LIGHTGRAY);
 	console.write("Checking for SyncTERM ...");
@@ -143,27 +145,26 @@ var isSyncTerm = function() {
 	console.ctrlkey_passthru = -1;
 	console.write("\x1B[0c");
 
-	while(cTerm.length > 0) {
-		if(console.inkey(K_NONE, 5000) == cTerm.shift())
-			continue;
+	while (cTerm.length > 0) {
+		if (console.inkey(K_NONE, 5000) == cTerm.shift()) continue;
 		ret = false;
 		break;
 	}
-	do {} while(console.inkey(K_NONE) != "") // Flush the input toilet
+	do {} while (console.inkey(K_NONE) != "") // Flush the input toilet
 
 	console.ctrlkey_passthru = ckpt;
 	return ret;
 
 }
 
-var showSpeed = function() {
+function showSpeed() {
 	speedFrame.clear();
 	speedFrame.putmsg(
 		(state.speed == 0) ? "Full" : speedMap[state.speed]
 	);
 }
 
-var showPause = function() {
+function showPause() {
 	pauseFrame.clear();
 	pauseFrame.putmsg((state.pausing) ? "On" : "Off");
 }
@@ -171,12 +172,12 @@ var showPause = function() {
 var GalleryChooser = function() {
 
 	var frames = {
-		'frame' : null,
-		'tree' : null,
-		'scrollBar' : null
+		frame : null,
+		tree : null,
+		scrollBar : null
 	};
 
-	var getList = function() {
+	function getList() {
 		var f = new File(root + "settings.ini");
 		f.open("r");
 		var galleries = f.iniGetAllObjects();
@@ -184,7 +185,7 @@ var GalleryChooser = function() {
 		return galleries;
 	}
 
-	this.open = function() {
+	this.open = function () {
 
 		areaFrame.clear();
 		areaFrame.putmsg("Gallery Menu");
@@ -205,11 +206,11 @@ var GalleryChooser = function() {
 
 		var list = getList();
 		list.forEach(
-			function(item) {
+			function (item) {
 				item.colors = settings;
 				frames.tree.addItem(
 					format("%-32s %s", item.name, item.description),
-					function() {
+					function () {
 						state.browser.close();
 						state.browser = load(root + item.module, JSON.stringify(item));
 						state.browser.open();
@@ -227,23 +228,23 @@ var GalleryChooser = function() {
 
 	}
 
-	this.close = function() {
+	this.close = function () {
 		frames.tree.close();
 		frames.scrollBar.close();
 		frames.frame.close();
 	}
 
-	this.cycle = function() {
+	this.cycle = function () {
 		frames.scrollBar.cycle();
 	}
 
-	this.getcmd = function(cmd) {
+	this.getcmd = function (cmd) {
 		frames.tree.getcmd(cmd);
 	}
 
 }
 
-var initDisplay = function() {
+function initDisplay() {
 
 	console.clear(BG_BLACK|LIGHTGRAY);
 
@@ -273,14 +274,11 @@ var initDisplay = function() {
 		frame
 	);
 	statusBarFrame.putmsg(
-		format(
-			"%-41s%-16s%-13s",
-			"Area:","S)peed:","P)ause:"
-		)
+		format("%-41s%-16s%-13s", "Area:","S)peed:","P)ause:")
 	);
 	statusBarFrame.gotoxy(statusBarFrame.width - 4, 1);
 	statusBarFrame.putmsg("Q)uit");
-	
+
 	areaFrame = new Frame(
 		statusBarFrame.x + 6,
 		statusBarFrame.y,
@@ -318,7 +316,7 @@ var initDisplay = function() {
 
 }
 
-var initSettings = function() {
+function initSettings() {
 	var f = new File(js.exec_dir + "settings.ini");
 	f.open("r");
 	settings = f.iniGetObject();
@@ -330,29 +328,20 @@ var initSettings = function() {
 	settings.sfg = getColor(settings.sfg);
 	settings.sbg = getColor(settings.sbg);
 	settings.border = settings.border.split(",");
-	settings.border.forEach(
-		function(e, i, a) {
-			a[i] = getColor(e);
-		}
-	);
+	settings.border.forEach(function (e, i, a) { a[i] = getColor(e); });
 }
 
-var init = function() {
-
+function init() {
 	bbs.sys_status|=(SS_MOFF|SS_PAUSEON);
 	bbs.sys_status&=(~SS_PAUSEOFF);
-
 	state.syncTerm = isSyncTerm();
-
 	initSettings();
 	initDisplay();
-
 	state.browser = new GalleryChooser();
 	state.browser.open();
-
 }
 
-var cleanUp = function() {
+function cleanUp() {
 	frame.close();
 	bbs.sys_status = state.status;
 	console.attributes = state.attr;
@@ -360,8 +349,8 @@ var cleanUp = function() {
 	exit(0);
 }
 
-var handleInput = function(userInput) {
-	switch(userInput) {
+function handleInput(userInput) {
+	switch (userInput) {
 		case "P":
 			state.pausing = (state.pausing) ? false : true;
 			showPause();
@@ -373,7 +362,7 @@ var handleInput = function(userInput) {
 		case "Q":
 			state.browser.close();
 			frame.invalidate();
-			if(state.browser instanceof GalleryChooser) {
+			if (state.browser instanceof GalleryChooser) {
 				cleanUp();
 			} else {
 				state.browser = new GalleryChooser();
@@ -386,15 +375,14 @@ var handleInput = function(userInput) {
 	}
 }
 
-var main = function() {
-
-	while(!js.terminated) {
+function main() {
+	while (!js.terminated) {
 		handleInput(console.inkey(K_NONE, 5).toUpperCase());
 		state.browser.cycle();
-		if(frame.cycle())
+		if (frame.cycle()) {
 			console.gotoxy(console.screen_columns, console.screen_rows);
+		}
 	}
-
 }
 
 init();
