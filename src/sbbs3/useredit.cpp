@@ -897,7 +897,7 @@ void sbbs_t::maindflts(user_t* user)
 					user->misc|=NO_EXASCII;
 				else
 					user->misc&=~NO_EXASCII;
-				if(!(user->misc&AUTOTERM)) {
+				if(!(user->misc&AUTOTERM) && (user->misc&(ANSI|NO_EXASCII)) == ANSI) {
 					if(!noyes(text[RipTerminalQ]))
 						user->misc|=RIP;
 					else
