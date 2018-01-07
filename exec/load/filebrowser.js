@@ -48,7 +48,7 @@
 	Events:
 
 	-	'load' is an event that fires after the directory listing has been
-		read but before the file list has been displayed.  Its callback 
+		read but before the file list has been displayed.  Its callback
 		function will be given one argument, an array of strings of the
 		complete paths of all files and subdirectories within the current
 		directory.  It must return this array - or a modified version
@@ -137,95 +137,89 @@ load("frame.js");
 load("tree.js");
 load("scrollbar.js");
 
-var FileBrowser = function(options) {
+var FileBrowser = function (options) {
 
 	var self = this;
 	var delimiter = backslash(system.exec_dir).substr(-1, 1);
 
 	var properties = {
-		'path' : "",
-		'top' : null,
-		'parentFrame' : null,
-		'frame' : null,
-		'pathFrame' : null,
-		'tree' : null,
-		'treeFrame' : null,
-		'scrollBar' : null,
-		'colors' : {
-			'sfg' : WHITE,
-			'sbg' : BG_BLUE,
-			'fg' : WHITE,
-			'bg' : BG_BLACK,
-			'lfg' : WHITE,
-			'lbg' : BG_CYAN
+		path : "",
+		top : null,
+		parentFrame : null,
+		frame : null,
+		pathFrame : null,
+		tree : null,
+		treeFrame : null,
+		scrollBar : null,
+		colors : {
+			sfg : WHITE,
+			sbg : BG_BLUE,
+			fg : WHITE,
+			bg : BG_BLACK,
+			lfg : WHITE,
+			lbg : BG_CYAN
 		},
-		'hide' : [],
-		'index' : 0
+		hide : [],
+		index : 0
 	};
 
 	var callbacks = {
-		'load' : function(list) {
-			return list;
-		},
-		'file' : function(str) {
-			if(file_isdir(str))
-				return "[" + file_getname(str) + "]";
+		load : function (list) { return list; }, // wat?
+		file : function (str) {
+			if (file_isdir(str)) return "[" + file_getname(str) + "]";
 			return file_getname(str);
 		},
-		'fileSelect' : function() {}
+		fileSelect : function() {}
 	};
 
-	var initOptions = function(options) {
+	function initOptions(options) {
 
-		if(	typeof options.path != "string"
-			||
+		if (typeof options.path != "string" ||
 			!file_isdir(options.path)
 		) {
 			throw "FileBrowser: invalid or no 'path' argument.";
 		}
 
-		if(typeof options.frame != "undefined")
+		if (typeof options.frame != "undefined") {
 			properties.parentFrame = options.frame;
+		}
 
-		if(!file_isdir(options.path))
+		if (!file_isdir(options.path)) {
 			throw "FileBrowser: 'path' argument must be an existing directory.";
-		else
+		} else {
 			properties.path = options.path;
+		}
 
-		if(	typeof options.top == "string"
-			&&
-			(	!file_isdir(options.top)
-				||
-				options.top.length > options.path.length
-			)			
+		if (typeof options.top == "string" &&
+			(!file_isdir(options.top) || options.top.length > options.path.length)
 		) {
 			throw "FileBrowser: 'top' argument must be an existing directory above or equal to 'path'.";
-		} else if(typeof options.top == "string") {
+		} else if (typeof options.top == "string") {
 			properties.top = options.top;
 		} else {
 			properties.top = options.path;
 		}
 
-		if(properties.path.substr(-1) != delimiter)
-			properties.path += delimiter;
+		if (properties.path.substr(-1) != delimiter) properties.path += delimiter;
 
-		if(properties.top.substr(-1) != delimiter)
-			properties.top += delimiter;
+		if (properties.top.substr(-1) != delimiter) properties.top += delimiter;
 
-		if(typeof options.colors == "object") {
-			for(var color in options.colors)
+		if (typeof options.colors == "object") {
+			for (var color in options.colors) {
 				properties.colors[color] = options.colors[color];
+			}
 		}
 
-		if(typeof options.hide != "undefined") {
-			if(!Array.isArray(options.hide))
+		if (typeof options.hide != "undefined") {
+			if (!Array.isArray(options.hide)) {
 				throw "FileBrowser: 'hide' argument must be an array of strings.";
+			}
 			properties.hide = options.hide;
 		}
 
 	}
 
-	var initList = function() {
+	function initList() {
 
 		properties.pathFrame.putmsg(
 			"Browsing: " + properties.path.replace(properties.top, delimiter)
@@ -233,47 +227,36 @@ var FileBrowser = function(options) {
 
 		// Would rather use GLOB_APPEND here, but it crashes my BBS. :|
 		var files = [].concat(
-			directory(
-				properties.path + "*",
-				GLOB_ONLYDIR|GLOB_PERIOD
-			),
-			directory(
-				properties.path + "*"
-			).filter(
-				function(e) {
-					if(file_isdir(e))
-						return false;
-					return true;
-				}
+			directory(properties.path + "*", GLOB_ONLYDIR|GLOB_PERIOD),
+			directory(properties.path + "*").filter(
+				function (e) { return (!file_isdir(e)); }
 			)
 		);
 		files = callbacks.load.apply(self, [files]);
 
 		files.forEach(
-			function(item) {
+			function (item) {
 				var fileString = callbacks.file.apply(self, [item]);
-				if(fileString == "[.]")
-					return;
-				if(item.replace(/\.\.$/, "") == properties.top)
-					return;
+				if (fileString == "[.]") return;
+				if (item.replace(/\.\.$/, "") == properties.top) return;
 				var fn = file_getname(item);
-				for(var h = 0; h < properties.hide.length; h++) {
-					if(!wildmatch(fn, properties.hide[h]))
-						continue;
+				for (var h = 0; h < properties.hide.length; h++) {
+					if (!wildmatch(fn, properties.hide[h])) continue;
 					return;
 				}
 				properties.tree.addItem(
 					fileString,
 					file_isdir(item)
 					?
-					(function() {
-						if(item.match(/\.\.$/) !== null)
+					(function () {
+						if (item.match(/\.\.$/) !== null) {
 							item = item.split(delimiter).slice(0, -2).join(delimiter);
+						}
 						properties.path = backslash(item);
 						self.refresh();
 					})
 					:
-					(function() {
+					(function () {
 						properties.index = properties.tree.index;
 						callbacks.fileSelect.apply(self, [item]);
 						self.refresh();
@@ -289,7 +272,7 @@ var FileBrowser = function(options) {
 
 	}
 
-	var initDisplay = function() {
+	function initDisplay() {
 
 		properties.frame = new Frame(
 			(properties.parentFrame === null) ? 1 : properties.parentFrame.x,
@@ -319,8 +302,9 @@ var FileBrowser = function(options) {
 		);
 
 		properties.tree = new Tree(properties.treeFrame);
-		for(var color in properties.colors)
+		for (var color in properties.colors) {
 			properties.tree.colors[color] = properties.colors[color];
+		}
 		initList();
 		properties.scrollBar = new ScrollBar(properties.tree);
 		properties.frame.open();
@@ -328,61 +312,69 @@ var FileBrowser = function(options) {
 
 	}
 
-	var init = function() {
+	function init() {
 		initOptions(options);
 		initDisplay();
 	}
 
 	this.__defineGetter__("path", function() { return properties.path; });
 	this.__defineSetter__(
-		"path", function(path) {
-			if(typeof path != "string")
+		"path", function (path) {
+			if (typeof path != "string") {
 				throw "FileBrowser.path: Invalid or no path supplied.";
+			}
 			path = backslash(fullpath(path));
-			if(path.length < properties.top.length || path.substr(0, properties.top.length) != properties.top)
+			if (path.length < properties.top.length ||
+				path.substr(0, properties.top.length) != properties.top
+			) {
 				throw "FileBrowser.path: Path must not be outside of the top-level directory.";
+			}
 			properties.path = path;
 			self.refresh();
 		}
 	);
 
-	this.open = function() {
+	this.open = function () {
 		init();
 		properties.frame.draw();
 	}
 
-	this.on = function(event, callback) {
-		if(typeof event != "string" || typeof callbacks[event] == undefined)
+	this.on = function (event, callback) {
+		if (typeof event != "string" || typeof callbacks[event] == undefined) {
 			throw "FileBrowser.on: Invalid or no event specified.";
-		if(typeof callback != "function")
+		}
+		if (typeof callback != "function") {
 			throw "FileBrowser.on: Invalid callback function.";
+		}
 		callbacks[event] = callback;
 	}
 
 	this.cycle = function() {
-		if(properties.parentFrame === null && properties.frame.cycle())
+		if (properties.parentFrame === null && properties.frame.cycle()) {
 			console.gotoxy(console.screen_columns, console.screen_rows);
+		}
 		properties.scrollBar.cycle();
 	}
 
-	this.getcmd = function(cmd) {
+	this.getcmd = function (cmd) {
 		properties.tree.getcmd(cmd);
 	}
 
-	this.refresh = function() {
+	this.refresh = function () {
 		this.close();
 		options =  {
-			'path' : properties.path,
-			'top' : properties.top,
-			'parentFrame' : properties.parentFrame
+			path : properties.path,
+			top : properties.top,
+			parentFrame : properties.parentFrame
 		};
 		this.open();
 	}
 
-	this.close = function() {
+	this.close = function () {
 		properties.tree.close();
 		properties.scrollBar.close();
-		properties.frame.close();
+		//properties.frame.close();
+		properties.frame.delete();
 	}
 
 }
