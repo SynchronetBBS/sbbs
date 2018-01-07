@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1849,8 +1849,8 @@ static jsSyncMethodSpec js_console_functions[] = {
 	},
 	{"ansi_gotoxy",		js_gotoxy,			1, JSTYPE_ALIAS },
 	{"gotoxy",			js_gotoxy,			1, JSTYPE_VOID,		JSDOCSTR("[x,y] or [object { x,y }]")
-	,JSDOCSTR("move cursor to a specific screen coordinate (ANSI), "
-	"arguments can be separate x and y cooridinates or an object with x and y properites "
+	,JSDOCSTR("move cursor to a specific screen coordinate (ANSI, 1-based values), "
+	"arguments can be separate x and y coordinates or an object with x and y properties "
 	"(like that returned from <tt>console.getxy()</tt>)")
 	,311
 	},
