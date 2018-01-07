@@ -1626,7 +1626,6 @@ function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswer
 function ReadSlyEditConfigFile()
 {
 	var cfgObj = new Object(); // Configuration object
-
 	cfgObj.userIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
 	// Default settings
 	cfgObj.thirdPartyLoadOnStart = new Array();
@@ -1685,8 +1684,6 @@ function ReadSlyEditConfigFile()
 	cfgObj.iceColors.menuOptClassicColors = true;
 	// Ice color theme file
 	cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename("SlyIceColors_BlueIce.cfg", gStartupPath);
-	// Text edit color
-	cfgObj.iceColors.TextEditColor = "\1n\1w";
 	// Quote line color
 	cfgObj.iceColors.QuoteLineColor = "\1n\1c";
 	// Ice colors for the quote window
@@ -1716,8 +1713,6 @@ function ReadSlyEditConfigFile()
 	cfgObj.DCTColors = new Object();
 	// DCT color theme file
 	cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename("SlyDCTColors_Default.cfg", gStartupPath);
-	// Text edit color
-	cfgObj.DCTColors.TextEditColor = "\1n\1w";
 	// Quote line color
 	cfgObj.DCTColors.QuoteLineColor = "\1n\1c";
 	// DCT colors for the border stuff
@@ -1854,21 +1849,20 @@ function ReadSlyEditConfigFile()
 					else if (settingUpper == "NOCOLORSELECTIONGRPNAMES")
 					{
 						// Message group names for message groups where text
-						// color selection isn't allowed.  Split on commas and
-						// spaces.
+						// color selection isn't allowed.  Split on commas.
 						// I was originally going to have this be a list of
 						// numbers for the group numbers/indexes and check
 						// against msg_area.grp_list, but that group list could
 						// be different for different users, depending on access
 						// requirements.
-						cfgObj.noColorSelectionGrpNames = valueUpper.split(/[, ]/);
+						cfgObj.noColorSelectionGrpNames = valueUpper.split(",");
 					}
 					else if (settingUpper == "NOCOLORSELECTIONSUBBOARDCODES")
 					{
 						// Sub-board codes for sub-boards where text color selection
-						// isn't allowed.  Split on commas and spaces, and convert
-						// all to lowercase, since sub-board codes need to be lowercase.
-						var values = value.toLowerCase().split(/[, ]/);
+						// isn't allowed.  Split on commas, and convert all to
+						// lowercase, since sub-board codes need to be lowercase.
+						var values = value.toLowerCase().split(",");
 						for (var i = 0; i < values.length; ++i)
 						{
 							if (msg_area.sub.hasOwnProperty(values[i]))
@@ -1884,11 +1878,11 @@ function ReadSlyEditConfigFile()
 							cfgObj.cvtColorToANSIGrpNames.push("ELECTRONIC MAIL");
 						}
 						else
-							cfgObj.cvtColorToANSIGrpNames = valueUpper.split(/[, ]/);
+							cfgObj.cvtColorToANSIGrpNames = valueUpper.split(",");
 					}
 					else if (settingUpper == "CVTCOLORTOANSISUBBOARDCODES")
 					{
-						var values = value.toLowerCase().split(/[, ]/);
+						var values = value.toLowerCase().split(",");
 						for (var i = 0; i < values.length; ++i)
 						{
 							if (msg_area.sub.hasOwnProperty(values[i]))
@@ -2398,13 +2392,7 @@ function isQuoteLine(pLineArray, pLineIndex)
 
    var lineIsQuoteLine = false;
    if (typeof(pLineArray[pLineIndex]) != "undefined")
-   {
-      /*
-      lineIsQuoteLine = ((pLineArray[pLineIndex].isQuoteLine) ||
-                     (/^ *>/.test(pLineArray[pLineIndex].text)));
-      */
       lineIsQuoteLine = (pLineArray[pLineIndex].isQuoteLine);
-   }
    return lineIsQuoteLine;
 }
 
@@ -5071,11 +5059,13 @@ function findAttrCodesInLinesBeforeIdx(pEditLines, pEditLineIdx, pTextLineIdx)
 {
 	if ((pEditLineIdx < 0) || (pEditLineIdx >= pEditLines.length))
 		return "";
-	if ((pTextLineIdx < 0) || (pTextLineIdx >= pEditLines[pEditLineIdx].text.length))
+	if (pTextLineIdx < 0)
 		return "";
+	// Let the text line index be one past the last character but no more than that
+	var textLineIdx = (pTextLineIdx > pEditLines[pEditLineIdx].text.length ? pEditLines[pEditLineIdx].text.length : pTextLineIdx);
 
 	var attrCodes = "";
-	var attrCodeObj = getAttrsAndIndexesBeforeStrIdx(pEditLines[pEditLineIdx].text, pTextLineIdx-1);
+	var attrCodeObj = getAttrsAndIndexesBeforeStrIdx(pEditLines[pEditLineIdx].text, textLineIdx-1);
 	var startIdx = attrCodeObj.syncAttrStartIdx;
 	while (startIdx > -1)
 	{

@@ -390,37 +390,48 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
 //
 // Parameters:
 //  pLineNum: The line number on the screen where the text should be placed
-//  The following are not used and are only here to match the DCT-style function:
-//   pUsingQuotes: Boolean - Whether or not message quoting is enabled.
-function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
+//  pUsingQuotes: Boolean - Whether or not message quoting is enabled.  This is
+//                only here to match the DCT-style function.
+//  pFillRestOfLine: Optional boolean - Whether or not to fill the rest of the line.
+//                   Defaults to false.
+function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes, pFillRestOfLine)
 {
-   // Construct the help text only once
-   if (typeof(DisplayBottomHelpLine_IceStyle.helpText) == "undefined")
-   {
-      // This line contains the copyright mesage & ESC key help
-      var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "w") + "ch"
-                      + EDITOR_VERSION.toString() + "   "
-                      + iceText("Copyright", "w") + " ch2018 "
-                      + iceText("Eric Oulashin", "w") + " nb" + DOT_CHAR + " "
-                      + iceText("Press ESCape For Help", "w");
-      // Calculate the starting position to center the help text, and front-pad
-      // DisplayBottomHelpLine_IceStyle.helpText with that many spaces.
-      var xPos = (console.screen_columns / 2).toFixed(0)
-                - (strip_ctrl(screenText).length / 2).toFixed(0);
-      DisplayBottomHelpLine_IceStyle.helpText = "";
-      for (var i = 0; i < xPos; ++i)
-         DisplayBottomHelpLine_IceStyle.helpText += " ";
-      DisplayBottomHelpLine_IceStyle.helpText += screenText;
-   }
+	// Construct the help text only once
+	if (typeof(DisplayBottomHelpLine_IceStyle.helpText) == "undefined")
+	{
+		// This line contains the copyright mesage & ESC key help
+		var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "\1w") + "\1c\1h"
+		               + EDITOR_VERSION.toString() + "   "
+		               + iceText("Copyright", "\1w") + " \1c\1h2018 "
+		               + iceText("Eric Oulashin", "\1w") + " \1n\1b" + DOT_CHAR + " "
+		               + iceText("Press ESCape For Help", "\1w");
+		// Calculate the starting position to center the help text, and front-pad
+		// DisplayBottomHelpLine_IceStyle.helpText with that many spaces.
+		var xPos = (console.screen_columns / 2).toFixed(0)
+		         - (strip_ctrl(screenText).length / 2).toFixed(0);
+		DisplayBottomHelpLine_IceStyle.helpText = "";
+		for (var i = 0; i < xPos; ++i)
+			DisplayBottomHelpLine_IceStyle.helpText += " ";
+		DisplayBottomHelpLine_IceStyle.helpText += screenText;
+	}
 
-   // If pLineNum is not specified, then default to the last line
+	// If pLineNum is not specified, then default to the last line
 	// on the screen.
 	var lineNum = console.screen_rows;
 	if ((typeof(pLineNum) != "undefined") && (pLineNum != null))
 		lineNum = pLineNum;
-   // Display the help text on the screen
+	// Display the help text on the screen
 	console.gotoxy(1, lineNum);
 	console.print(DisplayBottomHelpLine_IceStyle.helpText);
+	// Fill the rest of the line (less 1 character) if we're told to do so
+	var fillRestOfLine = (typeof(pFillRestOfLine) == "boolean" ? pFillRestOfLine : false);
+	if (fillRestOfLine)
+	{
+		// The remainder length has 1 subtracted from it so that we don't output a newline/CR
+		var remainderLen = console.screen_columns - strip_ctrl(DisplayBottomHelpLine_IceStyle.helpText).length - 1;
+		if (remainderLen > 0)
+			printf("\1n%" + remainderLen + "s", "");
+	}
 }
 
 // Updates the insert mode displayd on the screen, for Ice Edit style.

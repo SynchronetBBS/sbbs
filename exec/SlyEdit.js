@@ -43,6 +43,25 @@
  *                              Fixed a bug reported by Al: When saving a message
  *                              with /s on a blank line, SlyEdit was quitting with
  *                              an error due to a non-existent edit line.
+ * 2018-01-07 Eric Oulashin     Version 1.57
+ *                              Updated the settings noColorSelectionInGrpNames,
+ *                              noColorSelectionInSubBoardCodes, cvtColorToANSIGrpNames,
+ *                              and cvtColorToANSISubBoardCodes to be comma-separated
+ *                              only (instead of either comma or space-separated),
+ *                              to keep things simple and in case there are any spaces
+ *                              in any message group descriptions.
+ *                              Removed the TextEditColor setting from the color theme
+ *                              files, since that probably no longer makes sense now
+ *                              that the user can change the text color.
+ *                              When inserting quote lines into a message, ensured the
+ *                              quote lines have the "normal" attribute.  The user's
+ *                              chosen colors are applied to their own text lines.
+ *                              When importing a file (for sysops only), any color or
+ *                              attribute codes are stripped if colors are not allowed
+ *                              in the current message area according to the SlyEdit
+ *                              configuration file.
+ *                              Fixed a bug in refreshing the help text line on the
+ *                              bottom of the screen after choosing text colors.
  */
 
 /* Command-line arguments:
@@ -120,8 +139,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.56";
-const EDITOR_VER_DATE = "2018-01-05";
+const EDITOR_VERSION = "1.57";
+const EDITOR_VER_DATE = "2018-01-07";
 
 
 // Program variables
@@ -146,8 +165,6 @@ var gQuoteWinTextColor = "\1n\1" + "7\1k";   // Normal text color for the quote 
 var gQuoteLineHighlightColor = "\1n\1w"; // Highlighted text color for the quote window (DCT default)
 var gTextAttrs = "\1n";                  // The text color for edit mode
 var gQuoteLineColor = "\1n\1c";          // The text color for quote lines
-// TODO: Not sure if SlyEdit will need gUseTextAttribs anymore?
-var gUseTextAttribs = false;              // Will be set to true if text colors start to be used
 
 // gQuotePrefix contains the text to prepend to quote lines.
 // gQuotePrefix will later be updated to include the "To" user's
@@ -264,7 +281,6 @@ if (EDITOR_STYLE == "DCT")
 	gEditTop = 6;
 	gQuoteWinTextColor = gConfigSettings.DCTColors.QuoteWinText;
 	gQuoteLineHighlightColor = gConfigSettings.DCTColors.QuoteLineHighlightColor;
-	gTextAttrs = gConfigSettings.DCTColors.TextEditColor;
 	gQuoteLineColor = gConfigSettings.DCTColors.QuoteLineColor;
 
 	// Function pointers for the DCTEdit-style screen update functions
@@ -284,7 +300,6 @@ else if (EDITOR_STYLE == "ICE")
 	gEditTop = 5;
 	gQuoteWinTextColor = gConfigSettings.iceColors.QuoteWinText;
 	gQuoteLineHighlightColor = gConfigSettings.iceColors.QuoteLineHighlightColor;
-	gTextAttrs = gConfigSettings.iceColors.TextEditColor;
 	gQuoteLineColor = gConfigSettings.iceColors.QuoteLineColor;
 
 	// Function pointers for the IceEdit-style screen update functions
@@ -2797,11 +2812,12 @@ function textLineIsEditable(pLineIdx)
 function doQuoteSelection(pCurpos, pCurrentWordLength)
 {
 	// Create the return object
-	var retObj = new Object();
-	retObj.x = pCurpos.x;
-	retObj.y = pCurpos.y;
-	retObj.timedOut = false;
-	retObj.currentWordLength = pCurrentWordLength;
+	var retObj = {
+		x: pCurpos.x,
+		y: pCurpos.y,
+		timedOut: false,
+		currentWordLength: pCurrentWordLength
+	};
 
 	// Note: Quote lines are in the gQuoteLines array, where each element is
 	// a string.
@@ -2856,7 +2872,6 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 			// then re-populate gQuoteLines with the original quote lines.
 			if (trimSpacesFromQuoteLinesSettingChanged)
 			{
-				//readQuoteOrMessageFile();
 				gQuoteLines = [];
 				for (var i = 0; i < doQuoteSelection.backupQuoteLines.length; ++i)
 					gQuoteLines.push(doQuoteSelection.backupQuoteLines[i]);
@@ -2880,8 +2895,6 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 			setQuotePrefix();
 			if (gConfigSettings.reWrapQuoteLines)
 			{
-				// TODO: This seemed to never be finishing for certain messages - Entering
-				// an infinite loop?  I believe this was fixed as of version 1.49.
 				wrapQuoteLines(gUserSettings.useQuoteLineInitials, gUserSettings.indentQuoteLinesWithInitials,
 				               gUserSettings.trimSpacesFromQuoteLines);
 			}
@@ -2895,9 +2908,10 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 	}
 
 	// Set up some variables
-	var curpos = new Object();
-	curpos.x = pCurpos.x;
-	curpos.y = pCurpos.y;
+	var curpos = {
+		x: pCurpos.x,
+		y: pCurpos.y
+	};
 	// Make the quote window's height about 42% of the edit area.
 	const quoteWinHeight = Math.floor(gEditHeight * 0.42) + 1;
 	// The first and last lines on the screen where quote lines are written
@@ -2926,6 +2940,7 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 	// User input loop
 	var quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
 	retObj.timedOut = false;
+	var choseFirstQuoteLine = true;
 	var userInput = null;
 	var continueOn = true;
 	while (continueOn)
@@ -3087,7 +3102,13 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 				var numTimesToMoveDown = 1;
 
 				// Insert the quote line into gEditLines after the current gEditLines index.
-				var insertedBelow = insertLineIntoMsg(gEditLinesIndex, quoteLine, true, true);
+				// Ensure the quote line has a normal attribute.  The user's text color/attributes
+				// will be set back into the edit lines later.
+				var insertedBelow = false;
+				if (choseFirstQuoteLine)
+					insertedBelow = insertLineIntoMsg(gEditLinesIndex, "\1n" + quoteLine, true, true);
+				else
+					insertedBelow = insertLineIntoMsg(gEditLinesIndex, quoteLine, true, true);
 				if (insertedBelow)
 				{
 					// The cursor will need to be moved down 1 more line.
@@ -3099,7 +3120,7 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 					retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 				}
 				else
-				retObj.currentWordLength = 0;
+					retObj.currentWordLength = 0;
 
 				// Refresh the part of the message that needs to be refreshed on the
 				// screen (above the quote window).
@@ -3158,7 +3179,6 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 	                              gInsertMode, gConfigSettings.allowColorSelection);
 
 	// Make sure the color is correct for editing.
-	//console.print("n" + gTextAttrs);
 	console.print(chooseEditColor());
 	// Put the cursor where it should be.
 	console.gotoxy(curpos);
@@ -3468,7 +3488,7 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 			if (color.length == 0)
 				color = "\1n";
 			console.gotoxy(gEditLeft, screenLine);
-			printLineAndFillEditWidthRemainder(gEditLines[arrayIndex].text, color);
+			printLineAndFillEditWidthRemainder(gEditLines[arrayIndex].text, color, isQuoteLine(gEditLines, arrayIndex));
 			gEditAreaBuffer[screenLine] = gEditLines[arrayIndex].text;
 		}
 
@@ -3925,38 +3945,38 @@ function getWordLength(pEditLinesIndex, pTextLineIndex)
 //               (as opposed to above).
 function insertLineIntoMsg(pInsertLineIndex, pString, pHardNewline, pIsQuoteLine)
 {
-   var insertedBelow = false;
+	var insertedBelow = false;
 
-   // Create the new text line
-   var line = new TextLine();
-   line.text = pString;
-   line.hardNewlineEnd = false;
-   if ((pHardNewline != null) && (typeof(pHardNewline) != "undefined"))
-      line.hardNewlineEnd = pHardNewline;
-   if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) != "undefined"))
-      line.isQuoteLine = pIsQuoteLine;
+	// Create the new text line
+	var line = new TextLine();
+	line.text = pString;
+	line.hardNewlineEnd = false;
+	if ((pHardNewline != null) && (typeof(pHardNewline) != "undefined"))
+		line.hardNewlineEnd = pHardNewline;
+	if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) != "undefined"))
+		line.isQuoteLine = pIsQuoteLine;
 
-   // If the current message line is empty, insert the quote line above
-   // the current line.  Otherwise, insert the quote line below the
-   // current line.
-   if (typeof(gEditLines[pInsertLineIndex]) == "undefined")
-      gEditLines.splice(pInsertLineIndex, 0, line);
-   // Note: One time, I noticed an error with the following test:
-   // gEditLines[pInsertLineIndex] has no properties
-   // Thus, I added the above test to see if the edit line is valid.
-   else if (gEditLines[pInsertLineIndex].displayLength() == 0)
-      gEditLines.splice(pInsertLineIndex, 0, line);
-   else
-   {
-      // Insert the quote line below the given line index
-      gEditLines.splice(pInsertLineIndex + 1, 0, line);
-      // The current message line should have its hardNewlineEnd set
-      // true so that the quote line won't get wrapped up.
-      gEditLines[pInsertLineIndex].hardNewlineEnd = true;
-      insertedBelow = true;
-   }
+	// If the current message line is empty, insert the quote line above
+	// the current line.  Otherwise, insert the quote line below the
+	// current line.
+	if (typeof(gEditLines[pInsertLineIndex]) == "undefined")
+		gEditLines.splice(pInsertLineIndex, 0, line);
+	// Note: One time, I noticed an error with the following test:
+	// gEditLines[pInsertLineIndex] has no properties
+	// Thus, I added the above test to see if the edit line is valid.
+	else if (gEditLines[pInsertLineIndex].displayLength() == 0)
+		gEditLines.splice(pInsertLineIndex, 0, line);
+	else
+	{
+		// Insert the quote line below the given line index
+		gEditLines.splice(pInsertLineIndex + 1, 0, line);
+		// The current message line should have its hardNewlineEnd set
+		// true so that the quote line won't get wrapped up.
+		gEditLines[pInsertLineIndex].hardNewlineEnd = true;
+		insertedBelow = true;
+	}
 
-   return insertedBelow;
+	return insertedBelow;
 }
 
 // Prompts the user for a filename on the BBS computer and loads its contents
@@ -4024,11 +4044,18 @@ function importFile(pIsSysop, pCurpos)
 							// Synchronet color codes.
 							do
 							{
+								//gConfigSettings.allowColorSelection && colorSelectionAllowedInMsgArea(pMsgAreaName, pSubCode)
 								// Convert any ANSI colors in the file line to Synchronet
 								// colors
 								fileLine = cvtANSIToSyncAndRemoveUnwantedANSI(fileLine);
 								var substrObj = substrWithSyncColorCodes(fileLine, 0, maxLineLength);
-								insertLineIntoMsg(gEditLinesIndex, substrObj.strSub, true, false);
+								// If color codes are allowed and allowed in the current message area,
+								// then insert the line as-is.  Otherwise, strip control characters
+								// from the line when inserting it.
+								if (gConfigSettings.allowColorSelection && colorSelectionAllowedInMsgArea(gMsgAreaName, bbs.cursub_code))
+									insertLineIntoMsg(gEditLinesIndex, substrObj.strSub, true, false);
+								else
+									insertLineIntoMsg(gEditLinesIndex, strip_ctrl(substrObj.strSub), true, false);
 								fileLine = fileLine.substr(substrObj.endIdx+1);
 								++gEditLinesIndex;
 							} while (strip_ctrl(fileLine).length > maxLineLength);
@@ -4430,7 +4457,7 @@ function doColorSelection(pCurpos, pCurrentWordLength)
 		console.gotoxy(65, console.screen_rows);
 		console.cleartoeol("\1n");
 	}
-	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, true);
 
 	// Move the cursor to where it should be before returning
 	console.gotoxy(pCurpos);
@@ -6380,10 +6407,18 @@ function getSignName(pSubCode, pRealNameOnlyFirst, pRealNameForEmail)
 // Parameters:
 //  pTextLine: The text line to print
 //  pColor: The color/attribute code to use
-function printLineAndFillEditWidthRemainder(pTextLine, pColor)
+//  pIsQuoteLine: Boolean - Whether or not it's a quote line.  If true,
+//                then any attribtes will be stripped and the passed-in
+//                color (assumed to be the quote line color as applicable)
+//                will be used.
+function printLineAndFillEditWidthRemainder(pTextLine, pColor, pIsQuoteLine)
 {
-	console.print(pColor + pTextLine);
-	var printableStrLen = strip_ctrl(pTextLine).length;
+	var lineWithoutCtrlChars = strip_ctrl(pTextLine);
+	if (pIsQuoteLine)
+		console.print(pColor + lineWithoutCtrlChars);
+	else
+		console.print(pColor + pTextLine);
+	var printableStrLen = lineWithoutCtrlChars.length;
 	if (printableStrLen < gEditWidth)
 		printf("\1n%" + +(gEditWidth - printableStrLen) + "s", "");
 }
