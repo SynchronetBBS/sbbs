@@ -132,41 +132,37 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	else
 		CRLF;
 
-	SAFEPRINTF(str,"%smenu/msghdr.*", cfg.text_dir);
-	if(fexist(str)) {
+	if(menu_exists("msghdr")) {
 		menu("msghdr");
-		return; 
+	} else {
+		bprintf(text[MsgSubj],msg->subj);
+		if(msg->hdr.attr)
+			show_msgattr(msg);
+		if(msg->to && *msg->to) {
+			bprintf(text[MsgTo],msg->to);
+			if(msg->to_net.addr!=NULL)
+				bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
+			if(msg->to_ext)
+				bprintf(text[MsgToExt],msg->to_ext);
+		}
+		if(!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP) {
+			bprintf(text[MsgFrom],msg->from);
+			if(msg->from_ext)
+				bprintf(text[MsgFromExt],msg->from_ext);
+			if(msg->from_net.addr!=NULL && strchr(msg->from,'@')==NULL)
+				bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str)); 
+		}
+		if(!(msg->hdr.attr&MSG_POLL) && (msg->upvotes || msg->downvotes))
+			bprintf(text[MsgVotes]
+				,msg->upvotes, msg->user_voted==1 ? text[PollAnswerChecked] : nulstr
+				,msg->downvotes, msg->user_voted==2 ? text[PollAnswerChecked] : nulstr
+				,msg->upvotes - msg->downvotes);
+		bprintf(text[MsgDate]
+			,timestr(msg->hdr.when_written.time)
+			,smb_zonestr(msg->hdr.when_written.zone,NULL)
+			,age_of_posted_item(age, sizeof(age), msg->hdr.when_written.time - (smb_tzutc(msg->hdr.when_written.zone) * 60)));
+		CRLF;
 	}
-
-	bprintf(text[MsgSubj],msg->subj);
-	if(msg->hdr.attr)
-		show_msgattr(msg);
-	if(msg->to && *msg->to) {
-		bprintf(text[MsgTo],msg->to);
-		if(msg->to_net.addr!=NULL)
-			bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
-		if(msg->to_ext)
-			bprintf(text[MsgToExt],msg->to_ext);
-	}
-	if(!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP) {
-		bprintf(text[MsgFrom],msg->from);
-		if(msg->from_ext)
-			bprintf(text[MsgFromExt],msg->from_ext);
-		if(msg->from_net.addr!=NULL && strchr(msg->from,'@')==NULL)
-			bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str)); 
-	}
-	if(!(msg->hdr.attr&MSG_POLL) && (msg->upvotes || msg->downvotes))
-		bprintf(text[MsgVotes]
-			,msg->upvotes, msg->user_voted==1 ? text[PollAnswerChecked] : nulstr
-			,msg->downvotes, msg->user_voted==2 ? text[PollAnswerChecked] : nulstr
-			,msg->upvotes - msg->downvotes);
-	bprintf(text[MsgDate]
-		,timestr(msg->hdr.when_written.time)
-		,smb_zonestr(msg->hdr.when_written.zone,NULL)
-		,age_of_posted_item(age, sizeof(age), msg->hdr.when_written.time - (smb_tzutc(msg->hdr.when_written.zone) * 60)));
-
-	CRLF;
-
 	for(i=0;i<msg->total_hfields;i++) {
 		if(msg->hfield[i].type==SENDER)
 			sender=(char *)msg->hfield_dat[i];

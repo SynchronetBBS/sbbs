@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -51,8 +51,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 			while(online) {
 				j=0;
 				if(usrgrps>1) {
-					sprintf(str,"%smenu/grps.*", cfg.text_dir);
-					if(fexist(str))
+					if(menu_exists("grps"))
 						menu("grps");
 					else {
 						bputs(text[CfgGrpLstHdr]);
@@ -75,9 +74,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 					else
 						j--; 
 				}
-				sprintf(str,"%smenu/subs%u.*", cfg.text_dir, usrgrp[j]+1);
-				if(fexist(str)) {
-					sprintf(str,"subs%u",usrgrp[j]+1);
+				sprintf(str,"subs%u",usrgrp[j]+1);
+				if(menu_exists(str)) {
 					menu(str); 
 				}
 				else {
@@ -209,8 +207,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 
 		case CS_MSG_SHOW_GROUPS:
 			if(!usrgrps) return(0);
-			sprintf(str,"%smenu/grps.*", cfg.text_dir);
-			if(fexist(str)) {
+			if(menu_exists("grps")) {
 				menu("grps");
 				return(0); 
 			}
@@ -227,9 +224,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 
 		case CS_MSG_SHOW_SUBBOARDS:
 			if(!usrgrps) return(0);
-			sprintf(str,"%smenu/subs%u.*", cfg.text_dir, usrgrp[curgrp]+1);
-			if(fexist(str)) {
-				sprintf(str,"subs%u",usrgrp[curgrp]+1);
+			sprintf(str,"subs%u",usrgrp[curgrp]+1);
+			if(menu_exists(str)) {
 				menu(str);
 				return(0); 
 			}

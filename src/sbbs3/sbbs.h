@@ -712,6 +712,7 @@ public:
 	void	printfile(char *str, long mode);
 	void	printtail(char *str, int lines, long mode);
 	void	menu(const char *code);
+	bool	menu_exists(const char *code);
 
 	int		uselect(int add, uint n, const char *title, const char *item, const uchar *ar);
 	uint	uselect_total, uselect_num[500];

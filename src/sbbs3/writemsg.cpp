@@ -779,8 +779,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 		bprintf("\r\nMessage editor: Read in %d lines\r\n",lines);
 	bprintf(text[EnterMsgNow],maxlines);
 
-	SAFEPRINTF(path,"%smenu/msgtabs.*", cfg.text_dir);
-	if(fexist(path))
+	if(menu_exists("msgtabs"))
 		menu("msgtabs");
 	else {
 		for(i=0;i<79;i++) {

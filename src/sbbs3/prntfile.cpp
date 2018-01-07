@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -75,8 +75,9 @@ void sbbs_t::printfile(char *str, long mode)
 		sys_status&=~SS_ABORT; 
 	}
 
-	if(!(mode&P_NOCRLF) && !tos && !wip && !rip && !html)
+	if(!(mode&P_NOCRLF) && !tos && !wip && !rip && !html) {
 		CRLF;
+	}
 
 	if((stream=fnopen(&file,str,O_RDONLY|O_DENYNONE))==NULL) {
 		lprintf(LOG_NOTICE,"Node %d !Error %d (%s) opening: %s"
@@ -187,35 +188,43 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 /****************************************************************************/
 void sbbs_t::menu(const char *code)
 {
-    char str[MAX_PATH+1],path[MAX_PATH+1];
+    char str[MAX_PATH-5],path[MAX_PATH+1];
 
 	sys_status&=~SS_ABORT;
 	if(menu_file[0])
-		strcpy(path,menu_file);
+		SAFECOPY(path,menu_file);
 	else {
 		if(isfullpath(code))
 			SAFECOPY(str, code);
 		else {
-			sprintf(str,"%smenu/",cfg.text_dir);
-			if(menu_dir[0]) {
-				strcat(str,menu_dir);
-				strcat(str,"/"); 
-			}
-			strcat(str,code);
+			backslash(menu_dir);
+			SAFEPRINTF3(str, "%smenu/%s%s", cfg.text_dir, menu_dir, code);
 		}
-		strcat(str,".");
-		sprintf(path,"%s%s",str,term_supports(WIP) ? "wip": term_supports(RIP) ? "rip" : "html");
+		sprintf(path,"%s.%s",str,term_supports(WIP) ? "wip": term_supports(RIP) ? "rip" : "html");
 		if(!(term_supports()&(RIP|WIP|HTML)) || !fexistcase(path)) {
-			sprintf(path,"%smon",str);
+			SAFEPRINTF(path, "%s.mon", str);
 			if((term_supports()&(COLOR|ANSI))!=ANSI || !fexistcase(path)) {
-				sprintf(path,"%sans",str);
+				SAFEPRINTF(path, "%s.ans", str);
 				if(!term_supports(ANSI) || !fexistcase(path))
-					sprintf(path,"%sasc",str); 
+					SAFEPRINTF(path, "%s.asc", str); 
 			} 
 		} 
 	}
 
-	printfile(path,P_OPENCLOSE);
+	long mode = P_OPENCLOSE;
+	if(column == 0)
+		mode |= P_NOCRLF;
+	printfile(path, mode);
 }
 
+bool sbbs_t::menu_exists(const char *code)
+{
+	char path[MAX_PATH+1];
 
+	if(menu_file[0])
+		return fexistcase(menu_file) ? true : false;
+
+	backslash(menu_dir);
+	SAFEPRINTF3(path, "%smenu/%s%s.asc", cfg.text_dir, menu_dir, code);
+	return fexistcase(path) ? true : false;
+}

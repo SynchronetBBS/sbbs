@@ -372,8 +372,7 @@ void sbbs_t::multinodechat(int channel)
 						done=1;
 						break;
 					case '*':
-						sprintf(str,"%smenu/chan.*",cfg.text_dir);
-						if(fexist(str))
+						if(menu_exists("chan"))
 							menu("chan");
 						else {
 							bputs(text[ChatChanLstHdr]);

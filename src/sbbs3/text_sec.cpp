@@ -66,8 +66,7 @@ int sbbs_t::text_sec()
 	}
 	action=NODE_RTXT;
 	while(online) {
-		sprintf(str,"%smenu/text_sec.*",cfg.text_dir);
-		if(fexist(str))
+		if(menu_exists("text_sec"))
 			menu("text_sec");
 		else {
 			bputs(text[TextSectionLstHdr]);
@@ -83,9 +82,8 @@ int sbbs_t::text_sec()
 			break;
 		cursec--;
 		while(online) {
-			sprintf(str,"%smenu/text%lu.*",cfg.text_dir,cursec+1);
-			if(fexist(str)) {
-				sprintf(str,"text%lu",cursec+1);
+			sprintf(str,"text%lu",cursec+1);
+			if(menu_exists(str)) {
 				menu(str);
 				usemenu=1; 
 			}
