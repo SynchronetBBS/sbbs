@@ -8,7 +8,7 @@
 	ansi.send('screen', 'clear');
 */
 
-load("sbbsdefs.js");
+load("cga_defs.js");
 
 const defs = {
 	// SyncTerm extended modes
