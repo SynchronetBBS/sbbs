@@ -43,7 +43,7 @@
  *                              Fixed a bug reported by Al: When saving a message
  *                              with /s on a blank line, SlyEdit was quitting with
  *                              an error due to a non-existent edit line.
- * 2018-01-07 Eric Oulashin     Version 1.57
+ * 2018-01-08 Eric Oulashin     Version 1.57
  *                              Updated the settings noColorSelectionInGrpNames,
  *                              noColorSelectionInSubBoardCodes, cvtColorToANSIGrpNames,
  *                              and cvtColorToANSISubBoardCodes to be comma-separated
@@ -62,6 +62,8 @@
  *                              configuration file.
  *                              Fixed a bug in refreshing the help text line on the
  *                              bottom of the screen after choosing text colors.
+ *                              Also, updated to remove ANSI from quote lines so that
+ *                              quote lines look better.
  */
 
 /* Command-line arguments:
@@ -140,7 +142,7 @@ if (!console.term_supports(USER_ANSI))
 
 // Constants
 const EDITOR_VERSION = "1.57";
-const EDITOR_VER_DATE = "2018-01-07";
+const EDITOR_VER_DATE = "2018-01-08";
 
 
 // Program variables
@@ -837,7 +839,9 @@ function readQuoteOrMessageFile()
 				// Only use textLine if it's actually a string.
 				if (typeof(textLine) == "string")
 				{
-					textLine = strip_ctrl(textLine);
+					// Remove any ANSI and/or Synchronet color codes from quote lines so
+					// the quote lines look better
+					textLine = strip_ctrl(cvtANSIToSyncAndRemoveUnwantedANSI(textLine));
 					// If the line has only whitespace and/or > characters,
 					// then make the line blank before putting it into
 					// gQuoteLines.
