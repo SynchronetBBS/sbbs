@@ -10,6 +10,7 @@
  * w = width (default of 80)
  * h = height (default of 24)
  * attr = default attribute (default of 7 ie: LIGHTGRAY)
+ * attr_mask = mask attribute bits (e.g. to disable BLINK)
  * ch = default character (default of space)
  *
  * Instance variable data contains an array of array of Graphics.Cell objects
@@ -36,6 +37,7 @@ function Graphic(w,h,attr,ch)
 		this.width=w;
 
 	this.atcodes=true;
+	this.attr_mask=0xff;
 
 	this.data=new Array(this.width);
 	for(var y=0; y<this.height; y++) {
@@ -419,7 +421,7 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 			// Do not draw to the bottom left corner of the screen-would scroll
 			if(xpos+x != console.screen_columns
 					|| ypos+y != console.screen_rows) {
-				console.attributes=this.data[x+xoff][y+yoff].attr;
+				console.attributes=this.data[x+xoff][y+yoff].attr & this.attr_mask;
 				var ch=this.data[x+xoff][y+yoff].ch;
 				if(ch == "\r" || ch == "\n" || !ch)
 					ch=this.ch;
@@ -491,7 +493,7 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 				continue;
 			}
 			console.gotoxy(xpos+position.x,ypos+position.y);
-			console.attributes=this.data[position.x][position.y].attr;
+			console.attributes=this.data[position.x][position.y].attr & this.attr_mask;
 			var ch=this.data[position.x][position.y].ch;
 			if(ch == "\r" || ch == "\n" || !ch)
 				ch=this.ch;
