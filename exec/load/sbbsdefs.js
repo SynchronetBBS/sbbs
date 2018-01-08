@@ -35,6 +35,7 @@
 
 load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'nodedefs.js', 'NODE_WFC');
 load('smbdefs.js');
+load('cga_defs.js');
 
 /* Would rather use const than var, but end up with redeclaration errors.	*/
 
@@ -171,42 +172,7 @@ var		KEY_PAGEDN	='\x0e';	/* ctrl-n (Page Down)						*/
 								/********************************************/
 var		KEY_ABORT	='\x03';	/* ctrl-c (cancel/abort/break)				*/
 								/********************************************/
-
-							    /********************************************/
-							    /* console.attributes, also used for ansi()	*/
-							    /********************************************/
-var   BLINK			=0x80;		/* blink bit */
-var   HIGH			=0x08;		/* high intensity foreground bit */
-
-							    /* foreground colors */
-var   BLACK			=0;			/* dark colors (HIGH bit unset) */
-var   BLUE			=1;
-var   GREEN			=2;
-var   CYAN			=3;
-var   RED			=4;
-var   MAGENTA		=5;
-var   BROWN			=6;
-var   LIGHTGRAY		=7;
-var   DARKGRAY		=8;			/* light colors (HIGH bit set) */
-var   LIGHTBLUE		=9;
-var   LIGHTGREEN	=10;
-var   LIGHTCYAN		=11;
-var   LIGHTRED		=12;
-var   LIGHTMAGENTA	=13;
-var   YELLOW		=14;
-var   WHITE			=15;
-
-							    /* background colors */
-var   ANSI_NORMAL	=0x100;		/* special value for ansi() */
-var   BG_BLACK		=0x200;		/* special value for ansi() */
-var   BG_BLUE		=(BLUE<<4);
-var   BG_GREEN		=(GREEN<<4);
-var   BG_CYAN		=(CYAN<<4);
-var   BG_RED		=(RED<<4);
-var   BG_MAGENTA	=(MAGENTA<<4);
-var   BG_BROWN		=(BROWN<<4);
-var   BG_LIGHTGRAY	=(LIGHTGRAY<<4);
-
+					    
 					    		/********************************************/
 						    	/* user.settings							*/
 							    /********************************************/
