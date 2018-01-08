@@ -132,7 +132,8 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 //            	if(char == ' ' || (x<this.width-1))
                 	ansi += char;
         	}
-			ansi += '\r\n';
+			ansi += this.ansi.cursor_position.move('down');
+			ansi += this.ansi.cursor_position.move('left', this.width);
     	}
     	return ansi;
 	},
