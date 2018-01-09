@@ -1,5 +1,8 @@
 // $Id$
+
 // This can be loaded from text/menu/msghdr.asc via @EXEC:SHOWMSGHDR@
+// Don't forget to include or exclude the blank line after if do
+// (or don't) want a blank line separating message headers and body text
 
 load("smbdefs.js");
 load("text.js");
@@ -10,7 +13,6 @@ function show_msgattr(msg_attr, msg_auxattr)
 {
 	var attr = msg_attr;
 	var poll = attr&MSG_POLL_VOTE_MASK;
-	var auxattr = msg_auxattr;
 	var nulstr = "";
 
 	printf(bbs.text(MsgAttr)
@@ -27,7 +29,7 @@ function show_msgattr(msg_attr, msg_auxattr)
 		,attr&MSG_REPLIED	? "Replied  "	:nulstr
 		,attr&MSG_NOREPLY	? "NoReply  "	:nulstr
 		,poll == MSG_POLL	? "Poll  "		:nulstr
-		,poll == MSG_POLL && auxattr&POLL_CLOSED ? "(Closed)  "	:nulstr
+		,poll == MSG_POLL && msg_auxattr&POLL_CLOSED ? "(Closed)  "	:nulstr
 		,nulstr
 		,nulstr
 		,nulstr
@@ -39,7 +41,7 @@ function show_msghdr()
 {
 	printf(bbs.text(MsgSubj), bbs.msg_subject);
 	if(bbs.msg_attr)
-		show_msgattr(bbs.msg_attr /* ??? */);
+		show_msgattr(bbs.msg_attr, bbs.msg_auxattr);
 	if(bbs.msg_to && bbs.msg_to.length) {
 		printf(bbs.text(MsgTo), bbs.msg_to);
 		if(bbs.msg_to_net)
@@ -54,11 +56,13 @@ function show_msghdr()
 		if(bbs.msg_from_net)
 			printf(bbs.text(MsgFromNet), bbs.msg_from_net); 
 	}
-	// the bbs.msg_up/downvotes properties don't actually exist (yet)
-	if(!(bbs.msg_attr&MSG_POLL) && (bbs.atcode("MSG_UPVOTES")!='0' || bbs.atcode("MSG_DOWNVOTES")!='0'))
+	// the bbs.msg_up/down-votes properties don't actually exist (yet), so get their values via @-codes
+	var msg_upvotes = parseInt(bbs.atcode("MSG_UPVOTES"));
+	var msg_downvotes = parseInt(bbs.atcode("MSG_DOWNVOTES"));
+	if(!(bbs.msg_attr&MSG_POLL) && (msg_upvotes || msg_downvotes))
 		printf(bbs.text(MsgVotes)
-			,bbs.atcode("MSG_UPVOTES"), bbs.atcode("MSG_UPVOTED")
-			,bbs.atcode("MSG_DOWNVOTES"), bbs.atcode("MSG_DOWNVOTED")
+			,msg_upvotes, bbs.atcode("MSG_UPVOTED")
+			,msg_downvotes, bbs.atcode("MSG_DOWNVOTED")
 			,bbs.atcode("MSG_SCORE"));
 	printf(bbs.text(MsgDate), system.timestr(bbs.msg_date), system.zonestr(bbs.msg_timezone), bbs.atcode("MSG_AGE"));
 
@@ -71,5 +75,4 @@ show_msghdr();
 if(!(bbs.msg_attr&MSG_ANONYMOUS) && console.term_supports(USER_ANSI)) {
 	var Avatar = load({}, 'avatar_lib.js');
 	Avatar.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true);
-//	console.attributes = -1;	// Can't trust the saved 'current attribute' value
 }
