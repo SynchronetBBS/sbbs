@@ -20,6 +20,7 @@ typedef struct
 	CRYPT_SESSION	session;
 	char	*hostname;
 	struct xpms_set	*set;
+	size_t	unflushed;
 } js_socket_private_t;
 
 #ifdef __cplusplus
