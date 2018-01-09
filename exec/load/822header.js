@@ -1,4 +1,5 @@
 const RFC822HEADER = 0xb0;  // from smbdefs.h
+require("utf8_ascii.js", 'utf8_ascii');
 
 MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 {
@@ -83,6 +84,17 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 		// Unwrap headers
 		this.rfc822=this.rfc822.replace(/\s*\r\n\s+/g, " ");
 		this.rfc822 += "\r\n";
+		// Illegal characters in header?
+		if (this.rfc822.search(/[^\x01-\x7f]/) != -1) {
+			/* Is it UTF-8? */
+			if (this.rfc822.replace(/[\xc0-\xfd][\x80-\xbf]+/g,'').search(/[^\x01-\x7f]/) == -1) {
+				this.rfc822 = utf8_ascii(this.rfc822);
+			}
+			else {
+				// If not, just strip them all...
+				this.rfc822 = this.rfc822.replace(/[^\x01-\x7f]/g, '?');
+			}
+		}
 	}
 	return this.rfc822;
 };
