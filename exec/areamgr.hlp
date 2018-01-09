@@ -17,6 +17,7 @@ In the body of the message:
 %RESCAN <areatag>     Request a rescan of a single connected area
 %ACTIVE               Reconnect (resume) all temporarily disconnected areas
 %PASSIVE              Temporarily disconnect (pause) all connected areas
+%NOTIFY <ON | OFF>    Turn periodic Notification Messages ON or OFF
 %FROM <address>       Remote/proxy Area Management, must be the first command
 %+ALL                 Connect all available areas
 %-ALL                 Disconnect all areas
