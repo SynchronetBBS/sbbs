@@ -6,6 +6,7 @@ load("funclib.js");
 load("filebrowser.js");
 var Ansi = load({}, "ansiterm_lib.js");
 var Sauce = load({}, "sauce_lib.js");
+var Graphic = load({}, "graphic.js");
 
 Frame.prototype.drawBorder = function(color) {
 	var theColor = color;
@@ -61,6 +62,7 @@ var state = {
 	syncTerm : false,
 	fileList : [],
 	pausing : false,
+	drawfx : false,
 	speed : 0,
 	browser : null
 };
@@ -80,30 +82,52 @@ var speedMap = [
 	115200	// 11
 ];
 
+function draw(file, cols, rows)
+{
+	if(rows > console.screen_rows && cols <= console.screen_columns)
+		return console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
+	
+	// Use graphic when the entire image fits on the screen
+	var graphic = new Graphic(cols, rows);
+	try {
+		if(!graphic.load(file))
+			alert("Graphic.load failure: " + file);
+		else {
+			if(state.drawfx)	// Check this shit out
+				graphic.drawfx();
+			else
+				graphic.draw();
+		}
+	} catch(e) {
+		alert(e);
+	};
+}
+
 function printFile(file) {
 
 	console.clear(BG_BLACK|LIGHTGRAY);
 	frame.invalidate();
+	var sauce = Sauce.read(file);
 
 	if (state.syncTerm) {
 
 		Ansi.send("speed", "set", state.speed);
-		var sauce = Sauce.read(file);
-		if (sauce.ice_color) {
+		Ansi.send("ext_mode", "clear", "cursor");
+		if (sauce.ice_color)
 			Ansi.send("ext_mode", "set", "bg_bright_intensity");
-		}
 		mswait(500);
-		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
-		console.pause();
+		draw(file, sauce.cols, sauce.rows);
+		console.getkey();
 		Ansi.send("ext_mode", "clear", "bg_bright_intensity");
+		Ansi.send("ext_mode", "set", "cursor");
 		Ansi.send("speed", "clear");
 
 	} else if (state.speed == 0) {
 
-		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
-		console.pause();
+		draw(file, sauce.cols, sauce.rows);
+		console.getkey();
 
-	} else {	// TODO: terminate on Ctrl-Z char (CPM EOF)
+	} else {	// TODO: terminate on Ctrl-Z char (CPM EOF) in the file
 
 		var f = new File(file);
 		f.open("r");
@@ -121,7 +145,7 @@ function printFile(file) {
 			console.write(contents.splice(0, buf).join(""));
 			if (console.inkey(K_NONE, 1) != "") break;
 		}
-		console.pause();
+		console.getkey();
 
 		bbs.sys_status|=SS_PAUSEON;
 		bbs.sys_status&=(~SS_PAUSEOFF);
