@@ -39,6 +39,7 @@ function Graphic(w,h,attr,ch)
 	this.atcodes=true;
 	this.cpm_eof=true;
 	this.attr_mask=0xff;
+	this.ansi_crlf=true;
 
 	this.data=new Array(this.width);
 	for(var y=0; y<this.height; y++) {
@@ -135,8 +136,12 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 //            	if(char == ' ' || (x<this.width-1))
                 	ansi += char;
         	}
-			ansi += this.ansi.cursor_position.move('down');
-			ansi += this.ansi.cursor_position.move('left', this.width);
+			if(this.ansi_crlf)
+				ansi += '\r\n';
+			else {
+				ansi += this.ansi.cursor_position.move('down');
+				ansi += this.ansi.cursor_position.move('left', this.width);
+			}
     	}
     	return ansi;
 	},
@@ -415,7 +420,8 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 		return(false);
 	}
 	if(xpos+width-1 > console.screen_columns || ypos+height-1 > console.screen_rows) {
-		alert("Attempt to draw outside of screen: " + (xpos+width-1) + "x" + (ypos+height-1));
+		alert("Attempt to draw outside of screen: " + (xpos+width-1) + "x" + (ypos+height-1)
+			+ format(" > %ux%u", console.screen_columns, console.screen_rows));
 		return(false);
 	}
 	for(y=0;y<height; y++) {
