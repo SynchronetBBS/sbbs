@@ -377,12 +377,13 @@ function import_from_msgbase(list, msgbase, import_ptr, limit, all)
         if(idx.number <= import_ptr)
             continue;
         if(idx.to != sbl_crc) {
-            //print(idx.to + " != " + sbl_crc);
             continue;
         }
         if(idx.number > highest)
             highest = idx.number;
         var hdr = msgbase.get_msg_header(/* by_offset: */true, i);
+		if(!hdr.to || hdr.to.toLowerCase() != "sbl")
+			continue;
         var l;
         var msg_from = hdr.from;
 		if(all != true && !hdr.from_net_type)	// Skip locally posted messages
