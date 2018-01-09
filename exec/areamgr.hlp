@@ -1,10 +1,10 @@
 Address all Area Management requests to 'AreaFix' (without quotes).
-Your Area Manager password goes on the subject line.
+Your Area Manager password goes in the message subject.
 
-In the body of the message:
+In the body of the message, one or more:
 
-[+]<areaname>         Connect an area
--<areaname>           Disconnect an area
+<areatag>             Connect a message area (echo)
+-<areatag>            Disconnect an area
 %HELP                 Request this message
 %LIST                 Request a list of areas (tags) available to you
 %QUERY                Request a list of areas to which you are connected
@@ -15,6 +15,7 @@ In the body of the message:
 %TICPWD <password>    Set or change your TIC File password
 %RESCAN               Request a rescan of all connected areas
 %RESCAN <areatag>     Request a rescan of a single connected area
+%ECHOSTATS <areatag>  Request statistics (import/export details) of an area
 %ACTIVE               Reconnect (resume) all temporarily disconnected areas
 %PASSIVE              Temporarily disconnect (pause) all connected areas
 %NOTIFY <ON | OFF>    Turn periodic Notification Messages ON or OFF
