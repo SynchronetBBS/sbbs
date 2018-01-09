@@ -1212,21 +1212,23 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 }
 
 /******************************************************************************
- This function takes the contents of 'infile' and puts it into a netmail
- message bound for addr.
+ This function takes the contents of 'infile' and puts it into netmail
+ message(s) bound for addr.
 ******************************************************************************/
-void file_to_netmail(FILE* infile, const char* title, fidoaddr_t dest, const char* to)
+int file_to_netmail(FILE* infile, const char* title, fidoaddr_t dest, const char* to)
 {
 	char *buf,*p;
 	long l,m,len;
+	int netmails_created = 0;
 
+	fseek(infile, 0, SEEK_END);
 	l=len=ftell(infile);
 	if(len>8192L)
 		len=8192L;
 	rewind(infile);
 	if((buf=(char *)malloc(len+1))==NULL) {
 		lprintf(LOG_ERR,"ERROR line %d allocating %lu for file to netmail buf",__LINE__,len);
-		return; 
+		return 0; 
 	}
 	while((m=fread(buf,1,(len>8064L) ? 8064L:len,infile))>0) {
 		buf[m]=0;
@@ -1244,9 +1246,11 @@ void file_to_netmail(FILE* infile, const char* title, fidoaddr_t dest, const cha
 		}
 		if(ftell(infile)<l)
 			strcat(buf,"\r\nContinued in next message...\r\n");
-		create_netmail(to, /* msg: */NULL, title, buf, dest, /* attachment: */false); 
+		if(create_netmail(to, /* msg: */NULL, title, buf, dest, /* attachment: */false) == 0)
+			netmails_created++;
 	}
 	free(buf);
+	return netmails_created;
 }
 
 bool new_area(const char* tag, uint subnum, fidoaddr_t* link)
@@ -1910,9 +1914,11 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 			lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,str);
 			return false; 
 		}
-		file_to_netmail(stream, "Area Manager Help", addr, to);
+		bool result = file_to_netmail(stream, "Area Manager Help", addr, to) > 0;
+		if(!result)
+			lprintf(LOG_ERR,"ERROR converting file to netmail(s)");
 		fclose(stream);
-		return true; 
+		return result; 
 	}
 
 	if(stricmp(instr, "LIST") == 0) {
@@ -1956,7 +1962,8 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 					"Available types are:\r\n", p);
 				for(u=0;u<cfg.arcdefs;u++)
 					fprintf(tmpf,"                     %s\r\n",cfg.arcdef[u].name);
-				file_to_netmail(tmpf,"Compression Type Change",addr,to);
+				if(!file_to_netmail(tmpf,"Compression Type Change",addr,to))
+					lprintf(LOG_ERR,"ERROR converting file to netmail(s)");
 				fclose(tmpf);
 				return true; 
 			}
@@ -2100,7 +2107,8 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 				lprintf(LOG_ERR,"ERROR line %d couldn't open tmpfile",__LINE__);
 			} else {
 				fwrite_echostat(fp, stat);
-				file_to_netmail(fp,"Echo Statistics",addr,to);
+				if(!file_to_netmail(fp,"Echo Statistics",addr,to))
+					lprintf(LOG_ERR,"ERROR converting file to netmail(s)");
 				fclose(fp);
 			}
 		}
