@@ -2,6 +2,29 @@
 
 // Synchronet inter-bbs instant message module
 
+/* History of this module/feature:
+  
+   Original 2001: Queried systems using Finger (TCP port 79)
+                  Sent message using SMTP-SOML (TCP port 25)
+   Rev 1.11 2002: Queried system using both TCP and UDP-Finger (port 79)
+                  Still sent messages using SMTP-SOML
+   Rev 1.22 2007: Queried using SYSTAT/ActiveUser protocol (TCP & UDP port 11)
+                  in addition to Finger (TCP and UDP port 79)
+                  If send via SMTP failed, used MSP protocol (TCP port 18)
+   Rev 1.25 2009: Removed Finger (both TCP and UDP support), SYSTAT-TCP
+                  and SMTP support, so it now *only*:
+				  Queries using SYSTAT/ActiveUser protocol over UDP port 11
+				  Sends messages using MSP (TCP port 18)
+
+   So, while originally the requirements for systems to participate were:
+   - Synchronet SMTP Server listening on TCP port 25
+   - fingerservice.js listing on TCP port 79
+
+   Now, the requirements are:
+   - activeuserservice.js (or fingerservice.js) listening on UDP port 11
+   - mspservice.js listening on TCP port 18
+*/
+
 // $Id$
 
 const REVISION = "$Revision$".split(' ')[1];
@@ -11,6 +34,11 @@ const UDP_RESPONSE_TIMEOUT = 5000	// milliseconds
 load("sbbsdefs.js");
 load("nodedefs.js");
 load("sockdefs.js");	// SOCK_DGRAM
+var options=load({}, "modopts.js", "sbbsimsg");
+if(!options)
+	options = {};
+if(!options.from_user_prop)
+	options.from_user_prop = "alias";
 
 // Global vars
 var imsg_user;
@@ -35,37 +63,30 @@ if(!f.open("r")) {
 	exit();
 }
 
-sys = new Array();
+var sys = new Array();
 list = f.readAll();
 f.close();
 for(i in list) {
 	if(list[i]==null)
 		break;
-	while(list[i].charAt(0)==' ')		// skip prepended spaces
-		list[i] = list[i].slice(1);
+	var line = list[i].trimLeft();
+	if(line.charAt(0)==';')		// comment? 
+		continue;
 
-	word = list[i].split(/\s+/);
+	var word = line.split('\t');
+	var host = word[0].trimRight();
 
-	if(word[0].charAt(0)==';' ||		// comment? 
-		word[0] == system.host_name ||
-		word[0] == system.inetaddr)		// local system?
+	if(host == system.host_name
+		|| host == system.inetaddr)		// local system?
 		continue;						// ignore
 
-	if(word[1] != undefined)  {
-		if(!word[1].length)
-		{
-			printf("Setting zero-len %s to undefined\r\n",word[1]);
-			word[1]=undefined;
-		}
+	var ip_addr = word[1];
+	var bbs_name = word[2];
 
-		if(word[1].search(/^\s*$/m)!=-1)
-		{
-			printf("Setting %s to undefined\r\n",word[1]);
-			word[1]=undefined;
-		}
-	}
+	if(ip_addr == client.socket.local_ip_address || ip_addr == server.interface_ip_address)
+		continue;
 
-	sys.push( { addr: word[0], ip : word[1], udp: false, failed: false, reply: 999999 } );
+	sys.push( { addr: host, ip : ip_addr, name: bbs_name, failed: false, reply: 999999 } );
 }
 
 function save_sys_list()
@@ -79,7 +100,7 @@ function save_sys_list()
 		if(sys[i].ip == undefined)
 			f.writeln(sys[i].addr);
 		else
-			f.writeln(format("%-63s ", sys[i].addr) +  sys[i].ip);
+			f.writeln(format("%-63s\t%s\t%s", sys[i].addr, sys[i].ip, sys[i].name));
 	}
 	f.close();
 }
@@ -89,7 +110,7 @@ function sortarray(a, b)
 	return(a.reply-b.reply);
 }
 
-function parse_response(response, show)
+function parse_response(response, show, sys)
 {
 	// Skip header
 	while(response.length && response[0].charAt(0)!='-')
@@ -122,7 +143,9 @@ function parse_response(response, show)
 				,response[j],response[j].slice(26)));
 		}
 		var u = new Object;
-		u.host = sys[i].addr;
+		u.host = sys.addr;
+		u.bbs  = sys.name;
+		u.ip   = sys.ip;
 		u.name = format("%.25s",response[j]);
 		u.name = truncsp(u.name);
 		imsg_user.push(u);
@@ -134,22 +157,17 @@ function list_users(show)
 {
 	imsg_user = new Array();
 	var udp_req=0;
-	var udp_replies=0;
 	var replies=0;
 
 	users = 0;
 	start = new Date();
 	print("\1m\1hListing Systems and Users (Ctrl-C to Abort)...");
 
-	/* UDP systems */
-	for(i=0;sys[i]!=undefined;i++)
-		sys[i].udp=false;	// Reset the udp flag
 	sock = new Socket(SOCK_DGRAM);
 	//sock.debug=true;
-	for(i=0;sys[i]!=undefined && !(bbs.sys_status&SS_ABORT);i++) {
+	for(var i=0; sys[i]!=undefined && !(bbs.sys_status&SS_ABORT);i++) {
 		if(sys[i].ip==undefined)
 			continue;
-		/* Try SYSTAT and finger */
 		if(!sock.sendto("\r\n",sys[i].ip,IPPORT_SYSTAT))	// Get list of active users
 			continue;
 		udp_req++;
@@ -166,41 +184,37 @@ function list_users(show)
 		message=sock.recvfrom(20000);
 		if(message==null)
 			continue;
-		i=get_sysnum(message.ip_address);
-		if(i==-1)
+		var found = get_system_by_ip(message.ip_address);
+		if(!found)
 			continue;
-		if(sys[i].udp == false) {
-			replies++;
-			udp_replies++;
-			sys[i].udp=true;
-			sys[i].reply=new Date().valueOf()-start.valueOf();
+		replies++;
+		found.reply=new Date().valueOf()-start.valueOf();
 
-			response=message.data.split("\r\n");
+		response=message.data.split("\r\n");
 
-			if(show) {
-				console.line_counter=0;	// defeat pause
-				printf("\1n\1h%-25.25s\1n ",sys[i].addr);
-			}
-
-			parse_response(response, show);
+		if(show) {
+			console.line_counter=0;	// defeat pause
+			printf("\1n\1h%-25.25s\1n ",found.name);
 		}
+
+		parse_response(response, show, found);
 	}
 	
 	sock.close();
 
 	t = new Date().valueOf()-start.valueOf();
-	printf("\1m\1h%lu systems (%lu UDP) and %lu users listed in %d seconds.\r\n"
-		,replies, udp_replies, users, t/1000);
+	printf("\1m\1h%lu systems and %lu users listed in %d seconds.\r\n"
+		,replies, users, t/1000);
 	save_sys_list();
 }
 
-function get_sysnum(ip)
+function get_system_by_ip(ip)
 {
-	for(i in sys)
+	for(var i in sys)
 		if(sys[i].ip==ip)
-			return(i);
+			return(sys[i]);
 	printf("Unexpected response from %s\r\n",ip);
-	return(-1);
+	return null;
 }
 
 function send_msg(dest, msg)
@@ -221,7 +235,7 @@ function send_msg(dest, msg)
 			alert("MSP Connection to " + host + " failed with error " + sock.last_error);
 		}
 		else {
-			sock.send("B"+destuser+"\0"+/* Dest node +*/"\0"+msg+"\0"+user.name+"\0"+"Node: "+bbs.node_num+"\0\0"+system.name+"\0");
+			sock.send("B"+destuser+"\0"+/* Dest node +*/"\0"+msg+"\0"+user[options.from_user_prop]+"\0"+"Node: "+bbs.node_num+"\0\0"+system.name+"\0");
 		}
 	} while(0);
 
@@ -307,7 +321,7 @@ while(bbs.online) {
 			done=false;
 			while(bbs.online && !done) {
 				printf("\r\1n\1h\x11\1n-[\1hQ\1nuit]-\1h\x10 \1y%-25s \1c%s\1>"
-					,imsg_user[last_user].name,imsg_user[last_user].host);
+					,imsg_user[last_user].name,imsg_user[last_user].bbs);
 				switch(console.getkey(K_UPPER|K_NOECHO)) {
 					case '+':
 					case '>':
