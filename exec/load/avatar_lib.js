@@ -7,6 +7,8 @@ const defs = {
 	height: 6,
 };
 
+const size = defs.width * defs.height * 2;	// 2 bytes per cell for char and attributes
+
 function local_library()
 {
 	return format("%savatars/", system.text_dir);
