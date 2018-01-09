@@ -786,25 +786,8 @@ Frame.prototype.load = function(filename,width,height) {
 			y++;
 		}			
 		break;
-	case "BIN":
-		if(width == undefined || height == undefined)
-			throw("unknown graphic dimensions");
-		var offset = 0;
-		for(var y=0; y<height; y++) {
-			for(var x=0; x<width; x++) {
-				var c = new Char();
-				if(offset >= contents.length)
-					return(false);
-				c.ch = contents.substr(offset++, 1);
-				if(offset == contents.length)
-					return(false);
-				c.attr = ascii(contents.substr(offset++, 1));
-				c.id = this.id;
-				if(!this.__properties__.data[y])
-					this.__properties__.data[y]=[];
-				this.__properties__.data[y][x] = c;
-			}
-		}
+    case "BIN":
+        if (!this.load_bin(contents, width, height, 0)) return false;
 		break;
 	case "TXT":
 		var lines=contents.split(/\r\n/);
@@ -815,6 +798,27 @@ Frame.prototype.load = function(filename,width,height) {
 		throw("unsupported filetype");
 		break;
 	}
+}
+Frame.prototype.load_bin = function(contents, width, height, offset) {
+    if(width == undefined || height == undefined)
+        throw("unknown graphic dimensions");
+    if(offset == undefined) offset = 0;
+    for(var y=0; y<height; y++) {
+        for(var x=0; x<width; x++) {
+            var c = new Char();
+            if(offset >= contents.length)
+                return(false);
+            c.ch = contents.substr(offset++, 1);
+            if(offset == contents.length)
+                return(false);
+            c.attr = ascii(contents.substr(offset++, 1));
+            c.id = this.id;
+            if(!this.__properties__.data[y])
+                this.__properties__.data[y]=[];
+            this.__properties__.data[y][x] = c;
+        }
+    }
+    return true;
 }
 Frame.prototype.scroll = function(x,y) {
 	var update = false;
