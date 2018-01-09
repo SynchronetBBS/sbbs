@@ -67,10 +67,10 @@ function read(fname)
 		return false;
 
 	var obj = { comment:[], cols:0, rows:0, ice_color:false };
-	obj.title = file.read(35).trim();
-	obj.author = file.read(20).trim();
-	obj.group = file.read(20).trim();
-	obj.date = file.read(8).trim();
+	obj.title = truncsp(file.read(35));
+	obj.author = truncsp(file.read(20));
+	obj.group = truncsp(file.read(20));
+	obj.date = truncsp(file.read(8));
 	obj.filesize = file.readBin(4);
 	obj.datatype = file.readBin(1);
 	obj.filetype = file.readBin(1);
@@ -105,7 +105,7 @@ function read(fname)
 			while(comments--) {
 				var line = file.read(defs.comment_length);
 				if(line)
-					obj.comment.push(line.trimRight());
+					obj.comment.push(truncsp(line));
 			}
 		}
 	}
