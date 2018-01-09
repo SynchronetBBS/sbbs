@@ -392,7 +392,8 @@ for(var l in list_array) {
 	
 		}
 
-		if(hdr.to == listserver_name || hdr.subject == "Delivery failure: Synchronet ListServer Response") {
+		if(hdr.to == listserver_name || hdr.to_net_addr == listserver_address
+			|| hdr.subject == "Delivery failure: Synchronet ListServer Response") {
 			log(LOG_INFO,format("Deleting bounce message #%u to %s", hdr.number, hdr.to));
 			if(!mailbase.remove_msg(/* by offset: */ true, num))
 				log(LOG_ERR,format("!ERROR %d (%s) removing message #%u to %s"
