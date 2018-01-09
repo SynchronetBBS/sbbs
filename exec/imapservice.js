@@ -222,8 +222,19 @@ function send_fetch_response(msgnum, fmat, uid)
 	 * Most of these functions just diddle variables in this function
 	 */
 	function get_header() {
-		if(hdr == undefined) {
+		if(hdr == undefined)
 			hdr=base.get_msg_header(msgnum, /* expand_fields: */false);
+		/* If that didn't work, make up a minimal useless header */
+		if (hdr == undefined) {
+			hdr = Object.create(MsgBase.HeaderPrototype);
+			hdr.netattr = 0;
+			hdr.when_imprted_time = 0;
+			hdr.when_imported_zone_offset = 0;
+			hdr.from="deleted@example.com";
+			hdr.to="deleted@example.com";
+			hdr.id="<DELETED>";
+			hdr.subject="<DELETED>";
+			hdr.date="<undefined>";
 		}
 	}
 
@@ -235,6 +246,8 @@ function send_fetch_response(msgnum, fmat, uid)
 	function get_rfc822_text() {
 		if(rfc822.text==undefined)
 			rfc822.text=base.get_msg_body(msgnum, true, true, true);
+		if(rfc822.text==undefined)
+			rfc822.text='';
 	}
 
 	function get_rfc822() {
@@ -305,11 +318,6 @@ function send_fetch_response(msgnum, fmat, uid)
 
 		return a-b;
 	}
-
-	idx=index.idx[msgnum];
-	resp=idx.offset;
-	resp += " FETCH (";
-	fmat=fmat.sort(sort_format);
 
 	function get_mime_part(fmat) {
 		var m=fmat.match(/^BODY((?:\.PEEK)?)\[([^[\]]*)(?:\]\<([0-9]+)\.([0-9]+)\>)?/i);
@@ -423,6 +431,11 @@ function send_fetch_response(msgnum, fmat, uid)
 		return ret;
 	}
 
+	idx=index.idx[msgnum];
+	resp=idx.offset;
+	resp += " FETCH (";
+	fmat=fmat.sort(sort_format);
+
 	for(i in fmat) {
 		/*
 		 * This bit is for when a paremeter includes a list.
@@ -530,6 +543,7 @@ function send_fetch_response(msgnum, fmat, uid)
 	resp=resp.replace(/ $/,'');
 	resp += ")";
 	untagged(resp);
+	js.gc(false);
 }
 
 /*
@@ -648,7 +662,9 @@ function parse_command(line)
 					break;
 			}
 		}
-		tagged(args[0], "BAD", "Bad dog, no cookie.");
+		// Ignore empty lines (Seamonkey sends these...)
+		if (args.length > 0)
+			tagged(args[0], "BAD", "Bad dog, no cookie.");
 	}
 
 	function parse_line() {
@@ -1585,6 +1601,7 @@ function do_store(seq, uid, item, data)
 		if(!silent)
 			send_fetch_response(seq[i], ["FLAGS"], uid);
 	}
+	js.gc();
 	if(changed) {
 		save_cfg();
 		index=read_index(base);
@@ -1945,6 +1962,7 @@ var selected_command_handlers = {
 			for(i in seq) {
 				send_fetch_response(seq[i], data_items, false);
 			}
+			js.gc();
 			tagged(tag, "OK", "There they are!");
 		},
 	},
@@ -1993,6 +2011,7 @@ var selected_command_handlers = {
 					for(i in seq) {
 						send_fetch_response(seq[i], data_items, true);
 					}
+					js.gc();
 					tagged(tag, "OK", "There they are (with UIDs)!");
 					break;
 				case 'STORE':
@@ -2080,6 +2099,7 @@ while(1) {
 		parse_command(line);
 	}
 	else {
+		js.gc();
 		waited++;
 		if (waited >= 1800) {
 			untagged("BYE No lolligaggers here!");
