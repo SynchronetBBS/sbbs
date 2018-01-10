@@ -67,7 +67,7 @@ function read(fname)
 	if(file.read(defs.id_length + defs.version_length) != 'SAUCE00')
 		return false;
 
-	var obj = { comment:[], cols:0, rows:0, ice_color:false };
+	var obj = {};
 	obj.title = truncsp(file.read(35));
 	obj.author = truncsp(file.read(20));
 	obj.group = truncsp(file.read(20));
@@ -82,6 +82,12 @@ function read(fname)
 	var comments = file.readBin(1);
 	obj.tflags = file.readBin(1);
 	obj.tinfos = truncsp(file.read(22));
+	obj.comment = [];
+
+	// Convenience fields
+	obj.cols =  0;
+	obj.rows = 0
+	obj.ice_color = false;
 
 	// Do some convenience field parsing/conversions here
 	obj.date = new Date(obj.date.substr(0, 4), parseInt(obj.date.substr(4,2))-1, obj.date.substr(6,2));
@@ -97,7 +103,6 @@ function read(fname)
 			obj.cols = obj.tinfo1;
 			obj.rows = obj.tinfo2;
 		}
-		obj.fontname = obj.tinfos;
 	}
 
 	// Read the Comment Block here
