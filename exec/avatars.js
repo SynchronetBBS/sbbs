@@ -118,11 +118,25 @@ function valid_shared_file(filename)
     }
     if(sauce.datatype != SAUCE.defs.datatype.bin
 		|| sauce.cols != lib.defs.width
+		|| sauce.filesize < lib.size
 		|| (sauce.filesize%lib.size) != 0) {
         alert(format("%s has invalid SAUCE! (datatype=%u cols=%u size=%u)"
 			,filename, sauce.datatype, sauce.cols, sauce.filesize));
         return false;
     }
+	var file = new File(filename);
+	if(!file.open("rb"))
+		return false;
+	var data = file.read(sauce.filesize);
+	file.close();
+	var list = data.match(new RegExp('(.{1,' + lib.size + '})', 'g'));
+	printf("%u avatars\r\n", list.length);
+//	print(JSON.stringify(list, null, 4));
+	for(var i in list)
+		if(!lib.is_valid(list[i])) {
+			alert("Avatar " + i + " (" + list[i].length + " bytes) is invalid");
+			return false;
+		}
     return true;
 }
 
@@ -206,7 +220,8 @@ function import_from_msgbase(msgbase, import_ptr, limit, all)
 			success = import_shared_file(hdr, body);
 		}
 		printf("%s\r\n", success ? "success" : "FAILED");
-        count++;
+		if(success)
+			count++;
 		if(limit && count >= limit)
 			break;
     }
@@ -223,8 +238,11 @@ function import_from_msgbase(msgbase, import_ptr, limit, all)
 function decompress_list(list)
 {
 	var new_list = [];
-	for(var i in list)
-		new_list[base64_encode(LZString.decompressFromBase64(i.replace(/\s+/g, '')))] = list[i];
+	for(var i in list) {
+		var data = LZString.decompressFromBase64(i.replace(/\s+/g, ''));
+		if(lib.is_valid(data))
+			new_list[base64_encode(data)] = list[i];
+	}
 	return new_list;
 }
 
@@ -388,6 +406,12 @@ function main()
 				if(!usernum)
 					usernum = user.number;
 				var obj = lib.show(usernum);
+				break;
+			case "verify":
+				if(filename) {
+				    var success = valid_shared_file(filename);
+					print(success ? "Successful" : "FAILED");
+				}
 				break;
 		}
 	}

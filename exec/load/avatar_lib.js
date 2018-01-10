@@ -24,6 +24,31 @@ function netuser_fname(netaddr)
 	return format("%sqnet/%s.avatars.ini", system.data_dir, file_getname(netaddr));
 }
 
+function is_valid(buf)
+{
+	if(!buf || !buf.length || buf.length != this.size)
+		return false;
+	var invalid = buf.split('').filter(function (e,i) { 
+		if((i&1) == 0) { // char
+			switch(e) {
+				case '\r':
+				case '\n':
+				case '\a':
+				case '\b':
+				case '\t':
+				case '\f':
+				case '\x1b':	// ESC
+				case '\xff':	// Telnet IAC
+					return true;
+			}
+			return false;
+		}
+		// attr
+		return (ascii(e)&BLINK);
+		});
+	return invalid.length == 0;
+}
+
 function write_localuser(usernum, obj)
 {
 	var file = new File(this.localuser_fname(usernum));
@@ -91,6 +116,8 @@ function import_file(usernum, filename, offset)
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
 	if(!graphic.load(filename, offset))
+		return false;
+	if(!is_valid(graphic.BIN))
 		return false;
 	return update_localuser(usernum, base64_encode(graphic.BIN));
 }
