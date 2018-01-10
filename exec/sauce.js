@@ -58,7 +58,7 @@ function main()
 				if(sauce.group) printf(" [%s]", sauce.group);
 				print(")");
 				if(sauce.comment.length)
-					print('\t' + sauce.comment.join(' '));
+					print('\t' + sauce.comment.join(', '));
 				if(verbosity)
 					print(JSON.stringify(sauce, null, 4));
 			}
@@ -67,14 +67,25 @@ function main()
 				var cols = parseInt(prompt("Columns [" + sauce.cols + "]"));
 				if(cols)
 					sauce.cols = cols;
-				for(var i in { title:0, author:0, group:0 })
-					sauce[i] = prompt(i);
+				for(var i in { title:0, author:0, group:0 }) {
+					var str = prompt(i + " [" + sauce[i] + "]");
+					if(str)
+						sauce[i] = truncp(str);
+				}
+				var orig_comment = sauce.comment.slice();
 				sauce.comment.length = 0;
 				for(var i=0; i < lib.defs.max_comments; i++) {
-					var str = prompt("Comment " + i);
-					if(!str)
+					printf("Comment[%u] ('.' to end)", i);
+					var str;
+					if(i < orig_comment.length) {
+						str = prompt(" [" + orig_comment[i] + "]");
+						if(!str)
+							str = orig_comment[i];
+					} else
+						str = prompt("");
+					if(str == '.')
 						break;
-					sauce.comment.push(str);
+					sauce.comment.push(truncsp(str));
 				}
 				sauce.ice_color = !deny("Uses iCE (high-intensity background) colors");
 				var result = lib.write(file.name, sauce);
