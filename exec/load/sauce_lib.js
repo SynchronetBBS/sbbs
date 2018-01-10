@@ -44,6 +44,7 @@ const defs = {
 	version_length: 2,
 	trailer_length: 128,
 	comment_length: 64,
+	max_comments: 255,
 };
 
 // Pass either a filename or a File instance
@@ -111,6 +112,81 @@ function read(fname)
 		}
 	}
 	return obj;
+}
+
+function valueof(val)
+{
+	return val ? val : "";
+}
+
+// Pass either a filename or a File instance
+function write(fname, obj)
+{
+	var file;
+
+	if(typeof fname == 'object')
+		file = fname;
+	else {
+		file = new File(fname);
+		if(!file.open("r+b"))
+			return false;
+	}
+
+	var existing = this.read(file);
+	if(existing)
+		file.position = existing.filesize;
+	else
+		file.position = file.length;
+	obj.filesize = file.position;
+	file.truncate(obj.filesize);
+
+	// Do some convenience field parsing/conversions here
+	if(obj.ice_color == true)
+		obj.tflags |= defs.ansiflag.nonblink;
+	if(obj.datatype == defs.datatype.bin)
+		obj.filetype = obj.cols / 2;
+
+	file.write('\x1a');	// Ctrl-Z, CPM-EOF
+	if(obj.comment.length) {
+		file.write('COMNT');
+		for(var i in obj.comment)
+			file.printf("%-64s", valueof(obj.comment[i]));
+	}
+	file.write('SAUCE00');
+	file.printf("%-35.35s", valueof(obj.title));
+	file.printf("%-20.20s", valueof(obj.author));
+	file.printf("%-20.20s", valueof(obj.group));
+	// Use current date:
+	var now = new Date();
+	file.printf("%04u%02u%02u", now.getFullYear(), now.getMonth() + 1, now.getDate());
+	file.writeBin(obj.filesize);
+	file.writeBin(obj.datatype, 1);
+	file.writeBin(obj.filetype, 1);
+	file.writeBin(obj.tinfo1, 2);
+	file.writeBin(obj.tinfo2, 2);
+	file.writeBin(obj.tinfo3, 2);
+	file.writeBin(obj.tinfo4, 2);
+	file.writeBin(obj.comment.length, 1);
+	file.writeBin(obj.tflags, 1);
+	file.write(valueof(obj.tinfos), 22);
+	return true;
+}
+
+// Pass either a filename or a File instance
+function remove(fname)
+{
+	var file;
+
+	if(typeof fname == 'object')
+		file = fname;
+	else {
+		file = new File(fname);
+		if(!file.open("r+b"))
+			return false;
+	}
+
+	var obj = this.read(file);
+	return file.truncate(obj.filesize);
 }
 
 this;
