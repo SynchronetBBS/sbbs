@@ -129,7 +129,7 @@ function valid_shared_file(filename)
 		return false;
 	var data = file.read(sauce.filesize);
 	file.close();
-	var list = data.match(new RegExp('(.{1,' + lib.size + '})', 'g'));
+	var list = data.match(new RegExp('([\x00-\xff]{1,' + lib.size + '})', 'g'));
 	printf("%u avatars\r\n", list.length);
 //	print(JSON.stringify(list, null, 4));
 	for(var i in list)
