@@ -106,8 +106,11 @@ function read(fname)
 		if(file.read(defs.id_length) == 'COMNT') {
 			while(comments--) {
 				var line = file.read(defs.comment_length);
-				if(line)
-					obj.comment.push(truncsp(line));
+				if(!line)
+					continue;
+				var a = line.split('\n');	// Work-around for PabloDraw-Windows
+				for(var i in a)
+					obj.comment.push(truncsp(a[i]));
 			}
 		}
 	}
