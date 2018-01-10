@@ -83,7 +83,7 @@ function find_name(objs, name)
 function import_netuser_list(hdr, list)
 {
 	var objs = [];
-	var file = new File(this.netuser_fname(hdr.from_netaddr));
+	var file = new File(this.netuser_fname(hdr.from_net_addr));
 	if(file.open("r")) {
 		objs = file.iniGetAllObjects();
 		file.close();
@@ -109,13 +109,30 @@ function import_netuser_list(hdr, list)
 	return result;
 }
 
+function valid_shared_file(filename)
+{
+    var sauce = SAUCE.read(filename);
+    if(!sauce) {
+        alert(filename + " has no SAUCE!");
+        return false;
+    }
+    if(sauce.datatype != SAUCE.defs.datatype.bin
+		|| sauce.cols != lib.defs.width
+		|| (sauce.filesize%lib.size) != 0) {
+        alert(format("%s has invalid SAUCE! (datatype=%u cols=%u size=%u)"
+			,filename, sauce.datatype, sauce.cols, sauce.filesize));
+        return false;
+    }
+    return true;
+}
+
 function import_shared_file(hdr, body)
 {
 	var data = parse_file_msg(body);
 	if(!data)
 		return false;
 
-	var filename = format("%s.%s", hdr.msg_net_addr, file_getname(hdr.subject));
+	var filename = format("%s.%s", hdr.from_net_addr, file_getname(hdr.subject));
 	if(file_getext(filename).toLowerCase() != '.bin')
 		filename += '.bin';
 
@@ -127,18 +144,8 @@ function import_shared_file(hdr, body)
 	file.write(data);
 	file.close();
 	print(file.name + " created successfully");
-	var sauce = SAUCE.read(file.name);
-	if(!sauce) {
-		alert(file.name + " has no SAUCE!");
-		return false;
-	}
-	if(sauce.datatype != SAUCE.defs.datatype.bin
-		|| sauce.cols != lib.defs.width
-		|| (sauce.filesize%lib.size) != 0) {
-		alert(format("%s has invalid SAUCE! (datatype=%u cols=%u size=%u)"
-			,file.name, sauce.datatype, sauce.cols, sauce.filesize));
-		return false;
-	}
+	if(!valid_shared_file(file.name))
+	    return false;
 	var new_path = format("%s%s", lib.local_library(), filename);
 	var result = file_copy(file.name, new_path);
 	if(!result)
@@ -354,8 +361,11 @@ function main()
 					success = export_users(msgbase, realnames);
 				}
 				if(success && filename) {
-					printf("Exporting avatar file: %s\n", filename);
-					success = export_file(msgbase, filename);
+				    printf("Exporting avatar file: %s\n", filename);
+				    if(!valid_shared_file(filename))
+				        success = false;
+                    else
+					    success = export_file(msgbase, filename);
 				}
 				printf("%s\r\n", success ? "Successful" : "FAILED: " + msgbase.last_error);
 				break;
