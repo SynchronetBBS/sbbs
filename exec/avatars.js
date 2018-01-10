@@ -111,6 +111,10 @@ function import_netuser_list(hdr, list)
 
 function valid_shared_file(filename)
 {
+	if(!file_exists(filename)) {
+		alert(filename + " does not exist");
+		return false;
+	}
     var sauce = SAUCE.read(filename);
     if(!sauce) {
         alert(filename + " has no SAUCE!");
@@ -124,6 +128,12 @@ function valid_shared_file(filename)
 			,filename, sauce.datatype, sauce.cols, sauce.filesize));
         return false;
     }
+	for(var i in sauce.comment) {
+		if(strip_ctrl(sauce.comment[i]) != sauce.comment[i]) {
+			alert(format("%s has invalid SAUCE comment [%u]!", filename, i));
+			return false;
+		}
+	}
 	var file = new File(filename);
 	if(!file.open("rb"))
 		return false;
@@ -287,7 +297,11 @@ function export_file(msgbase, filename)
 	var data = file.read();
 	file.close();
 	data = LZString.compressToBase64(data);
-	var body = "bin-lz-begin\r\n";
+	var body = "";
+	body += "sauce-json-begin\r\n";
+	body += JSON.stringify(SAUCE.read(file.name), null, 1) + "\r\n";
+	body += "sauce-json-end\r\n";
+	body += "bin-lz-begin\r\n";
 	body += data.match(/([\x00-\xff]{1,72})/g).join("\r\n");
 	body += "\r\nbin-lz-end\r\n";
 	body += "--- " + js.exec_file + " " + REVISION + "\r\n";
@@ -350,7 +364,7 @@ function main()
 		var cmd = cmds[c].toLowerCase();
 		switch(cmd) {
 			case "import":
-				if(filename) {
+				if(filename && parseInt(optval[cmd])) {
 					printf("Importing %s for user #%u\r\n", filename, optval[cmd]);
 					var success = lib.import_file(optval[cmd], filename, offset);
 					printf("%s\r\n", success ? "Successful" : "FAILED!");
@@ -409,6 +423,22 @@ function main()
 			case "verify":
 				if(filename) {
 				    var success = valid_shared_file(filename);
+					print(success ? "Successful" : "FAILED");
+				}
+				break;
+			case "remove":
+				var usernum = parseInt(optval[cmd]);
+				if(usernum) {
+					printf("Removing user #%u avatar\n", usernum);
+					var success = lib.remove_localuser(usernum);
+					print(success ? "Successful" : "FAILED");
+				}
+				break;
+			case "enable":
+			case "disable":
+				var usernum = parseInt(optval[cmd]);
+				if(usernum) {
+					var success = lib.enable_localuser(usernum, cmd == "enable");
 					print(success ? "Successful" : "FAILED");
 				}
 				break;
