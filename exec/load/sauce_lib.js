@@ -83,6 +83,7 @@ function read(fname)
 	obj.tinfos = truncsp(file.read(22));
 
 	// Do some convenience field parsing/conversions here
+	obj.date = new Date(obj.date.substr(0, 4), parseInt(obj.date.substr(4,2))-1, obj.date.substr(6,2));
 	if(obj.datatype == defs.datatype.bin ||
 		(obj.datatype == defs.datatype.character
 			&& obj.filetype <= defs.filetype.ansimation)) {
