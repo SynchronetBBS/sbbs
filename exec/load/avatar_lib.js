@@ -33,11 +33,11 @@ function is_valid(buf)
 			switch(e) {
 				case '\r':
 				case '\n':
-				case '\a':
+				case '\x07':	// Beep/BEL ('\a')
 				case '\b':
 				case '\t':
 				case '\f':
-				case '\x1b':	// ESC
+				case '\x1b':	// ESC ('\e')
 				case '\xff':	// Telnet IAC
 					return true;
 			}
