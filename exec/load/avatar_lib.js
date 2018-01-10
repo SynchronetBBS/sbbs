@@ -60,6 +60,32 @@ function write_localuser(usernum, obj)
 	return result;
 }
 
+function enable_localuser(usernum, enabled)
+{
+	var file = new File(this.localuser_fname(usernum));
+	if(!file.open(file.exists ? 'r+':'w+')) {
+		return false;
+	}
+	var result;
+	if(!file.iniGetObject("avatar"))
+		result = false;
+	else
+		result = file.iniSetValue("avatar", "disabled", !enabled);
+	file.close();
+	return result;
+}
+
+function remove_localuser(usernum)
+{
+	var file = new File(this.localuser_fname(usernum));
+	if(!file.open(file.exists ? 'r+':'w+')) {
+		return false;
+	}
+	var result = file.iniRemoveSection("avatar");
+	file.close();
+	return result;
+}
+
 function write_netuser(username, netaddr, obj)
 {
 	var file = new File(this.netuser_fname(netaddr));
@@ -104,7 +130,7 @@ function read(usernum, username, netaddr)
 function update_localuser(usernum, data)
 {
 	var obj = read_localuser(usernum);
-	if(obj == false)
+	if(!obj)
 		obj = { created: new Date() };
 	obj.data = data;
 	obj.updated = new Date();
@@ -122,11 +148,19 @@ function import_file(usernum, filename, offset)
 	return update_localuser(usernum, base64_encode(graphic.BIN));
 }
 
+function enabled(obj)
+{
+	return typeof obj == 'object' 
+		&& typeof obj.data == 'string'
+		&& obj.data.length
+		&& !obj.disabled;
+}
+
 // Uses Graphic.draw() at an absolute screen coordinate
 function draw(usernum, username, netaddr, above, right)
 {
 	var avatar = this.read(usernum, username, netaddr);
-	if(!avatar)
+	if(!enabled(avatar))
 		return false;
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
@@ -154,14 +188,14 @@ function draw(usernum, username, netaddr, above, right)
 function show(usernum, username, netaddr)
 {
 	var avatar = this.read(usernum, username, netaddr);
-	if(!avatar)
+	if(!enabled(avatar))
 		return false;
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
 	graphic.attr_mask = ~graphic.defs.BLINK;	// Disable blink attribute (consider iCE colors?)
 	try {
 		graphic.BIN = base64_decode([avatar.data]);
-		console.write(graphic.ANSI);
+		console.print(graphic.ANSI);
 	} catch(e) {
 		return false;
 	};
