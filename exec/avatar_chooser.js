@@ -339,6 +339,7 @@ function CollectionLister(dir, parent_frame) {
 			function (e, i) {
 				if (e.search(EXCLUDE_FILES) > -1) return;
 				const sauce = sauce_lib.read(e);
+				if (!sauce) return;
 				const ti = state.tree.addItem(
 					sauce.title.length ? sauce.title : 'Unknown',
 					function () {
@@ -483,7 +484,7 @@ function MainMenu(parent_frame) {
 		state.tree.addItem(
 			'Upload an avatar', function () {
 				console.clear(WHITE);
-				console.putmsg('Your avatar must be 10 x 6 characters in size and saved in binary format.');
+				console.putmsg('Your avatar must be 10 x 6 characters in size and saved in binary format.\r\n');
 				if (upload_avatar()) {
 					console.putmsg('Your avatar has been updated.');
 				} else {
