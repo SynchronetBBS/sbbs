@@ -151,7 +151,8 @@ function import_file(usernum, filename, offset)
 
 function enabled(obj)
 {
-	return typeof obj == 'object' 
+	return obj
+		&& typeof obj == 'object' 
 		&& typeof obj.data == 'string'
 		&& obj.data.length
 		&& !obj.disabled;
