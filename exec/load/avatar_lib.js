@@ -26,6 +26,7 @@ function netuser_fname(netaddr)
 
 function is_valid(buf)
 {
+	load("cga_defs.js");
 	if(!buf || !buf.length || buf.length != this.size)
 		return false;
 	var invalid = buf.split('').filter(function (e,i) { 
