@@ -1,10 +1,21 @@
 // $Id$
 
 var REVISION = "$Revision$".split(' ')[1];
+
 load('sbbsdefs.js');
 load("lz-string.js");
 var lib = load({}, 'avatar_lib.js');
 var SAUCE = load({}, 'sauce_lib.js');
+
+var export_freq = 7;	// minimum days between exports
+
+var options=load({}, "modopts.js", "avatars");
+if(!options)
+	options = {};
+if(!options.sub)
+    options.sub="syncdata";
+if(options && options.export_freq > 0)
+	export_freq = options.export_freq;
 
 const user_avatars = 'SBBS User Avatars';
 const shared_avatars = 'SBBS Shared Avatars';
@@ -255,7 +266,7 @@ function decompress_list(list)
 	return new_list;
 }
 
-function export_users(msgbase, realnames)
+function export_users(msgbase, realnames, all)
 {
 	var last_user = system.lastuser;
 	var list = {};
@@ -270,18 +281,39 @@ function export_users(msgbase, realnames)
 		if(u.settings&USER_DELETED)
 			continue;
 		var avatar = lib.read_localuser(n);
-		if(!avatar)
+		if(avatar.export_count == undefined)
+			avatar.export_count = 0;
+		if(!lib.enabled(avatar)) {
 			continue;
-		var data = LZString.compressToBase64(base64_decode(avatar.data));
-		if(!list[data])
-			list[data] = [];
-		list[data].push(u.alias);
-		if(realnames)
-			list[data].push(u.name);
-		exported++;
+		}
+		var last_exported = 0;
+		if(avatar.last_exported)
+			last_exported = new Date(avatar.last_exported);
+		var updated;
+		if(avatar.updated)
+			updated = new Date(avatar.updated);
+		else
+			updated = new Date(avatar.created);
+		if(all == true
+			|| updated > last_exported
+			|| new Date() - last_exported >= export_freq * (24*60*60*1000)) {
+			printf("Exporting avatar for user #%u\r\n", n);
+			var data = LZString.compressToBase64(base64_decode(avatar.data));
+			if(!list[data])
+				list[data] = [];
+			list[data].push(u.alias);
+			if(realnames)
+				list[data].push(u.name);
+			avatar.last_exported = new Date();
+			avatar.export_count++;
+			lib.write_localuser(n, avatar);
+			exported++;
+		}
 	}
-	if(!exported)
+	if(!exported) {
+		print("No avatars to export");
 		return true;	// Nothing to export
+	}
 	for(var i in list)
 		list[i].sort();
 	var body = "json-begin\r\n";
@@ -379,7 +411,7 @@ function main()
 				printf("%s\r\n", success ? "Successful" : "FAILED!");
 				break;
 			}
-			var msgbase = new MsgBase(optval[cmd]);
+			var msgbase = new MsgBase(optval[cmd] ? optval[cmd] : options.sub);
 			print("Opening msgbase " + msgbase.file);
 			if(!msgbase.open()) {
 				alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
@@ -389,7 +421,7 @@ function main()
 			msgbase.close();
 			break;
 		case "export":
-			var msgbase = new MsgBase(optval[cmd]);
+			var msgbase = new MsgBase(optval[cmd] ? optval[cmd] : options.sub);
 			print("Opening msgbase " + msgbase.file);
 			if(!msgbase.open()) {
 				alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
@@ -398,7 +430,7 @@ function main()
 			var success = true;
 			if(!files.length) {
 				printf("Exporting user avatars\n");
-				success = export_users(msgbase, realnames);
+				success = export_users(msgbase, realnames, all);
 			}
 			for(var i in files) {
 				printf("Exporting avatar file: %s\n", files[i]);
