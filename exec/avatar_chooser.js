@@ -483,7 +483,7 @@ function MainMenu(parent_frame) {
 		state.tree.addItem(
 			'Upload an avatar', function () {
 				console.clear(WHITE);
-				console.putmsg('Comments go here');
+				console.putmsg('Your avatar must be 10 x 6 characters in size and saved in binary format.');
 				if (upload_avatar()) {
 					console.putmsg('Your avatar has been updated.');
 				} else {
