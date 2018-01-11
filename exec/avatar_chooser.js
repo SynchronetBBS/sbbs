@@ -497,21 +497,44 @@ function MainMenu(parent_frame) {
 
 }
 
-const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, 0);
-frame.transparent = true;
-frame.v_scroll = true;
-frame.drawBorder(BORDER, { x : 5, y : 1, attr : TITLE_COLOR, text: TITLE });
-frame.gotoxy(frame.x + frame.width - 20, frame.y + frame.height - 1);
-frame.putmsg(ascii(180) + QUIT_TEXT + ascii(195));
-frame.open();
+var sys_status, console_attr;
 
-const menu = new MainMenu(frame);
-menu.open();
-while (true) {
-	var i = console.inkey(K_NONE);
-	if (i !== '' && !menu.getcmd(i)) break;
-	menu.cycle();
-	if (frame.cycle()) bury_cursor();
+function init() {
+	console.clear(LIGHTGRAY);
+	sys_status = bbs.sys_status;
+	console_attr = console.attributes;
+	bbs.sys_status|=SS_MOFF;
 }
-menu.close();
-frame.close();
+
+function main() {
+
+	const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, 0);
+	frame.transparent = true;
+	frame.v_scroll = true;
+	frame.drawBorder(BORDER, { x : 5, y : 1, attr : TITLE_COLOR, text: TITLE });
+	frame.gotoxy(frame.x + frame.width - 20, frame.y + frame.height - 1);
+	frame.putmsg(ascii(180) + QUIT_TEXT + ascii(195));
+	frame.open();
+
+	const menu = new MainMenu(frame);
+	menu.open();
+	while (true) {
+		var i = console.inkey(K_NONE);
+		if (i !== '' && !menu.getcmd(i)) break;
+		menu.cycle();
+		if (frame.cycle()) bury_cursor();
+	}
+	menu.close();
+	frame.close();
+
+}
+
+function clean_up() {
+	bbs.sys_status = sys_status;
+	console.attributes = console_attr;
+	console.clear();
+}
+
+init();
+main();
+clean_up();
