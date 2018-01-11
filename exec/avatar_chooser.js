@@ -7,9 +7,6 @@ load('event-timer.js');
 const sauce_lib = load({}, 'sauce_lib.js');
 const avatar_lib = load({}, 'avatar_lib.js');
 
-const AVATAR_WIDTH = 10;
-const AVATAR_HEIGHT = 6;
-const AVATAR_SIZE = AVATAR_WIDTH * AVATAR_HEIGHT * 2;
 const BORDER = [ BLUE, LIGHTBLUE, CYAN, LIGHTCYAN, WHITE ];
 const TITLE = 'Avatar Settings';
 const TITLE_COLOR = WHITE;
@@ -116,7 +113,7 @@ function CollectionBrowser(filename, parent_frame) {
 		const sauce = sauce_lib.read(filename);
 		collection.title = sauce.title;
 		collection.descriptions = sauce.comment;
-		collection.count = Math.floor(sauce.rows / AVATAR_HEIGHT);
+		collection.count = Math.floor(sauce.rows / avatar_lib.defs.height);
 	}
 
 	function draw_collection(offset) {
@@ -128,11 +125,11 @@ function CollectionBrowser(filename, parent_frame) {
 
 		var x = 1, y = 2;
 		for (var a = 0; a < collection.count; a++) {
-			frames.container.blit(avatars.substr(a * AVATAR_SIZE, AVATAR_SIZE), AVATAR_WIDTH, AVATAR_HEIGHT, x, y, collection.descriptions[a], WHITE);
-			x += AVATAR_WIDTH + 2;
-			if (x + AVATAR_WIDTH >= frames.container.x + frames.container.width) {
+			frames.container.blit(avatars.substr(a * avatar_lib.size, avatar_lib.size), avatar_lib.defs.width, avatar_lib.defs.height, x, y, collection.descriptions[a], WHITE);
+			x += avatar_lib.defs.width + 2;
+			if (x + avatar_lib.defs.width >= frames.container.x + frames.container.width) {
 				x = 1;
-				y += AVATAR_HEIGHT + 2;
+				y += avatar_lib.defs.height + 2;
 			}
 		}
 
@@ -145,9 +142,9 @@ function CollectionBrowser(filename, parent_frame) {
 		var col = state.selected % state.cols;
 		var row = Math.floor(state.selected / state.cols);
 		// Actual x, y coordinates of avatar graphic within frames.container
-		var x = 1 + (col * AVATAR_WIDTH) + (2 * col);
-		var y = 2 + (row * AVATAR_HEIGHT) + (2 * row);
-		if (y - 1 + AVATAR_HEIGHT + 3 > frames.container.height) {
+		var x = 1 + (col * avatar_lib.defs.width) + (2 * col);
+		var y = 2 + (row * avatar_lib.defs.height) + (2 * row);
+		if (y - 1 + avatar_lib.defs.height + 3 > frames.container.height) {
 			frames.container.scrollTo(0, y - 1);
 		} else if (y - 1 < frames.container.offset.y) {
 			frames.container.scrollTo(0, y - 1);
@@ -179,12 +176,12 @@ function CollectionBrowser(filename, parent_frame) {
 		frames.container.checkbounds = false;
 		frames.container.v_scroll = true;
 
-		frames.highlight = new Frame(frames.container.x + 1, frames.container.y + 1, AVATAR_WIDTH + 2, AVATAR_HEIGHT + 3, WHITE, frames.container);
+		frames.highlight = new Frame(frames.container.x + 1, frames.container.y + 1, avatar_lib.defs.width + 2, avatar_lib.defs.height + 3, WHITE, frames.container);
 		frames.highlight.transparent = true;
 		frames.highlight.drawBorder(BORDER);
 
-		state.cols = Math.floor((frames.container.width - 3) / (AVATAR_WIDTH + 2));
-		state.rows = Math.floor((frames.container.height - 2) / (AVATAR_HEIGHT + 2));
+		state.cols = Math.floor((frames.container.width - 3) / (avatar_lib.defs.width + 2));
+		state.rows = Math.floor((frames.container.height - 2) / (avatar_lib.defs.height + 2));
 
 		frames.scrollbar = new ScrollBar(frames.container);
 
@@ -264,7 +261,7 @@ function CollectionLister(dir, parent_frame) {
 		frames.info.clear();
 		frames.info.putmsg('Author: ' + (sauce.author.length ? sauce.author : 'Unknown') + '\r\n');
 		frames.info.putmsg('Group: ' + (sauce.group.length ? sauce.group : 'Unknown') + '\r\n');
-		frames.info.putmsg('Avatars: ' + Math.floor(sauce.rows / AVATAR_HEIGHT) + '\r\n');
+		frames.info.putmsg('Avatars: ' + Math.floor(sauce.rows / avatar_lib.defs.height) + '\r\n');
 		frames.info.putmsg('ICE Colors: ' + (sauce.ice_color ? 'Yes' : 'No') + '\r\n');
 		frames.info.putmsg('Updated: ' + sauce.date.toLocaleDateString());
 	}
@@ -327,7 +324,7 @@ function CollectionLister(dir, parent_frame) {
 		f.open('rb');
 		const contents = f.read(); 
 		f.close();
-		return contents.substr(i * AVATAR_SIZE, AVATAR_SIZE);
+		return contents.substr(i * avatar_lib.size, avatar_lib.size);
 	}
 
 	this.getcmd = function (cmd) {
@@ -393,7 +390,7 @@ function MainMenu(parent_frame) {
 		if (user_avatar !== null) {
 			frames.user_avatar.clear();
 			frames.user_avatar.drawBorder(BORDER);
-			frames.user_avatar.blit(base64_decode(user_avatar.data), AVATAR_WIDTH, AVATAR_HEIGHT, 1, 1, 'My Avatar', WHITE);
+			frames.user_avatar.blit(base64_decode(user_avatar.data), avatar_lib.defs.width, avatar_lib.defs.height, 1, 1, 'My Avatar', WHITE);
 		}
 	}
 
@@ -419,10 +416,10 @@ function MainMenu(parent_frame) {
 		);
 
 		frames.user_avatar = new Frame(
-			frames.parent.x + frames.parent.width - 1 - AVATAR_WIDTH - 2,
-			frames.parent.y + frames.parent.height - 1 - AVATAR_HEIGHT - 3,
-			AVATAR_WIDTH + 2,
-			AVATAR_HEIGHT + 3,
+			frames.parent.x + frames.parent.width - 1 - avatar_lib.defs.width - 2,
+			frames.parent.y + frames.parent.height - 1 - avatar_lib.defs.height - 3,
+			avatar_lib.defs.width + 2,
+			avatar_lib.defs.height + 3,
 			15,
 			frames.parent
 		);
