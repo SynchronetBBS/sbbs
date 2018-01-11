@@ -186,6 +186,9 @@ if_true
 cmdkey A
 	auto_message
 	end_cmd
+cmdkey /A
+	exec_bin avatar_chooser
+	end_cmd
 
 cmdkey B
 	print "\r\nchBrowse/New Message Scan\r\n"
