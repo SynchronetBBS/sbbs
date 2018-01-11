@@ -387,7 +387,7 @@ function MainMenu(parent_frame) {
 
 	function load_user_avatar() {
 		var user_avatar = avatar_lib.read_localuser(user.number);
-		if (user_avatar !== null) {
+		if (user_avatar) {
 			frames.user_avatar.clear();
 			frames.user_avatar.drawBorder(BORDER);
 			frames.user_avatar.blit(base64_decode(user_avatar.data), avatar_lib.defs.width, avatar_lib.defs.height, 1, 1, 'My Avatar', WHITE);
