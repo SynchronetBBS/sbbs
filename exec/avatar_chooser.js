@@ -500,10 +500,10 @@ function MainMenu(parent_frame) {
 var sys_status, console_attr;
 
 function init() {
-	console.clear(LIGHTGRAY);
 	sys_status = bbs.sys_status;
 	console_attr = console.attributes;
 	bbs.sys_status|=SS_MOFF;
+	console.clear(LIGHTGRAY);
 }
 
 function main() {
