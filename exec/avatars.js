@@ -278,6 +278,8 @@ function export_users(msgbase, realnames)
 		if(realnames)
 			list[data].push(u.name);
 	}
+	if(!list.length)
+		return true;	// Nothing to export
 	for(var i in list)
 		list[i].sort();
 	var body = "json-begin\r\n";
