@@ -109,10 +109,19 @@ function download_avatar() {
 		};
 		sauce_lib.write(fn, sauce);
 		bbs.send_file(fn);
+		file_remove(fn);
 		return true;
 	} else {
 		return false;
 	}
+}
+
+function upload_avatar() {
+	const fn = system.temp_dir + format('avatar-%04d.bin', user.number);
+	bbs.receive_file(fn);
+	const success = avatar_lib.import_file(user.number, fn, 0);
+	file_remove(fn);
+	return success;
 }
 
 function CollectionBrowser(filename, parent_frame) {
@@ -473,7 +482,15 @@ function MainMenu(parent_frame) {
 		);
 		state.tree.addItem(
 			'Upload an avatar', function () {
-				// placeholder
+				console.clear(WHITE);
+				console.putmsg('Comments go here');
+				if (upload_avatar()) {
+					console.putmsg('Your avatar has been updated.');
+				} else {
+					console.putmsg('An error was encountered.  Your avatar has nto been updated.');
+				}
+				console.clear(LIGHTGRAY);
+				frames.parent.invalidate();
 			}
 		);
 		state.tree.addItem(
