@@ -107,125 +107,132 @@ load("frame.js");
 load("tree.js");
 load("funclib.js");
 
+const characterSets = [
+	[ 49, 50, 51, 52, 53, 54, 55, 56, 57, 48 ],
+	[ 218, 191, 192, 217, 196, 179, 195, 180, 193, 194 ],
+	[ 201, 187, 200, 188, 205, 186, 204, 185, 202, 203 ],
+	[ 213, 184, 212, 190, 205, 179, 198, 181, 207, 209 ],
+	[ 214, 183, 211, 189, 196, 199, 199, 182, 208, 210 ],
+	[ 197, 206, 216, 215, 128, 129, 130, 131, 132, 133 ],
+	[ 176, 177, 178, 219, 223, 220, 221, 222, 254, 134 ],
+	[ 135, 136, 137, 138, 139, 140, 141, 142, 143, 144 ],
+	[ 145, 146, 147, 148, 149, 150, 151, 152, 153, 154 ],
+	[ 155, 156, 157, 158, 159, 160, 161, 162, 163, 164 ],
+	[ 165, 166, 167, 168, 171, 172, 173, 174, 175, 224 ],
+	[ 225, 226, 227, 228, 229, 230, 231, 232, 233, 234 ],
+	[ 235, 236, 237, 238, 239, 240, 241, 242, 243, 244 ],
+	[ 245, 246, 247, 248, 249, 250, 251, 252, 253, 253 ]
+];
+
+// Map sbbsdefs.js console attributes to values usable in ANSI sequences
+const attrMap = {};
+attrMap[HIGH] = 1;
+attrMap[BLINK] = 5;
+attrMap[BLACK] = 30;
+attrMap[RED] = 31;
+attrMap[GREEN] = 32;
+attrMap[BROWN] = 33;
+attrMap[BLUE] = 34;
+attrMap[MAGENTA] = 35;
+attrMap[CYAN] = 36;
+attrMap[LIGHTGRAY] = 37;
+attrMap[DARKGRAY] = 30;
+attrMap[LIGHTRED] = 31;
+attrMap[LIGHTGREEN] = 32;
+attrMap[YELLOW] = 33;
+attrMap[LIGHTBLUE] = 34;
+attrMap[LIGHTMAGENTA] = 35;
+attrMap[LIGHTCYAN] = 36;
+attrMap[WHITE] = 37;
+attrMap[BG_BLACK] = 40;
+attrMap[BG_RED] = 41;
+attrMap[BG_GREEN] = 42;
+attrMap[BG_BROWN] = 43;
+attrMap[BG_BLUE] = 44;
+attrMap[BG_MAGENTA] = 45;
+attrMap[BG_CYAN] = 46;
+attrMap[BG_LIGHTGRAY] = 47;
+
 var ANSIEdit = function(options) {
 
 	var tree,
 		frames = {},
-		self = this,
-		characterSets = [
-			[ "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" ],
-			[ 218, 191, 192, 217, 196, 179, 195, 180, 193, 194 ],
-			[ 201, 187, 200, 188, 205, 186, 204, 185, 202, 203 ],
-			[ 213, 184, 212, 190, 205, 179, 198, 181, 207, 209 ],
-			[ 214, 183, 211, 189, 196, 199, 199, 182, 208, 210 ],
-			[ 197, 206, 216, 215, 128, 129, 130, 131, 132, 133 ],
-			[ 176, 177, 178, 219, 223, 220, 221, 222, 254, 134 ],
-			[ 135, 136, 137, 138, 139, 140, 141, 142, 143, 144 ],
-			[ 145, 146, 147, 148, 149, 150, 151, 152, 153, 154 ],
-			[ 155, 156, 157, 158, 159, 160, 161, 162, 163, 164 ],
-			[ 165, 166, 167, 168, 171, 172, 173, 174, 175, 224 ],
-			[ 225, 226, 227, 228, 229, 230, 231, 232, 233, 234 ],
-			[ 235, 236, 237, 238, 239, 240, 241, 242, 243, 244 ],
-			[ 245, 246, 247, 248, 249, 250, 251, 252, 253, 253 ]
-		];
+		self = this;
 
 	var	state = {
-		'attr' : (typeof options.attr != "number") ? LIGHTGRAY : options.attr,
-		'inMenu' : false,
-		'cursor' : { 'x' : 1, 'y' : 1 },
-		'lastCursor' : { 'x' : 0, 'y' : 0 },
-		'charSet' : 6,
+		attr : (typeof options.attr != 'number') ? LIGHTGRAY : options.attr,
+		inMenu : false,
+		cursor : { 'x' : 1, 'y' : 1 },
+		lastCursor : { 'x' : 0, 'y' : 0 },
+		charSet : 6,
 	};
 
 	var settings = {
-		'vScroll' : (typeof options.vScroll != "boolean") ? false : options.vScroll,
-		'hScroll' : (typeof options.hScroll != "boolean") ? false : options.hScroll,
-		'showPosition' : (typeof options.showPosition != "boolean") ? false : true,
-		'menuHeading' : (typeof options.menuHeading != "string") ? "ANSI Editor" : options.menuHeading
+		vScroll : typeof options.vScroll != 'boolean' ? false : options.vScroll,
+		hScroll : typeof options.hScroll != 'boolean' ? false : options.hScroll,
+		showPosition : typeof options.showPosition != 'boolean' ? false : true,
+		menuHeading : (
+			typeof options.menuHeading != 'string'
+			? 'ANSI Editor'
+			: options.menuHeading
+		)
 	};
 
-	// Map sbbsdefs.js console attributes to values usable in ANSI sequences
-	var attrMap = {};
-		attrMap[HIGH] = 1;
-		attrMap[BLINK] = 5;
-		attrMap[BLACK] = 30;
-		attrMap[RED] = 31;
-		attrMap[GREEN] = 32;
-		attrMap[BROWN] = 33;
-		attrMap[BLUE] = 34;
-		attrMap[MAGENTA] = 35;
-		attrMap[CYAN] = 36;
-		attrMap[LIGHTGRAY] = 37;
-		attrMap[DARKGRAY] = attrMap[BLACK];
-		attrMap[LIGHTRED] = attrMap[RED];
-		attrMap[LIGHTGREEN] = attrMap[GREEN];
-		attrMap[YELLOW] = attrMap[BROWN];
-		attrMap[LIGHTBLUE] = attrMap[BLUE];
-		attrMap[LIGHTMAGENTA] = attrMap[MAGENTA];
-		attrMap[LIGHTCYAN] = attrMap[CYAN];
-		attrMap[WHITE] = attrMap[LIGHTGRAY];
-		attrMap[BG_BLACK] = 40;
-		attrMap[BG_RED] = 41;
-		attrMap[BG_GREEN] = 42;
-		attrMap[BG_BROWN] = 43;
-		attrMap[BG_BLUE] = 44;
-		attrMap[BG_MAGENTA] = 45;
-		attrMap[BG_CYAN] = 46;
-		attrMap[BG_LIGHTGRAY] = 47;
+	function initFrames() {
 
-	var initFrames = function() {
+		if (typeof options.canvas_width !== 'number') options.canvas_width = options.width;
+		if (typeof options.canvas_height !== 'number') options.canvas_height = options.height - 1;
 
 		frames.top = new Frame(
 			options.x,
 			options.y,
 			options.width,
 			options.height,
-			LIGHTGRAY,
+			BG_BLUE|LIGHTGRAY,
 			options.parentFrame
 		);
+		frames.top.checkbounds = false;
 
+		if (options.width > options.canvas_width) {
+			var cx = options.x + Math.floor((options.width - options.canvas_width) / 2)
+		} else {
+			var cx = frames.top.x
+		}
+		if (options.height - 1 > options.canvas_height) {
+			var cy = options.y + Math.floor((options.height - options.canvas_height) / 2)
+		} else {
+			var cy = frames.top.y;
+		}
 		frames.canvas = new Frame(
-			frames.top.x,
-			frames.top.y,
-			frames.top.width,
-			frames.top.height - 1,
-			LIGHTGRAY,
-			frames.top
+			cx, cy,
+			options.canvas_width, options.canvas_height,
+			LIGHTGRAY, frames.top
 		);
 		frames.canvas.v_scroll = settings.vScroll;
 		frames.canvas.h_scroll = settings.hScroll;
 
 		frames.charSet = new Frame(
-			frames.top.x,
-			frames.canvas.y + frames.canvas.height,
-			50,
-			1,
-			state.attr,
-			frames.top
+			frames.top.x, frames.top.y + frames.top.height - 1,
+			frames.top.width, 1,
+			state.attr, frames.top
 		);
 
-		if(settings.showPosition) {
+		if (settings.showPosition) {
 			frames.position = new Frame(
-				frames.charSet.x + frames.charSet.width + 1,
-				frames.charSet.y,
-				frames.top.width - frames.charSet.width - 1,
-				1,
-				state.attr,
-				frames.top
+				frames.charSet.x + frames.charSet.width + 1, frames.charSet.y,
+				frames.top.width - frames.charSet.width - 1, 1,
+				state.attr, frames.top
 			);
 		}
 
 		frames.menu = new Frame(
-			Math.floor((frames.top.width - 28) / 2),
-			frames.canvas.y + 1,
-			28,
-			frames.canvas.height - 2,
-			BG_BLUE|WHITE,
-			frames.top
+			Math.floor((frames.top.width - 28) / 2), frames.top.y + 1,
+			28, frames.top.height - 2,
+			BG_BLUE|WHITE, frames.top
 		);
 		frames.menu.center(settings.menuHeading);
 		frames.menu.gotoxy(1, frames.menu.height);
-		frames.menu.center("Press <TAB> to exit");
+		frames.menu.center('Press <TAB> to exit');
 
 		frames.subMenu = new Frame(
 			frames.menu.x + 1,
@@ -238,108 +245,109 @@ var ANSIEdit = function(options) {
 
 	}
 
-	var initMenu = function() {
+	function initMenu() {
 		tree = new Tree(frames.subMenu);
 		tree.colors.fg = WHITE;
 		tree.colors.lfg = WHITE;
 		tree.colors.lbg = BG_CYAN;
 		tree.colors.tfg = LIGHTCYAN;
 		tree.colors.xfg = LIGHTCYAN;
-		tree.addItem("Color Palette", setColour);
-		var charSetTree = tree.addTree("Choose Character Set");
-		charSetTree.addItem(characterSets[0].join(" "), drawCharSet, 0);
-		for(var c = 1; c < characterSets.length; c++) {
-			var line = [];
-			for(var cc in characterSets[c])
-				line.push(ascii(characterSets[c][cc]));
-			charSetTree.addItem(line.join(" "), drawCharSet, c);
-		}
-		var downloadTree = tree.addTree("Download this ANSI");
-		downloadTree.addItem(" Binary", download, "bin");
-		downloadTree.addItem(" ASCII", download, "ascii");
-		downloadTree.addItem(" ANSI", download, "ansi");
-		tree.addItem("Clear the Canvas", self.clear);
+		tree.addItem('Color Palette', setColour);
+		var charSetTree = tree.addTree('Choose Character Set');
+		characterSets.forEach(
+			function (e, i) {
+				var line = e.map(function (ee) { return ascii(ee); });
+				charSetTree.addItem(line.join(" "), drawCharSet, i);
+			}
+		);
+		var downloadTree = tree.addTree('Download this ANSI');
+		downloadTree.addItem(' Binary', download, 'bin');
+		downloadTree.addItem(' ASCII', download, 'ascii');
+		downloadTree.addItem(' ANSI', download, 'ansi');
+		tree.addItem('Clear the Canvas', self.clear);
 		tree.open();
 	}
 
-	var setColour = function() {
+	function setColour() {
 		state.attr = colorPicker(
-			frames.menu.x - 4,
-			Math.floor((frames.menu.height - 6) / 2),
+			frames.top.x + Math.floor((frames.top.width - 36) / 2), //frames.menu.x - 4,
+			frames.top.y + Math.floor((frames.top.height - 6) / 2),
 			frames.menu,
 			state.attr
 		);
 		drawCharSet();
-		return "DONE";
+		return 'DONE'; // wat?
 	}
 
-	var drawCharSet = function(n) {
-		if(typeof n != "undefined")
-			state.charSet = n;
+	function drawCharSet(n) {
+		if (typeof n != 'undefined') state.charSet = n;
 		frames.charSet.attr = state.attr;
 		frames.charSet.clear();
-		for(var c = 0; c < characterSets[state.charSet].length; c++)
-			frames.charSet.putmsg(((c+1)%10) + ":" + ascii(characterSets[state.charSet][c]) + " ");
-		frames.charSet.putmsg("<TAB> menu");
-		return "DONE";
+		characterSets[state.charSet].forEach(
+			function (e, i) {
+				frames.charSet.putmsg(((i+1)%10) + ':' + ascii(e) + ' ');
+			}
+		);
+		frames.charSet.putmsg('<TAB> menu');
+		return 'DONE'; // wat?
 	}
 
-	var saveAscii = function() {
+	function saveAscii() {
 		var lines = [];
 		log(frames.canvas.data_width);
-		for(var y = 0; y < frames.canvas.data_height; y++) {
+		for (var y = 0; y < frames.canvas.data_height; y++) {
 			var line = "";
-			for(var x = 0; x < frames.canvas.data_width; x++) {
+			for (var x = 0; x < frames.canvas.data_width; x++) {
 				var ch = frames.canvas.getData(x, y);
-				line += (typeof ch.ch == "undefined" || ch.ch == "") ? " " : ch.ch;
+				line += (
+					(typeof ch.ch == 'undefined' || ch.ch == '') ? ' ' : ch.ch
+				);
 			}
 			lines.push(line);
 		}
-		var fn = system.data_dir + format("user/%04u.asc", user.number);
+		var fn = system.data_dir + format('user/%04u.asc', user.number);
 		var f = new File(fn);
-		f.open("w");
+		f.open('w');
 		f.writeAll(lines);
 		f.close();
 		return fn;
 	}
 
-	var saveAnsi = function() {
+	function saveAnsi() {
 		var fgmask = (1<<0)|(1<<1)|(1<<2)|(1<<3);
 		var bgmask = (1<<4)|(1<<5)|(1<<6);
 		var lines = [], fg = 7, bg = 0, hi = 0;
-		var line = format("%s[%s;%s;%sm", ascii(27), hi, fg, bg);
-		for(var y = 0; y < frames.canvas.data_height; y++) {
-			if(y > 0)
-				line = "";
+		var line = format('%s[%s;%s;%sm', ascii(27), hi, fg, bg);
+		for (var y = 0; y < frames.canvas.data_height; y++) {
+			if (y > 0) line = '';
 			var blanks = 0;
-			for(var x = 0; x < frames.canvas.data_width; x++) {
+			for (var x = 0; x < frames.canvas.data_width; x++) {
 				var ch = frames.canvas.getData(x, y);
-				if(typeof ch.attr != "undefined") {
+				if (typeof ch.attr != 'undefined') {
 					var sequence = [];
-					if((ch.attr&fgmask) != fg) {
+					if ((ch.attr&fgmask) != fg) {
 						fg = (ch.attr&fgmask);
-						if(fg > 7 && hi == 0) {
+						if (fg > 7 && hi == 0) {
 							hi = 1;
 							sequence.push(hi);
-						} else if(fg < 8 && hi == 1) {
+						} else if (fg < 8 && hi == 1) {
 							hi = 0;
 							sequence.push(hi);
 						}
 						sequence.push(attrMap[fg]);
 					}
-					if((ch.attr&bgmask) != bg) {
+					if ((ch.attr&bgmask) != bg) {
 						bg = (ch.attr&bgmask);
 						sequence.push((bg == 0) ? 40 : attrMap[bg]);
 					}
-					sequence = format("%s[%sm", ascii(27), sequence.join(";"));
-					if(sequence.length > 3)
-						line += sequence;
+					sequence = format('%s[%sm', ascii(27), sequence.join(';'));
+					if (sequence.length > 3) line += sequence;
 				}
-				if(typeof ch.ch == "undefined") {
+				if (typeof ch.ch == 'undefined') {
 					blanks++;
 				} else {
-					if(blanks > 0) {
-						line += ascii(27) + "[" + blanks + "C";
+					if (blanks > 0) {
+						line += ascii(27) + '[' + blanks + 'C';
 						blanks = 0;
 					}
 					line += ch.ch;
@@ -347,51 +355,52 @@ var ANSIEdit = function(options) {
 			}
 			lines.push(line);
 		}
-		var fn = system.data_dir + format("user/%04u.ans", user.number);
+		var fn = system.data_dir + format('user/%04u.ans', user.number);
 		var f = new File(fn);
-		f.open("w");
+		f.open('w');
 		f.writeAll(lines);
 		f.close();
 		return fn;
 	}
 
-	var saveBin = function() {
-		var f = system.data_dir + format("user/%04u.bin", user.number);
+	function saveBin() {
+		var f = system.data_dir + format('user/%04u.bin', user.number);
 		frames.canvas.screenShot(f, false);
 		return f;
 	}
 
-	var download = function(type) {
-		switch(type) {
-			case "bin":
+	function download(type) {
+		switch (type) {
+			case 'bin':
 				var f = saveBin();
 				break;
-			case "ansi":
+			case 'ansi':
 				var f = saveAnsi();
 				break;
-			case "ascii":
+			case 'ascii':
 				var f = saveAscii();
 				break;
 			default:
 				break;
 		}
-		if(typeof f != "undefined") {
+		if (typeof f != 'undefined') {
 			console.clear(LIGHTGRAY);
 			bbs.send_file(f, user.download_protocol);
-			if(typeof frames.top.parent != "undefined")
+			if (typeof frames.top.parent != "undefined") {
 				frames.top.parent.invalidate();
-			else
+			} else {
 				frames.top.invalidate();
+			}
 		}
-		return "DONE";
+		return 'DONE'; // wat?
 	}
 
-	var raiseMenu = function() {
+	function raiseMenu() {
 		state.inMenu = true;
 		frames.menu.top();
 	}
 
-	var lowerMenu = function() {
+	function lowerMenu() {
 		state.inMenu = false;
 		frames.menu.bottom();
 		self.cycle(true);
@@ -411,8 +420,9 @@ var ANSIEdit = function(options) {
 	this.close = function() {
 		tree.close();
 		frames.top.close();
-		if(typeof frames.top.parent != "undefined")
+		if (typeof frames.top.parent != 'undefined') {
 			frames.top.parent.invalidate();
+		}
 		frames.top.delete();
 	}
 
@@ -420,45 +430,49 @@ var ANSIEdit = function(options) {
 		frames.canvas.clear();
 		state.cursor.x = frames.canvas.x;
 		state.cursor.y = frames.canvas.y;
-		return "CLEAR";
+		return 'CLEAR';
 	}
 
 	this.putChar = function(ch) {
 
 		// Hacky workaround for something broken in Frame.scroll()
-		if(frames.canvas.data_height > frames.canvas.height && frames.canvas.offset.y > 0)
+		if (frames.canvas.data_height > frames.canvas.height &&
+			frames.canvas.offset.y > 0
+		) {
 			frames.canvas.refresh();
-		if(frames.canvas.data_width > frames.canvas.width && frames.canvas.offset.x > 0)
+		}
+		if (frames.canvas.data_width > frames.canvas.width &&
+			frames.canvas.offset.x > 0
+		) {
 			frames.canvas.refresh();
+		}
 
 		frames.canvas.setData(
-			(typeof ch.x == "undefined") ? (state.cursor.x - frames.canvas.x) : ch.x,
-			(typeof ch.y == "undefined") ? (state.cursor.y - frames.canvas.y) : ch.y,
+			typeof ch.x == 'undefined' ? state.cursor.x - frames.canvas.x : ch.x,
+			typeof ch.y == 'undefined' ? state.cursor.y - frames.canvas.y : ch.y,
 			ch.ch,
-			(typeof ch.attr == "undefined") ? state.attr : ch.attr
+			typeof ch.attr == 'undefined' ? state.attr : ch.attr
 		);
 
-		if(typeof ch.x != "undefined") {
+		if (typeof ch.x != 'undefined') {
 			this.cycle(true);
 			return;
 		}
 
 		var ret = {
-			'x' : state.cursor.x - frames.canvas.x,
-			'y' : state.cursor.y - frames.canvas.y,
-			'ch' : ch.ch,
-			'attr' : state.attr
+			x : state.cursor.x - frames.canvas.x,
+			y : state.cursor.y - frames.canvas.y,
+			ch : ch.ch,
+			attr : state.attr
 		};
 
-		if(	settings.hScroll
-			||
+		if (settings.hScroll ||
 			state.cursor.x < frames.canvas.x + frames.canvas.width - 1
 		) {
 			state.cursor.x++;
 		}
 
-		if(	settings.hScroll
-			&&
+		if (settings.hScroll &&
 			state.cursor.x - frames.canvas.offset.x > frames.canvas.width
 		) {
 			frames.canvas.scroll(1, 0);
@@ -470,170 +484,152 @@ var ANSIEdit = function(options) {
 
 	this.getcmd = function(userInput) {
 
-		if(userInput == "\x09") {
-
-			(state.inMenu) ? lowerMenu() : raiseMenu();
-
+		if (userInput == "\x09") {
+			state.inMenu ? lowerMenu() : raiseMenu();
 		} else if(state.inMenu) {
-
 			var ret = tree.getcmd(userInput);
-			if(ret == "DONE" || ret == "CLEAR")
-				lowerMenu();
-			if(ret == "CLEAR") {
+			if (ret == 'DONE' || ret == 'CLEAR') lowerMenu();
+			if (ret == 'CLEAR') {
 				var retval = {
-					'x' : state.cursor.x - frames.canvas.x,
-					'y' : state.cursor.y - frames.canvas.y,
-					'ch' : "CLEAR",
-					'attr' : state.attr
+					x : state.cursor.x - frames.canvas.x,
+					y : state.cursor.y - frames.canvas.y,
+					ch : 'CLEAR',
+					attr : state.attr
 				}
 			}
-
-		} else if(
-			userInput.match(/[\r]/) !== null
-			&&
+		} else if (
+			userInput.search(/\r/) >= 0 &&
 			(state.cursor.y < frames.canvas.y + frames.canvas.height - 1 || settings.vScroll)
 		) {
-
 			state.cursor.y++;
 			state.cursor.x = frames.canvas.x;
-			if(state.cursor.y - frames.canvas.offset.y > frames.canvas.height) {
+			if (state.cursor.y - frames.canvas.offset.y > frames.canvas.height) {
 				// I don't know why I need to do this, especially not after looking at Frame.scroll()
 				// but vertical Frame.scroll() won't work unless I do this
-				if(typeof frames.canvas.data[state.cursor.y - frames.canvas.y] == "undefined") {
+				if (typeof frames.canvas.data[state.cursor.y - frames.canvas.y] == 'undefined') {
 					frames.canvas.setData(
 						state.cursor.x - frames.canvas.x,
 						state.cursor.y - frames.canvas.y,
-						"",
+						'',
 						0
 					);
 				}
 				frames.canvas.scroll();
 			}
-
-		} else if(userInput == "\x08" && state.cursor.x > frames.canvas.x) {
-
+		} else if (userInput == '\x08' && state.cursor.x > frames.canvas.x) {
 			state.cursor.x--;
-			var retval = this.putChar( { 'ch' : " "	});
+			var retval = this.putChar({ ch : '' });
 			state.cursor.x--;
-
-		} else if(userInput == "\x7F") {
-
-			var retval = this.putChar({ 'ch' : " " });
+		} else if (userInput == '\x7F') {
+			var retval = this.putChar({ ch : ' ' });
 			state.cursor.x--;
-
-		} else if(userInput.match(/[0-9]/) !== null) {
-
+		} else if (userInput.match(/[0-9]/) !== null) {
 			userInput = (userInput == 0) ? 9 : userInput - 1;
 			var retval = this.putChar(
-				{ 'ch' : ascii(characterSets[state.charSet][userInput]) }
+				{ ch : ascii(characterSets[state.charSet][userInput]) }
 			);
-
 		} else if(userInput.match(/[\x20-\x7E]/) !== null) {
-
-			var retval = this.putChar({	'ch' : userInput });
-
+			var retval = this.putChar({	ch : userInput });
 		} else {
-
-			switch(userInput) {
-
+			switch (userInput) {
 				case KEY_UP:
-					if(state.cursor.y > frames.canvas.y)
-						state.cursor.y--;
-					if(	settings.vScroll
-						&&
-						frames.canvas.offset.y > 0
-						&&
+					if (state.cursor.y > frames.canvas.y) state.cursor.y--;
+					if (settings.vScroll &&
+						frames.canvas.offset.y > 0 &&
 						state.cursor.y == frames.canvas.offset.y
 					) {
 						frames.canvas.scroll(0, -1);
 					}
 					break;
-
 				case KEY_DOWN:
-					if(settings.vScroll || state.cursor.y < frames.canvas.y + frames.canvas.height - 1)
+					if (settings.vScroll ||
+						state.cursor.y < frames.canvas.y + frames.canvas.height - 1
+					) {
 						state.cursor.y++;
-					if(	settings.vScroll
-						&&
+					}
+					if (settings.vScroll &&
 						state.cursor.y - frames.canvas.offset.y > frames.canvas.height
 					) {
 						// I don't know why I need to do this, especially not after looking at Frame.scroll()
 						// but vertical Frame.scroll() won't work unless I do this
-						if(typeof frames.canvas.data[state.cursor.y - frames.canvas.y] == "undefined") {
+						if (typeof frames.canvas.data[state.cursor.y - frames.canvas.y] == 'undefined') {
 							frames.canvas.setData(
 								state.cursor.x - frames.canvas.x,
 								state.cursor.y - frames.canvas.y,
-								"",
+								'',
 								0
 							);
 						}
 						frames.canvas.scroll();
 					}
 					break;
-
 				case KEY_LEFT:
-					if(state.cursor.x > frames.canvas.x)
-						state.cursor.x--;
-					if( settings.hScroll
-						&&
-						frames.canvas.offset.x > 0
-						&&
+					if (state.cursor.x > frames.canvas.x) state.cursor.x--;
+					if (settings.hScroll &&
+						frames.canvas.offset.x > 0 &&
 						state.cursor.x == frames.canvas.offset.x
 					) {
 						frames.canvas.scroll(-1, 0);
 					}
 					break;
-
 				case KEY_RIGHT:
-					if(settings.hScroll || state.cursor.x < frames.canvas.x + frames.canvas.width - 1)
+					if (settings.hScroll ||
+						state.cursor.x < frames.canvas.x + frames.canvas.width - 1
+					) {
 						state.cursor.x++;
-					if( settings.hScroll
-						&&
+					}
+					if (settings.hScroll &&
 						state.cursor.x - frames.canvas.offset.x > frames.canvas.width
 					) {
 						// Hacky hack to populate entire frame data matrix
 						// Horizontal Frame.scroll() doesn't otherwise work in this situation
-						for(var y = 0; y <= state.cursor.y - frames.canvas.y; y++) {
-							if(typeof frames.canvas.data[state.cursor.y - frames.canvas.y] == "undefined")
-								frames.canvas.setData(state.cursor.x - frames.canvas.x, y, "", 0);
-							for(var x = 0; x <= state.cursor.x - frames.canvas.x; x++) {
-								if(typeof frames.canvas.data[y][x] == "undefined")
-									frames.canvas.setData(x, y, "", 0);
+						for (var y = 0; y <= state.cursor.y - frames.canvas.y; y++) {
+							if (typeof frames.canvas.data[state.cursor.y - frames.canvas.y] == 'undefined') {
+								frames.canvas.setData(
+									state.cursor.x - frames.canvas.x, y, '', 0
+								);
+							}
+							for (var x = 0; x <= state.cursor.x - frames.canvas.x; x++) {
+								if (typeof frames.canvas.data[y][x] == 'undefined') {
+									frames.canvas.setData(x, y, '', 0);
+								}
 							}
 						}
 						frames.canvas.scroll(1, 0);
 					}
 					break;
-
 				case KEY_HOME:
 					state.cursor.x = frames.canvas.x;
 					break;
-
 				case KEY_END:
 					state.cursor.x = frames.canvas.data_width;
 					break;
-
 				default:
 					break;
-
 			}
 
 		}
 
 		this.cycle();
 
-		return (typeof retval != "undefined") ?	retval : ({ 'x' : state.cursor.x - frames.canvas.x, 'y' : state.cursor.y - frames.canvas.y,	'ch' : false, 'attr' : state.attr });
+		return (
+			typeof retval != 'undefined'
+			? retval
+			: {	x : state.cursor.x - frames.canvas.x,
+				y : state.cursor.y - frames.canvas.y,
+				ch : false,
+				attr : state.attr
+			}
+		);
 
 	}
 
 	this.cycle = function(force) {
 
-		if(typeof parentFrame == "undefined")
-			frames.top.cycle();
+		if (typeof parentFrame == 'undefined') frames.top.cycle();
 
-		if(	(typeof force == "boolean" && force)
-			||
-			(	state.cursor.x != state.lastCursor.x
-				||
+		if ((typeof force == 'boolean' && force) ||
+			(	state.cursor.x != state.lastCursor.x ||
 				state.cursor.y != state.lastCursor.y
 			)
 		) {
@@ -644,18 +640,31 @@ var ANSIEdit = function(options) {
 				state.cursor.y - frames.canvas.offset.y
 			);
 
-			for(var c in state.cursor)
-				state.lastCursor[c] = state.cursor[c];
+			for (var c in state.cursor) state.lastCursor[c] = state.cursor[c];
 
-			if(!settings.showPosition)
-				return;
+			if (!settings.showPosition) return;
 
 			frames.position.clear();
 			frames.position.attr = state.attr;
-			frames.position.putmsg(format("(%s:%s)", state.cursor.x, state.cursor.y));
+			frames.position.putmsg(
+				format('(%s:%s)', state.cursor.x, state.cursor.y)
+			);
 
 		}
 
+	}
+
+	this.save_bin = function (fn) {
+		var f = new File(fn);
+		f.open('wb');
+		for (var y = 0; y < frames.canvas.height; y++) {
+			for (var x = 0; x < frames.canvas.width; x++) {
+				var ch = frames.canvas.getData(x, y);
+				f.write(ch.ch ? ch.ch : ' ');
+				f.writeBin(ch.attr ? ch.attr : 0, 1);
+			}
+		}
+		f.close();
 	}
 
 }
