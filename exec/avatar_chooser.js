@@ -88,6 +88,33 @@ function bury_cursor() {
 	console.gotoxy(console.screen_columns, console.screen_rows);
 }
 
+function download_avatar() {
+	const user_avatar = avatar_lib.read_localuser(user.number);
+	if (user_avatar) {
+		const fn = system.temp_dir + format('avatar-%04d.bin', user.number);
+		var f = new File(fn);
+		f.open('wb');
+		f.write(base64_decode(user_avatar.data));
+		f.close();
+		const sauce = {
+			title : user.alias + ' avatar',
+			author : user.alias,
+			group : system.name,
+			datatype : sauce_lib.defs.datatype.bin,
+			tinfo1 : avatar_lib.defs.width,
+			tinfo2 : avatar_lib.defs.height,
+			tinfo3 : 0,
+			tinfo4 : 0,
+			comment : ['']
+		};
+		sauce_lib.write(fn, sauce);
+		bbs.send_file(fn);
+		return true;
+	} else {
+		return false;
+	}
+}
+
 function CollectionBrowser(filename, parent_frame) {
 
 	const frames = {
@@ -281,7 +308,7 @@ function CollectionLister(dir, parent_frame) {
 			0,
 			frames.container
 		);
-		
+
 		frames.info = new Frame(
 			frames.tree.x + frames.tree.width + 1,
 			frames.container.y + 2,
@@ -290,7 +317,7 @@ function CollectionLister(dir, parent_frame) {
 			15,
 			frames.container
 		);
-		
+
 		if (frames.parent.is_open) frames.container.open();
 
 		state.tree = new Tree(frames.tree, 'Avatar collections');
@@ -322,7 +349,7 @@ function CollectionLister(dir, parent_frame) {
 	function get_avatar(i) {
 		const f = new File(state.collection);
 		f.open('rb');
-		const contents = f.read(); 
+		const contents = f.read();
 		f.close();
 		return contents.substr(i * avatar_lib.size, avatar_lib.size);
 	}
@@ -429,7 +456,7 @@ function MainMenu(parent_frame) {
 		if (frames.parent.is_open) {
 			frames.tree.open();
 			frames.user_avatar.open();
-		}		
+		}
 
 		state.tree = new Tree(frames.tree, 'Avatar collections');
 		state.tree.colors.fg = WHITE;
@@ -451,7 +478,15 @@ function MainMenu(parent_frame) {
 		);
 		state.tree.addItem(
 			'Download your avatar', function () {
-				// placeholder
+				console.clear(WHITE);
+				console.putmsg(
+					'Avatars are ' +
+					avatar_lib.defs.width + ' x ' + avatar_lib.defs.height +
+					' characters in size, and are sent in binary format.\r\n'
+				);
+				download_avatar();
+				console.clear(LIGHTGRAY);
+				frames.parent.invalidate();
 			}
 		);
 		state.tree.addItem(
