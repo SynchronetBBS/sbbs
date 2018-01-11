@@ -259,6 +259,7 @@ function export_users(msgbase, realnames)
 {
 	var last_user = system.lastuser;
 	var list = {};
+	var exported = 0;
 	
 	for(var n = 1; n <= last_user && !js.terminated; n++) {
 		if(!file_exists(lib.localuser_fname(n)))
@@ -277,8 +278,9 @@ function export_users(msgbase, realnames)
 		list[data].push(u.alias);
 		if(realnames)
 			list[data].push(u.name);
+		exported++;
 	}
-	if(!list.length)
+	if(!exported)
 		return true;	// Nothing to export
 	for(var i in list)
 		list[i].sort();
@@ -313,15 +315,14 @@ function export_file(msgbase, filename)
 function main()
 {
 	var optval={};
-	var cmds=[];
+	var cmd;
 	var i;
-	var filename;
 	var offset;
 	var realnames = false;
 	var ptr;
 	var limit;
 	var all;
-	var users = false;
+	var files = [];
 
     for(i in argv) {
 		var arg = argv[i];
@@ -336,13 +337,10 @@ function main()
 
         switch(arg) {
 			case '-file':
-				filename = val;
+				files.push(val);
 				break;
 			case '-offset':
 				offset = val;
-				break;
-			case '-users':
-				users = true;
 				break;
 			case '-realnames':
 				realnames = true;
@@ -353,98 +351,109 @@ function main()
 			case "-all":
 				all = true;
 				break;
+			case "import":
+			case "export":
+			case "dump":
+			case "draw":
+			case "show":
+			case "verify":
+			case "enable":
+			case "disable":
+			case "remove":
+				cmd = arg;
+				break;
 			default:
 				if(parseInt(arg) < 0)
 					limit = -parseInt(arg);
-				else
-					cmds.push(arg);
+				else if(arg.charAt(0) != '-')
+					files.push(arg);
 				break;
 		}
 	}
 	mkdir(lib.local_library());
-	for(var c in cmds) {
-		var cmd = cmds[c].toLowerCase();
-		switch(cmd) {
-			case "import":
-				if(filename && parseInt(optval[cmd])) {
-					printf("Importing %s for user #%u\r\n", filename, optval[cmd]);
-					var success = lib.import_file(optval[cmd], filename, offset);
-					printf("%s\r\n", success ? "Successful" : "FAILED!");
+	switch(cmd) {
+		case "import":
+			if(files.length && parseInt(optval[cmd])) {
+				printf("Importing %s for user #%u\r\n", files[0], optval[cmd]);
+				var success = lib.import_file(optval[cmd], files[0], offset);
+				printf("%s\r\n", success ? "Successful" : "FAILED!");
+				break;
+			}
+			var msgbase = new MsgBase(optval[cmd]);
+			print("Opening msgbase " + msgbase.file);
+			if(!msgbase.open()) {
+				alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
+				exit(-1);
+			}
+			import_from_msgbase(msgbase, ptr, limit, all);
+			msgbase.close();
+			break;
+		case "export":
+			var msgbase = new MsgBase(optval[cmd]);
+			print("Opening msgbase " + msgbase.file);
+			if(!msgbase.open()) {
+				alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
+				exit(-1);
+			}
+			var success = true;
+			if(!files.length) {
+				printf("Exporting user avatars\n");
+				success = export_users(msgbase, realnames);
+			}
+			for(var i in files) {
+				printf("Exporting avatar file: %s\n", files[i]);
+				if(!valid_shared_file(files[i])) {
+				    success = false;
 					break;
 				}
-				var msgbase = new MsgBase(optval[cmd]);
-				print("Opening msgbase " + msgbase.file);
-				if(!msgbase.open()) {
-					alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
-					exit(-1);
-				}
-				import_from_msgbase(msgbase, ptr, limit, all);
-				msgbase.close();
-				break;
-			case "export":
-				var msgbase = new MsgBase(optval[cmd]);
-				print("Opening msgbase " + msgbase.file);
-				if(!msgbase.open()) {
-					alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
-					exit(-1);
-				}
-				var success = true;
-				if(users) {
-					printf("Exporting user avatars\n");
-					success = export_users(msgbase, realnames);
-				}
-				if(success && filename) {
-				    printf("Exporting avatar file: %s\n", filename);
-				    if(!valid_shared_file(filename))
-				        success = false;
-                    else
-					    success = export_file(msgbase, filename);
-				}
-				printf("%s\r\n", success ? "Successful" : "FAILED: " + msgbase.last_error);
-				break;
-			case "dump":
-				var usernum = optval[cmd];
-				if(!usernum)
-					usernum = user.number;
-				var obj = lib.read_localuser(usernum);
-				print(JSON.stringify(obj));
-				break;
-			case "draw":	// Uses Graphic.draw()
-				var usernum = optval[cmd];
-				if(!usernum)
-					usernum = user.number;
-				console.clear();
-				var obj = lib.draw(usernum);
-				break;
-			case "show":	// Uses console.write()
-				var usernum = optval[cmd];
-				if(!usernum)
-					usernum = user.number;
-				var obj = lib.show(usernum);
-				break;
-			case "verify":
-				if(filename) {
-				    var success = valid_shared_file(filename);
-					print(success ? "Successful" : "FAILED");
-				}
-				break;
-			case "remove":
-				var usernum = parseInt(optval[cmd]);
-				if(usernum) {
-					printf("Removing user #%u avatar\n", usernum);
-					var success = lib.remove_localuser(usernum);
-					print(success ? "Successful" : "FAILED");
-				}
-				break;
-			case "enable":
-			case "disable":
-				var usernum = parseInt(optval[cmd]);
-				if(usernum) {
-					var success = lib.enable_localuser(usernum, cmd == "enable");
-					print(success ? "Successful" : "FAILED");
-				}
-				break;
-		}
+                else
+					success = export_file(msgbase, files[i]);
+			}
+			printf("%s\r\n", success ? "Successful" : "FAILED: " + msgbase.last_error);
+			break;
+		case "dump":
+			var usernum = optval[cmd];
+			if(!usernum)
+				usernum = user.number;
+			var obj = lib.read_localuser(usernum);
+			print(JSON.stringify(obj));
+			break;
+		case "draw":	// Uses Graphic.draw()
+			var usernum = optval[cmd];
+			if(!usernum)
+				usernum = user.number;
+			console.clear();
+			var obj = lib.draw(usernum);
+			break;
+		case "show":	// Uses console.write()
+			var usernum = optval[cmd];
+			if(!usernum)
+				usernum = user.number;
+			var obj = lib.show(usernum);
+			break;
+		case "verify":
+			for(var i in files) {
+				printf("%s: ", file_getname(files[i]));
+				var success = valid_shared_file(files[i]);
+				print(success ? "Successful" : "FAILED");
+			}
+			break;
+		case "remove":
+			var usernum = parseInt(optval[cmd]);
+			if(usernum) {
+				printf("Removing user #%u avatar\n", usernum);
+				var success = lib.remove_localuser(usernum);
+				print(success ? "Successful" : "FAILED");
+			}
+			break;
+		case "enable":
+		case "disable":
+			var usernum = parseInt(optval[cmd]);
+			if(usernum) {
+				var success = lib.enable_localuser(usernum, cmd == "enable");
+				print(success ? "Successful" : "FAILED");
+			}
+			break;
 	}
 }
 
