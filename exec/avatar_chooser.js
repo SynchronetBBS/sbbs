@@ -323,7 +323,7 @@ function CollectionLister(dir, parent_frame) {
 			frames.container.y + 2,
 			frames.tree.width - 1,
 			5,
-			15,
+			WHITE,
 			frames.container
 		);
 
@@ -335,6 +335,7 @@ function CollectionLister(dir, parent_frame) {
 		state.tree.colors.lfg = WHITE;
 		state.tree.colors.lbg = BG_BLUE;
 		state.tree.colors.kfg = LIGHTCYAN;
+		var first_sauce = null;
 		directory(dir + '/*.bin').forEach(
 			function (e, i) {
 				if (e.search(EXCLUDE_FILES) > -1) return;
@@ -349,9 +350,10 @@ function CollectionLister(dir, parent_frame) {
 					}
 				);
 				ti.sauce = sauce;
-				if (i == 0) display_collection_info(sauce);
+				if (first_sauce === null) first_sauce = sauce;
 			}
 		);
+		if (first_sauce !== null) display_collection_info(first_sauce);
 		state.tree.open();
 
 	}
