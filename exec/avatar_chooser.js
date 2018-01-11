@@ -3,6 +3,7 @@ load('frame.js');
 load('tree.js');
 load('scrollbar.js');
 load('event-timer.js');
+load('ansiedit.js');
 
 const sauce_lib = load({}, 'sauce_lib.js');
 const avatar_lib = load({}, 'avatar_lib.js');
@@ -313,7 +314,7 @@ function CollectionLister(dir, parent_frame) {
 			frames.container.x,
 			frames.container.y + 2,
 			Math.floor((frames.container.width - 2) / 2),
-			frames.container.height - 1,
+			frames.container.height - 2,
 			0,
 			frames.container
 		);
@@ -407,6 +408,83 @@ function CollectionLister(dir, parent_frame) {
 
 }
 
+function AvatarEditor(parent_frame, on_exit) {
+
+	const self = this;
+
+	const frames = {
+		parent : parent_frame,
+		container : null
+	};
+
+	var editor = null;
+
+	function _save() {
+		const fn = system.temp_dir + format('avatar-%04d.bin', user.number);
+		editor.save_bin(fn);
+		const success = avatar_lib.import_file(user.number, fn, 0);
+		file_remove(fn);
+	}
+
+	function save_and_exit() {
+		_save();
+		on_exit();
+	}
+
+	this.open = function () {
+		frames.container = new Frame(1, 1, 1, 1, BG_BLUE|WHITE, frames.parent);
+		frames.container.nest();
+		frames.container.putmsg('Avatar Editor - Press TAB for menu');
+		if (frames.parent.is_open) frames.container.open();
+		editor = new ANSIEdit(
+			{	x : frames.container.x,
+				y : frames.container.y + 1,
+				width : frames.container.width,
+				height : frames.container.height - 1,
+				canvas_width : 10,
+				canvas_height : 6,
+				parentFrame : frames.container
+			}
+		);
+		editor.open();
+		editor.menu.addItem('Save', _save);
+		editor.menu.addItem('Exit', on_exit);
+		editor.menu.addItem('Save & Exit', save_and_exit);
+
+		const user_avatar = avatar_lib.read_localuser(user.number);
+		if (user_avatar) {
+			const bin = base64_decode(user_avatar.data);
+			var o = 0; // offset into 'bin'
+			for (var yy = 0; yy < avatar_lib.defs.height; yy++) {
+				for (var xx = 0; xx < avatar_lib.defs.width; xx++) {
+					editor.putChar(
+						{	x : xx,
+							y : yy,
+							ch : bin.substr(o, 1),
+							attr : ascii(bin.substr(o + 1, 1))
+						}
+					)
+					o = o + 2;
+				}
+			}
+		}
+	}
+
+	this.getcmd = function (cmd) {
+		editor.getcmd(cmd);
+	}
+
+	this.cycle = function () {
+		editor.cycle();
+	}
+
+	this.close = function () {
+		editor.close();
+		frames.container.delete();
+	}
+
+}
+
 function MainMenu(parent_frame) {
 
 	const user_fname = avatar_lib.localuser_fname(user.number);
@@ -418,6 +496,7 @@ function MainMenu(parent_frame) {
 	};
 
 	const state = {
+		ae : null,
 		cl : null,
 		tree : null,
 		timer : new Timer(),
@@ -429,7 +508,11 @@ function MainMenu(parent_frame) {
 		if (user_avatar) {
 			frames.user_avatar.clear();
 			frames.user_avatar.drawBorder(BORDER);
-			frames.user_avatar.blit(base64_decode(user_avatar.data), avatar_lib.defs.width, avatar_lib.defs.height, 1, 1, 'My Avatar', WHITE);
+			frames.user_avatar.blit(
+				base64_decode(user_avatar.data),
+				avatar_lib.defs.width, avatar_lib.defs.height, 1, 1,
+				'My Avatar', WHITE
+			);
 		}
 	}
 
@@ -449,7 +532,7 @@ function MainMenu(parent_frame) {
 			frames.parent.x + 1,
 			frames.parent.y + 2,
 			Math.floor((frames.parent.width - 2) / 2),
-			frames.parent.height - 2,
+			frames.parent.height - 3,
 			0,
 			frames.parent
 		);
@@ -479,7 +562,7 @@ function MainMenu(parent_frame) {
 		state.tree.addItem(
 			'Select an avatar', function () {
 				state.tree.close();
-				state.cl = new CollectionLister(avatar_lib.local_library(), parent_frame);
+				state.cl = new CollectionLister(avatar_lib.local_library(), frames.parent);
 				state.cl.open();
 			}
 		);
@@ -511,7 +594,15 @@ function MainMenu(parent_frame) {
 		);
 		state.tree.addItem(
 			'Edit your avatar', function () {
-				// placeholder
+				// placeholder { x y w h canvas_x canvas_y, canvas_w, canvas_h }
+				state.ae = new AvatarEditor(
+					frames.parent,
+					function () {
+						state.ae.close();
+						state.ae = null;
+					}
+				);
+				state.ae.open();
 			}
 		);
 		state.tree.open();
@@ -521,7 +612,9 @@ function MainMenu(parent_frame) {
 	}
 
 	this.getcmd = function (cmd) {
-		if (state.cl !== null) {
+		if (state.ae !== null) {
+			state.ae.getcmd(cmd);
+		} else if (state.cl !== null) {
 			if (!state.cl.getcmd(cmd)) {
 				state.cl.close();
 				delete state.cl;
@@ -538,7 +631,11 @@ function MainMenu(parent_frame) {
 
 	this.cycle = function () {
 		state.timer.cycle();
-		if (state.cl !== null) state.cl.cycle();
+		if (state.ae !== null) {
+			state.ae.cycle();
+		} else if (state.cl !== null) {
+			state.cl.cycle();
+		}
 	}
 
 	this.close = function () {
