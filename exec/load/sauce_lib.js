@@ -60,12 +60,18 @@ function read(fname)
 			return false;
 	}
 
-	if(file.length < defs.trailer_length)
+	if(file.length < defs.trailer_length) {
+		if(typeof fname != 'object')
+			file.close();
 		return false;
+	}
 
 	file.position = file.length - defs.trailer_length;
-	if(file.read(defs.id_length + defs.version_length) != 'SAUCE00')
+	if(file.read(defs.id_length + defs.version_length) != 'SAUCE00') {
+		if(typeof fname != 'object')
+			file.close();
 		return false;
+	}
 
 	var obj = {};
 	obj.title = truncsp(file.read(35));
@@ -119,6 +125,8 @@ function read(fname)
 			}
 		}
 	}
+	if(typeof fname != 'object')
+		file.close();
 	return obj;
 }
 
@@ -177,6 +185,8 @@ function write(fname, obj)
 	file.writeBin(obj.comment.length, 1);
 	file.writeBin(obj.tflags, 1);
 	file.write(valueof(obj.tinfos), 22);
+	if(typeof fname != 'object')
+		file.close();
 	return true;
 }
 
@@ -194,7 +204,10 @@ function remove(fname)
 	}
 
 	var obj = this.read(file);
-	return file.truncate(obj.filesize);
+	var result = file.truncate(obj.filesize);
+	if(typeof fname != 'object')
+		file.close();
+	return result;
 }
 
 this;
