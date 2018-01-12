@@ -88,7 +88,7 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 	return msg->total_hfields;
 }
 
-
+/* Synchronized with atcode()! */
 void sbbs_t::show_msgattr(smbmsg_t* msg)
 {
 	uint16_t attr = msg->hdr.attr;
