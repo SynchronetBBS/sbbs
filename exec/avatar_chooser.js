@@ -314,7 +314,7 @@ function CollectionLister(dir, parent_frame) {
 			frames.container.x,
 			frames.container.y + 2,
 			Math.floor((frames.container.width - 2) / 2),
-			frames.container.height - 2,
+			frames.container.height - 3,
 			0,
 			frames.container
 		);
@@ -322,7 +322,7 @@ function CollectionLister(dir, parent_frame) {
 		frames.info = new Frame(
 			frames.tree.x + frames.tree.width + 1,
 			frames.container.y + 2,
-			frames.tree.width - 1,
+			frames.container.width - frames.tree.width - 2,
 			5,
 			WHITE,
 			frames.container
@@ -492,6 +492,7 @@ function MainMenu(parent_frame) {
 	const frames = {
 		parent : parent_frame,
 		tree : null,
+		info : null,
 		user_avatar : null
 	};
 
@@ -530,11 +531,26 @@ function MainMenu(parent_frame) {
 
 		frames.tree = new Frame(
 			frames.parent.x + 1,
-			frames.parent.y + 2,
+			frames.parent.y + 3,
 			Math.floor((frames.parent.width - 2) / 2),
-			frames.parent.height - 3,
+			5,
 			0,
 			frames.parent
+		);
+
+		frames.info = new Frame(
+			frames.tree.x + frames.tree.width + 1,
+			frames.parent.y + 3,
+			frames.parent.width - frames.tree.width - 4,
+			5,
+			WHITE,
+			frames.parent
+		);
+		frames.info.word_wrap = true;
+		frames.info.putmsg(
+			'On participating systems, your avatar will ' +
+			'be displayed alongside messages that you ' +
+			'have posted.'
 		);
 
 		frames.user_avatar = new Frame(
@@ -550,6 +566,7 @@ function MainMenu(parent_frame) {
 
 		if (frames.parent.is_open) {
 			frames.tree.open();
+			frames.info.open();
 			frames.user_avatar.open();
 		}
 
