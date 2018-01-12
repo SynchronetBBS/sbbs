@@ -271,7 +271,7 @@
 "\r\n\1n\1m\1h%s \1n\1madded to batch upload queue"\         230 FileAddedToUlQueue
 	"\1c - Files: \1h%u \1n\1c(\1h%u\1n\1c Max)\r\n"
 "\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you a file.\r\n"       231 UserToUserXferNodeMsg
-"\1n\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
+"\1n\1/\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
 	"\1w~E\1yxtended info, "\
 	"\1w~V\1yiew file, "\
 	"\1w~Q\1yuit or [Next]: \1w"
@@ -357,7 +357,7 @@
 "\b\b\b\b\b\b\b\b\b\b\1bCompressed %u slots "\           302 Compressed
 	"(%s bytes)\1n\r\n"
 "\1w\1h\r\n%s is already in the queue.\r\n"               303 FileAlreadyInQueue
-"\1w\1h\r\nFile is not online.\r\n"                       304 FileIsNotOnline
+"\1w\1h\1/File is not online.\r\n"                       304 FileIsNotOnline
 "\1n\r\n\1m\1h%s \1n\1madded to batch download queue -\r\n"\ 305 FileAddedToBatDlQueue
 	"\1cFiles: \1h%u\1n\1c (\1h%u\1n\1c Max)  Credits: \1h%s\1n\1c"\
 	"  Bytes: \1h%s\1n\1c  Time: \1h%s\r\n"
@@ -385,7 +385,7 @@
 "\r\n\1n\1gTime to download :\1h %s"                       325 FiTransferTime
 "\r\n\1n\1gAlternate Path   :\1h %s"                       326 FiAlternatePath
 "\r\n\1r\1h\1iInvalid Alternate Path Number: %u\1n"         327 InvalidAlternatePathN
-"\1_\r\n\1w\1hFile is currently open by %d user%s.\r\n"    328 FileIsOpen
+"\1_\1/\1w\1hFile is currently open by %d user%s.\r\n"    328 FileIsOpen
 "\7\7\r\n\1h\1rH\1ba\1gp\1yp\1cy \1mB\1wi\1rr\1gt\1bh\1cd\1ma\1yy "\  329 HappyBirthday
 	"\1wt\1ro \1gy\1bo\1cu\r\n\7\7\1mH\1ya\1wp\1rp\1gy "\
 	"\1bB\1ci\1mr\1yt\1wh\1rd\1ga\1by \1ct\1mo \1yy\1wo\1ru\1g.\1b.\1c.\r\n\r\n"
@@ -569,7 +569,7 @@
 "\1_\1y\1hAdjust Credits (- to subtract, M or K = "\       471 ModifyCredits
 	"Mega/Kilobytes, or $): \1n"
 "\1_\1y\1hAdjust Minutes (- to subtract, H = Hours): \1n"   472 ModifyMinutes
-"\r\nDelete Questionaire"                               473 DeleteQuestionaireQ
+"\r\nDelete Questionnaire"                               473 DeleteQuestionaireQ
 "\1h\1bUser Settings for \1w%s #%d\1b:\r\n\r\n"                474 UserDefaultsHdr
 "\1n\1b[\1h\1wT\1n\1b] \1hTerminal Mode                 \1n\1b: \1c%s\r\n"   475 UserDefaultsTerminal
 "\1n\1b[\1h\1wE\1n\1b] \1hExternal Editor               \1n\1b: \1c%s\r\n"   476 UserDefaultsXeditor
@@ -798,9 +798,9 @@
 "\1n\1g(\1h%d\1n\1g) %s\1h\r\n"                               659 CfgLibLstFmt
 "\1_\1c\1hListing \1n\1c(\1h%u\1n\1c) %s "\                     660 BatchFlagPrompt
 	"(\1h%u\1n\1c) %s (\1h?\1n\1c=Menu) (\1h%u\1n\1c Files\1n\1c): \1n"
-"\1n\1>\1q\1l\x014  \1h\1y[\1wB\1y]atch Download  "\                   661 FileListBatchCommands
-	"[\1wV\1y]iew Content  [\1wE\1y]xtended "\
-	"Info  [\1wP\1y]revious Files  [\1wQ\1y]uit  \1n\r\n"
+"\1n\1>\1q\1l\x014 \1h\1y[\1wD\1y]ownload  \1h\1y[\1wB\1y]atch  "\                   661 FileListBatchCommands
+	"[\1wV\1y]iew Content  [\1wE\1y]xtended Info  "\
+	"[\1wP\1y]revious Page  [\1wQ\1y]uit\1>\1n\r\n"
 "\r\nDownload attached file: \1w%s\1b (%s bytes)"         662 DownloadAttachedFileQ
 "\r\n\r\n\1nTime left : %13u\r\n"                        663 FreeMinLeft
 "\1b\1h\r\nTime left to deposit in minute bank "\         664 FreeMinToDeposit
@@ -965,3 +965,5 @@
 "\r\nTo vote in this poll, hit ~V now.\r\n" 796 VoteInThisPollNow
 "\1n\1mMIME-decoded plain-text:\1n\r\n"     797 MIMEDecodedPlainText
 "\1/@EXEC:SHOWMSGAVATAR@\r\n"				798 MsgHdrBodySeparator
+"\1/\r\n@EXEC:SHOWFILEAVATAR@"				799 FileHdrDescSeparator
+"Remove file"                               800 RemoveFileQ
