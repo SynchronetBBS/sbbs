@@ -513,6 +513,10 @@ void sbbs_t::ctrl_a(char x)
 		case '<':   /* Non-destructive backspace */
 			outchar(BS);
 			break;
+		case '/':	/* Conditional new-line */
+			if(column > 0)
+				CRLF;
+			break;
 		case '[':   /* Carriage return */
 			outchar(CR);
 			break;
