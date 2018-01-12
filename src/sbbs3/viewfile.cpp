@@ -55,7 +55,6 @@ int sbbs_t::viewfile(file_t* f, int ext)
 		else
 			viewfilecontents(f);
 		ASYNC;
-		CRLF;
 		sprintf(str,text[FileInfoPrompt],unpadfname(f->name,tmp));
 		mnemonics(str);
 		ch=(char)getkeys("BEVQ\r",0);

@@ -520,6 +520,7 @@ public:
 	csi_t	main_csi;		/* Main Command Shell Image */
 
 	smbmsg_t*	current_msg;	/* For message header @-codes */
+	file_t*		current_file;	
 
 			/* Global command shell variables */
 	uint	global_str_vars;
@@ -589,6 +590,8 @@ public:
 	void	getusrdirs(void);
 	uint	getusrsub(uint subnum);
 	uint	getusrgrp(uint subnum);
+	uint	getusrdir(uint dirnum);
+	uint	getusrlib(uint dirnum);
 
 	uint	userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
 				,bool del=false, bool next=false);
@@ -596,8 +599,10 @@ public:
 	bool	gettimeleft_inside;
 
 	/* str.cpp */
-	char*	timestr(time_t intime);
+	char*	timestr(time_t);
+	char*	datestr(time_t);
     char	timestr_output[60];
+	char	datestr_output[60];
 	char*	age_of_posted_item(char* buf, size_t max, time_t);
 	void	userlist(long mode);
 	size_t	gettmplt(char *outstr, const char *tmplt, long mode);

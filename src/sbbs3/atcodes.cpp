@@ -1038,8 +1038,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		uint16_t attr = current_msg->hdr.attr;
 		uint16_t poll = attr&MSG_POLL_VOTE_MASK;
 		uint32_t auxattr = current_msg->hdr.auxattr;
-		safe_snprintf(str,maxlen,"%s%s%s%s%s%s%s%s%s%s%s%s%s"
+		/* Synchronized with show_msgattr(): */
+		safe_snprintf(str,maxlen,"%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
 			,attr&MSG_PRIVATE						? "Private  "   :nulstr
+			,attr&MSG_SPAM							? "SPAM  "      :nulstr
 			,attr&MSG_READ							? "Read  "      :nulstr
 			,attr&MSG_DELETE						? "Deleted  "   :nulstr
 			,attr&MSG_KILLREAD						? "Kill  "      :nulstr
@@ -1206,6 +1208,73 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(str);
 	}
 
-	return(NULL);
+	/* Currently viewed file */
+	if(current_file != NULL) {
+		if(current_file->dir < cfg.total_dirs) {
+			if(strcmp(sp, "FILE_AREA") == 0) {
+				safe_snprintf(str, maxlen, "%s %s"
+					,cfg.lib[cfg.dir[current_file->dir]->lib]->sname
+					,cfg.dir[current_file->dir]->sname);
+				return str;
+			}
+			if(strcmp(sp, "FILE_AREA_DESC") == 0) {
+				safe_snprintf(str, maxlen, "%s %s"
+					,cfg.lib[cfg.dir[current_file->dir]->lib]->lname
+					,cfg.dir[current_file->dir]->lname);
+				return str;
+			}
+			if(strcmp(sp, "FILE_LIB") == 0)
+				return cfg.lib[cfg.dir[current_file->dir]->lib]->sname;
+			if(strcmp(sp, "FILE_LIB_DESC") == 0)
+				return cfg.lib[cfg.dir[current_file->dir]->lib]->lname;
+			if(strcmp(sp, "FILE_LIB_NUM") == 0) {
+				safe_snprintf(str, maxlen, "%u", getusrlib(current_file->dir));
+				return str;
+			}
+			if(strcmp(sp, "FILE_DIR") == 0)
+				return cfg.dir[current_file->dir]->sname;
+			if(strcmp(sp, "FILE_DIR_DESC") == 0)
+				return cfg.dir[current_file->dir]->lname;
+			if(strcmp(sp, "FILE_DIR_CODE") == 0)
+				return cfg.dir[current_file->dir]->code;
+			if(strcmp(sp, "FILE_DIR_NUM") == 0) {
+				safe_snprintf(str, maxlen, "%u", getusrdir(current_file->dir));
+				return str;
+			}
+		}
+		if(strcmp(sp, "FILE_NAME") == 0)
+			return current_file->name;
+		if(strcmp(sp, "FILE_DESC") == 0)
+			return current_file->desc;
+		if(strcmp(sp, "FILE_UPLOADER") == 0)
+			return current_file->uler;
+		if(strcmp(sp, "FILE_SIZE") == 0) {
+			safe_snprintf(str, maxlen, "%lu", current_file->size);
+			return str;
+		}
+		if(strcmp(sp, "FILE_CREDITS") == 0) {
+			safe_snprintf(str, maxlen, "%lu", current_file->cdt);
+			return str;
+		}
+		if(strcmp(sp, "FILE_TIME") == 0)
+			return timestr(current_file->date);
+		if(strcmp(sp, "FILE_TIME_ULED") == 0)
+			return timestr(current_file->dateuled);
+		if(strcmp(sp, "FILE_TIME_DLED") == 0)
+			return timestr(current_file->datedled);
+		if(strcmp(sp, "FILE_DATE") == 0)
+			return datestr(current_file->date);
+		if(strcmp(sp, "FILE_DATE_ULED") == 0)
+			return datestr(current_file->dateuled);
+		if(strcmp(sp, "FILE_DATE_DLED") == 0)
+			return datestr(current_file->datedled);
+
+		if(strcmp(sp, "FILE_TIMES_DLED") == 0) {
+			safe_snprintf(str, maxlen, "%lu", current_file->timesdled);
+			return str;
+		}
+	}
+
+	return NULL;
 }
 

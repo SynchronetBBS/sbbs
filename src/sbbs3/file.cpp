@@ -48,6 +48,7 @@ void sbbs_t::fileinfo(file_t* f)
 	char*	real_fname;
 	uint	i,j;
 
+	current_file = f;
 	for(i=0;i<usrlibs;i++)
 		if(usrlib[i]==cfg.dir[f->dir]->lib)
 			break;
@@ -85,10 +86,9 @@ void sbbs_t::fileinfo(file_t* f)
 		else
 			bprintf(text[InvalidAlternatePathN],f->altpath); 
 	}
-	CRLF;
+	bputs(text[FileHdrDescSeparator]);
 	if(f->misc&FM_EXTDESC) {
 		getextdesc(&cfg,f->dir,f->datoffset,ext);
-		CRLF;
 		putmsg(ext,P_NOATCODES);
 		CRLF; 
 	}
@@ -99,7 +99,7 @@ void sbbs_t::fileinfo(file_t* f)
 	}
 	if(f->opencount)
 		bprintf(text[FileIsOpen],f->opencount,f->opencount>1 ? "s" : nulstr);
-
+	current_file = NULL;
 }
 
 

@@ -842,6 +842,11 @@ char* sbbs_t::timestr(time_t intime)
 	return(::timestr(&cfg,(time32_t)intime,timestr_output));
 }
 
+char* sbbs_t::datestr(time_t t)
+{
+	return unixtodstr(&cfg, (time32_t)t, datestr_output);
+}
+
 void sbbs_t::sys_info()
 {
 	char	tmp[128];
