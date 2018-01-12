@@ -116,39 +116,40 @@ void usage(FILE* fp)
 	fprintf(fp,"\nusage: " PROG_NAME_LC " [-opts] [path]module[.js] [args]\n"
 		"\navailable opts:\n\n"
 #ifdef JSDOOR
-		"\t-c<ctrl_dir>   specify path to CTRL directory\n"
+		"    -c<ctrl_dir>   specify path to CTRL directory\n"
 #else
-		"\t-c<ctrl_dir>   specify path to Synchronet CTRL directory\n"
+		"    -c<ctrl_dir>   specify path to Synchronet CTRL directory\n"
 #endif
+		"    -C             do not change the current working directory (to CTRL dir)\n"
 #if defined(__unix__)
-		"\t-d             run in background (daemonize)\n"
+		"    -d             run in background (daemonize)\n"
 #endif
-		"\t-m<bytes>      set maximum heap size (default=%u bytes)\n"
-		"\t-s<bytes>      set context stack size (default=%u bytes)\n"
-		"\t-t<limit>      set time limit (default=%u, 0=unlimited)\n"
-		"\t-y<interval>   set yield interval (default=%u, 0=never)\n"
-		"\t-g<interval>   set garbage collection interval (default=%u, 0=never)\n"
+		"    -m<bytes>      set maximum heap size (default=%u bytes)\n"
+		"    -s<bytes>      set context stack size (default=%u bytes)\n"
+		"    -t<limit>      set time limit (default=%u, 0=unlimited)\n"
+		"    -y<interval>   set yield interval (default=%u, 0=never)\n"
+		"    -g<interval>   set garbage collection interval (default=%u, 0=never)\n"
 #ifdef JSDOOR
-		"\t-h[hostname]   use local or specified host name\n"
+		"    -h[hostname]   use local or specified host name\n"
 #else
-		"\t-h[hostname]   use local or specified host name (instead of SCFG value)\n"
+		"    -h[hostname]   use local or specified host name (instead of SCFG value)\n"
 #endif
-		"\t-u<mask>       set file creation permissions mask (in octal)\n"
-		"\t-L<level>      set log level (default=%u)\n"
-		"\t-E<level>      set error log level threshold (default=%u)\n"
-		"\t-i<path_list>  set load() comma-sep search path list (default=\"%s\")\n"
-		"\t-f             use non-buffered stream for console messages\n"
-		"\t-a             append instead of overwriting message output files\n"
-		"\t-e<filename>   send error messages to file in addition to stderr\n"
-		"\t-o<filename>   send console messages to file instead of stdout\n"
-		"\t-n             send status messages to %s instead of stderr\n"
-		"\t-q             send console messages to %s instead of stdout\n"
-		"\t-v             display version details and exit\n"
-		"\t-x             disable auto-termination on local abort signal\n"
-		"\t-l             loop until intentionally terminated\n"
-		"\t-p             wait for keypress (pause) on exit\n"
-		"\t-!             wait for keypress (pause) on error\n"
-		"\t-D             debugs the script\n"
+		"    -u<mask>       set file creation permissions mask (in octal)\n"
+		"    -L<level>      set log level (default=%u)\n"
+		"    -E<level>      set error log level threshold (default=%u)\n"
+		"    -i<path_list>  set load() comma-sep search path list (default=\"%s\")\n"
+		"    -f             use non-buffered stream for console messages\n"
+		"    -a             append instead of overwriting message output files\n"
+		"    -e<filename>   send error messages to file in addition to stderr\n"
+		"    -o<filename>   send console messages to file instead of stdout\n"
+		"    -n             send status messages to %s instead of stderr\n"
+		"    -q             send console messages to %s instead of stdout\n"
+		"    -v             display version details and exit\n"
+		"    -x             disable auto-termination on local abort signal\n"
+		"    -l             loop until intentionally terminated\n"
+		"    -p             wait for keypress (pause) on exit\n"
+		"    -!             wait for keypress (pause) on error\n"
+		"    -D             debugs the script\n"
 		,JAVASCRIPT_MAX_BYTES
 		,JAVASCRIPT_CONTEXT_STACK
 		,JAVASCRIPT_TIME_LIMIT
@@ -613,7 +614,7 @@ static JSBool
 js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char		instr[81];
+	char		instr[256];
     JSString *	str;
 	jsrefcount	rc;
 	char		*prstr;
@@ -1124,6 +1125,7 @@ int main(int argc, char **argv, char** environ)
 	ulong	exec_count=0;
 	BOOL	loop=FALSE;
 	BOOL	nonbuffered_con=FALSE;
+	BOOL	change_cwd=TRUE;
 
 	confp=stdout;
 	errfp=stderr;
@@ -1186,6 +1188,9 @@ int main(int argc, char **argv, char** environ)
 				case 'c':
 					if(*p==0) p=argv[++argn];
 					SAFECOPY(scfg.ctrl_dir,p);
+					break;
+				case 'C':
+					change_cwd = FALSE;
 					break;
 #if defined(__unix__)
 				case 'd':
@@ -1312,7 +1317,7 @@ int main(int argc, char **argv, char** environ)
 #ifdef JSDOOR
 	SAFECOPY(scfg.temp_dir,"./temp");
 #else
-	if(chdir(scfg.ctrl_dir)!=0)
+	if(change_cwd && chdir(scfg.ctrl_dir)!=0)
 		fprintf(errfp,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
 	fprintf(statfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
