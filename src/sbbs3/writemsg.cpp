@@ -726,7 +726,6 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 	int		i,j,line,lines=0,maxlines;
 	char	strin[256],**str,done=0;
 	char 	tmp[512];
-	char	path[MAX_PATH+1];
     ulong	l,m;
 
 	rioctl(IOCM|ABORT);
