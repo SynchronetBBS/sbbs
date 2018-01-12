@@ -920,7 +920,7 @@ static int send_files(char** fname, uint fnames)
 	uint		cps;
 	glob_t		g;
 	int			gi;
-	BOOL		success=TRUE;
+	BOOL		success=FALSE;
 	uint64_t	fsize;
 	uint64_t	sent_bytes;
 	uint64_t	total_bytes=0;
