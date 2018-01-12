@@ -2666,7 +2666,8 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,317
 	},
 	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("text [,length=<i>text_length</i>]")
-	,JSDOCSTR("write a string to the file (optionally unix-to-unix or base64 decoding in the process)")
+	,JSDOCSTR("write a string to the file (optionally unix-to-unix or base64 decoding in the process). "
+		"If the specified <i>length</i> is longer than the <i>text</i>, the remaining length will be written as NUL bytes.")
 	,310
 	},
 	{"writeln",			js_writeln,			0,	JSTYPE_BOOLEAN, JSDOCSTR("[text]")
