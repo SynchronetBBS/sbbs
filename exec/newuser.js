@@ -107,7 +107,7 @@ if(options
 		user.qwk_settings&=~QWK_FILES;
 	}
 	else if(console.yesno("\r\nDo you wish to access the Synchronet BBS List database"))
-		bbs.exec_xtrn("SBL");
+		bbs.exec_xtrn("SBBSLIST");
 }
 
 /********************************/
