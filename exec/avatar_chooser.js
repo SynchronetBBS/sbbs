@@ -93,7 +93,7 @@ function bury_cursor() {
 function download_avatar() {
 	const user_avatar = avatar_lib.read_localuser(user.number);
 	if (user_avatar) {
-		const fn = system.temp_dir + format('avatar-%04d.bin', user.number);
+		const fn = system.temp_dir + system.qwk_id.toLowerCase() + '.avatar.bin';
 		var f = new File(fn);
 		f.open('wb');
 		f.write(base64_decode(user_avatar.data));
@@ -124,6 +124,12 @@ function upload_avatar() {
 	const success = avatar_lib.import_file(user.number, fn, 0);
 	file_remove(fn);
 	return success;
+}
+
+function remove_avatar() {
+	if(console.noyes("Remove your avatar"))
+		return false;
+	return avatar_lib.remove_localuser(user.number);
 }
 
 function CollectionBrowser(filename, parent_frame) {
@@ -632,6 +638,15 @@ function MainMenu(parent_frame) {
 					}
 				);
 				state.ae.open();
+			}
+		);
+		state.tree.addItem(
+			'Remove your avatar',  function () {
+				console.clear(WHITE);
+				if(remove_avatar())
+					frames.user_avatar.clear();
+				console.clear(LIGHTGRAY);
+				frames.parent.invalidate();
 			}
 		);
 		state.tree.open();
