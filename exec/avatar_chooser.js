@@ -432,6 +432,16 @@ function AvatarEditor(parent_frame, on_exit) {
 		on_exit();
 	}
 
+    function flip_x() {
+        editor.flip_x();
+        console.ungetstr('\t');
+    }
+
+    function flip_y() {
+        editor.flip_y();
+        console.ungetstr('\t');
+    }
+
 	this.open = function () {
 		frames.container = new Frame(1, 1, 1, 1, BG_BLUE|WHITE, frames.parent);
 		frames.container.nest();
@@ -448,6 +458,8 @@ function AvatarEditor(parent_frame, on_exit) {
 			}
 		);
 		editor.open();
+        editor.menu.addItem('Flip X', flip_x);
+        editor.menu.addItem('Flip Y', flip_y);
 		editor.menu.addItem('Save', _save);
 		editor.menu.addItem('Exit', on_exit);
 		editor.menu.addItem('Save & Exit', save_and_exit);
