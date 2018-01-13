@@ -72,15 +72,16 @@ Frame.prototype.blit = function (bin, w, h, x, y, str, sc) {
 	var o = 0; // offset into 'bin'
 	for (var yy = 0; yy < h; yy++) {
 		for (var xx = 0; xx < w; xx++) {
-			this.setData(x + xx, y + yy, bin.substr(o, 1), ascii(bin.substr(o + 1, 1)));
+			this.setData(x + xx, y + yy, bin.substr(o, 1), bin.substr(o + 1, 1).charCodeAt(0) || BG_BLACK);
 			o = o + 2;
 		}
 	}
 	if (typeof str !== 'undefined') {
 		// get fancy and center this later
 		str = str.substr(0, 10);
+        var o = Math.floor((w - str.length) / 2);
 		for (var n = 0; n < str.length; n++) {
-			this.setData(x + n, y + h, str.substr(n, 1), sc);
+			this.setData(x + n + o, y + h, str.substr(n, 1), sc);
 		}
 	}
 }
@@ -461,7 +462,7 @@ function AvatarEditor(parent_frame, on_exit) {
 						{	x : xx,
 							y : yy,
 							ch : bin.substr(o, 1),
-							attr : ascii(bin.substr(o + 1, 1))
+							attr : bin.substr(o + 1, 1).charCodeAt(0) || BG_BLACK
 						}
 					)
 					o = o + 2;
