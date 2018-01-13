@@ -1558,27 +1558,20 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		/* change to the drive where the parent of the startup_dir is mounted */
 		fprintf(dosemubat,"%s\r\n",xtrndrive);
 
+		char* gamedir = "";
 		if(startup_dir!=NULL && startup_dir[0]) {
-
-			SAFECOPY(str,startup_dir);
-
-		/* if theres a trailing slash, dump it */
-
-			p=lastchar(str);
-			if (*p=='/') *p=0;
-
-			if ((p=strrchr(str, '/'))!=NULL)
-				SAFECOPY(str,p+1);  /* str = game's starting dir */
-
-			else str[0] = '\0';
+			SAFECOPY(str, startup_dir);
+			*lastchar(str) = 0;
+			gamedir = getfname(str);
 		}
-
-		else str[0] = '\0';
-
-		fprintf(dosemubat,"cd %s\r\n",str);  /* startup_dir  */
+		if(*gamedir == 0) {
+			lprintf(LOG_ERR, "No startup directory configured for: %s", cmdline);
+			reutrn -1;
+		}
+		fprintf(dosemubat,"cd %s\r\n", gamedir);
 
 		if (setup_override == 1)
-			fprintf(dosemubat,"call %s\\%s\\emusetup.bat %s\r\n",xtrndrive,str,cmdline);
+			fprintf(dosemubat,"call %s\\%s\\emusetup.bat %s\r\n",xtrndrive,gamedir,cmdline);
 		else if (setup_override == 0)
 			fprintf(dosemubat,"call %s\\emusetup.bat\r\n",ctrldrive);
 		/* if (setup_override == -1) do_nothing */
