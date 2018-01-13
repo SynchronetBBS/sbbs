@@ -667,4 +667,12 @@ var ANSIEdit = function(options) {
 		f.close();
 	}
 
+    this.flip_x = function () {
+        frames.canvas.flipX();
+    }
+
+    this.flip_y = function () {
+        frames.canvas.flipY();
+    }
+
 }
