@@ -124,6 +124,8 @@ function read(usernum, username, netaddr)
 {
 	if(parseInt(usernum) >= 1)
 		return read_localuser(usernum);
+	else if(!netaddr)
+		return read_localuser(system.matchuser(username));
 	else
 		return read_netuser(username, netaddr);
 }
