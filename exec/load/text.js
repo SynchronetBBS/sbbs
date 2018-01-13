@@ -806,5 +806,8 @@ var Only=794;
 var SPAMVisibilityIsNow=795;
 var VoteInThisPollNow=796;
 var MIMEDecodedPlainText=797;
+var MsgHdrBodySeparator=798;
+var FileHdrDescSeparator=799;
+var RemoveFileQ=800;
 
-var TOTAL_TEXT=798;
+var TOTAL_TEXT=801;
