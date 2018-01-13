@@ -72,7 +72,7 @@ function date_from_str(str)
 function export_entry(bbs, msgbase)
 {
     var i;
-    var hdr = { to:'sbl', from:bbs.entry.created.by, subject:bbs.name };
+    var hdr = { to:'SBL', from:bbs.entry.created.by, subject:bbs.name };
 
     var body = "";      // This section for SMB2SBL compatibility
     body += "Name:          " + bbs.name + "\r\n";
@@ -2215,6 +2215,9 @@ function main()
 						if(debug) print(JSON.stringify(entry, null, 1));
 					}
 				}
+				break;
+			case "maint":
+				alert("Not yet implemented");
 				break;
 		}
     }
