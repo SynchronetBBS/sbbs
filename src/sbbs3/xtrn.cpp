@@ -1558,7 +1558,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		/* change to the drive where the parent of the startup_dir is mounted */
 		fprintf(dosemubat,"%s\r\n",xtrndrive);
 
-		char* gamedir = "";
+		const char* gamedir = "";
 		if(startup_dir!=NULL && startup_dir[0]) {
 			SAFECOPY(str, startup_dir);
 			*lastchar(str) = 0;
@@ -1566,7 +1566,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		}
 		if(*gamedir == 0) {
 			lprintf(LOG_ERR, "No startup directory configured for: %s", cmdline);
-			reutrn -1;
+			return -1;
 		}
 		fprintf(dosemubat,"cd %s\r\n", gamedir);
 
