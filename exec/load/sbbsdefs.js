@@ -612,6 +612,23 @@ var LOG_DEBUG       =7;			/* debug-level messages                     */
                                 /********************************************/ 
 }
 
+								/* "flags" bits for directory() */
+var GLOB_MARK		=(1<<1);	/* Append a slash to each name.  */
+var GLOB_NOSORT		=(1<<2);	/* Don't sort the names.  */
+var GLOB_APPEND		=(1<<5);	/* Append to results of a previous call.  */
+var GLOB_NOESCAPE   =(1<<6);	/* Backslashes don't quote metacharacters.  */
+var GLOB_PERIOD     =(1<<7); 	/* Leading `.' can be matched by metachars.  */
+var GLOB_ONLYDIR    =(1<<13);	/* Match only directories.  */
+
+								/********************************************/
+								/* Values for which in bbs.read_mail()		*/
+								/********************************************/
+var MAIL_YOUR			=0;		/* mail sent to you							*/
+var MAIL_SENT			=1;		/* mail you have sent						*/
+var MAIL_ANY			=2;		/* mail sent to or from you					*/
+var MAIL_ALL			=3;		/* all mail (ignores usernumber arg)		*/
+								/********************************************/
+
 								/********************************************/
 								/* 'mode' bits for bbs.email()/netmail()	*/
 								/********************************************/
