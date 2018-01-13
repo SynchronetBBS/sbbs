@@ -18,6 +18,11 @@ if(options && (bbs.sys_status&SS_RLOGIN))
 if(options && options.qwk_settings)
 	user.qwk_settings = eval(options.qwk_settings);
 
+if(options && options.avatar) {
+	var avatar = load({}, 'avatar_lib.js');
+	avatar.update_localuser(user.number, options.avatar);
+}	
+
 console.clear();
 
 if(!user.address.length && user.number>1) {
