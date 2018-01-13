@@ -1279,10 +1279,10 @@ Frame.prototype.__putChar__ = function(ch,attr) {
 	this.setData(this.__position__.cursor.x,this.__position__.cursor.y,ch,attr,true);
 }
 
-Frame.prototype.__flip__ = function (swaps) {
+Frame.prototype.__flip__ = function (swaps, flipx) {
     for (var y = 0; y < this.data_height; y++) {
         if (!Array.isArray(this.data[y])) continue;
-        this.data[y] = this.data[y].reverse();
+        if (flipx) this.data[y] = this.data[y].reverse();
         for (var x = 0; x < this.data[y].length; x++) {
             for (var s = 0; s < swaps.length; s++) {
                 var i = swaps[s].indexOf(ascii(this.data[y][x].ch));
@@ -1293,6 +1293,7 @@ Frame.prototype.__flip__ = function (swaps) {
             }
         }
     }
+    if (!flipx) this.data.reverse();
 }
 
 Frame.prototype.flipX = function () {
@@ -1318,7 +1319,7 @@ Frame.prototype.flipX = function () {
         [ 192, 217 ],
         [ 221, 222 ]
     ];
-    this.__flip__(swaps);
+    this.__flip__(swaps, true);
 }
 
 Frame.prototype.flipY = function () {
@@ -1338,8 +1339,7 @@ Frame.prototype.flipY = function () {
         [ 212, 213 ],
         [ 220, 223 ]
     ];
-    this.__flip__(swaps);
-    this.data.reverse();
+    this.__flip__(swaps, false);
 }
 
 /* frame reference object */
