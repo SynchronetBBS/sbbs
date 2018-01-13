@@ -1279,6 +1279,69 @@ Frame.prototype.__putChar__ = function(ch,attr) {
 	this.setData(this.__position__.cursor.x,this.__position__.cursor.y,ch,attr,true);
 }
 
+Frame.prototype.__flip__ = function (swaps) {
+    for (var y = 0; y < this.data_height; y++) {
+        if (!Array.isArray(this.data[y])) continue;
+        this.data[y] = this.data[y].reverse();
+        for (var x = 0; x < this.data[y].length; x++) {
+            for (var s = 0; s < swaps.length; s++) {
+                var i = swaps[s].indexOf(ascii(this.data[y][x].ch));
+                if (i >= 0) {
+                    this.data[y][x].ch = ascii(swaps[s][(i + 1) % 2]);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+Frame.prototype.flipX = function () {
+    const swaps = [
+        [ 40, 41 ],
+        [ 47, 92 ],
+        [ 60, 62 ],
+        [ 91, 93 ],
+        [ 123, 125 ],
+        [ 169, 170 ],
+        [ 174, 175 ],
+        [ 180, 195 ],
+        [ 181, 198 ],
+        [ 182, 199 ],
+        [ 183, 214 ],
+        [ 184, 213 ],
+        [ 185, 204 ],
+        [ 187, 201 ],
+        [ 188, 200 ],
+        [ 189, 211 ],
+        [ 190, 212 ],
+        [ 191, 218 ],
+        [ 192, 217 ],
+        [ 221, 222 ]
+    ];
+    this.__flip__(swaps);
+}
+
+Frame.prototype.flipY = function () {
+    const swaps = [
+        [ 47, 92 ],
+        [ 183, 189 ],
+        [ 184, 190 ],
+        [ 187, 188 ],
+        [ 191, 217 ],
+        [ 192, 218 ],
+        [ 193, 194 ],
+        [ 200, 201 ],
+        [ 202, 203 ],
+        [ 207, 209 ],
+        [ 208, 210 ],
+        [ 211, 214 ],
+        [ 212, 213 ],
+        [ 220, 223 ]
+    ];
+    this.__flip__(swaps);
+    this.data.reverse();
+}
+
 /* frame reference object */
 function Canvas(frame,display) {
 	this.frame = frame;
