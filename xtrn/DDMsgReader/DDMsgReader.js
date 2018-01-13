@@ -89,6 +89,10 @@
  *                              Bug fix: When using the scrolling interface to read a
  *                              message, any message color codes that might appear in
  *                              the message lines are preserved across lines.
+ * 2018-01-12 Eric Oulashin     Version 1.17 beta 53
+ *                              Added support for displaying user avatars, recently
+ *                              added to Synchronet.  Added the configuration option
+ *                              displayAvatars to toggle this feature.
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -175,8 +179,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 52";
-var READER_DATE = "2017-12-29";
+var READER_VERSION = "1.17 Beta 53";
+var READER_DATE = "2018-01-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -411,6 +415,13 @@ if (gFrameJSAvailable)
 var gScrollbarJSAvailable = file_exists(backslash(system.exec_dir) + "load/scrollbar.js");
 if (gScrollbarJSAvailable)
 	load("scrollbar.js");
+// See if the avatar support files are available, and load them if so
+var gAvatar = null;
+if (file_exists(backslash(system.exec_dir) + "load/smbdefs.js") && file_exists(backslash(system.exec_dir) + "load/avatar_lib.js"))
+{
+	load("smbdefs.js");
+	gAvatar = load({}, "avatar_lib.js");
+}
 
 /////////////////////////////////////////////
 // Script execution code
@@ -940,6 +951,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	};
 	if (gIsSysop)
 		this.enhReaderKeys.validateMsg = "A";
+
+	// Whether or not to display avatars
+	this.displayAvatars = true;
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -7353,6 +7367,8 @@ function DigDistMsgReader_ReadConfigFile()
 					if (!file_exists(themeFilename))
 						themeFilename = gStartupPath + value;
 				}
+				else if (settingUpper == "DISPLAYAVATARS")
+					this.displayAvatars = (valueUpper == "TRUE");
 			}
 		}
 
@@ -9320,18 +9336,30 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		if (console.screen_columns > 80)
 			++screenX;
 		*/
+		// If avatars are available, then show the sender's avatar on the right
+		// side
+		if (this.displayAvatars && (gAvatar != null) && ((pMsgHdr.attr & MSG_ANONYMOUS) == 0))
+		{
+			console.gotoxy(1, screenY-1);
+			gAvatar.draw(pMsgHdr.from_ext, pMsgHdr.from, pMsgHdr.from_net_addr, /* above: */true, /* right-justified: */true);
+			console.attributes = 0;	// Clear the background attribute as the next line might scroll, filling with BG attribute
+			// If using the traditional (non-scrolling) user interface, then
+			// put the cursor where it should be.  (If using the scrolling
+			// interface, the cursor will be placed where it should be elsewhere.)
+			if (!this.scrollingReaderInterface)
+				console.gotoxy(1, screenY);
+		}
 	}
 	else
 	{
 		// The user's terminal doesn't support ANSI - So just output the header
 		// lines.
-		//for (var hdrFileIdx = 0; hdrFileIdx < this.enhMsgHeaderLines.length; ++hdrFileIdx)
 		for (var hdrFileIdx = 0; hdrFileIdx < enhHdrLines.length; ++hdrFileIdx)
 		{
-			//console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
 			console.putmsg(this.ParseMsgAtCodes(enhHdrLines[hdrFileIdx], pMsgHdr,
 			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false));
 		}
+		// Note: Avatar display is only supported for ANSI
 	}
 }
 
@@ -15986,16 +16014,16 @@ function WWIVAttrsToSyncAttrs(pText)
 	// so we don't want to do all that work for nothing.. :)
 	if (/\x03[0-9]/.test(pText))
 	{
-		var text = pText.replace(/\x030/g, "\1n");        // Normal
-		text = text.replace(/\x031/g, "\1n\1c\1h");     // Bright cyan
-		text = text.replace(/\x032/g, "\1n\1y\1h");     // Bright yellow
-		text = text.replace(/\x033/g, "\1n\1m");         // Magenta
-		text = text.replace(/\x034/g, "\1n\1h\1w\1" + "4"); // Bright white on blue
-		text = text.replace(/\x035/g, "\1n\1g");         // Green
-		text = text.replace(/\x036/g, "\1h\1r\1i");     // Bright red, blinking
-		text = text.replace(/\x037/g, "\1n\1h\1b");     // Bright blue
-		text = text.replace(/\x038/g, "\1n\1b");         // Blue
-		text = text.replace(/\x039/g, "\1n\1c");         // Cyan
+		var text = pText.replace(/\x030/g, "\1n");			// Normal
+		text = text.replace(/\x031/g, "\1n\1c\1h");			// Bright cyan
+		text = text.replace(/\x032/g, "\1n\1y\1h");			// Bright yellow
+		text = text.replace(/\x033/g, "\1n\1m");			// Magenta
+		text = text.replace(/\x034/g, "\1n\1h\1w\1" + "4");	// Bright white on blue
+		text = text.replace(/\x035/g, "\1n\1g");			// Green
+		text = text.replace(/\x036/g, "\1h\1r\1i");			// Bright red, blinking
+		text = text.replace(/\x037/g, "\1n\1h\1b");			// Bright blue
+		text = text.replace(/\x038/g, "\1n\1b");			// Blue
+		text = text.replace(/\x039/g, "\1n\1c");			// Cyan
 		return text;
 	}
 	else
@@ -16921,6 +16949,8 @@ function ANSIAttrsToSyncAttrs(pText)
 	else
 		return pText; // No ANSI codes found, so just return the text.
 }
+
+//////////////////////////////////////////////////////////////////////////////
 
 // Returns whether or not some text has any ANSI codes in it.
 //

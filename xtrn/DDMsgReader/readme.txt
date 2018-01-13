@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.17 beta 52
-                           Release date: 2017-12-29
+                                 Version 1.17 beta 53
+                           Release date: 2018-01-12
 
                                      by
 
@@ -26,11 +26,12 @@ Contents
    - Synchronet command shell background
    - Installing into a command shell
 4. Header ANSI/asc file
-5. Configuration file & color/text theme configuration file
+5. User avatars
+6. Configuration file & color/text theme configuration file
    - Main configuration file (DDMsgReader.cfg)
    - Theme configuration file
-6. Drop file for replying to messages with Synchronet message editors
-7. text.dat lines used in Digital Distortion Message Reader
+7. Drop file for replying to messages with Synchronet message editors
+8. text.dat lines used in Digital Distortion Message Reader
 
 
 1. Disclaimer
@@ -487,7 +488,30 @@ left-justified in a width of 30 characters, the @-code would look like this:
 @MSG_NUM_AND_TOTAL-L#########@
 
 
-5. Configuration file & color/text theme configuration file
+5. User avatars
+===============
+Digital Distortion Message Reader supports Synchronet's Avatar feature, which
+was added in Synchronet 3.17.  Basically, this feature allows users to have a
+small (10x6) text-based artwork that represents themselves and is displayed in
+the message header when reading messages.  Digital Distortion Message Reader
+has a setting in the configuration file, displayAvatars, which lets you toggle
+whether or not to dislpay user avatars.  Valid values are true and false.  For
+more information on Synchronet's Avatar feature, see the following wiki page
+with a web browser:
+http://wiki.synchro.net/module:avatars
+For the avatars feature to work, ensure you have all the latest Synchronet .js
+files in your sbbs/exec and sbbs/exec/load directories.  Specifically, Digital
+Distortion Message Reader loads smbdefs.js and avatar_lib.js, which are both
+in the sbbs/exec/load directory.  If those files are not there, then Digital
+Distortion Message Reader will still work but it won't display avatars.
+When avatars are enabled with Digital Distortion Message Reader, they will be
+displayed in the message header above a message, on the right side of the
+screen.  If you create a custom message header file for Digital Distortion
+Message Reader, you may want to reserve the rightmost 12 characters for the
+user avatar.
+
+
+6. Configuration file & color/text theme configuration file
 ===========================================================
 Digital Distortion Message Reader allows changing some settings, colors, and
 some of the text via configuration files.  The configuration files are plain
@@ -628,6 +652,10 @@ areaChooserHdrFilenameBase            The filename to use (without the
 
 areaChooserHdrMaxLines                The maximum number of lines to use from
                                       the message area chooser header file.
+
+displayAvatars                        Whether or not to display user avatars in
+                                      message headers.  Valid values are true
+                                      and false.
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
@@ -965,7 +993,7 @@ selectedMsgMarkColor                 The color to use for the checkmark for
                                      selected messages (used in the message
                                      list)
 
-6. Drop file for replying to messages with Synchronet message editors
+7. Drop file for replying to messages with Synchronet message editors
 =====================================================================
 When reading a message, the message lister will write a drop file in the node
 directory, called DDML_SyncSMBInfo.txt, which contains some information about
@@ -1000,7 +1028,7 @@ Note that if you have SlyEdit installed on your BBS, this version of Digital
 Distortion Message Reader (1.00) requires version 1.27 or newer of SlyEdit in
 order for SlyEdit to properly get the correct message from the message lister.
 
-7. text.dat lines used in Digital Distortion Message Reader
+8. text.dat lines used in Digital Distortion Message Reader
 ===========================================================
 This message reader uses the following lines from Synchronet's text.dat file
 (located in the sbbs/ctrl directory):

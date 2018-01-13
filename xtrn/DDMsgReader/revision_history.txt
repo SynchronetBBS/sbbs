@@ -19,6 +19,14 @@ Version  Date         Description
                       than the colors for messages to the user, since all
                       personal emails are to the user (the 'to user' colors for
                       each email might be obnoxious).
+                      Also, updated to support Synchronet's Avatar feature
+                      which was added in version 3.17.  For that feature to
+                      work, you will need the latest .js files - Specifically,
+                      for this reader, you would need smbdefs.js and
+                      avatar_lib.js.  Added a new configuration setting,
+                      displayAvatars, which toggles whether or not to display
+                      user avatars in the message headers.  Valid values are
+                      true and false.
                       Also contains various bug fixes.
 1.16     2016-09-11   Added a new feature that allows users to forward a
                       message to an email address or to another user on the
