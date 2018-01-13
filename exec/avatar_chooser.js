@@ -549,9 +549,8 @@ function MainMenu(parent_frame) {
 		);
 		frames.info.word_wrap = true;
 		frames.info.putmsg(
-			'On participating systems, your avatar will ' +
-			'be displayed alongside messages that you ' +
-			'have posted.'
+			'Your avatar will be displayed alongside messages ' +
+			'you have posted and files you have uploaded.'
 		);
 
 		frames.user_avatar = new Frame(
