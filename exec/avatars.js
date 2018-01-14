@@ -107,11 +107,13 @@ function import_netuser_list(hdr, list)
 			}
 			var index = find_name(objs, list[i][u]);
 			if(index >= 0) {
-				if(objs[index].data != i) {
+				if(i == "disabled")
+					delete objs[index];	// Remove rather than just mark as disabled
+				else if(objs[index].data != i) {
 					objs[index].data = i;
 					objs[index].updated = new Date();
 				}
-			} else
+			} else if(i != "disabled")
 				objs.push({ name: list[i][u], data: i, created: new Date() });
 		}
 	}
@@ -274,6 +276,10 @@ function decompress_list(list)
 {
 	var new_list = [];
 	for(var i in list) {
+		if(i == "disabled") {
+			new_list[i] = list[i];
+			continue;
+		}
 		var data = LZString.decompressFromBase64(i.replace(/\s+/g, ''));
 		if(lib.is_valid(data))
 			new_list[base64_encode(data)] = list[i];
@@ -298,9 +304,6 @@ function export_users(msgbase, realnames, all)
 		var avatar = lib.read_localuser(n);
 		if(avatar.export_count == undefined)
 			avatar.export_count = 0;
-		if(!lib.enabled(avatar)) {
-			continue;
-		}
 		var last_exported = 0;
 		if(avatar.last_exported)
 			last_exported = new Date(avatar.last_exported);
@@ -312,13 +315,26 @@ function export_users(msgbase, realnames, all)
 		if(all == true
 			|| updated > last_exported
 			|| new Date() - last_exported >= export_freq * (24*60*60*1000)) {
-			printf("Exporting avatar for user #%u\r\n", n);
-			var data = LZString.compressToBase64(base64_decode(avatar.data));
-			if(!list[data])
-				list[data] = [];
-			list[data].push(u.alias);
-			if(realnames)
-				list[data].push(u.name);
+			if(avatar.disabled == true) {
+				printf("Exporting disabled-avatar state for user #%u\r\n", n);
+				if(!list.disabled)
+					list.disabled = [];
+				list.disabled.push(u.alias);
+				if(realnames)
+					list.disabled.push(u.name);
+			} else {
+				if(!lib.is_enabled(avatar))	{
+					alert("Invalid avatar for user #" + n);
+					continue;
+				}
+				printf("Exporting avatar for user #%u\r\n", n);
+				var data = LZString.compressToBase64(base64_decode(avatar.data));
+				if(!list[data])
+					list[data] = [];
+				list[data].push(u.alias);
+				if(realnames)
+					list[data].push(u.name);
+			}
 			avatar.last_exported = new Date();
 			avatar.export_count++;
 			lib.write_localuser(n, avatar);

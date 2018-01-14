@@ -68,10 +68,14 @@ function enable_localuser(usernum, enabled)
 		return false;
 	}
 	var result;
-	if(!file.iniGetObject("avatar"))
+	var obj = file.iniGetObject("avatar");
+	if(!obj || obj.disabled == !enabled)
 		result = false;
-	else
-		result = file.iniSetValue("avatar", "disabled", !enabled);
+	else {
+		obj.disabled = !enabled;
+		obj.updated = new Date();
+		result = file.iniSetObject("avatar", obj);
+	}	
 	file.close();
 	return result;
 }
@@ -100,6 +104,8 @@ function write_netuser(username, netaddr, obj)
 
 function read_localuser(usernum)
 {
+	if(!usernum)
+		return false;
 	var file = new File(this.localuser_fname(usernum));
 	if(!file.open("r")) {
 		return false;
@@ -144,14 +150,22 @@ function import_file(usernum, filename, offset)
 {
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
-	if(!graphic.load(filename, offset))
+	try {
+		if(!graphic.load(filename, offset))
+			return false;
+	} catch(e) {
+		alert(e);
 		return false;
+	}
 	if(!is_valid(graphic.BIN))
 		return false;
-	return update_localuser(usernum, base64_encode(graphic.BIN));
+	var data = base64_encode(graphic.BIN);
+	if(!usernum)
+		return data;
+	return update_localuser(usernum, data);
 }
 
-function enabled(obj)
+function is_enabled(obj)
 {
 	return obj
 		&& typeof obj == 'object' 
@@ -164,7 +178,7 @@ function enabled(obj)
 function draw(usernum, username, netaddr, above, right)
 {
 	var avatar = this.read(usernum, username, netaddr);
-	if(!enabled(avatar))
+	if(!is_enabled(avatar))
 		return false;
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
@@ -192,7 +206,7 @@ function draw(usernum, username, netaddr, above, right)
 function show(usernum, username, netaddr)
 {
 	var avatar = this.read(usernum, username, netaddr);
-	if(!enabled(avatar))
+	if(!is_enabled(avatar))
 		return false;
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
