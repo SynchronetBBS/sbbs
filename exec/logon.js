@@ -221,8 +221,10 @@ else {
 		console.crlf();
 	}
 
-	if(console.term_supports(USER_ANSI))
+	if(console.term_supports(USER_ANSI)) {
 		Avatar.draw(user.number, /* name: */null, /* netaddr: */null, /* above: */false, /* right: */true);
+		console.attributes = 0;	// Clear the background attribute
+	}
 }
 
 // Automatically set shell to WIPSHELL
