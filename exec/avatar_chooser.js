@@ -292,6 +292,7 @@ function CollectionLister(dir, parent_frame) {
 		container : null,
 		tree : null,
 		info : null,
+        preview : null,
 		parent : parent_frame
 	};
 
@@ -301,13 +302,22 @@ function CollectionLister(dir, parent_frame) {
 		collection : null
 	};
 
-	function display_collection_info(sauce) {
+	function display_collection_info(sauce, fn) {
+
 		frames.info.clear();
 		frames.info.putmsg('Author: ' + (sauce.author.length ? sauce.author : 'Unknown') + '\r\n');
 		frames.info.putmsg('Group: ' + (sauce.group.length ? sauce.group : 'Unknown') + '\r\n');
 		frames.info.putmsg('Avatars: ' + Math.floor(sauce.rows / avatar_lib.defs.height) + '\r\n');
 		frames.info.putmsg('ICE Colors: ' + (sauce.ice_color ? 'Yes' : 'No') + '\r\n');
 		frames.info.putmsg('Updated: ' + sauce.date.toLocaleDateString());
+
+        frames.preview.clear();
+        const f = new File(fn);
+        f.open('rb');
+        var bin = f.read(avatar_lib.size);
+        f.close();
+        frames.preview.blit(bin, avatar_lib.defs.width, avatar_lib.defs.height, 0, 0);
+
 	}
 
 	this.open = function () {
@@ -335,6 +345,15 @@ function CollectionLister(dir, parent_frame) {
 			frames.container
 		);
 
+        frames.preview = new Frame(
+            frames.info.x,
+            frames.info.y + frames.info.height + 1,
+            avatar_lib.defs.width,
+            avatar_lib.defs.height,
+            BG_BLACK,
+            frames.container
+        );
+
 		if (frames.parent.is_open) frames.container.open();
 
 		state.tree = new Tree(frames.tree, 'Avatar collections');
@@ -343,7 +362,7 @@ function CollectionLister(dir, parent_frame) {
 		state.tree.colors.lfg = WHITE;
 		state.tree.colors.lbg = BG_BLUE;
 		state.tree.colors.kfg = LIGHTCYAN;
-		var first_sauce = null;
+		var first_collection = null;
 		directory(dir + '/*.bin').forEach(
 			function (e, i) {
 				if (e.search(EXCLUDE_FILES) > -1) return;
@@ -358,10 +377,15 @@ function CollectionLister(dir, parent_frame) {
 					}
 				);
 				ti.sauce = sauce;
-				if (first_sauce === null) first_sauce = sauce;
+                ti.file = e;
+				if (first_collection === null) {
+                    first_collection = { sauce : sauce, file : e }
+                };
 			}
 		);
-		if (first_sauce !== null) display_collection_info(first_sauce);
+		if (first_collection !== null) {
+            display_collection_info(first_collection.sauce, first_collection.file);
+        }
 		state.tree.open();
 
 	}
@@ -390,7 +414,7 @@ function CollectionLister(dir, parent_frame) {
 				return false;
 			} else if (state.tree.getcmd(cmd)) {
 				frames.info.clear();
-				display_collection_info(state.tree.currentItem.sauce);
+				display_collection_info(state.tree.currentItem.sauce, state.tree.currentItem.file);
 			}
 		}
 		return true;
