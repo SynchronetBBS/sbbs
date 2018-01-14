@@ -379,13 +379,7 @@ function CollectionLister(dir, parent_frame) {
 			var ret = state.cb.getcmd(cmd);
 			if (typeof ret == 'number') {
 				if (ret >= 0) {
-					// set user avatar here
-					var obj = {
-						created : new Date(),
-						updated : new Date(),
-						data : base64_encode(get_avatar(ret))
-					};
-					avatar_lib.write_localuser(user.number, obj);
+					avatar_lib.update_localuser(user.number, base64_encode(get_avatar(ret)));
 				}
 				state.cb.close();
 				state.cb = null;
@@ -506,6 +500,11 @@ function AvatarEditor(parent_frame, on_exit) {
 
 function MainMenu(parent_frame) {
 
+    const tree_strings = {
+        enable : 'Enable your avatar',
+        disable : 'Disable your avatar'
+    };
+
 	const user_fname = avatar_lib.localuser_fname(user.number);
 
 	const frames = {
@@ -519,20 +518,39 @@ function MainMenu(parent_frame) {
 		ae : null,
 		cl : null,
 		tree : null,
+        ed_item : null,
 		timer : new Timer(),
-		utime : file_exists(user_fname) ? file_date(user_fname) : -1
+		utime : file_exists(user_fname) ? file_date(user_fname) : -1,
+        user_avatar : null
 	};
 
 	function load_user_avatar() {
 		var user_avatar = avatar_lib.read_localuser(user.number);
 		if (user_avatar) {
-			frames.user_avatar.clear();
+            frames.user_avatar.clear();
 			frames.user_avatar.drawBorder(BORDER);
 			frames.user_avatar.blit(
 				base64_decode(user_avatar.data),
 				avatar_lib.defs.width, avatar_lib.defs.height, 1, 1,
 				'My Avatar', WHITE
 			);
+            state.user_avatar = {};
+            Object.keys(user_avatar).forEach(
+                function (e) {
+                    if (e !== 'data') state.user_avatar[e] = user_avatar[e];
+                }
+            );
+            if (state.user_avatar.disabled) {
+                for (var y = 1; y < frames.user_avatar.data.length - 2; y++) {
+                    if (!Array.isArray(frames.user_avatar.data[y])) continue;
+                    for (var x = 1; x < frames.user_avatar.data[y].length - 1; x++) {
+                        if (typeof frames.user_avatar.data[y][x] == 'object') {
+                            frames.user_avatar.data[y][x].attr = BG_BLACK|LIGHTGRAY;
+                        }
+                    }
+                }
+                frames.user_avatar.invalidate();
+            }
 		}
 	}
 
@@ -545,6 +563,18 @@ function MainMenu(parent_frame) {
 			}
 		}
 	}
+
+    function enable_disable() {
+        avatar_lib.enable_localuser(
+            user.number, state.ed_item.text == tree_strings.enable
+        );
+        load_user_avatar();
+        state.ed_item.text = (
+            state.ed_item.text == tree_strings.enable
+            ? tree_strings.disable
+            : tree_strings.enable
+        );
+    }
 
 	this.open = function () {
 
@@ -567,8 +597,8 @@ function MainMenu(parent_frame) {
 		);
 		frames.info.word_wrap = true;
 		frames.info.putmsg(
-			'Your avatar will be displayed alongside messages ' +
-			'you have posted and files you have uploaded.'
+			'If enabled, your avatar will be displayed alongside ' +
+            'messages you have posted and files you have uploaded.'
 		);
 
 		frames.user_avatar = new Frame(
@@ -629,7 +659,6 @@ function MainMenu(parent_frame) {
 		);
 		state.tree.addItem(
 			'Edit your avatar', function () {
-				// placeholder { x y w h canvas_x canvas_y, canvas_w, canvas_h }
 				state.ae = new AvatarEditor(
 					frames.parent,
 					function () {
@@ -640,15 +669,12 @@ function MainMenu(parent_frame) {
 				state.ae.open();
 			}
 		);
-		state.tree.addItem(
-			'Remove your avatar',  function () {
-				console.clear(WHITE);
-				if(remove_avatar())
-					frames.user_avatar.clear();
-				console.clear(LIGHTGRAY);
-				frames.parent.invalidate();
-			}
-		);
+        if (state.user_avatar !== null) {
+            state.ed_item = state.tree.addItem(
+                tree_strings[state.user_avatar.disabled ? 'enable' : 'disable'],
+                enable_disable
+            );
+        }
 		state.tree.open();
 
 		state.timer.addEvent(2000, true, test_user_file);
