@@ -520,13 +520,16 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
  */
 Graphic.prototype.load = function(filename, offset)
 {
-	var file_type=file_getext(filename).substr(1);
+	var file_type=file_getext(filename);
 	var f=new File(filename);
 	var ch;
 	var attr;
 	var l;
 
-	switch(file_type.toUpperCase()) {
+	if(!file_type)
+		throw("unsupported file type: " + filename);
+
+	switch(file_type.substr(1).toUpperCase()) {
 	case "ANS":
 		if(!(f.open("rb",true)))
 			return(false);
@@ -550,7 +553,7 @@ Graphic.prototype.load = function(filename, offset)
 			this.putmsg(undefined,undefined,l,true);
 		break;
 	default:
-		throw("unsupported file type:" + filename);
+		throw("unsupported file type: " + filename);
 	}
 	return(true);
 };
