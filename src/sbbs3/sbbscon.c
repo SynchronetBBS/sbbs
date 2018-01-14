@@ -34,7 +34,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifdef USE_LINUX_CAPS
+#if defined USE_LINUX_CAPS && !defined _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 
