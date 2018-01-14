@@ -313,9 +313,20 @@ function CollectionLister(dir, parent_frame) {
 
         frames.preview.clear();
         const f = new File(fn);
-        f.open('rb');
-        var bin = f.read(avatar_lib.size);
-        f.close();
+        if(f.open('rb')) {
+			var sauce = sauce_lib.read(f);
+			if(sauce) {
+				var num_avatars = sauce.filesize / avatar_lib.size;
+				var preview_avatar;
+				if(sauce.tinfo4 && sauce.tinfo4 <= num_avatars)
+					preview_avatar = (sauce.tinfo4 - 1);
+				else
+					preview_avatar = random(num_avatars);
+				f.position = preview_avatar * avatar_lib.size;
+			}
+			var bin = f.read(avatar_lib.size);
+			f.close();
+		}
         frames.preview.blit(bin, avatar_lib.defs.width, avatar_lib.defs.height, 0, 0);
 
 	}
