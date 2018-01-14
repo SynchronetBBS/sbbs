@@ -747,6 +747,12 @@ function init() {
 	console_attr = console.attributes;
 	bbs.sys_status|=SS_MOFF;
 	console.clear(LIGHTGRAY);
+	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+	console.ctrlkey_passthru|=(1<<11);      // Disable Ctrl-K handling in sbbs
+	console.ctrlkey_passthru|=(1<<16);      // Disable Ctrl-P handling in sbbs
+	console.ctrlkey_passthru|=(1<<20);      // Disable Ctrl-T handling in sbbs
+	console.ctrlkey_passthru|=(1<<21);      // Disable Ctrl-U handling in sbbs
+	console.ctrlkey_passthru|=(1<<26);      // Disable Ctrl-Z handling in sbbs
 }
 
 function main() {
