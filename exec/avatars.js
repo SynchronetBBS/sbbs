@@ -335,10 +335,13 @@ function export_users(msgbase, realnames, all)
 	body += JSON.stringify(list, null, 1) + "\r\n";
 	body += "json-end\r\n";
 	body += "--- " + js.exec_file + " " + REVISION + "\r\n";
-	return msgbase.save_msg({ to:user_avatars, from:system.operator, subject:system.name }, body);
+	var result = msgbase.save_msg({ to:user_avatars, from:system.operator, subject:system.name }, body);
+	if(!result)
+		alert("MsgBase error: " + msgbase.last_error);
+	return result;
 }
 
-function export_file(msgbase, filename)
+function export_file_to_msgbase(msgbase, filename)
 {
 	var file = new File(filename);
 	if(!file.open("rb")) {
@@ -356,7 +359,38 @@ function export_file(msgbase, filename)
 	body += data.match(/([\x00-\xff]{1,72})/g).join("\r\n");
 	body += "\r\nbin-lz-end\r\n";
 	body += "--- " + js.exec_file + " " + REVISION + "\r\n";
-	return msgbase.save_msg({ to:shared_avatars, from:system.operator, subject:file_getname(filename) }, body);
+	var result = msgbase.save_msg({ to:shared_avatars, from:system.operator, subject:file_getname(filename) }, body);
+	if(!result)
+		alert("MsgBase error: " + msgbase.last_error);
+	return result;
+}
+
+function export_file(msgbase, filename)
+{
+	var last_exported = new Date(0);
+
+    var ini = new File(msgbase.file + ".ini");
+	if(ini.open("r")) {
+		last_exported=ini.iniGetValue("avatars", filename, last_exported);
+		ini.close();
+	}
+
+	if(file_date(filename) < last_exported.valueOf() / 1000
+		&& new Date() - last_exported < export_freq * (24*60*60*1000)) {
+		alert("File not updated recently: " + filename);
+		return false;
+	}
+	
+	var success = export_file_to_msgbase(msgbase, filename);
+
+	if(success) {
+		if(ini.open(file_exists(ini.name) ? 'r+':'w+')) {
+			ini.iniSetValue("avatars", filename, new Date());
+			ini.close();
+		} else
+			alert("Error opening/creating " + ini.name);
+	}
+	return success;
 }
 
 function main()
@@ -369,6 +403,7 @@ function main()
 	var ptr;
 	var limit;
 	var all;
+	var share = false;
 	var files = [];
 
     for(i in argv) {
@@ -398,6 +433,9 @@ function main()
 			case "-all":
 				all = true;
 				break;
+			case "-share":
+				share = true;
+				break;
 			case "import":
 			case "export":
 			case "dump":
@@ -407,6 +445,7 @@ function main()
 			case "enable":
 			case "disable":
 			case "remove":
+			case "newuser":
 				cmd = arg;
 				break;
 			default:
@@ -448,15 +487,28 @@ function main()
 				success = export_users(msgbase, realnames, all);
 			}
 			for(var i in files) {
-				printf("Exporting avatar file: %s\n", files[i]);
+				printf("Exporting avatar collection: %s\n", files[i]);
 				if(!valid_shared_file(files[i])) {
 				    success = false;
 					break;
 				}
-                else
-					success = export_file(msgbase, files[i]);
+                else {
+					if(export_file(msgbase, files[i]))
+						printf("Exported avatar collection: %s\n", files[i]);
+				}
 			}
-			printf("%s\r\n", success ? "Successful" : "FAILED: " + msgbase.last_error);
+			if(share) {
+				var filespec = lib.local_library() + system.qwk_id + ".*.bin";
+				print("Exporting shared avatar collections: " + filespec);
+				var share_files = directory(filespec);
+				for(var i in share_files) {
+					if(!valid_shared_file(share_files[i]))
+						continue;
+					if(export_file(msgbase, share_files[i]))
+						printf("Exported shared avatar collection: %s\n", share_files[i]);
+				}
+			}
+			printf("%s\r\n", success ? "Successful" : "FAILED");
 			break;
 		case "dump":
 			var usernum = optval[cmd];
@@ -500,6 +552,32 @@ function main()
 				var success = lib.enable_localuser(usernum, cmd == "enable");
 				print(success ? "Successful" : "FAILED");
 			}
+			break;
+		case "newuser":
+			if(!files.length)
+				files.push(optval[cmd]);
+			if(!files.length) {
+				alert("No file specified");
+				break;
+			}
+			if(!file_exists(files[0])) {
+				printf("File does not exist: %s\r\n", files[0]);
+				break;
+			}
+			printf("Importing %s for new users\r\n", files[0]);
+			var data = lib.import_file(null, files[0], offset);
+			if(!data) {
+				alert("Failed");
+				break;
+			}
+			var ini = new File(file_cfgname(system.ctrl_dir, "modopts.ini"));
+			if(!ini.open(file_exists(ini.name) ? 'r+':'w+')) {
+				alert(ini.name + " open error " + ini.error);
+				break;
+			}
+			var success = ini.iniSetValue("newuser", "avatar", data);
+			printf("%s\r\n", success ? "Successful" : "FAILED!");
+			ini.close();
 			break;
 	}
 }
