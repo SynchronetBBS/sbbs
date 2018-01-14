@@ -72,6 +72,11 @@ function main()
 					if(str)
 						sauce[i] = truncp(str);
 				}
+				for(var i = 1; i <= 4; i++) {
+					var str = prompt("tinfo" + i + " [" + sauce["tinfo" + i] + "]");
+					if(str)
+						sauce["tinfo" + i] = parseInt(str);
+				}
 				var orig_comment = sauce.comment.slice();
 				sauce.comment.length = 0;
 				for(var i=0; i < lib.defs.max_comments; i++) {
