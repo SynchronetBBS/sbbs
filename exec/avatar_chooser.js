@@ -575,6 +575,7 @@ function MainMenu(parent_frame) {
                 }
                 frames.user_avatar.invalidate();
             }
+            if (state.ed_item instanceof TreeItem) state.ed_item.show();
 		}
 	}
 
@@ -693,12 +694,11 @@ function MainMenu(parent_frame) {
 				state.ae.open();
 			}
 		);
-        if (state.user_avatar !== null) {
-            state.ed_item = state.tree.addItem(
-                tree_strings[state.user_avatar.disabled ? 'enable' : 'disable'],
-                enable_disable
-            );
-        }
+        state.ed_item = state.tree.addItem(
+            tree_strings[state.user_avatar !== null && state.user_avatar.disabled ? 'enable' : 'disable'],
+            enable_disable
+        );
+        if (state.user_avatar == null) state.ed_item.hide();
 		state.tree.open();
 
 		state.timer.addEvent(2000, true, test_user_file);
@@ -747,7 +747,7 @@ function init() {
 	console_attr = console.attributes;
 	bbs.sys_status|=SS_MOFF;
 	console.clear(LIGHTGRAY);
-	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+    js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	console.ctrlkey_passthru|=(1<<11);      // Disable Ctrl-K handling in sbbs
 	console.ctrlkey_passthru|=(1<<16);      // Disable Ctrl-P handling in sbbs
 	console.ctrlkey_passthru|=(1<<20);      // Disable Ctrl-T handling in sbbs
