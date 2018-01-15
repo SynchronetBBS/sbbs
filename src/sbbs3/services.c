@@ -1819,10 +1819,6 @@ void DLLCALL services_thread(void* arg)
 			return;
 		}
 
-		tls_context = get_ssl_cert(&scfg, ssl_estr);
-		if (tls_context == -1)
-			lprintf(LOG_ERR, "Error creating TLS certificate: %s", ssl_estr);
-
 		update_clients();
 
 		/* Open and Bind Listening Sockets */
@@ -1830,8 +1826,6 @@ void DLLCALL services_thread(void* arg)
 
 		for(i=0;i<(int)services && !startup->shutdown_now;i++) {
 			if (service[i].options & SERVICE_OPT_TLS) {
-				if (tls_context == -1)
-					continue;
 				if (service[i].options & SERVICE_OPT_UDP) {
 					lprintf(LOG_ERR, "Option error, TLS and UDP specified for %s", service[i].protocol);
 					continue;
@@ -1843,6 +1837,13 @@ void DLLCALL services_thread(void* arg)
 				if (service[i].options & SERVICE_OPT_STATIC) {
 					lprintf(LOG_ERR, "Option error, TLS not yet supported for static services (%s)", service[i].protocol);
 					continue;
+				}
+				if(tls_context == -1) {
+					tls_context = get_ssl_cert(&scfg, ssl_estr);
+					if (tls_context == -1) {
+						lprintf(LOG_ERR, "Error creating TLS certificate: %s", ssl_estr);
+						continue;
+					}
 				}
 			}
 			service[i].set=xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
