@@ -148,11 +148,18 @@ function update_localuser(usernum, data)
 
 function import_file(usernum, filename, offset)
 {
-	if(!offset) {
-		sauce_lib=load({}, 'sauce_lib.js');
-		sauce = sauce_lib.read(filename);
-		if(sauce)
-			offset = random(sauce.filesize / this.size);
+	sauce_lib = load({}, 'sauce_lib.js');
+	var sauce = sauce_lib.read(filename);
+	if(sauce) {
+		var num_avatars = sauce.filesize / this.size;
+		if(num_avatars < 1) {
+			alert("Number of avatars: " + num_avatars);
+			return false;
+		}
+		if(offset >= num_avatars)
+			return false;
+		else if(offset == undefined)
+			offset = random(num_avatars);
 	}
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
@@ -186,10 +193,15 @@ function draw(usernum, username, netaddr, above, right)
 	var avatar = this.read(usernum, username, netaddr);
 	if(!is_enabled(avatar))
 		return false;
+	return draw_bin(avatar.data, above, right);
+}
+
+function draw_bin(data, above, right)
+{
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
 	try {
-		graphic.BIN = base64_decode([avatar.data]);
+		graphic.BIN = base64_decode([data]);
 		var lncntr = console.line_counter;
 		var pos = console.getxy();
 		var x = pos.x;
@@ -214,11 +226,16 @@ function show(usernum, username, netaddr)
 	var avatar = this.read(usernum, username, netaddr);
 	if(!is_enabled(avatar))
 		return false;
+	return show_bin(avatar.data);
+}
+
+function show_bin(data)
+{
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
 	graphic.attr_mask = ~graphic.defs.BLINK;	// Disable blink attribute (consider iCE colors?)
 	try {
-		graphic.BIN = base64_decode([avatar.data]);
+		graphic.BIN = base64_decode([data]);
 		console.print(graphic.ANSI);
 	} catch(e) {
 		return false;
