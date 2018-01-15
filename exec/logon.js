@@ -249,7 +249,9 @@ if(options
 	&& bbs.sys_status&SS_RLOGIN) {
 	bbs.xtrn_sec();
 	bbs.hangup();
-} else if(console.term_supports(USER_ANSI) && options && options.set_avatar == true) {
+} else if(user.security.restrictions&UFLAG_G
+	&& console.term_supports(USER_ANSI) 
+	&& options && options.set_avatar == true) {
 	var avatar = Avatar.read_localuser(user.number);
 	if(!avatar || !avatar.data) {
 		alert("You have not selected an avatar.");
