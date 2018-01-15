@@ -148,6 +148,12 @@ function update_localuser(usernum, data)
 
 function import_file(usernum, filename, offset)
 {
+	if(!offset) {
+		sauce_lib=load({}, 'sauce_lib.js');
+		sauce = sauce_lib.read(filename);
+		if(sauce)
+			offset = random(sauce.filesize / this.size);
+	}
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
 	try {
