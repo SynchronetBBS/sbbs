@@ -299,8 +299,20 @@ function CollectionLister(dir, parent_frame) {
 	const state = {
 		tree : null,
 		cb : null,
-		collection : null
+		collection : null,
+		preview : null
 	};
+
+	function display_preview(fn, offset) {
+		frames.preview.clear();
+		const f = new File(fn);
+		if (f.open('rb')) {
+			f.position = offset * avatar_lib.size;
+			var bin = f.read(avatar_lib.size);
+			f.close();
+			frames.preview.blit(bin, avatar_lib.defs.width, avatar_lib.defs.height, 0, 0);
+		}
+	}
 
 	function display_collection_info(sauce, fn) {
 
@@ -311,23 +323,23 @@ function CollectionLister(dir, parent_frame) {
 		frames.info.putmsg('ICE Colors: ' + (sauce.ice_color ? 'Yes' : 'No') + '\r\n');
 		frames.info.putmsg('Updated: ' + sauce.date.toLocaleDateString());
 
-        frames.preview.clear();
         const f = new File(fn);
-        if(f.open('rb')) {
+		var preview_avatar = 0;
+        if (f.open('rb')) {
 			var sauce = sauce_lib.read(f);
-			if(sauce) {
+			if (sauce) {
 				var num_avatars = sauce.filesize / avatar_lib.size;
-				var preview_avatar;
-				if(sauce.tinfo4 && sauce.tinfo4 <= num_avatars)
+				if (sauce.tinfo4 && sauce.tinfo4 <= num_avatars) {
 					preview_avatar = (sauce.tinfo4 - 1);
-				else
+				} else {
 					preview_avatar = random(num_avatars);
+				}
 				f.position = preview_avatar * avatar_lib.size;
 			}
-			var bin = f.read(avatar_lib.size);
 			f.close();
+			display_preview(fn, preview_avatar);
+			state.preview = preview_avatar;
 		}
-        frames.preview.blit(bin, avatar_lib.defs.width, avatar_lib.defs.height, 0, 0);
 
 	}
 
@@ -343,7 +355,7 @@ function CollectionLister(dir, parent_frame) {
 			frames.container.y + 2,
 			Math.floor((frames.container.width - 2) / 2),
 			frames.container.height - 3,
-			0,
+			BG_BLACK,
 			frames.container
 		);
 
@@ -423,7 +435,20 @@ function CollectionLister(dir, parent_frame) {
 		} else {
 			if (cmd.toLowerCase() == 'q') {
 				return false;
-			} else if (state.tree.getcmd(cmd)) {
+			} else if (cmd == KEY_LEFT) {
+				var num_avatars = Math.floor(state.tree.currentItem.sauce.filesize / avatar_lib.size);
+				state.preview = state.preview - 1;
+				if (state.preview < 0) state.preview = num_avatars - 1;
+				display_preview(state.tree.currentItem.file, state.preview);
+			} else if (cmd == KEY_RIGHT) {
+				var num_avatars = Math.floor(state.tree.currentItem.sauce.filesize / avatar_lib.size);
+				state.preview = (state.preview + 1) % num_avatars;
+				display_preview(state.tree.currentItem.file, state.preview);
+			} else if (
+				(state.tree.index > 0 || cmd != KEY_UP) &&
+				(state.tree.index < state.tree.items.length - 1 || cmd != KEY_DOWN) &&
+				state.tree.getcmd(cmd)
+			) {
 				frames.info.clear();
 				display_collection_info(state.tree.currentItem.sauce, state.tree.currentItem.file);
 			}
@@ -436,7 +461,9 @@ function CollectionLister(dir, parent_frame) {
 	}
 
 	this.close = function () {
+		frames.parent.attr = BG_BLACK|LIGHTGRAY;
 		state.tree.close();
+		frames.preview.delete();
 		frames.info.delete();
 		frames.tree.delete();
 		frames.container.delete();
@@ -544,6 +571,7 @@ function MainMenu(parent_frame) {
 
 	const frames = {
 		parent : parent_frame,
+		container : null,
 		tree : null,
 		info : null,
 		user_avatar : null
@@ -614,13 +642,16 @@ function MainMenu(parent_frame) {
 
 	this.open = function () {
 
+		frames.container = new Frame(1, 1, 1, 1, BG_BLACK, frames.parent);
+		frames.container.nest(1, 1);
+
 		frames.tree = new Frame(
 			frames.parent.x + 1,
 			frames.parent.y + 3,
 			Math.floor((frames.parent.width - 2) / 2),
 			5,
-			0,
-			frames.parent
+			BG_BLACK,
+			frames.container
 		);
 
 		frames.info = new Frame(
@@ -629,7 +660,7 @@ function MainMenu(parent_frame) {
 			frames.parent.width - frames.tree.width - 4,
 			5,
 			WHITE,
-			frames.parent
+			frames.container
 		);
 		frames.info.word_wrap = true;
 		frames.info.putmsg(
@@ -642,17 +673,13 @@ function MainMenu(parent_frame) {
 			frames.parent.y + frames.parent.height - 1 - avatar_lib.defs.height - 3,
 			avatar_lib.defs.width + 2,
 			avatar_lib.defs.height + 3,
-			15,
-			frames.parent
+			BG_BLACK|WHITE,
+			frames.container
 		);
 
 		load_user_avatar();
 
-		if (frames.parent.is_open) {
-			frames.tree.open();
-			frames.info.open();
-			frames.user_avatar.open();
-		}
+		if (frames.parent.is_open) frames.container.open();
 
 		state.tree = new Tree(frames.tree, 'Avatar collections');
 		state.tree.colors.fg = WHITE;
@@ -724,6 +751,7 @@ function MainMenu(parent_frame) {
 				state.cl.close();
 				delete state.cl;
 				state.cl = null;
+				frames.parent.attr = BG_BLACK|LIGHTGRAY;
 				state.tree.open();
 			}
 		} else if (cmd.toLowerCase() == 'q') {
@@ -747,6 +775,7 @@ function MainMenu(parent_frame) {
 		state.tree.close();
 		frames.user_avatar.delete();
 		frames.tree.delete();
+		frames.container.delete();
 	}
 
 }
@@ -768,7 +797,7 @@ function init() {
 
 function main() {
 
-	const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, 0);
+	const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLACK|LIGHTGRAY);
 	frame.transparent = true;
 	frame.v_scroll = true;
 	frame.drawBorder(BORDER, { x : 5, y : 1, attr : TITLE_COLOR, text: TITLE });
