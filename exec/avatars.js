@@ -119,9 +119,9 @@ function import_netuser_list(hdr, list)
 	}
 	if(!file.open("w"))
 		return false;
-	file.writeln(format(";from %s at %s (%s) on %s"
-		, hdr.from, hdr.subj, hdr.from_net_addr, new Date().toISOString()));
 	var result = file.iniSetAllObjects(objs);
+	file.writeln(format(";imported from %s at %s (%s) on %s"
+		, hdr.from, hdr.subj, hdr.from_net_addr, new Date().toISOString()));
 	file.close();
 	return result;
 }
@@ -161,7 +161,7 @@ function valid_shared_file(filename)
 //	print(JSON.stringify(list, null, 4));
 	for(var i in list)
 		if(!lib.is_valid(list[i])) {
-			alert("Avatar " + i + " (" + list[i].length + " bytes) is invalid");
+			alert("Avatar " + i + " " + sauce.comment[i] + " (" + list[i].length + " bytes) is invalid");
 			return false;
 		}
     return true;
@@ -534,17 +534,31 @@ function main()
 			print(JSON.stringify(obj));
 			break;
 		case "draw":	// Uses Graphic.draw()
+		case "show":	// Uses console.write()
+			if(files.length) {
+				for(var i in files) {
+					for(o=offset ? offset : 0; ; o++) {	
+						var data = lib.import_file(null, files[i], o);
+						if(!data)
+							break;
+						console.clear();
+						if(cmd == "draw") {
+							lib.draw_bin(data);
+							console.getkey();
+						} else {
+							lib.show_bin(data);
+							console.pause();
+						}
+						console.attributes = 7;
+					}
+				}
+				break;
+			}
 			var usernum = optval[cmd];
 			if(!usernum)
 				usernum = user.number;
 			console.clear();
-			var obj = lib.draw(usernum);
-			break;
-		case "show":	// Uses console.write()
-			var usernum = optval[cmd];
-			if(!usernum)
-				usernum = user.number;
-			var obj = lib.show(usernum);
+			var obj = lib[cmd](usernum);
 			break;
 		case "verify":
 			for(var i in files) {
@@ -592,6 +606,8 @@ function main()
 				break;
 			}
 			var success = ini.iniSetValue("newuser", "avatar", data);
+			if(success)
+				ini.iniRemoveKey("newuser", "avatar_file");
 			printf("%s\r\n", success ? "Successful" : "FAILED!");
 			ini.close();
 			break;
