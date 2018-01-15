@@ -106,6 +106,7 @@ load("sbbsdefs.js");
 load("frame.js");
 load("tree.js");
 load("funclib.js");
+load("event-timer.js");
 
 const characterSets = [
 	[ 49, 50, 51, 52, 53, 54, 55, 56, 57, 48 ],
@@ -165,6 +166,8 @@ var ANSIEdit = function(options) {
 		cursor : { 'x' : 1, 'y' : 1 },
 		lastCursor : { 'x' : 0, 'y' : 0 },
 		charSet : 6,
+		timer : new Timer(),
+		cursor_event : null
 	};
 
 	var settings = {
@@ -211,6 +214,18 @@ var ANSIEdit = function(options) {
 		frames.canvas.v_scroll = settings.vScroll;
 		frames.canvas.h_scroll = settings.hScroll;
 
+		frames.cursor = new Frame(frames.canvas.x, frames.canvas.y, 1, 1, BG_BLACK|WHITE, frames.canvas);
+		frames.cursor.putmsg(ascii(219));
+		state.cursor_event = state.timer.addEvent(
+			500, true, function () {
+				if (frames.cursor.is_open) {
+					frames.cursor.close();
+				} else {
+					frames.cursor.open();
+				}
+			}
+		)
+
 		frames.charSet = new Frame(
 			frames.top.x, frames.top.y + frames.top.height - 1,
 			frames.top.width, 1,
@@ -243,6 +258,12 @@ var ANSIEdit = function(options) {
 			frames.menu
 		);
 
+	}
+
+	function move_cursor(x, y) {
+		state.cursor_event.lastrun = Date.now();
+		frames.cursor.open();
+		frames.cursor.moveTo(x, y);
 	}
 
 	function initMenu() {
@@ -485,7 +506,16 @@ var ANSIEdit = function(options) {
 	this.getcmd = function(userInput) {
 
 		if (userInput == "\x09") {
-			state.inMenu ? lowerMenu() : raiseMenu();
+			if (state.inMenu) {
+				state.cursor_event.pause = false;
+				state.inMenu = false;
+				lowerMenu();
+			} else {
+				state.cursor_event.pause = true;
+				frames.cursor.close();
+				state.inMenu = true;
+				raiseMenu();
+			}
 		} else if(state.inMenu) {
 			var ret = tree.getcmd(userInput);
 			if (ret == 'DONE' || ret == 'CLEAR') lowerMenu();
@@ -503,6 +533,7 @@ var ANSIEdit = function(options) {
 		) {
 			state.cursor.y++;
 			state.cursor.x = frames.canvas.x;
+			move_cursor(state.cursor.x, state.cursor.y);
 			if (state.cursor.y - frames.canvas.offset.y > frames.canvas.height) {
 				// I don't know why I need to do this, especially not after looking at Frame.scroll()
 				// but vertical Frame.scroll() won't work unless I do this
@@ -520,9 +551,11 @@ var ANSIEdit = function(options) {
 			state.cursor.x--;
 			var retval = this.putChar({ ch : '' });
 			state.cursor.x--;
+			move_cursor(state.cursor.x, state.cursor.y);
 		} else if (userInput == '\x7F') {
 			var retval = this.putChar({ ch : ' ' });
 			state.cursor.x--;
+			move_cursor(state.cursor.x, state.cursor.y);
 		} else if (userInput.match(/[0-9]/) !== null) {
 			userInput = (userInput == 0) ? 9 : userInput - 1;
 			var retval = this.putChar(
@@ -533,7 +566,10 @@ var ANSIEdit = function(options) {
 		} else {
 			switch (userInput) {
 				case KEY_UP:
-					if (state.cursor.y > frames.canvas.y) state.cursor.y--;
+					if (state.cursor.y > frames.canvas.y) {
+						state.cursor.y--;
+						move_cursor(state.cursor.x, state.cursor.y);
+					}
 					if (settings.vScroll &&
 						frames.canvas.offset.y > 0 &&
 						state.cursor.y == frames.canvas.offset.y
@@ -546,6 +582,7 @@ var ANSIEdit = function(options) {
 						state.cursor.y < frames.canvas.y + frames.canvas.height - 1
 					) {
 						state.cursor.y++;
+						move_cursor(state.cursor.x, state.cursor.y);
 					}
 					if (settings.vScroll &&
 						state.cursor.y - frames.canvas.offset.y > frames.canvas.height
@@ -564,7 +601,10 @@ var ANSIEdit = function(options) {
 					}
 					break;
 				case KEY_LEFT:
-					if (state.cursor.x > frames.canvas.x) state.cursor.x--;
+					if (state.cursor.x > frames.canvas.x) {
+						state.cursor.x--;
+						move_cursor(state.cursor.x, state.cursor.y);
+					}
 					if (settings.hScroll &&
 						frames.canvas.offset.x > 0 &&
 						state.cursor.x == frames.canvas.offset.x
@@ -577,6 +617,7 @@ var ANSIEdit = function(options) {
 						state.cursor.x < frames.canvas.x + frames.canvas.width - 1
 					) {
 						state.cursor.x++;
+						move_cursor(state.cursor.x, state.cursor.y);
 					}
 					if (settings.hScroll &&
 						state.cursor.x - frames.canvas.offset.x > frames.canvas.width
@@ -600,9 +641,11 @@ var ANSIEdit = function(options) {
 					break;
 				case KEY_HOME:
 					state.cursor.x = frames.canvas.x;
+					move_cursor(state.cursor.x, state.cursor.y);
 					break;
 				case KEY_END:
 					state.cursor.x = frames.canvas.data_width;
+					move_cursor(state.cursor.x, state.cursor.y);
 					break;
 				default:
 					break;
@@ -624,21 +667,14 @@ var ANSIEdit = function(options) {
 
 	}
 
-	this.cycle = function(force) {
+	this.cycle = function() {
 
-		if (typeof parentFrame == 'undefined') frames.top.cycle();
+		state.timer.cycle();
+		if (typeof options.parentFrame == 'undefined') frames.top.cycle();
 
-		if ((typeof force == 'boolean' && force) ||
-			(	state.cursor.x != state.lastCursor.x ||
-				state.cursor.y != state.lastCursor.y
-			)
+		if (state.cursor.x != state.lastCursor.x ||
+			state.cursor.y != state.lastCursor.y
 		) {
-
-			console.attributes = state.attr;
-			console.gotoxy(
-				state.cursor.x - frames.canvas.offset.x,
-				state.cursor.y - frames.canvas.offset.y
-			);
 
 			for (var c in state.cursor) state.lastCursor[c] = state.cursor[c];
 
