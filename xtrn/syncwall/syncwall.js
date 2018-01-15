@@ -12,10 +12,9 @@ var	attr, systemStatus, users, systems, months,
 	editor, jsonClient, timer, timedEvent,
 	lastUser = -1, lastSystem = -1;
 
-var updateStatus = function(u, s, altUsers, altSystems) {
+function updateStatus(u, s, altUsers, altSystems) {
 
-	if(u == lastUser && s == lastSystem)
-		return;
+	if (u == lastUser && s == lastSystem) return;
 
 	// Derp, how does I scope?  Too late, too much drinkings yesno?
 	var usrs = (typeof altUsers == "undefined") ? users : altUsers;
@@ -28,12 +27,9 @@ var updateStatus = function(u, s, altUsers, altSystems) {
 	lastUser = u;
 	lastSystem = s;
 	editor.cycle(true);
-	if(typeof timedEvent != "undefined")
-		timedEvent.abort = true;
+	if (typeof timedEvent != "undefined") timedEvent.abort = true;
 	timedEvent = timer.addEvent(
-		5000,
-		false,
-		function() {
+		5000, false, function () {
 			statusFrame.clear();
 			lastUser = -1;
 			lastSystem = -1;
@@ -43,15 +39,15 @@ var updateStatus = function(u, s, altUsers, altSystems) {
 
 }
 
-var fetchHistory = function(month) {
-
+function fetchHistory(month) {
 	try {
 		var historyDir = js.exec_dir + "history";
-		if(!file_exists(historyDir) || !file_isdir(historyDir))
+		if (!file_exists(historyDir) || !file_isdir(historyDir)) {
 			mkdir(historyDir);
+		}
 		var fn = month.split("/");
 		fn = historyDir + "/" + fn[fn.length - 1];
-		if(!file_exists(fn)) {
+		if (!file_exists(fn)) {
 			var http = new HTTPRequest();
 			var body = http.Get(month);
 			var f = new File(fn);
@@ -60,13 +56,12 @@ var fetchHistory = function(month) {
 			f.close();
 		}
 		loadLocalHistory(fn);
-	} catch(err) {
+	} catch (err) {
 		log(LOG_ERR, "SyncWall error: " + err);
 	}
-
 }
 
-var loadLocalHistory = function(fn) {
+function loadLocalHistory(fn) {
 	var f = new File(fn);
 	f.open("r");
 	var history = JSON.parse(f.read());
@@ -77,8 +72,8 @@ var loadLocalHistory = function(fn) {
 	promptFrame.putmsg(" Hit <SPACE> to skip");
 	lastUser = -1;
 	lastSystem = -1;
-	for(var h = 0; h < history.SEQUENCE.length; h++) {
-		if(history.SEQUENCE[h].c == "CLEAR") {
+	for (var h = 0; h < history.SEQUENCE.length; h++) {
+		if (history.SEQUENCE[h].c == "CLEAR") {
 			editor.clear();
 		} else {
 			editor.putChar(
@@ -96,16 +91,13 @@ var loadLocalHistory = function(fn) {
 			);
 			editor.cycle();
 			frame.cycle();
-			if(console.inkey(K_NONE) == " ") {
+			if (console.inkey(K_NONE) == " ") {
 				loadState(history.STATE);
 				break;
 			}
-
-			if(h < history.SEQUENCE.length - 1)
-				mswait(delay);
+			if (h < history.SEQUENCE.length - 1) mswait(delay);
 		}
 	}
-
 	promptFrame.bottom();
 	statusFrame.clear();
 	statusFrame.putmsg("Hit any key to continue");
@@ -114,25 +106,18 @@ var loadLocalHistory = function(fn) {
 	console.getkey();
 	statusFrame.clear();
 	loadState();
-
 }
 
-var loadHistory = function() {
-
+function loadHistory() {
 	promptFrame.putmsg(" Hit <SPACE> to skip");
-
 	var len = jsonClient.read(dbName, "SEQUENCE.length", 1);
 	pageLoop:
-	for(var i = 0; i < len; i = i + ((len - i > page) ? page : len - i)) {
+	for (var i = 0; i < len; i = i + ((len - i > page) ? page : len - i)) {
 		var history = jsonClient.slice(
-			dbName,
-			"SEQUENCE",
-			i,
-			((len - i > page) ? i + page : len),
-			1
+			dbName,	"SEQUENCE",	i, ((len - i > page) ? i + page : len),	1
 		);
-		for(var h = 0; h < history.length; h++) {
-			if(history[h].c == "CLEAR") {
+		for (var h = 0; h < history.length; h++) {
+			if (history[h].c == "CLEAR") {
 				editor.clear();
 			} else {
 				editor.putChar(
@@ -146,27 +131,25 @@ var loadHistory = function() {
 			}
 			editor.cycle();
 			frame.cycle();
-			if(console.inkey(K_NONE) == " ") {
+			if (console.inkey(K_NONE) == " ") {
 				loadState();
 				break pageLoop;
 			}
 			// Loading the next 'page' history elements will delay us anyhow.
-			if(h < history.length - 1)
-				mswait(delay);
+			if (h < history.length - 1) mswait(delay);
 		}
 	}
-
 	promptFrame.bottom();
 	statusFrame.clear();
 	editor.cycle(true);
 	lastUser = -1;
 	lastSystem = -1;
-
 }
 
-var loadState = function(state) {
-	if(typeof state == "undefined")
+function loadState(state) {
+	if (typeof state == "undefined") {
 		var state = jsonClient.read(dbName, "STATE", 1);
+	}
 	editor.clear();
 	for(var y in state) {
 		for(var x in state[y]) {
@@ -181,36 +164,30 @@ var loadState = function(state) {
 	}
 }
 
-var sendUpdate = function(ch) {
-
+function sendUpdate(ch) {
 	jsonClient.write(
-		dbName,
-		"LATEST",
-		{	'x' : ch.x,
+		dbName,	"LATEST", {
+			'x' : ch.x,
 			'y' : ch.y,
 			'c' : ch.ch,
 			'a' : ch.attr,
 			'u' : users.indexOf(user.alias),
 			's' : systems.indexOf(system.name)
-		},
-		2
+		}, 2
 	);
-
 }
 
-var processUpdate = function(update) {
+function processUpdate(update) {
 
-	if(update.oper != "WRITE")
-		return;
+	if (update.oper != "WRITE") return;
 
 	var location = update.location.split(".");
-
-	if(location[0] == "USERS") {
+	if (location[0] == "USERS") {
 		users.push(update.data[update.data.length - 1]);
-	} else if(location[0] == "SYSTEMS") {
+	} else if (location[0] == "SYSTEMS") {
 		systems.push(update.data);
-	} else if(location[0] == "LATEST") {
-		if(update.data.c == "CLEAR") {
+	} else if (location[0] == "LATEST") {
+		if (update.data.c == "CLEAR") {
 			editor.clear();
 		} else {
 			editor.putChar(
@@ -226,16 +203,14 @@ var processUpdate = function(update) {
 
 }
 
-var initDisplay = function() {
-
+function initDisplay() {
 	attr = console.attributes;
 	systemStatus = bbs.sys_status;
 	bbs.sys_status |= SS_MOFF;
 	console.clear(LIGHTGRAY);
-
 }
 
-var initFrames = function() {
+function initFrames() {
 
 	frame = new Frame(
 		1,
@@ -246,51 +221,34 @@ var initFrames = function() {
 	);
 
 	titleFrame = new Frame(
-		frame.x,
-		frame.y,
-		frame.width,
-		1,
-		BG_BLUE|WHITE,
-		frame
+		frame.x, frame.y, frame.width, 1, BG_BLUE|WHITE, frame
 	);
 	titleFrame.putmsg(
 		"\1h\1w.: SyncWall InterBBS Graffiti Wall :. Hit [ESC] to exit"
 	);
 	titleFrame.gotoxy(titleFrame.width - 10, 1);
-	titleFrame.putmsg("\1h\1bby echicken"); // Aww yeah, bby. :|
+	titleFrame.putmsg("\1h\1bby echicken");
 
 	statusFrame = new Frame(
-		frame.x,
-		frame.y + frame.height - 1,
-		frame.width,
-		1,
-		BG_BLUE|WHITE,
-		frame
+		frame.x, frame.y + frame.height - 1,
+		frame.width, 1, BG_BLUE|WHITE, frame
 	);
 
 	promptFrame = new Frame(
-		statusFrame.width - 20,
-		statusFrame.y,
-		21,
-		1,
-		BG_BLUE|WHITE,
-		statusFrame
+		statusFrame.width - 20, statusFrame.y, 21, 1, BG_BLUE|WHITE, statusFrame
 	);
 
 	editorFrame = new Frame(
-		frame.x,
-		titleFrame.y + titleFrame.height,
-		frame.width,
-		frame.height - titleFrame.height - statusFrame.height,
-		LIGHTGRAY,
-		frame
+		frame.x, titleFrame.y + titleFrame.height,
+		frame.width, frame.height - titleFrame.height - statusFrame.height,
+		LIGHTGRAY, frame
 	);
 
 	frame.open();
 
 }
 
-var initEditor = function() {
+function initEditor() {
 
 	editor = new ANSIEdit(
 		{	'x' : editorFrame.x,
@@ -305,7 +263,7 @@ var initEditor = function() {
 
 	editor.open();
 	var historyTree = editor.menu.addTree("View previous month");
-	for(var m in months) {
+	for (var m in months) {
 		month = months[m].split("/");
 		month = month[month.length - 1].replace(".json", "");
 		month = format(" %s/%s", month.substr(0, 2), month.substr(2));
@@ -314,31 +272,27 @@ var initEditor = function() {
 
 }
 
-var initUsers = function() {
-
+function initUsers() {
 	users = jsonClient.read(dbName, "USERS", 1);
-	if(!users || users.indexOf(user.alias) < 0) {
+	if (!users || users.indexOf(user.alias) < 0) {
 		jsonClient.push(dbName, "USERS", user.alias, 2);
 		users = jsonClient.read(dbName, "USERS", 1);
 	}
 	jsonClient.subscribe(dbName, "USERS");
-
 }
 
-var initSystems = function() {
-
+function initSystems() {
 	systems = jsonClient.read(dbName, "SYSTEMS", 1);
-	if(!systems || systems.indexOf(system.name) < 0) {
+	if (!systems || systems.indexOf(system.name) < 0) {
 		jsonClient.push(dbName, "SYSTEMS", system.name, 2);
 		systems = jsonClient.read(dbName, "SYSTEMS", 1);
 	}
 	jsonClient.subscribe(dbName, "SYSTEMS");
-
 }
 
-var initJSON = function() {
+function initJSON() {
 
-	if(file_exists(js.exec_dir + "server.ini")) {
+	if (file_exists(js.exec_dir + "server.ini")) {
 		var f = new File(js.exec_dir + "server.ini");
 		f.open("r");
 		var ini = f.iniGetObject();
@@ -351,8 +305,7 @@ var initJSON = function() {
 		var ini = f.iniGetObject("JSON");
 		f.close();
 		// services.ini normally uses "Port" rather than "port", but it's actually not case sensitive
-		if(ini.port == undefined && ini.Port != undefined)
-			ini.port = ini.Port;
+		if (ini.port == undefined && ini.Port != undefined) ini.port = ini.Port;
 		var host = "localhost";
 		var port = (ini === null) ? 10088 : Number(ini.port);
 	}
@@ -360,15 +313,12 @@ var initJSON = function() {
 	jsonClient.callback = processUpdate;
 	jsonClient.subscribe(dbName, "LATEST");
 	months = jsonClient.read(dbName, "MONTHS", 1);
-	if(!months)
-		months = [];
+	if (!months) months = [];
 
 }
 
-var init = function() {
-
+function init() {
 	timer = new Timer();
-
 	initDisplay();
 	initJSON();
 	initFrames();
@@ -376,46 +326,35 @@ var init = function() {
 	initUsers();
 	initSystems();
 	loadHistory();
-
 }
 
-var cycle = function() {
-
-	frame.cycle();
+function cycle() {
 	editor.cycle();
 	jsonClient.cycle();
 	timer.cycle();
-
+	if (frame.cycle()) console.gotoxy(console.screen_columns, console.screen_rows);
 }
 
-var input = function() {
-
+function input() {
 	var userInput = console.inkey(K_NONE, 5);
-	if(userInput == "")
-		return true;
-	if(ascii(userInput) == 27)
-		return false;
+	if (userInput == "") return true;
+	if (ascii(userInput) == 27) return false;
 	var ret = editor.getcmd(userInput);
-	if(ret.ch != false || ascii(ret.ch) == 32) {
+	if (ret.ch != false || ascii(ret.ch) == 32) {
 		updateStatus(users.indexOf(user.alias), systems.indexOf(system.name));
 		sendUpdate(ret);
 	}
 	return true;
-
 }
 
-var main = function() {
-
+function main() {
 	while(!js.terminated) {
-		if(!input())
-			break;
+		if(!input()) break;
 		cycle();
 	}
-
 }
 
-var cleanUp = function() {
-
+function cleanUp() {
 	jsonClient.disconnect();
 	editor.close();
 	frame.close();
@@ -428,6 +367,6 @@ try {
 	main();
 	cleanUp();
 	exit();
-} catch(err) {
+} catch (err) {
 	log(LOG_ERR, "SyncWall: " + err);
 }
