@@ -47,6 +47,7 @@ enum {
 	 CON_PROP_STATUS
 	,CON_PROP_LNCNTR 
 	,CON_PROP_COLUMN
+	,CON_PROP_LASTLINELEN
 	,CON_PROP_ATTR
 	,CON_PROP_TOS
 	,CON_PROP_ROWS
@@ -94,6 +95,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_COLUMN:
 			val=sbbs->column;
+			break;
+		case CON_PROP_LASTLINELEN:
+			val=sbbs->lastlinelen;
 			break;
 		case CON_PROP_ATTR:
 			val=sbbs->curatr;
@@ -206,6 +210,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_COLUMN:
 			sbbs->column=val;
 			break;
+		case CON_PROP_LASTLINELEN:
+			sbbs->lastlinelen=val;
+			break;
 		case CON_PROP_ATTR:
 			if(JSVAL_IS_STRING(*vp)) {
 				JSVALUE_TO_MSTRING(cx, *vp, sval, NULL);
@@ -302,6 +309,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{	"status"			,CON_PROP_STATUS			,CON_PROP_FLAGS	,310},
 	{	"line_counter"		,CON_PROP_LNCNTR 			,CON_PROP_FLAGS	,310},
 	{	"current_column"	,CON_PROP_COLUMN			,CON_PROP_FLAGS ,315},
+	{	"last_line_length"	,CON_PROP_LASTLINELEN		,CON_PROP_FLAGS	,317},
 	{	"attributes"		,CON_PROP_ATTR				,CON_PROP_FLAGS	,310},
 	{	"top_of_screen"		,CON_PROP_TOS				,CON_PROP_FLAGS	,310},
 	{	"screen_rows"		,CON_PROP_ROWS				,CON_PROP_FLAGS	,310},
@@ -328,14 +336,15 @@ static jsSyncPropertySpec js_console_properties[] = {
 
 #ifdef BUILD_JSDOCS
 static char* con_prop_desc[] = {
-	 "status bitfield (see <tt>CON_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	 "status bit-field (see <tt>CON_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"current 0-based line counter (used for automatic screen pause)"
 	,"current 0-based column counter (used to auto-increment <i>line_counter</i> when screen wraps)"
+	,"length of last line sent to terminal (before a carriage-return or line-wrap)"
 	,"current display attributes (set with number or string value)"
 	,"set to <i>true</i> if the terminal cursor is already at the top of the screen"
 	,"number of remote terminal screen rows (in lines)"
 	,"number of remote terminal screen columns (in character cells)"
-	,"bitfield of automatically detected terminal settings "
+	,"bit-field of automatically detected terminal settings "
 		"(see <tt>USER_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"terminal type description (e.g. 'ANSI')"
 	,"number of seconds before displaying warning (Are you really there?) due to user/keyboard inactivity"
@@ -344,11 +353,11 @@ static char* con_prop_desc[] = {
 	,"number of low time-left (5 or fewer minutes remaining) warnings displayed to user"
 	,"input/output has been aborted"
 	,"remote output can be asynchronously aborted with Ctrl-C"
-	,"current Telnet mode bitfield (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"current Telnet mode bit-field (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"word-wrap buffer (used by getstr) - <small>READ ONLY</small>"
 	,"current yes/no question (set by yesno and noyes)"
 	,"cursor position offset for use with <tt>getstr(K_USEOFFSET)</tt>"
-	,"control key pass-through bitmask, set bits represent control key combinations "
+	,"control key pass-through bit-mask, set bits represent control key combinations "
 		"<i>not</i> handled by <tt>inkey()</tt> method "
 		"This may optionally be specified as a string of characters. "
 		"The format of this string is [+-][@-_]. If neither plus nor minus is "
