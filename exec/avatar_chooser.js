@@ -7,6 +7,7 @@ load('ansiedit.js');
 
 const sauce_lib = load({}, 'sauce_lib.js');
 const avatar_lib = load({}, 'avatar_lib.js');
+const ansiterm = load({}, 'ansiterm_lib.js');
 
 const BORDER = [ BLUE, LIGHTBLUE, CYAN, LIGHTCYAN, WHITE ];
 const TITLE = 'Avatar Settings';
@@ -787,7 +788,9 @@ function init() {
 	console_attr = console.attributes;
 	bbs.sys_status|=SS_MOFF;
 	console.clear(LIGHTGRAY);
+	ansiterm.send("ext_mode", "clear", "cursor");
     js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+	js.on_exit("ansiterm.send('ext_mode', 'set', 'cursor')");
 	console.ctrlkey_passthru|=(1<<11);      // Disable Ctrl-K handling in sbbs
 	console.ctrlkey_passthru|=(1<<16);      // Disable Ctrl-P handling in sbbs
 	console.ctrlkey_passthru|=(1<<20);      // Disable Ctrl-T handling in sbbs
