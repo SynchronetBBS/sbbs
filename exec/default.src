@@ -187,7 +187,15 @@ cmdkey A
 	auto_message
 	end_cmd
 cmdkey /A
-	exec_bin avatar_chooser
+	compare_ars ANSI and not GUEST
+	if_false
+		print "\r\nSorry, only regular users with ANSI terminals can do that.\r\n"
+	else
+		print "Selecting your avatar..."
+		exec_bin avatar_chooser
+		# an alternative approach (uses the configured xtrn/door):
+		# exec_xtrn avatchoo
+		end_if
 	end_cmd
 
 cmdkey B
