@@ -294,6 +294,10 @@ It usually turns out that the instructions were not followed closely enough.  Pl
 
 The Forum page is the most likely culprit.  Sorting messages into threads takes up a certain amount of memory and CPU time.  Bots crawling through your Forum may hit several pages at once, etc.  You may be able to mitigate this by playing with the *max_messages* setting as [described above](#optional-settings).  You may also consider consider restricting access to your Forum page so that only authenticated / non-guest users may browse it; access control via *webctrl.ini* files is described in the [Pages](#pages) section above.
 
+#### Something related to Fidonet isn't working!
+
+I don't care.
+
 #### Why aren't you using *insert flavour-of-the-month web framework here*
 
 Because I don't feel like it, and I don't want to hear about it.  I'm sure it's awesome, though.
