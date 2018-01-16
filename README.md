@@ -10,6 +10,8 @@ A web interface for Synchronet BBS
 * [Customization](#customization)
 	* [Sidebar Modules](#sidebar-modules)
 	* [Pages](#pages)
+* [Uninstall](#uninstall)
+* [Getting Support](#getting-support)
 
 ### Disclaimer
 
@@ -262,7 +264,7 @@ To stop using this web interface, you can just revert to your previous *web* dir
 - Revert your *ctrl/services.ini* file to the backup you made prior to installing this web interface
 - Undo any changes you made to your firewall & router during the *Quick Start*
 
-### Support
+### Getting Support
 
 #### Via GitHub
 
@@ -272,6 +274,10 @@ To stop using this web interface, you can just revert to your previous *web* dir
 #### On IRC
 
 - You can find me in #synchronet on irc.synchro.net.  I may be AFK, but ask your question and idle for a while; I'll respond eventually.
+
+#### On DOVE-Net
+
+- Post a message to 'echicken' in the Synchronet Sysops area.
 
 #### Email
 
