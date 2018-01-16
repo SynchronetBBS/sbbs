@@ -12,6 +12,7 @@ A web interface for Synchronet BBS
 	* [Pages](#pages)
 * [Uninstall](#uninstall)
 * [Getting Support](#getting-support)
+* [FAQ](#faq)
 
 ### Disclaimer
 
