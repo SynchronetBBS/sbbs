@@ -119,12 +119,15 @@ The following *optional* settings can be added to the [web] section of your *ctr
 	websocket_telnet_port = 1124
 	websocket_rlogin_port = 1514
 	allowed_ftelnet_targets = some.other.bbs:23,yet.another.bbs:2323
+	; Serve this web interface from a subdirectory of the webserver's document root
+	web_root = ../web/root/ecwebv4
 ```
 
 - Setting *forum_extended_ascii* to *false* may resolve problems with displaying UTF-8 encoded characters; character codes > 127 will not be assumed to be extended-ASCII references to CP437 characters.
 - Tweaking *max_messages* may improve forum performance or resolve 'Out of memory' errors, if you see any of those when browsing the forum
 - Normally, fTelnet will try to connect to the websocket proxies based on information from *ctrl/services.ini*.  In some situations (eg. when using an HTTPS reverse proxy) it may be necessary to connect to another port unknown to Synchronet.
 - The *allowed_ftelnet_targets* setting is only necessary if you will be adding additional pages through which users can connect to external systems via fTelnet (see below).  This is a comma-separated list of host:port entries.
+- If you placed the *contents* of the *web/root/* directory from this repository at some other location within your webserver's document root, use the *web_root* value to point to that directory.  (Note that the *contents* of the *web/lib/* directory from this repository must still live at *[web_directory]/lib* on your system.)
 
 ### Customization
 
