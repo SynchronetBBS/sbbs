@@ -282,3 +282,21 @@ To stop using this web interface, you can just revert to your previous *web* dir
 #### Email
 
 - Please don't.  Public support discussions are better for everyone, especially those searching the web for answers in the future.
+
+### FAQ
+
+#### I followed the instructions, but it isn't working
+
+It usually turns out that the instructions were not followed closely enough.  Please try again.  (I'm not pretending that this thing is bug-free or that the instructions are perfectly clear.  I'm just sayin'.)
+
+#### System performance is poor / memory usage has increased since I installed this
+
+The Forum page is the most likely culprit.  Sorting messages into threads takes up a certain amount of memory and CPU time.  Bots crawling through your Forum may hit several pages at once, etc.  You may be able to mitigate this by playing with the *max_messages* setting as [described above](#optional-settings).  You may also consider consider restricting access to your Forum page so that only authenticated / non-guest users may browse it; access control via *webctrl.ini* files is described in the [Pages](#pages) section above.
+
+#### Why aren't you using *insert flavour-of-the-month web framework here*
+
+Because I don't feel like it, and I don't want to hear about it.  I'm sure it's awesome, though.
+
+#### Why don't you use *insert javascript-tooling-thing here*
+
+Because I don't feel like it.  Also, if it adds additional dependencies or setup steps on behalf of the end-user (sysops), I'm not interested in supporting it.
