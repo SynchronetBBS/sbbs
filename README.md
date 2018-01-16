@@ -1,6 +1,16 @@
 # synchronet-web-v4
 A web interface for Synchronet BBS
 
+* [Disclaimer](#disclaimer)
+* [Requirements](#requirements)
+* [Quick start](#quick-start)
+* [Configuration](#configuration)
+	* [Advanced / Optional Settings](#optional-settings)
+	* [Additional fTelnet Targets](#additional-ftelnet-targets)
+* [Customization](#customization)
+	* [Sidebar Modules](#sidebar-modules)
+	* [Pages](#pages)
+
 ### Disclaimer
 
 - Use this software at your own risk.  It's still being developed, and hasn't been thoroughly tested yet.
@@ -106,7 +116,7 @@ if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (co
 - Ensure that the *guest* user specified in the [web] section of *ctrl/modopts.ini* exists and has only the permissions that you want an unauthenticated visitor from the web to have.  This user probably shouldn't be able to post messages, and definitely shouldn't be able to post to networked message areas.
 - Customise the *xtrn_blacklist* setting in the [web] section of *ctrl/modopts.ini*.  This is a comma-separated list of *internal codes* of any programs (or Online Program Sections) that you wish to *exclude* from your games page.
 
-#### Additional / advanced settings
+#### Optional Settings
 
 The following *optional* settings can be added to the [web] section of your *ctrl/modopts.ini* file:
 
