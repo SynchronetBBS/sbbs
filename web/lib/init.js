@@ -10,7 +10,13 @@ settings.web_directory = fullpath(
 		: settings.web_directory
 	)
 );
-settings.web_root = backslash(settings.web_directory + 'root/');
+settings.web_root = fullpath(
+	backslash(
+		typeof settings.web_root === 'undefined'
+		? settings.web_directory + 'root'
+		: settings.web_root
+	)
+);
 settings.web_lib = backslash(settings.web_directory + 'lib/');
 
 // Guest
