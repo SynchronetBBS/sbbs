@@ -1,5 +1,4 @@
 load('sbbsdefs.js');
-load(system.exec_dir + '../web/lib/init.js');
 
 function randomString(length) {
 	var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split("");
@@ -89,7 +88,7 @@ function destroySession(cookies) {
 		var cookie = cookies[c].split(',');
 
 		try {
-			
+
 			var usr = new User(cookie[0]);
 			if(usr.number < 1) {
 				throw 'Invalid user number ' + cookie[0] + ' in cookie.';
@@ -140,7 +139,7 @@ function authenticate(alias, password) {
 }
 
 // If someone is trying to log in
-if (typeof http_request.query.username !== 'undefined' && 
+if (typeof http_request.query.username !== 'undefined' &&
 	http_request.query.username[0].length <= LEN_ALIAS &&
 	typeof http_request.query.password != 'undefined' &&
 	http_request.query.password[0].length <= LEN_PASS
