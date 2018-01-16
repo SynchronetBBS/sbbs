@@ -20,9 +20,11 @@ if(options && options.qwk_settings)
 
 if(options && (options.avatar || options.avatar_file)) {
 	var avatar_lib = load({}, 'avatar_lib.js');
-	if(options.avatar_file)
+	if(options.avatar_file) {
+		if(options.avatar_file == file_getname(options.avatar_file))
+			options.avatar_file = system.text_dir + "avatars/" + options.avatar_file;
 		avatar_lib.import_file(user.number, options.avatar_file, options.avatar_offset);
-	else
+	} else
 		avatar_lib.update_localuser(user.number, options.avatar);
 }	
 
