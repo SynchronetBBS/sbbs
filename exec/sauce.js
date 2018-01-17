@@ -10,12 +10,15 @@ function main()
 	var files = [];
 	const view=0, add=1, edit=2, remove=3;
 	var cmd = view;
+	var edit_tinfo = false;
 
 	for(i=0; i < argv.length; i++) {
 		switch(argv[i]) {
 			case '-v':
 				verbosity++;
 				break;
+			case '-E':
+				edit_tinfo = true;
 			case '-e':
 				cmd = edit;
 				break;
@@ -72,10 +75,12 @@ function main()
 					if(str)
 						sauce[i] = truncsp(str);
 				}
-				for(var i = 1; i <= 4; i++) {
-					var str = prompt("tinfo" + i + " [" + sauce["tinfo" + i] + "]");
-					if(str)
-						sauce["tinfo" + i] = parseInt(str);
+				if(edit_tinfo) {
+					for(var i = 1; i <= 4; i++) {
+						var str = prompt("tinfo" + i + " [" + sauce["tinfo" + i] + "]");
+						if(str)
+							sauce["tinfo" + i] = parseInt(str);
+					}
 				}
 				var orig_comment = sauce.comment.slice();
 				sauce.comment.length = 0;
