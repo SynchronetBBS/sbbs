@@ -35,7 +35,7 @@ var options=load({}, "modopts.js", "sbbslist");
 if(!options)
 	options = {};
 if(!options.sub)
-    options.sub="syncdata";
+    options.sub = load({}, "syncdata.js").find();
 if(options && options.format > 0)
 	list_format = options.format;
 if(options && options.export_freq > 0)
@@ -349,7 +349,6 @@ function import_from_msgbase(list, msgbase, import_ptr, limit, all)
 
     var ini = new File(msgbase.file + ".ini");
 	if(import_ptr == undefined) {
-	    print("Opening " + ini.name);
 		if(ini.open("r")) {
 			import_ptr=ini.iniGetValue("sbbslist","import_ptr", 0);
 			ini.close();
@@ -443,7 +442,6 @@ function import_from_msgbase(list, msgbase, import_ptr, limit, all)
     }
 
     if(ini.open(file_exists(ini.name) ? 'r+':'w+')) {
-        print("new import_ptr = " + highest);
         ini.iniSetValue("sbbslist","import_ptr",highest);
         ini.close();
     } else
@@ -1893,6 +1891,125 @@ function edit(bbs)
 	return bbs;
 }
 
+function find_code(objs, code)
+{
+	for(var i=0; i < objs.length; i++)
+		if(objs[i].code.toLowerCase() == code.toLowerCase())
+			return i;
+	return -1;
+}
+
+function remove_from_list(list, value)
+{
+	var index = find_code(list, value);
+	if(index < 0)
+		return null;
+	return list.splice(index, 1);
+}
+
+function replace_in_list(list, value, obj)
+{
+	var index = find_code(list, value);
+	if(index < 0)
+		list.push(obj);
+	else
+		list[index] = obj;
+}
+
+function install()
+{
+	var sbbslist_cfg = {
+		"sec": 0,
+		"name": "Synchronet BBS List",
+		"code": "SBBSLIST",
+		"arstr": "",
+		"run_arstr": "",
+		"type": 0,
+		"misc": 1,
+		"event": 0,
+		"cost": 0,
+		"cmd": "?sbbslist.js browse",
+		"clean": "",
+		"path": "",
+		"textra": 0,
+		"maxtime": 0
+		};
+	var smb2sbl_cfg = {
+		"code": "SMB2SBL",
+		"cmd": "?sbbslist import",
+		"days": 255,
+		"time": 0,
+		"node": 1,
+		"misc": 0,
+		"dir": "",
+		"freq": 360,
+		"mdays": 0,
+		"months": 0
+		};
+	var sbl2smb_cfg = {
+        "code": "SBL2SMB",
+        "cmd": "?sbbslist export",
+        "days": 255,
+        "time": 0,
+        "node": 1,
+        "misc": 0,
+        "dir": "",
+        "freq": 360,
+        "mdays": 0,
+        "months": 0
+		};
+	var sblupdate_cfg = {
+        "code": "SBLUPDAT",
+        "cmd": "?sbbslist update",
+        "days": 255,
+        "time": 0,
+        "node": 1,
+        "misc": 0,
+        "dir": "",
+        "freq": 0,
+        "mdays": 2,
+        "months": 0
+		};
+	var sblmaint_cfg = {
+        "code": "SBLMAINT",
+        "cmd": "?sbbslist maint",
+        "days": 255,
+        "time": 0,
+        "node": 1,
+        "misc": 0,
+        "dir": "",
+        "freq": 0,
+        "mdays": 0,
+        "months": 0
+		};
+	var cnflib = load({}, "cnflib.js");
+	var xtrn_cnf = cnflib.read("xtrn.cnf");
+	if(!xtrn_cnf)
+		return "Failed to read xtrn.cnf";
+
+	remove_from_list(xtrn_cnf.xtrn, "sbl");
+	printf("Adding external program: SBBSLIST\r\n");
+	replace_in_list(xtrn_cnf.xtrn, "sbbslist", sbbslist_cfg);
+
+	printf("Adding timed event: SMB2SBL\r\n");
+	replace_in_list(xtrn_cnf.event, "smb2sbl", smb2sbl_cfg);
+
+	printf("Adding timed event: SBL2SMB\r\n");
+	replace_in_list(xtrn_cnf.event, "sbl2smb", sbl2smb_cfg);
+
+	printf("Adding timed event: SBLUPDAT\r\n");
+	replace_in_list(xtrn_cnf.event, "sblupdat", sblupdate_cfg);
+
+	printf("Adding timed event: SBLMAINT\r\n");
+	replace_in_list(xtrn_cnf.event, "sblmaint", sblmaint_cfg);
+
+	if(!cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
+		return "Failed to write xtrn.cnf";
+
+	return true;
+}
+
+
 function main()
 {
     var i,j;
@@ -2218,6 +2335,10 @@ function main()
 				break;
 			case "maint":
 				alert("Not yet implemented");
+				break;
+			case "install":
+				var result = install();
+				printf("%s\r\n", result == true ? "Successful" : "!FAILED: " + result);
 				break;
 		}
     }
