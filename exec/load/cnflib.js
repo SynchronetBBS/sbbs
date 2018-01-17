@@ -172,13 +172,31 @@ var CNF = new (function() {
 		}
 		return bytes;
 	}
+
+	this.fullpath = function(fileName) {
+		if(file_name(fileName) == fileName)
+			return system.ctrl_dir + fileName;
+		return fileName;
+	}
 	
 	/* read records from .cnf file */
 	this.read = function(fileName,struct) {
-		var f = new File(fileName);
-		f.open('rb',true);
-		f.etx=3;
-		
+		if(!struct) {
+			switch(file_getname(fileName).toLowerCase()) {
+				case "xtrn.cnf":
+					struct = js.global.struct.xtrn;
+					break;
+				case "msgs.cnf":
+					struct = js.global.struct.msg;
+					break;
+				default:
+					return false;
+			}
+		}
+		var f = new File(fullpath(fileName));
+		if(!f.open('rb'))
+			return false;
+
 		var data = readRecord(f,struct);
 
 		f.close();
@@ -187,8 +205,20 @@ var CNF = new (function() {
 
 	/* write records to .cnf file */
 	this.write = function(fileName,struct,data) {
-		var f = new File(fileName);
-		if(!f.open('wb',true))
+		if(!struct) {
+			switch(file_getname(fileName).toLowerCase()) {
+				case "xtrn.cnf":
+					struct = js.global.struct.xtrn;
+					break;
+				case "msgs.cnf":
+					struct = js.global.struct.msg;
+					break;
+				default:
+					return false;
+			}
+		}
+		var f = new File(fullpath(fileName));
+		if(!f.open('wb'))
 			return false;
 		
 		writeRecord(f,struct,data);
@@ -197,3 +227,5 @@ var CNF = new (function() {
 	}
 
 })();
+
+CNF;
