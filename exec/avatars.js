@@ -19,6 +19,7 @@ if(options && options.export_freq > 0)
 
 const user_avatars = 'SBBS User Avatars';
 const shared_avatars = 'SBBS Shared Avatars';
+const EXCLUDE_FILES = /\.\d+\.bin$/;		// Don't include Pablodraw backups in shared collections
 
 function parse_user_msg(text)
 {
@@ -389,7 +390,7 @@ function export_file(msgbase, filename)
 
     var ini = new File(msgbase.file + ".ini");
 	if(ini.open("r")) {
-		last_exported=ini.iniGetValue("avatars", filename, last_exported);
+		last_exported=ini.iniGetValue("avatars", file_getname(filename), last_exported);
 		ini.close();
 	}
 
@@ -403,7 +404,7 @@ function export_file(msgbase, filename)
 
 	if(success) {
 		if(ini.open(file_exists(ini.name) ? 'r+':'w+')) {
-			ini.iniSetValue("avatars", filename, new Date());
+			ini.iniSetValue("avatars", file_getname(filename), new Date());
 			ini.close();
 		} else
 			alert("Error opening/creating " + ini.name);
@@ -602,6 +603,11 @@ function main()
 				print("Exporting shared avatar collections: " + filespec);
 				var share_files = directory(filespec);
 				for(var i in share_files) {
+					if(share_files[i].search(EXCLUDE_FILES) >= 0) {
+						printf("Excluding file: %s\r\n", file_getname(share_files[i]));
+						continue;
+					}
+					printf("Exporting: %s\r\n", file_getname(share_files[i]));
 					if(!valid_shared_file(share_files[i]))
 						continue;
 					if(export_file(msgbase, share_files[i]))
