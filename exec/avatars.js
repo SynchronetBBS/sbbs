@@ -13,7 +13,7 @@ var options=load({}, "modopts.js", "avatars");
 if(!options)
 	options = {};
 if(!options.sub)
-    options.sub="syncdata";
+    options.sub = load({}, "syncdata.js").find();
 if(options && options.export_freq > 0)
 	export_freq = options.export_freq;
 
@@ -121,7 +121,7 @@ function import_netuser_list(hdr, list)
 		return false;
 	var result = file.iniSetAllObjects(objs);
 	file.writeln(format(";updated by %s at %s (%s) on %s"
-		, hdr.from, hdr.subject, hdr.from_net_addr, new Date().toISOString()));
+		, hdr.from, hdr.subject, hdr.from_net_addr, new Date()));
 	file.close();
 	return result;
 }
@@ -411,6 +411,85 @@ function export_file(msgbase, filename)
 	return success;
 }
 
+function install()
+{
+	if(!file_exists(lib.local_library() + "*.bin"))
+		return "Not avatars collections (.bin files) found in " + lib.local_library();
+	var cnflib = load({}, "cnflib.js");
+	var xtrn_cnf = cnflib.read("xtrn.cnf");
+	if(!xtrn_cnf)
+		return "Failed to read xtrn.cnf";
+
+	var changed = false;
+	if(!xtrn_area.prog["avatchoo"]) {
+		printf("Adding external program: Avatar Chooser\r\n");
+		xtrn_cnf.xtrn.push( {
+				"sec": 0,
+				"name": "Avatar Chooser",
+				"code": "AVATCHOO",
+				"arstr": "",
+				"run_arstr": "ANSI & !GUEST & REST ! Q",
+				"type": 0,
+				"misc": 1,
+				"event": 3,
+				"cost": 0,
+				"cmd": "?avatar_chooser",
+				"clean": "",
+				"path": "",
+				"textra": 0,
+				"maxtime": 0
+				});
+		changed = true;
+	}
+
+	if(!xtrn_area.event["avat-in"]) {
+		printf("Adding timed event: AVAT-IN\r\n");
+		xtrn_cnf.event.push( {
+				"code": "AVAT-IN",
+				"cmd": "?avatars import",
+				"days": 255,
+				"time": 0,
+				"node": 1,
+				"misc": 0,
+				"dir": "",
+				"freq": 30,
+				"mdays": 0,
+				"months": 0
+				});
+		changed = true;
+	}
+
+	if(!xtrn_area.event["avat-out"]) {
+		printf("Adding timed event: AVAT-OUT\r\n");
+		xtrn_cnf.event.push( {
+				"code": "AVAT-OUT",
+				"cmd": "?avatars export",
+				"days": 255,
+				"time": 0,
+				"node": 1,
+				"misc": 0,
+				"dir": "",
+				"freq": 30,
+				"mdays": 0,
+				"months": 0
+				});
+		changed = true;
+	}
+
+	if(changed && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
+		return "Failed to write xtrn.cnf";
+
+	var ini = new File(file_cfgname(system.ctrl_dir, "modopts.ini"));
+	if(!ini.open(file_exists(ini.name) ? 'r+':'w+'))
+		return ini.name + " open error " + ini.error;
+	printf("Updating %s\r\n", ini.name);
+	ini.iniSetValue("newuser", "avatar_file", "silhouettes.bin");
+	ini.iniSetValue("newuser", "avatar_offset", 0);
+	ini.iniSetValue("logon", "set_avatar", true);
+	ini.close();
+	return true;
+}
+
 function main()
 {
 	var optval={};
@@ -464,6 +543,7 @@ function main()
 			case "disable":
 			case "remove":
 			case "newuser":
+			case "install":
 				cmd = arg;
 				break;
 			default:
@@ -475,6 +555,8 @@ function main()
 		}
 	}
 	mkdir(lib.local_library());
+	for(var i in files)
+		files[i] = lib.fullpath(files[i]);
 	switch(cmd) {
 		case "import":
 			if(files.length && parseInt(optval[cmd])) {
@@ -612,6 +694,10 @@ function main()
 				ini.iniRemoveKey("newuser", "avatar_file");
 			printf("%s\r\n", success ? "Successful" : "FAILED!");
 			ini.close();
+			break;
+		case "install":
+			var result = install();
+			printf("%s\r\n", result == true ? "Successful" : "!FAILED: " + result);
 			break;
 	}
 }
