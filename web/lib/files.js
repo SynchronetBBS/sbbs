@@ -3,7 +3,11 @@ load('file_size.js');
 
 function listLibraries() {
 	return file_area.lib_list.filter(
-		function (library) { return library.dir_list.length > 0; }
+		function (library) {
+            if (library.dir_list.length < 1) return false;
+            var dirs = listDirectories(library.index);
+            return dirs.length > 0;
+        }
 	);
 }
 
