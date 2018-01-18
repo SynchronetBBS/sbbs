@@ -86,7 +86,7 @@ function draw(file, cols, rows)
 {
 	if(rows > console.screen_rows && cols <= console.screen_columns)
 		return console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
-	
+
 	// Use graphic when the entire image fits on the screen
 	var graphic = new Graphic(cols, rows);
 	try {
@@ -99,7 +99,8 @@ function draw(file, cols, rows)
 				graphic.draw();
 		}
 	} catch(e) {
-		alert(e);
+		// alert(e);
+		console.printfile(file, (state.pausing ? P_NONE : P_NOPAUSE) |P_CPM_EOF);
 	};
 }
 
