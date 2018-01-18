@@ -1960,7 +1960,7 @@ function install()
 		};
 	var sblupdate_cfg = {
         "code": "SBLUPDAT",
-        "cmd": "?sbbslist update",
+        "cmd": "?sbbslist update -preview",
         "days": 255,
         "time": 0,
         "node": 1,
