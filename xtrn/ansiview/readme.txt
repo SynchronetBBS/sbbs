@@ -171,24 +171,17 @@ echicken -at- bbs.electronicchicken.com
 
 5) Connect your BBS to some online ANSI & ASCII art archives
 
-	The following two sections of 'xtrn/ansiview/settings.ini' are commented
+	The following section of 'xtrn/ansiview/settings.ini' is commented
 	out by default:
 
-		;[sixteencolors.net]
-		;description = An online ANSI and ASCII artwork archive
-		;module = sixteencolors.js
+		;[electronic chicken bbs]
+		;description = An online archive of ANSI and ASCII artwork
+		;module = ecbbs.js
 		;cache = true
 		;cachettl = 86400
 
-		;[thescene.electronicchicken.com]
-		;description = An online ANSI and ASCII artwork archive
-		;module = thescene.js
-		;cache = true
-		;cachettl = 86400
-
-	You can enable access either or both of these online archives by
-	removing the semicolons from the beginning of each line of the
-	applicable section(s).
+	You can enable access to this online archive by removing the semicolons
+	from the beginning of each line of the section.
 
 	Please consider leaving the 'cache' value set to 'true' (without quotes),
 	as this will reduce the amount of traffic between your system and the
