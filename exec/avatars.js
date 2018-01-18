@@ -300,7 +300,10 @@ function export_users(msgbase, realnames, all)
 		if(!system.username(n))
 			continue;
 		var u = new User(n);
-		if(u.settings&USER_DELETED)
+		if((u.settings&USER_DELETED)
+			|| !u.total_posts			// No need to export avatars for users that have never posted
+			|| (u.security_restrictions&(UFLAG_P|UFLAG_N|UFLAG_Q)) // or will never post
+			)
 			continue;
 		var avatar = lib.read_localuser(n);
 		if(avatar.export_count == undefined)
@@ -308,6 +311,8 @@ function export_users(msgbase, realnames, all)
 		var last_exported = 0;
 		if(avatar.last_exported)
 			last_exported = new Date(avatar.last_exported);
+		if(u.stats.laston_date * 1000 < last_exported)
+			continue;	// Don't export avatars of inactive users
 		var updated;
 		if(avatar.updated)
 			updated = new Date(avatar.updated);
