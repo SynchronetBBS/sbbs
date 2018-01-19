@@ -301,7 +301,7 @@ function export_users(msgbase, realnames, all)
 			continue;
 		var u = new User(n);
 		if((u.settings&USER_DELETED)
-			|| !u.total_posts			// No need to export avatars for users that have never posted
+			|| !u.stats.total_posts			// No need to export avatars for users that have never posted
 			|| (u.security_restrictions&(UFLAG_P|UFLAG_N|UFLAG_Q)) // or will never post
 			)
 			continue;
