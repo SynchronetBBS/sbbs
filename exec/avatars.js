@@ -6,8 +6,10 @@ load('sbbsdefs.js');
 load("lz-string.js");
 var lib = load({}, 'avatar_lib.js');
 var SAUCE = load({}, 'sauce_lib.js');
+var Graphic = load({}, 'graphic.js');
 
 var export_freq = 7;	// minimum days between exports
+var verbosity = 0;
 
 var options=load({}, "modopts.js", "avatars");
 if(!options)
@@ -303,16 +305,22 @@ function export_users(msgbase, realnames, all)
 		if((u.settings&USER_DELETED)
 			|| !u.stats.total_posts			// No need to export avatars for users that have never posted
 			|| (u.security_restrictions&(UFLAG_P|UFLAG_N|UFLAG_Q)) // or will never post
-			)
+			) {
+			if(verbosity)
+				printf("User #%u hasn't or can't post, skipping\r\n", n);
 			continue;
+		}
 		var avatar = lib.read_localuser(n);
 		if(avatar.export_count == undefined)
 			avatar.export_count = 0;
 		var last_exported = 0;
 		if(avatar.last_exported)
 			last_exported = new Date(avatar.last_exported);
-		if(u.stats.laston_date * 1000 < last_exported)
+		if(u.stats.laston_date * 1000 < last_exported) {
+			if(verbosity)
+				printf("User #%u is inactive since: %s\r\n", new Date(u.stats.laston_date * 1000));
 			continue;	// Don't export avatars of inactive users
+		}
 		var updated;
 		if(avatar.updated)
 			updated = new Date(avatar.updated);
@@ -508,6 +516,7 @@ function main()
 	var all;
 	var share = false;
 	var files = [];
+	var usernum;
 
     for(i in argv) {
 		var arg = argv[i];
@@ -539,6 +548,12 @@ function main()
 			case "-share":
 				share = true;
 				break;
+			case "-user":
+				usernum = val;
+				break;
+			case "-v":
+				verbosity++;
+				break;
 			case "import":
 			case "export":
 			case "dump":
@@ -550,6 +565,7 @@ function main()
 			case "remove":
 			case "newuser":
 			case "install":
+			case "normalize":
 				cmd = arg;
 				break;
 			default:
@@ -563,6 +579,12 @@ function main()
 	mkdir(lib.local_library());
 	for(var i in files)
 		files[i] = lib.fullpath(files[i]);
+
+	if(usernum && !parseInt(usernum))
+		usernum = system.matchuser(usernum);
+	else if(!usernum && user && user.number)
+		usernum = user.number;
+
 	switch(cmd) {
 		case "import":
 			if(files.length && parseInt(optval[cmd])) {
@@ -622,9 +644,8 @@ function main()
 			printf("%s\r\n", success ? "Successful" : "FAILED");
 			break;
 		case "dump":
-			var usernum = optval[cmd];
 			if(!usernum)
-				usernum = user.number;
+				usernum = optval[cmd];
 			var obj = lib.read_localuser(usernum);
 			print(JSON.stringify(obj));
 			break;
@@ -649,9 +670,8 @@ function main()
 				}
 				break;
 			}
-			var usernum = optval[cmd];
 			if(!usernum)
-				usernum = user.number;
+				usernum = optval[cmd];
 			console.clear();
 			var obj = lib[cmd](usernum);
 			break;
@@ -663,7 +683,8 @@ function main()
 			}
 			break;
 		case "remove":
-			var usernum = parseInt(optval[cmd]);
+			if(!usernum)
+				usernum = optval[cmd];
 			if(usernum) {
 				printf("Removing user #%u avatar\n", usernum);
 				var success = lib.remove_localuser(usernum);
@@ -672,7 +693,8 @@ function main()
 			break;
 		case "enable":
 		case "disable":
-			var usernum = parseInt(optval[cmd]);
+			if(!usernum)
+				usernum = optval[cmd];
 			if(usernum) {
 				var success = lib.enable_localuser(usernum, cmd == "enable");
 				print(success ? "Successful" : "FAILED");
@@ -705,6 +727,39 @@ function main()
 				ini.iniRemoveKey("newuser", "avatar_file");
 			printf("%s\r\n", success ? "Successful" : "FAILED!");
 			ini.close();
+			break;
+		case "normalize":
+			var graphic = new Graphic(lib.defs.width, lib.defs.height);
+			if(files.length) {
+				if(!offset)
+					offset = 0;
+				var filename = lib.fullpath(files[0]);
+				try {
+					if(!graphic.load(filename, offset))
+						break;
+				} catch(e) {
+					alert(e);
+					break;
+				}
+				if(!lib.is_valid(graphic.BIN)) {
+					alert(filename + " is not a valid avatar");
+					break;
+				}
+				var file = new File(filename);
+				if(!file.open("r+b")) {
+					alert("Failed to open " + file.name);
+					break;
+				}
+				file.position = offset * lib.size;
+				file.write(graphic.normalize(optval[cmd]).BIN, lib.size);
+				file.close();
+				break;
+			}
+			if(!usernum)
+				break;
+			var avatar = lib.read_localuser(usernum);
+			graphic.base64_decode([avatar.data]);
+			lib.update_localuser(usernum, base64_encode(graphic.normalize(optval[cmd]).BIN));
 			break;
 		case "install":
 			var result = install();
