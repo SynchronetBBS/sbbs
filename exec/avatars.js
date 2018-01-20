@@ -116,7 +116,7 @@ function import_netuser_list(hdr, list)
 				if(verbosity)
 					printf("%s = %s\r\n", objs[index].name, i);
 				if(i == "disabled")
-					delete objs[index];	// Remove rather than just mark as disabled
+					objs.splice(index, 1);	// Remove rather than just mark as disabled
 				else if(objs[index].data != i) {
 					objs[index].data = i;
 					objs[index].updated = new Date();
