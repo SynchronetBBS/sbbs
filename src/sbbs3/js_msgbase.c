@@ -2855,6 +2855,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>thread_first</tt><td>Message number of the first reply to this message"
 	"<tr><td align=top><tt>field_list[].type</tt><td>Other SMB header fields (type)"
 	"<tr><td align=top><tt>field_list[].data</tt><td>Other SMB header fields (data)"
+	"<tr><td align=top><tt>can_read</tt><td>true if the current user can read this validated or unmoderated message"
 	"</table>"
 	"<br><i>New in v3.12:</i> "
 	"The optional <i>client</i> argument is an instance of the <i>Client</i> class to be used for the "
