@@ -425,7 +425,8 @@ while(client.socket.is_connected && !quit) {
 					));
 			else {	// LISTGROUP
 				writeln("211 list of article numbers follow");
-				for(i=0;i<msgbase.total_msgs;i++) {
+				var total_msgs = msgbase.total_msgs;
+				for(i=0;i<total_msgs;i++) {
 					idx=msgbase.get_msg_index(/* by_offset */true,i);
 					if(idx==null)
 						continue;

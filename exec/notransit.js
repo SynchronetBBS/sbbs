@@ -9,7 +9,8 @@ if(!mail.open()) {
 	alert(mail.last_error);
 	exit();
 }
-for(i=0;i<mail.total_msgs;i++) {
+var total_msgs = mail.total_msgs;
+for(i=0;i<total_msgs;i++) {
 	hdr = mail.get_msg_header(	/* by_offset:		*/	true, 
 								/* offset:			*/	i, 
 								/* expand_fields:	*/	false);
