@@ -113,6 +113,8 @@ function import_netuser_list(hdr, list)
 			}
 			var index = find_name(objs, list[i][u]);
 			if(index >= 0) {
+				if(verbosity)
+					printf("%s = %s\r\n", objs[index].name, i);
 				if(i == "disabled")
 					delete objs[index];	// Remove rather than just mark as disabled
 				else if(objs[index].data != i) {
@@ -132,7 +134,7 @@ function import_netuser_list(hdr, list)
 		, hdr.from, hdr.subject, hdr.from_net_addr, new Date()));
 	file.close();
 	if(verbosity)
-		printf("%s written with %u avatars", file.name, objs.length);
+		printf("%s written with %u avatars\r\n", file.name, objs.length);
 	return result;
 }
 
