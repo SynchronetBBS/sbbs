@@ -101,6 +101,9 @@ function import_netuser_list(hdr, list)
 	if(file.open("r")) {
 		objs = file.iniGetAllObjects();
 		file.close();
+	} else if(file_exists(file.name)) {
+		alert("Error " + file.error + " opening " + file.name);
+		return false;
 	}
 	for(var i in list) {
 		for(var u in list[i]) {
