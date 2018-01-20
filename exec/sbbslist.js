@@ -342,7 +342,7 @@ function import_entry(name, text)
 
 function import_from_msgbase(list, msgbase, import_ptr, limit, all)
 {
-    var i;
+    var i=0;
     var count=0;
     var highest;
     var sbl_crc=crc16_calc("sbl");
@@ -363,8 +363,11 @@ function import_from_msgbase(list, msgbase, import_ptr, limit, all)
 		}
 	}
     highest=import_ptr;
-    print("import_ptr = " + import_ptr);
-    for(i=0; i<msgbase.total_msgs; i++) {
+    log(LOG_DEBUG, "import_ptr = " + import_ptr + " last_msg = " + msgbase.last_msg);
+	if(msgbase.last_msg >= import_ptr)
+		i = total_msgs - (msgbase.last_msg - import_ptr);
+	var total_msgs = msgbase.total_msgs;
+    for(; i<total_msgs; i++) {
         if(js.terminated)
             break;
         //print(i);
@@ -375,11 +378,10 @@ function import_from_msgbase(list, msgbase, import_ptr, limit, all)
         }
         if(idx.number <= import_ptr)
             continue;
-        if(idx.to != sbl_crc) {
-            continue;
-        }
         if(idx.number > highest)
             highest = idx.number;
+        if(idx.to != sbl_crc)
+            continue;
         var hdr = msgbase.get_msg_header(/* by_offset: */true, i);
 		if(!hdr.to || hdr.to.toLowerCase() != "sbl")
 			continue;
