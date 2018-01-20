@@ -120,12 +120,16 @@ function import_netuser_list(hdr, list)
 				objs.push({ name: list[i][u], data: i, created: new Date() });
 		}
 	}
-	if(!file.open("w"))
+	if(!file.open("w")) {
+		alert("Error opening " + file.name);
 		return false;
+	}
 	var result = file.iniSetAllObjects(objs);
 	file.writeln(format(";updated by %s at %s (%s) on %s"
 		, hdr.from, hdr.subject, hdr.from_net_addr, new Date()));
 	file.close();
+	if(verbosity)
+		printf("%s written with %u avatars", file.name, objs.length);
 	return result;
 }
 
