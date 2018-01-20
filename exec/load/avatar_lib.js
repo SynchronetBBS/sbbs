@@ -28,6 +28,11 @@ function localuser_fname(usernum)
 
 function netuser_fname(netaddr)
 {
+	var fido = netaddr.match(/^(\d+):(\d+)\/(\d+)$/);				// 3D
+	if(!fido)
+		fido = netaddr.match(/^(\d+):(\d+)\/(\d+)\.(\d+)$/);		// 4D
+	if(fido)
+		return format("%sfido/%04x%04x.avatars.ini", system.data_dir, fido[2], fido[3]);
 	return format("%sqnet/%s.avatars.ini", system.data_dir, file_getname(netaddr));
 }
 
@@ -135,7 +140,7 @@ function read_netuser(username, netaddr)
 
 function read(usernum, username, netaddr)
 {
-	if(parseInt(usernum) >= 1)
+	if(parseInt(usernum, 10) >= 1)
 		return read_localuser(usernum);
 	else if(!netaddr)
 		return read_localuser(system.matchuser(username));
@@ -208,7 +213,7 @@ function draw_bin(data, above, right)
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
 	try {
-		graphic.BIN = base64_decode([data]);
+		graphic.BIN = base64_decode(data);
 		var lncntr = console.line_counter;
 		var pos = console.getxy();
 		var x = pos.x;
@@ -242,7 +247,7 @@ function show_bin(data)
 	var graphic = new Graphic(this.defs.width, this.defs.height);
 	graphic.attr_mask = ~graphic.defs.BLINK;	// Disable blink attribute (consider iCE colors?)
 	try {
-		graphic.BIN = base64_decode([data]);
+		graphic.BIN = base64_decode(data);
 		console.print(graphic.ANSI);
 	} catch(e) {
 		return false;

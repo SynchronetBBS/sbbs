@@ -7,6 +7,7 @@ load("lz-string.js");
 var lib = load({}, 'avatar_lib.js');
 var SAUCE = load({}, 'sauce_lib.js');
 var Graphic = load({}, 'graphic.js');
+var fidoaddr = load({}, 'fidoaddr.js');
 
 var export_freq = 7;	// minimum days between exports
 var verbosity = 0;
@@ -196,7 +197,12 @@ function import_shared_file(hdr, body)
 	if(file_getext(filename).toLowerCase() != suffix)
 		filename += suffix;
 
-	var file = new File(format("%sqnet/%s", system.data_dir, filename));
+	var fullpath;
+	if(fidoaddr.is_valid(hdr.from_net_addr))
+		fullpath = format("%sfido/%s.%s", system.data_dir, fidoaddr.to_filename(hdr.from_net_addr), filename);
+	else
+		fullpath = format("%sqnet/%s", system.data_dir, filename);
+	var file = new File(fullpath);
 	if(!file.open("wb")) {
 		alert("ERROR " + file.error + " opening " + file.name);
 		return false;
@@ -215,7 +221,7 @@ function import_shared_file(hdr, body)
 
 function import_from_msgbase(msgbase, import_ptr, limit, all)
 {
-    var i;
+    var i = 0;
     var count=0;
     var highest;
     var users_crc=crc16_calc(user_avatars.toLowerCase());
@@ -230,8 +236,11 @@ function import_from_msgbase(msgbase, import_ptr, limit, all)
 		}
 	}
     highest=import_ptr;
-    print("import_ptr = " + import_ptr);
-    for(i=0; i<msgbase.total_msgs; i++) {
+    log(LOG_DEBUG, "import_ptr = " + import_ptr + " last_msg = " + msgbase.last_msg);
+	var total_msgs = msgbase.total_msgs;
+	if(msgbase.last_msg >= import_ptr)
+		i = total_msgs - (msgbase.last_msg - import_ptr);
+    for(; i<total_msgs; i++) {
         if(js.terminated)
             break;
         //print(i);
@@ -242,11 +251,10 @@ function import_from_msgbase(msgbase, import_ptr, limit, all)
         }
         if(idx.number <= import_ptr)
             continue;
-        if(idx.to != users_crc && idx.to != shared_crc) {
-            continue;
-        }
         if(idx.number > highest)
             highest = idx.number;
+        if(idx.to != users_crc && idx.to != shared_crc)
+            continue;
         var hdr = msgbase.get_msg_header(/* by_offset: */true, i);
 		if(all != true && !hdr.from_net_type)	// Skip locally posted messages
 			continue;
@@ -585,7 +593,15 @@ function main()
 				break;
 		}
 	}
-	mkdir(lib.local_library());
+	var used_dir =  [ lib.local_library(), system.data_dir + 'qnet', system.data_dir + 'fido' ];
+	for(var i in used_dir) {
+		if(file_isdir(used_dir[i]))
+			continue;
+		print("Making directory: " + used_dir[i]);
+		if(!mkdir(used_dir[i]))
+			alert("Failed to make directory: " + used_dir[i]);
+	}
+
 	for(var i in files)
 		files[i] = lib.fullpath(files[i]);
 
