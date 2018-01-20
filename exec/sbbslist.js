@@ -133,7 +133,7 @@ function export_entry(bbs, msgbase)
 
 	delete bbs.entry;
     body += "\r\njson-begin\r\n";
-    body += JSON.stringify(bbs, null, 1) + "\r\n";
+    body += lfexpand(JSON.stringify(bbs, null, 1)) + "\r\n";
     body += "json-end\r\n";
     body += "--- " + js.exec_file + " " + REVISION + "\r\n";
 //    print(body);

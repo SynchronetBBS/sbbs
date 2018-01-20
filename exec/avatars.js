@@ -381,7 +381,7 @@ function export_users(msgbase, realnames, all)
 	for(var i in list)
 		list[i].sort();
 	var body = "json-begin\r\n";
-	body += JSON.stringify(list, null, 1) + "\r\n";
+	body += lfexpand(JSON.stringify(list, null, 1)) + "\r\n";
 	body += "json-end\r\n";
 	body += "--- " + js.exec_file + " " + REVISION + "\r\n";
 	var result = msgbase.save_msg({ to:user_avatars, from:system.operator, subject:system.name }, body);
@@ -402,7 +402,7 @@ function export_file_to_msgbase(msgbase, filename)
 	data = LZString.compressToBase64(data);
 	var body = "";
 	body += "sauce-json-begin\r\n";
-	body += JSON.stringify(SAUCE.read(file.name), null, 1) + "\r\n";
+	body += lfexpand(JSON.stringify(SAUCE.read(file.name), null, 1)) + "\r\n";
 	body += "sauce-json-end\r\n";
 	body += "bin-lz-begin\r\n";
 	body += data.match(/([\x00-\xff]{1,72})/g).join("\r\n");
