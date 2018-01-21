@@ -93,6 +93,8 @@
  *                              Added support for displaying user avatars, recently
  *                              added to Synchronet.  Added the configuration option
  *                              displayAvatars to toggle this feature.
+ * 2018-01-20 Eric Oulashin     Version 1.17 beta 54
+ *                              Added a configuration file option, rightJustifyAvatars.
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -179,8 +181,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 53";
-var READER_DATE = "2018-01-12";
+var READER_VERSION = "1.17 Beta 54";
+var READER_DATE = "2018-01-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -954,6 +956,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	// Whether or not to display avatars
 	this.displayAvatars = true;
+	this.rightJustifyAvatar = true;
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -7369,6 +7372,8 @@ function DigDistMsgReader_ReadConfigFile()
 				}
 				else if (settingUpper == "DISPLAYAVATARS")
 					this.displayAvatars = (valueUpper == "TRUE");
+				else if (settingUpper == "RIGHTJUSTIFYAVATARS")
+					this.rightJustifyAvatar = (valueUpper == "TRUE");
 			}
 		}
 
@@ -9341,7 +9346,8 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		if (this.displayAvatars && (gAvatar != null) && ((pMsgHdr.attr & MSG_ANONYMOUS) == 0))
 		{
 			console.gotoxy(1, screenY-1);
-			gAvatar.draw(pMsgHdr.from_ext, pMsgHdr.from, pMsgHdr.from_net_addr, /* above: */true, /* right-justified: */true);
+			//gAvatar.draw(pMsgHdr.from_ext, pMsgHdr.from, pMsgHdr.from_net_addr, /* above: */true, /* right-justified: */true);
+			gAvatar.draw(pMsgHdr.from_ext, pMsgHdr.from, pMsgHdr.from_net_addr, /* above: */true, /* right-justified: */this.rightJustifyAvatar);
 			console.attributes = 0;	// Clear the background attribute as the next line might scroll, filling with BG attribute
 			// If using the traditional (non-scrolling) user interface, then
 			// put the cursor where it should be.  (If using the scrolling

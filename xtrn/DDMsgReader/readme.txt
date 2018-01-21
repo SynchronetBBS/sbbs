@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.17 beta 53
-                           Release date: 2018-01-12
+                                 Version 1.17 beta 54
+                           Release date: 2018-01-20
 
                                      by
 
@@ -656,6 +656,10 @@ areaChooserHdrMaxLines                The maximum number of lines to use from
 displayAvatars                        Whether or not to display user avatars in
                                       message headers.  Valid values are true
                                       and false.
+
+rightJustifyAvatars                   Whether or not to right-justify avatars.
+                                      Valid values are true and false.  Flase
+                                      means to left-justify avatars.
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
