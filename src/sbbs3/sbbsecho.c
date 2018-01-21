@@ -3358,7 +3358,6 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l)
 					smb_hfield(&msg,FIDOMSGID,(ushort)(m-l),fbuf+l); 
 			}
@@ -3368,7 +3367,6 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l)
 					smb_hfield(&msg,FIDOREPLYID,(ushort)(m-l),fbuf+l); 
 			}
