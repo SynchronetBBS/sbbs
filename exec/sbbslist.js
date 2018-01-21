@@ -28,7 +28,7 @@ var color_cfg = {
 	sorted: BG_RED,
 };
 var cmd_prompt_fmt = "\1n\1c\xfe \1h%s \1n\1c\xfe ";
-if(!console.term_supports(USER_ANSI))
+if(js.global.console==undefined || !console.term_supports(USER_ANSI))
 	cmd_prompt_fmt = "%s: ";
 
 var debug = false;
