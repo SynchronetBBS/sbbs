@@ -28,6 +28,8 @@ var color_cfg = {
 	sorted: BG_RED,
 };
 var cmd_prompt_fmt = "\1n\1c\xfe \1h%s \1n\1c\xfe ";
+if(!console.term_supports(USER_ANSI))
+	cmd_prompt_fmt = "%s: ";
 
 var debug = false;
 
@@ -45,6 +47,7 @@ var lib = load({}, "sbbslist_lib.js");
 var capture = load({}, "termcapture_lib.js");
 capture.timeout=15;
 capture.poll_timeout=10;
+var avatar_lib = load({}, "avatar_lib.js");
 
 function objcopy(obj)
 {
@@ -804,7 +807,7 @@ function list_bbs_entry(bbs, selected, sort)
 	if(sort=="name")
 		color |= color_cfg.sorted;
 	console_color(color, selected);
-	printf("%-*s ", lib.max_len.name, bbs.name);
+	printf("%-*s%c", lib.max_len.name, bbs.name, selected ? '<' : ' ');
 
 	color = LIGHTMAGENTA;
 	if(!js.global.console || console.screen_columns >= 80) {
@@ -1375,6 +1378,37 @@ function is_nav_key(key)
 	return false;
 }
 
+function show_bbs_avatar(bbs)
+{
+	if(!bbs.imported) {
+		if(bbs.entry && bbs.entry.created
+			&& avatar_lib.draw(bbs.entry.created.by, null, null, /* above */true, /* right */true))
+			return;
+		if(bbs.name == system.name) {
+			avatar_lib.draw(1, null, null, /* above */true, /* right */true);
+			return;
+		}
+	}
+	for(var i in bbs.sysop) {
+		if(avatar_lib.draw(/* usernum */null, bbs.sysop[i].name, bbs.name, /* above */true, /* right */ true))
+			return;
+		for(var n in bbs.network) {
+			if(!bbs.network[n].address)
+				continue;
+			if(avatar_lib.draw(/* usernum */null, bbs.sysop[i].name, bbs.network[n].address, /* above */true, /* right */true))
+				return;
+		}
+	}
+	if(bbs.entry) {
+		if(bbs.entry.created
+			&& avatar_lib.draw(/* usernum */null, bbs.entry.created.by, bbs.entry.created.at, /* above */true, /* right */true))
+			return;
+		if(bbs.entry.updated
+			&& avatar_lib.draw(/* usernum */null, bbs.entry.updated.by, bbs.entry.updated.at, /* above */true, /* right */true))
+			return;
+	}
+}
+
 function view(list, current)
 {
 	console.line_counter = 0;
@@ -1391,6 +1425,8 @@ function view(list, current)
 		}
 
 		var bbs = list[current];
+		if(!bbs)
+			return;
 		console.clear();
 		console.attributes = BLACK | BG_LIGHTGRAY;
 		console.print(version_notice);
@@ -1499,10 +1535,10 @@ function view(list, current)
 					, verified_by, new Date(bbs.entry.verified.on).toDateString().substr(4));
 			}
 		}
-//		while(console.line_counter < console.screen_rows - 2)
-		if(console.term_supports(USER_ANSI))
+		if(console.term_supports(USER_ANSI)) {
 			console.gotoxy(1, console.screen_rows);
-		else
+			show_bbs_avatar(bbs);
+		} else
 			console.clearline(), console.crlf();
 
 		console.print(format(cmd_prompt_fmt, "Detail"));
