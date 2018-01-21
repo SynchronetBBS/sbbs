@@ -7,6 +7,10 @@ const defs = {
 	height: 6,
 };
 
+const QWK_ID_PATTERN = /^[A-Za-z]\w{1,7}$/;
+const FTN_3D_PATTERN = /^(\d+):(\d+)\/(\d+)$/;
+const FTN_4D_PATTERN = /^(\d+):(\d+)\/(\d+)\.(\d+)$/;
+
 const size = defs.width * defs.height * 2;	// 2 bytes per cell for char and attributes
 
 function local_library()
@@ -26,14 +30,33 @@ function localuser_fname(usernum)
 	return format("%suser/%04u.ini", system.data_dir, usernum);
 }
 
+function bbsindex_fname()
+{
+	return system.data_dir + "bbses.ini";
+}
+
+function bbsuser_fname(bbsname)
+{
+	var file = File(this.bbsindex_fname());
+	if(!file.open("r"))
+		return false;
+	var netaddr = file.iniGetValue(bbsname, "netaddr", "");
+	file.close();
+	if(!netaddr || !netaddr.length)
+		return false;
+	return netuser_fname(netaddr);
+}
+
 function netuser_fname(netaddr)
 {
-	var fido = netaddr.match(/^(\d+):(\d+)\/(\d+)$/);				// 3D
+	var fido = netaddr.match(FTN_3D_PATTERN);
 	if(!fido)
-		fido = netaddr.match(/^(\d+):(\d+)\/(\d+)\.(\d+)$/);		// 4D
+		fido = netaddr.match(FTN_4D_PATTERN);
 	if(fido)
 		return format("%sfido/%04x%04x.avatars.ini", system.data_dir, fido[2], fido[3]);
-	return format("%sqnet/%s.avatars.ini", system.data_dir, file_getname(netaddr));
+	if(netaddr.search(QWK_ID_PATTERN) == 0)
+		return format("%sqnet/%s.avatars.ini", system.data_dir, file_getname(netaddr));
+	return false;
 }
 
 function is_valid(buf)
@@ -127,9 +150,15 @@ function read_localuser(usernum)
 	return obj;
 }
 
+// netaddr may be a network address OR a BBS name
 function read_netuser(username, netaddr)
 {
-	var file = new File(this.netuser_fname(netaddr));
+	var filename = this.netuser_fname(netaddr);
+	if(!filename)
+		filename = this.bbsuser_fname(netaddr);
+	if(!filename)
+		return false;
+	var file = new File(filename);
 	if(!file.open("r")) {
 		return false;
 	}
@@ -248,7 +277,7 @@ function show_bin(data)
 	graphic.attr_mask = ~graphic.defs.BLINK;	// Disable blink attribute (consider iCE colors?)
 	try {
 		graphic.BIN = base64_decode(data);
-		console.print(graphic.ANSI);
+		console.print(graphic.MSG);
 	} catch(e) {
 		return false;
 	};

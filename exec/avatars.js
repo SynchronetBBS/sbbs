@@ -136,6 +136,13 @@ function import_netuser_list(hdr, list)
 	file.close();
 	if(verbosity)
 		printf("%s written with %u avatars\r\n", file.name, objs.length);
+
+	var bbes = new File(lib.bbsindex_fname());
+	if(bbses.open(bbses.exists ? 'r+':'w+')) {
+		bbses.iniSetValue(hdr.subject, "netaddr", hdr.from_net_addr);
+		bbses.iniSetValue(hdr.subject, "updated", new Date());
+		bbses.close();
+	}
 	return result;
 }
 
@@ -534,6 +541,7 @@ function main()
 	var share = false;
 	var files = [];
 	var usernum;
+	var cmds = [];
 
     for(i in argv) {
 		var arg = argv[i];
@@ -583,7 +591,7 @@ function main()
 			case "newuser":
 			case "install":
 			case "normalize":
-				cmd = arg;
+				cmds.push(arg);
 				break;
 			default:
 				if(parseInt(arg) < 0)
@@ -610,186 +618,191 @@ function main()
 	else if(!usernum && user && user.number)
 		usernum = user.number;
 
-	switch(cmd) {
-		case "import":
-			if(files.length && parseInt(optval[cmd])) {
-				printf("Importing %s for user #%u\r\n", files[0], optval[cmd]);
-				var success = lib.import_file(optval[cmd], files[0], offset);
-				printf("%s\r\n", success ? "Successful" : "FAILED!");
-				break;
-			}
-			var msgbase = new MsgBase(optval[cmd] ? optval[cmd] : options.sub);
-			print("Opening msgbase " + msgbase.file);
-			if(!msgbase.open()) {
-				alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
-				exit(-1);
-			}
-			import_from_msgbase(msgbase, ptr, limit, all);
-			msgbase.close();
-			break;
-		case "export":
-			var msgbase = new MsgBase(optval[cmd] ? optval[cmd] : options.sub);
-			print("Opening msgbase " + msgbase.file);
-			if(!msgbase.open()) {
-				alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
-				exit(-1);
-			}
-			var success = true;
-			if(!files.length) {
-				printf("Exporting user avatars\n");
-				success = export_users(msgbase, realnames, all);
-			}
-			for(var i in files) {
-				printf("Exporting avatar collection: %s\n", files[i]);
-				if(!valid_shared_file(files[i])) {
-				    success = false;
+	for(var c in cmds) {
+		var cmd = cmds[c].toLowerCase();
+		switch(cmd) {
+			case "import":
+				if(files.length && parseInt(optval[cmd])) {
+					printf("Importing %s for user #%u\r\n", files[0], optval[cmd]);
+					var success = lib.import_file(optval[cmd], files[0], offset);
+					printf("%s\r\n", success ? "Successful" : "FAILED!");
 					break;
 				}
-                else {
-					if(export_file(msgbase, files[i]))
-						printf("Exported avatar collection: %s\n", files[i]);
+				var msgbase = new MsgBase(optval[cmd] ? optval[cmd] : options.sub);
+				print("Opening msgbase " + msgbase.file);
+				if(!msgbase.open()) {
+					alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
+					exit(-1);
 				}
-			}
-			if(share) {
-				var filespec = lib.local_library() + system.qwk_id + ".*.bin";
-				print("Exporting shared avatar collections: " + filespec);
-				var share_files = directory(filespec);
-				for(var i in share_files) {
-					if(share_files[i].search(EXCLUDE_FILES) >= 0) {
-						printf("Excluding file: %s\r\n", file_getname(share_files[i]));
-						continue;
-					}
-					printf("Exporting: %s\r\n", file_getname(share_files[i]));
-					if(!valid_shared_file(share_files[i]))
-						continue;
-					if(export_file(msgbase, share_files[i]))
-						printf("Exported shared avatar collection: %s\n", share_files[i]);
+				import_from_msgbase(msgbase, ptr, limit, all);
+				msgbase.close();
+				break;
+			case "export":
+				var msgbase = new MsgBase(optval[cmd] ? optval[cmd] : options.sub);
+				print("Opening msgbase " + msgbase.file);
+				if(!msgbase.open()) {
+					alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
+					exit(-1);
 				}
-			}
-			printf("%s\r\n", success ? "Successful" : "FAILED");
-			break;
-		case "dump":
-			if(!usernum)
-				usernum = optval[cmd];
-			var obj = lib.read_localuser(usernum);
-			print(JSON.stringify(obj));
-			break;
-		case "draw":	// Uses Graphic.draw()
-		case "show":	// Uses console.write()
-			if(files.length) {
+				var success = true;
+				if(!files.length) {
+					printf("Exporting user avatars\n");
+					success = export_users(msgbase, realnames, all);
+				}
 				for(var i in files) {
-					for(o=offset ? offset : 0; ; o++) {	
-						var data = lib.import_file(null, files[i], o);
-						if(!data)
-							break;
-						console.clear();
-						if(cmd == "draw") {
-							lib.draw_bin(data);
-							console.getkey();
-						} else {
-							lib.show_bin(data);
-							console.pause();
-						}
-						console.attributes = 7;
+					printf("Exporting avatar collection: %s\n", files[i]);
+					if(!valid_shared_file(files[i])) {
+						success = false;
+						break;
+					}
+					else {
+						if(export_file(msgbase, files[i]))
+							printf("Exported avatar collection: %s\n", files[i]);
 					}
 				}
+				if(share) {
+					var filespec = lib.local_library() + system.qwk_id + ".*.bin";
+					print("Exporting shared avatar collections: " + filespec);
+					var share_files = directory(filespec);
+					for(var i in share_files) {
+						if(share_files[i].search(EXCLUDE_FILES) >= 0) {
+							printf("Excluding file: %s\r\n", file_getname(share_files[i]));
+							continue;
+						}
+						printf("Exporting: %s\r\n", file_getname(share_files[i]));
+						if(!valid_shared_file(share_files[i]))
+							continue;
+						if(export_file(msgbase, share_files[i]))
+							printf("Exported shared avatar collection: %s\n", share_files[i]);
+					}
+				}
+				printf("%s\r\n", success ? "Successful" : "FAILED");
 				break;
-			}
-			if(!usernum)
-				usernum = optval[cmd];
-			console.clear();
-			var obj = lib[cmd](usernum);
-			break;
-		case "verify":
-			for(var i in files) {
-				printf("%s: ", file_getname(files[i]));
-				var success = valid_shared_file(files[i]);
-				print(success ? "Successful" : "FAILED");
-			}
-			break;
-		case "remove":
-			if(!usernum)
-				usernum = optval[cmd];
-			if(usernum) {
-				printf("Removing user #%u avatar\n", usernum);
-				var success = lib.remove_localuser(usernum);
-				print(success ? "Successful" : "FAILED");
-			}
-			break;
-		case "enable":
-		case "disable":
-			if(!usernum)
-				usernum = optval[cmd];
-			if(usernum) {
-				var success = lib.enable_localuser(usernum, cmd == "enable");
-				print(success ? "Successful" : "FAILED");
-			}
-			break;
-		case "newuser":
-			if(!files.length)
-				files.push(optval[cmd]);
-			if(!files.length) {
-				alert("No file specified");
+			case "dump":
+				if(!usernum)
+					usernum = optval[cmd];
+				var obj = lib.read_localuser(usernum);
+				print(JSON.stringify(obj));
 				break;
-			}
-			if(!file_exists(files[0])) {
-				printf("File does not exist: %s\r\n", files[0]);
+			case "draw":	// Uses Graphic.draw()
+			case "show":	// Uses console.write()
+				if(files.length) {
+					for(var i in files) {
+						for(o=offset ? offset : 0; ; o++) {	
+							var data = lib.import_file(null, files[i], o);
+							if(!data)
+								break;
+							console.clear();
+							if(cmd == "draw") {
+								lib.draw_bin(data);
+								console.getkey();
+							} else {
+								lib.show_bin(data);
+								console.pause();
+							}
+							console.attributes = 7;
+						}
+					}
+					break;
+				}
+				if(!usernum)
+					usernum = optval[cmd];
+				console.clear();
+				var obj = lib[cmd](usernum);
+				console.getkey();
+				console.clear(LIGHTGRAY);
 				break;
-			}
-			printf("Importing %s for new users\r\n", files[0]);
-			var data = lib.import_file(null, files[0], offset);
-			if(!data) {
-				alert("Failed");
+			case "verify":
+				for(var i in files) {
+					printf("%s: ", file_getname(files[i]));
+					var success = valid_shared_file(files[i]);
+					print(success ? "Successful" : "FAILED");
+				}
 				break;
-			}
-			var ini = new File(file_cfgname(system.ctrl_dir, "modopts.ini"));
-			if(!ini.open(file_exists(ini.name) ? 'r+':'w+')) {
-				alert(ini.name + " open error " + ini.error);
+			case "remove":
+				if(!usernum)
+					usernum = optval[cmd];
+				if(usernum) {
+					printf("Removing user #%u avatar\n", usernum);
+					var success = lib.remove_localuser(usernum);
+					print(success ? "Successful" : "FAILED");
+				}
 				break;
-			}
-			var success = ini.iniSetValue("newuser", "avatar", data);
-			if(success)
-				ini.iniRemoveKey("newuser", "avatar_file");
-			printf("%s\r\n", success ? "Successful" : "FAILED!");
-			ini.close();
-			break;
-		case "normalize":
-			var graphic = new Graphic(lib.defs.width, lib.defs.height);
-			if(files.length) {
-				if(!offset)
-					offset = 0;
-				var filename = lib.fullpath(files[0]);
-				try {
-					if(!graphic.load(filename, offset))
+			case "enable":
+			case "disable":
+				if(!usernum)
+					usernum = optval[cmd];
+				if(usernum) {
+					var success = lib.enable_localuser(usernum, cmd == "enable");
+					print(success ? "Successful" : "FAILED");
+				}
+				break;
+			case "newuser":
+				if(!files.length)
+					files.push(optval[cmd]);
+				if(!files.length) {
+					alert("No file specified");
+					break;
+				}
+				if(!file_exists(files[0])) {
+					printf("File does not exist: %s\r\n", files[0]);
+					break;
+				}
+				printf("Importing %s for new users\r\n", files[0]);
+				var data = lib.import_file(null, files[0], offset);
+				if(!data) {
+					alert("Failed");
+					break;
+				}
+				var ini = new File(file_cfgname(system.ctrl_dir, "modopts.ini"));
+				if(!ini.open(file_exists(ini.name) ? 'r+':'w+')) {
+					alert(ini.name + " open error " + ini.error);
+					break;
+				}
+				var success = ini.iniSetValue("newuser", "avatar", data);
+				if(success)
+					ini.iniRemoveKey("newuser", "avatar_file");
+				printf("%s\r\n", success ? "Successful" : "FAILED!");
+				ini.close();
+				break;
+			case "normalize":
+				var graphic = new Graphic(lib.defs.width, lib.defs.height);
+				if(files.length) {
+					if(!offset)
+						offset = 0;
+					var filename = lib.fullpath(files[0]);
+					try {
+						if(!graphic.load(filename, offset))
+							break;
+					} catch(e) {
+						alert(e);
 						break;
-				} catch(e) {
-					alert(e);
+					}
+					if(!lib.is_valid(graphic.BIN)) {
+						alert(filename + " is not a valid avatar");
+						break;
+					}
+					var file = new File(filename);
+					if(!file.open("r+b")) {
+						alert("Failed to open " + file.name);
+						break;
+					}
+					file.position = offset * lib.size;
+					file.write(graphic.normalize(optval[cmd]).BIN, lib.size);
+					file.close();
 					break;
 				}
-				if(!lib.is_valid(graphic.BIN)) {
-					alert(filename + " is not a valid avatar");
+				if(!usernum)
 					break;
-				}
-				var file = new File(filename);
-				if(!file.open("r+b")) {
-					alert("Failed to open " + file.name);
-					break;
-				}
-				file.position = offset * lib.size;
-				file.write(graphic.normalize(optval[cmd]).BIN, lib.size);
-				file.close();
+				var avatar = lib.read_localuser(usernum);
+				graphic.base64_decode([avatar.data]);
+				lib.update_localuser(usernum, base64_encode(graphic.normalize(optval[cmd]).BIN));
 				break;
-			}
-			if(!usernum)
+			case "install":
+				var result = install();
+				printf("%s\r\n", result == true ? "Successful" : "!FAILED: " + result);
 				break;
-			var avatar = lib.read_localuser(usernum);
-			graphic.base64_decode([avatar.data]);
-			lib.update_localuser(usernum, base64_encode(graphic.normalize(optval[cmd]).BIN));
-			break;
-		case "install":
-			var result = install();
-			printf("%s\r\n", result == true ? "Successful" : "!FAILED: " + result);
-			break;
+		}
 	}
 }
 
