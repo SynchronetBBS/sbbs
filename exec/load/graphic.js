@@ -362,6 +362,109 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 	}
 });
 
+// return ctrl-a codes to obtain a certain attribute
+Graphic.prototype.ctrl_a_sequence = function(attr, curattr)
+{
+	if(attr == curattr)
+		return '';
+	var str = '';
+	if(((curattr&this.defs.BLINK) && !(attr&this.defs.BLINK)) 
+		|| ((curattr&this.defs.HIGH) && !(attr&this.defs.HIGH))) {
+		str += "\1N";
+		curattr = this.defs.LIGHTGRAY;
+	}
+	if((attr&0xf0) != (curattr&0xf0)) {
+		if((attr&this.defs.BLINK) && !(curattr&this.defs.BLINK))
+			str += "\1I";
+		switch(attr&0x70) {
+			case 0:
+				str += "\1" + "0";
+				break;
+			case this.defs.BG_RED:
+				str += "\1" + "1";
+				break;
+			case this.defs.BG_GREEN:
+				str += "\1" + "2";
+				break;
+			case this.defs.BG_BROWN:
+				str += "\1" + "3";
+				break;
+			case this.defs.BG_BLUE:
+				str += "\1" + "4";
+				break;
+			case this.defs.BG_MAGENTA:
+				str += "\1" + "5";
+				break;
+			case this.defs.BG_CYAN:
+				str += "\1" + "6";
+				break;
+			case this.defs.BG_LIGHTGRAY:
+				str += "\1" + "7";
+				break;
+		}
+	}
+	if((attr&0x0f) != (curattr&0x0f)) {
+		if((attr&this.defs.HIGH) && !(curattr&this.defs.HIGH))
+			str += "\1H";
+		switch(attr&0x07) {
+			case this.defs.BLACK:
+				str += "\1K";
+				break;
+			case this.defs.RED:
+				str += "\1R";
+				break;
+			case this.defs.GREEN:
+				str += "\1G";
+				break;
+			case this.defs.BROWN:
+				str += "\1Y";
+				break;
+			case this.defs.BLUE:
+				str += "\1B";
+				break;
+			case this.defs.MAGENTA:
+				str += "\1M";
+				break;
+			case this.defs.CYAN:
+				str += "\1C";
+				break;
+			case this.defs.LIGHTGRAY:
+				str += "\1W";
+				break;
+		}
+	}
+	return str;
+}	
+
+Object.defineProperty(Graphic.prototype, "MSG", {
+	get: function() {
+		var x;
+		var y;
+    	var lines=[];
+    	var curattr = this.defs.LIGHTGRAY;
+		var msg = '';
+		var ch;
+
+		for(y=0; y<this.height; y++) {
+			for(x=0; x<this.width; x++) {
+				msg += this.ctrl_a_sequence(this.data[x][y].attr, curattr);
+            	curattr = this.data[x][y].attr;
+            	ch = this.data[x][y].ch;
+				if(ch == '\1')	// Convert a Ctrl-A char to a Ctrl-AA (escaped)
+					ch += 'A';
+                msg += ch;
+        	}
+			msg += '\1N\r\n';
+			curattr = this.defs.LIGHTGRAY;
+    	}
+    	return msg;
+	},
+	set: function(msg) {
+		this.putmsg(undefined,undefined,msg,true);
+	}
+});
+
+
 /*
  * Returns an HTML encoding of the graphic data.
  *
