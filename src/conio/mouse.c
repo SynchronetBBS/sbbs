@@ -206,7 +206,7 @@ int CIOLIBCALL more_multies(int button, int clicks)
 	return(0);
 }
 
-void CIOLIBCALL ciolib_mouse_thread(void *data)
+void ciolib_mouse_thread(void *data)
 {
 	int	timedout;
 	int timeout_button=0;
