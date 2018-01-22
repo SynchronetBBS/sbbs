@@ -1,5 +1,3 @@
-/* answer.cpp */
-
 /* Synchronet answer "caller" function */
 
 /* $Id$ */
@@ -283,7 +281,9 @@ bool sbbs_t::answer()
 			"\x1b[6n"	/* Get cursor position */
 			"\x1b[u"	/* restore cursor position */
 			"\x1b[!_"	/* RIP? */
+#ifdef SUPPORT_ZUULTERM
 			"\x1b[30;40m\xc2\x9f""Zuul.connection.write('\\x1b""Are you the gatekeeper?')\xc2\x9c"	/* ZuulTerm? */
+#endif
 			"\x1b[0m_"	/* "Normal" colors */
 			"\x1b[2J"	/* clear screen */
 			"\x1b[H"	/* home cursor */
@@ -338,13 +338,16 @@ bool sbbs_t::answer()
 			if(terminal[0]==0)
 				SAFECOPY(terminal,"RIP");
 			logline("@R",strstr(str,"RIPSCRIP"));
-			autoterm|=(RIP|COLOR|ANSI); }
+			autoterm|=(RIP|COLOR|ANSI); 
+		}
+#ifdef SUPPORT_ZUULTERM
 		else if(strstr(str,"Are you the gatekeeper?"))  {
 			if(terminal[0]==0)
 				SAFECOPY(terminal,"HTML");
 			logline("@H",strstr(str,"Are you the gatekeeper?"));
 			autoterm|=HTML;
 		} 
+#endif
 	}
 	else if(terminal[0]==0)
 		SAFECOPY(terminal,"DUMB");
