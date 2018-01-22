@@ -38,6 +38,10 @@
 
 #define DUMP
 
+#ifndef MIN
+#define MIN(a,b)	((a) < (b) ? (a) : (b))
+#endif
+
 struct terminal term;
 struct cterminal	*cterm;
 
@@ -2077,8 +2081,8 @@ void capture_control(struct bbslist *bbs)
 							memset(sauce.author, ' ', sizeof(sauce.author));
 							memset(sauce.group, ' ', sizeof(sauce.group));
 							if(bbs != NULL) {
-								memcpy(sauce.title, bbs->name, min(strlen(bbs->name), sizeof(sauce.title)));
-								memcpy(sauce.author, bbs->user, min(strlen(bbs->user), sizeof(sauce.author)));
+								memcpy(sauce.title, bbs->name, MIN(strlen(bbs->name), sizeof(sauce.title)));
+								memcpy(sauce.author, bbs->user, MIN(strlen(bbs->user), sizeof(sauce.author)));
 							}
 							if((tm=localtime(&t)) != NULL)	// The null-terminator overwrites the first byte of filesize
 								sprintf(sauce.date, "%04u%02u%02u"
