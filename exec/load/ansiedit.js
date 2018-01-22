@@ -491,6 +491,7 @@ var ANSIEdit = function(options) {
 			state.cursor.x < frames.canvas.x + frames.canvas.width - 1
 		) {
 			state.cursor.x++;
+			move_cursor(state.cursor.x, state.cursor.y);
 		}
 
 		if (settings.hScroll &&
