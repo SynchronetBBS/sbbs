@@ -137,7 +137,7 @@ function import_netuser_list(hdr, list)
 	if(verbosity)
 		printf("%s written with %u avatars\r\n", file.name, objs.length);
 
-	var bbes = new File(lib.bbsindex_fname());
+	var bbses = new File(lib.bbsindex_fname());
 	if(bbses.open(bbses.exists ? 'r+':'w+')) {
 		bbses.iniSetValue(hdr.subject, "netaddr", hdr.from_net_addr);
 		bbses.iniSetValue(hdr.subject, "updated", new Date());
@@ -319,7 +319,7 @@ function export_users(msgbase, realnames, all)
 	var last_user = system.lastuser;
 	var list = {};
 	var exported = 0;
-	
+
 	for(var n = 1; n <= last_user && !js.terminated; n++) {
 		if(!file_exists(lib.localuser_fname(n)))
 			continue;
@@ -436,7 +436,7 @@ function export_file(msgbase, filename)
 		alert("File not updated recently: " + filename);
 		return false;
 	}
-	
+
 	var success = export_file_to_msgbase(msgbase, filename);
 
 	if(success) {
@@ -688,7 +688,7 @@ function main()
 			case "show":	// Uses console.write()
 				if(files.length) {
 					for(var i in files) {
-						for(o=offset ? offset : 0; ; o++) {	
+						for(o=offset ? offset : 0; ; o++) {
 							var data = lib.import_file(null, files[i], o);
 							if(!data)
 								break;
