@@ -1930,7 +1930,7 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->origin_mode=false;
 	if(cterm->scrollback!=NULL)
 		memset(cterm->scrollback,0,cterm->width*2*cterm->backlines);
-	sprintf(cterm->DA,"\x1b[=67;84;101;114;109;%u;", CONIO_FIRST_FREE_FONT);
+	strcpy(cterm->DA,"\x1b[=67;84;101;114;109;");
 	out=strchr(cterm->DA, 0);
 	if(out != NULL) {
 		for(in=revision; *in; in++) {
@@ -1941,6 +1941,7 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 		}
 		*out=0;
 	}
+	sprintf(cterm->DA + strlen(cterm->DA), ";%u", CONIO_FIRST_FREE_FONT);
 	/* Fire up note playing thread */
 	if(!cterm->playnote_thread_running) {
 		listInit(&cterm->notes, LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
