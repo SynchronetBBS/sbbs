@@ -1,4 +1,6 @@
-CTerm terminal chariteristics:
+$Id$
+
+CTerm terminal characteristics:
 ------------------------------
 
 End of line behaviour (wrapping):
@@ -91,7 +93,7 @@ CSI = [p1] M
 	Sets the current state of ANSI music parsing.
 	0 - Only CSI | will introduce an ANSI music string.
 	1 - Both CSI | and CSI N will introduce an ANSI music string.
-	2 - CSI |, CSI N, and CSI M will all intriduce and ANSI music string.
+	2 - CSI |, CSI N, and CSI M will all introduce an ANSI music string.
 	    In this mode, Delete Line will not be available.
 
 	SOURCE: CTerm only.
@@ -153,7 +155,7 @@ CSI ? 32 h
 	NON-STANDARD EXTENSION
 	Bright Intensity Disable
 
-	This makes the bright intensity bit not control the intesnity.
+	This makes the bright intensity bit not control the intensity.
 	Mostly for use with CSI ? 31 h to permit fonts in the same
 	colours.
 
@@ -199,7 +201,7 @@ CSI ? 7 l
     Disable auto wrap.
     
     This mode causes a write to the last column of a to leave the
-    cursor where it was before the write occured, overwriting anything
+    cursor where it was before the write occurred, overwriting anything
     which was previously written to the same position.
     
     SOURCE: Digital VT102 User Guide
@@ -279,7 +281,7 @@ CSI [ p1 ] @
 	Insert Character(s)
 	Defaults: p1 = 1
 	Moves text from the current position to the right edge p1 characters
-	to the right, with rightmost charaters going off-screen and the
+	to the right, with rightmost characters going off-screen and the
 	resulting hole being filled with the current attribute.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
@@ -381,7 +383,7 @@ CSI [ p1 [ ; p2 ] ] sp D
 		42 - Topaz (Amiga)      
 	Not all fonts are supported in all modes.  If a font is not supported in
 	the current mode, no action is taken, but there should be a non-zero
-	'setfont_result' value in the Device Attributes response.
+	'Font Selection result' value in the Device Attributes response.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
@@ -412,7 +414,7 @@ CSI [ p1 ] G
 
 CSI [ p1 [ ; p2 ] ] H
 CSI [ p1 [ ; p2 ] ] f
-	Cusror Position
+	Cursor Position
 	Defaults: p1 = 1  p2 = 1
 	Moves the cursor to the p2th column of the p1th line.
 
@@ -467,7 +469,7 @@ CSI [ p1 ] M
 CSI N
 	"ANSI" Music / Not implemented.
 	If "ANSI" Music is set to BananaCom (CSI = 1 M) or fully enabled
-	(CSI = 2 M) performs "ANSI" muisic.  See "ANSI" MUSIC section for more
+	(CSI = 2 M) performs "ANSI" music.  See "ANSI" MUSIC section for more
 	details.
 
 	SOURCE: BANSI.TXT
@@ -517,7 +519,7 @@ CSI [ p1 ] X
 CSI [ p1 ] Z
 	Cursor Backward Tabulation
 	Defaults: p1 = 1
-	Move the cursor to the p1th preceeding tab stop.  Will not go past the
+	Move the cursor to the p1th preceding tab stop.  Will not go past the
 	start of the line.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
@@ -526,36 +528,43 @@ CSI [ p1 ] c
 	Device Attributes
 	Defaults: p1 = 0
 	If p1 is 0, CTerm will reply with the sequence:
-	CSI [ = 67;84;101;114;109;pN;pF;pS;pV;pM... c
+	CSI [ = 67;84;101;114;109;pN;pV;pM;pF;pR;pS0;pS1;pS2;pS3... c
 	64;84;101;114;109 is the ASCII values of the "CTerm" string.  pN is the
 	CVS revision ID of CTerm with dots converted to semi-colons (e.g. "1;156").
 	Use the CVS revision to detect if a specific feature is available.  If
 	you are adding features to a forked version of cterm, please do so by
 	adding an extra parameter to the end, not by incrementing any existing
 	one!
-	pF is the first available loadable-font slot number, in decimal
-	pS is the result of any previous "Font Selection" request:
-		0 = successful font selection
-		1 = font selection requests are not supported by client
-		2 = required subsystem for font use has not been initalized
-		3 = character height of selected font is not supported in current video mode
-		4 = invalid font slot number specified in request
-		5 = required video mode for selected font is not compatible with current video mode
-		6 = memory allocation failure
 	pV is the set of current video flags, in decimal:
 		bit 0 = high intensity foreground selects alternate font (CSI ? 31 h)
 		bit 1 = high intensity foreground attribute does not change intensity (CSI ? 32 h)
 		bit 2 = blink attribute control high intensity background attributes (CSI ? 33 h)
 		bit 3 = blink attribute selects alternate font (CSI ? 34 h)
 		bit 4 = blink attribute does not blink text (CSI ? 35 h)
-	pM is the curren emulation mode, in decimal:
+	pM is the current emulation mode, in decimal:
 		bit 0 = auto wrap enabled (CSI ? 7 h)
 		bit 1 = origin mode enabled (CSI ? 6 h)
 		bit 2 = doorway mode enabled (CSI = 255 h)
 		bits 3:4 = cursor:
-			00b = 0: No cursor (CSI ? 25 l)
+			00b = 0: Invisible cursor (CSI ? 25 l)
 			01b = 1: Solid cursor
-			02b = 2: Normal cursor (CSI ? 25 h)
+			10b = 2: Normal cursor (CSI ? 25 h)
+	pF is the first available loadable-font slot number, in decimal
+	pR is the result of the previous "Font Selection" request:
+		0 = successful font selection
+		1 = font selection requests are not supported by client
+		2 = required subsystem for font use has not been initialized
+		3 = selected font is not available or is incompatible with current video mode
+		4 = invalid font slot number specified in request
+		5 = required video mode for selected font is incompatible with current video mode
+		6 = memory allocation failure
+        99 = no font selection request has been received
+    pS0 - pS3 contain the font slots numbers of previously successful "Font Selection" requests
+              into the 4 available alternate-font style/attribute values:
+              pS0 - normal attribute font slot
+              PS1 - high intensity foreground attribute font slot
+              PS2 - blink attribute font slot
+              PS3 - high intensity blink attribute font slot
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
@@ -564,17 +573,17 @@ CSI [ p1 [ ; pX ... ] ] m
 	Defaults: p1 = 0
 	Sets or clears one or more text attributes.  Unlimited parameters are
 	supported and are applied in received order.  The following are
-	supoprted:
+	supported:
 	                                        Blink Bold FG BG (Modified)
 	0 -  Default attribute, white on black     X    X  X  X
 	1 -  Bright Intensity                           X
-	2 -  Dim intensty                               X
+	2 -  Dim intensity                              X
 	5 -  Blink (By definition, slow blink)     X
 	6 -  Blink (By definition, fast blink)     X
 	     NOTE: Both blinks are the same speed.
 	7 -  Negative Image - Reverses FG and BG           X  X
 	8 -  Concealed characters, sets the                X
-	     forground colour to the background
+	     foreground colour to the background
 		 colour.
 	22 - Normal intensity                           X
 	25 - Steady (Not blinking)                 X
@@ -618,8 +627,8 @@ CSI [ p1 ] n
 		  and x is
 		  the current row.
 	255	- NON-STANDARD EXTENSION
-		  Replies as though a CSI [ 6 n was recieved with the cursor in
-		  the bottom right corner.  ie: Returns the terminal size as a
+		  Replies as though a CSI [ 6 n was received with the cursor in
+		  the bottom right corner.  i.e.: Returns the terminal size as a
 		  position report.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
@@ -664,9 +673,9 @@ CSI u
 "ANSI" Music
 ============
 This is the place where the BBS world completely fell on it's face in ANSI
-useage.  A programmer with either TeleMate or QModem (the first two programs to
+usage.  A programmer with either TeleMate or QModem (the first two programs to
 support "ANSI" music as far as I can tell) decided they needed a method of
-playing music on a BBS conenction.  They decided to add an "unused" ANSI code
+playing music on a BBS connection.  They decided to add an "unused" ANSI code
 and go their merry way.  Since their product didn't implement CSI M (Delete
 line) they assumed it was unused and blissfully broke the spec.  They defined
 "ANSI" music as:
@@ -708,9 +717,9 @@ Mx sets misc. music parameters where x is one of the following:
 	    playing before more characters are processed.
 	B - Play music in the background, allowing normal processing to
 	    continue.
-	N - "Normal" not legato, not stacatto
+	N - "Normal" not legato, not staccato
 	L - Play notes legato
-	S - Play notes stacatto
+	S - Play notes staccato
 T### Sets the tempo of the music where ### is one or more decimal digits.
 	If the decimal number is greater than 255, it is forced to 255.
 	If it is less than 32, it is forced to 32.  The number signifies
@@ -732,23 +741,23 @@ A, B, C, D, E, F, G, or P Plays the named note or pause from the current
 	is used.  The valid modifiers are:
 	+ - Sharp.  The next highest semitone is played.
 		Each sharp character will move up one semitone, so "C++"
-		is equivilent to "D".
+		is equivalent to "D".
 	# - Sharp.  The next highest semitone is played.
 		Each sharp character will move up one semitone, so "C##"
-		is equivilent to "D".
+		is equivalent to "D".
 	- - Flat.  The next lowest semitone is played.
 		Each flat character will move down one semitone, so "D--"
-		is equivilent to "C".
+		is equivalent to "C".
 	. - Duration is 1.5 times what it would otherwise be.  Dots are not
-		cumulative, so "C.." is equivilent to "C."
-	### - Notelength as a reciprical of the fraction of a whole note to
+		cumulative, so "C.." is equivalent to "C."
+	### - Notelength as a reciprocal of the fraction of a whole note to
 		play the note for.  For example, 4 would indicate a 1/4 note.
 		The default note length is 4.
 L### Set the notelength parameter for all following notes which do not have
 	one specified (ie: override the quarter-note default)  Legal note lengths
-	are 1-64 indicating the reciprical of the fraction (ie: 4 indicates a 1/4
+	are 1-64 indicating the reciprocal of the fraction (ie: 4 indicates a 1/4
 	note).
-<	Move the the next lowest octave.
+<	Move the next lowest octave.
 	Octave cannot go above six or below zero.
 >	Move to the next highest octave.
 	Octave cannot go above six or below zero.
@@ -759,7 +768,7 @@ six C notes for the seven octaves in rising order are:
 
 Purists will note that the lower three octaves are not exactly one half of
 the next higher octave in frequency.  This is due to lost resolution of
-low frequences.  The notes *sound* correct to me.  If anyone can give me
+low frequencies.  The notes *sound* correct to me.  If anyone can give me
 an excellent reason to change them (and more correct integer values for all
 notes) I am willing to do that assuming the notes still sound "right".
 
