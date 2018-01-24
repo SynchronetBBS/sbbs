@@ -4,7 +4,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -76,6 +76,7 @@ struct cterminal {
 	/* conio stuff */
 	int	x;		// X position of the left side on the screen
 	int	y;		// Y position of the top pn the screen
+	int setfont_result;
 
 	/* emulation mode */
 	cterm_emulation_t	emulation;
@@ -132,7 +133,7 @@ struct cterminal {
 	int					font_size;		// Bytes
 	int					doorway_mode;
 	int					doorway_char;	// Indicates next char is a "doorway" mode char
-	int					cursor;			// Current cursor mode (Normal or None)z
+	int					cursor;			// Current cursor mode (Normal or None)
 
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO

@@ -4,7 +4,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -1477,7 +1477,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force, int font_num)
 	if(cio_api.setfont!=NULL)
 		return(cio_api.setfont(font,force,font_num));
 	else
-		return(-1);
+		return(CIOLIB_SETFONT_NOT_SUPPORTED);
 }
 
 /* Optional */
