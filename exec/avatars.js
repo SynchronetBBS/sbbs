@@ -342,7 +342,7 @@ function export_users(msgbase, realnames, all)
 			last_exported = new Date(avatar.last_exported);
 		if(u.stats.laston_date * 1000 < last_exported) {
 			if(verbosity)
-				printf("User #%u is inactive since: %s\r\n", new Date(u.stats.laston_date * 1000));
+				printf("User #%u is inactive since: %s\r\n", n,new Date(u.stats.laston_date * 1000));
 			continue;	// Don't export avatars of inactive users
 		}
 		var updated;
@@ -591,6 +591,7 @@ function main()
 			case "newuser":
 			case "install":
 			case "normalize":
+			case "count":
 				cmds.push(arg);
 				break;
 			default:
@@ -797,6 +798,28 @@ function main()
 				var avatar = lib.read_localuser(usernum);
 				graphic.base64_decode([avatar.data]);
 				lib.update_localuser(usernum, base64_encode(graphic.normalize(optval[cmd]).BIN));
+				break;
+			case "count":
+				if(!files.length) {
+					var total = 0;
+					files = directory(lib.local_library() + "*.bin");
+					for(var i in files) {
+						var filename = files[i];
+						if(filename.search(EXCLUDE_FILES) >= 0)
+							continue;
+						printf("%-32s : ", file_getname(filename));
+						var sauce = SAUCE.read(filename);
+						if(!sauce) {
+							printf("no SAUCE\r\n");
+							conintue;
+						}
+						var count = sauce.filesize / lib.size;
+						printf("%u\r\n", count);
+						total += count;
+					}
+					printf("%u total\r\n", total);
+					break;
+				}
 				break;
 			case "install":
 				var result = install();
