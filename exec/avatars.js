@@ -387,7 +387,8 @@ function export_users(msgbase, realnames, all)
 	}
 	for(var i in list)
 		list[i].sort();
-	var body = "json-begin\r\n";
+	var body = "Timestamp: " + new Date() + "\r\n";
+	body += "json-begin\r\n";
 	body += lfexpand(JSON.stringify(list, null, 1)) + "\r\n";
 	body += "json-end\r\n";
 	body += "--- " + js.exec_file + " " + REVISION + "\r\n";
