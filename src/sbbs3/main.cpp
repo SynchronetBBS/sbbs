@@ -3162,6 +3162,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	scanposts_inside = false;
 	scansubs_inside = false;
 	timeleft = 60*10;	/* just incase this is being used for calling gettimeleft() */
+	last_sysop_auth = 0;
 	uselect_total = 0;
 	lbuflen = 0;
 	keybufbot=keybuftop=0;	/* initialize [unget]keybuf pointers */

@@ -463,6 +463,7 @@ public:
 	ulong	console;		/* Defines current Console settings */
 	char 	wordwrap[81];	/* Word wrap buffer */
 	time_t	now,			/* Used to store current time in Unix format */
+			last_sysop_auth,/* Time sysop was last authenticated */
 			answertime, 	/* Time call was answered */
 			logontime,		/* Time user logged on */
 			starttime,		/* Time stamp to use for time left calcs */
