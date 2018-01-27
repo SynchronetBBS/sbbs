@@ -54,7 +54,7 @@ function netuser_fname(netaddr)
 		fido = netaddr.match(FTN_4D_PATTERN);
 	if(fido)
 		return format("%sfido/%04x%04x.avatars.ini", system.data_dir, fido[2], fido[3]);
-	if(netaddr.search(QWK_ID_PATTERN) == 0)
+	if(file_getname(netaddr).search(QWK_ID_PATTERN) == 0)
 		return format("%sqnet/%s.avatars.ini", system.data_dir, file_getname(netaddr));
 	return false;
 }
