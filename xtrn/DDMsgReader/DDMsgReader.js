@@ -1095,7 +1095,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		this.enhMsgHeaderLines.push(hdrLine2);
 		var hdrLine3 = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
 					 + "\1gF\1n\1grom\1h\1c: \1b@MSG_FROM_AND_FROM_NET-L";
-		numChars = console.screen_columns - 23;
+		numChars = console.screen_columns - 36;
 		for (var i = 0; i < numChars; ++i)
 			hdrLine3 += "#";
 		hdrLine3 += "@\1k" + VERTICAL_SINGLE;
