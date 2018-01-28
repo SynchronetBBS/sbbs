@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.17 beta 54
-                           Release date: 2018-01-20
+                                 Version 1.17 beta 55
+                           Release date: 2018-01-27
 
                                      by
 
@@ -486,6 +486,12 @@ the current message number and the total number of messages in the message
 area.  It can also be used in a fixed-width field.  For example, to display it
 left-justified in a width of 30 characters, the @-code would look like this:
 @MSG_NUM_AND_TOTAL-L#########@
+
+Another additional @-code supported by Digital Distortion Message Reader is
+@MSG_FROM_AND_FROM_NET@, which shows the 'from' username along with the 'from'
+network type in paranthesis.  There is also a -L version for left-
+justification with length.  For instance:
+@MSG_FROM_AND_FROM_NET-L######@
 
 
 5. User avatars

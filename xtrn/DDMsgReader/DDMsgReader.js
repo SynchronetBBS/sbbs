@@ -95,6 +95,12 @@
  *                              displayAvatars to toggle this feature.
  * 2018-01-20 Eric Oulashin     Version 1.17 beta 54
  *                              Added a configuration file option, rightJustifyAvatars.
+ * 2018-01-27 Eric Oulashin     Version 1.17 beta 55
+ *                              Added the new @-code MSG_FROM_AND_FROM_NET and
+ *                              MSG_FROM_AND_FROM_NET-L (for left-justification with
+ *                              field length), which shows the 'from' name with
+ *                              the from network in parenthesis.  Updated the
+ *                              default message header to show that information.
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -181,8 +187,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 54";
-var READER_DATE = "2018-01-20";
+var READER_VERSION = "1.17 Beta 55";
+var READER_DATE = "2018-01-27";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1088,7 +1094,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		hdrLine2 += "@\1n\1c" + VERTICAL_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine2);
 		var hdrLine3 = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
-		             + "\1gF\1n\1grom\1h\1c: \1b@MSG_FROM-L";
+					 + "\1gF\1n\1grom\1h\1c: \1b@MSG_FROM_AND_FROM_NET-L";
 		numChars = console.screen_columns - 23;
 		for (var i = 0; i < numChars; ++i)
 			hdrLine3 += "#";
@@ -8354,7 +8360,7 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	// The order of the strings in this array matters.  For instance, @MSG_NUM_AND_TOTAL
 	// needs to come before @MSG_NUM so that it gets processed properly, since they
 	// both start out with the same text.
-	var atCodeStrBases = ["@MSG_FROM", "@MSG_FROM_EXT", "@MSG_TO", "@MSG_TO_NAME", "@MSG_TO_EXT",
+	var atCodeStrBases = ["@MSG_FROM", "@MSG_FROM_AND_FROM_NET", "@MSG_FROM_EXT", "@MSG_TO", "@MSG_TO_NAME", "@MSG_TO_EXT",
 	                      "@MSG_SUBJECT", "@MSG_DATE", "@MSG_ATTR", "@MSG_AUXATTR", "@MSG_NETATTR",
 	                      "@MSG_ALLATTR", "@MSG_NUM_AND_TOTAL", "@MSG_NUM", "@MSG_ID",
 	                      "@MSG_REPLY_ID", "@MSG_TIMEZONE", "@GRP", "@GRPL", "@SUB", "@SUBL",
@@ -8445,6 +8451,7 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	}
 	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
 	                         .replace(/@MSG_FROM@/gi, pMsgHdr["from"])
+	                         .replace(/@MSG_FROM_AND_FROM_NET@/gi, pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : ""))
 	                         .replace(/@MSG_FROM_EXT@/gi, (typeof(pMsgHdr["from_ext"]) == "string" ? pMsgHdr["from_ext"] : ""))
 	                         .replace(/@MSG_TO@/gi, pMsgHdr["to"])
 	                         .replace(/@MSG_TO_NAME@/gi, pMsgHdr["to"])
@@ -8514,7 +8521,12 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
 	var formatStr = ((/L/i).test(pAtCodeStr.charAt(pDashJustifyIdx+1)) ? "%-" : "%") + pSpecifiedLen + "s";
 	// Specify the replacement text depending on the @-code string
 	var replacementTxt = "";
-	if (pAtCodeStr.indexOf("@MSG_FROM") > -1)
+	if (pAtCodeStr.indexOf("@MSG_FROM_AND_FROM_NET") > -1)
+	{
+		var fromWithNet = pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : "");
+		replacementTxt = fromWithNet.substr(0, pSpecifiedLen);
+	}
+	else if (pAtCodeStr.indexOf("@MSG_FROM") > -1)
 		replacementTxt = pMsgHdr["from"].substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_FROM_EXT") > -1)
 		replacementTxt = (typeof pMsgHdr["from_ext"] === "undefined" ? "" : pMsgHdr["from_ext"].substr(0, pSpecifiedLen));

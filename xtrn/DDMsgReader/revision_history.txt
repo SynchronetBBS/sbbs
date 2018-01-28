@@ -27,6 +27,11 @@ Version  Date         Description
                       displayAvatars, which toggles whether or not to display
                       user avatars in the message headers.  Valid values are
                       true and false.
+                      Also Added the new @-code MSG_FROM_AND_FROM_NET and
+                      MSG_FROM_AND_FROM_NET-L (for left-justification with
+                      field length), which shows the 'from' name with the from
+                      network in parenthesis.  Updated the default message
+                      header to show that information.
                       Also contains various bug fixes.
 1.16     2016-09-11   Added a new feature that allows users to forward a
                       message to an email address or to another user on the
