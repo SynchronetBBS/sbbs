@@ -112,6 +112,38 @@ CSI = [ p1 [ ; p2 ] ] {
 
 	SOURCE: CTerm only.
 
+CSI = [ p1 [ ; ... ] ] n
+    NON-STANDARD EXTENSION
+	State/Mode Request/Report
+	Defaults: p1 = 0
+
+    When p1 is 1, CTerm will respond with a Font State Report of the form
+        CSI = 1 ;pF ;pR ;pS0 ;pS1 ;pS2 ;pS3 n
+	pF is the first available loadable-font slot number
+	pR is the result of the previous "Font Selection" request:
+		0 = successful font selection
+		1 = font selection requests are not supported by client
+		2 = required subsystem for font use has not been initialized
+		3 = selected font is not available or is incompatible with current video mode
+		4 = invalid font slot number specified in request
+		5 = required video mode for selected font is incompatible with current video mode
+		6 = memory allocation failure
+        99 = no font selection request has been received
+    pS0 - pS3 contain the font slots numbers of previously successful "Font Selection" requests
+              into the 4 available alternate-font style/attribute values:
+              pS0 - normal attribute font slot
+              PS1 - high intensity foreground attribute font slot
+              PS2 - blink attribute font slot
+              PS3 - high intensity blink attribute font slot
+
+    When p1 is 2, CTerm will respond with a Mode Report of the form
+        CSI = 2[;pN [;pN] [...]] n
+    Where pN represent zero or more mode values set previously (e.g. via CSI ? pN h).
+    Mode values cleared (disabled via CSI ? pN l) will not be included in the set of values
+    returned in the Mode Report.
+
+    Other values of p1 will be ignored by CTerm.
+
 
 CSI = 255 h
 	NON-STANDARD EXTENSION
@@ -383,7 +415,7 @@ CSI [ p1 [ ; p2 ] ] sp D
 		42 - Topaz (Amiga)      
 	Not all fonts are supported in all modes.  If a font is not supported in
 	the current mode, no action is taken, but there should be a non-zero
-	'Font Selection result' value in the Device Attributes response.
+	'Font Selection result' value in the Font State Report.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
@@ -528,43 +560,13 @@ CSI [ p1 ] c
 	Device Attributes
 	Defaults: p1 = 0
 	If p1 is 0, CTerm will reply with the sequence:
-	CSI [ = 67;84;101;114;109;pN;pV;pM;pF;pR;pS0;pS1;pS2;pS3... c
+        CSI = 67;84;101;114;109;pN c
 	64;84;101;114;109 is the ASCII values of the "CTerm" string.  pN is the
 	CVS revision ID of CTerm with dots converted to semi-colons (e.g. "1;156").
 	Use the CVS revision to detect if a specific feature is available.  If
 	you are adding features to a forked version of cterm, please do so by
 	adding an extra parameter to the end, not by incrementing any existing
 	one!
-	pV is the set of current video flags, in decimal:
-		bit 0 = high intensity foreground selects alternate font (CSI ? 31 h)
-		bit 1 = high intensity foreground attribute does not change intensity (CSI ? 32 h)
-		bit 2 = blink attribute control high intensity background attributes (CSI ? 33 h)
-		bit 3 = blink attribute selects alternate font (CSI ? 34 h)
-		bit 4 = blink attribute does not blink text (CSI ? 35 h)
-	pM is the current emulation mode, in decimal:
-		bit 0 = auto wrap enabled (CSI ? 7 h)
-		bit 1 = origin mode enabled (CSI ? 6 h)
-		bit 2 = doorway mode enabled (CSI = 255 h)
-		bits 3:4 = cursor:
-			00b = 0: Invisible cursor (CSI ? 25 l)
-			01b = 1: Solid cursor
-			10b = 2: Normal cursor (CSI ? 25 h)
-	pF is the first available loadable-font slot number, in decimal
-	pR is the result of the previous "Font Selection" request:
-		0 = successful font selection
-		1 = font selection requests are not supported by client
-		2 = required subsystem for font use has not been initialized
-		3 = selected font is not available or is incompatible with current video mode
-		4 = invalid font slot number specified in request
-		5 = required video mode for selected font is incompatible with current video mode
-		6 = memory allocation failure
-        99 = no font selection request has been received
-    pS0 - pS3 contain the font slots numbers of previously successful "Font Selection" requests
-              into the 4 available alternate-font style/attribute values:
-              pS0 - normal attribute font slot
-              PS1 - high intensity foreground attribute font slot
-              PS2 - blink attribute font slot
-              PS3 - high intensity blink attribute font slot
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 

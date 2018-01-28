@@ -980,7 +980,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 		case '[':
 			/* ANSI stuff */
 			p=cterm->escbuf+strlen(cterm->escbuf)-1;
-			if(cterm->escbuf[1]>=60 && cterm->escbuf[1] <= 63) {	/* Private extenstions */
+			if(cterm->escbuf[1]>=60 && cterm->escbuf[1] <= 63) {	/* Private extensions */
 				switch(*p) {
 					case 'M':
 						if(cterm->escbuf[1] == '=') {	/* ANSI Music setup */
@@ -1077,6 +1077,48 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						}
 						if(!strcmp(cterm->escbuf,"[=255l"))
 							cterm->doorway_mode=0;
+						break;
+					case 'n':	/* Query (extended) state information */
+						if(cterm->escbuf[1] != '=' || retbuf == NULL)
+							break;
+						tmp[0] = 0;
+						switch(strtoul(cterm->escbuf+2,NULL,10)) {
+							case 1:		/* Font state set via "CSI sp D" */
+								sprintf(tmp, "\x1b[=1;%u;%u;%u;%u;%u;%un"
+									,CONIO_FIRST_FREE_FONT
+									,(uint8_t)cterm->setfont_result
+									,(uint8_t)cterm->altfont[0]
+									,(uint8_t)cterm->altfont[1]
+									,(uint8_t)cterm->altfont[2]
+									,(uint8_t)cterm->altfont[3]
+								);
+								break;
+							case 2:		/* Video and emulation modes/flags set via "CSI ? N h" */
+							{
+								int vidflags = GETVIDEOFLAGS();
+								strcpy(tmp, "\x1b[=2");
+								if(cterm->origin_mode)
+									strcat(tmp, ";6");
+								if(cterm->autowrap)
+									strcat(tmp, ";7");
+								if(cterm->cursor == _NORMALCURSOR)
+									strcat(tmp, ";25");
+								if(vidflags & CIOLIB_VIDEO_ALTCHARS)
+									strcat(tmp, ";31");
+								if(vidflags & CIOLIB_VIDEO_NOBRIGHT)
+									strcat(tmp, ";32");
+								if(vidflags & CIOLIB_VIDEO_BGBRIGHT)
+									strcat(tmp, ";33");
+								if(vidflags & CIOLIB_VIDEO_BLINKALTCHARS)
+									strcat(tmp, ";34");
+								if(vidflags & CIOLIB_VIDEO_NOBLINK)
+									strcat(tmp, ";35");
+								strcat(tmp, "n");
+								break;
+							}
+						}
+						if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+							strcat(retbuf, tmp);
 						break;
 					case 's':
 						if(cterm->escbuf[1] == '?') {
@@ -1595,21 +1637,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					i=strtoul(cterm->escbuf+1,NULL,10);
 					if(!i) {
 						if(retbuf!=NULL) {
-							uint8_t mode_flags = cterm->autowrap 
-								| (cterm->origin_mode << 1)
-								| (cterm->doorway_mode << 2)
-								| (cterm->cursor << 3);
-							if(strlen(retbuf) + strlen(cterm->DA) + 29 < retsize)
-								sprintf(retbuf + strlen(retbuf), "%s;%u;%u;%u;%u;%u;%u;%uc"
-									,cterm->DA
-									,(uint8_t)GETVIDEOFLAGS()
-									,mode_flags
-									,(uint8_t)cterm->setfont_result
-									,(uint8_t)cterm->altfont[0]
-									,(uint8_t)cterm->altfont[1]
-									,(uint8_t)cterm->altfont[2]
-									,(uint8_t)cterm->altfont[3]
-									);
+							if(strlen(retbuf) + strlen(cterm->DA)  < retsize)
+								strcat(retbuf,cterm->DA);
 						}
 					}
 					break;
@@ -1949,7 +1978,7 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 		}
 		*out=0;
 	}
-	sprintf(cterm->DA + strlen(cterm->DA), ";%u", CONIO_FIRST_FREE_FONT);
+	strcat(cterm->DA,"c");
 	cterm->setfont_result = CTERM_NO_SETFONT_REQUESTED;
 	/* Fire up note playing thread */
 	if(!cterm->playnote_thread_running) {
