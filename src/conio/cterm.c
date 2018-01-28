@@ -1079,43 +1079,43 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							cterm->doorway_mode=0;
 						break;
 					case 'n':	/* Query (extended) state information */
-						if(cterm->escbuf[1] != '=' || retbuf == NULL)
+						if(retbuf == NULL)
 							break;
 						tmp[0] = 0;
-						switch(strtoul(cterm->escbuf+2,NULL,10)) {
-							case 1:		/* Font state set via "CSI sp D" */
-								sprintf(tmp, "\x1b[=1;%u;%u;%u;%u;%u;%un"
-									,CONIO_FIRST_FREE_FONT
-									,(uint8_t)cterm->setfont_result
-									,(uint8_t)cterm->altfont[0]
-									,(uint8_t)cterm->altfont[1]
-									,(uint8_t)cterm->altfont[2]
-									,(uint8_t)cterm->altfont[3]
-								);
-								break;
-							case 2:		/* Video and emulation modes/flags set via "CSI ? N h" */
-							{
-								int vidflags = GETVIDEOFLAGS();
-								strcpy(tmp, "\x1b[=2");
-								if(cterm->origin_mode)
-									strcat(tmp, ";6");
-								if(cterm->autowrap)
-									strcat(tmp, ";7");
-								if(cterm->cursor == _NORMALCURSOR)
-									strcat(tmp, ";25");
-								if(vidflags & CIOLIB_VIDEO_ALTCHARS)
-									strcat(tmp, ";31");
-								if(vidflags & CIOLIB_VIDEO_NOBRIGHT)
-									strcat(tmp, ";32");
-								if(vidflags & CIOLIB_VIDEO_BGBRIGHT)
-									strcat(tmp, ";33");
-								if(vidflags & CIOLIB_VIDEO_BLINKALTCHARS)
-									strcat(tmp, ";34");
-								if(vidflags & CIOLIB_VIDEO_NOBLINK)
-									strcat(tmp, ";35");
-								strcat(tmp, "n");
-								break;
+						if ((strcmp(cterm->escbuf,"[=n") == 0) || (strcmp(cterm->escbuf,"[=1n"))) {
+							sprintf(tmp, "\x1b[=1;%u;%u;%u;%u;%u;%un"
+								,CONIO_FIRST_FREE_FONT
+								,(uint8_t)cterm->setfont_result
+								,(uint8_t)cterm->altfont[0]
+								,(uint8_t)cterm->altfont[1]
+								,(uint8_t)cterm->altfont[2]
+								,(uint8_t)cterm->altfont[3]
+							);
+						}
+						if (!strcmp(cterm->escbuf,"[=2n")) {
+							int vidflags = GETVIDEOFLAGS();
+							strcpy(tmp, "\x1b[=2");
+							if(cterm->origin_mode)
+								strcat(tmp, ";6");
+							if(cterm->autowrap)
+								strcat(tmp, ";7");
+							if(cterm->cursor == _NORMALCURSOR)
+								strcat(tmp, ";25");
+							if(vidflags & CIOLIB_VIDEO_ALTCHARS)
+								strcat(tmp, ";31");
+							if(vidflags & CIOLIB_VIDEO_NOBRIGHT)
+								strcat(tmp, ";32");
+							if(vidflags & CIOLIB_VIDEO_BGBRIGHT)
+								strcat(tmp, ";33");
+							if(vidflags & CIOLIB_VIDEO_BLINKALTCHARS)
+								strcat(tmp, ";34");
+							if(vidflags & CIOLIB_VIDEO_NOBLINK)
+								strcat(tmp, ";35");
+							if (strlen(tmp) == 4) {	// Nothing set
+								strcat(tmp, ";");
 							}
+							strcat(tmp, "n");
+							break;
 						}
 						if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
 							strcat(retbuf, tmp);
