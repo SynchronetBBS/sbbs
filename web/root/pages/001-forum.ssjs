@@ -4,6 +4,7 @@ if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 load('sbbsdefs.js');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + 'forum.js');
+load(settings.web_lib + 'avatars.js');
 
 var strings = {
 	script : {
@@ -87,6 +88,7 @@ var strings = {
 			details : {
 				open : '<div class="col-sm-9">',
 				unread : '<span title="Unread" class="glyphicon glyphicon-star"></span>',
+                avatar : '<div name="avatar-%s" class="pull-left" style="padding-right:1em;"></div>',
 				info : 'From <strong>%s</strong>%s to <strong>%s</strong> on %s',
 				close : '</div>'
 			},
@@ -135,7 +137,11 @@ var strings = {
 	}
 };
 
+var avatars = new Avatars();
+
 writeln('<script type="text/javascript" src="./js/forum.js"></script>');
+writeln('<script type="text/javascript" src="./js/graphics-converter.js"></script>');
+writeln('<script type="text/javascript" src="./js/avatars.js"></script>');
 
 if (typeof http_request.query.notice !== 'undefined') {
 	writeln(format(strings.notice_box, http_request.query.notice[0]));
@@ -179,7 +185,16 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		) {
 			writeln(strings.message.header.details.unread);
 			if (firstUnread === '') firstUnread += header.number;
-		}			
+		}
+
+        if (typeof header.from_net_addr != 'undefined') {
+            avatars.get_netuser(header.from, header.from_net_addr);
+            writeln(format(strings.message.header.details.avatar, header.from + '@' + header.from_net_addr));
+        } else {
+            avatars.get_localuser(header.from_ext);
+            writeln(format(strings.message.header.details.avatar, header.from_ext));
+        }
+
 		writeln(
 			format(
 				strings.message.header.details.info,
@@ -222,7 +237,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			writeln(strings.message.header.voting.poll);
 		}
 		writeln(strings.message.header.voting.close);
-		
+
 		writeln(strings.message.header.close);
 
 		// Body
@@ -418,7 +433,27 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				)
 			);
 		}
-		writeln(strings.script.close);
+        writeln('const avatarizer = new Avatarizer();');
+        Object.keys(avatars.cache.local).forEach(
+            function (e) {
+                const bin = avatars.get_localuser(e);
+                if (!bin) return;
+                writeln('avatarizer.get_localuser("' + e + '", "' + bin + '");');
+            }
+        );
+        Object.keys(avatars.cache.network).forEach(
+            function (e) {
+                Object.keys(avatars.cache.network[e]).forEach(
+                    function (ee) {
+                        const bin = avatars.get_netuser(ee, e);
+                        if (!bin) return;
+                        writeln('avatarizer.get_netuser("' + ee + '", "' + e + '", "' + bin + '");');
+                    }
+                )
+            }
+        );
+        writeln(strings.script.close);
+
 
 	} catch (err) {
 		log(LOG_WARNING, err);
@@ -665,7 +700,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		);
 		writeln(strings.script.close);
 	}
-	
+
 	writeln(format(strings.group_list.breadcrumb, http_request.query.page[0]));
 
 	try {
