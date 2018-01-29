@@ -646,9 +646,13 @@ CSI [ p1 ] n
 CSI ? [ p1 [ pX ... ] ] s
 	NON-STANDARD EXTENSION
 	Save Mode Setting
-	Saves the current mode states as specified by CSI l and CSI h.  If
+	Saves the current mode states as specified by CSI ? l and CSI ? h.  If
 	p1 is omitted, saves all such states.  If pX is included, saves only
-	the specified states (arguments to CSI l/h).
+	the specified states (arguments to CSI ? l/h).
+
+	Note that currently, CSI ? s with no parameters will save the doorway
+        mode state, which can't be specified with a parameter (since it's set
+        using CSI = 255 h, not CSI ? 255 h).
 
 	SOURCE: SyncTERM only
 
@@ -664,9 +668,13 @@ CSI s
 CSI ? [ p1 [ pX ... ] ]  u
 	NON-STANDARD EXTENSION
 	Restore Mode Setting
-	Saves the current mode states as specified by CSI l and CSI h.  If
+	Saves the current mode states as specified by CSI ? l and CSI ? h.  If
 	p1 is omitted, saves all such states.  If pX is included, restores
-	all the specified states (arguments to CSI l/h)
+	all the specified states (arguments to CSI ? l/h)
+
+	Note that currently, CSI ? u with no parameters will restore the
+	doorway mode state, which can't be specified with a parameter (since
+	it's set using CSI = 255 h, not CSI ? 255 h).
 
 	SOURCE: SyncTERM only
 
