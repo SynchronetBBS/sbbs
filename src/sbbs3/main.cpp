@@ -5283,6 +5283,12 @@ NO_SSH:
 				}
 			}
 			switch(ssh_failed) {
+				case 0:
+					if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED))) {
+						lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d clearing owner",client_socket, i);
+						ssh_failed = 2;
+					}
+					break;
 				case 1:
 					lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d setting AUTHRESPONSE",client_socket, i);
 					break;
