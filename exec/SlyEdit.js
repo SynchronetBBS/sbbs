@@ -64,6 +64,18 @@
  *                              bottom of the screen after choosing text colors.
  *                              Also, updated to remove ANSI from quote lines so that
  *                              quote lines look better.
+ * 2018-01-27 Eric Oulashin     Version 1.58 Beta
+ *                              Bug fix:
+ *                              - Incorrect color used when refreshing quote lines
+ *                                (such as when the User Settings dialog is closed)
+ *                              - After changing the text color for text above a
+ *                                quote line, the incorrect color was used for
+ *                                refreshing quote lines below it
+ *                              Also, when saving a message, SlyEdit now removes any
+ *                              stray ASCII-1 characters that aren't part of a
+ *                              Synchronet color code.
+ * 2018-01-28 Eric Oulashin     Version 1.58
+ *                              Releasing this version
  */
 
 /* Command-line arguments:
@@ -141,8 +153,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.57";
-const EDITOR_VER_DATE = "2018-01-08";
+const EDITOR_VERSION = "1.58";
+const EDITOR_VER_DATE = "2018-01-28";
 
 
 // Program variables
@@ -508,7 +520,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 
 	// If the message text contains only "\1n" or "\1n\1w" attribute codes,
 	// then strip them all out.  Also, if other Synchronet color codes are
-	// found, then check to see if color codes are to be converted to ANSI,
+	// found, then check to see if color codes should be converted to ANSI,
 	// and if so, do it.
 	var sawOtherSyncAttrs = false;
 	var syncAttrRegexWithoutNormalOrWhite = /[krgybmc01234567hipq,;\.dtl<>\[\]asz]/i;
@@ -524,6 +536,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 	}
 	else
 	{
+		// Check to see if there are only normal or normal & white attribute codes
 		var sawNormalAttrOnly = false;
 		var sawNormalAndWhiteOnly = false;
 		for (var i = 0; (i < gEditLines.length) && !sawNormalAttrOnly && !sawNormalAndWhiteOnly; ++i)
@@ -533,6 +546,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 		}
 		if (sawNormalAttrOnly || sawNormalAndWhiteOnly)
 		{
+			// Remove the normal & normal-white attribute codes.
 			for (var i = 0; i < gEditLines.length; ++i)
 			{
 				gEditLines[i].text = gEditLines[i].text.replace(/[nw]/ig, "");
@@ -540,6 +554,14 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 					crossPostEditLines[i].text = gEditLines[i].text.replace(/[nw]/ig, "");
 			}
 		}
+	}
+	// Remove any stray ASCII-1 characters that aren't part of a Synchronet attribute
+	// code, if there are any.
+	for (var i = 0; i < gEditLines.length; ++i)
+	{
+		gEditLines[i].text = removeStrayANSIOneChars(gEditLines[i].text);
+		if (crossPostEditLines.length > i)
+			crossPostEditLines[i].text = removeStrayANSIOneChars(crossPostEditLines[i].text);
 	}
 }
 
@@ -1085,7 +1107,10 @@ function doEditLoop()
 							for (var lineIdx = gEditLinesIndex+1; (lineIdx < gEditLines.length) && (screenY <= gEditBottom); ++lineIdx)
 							{
 								console.gotoxy(1, screenY++);
-								console.print(gEditLines[lineIdx].text);
+								if (gEditLines[lineIdx].isQuoteLine)
+									console.print("\1n" + gQuoteLineColor + strip_ctrl(gEditLines[lineIdx].text));
+								else
+									console.print(gEditLines[lineIdx].text);
 							}
 
 							// Put the cursor back where it should be, and output
@@ -5024,6 +5049,7 @@ function doCrossPosting(pOriginalCurpos)
 	displayMessageRectangle(selBoxUpperLeft.x, selBoxUpperLeft.y, selBoxWidth,
 	                        selBoxHeight, editLineIndexAtSelBoxTopRow, true);
 	console.gotoxy(origStartingCurpos);
+	console.print(chooseEditColor());
 }
 // Displays a screenful of message groups, for the cross-posting
 // interface.
@@ -5801,6 +5827,8 @@ function printEditLine(pEditLineIdx, pStart, pLength)
 	//if (length > (gEditLines[pEditLineIdx].text.length - start))
 	//   length = gEditLines[pEditLineIdx].text.length - start;
 
+	if (gEditLines[pEditLineIdx].isQuoteLine)
+		console.print("\1n" + gQuoteLineColor);
 
 	var lengthWritten = 0;
 	// Cases where the start index is at the beginning of the line
@@ -5816,20 +5844,28 @@ function printEditLine(pEditLineIdx, pStart, pLength)
 		else
 		{
 			var textToWrite = gEditLines[pEditLineIdx].substrWithSyncColorCodes(start, length).strSub;
-			console.print(textToWrite);
+			if (gEditLines[pEditLineIdx].isQuoteLine)
+				console.print(strip_ctrl(textToWrite));
+			else
+				console.print(textToWrite);
 			lengthWritten = strip_ctrl(textToWrite).length;
 		}
 	}
 	else
 	{
 		// Start is > 0
-		var firstAttrCodes = gEditLines[pEditLineIdx].getLastAttrCodes(start);
 		var textToWrite = "";
 		if (length <= 0)
 			textToWrite = gEditLines[pEditLineIdx].substrWithSyncColorCodes(start).strSub;
 		else
 			textToWrite = gEditLines[pEditLineIdx].substrWithSyncColorCodes(start, length).strSub;
-		console.print(firstAttrCodes + textToWrite);
+		if (gEditLines[pEditLineIdx].isQuoteLine)
+			console.print(strip_ctrl(textToWrite));
+		else
+		{
+			var firstAttrCodes = gEditLines[pEditLineIdx].getLastAttrCodes(start);
+			console.print(firstAttrCodes + textToWrite);
+		}
 		lengthWritten = strip_ctrl(textToWrite).length;
 	}
 
@@ -6195,6 +6231,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 
 	if (returnCursorWhenDone)
 		console.gotoxy(originalCurpos);
+	console.print(chooseEditColor());
 }
 
 // Allows the user to select a tagline.  Returns an object with the following

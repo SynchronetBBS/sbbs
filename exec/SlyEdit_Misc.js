@@ -34,6 +34,7 @@
  *                              handle situations when it wraps text into the
  *                              next line when that next line is blank - Ensuring
  *                              it adds a blank line below that.
+ * 2018-01-27 Eric Oulashin     Added removeStrayANSIOneChars()
  */
  
  load("text.js");
@@ -5086,6 +5087,31 @@ function findAttrCodesInLinesBeforeIdx(pEditLines, pEditLineIdx, pTextLineIdx)
 	}
 	// TODO: Remove redundancies in attrCodes?
 	return attrCodes;
+}
+
+// Removes stray ASCII-1 characters from a string that aren't part of a Synchronet
+// color code.
+//
+// Parameters:
+//  pStr: The string to remove stray ASCII-1 codes from
+//
+// Return value: The string with the stray characters removed
+function removeStrayANSIOneChars(pStr)
+{
+	var str = pStr;
+	var idx = -1;
+	var startIdx = 0;
+	while ((idx = str.indexOf("\1", startIdx)) > -1)
+	{
+		if (!gSyncAttrRegex.test(str.substr(idx, 2)))
+		{
+			str = str.substr(0, idx) + str.substr(idx+1);
+			startIdx = idx;
+		}
+		else
+			startIdx = idx + 2;
+	}
+	return str;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
