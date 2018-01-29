@@ -1,14 +1,13 @@
---- makefile.orig	2018-01-03 01:54:50.601991000 -0500
-+++ makefile	2018-01-03 01:55:05.088060000 -0500
-@@ -1879,9 +1879,9 @@
+--- makefile.orig	2018-01-09 22:46:54.000000000 -0500
++++ makefile	2018-01-29 14:27:27.783443000 -0500
+@@ -1894,8 +1894,8 @@
  
  MINGW32_NT-6.1:
  	$(MAKE) OSNAME=win32 target-init
 -	$(MAKE) $(DEFINES) EXTRAOBJS="$(WIN32ASMOBJS)" \
+-		CFLAGS="$(XCFLAGS) -O2 -Wl,--subsystem,windows,--output-def,cl32.def"
 +	$(MAKE) OSNAME=win32 $(DEFINES) EXTRAOBJS="$(WIN32ASMOBJS)" \
- 		CFLAGS="$(XCFLAGS) -fomit-frame-pointer -O3 \
--		-Wl,--subsystem,windows,--output-def,cl32.def"
-+		-Wl,--subsystem,windows,--output-def,cl32.def -DSTATIC_LIB"
++		CFLAGS="$(XCFLAGS) -O2 -Wl,--subsystem,windows,--output-def,cl32.def -DSTATIC_LIB"
  
  # NCR MP-RAS: Use the NCR cc.  The "-DNCR_UST" is needed to enable threading
  #			  (User-Space Threads).
