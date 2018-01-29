@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.57
-                        Release date: 2018-01-07
+                              Version 1.58
+                        Release date: 2018-01-20
 
                                   by
 
