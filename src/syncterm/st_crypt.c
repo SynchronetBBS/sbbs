@@ -46,7 +46,7 @@ struct crypt_funcs cl;
 int init_crypt(void)
 {
 	dll_handle	cryptlib;
-	const char *libnames[]={ "cl", "cl33", "cl32", NULL };
+	const char *libnames[]={ "cl", "cl34", "cl33", "cl32", NULL };
 
 	if(crypt_loaded)
 		return(0);
