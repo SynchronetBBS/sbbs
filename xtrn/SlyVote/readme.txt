@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.33 Beta
-                           Release date: 2017-12-18
+                                 Version 0.34 Beta
+                           Release date: 2018-01-28
 
                                      by
 
@@ -41,6 +41,8 @@ along with the latest JavaScript files for Synchronet, such as the following:
 - frame.js
 - scrollbar.js
 - DDLightbarMenu.js
+- smbdefs.js
+- avatar_lib.js
 - Possibly other JavaScript files
 
 If you are using a beta build of Synchronet 3.17, you must use one built on
@@ -65,6 +67,11 @@ although a few BBSes on Dove-Net are not Synchronet).  FidoNet networks and
 other message networks that might not have Synchronet BBSes should not support
 voting by default in Synchronet.
 
+SlyVote also supports avatars, which was added in Synchronet 3.17.  Users can
+select a small ANSI graphic "avatar" to represent them, and SlyVote will
+display the avatar of the people who posted polls.  Avatar support requires
+smbdefs.js and avatar_lib.js, as well as the latest sbbsdefs.js.
+
 SlyVote stores user configuration files, which stores the user's last-read
 message numbers in the message areas, which are used when the user is viwing
 poll results.  Even though Synchronet can keep track of the user's last-read
@@ -77,8 +84,9 @@ For example, user 1 would be 0001.SlyVote.cfg.
 SlyVote's look and feel was initially based on DCT Vote, a voting booth door
 which was available in the 1990s.
 
-NOTE: SlyVote is currently in an early beta state and is not fully complete
-yet.
+NOTE: SlyVote is currently considered beta, though it has been tested and seems
+to be fairly stable.  The first non-beta version of SlyVote might not be
+released until an official non-beta Synchronet 3.17 is released.
 
 
 3. Installation & Setup
@@ -180,6 +188,11 @@ settings:
 
 Setting                               Description
 -------                               -----------
+showAvatars                           Whether or not to show avatars of the
+                                      people who post polls in the results.
+                                      Valid values are true and false.
+                                      Defaults to true.
+
 useAllAvailableSubBoards              Whether or not to use all available
                                       sub-boards where voting is enabled.
                                       Valid values are true and false.  This

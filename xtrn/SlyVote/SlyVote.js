@@ -98,6 +98,9 @@
  *                              that the PageUp and PageDown keys continue to work
  *                              properly.  This script should still also work with
  *                              older 3.17 builds of Synchronet.
+ * 2018-01-28 Eric Oulashin     Version 0.34 beta
+ *                              Updated to display avatars for the person who posted
+ *                              a poll.
  */
 
 load("sbbsdefs.js");
@@ -144,10 +147,13 @@ if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
 load("frame.js");
 load("scrollbar.js");
 load("DDLightbarMenu.js");
+// These next 2 are for avatar support
+load("smbdefs.js");
+var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.33 Beta";
-var SLYVOTE_DATE = "2017-12-18";
+var SLYVOTE_VERSION = "0.34 Beta";
+var SLYVOTE_DATE = "2018-01-28";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -890,7 +896,8 @@ function ReadConfigFile()
 		cfgReadError: "",
 		useAllAvailableSubBoards: true,
 		subBoardCodes: [],
-		startupSubBoardCode: ""
+		startupSubBoardCode: "",
+		showAvatars: true
 	};
 
 	// Open the main configuration file.  First look for it in the sbbs/mods
@@ -943,7 +950,9 @@ function ReadConfigFile()
 				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
 
 				// Set the appropriate value in the settings object.
-				if (settingUpper == "USEALLAVAILABLESUBBOARDS")
+				if (settingUpper == "SHOWAVATARS")
+					retObj.showAvatars = (value.toUpperCase() == "TRUE");
+				else if (settingUpper == "USEALLAVAILABLESUBBOARDS")
 					retObj.useAllAvailableSubBoards = (value.toUpperCase() == "TRUE");
 				else if (settingUpper == "SUBBOARDCODES")
 				{
@@ -1932,6 +1941,13 @@ function ViewVoteResults(pSubBoardCode)
 					console.gotoxy(curPos.x, curPos.y++);
 					console.print(displayMsgHdr[i]);
 				}
+				// If the 'show avatars' setting is true, then draw the 'from'
+				// user's avatar on the screen
+				if (gSlyVoteCfg.showAvatars)
+				{
+					gAvatar.draw(pollMsgHdrs[currentMsgIdx].from_ext, pollMsgHdrs[currentMsgIdx].from, pollMsgHdrs[currentMsgIdx].from_net_addr, /* above: */true, /* right-justified: */true);
+					console.attributes = 0;	// Clear the background attribute as the next line might scroll, filling with BG attribute
+				}
 				console.print("\1n");
 			}
 			var msgBodyText = GetMsgBody(msgbase, pollMsgHdrs[currentMsgIdx], pSubBoardCode, user);
@@ -2241,8 +2257,8 @@ function GetDefaultMsgDisplayHdr()
 	hdrLine2 += "@\1n\1c" + VERTICAL_SINGLE;
 	hdrDisplayLines.push(hdrLine2);
 	var hdrLine3 = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
-				 + "\1gF\1n\1grom\1h\1c: \1b@MSG_FROM-L";
-	numChars = console.screen_columns - 23;
+				 + "\1gF\1n\1grom\1h\1c: \1b@MSG_FROM_AND_FROM_NET-L";
+	numChars = console.screen_columns - 36;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine3 += "#";
 	hdrLine3 += "@\1k" + VERTICAL_SINGLE;
@@ -2323,7 +2339,12 @@ function ReplaceMsgAtCodeFormatStr(pMsgHdr, pSubBoardCode, pNumMsgs, pDisplayMsg
 	var formatStr = ((/L/i).test(pAtCodeStr.charAt(pDashJustifyIdx+1)) ? "%-" : "%") + pSpecifiedLen + "s";
 	// Specify the replacement text depending on the @-code string
 	var replacementTxt = "";
-	if (pAtCodeStr.indexOf("@MSG_FROM") > -1)
+	if (pAtCodeStr.indexOf("@MSG_FROM_AND_FROM_NET") > -1)
+	{
+		var fromWithNet = pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : "");
+		replacementTxt = fromWithNet.substr(0, pSpecifiedLen);
+	}
+	else if (pAtCodeStr.indexOf("@MSG_FROM") > -1)
 		replacementTxt = pMsgHdr["from"].substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_FROM_EXT") > -1)
 		replacementTxt = (typeof pMsgHdr["from_ext"] === "undefined" ? "" : pMsgHdr["from_ext"].substr(0, pSpecifiedLen));
@@ -2503,7 +2524,7 @@ function ParseMsgAtCodes(pTextLine, pMsgHdr, pSubBoardCode, pNumMsgs, pDisplayMs
 	// The order of the strings in this array matters.  For instance, @MSG_NUM_AND_TOTAL
 	// needs to come before @MSG_NUM so that it gets processed properly, since they
 	// both start out with the same text.
-	var atCodeStrBases = ["@MSG_FROM", "@MSG_FROM_EXT", "@MSG_TO", "@MSG_TO_NAME", "@MSG_TO_EXT",
+	var atCodeStrBases = ["@MSG_FROM", "@MSG_FROM_AND_FROM_NET", "@MSG_FROM_EXT", "@MSG_TO", "@MSG_TO_NAME", "@MSG_TO_EXT",
 	                      "@MSG_SUBJECT", "@MSG_DATE", "@MSG_ATTR", "@MSG_AUXATTR", "@MSG_NETATTR",
 	                      "@MSG_ALLATTR", "@MSG_NUM_AND_TOTAL", "@MSG_NUM", "@MSG_ID",
 	                      "@MSG_REPLY_ID", "@MSG_TIMEZONE", "@GRP", "@GRPL", "@SUB", "@SUBL",
@@ -2594,6 +2615,7 @@ function ParseMsgAtCodes(pTextLine, pMsgHdr, pSubBoardCode, pNumMsgs, pDisplayMs
 	}
 	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
 	                         .replace(/@MSG_FROM@/gi, pMsgHdr["from"])
+	                         .replace(/@MSG_FROM_AND_FROM_NET@/gi, pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : ""))
 	                         .replace(/@MSG_FROM_EXT@/gi, (typeof(pMsgHdr["from_ext"]) == "string" ? pMsgHdr["from_ext"] : ""))
 	                         .replace(/@MSG_TO@/gi, pMsgHdr["to"])
 	                         .replace(/@MSG_TO_NAME@/gi, pMsgHdr["to"])
