@@ -1,5 +1,5 @@
 --- misc/os_spec.h.orig	2018-01-10 01:39:04.000000000 -0500
-+++ misc/os_spec.h	2018-01-29 14:29:27.367319000 -0500
++++ misc/os_spec.h	2018-01-29 18:20:02.023299000 -0500
 @@ -223,10 +223,11 @@
       preprocessors get confused if they aren't defined */
    #define VC_16BIT( version )		0
@@ -14,12 +14,13 @@
    #define VC_GE_2010( version )		0
    #define VC_GE_2012( version )		0
    #define VC_GE_2013( version )		0
-@@ -946,6 +947,8 @@
-   #if defined( __APPLE__ )
+@@ -947,6 +948,9 @@
  	#include <machine/endian.h>
    #elif defined( __NetBSD__ )
-+	#include <sys/endian.h>
-+  #elif defined( __FreeBSD__ )
  	#include <sys/endian.h>
++  #elif defined( __FreeBSD__ )
++	#include <sys/endian.h>
++  #elif defined(__MINGW32__)
    #else
  	#include <endian.h>
+   #endif /* Apple vs. everyone else */
