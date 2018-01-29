@@ -264,6 +264,8 @@ int ssh_connect(struct bbslist *bbs)
 	/* Pass socket to cryptlib */
 	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_HEIGHT, rows);
 
+	cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
+
 	/* Activate the session */
 	uifc.pop(NULL);
 	uifc.pop("Activating Session");
