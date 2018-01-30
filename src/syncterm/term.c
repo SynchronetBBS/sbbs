@@ -2024,6 +2024,7 @@ void font_control(struct bbslist *bbs)
 void capture_control(struct bbslist *bbs)
 {
 	char *buf;
+	char *cap;
 	struct	text_info txtinfo;
 	int i,j;
 
@@ -2032,6 +2033,9 @@ void capture_control(struct bbslist *bbs)
    	gettextinfo(&txtinfo);
 	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	cap=(char *)alloca(cterm->height*cterm->width*2);
+	gettext(cterm->x, cterm->y, cterm->x+cterm->width-1, cterm->y+cterm->height-1, cap);
+
 	init_uifc(FALSE, FALSE);
 
 	if(!cterm->log) {
@@ -2068,7 +2072,7 @@ void capture_control(struct bbslist *bbs)
 					} else {
 						char msg[256];
 						uifc.pop("Writing to file");
-						fwrite(buf, sizeof(uint8_t), txtinfo.screenwidth * txtinfo.screenheight * 2, fp);
+						fwrite(cap, sizeof(uint8_t), cterm->width * cterm->height * 2, fp);
 						if(i > 2) {
 							time_t t = time(NULL);
 							struct tm* tm;
@@ -2089,7 +2093,9 @@ void capture_control(struct bbslist *bbs)
 									,1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday);
 							sauce.filesize = ftell(fp);	// LE
 							sauce.datatype = sauce_datatype_bin;
-							sauce.filetype = txtinfo.screenwidth / 2;
+							sauce.filetype = cterm->width / 2;
+							if(ciolib_getvideoflags() & CIOLIB_VIDEO_BGBRIGHT)
+								sauce.tflags |= sauce_ansiflag_nonblink;
 
 							fputc(SAUCE_SEPARATOR, fp);
 							/* No comment block (no comments) */
@@ -3094,6 +3100,6 @@ BOOL doterm(struct bbslist *bbs)
 /*
 	hidemouse();
 	hold_update=oldmc;
-	return(FALSE);
  */
+	return(FALSE);
 }
