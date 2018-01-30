@@ -151,7 +151,7 @@ int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, 
 int bitmap_init_mode(int mode, int *width, int *height)
 {
     int i;
-	char *newscreen;
+	uint32_t *newscreen;
 
 	if(!bitmap_initialized)
 		return(-1);
