@@ -23,7 +23,7 @@
 #include "vidmodes.h"
 #include "bitmap_con.h"
 
-static char *screen=NULL;
+static uint32_t *screen=NULL;
 int screenwidth=0;
 int screenheight=0;
 #define PIXEL_OFFSET(x,y)	( (y)*screenwidth+(x) )
@@ -54,6 +54,17 @@ struct rectangle {
 };
 
 static int update_rect(int sx, int sy, int width, int height, int force);
+
+static void memset_u32(void *buf, uint32_t u, size_t len)
+{
+	size_t i;
+	char *cbuf = buf;
+
+	for (i = 0; i < len; i++) {
+		memcpy(cbuf, &u, sizeof(uint32_t));
+		cbuf += sizeof(uint32_t);
+	}
+}
 
 static __inline void *locked_screen_check(void)
 {
@@ -167,14 +178,14 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	screenheight=vstat.charheight*vstat.rows;
 	if(height)
 		*height=screenheight;
-	newscreen=realloc(screen, screenwidth*screenheight);
+	newscreen=realloc(screen, screenwidth*screenheight*sizeof(screen[0]));
 	if(!newscreen) {
 		pthread_mutex_unlock(&vstatlock);
 		pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
 	screen=newscreen;
-	memset(screen,vstat.palette[0],screenwidth*screenheight);
+	memset_u32(screen,vstat.palette[0],screenwidth*screenheight);
 	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&screenlock);
 	for (i=0; i<sizeof(current_font)/sizeof(current_font[0]); i++)
@@ -884,7 +895,7 @@ static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsig
 	fontoffset=(sch&0xff)*vs->charheight;
 
 	for(y=0; y<vs->charheight; y++) {
-		memset(&screen[PIXEL_OFFSET(xoffset, yoffset+y)],bg,vs->charwidth);
+		memset_u32(&screen[PIXEL_OFFSET(xoffset, yoffset+y)],bg,vs->charwidth);
 		for(x=0; x<vs->charwidth; x++) {
 			if(this_font[fontoffset] & (0x80 >> x))
 				screen[PIXEL_OFFSET(xoffset+x, yoffset+y)]=fg;
