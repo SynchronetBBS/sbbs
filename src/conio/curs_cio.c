@@ -654,6 +654,7 @@ void curs_resume(void)
 	raw();
 	timeout(10);
 	refresh();
+	getch();
 }
 
 int curs_initciolib(long inmode)
