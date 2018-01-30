@@ -2284,7 +2284,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 					if(cterm->font_size) {
 						cterm->fontbuf[cterm->font_read++]=ch[0];
 						if(cterm->font_read == cterm->font_size) {
-	#ifndef CTERM_WITHOUT_CONIO
+#ifndef CTERM_WITHOUT_CONIO
 							char *buf2;
 
 							if((buf2=(char *)malloc(cterm->font_size))!=NULL) {
@@ -2317,7 +2317,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 								else
 									FREE_AND_NULL(buf2);
 							}
-	#endif
+#endif
 							cterm->font_size=0;
 						}
 					}
