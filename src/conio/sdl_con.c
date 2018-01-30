@@ -73,7 +73,8 @@ int	sdl_init_good=0;
 SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
 static unsigned int sdl_pending_mousekeys=0;
-Uint32	sdl_dac_default[sizeof(dac_default)/sizeof(struct dac_colors)];
+Uint32	*sdl_dac_default = NULL;
+size_t sdl_dac_defaultsz = 0;
 
 struct yuv_settings {
 	int			enabled;
@@ -84,10 +85,11 @@ struct yuv_settings {
 	int			changed;
 	int			best_format;
 	SDL_Overlay	*overlay;
-	Uint8		colours[sizeof(dac_default)/sizeof(struct dac_colors)][3];
+	Uint8		(*colours)[3];
+	size_t		colourssz;
 };
 
-static struct yuv_settings yuv={0,0,0,0,0,0,0,NULL};
+static struct yuv_settings yuv={0,0,0,0,0,0,0,NULL, NULL, 0};
 
 struct sdl_keyvals {
 	int	keysym
@@ -871,6 +873,17 @@ int sdl_setup_colours(SDL_Surface *surf)
 	}
 	sdl.SetColors(surf, co, 0, sizeof(dac_default)/sizeof(struct dac_colors));
 
+	if (sdl_dac_defaultsz < sizeof(dac_default)/sizeof(struct dac_colors)) {
+		Uint32 *newdd;
+		size_t newsz = sizeof(dac_default)/sizeof(struct dac_colors);
+
+		newdd = realloc(sdl_dac_default, newsz * sizeof(sdl_dac_default[0]));
+		if (newdd == NULL)
+			return -1;
+		sdl_dac_default = newdd;
+		sdl_dac_defaultsz = newsz;
+	}
+
 	for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
 		sdl_dac_default[i]=sdl.MapRGB(win->format, co[i].r, co[i].g, co[i].b);
 	}
@@ -883,6 +896,16 @@ int sdl_setup_yuv_colours(void)
 	int ret=0;
 
 	if(yuv.enabled) {
+		if (yuv.colourssz < sizeof(dac_default)/sizeof(struct dac_colors)) {
+			size_t newsz = sizeof(dac_default)/sizeof(struct dac_colors);
+			Uint8 (*newc)[3];
+
+			newc = realloc(yuv.colours, newsz * sizeof(yuv.colours[0]));
+			if (newc == NULL)
+				return -1;
+			yuv.colours = newc;
+			yuv.colourssz = newsz;
+		}
 		for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
 			RGBtoYUV(dac_default[i].red, dac_default[i].green, dac_default[i].blue, &(yuv.colours[i][0]), 0, 100);
 		}

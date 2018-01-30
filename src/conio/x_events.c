@@ -74,7 +74,8 @@ static int old_scaling = 0;
 static GC gca[sizeof(dac_default)/sizeof(struct dac_colors)];
 
 /* Array of pixel values to match all possible colours */
-static unsigned long pixel[sizeof(dac_default)/sizeof(struct dac_colors)];
+static unsigned long *pixel = NULL;
+size_t pixelsz = 0;
 
 static WORD Ascii2Scan[] = {
  0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
@@ -232,6 +233,16 @@ static int init_window()
     gcv.background = black;
 	gcv.graphics_exposures = False;
 
+	if (pixelsz < sizeof(dac_default)/sizeof(struct dac_colors)) {
+		unsigned long *newpixel;
+		size_t newpixelsz = sizeof(dac_default)/sizeof(struct dac_colors);
+
+		newpixel = realloc(pixel, sizeof(pixel[0])*newpixelsz);
+		if (newpixel == NULL)
+			return -1;
+		pixel = newpixel;
+		pixelsz = newpixelsz;
+	}
 	/* Get the pixel and GC values */
 	for(i=0; i<sizeof(dac_default)/sizeof(struct dac_colors); i++) {
 		color.red=dac_default[i].red << 8 | dac_default[i].red;
