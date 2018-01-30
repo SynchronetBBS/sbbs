@@ -163,6 +163,9 @@ ifeq ($(os),darwin)
 	${QUIET}rm -rf ${EXEODIR}/SyncTERM.app/Contents/Frameworks/SDL.framework/Headers/*
 endif
 
+syncterm.man: syncterm.man.in
+	sed -E -e 's|%%DESTDIR%%|${DESTDIR}|g' -e 's|%%PREFIX%%|${PREFIX}|g' < syncterm.man.in > syncterm.man
+
 syncterm.1.gz: syncterm.man
 	gzip < syncterm.man > syncterm.1.gz
 

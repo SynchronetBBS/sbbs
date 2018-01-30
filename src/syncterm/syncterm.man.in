@@ -130,7 +130,7 @@ The curses and ANSI modes are not necessarily the correct number of lines for
 a traditional screen mode. As such, filler will be added around the terminal
 screen. For some display sizes, unpredictable results may occur.
 .SH FILES
-.IP \fC%%DESTDIR%%%%PREFIX%%/syncterm.lst\fR
+.IP \fC%%DESTDIR%%%%PREFIX%%/etc/syncterm.lst\fR
 The system wide dialing directory.
 .IP \fC~/.syncterm/syncterm.lst\fR
 The users dialing directory
