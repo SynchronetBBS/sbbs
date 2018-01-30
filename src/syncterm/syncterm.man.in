@@ -28,14 +28,47 @@ to be forced.
 When \fI\-i\fP \fBis\fP specified, only the specified mode will be attempted. No
 automatic fallback will be performed.
 .LP
-Further, some available modes (such as SDL windowed) can not be expressly selected.
-.LP
 The possible
 values for \fIiface\fP are:
 .IP \fBS\fP
-Require SyncTERM to run in full-screen SDL mode. This requires SDL support to
+Require SyncTERM to run in SDL surface mode. This requires SDL support to
 have been compiled in, and the library ``libSDL.so'' to be in the library
 search path. Some distributions do not create this symlink when SDL is
+installed, but instead only install it when the development package is
+installed. In these cases, the development package must be installed to use SDL
+modes.
+.IP \fBSW\fP
+Require SyncTERM to run in windowed SDL surface mode. This requires SDL support
+to have been compiled in, and the library ``libSDL.so'' to be in the library
+search path. Some distributions do not create this symlink when SDL is
+installed, but instead only install it when the development package is
+installed. In these cases, the development package must be installed to use SDL
+modes.
+.IP \fBSF\fP
+Require SyncTERM to run in full-screen SDL surface mode. This requires SDL
+support to have been compiled in, and the library ``libSDL.so'' to be in the
+library search path. Some distributions do not create this symlink when SDL is
+installed, but instead only install it when the development package is
+installed. In these cases, the development package must be installed to use SDL
+modes.
+.IP \fBO\fP
+Require SyncTERM to run in SDL overlay mode. This requires SDL support to
+have been compiled in, and the library ``libSDL.so'' to be in the library
+search path. Some distributions do not create this symlink when SDL is
+installed, but instead only install it when the development package is
+installed. In these cases, the development package must be installed to use SDL
+modes.
+.IP \fBOW\fP
+Require SyncTERM to run in windowed SDL overlay mode. This requires SDL support
+to have been compiled in, and the library ``libSDL.so'' to be in the library
+search path. Some distributions do not create this symlink when SDL is
+installed, but instead only install it when the development package is
+installed. In these cases, the development package must be installed to use SDL
+modes.
+.IP \fBOF\fP
+Require SyncTERM to run in full-screen SDL overlay mode. This requires SDL
+support to have been compiled in, and the library ``libSDL.so'' to be in the
+library search path. Some distributions do not create this symlink when SDL is
 installed, but instead only install it when the development package is
 installed. In these cases, the development package must be installed to use SDL
 modes.
@@ -65,20 +98,20 @@ Specifies the default scheme for \fIURL\fP to be telnet://
 Specifies the default scheme for \fIURL\fP to be rlogin://
 .IP \fB\-r\fP
 Specifies the default scheme for \fIURL\fP to be ssh://
+.IP \fB\-4\fP
+Only resolve IPv4 addresses
+.IP \fB\-6\fP
+Only resolve IPv6 addresses
 .IP \fB\-s\fP
 Run in "safe mode" which disables the modification of local files such as the
 dialing list.
+.IP \fB\-T\fP
+When this is the ONLY argument, dumps terminfo entry to stdout and exits.
 .SH RUN-TIME LINKING
-For some features, specifically SSH support, SDL support, and X11 support,
+For some features, specifically SDL support, and X11 support,
 run-time linking is employed using dlopen(). Using this, it is possible to
-build a version which will use SDL, X11, and cryptlib if they are present, but
+build a version which will use SDL, and X11 if they are present, but
 not fail to run if they are not.
-.LP
-Unfortunately, due to some packagers decisions, this can result in a binary
-which supports SDL, X11, and SSH but can not find the required libraries. To
-solve this issue, the development package needs to be installed. The files that
-are used are libSDL.so for SDL support, libcl.so for SSH support, and libX11.so
-for X11 support.
 .SH TEXT MODE CAVAETS
 When running in one of the text modes such as curses or ANSI, many of the
 control functions are modified since there is no reliable way to use extra
@@ -97,7 +130,7 @@ The curses and ANSI modes are not necessarily the correct number of lines for
 a traditional screen mode. As such, filler will be added around the terminal
 screen. For some display sizes, unpredictable results may occur.
 .SH FILES
-.IP \fC/etc/syncterm.lst\fR
+.IP \fC%%DESTDIR%%%%PREFIX%%/syncterm.lst\fR
 The system wide dialing directory.
 .IP \fC~/.syncterm/syncterm.lst\fR
 The users dialing directory
@@ -111,16 +144,7 @@ details.
 .IP \fClibX11.so\fR
 When this file exists in the library path, SyncTERM will support the use of X11
 for input and output. See \fBRUN\-TIME LINKING\fP for details.
-.IP \fClibcl.so\fR
-When this file exists in the library path, SyncTERM will support the use of SSH
-connections. This file is part of Peter Gutmann's Cryptlib library available
-from ``http://www.cs.auckland.ac.nz/~pgut001/cryptlib/''. See
-\fBRUN\-TIME LINKING\fP for details.
 .SH AUTHOR
 Stephen Hurd <shurd@sasktel.net>
 .SH BUGS
-Commodore PETSCII and Atari ATASCII are lightly tested and most likely have
-problems.
-.LP
-The modem support is untested at this time. Further, it assumes the Hayes
-command set and 115200 bps rate on the serial port.
+None known at this time.
