@@ -1,7 +1,7 @@
 Version 1.1
 -----------
 Don't wait for keypress after file transfer completes
-Fix Windows bug with the dranfer path
+Fix Windows bug with the transfer path
 Add BinaryText screenshot capabilities to Capture Control menu
 Fix logging on Windows
 Range check screen width and height, clamp at 255 rows/cols
