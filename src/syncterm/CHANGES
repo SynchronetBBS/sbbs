@@ -1,5 +1,13 @@
 Version 1.1
 -----------
+Don't wait for keypress after file transfer completes
+Fix Windows bug with the dranfer path
+Add BinaryText screenshot capabilities to Capture Control menu
+Fix logging on Windows
+Range check screen width and height, clamp at 255 rows/cols
+Add CSI = 1 n and CSI = 2 n ANSI commands (see cterm.txt for details)
+Fix CSI ? s and CSI ? n
+Update tp Cryptlib 3.4.4
 
 Version 1.0
 -----------
