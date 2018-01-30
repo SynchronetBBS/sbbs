@@ -123,7 +123,7 @@ tabsetup(void)
 		case 27:
 #if 0		/* ToDo do something about this mess (Backtab weirdness!) */
 			ch = getch();
-			if(ch==0 || ch==0xff)
+			if(ch==0 || ch==0xe0)
 				ch|=getch()<<8;
 			if(ch==CIO_KEY_MOUSE)
 				getmouse(&me);

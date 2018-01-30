@@ -107,7 +107,7 @@ void input_thread(void *args)
 		if(kbhit()) {
 			lastkey=key;
 			key=getch();
-			if(key==0 || key == 0xff)
+			if(key==0 || key == 0xe0)
 				key|=getch()<<8;
 			if(key==1) {
 				toggle_modifier(CIO_MOD_ALT);

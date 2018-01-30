@@ -148,7 +148,7 @@ int spyon(char *sockname)  {
 			/* Check for control keys */
 			switch(key)  {
 				case 0:		/* Extended keys */
-				case 0xff:
+				case 0xe0:
 					getch();
 					break;
 				case 3:	/* CTRL-C */

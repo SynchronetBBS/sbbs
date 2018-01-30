@@ -104,7 +104,11 @@ int modem_response(char *str, size_t maxlen, int timeout)
 	while(1){
 		/* Abort with keystroke */
 		if(kbhit()) {
-			getch();
+			switch(getch()) {
+				case 0:
+				case 0xe0:
+					getch();
+			}
 			return(1);
 		}
 

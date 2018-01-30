@@ -52,7 +52,7 @@ viewmode(void)
 			}
 		memcpy(graph_mem, &bitmap, 64000);
 		ch = getch();
-		if(ch==0 || ch==0xff)
+		if(ch==0 || ch==0xe0)
 			ch|=getch()<<8;
 		switch (ch) {
 		case KEY_UP:

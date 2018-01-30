@@ -6,7 +6,7 @@ newgetch(void)
 	int             ch;
 
 	ch = getch();
-	if(ch==0 || ch==0xff)
+	if(ch==0 || ch==0xe0)
 		ch|=getch()<<8;
 	/* Input translation */
 	switch(ch) {

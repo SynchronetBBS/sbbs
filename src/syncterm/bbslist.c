@@ -268,7 +268,7 @@ void viewofflinescroll(void)
 		gotoxy(1,1);
 		key=getch();
 		switch(key) {
-			case 0xff:
+			case 0xe0:
 			case 0:
 				switch(key|getch()<<8) {
 					case CIO_KEY_QUIT:

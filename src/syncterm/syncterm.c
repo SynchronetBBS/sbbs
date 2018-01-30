@@ -1666,7 +1666,11 @@ int main(int argc, char **argv)
 		if(i >= txtinfo.screenheight-1) {
 			textattr(WHITE);
 			cputs("<Press A Key>");
-			getch();
+			switch(getch()) {
+				case 0:
+				case 0xe0:
+					getch();
+			}
 			textattr(LIGHTGRAY);
 			gotoxy(1, txtinfo.screenheight);
 			delline();
@@ -1675,7 +1679,11 @@ int main(int argc, char **argv)
 	}
 	textattr(WHITE);
 	cputs("<Press A Key to Exit>");
-	getch();
+	switch(getch()) {
+		case 0:
+		case 0xe0:
+			getch();
+	}
 	textattr(LIGHTGRAY);
 	return(0);
 }
