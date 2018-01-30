@@ -63,6 +63,20 @@ ESC M	(Disabled in current code)
 	current attribute
 	SOURCE: BANSI.TXT
 
+ESC _	Application Program String
+ESC P	Device Control String
+ESC ]	Operating System Command
+ESC ^	Privacy Message
+	Begins a string consisting of the characters 0x08 - 0x0d and
+	0x20-0x7e, terminated by a String Terminator (ST)
+	The string is currently ignored.
+
+ESC X	Start Of String
+	As the above strings, but may contain any characters except
+	a Start Of String sequence or a String Terminator sequence.
+
+ESC \	String Terminator
+
 Control Sequences:
 ------------------
 
