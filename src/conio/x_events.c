@@ -71,7 +71,7 @@ static int old_scaling = 0;
 
 
 /* Array of Graphics Contexts */
-static GC gca[sizeof(dac_default)/sizeof(struct dac_colors)];
+static GC *gca = NULL;
 
 /* Array of pixel values to match all possible colours */
 static unsigned long *pixel = NULL;
@@ -235,6 +235,7 @@ static int init_window()
 
 	if (pixelsz < sizeof(dac_default)/sizeof(struct dac_colors)) {
 		unsigned long *newpixel;
+		GC *newgca;
 		size_t newpixelsz = sizeof(dac_default)/sizeof(struct dac_colors);
 
 		newpixel = realloc(pixel, sizeof(pixel[0])*newpixelsz);
@@ -242,6 +243,10 @@ static int init_window()
 			return -1;
 		pixel = newpixel;
 		pixelsz = newpixelsz;
+		newgca = realloc(gca, sizeof(gca[0])*newpixelsz);
+		if (newgca == NULL)
+			return -1;
+		gca = newgca;
 	}
 	/* Get the pixel and GC values */
 	for(i=0; i<sizeof(dac_default)/sizeof(struct dac_colors); i++) {
@@ -889,6 +894,59 @@ static void x11_terminate_event_thread(void)
 	sem_wait(&event_thread_complete);
 }
 
+static void local_set_palette(struct x11_palette_entry *p)
+{
+	unsigned long *newpixel;
+	struct GC *newgca;
+	size_t i;
+	size_t newpixelsz;
+    XGCValues gcv;
+	XColor color;
+
+	gcv.function = GXcopy;
+    gcv.foreground = white;
+    gcv.background = black;
+	gcv.graphics_exposures = False;
+
+	newpixelsz = p->index + 1;
+	if (pixelsz < newpixelsz) {
+		newpixel = realloc(pixel, sizeof(pixel[0])*newpixelsz);
+		if (newpixel == NULL)
+			// TODO: Handle failure!
+			return;
+		pixel = newpixel;
+		newgca = realloc(gca, sizeof(gca[0])*newpixelsz);
+		if (newgca == NULL)
+			// TODO: Handle failure!
+			return;
+		gca = newgca;
+		/* Set all empty colours to black. */
+		for (i = pixelsz; i < (newpixelsz-1); i++) {
+			color.red=0;
+			color.green=0;
+			color.blue=0;
+			if(x11.XAllocColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color))
+				pixel[i]=color.pixel;
+			gcv.foreground=color.pixel;
+			gca[i]=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
+		}
+		pixelsz = newpixelsz;
+	}
+	else {
+		/* Free old colour first */
+		x11.XFreeColors(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &pixel[p->index], 1, 0);
+	}
+	/* Now set new colour */
+	color.red=p->r;
+	color.green=p->g;
+	color.blue=p->b;
+	if(x11.XAllocColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color))
+		pixel[p->index]=color.pixel;
+	gcv.foreground=color.pixel;
+	gca[p->index]=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
+	expose_rect(0, 0, x11_window_width-1, x11_window_height-1);
+}
+
 void x11_event_thread(void *args)
 {
 	int x;
@@ -1004,6 +1062,9 @@ void x11_event_thread(void *args)
 							break;
 						case X11_LOCAL_BEEP:
 							x11.XBell(dpy, 100);
+							break;
+						case X11_LOCAL_SETPALETTE:
+							local_set_palette(&lev.data.palette);
 							break;
 					}
 					tv.tv_sec=0;

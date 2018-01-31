@@ -35,6 +35,7 @@
 #define _CIOLIB_H_
 
 #include <string.h>	/* size_t */
+#include "gen_defs.h"
 
 #ifdef CIOLIBEXPORT
         #undef CIOLIBEXPORT
@@ -311,6 +312,7 @@ typedef struct {
 	void	(*setscaling)	(int new_value);
 	int		(*getscaling)	(void);
 	int		*ESCDELAY;
+	int		(*setpalette)	(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 } cioapi_t;
 
 CIOLIBEXPORTVAR cioapi_t cio_api;
@@ -379,6 +381,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_setvideoflags(int flags);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getvideoflags(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setscaling(int flags);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -440,6 +443,7 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define getvideoflags()			ciolib_getvideoflags()
 	#define setscaling(a)			ciolib_setscaling(a)
 	#define getscaling()			ciolib_getscaling()
+	#define setpalette(e,r,g,b)		ciolib_setpalette(e,r,g,b)
 #endif
 
 #ifdef WITH_SDL
