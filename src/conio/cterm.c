@@ -1083,7 +1083,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						if(retbuf == NULL)
 							break;
 						tmp[0] = 0;
-						if ((strcmp(cterm->escbuf,"[=n") == 0) || (strcmp(cterm->escbuf,"[=1n"))) {
+						if ((strcmp(cterm->escbuf,"[=n") == 0) || (strcmp(cterm->escbuf,"[=1n") == 0)) {
 							sprintf(tmp, "\x1b[=1;%u;%u;%u;%u;%u;%un"
 								,CONIO_FIRST_FREE_FONT
 								,(uint8_t)cterm->setfont_result
@@ -1093,7 +1093,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								,(uint8_t)cterm->altfont[3]
 							);
 						}
-						if (!strcmp(cterm->escbuf,"[=2n")) {
+						else if (!strcmp(cterm->escbuf,"[=2n")) {
 							int vidflags = GETVIDEOFLAGS();
 							strcpy(tmp, "\x1b[=2");
 							if(cterm->origin_mode)
@@ -1116,7 +1116,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								strcat(tmp, ";");
 							}
 							strcat(tmp, "n");
-							break;
 						}
 						if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
 							strcat(retbuf, tmp);
