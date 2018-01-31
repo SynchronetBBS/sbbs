@@ -105,7 +105,7 @@ struct update_rect {
 	int		y;
 	int		width;
 	int		height;
-	unsigned char *data;
+	uint32_t	*data;
 };
 
 struct sdl_palette {
@@ -621,7 +621,7 @@ char *sdl_getcliptext(void)
 	return(ret);
 }
 
-void sdl_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *data)
+void sdl_drawrect(int xoffset,int yoffset,int width,int height,uint32_t *data)
 {
 	struct update_rect *rect;
 

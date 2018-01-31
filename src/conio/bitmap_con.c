@@ -35,7 +35,7 @@ pthread_mutex_t vmem_lock;
 struct video_stats vstat;
 
 struct bitmap_callbacks {
-	void	(*drawrect)		(int xpos, int ypos, int width, int height, unsigned char *data);
+	void	(*drawrect)		(int xpos, int ypos, int width, int height, uint32_t *data);
 	void	(*flush)		(void);
 };
 
@@ -122,7 +122,7 @@ static void blinker_thread(void *data)
 /*
  * MUST be called only once and before any other bitmap functions
  */
-int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, unsigned char *data)
+int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, uint32_t *data)
 				,void (*flush_cb) (void))
 {
 	if(bitmap_initialized)
@@ -179,6 +179,7 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	if(height)
 		*height=screenheight;
 	newscreen=realloc(screen, screenwidth*screenheight*sizeof(screen[0]));
+
 	if(!newscreen) {
 		pthread_mutex_unlock(&vstatlock);
 		pthread_mutex_unlock(&screenlock);
@@ -223,7 +224,7 @@ int bitmap_init_mode(int mode, int *width, int *height)
  */
 void send_rectangle(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force)
 {
-	unsigned char *rect;
+	uint32_t *rect;
 	int pixel=0;
 	int inpixel;
 	int x,y;
@@ -235,14 +236,14 @@ void send_rectangle(struct video_stats *vs, int xoffset, int yoffset, int width,
 		if(xoffset < 0 || xoffset >= screenwidth || yoffset < 0 || yoffset >= screenheight || width <= 0 || width > screenwidth || height <=0 || height >screenheight)
 			goto end;
 
-		rect=(unsigned char *)malloc(width*height*sizeof(unsigned char));
+		rect=(uint32_t *)malloc(width*height*sizeof(rect[0]));
 		if(!rect)
 			goto end;
 
 		for(y=0; y<height; y++) {
 			inpixel=PIXEL_OFFSET(xoffset, yoffset+y);
 			for(x=0; x<width; x++)
-				rect[pixel++]=vs->palette[screen[inpixel++]];
+				rect[pixel++]=screen[inpixel++];
 		}
 		pthread_mutex_unlock(&screenlock);
 		callbacks.drawrect(xoffset,yoffset,width,height,rect);
@@ -783,7 +784,6 @@ error_return:
 
 static void bitmap_draw_cursor(struct video_stats *vs)
 {
-	int x;
 	int y;
 	char attr;
 	int pixel;
@@ -805,9 +805,7 @@ static void bitmap_draw_cursor(struct video_stats *vs)
 				for(y=vs->curs_start; y<=vs->curs_end; y++) {
 					if(xoffset < screenwidth && (yoffset+y) < screenheight) {
 						pixel=PIXEL_OFFSET(xoffset, yoffset+y);
-						for(x=0;x<vs->charwidth;x++)
-							screen[pixel++]=attr;
-						//memset(screen+pixel,attr,vs->charwidth);
+						memset_u32(screen+pixel,vs->palette[attr],vs->charwidth);
 					}
 				}
 				pthread_mutex_unlock(&screenlock);
@@ -901,10 +899,10 @@ static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsig
 	fontoffset=(sch&0xff)*vs->charheight;
 
 	for(y=0; y<vs->charheight; y++) {
-		memset_u32(&screen[PIXEL_OFFSET(xoffset, yoffset+y)],bg,vs->charwidth);
+		memset_u32(&screen[PIXEL_OFFSET(xoffset, yoffset+y)],vs->palette[bg],vs->charwidth);
 		for(x=0; x<vs->charwidth; x++) {
 			if(this_font[fontoffset] & (0x80 >> x))
-				screen[PIXEL_OFFSET(xoffset+x, yoffset+y)]=fg;
+				screen[PIXEL_OFFSET(xoffset+x, yoffset+y)]=vs->palette[fg];
 		}
 		fontoffset++;
 	}

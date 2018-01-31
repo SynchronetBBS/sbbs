@@ -11,7 +11,7 @@ struct update_rect {
 	int	y;
 	int	width;
 	int	height;
-	unsigned char *data;
+	uint32_t	*data;
 };
 
 enum x11_local_events {

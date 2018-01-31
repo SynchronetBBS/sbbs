@@ -43,7 +43,7 @@
 
 #include "ciolib.h"
 
-#define TOTAL_DAC_SIZE	34
+#define TOTAL_DAC_SIZE	274
 
 /* Entry type for the DAC table. */
 struct dac_colors {
@@ -92,8 +92,7 @@ struct video_stats {
 	int currattr;
 	int scaling;
 	int	vmultiplier;
-	struct dac_colors dac_colors[256];
-	unsigned char palette[16];
+	uint32_t palette[16];
 	struct vstat_vmem *vmem;
 };
 
@@ -107,7 +106,7 @@ enum {
 
 extern struct video_params vparams[49];
 #define NUMMODES      (sizeof(vparams) / sizeof(struct video_params))
-extern unsigned char palettes[5][16];
+extern uint32_t palettes[5][16];
 extern struct dac_colors dac_default[TOTAL_DAC_SIZE];
 extern char vga_font_bitmap[4096];
 extern char vga_font_bitmap14[3584];
