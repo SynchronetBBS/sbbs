@@ -65,15 +65,29 @@ ESC M	(Disabled in current code)
 
 ESC _	Application Program String
 ESC P	Device Control String
-ESC ]	Operating System Command
 ESC ^	Privacy Message
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
 	The string is currently ignored.
+ESC ]	Operating System Command
+	Begins a string consisting of the characters 0x08 - 0x0d and
+	0x20-0x7e, terminated by a String Terminator (ST)
+	Supported OSC values:
+		4;(pX;pY)...
+		Specifies one or more palette redefinitions.
+		pX is the palette index, and pY is the colour definition
+		Color format:
+			rgb:R/G/B
+			Where R, G, and B are a sequence of one to four
+			hex digits representing the value of the
+			red, green, and blue channels respectively.
+
+		SOURCE: xterm
 
 ESC X	Start Of String
 	As the above strings, but may contain any characters except
 	a Start Of String sequence or a String Terminator sequence.
+	The string is currently ignored.
 
 ESC \	String Terminator
 
