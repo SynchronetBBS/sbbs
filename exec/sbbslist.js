@@ -571,7 +571,7 @@ function upgrade_list(sbl_dab)
     print("Upgrading from: " + sbl_dab);
     if(!dab.open("rb", /* shareable: */true)) {
         alert("Error " + dab.error + " opening " + dab.name);
-        exit();
+        return [];
     }
 
     var list=[];
@@ -1701,6 +1701,8 @@ function edit_field(obj, field, max_len)
 
 function can_edit(bbs)
 {
+	if(!bbs)
+		return "not an entry";
 	if(bbs.imported) {
 		return "Cannot edit imported entries";
 	}
@@ -2134,9 +2136,13 @@ function main()
 	if(!quiet)
 		print(version_notice);
 
-    if(!file_exists(lib.list_fname))
-        list=upgrade_list(sbl_dir + "sbl.dab");
-    else
+    if(!file_exists(lib.list_fname)) {
+		var dab = sbl_dir + "sbl.dab";
+		if(file_exists(dab))
+			list=upgrade_list(dab);
+		else
+			list=[];
+    } else
         list=lib.read_list();
 	if(options && options.sort)
 		lib.sort(list, options.sort);
