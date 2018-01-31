@@ -1899,9 +1899,9 @@ while((drop_file_name = file_getcase(system.node_dir + "editor.inf"))!=undefined
 			drop_file_time=drop_file.date;
 			info = drop_file.readAll();
 			drop_file.close();
-			subj=info[0];
-			to=info[1];
-			from=info[3];
+			subj=strip_ctrl(info[0]);
+			to=strip_ctrl(info[1]);
+			from=strip_ctrl(info[3]);
 		}
 	}
 	file_remove(drop_file_name);
