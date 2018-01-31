@@ -142,7 +142,7 @@ CSI = [ p1 [ ; p2 ] ] {
 	of predefined fonts)  p2 indicates font size according to the
 	following table:
 		0 - 8x16 font, 4096 bytes.
-		1 - 8x14 font, 3586 bytes.
+		1 - 8x14 font, 3584 bytes.
 		2 - 8x8 font, 2048 bytes.
 
 	SOURCE: CTerm only.

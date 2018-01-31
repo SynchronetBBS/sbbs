@@ -1322,7 +1322,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->font_size=4096;
 									break;
 								case 1:
-									cterm->font_size=3586;
+									cterm->font_size=3584;
 									break;
 								case 2:
 									cterm->font_size=2048;
@@ -2392,7 +2392,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
 										conio_fontdata[cterm->font_slot].desc=strdup("Remote Defined Font");
 										break;
-									case 3586:
+									case 3584:
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_fourteen);
 										conio_fontdata[cterm->font_slot].eight_by_fourteen=buf2;
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
