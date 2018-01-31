@@ -860,6 +860,11 @@ static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsig
 
 	pthread_mutex_lock(&screenlock);
 
+	if ((xoffset + vs->charwidth > screenwidth) || yoffset + vs->charheight > screenheight) {
+		pthread_mutex_unlock(&screenlock);
+		return(-1);
+	}
+
 	if(!screen) {
 		pthread_mutex_unlock(&screenlock);
 		return(-1);
