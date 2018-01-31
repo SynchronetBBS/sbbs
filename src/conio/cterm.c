@@ -967,6 +967,228 @@ void CIOLIBCALL cterm_clearscreen(struct cterminal *cterm, char attr)
 		GOTOXY(1,1);
 }
 
+/*
+ * Parses an ESC sequence and returns it broken down
+ */
+
+struct esc_seq {
+	char c1_byte;			// Character after the ESC.  If '[', ctrl_func and param_str will be non-NULL.
+	char final_byte;		// Final Byte (or NULL if c1 function);
+	char *ctrl_func;		// Intermediate Bytes and Final Byte as NULL-terminated string.
+	char *param_str;		// The parameter bytes
+	int param_count;		// The number of parameters, or -1 if parameters were not parsed.
+	str_list_t param;		// The parameters as strings
+	uint64_t *param_int;	// The parameter bytes parsed as integers UINT64_MAX for default value.
+};
+
+static bool parse_parameters(struct esc_seq *seq)
+{
+	char *p;
+	char *dup;
+	char *start = NULL;
+	bool last_was_sc = false;
+	int i;
+
+	if (seq == NULL)
+		return false;
+	if (seq->param_str == NULL)
+		return false;
+
+	dup = strdup(seq->param_str);
+	if (dup == NULL)
+		return false;
+	p = dup;
+
+	// First, skip past any private extension indicator...
+	if (*p >= 0x3c && *p <= 0x3f)
+		p++;
+
+	seq->param_count = 0;
+
+	seq->param = strListInit();
+
+	for (; *p; p++) {
+		/* Ensure it's a legal value */
+		if (*p < 0x30 || *p > 0x3b) {
+			seq->param_count = -1;
+			strListFree(&seq->param);
+			seq->param = NULL;
+			free(dup);
+			return false;
+		}
+		/* Mark the start of the parameter */
+		if (start == NULL)
+			start = p;
+
+		if (*p == ';') {
+			/* End of parameter, add to string list */
+			last_was_sc = true;
+			*p = 0;
+			while(*start == '0' && start[1])
+				start++;
+			strListAppend(&seq->param, start, seq->param_count);
+			seq->param_count++;
+			start = NULL;
+		}
+		else
+			last_was_sc = false;
+	}
+	/* If the string ended with a semi-colon, there's a final zero-length parameter */
+	if (last_was_sc) {
+		strListAppend(&seq->param, "", seq->param_count);
+		seq->param_count++;
+	}
+	else if (start) {
+		/* End of parameter, add to string list */
+		last_was_sc = true;
+		*p = 0;
+		while(*start == '0' && start[1])
+			start++;
+		strListAppend(&seq->param, start, seq->param_count);
+		seq->param_count++;
+	}
+
+	seq->param_int = malloc(seq->param_count * sizeof(seq->param_int[0]));
+	if (seq->param_int == NULL) {
+			seq->param_count = -1;
+			strListFree(&seq->param);
+			seq->param = NULL;
+			free(dup);
+			return false;
+	}
+
+	/* Now, parse all the integer values... */
+	for (i=0; i<seq->param_count; i++) {
+		if (seq->param[i][0] == 0 || seq->param[i][0] == ':') {
+			seq->param_int[i] = UINT64_MAX;
+			continue;
+		}
+		seq->param_int[i] = strtoull(seq->param[i], NULL, 10);
+		if (seq->param_int[i] == ULLONG_MAX) {
+			seq->param_count = -1;
+			strListFree(&seq->param);
+			seq->param = NULL;
+			FREE_AND_NULL(seq->param_int);
+			free(dup);
+			return false;
+		}
+	}
+
+	free(dup);
+	return true;
+}
+
+static void seq_default(struct esc_seq *seq, int index, uint64_t val)
+{
+	char	tmpnum[24];
+
+	// Params not parsed
+	if (seq->param_count == -1)
+		return;
+
+	/* Do we need to add on to get defaults? */
+	if (index >= seq->param_count) {
+		uint64_t *np;
+
+		np = realloc(seq->param_int, (index + 1) * sizeof(seq->param_int[0]));
+		if (np == NULL)
+			return;
+		seq->param_int = np;
+		for (; seq->param_count <= index+1; seq->param_count++) {
+			if (seq->param_count == index) {
+				seq->param_int[index] = val;
+				sprintf(tmpnum, "%" PRIu64, val);
+				strListAppend(&seq->param, tmpnum, seq->param_count);
+			}
+			else {
+				seq->param_int[seq->param_count] = UINT64_MAX;
+				strListAppend(&seq->param, "", seq->param_count);
+			}
+		}
+		return;
+	}
+	if (seq->param_int[index] == UINT64_MAX) {
+		seq->param_int[index] = val;
+		sprintf(tmpnum, "%" PRIu64, val);
+		strListReplace(seq->param, index, tmpnum);
+	}
+}
+
+static void free_sequence(struct esc_seq * seq)
+{
+	if (seq == NULL)
+		return;
+	if (seq->param)
+		strListFree(&seq->param);
+	FREE_AND_NULL(seq->param_int);
+	seq->param_count = -1;
+	FREE_AND_NULL(seq->param_str);
+	FREE_AND_NULL(seq->ctrl_func);
+	free(seq);
+}
+
+static struct esc_seq *parse_sequence(const char *seq)
+{
+	struct esc_seq *ret;
+
+	ret = calloc(1, sizeof(struct esc_seq));
+	if (ret == NULL)
+		return ret;
+	ret->param_count = -1;
+
+	/* Check that it's part of C1 set */
+	if (seq[0] < 0x40 || seq[0] > 0x5f)
+		goto fail;
+
+	ret->c1_byte = seq[0];
+
+	/* Check if it's CSI */
+	if (seq[0] == '[') {
+		size_t parameter_len;
+		size_t intermediate_len;
+
+		parameter_len = strspn(&seq[1], "0123456789:;<=>?");
+		ret->param_str = malloc(parameter_len + 1);
+		if (!ret->param_str)
+			goto fail;
+		memcpy(ret->param_str, &seq[1], parameter_len);
+		ret->param_str[parameter_len] = 0;
+
+		intermediate_len = strspn(&seq[1+parameter_len], " !\"#$%&'()*+,-./");
+		if (seq[1+parameter_len+intermediate_len] < 0x40 || seq[1+parameter_len+intermediate_len] > 0x7e)
+			goto fail;
+		ret->ctrl_func = malloc(intermediate_len + 2);
+		if (!ret->ctrl_func)
+			goto fail;
+		memcpy(ret->ctrl_func, &seq[1+parameter_len], intermediate_len);
+
+		ret->final_byte = ret->ctrl_func[intermediate_len] = seq[1+parameter_len+intermediate_len];
+		/* Validate final byte */
+		if (ret->final_byte < 0x40 || ret->final_byte > 0x7e)
+			goto fail;
+
+		ret->ctrl_func[intermediate_len+1] = 0;
+
+		/*
+		 * Is this a private extension?
+		 * If so, return now, the caller can parse the parameter sequence itself
+		 * if the standard format is used.
+		 */
+		if (ret->param_str[0] >= 0x3c && ret->param_str[0] <= 0x3f)
+			return ret;
+
+		if (!parse_parameters(ret))
+			goto fail;
+	}
+	return ret;
+
+fail:
+	FREE_AND_NULL(ret->ctrl_func);
+	FREE_AND_NULL(ret->param_str);
+	free(ret);
+	return NULL;
+}
+
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed)
 {
 	char	*p;
@@ -976,13 +1198,18 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 	int		row,col;
 	int		max_row;
 	struct text_info ti;
+	struct esc_seq *seq;
 
-	switch(cterm->escbuf[0]) {
+	seq = parse_sequence(cterm->escbuf);
+	if (seq == NULL)
+		return;
+
+	switch(seq->c1_byte) {
 		case '[':
 			/* ANSI stuff */
 			p=cterm->escbuf+strlen(cterm->escbuf)-1;
-			if(cterm->escbuf[1]>=60 && cterm->escbuf[1] <= 63) {	/* Private extensions */
-				switch(*p) {
+			if(seq->param_str[0]>=60 && seq->param_str[0] <= 63) {	/* Private extensions */
+				switch(seq->final_byte) {
 					case 'M':
 						if(cterm->escbuf[1] == '=') {	/* ANSI Music setup */
 							i=strtoul(cterm->escbuf+2,NULL,10);
@@ -1000,133 +1227,151 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						}
 						break;
 					case 'h':
-						if(!strcmp(cterm->escbuf,"[?6h")) {
-							cterm->origin_mode=true;
-							GOTOXY(1,cterm->top_margin);
+						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+							for (i=0; i<seq->param_count; i++) {
+								switch(seq->param_int[i]) {
+									case 6:
+										cterm->origin_mode=true;
+										GOTOXY(1,cterm->top_margin);
+										break;
+									case 7:
+										cterm->autowrap=true;
+										break;
+									case 25:
+										cterm->cursor=_NORMALCURSOR;
+										SETCURSORTYPE(cterm->cursor);
+										break;
+									case 31:
+										i=GETVIDEOFLAGS();
+										i|=CIOLIB_VIDEO_ALTCHARS;
+										SETVIDEOFLAGS(i);
+										break;
+									case 32:
+										i=GETVIDEOFLAGS();
+										i|=CIOLIB_VIDEO_NOBRIGHT;
+										SETVIDEOFLAGS(i);
+										break;
+									case 33:
+										i=GETVIDEOFLAGS();
+										i|=CIOLIB_VIDEO_BGBRIGHT;
+										SETVIDEOFLAGS(i);
+										break;
+									case 34:
+										i=GETVIDEOFLAGS();
+										i|=CIOLIB_VIDEO_BLINKALTCHARS;
+										SETVIDEOFLAGS(i);
+										break;
+									case 35:
+										i=GETVIDEOFLAGS();
+										i|=CIOLIB_VIDEO_NOBLINK;
+										SETVIDEOFLAGS(i);
+								}
+							}
 						}
-						if(!strcmp(cterm->escbuf,"[?7h")) {
-							cterm->autowrap=true;
-						}
-						if(!strcmp(cterm->escbuf,"[?25h")) {
-							cterm->cursor=_NORMALCURSOR;
-							SETCURSORTYPE(cterm->cursor);
-						}
-						if(!strcmp(cterm->escbuf,"[?31h")) {
-							i=GETVIDEOFLAGS();
-							i|=CIOLIB_VIDEO_ALTCHARS;
-							SETVIDEOFLAGS(i);
-						}
-						if(!strcmp(cterm->escbuf,"[?32h")) {
-							i=GETVIDEOFLAGS();
-							i|=CIOLIB_VIDEO_NOBRIGHT;
-							SETVIDEOFLAGS(i);
-						}
-						if(!strcmp(cterm->escbuf,"[?33h")) {
-							i=GETVIDEOFLAGS();
-							i|=CIOLIB_VIDEO_BGBRIGHT;
-							SETVIDEOFLAGS(i);
-						}
-						if(!strcmp(cterm->escbuf,"[?34h")) {
-							i=GETVIDEOFLAGS();
-							i|=CIOLIB_VIDEO_BLINKALTCHARS;
-							SETVIDEOFLAGS(i);
-						}
-						if(!strcmp(cterm->escbuf,"[?35h")) {
-							i=GETVIDEOFLAGS();
-							i|=CIOLIB_VIDEO_NOBLINK;
-							SETVIDEOFLAGS(i);
-						}
-						if(!strcmp(cterm->escbuf,"[=255h"))
+						else if(!strcmp(seq->param_str,"=255"))
 							cterm->doorway_mode=1;
 						break;
 					case 'l':
-						if(!strcmp(cterm->escbuf,"[?6l")) {
-							cterm->origin_mode=false;
-							GOTOXY(1,1);
+						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+							for (i=0; i<seq->param_count; i++) {
+								switch(seq->param_int[i]) {
+									case 6:
+										cterm->origin_mode=false;
+										GOTOXY(1,1);
+										break;
+									case 7:
+										cterm->autowrap=false;
+										break;
+									case 25:
+										cterm->cursor=_NOCURSOR;
+										SETCURSORTYPE(cterm->cursor);
+										break;
+									case 31:
+										i=GETVIDEOFLAGS();
+										i&=~CIOLIB_VIDEO_ALTCHARS;
+										SETVIDEOFLAGS(i);
+										break;
+									case 32:
+										i=GETVIDEOFLAGS();
+										i&=~CIOLIB_VIDEO_NOBRIGHT;
+										SETVIDEOFLAGS(i);
+										break;
+									case 33:
+										i=GETVIDEOFLAGS();
+										i&=~CIOLIB_VIDEO_BGBRIGHT;
+										SETVIDEOFLAGS(i);
+										break;
+									case 34:
+										i=GETVIDEOFLAGS();
+										i&=~CIOLIB_VIDEO_BLINKALTCHARS;
+										SETVIDEOFLAGS(i);
+										break;
+									case 35:
+										i=GETVIDEOFLAGS();
+										i&=~CIOLIB_VIDEO_NOBLINK;
+										SETVIDEOFLAGS(i);
+										break;
+								}
+							}
 						}
-						if(!strcmp(cterm->escbuf,"[?7l")) {
-							cterm->autowrap=false;
-						}
-						if(!strcmp(cterm->escbuf,"[?25l")) {
-							cterm->cursor=_NOCURSOR;
-							SETCURSORTYPE(cterm->cursor);
-						}
-						if(!strcmp(cterm->escbuf,"[?31l")) {
-							i=GETVIDEOFLAGS();
-							i&=~CIOLIB_VIDEO_ALTCHARS;
-							SETVIDEOFLAGS(i);
-						}
-						if(!strcmp(cterm->escbuf,"[?32l")) {
-							i=GETVIDEOFLAGS();
-							i&=~CIOLIB_VIDEO_NOBRIGHT;
-							SETVIDEOFLAGS(i);
-						}
-						if(!strcmp(cterm->escbuf,"[?33l")) {
-							i=GETVIDEOFLAGS();
-							i&=~CIOLIB_VIDEO_BGBRIGHT;
-							SETVIDEOFLAGS(i);
-						}
-						if(!strcmp(cterm->escbuf,"[?34l")) {
-							i=GETVIDEOFLAGS();
-							i&=~CIOLIB_VIDEO_BLINKALTCHARS;
-							SETVIDEOFLAGS(i);
-						}
-						if(!strcmp(cterm->escbuf,"[?35l")) {
-							i=GETVIDEOFLAGS();
-							i&=~CIOLIB_VIDEO_NOBLINK;
-							SETVIDEOFLAGS(i);
-						}
-						if(!strcmp(cterm->escbuf,"[=255l"))
+						else if(!strcmp(seq->param_str,"=255"))
 							cterm->doorway_mode=0;
 						break;
 					case 'n':	/* Query (extended) state information */
-						if(retbuf == NULL)
-							break;
-						tmp[0] = 0;
-						if ((strcmp(cterm->escbuf,"[=n") == 0) || (strcmp(cterm->escbuf,"[=1n") == 0)) {
-							sprintf(tmp, "\x1b[=1;%u;%u;%u;%u;%u;%un"
-								,CONIO_FIRST_FREE_FONT
-								,(uint8_t)cterm->setfont_result
-								,(uint8_t)cterm->altfont[0]
-								,(uint8_t)cterm->altfont[1]
-								,(uint8_t)cterm->altfont[2]
-								,(uint8_t)cterm->altfont[3]
-							);
-						}
-						else if (!strcmp(cterm->escbuf,"[=2n")) {
-							int vidflags = GETVIDEOFLAGS();
-							strcpy(tmp, "\x1b[=2");
-							if(cterm->origin_mode)
-								strcat(tmp, ";6");
-							if(cterm->autowrap)
-								strcat(tmp, ";7");
-							if(cterm->cursor == _NORMALCURSOR)
-								strcat(tmp, ";25");
-							if(vidflags & CIOLIB_VIDEO_ALTCHARS)
-								strcat(tmp, ";31");
-							if(vidflags & CIOLIB_VIDEO_NOBRIGHT)
-								strcat(tmp, ";32");
-							if(vidflags & CIOLIB_VIDEO_BGBRIGHT)
-								strcat(tmp, ";33");
-							if(vidflags & CIOLIB_VIDEO_BLINKALTCHARS)
-								strcat(tmp, ";34");
-							if(vidflags & CIOLIB_VIDEO_NOBLINK)
-								strcat(tmp, ";35");
-							if (strlen(tmp) == 4) {	// Nothing set
-								strcat(tmp, ";");
+						if (seq->param_str[0] == '=' && parse_parameters(seq)) {
+							int vidflags;
+
+							if(retbuf == NULL)
+								break;
+							tmp[0] = 0;
+							if (seq->param_count > 1)
+								break;
+							seq_default(seq, 0, 1);
+							switch(seq->param_int[0]) {
+								case 1:
+									sprintf(tmp, "\x1b[=1;%u;%u;%u;%u;%u;%un"
+										,CONIO_FIRST_FREE_FONT
+										,(uint8_t)cterm->setfont_result
+										,(uint8_t)cterm->altfont[0]
+										,(uint8_t)cterm->altfont[1]
+										,(uint8_t)cterm->altfont[2]
+										,(uint8_t)cterm->altfont[3]
+									);
+									break;
+								case 2:
+									vidflags = GETVIDEOFLAGS();
+									strcpy(tmp, "\x1b[=2");
+									if(cterm->origin_mode)
+									strcat(tmp, ";6");
+									if(cterm->autowrap)
+										strcat(tmp, ";7");
+									if(cterm->cursor == _NORMALCURSOR)
+										strcat(tmp, ";25");
+									if(vidflags & CIOLIB_VIDEO_ALTCHARS)
+										strcat(tmp, ";31");
+									if(vidflags & CIOLIB_VIDEO_NOBRIGHT)
+										strcat(tmp, ";32");
+									if(vidflags & CIOLIB_VIDEO_BGBRIGHT)
+										strcat(tmp, ";33");
+									if(vidflags & CIOLIB_VIDEO_BLINKALTCHARS)
+										strcat(tmp, ";34");
+									if(vidflags & CIOLIB_VIDEO_NOBLINK)
+										strcat(tmp, ";35");
+									if (strlen(tmp) == 4) {	// Nothing set
+										strcat(tmp, ";");
+									}
+									strcat(tmp, "n");
+									break;
 							}
-							strcat(tmp, "n");
 						}
 						if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
 							strcat(retbuf, tmp);
 						break;
 					case 's':
-						if(cterm->escbuf[1] == '?') {
-							*p=0;
-							p2=cterm->escbuf+2;
+						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
 							GETTEXTINFO(&ti);
 							i=GETVIDEOFLAGS();
-							if(!*p2) {
+							if(seq->param_count == 0) {
 								/* All the save stuff... */
 								cterm->saved_mode_mask |= (CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN);
 								cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN);
@@ -1140,58 +1385,59 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								cterm->saved_mode |= (cterm->origin_mode)?CTERM_SAVEMODE_ORIGIN:0;
 								break;
 							}
-							while((p=strtok(p2,";"))!=NULL) {
-								p2=NULL;
-								if(!strcmp(p,"6")) {
-									cterm->saved_mode_mask |= CTERM_SAVEMODE_ORIGIN;
-									cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN);
-									cterm->saved_mode |= cterm->origin_mode?CTERM_SAVEMODE_ORIGIN:0;
-								}
-								if(!strcmp(p,"7")) {
-									cterm->saved_mode_mask |= CTERM_SAVEMODE_AUTOWRAP;
-									cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT);
-									cterm->saved_mode |= cterm->autowrap?CTERM_SAVEMODE_AUTOWRAP:0;
-								}
-								if(!strcmp(p,"25")) {
-									cterm->saved_mode_mask |= CTERM_SAVEMODE_CURSOR;
-									cterm->saved_mode &= ~(CTERM_SAVEMODE_CURSOR);
-									cterm->saved_mode |= (cterm->cursor==_NORMALCURSOR)?CTERM_SAVEMODE_CURSOR:0;
-								}
-								if(!strcmp(p,"31")) {
-									cterm->saved_mode_mask |= CTERM_SAVEMODE_ALTCHARS;
-									cterm->saved_mode &= ~(CTERM_SAVEMODE_ALTCHARS);
-									cterm->saved_mode |= (i&CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
-								}
-								if(!strcmp(p,"32")) {
-									cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBRIGHT;
-									cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBRIGHT);
-									cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
-								}
-								if(!strcmp(p,"33")) {
-									cterm->saved_mode_mask |= CTERM_SAVEMODE_BGBRIGHT;
-									cterm->saved_mode &= ~(CTERM_SAVEMODE_BGBRIGHT);
-									cterm->saved_mode |= (i&CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
-								}
-								if(!strcmp(p,"34")) {
-									cterm->saved_mode_mask |= CTERM_SAVEMODE_BLINKALTCHARS;
-									cterm->saved_mode &= ~(CTERM_SAVEMODE_BLINKALTCHARS);
-									cterm->saved_mode |= (i&CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
-								}
-								if(!strcmp(p,"35")) {
-									cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBLINK;
-									cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBLINK);
-									cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
+							else {
+								for (i=0; i<seq->param_count; i++) {
+									switch(seq->param_int[i]) {
+										case 6:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_ORIGIN;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN);
+											cterm->saved_mode |= cterm->origin_mode?CTERM_SAVEMODE_ORIGIN:0;
+											break;
+										case 7:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_AUTOWRAP;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT);
+											cterm->saved_mode |= cterm->autowrap?CTERM_SAVEMODE_AUTOWRAP:0;
+											break;
+										case 25:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_CURSOR;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_CURSOR);
+											cterm->saved_mode |= (cterm->cursor==_NORMALCURSOR)?CTERM_SAVEMODE_CURSOR:0;
+											break;
+										case 31:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_ALTCHARS;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_ALTCHARS);
+											cterm->saved_mode |= (i&CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
+											break;
+										case 32:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBRIGHT;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBRIGHT);
+											cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
+											break;
+										case 33:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_BGBRIGHT;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_BGBRIGHT);
+											cterm->saved_mode |= (i&CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
+											break;
+										case 34:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_BLINKALTCHARS;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_BLINKALTCHARS);
+											cterm->saved_mode |= (i&CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
+											break;
+										case 35:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBLINK;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBLINK);
+											cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
+											break;
+									}
 								}
 							}
 						}
 						break;
 					case 'u':
-						if(cterm->escbuf[1] == '?') {
-							*p=0;
-							p2=cterm->escbuf+2;
+						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
 							GETTEXTINFO(&ti);
 							i=GETVIDEOFLAGS();
-							if(!*p2) {
+							if(seq->param_count == 0) {
 								/* All the save stuff... */
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_ORIGIN)
 									cterm->origin_mode=(cterm->saved_mode & CTERM_SAVEMODE_ORIGIN) ? true : false;
@@ -1234,89 +1480,82 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								SETVIDEOFLAGS(i);
 								break;
 							}
-							while((p=strtok(p2,";"))!=NULL) {
-								p2=NULL;
-								if(!strcmp(p,"6")) {
-									if(cterm->saved_mode_mask & CTERM_SAVEMODE_ORIGIN)
-										cterm->origin_mode=(cterm->saved_mode & CTERM_SAVEMODE_ORIGIN) ? true : false;
-								}
-								if(!strcmp(p,"7")) {
-									if(cterm->saved_mode_mask & CTERM_SAVEMODE_AUTOWRAP)
-										cterm->autowrap=(cterm->saved_mode & CTERM_SAVEMODE_AUTOWRAP) ? true : false;
-								}
-								if(!strcmp(p,"25")) {
-									if(cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR) {
-										cterm->cursor = (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) ? _NORMALCURSOR : _NOCURSOR;
-										SETCURSORTYPE(cterm->cursor);
-									}
-								}
-								if(!strcmp(p,"31")) {
-									if(cterm->saved_mode_mask & CTERM_SAVEMODE_ALTCHARS) {
-										if(cterm->saved_mode & CTERM_SAVEMODE_ALTCHARS)
-											i |= CIOLIB_VIDEO_ALTCHARS;
-										else
-											i &= ~CIOLIB_VIDEO_ALTCHARS;
-										SETVIDEOFLAGS(i);
-									}
-								}
-								if(!strcmp(p,"32")) {
-									if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBRIGHT) {
-										if(cterm->saved_mode & CTERM_SAVEMODE_NOBRIGHT)
-											i |= CIOLIB_VIDEO_NOBRIGHT;
-										else
-											i &= ~CIOLIB_VIDEO_NOBRIGHT;
-										SETVIDEOFLAGS(i);
-									}
-								}
-								if(!strcmp(p,"33")) {
-									if(cterm->saved_mode_mask & CTERM_SAVEMODE_BGBRIGHT) {
-										if(cterm->saved_mode & CTERM_SAVEMODE_BGBRIGHT)
-											i |= CIOLIB_VIDEO_BGBRIGHT;
-										else
-											i &= ~CIOLIB_VIDEO_BGBRIGHT;
-										SETVIDEOFLAGS(i);
-									}
-								}
-								if(!strcmp(p,"34")) {
-									if(cterm->saved_mode_mask & CTERM_SAVEMODE_BLINKALTCHARS) {
-										if(cterm->saved_mode & CTERM_SAVEMODE_BLINKALTCHARS)
-											i |= CIOLIB_VIDEO_BLINKALTCHARS;
-										else
-											i &= ~CIOLIB_VIDEO_BLINKALTCHARS;
-										SETVIDEOFLAGS(i);
-									}
-								}
-								if(!strcmp(p,"35")) {
-									if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBLINK) {
-										if(cterm->saved_mode & CTERM_SAVEMODE_NOBLINK)
-											i |= CIOLIB_VIDEO_NOBLINK;
-										else
-											i &= ~CIOLIB_VIDEO_NOBLINK;
-										SETVIDEOFLAGS(i);
+							else {
+								for (i=0; i<seq->param_count; i++) {
+									switch(seq->param_int[i]) {
+										case 6:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_ORIGIN)
+												cterm->origin_mode=(cterm->saved_mode & CTERM_SAVEMODE_ORIGIN) ? true : false;
+											break;
+										case 7:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_AUTOWRAP)
+												cterm->autowrap=(cterm->saved_mode & CTERM_SAVEMODE_AUTOWRAP) ? true : false;
+											break;
+										case 25:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR) {
+												cterm->cursor = (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) ? _NORMALCURSOR : _NOCURSOR;
+												SETCURSORTYPE(cterm->cursor);
+											}
+											break;
+										case 31:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_ALTCHARS) {
+												if(cterm->saved_mode & CTERM_SAVEMODE_ALTCHARS)
+													i |= CIOLIB_VIDEO_ALTCHARS;
+												else
+													i &= ~CIOLIB_VIDEO_ALTCHARS;
+												SETVIDEOFLAGS(i);
+											}
+											break;
+										case 32:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBRIGHT) {
+												if(cterm->saved_mode & CTERM_SAVEMODE_NOBRIGHT)
+													i |= CIOLIB_VIDEO_NOBRIGHT;
+												else
+													i &= ~CIOLIB_VIDEO_NOBRIGHT;
+												SETVIDEOFLAGS(i);
+											}
+											break;
+										case 33:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_BGBRIGHT) {
+												if(cterm->saved_mode & CTERM_SAVEMODE_BGBRIGHT)
+													i |= CIOLIB_VIDEO_BGBRIGHT;
+												else
+													i &= ~CIOLIB_VIDEO_BGBRIGHT;
+												SETVIDEOFLAGS(i);
+											}
+											break;
+										case 34:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_BLINKALTCHARS) {
+												if(cterm->saved_mode & CTERM_SAVEMODE_BLINKALTCHARS)
+													i |= CIOLIB_VIDEO_BLINKALTCHARS;
+												else
+													i &= ~CIOLIB_VIDEO_BLINKALTCHARS;
+												SETVIDEOFLAGS(i);
+											}
+											break;
+										case 35:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBLINK) {
+												if(cterm->saved_mode & CTERM_SAVEMODE_NOBLINK)
+													i |= CIOLIB_VIDEO_NOBLINK;
+												else
+													i &= ~CIOLIB_VIDEO_NOBLINK;
+												SETVIDEOFLAGS(i);
+											}
+											break;
 									}
 								}
 							}
 						}
 						break;
 					case '{':
-						if(cterm->escbuf[1] == '=') {	/* Font loading */
-							i=255;
-							j=0;
-							if(strlen(cterm->escbuf)>2) {
-								if((p=strtok(cterm->escbuf+2,";"))!=NULL) {
-									i=strtoul(p,NULL,10);
-									if(!i && cterm->escbuf[2] != '0')
-										i=255;
-									if((p=strtok(NULL,";"))!=NULL) {
-										j=strtoul(p,NULL,10);
-									}
-								}
-							}
-							if(i>255)
+						if(seq->param_str[0] == '=' && parse_parameters(seq)) {	/* Font loading */
+							seq_default(seq, 0, 255);
+							seq_default(seq, 1, 0);
+							if(seq->param_int[0]>255)
 								break;
 							cterm->font_read=0;
-							cterm->font_slot=i;
-							switch(j) {
+							cterm->font_slot=seq->param_int[0];
+							switch(seq->param_int[1]) {
 								case 0:
 									cterm->font_size=4096;
 									break;
@@ -1335,25 +1574,108 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				}
 				break;
 			}
-			switch(*p) {
+			else if (seq->ctrl_func[1]) {	// Private control function
+				// Font Select
+				if (strcmp(seq->ctrl_func, " D") == 0) {
+					seq_default(seq, 0, 0);
+					seq_default(seq, 1, 0);
+					switch(seq->param_int[0]) {
+						case 0:	/* Four fonts are currently supported */
+						case 1:
+						case 2:
+						case 3:
+							cterm->setfont_result = SETFONT(seq->param_int[1],FALSE,seq->param_int[0]+1);
+							if(cterm->setfont_result == CIOLIB_SETFONT_SUCCESS)
+								cterm->altfont[seq->param_int[0]] = seq->param_int[1];
+							break;
+					}
+				}
+				// Communication speed
+				else if (strcmp(seq->ctrl_func, "*r") == 0) {
+					/*
+					 * Ps1 			Comm Line 		Ps2 		Communication Speed
+					 * none, 0, 1 	Host Transmit 	none, 0 	Use default speed.
+					 * 2		 	Host Receive 	1 			300
+					 * 3 			Printer 		2 			600
+					 * 4		 	Modem Hi 		3 			1200
+					 * 5		 	Modem Lo 		4 			2400
+					 * 								5 			4800
+					 * 								6 			9600
+					 * 								7 			19200
+					 * 								8 			38400
+					 * 								9 			57600
+					 * 								10 			76800
+					 * 								11 			115200
+					 */
+					int newspeed=-1;
+
+					seq_default(seq, 0, 0);
+					seq_default(seq, 1, 0);
+
+					if (seq->param_int[0] < 2) {
+						switch(seq->param_int[1]) {
+							case 0:
+								newspeed=0;
+								break;
+							case 1:
+								newspeed=300;
+								break;
+							case 2:
+								newspeed=600;
+								break;
+							case 3:
+								newspeed=1200;
+								break;
+							case 4:
+								newspeed=2400;
+								break;
+							case 5:
+								newspeed=4800;
+								break;
+							case 6:
+								newspeed=9600;
+								break;
+							case 7:
+								newspeed=19200;
+								break;
+							case 8:
+								newspeed=38400;
+								break;
+							case 9:
+								newspeed=57600;
+								break;
+							case 10:
+								newspeed=76800;
+								break;
+							case 11:
+								newspeed=115200;
+								break;
+						}
+					}
+					if(newspeed >= 0)
+						*speed = newspeed;
+				}
+				break;
+			}
+			switch(seq->final_byte) {
 				case '@':	/* Insert Char */
 					i=WHEREX();
 					j=WHEREY();
-					k=strtoul(cterm->escbuf+1,NULL,10);
-					if(k<1)
-						k=1;
-					if(k>cterm->width - j)
-						k=cterm->width - j;
-					MOVETEXT(cterm->x+i-1,cterm->y+j-1,cterm->x+cterm->width-1-k,cterm->y+j-1,cterm->x+i-1+k,cterm->y+j-1);
-					for(l=0; l< k; l++)
+					seq_default(seq, 0, 1);
+					if(seq->param_int[0] < 1)
+						seq->param_int[0] = 1;
+					if(seq->param_int[0] > cterm->width - j)
+						seq->param_int[0] = cterm->width - j;
+					MOVETEXT(cterm->x+i-1,cterm->y+j-1,cterm->x+cterm->width-1-seq->param_int[0],cterm->y+j-1,cterm->x+i-1+seq->param_int[0],cterm->y+j-1);
+					for(l=0; l < seq->param_int[0]; l++)
 						PUTCH(' ');
 					GOTOXY(i,j);
 					break;
 				case 'A':	/* Cursor Up */
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0)
-						i=1;
-					i=WHEREY()-i;
+					seq_default(seq, 0, 1);
+					if (seq->param_int[0] < 1)
+						seq->param_int[0] = 1;
+					i=WHEREY()-seq->param_int[0];
 					if(i<cterm->top_margin)
 						i=cterm->top_margin;
 					GOTOXY(WHEREX(),i);
@@ -1376,38 +1698,14 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						i=cterm->width;
 					GOTOXY(i,WHEREY());
 					break;
-				case 'D':	/* Cursor Left and Font Select */
-					if(*(p-1)==' ') {	/* Font Select */
-						i=0;
-						j=0;
-						if(strlen(cterm->escbuf)>2) {
-							if((p=strtok(cterm->escbuf+1,";"))!=NULL) {
-								i=strtoul(p,NULL,10);
-								if((p=strtok(NULL,";"))!=NULL) {
-									j=strtoul(p,NULL,10);
-								}
-							}
-							switch(i) {
-								case 0:	/* Four fonts are currently supported */
-								case 1:
-								case 2:
-								case 3:
-									cterm->setfont_result = SETFONT(j,FALSE,i+1);
-									if(cterm->setfont_result == CIOLIB_SETFONT_SUCCESS)
-										cterm->altfont[i] = j;
-									break;
-							}
-						}
-					}
-					else {
-						i=strtoul(cterm->escbuf+1,NULL,10);
-						if(i==0)
-							i=1;
-						i=WHEREX()-i;
-						if(i<1)
-							i=1;
-						GOTOXY(i,WHEREY());
-					}
+				case 'D':	/* Cursor Left */
+					i=strtoul(cterm->escbuf+1,NULL,10);
+					if(i==0)
+						i=1;
+					i=WHEREX()-i;
+					if(i<1)
+						i=1;
+					GOTOXY(i,WHEREY());
 					break;
 				case 'E':	/* Cursor next line */
 					i=strtoul(cterm->escbuf+1,NULL,10);
@@ -1781,98 +2079,19 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				case 'q': /* ToDo?  VT100 keyboard lights */
 					break;
 				case 'r': /* ToDo?  Scrolling reigon */
-					/* Set communication speed (if has a * before it) */
-					if(*(p-1) == '*' && speed != NULL) {
-						/*
-						 * Ps1 			Comm Line 		Ps2 		Communication Speed
-						 * none, 0, 1 	Host Transmit 	none, 0 	Use default speed.
-						 * 2		 	Host Receive 	1 			300
-						 * 3 			Printer 		2 			600
-						 * 4		 	Modem Hi 		3 			1200
-						 * 5		 	Modem Lo 		4 			2400
-						 * 								5 			4800
-						 * 								6 			9600
-						 * 								7 			19200
-						 * 								8 			38400
-						 * 								9 			57600
-						 * 								10 			76800
-						 * 								11 			115200
-						 */
-						int newspeed=0;
-
-						*(--p)=0;
-						if(cterm->escbuf[1]) {
-							p=strtok(cterm->escbuf+1,";");
-							if(p!=NULL) {
-								if(p!=cterm->escbuf+1 || strtoul(p,NULL,10)<2) {
-									if(p==cterm->escbuf+1)
-										p=strtok(NULL,";");
-									if(p!=NULL) {
-										switch(strtoul(p,NULL,10)) {
-											case 0:
-												newspeed=0;
-												break;
-											case 1:
-												newspeed=300;
-												break;
-											case 2:
-												newspeed=600;
-												break;
-											case 3:
-												newspeed=1200;
-												break;
-											case 4:
-												newspeed=2400;
-												break;
-											case 5:
-												newspeed=4800;
-												break;
-											case 6:
-												newspeed=9600;
-												break;
-											case 7:
-												newspeed=19200;
-												break;
-											case 8:
-												newspeed=38400;
-												break;
-											case 9:
-												newspeed=57600;
-												break;
-											case 10:
-												newspeed=76800;
-												break;
-											case 11:
-												newspeed=115200;
-												break;
-											default:
-												newspeed=-1;
-												break;
-										}
-									}
-								}
-								else
-									newspeed = -1;
+					row = 1;
+					max_row = cterm->height;
+					if(strlen(cterm->escbuf)>2) {
+						if((p=strtok(cterm->escbuf+1,";"))!=NULL) {
+							row=strtoul(p,NULL,10);
+							if((p=strtok(NULL,";"))!=NULL) {
+								max_row=strtoul(p,NULL,10);
 							}
 						}
-						if(newspeed >= 0)
-							*speed = newspeed;
 					}
-					else {
-						row = 1;
-						max_row = cterm->height;
-						if(strlen(cterm->escbuf)>2) {
-							if((p=strtok(cterm->escbuf+1,";"))!=NULL) {
-								row=strtoul(p,NULL,10);
-								if((p=strtok(NULL,";"))!=NULL) {
-									max_row=strtoul(p,NULL,10);
-								}
-							}
-						}
-						if(row >= 1 && max_row > row && max_row <= cterm->height) {
-							cterm->top_margin = row;
-							cterm->bottom_margin = max_row;
-						}
+					if(row >= 1 && max_row > row && max_row <= cterm->height) {
+						cterm->top_margin = row;
+						cterm->bottom_margin = max_row;
 					}
 					break;
 				case 's':
@@ -2037,6 +2256,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 			/* ToDo: Reset Terminal */
 			break;
 	}
+	free_sequence(seq);
 	cterm->escbuf[0]=0;
 	cterm->sequence=0;
 }
