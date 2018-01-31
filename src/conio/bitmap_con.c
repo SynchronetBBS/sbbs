@@ -341,6 +341,7 @@ void bitmap_setvideoflags(int flags)
 	else
 		vstat.blink_altcharset=0;
 	pthread_mutex_unlock(&vstatlock);
+	force_redraws++;
 }
 
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
