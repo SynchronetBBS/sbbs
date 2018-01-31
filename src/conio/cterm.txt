@@ -84,6 +84,13 @@ ESC ]	Operating System Command
 
 		SOURCE: xterm
 
+		104 [ ; Ps ... ]
+		Resets palette entry to default.  If the entire string
+		is "104", resets all colours.  Otherwise, only each index
+		separated by a semicolon is reset.
+
+		SOURCE: xterm
+
 ESC X	Start Of String
 	As the above strings, but may contain any characters except
 	a Start Of String sequence or a String Terminator sequence.
