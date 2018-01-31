@@ -164,6 +164,7 @@ int try_sdl_init(int mode)
 		cio_api.get_window_info=sdl_get_window_info;
 		cio_api.setscaling=sdl_setscaling;
 		cio_api.getscaling=sdl_getscaling;
+		cio_api.setpalette=sdl_setpalette;
 		return(1);
 	}
 	return(0);
