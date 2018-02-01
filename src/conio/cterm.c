@@ -1211,17 +1211,17 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 			if(seq->param_str[0]>=60 && seq->param_str[0] <= 63) {	/* Private extensions */
 				switch(seq->final_byte) {
 					case 'M':
-						if(cterm->escbuf[1] == '=') {	/* ANSI Music setup */
-							i=strtoul(cterm->escbuf+2,NULL,10);
-							switch(i) {
+						if(seq->param_str[0] == '=' && parse_parameters(seq)) {	/* ANSI Music setup */
+							seq_default(seq, 0, 0);
+							switch(seq->param_int[0]) {
+								case 0:					/* Disable ANSI Music */
+									cterm->music_enable=CTERM_MUSIC_SYNCTERM;
+									break;
 								case 1:					/* BANSI (ESC[N) music only) */
 									cterm->music_enable=CTERM_MUSIC_BANSI;
 									break;
 								case 2:					/* ESC[M ANSI music */
 									cterm->music_enable=CTERM_MUSIC_ENABLED;
-									break;
-								default:					/* Disable ANSI Music */
-									cterm->music_enable=CTERM_MUSIC_SYNCTERM;
 									break;
 							}
 						}
@@ -1657,462 +1657,421 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				}
 				break;
 			}
-			switch(seq->final_byte) {
-				case '@':	/* Insert Char */
-					i=WHEREX();
-					j=WHEREY();
-					seq_default(seq, 0, 1);
-					if(seq->param_int[0] < 1)
-						seq->param_int[0] = 1;
-					if(seq->param_int[0] > cterm->width - j)
-						seq->param_int[0] = cterm->width - j;
-					MOVETEXT(cterm->x+i-1,cterm->y+j-1,cterm->x+cterm->width-1-seq->param_int[0],cterm->y+j-1,cterm->x+i-1+seq->param_int[0],cterm->y+j-1);
-					for(l=0; l < seq->param_int[0]; l++)
-						PUTCH(' ');
-					GOTOXY(i,j);
-					break;
-				case 'A':	/* Cursor Up */
-					seq_default(seq, 0, 1);
-					if (seq->param_int[0] < 1)
-						seq->param_int[0] = 1;
-					i=WHEREY()-seq->param_int[0];
-					if(i<cterm->top_margin)
-						i=cterm->top_margin;
-					GOTOXY(WHEREX(),i);
-					break;
-				case 'B':	/* Cursor Down */
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0)
-						i=1;
-					i=WHEREY()+i;
-					if(i>cterm->bottom_margin)
-						i=cterm->bottom_margin;
-					GOTOXY(WHEREX(),i);
-					break;
-				case 'C':	/* Cursor Right */
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0)
-						i=1;
-					i=WHEREX()+i;
-					if(i>cterm->width)
-						i=cterm->width;
-					GOTOXY(i,WHEREY());
-					break;
-				case 'D':	/* Cursor Left */
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0)
-						i=1;
-					i=WHEREX()-i;
-					if(i<1)
-						i=1;
-					GOTOXY(i,WHEREY());
-					break;
-				case 'E':	/* Cursor next line */
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0)
-						i=1;
-					i=WHEREY()+i;
-					if(i>cterm->bottom_margin)
-						i=cterm->bottom_margin;
-					GOTOXY(1,i);
-					break;
-				case 'F':	/* Cursor preceding line */
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0)
-						i=1;
-					i=WHEREY()-i;
-					if(i<cterm->top_margin)
-						i=cterm->top_margin;
-					GOTOXY(1,i);
-					break;
-				case 'G':
-					col=strtoul(cterm->escbuf+1,NULL,10);
-					if(col<1)
-						col=1;
-					if(col>cterm->width)
-						col=cterm->width;
-					GOTOXY(col,WHEREY());
-					break;
-				case 'f':
-				case 'H':
-					row=1;
-					max_row = cterm->height;
-					if(cterm->origin_mode)
-						max_row = cterm->bottom_margin - cterm->top_margin + 1;
-					col=1;
-					*p=0;
-					if(strlen(cterm->escbuf)>1) {	// Remember, we truncated the 'H' or 'f'
-						if((p=strtok(cterm->escbuf+1,";"))!=NULL) {
-							row=strtoul(p,NULL,10);
-							if((p=strtok(NULL,";"))!=NULL) {
-								col=strtoul(p,NULL,10);
-							}
-						}
-					}
-					if(row<1)
-						row=1;
-					if(col<1)
-						col=1;
-					if(row>max_row)
-						row=max_row;
-					if(cterm->origin_mode)
-						row += cterm->top_margin - 1;
-					if(col>cterm->width)
-						col=cterm->width;
-					GOTOXY(col,row);
-					break;
-				case 'J':
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					switch(i) {
-						case 0:
-							CLREOL();
-							row=WHEREY();
-							col=WHEREX();
-							for(i=row+1;i<=cterm->height;i++) {
-								GOTOXY(1,i);
-								CLREOL();
-							}
-							GOTOXY(col,row);
-							break;
-						case 1:
-							clear2bol(cterm);
-							row=WHEREY();
-							col=WHEREX();
-							for(i=row-1;i>=1;i--) {
-								GOTOXY(1,i);
-								CLREOL();
-							}
-							GOTOXY(col,row);
-							break;
-						case 2:
-							cterm_clearscreen(cterm, (char)cterm->attr);
-							GOTOXY(1,1);
-							break;
-					}
-					break;
-				case 'K':
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					switch(i) {
-						case 0:
-							CLREOL();
-							break;
-						case 1:
-							clear2bol(cterm);
-							break;
-						case 2:
-							row=WHEREY();
-							col=WHEREX();
-							GOTOXY(1,row);
-							CLREOL();
-							GOTOXY(col,row);
-							break;
-					}
-					break;
-				case 'L':		/* Insert line */
-					row=WHEREY();
-					col=WHEREX();
-					if(row < cterm->top_margin || row > cterm->bottom_margin)
+			else {
+				switch(seq->final_byte) {
+					case '@':	/* Insert Char */
+						i=WHEREX();
+						j=WHEREY();
+						seq_default(seq, 0, 1);
+						if(seq->param_int[0] < 1)
+							seq->param_int[0] = 1;
+						if(seq->param_int[0] > cterm->width - j)
+							seq->param_int[0] = cterm->width - j;
+						MOVETEXT(cterm->x+i-1,cterm->y+j-1,cterm->x+cterm->width-1-seq->param_int[0],cterm->y+j-1,cterm->x+i-1+seq->param_int[0],cterm->y+j-1);
+						for(l=0; l < seq->param_int[0]; l++)
+							PUTCH(' ');
+						GOTOXY(i,j);
 						break;
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0)
-						i=1;
-					if(i>cterm->bottom_margin-row)
-						i=cterm->bottom_margin-row;
-					if(i)
-						MOVETEXT(cterm->x,cterm->y+row-1,cterm->x+cterm->width-1,cterm->y+cterm->bottom_margin-1-i,cterm->x,cterm->y+row-1+i);
-					for(j=0;j<i;j++) {
-						GOTOXY(1,row+j);
-						CLREOL();
-					}
-					GOTOXY(col,row);
-					break;
-				case 'M':	/* ANSI music and also supposed to be delete line! */
-					if(cterm->music_enable==CTERM_MUSIC_ENABLED) {
-						cterm->music=1;
-					}
-					else {
-						row=WHEREY();
-						if(row >= cterm->top_margin && row <= cterm->bottom_margin) {
-							i=strtoul(cterm->escbuf+1,NULL,10);
-							if(i<1)
-								i=1;
-							dellines(cterm, i);
-						}
-					}
-					break;
-				case 'N':
-					/* BananANSI style... does NOT start with MF or MB */
-					/* This still conflicts (ANSI erase field) */
-					if(cterm->music_enable >= CTERM_MUSIC_BANSI)
-						cterm->music=2;
-					break;
-				case 'P':	/* Delete char */
-					row=WHEREY();
-					col=WHEREX();
-
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0)
-						i=1;
-					if(i>cterm->width-col+1)
-						i=cterm->width-col+1;
-					MOVETEXT(cterm->x+col-1+i,cterm->y+row-1,cterm->x+cterm->width-1,cterm->y+row-1,cterm->x+col-1,cterm->y+row-1);
-					GOTOXY(cterm->width-i,row);
-					CLREOL();
-					GOTOXY(col,row);
-					break;
-				case 'S':
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0 && cterm->escbuf[1] != '0')
-						i=1;
-					for(j=0; j<i; j++)
-						scrollup(cterm);
-					break;
-				case 'T':
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0 && cterm->escbuf[1] != '0')
-						i=1;
-					for(j=0; j<i; j++)
-						scrolldown(cterm);
-					break;
-#if 0
-				case 'U':
-					GETTEXTINFO(&ti);
-					cterm_clearscreen(cterm, ti.normattr);
-					if(cterm->origin_mode)
-						GOTOXY(1,cterm->top_margin);
-					else
-						GOTOXY(1,1);
-					break;
-#endif
-				case 'X':
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i<1)
-						i=1;
-					if(i>cterm->width-WHEREX())
-						i=cterm->width-WHEREX();
-					p2=malloc(i*2);
-					j=0;
-					for(k=0;k<i;k++) {
-						p2[j++]=' ';
-						p2[j++]=cterm->attr;
-					}
-					PUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1+i-1,cterm->y+WHEREY()-1,p2);
-					free(p2);
-					break;
-				case 'Z':
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(i==0 && cterm->escbuf[0] != '0')
-						i=1;
-					for(j=(sizeof(cterm_tabs)/sizeof(cterm_tabs[0]))-1;j>=0;j--) {
-						if(cterm_tabs[j]<WHEREX()) {
-							k=j-i+1;
-							if(k<0)
-								k=0;
-							GOTOXY(cterm_tabs[k],WHEREY());
-							break;
-						}
-					}
-					break;
-				case 'b':	/* ToDo?  Banana ANSI */
-					break;
-				case 'c':	/* Device Attributes */
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					if(!i) {
-						if(retbuf!=NULL) {
-							if(strlen(retbuf) + strlen(cterm->DA)  < retsize)
-								strcat(retbuf,cterm->DA);
-						}
-					}
-					break;
-				case 'g':	/* ToDo?  VT100 Tabs */
-					break;
-				case 'i':	/* ToDo?  Printing */
-					break;
-				case 'm':
-					*(p--)=0;
-					p2=cterm->escbuf+1;
-					GETTEXTINFO(&ti);
-					if(p2>p) {
-						cterm->attr=ti.normattr;
-						TEXTATTR(cterm->attr);
+					case 'A':	/* Cursor Up */
+						seq_default(seq, 0, 1);
+						i=WHEREY()-seq->param_int[0];
+						if(i<cterm->top_margin)
+							i=cterm->top_margin;
+						GOTOXY(WHEREX(),i);
 						break;
-					}
-					while((p=strtok(p2,";"))!=NULL) {
-						p2=NULL;
-						switch(strtoul(p,NULL,10)) {
+					case 'B':	/* Cursor Down */
+						seq_default(seq, 0, 1);
+						i=WHEREY()+seq->param_int[0];
+						if(i>cterm->bottom_margin)
+							i=cterm->bottom_margin;
+						GOTOXY(WHEREX(),i);
+						break;
+					case 'C':	/* Cursor Right */
+						seq_default(seq, 0, 1);
+						i=WHEREX()+seq->param_int[0];
+						if(i>cterm->width)
+							i=cterm->width;
+						GOTOXY(i,WHEREY());
+						break;
+					case 'D':	/* Cursor Left */
+						seq_default(seq, 0, 1);
+						i=WHEREX()-seq->param_int[0];
+						if(i<1)
+							i=1;
+						GOTOXY(i,WHEREY());
+						break;
+					case 'E':	/* Cursor next line */
+						seq_default(seq, 0, 1);
+						i=WHEREY()+seq->param_int[0];
+						if(i>cterm->bottom_margin)
+							i=cterm->bottom_margin;
+						GOTOXY(1,i);
+						break;
+					case 'F':	/* Cursor preceding line */
+						seq_default(seq, 0, 1);
+						i=WHEREY()-seq->param_int[0];
+						if(i<cterm->top_margin)
+							i=cterm->top_margin;
+						GOTOXY(1,i);
+						break;
+					case 'G':	/* Cursor Position Absolute */
+						seq_default(seq, 0, 1);
+						col=seq->param_int[0];
+						if(col >= 1 && col <= cterm->width)
+							GOTOXY(col,WHEREY());
+						break;
+					case 'f':	/* Character And Line Position */
+					case 'H':	/* Cursor Position */
+						seq_default(seq, 0, 1);
+						seq_default(seq, 1, 1);
+						max_row = cterm->height;
+						if(cterm->origin_mode)
+							max_row = cterm->bottom_margin - cterm->top_margin + 1;
+						row=seq->param_int[0];
+						col=seq->param_int[1];
+						if(row<1)
+							row=1;
+						if(col<1)
+							col=1;
+						if(row>max_row)
+							row=max_row;
+						if(cterm->origin_mode)
+							row += cterm->top_margin - 1;
+						if(col>cterm->width)
+							col=cterm->width;
+						GOTOXY(col,row);
+						break;
+					case 'J':	/* Erase In Page */
+						seq_default(seq, 0, 0);
+						switch(seq->param_int[0]) {
 							case 0:
-								cterm->attr=ti.normattr;
+								CLREOL();
+								row=WHEREY();
+								col=WHEREX();
+								for(i=row+1;i<=cterm->height;i++) {
+									GOTOXY(1,i);
+									CLREOL();
+								}
+								GOTOXY(col,row);
 								break;
 							case 1:
-								cterm->attr|=8;
+								clear2bol(cterm);
+								row=WHEREY();
+								col=WHEREX();
+								for(i=row-1;i>=1;i--) {
+									GOTOXY(1,i);
+									CLREOL();
+								}
+								GOTOXY(col,row);
 								break;
 							case 2:
-								cterm->attr&=247;
+								cterm_clearscreen(cterm, (char)cterm->attr);
+								GOTOXY(1,1);
 								break;
-							case 4:	/* Underscore */
+						}
+						break;
+					case 'K':	/* Erase In Line */
+						seq_default(seq, 0, 0);
+						switch(seq->param_int[0]) {
+							case 0:
+								CLREOL();
 								break;
+							case 1:
+								clear2bol(cterm);
+								break;
+							case 2:
+								row=WHEREY();
+								col=WHEREX();
+								GOTOXY(1,row);
+								CLREOL();
+								GOTOXY(col,row);
+								break;
+						}
+						break;
+					case 'L':		/* Insert line */
+						row=WHEREY();
+						col=WHEREX();
+						if(row < cterm->top_margin || row > cterm->bottom_margin)
+							break;
+						seq_default(seq, 0, 1);
+						i=seq->param_int[0];
+						if(i>cterm->bottom_margin-row)
+							i=cterm->bottom_margin-row;
+						if(i)
+							MOVETEXT(cterm->x,cterm->y+row-1,cterm->x+cterm->width-1,cterm->y+cterm->bottom_margin-1-i,cterm->x,cterm->y+row-1+i);
+						for(j=0;j<i;j++) {
+							GOTOXY(1,row+j);
+							CLREOL();
+						}
+						GOTOXY(col,row);
+						break;
+					case 'M':	/* ANSI music and also supposed to be delete line! */
+						if(cterm->music_enable==CTERM_MUSIC_ENABLED) {
+							cterm->music=1;
+						}
+						else {
+							row=WHEREY();
+							if(row >= cterm->top_margin && row <= cterm->bottom_margin) {
+								seq_default(seq, 0, 1);
+								i=seq->param_int[0];
+								dellines(cterm, i);
+							}
+						}
+						break;
+					case 'N':
+						/* BananANSI style... does NOT start with MF or MB */
+						/* This still conflicts (ANSI erase field) */
+						if(cterm->music_enable >= CTERM_MUSIC_BANSI)
+							cterm->music=2;
+						break;
+					case 'P':	/* Delete char */
+						row=WHEREY();
+						col=WHEREX();
+
+						seq_default(seq, 0, 1);
+						i=seq->param_int[0];
+						if(i>cterm->width-col+1)
+							i=cterm->width-col+1;
+						MOVETEXT(cterm->x+col-1+i,cterm->y+row-1,cterm->x+cterm->width-1,cterm->y+row-1,cterm->x+col-1,cterm->y+row-1);
+						GOTOXY(cterm->width-i,row);
+						CLREOL();
+						GOTOXY(col,row);
+						break;
+					case 'S':	/* Scroll Up */
+						seq_default(seq, 0, 1);
+						for(j=0; j<seq->param_int[0]; j++)
+							scrollup(cterm);
+						break;
+					case 'T':	/* Scroll Down */
+						seq_default(seq, 0, 1);
+						for(j=0; j<seq->param_int[0]; j++)
+							scrolldown(cterm);
+						break;
+#if 0
+					case 'U':	/* Next Page */
+						GETTEXTINFO(&ti);
+						cterm_clearscreen(cterm, ti.normattr);
+						if(cterm->origin_mode)
+							GOTOXY(1,cterm->top_margin);
+						else
+							GOTOXY(1,1);
+						break;
+#endif
+					case 'X':	/* Erase Character */
+						seq_default(seq, 0, 1);
+						i=seq->param_int[0];
+						if(i>cterm->width-WHEREX())
+							i=cterm->width-WHEREX();
+						p2=malloc(i*2);
+						j=0;
+						for(k=0;k<i;k++) {
+							p2[j++]=' ';
+							p2[j++]=cterm->attr;
+						}
+						PUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1+i-1,cterm->y+WHEREY()-1,p2);
+						free(p2);
+						break;
+					case 'Z':	/* Cursor Backward Tabulation */
+						seq_default(seq, 0, 1);
+						i=strtoul(cterm->escbuf+1,NULL,10);
+						for(j=(sizeof(cterm_tabs)/sizeof(cterm_tabs[0]))-1;j>=0;j--) {
+							if(cterm_tabs[j]<WHEREX()) {
+								k=j-seq->param_int[0]+1;
+								if(k<0)
+									k=0;
+								GOTOXY(cterm_tabs[k],WHEREY());
+								break;
+							}
+						}
+						break;
+					case 'b':	/* ToDo?  Banana ANSI/Repeat */
+						break;
+					case 'c':	/* Device Attributes */
+						seq_default(seq, 0, 0);
+						if(!seq->param_int[0]) {
+							if(retbuf!=NULL) {
+								if(strlen(retbuf) + strlen(cterm->DA)  < retsize)
+									strcat(retbuf,cterm->DA);
+							}
+						}
+						break;
+					case 'g':	/* ToDo?  Tabulation Clear */
+						break;
+					case 'i':	/* ToDo?  Printing (Media Copy) */
+						break;
+					case 'm':	/* Select Graphic Rendition */
+						seq_default(seq, 0, 0);
+						GETTEXTINFO(&ti);
+						for (i=0; i < seq->param_count; i++) {
+							switch(seq->param_int[i]) {
+								case 0:
+									cterm->attr=ti.normattr;
+									break;
+								case 1:
+									cterm->attr|=8;
+									break;
+								case 2:
+									cterm->attr&=247;
+									break;
+								case 4:	/* Underscore */
+									break;
+								case 5:
+								case 6:
+									cterm->attr|=128;
+									break;
+								case 7:
+								case 27:
+									i=cterm->attr&7;
+									j=cterm->attr&112;
+									cterm->attr &= 136;
+									cterm->attr |= j>>4;
+									cterm->attr |= i<<4;
+									break;
+								case 8:
+									j=cterm->attr&112;
+									cterm->attr&=112;
+									cterm->attr |= j>>4;
+									break;
+								case 22:
+									cterm->attr &= 0xf7;
+									break;
+								case 25:
+									cterm->attr &= 0x7f;
+									break;
+								case 30:
+									cterm->attr&=248;
+									break;
+								case 31:
+									cterm->attr&=248;
+									cterm->attr|=4;
+									break;
+								case 32:
+									cterm->attr&=248;
+									cterm->attr|=2;
+									break;
+								case 33:
+									cterm->attr&=248;
+									cterm->attr|=6;
+									break;
+								case 34:
+									cterm->attr&=248;
+									cterm->attr|=1;
+									break;
+								case 35:
+									cterm->attr&=248;
+									cterm->attr|=5;
+									break;
+								case 36:
+									cterm->attr&=248;
+									cterm->attr|=3;
+									break;
+								case 37:
+								case 39:
+									cterm->attr&=248;
+									cterm->attr|=7;
+									break;
+								case 49:
+								case 40:
+									cterm->attr&=143;
+									break;
+								case 41:
+									cterm->attr&=143;
+									cterm->attr|=4<<4;
+									break;
+								case 42:
+									cterm->attr&=143;
+									cterm->attr|=2<<4;
+									break;
+								case 43:
+									cterm->attr&=143;
+									cterm->attr|=6<<4;
+									break;
+								case 44:
+									cterm->attr&=143;
+									cterm->attr|=1<<4;
+									break;
+								case 45:
+									cterm->attr&=143;
+									cterm->attr|=5<<4;
+									break;
+								case 46:
+									cterm->attr&=143;
+									cterm->attr|=3<<4;
+									break;
+								case 47:
+									cterm->attr&=143;
+									cterm->attr|=7<<4;
+									break;
+							}
+						}
+						TEXTATTR(cterm->attr);
+						break;
+					case 'n':	/* Device Status Report */
+						seq_default(seq, 0, 0);
+						switch(seq->param_int[0]) {
 							case 5:
+								if(retbuf!=NULL) {
+									strcpy(tmp,"\x1b[0n");
+									if(strlen(retbuf)+strlen(tmp) < retsize)
+										strcat(retbuf,tmp);
+								}
+								break;
 							case 6:
-								cterm->attr|=128;
+								if(retbuf!=NULL) {
+									row = WHEREY();
+									if(cterm->origin_mode)
+										row = row - cterm->top_margin + 1;
+									sprintf(tmp,"%c[%d;%dR",27,row,WHEREX());
+									if(strlen(retbuf)+strlen(tmp) < retsize)
+										strcat(retbuf,tmp);
+								}
 								break;
-							case 7:
-							case 27:
-								i=cterm->attr&7;
-								j=cterm->attr&112;
-								cterm->attr &= 136;
-								cterm->attr |= j>>4;
-								cterm->attr |= i<<4;
-								break;
-							case 8:
-								j=cterm->attr&112;
-								cterm->attr&=112;
-								cterm->attr |= j>>4;
-								break;
-							case 22:
-								cterm->attr &= 0xf7;
-								break;
-							case 25:
-								cterm->attr &= 0x7f;
-								break;
-							case 30:
-								cterm->attr&=248;
-								break;
-							case 31:
-								cterm->attr&=248;
-								cterm->attr|=4;
-								break;
-							case 32:
-								cterm->attr&=248;
-								cterm->attr|=2;
-								break;
-							case 33:
-								cterm->attr&=248;
-								cterm->attr|=6;
-								break;
-							case 34:
-								cterm->attr&=248;
-								cterm->attr|=1;
-								break;
-							case 35:
-								cterm->attr&=248;
-								cterm->attr|=5;
-								break;
-							case 36:
-								cterm->attr&=248;
-								cterm->attr|=3;
-								break;
-							case 37:
-							case 39:
-								cterm->attr&=248;
-								cterm->attr|=7;
-								break;
-							case 49:
-							case 40:
-								cterm->attr&=143;
-								break;
-							case 41:
-								cterm->attr&=143;
-								cterm->attr|=4<<4;
-								break;
-							case 42:
-								cterm->attr&=143;
-								cterm->attr|=2<<4;
-								break;
-							case 43:
-								cterm->attr&=143;
-								cterm->attr|=6<<4;
-								break;
-							case 44:
-								cterm->attr&=143;
-								cterm->attr|=1<<4;
-								break;
-							case 45:
-								cterm->attr&=143;
-								cterm->attr|=5<<4;
-								break;
-							case 46:
-								cterm->attr&=143;
-								cterm->attr|=3<<4;
-								break;
-							case 47:
-								cterm->attr&=143;
-								cterm->attr|=7<<4;
+							case 255:
+								if(retbuf!=NULL) {
+									row = cterm->height;
+									if(cterm->origin_mode)
+										row = (cterm->bottom_margin - cterm->top_margin) + 1;
+									sprintf(tmp,"%c[%d;%dR",27,row,cterm->width);
+									if(strlen(retbuf)+strlen(tmp) < retsize)
+										strcat(retbuf,tmp);
+								}
 								break;
 						}
-					}
-					TEXTATTR(cterm->attr);
-					break;
-				case 'n':
-					i=strtoul(cterm->escbuf+1,NULL,10);
-					switch(i) {
-						case 5:
-							if(retbuf!=NULL) {
-								strcpy(tmp,"\x1b[0n");
-								if(strlen(retbuf)+strlen(tmp) < retsize)
-									strcat(retbuf,tmp);
-							}
-							break;
-						case 6:
-							if(retbuf!=NULL) {
-								row = WHEREY();
-								if(cterm->origin_mode)
-									row = row - cterm->top_margin + 1;
-								sprintf(tmp,"%c[%d;%dR",27,row,WHEREX());
-								if(strlen(retbuf)+strlen(tmp) < retsize)
-									strcat(retbuf,tmp);
-							}
-							break;
-						case 255:
-							if(retbuf!=NULL) {
-								row = cterm->height;
-								if(cterm->origin_mode)
-									row = (cterm->bottom_margin - cterm->top_margin) + 1;
-								sprintf(tmp,"%c[%d;%dR",27,row,cterm->width);
-								if(strlen(retbuf)+strlen(tmp) < retsize)
-									strcat(retbuf,tmp);
-							}
-							break;
-					}
-					break;
-				case 'p': /* ToDo?  ANSI keyboard reassignment */
-					break;
-				case 'q': /* ToDo?  VT100 keyboard lights */
-					break;
-				case 'r': /* ToDo?  Scrolling reigon */
-					row = 1;
-					max_row = cterm->height;
-					if(strlen(cterm->escbuf)>2) {
-						if((p=strtok(cterm->escbuf+1,";"))!=NULL) {
-							row=strtoul(p,NULL,10);
-							if((p=strtok(NULL,";"))!=NULL) {
-								max_row=strtoul(p,NULL,10);
-							}
+						break;
+					case 'p': /* ToDo?  ANSI keyboard reassignment */
+						break;
+					case 'q': /* ToDo?  VT100 keyboard lights */
+						break;
+					case 'r': /* ToDo?  Scrolling reigon */
+						seq_default(seq, 0, 1);
+						seq_default(seq, 1, cterm->height);
+						row = seq->param_int[0];
+						max_row = seq->param_int[1];
+						if(row >= 1 && max_row > row && max_row <= cterm->height) {
+							cterm->top_margin = row;
+							cterm->bottom_margin = max_row;
 						}
-					}
-					if(row >= 1 && max_row > row && max_row <= cterm->height) {
-						cterm->top_margin = row;
-						cterm->bottom_margin = max_row;
-					}
-					break;
-				case 's':
-					cterm->save_xpos=WHEREX();
-					cterm->save_ypos=WHEREY();
-					break;
-				case 'u':
-					if(cterm->save_ypos>0 && cterm->save_ypos<=cterm->height
-							&& cterm->save_xpos>0 && cterm->save_xpos<=cterm->width) {
-						if(cterm->origin_mode && (cterm->save_ypos < cterm->top_margin || cterm->save_ypos > cterm->bottom_margin))
-							break;
-						GOTOXY(cterm->save_xpos,cterm->save_ypos);
-					}
-					break;
-				case 'y':	/* ToDo?  VT100 Tests */
-					break;
-				case 'z':	/* ToDo?  Reset */
-					break;
-				case '|':	/* SyncTERM ANSI Music */
-					cterm->music=1;
-					break;
+						break;
+					case 's':
+						cterm->save_xpos=WHEREX();
+						cterm->save_ypos=WHEREY();
+						break;
+					case 'u':
+						if(cterm->save_ypos>0 && cterm->save_ypos<=cterm->height
+								&& cterm->save_xpos>0 && cterm->save_xpos<=cterm->width) {
+							if(cterm->origin_mode && (cterm->save_ypos < cterm->top_margin || cterm->save_ypos > cterm->bottom_margin))
+								break;
+							GOTOXY(cterm->save_xpos,cterm->save_ypos);
+						}
+						break;
+					case 'y':	/* ToDo?  VT100 Tests */
+						break;
+					case 'z':	/* ToDo?  Reset */
+						break;
+					case '|':	/* SyncTERM ANSI Music */
+						cterm->music=1;
+						break;
+				}
 			}
 			break;
 #if 0
