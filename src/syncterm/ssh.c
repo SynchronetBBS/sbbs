@@ -16,6 +16,8 @@
 
 #include "st_crypt.h"
 
+#include "syncterm.h"
+
 static SOCKET	sock;
 CRYPT_SESSION	ssh_session;
 int				ssh_active=FALSE;
