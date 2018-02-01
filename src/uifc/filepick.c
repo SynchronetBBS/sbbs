@@ -201,7 +201,9 @@ void display_current_path(uifcapi_t *api, char *path)
 	char	dpath[MAX_PATH+2];
 	size_t	width;
 	int height;
+#ifdef _WIN32
 	char	*p;
+#endif
 
 	height=api->scrn_len-3;
 	width=SCRN_RIGHT-SCRN_LEFT-3;
