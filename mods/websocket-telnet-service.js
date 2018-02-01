@@ -233,7 +233,8 @@ try {
         var telnet_addr = '127.0.0.1';
     } else {
         var telnet_addr = ini.TelnetInterface.split(/,/)[0];
-        if (parseInt(telnet_addr.replace(/[^\d]/g, '') == 0)) telnet_addr = '127.0.0.1';
+        var ta = parseInt(telnet_addr.replace(/[^\d]/g, '') == 0);
+        if (isNaN(ta) || ta == 0) telnet_addr = '127.0.0.1';
     }
 
     var wss = new WebSocketProxy(client);

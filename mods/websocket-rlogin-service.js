@@ -410,7 +410,8 @@ try {
         var rlogin_addr = '127.0.0.1';
     } else {
         var rlogin_addr = ini.RLoginInterface.split(/,/)[0];
-        if (parseInt(rlogin_addr.replace(/[^\d]/g, '') == 0)) rlogin_addr = '127.0.0.1';
+        var ra = parseInt(rlogin_addr.replace(/[^\d]/g, ''));
+        if (isNaN(ra) || ra == 0) rlogin_addr = '127.0.0.1';
     }
 
 	rlogin = new RLoginClient(
