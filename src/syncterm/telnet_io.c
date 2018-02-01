@@ -46,14 +46,14 @@ static int lprintf(int level, const char *fmt, ...)
     return(fprintf(log_fp, "Telnet %s %s\n", log_levels[level], sbuf));
 }
 
-void putcom(BYTE* buf, size_t len)
+void putcom(char* buf, size_t len)
 {
 	char	str[128];
 	char*	p=str;
 	size_t i;
 
 	for(i=0;i<len;i++)
-		p+=sprintf(p,"%u ", buf[i]);
+		p+=sprintf(p,"%u ", ((BYTE)buf[i]));
 
 	lprintf(LOG_DEBUG,"TX: %s", str);
 	send(telnet_sock, buf, len, 0);
@@ -157,7 +157,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 					&& telnet_cmd[telnet_cmdlen-2]==TELNET_IAC) {
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE && telnet_cmd[3]==TELNET_TERM_SEND) {
-						BYTE buf[32];
+						char buf[32];
 						int len=sprintf(buf,"%c%c%c%cANSI%c%c"
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_TYPE,TELNET_TERM_IS
@@ -208,7 +208,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 						buf[8]=TELNET_SE;
 						lprintf(LOG_INFO,"TX: Window Size is %u x %u"
 							,term.width, term.height);
-						putcom(buf,9);
+						putcom((char *)buf,9);
 					}
 
 				} else { /* WILL/WONT (remote options) */ 
