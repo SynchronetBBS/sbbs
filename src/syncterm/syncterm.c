@@ -1261,7 +1261,6 @@ int main(int argc, char **argv)
 	str_list_t	inifile;
 	FILE *listfile;
 	char	*inpath=NULL;
-	BOOL	exit_now=FALSE;
 	int		conn_type=CONN_TYPE_TELNET;
 	int		text_mode;
 	BOOL	override_conn=FALSE;
