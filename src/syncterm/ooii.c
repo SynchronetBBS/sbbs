@@ -342,7 +342,7 @@ static int readSmallMenu(char *codeStr) {
 
 	char tempBlock[255];
 	char menuBlock[255];
-	int  yy,er;
+	int  yy;
 	int  zz;
 	char *origCodeStr=codeStr;
 	char buf[256];
@@ -1066,10 +1066,6 @@ static int incomingCheckStatus(char *codeStr) {
 }
 
 char * scanChar(unsigned char s, int where, int miniTrik) {
-	char sc[30];
-	unsigned char zz;
-	unsigned char mbPos;
-
 	if (!miniTrik) {
 		if ((s==7) || (s>=9  && s<=11) || (s>=26 && s<=28) || (s>=31 && s<=33) || (s==38))
 			return("??");
@@ -1218,7 +1214,6 @@ static int incomingMapScanner(char *codeStr)
 
 	int zz,scanPtr,yy;
 	unsigned char scanVals[10];       // ScanVals  : ARRAY[1..9] OF BYTE;
-	char scanChIn[255];
 	char scan[30];
 	char menuBlock[255];
 	char *origCodeStr=codeStr;
