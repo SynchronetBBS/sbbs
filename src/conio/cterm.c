@@ -1622,7 +1622,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				}
 				break;
 			}
-			else if (seq->ctrl_func[1]) {	// Private control function
+			else if (seq->ctrl_func[1]) {	// Control Function with Intermediate Character
 				// Font Select
 				if (strcmp(seq->ctrl_func, " D") == 0) {
 					seq_default(seq, 0, 0);
@@ -1638,6 +1638,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 					}
 				}
+				/* 
+				 * END OF STANDARD CONTROL FUNCTIONS
+				 * AFTER THIS IS ALL PRIVATE EXTENSIONS
+				 */
 				// Communication speed
 				else if (strcmp(seq->ctrl_func, "*r") == 0) {
 					/*
@@ -1789,6 +1793,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							col=cterm->width;
 						GOTOXY(col,row);
 						break;
+					case 'I':	/* TODO? Cursor Forward Tabulation */
+						break;
 					case 'J':	/* Erase In Page */
 						seq_default(seq, 0, 0);
 						switch(seq->param_int[0]) {
@@ -1853,7 +1859,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						}
 						GOTOXY(col,row);
 						break;
-					case 'M':	/* ANSI music and also supposed to be delete line! */
+					case 'M':	/* Delete Line (also ANSI music) */
 						if(cterm->music_enable==CTERM_MUSIC_ENABLED) {
 							cterm->music=1;
 						}
@@ -1866,11 +1872,13 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 						}
 						break;
-					case 'N':
+					case 'N':	/* Erase In Field (also ANSI Music) */
 						/* BananANSI style... does NOT start with MF or MB */
 						/* This still conflicts (ANSI erase field) */
 						if(cterm->music_enable >= CTERM_MUSIC_BANSI)
 							cterm->music=2;
+						break;
+					case 'O':	/* TODO? Erase In Area */
 						break;
 					case 'P':	/* Delete char */
 						row=WHEREY();
@@ -1884,6 +1892,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						GOTOXY(cterm->width-i,row);
 						CLREOL();
 						GOTOXY(col,row);
+						break;
+					case 'Q':	/* TODO? Select Editing Extent */
+						break;
+					case 'R':	/* TODO? Active Position Report */
 						break;
 					case 'S':	/* Scroll Up */
 						seq_default(seq, 0, 1);
@@ -1905,6 +1917,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							GOTOXY(1,1);
 						break;
 #endif
+					case 'V':	/* TODO? Preceding Page */
+						break;
+					case 'W':	/* TODO? Cursor Tabulation Control */
+						break;
 					case 'X':	/* Erase Character */
 						seq_default(seq, 0, 1);
 						i=seq->param_int[0];
@@ -1919,6 +1935,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						PUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1+i-1,cterm->y+WHEREY()-1,p2);
 						free(p2);
 						break;
+					case 'Y':	/* TODO? Cursor Line Tabulation */
+						break;
 					case 'Z':	/* Cursor Backward Tabulation */
 						seq_default(seq, 0, 1);
 						i=strtoul(cterm->escbuf+1,NULL,10);
@@ -1932,7 +1950,21 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 						}
 						break;
-					case 'b':	/* ToDo?  Banana ANSI/Repeat */
+					case '[':	/* TODO? Start Reversed String */
+						break;
+					case '\\':	/* TODO? Parallel Texts */
+						break;
+					case ']':	/* TODO? Start Directed String */
+						break;
+					case '^':	/* TODO? Select Implicit Movement Direction */
+						break;
+					case '_':	/* NOT DEFIFINED IN STANDARD */
+						break;
+					case '`':	/* TODO? Character Position Absolute */
+						break;
+					case 'a':	/* TODO? Character Position Forward */
+						break;
+					case 'b':	/* ToDo? Repeat */
 						break;
 					case 'c':	/* Device Attributes */
 						seq_default(seq, 0, 0);
@@ -1943,9 +1975,22 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 						}
 						break;
+					case 'd':	/* TODO? Line Position Absolute */
+						break;
+					case 'e':	/* TODO? Line Position Forward */
+						break;
+					// for case 'f': see case 'H':
 					case 'g':	/* ToDo?  Tabulation Clear */
 						break;
-					case 'i':	/* ToDo?  Printing (Media Copy) */
+					case 'h':	/* TODO? Set Mode */
+						break;
+					case 'i':	/* ToDo?  Media Copy (Printing) */
+						break;
+					case 'j':	/* TODO? Character Position Backward */
+						break;
+					case 'k':	/* TODO? Line Position Backward */
+						break;
+					case 'l':	/* TODO? Reset Mode */
 						break;
 					case 'm':	/* Select Graphic Rendition */
 						seq_default(seq, 0, 0);
@@ -2086,6 +2131,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								break;
 						}
 						break;
+					case 'o': /* ToDo?  Define Area Qualification */
+						break;
+					/* 
+					 * END OF STANDARD CONTROL FUNCTIONS
+					 * AFTER THIS IS ALL PRIVATE EXTENSIONS
+					 */
 					case 'p': /* ToDo?  ANSI keyboard reassignment */
 						break;
 					case 'q': /* ToDo?  VT100 keyboard lights */
