@@ -229,10 +229,11 @@ try {
     var ini = f.iniGetObject('BBS');
     f.close();
 
-    if (typeof ini.TelnetInterface === 'undefined' || ini.TelnetInterface === '0.0.0.0') {
-        var telnet_addr = '127.0.0.1';
+    if (typeof ini.TelnetInterface === 'undefined') {
+        var telnet_addr = 'localhost';
     } else {
-        var telnet_addr = ini.TelnetInterface;
+        var telnet_addr = ini.TelnetInterface.split(/,/)[0];
+        if (parseInt(telnet_addr.replace(/[^\d]/g, '') == 0)) telnet_addr = 'localhost';
     }
 
     var wss = new WebSocketProxy(client);
