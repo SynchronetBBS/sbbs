@@ -230,10 +230,10 @@ try {
     f.close();
 
     if (typeof ini.TelnetInterface === 'undefined') {
-        var telnet_addr = 'localhost';
+        var telnet_addr = '127.0.0.1';
     } else {
         var telnet_addr = ini.TelnetInterface.split(/,/)[0];
-        if (parseInt(telnet_addr.replace(/[^\d]/g, '') == 0)) telnet_addr = 'localhost';
+        if (parseInt(telnet_addr.replace(/[^\d]/g, '') == 0)) telnet_addr = '127.0.0.1';
     }
 
     var wss = new WebSocketProxy(client);
