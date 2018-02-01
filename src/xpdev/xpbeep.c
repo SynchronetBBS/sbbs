@@ -572,7 +572,10 @@ void DLLCALL xptone_complete(void)
 		while(pa_api->active(portaudio_stream))
 			SLEEP(1);
 		pa_api->stop(portaudio_stream);
-		FREE_AND_NULL(pawave);
+		if (pawave) {
+			free((void *)pawave);
+			pawave = NULL;
+		}
 	}
 #endif
 
