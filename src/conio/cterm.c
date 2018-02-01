@@ -2435,6 +2435,10 @@ static void ctputs(struct cterminal *cterm, char *buf)
 	*cterm->_wscroll=oldscroll;
 }
 
+#define ustrlen(s)	strlen((const char *)s)
+#define uctputs(c, p)	ctputs(c, (char *)p)
+#define ustrcat(b, s)	strcat((char *)b, (const char *)s)
+
 CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, char *retbuf, size_t retsize, int *speed)
 {
 	const unsigned char *buf = (unsigned char *)vbuf;
@@ -2462,7 +2466,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	SETCURSORTYPE(cterm->cursor);
 	ch[1]=0;
 	if(buflen==-1)
-		buflen=strlen(buf);
+		buflen=ustrlen(buf);
 	switch(buflen) {
 		case 0:
 			break;
@@ -2471,8 +2475,8 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 				fwrite(buf, buflen, 1, cterm->logfile);
 			prn[0]=0;
 			for(j=0;j<buflen;j++) {
-				if(strlen(prn) >= sizeof(prn)-sizeof(cterm->escbuf)) {
-					ctputs(cterm, prn);
+				if(ustrlen(prn) >= sizeof(prn)-sizeof(cterm->escbuf)) {
+					uctputs(cterm, prn);
 					prn[0]=0;
 				}
 				ch[0]=buf[j];
@@ -2488,7 +2492,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							/* 0x08-0x0d, 0x20-0x7e */
 							if (ch[0] < 8 || (ch[0] > 0x0d && ch[0] < 0x20) || ch[0] > 0x7e) {
 								if (ch[0] == 27) {
-									ctputs(cterm, prn);
+									uctputs(cterm, prn);
 									prn[0]=0;
 									cterm->sequence=1;
 									break;
@@ -2520,7 +2524,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							break;
 						case CTERM_STRING_SOS:
 							/* Anything but SOS or ST (ESC X or ESC \) */
-							if (ch[0] == 'X' || ch[0] == '\\' && 
+							if ((ch[0] == 'X' || ch[0] == '\\') && 
 							    cterm->strbuf && cterm->strbuflen &&
 							    cterm->strbuf[cterm->strbuflen-1] == '\e') {
 								cterm->strbuflen--;
@@ -2598,13 +2602,13 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 					k=strlen(cterm->escbuf);
 					if(k+1 >= sizeof(cterm->escbuf)) {
 						/* Broken sequence detected */
-						strcat(prn,"\033");
-						strcat(prn,cterm->escbuf);
+						ustrcat(prn,"\033");
+						ustrcat(prn,cterm->escbuf);
 						cterm->escbuf[0]=0;
 						cterm->sequence=0;
 					}
 					else {
-						strcat(cterm->escbuf,ch);
+						ustrcat(cterm->escbuf,ch);
 						if(k) {
 							if(cterm->escbuf[0] != '[') {	/* Not a CSI code. */
 								/* ANSI control characters */
@@ -2617,8 +2621,8 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 								}
 								else {
 									/* Broken sequence detected */
-									strcat(prn,"\033");
-									strcat(prn,cterm->escbuf);
+									ustrcat(prn,"\033");
+									ustrcat(prn,cterm->escbuf);
 									cterm->escbuf[0]=0;
 									cterm->sequence=0;
 								}
@@ -2632,8 +2636,8 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									if(cterm->escbuf[k]!='[' 
 											&& (cterm->escbuf[k] < 48 || cterm->escbuf[k] > 63)) {
 										/* Broken sequence detected */
-										strcat(prn,"\033");
-										strcat(prn,cterm->escbuf);
+										ustrcat(prn,"\033");
+										ustrcat(prn,cterm->escbuf);
 										cterm->escbuf[0]=0;
 										cterm->sequence=0;
 									}
@@ -2644,8 +2648,8 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 											&& (cterm->escbuf[k] < 48 || cterm->escbuf[k] > 63) 
 											&& (cterm->escbuf[k] < 32 || cterm->escbuf[k] > 47)) {
 										/* Broken sequence detected */
-										strcat(prn,"\033");
-										strcat(prn,cterm->escbuf);
+										ustrcat(prn,"\033");
+										ustrcat(prn,cterm->escbuf);
 										cterm->escbuf[0]=0;
 										cterm->sequence=0;
 									}
@@ -2656,8 +2660,8 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 								}
 								else {
 									/* Broken sequence detected */
-									strcat(prn,"\033");
-									strcat(prn,cterm->escbuf);
+									ustrcat(prn,"\033");
+									ustrcat(prn,cterm->escbuf);
 									cterm->escbuf[0]=0;
 									cterm->sequence=0;
 								}
@@ -2678,16 +2682,16 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							}
 							else {
 								/* Broken sequence detected */
-								strcat(prn,"\033");
-								strcat(prn,cterm->escbuf);
+								ustrcat(prn,"\033");
+								ustrcat(prn,cterm->escbuf);
 								cterm->escbuf[0]=0;
 								cterm->sequence=0;
 							}
 						}
 						if(ch[0]=='\033') {	/* Broken sequence followed by a legal one! */
 							if(prn[0])	/* Don't display the ESC */
-								prn[strlen(prn)-1]=0;
-							ctputs(cterm, prn);
+								prn[ustrlen(prn)-1]=0;
+							uctputs(cterm, prn);
 							prn[0]=0;
 							cterm->sequence=1;
 						}
@@ -2705,7 +2709,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 					}
 					else {
 						if(strchr(musicchars,ch[0])!=NULL)
-							strcat(cterm->musicbuf,ch);
+							ustrcat(cterm->musicbuf,ch);
 						else {
 							/* Kill non-music strings */
 							cterm->music=0;
@@ -3156,7 +3160,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 					}
 					else {	/* ANSI-BBS */
 						if(cterm->doorway_char) {
-							ctputs(cterm, prn);
+							uctputs(cterm, prn);
 							ch[1]=cterm->attr;
 							PUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,ch);
 							ch[1]=0;
@@ -3181,7 +3185,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										cterm->doorway_char=1;
 									break;
 								case 7:			/* Beep */
-									ctputs(cterm, prn);
+									uctputs(cterm, prn);
 									prn[0]=0;
 									if(cterm->log==CTERM_LOG_ASCII && cterm->logfile != NULL)
 										fputs("\x07", cterm->logfile);
@@ -3194,7 +3198,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									}
 									break;
 								case 12:		/* ^L - Clear screen */
-									ctputs(cterm, prn);
+									uctputs(cterm, prn);
 									prn[0]=0;
 									if(cterm->log==CTERM_LOG_ASCII && cterm->logfile != NULL)
 										fputs("\x0c", cterm->logfile);
@@ -3205,18 +3209,18 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										GOTOXY(1,1);
 									break;
 								case 27:		/* ESC */
-									ctputs(cterm, prn);
+									uctputs(cterm, prn);
 									prn[0]=0;
 									cterm->sequence=1;
 									break;
 								default:
-									strcat(prn,ch);
+									ustrcat(prn,ch);
 							}
 						}
 					}
 				}
 			}
-			ctputs(cterm, prn);
+			uctputs(cterm, prn);
 			prn[0]=0;
 			break;
 	}
