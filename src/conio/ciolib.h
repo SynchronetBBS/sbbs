@@ -266,6 +266,7 @@ typedef struct {
 	int		(*wherex)		(void);
 	int		(*wherey)		(void);
 	int		(*putch)		(int);
+	int		(*cputch)		(uint32_t, int);
 	void	(*gotoxy)		(int,int);
 	void	(*clrscr)		(void);
 	void	(*gettextinfo)	(struct text_info *);
@@ -288,6 +289,7 @@ typedef struct {
 	void	(*insline)		(void);
 	int		(*cprintf)		(const char *,...);
 	int		(*cputs)		(char *);
+	int		(*ccputs)		(uint32_t, const char *);
 	void	(*textbackground)	(int);
 	void	(*textcolor)	(int);
 	int		(*getmouse)		(struct mouse_event *mevent);
@@ -346,6 +348,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_gotoxy(int x, int y);
 CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_cputs(char *str);
+CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t palette_entry, const char *str);
 CIOLIBEXPORT int	CIOLIBCALL ciolib_cprintf(const char *fmat, ...);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textbackground(int colour);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textcolor(int colour);
@@ -357,6 +360,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textattr(int a);
 CIOLIBEXPORT void CIOLIBCALL ciolib_delay(long a);
 CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a);
+CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t, int a);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setcursortype(int a);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textmode(int mode);
 CIOLIBEXPORT void CIOLIBCALL ciolib_window(int sx, int sy, int ex, int ey);
@@ -407,6 +411,7 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define clreol()				ciolib_clreol()
 	#define clrscr()				ciolib_clrscr()
 	#define cputs(a)				ciolib_cputs(a)
+	#define ccputs(a,b)				ciolib_ccputs(a,b)
 	#define textbackground(a)		ciolib_textbackground(a)
 	#define textcolor(a)			ciolib_textcolor(a)
 	#define highvideo()				ciolib_highvideo()
@@ -417,6 +422,7 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define textattr(a)				ciolib_textattr(a)
 	#define delay(a)				ciolib_delay(a)
 	#define putch(a)				ciolib_putch(a)
+	#define cputch(a,b)				ciolib_cputch(a,b)
 	#define _setcursortype(a)		ciolib_setcursortype(a)
 	#define textmode(a)				ciolib_textmode(a)
 	#define window(a,b,c,d)			ciolib_window(a,b,c,d)

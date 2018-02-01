@@ -67,6 +67,8 @@ struct  video_params {
 struct vstat_vmem {
 	unsigned refcount;
 	unsigned short *vmem;
+	uint32_t *fgvmem;
+	uint32_t *bgvmem;
 };
 
 struct video_stats {
@@ -92,6 +94,8 @@ struct video_stats {
 	int currattr;
 	int scaling;
 	int	vmultiplier;
+	uint32_t flags;
+#define VIDMODES_FLAG_PALETTE_VMEM	1
 	uint32_t palette[16];
 	struct vstat_vmem *vmem;
 };

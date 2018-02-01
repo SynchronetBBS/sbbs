@@ -1998,12 +1998,16 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						for (i=0; i < seq->param_count; i++) {
 							switch(seq->param_int[i]) {
 								case 0:
+									cterm->fg_color = UINT32_MAX;
+									cterm->bg_color = UINT32_MAX;
 									cterm->attr=ti.normattr;
 									break;
 								case 1:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr|=8;
 									break;
 								case 2:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=247;
 									break;
 								case 4:	/* Underscore */
@@ -2014,6 +2018,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 7:
 								case 27:
+									cterm->fg_color = UINT32_MAX;
+									cterm->bg_color = UINT32_MAX;
 									i=cterm->attr&7;
 									j=cterm->attr&112;
 									cterm->attr &= 136;
@@ -2021,77 +2027,96 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->attr |= i<<4;
 									break;
 								case 8:
+									cterm->fg_color = UINT32_MAX;
+									cterm->bg_color = UINT32_MAX;
 									j=cterm->attr&112;
 									cterm->attr&=112;
 									cterm->attr |= j>>4;
 									break;
 								case 22:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr &= 0xf7;
 									break;
 								case 25:
 									cterm->attr &= 0x7f;
 									break;
 								case 30:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									break;
 								case 31:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=4;
 									break;
 								case 32:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=2;
 									break;
 								case 33:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=6;
 									break;
 								case 34:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=1;
 									break;
 								case 35:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=5;
 									break;
 								case 36:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=3;
 									break;
 								case 37:
 								case 39:
+									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=7;
 									break;
 								case 49:
 								case 40:
+									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									break;
 								case 41:
+									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=4<<4;
 									break;
 								case 42:
+									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=2<<4;
 									break;
 								case 43:
+									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=6<<4;
 									break;
 								case 44:
+									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=1<<4;
 									break;
 								case 45:
+									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=5<<4;
 									break;
 								case 46:
+									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=3<<4;
 									break;
 								case 47:
+									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=7<<4;
 									break;
@@ -2360,6 +2385,8 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->cursor=_NORMALCURSOR;
 	cterm->autowrap=true;
 	cterm->origin_mode=false;
+	cterm->fg_color = UINT32_MAX;
+	cterm->bg_color = UINT32_MAX;
 	if(cterm->scrollback!=NULL)
 		memset(cterm->scrollback,0,cterm->width*2*cterm->backlines);
 	strcpy(cterm->DA,"\x1b[=67;84;101;114;109;");
@@ -2975,6 +3002,8 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							case 156:	/* Purple */
 							case 158:	/* Yellow */
 							case 159:	/* Cyan */
+								cterm->fg_color = UINT32_MAX;
+								cterm->bg_color = UINT32_MAX;
 								cterm->attr &= 0xf0;
 								switch(buf[j]) {
 									case 5:		/* White */

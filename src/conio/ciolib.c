@@ -119,6 +119,8 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int 
 CIOLIBEXPORT void CIOLIBCALL ciolib_setscaling(int new_value);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
+CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t pallette_entry, int a);
+CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t pallette_entry, const char *str);
 
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 int sdl_video_initialized = 0;
@@ -1400,6 +1402,45 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a)
 
 	return(a1);
 	
+}
+
+CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t palette_entry, int a)
+{
+	CIOLIB_INIT();
+
+	if (cio_api.cputch == NULL || palette_entry == UINT32_MAX)
+		return ciolib_putch(a);
+	return cio_api.cputch(palette_entry, a);
+}
+
+CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t palette_entry, const char *s)
+{
+	CIOLIB_INIT();
+
+	if (palette_entry == UINT32_MAX)
+		return ciolib_cputs((char *)s);
+	if (cio_api.ccputs != NULL)
+		return ciolib_ccputs(palette_entry, s);
+	if (cio_api.cputch != NULL) {
+		int		pos;
+		int		ret=0;
+		int		olddmc;
+
+		olddmc=hold_update;
+		hold_update=1;
+		for(pos=0;s[pos];pos++)
+		{
+			ret=s[pos];
+			if(s[pos]=='\n')
+				ciolib_putch('\r');
+			ciolib_cputch(palette_entry, s[pos]);
+		}
+		hold_update=olddmc;
+		ciolib_gotoxy(ciolib_wherex(),ciolib_wherey());
+		return(ret);
+	}
+
+	return cio_api.cputs((char *)s);
 }
 
 /* **MUST** be implemented */

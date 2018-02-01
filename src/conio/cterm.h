@@ -109,6 +109,8 @@ struct cterminal {
 	int					started;		// Indicates that conio functions are being called
 	int					c64reversemode;	// Commodore 64 reverse mode state
 	unsigned char		attr;			// Current attribute
+	uint32_t			fg_color;
+	uint32_t			bg_color;
 	int					save_xpos;		// Saved position (for later restore)
 	int					save_ypos;
 	int					sequence;		// An escape sequence is being parsed
