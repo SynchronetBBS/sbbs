@@ -103,7 +103,9 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_highvideo(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_lowvideo(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_normvideo(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,void *e);
+CIOLIBEXPORT int CIOLIBCALL ciolib_pputtext(int a,int b,int c,int d,void *e,uint32_t *f, uint32_t *g);
 CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e);
+CIOLIBEXPORT int CIOLIBCALL ciolib_pgettext(int a,int b,int c,int d,void *e, uint32_t *f, uint32_t *g);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textattr(int a);
 CIOLIBEXPORT void CIOLIBCALL ciolib_delay(long a);
 CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a);
@@ -1278,6 +1280,26 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e)
 }
 
 /* Optional */
+CIOLIBEXPORT int CIOLIBCALL ciolib_pgettext(int a,int b,int c,int d,void *e,uint32_t *f, uint32_t *g)
+{
+	CIOLIB_INIT();
+
+	if (cio_api.pgettext == NULL)
+		return ciolib_gettext(a, b, c, d, e);
+	return cio_api.pgettext(a,b,c,d,e,f,g);
+}
+
+/* Optional */
+CIOLIBEXPORT int CIOLIBCALL ciolib_pputtext(int a,int b,int c,int d,void *e,uint32_t *f, uint32_t *g)
+{
+	CIOLIB_INIT();
+
+	if (cio_api.pputtext == NULL)
+		return ciolib_puttext(a, b, c, d, e);
+	return cio_api.pputtext(a,b,c,d,e,f,g);
+}
+
+/* Optional */
 CIOLIBEXPORT void CIOLIBCALL ciolib_textattr(int a)
 {
 	CIOLIB_INIT();
@@ -1303,7 +1325,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_delay(long a)
 }
 
 /* Optional */
-CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a)
+CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 {
 	unsigned char a1=a;
 	unsigned char buf[2];
@@ -1407,13 +1429,18 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a)
 	
 }
 
-CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg_palette, uint32_t bg_palette, int a)
+/* Optional */
+CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a)
 {
 	CIOLIB_INIT();
 
-	if (cio_api.cputch == NULL)
-		return ciolib_putch(a);
-	return cio_api.cputch(fg_palette, bg_palette, a);
+	if (cio_api.putch == NULL) {
+		uint32_t fg,bg;
+
+		ciolib_attr2palette(cio_textinfo.attribute, &fg, &bg);
+		return ciolib_cputch(fg, bg, a);
+	}
+	return cio_api.putch(a);
 }
 
 CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t fg_palette, uint32_t bg_palette, const char *s)
@@ -1632,5 +1659,9 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint
 {
 	if (cio_api.attr2palette)
 		return cio_api.attr2palette(attr, fg, bg);
+	/*
+	 * TODO: If we want to be able to cross screens, we need some
+	 * mapping for non-plaette aware things.
+	 */
 	return -1;
 }

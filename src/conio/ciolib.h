@@ -259,7 +259,9 @@ typedef struct {
 	int		mouse;
 	void	(*clreol)		(void);
 	int		(*puttext)		(int,int,int,int,void *);
+	int		(*pputtext)		(int,int,int,int,void *,uint32_t *,uint32_t *);
 	int		(*gettext)		(int,int,int,int,void *);
+	int		(*pgettext)		(int,int,int,int,void *,uint32_t *,uint32_t *);
 	void	(*textattr)		(int);
 	int		(*kbhit)		(void);
 	void	(*delay)		(long);
