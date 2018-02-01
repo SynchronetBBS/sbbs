@@ -406,10 +406,12 @@ try {
 	var ini = f.iniGetObject('BBS');
 	f.close();
 
-    if (typeof ini.RLoginInterface === 'undefined' || ini.RLoginInterface === '0.0.0.0') {
+    if (typeof ini.RLoginInterface === 'undefined') {
         var rlogin_addr = '127.0.0.1';
     } else {
-        var rlogin_addr = ini.RLoginInterface;
+        var rlogin_addr = ini.RLoginInterface.split(/,/)[0];
+        var ra = parseInt(rlogin_addr.replace(/[^\d]/g, ''));
+        if (isNaN(ra) || ra == 0) rlogin_addr = '127.0.0.1';
     }
 
 	rlogin = new RLoginClient(
