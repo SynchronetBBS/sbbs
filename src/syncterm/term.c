@@ -2153,7 +2153,7 @@ void capture_control(struct bbslist *bbs)
 						check_exit(FALSE);
 						break;
 					case 0:
-						cterm->log=cterm->log |= CTERM_LOG_PAUSED;
+						cterm->log |= CTERM_LOG_PAUSED;
 						break;
 					case 1:
 						cterm_closelog(cterm);
