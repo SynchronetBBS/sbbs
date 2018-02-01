@@ -1917,7 +1917,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	return(FALSE);
 }
 
-int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_received)
+int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint64_t* bytes_received)
 {
 	char		fpath[MAX_PATH+1];
 	FILE*		fp;
