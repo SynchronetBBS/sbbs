@@ -1127,6 +1127,50 @@ static void free_sequence(struct esc_seq * seq)
 	free(seq);
 }
 
+/*
+ * Returns true if the sequence is legal so far
+ */
+
+static enum {
+	SEQ_BROKEN,
+	SEQ_INCOMPLETE,
+	SEQ_COMPLETE
+} legal_sequence(const char *seq, size_t max_len)
+{
+	if (seq == NULL)
+		return SEQ_BROKEN;
+
+	if (seq[0] == 0)
+		goto incomplete;
+
+	/* Check that it's part of C1 set */
+	if (seq[0] < 0x40 || seq[0] > 0x5f)
+		return SEQ_BROKEN;
+
+	/* Check if it's CSI */
+	if (seq[0] == '[') {
+		size_t parameter_len;
+		size_t intermediate_len;
+
+		parameter_len = strspn(&seq[1], "0123456789:;<=>?");
+		if (seq[1+parameter_len] == 0)
+			goto incomplete;
+
+		intermediate_len = strspn(&seq[1+parameter_len], " !\"#$%&'()*+,-./");
+		if (seq[1+parameter_len+intermediate_len] == 0)
+			goto incomplete;
+
+		if (seq[1+parameter_len+intermediate_len] < 0x40 || seq[1+parameter_len+intermediate_len] > 0x7e)
+			return SEQ_BROKEN;
+	}
+	return SEQ_COMPLETE;
+
+incomplete:
+	if (strlen(seq) >= max_len)
+		return SEQ_BROKEN;
+	return SEQ_INCOMPLETE;
+}
+
 static struct esc_seq *parse_sequence(const char *seq)
 {
 	struct esc_seq *ret;
@@ -2599,102 +2643,27 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 					}
 				}
 				else if(cterm->sequence) {
-					k=strlen(cterm->escbuf);
-					if(k+1 >= sizeof(cterm->escbuf)) {
-						/* Broken sequence detected */
-						ustrcat(prn,"\033");
-						ustrcat(prn,cterm->escbuf);
-						cterm->escbuf[0]=0;
-						cterm->sequence=0;
-					}
-					else {
-						ustrcat(cterm->escbuf,ch);
-						if(k) {
-							if(cterm->escbuf[0] != '[') {	/* Not a CSI code. */
-								/* ANSI control characters */
-								if(ch[0] >= 32 && ch[0] <= 47) {
-									/* Legal intermediate character */
-								}
-								else if(ch[0] >= 48 && ch[0] <= 126) {
-									/* Terminating character */
-									do_ansi(cterm, retbuf, retsize, speed);
-								}
-								else {
-									/* Broken sequence detected */
-									ustrcat(prn,"\033");
-									ustrcat(prn,cterm->escbuf);
-									cterm->escbuf[0]=0;
-									cterm->sequence=0;
-								}
+					ustrcat(cterm->escbuf,ch);
+					switch(legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
+						case SEQ_BROKEN:
+							/* Broken sequence detected */
+							ustrcat(prn,"\033");
+							ustrcat(prn,cterm->escbuf);
+							cterm->escbuf[0]=0;
+							cterm->sequence=0;
+							if(ch[0]=='\033') {	/* Broken sequence followed by a legal one! */
+								if(prn[0])	/* Don't display the ESC */
+									prn[ustrlen(prn)-1]=0;
+								uctputs(cterm, prn);
+								prn[0]=0;
+								cterm->sequence=1;
 							}
-							else {
-								/* We know that it was a CSI at this point */
-								/* Here's where we get funky! */
-								/* the last character defines the set of legal next characters */
-								if(ch[0] >= 48 && ch[0] <= 63) {
-									/* Parameter character.  Only legal after '[' and other param chars */
-									if(cterm->escbuf[k]!='[' 
-											&& (cterm->escbuf[k] < 48 || cterm->escbuf[k] > 63)) {
-										/* Broken sequence detected */
-										ustrcat(prn,"\033");
-										ustrcat(prn,cterm->escbuf);
-										cterm->escbuf[0]=0;
-										cterm->sequence=0;
-									}
-								}
-								else if(ch[0] >= 32 && ch[0] <= 47) {
-									/* Intermediate character.  Legal after '[', param, or intermetiate chars */
-									if(cterm->escbuf[k]!='[' 
-											&& (cterm->escbuf[k] < 48 || cterm->escbuf[k] > 63) 
-											&& (cterm->escbuf[k] < 32 || cterm->escbuf[k] > 47)) {
-										/* Broken sequence detected */
-										ustrcat(prn,"\033");
-										ustrcat(prn,cterm->escbuf);
-										cterm->escbuf[0]=0;
-										cterm->sequence=0;
-									}
-								}
-								else if(ch[0] >= 64 && ch[0] <= 126) {
-										/* Terminating character.  Always legal at this point. */
-									do_ansi(cterm, retbuf, retsize, speed);
-								}
-								else {
-									/* Broken sequence detected */
-									ustrcat(prn,"\033");
-									ustrcat(prn,cterm->escbuf);
-									cterm->escbuf[0]=0;
-									cterm->sequence=0;
-								}
-							}
-						}
-						else {
-							/* First char after the ESC */
-							if(ch[0] >= 32 && ch[0] <= 47) {
-								/* Legal intermediate character */
-								/* No CSI then */
-							}
-							else if(ch[0]=='[') {
-								/* CSI received */
-							}
-							else if(ch[0] >= 48 && ch[0] <= 126) {
-								/* Terminating character */
-								do_ansi(cterm, retbuf, retsize, speed);
-							}
-							else {
-								/* Broken sequence detected */
-								ustrcat(prn,"\033");
-								ustrcat(prn,cterm->escbuf);
-								cterm->escbuf[0]=0;
-								cterm->sequence=0;
-							}
-						}
-						if(ch[0]=='\033') {	/* Broken sequence followed by a legal one! */
-							if(prn[0])	/* Don't display the ESC */
-								prn[ustrlen(prn)-1]=0;
-							uctputs(cterm, prn);
-							prn[0]=0;
-							cterm->sequence=1;
-						}
+							break;
+						case SEQ_INCOMPLETE:
+							break;
+						case SEQ_COMPLETE:
+							do_ansi(cterm, retbuf, retsize, speed);
+							break;
 					}
 				}
 				else if (cterm->music) {
