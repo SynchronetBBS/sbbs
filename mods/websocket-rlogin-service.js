@@ -236,7 +236,7 @@ var RLoginClient = function(options) {
 
 		if (!state.connected) throw 'RLogin.send: not connected.';
 		if (state.suspendInput) throw 'RLogin.send: input has been suspended.';
-		
+
 		if (typeof data === 'string') {
 			data = data.split('').map(function (d) { return ascii(d); });
 		}
@@ -294,21 +294,21 @@ var RLoginClient = function(options) {
 	}
 
 	this.connect = function () {
-		
+
 		if (typeof options.port !== 'number' ||
 			typeof options.host != 'string'
 		) {
 			throw 'RLogin: invalid host or port argument.';
 		}
-		
+
 		if (typeof options.clientUsername !== 'string') {
 			throw 'RLogin: invalid clientUsername argument.';
 		}
-		
+
 		if (typeof options.serverUsername !== 'string') {
 			throw 'RLogin: invalid serverUsername argument.';
 		}
-		
+
 		if (typeof options.terminalType !== 'string') {
 			throw 'RLogin: invalid terminalType argument.';
 		}
@@ -363,23 +363,27 @@ try {
 
 	wss = new WebSocketProxy(client);
 
-	if (typeof wss.headers['Cookie'] === 'undefined') {
+	if (typeof wss.headers['Cookie'] == 'undefined') {
 		err('No cookie from WebSocket client.');
 	}
 
-	// Should probably search for the right cookie instead of assuming
-	var cookie = wss.headers['Cookie'].split('=');
-	if (cookie[0] !== 'synchronet' || cookie.length < 2) {
-		err('Invalid cookie from WebSocket client.');
-	}
+    var cookie = null;
+    wss.headers['Cookie'].split(';').some(
+        function (e) {
+            if (e.search(/^\s*synchronet\=/) == 0) {
+                cookie = e;
+                return true;
+            } else {
+                return false;
+            }
+        }
+    );
+    if (cookie === null) err('Invalid cookie from WebSocket client.');
+    cookie = cookie.replace(/^\s*synchronet\=/, '').split(',');
 
-	cookie = cookie[1].split(',');
 	cookie[0] = parseInt(cookie[0]);
-	if (cookie.length < 2 ||
-		isNaN(cookie[0]) ||
-		cookie[0] < 1 ||
-		cookie[0] > system.lastuser
-	) {
+	if (cookie.length < 2 || isNaN(cookie[0]) || cookie[0] < 1 || cookie[0] > system.lastuser) {
+        log('cookie ' + JSON.stringify(cookie));
 		err('Invalid cookie from WebSocket client.');
 	}
 
