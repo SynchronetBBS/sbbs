@@ -56,7 +56,7 @@ void telnet_input_thread(void *args)
 				break;
 		}
 		if(rd>0)
-			buf=telnet_interpret(conn_api.rd_buf, rd, rbuf, &rd);
+			buf=(char *)telnet_interpret(conn_api.rd_buf, rd, (BYTE *)rbuf, &rd);
 		buffered=0;
 		while(buffered < rd) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -89,7 +89,7 @@ void telnet_output_thread(void *args)
 		if(wr) {
 			wr=conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
-			buf=telnet_expand(conn_api.wr_buf, wr, ebuf, &wr);
+			buf=(char *)telnet_expand(conn_api.wr_buf, wr, (BYTE *)ebuf, &wr);
 			sent=0;
 			while(sent < wr) {
 				FD_ZERO(&wds);
