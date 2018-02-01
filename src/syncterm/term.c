@@ -1733,7 +1733,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				}
 				file_bytes=total_bytes=0;
 				ftime=total_files=0;
-				i=sscanf(block+strlen(block)+1,"%"PRId64" %lo %lo %lo %d %"PRId64
+				i=sscanf(((char *)block)+strlen((char *)block)+1,"%"PRId64" %lo %lo %lo %d %"PRId64
 					,&file_bytes			/* file size (decimal) */
 					,&tmpftime 				/* file time (octal unix format) */
 					,&fmode 				/* file mode (not used) */
@@ -1742,8 +1742,8 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					,&total_bytes			/* remaining bytes to be sent */
 					);
 				ftime=tmpftime;
-				lprintf(LOG_DEBUG,"YMODEM header (%u fields): %s", i, block+strlen(block)+1);
-				SAFECOPY(fname,block);
+				lprintf(LOG_DEBUG,"YMODEM header (%u fields): %s", i, block+strlen((char *)block)+1);
+				SAFECOPY(fname,((char *)block));
 
 				if(!file_bytes)
 					file_bytes=0x7fffffff;
@@ -2268,7 +2268,7 @@ int html_urlredirect(const char *uri, char *buf, size_t bufsize, char *uribuf, s
 #ifdef WITH_WXWIDGETS
 #define WRITE_OUTBUF()	\
 	if(outbuf_size > 0) { \
-		cterm_write(cterm, outbuf, outbuf_size, prn, sizeof(prn), &speed); \
+		cterm_write(cterm, outbuf, outbuf_size, (char *)prn, sizeof(prn), &speed); \
 		outbuf_size=0; \
 		if(html_mode==HTML_MODE_RAISED) { \
 			if(html_startx != wherex() || html_starty != wherey()) { \
@@ -2277,16 +2277,16 @@ int html_urlredirect(const char *uri, char *buf, size_t bufsize, char *uribuf, s
 			} \
 		} \
 		if(prn[0]) \
-			conn_send(prn, strlen(prn), 0); \
+			conn_send(prn, strlen((char *)prn), 0); \
 		updated=TRUE; \
 	}
 #else
 #define WRITE_OUTBUF()	\
 	if(outbuf_size > 0) { \
-		cterm_write(cterm, outbuf, outbuf_size, prn, sizeof(prn), &speed); \
+		cterm_write(cterm, outbuf, outbuf_size, (char *)prn, sizeof(prn), &speed); \
 		outbuf_size=0; \
 		if(prn[0]) \
-			conn_send(prn, strlen(prn), 0); \
+			conn_send(prn, strlen((char *)prn), 0); \
 		updated=TRUE; \
 	}
 #endif
@@ -2487,13 +2487,13 @@ BOOL doterm(struct bbslist *bbs)
 							htmldet[0]=0;
 #endif
 
-						j=strlen(zrqbuf);
+						j=strlen((char *)zrqbuf);
 						if(inch == zrqinit[j] || inch == zrinit[j]) {
 							zrqbuf[j]=inch;
 							zrqbuf[++j]=0;
 							if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
 								WRITE_OUTBUF();
-								if(!strcmp(zrqbuf, zrqinit))
+								if(!strcmp((char *)zrqbuf, (char *)zrqinit))
 									zmodem_download(bbs);
 								else
 									begin_upload(bbs, TRUE, inch);
@@ -2513,7 +2513,7 @@ BOOL doterm(struct bbslist *bbs)
 								}
 							}
 							else { /* Already have the start of the sequence */
-								j=strlen(ooii_buf);
+								j=strlen((char *)ooii_buf);
 								if(j+1 >= sizeof(ooii_buf))
 									j--;
 								ooii_buf[j++]=inch;
@@ -2525,19 +2525,19 @@ BOOL doterm(struct bbslist *bbs)
 										xptone_close();
 									}
 									if(prn[0])
-										conn_send(prn,strlen(prn),0);
+										conn_send(prn,strlen((char *)prn),0);
 									ooii_buf[0]=0;
 								}
 								continue;
 							}
 						}
 						else {
-							j=strlen(ooii_buf);
+							j=strlen((char *)ooii_buf);
 							if(inch==ooii_init1[j]) {
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
 								if(ooii_init1[j]==0) {
-									if(strcmp(ooii_buf, ooii_init1)==0) {
+									if(strcmp((char *)ooii_buf, (char *)ooii_init1)==0) {
 										ooii_mode=1;
 										xptone_open();
 									}
@@ -2548,7 +2548,7 @@ BOOL doterm(struct bbslist *bbs)
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
 								if(ooii_init2[j]==0) {
-									if(strcmp(ooii_buf, ooii_init2)==0) {
+									if(strcmp((char *)ooii_buf, (char *)ooii_init2)==0) {
 										ooii_mode=2;
 										xptone_open();
 									}
@@ -2612,7 +2612,7 @@ BOOL doterm(struct bbslist *bbs)
 							break;
 						case CIOLIB_BUTTON_2_CLICK:
 						case CIOLIB_BUTTON_3_CLICK:
-							p=getcliptext();
+							p=(unsigned char *)getcliptext();
 							if(p!=NULL) {
 								for(p2=p; *p2; p2++) {
 									if(*p2=='\n') {
@@ -2648,7 +2648,7 @@ BOOL doterm(struct bbslist *bbs)
 					break;
 				case 0x1200:	/* ALT-E */
 					{
-						p=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+						p=(unsigned char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
 						if(p) {
 							gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
 							show_bbslist(bbs->name, TRUE);
@@ -2820,7 +2820,7 @@ BOOL doterm(struct bbslist *bbs)
 						case 13:
 #endif
 							{
-								p=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+								p=(unsigned char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
 								if(p) {
 									gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
 									show_bbslist(bbs->name, TRUE);

@@ -260,11 +260,11 @@ static void readInPix(char codeCh, int ooii_mode) {
 	}
 
 	if (codeCh>='A' && codeCh<='E')
-		cterm_write(cterm, ooii_cmenus[ooii_mode-1][fptr], strlen(ooii_cmenus[ooii_mode-1][fptr])-1, NULL, 0, NULL);
+		cterm_write(cterm, ooii_cmenus[ooii_mode-1][fptr], strlen((char *)ooii_cmenus[ooii_mode-1][fptr])-1, NULL, 0, NULL);
 	else if (codeCh>='F' && codeCh<='K')
-		cterm_write(cterm, ooii_bmenus[ooii_mode-1][fptr], strlen(ooii_bmenus[ooii_mode-1][fptr])-1, NULL, 0, NULL);
+		cterm_write(cterm, ooii_bmenus[ooii_mode-1][fptr], strlen((char *)ooii_bmenus[ooii_mode-1][fptr])-1, NULL, 0, NULL);
 	else if (codeCh=='0')
-		cterm_write(cterm, ooii_logon[ooii_mode-1][fptr], strlen(ooii_logon[ooii_mode-1][fptr])-1, NULL, 0, NULL);
+		cterm_write(cterm, ooii_logon[ooii_mode-1][fptr], strlen((char *)ooii_logon[ooii_mode-1][fptr])-1, NULL, 0, NULL);
 
 	/* We don't overwrite the status line, so we don't need to redraw it */
 	/* statusLine(); */
@@ -272,8 +272,8 @@ static void readInPix(char codeCh, int ooii_mode) {
 	return;
 }
 
-static int readInText(char *codeStr) {
-	char *origCodeStr=codeStr;
+static int readInText(unsigned char *codeStr) {
+	unsigned char *origCodeStr=codeStr;
 
 	switch ((char)codeStr[0]) {
 		case '1':
@@ -298,7 +298,7 @@ static int readInText(char *codeStr) {
 	return(codeStr-origCodeStr);;
 }
 
-static void getBlock(char **codeStr, char *menuBlock)
+static void getBlock(unsigned char **codeStr, char *menuBlock)
 {
 	menuBlock[0]=0;
 	if(**codeStr=='_')
@@ -329,7 +329,7 @@ static void strrjust(char *buf, size_t len, char pad)
 	}
 }
 
-static int readSmallMenu(char *codeStr) {
+static int readSmallMenu(unsigned char *codeStr) {
 	#define MultA 2
 	#define MultE 3
 	#define MultS 3
@@ -344,7 +344,7 @@ static int readSmallMenu(char *codeStr) {
 	char menuBlock[255];
 	int  yy;
 	int  zz;
-	char *origCodeStr=codeStr;
+	unsigned char *origCodeStr=codeStr;
 	char buf[256];
 
 	switch ((char)codeStr[0]) {
@@ -990,11 +990,11 @@ static void checkStamp(int xx,int yy,char stampStr[20]) {  // used w/ incomingCh
 	return;
 }
 
-static int incomingCheckStatus(char *codeStr) {
+static int incomingCheckStatus(unsigned char *codeStr) {
 
 	int who,zz;
 	char menuBlock[255];
-	char *origCodeStr=codeStr;
+	unsigned char *origCodeStr=codeStr;
 
 	term_clearscreen();
 	term_gotoxy(1,1);
@@ -1209,14 +1209,14 @@ static void setScanCol(char s) {
   return;
 }
 
-static int incomingMapScanner(char *codeStr)
+static int incomingMapScanner(unsigned char *codeStr)
 {
 
 	int zz,scanPtr,yy;
 	unsigned char scanVals[10];       // ScanVals  : ARRAY[1..9] OF BYTE;
 	char scan[30];
 	char menuBlock[255];
-	char *origCodeStr=codeStr;
+	unsigned char *origCodeStr=codeStr;
 	int  where;
 	int  miniTrik;
 
@@ -1535,8 +1535,8 @@ static int incomingMapScanner(char *codeStr)
 }
 
 /* TODO: Sound support */
-static int incomingSoundVoc(char *codeStr) {
-	char *origCodeStr=codeStr;
+static int incomingSoundVoc(unsigned char *codeStr) {
+	unsigned char *origCodeStr=codeStr;
 
 	codeStr++;
 	switch(*codeStr) {
@@ -1679,7 +1679,7 @@ static int incomingSoundVoc(char *codeStr) {
 	return(codeStr-origCodeStr);
 }
 
-BOOL handle_ooii_code(char *codeStr, int *ooii_mode, char *retbuf, size_t retsize)
+BOOL handle_ooii_code(unsigned char *codeStr, int *ooii_mode, unsigned char *retbuf, size_t retsize)
 {
 	BOOL	quit=FALSE;
 	char	menuBlock[255];
@@ -1731,8 +1731,8 @@ BOOL handle_ooii_code(char *codeStr, int *ooii_mode, char *retbuf, size_t retsiz
 						if(zz < 1)
 							zz=1;
 						*ooii_mode=zz+1;
-						if(strlen(retbuf)+3 < retsize)
-							sprintf(retbuf, "\xaf%d|", zz);
+						if(strlen((char *)retbuf)+3 < retsize)
+							sprintf((char *)retbuf, "\xaf%d|", zz);
 					}
 					break;
 			}

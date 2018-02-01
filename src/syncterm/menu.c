@@ -19,7 +19,7 @@ void viewscroll(void)
 	int	top;
 	int key;
 	int i;
-	char	*scrollback;
+	unsigned char	*scrollback;
 	struct	text_info txtinfo;
 	int	x,y;
 	struct mouse_event mevent;
@@ -30,7 +30,7 @@ void viewscroll(void)
 	uifcbail();
     gettextinfo(&txtinfo);
 	/* too large for alloca() */
-	scrollback=(char *)malloc((scrollback_buf==NULL?0:(term.width*2*settings.backlines))+(txtinfo.screenheight*txtinfo.screenwidth*2));
+	scrollback=(unsigned char *)malloc((scrollback_buf==NULL?0:(term.width*2*settings.backlines))+(txtinfo.screenheight*txtinfo.screenwidth*2));
 	if(scrollback==NULL)
 		return;
 	if(cterm->scrollback != NULL)

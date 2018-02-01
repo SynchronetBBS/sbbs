@@ -9,7 +9,7 @@ Add CSI = 1 n and CSI = 2 n ANSI commands (see cterm.txt for details)
 Fix CSI ? s and CSI ? n
 Update to Cryptlib 3.4.4
 Ignore unsupported APC, DCS, OSC, PM, and SOS strings
-Add support for the palette redefinition OSC command from xterm
+Add support for the palette redefinition/reset OSC commands from xterm
 
 Version 1.0
 -----------
