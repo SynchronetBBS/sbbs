@@ -1152,7 +1152,11 @@ static enum {
 		size_t parameter_len;
 		size_t intermediate_len;
 
-		parameter_len = strspn(&seq[1], "0123456789:;<=>?");
+		if (seq[1] >= '<' && seq[1] <= '?')
+			parameter_len = strspn(&seq[1], "0123456789:;<=>?");
+		else
+			parameter_len = strspn(&seq[1], "0123456789:;");
+
 		if (seq[1+parameter_len] == 0)
 			goto incomplete;
 
