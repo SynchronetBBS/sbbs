@@ -645,8 +645,6 @@ void sdl_drawrect(int xoffset,int yoffset,int width,int height,uint32_t *data)
 int sdl_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 {
 	struct sdl_palette *pal;
-	va_list argptr;
-	SDL_Event	ev;
 
 	if (sdl_init_good) {
 		pal = (struct sdl_palette *)malloc(sizeof(struct sdl_palette));

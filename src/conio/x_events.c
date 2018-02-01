@@ -897,7 +897,7 @@ static void x11_terminate_event_thread(void)
 static void local_set_palette(struct x11_palette_entry *p)
 {
 	unsigned long *newpixel;
-	struct GC *newgca;
+	static GC *newgca;
 	size_t i;
 	size_t newpixelsz;
     XGCValues gcv;
