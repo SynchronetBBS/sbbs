@@ -349,11 +349,19 @@ void bitmap_setvideoflags(int flags)
 	force_redraws++;
 }
 
-void set_vmem_attr(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t attr)
+void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell)
 {
-	vmem_ptr->vmem[pos] = attr;
-	vmem_ptr->fgvmem[pos] = vstat.palette[attr >> 8];
-	vmem_ptr->bgvmem[pos] = vstat.palette[attr & 0xff];
+	uint32_t fg = (cell >> 8) & 0x0f;
+	uint32_t bg = (cell >> 12) & 0x0f;
+
+	if(!vstat.bright_background)
+		bg &= 0x07;
+	if(vstat.no_bright)
+		bg &= 0x07;
+
+	vmem_ptr->vmem[pos] = cell;
+	vmem_ptr->fgvmem[pos] = vstat.palette[fg];
+	vmem_ptr->bgvmem[pos] = vstat.palette[bg];
 }
 
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
@@ -406,7 +414,7 @@ void bitmap_clreol(void)
 	pos=(cio_textinfo.cury+cio_textinfo.wintop-2)*cio_textinfo.screenwidth;
 	vmem_ptr = lock_vmem(&vstat);
 	for(x=cio_textinfo.curx+cio_textinfo.winleft-2; x<cio_textinfo.winright; x++)
-		set_vmem_attr(vmem_ptr, pos+x, fill);
+		set_vmem_cell(vmem_ptr, pos+x, fill);
 	unlock_vmem(vmem_ptr);
 }
 
@@ -419,7 +427,7 @@ void bitmap_clrscr(void)
 	vmem_ptr = lock_vmem(&vstat);
 	for(y=cio_textinfo.wintop-1; y<cio_textinfo.winbottom; y++) {
 		for(x=cio_textinfo.winleft-1; x<cio_textinfo.winright; x++)
-			set_vmem_attr(vmem_ptr, y*cio_textinfo.screenwidth+x, fill);
+			set_vmem_cell(vmem_ptr, y*cio_textinfo.screenwidth+x, fill);
 	}
 	unlock_vmem(vmem_ptr);
 }
@@ -452,7 +460,7 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 		for(x=sx-1;x<ex;x++) {
 			sch=*(out++);
 			sch |= (*(out++))<<8;
-			set_vmem_attr(vmem_ptr, y*cio_textinfo.screenwidth+x, sch);
+			set_vmem_cell(vmem_ptr, y*cio_textinfo.screenwidth+x, sch);
 		}
 	}
 	unlock_vmem(vmem_ptr);
@@ -890,19 +898,7 @@ static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsig
 
 	unlock_vmem(vmem_ptr);
 
-#if 0	// TODO: This needs to be in the put, and needs to be propegated back when flags change...
 	altfont = (sch>>11 & 0x01) | ((sch>>14) & 0x02);
-	if(vs->bright_background) {
-		bg=(sch&0xf000)>>12;
-		fg=(sch&0x0f00)>>8;
-	}
-	else {
-		bg=(sch&0x7000)>>12;
-		if(sch&0x8000 && vs->blink && (!vs->no_blink))
-			fg=bg;
-		else
-			fg=(sch&0x0f00)>>8;
-	}
 	if (!vs->bright_altcharset)
 		altfont &= ~0x01;
 	if (!vs->blink_altcharset)
@@ -910,16 +906,13 @@ static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsig
 	this_font=font[altfont];
 	if (this_font == NULL)
 		this_font = font[0];
-	if(vs->no_bright)
-		fg &= 0x07;
 	fontoffset=(sch&0xff)*vs->charheight;
-#endif
 
 	for(y=0; y<vs->charheight; y++) {
-		memset_u32(&screen[PIXEL_OFFSET(xoffset, yoffset+y)],vs->palette[bg],vs->charwidth);
+		memset_u32(&screen[PIXEL_OFFSET(xoffset, yoffset+y)],bg,vs->charwidth);
 		for(x=0; x<vs->charwidth; x++) {
 			if(this_font[fontoffset] & (0x80 >> x))
-				screen[PIXEL_OFFSET(xoffset+x, yoffset+y)]=vs->palette[fg];
+				screen[PIXEL_OFFSET(xoffset+x, yoffset+y)]=fg;
 		}
 		fontoffset++;
 	}
