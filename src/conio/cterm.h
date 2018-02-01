@@ -166,9 +166,11 @@ struct cterminal {
 	void	(*ciolib_setscaling)	(struct cterminal *,int new_value);
 	int		(*ciolib_getscaling)	(struct cterminal *);
 	int		(*ciolib_putch)			(struct cterminal *,int);
+	int		(*ciolib_cputch)		(struct cterminal *,uint32_t,uint32_t,int);
 	int		(*ciolib_puttext)		(struct cterminal *,int,int,int,int,void *);
 	void	(*ciolib_window)		(struct cterminal *,int,int,int,int);
 	int		(*ciolib_cputs)			(struct cterminal *,char *);
+	int		(*ciolib_ccputs)		(struct cterminal *,uint32_t,uint32_t,const char *);
 	int		(*ciolib_setfont)		(struct cterminal *,int font, int force, int font_num);
 #else
 	void	CIOLIBCALL (*ciolib_gotoxy)		(int,int);
@@ -186,9 +188,11 @@ struct cterminal {
 	void	CIOLIBCALL (*ciolib_setscaling)		(int new_value);
 	int		CIOLIBCALL (*ciolib_getscaling)		(void);
 	int		CIOLIBCALL (*ciolib_putch)			(int);
+	int		CIOLIBCALL (*ciolib_cputch)			(uint32_t, uint32_t, int);
 	int		CIOLIBCALL (*ciolib_puttext)		(int,int,int,int,void *);
 	void	CIOLIBCALL (*ciolib_window)		(int,int,int,int);
 	int		CIOLIBCALL (*ciolib_cputs)			(char *);
+	int		CIOLIBCALL (*ciolib_ccputs)			(uint32_t, uint32_t, const char *);
 	int		CIOLIBCALL (*ciolib_setfont)		(int font, int force, int font_num);
 #endif
 	int 	*_wscroll;

@@ -349,19 +349,34 @@ void bitmap_setvideoflags(int flags)
 	force_redraws++;
 }
 
-void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell)
+int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
 {
-	uint32_t fg = (cell >> 8) & 0x0f;
-	uint32_t bg = (cell >> 12) & 0x0f;
+	uint32_t fg = attr & 0x0f;
+	uint32_t bg = (attr >> 4) & 0x0f;
 
 	if(!vstat.bright_background)
 		bg &= 0x07;
 	if(vstat.no_bright)
 		bg &= 0x07;
 
+	if (fgp)
+		*fgp = vstat.palette[fg];
+	if (bgp)
+		*bgp = vstat.palette[bg];
+
+	return 0;
+}
+
+static void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell)
+{
+	uint32_t fg;
+	uint32_t bg;
+
+	bitmap_attr2palette(cell>>8, &fg, &bg);
+
 	vmem_ptr->vmem[pos] = cell;
-	vmem_ptr->fgvmem[pos] = vstat.palette[fg];
-	vmem_ptr->bgvmem[pos] = vstat.palette[bg];
+	vmem_ptr->fgvmem[pos] = fg;
+	vmem_ptr->bgvmem[pos] = bg;
 }
 
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)

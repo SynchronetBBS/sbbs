@@ -121,6 +121,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg_palette, uint32_t bg_palette, int a);
 CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t fg_palette, uint32_t bg_palette, const char *str);
+CIOLIBEXPORT int CIOLIBCALL ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 int sdl_video_initialized = 0;
@@ -167,6 +168,7 @@ int try_sdl_init(int mode)
 		cio_api.setscaling=sdl_setscaling;
 		cio_api.getscaling=sdl_getscaling;
 		cio_api.setpalette=sdl_setpalette;
+		cio_api.attr2palette=bitmap_attr2palette;
 		return(1);
 	}
 	return(0);
@@ -214,6 +216,7 @@ int try_x_init(int mode)
 		cio_api.setscaling=bitmap_setscaling;
 		cio_api.getscaling=bitmap_getscaling;
 		cio_api.setpalette=x_setpalette;
+		cio_api.attr2palette=bitmap_attr2palette;
 		return(1);
 	}
 	return(0);
@@ -1418,8 +1421,8 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t fg_palette, uint32_t bg_palet
 	CIOLIB_INIT();
 
 	if (cio_api.ccputs != NULL)
-		return ciolib_ccputs(fg_palette, bg_palette, s);
-	if (cio_api.cputch != NULL) {
+		return cio_api.ccputs(fg_palette, bg_palette, s);
+	if (cio_api.cputch == NULL) {
 		int		pos;
 		int		ret=0;
 		int		olddmc;
@@ -1623,4 +1626,11 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_setpalette(uint32_t entry, uint16_t r, uint16
 	if(cio_api.setpalette)
 		return(cio_api.setpalette(entry, r, g, b));
 	return(1);
+}
+
+CIOLIBEXPORT int CIOLIBCALL ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg)
+{
+	if (cio_api.attr2palette)
+		return cio_api.attr2palette(attr, fg, bg);
+	return -1;
 }

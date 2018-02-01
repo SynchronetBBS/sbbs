@@ -177,9 +177,11 @@ struct note_params {
 	#define SETVIDEOFLAGS(a)		cterm->ciolib_setvideoflags(cterm,a)
 	#define GETVIDEOFLAGS()			cterm->ciolib_getvideoflags(cterm)
 	#define PUTCH(a)				cterm->ciolib_putch(cterm,a)
+	#define CPUTCH(a,b,c)			cterm->ciolib_cputch(cterm,a,b,c)
 	#define PUTTEXT(a,b,c,d,e)		cterm->ciolib_puttext(cterm,a,b,c,d,e)
 	#define WINDOW(a,b,c,d)			cterm->ciolib_window(cterm,a,b,c,d)
 	#define CPUTS(a)				cterm->ciolib_cputs(cterm,a)
+	#define CCPUTS(a,b,c)			cterm->ciolib_ccputs(cterm,a,b,c)
 	#define SETFONT(a,b,c)			cterm->ciolib_setfont(cterm,a,b,c)
 #else
 	#define GOTOXY(x,y)				cterm->ciolib_gotoxy(x, y)
@@ -195,9 +197,11 @@ struct note_params {
 	#define SETVIDEOFLAGS(a)		cterm->ciolib_setvideoflags(a)
 	#define GETVIDEOFLAGS()			cterm->ciolib_getvideoflags()
 	#define PUTCH(a)				cterm->ciolib_putch(a)
+	#define CPUTCH(a,b,c)			cterm->ciolib_cputch(a,b,c)
 	#define PUTTEXT(a,b,c,d,e)		cterm->ciolib_puttext(a,b,c,d,e)
 	#define WINDOW(a,b,c,d)			cterm->ciolib_window(a,b,c,d)
 	#define CPUTS(a)				cterm->ciolib_cputs(a)
+	#define CCPUTS(a,b,c)			cterm->ciolib_ccputs(a,b,c)
 	#define SETFONT(a,b,c)			cterm->ciolib_setfont(a,b,c)
 #endif
 
@@ -519,6 +523,11 @@ static int ciolib_putch(struct cterminal *cterm,int a)
 	return(a1);
 }
 
+static int ciolib_cputch(struct cterminal *cterm, uint32_t fg, uint32_t bg, int a)
+{
+	return ciolib_putch(cterm, a);
+}
+
 static int ciolib_puttext(struct cterminal *cterm,int sx, int sy, int ex, int ey, void *fill)
 {
 	int x,y;
@@ -587,6 +596,11 @@ static int ciolib_cputs(struct cterminal *cterm, char *str)
 	}
 	GOTOXY(WHEREX(),WHEREY());
 	return(ret);
+}
+
+static int ciolib_ccputs(struct cterminal *cterm, uint32_t fg, uint32_t bg, char *str)
+{
+	return ciolib_cputs(cterm, str);
 }
 
 static int ciolib_setfont(struct cterminal *,int font, int force, int font_num)
@@ -1998,17 +2012,16 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						for (i=0; i < seq->param_count; i++) {
 							switch(seq->param_int[i]) {
 								case 0:
-									cterm->fg_color = UINT32_MAX;
-									cterm->bg_color = UINT32_MAX;
 									cterm->attr=ti.normattr;
+									attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 									break;
 								case 1:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr|=8;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 2:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=247;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 4:	/* Underscore */
 									break;
@@ -2018,107 +2031,105 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 7:
 								case 27:
-									cterm->fg_color = UINT32_MAX;
-									cterm->bg_color = UINT32_MAX;
 									i=cterm->attr&7;
 									j=cterm->attr&112;
 									cterm->attr &= 136;
 									cterm->attr |= j>>4;
 									cterm->attr |= i<<4;
+									attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 									break;
 								case 8:
-									cterm->fg_color = UINT32_MAX;
-									cterm->bg_color = UINT32_MAX;
 									j=cterm->attr&112;
 									cterm->attr&=112;
 									cterm->attr |= j>>4;
+									attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 									break;
 								case 22:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr &= 0xf7;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 25:
 									cterm->attr &= 0x7f;
 									break;
 								case 30:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 31:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=4;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 32:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=2;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 33:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=6;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 34:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=1;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 35:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=5;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 36:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=3;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 37:
 								case 39:
-									cterm->fg_color = UINT32_MAX;
 									cterm->attr&=248;
 									cterm->attr|=7;
+									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 49:
 								case 40:
-									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
+									attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 41:
-									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=4<<4;
+									attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 42:
-									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=2<<4;
+									attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 43:
-									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=6<<4;
+									attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 44:
-									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=1<<4;
+									attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 45:
-									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=5<<4;
+									attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 46:
-									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=3<<4;
+									attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 47:
-									cterm->bg_color = UINT32_MAX;
 									cterm->attr&=143;
 									cterm->attr|=7<<4;
+									attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 							}
 						}
@@ -2432,9 +2443,11 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->ciolib_setscaling=ciolib_setscaling;
 	cterm->ciolib_getscaling=ciolib_getscaling;
 	cterm->ciolib_putch=ciolib_putch;
+	cterm->ciolib_cputch=ciolib_cputch;
 	cterm->ciolib_puttext=ciolib_puttext;
 	cterm->ciolib_window=ciolib_window;
 	cterm->ciolib_cputs=ciolib_cputs;
+	cterm->ciolib_ccputs=ciolib_ccputs;
 	cterm->ciolib_setfont=ciolib_setfont;
 	cterm->_wscroll=&_wscroll;
 	cterm->puttext_can_move=&puttext_can_move;
@@ -2484,7 +2497,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 				break;
 			case '\n':
 				*p=0;
-				CPUTS(outp);
+				CCPUTS(cterm->fg_color, cterm->bg_color, outp);
 				outp=p+1;
 				if(cy==cterm->bottom_margin)
 					scrollup(cterm);
@@ -2494,7 +2507,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 				break;
 			case '\b':
 				*p=0;
-				CPUTS(outp);
+				CCPUTS(cterm->fg_color, cterm->bg_color, outp);
 				outp=p+1;
 				if(cx>1)
 					cx--;
@@ -2504,7 +2517,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 				break;
 			case '\t':
 				*p=0;
-				CPUTS(outp);
+				CCPUTS(cterm->fg_color, cterm->bg_color, outp);
 				outp=p+1;
 				for(i=0;i<sizeof(cterm_tabs)/sizeof(cterm_tabs[0]);i++) {
 					if(cterm_tabs[i]>cx) {
@@ -2526,7 +2539,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 					char ch;
 					ch=*(p+1);
 					*(p+1)=0;
-					CPUTS(outp);
+					CCPUTS(cterm->fg_color, cterm->bg_color, outp);
 					*(p+1)=ch;
 					outp=p+1;
 					GOTOXY(cx,cy);
@@ -2537,7 +2550,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 						char ch;
 						ch=*(p+1);
 						*(p+1)=0;
-						CPUTS(outp);
+						CCPUTS(cterm->fg_color, cterm->bg_color, outp);
 						*(p+1)=ch;
 						outp=p+1;
 						scrollup(cterm);
@@ -2557,7 +2570,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 				break;
 		}
 	}
-	CPUTS(outp);
+	CCPUTS(cterm->fg_color, cterm->bg_color, outp);
 	*cterm->_wscroll=oldscroll;
 }
 
