@@ -1104,6 +1104,9 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	memcpy(cvstat.vmem->bgvmem, vmem_ptr->bgvmem, vstat.cols*vstat.rows*sizeof(vmem_ptr->bgvmem[0]));
 	pthread_mutex_unlock(&vmem_lock);
 
+	if (hold_update)
+		redraw_cursor = 0;
+
 	for(y=0;y<height;y++) {
 		pos=(sy+y-1)*cvstat.cols+(sx-1);
 		for(x=0;x<width;x++) {
