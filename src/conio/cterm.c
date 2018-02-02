@@ -1279,12 +1279,20 @@ void draw_sixel(struct cterminal *cterm, char *str)
 	int i;
 	char *p;
 	int max_row;
+	int	olddmc;
+
+	olddmc=*cterm->hold_update;
+	*cterm->hold_update=0;
 
 	GETTEXTINFO(&ti);
 	vmode = find_vmode(ti.currmode);
 	attr2palette(ti.attribute, &fg, &bg);
 	x = left = (cterm->x + WHEREX() - 2) * vparams[vmode].charwidth;
 	y = (cterm->y + WHEREY() - 2) * vparams[vmode].charheight;
+	GOTOXY(ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
+	SETCURSORTYPE(_NOCURSOR);
+	GOTOXY(ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
+	*cterm->hold_update=1;
 	ratio = trans = hgrid = 0;
 	ratio = strtoul(str, &p, 10);
 	if (*p == ';') {
@@ -1396,15 +1404,16 @@ void draw_sixel(struct cterminal *cterm, char *str)
 		}
 	}
 
+	x = left;
 	x = x / vparams[vmode].charwidth + 1;
 	x -= (cterm->x - 1);
-	x++;
 
-	y = y / vparams[vmode].charheight + 1;
+	y = (y+6) / vparams[vmode].charheight + 1;
 	y -= (cterm->y - 1);
-	y++;
 
+	*cterm->hold_update=olddmc;
 	GOTOXY(x,y);
+	SETCURSORTYPE(cterm->cursor);
 }
 
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed)
