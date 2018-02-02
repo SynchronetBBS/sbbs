@@ -400,7 +400,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	int width=ex-x+1;
 	int height=ey-y+1;
 	struct vstat_vmem *vmem_ptr;
-	size_t sdestoffset;
+	int32_t sdestoffset;
 	size_t ssourcepos;
 	int32_t screeny;
 
@@ -427,19 +427,19 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	pthread_mutex_lock(&screenlock);
 	vmem_ptr = lock_vmem(&vstat);
 	for(cy=(direction==-1?(height-1):0); cy<height && cy>=0; cy+=direction) {
-		sourcepos=((y-1)+cy)*cio_textinfo.screenwidth+(x-1);
 		memmove(&(vmem_ptr->vmem[sourcepos+destoffset]), &(vmem_ptr->vmem[sourcepos]), sizeof(vmem_ptr->vmem[0])*width);
 		memmove(&(vmem_ptr->fgvmem[sourcepos+destoffset]), &(vmem_ptr->fgvmem[sourcepos]), sizeof(vmem_ptr->fgvmem[0])*width);
 		memmove(&(vmem_ptr->bgvmem[sourcepos+destoffset]), &(vmem_ptr->bgvmem[sourcepos]), sizeof(vmem_ptr->bgvmem[0])*width);
+		sourcepos += direction * cio_textinfo.screenwidth;
 	}
-	if (vstat.curs_row >= x && vstat.curs_row <= ex &&
-	    vstat.curs_col >= y && vstat.curs_col <= ey)
+	if (vstat.curs_row >= y && vstat.curs_row <= ey &&
+	    vstat.curs_col >= x && vstat.curs_col <= ex)
 		bitmap_draw_one_char(&vstat, vstat.curs_col, vstat.curs_row);
-	ssourcepos=(y-1)     *cio_textinfo.screenwidth*vstat.charwidth+(x-1)  *vstat.charwidth;
-	sdestoffset=(((toy-1)*cio_textinfo.screenwidth*vstat.charwidth+(tox-1)*vstat.charwidth)-ssourcepos)*vstat.charheight;
+	ssourcepos=(y-1)     *cio_textinfo.screenwidth*vstat.charwidth*vstat.charheight + (x-1)  *vstat.charwidth;
+	sdestoffset=(((toy-1)*cio_textinfo.screenwidth*vstat.charwidth*vstat.charheight + (tox-1)*vstat.charwidth)-ssourcepos);
 	for(screeny=(direction==-1?(height-1)*vstat.charheight:0); screeny<height*vstat.charheight && screeny>=0; screeny+=direction) {
-		ssourcepos=((y-1)*vstat.charheight+screeny)*cio_textinfo.screenwidth*vstat.charwidth+(x-1)*vstat.charwidth;
 		memmove(&(screen[ssourcepos+sdestoffset]), &(screen[ssourcepos]), sizeof(screen[0])*width*vstat.charwidth);
+		ssourcepos += direction * cio_textinfo.screenwidth*vstat.charwidth;
 	}
 
 	unlock_vmem(vmem_ptr);
