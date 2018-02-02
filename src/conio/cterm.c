@@ -1333,8 +1333,6 @@ void draw_sixel(struct cterminal *cterm, char *str)
 			break;
 	}
 	p++;
-	// TODO: It seems the official documentation is wrong?  Nobody gets this right.
-	trans=1;
 	repeat = 0;
 	/* DO IT! */
 	while (*p) {
