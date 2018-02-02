@@ -55,6 +55,8 @@ struct rectangle {
 };
 
 static int update_rect(int sx, int sy, int width, int height, int force);
+static void bitmap_draw_cursor(struct video_stats *vs);
+static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsigned int ypos);
 
 static void memset_u32(void *buf, uint32_t u, size_t len)
 {
@@ -360,7 +362,7 @@ int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
 	if(!vstat.bright_background)
 		bg &= 0x07;
 	if(vstat.no_bright)
-		bg &= 0x07;
+		fg &= 0x07;
 
 	if (fgp)
 		*fgp = vstat.palette[fg];
@@ -374,12 +376,19 @@ static void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell
 {
 	uint32_t fg;
 	uint32_t bg;
+	int col, row;
 
 	bitmap_attr2palette(cell>>8, &fg, &bg);
 
 	vmem_ptr->vmem[pos] = cell;
 	vmem_ptr->fgvmem[pos] = fg;
 	vmem_ptr->bgvmem[pos] = bg;
+	row = pos / vstat.cols;
+	col = pos - (row * vstat.cols);
+	pthread_mutex_unlock(&vmem_lock);
+	bitmap_draw_one_char(&vstat, col+1, row+1);
+	pthread_mutex_lock(&vmem_lock);
+	update_pixels++;
 }
 
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
@@ -391,6 +400,9 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	int width=ex-x+1;
 	int height=ey-y+1;
 	struct vstat_vmem *vmem_ptr;
+	size_t sdestoffset;
+	size_t ssourcepos;
+	int32_t screeny;
 
 	if(		   x<1
 			|| y<1
@@ -419,7 +431,21 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		memmove(&(vmem_ptr->fgvmem[sourcepos+destoffset]), &(vmem_ptr->fgvmem[sourcepos]), sizeof(vmem_ptr->fgvmem[0])*width);
 		memmove(&(vmem_ptr->bgvmem[sourcepos+destoffset]), &(vmem_ptr->bgvmem[sourcepos]), sizeof(vmem_ptr->bgvmem[0])*width);
 	}
+	if (vstat.curs_row >= x && vstat.curs_row <= ex &&
+	    vstat.curs_col >= y && vstat.curs_col <= ey)
+		bitmap_draw_one_char(&vstat, vstat.curs_col, vstat.curs_row);
+	pthread_mutex_lock(&screenlock);
+	ssourcepos=(y-1)     *cio_textinfo.screenwidth*vstat.charwidth+(x-1)  *vstat.charwidth;
+	sdestoffset=(((toy-1)*cio_textinfo.screenwidth*vstat.charwidth+(tox-1)*vstat.charwidth)-ssourcepos)*vstat.charheight;
+	for(screeny=(direction==-1?(height-1)*vstat.charheight:0); screeny<height*vstat.charheight && screeny>=0; screeny+=direction) {
+		ssourcepos=((y-1)*vstat.charheight+screeny)*cio_textinfo.screenwidth*vstat.charwidth+(x-1)*vstat.charwidth;
+		memmove(&(screen[ssourcepos+sdestoffset]), &(screen[ssourcepos]), sizeof(screen[0])*width*vstat.charwidth);
+	}
+	pthread_mutex_unlock(&screenlock);
+	bitmap_draw_cursor(&vstat);
+
 	unlock_vmem(vmem_ptr);
+
 	return(1);
 }
 
@@ -1084,9 +1110,6 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		for(x=0;x<width;x++) {
 			/* TODO: Need to deal with blink/bgbright here too... */
 			if(force
-					|| (last_vmem[pos] != cvstat.vmem->vmem[pos]) 					/* Different char */
-					|| (last_fgvmem[pos] != cvstat.vmem->fgvmem[pos]) 				/* Different foreground colour */
-					|| (last_bgvmem[pos] != cvstat.vmem->bgvmem[pos]) 				/* Different background colour */
 					|| ((cvstat.blink != vs.blink) && (cvstat.vmem->vmem[pos]>>15) && (!cvstat.no_blink)) 	/* Blinking char */
 					|| (redraw_cursor && ((vs.curs_col==sx+x && vs.curs_row==sy+y) || (cvstat.curs_col==sx+x && cvstat.curs_row==sy+y)))	/* Cursor */
 					) {
