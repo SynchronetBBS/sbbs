@@ -55,7 +55,7 @@ function main()
 			if(sauce == false) {
 				sauce = { datatype: lib.defs.datatype.bin, cols: 80, comment: [], tinfos: '' };
 			} else {
-				printf("(%ux%u%s", sauce.cols, sauce.rows, sauce.ice_color ? " iCE":"");
+				printf("(Type:%u %ux%u%s", sauce.datatype, sauce.cols, sauce.rows, sauce.ice_color ? " iCE":"");
 				if(sauce.title) printf(" '%s'", sauce.title);
 				if(sauce.author) printf(" by %s", sauce.author);
 				if(sauce.group) printf(" [%s]", sauce.group);
