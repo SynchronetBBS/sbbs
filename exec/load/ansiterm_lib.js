@@ -157,7 +157,10 @@ var ext_mode = {
 	set: 	function(mode) 	{ return format("\x1b[?%uh", defs.ext_mode[mode]); },
 	clear:	function(mode) 	{ return format("\x1b[?%ul", defs.ext_mode[mode]); },
 	save:	function(mode)	{ return format("\x1b[?%us", defs.ext_mode[mode]); },
-	restore: function(mode) { return format("\x1b[?%uu", defs.ext_mode[mode]); }
+	restore: function(mode) { return format("\x1b[?%uu", defs.ext_mode[mode]); },
+	save_all:		function()	{ return "\x1b[?s"; },
+	restore_all:	function()	{ return "\x1b[?u"; }
+
 }
 
 var speed = {
