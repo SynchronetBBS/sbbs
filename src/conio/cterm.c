@@ -1265,6 +1265,140 @@ fail:
 	return NULL;
 }
 
+void draw_sixel(struct cterminal *cterm, char *str)
+{
+	uint32_t fg;
+	uint32_t bg;
+	int ratio, trans, hgrid;
+	int iv, ih, height, width;
+	unsigned long repeat;
+	unsigned left;
+	unsigned x,y;
+	int vmode;
+	struct text_info ti;
+	int i;
+	char *p;
+
+	SETCURSORTYPE(_NOCURSOR);
+	GETTEXTINFO(&ti);
+	vmode = find_vmode(ti.currmode);
+	attr2palette(ti.attribute, &fg, &bg);
+	x = left = (cterm->x + WHEREX() - 2) * vparams[vmode].charwidth;
+	y = (cterm->y + WHEREY() - 2) * vparams[vmode].charheight;
+	ratio = trans = hgrid = 0;
+	ratio = strtoul(str, &p, 10);
+	if (*p == ';') {
+		p++;
+		trans = strtoul(p, &p, 10);
+	}
+	if (*p == ';') {
+		p++;
+		hgrid = strtoul(p, &p, 10);
+	}
+	p++;
+	// TODO: It seems the official documentation is wrong?  Nobody gets this right.
+	trans=1;
+	repeat = 0;
+	/* DO IT! */
+	while (*p) {
+		if (*p >= '?' && *p <= '~') {
+			unsigned data = *p - '?';
+
+			for (i=0; i<6; i++) {
+				if (data & (1<<i)) {
+					setpixel(x, y+i, fg);
+				}
+				else {
+					if (!trans) {
+						setpixel(x, y+i, bg);
+					}
+				}
+			}
+			x++;
+			// TODO: Check X
+			if (repeat)
+				repeat--;
+			else
+				p++;
+		}
+		else {
+			switch(*p) {
+				case '"':	// Raster Attributes
+					p++;
+					iv = strtoul(p, &p, 10);
+					if (*p == ';') {
+						p++;
+						ih = strtoul(p, &p, 10);
+					}
+					if (*p == ';') {
+						p++;
+						height = strtoul(p, &p, 10);
+					}
+					if (*p == ';') {
+						p++;
+						width = strtoul(p, &p, 10);
+					}
+					break;
+				case '!':	// Repeat
+					p++;
+					if (!p)
+						continue;
+					repeat = strtoul(p, &p, 10);
+					break;
+				case '#':	// Colour Introducer
+					p++;
+					if (!p)
+						continue;
+					fg = strtoul(p, &p, 10) + TOTAL_DAC_SIZE;
+					/* Do we want to redefine it while we're here? */
+					if (*p == ';') {
+						unsigned long t,r,g,b;
+
+						p++;
+						t=r=g=b=0;
+						t = strtoul(p, &p, 10);
+						if (*p == ';') {
+							p++;
+							r = strtoul(p, &p, 10);
+						}
+						if (*p == ';') {
+							p++;
+							g = strtoul(p, &p, 10);
+						}
+						if (*p == ';') {
+							p++;
+							b = strtoul(p, &p, 10);
+						}
+						if (t == 2)	// Only support RGB
+							setpalette(fg, r<<8|r, g<<8|g, b<<8|b);
+					}
+					break;
+				case '$':	// Graphics Carriage Return
+					x = left;
+					p++;
+					break;
+				case '-':	// Graphics New Line
+					x = left;
+					y += 6;
+					/* Check y */
+					p++;
+					break;
+				default:
+					p++;
+			}
+		}
+	}
+	x = x / vparams[vmode].charwidth + 1;
+	x -= cterm->x;
+	x++;
+
+	y = y / vparams[vmode].charheight + 1;
+	y -= cterm->y;
+	y++;
+	GOTOXY(x,y);
+	SETCURSORTYPE(cterm->cursor);
+}
+
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed)
 {
 	char	*p;
@@ -2294,6 +2428,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				cterm->strbuf[cterm->strbuflen] = 0;
 			}
 			switch (cterm->string) {
+				case CTERM_STRING_DCS:
+					/* Is this a Sixel command? */
+					i = strspn(cterm->strbuf, "0123456789;");
+					if (cterm->strbuf[i] == 'q')
+						draw_sixel(cterm, cterm->strbuf);
+					break;
 				case CTERM_STRING_OSC:
 					/* Is this an xterm Change Color(s)? */
 					if (cterm->strbuf[0] == '4' && cterm->strbuf[1] == ';') {
@@ -2366,6 +2506,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 						}
 					}
+					break;
 			}
 			// TODO: Handle the string...
 			FREE_AND_NULL(cterm->strbuf);
