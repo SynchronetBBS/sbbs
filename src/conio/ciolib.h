@@ -359,7 +359,9 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_highvideo(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_lowvideo(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_normvideo(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,void *e);
+CIOLIBEXPORT int CIOLIBCALL ciolib_pputtext(int a,int b,int c,int d,void *e,uint32_t *f, uint32_t *g);
 CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e);
+CIOLIBEXPORT int CIOLIBCALL ciolib_pgettext(int a,int b,int c,int d,void *e,uint32_t *f, uint32_t *g);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textattr(int a);
 CIOLIBEXPORT void CIOLIBCALL ciolib_delay(long a);
 CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a);
@@ -422,7 +424,9 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define lowvideo()				ciolib_lowvideo()
 	#define normvideo()				ciolib_normvideo()
 	#define puttext(a,b,c,d,e)		ciolib_puttext(a,b,c,d,e)
+	#define pputtext(a,b,c,d,e,f,g)		ciolib_pputtext(a,b,c,d,e,f,g)
 	#define gettext(a,b,c,d,e)		ciolib_gettext(a,b,c,d,e)
+	#define pgettext(a,b,c,d,e,f,g)		ciolib_pgettext(a,b,c,d,e,f,g)
 	#define textattr(a)				ciolib_textattr(a)
 	#define delay(a)				ciolib_delay(a)
 	#define putch(a)				ciolib_putch(a)
