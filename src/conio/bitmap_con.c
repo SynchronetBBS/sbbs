@@ -1164,3 +1164,14 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 
 	return(0);
 }
+
+int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
+{
+	pthread_mutex_lock(&screenlock);
+	screen[PIXEL_OFFSET(x, y)]=colour;
+	pthread_mutex_unlock(&screenlock);
+	pthread_mutex_lock(&vstatlock);
+	send_rectangle(&vstat, x, y, 1, 1, 1);
+	pthread_mutex_unlock(&vstatlock);
+	return 1;
+}

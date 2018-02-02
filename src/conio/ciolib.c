@@ -124,6 +124,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_setpalette(uint32_t entry, uint16_t r, uint16
 CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg_palette, uint32_t bg_palette, int a);
 CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t fg_palette, uint32_t bg_palette, const char *str);
 CIOLIBEXPORT int CIOLIBCALL ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
+CIOLIBEXPORT int CIOLIBCALL ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 int sdl_video_initialized = 0;
@@ -172,6 +173,7 @@ int try_sdl_init(int mode)
 		cio_api.getscaling=sdl_getscaling;
 		cio_api.setpalette=sdl_setpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
+		cio_api.setpixel=bitmap_setpixel;
 		return(1);
 	}
 	return(0);
@@ -221,6 +223,7 @@ int try_x_init(int mode)
 		cio_api.getscaling=bitmap_getscaling;
 		cio_api.setpalette=x_setpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
+		cio_api.setpixel=bitmap_setpixel;
 		return(1);
 	}
 	return(0);
@@ -1740,4 +1743,13 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint
 	 * mapping for non-plaette aware things.
 	 */
 	return -1;
+}
+
+CIOLIBEXPORT int CIOLIBCALL ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour)
+{
+	CIOLIB_INIT();
+
+	if (cio_api.setpixel)
+		return cio_api.setpixel(x, y, colour);
+	return 0;
 }

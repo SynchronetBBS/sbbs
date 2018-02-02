@@ -32,5 +32,6 @@ void bitmap_setvideoflags(int flags);
 void bitmap_setscaling(int new_value);
 int bitmap_getscaling(void);
 int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp);
+int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 
 #endif

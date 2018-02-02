@@ -318,6 +318,7 @@ typedef struct {
 	int		*ESCDELAY;
 	int		(*setpalette)	(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 	int		(*attr2palette)	(uint8_t attr, uint32_t *fg, uint32_t *bg);
+	int		(*setpixel)	(uint32_t x, uint32_t y, uint32_t colour);
 } cioapi_t;
 
 CIOLIBEXPORTVAR cioapi_t cio_api;
@@ -392,6 +393,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_setscaling(int flags);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 CIOLIBEXPORT int CIOLIBCALL ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
+CIOLIBEXPORT int CIOLIBCALL ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -459,6 +461,7 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define getscaling()			ciolib_getscaling()
 	#define setpalette(e,r,g,b)		ciolib_setpalette(e,r,g,b)
 	#define attr2palette(a,b,c)		ciolib_attr2palette(a,b,c)
+	#define setpixel(a,b,c)			ciolib_setpixel(a,b,c)
 #endif
 
 #ifdef WITH_SDL
