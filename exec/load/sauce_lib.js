@@ -109,6 +109,9 @@ function read(fname)
 			obj.cols = obj.tinfo1;
 			obj.rows = obj.tinfo2;
 		}
+	} else if(obj.datatype == defs.datatype.xbin) {
+		obj.cols = obj.tinfo1;
+		obj.rows = obj.tinfo2;
 	}
 
 	// Read the Comment Block here
@@ -159,8 +162,16 @@ function write(fname, obj)
 	// Do some convenience field parsing/conversions here
 	if(obj.ice_color == true)
 		obj.tflags |= defs.ansiflag.nonblink;
-	if(obj.datatype == defs.datatype.bin)
-		obj.filetype = obj.cols / 2;
+	switch(obj.datatype) {
+		case defs.datatype.bin:
+			obj.filetype = obj.cols / 2;
+			break;
+		case defs.datatype.xbin:
+		case defs.datatype.character:
+			obj.tinfo1 = obj.cols;
+			obj.tinfo2 = obj.rows;
+			break;
+	}	
 
 	file.write('\x1a');	// Ctrl-Z, CPM-EOF
 	if(obj.comment.length) {
