@@ -504,10 +504,6 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 	var x;
 	var y;
 
-	if(xpos==undefined)
-		xpos=1;
-	if(ypos==undefined)
-		ypos=1;
 	if(width==undefined)
 		width=this.width;
 	if(height==undefined)
@@ -516,6 +512,14 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 		xoff=0;
 	if(yoff==undefined)
 		yoff=0;
+	if(xpos == 'center')	// center
+		xpos = Math.floor((console.screen_columns - width) / 2);
+	if(xpos==undefined || xpos < 1)
+		xpos=1;
+	if(ypos == 'center')	// center
+		ypos = Math.floor((console.screen_rows - height) / 2);
+	if(ypos==undefined || ypos < 1)
+		ypos=1;
 	if(delay==undefined)
 		delay=0;
 	if(xoff+width > this.width || yoff+height > this.height) {
