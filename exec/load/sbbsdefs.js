@@ -154,6 +154,10 @@ var   CON_BACKSPACE =(1<<14);	/* Backspace key - from getstr(K_LEFTEXIT)	*/
 var   CON_LEFTARROW =(1<<15);	/* Left arrow hit - from getstr(K_LEFTEXIT)	*/
 var   CON_INSERT	=(1<<16);	/* Insert mode - for use with getstr()		*/
 var	  CON_DELETELINE=(1<<17);	/* Deleted line - from getstr(K_LEFTEXIT)	*/
+var   CON_NORM_FONT	=(1<<18);	/* Alt normal font activated				*/
+var   CON_HIGH_FONT	=(1<<19);	/* Alt high-intensity font activated		*/
+var   CON_BLINK_FONT=(1<<20);	/* Alt blink font activated					*/
+var   CON_HBLINK_FONT=(1<<21);	/* Alt high-blink font activated			*/
 					    		/********************************************/
 
 								/********************************************/
@@ -201,7 +205,6 @@ var   USER_WIP 		=(1<<21);	/* Supports WIP terminal emulation			*/
 var   USER_AUTOLOGON=(1<<22);	/* AutoLogon via IP							*/
 var	  USER_HTML		=(1<<23);	/* Using Deuce's HTML terminal (*cough*)	*/
 var	  USER_NOPAUSESPIN=(1<<24);	/* No spinning cursor at pause prompt		*/
-
 					    		/********************************************/
 
 					    		/********************************************/
@@ -536,6 +539,14 @@ var   TG_RLOGINSWAP	=(1<<11);	/* Swap the RLogin alias/real-names			*/
 var TELNET_MODE_GATE=(1<<2);	/* Pass-through telnet commands/responses	*/
 var TELNET_MODE_OFF	=(1<<3);	/* Not a telnet connection					*/
 					    		/********************************************/
+
+								/* Telnet standard commands and options		*/
+								/* for use with console.telnet_cmd()		*/
+var TELNET_DONT		= 254;		/* 0xfe - Don't do option */
+var TELNET_DO   	= 253;		/* 0xfd - Do option */
+var TELNET_WONT 	= 252;		/* 0xfc - Won't do option */
+var TELNET_WILL 	= 251;		/* 0xfb - Will do option */
+var TELNET_BINARY_TX = 0;		/* option: binary transmission */
 
 					    		/********************************************/
 								/* Bits in mode of bbs.scan_subs()			*/
