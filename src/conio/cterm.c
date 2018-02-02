@@ -1276,10 +1276,12 @@ void draw_sixel(struct cterminal *cterm, char *str)
 	unsigned x,y;
 	int vmode;
 	struct text_info ti;
-	int i;
+	int i, j, k;
 	char *p;
 	int max_row;
 	int	olddmc;
+	int pixels_sent = 0;
+	int first_pass = 1;
 
 	olddmc=*cterm->hold_update;
 	*cterm->hold_update=0;
@@ -1303,6 +1305,33 @@ void draw_sixel(struct cterminal *cterm, char *str)
 		p++;
 		hgrid = strtoul(p, &p, 10);
 	}
+	switch (ratio) {
+		case 0:
+		case 1:
+			iv = 2;
+			ih = 1;
+			break;
+		case 2:
+			iv = 5;
+			ih = 1;
+			break;
+		case 3:
+		case 4:
+			iv = 3;
+			ih = 1;
+			break;
+		case 5:
+		case 6:
+			iv = 2;
+			ih = 1;
+			break;
+		case 7:
+		case 8:
+		case 9:
+			iv = 1;
+			ih = 1;
+			break;
+	}
 	p++;
 	// TODO: It seems the official documentation is wrong?  Nobody gets this right.
 	trans=1;
@@ -1312,17 +1341,24 @@ void draw_sixel(struct cterminal *cterm, char *str)
 		if (*p >= '?' && *p <= '~') {
 			unsigned data = *p - '?';
 
+			pixels_sent = 1;
 			for (i=0; i<6; i++) {
 				if (data & (1<<i)) {
-					setpixel(x, y+i, fg);
+					for (j = 0; j < iv; j++) {
+						for (k = 0; k < ih; k++)
+							setpixel(x+k, y+(i*iv)+j, fg);
+					}
 				}
 				else {
-					if (!trans) {
-						setpixel(x, y+i, bg);
+					if (first_pass && !trans) {
+						for (j = 0; j < iv; j++) {
+							for (k = 0; k < ih; k++)
+								setpixel(x+k, y+(i*iv)+j, bg);
+						}
 					}
 				}
 			}
-			x++;
+			x+=ih;
 			// TODO: Check X
 			if (repeat)
 				repeat--;
@@ -1332,19 +1368,26 @@ void draw_sixel(struct cterminal *cterm, char *str)
 		else {
 			switch(*p) {
 				case '"':	// Raster Attributes
-					p++;
-					iv = strtoul(p, &p, 10);
-					if (*p == ';') {
+					if (!pixels_sent) {
 						p++;
-						ih = strtoul(p, &p, 10);
-					}
-					if (*p == ';') {
-						p++;
-						height = strtoul(p, &p, 10);
-					}
-					if (*p == ';') {
-						p++;
-						width = strtoul(p, &p, 10);
+						iv = strtoul(p, &p, 10);
+						if (*p == ';') {
+							p++;
+							ih = strtoul(p, &p, 10);
+						}
+						if (*p == ';') {
+							p++;
+							width = strtoul(p, &p, 10);
+						}
+						if (*p == ';') {
+							p++;
+							height = strtoul(p, &p, 10);
+						}
+						// TODO: If the image scrolls, the background isn't set
+						for (i = 0; i<height*iv; i++) {
+							for (j = 0; j < width*ih; j++)
+								setpixel(x+j, y+i, bg);
+						}
 					}
 					break;
 				case '!':	// Repeat
@@ -1384,6 +1427,7 @@ void draw_sixel(struct cterminal *cterm, char *str)
 				case '$':	// Graphics Carriage Return
 					x = left;
 					p++;
+					first_pass = 0;
 					break;
 				case '-':	// Graphics New Line
 					max_row = cterm->height;
@@ -1391,12 +1435,13 @@ void draw_sixel(struct cterminal *cterm, char *str)
 						max_row = cterm->bottom_margin - cterm->top_margin + 1;
 
 					x = left;
-					y += 6;
-					if (y + 5 >= (cterm->y + max_row - 1) * vparams[vmode].charheight) {
+					y += 6*iv;
+					while ((y + 6*iv - 1) >= (cterm->y + max_row - 1) * vparams[vmode].charheight) {
 						scrollup(cterm);
 						y -= vparams[vmode].charheight;
 					}
 					p++;
+					first_pass = 1;
 					break;
 				default:
 					p++;
@@ -1408,7 +1453,7 @@ void draw_sixel(struct cterminal *cterm, char *str)
 	x = x / vparams[vmode].charwidth + 1;
 	x -= (cterm->x - 1);
 
-	y = (y+6) / vparams[vmode].charheight + 1;
+	y = (y+6*iv-1) / vparams[vmode].charheight + 1;
 	y -= (cterm->y - 1);
 
 	*cterm->hold_update=olddmc;
