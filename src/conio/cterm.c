@@ -1122,7 +1122,7 @@ static void seq_default(struct esc_seq *seq, int index, uint64_t val)
 		if (np == NULL)
 			return;
 		seq->param_int = np;
-		for (; seq->param_count <= index+1; seq->param_count++) {
+		for (; seq->param_count <= index; seq->param_count++) {
 			if (seq->param_count == index) {
 				seq->param_int[index] = val;
 				sprintf(tmpnum, "%" PRIu64, val);
