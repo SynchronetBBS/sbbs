@@ -1394,7 +1394,7 @@ void change_settings(void)
 						scrollback_buf = tmpscroll ? tmpscroll : scrollback_buf;
 						scrollback_fbuf = tmpscrollf ? tmpscrollf : scrollback_fbuf;
 						scrollback_bbuf = tmpscrollb ? tmpscrollb : scrollback_bbuf;
-						if(tmpscroll == NULL | tmpscrollf == NULL | tmpscrollb == NULL) {
+						if(tmpscroll == NULL || tmpscrollf == NULL || tmpscrollb == NULL) {
 							uifc.helpbuf="The selected scrollback size is too large.\n"
 										 "Please reduce the number of lines.";
 							uifc.msg("Cannot allocate space for scrollback.");
