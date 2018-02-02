@@ -530,7 +530,7 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 	for(y=0;y<height; y++) {
 		console.gotoxy(xpos,ypos+y);
 		for(x=0; x<width; x++) {
-			// Do not draw to the bottom left corner of the screen-would scroll
+			// Do not draw to the bottom right corner of the screen-would scroll
 			if(xpos+x != console.screen_columns
 					|| ypos+y != console.screen_rows) {
 				console.attributes=this.data[x+xoff][y+yoff].attr & this.attr_mask;
@@ -939,6 +939,25 @@ Graphic.prototype.normalize = function(bg)
 		}
 	}
 	return this;
+}
+
+// Does not modify HIGH-intensity or BLINK attributes:
+Graphic.prototype.change_colors = function(fg, bg)
+{
+	for(var y=0; y<this.height; y++) {
+		for(var x=0; x<this.width; x++) {
+			attr = this.data[x][y].attr;
+			if(fg !== undefined) {
+				attr &= 0xf8;
+				attr |= (fg&7);
+			}
+			if(bg !== undefined) {
+				attr &= 0x8f;
+				attr |= (bg&7) << 4;
+			}
+			this.data[x][y].attr = attr;
+		}
+	}
 }
 
 /* Leave as last line for convenient load() usage: */
