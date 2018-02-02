@@ -2085,6 +2085,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->attr|=3;
 									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
+								case 38:
+									if (i+2 < seq->param_count && seq->param_int[i+1] == 5) {
+										cterm->fg_color = seq->param_int[i+2];
+										i+=2;
+									}
+									break;
 								case 37:
 								case 39:
 									cterm->attr&=248;
@@ -2130,6 +2136,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->attr&=143;
 									cterm->attr|=7<<4;
 									attr2palette(cterm->attr, NULL, &cterm->bg_color);
+									break;
+								case 48:
+									if (i+2 < seq->param_count && seq->param_int[i+1] == 5) {
+										cterm->bg_color = seq->param_int[i+2];
+										i+=2;
+									}
 									break;
 							}
 						}
@@ -2464,6 +2476,7 @@ void CIOLIBCALL cterm_start(struct cterminal *cterm)
 	if(!cterm->started) {
 		GETTEXTINFO(&ti);
 		cterm->attr=ti.normattr;
+		attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 		TEXTATTR(cterm->attr);
 		SETCURSORTYPE(cterm->cursor);
 		cterm->started=1;
