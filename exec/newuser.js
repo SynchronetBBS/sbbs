@@ -7,6 +7,9 @@
 // @format.tab-size 8, @format.use-tabs true
 
 load("sbbsdefs.js");
+
+const QWK_ID_PATTERN = /^[A-Z]\w{1,7}$/;
+
 var options;
 options=load("modopts.js","newuser");
 
@@ -17,16 +20,6 @@ if(options && (bbs.sys_status&SS_RLOGIN))
 
 if(options && options.qwk_settings)
 	user.qwk_settings = eval(options.qwk_settings);
-
-if(options && (options.avatar || options.avatar_file)) {
-	var avatar_lib = load({}, 'avatar_lib.js');
-	if(options.avatar_file) {
-		if(options.avatar_file == file_getname(options.avatar_file))
-			options.avatar_file = system.text_dir + "avatars/" + options.avatar_file;
-		avatar_lib.import_file(user.number, options.avatar_file, options.avatar_offset);
-	} else
-		avatar_lib.update_localuser(user.number, options.avatar);
-}	
 
 console.clear();
 
@@ -43,35 +36,18 @@ if(options && options.ask_qnet) {
 		qnet=true;
 }
 
+if(!qnet && options && (options.avatar || options.avatar_file)) {
+	var avatar_lib = load({}, 'avatar_lib.js');
+	if(options.avatar_file)
+		avatar_lib.import_file(user.number, options.avatar_file, options.avatar_offset);
+	else
+		avatar_lib.update_localuser(user.number, options.avatar);
+}	
+
 function chk_qwk_id(str)
 {
-	if(str.length<2 || str.length>8)
-		return(false);
-
-	if(Number(str)>0 || Number(str)<0)
-		return(false);
-
-	/* I know this could be much smaller using regexp */
-	if(str.indexOf(' ')>=0)
-		return(false);
-	if(str.indexOf('.')>=0)
-		return(false);
-	if(str.indexOf(':')>=0)
-		return(false);
-	if(str.indexOf(';')>=0)
-		return(false);
-	if(str.indexOf('\\')>=0)
-		return(false);
-	if(str.indexOf('/')>=0)
-		return(false);
-	if(str.indexOf('|')>=0)
-		return(false);
-	if(str.indexOf('+')>=0)
-		return(false);
-	if(str.indexOf('"')>=0)
-		return(false);
-	if(str.indexOf('&')>=0)
-		return(false);
+	if(str.search(QWK_ID_PATTERN) != 0)
+		return false;
 
 	var userfound=system.matchuser(str,true);
 	if(userfound && userfound!=user.number)
