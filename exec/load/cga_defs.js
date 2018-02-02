@@ -1,5 +1,5 @@
 // $Id$
-// CGA (IBM Color Graphics Adapater) definitions
+// CGA (IBM Color Graphics Adapter) definitions
 
 								/********************************************/
 							    /* console.attributes, also used for ansi()	*/
@@ -35,3 +35,6 @@ var   BG_RED		=(RED<<4);
 var   BG_MAGENTA	=(MAGENTA<<4);
 var   BG_BROWN		=(BROWN<<4);
 var   BG_LIGHTGRAY	=(LIGHTGRAY<<4);
+
+// Leave as last line:
+this;
