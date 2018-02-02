@@ -101,6 +101,10 @@
  *                              field length), which shows the 'from' name with
  *                              the from network in parenthesis.  Updated the
  *                              default message header to show that information.
+ * 2018-02-01 Eric Oulashin     Version 1.17 beta 56
+ *                              When replying to a message, the reader will
+ *                              strip any control characters that might be in the
+ *                              subject line.
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -187,8 +191,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 55";
-var READER_DATE = "2018-01-27";
+var READER_VERSION = "1.17 Beta 56";
+var READER_DATE = "2018-02-01";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -8885,6 +8889,9 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			}
 		}
 	}
+
+	// Strip any control characters that the subject line might have
+	pMsgHdr.subject = strip_ctrl(pMsgHdr.subject);
 
 	// If the user is listing personal e-mail, then we need to call
 	// bbs.email() to leave a reply; otherwise, use bbs.post_msg().
