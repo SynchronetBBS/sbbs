@@ -137,7 +137,8 @@ int try_sdl_init(int mode)
 	if(!sdl_initciolib(mode)) {
 		cio_api.mouse=1;
 		cio_api.puttext=bitmap_puttext;
-		cio_api.gettext=bitmap_gettext;
+		cio_api.pputtext=bitmap_pputtext;
+		cio_api.pgettext=bitmap_pgettext;
 		cio_api.gotoxy=bitmap_gotoxy;
 		cio_api.setcursortype=bitmap_setcursortype;
 		cio_api.setfont=bitmap_setfont;
@@ -192,7 +193,8 @@ int try_x_init(int mode)
 		cio_api.mode=CIOLIB_MODE_X;
 		cio_api.mouse=1;
 		cio_api.puttext=bitmap_puttext;
-		cio_api.gettext=bitmap_gettext;
+		cio_api.pputtext=bitmap_pputtext;
+		cio_api.pgettext=bitmap_pgettext;
 		cio_api.gotoxy=bitmap_gotoxy;
 		cio_api.setcursortype=bitmap_setcursortype;
 		cio_api.setfont=bitmap_setfont;
@@ -496,6 +498,8 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int 
 	int width;
 	int height;
 	unsigned char *buf;
+	uint32_t *fgb = NULL;
+	uint32_t *bgb = NULL;
 
 	CIOLIB_INIT();
 
@@ -507,14 +511,39 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int 
 	buf=(unsigned char *)malloc((width+1)*(height+1)*2);
 	if(buf==NULL)
 		return(0);
-	if(!ciolib_gettext(sx,sy,ex,ey,buf))
-		goto fail;
-	if(!ciolib_puttext(dx,dy,dx+width,dy+height,buf))
-		goto fail;
+	if (cio_api.pgettext) {
+		fgb=(uint32_t *)malloc((width+1)*(height+1)*sizeof(fgb[0]));
+		if (fgb == NULL) {
+			free(buf);
+			return 0;
+		}
+
+		bgb=(uint32_t *)malloc((width+1)*(height+1)*sizeof(bgb[0]));
+		if (bgb == NULL) {
+			free(fgb);
+			free(buf);
+			return 0;
+		}
+		if(!ciolib_pgettext(sx,sy,ex,ey,buf,fgb,bgb))
+			goto fail;
+		if(!ciolib_pputtext(dx,dy,dx+width,dy+height,buf,fgb,bgb))
+			goto fail;
+	}
+	else {
+		if(!ciolib_gettext(sx,sy,ex,ey,buf))
+			goto fail;
+		if(!ciolib_puttext(dx,dy,dx+width,dy+height,buf))
+			goto fail;
+	}
+
 	return(1);
 
 fail:
 	free(buf);
+	if (fgb)
+		free(fgb);
+	if (bgb)
+		free(bgb);
 	return 0;
 }
 
@@ -811,6 +840,8 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_window(int sx, int sy, int ex, int ey)
 CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 {
 	unsigned char *buf;
+	uint32_t *fgbuf = NULL;
+	uint32_t *bgbuf = NULL;
 	int i;
 	int width,height;
 
@@ -826,7 +857,21 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 	buf=(unsigned char *)malloc(width*height*2);
 	if (!buf)
 		return;
+	if (cio_api.pputtext) {
+		fgbuf = malloc(width*height*sizeof(fgbuf[0]));
+		if (!fgbuf) {
+			free(buf);
+			return;
+		}
+		bgbuf = malloc(width*height*sizeof(bgbuf[0]));
+		if (!bgbuf) {
+			free(fgbuf);
+			free(buf);
+			return;
+		}
+	}
 	for(i=0;i<width*height*2;) {
+		ciolib_attr2palette(cio_textinfo.attribute, &fgbuf[i>>1], &bgbuf[i>>1]);
 		buf[i++]=' ';
 		buf[i++]=cio_textinfo.attribute;
 	}
@@ -836,6 +881,10 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 			cio_textinfo.winright,
 			cio_textinfo.cury+cio_textinfo.wintop-1,
 			buf);
+	if (fgbuf)
+		free(fgbuf);
+	if (bgbuf)
+		free(bgbuf);
 	free(buf);
 }
 
@@ -843,6 +892,8 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
 {
 	unsigned char *buf;
+	uint32_t *fgbuf = NULL;
+	uint32_t *bgbuf = NULL;
 	int i;
 	int width,height;
 	int old_ptcm=puttext_can_move;
@@ -858,14 +909,32 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
 	buf=(unsigned char *)malloc(width*height*2);
 	if(!buf)
 		return;
+	if (cio_api.pputtext) {
+		fgbuf = malloc(width*height*sizeof(fgbuf[0]));
+		if (!fgbuf) {
+			free(buf);
+			return;
+		}
+		bgbuf = malloc(width*height*sizeof(bgbuf[0]));
+		if (!bgbuf) {
+			free(fgbuf);
+			free(buf);
+			return;
+		}
+	}
 	for(i=0;i<width*height*2;) {
 		buf[i++]=' ';
 		buf[i++]=cio_textinfo.attribute;
 	}
 	puttext_can_move=1;
-	ciolib_puttext(cio_textinfo.winleft,cio_textinfo.wintop,cio_textinfo.winright,cio_textinfo.winbottom,buf);
+	ciolib_pputtext(cio_textinfo.winleft,cio_textinfo.wintop,cio_textinfo.winright,cio_textinfo.winbottom,buf,fgbuf,bgbuf);
 	ciolib_gotoxy(1,1);
 	puttext_can_move=old_ptcm;
+
+	if (fgbuf)
+		free(fgbuf);
+	if (bgbuf)
+		free(bgbuf);
 	free(buf);
 }
 
@@ -1257,7 +1326,10 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e)
 	int		ret;
 	CIOLIB_INIT();
 
-	ret = cio_api.gettext(a,b,c,d,e);
+	if (cio_api.gettext == NULL)
+		ret = cio_api.pgettext(a,b,c,d,e,NULL,NULL);
+	else
+		ret = cio_api.gettext(a,b,c,d,e);
 	if(ciolib_xlat) {
 		font = ciolib_getfont();
 		if (font >= 0) {
@@ -1329,6 +1401,8 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 {
 	unsigned char a1=a;
 	unsigned char buf[2];
+	uint32_t fgbuf[1];
+	uint32_t bgbuf[1];
 	int i;
 	int old_puttext_can_move=puttext_can_move;
 
@@ -1341,6 +1415,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 
 	buf[0]=a1;
 	buf[1]=cio_textinfo.attribute;
+	ciolib_attr2palette(buf[1], &fgbuf[0], &bgbuf[0]);
 
 	switch(a1) {
 		case '\r':
@@ -1356,11 +1431,11 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 			if(cio_textinfo.curx>1) {
 				ciolib_gotoxy(cio_textinfo.curx-1,cio_textinfo.cury);
 				buf[0]=' ';
-				ciolib_puttext(cio_textinfo.curx+cio_textinfo.winleft-1
+				ciolib_pputtext(cio_textinfo.curx+cio_textinfo.winleft-1
 						,cio_textinfo.cury+cio_textinfo.wintop-1
 						,cio_textinfo.curx+cio_textinfo.winleft-1
 						,cio_textinfo.cury+cio_textinfo.wintop-1
-						,buf);
+						,buf,fgbuf,bgbuf);
 			}
 			break;
 		case 7:		/* Bell */
@@ -1371,11 +1446,11 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 				if(tabs[i]>cio_textinfo.curx) {
 					buf[0]=' ';
 					while(cio_textinfo.curx<tabs[i]) {
-						ciolib_puttext(cio_textinfo.curx+cio_textinfo.winleft-1
+						ciolib_pputtext(cio_textinfo.curx+cio_textinfo.winleft-1
 								,cio_textinfo.cury+cio_textinfo.wintop-1
 								,cio_textinfo.curx+cio_textinfo.winleft-1
 								,cio_textinfo.cury+cio_textinfo.wintop-1
-								,buf);
+								,buf,bgbuf,fgbuf);
 						ciolib_gotoxy(cio_textinfo.curx+1,cio_textinfo.cury);
 						if(cio_textinfo.curx==cio_textinfo.screenwidth)
 							break;
@@ -1394,29 +1469,29 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 		default:
 			if(cio_textinfo.cury==cio_textinfo.winbottom-cio_textinfo.wintop+1
 					&& cio_textinfo.curx==cio_textinfo.winright-cio_textinfo.winleft+1) {
-				ciolib_puttext(ciolib_wherex()+cio_textinfo.winleft-1
+				ciolib_pputtext(ciolib_wherex()+cio_textinfo.winleft-1
 						,ciolib_wherey()+cio_textinfo.wintop-1
 						,ciolib_wherex()+cio_textinfo.winleft-1
 						,ciolib_wherey()+cio_textinfo.wintop-1
-						,buf);
+						,buf,fgbuf,bgbuf);
 				ciolib_wscroll();
 				ciolib_gotoxy(1, cio_textinfo.winbottom-cio_textinfo.wintop+1);
 			}
 			else {
 				if(cio_textinfo.curx==cio_textinfo.winright-cio_textinfo.winleft+1) {
-					ciolib_puttext(ciolib_wherex()+cio_textinfo.winleft-1
+					ciolib_pputtext(ciolib_wherex()+cio_textinfo.winleft-1
 							,ciolib_wherey()+cio_textinfo.wintop-1
 							,ciolib_wherex()+cio_textinfo.winleft-1
 							,ciolib_wherey()+cio_textinfo.wintop-1
-							,buf);
+							,buf,fgbuf,bgbuf);
 					ciolib_gotoxy(1,cio_textinfo.cury+1);
 				}
 				else {
-					ciolib_puttext(ciolib_wherex()+cio_textinfo.winleft-1
+					ciolib_pputtext(ciolib_wherex()+cio_textinfo.winleft-1
 							,ciolib_wherey()+cio_textinfo.wintop-1
 							,ciolib_wherex()+cio_textinfo.winleft-1
 							,ciolib_wherey()+cio_textinfo.wintop-1
-							,buf);
+							,buf,fgbuf,bgbuf);
 					ciolib_gotoxy(cio_textinfo.curx+1, cio_textinfo.cury);
 				}
 			}
@@ -1475,7 +1550,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t fg_palette, uint32_t bg_palet
 CIOLIBEXPORT void CIOLIBCALL ciolib_setcursortype(int a)
 {
 	CIOLIB_INIT();
-	
+
 	cio_api.setcursortype(a);
 }
 

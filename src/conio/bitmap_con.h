@@ -9,8 +9,9 @@ extern pthread_mutex_t vstatlock;
 extern sem_t	drawn_sem;
 extern int force_redraws;
 
-int bitmap_gettext(int sx, int sy, int ex, int ey, void *fill);
+int bitmap_pgettext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, uint32_t *bg);
 int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill);
+int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, uint32_t *bg);
 void bitmap_gotoxy(int x, int y);
 void bitmap_setcursortype(int type);
 int bitmap_setfont(int font, int force, int font_no);

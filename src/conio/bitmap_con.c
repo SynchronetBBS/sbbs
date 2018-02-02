@@ -447,10 +447,12 @@ void bitmap_clrscr(void)
 	unlock_vmem(vmem_ptr);
 }
 
-int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
+int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, uint32_t *bg)
 {
 	int x,y;
 	unsigned char *out;
+	uint32_t *fgout;
+	uint32_t *bgout;
 	WORD	sch;
 	struct vstat_vmem *vmem_ptr;
 
@@ -471,22 +473,53 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 
 	vmem_ptr = lock_vmem(&vstat);
 	out=fill;
+	fgout = fg;
+	bgout = bg;
 	for(y=sy-1;y<ey;y++) {
 		for(x=sx-1;x<ex;x++) {
 			sch=*(out++);
 			sch |= (*(out++))<<8;
 			set_vmem_cell(vmem_ptr, y*cio_textinfo.screenwidth+x, sch);
+			if (fg)
+				vmem_ptr->fgvmem[y*cio_textinfo.screenwidth+x] = *(fgout++);
+			if (bg)
+				vmem_ptr->bgvmem[y*cio_textinfo.screenwidth+x] = *(bgout++);
 		}
 	}
 	unlock_vmem(vmem_ptr);
 	return(1);
 }
 
+int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
+{
+	int i, ret;
+	uint16_t *buf = fill;
+	uint32_t *fg;
+	uint32_t *bg;
+
+	fg = malloc((ex-sx+1)*(ey-sy+1)*sizeof(fg[0]));
+	if (fg == NULL)
+		return 0;
+	bg = malloc((ex-sx+1)*(ey-sy+1)*sizeof(bg[0]));
+	if (bg == NULL) {
+		free(fg);
+		return 0;
+	}
+	for (i=0; i<(ex-sx+1)*(ey-sy+1); i++)
+		bitmap_attr2palette(buf[i]>>8, &fg[i], &bg[i]);
+	ret = bitmap_pputtext(sx,sy,ex,ey,fill,fg,bg);
+	free(fg);
+	free(bg);
+	return ret;
+}
+
 /* Called from main thread only */
-int bitmap_gettext(int sx, int sy, int ex, int ey, void *fill)
+int bitmap_pgettext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, uint32_t *bg)
 {
 	int x,y;
 	unsigned char *out;
+	uint32_t *fgout;
+	uint32_t *bgout;
 	WORD	sch;
 	struct vstat_vmem *vmem_ptr;
 
@@ -506,11 +539,17 @@ int bitmap_gettext(int sx, int sy, int ex, int ey, void *fill)
 
 	vmem_ptr = lock_vmem(&vstat);
 	out=fill;
+	fgout=fg;
+	bgout=bg;
 	for(y=sy-1;y<ey;y++) {
 		for(x=sx-1;x<ex;x++) {
 			sch=vmem_ptr->vmem[y*cio_textinfo.screenwidth+x];
 			*(out++)=sch & 0xff;
 			*(out++)=sch >> 8;
+			if (fg)
+				*(fgout++) = vmem_ptr->fgvmem[y*cio_textinfo.screenwidth+x];
+			if (bg)
+				*(bgout++) = vmem_ptr->bgvmem[y*cio_textinfo.screenwidth+x];
 		}
 	}
 	unlock_vmem(vmem_ptr);
