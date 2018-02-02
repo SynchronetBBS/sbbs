@@ -93,13 +93,17 @@ void uifcmsg(char *msg, char *helpbuf)
 {
 	int i;
 	char	*buf;
+	uint32_t *fbuf;
+	uint32_t *bbuf;
 	struct	text_info txtinfo;
 
     gettextinfo(&txtinfo);
 	i=uifc_initialized;
 	if(!i) {
 		buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
-		gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+		fbuf=alloca(txtinfo.screenheight*txtinfo.screenwidth*sizeof(fbuf[0]));
+		bbuf=alloca(txtinfo.screenheight*txtinfo.screenwidth*sizeof(bbuf[0]));
+		pgettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf,fbuf,bbuf);
 	}
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
@@ -111,7 +115,7 @@ void uifcmsg(char *msg, char *helpbuf)
 		fprintf(stderr,"%s\n",msg);
 	if(!i) {
 		uifcbail();
-		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+		pputtext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf,fbuf,bbuf);
 	}
 }
 
@@ -119,13 +123,17 @@ void uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 {
 	int i;
 	char	*buf;
+	uint32_t *fbuf;
+	uint32_t *bbuf;
 	struct	text_info txtinfo;
 
     gettextinfo(&txtinfo);
 	i=uifc_initialized;
 	if(!i) {
 		buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
-		gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+		fbuf=alloca(txtinfo.screenheight*txtinfo.screenwidth*sizeof(fbuf[0]));
+		bbuf=alloca(txtinfo.screenheight*txtinfo.screenwidth*sizeof(bbuf[0]));
+		pgettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf,fbuf,bbuf);
 	}
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
@@ -137,7 +145,7 @@ void uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 		fprintf(stderr,"%s\n",msg);
 	if(!i) {
 		uifcbail();
-		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+		pputtext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf,fbuf,bbuf);
 	}
 }
 
@@ -145,6 +153,8 @@ int confirm(char *msg, char *helpbuf)
 {
 	int i;
 	char	*buf;
+	uint32_t *fbuf;
+	uint32_t *bbuf;
 	struct	text_info txtinfo;
 	char	*options[] = {
 				 "Yes"
@@ -157,7 +167,9 @@ int confirm(char *msg, char *helpbuf)
 	i=uifc_initialized;
 	if(!i) {
 		buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
-		gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+		fbuf=alloca(txtinfo.screenheight*txtinfo.screenwidth*sizeof(fbuf[0]));
+		bbuf=alloca(txtinfo.screenheight*txtinfo.screenwidth*sizeof(bbuf[0]));
+		pgettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf,fbuf,bbuf);
 	}
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
@@ -169,7 +181,7 @@ int confirm(char *msg, char *helpbuf)
 	}
 	if(!i) {
 		uifcbail();
-		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+		pputtext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf,fbuf,bbuf);
 	}
 	return(ret);
 }

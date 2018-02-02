@@ -94,6 +94,8 @@ int default_font=0;
 struct syncterm_settings settings;
 char *font_names[sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)];
 unsigned char *scrollback_buf=NULL;
+uint32_t *scrollback_fbuf=NULL;
+uint32_t *scrollback_bbuf=NULL;
 unsigned int  scrollback_lines=0;
 unsigned int  scrollback_mode=C80;
 unsigned int  scrollback_cols=80;
