@@ -1408,14 +1408,15 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 
 	CIOLIB_INIT();
 
-	if(cio_api.putch)
-		return(cio_api.putch(a1));
+	if(cio_api.cputch)
+		return(cio_api.cputch(fg, bg, a1));
 
 	puttext_can_move=1;
 
 	buf[0]=a1;
 	buf[1]=cio_textinfo.attribute;
-	ciolib_attr2palette(buf[1], &fgbuf[0], &bgbuf[0]);
+	fgbuf[0] = fg;
+	bgbuf[0] = bg;
 
 	switch(a1) {
 		case '\r':
