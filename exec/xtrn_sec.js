@@ -126,7 +126,9 @@ function external_program_menu(xsec)
 		}
 		if(options.clear_screen_on_exec)
 			console.clear();
+		load('fonts.js', 'xtrn:' + prog_list[i].code);
 		bbs.exec_xtrn(prog_list[i].code); 
+		load('fonts.js', 'default');
 
 		if(prog_list[i].settings&XTRN_PAUSE)
 			console.pause();
