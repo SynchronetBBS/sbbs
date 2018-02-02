@@ -76,6 +76,9 @@
  *                              Synchronet color code.
  * 2018-01-28 Eric Oulashin     Version 1.58
  *                              Releasing this version
+ * 2018-02-01 Eric Oulashin     Version 1.59
+ *                              Updated to strip control characters from the
+ *                              information read from the drop file.
  */
 
 /* Command-line arguments:
@@ -153,8 +156,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.58";
-const EDITOR_VER_DATE = "2018-01-28";
+const EDITOR_VERSION = "1.59";
+const EDITOR_VER_DATE = "2018-02-01";
 
 
 // Program variables
@@ -430,10 +433,10 @@ if (dropFileName != undefined)
 			info = dropFile.readAll();
 			dropFile.close();
 
-			gFromName = info[0];
-			gToName = info[1];
-			gMsgSubj = info[2];
-			gMsgAreaName = info[4];
+			gFromName = strip_ctrl(info[0]);
+			gToName = strip_ctrl(info[1]);
+			gMsgSubj = strip_ctrl(info[2]);
+			gMsgAreaName = strip_ctrl(info[4]);
 
 			// Now that we know the name of the message area
 			// that the message is being posted in, call
