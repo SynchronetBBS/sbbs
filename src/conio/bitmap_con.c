@@ -441,7 +441,6 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		ssourcepos=((y-1)*vstat.charheight+screeny)*cio_textinfo.screenwidth*vstat.charwidth+(x-1)*vstat.charwidth;
 		memmove(&(screen[ssourcepos+sdestoffset]), &(screen[ssourcepos]), sizeof(screen[0])*width*vstat.charwidth);
 	}
-	bitmap_draw_cursor(&vstat);
 
 	unlock_vmem(vmem_ptr);
 	pthread_mutex_unlock(&screenlock);

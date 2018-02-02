@@ -1278,8 +1278,8 @@ void draw_sixel(struct cterminal *cterm, char *str)
 	struct text_info ti;
 	int i;
 	char *p;
+	int max_row;
 
-	SETCURSORTYPE(_NOCURSOR);
 	GETTEXTINFO(&ti);
 	vmode = find_vmode(ti.currmode);
 	attr2palette(ti.attribute, &fg, &bg);
@@ -1378,9 +1378,16 @@ void draw_sixel(struct cterminal *cterm, char *str)
 					p++;
 					break;
 				case '-':	// Graphics New Line
+					max_row = cterm->height;
+					if(cterm->origin_mode)
+						max_row = cterm->bottom_margin - cterm->top_margin + 1;
+
 					x = left;
 					y += 6;
-					/* Check y */
+					if (y + 5 >= (cterm->y + max_row - 1) * vparams[vmode].charheight) {
+						scrollup(cterm);
+						y -= vparams[vmode].charheight;
+					}
 					p++;
 					break;
 				default:
@@ -1388,15 +1395,16 @@ void draw_sixel(struct cterminal *cterm, char *str)
 			}
 		}
 	}
+
 	x = x / vparams[vmode].charwidth + 1;
-	x -= cterm->x;
+	x -= (cterm->x - 1);
 	x++;
 
 	y = y / vparams[vmode].charheight + 1;
-	y -= cterm->y;
+	y -= (cterm->y - 1);
 	y++;
+
 	GOTOXY(x,y);
-	SETCURSORTYPE(cterm->cursor);
 }
 
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed)
