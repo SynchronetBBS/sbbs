@@ -67,6 +67,7 @@ function is_valid(buf)
 	var invalid = buf.split('').filter(function (e,i) { 
 		if((i&1) == 0) { // char
 			switch(e) {
+				case '\x00':
 				case '\r':
 				case '\n':
 				case '\x07':	// Beep/BEL ('\a')
