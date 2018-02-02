@@ -78,7 +78,10 @@
  *                              Releasing this version
  * 2018-02-01 Eric Oulashin     Version 1.59
  *                              Updated to strip control characters from the
- *                              information read from the drop file.
+ *                              information read from the drop file.  Also made a bug
+ *                              fix: When backspacing, it now properly removes any
+ *                              Synchronet attribute codes immediately after the
+ *                              character being deleted.
  */
 
 /* Command-line arguments:
@@ -1782,8 +1785,10 @@ function doBackspace(pCurpos, pCurrentWordLength)
 	// over to the left.
 	if (retObj.x > gEditLeft)
 	{
+		//displayDebugText(1, 1, "Here 1!!   \1;", console.getxy(), false, false, true); // Temporary
 		if (gTextLineIndex > 0)
 		{
+			//displayDebugText(1, 1, "Here 2!!   \1;", console.getxy(), false, false, true); // Temporary
 			console.print(BACKSPACE);
 			console.print("\1n " + gTextAttrs);
 			--retObj.x;
@@ -1841,9 +1846,11 @@ function doBackspace(pCurpos, pCurrentWordLength)
 		// if there's room (if not, don't do anything).
 		if (gEditLinesIndex > 0)
 		{
+			//displayDebugText(1, 1, "Here 3!!   \1;", console.getxy(), false, false, true); // Temporary
 			var prevLineIndex = gEditLinesIndex - 1;
 			if (gEditLines[gEditLinesIndex].displayLength() > 0)
 			{
+				//displayDebugText(1, 1, "Here 4!!   \1;", console.getxy(), false, false, true); // Temporary
 				// Store the previous line's original visible length
 				var originalPrevLineLen = gEditLines[prevLineIndex].displayLength();
 
@@ -1851,6 +1858,7 @@ function doBackspace(pCurpos, pCurrentWordLength)
 				var prevLineNumCharsAvailable = gEditWidth - gEditLines[prevLineIndex].displayLength();
 				if (prevLineNumCharsAvailable > 0)
 				{
+					//displayDebugText(1, 1, "Here 5!!   \1;", console.getxy(), false, false, true); // Temporary
 					var index = prevLineNumCharsAvailable - 1;
 					// If that index is valid for the current line, then find the first
 					// space in the current line so that the text would fit at the end
@@ -1871,6 +1879,7 @@ function doBackspace(pCurpos, pCurrentWordLength)
 					// the space to the end of the previous line.
 					if (index > 0)
 					{
+						//displayDebugText(1, 1, "Here 6!!   \1;", console.getxy(), false, false, true); // Temporary
 						var linePart = gEditLines[gEditLinesIndex].text.substr(0, index);
 						gEditLines[gEditLinesIndex].text = gEditLines[gEditLinesIndex].text.substr(index+1);
 						// Save the text line index for the previous line where
@@ -1904,6 +1913,7 @@ function doBackspace(pCurpos, pCurrentWordLength)
 			}
 			else
 			{
+				//displayDebugText(1, 1, "Here 7!!   \1;", console.getxy(), false, false, true); // Temporary
 				// The current line's displayable length is 0.
 				// Save the current line's text, to preserve color/attribute
 				// codes that might be there
@@ -1913,6 +1923,7 @@ function doBackspace(pCurpos, pCurrentWordLength)
 				// previous line.
 				if (gEditLines[prevLineIndex].displayLength() <= gEditWidth-1)
 				{
+					//displayDebugText(1, 1, "Here 8!!   \1;", console.getxy(), false, false, true); // Temporary
 					// Copy the current line's "hard newline end" setting to the
 					// previous line (so that if there's a blank line below the
 					// current line, the blank line will be preserved), then remove
@@ -1942,6 +1953,7 @@ function doBackspace(pCurpos, pCurrentWordLength)
 	// and refresh the screen.
 	if (didBackspace)
 	{
+		//displayDebugText(1, 1, "Here 9!!   \1;", console.getxy(), false, false, true); // Temporary
 		// Store the previous line of text now so we can compare it later
 		var prevTextline = "";
 		if (gEditLinesIndex > 0)
