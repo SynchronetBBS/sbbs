@@ -424,6 +424,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	sourcepos=(y-1)*cio_textinfo.screenwidth+(x-1);
 	destoffset=(((toy-1)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
 
+	pthread_mutex_lock(&screenlock);
 	vmem_ptr = lock_vmem(&vstat);
 	for(cy=(direction==-1?(height-1):0); cy<height && cy>=0; cy+=direction) {
 		sourcepos=((y-1)+cy)*cio_textinfo.screenwidth+(x-1);
@@ -434,17 +435,16 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	if (vstat.curs_row >= x && vstat.curs_row <= ex &&
 	    vstat.curs_col >= y && vstat.curs_col <= ey)
 		bitmap_draw_one_char(&vstat, vstat.curs_col, vstat.curs_row);
-	pthread_mutex_lock(&screenlock);
 	ssourcepos=(y-1)     *cio_textinfo.screenwidth*vstat.charwidth+(x-1)  *vstat.charwidth;
 	sdestoffset=(((toy-1)*cio_textinfo.screenwidth*vstat.charwidth+(tox-1)*vstat.charwidth)-ssourcepos)*vstat.charheight;
 	for(screeny=(direction==-1?(height-1)*vstat.charheight:0); screeny<height*vstat.charheight && screeny>=0; screeny+=direction) {
 		ssourcepos=((y-1)*vstat.charheight+screeny)*cio_textinfo.screenwidth*vstat.charwidth+(x-1)*vstat.charwidth;
 		memmove(&(screen[ssourcepos+sdestoffset]), &(screen[ssourcepos]), sizeof(screen[0])*width*vstat.charwidth);
 	}
-	pthread_mutex_unlock(&screenlock);
 	bitmap_draw_cursor(&vstat);
 
 	unlock_vmem(vmem_ptr);
+	pthread_mutex_unlock(&screenlock);
 
 	return(1);
 }
@@ -1092,8 +1092,8 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 			|| vstat.curs_end!=vs.curs_end)
 		redraw_cursor=1;
 	cvstat = vstat;
-	vmem_ptr = get_vmem(&vstat);
 	pthread_mutex_unlock(&vstatlock);
+	vmem_ptr = get_vmem(&vstat);
 	pthread_mutex_lock(&vmem_lock);
 	cvstat.vmem = &cvmem;
 	cvstat.vmem->refcount = 1;
