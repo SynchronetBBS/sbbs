@@ -453,7 +453,7 @@ function export_file(msgbase, filename)
 function install()
 {
 	if(!file_exists(lib.local_library() + "*.bin"))
-		return "Not avatars collections (.bin files) found in " + lib.local_library();
+		return "No avatars collections (.bin files) found in " + lib.local_library();
 	var cnflib = load({}, "cnflib.js");
 	var xtrn_cnf = cnflib.read("xtrn.cnf");
 	if(!xtrn_cnf)
