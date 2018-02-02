@@ -125,6 +125,12 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg_palette, uint32_t bg_palet
 CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t fg_palette, uint32_t bg_palette, const char *str);
 CIOLIBEXPORT int CIOLIBCALL ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
+CIOLIBEXPORT struct ciolib_pixels * CIOLIBCALL ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey);
+CIOLIBEXPORT int CIOLIBCALL ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels);
+CIOLIBEXPORT void CIOLIBCALL ciolib_freepixels(struct ciolib_pixels *pixels);
+CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_freescreen(struct ciolib_screen *);
+CIOLIBEXPORT int CIOLIBCALL ciolib_restorescreen(struct ciolib_screen *scrn);
 
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 int sdl_video_initialized = 0;
@@ -174,6 +180,8 @@ int try_sdl_init(int mode)
 		cio_api.setpalette=sdl_setpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
+		cio_api.getpixels=bitmap_getpixels;
+		cio_api.setpixels=bitmap_setpixels;
 		return(1);
 	}
 	return(0);
@@ -224,6 +232,7 @@ int try_x_init(int mode)
 		cio_api.setpalette=x_setpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
+		cio_api.setpixels=bitmap_setpixels;
 		return(1);
 	}
 	return(0);
@@ -1752,4 +1761,101 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_setpixel(uint32_t x, uint32_t y, uint32_t col
 	if (cio_api.setpixel)
 		return cio_api.setpixel(x, y, colour);
 	return 0;
+}
+
+CIOLIBEXPORT struct ciolib_pixels * CIOLIBCALL ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey)
+{
+	CIOLIB_INIT();
+
+	if (cio_api.getpixels)
+		return cio_api.getpixels(sx, sy, ex, ey);
+	return NULL;
+}
+
+CIOLIBEXPORT int CIOLIBCALL ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels)
+{
+	CIOLIB_INIT();
+
+	if (cio_api.setpixels)
+		return cio_api.setpixels(sx, sy, ex, ey, x_off, y_off, pixels);
+	return 0;
+}
+
+CIOLIBEXPORT void CIOLIBCALL ciolib_freepixels(struct ciolib_pixels *pixels)
+{
+	if (pixels == NULL)
+		return;
+
+	FREE_AND_NULL(pixels->pixels);
+	FREE_AND_NULL(pixels);
+}
+
+CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void)
+{
+	struct ciolib_screen *ret;
+	int vmode;
+
+	CIOLIB_INIT();
+
+	ret = malloc(sizeof(*ret));
+	if (ret == NULL)
+		return NULL;
+
+	ciolib_gettextinfo(&ret->text_info);
+	vmode = find_vmode(ret->text_info.currmode);
+	ret->vmem = malloc(vparams[vmode].cols * vparams[vmode].rows * 2);
+	if (ret->vmem == NULL) {
+		free(ret);
+		return NULL;
+	}
+	ret->foreground = malloc(vparams[vmode].cols * vparams[vmode].rows * sizeof(ret->foreground[0]));
+	if (ret->foreground == NULL) {
+		free(ret->vmem);
+		free(ret);
+		return NULL;
+	}
+	ret->background = malloc(vparams[vmode].cols * vparams[vmode].rows * sizeof(ret->background[0]));
+	if (ret->background == NULL) {
+		free(ret->foreground);
+		free(ret->vmem);
+		free(ret);
+		return NULL;
+	}
+
+	ret->pixels = ciolib_getpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols, vparams[vmode].charheight * vparams[vmode].rows);
+	ciolib_pgettext(1, 1, vparams[vmode].cols, vparams[vmode].rows, ret->vmem, ret->foreground, ret->background);
+
+	return ret;
+}
+
+CIOLIBEXPORT void CIOLIBCALL ciolib_freescreen(struct ciolib_screen *scrn)
+{
+	if (scrn == NULL)
+		return;
+
+	ciolib_freepixels(scrn->pixels);
+	FREE_AND_NULL(scrn->background);
+	FREE_AND_NULL(scrn->foreground);
+	FREE_AND_NULL(scrn->vmem);
+	free(scrn);
+}
+
+CIOLIBEXPORT int CIOLIBCALL ciolib_restorescreen(struct ciolib_screen *scrn)
+{
+	struct text_info ti;
+	int vmode;
+
+	CIOLIB_INIT();
+
+	ciolib_gettextinfo(&ti);
+
+	if (ti.currmode != scrn->text_info.currmode)
+		ciolib_textmode(scrn->text_info.currmode);
+	ciolib_pputtext(1, 1, scrn->text_info.screenwidth, scrn->text_info.screenheight, scrn->vmem, scrn->foreground, scrn->background);
+	ciolib_gotoxy(scrn->text_info.curx, scrn->text_info.cury);
+	ciolib_textcolor(scrn->text_info.attribute);
+	ciolib_window(scrn->text_info.winleft, scrn->text_info.wintop, scrn->text_info.winright, scrn->text_info.winbottom);
+	vmode = find_vmode(scrn->text_info.currmode);
+	ciolib_setpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols, vparams[vmode].charheight * vparams[vmode].rows, 0, 0, scrn->pixels);
+	return 1;
 }

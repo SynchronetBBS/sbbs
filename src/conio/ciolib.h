@@ -252,6 +252,20 @@ struct conio_font_data_struct {
 
 CIOLIBEXPORTVAR struct conio_font_data_struct conio_fontdata[257];
 
+struct ciolib_pixels {
+	uint32_t	*pixels;
+	uint32_t	width;
+	uint32_t	height;
+};
+
+struct ciolib_screen {
+	struct ciolib_pixels	*pixels;
+	void			*vmem;
+	void			*foreground;
+	void			*background;
+	struct text_info	text_info;
+};
+
 #define CONIO_FIRST_FREE_FONT	43
 
 typedef struct {
@@ -319,6 +333,8 @@ typedef struct {
 	int		(*setpalette)	(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 	int		(*attr2palette)	(uint8_t attr, uint32_t *fg, uint32_t *bg);
 	int		(*setpixel)	(uint32_t x, uint32_t y, uint32_t colour);
+	struct ciolib_pixels *(*getpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey);
+	int		(*setpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels);
 } cioapi_t;
 
 CIOLIBEXPORTVAR cioapi_t cio_api;
@@ -394,6 +410,13 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 CIOLIBEXPORT int CIOLIBCALL ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
+CIOLIBEXPORT struct ciolib_pixels * CIOLIBCALL ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey);
+CIOLIBEXPORT int CIOLIBCALL ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels);
+CIOLIBEXPORT void CIOLIBCALL ciolib_freepixels(struct ciolib_pixels *pixels);
+CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_freescreen(struct ciolib_screen *);
+CIOLIBEXPORT int CIOLIBCALL ciolib_restorescreen(struct ciolib_screen *scrn);
+
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -462,6 +485,12 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define setpalette(e,r,g,b)		ciolib_setpalette(e,r,g,b)
 	#define attr2palette(a,b,c)		ciolib_attr2palette(a,b,c)
 	#define setpixel(a,b,c)			ciolib_setpixel(a,b,c)
+	#define getpixels(a,b,c,d)		ciolib_getpixels(a,b,c,d)
+	#define setpixels(a,b,c,d,e,f,g)	ciolib_setpixels(a,b,c,d,e,f,g)
+	#define freepixles(a)			ciolib_freepixels(a)
+	#define savescreen()			ciolib_savescreen()
+	#define freescreen(a)			ciolib_freescreen(a)
+	#define restorescreen(a)		ciolib_restorescreen(a)
 #endif
 
 #ifdef WITH_SDL

@@ -1202,3 +1202,70 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	pthread_mutex_unlock(&screenlock);
 	return 1;
 }
+
+struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey)
+{
+	struct ciolib_pixels *pixels;
+	uint32_t width,height;
+	size_t y;
+
+	if (sx > ex || sy > ey)
+		return NULL;
+
+	if (ex > screenwidth || ey > screenheight)
+		return NULL;
+
+	width = ex - sx + 1;
+	height = ey - sy + 1;
+
+	pixels = malloc(sizeof(*pixels));
+	if (pixels == NULL)
+		return NULL;
+
+	pixels->width = width;
+	pixels->height = height;
+
+	pixels->pixels = malloc(sizeof(pixels->pixels[0])*(width)*(height));
+	if (pixels->pixels == NULL) {
+		free(pixels);
+		return NULL;
+	}
+
+	pthread_mutex_lock(&screenlock);
+	for (y = sy; y <= ey; y++)
+		memcpy(&pixels->pixels[width*(y-sy)], &screen[PIXEL_OFFSET(sx, y)], width * sizeof(pixels->pixels[0]));
+	pthread_mutex_unlock(&screenlock);
+
+	return pixels;
+}
+
+int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels)
+{
+	uint32_t y;
+	uint32_t width,height;
+
+	if (pixels == NULL)
+		return 0;
+
+	if (sx > ex || sy > ey)
+		return 0;
+
+	if (ex > screenwidth || ey > screenheight)
+		return 0;
+
+	width = ex - sx + 1;
+	height = ey - sy + 1;
+
+	if (width + x_off > pixels->width)
+		return 0;
+
+	if (height + y_off > pixels->height)
+		return 0;
+
+	pthread_mutex_lock(&screenlock);
+	for (y = sy; y <= ey; y++)
+		memcpy(&screen[PIXEL_OFFSET(sx, y)], &pixels->pixels[pixels->width*(y-sy+y_off)+x_off], width * sizeof(pixels->pixels[0]));
+	pthread_mutex_unlock(&screenlock);
+	update_pixels++;
+	return 1;
+}
