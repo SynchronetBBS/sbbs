@@ -1265,113 +1265,65 @@ fail:
 	return NULL;
 }
 
-void draw_sixel(struct cterminal *cterm, char *str)
+static void parse_sixel_string(struct cterminal *cterm, bool finish)
 {
-	uint32_t fg;
-	uint32_t bg;
-	int ratio, trans, hgrid;
-	int iv, ih, height, width;
-	unsigned long repeat;
-	unsigned left;
-	unsigned x,y;
+	char *p = cterm->strbuf;
+	char *end;
+	int i, j, k;
 	int vmode;
 	struct text_info ti;
-	int i, j, k;
-	char *p;
-	int max_row;
-	int	olddmc;
-	int pixels_sent = 0;
-	int first_pass = 1;
 
-	olddmc=*cterm->hold_update;
-	*cterm->hold_update=0;
+	if (cterm->strbuflen == 0) {
+		if (finish)
+			goto all_done;
+		return;
+	}
 
-	GETTEXTINFO(&ti);
-	vmode = find_vmode(ti.currmode);
-	attr2palette(ti.attribute, &fg, &bg);
-	x = left = (cterm->x + WHEREX() - 2) * vparams[vmode].charwidth;
-	y = (cterm->y + WHEREY() - 2) * vparams[vmode].charheight;
-	GOTOXY(ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
-	SETCURSORTYPE(_NOCURSOR);
-	GOTOXY(ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
-	*cterm->hold_update=1;
-	ratio = trans = hgrid = 0;
-	ratio = strtoul(str, &p, 10);
-	if (*p == ';') {
-		p++;
-		trans = strtoul(p, &p, 10);
-	}
-	if (*p == ';') {
-		p++;
-		hgrid = strtoul(p, &p, 10);
-	}
-	switch (ratio) {
-		case 0:
-		case 1:
-			iv = 2;
-			ih = 1;
-			break;
-		case 2:
-			iv = 5;
-			ih = 1;
-			break;
-		case 3:
-		case 4:
-			iv = 3;
-			ih = 1;
-			break;
-		case 5:
-		case 6:
-			iv = 2;
-			ih = 1;
-			break;
-		case 7:
-		case 8:
-		case 9:
-			iv = 1;
-			ih = 1;
-			break;
-	}
-	p++;
-	repeat = 0;
-	/* DO IT! */
-	while (*p) {
+	end = p+cterm->strbuflen-1;
+
+	if ((*end < '?' || *end > '~') && !finish)
+		return;
+
+	while (p <= end) {
 		if (*p >= '?' && *p <= '~') {
 			unsigned data = *p - '?';
 
-			pixels_sent = 1;
+			cterm->sx_pixels_sent = 1;
 			for (i=0; i<6; i++) {
 				if (data & (1<<i)) {
-					for (j = 0; j < iv; j++) {
-						for (k = 0; k < ih; k++)
-							setpixel(x+k, y+(i*iv)+j, fg);
+					for (j = 0; j < cterm->sx_iv; j++) {
+						for (k = 0; k < cterm->sx_ih; k++)
+							setpixel(cterm->sx_x+k, cterm->sx_y+(i*cterm->sx_iv)+j, cterm->sx_fg);
 					}
 				}
 				else {
-					if (first_pass && !trans) {
-						for (j = 0; j < iv; j++) {
-							for (k = 0; k < ih; k++)
-								setpixel(x+k, y+(i*iv)+j, bg);
+					if (cterm->sx_first_pass && !cterm->sx_trans) {
+						for (j = 0; j < cterm->sx_iv; j++) {
+							for (k = 0; k < cterm->sx_ih; k++)
+								setpixel(cterm->sx_x+k, cterm->sx_y+(i*cterm->sx_iv)+j, cterm->sx_bg);
 						}
 					}
 				}
 			}
-			x+=ih;
+			cterm->sx_x+=cterm->sx_ih;
 			// TODO: Check X
-			if (repeat)
-				repeat--;
-			if (!repeat)
+			if (cterm->sx_repeat)
+				cterm->sx_repeat--;
+			if (!cterm->sx_repeat)
 				p++;
 		}
 		else {
 			switch(*p) {
 				case '"':	// Raster Attributes
-					if (!pixels_sent) {
+					if (!cterm->sx_pixels_sent) {
+						unsigned long height, width;
+
 						p++;
-						iv = strtoul(p, &p, 10);
+						cterm->sx_iv = strtoul(p, &p, 10);
+						height = width = 0;
 						if (*p == ';') {
 							p++;
-							ih = strtoul(p, &p, 10);
+							cterm->sx_ih = strtoul(p, &p, 10);
 						}
 						if (*p == ';') {
 							p++;
@@ -1382,23 +1334,25 @@ void draw_sixel(struct cterminal *cterm, char *str)
 							height = strtoul(p, &p, 10);
 						}
 						// TODO: If the image scrolls, the background isn't set
-						for (i = 0; i<height*iv; i++) {
-							for (j = 0; j < width*ih; j++)
-								setpixel(x+j, y+i, bg);
+						for (i = 0; i<height*cterm->sx_iv; i++) {
+							for (j = 0; j < width*cterm->sx_ih; j++)
+								setpixel(cterm->sx_x+j, cterm->sx_y+i, cterm->sx_bg);
 						}
 					}
+					else
+						p++;
 					break;
 				case '!':	// Repeat
 					p++;
 					if (!p)
 						continue;
-					repeat = strtoul(p, &p, 10);
+					cterm->sx_repeat = strtoul(p, &p, 10);
 					break;
 				case '#':	// Colour Introducer
 					p++;
 					if (!p)
 						continue;
-					fg = strtoul(p, &p, 10) + TOTAL_DAC_SIZE;
+					cterm->sx_fg = strtoul(p, &p, 10) + TOTAL_DAC_SIZE;
 					/* Do we want to redefine it while we're here? */
 					if (*p == ';') {
 						unsigned long t,r,g,b;
@@ -1419,44 +1373,58 @@ void draw_sixel(struct cterminal *cterm, char *str)
 							b = strtoul(p, &p, 10);
 						}
 						if (t == 2)	// Only support RGB
-							setpalette(fg, r<<8|r, g<<8|g, b<<8|b);
+							setpalette(cterm->sx_fg, r<<8|r, g<<8|g, b<<8|b);
 					}
 					break;
 				case '$':	// Graphics Carriage Return
-					x = left;
+					cterm->sx_x = cterm->sx_left;
+					cterm->sx_first_pass = 0;
 					p++;
-					first_pass = 0;
 					break;
 				case '-':	// Graphics New Line
-					max_row = cterm->height;
-					if(cterm->origin_mode)
-						max_row = cterm->bottom_margin - cterm->top_margin + 1;
+					{
+						int max_row = cterm->height;
+						GETTEXTINFO(&ti);
+						vmode = find_vmode(ti.currmode);
 
-					x = left;
-					y += 6*iv;
-					while ((y + 6*iv - 1) >= (cterm->y + max_row - 1) * vparams[vmode].charheight) {
-						scrollup(cterm);
-						y -= vparams[vmode].charheight;
+						if(cterm->origin_mode)
+							max_row = cterm->bottom_margin - cterm->top_margin + 1;
+
+						cterm->sx_x = cterm->sx_left;
+						cterm->sx_y += 6*cterm->sx_iv;
+						while ((cterm->sx_y + 6*cterm->sx_iv - 1) >= (cterm->y + max_row - 1) * vparams[vmode].charheight) {
+							scrollup(cterm);
+							cterm->sx_y -= vparams[vmode].charheight;
+						}
+						cterm->sx_first_pass = 1;
+						p++;
 					}
-					p++;
-					first_pass = 1;
 					break;
 				default:
 					p++;
 			}
 		}
 	}
+	cterm->strbuflen = 0;
+	if (finish)
+		goto all_done;
+	return;
 
-	x = left;
-	x = x / vparams[vmode].charwidth + 1;
-	x -= (cterm->x - 1);
+all_done:
+	GETTEXTINFO(&ti);
+	vmode = find_vmode(ti.currmode);
 
-	y = (y+6*iv-1) / vparams[vmode].charheight + 1;
-	y -= (cterm->y - 1);
+	cterm->sx_x = cterm->sx_left;
+	cterm->sx_x = cterm->sx_x / vparams[vmode].charwidth + 1;
+	cterm->sx_x -= (cterm->x - 1);
 
-	*cterm->hold_update=olddmc;
-	GOTOXY(x,y);
+	cterm->sx_y = (cterm->sx_y+6*cterm->sx_iv-1) / vparams[vmode].charheight + 1;
+	cterm->sx_y -= (cterm->y - 1);
+
+	*cterm->hold_update=cterm->sx_hold_update;
+	GOTOXY(cterm->sx_x,cterm->sx_y);
 	SETCURSORTYPE(cterm->cursor);
+	cterm->sixel = SIXEL_INACTIVE;
 }
 
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed)
@@ -2446,6 +2414,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 			break;
 		case 'P':	// Device Control String - DCS
 			cterm->string = CTERM_STRING_DCS;
+			cterm->sixel = SIXEL_POSSIBLE;
 			FREE_AND_NULL(cterm->strbuf);
 			cterm->strbuf = malloc(1024);
 			cterm->strbufsize = 1024;
@@ -2489,10 +2458,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 			}
 			switch (cterm->string) {
 				case CTERM_STRING_DCS:
-					/* Is this a Sixel command? */
-					i = strspn(cterm->strbuf, "0123456789;");
-					if (cterm->strbuf[i] == 'q')
-						draw_sixel(cterm, cterm->strbuf);
+					if (cterm->sixel == SIXEL_STARTED)
+						parse_sixel_string(cterm, true);
+					cterm->sixel = SIXEL_INACTIVE;
 					break;
 				case CTERM_STRING_OSC:
 					/* Is this an xterm Change Color(s)? */
@@ -2568,7 +2536,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					}
 					break;
 			}
-			// TODO: Handle the string...
 			FREE_AND_NULL(cterm->strbuf);
 			cterm->strbufsize = cterm->strbuflen = 0;
 			cterm->string = 0;
@@ -2810,6 +2777,83 @@ static void ctputs(struct cterminal *cterm, char *buf)
 	*cterm->_wscroll=oldscroll;
 }
 
+static void parse_sixel_intro(struct cterminal *cterm)
+{
+	size_t i;
+
+	if (cterm->sixel != SIXEL_POSSIBLE)
+		return;
+
+	i = strspn(cterm->strbuf, "0123456789;");
+
+	if (i >= cterm->strbuflen)
+		return;
+
+	if (cterm->strbuf[i] == 'q') {
+		int ratio, hgrid;
+		int vmode;
+		struct text_info ti;
+		char *p;
+
+		cterm->sixel = SIXEL_STARTED;
+		cterm->sx_repeat = 0;
+		cterm->sx_pixels_sent = 0;
+		cterm->sx_first_pass = 1;
+		cterm->sx_hold_update = *cterm->hold_update;
+		*cterm->hold_update = 0;
+
+		GETTEXTINFO(&ti);
+		vmode = find_vmode(ti.currmode);
+		attr2palette(ti.attribute, &cterm->sx_fg, &cterm->sx_bg);
+		cterm->sx_x = cterm->sx_left = (cterm->x + WHEREX() - 2) * vparams[vmode].charwidth;
+		cterm->sx_y = (cterm->y + WHEREY() - 2) * vparams[vmode].charheight;
+		SETCURSORTYPE(_NOCURSOR);
+		GOTOXY(ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
+		*cterm->hold_update = 1;
+		ratio = cterm->sx_trans = hgrid = 0;
+		ratio = strtoul(cterm->strbuf, &p, 10);
+		if (*p == ';') {
+			p++;
+			cterm->sx_trans = strtoul(p, &p, 10);
+		}
+		if (*p == ';') {
+			p++;
+			hgrid = strtoul(p, &p, 10);
+		}
+		switch (ratio) {
+			default:
+			case 0:
+			case 1:
+				cterm->sx_iv = 2;
+				cterm->sx_ih = 1;
+				break;
+			case 2:
+				cterm->sx_iv = 5;
+				cterm->sx_ih = 1;
+				break;
+			case 3:
+			case 4:
+				cterm->sx_iv = 3;
+				cterm->sx_ih = 1;
+				break;
+			case 5:
+			case 6:
+				cterm->sx_iv = 2;
+				cterm->sx_ih = 1;
+				break;
+			case 7:
+			case 8:
+			case 9:
+				cterm->sx_iv = 1;
+				cterm->sx_ih = 1;
+				break;
+		}
+		cterm->strbuflen = 0;
+	}
+	else if (cterm->strbuf[i] != 'q')
+		cterm->sixel = SIXEL_INACTIVE;
+}
+
 #define ustrlen(s)	strlen((const char *)s)
 #define uctputs(c, p)	ctputs(c, (char *)p)
 #define ustrcat(b, s)	strcat((char *)b, (const char *)s)
@@ -2857,9 +2901,9 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 				ch[0]=buf[j];
 				if (cterm->string && !cterm->sequence) {
 					switch (cterm->string) {
-						case CTERM_STRING_APC:
-							/* 0x08-0x0d, 0x20-0x7e */
 						case CTERM_STRING_DCS:
+							/* 0x08-0x0d, 0x20-0x7e */
+						case CTERM_STRING_APC:
 							/* 0x08-0x0d, 0x20-0x7e */
 						case CTERM_STRING_OSC:
 							/* 0x08-0x0d, 0x20-0x7e */
@@ -2877,11 +2921,20 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									/* Just toss out the string and this char */
 									FREE_AND_NULL(cterm->strbuf);
 									cterm->strbuflen = cterm->strbufsize = 0;
+									cterm->sixel = SIXEL_INACTIVE;
 								}
 							}
 							else {
 								if (cterm->strbuf) {
 									cterm->strbuf[cterm->strbuflen++] = ch[0];
+									switch(cterm->sixel) {
+										case SIXEL_STARTED:
+											parse_sixel_string(cterm, false);
+											break;
+										case SIXEL_POSSIBLE:
+											parse_sixel_intro(cterm);
+											break;
+									}
 									if (cterm->strbuflen == cterm->strbufsize) {
 										char *p;
 

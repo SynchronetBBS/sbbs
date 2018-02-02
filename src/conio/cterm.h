@@ -151,6 +151,23 @@ struct cterminal {
 	int					doorway_char;	// Indicates next char is a "doorway" mode char
 	int					cursor;			// Current cursor mode (Normal or None)
 
+	/* Sixel state */
+	int					sixel;			// Sixel status
+#define SIXEL_INACTIVE	0
+#define SIXEL_POSSIBLE	1
+#define SIXEL_STARTED	2
+	int					sx_iv;			// Vertical size
+	int					sx_ih;			// Horizontal size
+	int					sx_trans;		// "Transparent" background
+	unsigned long		sx_repeat;		// Repeat count
+	unsigned			sx_left;		// Left margin (0-based pixel offset)
+	unsigned			sx_x, sx_y;		// Current position
+	uint32_t			sx_fg, sx_bg;	// Current colour set
+	int					sx_pixels_sent;	/* If any pixels have been sent... 
+										   Raster Attributes are ignore if this is true. */
+	int					sx_first_pass;	// First pass through a line
+	int					sx_hold_update;	// hold_update value to restore on completion
+
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO
 	void	(*ciolib_gotoxy)		(struct cterminal *,int,int);
