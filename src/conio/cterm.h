@@ -171,6 +171,7 @@ struct cterminal {
 	int		(*ciolib_putch)			(struct cterminal *,int);
 	int		(*ciolib_cputch)		(struct cterminal *,uint32_t,uint32_t,int);
 	int		(*ciolib_puttext)		(struct cterminal *,int,int,int,int,void *);
+	int		(*ciolib_pputtext)		(struct cterminal *,int,int,int,int,void *,uint32_t *,uint32_t *);
 	void	(*ciolib_window)		(struct cterminal *,int,int,int,int);
 	int		(*ciolib_cputs)			(struct cterminal *,char *);
 	int		(*ciolib_ccputs)		(struct cterminal *,uint32_t,uint32_t,const char *);
@@ -194,6 +195,7 @@ struct cterminal {
 	int		CIOLIBCALL (*ciolib_putch)			(int);
 	int		CIOLIBCALL (*ciolib_cputch)			(uint32_t, uint32_t, int);
 	int		CIOLIBCALL (*ciolib_puttext)		(int,int,int,int,void *);
+	int		CIOLIBCALL (*ciolib_pputtext)		(int,int,int,int,void *,uint32_t *,uint32_t *);
 	void	CIOLIBCALL (*ciolib_window)		(int,int,int,int);
 	int		CIOLIBCALL (*ciolib_cputs)			(char *);
 	int		CIOLIBCALL (*ciolib_ccputs)			(uint32_t, uint32_t, const char *);
