@@ -654,7 +654,7 @@ int sdl_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 			pal->g = g>>8;
 			pal->b = b>>8;
 			sdl_user_func(SDL_USEREVENT_SETPALETTE, pal);
-			force_redraws++;
+			update_pixels++;
 		}
 	}
 	return 0;
@@ -1073,7 +1073,7 @@ void setup_surfaces(void)
 		sdl_setup_colours(new_rect);
 		sdl.mutexV(newrect_mutex);
 		sdl_setup_colours(win);
-		force_redraws++;
+		update_pixels++;
 	}
 	else if(sdl_init_good) {
 		ev.type=SDL_QUIT;
@@ -1729,7 +1729,7 @@ int sdl_video_event_thread(void *data)
 					case SDL_VIDEOEXPOSE:
 						{
 							if(yuv.enabled) {
-								force_redraws=1;
+								update_pixels++;
 							}
 							else {
 								if(upd_rects) {

@@ -45,6 +45,7 @@ static struct bitmap_callbacks callbacks;
 static unsigned char *font[4];
 static unsigned char space=' ';
 int force_redraws=0;
+int update_pixels = 0;
 
 struct rectangle {
 	int x;
@@ -115,6 +116,8 @@ static void blinker_thread(void *data)
 			update_rect(0,0,0,0,force_redraws--);
 		else
 			update_rect(0,0,0,0,FALSE);
+		if (update_pixels)
+			send_rectangle(&vstat, 0, 0, screenwidth, screenheight, update_pixels--);
 		callbacks.flush();
 	}
 }
@@ -1170,6 +1173,7 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	pthread_mutex_lock(&screenlock);
 	if (x < screenwidth && y < screenheight)
 		screen[PIXEL_OFFSET(x, y)]=colour;
+	update_pixels++;
 	pthread_mutex_unlock(&screenlock);
 	return 1;
 }
