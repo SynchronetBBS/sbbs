@@ -1318,7 +1318,7 @@ void draw_sixel(struct cterminal *cterm, char *str)
 			// TODO: Check X
 			if (repeat)
 				repeat--;
-			else
+			if (!repeat)
 				p++;
 		}
 		else {
