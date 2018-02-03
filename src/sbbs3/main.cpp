@@ -4031,6 +4031,7 @@ void sbbs_t::reset_logon_vars(void)
 	cols=80;
     lncntr=0;
     autoterm=0;
+	cterm_version = 0;
     lbuflen=0;
     slcnt=0;
     altul=0;

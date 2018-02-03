@@ -483,6 +483,10 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CON_LEFTARROW	(1<<15)	/* Left arrow hit, exiting from getstr()	*/
 #define CON_INSERT		(1<<16)	/* Insert mode, for getstr()				*/
 #define CON_DELETELINE	(1<<17)	/* Deleted line, exiting from getstr()		*/
+#define CON_NORM_FONT	(1<<18)	/* Alt normal font set activated			*/
+#define CON_HIGH_FONT	(1<<19)	/* Alt high-intensity font activated		*/
+#define CON_BLINK_FONT	(1<<20)	/* Alt blink attribute font activated		*/
+#define CON_HBLINK_FONT	(1<<21)	/* Alt high-blink attribute font activated	*/
 																			
 							/* Number of milliseconds						*/
 #define DELAY_AUTOHG 1500	/* Delay for auto-hangup (xfer) 				*/
@@ -646,10 +650,11 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define AUTOHANG	(1L<<20)		/* Auto-hang-up after transfer			*/
 #define WIP 		(1L<<21)		/* Supports WIP terminal emulation		*/
 #define AUTOLOGON	(1L<<22)		/* AutoLogon via IP						*/
-#define HTML		(1L<<23)		/* Using Deuce's HTML terminal			*/
+#define HTML		(1L<<23)		/* Using Zuul/HTML terminal				*/
 #define NOPAUSESPIN	(1L<<24)		/* No spinning cursor at pause prompt	*/
+#define CTERM_FONTS	(1L<<25)		/* Loadable fonts are supported			*/
 
-#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML)
+#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|CTERM_FONTS)
 
 									/* Special terminal key mappings */
 #define TERM_KEY_HOME	CTRL_B

@@ -452,7 +452,8 @@ public:
 	long	cols;			/* Current number of Columns for User */
 	long	column;			/* Current column counter (for line counter) */
 	long	lastlinelen;	/* The previously displayed line length */
-	long 	autoterm;		/* Autodetected terminal type */
+	long 	autoterm;		/* Auto-detected terminal type */
+	long	cterm_version;	/* (MajorVer*1000) + MinorVer */
 	char 	slbuf[SAVE_LINES][LINE_BUFSIZE+1]; /* Saved for redisplay */
 	char 	slatr[SAVE_LINES];	/* Starting attribute of each line */
 	char 	slcuratr[SAVE_LINES];	/* Ending attribute of each line */
