@@ -2353,6 +2353,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 						}
 						TEXTATTR(cterm->attr);
+						setcolour(cterm->fg_color, cterm->bg_color);
 						break;
 					case 'n':	/* Device Status Report */
 						seq_default(seq, 0, 0);
@@ -2732,7 +2733,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 				break;
 			case '\n':
 				*p=0;
-				CCPUTS(cterm->fg_color, cterm->bg_color, outp);
+				CPUTS(outp);
 				outp=p+1;
 				if(cy==cterm->bottom_margin)
 					scrollup(cterm);
@@ -2742,7 +2743,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 				break;
 			case '\b':
 				*p=0;
-				CCPUTS(cterm->fg_color, cterm->bg_color, outp);
+				CPUTS(outp);
 				outp=p+1;
 				if(cx>1)
 					cx--;
@@ -2752,7 +2753,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 				break;
 			case '\t':
 				*p=0;
-				CCPUTS(cterm->fg_color, cterm->bg_color, outp);
+				CPUTS(outp);
 				outp=p+1;
 				for(i=0;i<sizeof(cterm_tabs)/sizeof(cterm_tabs[0]);i++) {
 					if(cterm_tabs[i]>cx) {
@@ -2774,7 +2775,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 					char ch;
 					ch=*(p+1);
 					*(p+1)=0;
-					CCPUTS(cterm->fg_color, cterm->bg_color, outp);
+					CPUTS(outp);
 					*(p+1)=ch;
 					outp=p+1;
 					GOTOXY(cx,cy);
@@ -2785,7 +2786,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 						char ch;
 						ch=*(p+1);
 						*(p+1)=0;
-						CCPUTS(cterm->fg_color, cterm->bg_color, outp);
+						CPUTS(outp);
 						*(p+1)=ch;
 						outp=p+1;
 						scrollup(cterm);
@@ -2805,7 +2806,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 				break;
 		}
 	}
-	CCPUTS(cterm->fg_color, cterm->bg_color, outp);
+	CPUTS(outp);
 	*cterm->_wscroll=oldscroll;
 }
 
@@ -2921,6 +2922,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 		WINDOW(cterm->x,cterm->y,cterm->x+cterm->width-1,cterm->y+cterm->height-1);
 	GOTOXY(cterm->xpos,cterm->ypos);
 	TEXTATTR(cterm->attr);
+	setcolour(cterm->fg_color, cterm->bg_color);
 	SETCURSORTYPE(cterm->cursor);
 	ch[1]=0;
 	if(buflen==-1)
@@ -3343,8 +3345,6 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							case 156:	/* Purple */
 							case 158:	/* Yellow */
 							case 159:	/* Cyan */
-								cterm->fg_color = UINT32_MAX;
-								cterm->bg_color = UINT32_MAX;
 								cterm->attr &= 0xf0;
 								switch(buf[j]) {
 									case 5:		/* White */

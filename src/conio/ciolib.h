@@ -231,6 +231,8 @@ struct text_info {
 };
 
 CIOLIBEXPORTVAR struct text_info cio_textinfo;
+CIOLIBEXPORTVAR uint32_t ciolib_fg;
+CIOLIBEXPORTVAR uint32_t ciolib_bg;
 
 struct mouse_event {
 	int event;
@@ -259,6 +261,8 @@ struct ciolib_pixels {
 };
 
 struct ciolib_screen {
+	uint32_t		fg_colour;
+	uint32_t		bg_colour;
 	struct ciolib_pixels	*pixels;
 	void			*vmem;
 	uint32_t		*foreground;
@@ -416,7 +420,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_freepixels(struct ciolib_pixels *pixels);
 CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_freescreen(struct ciolib_screen *);
 CIOLIBEXPORT int CIOLIBCALL ciolib_restorescreen(struct ciolib_screen *scrn);
-
+CIOLIBEXPORT void CIOLIBCALL ciolib_setcolour(uint32_t fg, uint32_t bg);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -491,6 +495,7 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define savescreen()			ciolib_savescreen()
 	#define freescreen(a)			ciolib_freescreen(a)
 	#define restorescreen(a)		ciolib_restorescreen(a)
+	#define setcolour(a,b)			ciolib_setcolour(a,b)
 #endif
 
 #ifdef WITH_SDL

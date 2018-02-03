@@ -454,6 +454,8 @@ void bitmap_clreol(void)
 	vmem_ptr = lock_vmem(&vstat);
 	for(x=cio_textinfo.curx+cio_textinfo.winleft-2; x<cio_textinfo.winright; x++) {
 		set_vmem_cell(vmem_ptr, pos+x, fill);
+		vmem_ptr->fgvmem[pos+x] = ciolib_fg;
+		vmem_ptr->bgvmem[pos+x] = ciolib_bg;
 		pthread_mutex_unlock(&vmem_lock);
 		bitmap_draw_one_char(&vstat, x+1, row);
 		pthread_mutex_lock(&vmem_lock);
@@ -471,6 +473,8 @@ void bitmap_clrscr(void)
 	for(y=cio_textinfo.wintop-1; y<cio_textinfo.winbottom; y++) {
 		for(x=cio_textinfo.winleft-1; x<cio_textinfo.winright; x++) {
 			set_vmem_cell(vmem_ptr, y*cio_textinfo.screenwidth+x, fill);
+			vmem_ptr->fgvmem[y*cio_textinfo.screenwidth+x] = ciolib_fg;
+			vmem_ptr->bgvmem[y*cio_textinfo.screenwidth+x] = ciolib_bg;
 			pthread_mutex_unlock(&vmem_lock);
 			bitmap_draw_one_char(&vstat, x+1, y+1);
 			pthread_mutex_lock(&vmem_lock);
@@ -620,12 +624,20 @@ int bitmap_setfont(int font, int force, int font_num)
 	int	newmode=-1;
 	struct text_info ti;
 	char	*old;
+	uint32_t *oldf;
+	uint32_t *oldb;
 	int		ow,oh;
 	int		row,col;
 	char	*new;
+	uint32_t *newf;
+	uint32_t *newb;
 	int		attr;
 	char	*pold;
+	uint32_t *poldf;
+	uint32_t *poldb;
 	char	*pnew;
+	uint32_t *pnewf;
+	uint32_t *pnewb;
 	int		result = CIOLIB_SETFONT_CHARHEIGHT_NOT_SUPPORTED;
 
 	if(!bitmap_initialized)
@@ -698,43 +710,70 @@ int bitmap_setfont(int font, int force, int font_num)
 		oh=ti.screenheight;
 
 		old=malloc(ow*oh*2);
-		if(old) {
-			gettext(1,1,ow,oh,old);
+		oldf=malloc(ow*oh*sizeof(oldf[0]));
+		oldb=malloc(ow*oh*sizeof(oldf[0]));
+		if(old && oldf && oldb) {
+			pgettext(1,1,ow,oh,old,oldf,oldb);
 			textmode(newmode);
 			new=malloc(ti.screenwidth*ti.screenheight*2);
+			newf=malloc(ti.screenwidth*ti.screenheight*sizeof(newf[0]));
+			newb=malloc(ti.screenwidth*ti.screenheight*sizeof(newb[0]));
 			if(!new) {
 				free(old);
+				FREE_AND_NULL(oldf);
+				FREE_AND_NULL(oldb);
 				return CIOLIB_SETFONT_MALLOC_FAILURE;
 			}
 			pold=old;
+			poldf=oldf;
+			poldb=oldb;
 			pnew=new;
+			pnewf=newf;
+			pnewb=newb;
 			for(row=0; row<ti.screenheight; row++) {
 				for(col=0; col<ti.screenwidth; col++) {
 					if(row < oh) {
 						if(col < ow) {
 							*(new++)=*(old++);
 							*(new++)=*(old++);
+							*(newf++)=*(oldf++);
+							*(newb++)=*(oldb++);
 						}
 						else {
 							*(new++)=space;
 							*(new++)=attr;
+							*(newf++) = ciolib_fg;
+							*(newb++) = ciolib_bg;
 						}
 					}
 					else {
 						*(new++)=space;
 						*(new++)=attr;
+						*(newf++) = ciolib_fg;
+						*(newb++) = ciolib_bg;
 					}
 				}
 				if(row < oh) {
 					for(;col<ow;col++) {
 						old++;
 						old++;
+						oldf++;
+						oldb++;
 					}
 				}
 			}
-			puttext(1,1,ti.screenwidth,ti.screenheight,new);
+			pputtext(1,1,ti.screenwidth,ti.screenheight,pnew,pnewf,pnewb);
 			free(pnew);
+			free(pnewf);
+			free(pnewb);
 			free(pold);
+			free(poldf);
+			free(poldb);
+		}
+		else {
+			FREE_AND_NULL(old);
+			FREE_AND_NULL(oldf);
+			FREE_AND_NULL(oldb);
 		}
 	}
 	bitmap_loadfont(NULL);
@@ -895,7 +934,6 @@ error_return:
 static void bitmap_draw_cursor(struct video_stats *vs)
 {
 	int y;
-	char attr;
 	int pixel;
 	int xoffset,yoffset;
 	int yo, xw, yw;
@@ -909,13 +947,12 @@ static void bitmap_draw_cursor(struct video_stats *vs)
 				yoffset=(vs->curs_row-1)*vs->charheight;
 				if(xoffset < 0 || yoffset < 0)
 					return;
-				attr=cio_textinfo.attribute&0x0f;
-	
+
 				pthread_mutex_lock(&screenlock);
 				for(y=vs->curs_start; y<=vs->curs_end; y++) {
 					if(xoffset < screenwidth && (yoffset+y) < screenheight) {
 						pixel=PIXEL_OFFSET(xoffset, yoffset+y);
-						memset_u32(screen+pixel,vs->palette[attr],vs->charwidth);
+						memset_u32(screen+pixel,ciolib_fg,vs->charwidth);
 					}
 				}
 				pthread_mutex_unlock(&screenlock);
