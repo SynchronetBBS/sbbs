@@ -161,7 +161,7 @@ int rlogin_connect(struct bbslist *bbs)
 			conn_send(sbuf, strlen(sbuf)+1,1000);
 		}
 		else
-			conn_send("ansi-bbs/115200",15,1000);
+			conn_send("ansi-bbs/115200",16,1000);
 	}
 
 	_beginthread(rlogin_output_thread, 0, NULL);
