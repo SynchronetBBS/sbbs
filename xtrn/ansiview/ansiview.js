@@ -7,6 +7,8 @@ load("filebrowser.js");
 var Ansi = load({}, "ansiterm_lib.js");
 var Sauce = load({}, "sauce_lib.js");
 var Graphic = load({}, "graphic.js");
+var xbin = load({}, "xbin_lib.js");
+var cterm = load({}, "cterm_lib.js");
 
 Frame.prototype.drawBorder = function(color) {
 	var theColor = color;
@@ -107,13 +109,41 @@ function draw(file, cols, rows)
 	};
 }
 
-function printFile(file) {
+function drawFile(file) {
 
-	console.clear(BG_BLACK|LIGHTGRAY);
-	frame.invalidate();
 	var sauce = Sauce.read(file);
+	var is_xbin = file_getext(file).toLowerCase() == ".xb" || file_getext(file).toLowerCase() == ".xbin";
 
-	if (state.syncTerm) {
+	if (file_getext(file).toLowerCase() == ".bin" || is_xbin) {
+		if (!state.syncTerm)
+			return "Sorry, this file format is not supported by your terminal";
+		if(!is_xbin	&& (!sauce || sauce.datatype != Sauce.defs.datatype.bin)) {
+			return "Sorry, this file has a missing or invalid SAUCE record";
+		}
+		var f = new File(file);
+		if (!f.open("rb"))
+			return "Failed to open: " + f.name;
+		var image = {};
+		if (!is_xbin) {
+			image.width = sauce.cols;
+			image.height = sauce.rows;
+			image.flags = 0;
+			if (sauce.ice_color)
+				image.flags |= xbin.FLAG_NONBLINK;
+			image.bin = f.read(image.width * image.height * 2);
+		} else { /* XBin */
+			image = xbin.read(f);
+		}
+		f.close();
+		if (image.font && image.font.length && image.charheight != cterm.charheight(console.screen_rows)) {
+			delete image;
+			return "Sorry, your terminal's screen dimensions are not compatible with this file";
+		}
+		cterm.xbin_draw(image);
+		cterm.xbin_cleanup(image);
+		delete image;
+	}
+	else if (state.syncTerm) {
 
 		Ansi.send("speed", "set", state.speed);
 		Ansi.send("ext_mode", "clear", "cursor");
@@ -134,7 +164,8 @@ function printFile(file) {
 	} else {	// TODO: terminate on Ctrl-Z char (CPM EOF) in the file
 
 		var f = new File(file);
-		f.open("r");
+		if(!f.open("r"))
+			return "Failed to open file: " + file.name;
 		var contents = f.read().split("");
 		f.close();
 
@@ -155,10 +186,20 @@ function printFile(file) {
 		bbs.sys_status&=(~SS_PAUSEOFF);
 
 	}
-
-	console.clear(BG_BLACK|LIGHTGRAY);
-
+	return true;
 }
+
+function printFile(file) {
+	console.clear(BG_BLACK|LIGHTGRAY);
+	frame.invalidate();
+	var result = drawFile(file);
+	console.clear(BG_BLACK|LIGHTGRAY);
+	if(result !== true) {
+		alert(result);
+		console.pause();
+	}
+}
+
 
 // Basic check for SyncTERM; we don't really care which version it is
 function isSyncTerm() {
