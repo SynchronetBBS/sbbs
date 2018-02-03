@@ -54,6 +54,7 @@ enum {
 	,CON_PROP_COLUMNS
 	,CON_PROP_AUTOTERM
 	,CON_PROP_TERMINAL
+	,CON_PROP_CTERM_VERSION
 	,CON_PROP_WORDWRAP
 	,CON_PROP_QUESTION
 	,CON_PROP_INACTIV_WARN
@@ -119,6 +120,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				return(JS_FALSE);
 			*vp = STRING_TO_JSVAL(js_str);
 			return(JS_TRUE);
+		case CON_PROP_CTERM_VERSION:
+			val=sbbs->cterm_version;
+			break;
 
 		case CON_PROP_INACTIV_WARN:
 			val=sbbs->cfg.sec_warn;
@@ -244,6 +248,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			SAFECOPY(sbbs->terminal,sval);
 			free(sval);
 			break;
+		case CON_PROP_CTERM_VERSION:
+			sbbs->cterm_version = val;
+			break;
 		case CON_PROP_INACTIV_WARN:
 			sbbs->cfg.sec_warn = (uint16_t)val;
 			break;
@@ -316,6 +323,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{	"screen_columns"	,CON_PROP_COLUMNS			,CON_PROP_FLAGS	,311},
 	{	"autoterm"			,CON_PROP_AUTOTERM			,CON_PROP_FLAGS	,310},
 	{	"terminal"			,CON_PROP_TERMINAL			,CON_PROP_FLAGS ,311},
+	{	"cterm_version"		,CON_PROP_CTERM_VERSION		,CON_PROP_FLAGS ,317},
 	{	"inactivity_warning",CON_PROP_INACTIV_WARN		,CON_PROP_FLAGS, 31401},
 	{	"inactivity_hangup"	,CON_PROP_INACTIV_HANGUP	,CON_PROP_FLAGS, 31401},
 	{	"timeout"			,CON_PROP_TIMEOUT			,CON_PROP_FLAGS	,310},
@@ -1663,6 +1671,7 @@ js_telnet_cmd(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
 	int32		cmd,opt=0;
+	int32		wait=0;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1676,9 +1685,20 @@ js_telnet_cmd(JSContext *cx, uintN argc, jsval *arglist)
 		if(!JS_ValueToInt32(cx,argv[1],&opt))
 			return JS_FALSE;
 	}
+	if(argc>2) {
+		if(!JS_ValueToInt32(cx,argv[2],&wait))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->send_telnet_cmd((uchar)cmd,(uchar)opt);
+	if(wait) {
+		if(sbbs->request_telnet_opt((uchar)cmd, (uchar)opt, wait) == true) {
+			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+		} else {
+			JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+		}
+	} else
+		sbbs->send_telnet_cmd((uchar)cmd, (uchar)opt);
 	JS_RESUMEREQUEST(cx, rc);
 
     return(JS_TRUE);
@@ -1899,9 +1919,11 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("lock the user input thread (allowing direct client socket access)")
 	,310
 	},
-	{"telnet_cmd",		js_telnet_cmd,		2, JSTYPE_VOID,		JSDOCSTR("command [,option=<tt>0</tt>]")
-	,JSDOCSTR("send Telnet command (with optional command option) to remote client")
-	,310
+	{"telnet_cmd",		js_telnet_cmd,		3, JSTYPE_BOOLEAN,		JSDOCSTR("command [,option=<tt>0</tt>] [,timeout=<tt>0</tt>]")
+	,JSDOCSTR("send Telnet command (with optional command option) to remote client"
+		", if the optional timeout is specified (in milliseconds, added in v3.17), then an acknowledgment will be expected and"
+		" the return value will indicate whether or not one was received")
+	,317
 	},
 	{"handle_ctrlkey",	js_handle_ctrlkey,	1, JSTYPE_BOOLEAN,	JSDOCSTR("key [,mode=<tt>K_NONE</tt>]")
 	,JSDOCSTR("call internal control key handler for specified control key, returns <tt>true</tt> if handled")
