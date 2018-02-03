@@ -2,6 +2,7 @@
 
 // Library for dealing with CTerm/SyncTERM enhanced features (e.g. fonts)
 
+load('sbbsdefs.js');
 var xbin = load({}, 'xbin_defs.js');
 var ansiterm = load({}, 'ansiterm_lib.js');
 
@@ -211,7 +212,37 @@ function load_font(slot, data, force)
 	return true;
 }
 
-function xbimage_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
+function reset_palette()
+{
+	console.write("\x1b]104\x1b\\");
+}
+
+function redefine_palette(palette, bits)
+{
+	if(!bits)	// per color channel (options are 4, 8, 12, or 16)
+		bits = 8;
+	var str = "\x1b]4";
+	for(var i =0 ; i <  palette.length; i++)
+		str += format(";%u;rgb:%0*X/%0*X/%0*X", i
+			, bits / 4, palette[i].r
+			, bits / 4, palette[i].g
+			, bits / 4, palette[i].b);
+	str += "\x1b\\";
+//	log(LOG_DEBUG, "New palette: " + str);
+	console.write(str);
+}
+
+// Scale from 6-bit to 8-bit RGB color channel
+function scale_rgb_channel_value(val)
+{
+	var newval = Math.ceil(0xff / (0x3f / (val&0x3f)));
+
+//	log(LOG_DEBUG, format("scaled color channel from %d (%X) to %d (%x)", val, val, newval, newval));
+
+	return newval;
+}
+
+function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 {
 	load('graphic.js');
 
@@ -222,18 +253,19 @@ function xbimage_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 			delay = 0;
 	}
 
-	for(var i = 0; i < image.font.length; i++)	{
-//		print("Loading font " + image.font[i].length + " bytes");
-		this.load_font(0xff - i, image.font[i], true);
+	if(image.font) {
+		for(var i = 0; i < image.font.length; i++)	{
+	//		print("Loading font " + image.font[i].length + " bytes");
+			this.load_font(0xff - i, image.font[i], true);
+		}
 	}
-
-	if(image.flags&xbin.FLAG_NONHIGH)
-		ansiterm.send("ext_mode", "set", "no_bright_intensity");
 	console.clear(7);
 	for(var p in this.font_styles) {
 		var font_set = image[p];
-		if(font_set == undefined)
+		if(font_set == undefined) {
+			this.activate_font(this.font_styles[p], 0);
 			continue;
+		}
 //		printf("font_set = %u\r\n", font_set);
 		if(font_set < image.font_count) {
 //			print(format("Activating font " + font_set + " for " + p));
@@ -242,11 +274,78 @@ function xbimage_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 			}
 		}
 	}
+	if(image.flags&xbin.FLAG_NONHIGH)
+		ansiterm.send("ext_mode", "set", "no_bright_intensity");
+	if(image.flags&xbin.FLAG_NONBLINK)
+		ansiterm.send("ext_mode", "set", "no_blink");
 
-//	console.getkey();
-//	return true;
+	if(image.palette) {
+		var palette = [];
+		for(var i = 0; i < 16; i++) {
+			/* Must send the color definitions in the Xterm/ANSI order: */
+			var offset;
+			switch(i) {
+				case 0:
+					offset = BLACK;
+					break;
+				case 1:	/* Maroon */
+					offset = RED;
+					break;
+				case 2:	/* Green */
+					offset = GREEN;
+					break;
+				case 3: /* Olive */
+					offset = BROWN;
+					break;
+				case 4:	/* Navy */
+					offset = BLUE;
+					break;
+				case 5:	/* Purple */
+					offset = MAGENTA;
+					break;
+				case 6:	/* Teal */
+					offset = CYAN;
+					break;
+				case 7: /* Silver */
+					offset = LIGHTGRAY;
+					break;
+				case 8:	/* Grey */
+					offset = DARKGRAY;
+					break;
+				case 9:	/* Red */
+					offset = LIGHTRED;
+					break;
+				case 10:	/* Lime */
+					offset = LIGHTGREEN;
+					break;
+				case 11:
+					offset = YELLOW;
+					break;
+				case 12:	/* Blue */
+					offset = LIGHTBLUE;
+					break;
+				case 13:	/* Fuchsia */
+					offset = LIGHTMAGENTA;
+					break;
+				case 14:	/* Aqua */
+					offset = LIGHTCYAN;
+					break;
+				case 15:	/* White */
+					offset = WHITE;
+					break;
+			}
+			offset *= 3;
+			palette.push({ 
+				  r:scale_rgb_channel_value(ascii(image.palette.charAt(offset)))
+				, g:scale_rgb_channel_value(ascii(image.palette.charAt(offset+1)))
+				, b:scale_rgb_channel_value(ascii(image.palette.charAt(offset+2)))
+				});
+		}
+		this.redefine_palette(palette);
+	}
 	
 	ansiterm.send("ext_mode", "clear", "cursor");
+//	log(LOG_DEBUG, 'Enabled modes ' + this.query_mode());
 	var graphic = new Graphic(image.width, image.height);
 	graphic.BIN = image.bin;
 	var width = image.width;
@@ -262,8 +361,8 @@ function xbimage_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 	do {
 		if(xoff && xoff + width > image.width)
 			xoff = image.width - width;
-		if(yoff && yoff + height >= image.height)
-			yoff = image.height - (height + 1);
+		if(yoff && yoff + height > image.height)
+			yoff = image.height - height;
 		if(xoff < 0)
 			xoff = 0;
 		if(yoff < 0)
@@ -292,24 +391,54 @@ function xbimage_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 		else
 			key = console.inkey(K_UPPER, delay);
 		switch(key) {
+			case '5':	/* middle */
+				xoff = Math.floor(width / 2);
+				yoff = Math.floor(height / 2);
+				break;
+			case '6':
 			case KEY_RIGHT:
 				xoff++;
 				break;
+			case '4':
 			case KEY_LEFT:
 				xoff--;
 				break;
+			case '8':
 			case KEY_UP:
 				yoff--;
 				break;
+			case '7':
+				yoff--;
+				xoff--;
+				break;
+			case '9':
+				yoff--;
+				xoff++;
+				break;
+			case '3':
+				yoff++;
+				xoff++;
+				break;
+			case '1':
+				yoff++;
+				xoff--;
+				break;
+			case KEY_PAGEUP:
+				yoff -= height;
+				break;
+			case '2':
 			case KEY_DOWN:
 				yoff++;
+				break;
+			case KEY_PAGEDN:
+				yoff += height;
 				break;
 			case KEY_HOME:
 				xoff = 0;
 				yoff = 0;
 				break;
 			case KEY_END:
-				yoff = image.height - (height + 1);
+				yoff = image.height - height;
 				break;
 			case 'Q':
 				return false;
@@ -321,9 +450,12 @@ function xbimage_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 	return true;
 }
 
-function xbimage_cleanup(image)
+function xbin_cleanup(image)
 {
-	console.clear(ansiterm.LIGHTGRAY);
+	if(image && image.palette)
+		this.reset_palette();
+
+	console.clear(ansiterm.LIGHTGRAY|ansiterm.BG_BLACK);
 	ansiterm.send("ext_mode", "set", "cursor");
 
 	for(var p in this.font_styles)
@@ -332,6 +464,8 @@ function xbimage_cleanup(image)
 
 	if(image==undefined || image.flags&xbin.FLAG_NONHIGH)
 		ansiterm.send("ext_mode", "clear", "no_bright_intensity");
+	if(image==undefined || image.flags&xbin.FLAG_NONBLINK)
+		ansiterm.send("ext_mode", "clear", "no_blink");
 }
 
 // Leave as last line:
