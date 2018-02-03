@@ -917,19 +917,21 @@ int sdl_setup_colours(SDL_Surface *surf)
 		}
 		sdl_co = newco;
 		sdl_dac_default = newdd;
+
+		for(i=sdl_dac_defaultsz; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
+			sdl_co[i].r=dac_default[i].red;
+			sdl_co[i].g=dac_default[i].green;
+			sdl_co[i].b=dac_default[i].blue;
+		}
+		sdl.SetColors(surf, sdl_co, 0, sizeof(dac_default)/sizeof(struct dac_colors));
+
+		for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
+			sdl_dac_default[i]=sdl.MapRGB(win->format, sdl_co[i].r, sdl_co[i].g, sdl_co[i].b);
+		}
+
 		sdl_dac_defaultsz = newsz;
 	}
 
-	for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
-		sdl_co[i].r=dac_default[i].red;
-		sdl_co[i].g=dac_default[i].green;
-		sdl_co[i].b=dac_default[i].blue;
-	}
-	sdl.SetColors(surf, sdl_co, 0, sizeof(dac_default)/sizeof(struct dac_colors));
-
-	for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
-		sdl_dac_default[i]=sdl.MapRGB(win->format, sdl_co[i].r, sdl_co[i].g, sdl_co[i].b);
-	}
 	return(ret);
 }
 
