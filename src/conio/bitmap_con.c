@@ -376,18 +376,12 @@ static void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell
 {
 	uint32_t fg;
 	uint32_t bg;
-	int col, row;
 
 	bitmap_attr2palette(cell>>8, &fg, &bg);
 
 	vmem_ptr->vmem[pos] = cell;
 	vmem_ptr->fgvmem[pos] = fg;
 	vmem_ptr->bgvmem[pos] = bg;
-	row = pos / vstat.cols;
-	col = pos - (row * vstat.cols);
-	pthread_mutex_unlock(&vmem_lock);
-	bitmap_draw_one_char(&vstat, col+1, row+1);
-	pthread_mutex_lock(&vmem_lock);
 	update_pixels++;
 }
 
@@ -453,11 +447,17 @@ void bitmap_clreol(void)
 	int pos,x;
 	WORD fill=(cio_textinfo.attribute<<8)|space;
 	struct vstat_vmem *vmem_ptr;
+	int row;
 
-	pos=(cio_textinfo.cury+cio_textinfo.wintop-2)*cio_textinfo.screenwidth;
+	row = cio_textinfo.cury + cio_textinfo.wintop - 1;
+	pos=(row - 1)*cio_textinfo.screenwidth;
 	vmem_ptr = lock_vmem(&vstat);
-	for(x=cio_textinfo.curx+cio_textinfo.winleft-2; x<cio_textinfo.winright; x++)
+	for(x=cio_textinfo.curx+cio_textinfo.winleft-2; x<cio_textinfo.winright; x++) {
 		set_vmem_cell(vmem_ptr, pos+x, fill);
+		pthread_mutex_unlock(&vmem_lock);
+		bitmap_draw_one_char(&vstat, x+1, row);
+		pthread_mutex_lock(&vmem_lock);
+	}
 	unlock_vmem(vmem_ptr);
 }
 
@@ -469,8 +469,12 @@ void bitmap_clrscr(void)
 
 	vmem_ptr = lock_vmem(&vstat);
 	for(y=cio_textinfo.wintop-1; y<cio_textinfo.winbottom; y++) {
-		for(x=cio_textinfo.winleft-1; x<cio_textinfo.winright; x++)
+		for(x=cio_textinfo.winleft-1; x<cio_textinfo.winright; x++) {
 			set_vmem_cell(vmem_ptr, y*cio_textinfo.screenwidth+x, fill);
+			pthread_mutex_unlock(&vmem_lock);
+			bitmap_draw_one_char(&vstat, x+1, y+1);
+			pthread_mutex_lock(&vmem_lock);
+		}
 	}
 	unlock_vmem(vmem_ptr);
 }
@@ -512,6 +516,9 @@ int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 				vmem_ptr->fgvmem[y*cio_textinfo.screenwidth+x] = *(fgout++);
 			if (bg)
 				vmem_ptr->bgvmem[y*cio_textinfo.screenwidth+x] = *(bgout++);
+			pthread_mutex_unlock(&vmem_lock);
+			bitmap_draw_one_char(&vstat, x+1, y+1);
+			pthread_mutex_lock(&vmem_lock);
 		}
 	}
 	unlock_vmem(vmem_ptr);
