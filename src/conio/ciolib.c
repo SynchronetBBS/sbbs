@@ -1533,30 +1533,27 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a)
 
 CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t fg_palette, uint32_t bg_palette, const char *s)
 {
+	int		pos;
+	int		ret=0;
+	int		olddmc;
+
 	CIOLIB_INIT();
 
 	if (cio_api.ccputs != NULL)
 		return cio_api.ccputs(fg_palette, bg_palette, s);
-	if (cio_api.cputch == NULL) {
-		int		pos;
-		int		ret=0;
-		int		olddmc;
 
-		olddmc=hold_update;
-		hold_update=1;
-		for(pos=0;s[pos];pos++)
-		{
-			ret=s[pos];
-			if(s[pos]=='\n')
-				ciolib_putch('\r');
-			ciolib_cputch(fg_palette, bg_palette, s[pos]);
-		}
-		hold_update=olddmc;
-		ciolib_gotoxy(ciolib_wherex(),ciolib_wherey());
-		return(ret);
+	olddmc=hold_update;
+	hold_update=1;
+	for(pos=0;s[pos];pos++)
+	{
+		ret=s[pos];
+		if(s[pos]=='\n')
+			ciolib_putch('\r');
+		ciolib_cputch(fg_palette, bg_palette, s[pos]);
 	}
-
-	return cio_api.cputs((char *)s);
+	hold_update=olddmc;
+	ciolib_gotoxy(ciolib_wherex(),ciolib_wherey());
+	return(ret);
 }
 
 /* **MUST** be implemented */
