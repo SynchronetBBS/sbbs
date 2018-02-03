@@ -92,8 +92,6 @@ void mousedrag(unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrol
 	uint32_t *screenf;
 	uint32_t *screenb;
 	unsigned char *tscreen;
-	uint32_t *tscreenf;
-	uint32_t *tscreenb;
 	unsigned char *sbuffer;
 	uint32_t *sbufferf;
 	uint32_t *sbufferb;
@@ -105,6 +103,7 @@ void mousedrag(unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrol
 	char *newcopybuf;
 	int lastchar;
 	int old_xlat = ciolib_xlat;
+	struct ciolib_screen *savscrn;
 
 	sbufsize=term.width*2*term.height;
 	sbufsizep=term.width*sizeof(screenf[0])*term.height;
@@ -115,11 +114,10 @@ void mousedrag(unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrol
 	sbufferf=malloc(sbufsizep);
 	sbufferb=malloc(sbufsizep);
 	tscreen=(unsigned char*)malloc(sbufsize);
-	tscreenf=malloc(sbufsizep);
-	tscreenb=malloc(sbufsizep);
 	pgettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen,screenf,screenb);
 	ciolib_xlat = TRUE;
-	pgettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,tscreen,tscreenf,tscreenb);
+	gettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,tscreen);
+	savscrn = savescreen();
 	ciolib_xlat = old_xlat;
 	while(1) {
 		key=getch();
@@ -199,10 +197,10 @@ cleanup:
 	free(sbufferf);
 	free(sbufferb);
 	free(tscreen);
-	free(tscreenf);
-	free(tscreenb);
 	if(copybuf)
 		free(copybuf);
+	restorescreen(savscrn);
+	freescreen(savscrn);
 	return;
 }
 
