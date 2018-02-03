@@ -1017,7 +1017,7 @@ void setup_surfaces(void)
 		tmp_rect=sdl.CreateRGBSurface(SDL_HWSURFACE
 				, char_width
 				, char_height
-				, 8, 0, 0, 0, 0);
+				, 32, 0, 0, 0, 0);
 		if(tmp_rect) {
 			if(yuv.enabled) {
 				new_rect=tmp_rect;
