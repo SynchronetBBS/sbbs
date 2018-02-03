@@ -67,7 +67,8 @@ int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 	va_start(argptr,fmt);
 	numchars= vsnprintf(dst,size,fmt,argptr);
 	va_end(argptr);
-	dst[size-1]=0;
+	if (size > 0)
+		dst[size-1]=0;
 #ifdef _MSC_VER
 	if(numchars==-1)
 		numchars=strlen(dst);
