@@ -1373,7 +1373,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 							b = strtoul(p, &p, 10);
 						}
 						if (t == 2)	// Only support RGB
-							setpalette(cterm->sx_fg, r<<8|r, g<<8|g, b<<8|b);
+							setpalette(cterm->sx_fg, UINT16_MAX*r/100, UINT16_MAX*g/100, UINT16_MAX*b/100);
 					}
 					break;
 				case '$':	// Graphics Carriage Return
@@ -1390,9 +1390,14 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						if(cterm->origin_mode)
 							max_row = cterm->bottom_margin - cterm->top_margin + 1;
 
+						if ((!cterm->sx_scroll_mode) && (((cterm->sx_y + 6 * cterm->sx_iv) + 6*cterm->sx_iv - 1) >= (cterm->y + max_row - 1) * vparams[vmode].charheight)) {
+							p++;
+							break;
+						}
+
 						cterm->sx_x = cterm->sx_left;
 						cterm->sx_y += 6*cterm->sx_iv;
-						while ((cterm->sx_y + 6*cterm->sx_iv - 1) >= (cterm->y + max_row - 1) * vparams[vmode].charheight) {
+						while ((cterm->sx_y + 6 * cterm->sx_iv - 1) >= (cterm->y + max_row - 1) * vparams[vmode].charheight) {
 							scrollup(cterm);
 							cterm->sx_y -= vparams[vmode].charheight;
 						}
@@ -1414,15 +1419,20 @@ all_done:
 	GETTEXTINFO(&ti);
 	vmode = find_vmode(ti.currmode);
 
-	cterm->sx_x = cterm->sx_left;
-	cterm->sx_x = cterm->sx_x / vparams[vmode].charwidth + 1;
-	cterm->sx_x -= (cterm->x - 1);
-
-	cterm->sx_y = (cterm->sx_y+6*cterm->sx_iv-1) / vparams[vmode].charheight + 1;
-	cterm->sx_y -= (cterm->y - 1);
-
 	*cterm->hold_update=cterm->sx_hold_update;
-	GOTOXY(cterm->sx_x,cterm->sx_y);
+	if (cterm->sx_scroll_mode) {
+		cterm->sx_x = cterm->sx_left;
+		cterm->sx_x = cterm->sx_x / vparams[vmode].charwidth + 1;
+		cterm->sx_x -= (cterm->x - 1);
+
+		cterm->sx_y = (cterm->sx_y+6*cterm->sx_iv-1) / vparams[vmode].charheight + 1;
+		cterm->sx_y -= (cterm->y - 1);
+
+		GOTOXY(cterm->sx_x,cterm->sx_y);
+	}
+	else {
+		GOTOXY(cterm->sx_start_x, cterm->sx_start_y);
+	}
 	SETCURSORTYPE(cterm->cursor);
 	cterm->sixel = SIXEL_INACTIVE;
 }
@@ -1503,6 +1513,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										i=GETVIDEOFLAGS();
 										i|=CIOLIB_VIDEO_NOBLINK;
 										SETVIDEOFLAGS(i);
+										break;
+									case 80:
+										cterm->sx_scroll_mode = 1;
+										break;
 								}
 							}
 						}
@@ -1548,6 +1562,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										i=GETVIDEOFLAGS();
 										i&=~CIOLIB_VIDEO_NOBLINK;
 										SETVIDEOFLAGS(i);
+										break;
+									case 80:
+										cterm->sx_scroll_mode = 0;
 										break;
 								}
 							}
@@ -1595,6 +1612,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										strcat(tmp, ";34");
 									if(vidflags & CIOLIB_VIDEO_NOBLINK)
 										strcat(tmp, ";35");
+									if (cterm->sx_scroll_mode)
+										strcat(tmp, ";80");
 									if (strlen(tmp) == 4) {	// Nothing set
 										strcat(tmp, ";");
 									}
@@ -1611,8 +1630,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							i=GETVIDEOFLAGS();
 							if(seq->param_count == 0) {
 								/* All the save stuff... */
-								cterm->saved_mode_mask |= (CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN);
-								cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN);
+								cterm->saved_mode_mask |= (CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN|CTERM_SAVEMODE_SIXEL_SCROLL);
+								cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN|CTERM_SAVEMODE_SIXEL_SCROLL);
 								cterm->saved_mode |= (cterm->autowrap)?CTERM_SAVEMODE_AUTOWRAP:0;
 								cterm->saved_mode |= (cterm->cursor==_NORMALCURSOR)?CTERM_SAVEMODE_CURSOR:0;
 								cterm->saved_mode |= (i&CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
@@ -1621,6 +1640,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								cterm->saved_mode |= (i&CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
 								cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
 								cterm->saved_mode |= (cterm->origin_mode)?CTERM_SAVEMODE_ORIGIN:0;
+								cterm->saved_mode |= (cterm->sx_scroll_mode)?CTERM_SAVEMODE_SIXEL_SCROLL:0;
 								break;
 							}
 							else {
@@ -1666,6 +1686,11 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBLINK);
 											cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
 											break;
+										case 80:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_SIXEL_SCROLL;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_SIXEL_SCROLL);
+											cterm->saved_mode |= (cterm->sx_scroll_mode)?CTERM_SAVEMODE_SIXEL_SCROLL:0;
+											break;
 									}
 								}
 							}
@@ -1681,6 +1706,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->origin_mode=(cterm->saved_mode & CTERM_SAVEMODE_ORIGIN) ? true : false;
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_AUTOWRAP)
 									cterm->autowrap=(cterm->saved_mode & CTERM_SAVEMODE_AUTOWRAP) ? true : false;
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_SIXEL_SCROLL)
+									cterm->sx_scroll_mode=(cterm->saved_mode & CTERM_SAVEMODE_SIXEL_SCROLL) ? true : false;
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR) {
 									cterm->cursor = (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) ? _NORMALCURSOR : _NOCURSOR;
 									SETCURSORTYPE(cterm->cursor);
@@ -1779,6 +1806,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													i &= ~CIOLIB_VIDEO_NOBLINK;
 												SETVIDEOFLAGS(i);
 											}
+											break;
+										case 80:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_SIXEL_SCROLL)
+												cterm->sx_scroll_mode=(cterm->saved_mode & CTERM_SAVEMODE_SIXEL_SCROLL) ? true : false;
 											break;
 									}
 								}
@@ -2594,6 +2625,7 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->origin_mode=false;
 	cterm->fg_color = UINT32_MAX;
 	cterm->bg_color = UINT32_MAX;
+	cterm->sx_scroll_mode = true;
 	if(cterm->scrollback!=NULL)
 		memset(cterm->scrollback,0,cterm->width*2*cterm->backlines);
 	if(cterm->scrollbackf!=NULL)
@@ -2805,8 +2837,15 @@ static void parse_sixel_intro(struct cterminal *cterm)
 		GETTEXTINFO(&ti);
 		vmode = find_vmode(ti.currmode);
 		attr2palette(ti.attribute, &cterm->sx_fg, &cterm->sx_bg);
-		cterm->sx_x = cterm->sx_left = (cterm->x + WHEREX() - 2) * vparams[vmode].charwidth;
-		cterm->sx_y = (cterm->y + WHEREY() - 2) * vparams[vmode].charheight;
+		if (cterm->sx_scroll_mode) {
+			cterm->sx_x = cterm->sx_left = (cterm->x + WHEREX() - 2) * vparams[vmode].charwidth;
+			cterm->sx_y = (cterm->y + WHEREY() - 2) * vparams[vmode].charheight;
+		}
+		else {
+			cterm->sx_x = cterm->sx_left = cterm->sx_y = 0;
+			cterm->sx_start_x = WHEREX();
+			cterm->sx_start_y = WHEREY();
+		}
 		SETCURSORTYPE(_NOCURSOR);
 		GOTOXY(ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
 		*cterm->hold_update = 1;

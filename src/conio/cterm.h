@@ -100,7 +100,7 @@ struct cterminal {
 #define	CTERM_SAVEMODE_ALTCHARS			0x004
 #define CTERM_SAVEMODE_NOBRIGHT			0x008
 #define CTERM_SAVEMODE_BGBRIGHT			0x010
-	// 0x010 was CTERM_SAVEMODE_DOORWAY
+#define CTERM_SAVEMODE_SIXEL_SCROLL		0x020
 #define CTERM_SAVEMODE_ORIGIN			0x040
 #define	CTERM_SAVEMODE_BLINKALTCHARS	0x080
 #define CTERM_SAVEMODE_NOBLINK			0x100
@@ -167,6 +167,9 @@ struct cterminal {
 										   Raster Attributes are ignore if this is true. */
 	int					sx_first_pass;	// First pass through a line
 	int					sx_hold_update;	// hold_update value to restore on completion
+	bool				sx_scroll_mode;	// Sixel scrolling mode
+	int					sx_start_x;		// Starting X position
+	int					sx_start_y;		// Starting Y position
 
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO

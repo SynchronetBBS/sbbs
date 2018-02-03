@@ -64,11 +64,83 @@ ESC M	(Disabled in current code)
 	SOURCE: BANSI.TXT
 
 ESC _	Application Program String
+	Begins a string consisting of the characters 0x08 - 0x0d and
+	0x20-0x7e, terminated by a String Terminator (ST)
+	The string is currently ignored.
+
 ESC P	Device Control String
+	Begins a string consisting of the characters 0x08 - 0x0d and
+	0x20-0x7e, terminated by a String Terminator (ST)
+	Supported OSC values:
+		[ p1 [ ; p2 ] ] q
+		Defaults:  p1 = 0  p2 = 0
+		Indicates the string is a sixel sequence.
+
+		p1 selects the vertical height of a single pixel.  This
+		may be overridden by the raster attributes command, and
+		is deprecated.  Supported values
+		
+			Value      Vertical Size
+			-----      -------------
+			0,1,5,6    2 pixels
+			2          5 pixels
+			3,4        3 pixels
+			7,8,9      1 pixel
+
+		p2 indicates if unset sixels should be set to the current
+		background colour.  If p2 is 1, positions specified as 0
+		remain at their current colour.
+
+		Any additional parameters are ignored.
+
+		The rest of the string is made up of sixel data characters and
+		sixel control functions.  Sixel data characters are in the
+		rage of '?' (0x3f) to '~' (0x7e).  Each sixel data character
+		represents six vertical pixels.  The data is extracted by
+		subtracting 0x3f from the ASCII value of the character.
+		The least significant bit is the topmost pixel.
+
+                Sixel Control Functions
+                ! Pn X
+			Graphics Repeat Introducer
+			The character X is repeated Pn times.
+		" p1 ; p2 [ ; p3 [ ; p4 ] ]
+			Raster Attributes
+			p1 indicates the vertical size in pixels of each
+			sixel.  p2 indicates the horizontal size in pixels.
+			p3 and p4 define the height and width (in sixels)
+			respectively of a block to fill with the background
+			colour.  This block may not extend past the current
+			bottom of the screen.  If any pixel data characters
+			proceed this command, it is ignored.
+		# p1
+			Colour Select
+			Selects the current foreground colour from the
+			sixel palette.
+		# p1 ; p2 ; p3 ; p4 ; p5
+			Palette map
+			Defines sixel palette entry p1 and sets it as the
+			current foreground colour.  p2 specifies the colour
+			space to define the colour in, the only supported
+			value is 2.  p3, p4, and p5 specify the red, green,
+			and blue content as a percentage (0-100).
+		$
+			Graphics Carriage Return
+			Returns the active position to the left border of
+			the same sixel row.  Generally, one pass per colour
+			is used.  In passes after the first one, sixels
+			with a value of zero are not overwritten with the
+			background colour.
+		-
+			Graphics New Line
+			Moves the active position to the left border of the
+			next sixel row.
+
 ESC ^	Privacy Message
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
 	The string is currently ignored.
+
 ESC ]	Operating System Command
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
@@ -190,67 +262,49 @@ CSI = 255 h
 
 	SOURCE: BANSI.TXT
 
-CSI ? 6 h
+CSI ? [ p1 [ ; pX ... ] ] h
 	NON-STANDARD EXTENSION
-	Enable origin mode.
+	Set Mode
+	Sets one or more mode.  The following modes are supported:
 
-	In this mode, position parameters are relative to the top left of the
-	scrolling region, not the screen.
-
-	SOURCE: Digital VT102 User Guide
-
-CSI ? 7 h
-	NON-STANDARD EXTENSION
-	Enable auto wrap.
-
-	This is the normal mode in which a write to the last column of a
-	row will move the cursor to the start of the next line triggering a
-	scroll if required to create a new line.
-
-	SOURCE: Digital VT102 User Guide
-
-CSI ? 25 h
-	NON-STANDARD EXTENSION
-	Display the cursor
-
-	SOURCE: "Installing and Using the VT320 Video Terminal"
-
-CSI ? 31 h
-	NON-STANDARD EXTENSION
-	Enable bright alt character set
-
-	With this mode set, the bright (1) graphic rendition selects
-	characters from an alternate character set.
-
-CSI ? 32 h
-	NON-STANDARD EXTENSION
-	Bright Intensity Disable
-
-	This makes the bright intensity bit not control the intensity.
-	Mostly for use with CSI ? 31 h to permit fonts in the same
-	colours.
-
-CSI ? 33 h
-	NON-STANDARD EXTENSION
-	Blink to Bright Intensity Background
-
-	With this mode set, the blink (5,6) graphic renditions cause the
-	background colour to be high intensity rather than causing blink
-
-CSI ? 34 h
-	NON-STANDARD EXTENSION
-	Enable blink alt character set
-
-	With this mode set, the blink (5,6) graphic renditions selects
-	characters from an alternate character set.
-
-CSI ? 35 h
-	NON-STANDARD EXTENSION
-	Blink Disabled
-
-	This makes the blink bit not cause the character to blink.
-	Mostly for use with CSI ? 34 h to permit fonts to be used without
-	blinking.
+	6 -  Enable origin mode.
+	     In this mode, position parameters are relative to the top left of
+	     the scrolling region, not the screen.  Defaults to reset.
+	     SOURCE: Digital VT102 User Guide
+	7 -  Enable auto wrap
+	     This is the normal mode in which a write to the last column of a
+	     row will move the cursor to the start of the next line triggering
+	     a scroll if required to create a new line.  Defaults to set.
+	     SOURCE: Digital VT102 User Guide
+	25 - Display the cursor.  Defaults to set.
+	     SOURCE: "Installing and Using the VT320 Video Terminal"
+	31 - Enable bright alt character set
+	     With this mode set, the bright (1) graphic rendition selects
+	     characters from an alternate character set.  Defaults to reset.
+	32 - Bright Intensity Disable
+	     This makes the bright intensity bit not control the intensity.
+	     Mostly for use with CSI ? 31 h to permit fonts in the same
+	     colours.  Defaults to reset.
+	33 - Blink to Bright Intensity Background
+	     With this mode set, the blink (5,6) graphic renditions cause the
+	     background colour to be high intensity rather than causing blink.
+	     Defaults to reset.
+	34 - Enable blink alt character set
+	     With this mode set, the blink (5, 6) graphic renditions selects
+	     characters from an alternate character set.  Defaults to reset
+	35 - Blink Disabled
+	     This makes the blink (5, 6) graphic renditions not cause the
+	     character to blink.  Mostly for use with CSI ? 34 h to permit
+	     fonts to be used without blinking.  Defaults to reset.
+	80 - Sixel Scrolling Enabled
+	     When this is set, the sixel active position begins in the
+	     upper-left corner of the currently active text position.
+	     When the sixel active position reaches the bottom of the
+	     page, the page is scrolled up.  At the end of the sixel
+	     string, a sixel newline is appended, and the current cursor
+	     position is the one in which the bottom sixel is in.
+	     Defaults to set.
+	     SOURCE: VT330/VT340 Programmer Reference Manual
 
 CSI = 255 l
 	NON-STANDARD EXTENSION
@@ -258,30 +312,48 @@ CSI = 255 l
 
 	SOURCE: BANSI.TXT
 
-CSI ? 6 h
+CSI ? [ p1 [ ; pX ... ] ] l
 	NON-STANDARD EXTENSION
-	Disable origin mode.
+	Reset Mode
+	Resets one or more mode.  The following modes are supported:
 
-	In this mode, position parameters are relative to the top left of the
-	screen, not the scrolling region.
-
-	SOURCE: Digital VT102 User Guide
-
-CSI ? 7 l
-	NON-STANDARD EXTENSION
-	Disable auto wrap.
-
-	This mode causes a write to the last column of a to leave the
-	cursor where it was before the write occurred, overwriting anything
-	which was previously written to the same position.
-
-	SOURCE: Digital VT102 User Guide
-
-CSI ? 25 l
-	NON-STANDARD EXTENSION
-	Hide the cursor
-
-	SOURCE: "Installing and Using the VT320 Video Terminal"
+	6 -  Origin Mode
+	     With this mode reset, position parameters are relative to the
+	     top left of the screen, not the scrolling region.  Defaults
+	     to reset.
+	     SOURCE: Digital VT102 User Guide
+	7 -  Disable auto wrap
+	     Resetting this mode causes a write to the last column of a to
+	     leave the cursor where it was before the write occurred,
+	     overwriting anything which was previously written to the same
+	     position.
+	     SOURCE: Digital VT102 User Guide
+	25 - Hide the cursor.  Defaults to set.
+	     SOURCE: "Installing and Using the VT320 Video Terminal"
+	31 - Disable bright alt character set
+	     With this mode reset, the bright (1) graphic rendition does not
+	     select an alternative font.  Defaults to reset.
+	32 - Bright Intensity Enable
+	     When reset, bright intensity graphics rendition behaves normally.
+	     Defaults to reset.
+	33 - Disable Blink to Bright Intensity Background
+	     With this mode set, the blink (5,6) graphic renditions do not
+	     affect the background colour.  Defaults to reset.
+	34 - Disable blink alt character set
+	     With this mode reset, the blink (5, 6) graphic renditions do not
+	     select characters from an alternate character set.  Defaults to
+	     reset.
+	35 - Blink Enable
+	     With this mode reset, the blink (5,6) graphic renditions behave
+	     normally (cause the characters to blink).  Defaults to reset.
+	80 - Sixel Scrolling Disabled
+	     When this is reset, the sixel active position begins in the
+	     upper-left corner of the page.  Any commands that attempt to
+	     advance the sixel position past the bottom of the page are
+	     ignored.  At the end of the sixel string, the current cursor
+	     position is unchanged from where it was when the sixel string
+	     started.  Defaults to set.
+	     SOURCE: VT330/VT340 Programmer Reference Manual
 
 CSI ? 31 l
 	NON-STANDARD EXTENSION
