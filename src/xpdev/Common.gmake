@@ -83,6 +83,16 @@ ifeq ($(os),darwin)
  XPDEV_CFLAGS		+=	-DHAS_RANDOM_FUNC
 endif
 
+# macOS needs to use the standard snprintf()... use it on FreeBSD as well for testing.
+ifeq ($(os),darwin)
+ XPDEV_CFLAGS	+=	-DUSE_SNPRINTF
+ XPDEV-MT_CFLAGS+=	-DUSE_SNPRINTF
+endif
+ifeq ($(os),freebsd)
+ XPDEV_CFLAGS	+=	-DUSE_SNPRINTF
+ XPDEV-MT_CFLAGS+=	-DUSE_SNPRINTF
+endif
+
 # Find SDL headers!
 ifdef USE_SDL_AUDIO
  ifdef SDL_CONFIG
