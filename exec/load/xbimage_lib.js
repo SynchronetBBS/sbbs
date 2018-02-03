@@ -4,7 +4,7 @@
 
 var REVISION = "$Revision$".split(' ')[1];
 var sauce_lib = load({}, 'sauce_lib.js');
-var xbin = load({}, 'xbin_defs.js');
+var xbin = load({}, 'xbin_lib.js');
 var cga = load({}, 'cga_defs.js');
 
 const illegal_chars = [0, 7, 8, 9, 10, 12, 13, 27, 32];
@@ -246,46 +246,6 @@ function create(filename, glyph, charheight, width, height, fg_color, bg_color, 
 	file.close();
 
 	return true;
-}
-
-function read(file)
-{
-	if(file.read(xbin.ID_LEN) != xbin.id)
-		return false;
-	var image = {};
-	image.width = file.readBin(2);
-	image.height = file.readBin(2);
-	image.charheight =file.readBin(1);
-	image.flags = file.readBin(1);
-	image.font_count = 0;
-	if(image.flags&xbin.FLAG_FONT_NORMAL)
-		image.font_count++;
-	if(image.flags&xbin.FLAG_FONT_HIGH)
-		image.font_count++;
-	if(image.flags&xbin.FLAG_FONT_BLINK)
-		image.font_count++;
-	if(image.flags&xbin.FLAG_FONT_HIGHBLINK)
-		image.font_count++;
-
-	if(image.flags&xbin.FLAG_FONT_NORMAL)
-		image.normal = (image.font_count-1)&2;	// Either 0 or 2
-	if(image.flags&xbin.FLAG_FONT_HIGH)
-		image.high = (image.font_count-1)&3;	// Either 1 or 3
-	if(image.flags&xbin.FLAG_FONT_BLINK)
-		image.blink = 0;
-	if(image.flags&xbin.FLAG_FONT_HIGHBLINK)
-		image.highblink = 1;
-
-	if(image.flags&xbin.FLAG_PALETTE)
-		file.position += xbin.PALETTE_LEN;
-//	printf("image.font_count = %d\r\n", image.font_count);
-	image.font = [];
-	for(var i = 0; i < image.font_count; i++)
-		image.font[i] = file.read(0x100 * image.charheight);
-
-	image.bin = file.read(image.width * image.height * 2);
-
-	return image;
 }
 
 // Leave as last line:
