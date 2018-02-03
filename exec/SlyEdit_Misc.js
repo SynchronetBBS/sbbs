@@ -37,8 +37,8 @@
  * 2018-01-27 Eric Oulashin     Added removeStrayANSIOneChars()
  */
  
- load("text.js");
- 
+load("text.js");
+
 // Note: These variables are declared with "var" instead of "const" to avoid
 // multiple declaration errors when this file is loaded more than once.
 

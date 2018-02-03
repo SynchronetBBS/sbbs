@@ -82,6 +82,8 @@
  *                              fix: When backspacing, it now properly removes any
  *                              Synchronet attribute codes immediately after the
  *                              character being deleted.
+ * 2018-02-02 Eric Oulashin     Version 1.60
+ *                              Bug fixes for edit line indexes with a wide terminal
  */
 
 /* Command-line arguments:
@@ -159,8 +161,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.59";
-const EDITOR_VER_DATE = "2018-02-01";
+const EDITOR_VERSION = "1.60";
+const EDITOR_VER_DATE = "2018-02-02";
 
 
 // Program variables
@@ -1040,7 +1042,7 @@ function doEditLoop()
 					var retObject = doQuoteSelection(curpos, currentWordLength);
 					curpos.x = retObject.x;
 					curpos.y = retObject.y;
-					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 					currentWordLength = retObject.currentWordLength;
 					// If user input timed out, then abort.
 					if (retObject.timedOut)
@@ -1172,7 +1174,7 @@ function doEditLoop()
 						--curpos.y;
 
 					console.gotoxy(curpos);
-					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 					currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 					console.print(chooseEditColor()); // Make sure the edit color is correct
 				}
@@ -1199,7 +1201,7 @@ function doEditLoop()
 						++curpos.y;
 
 					console.gotoxy(curpos);
-					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 					currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 					console.print(chooseEditColor()); // Make sure the edit color is correct
 				}
@@ -1256,7 +1258,7 @@ function doEditLoop()
 						console.gotoxy(curpos);
 					}
 				}
-				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 				currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 				// Output the text color, depending on if this line is a quote line or
 				// an edit line
@@ -1340,7 +1342,7 @@ function doEditLoop()
 				}
 				console.gotoxy(curpos);
 				console.print(chooseEditColor());
-				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 				currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 				// Make sure the edit color is correct
 				console.print(chooseEditColor());
@@ -1349,7 +1351,7 @@ function doEditLoop()
 				// Go to the beginning of the line
 				curpos.x = gEditLeft;
 				console.gotoxy(curpos);
-				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 				currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 				// Update the text color for the cursor on the screen
 				gTextAttrs = "\1n";
@@ -1375,7 +1377,7 @@ function doEditLoop()
 					// Place the cursor where it should be.
 					console.gotoxy(curpos);
 
-					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 					currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 
 					if (!gEditLines[gEditLinesIndex].isQuoteLine)
@@ -1402,7 +1404,7 @@ function doEditLoop()
 					var retObject = doBackspace(curpos, currentWordLength);
 					curpos.x = retObject.x;
 					curpos.y = retObject.y;
-					//gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+					//gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 					currentWordLength = retObject.currentWordLength;
 					// Make sure the edit color is correct
 					console.print(chooseEditColor());
@@ -1415,7 +1417,7 @@ function doEditLoop()
 					var retObject = doDeleteKey(curpos, currentWordLength);
 					curpos.x = retObject.x;
 					curpos.y = retObject.y;
-					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 					currentWordLength = retObject.currentWordLength;
 					// Make sure the edit color is correct
 					console.print(chooseEditColor());
@@ -1435,7 +1437,7 @@ function doEditLoop()
 					{
 						curpos.x = retObject.x;
 						curpos.y = retObject.y;
-						gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+						gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 						currentWordLength = retObject.currentWordLength;
 						if (retObject.doQuoteSelection)
 						{
@@ -1444,7 +1446,7 @@ function doEditLoop()
 								retObject = doQuoteSelection(curpos, currentWordLength);
 								curpos.x = retObject.x;
 								curpos.y = retObject.y;
-								gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+								gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 								currentWordLength = retObject.currentWordLength;
 								// If user input timed out, then abort.
 								if (retObject.timedOut)
@@ -1491,7 +1493,7 @@ function doEditLoop()
 				continueOn = retObj.continueOn;
 				curpos.x = retObj.x;
 				curpos.y = retObj.y;
-				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 				currentWordLength = retObj.currentWordLength;
 				// If we can continue on, put the cursor back
 				// where it should be.
@@ -1505,7 +1507,7 @@ function doEditLoop()
 				var retObj = findText(curpos);
 				curpos.x = retObj.x;
 				curpos.y = retObj.y;
-				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 				console.print(chooseEditColor()); // Make sure the edit color is correct
 				break;
 			case IMPORT_FILE_KEY:
@@ -1515,7 +1517,7 @@ function doEditLoop()
 					var retObj = importFile(gConfigSettings.userIsSysop, curpos);
 					curpos.x = retObj.x;
 					curpos.y = retObj.y;
-					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+					gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 					currentWordLength = retObj.currentWordLength;
 					console.print(chooseEditColor()); // Make sure the edit color is correct
 				}
@@ -1532,7 +1534,7 @@ function doEditLoop()
 				var retObj = doDeleteLine(curpos);
 				curpos.x = retObj.x;
 				curpos.y = retObj.y;
-				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 				currentWordLength = retObj.currentWordLength;
 				console.print(chooseEditColor()); // Make sure the edit color is correct
 				break;
@@ -1574,7 +1576,7 @@ function doEditLoop()
 				}
 				console.gotoxy(curpos);
 				currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 				console.print(chooseEditColor()); // Make sure the edit color is correct
 				break;
 			case KEY_PAGE_DOWN: // Move 1 page down in the message
@@ -1627,7 +1629,7 @@ function doEditLoop()
 					}
 				}
 				console.gotoxy(curpos);
-				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-1);
+				gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(curpos.x-gEditLeft);
 				currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 				console.print(chooseEditColor()); // Make sure the edit color is correct
 				break;
@@ -2337,12 +2339,12 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 	// If the cursor's horizontal position has gone beyond the edit width, then
 	// update the x & y position of the cursor, as well as the edit lines
 	// indexes.
-	if (retObj.x > gEditWidth)
+	if (retObj.x - gEditLeft + 1 > gEditWidth)
 	{
 		retObj.x -= gEditWidth;
 		++retObj.y;
 		++gEditLinesIndex; // There should be a next line in gEditLines
-		gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(retObj.x-1);
+		gTextLineIndex = gEditLines[gEditLinesIndex].displayIdxToActualIdx(retObj.x-gEditLeft);
 	}
 	else
 	{
@@ -2718,7 +2720,7 @@ function enterKey_InsertOrAppendNewLine(pCurpos, pCurrentWordLength, pAppendLine
 		// We're in the middle of the line.
 		// Get the text to the end of the current line.
 		// Note: The cursor's x position should be 1 more than display index in the string
-		var actualStartIdx = gEditLines[gEditLinesIndex].displayIdxToActualIdx(pCurpos.x-1);
+		var actualStartIdx = gEditLines[gEditLinesIndex].displayIdxToActualIdx(pCurpos.x-gEditLeft);
 		// If there are Synchronet attribute codes before actualStartIdx, then get them too
 		if (actualStartIdx >= 2)
 		{
