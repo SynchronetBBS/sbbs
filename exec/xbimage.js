@@ -77,7 +77,7 @@ function show(filename, xpos, ypos, fg_color, bg_color, delay, cycle, cleanup)
 		return false;
 	}
 
-	var image = image_lib.read(file);
+	var image = image_lib.xbin.read(file);
 	file.close();
 	if(!image)
 		return false;
@@ -85,9 +85,9 @@ function show(filename, xpos, ypos, fg_color, bg_color, delay, cycle, cleanup)
 //	print(lfexpand(JSON.stringify(image, null, 4)));
 //	console.getkey();
 	
-	var result = cterm.xbimage_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle);
+	var result = cterm.xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle);
 	if(cleanup)
-		cterm.xbimage_cleanup(image);
+		cterm.xbin_cleanup(image);
 
 	if(typeof result == 'string')
 		alert(result);
@@ -136,7 +136,7 @@ function demo(filename, delay)
 		if(console.aborted)
 			break;
 	}
-	cterm.xbimage_cleanup();
+	cterm.xbin_cleanup();
 	if(global.name) {
 		print("\1n\1hDemonstration concluded: \1y" + global.name);
 		console.inkey(0, delay);
@@ -152,7 +152,7 @@ function info(filename, verbose)
 	}
 
 	printf(format("%-64s : ", file.name));
-	var image = image_lib.read(file);
+	var image = image_lib.xbin.read(file);
 	file.close();
 	printf("%4u x %-4u Flags(%x) Fonts(%u) Char(%u)\r\n"
 		,image.width, image.height, image.flags, image.font.length, image.charheight);
