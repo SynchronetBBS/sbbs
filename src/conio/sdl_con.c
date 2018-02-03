@@ -924,13 +924,16 @@ int sdl_setup_colours(SDL_Surface *surf)
 			sdl_co[i].b=dac_default[i].blue;
 		}
 
+		sdl.SetColors(surf, sdl_co, 0, sdl_dac_defaultsz);
+
 		for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
 			sdl_dac_default[i]=sdl.MapRGB(win->format, sdl_co[i].r, sdl_co[i].g, sdl_co[i].b);
 		}
 
 		sdl_dac_defaultsz = newsz;
 	}
-	sdl.SetColors(surf, sdl_co, 0, sdl_dac_defaultsz);
+	else
+		sdl.SetColors(surf, sdl_co, 0, sdl_dac_defaultsz);
 
 	return(ret);
 }
