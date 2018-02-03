@@ -424,6 +424,9 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	sourcepos=(y-1)*cio_textinfo.screenwidth+(x-1);
 	destoffset=(((toy-1)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
 
+	if (vstat.curs_row >= y && vstat.curs_row <= ey &&
+	    vstat.curs_col >= x && vstat.curs_col <= ex)
+		bitmap_draw_one_char(&vstat, vstat.curs_col, vstat.curs_row);
 	pthread_mutex_lock(&screenlock);
 	vmem_ptr = lock_vmem(&vstat);
 	for(cy=(direction==-1?(height-1):0); cy<height && cy>=0; cy+=direction) {
@@ -432,9 +435,6 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		memmove(&(vmem_ptr->bgvmem[sourcepos+destoffset]), &(vmem_ptr->bgvmem[sourcepos]), sizeof(vmem_ptr->bgvmem[0])*width);
 		sourcepos += direction * cio_textinfo.screenwidth;
 	}
-	if (vstat.curs_row >= y && vstat.curs_row <= ey &&
-	    vstat.curs_col >= x && vstat.curs_col <= ex)
-		bitmap_draw_one_char(&vstat, vstat.curs_col, vstat.curs_row);
 	ssourcepos=(y-1)     *cio_textinfo.screenwidth*vstat.charwidth*vstat.charheight + (x-1)  *vstat.charwidth;
 	sdestoffset=(((toy-1)*cio_textinfo.screenwidth*vstat.charwidth*vstat.charheight + (tox-1)*vstat.charwidth)-ssourcepos);
 	for(screeny=(direction==-1?(height-1)*vstat.charheight:0); screeny<height*vstat.charheight && screeny>=0; screeny+=direction) {
