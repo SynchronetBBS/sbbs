@@ -144,7 +144,7 @@ void load_font_files(void)
 			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_sixteen);
 		if(conio_fontdata[nextfont].eight_by_fourteen)
 			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_fourteen);
-		if(conio_fontdata[nextfont].eight_by_sixteen)
+		if(conio_fontdata[nextfont].eight_by_eight)
 			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_eight);
 		if(conio_fontdata[nextfont].desc)
 			FREE_AND_NULL(conio_fontdata[nextfont].desc);
