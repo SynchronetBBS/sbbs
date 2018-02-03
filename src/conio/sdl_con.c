@@ -994,7 +994,7 @@ void setup_surfaces(void)
 			win=sdl.SetVideoMode(yuv.win_width,yuv.win_height,0,flags);
 	}
 	else
-		win=sdl.SetVideoMode(char_width,char_height,8,flags);
+		win=sdl.SetVideoMode(char_width,char_height,0,flags);
 
 #if !defined(NO_X) && defined(__unix__)
 	if(sdl_x11available && sdl_using_x11) {
