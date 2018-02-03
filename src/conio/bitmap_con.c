@@ -1212,7 +1212,7 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 	if (sx > ex || sy > ey)
 		return NULL;
 
-	if (ex > screenwidth || ey > screenheight)
+	if (ex >= screenwidth || ey >= screenheight)
 		return NULL;
 
 	width = ex - sx + 1;

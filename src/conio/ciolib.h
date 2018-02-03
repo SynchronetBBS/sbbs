@@ -261,8 +261,8 @@ struct ciolib_pixels {
 struct ciolib_screen {
 	struct ciolib_pixels	*pixels;
 	void			*vmem;
-	void			*foreground;
-	void			*background;
+	uint32_t		*foreground;
+	uint32_t		*background;
 	struct text_info	text_info;
 };
 
