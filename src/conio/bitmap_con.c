@@ -113,8 +113,10 @@ static int check_redraw(void)
 	int ret;
 
 	pthread_mutex_lock(&redraw_lock);
+	pthread_rwlock_rdlock(&vmem_lock);
 	ret = force_redraws;
 	force_redraws = 0;
+	pthread_rwlock_unlock(&vmem_lock);
 	pthread_mutex_unlock(&redraw_lock);
 	return ret;
 }
@@ -123,7 +125,9 @@ static pthread_mutex_t pixels_lock;
 void request_pixels(void)
 {
 	pthread_mutex_lock(&pixels_lock);
+	pthread_rwlock_rdlock(&screen.screenlock);
 	update_pixels = 1;
+	pthread_rwlock_unlock(&screen.screenlock);
 	pthread_mutex_unlock(&pixels_lock);
 }
 
