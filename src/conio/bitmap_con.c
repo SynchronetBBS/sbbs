@@ -121,24 +121,26 @@ static int check_redraw(void)
 	return ret;
 }
 
-static pthread_mutex_t pixels_lock;
+void request_pixels_locked(void)
+{
+	update_pixels = 1;
+}
+
 void request_pixels(void)
 {
-	pthread_mutex_lock(&pixels_lock);
 	pthread_rwlock_rdlock(&screen.screenlock);
-	update_pixels = 1;
+	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
-	pthread_mutex_unlock(&pixels_lock);
 }
 
 static int check_pixels(void)
 {
 	int ret;
 
-	pthread_mutex_lock(&pixels_lock);
+	pthread_rwlock_rdlock(&screen.screenlock);
 	ret = update_pixels;
 	update_pixels = 0;
-	pthread_mutex_unlock(&pixels_lock);
+	pthread_rwlock_lock(&screen.screenlock);
 	return ret;
 }
 
@@ -184,7 +186,6 @@ int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, 
 	if(bitmap_initialized)
 		return(-1);
 	pthread_mutex_init(&redraw_lock, NULL);
-	pthread_mutex_init(&pixels_lock, NULL);
 	pthread_rwlock_init(&vmem_lock, NULL);
 	pthread_rwlock_init(&vstatlock, NULL);
 	pthread_rwlock_init(&screen.screenlock, NULL);
@@ -501,6 +502,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		memmove(&(screen.screen[ssourcepos+sdestoffset]), &(screen.screen[ssourcepos]), sizeof(screen.screen[0])*width*vstat.charwidth);
 		ssourcepos += direction * cio_textinfo.screenwidth*vstat.charwidth;
 	}
+	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
@@ -1119,6 +1121,7 @@ static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsig
 		}
 		fontoffset++;
 	}
+	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
 
 	return(0);
@@ -1318,8 +1321,8 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	pthread_rwlock_wrlock(&screen.screenlock);
 	if (x < screen.screenwidth && y < screen.screenheight)
 		screen.screen[PIXEL_OFFSET(screen, x, y)]=colour;
+	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
-	request_pixels();
 	return 1;
 }
 
@@ -1357,6 +1360,7 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 
 	for (y = sy; y <= ey; y++)
 		memcpy(&pixels->pixels[width*(y-sy)], &screen.screen[PIXEL_OFFSET(screen, sx, y)], width * sizeof(pixels->pixels[0]));
+	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
 
 	return pixels;
@@ -1390,7 +1394,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 
 	for (y = sy; y <= ey; y++)
 		memcpy(&screen.screen[PIXEL_OFFSET(screen, sx, y)], &pixels->pixels[pixels->width*(y-sy+y_off)+x_off], width * sizeof(pixels->pixels[0]));
+	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
-	request_pixels();
 	return 1;
 }
