@@ -100,24 +100,26 @@ static void unlock_vmem(struct vstat_vmem *vm)
 	release_vmem(vm);
 }
 
-static pthread_mutex_t redraw_lock;
+static void request_redraw_locked(void)
+{
+	force_redraws = 1;
+}
+
 static void request_redraw(void)
 {
-	pthread_mutex_lock(&redraw_lock);
-	force_redraws = 1;
-	pthread_mutex_unlock(&redraw_lock);
+	pthread_rwlock_rdlock(&vstatlock);
+	request_redraw_locked();
+	pthread_rwlock_unlock(&vstatlock);
 }
 
 static int check_redraw(void)
 {
 	int ret;
 
-	pthread_mutex_lock(&redraw_lock);
-	pthread_rwlock_rdlock(&vmem_lock);
+	pthread_rwlock_rdlock(&vstatlock);
 	ret = force_redraws;
 	force_redraws = 0;
-	pthread_rwlock_unlock(&vmem_lock);
-	pthread_mutex_unlock(&redraw_lock);
+	pthread_rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -164,10 +166,8 @@ static void blinker_thread(void *data)
 			count=0;
 			pthread_rwlock_unlock(&vstatlock);
 		}
-		if(check_redraw())
-			update_rect(0,0,0,0,TRUE);
-		else
-			update_rect(0,0,0,0,FALSE);
+		if (update_rect(0,0,0,0,check_redraw()))
+			request_redraw();
 		if (check_pixels()) {
 			pthread_rwlock_rdlock(&screen.screenlock);
 			send_rectangle(&vstat, 0, 0, screen.screenwidth, screen.screenheight, TRUE);
@@ -185,7 +185,6 @@ int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, 
 {
 	if(bitmap_initialized)
 		return(-1);
-	pthread_mutex_init(&redraw_lock, NULL);
 	pthread_rwlock_init(&vmem_lock, NULL);
 	pthread_rwlock_init(&vstatlock, NULL);
 	pthread_rwlock_init(&screen.screenlock, NULL);
@@ -406,7 +405,6 @@ void bitmap_setvideoflags(int flags)
 	else
 		vstat.blink_altcharset=0;
 	pthread_rwlock_unlock(&vstatlock);
-	request_redraw();
 }
 
 static int bitmap_attr2palette_locked(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
@@ -448,7 +446,6 @@ static void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell
 	vmem_ptr->vmem[pos] = cell;
 	vmem_ptr->fgvmem[pos] = fg;
 	vmem_ptr->bgvmem[pos] = bg;
-	request_pixels();
 }
 
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
@@ -527,6 +524,7 @@ void bitmap_clreol(void)
 		vmem_ptr->bgvmem[pos+x] = ciolib_bg;
 		bitmap_draw_one_char(&vstat, x+1, row);
 	}
+	request_pixels();
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 }
@@ -547,6 +545,7 @@ void bitmap_clrscr(void)
 			bitmap_draw_one_char(&vstat, x+1, y+1);
 		}
 	}
+	request_pixels();
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 }
@@ -592,6 +591,7 @@ int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 			bitmap_draw_one_char(&vstat, x+1, y+1);
 		}
 	}
+	request_pixels();
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 	return(1);
@@ -988,7 +988,7 @@ static int bitmap_loadfont_locked(char *filename)
 		}
 	}
 
-	request_redraw();
+	request_redraw_locked();
     return(0);
 
 error_return:
@@ -1121,12 +1121,19 @@ static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsig
 		}
 		fontoffset++;
 	}
-	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
 
 	return(0);
 }
 
+/*
+ * Copies the current vmem into a temporary buffer.
+ * Compares each cell with the previous buffer.
+ * Any changed cells update the screen.
+ * The temporary buffer becomes the previous buffer
+ * 
+ * Most of the hard work is in combining rectangles.
+ */
 static int update_rect(int sx, int sy, int width, int height, int force)
 {
 	int x,y;
@@ -1147,6 +1154,8 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	struct rectangle last_rect;
 	int last_rect_used=0;
 	struct vstat_vmem *vmem_ptr;
+	int bright_attr_changed=0;
+	int blink_attr_changed=0;
 
 	if(!bitmap_initialized)
 		return(-1);
@@ -1161,6 +1170,18 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		height=cio_textinfo.screenheight;
 
 	pthread_rwlock_rdlock(&vstatlock);
+
+	if (vstat.vmem == NULL) {
+		pthread_rwlock_unlock(&vstatlock);
+		return -1;
+	}
+
+	if(vstat.vmem->vmem == NULL || vstat.vmem->fgvmem == NULL || vstat.vmem->bgvmem == NULL) {
+		pthread_rwlock_unlock(&vstatlock);
+		return -1;
+	}
+
+	/* If the size has changed, realloc buffers to fit. */
 	if(vs.cols!=vstat.cols || vs.rows != vstat.rows || last_vmem==NULL || this_vmem == NULL ||
 	    last_fgvmem==NULL || this_fgvmem == NULL || last_bgvmem==NULL || this_bgvmem == NULL) {
 		void *p;
@@ -1180,9 +1201,12 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 			return(-1);
 		last_bgvmem=p;
 
+		/* Clear out the newly allocated buffers (why?) */
 		memset(last_vmem, 255, vstat.cols*vstat.rows*sizeof(last_vmem[0]));
 		memset(last_fgvmem, 255, vstat.cols*vstat.rows*sizeof(last_fgvmem[0]));
 		memset(last_bgvmem, 255, vstat.cols*vstat.rows*sizeof(last_bgvmem[0]));
+
+		/* Force a full redraw */
 		sx=1;
 		sy=1;
 		width=vstat.cols;
@@ -1207,16 +1231,30 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		this_bgvmem = p;
 	}
 
-	/* Redraw cursor */
-	if(vstat.blink != vs.blink
+	/* Redraw cursor? */
+	if(force || vstat.blink != vs.blink
 			|| vstat.curs_col!=vs.curs_col
 			|| vstat.curs_row!=vs.curs_row
 			|| vstat.curs_start!=vs.curs_start
 			|| vstat.curs_end!=vs.curs_end)
 		redraw_cursor=1;
+
+	/* Did the meaning of the blink bit change? */
+	if (vstat.bright_background != vs.bright_background ||
+			vstat.no_blink != vs.no_blink ||
+			vstat.blink_altcharset != vs.blink_altcharset)
+	    blink_attr_changed = 1;
+
+	/* Did the meaning of the bright bit change? */
+	if (vstat.no_bright != vs.no_bright ||
+			vstat.bright_altcharset != vs.bright_altcharset)
+		bright_attr_changed = 1;
+
+	/* Copy the whole vstat into cur */
 	cvstat = vstat;
+
+	/* Copy the vmems into cur */
 	vmem_ptr = lock_vmem(&vstat, 0);
-	pthread_rwlock_unlock(&vstatlock);
 	cvstat.vmem = &cvmem;
 	cvstat.vmem->refcount = 1;
 	cvstat.vmem->vmem = this_vmem;
@@ -1225,17 +1263,33 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	memcpy(cvstat.vmem->vmem, vmem_ptr->vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
 	memcpy(cvstat.vmem->fgvmem, vmem_ptr->fgvmem, vstat.cols*vstat.rows*sizeof(vmem_ptr->fgvmem[0]));
 	memcpy(cvstat.vmem->bgvmem, vmem_ptr->bgvmem, vstat.cols*vstat.rows*sizeof(vmem_ptr->bgvmem[0]));
+
+	/* We will not touch the "real" vstat again, so we don't need any locks */
 	unlock_vmem(vmem_ptr);
+	pthread_rwlock_unlock(&vstatlock);
 
 	if (hold_update)
 		redraw_cursor = 0;
 
+	/* 
+	 * Now we go through each character seeing if it's changed (or force is set)
+	 * We combine updates into rectangles by lines...
+	 * 
+	 * First, in the same line, we build this_rect.
+	 * At the end of the line, if this_rect is the same width as the screen,
+	 * we add it to last_rect.
+	 */
 	for(y=0;y<height;y++) {
 		pos=(sy+y-1)*cvstat.cols+(sx-1);
 		for(x=0;x<width;x++) {
-			/* TODO: Need to deal with blink/bgbright here too... */
-			if(force
-					|| ((cvstat.blink != vs.blink) && (cvstat.vmem->vmem[pos]>>15) && (!cvstat.no_blink)) 	/* Blinking char */
+			/* Last this char been updated? */
+			if(force																/* Forced */
+					|| (cvstat.vmem->vmem[pos] != last_vmem[pos])					/* Character and/or attribute */
+					|| cvstat.vmem->fgvmem[pos] != last_fgvmem[pos]					/* FG colour */
+					|| cvstat.vmem->bgvmem[pos] != last_bgvmem[pos]					/* BG colour */
+					|| ((cvstat.vmem->vmem[pos] & 0x8000) && (blink_attr_changed ||
+							((cvstat.blink != vs.blink) && (!cvstat.no_blink)))) 	/* Blinking char */
+					|| ((cvstat.vmem->vmem[pos] & 0x0800) && bright_attr_changed)	/* Bright char */
 					|| (redraw_cursor && ((vs.curs_col==sx+x && vs.curs_row==sy+y) || (cvstat.curs_col==sx+x && cvstat.curs_row==sy+y)))	/* Cursor */
 					) {
 				last_vmem[pos] = cvstat.vmem->vmem[pos];
@@ -1246,11 +1300,13 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 				if(!redraw_cursor && sx+x==cvstat.curs_col && sy+y==cvstat.curs_row)
 					redraw_cursor=1;
 
+				/* If the last char was updated, we can add to the existing rectangle */
 				if(lastcharupdated) {
 					this_rect.width+=cvstat.charwidth;
 					lastcharupdated++;
 				}
 				else {
+					/* Otherwise, send the old rectangle, and start a new one. */
 					if(this_rect_used) {
 						send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
 					}
@@ -1263,6 +1319,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 				}
 			}
 			else {
+				/* If this char wasn't updated, sent the rectangles */
 				if(last_rect_used) {
 					send_rectangle(&cvstat, last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
 					last_rect_used=0;
