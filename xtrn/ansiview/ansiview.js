@@ -136,8 +136,8 @@ function drawFile(file) {
 		}
 		f.close();
 		if (image.font && image.font.length && image.charheight != cterm.charheight(console.screen_rows)) {
-			delete image;
-			return "Sorry, your terminal's screen dimensions are not compatible with this file";
+			alert(format("Warning: file intended for a different char height (%u), font not used.", image.charheight));
+			console.pause();
 		}
 		cterm.xbin_draw(image);
 		cterm.xbin_cleanup(image);
