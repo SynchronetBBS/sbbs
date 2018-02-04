@@ -38,18 +38,29 @@ function query(request)
 	console.write(request);
 	var response='';
 
+	var lastch;
 	while(1) {
 		var ch=console.inkey(0, 1000);
 		if(ch=="")
 			break;
+		if(!response.length) {
+			if(lastch == '\x1b' && ch == '[')
+				response = '\x1b[';
+			else {
+				if(lastch)
+					log(LOG_DEBUG, "CTerm Discarding: " + format("'%c' (%02X)", lastch, ascii(lastch)));
+				lastch = ch;
+			}
+    		continue;
+		}
 		response += ch;
-		if(ch != '\x1b' && ch != '[' && (ch < ' ' || ch > '/') && (ch<'0' || ch > '?'))
+		if((ch < ' ' || ch > '/') && (ch < '0' || ch > '?'))
 			break;
 	}
 	console.ctrlkey_passthru = oldctrl;
 	var printable=response;
 	printable=printable.replace(/\x1b/g,"");
-	log(LOG_DEBUG, "Response: "+printable);
+	log(LOG_DEBUG, "CTerm query response: "+printable);
 	return response;
 }
 
@@ -151,10 +162,10 @@ function supports_fonts()
 function activate_font(style, slot)
 {
 	if(style == undefined) {
-		LOG(LOG_WARNING, "activate_font: style is undefined");
+		LOG(LOG_WARNING, "CTerm activate_font: style is undefined");
 		return false;
 	}
-	log(LOG_DEBUG, format("activate_font: %u %u", style, slot));
+	log(LOG_DEBUG, format("CTerm activate_font: %u %u", style, slot));
 	load('sbbsdefs.js');
 	var console_status = console.status;
 	console.write(format("\x1b[%u;%u D", style, slot));
@@ -179,7 +190,7 @@ function activate_font(style, slot)
 		else
 			console.write("\x1b[?31l");
 	}
-	log(LOG_DEBUG, "activate_font result: " + result);
+	log(LOG_DEBUG, "CTerm activate_font result: " + result);
 	if(result === '0')
 		result = true;
 	return result;
@@ -188,10 +199,10 @@ function activate_font(style, slot)
 function load_font(slot, data, force)
 {
 	if(force != true && console.cterm_font_loaded[slot] == true) {
-		log(LOG_DEBUG, format("load_font: slot %u already loaded", slot));
+		log(LOG_DEBUG, format("CTerm load_font: slot %u already loaded", slot));
 		return true;
 	}
-	log(LOG_DEBUG, format("load_font: slot %u with %u bytes", slot, data.length));
+	log(LOG_DEBUG, format("CTerm load_font: slot %u with %u bytes", slot, data.length));
 	load('sbbsdefs.js');
 	if(!(console.telnet_mode&TELNET_MODE_OFF)) {
 		if(!console.telnet_cmd(TELNET_WILL, TELNET_BINARY_TX, 1000))
@@ -199,7 +210,7 @@ function load_font(slot, data, force)
 	}
 	var fsize = fontsize(data.length);
 	if(fsize < 0) {
-		log(LOG_WARNING, format("Unsupported font file size: %lu bytes", data.length));
+		log(LOG_WARNING, format("CTerm Unsupported font file size: %lu bytes", data.length));
 		return false;
 	}
 	console.write(format("\x1b[=%u;%u{", slot, fsize));
@@ -228,7 +239,7 @@ function redefine_palette(palette, bits)
 			, bits / 4, palette[i].g
 			, bits / 4, palette[i].b);
 	str += "\x1b\\";
-//	log(LOG_DEBUG, "New palette: " + str);
+//	log(LOG_DEBUG, "CTerm New palette: " + str);
 	console.write(str);
 }
 
@@ -346,7 +357,7 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 	}
 	
 	ansiterm.send("ext_mode", "clear", "cursor");
-//	log(LOG_DEBUG, 'Enabled modes ' + this.query_mode());
+//	log(LOG_DEBUG, 'CTerm Enabled modes ' + this.query_mode());
 	var graphic = new Graphic(image.width, image.height);
 	graphic.BIN = image.bin;
 	var width = image.width;
