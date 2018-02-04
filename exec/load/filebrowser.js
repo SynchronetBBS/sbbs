@@ -160,6 +160,7 @@ var FileBrowser = function (options) {
 			lbg : BG_CYAN
 		},
 		hide : [],
+        hide_regexp : null,
 		index : 0
 	};
 
@@ -217,6 +218,11 @@ var FileBrowser = function (options) {
 			properties.hide = options.hide;
 		}
 
+        if (typeof options.hide_regexp != 'undefined') {
+            properties.hide_regexp = new RegExp(options.hide_regexp);
+            log(options.hide_regexp);
+        }
+
 	}
 
 	function initList() {
@@ -244,6 +250,7 @@ var FileBrowser = function (options) {
 					if (!wildmatch(fn, properties.hide[h])) continue;
 					return;
 				}
+                if (properties.hide_regexp !== null && fn.search(properties.hide_regexp) > -1) return;
 				properties.tree.addItem(
 					fileString,
 					file_isdir(item)
