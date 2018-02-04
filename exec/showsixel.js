@@ -1,6 +1,6 @@
 // $Id$
 
-load('cterm_libs.js');
+load('cterm_lib.js');
 
 if(console.cterm_version >= 1189) {
 	var image=new File(argv[0]);
