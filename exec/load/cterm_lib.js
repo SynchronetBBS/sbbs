@@ -253,24 +253,25 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 			delay = 0;
 	}
 
-	if(image.font) {
+	console.clear(LIGHTGRAY|BG_BLACK);
+
+	if(image.font && image.charheight == this.charheight(console.screen_rows)) {
 		for(var i = 0; i < image.font.length; i++)	{
 	//		print("Loading font " + image.font[i].length + " bytes");
 			this.load_font(0xff - i, image.font[i], true);
 		}
-	}
-	console.clear(7);
-	for(var p in this.font_styles) {
-		var font_set = image[p];
-		if(font_set == undefined) {
-			this.activate_font(this.font_styles[p], 0);
-			continue;
-		}
-//		printf("font_set = %u\r\n", font_set);
-		if(font_set < image.font_count) {
-//			print(format("Activating font " + font_set + " for " + p));
-			if(this.activate_font(this.font_styles[p], 0xff - font_set) == false) {
-				return "activate font failed";
+		for(var p in this.font_styles) {
+			var font_set = image[p];
+			if(font_set == undefined) {
+				this.activate_font(this.font_styles[p], 0);
+				continue;
+			}
+	//		printf("font_set = %u\r\n", font_set);
+			if(font_set < image.font_count) {
+	//			print(format("Activating font " + font_set + " for " + p));
+				if(this.activate_font(this.font_styles[p], 0xff - font_set) == false) {
+					return "activate font failed";
+				}
 			}
 		}
 	}
@@ -458,10 +459,11 @@ function xbin_cleanup(image)
 	console.clear(ansiterm.LIGHTGRAY|ansiterm.BG_BLACK);
 	ansiterm.send("ext_mode", "set", "cursor");
 
-	for(var p in this.font_styles)
-		if(image==undefined || image[p] < image.font_count)
-			this.activate_font(this.font_styles[p], 0);
-
+	if(image===undefined || (image.font && image.charheight == this.charheight(console.screen_rows))) {
+		for(var p in this.font_styles)
+			if(image==undefined || image[p] < image.font_count)
+				this.activate_font(this.font_styles[p], 0);
+	}
 	if(image==undefined || image.flags&xbin.FLAG_NONHIGH)
 		ansiterm.send("ext_mode", "clear", "no_bright_intensity");
 	if(image==undefined || image.flags&xbin.FLAG_NONBLINK)
