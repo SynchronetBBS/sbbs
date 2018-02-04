@@ -4,8 +4,24 @@
 #include "vidmodes.h"
 #include "threadwrap.h"
 
+/*
+ * Hacks for rwlocks... threadwrap doesn't have them...
+ */
+#ifdef _WIN32
+
+typedef pthread_mutex_t pthread_rwlock_t;
+#define pthread_rwlock_init(a,b)	pthread_mutex_init(a,b)
+#define pthread_rwlock_rdlock(a)	pthread_mutex_lock(a)
+#define pthread_rwlock_wrlock(a)	pthread_mutex_lock(a)
+#define pthread_rwlock_unlock(a)	pthread_mutex_unlock(a)
+#define pthread_rwlock_trywrlock(a)	pthread_mutex_trylock(a)
+#define pthread_rwlock_tryrdlock(a)	pthread_mutex_trylock(a)
+#define pthread_rwlock_destroy(a)	pthread_mutex_destroy(a)
+
+#endif
+
 extern struct video_stats vstat;
-extern pthread_mutex_t vstatlock;
+extern pthread_rwlock_t vstatlock;
 extern sem_t	drawn_sem;
 extern int force_redraws;
 extern int update_pixels;
