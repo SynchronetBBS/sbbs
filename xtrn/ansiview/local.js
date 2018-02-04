@@ -81,7 +81,8 @@
 				typeof args.hide == "undefined")
 				? hide
 				: hide.concat(args.hide.split(",")
-			)
+			),
+            hide_regexp : (args.hide_regexp || null)
 		}
 	);
 	fileBrowser.on("load", onLoad);
