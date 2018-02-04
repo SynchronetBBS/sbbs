@@ -48,8 +48,8 @@ pthread_rwlock_t		vstatlock;
 static struct bitmap_callbacks callbacks;
 static unsigned char *font[4];
 static unsigned char space=' ';
-int force_redraws=0;
-int update_pixels = 0;
+static int force_redraws=0;
+static int update_pixels = 0;
 
 struct rectangle {
 	int x;
@@ -100,6 +100,44 @@ static void unlock_vmem(struct vstat_vmem *vm)
 	release_vmem(vm);
 }
 
+static pthread_mutex_t redraw_lock;
+static void request_redraw(void)
+{
+	pthread_mutex_lock(&redraw_lock);
+	force_redraws = 1;
+	pthread_mutex_unlock(&redraw_lock);
+}
+
+static int check_redraw(void)
+{
+	int ret;
+
+	pthread_mutex_lock(&redraw_lock);
+	ret = force_redraws;
+	force_redraws = 0;
+	pthread_mutex_unlock(&redraw_lock);
+	return ret;
+}
+
+static pthread_mutex_t pixels_lock;
+void request_pixels(void)
+{
+	pthread_mutex_lock(&pixels_lock);
+	update_pixels = 1;
+	pthread_mutex_unlock(&pixels_lock);
+}
+
+static int check_pixels(void)
+{
+	int ret;
+
+	pthread_mutex_lock(&pixels_lock);
+	ret = update_pixels;
+	update_pixels = 0;
+	pthread_mutex_unlock(&pixels_lock);
+	return ret;
+}
+
 /* Blinker Thread */
 static void blinker_thread(void *data)
 {
@@ -120,13 +158,13 @@ static void blinker_thread(void *data)
 			count=0;
 			pthread_rwlock_unlock(&vstatlock);
 		}
-		if(force_redraws)
-			update_rect(0,0,0,0,force_redraws--);
+		if(check_redraw())
+			update_rect(0,0,0,0,TRUE);
 		else
 			update_rect(0,0,0,0,FALSE);
-		if (update_pixels) {
+		if (check_pixels()) {
 			pthread_rwlock_rdlock(&screen.screenlock);
-			send_rectangle(&vstat, 0, 0, screen.screenwidth, screen.screenheight, update_pixels--);
+			send_rectangle(&vstat, 0, 0, screen.screenwidth, screen.screenheight, TRUE);
 			pthread_rwlock_unlock(&screen.screenlock);
 		}
 		callbacks.flush();
@@ -141,6 +179,8 @@ int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, 
 {
 	if(bitmap_initialized)
 		return(-1);
+	pthread_mutex_init(&redraw_lock, NULL);
+	pthread_mutex_init(&pixels_lock, NULL);
 	pthread_rwlock_init(&vmem_lock, NULL);
 	pthread_rwlock_init(&vstatlock, NULL);
 	pthread_rwlock_init(&screen.screenlock, NULL);
@@ -361,7 +401,7 @@ void bitmap_setvideoflags(int flags)
 	else
 		vstat.blink_altcharset=0;
 	pthread_rwlock_unlock(&vstatlock);
-	force_redraws++;
+	request_redraw();
 }
 
 static int bitmap_attr2palette_locked(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
@@ -403,7 +443,7 @@ static void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell
 	vmem_ptr->vmem[pos] = cell;
 	vmem_ptr->fgvmem[pos] = fg;
 	vmem_ptr->bgvmem[pos] = bg;
-	update_pixels++;
+	request_pixels();
 }
 
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
@@ -942,7 +982,7 @@ static int bitmap_loadfont_locked(char *filename)
 		}
 	}
 
-	force_redraws++;
+	request_redraw();
     return(0);
 
 error_return:
@@ -1275,7 +1315,7 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	if (x < screen.screenwidth && y < screen.screenheight)
 		screen.screen[PIXEL_OFFSET(screen, x, y)]=colour;
 	pthread_rwlock_unlock(&screen.screenlock);
-	update_pixels++;
+	request_pixels();
 	return 1;
 }
 
@@ -1347,6 +1387,6 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	for (y = sy; y <= ey; y++)
 		memcpy(&screen.screen[PIXEL_OFFSET(screen, sx, y)], &pixels->pixels[pixels->width*(y-sy+y_off)+x_off], width * sizeof(pixels->pixels[0]));
 	pthread_rwlock_unlock(&screen.screenlock);
-	update_pixels++;
+	request_pixels();
 	return 1;
 }
