@@ -1,4 +1,5 @@
 /* $Id$ */
+/* $Id$ */
 
 #include <stdarg.h>
 #include <stdio.h>		/* NULL */
@@ -168,11 +169,8 @@ static void blinker_thread(void *data)
 		}
 		if (update_rect(0,0,0,0,check_redraw()))
 			request_redraw();
-		if (check_pixels()) {
-			pthread_rwlock_rdlock(&screen.screenlock);
+		if (check_pixels())
 			send_rectangle(&vstat, 0, 0, screen.screenwidth, screen.screenheight, TRUE);
-			pthread_rwlock_unlock(&screen.screenlock);
-		}
 		callbacks.flush();
 	}
 }
@@ -285,34 +283,38 @@ int bitmap_init_mode(int mode, int *width, int *height)
  * Generally, if the driver may block on a rectangle draw, the updates
  * should be cached until flush is called.
  */
-void send_rectangle(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force)
+
+static void send_rectangle_locked(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force)
 {
 	uint32_t *rect;
 	int pixel=0;
 	int inpixel;
 	int x,y;
 
-	if(!bitmap_initialized)
-		return;
-	pthread_rwlock_rdlock(&screen.screenlock);
 	if(callbacks.drawrect) {
 		if(xoffset < 0 || xoffset >= screen.screenwidth || yoffset < 0 || yoffset >= screen.screenheight || width <= 0 || width > screen.screenwidth || height <=0 || height >screen.screenheight)
-			goto end;
+			return;
 
 		rect=(uint32_t *)malloc(width*height*sizeof(rect[0]));
 		if(!rect)
-			goto end;
+			return;
 
 		for(y=0; y<height; y++) {
 			inpixel=PIXEL_OFFSET(screen, xoffset, yoffset+y);
 			for(x=0; x<width; x++)
 				rect[pixel++]=screen.screen[inpixel++];
 		}
-		pthread_rwlock_unlock(&screen.screenlock);
 		callbacks.drawrect(xoffset,yoffset,width,height,rect);
 		return;
 	}
-end:
+}
+
+void send_rectangle(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force)
+{
+	if(!bitmap_initialized)
+		return;
+	pthread_rwlock_rdlock(&screen.screenlock);
+	send_rectangle_locked(vs,xoffset,yoffset,width,height,force);
 	pthread_rwlock_unlock(&screen.screenlock);
 }
 
@@ -499,6 +501,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		memmove(&(screen.screen[ssourcepos+sdestoffset]), &(screen.screen[ssourcepos]), sizeof(screen.screen[0])*width*vstat.charwidth);
 		ssourcepos += direction * cio_textinfo.screenwidth*vstat.charwidth;
 	}
+	/* TODO: Just resend the whole screen... */
 	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
 	unlock_vmem(vmem_ptr);
@@ -524,7 +527,7 @@ void bitmap_clreol(void)
 		vmem_ptr->bgvmem[pos+x] = ciolib_bg;
 		bitmap_draw_one_char(&vstat, x+1, row);
 	}
-	request_pixels();
+	send_rectangle(&vstat, cio_textinfo.curx+cio_textinfo.winleft-2, row-1, cio_textinfo.winright - cio_textinfo.curx+cio_textinfo.winleft - 3, 1, FALSE);
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 }
@@ -545,7 +548,8 @@ void bitmap_clrscr(void)
 			bitmap_draw_one_char(&vstat, x+1, y+1);
 		}
 	}
-	request_pixels();
+	/* Just redraw the whole screen */
+	send_rectangle(&vstat, cio_textinfo.winleft-1, cio_textinfo.wintop-1, cio_textinfo.winright - cio_textinfo.winleft - 1, cio_textinfo.winright - cio_textinfo.wintop-1, FALSE);
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 }
@@ -591,7 +595,7 @@ int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 			bitmap_draw_one_char(&vstat, x+1, y+1);
 		}
 	}
-	request_pixels();
+	send_rectangle(&vstat, sx-1, sy-1, ex-sx + 1, ey - sy - 1, FALSE);
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 	return(1);
@@ -1307,9 +1311,8 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 				}
 				else {
 					/* Otherwise, send the old rectangle, and start a new one. */
-					if(this_rect_used) {
+					if(this_rect_used)
 						send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
-					}
 					this_rect.x=(sx+x-1)*cvstat.charwidth;
 					this_rect.y=(sy+y-1)*cvstat.charheight;
 					this_rect.width=cvstat.charwidth;
@@ -1375,11 +1378,26 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 
 int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 {
+	uint32_t *rect = NULL;
+
+	if(callbacks.drawrect)
+		rect=(uint32_t *)malloc(sizeof(rect[0]));
+
 	pthread_rwlock_wrlock(&screen.screenlock);
+
+	if (callbacks.drawrect && rect == NULL)
+		request_pixels_locked();
+
 	if (x < screen.screenwidth && y < screen.screenheight)
 		screen.screen[PIXEL_OFFSET(screen, x, y)]=colour;
-	request_pixels_locked();
+
 	pthread_rwlock_unlock(&screen.screenlock);
+
+	if (rect) {
+		rect[0]=colour;
+		callbacks.drawrect(x,y,1,1,rect);
+	}
+
 	return 1;
 }
 
@@ -1417,7 +1435,6 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 
 	for (y = sy; y <= ey; y++)
 		memcpy(&pixels->pixels[width*(y-sy)], &screen.screen[PIXEL_OFFSET(screen, sx, y)], width * sizeof(pixels->pixels[0]));
-	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
 
 	return pixels;
@@ -1425,6 +1442,7 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 
 int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels)
 {
+	uint32_t *rect = NULL;
 	uint32_t y;
 	uint32_t width,height;
 
@@ -1443,15 +1461,30 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	if (height + y_off > pixels->height)
 		return 0;
 
+	if(callbacks.drawrect)
+		rect=(uint32_t *)malloc(height * width * sizeof(rect[0]));
+
 	pthread_rwlock_wrlock(&screen.screenlock);
+
+	/* If malloc() failed, redraw the whole screen */
+	if (callbacks.drawrect && rect == NULL)
+		request_pixels_locked();
+
 	if (ex > screen.screenwidth || ey > screen.screenheight) {
 		pthread_rwlock_unlock(&screen.screenlock);
 		return 0;
 	}
 
-	for (y = sy; y <= ey; y++)
+	for (y = sy; y <= ey; y++) {
 		memcpy(&screen.screen[PIXEL_OFFSET(screen, sx, y)], &pixels->pixels[pixels->width*(y-sy+y_off)+x_off], width * sizeof(pixels->pixels[0]));
-	request_pixels_locked();
+		if (rect) {
+			memcpy(&rect[y*width], &pixels->pixels[pixels->width*(y-sy+y_off)+x_off], width * sizeof(pixels->pixels[0]));
+		}
+	}
 	pthread_rwlock_unlock(&screen.screenlock);
+
+	if(rect)
+		callbacks.drawrect(sx,sy,width,height,rect);
+
 	return 1;
 }
