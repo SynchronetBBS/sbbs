@@ -133,7 +133,7 @@ function charheight(rows)
 
 function supports_fonts()
 {
-	if(console.cterm_version < cterm_version_supports_fonts)
+	if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_fonts)
 		return false;
 	if(font_state === undefined)
 		query_fontstate();
