@@ -140,7 +140,7 @@ static int check_pixels(void)
 	pthread_rwlock_rdlock(&screen.screenlock);
 	ret = update_pixels;
 	update_pixels = 0;
-	pthread_rwlock_lock(&screen.screenlock);
+	pthread_rwlock_unlock(&screen.screenlock);
 	return ret;
 }
 
