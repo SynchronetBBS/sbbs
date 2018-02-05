@@ -172,6 +172,8 @@ struct cterminal {
 	int					sx_start_y;		// Starting Y position
 	int					sx_row_max_x;	// Max right size of this sixel line
 	struct ciolib_pixels *sx_pixels;
+	unsigned long		sx_width;		// Width from raster attributes
+	unsigned long		sx_height;		// REMAINING heigh from raster attributes
 	uint8_t				*sx_mask;
 
 	/* conio function pointers */

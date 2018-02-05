@@ -1301,13 +1301,25 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 				cterm->sx_mask = malloc((cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
 				memset(cterm->sx_mask, 0, (cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
 			}
+			if (cterm->sx_x == cterm->sx_left && cterm->sx_height && cterm->sx_width) {
+				/* Fill in the background of the line */
+				for (i = 0; i < (cterm->sx_height > 6 ? 6 : cterm->sx_height); i++) {
+					for (j = 0; j < cterm->sx_iv; j++) {
+						for (k = 0; k < cterm->sx_ih; k++) {
+							pos = i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k;
+							cterm->sx_pixels->pixels[pos] = cterm->sx_bg;
+							cterm->sx_mask[pos/8] |= (0x80 >> (pos % 8));
+						}
+					}
+				}
+			}
 			if (cterm->sx_x < ti.screenwidth * vparams[vmode].charwidth) {
 				for (i=0; i<6; i++) {
 					if (data & (1<<i)) {
 						for (j = 0; j < cterm->sx_iv; j++) {
 							for (k = 0; k < cterm->sx_ih; k++) {
 								pos = i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k;
-								cterm->sx_pixels->pixels[i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k] = cterm->sx_fg;
+								cterm->sx_pixels->pixels[pos] = cterm->sx_fg;
 								cterm->sx_mask[pos/8] |= (0x80 >> (pos % 8));
 							}
 						}
@@ -1347,43 +1359,20 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 			switch(*p) {
 				case '"':	// Raster Attributes
 					if (!cterm->sx_pixels_sent) {
-						unsigned long height, width;
-
 						p++;
 						cterm->sx_iv = strtoul(p, &p, 10);
-						height = width = 0;
+						cterm->sx_height = cterm->sx_width = 0;
 						if (*p == ';') {
 							p++;
 							cterm->sx_ih = strtoul(p, &p, 10);
 						}
 						if (*p == ';') {
 							p++;
-							width = strtoul(p, &p, 10);
+							cterm->sx_width = strtoul(p, &p, 10);
 						}
 						if (*p == ';') {
 							p++;
-							height = strtoul(p, &p, 10);
-						}
-						// TODO: If the image scrolls, the background isn't set
-						/*
-						 * Now that we're going by line, we can easily do this by
-						 * expanding each line to the width, and continuing until
-						 * height pixels are sent (or end of image).
-						 * 
-						 * This would also make animations better.
-						 */
-						if (height && width) {
-							struct ciolib_pixels px;
-
-							px.pixels = malloc(sizeof(px.pixels[0])*width*height*cterm->sx_iv*cterm->sx_ih);
-							px.height = height;
-							px.width = width;
-							for (i = 0; i<height*cterm->sx_iv; i++) {
-								for (j = 0; j < width*cterm->sx_ih; j++)
-									px.pixels[i*width*cterm->sx_ih + j] = cterm->sx_bg;
-							}
-							setpixels(cterm->sx_x, cterm->sx_y, cterm->sx_x + width - 1, cterm->sx_y + height - 1, 0, 0, &px, NULL);
-							free(px.pixels);
+							cterm->sx_height = strtoul(p, &p, 10);
 						}
 					}
 					else
@@ -1447,6 +1436,8 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 
 						cterm->sx_x = cterm->sx_left;
 						cterm->sx_y += 6*cterm->sx_iv;
+						if (cterm->sx_height)
+							cterm->sx_height -= cterm->sx_height > 6 ? 6 : cterm->sx_height;
 						while ((cterm->sx_y + 6 * cterm->sx_iv - 1) >= (cterm->y + max_row - 1) * vparams[vmode].charheight) {
 							scrollup(cterm);
 							cterm->sx_y -= vparams[vmode].charheight;
@@ -1473,12 +1464,32 @@ all_done:
 		setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
 
 	*cterm->hold_update=cterm->sx_hold_update;
+
+	/* Finish off the background */
+	cterm->sx_x = cterm->sx_left;
+	cterm->sx_y += 6 * cterm->sx_iv;
+	if (cterm->sx_height)
+		cterm->sx_height -= cterm->sx_height > 6 ? 6 : cterm->sx_height;
+
+	if (cterm->sx_height && cterm->sx_width) {
+		struct ciolib_pixels px;
+
+		px.pixels = malloc(sizeof(px.pixels[0])*cterm->sx_width*cterm->sx_height*cterm->sx_iv*cterm->sx_ih);
+		px.height = cterm->sx_height;
+		px.width = cterm->sx_width;
+		for (i = 0; i<cterm->sx_height*cterm->sx_iv; i++) {
+			for (j = 0; j < cterm->sx_width*cterm->sx_ih; j++)
+				px.pixels[i*cterm->sx_width*cterm->sx_ih + j] = cterm->sx_bg;
+		}
+		setpixels(cterm->sx_x, cterm->sx_y, cterm->sx_x + cterm->sx_width - 1, cterm->sx_y + cterm->sx_height - 1, 0, 0, &px, NULL);
+		free(px.pixels);
+	}
+
 	if (cterm->sx_scroll_mode) {
-		cterm->sx_x = cterm->sx_left;
 		cterm->sx_x = cterm->sx_x / vparams[vmode].charwidth + 1;
 		cterm->sx_x -= (cterm->x - 1);
 
-		cterm->sx_y = (cterm->sx_y+6*cterm->sx_iv-1) / vparams[vmode].charheight + 1;
+		cterm->sx_y = (cterm->sx_y - 1) / vparams[vmode].charheight + 1;
 		cterm->sx_y -= (cterm->y - 1);
 
 		GOTOXY(cterm->sx_x,cterm->sx_y);
@@ -2889,6 +2900,8 @@ static void parse_sixel_intro(struct cterminal *cterm)
 		cterm->sx_repeat = 0;
 		cterm->sx_pixels_sent = 0;
 		cterm->sx_first_pass = 1;
+		cterm->sx_height = 0;
+		cterm->sx_width = 0;
 		cterm->sx_hold_update = *cterm->hold_update;
 		*cterm->hold_update = 0;
 
