@@ -1438,6 +1438,9 @@ int main(int argc, char **argv)
             			case 28:
                 			text_mode=C80X28;
                 			break;
+				case 30:
+					text_mode=C80X30;
+					break;
             			case 43:
                 			text_mode=C80X43;
                 			break;
@@ -1701,6 +1704,8 @@ int screen_to_ciolib(int screen)
 			return(C80);
 		case SCREEN_MODE_80X28:
 			return(C80X28);
+		case SCREEN_MODE_80X30:
+			return(C80X30);
 		case SCREEN_MODE_80X43:
 			return(C80X43);
 		case SCREEN_MODE_80X50:
