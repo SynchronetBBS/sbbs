@@ -763,6 +763,7 @@ int sdl_init(int mode)
 		if(sdl_x11available)
 			sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 #endif
+		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
 		return(0);
 	}
 
@@ -1700,6 +1701,7 @@ int sdl_video_event_thread(void *data)
 							else {
 								pthread_rwlock_rdlock(&vstatlock);
 								new_scaling = (int)(ev.resize.w/(vstat.charwidth*vstat.cols));
+fprintf(stderr, "%d/%d - New Scaling %d\n", ev.resize.w, ev.resize.h, new_scaling);
 								cvstat = vstat;
 								pthread_rwlock_unlock(&vstatlock);
 							}

@@ -244,6 +244,10 @@ int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, 
 {
 	if(bitmap_initialized)
 		return(-1);
+	cio_api.options |= CONIO_OPT_LOADABLE_FONTS | CONIO_OPT_BLINK_ALT_FONT
+			| CONIO_OPT_BOLD_ALT_FONT | CONIO_OPT_BRIGHT_BACKGROUND
+			| CONIO_OPT_SET_PIXEL | CONIO_OPT_CUSTOM_CURSOR
+			| CONIO_OPT_FONT_SELECT | CONIO_OPT_EXTENDED_PALETTE;
 	pthread_mutex_init(&callbacks.lock, NULL);
 	pthread_rwlock_init(&vstatlock, NULL);
 	pthread_rwlock_init(&screen.screenlock, NULL);

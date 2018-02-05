@@ -669,6 +669,8 @@ int curs_initciolib(long inmode)
 	char *term;
 	SCREEN *tst;
 
+	cio_api.options = 0;
+
 	term=getenv("TERM");
 	if(term==NULL)
 		return(0);

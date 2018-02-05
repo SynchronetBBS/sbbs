@@ -440,6 +440,7 @@ int x_init(void)
 		pthread_mutex_destroy(&copybuf_mutex);
 		return(-1);
 	}
+	cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
 	return(0);
 }
 

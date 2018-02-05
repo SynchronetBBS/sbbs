@@ -617,6 +617,7 @@ int win32_initciolib(long inmode)
 		atexit(RestoreDisplayMode);
 	}
 	cio_api.mouse=1;
+	cio_api.options = CONIO_OPT_BRIGHT_BACKGROUND | CONIO_OPT_CUSTOM_CURSOR | CONIO_OPT_SET_TITLE;
 	return(1);
 }
 
@@ -638,6 +639,7 @@ void win32_textmode(int mode)
 	HANDLE	h;
 	COORD	sz;
 	SMALL_RECT	rc;
+	CONSOLE_SCREEN_BUFFER_INFOEX	bi;
 
 	for(i=0;i<NUMMODES;i++) {
 		if(vparams[i].mode==mode)
@@ -672,6 +674,14 @@ void win32_textmode(int mode)
 	cio_textinfo.wintop=1;
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
+	if (GetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &bi)) {
+		for (i = 0; i < 16; i++) {
+			bi.ColorTable[] = RGB(dac_default[vparams[modeidx].palette[i].red, dac_default[vparams[modeidx].palette[i].green, dac_default[vparams[modeidx].palette[i].blue);
+		}
+		if (SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &bi)) {
+			cio_api.options |= CONIO_OPT_PALETTE_SETTING;
+		}
+	}
 }
 
 int win32_gettext(int left, int top, int right, int bottom, void* buf)
@@ -881,4 +891,21 @@ int win32_getvideoflags(void)
 	if(mode==CONSOLE_FULLSCREEN_MODE)
 		return(0);
 	return(CIOLIB_VIDEO_BGBRIGHT);
+}
+
+int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
+{
+	CONSOLE_SCREEN_BUFFER_INFOEX	bi;
+
+	if (entry > 15)
+		return 0;
+
+	if (!GetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &bi))
+		return 0;
+
+	bi.ColorTable[entry] = RGB(r >> 8, g >> 8, b >> 8);
+	if (!SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &bi))
+		return 0;
+
+	return 1;
 }

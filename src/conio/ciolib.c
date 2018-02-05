@@ -342,6 +342,7 @@ int try_conio_init(int mode)
 		cio_api.getcustomcursor=win32_getcustomcursor;
 		cio_api.setcustomcursor=win32_setcustomcursor;
 		cio_api.getvideoflags=win32_getvideoflags;
+		cio_api.setpalette=win32_setpalette;
 		return(1);
 	}
 	return(0);

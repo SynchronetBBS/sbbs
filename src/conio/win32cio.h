@@ -59,6 +59,7 @@ void	win32_resume(void);
 void win32_getcustomcursor(int *s, int *e, int *r, int *b, int *v);
 void win32_setcustomcursor(int s, int e, int r, int b, int v);
 int win32_getvideoflags(void);
+int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 
 #ifdef __cplusplus
 }

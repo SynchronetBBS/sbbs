@@ -21,7 +21,7 @@ typedef pthread_mutex_t pthread_rwlock_t;
 
 #else
 
-#if 0
+#if 1
 
 #define	pthread_rwlock_t		pthread_mutex_t
 #define pthread_rwlock_init(a,b)	pthread_mutex_init(a,b)

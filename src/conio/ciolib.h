@@ -275,6 +275,19 @@ struct ciolib_screen {
 typedef struct {
 	int		mode;
 	int		mouse;
+	uint64_t	options;
+#define	CONIO_OPT_LOADABLE_FONTS	1
+#define CONIO_OPT_BLINK_ALT_FONT	2
+#define CONIO_OPT_BOLD_ALT_FONT		4
+#define CONIO_OPT_BRIGHT_BACKGROUND	8
+#define CONIO_OPT_PALETTE_SETTING	16
+#define CONIO_OPT_SET_PIXEL			32
+#define CONIO_OPT_CUSTOM_CURSOR		64
+#define CONIO_OPT_FONT_SELECT		128
+#define CONIO_OPT_SET_TITLE			256
+#define CONIO_OPT_SET_NAME			512
+#define CONIO_OPT_SET_ICON			1024
+#define CONIO_OPT_EXTENDED_PALETTE	2048
 	void	(*clreol)		(void);
 	int		(*puttext)		(int,int,int,int,void *);
 	int		(*pputtext)		(int,int,int,int,void *,uint32_t *,uint32_t *);
