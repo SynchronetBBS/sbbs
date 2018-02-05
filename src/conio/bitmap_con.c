@@ -1532,21 +1532,22 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	}
 
 	for (y = sy; y <= ey; y++) {
+		pos = pixels->width*(y-sy+y_off)+x_off;
 		if (mask == NULL) {
-			memcpy(&screen.screen[PIXEL_OFFSET(screen, sx, y)], &pixels->pixels[pixels->width*(y-sy+y_off)+x_off], width * sizeof(pixels->pixels[0]));
+			memcpy(&screen.screen[PIXEL_OFFSET(screen, sx, y)], &pixels->pixels[pos], width * sizeof(pixels->pixels[0]));
 			if (rect)
-				memcpy(&rect[(y-sy)*width], &pixels->pixels[pixels->width*(y-sy+y_off)+x_off], width * sizeof(pixels->pixels[0]));
+				memcpy(&rect[(y-sy)*width], &pixels->pixels[pos], width * sizeof(pixels->pixels[0]));
 		}
 		else {
 			for (x = sx; x <= ex; x++) {
-				pos = ((y-sy)*width)+(x-sx);
+				pos++;
 				mask_byte = pos / 8;
 				mask_bit = pos % 8;
 				mask_bit = 0x80 >> mask_bit;
 				if (m[mask_byte] & mask_bit) {
-					screen.screen[PIXEL_OFFSET(screen, x, y)] = pixels->pixels[pixels->width*(y-sy+y_off)+x_off+(x-sx)];
+					screen.screen[PIXEL_OFFSET(screen, x, y)] = pixels->pixels[pos];
 					if (rect)
-						*(rp++) = pixels->pixels[pixels->width*(y-sy+y_off)+x_off+(x-sx)];
+						*(rp++) = pixels->pixels[pos];
 				}
 				else {
 					if (rect) {
