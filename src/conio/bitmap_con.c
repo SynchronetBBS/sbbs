@@ -65,7 +65,7 @@ static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsig
 static int bitmap_loadfont_locked(char *filename);
 static void *get_rectangle_locked(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force);
 
-#if 1
+#if 0
 int dbg_pthread_rwlock_rdlock(pthread_rwlock_t *lock, unsigned line)
 {
 	int ret = pthread_rwlock_rdlock(lock);
@@ -1228,12 +1228,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	static unsigned short *last_vmem=NULL;
 	static uint32_t *last_fgvmem=NULL;
 	static uint32_t *last_bgvmem=NULL;
-	static unsigned short *this_vmem=NULL;
-	static uint32_t *this_fgvmem=NULL;
-	static uint32_t *this_bgvmem=NULL;
 	static struct video_stats vs;
-	struct video_stats cvstat;
-	struct vstat_vmem cvmem;
 	struct rectangle this_rect;
 	int this_rect_used=0;
 	struct rectangle last_rect;
@@ -1267,8 +1262,8 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	}
 
 	/* If the size has changed, realloc buffers to fit. */
-	if(vs.cols!=vstat.cols || vs.rows != vstat.rows || last_vmem==NULL || this_vmem == NULL ||
-	    last_fgvmem==NULL || this_fgvmem == NULL || last_bgvmem==NULL || this_bgvmem == NULL) {
+	if(vs.cols!=vstat.cols || vs.rows != vstat.rows || last_vmem==NULL ||
+	    last_fgvmem==NULL || last_bgvmem==NULL) {
 		void *p;
 
 		p=realloc(last_vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
@@ -1299,21 +1294,6 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		force=1;
 		vs.cols=vstat.cols;
 		vs.rows=vstat.rows;
-
-		p=realloc(this_vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
-		if(p==NULL)
-			return(-1);
-		this_vmem = p;
-
-		p=realloc(this_fgvmem, vstat.cols*vstat.rows*sizeof(this_fgvmem[0]));
-		if(p==NULL)
-			return(-1);
-		this_fgvmem = p;
-
-		p=realloc(this_bgvmem, vstat.cols*vstat.rows*sizeof(this_bgvmem[0]));
-		if(p==NULL)
-			return(-1);
-		this_bgvmem = p;
 	}
 
 	/* Redraw cursor? */
@@ -1335,22 +1315,8 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 			vstat.bright_altcharset != vs.bright_altcharset)
 		bright_attr_changed = 1;
 
-	/* Copy the whole vstat into cur */
-	cvstat = vstat;
-
 	/* Copy the vmems into cur */
 	vmem_ptr = get_vmem(&vstat);
-	cvstat.vmem = &cvmem;
-	cvstat.vmem->refcount = 1;
-	cvstat.vmem->vmem = this_vmem;
-	cvstat.vmem->fgvmem = this_fgvmem;
-	cvstat.vmem->bgvmem = this_bgvmem;
-	memcpy(cvstat.vmem->vmem, vmem_ptr->vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
-	memcpy(cvstat.vmem->fgvmem, vmem_ptr->fgvmem, vstat.cols*vstat.rows*sizeof(vmem_ptr->fgvmem[0]));
-	memcpy(cvstat.vmem->bgvmem, vmem_ptr->bgvmem, vstat.cols*vstat.rows*sizeof(vmem_ptr->bgvmem[0]));
-
-	/* We will not touch the "real" vstat again, so we don't need any locks */
-	release_vmem(vmem_ptr);
 
 	if (hold_update)
 		redraw_cursor = 0;
@@ -1365,39 +1331,39 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	 */
 
 	for(y=0;y<height;y++) {
-		pos=(sy+y-1)*cvstat.cols+(sx-1);
+		pos=(sy+y-1)*vstat.cols+(sx-1);
 		for(x=0;x<width;x++) {
 			/* Last this char been updated? */
 			if(force																/* Forced */
-					|| (cvstat.vmem->vmem[pos] != last_vmem[pos])					/* Character and/or attribute */
-					|| cvstat.vmem->fgvmem[pos] != last_fgvmem[pos]					/* FG colour */
-					|| cvstat.vmem->bgvmem[pos] != last_bgvmem[pos]					/* BG colour */
-					|| ((cvstat.vmem->vmem[pos] & 0x8000) && (blink_attr_changed ||
-							((cvstat.blink != vs.blink) && (!cvstat.no_blink)))) 	/* Blinking char */
-					|| ((cvstat.vmem->vmem[pos] & 0x0800) && bright_attr_changed)	/* Bright char */
-					|| (redraw_cursor && ((vs.curs_col==sx+x && vs.curs_row==sy+y) || (cvstat.curs_col==sx+x && cvstat.curs_row==sy+y)))	/* Cursor */
+					|| (vstat.vmem->vmem[pos] != last_vmem[pos])					/* Character and/or attribute */
+					|| vstat.vmem->fgvmem[pos] != last_fgvmem[pos]					/* FG colour */
+					|| vstat.vmem->bgvmem[pos] != last_bgvmem[pos]					/* BG colour */
+					|| ((vstat.vmem->vmem[pos] & 0x8000) && (blink_attr_changed ||
+							((vstat.blink != vs.blink) && (!vstat.no_blink)))) 	/* Blinking char */
+					|| ((vstat.vmem->vmem[pos] & 0x0800) && bright_attr_changed)	/* Bright char */
+					|| (redraw_cursor && ((vs.curs_col==sx+x && vs.curs_row==sy+y) || (vstat.curs_col==sx+x && vstat.curs_row==sy+y)))	/* Cursor */
 					) {
-				last_vmem[pos] = cvstat.vmem->vmem[pos];
-				last_fgvmem[pos] = cvstat.vmem->fgvmem[pos];
-				last_bgvmem[pos] = cvstat.vmem->bgvmem[pos];
-				bitmap_draw_one_char(&cvstat, sx+x,sy+y);
+				last_vmem[pos] = vstat.vmem->vmem[pos];
+				last_fgvmem[pos] = vstat.vmem->fgvmem[pos];
+				last_bgvmem[pos] = vstat.vmem->bgvmem[pos];
+				bitmap_draw_one_char(&vstat, sx+x,sy+y);
 
-				if(!redraw_cursor && sx+x==cvstat.curs_col && sy+y==cvstat.curs_row)
+				if(!redraw_cursor && sx+x==vstat.curs_col && sy+y==vstat.curs_row)
 					redraw_cursor=1;
 
 				/* If the last char was updated, we can add to the existing rectangle */
 				if(lastcharupdated) {
-					this_rect.width+=cvstat.charwidth;
+					this_rect.width+=vstat.charwidth;
 					lastcharupdated++;
 				}
 				else {
 					/* Otherwise, send the old rectangle, and start a new one. */
 					if(this_rect_used)
-						send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
-					this_rect.x=(sx+x-1)*cvstat.charwidth;
-					this_rect.y=(sy+y-1)*cvstat.charheight;
-					this_rect.width=cvstat.charwidth;
-					this_rect.height=cvstat.charheight;
+						send_rectangle(&vstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
+					this_rect.x=(sx+x-1)*vstat.charwidth;
+					this_rect.y=(sy+y-1)*vstat.charheight;
+					this_rect.width=vstat.charwidth;
+					this_rect.height=vstat.charheight;
 					this_rect_used=1;
 					lastcharupdated++;
 				}
@@ -1405,11 +1371,11 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 			else {
 				/* If this char wasn't updated, sent the rectangles */
 				if(last_rect_used) {
-					send_rectangle(&cvstat, last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
+					send_rectangle(&vstat, last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
 					last_rect_used=0;
 				}
 				if(this_rect_used) {
-					send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
+					send_rectangle(&vstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
 					this_rect_used=0;
 				}
 				lastcharupdated=0;
@@ -1419,7 +1385,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		/* If ALL chars in the line were used, add to last_rect */
 		if(lastcharupdated==width) {
 			if(last_rect_used) {
-				last_rect.height += cvstat.charheight;
+				last_rect.height += vstat.charheight;
 				this_rect_used=0;
 			}
 			else {
@@ -1432,11 +1398,11 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		else
 		{
 			if(last_rect_used) {
-				send_rectangle(&cvstat, last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
+				send_rectangle(&vstat, last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
 				last_rect_used=0;
 			}
 			if(this_rect_used) {
-				send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
+				send_rectangle(&vstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
 				this_rect_used=0;
 			}
 		}
@@ -1444,17 +1410,19 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	}
 
 	if(last_rect_used)
-		send_rectangle(&cvstat, last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
+		send_rectangle(&vstat, last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
 	if(this_rect_used) {
-		send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
+		send_rectangle(&vstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
 	}
-	pthread_rwlock_unlock(&vstatlock);
-
-	vs = cvstat;
+	release_vmem(vmem_ptr);
 
 	/* Did we redraw over the cursor?  If so, update cursor info */
 	if(redraw_cursor)
-		bitmap_draw_cursor(&cvstat);
+		bitmap_draw_cursor(&vstat);
+
+	pthread_rwlock_unlock(&vstatlock);
+
+	vs = vstat;
 
 	return(0);
 }
