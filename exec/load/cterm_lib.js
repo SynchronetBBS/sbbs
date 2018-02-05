@@ -9,6 +9,7 @@ var ansiterm = load({}, 'ansiterm_lib.js');
 const cterm_version_supports_fonts = 1061;
 const cterm_version_supports_fontstate_query = 1161;	// Yes, just a coincidence
 const cterm_version_supports_mode_query = 1160;
+const cterm_version_supports_palettes = 1167;
 var font_slot_first = 43;
 const font_slot_last = 255;
 const font_styles = { normal:0, high:1, blink:2, highblink:3 };
@@ -142,6 +143,12 @@ function charheight(rows)
 	return 8;
 }
 
+// This may return true, false, or undefined
+// Returns true when we know for sure fonts are supported in the terminal (to the best of our knowledge).
+// Returns false when we are pretty confident that fonts are *not* supported in the terminal (not CTerm).
+// Returns undefined when we aren't really sure because it's a version of CTerm (e.g. SyncTERM 1.0)
+// which didn't support queries
+// ... and it may be running in a video output mode that doesn't support fonts (e.g. Win32 Console).
 function supports_fonts()
 {
 	if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_fonts)
@@ -152,6 +159,15 @@ function supports_fonts()
 		return undefined;
 	var setfont_result = parseInt(font_state[font_state_field_result], 10);
 	return setfont_result == 0 || setfont_result == 99;
+}
+
+// Right this function may return true when in fact the terminal is running in a video mode where
+// palette redefinitions are not supported
+function supports_palettes()
+{
+	if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_palettes)
+		return false;
+	return true;
 }
 
 // Returns:
@@ -225,11 +241,15 @@ function load_font(slot, data, force)
 
 function reset_palette()
 {
-	console.write("\x1b]104\x1b\\");
+	if(!this.supports_palettes())
+		return false;
+	return console.write("\x1b]104\x1b\\");
 }
 
 function redefine_palette(palette, bits)
 {
+	if(!this.supports_palettes())
+		return false;
 	if(!bits)	// per color channel (options are 4, 8, 12, or 16)
 		bits = 8;
 	var str = "\x1b]4";
@@ -266,7 +286,7 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 
 	console.clear(LIGHTGRAY|BG_BLACK);
 
-	if(image.font && image.charheight == this.charheight(console.screen_rows)) {
+	if(this.supports_fonts() != false && image.font && image.charheight == this.charheight(console.screen_rows)) {
 		for(var i = 0; i < image.font.length; i++)	{
 	//		print("Loading font " + image.font[i].length + " bytes");
 			this.load_font(0xff - i, image.font[i], true);
@@ -291,7 +311,7 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 	if(image.flags&xbin.FLAG_NONBLINK)
 		ansiterm.send("ext_mode", "set", "no_blink");
 
-	if(image.palette) {
+	if(image.palette && this.supports_palettes()) {
 		var palette = [];
 		for(var i = 0; i < 16; i++) {
 			/* Must send the color definitions in the Xterm/ANSI order: */
@@ -464,13 +484,14 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 
 function xbin_cleanup(image)
 {
-	if(image && image.palette)
+	if(image && image.palette && this.supports_palettes())
 		this.reset_palette();
 
 	console.clear(ansiterm.LIGHTGRAY|ansiterm.BG_BLACK);
 	ansiterm.send("ext_mode", "set", "cursor");
 
-	if(image===undefined || (image.font && image.charheight == this.charheight(console.screen_rows))) {
+	if(this.supports_fonts() != false
+		&& (image===undefined || (image.font && image.charheight == this.charheight(console.screen_rows)))) {
 		for(var p in this.font_styles)
 			if(image==undefined || image[p] < image.font_count)
 				this.activate_font(this.font_styles[p], 0);
