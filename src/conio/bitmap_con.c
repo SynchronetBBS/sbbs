@@ -302,7 +302,6 @@ static void send_rectangle_locked(struct video_stats *vs, int xoffset, int yoffs
 	int inpixel;
 	int x,y;
 
-if (force) fprintf(stderr, "Forced rectangle %d/%d %dx%d\n", xoffset, yoffset, width, height);
 	if(callbacks.drawrect) {
 		if(xoffset < 0 || xoffset >= screen.screenwidth || yoffset < 0 || yoffset >= screen.screenheight || width <= 0 || width > screen.screenwidth || height <=0 || height >screen.screenheight)
 			return;
@@ -332,7 +331,6 @@ void send_rectangle(struct video_stats *vs, int xoffset, int yoffset, int width,
 
 static void send_text_rectangle_locked(int xoffset, int yoffset, int width, int height, int force)
 {
-if (force) fprintf(stderr, "Text rectangle %d/%d %dx%d\n", xoffset, yoffset, width, height);
 	xoffset *= vstat.charwidth;
 	width *= vstat.charwidth;
 	yoffset *= vstat.charheight;
@@ -569,7 +567,6 @@ void bitmap_clrscr(void)
 	WORD fill=(cio_textinfo.attribute<<8)|space;
 	struct vstat_vmem *vmem_ptr;
 
-fprintf(stderr, "Clearing\n");
 	pthread_rwlock_rdlock(&vstatlock);
 	vmem_ptr = lock_vmem(&vstat, 1);
 	for(y=cio_textinfo.wintop-1; y<cio_textinfo.winbottom; y++) {

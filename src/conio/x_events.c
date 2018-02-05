@@ -492,7 +492,6 @@ static void expose_rect(int x, int y, int width, int height)
 {
 	int sx,sy,ex,ey;
 
-fprintf(stderr, "Exposing %d/%d %dx%d\n", x,y,width,height);
 	pthread_rwlock_rdlock(&vstatlock);
 	sx=x/vstat.scaling;
 	sy=y/(vstat.scaling*vstat.vmultiplier);
@@ -508,7 +507,6 @@ fprintf(stderr, "Exposing %d/%d %dx%d\n", x,y,width,height);
 	ex=ex/vstat.scaling;
 	ey=ey/(vstat.scaling*vstat.vmultiplier);
 	pthread_rwlock_unlock(&vstatlock);
-fprintf(stderr, "Exposing %d/%d - %d/%d\n", sx,sy,ex,ey);
 
 	send_rectangle(&vstat, sx, sy, ex-sx+1, ey-sy+1, FALSE);
 }
