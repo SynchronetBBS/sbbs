@@ -429,12 +429,13 @@ void sdl_user_func(int func, ...)
 		case SDL_USEREVENT_PASTE:
 		case SDL_USEREVENT_SHOWMOUSE:
 		case SDL_USEREVENT_HIDEMOUSE:
+		case SDL_USEREVENT_FLUSH:
 			break;
 	}
 	while(1) {
 		while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
 			YIELD();
-		if (func != SDL_USEREVENT_UPDATERECT) {
+		if (func != SDL_USEREVENT_UPDATERECT && func != SDL_USEREVENT_FLUSH) {
 			if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
 				continue;
 		}
@@ -460,7 +461,6 @@ int sdl_user_func_ret(int func, ...)
 	while(1) {
 		switch(func) {
 			case SDL_USEREVENT_SETVIDMODE:
-			case SDL_USEREVENT_FLUSH:
 			case SDL_USEREVENT_INIT:
 			case SDL_USEREVENT_QUIT:
 				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
@@ -638,7 +638,7 @@ int sdl_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 
 void sdl_flush(void)
 {
-	sdl_user_func_ret(SDL_USEREVENT_FLUSH);
+	sdl_user_func(SDL_USEREVENT_FLUSH);
 }
 
 int sdl_init_mode(int mode)
@@ -649,7 +649,7 @@ int sdl_init_mode(int mode)
 	oldcols = vstat.cols;
 	pthread_rwlock_unlock(&vstatlock);
 
-	sdl_user_func_ret(SDL_USEREVENT_FLUSH);
+	sdl_user_func(SDL_USEREVENT_FLUSH);
 
 	bitmap_init_mode(mode, &bitmap_width, &bitmap_height);
 
@@ -1724,7 +1724,7 @@ int sdl_video_event_thread(void *data)
 						break;
 					case SDL_USEREVENT: {
 						/* Tell SDL to do various stuff... */
-						if (ev.user.code != SDL_USEREVENT_UPDATERECT)
+						if (ev.user.code != SDL_USEREVENT_UPDATERECT && ev.user.code != SDL_USEREVENT_FLUSH)
 							sdl.SemPost(sdl_ufunc_rec);
 						switch(ev.user.code) {
 							case SDL_USEREVENT_QUIT:
@@ -1813,8 +1813,6 @@ int sdl_video_event_thread(void *data)
 								}
 								sdl.mutexP(newrect_mutex);
 								sdl.mutexV(win_mutex);
-								sdl_ufunc_retval=0;
-								sdl.SemPost(sdl_ufunc_ret);
 								break;
 							case SDL_USEREVENT_SETNAME:
 								sdl.WM_SetCaption((char *)ev.user.data1,(char *)ev.user.data1);
