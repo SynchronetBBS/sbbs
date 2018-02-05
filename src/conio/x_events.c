@@ -298,7 +298,7 @@ static void map_window()
 
     x11.XFree(sh);
 
-	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,TRUE);
+	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,FALSE);
 
     return;
 }
@@ -340,7 +340,7 @@ static int init_mode(int mode)
     /* Resize window if necessary. */
 	if((!(bitmap_width == 0 && bitmap_height == 0)) && (oldwidth != bitmap_width || oldheight != bitmap_height))
 		resize_window();
-	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,TRUE);
+	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,FALSE);
 	pthread_rwlock_unlock(&vstatlock);
 
 	sem_post(&mode_set);
@@ -484,7 +484,7 @@ static void handle_resize_event(int width, int height)
 			|| (height % (vstat.charheight * vstat.rows) != 0)) {
 		resize_window();
 	}
-	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,TRUE);
+	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,FALSE);
 	pthread_rwlock_unlock(&vstatlock);
 }
 
@@ -492,6 +492,7 @@ static void expose_rect(int x, int y, int width, int height)
 {
 	int sx,sy,ex,ey;
 
+fprintf(stderr, "Exposing %d/%d %dx%d\n", x,y,width,height);
 	pthread_rwlock_rdlock(&vstatlock);
 	sx=x/vstat.scaling;
 	sy=y/(vstat.scaling*vstat.vmultiplier);
@@ -507,8 +508,9 @@ static void expose_rect(int x, int y, int width, int height)
 	ex=ex/vstat.scaling;
 	ey=ey/(vstat.scaling*vstat.vmultiplier);
 	pthread_rwlock_unlock(&vstatlock);
+fprintf(stderr, "Exposing %d/%d - %d/%d\n", sx,sy,ex,ey);
 
-	send_rectangle(&vstat, sx, sy, ex-sx+1, ey-sy+1, TRUE);
+	send_rectangle(&vstat, sx, sy, ex-sx+1, ey-sy+1, FALSE);
 }
 
 static int x11_event(XEvent *ev)
@@ -938,7 +940,7 @@ static void local_set_palette(struct x11_palette_entry *p)
 		pixel[p->index]=color.pixel;
 	gcv.foreground=color.pixel;
 	gca[p->index]=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
-	expose_rect(0, 0, x11_window_width-1, x11_window_height-1);
+	expose_rect(0, 0, x11_window_width, x11_window_height);
 }
 
 void x11_event_thread(void *args)

@@ -49,7 +49,7 @@ int bitmap_getscaling(void);
 int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp);
 int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey);
-int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *);
+int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *, void *mask);
 void request_pixels(void);
 
 #endif
