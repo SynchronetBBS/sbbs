@@ -95,10 +95,10 @@ function draw(file, cols, rows)
 	// Use graphic when the entire image fits on the screen
 	var graphic = new Graphic(cols, rows);
 	try {
-		if(!graphic.load(file))
+		if (!graphic.load(file))
 			alert("Graphic.load failure: " + file);
 		else {
-			if(state.drawfx)	// Check this shit out
+			if (state.drawfx)	// Check this shit out
 				graphic.drawfx();
 			else
 				graphic.draw();
@@ -117,7 +117,7 @@ function drawFile(file) {
 	if (file_getext(file).toLowerCase() == ".bin" || is_xbin) {
 		if (!state.syncTerm)
 			return "Sorry, this file format is not supported by your terminal";
-		if(!is_xbin	&& (!sauce || sauce.datatype != Sauce.defs.datatype.bin)) {
+		if (!is_xbin	&& (!sauce || sauce.datatype != Sauce.defs.datatype.bin)) {
 			return "Sorry, this file has a missing or invalid SAUCE record";
 		}
 		var f = new File(file);
@@ -135,8 +135,20 @@ function drawFile(file) {
 			image = xbin.read(f);
 		}
 		f.close();
-		if (image.font && image.font.length && image.charheight != cterm.charheight(console.screen_rows)) {
-			alert(format("Warning: file intended for a different char height (%u), font not used.", image.charheight));
+		var warning = '';
+		if (image.font) {
+			if (cterm.supports_fonts() == false)
+				warning += "Warning: your terminal does not support loadable fonts; font not used.\r\n";
+			else if (image.font.length && image.charheight != cterm.charheight(console.screen_rows))
+				warning += format("Warning: file intended for a different char height (%u); font not used.\r\n"
+					,image.charheight);
+		}
+		if (image.palette) {
+			if (cterm.supports_palettes() == false)
+				warning += "Warning: your terminal does not support loadable palettes; palette not used.\r\n";
+		}
+		if (warning.length) {
+			alert(warning);
 			console.pause();
 		}
 		cterm.xbin_draw(image);
@@ -164,7 +176,7 @@ function drawFile(file) {
 	} else {	// TODO: terminate on Ctrl-Z char (CPM EOF) in the file
 
 		var f = new File(file);
-		if(!f.open("r"))
+		if (!f.open("r"))
 			return "Failed to open file: " + file.name;
 		var contents = f.read().split("");
 		f.close();
@@ -194,7 +206,7 @@ function printFile(file) {
 	frame.invalidate();
 	var result = drawFile(file);
 	console.clear(BG_BLACK|LIGHTGRAY);
-	if(result !== true) {
+	if (result !== true) {
 		alert(result);
 		console.pause();
 	}
