@@ -43,6 +43,7 @@ struct bitmap_callbacks {
 	void	(*drawrect)		(int xpos, int ypos, int width, int height, uint32_t *data);
 	void	(*flush)		(void);
 	pthread_mutex_t lock;
+	unsigned rects;
 };
 
 pthread_rwlock_t		vstatlock;
@@ -187,7 +188,10 @@ static int check_pixels(void)
 static void cb_flush(void)
 {
 	pthread_mutex_lock(&callbacks.lock);
-	callbacks.flush();
+	if (callbacks.rects) {
+		callbacks.flush();
+		callbacks.rects = 0;
+	}
 	pthread_mutex_unlock(&callbacks.lock);
 }
 
@@ -197,6 +201,7 @@ static void	cb_drawrect(int xpos, int ypos, int width, int height, uint32_t *dat
 		return;
 	pthread_mutex_lock(&callbacks.lock);
 	callbacks.drawrect(xpos, ypos, width, height, data);
+	callbacks.rects++;
 	pthread_mutex_unlock(&callbacks.lock);
 }
 
@@ -257,6 +262,7 @@ int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, 
 
 	callbacks.drawrect=drawrect_cb;
 	callbacks.flush=flush_cb;
+	callbacks.rects = 0;
 	bitmap_initialized=1;
 	_beginthread(blinker_thread,0,NULL);
 
@@ -1528,6 +1534,7 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels, void *mask)
 {
 	uint32_t *rect = NULL;
+	uint32_t *rp;
 	uint32_t x, y;
 	uint32_t width,height;
 	char *m = mask;
@@ -1551,7 +1558,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		return 0;
 
 	if(callbacks.drawrect)
-		rect=(uint32_t *)malloc(height * width * sizeof(rect[0]));
+		rp = rect=(uint32_t *)malloc(height * width * sizeof(rect[0]));
 
 	pthread_rwlock_wrlock(&screen.screenlock);
 
@@ -1572,18 +1579,19 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		}
 		else {
 			for (x = sx; x <= ex; x++) {
-				pos = ((y-sy)*width)+x;
+				pos = ((y-sy)*width)+(x-sx);
 				mask_byte = pos / 8;
 				mask_bit = pos % 8;
 				mask_bit = 0x80 >> mask_bit;
 				if (m[mask_byte] & mask_bit) {
-					screen.screen[PIXEL_OFFSET(screen, x, y)] = pixels->pixels[pixels->width*(y-sy+y_off)+x_off+x];
+					screen.screen[PIXEL_OFFSET(screen, x, y)] = pixels->pixels[pixels->width*(y-sy+y_off)+x_off+(x-sx)];
 					if (rect)
-						rect[(y-sy)*width] = pixels->pixels[pixels->width*(y-sy+y_off)+x_off+x];
+						*(rp++) = pixels->pixels[pixels->width*(y-sy+y_off)+x_off+(x-sx)];
 				}
 				else {
-					if (rect)
-						rect[(y-sy)*width] = screen.screen[PIXEL_OFFSET(screen, x, y)];
+					if (rect) {
+						*(rp++) = screen.screen[PIXEL_OFFSET(screen, x, y)];
+					}
 				}
 			}
 		}

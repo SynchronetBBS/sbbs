@@ -170,6 +170,8 @@ struct cterminal {
 	bool				sx_scroll_mode;	// Sixel scrolling mode
 	int					sx_start_x;		// Starting X position
 	int					sx_start_y;		// Starting Y position
+	struct ciolib_pixels *sx_pixels;
+	uint8_t				*sx_mask;
 
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO

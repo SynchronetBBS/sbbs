@@ -1271,6 +1271,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 	char *end;
 	int i, j, k;
 	int vmode;
+	int pos;
 	struct text_info ti;
 
 	if (cterm->strbuflen == 0) {
@@ -1288,23 +1289,45 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 		if (*p >= '?' && *p <= '~') {
 			unsigned data = *p - '?';
 
-			cterm->sx_pixels_sent = 1;
-			for (i=0; i<6; i++) {
-				if (data & (1<<i)) {
-					for (j = 0; j < cterm->sx_iv; j++) {
-						for (k = 0; k < cterm->sx_ih; k++)
-							setpixel(cterm->sx_x+k, cterm->sx_y+(i*cterm->sx_iv)+j, cterm->sx_fg);
-					}
+			if (*p != '?' || ((!cterm->sx_trans) || cterm->sx_first_pass)) {
+				cterm->sx_pixels_sent = 1;
+				if (cterm->sx_pixels == NULL) {
+					cterm->sx_pixels = malloc(sizeof(struct ciolib_pixels));
+					cterm->sx_pixels->pixels = malloc(sizeof(cterm->sx_pixels->pixels[0]) * cterm->sx_iv * cterm->sx_ih * 6);
+					cterm->sx_pixels->width = cterm->sx_ih;
+					cterm->sx_pixels->height = cterm->sx_iv * 6;
+					cterm->sx_mask = malloc((cterm->sx_iv * cterm->sx_ih * 6 + 7)/8);
 				}
-				else {
-					if (cterm->sx_first_pass && !cterm->sx_trans) {
+				memset(cterm->sx_mask, 0xff, (cterm->sx_iv * cterm->sx_ih * 6 + 7)/8);
+				for (i=0; i<6; i++) {
+					if (data & (1<<i)) {
 						for (j = 0; j < cterm->sx_iv; j++) {
-							for (k = 0; k < cterm->sx_ih; k++)
-								setpixel(cterm->sx_x+k, cterm->sx_y+(i*cterm->sx_iv)+j, cterm->sx_bg);
+							for (k = 0; k < cterm->sx_ih; k++) {
+								cterm->sx_pixels->pixels[i * cterm->sx_iv * cterm->sx_ih + j * cterm->sx_ih + k] = cterm->sx_fg;
+							}
+						}
+					}
+					else {
+						if (cterm->sx_first_pass && !cterm->sx_trans) {
+							for (j = 0; j < cterm->sx_iv; j++) {
+								for (k = 0; k < cterm->sx_ih; k++) {
+									cterm->sx_pixels->pixels[i * cterm->sx_iv * cterm->sx_ih + j * cterm->sx_ih + k] = cterm->sx_bg;
+								}
+							}
+						}
+						else {
+							for (j = 0; j < cterm->sx_iv; j++) {
+								for (k = 0; k < cterm->sx_ih; k++) {
+									pos = i * cterm->sx_iv * cterm->sx_ih + j * cterm->sx_ih + k;
+									cterm->sx_mask[pos/8] &= ~(0x80 >> (pos % 8));
+								}
+							}
 						}
 					}
 				}
+				setpixels(cterm->sx_x, cterm->sx_y, cterm->sx_x + cterm->sx_ih - 1, cterm->sx_y + cterm->sx_iv * 6 - 1, 0, 0, cterm->sx_pixels, cterm->sx_mask);
 			}
+			
 			cterm->sx_x+=cterm->sx_ih;
 			// TODO: Check X
 			if (cterm->sx_repeat)
@@ -1334,9 +1357,16 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 							height = strtoul(p, &p, 10);
 						}
 						// TODO: If the image scrolls, the background isn't set
-						for (i = 0; i<height*cterm->sx_iv; i++) {
-							for (j = 0; j < width*cterm->sx_ih; j++)
-								setpixel(cterm->sx_x+j, cterm->sx_y+i, cterm->sx_bg);
+						if (height && width) {
+							struct ciolib_pixels px;
+
+							px.pixels = malloc(sizeof(px.pixels[0])*width*height*cterm->sx_iv*cterm->sx_ih);
+							for (i = 0; i<height*cterm->sx_iv; i++) {
+								for (j = 0; j < width*cterm->sx_ih; j++)
+									px.pixels[i*width*cterm->sx_ih + j] = cterm->sx_bg;
+							}
+							setpixels(cterm->sx_x, cterm->sx_y, cterm->sx_x + width - 1, cterm->sx_y - 1, 0, 0, &px, NULL);
+							free(px.pixels);
 						}
 					}
 					else
@@ -1435,6 +1465,10 @@ all_done:
 	}
 	SETCURSORTYPE(cterm->cursor);
 	cterm->sixel = SIXEL_INACTIVE;
+	if (cterm->sx_pixels)
+		FREE_AND_NULL(cterm->sx_pixels->pixels);
+	FREE_AND_NULL(cterm->sx_pixels);
+	FREE_AND_NULL(cterm->sx_mask);
 }
 
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed)
