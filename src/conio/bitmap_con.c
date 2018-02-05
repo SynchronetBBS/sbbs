@@ -36,7 +36,6 @@ static int default_font=-99;
 static int current_font[4]={-99, -99, -99, -99};
 static int bitmap_initialized=0;
 
-static pthread_rwlock_t vmem_lock;
 struct video_stats vstat;
 
 struct bitmap_callbacks {
@@ -114,23 +113,6 @@ static __inline void *locked_screen_check(void)
 	ret=screen.screen;
 	pthread_rwlock_unlock(&screen.screenlock);
 	return(ret);
-}
-
-static struct vstat_vmem *lock_vmem(struct video_stats *vs, int wr)
-{
-	struct vstat_vmem *ret;
-	ret = get_vmem(vs);
-	if (wr)
-		pthread_rwlock_wrlock(&vmem_lock);
-	else
-		pthread_rwlock_rdlock(&vmem_lock);
-	return ret;
-}
-
-static void unlock_vmem(struct vstat_vmem *vm)
-{
-	pthread_rwlock_unlock(&vmem_lock);
-	release_vmem(vm);
 }
 
 static void request_redraw_locked(void)
@@ -263,13 +245,10 @@ int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, 
 	if(bitmap_initialized)
 		return(-1);
 	pthread_mutex_init(&callbacks.lock, NULL);
-	pthread_rwlock_init(&vmem_lock, NULL);
 	pthread_rwlock_init(&vstatlock, NULL);
 	pthread_rwlock_init(&screen.screenlock, NULL);
 	pthread_rwlock_wrlock(&vstatlock);
-	pthread_rwlock_wrlock(&vmem_lock);
 	vstat.vmem=NULL;
-	pthread_rwlock_unlock(&vmem_lock);
 	vstat.flags = VIDMODES_FLAG_PALETTE_VMEM;
 	pthread_rwlock_unlock(&vstatlock);
 
@@ -297,10 +276,8 @@ int bitmap_init_mode(int mode, int *width, int *height)
 		return(-1);
 
 	pthread_rwlock_wrlock(&vstatlock);
-	pthread_rwlock_wrlock(&vmem_lock);
 
 	if(load_vmode(&vstat, mode)) {
-		pthread_rwlock_unlock(&vmem_lock);
 		pthread_rwlock_unlock(&vstatlock);
 		return(-1);
 	}
@@ -329,7 +306,6 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	screen.screen=newscreen;
 	memset_u32(screen.screen,vstat.palette[0],screen.screenwidth*screen.screenheight);
 	pthread_rwlock_unlock(&screen.screenlock);
-	pthread_rwlock_unlock(&vmem_lock);
 	for (i=0; i<sizeof(current_font)/sizeof(current_font[0]); i++)
 		current_font[i]=default_font;
 	bitmap_loadfont_locked(NULL);
@@ -582,7 +558,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	destoffset=(((toy-1)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
 
 	pthread_rwlock_rdlock(&vstatlock);
-	vmem_ptr = lock_vmem(&vstat, 1);
+	vmem_ptr = get_vmem(&vstat);
 	if (vstat.curs_row >= y && vstat.curs_row <= ey &&
 	    vstat.curs_col >= x && vstat.curs_col <= ex)
 		bitmap_draw_one_char(&vstat, vstat.curs_col, vstat.curs_row);
@@ -602,7 +578,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	/* TODO: Just resend the whole screen... */
 	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
-	unlock_vmem(vmem_ptr);
+	release_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 
 	return(1);
@@ -618,14 +594,14 @@ void bitmap_clreol(void)
 	row = cio_textinfo.cury + cio_textinfo.wintop - 1;
 	pos=(row - 1)*cio_textinfo.screenwidth;
 	pthread_rwlock_rdlock(&vstatlock);
-	vmem_ptr = lock_vmem(&vstat, 1);
+	vmem_ptr = get_vmem(&vstat);
 	for(x=cio_textinfo.curx+cio_textinfo.winleft-2; x<cio_textinfo.winright; x++) {
 		set_vmem_cell(vmem_ptr, pos+x, fill);
 		vmem_ptr->fgvmem[pos+x] = ciolib_fg;
 		vmem_ptr->bgvmem[pos+x] = ciolib_bg;
 		bitmap_draw_one_char(&vstat, x+1, row);
 	}
-	unlock_vmem(vmem_ptr);
+	release_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 	send_text_rectangle(cio_textinfo.curx+cio_textinfo.winleft-2, row-1, cio_textinfo.winright - cio_textinfo.curx+cio_textinfo.winleft - 3, 1, FALSE);
 }
@@ -637,7 +613,7 @@ void bitmap_clrscr(void)
 	struct vstat_vmem *vmem_ptr;
 
 	pthread_rwlock_rdlock(&vstatlock);
-	vmem_ptr = lock_vmem(&vstat, 1);
+	vmem_ptr = get_vmem(&vstat);
 	for(y=cio_textinfo.wintop-1; y<cio_textinfo.winbottom; y++) {
 		for(x=cio_textinfo.winleft-1; x<cio_textinfo.winright; x++) {
 			set_vmem_cell(vmem_ptr, y*cio_textinfo.screenwidth+x, fill);
@@ -646,7 +622,7 @@ void bitmap_clrscr(void)
 			bitmap_draw_one_char(&vstat, x+1, y+1);
 		}
 	}
-	unlock_vmem(vmem_ptr);
+	release_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 	send_text_rectangle(cio_textinfo.winleft-1, cio_textinfo.wintop-1, cio_textinfo.winright - cio_textinfo.winleft + 1, cio_textinfo.winbottom - cio_textinfo.wintop + 1, TRUE);
 }
@@ -676,7 +652,7 @@ int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 		return(0);
 
 	pthread_rwlock_rdlock(&vstatlock);
-	vmem_ptr = lock_vmem(&vstat, 1);
+	vmem_ptr = get_vmem(&vstat);
 	out=fill;
 	fgout = fg;
 	bgout = bg;
@@ -692,7 +668,7 @@ int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 			bitmap_draw_one_char(&vstat, x+1, y+1);
 		}
 	}
-	unlock_vmem(vmem_ptr);
+	release_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 	send_text_rectangle(sx-1, sy-1, ex-sx + 1, ey - sy + 1, FALSE);
 	return(1);
@@ -746,7 +722,7 @@ int bitmap_pgettext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 		return(0);
 
 	pthread_rwlock_rdlock(&vstatlock);
-	vmem_ptr = lock_vmem(&vstat, 0);
+	vmem_ptr = get_vmem(&vstat);
 	out=fill;
 	fgout=fg;
 	bgout=bg;
@@ -761,7 +737,7 @@ int bitmap_pgettext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 				*(bgout++) = vmem_ptr->bgvmem[y*cio_textinfo.screenwidth+x];
 		}
 	}
-	unlock_vmem(vmem_ptr);
+	release_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 	return(1);
 }
@@ -1167,7 +1143,7 @@ void bitmap_gotoxy(int x, int y)
 }
 
 /*
- * IF vs == &vstat, vstatlock and vmem_lock need to be held.
+ * IF vs == &vstat, vstatlock needs to be held.
  * If not, not
  */
 static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsigned int ypos)
@@ -1363,7 +1339,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	cvstat = vstat;
 
 	/* Copy the vmems into cur */
-	vmem_ptr = lock_vmem(&vstat, 0);
+	vmem_ptr = get_vmem(&vstat);
 	cvstat.vmem = &cvmem;
 	cvstat.vmem->refcount = 1;
 	cvstat.vmem->vmem = this_vmem;
@@ -1374,7 +1350,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	memcpy(cvstat.vmem->bgvmem, vmem_ptr->bgvmem, vstat.cols*vstat.rows*sizeof(vmem_ptr->bgvmem[0]));
 
 	/* We will not touch the "real" vstat again, so we don't need any locks */
-	unlock_vmem(vmem_ptr);
+	release_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
 
 	if (hold_update)
