@@ -210,6 +210,9 @@ static void blinker_thread(void *data)
 {
 	void *rect;
 	int count=0;
+	int ccol;
+	int crow;
+	int update;
 
 	SetThreadName("Blinker");
 	while(1) {
@@ -218,6 +221,7 @@ static void blinker_thread(void *data)
 		} while(locked_screen_check()==NULL);
 		count++;
 		if(count==50) {
+			update = 1;
 			pthread_rwlock_wrlock(&vstatlock);
 			if(vstat.blink)
 				vstat.blink=FALSE;
@@ -230,12 +234,21 @@ static void blinker_thread(void *data)
 			if (update_rect(0,0,0,0,TRUE))
 				request_redraw();
 		}
+		else {
+			if (ccol != vstat.curs_col || crow != vstat.curs_row) {
+				update = 1;
+				ccol = vstat.curs_col;
+				crow = vstat.curs_row;
+			}
+			if (update)
+				update_rect(0,0,0,0,FALSE);
+			update = 0;
+		}
 		if (check_pixels()) {
 			pthread_rwlock_rdlock(&screen.screenlock);
 			rect = get_rectangle_locked(&vstat, 0, 0, screen.screenwidth, screen.screenheight, FALSE);
 			pthread_rwlock_unlock(&screen.screenlock);
 			cb_drawrect(0, 0, screen.screenwidth, screen.screenheight, rect);
-
 		}
 		cb_flush();
 	}
@@ -1209,9 +1222,11 @@ static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsig
 
 	for(y=0; y<vs->charheight; y++) {
 		memset_u32(&screen.screen[PIXEL_OFFSET(screen, xoffset, yoffset+y)],bg,vs->charwidth);
-		for(x=0; x<vs->charwidth; x++) {
-			if(this_font[fontoffset] & (0x80 >> x))
-				screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]=fg;
+		if ((!((sch & 0x8000) && !vstat.blink)) || vstat.no_blink) {
+			for(x=0; x<vs->charwidth; x++) {
+				if(this_font[fontoffset] & (0x80 >> x))
+					screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]=fg;
+			}
 		}
 		fontoffset++;
 	}
@@ -1326,7 +1341,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	}
 
 	/* Redraw cursor? */
-	if(force || vstat.blink != vs.blink
+	if(vstat.blink != vs.blink
 			|| vstat.curs_col!=vs.curs_col
 			|| vstat.curs_row!=vs.curs_row
 			|| vstat.curs_start!=vs.curs_start
@@ -1373,6 +1388,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	 * At the end of the line, if this_rect is the same width as the screen,
 	 * we add it to last_rect.
 	 */
+
 	for(y=0;y<height;y++) {
 		pos=(sy+y-1)*cvstat.cols+(sx-1);
 		for(x=0;x<width;x++) {
@@ -1460,7 +1476,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 
 	vs = cvstat;
 
-	/* Did we redraw the cursor?  If so, update cursor info */
+	/* Did we redraw over the cursor?  If so, update cursor info */
 	if(redraw_cursor)
 		bitmap_draw_cursor(&cvstat);
 
