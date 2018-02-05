@@ -41,7 +41,7 @@ function query(request)
 
 	var lastch;
 	while(1) {
-		var ch=console.inkey(0, 1000);
+		var ch=console.inkey(0, 3000);
 		if(ch=="")
 			break;
 		if(!response.length) {
