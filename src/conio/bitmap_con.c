@@ -1351,7 +1351,6 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 
 	/* We will not touch the "real" vstat again, so we don't need any locks */
 	release_vmem(vmem_ptr);
-	pthread_rwlock_unlock(&vstatlock);
 
 	if (hold_update)
 		redraw_cursor = 0;
@@ -1449,6 +1448,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	if(this_rect_used) {
 		send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
 	}
+	pthread_rwlock_unlock(&vstatlock);
 
 	vs = cvstat;
 
