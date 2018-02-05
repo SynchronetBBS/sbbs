@@ -1713,7 +1713,7 @@ void sys_cfg(void)
 				k=0;
 				while(1) {
 					for(i=0;i<100;i++) {
-						sprintf(tmp,"%luk",cfg.level_freecdtperday[i]/1024L);
+						byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
 						sprintf(opt[i],"%-2d    %5d %5d "
 							"%5d %5d %5d %5d %6s %7s %2u",i
 							,cfg.level_timeperday[i],cfg.level_timepercall[i]
@@ -1761,7 +1761,7 @@ void sys_cfg(void)
 							,cfg.level_postsperday[i]);
 						sprintf(opt[j++],"%-22.22s%-5u","Lines Per Message"
 							,cfg.level_linespermsg[i]);
-						sprintf(tmp,"%luk",cfg.level_freecdtperday[i]/1024L);
+						byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
 						sprintf(opt[j++],"%-22.22s%-6s","Free Credits Per Day"
 							,tmp);
 						sprintf(opt[j++],"%-22.22s%s %u","Expire To"
@@ -1822,11 +1822,12 @@ void sys_cfg(void)
 								cfg.level_linespermsg[i]=atoi(tmp);
 								break;
 							case 6:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Free Credits Per Day (in Kilobytes)"
-									,ultoa(cfg.level_freecdtperday[i]/1024L,tmp,10),8
-									,K_EDIT|K_UPPER);
-								cfg.level_freecdtperday[i]=atol(tmp)*1024L;
+								byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
+								if(uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Free Credits Per Day"
+									,tmp,10
+									,K_EDIT|K_UPPER) > 0)
+									cfg.level_freecdtperday[i] = parse_byte_count(tmp, 1);
 								break;
 							case 7:
 								j=0;
