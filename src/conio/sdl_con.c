@@ -1844,7 +1844,9 @@ int sdl_video_event_thread(void *data)
 								free(ev.user.data1);
 								break;
 							case SDL_USEREVENT_SETVIDMODE:
+#ifndef BITMAP_NO_WORKING_RWLOCK
 								pthread_rwlock_rdlock(&vstatlock);
+#endif
 								if(!yuv.enabled) {
 									rectspace=vstat.cols*vstat.rows+vstat.cols;
 									rectsused=0;
@@ -1861,7 +1863,9 @@ int sdl_video_event_thread(void *data)
 								old_scaling = vstat.scaling;
 								setup_surfaces();
 								cvstat = vstat;
+#ifndef BITMAP_NO_WORKING_RWLOCK
 								pthread_rwlock_unlock(&vstatlock);
+#endif
 								sdl_ufunc_retval=0;
 								sdl.SemPost(sdl_ufunc_ret);
 								break;
