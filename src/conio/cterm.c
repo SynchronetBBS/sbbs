@@ -1289,21 +1289,25 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 		if (*p >= '?' && *p <= '~') {
 			unsigned data = *p - '?';
 
-			if (*p != '?' || ((!cterm->sx_trans) || cterm->sx_first_pass)) {
-				cterm->sx_pixels_sent = 1;
-				if (cterm->sx_pixels == NULL) {
-					cterm->sx_pixels = malloc(sizeof(struct ciolib_pixels));
-					cterm->sx_pixels->pixels = malloc(sizeof(cterm->sx_pixels->pixels[0]) * cterm->sx_iv * cterm->sx_ih * 6);
-					cterm->sx_pixels->width = cterm->sx_ih;
-					cterm->sx_pixels->height = cterm->sx_iv * 6;
-					cterm->sx_mask = malloc((cterm->sx_iv * cterm->sx_ih * 6 + 7)/8);
-				}
-				memset(cterm->sx_mask, 0xff, (cterm->sx_iv * cterm->sx_ih * 6 + 7)/8);
+			cterm->sx_pixels_sent = 1;
+			GETTEXTINFO(&ti);
+			vmode = find_vmode(ti.currmode);
+			if (cterm->sx_pixels == NULL) {
+
+				cterm->sx_pixels = malloc(sizeof(struct ciolib_pixels));
+				cterm->sx_pixels->pixels = malloc(sizeof(cterm->sx_pixels->pixels[0]) * cterm->sx_iv * ti.screenwidth * vparams[vmode].charwidth * 6);
+				cterm->sx_pixels->width = ti.screenwidth * vparams[vmode].charwidth;
+				cterm->sx_pixels->height = cterm->sx_iv * 6;
+				cterm->sx_mask = malloc((cterm->sx_iv * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
+			}
+			if (cterm->sx_x < ti.screenwidth * vparams[vmode].charwidth) {
 				for (i=0; i<6; i++) {
 					if (data & (1<<i)) {
 						for (j = 0; j < cterm->sx_iv; j++) {
 							for (k = 0; k < cterm->sx_ih; k++) {
-								cterm->sx_pixels->pixels[i * cterm->sx_iv * cterm->sx_ih + j * cterm->sx_ih + k] = cterm->sx_fg;
+								pos = i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k;
+								cterm->sx_pixels->pixels[i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k] = cterm->sx_fg;
+								cterm->sx_mask[pos/8] |= (0x80 >> (pos % 8));
 							}
 						}
 					}
@@ -1311,25 +1315,28 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						if (cterm->sx_first_pass && !cterm->sx_trans) {
 							for (j = 0; j < cterm->sx_iv; j++) {
 								for (k = 0; k < cterm->sx_ih; k++) {
-									cterm->sx_pixels->pixels[i * cterm->sx_iv * cterm->sx_ih + j * cterm->sx_ih + k] = cterm->sx_bg;
+									pos = i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k;
+									cterm->sx_pixels->pixels[pos] = cterm->sx_bg;
+									cterm->sx_mask[pos/8] |= (0x80 >> (pos % 8));
 								}
 							}
 						}
 						else {
 							for (j = 0; j < cterm->sx_iv; j++) {
 								for (k = 0; k < cterm->sx_ih; k++) {
-									pos = i * cterm->sx_iv * cterm->sx_ih + j * cterm->sx_ih + k;
-									cterm->sx_mask[pos/8] &= ~(0x80 >> (pos % 8));
+									pos = i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k;
+									if (cterm->sx_first_pass)
+										cterm->sx_mask[pos/8] &= ~(0x80 >> (pos % 8));
 								}
 							}
 						}
 					}
 				}
-				setpixels(cterm->sx_x, cterm->sx_y, cterm->sx_x + cterm->sx_ih - 1, cterm->sx_y + cterm->sx_iv * 6 - 1, 0, 0, cterm->sx_pixels, cterm->sx_mask);
+				if (cterm->sx_x > cterm->sx_row_max_x)
+					cterm->sx_row_max_x = cterm->sx_x;
 			}
-			
+
 			cterm->sx_x+=cterm->sx_ih;
-			// TODO: Check X
 			if (cterm->sx_repeat)
 				cterm->sx_repeat--;
 			if (!cterm->sx_repeat)
@@ -1419,6 +1426,9 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						GETTEXTINFO(&ti);
 						vmode = find_vmode(ti.currmode);
 
+						setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
+						cterm->sx_row_max_x = 0;
+
 						if(cterm->origin_mode)
 							max_row = cterm->bottom_margin - cterm->top_margin + 1;
 
@@ -1450,6 +1460,9 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 all_done:
 	GETTEXTINFO(&ti);
 	vmode = find_vmode(ti.currmode);
+
+	if (cterm->sx_row_max_x)
+		setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
 
 	*cterm->hold_update=cterm->sx_hold_update;
 	if (cterm->sx_scroll_mode) {
