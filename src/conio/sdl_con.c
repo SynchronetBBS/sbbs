@@ -77,6 +77,8 @@ static SDL_Color *sdl_co = NULL;
 static Uint32	*sdl_dac_default = NULL;
 static size_t sdl_dac_defaultsz = 0;
 
+static struct video_stats cvstat;
+
 struct yuv_settings {
 	int			enabled;
 	int			win_width;
@@ -669,6 +671,7 @@ int sdl_init_mode(int mode)
 		vstat.scaling = 1;
 	if(vstat.vmultiplier < 1)
 		vstat.vmultiplier = 1;
+	cvstat = vstat;
 	pthread_rwlock_unlock(&vstatlock);
 
 	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE);
@@ -1059,6 +1062,7 @@ void setup_surfaces(void)
 		sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
 	}
 	sdl.mutexV(win_mutex);
+	cvstat = vstat;
 }
 
 /* Called from event thread only */
@@ -1548,16 +1552,12 @@ int win_to_text_xpos(int winpos)
 	if(yuv.enabled) {
 
 		sdl.mutexP(win_mutex);
-		pthread_rwlock_rdlock(&vstatlock);
-		ret = winpos*vstat.cols/win->w+1;
-		pthread_rwlock_unlock(&vstatlock);
+		ret = winpos*cvstat.cols/win->w+1;
 		sdl.mutexV(win_mutex);
 		return(ret);
 	}
 	else {
-		pthread_rwlock_rdlock(&vstatlock);
-		ret = winpos/(vstat.charwidth*vstat.scaling)+1;
-		pthread_rwlock_unlock(&vstatlock);
+		ret = winpos/(cvstat.charwidth*cvstat.scaling)+1;
 		return ret;
 	}
 }
@@ -1568,16 +1568,12 @@ int win_to_text_ypos(int winpos)
 
 	if(yuv.enabled) {
 		sdl.mutexP(win_mutex);
-		pthread_rwlock_rdlock(&vstatlock);
-		ret = winpos*vstat.rows/win->h+1;
-		pthread_rwlock_unlock(&vstatlock);
+		ret = winpos*cvstat.rows/win->h+1;
 		sdl.mutexV(win_mutex);
 		return(ret);
 	}
 	else {
-		pthread_rwlock_rdlock(&vstatlock);
-		ret = winpos/(vstat.charheight*vstat.scaling*vstat.vmultiplier)+1;
-		pthread_rwlock_unlock(&vstatlock);
+		ret = winpos/(cvstat.charheight*cvstat.scaling*cvstat.vmultiplier)+1;
 		return ret;
 	}
 }
@@ -1752,10 +1748,8 @@ int sdl_video_event_thread(void *data)
 										break;
 									}
 									sdl.mutexP(newrect_mutex);
-									pthread_rwlock_rdlock(&vstatlock);
-									scaling = vstat.scaling;
-									vmultiplier = vstat.vmultiplier;
-									pthread_rwlock_unlock(&vstatlock);
+									scaling = cvstat.scaling;
+									vmultiplier = cvstat.vmultiplier;
 									for(y=0; y<rect->height; y++) {
 										offset=y*rect->width;
 										for(x=0; x<rect->width; x++) {
