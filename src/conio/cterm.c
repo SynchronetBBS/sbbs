@@ -1361,6 +1361,8 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 							struct ciolib_pixels px;
 
 							px.pixels = malloc(sizeof(px.pixels[0])*width*height*cterm->sx_iv*cterm->sx_ih);
+							px.height = height;
+							px.width = width;
 							for (i = 0; i<height*cterm->sx_iv; i++) {
 								for (j = 0; j < width*cterm->sx_ih; j++)
 									px.pixels[i*width*cterm->sx_ih + j] = cterm->sx_bg;
