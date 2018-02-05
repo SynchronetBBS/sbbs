@@ -210,9 +210,9 @@ static void blinker_thread(void *data)
 {
 	void *rect;
 	int count=0;
-	int ccol;
-	int crow;
-	int update;
+	int ccol = 0;
+	int crow = 0;
+	int update = 0;
 
 	SetThreadName("Blinker");
 	while(1) {
