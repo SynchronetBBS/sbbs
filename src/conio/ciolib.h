@@ -156,6 +156,7 @@ enum text_modes
     C80X14,
     C80X21,
     C80X28,
+    C80X30,
     C80X43,
     C80X50,
     C80X60,

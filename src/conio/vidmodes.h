@@ -108,7 +108,7 @@ enum {
 	,ATARI_PALETTE
 };
 
-extern struct video_params vparams[49];
+extern struct video_params vparams[50];
 #define NUMMODES      (sizeof(vparams) / sizeof(struct video_params))
 extern uint32_t palettes[5][16];
 extern struct dac_colors dac_default[TOTAL_DAC_SIZE];
