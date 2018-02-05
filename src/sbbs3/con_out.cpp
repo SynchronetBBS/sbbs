@@ -218,22 +218,7 @@ void sbbs_t::outchar(char ch)
 		else {
 			if(ch==(char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
 				outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
-			i=0;
-			while(outcom(ch)&TXBOF && i<1440) { /* 3 minute pause delay */
-				if(!online)
-					break;
-				i++;
-				if(sys_status&SS_SYSPAGE)
-					sbbs_beep(i,80);
-				else
-					mswait(80); 
-			}
-			if(i==1440) {							/* timeout - beep flush outbuf */
-				i=rioctl(TXBC);
-				lprintf(LOG_NOTICE,"timeout(outchar) %04X %04X\r\n",i,rioctl(IOFO));
-				outcom(BEL);
-				rioctl(IOCS|PAUSE); 
-			} 
+			outcom(ch);
 		} 
 	}
 	if(!outchar_esc) {
@@ -546,6 +531,12 @@ void sbbs_t::ctrl_a(char x)
 		case 'I':	/* Blink */
 			atr|=BLINK;
 			attr(atr);
+			break;
+		case 'F':	/* Blink, only if alt Blink Font is loaded */
+			if(((atr&HIGH) && (console&CON_HBLINK_FONT)) || (!(atr&HIGH) && (console&CON_BLINK_FONT)))
+				attr(atr|BLINK);
+			else if(x == 'F' && !(atr&HIGH))	/* otherwise, set HIGH attribute (only if capital 'F') */
+				attr(atr|HIGH);
 			break;
 		case 'N': 	/* Normal */
 			attr(LIGHTGRAY);

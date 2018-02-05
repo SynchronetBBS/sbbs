@@ -347,7 +347,10 @@ public:
 	pthread_mutex_t	ssh_mutex;
 	bool	ssh_mutex_created;
 
-	int 	outcom(uchar ch); 	   // send character
+	#define OUTCOM_RETRY_DELAY		80		// milliseconds
+	#define OUTCOM_RETRY_ATTEMPTS	1000	// 80 seconds
+	int 	_outcom(uchar ch); 	   // send character, without retry (on buffer flow condition)
+	int		outcom(uchar ch, int max_attempts = OUTCOM_RETRY_ATTEMPTS);		// send character, with retry
 	int 	incom(unsigned long timeout=0);		   // receive character
 
 	void	spymsg(const char *msg);		// send message to active spies
