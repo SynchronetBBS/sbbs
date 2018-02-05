@@ -408,13 +408,6 @@ void sdl_user_func(int func, ...)
 				return;
 			}
 			*(unsigned long *)ev.user.data2=va_arg(argptr, unsigned long);
-			while(1) {
-				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
-					YIELD();
-				if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
-					continue;
-				break;
-			}
 			break;
 		case SDL_USEREVENT_SETNAME:
 		case SDL_USEREVENT_SETTITLE:
@@ -423,46 +416,27 @@ void sdl_user_func(int func, ...)
 				va_end(argptr);
 				return;
 			}
-			while(1) {
-				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
-					YIELD();
-				if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
-					continue;
-				break;
-			};
 			break;
 		case SDL_USEREVENT_UPDATERECT:
 			ev.user.data1=va_arg(argptr, struct update_rect *);
-			while(1) {
-				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
-					YIELD();
-				if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
-					continue;
-				break;
-			}
 			break;
 		case SDL_USEREVENT_SETPALETTE:
 			ev.user.data1=va_arg(argptr, struct sdl_palette *);
-			while(1) {
-				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
-					YIELD();
-				if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
-					continue;
-				break;
-			}
 			break;
 		case SDL_USEREVENT_COPY:
 		case SDL_USEREVENT_PASTE:
 		case SDL_USEREVENT_SHOWMOUSE:
 		case SDL_USEREVENT_HIDEMOUSE:
-			while(1) {
-				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
-					YIELD();
-				if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
-					continue;
-				break;
-			}
 			break;
+	}
+	while(1) {
+		while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+			YIELD();
+		if (func != SDL_USEREVENT_UPDATERECT) {
+			if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
+				continue;
+		}
+		break;
 	}
 	sdl.mutexV(sdl_ufunc_mtx);
 	va_end(argptr);
@@ -1754,7 +1728,8 @@ int sdl_video_event_thread(void *data)
 						break;
 					case SDL_USEREVENT: {
 						/* Tell SDL to do various stuff... */
-						sdl.SemPost(sdl_ufunc_rec);
+						if (ev.user.code != SDL_USEREVENT_UPDATERECT)
+							sdl.SemPost(sdl_ufunc_rec);
 						switch(ev.user.code) {
 							case SDL_USEREVENT_QUIT:
 								sdl_ufunc_retval=0;
