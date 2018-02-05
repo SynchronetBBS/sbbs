@@ -298,7 +298,7 @@ static void map_window()
 
     x11.XFree(sh);
 
-	request_pixels();
+	bitmap_request_pixels();
 
     return;
 }
@@ -340,7 +340,7 @@ static int init_mode(int mode)
     /* Resize window if necessary. */
 	if((!(bitmap_width == 0 && bitmap_height == 0)) && (oldwidth != bitmap_width || oldheight != bitmap_height))
 		resize_window();
-	request_pixels();
+	bitmap_request_pixels();
 	pthread_rwlock_unlock(&vstatlock);
 
 	sem_post(&mode_set);
@@ -484,7 +484,7 @@ static void handle_resize_event(int width, int height)
 			|| (height % (vstat.charheight * vstat.rows) != 0)) {
 		resize_window();
 	}
-	request_pixels();
+	bitmap_request_pixels();
 	pthread_rwlock_unlock(&vstatlock);
 }
 
@@ -508,7 +508,7 @@ static void expose_rect(int x, int y, int width, int height)
 	ey=ey/(vstat.scaling*vstat.vmultiplier);
 	pthread_rwlock_unlock(&vstatlock);
 
-	request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
+	bitmap_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
 }
 
 static int x11_event(XEvent *ev)
@@ -949,13 +949,13 @@ static void readev(struct x11_local_event *lev)
 	char *buf = (char *)lev;
 
 	FD_ZERO(&rfd);
-	FD_SET(local_pipe[1], &rfd);
+	FD_SET(local_pipe[0], &rfd);
 
 	while (rcvd < sizeof(*lev)) {
 		select(local_pipe[0]+1, &rfd, NULL, NULL, NULL);
 		ret = read(local_pipe[0], buf+rcvd, sizeof(*lev) - rcvd);
 		if (ret > 0)
-		rcvd += ret;
+			rcvd += ret;
 	}
 }
 

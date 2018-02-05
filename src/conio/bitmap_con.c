@@ -160,17 +160,17 @@ static void request_pixels_locked(void)
 	update_pixels = 1;
 }
 
-void request_pixels(void)
+void bitmap_request_pixels(void)
 {
 	pthread_rwlock_rdlock(&screen.screenlock);
 	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
 }
 
-void request_some_pixels(x, y, width, height)
+void bitmap_request_some_pixels(int x, int y, int width, int height)
 {
 	/* TODO: Some sort of queue here? */
-	request_pixels();
+	bitmap_request_pixels();
 }
 
 static int check_pixels(void)
@@ -617,6 +617,7 @@ void bitmap_clrscr(void)
 	WORD fill=(cio_textinfo.attribute<<8)|space;
 	struct vstat_vmem *vmem_ptr;
 
+fprintf(stderr, "Clearing screen...\n");
 	pthread_rwlock_rdlock(&vstatlock);
 	vmem_ptr = lock_vmem(&vstat, 1);
 	for(y=cio_textinfo.wintop-1; y<cio_textinfo.winbottom; y++) {
