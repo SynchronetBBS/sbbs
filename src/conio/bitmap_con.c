@@ -617,7 +617,6 @@ void bitmap_clrscr(void)
 	WORD fill=(cio_textinfo.attribute<<8)|space;
 	struct vstat_vmem *vmem_ptr;
 
-fprintf(stderr, "Clearing screen...\n");
 	pthread_rwlock_rdlock(&vstatlock);
 	vmem_ptr = lock_vmem(&vstat, 1);
 	for(y=cio_textinfo.wintop-1; y<cio_textinfo.winbottom; y++) {
@@ -630,7 +629,7 @@ fprintf(stderr, "Clearing screen...\n");
 	}
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
-	send_text_rectangle(cio_textinfo.winleft-1, cio_textinfo.wintop-1, cio_textinfo.winright - cio_textinfo.winleft - 1, cio_textinfo.winright - cio_textinfo.wintop-1, TRUE);
+	send_text_rectangle(cio_textinfo.winleft-1, cio_textinfo.wintop-1, cio_textinfo.winright - cio_textinfo.winleft + 1, cio_textinfo.winbottom - cio_textinfo.wintop + 1, TRUE);
 }
 
 int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, uint32_t *bg)
