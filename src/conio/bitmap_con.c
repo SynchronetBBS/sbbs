@@ -1,5 +1,4 @@
 /* $Id$ */
-/* $Id$ */
 
 #include <stdarg.h>
 #include <stdio.h>		/* NULL */
@@ -37,12 +36,13 @@ static int default_font=-99;
 static int current_font[4]={-99, -99, -99, -99};
 static int bitmap_initialized=0;
 
-pthread_rwlock_t vmem_lock;
+static pthread_rwlock_t vmem_lock;
 struct video_stats vstat;
 
 struct bitmap_callbacks {
 	void	(*drawrect)		(int xpos, int ypos, int width, int height, uint32_t *data);
 	void	(*flush)		(void);
+	pthread_mutex_t lock;
 };
 
 pthread_rwlock_t		vstatlock;
@@ -63,7 +63,37 @@ static int update_rect(int sx, int sy, int width, int height, int force);
 static void bitmap_draw_cursor(struct video_stats *vs);
 static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsigned int ypos);
 static int bitmap_loadfont_locked(char *filename);
-static void send_rectangle_locked(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force);
+static void *get_rectangle_locked(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force);
+
+#if 1
+int dbg_pthread_rwlock_rdlock(pthread_rwlock_t *lock, unsigned line)
+{
+	int ret = pthread_rwlock_rdlock(lock);
+	if (ret)
+		fprintf(stderr, "rdlock returned %d at %u\n", ret, line);
+	return ret;
+}
+
+int dbg_pthread_rwlock_wrlock(pthread_rwlock_t *lock, unsigned line)
+{
+	int ret = pthread_rwlock_wrlock(lock);
+	if (ret)
+		fprintf(stderr, "wrlock returned %d at %u\n", ret, line);
+	return ret;
+}
+
+int dbg_pthread_rwlock_unlock(pthread_rwlock_t *lock, unsigned line)
+{
+	int ret = pthread_rwlock_unlock(lock);
+	if (ret)
+		fprintf(stderr, "unlock returned %d at %u\n", ret, line);
+	return ret;
+}
+
+#define pthread_rwlock_rdlock(a)	dbg_pthread_rwlock_rdlock(a, __LINE__)
+#define pthread_rwlock_wrlock(a)	dbg_pthread_rwlock_wrlock(a, __LINE__)
+#define pthread_rwlock_unlock(a)	dbg_pthread_rwlock_unlock(a, __LINE__)
+#endif
 
 static void memset_u32(void *buf, uint32_t u, size_t len)
 {
@@ -125,7 +155,7 @@ static int check_redraw(void)
 	return ret;
 }
 
-void request_pixels_locked(void)
+static void request_pixels_locked(void)
 {
 	update_pixels = 1;
 }
@@ -135,6 +165,12 @@ void request_pixels(void)
 	pthread_rwlock_rdlock(&screen.screenlock);
 	request_pixels_locked();
 	pthread_rwlock_unlock(&screen.screenlock);
+}
+
+void request_some_pixels(x, y, width, height)
+{
+	/* TODO: Some sort of queue here? */
+	request_pixels();
 }
 
 static int check_pixels(void)
@@ -148,11 +184,27 @@ static int check_pixels(void)
 	return ret;
 }
 
+static void cb_flush(void)
+{
+	pthread_mutex_lock(&callbacks.lock);
+	callbacks.flush();
+	pthread_mutex_unlock(&callbacks.lock);
+}
+
+static void	cb_drawrect(int xpos, int ypos, int width, int height, uint32_t *data)
+{
+	if (data == NULL)
+		return;
+	pthread_mutex_lock(&callbacks.lock);
+	callbacks.drawrect(xpos, ypos, width, height, data);
+	pthread_mutex_unlock(&callbacks.lock);
+}
+
 /* Blinker Thread */
 static void blinker_thread(void *data)
 {
+	void *rect;
 	int count=0;
-	int did_work;
 
 	SetThreadName("Blinker");
 	while(1) {
@@ -160,7 +212,6 @@ static void blinker_thread(void *data)
 			SLEEP(10);
 		} while(locked_screen_check()==NULL);
 		count++;
-		did_work = 0;
 		if(count==50) {
 			pthread_rwlock_wrlock(&vstatlock);
 			if(vstat.blink)
@@ -173,16 +224,15 @@ static void blinker_thread(void *data)
 		if (check_redraw()) {
 			if (update_rect(0,0,0,0,TRUE))
 				request_redraw();
-			did_work++;
 		}
 		if (check_pixels()) {
 			pthread_rwlock_rdlock(&screen.screenlock);
-			send_rectangle_locked(&vstat, 0, 0, screen.screenwidth, screen.screenheight, FALSE);
+			rect = get_rectangle_locked(&vstat, 0, 0, screen.screenwidth, screen.screenheight, FALSE);
 			pthread_rwlock_unlock(&screen.screenlock);
-			did_work++;
+			cb_drawrect(0, 0, screen.screenwidth, screen.screenheight, rect);
+
 		}
-		if (did_work)
-			callbacks.flush();
+		cb_flush();
 	}
 }
 
@@ -194,6 +244,7 @@ int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, 
 {
 	if(bitmap_initialized)
 		return(-1);
+	pthread_mutex_init(&callbacks.lock, NULL);
 	pthread_rwlock_init(&vmem_lock, NULL);
 	pthread_rwlock_init(&vstatlock, NULL);
 	pthread_rwlock_init(&screen.screenlock, NULL);
@@ -295,7 +346,7 @@ int bitmap_init_mode(int mode, int *width, int *height)
  * should be cached until flush is called.
  */
 
-static void send_rectangle_locked(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force)
+static void *get_rectangle_locked(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force)
 {
 	uint32_t *rect;
 	int pixel=0;
@@ -304,47 +355,46 @@ static void send_rectangle_locked(struct video_stats *vs, int xoffset, int yoffs
 
 	if(callbacks.drawrect) {
 		if(xoffset < 0 || xoffset >= screen.screenwidth || yoffset < 0 || yoffset >= screen.screenheight || width <= 0 || width > screen.screenwidth || height <=0 || height >screen.screenheight)
-			return;
+			return NULL;
 
 		rect=(uint32_t *)malloc(width*height*sizeof(rect[0]));
 		if(!rect)
-			return;
+			return NULL;
 
 		for(y=0; y<height; y++) {
 			inpixel=PIXEL_OFFSET(screen, xoffset, yoffset+y);
 			for(x=0; x<width; x++)
 				rect[pixel++]=screen.screen[inpixel++];
 		}
-		callbacks.drawrect(xoffset,yoffset,width,height,rect);
-		return;
+		return rect;
 	}
+	return NULL;
 }
 
-void send_rectangle(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force)
+static void send_rectangle(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force)
 {
+	void *rect;
+
 	if(!bitmap_initialized)
 		return;
 	pthread_rwlock_rdlock(&screen.screenlock);
-	send_rectangle_locked(vs,xoffset,yoffset,width,height,force);
+	rect = get_rectangle_locked(vs,xoffset,yoffset,width,height,force);
 	pthread_rwlock_unlock(&screen.screenlock);
+	cb_drawrect(xoffset, yoffset, width, height, rect);
+	return;
 }
 
-static void send_text_rectangle_locked(int xoffset, int yoffset, int width, int height, int force)
-{
-	xoffset *= vstat.charwidth;
-	width *= vstat.charwidth;
-	yoffset *= vstat.charheight;
-	height *= vstat.charheight;
-	send_rectangle(&vstat,xoffset,yoffset,width,height,force);
-}
-
-void send_text_rectangle(int xoffset, int yoffset, int width, int height, int force)
+static void send_text_rectangle(int xoffset, int yoffset, int width, int height, int force)
 {
 	if(!bitmap_initialized)
 		return;
 	pthread_rwlock_rdlock(&vstatlock);
-	send_text_rectangle_locked(xoffset, yoffset, width, height, force);
+	xoffset *= vstat.charwidth;
+	width *= vstat.charwidth;
+	yoffset *= vstat.charheight;
+	height *= vstat.charheight;
 	pthread_rwlock_unlock(&vstatlock);
+	send_rectangle(&vstat,xoffset,yoffset,width,height,force);
 }
 
 /********************************************************/
@@ -472,7 +522,7 @@ static void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell
 	uint32_t fg;
 	uint32_t bg;
 
-	bitmap_attr2palette(cell>>8, &fg, &bg);
+	bitmap_attr2palette_locked(cell>>8, &fg, &bg);
 
 	vmem_ptr->vmem[pos] = cell;
 	vmem_ptr->fgvmem[pos] = fg;
@@ -556,9 +606,9 @@ void bitmap_clreol(void)
 		vmem_ptr->bgvmem[pos+x] = ciolib_bg;
 		bitmap_draw_one_char(&vstat, x+1, row);
 	}
-	send_text_rectangle_locked(cio_textinfo.curx+cio_textinfo.winleft-2, row-1, cio_textinfo.winright - cio_textinfo.curx+cio_textinfo.winleft - 3, 1, FALSE);
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
+	send_text_rectangle(cio_textinfo.curx+cio_textinfo.winleft-2, row-1, cio_textinfo.winright - cio_textinfo.curx+cio_textinfo.winleft - 3, 1, FALSE);
 }
 
 void bitmap_clrscr(void)
@@ -577,9 +627,9 @@ void bitmap_clrscr(void)
 			bitmap_draw_one_char(&vstat, x+1, y+1);
 		}
 	}
-	send_text_rectangle_locked(cio_textinfo.winleft-1, cio_textinfo.wintop-1, cio_textinfo.winright - cio_textinfo.winleft - 1, cio_textinfo.winright - cio_textinfo.wintop-1, TRUE);
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
+	send_text_rectangle(cio_textinfo.winleft-1, cio_textinfo.wintop-1, cio_textinfo.winright - cio_textinfo.winleft - 1, cio_textinfo.winright - cio_textinfo.wintop-1, TRUE);
 }
 
 int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, uint32_t *bg)
@@ -623,9 +673,9 @@ int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 			bitmap_draw_one_char(&vstat, x+1, y+1);
 		}
 	}
-	send_text_rectangle_locked(sx-1, sy-1, ex-sx + 1, ey - sy + 1, FALSE);
 	unlock_vmem(vmem_ptr);
 	pthread_rwlock_unlock(&vstatlock);
+	send_text_rectangle(sx-1, sy-1, ex-sx + 1, ey - sy + 1, FALSE);
 	return(1);
 }
 
@@ -1047,6 +1097,7 @@ static void bitmap_draw_cursor(struct video_stats *vs)
 	int pixel;
 	int xoffset,yoffset;
 	int yo, xw, yw;
+	void *rect;
 
 	if(!bitmap_initialized)
 		return;
@@ -1065,11 +1116,14 @@ static void bitmap_draw_cursor(struct video_stats *vs)
 						memset_u32(screen.screen+pixel,ciolib_fg,vs->charwidth);
 					}
 				}
-				pthread_rwlock_unlock(&screen.screenlock);
 				yo = yoffset+vs->curs_start;
 				xw = vs->charwidth;
 				yw = vs->curs_end-vs->curs_start+1;
-				send_rectangle(vs, xoffset, yo, xw, yw,FALSE);
+				rect = get_rectangle_locked(vs, xoffset, yo, xw, yw,FALSE);
+
+				pthread_rwlock_unlock(&screen.screenlock);
+
+				cb_drawrect(xoffset, yo, xw, yw, rect);
 				return;
 			}
 		}
@@ -1094,7 +1148,7 @@ void bitmap_gotoxy(int x, int y)
 }
 
 /*
- * IF vs == &vstat, vstatlocl and vmem_lock need to be held.
+ * IF vs == &vstat, vstatlock and vmem_lock need to be held.
  * If not, not
  */
 static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsigned int ypos)
@@ -1111,13 +1165,15 @@ static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsig
 	WORD	sch;
 	struct vstat_vmem *vmem_ptr;
 
-	if(!bitmap_initialized)
+	if(!bitmap_initialized) {
 		return(-1);
+	}
 
 	vmem_ptr = vs->vmem;
 
-	if(!vmem_ptr)
+	if(!vmem_ptr) {
 		return(-1);
+	}
 
 	pthread_rwlock_wrlock(&screen.screenlock);
 
@@ -1392,8 +1448,9 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 
 	if(last_rect_used)
 		send_rectangle(&cvstat, last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
-	if(this_rect_used)
+	if(this_rect_used) {
 		send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
+	}
 
 	vs = cvstat;
 
@@ -1423,7 +1480,7 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 
 	if (rect) {
 		rect[0]=colour;
-		callbacks.drawrect(x,y,1,1,rect);
+		cb_drawrect(x,y,1,1,rect);
 	}
 
 	return 1;
@@ -1531,10 +1588,12 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 			}
 		}
 	}
+
 	pthread_rwlock_unlock(&screen.screenlock);
 
-	if(rect)
-		callbacks.drawrect(sx,sy,width,height,rect);
+	if(rect) {
+		cb_drawrect(sx,sy,width,height,rect);
+	}
 
 	return 1;
 }

@@ -298,7 +298,7 @@ static void map_window()
 
     x11.XFree(sh);
 
-	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,FALSE);
+	request_pixels();
 
     return;
 }
@@ -340,7 +340,7 @@ static int init_mode(int mode)
     /* Resize window if necessary. */
 	if((!(bitmap_width == 0 && bitmap_height == 0)) && (oldwidth != bitmap_width || oldheight != bitmap_height))
 		resize_window();
-	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,FALSE);
+	request_pixels();
 	pthread_rwlock_unlock(&vstatlock);
 
 	sem_post(&mode_set);
@@ -484,7 +484,7 @@ static void handle_resize_event(int width, int height)
 			|| (height % (vstat.charheight * vstat.rows) != 0)) {
 		resize_window();
 	}
-	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,FALSE);
+	request_pixels();
 	pthread_rwlock_unlock(&vstatlock);
 }
 
@@ -508,7 +508,7 @@ static void expose_rect(int x, int y, int width, int height)
 	ey=ey/(vstat.scaling*vstat.vmultiplier);
 	pthread_rwlock_unlock(&vstatlock);
 
-	send_rectangle(&vstat, sx, sy, ex-sx+1, ey-sy+1, FALSE);
+	request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
 }
 
 static int x11_event(XEvent *ev)
@@ -941,6 +941,24 @@ static void local_set_palette(struct x11_palette_entry *p)
 	expose_rect(0, 0, x11_window_width, x11_window_height);
 }
 
+static void readev(struct x11_local_event *lev)
+{
+	fd_set	rfd;
+	int ret;
+	int rcvd = 0;
+	char *buf = (char *)lev;
+
+	FD_ZERO(&rfd);
+	FD_SET(local_pipe[1], &rfd);
+
+	while (rcvd < sizeof(*lev)) {
+		select(local_pipe[0]+1, &rfd, NULL, NULL, NULL);
+		ret = read(local_pipe[0], buf+rcvd, sizeof(*lev) - rcvd);
+		if (ret > 0)
+		rcvd += ret;
+	}
+}
+
 void x11_event_thread(void *args)
 {
 	int x;
@@ -1005,7 +1023,7 @@ void x11_event_thread(void *args)
 				while(FD_ISSET(local_pipe[0], &fdset)) {
 					struct x11_local_event lev;
 
-					read(local_pipe[0], &lev, sizeof(lev));
+					readev(&lev);
 					switch(lev.type) {
 						case X11_LOCAL_SETMODE:
 							init_mode(lev.data.mode);

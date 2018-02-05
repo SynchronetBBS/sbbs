@@ -71,12 +71,30 @@ int x_getch(void)
 	return(ch);
 }
 
+static void write_event(struct x11_local_event *ev)
+{
+	size_t sent = 0;
+	char *buf = (char *)ev;
+	fd_set	wfd;
+	int rv;
+
+	FD_ZERO(&wfd);
+	FD_SET(local_pipe[1], &wfd);
+
+	while (sent < sizeof(*ev)) {
+		select(local_pipe[1]+1, NULL, &wfd, NULL, NULL);
+		rv = write(local_pipe[1], buf + sent, sizeof(*ev) - sent);
+		if (rv > 0)
+			sent += rv;
+	}
+}
+
 int x_beep(void)
 {
 	struct x11_local_event ev;
 
 	ev.type=X11_LOCAL_BEEP;
-	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+	write_event(&ev);
 	return(0);
 }
 
@@ -86,7 +104,7 @@ void x_textmode(int mode)
 
 	ev.type=X11_LOCAL_SETMODE;
 	ev.data.mode = mode;
-	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+	write_event(&ev);
 	sem_wait(&mode_set);
 }
 
@@ -96,7 +114,7 @@ void x_setname(const char *name)
 
 	ev.type=X11_LOCAL_SETNAME;
 	SAFECOPY(ev.data.name, name);
-	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+	write_event(&ev);
 }
 
 void x_settitle(const char *title)
@@ -105,7 +123,7 @@ void x_settitle(const char *title)
 
 	ev.type=X11_LOCAL_SETTITLE;
 	SAFECOPY(ev.data.title, title);
-	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+	write_event(&ev);
 }
 
 void x_copytext(const char *text, size_t buflen)
@@ -118,7 +136,7 @@ void x_copytext(const char *text, size_t buflen)
 	copybuf=strdup(text);
 	if(copybuf) {
 		ev.type=X11_LOCAL_COPY;
-		while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+		write_event(&ev);
 	}
 	pthread_mutex_unlock(&copybuf_mutex);
 	return;
@@ -130,7 +148,7 @@ char *x_getcliptext(void)
 	struct x11_local_event ev;
 
 	ev.type=X11_LOCAL_PASTE;
-	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+	write_event(&ev);
 	sem_wait(&pastebuf_set);
 	if(pastebuf!=NULL)
 		ret=strdup(pastebuf);
@@ -161,7 +179,7 @@ int x_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 	ev.data.palette.r = r;
 	ev.data.palette.g = g;
 	ev.data.palette.b = b;
-	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+	write_event(&ev);
 	return(0);
 }
 
@@ -436,7 +454,7 @@ void x11_drawrect(int xoffset,int yoffset,int width,int height,uint32_t *data)
 		ev.data.rect.width=width;
 		ev.data.rect.height=height;
 		ev.data.rect.data=data;
-		while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+		write_event(&ev);
 	}
 }
 
@@ -446,5 +464,5 @@ void x11_flush(void)
 
 	ev.type=X11_LOCAL_FLUSH;
 	if(x11_initialized)
-		while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+		write_event(&ev);
 }
