@@ -647,6 +647,7 @@ int sdl_init_mode(int mode)
 
 	pthread_rwlock_rdlock(&vstatlock);
 	oldcols = vstat.cols;
+	cvstat = vstat;
 	pthread_rwlock_unlock(&vstatlock);
 
 	sdl_user_func(SDL_USEREVENT_FLUSH);
@@ -1076,6 +1077,7 @@ void sdl_add_key(unsigned int keyval)
 			cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		pthread_rwlock_rdlock(&vstatlock);
 		setup_surfaces();
+		cvstat = vstat;
 		pthread_rwlock_unlock(&vstatlock);
 		return;
 	}
@@ -1598,6 +1600,7 @@ int sdl_video_event_thread(void *data)
 	}
 	pthread_rwlock_rdlock(&vstatlock);
 	old_scaling = vstat.scaling;
+	cvstat = vstat;
 	pthread_rwlock_unlock(&vstatlock);
 	
 	if(!init_sdl_video()) {
@@ -1632,6 +1635,7 @@ int sdl_video_event_thread(void *data)
 						setup_surfaces();
 						old_scaling = vstat.scaling;
 					}
+					cvstat = vstat;
 					pthread_rwlock_unlock(&vstatlock);
 				}
 				SLEEP(1);
@@ -1696,6 +1700,7 @@ int sdl_video_event_thread(void *data)
 							else {
 								pthread_rwlock_rdlock(&vstatlock);
 								new_scaling = (int)(ev.resize.w/(vstat.charwidth*vstat.cols));
+								cvstat = vstat;
 								pthread_rwlock_unlock(&vstatlock);
 							}
 						}
@@ -1855,6 +1860,7 @@ int sdl_video_event_thread(void *data)
 								new_scaling = -1;
 								old_scaling = vstat.scaling;
 								setup_surfaces();
+								cvstat = vstat;
 								pthread_rwlock_unlock(&vstatlock);
 								sdl_ufunc_retval=0;
 								sdl.SemPost(sdl_ufunc_ret);

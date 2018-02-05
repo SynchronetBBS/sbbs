@@ -68,7 +68,7 @@ static unsigned long white;
 static int bitmap_width=0;
 static int bitmap_height=0;
 static int old_scaling = 0;
-
+static struct video_stats cvstat;
 
 /* Array of Graphics Contexts */
 static GC *gca = NULL;
@@ -213,10 +213,8 @@ static int init_window()
 	white=WhitePixel(dpy, DefaultScreen(dpy));
 
     /* Create window, but defer setting a size and GC. */
-	pthread_rwlock_rdlock(&vstatlock);
     win = x11.XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0,
-			      640*vstat.scaling, 400*vstat.scaling*vstat.vmultiplier, 2, black, black);
-	pthread_rwlock_unlock(&vstatlock);
+			      640*cvstat.scaling, 400*cvstat.scaling*cvstat.vmultiplier, 2, black, black);
 
 	wmhints=x11.XAllocWMHints();
 	if(wmhints) {
@@ -318,9 +316,7 @@ static int init_mode(int mode)
 	int oldwidth=bitmap_width;
 	int oldheight=bitmap_height;
 
-	pthread_rwlock_rdlock(&vstatlock);
-	oldcols=vstat.cols;
-	pthread_rwlock_unlock(&vstatlock);
+	oldcols=cvstat.cols;
 
 	bitmap_init_mode(mode, &bitmap_width, &bitmap_height);
 
@@ -341,6 +337,7 @@ static int init_mode(int mode)
 	if((!(bitmap_width == 0 && bitmap_height == 0)) && (oldwidth != bitmap_width || oldheight != bitmap_height))
 		resize_window();
 	bitmap_request_pixels();
+	cvstat = vstat;
 	pthread_rwlock_unlock(&vstatlock);
 
 	sem_post(&mode_set);
@@ -357,6 +354,7 @@ static int video_init()
 		vstat.scaling=1;
 	if(vstat.vmultiplier<1)
 		vstat.vmultiplier=1;
+	cvstat = vstat;
 	pthread_rwlock_unlock(&vstatlock);
     if(init_window())
 		return(-1);
@@ -381,7 +379,6 @@ static void local_draw_rect(struct update_rect *rect)
 #if 0 /* Draw solid colour rectangles... */
 	int rectw, recth, rectc, y2;
 
-	pthread_rwlock_rdlock(&vstatlock);
 	for(y=0; y<rect->height; y++) {
 		for(x=0; x<rect->width; x++) {
 			rectc=rect->data[y*rect->width+x];
@@ -406,31 +403,28 @@ static void local_draw_rect(struct update_rect *rect)
 				memset(rect->data+((y+y2)*rect->width+x),255,rectw);
 
 			/* Draw it */
-			x11.XFillRectangle(dpy, win, gca[rectc], (rect->x+x)*vstat.scaling, (rect->y+y)*vstat.scaling*vstat.vmultiplier, rectw*vstat.scaling, recth*vstat.scaling*vstat.vmultiplier);
+			x11.XFillRectangle(dpy, win, gca[rectc], (rect->x+x)*cvstat.scaling, (rect->y+y)*cvstat.scaling*cvstat.vmultiplier, rectw*cvstat.scaling, recth*cvstat.scaling*cvstat.vmultiplier);
 		}
 	}
-	pthread_rwlock_unlock(&vstatlock);
 #else
 #if 1	/* XImage */
-	pthread_rwlock_rdlock(&vstatlock);
-	xim=x11.XCreateImage(dpy,&visual,depth,ZPixmap,0,NULL,rect->width*vstat.scaling,rect->height*vstat.scaling*vstat.vmultiplier,32,0);
-	xim->data=(char *)malloc(xim->bytes_per_line*rect->height*vstat.scaling*vstat.vmultiplier);
+	xim=x11.XCreateImage(dpy,&visual,depth,ZPixmap,0,NULL,rect->width*cvstat.scaling,rect->height*cvstat.scaling*cvstat.vmultiplier,32,0);
+	xim->data=(char *)malloc(xim->bytes_per_line*rect->height*cvstat.scaling*cvstat.vmultiplier);
 	for(y=0;y<rect->height;y++) {
 		for(x=0; x<rect->width; x++) {
-			for(yscale=0; yscale<vstat.scaling*vstat.vmultiplier; yscale++) {
-				for(xscale=0; xscale<vstat.scaling; xscale++) {
+			for(yscale=0; yscale<cvstat.scaling*cvstat.vmultiplier; yscale++) {
+				for(xscale=0; xscale<cvstat.scaling; xscale++) {
 #ifdef XPutPixel
-					XPutPixel(xim,x*vstat.scaling+xscale,y*vstat.scaling*vstat.vmultiplier+yscale,pixel[rect->data[y*rect->width+x]]);
+					XPutPixel(xim,x*cvstat.scaling+xscale,y*cvstat.scaling*cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->width+x]]);
 #else
-					x11.XPutPixel(xim,x*vstat.scaling+xscale,y*vstat.scaling*vstat.vmultiplier+yscale,pixel[rect->data[y*rect->width+x]]);
+					x11.XPutPixel(xim,x*cvstat.scaling+xscale,y*cvstat.scaling*cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->width+x]]);
 #endif
 				}
 			}
 		}
 	}
 
-	x11.XPutImage(dpy,win,gca[0],xim,0,0,rect->x*vstat.scaling,rect->y*vstat.scaling*vstat.vmultiplier,rect->width*vstat.scaling,rect->height*vstat.scaling*vstat.vmultiplier);
-	pthread_rwlock_unlock(&vstatlock);
+	x11.XPutImage(dpy,win,gca[0],xim,0,0,rect->x*cvstat.scaling,rect->y*cvstat.scaling*cvstat.vmultiplier,rect->width*cvstat.scaling,rect->height*cvstat.scaling*cvstat.vmultiplier);
 #ifdef XDestroyImage
 	XDestroyImage(xim);
 #else
@@ -438,13 +432,11 @@ static void local_draw_rect(struct update_rect *rect)
 #endif
 
 #else	/* XFillRectangle */
-	pthread_rwlock_lock(&vstatlock);
 	for(y=0;y<rect->height;y++) {
 		for(x=0; x<rect->width; x++) {
-			x11.XFillRectangle(dpy, win, gca[rect->data[y*rect->width+x]], (rect->x+x)*vstat.scaling, (rect->y+y)*vstat.scaling*vstat.vmultiplier, vstat.scaling, vstat.scaling*vstat.vmultiplier);
+			x11.XFillRectangle(dpy, win, gca[rect->data[y*rect->width+x]], (rect->x+x)*cvstat.scaling, (rect->y+y)*cvstat.scaling*cvstat.vmultiplier, cvstat.scaling, cvstat.scaling*cvstat.vmultiplier);
 		}
 	}
-	pthread_rwlock_unlock(&vstatlock);
 #endif
 #endif
 	free(rect->data);
@@ -485,6 +477,7 @@ static void handle_resize_event(int width, int height)
 		resize_window();
 	}
 	bitmap_request_pixels();
+	cvstat = vstat;
 	pthread_rwlock_unlock(&vstatlock);
 }
 
@@ -492,21 +485,19 @@ static void expose_rect(int x, int y, int width, int height)
 {
 	int sx,sy,ex,ey;
 
-	pthread_rwlock_rdlock(&vstatlock);
-	sx=x/vstat.scaling;
-	sy=y/(vstat.scaling*vstat.vmultiplier);
+	sx=x/cvstat.scaling;
+	sy=y/(cvstat.scaling*cvstat.vmultiplier);
 
 	ex=x+width-1;
 	ey=y+height-1;
-	if((ex+1)%vstat.scaling) {
-		ex += vstat.scaling-(ex%vstat.scaling);
+	if((ex+1)%cvstat.scaling) {
+		ex += cvstat.scaling-(ex%cvstat.scaling);
 	}
-	if((ey+1)%(vstat.scaling*vstat.vmultiplier)) {
-		ey += vstat.scaling*vstat.vmultiplier-(ey%(vstat.scaling*vstat.vmultiplier));
+	if((ey+1)%(cvstat.scaling*cvstat.vmultiplier)) {
+		ey += cvstat.scaling*cvstat.vmultiplier-(ey%(cvstat.scaling*cvstat.vmultiplier));
 	}
-	ex=ex/vstat.scaling;
-	ey=ey/(vstat.scaling*vstat.vmultiplier);
-	pthread_rwlock_unlock(&vstatlock);
+	ex=ex/cvstat.scaling;
+	ey=ey/(cvstat.scaling*cvstat.vmultiplier);
 
 	bitmap_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
 }
@@ -610,23 +601,21 @@ static int x11_event(XEvent *ev)
 			{
 				XMotionEvent *me = (XMotionEvent *)ev;
 
-				pthread_rwlock_rdlock(&vstatlock);
-				me->x/=vstat.scaling;
-				me->x/=vstat.charwidth;
-				me->y/=vstat.scaling;
-				me->y/=vstat.vmultiplier;
-				me->y/=vstat.charheight;
+				me->x/=cvstat.scaling;
+				me->x/=cvstat.charwidth;
+				me->y/=cvstat.scaling;
+				me->y/=cvstat.vmultiplier;
+				me->y/=cvstat.charheight;
 				me->x++;
 				me->y++;
 				if(me->x<1)
 					me->x=1;
 				if(me->y<1)
 					me->y=1;
-				if(me->x>vstat.cols)
-					me->x=vstat.cols;
-				if(me->y>vstat.rows+1)
-					me->y=vstat.rows+1;
-				pthread_rwlock_unlock(&vstatlock);
+				if(me->x>cvstat.cols)
+					me->x=cvstat.cols;
+				if(me->y>cvstat.rows+1)
+					me->y=cvstat.rows+1;
 				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,me->x,me->y);
 	    	}
 			break;
@@ -634,23 +623,21 @@ static int x11_event(XEvent *ev)
 			{
 				XButtonEvent *be = (XButtonEvent *)ev;
 
-				pthread_rwlock_rdlock(&vstatlock);
-				be->x/=vstat.scaling;
-				be->x/=vstat.charwidth;
-				be->y/=vstat.scaling;
-				be->y/=vstat.vmultiplier;
-				be->y/=vstat.charheight;
+				be->x/=cvstat.scaling;
+				be->x/=cvstat.charwidth;
+				be->y/=cvstat.scaling;
+				be->y/=cvstat.vmultiplier;
+				be->y/=cvstat.charheight;
 				be->x++;
 				be->y++;
 				if(be->x<1)
 					be->x=1;
 				if(be->y<1)
 					be->y=1;
-				if(be->x>vstat.cols)
-					be->x=vstat.cols;
-				if(be->y>vstat.rows+1)
-					be->y=vstat.rows+1;
-				pthread_rwlock_unlock(&vstatlock);
+				if(be->x>cvstat.cols)
+					be->x=cvstat.cols;
+				if(be->y>cvstat.rows+1)
+					be->y=cvstat.rows+1;
 				if (be->button <= 3) {
 					ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(be->button),be->x,be->y);
 				}
@@ -660,23 +647,21 @@ static int x11_event(XEvent *ev)
 			{
 				XButtonEvent *be = (XButtonEvent *)ev;
 
-				pthread_rwlock_rdlock(&vstatlock);
-				be->x/=vstat.scaling;
-				be->x/=vstat.charwidth;
-				be->y/=vstat.scaling;
-				be->y/=vstat.vmultiplier;
-				be->y/=vstat.charheight;
+				be->x/=cvstat.scaling;
+				be->x/=cvstat.charwidth;
+				be->y/=cvstat.scaling;
+				be->y/=cvstat.vmultiplier;
+				be->y/=cvstat.charheight;
 				be->x++;
 				be->y++;
 				if(be->x<1)
 					be->x=1;
 				if(be->y<1)
 					be->y=1;
-				if(be->x>vstat.cols)
-					be->x=vstat.cols;
-				if(be->y>vstat.rows+1)
-					be->y=vstat.rows+1;
-				pthread_rwlock_unlock(&vstatlock);
+				if(be->x>cvstat.cols)
+					be->x=cvstat.cols;
+				if(be->y>cvstat.rows+1)
+					be->y=cvstat.rows+1;
 				if (be->button <= 3) {
 					ciomouse_gotevent(CIOLIB_BUTTON_PRESS(be->button),be->x,be->y);
 				}
@@ -879,6 +864,7 @@ void check_scaling(void)
 		resize_window();
 		old_scaling = vstat.scaling;
 	}
+	cvstat = vstat;
 	pthread_rwlock_unlock(&vstatlock);
 }
 
