@@ -40,6 +40,7 @@ function Graphic(w,h,attr,ch)
 	this.cpm_eof=true;
 	this.attr_mask=0xff;
 	this.ansi_crlf=true;
+	this.doorway_mode=false;
 	this.illegal_characters = [0, 7, 8, 9, 10, 12, 13, 27];
 
 	this.data=new Array(this.width);
@@ -104,8 +105,6 @@ Object.defineProperty(Graphic.prototype, "BIN", {
 				if (blen < pos+2)
 					return;
 				var char = bin.charAt(pos);
-				if(this.illegal_characters.indexOf(ascii(char)) >= 0)	// Replace illegal chars with the default char (e.g. space)
-					char = this.ch;
 				this.data[x][y] = new this.Cell(char, bin.charCodeAt(pos+1));
 				pos += 2;
 			}
@@ -134,7 +133,15 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 			for(x=0; x<this.width; x++) {
 				ansi += this.ansi.attr(this.data[x][y].attr, curattr);
             	curattr = this.data[x][y].attr;
-            	char = this.data[x][y].ch;
+				/* Replace illegal characters with default char */
+				if (this.illegal_characters.indexOf(ascii(this.data[x][y].ch)) >= 0) {
+					if (this.doorway_mode)
+						char = ascii(0) + this.data[x][y].ch;
+					else
+						char = this.ch;
+				}
+				else
+            		char = this.data[x][y].ch;
             	/* Don't put printable chars in the last column */
 //            	if(char == ' ' || (x<this.width-1))
                 	ansi += char;
@@ -299,6 +306,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 		var cmd;
 		var params;
 		var ch;
+		var doorway_char = false;
 
 		/* parse 'ATCODES'?? 
 		ans = ans.replace(/@(.*)@/g,
@@ -308,22 +316,24 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 		);
 		*/
 		while(ans.length > 0) {
-			m = ans.match(/^\x1b\[([\x30-\x3f]*)([\x20-\x2f]*[\x40-\x7e])/);
-			if (m !== null) {
-				paramstr = m[1];
-				cmd = m[2];
-				if (paramstr.search(/^[<=>?]/) != 0) {
-					params=paramstr.split(/;/);
-
-					if (std_cmds[cmd] !== undefined)
-						std_cmds[cmd](params,this);
+			if (!doorway_char) {
+				m = ans.match(/^\x1b\[([\x30-\x3f]*)([\x20-\x2f]*[\x40-\x7e])/);
+				if (m !== null) {
+					paramstr = m[1];
+					cmd = m[2];
+					if (paramstr.search(/^[<=>?]/) != 0) {
+						params=paramstr.split(/;/);
+	
+						if (std_cmds[cmd] !== undefined)
+							std_cmds[cmd](params,this);
+					}
+					ans = ans.substr(m[0].length);
+   		            continue;
 				}
-				ans = ans.substr(m[0].length);
-   	            continue;
+				if(this.cpm_eof == true && ans[0] == '\x1a') // EOF
+					break;
 			}
 
-			if(this.cpm_eof == true && ans[0] == '\x1a') // EOF
-				break;
 			/* set character and attribute */
 			ch = ans[0];
 			ans = ans.substr(1);
@@ -343,9 +353,17 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
                     if(x > 0)
 						x--;
             		break;
+				case '\x00':
+					if (this.doorway_mode) {
+						if (!doorway_char) {
+							doorway_char = true;
+							break;
+						}
+					}
                 default:
 			        this.data[x][y]=new this.Cell(ch,attr);
 			        x++;
+					doorway_char = false;
                     break;
             }
 			/* validate position/scroll */
@@ -542,8 +560,12 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 					|| ypos+y != console.screen_rows) {
 				console.attributes=this.data[x+xoff][y+yoff].attr & this.attr_mask;
 				var ch=this.data[x+xoff][y+yoff].ch;
-				if(ch == "\r" || ch == "\n" || !ch)
-					ch=this.ch;
+				if (this.illegal_characters.indexOf(ascii(this.data[x][y].ch)) >= 0) {
+					if (this.doorway_mode)
+						ch = ascii(0) + ch;
+					else
+						ch=this.ch;
+				}
 				console.write(ch);
 			}
 		}
@@ -614,8 +636,12 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 			console.gotoxy(xpos+position.x,ypos+position.y);
 			console.attributes=this.data[position.x][position.y].attr & this.attr_mask;
 			var ch=this.data[position.x][position.y].ch;
-			if(ch == "\r" || ch == "\n" || !ch)
-				ch=this.ch;
+			if (this.illegal_characters.indexOf(ascii(this.data[x][y].ch)) >= 0) {
+				if (this.doorway_mode)
+					ch = ascii(0) + ch;
+				else
+					ch=this.ch;
+			}
 			console.write(ch);
 		}
 		placeholder[randx].splice(randy,1);
