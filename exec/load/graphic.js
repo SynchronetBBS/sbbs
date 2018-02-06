@@ -40,6 +40,7 @@ function Graphic(w,h,attr,ch)
 	this.cpm_eof=true;
 	this.attr_mask=0xff;
 	this.ansi_crlf=true;
+	this.illegal_characters = [0, 7, 8, 9, 10, 12, 13, 27];
 
 	this.data=new Array(this.width);
 	for(var y=0; y<this.height; y++) {
@@ -100,10 +101,12 @@ Object.defineProperty(Graphic.prototype, "BIN", {
 
 		for (y=0; y<this.height; y++) {
 			for (x=0; x<this.width; x++) {
-				if (blen >= pos+2)
-					this.data[x][y] = new this.Cell(bin.charAt(pos), bin.charCodeAt(pos+1));
-				else
+				if (blen < pos+2)
 					return;
+				var char = bin.charAt(pos);
+				if(this.illegal_characters.indexOf(ascii(char)) >= 0)	// Replace illegal chars with the default char (e.g. space)
+					char = this.ch;
+				this.data[x][y] = new this.Cell(char, bin.charCodeAt(pos+1));
 				pos += 2;
 			}
 		}
