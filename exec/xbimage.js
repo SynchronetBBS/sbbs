@@ -8,7 +8,7 @@ var cga = load({}, 'cga_defs.js');
 var vga = load({}, 'vga_defs.js');
 var sauce_lib = load({}, 'sauce_lib.js');
 
-function convert_from_bmp(filename, charheight, fg_color, bg_color, invert, blink_first, title, author, group)
+function convert_from_bmp(filename, charheight, fg_color, bg_color, palette, invert, blink_first, title, author, group)
 {
 	if(!charheight)
 		charheight = 16;
@@ -61,7 +61,7 @@ function convert_from_bmp(filename, charheight, fg_color, bg_color, invert, blin
 	return true;
 }
 
-function show(filename, xpos, ypos, fg_color, bg_color, delay, palette, cleanup)
+function show(filename, xpos, ypos, fg_color, bg_color, palette, delay, cleanup)
 {
 	var cterm = load({}, 'cterm_lib.js');
 
@@ -110,6 +110,15 @@ function color_value(palette, val)
 	return rgb;
 }
 
+function color_index(val)
+{
+	if(val === undefined)
+		return val;
+	if(typeof val == "string" && cga[val.toUpperCase()] != undefined)
+		return cga[val.toUpperCase()];
+	return parseInt(val, 10);
+}
+
 function demo(filename, delay)
 {
 	var cterm = load({}, 'cterm_lib.js');
@@ -151,7 +160,10 @@ function demo(filename, delay)
 		}
 
 		if(show(obj[i].name, obj[i].xpos, obj[i].ypos
-			,obj[i].fg_color, obj[i].bg_color, obj[i].delay, palette) != true)
+			,color_index(obj[i].fg_color)
+			,color_index(obj[i].bg_color)
+			,palette
+			,obj[i].delay) != true)
 			break;
 		if(console.aborted)
 			break;
@@ -186,6 +198,26 @@ function info(filename, verbose)
 	return true;
 }
 
+function modify(filename, flags)
+{
+	var file = new File(filename);
+	if(!file.open('r+b')) {
+		alert('Error opening ' + file.name);
+		return false;
+	}
+
+	printf(format("%-64s : ", file.name));
+	var image = image_lib.xbin.read(file);
+	printf("%4u x %-4u Flags(%x) Fonts(%u) Char(%u)\r\n"
+		,image.width, image.height, image.flags, image.font ? image.font.length : 0, image.charheight);
+	if(flags !== undefined)
+		image.flags = flags;
+	file.truncate();
+	image_lib.xbin.write(file, image);
+
+	return true;
+}
+
 function main()
 {
 	var optval={};
@@ -204,7 +236,8 @@ function main()
 	var title;
 	var author;
 	var group;
-	var palette = vga.color_palette;
+	var palette;
+	var flags;
 
 	for(var i in argv) {
 
@@ -219,19 +252,24 @@ function main()
 		optval[arg] = val;
 
 		if(arg.charAt(0) == '-' && cga[arg.substring(1).toUpperCase()] != undefined) {
+			if(palette === undefined)
+				 palette = vga.color_palette
 			palette[cga[arg.substring(1).toUpperCase()]] = color_value(palette, val.toUpperCase());
 			continue;
 		}
 
 		switch(arg) {
 			case "-fg":
-				fg_color = parseInt(val, 10);
+				fg_color = color_index(val);
 				break;
 			case "-bg":
-				bg_color = parseInt(val, 10);
+				bg_color = color_index(val);
 				break;
 			case "-delay":
 				delay = parseInt(val, 10);
+				break;
+			case "-flags":
+				flags = parseInt(val);
 				break;
 			case "-cycle":
 				cycle = true;
@@ -259,12 +297,9 @@ function main()
 				break;
 			case "create":
 			case "show":
-				cmds.push(arg);
-				break;
 			case "demo":
-				cmds.push(arg);
-				break;
 			case "info":
+			case "modify":
 				cmds.push(arg);
 				break;
 			default:
@@ -284,11 +319,12 @@ function main()
 		switch(cmd) {
 			case "create":
 				for(var ch in charheights)
-					if(!convert_from_bmp(files[0], charheights[ch], fg_color, bg_color, invert, blink_first,title, author, group))
+					if(!convert_from_bmp(files[0], charheights[ch], fg_color, bg_color, palette, invert
+						, blink_first,title, author, group))
 						break;
 				break;
 			case "show":
-				show(optval[cmd] ? optval[cmd] : files[0], xpos, ypos, fg_color, bg_color, delay, palette, /* cleanup: */true);
+				show(optval[cmd] ? optval[cmd] : files[0], xpos, ypos, fg_color, bg_color, palette, delay, /* cleanup: */true);
 				load('fonts.js', 'default');
 				break;
 			case "demo":
@@ -298,6 +334,10 @@ function main()
 			case "info":
 				for(var i in files)
 					info(files[i], verbose);
+				break;
+			case "modify":
+				for(var i in files)
+					modify(files[i], flags);
 				break;
 		}
 	}
