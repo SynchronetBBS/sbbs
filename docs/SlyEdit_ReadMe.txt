@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.59
-                        Release date: 2018-02-01
+                              Version 1.54
+                        Release date: 2017-12-26
 
                                   by
 
@@ -198,7 +198,7 @@ BBS machine):
 Help keys                                     Slash commands (on blank line)
 ---------                                     ------------------------------
 Ctrl-G       : General help                 ¦ /A      : Abort
-Ctrl-L       : Command key list (this list) ¦ /S      : Save
+Ctrl-P       : Command key help             ¦ /S      : Save
 Ctrl-R       : Program information          ¦ /Q      : Quote message
 Ctrl-T       : List text replacements       ¦ /T      : List text replacements
                                             ¦ /U      : Your settings
@@ -207,11 +207,11 @@ Command/edit keys
 -----------------
 Ctrl-A       : Abort message                ¦ PageUp  : Page up
 Ctrl-Z       : Save message                 ¦ PageDown: Page down
-Ctrl-Q       : Quote message                ¦ Ctrl-S  : Search for text
+Ctrl-Q       : Quote message                ¦ Ctrl-N  : Find text
 Insert/Ctrl-I: Toggle insert/overwrite mode ¦ Ctrl-D  : Delete line
 ESC          : Command menu
-Ctrl-U       : Your settings                ¦ Ctrl-K  : Choose text color
 Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
+Ctrl-U       : Your settings
 
 
 5. Digital Distortion Message Lister note
@@ -340,31 +340,6 @@ enableTagLines                    Whether or not to enable the option for users
                                   setting serves as the default for the user
                                   setting, which users can configure in their
                                   own settings.
-
-allowColorSelection               Whether or not to allow users to select text
-                                  colors for their message.  Valid values are
-                                  true and false.
-
-noColorSelectionGrpNames          A comma-separated list of message group names
-                                  where users are not allowed to select colors
-                                  for their message.  These can be the group's
-                                  short names or their descriptions.
-
-noColorSelectionSubBoardCodes     A comma-separated list of message sub-board
-                                  internal codes where users are not allowed
-                                  to select colors for their message.
-
-cvtColorToANSIGrpNames            A comma-separated list of group names for
-                                  message groups where  text color codes should
-                                  be converted to ANSI codes.  These can be the
-                                  group's short names or their descriptions.
-                                  This can also be "All" to have SlyEdit
-                                  convert to ANSI for all message groups.
-
-
-cvtColorToANSISubBoardCodes       A comma-separated list of sub-board internal
-                                  codes where text color codes should be
-                                  converted to ANSI codes.
 
 Ice colors
 ----------
@@ -685,12 +660,12 @@ listBoxItemHighlight              The color to use for the currently selected
 
 10. Text replacements (AKA Macros)
 ==================================
-Text replacements (AKA Macros), which lets you (the sysop) define words to be
-replaced with other text as the user types a message.  This feature can be
-used, for instance, to replace commonly misspelled words with their correct
-versions or to replace swear words with less offensive words.  This feature is
-toggled by the enableTextReplacements option in SlyEdit.cfg can can have one of
-three values:
+SlyEdit version 1.29 added text replacements (AKA Macros), which lets you (the
+sysop) define words to be replaced with other text as the user types a message.
+This feature can be used, for instance, to replace commonly misspelled words
+with their correct versions or to replace swear words with less offensive
+words.  This feature is toggled by the enableTextReplacements option in
+SlyEdit.cfg can can have one of three values:
 false : Text replacement is disabled
 true  : Text replacement is enabled and performed as literal search and replace
 regex : Text replacement is enabled using regular expressions as implemented by
@@ -699,14 +674,12 @@ regex : Text replacement is enabled using regular expressions as implemented by
         JavaScript-C or "SpiderMonkey").
 
 The text searches are performed on single words only, as the user types the
-message, and are replaced by whatever text you configure for the word.
-Synchronet color/attribute codes are allowed in the replacement text, but the
-color/attribute codes will be stripped if colors are not allowed according to
-the SlyEdit configuration.  The configuration for text replacing is read from a
-configuration file called SlyEdit_TextReplacements.cfg, which is plain text and
-can be placed in either sbbs/ctrl or in the same directory as SlyEdit's .js
-files (SlyEdit.js, SlyEdit_Misc.js, etc.).  Each line in
-SlyEdit_TextReplacements.cfg needs to have the following format:
+message, and are replaced by whatever text you configure for the word.  The
+configuration for text replacing is read from a configuration file called
+SlyEdit_TextReplacements.cfg, which is plain text and can be placed in either
+sbbs/ctrl or in the same directory as SlyEdit's .js files (SlyEdit.js,
+SlyEdit_Misc.js, etc.).  Each line in SlyEdit_TextReplacements.cfg needs to
+have the following format:
 originalWord=replacementText
 where originalWord is the word to be replaced, and replacementText is the text
 to replace the word with.

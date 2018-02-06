@@ -13,7 +13,7 @@
  *                              Initial public release
  * 2009-12-03 Eric Oulashin     Added support for color schemes.
  *                              Added displayIceYesNoText() and
- *                              readIceColorConfig().
+ *                              readColorConfig().
  * 2010-01-02 Eric Oulashin     Removed abortConfirm_DCTStyle(),
  *                              since it's no longer used anymore.
  * 2011-02-02 Eric Oulashin     Moved the time displaying code into
@@ -23,13 +23,13 @@
  *                              of the theme filename, since the path is
  *                              now set in ReadSlyEditConfigFile() in
  *                              SlyEdit_Misc.js.
- * 2013-01-19 Eric Oulashin     Updated readIceColorConfig() to move the
+ * 2013-01-19 Eric Oulashin     Updated readColorConfig() to move the
  *                              general color settings to gConfigSettings.genColors.*
  * 2013-01-25 Eric Oulashin     Updated doIceESCMenu() to include an option
  *                              for cross-posting, when allowed.
- * 2013-08-23 Eric Oulashin     Updated readIceColorConfig() with the new general color
+ * 2013-08-23 Eric Oulashin     Updated readColorConfig() with the new general color
  *                              configuration settings.
- * 2013-08-28 Eric Oulashin     Simplified readIceColorConfig() by having it call
+ * 2013-08-28 Eric Oulashin     Simplified readColorConfig() by having it call
  *                              moveGenColorsToGenSettings() (defined in
  *                              SlyEdit_Misc.js) to move the general colors
  *                              into the genColors array in the configuration
@@ -48,7 +48,7 @@
  *                              to use the new gConfigSettings.iceColors.menuOptClassicColors
  *                              configuration setting for new vs. classic Ice-style
  *                              menu option colors.
- * 2013-10-17 Eric Oulashin     Bug fix: Updated readIceColorConfig() to make a backup of
+ * 2013-10-17 Eric Oulashin     Bug fix: Updated readColorConfig() to make a backup of
  *                              the menuOptClassicColors setting and set it back in the
  *                              iceColors object after reading & setting the colors.
  *                              Bug fix in DisplayTextAreaBottomBorder_IceStyle() in
@@ -70,7 +70,7 @@ var ICE_ESC_MENU_HELP = 4;
 var ICE_ESC_MENU_CROSS_POST = 5;
 
 // Read the color configuration file
-readIceColorConfig(gConfigSettings.iceColors.ThemeFilename);
+readColorConfig(gConfigSettings.iceColors.ThemeFilename);
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -80,20 +80,20 @@ readIceColorConfig(gConfigSettings.iceColors.ThemeFilename);
 //
 // Parameters:
 //  pFilename: The name of the color configuration file
-function readIceColorConfig(pFilename)
+function readColorConfig(pFilename)
 {
-	var colors = readValueSettingConfigFile(pFilename, 512, true);
-	if (colors != null)
-	{
-		// Make a backup of the menuOptClassicColors setting so we can set it
-		// back in the Ice color settings object after setting the colors.
-		var useClassicColorsBackup = gConfigSettings.iceColors.menuOptClassicColors;
-		gConfigSettings.iceColors = colors;
-		// Move the general color settings into gConfigSettings.genColors.*
-		if (EDITOR_STYLE == "ICE")
-			moveGenColorsToGenSettings(gConfigSettings.iceColors, gConfigSettings);
-		gConfigSettings.iceColors.menuOptClassicColors = useClassicColorsBackup;
-	}
+   var colors = readValueSettingConfigFile(pFilename, 512);
+   if (colors != null)
+   {
+      // Make a backup of the menuOptClassicColors setting so we can set it
+      // back in the Ice color settings object after setting the colors.
+      var useClassicColorsBackup = gConfigSettings.iceColors.menuOptClassicColors;
+      gConfigSettings.iceColors = colors;
+      // Move the general color settings into gConfigSettings.genColors.*
+      if (EDITOR_STYLE == "ICE")
+         moveGenColorsToGenSettings(gConfigSettings.iceColors, gConfigSettings);
+      gConfigSettings.iceColors.menuOptClassicColors = useClassicColorsBackup;
+   }
 }
 
 // Re-draws the screen, in the style of IceEdit.
@@ -109,7 +109,7 @@ function readIceColorConfig(pFilename)
 //  pEditLinesIndex: The index of the message line at the top of the edit area
 //  pDisplayEditLines: The function that displays the edit lines
 function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEditColor,
-                               pInsertMode, pUseQuotes, pEditLinesIndex, pDisplayEditLines)
+                                pInsertMode, pUseQuotes, pEditLinesIndex, pDisplayEditLines)
 {
 	// Top header
 	// Generate & display the top border line (Note: Generate this
@@ -235,7 +235,8 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
       // The message area name should be centered on the line.  So, based on its
       // length (up to 35 characters), figure out its starting position before
       // printing it.
-      var msgAreaName = gMsgAreaName.substr(0, 35); // The 35 used to be 20
+      //var msgAreaName = gMsgArea.substr(0, 20); // Used to be 20 characters
+      var msgAreaName = gMsgArea.substr(0, 35);
       // 2 is subtracted from the starting position to leave room for the
       // block character and the space.
       var startPos = (console.screen_columns/2).toFixed(0) - (msgAreaName.length/2).toFixed(0) - 2;
@@ -390,48 +391,37 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
 //
 // Parameters:
 //  pLineNum: The line number on the screen where the text should be placed
-//  pUsingQuotes: Boolean - Whether or not message quoting is enabled.  This is
-//                only here to match the DCT-style function.
-//  pFillRestOfLine: Optional boolean - Whether or not to fill the rest of the line.
-//                   Defaults to false.
-function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes, pFillRestOfLine)
+//  The following are not used and are only here to match the DCT-style function:
+//   pUsingQuotes: Boolean - Whether or not message quoting is enabled.
+function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
 {
-	// Construct the help text only once
-	if (typeof(DisplayBottomHelpLine_IceStyle.helpText) == "undefined")
-	{
-		// This line contains the copyright mesage & ESC key help
-		var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "\1w") + "\1c\1h"
-		               + EDITOR_VERSION.toString() + "   "
-		               + iceText("Copyright", "\1w") + " \1c\1h2018 "
-		               + iceText("Eric Oulashin", "\1w") + " \1n\1b" + DOT_CHAR + " "
-		               + iceText("Press ESCape For Help", "\1w");
-		// Calculate the starting position to center the help text, and front-pad
-		// DisplayBottomHelpLine_IceStyle.helpText with that many spaces.
-		var xPos = (console.screen_columns / 2).toFixed(0)
-		         - (strip_ctrl(screenText).length / 2).toFixed(0);
-		DisplayBottomHelpLine_IceStyle.helpText = "";
-		for (var i = 0; i < xPos; ++i)
-			DisplayBottomHelpLine_IceStyle.helpText += " ";
-		DisplayBottomHelpLine_IceStyle.helpText += screenText;
-	}
+   // Construct the help text only once
+   if (typeof(DisplayBottomHelpLine_IceStyle.helpText) == "undefined")
+   {
+      // This line contains the copyright mesage & ESC key help
+      var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "w") + "ch"
+                      + EDITOR_VERSION.toString() + "   "
+                      + iceText("Copyright", "w") + " ch2017 "
+                      + iceText("Eric Oulashin", "w") + " nb" + DOT_CHAR + " "
+                      + iceText("Press ESCape For Help", "w");
+      // Calculate the starting position to center the help text, and front-pad
+      // DisplayBottomHelpLine_IceStyle.helpText with that many spaces.
+      var xPos = (console.screen_columns / 2).toFixed(0)
+                - (strip_ctrl(screenText).length / 2).toFixed(0);
+      DisplayBottomHelpLine_IceStyle.helpText = "";
+      for (var i = 0; i < xPos; ++i)
+         DisplayBottomHelpLine_IceStyle.helpText += " ";
+      DisplayBottomHelpLine_IceStyle.helpText += screenText;
+   }
 
-	// If pLineNum is not specified, then default to the last line
+   // If pLineNum is not specified, then default to the last line
 	// on the screen.
 	var lineNum = console.screen_rows;
 	if ((typeof(pLineNum) != "undefined") && (pLineNum != null))
 		lineNum = pLineNum;
-	// Display the help text on the screen
+   // Display the help text on the screen
 	console.gotoxy(1, lineNum);
 	console.print(DisplayBottomHelpLine_IceStyle.helpText);
-	// Fill the rest of the line (less 1 character) if we're told to do so
-	var fillRestOfLine = (typeof(pFillRestOfLine) == "boolean" ? pFillRestOfLine : false);
-	if (fillRestOfLine)
-	{
-		// The remainder length has 1 subtracted from it so that we don't output a newline/CR
-		var remainderLen = console.screen_columns - strip_ctrl(DisplayBottomHelpLine_IceStyle.helpText).length - 1;
-		if (remainderLen > 0)
-			printf("\1n%" + remainderLen + "s", "");
-	}
 }
 
 // Updates the insert mode displayd on the screen, for Ice Edit style.
