@@ -560,7 +560,7 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 					|| ypos+y != console.screen_rows) {
 				console.attributes=this.data[x+xoff][y+yoff].attr & this.attr_mask;
 				var ch=this.data[x+xoff][y+yoff].ch;
-				if (this.illegal_characters.indexOf(ascii(this.data[x][y].ch)) >= 0) {
+				if (this.illegal_characters.indexOf(ascii(ch)) >= 0) {
 					if (this.doorway_mode)
 						ch = ascii(0) + ch;
 					else
