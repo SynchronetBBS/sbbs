@@ -438,10 +438,8 @@ void sdl_user_func(int func, ...)
 	while(1) {
 		while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
 			YIELD();
-		if (func != SDL_USEREVENT_UPDATERECT && func != SDL_USEREVENT_FLUSH) {
-			if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
+		if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
 				continue;
-		}
 		break;
 	}
 	sdl.mutexV(sdl_ufunc_mtx);
@@ -1715,8 +1713,7 @@ int sdl_video_event_thread(void *data)
 						break;
 					case SDL_USEREVENT: {
 						/* Tell SDL to do various stuff... */
-						if (ev.user.code != SDL_USEREVENT_UPDATERECT && ev.user.code != SDL_USEREVENT_FLUSH)
-							sdl.SemPost(sdl_ufunc_rec);
+						sdl.SemPost(sdl_ufunc_rec);
 						switch(ev.user.code) {
 							case SDL_USEREVENT_QUIT:
 								sdl_ufunc_retval=0;
