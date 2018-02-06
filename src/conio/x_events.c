@@ -321,7 +321,7 @@ static int init_mode(int mode)
 
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
 
-	pthread_rwlock_wrlock(&vstatlock);
+	pthread_mutex_lock(&vstatlock);
 	/* Deal with 40 col doubling */
 	if(oldcols != vstat.cols) {
 		if(oldcols == 40)
@@ -339,7 +339,7 @@ static int init_mode(int mode)
 		resize_window();
 	bitmap_drv_request_pixels();
 	cvstat = vstat;
-	pthread_rwlock_unlock(&vstatlock);
+	pthread_mutex_unlock(&vstatlock);
 
 	sem_post(&mode_set);
     return(0);
@@ -350,13 +350,13 @@ static int video_init()
     /* If we are running under X, get a connection to the X server and create
        an empty window of size (1, 1). It makes a couple of init functions a
        lot easier. */
-	pthread_rwlock_wrlock(&vstatlock);
+	pthread_mutex_lock(&vstatlock);
 	if(vstat.scaling<1)
 		vstat.scaling=1;
 	if(vstat.vmultiplier<1)
 		vstat.vmultiplier=1;
 	cvstat = vstat;
-	pthread_rwlock_unlock(&vstatlock);
+	pthread_mutex_unlock(&vstatlock);
     if(init_window())
 		return(-1);
 
@@ -449,10 +449,10 @@ static void handle_resize_event(int width, int height)
 	int newFSW=1;
 
 	// No change
-	pthread_rwlock_wrlock(&vstatlock);
+	pthread_mutex_lock(&vstatlock);
 	if((width == vstat.charwidth * vstat.cols * vstat.scaling)
 			&& (height == vstat.charheight * vstat.rows * vstat.scaling*vstat.vmultiplier)) {
-		pthread_rwlock_unlock(&vstatlock);
+		pthread_mutex_unlock(&vstatlock);
 		return;
 	}
 
@@ -479,7 +479,7 @@ static void handle_resize_event(int width, int height)
 	}
 	bitmap_drv_request_pixels();
 	cvstat = vstat;
-	pthread_rwlock_unlock(&vstatlock);
+	pthread_mutex_unlock(&vstatlock);
 }
 
 static void expose_rect(int x, int y, int width, int height)
@@ -860,13 +860,13 @@ static int x11_event(XEvent *ev)
 
 void check_scaling(void)
 {
-	pthread_rwlock_rdlock(&vstatlock);
+	pthread_mutex_lock(&vstatlock);
 	if (old_scaling != vstat.scaling) {
 		resize_window();
 		old_scaling = vstat.scaling;
 	}
 	cvstat = vstat;
-	pthread_rwlock_unlock(&vstatlock);
+	pthread_mutex_unlock(&vstatlock);
 }
 
 static void x11_terminate_event_thread(void)

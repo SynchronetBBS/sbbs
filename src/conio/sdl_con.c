@@ -646,17 +646,17 @@ int sdl_init_mode(int mode)
 {
     int oldcols;
 
-	pthread_rwlock_rdlock(&vstatlock);
+	pthread_mutex_lock(&vstatlock);
 	oldcols = vstat.cols;
 	cvstat = vstat;
-	pthread_rwlock_unlock(&vstatlock);
+	pthread_mutex_unlock(&vstatlock);
 
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
 
 	/* Deal with 40 col doubling */
-	pthread_rwlock_wrlock(&vstatlock);
+	pthread_mutex_lock(&vstatlock);
 	if(yuv.enabled) {
 		vstat.scaling=2;
 	}
@@ -674,7 +674,7 @@ int sdl_init_mode(int mode)
 	if(vstat.vmultiplier < 1)
 		vstat.vmultiplier = 1;
 	cvstat = vstat;
-	pthread_rwlock_unlock(&vstatlock);
+	pthread_mutex_unlock(&vstatlock);
 
 	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE);
 
@@ -1077,10 +1077,10 @@ void sdl_add_key(unsigned int keyval)
 			cio_api.mode=fullscreen?CIOLIB_MODE_SDL_YUV_FULLSCREEN:CIOLIB_MODE_SDL_YUV;
 		else
 			cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
-		pthread_rwlock_rdlock(&vstatlock);
+		pthread_mutex_lock(&vstatlock);
 		setup_surfaces();
 		cvstat = vstat;
-		pthread_rwlock_unlock(&vstatlock);
+		pthread_mutex_unlock(&vstatlock);
 		return;
 	}
 	if(keyval <= 0xffff) {
@@ -1600,10 +1600,10 @@ int sdl_video_event_thread(void *data)
 		sdl.mutexV(bitmap_init_mutex);
 		SLEEP(1);
 	}
-	pthread_rwlock_rdlock(&vstatlock);
+	pthread_mutex_lock(&vstatlock);
 	old_scaling = vstat.scaling;
 	cvstat = vstat;
-	pthread_rwlock_unlock(&vstatlock);
+	pthread_mutex_unlock(&vstatlock);
 	
 	if(!init_sdl_video()) {
 		char	driver[16];
@@ -1626,7 +1626,7 @@ int sdl_video_event_thread(void *data)
 
 		while(1) {
 			if(sdl.PollEvent(&ev)!=1) {
-				if(pthread_rwlock_trywrlock(&vstatlock)==0) {
+				if(pthread_mutex_trylock(&vstatlock)==0) {
 					if (new_scaling != -1 || vstat.scaling != old_scaling) {
 						if (new_scaling == -1)
 							new_scaling = vstat.scaling;
@@ -1638,7 +1638,7 @@ int sdl_video_event_thread(void *data)
 						old_scaling = vstat.scaling;
 					}
 					cvstat = vstat;
-					pthread_rwlock_unlock(&vstatlock);
+					pthread_mutex_unlock(&vstatlock);
 				}
 				SLEEP(1);
 			}
@@ -1700,10 +1700,10 @@ int sdl_video_event_thread(void *data)
 								new_scaling = 2;
 							}
 							else {
-								pthread_rwlock_rdlock(&vstatlock);
+								pthread_mutex_lock(&vstatlock);
 								new_scaling = (int)(ev.resize.w/(vstat.charwidth*vstat.cols));
 								cvstat = vstat;
-								pthread_rwlock_unlock(&vstatlock);
+								pthread_mutex_unlock(&vstatlock);
 							}
 						}
 						break;
@@ -1846,8 +1846,8 @@ int sdl_video_event_thread(void *data)
 								free(ev.user.data1);
 								break;
 							case SDL_USEREVENT_SETVIDMODE:
-#ifndef BITMAP_NO_WORKING_RWLOCK
-								pthread_rwlock_rdlock(&vstatlock);
+#if 0 // TODO
+								pthread_mutex_lock(&vstatlock);
 #endif
 								if(!yuv.enabled) {
 									rectspace=vstat.cols*vstat.rows+vstat.cols;
@@ -1865,8 +1865,8 @@ int sdl_video_event_thread(void *data)
 								old_scaling = vstat.scaling;
 								setup_surfaces();
 								cvstat = vstat;
-#ifndef BITMAP_NO_WORKING_RWLOCK
-								pthread_rwlock_unlock(&vstatlock);
+#if 0 // TODO
+								pthread_mutex_unlock(&vstatlock);
 #endif
 								sdl_ufunc_retval=0;
 								sdl.SemPost(sdl_ufunc_ret);

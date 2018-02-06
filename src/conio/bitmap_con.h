@@ -4,41 +4,8 @@
 #include "vidmodes.h"
 #include "threadwrap.h"
 
-/*
- * Hacks for rwlocks... threadwrap doesn't have them...
- */
-#ifdef _WIN32
-
-typedef pthread_mutex_t pthread_rwlock_t;
-#define pthread_rwlock_init(a,b)	pthread_mutex_init(a,b)
-#define pthread_rwlock_rdlock(a)	pthread_mutex_lock(a)
-#define pthread_rwlock_wrlock(a)	pthread_mutex_lock(a)
-#define pthread_rwlock_unlock(a)	pthread_mutex_unlock(a)
-#define pthread_rwlock_trywrlock(a)	pthread_mutex_trylock(a)
-#define pthread_rwlock_tryrdlock(a)	pthread_mutex_trylock(a)
-#define pthread_rwlock_destroy(a)	pthread_mutex_destroy(a)
-#define BITMAP_NO_WORKING_RWLOCK
-
-#else
-
-#if 1
-
-#define	pthread_rwlock_t		pthread_mutex_t
-#define pthread_rwlock_init(a,b)	pthread_mutex_init(a,b)
-#define pthread_rwlock_rdlock(a)	pthread_mutex_lock(a)
-#define pthread_rwlock_wrlock(a)	pthread_mutex_lock(a)
-#define pthread_rwlock_unlock(a)	pthread_mutex_unlock(a)
-#define pthread_rwlock_trywrlock(a)	pthread_mutex_trylock(a)
-#define pthread_rwlock_tryrdlock(a)	pthread_mutex_trylock(a)
-#define pthread_rwlock_destroy(a)	pthread_mutex_destroy(a)
-#define BITMAP_NO_WORKING_RWLOCK
-
-#endif
-
-#endif
-
 extern struct video_stats vstat;
-extern pthread_rwlock_t vstatlock;
+extern pthread_mutex_t vstatlock;
 
 #ifndef BITMAP_CIOLIB_DRIVER
 /* Called from ciolib */
