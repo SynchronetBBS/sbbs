@@ -77,7 +77,7 @@ function remap(map, height, width, index, glyph)
 }
 
 
-function create(filename, glyph, charheight, width, height, fg_color, bg_color, blink_first, sauce)
+function create(filename, glyph, charheight, width, height, fg_color, bg_color, palette, blink_first, sauce)
 {
 	if(blink_first === undefined)
 		blink_first = true;
@@ -204,8 +204,14 @@ function create(filename, glyph, charheight, width, height, fg_color, bg_color, 
 		if(font_count > 3)
 			flags |= xbin.FLAG_FONT_HIGHBLINK;
 	}
+	if(palette)
+		flags |= xbin.FLAG_PALETTE;
 	file.writeBin(flags, 1);
 
+	if(palette && palette.length) {
+		for(var i = 0; i < palette.length; i++)
+			file.writeBin(palette[i], /* size (each color channel, in bytes): */1);
+	}
 	for(var i = 0; i < font_count; i++)
 		file.write(font_data[i].join(''));
 
