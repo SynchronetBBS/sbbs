@@ -1,5 +1,4 @@
 /* $Id$ */
-/* $Id$ */
 
 #include <stdarg.h>
 #include <stdio.h>		/* NULL */
@@ -1423,7 +1422,13 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
  * This function is intended to be called from the driver.
  * as a result, it cannot block waiting for driver status
  *
+ * Must be called with vstatlock held.
  * Care MUST be taken to avoid deadlocks...
+ * This is where the vmode bits used by the driver are modified...
+ * the driver must be aware of this.
+ * This is where the driver should grab vstatlock, then it should copy
+ * out after this and only grab that lock again briefly to update
+ * vstat.scaling.
  */
 int bitmap_drv_init_mode(int mode, int *width, int *height)
 {
@@ -1433,12 +1438,8 @@ int bitmap_drv_init_mode(int mode, int *width, int *height)
 	if(!bitmap_initialized)
 		return(-1);
 
-	pthread_mutex_lock(&vstatlock);
-
-	if(load_vmode(&vstat, mode)) {
-		pthread_mutex_unlock(&vstatlock);
+	if(load_vmode(&vstat, mode))
 		return(-1);
-	}
 
 	/* Initialize video memory with black background, white foreground */
 	for (i = 0; i < vstat.cols*vstat.rows; ++i) {
@@ -1458,7 +1459,6 @@ int bitmap_drv_init_mode(int mode, int *width, int *height)
 
 	if(!newscreen) {
 		pthread_mutex_unlock(&screen.screenlock);
-		pthread_mutex_unlock(&vstatlock);
 		return(-1);
 	}
 	screen.screen=newscreen;
@@ -1481,7 +1481,6 @@ int bitmap_drv_init_mode(int mode, int *width, int *height)
 		cio_textinfo.screenwidth = 0xff;
 	else
 		cio_textinfo.screenwidth = vstat.cols;
-	pthread_mutex_unlock(&vstatlock);
 
 	cio_textinfo.curx=1;
 	cio_textinfo.cury=1;

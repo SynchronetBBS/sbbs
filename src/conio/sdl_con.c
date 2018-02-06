@@ -229,6 +229,8 @@ const struct sdl_keyvals sdl_keyval[] =
 	{0, 0, 0, 0, 0}	/** END **/
 };
 
+void sdl_setscaling(int new_value);
+
 #if !defined(NO_X) && defined(__unix__)
 #include "SDL_syswm.h"
 
@@ -646,35 +648,32 @@ int sdl_init_mode(int mode)
 {
     int oldcols;
 
-	pthread_mutex_lock(&vstatlock);
-	oldcols = vstat.cols;
-	cvstat = vstat;
-	pthread_mutex_unlock(&vstatlock);
+	oldcols = cvstat.cols;
 
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
+	pthread_mutex_lock(&vstatlock);
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
+	cvstat = vstat;
+	pthread_mutex_unlock(&vstatlock);
 
 	/* Deal with 40 col doubling */
-	pthread_mutex_lock(&vstatlock);
 	if(yuv.enabled) {
-		vstat.scaling=2;
+		sdl_setscaling(2);
 	}
 	else {
-		if(oldcols != vstat.cols) {
+		if(oldcols != cvstat.cols) {
 			if(oldcols == 40)
-				vstat.scaling /= 2;
-			if(vstat.cols == 40)
-				vstat.scaling *= 2;
+				cvstat.scaling /= 2;
+			if(cvstat.cols == 40)
+				cvstat.scaling *= 2;
 		}
 	}
 
-	if(vstat.scaling < 1)
-		vstat.scaling = 1;
-	if(vstat.vmultiplier < 1)
-		vstat.vmultiplier = 1;
-	cvstat = vstat;
-	pthread_mutex_unlock(&vstatlock);
+	if(cvstat.scaling < 1)
+		cvstat.scaling = 1;
+	if(cvstat.vmultiplier < 1)
+		cvstat.vmultiplier = 1;
 
 	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE);
 
@@ -771,20 +770,20 @@ int sdl_init(int mode)
 	return(-1);
 }
 
-/* Called from main thread only */
 void sdl_setscaling(int new_value)
 {
 	if (yuv.enabled)
 		return;
-	vstat.scaling = new_value;
+	pthread_mutex_lock(&vstatlock);
+	cvstat.scaling = vstat.scaling = new_value;
+	pthread_mutex_unlock(&vstatlock);
 }
 
-/* Called from main thread only */
 int sdl_getscaling(void)
 {
 	if (yuv.enabled)
 		return 1;
-	return vstat.scaling;
+	return cvstat.scaling;
 }
 
 /* Called from main thread only */
@@ -941,7 +940,6 @@ int sdl_setup_yuv_colours(void)
 	return(ret);
 }
 
-/* Call with vstatlock held (reader or writer) */
 void setup_surfaces(void)
 {
 	int		char_width;
@@ -957,12 +955,12 @@ void setup_surfaces(void)
 		flags |= SDL_RESIZABLE;
 
 	sdl.mutexP(win_mutex);
-	charwidth = vstat.charwidth;
-	charheight = vstat.charheight;
-	cols = vstat.cols;
-	scaling = vstat.scaling;
-	rows = vstat.rows;
-	vmultiplier = vstat.vmultiplier;
+	charwidth = cvstat.charwidth;
+	charheight = cvstat.charheight;
+	cols = cvstat.cols;
+	scaling = cvstat.scaling;
+	rows = cvstat.rows;
+	vmultiplier = cvstat.vmultiplier;
 	
 	char_width=charwidth*cols*scaling;
 	char_height=charheight*rows*scaling*vmultiplier;
@@ -1065,7 +1063,6 @@ void setup_surfaces(void)
 		sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
 	}
 	sdl.mutexV(win_mutex);
-	cvstat = vstat;
 }
 
 /* Called from event thread only */
@@ -1077,10 +1074,7 @@ void sdl_add_key(unsigned int keyval)
 			cio_api.mode=fullscreen?CIOLIB_MODE_SDL_YUV_FULLSCREEN:CIOLIB_MODE_SDL_YUV;
 		else
 			cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
-		pthread_mutex_lock(&vstatlock);
 		setup_surfaces();
-		cvstat = vstat;
-		pthread_mutex_unlock(&vstatlock);
 		return;
 	}
 	if(keyval <= 0xffff) {
@@ -1600,10 +1594,7 @@ int sdl_video_event_thread(void *data)
 		sdl.mutexV(bitmap_init_mutex);
 		SLEEP(1);
 	}
-	pthread_mutex_lock(&vstatlock);
-	old_scaling = vstat.scaling;
-	cvstat = vstat;
-	pthread_mutex_unlock(&vstatlock);
+	old_scaling = cvstat.scaling;
 	
 	if(!init_sdl_video()) {
 		char	driver[16];
@@ -1626,19 +1617,15 @@ int sdl_video_event_thread(void *data)
 
 		while(1) {
 			if(sdl.PollEvent(&ev)!=1) {
-				if(pthread_mutex_trylock(&vstatlock)==0) {
-					if (new_scaling != -1 || vstat.scaling != old_scaling) {
-						if (new_scaling == -1)
-							new_scaling = vstat.scaling;
-						vstat.scaling=new_scaling;
-						new_scaling = -1;
-						if(vstat.scaling < 1)
-							vstat.scaling=1;
-						setup_surfaces();
-						old_scaling = vstat.scaling;
-					}
-					cvstat = vstat;
-					pthread_mutex_unlock(&vstatlock);
+				if (new_scaling != -1 || cvstat.scaling != old_scaling) {
+					if (new_scaling == -1)
+						new_scaling = cvstat.scaling;
+					sdl_setscaling(new_scaling);
+					new_scaling = -1;
+					if(cvstat.scaling < 1)
+						sdl_setscaling(1);
+					setup_surfaces();
+					old_scaling = cvstat.scaling;
 				}
 				SLEEP(1);
 			}
@@ -1700,10 +1687,7 @@ int sdl_video_event_thread(void *data)
 								new_scaling = 2;
 							}
 							else {
-								pthread_mutex_lock(&vstatlock);
-								new_scaling = (int)(ev.resize.w/(vstat.charwidth*vstat.cols));
-								cvstat = vstat;
-								pthread_mutex_unlock(&vstatlock);
+								new_scaling = (int)(ev.resize.w/(cvstat.charwidth*cvstat.cols));
 							}
 						}
 						break;
@@ -1846,11 +1830,8 @@ int sdl_video_event_thread(void *data)
 								free(ev.user.data1);
 								break;
 							case SDL_USEREVENT_SETVIDMODE:
-#if 0 // TODO
-								pthread_mutex_lock(&vstatlock);
-#endif
 								if(!yuv.enabled) {
-									rectspace=vstat.cols*vstat.rows+vstat.cols;
+									rectspace=cvstat.cols*cvstat.rows+cvstat.cols;
 									rectsused=0;
 									if(upd_rects)
 										free(upd_rects);
@@ -1862,12 +1843,8 @@ int sdl_video_event_thread(void *data)
 									}
 								}
 								new_scaling = -1;
-								old_scaling = vstat.scaling;
+								old_scaling = cvstat.scaling;
 								setup_surfaces();
-								cvstat = vstat;
-#if 0 // TODO
-								pthread_mutex_unlock(&vstatlock);
-#endif
 								sdl_ufunc_retval=0;
 								sdl.SemPost(sdl_ufunc_ret);
 								break;

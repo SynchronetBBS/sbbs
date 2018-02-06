@@ -474,16 +474,11 @@ void x11_flush(void)
 void x_setscaling(int newval)
 {
 	pthread_mutex_lock(&vstatlock);
-	vstat.scaling = newval;
+	x_cvstat.scaling = vstat.scaling = newval;
 	pthread_mutex_unlock(&vstatlock);
 }
 
 int x_getscaling(void)
 {
-	int ret;
-
-	pthread_mutex_lock(&vstatlock);
-	ret = vstat.scaling;
-	pthread_mutex_unlock(&vstatlock);
-	return ret;
+	return x_cvstat.scaling;
 }
