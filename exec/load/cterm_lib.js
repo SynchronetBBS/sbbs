@@ -326,7 +326,8 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 		ansiterm.send("ext_mode", "set", "no_bright_intensity");
 	if(image.flags&xbin.FLAG_NONBLINK) {
 		ansiterm.send("ext_mode", "set", "no_blink");
-		ansiterm.send("ext_mode", "set", "bg_bright_intensity");
+		if(!(console.status&(CON_BLINK_FONT|CON_HBLINK_FONT)))
+			ansiterm.send("ext_mode", "set", "bg_bright_intensity");
 	}
 
 	if(image.palette && this.supports_palettes()) {
