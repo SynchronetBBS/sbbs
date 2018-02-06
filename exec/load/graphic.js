@@ -636,7 +636,7 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 			console.gotoxy(xpos+position.x,ypos+position.y);
 			console.attributes=this.data[position.x][position.y].attr & this.attr_mask;
 			var ch=this.data[position.x][position.y].ch;
-			if (this.illegal_characters.indexOf(ascii(this.data[x][y].ch)) >= 0) {
+			if (this.illegal_characters.indexOf(ascii(ch)) >= 0) {
 				if (this.doorway_mode)
 					ch = ascii(0) + ch;
 				else
