@@ -5,6 +5,7 @@
 var image_lib = load({}, 'xbimage_lib.js');
 var bmplib = load({}, 'bmp_lib.js');
 var cga = load({}, 'cga_defs.js');
+var vga = load({}, 'vga_defs.js');
 var sauce_lib = load({}, 'sauce_lib.js');
 
 function convert_from_bmp(filename, charheight, fg_color, bg_color, invert, blink_first, title, author, group)
@@ -60,7 +61,7 @@ function convert_from_bmp(filename, charheight, fg_color, bg_color, invert, blin
 	return true;
 }
 
-function show(filename, xpos, ypos, fg_color, bg_color, delay, cycle, cleanup)
+function show(filename, xpos, ypos, fg_color, bg_color, delay, palette, cleanup)
 {
 	var cterm = load({}, 'cterm_lib.js');
 
@@ -84,8 +85,11 @@ function show(filename, xpos, ypos, fg_color, bg_color, delay, cycle, cleanup)
 
 //	print(lfexpand(JSON.stringify(image, null, 4)));
 //	console.getkey();
+
+	if(palette)
+		image.palette = palette;
 	
-	var result = cterm.xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle);
+	var result = cterm.xbin_draw(image, xpos, ypos, fg_color, bg_color, delay);
 	if(cleanup)
 		cterm.xbin_cleanup(image);
 
@@ -93,6 +97,17 @@ function show(filename, xpos, ypos, fg_color, bg_color, delay, cycle, cleanup)
 		alert(result);
 
 	return result;
+}
+
+function color_value(palette, val)
+{
+	if(cga[val] != undefined)
+		return palette[cga[val]];
+	var rgb = val.split(',');
+	rgb[0] = parseInt(rgb[0]);
+	rgb[1] = parseInt(rgb[1]);
+	rgb[2] = parseInt(rgb[2]);
+	return rgb;
 }
 
 function demo(filename, delay)
@@ -115,7 +130,7 @@ function demo(filename, delay)
 	ini.close();
 
 	if(global.name) {
-		print("\1n\1hDemonstration beginning: \1y" + global.name);
+		print("\1n\1hDemonstration beginning: \1y" + global.name + "\1w (Hit '\1cQ\1w' to abort)");
 		console.inkey(0, delay);
 	}
 	if(global.delay === undefined)
@@ -123,20 +138,26 @@ function demo(filename, delay)
 
 
 	for(var i in obj) {
+		var palette = vga.color_palette;
 		if(obj[i].delay === undefined)
 			obj[i].delay = global.delay;
 		if(obj[i].xpos === undefined)
 			obj[i].xpos = global.xpos;
 		if(obj[i].ypos === undefined)
 			obj[i].ypos = global.ypos;
+		for(var c in cga.colors) {
+			if(obj[i][cga.colors[c].toLowerCase()] !== undefined)
+				palette[c] = color_value(palette, obj[i][cga.colors[c].toLowerCase()].toUpperCase());
+		}
 
 		if(show(obj[i].name, obj[i].xpos, obj[i].ypos
-			,obj[i].fg_color, obj[i].bg_color, obj[i].delay, obj[i].cycle) != true)
+			,obj[i].fg_color, obj[i].bg_color, obj[i].delay, palette) != true)
 			break;
 		if(console.aborted)
 			break;
 	}
 	cterm.xbin_cleanup();
+	cterm.reset_palette();
 	if(global.name) {
 		print("\1n\1hDemonstration concluded: \1y" + global.name);
 		console.inkey(0, delay);
@@ -183,6 +204,7 @@ function main()
 	var title;
 	var author;
 	var group;
+	var palette = vga.color_palette;
 
 	for(var i in argv) {
 
@@ -195,6 +217,11 @@ function main()
 			arg = arg.substring(0,eq);
 		}
 		optval[arg] = val;
+
+		if(arg.charAt(0) == '-' && cga[arg.substring(1).toUpperCase()] != undefined) {
+			palette[cga[arg.substring(1).toUpperCase()]] = color_value(palette, val.toUpperCase());
+			continue;
+		}
 
 		switch(arg) {
 			case "-fg":
@@ -261,7 +288,7 @@ function main()
 						break;
 				break;
 			case "show":
-				show(optval[cmd] ? optval[cmd] : files[0], xpos, ypos, fg_color, bg_color, delay, cycle, /* cleanup: */true);
+				show(optval[cmd] ? optval[cmd] : files[0], xpos, ypos, fg_color, bg_color, delay, palette, /* cleanup: */true);
 				load('fonts.js', 'default');
 				break;
 			case "demo":
