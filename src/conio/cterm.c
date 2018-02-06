@@ -1497,6 +1497,7 @@ all_done:
 	else {
 		GOTOXY(cterm->sx_start_x, cterm->sx_start_y);
 	}
+	cterm->cursor = cterm->sx_orig_cursor;
 	SETCURSORTYPE(cterm->cursor);
 	cterm->sixel = SIXEL_INACTIVE;
 	if (cterm->sx_pixels)
@@ -2917,7 +2918,9 @@ static void parse_sixel_intro(struct cterminal *cterm)
 			cterm->sx_start_x = WHEREX();
 			cterm->sx_start_y = WHEREY();
 		}
-		SETCURSORTYPE(_NOCURSOR);
+		cterm->sx_orig_cursor = cterm->cursor;
+		cterm->cursor = _NOCURSOR;
+		SETCURSORTYPE(cterm->cursor);
 		GOTOXY(ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
 		*cterm->hold_update = 1;
 		ratio = cterm->sx_trans = hgrid = 0;

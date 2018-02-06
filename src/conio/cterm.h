@@ -175,6 +175,7 @@ struct cterminal {
 	unsigned long		sx_width;		// Width from raster attributes
 	unsigned long		sx_height;		// REMAINING heigh from raster attributes
 	uint8_t				*sx_mask;
+	int					sx_orig_cursor;	// Original value of cterm->cursor
 
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO
