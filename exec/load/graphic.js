@@ -17,30 +17,35 @@
  *
  * Instance variables atcodes are slated for removal.
  */
-function Graphic(w,h,attr,ch)
+function Graphic(w,h,attr,ch, dw)
 {
 	if(ch==undefined)
 		this.ch=' ';
 	else
 		this.ch=ch;
+
 	if(attr==undefined)
 		this.attribute=7;
 	else
 		this.attribute=attr;
+
 	if(h==undefined)
 		this.height=24;
 	else
 		this.height=h;
+
 	if(w==undefined)
 		this.width=80;
 	else
 		this.width=w;
 
+	if (dw === undefined)
+		this.doorway_mode = dw;
+
 	this.atcodes=true;
 	this.cpm_eof=true;
 	this.attr_mask=0xff;
 	this.ansi_crlf=true;
-	this.doorway_mode=false;
 	this.illegal_characters = [0, 7, 8, 9, 10, 12, 13, 27];
 
 	this.data=new Array(this.width);
@@ -53,6 +58,12 @@ function Graphic(w,h,attr,ch)
 		}
 	}
 }
+
+/*
+ * Default to not DoorWay mode, allow it to be overridden per object, or
+ * globally.
+ */
+Graphic.prototype.doorway_mode = false;
 
 /*
  * Load sbbsdefs.js into Graphic.defs
