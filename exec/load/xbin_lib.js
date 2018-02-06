@@ -33,7 +33,7 @@ function read(file)
 	if(image.flags&this.FLAG_PALETTE) {
 		image.palette = [];
 		for(var i = 0; i < 16; i++)	/* R G B, one byte each though only the low 6 bits should be used */
-			image.palette[i] = [ file.readBin(1)&0x3f, file.readBin(1)&0x3f, file.readBin(1)&0x3f ];
+			image.palette[i] = file.readBin(/* size: */1, /* count: */3);
 	}
 
 //	printf("image.font_count = %d\r\n", image.font_count);
@@ -83,6 +83,26 @@ function read(file)
 	}
 
 	return image;
+}
+
+function write(file, image)
+{
+	if(image.flags)
+		image.flags &= ~this.FLAG_COMPRESSED;
+	file.write(this.id, this.ID_LEN);
+	file.writeBin(image.width, 2);
+	file.writeBin(image.height, 2);
+	file.writeBin(image.charheight, 1);
+	file.writeBin(image.flags, 1);
+
+	if(image.palette && image.palette.length) {
+		for(var i = 0; i < image.palette.length; i++)
+			file.writeBin(image.palette[i], /* size (each color channel, in bytes): */1);
+	}
+	for(var i = 0; i < image.font_count; i++)
+		file.write(image.font[i]);
+
+	file.write(image.bin);
 }
 
 // Leave as last line:
