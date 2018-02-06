@@ -280,6 +280,45 @@ static void send_text_rectangle(int xoffset, int yoffset, int width, int height,
 /* These functions get called from ciolib and the blinker thread only */
 /**********************************************************************/
 
+static void bitmap_draw_cursor(struct video_stats *vs)
+{
+	int y;
+	int pixel;
+	int xoffset,yoffset;
+	int yo, xw, yw;
+	void *rect;
+
+	if(!bitmap_initialized)
+		return;
+	if(vs->curs_visible) {
+		if(vs->blink || (!vs->curs_blink)) {
+			if(vs->curs_start<=vs->curs_end) {
+				xoffset=(vs->curs_col-1)*vs->charwidth;
+				yoffset=(vs->curs_row-1)*vs->charheight;
+				if(xoffset < 0 || yoffset < 0)
+					return;
+
+				pthread_mutex_lock(&screen.screenlock);
+				for(y=vs->curs_start; y<=vs->curs_end; y++) {
+					if(xoffset < screen.screenwidth && (yoffset+y) < screen.screenheight) {
+						pixel=PIXEL_OFFSET(screen, xoffset, yoffset+y);
+						memset_u32(screen.screen+pixel,ciolib_fg,vs->charwidth);
+					}
+				}
+				yo = yoffset+vs->curs_start;
+				xw = vs->charwidth;
+				yw = vs->curs_end-vs->curs_start+1;
+				rect = get_rectangle_locked(vs, xoffset, yo, xw, yw,FALSE);
+
+				pthread_mutex_unlock(&screen.screenlock);
+
+				cb_drawrect(xoffset, yo, xw, yw, rect);
+				return;
+			}
+		}
+	}
+}
+
 static void	cb_drawrect(int xpos, int ypos, int width, int height, uint32_t *data)
 {
 	if (data == NULL)
@@ -515,45 +554,6 @@ static __inline void *locked_screen_check(void)
 	ret=screen.screen;
 	pthread_mutex_unlock(&screen.screenlock);
 	return(ret);
-}
-
-static void bitmap_draw_cursor(struct video_stats *vs)
-{
-	int y;
-	int pixel;
-	int xoffset,yoffset;
-	int yo, xw, yw;
-	void *rect;
-
-	if(!bitmap_initialized)
-		return;
-	if(vs->curs_visible) {
-		if(vs->blink || (!vs->curs_blink)) {
-			if(vs->curs_start<=vs->curs_end) {
-				xoffset=(vs->curs_col-1)*vs->charwidth;
-				yoffset=(vs->curs_row-1)*vs->charheight;
-				if(xoffset < 0 || yoffset < 0)
-					return;
-
-				pthread_mutex_lock(&screen.screenlock);
-				for(y=vs->curs_start; y<=vs->curs_end; y++) {
-					if(xoffset < screen.screenwidth && (yoffset+y) < screen.screenheight) {
-						pixel=PIXEL_OFFSET(screen, xoffset, yoffset+y);
-						memset_u32(screen.screen+pixel,ciolib_fg,vs->charwidth);
-					}
-				}
-				yo = yoffset+vs->curs_start;
-				xw = vs->charwidth;
-				yw = vs->curs_end-vs->curs_start+1;
-				rect = get_rectangle_locked(vs, xoffset, yo, xw, yw,FALSE);
-
-				pthread_mutex_unlock(&screen.screenlock);
-
-				cb_drawrect(xoffset, yo, xw, yw, rect);
-				return;
-			}
-		}
-	}
 }
 
 /*
@@ -907,13 +907,18 @@ void bitmap_gotoxy(int x, int y)
 		return;
 	/* Move cursor location */
 	pthread_mutex_lock(&blinker_lock);
+	/* Erase current cursor (unconditionally) */
+	if (cio_textinfo.curx!=x || cio_textinfo.cury!=y) {
+		bitmap_draw_one_char(&vstat, x, y);
+	}
 	cio_textinfo.curx=x;
 	cio_textinfo.cury=y;
+	/* Draw new cursor */
 	if(!hold_update) {
-		/* Move visible cursor */
 		pthread_mutex_lock(&vstatlock);
 		vstat.curs_col=x+cio_textinfo.winleft-1;
 		vstat.curs_row=y+cio_textinfo.wintop-1;
+		bitmap_draw_cursor(&vstat);
 		pthread_mutex_unlock(&vstatlock);
 	}
 	pthread_mutex_unlock(&blinker_lock);
