@@ -86,6 +86,7 @@ function query_fontstate(field)
 	if(response.substr(0,5) == "\x1b[=1;" && response.substr(-1) == "n") {
 		font_state = response.slice(5, -1).split(/;/);
 		font_slot_first = font_state[font_state_field_first];
+		console.cterm_fonts_active = font_state.slice(font_state_field_style, font_state_field_style + 4)
 		if(!field)
 			return font_state;
 		return font_state[field];
@@ -209,7 +210,18 @@ function activate_font(style, slot)
 	log(LOG_DEBUG, "CTerm activate_font result: " + result);
 	if(result === '0')
 		result = true;
+	if(console.cterm_fonts_active === undefined)
+		console.cterm_fonts_active = [];
+	console.cterm_fonts_active[style] = slot;
 	return result;
+}
+
+/* Used to set all 4 font styles, e.g. as copied from console.cterm_fonts_active */
+function activate_fonts(slots)
+{
+	for(var i in slots) {
+		activate_font(/* style */i, slots[i]);
+	}
 }
 
 function load_font(slot, data, force)
@@ -287,6 +299,8 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 	console.clear(LIGHTGRAY|BG_BLACK);
 
 	if(this.supports_fonts() != false && image.font && image.charheight == this.charheight(console.screen_rows)) {
+		this.saved_fonts = console.cterm_fonts_active.slice();
+		log(LOG_DEBUG, "CTerm saving active fonts slots: " + this.saved_fonts);
 		for(var i = 0; i < image.font.length; i++)	{
 	//		print("Loading font " + image.font[i].length + " bytes");
 			this.load_font(0xff - i, image.font[i], true);
@@ -492,9 +506,13 @@ function xbin_cleanup(image)
 
 	if(this.supports_fonts() != false
 		&& (image===undefined || (image.font && image.charheight == this.charheight(console.screen_rows)))) {
-		for(var p in this.font_styles)
-			if(image==undefined || image[p] < image.font_count)
-				this.activate_font(this.font_styles[p], 0);
+		if(this.saved_fonts && this.saved_fonts.length) {
+			log(LOG_DEBUG, "CTerm restoring active fonts slots: " + this.saved_fonts);
+			activate_fonts(this.saved_fonts);
+		} else
+			for(var p in this.font_styles)
+				if(image==undefined || image[p] < image.font_count)
+					this.activate_font(this.font_styles[p], 0);
 	}
 	if(image==undefined || image.flags&xbin.FLAG_NONHIGH)
 		ansiterm.send("ext_mode", "clear", "no_bright_intensity");
