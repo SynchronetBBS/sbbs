@@ -324,8 +324,10 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 	}
 	if(image.flags&xbin.FLAG_NONHIGH)
 		ansiterm.send("ext_mode", "set", "no_bright_intensity");
-	if(image.flags&xbin.FLAG_NONBLINK)
+	if(image.flags&xbin.FLAG_NONBLINK) {
 		ansiterm.send("ext_mode", "set", "no_blink");
+		ansiterm.send("ext_mode", "set", "bg_bright_intensity");
+	}
 
 	if(image.palette && this.supports_palettes()) {
 		var palette = [];
@@ -517,8 +519,10 @@ function xbin_cleanup(image)
 	}
 	if(image==undefined || image.flags&xbin.FLAG_NONHIGH)
 		ansiterm.send("ext_mode", "clear", "no_bright_intensity");
-	if(image==undefined || image.flags&xbin.FLAG_NONBLINK)
+	if(image==undefined || image.flags&xbin.FLAG_NONBLINK) {
 		ansiterm.send("ext_mode", "clear", "no_blink");
+		ansiterm.send("ext_mode", "clear", "bg_bright_intensity");
+	}
 }
 
 // Leave as last line:
