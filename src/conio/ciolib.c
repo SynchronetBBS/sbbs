@@ -235,6 +235,7 @@ int try_x_init(int mode)
 		cio_api.setpalette=x_setpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
+		cio_api.getpixels=bitmap_getpixels;
 		cio_api.setpixels=bitmap_setpixels;
 		return(1);
 	}
