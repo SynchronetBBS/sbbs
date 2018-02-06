@@ -174,7 +174,9 @@ function str_cmds(str)
 		if(word=="EXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				bbs.exec(get_arg(str),EX_OUTR|EX_INR);
+				str=get_arg(str);
+				if(str)
+					bbs.exec(str,EX_OUTR|EX_INR);
 			}
 			return;
 		}
@@ -187,7 +189,9 @@ function str_cmds(str)
 		if(word=="NEXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(5);
-				bbs.exec(get_arg(str),EX_OUTR|EX_INR|EX_NATIVE);
+				str=get_arg(str);
+				if(str)
+					bbs.exec(str,EX_OUTR|EX_INR|EX_NATIVE);
 			}
 			return;
 		}
@@ -200,7 +204,9 @@ function str_cmds(str)
 		if(word=="FOSSIL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(6);
-				bbs.exec(get_arg(str));
+				str=get_arg(str);
+				if(str)
+					bbs.exec(str);
 			}
 			return;
 		}
