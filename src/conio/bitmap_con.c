@@ -89,13 +89,6 @@ static __inline void *locked_screen_check(void);
 static void bitmap_draw_cursor(struct video_stats *vs);
 static int update_rect(int sx, int sy, int width, int height, int force);
 
-
-static int update_rect(int sx, int sy, int width, int height, int force);
-static void bitmap_draw_cursor(struct video_stats *vs);
-static int bitmap_draw_one_char(struct video_stats *vs, unsigned int xpos, unsigned int ypos);
-static int bitmap_loadfont_locked(char *filename);
-static void *get_rectangle_locked(struct video_stats *vs, int xoffset, int yoffset, int width, int height, int force);
-
 /**************************************************************/
 /* These functions get called from the driver and ciolib only */
 /**************************************************************/
@@ -557,10 +550,9 @@ static __inline void *locked_screen_check(void)
 }
 
 /*
- * Copies the current vmem into a temporary buffer.
- * Compares each cell with the previous buffer.
- * Any changed cells update the screen.
- * The temporary buffer becomes the previous buffer
+ * Updates any changed cells... blinking, modified flags, and the cursor
+ * Is also used (with force = TRUE) to completely redraw the screen from
+ * vmem (such as in the case of a font load).
  * 
  * Most of the hard work is in combining rectangles.
  */
@@ -570,9 +562,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	unsigned int pos;
 	int	redraw_cursor=0;
 	int	lastcharupdated=0;
-	static unsigned short *last_vmem=NULL;
-	static uint32_t *last_fgvmem=NULL;
-	static uint32_t *last_bgvmem=NULL;
+
 	static struct video_stats vs;
 	struct rectangle this_rect;
 	int this_rect_used=0;
@@ -607,29 +597,8 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	}
 
 	/* If the size has changed, realloc buffers to fit. */
-	if(vs.cols!=vstat.cols || vs.rows != vstat.rows || last_vmem==NULL ||
-	    last_fgvmem==NULL || last_bgvmem==NULL) {
+	if(vs.cols!=vstat.cols || vs.rows != vstat.rows) {
 		void *p;
-
-		p=realloc(last_vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
-		if(p==NULL)
-			return(-1);
-		last_vmem=p;
-
-		p=realloc(last_fgvmem, vstat.cols*vstat.rows*sizeof(last_fgvmem[0]));
-		if(p==NULL)
-			return(-1);
-		last_fgvmem=p;
-
-		p=realloc(last_bgvmem, vstat.cols*vstat.rows*sizeof(last_bgvmem[0]));
-		if(p==NULL)
-			return(-1);
-		last_bgvmem=p;
-
-		/* Clear out the newly allocated buffers (why?) */
-		memset(last_vmem, 255, vstat.cols*vstat.rows*sizeof(last_vmem[0]));
-		memset(last_fgvmem, 255, vstat.cols*vstat.rows*sizeof(last_fgvmem[0]));
-		memset(last_bgvmem, 255, vstat.cols*vstat.rows*sizeof(last_bgvmem[0]));
 
 		/* Force a full redraw */
 		sx=1;
@@ -680,17 +649,11 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		for(x=0;x<width;x++) {
 			/* Last this char been updated? */
 			if(force																/* Forced */
-					|| (vstat.vmem->vmem[pos] != last_vmem[pos])					/* Character and/or attribute */
-					|| vstat.vmem->fgvmem[pos] != last_fgvmem[pos]					/* FG colour */
-					|| vstat.vmem->bgvmem[pos] != last_bgvmem[pos]					/* BG colour */
 					|| ((vstat.vmem->vmem[pos] & 0x8000) && (blink_attr_changed ||
 							((vstat.blink != vs.blink) && (!vstat.no_blink)))) 	/* Blinking char */
 					|| ((vstat.vmem->vmem[pos] & 0x0800) && bright_attr_changed)	/* Bright char */
 					|| (redraw_cursor && ((vs.curs_col==sx+x && vs.curs_row==sy+y) || (vstat.curs_col==sx+x && vstat.curs_row==sy+y)))	/* Cursor */
 					) {
-				last_vmem[pos] = vstat.vmem->vmem[pos];
-				last_fgvmem[pos] = vstat.vmem->fgvmem[pos];
-				last_bgvmem[pos] = vstat.vmem->bgvmem[pos];
 				bitmap_draw_one_char(&vstat, sx+x,sy+y);
 
 				if(!redraw_cursor && sx+x==vstat.curs_col && sy+y==vstat.curs_row)
