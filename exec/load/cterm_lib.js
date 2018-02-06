@@ -258,6 +258,8 @@ function reset_palette()
 	return console.write("\x1b]104\x1b\\");
 }
 
+/* Palette is a 2-dim array: [16][3], each entry in R/G/B format */
+/* Bit is the number of bits per color channel */
 function redefine_palette(palette, bits)
 {
 	if(!this.supports_palettes())
@@ -267,9 +269,9 @@ function redefine_palette(palette, bits)
 	var str = "\x1b]4";
 	for(var i =0 ; i <  palette.length; i++)
 		str += format(";%u;rgb:%0*X/%0*X/%0*X", i
-			, bits / 4, palette[i].r
-			, bits / 4, palette[i].g
-			, bits / 4, palette[i].b);
+			, bits / 4, palette[i][0]
+			, bits / 4, palette[i][1]
+			, bits / 4, palette[i][2]);
 	str += "\x1b\\";
 //	log(LOG_DEBUG, "CTerm New palette: " + str);
 	console.write(str);
@@ -380,12 +382,11 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 					offset = WHITE;
 					break;
 			}
-			offset *= 3;
-			palette.push({ 
-				  r:scale_rgb_channel_value(ascii(image.palette.charAt(offset)))
-				, g:scale_rgb_channel_value(ascii(image.palette.charAt(offset+1)))
-				, b:scale_rgb_channel_value(ascii(image.palette.charAt(offset+2)))
-				});
+			palette.push([
+				scale_rgb_channel_value(image.palette[offset][0]),
+				scale_rgb_channel_value(image.palette[offset][1]),
+				scale_rgb_channel_value(image.palette[offset][2])
+				]);
 		}
 		this.redefine_palette(palette);
 	}

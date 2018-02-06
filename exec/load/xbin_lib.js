@@ -30,8 +30,11 @@ function read(file)
 	if(image.flags&this.FLAG_FONT_HIGHBLINK)
 		image.highblink = 1;
 
-	if(image.flags&this.FLAG_PALETTE)
-		image.palette = file.read(this.PALETTE_LEN);
+	if(image.flags&this.FLAG_PALETTE) {
+		image.palette = [];
+		for(var i = 0; i < 16; i++)	/* R G B, one byte each though only the low 6 bits should be used */
+			image.palette[i] = [ file.readBin(1)&0x3f, file.readBin(1)&0x3f, file.readBin(1)&0x3f ];
+	}
 
 //	printf("image.font_count = %d\r\n", image.font_count);
 	image.font = [];
