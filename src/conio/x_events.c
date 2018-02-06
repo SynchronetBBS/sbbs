@@ -22,6 +22,7 @@
 #include "vidmodes.h"
 
 #include "ciolib.h"
+#define BITMAP_CIOLIB_DRIVER
 #include "bitmap_con.h"
 #include "link_list.h"
 #include "x_events.h"
@@ -296,7 +297,7 @@ static void map_window()
 
     x11.XFree(sh);
 
-	bitmap_request_pixels();
+	bitmap_drv_request_pixels();
 
     return;
 }
@@ -318,7 +319,7 @@ static int init_mode(int mode)
 
 	oldcols=cvstat.cols;
 
-	bitmap_init_mode(mode, &bitmap_width, &bitmap_height);
+	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
 
 	pthread_rwlock_wrlock(&vstatlock);
 	/* Deal with 40 col doubling */
@@ -336,7 +337,7 @@ static int init_mode(int mode)
     /* Resize window if necessary. */
 	if((!(bitmap_width == 0 && bitmap_height == 0)) && (oldwidth != bitmap_width || oldheight != bitmap_height))
 		resize_window();
-	bitmap_request_pixels();
+	bitmap_drv_request_pixels();
 	cvstat = vstat;
 	pthread_rwlock_unlock(&vstatlock);
 
@@ -359,7 +360,7 @@ static int video_init()
     if(init_window())
 		return(-1);
 
-	bitmap_init(x11_drawrect, x11_flush);
+	bitmap_drv_init(x11_drawrect, x11_flush);
 
     /* Initialize mode 3 (text, 80x25, 16 colors) */
     if(init_mode(3)) {
@@ -476,7 +477,7 @@ static void handle_resize_event(int width, int height)
 			|| (height % (vstat.charheight * vstat.rows) != 0)) {
 		resize_window();
 	}
-	bitmap_request_pixels();
+	bitmap_drv_request_pixels();
 	cvstat = vstat;
 	pthread_rwlock_unlock(&vstatlock);
 }
@@ -499,7 +500,7 @@ static void expose_rect(int x, int y, int width, int height)
 	ex=ex/cvstat.scaling;
 	ey=ey/(cvstat.scaling*cvstat.vmultiplier);
 
-	bitmap_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
+	bitmap_drv_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
 }
 
 static int x11_event(XEvent *ev)

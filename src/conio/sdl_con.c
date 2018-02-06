@@ -27,6 +27,7 @@
 
 #include "ciolib.h"
 #include "vidmodes.h"
+#define BITMAP_CIOLIB_DRIVER
 #include "bitmap_con.h"
 
 #include "SDL.h"
@@ -630,7 +631,7 @@ int sdl_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 			pal->g = g>>8;
 			pal->b = b>>8;
 			sdl_user_func(SDL_USEREVENT_SETPALETTE, pal);
-			bitmap_request_pixels();
+			bitmap_drv_request_pixels();
 		}
 	}
 	return 0;
@@ -652,7 +653,7 @@ int sdl_init_mode(int mode)
 
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
-	bitmap_init_mode(mode, &bitmap_width, &bitmap_height);
+	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
 
 	/* Deal with 40 col doubling */
 	pthread_rwlock_wrlock(&vstatlock);
@@ -693,7 +694,7 @@ int sdl_init(int mode)
 		return(-1);
 	}
 
-	bitmap_init(sdl_drawrect, sdl_flush);
+	bitmap_drv_init(sdl_drawrect, sdl_flush);
 	sdl.mutexP(bitmap_init_mutex);
 	bitmap_initialized=1;
 	sdl.mutexV(bitmap_init_mutex);
@@ -775,7 +776,7 @@ void sdl_setscaling(int new_value)
 {
 	if (yuv.enabled)
 		return;
-	bitmap_setscaling(new_value);
+	vstat.scaling = new_value;
 }
 
 /* Called from main thread only */
@@ -783,7 +784,7 @@ int sdl_getscaling(void)
 {
 	if (yuv.enabled)
 		return 1;
-	return bitmap_getscaling();
+	return vstat.scaling;
 }
 
 /* Called from main thread only */
@@ -1056,7 +1057,7 @@ void setup_surfaces(void)
 		sdl_setup_colours(new_rect);
 		sdl.mutexV(newrect_mutex);
 		sdl_setup_colours(win);
-		bitmap_request_pixels();
+		bitmap_drv_request_pixels();
 	}
 	else if(sdl_init_good) {
 		ev.type=SDL_QUIT;
@@ -1701,7 +1702,6 @@ int sdl_video_event_thread(void *data)
 							else {
 								pthread_rwlock_rdlock(&vstatlock);
 								new_scaling = (int)(ev.resize.w/(vstat.charwidth*vstat.cols));
-fprintf(stderr, "%d/%d - New Scaling %d\n", ev.resize.w, ev.resize.h, new_scaling);
 								cvstat = vstat;
 								pthread_rwlock_unlock(&vstatlock);
 							}
@@ -1710,7 +1710,7 @@ fprintf(stderr, "%d/%d - New Scaling %d\n", ev.resize.w, ev.resize.h, new_scalin
 					case SDL_VIDEOEXPOSE:
 						{
 							if(yuv.enabled) {
-								bitmap_request_pixels();
+								bitmap_drv_request_pixels();
 							}
 							else {
 								if(upd_rects) {

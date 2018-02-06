@@ -230,8 +230,8 @@ int try_x_init(int mode)
 		cio_api.copytext=x_copytext;
 		cio_api.getcliptext=x_getcliptext;
 		cio_api.get_window_info=x_get_window_info;
-		cio_api.setscaling=bitmap_setscaling;
-		cio_api.getscaling=bitmap_getscaling;
+		cio_api.setscaling=x_setscaling;
+		cio_api.getscaling=x_getscaling;
 		cio_api.setpalette=x_setpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
