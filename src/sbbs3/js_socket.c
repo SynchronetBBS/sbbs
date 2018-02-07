@@ -140,8 +140,10 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 			do_js_close(p);
 			return -1;
 		}
+		if(!socket_check(p->sock,NULL,NULL,0))
+			break;
 	} while(len);
-	return total;	// Shouldn't happen...
+	return total;
 }
 
 static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, size_t len, int flush)
@@ -169,9 +171,11 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 			if(flush) do_CryptFlush(p);
 			return total;
 		}
+		if(!socket_check(p->sock,NULL,NULL,0))
+			break;
 	} while(len);
 	if(flush) do_CryptFlush(p);
-	return total; // shouldn't happen...
+	return total;
 }
 
 static int js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *offset, off_t count)
