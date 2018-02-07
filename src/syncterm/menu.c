@@ -63,7 +63,7 @@ void viewscroll(void)
 		if(top>cterm->backpos)
 			top=cterm->backpos;
 		pputtext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,scrollback+(term.width*2*top),scrollbackf+(term.width*top),scrollbackb+(term.width*top));
-		ciolib_xlat = TRUE;
+		ciolib_xlat = CIOLIB_XLAT_CHARS;
 		cputs("Scrollback");
 		gotoxy(cterm->width-9,1);
 		cputs("Scrollback");

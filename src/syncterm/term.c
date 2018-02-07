@@ -115,7 +115,7 @@ void mousedrag(unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrol
 	sbufferb=malloc(sbufsizep);
 	tscreen=(unsigned char*)malloc(sbufsize);
 	pgettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen,screenf,screenb);
-	ciolib_xlat = TRUE;
+	ciolib_xlat = CIOLIB_XLAT_CHARS;
 	gettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,tscreen);
 	savscrn = savescreen();
 	ciolib_xlat = old_xlat;
@@ -237,7 +237,7 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	now=time(NULL);
 	if(now==lastupd && speed==oldspeed)
 		return;
-	ciolib_xlat = TRUE;
+	ciolib_xlat = CIOLIB_XLAT_CHARS;
 	lastupd=now;
 	oldspeed=speed;
 	timeon=now - bbs->connected;
@@ -1982,7 +1982,7 @@ void font_control(struct bbslist *bbs)
 	struct ciolib_screen *savscrn;
 	struct	text_info txtinfo;
 	int i,j,k;
-	int enable_xlat = 0;
+	int enable_xlat = CIOLIB_XLAT_NONE;
 
 	if(safe_mode)
 		return;
@@ -2021,9 +2021,9 @@ void font_control(struct bbslist *bbs)
 				else {
 					setfont(i,FALSE,1);
 					if (i >=32 && i<= 35 && cterm->emulation != CTERM_EMULATION_PETASCII)
-						enable_xlat = TRUE;
+						enable_xlat = CIOLIB_XLAT_CHARS;
 					if (i==36 && cterm->emulation != CTERM_EMULATION_ATASCII)
-						enable_xlat = TRUE;
+						enable_xlat = CIOLIB_XLAT_CHARS;
 				}
 			}
 			else

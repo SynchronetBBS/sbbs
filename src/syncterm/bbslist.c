@@ -262,11 +262,11 @@ void viewofflinescroll(void)
 				,scrollback_buf+(scrollback_cols*2*top)
 				,scrollback_fbuf?scrollback_fbuf+(scrollback_cols*top):NULL
 				,scrollback_bbuf?scrollback_bbuf+(scrollback_cols*top):NULL);
-		ciolib_xlat=TRUE;
+		ciolib_xlat=CIOLIB_XLAT_CHARS;
 		cputs("Scrollback");
 		gotoxy(scrollback_cols-9,1);
 		cputs("Scrollback");
-		ciolib_xlat=FALSE;
+		ciolib_xlat=CIOLIB_XLAT_NONE;
 		gotoxy(1,1);
 		key=getch();
 		switch(key) {
