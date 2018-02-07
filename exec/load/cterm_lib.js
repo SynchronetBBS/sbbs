@@ -10,6 +10,7 @@ const cterm_version_supports_fonts = 1061;
 const cterm_version_supports_fontstate_query = 1161;	// Yes, just a coincidence
 const cterm_version_supports_mode_query = 1160;
 const cterm_version_supports_palettes = 1167;
+const cterm_version_supports_fontdim_query = 1198;
 var font_slot_first = 43;
 const font_slot_last = 255;
 const font_styles = { normal:0, high:1, blink:2, highblink:3 };
@@ -113,9 +114,21 @@ function query_mode(which)
 	return false;
 }
 
+function query_fontdim()
+{
+	if(console.cterm_version < cterm_version_supports_fontdim_query)
+		return false;
+
+	var response = query("\x1b[=3n");
+	if(!response)
+		return response;
+	if(response.substr(0,5) == "\x1b[=3;" && response.substr(-1) == "n")
+		return response.slice(5, -1).split(/;/);
+	return false;
+}
+
 function fontsize(n)
 {
-
 	switch(n) {
 		case 4096:
 			return 0;
@@ -132,6 +145,13 @@ function fontsize(n)
 
 function charheight(rows)
 {
+	if(console.cterm_charheight)
+		return console.cterm_charheight;
+
+	var dim = query_fontdim();
+	if(dim && dim.length)
+		return console.cterm_charheight = dim[0];	/* height */
+
 	switch(rows) {
 		case 27:
 		case 28:
@@ -410,6 +430,7 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 		graphic.change_colors(fg_color, bg_color);
 	var xoff = 0;
 	var yoff = 0;
+	var last_xoff,last_yoff;
 	do {
 		if(xoff && xoff + width > image.width)
 			xoff = image.width - width;
@@ -419,11 +440,15 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 			xoff = 0;
 		if(yoff < 0)
 			yoff = 0;
-		try {
-			graphic.draw(xpos, ypos, width, height, xoff, yoff);
-		} catch(e) {
-			log(LOG_WARNING, e);
-			return e.toString();
+		if(xoff != last_xoff || yoff != last_yoff) {	// Don't redraw redundantly
+			try {
+				graphic.draw(xpos, ypos, width, height, xoff, yoff);
+			} catch(e) {
+				log(LOG_WARNING, e);
+				return e.toString();
+			}
+			last_xoff = xoff;
+			last_yoff = yoff;
 		}
 //		console.write(graphic.ANSI);
 //		console.print(graphic.MSG);
