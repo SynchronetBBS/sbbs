@@ -121,7 +121,7 @@ static int check_redraw(void);
 static int check_pixels(void);
 static void blinker_thread(void *data);
 static __inline void *locked_screen_check(void);
-static void bitmap_draw_cursor(void);
+static BOOL bitmap_draw_cursor(void);
 static int update_rect(int sx, int sy, int width, int height, int force);
 static int bitmap_pputtext_locked(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, uint32_t *bg);
 
@@ -386,21 +386,22 @@ static void send_text_rectangle(int xoffset, int yoffset, int width, int height)
  *    bitmap_draw_one_char().
  * 10) The blinker thread via update_rect() will redraw the cursor.
  */
-static void bitmap_draw_cursor(void)
+static BOOL bitmap_draw_cursor(void)
 {
 	int y;
 	int pixel;
 	int xoffset,yoffset;
+	BOOL ret = FALSE;
 
 	if(!bitmap_initialized)
-		return;
+		return ret;
 	if(vstat.curs_visible) {
 		if(vstat.blink || (!vstat.curs_blink)) {
 			if(vstat.curs_start<=vstat.curs_end) {
 				xoffset=(vstat.curs_col-1)*vstat.charwidth;
 				yoffset=(vstat.curs_row-1)*vstat.charheight;
 				if(xoffset < 0 || yoffset < 0)
-					return;
+					return ret;
 
 				pthread_mutex_lock(&screen.screenlock);
 				for(y=vstat.curs_start; y<=vstat.curs_end; y++) {
@@ -409,10 +410,12 @@ static void bitmap_draw_cursor(void)
 						memset_u32(screen.screen+pixel,ciolib_fg,vstat.charwidth);
 					}
 				}
+				ret = TRUE;
 				pthread_mutex_unlock(&screen.screenlock);
 			}
 		}
 	}
+	return ret;
 }
 
 static void	cb_drawrect(int xpos, int ypos, int width, int height, uint32_t *data)
@@ -755,8 +758,9 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 				}
 				else {
 					/* Otherwise, send the old rectangle, and start a new one. */
-					if(this_rect_used)
+					if(this_rect_used) {
 						send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height);
+					}
 					this_rect.x=(sx+x-1)*vstat.charwidth;
 					this_rect.y=(sy+y-1)*vstat.charheight;
 					this_rect.width=vstat.charwidth;
@@ -806,8 +810,9 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		lastcharupdated=0;
 	}
 
-	if(last_rect_used)
+	if(last_rect_used) {
 		send_rectangle(last_rect.x, last_rect.y, last_rect.width, last_rect.height);
+	}
 	if(this_rect_used) {
 		send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height);
 	}
@@ -916,6 +921,8 @@ int bitmap_pgettext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 
 void bitmap_gotoxy(int x, int y)
 {
+	static int last_hold_update = 1;
+
 	if(!bitmap_initialized)
 		return;
 	/* Move cursor location */
@@ -932,12 +939,15 @@ void bitmap_gotoxy(int x, int y)
 			}
 		}
 		pthread_mutex_lock(&vstatlock);
-		vstat.curs_col=x+cio_textinfo.winleft-1;
-		vstat.curs_row=y+cio_textinfo.wintop-1;
-		bitmap_draw_cursor();
-		send_text_rectangle_locked(vstat.curs_col - 1, vstat.curs_row - 1, 1, 1);
+		if (vstat.curs_col != x+cio_textinfo.winleft-1 || vstat.curs_row != y+cio_textinfo.wintop-1) {
+			vstat.curs_col=x+cio_textinfo.winleft-1;
+			vstat.curs_row=y+cio_textinfo.wintop-1;
+			if (bitmap_draw_cursor())
+				send_text_rectangle_locked(vstat.curs_col - 1, vstat.curs_row - 1, 1, 1);
+		}
 		pthread_mutex_unlock(&vstatlock);
 	}
+	last_hold_update = hold_update;
 	pthread_mutex_unlock(&blinker_lock);
 }
 
@@ -970,8 +980,8 @@ void bitmap_setcursortype(int type)
 			if (oldstart <= oldend) /* Only if it's drawn */
 				bitmap_draw_one_char(vstat.curs_col, vstat.curs_row);
 			/* Draw new cursor */
-			bitmap_draw_cursor();
-			send_text_rectangle_locked(vstat.curs_col - 1, vstat.curs_row - 1, 1, 1);
+			if (bitmap_draw_cursor())
+				send_text_rectangle_locked(vstat.curs_col - 1, vstat.curs_row - 1, 1, 1);
 		}
 	}
 	pthread_mutex_unlock(&vstatlock);
@@ -1341,8 +1351,8 @@ void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 		if (oldvisible && oldstart <= oldend)
 			bitmap_draw_one_char(vstat.curs_col, vstat.curs_row);
 		/* Draw new cursor */
-		bitmap_draw_cursor();
-		send_text_rectangle_locked(vstat.curs_col - 1, vstat.curs_row - 1, 1, 1);
+		if (bitmap_draw_cursor())
+			send_text_rectangle_locked(vstat.curs_col - 1, vstat.curs_row - 1, 1, 1);
 	}
 	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&blinker_lock);
