@@ -1275,7 +1275,7 @@ void bitmap_clreol(void)
 	}
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
-	send_text_rectangle(cio_textinfo.curx+cio_textinfo.winleft-2, row-1, cio_textinfo.winright - cio_textinfo.curx+cio_textinfo.winleft - 3, 1);
+	send_text_rectangle(cio_textinfo.curx+cio_textinfo.winleft-2, row-1, cio_textinfo.winright - cio_textinfo.winleft + cio_textinfo.curx, 1);
 	pthread_mutex_unlock(&blinker_lock);
 }
 
