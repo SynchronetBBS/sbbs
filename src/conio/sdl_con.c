@@ -53,6 +53,8 @@ SDL_mutex	*bitmap_init_mutex;
 static int bitmap_initialized = 0;
 
 /* *nix copy/paste stuff */
+int paste_needs_events;
+int copy_needs_events;
 SDL_sem	*sdl_pastebuf_set;
 SDL_sem	*sdl_pastebuf_copied;
 SDL_mutex	*sdl_copybuf_mutex;
@@ -400,6 +402,7 @@ void sdl_user_func(int func, ...)
 {
 	va_list argptr;
 	SDL_Event	ev;
+	int rv;
 
 	ev.type=SDL_USEREVENT;
 	ev.user.data1=NULL;
@@ -407,6 +410,8 @@ void sdl_user_func(int func, ...)
 	ev.user.code=func;
 	va_start(argptr, func);
 	sdl.mutexP(sdl_ufunc_mtx);
+	/* Drain the swamp */
+	while(sdl.SemWaitTimeout(sdl_ufunc_rec, 0)==0);
 	switch(func) {
 		case SDL_USEREVENT_SETICON:
 			ev.user.data1=va_arg(argptr, void *);
@@ -438,10 +443,12 @@ void sdl_user_func(int func, ...)
 			return;
 	}
 	while(1) {
-		while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+		while((rv = sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff))!=1)
 			YIELD();
-		if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
+		if (func != SDL_USEREVENT_FLUSH) {
+			if ((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 1000)) != 0)
 				continue;
+		}
 		break;
 	}
 	sdl.mutexV(sdl_ufunc_mtx);
@@ -451,6 +458,7 @@ void sdl_user_func(int func, ...)
 /* Called from main thread only */
 int sdl_user_func_ret(int func, ...)
 {
+	int rv;
 	va_list argptr;
 	SDL_Event	ev;
 
@@ -460,6 +468,8 @@ int sdl_user_func_ret(int func, ...)
 	ev.user.code=func;
 	va_start(argptr, func);
 	sdl.mutexP(sdl_ufunc_mtx);
+	/* Drain the swamp */
+	while(sdl.SemWaitTimeout(sdl_ufunc_rec, 0)==0);
 	while(1) {
 		switch(func) {
 			case SDL_USEREVENT_SETVIDMODE:
@@ -478,9 +488,10 @@ int sdl_user_func_ret(int func, ...)
 		 * we need for copy/paste on X11.
 		 * This hack can be removed for SDL2
 		 */
-		if(sdl.SemWaitTimeout(sdl_ufunc_rec, 1000)!=0)
+		if((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 1000))!=0)
 			continue;
-		if(sdl.SemWait(sdl_ufunc_ret)==0)
+		rv = sdl.SemWait(sdl_ufunc_ret);
+		if(rv==0)
 			break;
 	}
 	sdl.mutexV(sdl_ufunc_mtx);
@@ -762,8 +773,6 @@ int sdl_init(int mode)
 				sdl_x11available=FALSE;
 			}
 		}
-		if(sdl_x11available)
-			sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 #endif
 		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
 		return(0);
@@ -1717,8 +1726,10 @@ int sdl_video_event_thread(void *data)
 						break;
 					case SDL_USEREVENT: {
 						struct update_rect *list;
+						struct update_rect *list_tail;
 						/* Tell SDL to do various stuff... */
-						sdl.SemPost(sdl_ufunc_rec);
+						if (ev.user.code != SDL_USEREVENT_FLUSH)
+							sdl.SemPost(sdl_ufunc_rec);
 						switch(ev.user.code) {
 							case SDL_USEREVENT_QUIT:
 								sdl_ufunc_retval=0;
@@ -1740,9 +1751,13 @@ int sdl_video_event_thread(void *data)
 									sdl.mutexP(win_mutex);
 									if(!win) {
 										sdl.mutexV(win_mutex);
-										free(list->data);
-										free(list);
-										continue;
+										/* Put it back at the start of the list... */
+										sdl.mutexP(sdl_headlock);
+										for (list_tail = list; list_tail->next; list_tail = list_tail->next);
+										list_tail->next = update_list;
+										update_list = list;
+										sdl.mutexV(sdl_headlock);
+										break;
 									}
 									sdl.mutexP(newrect_mutex);
 									scaling = cvstat.scaling;
@@ -1762,11 +1777,15 @@ int sdl_video_event_thread(void *data)
 									}
 									if(!yuv.enabled) {
 										if (!upd_rects) {
-											free(list->data);
-											free(list);
 											sdl.mutexV(newrect_mutex);
 											sdl.mutexV(win_mutex);
-											continue;
+											/* Put it back at the start of the list... */
+											sdl.mutexP(sdl_headlock);
+											for (list_tail = list; list_tail->next; list_tail = list_tail->next);
+											list_tail->next = update_list;
+											update_list = list;
+											sdl.mutexV(sdl_headlock);
+											break;
 										}
 										upd_rects[rectsused].x=list->x*scaling;
 										upd_rects[rectsused].y=list->y*scaling*vmultiplier;
@@ -1883,6 +1902,8 @@ int sdl_video_event_thread(void *data)
 
 									SDL_VERSION(&(wmi.version));
 									sdl.GetWMInfo(&wmi);
+									sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
+									copy_needs_events = 1;
 									sdl_x11.XSetSelectionOwner(wmi.info.x11.display, CONSOLE_CLIPBOARD, wmi.info.x11.window, CurrentTime);
 									break;
 								}
@@ -1897,6 +1918,8 @@ int sdl_video_event_thread(void *data)
 									SDL_VERSION(&(wmi.version));
 									sdl.GetWMInfo(&wmi);
 
+									paste_needs_events = 1;
+									sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 									sowner=sdl_x11.XGetSelectionOwner(wmi.info.x11.display, CONSOLE_CLIPBOARD);
 									if(sowner==wmi.info.x11.window) {
 										/* Get your own primary selection */
@@ -1911,6 +1934,9 @@ int sdl_video_event_thread(void *data)
 										sdl.SemPost(sdl_pastebuf_set);
 										sdl.SemWait(sdl_pastebuf_copied);
 										FREE_AND_NULL(sdl_pastebuf);
+										paste_needs_events = 0;
+										if (!copy_needs_events)
+											sdl.EventState(SDL_SYSWMEVENT, SDL_DISABLE);
 									}
 									else if(sowner!=None) {
 										sdl_x11.XConvertSelection(wmi.info.x11.display, CONSOLE_CLIPBOARD, XA_STRING, XA_STRING, wmi.info.x11.window, CurrentTime);
@@ -1920,6 +1946,9 @@ int sdl_video_event_thread(void *data)
 										FREE_AND_NULL(sdl_pastebuf);
 										sdl.SemPost(sdl_pastebuf_set);
 										sdl.SemWait(sdl_pastebuf_copied);
+										paste_needs_events = 0;
+										if (!copy_needs_events)
+											sdl.EventState(SDL_SYSWMEVENT, SDL_DISABLE);
 									}
 									break;
 								}
@@ -2005,6 +2034,9 @@ int sdl_video_event_thread(void *data)
 											FREE_AND_NULL(sdl_copybuf);
 										}
 										sdl.mutexV(sdl_copybuf_mutex);
+										copy_needs_events = 0;
+										if (!paste_needs_events)
+											sdl.EventState(SDL_SYSWMEVENT, SDL_DISABLE);
 										break;
 								}
 								case SelectionNotify: {
@@ -2034,6 +2066,9 @@ int sdl_video_event_thread(void *data)
 										/* Set paste buffer */
 										sdl.SemPost(sdl_pastebuf_set);
 										sdl.SemWait(sdl_pastebuf_copied);
+										paste_needs_events = 0;
+										if (!copy_needs_events)
+											sdl.EventState(SDL_SYSWMEVENT, SDL_DISABLE);
 										if(sdl_pastebuf!=NULL) {
 											sdl_x11.XFree(sdl_pastebuf);
 											sdl_pastebuf=NULL;
