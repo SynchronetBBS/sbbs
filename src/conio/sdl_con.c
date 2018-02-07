@@ -109,7 +109,11 @@ struct update_rect {
 	int		width;
 	int		height;
 	uint32_t	*data;
+	struct update_rect *next;
 };
+static SDL_mutex *sdl_headlock;
+static struct update_rect *update_list = NULL;
+static struct update_rect *update_list_tail = NULL;
 
 struct sdl_palette {
 	uint32_t	index;
@@ -119,8 +123,7 @@ struct sdl_palette {
 };
 
 enum {
-	 SDL_USEREVENT_UPDATERECT
-	,SDL_USEREVENT_FLUSH
+	 SDL_USEREVENT_FLUSH
 	,SDL_USEREVENT_SETTITLE
 	,SDL_USEREVENT_SETNAME
 	,SDL_USEREVENT_SETICON
@@ -422,9 +425,6 @@ void sdl_user_func(int func, ...)
 				return;
 			}
 			break;
-		case SDL_USEREVENT_UPDATERECT:
-			ev.user.data1=va_arg(argptr, struct update_rect *);
-			break;
 		case SDL_USEREVENT_SETPALETTE:
 			ev.user.data1=va_arg(argptr, struct sdl_palette *);
 			break;
@@ -434,6 +434,8 @@ void sdl_user_func(int func, ...)
 		case SDL_USEREVENT_HIDEMOUSE:
 		case SDL_USEREVENT_FLUSH:
 			break;
+		default:
+			return;
 	}
 	while(1) {
 		while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
@@ -451,7 +453,6 @@ int sdl_user_func_ret(int func, ...)
 {
 	va_list argptr;
 	SDL_Event	ev;
-	int		passed=FALSE;
 
 	ev.type=SDL_USEREVENT;
 	ev.user.data1=NULL;
@@ -466,25 +467,21 @@ int sdl_user_func_ret(int func, ...)
 			case SDL_USEREVENT_QUIT:
 				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
 					YIELD();
-				passed=TRUE;
 				break;
+			default:
+				sdl.mutexV(sdl_ufunc_mtx);
+				return -1;
 		}
-		if(passed) {
-			/*
-			 * This is needed for lost event detection.
-			 * Lost events only occur on SYSWMEVENT which is what
-			 * we need for copy/paste on X11.
-			 * This hack can be removed for SDL2
-			 */
-			if(sdl.SemWaitTimeout(sdl_ufunc_rec, 1000)!=0)
-				continue;
-			if(sdl.SemWait(sdl_ufunc_ret)==0)
-				break;
-		}
-		else {
-			sdl_ufunc_retval=-1;
+		/*
+		 * This is needed for lost event detection.
+		 * Lost events only occur on SYSWMEVENT which is what
+		 * we need for copy/paste on X11.
+		 * This hack can be removed for SDL2
+		 */
+		if(sdl.SemWaitTimeout(sdl_ufunc_rec, 1000)!=0)
+			continue;
+		if(sdl.SemWait(sdl_ufunc_ret)==0)
 			break;
-		}
 	}
 	sdl.mutexV(sdl_ufunc_mtx);
 	va_end(argptr);
@@ -610,7 +607,14 @@ void sdl_drawrect(int xoffset,int yoffset,int width,int height,uint32_t *data)
 			rect->width=width;
 			rect->height=height;
 			rect->data=data;
-			sdl_user_func(SDL_USEREVENT_UPDATERECT, rect);
+			rect->next = NULL;
+			sdl.mutexP(sdl_headlock);
+			if (update_list == NULL)
+				update_list = rect;
+			else
+				update_list_tail->next = rect;
+			update_list_tail = rect;
+			sdl.mutexV(sdl_headlock);
 		}
 		else
 			free(data);
@@ -1712,6 +1716,7 @@ int sdl_video_event_thread(void *data)
 						}
 						break;
 					case SDL_USEREVENT: {
+						struct update_rect *list;
 						/* Tell SDL to do various stuff... */
 						sdl.SemPost(sdl_ufunc_rec);
 						switch(ev.user.code) {
@@ -1721,9 +1726,13 @@ int sdl_video_event_thread(void *data)
 								if (upd_rects)
 									free(upd_rects);
 								return(0);
-							case SDL_USEREVENT_UPDATERECT:
-								{
-									struct update_rect *rect=(struct update_rect *)ev.user.data1;
+							case SDL_USEREVENT_FLUSH:
+								sdl.mutexP(sdl_headlock);
+								list = update_list;
+								update_list = update_list_tail = NULL;
+								sdl.mutexV(sdl_headlock);
+								/* Old SDL_USEREVENT_UPDATERECT */
+								for (; list; list = list->next) {
 									SDL_Rect r;
 									int x,y,offset;
 									int scaling, vmultiplier;
@@ -1731,38 +1740,38 @@ int sdl_video_event_thread(void *data)
 									sdl.mutexP(win_mutex);
 									if(!win) {
 										sdl.mutexV(win_mutex);
-										free(rect->data);
-										free(rect);
-										break;
+										free(list->data);
+										free(list);
+										continue;
 									}
 									sdl.mutexP(newrect_mutex);
 									scaling = cvstat.scaling;
 									vmultiplier = cvstat.vmultiplier;
-									for(y=0; y<rect->height; y++) {
-										offset=y*rect->width;
-										for(x=0; x<rect->width; x++) {
+									for(y=0; y<list->height; y++) {
+										offset=y*list->width;
+										for(x=0; x<list->width; x++) {
 											r.w=scaling;
 											r.h=scaling*vmultiplier;
-											r.x=(rect->x+x)*scaling;
-											r.y=(rect->y+y)*scaling*vmultiplier;
+											r.x=(list->x+x)*scaling;
+											r.y=(list->y+y)*scaling*vmultiplier;
 											if(yuv.enabled)
-												yuv_fillrect(yuv.overlay, &r, rect->data[offset++]);
+												yuv_fillrect(yuv.overlay, &r, list->data[offset++]);
 											else
-												sdl.FillRect(new_rect, &r, sdl_dac_default[rect->data[offset++]]);
+												sdl.FillRect(new_rect, &r, sdl_dac_default[list->data[offset++]]);
 										}
 									}
 									if(!yuv.enabled) {
 										if (!upd_rects) {
-											free(rect->data);
-											free(rect);
+											free(list->data);
+											free(list);
 											sdl.mutexV(newrect_mutex);
 											sdl.mutexV(win_mutex);
-											break;
+											continue;
 										}
-										upd_rects[rectsused].x=rect->x*scaling;
-										upd_rects[rectsused].y=rect->y*scaling*vmultiplier;
-										upd_rects[rectsused].w=rect->width*scaling;
-										upd_rects[rectsused].h=rect->height*scaling*vmultiplier;
+										upd_rects[rectsused].x=list->x*scaling;
+										upd_rects[rectsused].y=list->y*scaling*vmultiplier;
+										upd_rects[rectsused].w=list->width*scaling;
+										upd_rects[rectsused].h=list->height*scaling*vmultiplier;
 										sdl.BlitSurface(new_rect, &(upd_rects[rectsused]), win, &(upd_rects[rectsused]));
 										rectsused++;
 										if(rectsused==rectspace) {
@@ -1772,11 +1781,11 @@ int sdl_video_event_thread(void *data)
 									}
 									sdl.mutexV(newrect_mutex);
 									sdl.mutexV(win_mutex);
-									free(rect->data);
-									free(rect);
+									free(list->data);
+									free(list);
 								}
-								break;
-							case SDL_USEREVENT_FLUSH:
+
+								/* Old flush function */
 								sdl.mutexP(win_mutex);
 								sdl.mutexP(newrect_mutex);
 								if(win && new_rect) {
@@ -2089,6 +2098,7 @@ int sdl_initciolib(int mode)
 	sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
 	sdl_ufunc_rec=sdl.SDL_CreateSemaphore(0);
 	sdl_ufunc_mtx=sdl.SDL_CreateMutex();
+	sdl_headlock=sdl.SDL_CreateMutex();
 	newrect_mutex=sdl.SDL_CreateMutex();
 	win_mutex=sdl.SDL_CreateMutex();
 	sdl_keylock=sdl.SDL_CreateMutex();
