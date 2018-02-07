@@ -47,6 +47,7 @@ function Graphic(w,h,attr,ch, dw)
 	this.attr_mask=0xff;
 	this.ansi_crlf=true;
 	this.illegal_characters = [0, 7, 8, 9, 10, 12, 13, 27];
+	this.autowrap=true;
 
 	this.data=new Array(this.width);
 	for(var y=0; y<this.height; y++) {
@@ -573,8 +574,9 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 		console.gotoxy(xpos,ypos+y);
 		for(x=0; x<width; x++) {
 			// Do not draw to the bottom right corner of the screen-would scroll
-			if(xpos+x != console.screen_columns
-					|| ypos+y != console.screen_rows) {
+			if(this.autowrap == false
+				|| xpos+x != console.screen_columns
+				|| ypos+y != console.screen_rows) {
 				console.attributes=this.data[x+xoff][y+yoff].attr & this.attr_mask;
 				var ch=this.data[x+xoff][y+yoff].ch;
 				if (this.illegal_characters.indexOf(ascii(ch)) >= 0) {
