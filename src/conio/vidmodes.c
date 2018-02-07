@@ -110,8 +110,8 @@ struct video_params vparams[] = {
 	/* VESA 60x132 mode */
 	{VESA_132X60, COLOUR_PALETTE, 132, 60, 7, 7, 8, 8, 1},
 	/* Awesome modes */
-	{ST132X37_16_9, COLOUR_PALETTE, 132, 40, 14, 15, 16, 8, 1},
-	{ST132X52_5_4, COLOUR_PALETTE, 132, 40, 14, 15, 16, 8, 1},
+	{ST132X37_16_9, COLOUR_PALETTE, 132, 37, 14, 15, 16, 8, 1},
+	{ST132X52_5_4, COLOUR_PALETTE, 132, 52, 14, 15, 16, 8, 1},
 };
 
 uint32_t palettes[5][16] = {
