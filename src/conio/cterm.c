@@ -1688,6 +1688,14 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									}
 									strcat(tmp, "n");
 									break;
+								case 3:	/* Query font char dimensions */
+								{
+									int vmode;
+									GETTEXTINFO(&ti);
+									vmode = find_vmode(ti.currmode);
+									sprintf(tmp, "\x1b[=3;%u;%un", vparams[vmode].charheight, vparams[vmode].charwidth);
+									break;
+								}
 							}
 						}
 						if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
@@ -2439,7 +2447,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									row = WHEREY();
 									if(cterm->origin_mode)
 										row = row - cterm->top_margin + 1;
-									sprintf(tmp,"%c[%d;%dR",27,row,WHEREX());
+									sprintf(tmp,"\x1b[%d;%dR",row,WHEREX());
 									if(strlen(retbuf)+strlen(tmp) < retsize)
 										strcat(retbuf,tmp);
 								}
@@ -2449,7 +2457,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									row = cterm->height;
 									if(cterm->origin_mode)
 										row = (cterm->bottom_margin - cterm->top_margin) + 1;
-									sprintf(tmp,"%c[%d;%dR",27,row,cterm->width);
+									sprintf(tmp,"\x1b[%d;%dR",row,cterm->width);
 									if(strlen(retbuf)+strlen(tmp) < retsize)
 										strcat(retbuf,tmp);
 								}
@@ -3068,12 +3076,12 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							/* Anything but SOS or ST (ESC X or ESC \) */
 							if ((ch[0] == 'X' || ch[0] == '\\') && 
 							    cterm->strbuf && cterm->strbuflen &&
-							    cterm->strbuf[cterm->strbuflen-1] == '\e') {
+							    cterm->strbuf[cterm->strbuflen-1] == '\x1b') {
 								cterm->strbuflen--;
 								cterm->string = 0;
 								FREE_AND_NULL(cterm->strbuf);
 								cterm->strbuflen = cterm->strbufsize = 0;
-								cterm_write(cterm, "\e", 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
+								cterm_write(cterm, "\x1b", 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
 								cterm_write(cterm, &ch[0], 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
 							}
 							else {
