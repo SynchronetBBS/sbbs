@@ -1516,6 +1516,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 	int		max_row;
 	struct text_info ti;
 	struct esc_seq *seq;
+	uint32_t oldfg, oldbg;
+	bool updfg, updbg;
 
 	seq = parse_sequence(cterm->escbuf);
 	if (seq == NULL)
@@ -1545,6 +1547,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						break;
 					case 'h':
 						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+							attr2palette(cterm->attr, &oldfg, &oldbg);
+							updfg = (oldfg == cterm->fg_color);
+							updbg = (oldfg == cterm->bg_color);
 							for (i=0; i<seq->param_count; i++) {
 								switch(seq->param_int[i]) {
 									case 6:
@@ -1588,12 +1593,17 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										break;
 								}
 							}
+							if (updfg || updbg)
+								attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
 						}
 						else if(!strcmp(seq->param_str,"=255"))
 							cterm->doorway_mode=1;
 						break;
 					case 'l':
 						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+							attr2palette(cterm->attr, &oldfg, &oldbg);
+							updfg = (oldfg == cterm->fg_color);
+							updbg = (oldfg == cterm->bg_color);
 							for (i=0; i<seq->param_count; i++) {
 								switch(seq->param_int[i]) {
 									case 6:
@@ -1637,6 +1647,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										break;
 								}
 							}
+							if (updfg || updbg)
+								attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
 						}
 						else if(!strcmp(seq->param_str,"=255"))
 							cterm->doorway_mode=0;
@@ -1777,6 +1789,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
 							GETTEXTINFO(&ti);
 							i=GETVIDEOFLAGS();
+							attr2palette(cterm->attr, &oldfg, &oldbg);
+							updfg = (oldfg == cterm->fg_color);
+							updbg = (oldfg == cterm->bg_color);
 							if(seq->param_count == 0) {
 								/* All the save stuff... */
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_ORIGIN)
@@ -1891,6 +1906,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									}
 								}
 							}
+							if (updfg || updbg)
+								attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
 						}
 						break;
 					case '{':
@@ -2293,6 +2310,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					case 'm':	/* Select Graphic Rendition */
 						seq_default(seq, 0, 0);
 						GETTEXTINFO(&ti);
+						j = GETVIDEOFLAGS();
 						for (i=0; i < seq->param_count; i++) {
 							switch(seq->param_int[i]) {
 								case 0:
@@ -2301,27 +2319,23 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 1:
 									cterm->attr|=8;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
+									if (!(j & CIOLIB_VIDEO_NOBRIGHT))
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 2:
 									cterm->attr&=247;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
+									if (!(j & CIOLIB_VIDEO_NOBRIGHT))
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 4:	/* Underscore */
 									break;
 								case 5:
 								case 6:
 									cterm->attr|=128;
+									if (j & CIOLIB_VIDEO_BGBRIGHT)
+										attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 7:
-								case 27:
-									i=cterm->attr&7;
-									j=cterm->attr&112;
-									cterm->attr &= 136;
-									cterm->attr |= j>>4;
-									cterm->attr |= i<<4;
-									attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-									break;
 								case 8:
 									j=cterm->attr&112;
 									cterm->attr&=112;
@@ -2330,10 +2344,21 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 22:
 									cterm->attr &= 0xf7;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
+									if (!(j & CIOLIB_VIDEO_NOBRIGHT))
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 25:
 									cterm->attr &= 0x7f;
+									if (j & CIOLIB_VIDEO_BGBRIGHT)
+										attr2palette(cterm->attr, NULL, &cterm->bg_color);
+									break;
+								case 27:
+									i=cterm->attr&7;
+									j=cterm->attr&112;
+									cterm->attr &= 136;
+									cterm->attr |= j>>4;
+									cterm->attr |= i<<4;
+									attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 									break;
 								case 30:
 									cterm->attr&=248;
