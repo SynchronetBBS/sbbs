@@ -412,41 +412,41 @@ void sdl_user_func(int func, ...)
 	sdl.mutexP(sdl_ufunc_mtx);
 	/* Drain the swamp */
 	while(sdl.SemWaitTimeout(sdl_ufunc_rec, 0)==0);
-	switch(func) {
-		case SDL_USEREVENT_SETICON:
-			ev.user.data1=va_arg(argptr, void *);
-			if((ev.user.data2=(unsigned long *)malloc(sizeof(unsigned long)))==NULL) {
-				sdl.mutexV(sdl_ufunc_mtx);
-				va_end(argptr);
+	while (1) {
+		switch(func) {
+			case SDL_USEREVENT_SETICON:
+				ev.user.data1=va_arg(argptr, void *);
+				if((ev.user.data2=(unsigned long *)malloc(sizeof(unsigned long)))==NULL) {
+					sdl.mutexV(sdl_ufunc_mtx);
+					va_end(argptr);
+					return;
+				}
+				*(unsigned long *)ev.user.data2=va_arg(argptr, unsigned long);
+				break;
+			case SDL_USEREVENT_SETNAME:
+			case SDL_USEREVENT_SETTITLE:
+				if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
+					sdl.mutexV(sdl_ufunc_mtx);
+					va_end(argptr);
+					return;
+				}
+				break;
+			case SDL_USEREVENT_SETPALETTE:
+				ev.user.data1=va_arg(argptr, struct sdl_palette *);
+				break;
+			case SDL_USEREVENT_COPY:
+			case SDL_USEREVENT_PASTE:
+			case SDL_USEREVENT_SHOWMOUSE:
+			case SDL_USEREVENT_HIDEMOUSE:
+			case SDL_USEREVENT_FLUSH:
+				break;
+			default:
 				return;
-			}
-			*(unsigned long *)ev.user.data2=va_arg(argptr, unsigned long);
-			break;
-		case SDL_USEREVENT_SETNAME:
-		case SDL_USEREVENT_SETTITLE:
-			if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
-				sdl.mutexV(sdl_ufunc_mtx);
-				va_end(argptr);
-				return;
-			}
-			break;
-		case SDL_USEREVENT_SETPALETTE:
-			ev.user.data1=va_arg(argptr, struct sdl_palette *);
-			break;
-		case SDL_USEREVENT_COPY:
-		case SDL_USEREVENT_PASTE:
-		case SDL_USEREVENT_SHOWMOUSE:
-		case SDL_USEREVENT_HIDEMOUSE:
-		case SDL_USEREVENT_FLUSH:
-			break;
-		default:
-			return;
-	}
-	while(1) {
+		}
 		while((rv = sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff))!=1)
 			YIELD();
 		if (func != SDL_USEREVENT_FLUSH) {
-			if ((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 1000)) != 0)
+			if ((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 2000)) != 0)
 				continue;
 		}
 		break;
@@ -488,7 +488,7 @@ int sdl_user_func_ret(int func, ...)
 		 * we need for copy/paste on X11.
 		 * This hack can be removed for SDL2
 		 */
-		if((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 1000))!=0)
+		if((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 2000))!=0)
 			continue;
 		rv = sdl.SemWait(sdl_ufunc_ret);
 		if(rv==0)
@@ -1727,6 +1727,7 @@ int sdl_video_event_thread(void *data)
 					case SDL_USEREVENT: {
 						struct update_rect *list;
 						struct update_rect *list_tail;
+						struct update_rect *old_next;
 						/* Tell SDL to do various stuff... */
 						if (ev.user.code != SDL_USEREVENT_FLUSH)
 							sdl.SemPost(sdl_ufunc_rec);
@@ -1743,11 +1744,12 @@ int sdl_video_event_thread(void *data)
 								update_list = update_list_tail = NULL;
 								sdl.mutexV(sdl_headlock);
 								/* Old SDL_USEREVENT_UPDATERECT */
-								for (; list; list = list->next) {
+								for (; list; list = old_next) {
 									SDL_Rect r;
 									int x,y,offset;
 									int scaling, vmultiplier;
 
+									old_next = list->next;
 									sdl.mutexP(win_mutex);
 									if(!win) {
 										sdl.mutexV(win_mutex);
