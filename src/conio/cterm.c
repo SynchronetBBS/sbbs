@@ -1388,7 +1388,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 					p++;
 					if (!p)
 						continue;
-					cterm->sx_fg = strtoul(p, &p, 10) + TOTAL_DAC_SIZE;
+					cterm->sx_fg = strtoul(p, &p, 10) + TOTAL_DAC_SIZE + 16;
 					/* Do we want to redefine it while we're here? */
 					if (*p == ';') {
 						unsigned long t,r,g,b;
@@ -2371,7 +2371,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 38:
 									if (i+2 < seq->param_count && seq->param_int[i+1] == 5) {
-										cterm->fg_color = seq->param_int[i+2];
+										cterm->fg_color = seq->param_int[i+2] + 16;
 										i+=2;
 									}
 									break;
@@ -2423,7 +2423,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 48:
 									if (i+2 < seq->param_count && seq->param_int[i+1] == 5) {
-										cterm->bg_color = seq->param_int[i+2];
+										cterm->bg_color = seq->param_int[i+2] + 16;
 										i+=2;
 									}
 									break;
@@ -2619,7 +2619,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									ccount++;
 								}
 								if (ccount == 3)
-									setpalette(index, rgb[0], rgb[1], rgb[2]);
+									setpalette(index+16, rgb[0], rgb[1], rgb[2]);
 								index = ULONG_MAX;
 							}
 						}
@@ -2628,7 +2628,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						if (strlen(cterm->strbuf) == 3) {
 							// Reset all colours
 							for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
-								setpalette(i, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+								setpalette(i+16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
 						}
 						else if(cterm->strbuf[3] == ';') {
 							char *seqlast;
@@ -2639,7 +2639,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								p2=NULL;
 								pi = strtoull(p, NULL, 10);
 								if (pi < sizeof(dac_default)/sizeof(struct dac_colors))
-									setpalette(pi, dac_default[pi].red << 8 | dac_default[pi].red, dac_default[pi].green << 8 | dac_default[pi].green, dac_default[pi].blue << 8 | dac_default[pi].blue);
+									setpalette(pi+16, dac_default[pi].red << 8 | dac_default[pi].red, dac_default[pi].green << 8 | dac_default[pi].green, dac_default[pi].blue << 8 | dac_default[pi].blue);
 							}
 						}
 					}
@@ -2665,6 +2665,8 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	char	*out;
 	int		i;
 	struct cterminal *cterm;
+	struct text_info ti;
+	int vmode;
 
 	if((cterm=malloc(sizeof(struct cterminal)))==NULL)
 		return cterm;
@@ -2737,6 +2739,12 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 			cterm->escbuf[cterm_tabs[i]]=1;
 	}
 
+	/* Set up a shadow palette */
+	gettextinfo(&ti);
+	vmode = find_vmode(ti.currmode);
+	for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
+		setpalette(i+16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+
 #ifndef CTERM_WITHOUT_CONIO
 	cterm->ciolib_gotoxy=ciolib_gotoxy;
 	cterm->ciolib_wherex=ciolib_wherex;
@@ -2777,6 +2785,8 @@ void CIOLIBCALL cterm_start(struct cterminal *cterm)
 		GETTEXTINFO(&ti);
 		cterm->attr=ti.normattr;
 		attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+		cterm->fg_color += 16;
+		cterm->bg_color += 16;
 		TEXTATTR(cterm->attr);
 		SETCURSORTYPE(cterm->cursor);
 		cterm->started=1;
@@ -2984,13 +2994,20 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	const unsigned char *buf = (unsigned char *)vbuf;
 	unsigned char ch[2];
 	unsigned char prn[BUFSIZE];
-	int j,k,l;
+	int i,j,k,l;
 	struct text_info	ti;
 	int	olddmc;
 	int oldptnm;
 
 	if(!cterm->started)
 		cterm_start(cterm);
+
+	/* Now rejigger the current modes palette... */
+	/* TODO: We need a way to remap instead of fuckery */
+extern struct video_stats vstat;
+	for (i=0; i < 16; i++) {
+		vstat.palette[i] += 16;
+	}
 
 	oldptnm=*cterm->puttext_can_move;
 	*cterm->puttext_can_move=1;
@@ -3478,6 +3495,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										break;
 								}
 								TEXTATTR(cterm->attr);
+								attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 								break;
 
 							/* Movement */
@@ -3712,6 +3730,12 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	*cterm->puttext_can_move=oldptnm;
 	GOTOXY(WHEREX(),WHEREY());
 	SETCURSORTYPE(cterm->cursor);
+
+	/* Now rejigger the current modes palette... */
+	/* TODO: We need a way to remap instead of fuckery */
+	for (i=0; i < 16; i++)
+		vstat.palette[i] -= 16;
+
 	return(retbuf);
 }
 
