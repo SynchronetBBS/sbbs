@@ -472,16 +472,19 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 				xoff = Math.floor(width / 2);
 				yoff = Math.floor(height / 2);
 				break;
+			case '\b':
+				yoff--;
+				break;
+			case '\r':
+				yoff++;
+				break;
 			case '6':
-			case KEY_RIGHT:
 				xoff++;
 				break;
 			case '4':
-			case KEY_LEFT:
 				xoff--;
 				break;
 			case '8':
-			case KEY_UP:
 				yoff--;
 				break;
 			case '7':
@@ -500,12 +503,23 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 				yoff++;
 				xoff--;
 				break;
+			case '2':
+				yoff++;
+				break;
 			case KEY_PAGEUP:
 				yoff -= height;
 				break;
-			case '2':
+			case KEY_LEFT:
+				xoff -= 10;
+				break;
+			case KEY_RIGHT:
+				xoff += 10;
+				break;
+			case KEY_UP:
+				yoff -= 5;
+				break;
 			case KEY_DOWN:
-				yoff++;
+				yoff += 5;
 				break;
 			case KEY_PAGEDN:
 				yoff += height;
