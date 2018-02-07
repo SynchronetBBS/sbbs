@@ -105,6 +105,7 @@ function HTTPRequest(username,password,extra_headers)
 
 		if((this.sock=new Socket(SOCK_STREAM))==null)
 			throw("Unable to create socket");
+		this.sock.nonblocking = true;	// Use non-blocking operations
 		if(!this.sock.connect(this.url.host, this.url.port?this.url.port:(this.url.scheme=='http'?80:443))) {
 			this.sock.close();
 			throw("Unable to connect");
