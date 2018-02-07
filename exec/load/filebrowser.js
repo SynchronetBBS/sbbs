@@ -314,6 +314,7 @@ var FileBrowser = function (options) {
 		}
 		initList();
 		properties.scrollBar = new ScrollBar(properties.tree);
+        properties.tree.first_letter_search = true;
 		properties.frame.open();
 		properties.tree.open();
 
