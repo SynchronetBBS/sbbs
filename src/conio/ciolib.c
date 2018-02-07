@@ -1322,12 +1322,20 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,void *e)
 			}
 			else {
 				for (i=0; i<(c-a+1)*(d-b+1)*2; i+=2) {
-					if (((char *)e)[i] > 31 && ((char *)e)[i] < 127 && conio_fontdata[font].put_xlat != NULL)
-						buf[i] = conio_fontdata[font].put_xlat[((char *)e)[i]-32];
+					if (ciolib_xlat & CIOLIB_XLAT_CHARS) {
+						if (((char *)e)[i] > 31 && ((char *)e)[i] < 127 && conio_fontdata[font].put_xlat != NULL)
+							buf[i] = conio_fontdata[font].put_xlat[((char *)e)[i]-32];
+						else
+							buf[i] = ((char *)e)[i];
+					}
 					else
 						buf[i] = ((char *)e)[i];
-					if (cio_textinfo.currmode == C64_40X25)
-						buf[i+1]=c64_attr_xlat(((char *)e)[i+1]);
+					if (ciolib_xlat & CIOLIB_XLAT_ATTR) {
+						if (cio_textinfo.currmode == C64_40X25)
+							buf[i+1]=c64_attr_xlat(((char *)e)[i+1]);
+						else
+							buf[i+1]=((char *)e)[i+1];
+					}
 					else
 						buf[i+1]=((char *)e)[i+1];
 				}
@@ -1359,14 +1367,18 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e)
 		if (font >= 0) {
 			if (conio_fontdata[font].put_xlat || cio_textinfo.currmode == C64_40X25) {
 				for (i=0; i<(c-a+1)*(d-b+1)*2; i+=2) {
-					if (conio_fontdata[font].put_xlat) {
-						xlat = ((char *)e)[i];
-						if ((ch = memchr(conio_fontdata[font].put_xlat, ((char *)e)[i], 128))!=NULL)
-							xlat = (char)(ch-conio_fontdata[font].put_xlat)+32;
-						((char *)e)[i] = xlat;
+					if (ciolib_xlat & CIOLIB_XLAT_CHARS) {
+						if (conio_fontdata[font].put_xlat) {
+							xlat = ((char *)e)[i];
+							if ((ch = memchr(conio_fontdata[font].put_xlat, ((char *)e)[i], 128))!=NULL)
+								xlat = (char)(ch-conio_fontdata[font].put_xlat)+32;
+							((char *)e)[i] = xlat;
+						}
 					}
-					if (cio_textinfo.currmode == C64_40X25) {
-							((char *)e)[i+1] = c64_attr_rev(((char *)e)[i+1]);;
+					if (ciolib_xlat & CIOLIB_XLAT_ATTR) {
+						if (cio_textinfo.currmode == C64_40X25) {
+								((char *)e)[i+1] = c64_attr_rev(((char *)e)[i+1]);;
+						}
 					}
 				}
 			}
