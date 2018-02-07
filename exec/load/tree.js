@@ -83,7 +83,8 @@ function Tree(frame,text,tree) {
 		attr:undefined,
 		list:[],
 		items:[],
-        first_letter_search:false
+        first_letter_search:false,
+		character_search:true
 	};
 	this.__values__ = {
 		NOT_HANDLED:false,
@@ -141,10 +142,13 @@ function Tree(frame,text,tree) {
 				return this.__properties__.items[i].action();
 			}
 		}
-        if (this.__properties__.first_letter_search) {
-            var pattern = new RegExp('^' + cmd, 'i');
+		var pattern = new RegExp(cmd, "i");
+		if(this.__properties__.character_search) {
+			if (this.__properties__.first_letter_search) {
+				pattern = new RegExp('^' + cmd, 'i');
+			}
         } else {
-            var pattern = new RegExp(cmd, "i");
+			return this.__values__.NOT_HANDLED;
         }
 		var stop=this.__properties__.items.length-1;
 		if(this.depth == 0) {
