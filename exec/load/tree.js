@@ -1,10 +1,10 @@
-/*	$id: $ 
+/*	$id: $
 
-	Lightbar Menu Tree 
+	Lightbar Menu Tree
 	by Matt Johnson (MCMLXXIX) 2012
-	
+
 	properties:
-	
+
 		frame
 		items
 		parent
@@ -18,10 +18,10 @@
 		currentItem
 		currentTree
 		height
-	
+
 	methods:
-	
-		cycle()										//cycle frame object 
+
+		cycle()										//cycle frame object
 		getcmd(cmd)									//handle user input
 		addTree(text)								//add a subtree to an existing tree
 		addItem(text,[func|retval],[arg1,arg2..])	//add an item to the tree
@@ -32,36 +32,36 @@
 		hide()										//hide tree
 		enable()									//enable a disabled item
 		disable()									//disable an item
-		trace()										//locate a tree item based on hash record 
+		trace()										//locate a tree item based on hash record
 		refresh()									//reload tree data into frame
-	
+
 	usage example:
-	
+
 	// create a new frame in the top left corner; 40 columns 40 rows
 	var frame = new Frame(1,1,40,40);
-	
+
 	// use the frame as a place to load a menu tree
 	var tree=new Tree(frame,"My Menu");
-	
+
 	// add an item with a hotkey of "i" and a return value of 1
 	tree.addItem("|item one",1);
-	
+
 	// add an item with no hotkey that takes 4 arguments in its function
 	tree.addItem("item two",myFunc,"arg1","arg2","arg3","arg4");
 
 	// create a subtree with a hotkey of "m"
 	var subtree=tree.addTree("|menu title");
-	
+
 	// add items to the subtree the same as before
 	subtree.addItem("|logoff",bbs.hangup);
-	
+
 	// open frame canvas and load tree data into it
 	frame.open();
 	tree.open();
-	
+
 	// display the frame contents
 	frame.draw();
-	
+
 */
 
 load("funclib.js");
@@ -82,7 +82,8 @@ function Tree(frame,text,tree) {
 		line:1,
 		attr:undefined,
 		list:[],
-		items:[]
+		items:[],
+        first_letter_search:false
 	};
 	this.__values__ = {
 		NOT_HANDLED:false,
@@ -103,7 +104,7 @@ function Tree(frame,text,tree) {
 	this.colors = {
 		// non-current item foreground
 		fg:LIGHTGRAY,
-		// non-current item/empty space background 
+		// non-current item/empty space background
 		bg:BG_BLACK,
 		// current item foreground
 		lfg:LIGHTRED,
@@ -126,7 +127,7 @@ function Tree(frame,text,tree) {
 		// tree expansion foreground
 		xfg:YELLOW
 	};
-	
+
 	/* private functions */
 	this.__matchHotkey__ = function(cmd) {
 		if(!cmd.match(/\w/))
@@ -140,13 +141,17 @@ function Tree(frame,text,tree) {
 				return this.__properties__.items[i].action();
 			}
 		}
-		var pattern=new RegExp(cmd,"i");
+        if (this.__properties__.first_letter_search) {
+            var pattern = new RegExp('^' + cmd, 'i');
+        } else {
+            var pattern = new RegExp(cmd, "i");
+        }
 		var stop=this.__properties__.items.length-1;
 		if(this.depth == 0) {
 			stop=this.__properties__.index;
 		}
 		for(var i=this.__properties__.index+1;;i++) {
-			if(i >= this.__properties__.items.length) 
+			if(i >= this.__properties__.items.length)
 				i=0;
 			if(this.__properties__.items[i].status&this.__flags__.DISABLED)
 				continue;
@@ -159,7 +164,7 @@ function Tree(frame,text,tree) {
 			if(i == stop) {
 				break;
 			}
-		}	
+		}
 		return this.__values__.NOT_HANDLED;
 	}
 
@@ -267,7 +272,7 @@ Tree.prototype.__defineGetter__("line", function() {
 Tree.prototype.__defineSetter__("line", function(line) {
 	if(this.__properties__.parent)
 		this.__properties__.parent.line=line;
-	else 
+	else
 		this.__properties__.line=line;
 	return true;
 });
@@ -276,7 +281,7 @@ Tree.prototype.__defineGetter__("current", function() {
 });
 Tree.prototype.__defineGetter__("currentItem", function() {
 	var current = this;
-	while(current.current instanceof Tree) 
+	while(current.current instanceof Tree)
 		current = current.current;
 	if(current.current instanceof TreeItem)
 		return current.current;
@@ -285,7 +290,7 @@ Tree.prototype.__defineGetter__("currentItem", function() {
 });
 Tree.prototype.__defineGetter__("currentTree", function() {
 	var current = this;
-	while(current.current instanceof Tree) 
+	while(current.current instanceof Tree)
 		current = current.current;
 	return current;
 });
@@ -303,6 +308,20 @@ Tree.prototype.__defineGetter__("height", function() {
 	}
 	return c;
 });
+Tree.prototype.__defineGetter__(
+    "first_letter_search", function () {
+        return this.__properties__.first_letter_search;
+    }
+);
+Tree.prototype.__defineSetter__(
+    "first_letter_search", function (value) {
+        if (typeof value != 'boolean') {
+            throw 'Invalid first_letter_search parameter';
+        }
+        this.__properties__.first_letter_search = value;
+    }
+);
+
 
 /* tree methods */
 Tree.prototype.cycle = function() {
@@ -311,12 +330,12 @@ Tree.prototype.cycle = function() {
 Tree.prototype.getcmd = function(cmd) {
 	/* initialize return value */
 	var retval=this.__values__.NOT_HANDLED;
-	
+
 	if(!(this.__properties__.status&this.__flags__.CLOSED)) {
 		/* if the current tree item is a subtree, pass control to the next subtree */
-		if(this.current instanceof Tree) 
+		if(this.current instanceof Tree)
 			retval=this.current.getcmd(cmd);
-		
+
 		/* if the submenu did not handle it, let this menu handle the command */
 		if(retval === this.__values__.NOT_HANDLED) {
 			switch(cmd) {
@@ -342,22 +361,22 @@ Tree.prototype.getcmd = function(cmd) {
 				retval = this.deleteItem();
 				break;
 			case this.__commands__.SELECT:
-				if(this.__properties__.index >= 0) 
-					retval = this.current.action();						
-				else 
+				if(this.__properties__.index >= 0)
+					retval = this.current.action();
+				else
 					retval = this.close();
 				break;
 			default:
 				retval=this.__matchHotkey__(cmd);
 				break;
 			}
-			
+
 			/* update the tree on an item being handled */
 			if(retval !== this.__values__.NOT_HANDLED) {
 				this.refresh();
 			}
 		}
-		
+
 		/* handle any residual movement from pageup or pagedown
 		on a subtree */
 		else {
@@ -375,7 +394,7 @@ Tree.prototype.getcmd = function(cmd) {
 				retval = this.end();
 				break;
 			}
-			
+
 			/* update the tree on an item being handled */
 			if(retval !== this.__values__.NOT_HANDLED) {
 				this.refresh();
@@ -423,7 +442,7 @@ Tree.prototype.addItem = function(text,func,args) {
 	if(!(this.status&this.__flags__.CLOSED))
 		this.refresh();
 	return item;
-}		
+}
 Tree.prototype.deleteItem = function(index) {
 	if(!index)
 		index = this.__properties__.index;
@@ -438,7 +457,7 @@ Tree.prototype.deleteItem = function(index) {
 Tree.prototype.open = function() {
 	if(this.__properties__.status&this.__flags__.CLOSED) {
 		this.__properties__.status&=~this.__flags__.CLOSED;
-		if(typeof this.onOpen == "function") 
+		if(typeof this.onOpen == "function")
 			this.onOpen();
 		this.refresh();
 	}
@@ -448,7 +467,7 @@ Tree.prototype.close = function() {
 	if(this.__properties__.status&this.__flags__.CLOSED)
 		return false;
 	this.__properties__.status|=this.__flags__.CLOSED;
-	if(typeof this.onClose == "function") 
+	if(typeof this.onClose == "function")
 		this.onClose();
 	this.refresh();
 	return true;
@@ -496,9 +515,9 @@ Tree.prototype.trace = function(hash) {
 	return false;
 }
 Tree.prototype.list = function(list) {
-	if(this.__properties__.parent) 
+	if(this.__properties__.parent)
 		this.__properties__.parent.list(list);
-	else 
+	else
 		this.__properties__.list.push(list);
 }
 Tree.prototype.refresh=function() {
@@ -513,10 +532,10 @@ Tree.prototype.refresh=function() {
 		if(this.line > this.frame.height)
 			offset = this.line-this.frame.height;
 		var output = this.__properties__.list.splice(offset,this.frame.height);
-		
+
 		var y;
 		var x;
-		
+
 		/* push tree items into frame */
 		for(y=0;y<output.length;y++) {
 			var ch;
@@ -558,7 +577,7 @@ Tree.prototype.up=function() {
 		if(this.__properties__.index == start)
 			break;
 		if(!(this.current.status&this.__flags__.DISABLED)) {
-			if(this.current instanceof Tree) 
+			if(this.current instanceof Tree)
 				this.current.updateIndex(this.__commands__.UP);
 			return this.__values__.HANDLED;
 		}
@@ -576,7 +595,7 @@ Tree.prototype.down=function() {
 		if(this.__properties__.index == start)
 			break;
 		if(!(this.current.status&this.__flags__.DISABLED)) {
-			if(this.current instanceof Tree) 
+			if(this.current instanceof Tree)
 				this.current.updateIndex(this.__commands__.DOWN);
 			return this.__values__.HANDLED;
 		}
@@ -584,28 +603,28 @@ Tree.prototype.down=function() {
 	return this.__values__.NOT_HANDLED;
 }
 Tree.prototype.home=function() {
-	/*ToDo: track starting position and compare to ending position 
+	/*ToDo: track starting position and compare to ending position
 	(prevent infinite loop and avoid empty menus) */
 	if(this.depth == 0) {
 		this.__properties__.index = 0;
 		while(this.current.status&this.__flags__.disabled)
 			this.down();
-		if(this.current instanceof Tree) 
+		if(this.current instanceof Tree)
 			this.current.index = -1;
 		return this.__values__.HANDLED;
 	}
 	return this.__values__.NOT_HANDLED;
 }
 Tree.prototype.end=function() {
-	/*ToDo: track starting position and compare to ending position 
+	/*ToDo: track starting position and compare to ending position
 	(prevent infinite loop and avoid empty menus) */
 	this.__properties__.index = this.__properties__.items.length-1;
 	while(this.current.status&this.__flags__.disabled)
 		this.up();
-	if(this.current instanceof Tree && 
+	if(this.current instanceof Tree &&
 		!(this.current.status&this.__flags__.CLOSED) &&
-		!(this.current.status&this.__flags__.DISABLED) && 
-		!(this.current.status&this.__flags__.HIDDEN)) 
+		!(this.current.status&this.__flags__.DISABLED) &&
+		!(this.current.status&this.__flags__.HIDDEN))
 		this.current.end();
 	if(this.depth == 0)
 		return this.__values__.HANDLED;
@@ -616,12 +635,12 @@ Tree.prototype.pageUp=function(count,distance) {
 	or the top of the menu have been reached */
 	for(var i=count;i<distance;i++) {
 		var r;
-		if(this.current instanceof Tree && 
+		if(this.current instanceof Tree &&
 			!(this.current.status&this.__flags__.CLOSED) &&
-			!(this.current.status&this.__flags__.DISABLED) && 
+			!(this.current.status&this.__flags__.DISABLED) &&
 			!(this.current.status&this.__flags__.HIDDEN)) {
 			var r=this.current.pageUp(i,distance);
-			if(r === this.__values__.HANDLED) 
+			if(r === this.__values__.HANDLED)
 				break;
 			else if(r > i && r < distance)
 				i = r;
@@ -638,12 +657,12 @@ Tree.prototype.pageDown=function(count,distance) {
 	or the top of the menu have been reached */
 	for(var i=count;i<distance;i++) {
 		var r;
-		if(this.current instanceof Tree && 
+		if(this.current instanceof Tree &&
 			!(this.current.status&this.__flags__.CLOSED) &&
-			!(this.current.status&this.__flags__.DISABLED) && 
+			!(this.current.status&this.__flags__.DISABLED) &&
 			!(this.current.status&this.__flags__.HIDDEN)) {
 			var r=this.current.pageDown(i,distance);
-			if(r === this.__values__.HANDLED) 
+			if(r === this.__values__.HANDLED)
 				break;
 			else if(r > i && r < distance)
 				i = r;
@@ -663,16 +682,16 @@ Tree.prototype.generate=function(last,current,line) {
 	var list=[];
 	var bg=this.colors.hbg;
 	var fg=this.colors.hfg;
-	
+
 	/* if this tree is the top level, initialize recursive shit */
 	if(this.depth == 0) {
 		current = true;
 		line = 1;
 	}
-	
+
 	/* if this is a subtree, do stuff? */
 	else if(this.depth > 0) {
-	
+
 		/* if this is the current item, set lightbar bg color */
 		if(current) {
 			if(this.__properties__.index == -1) {
@@ -683,11 +702,11 @@ Tree.prototype.generate=function(last,current,line) {
 				bg=this.colors.cbg;
 			}
 		}
-		
+
 		/* add indentation on subtrees */
-		for(var i=0;i<this.depth-2;i++) 
+		for(var i=0;i<this.depth-2;i++)
 			list.push({ch:" ",attr:bg+fg});
-			
+
 		/* do not draw tree branches on top level tree */
 		if(this.depth > 1) {
 			/* if this is the bottom of a subtree */
@@ -701,17 +720,17 @@ Tree.prototype.generate=function(last,current,line) {
 				list.push({ch:"\xC3",attr:bg+fg});
 			}
 		}
-		
+
 		fg = this.colors.xfg;
-		if(this.__properties__.status&this.__flags__.CLOSED) 
+		if(this.__properties__.status&this.__flags__.CLOSED)
 			list.push({ch:"+",attr:bg+fg});
-		else 
+		else
 			list.push({ch:"-",attr:bg+fg});
-		
+
 		/* if this tree is disabled, use disabled fg */
 		if(this.__properties__.status&this.__flags__.DISABLED)
 			fg=this.colors.dfg;
-			
+
 		else if(current) {
 			/* if current, lightbar fg */
 			if(this.__properties__.index == -1)
@@ -725,7 +744,7 @@ Tree.prototype.generate=function(last,current,line) {
 		/* special item fg */
 		else
 			fg=this.__properties__.attr;
-		
+
 		/* push text string into list */
 		for(var i=0;i<this.__properties__.text.length;i++) {
 			if(this.__properties__.text[i] == "|")
@@ -737,7 +756,7 @@ Tree.prototype.generate=function(last,current,line) {
 		line++;
 		this.list(list);
 	}
-	
+
 	/* if this tree is "open", list its items */
 	if(!(this.__properties__.status&this.__flags__.CLOSED)) {
 		for(var i in this.__properties__.items) {
@@ -746,7 +765,7 @@ Tree.prototype.generate=function(last,current,line) {
 			line = this.__properties__.items[i].generate(l,c,line);
 		}
 	}
-	
+
 	return line;
 }
 Tree.prototype.updateIndex=function(cmd) {
@@ -764,7 +783,7 @@ Tree.prototype.updateIndex=function(cmd) {
 
 /* tree item */
 function TreeItem(text,parent,func,args) {
-	
+
 	/* private properties */
 	this.__flags__ = {
 		CLOSED:(1<<0),
@@ -781,7 +800,7 @@ function TreeItem(text,parent,func,args) {
 	/* public properties */
 	this.func = func;
 	this.args = args;
-	
+
 	/* private functions */
 	function init(text,parent,func,args) {
 		this.__properties__.text = text;
@@ -900,22 +919,22 @@ TreeItem.prototype.refresh=function() {
 TreeItem.prototype.generate=function(last,current,line) {
 	if(this.__properties__.status&this.__flags__.HIDDEN)
 		return line;
-		
+
 	var list=[];
 	var bg=this.colors.bg;
 	var fg=this.colors.fg;
-	
+
 	/* if this is the current item, set lightbar bg color */
 	if(current) {
 		bg=this.colors.lbg;
 		this.line = line;
 	}
-	
+
 	/* add indentation on subtrees */
-	for(var i=0;i<this.depth-2;i++) 
+	for(var i=0;i<this.depth-2;i++)
 		list.push({ch:" ",attr:bg+fg});
 	/* do not draw tree branches on top level tree */
-	if(this.depth == 1) 
+	if(this.depth == 1)
 		list.push({ch:" ",attr:bg+fg});
 	/* if this is the bottom of a subtree */
 	else if(last) {
@@ -927,7 +946,7 @@ TreeItem.prototype.generate=function(last,current,line) {
 		fg=this.colors.tfg;
 		list.push({ch:"\xC3",attr:bg+fg});
 	}
-	
+
 	/* if this tree is disabled, use disabled fg */
 	if(this.__properties__.status&this.__flags__.DISABLED)
 		fg=this.colors.dfg;
@@ -940,7 +959,7 @@ TreeItem.prototype.generate=function(last,current,line) {
 	/* special item fg */
 	else
 		fg=this.__properties__.attr;
-	
+
 	/* push text string into list */
 	for(var i=0;i<this.__properties__.text.length;i++) {
 		if(this.__properties__.text[i] == "|")
@@ -952,4 +971,3 @@ TreeItem.prototype.generate=function(last,current,line) {
 	this.list(list);
 	return ++line;
 }
-
