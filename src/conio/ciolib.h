@@ -360,7 +360,8 @@ typedef struct {
 	int		(*setpixel)	(uint32_t x, uint32_t y, uint32_t colour);
 	struct ciolib_pixels *(*getpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey);
 	int		(*setpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels, void *mask);
-	uint32_t 	*(*get_modepalette)(void);
+	uint32_t 	*(*get_modepalette)(uint32_t[16]);
+	int	(*set_modepalette)(uint32_t[16]);
 } cioapi_t;
 
 CIOLIBEXPORTVAR cioapi_t cio_api;
@@ -448,7 +449,8 @@ CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_freescreen(struct ciolib_screen *);
 CIOLIBEXPORT int CIOLIBCALL ciolib_restorescreen(struct ciolib_screen *scrn);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setcolour(uint32_t fg, uint32_t bg);
-CIOLIBEXPORT uint32_t * CIOLIBCALL ciolib_get_modepalette(void);
+CIOLIBEXPORT uint32_t * CIOLIBCALL ciolib_get_modepalette(uint32_t[16]);
+CIOLIBEXPORT int CIOLIBCALL ciolib_set_modepalette(uint32_t[16]);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -524,7 +526,8 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define freescreen(a)			ciolib_freescreen(a)
 	#define restorescreen(a)		ciolib_restorescreen(a)
 	#define setcolour(a,b)			ciolib_setcolour(a,b)
-	#define get_modepalette()		ciolib_get_modepalette()
+	#define get_modepalette(a)		ciolib_get_modepalette(a)
+	#define set_modepalette(a)		ciolib_set_modepalette(a)
 #endif
 
 #ifdef WITH_SDL

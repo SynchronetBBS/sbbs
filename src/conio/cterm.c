@@ -3024,13 +3024,14 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	int	olddmc;
 	int oldptnm;
 	uint32_t *mpalette;
+	uint32_t palette[16];
 
 	if(!cterm->started)
 		cterm_start(cterm);
 
 	/* Now rejigger the current modes palette... */
 	/* TODO: We need a way to remap instead of fuckery */
-	mpalette = get_modepalette();
+	mpalette = get_modepalette(palette);
 	if (mpalette) {
 		for (i=0; i < 16; i++) {
 			mpalette[i] += 16;
@@ -3764,6 +3765,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	if (mpalette) {
 		for (i=0; i < 16; i++)
 			mpalette[i] -= 16;
+		set_modepalette(mpalette);
 	}
 
 	return(retbuf);

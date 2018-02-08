@@ -1572,14 +1572,23 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 	return pixels;
 }
 
-uint32_t *bitmap_get_modepalette(void)
+uint32_t *bitmap_get_modepalette(uint32_t p[16])
 {
 	uint32_t *ret;
 
 	pthread_mutex_lock(&vstatlock);
-	ret = vstat.palette;
+	memcpy(p, vstat.palette, sizeof(vstat.palette));
+	ret = p;
 	pthread_mutex_unlock(&vstatlock);
 	return ret;
+}
+
+int bitmap_set_modepalette(uint32_t p[16])
+{
+	pthread_mutex_lock(&vstatlock);
+	memcpy(vstat.palette, p, sizeof(vstat.palette));
+	pthread_mutex_unlock(&vstatlock);
+	return 0;
 }
 
 /***********************/
