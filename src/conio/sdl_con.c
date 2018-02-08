@@ -1597,9 +1597,7 @@ int sdl_video_event_thread(void *data)
 	SDL_Event	ev;
 	int			new_scaling = -1;
 	int			old_scaling;
-	SDL_Rect	*upd_rects=NULL;
-	int			rectspace=0;
-	int			rectsused=0;
+	SDL_Rect	upd_rect;
 
 	while(1) {
 		sdl.mutexP(bitmap_init_mutex);
@@ -1719,19 +1717,16 @@ int sdl_video_event_thread(void *data)
 								bitmap_drv_request_pixels();
 							}
 							else {
-								if(upd_rects) {
-									upd_rects[0].x=0;
-									upd_rects[0].y=0;
-									sdl.mutexP(win_mutex);
-									sdl.mutexP(newrect_mutex);
-									upd_rects[0].w=new_rect->w;
-									upd_rects[0].h=new_rect->h;
-									sdl.BlitSurface(new_rect, upd_rects, win, upd_rects);
-									sdl.mutexV(newrect_mutex);
-									sdl.UpdateRects(win,1,upd_rects);
-									sdl.mutexV(win_mutex);
-									rectsused=0;
-								}
+								upd_rect.x=0;
+								upd_rect.y=0;
+								sdl.mutexP(win_mutex);
+								sdl.mutexP(newrect_mutex);
+								upd_rect.w=new_rect->w;
+								upd_rect.h=new_rect->h;
+								sdl.BlitSurface(new_rect, &upd_rect, win, &upd_rect);
+								sdl.mutexV(newrect_mutex);
+								sdl.Flip(win);
+								sdl.mutexV(win_mutex);
 							}
 						}
 						break;
@@ -1747,8 +1742,6 @@ int sdl_video_event_thread(void *data)
 							case SDL_USEREVENT_QUIT:
 								sdl_ufunc_retval=0;
 								sdl.SemPost(sdl_ufunc_ret);
-								if (upd_rects)
-									free(upd_rects);
 								return(0);
 							case SDL_USEREVENT_FLUSH:
 								sdl.mutexP(sdl_headlock);
@@ -1790,27 +1783,11 @@ int sdl_video_event_thread(void *data)
 										}
 									}
 									if(!yuv.enabled) {
-										if (!upd_rects) {
-											sdl.mutexV(newrect_mutex);
-											sdl.mutexV(win_mutex);
-											/* Put it back at the start of the list... */
-											sdl.mutexP(sdl_headlock);
-											for (list_tail = list; list_tail->next; list_tail = list_tail->next);
-											list_tail->next = update_list;
-											update_list = list;
-											sdl.mutexV(sdl_headlock);
-											break;
-										}
-										upd_rects[rectsused].x=list->x*scaling;
-										upd_rects[rectsused].y=list->y*scaling*vmultiplier;
-										upd_rects[rectsused].w=list->width*scaling;
-										upd_rects[rectsused].h=list->height*scaling*vmultiplier;
-										sdl.BlitSurface(new_rect, &(upd_rects[rectsused]), win, &(upd_rects[rectsused]));
-										rectsused++;
-										if(rectsused==rectspace) {
-											sdl.UpdateRects(win,rectsused,upd_rects);
-											rectsused=0;
-										}
+										upd_rect.x=list->x*scaling;
+										upd_rect.y=list->y*scaling*vmultiplier;
+										upd_rect.w=list->width*scaling;
+										upd_rect.h=list->height*scaling*vmultiplier;
+										sdl.BlitSurface(new_rect, &upd_rect, win, &upd_rect);
 									}
 									sdl.mutexV(newrect_mutex);
 									sdl.mutexV(win_mutex);
@@ -1835,10 +1812,7 @@ int sdl_video_event_thread(void *data)
 										}
 									}
 									else {
-										if(upd_rects && rectsused) {
-											sdl.UpdateRects(win,rectsused,upd_rects);
-											rectsused=0;
-										}
+										sdl.Flip(win);
 									}
 								}
 								sdl.mutexP(newrect_mutex);
@@ -1869,18 +1843,6 @@ int sdl_video_event_thread(void *data)
 								free(ev.user.data1);
 								break;
 							case SDL_USEREVENT_SETVIDMODE:
-								if(!yuv.enabled) {
-									rectspace=cvstat.cols*cvstat.rows+cvstat.cols;
-									rectsused=0;
-									if(upd_rects)
-										free(upd_rects);
-									upd_rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*rectspace);
-									if(upd_rects==NULL) {
-										ev.type=SDL_QUIT;
-										sdl_exitcode=1;
-										sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
-									}
-								}
 								new_scaling = -1;
 								old_scaling = cvstat.scaling;
 								setup_surfaces();
@@ -2132,8 +2094,6 @@ int sdl_video_event_thread(void *data)
 			}
 		}
 	}
-	if (upd_rects)
-		free(upd_rects);
 	return(0);
 }
 
