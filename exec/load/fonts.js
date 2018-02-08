@@ -36,7 +36,7 @@ function fonts(key)
 			var slotnum = parseInt(slotval, 10);
 			log(LOG_DEBUG, "activate: " + obj[p] + " slot " + slotnum + " >= " + cterm.font_slot_first);
 			if(slotval !== undefined && slotnum >= cterm.font_slot_first
-				&& !console.cterm_font_loaded[slotnum]) {
+				&& !cterm.fonts_loaded[slotnum]) {
 				// Need to load the font
 				var filename;
 				if(filenames)

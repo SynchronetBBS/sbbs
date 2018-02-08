@@ -21,7 +21,7 @@ const font_state_field_style = 2;
 const da_ver_major = 0;
 const da_ver_minor = 1;
 
-if(console.cterm_version === undefined) {
+if(console.cterm_version === undefined || console.cterm_version < 0) {
 	var response = query_da();
 	if(response) {
 		da_response = response.split(/;/);
@@ -29,8 +29,13 @@ if(console.cterm_version === undefined) {
 	}
 }
 
-if(console.cterm_font_loaded === undefined)
-	console.cterm_font_loaded = [];
+if(console.cterm_fonts_loaded === undefined)
+	console.cterm_fonts_loaded = [];
+
+// Stash these in console, so they're persistent among multiple contexts
+var version = console.cterm_version;
+var fonts_loaded = console.cterm_fonts_loaded;
+var fonts_active = console.cterm_fonts_active;
 
 function query(request)
 {
@@ -152,6 +157,9 @@ function charheight(rows)
 	if(dim && dim.length)
 		return console.cterm_charheight = dim[0];	/* height */
 
+	if(rows === undefined)
+		rows = console.screen_rows;
+
 	switch(rows) {
 		case 27:
 		case 28:
@@ -246,7 +254,7 @@ function activate_fonts(slots)
 
 function load_font(slot, data, force)
 {
-	if(force != true && console.cterm_font_loaded[slot] == true) {
+	if(force != true && console.cterm_fonts_loaded[slot] == true) {
 		log(LOG_DEBUG, format("CTerm load_font: slot %u already loaded", slot));
 		return true;
 	}
@@ -267,7 +275,7 @@ function load_font(slot, data, force)
 		console.write("\x00\x00");	// Work-around cterm bug for 8x14 fonts
 	if(!(console.telnet_mode&TELNET_MODE_OFF))
 		console.telnet_cmd(TELNET_WONT, TELNET_BINARY_TX);
-	console.cterm_font_loaded[slot] = true;
+	console.cterm_fonts_loaded[slot] = true;
 	return true;
 }
 
@@ -320,7 +328,7 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 
 	console.clear(LIGHTGRAY|BG_BLACK);
 
-	if(this.supports_fonts() != false && image.font && image.charheight == this.charheight(console.screen_rows)) {
+	if(this.supports_fonts() != false && image.font && image.charheight == this.charheight()) {
 		this.saved_fonts = console.cterm_fonts_active.slice();
 		log(LOG_DEBUG, "CTerm saving active fonts slots: " + this.saved_fonts);
 		for(var i = 0; i < image.font.length; i++)	{
@@ -551,7 +559,7 @@ function xbin_cleanup(image)
 	ansiterm.send("ext_mode", "set", "autowrap");
 
 	if(this.supports_fonts() != false
-		&& (image===undefined || (image.font && image.charheight == this.charheight(console.screen_rows)))) {
+		&& (image===undefined || (image.font && image.charheight == this.charheight()))) {
 		if(this.saved_fonts && this.saved_fonts.length) {
 			log(LOG_DEBUG, "CTerm restoring active fonts slots: " + this.saved_fonts);
 			activate_fonts(this.saved_fonts);
