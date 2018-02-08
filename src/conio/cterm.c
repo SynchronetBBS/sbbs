@@ -3023,15 +3023,18 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	struct text_info	ti;
 	int	olddmc;
 	int oldptnm;
+	uint32_t *mpalette;
 
 	if(!cterm->started)
 		cterm_start(cterm);
 
 	/* Now rejigger the current modes palette... */
 	/* TODO: We need a way to remap instead of fuckery */
-extern struct video_stats vstat;
-	for (i=0; i < 16; i++) {
-		vstat.palette[i] += 16;
+	mpalette = get_modepalette();
+	if (mpalette) {
+		for (i=0; i < 16; i++) {
+			mpalette[i] += 16;
+		}
 	}
 
 	oldptnm=*cterm->puttext_can_move;
@@ -3758,8 +3761,10 @@ extern struct video_stats vstat;
 
 	/* Now rejigger the current modes palette... */
 	/* TODO: We need a way to remap instead of fuckery */
-	for (i=0; i < 16; i++)
-		vstat.palette[i] -= 16;
+	if (mpalette) {
+		for (i=0; i < 16; i++)
+			mpalette[i] -= 16;
+	}
 
 	return(retbuf);
 }

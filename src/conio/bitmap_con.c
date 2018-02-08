@@ -1572,6 +1572,16 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 	return pixels;
 }
 
+uint32_t *bitmap_get_modepalette(void)
+{
+	uint32_t *ret;
+
+	pthread_mutex_lock(&vstatlock);
+	ret = vstat.palette;
+	pthread_mutex_unlock(&vstatlock);
+	return ret;
+}
+
 /***********************/
 /* Called from drivers */
 /***********************/
