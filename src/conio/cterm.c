@@ -912,9 +912,9 @@ static void scrollup(struct cterminal *cterm)
 		if(cterm->backpos>cterm->backlines) {
 			memmove(cterm->scrollback,cterm->scrollback+cterm->width*2,cterm->width*2*(cterm->backlines-1));
 			if (cterm->scrollbackf)
-				memmove(cterm->scrollbackf,cterm->scrollbackf+cterm->width,cterm->width*(cterm->backlines-1));
+				memmove(cterm->scrollbackf,cterm->scrollbackf+cterm->width,cterm->width*(cterm->backlines-1)*sizeof(cterm->scrollbackf[0]));
 			if (cterm->scrollbackb)
-				memmove(cterm->scrollbackb,cterm->scrollbackb+cterm->width,cterm->width*(cterm->backlines-1));
+				memmove(cterm->scrollbackb,cterm->scrollbackb+cterm->width,cterm->width*(cterm->backlines-1)*sizeof(cterm->scrollbackb[0]));
 			cterm->backpos--;
 		}
 		PGETTEXT(cterm->x, top, cterm->x+cterm->width-1, top, cterm->scrollback+(cterm->backpos-1)*cterm->width*2, cterm->scrollbackf?cterm->scrollbackf+(cterm->backpos-1)*cterm->width:NULL, cterm->scrollbackb?cterm->scrollbackb+(cterm->backpos-1)*cterm->width:NULL);
@@ -979,9 +979,9 @@ void CIOLIBCALL cterm_clearscreen(struct cterminal *cterm, char attr)
 			cterm->backpos=cterm->backlines;
 
 			if (cterm->scrollbackf)
-				memmove(cterm->scrollbackf,cterm->scrollbackf+cterm->width*(cterm->backpos-cterm->backlines),cterm->width*(cterm->backlines-(cterm->backpos-cterm->backlines)));
+				memmove(cterm->scrollbackf,cterm->scrollbackf+cterm->width*(cterm->backpos-cterm->backlines),cterm->width*sizeof(cterm->scrollbackf[0])*(cterm->backlines-(cterm->backpos-cterm->backlines)));
 			if (cterm->scrollbackb)
-				memmove(cterm->scrollbackb,cterm->scrollbackb+cterm->width*(cterm->backpos-cterm->backlines),cterm->width*(cterm->backlines-(cterm->backpos-cterm->backlines)));
+				memmove(cterm->scrollbackb,cterm->scrollbackb+cterm->width*(cterm->backpos-cterm->backlines),cterm->width*sizeof(cterm->scrollbackb[0])*(cterm->backlines-(cterm->backpos-cterm->backlines)));
 		}
 		PGETTEXT(cterm->x,cterm->y,cterm->x+cterm->width-1,cterm->y+cterm->height-1,
 		    cterm->scrollback + (cterm->backpos - cterm->height) * cterm->width * 2,
