@@ -79,6 +79,11 @@ static unsigned int sdl_pending_mousekeys=0;
 static SDL_Color *sdl_co = NULL;
 static Uint32	*sdl_dac_default = NULL;
 static size_t sdl_dac_defaultsz = 0;
+static int sdl_using_directx=0;
+static int sdl_using_quartz=0;
+static int sdl_using_x11=0;
+static int sdl_x11available=0;
+
 
 static struct video_stats cvstat;
 
@@ -246,8 +251,6 @@ void sdl_setscaling(int new_value);
 
 #define CONSOLE_CLIPBOARD	XA_PRIMARY
 
-int sdl_x11available=0;
-
 /* X functions */
 struct x11 {
 	int		(*XFree)		(void *data);
@@ -411,7 +414,8 @@ void sdl_user_func(int func, ...)
 	va_start(argptr, func);
 	sdl.mutexP(sdl_ufunc_mtx);
 	/* Drain the swamp */
-	while(sdl.SemWaitTimeout(sdl_ufunc_rec, 0)==0);
+	if(sdl_x11available && sdl_using_x11)
+		while(sdl.SemWaitTimeout(sdl_ufunc_rec, 0)==0);
 	while (1) {
 		switch(func) {
 			case SDL_USEREVENT_SETICON:
@@ -446,8 +450,9 @@ void sdl_user_func(int func, ...)
 		while((rv = sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff))!=1)
 			YIELD();
 		if (func != SDL_USEREVENT_FLUSH) {
-			if ((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 2000)) != 0)
-				continue;
+			if(sdl_x11available && sdl_using_x11)
+				if ((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 2000)) != 0)
+					continue;
 		}
 		break;
 	}
@@ -469,7 +474,8 @@ int sdl_user_func_ret(int func, ...)
 	va_start(argptr, func);
 	sdl.mutexP(sdl_ufunc_mtx);
 	/* Drain the swamp */
-	while(sdl.SemWaitTimeout(sdl_ufunc_rec, 0)==0);
+	if(sdl_x11available && sdl_using_x11)
+		while(sdl.SemWaitTimeout(sdl_ufunc_rec, 0)==0);
 	while(1) {
 		switch(func) {
 			case SDL_USEREVENT_SETVIDMODE:
@@ -488,8 +494,9 @@ int sdl_user_func_ret(int func, ...)
 		 * we need for copy/paste on X11.
 		 * This hack can be removed for SDL2
 		 */
-		if((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 2000))!=0)
-			continue;
+		if(sdl_x11available && sdl_using_x11)
+			if((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 2000))!=0)
+				continue;
 		rv = sdl.SemWait(sdl_ufunc_ret);
 		if(rv==0)
 			break;
@@ -503,10 +510,6 @@ void exit_sdl_con(void)
 {
 	sdl_user_func_ret(SDL_USEREVENT_QUIT);
 }
-
-int sdl_using_directx=0;
-int sdl_using_quartz=0;
-int sdl_using_x11=0;
 
 void sdl_copytext(const char *text, size_t buflen)
 {
@@ -773,6 +776,8 @@ int sdl_init(int mode)
 				sdl_x11available=FALSE;
 			}
 		}
+#else
+		sdl_x11available=FALSE;
 #endif
 		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
 		return(0);
@@ -1613,16 +1618,22 @@ int sdl_video_event_thread(void *data)
 #if defined(_WIN32)
 			if(!strcmp(driver,"directx"))
 				sdl_using_directx=TRUE;
+#else
+			sdl_using_directx=FALSE;
 #endif
 #if (defined(__MACH__) && defined(__APPLE__))
 			if(!strcmp(driver,"Quartz"))
 				sdl_using_quartz=TRUE;
+#else
+			sdl_using_quartz=FALSE;
 #endif
 #if !defined(NO_X) && defined(__unix__)
 			if(!strcmp(driver,"x11"))
 				sdl_using_x11=TRUE;
 			if(!strcmp(driver,"dga"))
 				sdl_using_x11=TRUE;
+#else
+			sdl_using_x11=FALSE;
 #endif
 		}
 
@@ -1730,7 +1741,8 @@ int sdl_video_event_thread(void *data)
 						struct update_rect *old_next;
 						/* Tell SDL to do various stuff... */
 						if (ev.user.code != SDL_USEREVENT_FLUSH)
-							sdl.SemPost(sdl_ufunc_rec);
+							if(sdl_x11available && sdl_using_x11)
+								sdl.SemPost(sdl_ufunc_rec);
 						switch(ev.user.code) {
 							case SDL_USEREVENT_QUIT:
 								sdl_ufunc_retval=0;
