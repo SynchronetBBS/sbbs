@@ -25,7 +25,7 @@ if(console.cterm_version === undefined) {
 	var response = query_da();
 	if(response) {
 		da_response = response.split(/;/);
-		console.cterm_version = (da_response[da_ver_major]*1000) + da_response[da_ver_minor];
+		console.cterm_version = (parseInt(da_response[da_ver_major], 10)*1000) + parseInt(da_response[da_ver_minor], 10);
 	}
 }
 
