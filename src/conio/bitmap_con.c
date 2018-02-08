@@ -921,8 +921,6 @@ int bitmap_pgettext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 
 void bitmap_gotoxy(int x, int y)
 {
-	static int last_hold_update = 1;
-
 	if(!bitmap_initialized)
 		return;
 	/* Move cursor location */
@@ -947,7 +945,6 @@ void bitmap_gotoxy(int x, int y)
 		}
 		pthread_mutex_unlock(&vstatlock);
 	}
-	last_hold_update = hold_update;
 	pthread_mutex_unlock(&blinker_lock);
 }
 

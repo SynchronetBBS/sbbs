@@ -932,12 +932,10 @@ static void dellines(struct cterminal * cterm, int lines)
 	int top = cterm->y+cterm->top_margin-1;
 	int height = cterm->bottom_margin-cterm->top_margin+1;
 	int i;
-	int linestomove;
 	int x,y;
 
 	if(lines<1)
 		return;
-	linestomove=cterm->height-WHEREY();
 	MOVETEXT(cterm->x,top+WHEREY()-1+lines,cterm->x+cterm->width-1,top+height-1,cterm->x,top+WHEREY()-1);
 	x=WHEREX();
 	y=WHEREY();
@@ -2691,7 +2689,6 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	int		i;
 	struct cterminal *cterm;
 	struct text_info ti;
-	int vmode;
 
 	if((cterm=malloc(sizeof(struct cterminal)))==NULL)
 		return cterm;
