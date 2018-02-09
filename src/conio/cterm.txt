@@ -191,12 +191,209 @@ Sequence Parameters:
 	If the parameter string begins with '<', '=', '>', or '?' then
 	this is a non-standard extension to the ANSI spec.
 
-	Parameters will be shown as pX where X will be a decimal position
-	number.  Surrounded by [] indicates the parameter is optional.
+	Pn          Indicates a single numeric parameter
+	Pn1 ; Pn2   Two numeric parameters
+	Pn...       Any number of numeric parameters
+	Ps          Single selective parameter
+	Ps1 ; Ps1   Two selective parameters
+	Ps...       Any numer of selective parameters
 
-CSI = [p1] M
+	If a default is defined, the parameter is optional
+
+CSI Pn @
+	Insert Character(s)
+	Defaults: Pn = 1
+	Moves text from the current position to the right edge Pn characters
+	to the right, with rightmost characters going off-screen and the
+	resulting hole being filled with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn A
+	Cursor Up
+	Defaults: Pn = 1
+	Moves the cursor position up Pn lines from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn B
+	Cursor Down
+	Defaults: Pn = 1
+	Moves the cursor position down Pn lines from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn C
+	Cursor Right
+	Defaults: Pn = 1
+	Moves the cursor position right Pn columns from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn D
+	Cursor Left
+	Defaults: Pn = 1
+	Moves the cursor position left Pn columns from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Ps1 ; Ps2 sp D
+	Font Selection
+	Defaults: Ps1 = 0  Ps2 = 0
+	"sp" indicates a single space character.
+	Sets font Ps1 to be the one indicated by Ps2.  Currently four fonts are
+	supported.  Ps2 must be between 0 and 255.  Not all output types support
+	font selection.  Only X11 and SDL currently do.
+	Supported Ps1 values:
+		0  - Default font
+		1  - Font selected by the high intensity bit when CSI [ ? 31 h
+		     is enabled
+		2  - Font selected by the blink intensity bit when CSI [ ? 34 h
+		     is enabled
+		3  - Font selected by both the high intensity and blink bits
+		     when both CSI [ ? 31 h and CSI [ ? 34 h are enabled
+	Currently included fonts are:
+		0  - Codepage 437 English
+		1  - Codepage 1251 Cyrillic, (swiss)
+		2  - Russian koi8-r
+		3  - ISO-8859-2 Central European
+		4  - ISO-8859-4 Baltic wide (VGA 9bit mapped)
+		5  - Codepage 866 (c) Russian
+		6  - ISO-8859-9 Turkish
+		7  - haik8 codepage (use only with armscii8 screenmap)
+		8  - ISO-8859-8 Hebrew
+		9  - Ukrainian font koi8-u
+		10 - ISO-8859-15 West European, (thin)
+		11 - ISO-8859-4 Baltic (VGA 9bit mapped)
+		12 - Russian koi8-r (b)
+		13 - ISO-8859-4 Baltic wide
+		14 - ISO-8859-5 Cyrillic
+		15 - ARMSCII-8 Character set
+		16 - ISO-8859-15 West European
+		17 - Codepage 850 Multilingual Latin I, (thin)
+		18 - Codepage 850 Multilingual Latin I
+		19 - Codepage 885 Norwegian, (thin)
+		20 - Codepage 1251 Cyrillic
+		21 - ISO-8859-7 Greek
+		22 - Russian koi8-r (c)
+		23 - ISO-8859-4 Baltic
+		24 - ISO-8859-1 West European
+		25 - Codepage 866 Russian
+		26 - Codepage 437 English, (thin)
+		27 - Codepage 866 (b) Russian
+		28 - Codepage 885 Norwegian
+		29 - Ukrainian font cp866u
+		30 - ISO-8859-1 West European, (thin)
+		31 - Codepage 1131 Belarusian, (swiss)
+		32 - Commodore 64 (UPPER)
+		33 - Commodore 64 (Lower)
+		34 - Commodore 128 (UPPER)
+		35 - Commodore 128 (Lower)
+		36 - Atari
+		37 - P0T NOoDLE (Amiga)
+		38 - mO'sOul (Amiga)
+		39 - MicroKnight Plus (Amiga)
+		40 - Topaz Plus (Amiga)
+		41 - MicroKnight (Amiga)
+		42 - Topaz (Amiga)
+
+	Not all fonts are supported in all modes.  If a font is not supported
+	in the current mode, no action is taken, but there should be a
+	non-zero 'Font Selection result' value in the Font State Report.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn E
+	Cursor Next Line
+	Defaults: Pn = 1
+	Moves the cursor to the first column of the line Pn down from the
+	current position. Moving past the bottom of the screen scrolls the
+	screen up the remaining number of lines filling newly added lines
+	with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn F
+	Cursor Preceding Line
+	Defaults: Pn = 1
+	Moves the cursor to the first column if the row Pn up from the
+	current position.  Attempting to move past the screen boundaries
+	stops the cursor at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn G
+	Cursor Character Absolute
+	Defaults: Pn = 1
+	Movies the cursor to column Pn of the current row.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn1 ; Pn2 H
+CSI Pn1 ; Pn2 f
+	Cursor Position
+	Defaults: Pn1 = 1  Pn2 = 1
+	Moves the cursor to the Pn2th column of the Pn1th line.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Ps J
+	Erase in Page
+	Defaults: Ps = 0
+	Erases from the current screen according to the value of Ps
+	0 - Erase from the current position to the end of the screen.
+	1 - Erase from the current position to the start of the screen.
+	2 - Erase entire screen.  As a violation of ECMA-048, also moves
+	    the cursor to position 1/1 as a number of BBS programs assume
+	    this behaviour.
+	Erased characters are set to the current attribute.
+
+	SOURCE BANSI.TXT
+
+CSI Ps K
+	Erase in Line
+	Defaults: Ps = 0
+	Erases from the current line according to the value pf Ps
+	0 - Erase from the current position to the end of the line.
+	1 - Erase from the current position to the start of the line.
+	2 - Erase entire line.
+	Erased characters are set to the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn L
+	Insert Line(s)
+	Defaults: Pn = 1
+	Inserts Pn lines at the current line position.  The current line and
+	those after it are scrolled down and the new empty lines are filled
+	with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn M
+	Delete Line(s) / "ANSI" Music
+	Defaults: Pn = 1
+	Deletes the current line and the Pn - 1 lines after it scrolling the
+	first non-deleted line up to the current line and filling the newly
+	empty lines at the end of the screen with the current attribute.
+	If "ANSI" Music is fully enabled (CSI = 2 M), performs "ANSI" music
+	instead.
+	See "ANSI" MUSIC section for more details.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+	SOURCE: BANSI.TXT
+
+CSI = Ps M
 	NON-STANDARD EXTENSION.
-	Defaults:  p1 = 0
+	Defaults:  Ps = 0
 	Sets the current state of ANSI music parsing.
 	0 - Only CSI | will introduce an ANSI music string.
 	1 - Both CSI | and CSI N will introduce an ANSI music string.
@@ -205,56 +402,94 @@ CSI = [p1] M
 
 	SOURCE: CTerm only.
 
-CSI = [ p1 [ ; p2 ] ] {
-	NON-STANDARD EXTENSION.
-	Defaults:  p1 = 255  p2 = 0
-	Indicates that a font block is following.
-	p1 indicates the font slot to place the loaded font into.  This must
-	be higher than the last default defined font (See CSI sp D for list
-	of predefined fonts)  p2 indicates font size according to the
-	following table:
-		0 - 8x16 font, 4096 bytes.
-		1 - 8x14 font, 3584 bytes.
-		2 - 8x8 font, 2048 bytes.
+CSI N
+	"ANSI" Music / Not implemented.
+	If "ANSI" Music is set to BananaCom (CSI = 1 M) or fully enabled
+	(CSI = 2 M) performs "ANSI" music.  See "ANSI" MUSIC section for more
+	details.
 
-	SOURCE: CTerm only.
+	SOURCE: BANSI.TXT
 
-CSI = [ p1 [ ; ... ] ] n
-	NON-STANDARD EXTENSION
-	State/Mode Request/Report
-	Defaults: p1 = 1
+CSI Pn P
+	Delete Character
+	Defaults: Pn = 1
+	Deletes the character at the current position by shifting all
+	characters from the current column + p1 left to the current column.
+	Opened blanks at the end of the line are filled with the current
+	attribute.
 
-	When p1 is 1, CTerm will respond with a Font State Report of the form
-        CSI = 1 ;pF ;pR ;pS0 ;pS1 ;pS2 ;pS3 n
-	pF is the first available loadable-font slot number
-	pR is the result of the previous "Font Selection" request:
-		0 = successful font selection
-		1 = font selection requests are not supported by client
-		2 = required subsystem for font use has not been initialized
-		3 = selected font is not available or is incompatible with
-		    current video mode
-		4 = invalid font slot number specified in request
-		5 = required video mode for selected font is incompatible
-		    with current video mode
-		6 = memory allocation failure
-		99 = no font selection request has been received
-	pS0 - pS3 contain the font slots numbers of previously successful
-	"Font Selection" requests into the 4 available alternate-font
-	style/attribute values:
-		pS0 - normal attribute font slot
-		PS1 - high intensity foreground attribute font slot
-		PS2 - blink attribute font slot
-		PS3 - high intensity blink attribute font slot
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-	When p1 is 2, CTerm will respond with a Mode Report of the form
-	CSI = 2[;pN [;pN] [...]] n
-	Where pN represent zero or more mode values set previously
-	(e.g. via CSI ? pN h).	Mode values cleared (disabled via CSI ? pN l)
-	will not be included in the set of values returned in the Mode
-	Report.  If no modes are currently set, an empty parameter will be
-	included as the first and only pN.
+CSI Pn S
+	Scroll Up
+	Defaults: Pn = 1
+	Scrolls all text on the screen up Pn lines.  New lines emptied at the
+	bottom are filled with the current attribute.
 
-	SOURCE: CTerm only.
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn T
+	Scroll Down
+	Defaults: Pn = 1
+	Scrolls all text on the screen down Pn lines.  New lines emptied at the
+	top are filled with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI U
+	NON-STANDARD (Disabled in current code)
+	Clear screen with default attribute.
+	This code is *supposed* to go to the "next page" according to the
+	ANSI/ECMA specs with CSI V going to "previous page"
+
+	SOURCE: BANSI.TXT
+
+CSI Pn X
+	Erase Character
+	Defaults: Pn = 1
+	Erase p1 characters starting at the current character.  Will not erase
+	past the end of line.
+	Erased characters are set to the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn Z
+	Cursor Backward Tabulation
+	Defaults: Pn = 1
+	Move the cursor to the p1th preceding tab stop.  Will not go past the
+	start of the line.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Ps c
+	Device Attributes
+	Defaults: Ps = 0
+	If Ps is 0, CTerm will reply with the sequence:
+        CSI = 67;84;101;114;109;pN c
+	64;84;101;114;109 is the ASCII values of the "CTerm" string.  pN is the
+	CVS revision ID of CTerm with dots converted to semi-colons
+	(e.g. "1;156").  Use the CVS revision to detect if a specific feature
+	is available.  If you are adding features to a forked version of cterm,
+	please do so by	adding an extra parameter to the end, not by
+	incrementing any existing one!
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI < Ps c
+	CTerm Device Attributes
+
+	Defaults: Ps = 0
+	If Pn is 0, CTerm will reply with the sequence:
+        CSI < 0 ; Ps... c
+
+	Possible values for Ps:
+	1 - Loadable fonts are availabe via CSI = Ps1 ; Ps2 {
+	2 - Palette entries may be modified via an Operating System Command
+	    string
+	3 - Pixel operations are supported (currently, sixel graphics)
+	4 - The current font may be selected via CSI Ps1 ; Ps2 sp D
+	5 - More than the standard 16 colours may by configured via
+	    Operating System Command strings
 
 CSI = 255 h
 	NON-STANDARD EXTENSION
@@ -262,7 +497,7 @@ CSI = 255 h
 
 	SOURCE: BANSI.TXT
 
-CSI ? [ p1 [ ; pX ... ] ] h
+CSI ? Ps... h
 	NON-STANDARD EXTENSION
 	Set Mode
 	Sets one or more mode.  The following modes are supported:
@@ -312,7 +547,7 @@ CSI = 255 l
 
 	SOURCE: BANSI.TXT
 
-CSI ? [ p1 [ ; pX ... ] ] l
+CSI ? Ps... l
 	NON-STANDARD EXTENSION
 	Reset Mode
 	Resets one or more mode.  The following modes are supported:
@@ -355,337 +590,9 @@ CSI ? [ p1 [ ; pX ... ] ] l
 	     started.  Defaults to set.
 	     SOURCE: VT330/VT340 Programmer Reference Manual
 
-CSI ? 31 l
-	NON-STANDARD EXTENSION
-	Disable alt character set
-
-	Reverses CSI ? 31 h
-
-CSI ? 32 l
-	NON-STANDARD EXTENSION
-	Bright Intensity Enable
-
-	Causes "bright" foreground characters to be bright.
-	Reverses CSI ? 32 h
-
-CSI ? 33 l
-	NON-STANDARD EXTENSION
-	Blink Normal
-
-	Reverses CSI ? 33 h
-
-CSI ? 34 l
-	NON-STANDARD EXTENSION
-	Disable alt character set
-
-	Reverses CSI ? 34 h
-
-CSI ? 35 l
-	NON-STANDARD EXTENSION
-	Blink Enabled
-
-	Reverses CSI ? 35 h
-
-CSI [ p1 [ ; p2 ] ] * r
-	NON-STANDARD EXTENSION.
-	Set the output emulation speed.
-	If p1 or p2 are omitted, causes output speed emulation to stop
-	p1 may be empty.
-	Sequence is ignored if p1 is not empty, 0, or 1.
-	The value of p2 sets the output speed emulation as follows:
-
-	Value		Speed
-	-----		-----
-	empty, 0	Unlimited
-	1		300
-	2		600
-	3		1200
-	4		2400
-	5		4800
-	6		9600
-	7		19200
-	8		38400
-	9		57600
-	10		76800
-	11		115200
-
-	SOURCE: VT4xx Specification from http://www.vt100.net/
-
-CSI [ p1 [ ; p2 ] ] r
-	NON-STANDARD EXTENSION.
-	Set Top and Bottom Margins
-	Defaults: p1 = 1
-		p2 = last line on screen
-	Selects top and bottom margins, defining the scrolling region. P1 is
-	the line number of the first line in the scrolling region. P2 is the
-	line number of the bottom line.
-
-CSI [ p1 ] @
-	Insert Character(s)
-	Defaults: p1 = 1
-	Moves text from the current position to the right edge p1 characters
-	to the right, with rightmost characters going off-screen and the
-	resulting hole being filled with the current attribute.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] A
-	Cursor Up
-	Defaults: p1 = 1
-	Moves the cursor position up p1 lines from the current position.
-	Attempting to move past the screen boundaries stops the cursor
-	at the screen boundary.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] B
-	Cursor Down
-	Defaults: p1 = 1
-	Moves the cursor position down p1 lines from the current position.
-	Attempting to move past the screen boundaries stops the cursor
-	at the screen boundary.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] C
-	Cursor Right
-	Defaults: p1 = 1
-	Moves the cursor position right p1 columns from the current position.
-	Attempting to move past the screen boundaries stops the cursor
-	at the screen boundary.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] D
-	Cursor Left
-	Defaults: p1 = 1
-	Moves the cursor position left p1 columns from the current position.
-	Attempting to move past the screen boundaries stops the cursor
-	at the screen boundary.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 [ ; p2 ] ] sp D
-	Font Selection
-	Defaults: p1 = 0  p2 = 0
-	"sp" indicates a single space character.
-	Sets font p1 to be the one indicated by p2.  Currently four fonts are
-	supported.  p2 must be between 0 and 255.  Not all output types support
-	font selection.  Only X11 and SDL currently do.
-	Supported p1 values:
-		0  - Default font
-		1  - Font selected by the high intensity bit when CSI [ ? 31 h
-		     is enabled
-		2  - Font selected by the blink intensity bit when CSI [ ? 34 h
-		     is enabled
-		3  - Font selected by both the high intensity and blink bits
-		     when both CSI [ ? 31 h and CSI [ ? 34 h are enabled
-	Currently included fonts are:
-		0  - Codepage 437 English
-		1  - Codepage 1251 Cyrillic, (swiss)
-		2  - Russian koi8-r
-		3  - ISO-8859-2 Central European
-		4  - ISO-8859-4 Baltic wide (VGA 9bit mapped)
-		5  - Codepage 866 (c) Russian
-		6  - ISO-8859-9 Turkish
-		7  - haik8 codepage (use only with armscii8 screenmap)
-		8  - ISO-8859-8 Hebrew
-		9  - Ukrainian font koi8-u
-		10 - ISO-8859-15 West European, (thin)
-		11 - ISO-8859-4 Baltic (VGA 9bit mapped)
-		12 - Russian koi8-r (b)
-		13 - ISO-8859-4 Baltic wide
-		14 - ISO-8859-5 Cyrillic
-		15 - ARMSCII-8 Character set
-		16 - ISO-8859-15 West European
-		17 - Codepage 850 Multilingual Latin I, (thin)
-		18 - Codepage 850 Multilingual Latin I
-		19 - Codepage 885 Norwegian, (thin)
-		20 - Codepage 1251 Cyrillic
-		21 - ISO-8859-7 Greek
-		22 - Russian koi8-r (c)
-		23 - ISO-8859-4 Baltic
-		24 - ISO-8859-1 West European
-		25 - Codepage 866 Russian
-		26 - Codepage 437 English, (thin)
-		27 - Codepage 866 (b) Russian
-		28 - Codepage 885 Norwegian
-		29 - Ukrainian font cp866u
-		30 - ISO-8859-1 West European, (thin)
-		31 - Codepage 1131 Belarusian, (swiss)
-		32 - Commodore 64 (UPPER)
-		33 - Commodore 64 (Lower)
-		34 - Commodore 128 (UPPER)
-		35 - Commodore 128 (Lower)
-		36 - Atari
-		37 - P0T NOoDLE (Amiga) 
-		38 - mO'sOul (Amiga)    
-		39 - MicroKnight Plus (Amiga)
-		40 - Topaz Plus (Amiga)      
-		41 - MicroKnight (Amiga)
-		42 - Topaz (Amiga)      
-	Not all fonts are supported in all modes.  If a font is not supported
-	in the current mode, no action is taken, but there should be a
-	non-zero 'Font Selection result' value in the Font State Report.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] E
-	Cursor Next Line
-	Defaults: p1 = 1
-	Moves the cursor to the first column of the line p1 down from the
-	current position. Moving past the bottom of the screen scrolls the
-	screen up the remaining number of lines filling newly added lines
-	with the current attribute.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] F
-	Cursor Preceding Line
-	Defaults: p1 = 1
-	Moves the cursor to the first column if the row p1 up from the
-	current position.  Attempting to move past the screen boundaries
-	stops the cursor at the screen boundary.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] G
-	Cursor Character Absolute
-	Defaults: p1 = 1
-	Movies the cursor to column p1 of the current row.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 [ ; p2 ] ] H
-CSI [ p1 [ ; p2 ] ] f
-	Cursor Position
-	Defaults: p1 = 1  p2 = 1
-	Moves the cursor to the p2th column of the p1th line.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] J
-	Erase in Page
-	Defaults: p1 = 0
-	Erases from the current screen according to the value of p1
-	0 - Erase from the current position to the end of the screen.
-	1 - Erase from the current position to the start of the screen.
-	2 - Erase entire screen.  As a violation of ECMA-048, also moves
-	    the cursor to position 1/1 as a number of BBS programs assume
-	    this behaviour.
-	Erased characters are set to the current attribute.
-
-	SOURCE BANSI.TXT
-
-CSI [ p1 ] K
-	Erase in Line
-	Defaults: p1 = 0
-	Erases from the current line according to the value pf p1
-	0 - Erase from the current position to the end of the line.
-	1 - Erase from the current position to the start of the line.
-	2 - Erase entire line.
-	Erased characters are set to the current attribute.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] L
-	Insert Line(s)
-	Defaults: p1 = 1
-	Inserts p1 lines at the current line position.  The current line and
-	those after it are scrolled down and the new empty lines are filled
-	with the current attribute.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] M
-	Delete Line(s) / "ANSI" Music
-	Defaults: p1 = 1
-	Deletes the current line and the p1 - 1 lines after it scrolling the
-	first non-deleted line up to the current line and filling the newly
-	empty lines at the end of the screen with the current attribute.
-	If "ANSI" Music is fully enabled (CSI = 2 M), performs "ANSI" music
-	instead.
-	See "ANSI" MUSIC section for more details.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-	SOURCE: BANSI.TXT
-
-CSI N
-	"ANSI" Music / Not implemented.
-	If "ANSI" Music is set to BananaCom (CSI = 1 M) or fully enabled
-	(CSI = 2 M) performs "ANSI" music.  See "ANSI" MUSIC section for more
-	details.
-
-	SOURCE: BANSI.TXT
-
-CSI [ p1 ] P
-	Delete Character
-	Defaults: p1 = 1
-	Deletes the character at the current position by shifting all
-	characters from the current column + p1 left to the current column.
-	Opened blanks at the end of the line are filled with the current
-	attribute.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] S
-	Scroll Up
-	Defaults: p1 = 1
-	Scrolls all text on the screen up p1 lines.  New lines emptied at the
-	bottom are filled with the current attribute.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] T
-	Scroll Down
-	Defaults: p1 = 1
-	Scrolls all text on the screen down p1 lines.  New lines emptied at the
-	top are filled with the current attribute.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI U
-	NON-STANDARD (Disabled in current code)
-	Clear screen with default attribute.
-	This code is *supposed* to go to the "next page" according to the
-	ANSI/ECMA specs with CSI V going to "previous page"
-
-	SOURCE: BANSI.TXT
-
-CSI [ p1 ] X
-	Erase Character
-	Defaults: p1 = 1
-	Erase p1 characters starting at the current character.  Will not erase
-	past the end of line.
-	Erased characters are set to the current attribute.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] Z
-	Cursor Backward Tabulation
-	Defaults: p1 = 1
-	Move the cursor to the p1th preceding tab stop.  Will not go past the
-	start of the line.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 ] c
-	Device Attributes
-	Defaults: p1 = 0
-	If p1 is 0, CTerm will reply with the sequence:
-        CSI = 67;84;101;114;109;pN c
-	64;84;101;114;109 is the ASCII values of the "CTerm" string.  pN is the
-	CVS revision ID of CTerm with dots converted to semi-colons
-	(e.g. "1;156").  Use the CVS revision to detect if a specific feature
-	is available.  If you are adding features to a forked version of cterm,
-	please do so by	adding an extra parameter to the end, not by
-	incrementing any existing one!
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ p1 [ ; pX ... ] ] m
+CSI Ps... m
 	Select Graphic Rendition
-	Defaults: p1 = 0
+	Defaults: Ps1 = 0
 	Sets or clears one or more text attributes.  Unlimited parameters are
 	supported and are applied in received order.  The following are
 	supported:
@@ -714,6 +621,7 @@ CSI [ p1 [ ; pX ... ] ] m
 	35 - Magenta foreground                            X
 	36 - Cyan foreground                               X
 	37 - White foreground                              X
+	38 - Foreground from palette (see note)            X
 	39 - Default foreground (same as white)	           X
 	40 - Black background                                 X
 	41 - Red background                                   X
@@ -723,15 +631,28 @@ CSI [ p1 [ ; pX ... ] ] m
 	45 - Magenta background                               X
 	46 - Cyan background                                  X
 	47 - White background                                 X
+	48 - Background from palette (see note)            X
 	49 - Default background (same as black)               X
 
 	All others are ignored.
 
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+	Note, For 38 and 48, an additional two parameters are required
+	after that value.  They are considered part of the 38, not separate
+	values.  The first additional parameter must be a 5.  The second
+	additional parameter specified the palette index to use.  To set the
+	foreground to orange, and the background to a fairly dark grey, you
+	would send:
+	CSI 38 ; 5 ; 214 ; 48 ; 5 ; 238 m
 
-CSI [ p1 ] n
+	The default palette is the XTerm 256-colour palette.  See here:
+	https://jonasjacek.github.io/colors/
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+	SOURCE: XTerm
+
+CSI Ps n
 	Device Status Report
-	Defaults: p1 = 0
+	Defaults: Ps = 0
 	A request for a status report.  CTerm handles the following three
 	requests:
 	5	- Request a DSR
@@ -750,12 +671,83 @@ CSI [ p1 ] n
 		(parameters 5 and 6 only)
 	SOURCE: BANSI.TXT (parameter 255)
 
-CSI ? [ p1 [ pX ... ] ] s
+CSI = Ps n
+	NON-STANDARD EXTENSION
+	State/Mode Request/Report
+	Defaults: Ps = 1
+
+	When Ps is 1, CTerm will respond with a Font State Report of the form
+        CSI = 1 ;pF ;pR ;pS0 ;pS1 ;pS2 ;pS3 n
+	pF is the first available loadable-font slot number
+	pR is the result of the previous "Font Selection" request:
+		0 = successful font selection
+		1 = font selection requests are not supported by client
+		2 = required subsystem for font use has not been initialized
+		3 = selected font is not available or is incompatible with
+		    current video mode
+		4 = invalid font slot number specified in request
+		5 = required video mode for selected font is incompatible
+		    with current video mode
+		6 = memory allocation failure
+		99 = no font selection request has been received
+	pS0 - pS3 contain the font slots numbers of previously successful
+	"Font Selection" requests into the 4 available alternate-font
+	style/attribute values:
+		pS0 - normal attribute font slot
+		PS1 - high intensity foreground attribute font slot
+		PS2 - blink attribute font slot
+		PS3 - high intensity blink attribute font slot
+
+	When Ps is 2, CTerm will respond with a Mode Report of the form
+	CSI = 2[;pN [;pN] [...]] n
+	Where pN represent zero or more mode values set previously
+	(e.g. via CSI ? pN h).	Mode values cleared (disabled via CSI ? pN l)
+	will not be included in the set of values returned in the Mode
+	Report.  If no modes are currently set, an empty parameter will be
+	included as the first and only pN.
+
+	SOURCE: CTerm only.
+
+CSI Pn1 ; Pn2 r
+	NON-STANDARD EXTENSION.
+	Set Top and Bottom Margins
+	Defaults: Pn1 = 1
+	          Pn2 = last line on screen
+	Selects top and bottom margins, defining the scrolling region. Pn1 is
+	the line number of the first line in the scrolling region. Pn2 is the
+	line number of the bottom line.
+
+CSI Ps1 ; Ps2 * r
+	NON-STANDARD EXTENSION.
+	Set the output emulation speed.
+	If Ps1 or Ps2 are omitted, causes output speed emulation to stop
+	Ps1 may be empty.
+	Sequence is ignored if Ps1 is not empty, 0, or 1.
+	The value of Ps2 sets the output speed emulation as follows:
+
+	Value		Speed
+	-----		-----
+	empty, 0	Unlimited
+	1		300
+	2		600
+	3		1200
+	4		2400
+	5		4800
+	6		9600
+	7		19200
+	8		38400
+	9		57600
+	10		76800
+	11		115200
+
+	SOURCE: VT4xx Specification from http://www.vt100.net/
+
+CSI ? Ps... s
 	NON-STANDARD EXTENSION
 	Save Mode Setting
 	Saves the current mode states as specified by CSI ? l and CSI ? h.  If
-	p1 is omitted, saves all such states.  If pX is included, saves only
-	the specified states (arguments to CSI ? l/h).
+	Ps1 is omitted, saves all such states.  If one or more values of Ps is
+	included, saves only the specified states (arguments to CSI ? l/h).
 
 	SOURCE: SyncTERM only
 
@@ -768,12 +760,12 @@ CSI s
 
 	SOURCE: ANSI.SYS
 
-CSI ? [ p1 [ pX ... ] ]  u
+CSI ? Ps...  u
 	NON-STANDARD EXTENSION
 	Restore Mode Setting
 	Saves the current mode states as specified by CSI ? l and CSI ? h.  If
-	p1 is omitted, saves all such states.  If pX is included, restores
-	all the specified states (arguments to CSI ? l/h)
+	Ps is omitted, saves all such states.  If one or more values of Ps is
+	included, restores all the specified states (arguments to CSI ? l/h)
 
 	SOURCE: SyncTERM only
 
@@ -784,6 +776,20 @@ CSI u
 	has been saved, the cursor is not moved.
 
 	SOURCE: ANSI.SYS
+
+CSI = Ps1 ; Ps2 {
+	NON-STANDARD EXTENSION.
+	Defaults:  Ps1 = 255  Ps2 = 0
+	Indicates that a font block is following.
+	Ps1 indicates the font slot to place the loaded font into.  This must
+	be higher than the last default defined font (See CSI sp D for list
+	of predefined fonts)  Ps2 indicates font size according to the
+	following table:
+		0 - 8x16 font, 4096 bytes.
+		1 - 8x14 font, 3584 bytes.
+		2 - 8x8 font, 2048 bytes.
+
+	SOURCE: CTerm only.
 
 "ANSI" Music
 ============
