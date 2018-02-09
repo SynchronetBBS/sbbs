@@ -32,7 +32,6 @@
  *              Jan 30, 1996  6.00  BP   Add ODInQueueGetNextEvent() timeout.
  *              Feb 19, 1996  6.00  BP   Changed version number to 6.00.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -315,8 +314,7 @@ tODResult ODInQueueGetNextEvent(tODInQueueHandle hInQueue,
    /* this thread to be blocked until an event is added to the queue, if it */
    /* is currently empty.                                                   */
 
-   if(ODSemaphoreDown(pInputQueueInfo->hItemCountSemaphore, Timeout)==kODRCTimeout)
-      return(kODRCTimeout);
+   ODSemaphoreDown(pInputQueueInfo->hItemCountSemaphore, Timeout);
 
 #else /* !OD_MULTITHREADED */
 

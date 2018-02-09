@@ -1,22 +1,3 @@
-/*
- *  The Beast's Domain door game
- *  Copyright (C) 2005  Domain Entertainment
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
-
 #include "xsdk.h"
 
 void movement(int sx,int sy,int sz,int sgx,int sgy);
@@ -48,7 +29,7 @@ void moduser(void);
 void list_users(void);
 void monster_check(int gx,int gy);
 int warp_to_other(void);
-void perform_daily_maintenance(int);
+void perform_daily_maintenance(void);
 void restore_clock(void);
 void send_message(int oldnumnodes);
 void read_player_message(void);
@@ -106,7 +87,6 @@ typedef struct {
     uchar ring,key,compass;
     char space[28];
 } user_t;
-#define USER_T_SIZE	100
 
 typedef struct {
     char type,color,symbol,name[50];
@@ -117,12 +97,5 @@ extern rmobj_t  rmobj[55];
 extern rmobj_t  rmcmp[55];
 extern object_t object[62];
 extern user_t user;
-extern int in_shop;
+extern int in_shop,trash[1];
 extern long cost_per_min,times_per_day,total_cost;
-
-extern char     redraw_screen;
-extern long     record_number;
-extern int      create_log,chfile,rmfile,weapon_ready,invisible,strong,
-                tpic,lasthit,clock_tick,clock_tick2,ateof;
-extern uchar    map[LEVELS][SQUARE][SQUARE];
-

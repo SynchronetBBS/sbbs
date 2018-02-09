@@ -42,7 +42,6 @@
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
  *              Jun 08, 1996  6.10  BP   Added cast in call to alloc function.
  *              Oct 19, 2001  6.20  RS   Eliminated MSVC 6.0 warning.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -483,10 +482,6 @@ static void ODEditDrawAreaLine(tEditInstance *pEditInstance,
 
       od_disp(ODEditBufferGetCharacter(pEditInstance, unBufferLine, 0),
          unLineLength, TRUE);
-   }
-   else
-   {
-      unLineLength = 0;
    }
 
    /* If right edge of edit area aligns with the right edge of the screen. */
@@ -1470,7 +1465,6 @@ static void ODEditSetBreakSequence(tEditInstance *pEditInstance,
    {
       /* This should never happen: an invalid end of line sequence was */
       /* passed in.                                                    */
-      pszSequence = NULL;
       ASSERT(FALSE);
    }
 

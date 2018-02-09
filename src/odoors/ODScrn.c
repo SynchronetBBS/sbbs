@@ -54,7 +54,6 @@
  *              Mar 13, 1996  6.10  BP   Added od_local_win_col.
  *              Mar 17, 1996  6.10  BP   Terminate string in ODScrnLocalInput()
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -93,7 +92,9 @@
 
 /* Private variables used by the screen I/O functions. */
 
-#if defined(ODPLAT_DOS) || defined(ODPLAT_NIX)
+/* Segment address of video buffer. */
+#ifdef ODPLAT_DOS
+static WORD wBufferSegment;
 static void *pAllocatedBufferMemory;
 #endif /* ODPLAT_DOS */
 
@@ -116,12 +117,8 @@ static BYTE btCurrentAttribute;
 /* Is scrolling enabled. */
 static BOOL bScrollEnabled;
 
-#ifdef ODPLAT_DOS
-/* Segment address of video buffer. */
-static WORD wBufferSegment;
 /* Display page to use. */
 static BYTE btDisplayPage;
-#endif
 
 /* Is cursor currently on. */
 static BYTE bCaretOn;
@@ -945,14 +942,13 @@ tODResult ODScrnInitialize(void)
 {
    BOOL bClear = TRUE;
 
-#if defined(ODPLAT_DOS) || defined(ODPLAT_NIX)
+#ifdef ODPLAT_DOS
+   BYTE btDisplayMode;
+
    /* In silent mode, we perform all output in a block of memory that is */
    /* never displayed.                                                   */
-   /* *nix is always in "silent mode"                                    */
-#ifndef ODPLAT_NIX
    if(od_control.od_silent_mode)
    {
-#endif
       /* Allocate memory for screen buffer, using standard pointer type */
       /* for current memory model.                                      */
       pAllocatedBufferMemory = malloc(SCREEN_BUFFER_SIZE);
@@ -965,12 +961,9 @@ tODResult ODScrnInitialize(void)
       /* Set the screen buffer far pointer to point to the allocated */
       /* buffer.                                                     */
       pScrnBuffer = pAllocatedBufferMemory;
-#ifndef ODPLAT_NIX
    }
    else
    {
-      BYTE btDisplayMode;
-
       /* Get current video mode. */
       ASM    push si
       ASM    push di
@@ -1061,7 +1054,6 @@ tODResult ODScrnInitialize(void)
       }
    }
 #endif /* ODPLAT_DOS */
-#endif /* ODPLAT_DOS/NIX */
 
 #ifdef ODPLAT_WIN32
    /* Allocate memory for screen buffer. */
@@ -1116,17 +1108,12 @@ void ODScrnShutdown(void)
    }
 #else /* !ODPLAT_WIN32 */
    /* In silent mode, we must deallocate screen buffer memory. */
-   /* *nix is always in silent mode                            */
-#ifndef ODPLAT_NIX
    if(od_control.od_silent_mode && pAllocatedBufferMemory != NULL)
    {
-#endif
       free(pAllocatedBufferMemory);
       pAllocatedBufferMemory = NULL;
       pScrnBuffer = NULL;
-#ifndef ODPLAT_NIX
    }
-#endif
 #endif
 }
 
@@ -1854,7 +1841,7 @@ BOOL ODScrnPutText(BYTE btLeft, BYTE btTop, BYTE btRight, BYTE btBottom,
  *
  *     Return: void.
  */
-void ODScrnDisplayString(const char *pszString)
+void ODScrnDisplayString(char *pszString)
 {
    ODScrnDisplayBuffer(pszString, strlen(pszString));
 }
@@ -1875,9 +1862,9 @@ void ODScrnDisplayString(const char *pszString)
  *
  *     Return: void.
  */
-void ODScrnDisplayBuffer(const char *pBuffer, INT nCharsToDisplay)
+void ODScrnDisplayBuffer(char *pBuffer, INT nCharsToDisplay)
 {
-   const char *pchCurrentChar = pBuffer;
+   char *pchCurrentChar = pBuffer;
    INT nCharsLeft = nCharsToDisplay;
    BYTE ODFAR *pDest;
    BYTE btLeftColumn;
@@ -2551,4 +2538,3 @@ void ODScrnRemoveMessage(void *pMessageInfo)
    ODScrnEnableCaret(TRUE);
 #endif /* !ODPLAT_WIN32 */
 }
-

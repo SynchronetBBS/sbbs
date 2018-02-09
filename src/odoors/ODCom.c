@@ -47,10 +47,6 @@
  *              Jan 13, 1997  6.10  BP   Fixes for Door32 support.
  *              Oct 19, 2001  6.20  RS   Added TCP/IP socket (telnet) support.
  *              Oct 22, 2001  6.21  RS   Fixed disconnected socket detection.
- *              Aug 22, 2002  6.22  RS   Fixed bugs in ODComCarrier and ODComWaitEvent
- *              Aug 22, 2002  6.22  MD   Modified socket functions for non-blocking use.
- *              Sep 18, 2002  6.22  MD   Fixed bugs in ODComWaitEvent for non-blocking sockets.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -63,16 +59,6 @@
 #include <time.h>
 
 #include "OpenDoor.h"
-#ifdef ODPLAT_NIX
-#include <sys/ioctl.h>
-#include <signal.h>
-#include <termios.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#endif
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODPlat.h"
@@ -111,30 +97,11 @@
 #define INCLUDE_SOCKET_COM                          /* TCP/IP socket I/O.    */
 #endif /* ODPLAT_WIN32 */
 
-/* Serial I/O mechanisms supported inder *nix version */
-#ifdef ODPLAT_NIX
-#define INCLUDE_STDIO_COM
-#define INCLUDE_SOCKET_COM                          /* TCP/IP socket I/O.    */
-
-/* Win32 Compat. Stuff */
-#define SOCKET	int
-#define WSAEWOULDBLOCK	EAGAIN
-#define SOCKET_ERROR -1
-#define WSAGetLastError() errno
-#define ioctlsocket	ioctl
-#define closesocket	close
-#endif /* ODPLAT_NIX */
 
 /* Include "windows.h" for Win32-API based serial I/O. */
 #ifdef INCLUDE_WIN32_COM
 #include "windows.h"
 #endif /* INCLUDE_WIN32_COM */
-
-/* terminal variables */
-#ifdef INCLUDE_STDIO_COM
-struct termios tio_default;				/* Initial term settings */
-#endif
-
 
 #if defined(_WIN32) && defined(INCLUDE_SOCKET_COM)
 	#include <winsock.h>
@@ -187,9 +154,9 @@ typedef struct
 #endif /* INCLUDE_DOOR32_COM */
 #ifdef INCLUDE_SOCKET_COM
 	SOCKET	socket;
-	int	old_delay;
 #endif
 } tPortInfo;
+
 
 /* ========================================================================= */
 /* Internal interrupt-driven serial I/O specific defintions & functions.     */
@@ -337,6 +304,7 @@ static int nRXHighWaterMark;            /* High water mark for queue size. */
 static int nRXLowWaterMark;             /* Low water mark for queue size. */
 static BYTE btFlowControl;              /* Flow control method. */
 static BOOL bStopTrans;                 /* Flag set to stop transmitting. */
+
 
 /* ----------------------------------------------------------------------------
  * ODComSetVect()                                      *** PRIVATE FUNCTION ***
@@ -1218,9 +1186,6 @@ tODResult ODComOpen(tPortHandle hPort)
    unsigned long ulQuotient, ulRemainder;
    BYTE btTemp;
 #endif /* INCLUDE_FOSSIL_COM || INCLUDE_UART_COM */
-#ifdef INCLUDE_STDIO_COM
-	struct termios tio_raw;
-#endif
    tPortInfo *pPortInfo = ODHANDLE2PTR(hPort, tPortInfo);
    int nPort;
 
@@ -1780,30 +1745,6 @@ no_fossil:
    }
 #endif /* INCLUDE_WIN32_COM */
 
-#ifdef INCLUDE_STDIO_COM
-   if(pPortInfo->Method == kComMethodStdIO ||
-      pPortInfo->Method == kComMethodUnspecified)
-   {
-		if (isatty(STDIN_FILENO))  {
-			tcgetattr(STDIN_FILENO,&tio_default);
-			tio_raw = tio_default;
-			cfmakeraw(&tio_raw);
-			tcsetattr(STDIN_FILENO,TCSANOW,&tio_raw);
-			setvbuf(stdout, NULL, _IONBF, 0);
-		}
-
-      /* Set port state as open. */
-      pPortInfo->bIsOpen = TRUE;
-
-      /* Set serial I/O method. */
-      pPortInfo->Method = kComMethodStdIO;
-
-      /* Return with success. */
-      return(kODRCSuccess);
-
-   }
-#endif /* INCLUDE_STDIO_COM */
-
    /* If we get to this point, then no form of serial I/O could be */
    /* initialized.                                                 */
    return(kODRCGeneralFailure);
@@ -1834,13 +1775,8 @@ tODResult ODComOpenFromExistingHandle(tPortHandle hPort,
 
 #ifdef INCLUDE_SOCKET_COM
 	if(pPortInfo->Method == kComMethodSocket) {
-		socklen_t delay=FALSE;
 
 		pPortInfo->socket = dwExistingHandle;
-
-		getsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, &(pPortInfo->old_delay), &delay);
-		delay=FALSE;
-		setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, &delay, sizeof(delay));
 
         pPortInfo->bIsOpen = TRUE;
 
@@ -1973,17 +1909,9 @@ tODResult ODComClose(tPortHandle hPort)
 
 #ifdef INCLUDE_SOCKET_COM
       case kComMethodSocket:
-		 setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, &(pPortInfo->old_delay), sizeof(pPortInfo->old_delay));
          closesocket(pPortInfo->socket);
          break;
 #endif /* INCLUDE_SOCKET_COM */
-
-#ifdef INCLUDE_STDIO_COM
-	  case kComMethodStdIO:
-	     if(isatty(STDIN_FILENO))
-		    tcsetattr(STDIN_FILENO,TCSANOW,&tio_default);
-	     break;
-#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -2013,9 +1941,6 @@ tODResult ODComClose(tPortHandle hPort)
  */
 tODResult ODComCarrier(tPortHandle hPort, BOOL *pbIsCarrier)
 {
-#ifdef ODPLAT_NIX
-   sigset_t	  sigs;
-#endif
    tPortInfo *pPortInfo = ODHANDLE2PTR(hPort, tPortInfo);
    int nPort;
 
@@ -2100,22 +2025,10 @@ tODResult ODComCarrier(tPortHandle hPort, BOOL *pbIsCarrier)
 			tv.tv_usec=0;
 			i=select(pPortInfo->socket+1,&socket_set,NULL,NULL,&tv);
 			if(i==0 
-				|| (i==1 && recv(pPortInfo->socket,&ch,1,MSG_PEEK)==1))
+				|| (i==1 && recv(pPortInfo->socket+1,&ch,1,MSG_PEEK)==1))
 				*pbIsCarrier = TRUE;
 			else
 				*pbIsCarrier = FALSE;
-			break;
-		}
-#endif
-
-#ifdef INCLUDE_STDIO_COM
-	  case kComMethodStdIO:
-	    {
-			sigpending(&sigs);
-			if(sigismember(&sigs,SIGHUP))
-				*pbIsCarrier = FALSE;
-			else
-				*pbIsCarrier = TRUE;
 			break;
 		}
 #endif
@@ -2220,11 +2133,6 @@ set_dtr:
          break;
 #endif /* INCLUDE_SOCKET_CO */
 
-#ifdef INCLUDE_STDIO_COM
-	  case kComMethodStdIO:
-	     return(kODRCUnsupported);
-#endif
-
       default:
          /* If we get here, then the current serial I/O method is not */
          /* handled by this function.                                 */
@@ -2320,12 +2228,6 @@ still_sending:
 			return(kODRCUnsupported);
 #endif /* INCLUDE_SOCKET_COM */
 
-#ifdef INCLUDE_STDIO_COM
-	  case kComMethodStdIO:
-			*pnOutboundWaiting = 0;
-			return(kODRCUnsupported);
-#endif	        
-
       default:
          /* If we get here, then the current serial I/O method is not */
          /* handled by this function.                                 */
@@ -2389,11 +2291,6 @@ tODResult ODComClearOutbound(tPortHandle hPort)
       case kComMethodSocket:
 			return(kODRCUnsupported);
 #endif /* INCLUDE_SOCKET_COM */
-
-#ifdef INCLUDE_STDIO_COM
-      case kComMethodStdIO:
-			return(kODRCUnsupported);
-#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -2460,10 +2357,6 @@ tODResult ODComClearInbound(tPortHandle hPort)
 			return(kODRCUnsupported);
 #endif /* INCLUDE_SOCKET_COM */
 
-#ifdef INCLUDE_STDIO_COM
-      case kComMethodStdIO:
-			return(kODRCUnsupported);
-#endif
       default:
          /* If we get here, then the current serial I/O method is not */
          /* handled by this function.                                 */
@@ -2576,12 +2469,6 @@ tODResult ODComInbound(tPortHandle hPort, int *pnInboundWaiting)
 			break;
 #endif /* INCLUDE_SOCKET_COM */
 
-#ifdef INCLUDE_STDIO_COM
-      case kComMethodStdIO:
-			if(ioctl(0,FIONREAD,pnInboundWaiting) == -1)
-				*pnInboundWaiting = 0;
-			break;
-#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -2767,69 +2654,22 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 		{
 			fd_set	socket_set;
 			struct	timeval tv;
-			int		select_ret, recv_ret;
 
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
 
 			tv.tv_sec=0;
-			tv.tv_usec=100;
+			tv.tv_usec=0;
 
-			select_ret = select(pPortInfo->socket+1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
-			if (select_ret == SOCKET_ERROR)
-				return (kODRCGeneralFailure);
-			if (select_ret == 0)
-				return (kODRCNothingWaiting);
+			if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,bWait ? NULL : &tv) != 1)
+	         return(bWait ? kODRCGeneralFailure : kODRCNothingWaiting);
 
-			do {
-				recv_ret = recv(pPortInfo->socket, pbtNext, 1, 0);
-				if(recv_ret != SOCKET_ERROR)
-					break;
-				if(WSAGetLastError() != WSAEWOULDBLOCK)
-					return (kODRCGeneralFailure);
-				od_sleep(50);
-			} while (bWait);
-
-			if (recv_ret == 0)
-				 return (kODRCNothingWaiting);
+			if(recv(pPortInfo->socket,pbtNext,1,0) != 1)
+	         return(bWait ? kODRCGeneralFailure : kODRCNothingWaiting);
 
 			break;
 		}
 #endif /* INCLUDE_SOCKET_COM */
-
-#ifdef INCLUDE_STDIO_COM
-      case kComMethodStdIO:
-		{
-			fd_set	socket_set;
-			struct	timeval tv;
-			int		select_ret=-1;
-			int		recv_ret;
-
-			while(select_ret==-1) {
-				FD_ZERO(&socket_set);
-				FD_SET(STDIN_FILENO,&socket_set);
-
-				tv.tv_sec=0;
-				tv.tv_usec=100;
-
-				select_ret = select(STDIN_FILENO+1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
-				if (select_ret == -1) {
-					if(errno==EINTR)
-						continue;
-					return (kODRCGeneralFailure);
-				}
-				if (select_ret == 0)
-					return (kODRCNothingWaiting);
-			}
-
-			recv_ret = read(STDIN_FILENO, pbtNext, 1);
-			if(recv_ret == 1)
-				break;
-			return (kODRCGeneralFailure);
-
-			break;
-		}
-#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -2957,63 +2797,22 @@ keep_going:
 		{
 			fd_set	socket_set;
 			struct	timeval tv;
-			int		send_ret;
 
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
 
-			tv.tv_sec=1;
+			tv.tv_sec=0;
 			tv.tv_usec=0;
 
 			if(select(pPortInfo->socket+1,NULL,&socket_set,NULL,&tv) != 1)
 	         return(kODRCGeneralFailure);
 
-			do {
-				send_ret = send(pPortInfo->socket, &btToSend, 1, 0);
-				if (send_ret != 1)
-					od_sleep(50);
-			} while ((send_ret == SOCKET_ERROR) && (WSAGetLastError() == WSAEWOULDBLOCK));
-
-			if (send_ret == SOCKET_ERROR)
-				return (kODRCGeneralFailure);
-
+			if(send(pPortInfo->socket,&btToSend,1,0) != 1)
+				return(kODRCGeneralFailure);
 			break;
 		}
 #endif /* INCLUDE_SOCKET_COM */
 
-#ifdef INCLUDE_STDIO_COM
-	  case kComMethodStdIO:
-	    {
-		fd_set  fdset;
-		struct  timeval tv;
-		int             retval=-1;
-		int	loopcount=0;
-
-		while(retval==-1 && loopcount < 10) {
-			FD_ZERO(&fdset);
-			FD_SET(STDOUT_FILENO,&fdset);
-
-			tv.tv_sec=1;
-			tv.tv_usec=0;
-
-			retval=select(STDOUT_FILENO+1,NULL,&fdset,NULL,&tv);
-			if(retval!=1) {
-				if(retval==0)  {
-					retval=-1;
-					loopcount++;
-					continue;
-				}
-				if(retval==-1 && errno==EINTR)
-					continue;
-				return(kODRCGeneralFailure);
-			}
-		}
-
-	    if(fwrite(&btToSend,1,1,stdout)!=1)
-		   return(kODRCGeneralFailure);
-		break;
-		}
-#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -3201,7 +3000,7 @@ tODResult ODComGetBuffer(tPortHandle hPort, BYTE *pbtBuffer, int nSize,
 			FD_SET(pPortInfo->socket,&socket_set);
 
 			tv.tv_sec=0;
-			tv.tv_usec=100;
+			tv.tv_usec=0;
 
 			if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,&tv) != 1) {
 				*pnBytesRead = 0;
@@ -3213,14 +3012,6 @@ tODResult ODComGetBuffer(tPortHandle hPort, BYTE *pbtBuffer, int nSize,
 		}
 #endif /* INCLUDE_SOCKET_COM */
 
-#ifdef INCLUDE_STDIO_COM
-      case kComMethodStdIO:
-	    {
-		    for(*pnBytesRead=0;
-				*pnBytesRead<nSize && (ODComGetByte(hPort, (pbtBuffer+*pnBytesRead), FALSE)==kODRCSuccess);
-				*pnBytesRead++);
-		}
-#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -3447,68 +3238,21 @@ try_again:
 		{
 			fd_set	socket_set;
 			struct	timeval tv;
-			int     send_ret;
 
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
 
-			tv.tv_sec=1;
+			tv.tv_sec=0;
 			tv.tv_usec=0;
 
 			if(select(pPortInfo->socket+1,NULL,&socket_set,NULL,&tv) != 1)
 	         return(kODRCGeneralFailure);
 
-			do {
-				send_ret = send(pPortInfo->socket, pbtBuffer, nSize, 0);
-				if (send_ret != SOCKET_ERROR)
-					break;
-				od_sleep(25);
-			} while (WSAGetLastError() == WSAEWOULDBLOCK);
-
-			if (send_ret != nSize)
-				return (kODRCGeneralFailure);
-      break;
+			if(send(pPortInfo->socket,pbtBuffer,nSize,0) != nSize)
+				return(kODRCGeneralFailure);
+			break;
 		}
 #endif /* INCLUDE_SOCKET_COM */
-
-#ifdef INCLUDE_STDIO_COM
-      case kComMethodStdIO:
-	    {
-			int pos=0;
-			fd_set  fdset;
-			struct  timeval tv;
-			int     retval;
-			int	loopcount=0;
-
-			while(pos<nSize) {
-				FD_ZERO(&fdset);
-				FD_SET(STDOUT_FILENO,&fdset);
-
-				tv.tv_sec=1;
-				tv.tv_usec=0;
-
-				retval=select(STDOUT_FILENO+1,NULL,&fdset,NULL,&tv);
-				if(retval!=1) {
-					if(retval==0) {
-						if(++loopcount>10)
-							return(kODRCGeneralFailure);
-						continue;
-					}
-					if(retval==-1 && errno==EINTR)
-						continue;
-					return(kODRCGeneralFailure);
-				}
-
-				retval=fwrite(pbtBuffer+pos,1,nSize-pos,stdout);
-				if(retval!=nSize-pos) {
-					od_sleep(1);
-				}
-
-				pos+=retval;
-			}
-		    break;
-		}
-#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -3543,10 +3287,9 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
 
    switch(pPortInfo->Method)
    {
-#if defined(INCLUDE_UART_COM) || defined(INCLUDE_FOSSIL_COM) || defined(INCLUDE_STDIO_COM)
+#if defined(INCLUDE_UART_COM) || defined(INCLUDE_FOSSIL_COM)
       case kComMethodFOSSIL:
       case kComMethodUART:
-	  case kComMethodStdIO:
          switch(Event)
          {
             case kNoCarrier:
@@ -3653,7 +3396,6 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
   			/* Wait for socket disconnect */
 				fd_set	socket_set;
 				char		ch;
-				int recv_ret;
 
 				while(1) 
 				{
@@ -3663,13 +3405,10 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
 					if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,NULL)
 						==SOCKET_ERROR)
 						break;
-					recv_ret = recv(pPortInfo->socket, &ch, 1, MSG_PEEK);
-					if(recv_ret == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
-						continue;
-					if (recv_ret != 1)
+					if(recv(pPortInfo->socket+1,&ch,1,MSG_PEEK)!=1)
 						break;
 				}
-			}
+			} 
 			else
 			{
 				VERIFY_CALL(FALSE);

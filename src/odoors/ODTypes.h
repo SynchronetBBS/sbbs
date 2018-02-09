@@ -55,7 +55,7 @@ typedef enum
    kODRCTimeout,
    kODRCSafeFailure,
    kODRCUnrecoverableFailure,
-   kODRCUnsupported
+   kODRCUnsupported,
 } tODResult;
 
 /* Callback function types. */

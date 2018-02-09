@@ -74,7 +74,6 @@
  *              Apr 08, 1996  6.10  BP   Store local login name in user_handle.
  *              Jan 13, 1997  6.10  BP   Fixes for Door32 support.
  *              Oct 19, 2001  6.20  RS   Added door32.sys and socket support.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -87,13 +86,6 @@
 #include <time.h>
 
 #include "OpenDoor.h"
-#ifdef ODPLAT_NIX
-#include <termios.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
-#endif
-#include "ODStr.h"
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODScrn.h"
@@ -247,24 +239,24 @@ static char *apszColorNames[] =
 /* Array of door information (drop) file names to search for. */
 static char *apszDropFileNames[] = 
 {
-   "exitinfo.bbs",
-   "dorinfo1.def",
-   "chain.txt",
-   "sfdoors.dat",
-   "door.sys",
-   "callinfo.bbs",
-   "sfmain.dat",
-   "sffile.dat",
-   "sfmess.dat",
-   "sfsysop.dat",
-   "tribbs.sys",
-   "door32.sys",
+   "EXITINFO.BBS",
+   "DORINFO1.DEF",
+   "CHAIN.TXT",
+   "SFDOORS.DAT",
+   "DOOR.SYS",
+   "CALLINFO.BBS",
+   "SFMAIN.DAT",
+   "SFFILE.DAT",
+   "SFMESS.DAT",
+   "SFSYSOP.DAT",
+   "TRIBBS.SYS",
+   "DOOR32.SYS",
 };
 
 /* Array of door information (drop) file numbers 
  * (corresponding to apszDropFileNames) 
  */
-enum {
+static enum {
    FOUND_EXITINFO_BBS,
    FOUND_DORINFO1_DEF,
    FOUND_CHAIN_TXT,
@@ -339,11 +331,6 @@ ODAPIDEF void ODCALL od_init(void)
    FILE *pfDropFile=NULL;
    char *pointer;
    INT nFound = FOUND_NONE;
-#ifdef _WIN32
-   float forcefloats;
-
-   forcefloats=1.1;
-#endif
 
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_init()");
@@ -453,10 +440,6 @@ malloc_error:
    {
       od_control.od_node = atoi(pointer);
    }
-   else if((pointer=getenv("SBBSNNUM")) != NULL)
-   {
-      od_control.od_node = atoi(pointer);
-   }
    else if(wODNodeNumber != 65535U)
    {
       od_control.od_node = wODNodeNumber;
@@ -476,7 +459,6 @@ malloc_error:
       od_control.user_rip = FALSE;
       od_control.user_attribute = 0x06;
       od_control.user_screen_length = 23;
-      od_control.user_screenwidth = 80;
       od_control.od_page_pausing = TRUE;
       od_control.od_page_len = 15;
    }
@@ -486,11 +468,7 @@ malloc_error:
       /* variables that we must initialize if they weren't already set */
       /* when the custom drop file was read.                           */
       if(od_control.user_timelimit == 0) od_control.user_timelimit = 60;
-#ifdef ODPLAT_NIX
-      if(od_control.port == -1) od_control.baud = 1L;
-#else
       if(od_control.port == -1) od_control.baud = 0L;
-#endif
    }
 
    /* Setup inbound local/remote buffer. */
@@ -519,11 +497,7 @@ force_local:
       od_control.od_info_type = NO_DOOR_FILE;
 
       /* Operate in local mode. */
-#ifdef ODPLAT_NIX
-      od_control.baud = 1L;
-#else
       od_control.baud = 0L;
-#endif
 
       if(!bParsedCmdLine)
       {
@@ -557,16 +531,16 @@ force_local:
       /* Generate the name of the dorinfox.def file for this node. */
       if(od_control.od_node > 35)
       {
-         apszDropFileNames[1] = (char *)"dorinfo1.def";
+         apszDropFileNames[1] = (char *)"DORINFO1.DEF";
       }
       else if(od_control.od_node > 9)
       {
-         sprintf(szIFTemp, "dorinfo%c.def", od_control.od_node + 55);
+         sprintf(szIFTemp, "DORINFO%c.DEF", od_control.od_node + 55);
          apszDropFileNames[1] = (char *)szIFTemp;
       }
       else
       {
-         sprintf(szIFTemp, "dorinfo%d.def", od_control.od_node);
+         sprintf(szIFTemp, "DORINFO%d.DEF", od_control.od_node);
          apszDropFileNames[1] = (char *)szIFTemp;
       }
 
@@ -575,10 +549,10 @@ force_local:
       if(!ODFileAccessMode(od_control.info_path, 4))
       {
          /* Check for a DORINFOx.DEF filename. */
-         if(ODStringHasTail(od_control.info_path, ".def") &&
+         if(ODStringHasTail(od_control.info_path, ".DEF") &&
             strlen(od_control.info_path) >= strlen(apszDropFileNames[2]) &&
             strnicmp((char *)&od_control.info_path +
-            (strlen(od_control.info_path) - 12), "dorinfo", 7) == 0)
+            (strlen(od_control.info_path) - 12), "DORINFO", 7) == 0)
          {
             nFound = FOUND_DORINFO1_DEF;
             strcpy(szDropFilePath, od_control.info_path);
@@ -616,7 +590,7 @@ force_local:
             goto DropFileFail;
          }
 
-         ODMakeFilename(szODWorkString, szExitinfoBBSPath, "dorinfo1.def",
+         ODMakeFilename(szODWorkString, szExitinfoBBSPath, "DORINFO1.DEF",
             sizeof(szExitinfoBBSPath));
          if((pfDropFile = fopen(szODWorkString, "r")) == NULL)
          {
@@ -645,10 +619,6 @@ read_dorinfox:
           {
             szIFTemp[strlen(szIFTemp) - 1] = '\0';
           }
-          if(szIFTemp[strlen(szIFTemp) - 1] == '\r')
-          {
-            szIFTemp[strlen(szIFTemp) - 1] = '\0';
-          }
           strncpy(od_control.system_name, szIFTemp, 39);
           od_control.system_name[39] = '\0';
 
@@ -670,11 +640,7 @@ read_dorinfox:
           od_control.port=szIFTemp[3]-'1';
                                           /* determine BPS rate of connection */
           if(fgets((char *)apszDropFileInfo[0],255,pfDropFile)==NULL) goto DropFileFail;
-#ifdef ODPLAT_NIX
-          od_control.baud= (od_control.port == -1) ? 1 : atol((char *)apszDropFileInfo[0]);
-#else
           od_control.baud= (od_control.port == -1) ? 0 : atol((char *)apszDropFileInfo[0]);
-#endif
 
           if(fgets((char *)apszDropFileInfo[1],80,pfDropFile)==NULL) goto DropFileFail;
 
@@ -768,11 +734,7 @@ read_dorinfox:
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
           if(strcmp(szIFTemp,"KB")==0)
           {
-#ifdef ODPLAT_NIX
-             od_control.baud=1;
-#else
              od_control.baud=0;
-#endif
           }
           else
           {
@@ -825,23 +787,6 @@ read_dorinfox:
 
              od_control.port=szIFTemp[3]-'1';
 
-             /* Check for COM0:STDIO */
-             if(!strncmp(szIFTemp,"COM0:STDIO",10))
-                od_control.od_com_method=COM_STDIO;
-
-             /* Check for COM0:SOCKET### */
-             if(!strncmp(szIFTemp,"COM0:SOCKET",11)) {
-                od_control.od_com_method=COM_SOCKET;
-		od_control.od_use_socket = TRUE;
-                od_control.od_open_handle=atoi(szIFTemp+11);
-             }
-
-             /* Check for COM0:HANDLE### */
-             if(!strncmp(szIFTemp,"COM0:HANDLE",11)) {
-                od_control.od_com_method=COM_WIN32;
-                od_control.od_open_handle=atoi(szIFTemp+11);
-             }
-
              /* Read line 2. */
              if(fgets((char *)apszDropFileInfo[0], 80, pfDropFile) == NULL)
              {
@@ -874,11 +819,7 @@ read_dorinfox:
                 od_control.baud = atol(szIFTemp);
              }
 
-#ifdef ODPLAT_NIX
-             if(od_control.port == -1) od_control.baud = 1L;
-#else
              if(od_control.port == -1) od_control.baud = 0L;
-#endif
 
              /* Read line 6. */
              if(fgets((char *)apszDropFileInfo[3],80,pfDropFile)==NULL) goto DropFileFail;
@@ -902,7 +843,6 @@ read_dorinfox:
              if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
              szIFTemp[25]='\0';
              if(szIFTemp[strlen(szIFTemp)-1]=='\n') szIFTemp[strlen(szIFTemp)-1]='\0';
-             if(szIFTemp[strlen(szIFTemp)-1]=='\r') szIFTemp[strlen(szIFTemp)-1]='\0';
              strcpy(od_control.user_location,szIFTemp);
 
              /* Read line 12. */
@@ -921,7 +861,6 @@ read_dorinfox:
              if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
              szIFTemp[15]='\0';
              if(szIFTemp[strlen(szIFTemp)-1]=='\n') szIFTemp[strlen(szIFTemp)-1]='\0';
-             if(szIFTemp[strlen(szIFTemp)-1]=='\r') szIFTemp[strlen(szIFTemp)-1]='\0';
              strcpy(od_control.user_password,szIFTemp);
 
              /* Read line 15. */
@@ -1096,8 +1035,6 @@ again:
                 od_control.user_comment[79]='\0';
                 if(od_control.user_comment[strlen(od_control.user_comment)-1]=='\n')
                    od_control.user_comment[strlen(od_control.user_comment)-1]='\0';
-                if(od_control.user_comment[strlen(od_control.user_comment)-1]=='\r')
-                   od_control.user_comment[strlen(od_control.user_comment)-1]='\0';
 
                 /* Read line 54. */
                 if(fgets((char *)apszDropFileInfo[20],80,pfDropFile)==NULL) goto finished;
@@ -1125,11 +1062,7 @@ again:
              if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
              if(od_control.port==-1)
              {
-#ifdef ODPLAT_NIX
-                od_control.baud=1L;
-#else
                 od_control.baud=0L;
-#endif
              }
              else
              {
@@ -1381,11 +1314,7 @@ finished:
 
 			 /* Read line 3: Baud rate */
           if(fgets((char *)apszDropFileInfo[0],255,pfDropFile)==NULL) goto DropFileFail;
-#ifdef ODPLAT_NIX
-          od_control.baud= (od_control.port == -1) ? 1 : atol((char *)apszDropFileInfo[0]);
-#else
           od_control.baud= (od_control.port == -1) ? 0 : atol((char *)apszDropFileInfo[0]);
-#endif
 
 			 /* Read line 4: BBS Software name and version - unused. */
           if(fgets(szIFTemp, 255, pfDropFile) == NULL) goto DropFileFail;
@@ -1550,7 +1479,7 @@ static BOOL ODInitReadSFDoorsDAT(void)
 
    /* Line 15: User's login time. */
    if(fgets((char *)apszDropFileInfo[2],255,pfDropFile)==NULL) return(FALSE);
-   sprintf(od_control.user_logintime, "%02d:%02d",
+   sprintf(od_control.user_logintime, "%02.2d:%02.2d",
       atoi((char *)apszDropFileInfo[2]) % 60,
       atoi((char *)apszDropFileInfo[2]) / 60);
 
@@ -1690,7 +1619,7 @@ static void ODInitReadExitInfo(void)
    od_control.od_ra_info=FALSE;
 
    /* Try to open EXITINFO.BBS. */
-   ODMakeFilename(szODWorkString, szExitinfoBBSPath, "exitinfo.bbs",
+   ODMakeFilename(szODWorkString, szExitinfoBBSPath, "EXITINFO.BBS",
       sizeof(szExitinfoBBSPath));
    if((pfDropFile = fopen(szODWorkString, "rb")) != NULL)
    {
@@ -1890,10 +1819,6 @@ static void ODInitReadExitInfo(void)
 static void ODInitPartTwo(void)
 {
    BYTE btCount;
-#ifdef ODPLAT_NIX
-   struct termios term;
-   struct passwd  *uinfo;
-#endif
 
    /* Initialize any colors that haven't already been set. */
    if(!od_control.od_list_title_col) od_control.od_list_title_col = 0x0f;
@@ -2047,9 +1972,7 @@ static void ODInitPartTwo(void)
    }
 
    /* If we are not operating in local mode, then setup for serial I/O. */
-#ifndef ODPLAT_NIX
    if(od_control.baud != 0)
-#endif
    {
       tComMethod ComMethod;
 
@@ -2067,7 +1990,7 @@ malloc_error:
          ODComSetPreferredMethod(hSerialPort, kComMethodSocket);
       }
 
-#if defined ODPLAT_WIN32 || defined ODPLAT_NIX
+#ifdef ODPLAT_WIN32
       /* Check whether a handle has been provided by the caller. */
       if(od_control.od_open_handle != 0)
       {
@@ -2225,15 +2148,13 @@ malloc_error:
 			case kComMethodSocket:
 				od_control.od_com_method = COM_SOCKET;	/* Why are using doubling up constants here? */
 				break;
-		 case kComMethodStdIO:
-		    od_control.od_com_method = COM_STDIO;
-			break;
          default:
             ODInitError("No method of accessing serial port, cannot continue.\n");
             exit(od_control.od_errorlevel[1]);
             break;
       }
    }
+
 
    /* If we are operating in local mode, then disable silent mode. */
    if(od_control.baud == 0)
@@ -2280,26 +2201,6 @@ malloc_error:
    ODKrnlInitialize();
 
 #ifndef ODPLAT_WIN32
-#ifdef ODPLAT_NIX
-   if(bPromptForUserName)
-   {
-      od_control.od_com_method=COM_STDIO;
-      od_control.baud=19200;
-      gethostname(od_control.system_name,sizeof(od_control.system_name));
-      od_control.system_name[sizeof(od_control.system_name)-1]=0;
-      if (isatty(STDIN_FILENO))  {
-        tcgetattr(STDIN_FILENO,&term);
-   	  od_control.baud=cfgetispeed(&term);
-        if(!od_control.baud)
-   	    od_control.baud=cfgetispeed(&term);
-        if(!od_control.baud)
-   		 od_control.baud=19200;
-      }
-      uinfo=getpwuid(getuid());
-      ODStringCopy(od_control.user_handle, uinfo->pw_name,sizeof(od_control.user_handle));
-      ODStringCopy(od_control.user_name, uinfo->pw_gecos,sizeof(od_control.user_name));
-   }
-#else
    if(bPromptForUserName)
    {
       void *pWindow = ODScrnCreateWindow(10, 8, 70, 15,
@@ -2326,7 +2227,6 @@ malloc_error:
          ODScrnSetAttribute(0x07);
       }
    }
-#endif /* !ODPLAT_NIX */
 #endif /* !ODPLAT_WIN32 */
 
 #ifdef OD_TEXTMODE
@@ -2386,8 +2286,8 @@ no_default:
    {
       if(od_control.od_logfile_messages[btCount] == NULL)
       {
-         od_control.od_logfile_messages[btCount]
-            = apszLogMessages[btCount];
+         (char *)od_control.od_logfile_messages[btCount]
+            = (char *)apszLogMessages[btCount];
       }
    }
 
@@ -2442,9 +2342,6 @@ void ODInitError(char *pszErrorText)
          MB_ICONSTOP | MB_OK | MB_TASKMODAL);
       free(pszMessage);
    }
-#endif
-#ifdef ODPLAT_NIX
-   fwrite(pszErrorText,strlen(pszErrorText),1,stderr);
 #endif
 }
 

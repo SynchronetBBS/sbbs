@@ -44,7 +44,6 @@
  *              Mar 06, 1996  6.10  BP   Prevent TC generated N_LXMUL@ call.
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
  *              Oct 18, 2001  6.11  MD   Added od_send_file_section()
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -56,7 +55,6 @@
 #include <stdarg.h>
 
 #include "OpenDoor.h"
-#include "ODStr.h"
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODCom.h"
@@ -78,7 +76,7 @@
 
 /* Local helper function prototypes. */
 static void ODEmulateFromBuffer(char *pszBuffer, BOOL bRemoteEcho);
-static FILE *ODEmulateFindCompatFile(const char *pszBaseName, INT *pnLevel);
+static FILE *ODEmulateFindCompatFile(char *pszBaseName, INT *pnLevel);
 static void ODEmulateFillArea(BYTE btLeft, BYTE btTop, BYTE btRight,
    BYTE btBottom, char chToFillWith);
 
@@ -223,7 +221,7 @@ ODAPIDEF char ODCALL od_hotkey_menu(char *pszFileName, char *pszHotKeys,
  *
  *     Return: TRUE on success, or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_send_file(const char *pszFileName)
+ODAPIDEF BOOL ODCALL od_send_file(char *pszFileName)
 {
    FILE *pfRemoteFile;
    FILE *pfLocalFile = NULL;
@@ -299,7 +297,7 @@ ODAPIDEF BOOL ODCALL od_send_file(const char *pszFileName)
 
       /* Get filename of remote file. */
       strcpy(szODWorkString, pszFileName);
-      strcat(szODWorkString, ".rip");
+      strcat(szODWorkString, ".RIP");
       strupr(szODWorkString);
    }
    else
@@ -316,7 +314,7 @@ ODAPIDEF BOOL ODCALL od_send_file(const char *pszFileName)
       strcpy(szODWorkString, pszFileName);
       strupr(szODWorkString);
 
-      if(strstr(szODWorkString, ".rip"))
+      if(strstr(szODWorkString, ".RIP"))
       {
          /* No page pausing during .RIP display. */
          bPausing = FALSE;
@@ -417,13 +415,13 @@ abort_send:
       }
 
       /* Get next line, if any. */
-      if(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfRemoteFile) == NULL)
+      if(fgets(szODWorkString, 256, pfRemoteFile) == NULL)
       {
          /* If different local file. */
          if(pfLocalFile)
          {
             /* Display rest of it. */
-            while(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfLocalFile))
+            while(fgets(szODWorkString, 256, pfLocalFile))
             {
                 /* Pass each line to terminal emulator. */
                ODEmulateFromBuffer(szODWorkString, FALSE);
@@ -464,9 +462,9 @@ abort_send:
          {
             od_disp(szODWorkString, strlen(szODWorkString), FALSE);
 
-            if(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfLocalFile) == NULL)
+            if(fgets(szODWorkString, 256, pfLocalFile) == NULL)
             {
-               while(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfRemoteFile))
+               while(fgets(szODWorkString, 256, pfRemoteFile))
                {
                   od_disp(szODWorkString, strlen(szODWorkString), FALSE);
                }
@@ -638,7 +636,7 @@ ODAPIDEF BOOL ODCALL od_send_file_section(char *pszFileName, char *pszSectionNam
 
       /* Get filename of remote file. */
       strcpy(szODWorkString, pszFileName);
-      strcat(szODWorkString, ".rip");
+      strcat(szODWorkString, ".RIP");
       strupr(szODWorkString);
    }
    else
@@ -655,7 +653,7 @@ ODAPIDEF BOOL ODCALL od_send_file_section(char *pszFileName, char *pszSectionNam
       strcpy(szODWorkString, pszFileName);
       strupr(szODWorkString);
 
-      if(strstr(szODWorkString, ".rip"))
+      if(strstr(szODWorkString, ".RIP"))
       {
          /* No page pausing during .RIP display. */
          bPausing = FALSE;
@@ -763,13 +761,13 @@ abort_send:
       }
 
       /* Get next line, if any. */
-      if(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfRemoteFile) == NULL)
+      if(fgets(szODWorkString, 256, pfRemoteFile) == NULL)
       {
          /* If different local file. */
          if(pfLocalFile)
          {
             /* Display rest of it. */
-            while(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfLocalFile))
+            while(fgets(szODWorkString, 256, pfLocalFile))
             {
                if (!bSectionFound && strncmp(szFullSectionName, szODWorkString, uSectionNameLength) == 0) 
                {
@@ -846,9 +844,9 @@ abort_send:
          {
             od_disp(szODWorkString, strlen(szODWorkString), FALSE);
 
-            if(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfLocalFile) == NULL)
+            if(fgets(szODWorkString, 256, pfLocalFile) == NULL)
             {
-               while(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfRemoteFile))
+               while(fgets(szODWorkString, 256, pfRemoteFile))
                {
                   od_disp(szODWorkString, strlen(szODWorkString), FALSE);
                }
@@ -938,7 +936,7 @@ end_transmission:
  *     Return: A pointer to a now-open file of the required type, or NULL if
  *             no match was found.
  */
-static FILE *ODEmulateFindCompatFile(const char *pszBaseName, INT *pnLevel)
+static FILE *ODEmulateFindCompatFile(char *pszBaseName, INT *pnLevel)
 {
    FILE *pfCompatibleFile;
 
@@ -957,21 +955,21 @@ static FILE *ODEmulateFindCompatFile(const char *pszBaseName, INT *pnLevel)
       {
          case LEVEL_RIP:
             if(!od_control.user_rip) continue;
-            strcat(szODWorkString, ".rip");
+            strcat(szODWorkString, ".RIP");
             break;
 
          case LEVEL_AVATAR:
             if(!od_control.user_avatar) continue;
-            strcat(szODWorkString, ".avt");
+            strcat(szODWorkString, ".AVT");
             break;
 
          case LEVEL_ANSI:
             if(!od_control.user_ansi) continue;
-            strcat(szODWorkString, ".ans");
+            strcat(szODWorkString, ".ANS");
             break;
 
          case LEVEL_ASCII:
-            strcat(szODWorkString, ".asc");
+            strcat(szODWorkString, ".ASC");
             break;
       }
 
@@ -1001,7 +999,7 @@ static FILE *ODEmulateFindCompatFile(const char *pszBaseName, INT *pnLevel)
  *
  *     Return: void
  */
-ODAPIDEF void ODCALL od_disp_emu(const char *pszToDisplay, BOOL bRemoteEcho)
+ODAPIDEF void ODCALL od_disp_emu(char *pszToDisplay, BOOL bRemoteEcho)
 {
    BOOL bTranslateRemote;
 

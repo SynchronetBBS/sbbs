@@ -12,7 +12,7 @@
 
 
 /* The opendoor.h file must be included by any program using OpenDoors. */
-#include "OpenDoor.h"
+#include "opendoor.h"
 
 #include <string.h>
 

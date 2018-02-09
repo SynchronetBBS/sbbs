@@ -1,34 +1,12 @@
-/*
- *  The Beast's Domain door game
- *  Copyright (C) 2005  Domain Entertainment
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
-
+#include <io.h>
+#include <dos.h>
 #include <time.h>
 #include <fcntl.h>
-#if 0
-#include <dos.h>
-#include <io.h>
 #include <conio.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include "xsdk.h"		/* Colour definitions */
+#include <sys\stat.h>
 #include "objects.h"
 
 #define N  (1<<0)
@@ -61,7 +39,7 @@
 #define NUM_MONSTER     33 /* 23 */
 #define NUM_BLOCKAGE    56 /* 6  */
 
-int main(int argc, char **argv)
+void main(int argc, char **argv)
 {
     FILE *stream;
     char door=0,room[SQUARE][SQUARE],str[128];
@@ -70,36 +48,33 @@ int main(int argc, char **argv)
         magic[10],magic2[10],num_monster,num_gold,fountain[10],stairs,staff,
         save=0;
     long lastrun;
+    struct time t;
+    struct date d;
 
-    if(argc > 1) {
-        if(!stricmp(argv[1],"/?")) {
-            if(argc);
-            printf("\r\nThe Beast's Domain  Reroller  Copyright 1993 Domain "
-                    "Entertainment\r\n");
-            printf("\r\nUsage: REROLL /SAVE\r\n");
-            printf("\r\nWhere /SAVE     prevents the user data file "
-                  "from being deleted\r\n");
-            return(1);
-        }
-        if(!stricmp(argv[1],"/SAVE")) save=1;
+    if(!stricmp(argv[1],"/?")) {
+        if(argc);
+        printf("\r\nThe Beast's Domain  Reroller  Copyright 1993 Domain "
+                "Entertainment\r\n");
+        printf("\r\nUsage: REROLL /SAVE\r\n");
+        printf("\r\nWhere /SAVE     prevents the user data file "
+              "from being deleted\r\n");
+        return;
     }
+    if(!stricmp(argv[1],"/SAVE")) save=1;
 
-    xp_randomize();
-#if 0
-    clrscr();
-#endif
+    randomize(); clrscr();
     printf("Creating The Beast's Domain (may take several minutes)!\r\n\r\n");
-    if(!save) unlink("tbd.usr");
+    if(!save) unlink("TBD.USR");
     else printf("Saving current user file...");
-    unlink("tbd.mnt");
-    unlink("topten.ans");
-    unlink("tbdmap.dab");
-    unlink("tbdtoday.log");
-    unlink("tbdchar.pos");
-/*    if((file=open("tbdmap.dab",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
+    unlink("TBD.MNT");
+    unlink("TOPTEN.ANS");
+    unlink("TBDMAP.DAB");
+    unlink("TBDTODAY.LOG");
+    unlink("TBDCHAR.POS");
+/*    if((file=open("TBDMAP.DAB",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
         printf("Error opening map file\r\n");
         exit(0); } */
-    if((stream=fopen("tbdmap.dab","w+b"))==NULL) {
+    if((stream=fopen("TBDMAP.DAB","w+b"))==NULL) {
         printf("Error opening map file\r\n");
         exit(0); }
 
@@ -110,7 +85,7 @@ for (w=0;w<LEVELS;w++) {
     fseek(stream,w*SQUARE*SQUARE,SEEK_SET);
     for (x=0;x<SQUARE*SQUARE;x++) {
         for (y=0;y<7;y++) {         /* number of possible doors in each room */
-            if (xp_random(4)) {
+            if (random(4)) {
                 switch(y) {
                     case 0:
                         if (x>SQUARE-1) door|=N;
@@ -219,16 +194,16 @@ fclose(stream);
         } while(weapons2[x]==armor2[x] || weapons2[x]==magic2[x] || armor2[x]==
                 magic2[x]);
     }
-    unlink("tbdobj.dab");
-/*    if((file=open("tbdobj.dab",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
+    unlink("TBDOBJ.DAB");
+/*    if((file=open("TBDOBJ.DAB",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
         printf("Error opening object data file\r\n");
         exit(0); } */
-    if((stream=fopen("tbdobj.dab","w+b"))==NULL) {
+    if((stream=fopen("TBDOBJ.DAB","w+b"))==NULL) {
         printf("Error opening object data file\r\n");
         exit(0); }
 
-    stairs=xp_random(SQUARE*SQUARE);
-    do { staff=xp_random(SQUARE*SQUARE); } while(staff==stairs);
+    stairs=random(SQUARE*SQUARE);
+    do { staff=random(SQUARE*SQUARE); } while(staff==stairs);
     printf("\r\n\r\nStocking The Beast's Domain.");
 for (w=0;w<LEVELS;w++) {
     for (x=0;x<SQUARE*SQUARE;x++) {
@@ -274,7 +249,7 @@ for (w=0;w<LEVELS;w++) {
 
                 }
             }
-        } else if((magic[w]==x || magic2[w]==x) && w<8) {
+        } else if((magic[w]==x || magic2[x]==x) && w<8) {
             ch=NUM_TRADINGPOST+2; val=0;
 /*            write(file,&ch,1); write(file,&val,1); */
             fwrite(&ch,sizeof(ch),1,stream);
@@ -363,17 +338,12 @@ for (w=0;w<LEVELS;w++) {
 }
 /* close(file); */
 fclose(stream);
-if((file=open("tbd.mnt",O_WRONLY|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))!=-1) {
-#if 0
-    struct time t;
-    struct date d;
+if((file=open("TBD.MNT",O_WRONLY|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))!=-1) {
+    lastrun=time(NULL);
     unixtodos(lastrun,&d,&t);
     t.ti_hour=t.ti_min=t.ti_sec=t.ti_hund=0;
     lastrun=dostounix(&d,&t);
-#endif
-    lastrun=time(NULL);
-    lastrun -= lastrun % 86400;
     write(file,&lastrun,4); close(file); }
 printf("\r\n\r\nProgram Complete!  The Beast's Domain is ready to go!");
-return(0);
+return;
 }

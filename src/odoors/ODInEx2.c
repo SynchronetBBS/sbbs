@@ -60,7 +60,6 @@
  *              Mar 27, 1996  6.10  BP   Added WCNODEID to
  *              Jan 13, 1997  6.10  BP   Fixes for Door32 support.
  *              Oct 19, 2001  6.20  RS   Added TCP/IP socket (telnet) support.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -73,7 +72,6 @@
 #include <time.h>
 
 #include "OpenDoor.h"
-#include "ODStr.h"
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODCom.h"
@@ -106,7 +104,6 @@ static char *apszEnvVarNames[] =
    "PCB",
    "BBS",
    "WCNODEID",
-   "SBBSNODE",
 };
 #define NUM_DIR_ENV_VARS DIM(apszEnvVarNames)
 
@@ -845,9 +842,9 @@ INT ODSearchForDropFile(char **papszFileNames, INT nNumFileNames,
 
    /* Next, look for the drop file(s) in the current directory. */
    if((nResult = ODSearchInDir(papszFileNames, nNumFileNames, pszFound,
-      "."DIRSEP_STR)) != -1)
+      ".\\")) != -1)
    {
-      if(pszDirectory != NULL) strcpy(pszDirectory, "."DIRSEP_STR);
+      if(pszDirectory != NULL) strcpy(pszDirectory, ".\\");
       return(nResult);
    }
 

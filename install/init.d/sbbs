@@ -1,8 +1,6 @@
 #!/bin/bash
 # 
-# Linux system service run script (init file) for Synchronet
-#
-# This file normally goes in your /etc/init.d directory
+# Linux service startup script (init file) for Synchronet
 #
 # $Id$
 
@@ -37,7 +35,8 @@ export SBBSCTRL=$SBBSDIR/ctrl
 # RedHat/SysVinit commands
 start_daemon="daemon"
 daemon_status="status"
-rc_status="save_status"
+rc_status="redhat_status"
+rc_status_v="redhat_status"
 rc_exit="exit"
 
 # load the function library (to define the daemon and killproc functions)
@@ -55,7 +54,8 @@ elif [ -f /etc/rc.status ] ; then
 	# Convert init commands to SUSE (rc.status) syntax
 	start_daemon="startproc"
 	daemon_status="checkproc"
-	rc_status="rc_status -v"
+	rc_status="rc_status"
+	rc_status_v="rc_status -v"
 	rc_exit="rc_exit"
 else
 	echo $"Unsupported init type"
@@ -68,17 +68,16 @@ proc="$SBBSDIR/exec/$prog"
 pidfile="/var/run/sbbs.pid"
 lockfile="/var/lock/subsys/sbbs"
 
-save_status() {
+redhat_status() {
 	retval=$?
 }
 
 start() {
-	echo -n $"Starting $prog: "
+	echo -n $"Starting $proc: "
 	shift
-	export SHELL=/bin/sh
 	$start_daemon $proc -d $@
 	# Remember status and be verbose
-	$rc_status
+	$rc_status_v	
 	echo
 	[ $retval = 0 ] && touch $lockfile
 	return $retval
@@ -88,7 +87,7 @@ stop() {
 	echo -n $"Stopping $prog: "
 	killproc $proc
 	# Remember status and be verbose
-	$rc_status
+	$rc_status_v
 	echo
 	[ $retval = 0 ] && rm -f $lockfile $pidfile
 	return $retval
@@ -98,7 +97,7 @@ reload(){
 	echo -n $"Reloading $prog: "
 	killproc $proc -HUP
 	# Remember status and be verbose
-	$rc_status
+	$rc_status_v
 	echo
 	return $retval
 }
@@ -112,16 +111,18 @@ case "$1" in
 		;;
 	status)
 		$daemon_status $proc
-		$rc_status
+		$rc_status_v
 		;;
 	restart)
 		stop
 		start $@
+		$rc_status
 		;;
 	condrestart)
 		if [ -f $pidfile ] ; then
 			stop
 			start $@
+			$rc_status
 		fi
 		;;
 	reload)

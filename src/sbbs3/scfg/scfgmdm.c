@@ -1,37 +1,6 @@
 /* scfgmdm.c */
 
-/* $Id$ */
-
-/****************************************************************************
- * @format.tab-size 4		(Plain Text/Source Code File Header)			*
- * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
- *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
- *																			*
- * This program is free software; you can redistribute it and/or			*
- * modify it under the terms of the GNU General Public License				*
- * as published by the Free Software Foundation; either version 2			*
- * of the License, or (at your option) any later version.					*
- * See the GNU General Public License for more details: gpl.txt or			*
- * http://www.fsf.org/copyleft/gpl.html										*
- *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
- * For Synchronet coding style and modification guidelines, see				*
- * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
- *																			*
- * Note: If this box doesn't appear square, then you need to fix your tabs.	*
- ****************************************************************************/
+/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
 
 #include "scfg.h"
 
@@ -40,7 +9,7 @@ int exec_mdm(char *fname);
 void mdm_cfg(int mdmnum)
 {
 
-free(cfg.mdm_result);
+FREE(cfg.mdm_result);
 cfg.mdm_result=NULL;
 
 /*
@@ -71,7 +40,7 @@ void cvttab(char *str)
 
 for(i=0;str[i];i++)
 	if(str[i]==TAB)
-		str[i]=' ';
+		str[i]=SP;
 }
 
 int export_mdm(char *fname)
@@ -134,7 +103,7 @@ while(!feof(stream)) {
 	cvttab(str);
     truncsp(str);
 	p=str;
-	while(*p && *p<=' ')   /* look for beginning of command */
+	while(*p && *p<=SP)   /* look for beginning of command */
 		p++;
 	if(!*p)
 		continue;
@@ -143,55 +112,55 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"COM_RATE",8)) {
 		p+=8;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		cfg.com_rate=atol(p);
 		continue; }
 
 	if(!strnicmp(p,"INIT_STR",8)) {
 		p+=8;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		sprintf(cfg.mdm_init,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"DIAL_STR",8)) {
 		p+=8;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		sprintf(cfg.mdm_dial,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"HANGUP_STR",10)) {
 		p+=10;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		sprintf(cfg.mdm_hang,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"ANSWER_STR",10)) {
 		p+=10;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		sprintf(cfg.mdm_answ,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"OFFHOOK_STR",11)) {
 		p+=11;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		sprintf(cfg.mdm_offh,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"SPEC_INIT",9)) {
 		p+=9;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		sprintf(cfg.mdm_spec,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"TERM_INIT",9)) {
 		p+=9;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		sprintf(cfg.mdm_term,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"LOCKED_RATE",11)) {
 		p+=11;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		if(!stricmp(p,"OFF") || !stricmp(p,"NO"))
 			cfg.mdm_misc&=~MDM_STAYHIGH;
 		else
@@ -200,7 +169,7 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"CALLER_ID",9)) {
 		p+=9;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		if(!stricmp(p,"YES") || !stricmp(p,"ON"))
 			cfg.mdm_misc|=MDM_CALLERID;
 		else
@@ -209,7 +178,7 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"VERBAL_RESULTS",14)) {
 		p+=14;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		if(!stricmp(p,"YES") || !stricmp(p,"ON"))
 			cfg.mdm_misc|=MDM_VERBAL;
 		else
@@ -218,7 +187,7 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"DROP_DTR",8)) {
 		p+=8;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		if(!stricmp(p,"OFF") || !stricmp(p,"NO"))
 			cfg.mdm_misc|=MDM_NODTR;
 		else
@@ -227,7 +196,7 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"FLOW_CONTROL",12)) {
 		p+=12;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		cfg.mdm_misc&=~(MDM_RTS|MDM_CTS);
 		strupr(p);
 		if(strstr(p,"RTS") || strstr(p,"RECEIVE") || strstr(p,"RECV")
@@ -240,13 +209,13 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"RESULT ",7)) {
 		p+=7;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		i=atoi(p);
 		for(j=0;j<cfg.mdm_results;j++)
 			if(cfg.mdm_result[j].code==i)
 				break;
 		if(j>=cfg.mdm_results) {
-			if((cfg.mdm_result=(mdm_result_t *)realloc(
+			if((cfg.mdm_result=(mdm_result_t *)REALLOC(
 				cfg.mdm_result,sizeof(mdm_result_t)
 				*(cfg.mdm_results+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,p,cfg.mdm_results+1);
@@ -255,26 +224,27 @@ while(!feof(stream)) {
 				continue; }
 			cfg.mdm_results++; }
 		cfg.mdm_result[j].code=i;
-		while(*p!=' ') p++;
-		while(*p==' ') p++;
+		while(*p!=SP) p++;
+		while(*p==SP) p++;
 		cfg.mdm_result[j].cps=atoi(p);
-		while(*p!=' ') p++;
-        while(*p==' ') p++;
+		while(*p!=SP) p++;
+        while(*p==SP) p++;
 		cfg.mdm_result[j].rate=atoi(p);
-		while(*p!=' ') p++;
-        while(*p==' ') p++;
+		while(*p!=SP) p++;
+        while(*p==SP) p++;
 		sprintf(cfg.mdm_result[j].str,"%.*s",LEN_MODEM,p);
 		continue; }
 
 	if(!strnicmp(p,"INCLUDE ",8)) {
 		p+=8;
-		while(*p==' ') p++;
+		while(*p==SP) p++;
 		exec_mdm(p);
 		continue; }
 
 	sprintf(msg,"ERROR: '%.15s' in %.8s.MDM",p,fname);
+	savnum--;
 	umsg(msg);
-}
+	savnum++; }
 
 fclose(stream);
 return(1);
@@ -306,16 +276,16 @@ while(!feof(stream)) {
 	if(!fgets(fname,120,stream))
 		break;
 	truncsp(fname);
-	if((mdm_type=realloc(mdm_type,sizeof(char *)*(mdm_types+1)))==NULL) {
+	if((mdm_type=REALLOC(mdm_type,sizeof(char *)*(mdm_types+1)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,"Modem Type",sizeof(char *)*(mdm_types+1));
 		break; }
-	if((mdm_file=realloc(mdm_file,sizeof(char *)*(mdm_types+1)))==NULL) {
+	if((mdm_file=REALLOC(mdm_file,sizeof(char *)*(mdm_types+1)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,"Modem File",sizeof(char *)*(mdm_types+1));
         break; }
-	if((mdm_type[mdm_types]=malloc(strlen(str)+1))==NULL) {
+	if((mdm_type[mdm_types]=MALLOC(strlen(str)+1))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,"Modem Typename",sizeof(char *)*(mdm_types+1));
         break; }
-	if((mdm_file[mdm_types]=malloc(9))==NULL) {
+	if((mdm_file[mdm_types]=MALLOC(9))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,"Modem Filename",sizeof(char *)*(mdm_types+1));
         break; }
 	strcpy(mdm_type[mdm_types],str);

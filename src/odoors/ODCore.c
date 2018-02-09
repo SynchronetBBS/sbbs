@@ -66,8 +66,6 @@
  *              Mar 21, 1996  6.10  BP   Added od_control_get().
  *              Sep 01, 1996  6.10  BP   Update output area on od_set_per...().
  *              Oct 19, 2001  6.20  RS   od_get_key now ignores linefeeds.
- *              Mar 14, 2002  6.22  RS   Fixed od_get_key(bWait=FALSE)
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -80,7 +78,6 @@
 #include <errno.h>
 
 #include "OpenDoor.h"
-#include "ODStr.h"
 #include "ODGen.h"
 #include "ODPlat.h"
 #include "ODCom.h"
@@ -133,7 +130,7 @@ char *pchColorEndPos;
 BYTE btCurrentStatusLine = STATUS_NONE;
 OD_PERSONALITY_CALLBACK *pfCurrentPersonality = NULL;
 char szDesiredPersonality[33] = "";
-SET_PERSONALITY_FUNC *pfSetPersonality = NULL;
+extern SET_PERSONALITY_FUNC *pfSetPersonality = NULL;
 
 /* Commonly used character sequences. */
 char abtBlackBlock[2] = {' ', 0x07};
@@ -241,15 +238,9 @@ ODAPIDEF void ODCALL od_clr_scr(void)
          od_disp("!|w0000270M12", 13, FALSE);
       }
    }
-   
-   if(od_control.user_ansi)
-   {
-      od_disp("\x1b[2J\x1b[1;1H", 10, FALSE);
-   }
-   else {
-	   /* Send ascii 12 to modem, no local echo. */
-	   od_disp(szClearScreen, 1, FALSE);
-   }
+
+   /* Send ascii 12 to modem, no local echo. */
+   od_disp(szClearScreen, 1, FALSE);
 
    /* Clear local window. */
    ODScrnClear();
@@ -402,37 +393,6 @@ ODAPIDEF void ODCALL od_clear_keybuffer(void)
    OD_API_EXIT();
 }
 
-/* ----------------------------------------------------------------------------
- * od_key_pending()
- *
- * Returns TRUE if there's a key pending, FALSE otherwise.
- *
- * Parameters: none
- *
- *     Return: TRUE if character is waiting, FALSE if no character is waiting.
- */
-ODAPIDEF BOOL ODCALL od_key_pending(void)
-{
-   /* Initialize OpenDoors if it hasn't already been done. */
-   if(!bODInitialized) od_init();
-
-   /* Log function entry if running in trace mode. */
-   TRACE(TRACE_API, "od_get_key()");
-
-   OD_API_ENTRY();
-
-   /* Call the OpenDoors kernel. */
-   CALL_KERNEL_IF_NEEDED();
-
-   if(!ODInQueueWaiting(hODInputQueue))
-   {
-         OD_API_EXIT();
-         return(FALSE);
-   }
-
-   OD_API_EXIT();
-   return(TRUE);
-}
 
 /* ----------------------------------------------------------------------------
  * od_get_key()
@@ -463,19 +423,19 @@ ODAPIDEF char ODCALL od_get_key(BOOL bWait)
    /* Call the OpenDoors kernel. */
    CALL_KERNEL_IF_NEEDED();
 
-	do {
+   /* If we aren't supposed to wait for input, then check whether any   */
+   /* input is waiting in the input queue, and if not return right away */
+   /* without any data.                                                 */
+   if(!bWait)
+   {
+      if(!ODInQueueWaiting(hODInputQueue))
+      {
+         OD_API_EXIT();
+         return(0);
+      }
+   }
 
-	   /* If we aren't supposed to wait for input, then check whether any   */
-	   /* input is waiting in the input queue, and if not return right away */
-	   /* without any data.                                                 */
-	   if(!bWait)
-	   {
-		  if(!ODInQueueWaiting(hODInputQueue))
-		  {
-			 OD_API_EXIT();
-			 return(0);
-		  }
-	   }
+	do {
 
 		/* Obtain the next character from the input queue. If we get to this */
 		/* point and there is no data waiting in the input queue, then the   */
@@ -806,7 +766,7 @@ cleanup:
  *
  *     Return: void
  */
-ODAPIDEF void ODCALL od_disp(const char *pachBuffer, INT nSize, BOOL bLocalEcho)
+ODAPIDEF void ODCALL od_disp(char *pachBuffer, INT nSize, BOOL bLocalEcho)
 {
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_disp()");
@@ -851,7 +811,7 @@ ODAPIDEF void ODCALL od_disp(const char *pachBuffer, INT nSize, BOOL bLocalEcho)
  *
  *     Return: void
  */
-ODAPIDEF void ODCALL od_disp_str(const char *pszToDisplay)
+ODAPIDEF void ODCALL od_disp_str(char *pszToDisplay)
 {
    /* Log function entry if running in trace mode */
    TRACE(TRACE_API, "od_disp_str()");
@@ -1059,11 +1019,6 @@ void ODStringToName(char *pszToConvert)
 
    /* Trim any newline character that may be at the end of the string. */
    if(pszToConvert[strlen(pszToConvert) - 1] == '\n')
-   {
-      pszToConvert[strlen(pszToConvert) - 1] = '\0';
-   }
-   /* Trim any CR character that may be at the end of the string. */
-   if(pszToConvert[strlen(pszToConvert) - 1] == '\r')
    {
       pszToConvert[strlen(pszToConvert) - 1] = '\0';
    }
@@ -1368,7 +1323,7 @@ ODAPIDEF void ODCALL od_set_dtr(BOOL bHigh)
  *
  *     Return: void
  */
-ODAPIDEF char ODCALL od_get_answer(const char *pszOptions)
+ODAPIDEF char ODCALL od_get_answer(char *pszOptions)
 {
    char *pchPossibleOption;
    char chPressed;

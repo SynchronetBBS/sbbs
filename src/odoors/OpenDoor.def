@@ -63,7 +63,6 @@ EXPORTS
    od_init=_od_init@0
    od_input_str=_od_input_str@16
    od_kernel=_od_kernel@0
-   od_key_pending=_od_key_pending@0
    od_list_files=_od_list_files@4
    od_log_open=_od_log_open@0
    od_log_write=_od_log_write@4

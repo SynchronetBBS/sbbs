@@ -18,7 +18,7 @@
 
 
 /* Header file for the OpenDoors API */
-#include "OpenDoor.h"
+#include "opendoor.h"
 
 /* Other required C header files */
 #include <string.h>
@@ -26,8 +26,6 @@
 #include <time.h>
 #include <errno.h>
 #include <stdlib.h>
-
-#include "genwrap.h"
 
 
 /* Hard-coded configurable constants - change these values to alter game */
@@ -38,7 +36,7 @@
 #define CHANGE_DIRECTION      10       /* % of ticks course changes direction */
 #define MAX_NAME_SIZE         35       /* Maximum characters in player name */
 #define WAIT_FOR_FILE         10       /* Time to wait for access to file */
-#define SCORE_FILENAME   "skigame.dat" /* Name of high score file */
+#define SCORE_FILENAME   "SKIGAME.DAT" /* Name of high score file */
 
 
 /* High-score file format structure */
@@ -346,7 +344,7 @@ void PlayGame(void)
    tHighScoreRecord ScoreRecord;
    FILE *pfFile;
    tHighScoreFile HighScores;
-   int nBackup=0;
+   int nBackup;
    clock_t StartClock;
 
    /* Clear the Screen */
@@ -362,7 +360,7 @@ void PlayGame(void)
    /* Loop until game is over */
    for(;;)
    {
-      StartClock = msclock();
+      StartClock = clock();
 
       /* Display current line */
       if(od_control.user_ansi || od_control.user_avatar)
@@ -505,9 +503,9 @@ void PlayGame(void)
          return;
       }
 
-      /* Delay for about 1/10th of a second, to add a constant delay after */
+      /* Delay for about 1/18th of a second, to add a constant delay after */
       /* each line is displayed that does not depend on the connect speed. */
-      while(msclock() < StartClock + (((clock_t)MSCLOCKS_PER_SEC) / 10))
+      while(clock() < StartClock + (((clock_t)CLOCKS_PER_SEC) / 18))
          od_sleep(0);
 
       /* Increase score */
@@ -543,7 +541,7 @@ void SpaceRight(int nColumns)
    if(od_control.user_ansi)
    {
       /* Move cursor right using ESC[nC control sequence */
-      sprintf(szSequence, "\x1b[%02dC", nColumns);
+      sprintf(szSequence, "\x1b[%02.2dC", nColumns);
       od_disp_emu(szSequence, TRUE);
    }
 
@@ -561,7 +559,7 @@ void MoveLeft(int nColumns)
 {
    /* Move cursor left using ESC[nD control sequence */
    char szSequence[6];
-   sprintf(szSequence, "\x1b[%02dD", nColumns);
+   sprintf(szSequence, "\x1b[%02.2dD", nColumns);
    od_disp_emu(szSequence, TRUE);
 }
 

@@ -34,15 +34,15 @@ BEGIN
     POPUP "&Door"
     BEGIN
         MENUITEM "C&onfigure..."                ID_DOOR_CONFIG
-        MENUITEM "&Chat Mode\tAlt+C",          ID_DOOR_CHATMODE
+        MENUITEM "&Chat Mode\tCtrl+C",          ID_DOOR_CHATMODE
         MENUITEM SEPARATOR
-        MENUITEM "User &Keyboard Off\tAlt+K",  ID_DOOR_USERKEYBOARDOFF
-        MENUITEM "Sysop &Next\tAlt+N",         ID_DOOR_SYSOPNEXT
+        MENUITEM "User &Keyboard Off\tCtrl+K",  ID_DOOR_USERKEYBOARDOFF
+        MENUITEM "Sysop &Next\tCtrl+N",         ID_DOOR_SYSOPNEXT
         MENUITEM SEPARATOR
-        MENUITEM "&Hangup\tAlt+H",             ID_DOOR_HANGUP
-        MENUITEM "&Lockout\tAlt+L",            ID_DOOR_LOCKOUT
+        MENUITEM "&Hangup\tCtrl+H",             ID_DOOR_HANGUP
+        MENUITEM "&Lockout\tCtrl+L",            ID_DOOR_LOCKOUT
         MENUITEM SEPARATOR
-        MENUITEM "E&xit To BBS\tAlt+X",        ID_DOOR_EXIT
+        MENUITEM "E&xit To BBS\tCtrl+X",        ID_DOOR_EXIT
     END
     POPUP "&View"
     BEGIN
@@ -52,11 +52,11 @@ BEGIN
     POPUP "&User"
     BEGIN
         MENUITEM "Add &One Minute\tShift+Up Arrow",   ID_USER_ADDONEMINUTE
-        MENUITEM "Add &Five Minutes\tAlt+Up Arrow", ID_USER_ADDFIVEMINUTES
+        MENUITEM "Add &Five Minutes\tCtrl+Up Arrow", ID_USER_ADDFIVEMINUTES
         MENUITEM SEPARATOR
         MENUITEM "&Subtract One Minute\tShift+Down Arrow", 
                                                 ID_USER_SUBTRACTONEMINUTE
-        MENUITEM "S&ubtract Five Minutes\tAlt+Down Arrow", 
+        MENUITEM "S&ubtract Five Minutes\tCtrl+Down Arrow", 
                                                 ID_USER_SUBTRACTFIVEMINUTES
         MENUITEM SEPARATOR
         MENUITEM "&Inactivity Timer",           ID_USER_INACTIVITYTIMER
@@ -84,7 +84,7 @@ BEGIN
     LTEXT           "",IDC_VERSION,32,14,123,7
     LTEXT           "",IDC_COPYRIGHT,32,23,119,8
     LTEXT           "Written using:",-1,31,48,69,8
-    LTEXT           "OpenDoors 6.24, Win32 Edition",-1,31,57,127,8
+    LTEXT           "OpenDoors 6.10, Win32 Edition",-1,31,57,127,8
     LTEXT           "Copyright \251 1991-1997 by Brian Pirie.",-1,31,
                     66,139,8,SS_NOPREFIX
     LTEXT           "All Rights Reserved.",-1,31,75,90,8
@@ -136,7 +136,6 @@ IDB_TOOLBAR             BITMAP  DISCARDABLE     "toolbar.bmp"
 /* Accelerator Table.                                                        */
 /* ========================================================================= */
 
-/* Dumb dumb dumb.
 IDR_FRAME ACCELERATORS DISCARDABLE 
 BEGIN
     "C",            ID_DOOR_CHATMODE,       VIRTKEY, CONTROL, NOINVERT
@@ -149,21 +148,6 @@ BEGIN
     VK_DOWN,        ID_USER_SUBTRACTONEMINUTE, VIRTKEY, SHIFT, NOINVERT
     VK_F1,          ID_HELP_CONTENTS,       VIRTKEY, NOINVERT
     VK_UP,          ID_USER_ADDFIVEMINUTES, VIRTKEY, CONTROL, NOINVERT
-    VK_UP,          ID_USER_ADDONEMINUTE,   VIRTKEY, SHIFT, NOINVERT
-END
-*/
-IDR_FRAME ACCELERATORS DISCARDABLE 
-BEGIN
-    "C",            ID_DOOR_CHATMODE,       VIRTKEY, ALT, NOINVERT
-    "H",            ID_DOOR_HANGUP,         VIRTKEY, ALT, NOINVERT
-    "K",            ID_DOOR_USERKEYBOARDOFF, VIRTKEY, ALT, NOINVERT
-    "L",            ID_DOOR_LOCKOUT,        VIRTKEY, ALT, NOINVERT
-    "N",            ID_DOOR_SYSOPNEXT,      VIRTKEY, ALT, NOINVERT
-    "X",            ID_DOOR_EXIT,           VIRTKEY, ALT, NOINVERT
-    VK_DOWN,        ID_USER_SUBTRACTFIVEMINUTES, VIRTKEY, ALT, NOINVERT
-    VK_DOWN,        ID_USER_SUBTRACTONEMINUTE, VIRTKEY, SHIFT, NOINVERT
-    VK_F1,          ID_HELP_CONTENTS,       VIRTKEY, NOINVERT
-    VK_UP,          ID_USER_ADDFIVEMINUTES, VIRTKEY, ALT, NOINVERT
     VK_UP,          ID_USER_ADDONEMINUTE,   VIRTKEY, SHIFT, NOINVERT
 END
 

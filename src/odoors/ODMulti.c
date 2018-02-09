@@ -36,7 +36,6 @@
  *              Feb 19, 1996  6.00  BP   Changed version number to 6.00.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Sep 01, 1996  6.10  BP   Update output area on od_set_per...().
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -48,7 +47,6 @@
 #include <stdio.h>
 
 #include "OpenDoor.h"
-#include "ODStr.h"
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODScrn.h"
@@ -108,7 +106,7 @@ ODAPIDEF void ODCALL ODMPSEnable(void)
  *
  *     Return: TRUE on success, or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_set_personality(const char *pszName)
+ODAPIDEF BOOL ODCALL od_set_personality(char *pszName)
 {
 #ifdef OD_TEXTMODE
    BYTE btNewPersonality;
@@ -213,7 +211,7 @@ ODAPIDEF BOOL ODCALL od_set_personality(const char *pszName)
  *
  *     Return: TRUE on success or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_add_personality(const char *pszName, BYTE btOutputTop,
+ODAPIDEF BOOL ODCALL od_add_personality(char *pszName, BYTE btOutputTop,
    BYTE btOutputBottom, OD_PERSONALITY_PROC *pfPerFunc)
 {
    /* Log function entry if running in trace mode */

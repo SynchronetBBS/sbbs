@@ -32,7 +32,6 @@
  *              Dec 30, 1995  6.00  BP   Added ODCALL for calling convention.
  *              Feb 19, 1996  6.00  BP   Changed version number to 6.00.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -84,7 +83,7 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
    INT nRowBytes = nRowLength * 2;
    char *pchTest;
    char *pchMemory;
-   char *pBuffer=NULL;
+   char *pBuffer;
    char *pchScreenBlock;
    INT nBlockRow = 0;
    INT nOutRow;
@@ -155,8 +154,7 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
       pBlock))
    {
       od_control.od_error = ERR_PARAMETER;
-      if(pBuffer)
-         free(pBuffer);
+      free(pBuffer);
       OD_API_EXIT();
       return(FALSE);
    }
@@ -186,9 +184,9 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
                if(od_control.od_full_put) break;
 
                /* If both buffers have space characters. */
-               if((*pchMemory==' ' || *pchMemory==0) && (*pchTest==' ' || *pchTest=='\0'))
+               if(*pchMemory==*pchTest && (*pchTest==' ' || *pchTest=='\0'))
                {
-                  /* If background colours differ, then stop comparison loop. */
+                  /* If colours differ, then stop comparison loop. */
                   if((pchTest[1]&0x70) != (pchMemory[1]&0x70))
                   {
                      break;
@@ -196,7 +194,7 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
                }
 
                /* If both have different character and colour attributes. */
-               else if(*((WORD *)pchTest) != *((WORD *)pchMemory))
+               else if(*((int *)pchTest) != *((int *)pchMemory))
                {
                   /* Then stop comparison loop now. */
                   break;

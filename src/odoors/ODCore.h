@@ -60,7 +60,7 @@ extern BOOL bIsCallbackActive;
 extern BOOL bShellChatActive;
 
 /* Global working space. */
-#define OD_GLOBAL_WORK_STRING_SIZE  1025
+#define OD_GLOBAL_WORK_STRING_SIZE  257
 extern char szODWorkString[OD_GLOBAL_WORK_STRING_SIZE];
 
 /* Global instance of the text information structure for general use. */

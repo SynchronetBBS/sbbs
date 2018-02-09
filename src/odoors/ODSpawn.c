@@ -43,7 +43,6 @@
  *              Feb 27, 1996  6.00  BP   Store screen info in our own struct.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
- *              Aug 10, 2003  6.23  SH   *nix support - some functions not supported (Yet)
  */
 
 #define BUILDING_OPENDOORS
@@ -56,12 +55,6 @@
 #include <errno.h>
 
 #include "OpenDoor.h"
-#ifdef ODPLAT_NIX
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#endif
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODCom.h"
@@ -156,11 +149,6 @@ static void savevect(void);
 
 #endif /* ODPLAT_DOS */
 
-#ifdef ODPLAT_NIX
-/* Location function prototypes. */
-int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
-   char *papszEnviron[]);
-#endif /* ODPLAT_NIX */
 
 /* ----------------------------------------------------------------------------
  * od_spawn()
@@ -172,7 +160,7 @@ int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
  *
  *     Return: TRUE on success, or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_spawn(const char *pszCommandLine)
+ODAPIDEF BOOL ODCALL od_spawn(char *pszCommandLine)
 {
 #ifdef ODPLAT_DOS
    char *apszArgs[4];
@@ -228,24 +216,6 @@ ODAPIDEF BOOL ODCALL od_spawn(const char *pszCommandLine)
    /* Now, call od_spawnvpe(). */
    return(od_spawnvpe(P_WAIT, *apszArgs, apszArgs, NULL) != -1);
 #endif /* ODPLAT_WIN32 */
-
-#ifdef ODPLAT_NIX
-   sigset_t		block;
-   int retval;
-
-   /* Suspend kernel */
-   sigemptyset(&block);
-   sigaddset(&block,SIGALRM);
-   sigprocmask(SIG_BLOCK,&block,NULL);
-   retval=system(pszCommandLine);
-
-   /* Restore kernel */
-   sigemptyset(&block);
-   sigaddset(&block,SIGALRM);
-   sigprocmask(SIG_UNBLOCK,&block,NULL);
-
-   return(retval!=-1 && retval != 127);
-#endif
 }
 
 
@@ -1041,62 +1011,3 @@ int _spawnve(int nModeFlag, char *pszPath, char *papszArgs[],
 }
 
 #endif /* ODPLAT_DOS */
-
-#ifdef ODPLAT_NIX
-/* ----------------------------------------------------------------------------
- * _spawnvpe()                                         *** PRIVATE FUNCTION ***
- *
- * Executes a child program in the *nix environment.
- *
- * Parameters: nModeFlag    - Must be P_WAIT or P_NOWAIT
- *
- *             pszPath      - Name of program to execute.
- *
- *             papszArgs    - Array of command-line arguments.
- *
- *             papszEnviron - Array of environment variables.
- *
- *     Return: -1 on failure or the spawned-to program's return value on
- *             success.
- */
-int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
-   char *papszEnviron[])
-{
-   pid_t	child;
-   int		status;
-   pid_t	wret;
-   struct sigaction act;
-
-
-   child=fork();
-
-   if(nModeFlag == P_WAIT)  {
-      /* require wait for child */
-      act.sa_handler=SIG_IGN;
-      sigemptyset(&(act.sa_mask));
-      act.sa_flags=SA_NOCLDSTOP;
-      sigaction(SIGCHLD,&act,NULL);
-   }
-   else  {
-      /* Ignore SIGCHLD for backgrounded spawned processes */
-      act.sa_handler=SIG_IGN;
-      sigemptyset(&(act.sa_mask));
-      act.sa_flags=SA_NOCLDSTOP|SA_NOCLDWAIT;
-      sigaction(SIGCHLD,&act,NULL);
-   }
-
-   if(!child)  {
-      /* Do the exec stuff here */
-	  execve(pszPath,papszArgs,papszEnviron);
-	  exit(-1); /* this should never happen! */
-   }
-   if(nModeFlag == P_WAIT)  {
-      wret=waitpid(child,&status,0);
-	  if(WIFEXITED(status))  {
-	     return(WEXITSTATUS(status));
-	  }
-	  return(-1);
-   }
-   return(0);
-}
-#endif /* ODPLAT_NIX */

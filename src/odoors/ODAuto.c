@@ -33,7 +33,6 @@
  *              Dec 30, 1995  6.00  BP   Added ODCALL for calling convention.
  *              Feb 19, 1996  6.00  BP   Changed version number to 6.00.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -42,7 +41,6 @@
 #include <ctype.h>
 
 #include "OpenDoor.h"
-#include "ODStr.h"
 #include "ODTypes.h"
 #include "ODGen.h"
 #include "ODPlat.h"

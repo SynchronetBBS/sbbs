@@ -6,10 +6,10 @@
 
 # ODIR, SLASH, LIBFILE, EXEFILE, and DELETE must be pre-defined
 
-SBBSINST	=	$(EXEODIR)$(DIRSEP)sbbsinst$(EXEFILE) 
+SBBSINST	=	$(ODIR)$(SLASH)sbbsinst$(EXEFILE) 
 
-all:	xpdev-mt ciolib-mt uifc-mt $(EXEODIR) \
-		$(MTOBJODIR) \
+all:	$(ODIR) \
 		$(SBBSINST)
 
-$(SBBSINST):	$(XPDEV-MT_LIB) $(CIOLIB-MT) $(UIFCLIB-MT)
+clean:
+	@$(DELETE) $(ODIR)$(SLASH)*

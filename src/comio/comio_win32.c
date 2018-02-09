@@ -1,6 +1,4 @@
-/* comio_win32.c */
-
-/* Synchronet Serial Communications I/O Library Functions for Win32 */
+/* comio_win32.h */
 
 /* $Id$ */
 
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -38,21 +36,10 @@
 #include "comio.h"
 #include "genwrap.h"
 
-char* COMIOCALL comVersion(char* str, size_t len)
-{
-	char revision[16];
-
-	sscanf("$Revision$", "%*s %s", revision);
-
-	safe_snprintf(str,len,"Synchronet Communications I/O Library for "PLATFORM_DESC" v%s", revision);
-	return str;
-}
-
-COM_HANDLE COMIOCALL comOpen(const char* device)
+COM_HANDLE comOpen(const char* device)
 {
 	COM_HANDLE handle;
 	COMMTIMEOUTS timeouts;
-	DCB	dcb;
 
 	if((handle=CreateFile(device
 		,GENERIC_READ|GENERIC_WRITE 	/* Access */
@@ -74,45 +61,15 @@ COM_HANDLE COMIOCALL comOpen(const char* device)
 		SetCommTimeouts(handle,&timeouts);
 	}
 
-	/* Force N-8-1 mode: */
-	if(GetCommState(handle, &dcb)==TRUE) {
-		dcb.ByteSize	= 8;
-		dcb.Parity		= NOPARITY;
-		dcb.StopBits	= ONESTOPBIT;
-		SetCommState(handle, &dcb);
-	}
-
 	return handle;
 }
 
-BOOL COMIOCALL comClose(COM_HANDLE handle)
+BOOL comClose(COM_HANDLE handle)
 {
 	return CloseHandle(handle);
 }
 
-long COMIOCALL comGetBaudRate(COM_HANDLE handle)
-{
-	DCB dcb;
-
-	if(GetCommState(handle, &dcb)!=TRUE)
-		return COM_ERROR;
-
-	return dcb.BaudRate;
-}
-
-BOOL COMIOCALL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
-{
-	DCB dcb;
-
-	if(GetCommState(handle, &dcb)!=TRUE)
-		return FALSE;
-
-	dcb.BaudRate=rate;
-
-	return SetCommState(handle, &dcb);
-}
-
-int COMIOCALL comGetModemStatus(COM_HANDLE handle)
+int comGetModemStatus(COM_HANDLE handle)
 {
 	DWORD status=0;
 	
@@ -122,24 +79,24 @@ int COMIOCALL comGetModemStatus(COM_HANDLE handle)
 		return COM_ERROR;
 }
 
-BOOL COMIOCALL comRaiseDTR(COM_HANDLE handle)
+BOOL comRaiseDTR(COM_HANDLE handle)
 {
 	return EscapeCommFunction(handle, SETDTR);
 }
 
-BOOL COMIOCALL comLowerDTR(COM_HANDLE handle)
+BOOL comLowerDTR(COM_HANDLE handle)
 {
 	return EscapeCommFunction(handle, CLRDTR);
 }
 
-BOOL COMIOCALL comWriteByte(COM_HANDLE handle, BYTE ch)
+BOOL comWriteByte(COM_HANDLE handle, BYTE ch)
 {
 	DWORD wr=0;
 
 	return WriteFile(handle, &ch, sizeof(ch), &wr, NULL) && wr==sizeof(BYTE);
 }
 
-int COMIOCALL comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
+int comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
 {
 	DWORD wr=0;
 
@@ -149,25 +106,43 @@ int COMIOCALL comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
 	return wr;
 }
 
-int COMIOCALL comWriteString(COM_HANDLE handle, const char* str)
+int comWriteString(COM_HANDLE handle, const char* str)
 {
 	return comWriteBuf(handle, str, strlen(str));
 }
 
-BOOL COMIOCALL comReadByte(COM_HANDLE handle, BYTE* ch)
+BOOL comReadByte(COM_HANDLE handle, BYTE* ch)
 {
 	DWORD rd;
 
 	return ReadFile(handle, ch, sizeof(BYTE), &rd, NULL) && rd==sizeof(BYTE);
 }
 
-BOOL COMIOCALL comPurgeInput(COM_HANDLE handle)
+size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, int timeout)
+{
+	BYTE		ch;
+	size_t		len=0;
+	msclock_t	start=msclock();
+
+	while(len < buflen) {
+		if(!comReadByte(handle, &ch)) {
+			if(msclock()-start >= timeout)
+				break;
+			YIELD();
+			continue;
+		}
+		buf[len++]=ch;
+	}
+
+	return len;
+}
+
+BOOL comPurgeInput(COM_HANDLE handle)
 {
 	return PurgeComm(handle, PURGE_RXCLEAR);
 }
 
-BOOL COMIOCALL comPurgeOutput(COM_HANDLE handle)
+BOOL comPurgeOutput(COM_HANDLE handle)
 {
 	return PurgeComm(handle, PURGE_TXCLEAR);
 }
-

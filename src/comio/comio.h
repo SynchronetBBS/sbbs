@@ -43,26 +43,6 @@
 #define COM_ERROR						-1
 
 #ifdef _WIN32
-	#ifdef __BORLANDC__
-		#define COMIOCALL __stdcall
-	#else
-		#define COMIOCALL
-	#endif
-	#if defined(COMIO_IMPORTS) || defined(COMIO_EXPORTS)
-		#if defined(COMIO_IMPORTS)
-			#define COMIOEXPORT __declspec( dllimport )
-		#else
-			#define COMIOEXPORT __declspec( dllexport )
-		#endif
-	#else	/* self-contained executable */
-		#define COMIOEXPORT
-	#endif
-#else
-	#define COMIOCALL
-	#define COMIOEXPORT
-#endif
-
-#ifdef _WIN32
 	#include <windows.h>
 
     #define COM_HANDLE					HANDLE
@@ -74,34 +54,9 @@
 	#define COM_RING					MS_RING_ON
 	#define	COM_DCD						MS_RLSD_ON
 #else
-	#include <termios.h>
-
     #define COM_HANDLE					int
 	#define COM_HANDLE_INVALID			-1
 	#define COM_ERROR_VALUE				errno
-
-/* Stuff we apparently don't care about... 
- *
- *	TIOCM_LE   Line Enable.
- *	TIOCM_DTR  Data Terminal Ready.
- *	TIOCM_RTS  Request To Send.
- *	TIOCM_ST   Secondary Transmit.
- *	TIOCM_SR   Secondary Receive.
- */
-
-	#define COM_CTS						TIOCM_CTS  /* Clear To Send. */
-#ifdef TIOCM_CAR
-	#define COM_DCD						TIOCM_CAR  /* Carrier Detect. */
-#else
-	#define COM_DCD						TIOCM_CD   /* Carrier Detect (synonym). */
-#endif
-#ifdef TIOCM_RNG
-	#define COM_RING					TIOCM_RNG  /* Ring Indication. */
-#else
-	#define COM_RING					TIOCM_RI   /* Ring Indication (synonym). */
-#endif
-	#define COM_DSR						TIOCM_DSR  /* Data Set Ready. */
-
 #endif
 
 /**************/
@@ -112,24 +67,18 @@
 extern "C" {
 #endif
 
-COMIOEXPORT char*		COMIOCALL comVersion(char* str, size_t len);
-COMIOEXPORT COM_HANDLE	COMIOCALL comOpen(const char* device);
-COMIOEXPORT BOOL		COMIOCALL comClose(COM_HANDLE);
-COMIOEXPORT long		COMIOCALL comGetBaudRate(COM_HANDLE);
-COMIOEXPORT BOOL		COMIOCALL comSetBaudRate(COM_HANDLE, ulong rate);
-COMIOEXPORT int			COMIOCALL comGetModemStatus(COM_HANDLE);
-COMIOEXPORT int			COMIOCALL comRaiseDTR(COM_HANDLE);
-COMIOEXPORT int			COMIOCALL comLowerDTR(COM_HANDLE);
-COMIOEXPORT BOOL		COMIOCALL comWriteByte(COM_HANDLE, BYTE);
-COMIOEXPORT int			COMIOCALL comWriteBuf(COM_HANDLE, const BYTE*, size_t buflen);
-COMIOEXPORT int			COMIOCALL comWriteString(COM_HANDLE, const char*);
-COMIOEXPORT BOOL		COMIOCALL comReadByte(COM_HANDLE, BYTE*);
-COMIOEXPORT size_t		COMIOCALL comReadBuf(COM_HANDLE, char* buf, size_t buflen
-					    ,const char* terminators, int timeout /* in milliseconds */);
-COMIOEXPORT size_t		COMIOCALL comReadLine(COM_HANDLE, char* buf, size_t buflen
-						,int timeout /* in milliseconds */);
-COMIOEXPORT BOOL		COMIOCALL comPurgeInput(COM_HANDLE);
-COMIOEXPORT BOOL		COMIOCALL comPurgeOutput(COM_HANDLE);
+COM_HANDLE	comOpen(const char* device);
+BOOL		comClose(COM_HANDLE);
+int			comGetModemStatus(COM_HANDLE);
+int			comRaiseDTR(COM_HANDLE);
+int			comLowerDTR(COM_HANDLE);
+BOOL		comWriteByte(COM_HANDLE, BYTE);
+int			comWriteBuf(COM_HANDLE, const BYTE*, size_t buflen);
+int			comWriteString(COM_HANDLE, const char*);
+BOOL		comReadByte(COM_HANDLE, BYTE*);
+size_t		comReadBuf(COM_HANDLE, char* buf, size_t buflen, int timeout /* in milliseconds */);
+BOOL		comPurgeInput(COM_HANDLE);
+BOOL		comPurgeOutput(COM_HANDLE);
 
 #if defined(__cplusplus)
 }

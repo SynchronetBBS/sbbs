@@ -36,15 +36,17 @@
 #include <time.h>
 #include <errno.h>
 #include <ctype.h>
+#ifdef MULTINODE_AWARE
+#include <io.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <share.h>
+#endif
 
 /* Include the OpenDoors header file. This line must be done in any program */
 /* using OpenDoors.                                                         */
-#include "OpenDoor.h"
+#include "opendoor.h"
 
-#ifdef MULTINODE_AWARE
-#include <filewrap.h>
-#endif
-#include "genwrap.h"
 
 /* Manifest constants used by Vote */
 #define NO_QUESTION              -1
@@ -59,8 +61,8 @@
 #define QUESTION_STR_SIZE         71
 #define ANSWER_STR_SIZE           31
 
-#define USER_FILENAME             "vote.usr"
-#define QUESTION_FILENAME         "vote.qst"
+#define USER_FILENAME             "VOTE.USR"
+#define QUESTION_FILENAME         "VOTE.QST"
 
 #define FILE_ACCESS_MAX_WAIT      20
 
@@ -167,7 +169,7 @@ int main(int argc, char *argv[])
 
    /* Set filename for log file. If not set, DOOR.LOG will be used by */
    /* default.                                                        */
-   strcpy(od_control.od_logfile_name, "vote.log");
+   strcpy(od_control.od_logfile_name, "VOTE.LOG");
 
    /* Set function to be called before program exits. */
    od_control.od_before_exit = BeforeExitFunction;

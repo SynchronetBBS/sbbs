@@ -35,7 +35,6 @@
  *              Feb 19, 1996  6.00  BP   Changed version number to 6.00.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Mar 06, 1996  6.10  BP   Added ODDWordMultiply().
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -44,7 +43,6 @@
 #include <stdio.h>
 
 #include "OpenDoor.h"
-#include "ODStr.h"
 #include "ODUtil.h"
 #include "ODGen.h"
 
@@ -141,7 +139,7 @@ char *ODStringPascalToC(char *pszCString, char *psPascalString,
    if(*(BYTE *)psPascalString <= btMaxLength)
    {
       memcpy(pszCString, (char *)psPascalString + 1, *psPascalString);
-      pszCString[(int)psPascalString[0]] = '\0';
+      pszCString[*psPascalString] = '\0';
    }
    else
    {
@@ -228,14 +226,10 @@ tODResult ODMakeFilename(char *pszOut, CONST char *pszPath,
    }
 
    /* Ensure there is a trailing backslash, if path was not empty. */
-#ifdef ODPLAT_NIX
-
-#else
-   if(pszOut[strlen(pszOut) - 1] != DIRSEP && strlen(pszOut) > 0)
+   if(pszOut[strlen(pszOut) - 1] != '\\' && strlen(pszOut) > 0)
    {
-      strcat(pszOut, DIRSEP_STR);
+      strcat(pszOut, "\\");
    }
-#endif
 
    /* Append base filename. */
    strcat(pszOut, pszFilename);

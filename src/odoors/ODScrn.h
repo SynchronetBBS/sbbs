@@ -62,8 +62,8 @@ void ODScrnShutdown(void);
 
 /* Basic text output functions. */
 void ODScrnDisplayChar(unsigned char chToOutput);
-void ODScrnDisplayBuffer(const char *pBuffer, INT nCharsToDisplay);
-void ODScrnDisplayString(const char *pszString);
+void ODScrnDisplayBuffer(char *pBuffer, INT nCharsToDisplay);
+void ODScrnDisplayString(char *pszString);
 INT ODScrnPrintf(char *pszFormat, ...);
 
 /* Functions for manipulating rectangular areas of the screen buffer. */

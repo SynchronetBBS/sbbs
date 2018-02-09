@@ -59,7 +59,6 @@
  *              Mar 13, 1996  6.10  BP   bOnlyShiftArrow -> nArrowUseCount.
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
  *              Oct 22, 2001  6.21  RS   Lowered thread priorities to normal.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -72,13 +71,6 @@
 #include <limits.h>
 
 #include "OpenDoor.h"
-#ifdef ODPLAT_NIX
-#include <sys/types.h>
-#include <unistd.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <errno.h>
-#endif
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODPlat.h"
@@ -111,13 +103,6 @@ static void ODKrnlHandleReceivedChar(char chReceived, BOOL bFromRemote);
 static void ODKrnlTimeUpdate(void);
 static void ODKrnlChatCleanup(void);
 static void ODKrnlChatMode(void);
-#ifdef ODPLAT_NIX
-#ifdef USE_KERNEL_SIGNAL
-static void sig_run_kernel(int sig);
-static void sig_get_char(int sig);
-static void sig_no_carrier(int sig);
-#endif
-#endif
 
 /* Functions specific to the multithreaded implementation of the kernel. */
 #ifdef OD_MULTITHREADED
@@ -179,62 +164,7 @@ tODSemaphoreHandle hODActiveSemaphore = NULL;
  */
 tODResult ODKrnlInitialize(void)
 {
-#ifdef ODPLAT_NIX
-   sigset_t		block;
-#ifdef USE_KERNEL_SIGNAL
-   struct sigaction act;
-   struct itimerval itv;
-#endif
-#endif
-
    tODResult Result = kODRCSuccess;
-   
-#ifdef ODPLAT_NIX
-#ifdef USE_KERNEL_SIGNAL
-   /* HUP Detection */
-   act.sa_handler=sig_no_carrier;
-   /* If two HUP signals are recieved, die on the second */
-   act.sa_flags=SA_RESETHAND|SA_RESTART;
-   sigemptyset(&(act.sa_mask));
-   sigaction(SIGHUP,&act,NULL);
-
-   /* Run kernel on SIGALRM (Every .01 seconds) */
-   act.sa_handler=sig_run_kernel;
-   act.sa_flags=SA_RESTART;
-   sigemptyset(&(act.sa_mask));
-   sigaction(SIGALRM,&act,NULL);
-   itv.it_interval.tv_sec=0;
-   itv.it_interval.tv_usec=10000;
-   itv.it_value.tv_sec=0;
-   itv.it_value.tv_usec=10000;
-   setitimer(ITIMER_REAL,&itv,NULL);
-
-   /* Make stdin signal driven. */
-//   act.sa_handler=sig_get_char;
-//   act.sa_flags=0;
-//   sigemptyset(&(act.sa_mask));
-//   sigaction(SIGIO,&act,NULL);
-//
-//   /* Have SIGIO signals delivered to this process */
-//   fcntl(0,F_SETOWN,getpid());
-//   
-//   /* Enable SIGIO when read possible on stdin */
-//   fcntl(0,F_SETFL,fcntl(0,F_GETFL)|O_ASYNC); 
-
-   /* Make sure SIGHUP, SIGALRM, and SIGIO are unblocked */
-   sigemptyset(&block);
-   sigaddset(&block,SIGHUP);
-   sigaddset(&block,SIGALRM);
-#if 0
-   sigaddset(&block,SIGIO);
-#endif
-   sigprocmask(SIG_UNBLOCK,&block,NULL);
-#else	/* Using ODComCarrier... don't catch HUP signal */
-   sigemptyset(&block);
-   sigaddset(&block,SIGHUP);
-   sigprocmask(SIG_BLOCK,&block,NULL);
-#endif
-#endif
 
    /* Initialize time of next status update and next time deduction. */
    nNextStatusUpdateTime = time(NULL) + STATUS_UPDATE_PERIOD;
@@ -346,12 +276,10 @@ void ODKrnlShutdown(void)
 ODAPIDEF void ODCALL od_kernel(void)
 {
 #ifndef OD_MULTITHREADED
-   char ch;
-#ifdef ODPLAT_DOS
    WORD wKey;
    BYTE btShiftStatus;
+   char ch;
    char *pszShellName;
-#endif
    BOOL bCarrier;
 #endif /* OD_MULTITHREADED */
 
@@ -384,7 +312,6 @@ ODAPIDEF void ODCALL od_kernel(void)
    /* activies.                                                         */
    if(od_control.baud != 0)
    {
-#ifndef USE_KERNEL_SIGNAL
       /* If carrier detection is enabled, then shutdown OpenDoors if */
       /* the carrier detect signal is no longer high.                */
       if(!(od_control.od_disable&DIS_CARRIERDETECT))
@@ -395,7 +322,6 @@ ODAPIDEF void ODCALL od_kernel(void)
             ODKrnlForceOpenDoorsShutdown(ERRORLEVEL_NOCARRIER);
          }
       }
-#endif
 
       /* Loop, obtaining any new characters from the serial port and */
       /* adding them to the common local/remote input queue.         */
@@ -405,7 +331,7 @@ ODAPIDEF void ODCALL od_kernel(void)
       }
    }
 
-#ifdef ODPLAT_DOS
+
 check_keyboard_again:
     if(nKrnlFuncPending && !bShellChatActive)
     {
@@ -708,7 +634,6 @@ statup:
          ODScrnEnableCaret(TRUE);
       }
    }
-#endif
 
    ODKrnlTimeUpdate();
 
@@ -1632,44 +1557,3 @@ static void ODKrnlChatCleanup(void)
    }
 #endif
 }
-
-#ifdef ODPLAT_NIX
-#ifdef USE_KERNEL_SIGNAL
-/* ----------------------------------------------------------------------------
- * sig_run_kernel(sig)				   *** PRIVATE FUNCTION ***
- *
- * Runs od_kernel() on a SIGALRM
- *
- */
-static void sig_run_kernel(int sig)
-{
-   od_kernel();
-}
-
-/* ----------------------------------------------------------------------------
- * sig_run_kernel(sig)				   *** PRIVATE FUNCTION ***
- *
- * Runs od_kernel() on a SIGALRM
- *
- */
-static void sig_get_char(int sig)
-{
-   static char ch;
-   /* Loop, obtaining any new characters from the serial port and */
-   /* adding them to the common local/remote input queue.         */
-   while(ODComGetByte(hSerialPort, &ch, FALSE) == kODRCSuccess)
-   {
-      ODKrnlHandleReceivedChar(ch, TRUE);
-   }
-}
-
-static void sig_no_carrier(int sig)
-{
-   if(od_control.baud != 0 && )
-   {
-      if(!(od_control.od_disable&DIS_CARRIERDETECT))
-      	ODKrnlForceOpenDoorsShutdown(ERRORLEVEL_NOCARRIER);
-   }
-}
-#endif
-#endif

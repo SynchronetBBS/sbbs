@@ -35,7 +35,6 @@
  *              Dec 30, 1995  6.00  BP   Added ODCALL for calling convention.
  *              Feb 19, 1996  6.00  BP   Changed version number to 6.00.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -120,18 +119,18 @@ ODAPIDEF BOOL ODCALL od_list_files(char *pszFileSpec)
    if(pszFileSpec == NULL)
    {
       strcpy(szODWorkString, ".");
-      strcpy(szDirectory, "."DIRSEP_STR);
+      strcpy(szDirectory, ".\\");
    }
    else if(*pszFileSpec == '\0')
    {
       strcpy(szODWorkString, ".");
-      strcpy(szDirectory, "."DIRSEP_STR);
+      strcpy(szDirectory, ".\\");
    }
    else
    {
       strcpy(szODWorkString, pszFileSpec);
       strcpy(szDirectory, pszFileSpec);
-      if(szODWorkString[strlen(szODWorkString) - 1] == DIRSEP)
+      if(szODWorkString[strlen(szODWorkString) - 1] == '\\')
       {
          szODWorkString[strlen(szODWorkString) - 1] = '\0';
       }
@@ -209,10 +208,6 @@ ODAPIDEF BOOL ODCALL od_list_files(char *pszFileSpec)
       else
       {
          bUseNextLine = FALSE;
-      }
-      if(szLine[strlen(szLine) - 1] == '\r')
-      {
-         szLine[strlen(szLine) - 1] = '\0';
       }
 
       if(chLastControlKey != 0)
@@ -446,7 +441,7 @@ static INT ODListFilenameSplit(const char *pszEntirePath, char *pszDrive,
       nToReturn |= DRIVE;
    }
 
-   if((pchCurrentPos = strrchr(pchStart, DIRSEP))==NULL)
+   if((pchCurrentPos = strrchr(pchStart, '\\'))==NULL)
    {
       pszDir[0] = '\0';
    }

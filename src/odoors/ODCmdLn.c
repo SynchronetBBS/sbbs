@@ -40,8 +40,6 @@
  *              Feb 27, 1996  6.00  BP   Add -P COMx to command line help.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Apr 08, 1996  6.10  BP   Added command-line parsing callbacks.
- *					 Apr 24, 2002  6.22  RS   Added -SOCKET parameter.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -52,7 +50,6 @@
 #include <ctype.h>
 
 #include "OpenDoor.h"
-#include "ODStr.h"
 #include "ODPlat.h"
 #include "ODCore.h"
 #include "ODInEx.h"
@@ -90,7 +87,6 @@ typedef enum
    kParamGraphics,
    kParamBBSName,
    kParamPortHandle,
-   kParamSocketDescriptor,
    kParamSilentMode,
    kParamOption,
    kParamUnknown
@@ -277,7 +273,6 @@ ODAPIDEF void ODCALL od_parse_cmd_line(INT nArgCount, char *papszArguments[])
                   "-B x or -BPS x\t- Sets the serial port <---> modem bps (baud) rate to use.\n"
                   "-P x or -PORT x\t- Sets serial port to use. For COM1: use -P 0 or -P COM1, for COM2: use -P 1 or -P COM2, etc.\n"
                   "-HANDLE x\t- Provides an already open serial port handle.\n"
-						"-SOCKET x\t- Provides an already open TCP/IP socket descriptor.\n"
                   "-SILENT\t\t- Operate in silent mode, with no local display.\n"
                   "-MAXTIME x\t- Sets the maximum number of minutes that user will be permitted to access the door.\n"
                   "-G or -GRAPHICS\t- Unless followed by 0 or N, turns on ANSI display mode.\n"
@@ -400,10 +395,6 @@ ODAPIDEF void ODCALL od_parse_cmd_line(INT nArgCount, char *papszArguments[])
             ODGetNextArgName(&nCurrentArg, nArgCount, papszArguments,
                od_control.system_name, sizeof(od_control.system_name));
             break;
-
-         case kParamSocketDescriptor:
-				od_control.od_use_socket = TRUE;
-				/* fall through */
 
          case kParamPortHandle:
             ODAdvanceToNextArg(&nCurrentArg, nArgCount, pszCurrentArg);
@@ -648,10 +639,6 @@ static tCommandLineParameter ODGetCommandLineParameter(char *pszArgument)
    else if(stricmp(pszArgument, "HANDLE") == 0)
    {
       return(kParamPortHandle);
-   }
-   else if(stricmp(pszArgument, "SOCKET") == 0)
-   {
-      return(kParamSocketDescriptor);
    }
    else if(stricmp(pszArgument, "SILENT") == 0)
    {

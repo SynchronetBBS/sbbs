@@ -33,7 +33,6 @@
  *              Feb 19, 1996  6.00  BP   Changed version number to 6.00.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -45,7 +44,6 @@
 #include <time.h>
 
 #include "OpenDoor.h"
-#include "ODStr.h"
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODInEx.h"
@@ -119,14 +117,14 @@ ODAPIDEF void ODCALL ODConfigInit(void)
 
    if((pfConfigFile = fopen(od_control.od_config_filename, "rt")) == NULL)
    {
-      if(strchr(od_control.od_config_filename, DIRSEP) != NULL
+      if(strchr(od_control.od_config_filename, '\\') != NULL
          || strchr(od_control.od_config_filename, ':') != NULL)
       {
          wCurrent = strlen(od_control.od_config_filename);
          pchConfigText = (char *)od_control.od_config_filename + (wCurrent - 1);
          while(wCurrent > 0)
          {
-            if(*pchConfigText == DIRSEP || *pchConfigText == ':')
+            if(*pchConfigText == '\\' || *pchConfigText == ':')
             {
                strcpy(szConfigLine, (char *)pchConfigText + 1);
                pfConfigFile = fopen(szConfigLine, "rt");
@@ -238,7 +236,7 @@ ODAPIDEF void ODCALL ODConfigInit(void)
                      break;
 
                   case 2:
-                     if(pchConfigText[strlen(pchConfigText) - 1] == DIRSEP
+                     if(pchConfigText[strlen(pchConfigText) - 1] == '\\'
                         && pchConfigText[strlen(pchConfigText) - 2] != ':'
                         && strlen(pchConfigText) > 1)
                      {
@@ -362,10 +360,6 @@ ODAPIDEF void ODCALL ODConfigInit(void)
                                  ch = fgetc(pfCustomDropFile);
                               } while(ch != '\n' && ch != EOF);
                            }
-                           if(szTempString[strlen(szTempString) - 1] == '\r')
-                           {
-                              szTempString[strlen(szTempString) - 1] = '\0';
-                           }
 
                            strupr(pchConfigText);
 
@@ -395,11 +389,7 @@ ODAPIDEF void ODCALL ODConfigInit(void)
                                     case 4:
                                        if(ODCfgIsTrue(szTempString))
                                        {
-#ifdef ODPLAT_NIX
-                                          od_control.baud = 1;
-#else
                                           od_control.baud = 0;
-#endif
                                        }
                                        break;
 

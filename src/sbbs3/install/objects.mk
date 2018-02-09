@@ -4,8 +4,12 @@
 
 # $Id$
 
-# MTOBJODIR, DIRSEP, and OFILE must be pre-defined
+# LIBODIR, SBBSLIBODIR, SLASH, and OFILE must be pre-defined
 
 
-OBJS	=	$(MTOBJODIR)$(DIRSEP)sbbsinst$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)httpio$(OFILE)
+OBJS	=	$(ODIR)$(SLASH)sbbsinst.$(OFILE)\
+			$(ODIR)$(SLASH)conwrap.$(OFILE)\
+			$(ODIR)$(SLASH)genwrap.$(OFILE)\
+			$(ODIR)$(SLASH)dirwrap.$(OFILE)\
+			$(ODIR)$(SLASH)uifcx.$(OFILE)\
+

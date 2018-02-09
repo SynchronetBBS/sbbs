@@ -84,19 +84,11 @@ LINK32=link.exe
 # Name "sexpots - Win32 Debug"
 # Begin Source File
 
-SOURCE=..\comio\comio.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\comio\comio_win32.c
 # End Source File
 # Begin Source File
 
 SOURCE=.\sexpots.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\sexpots.rc
 # End Source File
 # Begin Source File
 

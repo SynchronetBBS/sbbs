@@ -41,7 +41,6 @@
  *              Feb 19, 1996  6.00  BP   Changed version number to 6.00.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Apr 08, 1996  6.10  BP   Make 'C' use word capitalization.
- *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
@@ -1025,7 +1024,7 @@ static BOOL ODEditIsCharValidForPos(char chEntered, INT nPosition)
             /* Filename separators. */
             case ':':
             case '.':
-            case DIRSEP:
+            case '\\':
 
             /* Wildcard characters. */
             case '?':
@@ -1074,7 +1073,7 @@ static BOOL ODEditIsCharValidForPos(char chEntered, INT nPosition)
       case 'w':
          if(chEntered >= 'A' && chEntered <= 'Z') break;
          if(chEntered >= 'a' && chEntered <= 'z') break;
-         if(chEntered == ':' || chEntered == '.' || chEntered == DIRSEP
+         if(chEntered == ':' || chEntered == '.' || chEntered == '\\'
             || chEntered == '*' || chEntered == '?')
          {
             break;

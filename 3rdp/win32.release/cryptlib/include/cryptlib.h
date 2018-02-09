@@ -1,7 +1,7 @@
 /****************************************************************************
 *																			*
 *								cryptlib Header File						*
-*						Copyright Peter Gutmann 1992-2012					*
+*						Copyright Peter Gutmann 1992-2011					*
 *																			*
 ****************************************************************************/
 
@@ -9,9 +9,9 @@
 
 #define _CRYPTLIB_DEFINED
 
-/* The current cryptlib version: 3.4.2 */
+/* The current cryptlib version: 3.4.1 */
 
-#define CRYPTLIB_VERSION	3420
+#define CRYPTLIB_VERSION	3410
 
 /* Fixup for Windows support.  We need to include windows.h for various types
    and prototypes needed for DLL's.  In addition wincrypt.h defines some
@@ -200,27 +200,29 @@ typedef enum {						/* Algorithms */
 	CRYPT_ALGO_DES,					/* DES */
 	CRYPT_ALGO_3DES,				/* Triple DES */
 	CRYPT_ALGO_IDEA,				/* IDEA (only used for PGP 2.x) */
-	CRYPT_ALGO_CAST,				/* CAST-128 (only used for OpenPGP) */
+	CRYPT_ALGO_RESERVED1,			/* Formerly CAST-128 */
 	CRYPT_ALGO_RC2,					/* RC2 (disabled by default) */
 	CRYPT_ALGO_RC4,					/* RC4 */
 	CRYPT_ALGO_RC5,					/* RC5 */
 	CRYPT_ALGO_AES,					/* AES */
 	CRYPT_ALGO_BLOWFISH,			/* Blowfish */
+	CRYPT_ALGO_RESERVED2,			/* Formerly Skipjack */
 
 	/* Public-key encryption */
 	CRYPT_ALGO_DH = 100,			/* Diffie-Hellman */
 	CRYPT_ALGO_RSA,					/* RSA */
 	CRYPT_ALGO_DSA,					/* DSA */
 	CRYPT_ALGO_ELGAMAL,				/* ElGamal */
-	CRYPT_ALGO_RESERVED1,			/* Formerly KEA */
+	CRYPT_ALGO_RESERVED3,			/* Formerly KEA */
 	CRYPT_ALGO_ECDSA,				/* ECDSA */
 	CRYPT_ALGO_ECDH,				/* ECDH */
 
 	/* Hash algorithms */
-	CRYPT_ALGO_RESERVED2 = 200,		/* Formerly MD2 */
-	CRYPT_ALGO_RESERVED3,			/* Formerly MD4 */
+	CRYPT_ALGO_RESERVED4 = 200,		/* Formerly MD2 */
+	CRYPT_ALGO_RESERVED5,			/* Formerly MD4 */
 	CRYPT_ALGO_MD5,					/* MD5 */
 	CRYPT_ALGO_SHA1,				/* SHA/SHA1 */
+		CRYPT_ALGO_SHA = CRYPT_ALGO_SHA1,	/* Older form */
 	CRYPT_ALGO_RIPEMD160,			/* RIPE-MD 160 */
 	CRYPT_ALGO_SHA2,				/* SHA-256 */
 		CRYPT_ALGO_SHA256 = CRYPT_ALGO_SHA2,/* Alternate name */
@@ -229,6 +231,7 @@ typedef enum {						/* Algorithms */
 	/* MAC's */
 	CRYPT_ALGO_HMAC_MD5 = 300,		/* HMAC-MD5 */
 	CRYPT_ALGO_HMAC_SHA1,			/* HMAC-SHA */
+		CRYPT_ALGO_HMAC_SHA_ = CRYPT_ALGO_HMAC_SHA1,	/* Older form */
 	CRYPT_ALGO_HMAC_RIPEMD160,		/* HMAC-RIPEMD-160 */
 	CRYPT_ALGO_HMAC_SHA2,			/* HMAC-SHA2 */
 	CRYPT_ALGO_HMAC_SHAng,			/* HMAC-future-SHA-nextgen */
@@ -656,7 +659,6 @@ typedef enum {
 	CRYPT_CERTINFO_EDIPARTYNAME_NAMEASSIGNER,	/* ediPartyName.nameAssigner */
 	CRYPT_CERTINFO_EDIPARTYNAME_PARTYNAME,	/* ediPartyName.partyName */
 	CRYPT_CERTINFO_UNIFORMRESOURCEIDENTIFIER,	/* uniformResourceIdentifier */
-		CRYPT_CERTINFO_URL = CRYPT_CERTINFO_UNIFORMRESOURCEIDENTIFIER,
 	CRYPT_CERTINFO_IPADDRESS,				/* iPAddress */
 	CRYPT_CERTINFO_REGISTEREDID,			/* registeredID */
 
@@ -1235,11 +1237,6 @@ typedef enum {
 	CRYPT_SESSINFO_SSL_OPTIONS,		/* SSL/TLS protocol options */
 	CRYPT_SESSINFO_TSP_MSGIMPRINT,	/* TSP message imprint */
 
-	/* Terminal attributes */
-	CRYPT_SESSINFO_SSH_TERMINAL,	/* TERM string sent to remote */
-	CRYPT_SESSINFO_SSH_WIDTH,	/* Terminal width */
-	CRYPT_SESSINFO_SSH_HEIGHT,	/* Terminal height */
-
 	/* Used internally */
 	CRYPT_SESSINFO_LAST, CRYPT_USERINFO_FIRST = 7000,
 
@@ -1649,10 +1646,8 @@ typedef enum {
 #define CRYPT_SSLOPTION_MINVER_TLS12		0x03
 #define CRYPT_SSLOPTION_SUITEB_128			0x04	/* SuiteB security levels */
 #define CRYPT_SSLOPTION_SUITEB_256			0x08
-#define CRYPT_SSLOPTION_DISABLE_NAMEVERIFY	0x10	/* Disable cert hostname check */
-#define CRYPT_SSLOPTION_DISABLE_CERTVERIFY	0x20	/* Disable certificate check */
 #ifdef _CRYPT_DEFINED
-#define CRYPT_SSLOPTION_MAX					0x3F	/* Defines for range checking */
+#define CRYPT_SSLOPTION_MAX					0x0F	/* Defines for range checking */
 #endif /* _CRYPT_DEFINED */
 
 /****************************************************************************
@@ -2001,6 +1996,12 @@ C_RET cryptDestroyObject( C_IN CRYPT_HANDLE cryptObject );
 
 C_CHECK_RETVAL \
 C_RET cryptGenerateKey( C_IN CRYPT_CONTEXT cryptContext );
+C_CHECK_RETVAL \
+C_RET cryptGenerateKeyAsync( C_IN CRYPT_CONTEXT cryptContext );
+C_CHECK_RETVAL \
+C_RET cryptAsyncQuery( C_IN CRYPT_HANDLE cryptObject );
+C_CHECK_RETVAL \
+C_RET cryptAsyncCancel( C_IN CRYPT_HANDLE cryptObject );
 
 /* Encrypt/decrypt/hash a block of memory */
 

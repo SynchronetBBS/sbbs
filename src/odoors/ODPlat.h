@@ -49,10 +49,6 @@
 #include "ODTypes.h"
 #include "ODGen.h"
 
-#ifdef ODPLAT_NIX
-#include <sys/time.h>
-#endif
-
 #ifdef ODPLAT_WIN32
 #include "windows.h"
 #endif /* ODPLAT_WIN32 */
@@ -71,9 +67,6 @@ typedef struct
 #ifdef ODPLAT_DOS
    clock_t Start;
    clock_t Duration;
-#elif defined(ODPLAT_NIX)
-   time_t Start;
-   tODMilliSec Duration;
 #else /* !ODPLAT_DOS */
    tODMilliSec Start;
    tODMilliSec Duration;
@@ -168,7 +161,7 @@ extern tODMultitasker ODMultitasker;
 typedef tODHandle tODDirHandle;
 
 /* Directory entry structure. */
-#define DIR_FILENAME_SIZE 1024
+#define DIR_FILENAME_SIZE 13
 
 #define DIR_ATTRIB_NORMAL   0x00
 #define DIR_ATTRIB_RDONLY   0x01

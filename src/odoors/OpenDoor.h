@@ -80,10 +80,7 @@
 /* ========================================================================= */
 
 /* OpenDoors API version number. */
-#define OD_VERSION 0x624
-
-#define DIRSEP		'\\'
-#define DIRSEP_STR	"\\"
+#define OD_VERSION 0x621
 
 /* OpenDoors target platform. */
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
@@ -96,20 +93,10 @@
 #define OD_DLL
 #endif /* !OD_WIN32_STATIC */
 #else /* !WIN32 */
-#if defined(__unix__) || defined(__NetBSD__) || defined(__APPLE__)
-#define ODPLAT_NIX
-#undef ODPLAT_DOS
-#undef DIRSEP
-#define DIRSEP '/'
-#undef DIRSEP_STR
-#define DIRSEP_STR "/"
-#else
 #define ODPLAT_DOS
 #undef ODPLAT_WIN32
 #pragma message("Compiling for DOS version of OpenDoors")
-#endif /* !NIX */
 #endif /* !WIN32 */
-
 
 /* Include any other headers required by OpenDoor.h. */
 #ifdef ODPLAT_WIN32 
@@ -119,9 +106,9 @@
 /* For DLL versions, definitions of function or data that is exported from */
 /* a module or imported into a module.                                     */
 #ifdef OD_DLL
-#if defined(_MSC_VER) || defined(__BORLANDC__)
+#ifdef _MSC_VER
 #define OD_EXPORT __declspec(dllexport)
-#else /* !_MSC_VER || __BORLANDC__ */
+#else /* !_MSC_VER */
 #define OD_EXPORT _export
 #endif /* !_MSC_VER */
 #define OD_IMPORT DECLSPEC_IMPORT
@@ -178,25 +165,15 @@
 
 /* Portable types that are the same size across all platforms */
 #ifndef ODPLAT_WIN32
-#ifndef BYTE
 typedef unsigned char      BYTE;                        /* Unsigned, 8 bits. */
-#endif
-#ifndef WORD
 typedef unsigned short     WORD;                       /* Unsigned, 16 bits. */
-#endif
-#ifndef DWORD
 typedef unsigned long      DWORD;                      /* Unsigned, 32 bits. */
-#endif
-#ifndef CHAR
 typedef char               CHAR;         /* Native character representation. */
-#endif
-#define DWORD_DEFINED
-#define WORD_DEFINED
 #endif /* !ODPLAT_WIN32 */
 
 typedef signed char        INT8;                          /* Signed, 8 bits. */
 typedef signed short int   INT16;                        /* Signed, 16 bits. */
-#ifndef ODPLAT_WIN32	/* avoid type redefinition from basetsd.h */
+#ifndef _WIN32	/* avoid type redefinition from basetsd.h */
 typedef signed long int    INT32;                        /* Signed, 32 bits. */
 #endif
 
@@ -241,17 +218,17 @@ typedef DWORD tODMilliSec;
 /* Editor text formats. */
 typedef enum
 {
-    FORMAT_PARAGRAPH_BREAKS
-   ,FORMAT_LINE_BREAKS
-   ,FORMAT_FTSC_MESSAGE
-   ,FORMAT_NO_WORDWRAP
+   FORMAT_PARAGRAPH_BREAKS,
+   FORMAT_LINE_BREAKS,
+   FORMAT_FTSC_MESSAGE,
+   FORMAT_NO_WORDWRAP,
 } tODEditTextFormat;
 
 /* Menu callback function return values. */
 typedef enum
 {
-    EDIT_MENU_DO_NOTHING
-   ,EDIT_MENU_EXIT_EDITOR
+   EDIT_MENU_DO_NOTHING,
+   EDIT_MENU_EXIT_EDITOR,
 } tODEditMenuResult;
 
 /* Editor flags. */
@@ -282,8 +259,8 @@ typedef struct
 /* Input event types. */
 typedef enum
 {
-    EVENT_CHARACTER
-   ,EVENT_EXTENDED_KEY
+   EVENT_CHARACTER,
+   EVENT_EXTENDED_KEY,
 } tODInputEventType;
 
 /* Extended key codes. */
@@ -307,8 +284,6 @@ typedef enum
 #define OD_KEY_END         0x4f
 #define OD_KEY_PGUP        0x49
 #define OD_KEY_PGDN        0x51
-#define OD_KEY_F11         0x85
-#define OD_KEY_F12         0x86
 #define OD_KEY_SHIFTTAB    0x0f
 
 /* Input event structure. */
@@ -476,7 +451,6 @@ typedef struct
 #define COM_WIN32             3
 #define COM_DOOR32            4
 #define COM_SOCKET				5
-#define COM_STDIO			  6
 
 /* Flow control method (od_control.od_com_flow_control). */
 #define COM_DEFAULT_FLOW      0
@@ -489,7 +463,7 @@ ODAPIDEF void ODCALL ODLogEnable(void);
 ODAPIDEF void ODCALL ODMPSEnable(void);
 
 /* Optional OpenDoors component settings. */
-typedef void(ODFAR OD_COMPONENT)(void);
+typedef void ODFAR OD_COMPONENT;
 #define INCLUDE_CONFIG_FILE   (OD_COMPONENT *)ODConfigInit
 #define NO_CONFIG_FILE        NULL
 #define INCLUDE_LOGFILE       (OD_COMPONENT *)ODLogEnable
@@ -504,7 +478,7 @@ ODAPIDEF void ODCALL pdef_ra(BYTE btOperation);
 ODAPIDEF void ODCALL pdef_wildcat(BYTE btOperation);
 
 /* Personality proc type. */
-typedef void(ODFAR OD_PERSONALITY_PROC)(BYTE);
+typedef void OD_PERSONALITY_PROC;
 
 /* Personality identifiers. */
 #define PER_OPENDOORS         (void *)pdef_opendoors
@@ -720,7 +694,7 @@ typedef struct
    char          od_cfg_text[48][33];
    char          od_cfg_lines[25][33];
    OD_COMPONENT  *od_config_file;
-   const char *  od_config_filename;
+   char *        od_config_filename;
    void          (*od_config_function)(char *keyword, char *options);
    char          od_color_char;
    char          od_color_delimiter;
@@ -925,7 +899,6 @@ od_control;
  *    od_edit_str()           - Fancy formatted string input function (ANS/AVT)
  *    od_clear_keybuffer()    - Removes any waiting keys in keyboard buffer
  *    od_multiline_edit()     - Edits text that spans multiple lines  (ANS/AVT)
- *    od_key_pending()        - Returns TRUE if a key is waiting to be processed
  *
  * COMMON DOOR ACTIVITY FUNCTIONS
  *    od_page()               - Allows user to page sysop
@@ -948,7 +921,7 @@ od_control;
  *    od_sleep()              - Yield to other processes
  *    od_control_get()        - Returns a pointer to the od_control structure.
  */
-ODAPIDEF BOOL ODCALL   od_add_personality(const char *pszName, BYTE btOutputTop,
+ODAPIDEF BOOL ODCALL   od_add_personality(char *pszName, BYTE btOutputTop,
                           BYTE btOutputBottom,
                           OD_PERSONALITY_PROC *pfPerFunc);
 ODAPIDEF void ODCALL   od_autodetect(INT nFlags);
@@ -959,9 +932,9 @@ ODAPIDEF void ODCALL   od_clr_line(void);
 ODAPIDEF void ODCALL   od_clr_scr(void);
 ODAPIDEF BYTE ODCALL   od_color_config(char *pszColorDesc);
 ODAPIDEF tODControl *  ODCALL od_control_get(void);
-ODAPIDEF void ODCALL   od_disp(const char *pachBuffer, INT nSize, BOOL bLocalEcho);
-ODAPIDEF void ODCALL   od_disp_emu(const char *pszToDisplay, BOOL bRemoteEcho);
-ODAPIDEF void ODCALL   od_disp_str(const char *pszToDisplay);
+ODAPIDEF void ODCALL   od_disp(char *pachBuffer, INT nSize, BOOL bLocalEcho);
+ODAPIDEF void ODCALL   od_disp_emu(char *pszToDisplay, BOOL bRemoteEcho);
+ODAPIDEF void ODCALL   od_disp_str(char *pszToDisplay);
 ODAPIDEF BOOL ODCALL   od_draw_box(BYTE btLeft, BYTE btTop, BYTE btRight,
                           BYTE btBottom);
 ODAPIDEF WORD ODCALL   od_edit_str(char *pszInput, char *pszFormat, INT nRow,
@@ -969,11 +942,10 @@ ODAPIDEF WORD ODCALL   od_edit_str(char *pszInput, char *pszFormat, INT nRow,
                           BYTE btHighlightColour, char chBlank,
                           WORD nFlags);
 ODAPIDEF void ODCALL   od_exit(INT nErrorLevel, BOOL bTermCall);
-ODAPIDEF char ODCALL   od_get_answer(const char *pszOptions);
+ODAPIDEF char ODCALL   od_get_answer(char *pszOptions);
 ODAPIDEF void ODCALL   od_get_cursor(INT *pnRow, INT *pnColumn);
 ODAPIDEF BOOL ODCALL   od_get_input(tODInputEvent *pInputEvent,
                           tODMilliSec TimeToWait, WORD wFlags);
-ODAPIDEF BOOL ODCALL   od_key_pending(void);
 ODAPIDEF char ODCALL   od_get_key(BOOL bWait);
 ODAPIDEF BOOL ODCALL   od_gettext(INT nLeft, INT nTop, INT nRight,
                           INT nBottom, void *pBlock);
@@ -996,7 +968,7 @@ ODAPIDEF void ODCALL   od_parse_cmd_line(INT nArgCount,
 #endif /* !ODPLAT_WIN32 */
 ODAPIDEF INT ODCALL    od_popup_menu(char *pszTitle, char *pszText,
                           INT nLeft, INT nTop, INT nLevel, WORD uFlags);
-ODAPIDEF void ODVCALL  od_printf(const char *pszFormat, ...);
+ODAPIDEF void ODVCALL  od_printf(char *pszFormat, ...);
 ODAPIDEF void ODCALL   od_putch(char chToDisplay);
 ODAPIDEF BOOL ODCALL   od_puttext(INT nLeft, INT nTop, INT nRight,
                           INT nBottom, void *pBlock);
@@ -1005,16 +977,16 @@ ODAPIDEF BOOL ODCALL   od_restore_screen(void *pBuffer);
 ODAPIDEF BOOL ODCALL   od_save_screen(void *pBuffer);
 ODAPIDEF BOOL ODCALL   od_scroll(INT nLeft, INT nTop, INT nRight,
                           INT nBottom, INT nDistance, WORD nFlags);
-ODAPIDEF BOOL ODCALL   od_send_file(const char *pszFileName);
+ODAPIDEF BOOL ODCALL   od_send_file(char *pszFileName);
 ODAPIDEF BOOL ODCALL   od_send_file_section(char *pszFileName, char *pszSectionName);
 ODAPIDEF void ODCALL   od_set_attrib(INT nColour);
 ODAPIDEF void ODCALL   od_set_color(INT nForeground, INT nBackground);
 ODAPIDEF void ODCALL   od_set_cursor(INT nRow, INT nColumn);
 ODAPIDEF void ODCALL   od_set_dtr(BOOL bHigh);
-ODAPIDEF BOOL ODCALL   od_set_personality(const char *pszName);
+ODAPIDEF BOOL ODCALL   od_set_personality(char *pszName);
 ODAPIDEF void ODCALL   od_set_statusline(INT nSetting);
 ODAPIDEF void ODCALL   od_sleep(tODMilliSec Milliseconds);
-ODAPIDEF BOOL ODCALL   od_spawn(const char *pszCommandLine);
+ODAPIDEF BOOL ODCALL   od_spawn(char *pszCommandLine);
 ODAPIDEF INT16 ODCALL  od_spawnvpe(INT16 nModeFlag, char *pszPath,
                           char *papszArg[], char *papszEnv[]);
 ODAPIDEF void * ODCALL od_window_create(INT nLeft, INT nTop, INT nRight,

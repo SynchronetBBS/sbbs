@@ -1,9 +1,7 @@
-/* $Id$ */
-
 /******************************************************************************
   DPOKER.EXE: Domain Poker online multi-player poker BBS door game for
   Synchronet (and other) BBS software.
-  Copyright (C) 1992-2007 Allen Christiansen DBA Domain Entertainment.
+  Copyright (C) 1992-2005 Allen Christiansen DBA Domain Entertainment.
 
   This program is free software; you can redistribute it and/or modify it under
   the terms of the GNU General Public License as published by the Free Software
@@ -25,11 +23,9 @@
                 Irvine, CA 92619-4452
 ******************************************************************************/
 
-#include "ini_file.h"
+#include <process.h>
 #include "xsdk.h"
-#define VERSION "2K7"
-char	revision[16];
-char	compiler[32];
+#define VERSION "2K"
 
 #define J 11    /* jack */
 #define Q 12    /* queen */
@@ -66,17 +62,17 @@ card_t newdeck[52]={
 
 card_t deck[52], card[52];
 card_t hand[MAX_NODES+1][10];
-char comp_name[41],password[10]={0};
+char comp_name[41],password[10]={NULL};
 int cur_card=0,rank=0,last_bet=100,create_log=0,symbols=1,table=1,comp_stat=0,
     player_dis=0,xraised=0;
     /* player_dis tells the computer how many the player threw out */
 short cur_table=0,dupcard1=0,dupcard2=0,hicard=0,total_players,cur_node,
       firstbid=0,stage;
-short num_tables=0,skim=0,bet_limit[MAX_TABLES+1]={0},
-    ante[MAX_TABLES+1]={0},options[MAX_TABLES+1]={0};
-uchar node[MAX_NODES+1]={0};
+short num_tables=0,skim=0,bet_limit[MAX_TABLES+1]={NULL},
+    ante[MAX_TABLES+1]={NULL},options[MAX_TABLES+1]={NULL};
+uchar node[MAX_NODES+1]={NULL};
 ulong player_bet=0,newpts,temppts,current_bet,total_pot,comp_bet=0,
-    time_played=0,time_allowed=0,max_bet=0,max_total[MAX_TABLES+1]={0};
+    time_played=0,time_allowed=0,max_bet=0,max_total[MAX_TABLES+1]={NULL};
 uint firstbet=1;
 unsigned short temp_num,dealer;
 
@@ -85,7 +81,7 @@ long xfer_pts2=0;
 /*******************
  Function Prototypes
 ********************/
-int main(int argc, char **argv);
+void main(int argc, char **argv);
 void get_player(int player);
 void get_game_status(int tablenum);
 void put_game_status(int specnode);
@@ -95,6 +91,7 @@ void quit_out(void);
 
 #ifndef DPCLEAN
 
+int delfiles(char *spec);
 void put_player(int player);
 int straight_flush(void);
 void center_wargs(char *str, ...);
@@ -142,164 +139,112 @@ enum { INACTIVE, WAITING, BETTING, DISCARDING, FOLDED, DEALING };
 /* These or for determining what stage the game is in */
 enum { OPEN, DEAL, BET, DISCARD, BET2, GET_WINNER };
 
-#ifdef _WIN32	/* necessary for compatibility with SBBS v2 */
-#pragma pack(push)
-#pragma pack(1)
-#endif
-
-#ifdef __GNUC__ 
-	#define _PACK __attribute__ ((packed))
-#else
-	#define _PACK
-#endif
-
-int main(int argc, char **argv)
+void main(int argc, char **argv)
 {
-    char	ch,str[256],*buf;
-	char*	p;
-    int		file,i,x;
-    long	won,lost;
-    ulong	length,l,lastrun;
-	FILE	*inifile;
-	int		opts;
-	char	key_name[8];
-	BOOL	cleanup=FALSE;
-	char	*env_node;
-    struct _PACK {
+    FILE *fp;
+    char ch,str[256],str1[10],*buf;
+    int file,i,x;
+    long won,lost;
+    ulong length,l,lastrun;
+    struct date d;
+    struct time t;
+
+    struct {
         char name[25];
         ulong time;
         long points;
     } player_stuff;
 
-	sscanf("$Revision$", "%*s %s", revision);
-	DESCRIBE_COMPILER(compiler);
-
     memset(node,'\0',MAX_NODES);
 
-	/* ToDo... this should seed better */
-    srand(time(NULL));
-	env_node=getenv("SBBSNODE");
-	if(env_node==NULL) {
-		printf("\nDomain Poker v%s-%s/XSDK v%s  Copyright %s Domain "
-				"Entertainment\n",VERSION,revision,xsdk_ver,__DATE__+7);
-		printf("\nERROR: SBBSNODE Environment variable not set!\n");
-		return(1);
-	}
-    sprintf(node_dir,"%s",env_node);
-	backslash(node_dir);
+    randomize();
+    sprintf(node_dir,"%s",getenv("SBBSNODE"));
+    if(node_dir[strlen(node_dir)-1]!='\\')
+        strcat(node_dir,"\\");
+
+    if(!stricmp(argv[1],"/?")) {
+        printf("\r\nDomain Poker v%s/XSDK v%s  Copyright 2005 Domain "
+                "Entertainment",VERSION,xsdk_ver);
+        printf("\r\nUsage: DPOKER [/options]\r\n");
+        printf("\r\nOptions: L = Create daily log of computer vs player "
+              "wins/losses\r\n");
+        return; }
 
     for (x=1; x<argc; x++) {
-		p=argv[x];
-		while(*p=='/' || *p=='-')
-			p++;
-        if(stricmp(p,"L")==0)
-            create_log=TRUE;
-		else if(stricmp(p,"clean")==0)
-			cleanup=TRUE;
-		else {
-			printf("\nDomain Poker v%s-%s/XSDK v%s  Copyright %s Domain "
-					"Entertainment\n",VERSION,revision,xsdk_ver,__DATE__+7);
-			printf("Compiler: %s\n", compiler);
-			printf("\nUsage: dpoker [-L] [-CLEAN]\n");
-			printf("\nOptions:\n");
-			printf("\tL = Create daily log of computer vs player "
-				  "wins/losses\n");
-			printf("\tCLEAN = Clean-up player/node data (replaces 'dpclean')\n");
-			return(0); 
-		}
+        if (!strchr(argv[x],'/')) {
+            strcpy(node_dir,argv[x]);
+            if (node_dir[strlen(node_dir)-1]!='\\')
+                strcat(node_dir,"\\"); }
+        if (!stricmp(argv[x],"/L"))
+            create_log=1;
     }
     initdata();
-
-	if(cleanup) {
-		sprintf(str,"player.%d",node_num);
-		if (fexist(str)) {
-			get_player(node_num);
-			newpts=temppts;
-			quit_out();
-		}
-		return(0);
-	}
     newpts=user_cdt;
 
-    if(!(fexist("dpoker.mnt"))) {
-        if((file=nopen("dpoker.mnt",O_WRONLY|O_CREAT))!=-1) {
+    if(!(fexist("DPOKER.MNT"))) {
+        if((file=nopen("DPOKER.MNT",O_WRONLY|O_CREAT))!=-1) {
             bprintf("\r\nPLEASE WAIT: Running daily maintenance.\r\n");
             lastrun=time(NULL);
-			lastrun-=lastrun%86400;
-            write(file,&lastrun,sizeof(lastrun)); close(file);
-            delfiles(".","player.*");
-            delfiles(".","gamestat.*");
-            delfiles(".","deck.*");
-            delfiles(".","message.*");
-            unlink("dpoker.plr");
-			close(file);
-		}
-	}
-/* ToDo...
-    if((file=nopen("dpoker.mnt",O_RDWR|O_DENYALL))==-1) { */
-    if((file=nopen("dpoker.mnt",O_RDWR))==-1) {
+            unixtodos(lastrun,&d,&t);
+            t.ti_hour=t.ti_min=t.ti_sec=t.ti_hund=0;
+            lastrun=dostounix(&d,&t);
+            write(file,&lastrun,4); close(file);
+            delfiles("PLAYER.*");
+            delfiles("GAMESTAT.*");
+            delfiles("DECK.*");
+            delfiles("MESSAGE.*");
+            unlink("DPOKER.PLR"); } }
+    if((file=nopen("DPOKER.MNT",O_RDWR|O_DENYALL))==-1) {
         bprintf("\r\nPLEASE WAIT: Daily maintenance is running.\r\n");
         mswait(10000);
     } else {
-        read(file,&lastrun,sizeof(lastrun));
+        read(file,&lastrun,4);
         if(time(NULL)-lastrun>=86400) {
             bprintf("\r\nPLEASE WAIT: Running daily maintenance.\r\n");
             lastrun=time(NULL); lseek(file,0L,SEEK_SET);
-			lastrun-=lastrun%86400;
-            write(file,&lastrun,sizeof(lastrun));
-            delfiles(".","player.*");
-            delfiles(".","gamestat.*");
-            delfiles(".","deck.*");
-            delfiles(".","message.*");
-            unlink("dpoker.plr");
-		}
-        close(file);
-	}
+            unixtodos(lastrun,&d,&t);
+            t.ti_hour=t.ti_min=t.ti_sec=t.ti_hund=0;
+            lastrun=dostounix(&d,&t);
+            write(file,&lastrun,4);
+            delfiles("PLAYER.*");
+            delfiles("GAMESTAT.*");
+            delfiles("DECK.*");
+            delfiles("MESSAGE.*");
+            unlink("DPOKER.PLR"); }
+        close(file); }
 
-	inifile=fopen("dpoker.ini","r");
-	iniReadString(inifile,NULL,"ComputerName","King Drafus",comp_name);
-	num_tables=iniReadShortInt(inifile,NULL,"Tables",5);
-	if(num_tables>MAX_TABLES)
-		num_tables=MAX_TABLES;
-	if(num_tables<1)
-		num_tables=1;
-	time_allowed=iniReadInteger(inifile,NULL,"TimeAllowed",86400);
-	if(time_allowed>86400 || time_allowed<0)
-		time_allowed=86400;
-	skim=iniReadShortInt(inifile,NULL,"Skim",10);
-	if(skim<0)
-		skim=0;
-	if(skim>50)
-		skim=50;
-	for(i=1;i<=num_tables;i++) {
-		sprintf(key_name,"Table%d",i);
-		opts=0;
-		opts|=(iniReadBool(inifile,key_name,"ComputerPlayer",TRUE)?COMPUTER:0);
-		opts|=(iniReadBool(inifile,key_name,"Password",FALSE)?PASSWORD:0);
-		options[i]=opts;
-		ante[i]=iniReadShortInt(inifile,key_name,"Ante",i*50);
-		if(ante[i] < 0)
-			ante[i]=0;
-		bet_limit[i]=iniReadShortInt(inifile,key_name,"BetLimit",i*100);
-		if(bet_limit[i] < 1)
-			bet_limit[i]=1;
-		max_total[i]=iniReadInteger(inifile,key_name,"TableLimit",i*1000);
-		if(max_total[i] < 1)
-			max_total[i]=1;
-	}
-	if(inifile!=NULL)
-		fclose(inifile);
+    if((file=nopen("DPOKER.CFG",O_RDONLY))==-1) {
+        printf("Error opening config file.  Did you run DPCONFIG?\r\n");
+        pause();
+        exit(1); }
+    if(filelength(file)!=500L) {
+        printf("Incorrect configuration file for this version of Domain Poker."
+            "\r\nYou must delete the file DPOKER.CFG and run DPCONFIG.EXE!"
+            "\r\n");
+        pause();
+        exit(1); }
+    read(file,comp_name,26);
+    read(file,&num_tables,sizeof(short));
+    read(file,&time_allowed,sizeof(short));
+    read(file,&skim,sizeof(short));
+    for(i=1;i<=num_tables;i++) {
+        read(file,&options[i],sizeof(short));
+        read(file,&ante[i],sizeof(short));
+        read(file,&bet_limit[i],sizeof(short));
+        read(file,&max_total[i],sizeof(long));
+        read(file,str,8); }
+    close(file);
 
     if (comp_name[0]==0)
         strcpy(comp_name,sys_guru);
 
-    if(fexist("dpoker.plr")) {
-        if((file=nopen("dpoker.plr",O_RDONLY))==-1) {
+    if(fexist("DPOKER.PLR")) {
+        if((file=nopen("DPOKER.PLR",O_RDONLY))==-1) {
             printf("Error opening time file\r\n");
             pause();
-            return(1);}
+            exit(1);}
         length=filelength(file);
-        if ((buf=(char *)malloc(length))!=NULL) {
+        if ((buf=(char *)MALLOC(length))!=NULL) {
             read(file,buf,length);
         }
         close(file);
@@ -311,7 +256,7 @@ int main(int argc, char **argv)
             if (!stricmp(player_stuff.name,user_name))
                 time_played+=(player_stuff.time*60);
         }
-        free(buf);
+        FREE(buf);
     }
 
 
@@ -322,11 +267,13 @@ int main(int argc, char **argv)
         if (ante[x]<=0 || ante[x]>bet_limit[x]) ante[x]=bet_limit[x];
     }
 
-    while(inkey(0));	/* clear input buffer */
+    while(kbhit())   /* clear input buffer */
+        getch();
     putchar(5); /* ctrl-e */
     mswait(500);
-    if(keyhit()) {
-        while(inkey(0));
+    if(kbhit()) {
+        while(kbhit())
+            getch();
         cls(); bputs("\r\n"); center_wargs("\1r\1h\1i*** ATTENTION ***");
         bputs("\r\n\1n\1hDomain Poker \1nuses Ctrl-E (ENQ) for the 'club' card "
               "symbol.");
@@ -340,8 +287,8 @@ int main(int argc, char **argv)
         pause();
     }
     cls();
-    center_wargs("\1n\1gWelcome to Domain Poker v%s-%s",VERSION,revision);
-    center_wargs("\1n\1gCopyright %s Domain Entertainment", __DATE__+7);
+    center_wargs("\1n\1gWelcome to Domain Poker v%s",VERSION);
+    center_wargs("\1n\1gCopyright 2005 Domain Entertainment");
 
     do {
         mnehigh=GREEN|HIGH; mnelow=GREEN;
@@ -359,15 +306,15 @@ int main(int argc, char **argv)
 			case 'Q':
 				break;
             case 'P':
-                if (!fexist("dpoker.plr")) {
+                if (!fexist("DPOKER.PLR")) {
                     bprintf("\r\n\1c\1hNo one has played Domain Poker today.");
                     break;
                 }
                 won=lost=0L;
                 bprintf("\r\n\1y\1hList of today's players\1n\r\n");
-                if((file=nopen("dpoker.plr",O_RDONLY))!=-1) {
+                if((file=nopen("DPOKER.PLR",O_RDONLY))!=-1) {
                     length=filelength(file);
-                    if ((buf=(char *)malloc(length))!=NULL) {
+                    if ((buf=(char *)MALLOC(length))!=NULL) {
                         read(file,buf,length);
                     }
                     close(file);
@@ -388,7 +335,7 @@ int main(int argc, char **argv)
                                 lost+=labs(player_stuff.points);
                         }
                     }
-                    free(buf);
+                    FREE(buf);
                     if (won || lost) {
                         bprintf("\r\n\r\n\1m\1hYou've won \1y%ldK \1mand "
                                 "lost \1y%ldK \1mfor a total %s of "
@@ -398,12 +345,10 @@ int main(int argc, char **argv)
                 }
                 break;
             case 'H':
-				cls();
-                printfile("dpoker.how");
+                printfile("DPOKER.HOW");
                 break;
 			case 'I':
-				cls();
-                printfile("dpoker.ins");
+                printfile("DPOKER.INS");
 				break;
 			case 'L':
                 do {
@@ -440,8 +385,6 @@ int main(int argc, char **argv)
     } while (ch!='Q');
 
     bprintf("\r\n\r\n\1n\1gReturning you to \1g\1h%s\r\n\r\n\1n",sys_name);
-	mswait(500);
-	return(0);
 }
 
 /*****************************************************************************
@@ -594,7 +537,7 @@ void computer_discard()
             for (j=0;j<5;j++) {
                 if (hand[0][j].suit==(matchcard)) x++;
             }
-            if (x>2 && !xp_random(3)) {
+            if (x>2 && !random(3)) {
                 for (i=0;i<5;i++) {
                     if (hand[0][i].suit!=matchcard)
                         hand[0][i]=deck[cur_card++];
@@ -617,7 +560,7 @@ void computer_discard()
                     x++; matchcard++;
                 }
             }
-            if (x>2 && !xp_random(3)) {
+            if (x>2 && !random(3)) {
                 for (i=0;i<5;i++) {
                     match=0;
                     for (j=0;j<x;j++)
@@ -676,7 +619,7 @@ void computer_discard()
 **************************************************************************/
 void computer_bet()
 {
-    int add=0,call=0,fold=0,raise=0;
+    int num,add=0,call=0,fold=0,raise=0;
 
     if (!firstbet && stage==BET && current_bet==0) { next_player(); return; }
     if (!firstbet && stage==BET2 && (comp_bet-current_bet==0) && firstbid) {
@@ -709,7 +652,7 @@ void computer_bet()
             if (!rand()%4 || (!firstbet && current_bet<=(.1
                 *bet_limit[cur_table]) && !rand()%2)) {
                 if (!xraised) {
-                    add=(max_bet*.75)+xp_random(max_bet*.25);
+                    add=(max_bet*.75)+random(max_bet*.25);
                     raise=1; break;
                 }
             }
@@ -719,11 +662,11 @@ void computer_bet()
                     call=1; break;
                 }
                 if (hicard<11) {
-                    add=(max_bet*.40)+xp_random(max_bet*.20);
+                    add=(max_bet*.40)+random(max_bet*.20);
                     raise=1; break;
                 }
                 if (hicard>10) {
-                    add=(max_bet*.50)+xp_random(max_bet*.25);
+                    add=(max_bet*.50)+random(max_bet*.25);
                     raise=1; break;
                 }
             }
@@ -733,11 +676,11 @@ void computer_bet()
                     call=1; break;
                 }
                 if (dupcard1<11) {
-                    add=(max_bet*.60)+xp_random(max_bet*.40);
+                    add=(max_bet*.60)+random(max_bet*.40);
                     raise=1; break;
                 }
                 if (dupcard1>10) {
-                    add=(max_bet*.75)+xp_random(max_bet*.25);
+                    add=(max_bet*.75)+random(max_bet*.25);
                     raise=1; break;
                 }
             }
@@ -746,11 +689,11 @@ void computer_bet()
                     call=1; break;
                 }
                 if (dupcard1<11 && dupcard2<11) {
-                    add=(max_bet*.80)+xp_random(max_bet*.20);
+                    add=(max_bet*.80)+random(max_bet*.20);
                     raise=1; break;
                 }
                 if (dupcard1>10 || dupcard2>10) {
-                    add=(max_bet*.90)+xp_random(max_bet*.10);
+                    add=(max_bet*.90)+random(max_bet*.10);
                     raise=1; break;
                 }
             }
@@ -772,7 +715,7 @@ void computer_bet()
                             call=1; break;
                         } else {
                             add=(max_bet*.30)+
-                                xp_random(max_bet*.10);
+                                random(max_bet*.10);
                             raise=1; break;
                         }
                     } else {
@@ -796,11 +739,11 @@ void computer_bet()
                         call=1; break;
                     }
                     if (dupcard1<11) {
-                        add=(max_bet*.70)+xp_random(max_bet*.30);
+                        add=(max_bet*.70)+random(max_bet*.30);
                         raise=1; break;
                     }
                     if (dupcard1>10) {
-                        add=(max_bet*.80)+xp_random(max_bet*.20);
+                        add=(max_bet*.80)+random(max_bet*.20);
                         raise=1; break;
                     }
                 }
@@ -808,11 +751,11 @@ void computer_bet()
                     call=1; break;
                 }
                 if (dupcard1<11) {
-                    add=(max_bet*.60)+xp_random(max_bet*.40);
+                    add=(max_bet*.60)+random(max_bet*.40);
                     raise=1; break;
                 }
                 if (dupcard1>10) {
-                    add=(max_bet*.80)+xp_random(max_bet*.20);
+                    add=(max_bet*.80)+random(max_bet*.20);
                     raise=1; break;
                 }
             }
@@ -821,11 +764,11 @@ void computer_bet()
                     call=1; break;
                 }
                 if (dupcard1<11 && dupcard2<11) {
-                    add=(max_bet*.80)+xp_random(max_bet*.20);
+                    add=(max_bet*.80)+random(max_bet*.20);
                     raise=1; break;
                 }
                 if (dupcard1>10 || dupcard2>10) {
-                    add=(max_bet*.90)+xp_random(max_bet*.10);
+                    add=(max_bet*.90)+random(max_bet*.10);
                     raise=1; break;
                 }
             }
@@ -931,6 +874,7 @@ void show_all_hands(int winner)
 **********************************************************/
 void single_winner()
 {
+    char str[256];
     int winner=0,comprank,compdup1,compdup2,x;
     long l=0;
 
@@ -1030,10 +974,10 @@ void play_menu()
     char ch, fname[81],str[256],
         *waitcmd="\1y\1hCommand \1b\1h(\1c\1hL,S,Y,Q,^P,^U,?\1b\1h):\1n ",
         *dealcmd="\1m\1hDealer \1n\1b\1h(\1c\1hD,L,S,Y,Q,^P,^U,?\1b\1h):\1n ";
-    int warn,tt;
+    int warn,num,tt;
     time_t timeout,timeout2,now;
 
-    sprintf(fname,"message.%d",node_num);
+    sprintf(fname,"MESSAGE.%d",node_num);
     get_game_status(cur_table);
 
     bprintf("\r\n");
@@ -1078,7 +1022,7 @@ void play_menu()
                         break;
                     }
                     if (dealer==node_num && stage==OPEN) {
-                        node[node_num-1]=DEALING; deal();
+                        node[num-1]=DEALING; deal();
                     }
                     break;
 
@@ -1249,7 +1193,7 @@ void show_players(int tablenum)
 
     if (!tablenum) tablenum=cur_table;
     if (!tablenum) tablenum=1;
-    sprintf(str,"gamestat.%d",tablenum);
+    sprintf(str,"GAMESTAT.%d",tablenum);
 
     if (fexist(str)) get_game_status(tablenum);
     else total_players=0;
@@ -1477,6 +1421,7 @@ void dealer_ctrl()
 void bet_menu()
 {
     char str[256],betcmd[256],ch;
+    long points;
 
     get_game_status(cur_table); node[node_num-1]=BETTING;
     put_game_status(node_num-1);
@@ -1613,12 +1558,12 @@ void increase_bet()
 **********************************************************************/
 void put_player(int player)
 {
-    int file;
+    int file,x;
     char str[256];
 
     if (player==node_num) { temp_num=user_number; temppts=newpts; }
 
-    sprintf(str,"player.%d",player);
+    sprintf(str,"PLAYER.%d",player);
     if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
     bprintf("put_player: Error opening '%s'\r\n",str);
         return; }
@@ -1627,7 +1572,7 @@ void put_player(int player)
     write(file,&player_bet,sizeof(player_bet));
     write(file,&temppts,sizeof(temppts));
     gethandtype(player);
-    write(file,&rank,sizeof(rank));
+    write(file,&rank,2);
     write(file,&dupcard1,sizeof(dupcard1));
     write(file,&dupcard2,sizeof(dupcard2));
     write(file,&hicard,sizeof(hicard));
@@ -1647,11 +1592,11 @@ void putdeck()
     char str[20];
 	int file;
 
-    sprintf(str,"deck.%d",cur_table);
+    sprintf(str,"DECK.%d",cur_table);
     if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
         bputs("putdeck: Error opening DECK for write\r\n");
         return; }
-    write(file,&cur_card,sizeof(cur_card));
+    write(file,&cur_card,2);
     write(file,deck,52*sizeof(card_t));
     close(file);
 }
@@ -1664,11 +1609,11 @@ void getdeck()
     char str[20];
     int file;
 
-    sprintf(str,"deck.%d",cur_table);
+    sprintf(str,"DECK.%d",cur_table);
     if((file=nopen(str,O_RDONLY))==-1) {
         bputs("getdeck: Error opening DECK for read\r\n");
         return; }
-    read(file,&cur_card,sizeof(cur_card));
+    read(file,&cur_card,2);
     read(file,deck,52*sizeof(card_t));
     close(file);
 }
@@ -1809,7 +1754,7 @@ void moduser()
     FILE *fp;
 
     xfer_pts=(newpts-user_cdt);
-    sprintf(str,"%smoduser.dat",node_dir);
+    sprintf(str,"%sMODUSER.DAT",node_dir);
     if((fp=fopen(str,"wt"))==NULL) {
         printf("Can't open %s\r\n",str);
         exit(1); }
@@ -1834,7 +1779,7 @@ void shuffle()
 
     i=0;
     while(i<51) {
-        j=xp_random((52)-1);
+        j=random((52)-1);
         if(!shufdeck[j].value)  /* card already used */
             continue;
         deck[i]=shufdeck[j];
@@ -1855,7 +1800,7 @@ void read_player_message()
 	int file;
 	ulong length;
 
-    sprintf(str,"message.%d",node_num);
+    sprintf(str,"MESSAGE.%d",node_num);
     if((file=nopen(str,O_RDONLY))==-1) {
         bprintf("File not Found: %s\r\r\n",str);
         return; }
@@ -1883,8 +1828,8 @@ void read_player_message()
 **************************************************/
 void send_message()
 {
-	int num;
-    char str[256],str1[256];
+	int file,num;
+    char ch,fname[81],str[256],str1[256];
 
     if (total_players==1) {
         bprintf("\r\n\r\n\1r\1hYou are the only player!\1n");
@@ -1914,7 +1859,7 @@ void send_message()
                     } else {
                         send_player_message(num,str);
                     }
-                } while (inkey(0) || wordwrap[0]);
+                } while (getch() || wordwrap[0]);
                 break;
             } else bprintf("\r\n\r\n\1r\1hInvalid Player Number!\r\n");
         } else if (num=='L') show_players(0);
@@ -2093,7 +2038,7 @@ void join_game()
     char str[256];
 
     memset(node,'\0',MAX_NODES);
-    sprintf(str,"gamestat.%d",cur_table);
+    sprintf(str,"GAMESTAT.%d",cur_table);
     if (!fexist(str)) {
         if(!(options[cur_table]&COMPUTER))
             bprintf("\r\n\1r\1hNOTICE: No computer player available at this "
@@ -2106,7 +2051,7 @@ void join_game()
         } else password[0]=0;
         node[node_num-1]=WAITING; cur_node=node_num; total_players=1;
         current_bet=0; dealer=node_num; stage=OPEN;
-        sprintf(str,"gamestat.%d",cur_table);
+        sprintf(str,"GAMESTAT.%d",cur_table);
         if (!fexist(str)) {
             put_game_status(-1); put_player(node_num);
             return;
@@ -2116,7 +2061,7 @@ void join_game()
 	}
     get_game_status(cur_table);
     if (total_players==6) {
-        bprintf("\r\n\r\nThere are already 6 players at this table!");
+        bprintf("\r\n\r\hThere are already 6 players at this table!");
         return;
     }
     if (password[0] && !SYSOP) {
@@ -2159,7 +2104,7 @@ void join_game()
         }
     }
     put_game_status(-1);
-    sprintf(str,"message.%d",node_num);     /* Kill off any stray messages */
+    sprintf(str,"MESSAGE.%d",node_num);     /* Kill off any stray messages */
     unlink(str);
     put_player(node_num);
     get_game_status(cur_table);
@@ -2184,7 +2129,8 @@ void join_game()
 *************************************************************************/
 int select_table()
 {
-    int ch;
+    char str[256],statstr[256];
+    int x,ch;
 
     /* first show all tables & players at each (& if full or not)
        then allow to list players at a particular table by typing in
@@ -2226,7 +2172,7 @@ void show_tables()
     bprintf("\r\n Table     Number of    Bet    Table  Table  Table");
     bprintf("\r\n Number     Players    Limit   Limit  Ante   Status\r\n");
     for (x=1;x<=num_tables;x++) {
-        sprintf(str,"gamestat.%d",x);
+        sprintf(str,"GAMESTAT.%d",x);
         if (fexist(str)) {
             get_game_status(x);
             strcpy(statstr,"\1b\1h[\1cIn Play\1b]");
@@ -2252,7 +2198,7 @@ void show_tables()
                 bprintf("           [\1rNo Comp Player\1b]");
         }
     }
-    sprintf(str,"gamestat.%d",cur_table);
+    sprintf(str,"GAMESTAT.%d",cur_table);
     if (cur_table && fexist(str))
         get_game_status(cur_table);
 }
@@ -2266,12 +2212,13 @@ void computer_log(long points)
     int file;
     long l;
     time_t now;
-	struct tm *tp;
+    struct date date;
+    struct time curtime;
 
     now=time(NULL); /* Creates log to show wins/losses for the day */
-	tp=localtime(&now);
-    sprintf(str,"%02d%02d%02d.log",tp->tm_mon+1,tp->tm_mday
-        ,tp->tm_year%100);
+    unixtodos(now,&date,&curtime);
+    sprintf(str,"%02d%02d%02d.log",date.da_mon,date.da_day
+        ,date.da_year-1900);
     if ((file=nopen(str,O_RDWR|O_CREAT))==-1)
         printf("Error opening %s\r\r\n",str);
     else {
@@ -2323,7 +2270,7 @@ void declare_winner()
 {
     char str[256];
     int highrank=0, highdup1=0, highdup2=0, winner[128], num,
-        x=0, compare;
+        show, x=0, compare;
     ulong skim_amt;
 
     get_game_status(cur_table);
@@ -2474,9 +2421,9 @@ void get_game_status(int tablenum)
     memset(node,'\0',MAX_NODES);
     password[0]=0;
 
-    sprintf(str,"gamestat.%d",tablenum);
+    sprintf(str,"GAMESTAT.%d",tablenum);
     if ((file=nopen(str,O_RDONLY))==-1) {
-        sprintf(str,"Couldn't open gamestat.%d for READ",tablenum);
+        sprintf(str,"Couldn't open GAMESTAT.%d for READ",tablenum);
         bputs(str);
         return;
     }
@@ -2501,7 +2448,7 @@ void put_game_status(int specnode)
     char str[256];
     int file;
 
-    sprintf(str,"gamestat.%d",cur_table);
+    sprintf(str,"GAMESTAT.%d",cur_table);
     if ((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
         bputs("Couldn't open GAMESTAT for WRITE");
         return;
@@ -2526,10 +2473,10 @@ void put_game_status(int specnode)
 ***********************************************************************/
 void get_player(int player)
 {
-    int file;
+    int file,x;
     char str[256];
 
-    sprintf(str,"player.%d",player);
+    sprintf(str,"PLAYER.%d",player);
     if((file=nopen(str,O_RDONLY))==-1) {
     bprintf("get_player: Error opening '%s'\r\n",str);
         return; }
@@ -2537,7 +2484,7 @@ void get_player(int player)
     read(file,&temp_num,sizeof(temp_num));
     read(file,&player_bet,sizeof(player_bet));
     read(file,&temppts,sizeof(temppts));
-    read(file,&rank,sizeof(rank));
+    read(file,&rank,2);
     read(file,&dupcard1,sizeof(dupcard1));
     read(file,&dupcard2,sizeof(dupcard2));
     read(file,&hicard,sizeof(hicard));
@@ -2553,10 +2500,10 @@ void send_player_message(int plr, char *msg)
     int file;
     char fname[81];
 
-    sprintf(fname,"message.%d",plr);
+    sprintf(fname,"MESSAGE.%d",plr);
 
     if ((file=nopen(fname,O_WRONLY|O_APPEND|O_CREAT))==-1) {
-        bputs("Couldn't open message.xxx for WRITE");
+        bputs("Couldn't open MESSAGE.xxx for WRITE");
         return;
     }
     write(file,msg,strlen(msg));
@@ -2593,7 +2540,7 @@ void quit_out()
     if (xfer_pts!=0) {
         x=time_played/60;
         sprintf(str,"%-25.25s",user_name);
-        if ((file=nopen("dpoker.plr",O_WRONLY|O_CREAT|O_APPEND))!=-1) {
+        if ((file=nopen("DPOKER.PLR",O_WRONLY|O_CREAT|O_APPEND))!=-1) {
             write(file,str,25);
             write(file,&x,sizeof(x));
             write(file,&xfer_pts,sizeof(xfer_pts));
@@ -2602,23 +2549,23 @@ void quit_out()
     }
     xfer_pts=0;
 
-    sprintf(str,"message.%d",node_num);
+    sprintf(str,"MESSAGE.%d",node_num);
     unlink(str);
-    sprintf(str,"player.%d",node_num);
+    sprintf(str,"PLAYER.%d",node_num);
     unlink(str);
     get_game_status(cur_table);
     if (node[node_num-1]>0 && node[node_num-1]<6) {
         node[node_num-1]=0; --total_players;
         put_game_status(-1);
-        sprintf(str,"message.%d",node_num);
+        sprintf(str,"MESSAGE.%d",node_num);
         unlink(str);
-        sprintf(str,"player.%d",node_num);
+        sprintf(str,"PLAYER.%d",node_num);
         unlink(str);
         sprintf(str,"\r\n\1n\1gNode %2d: \1h%s \1n\1ghas left the game.\1n"
                 ,node_num,user_name);
         send_all_message(str,0);
         if (!total_players) {
-            sprintf(str,"gamestat.%d",cur_table);
+            sprintf(str,"GAMESTAT.%d",cur_table);
             unlink(str);
             return;
         } else {
@@ -2640,4 +2587,24 @@ void quit_out()
             }
         }
     }
+}
+/******************************************************************************
+ This function deletes specified files - and it allows wildcards!
+******************************************************************************/
+int delfiles(char *spec)
+{
+    char str[129], done;
+    int files=0;
+    struct ffblk ff;
+
+    sprintf(str,"%s",spec);
+    done=findfirst(str,&ff,0);
+    while(!done) {
+        sprintf(str,"%s",ff.ff_name);
+        if (remove(str))
+            printf("Error");
+        else files++;
+        done=findnext(&ff);
+    }
+    return files;
 }
