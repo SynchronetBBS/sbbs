@@ -443,10 +443,10 @@ void sdl_user_func(int func, ...)
 					return;
 				}
 				pal = (struct sdl_palette *)ev.user.data1;
-				pal->index = va_arg(argptr, uint32_t);
-				pal->r = va_arg(argptr, uint32_t);
-				pal->g = va_arg(argptr, uint32_t);
-				pal->b = va_arg(argptr, uint32_t);
+				pal->index = va_arg(argptr, int) >> 8;
+				pal->r = va_arg(argptr, int) >> 8;
+				pal->g = va_arg(argptr, int) >> 8;
+				pal->b = va_arg(argptr, int) >> 8;
 				break;
 			case SDL_USEREVENT_COPY:
 			case SDL_USEREVENT_PASTE:
@@ -1993,8 +1993,9 @@ int sdl_video_event_thread(void *data)
 										sdl.SetColors(win, sdl_co, first, count);
 										sdl.SetColors(new_rect, sdl_co, first, count);
 
-										for(i=0; i<count; i++)
+										for(i=0; i<count; i++) {
 											sdl_dac_default[i+first]=sdl.MapRGB(win->format, sdl_co[i+first].r, sdl_co[i+first].g, sdl_co[i+first].b);
+										}
 									}
 									bitmap_drv_request_pixels();
 									free(pal);
