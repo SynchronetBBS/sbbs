@@ -3026,12 +3026,11 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 		cterm_start(cterm);
 
 	/* Now rejigger the current modes palette... */
-	/* TODO: We need a way to remap instead of fuckery */
 	mpalette = get_modepalette(palette);
 	if (mpalette) {
-		for (i=0; i < 16; i++) {
+		for (i=0; i < 16; i++)
 			mpalette[i] += 16;
-		}
+		set_modepalette(mpalette);
 	}
 
 	oldptnm=*cterm->puttext_can_move;
@@ -3757,7 +3756,6 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	SETCURSORTYPE(cterm->cursor);
 
 	/* Now rejigger the current modes palette... */
-	/* TODO: We need a way to remap instead of fuckery */
 	if (mpalette) {
 		for (i=0; i < 16; i++)
 			mpalette[i] -= 16;

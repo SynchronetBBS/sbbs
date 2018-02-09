@@ -188,6 +188,7 @@ int try_sdl_init(int mode)
 		cio_api.getpixels=bitmap_getpixels;
 		cio_api.setpixels=bitmap_setpixels;
 		cio_api.get_modepalette=bitmap_get_modepalette;
+		cio_api.set_modepalette=bitmap_set_modepalette;
 		return(1);
 	}
 	return(0);
@@ -241,6 +242,7 @@ int try_x_init(int mode)
 		cio_api.getpixels=bitmap_getpixels;
 		cio_api.setpixels=bitmap_setpixels;
 		cio_api.get_modepalette=bitmap_get_modepalette;
+		cio_api.set_modepalette=bitmap_set_modepalette;
 		return(1);
 	}
 	return(0);
