@@ -7,7 +7,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SyncTERM", "SyncTERM.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xpdev_mt", "..\xpdev\xpdev_mt.vcxproj", "{AEED3A81-3A47-4953-BE51-FD5E08283890}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "conio", "..\conio\conio.vcxproj", "{84592E48-27CA-48A6-B9C6-243D2347A578}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "conio", "..\conio\conio_sdl.vcxproj", "{84592E48-27CA-48A6-B9C6-243D2347A578}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uifc", "..\uifc\uifc.vcxproj", "{7BFB9820-0E57-4BE4-9BE9-E0A687874E19}"
 EndProject
