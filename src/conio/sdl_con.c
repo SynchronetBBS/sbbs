@@ -357,6 +357,7 @@ planar:
 		Y=overlay->pixels[0]+overlay->pitches[0]*(r->y)+(r->x);
 		U=overlay->pixels[uplane]+uvoffset;
 		V=overlay->pixels[vplane]+uvoffset;
+
 		for(y=0; y<r->h; y++)
 		{
 			memset(Y, yuv.colours[dac_entry][0], r->w);
@@ -668,14 +669,13 @@ int sdl_init_mode(int mode)
 
 	pthread_mutex_lock(&vstatlock);
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
+	if(yuv.enabled)
+		vstat.scaling = 2;
 	cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
 
 	/* Deal with 40 col doubling */
-	if(yuv.enabled) {
-		sdl_setscaling(2);
-	}
-	else {
+	if(!yuv.enabled) {
 		if(oldcols != cvstat.cols) {
 			if(oldcols == 40)
 				cvstat.scaling /= 2;
@@ -948,7 +948,7 @@ int sdl_setup_yuv_colours(void)
 			yuv.colourssz = newsz;
 		}
 		for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
-			RGBtoYUV(dac_default[i].red, dac_default[i].green, dac_default[i].blue, &(yuv.colours[i][0]), 0, 100);
+			RGBtoYUV(dac_default[i].red, dac_default[i].green, dac_default[i].blue, yuv.colours[i], 0, 100);
 		}
 	}
 	return(ret);
@@ -1948,9 +1948,9 @@ int sdl_video_event_thread(void *data)
 												yuv.colours = newc;
 												yuv.colourssz = newsz;
 												for(i=oldsz; i<pal->index; i++)
-													RGBtoYUV(0, 0, 0, &(yuv.colours[i][0]), 0, 100);
+													RGBtoYUV(0, 0, 0, yuv.colours[i], 0, 100);
 											}
-											RGBtoYUV(pal->r, pal->g, pal->b, &(yuv.colours[pal->index][0]), 0, 100);
+											RGBtoYUV(pal->r, pal->g, pal->b, yuv.colours[pal->index], 0, 100);
 										}
 									}
 									else {
