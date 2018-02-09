@@ -62,6 +62,7 @@ static Atom WM_DELETE_WINDOW=0;
 static Display *dpy=NULL;
 static Window win;
 static Visual visual;
+static XImage *xim;
 static unsigned int depth=0;
 static int xfd;
 static unsigned long black;
@@ -194,6 +195,19 @@ static struct {
     {	0x8600, 0x5888, 0x8a00, 0x8c00 }, /* key 88 - F12 */
 };
 
+static void resize_xim(void)
+{
+	if (xim) {
+#ifdef XDestroyImage
+		XDestroyImage(xim);
+#else
+		x11.XDestroyImage(xim);
+#endif
+	}
+    xim=x11.XCreateImage(dpy,&visual,depth,ZPixmap,0,NULL,bitmap_width*x_cvstat.scaling,bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier,32,0);
+    xim->data=(char *)malloc(xim->bytes_per_line*bitmap_width*x_cvstat.scaling*bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier);
+}
+
 /* Get a connection to the X server and create the window. */
 static int init_window()
 {
@@ -268,6 +282,8 @@ static int init_window()
 	depth = DefaultDepth(dpy, DefaultScreen(dpy));
 	x11.XSetWMProtocols(dpy, win, &WM_DELETE_WINDOW, 1);
 
+	resize_xim();
+
 	return(0);
 }
 
@@ -305,7 +321,8 @@ static void map_window()
 static void resize_window()
 {
     x11.XResizeWindow(dpy, win, bitmap_width*x_cvstat.scaling, bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier);
-    
+    resize_xim();
+
     return;
 }
 
@@ -370,71 +387,26 @@ static int video_init()
 static void local_draw_rect(struct update_rect *rect)
 {
 	int x,y,xscale,yscale;
-	XImage *xim;
 
-#if 0 /* Draw solid colour rectangles... */
-	int rectw, recth, rectc, y2;
-
-	for(y=0; y<rect->height; y++) {
-		for(x=0; x<rect->width; x++) {
-			rectc=rect->data[y*rect->width+x];
-
-			/* Already displayed? */
-			if(rectc == 255)
-				continue;
-
-			rectw=1;
-			recth=1;
-
-			/* Grow as wide as we can */
-			while(x+rectw < rect->width && rect->data[y*rect->width+x+rectw]==rectc)
-				rectw++;
-			
-			/* Now grow as tall as we can */
-			while(y+recth < rect->height && memcmp(rect->data+(y*rect->width+x), rect->data+((y+recth)*rect->width+x), rectw)==0)
-				recth++;
-
-			/* Mark pixels as drawn */
-			for(y2=0; y2<recth; y2++)
-				memset(rect->data+((y+y2)*rect->width+x),255,rectw);
-
-			/* Draw it */
-			x11.XFillRectangle(dpy, win, gca[rectc], (rect->x+x)*x_cvstat.scaling, (rect->y+y)*x_cvstat.scaling*x_cvstat.vmultiplier, rectw*x_cvstat.scaling, recth*x_cvstat.scaling*x_cvstat.vmultiplier);
-		}
-	}
-#else
-#if 1	/* XImage */
 	xim=x11.XCreateImage(dpy,&visual,depth,ZPixmap,0,NULL,rect->width*x_cvstat.scaling,rect->height*x_cvstat.scaling*x_cvstat.vmultiplier,32,0);
 	xim->data=(char *)malloc(xim->bytes_per_line*rect->height*x_cvstat.scaling*x_cvstat.vmultiplier);
+
 	for(y=0;y<rect->height;y++) {
 		for(x=0; x<rect->width; x++) {
 			for(yscale=0; yscale<x_cvstat.scaling*x_cvstat.vmultiplier; yscale++) {
 				for(xscale=0; xscale<x_cvstat.scaling; xscale++) {
 #ifdef XPutPixel
-					XPutPixel(xim,x*x_cvstat.scaling+xscale,y*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->width+x]]);
+					XPutPixel(xim,(x+rect->x)*x_cvstat.scaling+xscale,(y+rect->y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->width+x]]);
 #else
-					x11.XPutPixel(xim,x*x_cvstat.scaling+xscale,y*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->width+x]]);
+					x11.XPutPixel(xim,(x+rect->x)*x_cvstat.scaling+xscale,(y+y->rect)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->width+x]]);
 #endif
 				}
 			}
 		}
 	}
 
-	x11.XPutImage(dpy,win,gca[0],xim,0,0,rect->x*x_cvstat.scaling,rect->y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->width*x_cvstat.scaling,rect->height*x_cvstat.scaling*x_cvstat.vmultiplier);
-#ifdef XDestroyImage
-	XDestroyImage(xim);
-#else
-	x11.XDestroyImage(xim);
-#endif
+	x11.XPutImage(dpy,win,gca[0],xim,rect->x*x_cvstat.scaling,rect->y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->x*x_cvstat.scaling,rect->y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->width*x_cvstat.scaling,rect->height*x_cvstat.scaling*x_cvstat.vmultiplier);
 
-#else	/* XFillRectangle */
-	for(y=0;y<rect->height;y++) {
-		for(x=0; x<rect->width; x++) {
-			x11.XFillRectangle(dpy, win, gca[rect->data[y*rect->width+x]], (rect->x+x)*x_cvstat.scaling, (rect->y+y)*x_cvstat.scaling*x_cvstat.vmultiplier, x_cvstat.scaling, x_cvstat.scaling*x_cvstat.vmultiplier);
-		}
-	}
-#endif
-#endif
 	free(rect->data);
 }
 
@@ -994,7 +966,7 @@ void x11_event_thread(void *args)
 					x11.XNextEvent(dpy, &ev);
 					x11_event(&ev);
 				}
-				while(FD_ISSET(local_pipe[0], &fdset)) {
+				if(FD_ISSET(local_pipe[0], &fdset)) {
 					struct x11_local_event lev;
 
 					readev(&lev);
@@ -1053,14 +1025,6 @@ void x11_event_thread(void *args)
 							local_set_palette(&lev.data.palette);
 							break;
 					}
-					tv.tv_sec=0;
-					tv.tv_usec=0;
-
-					FD_ZERO(&fdset);
-					FD_SET(local_pipe[0], &fdset);
-
-					if(select(local_pipe[0]+1, &fdset, 0, 0, &tv)!=1)
-						FD_ZERO(&fdset);
 				}
 		}
 	}
