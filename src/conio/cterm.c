@@ -1455,8 +1455,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 	return;
 
 all_done:
-	GETTEXTINFO(&ti);
-	vmode = find_vmode(ti.currmode);
+	vmode = find_vmode(cio_api.mode);
 
 	if (cterm->sx_row_max_x)
 		setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
@@ -1738,8 +1737,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								case 3:	/* Query font char dimensions */
 								{
 									int vmode;
-									GETTEXTINFO(&ti);
-									vmode = find_vmode(ti.currmode);
+									vmode = find_vmode(cio_api.mode);
 									sprintf(tmp, "\x1b[=3;%u;%un", vparams[vmode].charheight, vparams[vmode].charwidth);
 									break;
 								}
