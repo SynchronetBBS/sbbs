@@ -105,7 +105,6 @@ pthread_mutex_t		vstatlock;
 /* Forward declarations */
 
 static int bitmap_loadfont_locked(char *filename);
-static void request_pixels_locked(void);
 static void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell);
 static int bitmap_attr2palette_locked(uint8_t attr, uint32_t *fgp, uint32_t *bgp);
 static void	cb_drawrect(int xpos, int ypos, int width, int height, uint32_t *data);
@@ -115,11 +114,10 @@ static void memset_u32(void *buf, uint32_t u, size_t len);
 static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos);
 static void cb_flush(void);
 static int check_redraw(void);
-static int check_pixels(void);
 static void blinker_thread(void *data);
 static __inline void *locked_screen_check(void);
 static BOOL bitmap_draw_cursor(void);
-static int update_rect(int sx, int sy, int width, int height, int force);
+static int update_from_vmem(int force);
 static int bitmap_pputtext_locked(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, uint32_t *bg);
 
 /**************************************************************/
@@ -246,11 +244,6 @@ error_return:
 	return(-1);
 }
 
-static void request_pixels_locked(void)
-{
-	update_pixels = 1;
-}
-
 /***************************************************/
 /* These functions get called from the driver only */
 /***************************************************/
@@ -356,7 +349,7 @@ static int bitmap_attr2palette_locked(uint8_t attr, uint32_t *fgp, uint32_t *bgp
  * 8) bitmap_draw_cursor() is the only thing that draws the cursor.
  * 9) To erase a cursor, you redraw the cell it's in using
  *    bitmap_draw_one_char().
- * 10) The blinker thread via update_rect() will redraw the cursor.
+ * 10) The blinker thread via update_from_rect() will redraw the cursor.
  */
 static BOOL bitmap_draw_cursor(void)
 {
@@ -532,23 +525,11 @@ static int check_redraw(void)
 	return ret;
 }
 
-static int check_pixels(void)
-{
-	int ret;
-
-	pthread_mutex_lock(&screen.screenlock);
-	ret = update_pixels;
-	update_pixels = 0;
-	pthread_mutex_unlock(&screen.screenlock);
-	return ret;
-}
-
 /* Blinker Thread */
 static void blinker_thread(void *data)
 {
 	void *rect;
 	int count=0;
-	int update = 0;
 
 	SetThreadName("Blinker");
 	while(1) {
@@ -557,7 +538,6 @@ static void blinker_thread(void *data)
 		} while(locked_screen_check()==NULL);
 		count++;
 		if(count==50) {
-			update = 1;
 			pthread_mutex_lock(&vstatlock);
 			if(vstat.blink)
 				vstat.blink=FALSE;
@@ -569,20 +549,23 @@ static void blinker_thread(void *data)
 		/* Lock out ciolib while we handle shit */
 		pthread_mutex_lock(&blinker_lock);
 		if (check_redraw()) {
-			if (update_rect(0,0,0,0,TRUE))
+			if (update_from_vmem(TRUE))
 				request_redraw();
 		}
 		else {
-			if (update)
-				update_rect(0,0,0,0,FALSE);
-			update = 0;
+			if (count==50)
+				if (update_from_vmem(FALSE))
+					request_redraw();
 		}
-		if (check_pixels()) {
-			pthread_mutex_lock(&screen.screenlock);
+		pthread_mutex_lock(&screen.screenlock);
+		if (update_pixels) {
 			rect = get_full_rectangle_locked();
+			update_pixels = 0;
 			pthread_mutex_unlock(&screen.screenlock);
 			cb_drawrect(0, 0, screen.screenwidth, screen.screenheight, rect);
 		}
+		else
+			pthread_mutex_unlock(&screen.screenlock);
 		cb_flush();
 		pthread_mutex_unlock(&blinker_lock);
 	}
@@ -602,29 +585,23 @@ static __inline void *locked_screen_check(void)
  * Is also used (with force = TRUE) to completely redraw the screen from
  * vmem (such as in the case of a font load).
  */
-static int update_rect(int sx, int sy, int width, int height, int force)
+static int update_from_vmem(int force)
 {
-	int x,y;
-	unsigned int pos;
-	int	redraw_cursor=0;
-	int	lastcharupdated=0;
-
 	static struct video_stats vs;
 	struct vstat_vmem *vmem_ptr;
+	int x,y,width,height;
+	unsigned int pos;
+
+	int	redraw_cursor=0;
+	int	lastcharupdated=0;
 	int bright_attr_changed=0;
 	int blink_attr_changed=0;
 
 	if(!bitmap_initialized)
 		return(-1);
 
-	if(sx<=0)
-		sx=1;
-	if(sy<=0)
-		sy=1;
-	if(width<=0 || width>cio_textinfo.screenwidth)
-		width=cio_textinfo.screenwidth;
-	if(height<=0 || height>cio_textinfo.screenheight)
-		height=cio_textinfo.screenheight;
+	width=cio_textinfo.screenwidth;
+	height=cio_textinfo.screenheight;
 
 	pthread_mutex_lock(&vstatlock);
 
@@ -638,15 +615,12 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		return -1;
 	}
 
+	/* If we change window size, redraw everything */
 	if(vs.cols!=vstat.cols || vs.rows != vstat.rows) {
 		/* Force a full redraw */
-		sx=1;
-		sy=1;
 		width=vstat.cols;
 		height=vstat.rows;
 		force=1;
-		vs.cols=vstat.cols;
-		vs.rows=vstat.rows;
 	}
 
 	/* Redraw cursor? */
@@ -667,7 +641,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 			vstat.bright_altcharset != vs.bright_altcharset)
 		bright_attr_changed = 1;
 
-	/* Copy the vmems into cur */
+	/* Get vmem pointer */
 	vmem_ptr = get_vmem(&vstat);
 
 	/* 
@@ -680,19 +654,19 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	 */
 
 	for(y=0;y<height;y++) {
-		pos=(sy+y-1)*vstat.cols+(sx-1);
+		pos=y*vstat.cols;
 		for(x=0;x<width;x++) {
 			/* Last this char been updated? */
 			if(force																/* Forced */
 					|| ((vstat.vmem->vmem[pos] & 0x8000) && (blink_attr_changed ||
 							((vstat.blink != vs.blink) && (!vstat.no_blink)))) 	/* Blinking char */
 					|| ((vstat.vmem->vmem[pos] & 0x0800) && bright_attr_changed)	/* Bright char */
-					|| (redraw_cursor && (vstat.curs_col==sx+x && vstat.curs_row==sy+y))	/* Cursor */
+					|| (redraw_cursor && (vstat.curs_col==x+1 && vstat.curs_row==y+1))	/* Cursor */
 					) {
-				bitmap_draw_one_char(sx+x,sy+y);
+				bitmap_draw_one_char(x+1,y+1);
 
 				/* If we're overwriting the cell the cursor is in, we need to redraw it. */
-				if(sx+x==vstat.curs_col && sy+y==vstat.curs_row)
+				if(x+1==vstat.curs_col && y+1==vstat.curs_row)
 					bitmap_draw_cursor();
 			}
 			pos++;
@@ -1294,27 +1268,14 @@ int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
 
 int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 {
-	uint32_t *rect = NULL;
-
-	if(callbacks.drawrect)
-		rect=(uint32_t *)malloc(sizeof(rect[0]));
-
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&screen.screenlock);
-
-	if (callbacks.drawrect && rect == NULL)
-		request_pixels_locked();
 
 	if (x < screen.screenwidth && y < screen.screenheight)
 		screen.screen[PIXEL_OFFSET(screen, x, y)]=colour;
 	update_pixels = 1;
 
 	pthread_mutex_unlock(&screen.screenlock);
-
-	if (rect) {
-		rect[0]=colour;
-		cb_drawrect(x,y,1,1,rect);
-	}
 	pthread_mutex_unlock(&blinker_lock);
 
 	return 1;
@@ -1322,8 +1283,6 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 
 int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels, void *mask)
 {
-	uint32_t *rect = NULL;
-	uint32_t *rp;
 	uint32_t x, y;
 	uint32_t width,height;
 	char *m = mask;
@@ -1346,16 +1305,8 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	if (height + y_off > pixels->height)
 		return 0;
 
-	if(callbacks.drawrect)
-		rp = rect=(uint32_t *)malloc(height * width * sizeof(rect[0]));
-
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&screen.screenlock);
-
-	/* If malloc() failed, redraw the whole screen */
-	if (callbacks.drawrect && rect == NULL)
-		request_pixels_locked();
-
 	if (ex > screen.screenwidth || ey > screen.screenheight) {
 		pthread_mutex_unlock(&screen.screenlock);
 		pthread_mutex_unlock(&blinker_lock);
@@ -1364,37 +1315,22 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 
 	for (y = sy; y <= ey; y++) {
 		pos = pixels->width*(y-sy+y_off)+x_off;
-		if (mask == NULL) {
+		if (mask == NULL)
 			memcpy(&screen.screen[PIXEL_OFFSET(screen, sx, y)], &pixels->pixels[pos], width * sizeof(pixels->pixels[0]));
-			if (rect)
-				memcpy(&rect[(y-sy)*width], &pixels->pixels[pos], width * sizeof(pixels->pixels[0]));
-		}
 		else {
 			for (x = sx; x <= ex; x++) {
 				pos++;
 				mask_byte = pos / 8;
 				mask_bit = pos % 8;
 				mask_bit = 0x80 >> mask_bit;
-				if (m[mask_byte] & mask_bit) {
+				if (m[mask_byte] & mask_bit)
 					screen.screen[PIXEL_OFFSET(screen, x, y)] = pixels->pixels[pos];
-					if (rect)
-						*(rp++) = pixels->pixels[pos];
-				}
-				else {
-					if (rect) {
-						*(rp++) = screen.screen[PIXEL_OFFSET(screen, x, y)];
-					}
-				}
 			}
 		}
 	}
 
 	update_pixels = 1;
 	pthread_mutex_unlock(&screen.screenlock);
-
-	if(rect) {
-		cb_drawrect(sx,sy,width,height,rect);
-	}
 	pthread_mutex_unlock(&blinker_lock);
 
 	return 1;
@@ -1572,7 +1508,7 @@ int bitmap_drv_init(void (*drawrect_cb) (int xpos, int ypos, int width, int heig
 void bitmap_drv_request_pixels(void)
 {
 	pthread_mutex_lock(&screen.screenlock);
-	request_pixels_locked();
+	update_pixels = 1;
 	pthread_mutex_unlock(&screen.screenlock);
 }
 
