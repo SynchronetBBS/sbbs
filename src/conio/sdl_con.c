@@ -443,10 +443,10 @@ void sdl_user_func(int func, ...)
 					return;
 				}
 				pal = (struct sdl_palette *)ev.user.data1;
-				pal->index = va_arg(argptr, int) >> 8;
-				pal->r = va_arg(argptr, int) >> 8;
-				pal->g = va_arg(argptr, int) >> 8;
-				pal->b = va_arg(argptr, int) >> 8;
+				pal->index = va_arg(argptr, uint32_t);
+				pal->r = (va_arg(argptr, int) >> 8) & 0xffff;
+				pal->g = (va_arg(argptr, int) >> 8) & 0xffff;
+				pal->b = (va_arg(argptr, int) >> 8) & 0xffff;
 				break;
 			case SDL_USEREVENT_COPY:
 			case SDL_USEREVENT_PASTE:
