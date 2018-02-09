@@ -553,7 +553,7 @@ static void blinker_thread(void *data)
 				request_redraw();
 		}
 		else {
-			if (count==50)
+			if (count==0)
 				if (update_from_vmem(FALSE))
 					request_redraw();
 		}
