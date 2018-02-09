@@ -1455,7 +1455,8 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 	return;
 
 all_done:
-	vmode = find_vmode(cio_api.mode);
+	GETTEXTINFO(&ti);
+	vmode = find_vmode(ti.currmode);
 
 	if (cterm->sx_row_max_x)
 		setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
@@ -1545,7 +1546,11 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					case 'S':		// XTerm graphics query
 						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
 							if (seq->param_int[0] == 2 && seq->param_int[1] == 1) {
-								int vmode = find_vmode(cio_api.mode);
+								struct text_info ti;
+								int vmode;
+
+								GETTEXTINFO(&ti);
+								vmode = find_vmode(ti.currmode)
 								sprintf(tmp, "\x1b[?2;0;%u;%uS", vparams[vmode].charwidth*cterm->width, vparams[vmode].charheight*cterm->height);
 								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
 									strcat(retbuf, tmp);
@@ -1736,8 +1741,11 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 3:	/* Query font char dimensions */
 								{
+									struct text_info ti;
 									int vmode;
-									vmode = find_vmode(cio_api.mode);
+
+									GETTEXTINFO(&ti);
+									vmode = find_vmode(ti.currmode)
 									sprintf(tmp, "\x1b[=3;%u;%un", vparams[vmode].charheight, vparams[vmode].charwidth);
 									break;
 								}
