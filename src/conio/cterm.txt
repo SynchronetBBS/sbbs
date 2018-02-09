@@ -428,6 +428,14 @@ CSI Pn S
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
+CSI ? Ps1 ; Ps2 S
+	Query Graphics Information
+	If Ps1 is 2, and Ps2 is 1, replies with the graphics screen information
+	in the following format: CSI ? 2 ; 0 ; Px ; Py S
+	Where Px is the width of the screen in pixels and Py is the height.
+
+	SOURCE: XTerm
+
 CSI Pn T
 	Scroll Down
 	Defaults: Pn = 1
