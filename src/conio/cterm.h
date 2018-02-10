@@ -143,7 +143,7 @@ struct cterminal {
 	int					ypos;
 	cterm_log_t			log;
 	FILE*				logfile;
-	char				fontbuf[4096];	// Remote font
+	char				fontbuf[4097];	// Remote font
 	int					font_read;		// Current position in fontbuf
 	int					font_slot;
 	int					font_size;		// Bytes

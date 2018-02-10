@@ -72,6 +72,15 @@ ESC P	Device Control String
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
 	Supported OSC values:
+		"CTerm:Font:p1:<b64>"
+		Indicates the string is a loadable font. (CTerm 1.213)
+
+		p1 is a font slot number, which must be higher than the last
+		default defined font (See CSI sp D for list of predefined
+		fonts). <b64> is the base64 encoded font data.  Font size is
+		deduced from the size of the data.  This replaces the now
+		deprecated CSI = Ps1 ; Ps2 {
+
 		[ p1 [ ; p2 ] ] q
 		Defaults:  p1 = 0  p2 = 0
 		Indicates the string is a sixel sequence.
@@ -491,7 +500,7 @@ CSI < Ps c
         CSI < 0 ; Ps... c
 
 	Possible values for Ps:
-	1 - Loadable fonts are availabe via CSI = Ps1 ; Ps2 {
+	1 - Loadable fonts are availabe via Device Control Strings
 	2 - Palette entries may be modified via an Operating System Command
 	    string
 	3 - Pixel operations are supported (currently, sixel graphics)
@@ -786,7 +795,7 @@ CSI u
 	SOURCE: ANSI.SYS
 
 CSI = Ps1 ; Ps2 {
-	NON-STANDARD EXTENSION.
+	NON-STANDARD EXTENSION (Deprecated)
 	Defaults:  Ps1 = 255  Ps2 = 0
 	Indicates that a font block is following.
 	Ps1 indicates the font slot to place the loaded font into.  This must
@@ -796,6 +805,8 @@ CSI = Ps1 ; Ps2 {
 		0 - 8x16 font, 4096 bytes.
 		1 - 8x14 font, 3584 bytes.
 		2 - 8x8 font, 2048 bytes.
+
+	The DCS font string should be used instead as of CTerm 1.213
 
 	SOURCE: CTerm only.
 
