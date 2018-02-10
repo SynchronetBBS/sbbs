@@ -112,6 +112,7 @@ static void request_redraw_locked(void);
 static void request_redraw(void);
 static void memset_u32(void *buf, uint32_t u, size_t len);
 static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos);
+static int bitmap_draw_one_char_cursor(unsigned int xpos, unsigned int ypos);
 static void cb_flush(void);
 static int check_redraw(void);
 static void blinker_thread(void *data);
@@ -291,7 +292,7 @@ static int bitmap_pputtext_locked(int sx, int sy, int ex, int ey, void *fill, ui
 				vmem_ptr->fgvmem[y*cio_textinfo.screenwidth+x] = *(fgout++);
 			if (bg)
 				vmem_ptr->bgvmem[y*cio_textinfo.screenwidth+x] = *(bgout++);
-			bitmap_draw_one_char(x+1, y+1);
+			bitmap_draw_one_char_cursor(x+1, y+1);
 		}
 	}
 	release_vmem(vmem_ptr);
@@ -382,6 +383,15 @@ static BOOL bitmap_draw_cursor(void)
 		}
 	}
 	return ret;
+}
+
+static int bitmap_draw_one_char_cursor(unsigned int xpos, unsigned int ypos)
+{
+	if (bitmap_draw_one_char(xpos, ypos) == -1)
+		return -1;
+	if (xpos == vstat.curs_col && ypos == vstat.curs_row)
+		return bitmap_draw_cursor();
+	return 0;
 }
 
 static void	cb_drawrect(int xpos, int ypos, int width, int height, uint32_t *data)
@@ -663,11 +673,7 @@ static int update_from_vmem(int force)
 					|| ((vstat.vmem->vmem[pos] & 0x0800) && bright_attr_changed)	/* Bright char */
 					|| (redraw_cursor && (vstat.curs_col==x+1 && vstat.curs_row==y+1))	/* Cursor */
 					) {
-				bitmap_draw_one_char(x+1,y+1);
-
-				/* If we're overwriting the cell the cursor is in, we need to redraw it. */
-				if(x+1==vstat.curs_col && y+1==vstat.curs_row)
-					bitmap_draw_cursor();
+				bitmap_draw_one_char_cursor(x+1,y+1);
 			}
 			pos++;
 		}
@@ -795,6 +801,7 @@ void bitmap_gotoxy(int x, int y)
 		if (vstat.curs_col != x+cio_textinfo.winleft-1 || vstat.curs_row != y+cio_textinfo.wintop-1) {
 			vstat.curs_col=x+cio_textinfo.winleft-1;
 			vstat.curs_row=y+cio_textinfo.wintop-1;
+			bitmap_draw_cursor();
 		}
 		pthread_mutex_unlock(&vstatlock);
 	}
@@ -1129,7 +1136,7 @@ void bitmap_clreol(void)
 		set_vmem_cell(vmem_ptr, pos+x, fill);
 		vmem_ptr->fgvmem[pos+x] = ciolib_fg;
 		vmem_ptr->bgvmem[pos+x] = ciolib_bg;
-		bitmap_draw_one_char(x+1, row);
+		bitmap_draw_one_char_cursor(x+1, row);
 	}
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
@@ -1150,7 +1157,7 @@ void bitmap_clrscr(void)
 			set_vmem_cell(vmem_ptr, y*cio_textinfo.screenwidth+x, fill);
 			vmem_ptr->fgvmem[y*cio_textinfo.screenwidth+x] = ciolib_fg;
 			vmem_ptr->bgvmem[y*cio_textinfo.screenwidth+x] = ciolib_bg;
-			bitmap_draw_one_char(x+1, y+1);
+			bitmap_draw_one_char_cursor(x+1, y+1);
 		}
 	}
 	release_vmem(vmem_ptr);
