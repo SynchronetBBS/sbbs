@@ -1081,7 +1081,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		bitmap_draw_one_char(vstat.curs_col, vstat.curs_row);
 		redraw_cursor = 1;
 	}
-	for(cy=(direction==-1?(height-1):0); cy<height && cy>=0; cy+=direction) {
+	for(cy=0; cy<height; cy++) {
 		memmove(&(vmem_ptr->vmem[sourcepos+destoffset]), &(vmem_ptr->vmem[sourcepos]), sizeof(vmem_ptr->vmem[0])*width);
 		memmove(&(vmem_ptr->fgvmem[sourcepos+destoffset]), &(vmem_ptr->fgvmem[sourcepos]), sizeof(vmem_ptr->fgvmem[0])*width);
 		memmove(&(vmem_ptr->bgvmem[sourcepos+destoffset]), &(vmem_ptr->bgvmem[sourcepos]), sizeof(vmem_ptr->bgvmem[0])*width);
@@ -1089,15 +1089,15 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	}
 
 	if (direction == -1) {
-		ssourcepos=((y+height-1)     *vstat.charheight-1)*cio_textinfo.screenwidth*vstat.charwidth + (x+width-2)  *vstat.charwidth;
-		sdestoffset=((((toy+height-1)*vstat.charheight-1)*cio_textinfo.screenwidth*vstat.charwidth + (tox+width-2)*vstat.charwidth)-ssourcepos);
+		ssourcepos=((y+height-1)     *vstat.charheight-1)*cio_textinfo.screenwidth*vstat.charwidth + (x-1)  *vstat.charwidth;
+		sdestoffset=((((toy+height-1)*vstat.charheight-1)*cio_textinfo.screenwidth*vstat.charwidth + (tox-1)*vstat.charwidth)-ssourcepos);
 	}
 	else {
 		ssourcepos=(y-1)     *cio_textinfo.screenwidth*vstat.charwidth*vstat.charheight + (x-1)  *vstat.charwidth;
 		sdestoffset=(((toy-1)*cio_textinfo.screenwidth*vstat.charwidth*vstat.charheight + (tox-1)*vstat.charwidth)-ssourcepos);
 	}
 	pthread_mutex_lock(&screen.screenlock);
-	for(screeny=(direction==-1?height*vstat.charheight-1:0); screeny<height*vstat.charheight && screeny>=0; screeny+=direction) {
+	for(screeny=0; screeny < height*vstat.charheight; screeny++) {
 		memmove(&(screen.screen[ssourcepos+sdestoffset]), &(screen.screen[ssourcepos]), sizeof(screen.screen[0])*width*vstat.charwidth);
 		ssourcepos += direction * cio_textinfo.screenwidth*vstat.charwidth;
 	}
