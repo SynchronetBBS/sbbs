@@ -2378,6 +2378,11 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 7:
+									j=cterm->attr&112;
+									cterm->attr = (cterm->attr << 4) & 0x70;
+									cterm->attr |= j>>4;
+									attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+									break;
 								case 8:
 									j=cterm->attr&112;
 									cterm->attr&=112;
