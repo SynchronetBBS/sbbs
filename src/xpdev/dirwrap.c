@@ -968,8 +968,8 @@ char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 	if(sb.st_mode&S_IFDIR)
 		strcat(target,"/"); */
 
-	for(;*out;out++)  {
-		while(*out=='/')  {
+	for(;*out;out++) {
+		while(*out=='/') {
 			if(*(out+1)=='/')
 				memmove(out,out+1,strlen(out));
 			else if(*(out+1)=='.' && (*(out+2)=='/' || *(out+2)==0))
@@ -986,6 +986,8 @@ char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 				out++;
 			}
 		}
+		if (!*out)
+			break;
 	}
 	return(target);
 }
