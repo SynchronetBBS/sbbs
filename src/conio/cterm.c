@@ -181,6 +181,7 @@ struct note_params {
 	#define PUTCH(a)				cterm->ciolib_putch(cterm,a)
 	#define CPUTCH(a,b,c)			cterm->ciolib_cputch(cterm,a,b,c)
 	#define PUTTEXT(a,b,c,d,e)		cterm->ciolib_puttext(cterm,a,b,c,d,e)
+	#define PPUTTEXT(a,b,c,d,e,f,g)	cterm->ciolib_pputtext(cterm,a,b,c,d,e,f,g)
 	#define WINDOW(a,b,c,d)			cterm->ciolib_window(cterm,a,b,c,d)
 	#define CPUTS(a)				cterm->ciolib_cputs(cterm,a)
 	#define CCPUTS(a,b,c)			cterm->ciolib_ccputs(cterm,a,b,c)
@@ -202,6 +203,7 @@ struct note_params {
 	#define PUTCH(a)				cterm->ciolib_putch(a)
 	#define CPUTCH(a,b,c)			cterm->ciolib_cputch(a,b,c)
 	#define PUTTEXT(a,b,c,d,e)		cterm->ciolib_puttext(a,b,c,d,e)
+	#define PPUTTEXT(a,b,c,d,e,f,g)	cterm->ciolib_pputtext(a,b,c,d,e,f,g)
 	#define WINDOW(a,b,c,d)			cterm->ciolib_window(a,b,c,d)
 	#define CPUTS(a)				cterm->ciolib_cputs(a)
 	#define CCPUTS(a,b,c)			cterm->ciolib_ccputs(a,b,c)
@@ -950,10 +952,14 @@ static void dellines(struct cterminal * cterm, int lines)
 static void clear2bol(struct cterminal * cterm)
 {
 	char *buf;
+	uint32_t *buff;
+	uint32_t *bufb;
 	int i,j,k;
 
 	k=WHEREX();
-	buf=(char *)malloc(k*2);
+	buf=malloc(k*2);
+	buff=malloc(k*sizeof(buff[0]));
+	bufb=malloc(k*sizeof(bufb[0]));
 	j=0;
 	for(i=0;i<k;i++) {
 		if(cterm->emulation == CTERM_EMULATION_ATASCII)
@@ -961,9 +967,13 @@ static void clear2bol(struct cterminal * cterm)
 		else
 			buf[j++]=' ';
 		buf[j++]=cterm->attr;
+		buff[i]=cterm->fg_color;
+		bufb[i]=cterm->bg_color;
 	}
-	PUTTEXT(cterm->x,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,buf);
+	PPUTTEXT(cterm->x,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,buf,buff,bufb);
 	free(buf);
+	free(buff);
+	free(bufb);
 }
 
 void CIOLIBCALL cterm_clearscreen(struct cterminal *cterm, char attr)
@@ -1516,6 +1526,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 	struct text_info ti;
 	struct esc_seq *seq;
 	uint32_t oldfg, oldbg;
+	uint32_t *bgbuf, *fgbuf;
 	bool updfg, updbg;
 
 	seq = parse_sequence(cterm->escbuf);
@@ -2284,13 +2295,19 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						if(i>cterm->width-WHEREX())
 							i=cterm->width-WHEREX();
 						p2=malloc(i*2);
+						fgbuf=malloc(i*sizeof(fgbuf[0]));
+						bgbuf=malloc(i*sizeof(bgbuf[0]));
 						j=0;
 						for(k=0;k<i;k++) {
 							p2[j++]=' ';
 							p2[j++]=cterm->attr;
+							fgbuf[k]=cterm->fg_color;
+							bgbuf[k]=cterm->bg_color;
 						}
-						PUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1+i-1,cterm->y+WHEREY()-1,p2);
+						PPUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1+i-1,cterm->y+WHEREY()-1,p2,fgbuf,bgbuf);
 						free(p2);
+						free(fgbuf);
+						free(bgbuf);
 						break;
 					case 'Y':	/* TODO? Cursor Line Tabulation */
 						break;
@@ -3109,6 +3126,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	int oldptnm;
 	uint32_t *mpalette;
 	uint32_t palette[16];
+	uint32_t tmpfg, tmpbg;
 
 	if(!cterm->started)
 		cterm_start(cterm);
@@ -3767,7 +3785,9 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 						if(cterm->doorway_char) {
 							uctputs(cterm, prn);
 							ch[1]=cterm->attr;
-							PUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,ch);
+							tmpfg = cterm->fg_color;
+							tmpbg = cterm->bg_color;
+							PPUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,ch,&tmpfg,&tmpfg);
 							ch[1]=0;
 							if(WHEREX()==cterm->width) {
 								if(WHEREY()==cterm->bottom_margin) {
