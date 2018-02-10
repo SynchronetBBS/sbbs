@@ -2307,9 +2307,36 @@ int html_urlredirect(const char *uri, char *buf, size_t bufsize, char *uribuf, s
 	}
 #endif
 
+static int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
+{
+	get_syncterm_filename(fn, fnsz, SYNCTERM_PATH_CACHE, FALSE);
+	backslash(fn);
+	strcat(fn, bbs->name);
+	backslash(fn);
+	if (!isdir(fn))
+		MKDIR(fn);
+	if (!isdir(fn))
+		return 0;
+	return 1;
+}
+
+static int clean_path(char *fn, size_t fnsz)
+{
+	char *fp;
+
+	fp = _fullpath(NULL, fn, fnsz);
+	if (fp == NULL || strcmp(fp, fn)) {
+		FREE_AND_NULL(fp);
+		return 0;
+	}
+	FREE_AND_NULL(fp);
+	return 1;
+}
+
 static void apc_handler(char *strbuf, size_t slen, void *apcd)
 {
 	char fn[PATH_MAX+1];
+	char fn_root[PATH_MAX+1];
 	FILE *f;
 	int rc;
 	size_t sz;
@@ -2325,21 +2352,18 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 	if(ansi_replybuf[0]) \
 		conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0); \
 	ansi_replybuf[0] = 0;
+	if (get_cache_fn_base(bbs, fn_root, sizeof(fn_root)) == 0)
+		return;
+	strcpy(fn, fn_root);
 
 	if (strncmp(strbuf, "SyncTERM:C;S;", 13)==0) {
 		// Request to save b64 encoded data into the cache directory.
-		get_syncterm_filename(fn, sizeof(fn), SYNCTERM_PATH_CACHE, FALSE);
-		backslash(fn);
-		strcat(fn, bbs->name);
-		backslash(fn);
-		if (!isdir(fn))
-			MKDIR(fn);
-		if (!isdir(fn))
-			return;
 		p = strchr(strbuf+13, ';');
 		if (p == NULL)
 			return;
 		strncat(fn, strbuf+13, p-strbuf-13);
+		if (!clean_path(fn, sizeof(fn)))
+			return;
 		p++;
 		sz = (slen - (p-strbuf)) * 3 / 4 + 1;
 		buf = malloc(sz);
@@ -2349,6 +2373,12 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 		if (rc < 0) {
 			free(buf);
 			return;
+		}
+		p = strrchr(fn, '/');
+		if (p) {
+			*p = 0;
+			mkpath(fn);
+			*p = '/';
 		}
 		f = fopen(fn, "wb");
 		if (f == NULL) {
@@ -2363,10 +2393,10 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 		// Cache list
 		if (strbuf[12] != 0 && strbuf[12] != ';')
 			return;
-		get_syncterm_filename(fn, sizeof(fn), SYNCTERM_PATH_CACHE, FALSE);
-		backslash(fn);
-		strcat(fn, bbs->name);
-		backslash(fn);
+		if (!clean_path(fn, sizeof(fn))) {
+			conn_send("\x1b_SyncTERM:C;L\n\x1b\\", 17, 0);
+			return;
+		}
 		if (!isdir(fn)) {
 			conn_send("\x1b_SyncTERM:C;L\n\x1b\\", 17, 0);
 			return;
@@ -2386,7 +2416,8 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 		if (buf == NULL)
 			return;
 		for (i=0; i<gl.gl_pathc; i++) {
-			if (isdir(gl.gl_pathv[i]))
+			/* Skip . and .. along with any fuckery */
+			if (!clean_path(gl.gl_pathv[i], MAX_PATH))
 				continue;
 			p = getfname(gl.gl_pathv[i]);
 			conn_send(p, strlen(p), 0);
@@ -2418,13 +2449,9 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 		if (*p != ';')
 			return;
 		p++;
-		get_syncterm_filename(fn, sizeof(fn), SYNCTERM_PATH_CACHE, FALSE);
-		backslash(fn);
-		strcat(fn, bbs->name);
-		backslash(fn);
-		if (!isdir(fn))
-			return;
 		strcat(fn, p);
+		if (!clean_path(fn, sizeof(fn)))
+			return;
 		if (!fexist(fn))
 			return;
 		sz = flength(fn);
