@@ -64,6 +64,8 @@ void curs_textmode(int mode);
 int curs_hidemouse(void);
 int curs_showmouse(void);
 int curs_beep(void);
+int curs_getvideoflags(void);
+void curs_setvideoflags(int flags);
 #ifdef __cplusplus
 }
 #endif
