@@ -188,8 +188,13 @@ function loadfont()
 		}
 		font.close();
 
-		console.write("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
-		console.write(fontdata);
+		if (parseInt(ver[1]) > 212) {
+			console.write("\x1bPCTerm:Font:"+(firstslot+parseInt(i))+":"+base64_encode(fontdata)+"\x1b\\");
+		}
+		else {
+			console.write("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
+			console.write(fontdata);
+		}
 		if(showprogress)
 			console.write(".");
 	}

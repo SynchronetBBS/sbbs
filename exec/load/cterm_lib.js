@@ -6,6 +6,7 @@ load('sbbsdefs.js');
 var xbin = load({}, 'xbin_defs.js');
 var ansiterm = load({}, 'ansiterm_lib.js');
 
+const cterm_version_supports_b64_fonts = 1213;
 const cterm_version_supports_fonts = 1061;
 const cterm_version_supports_fontstate_query = 1161;	// Yes, just a coincidence
 const cterm_version_supports_mode_query = 1160;
@@ -269,8 +270,13 @@ function load_font(slot, data, force)
 		log(LOG_WARNING, format("CTerm Unsupported font file size: %lu bytes", data.length));
 		return false;
 	}
-	console.write(format("\x1b[=%u;%u{", slot, fsize));
-	console.write(data);
+	if (cterm_version < cterm_version_supports_b64_fonts) {
+		console.write(format("\x1b[=%u;%u{", slot, fsize));
+		console.write(data);
+	}
+	else {
+		console.write("\x1bPCTerm:Font:"+(slot)+":"+base64_encode(data)+"\x1b\\");
+	}
 	if(fsize == 1 && console.cterm_version < 1168)
 		console.write("\x00\x00");	// Work-around cterm bug for 8x14 fonts
 	if(!(console.telnet_mode&TELNET_MODE_OFF))
