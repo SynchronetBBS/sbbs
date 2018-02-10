@@ -428,9 +428,10 @@ int pty_connect(struct bbslist *bbs)
 	case 0:		/* Child */
 		setenv("TERM",settings.TERM,1);
 		termcap=xp_asprintf("syncterm|SyncTERM"
-			":co#%d:li#%d:ND:am:da:mi:ms:ut"
-			":Co#256:pa#32762:it#8"	// Pairs is a signed 16-bit value
-			":@7=\\E[K:AB=\\E[48;5;%%dm:AF=\\E[38;5;%%dm:AL=\\E[%%dL:DL=\\E[%%dM"
+			":am:da:mi:ms:ND:ut"
+			":co#%d:it#8:li#%d"
+			"%s"
+			":@7=\\E[K:AL=\\E[%%dL:DL=\\E[%%dM"
 			":DO=\\E[%%dB:F1=\\E[23~:F2=\\E[24~:IC=\\E[%%d@"
 			":ic=\\E[@"
 			":LE=\\E[%%dD:RA=\\E[7l:RI=\\E[%%dC:SA=\\E[?7h:SF=\\E[%%dS"
@@ -447,7 +448,8 @@ int pty_connect(struct bbslist *bbs)
 			":r1=\\E[?7h\\E[?25h\\E[?31l\\E[?32l\\E[?33l\\E[*r\\E[ D\\E[0m\\E[?s"
 			":rc=\\E[u"
 			":sc=\\E[s:sf=\\E[S:so=\\E[0;1;7m:sr=\\E[T:ta=^I:up=\\E[A"
-			":ve=\\E[?25h:vi=\\E[?25l:",ws.ws_col,ws.ws_row);
+			":ve=\\E[?25h:vi=\\E[?25l:",ws.ws_col,ws.ws_row
+				,cio_api.options & CONIO_OPT_PALETTE_SETTING ? ":Co#256:pa#32762:AB=\\E[48;5;%dm:AF=\\E[38;5;%dm" : ":Co#8:pa#64:AB=\\E[4%dm:AF=\\E[3%dm");
 		setenv("TERMCAP",termcap,1);
 		xp_asprintf_free(termcap);
 		termcap=xp_asprintf("%d",ws.ws_col);

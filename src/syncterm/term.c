@@ -33,8 +33,11 @@
 #ifndef WITHOUT_OOII
 #include "ooii.h"
 #endif
+#include "base64.h"
+#include "md5.h"
 
 #define	ANSI_REPLY_BUFSIZE	2048
+static char ansi_replybuf[2048];
 
 #define DUMP
 
@@ -2281,7 +2284,7 @@ int html_urlredirect(const char *uri, char *buf, size_t bufsize, char *uribuf, s
 #ifdef WITH_WXWIDGETS
 #define WRITE_OUTBUF()	\
 	if(outbuf_size > 0) { \
-		cterm_write(cterm, outbuf, outbuf_size, (char *)prn, sizeof(prn), &speed); \
+		cterm_write(cterm, outbuf, outbuf_size, (char *)ansi_replybuf, sizeof(ansi_replybuf), &speed); \
 		outbuf_size=0; \
 		if(html_mode==HTML_MODE_RAISED) { \
 			if(html_startx != wherex() || html_starty != wherey()) { \
@@ -2289,27 +2292,186 @@ int html_urlredirect(const char *uri, char *buf, size_t bufsize, char *uribuf, s
 				html_mode=HTML_MODE_ICONIZED; \
 			} \
 		} \
-		if(prn[0]) \
-			conn_send(prn, strlen((char *)prn), 0); \
+		if(ansi_replybuf[0]) \
+			conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0); \
 		updated=TRUE; \
 	}
 #else
 #define WRITE_OUTBUF()	\
 	if(outbuf_size > 0) { \
-		cterm_write(cterm, outbuf, outbuf_size, (char *)prn, sizeof(prn), &speed); \
+		cterm_write(cterm, outbuf, outbuf_size, (char *)ansi_replybuf, sizeof(ansi_replybuf), &speed); \
 		outbuf_size=0; \
-		if(prn[0]) \
-			conn_send(prn, strlen((char *)prn), 0); \
+		if(ansi_replybuf[0]) \
+			conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0); \
 		updated=TRUE; \
 	}
 #endif
+
+static void apc_handler(char *strbuf, size_t slen, void *apcd)
+{
+	char fn[PATH_MAX+1];
+	FILE *f;
+	int rc;
+	size_t sz;
+	char *p;
+	char *buf;
+	struct bbslist *bbs = apcd;
+	glob_t gl;
+	int i;
+	MD5	ctx;
+	BYTE	digest[MD5_DIGEST_SIZE];
+	unsigned long slot;
+
+	if(ansi_replybuf[0]) \
+		conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0); \
+	ansi_replybuf[0] = 0;
+
+	if (strncmp(strbuf, "SyncTERM:C;S;", 13)==0) {
+		// Request to save b64 encoded data into the cache directory.
+		get_syncterm_filename(fn, sizeof(fn), SYNCTERM_PATH_CACHE, FALSE);
+		backslash(fn);
+		strcat(fn, bbs->name);
+		backslash(fn);
+		if (!isdir(fn))
+			MKDIR(fn);
+		if (!isdir(fn))
+			return;
+		p = strchr(strbuf+13, ';');
+		if (p == NULL)
+			return;
+		strncat(fn, strbuf+13, p-strbuf-13);
+		p++;
+		sz = (slen - (p-strbuf)) * 3 / 4 + 1;
+		buf = malloc(sz);
+		if (!buf)
+			return;
+		rc = b64_decode(buf, sz, p, slen);
+		if (rc < 0) {
+			free(buf);
+			return;
+		}
+		f = fopen(fn, "wb");
+		if (f == NULL) {
+			free(buf);
+			return;
+		}
+		fwrite(buf, rc, 1, f);
+		free(buf);
+		fclose(f);
+	}
+	else if (strncmp(strbuf, "SyncTERM:C;L", 12) == 0) {
+		// Cache list
+		if (strbuf[12] != 0 && strbuf[12] != ';')
+			return;
+		get_syncterm_filename(fn, sizeof(fn), SYNCTERM_PATH_CACHE, FALSE);
+		backslash(fn);
+		strcat(fn, bbs->name);
+		backslash(fn);
+		if (!isdir(fn)) {
+			conn_send("\x1b_SyncTERM:C;L\n\x1b\\", 17, 0);
+			return;
+		}
+		if (slen == 12)
+			p = "*";
+		else
+			p = strbuf+13;
+		strcat(fn, p);
+		conn_send("\x1b_SyncTERM:C;L\n", 15, 0);
+		rc = glob(fn, GLOB_MARK, NULL, &gl);
+		if (rc != 0) {
+			conn_send("\x1b\\", 2, 0);
+			return;
+		}
+		buf = malloc(1024*32);
+		if (buf == NULL)
+			return;
+		for (i=0; i<gl.gl_pathc; i++) {
+			if (isdir(gl.gl_pathv[i]))
+				continue;
+			p = getfname(gl.gl_pathv[i]);
+			conn_send(p, strlen(p), 0);
+			conn_send("\t", 1, 0);
+			f = fopen(gl.gl_pathv[i], "rb");
+			if (f) {
+				MD5_open(&ctx);
+				while (!feof(f)) {
+					rc = fread(buf, 1, 1024*32, f);
+					if (rc > 0)
+						MD5_calc(digest, buf, rc);
+				}
+				fclose(f);
+				MD5_hex((BYTE *)buf, digest);
+				conn_send(buf, strlen(buf), 0);
+			}
+			conn_send("\n", 1, 0);
+		}
+		free(buf);
+		conn_send("\x1b\\", 2, 0);
+		globfree(&gl);
+	}
+	else if (strncmp(strbuf, "SyncTERM:C;SetFont;", 19) == 0) {
+		slot = strtoul(strbuf+19, &p, 10);
+		if (slot < CONIO_FIRST_FREE_FONT)
+			return;
+		if (slot > 255)
+			return;
+		if (*p != ';')
+			return;
+		p++;
+		get_syncterm_filename(fn, sizeof(fn), SYNCTERM_PATH_CACHE, FALSE);
+		backslash(fn);
+		strcat(fn, bbs->name);
+		backslash(fn);
+		if (!isdir(fn))
+			return;
+		strcat(fn, p);
+		if (!fexist(fn))
+			return;
+		sz = flength(fn);
+		f = fopen(fn, "rb");
+		if (f) {
+			buf = malloc(sz);
+			if (buf == NULL) {
+				fclose(f);
+				return;
+			}
+			if (fread(buf, sz, 1, f) != 1) {
+				fclose(f);
+				free(buf);
+				return;
+			}
+			switch(sz) {
+				case 4096:
+					FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_sixteen);
+					conio_fontdata[cterm->font_slot].eight_by_sixteen=buf;
+					FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
+					conio_fontdata[cterm->font_slot].desc=strdup("Cached Font");
+					break;
+				case 3584:
+					FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_fourteen);
+					conio_fontdata[cterm->font_slot].eight_by_fourteen=buf;
+					FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
+					conio_fontdata[cterm->font_slot].desc=strdup("Cached Font");
+					break;
+				case 2048:
+					FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_eight);
+					conio_fontdata[cterm->font_slot].eight_by_eight=buf;
+					FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
+					conio_fontdata[cterm->font_slot].desc=strdup("Cached Font");
+					break;
+				default:
+					free(buf);
+			}
+			fclose(f);
+		}
+	}
+}
 
 BOOL doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
 	unsigned char outbuf[OUTBUF_SIZE];
 	size_t outbuf_size=0;
-	unsigned char prn[ANSI_REPLY_BUFSIZE];
 	int	key;
 	int i,j;
 	unsigned char *p,*p2;
@@ -2395,6 +2557,8 @@ BOOL doterm(struct bbslist *bbs)
 		FREE_AND_NULL(cterm);
 		return FALSE;
 	}
+	cterm->apc_handler = apc_handler;
+	cterm->apc_handler_data = bbs;
 	scrollback_cols=term.width;
 	cterm->music_enable=bbs->music;
 	ch[1]=0;
@@ -2548,12 +2712,12 @@ BOOL doterm(struct bbslist *bbs)
 								ooii_buf[j]=0;
 								if(inch == '|') {
 									WRITE_OUTBUF();
-									if(handle_ooii_code(ooii_buf, &ooii_mode, prn, sizeof(prn))) {
+									if(handle_ooii_code(ooii_buf, &ooii_mode, (unsigned char *)ansi_replybuf, sizeof(ansi_replybuf))) {
 										ooii_mode=0;
 										xptone_close();
 									}
-									if(prn[0])
-										conn_send(prn,strlen((char *)prn),0);
+									if(ansi_replybuf[0])
+										conn_send(ansi_replybuf,strlen((char *)ansi_replybuf),0);
 									ooii_buf[0]=0;
 								}
 								continue;
