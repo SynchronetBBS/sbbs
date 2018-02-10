@@ -2655,12 +2655,20 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				cterm->strbuf[cterm->strbuflen] = 0;
 			}
 			switch (cterm->string) {
+				case CTERM_STRING_APC:
+					if (cterm->apc_handler)
+						cterm->apc_handler(cterm->strbuf, cterm->strbuflen, cterm->apc_handler_data);
+					break;
 				case CTERM_STRING_DCS:
 					if (cterm->sixel == SIXEL_STARTED)
 						parse_sixel_string(cterm, true);
 					else {
 						if (strncmp(cterm->strbuf, "CTerm:Font:", 11) == 0) {
 							cterm->font_slot = strtoul(cterm->strbuf+11, &p, 10);
+							if(cterm->font_slot < CONIO_FIRST_FREE_FONT)
+								break;
+							if (cterm->font_slot > 255)
+								break;
 							if (p && *p == ':') {
 								p++;
 								i = b64_decode(cterm->fontbuf, sizeof(cterm->fontbuf), p, 0);
@@ -3263,7 +3271,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 
 						if((buf2=(char *)malloc(cterm->font_size))!=NULL) {
 							memcpy(buf2,cterm->fontbuf,cterm->font_size);
-							if(cterm->font_slot >= CONIO_FIRST_FREE_FONT) {
+							if(cterm->font_slot >= CONIO_FIRST_FREE_FONT && cterm->font_slot < 256) {
 								switch(cterm->font_size) {
 									case 4096:
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_sixteen);

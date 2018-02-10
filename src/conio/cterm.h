@@ -177,6 +177,10 @@ struct cterminal {
 	uint8_t				*sx_mask;
 	int					sx_orig_cursor;	// Original value of cterm->cursor
 
+	/* APC Handler */
+	void				(*apc_handler)(char *strbuf, size_t strlen, void *cbdata);
+	void				*apc_handler_data;
+
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO
 	void	(*ciolib_gotoxy)		(struct cterminal *,int,int);
