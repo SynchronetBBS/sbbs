@@ -616,7 +616,7 @@ void curs_textattr(int attr)
 		if (fg & 8)  {
 			attrs |= A_BOLD;
 		}
-		colour = COLOR_PAIR( ((fg&7)|(bg&0x70))+1 );
+		colour = COLOR_PAIR( ((fg&7)|((bg&0x70)>>1))+1 );
 	}
 #ifdef NCURSES_VERSION_MAJOR
 	attrset(attrs);
