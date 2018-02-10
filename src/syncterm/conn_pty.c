@@ -428,8 +428,8 @@ int pty_connect(struct bbslist *bbs)
 	case 0:		/* Child */
 		setenv("TERM",settings.TERM,1);
 		termcap=xp_asprintf("syncterm|SyncTERM"
-			":co#%d:li#%d:ND:am:cc:da:mi:ms:ut"
-			":Co#256:pa#65525:it#8"
+			":co#%d:li#%d:ND:am:da:mi:ms:ut"
+			":Co#256:pa#32762:it#8"	// Pairs is a signed 16-bit value
 			":@7=\\E[K:AB=\\E[48;5;%%dm:AF=\\E[38;5;%%dm:AL=\\E[%%dL:DL=\\E[%%dM"
 			":DO=\\E[%%dB:F1=\\E[23~:F2=\\E[24~:IC=\\E[%%d@"
 			":ic=\\E[@"
@@ -438,7 +438,7 @@ int pty_connect(struct bbslist *bbs)
 			":ac=-\\030.^Y0\\333`\\004a\\260f\\370g\\361h\\261i\\025j\\331k\\277l\\332m\\300n\\305q\\304t\\303u\\264v\\301w\\302x\\263y\\363z\\362~\\371"
 			":al=\\E[L:bl=^G:bt=\\E[Z:cb=\\E[1K:cd=\\E[J:ce=\\E[K"
 			":ch=\\E[%%i%%dG:cl=\\E[2J:cm=\\E[%%i%%d;%%dH:cr=^M:cs=\\E[%%i%%d;%%dr"
-			":cv=\\E[%%i%%dH:dc=\\E[P:dl=\\E[M:do=^J:ec=\\E[%%dX:ho=\\E[H"
+			":dc=\\E[P:dl=\\E[M:do=^J:ec=\\E[%%dX:ho=\\E[H"
 			":k1=\\EOP:k2=\\EOQ:k3=\\EOR:k4=\\EOS:k5=\\EOt:k6=\\E[17~"
 			":k7=\\E[18~:k8=\\E[19~:k9=\\E[20~:k;=\\E[21~:kD=\\177:kI=\\E[@"
 			":kN=\\E[U:kP=\\E[V:kb=^H:kd=\\E[B:kh=\\E[H:kl=\\E[D:kr=\\E[C"

@@ -1289,7 +1289,7 @@ int main(int argc, char **argv)
 				"	dch=\\E[%p1%dP,dl=\\E[%p1%dM,cud=\\E[%p1%dB,ich=\\E[%p1%d@,indn=\\E[%p1%dS,\n"
 				"	il=\\E[%p1%dL,cub=\\E[%p1%dD,cuf=\\E[%p1%dC,rin=\\E[%p1%dT,cuu=\\E[%p1%dA,\n"
 				"	rs1=\\E[?7h\\E[?25h\\E[?31l\\E[?32l\\E[?33l\\E[*r\\E[ D\\E[0m\\E[?s,\n"
-				"	rc=\\E[u,vpa=\\E[%i%p1%dH,sc=\\E[s,ind=\\E[S,ri=\\E[T,\n"
+				"	rc=\\E[u,sc=\\E[s,ind=\\E[S,ri=\\E[T,\n"
 				"	ht=\t,setab=\\E[4%p1%dm,setaf=\\E[3%p1%dm,\n"
 				"	sgr=\\E[0%?%p1%p6%|%t;1%;%?%p4%|%t;5%;%?%p1%p3%|%t;7%;%?%p7%|%t;8%;m,\n"
 				"	smso=\\E[0;1;7m,\n"
