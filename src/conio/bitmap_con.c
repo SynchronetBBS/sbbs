@@ -1063,8 +1063,14 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		direction=-1;
 
 	pthread_mutex_lock(&blinker_lock);
-	sourcepos=(y-1)*cio_textinfo.screenwidth+(x-1);
-	destoffset=(((toy-1)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
+	if (direction == -1) {
+		sourcepos=(y+height-2)*cio_textinfo.screenwidth+(x+width-2);
+		destoffset=(((toy+height-2)*cio_textinfo.screenwidth+(tox+width-2))-sourcepos);
+	}
+	else {
+		sourcepos=(y-1)*cio_textinfo.screenwidth+(x-1);
+		destoffset=(((toy-1)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
+	}
 
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
@@ -1081,10 +1087,17 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		memmove(&(vmem_ptr->bgvmem[sourcepos+destoffset]), &(vmem_ptr->bgvmem[sourcepos]), sizeof(vmem_ptr->bgvmem[0])*width);
 		sourcepos += direction * cio_textinfo.screenwidth;
 	}
-	ssourcepos=(y-1)     *cio_textinfo.screenwidth*vstat.charwidth*vstat.charheight + (x-1)  *vstat.charwidth;
-	sdestoffset=(((toy-1)*cio_textinfo.screenwidth*vstat.charwidth*vstat.charheight + (tox-1)*vstat.charwidth)-ssourcepos);
+
+	if (direction == -1) {
+		ssourcepos=((y+height-1)     *vstat.charheight-1)*cio_textinfo.screenwidth*vstat.charwidth + (x+width-2)  *vstat.charwidth;
+		sdestoffset=((((toy+height-1)*vstat.charheight-1)*cio_textinfo.screenwidth*vstat.charwidth + (tox+width-2)*vstat.charwidth)-ssourcepos);
+	}
+	else {
+		ssourcepos=(y-1)     *cio_textinfo.screenwidth*vstat.charwidth*vstat.charheight + (x-1)  *vstat.charwidth;
+		sdestoffset=(((toy-1)*cio_textinfo.screenwidth*vstat.charwidth*vstat.charheight + (tox-1)*vstat.charwidth)-ssourcepos);
+	}
 	pthread_mutex_lock(&screen.screenlock);
-	for(screeny=(direction==-1?(height-1)*vstat.charheight:0); screeny<height*vstat.charheight && screeny>=0; screeny+=direction) {
+	for(screeny=(direction==-1?height*vstat.charheight-1:0); screeny<height*vstat.charheight && screeny>=0; screeny+=direction) {
 		memmove(&(screen.screen[ssourcepos+sdestoffset]), &(screen.screen[ssourcepos]), sizeof(screen.screen[0])*width*vstat.charwidth);
 		ssourcepos += direction * cio_textinfo.screenwidth*vstat.charwidth;
 	}
