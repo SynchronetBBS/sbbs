@@ -179,6 +179,17 @@ void sbbs_t::outchar(char ch)
 {
 	int		i;
 
+	/*
+	 * outchar_esc values:
+	 * 0: No sequence
+	 * 1: ESC
+	 * 2: CSI
+	 * 3: Final byte
+     * 4: APS, DCS, PM, or OSC
+     * 5: SOS
+     * 6: ESC inside of SOS
+     */
+
 	if(console&CON_ECHO_OFF)
 		return;
 	if(ch==ESC)
@@ -186,12 +197,34 @@ void sbbs_t::outchar(char ch)
 	else if(outchar_esc==1) {
 		if(ch=='[')
 			outchar_esc++;
+		else if(ch=='_' || ch=='P' || ch == '^' || ch == ']')
+			outchar_esc=4;
+		else if(ch=='X')
+			outchar_esc=5;
 		else
 			outchar_esc=0;
 	}
 	else if(outchar_esc==2) {
 		if(ch>='@' && ch<='~')
 			outchar_esc++;
+	}
+	else if(outchar_esc==4) {	// APS, DCS, PM, or OSC
+		if (ch == ESC)
+			outchar_esc = 1;
+		if (!((ch >= 0x08 && ch <= 0x0d) || (ch >= 0x20 && ch <= 0x7e)))
+			outchar_esc = 0;
+	}
+	else if(outchar_esc==5) {	// SOS
+		if (ch == ESC)
+			outchar_esc++;
+	}
+	else if(outchar_esc==6) {	// ESC inside SOS
+		if (ch == '\\')
+			outchar_esc = 1;
+		else if (ch == 'X')
+			outchar_esc = 0;
+		else
+			outchar_esc = 5;
 	}
 	else
 		outchar_esc=0;
