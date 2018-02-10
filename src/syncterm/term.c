@@ -2314,7 +2314,7 @@ static int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
 	strcat(fn, bbs->name);
 	backslash(fn);
 	if (!isdir(fn))
-		MKDIR(fn);
+		mkpath(fn);
 	if (!isdir(fn))
 		return 0;
 	return 1;
