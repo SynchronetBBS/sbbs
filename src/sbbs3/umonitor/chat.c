@@ -194,7 +194,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 					close(in);
 					in=-1;
 				}
-				if(ch==0 || ch==0xe0) {		/* Special keys... eat 'em. */
+				if(ch==0 || ch=='\xe0') {		/* Special keys... eat 'em. */
 					getch();
 				}
 			}
@@ -237,7 +237,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 			ch=getch();
 			switch(ch)  {
 				case 0:			/* Special Chars */
-				case 0xe0:
+				case '\xe0':
 					ch=0;
 					getch();
 					break;
