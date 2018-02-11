@@ -537,6 +537,8 @@ connected:
 		failcode=FAILURE_DISCONNECTED;
 		goto connect_failed;
 	}
+	int keepalives = TRUE;
+	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepalives, sizeof(keepalives));
 
 	uifc.pop(NULL);
 	return(sock);
