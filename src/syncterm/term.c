@@ -9,6 +9,7 @@
 #include "threadwrap.h"
 #include "filewrap.h"
 #include "xpbeep.h"
+#include "xpendian.h"
 
 #include "conn.h"
 #include "syncterm.h"
@@ -2109,15 +2110,30 @@ void capture_control(struct bbslist *bbs)
 							if((tm=localtime(&t)) != NULL)	// The null-terminator overwrites the first byte of filesize
 								sprintf(sauce.date, "%04u%02u%02u"
 									,1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday);
-							sauce.filesize = ftell(fp);	// LE
+							sauce.filesize = LE_INT32(ftell(fp));	// LE
 							sauce.datatype = sauce_datatype_bin;
 							sauce.filetype = cterm->width / 2;
-							if(ciolib_getvideoflags() & CIOLIB_VIDEO_BGBRIGHT)
+							if(ciolib_getvideoflags() & (CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK))
 								sauce.tflags |= sauce_ansiflag_nonblink;
 
 							fputc(SAUCE_SEPARATOR, fp);
 							/* No comment block (no comments) */
-							fwrite(&sauce, sizeof(sauce), 1, fp);
+							fwrite(&sauce.id, sizeof(sauce.id), 1, fp);
+							fwrite(&sauce.ver, sizeof(sauce.ver), 1, fp);
+							fwrite(&sauce.title, sizeof(sauce.title), 1, fp);
+							fwrite(&sauce.author, sizeof(sauce.author), 1, fp);
+							fwrite(&sauce.group, sizeof(sauce.group), 1, fp);
+							fwrite(&sauce.date, sizeof(sauce.date), 1, fp);
+							fwrite(&sauce.filesize, sizeof(sauce.filesize), 1, fp);
+							fwrite(&sauce.datatype, sizeof(sauce.datatype), 1, fp);
+							fwrite(&sauce.filetype, sizeof(sauce.filetype), 1, fp);
+							fwrite(&sauce.tinfo1, sizeof(sauce.tinfo1), 1, fp);
+							fwrite(&sauce.tinfo2, sizeof(sauce.tinfo2), 1, fp);
+							fwrite(&sauce.tinfo3, sizeof(sauce.tinfo3), 1, fp);
+							fwrite(&sauce.tinfo4, sizeof(sauce.tinfo4), 1, fp);
+							fwrite(&sauce.comments, sizeof(sauce.comments), 1, fp);
+							fwrite(&sauce.tflags, sizeof(sauce.tflags), 1, fp);
+							fwrite(&sauce.tinfos, sizeof(sauce.tinfos), 1, fp);
 						}
 						fclose(fp);
 						uifc.pop(NULL);
@@ -2335,8 +2351,8 @@ static int clean_path(char *fn, size_t fnsz)
 
 static void apc_handler(char *strbuf, size_t slen, void *apcd)
 {
-	char fn[PATH_MAX+1];
-	char fn_root[PATH_MAX+1];
+	char fn[MAX_PATH+1];
+	char fn_root[MAX_PATH+1];
 	FILE *f;
 	int rc;
 	size_t sz;
