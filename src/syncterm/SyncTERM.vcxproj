@@ -101,8 +101,10 @@
     <ClCompile Include="..\sbbs3\telnet.c" />
     <ClCompile Include="..\sbbs3\xmodem.c" />
     <ClCompile Include="..\sbbs3\zmodem.c" />
+    <ClCompile Include="..\smblib\base64.c" />
     <ClCompile Include="..\smblib\crc16.c" />
     <ClCompile Include="..\smblib\crc32.c" />
+    <ClCompile Include="..\smblib\md5.c" />
     <ClCompile Include="..\uifc\filepick.c" />
     <ClCompile Include="..\xpdev\xpbeep.c" />
     <ClCompile Include="bbslist.c" />
@@ -127,7 +129,7 @@
     <ProjectReference Include="..\comio\comio.vcxproj">
       <Project>{79cf784e-4438-4fcc-9b7a-10acb716c948}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\conio\conio.vcxproj">
+    <ProjectReference Include="..\conio\conio_sdl.vcxproj">
       <Project>{84592e48-27ca-48a6-b9c6-243d2347a578}</Project>
     </ProjectReference>
     <ProjectReference Include="..\uifc\uifc.vcxproj">
