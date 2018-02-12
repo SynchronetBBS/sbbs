@@ -1497,6 +1497,46 @@ uint32_t bitmap_map_rgb(uint16_t r, uint16_t g, uint16_t b)
 	return i + TOTAL_DAC_SIZE + 512;
 }
 
+void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
+{
+	pthread_mutex_lock(&blinker_lock);
+
+	if (id < CONIO_FIRST_FREE_FONT) {
+		free(name);
+		free(data);
+		return;
+	}
+
+	pthread_mutex_lock(&screen.screenlock);
+	switch (size) {
+		case 4096:
+			FREE_AND_NULL(conio_fontdata[id].eight_by_sixteen);
+			conio_fontdata[id].eight_by_sixteen=data;
+			FREE_AND_NULL(conio_fontdata[id].desc);
+			conio_fontdata[id].desc=name;
+			update_pixels = 1;
+			break;
+		case 3584:
+			FREE_AND_NULL(conio_fontdata[id].eight_by_fourteen);
+			conio_fontdata[id].eight_by_fourteen=data;
+			FREE_AND_NULL(conio_fontdata[id].desc);
+			conio_fontdata[id].desc=name;
+			break;
+		case 2048:
+			FREE_AND_NULL(conio_fontdata[id].eight_by_eight);
+			conio_fontdata[id].eight_by_eight=data;
+			FREE_AND_NULL(conio_fontdata[id].desc);
+			conio_fontdata[id].desc=name;
+			break;
+		default:
+			free(name);
+			free(data);
+	}
+	update_pixels = 1;
+	pthread_mutex_unlock(&screen.screenlock);
+	pthread_mutex_unlock(&blinker_lock);
+}
+
 /***********************/
 /* Called from drivers */
 /***********************/

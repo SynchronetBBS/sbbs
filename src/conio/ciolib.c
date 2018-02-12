@@ -190,6 +190,7 @@ int try_sdl_init(int mode)
 		cio_api.get_modepalette=bitmap_get_modepalette;
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
+		cio_api.replace_font = bitmap_replace_font;
 		return(1);
 	}
 	return(0);
@@ -245,6 +246,7 @@ int try_x_init(int mode)
 		cio_api.get_modepalette=bitmap_get_modepalette;
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
+		cio_api.replace_font = bitmap_replace_font;
 		return(1);
 	}
 	return(0);
@@ -1921,4 +1923,16 @@ CIOLIBEXPORT uint32_t CIOLIBCALL ciolib_map_rgb(uint16_t r, uint16_t g, uint16_t
 	if (cio_api.map_rgb)
 		return cio_api.map_rgb(r,g,b);
 	return UINT32_MAX;
+}
+
+CIOLIBEXPORT void CIOLIBCALL ciolib_replace_font(uint8_t id, char *name, void *data, size_t size)
+{
+	CIOLIB_INIT();
+
+	if (cio_api.replace_font) {
+		cio_api.replace_font(id, name, data, size);
+		return;
+	}
+	free(name);
+	free(data);
 }
