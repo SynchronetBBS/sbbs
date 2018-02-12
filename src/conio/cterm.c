@@ -3275,7 +3275,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 						if((buf2=(char *)malloc(cterm->font_size))!=NULL) {
 							memcpy(buf2,cterm->fontbuf,cterm->font_size);
 							if(cterm->font_slot >= CONIO_FIRST_FREE_FONT && cterm->font_slot < 256) {
-								replace_font(cterm->font_slot, strdup("Remote Defined Font"), buf2, i);
+								replace_font(cterm->font_slot, strdup("Remote Defined Font"), buf2, cterm->font_size);
 							}
 							else
 								FREE_AND_NULL(buf2);
