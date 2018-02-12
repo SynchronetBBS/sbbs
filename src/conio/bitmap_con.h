@@ -19,6 +19,7 @@ struct rectlist {
 
 extern struct video_stats vstat;
 extern pthread_mutex_t vstatlock;
+extern uint32_t color_max;
 
 #ifndef BITMAP_CIOLIB_DRIVER
 /* Called from ciolib */

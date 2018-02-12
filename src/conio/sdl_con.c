@@ -84,7 +84,6 @@ static int sdl_using_quartz=0;
 static int sdl_using_x11=0;
 static int sdl_x11available=0;
 
-
 static struct video_stats cvstat;
 
 struct yuv_settings {
@@ -631,6 +630,11 @@ void sdl_drawrect(struct rectlist *data)
 
 int sdl_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 {
+	if (index > 1000000)
+		return 1;
+
+	if (index > color_max)
+		color_max = index;
 	sdl_user_func(SDL_USEREVENT_SETPALETTE, index, r, g, b);
 	return 0;
 }

@@ -177,6 +177,12 @@ int x_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 {
 	struct x11_local_event ev;
 
+	if (entry > 1000000)
+		return 1;
+
+	if (entry > color_max)
+		color_max = entry;
+
 	ev.type=X11_LOCAL_SETPALETTE;
 	ev.data.palette.index = entry;
 	ev.data.palette.r = r;

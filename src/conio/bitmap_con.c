@@ -104,6 +104,7 @@ struct rectlist *free_rects;
 /* Exported globals */
 
 pthread_mutex_t		vstatlock;
+uint32_t color_max = TOTAL_DAC_SIZE-1;
 
 /* Forward declarations */
 
@@ -373,6 +374,8 @@ static BOOL bitmap_draw_cursor(void)
 					return ret;
 
 				pthread_mutex_lock(&screen.screenlock);
+				if (ciolib_fg > color_max)
+					ciolib_fg = color_max;
 				for(y=vstat.curs_start; y<=vstat.curs_end; y++) {
 					if(xoffset < screen.screenwidth && (yoffset+y) < screen.screenheight) {
 						pixel=PIXEL_OFFSET(screen, xoffset, yoffset+y);
@@ -524,7 +527,11 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 
 	sch=vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)];
 	fg = vmem_ptr->fgvmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)];
+	if (fg > color_max)
+		fg = color_max;
 	bg = vmem_ptr->bgvmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)];
+	if (bg > color_max)
+		bg = color_max;
 
 	altfont = (sch>>11 & 0x01) | ((sch>>14) & 0x02);
 	if (!vstat.bright_altcharset)
@@ -1342,6 +1349,8 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&screen.screenlock);
 
+	if (colour > color_max)
+		colour = color_max;
 	if (x < screen.screenwidth && y < screen.screenheight)
 		screen.screen[PIXEL_OFFSET(screen, x, y)]=colour;
 	update_pixels = 1;
@@ -1360,6 +1369,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	int mask_bit;
 	size_t mask_byte;
 	size_t pos;
+	uint32_t co;
 
 	if (pixels == NULL)
 		return 0;
@@ -1386,16 +1396,27 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 
 	for (y = sy; y <= ey; y++) {
 		pos = pixels->width*(y-sy+y_off)+x_off;
-		if (mask == NULL)
-			memcpy(&screen.screen[PIXEL_OFFSET(screen, sx, y)], &pixels->pixels[pos], width * sizeof(pixels->pixels[0]));
+		if (mask == NULL) {
+			for (x = sx; x <= ex; x++) {
+				co = pixels->pixels[pos];
+				if (co > color_max)
+					co = color_max;
+				screen.screen[PIXEL_OFFSET(screen, x, y)] = co;
+				pos++;
+			}
+		}
 		else {
 			for (x = sx; x <= ex; x++) {
-				pos++;
 				mask_byte = pos / 8;
 				mask_bit = pos % 8;
 				mask_bit = 0x80 >> mask_bit;
-				if (m[mask_byte] & mask_bit)
-					screen.screen[PIXEL_OFFSET(screen, x, y)] = pixels->pixels[pos];
+				if (m[mask_byte] & mask_bit) {
+					co = pixels->pixels[pos];
+					if (co > color_max)
+						co = color_max;
+					screen.screen[PIXEL_OFFSET(screen, x, y)] = co;
+				}
+				pos++;
 			}
 		}
 	}
