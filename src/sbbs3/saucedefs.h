@@ -62,8 +62,7 @@ enum sauce_datatype {
 };
 
 enum sauce_char_filetype {
-	 sauce_char_filetype_none
-	,sauce_char_filetype_ascii
+	 sauce_char_filetype_ascii
 	,sauce_char_filetype_ansi
 	,sauce_char_filetype_ansimation
 	,sauce_char_filetype_rip
