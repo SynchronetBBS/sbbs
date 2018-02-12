@@ -19,7 +19,7 @@ Added CSI ? Ps1 ; Ps2 S to query graphics canvas size
 Add a new ANSI compliant DCS command for font loading
 Support bright background mode in curses when in xterm 88 or 256 color mode
 Added support for cached font assets
-Support for XTerm and TundrawDraw/PabloDraw 24-bit color modes
+Support for XTerm and TundraDraw/PabloDraw 24-bit color modes
 
 Version 1.0
 -----------
