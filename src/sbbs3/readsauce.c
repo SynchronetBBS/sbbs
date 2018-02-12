@@ -130,11 +130,11 @@ struct fontinfo finfo[] = {
 	{"IBM VGA25G","8x19","640x480","4:3","1:1","0%","Custom font for emulating 80x25 in VGA graphics mode 12 (640x480 16 color) (code page 437).",false},
 	{"IBM EGA","8x14","640x350","4:3","35:48 (1:1.3714)","37.14%","Standard hardware font on EGA cards for 80x25 text mode (code page 437)",false},
 	{"IBM EGA43","8x8","640x350","4:3","35:48 (1:1.3714)","37.14%","Standard hardware font on EGA cards for condensed 80x43 text mode (code page 437)",false},
-	{"IBM VGA ### [8]","9x16","720x400","4:3","20:27 (1:1.35)","35%","Software installed code page font for VGA 80x25 text mode",false},
-	{"IBM VGA50 ### [8]","9x8","720x400","4:3","20:27 (1:1.35)","35%","Software installed code page font for VGA condensed 80x50 text mode",false},
-	{"IBM VGA25G ### [8]","8x19","640x480","4:3","1:1","0%","Custom font for emulating 80x25 in VGA graphics mode 12 (640x480 16 color).",false},
-	{"IBM EGA ### [8]","8x14","640x350","4:3","35:48 (1:1.3714)","37.14%","Software installed code page font for EGA 80x25 text mode",false},
-	{"IBM EGA43 ### [8]","8x8","640x350","4:3","35:48 (1:1.3714)","37.14%","Software installed code page font for EGA condensed 80x43 text mode",false},
+	{"IBM VGA ###","9x16","720x400","4:3","20:27 (1:1.35)","35%","Software installed code page font for VGA 80x25 text mode",false},
+	{"IBM VGA50 ###","9x8","720x400","4:3","20:27 (1:1.35)","35%","Software installed code page font for VGA condensed 80x50 text mode",false},
+	{"IBM VGA25G ###","8x19","640x480","4:3","1:1","0%","Custom font for emulating 80x25 in VGA graphics mode 12 (640x480 16 color).",false},
+	{"IBM EGA ###","8x14","640x350","4:3","35:48 (1:1.3714)","37.14%","Software installed code page font for EGA 80x25 text mode",false},
+	{"IBM EGA43 ###","8x8","640x350","4:3","35:48 (1:1.3714)","37.14%","Software installed code page font for EGA condensed 80x43 text mode",false},
 	{"Amiga Topaz 1","8x8","640x200","4:3","5:12 (1:2.4)","140%","Original Amiga Topaz Kickstart 1.x font. (A500, A1000, A2000)",false},
 	{"Amiga Topaz 1+","8x8","640x200","4:3","5:12 (1:2.4)","140%","Modified Amiga Topaz Kickstart 1.x font. (A500, A1000, A2000)",false},
 	{"Amiga Topaz 2","8x8","640x200","4:3","5:12 (1:2.4)","140%","Original Amiga Topaz Kickstart 2.x font (A600, A1200, A4000)",false},
@@ -154,6 +154,8 @@ int main(int argc, char **argv)
 	int i, j, k;
 	struct sauce sauce;
 	char *buf;
+	char *cpp;
+	size_t namelen;
 
 	for (i=1; i<argc; i++) {
 		if (!fexist(argv[i])) {
@@ -242,9 +244,15 @@ int main(int argc, char **argv)
 					if (sauce.tinfos[0]) {
 						fprintf(stdout, "FontName: %.22s\n", sauce.tinfos);
 						for (k = 0; k<sizeof(finfo)/sizeof(finfo[0]); k++) {
-							if (strncmp(sauce.tinfos, finfo[k].name, 22) == 0) {
+							namelen = 22;
+							cpp = strstr(finfo[k].name, "###");
+							if (cpp != NULL)
+								namelen = (cpp-finfo[k].name);
+							if (strncmp(sauce.tinfos, finfo[k].name, namelen) == 0) {
 								if (finfo[k].has_8px && (sauce.tflags & sauce_ansiflag_spacing_8pix))
 									k++;
+								if (cpp)
+									fprintf(stdout, "\tCode Page: %.*s\n", (int)strlen(cpp), sauce.tinfos + (cpp-finfo[k].name));
 								fprintf(stdout,"\tFont Size: %s\n", finfo[k].size);
 								fprintf(stdout,"\tResolution: %s\n", finfo[k].resolution);
 								fprintf(stdout,"\tDisplay Aspect Ratio: %s\n", finfo[k].dar);
