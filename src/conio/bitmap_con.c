@@ -77,17 +77,10 @@ struct bitmap_screen {
 };
 
 struct bitmap_callbacks {
-	void	(*drawrect)		(int xpos, int ypos, int width, int height, uint32_t *data);
+	void	(*drawrect)		(struct rectlist *data);
 	void	(*flush)		(void);
 	pthread_mutex_t lock;
 	unsigned rects;
-};
-
-struct rectangle {
-	int x;
-	int y;
-	int width;
-	int height;
 };
 
 /* Static globals */
@@ -103,6 +96,7 @@ static unsigned char space=' ';
 static int force_redraws=0;
 static int update_pixels = 0;
 static pthread_mutex_t blinker_lock;
+struct rectlist *free_rects;
 
 /* The read lock must be held here. */
 #define PIXEL_OFFSET(screen, x, y)	( (y)*screen.screenwidth+(x) )
@@ -116,7 +110,7 @@ pthread_mutex_t		vstatlock;
 static int bitmap_loadfont_locked(char *filename);
 static void set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell);
 static int bitmap_attr2palette_locked(uint8_t attr, uint32_t *fgp, uint32_t *bgp);
-static void	cb_drawrect(int xpos, int ypos, int width, int height, uint32_t *data);
+static void	cb_drawrect(struct rectlist *data);
 static void request_redraw_locked(void);
 static void request_redraw(void);
 static void memset_u32(void *buf, uint32_t u, size_t len);
@@ -403,12 +397,12 @@ static int bitmap_draw_one_char_cursor(unsigned int xpos, unsigned int ypos)
 	return 0;
 }
 
-static void	cb_drawrect(int xpos, int ypos, int width, int height, uint32_t *data)
+static void	cb_drawrect(struct rectlist *data)
 {
 	if (data == NULL)
 		return;
 	pthread_mutex_lock(&callbacks.lock);
-	callbacks.drawrect(xpos, ypos, width, height, data);
+	callbacks.drawrect(data);
 	callbacks.rects++;
 	pthread_mutex_unlock(&callbacks.lock);
 }
@@ -425,15 +419,46 @@ static void request_redraw(void)
 	pthread_mutex_unlock(&vstatlock);
 }
 
-static void *get_full_rectangle_locked(void)
+/*
+ * Called with the screen lock held
+ */
+static struct rectlist *alloc_full_rect(void)
 {
-	uint32_t *rect;
+	struct rectlist * ret;
+
+	while (free_rects) {
+		if (free_rects->rect.width == screen.screenwidth && free_rects->rect.height == screen.screenheight) {
+			ret = free_rects;
+			free_rects = free_rects->next;
+			return ret;
+		}
+		else {
+			free(free_rects->data);
+			ret = free_rects->next;
+			free(free_rects);
+			free_rects = ret;
+		}
+	}
+
+	ret = malloc(sizeof(struct rectlist));
+	ret->rect.x = 0;
+	ret->rect.y = 0;
+	ret->rect.width = screen.screenwidth;
+	ret->rect.height = screen.screenheight;
+	ret->data = malloc(ret->rect.width * ret->rect.height * sizeof(ret->data[0]));
+	if (ret->data == NULL)
+		FREE_AND_NULL(ret);
+	return ret;
+}
+
+static struct rectlist *get_full_rectangle_locked(void)
+{
+	struct rectlist *rect = alloc_full_rect();
 
 	if(callbacks.drawrect) {
-		rect=(uint32_t *)malloc(screen.screenwidth*screen.screenheight*sizeof(rect[0]));
 		if (!rect)
 			return rect;
-		memcpy(rect, screen.screen, screen.screenwidth*screen.screenheight*sizeof(rect[0]));
+		memcpy(rect->data, screen.screen, screen.screenwidth*screen.screenheight*sizeof(rect->data[0]));
 		return rect;
 	}
 	return NULL;
@@ -581,7 +606,7 @@ static void blinker_thread(void *data)
 			rect = get_full_rectangle_locked();
 			update_pixels = 0;
 			pthread_mutex_unlock(&screen.screenlock);
-			cb_drawrect(0, 0, screen.screenwidth, screen.screenheight, rect);
+			cb_drawrect(rect);
 		}
 		else
 			pthread_mutex_unlock(&screen.screenlock);
@@ -1536,7 +1561,7 @@ int bitmap_drv_init_mode(int mode, int *width, int *height)
 /*
  * MUST be called only once and before any other bitmap functions
  */
-int bitmap_drv_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, uint32_t *data)
+int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 				,void (*flush_cb) (void))
 {
 	if(bitmap_initialized)
@@ -1574,4 +1599,12 @@ void bitmap_drv_request_some_pixels(int x, int y, int width, int height)
 {
 	/* TODO: Some sort of queue here? */
 	bitmap_drv_request_pixels();
+}
+
+void bitmap_drv_free_rect(struct rectlist *rect)
+{
+	pthread_mutex_lock(&screen.screenlock);
+	rect->next = free_rects;
+	free_rects = rect;
+	pthread_mutex_unlock(&screen.screenlock);
 }

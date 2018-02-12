@@ -110,17 +110,9 @@ struct sdl_keyvals {
 		,alt;
 };
 
-struct update_rect {
-	int		x;
-	int		y;
-	int		width;
-	int		height;
-	uint32_t	*data;
-	struct update_rect *next;
-};
 static SDL_mutex *sdl_headlock;
-static struct update_rect *update_list = NULL;
-static struct update_rect *update_list_tail = NULL;
+static struct rectlist *update_list = NULL;
+static struct rectlist *update_list_tail = NULL;
 
 struct sdl_palette {
 	uint32_t	index;
@@ -620,29 +612,18 @@ char *sdl_getcliptext(void)
 	return(ret);
 }
 
-void sdl_drawrect(int xoffset,int yoffset,int width,int height,uint32_t *data)
+void sdl_drawrect(struct rectlist *data)
 {
-	struct update_rect *rect;
-
 	if(sdl_init_good) {
-		rect=(struct update_rect *)malloc(sizeof(struct update_rect));
-		if(rect) {
-			rect->x=xoffset;
-			rect->y=yoffset;
-			rect->width=width;
-			rect->height=height;
-			rect->data=data;
-			rect->next = NULL;
-			sdl.mutexP(sdl_headlock);
-			if (update_list == NULL)
-				update_list = rect;
-			else
-				update_list_tail->next = rect;
-			update_list_tail = rect;
+		data->next = NULL;
+		sdl.mutexP(sdl_headlock);
+		if (update_list == NULL)
+			update_list = data;
+		else {
+			update_list_tail->next = data;
+			update_list_tail = data;
 			sdl.mutexV(sdl_headlock);
 		}
-		else
-			free(data);
 	}
 	else
 		free(data);
@@ -1729,9 +1710,9 @@ int sdl_video_event_thread(void *data)
 						}
 						break;
 					case SDL_USEREVENT: {
-						struct update_rect *list;
-						struct update_rect *list_tail;
-						struct update_rect *old_next;
+						struct rectlist *list;
+						struct rectlist *list_tail;
+						struct rectlist *old_next;
 						/* Tell SDL to do various stuff... */
 						if (ev.user.code != SDL_USEREVENT_FLUSH)
 							if(sdl_x11available && sdl_using_x11)
@@ -1767,13 +1748,13 @@ int sdl_video_event_thread(void *data)
 									sdl.mutexP(newrect_mutex);
 									scaling = cvstat.scaling;
 									vmultiplier = cvstat.vmultiplier;
-									for(y=0; y<list->height; y++) {
-										offset=y*list->width;
-										for(x=0; x<list->width; x++) {
+									for(y=0; y<list->rect.height; y++) {
+										offset=y*list->rect.width;
+										for(x=0; x<list->rect.width; x++) {
 											r.w=scaling;
 											r.h=scaling*vmultiplier;
-											r.x=(list->x+x)*scaling;
-											r.y=(list->y+y)*scaling*vmultiplier;
+											r.x=(list->rect.x+x)*scaling;
+											r.y=(list->rect.y+y)*scaling*vmultiplier;
 											if(yuv.enabled)
 												yuv_fillrect(yuv.overlay, &r, list->data[offset++]);
 											else
@@ -1781,16 +1762,15 @@ int sdl_video_event_thread(void *data)
 										}
 									}
 									if(!yuv.enabled) {
-										upd_rect.x=list->x*scaling;
-										upd_rect.y=list->y*scaling*vmultiplier;
-										upd_rect.w=list->width*scaling;
-										upd_rect.h=list->height*scaling*vmultiplier;
+										upd_rect.x=list->rect.x*scaling;
+										upd_rect.y=list->rect.y*scaling*vmultiplier;
+										upd_rect.w=list->rect.width*scaling;
+										upd_rect.h=list->rect.height*scaling*vmultiplier;
 										sdl.BlitSurface(new_rect, &upd_rect, win, &upd_rect);
 									}
 									sdl.mutexV(newrect_mutex);
 									sdl.mutexV(win_mutex);
-									free(list->data);
-									free(list);
+									bitmap_drv_free_rect(list);
 								}
 
 								/* Old flush function */

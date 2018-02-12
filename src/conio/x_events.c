@@ -384,30 +384,30 @@ static int video_init()
     return(0);
 }
 
-static void local_draw_rect(struct update_rect *rect)
+static void local_draw_rect(struct rectlist *rect)
 {
 	int x,y,xscale,yscale;
 
-	xim=x11.XCreateImage(dpy,&visual,depth,ZPixmap,0,NULL,rect->width*x_cvstat.scaling,rect->height*x_cvstat.scaling*x_cvstat.vmultiplier,32,0);
-	xim->data=(char *)malloc(xim->bytes_per_line*rect->height*x_cvstat.scaling*x_cvstat.vmultiplier);
+	xim=x11.XCreateImage(dpy,&visual,depth,ZPixmap,0,NULL,rect->rect.width*x_cvstat.scaling,rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier,32,0);
+	xim->data=(char *)malloc(xim->bytes_per_line*rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier);
 
-	for(y=0;y<rect->height;y++) {
-		for(x=0; x<rect->width; x++) {
+	for(y=0;y<rect->rect.height;y++) {
+		for(x=0; x<rect->rect.width; x++) {
 			for(yscale=0; yscale<x_cvstat.scaling*x_cvstat.vmultiplier; yscale++) {
 				for(xscale=0; xscale<x_cvstat.scaling; xscale++) {
 #ifdef XPutPixel
-					XPutPixel(xim,(x+rect->x)*x_cvstat.scaling+xscale,(y+rect->y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->width+x]]);
+					XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->rect.width+x]]);
 #else
-					x11.XPutPixel(xim,(x+rect->x)*x_cvstat.scaling+xscale,(y+y->rect)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->width+x]]);
+					x11.XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->rect.width+x]]);
 #endif
 				}
 			}
 		}
 	}
 
-	x11.XPutImage(dpy,win,gca[0],xim,rect->x*x_cvstat.scaling,rect->y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->x*x_cvstat.scaling,rect->y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->width*x_cvstat.scaling,rect->height*x_cvstat.scaling*x_cvstat.vmultiplier);
+	x11.XPutImage(dpy,win,gca[0],xim,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.width*x_cvstat.scaling,rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier);
 
-	free(rect->data);
+	bitmap_drv_free_rect(rect);
 }
 
 static void handle_resize_event(int width, int height)
@@ -1013,7 +1013,7 @@ void x11_event_thread(void *args)
 							}
 							break;
 						case X11_LOCAL_DRAWRECT:
-							local_draw_rect(&lev.data.rect);
+							local_draw_rect(lev.data.rect);
 							break;
 						case X11_LOCAL_FLUSH:
 							x11.XFlush(dpy);
