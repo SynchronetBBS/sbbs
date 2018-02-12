@@ -357,7 +357,7 @@ static int bitmap_attr2palette_locked(uint8_t attr, uint32_t *fgp, uint32_t *bgp
  */
 static BOOL bitmap_draw_cursor(void)
 {
-	int y;
+	int x,y;
 	int pixel;
 	int xoffset,yoffset;
 	BOOL ret = FALSE;
@@ -376,11 +376,17 @@ static BOOL bitmap_draw_cursor(void)
 				for(y=vstat.curs_start; y<=vstat.curs_end; y++) {
 					if(xoffset < screen.screenwidth && (yoffset+y) < screen.screenheight) {
 						pixel=PIXEL_OFFSET(screen, xoffset, yoffset+y);
-						memset_u32(screen.screen+pixel,ciolib_fg,vstat.charwidth);
+						for (x = 0; x < vstat.charwidth; x++) {
+							if (screen.screen[pixel] != ciolib_fg) {
+								ret = TRUE;
+								screen.screen[pixel] = ciolib_fg;
+							}
+							pixel++;
+						}
 					}
 				}
-				ret = TRUE;
-				update_pixels = 1;
+				if (ret)
+					update_pixels = 1;
 				pthread_mutex_unlock(&screen.screenlock);
 			}
 		}
@@ -492,6 +498,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	unsigned char *this_font;
 	WORD	sch;
 	struct vstat_vmem *vmem_ptr;
+	BOOL	changed = FALSE;
 
 	if(!bitmap_initialized) {
 		return(-1);
@@ -530,16 +537,25 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	fontoffset=(sch&0xff)*vstat.charheight;
 
 	for(y=0; y<vstat.charheight; y++) {
-		memset_u32(&screen.screen[PIXEL_OFFSET(screen, xoffset, yoffset+y)],bg,vstat.charwidth);
 		if ((!((sch & 0x8000) && !vstat.blink)) || vstat.no_blink) {
 			for(x=0; x<vstat.charwidth; x++) {
-				if(this_font[fontoffset] & (0x80 >> x))
-					screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]=fg;
+				if(this_font[fontoffset] & (0x80 >> x)) {
+					if (screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]!=fg) {
+						changed=TRUE;
+						screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]=fg;
+					}
+				}
+				else
+					if (screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]!=bg) {
+						changed=TRUE;
+						screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]=bg;
+					}
 			}
 		}
 		fontoffset++;
 	}
-	update_pixels = 1;
+	if (changed)
+		update_pixels = 1;
 	pthread_mutex_unlock(&screen.screenlock);
 
 	return(0);
