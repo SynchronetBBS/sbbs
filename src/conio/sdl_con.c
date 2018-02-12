@@ -626,7 +626,7 @@ void sdl_drawrect(struct rectlist *data)
 		sdl.mutexV(sdl_headlock);
 	}
 	else
-		free(data);
+		bitmap_drv_free_rect(data);
 }
 
 int sdl_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
