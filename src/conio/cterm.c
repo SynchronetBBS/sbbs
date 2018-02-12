@@ -3218,14 +3218,20 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									if (cterm->strbuflen == cterm->strbufsize) {
 										char *p;
 
-										cterm->strbufsize += 1024;
-										p = realloc(cterm->strbuf, cterm->strbufsize);
-										if (p == NULL) {
+										cterm->strbufsize *= 2;
+										if (cterm->strbufsize > 1024 * 1024 * 512) {
 											FREE_AND_NULL(cterm->strbuf);
 											cterm->strbuflen = cterm->strbufsize = 0;
 										}
-										else
-											cterm->strbuf = p;
+										else {
+											p = realloc(cterm->strbuf, cterm->strbufsize);
+											if (p == NULL) {
+												FREE_AND_NULL(cterm->strbuf);
+												cterm->strbuflen = cterm->strbufsize = 0;
+											}
+											else
+												cterm->strbuf = p;
+										}
 									}
 								}
 							}
@@ -3254,11 +3260,17 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										char *p;
 
 										cterm->strbufsize *= 2;
-										p = realloc(cterm->strbuf, cterm->strbufsize);
-										if (p == NULL) {
-											cterm->string = 0;
+										if (cterm->strbufsize > 1024 * 1024 * 512) {
 											FREE_AND_NULL(cterm->strbuf);
 											cterm->strbuflen = cterm->strbufsize = 0;
+										}
+										else {
+											p = realloc(cterm->strbuf, cterm->strbufsize);
+											if (p == NULL) {
+												cterm->string = 0;
+												FREE_AND_NULL(cterm->strbuf);
+												cterm->strbuflen = cterm->strbufsize = 0;
+											}
 										}
 									}
 								}
