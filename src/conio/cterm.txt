@@ -638,7 +638,7 @@ CSI Ps... m
 	35 - Magenta foreground                            X
 	36 - Cyan foreground                               X
 	37 - White foreground                              X
-	38 - Foreground from palette (see note)            X
+	38 - Extended Foreground (see notes)               X
 	39 - Default foreground (same as white)	           X
 	40 - Black background                                 X
 	41 - Red background                                   X
@@ -648,13 +648,16 @@ CSI Ps... m
 	45 - Magenta background                               X
 	46 - Cyan background                                  X
 	47 - White background                                 X
-	48 - Background from palette (see note)            X
+	48 - Extended Background (see notes)                  X
 	49 - Default background (same as black)               X
 
 	All others are ignored.
 
-	Note, For 38 and 48, an additional two parameters are required
-	after that value.  They are considered part of the 38, not separate
+	NOTE: For 38 and 48, two additional formats are supported, a palette
+	selection and a direct colour selection.
+
+	For palette selection, an additional two parameters are required
+	after that value.  They are considered part of the 38/48, not separate
 	values.  The first additional parameter must be a 5.  The second
 	additional parameter specified the palette index to use.  To set the
 	foreground to orange, and the background to a fairly dark grey, you
@@ -663,6 +666,16 @@ CSI Ps... m
 
 	The default palette is the XTerm 256-colour palette.  See here:
 	https://jonasjacek.github.io/colors/
+
+	For direct colour selection, an additional five parameters are required
+	after that value.  They are considered part of the 38/48, not separate
+	values.  The first additional parameter must be a 2.  The second
+	additional parameter is ignored.  The third, fourth, and fifth specify
+	the R/G/B values respectively. CTerm handles this with an internal
+	temporary palette, so scrollback may not have the correct colours.
+	The internal palette is large enough for all cells in a 132x60 screen
+	to have unique foreground and background colours though, so the current
+	screen should always be as expected.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 	SOURCE: XTerm
@@ -776,6 +789,18 @@ CSI s
 	that any terminal program MUST implement it.
 
 	SOURCE: ANSI.SYS
+
+CSI Ps ; Pn1 ; Pn2 ; Pn3 t
+	NON-STANDARD EXTENSION
+	Select a 24-bit colour
+	If Ps is 0, sets the background colour.
+	If Ps is 1, sets the foreground colour.
+	Pn1, Pn2, Pn3 contains the RGB value to set.
+	CTerm handles this with an internal temporary palette, so scrollback
+	may not have the correct colours.  The internal palette is large
+	enough for all cells in a 132x60 screen to have unique foreground
+	and background colours though, so the current screen should always
+	be as expected.
 
 CSI ? Ps...  u
 	NON-STANDARD EXTENSION

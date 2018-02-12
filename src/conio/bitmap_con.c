@@ -23,6 +23,15 @@
 #include "vidmodes.h"
 #include "bitmap_con.h"
 
+struct palette_entry {
+	uint8_t	red;
+	uint8_t	green;
+	uint8_t	blue;
+	time_t	allocated;
+};
+
+static struct palette_entry truecolour_palette[15840];	// Big enough for a unique fg/bg for each cell in a 132x60 window
+
 #if 0
 
 int dbg_pthread_mutex_lock(pthread_mutex_t *lptr, unsigned line)
@@ -1415,6 +1424,35 @@ int bitmap_set_modepalette(uint32_t p[16])
 	memcpy(vstat.palette, p, sizeof(vstat.palette));
 	pthread_mutex_unlock(&vstatlock);
 	return 0;
+}
+
+uint32_t bitmap_map_rgb(uint16_t r, uint16_t g, uint16_t b)
+{
+	time_t oldest;
+	int oldestoff;
+	int i;
+	time_t now = time(NULL);
+
+	oldest = now;
+	r>>=8;
+	g>>=8;
+	b>>=8;
+	for (i=0; i<sizeof(truecolour_palette) / sizeof(truecolour_palette[0]); i++) {
+		if (truecolour_palette[i].allocated == 0)
+			break;
+		if (truecolour_palette[i].allocated < oldest) {
+			oldest = truecolour_palette[i].allocated;
+			oldestoff = i;
+		}
+		if (truecolour_palette[i].red == r && truecolour_palette[i].green == g && truecolour_palette[i].blue == b) {
+			truecolour_palette[i].allocated = now;
+			return i + TOTAL_DAC_SIZE + 512;
+		}
+	}
+
+	ciolib_setpalette(i + TOTAL_DAC_SIZE + 512, r<<8 | r, g<<8 | g, b<<8 | b);
+	truecolour_palette[i].allocated = now;
+	return i + TOTAL_DAC_SIZE + 512;
 }
 
 /***********************/

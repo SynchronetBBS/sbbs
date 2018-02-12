@@ -2463,6 +2463,13 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										cterm->fg_color = seq->param_int[i+2] + 16;
 										i+=2;
 									}
+									else if (i+5 < seq->param_count && seq->param_int[i+1] == 2) {
+										uint32_t nc;
+
+										nc = map_rgb(seq->param_int[i+3]<<8, seq->param_int[i+4]<<8, seq->param_int[i+5]<<8);
+										if (nc != UINT32_MAX)
+											cterm->fg_color = nc;
+									}
 									break;
 								case 37:
 								case 39:
@@ -2514,6 +2521,13 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									if (i+2 < seq->param_count && seq->param_int[i+1] == 5) {
 										cterm->bg_color = seq->param_int[i+2] + 16;
 										i+=2;
+									}
+									else if (i+5 < seq->param_count && seq->param_int[i+1] == 2) {
+										uint32_t nc;
+
+										nc = map_rgb(seq->param_int[i+3]<<8, seq->param_int[i+4]<<8, seq->param_int[i+5]<<8);
+										if (nc != UINT32_MAX)
+											cterm->bg_color = nc;
 									}
 									break;
 							}
@@ -2576,6 +2590,22 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					case 's':
 						cterm->save_xpos=WHEREX();
 						cterm->save_ypos=WHEREY();
+						break;
+					case 't':
+						if (seq->param_count >= 4) {
+							uint32_t *c = NULL;
+							uint32_t nc;
+
+							if (seq->param_int[0] == 0)
+								c = &cterm->bg_color;
+							else if (seq->param_int[0] == 1)
+								c = &cterm->fg_color;
+							if (c == NULL)
+								break;
+							nc = map_rgb(seq->param_int[1]<<8, seq->param_int[2]<<8, seq->param_int[3]<<8);
+							if (nc != UINT32_MAX)
+								*c = nc;
+						}
 						break;
 					case 'u':
 						if(cterm->save_ypos>0 && cterm->save_ypos<=cterm->height
