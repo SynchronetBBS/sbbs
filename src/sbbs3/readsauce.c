@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 			fclose(f);
 			continue;
 		}
-		fprintf(stdout, "--- %s ---\n", argv[i]);
+		fprintf(stdout, "\n--- %s ---\n", argv[i]);
 		if (sauce.title[0])
 			fprintf(stdout, "Title: %.35s\n", sauce.title);
 		if (sauce.author[0])
