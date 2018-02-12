@@ -335,3 +335,6 @@ DSTSEDIT_OBJS = \
 			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
 
+READSAUCE_OBJS = \
+			$(OBJODIR)$(DIRSEP)readsauce$(OFILE)
+
