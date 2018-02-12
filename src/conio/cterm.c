@@ -1018,6 +1018,43 @@ struct esc_seq {
 	uint64_t *param_int;	// The parameter bytes parsed as integers UINT64_MAX for default value.
 };
 
+struct sub_params {
+	int param_count;		// The number of parameters, or -1 if parameters were not parsed.
+	uint64_t *param_int;	// The parameter bytes parsed as integers UINT64_MAX for default value.
+};
+
+static bool parse_sub_parameters(struct sub_params *sub, struct esc_seq *seq, unsigned param)
+{
+	int i;
+	char *p;
+
+	sub->param_count = 0;
+	sub->param_int = NULL;
+
+	if (param >= seq->param_count)
+		return false;
+	for (p=seq->param[param]; *p; p++)
+		if (*p == ':')
+			sub->param_count++;
+	sub->param_int = malloc(sub->param_count * sizeof(sub->param_int[0]));
+	if (sub->param_int == NULL)
+		return false;
+	p = seq->param[param];
+	for (i=0; i<seq->param_count; i++) {
+		sub->param_int[i] = strtoull(p, &p, 10);
+		if (*p != ':' && *p != 0) {
+			free(seq->param_int);
+			return false;
+		}
+	}
+	return true;
+}
+
+static void free_sub_parameters(struct sub_params *sub)
+{
+	FREE_AND_NULL(sub->param_int);
+}
+
 static bool parse_parameters(struct esc_seq *seq)
 {
 	char *p;
@@ -1514,6 +1551,73 @@ all_done:
 	FREE_AND_NULL(cterm->sx_pixels);
 	FREE_AND_NULL(cterm->sx_mask);
 }
+
+static void parse_extended_colour(struct esc_seq *seq, int *i, uint32_t *co)
+{
+	struct sub_params sub = {0};
+	uint32_t nc;
+
+	if (seq == NULL || co == NULL || i == NULL)
+		return;
+	if (*i>=seq->param_count)
+		return;
+
+	if (seq->param[*i][2] == ':') {
+		// CSI 38 : 5 : X m variant
+		// CSI 38 : 2 : Z? : R : G : B m variant
+
+		if (parse_sub_parameters(&sub, seq, *i)) {
+			if (sub.param_count == 3 && sub.param_int[1] == 5)
+				*co = sub.param_int[2];
+			else if (sub.param_int[1] == 2) {
+				if (sub.param_count == 5) {
+					nc = map_rgb(sub.param_int[2]<<8, sub.param_int[3]<<8, sub.param_int[4]<<8);
+					if (nc != UINT32_MAX)
+						*co = nc;
+				}
+				else if (sub.param_count > 5) {
+					nc = map_rgb(sub.param_int[3]<<8, sub.param_int[4]<<8, sub.param_int[5]<<8);
+					if (nc != UINT32_MAX)
+						*co = nc;
+				}
+			}
+		}
+	}
+	else if ((*i)+1 < seq->param_count && seq->param_int[(*i)+1] == 5 && seq->param[(*i)+1][1] == ':') {
+		// CSI 38 ; 5 : X m variant
+		if (parse_sub_parameters(&sub, seq, (*i)+1)) {
+			if (sub.param_count == 2)
+				*co = sub.param_int[1];
+			(*i)++;
+		}
+	}
+	else if ((*i)+2 < seq->param_count && seq->param_int[(*i)+1] == 5) {
+		// CSI 38 ; 5 ; X m variant
+		*co = seq->param_int[(*i)+2] + 16;
+		*i+=2;
+	}
+	else if ((*i)+1 < seq->param_count && seq->param_int[(*i)+1] == 2 && seq->param[(*i)+1][1] == ':') {
+		// CSI 38 ; 2 : Z? : R : G : B m variant
+		if (parse_sub_parameters(&sub, seq, (*i)+1)) {
+			nc = UINT32_MAX;
+			if (sub.param_count > 4)
+				nc = map_rgb(sub.param_int[2]<<8, sub.param_int[3]<<8, sub.param_int[4]<<8);
+			else if (sub.param_count == 4)
+				nc = map_rgb(sub.param_int[1]<<8, sub.param_int[2]<<8, sub.param_int[3]<<8);
+			if (nc != UINT32_MAX)
+				*co = nc;
+		}
+	}
+	else if ((*i)+4 < seq->param_count && seq->param_int[(*i)+1] == 2) {
+		// CSI 38 ; 2 ; R ; G ; B m variant
+		nc = map_rgb(seq->param_int[(*i)+2]<<8, seq->param_int[(*i)+3]<<8, seq->param_int[(*i)+4]<<8);
+		if (nc != UINT32_MAX)
+			*co = nc;
+		*i += 4;
+	}
+	free_sub_parameters(&sub);
+}
+
 
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed)
 {
@@ -2459,17 +2563,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 38:
-									if (i+2 < seq->param_count && seq->param_int[i+1] == 5) {
-										cterm->fg_color = seq->param_int[i+2] + 16;
-										i+=2;
-									}
-									else if (i+5 < seq->param_count && seq->param_int[i+1] == 2) {
-										uint32_t nc;
-
-										nc = map_rgb(seq->param_int[i+2]<<8, seq->param_int[i+3]<<8, seq->param_int[i+4]<<8);
-										if (nc != UINT32_MAX)
-											cterm->fg_color = nc;
-									}
+									parse_extended_colour(seq, &i, &cterm->fg_color);
 									break;
 								case 37:
 								case 39:
@@ -2518,17 +2612,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 48:
-									if (i+2 < seq->param_count && seq->param_int[i+1] == 5) {
-										cterm->bg_color = seq->param_int[i+2] + 16;
-										i+=2;
-									}
-									else if (i+5 < seq->param_count && seq->param_int[i+1] == 2) {
-										uint32_t nc;
-
-										nc = map_rgb(seq->param_int[i+3]<<8, seq->param_int[i+4]<<8, seq->param_int[i+5]<<8);
-										if (nc != UINT32_MAX)
-											cterm->bg_color = nc;
-									}
+									parse_extended_colour(seq, &i, &cterm->bg_color);
 									break;
 							}
 						}
