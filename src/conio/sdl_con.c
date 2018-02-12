@@ -622,8 +622,8 @@ void sdl_drawrect(struct rectlist *data)
 		else {
 			update_list_tail->next = data;
 			update_list_tail = data;
-			sdl.mutexV(sdl_headlock);
 		}
+		sdl.mutexV(sdl_headlock);
 	}
 	else
 		free(data);
