@@ -148,10 +148,40 @@ struct fontinfo finfo[] = {
 	{"Atari ATASCII","8x8","320x192","4:3","4:5 (1:1.25)","25%","Original ATASCII font (Atari 400, 800, XL, XE)",false},
 };
 
+struct codepages {
+	char *code;
+	char *name;
+};
+
+struct codepages cpages[] = {
+	{"437","The character set of the original IBM PC. Also known as 'MS-DOS Latin US'."},
+	{"720","Arabic. Also known as 'Windows-1256'."},
+	{"737","Greek. Also known as 'MS-DOS Greek'."},
+	{"775","Baltic Rim (Estonian, Lithuanian and Latvian). Also known as 'MS-DOS Baltic Rim'."},
+	{"819","Latin-1 Supplemental. Also known as 'Windows-28591' and 'ISO/IEC 8859-1'."},
+	{"850","Western Europe. Also known as 'MS-DOS Latin 1'."},
+	{"852","Central Europe (Bosnian, Croatian, Czech, Hungarian, Polish, Romanian, Serbian and Slovak). Also known as 'MS-DOS Latin 2'."},
+	{"855","Cyrillic (Serbian, Macedonian Bulgarian, Russian). Also known as 'MS-DOS Cyrillic'."},
+	{"857","Turkish. Also known as 'MS-DOS Turkish'."},
+	{"858","Western Europe."},
+	{"860","Portuguese. Also known as 'MS-DOS Portuguese'."},
+	{"861","Icelandic. Also known as 'MS-DOS Icelandic'."},
+	{"862","Hebrew. Also known as 'MS-DOS Hebrew'."},
+	{"863","French Canada. Also known as 'MS-DOS French Canada'."},
+	{"864","Arabic."},
+	{"865","Nordic."},
+	{"866","Cyrillic."},
+	{"869","Greek 2. Also known as 'MS-DOS Greek 2'."},
+	{"872","Cyrillic."},
+	{"KAM","'Kamenicky' encoding. Also known as 'KEYBCS2'."},
+	{"MAZ","'Mazovia' encoding."},
+	{"MIK","Cyrillic."},
+};
+
 int main(int argc, char **argv)
 {
 	FILE *f;
-	int i, j, k;
+	int i, j, k, l;
 	struct sauce sauce;
 	char *buf;
 	char *cpp;
@@ -251,8 +281,16 @@ int main(int argc, char **argv)
 							if (strncmp(sauce.tinfos, finfo[k].name, namelen) == 0) {
 								if (finfo[k].has_8px && (sauce.tflags & sauce_ansiflag_spacing_8pix))
 									k++;
-								if (cpp)
-									fprintf(stdout, "\tCode Page: %.*s\n", (int)strlen(cpp), sauce.tinfos + (cpp-finfo[k].name));
+								if (cpp) {
+									for (l=0; l<sizeof(cpages)/sizeof(cpages[0]); l++) {
+										if (strcmp(cpages[l].code, sauce.tinfos + (cpp-finfo[k].name)) == 0) {
+											fprintf(stdout, "\tCode Page: %.*s - %s\n", (int)strlen(cpp), sauce.tinfos + (cpp-finfo[k].name), cpages[l].name);
+											break;
+										}
+									}
+								}
+								if (l == sizeof(cpages)/sizeof(cpages[0]))
+									fprintf(stdout, "\tCode Page: %.*s - Invalid/Unsupported\n", (int)strlen(cpp), sauce.tinfos + (cpp-finfo[k].name));
 								fprintf(stdout,"\tFont Size: %s\n", finfo[k].size);
 								fprintf(stdout,"\tResolution: %s\n", finfo[k].resolution);
 								fprintf(stdout,"\tDisplay Aspect Ratio: %s\n", finfo[k].dar);
