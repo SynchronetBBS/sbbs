@@ -430,6 +430,7 @@ static struct rectlist *alloc_full_rect(void)
 		if (free_rects->rect.width == screen.screenwidth && free_rects->rect.height == screen.screenheight) {
 			ret = free_rects;
 			free_rects = free_rects->next;
+			free_rects->rect.x = free_rects->rect.y = 0;
 			return ret;
 		}
 		else {
