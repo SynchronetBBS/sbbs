@@ -618,7 +618,7 @@ void sdl_drawrect(struct rectlist *data)
 		data->next = NULL;
 		sdl.mutexP(sdl_headlock);
 		if (update_list == NULL)
-			update_list = data;
+			update_list = update_list_tail = data;
 		else {
 			update_list_tail->next = data;
 			update_list_tail = data;
