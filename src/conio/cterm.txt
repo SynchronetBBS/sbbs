@@ -667,15 +667,14 @@ CSI Ps... m
 	The default palette is the XTerm 256-colour palette.  See here:
 	https://jonasjacek.github.io/colors/
 
-	For direct colour selection, an additional five parameters are required
+	For direct colour selection, an additional four parameters are required
 	after that value.  They are considered part of the 38/48, not separate
-	values.  The first additional parameter must be a 2.  The second
-	additional parameter is ignored.  The third, fourth, and fifth specify
-	the R/G/B values respectively. CTerm handles this with an internal
-	temporary palette, so scrollback may not have the correct colours.
-	The internal palette is large enough for all cells in a 132x60 screen
-	to have unique foreground and background colours though, so the current
-	screen should always be as expected.
+	values.  The first additional parameter must be a 2.  The second,
+	third, and fourth specify the R/G/B values respectively. CTerm handles
+	this with an internal temporary palette, so scrollback may not have the
+	correct colours.  The internal palette is large enough for all cells in
+	a 132x60 screen to have unique foreground and background colours
+	though, so the current screen should always be as expected.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 	SOURCE: XTerm

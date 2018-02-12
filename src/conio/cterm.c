@@ -2466,7 +2466,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									else if (i+5 < seq->param_count && seq->param_int[i+1] == 2) {
 										uint32_t nc;
 
-										nc = map_rgb(seq->param_int[i+3]<<8, seq->param_int[i+4]<<8, seq->param_int[i+5]<<8);
+										nc = map_rgb(seq->param_int[i+2]<<8, seq->param_int[i+3]<<8, seq->param_int[i+4]<<8);
 										if (nc != UINT32_MAX)
 											cterm->fg_color = nc;
 									}
