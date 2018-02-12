@@ -3251,7 +3251,6 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							else {
 								if (cterm->strbuf == NULL) {
 									cterm->string = 0;
-									FREE_AND_NULL(cterm->strbuf);
 									cterm->strbuflen = cterm->strbufsize = 0;
 								}
 								else {
@@ -3262,6 +3261,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										cterm->strbufsize *= 2;
 										if (cterm->strbufsize > 1024 * 1024 * 512) {
 											FREE_AND_NULL(cterm->strbuf);
+											cterm->string = 0;
 											cterm->strbuflen = cterm->strbufsize = 0;
 										}
 										else {
