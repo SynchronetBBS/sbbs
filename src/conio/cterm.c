@@ -1339,7 +1339,6 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 			GETTEXTINFO(&ti);
 			vmode = find_vmode(ti.currmode);
 			if (cterm->sx_pixels == NULL) {
-
 				cterm->sx_pixels = malloc(sizeof(struct ciolib_pixels));
 				cterm->sx_pixels->pixels = malloc(sizeof(cterm->sx_pixels->pixels[0]) * cterm->sx_iv * ti.screenwidth * vparams[vmode].charwidth * 6);
 				cterm->sx_pixels->width = ti.screenwidth * vparams[vmode].charwidth;
@@ -1347,7 +1346,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 				cterm->sx_mask = malloc((cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
 				memset(cterm->sx_mask, 0, (cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
 			}
-			if (cterm->sx_x == cterm->sx_left && cterm->sx_height && cterm->sx_width) {
+			if (cterm->sx_x == cterm->sx_left && cterm->sx_height && cterm->sx_width && cterm->sx_first_pass) {
 				/* Fill in the background of the line */
 				for (i = 0; i < (cterm->sx_height > 6 ? 6 : cterm->sx_height); i++) {
 					for (j = 0; j < cterm->sx_iv; j++) {
@@ -1506,8 +1505,9 @@ all_done:
 	GETTEXTINFO(&ti);
 	vmode = find_vmode(ti.currmode);
 
-	if (cterm->sx_row_max_x)
+	if (cterm->sx_row_max_x) {
 		setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
+	}
 
 	*cterm->hold_update=cterm->sx_hold_update;
 
@@ -3222,6 +3222,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	uint32_t *mpalette;
 	uint32_t palette[16];
 	uint32_t tmpfg, tmpbg;
+	int orig_fonts[4];
 
 	if(!cterm->started)
 		cterm_start(cterm);
@@ -3233,6 +3234,16 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 			mpalette[i] += 16;
 		set_modepalette(mpalette);
 	}
+
+	/* Deedle up the fonts */
+	orig_fonts[0] = getfont(1);
+	orig_fonts[1] = getfont(2);
+	orig_fonts[2] = getfont(3);
+	orig_fonts[3] = getfont(4);
+	setfont(cterm->altfont[0], FALSE, 1);
+	setfont(cterm->altfont[1], FALSE, 2);
+	setfont(cterm->altfont[2], FALSE, 3);
+	setfont(cterm->altfont[3], FALSE, 4);
 
 	oldptnm=*cterm->puttext_can_move;
 	*cterm->puttext_can_move=1;
@@ -3954,6 +3965,12 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 			mpalette[i] -= 16;
 		set_modepalette(mpalette);
 	}
+
+	/* De-doodle the fonts */
+	setfont(orig_fonts[0], FALSE, 1);
+	setfont(orig_fonts[1], FALSE, 2);
+	setfont(orig_fonts[2], FALSE, 3);
+	setfont(orig_fonts[3], FALSE, 4);
 
 	return(retbuf);
 }

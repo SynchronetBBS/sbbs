@@ -15,14 +15,6 @@ enum x11_local_events {
 	,X11_LOCAL_DRAWRECT
 	,X11_LOCAL_FLUSH
 	,X11_LOCAL_BEEP
-	,X11_LOCAL_SETPALETTE
-};
-
-struct x11_palette_entry {
-	uint32_t	index;
-	uint16_t	r;
-	uint16_t	g;
-	uint16_t	b;
 };
 
 struct x11_local_event {
@@ -32,7 +24,6 @@ struct x11_local_event {
 		char	name[81];
 		char	title[81];
 		struct	rectlist *rect;
-		struct	x11_palette_entry palette;
 	} data;
 };
 
@@ -85,6 +76,10 @@ struct x11 {
 	Status	(*XSetWMProtocols) (Display*, Window, Atom *, int);
 	Atom	(*XInternAtom) (Display *, char *, Bool);
 	int		(*XFreeColors) (Display*, Colormap, unsigned long *, int, unsigned long);
+	XVisualInfo *(*XGetVisualInfo)(Display *display, long vinfo_mask, XVisualInfo *vinfo_template, int *nitems_return);
+	Window (*XCreateWindow)(Display *display, Window parent, int x, int y, unsigned int width, unsigned int height, unsigned int border_width, int depth, 
+                       unsigned int class, Visual *visual, unsigned long valuemask, XSetWindowAttributes *attributes);
+	Colormap (*XCreateColormap)(Display *display, Window w, Visual *visual, int alloc);
 };
 
 

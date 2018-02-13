@@ -268,8 +268,6 @@ void release_vmem(struct vstat_vmem *vm)
 	vm->refcount--;
 	if (vm->refcount == 0) {
 		FREE_AND_NULL(vm->vmem);
-		FREE_AND_NULL(vm->fgvmem);
-		FREE_AND_NULL(vm->bgvmem);
 		FREE_AND_NULL(vm);
 	}
 }
@@ -281,29 +279,10 @@ static struct vstat_vmem *new_vmem(int cols, int rows, bool palette)
 	if (ret == NULL)
 		return ret;
 	ret->refcount = 1;
-	ret->vmem = (unsigned short *)malloc(cols*rows*sizeof(unsigned short));
+	ret->vmem = malloc(cols*rows*sizeof(ret->vmem[0]));
 	if (ret->vmem == NULL) {
 		free(ret);
 		return NULL;
-	}
-	if (palette) {
-		ret->fgvmem = malloc(cols*rows*sizeof(ret->fgvmem[0]));
-		if (ret->fgvmem == NULL) {
-			free(ret->vmem);
-			free(ret);
-			return NULL;
-		}
-		ret->bgvmem = malloc(cols*rows*sizeof(ret->bgvmem[0]));
-		if (ret->bgvmem == NULL) {
-			free(ret->fgvmem);
-			free(ret->vmem);
-			free(ret);
-			return NULL;
-		}
-	}
-	else {
-		ret->fgvmem = NULL;
-		ret->bgvmem = NULL;
 	}
 	return ret;
 }

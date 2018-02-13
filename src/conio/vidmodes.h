@@ -64,11 +64,17 @@ struct  video_params {
 	int	vmultiplier;
 };
 
+struct vmem_cell {
+	uint8_t legacy_attr;
+	uint8_t ch;
+	uint8_t font;
+	uint32_t fg;	// RGB 00RRGGBB High bit indicates palette colour
+	uint32_t bg;	// RGB 00RRGGBB High bit indicates palette colour
+};
+
 struct vstat_vmem {
 	unsigned refcount;
-	unsigned short *vmem;
-	uint32_t *fgvmem;
-	uint32_t *bgvmem;
+	struct vmem_cell *vmem;
 };
 
 struct video_stats {

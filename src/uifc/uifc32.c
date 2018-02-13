@@ -263,7 +263,7 @@ int UIFCCALL uifcini32(uifcapi_t* uifcapi)
 
     api=uifcapi;
     if (api->chars == NULL) {
-		switch(getfont()) {
+		switch(getfont(1)) {
 			case -1:
 			case 0:
 			case 17:

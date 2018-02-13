@@ -73,11 +73,7 @@ static int old_scaling = 0;
 struct video_stats x_cvstat;
 
 /* Array of Graphics Contexts */
-static GC *gca = NULL;
-
-/* Array of pixel values to match all possible colours */
-static unsigned long *pixel = NULL;
-size_t pixelsz = 0;
+static GC gc;
 
 static WORD Ascii2Scan[] = {
  0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
@@ -205,17 +201,21 @@ static void resize_xim(void)
 #endif
 	}
     xim=x11.XCreateImage(dpy,&visual,depth,ZPixmap,0,NULL,bitmap_width*x_cvstat.scaling,bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier,32,0);
-    xim->data=(char *)malloc(xim->bytes_per_line*bitmap_width*x_cvstat.scaling*bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier);
+    xim->data=(char *)malloc(xim->bytes_per_line*xim->height);
 }
 
 /* Get a connection to the X server and create the window. */
 static int init_window()
 {
     XGCValues gcv;
-	XColor color;
     int i;
-	XWindowAttributes	attr;
 	XWMHints *wmhints;
+	int ret;
+	int best=-1;
+	int best_depth=0;
+	int best_cmap=0;
+	XVisualInfo template = {0};
+	XVisualInfo *vi;
 
 	dpy = x11.XOpenDisplay(NULL);
     if (dpy == NULL) {
@@ -223,13 +223,37 @@ static int init_window()
 	}
     xfd = ConnectionNumber(dpy);
 
+	template.screen = DefaultScreen(dpy);
+	template.class = TrueColor;
+	vi = x11.XGetVisualInfo(dpy, VisualScreenMask | VisualClassMask, &template, &ret);
+	for (i=0; i<ret; i++) {
+		if (vi[i].depth >= best_depth && vi[i].colormap_size >= best_cmap) {
+			best = i;
+			best_depth = vi[i].depth;
+		}
+	}
+	if (best != -1) {
+		visual = *vi[best].visual;
+	}
+	else {
+		fprintf(stderr, "Unable to find TrueColor visual\n");
+		x11.XFree(vi);
+		return -1;
+	}
+	x11.XFree(vi);
+
 	/* Allocate black and white */
 	black=BlackPixel(dpy, DefaultScreen(dpy));
 	white=WhitePixel(dpy, DefaultScreen(dpy));
 
     /* Create window, but defer setting a size and GC. */
-    win = x11.XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0,
-			      640*x_cvstat.scaling, 400*x_cvstat.scaling*x_cvstat.vmultiplier, 2, black, black);
+	XSetWindowAttributes wa = {0};
+	wa.colormap = x11.XCreateColormap(dpy, DefaultRootWindow(dpy), &visual, AllocNone);
+	wa.background_pixel = black;
+	wa.border_pixel = black;
+	depth = best_depth;
+    win = x11.XCreateWindow(dpy, DefaultRootWindow(dpy), 0, 0,
+			      640*x_cvstat.scaling, 400*x_cvstat.scaling*x_cvstat.vmultiplier, 2, depth, InputOutput, &visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
 
 	wmhints=x11.XAllocWMHints();
 	if(wmhints) {
@@ -246,40 +270,13 @@ static int init_window()
     gcv.background = black;
 	gcv.graphics_exposures = False;
 
-	if (pixelsz < sizeof(dac_default)/sizeof(struct dac_colors)) {
-		unsigned long *newpixel;
-		GC *newgca;
-		size_t newpixelsz = sizeof(dac_default)/sizeof(struct dac_colors);
-
-		newpixel = realloc(pixel, sizeof(pixel[0])*newpixelsz);
-		if (newpixel == NULL)
-			return -1;
-		pixel = newpixel;
-		pixelsz = newpixelsz;
-		newgca = realloc(gca, sizeof(gca[0])*newpixelsz);
-		if (newgca == NULL)
-			return -1;
-		gca = newgca;
-	}
-	/* Get the pixel and GC values */
-	for(i=0; i<sizeof(dac_default)/sizeof(struct dac_colors); i++) {
-		color.red=dac_default[i].red << 8 | dac_default[i].red;
-		color.green=dac_default[i].green << 8 | dac_default[i].green;
-		color.blue=dac_default[i].blue << 8 | dac_default[i].blue;
-		if(x11.XAllocColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color))
-			pixel[i]=color.pixel;
-		gcv.foreground=color.pixel;
-		gca[i]=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
-	}
+	gc=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
 
     x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask |
 		     ExposureMask | ButtonPressMask
 		     | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask);
-	x11.XGetWindowAttributes(dpy,win,&attr);
-	memcpy(&visual,attr.visual,sizeof(visual));
 
     x11.XStoreName(dpy, win, "SyncConsole");
-	depth = DefaultDepth(dpy, DefaultScreen(dpy));
 	x11.XSetWMProtocols(dpy, win, &WM_DELETE_WINDOW, 1);
 
 	resize_xim();
@@ -388,24 +385,22 @@ static void local_draw_rect(struct rectlist *rect)
 {
 	int x,y,xscale,yscale;
 
-	xim=x11.XCreateImage(dpy,&visual,depth,ZPixmap,0,NULL,rect->rect.width*x_cvstat.scaling,rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier,32,0);
-	xim->data=(char *)malloc(xim->bytes_per_line*rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier);
-
+	/* TODO: Translate into local colour depth */
 	for(y=0;y<rect->rect.height;y++) {
 		for(x=0; x<rect->rect.width; x++) {
 			for(yscale=0; yscale<x_cvstat.scaling*x_cvstat.vmultiplier; yscale++) {
 				for(xscale=0; xscale<x_cvstat.scaling; xscale++) {
 #ifdef XPutPixel
-					XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->rect.width+x]]);
+					XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,rect->data[y*rect->rect.width+x]);
 #else
-					x11.XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel[rect->data[y*rect->rect.width+x]]);
+					x11.XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,rect->data[y*rect->rect.width+x]);
 #endif
 				}
 			}
 		}
 	}
 
-	x11.XPutImage(dpy,win,gca[0],xim,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.width*x_cvstat.scaling,rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier);
+	x11.XPutImage(dpy,win,gc,xim,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.width*x_cvstat.scaling,rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier);
 
 	bitmap_drv_free_rect(rect);
 }
@@ -834,59 +829,6 @@ static void x11_terminate_event_thread(void)
 	sem_wait(&event_thread_complete);
 }
 
-static void local_set_palette(struct x11_palette_entry *p)
-{
-	unsigned long *newpixel;
-	static GC *newgca;
-	size_t i;
-	size_t newpixelsz;
-    XGCValues gcv;
-	XColor color;
-
-	gcv.function = GXcopy;
-    gcv.foreground = white;
-    gcv.background = black;
-	gcv.graphics_exposures = False;
-
-	newpixelsz = p->index + 1;
-	if (pixelsz < newpixelsz) {
-		newpixel = realloc(pixel, sizeof(pixel[0])*newpixelsz);
-		if (newpixel == NULL)
-			// TODO: Handle failure!
-			return;
-		pixel = newpixel;
-		newgca = realloc(gca, sizeof(gca[0])*newpixelsz);
-		if (newgca == NULL)
-			// TODO: Handle failure!
-			return;
-		gca = newgca;
-		/* Set all empty colours to black. */
-		for (i = pixelsz; i < (newpixelsz-1); i++) {
-			color.red=0;
-			color.green=0;
-			color.blue=0;
-			if(x11.XAllocColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color))
-				pixel[i]=color.pixel;
-			gcv.foreground=color.pixel;
-			gca[i]=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
-		}
-		pixelsz = newpixelsz;
-	}
-	else {
-		/* Free old colour first */
-		x11.XFreeColors(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &pixel[p->index], 1, 0);
-	}
-	/* Now set new colour */
-	color.red=p->r;
-	color.green=p->g;
-	color.blue=p->b;
-	if(x11.XAllocColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color))
-		pixel[p->index]=color.pixel;
-	gcv.foreground=color.pixel;
-	gca[p->index]=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
-	expose_rect(0, 0, x11_window_width, x11_window_height);
-}
-
 static void readev(struct x11_local_event *lev)
 {
 	fd_set	rfd;
@@ -1020,9 +962,6 @@ void x11_event_thread(void *args)
 							break;
 						case X11_LOCAL_BEEP:
 							x11.XBell(dpy, 100);
-							break;
-						case X11_LOCAL_SETPALETTE:
-							local_set_palette(&lev.data.palette);
 							break;
 					}
 				}

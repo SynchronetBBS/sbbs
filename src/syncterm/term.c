@@ -221,8 +221,14 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	int	timeon;
 	char sep;
 	int old_xlat = ciolib_xlat;
+	int oldfont_norm;
+	int oldfont_bright;
 
-	switch(getfont()) {
+	oldfont_norm=getfont(1);
+	oldfont_bright=getfont(2);
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	switch(getfont(1)) {
 			case 0:
 			case 17:
 			case 18:
@@ -239,8 +245,11 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 				sep = '|';
 	}
 	now=time(NULL);
-	if(now==lastupd && speed==oldspeed)
+	if(now==lastupd && speed==oldspeed) {
+		setfont(oldfont_norm,0,1);
+		setfont(oldfont_bright,0,2);
 		return;
+	}
 	ciolib_xlat = CIOLIB_XLAT_CHARS;
 	lastupd=now;
 	oldspeed=speed;
@@ -273,6 +282,7 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 		strcat(nbuf, " (OOTerm2)");
 		break;
 	}
+	ciolib_setcolour(11, 4);
 	switch(cio_api.mode) {
 		case CIOLIB_MODE_CURSES:
 		case CIOLIB_MODE_CURSES_IBM:
@@ -292,6 +302,8 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	if(wherex()>=80)
 		clreol();
 	_wscroll=oldscroll;
+	setfont(oldfont_norm,0,1);
+	setfont(oldfont_bright,0,2);
 	textattr(txtinfo.attribute);
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
 	gotoxy(txtinfo.curx,txtinfo.cury);
@@ -2005,7 +2017,7 @@ void font_control(struct bbslist *bbs)
 			check_exit(FALSE);
 			break;
 		default:
-			i=j=getfont();
+			i=j=getfont(1);
 			uifc.helpbuf="`Font Setup`\n\n"
 						"Change the current font.  Font must support the current video mode:\n\n"
 						"`8x8`  Used for screen modes with 35 or more lines and all C64/C128 modes\n"

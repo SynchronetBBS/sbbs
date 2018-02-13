@@ -19,7 +19,6 @@ struct rectlist {
 
 extern struct video_stats vstat;
 extern pthread_mutex_t vstatlock;
-extern uint32_t color_max;
 
 #ifndef BITMAP_CIOLIB_DRIVER
 /* Called from ciolib */
@@ -29,7 +28,7 @@ int bitmap_pgettext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, ui
 void bitmap_gotoxy(int x, int y);
 void bitmap_setcursortype(int type);
 int bitmap_setfont(int font, int force, int font_no);
-int bitmap_getfont(void);
+int bitmap_getfont(int fnum);
 int bitmap_loadfont(char *filename);
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy);
 void bitmap_clreol(void);
@@ -46,6 +45,7 @@ uint32_t *bitmap_get_modepalette(uint32_t p[16]);
 int bitmap_set_modepalette(uint32_t p[16]);
 uint32_t bitmap_map_rgb(uint16_t r, uint16_t g, uint16_t b);
 void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size);
+int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b);
 #endif
 
 #ifdef BITMAP_CIOLIB_DRIVER

@@ -173,25 +173,6 @@ int x_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	return(0);
 }
 
-int x_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
-{
-	struct x11_local_event ev;
-
-	if (entry > 1000000)
-		return 1;
-
-	if (entry > color_max)
-		color_max = entry;
-
-	ev.type=X11_LOCAL_SETPALETTE;
-	ev.data.palette.index = entry;
-	ev.data.palette.r = r;
-	ev.data.palette.g = g;
-	ev.data.palette.b = b;
-	write_event(&ev);
-	return(0);
-}
-
 /* Mouse event/keyboard thread */
 void x11_mouse_thread(void *data)
 {
@@ -404,6 +385,18 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XGetVisualInfo=xp_dlsym(dl,XGetVisualInfo))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateWindow=xp_dlsym(dl,XCreateWindow))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateColormap=xp_dlsym(dl,XCreateColormap))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 
 	if(sem_init(&pastebuf_set, 0, 0)) {
 		xp_dlclose(dl);
@@ -449,7 +442,7 @@ int x_init(void)
 		pthread_mutex_destroy(&copybuf_mutex);
 		return(-1);
 	}
-	cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
+	cio_api.options |= CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
 	return(0);
 }
 

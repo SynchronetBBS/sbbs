@@ -182,7 +182,7 @@ int try_sdl_init(int mode)
 		cio_api.get_window_info=sdl_get_window_info;
 		cio_api.setscaling=sdl_setscaling;
 		cio_api.getscaling=sdl_getscaling;
-		cio_api.setpalette=sdl_setpalette;
+		cio_api.setpalette=bitmap_setpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
@@ -238,7 +238,7 @@ int try_x_init(int mode)
 		cio_api.get_window_info=x_get_window_info;
 		cio_api.setscaling=x_setscaling;
 		cio_api.getscaling=x_getscaling;
-		cio_api.setpalette=x_setpalette;
+		cio_api.setpalette=bitmap_setpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
@@ -1323,7 +1323,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,void *e)
 	CIOLIB_INIT();
 
 	if(ciolib_xlat) {
-		font = ciolib_getfont();
+		font = ciolib_getfont(1);
 		if (font >= 0) {
 			buf=malloc((c-a+1)*(d-b+1)*2);
 			if(!buf)
@@ -1374,7 +1374,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e)
 	else
 		ret = cio_api.gettext(a,b,c,d,e);
 	if(ciolib_xlat) {
-		font = ciolib_getfont();
+		font = ciolib_getfont(1);
 		if (font >= 0) {
 			if (conio_fontdata[font].put_xlat || cio_textinfo.currmode == C64_40X25) {
 				for (i=0; i<(c-a+1)*(d-b+1)*2; i+=2) {
@@ -1670,12 +1670,12 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force, int font_num)
 }
 
 /* Optional */
-CIOLIBEXPORT int CIOLIBCALL ciolib_getfont(void)
+CIOLIBEXPORT int CIOLIBCALL ciolib_getfont(int font_num)
 {
 	CIOLIB_INIT();
 
 	if(cio_api.getfont!=NULL)
-		return(cio_api.getfont());
+		return(cio_api.getfont(font_num));
 	else
 		return(-1);
 }

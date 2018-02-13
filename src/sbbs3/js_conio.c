@@ -475,12 +475,19 @@ js_conio_beep(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_getfont(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval *argv=JS_ARGV(cx, arglist);
+	int32	fnum;
 	jsrefcount	rc;
 
-	rc=JS_SUSPENDREQUEST(cx);
-    JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(getfont()));
-	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	if(argc==1 && JSVAL_IS_NUMBER(argv[0]) && JS_ValueToInt32(cx,argv[0],&fnum)) {
+		rc=JS_SUSPENDREQUEST(cx);
+		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(getfont(fnum)));
+		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+		JS_RESUMEREQUEST(cx, rc);
+		return(JS_TRUE);
+	}
+
+	return(JS_FALSE);
 }
 
 static JSBool
@@ -1080,8 +1087,8 @@ static jsSyncMethodSpec js_functions[] = {
 		,JSTYPE_VOID,JSDOCSTR("")
 		,JSDOCSTR("Beeps."),315
 	},
-	{"getfont",			js_conio_getfont,		0
-		,JSTYPE_NUMBER,JSDOCSTR("")
+	{"getfont",			js_conio_getfont,		1
+		,JSTYPE_NUMBER,JSDOCSTR("fnum")
 		,JSDOCSTR("Returns the current font ID or -1 if fonts aren't supported."),315
 	},
 	{"hidemouse",		js_conio_hidemouse,		0

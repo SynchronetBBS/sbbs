@@ -70,7 +70,6 @@ char *x_getcliptext(void);
 int x_setfont(int font, int force);
 int x_getfont(void);
 int x_loadfont(char *filename);
-int x_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 int x_get_window_info(int *width, int *height, int *xpos, int *ypos);
 void x11_drawrect(struct rectlist *data);
 void x11_flush(void);

@@ -345,7 +345,7 @@ typedef struct {
 	void	(*suspend)		(void);
 	void	(*resume)		(void);
 	int		(*setfont)		(int font, int force, int font_num);
-	int		(*getfont)		(void);
+	int		(*getfont)		(int font_num);
 	int		(*loadfont)		(char *filename);
 	int		(*get_window_info)		(int* width, int* height, int* xpos, int* ypos);
 	void	(*getcustomcursor)	(int *startline, int *endline, int *range, int *blink, int *visible);
@@ -431,7 +431,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_hidemouse(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_copytext(const char *text, size_t buflen);
 CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force, int font_num);
-CIOLIBEXPORT int CIOLIBCALL ciolib_getfont(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_getfont(int font_num);
 CIOLIBEXPORT int CIOLIBCALL ciolib_loadfont(char *filename);
 CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int *xpos, int *ypos);
 CIOLIBEXPORT int CIOLIBCALL ciolib_beep(void);
@@ -510,7 +510,7 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define copytext(a,b)			ciolib_copytext(a,b)
 	#define getcliptext()			ciolib_getcliptext()
 	#define setfont(a,b,c)			ciolib_setfont(a,b,c)
-	#define getfont()				ciolib_getfont()
+	#define getfont(a)				ciolib_getfont(a)
 	#define loadfont(a)				ciolib_loadfont(a)
 	#define get_window_info(a,b,c,d)	ciolib_get_window_info(a,b,c,d)
 	#define beep()				ciolib_beep()
