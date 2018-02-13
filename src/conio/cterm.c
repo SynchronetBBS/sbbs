@@ -169,7 +169,6 @@ struct note_params {
 	#define WHEREX()				cterm->ciolib_wherex(cterm)
 	#define WHEREY()				cterm->ciolib_wherey(cterm)
 	#define GETTEXT(a,b,c,d,e)		cterm->ciolib_gettext(cterm, a,b,c,d,e)
-	#define PGETTEXT(a,b,c,d,e,f,g)		cterm->ciolib_pgettext(cterm, a,b,c,d,e,f,g)
 	#define GETTEXTINFO(a)			cterm->ciolib_gettextinfo(cterm,a)
 	#define TEXTATTR(a)				cterm->ciolib_textattr(cterm,a)
 	#define SETCURSORTYPE(a)		cterm->ciolib_setcursortype(cterm,a)
@@ -179,19 +178,15 @@ struct note_params {
 	#define SETVIDEOFLAGS(a)		cterm->ciolib_setvideoflags(cterm,a)
 	#define GETVIDEOFLAGS()			cterm->ciolib_getvideoflags(cterm)
 	#define PUTCH(a)				cterm->ciolib_putch(cterm,a)
-	#define CPUTCH(a,b,c)			cterm->ciolib_cputch(cterm,a,b,c)
 	#define PUTTEXT(a,b,c,d,e)		cterm->ciolib_puttext(cterm,a,b,c,d,e)
-	#define PPUTTEXT(a,b,c,d,e,f,g)	cterm->ciolib_pputtext(cterm,a,b,c,d,e,f,g)
 	#define WINDOW(a,b,c,d)			cterm->ciolib_window(cterm,a,b,c,d)
 	#define CPUTS(a)				cterm->ciolib_cputs(cterm,a)
-	#define CCPUTS(a,b,c)			cterm->ciolib_ccputs(cterm,a,b,c)
 	#define SETFONT(a,b,c)			cterm->ciolib_setfont(cterm,a,b,c)
 #else
 	#define GOTOXY(x,y)				cterm->ciolib_gotoxy(x, y)
 	#define WHEREX()				cterm->ciolib_wherex()
 	#define WHEREY()				cterm->ciolib_wherey()
 	#define GETTEXT(a,b,c,d,e)		cterm->ciolib_gettext(a,b,c,d,e)
-	#define PGETTEXT(a,b,c,d,e,f,g)		cterm->ciolib_pgettext(a,b,c,d,e,f,g)
 	#define GETTEXTINFO(a)			cterm->ciolib_gettextinfo(a)
 	#define TEXTATTR(a)				cterm->ciolib_textattr(a)
 	#define SETCURSORTYPE(a)		cterm->ciolib_setcursortype(a)
@@ -201,12 +196,9 @@ struct note_params {
 	#define SETVIDEOFLAGS(a)		cterm->ciolib_setvideoflags(a)
 	#define GETVIDEOFLAGS()			cterm->ciolib_getvideoflags()
 	#define PUTCH(a)				cterm->ciolib_putch(a)
-	#define CPUTCH(a,b,c)			cterm->ciolib_cputch(a,b,c)
 	#define PUTTEXT(a,b,c,d,e)		cterm->ciolib_puttext(a,b,c,d,e)
-	#define PPUTTEXT(a,b,c,d,e,f,g)	cterm->ciolib_pputtext(a,b,c,d,e,f,g)
 	#define WINDOW(a,b,c,d)			cterm->ciolib_window(a,b,c,d)
 	#define CPUTS(a)				cterm->ciolib_cputs(a)
-	#define CCPUTS(a,b,c)			cterm->ciolib_ccputs(a,b,c)
 	#define SETFONT(a,b,c)			cterm->ciolib_setfont(a,b,c)
 #endif
 
@@ -528,11 +520,6 @@ static int ciolib_putch(struct cterminal *cterm,int a)
 	return(a1);
 }
 
-static int ciolib_cputch(struct cterminal *cterm, uint32_t fg, uint32_t bg, int a)
-{
-	return ciolib_putch(cterm, a);
-}
-
 static int ciolib_puttext(struct cterminal *cterm,int sx, int sy, int ex, int ey, void *fill)
 {
 	int x,y;
@@ -601,11 +588,6 @@ static int ciolib_cputs(struct cterminal *cterm, char *str)
 	}
 	GOTOXY(WHEREX(),WHEREY());
 	return(ret);
-}
-
-static int ciolib_ccputs(struct cterminal *cterm, uint32_t fg, uint32_t bg, char *str)
-{
-	return ciolib_cputs(cterm, str);
 }
 
 static int ciolib_setfont(struct cterminal *,int font, int force, int font_num)
@@ -913,14 +895,10 @@ static void scrollup(struct cterminal *cterm)
 	cterm->backpos++;
 	if(cterm->scrollback!=NULL) {
 		if(cterm->backpos>cterm->backlines) {
-			memmove(cterm->scrollback,cterm->scrollback+cterm->width*2,cterm->width*2*(cterm->backlines-1));
-			if (cterm->scrollbackf)
-				memmove(cterm->scrollbackf,cterm->scrollbackf+cterm->width,cterm->width*(cterm->backlines-1)*sizeof(cterm->scrollbackf[0]));
-			if (cterm->scrollbackb)
-				memmove(cterm->scrollbackb,cterm->scrollbackb+cterm->width,cterm->width*(cterm->backlines-1)*sizeof(cterm->scrollbackb[0]));
+			memmove(cterm->scrollback,cterm->scrollback+cterm->width,cterm->width*sizeof(*cterm->scrollback)*(cterm->backlines-1));
 			cterm->backpos--;
 		}
-		PGETTEXT(cterm->x, top, cterm->x+cterm->width-1, top, cterm->scrollback+(cterm->backpos-1)*cterm->width*2, cterm->scrollbackf?cterm->scrollbackf+(cterm->backpos-1)*cterm->width:NULL, cterm->scrollbackb?cterm->scrollbackb+(cterm->backpos-1)*cterm->width:NULL);
+		vmem_gettext(cterm->x, top, cterm->x+cterm->width-1, top, cterm->scrollback+(cterm->backpos-1)*cterm->width);
 	}
 	MOVETEXT(cterm->x,top+1,cterm->x+cterm->width-1,top+height-1,cterm->x,top);
 	x=WHEREX();
@@ -951,29 +929,23 @@ static void dellines(struct cterminal * cterm, int lines)
 
 static void clear2bol(struct cterminal * cterm)
 {
-	char *buf;
-	uint32_t *buff;
-	uint32_t *bufb;
-	int i,j,k;
+	struct vmem_cell *buf;
+	int i,k;
 
 	k=WHEREX();
-	buf=malloc(k*2);
-	buff=malloc(k*sizeof(buff[0]));
-	bufb=malloc(k*sizeof(bufb[0]));
-	j=0;
+	buf=malloc(k*sizeof(*buf));
 	for(i=0;i<k;i++) {
 		if(cterm->emulation == CTERM_EMULATION_ATASCII)
-			buf[j++]=0;
+			buf[i].ch=0;
 		else
-			buf[j++]=' ';
-		buf[j++]=cterm->attr;
-		buff[i]=cterm->fg_color;
-		bufb[i]=cterm->bg_color;
+			buf[i].ch=' ';
+		buf[i].legacy_attr=cterm->attr;
+		buf[i].fg=cterm->fg_color;
+		buf[i].bg=cterm->bg_color;
+		buf[i].font = ciolib_attrfont(cterm->attr);
 	}
-	PPUTTEXT(cterm->x,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,buf,buff,bufb);
+	vmem_puttext(cterm->x,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,buf);
 	free(buf);
-	free(buff);
-	free(bufb);
 }
 
 void CIOLIBCALL cterm_clearscreen(struct cterminal *cterm, char attr)
@@ -984,18 +956,11 @@ void CIOLIBCALL cterm_clearscreen(struct cterminal *cterm, char attr)
 	if(cterm->scrollback!=NULL) {
 		cterm->backpos+=cterm->height;
 		if(cterm->backpos>cterm->backlines) {
-			memmove(cterm->scrollback,cterm->scrollback+cterm->width*2*(cterm->backpos-cterm->backlines),cterm->width*2*(cterm->backlines-(cterm->backpos-cterm->backlines)));
+			memmove(cterm->scrollback,cterm->scrollback+cterm->width*(cterm->backpos-cterm->backlines),cterm->width*sizeof(*cterm->scrollback)*(cterm->backlines-(cterm->backpos-cterm->backlines)));
 			cterm->backpos=cterm->backlines;
-
-			if (cterm->scrollbackf)
-				memmove(cterm->scrollbackf,cterm->scrollbackf+cterm->width*(cterm->backpos-cterm->backlines),cterm->width*sizeof(cterm->scrollbackf[0])*(cterm->backlines-(cterm->backpos-cterm->backlines)));
-			if (cterm->scrollbackb)
-				memmove(cterm->scrollbackb,cterm->scrollbackb+cterm->width*(cterm->backpos-cterm->backlines),cterm->width*sizeof(cterm->scrollbackb[0])*(cterm->backlines-(cterm->backpos-cterm->backlines)));
 		}
-		PGETTEXT(cterm->x,cterm->y,cterm->x+cterm->width-1,cterm->y+cterm->height-1,
-		    cterm->scrollback + (cterm->backpos - cterm->height) * cterm->width * 2,
-		    cterm->scrollbackf ? cterm->scrollbackf + (cterm->backpos - cterm->height) * cterm->width : NULL,
-		    cterm->scrollbackb ? cterm->scrollbackb + (cterm->backpos - cterm->height) * cterm->width : NULL);
+		vmem_gettext(cterm->x,cterm->y,cterm->x+cterm->width-1,cterm->y+cterm->height-1,
+		    cterm->scrollback + (cterm->backpos - cterm->height) * cterm->width);
 	}
 	CLRSCR();
 	if(cterm->origin_mode)
@@ -1630,8 +1595,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 	struct text_info ti;
 	struct esc_seq *seq;
 	uint32_t oldfg, oldbg;
-	uint32_t *bgbuf, *fgbuf;
 	bool updfg, updbg;
+	struct vmem_cell *vc;
 
 	seq = parse_sequence(cterm->escbuf);
 	if (seq == NULL)
@@ -2398,20 +2363,17 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						i=seq->param_int[0];
 						if(i>cterm->width-WHEREX())
 							i=cterm->width-WHEREX();
-						p2=malloc(i*2);
-						fgbuf=malloc(i*sizeof(fgbuf[0]));
-						bgbuf=malloc(i*sizeof(bgbuf[0]));
+						vc=malloc(i*sizeof(*vc));
 						j=0;
 						for(k=0;k<i;k++) {
-							p2[j++]=' ';
-							p2[j++]=cterm->attr;
-							fgbuf[k]=cterm->fg_color;
-							bgbuf[k]=cterm->bg_color;
+							vc[k].ch=' ';
+							vc[k].legacy_attr=cterm->attr;
+							vc[k].fg=cterm->fg_color;
+							vc[k].bg=cterm->bg_color;
+							vc[k].font = ciolib_attrfont(cterm->attr);
 						}
-						PPUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1+i-1,cterm->y+WHEREY()-1,p2,fgbuf,bgbuf);
-						free(p2);
-						free(fgbuf);
-						free(bgbuf);
+						vmem_puttext(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1+i-1,cterm->y+WHEREY()-1,vc);
+						free(vc);
 						break;
 					case 'Y':	/* TODO? Cursor Line Tabulation */
 						break;
@@ -2883,7 +2845,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 	cterm->sequence=0;
 }
 
-struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrollbackb, int emulation)
+struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, struct vmem_cell *scrollback, int emulation)
 {
 	char	*revision="$Revision$";
 	char *in;
@@ -2918,8 +2880,6 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->backpos=0;
 	cterm->backlines=backlines;
 	cterm->scrollback=scrollback;
-	cterm->scrollbackf=scrollbackf;
-	cterm->scrollbackb=scrollbackb;
 	cterm->log=CTERM_LOG_NONE;
 	cterm->logfile=NULL;
 	cterm->emulation=emulation;
@@ -2931,10 +2891,6 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->sx_scroll_mode = true;
 	if(cterm->scrollback!=NULL)
 		memset(cterm->scrollback,0,cterm->width*2*cterm->backlines);
-	if(cterm->scrollbackf!=NULL)
-		memset(cterm->scrollbackf,0,cterm->width*cterm->backlines*sizeof(cterm->scrollbackf[0]));
-	if(cterm->scrollbackb!=NULL)
-		memset(cterm->scrollbackb,0,cterm->width*cterm->backlines*sizeof(cterm->scrollbackb[0]));
 	strcpy(cterm->DA,"\x1b[=67;84;101;114;109;");
 	out=strchr(cterm->DA, 0);
 	if(out != NULL) {
@@ -2970,7 +2926,7 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->ciolib_gotoxy=ciolib_gotoxy;
 	cterm->ciolib_wherex=ciolib_wherex;
 	cterm->ciolib_wherey=ciolib_wherey;
-	cterm->ciolib_pgettext=ciolib_pgettext;
+	cterm->ciolib_vmem_gettext=ciolib_vmem_gettext;
 	cterm->ciolib_gettext=ciolib_gettext;
 	cterm->ciolib_gettextinfo=ciolib_gettextinfo;
 	cterm->ciolib_textattr=ciolib_textattr;
@@ -2983,12 +2939,9 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->ciolib_setscaling=ciolib_setscaling;
 	cterm->ciolib_getscaling=ciolib_getscaling;
 	cterm->ciolib_putch=ciolib_putch;
-	cterm->ciolib_cputch=ciolib_cputch;
 	cterm->ciolib_puttext=ciolib_puttext;
-	cterm->ciolib_pputtext=ciolib_pputtext;
 	cterm->ciolib_window=ciolib_window;
 	cterm->ciolib_cputs=ciolib_cputs;
-	cterm->ciolib_ccputs=ciolib_ccputs;
 	cterm->ciolib_setfont=ciolib_setfont;
 	cterm->_wscroll=&_wscroll;
 	cterm->puttext_can_move=&puttext_can_move;
@@ -3221,7 +3174,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	int oldptnm;
 	uint32_t *mpalette;
 	uint32_t palette[16];
-	uint32_t tmpfg, tmpbg;
+	struct vmem_cell tmpvc;
 	int orig_fonts[4];
 
 	if(!cterm->started)
@@ -3880,10 +3833,12 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 					else {	/* ANSI-BBS */
 						if(cterm->doorway_char) {
 							uctputs(cterm, prn);
-							ch[1]=cterm->attr;
-							tmpfg = cterm->fg_color;
-							tmpbg = cterm->bg_color;
-							PPUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,ch,&tmpfg,&tmpfg);
+							tmpvc.ch = ch[0];
+							tmpvc.legacy_attr=cterm->attr;
+							tmpvc.fg = cterm->fg_color;
+							tmpvc.bg = cterm->bg_color;
+							tmpvc.font = ciolib_attrfont(cterm->attr);
+							vmem_puttext(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,&tmpvc);
 							ch[1]=0;
 							if(WHEREX()==cterm->width) {
 								if(WHEREY()==cterm->bottom_margin) {

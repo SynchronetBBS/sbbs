@@ -105,9 +105,9 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_highvideo(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_lowvideo(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_normvideo(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,void *e);
-CIOLIBEXPORT int CIOLIBCALL ciolib_pputtext(int a,int b,int c,int d,void *e,uint32_t *f, uint32_t *g);
+CIOLIBEXPORT int CIOLIBCALL ciolib_vmem_puttext(int a,int b,int c,int d,struct vmem_cell *e);
 CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e);
-CIOLIBEXPORT int CIOLIBCALL ciolib_pgettext(int a,int b,int c,int d,void *e, uint32_t *f, uint32_t *g);
+CIOLIBEXPORT int CIOLIBCALL ciolib_vmem_gettext(int a,int b,int c,int d,struct vmem_cell *e);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textattr(int a);
 CIOLIBEXPORT void CIOLIBCALL ciolib_delay(long a);
 CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a);
@@ -123,8 +123,6 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int 
 CIOLIBEXPORT void CIOLIBCALL ciolib_setscaling(int new_value);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
-CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg_palette, uint32_t bg_palette, int a);
-CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t fg_palette, uint32_t bg_palette, const char *str);
 CIOLIBEXPORT int CIOLIBCALL ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 CIOLIBEXPORT struct ciolib_pixels * CIOLIBCALL ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey);
@@ -149,8 +147,8 @@ int try_sdl_init(int mode)
 	if(!sdl_initciolib(mode)) {
 		cio_api.mouse=1;
 		cio_api.puttext=bitmap_puttext;
-		cio_api.pputtext=bitmap_pputtext;
-		cio_api.pgettext=bitmap_pgettext;
+		cio_api.vmem_puttext=bitmap_vmem_puttext;
+		cio_api.vmem_gettext=bitmap_vmem_gettext;
 		cio_api.gotoxy=bitmap_gotoxy;
 		cio_api.setcursortype=bitmap_setcursortype;
 		cio_api.setfont=bitmap_setfont;
@@ -212,8 +210,8 @@ int try_x_init(int mode)
 		cio_api.mode=CIOLIB_MODE_X;
 		cio_api.mouse=1;
 		cio_api.puttext=bitmap_puttext;
-		cio_api.pputtext=bitmap_pputtext;
-		cio_api.pgettext=bitmap_pgettext;
+		cio_api.vmem_puttext=bitmap_vmem_puttext;
+		cio_api.vmem_gettext=bitmap_vmem_gettext;
 		cio_api.gotoxy=bitmap_gotoxy;
 		cio_api.setcursortype=bitmap_setcursortype;
 		cio_api.setfont=bitmap_setfont;
@@ -526,7 +524,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int 
 {
 	int width;
 	int height;
-	unsigned char *buf;
+	void *buf;
 	uint32_t *fgb = NULL;
 	uint32_t *bgb = NULL;
 
@@ -537,28 +535,19 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int 
 
 	width=ex-sx;
 	height=ey-sy;
-	buf=(unsigned char *)malloc((width+1)*(height+1)*2);
-	if(buf==NULL)
-		return(0);
-	if (cio_api.pgettext) {
-		fgb=(uint32_t *)malloc((width+1)*(height+1)*sizeof(fgb[0]));
-		if (fgb == NULL) {
-			free(buf);
+	if (cio_api.vmem_gettext) {
+		buf=malloc((width+1)*(height+1)*sizeof(struct vmem_cell));
+		if (buf == NULL)
 			return 0;
-		}
-
-		bgb=(uint32_t *)malloc((width+1)*(height+1)*sizeof(bgb[0]));
-		if (bgb == NULL) {
-			free(fgb);
-			free(buf);
-			return 0;
-		}
-		if(!ciolib_pgettext(sx,sy,ex,ey,buf,fgb,bgb))
+		if(!ciolib_vmem_gettext(sx,sy,ex,ey,buf))
 			goto fail;
-		if(!ciolib_pputtext(dx,dy,dx+width,dy+height,buf,fgb,bgb))
+		if(!ciolib_vmem_puttext(dx,dy,dx+width,dy+height,buf))
 			goto fail;
 	}
 	else {
+		buf=malloc((width+1)*(height+1)*2);
+		if (buf == NULL)
+			return 0;
 		if(!ciolib_gettext(sx,sy,ex,ey,buf))
 			goto fail;
 		if(!ciolib_puttext(dx,dy,dx+width,dy+height,buf))
@@ -867,9 +856,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_window(int sx, int sy, int ex, int ey)
 /* Optional */
 CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 {
-	unsigned char *buf;
-	uint32_t *fgbuf = NULL;
-	uint32_t *bgbuf = NULL;
+	struct vmem_cell *buf;
 	int i;
 	int width,height;
 
@@ -882,49 +869,29 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 
 	width=cio_textinfo.winright-cio_textinfo.winleft+1-cio_textinfo.curx+1;
 	height=1;
-	buf=(unsigned char *)malloc(width*height*2);
+	buf=malloc(width*height*sizeof(*buf));
 	if (!buf)
 		return;
-	if (cio_api.pputtext) {
-		fgbuf = malloc(width*height*sizeof(fgbuf[0]));
-		if (!fgbuf) {
-			free(buf);
-			return;
-		}
-		bgbuf = malloc(width*height*sizeof(bgbuf[0]));
-		if (!bgbuf) {
-			free(fgbuf);
-			free(buf);
-			return;
-		}
-		for (i = 0; i < width*height; i++) {
-			fgbuf[i] = ciolib_fg;
-			bgbuf[i] = ciolib_bg;
-		}
+	for(i=0;i<width*height;i++) {
+		buf[i].ch = ' ';
+		buf[i].legacy_attr = cio_textinfo.attribute;
+		buf[i].fg = ciolib_fg;
+		buf[i].bg = ciolib_bg;
+		buf[i].font = ciolib_attrfont(cio_textinfo.attribute);
 	}
-	for(i=0;i<width*height*2;) {
-		buf[i++]=' ';
-		buf[i++]=cio_textinfo.attribute;
-	}
-	ciolib_pputtext(
+	ciolib_vmem_puttext(
 			cio_textinfo.curx+cio_textinfo.winleft-1,
 			cio_textinfo.cury+cio_textinfo.wintop-1,
 			cio_textinfo.winright,
 			cio_textinfo.cury+cio_textinfo.wintop-1,
-			buf, fgbuf, bgbuf);
-	if (fgbuf)
-		free(fgbuf);
-	if (bgbuf)
-		free(bgbuf);
+			buf);
 	free(buf);
 }
 
 /* Optional */
 CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
 {
-	unsigned char *buf;
-	uint32_t *fgbuf = NULL;
-	uint32_t *bgbuf = NULL;
+	struct vmem_cell *buf;
 	int i;
 	int width,height;
 	int old_ptcm=puttext_can_move;
@@ -937,39 +904,21 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
 
 	width=cio_textinfo.winright-cio_textinfo.winleft+1;
 	height=cio_textinfo.winbottom-cio_textinfo.wintop+1;
-	buf=(unsigned char *)malloc(width*height*2);
+	buf=malloc(width*height*sizeof(*buf));
 	if(!buf)
 		return;
-	if (cio_api.pputtext) {
-		fgbuf = malloc(width*height*sizeof(fgbuf[0]));
-		if (!fgbuf) {
-			free(buf);
-			return;
-		}
-		bgbuf = malloc(width*height*sizeof(bgbuf[0]));
-		if (!bgbuf) {
-			free(fgbuf);
-			free(buf);
-			return;
-		}
-		for (i = 0; i < width*height; i++) {
-			fgbuf[i] = ciolib_fg;
-			bgbuf[i] = ciolib_bg;
-		}
-	}
-	for(i=0;i<width*height*2;) {
-		buf[i++]=' ';
-		buf[i++]=cio_textinfo.attribute;
+	for(i=0;i<width*height;i++) {
+		buf[i].ch = ' ';
+		buf[i].legacy_attr = cio_textinfo.attribute;
+		buf[i].fg = ciolib_fg;
+		buf[i].bg = ciolib_bg;
+		buf[i].font = ciolib_attrfont(cio_textinfo.attribute);
 	}
 	puttext_can_move=1;
-	ciolib_pputtext(cio_textinfo.winleft,cio_textinfo.wintop,cio_textinfo.winright,cio_textinfo.winbottom,buf,fgbuf,bgbuf);
+	ciolib_vmem_puttext(cio_textinfo.winleft,cio_textinfo.wintop,cio_textinfo.winright,cio_textinfo.winbottom,buf);
 	ciolib_gotoxy(1,1);
 	puttext_can_move=old_ptcm;
 
-	if (fgbuf)
-		free(fgbuf);
-	if (bgbuf)
-		free(bgbuf);
 	free(buf);
 }
 
@@ -1367,10 +1316,20 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e)
 	int		i;
 	int		font;
 	int		ret;
+	struct vmem_cell *buf;
 	CIOLIB_INIT();
 
-	if (cio_api.gettext == NULL)
-		ret = cio_api.pgettext(a,b,c,d,e,NULL,NULL);
+	if (cio_api.gettext == NULL) {
+		buf = malloc((c-a+1)*(d-b+1)*sizeof(*buf));
+		if (buf == NULL)
+			return 1;
+		ch = e;
+		ret = cio_api.vmem_gettext(a,b,c,d,buf);
+		for (i=0; i<(c-a+1)*(d-b+1); i++) {
+			*(ch++)=buf[i].ch;
+			*(ch++)=buf[i].legacy_attr;
+		}
+	}
 	else
 		ret = cio_api.gettext(a,b,c,d,e);
 	if(ciolib_xlat) {
@@ -1399,23 +1358,47 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e)
 }
 
 /* Optional */
-CIOLIBEXPORT int CIOLIBCALL ciolib_pgettext(int a,int b,int c,int d,void *e,uint32_t *f, uint32_t *g)
+CIOLIBEXPORT int CIOLIBCALL ciolib_vmem_gettext(int a,int b,int c,int d,struct vmem_cell *e)
 {
+	int ret;
+	uint16_t *buf;
+	int i;
 	CIOLIB_INIT();
 
-	if (cio_api.pgettext == NULL)
-		return ciolib_gettext(a, b, c, d, e);
-	return cio_api.pgettext(a,b,c,d,e,f,g);
+	if (cio_api.vmem_gettext == NULL) {
+		buf = malloc((c-a+1)*(d-b+1)*sizeof(*buf));
+		if (buf == NULL)
+			return 1;
+		ret = ciolib_gettext(a, b, c, d, e);
+		for (i=0; i<(c-a+1)*(d-b+1); i++) {
+			e[i].ch = buf[i] & 0xff;
+			e[i].legacy_attr = buf[i] >> 8;
+		}
+		free(buf);
+		return ret;
+	}
+	return cio_api.vmem_gettext(a,b,c,d,e);
 }
 
 /* Optional */
-CIOLIBEXPORT int CIOLIBCALL ciolib_pputtext(int a,int b,int c,int d,void *e,uint32_t *f, uint32_t *g)
+CIOLIBEXPORT int CIOLIBCALL ciolib_vmem_puttext(int a,int b,int c,int d,struct vmem_cell *e)
 {
+	int i;
+	int ret;
+	uint16_t *buf;
 	CIOLIB_INIT();
 
-	if (cio_api.pputtext == NULL)
-		return ciolib_puttext(a, b, c, d, e);
-	return cio_api.pputtext(a,b,c,d,e,f,g);
+	if (cio_api.vmem_puttext == NULL) {
+		buf = malloc((c-a+1)*(d-b+1)*sizeof(*buf));
+		if (buf == NULL)
+			return 0;
+		for (i=0; i<(c-a+1)*(d-b+1); i++)
+			buf[i] = (e[i].legacy_attr << 8) | (e[i].ch);
+		ret = ciolib_puttext(a, b, c, d, buf);
+		free(buf);
+		return ret;
+	}
+	return cio_api.vmem_puttext(a,b,c,d,e);
 }
 
 /* Optional */
@@ -1445,26 +1428,25 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_delay(long a)
 }
 
 /* Optional */
-CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
+CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a)
 {
 	unsigned char a1=a;
-	unsigned char buf[2];
-	uint32_t fgbuf[1];
-	uint32_t bgbuf[1];
+	struct vmem_cell buf;
 	int i;
 	int old_puttext_can_move=puttext_can_move;
 
 	CIOLIB_INIT();
 
-	if(cio_api.cputch)
-		return(cio_api.cputch(fg, bg, a1));
+	if(cio_api.putch)
+		return(cio_api.putch(a1));
 
 	puttext_can_move=1;
 
-	buf[0]=a1;
-	buf[1]=cio_textinfo.attribute;
-	fgbuf[0] = fg;
-	bgbuf[0] = bg;
+	buf.ch=a1;
+	buf.legacy_attr=cio_textinfo.attribute;
+	buf.fg = ciolib_fg;
+	buf.bg = ciolib_bg;
+	buf.font = ciolib_attrfont(cio_textinfo.attribute);
 
 	switch(a1) {
 		case '\r':
@@ -1479,12 +1461,12 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 		case '\b':
 			if(cio_textinfo.curx>1) {
 				ciolib_gotoxy(cio_textinfo.curx-1,cio_textinfo.cury);
-				buf[0]=' ';
-				ciolib_pputtext(cio_textinfo.curx+cio_textinfo.winleft-1
+				buf.ch=' ';
+				ciolib_vmem_puttext(cio_textinfo.curx+cio_textinfo.winleft-1
 						,cio_textinfo.cury+cio_textinfo.wintop-1
 						,cio_textinfo.curx+cio_textinfo.winleft-1
 						,cio_textinfo.cury+cio_textinfo.wintop-1
-						,buf,fgbuf,bgbuf);
+						,&buf);
 			}
 			break;
 		case 7:		/* Bell */
@@ -1493,13 +1475,13 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 		case '\t':
 			for(i=0;i<(sizeof(tabs)/sizeof(int));i++) {
 				if(tabs[i]>cio_textinfo.curx) {
-					buf[0]=' ';
+					buf.ch=' ';
 					while(cio_textinfo.curx<tabs[i]) {
-						ciolib_pputtext(cio_textinfo.curx+cio_textinfo.winleft-1
+						ciolib_vmem_puttext(cio_textinfo.curx+cio_textinfo.winleft-1
 								,cio_textinfo.cury+cio_textinfo.wintop-1
 								,cio_textinfo.curx+cio_textinfo.winleft-1
 								,cio_textinfo.cury+cio_textinfo.wintop-1
-								,buf,bgbuf,fgbuf);
+								,&buf);
 						ciolib_gotoxy(cio_textinfo.curx+1,cio_textinfo.cury);
 						if(cio_textinfo.curx==cio_textinfo.screenwidth)
 							break;
@@ -1518,29 +1500,29 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 		default:
 			if(cio_textinfo.cury==cio_textinfo.winbottom-cio_textinfo.wintop+1
 					&& cio_textinfo.curx==cio_textinfo.winright-cio_textinfo.winleft+1) {
-				ciolib_pputtext(ciolib_wherex()+cio_textinfo.winleft-1
+				ciolib_vmem_puttext(ciolib_wherex()+cio_textinfo.winleft-1
 						,ciolib_wherey()+cio_textinfo.wintop-1
 						,ciolib_wherex()+cio_textinfo.winleft-1
 						,ciolib_wherey()+cio_textinfo.wintop-1
-						,buf,fgbuf,bgbuf);
+						,&buf);
 				ciolib_wscroll();
 				ciolib_gotoxy(1, cio_textinfo.winbottom-cio_textinfo.wintop+1);
 			}
 			else {
 				if(cio_textinfo.curx==cio_textinfo.winright-cio_textinfo.winleft+1) {
-					ciolib_pputtext(ciolib_wherex()+cio_textinfo.winleft-1
+					ciolib_vmem_puttext(ciolib_wherex()+cio_textinfo.winleft-1
 							,ciolib_wherey()+cio_textinfo.wintop-1
 							,ciolib_wherex()+cio_textinfo.winleft-1
 							,ciolib_wherey()+cio_textinfo.wintop-1
-							,buf,fgbuf,bgbuf);
+							,&buf);
 					ciolib_gotoxy(1,cio_textinfo.cury+1);
 				}
 				else {
-					ciolib_pputtext(ciolib_wherex()+cio_textinfo.winleft-1
+					ciolib_vmem_puttext(ciolib_wherex()+cio_textinfo.winleft-1
 							,ciolib_wherey()+cio_textinfo.wintop-1
 							,ciolib_wherex()+cio_textinfo.winleft-1
 							,ciolib_wherey()+cio_textinfo.wintop-1
-							,buf,fgbuf,bgbuf);
+							,&buf);
 					ciolib_gotoxy(cio_textinfo.curx+1, cio_textinfo.cury);
 				}
 			}
@@ -1551,41 +1533,6 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t fg, uint32_t bg, int a)
 
 	return(a1);
 	
-}
-
-/* Optional */
-CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a)
-{
-	CIOLIB_INIT();
-
-	if (cio_api.putch == NULL)
-		return ciolib_cputch(ciolib_fg, ciolib_bg, a);
-	return cio_api.putch(a);
-}
-
-CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t fg_palette, uint32_t bg_palette, const char *s)
-{
-	int		pos;
-	int		ret=0;
-	int		olddmc;
-
-	CIOLIB_INIT();
-
-	if (cio_api.ccputs != NULL)
-		return cio_api.ccputs(fg_palette, bg_palette, s);
-
-	olddmc=hold_update;
-	hold_update=1;
-	for(pos=0;s[pos];pos++)
-	{
-		ret=s[pos];
-		if(s[pos]=='\n')
-			ciolib_putch('\r');
-		ciolib_cputch(fg_palette, bg_palette, s[pos]);
-	}
-	hold_update=olddmc;
-	ciolib_gotoxy(ciolib_wherex(),ciolib_wherey());
-	return(ret);
 }
 
 /* **MUST** be implemented */
@@ -1832,7 +1779,7 @@ CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void)
 
 	ciolib_gettextinfo(&ret->text_info);
 	vmode = find_vmode(ret->text_info.currmode);
-	ret->vmem = malloc(vparams[vmode].cols * vparams[vmode].rows * 2);
+	ret->vmem = malloc(vparams[vmode].cols * vparams[vmode].rows * sizeof(struct vmem_cell));
 	if (ret->vmem == NULL) {
 		free(ret);
 		return NULL;
@@ -1852,7 +1799,7 @@ CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void)
 	}
 
 	ret->pixels = ciolib_getpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1);
-	ciolib_pgettext(1, 1, vparams[vmode].cols, vparams[vmode].rows, ret->vmem, ret->foreground, ret->background);
+	ciolib_vmem_gettext(1, 1, vparams[vmode].cols, vparams[vmode].rows, ret->vmem);
 	ret->fg_colour = ciolib_fg;
 	ret->bg_colour = ciolib_bg;
 
@@ -1882,7 +1829,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_restorescreen(struct ciolib_screen *scrn)
 
 	if (ti.currmode != scrn->text_info.currmode)
 		ciolib_textmode(scrn->text_info.currmode);
-	ciolib_pputtext(1, 1, scrn->text_info.screenwidth, scrn->text_info.screenheight, scrn->vmem, scrn->foreground, scrn->background);
+	ciolib_vmem_puttext(1, 1, scrn->text_info.screenwidth, scrn->text_info.screenheight, scrn->vmem);
 	ciolib_textcolor(scrn->text_info.attribute);
 	ciolib_window(scrn->text_info.winleft, scrn->text_info.wintop, scrn->text_info.winright, scrn->text_info.winbottom);
 	vmode = find_vmode(scrn->text_info.currmode);
@@ -1935,4 +1882,18 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_replace_font(uint8_t id, char *name, void *d
 	}
 	free(name);
 	free(data);
+}
+
+CIOLIBEXPORT int CIOLIBCALL ciolib_attrfont(uint8_t attr)
+{
+	int flags;
+	int font = 0;
+	CIOLIB_INIT();
+
+	flags = ciolib_getvideoflags();
+	if ((flags & CIOLIB_VIDEO_ALTCHARS) && (attr & 0x08))
+		font |= 1;
+	if ((flags * CIOLIB_VIDEO_BLINKALTCHARS) && (attr & 0x80))
+		font |= 2;
+	return ciolib_getfont(font+1);
 }

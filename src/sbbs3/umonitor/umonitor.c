@@ -802,7 +802,7 @@ int main(int argc, char** argv)  {
 	/* Ini file stuff */
 	/******************/
 	char	ini_file[MAX_PATH+1];
-	FILE*				fp;
+	FILE*				fp=NULL;
 	bbs_startup_t		bbs_startup;
 
 	sscanf("$Revision$", "%*s %s", revision);

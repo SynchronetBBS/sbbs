@@ -20,6 +20,6 @@ extern struct cterminal	*cterm;
 extern int log_level;
 
 BOOL doterm(struct bbslist *);
-void mousedrag(unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrollbackb);
+void mousedrag(struct vmem_cell *scrollback);
 
 #endif

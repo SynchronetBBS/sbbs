@@ -23,8 +23,8 @@ extern pthread_mutex_t vstatlock;
 #ifndef BITMAP_CIOLIB_DRIVER
 /* Called from ciolib */
 int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill);
-int bitmap_pputtext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, uint32_t *bg);
-int bitmap_pgettext(int sx, int sy, int ex, int ey, void *fill, uint32_t *fg, uint32_t *bg);
+int bitmap_vmem_puttext(int sx, int sy, int ex, int ey, struct vmem_cell *fill);
+int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill);
 void bitmap_gotoxy(int x, int y);
 void bitmap_setcursortype(int type);
 int bitmap_setfont(int font, int force, int font_no);

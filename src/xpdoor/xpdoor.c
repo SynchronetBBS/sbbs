@@ -190,7 +190,7 @@ int xpd_init()
 			return(-1);
 	}
 	gettextinfo(&ti);
-	cterm = cterm_init(ti.screenheight, ti.screenwidth, 1, 1, 0, NULL, NULL, NULL, CTERM_EMULATION_ANSI_BBS);
+	cterm = cterm_init(ti.screenheight, ti.screenwidth, 1, 1, 0, NULL, CTERM_EMULATION_ANSI_BBS);
 	return 0;
 }
 

@@ -278,6 +278,14 @@ struct ciolib_screen {
 	struct text_info	text_info;
 };
 
+struct vmem_cell {
+	uint8_t legacy_attr;
+	uint8_t ch;
+	uint8_t font;
+	uint32_t fg;	// RGB 00RRGGBB High bit indicates palette colour
+	uint32_t bg;	// RGB 00RRGGBB High bit indicates palette colour
+};
+
 #define CONIO_FIRST_FREE_FONT	43
 
 typedef struct {
@@ -298,16 +306,15 @@ typedef struct {
 #define CONIO_OPT_EXTENDED_PALETTE	2048
 	void	(*clreol)		(void);
 	int		(*puttext)		(int,int,int,int,void *);
-	int		(*pputtext)		(int,int,int,int,void *,uint32_t *,uint32_t *);
+	int		(*vmem_puttext)		(int,int,int,int,struct vmem_cell *);
 	int		(*gettext)		(int,int,int,int,void *);
-	int		(*pgettext)		(int,int,int,int,void *,uint32_t *,uint32_t *);
+	int		(*vmem_gettext)		(int,int,int,int,struct vmem_cell *);
 	void	(*textattr)		(int);
 	int		(*kbhit)		(void);
 	void	(*delay)		(long);
 	int		(*wherex)		(void);
 	int		(*wherey)		(void);
 	int		(*putch)		(int);
-	int		(*cputch)		(uint32_t, uint32_t, int);
 	void	(*gotoxy)		(int,int);
 	void	(*clrscr)		(void);
 	void	(*gettextinfo)	(struct text_info *);
@@ -330,7 +337,6 @@ typedef struct {
 	void	(*insline)		(void);
 	int		(*cprintf)		(const char *,...);
 	int		(*cputs)		(char *);
-	int		(*ccputs)		(uint32_t, uint32_t, const char *);
 	void	(*textbackground)	(int);
 	void	(*textcolor)	(int);
 	int		(*getmouse)		(struct mouse_event *mevent);
@@ -402,7 +408,6 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_gotoxy(int x, int y);
 CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_cputs(char *str);
-CIOLIBEXPORT int CIOLIBCALL ciolib_ccputs(uint32_t fg_palette, uint32_t bg_palette, const char *str);
 CIOLIBEXPORT int	CIOLIBCALL ciolib_cprintf(const char *fmat, ...);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textbackground(int colour);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textcolor(int colour);
@@ -410,13 +415,12 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_highvideo(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_lowvideo(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_normvideo(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,void *e);
-CIOLIBEXPORT int CIOLIBCALL ciolib_pputtext(int a,int b,int c,int d,void *e,uint32_t *f, uint32_t *g);
+CIOLIBEXPORT int CIOLIBCALL ciolib_vmem_puttext(int a,int b,int c,int d,struct vmem_cell *e);
 CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e);
-CIOLIBEXPORT int CIOLIBCALL ciolib_pgettext(int a,int b,int c,int d,void *e,uint32_t *f, uint32_t *g);
+CIOLIBEXPORT int CIOLIBCALL ciolib_vmem_gettext(int a,int b,int c,int d,struct vmem_cell *e);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textattr(int a);
 CIOLIBEXPORT void CIOLIBCALL ciolib_delay(long a);
 CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a);
-CIOLIBEXPORT int CIOLIBCALL ciolib_cputch(uint32_t, uint32_t, int a);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setcursortype(int a);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textmode(int mode);
 CIOLIBEXPORT void CIOLIBCALL ciolib_window(int sx, int sy, int ex, int ey);
@@ -455,6 +459,7 @@ CIOLIBEXPORT uint32_t * CIOLIBCALL ciolib_get_modepalette(uint32_t[16]);
 CIOLIBEXPORT int CIOLIBCALL ciolib_set_modepalette(uint32_t[16]);
 CIOLIBEXPORT uint32_t CIOLIBCALL ciolib_map_rgb(uint16_t r, uint16_t g, uint16_t b);
 CIOLIBEXPORT void CIOLIBCALL ciolib_replace_font(uint8_t id, char *name, void *data, size_t size);
+CIOLIBEXPORT int CIOLIBCALL ciolib_attrfont(uint8_t attr);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -480,20 +485,18 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define clreol()				ciolib_clreol()
 	#define clrscr()				ciolib_clrscr()
 	#define cputs(a)				ciolib_cputs(a)
-	#define ccputs(a,b,c)				ciolib_ccputs(a,b,c)
 	#define textbackground(a)		ciolib_textbackground(a)
 	#define textcolor(a)			ciolib_textcolor(a)
 	#define highvideo()				ciolib_highvideo()
 	#define lowvideo()				ciolib_lowvideo()
 	#define normvideo()				ciolib_normvideo()
 	#define puttext(a,b,c,d,e)		ciolib_puttext(a,b,c,d,e)
-	#define pputtext(a,b,c,d,e,f,g)		ciolib_pputtext(a,b,c,d,e,f,g)
+	#define vmem_puttext(a,b,c,d,e)	ciolib_vmem_puttext(a,b,c,d,e)
 	#define gettext(a,b,c,d,e)		ciolib_gettext(a,b,c,d,e)
-	#define pgettext(a,b,c,d,e,f,g)		ciolib_pgettext(a,b,c,d,e,f,g)
+	#define vmem_gettext(a,b,c,d,e)	ciolib_vmem_gettext(a,b,c,d,e)
 	#define textattr(a)				ciolib_textattr(a)
 	#define delay(a)				ciolib_delay(a)
 	#define putch(a)				ciolib_putch(a)
-	#define cputch(a,b,c)				ciolib_cputch(a,b,c)
 	#define _setcursortype(a)		ciolib_setcursortype(a)
 	#define textmode(a)				ciolib_textmode(a)
 	#define window(a,b,c,d)			ciolib_window(a,b,c,d)
@@ -533,7 +536,8 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define get_modepalette(a)		ciolib_get_modepalette(a)
 	#define set_modepalette(a)		ciolib_set_modepalette(a)
 	#define map_rgb(a,b,c)			ciolib_map_rgb(a,b,c)
-	#define replace_font(a,b,c,d)	ciolib_replace_font(a,b,c,d);
+	#define replace_font(a,b,c,d)	ciolib_replace_font(a,b,c,d)
+	#define attrfont(a)				ciolib_attrfont(a)
 #endif
 
 #ifdef WITH_SDL

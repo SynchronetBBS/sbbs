@@ -51,9 +51,7 @@ struct cterminal	*cterm;
 
 #define TRANSFER_WIN_WIDTH	66
 #define TRANSFER_WIN_HEIGHT	18
-static char winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1) * 2];	/* Save buffer for transfer window */
-static uint32_t winbuff[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1)];	/* Save buffer for transfer window */
-static uint32_t winbufb[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1)];	/* Save buffer for transfer window */
+static struct vmem_cell winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1) * 2];	/* Save buffer for transfer window */
 static struct text_info	trans_ti;
 static struct text_info	log_ti;
 #ifdef WITH_WXWIDGETS
@@ -88,19 +86,14 @@ void setup_mouse_events(void)
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
-void mousedrag(unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrollbackb)
+void mousedrag(struct vmem_cell *scrollback)
 {
 	int	key;
 	struct mouse_event mevent;
-	unsigned char *screen;
-	uint32_t *screenf;
-	uint32_t *screenb;
+	struct vmem_cell *screen;
 	unsigned char *tscreen;
-	unsigned char *sbuffer;
-	uint32_t *sbufferf;
-	uint32_t *sbufferb;
+	struct vmem_cell *sbuffer;
 	int sbufsize;
-	size_t sbufsizep;
 	int pos, startpos,endpos, lines;
 	int outpos;
 	char *copybuf=NULL;
@@ -109,16 +102,11 @@ void mousedrag(unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrol
 	int old_xlat = ciolib_xlat;
 	struct ciolib_screen *savscrn;
 
-	sbufsize=term.width*2*term.height;
-	sbufsizep=term.width*sizeof(screenf[0])*term.height;
-	screen=(unsigned char*)malloc(sbufsize);
-	screenf=malloc(sbufsizep);
-	screenb=malloc(sbufsizep);
-	sbuffer=(unsigned char*)malloc(sbufsize);
-	sbufferf=malloc(sbufsizep);
-	sbufferb=malloc(sbufsizep);
-	tscreen=(unsigned char*)malloc(sbufsize);
-	pgettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen,screenf,screenb);
+	sbufsize=term.width*sizeof(*screen)*term.height;
+	screen=malloc(sbufsize);
+	sbuffer=malloc(sbufsize);
+	tscreen=malloc(term.width*2*term.height);
+	vmem_gettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen);
 	ciolib_xlat = CIOLIB_XLAT_CHARS;
 	gettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,tscreen);
 	savscrn = savescreen();
@@ -144,19 +132,17 @@ void mousedrag(unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrol
 				switch(mevent.event) {
 					case CIOLIB_BUTTON_1_DRAG_MOVE:
 						memcpy(sbuffer,screen,sbufsize);
-						memcpy(sbufferf,screenf,sbufsizep);
-						memcpy(sbufferb,screenb,sbufsizep);
 						for(pos=startpos;pos<=endpos;pos++) {
-							if((sbuffer[pos*2+1]&0x70)!=0x10)
-								sbuffer[pos*2+1]=(sbuffer[pos*2+1]&0x8F)|0x10;
+							if((sbuffer[pos].legacy_attr&0x70)!=0x10)
+								sbuffer[pos].legacy_attr=(sbuffer[pos].legacy_attr&0x8F)|0x10;
 							else
-								sbuffer[pos*2+1]=(sbuffer[pos*2+1]&0x8F)|0x60;
-							if(((sbuffer[pos*2+1]&0x70)>>4) == (sbuffer[pos*2+1]&0x0F)) {
-								sbuffer[pos*2+1]|=0x08;
+								sbuffer[pos].legacy_attr=(sbuffer[pos].legacy_attr&0x8F)|0x60;
+							if(((sbuffer[pos].legacy_attr&0x70)>>4) == (sbuffer[pos].legacy_attr&0x0F)) {
+								sbuffer[pos].legacy_attr|=0x08;
 							}
-							attr2palette(sbuffer[pos*2+1], &sbufferf[pos], &sbufferb[pos]);
+							attr2palette(sbuffer[pos].legacy_attr, &sbuffer[pos].fg, &sbuffer[pos].bg);
 						}
-						pputtext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,sbuffer,sbufferf,sbufferb);
+						vmem_puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,sbuffer);
 						break;
 					default:
 						lines=abs(mevent.endy-mevent.starty)+1;
@@ -182,12 +168,12 @@ void mousedrag(unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrol
 						}
 						copybuf[outpos]=0;
 						copytext(copybuf, strlen(copybuf));
-						pputtext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen,screenf,screenb);
+						vmem_puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen);
 						goto cleanup;
 				}
 				break;
 			default:
-				pputtext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen,screenf,screenb);
+				vmem_puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen);
 				ungetch(key);
 				goto cleanup;
 		}
@@ -195,11 +181,7 @@ void mousedrag(unsigned char *scrollback, uint32_t *scrollbackf, uint32_t *scrol
 
 cleanup:
 	free(screen);
-	free(screenf);
-	free(screenb);
 	free(sbuffer);
-	free(sbufferf);
-	free(sbufferb);
 	free(tscreen);
 	if(copybuf)
 		free(copybuf);
@@ -627,7 +609,7 @@ void draw_transfer_window(char* title)
 	left=(trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2;
 	window(1, 1, trans_ti.screenwidth, trans_ti.screenheight);
 
-	pgettext(left, top, left + TRANSFER_WIN_WIDTH + 1, top + TRANSFER_WIN_HEIGHT, winbuf, winbuff, winbufb);
+	vmem_gettext(left, top, left + TRANSFER_WIN_WIDTH + 1, top + TRANSFER_WIN_HEIGHT, winbuf);
 	memset(outline, YELLOW | (BLUE<<4), sizeof(outline));
 	for(i=2;i < sizeof(outline) - 2; i+=2) {
 		outline[i] = (char)0xcd;	/* Double horizontal line */
@@ -717,12 +699,12 @@ void draw_transfer_window(char* title)
 }
 
 void erase_transfer_window(void) {
-	pputtext(
+	vmem_puttext(
 		  ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)
 		, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)
 		, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH + 1
 		, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2) + TRANSFER_WIN_HEIGHT
-		, winbuf, winbuff, winbufb);
+		, winbuf);
 	window(trans_ti.winleft, trans_ti.wintop, trans_ti.winright, trans_ti.winbottom);
 	gotoxy(trans_ti.curx, trans_ti.cury);
 	textattr(trans_ti.attribute);
@@ -2530,7 +2512,7 @@ BOOL doterm(struct bbslist *bbs)
 	int	key;
 	int i,j;
 	unsigned char *p,*p2;
-	uint32_t *up;
+	struct vmem_cell *vc;
 	BYTE zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
 	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
 	BYTE zrqbuf[sizeof(zrqinit)];
@@ -2573,27 +2555,13 @@ BOOL doterm(struct bbslist *bbs)
 	log_level = bbs->xfer_loglevel;
 	conn_api.log_level = bbs->telnet_loglevel;
 	setup_mouse_events();
-	p=(unsigned char *)realloc(scrollback_buf, term.width*2*settings.backlines);
-	if(p != NULL) {
-		scrollback_buf=p;
-		memset(scrollback_buf,0,term.width*2*settings.backlines);
+	vc=realloc(scrollback_buf, term.width*sizeof(*vc)*settings.backlines);
+	if(vc != NULL) {
+		scrollback_buf=vc;
+		memset(scrollback_buf,0,term.width*sizeof(*vc)*settings.backlines);
 	}
 	else
 		FREE_AND_NULL(scrollback_buf);
-	up=realloc(scrollback_fbuf, term.width*sizeof(scrollback_fbuf[0])*settings.backlines);
-	if(up != NULL) {
-		scrollback_fbuf=up;
-		memset(scrollback_fbuf,0,term.width*sizeof(scrollback_fbuf[0])*settings.backlines);
-	}
-	else
-		FREE_AND_NULL(scrollback_fbuf);
-	up=realloc(scrollback_bbuf, term.width*sizeof(scrollback_bbuf[0])*settings.backlines);
-	if(up != NULL) {
-		scrollback_bbuf=up;
-		memset(scrollback_bbuf,0,term.width*sizeof(scrollback_bbuf[0])*settings.backlines);
-	}
-	else
-		FREE_AND_NULL(scrollback_bbuf);
 	scrollback_lines=0;
 	scrollback_mode=txtinfo.currmode;
 	switch(bbs->screen_mode) {
@@ -2607,7 +2575,7 @@ BOOL doterm(struct bbslist *bbs)
 			emulation = CTERM_EMULATION_ATASCII;
 			break;
 	}
-	cterm=cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf,scrollback_fbuf,scrollback_bbuf, emulation);
+	cterm=cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf, emulation);
 	if(!cterm) {
 		FREE_AND_NULL(cterm);
 		return FALSE;
@@ -2854,7 +2822,7 @@ BOOL doterm(struct bbslist *bbs)
 					getmouse(&mevent);
 					switch(mevent.event) {
 						case CIOLIB_BUTTON_1_DRAG_START:
-							mousedrag(scrollback_buf, scrollback_fbuf, scrollback_bbuf);
+							mousedrag(scrollback_buf);
 							key = 0;
 							break;
 						case CIOLIB_BUTTON_2_CLICK:
@@ -2904,8 +2872,6 @@ BOOL doterm(struct bbslist *bbs)
 						freescreen(savscrn);
 						if(cterm->scrollback != scrollback_buf || cterm->backlines != settings.backlines) {
 							cterm->scrollback = scrollback_buf;
-							cterm->scrollbackf = scrollback_fbuf;
-							cterm->scrollbackb = scrollback_bbuf;
 							cterm->backlines = settings.backlines;
 							if(cterm->backpos>cterm->backlines)
 								cterm->backpos=cterm->backlines;
