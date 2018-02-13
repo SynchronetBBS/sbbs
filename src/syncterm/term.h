@@ -6,6 +6,7 @@
 #define _TERM_H_
 
 #include "bbslist.h"
+#include "ciolib.h"
 
 struct terminal {
 	int	height;
