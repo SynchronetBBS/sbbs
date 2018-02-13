@@ -245,49 +245,22 @@ struct x11 {
 struct x11 sdl_x11;
 #endif
 
-void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int luminance)
+static void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array)
 {
 	int i;
 
-    if (monochrome)
-    {
-#if 0 /* these are the two formulas that I found on the FourCC site... */
-        yuv_array[0] = 0.299*r + 0.587*g + 0.114*b;
-        yuv_array[1] = 128;
-        yuv_array[2] = 128;
-#else
-        //yuv_array[0] = (Uint8)((0.257 * r) + (0.504 * g) + (0.098 * b) + 16);
-	i = 263*r + 516*g + 100*b + 16384;
-	i >>= 10;
-	yuv_array[0] = i+16;
-        yuv_array[1] = 128;
-        yuv_array[2] = 128;
-#endif
-    }
-    else
-    {
-#if 0 /* these are the two formulas that I found on the FourCC site... */
-        yuv_array[0] = 0.299*r + 0.587*g + 0.114*b;
-        yuv_array[1] = (b-yuv[0])*0.565 + 128;
-        yuv_array[2] = (r-yuv[0])*0.713 + 128;
-#else
-        //yuv_array[0] = (Uint8)((0.257 * r) + (0.504 * g) + (0.098 * b) + 16);
-		i = (r*263+g*516+b*100+16384);
-		yuv_array[0] = i >> 10;
-        //yuv_array[1] = (Uint8)(128 - (0.148 * r) - (0.291 * g) + (0.439 * b));
-		i = 131072 - 152*r - 298*g + 450*b;
-		yuv_array[1] = i >> 10;
-        //yuv_array[2] = (Uint8)(128 + (0.439 * r) - (0.368 * g) - (0.071 * b));
-		i = 131072 + 450*r - 377*g - 73*b;
-		yuv_array[2] = i >> 10;
-#endif
-    }
-
-    if (luminance!=100)
-        yuv_array[0]=yuv_array[0]*luminance/100;
+	//yuv_array[0] = (Uint8)((0.257 * r) + (0.504 * g) + (0.098 * b) + 16);
+	i = (r*263+g*516+b*100+16384);
+	yuv_array[0] = i >> 10;
+	//yuv_array[1] = (Uint8)(128 - (0.148 * r) - (0.291 * g) + (0.439 * b));
+	i = 131072 - 152*r - 298*g + 450*b;
+	yuv_array[1] = i >> 10;
+	//yuv_array[2] = (Uint8)(128 + (0.439 * r) - (0.368 * g) - (0.071 * b));
+	i = 131072 + 450*r - 377*g - 73*b;
+	yuv_array[2] = i >> 10;
 }
 
-void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, Uint8 yuvc[3])
+static void yuv_fillrect(SDL_Overlay *restrict overlay, SDL_Rect *restrict r, Uint8 *restrict yuvc)
 {
 	int uplane,vplane;					/* Planar formats */
 	int y0pack, y1pack, u0pack, v0pack;	/* Packed formats */
@@ -394,7 +367,7 @@ packed:
 	return;
 }
 
-void sdl_user_func(int func, ...)
+static void sdl_user_func(int func, ...)
 {
 	va_list argptr;
 	SDL_Event	ev;
@@ -451,7 +424,7 @@ void sdl_user_func(int func, ...)
 }
 
 /* Called from main thread only */
-int sdl_user_func_ret(int func, ...)
+static int sdl_user_func_ret(int func, ...)
 {
 	int rv;
 	va_list argptr;
@@ -496,7 +469,7 @@ int sdl_user_func_ret(int func, ...)
 	return(sdl_ufunc_retval);
 }
 
-void exit_sdl_con(void)
+static void exit_sdl_con(void)
 {
 	sdl_user_func_ret(SDL_USEREVENT_QUIT);
 }
@@ -621,7 +594,7 @@ void sdl_flush(void)
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 }
 
-int sdl_init_mode(int mode)
+static int sdl_init_mode(int mode)
 {
     int oldcols;
 
@@ -851,56 +824,7 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	return(0);
 }
 
-/* Called from events thread only */
-int sdl_setup_colours(SDL_Surface *surf)
-{
-	int i;
-	int ret=0;
-
-	if (sdl_dac_defaultsz < sizeof(dac_default)/sizeof(struct dac_colors)) {
-		Uint32 *newdd;
-		SDL_Color *newco;
-		size_t newsz = sizeof(dac_default)/sizeof(struct dac_colors);
-
-		newdd = realloc(sdl_dac_default, newsz * sizeof(sdl_dac_default[0]));
-		if (newdd == NULL)
-			return -1;
-		newco = realloc(sdl_co, newsz * sizeof(sdl_co[0]));
-		if (newco == NULL) {
-			free(newdd);
-			return -1;
-		}
-		sdl_co = newco;
-		sdl_dac_default = newdd;
-
-		for(i=sdl_dac_defaultsz; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
-			sdl_co[i].r=dac_default[i].red;
-			sdl_co[i].g=dac_default[i].green;
-			sdl_co[i].b=dac_default[i].blue;
-		}
-
-		sdl.SetColors(surf, sdl_co, 0, sdl_dac_defaultsz);
-
-		for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
-			sdl_dac_default[i]=sdl.MapRGB(win->format, sdl_co[i].r, sdl_co[i].g, sdl_co[i].b);
-		}
-
-		sdl_dac_defaultsz = newsz;
-	}
-	else
-		sdl.SetColors(surf, sdl_co, 0, sdl_dac_defaultsz);
-
-	return(ret);
-}
-
-int sdl_setup_yuv_colours(void)
-{
-	int ret=0;
-
-	return(ret);
-}
-
-void setup_surfaces(void)
+static void setup_surfaces(void)
 {
 	int		char_width;
 	int		char_height;
@@ -1009,12 +933,9 @@ void setup_surfaces(void)
 					sdl.FreeYUVOverlay(yuv.overlay);
 			}
 			yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, yuv.best_format, win);
-			sdl_setup_yuv_colours();
 		}
 		sdl.mutexP(newrect_mutex);
-		sdl_setup_colours(new_rect);
 		sdl.mutexV(newrect_mutex);
-		sdl_setup_colours(win);
 		bitmap_drv_request_pixels();
 	}
 	else if(sdl_init_good) {
@@ -1026,7 +947,7 @@ void setup_surfaces(void)
 }
 
 /* Called from event thread only */
-void sdl_add_key(unsigned int keyval)
+static void sdl_add_key(unsigned int keyval)
 {
 	if(keyval==0xa600) {
 		fullscreen=!fullscreen;
@@ -1062,7 +983,7 @@ void sdl_add_key(unsigned int keyval)
 	}
 }
 
-unsigned int cp437_convert(unsigned int unicode)
+static unsigned int cp437_convert(unsigned int unicode)
 {
 	if(unicode < 0x80)
 		return(unicode);
@@ -1328,7 +1249,7 @@ unsigned int cp437_convert(unsigned int unicode)
 }
 
 /* Called from event thread only */
-unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned int unicode)
+static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned int unicode)
 {
 	int expect;
 	int i;
@@ -1494,7 +1415,7 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 }
 
 /* Mouse event/keyboard thread */
-int sdl_mouse_thread(void *data)
+static int sdl_mouse_thread(void *data)
 {
 	SetThreadName("SDL Mouse");
 	while(1) {
@@ -1503,7 +1424,7 @@ int sdl_mouse_thread(void *data)
 	}
 }
 
-int win_to_text_xpos(int winpos)
+static int win_to_text_xpos(int winpos)
 {
 	int ret;
 
@@ -1520,7 +1441,7 @@ int win_to_text_xpos(int winpos)
 	}
 }
 
-int win_to_text_ypos(int winpos)
+static int win_to_text_ypos(int winpos)
 {
 	int ret;
 
@@ -1536,7 +1457,7 @@ int win_to_text_ypos(int winpos)
 	}
 }
 
-int sdl_video_event_thread(void *data)
+static int sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
 	int			new_scaling = -1;
@@ -1713,17 +1634,17 @@ int sdl_video_event_thread(void *data)
 									sdl.mutexP(newrect_mutex);
 									scaling = cvstat.scaling;
 									vmultiplier = cvstat.vmultiplier;
+									r.w=scaling;
+									r.h=scaling*vmultiplier;
+									r.x=(list->rect.x+x)*scaling;
+									r.y=(list->rect.y+y)*scaling*vmultiplier;
 									for(y=0; y<list->rect.height; y++) {
 										offset=y*list->rect.width;
 										for(x=0; x<list->rect.width; x++) {
-											r.w=scaling;
-											r.h=scaling*vmultiplier;
-											r.x=(list->rect.x+x)*scaling;
-											r.y=(list->rect.y+y)*scaling*vmultiplier;
 											if(yuv.enabled) {
 												Uint8 yuvc[3];
 
-												RGBtoYUV(list->data[offset] >> 16 & 0xff, list->data[offset] >> 8 & 0xff, list->data[offset] & 0xff, yuvc, 0, 100);
+												RGBtoYUV(list->data[offset] >> 16 & 0xff, list->data[offset] >> 8 & 0xff, list->data[offset] & 0xff, yuvc);
 												yuv_fillrect(yuv.overlay, &r, yuvc);
 											}
 											else {
