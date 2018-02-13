@@ -71,6 +71,10 @@ static int bitmap_width=0;
 static int bitmap_height=0;
 static int old_scaling = 0;
 struct video_stats x_cvstat;
+static unsigned long base_pixel;
+static int r_shift;
+static int g_shift;
+static int b_shift;
 
 /* Array of Graphics Contexts */
 static GC gc;
@@ -234,6 +238,13 @@ static int init_window()
 	}
 	if (best != -1) {
 		visual = *vi[best].visual;
+		base_pixel = ULONG_MAX;
+		base_pixel &= ~visual.red_mask;
+		base_pixel &= ~visual.green_mask;
+		base_pixel &= ~visual.blue_mask;
+		r_shift = fls(visual.red_mask)-16;
+		g_shift = fls(visual.green_mask)-16;
+		b_shift = fls(visual.blue_mask)-16;
 	}
 	else {
 		fprintf(stderr, "Unable to find TrueColor visual\n");
@@ -384,16 +395,37 @@ static int video_init()
 static void local_draw_rect(struct rectlist *rect)
 {
 	int x,y,xscale,yscale;
+	unsigned int r, g, b;
+	unsigned long pixel;
 
 	/* TODO: Translate into local colour depth */
 	for(y=0;y<rect->rect.height;y++) {
 		for(x=0; x<rect->rect.width; x++) {
 			for(yscale=0; yscale<x_cvstat.scaling*x_cvstat.vmultiplier; yscale++) {
 				for(xscale=0; xscale<x_cvstat.scaling; xscale++) {
+					r = rect->data[y*rect->rect.width+x] >> 16 & 0xff;
+					g = rect->data[y*rect->rect.width+x] >> 8 & 0xff;
+					b = rect->data[y*rect->rect.width+x] & 0xff;
+					r = (r<<8)|r;
+					g = (g<<8)|g;
+					b = (b<<8)|b;
+					pixel = base_pixel;
+					if (r_shift >= 0)
+						pixel |= (r << r_shift) & visual.red_mask;
+					else
+						pixel |= (r >> (0-r_shift)) & visual.red_mask;
+					if (g_shift >= 0)
+						pixel |= (g << g_shift) & visual.green_mask;
+					else
+						pixel |= (g >> (0-g_shift)) & visual.green_mask;
+					if (b_shift >= 0)
+						pixel |= (b << b_shift) & visual.blue_mask;
+					else
+						pixel |= (b >> (0-b_shift)) & visual.blue_mask;
 #ifdef XPutPixel
-					XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,rect->data[y*rect->rect.width+x]);
+					XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel);
 #else
-					x11.XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,rect->data[y*rect->rect.width+x]);
+					x11.XPutPixel(xim,(x+rect->rect.x)*x_cvstat.scaling+xscale,(y+rect->rect.y)*x_cvstat.scaling*x_cvstat.vmultiplier+yscale,pixel);
 #endif
 				}
 			}
