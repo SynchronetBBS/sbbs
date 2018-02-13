@@ -247,6 +247,8 @@ struct x11 sdl_x11;
 
 void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int luminance)
 {
+	int i;
+
     if (monochrome)
     {
 #if 0 /* these are the two formulas that I found on the FourCC site... */
@@ -254,7 +256,10 @@ void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int l
         yuv_array[1] = 128;
         yuv_array[2] = 128;
 #else
-        yuv_array[0] = (Uint8)((0.257 * r) + (0.504 * g) + (0.098 * b) + 16);
+        //yuv_array[0] = (Uint8)((0.257 * r) + (0.504 * g) + (0.098 * b) + 16);
+	i = 263*r + 516*g + 100*b + 16384;
+	i >>= 10;
+	yuv_array[0] = i+16;
         yuv_array[1] = 128;
         yuv_array[2] = 128;
 #endif
@@ -266,9 +271,15 @@ void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int l
         yuv_array[1] = (b-yuv[0])*0.565 + 128;
         yuv_array[2] = (r-yuv[0])*0.713 + 128;
 #else
-        yuv_array[0] = (Uint8)((0.257 * r) + (0.504 * g) + (0.098 * b) + 16);
-        yuv_array[1] = (Uint8)(128 - (0.148 * r) - (0.291 * g) + (0.439 * b));
-        yuv_array[2] = (Uint8)(128 + (0.439 * r) - (0.368 * g) - (0.071 * b));
+        //yuv_array[0] = (Uint8)((0.257 * r) + (0.504 * g) + (0.098 * b) + 16);
+		i = (r*263+g*516+b*100+16384);
+		yuv_array[0] = i >> 10;
+        //yuv_array[1] = (Uint8)(128 - (0.148 * r) - (0.291 * g) + (0.439 * b));
+		i = 131072 - 152*r - 298*g + 450*b;
+		yuv_array[1] = i >> 10;
+        //yuv_array[2] = (Uint8)(128 + (0.439 * r) - (0.368 * g) - (0.071 * b));
+		i = 131072 + 450*r - 377*g - 73*b;
+		yuv_array[2] = i >> 10;
 #endif
     }
 
