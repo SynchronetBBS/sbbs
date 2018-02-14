@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	}
 	printf("%-8s %-10ld  (0x%08lX)    ISO %s\n"
 		,"time_t"
-		,(uint32_t)t, (uint32_t)t
+		,(long)t, (long)t
 		,xpDateTime_to_isoDateTimeStr(xpDateTime
 			,NULL, " ", NULL
 			,/* precision: */3
