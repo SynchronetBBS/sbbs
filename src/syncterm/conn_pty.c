@@ -443,9 +443,9 @@ int pty_connect(struct bbslist *bbs)
 			":k1=\\EOP:k2=\\EOQ:k3=\\EOR:k4=\\EOS:k5=\\EOt:k6=\\E[17~"
 			":k7=\\E[18~:k8=\\E[19~:k9=\\E[20~:k;=\\E[21~:kD=\\177:kI=\\E[@"
 			":kN=\\E[U:kP=\\E[V:kb=^H:kd=\\E[B:kh=\\E[H:kl=\\E[D:kr=\\E[C"
-			":ku=\\E[A:le=\\E[D:ll=\\E[255H:mb=\\E[5m:md=\\E[1m:me=\\E[0m"
+			":ku=\\E[A:le=\\E[D:ll=\\E[255H:mb=\\E[5m:md=\\E[1m:me=\\E[m"
 			":nd=\\E[C:nw=^M^J:DC=\\E[%%dP"
-			":r1=\\E[?7h\\E[?25h\\E[?31l\\E[?32l\\E[?33l\\E[*r\\E[ D\\E[0m\\E[?s"
+			":r1=\\E[?7h\\E[?25h\\E[?31l\\E[?32l\\E[?33l\\E[*r\\E[ D\\E[m\\E[?s"
 			":rc=\\E[u"
 			":sc=\\E[s:sf=\\E[S:so=\\E[0;1;7m:se=\\E[m:sr=\\E[T:ta=^I:up=\\E[A"
 			":ve=\\E[?25h:vi=\\E[?25l:",ws.ws_col,ws.ws_row
