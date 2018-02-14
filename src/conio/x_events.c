@@ -208,6 +208,19 @@ static void resize_xim(void)
     xim->data=(char *)malloc(xim->bytes_per_line*xim->height);
 }
 
+/* Swiped from FreeBSD libc */
+static int
+my_fls(unsigned long mask)
+{
+        int bit;
+
+        if (mask == 0)
+                return (0);
+        for (bit = 1; mask != 1; bit++)
+                mask = mask >> 1;
+        return (bit);
+}
+
 /* Get a connection to the X server and create the window. */
 static int init_window()
 {
@@ -242,9 +255,9 @@ static int init_window()
 		base_pixel &= ~visual.red_mask;
 		base_pixel &= ~visual.green_mask;
 		base_pixel &= ~visual.blue_mask;
-		r_shift = fls(visual.red_mask)-16;
-		g_shift = fls(visual.green_mask)-16;
-		b_shift = fls(visual.blue_mask)-16;
+		r_shift = my_fls(visual.red_mask)-16;
+		g_shift = my_fls(visual.green_mask)-16;
+		b_shift = my_fls(visual.blue_mask)-16;
 	}
 	else {
 		fprintf(stderr, "Unable to find TrueColor visual\n");
