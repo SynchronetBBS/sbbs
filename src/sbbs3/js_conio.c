@@ -467,7 +467,8 @@ js_conio_beep(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
-    JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(beep()));
+    	beep();
+	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
