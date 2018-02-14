@@ -125,6 +125,10 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 			goto failure_return_3;
 		if(!DO(cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_XYZZY, 1 )))
 			goto failure_return_3;
+		if(!DO(cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COUNTRYNAME, "US", 2)))
+			goto failure_return_3;
+		if(!DO(cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_DNSNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
+			goto failure_return_3;
 		if(!DO(cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COMMONNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
 			goto failure_return_3;
 		sprintf(sysop_email, "sysop@%s", scfg.sys_inetaddr);
