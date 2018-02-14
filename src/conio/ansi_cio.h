@@ -68,7 +68,7 @@ void ansi_gettextinfo(struct text_info *info);
 void ansi_setcursortype(int type);
 int ansi_getch(void);
 int ansi_getche(void);
-int ansi_beep(void);
+void ansi_beep(void);
 void ansi_textmode(int mode);
 #ifdef __cplusplus
 }

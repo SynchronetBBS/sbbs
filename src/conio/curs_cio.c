@@ -1033,9 +1033,9 @@ int curs_showmouse(void)
 	return(-1);
 }
 
-int curs_beep(void)
+void curs_beep(void)
 {
-	return(beep());
+	beep();
 }
 
 int curs_getvideoflags(void)

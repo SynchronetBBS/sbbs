@@ -138,7 +138,7 @@ static int bitmap_loadfont_locked(char *filename)
 	FILE	*fontfile=NULL;
 
 	if(!bitmap_initialized)
-		return(-1);
+		return(0);
 	if(current_font[0]==-99 || current_font[0]>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
 		for(i=0; conio_fontdata[i].desc != NULL; i++) {
 			if(!strcmp(conio_fontdata[i].desc, "Codepage 437 English")) {
@@ -152,7 +152,7 @@ static int bitmap_loadfont_locked(char *filename)
 	if(current_font[0]==-1)
 		filename=current_filename;
 	else if(conio_fontdata[current_font[0]].desc==NULL)
-		return(-1);
+		return(0);
 
 	for (i=1; i<sizeof(current_font)/sizeof(current_font[0]); i++) {
 		if(current_font[i] == -1)
@@ -237,14 +237,14 @@ static int bitmap_loadfont_locked(char *filename)
 		}
 	}
 
-    return(0);
+    return(1);
 
 error_return:
 	for (i=0; i<sizeof(font)/sizeof(font[0]); i++)
 		FREE_AND_NULL(font[i]);
 	if(fontfile)
 		fclose(fontfile);
-	return(-1);
+	return(0);
 }
 
 /***************************************************/
@@ -327,7 +327,7 @@ static int bitmap_attr2palette_locked(uint8_t attr, uint32_t *fgp, uint32_t *bgp
 	if (bgp)
 		*bgp = vstat.palette[bg];
 
-	return 0;
+	return 1;
 }
 
 /**********************************************************************/
@@ -898,13 +898,11 @@ int bitmap_setfont(int font, int force, int font_num)
 	int		attr;
 	struct vmem_cell	*pold;
 	struct vmem_cell	*pnew;
-	int		result = CIOLIB_SETFONT_CHARHEIGHT_NOT_SUPPORTED;
 
 	if(!bitmap_initialized)
-		return(CIOLIB_SETFONT_NOT_INITIALIZED);
-	if(font < 0 || font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
-		return(CIOLIB_SETFONT_INVALID_FONT);
-	}
+		return(0);
+	if(font < 0 || font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2))
+		return(0);
 
 	if(conio_fontdata[font].eight_by_sixteen!=NULL)
 		newmode=C80;
@@ -941,10 +939,8 @@ int bitmap_setfont(int font, int force, int font_num)
 			}
 			break;
 	}
-	if(changemode && (newmode==-1 || font_num > 1)) {
-		result = CIOLIB_SETFONT_ILLEGAL_VIDMODE_CHANGE;
+	if(changemode && (newmode==-1 || font_num > 1))
 		goto error_return;
-	}
 	switch(font_num) {
 		case 0:
 			default_font=font;
@@ -977,7 +973,7 @@ int bitmap_setfont(int font, int force, int font_num)
 			new=malloc(ti.screenwidth*ti.screenheight*sizeof(*new));
 			if(!new) {
 				free(old);
-				return CIOLIB_SETFONT_MALLOC_FAILURE;
+				return 0;
 			}
 			pold=old;
 			pnew=new;
@@ -1024,12 +1020,12 @@ int bitmap_setfont(int font, int force, int font_num)
 	bitmap_loadfont_locked(NULL);
 	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&blinker_lock);
-	return(CIOLIB_SETFONT_SUCCESS);
+	return(1);
 
 error_return:
 	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&blinker_lock);
-	return(result);
+	return(0);
 }
 
 int bitmap_getfont(int font_num)
@@ -1419,15 +1415,12 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 	return pixels;
 }
 
-uint32_t *bitmap_get_modepalette(uint32_t p[16])
+int bitmap_get_modepalette(uint32_t p[16])
 {
-	uint32_t *ret;
-
 	pthread_mutex_lock(&vstatlock);
 	memcpy(p, vstat.palette, sizeof(vstat.palette));
-	ret = p;
 	pthread_mutex_unlock(&vstatlock);
-	return ret;
+	return 1;
 }
 
 int bitmap_set_modepalette(uint32_t p[16])
@@ -1435,7 +1428,7 @@ int bitmap_set_modepalette(uint32_t p[16])
 	pthread_mutex_lock(&vstatlock);
 	memcpy(vstat.palette, p, sizeof(vstat.palette));
 	pthread_mutex_unlock(&vstatlock);
-	return 0;
+	return 1;
 }
 
 uint32_t bitmap_map_rgb(uint16_t r, uint16_t g, uint16_t b)
@@ -1486,7 +1479,7 @@ void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
 int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 {
 	if (index > 65535)
-		return 1;
+		return 0;
 
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&screen.screenlock);
@@ -1496,7 +1489,7 @@ int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 	update_pixels = 1;
 	pthread_mutex_unlock(&screen.screenlock);
 	pthread_mutex_unlock(&blinker_lock);
-	return 0;
+	return 1;
 }
 
 /***********************/

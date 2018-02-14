@@ -76,9 +76,6 @@ int	sdl_init_good=0;
 SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
 static unsigned int sdl_pending_mousekeys=0;
-static SDL_Color *sdl_co = NULL;
-static Uint32	*sdl_dac_default = NULL;
-static size_t sdl_dac_defaultsz = 0;
 static int sdl_using_directx=0;
 static int sdl_using_quartz=0;
 static int sdl_using_x11=0;
@@ -820,8 +817,8 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	if(ypos)
 		*ypos=-1;
 	sdl.mutexV(win_mutex);
-	
-	return(0);
+
+	return(1);
 }
 
 static void setup_surfaces(void)
@@ -1636,11 +1633,11 @@ static int sdl_video_event_thread(void *data)
 									vmultiplier = cvstat.vmultiplier;
 									r.w=scaling;
 									r.h=scaling*vmultiplier;
-									r.x=(list->rect.x+x)*scaling;
-									r.y=(list->rect.y+y)*scaling*vmultiplier;
 									for(y=0; y<list->rect.height; y++) {
 										offset=y*list->rect.width;
+										r.y=(list->rect.y+y)*scaling*vmultiplier;
 										for(x=0; x<list->rect.width; x++) {
+											r.x=(list->rect.x+x)*scaling;
 											if(yuv.enabled) {
 												Uint8 yuvc[3];
 

@@ -61,7 +61,7 @@ void x_gettextinfo(struct text_info *info);
 void x_setcursortype(int type);
 int x_getch(void);
 int x_getche(void);
-int x_beep(void);
+void x_beep(void);
 void x_textmode(int mode);
 void x_setname(const char *name);
 void x_settitle(const char *title);

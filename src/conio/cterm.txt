@@ -710,14 +710,7 @@ CSI = Ps n
 	pF is the first available loadable-font slot number
 	pR is the result of the previous "Font Selection" request:
 		0 = successful font selection
-		1 = font selection requests are not supported by client
-		2 = required subsystem for font use has not been initialized
-		3 = selected font is not available or is incompatible with
-		    current video mode
-		4 = invalid font slot number specified in request
-		5 = required video mode for selected font is incompatible
-		    with current video mode
-		6 = memory allocation failure
+		1 = failed font selection
 		99 = no font selection request has been received
 	pS0 - pS3 contain the font slots numbers of previously successful
 	"Font Selection" requests into the 4 available alternate-font

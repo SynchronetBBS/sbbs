@@ -859,10 +859,9 @@ int ansi_getch(void)
 	return(ch);
 }
 
-int ansi_beep(void)
+void ansi_beep(void)
 {
 	ansi_sendstr("\7",1);
-	return(0);
 }
 
 #if defined(__BORLANDC__)

@@ -70,16 +70,6 @@
 #endif
 
 enum {
-	 CIOLIB_SETFONT_SUCCESS						= 0
-	,CIOLIB_SETFONT_NOT_SUPPORTED				= 1
-	,CIOLIB_SETFONT_NOT_INITIALIZED				= 2
-	,CIOLIB_SETFONT_CHARHEIGHT_NOT_SUPPORTED	= 3
-	,CIOLIB_SETFONT_INVALID_FONT				= 4
-	,CIOLIB_SETFONT_ILLEGAL_VIDMODE_CHANGE		= 5
-	,CIOLIB_SETFONT_MALLOC_FAILURE				= 6
-};
-
-enum {
 	 CIOLIB_MODE_AUTO
 	,CIOLIB_MODE_CURSES
 	,CIOLIB_MODE_CURSES_IBM
@@ -321,7 +311,7 @@ typedef struct {
 	void	(*setcursortype)(int);
 	int		(*getch)		(void);
 	int		(*getche)		(void);
-	int		(*beep)			(void);
+	void	(*beep)			(void);
 	void	(*highvideo)	(void);
 	void	(*lowvideo)		(void);
 	void	(*normvideo)	(void);
@@ -366,7 +356,7 @@ typedef struct {
 	int		(*setpixel)	(uint32_t x, uint32_t y, uint32_t colour);
 	struct ciolib_pixels *(*getpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey);
 	int		(*setpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels, void *mask);
-	uint32_t 	*(*get_modepalette)(uint32_t[16]);
+	int 	(*get_modepalette)(uint32_t[16]);
 	int	(*set_modepalette)(uint32_t[16]);
 	uint32_t	(*map_rgb)(uint16_t r, uint16_t g, uint16_t b);
 	void	(*replace_font)(uint8_t id, char *name, void *data, size_t size);
@@ -438,7 +428,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force, int font_num);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getfont(int font_num);
 CIOLIBEXPORT int CIOLIBCALL ciolib_loadfont(char *filename);
 CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int *xpos, int *ypos);
-CIOLIBEXPORT int CIOLIBCALL ciolib_beep(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_beep(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_getcustomcursor(int *startline, int *endline, int *range, int *blink, int *visible);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setcustomcursor(int startline, int endline, int range, int blink, int visible);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setvideoflags(int flags);
@@ -455,7 +445,7 @@ CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_freescreen(struct ciolib_screen *);
 CIOLIBEXPORT int CIOLIBCALL ciolib_restorescreen(struct ciolib_screen *scrn);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setcolour(uint32_t fg, uint32_t bg);
-CIOLIBEXPORT uint32_t * CIOLIBCALL ciolib_get_modepalette(uint32_t[16]);
+CIOLIBEXPORT int CIOLIBCALL ciolib_get_modepalette(uint32_t[16]);
 CIOLIBEXPORT int CIOLIBCALL ciolib_set_modepalette(uint32_t[16]);
 CIOLIBEXPORT uint32_t CIOLIBCALL ciolib_map_rgb(uint16_t r, uint16_t g, uint16_t b);
 CIOLIBEXPORT void CIOLIBCALL ciolib_replace_font(uint8_t id, char *name, void *data, size_t size);
