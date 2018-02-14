@@ -1290,7 +1290,7 @@ int main(int argc, char **argv)
 				"	rc=\\E[u,sc=\\E[s,ind=\\E[S,ri=\\E[T,\n"
 				"	ht=\t,setab=\\E[4%p1%dm,setaf=\\E[3%p1%dm,\n"
 				"	sgr=\\E[0%?%p1%p6%|%t;1%;%?%p4%|%t;5%;%?%p1%p3%|%t;7%;%?%p7%|%t;8%;m,\n"
-				"	smso=\\E[0;1;7m,\n"
+				"	smso=\\E[0;1;7m,rmso=\\E[m,\n"
 				"syncterm-24|SyncTERM 80x25,\n"
 				"	lines#24,use=syncterm,\n"
 				"syncterm-25|SyncTERM No Status Line,\n"
