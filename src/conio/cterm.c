@@ -2075,7 +2075,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								cterm->setfont_result = 1;
 							else
 								cterm->setfont_result = 0;
-							if(cterm->setfont_result == 1)
+							if(cterm->setfont_result == 0)
 								cterm->altfont[seq->param_int[0]] = seq->param_int[1];
 							break;
 					}
