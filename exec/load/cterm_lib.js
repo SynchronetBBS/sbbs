@@ -15,7 +15,6 @@ const cterm_version_supports_fontdim_query = 1198;
 var font_slot_first = 43;
 const font_slot_last = 255;
 const font_styles = { normal:0, high:1, blink:2, highblink:3 };
-var font_state;
 const font_state_field_first = 0;
 const font_state_field_result = 1;
 const font_state_field_style = 2;
@@ -150,12 +149,12 @@ function query_fontstate(field)
 	if(!response)
 		return response;
 	if(response.substr(0,5) == "\x1b[=1;" && response.substr(-1) == "n") {
-		font_state = response.slice(5, -1).split(/;/);
-		font_slot_first = font_state[font_state_field_first];
-		console.cterm_fonts_active = font_state.slice(font_state_field_style, font_state_field_style + 4)
+		console.cterm_font_state = response.slice(5, -1).split(/;/);
+		font_slot_first = console.cterm_font_state[font_state_field_first];
+		console.cterm_fonts_active = console.cterm_font_state.slice(font_state_field_style, font_state_field_style + 4)
 		if(!field)
-			return font_state;
-		return font_state[field];
+			return console.cterm_font_state;
+		return console.cterm_font_state[field];
 	}
 	return false;
 }
@@ -242,11 +241,11 @@ function supports_fonts()
 {
 	if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_fonts)
 		return false;
-	if(font_state === undefined)
+	if(console.cterm_font_state === undefined)
 		query_fontstate();
-	if(font_state === undefined || font_state[font_state_field_result] == undefined)
+	if(console.cterm_font_state === undefined || console.cterm_font_state[font_state_field_result] == undefined)
 		return undefined;
-	var setfont_result = parseInt(font_state[font_state_field_result], 10);
+	var setfont_result = parseInt(console.cterm_font_state[font_state_field_result], 10);
 	return setfont_result == 0 || setfont_result == 99;
 }
 
@@ -320,7 +319,7 @@ function load_font(slot, data, force)
 	}
 	log(LOG_DEBUG, format("CTerm load_font: slot %u with %u bytes", slot, data.length));
 	load('sbbsdefs.js');
-	if (cterm_version < cterm_version_supports_b64_fonts) {
+	if (console.cterm_version < cterm_version_supports_b64_fonts) {
 		if(!(console.telnet_mode&TELNET_MODE_OFF)) {
 			if(!console.telnet_cmd(TELNET_WILL, TELNET_BINARY_TX, 1000))
 				mswait(100);	// Insure we enter binary mode *before* sending font data
@@ -331,7 +330,7 @@ function load_font(slot, data, force)
 		log(LOG_WARNING, format("CTerm Unsupported font file size: %lu bytes", data.length));
 		return false;
 	}
-	if (cterm_version < cterm_version_supports_b64_fonts) {
+	if (console.cterm_version < cterm_version_supports_b64_fonts) {
 		console.write(format("\x1b[=%u;%u{", slot, fsize));
 		console.write(data);
 	}
@@ -340,7 +339,7 @@ function load_font(slot, data, force)
 	}
 	if(fsize == 1 && console.cterm_version < 1168)
 		console.write("\x00\x00");	// Work-around cterm bug for 8x14 fonts
-	if (cterm_version < cterm_version_supports_b64_fonts) {
+	if (console.cterm_version < cterm_version_supports_b64_fonts) {
 		if(!(console.telnet_mode&TELNET_MODE_OFF))
 			console.telnet_cmd(TELNET_WONT, TELNET_BINARY_TX);
 	}
