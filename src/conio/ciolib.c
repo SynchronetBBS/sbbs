@@ -1965,3 +1965,46 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_attrfont(uint8_t attr)
 		font |= 2;
 	return ciolib_getfont(font+1);
 }
+
+/* Returns non-zero if fontnum is supported in this mode */
+CIOLIBEXPORT int CIOLIBCALL ciolib_checkfont(int fontnum)
+{
+	int vmode;
+	struct text_info ti;
+
+	CIOLIB_INIT();
+
+	if (fontnum < 0 || fontnum > 255)
+		return 0;
+
+	// Font 0 is always supported.
+	if (fontnum == 0)
+		return 1;
+
+	ciolib_gettextinfo(&ti);
+	vmode = find_vmode(ti.currmode);
+
+	if (cio_api.checkfont != NULL)
+		return cio_api.checkfont(fontnum);
+
+	if (cio_api.options & CONIO_OPT_FONT_SELECT) {
+		switch (vparams[vmode].charheight) {
+			case 8:
+				if (conio_fontdata[fontnum].eight_by_eight)
+					return 1;
+				return 0;
+			case 14:
+				if (conio_fontdata[fontnum].eight_by_fourteen)
+					return 1;
+				return 0;
+			case 16:
+				if (conio_fontdata[fontnum].eight_by_sixteen)
+					return 1;
+				return 0;
+			default:
+				return 0;
+		}
+	}
+	return 0;
+
+}
