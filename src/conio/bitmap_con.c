@@ -504,6 +504,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	WORD	sch;
 	struct vstat_vmem *vmem_ptr;
 	BOOL	changed = FALSE;
+	BOOL	draw_fg = TRUE;
 
 	if(!bitmap_initialized) {
 		return(-1);
@@ -546,21 +547,20 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 		this_font = font[0];
 	fontoffset=(sch&0xff)*vstat.charheight;
 
+	draw_fg = ((!((sch & 0x8000) && !vstat.blink)) || vstat.no_blink);
 	for(y=0; y<vstat.charheight; y++) {
-		if ((!((sch & 0x8000) && !vstat.blink)) || vstat.no_blink) {
-			for(x=0; x<vstat.charwidth; x++) {
-				if(this_font[fontoffset] & (0x80 >> x)) {
-					if (screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]!=fg) {
-						changed=TRUE;
-						screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]=fg;
-					}
+		for(x=0; x<vstat.charwidth; x++) {
+			if(this_font[fontoffset] & (0x80 >> x) && draw_fg) {
+				if (screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]!=fg) {
+					changed=TRUE;
+					screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]=fg;
 				}
-				else
-					if (screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]!=bg) {
-						changed=TRUE;
-						screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]=bg;
-					}
 			}
+			else
+				if (screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]!=bg) {
+					changed=TRUE;
+					screen.screen[PIXEL_OFFSET(screen, xoffset+x, yoffset+y)]=bg;
+				}
 		}
 		fontoffset++;
 	}
