@@ -604,19 +604,25 @@ while(client.socket.is_connected && !quit) {
 
 			current_article=hdr.number;
 
-			if(cmd[0].toUpperCase()!="HEAD")
+			if(cmd[0].toUpperCase()!="HEAD") {
 				body=msgbase.get_msg_body(false,current_article
 					,true /* remove ctrl-a codes */
 					,true /* rfc822 formatted text */);
 
-			// force taglines for QNET Users on local messages
-			if(add_tag && user.security.restrictions&UFLAG_Q && !hdr.from_net_type)
-				body += "\r\n" + tearline + tagline;
+				if(!body) {
+					writeln("430 error getting message body: " + msgbase.last_error);
+					break;
+				}
 
-			if(!ex_ascii || (msgbase.cfg && msgbase.cfg.settings&SUB_ASCII)) {
-				/* Convert Ex-ASCII chars to approximate ASCII equivalents */
-				body = ascii_str(body);
-				hdr.subject = ascii_str(hdr.subject);
+				// force taglines for QNET Users on local messages
+				if(add_tag && user.security.restrictions&UFLAG_Q && !hdr.from_net_type)
+					body += "\r\n" + tearline + tagline;
+
+				if(!ex_ascii || (msgbase.cfg && msgbase.cfg.settings&SUB_ASCII)) {
+					/* Convert Ex-ASCII chars to approximate ASCII equivalents */
+					body = ascii_str(body);
+					hdr.subject = ascii_str(hdr.subject);
+				}
 			}
 
 /* Eliminate dupe loops
