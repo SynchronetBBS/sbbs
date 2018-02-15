@@ -2928,7 +2928,10 @@ BOOL doterm(struct bbslist *bbs)
 					// Fallthrough
 				case 0x2300:	/* Alt-H - Hangup */
 					{
+						struct ciolib_screen *savscrn;
+						savscrn = savescreen();
 						if(quitting || confirm("Disconnect... Are you sure?", "Selecting Yes closes the connection\n")) {
+							freescreen(savscrn);
 #ifdef WITH_WXWIDGETS
 							if(html_mode != HTML_MODE_HIDDEN) {
 								hide_html();
@@ -2945,10 +2948,9 @@ BOOL doterm(struct bbslist *bbs)
 							hold_update=oldmc;
 							return(key==0x2d00 /* Alt-X? */ || key == CIO_KEY_QUIT);
 						}
+						restorescreen(savscrn);
+						freescreen(savscrn);
 						setup_mouse_events();
-						window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
-						textattr(txtinfo.attribute);
-						gotoxy(txtinfo.curx,txtinfo.cury);
 						showmouse();
 					}
 					key = 0;
