@@ -204,6 +204,10 @@ static void resize_xim(void)
 		x11.XDestroyImage(xim);
 #endif
 	}
+	if (last) {
+		bitmap_drv_free_rect(last);
+		last = NULL;
+	}
     xim=x11.XCreateImage(dpy,&visual,depth,ZPixmap,0,NULL,bitmap_width*x_cvstat.scaling,bitmap_height*x_cvstat.scaling*x_cvstat.vmultiplier,32,0);
     xim->data=(char *)malloc(xim->bytes_per_line*xim->height);
 }
