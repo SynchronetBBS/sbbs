@@ -23,9 +23,6 @@
 #include "xmodem.h"
 #include "telnet_io.h"
 #include "saucedefs.h"
-#ifdef WITH_WXWIDGETS
-#include "htmlwin.h"
-#endif
 
 #ifdef GUTS_BUILTIN
 #include "gutsz.h"
@@ -54,24 +51,6 @@ struct cterminal	*cterm;
 static struct vmem_cell winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1) * 2];	/* Save buffer for transfer window */
 static struct text_info	trans_ti;
 static struct text_info	log_ti;
-#ifdef WITH_WXWIDGETS
-enum html_mode {
-	 HTML_MODE_HIDDEN
-	,HTML_MODE_ICONIZED
-	,HTML_MODE_RAISED
-	,HTML_MODE_READING
-};
-static enum html_mode html_mode=HTML_MODE_HIDDEN;
-enum {
-	 HTML_SUPPORT_UNKNOWN
-	,HTML_NOTSUPPORTED
-	,HTML_SUPPORTED
-};
-
-static int html_supported=HTML_SUPPORT_UNKNOWN;
-
-char *html_addr=NULL;
-#endif
 
 void setup_mouse_events(void)
 {
@@ -2196,117 +2175,8 @@ void capture_control(struct bbslist *bbs)
 	freescreen(savscrn);
 }
 
-#ifdef WITH_WXWIDGETS
-void html_send(const char *buf)
-{
-	conn_send((char *)buf,strlen(buf),0);
-}
-
-static char cachedir[MAX_PATH+6];
-static int cachedirlen=0;
-
-void html_cleanup(void)
-{
-	if(cachedirlen)
-		delfiles(cachedir+5,ALLFILES);
-}
-
-int html_urlredirect(const char *uri, char *buf, size_t bufsize, char *uribuf, size_t uribufsize)
-{
-	char *in;
-	size_t out;
-
-	if(!cachedirlen) {
-		strcpy(cachedir,"file:");
-		get_syncterm_filename(cachedir+5, sizeof(cachedir)-5, SYNCTERM_PATH_CACHE, FALSE);
-		cachedirlen=strlen(cachedir);
-		html_cleanup();
-	}
-
-	if(!memcmp(uri, cachedir, cachedirlen)) {
-		/* Reading from the cache... no redirect */
-		return(URL_ACTION_ISGOOD);
-	}
-
-	strncpy(buf, cachedir, bufsize);
-	buf[bufsize-1]=0;
-	backslash(buf);
-	/* Append mangledname */
-	in=(char *)uri;
-	out=strlen(buf);
-	while(*in && out < bufsize-1) {
-		char ch;
-		ch=*(in++);
-		if(ch < ' ')
-			ch='^';
-		if(ch > 126)
-			ch='~';
-		switch(ch) {
-			case '*':
-			case '?':
-			case ':':
-			case '[':
-			case ']':
-			case '"':
-			case '<':
-			case '>':
-			case '|':
-			case '(':
-			case ')':
-			case '{':
-			case '}':
-			case '/':
-			case '\\':
-				buf[out++]='_';
-				break;
-			default:
-				buf[out++]=ch;
-		}
-	}
-	buf[out]=0;
-
-	/* We now have the cache filename... does it already exist? */
-	if(fexist(buf+5))
-		return(URL_ACTION_REDIRECT);
-
-	/* If not, we need to fetch it... convert relative URIs */
-	if(strstr(uri,"://")) {
-		/* Good URI */
-		strncpy(uribuf, uri, uribufsize);
-		uribuf[uribufsize-1]=0;
-		return(URL_ACTION_DOWNLOAD);
-	}
-
-	strcpy(uribuf, "http://");
-	if(html_addr)
-		strcat(uribuf, html_addr);
-	if(uri[0]!='/')
-		strcat(uribuf, "/");
-	strcat(uribuf,uri);
-
-	return(URL_ACTION_DOWNLOAD);
-}
-
-#endif
-
 #define OUTBUF_SIZE	2048
 
-#ifdef WITH_WXWIDGETS
-#define WRITE_OUTBUF()	\
-	if(outbuf_size > 0) { \
-		cterm_write(cterm, outbuf, outbuf_size, (char *)ansi_replybuf, sizeof(ansi_replybuf), &speed); \
-		outbuf_size=0; \
-		if(html_mode==HTML_MODE_RAISED) { \
-			if(html_startx != wherex() || html_starty != wherey()) { \
-				iconize_html(); \
-				html_mode=HTML_MODE_ICONIZED; \
-			} \
-		} \
-		if(ansi_replybuf[0]) \
-			conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0); \
-		updated=TRUE; \
-	}
-#else
 #define WRITE_OUTBUF()	\
 	if(outbuf_size > 0) { \
 		cterm_write(cterm, outbuf, outbuf_size, (char *)ansi_replybuf, sizeof(ansi_replybuf), &speed); \
@@ -2315,7 +2185,6 @@ int html_urlredirect(const char *uri, char *buf, size_t bufsize, char *uribuf, s
 			conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0); \
 		updated=TRUE; \
 	}
-#endif
 
 static int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
 {
@@ -2520,14 +2389,6 @@ BOOL doterm(struct bbslist *bbs)
 	BYTE gutsinit[] = { ESC, '[', '{' };	/* For GUTS auto-transfers */
 	BYTE gutsbuf[sizeof(gutsinit)];
 #endif
-#ifdef WITH_WXWIDGETS
-	BYTE htmldetect[]="\2\2?HTML?";
-	BYTE htmlresponse[]="\2\2!HTML!";
-	BYTE htmlstart[]="\2\2<HTML>";
-	BYTE htmldet[sizeof(htmldetect)];
-	int html_startx;
-	int html_starty;
-#endif
 	int	inch;
 	long double nextchar=0;
 	long double lastchar=0;
@@ -2592,9 +2453,6 @@ BOOL doterm(struct bbslist *bbs)
 #ifdef GUTS_BUILTIN
 	gutsbuf[0]=0;
 #endif
-#ifdef WITH_WXWIDGETS
-	htmldet[0]=0;
-#endif
 
 	/* Main input loop */
 	oldmc=hold_update;
@@ -2617,13 +2475,6 @@ BOOL doterm(struct bbslist *bbs)
 						if(!is_connected(NULL)) {
 							WRITE_OUTBUF();
 							hold_update=oldmc;
-#ifdef WITH_WXWIDGETS
-							if(html_mode != HTML_MODE_HIDDEN) {
-								hide_html();
-								html_cleanup();
-								html_mode=HTML_MODE_HIDDEN;
-							}
-#endif
 							uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
 							check_exit(FALSE);
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
@@ -2654,54 +2505,6 @@ BOOL doterm(struct bbslist *bbs)
 						else
 							gutsbuf[0]=0;
 #endif
-#ifdef WITH_WXWIDGETS
-						if(html_mode==HTML_MODE_READING) {
-							if(inch==2) {
-								html_startx=wherex();
-								html_starty=wherey();
-								html_commit();
-								raise_html();
-								html_mode=HTML_MODE_RAISED;
-							}
-							else {
-								add_html_char(inch);
-							}
-							continue;
-						}
-
-						j=strlen(htmldet);
-						if(inch == htmldetect[j] || toupper(inch)==htmlstart[j]) {
-							htmldet[j]=inch;
-							htmldet[++j]=0;
-							if(j==sizeof(htmldetect)-1) {
-								WRITE_OUTBUF();
-								if(!strcmp(htmldet, htmldetect)) {
-									if(html_supported==HTML_SUPPORT_UNKNOWN) {
-										int width,height,xpos,ypos;
-										html_addr=bbs->addr;
-
-										get_window_info(&width, &height, &xpos, &ypos);
-										if(!run_html(width, height, xpos, ypos, html_send, html_urlredirect))
-											html_supported=HTML_SUPPORTED;
-										else
-											html_supported=HTML_NOTSUPPORTED;
-									}
-									if(html_supported==HTML_SUPPORTED) {
-										conn_send(htmlresponse, sizeof(htmlresponse)-1, 0);
-										hide_html();
-									}
-								}
-								else {
-									show_html("");
-									html_mode=HTML_MODE_READING;
-								}
-								htmldet[0]=0;
-							}
-						}
-						else
-							htmldet[0]=0;
-#endif
-
 						j=strlen((char *)zrqbuf);
 						if(inch == zrqinit[j] || inch == zrinit[j]) {
 							zrqbuf[j]=inch;
@@ -2932,13 +2735,6 @@ BOOL doterm(struct bbslist *bbs)
 						savscrn = savescreen();
 						if(quitting || confirm("Disconnect... Are you sure?", "Selecting Yes closes the connection\n")) {
 							freescreen(savscrn);
-#ifdef WITH_WXWIDGETS
-							if(html_mode != HTML_MODE_HIDDEN) {
-								hide_html();
-								html_cleanup();
-								html_mode=HTML_MODE_HIDDEN;
-							}
-#endif
 							setup_mouse_events();
 							cterm_clearscreen(cterm,cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
@@ -2967,13 +2763,6 @@ BOOL doterm(struct bbslist *bbs)
 					j=wherey();
 					switch(syncmenu(bbs, &speed)) {
 						case -1:
-#ifdef WITH_WXWIDGETS
-							if(html_mode != HTML_MODE_HIDDEN) {
-								hide_html();
-								html_cleanup();
-								html_mode=HTML_MODE_HIDDEN;
-							}
-#endif
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
 							cterm_end(cterm);
@@ -3013,14 +2802,6 @@ BOOL doterm(struct bbslist *bbs)
 								xptone_open();
 							break;
 						case 12:
-#endif
-				
-#ifdef WITH_WXWIDGETS
-							if(html_mode != HTML_MODE_HIDDEN) {
-								hide_html();
-								html_cleanup();
-								html_mode=HTML_MODE_HIDDEN;
-							}
 #endif
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
