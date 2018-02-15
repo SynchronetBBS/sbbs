@@ -405,20 +405,39 @@ static int video_init()
     return(0);
 }
 
+static struct rectlist *last = NULL;
+
 static void local_draw_rect(struct rectlist *rect)
 {
 	int x,y,xscale,yscale;
 	unsigned int r, g, b;
 	unsigned long pixel;
+	int cleft = rect->rect.width+1;
+	int cright = -1;
+	int ctop = 0;
+	int idx;
 
 	/* TODO: Translate into local colour depth */
 	for(y=0;y<rect->rect.height;y++) {
+		idx = y*rect->rect.width+x;
 		for(x=0; x<rect->rect.width; x++) {
+			if (last) {
+				if (last->data[idx] != rect->data[idx]) {
+					if (x < cleft)
+						cleft = x;
+					if (x > cright)
+						cright = x;
+				}
+				else {
+					idx++;
+					continue;
+				}
+			}
 			for(yscale=0; yscale<x_cvstat.scaling*x_cvstat.vmultiplier; yscale++) {
 				for(xscale=0; xscale<x_cvstat.scaling; xscale++) {
-					r = rect->data[y*rect->rect.width+x] >> 16 & 0xff;
-					g = rect->data[y*rect->rect.width+x] >> 8 & 0xff;
-					b = rect->data[y*rect->rect.width+x] & 0xff;
+					r = rect->data[idx] >> 16 & 0xff;
+					g = rect->data[idx] >> 8 & 0xff;
+					b = rect->data[idx] & 0xff;
 					r = (r<<8)|r;
 					g = (g<<8)|g;
 					b = (b<<8)|b;
@@ -442,12 +461,22 @@ static void local_draw_rect(struct rectlist *rect)
 #endif
 				}
 			}
+			idx++;
+		}
+		/* This line was changed */
+		if (last && (((y & 0x1f) == 0x1f) || (y == rect->rect.height-1)) && cright >= 0) {
+			x11.XPutImage(dpy,win,gc,xim,cleft*x_cvstat.scaling,ctop*x_cvstat.scaling*x_cvstat.vmultiplier,cleft*x_cvstat.scaling,ctop*x_cvstat.scaling*x_cvstat.vmultiplier,(cright-cleft+1)*x_cvstat.scaling,(y-ctop+1)*x_cvstat.scaling*x_cvstat.vmultiplier);
+			cleft = rect->rect.width+1;
+			cright = -1;
+			ctop = y+1;
 		}
 	}
 
-	x11.XPutImage(dpy,win,gc,xim,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.width*x_cvstat.scaling,rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier);
-
-	bitmap_drv_free_rect(rect);
+	if (last == NULL)
+		x11.XPutImage(dpy,win,gc,xim,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.width*x_cvstat.scaling,rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier);
+	else
+		bitmap_drv_free_rect(last);
+	last = rect;
 }
 
 static void handle_resize_event(int width, int height)
