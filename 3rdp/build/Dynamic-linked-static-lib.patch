@@ -13,7 +13,7 @@
  	fi
  fi
 -if [ -f /usr/include/zlib.h ] ; then
-+if [ -f /usr/include/zlib.h -a 0 = 3] ; then
++if [ -f /usr/include/zlib.h -a 0 = 3 ] ; then
  	echo "  (Enabling use of system zlib)." >&2 ;
  	CCARGS="$CCARGS -DHAS_ZLIB" ;
  fi
