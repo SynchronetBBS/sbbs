@@ -1,0 +1,11 @@
+--- cert/dn.c.orig	2018-02-15 01:13:14.949502000 -0500
++++ cert/dn.c	2018-02-15 01:13:55.474689000 -0500
+@@ -204,7 +204,7 @@
+   /*W*/				   xF|									  xS,
+   /*X*/	0,
+   /*Y*/				xE|											 xT|xU,
+-  /*Z*/	xA|									xM|							  xW,
++  /*Z*/	xA|									xM|							  xW|	   xZ,
+ 		0, 0	/* Catch overflows */
+ 		};
+ 	const int cc0 = countryCode[ 0 ] - 'A';
