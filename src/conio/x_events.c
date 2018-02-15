@@ -75,6 +75,8 @@ static unsigned long base_pixel;
 static int r_shift;
 static int g_shift;
 static int b_shift;
+static struct rectlist *last = NULL;
+
 
 /* Array of Graphics Contexts */
 static GC gc;
@@ -409,16 +411,15 @@ static int video_init()
     return(0);
 }
 
-static struct rectlist *last = NULL;
-
 static void local_draw_rect(struct rectlist *rect)
 {
 	int x,y,xscale,yscale;
 	unsigned int r, g, b;
 	unsigned long pixel;
-	int cleft = rect->rect.width+1;
+	int cleft = rect->rect.width;
 	int cright = -1;
-	int ctop = 0;
+	int ctop = rect->rect.height;
+	int cbottom = -1;
 	int idx;
 
 	/* TODO: Translate into local colour depth */
@@ -431,6 +432,10 @@ static void local_draw_rect(struct rectlist *rect)
 						cleft = x;
 					if (x > cright)
 						cright = x;
+					if (y < ctop)
+						ctop = y;
+					if (y > cbottom)
+						cbottom = y;
 				}
 				else {
 					idx++;
@@ -469,10 +474,10 @@ static void local_draw_rect(struct rectlist *rect)
 		}
 		/* This line was changed */
 		if (last && (((y & 0x1f) == 0x1f) || (y == rect->rect.height-1)) && cright >= 0) {
-			x11.XPutImage(dpy,win,gc,xim,cleft*x_cvstat.scaling,ctop*x_cvstat.scaling*x_cvstat.vmultiplier,cleft*x_cvstat.scaling,ctop*x_cvstat.scaling*x_cvstat.vmultiplier,(cright-cleft+1)*x_cvstat.scaling,(y-ctop+1)*x_cvstat.scaling*x_cvstat.vmultiplier);
-			cleft = rect->rect.width+1;
-			cright = -1;
-			ctop = y+1;
+			x11.XPutImage(dpy,win,gc,xim,cleft*x_cvstat.scaling,ctop*x_cvstat.scaling*x_cvstat.vmultiplier,cleft*x_cvstat.scaling,ctop*x_cvstat.scaling*x_cvstat.vmultiplier,(cright-cleft+1)*x_cvstat.scaling,(cbottom-ctop+1)*x_cvstat.scaling*x_cvstat.vmultiplier);
+			cleft = rect->rect.width;
+			cright = cbottom = -1;
+			ctop = rect->rect.height;
 		}
 	}
 
