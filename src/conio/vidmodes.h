@@ -76,7 +76,7 @@ struct video_stats {
 	int curs_col;
 	int curs_start;
 	int curs_end;
-	int curs_blink;
+	int curs_blinks;
 	int curs_visible;
 	int default_curs_start;
 	int default_curs_end;

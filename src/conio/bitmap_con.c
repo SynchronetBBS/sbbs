@@ -342,7 +342,7 @@ static int bitmap_attr2palette_locked(uint8_t attr, uint32_t *fgp, uint32_t *bgp
  *    the are both rows from the top of the cell.
  *    If vstat.curs_start > vstat.curs_end, the cursor is not shown.
  * 3) If vstat.curs_visible is false, the cursor is not shown.
- * 4) If vstat.curs_blink is false, the cursor does not blink.
+ * 4) If vstat.curs_blinks is false, the cursor does not blink.
  * 5) When blinking, the cursor is shown when vstat.blink is true.
  * 6) The *ONLY* thing that should be changing vstat.curs_col or
  *    vstat.curs_row is bitmap_gotoxy().
@@ -362,7 +362,7 @@ static BOOL bitmap_draw_cursor(void)
 	if(!bitmap_initialized)
 		return ret;
 	if(vstat.curs_visible) {
-		if(vstat.blink || (!vstat.curs_blink)) {
+		if(vstat.blink || (!vstat.curs_blinks)) {
 			if(vstat.curs_start<=vstat.curs_end) {
 				xoffset=(vstat.curs_col-1)*vstat.charwidth;
 				yoffset=(vstat.curs_row-1)*vstat.charheight;
@@ -697,7 +697,7 @@ static int update_from_vmem(int force)
 	/* Redraw cursor? */
 	if(vstat.curs_visible							// Visible
 			&& vstat.curs_start <= vstat.curs_end	// Should be drawn
-			&& vstat.curs_blink						// Is blinking
+			&& vstat.curs_blinks						// Is blinking
 			&& vstat.blink != vs.blink)				// Blink has changed
 		redraw_cursor=1;
 
@@ -1189,7 +1189,7 @@ void bitmap_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
 	if(r)
 		*r=vstat.charheight;
 	if(b)
-		*b=vstat.curs_blink;
+		*b=vstat.curs_blinks;
 	if(v)
 		*v=vstat.curs_visible;
 	pthread_mutex_unlock(&vstatlock);
@@ -1201,7 +1201,7 @@ void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 	double ratio;
 	int oldstart = vstat.curs_start;
 	int oldend = vstat.curs_end;
-	int oldblink = vstat.curs_blink;
+	int oldblink = vstat.curs_blinks;
 	int oldvisible = vstat.curs_visible;
 
 	pthread_mutex_lock(&blinker_lock);
@@ -1215,13 +1215,13 @@ void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 	if(e>=0)
 		vstat.curs_end=e*ratio;
 	if(b>=0)
-		vstat.curs_blink=b;
+		vstat.curs_blinks=b;
 	if(v>=0)
 		vstat.curs_visible=v;
 	/* Did anything actually change? */
 	if (oldstart != vstat.curs_start
 			|| oldend != vstat.curs_end
-			|| oldblink != vstat.curs_blink
+			|| oldblink != vstat.curs_blinks
 			|| oldvisible != vstat.curs_visible) {
 		/* Erase the current cursor */
 		if (oldvisible && oldstart <= oldend)

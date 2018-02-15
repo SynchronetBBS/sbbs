@@ -304,7 +304,7 @@ int load_vmode(struct video_stats *vs, int mode)
 	vs->curs_end=vparams[i].curs_end;
 	vs->default_curs_start=vparams[i].curs_start;
 	vs->default_curs_end=vparams[i].curs_end;
-	vs->curs_blink=1;
+	vs->curs_blinks=1;
 	vs->curs_visible=1;
 	vs->curs_row=1;
 	vs->curs_col=1;
