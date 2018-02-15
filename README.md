@@ -6,7 +6,6 @@ A web interface for Synchronet BBS
 * [Quick start](#quick-start)
 * [Configuration](#configuration)
 	* [Advanced / Optional Settings](#optional-settings)
-	* [Additional fTelnet Targets](#additional-ftelnet-targets)
 * [Customization](#customization)
 	* [Sidebar Modules](#sidebar-modules)
 	* [Pages](#pages)
@@ -32,10 +31,6 @@ A web interface for Synchronet BBS
 	- Copy the contents of the downloaded *mods* directory into your local *mods* directory
 	- Copy the contents of the downloaded *text* directory into your local *text* directory
 	- Rename your current *web* directory to something like *web.old* and then copy the downloaded *web* directory in its place
-- [Download fTelnet](https://github.com/rickparrish/fTelnet/archive/master.zip)
-	- Extract the archive
-	- Copy the *release* subdirectory into your new *web/root/* directory
-	- Rename the copied *release* subdirectory to *ftelnet*
 - Add the following section to your *ctrl/modopts.ini* file:
 ```ini
 [web]
@@ -54,16 +49,12 @@ A web interface for Synchronet BBS
 	maximum_telegram_length = 800
 	; Where (absolute or relative to 'exec') the 'lib' and 'root' directories live
 	web_directory = ../web
-	; Path to a .ans file to use as the ftelnet splash screen
-	ftelnet_splash = ../text/synch.ans
 	; Enable or disable keyboard navigation in message threads
 	keyboard_navigation = false
 	; Display upvote/downvote buttons in message threads (3.17)
 	vote_functions = true
 	; Refresh nodelist, vote counts, etc. this often (in milliseconds)
 	refresh_interval = 60000
-	; External Programs (or entire sections) to exclude from the Games page
-	xtrn_blacklist = scfg,oneliner
 	; Disable the sidebar altogether
 	layout_sidebar_off = false
 	; Place the sidebar on the left-hand side of the page
@@ -71,53 +62,14 @@ A web interface for Synchronet BBS
 	; Make the page consume the entire width of the browser window
 	layout_full_width = false
 ```
-- Add the following section to your *ctrl/services.ini* file:
-```ini
-[WebSocketTelnet]
-Port=1123
-Options=NO_HOST_LOOKUP
-Command=websocket-telnet-service.js
-```
-- Add the following section to your *ctrl/services.ini* file:
-```ini
-[WebSocketRLogin]
-Port=1513
-Options=NO_HOST_LOOKUP
-Command=websocket-rlogin-service.js
-```
+
 - Tell your router and firewall to open and forward ports *1123* and *1513* to your BBS
 - If you were running ecWeb v3 and modified the *RootDirectory* value in the *[Web]* section of *ctrl/sbbs.ini* to point to *../web/root/ecwebv3*, change it back to *../web/root*.
-
-- Edit the *[logon]* section of your *ctrl/modopts.ini* file, and ensure that it has an *rlogin_auto_xtrn* key with a value of *true*
-	- NB: that's the *[logon]* section and not the *[login]* section
-
-```ini
-[logon]
-rlogin_auto_xtrn = true
-```
-
-- Your *logon.js* file should have a block of code near the top that looks like this, but if it doesn't you should add it in:
-
-```js
-var options = load("modopts.js", "logon");
-
-// Check if we're being asked to auto-run an external (web interface external programs section uses this)
-if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
-    var external_code = console.terminal.substring(5);
-    if (!bbs.exec_xtrn(external_code)) {
-        alert(log(LOG_ERR,"!ERROR Unable to launch external: '" + external_code + "'"));
-    }
-    bbs.hangup();
-	exit();
-}
-```
-
 - Start your BBS back up again
 
 ### Configuration
 
 - Ensure that the *guest* user specified in the [web] section of *ctrl/modopts.ini* exists and has only the permissions that you want an unauthenticated visitor from the web to have.  This user probably shouldn't be able to post messages, and definitely shouldn't be able to post to networked message areas.
-- Customise the *xtrn_blacklist* setting in the [web] section of *ctrl/modopts.ini*.  This is a comma-separated list of *internal codes* of any programs (or Online Program Sections) that you wish to *exclude* from your games page.
 
 #### Optional Settings
 
@@ -128,18 +80,12 @@ The following *optional* settings can be added to the [web] section of your *ctr
 	forum_extended_ascii = false
 	; Only load this many messages from each sub (default: 0 for all)
 	max_messages = 500
-	; Connect to the websocket proxies on ports other than specified in ctrl/services.ini
-	websocket_telnet_port = 1124
-	websocket_rlogin_port = 1514
-	allowed_ftelnet_targets = some.other.bbs:23,yet.another.bbs:2323
 	; Serve this web interface from a subdirectory of the webserver's document root
 	web_root = ../web/root/ecwebv4
 ```
 
 - Setting *forum_extended_ascii* to *false* may resolve problems with displaying UTF-8 encoded characters; character codes > 127 will not be assumed to be extended-ASCII references to CP437 characters.
 - Tweaking *max_messages* may improve forum performance or resolve 'Out of memory' errors, if you see any of those when browsing the forum
-- Normally, fTelnet will try to connect to the websocket proxies based on information from *ctrl/services.ini*.  In some situations (eg. when using an HTTPS reverse proxy) it may be necessary to connect to another port unknown to Synchronet.
-- The *allowed_ftelnet_targets* setting is only necessary if you will be adding additional pages through which users can connect to external systems via fTelnet (see below).  This is a comma-separated list of host:port entries.
 - If you placed the *contents* of the *web/root/* directory from this repository at some other location within your webserver's document root, use the *web_root* value to point to that directory.  (Note that the *contents* of the *web/lib/* directory from this repository must still live at *[web_directory]/lib* on your system.)
 
 ### Customization
@@ -209,53 +155,6 @@ You can add drop-down menus to the navigation bar by adding subdirectories to th
 - You can nest additional subdirectories to create sub-menus.
 - Subdirectories with names beginning with *.* will be ignored.
 - Each subdirectory can contain a [webctrl.ini](http://wiki.synchro.net/server:web#webctrlini_per-directory_configuration_file) file for access control.
-
-#### Additional fTelnet targets
-
-The fTelnet embed on the home page is configured to automatically connect to a BBS on the same system that is hosting the website.  If you run another BBS or wish to allow users of your website to connect via fTelnet to some other BBS:
-
-- Edit *ctrl/modopts.ini*
-- In the *[web]* section, add the *allowed_ftelnet_targets* key if it doesn't already exist (see *Additional/advanced settings* above)
-- Add an entry to the list for each additional host you want to allow fTelnet to connect to
-- Create a new *.xjs* file in your *pages/* directory or in a subdirectory thereof.  (In this example, I've created */sbbs/web/root/pages/More/006-some-other-bbs.xjs*.)  Populate it with the following content:
-
-```html
-<!--Some Other BBS-->
-<?xjs
-	if (typeof argv[0] != 'boolean' || !argv[0]) exit();
-	load(settings.web_lib + 'ftelnet.js');
-?>
-
-<script src="./ftelnet/ftelnet.norip.xfer.min.js" id="fTelnetScript"></script>
-<style>.fTelnetStatusBar { display : none; }</style>
-<div id="fTelnetContainer" style="margin-bottom:1em;clear:both;"></div>
-<div class="row">
-	<div class="center-block" style="width:200px;margin-bottom:1em;">
-		<button id="ftelnet-connect" class="btn btn-primary">Connect via Telnet</button>
-	</div>
-</div>
-<script type="text/javascript">
-	Options.Hostname = 'valhalla.synchro.net';
-	Options.Port = 23;
-    Options.ProxyHostname = '<?xjs write(http_request.vhost); ?>';
-    Options.ProxyPort = <?xjs write(settings.websocket_telnet_port || webSocket.Port); ?>;;
-    Options.ProxyPortSecure = <?xjs write(settings.websocket_telnet_port || webSocket.Port); ?>;;
-	Options.ConnectionType = 'telnet';
-	Options.SplashScreen = '<?xjs write(getSplash()); ?>';
-	Options.StatusBarVisible = false;
-	Options.VirtualKeyboardVisible = (
-		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-			navigator.userAgent
-		)
-	);
-	var ftClient = new fTelnetClient('fTelnetContainer', Options);
-	$('#ftelnet-connect').click(function() { ftClient.Connect(); });
-</script>
-```
-
-- Edit the first line so that the title of the page (*Some Other BBS*) is to your liking
-- Edit the *Options.Hostname* line so that the text within the quotes points to the system you want to target
-- Edit the *Options.Port* line if the target system's telnet server is listening on some port other than *23*
 
 ### Uninstall
 
