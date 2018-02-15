@@ -123,6 +123,8 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 			goto failure_return_2;
 		if(!DO(cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_SUBJECTPUBLICKEYINFO, ssl_context)))
 			goto failure_return_3;
+		if(!DO(cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_SELFSIGNED, 1)))
+			goto failure_return_3;
 		if(!DO(cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COUNTRYNAME, "ZZ", 2)))
 			goto failure_return_3;
 		if(!DO(cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_ORGANIZATIONNAME, cfg->sys_name, strlen(cfg->sys_name))))
