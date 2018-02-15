@@ -638,8 +638,6 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 						if(!cryptStatusOK(status=cryptPopData(session->tls_sess, "", 0, &status))) {
 							if (status != CRYPT_ERROR_TIMEOUT && status != CRYPT_ERROR_PARAM2)
 								lprintf(LOG_NOTICE,"%04d Cryptlib error %d popping data after timeout",session->socket, status);
-							if (failed)
-								*failed=TRUE;
 						}
 						status = CRYPT_OK;
 					}
@@ -664,8 +662,6 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 #endif
 						else
 							lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",session->socket,ERROR_VALUE);
-						if(failed)
-							*failed=TRUE;
 						return(sent);
 					}
 				}
