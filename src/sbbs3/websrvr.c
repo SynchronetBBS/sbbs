@@ -6196,6 +6196,7 @@ void http_session_thread(void* arg)
 		}
 #endif
 		if (tls_context != -1) {
+			HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY), &session);
 			HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_PRIVATEKEY, tls_context), &session);
 		}
 		BOOL nodelay=TRUE;
