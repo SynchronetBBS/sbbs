@@ -362,7 +362,7 @@ static BOOL bitmap_draw_cursor(void)
 	if(!bitmap_initialized)
 		return ret;
 	if(vstat.curs_visible) {
-		if(vstat.blink || (!vstat.curs_blinks)) {
+		if(vstat.curs_blink || (!vstat.curs_blinks)) {
 			if(vstat.curs_start<=vstat.curs_end) {
 				xoffset=(vstat.curs_col-1)*vstat.charwidth;
 				yoffset=(vstat.curs_row-1)*vstat.charheight;
@@ -608,12 +608,24 @@ static void blinker_thread(void *data)
 			SLEEP(10);
 		} while(locked_screen_check()==NULL);
 		count++;
+		if (count==25) {
+			pthread_mutex_lock(&vstatlock);
+			if(vstat.curs_blink)
+				vstat.curs_blink=FALSE;
+			else
+				vstat.curs_blink=TRUE;
+			pthread_mutex_unlock(&vstatlock);
+		}
 		if(count==50) {
 			pthread_mutex_lock(&vstatlock);
 			if(vstat.blink)
 				vstat.blink=FALSE;
 			else
 				vstat.blink=TRUE;
+			if(vstat.curs_blink)
+				vstat.curs_blink=FALSE;
+			else
+				vstat.curs_blink=TRUE;
 			count=0;
 			pthread_mutex_unlock(&vstatlock);
 		}
@@ -624,7 +636,7 @@ static void blinker_thread(void *data)
 				request_redraw();
 		}
 		else {
-			if (count==0)
+			if (count==0 || count==25)
 				if (update_from_vmem(FALSE))
 					request_redraw();
 		}
@@ -697,8 +709,8 @@ static int update_from_vmem(int force)
 	/* Redraw cursor? */
 	if(vstat.curs_visible							// Visible
 			&& vstat.curs_start <= vstat.curs_end	// Should be drawn
-			&& vstat.curs_blinks						// Is blinking
-			&& vstat.blink != vs.blink)				// Blink has changed
+			&& vstat.curs_blinks					// Is blinking
+			&& vstat.curs_blink != vs.curs_blink)	// Blink has changed
 		redraw_cursor=1;
 
 	/* Did the meaning of the blink bit change? */

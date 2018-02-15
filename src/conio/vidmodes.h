@@ -85,6 +85,7 @@ struct video_stats {
 	int charwidth;
 	int bright_background;
 	int blink;
+	int curs_blink;
 	int no_bright;
 	int no_blink;
 	int bright_altcharset;
