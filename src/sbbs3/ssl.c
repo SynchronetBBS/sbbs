@@ -130,7 +130,7 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 		if(!DO(cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COMMONNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
 			goto failure_return_3;
 		sprintf(sysop_email, "sysop@%s", scfg.sys_inetaddr);
-		if(!DO(cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_RFC822NAME, sesop_email, strlen(sesop_email))))
+		if(!DO(cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_RFC822NAME, sysop_email, strlen(sysop_email))))
 			goto failure_return_3;
 		if(!DO(cryptSignCert(ssl_cert, ssl_context)))
 			goto failure_return_3;
