@@ -24,10 +24,6 @@
 #include "telnet_io.h"
 #include "saucedefs.h"
 
-#ifdef GUTS_BUILTIN
-#include "gutsz.h"
-#endif
-
 #ifndef WITHOUT_OOII
 #include "ooii.h"
 #endif
@@ -843,207 +839,6 @@ static BOOL is_connected(void* unused)
 		return TRUE;
 	return(conn_connected());
 }
-
-#ifdef GUTS_BUILTIN
-static int guts_lputs(void* cbdata, int level, const char* str)
-{
-	struct GUTS_info *gi=cbdata;
-	/* ToDo: Do something useful here. */
-	/* fprintf(stderr,"%s\n",str); */
-	return(0);
-}
-
-void guts_zmodem_progress(void* cbdata, ulong current_pos)
-{
-	struct GUTS_info *gi=cbdata;
-	/* ToDo: Do something useful here. */
-	return;
-}
-
-static int guts_send_byte(void* cbdata, uchar ch, unsigned timeout)
-{
-	int	i;
-	struct GUTS_info *gi=cbdata;
-
-	if(!socket_check(gi->oob_socket, NULL, &i, timeout*1000))
-		return(-1);
-
-	if(!i)
-		return(-1);
-
-	if(send(gi->oob_socket,&ch,1,0)==-1)
-		return(-1);
-
-	return(0);
-}
-
-static int guts_recv_byte(void* cbdata, unsigned timeout)
-{
-	BOOL	data_is_waiting;
-	BYTE	ch;
-	struct GUTS_info *gi=cbdata;
-
-	if(!socket_check(gi->oob_socket, &data_is_waiting, NULL, timeout*1000))
-		return(-1);
-
-	if(!data_is_waiting)
-		return(-1);
-
-	if(recv(gi->oob_socket,&ch,1,0)!=1)
-		return(-1);
-
-	return(ch);
-}
-
-static BOOL guts_is_connected(void* cbdata)
-{
-	struct GUTS_info *gi=cbdata;
-	return socket_check(gi->oob_socket,NULL,NULL,0);
-}
-
-BOOL guts_data_waiting(void* cbdata, unsigned timeout)
-{
-	BOOL rd;
-	struct GUTS_info *gi=cbdata;
-
-	if(!socket_check(gi->oob_socket,&rd,NULL,timeout*1000))
-		return(FALSE);
-	return(rd);
-}
-
-void guts_background_download(void *cbdata)
-{
-	struct GUTS_info gi=*(struct GUTS_info *)cbdata;
-
-	zmodem_t	zm;
-	ulong		bytes_received;
-
-	SetThreadName("GUTS Download");
-	zmodem_mode=ZMODEM_MODE_RECV;
-
-	transfer_buf_len=0;
-	zmodem_init(&zm
-		,&gi
-		,guts_lputs, guts_zmodem_progress
-		,guts_send_byte,guts_recv_byte,guts_is_connected
-		,NULL /* is_cancelled */
-		,guts_data_waiting
-		,guts_flush_send);
-	zm.log_level=&log_level;
-
-	/* ToDo: This would be a good time to detach or something. */
-	zmodem_recv_files(&zm,gi.files[0],&bytes_received);
-
-	oob_close(&gi);
-}
-
-void guts_background_upload(void *cbdata)
-{
-	struct GUTS_info gi=*(struct GUTS_info *)cbdata;
-
-	zmodem_t	zm;
-	ulong	fsize;
-	FILE*	fp;
-
-	SetThreadName("GUTS Upload");
-	if((fp=fopen(gi.files[0],"rb"))==NULL) {
-		fprintf(stderr,"Error %d opening %s for read",errno,gi.files[0]);
-		return;
-	}
-
-	setvbuf(fp,NULL,_IOFBF,0x10000);
-
-
-	zmodem_mode=ZMODEM_MODE_SEND;
-
-	transfer_buf_len=0;
-	zmodem_init(&zm
-		,&gi
-		,guts_lputs, guts_zmodem_progress
-		,guts_send_byte,guts_recv_byte,guts_is_connected
-		,NULL /* is_cancelled */
-		,guts_data_waiting
-		,guts_flush_send);
-	zm.log_level=&log_level;
-
-	zm.current_file_num = zm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
-
-	fsize=filelength(fileno(fp));
-
-	if(zmodem_send_file(&zm, gi.files[0], fp
-		,/* ZRQINIT? */TRUE, /* start_time */NULL, /* sent_bytes */ NULL))
-		zmodem_get_zfin(&zm);
-
-	fclose(fp);
-
-	oob_close(&gi);
-}
-
-void guts_transfer(struct bbslist *bbs)
-{
-	struct GUTS_info gi;
-
-	if(safe_mode)
-		return;
-	setup_defaults(&gi);
-	gi.socket=conn_socket;
-	gi.telnet=bbs->conn_type==CONN_TYPE_TELNET;
-	gi.server=FALSE;
-	gi.use_daemon=FALSE;
-	gi.orig=FALSE;
-
-	if(negotiation(&gi)) {
-		oob_close(&gi);
-		return;
-	}
-
-	/* Authentication Phase */
-	if(!gi.inband) {
-		if(authenticate(&gi)) {
-			oob_close(&gi);
-			return;
-		}
-	}
-
-	if(gi.inband) {
-		if(gi.direction==UPLOAD)
-			begin_upload(bbs, TRUE);
-		else
-			zmodem_download(bbs);
-		oob_close(&gi);
-	}
-	else {
-		if(gi.direction==UPLOAD) {
-			int		result;
-			struct file_pick fpick;
-
-			init_uifc(FALSE, FALSE);
-			result=filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
-
-			if(result==-1 || fpick.files<1) {
-				check_exit(FALSE);
-				filepick_free(&fpick);
-				uifcbail();
-				setup_mouse_events();
-				return;
-			}
-			strListPush(&gi.files, fpick.selected[0]);
-			filepick_free(&fpick);
-
-			uifcbail();
-			setup_mouse_events();
-
-			_beginthread(guts_background_upload, 0, &gi);
-		}
-		else {
-			strListPush(&gi.files, bbs->dldir);
-			_beginthread(guts_background_download, 0, &gi);
-		}
-	}
-
-	return;
-}
-#endif
 
 void raw_upload(FILE *fp)
 {
@@ -2385,10 +2180,6 @@ BOOL doterm(struct bbslist *bbs)
 	BYTE zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
 	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
 	BYTE zrqbuf[sizeof(zrqinit)];
-#ifdef GUTS_BUILTIN
-	BYTE gutsinit[] = { ESC, '[', '{' };	/* For GUTS auto-transfers */
-	BYTE gutsbuf[sizeof(gutsinit)];
-#endif
 	int	inch;
 	long double nextchar=0;
 	long double lastchar=0;
@@ -2450,9 +2241,6 @@ BOOL doterm(struct bbslist *bbs)
 #ifndef WITHOUT_OOII
 	ooii_buf[0]=0;
 #endif
-#ifdef GUTS_BUILTIN
-	gutsbuf[0]=0;
-#endif
 
 	/* Main input loop */
 	oldmc=hold_update;
@@ -2491,20 +2279,6 @@ BOOL doterm(struct bbslist *bbs)
 							nextchar = lastchar + 1/(long double)(speed/10);
 						}
 
-#ifdef GUTS_BUILTIN
-						j=strlen(gutsbuf);
-						if(inch == gutsinit[j]) {
-							gutsbuf[j]=inch;
-							gutsbuf[++j]=0;
-							if(j==sizeof(gutsinit)) { /* Have full sequence */
-								WRITE_OUTBUF();
-								guts_transfer(bbs);
-								remain=1;
-							}
-						}
-						else
-							gutsbuf[0]=0;
-#endif
 						j=strlen((char *)zrqbuf);
 						if(inch == zrqinit[j] || inch == zrinit[j]) {
 							zrqbuf[j]=inch;
