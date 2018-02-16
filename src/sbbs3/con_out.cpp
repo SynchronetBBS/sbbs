@@ -177,8 +177,6 @@ long sbbs_t::term_supports(long cmp_flags)
 /****************************************************************************/
 void sbbs_t::outchar(char ch)
 {
-	int		i;
-
 	/*
 	 * outchar_esc values:
 	 * 0: No sequence
