@@ -192,7 +192,7 @@ void sbbs_t::outchar(char ch)
 
 	if(console&CON_ECHO_OFF)
 		return;
-	if(ch==ESC)
+	if(ch==ESC && outchar_esc < 4)
 		outchar_esc=1;
 	else if(outchar_esc==1) {
 		if(ch=='[')
@@ -201,6 +201,8 @@ void sbbs_t::outchar(char ch)
 			outchar_esc=4;
 		else if(ch=='X')
 			outchar_esc=5;
+		else if(ch >= 0x40 && ch <= 0x5f)
+			outchar_esc=3;
 		else
 			outchar_esc=0;
 	}
