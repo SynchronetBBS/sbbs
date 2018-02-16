@@ -704,7 +704,7 @@ while(client.socket.is_connected && !quit) {
 			if(hdr!=null && body!=null)	/* both, separate with blank line */
 				writeln("");
 			if(body!=null) {
-				write(body);
+				writeln(truncsp(body));
 				msgs_read++;
 			}
 			writeln(".");
