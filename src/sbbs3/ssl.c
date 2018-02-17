@@ -53,6 +53,7 @@ static bool get_error_string(int status, CRYPT_SESSION sess, char estr[SSL_ESTR_
 
 static pthread_once_t crypt_init_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t ssl_cert_mutex;
+static bool cryptlib_initialized;
 
 static void do_cryptEnd(void)
 {
@@ -66,6 +67,7 @@ static void internal_do_cryptInit(void)
 	if((ret=cryptInit())==CRYPT_OK) {
 		cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
 		atexit(do_cryptEnd);
+		cryptlib_initialized = true;
 	}
 	else {
 		lprintf(LOG_ERR,"cryptInit() returned %d", ret);
@@ -79,6 +81,11 @@ int DLLCALL do_cryptInit(void)
 	if(pthread_once(&crypt_init_once, internal_do_cryptInit) == 0)
 		return 1;
 	return 0;
+}
+
+bool DLLCALL is_crypt_initialized(void)
+{
+	return cryptlib_initialized;
 }
 
 #define DO(x)	get_error_string(x, ssl_context, estr, __FILE__, __LINE__)

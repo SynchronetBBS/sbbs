@@ -37,6 +37,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "ssl.h"
 
 const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
 
@@ -109,7 +110,7 @@ void sbbs_t::ver()
 	socklib_version(str,SOCKLIB_DESC);
 
 #ifdef USE_CRYPTLIB
-	{
+	if(is_crypt_initialized()) {
 		int cl_major=0, cl_minor=0, cl_step=0;
 		int result;
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MAJORVERSION, &cl_major);
