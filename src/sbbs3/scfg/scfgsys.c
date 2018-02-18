@@ -1827,7 +1827,7 @@ void sys_cfg(void)
 									,"Free Credits Per Day"
 									,tmp,10
 									,K_EDIT|K_UPPER) > 0)
-									cfg.level_freecdtperday[i] = parse_byte_count(tmp, 1);
+									cfg.level_freecdtperday[i] = (int32_t)parse_byte_count(tmp, 1);
 								break;
 							case 7:
 								j=0;
