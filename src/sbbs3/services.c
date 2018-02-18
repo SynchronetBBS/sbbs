@@ -359,7 +359,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	/* User name or number */
-	JSVALUE_TO_ASTRING(cx, argv[0], user, (LEN_ALIAS > LEN_NAME) ? LEN_ALIAS+2 : LEN_NAME+2, NULL);
+	JSVALUE_TO_ASTRING(cx, argv[0], user, 128, NULL);
 	if(user==NULL)
 		return(JS_FALSE);
 
