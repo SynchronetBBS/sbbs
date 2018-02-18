@@ -124,7 +124,7 @@ static struct init_field web_init_fields[] = {
 #define WEB_OPT_DEBUG_RX			(1<<0)	/* Log all received requests		*/
 #define WEB_OPT_DEBUG_TX			(1<<1)	/* Log all transmitted responses	*/
 #define WEB_OPT_DEBUG_SSJS			(1<<2)	/* Don't delete sbbs_ssjs.*.html	*/
-#define WEB_OPT_VIRTUAL_HOSTS		(1<<4)	/* Use virutal host html subdirs	*/
+#define WEB_OPT_VIRTUAL_HOSTS		(1<<4)	/* Use virtual host html subdirs	*/
 #define WEB_OPT_NO_CGI				(1<<5)	/* Disable CGI support				*/
 #define WEB_OPT_HTTP_LOGGING		(1<<6)	/* Create/write-to HttpLogFile		*/
 #define WEB_OPT_ALLOW_TLS			(1<<7)	/* Enable HTTPS						*/
