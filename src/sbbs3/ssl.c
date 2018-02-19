@@ -78,9 +78,9 @@ static void internal_do_cryptInit(void)
 
 int DLLCALL do_cryptInit(void)
 {
-	if(pthread_once(&crypt_init_once, internal_do_cryptInit) == 0)
-		return 1;
-	return 0;
+	if (pthread_once(&crypt_init_once, internal_do_cryptInit) != 0)
+		return 0;
+	return cryptlib_initialized;
 }
 
 bool DLLCALL is_crypt_initialized(void)
