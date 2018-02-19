@@ -4940,7 +4940,7 @@ void DLLCALL bbs_thread(void* arg)
 				goto NO_SSH;
 			}
 
-			/* Ok, now try saving this one... use the syspass to enctrpy it. */
+			/* Ok, now try saving this one... use the syspass to encrypt it. */
 			if(cryptStatusOK(cryptKeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_CREATE))) {
 				if(!cryptStatusOK(cryptAddPrivateKey(ssh_keyset, ssh_context, scfg.sys_pass)))
 					lprintf(LOG_ERR,"SSH Cryptlib error %d saving key",i);
