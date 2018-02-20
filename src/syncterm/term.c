@@ -713,11 +713,11 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 	struct	text_info txtinfo;
 	struct ciolib_screen *savscrn;
 
-    gettextinfo(&txtinfo);
-    savscrn = savescreen();
-
 	if(safe_mode)
 		return;
+
+    gettextinfo(&txtinfo);
+    savscrn = savescreen();
 
 	init_uifc(FALSE, FALSE);
 	result=filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
