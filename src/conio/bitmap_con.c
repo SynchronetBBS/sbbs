@@ -465,9 +465,10 @@ static uint32_t color_value(uint32_t col)
 static struct rectlist *get_full_rectangle_locked(void)
 {
 	size_t i;
-	struct rectlist *rect = alloc_full_rect();
+	struct rectlist *rect;
 
 	if(callbacks.drawrect) {
+		rect = alloc_full_rect();
 		if (!rect)
 			return rect;
 		for (i=0; i<screen.screenwidth*screen.screenheight; i++)
