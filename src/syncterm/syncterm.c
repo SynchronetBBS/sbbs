@@ -1536,8 +1536,10 @@ int main(int argc, char **argv)
 		}
 		if(addr_family != ADDRESS_FAMILY_UNSPEC)
 			bbs->address_family=addr_family;
-		if(bbs->port==0)
+		if(bbs->port==0) {
+			free(bbs);
 			goto USAGE;
+		}
 	}
 
 	if(!winsock_startup())
