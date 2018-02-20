@@ -99,6 +99,8 @@ js_set_key(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSVALUE_TO_MSTRING(cx, argv[0], key, &len);
 	HANDLE_PENDING(cx, key);
+	if (key == NULL)
+		return JS_FALSE;
 
 	obj = JS_THIS_OBJECT(cx, arglist);
 	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
@@ -138,6 +140,8 @@ js_derive_key(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSVALUE_TO_MSTRING(cx, argv[0], key, &len);
 	HANDLE_PENDING(cx, key);
+	if (key == NULL)
+		return JS_FALSE;
 
 	if (len < 8 || len > CRYPT_MAX_HASHSIZE) {
 		free(key);
@@ -190,6 +194,8 @@ js_do_encrption(JSContext *cx, uintN argc, jsval *arglist, int encrypt)
 
 	JSVALUE_TO_MSTRING(cx, argv[0], cipherText, &len);
 	HANDLE_PENDING(cx, cipherText);
+	if (cipherText == NULL)
+		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	if (encrypt)
@@ -311,6 +317,8 @@ js_cryptcon_attrstr_set(JSContext *cx, jsval *vp, CRYPT_CONTEXT ctx, CRYPT_ATTRI
 
 	JSVALUE_TO_MSTRING(cx, *vp, val, &len);
 	HANDLE_PENDING(cx, val);
+	if (val == NULL)
+		return JS_FALSE;
 
 	status = cryptSetAttributeString(ctx, type, val, len);
 	if (cryptStatusError(status)) {
