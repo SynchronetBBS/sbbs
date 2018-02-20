@@ -1104,44 +1104,49 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 	}
 #else
 	/* UNIX */
-	char	*home=NULL;
+	char	*home=getenv("HOME");
 
-	if(inpath==NULL)
-		home=getenv("HOME");
-	if(!shared && (home==NULL || strlen(home) > MAX_PATH-32)) {	/* $HOME just too damn big */
-		if(type==SYNCTERM_DEFAULT_TRANSFER_PATH || type==SYNCTERM_PATH_CACHE) {
-			getcwd(fn, fnlen);
-			backslash(fn);
-			if(type==SYNCTERM_PATH_CACHE) {
-				strcat(fn,"cache");
+	home=getenv("HOME");
+	if (!shared) {
+		if((home==NULL || strlen(home) > MAX_PATH-32)) {	/* $HOME just too damn big */
+			if(type==SYNCTERM_DEFAULT_TRANSFER_PATH || type==SYNCTERM_PATH_CACHE) {
+				getcwd(fn, fnlen);
 				backslash(fn);
+				if(type==SYNCTERM_PATH_CACHE) {
+					strcat(fn,"cache");
+					backslash(fn);
+				}
+				return(fn);
 			}
-			return(fn);
+			SAFECOPY(oldlst,"syncterm.lst");
+			strcpy(fn,"./");
 		}
-		SAFECOPY(oldlst,"syncterm.lst");
-		strcpy(fn,"./");
+		else {
+			if(type==SYNCTERM_DEFAULT_TRANSFER_PATH || type==SYNCTERM_PATH_CACHE) {
+				strcpy(fn, home);
+				backslash(fn);
+#if defined(__APPLE__) && defined(__MACH__)
+				if(get_new_OSX_filename(oldlst, sizeof(oldlst), type, shared)!=NULL)
+					strcpy(fn, oldlst);
+#endif
+				if(!isdir(fn))
+					if(MKDIR(fn))
+						fn[0]=0;
+				if(type==SYNCTERM_PATH_CACHE) {
+					strcat(fn,"cache");
+					backslash(fn);
+				}
+				return(fn);
+			}
+			SAFECOPY(oldlst,home);
+			backslash(oldlst);
+			strcat(oldlst,"syncterm.lst");
+			sprintf(fn,"%.*s",fnlen,home);
+			strncat(fn, "/.syncterm", fnlen-strlen(fn)-1);
+			backslash(fn);
+		}
 	}
 	else {
-		if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
-			strcpy(fn, home);
-			backslash(fn);
-#if defined(__APPLE__) && defined(__MACH__)
-			if(get_new_OSX_filename(oldlst, sizeof(oldlst), type, shared)!=NULL)
-				strcpy(fn, oldlst);
-#endif
-			if(!isdir(fn))
-				MKDIR(fn);
-			return(fn);
-		}
-		SAFECOPY(oldlst,home);
-		backslash(oldlst);
-		strcat(oldlst,"syncterm.lst");
-		sprintf(fn,"%.*s",fnlen,home);
-		strncat(fn, "/.syncterm", fnlen-strlen(fn)-1);
-		backslash(fn);
-	}
-
-	if(shared) {
 #ifdef SYSTEM_LIST_DIR
 		strcpy(fn,SYSTEM_LIST_DIR);
 		backslash(fn);
@@ -1248,6 +1253,7 @@ void load_settings(struct syncterm_settings *set)
 int main(int argc, char **argv)
 {
 	struct bbslist *bbs=NULL;
+	BOOL bbs_alloc=FALSE;
 	struct	text_info txtinfo;
 	char	str[MAX_PATH+1];
 	char	drive[MAX_PATH+1];
@@ -1394,6 +1400,7 @@ int main(int argc, char **argv)
 						case 0:
 							printf("NOTICE: The -i option is depreciated, use -if instead\r\n");
 							SLEEP(2000);
+							/* Fall-through */
 						case 'F':
 							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
 							break;
@@ -1518,6 +1525,7 @@ int main(int argc, char **argv)
 			uifcmsg("Unable to allocate memory","The system was unable to allocate memory.");
 			return(1);
 		}
+		bbs_alloc=TRUE;
 		memset(bbs, 0, sizeof(struct bbslist));
 		if((listfile=fopen(settings.list_path,"r"))==NULL)
 			parse_url(url, bbs, conn_type, TRUE);
@@ -1536,10 +1544,8 @@ int main(int argc, char **argv)
 		}
 		if(addr_family != ADDRESS_FAMILY_UNSPEC)
 			bbs->address_family=addr_family;
-		if(bbs->port==0) {
-			free(bbs);
+		if(bbs->port==0)
 			goto USAGE;
-		}
 	}
 
 	if(!winsock_startup())
@@ -1629,12 +1635,24 @@ int main(int argc, char **argv)
 					}
 				}
 			}
+			if (bbs_alloc) {
+				bbs_alloc=FALSE;
+				free(bbs);
+			}
 			bbs=NULL;
 			break;
 		}
 		else
 			last_bbs=strdup(bbs->name);
+		if (bbs_alloc) {
+			bbs_alloc=FALSE;
+			free(bbs);
+		}
 		bbs=NULL;
+	}
+	if (bbs_alloc) {
+		bbs_alloc=FALSE;
+		free(bbs);
 	}
 	if (last_bbs)
 		free(last_bbs);
@@ -1666,6 +1684,10 @@ int main(int argc, char **argv)
 	return(0);
 
 	USAGE:
+	if (bbs_alloc) {
+		bbs_alloc=FALSE;
+		free(bbs);
+	}
 	uifcbail();
 	clrscr();
     gettextinfo(&txtinfo);
