@@ -88,6 +88,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 	CRLF;
 
 	if((msgbuf=(char*)malloc(length+1))==NULL) {
+		fclose(fp);
 		errormsg(WHERE,ERR_ALLOC,msgpath,length+1);
 		return(false);
 	}
