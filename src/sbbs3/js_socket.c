@@ -875,7 +875,6 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
-	free(fname);
 
 	len = js_socket_sendfilesocket(p, file, NULL, 0);
 	close(file);
@@ -886,6 +885,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "send of %s failed",fname);
 	}
+	free(fname);
 
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
@@ -2123,6 +2123,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 					return JS_FALSE;
 				}
 				JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
+				FREE_AND_NULL(protocol);
 				return JS_TRUE;
 			}
 			else
@@ -2151,6 +2152,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx,"open_socket failed with error %d",ERROR_VALUE);
 		if(protocol)
 			free(protocol);
+		free(p);
 		return(JS_FALSE);
 	}
 	if(protocol)
@@ -2162,6 +2164,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
+		free(p);
 		return(JS_FALSE);
 	}
 

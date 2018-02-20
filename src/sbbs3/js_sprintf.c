@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -68,6 +68,7 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 				JS_ClearPendingException(cx);
 			if(p2==NULL) {
 				free(p);
+				free(op);
 				return NULL;
 			}
 			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_CHARP,p2);

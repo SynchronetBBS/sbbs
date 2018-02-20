@@ -1142,8 +1142,8 @@ js_lfexpand(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	if((outbuf=(char*)malloc((strlen(inbuf)*2)+1))==NULL) {
-		free(inbuf);
 		JS_ReportError(cx, "Error allocating %lu bytes at %s:%d", (strlen(inbuf)*2)+1, getfname(__FILE__), __LINE__);
+		free(inbuf);
 		return(JS_FALSE);
 	}
 
@@ -1268,10 +1268,10 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if((outbuf=(char*)malloc((strlen(inbuf)*(strlen(prefix)+1))+1))==NULL) {
+		JS_ReportError(cx, "Error allocating %lu bytes at %s:%d", (strlen(inbuf)*(strlen(prefix)+1))+1, getfname(__FILE__), __LINE__);
 		free(inbuf);
 		if(prefix != prefix_def)
 			free(prefix);
-		JS_ReportError(cx, "Error allocating %lu bytes at %s:%d", (strlen(inbuf)*(strlen(prefix)+1))+1, getfname(__FILE__), __LINE__);
 		return(JS_FALSE);
 	}
 
@@ -2529,6 +2529,7 @@ js_b64_decode(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((outbuf=(char*)malloc(len))==NULL) {
 		JS_ReportError(cx, "Error allocating %lu bytes at %s:%d", len, getfname(__FILE__), __LINE__);
+		free(inbuf);
 		return(JS_FALSE);
 	}
 
@@ -2703,8 +2704,10 @@ js_truncstr(JSContext *cx, uintN argc, jsval *arglist)
 		free(str);
 		return JS_FALSE;
 	}
-	if(set==NULL)
+	if(set==NULL) {
+		free(str);
 		return(JS_TRUE);
+	}
 
 	truncstr(str,set);
 	free(set);
@@ -3339,8 +3342,11 @@ js_fmutex(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
-		if(!JS_ValueToInt32(cx, argv[argn++], &max_age))
+		if(!JS_ValueToInt32(cx, argv[argn++], &max_age)) {
+			FREE_AND_NULL(text);
+			free(fname);
 			return JS_FALSE;
+		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -3821,8 +3827,10 @@ js_resolve_ip(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(want_array) {
 		JS_RESUMEREQUEST(cx, rc);
-		if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
+		if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL) {
+			freeaddrinfo(res);
 			return(JS_FALSE);
+		}
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(rarray));
 		for(cur=res; cur; cur=cur->ai_next) {
 			inet_addrtop((void *)cur->ai_addr, ip_str, sizeof(ip_str));
@@ -3883,6 +3891,7 @@ js_resolve_host(JSContext *cx, uintN argc, jsval *arglist)
 	hints.ai_flags = NI_NAMEREQD;
 	if(getnameinfo(res->ai_addr, res->ai_addrlen, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD)!=0) {
 		JS_RESUMEREQUEST(cx, rc);
+		freeaddrinfo(res);
 		return(JS_TRUE);
 	}
 	JS_RESUMEREQUEST(cx, rc);
@@ -4498,29 +4507,37 @@ BOOL DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec*
 	p->startup = startup;
 	p->exit_func=NULL;
 
-	if((*glob = JS_NewCompartmentAndGlobalObject(cx, &js_global_class, NULL)) ==NULL)
+	if((*glob = JS_NewCompartmentAndGlobalObject(cx, &js_global_class, NULL)) ==NULL) {
+		free(p);
 		return(FALSE);
-	if(!JS_AddObjectRoot(cx, glob))
+	}
+	if(!JS_AddObjectRoot(cx, glob)) {
+		free(p);
 		return(FALSE);
+	}
 
 	if(!JS_SetPrivate(cx, *glob, p)) {	/* Store a pointer to scfg_t and the new methods */
 		JS_RemoveObjectRoot(cx, glob);
+		free(p);
 		return(FALSE);
 	}
 
 	if (!JS_InitStandardClasses(cx, *glob)) {
 		JS_RemoveObjectRoot(cx, glob);
+		free(p);
 		return(FALSE);
 	}
 
 	p->bg_count=0;
 	if(sem_init(&p->bg_sem, 0, 0)==-1) {
 		JS_RemoveObjectRoot(cx, glob);
+		free(p);
 		return(FALSE);
 	}
 
 	if (!JS_SetReservedSlot(cx, *glob, 0, INT_TO_JSVAL(0))) {
 		JS_RemoveObjectRoot(cx, glob);
+		free(p);
 		return(FALSE);
 	}
 

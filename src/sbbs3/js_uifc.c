@@ -619,8 +619,11 @@ js_uifc_input(JSContext *cx, uintN argc, jsval *arglist)
 				free(prompt);
 			return JS_FALSE;
 		}
-		if(org==NULL)
+		if(org==NULL) {
+			if(prompt)
+				free(prompt);
 			return(JS_TRUE);
+		}
 	}
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
 		&& !JS_ValueToInt32(cx,argv[argn++],&maxlen)) {
@@ -724,7 +727,8 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 		if(JS_IsArrayObject(cx, objarg)) {
 			if(!JS_GetArrayLength(cx, objarg, &numopts))
 				return(JS_TRUE);
-			opts=strListInit();
+			if(opts == NULL)
+				opts=strListInit();
 			for(i=0;i<numopts;i++) {
 				if(!JS_GetElement(cx, objarg, i, &val))
 					break;
@@ -735,8 +739,7 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 				}
 				strListPush(&opts,opt);
 			}
-			if(opt)
-				free(opt);
+			FREE_AND_NULL(opt);
 		}
 		else if(JS_GetClass(cx, objarg) == &js_uifc_list_ctx_class) {
 			p = JS_GetPrivate(cx, objarg);
@@ -757,6 +760,8 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	strListFree(&opts);
+	if(title != NULL)
+		free(title);
 	return(JS_TRUE);
 }
 

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1500,6 +1500,7 @@ js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc && (!JS_ValueToInt32(cx,argv[0],&val)))
 		return JS_FALSE;
+	memset(&user, 0, sizeof(user));
 	user.number=(ushort)val;
 	if(user.number!=0 && (i=getuserdat(scfg,&user))!=0) {
 		JS_ReportError(cx,"Error %d reading user number %d",i,val);

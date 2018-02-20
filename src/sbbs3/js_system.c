@@ -1125,7 +1125,7 @@ js_spamlog(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	uintN		i;
-	char*		p;
+	char*		p=NULL;
 	char*		prot=NULL;
 	char*		action=NULL;
 	char*		reason=NULL;
@@ -1162,27 +1162,29 @@ js_spamlog(JSContext *cx, uintN argc, jsval *arglist)
 					free(to);
 				if(from)
 					free(from);
+				if(p)
+					free(p);
 				return JS_FALSE;
 			}
+			if(p==NULL)
+				continue;
+			if(prot==NULL)
+				prot=p;
+			else if(action==NULL)
+				action=p;
+			else if(reason==NULL)
+				reason=p;
+			else if(host==NULL)
+				host=p;
+			else if(ip_addr==NULL)
+				ip_addr=p;
+			else if(to==NULL)
+				to=p;
+			else if(from==NULL)
+				from=p;
+			else
+				free(p);
 		}
-		if(p==NULL)
-			continue;
-		if(prot==NULL)
-			prot=p;
-		else if(action==NULL)
-			action=p;
-		else if(reason==NULL)
-			reason=p;
-		else if(host==NULL)
-			host=p;
-		else if(ip_addr==NULL)
-			ip_addr=p;
-		else if(to==NULL)
-			to=p;
-		else if(from==NULL)
-			from=p;
-		else
-			free(p);
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	ret=spamlog(cfg,prot,action,reason,host,ip_addr,to,from);
@@ -1212,7 +1214,7 @@ js_hacklog(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	uintN		i;
 	int32		i32=0;
-	char*		p;
+	char*		p=NULL;
 	char*		prot=NULL;
 	char*		user=NULL;
 	char*		text=NULL;
@@ -1250,6 +1252,8 @@ js_hacklog(JSContext *cx, uintN argc, jsval *arglist)
 					free(text);
 				if(host)
 					free(host);
+				if(p)
+					free(p);
 				return JS_FALSE;
 			}
 		}
@@ -1285,7 +1289,7 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	uintN		i;
-	char*		p;
+	char*		p=NULL;
 	char*		prot=NULL;
 	char*		reason=NULL;
 	char*		host=NULL;
@@ -1319,6 +1323,8 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 					free(from);
 				if(fname)
 					free(fname);
+				if(p)
+					free(p);
 				return JS_FALSE;
 			}
 		}
