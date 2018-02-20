@@ -124,11 +124,13 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 		}
 		fseek(smb->sdt_fp,msg->hdr.offset+msg->dfield[i].offset
 			,SEEK_SET);
-		fread(&xlat,sizeof(xlat),1,smb->sdt_fp);
+		if(fread(&xlat, 1, sizeof(xlat), smb->sdt_fp) != sizeof(xlat))
+			continue;
 		lzh=0;
 		if(xlat==XLAT_LZH) {
 			lzh=1;
-			fread(&xlat,sizeof(xlat),1,smb->sdt_fp); 
+			if(fread(&xlat, 1, sizeof(xlat), smb->sdt_fp) != sizeof(xlat))
+				continue;
 		}
 		if(xlat!=XLAT_NONE) 	/* no other translations currently supported */
 			continue;
@@ -145,7 +147,14 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 				free(buf);
 				return(NULL);
 			}
-			smb_fread(smb,lzhbuf,length,smb->sdt_fp);
+			if(smb_fread(smb,lzhbuf,length,smb->sdt_fp) != length) {
+				sprintf(smb->last_error
+					,"%s read failure of %ld bytes for LZH data"
+					, __FUNCTION__, length);
+				free(lzhbuf);
+				free(buf);
+				return(NULL);
+			}
 			lzhlen=*(int32_t*)lzhbuf;
 			if((p=(char*)realloc(buf,l+lzhlen+3L))==NULL) {
 				sprintf(smb->last_error
