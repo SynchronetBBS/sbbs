@@ -1638,7 +1638,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 
 								GETTEXTINFO(&ti);
 								vmode = find_vmode(ti.currmode);
-								sprintf(tmp, "\x1b[?2;0;%u;%uS", vparams[vmode].charwidth*cterm->width, vparams[vmode].charheight*cterm->height);
+								if (vmode != -1)
+									sprintf(tmp, "\x1b[?2;0;%u;%uS", vparams[vmode].charwidth*cterm->width, vparams[vmode].charheight*cterm->height);
 								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
 									strcat(retbuf, tmp);
 							}
@@ -1833,7 +1834,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 
 									GETTEXTINFO(&ti);
 									vmode = find_vmode(ti.currmode);
-									sprintf(tmp, "\x1b[=3;%u;%un", vparams[vmode].charheight, vparams[vmode].charwidth);
+									if (vmode != -1)
+										sprintf(tmp, "\x1b[=3;%u;%un", vparams[vmode].charheight, vparams[vmode].charwidth);
 									break;
 								}
 							}
