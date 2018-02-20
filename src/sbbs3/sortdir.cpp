@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -140,7 +140,7 @@ void sbbs_t::resort(uint dirnum)
 		errormsg(WHERE,ERR_OPEN,exbfname,O_RDWR|O_CREAT);
 		return; }
 	if((txbfile=nopen(txbfname,O_RDWR|O_CREAT))==-1) {
-		close(exbfile);
+		close(ixbfile);
 		close(datfile);
 		close(exbfile);
 		free((char *)ixbbuf);
