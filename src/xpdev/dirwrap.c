@@ -248,7 +248,7 @@ int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 			SAFECOPY(path,pattern);
 			p=getfname(path);
 			*p=0;
-			strcat(path,ff.name);
+			SAFECAT(path,ff.name);
 
 			if((glob->gl_pathv[glob->gl_pathc]=(char*)malloc(strlen(path)+2))==NULL) {
 				globfree(glob);
@@ -315,7 +315,7 @@ long DLLCALL getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only
 
 	SAFECOPY(match,path);
 	backslash(match);
-	strcat(match,ALLFILES);
+	SAFECAT(match,ALLFILES);
 	glob(match,GLOB_MARK,NULL,&g);
 	if(include_subdirs && !subdir_only)
 		count=g.gl_pathc;
@@ -767,7 +767,7 @@ ulong DLLCALL getfilecount(const char *inpath, const char* pattern)
 
 	SAFECOPY(path, inpath);
 	backslash(path);
-	strcat(path, pattern);
+	SAFECAT(path, pattern);
 	if(glob(path, GLOB_MARK, NULL, &g))
 		return 0;
 	for(gi = 0; gi < g.gl_pathc; ++gi) {
