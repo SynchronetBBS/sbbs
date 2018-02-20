@@ -1303,6 +1303,8 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 			cterm->sx_pixels_sent = 1;
 			GETTEXTINFO(&ti);
 			vmode = find_vmode(ti.currmode);
+			if (vmode = -1)
+				return;
 			if (cterm->sx_pixels == NULL) {
 				cterm->sx_pixels = malloc(sizeof(struct ciolib_pixels));
 				cterm->sx_pixels->pixels = malloc(sizeof(cterm->sx_pixels->pixels[0]) * cterm->sx_iv * ti.screenwidth * vparams[vmode].charwidth * 6);
@@ -1433,6 +1435,8 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						GETTEXTINFO(&ti);
 						vmode = find_vmode(ti.currmode);
 
+						if (vmode == -1)
+							return;
 						setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
 						cterm->sx_row_max_x = 0;
 
@@ -1497,13 +1501,15 @@ all_done:
 	}
 
 	if (cterm->sx_scroll_mode) {
-		cterm->sx_x = cterm->sx_x / vparams[vmode].charwidth + 1;
-		cterm->sx_x -= (cterm->x - 1);
+		if (vmode != -1) {
+			cterm->sx_x = cterm->sx_x / vparams[vmode].charwidth + 1;
+			cterm->sx_x -= (cterm->x - 1);
 
-		cterm->sx_y = (cterm->sx_y - 1) / vparams[vmode].charheight + 1;
-		cterm->sx_y -= (cterm->y - 1);
+			cterm->sx_y = (cterm->sx_y - 1) / vparams[vmode].charheight + 1;
+			cterm->sx_y -= (cterm->y - 1);
 
-		GOTOXY(cterm->sx_x,cterm->sx_y);
+			GOTOXY(cterm->sx_x,cterm->sx_y);
+		}
 	}
 	else {
 		GOTOXY(cterm->sx_start_x, cterm->sx_start_y);
