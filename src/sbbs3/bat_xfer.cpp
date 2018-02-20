@@ -126,7 +126,7 @@ void sbbs_t::batchmenu()
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-						strcat(tmp2,tmp); 
+						SAFECAT(tmp2,tmp); 
 					}
 				ungetkey(useron.prot);
 				ch=(char)getkeys(tmp2,0);
@@ -299,7 +299,7 @@ void sbbs_t::batchmenu()
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->batulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-						strcat(str,tmp); 
+						SAFECAT(str,tmp); 
 					}
 				ch=(char)getkeys(str,0);
 				if(ch==text[YNQP][2])
@@ -387,7 +387,7 @@ BOOL sbbs_t::start_batch_download()
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 			sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-			strcat(str,tmp); 
+			SAFECAT(str,tmp); 
 		}
 	ungetkey(useron.prot);
 	ch=(char)getkeys(str,0);
@@ -509,10 +509,10 @@ bool sbbs_t::create_batchdn_lst(bool native)
 				? cfg.altpath[batdn_alt[i]-1] : cfg.dir[batdn_dir[i]]->path);
 
 		unpadfname(batdn_name[i],fname);
-		strcat(path,fname);
+		SAFECAT(path,fname);
 		if(native)
 			fexistcase(path);
-		strcat(path,crlf);
+		SAFECAT(path,crlf);
 		write(file,path,strlen(path)); 
 	}
 	close(file);
