@@ -543,6 +543,9 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 		case 16:
 			this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].font].eight_by_sixteen;
 			break;
+		default:
+			pthread_mutex_unlock(&screen.screenlock);
+			return(-1);
 	}
 	if (this_font == NULL)
 		this_font = font[0];
