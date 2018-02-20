@@ -404,7 +404,6 @@ enum failure_reason {
 	,FAILURE_CANT_CREATE
 	,FAILURE_CONNECT_ERROR
 	,FAILURE_ABORTED
-	,FAILURE_GENERAL
 	,FAILURE_DISCONNECTED
 };
 
@@ -576,12 +575,6 @@ connect_failed:
 				uifcmsg("Connection Aborted.",	"`Connection Aborted`\n\n"
 								"Connection to the remote system aborted by keystroke.");
 				break;
-			case FAILURE_GENERAL:
-				sprintf(str,"Connect error (%d)!",ERROR_VALUE);
-				uifcmsg(str
-								,"`SyncTERM failed to connect`\n\n"
-								 "The call to select() returned an unexpected error code.");
-				break;
 			case FAILURE_DISCONNECTED:
 				sprintf(str,"Connect error (%d)!",ERROR_VALUE);
 				uifcmsg(str
@@ -590,6 +583,7 @@ connect_failed:
 				break;
 		}
 		conn_close();
+		if (sock != INVALID_SOCKET)
 		closesocket(sock);
 		return(INVALID_SOCKET);
 	}
