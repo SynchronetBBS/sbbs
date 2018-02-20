@@ -1628,6 +1628,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 							break;
 						case -2-CIO_KEY_MOUSE:	/* Clicked outside of window... */
 							getmouse(&mevent);
+							/* Fall-through */
 						case -2-0x0f00:	/* Backtab */
 						case -2-0x4b00:	/* Left Arrow */
 						case -2-0x4d00:	/* Right Arrow */
@@ -1831,7 +1832,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 							check_exit(FALSE);
 						}
 						else if(edit_list(list, list[opt],settings.list_path,FALSE)) {
-							load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?strdup(list[opt]->name):NULL);
+							load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, strdup(list[opt]->name));
 							oldopt=-1;
 						}
 					}
