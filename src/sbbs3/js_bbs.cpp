@@ -3052,7 +3052,7 @@ static JSBool
 js_cmdstr(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		p;
+	char*		p = NULL;
 	const char	*def="";
 	char*		fpath=(char *)def;
 	char*		fspec=(char *)def;
@@ -3073,6 +3073,8 @@ js_cmdstr(JSContext *cx, uintN argc, jsval *arglist)
  		return(JS_FALSE);
 
 	JSSTRING_TO_MSTRING(cx, js_str, p, NULL);
+	if(p == NULL)
+		return JS_FALSE;
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_STRING(argv[i])) {
@@ -3091,14 +3093,15 @@ js_cmdstr(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	p=sbbs->cmdstr(p,fpath,fspec,NULL);
+	char* cmd = sbbs->cmdstr(p, fpath, fspec, NULL);
+	free(p);
 	if(fpath != def)
 		free(fpath);
 	if(fspec != def)
 		free(fspec);
 	JS_RESUMEREQUEST(cx, rc);
 
-	if((js_str=JS_NewStringCopyZ(cx, p))==NULL)
+	if((js_str=JS_NewStringCopyZ(cx, cmd))==NULL)
 		return(JS_FALSE);
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
 	return(JS_TRUE);
