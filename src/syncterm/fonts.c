@@ -270,12 +270,14 @@ void font_management(void)
 			char	**path;
 
 			if(i&MSK_DEL) {
-				FREE_AND_NULL(fonts[cur].name);
-				FREE_AND_NULL(fonts[cur].path8x8);
-				FREE_AND_NULL(fonts[cur].path8x14);
-				FREE_AND_NULL(fonts[cur].path8x16);
-				memmove(&(fonts[cur]),&(fonts[cur+1]),sizeof(struct font_files)*(count-cur));
-				count--;
+				if (fonts) {
+					FREE_AND_NULL(fonts[cur].name);
+					FREE_AND_NULL(fonts[cur].path8x8);
+					FREE_AND_NULL(fonts[cur].path8x14);
+					FREE_AND_NULL(fonts[cur].path8x16);
+					memmove(&(fonts[cur]),&(fonts[cur+1]),sizeof(struct font_files)*(count-cur));
+					count--;
+				}
 				break;
 			}
 			if(i&MSK_INS) {
