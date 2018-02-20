@@ -171,6 +171,8 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			if(!JS_SetElement(cx, alt_list, l, &val))
 				return JS_FALSE;
 		}
+		if(name)
+			return(JS_TRUE);
 	}
 
 #ifdef BUILD_JSDOCS

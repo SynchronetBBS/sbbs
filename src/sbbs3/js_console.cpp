@@ -531,8 +531,10 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(js_str!=NULL) {
 		JSSTRING_TO_MSTRING(cx, js_str, p2, NULL);
-		if(p2==NULL)
+		if(p2==NULL) {
+			free(p);
 			return JS_FALSE;
+		}
 		sprintf(p,"%.*s",(int)maxlen,p2);
 		free(p2);
 	}
@@ -1235,17 +1237,24 @@ js_uselect(JSContext *cx, uintN argc, jsval *arglist)
 	
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&num))
+			if(!JS_ValueToInt32(cx,argv[i],&num)) {
+				FREE_AND_NULL(title);
+				FREE_AND_NULL(item);
 				return JS_FALSE;
+			}
 			continue;
 		}
-		if((js_str=JS_ValueToString(cx, argv[i]))==NULL)
+		if((js_str=JS_ValueToString(cx, argv[i]))==NULL) {
+			FREE_AND_NULL(title);
+			FREE_AND_NULL(item);
 			return(JS_FALSE);
-
+		}
 		if(title==NULL) {
 			JSSTRING_TO_MSTRING(cx, js_str, title, NULL)	// Magicsemicolon
-			if(title==NULL)
+			if(title==NULL) {
+				FREE_AND_NULL(item);
 				return JS_FALSE;
+			}
 		}
 		else if(item==NULL) {
 			JSSTRING_TO_MSTRING(cx, js_str, item, NULL)	// Magicsemicolon

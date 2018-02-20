@@ -1222,8 +1222,10 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	JSSTRING_TO_MSTRING(cx, cmd, cstr, NULL);
-	if(cstr==NULL)
+	if(cstr==NULL) {
+		FREE_AND_NULL(p_startup_dir);
 		return JS_FALSE;
+	}
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->external(cstr,mode,p_startup_dir)));
 	free(cstr);
@@ -1418,6 +1420,7 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 		sbbs->text[i]=p;
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	}
+	free(p);
 
 	return(JS_TRUE);
 }
@@ -2543,8 +2546,11 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	if(js_subj!=NULL)
 		JSSTRING_TO_MSTRING(cx, js_subj, subj, NULL);
-	if(subj==NULL)
+	if(subj==NULL) {
+		if(top != def)
+			free(top);
 		return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->email(usernumber,top,subj,mode)));
@@ -3081,13 +3087,19 @@ js_cmdstr(JSContext *cx, uintN argc, jsval *arglist)
 			js_str = JS_ValueToString(cx, argv[i]);
 			if(fpath==def) {
 				JSSTRING_TO_MSTRING(cx, js_str, fpath, NULL);
-				if(fpath==NULL)
+				if(fpath==NULL) {
+					if(fspec != def)
+						free(fspec);
 					return JS_FALSE;
+				}
 			}
 			else if(fspec==def) {
 				JSSTRING_TO_MSTRING(cx, js_str, fspec, NULL);
-				if(fspec==NULL)
+				if(fspec==NULL) {
+					if(fpath != def)
+						free(fpath);
 					return JS_FALSE;
+				}
 			}
 		}
 	}
@@ -3168,6 +3180,8 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
+			if(fspec != def)
+				FREE_AND_NULL(fspec);
 			JSSTRING_TO_MSTRING(cx, js_str, afspec, NULL);
 			if(afspec==NULL)
 				return JS_FALSE;
@@ -3219,6 +3233,8 @@ js_listfileinfo(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
+			if(fspec != def && fspec != NULL)
+				free(fspec);
 			JSSTRING_TO_MSTRING(cx, js_str, fspec, NULL);
 			if(fspec==NULL)
 				return JS_FALSE;
@@ -3437,8 +3453,11 @@ js_scanposts(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&mode))
+			if(!JS_ValueToInt32(cx,argv[i],&mode)) {
+				if(find != def)
+					free(find);
 				return JS_FALSE;
+			}
 		}
 		else if(JSVAL_IS_STRING(argv[i]) && find==def) {
 			JSVALUE_TO_MSTRING(cx, argv[i], find, NULL);
