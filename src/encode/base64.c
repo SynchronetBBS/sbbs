@@ -156,12 +156,15 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 	}
 	if(outp<outend)
 		*outp=0;
+	int result;
 	if(target==source) {
 		memcpy(target,tmpbuf,tlen);
+		result = outp - tmpbuf;
 		free(tmpbuf);
-	}
+	} else
+		result = outp - target;
 
-	return(outp-target);
+	return result;
 }
 
 #ifdef BASE64_TEST
