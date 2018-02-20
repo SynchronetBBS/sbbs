@@ -299,7 +299,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 		if(uifc->helpbuf)
 			free(uifc->helpbuf);
 		JSVALUE_TO_MSTRING(cx, *vp, uifc->helpbuf, NULL);
-		HANDLE_PENDING(cx, uifc->helpbuf);
+		HANDLE_PENDING(cx, NULL);
 		return JS_TRUE;
 	}
 

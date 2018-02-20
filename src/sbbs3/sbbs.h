@@ -221,7 +221,6 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	if(JS_IsExceptionPending(cx)) { \
 		if(p != NULL) \
 			free(p); \
-		p = NULL; \
 		return JS_FALSE; \
 	}
 
