@@ -316,7 +316,8 @@ long DLLCALL getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only
 	SAFECOPY(match,path);
 	backslash(match);
 	SAFECAT(match,ALLFILES);
-	glob(match,GLOB_MARK,NULL,&g);
+	if (glob(match,GLOB_MARK,NULL,&g) != 0)
+		return 0;
 	if(include_subdirs && !subdir_only)
 		count=g.gl_pathc;
 	else
