@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -233,6 +233,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 			default:
 				lprintf(xm,LOG_WARNING,"Block %u: Received %s  Expected SOH, STX, or EOT"
 					,expected_block_num, chr((uchar)i));
+				/* Fall-through */
 			case NOINP: 	/* Nothing came in */
 				if(eot)
 					return(EOT);
@@ -492,7 +493,10 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 	if(start!=NULL)		
 		*start=time(NULL);
 
-	fstat(fileno(fp),&st);
+	if(fstat(fileno(fp),&st) != 0) {
+		lprintf(xm,LOG_ERR,"Failed to fstat file");
+		return FALSE;
+	}
 
 	if(xm->total_files==0)
 		xm->total_files=1;

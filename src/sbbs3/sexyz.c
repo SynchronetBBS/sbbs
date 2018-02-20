@@ -1332,6 +1332,7 @@ static int receive_files(char** fname_list, int fnames)
 				if(fwrite(block,1,wr,fp)!=wr) {
 					lprintf(LOG_ERR,"ERROR %d writing %u bytes at file offset %"PRIu64
 						,errno, wr, (uint64_t)ftello(fp));
+					fclose(fp);
 					xmodem_cancel(&xm);
 					return(1); 
 				}
@@ -1884,7 +1885,7 @@ int main(int argc, char **argv)
 	if(!stdio) {
 #endif
 		lprintf(LOG_DEBUG,"Setting TCP_NODELAY to %d",tcp_nodelay);
-		setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&tcp_nodelay,sizeof(tcp_nodelay));
+		(void)setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&tcp_nodelay,sizeof(tcp_nodelay));
 #ifdef __unix__
 	}
 #endif
@@ -1892,7 +1893,7 @@ int main(int argc, char **argv)
 	/* Set non-blocking mode */
 #ifdef __unix__
 	if(stdio) {
-		fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+		(void)fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
 	}
 	else
 #endif
