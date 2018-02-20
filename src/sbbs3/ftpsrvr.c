@@ -4891,7 +4891,11 @@ void DLLCALL ftp_server(void* arg)
 		else
 			SAFECOPY(scfg.temp_dir,"../temp");
 	   	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-		MKDIR(scfg.temp_dir);
+		if(!isdir(scfg.temp_dir) && MKDIR(scfg.temp_dir) != 0) {
+			lprintf(LOG_ERR, "Error %d creating temp directory: %s", errno, scfg.temp_dir);
+			cleanup(1,__LINE__);
+			break;
+		}
 		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 		if(!isdir(scfg.temp_dir)) {
 			lprintf(LOG_CRIT,"!Invalid temp directory: %s", scfg.temp_dir);
