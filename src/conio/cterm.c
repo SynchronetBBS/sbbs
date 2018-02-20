@@ -3179,7 +3179,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	int oldptnm;
 	uint32_t palette[16];
 	int mpalette;
-	struct vmem_cell tmpvc;
+	struct vmem_cell tmpvc[1];
 	int orig_fonts[4];
 
 	if(!cterm->started)
@@ -3840,12 +3840,12 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 					else {	/* ANSI-BBS */
 						if(cterm->doorway_char) {
 							uctputs(cterm, prn);
-							tmpvc.ch = ch[0];
-							tmpvc.legacy_attr=cterm->attr;
-							tmpvc.fg = cterm->fg_color;
-							tmpvc.bg = cterm->bg_color;
-							tmpvc.font = ciolib_attrfont(cterm->attr);
-							vmem_puttext(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,&tmpvc);
+							tmpvc[0].ch = ch[0];
+							tmpvc[0].legacy_attr=cterm->attr;
+							tmpvc[0].fg = cterm->fg_color;
+							tmpvc[0].bg = cterm->bg_color;
+							tmpvc[0].font = ciolib_attrfont(cterm->attr);
+							vmem_puttext(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,tmpvc);
 							ch[1]=0;
 							if(WHEREX()==cterm->width) {
 								if(WHEREY()==cterm->bottom_margin) {
