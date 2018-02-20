@@ -3324,6 +3324,8 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 												FREE_AND_NULL(cterm->strbuf);
 												cterm->strbuflen = cterm->strbufsize = 0;
 											}
+											else
+												cterm->strbuf = p;
 										}
 									}
 								}
