@@ -1303,7 +1303,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 			cterm->sx_pixels_sent = 1;
 			GETTEXTINFO(&ti);
 			vmode = find_vmode(ti.currmode);
-			if (vmode = -1)
+			if (vmode == -1)
 				return;
 			if (cterm->sx_pixels == NULL) {
 				cterm->sx_pixels = malloc(sizeof(struct ciolib_pixels));
