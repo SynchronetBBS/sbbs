@@ -111,12 +111,18 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 	uint	i;
 	long	length,l;
 	faddr_t addr;
+	uint16_t net_type;
 	fmsghdr_t hdr;
 	struct tm tm;
 
 	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
-		return(false); 
+		return false; 
+	}
+
+	if(useron.rest&FLAG('M')) {
+		bputs(text[NoNetMailAllowed]);
+		return false;
 	}
 
 	SAFECOPY(subj,title);
@@ -125,39 +131,38 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 
 	lookup_netuser(to);
 
-	p=strrchr(to,'@');      /* Find '@' in name@addr */
-	if(p && !isdigit(*(p+1)) && !strchr(p,'.') && !strchr(p,':')) {
+	net_type = smb_netaddr_type(to);
+	lprintf(LOG_DEBUG, "parsed net type of '%s' is %s\r\n", to, smb_nettype((enum smb_net_type)net_type));
+	if(net_type == NET_QWK) {
 		mode&=~WM_FILE;
 		qnetmail(to,title,mode|WM_NETMAIL);
-		return(false); 
+		return false; 
 	}
-	if(!cfg.total_faddrs || p==NULL || !strchr(p+1,'/')) {
-		if(!p && cfg.dflt_faddr.zone)
-			addr=cfg.dflt_faddr;
-		else if(cfg.inetmail_misc&NMAIL_ALLOW) {
-			if(mode&WM_FILE && !SYSOP && !(cfg.inetmail_misc&NMAIL_FILE))
-				mode&=~WM_FILE;
-			return(inetmail(into,title,mode|WM_NETMAIL));
+	if(net_type == NET_INTERNET) {
+		if(!(cfg.inetmail_misc&NMAIL_ALLOW)) {
+			bputs(text[NoNetMailAllowed]);
+			return false;
 		}
-		else if(cfg.dflt_faddr.zone)
-			addr=cfg.dflt_faddr;
-		else {
-			bputs(text[InvalidNetMailAddr]);
-			return(false); 
-		} 
-	} else {
-		addr=atofaddr(&cfg,p+1); 	/* Get fido address */
-		*p=0;					/* Chop off address */
+		if(mode&WM_FILE && !SYSOP && !(cfg.inetmail_misc&NMAIL_FILE))
+			mode&=~WM_FILE;
+		return inetmail(into,title,mode|WM_NETMAIL);
 	}
+	p=strrchr(to,'@');      /* Find '@' in name@addr */
+	if(p==NULL || net_type != NET_FIDO) {
+		bputs(text[InvalidNetMailAddr]);
+		return false; 
+	}
+	if(!cfg.total_faddrs || (!SYSOP && !(cfg.netmail_misc&NMAIL_ALLOW))) {
+		bputs(text[NoNetMailAllowed]);
+		return false; 
+	}
+	*p=0;					/* Chop off address */
+	p++;
+	SKIP_WHITESPACE(p);
+	addr=atofaddr(&cfg,p); 	/* Get fido address */
 
 	if(mode&WM_FILE && !SYSOP && !(cfg.netmail_misc&NMAIL_FILE))
 		mode&=~WM_FILE;
-
-	if((!SYSOP && !(cfg.netmail_misc&NMAIL_ALLOW)) || useron.rest&FLAG('M')
-		|| !cfg.total_faddrs) {
-		bputs(text[NoNetMailAllowed]);
-		return(false); 
-	}
 
 	truncsp(to);				/* Truncate off space */
 
@@ -449,7 +454,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	char*	sender_id = fromhub ? cfg.qhub[fromhub-1]->id : useron.alias;
 	char 	tmp[512];
 	int 	i,fido,inet=0,qnet=0;
-	ushort	net;
+	uint16_t net;
 	uint16_t xlat;
 	long	l,offset,length,m,n;
 	faddr_t fidoaddr;
@@ -764,7 +769,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 		smb_dfield(&msg,TEXT_BODY,length);
 
-		i=smb_addmsghdr(&smb,&msg,SMB_SELFPACK);
+		i=smb_addmsghdr(&smb,&msg,smb_storage_mode(&cfg, &smb));
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
 

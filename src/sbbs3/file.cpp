@@ -212,6 +212,7 @@ void sbbs_t::closefile(file_t* f)
 	}
 	close(file);
 	if((file=nopen(str1,O_WRONLY|O_TRUNC))==-1) {
+		free(buf);
 		errormsg(WHERE,ERR_OPEN,str1,O_WRONLY|O_TRUNC);
 		return; 
 	}

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -252,7 +252,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 		}
 		if(lread(file,ixbbuf,length)!=length) {
 			close(file);
-			free((char *)ixbbuf);
+			free(ixbbuf);
 			return(FALSE); 
 		}
 	/************************************************/
@@ -263,7 +263,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 				for(i=0;i<12 && toupper(fname[i])==toupper(ixbbuf[l+i]);i++);
 				if(i==12) {     /* file already in directory index */
 					close(file);
-					free((char *)ixbbuf);
+					free(ixbbuf);
 					return(FALSE); 
 				}
 				if(cfg->dir[f->dir]->sort==SORT_NAME_A 
@@ -287,22 +287,22 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 		lseek(file,l,SEEK_SET);
 		if(write(file,fname,11)!=11) {  /* Write filename to IXB file */
 			close(file);
-			free((char *)ixbbuf);
+			free(ixbbuf);
 			return(FALSE); 
 		}
 		if(write(file,idx,3)!=3) {  /* Write DAT offset into IXB file */
 			close(file);
-			free((char *)ixbbuf);
+			free(ixbbuf);
 			return(FALSE); 
 		}
 		write(file,&f->dateuled,4);
 		write(file,&f->datedled,4);              /* Write 0 for datedled */
 		if(lwrite(file,&ixbbuf[l],length-l)!=length-l) { /* Write rest of IXB */
 			close(file);
-			free((char *)ixbbuf);
+			free(ixbbuf);
 			return(FALSE); 
 		}
-		free((char *)ixbbuf); 
+		free(ixbbuf); 
 	}
 	else {              /* IXB file is empty... No files */
 		if(write(file,fname,11)!=11) {  /* Write filename it IXB file */
@@ -348,7 +348,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 	}
 	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
-		free((char *)ixbbuf);
+		free(ixbbuf);
 		return(FALSE); 
 	}
 	close(file);
@@ -361,7 +361,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 			break; 
 	}
 	if(l>=length) {
-		free((char *)ixbbuf);
+		free(ixbbuf);
 		return(FALSE); 
 	}
 	l+=11;
@@ -370,7 +370,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 		|((long)ixbbuf[l+5]<<16)|((long)ixbbuf[l+6]<<24);
 	f->datedled=ixbbuf[l+7]|((long)ixbbuf[l+8]<<8)
 		|((long)ixbbuf[l+9]<<16)|((long)ixbbuf[l+10]<<24);
-	free((char *)ixbbuf);
+	free(ixbbuf);
 	return(TRUE);
 }
 
@@ -455,11 +455,12 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 	}
 	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
-		free((char *)ixbbuf);
+		free(ixbbuf);
 		return(FALSE); 
 	}
 	close(file);
 	if((file=sopen(str,O_WRONLY|O_TRUNC|O_BINARY,SH_DENYRW))==-1) {
+		free(ixbbuf);
 		return(FALSE); 
 	}
 	for(l=0;l<length;l+=F_IXBSIZE) {
@@ -469,11 +470,11 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 		if(stricmp(ixbname,fname))
 			if(lwrite(file,&ixbbuf[l],F_IXBSIZE)!=F_IXBSIZE) {
 				close(file);
-				free((char *)ixbbuf);
+				free(ixbbuf);
 				return(FALSE); 
 		} 
 	}
-	free((char *)ixbbuf);
+	free(ixbbuf);
 	close(file);
 	SAFEPRINTF2(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_WRONLY|O_BINARY,SH_DENYRW))==-1) {
@@ -519,7 +520,7 @@ BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 	}
 	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
-		free((char *)ixbbuf);
+		free(ixbbuf);
 		return(FALSE); 
 	}
 	close(file);
@@ -528,7 +529,7 @@ BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 			if(toupper(fname[i])!=toupper(ixbbuf[l+i])) break;
 		if(i==11) break; 
 	}
-	free((char *)ixbbuf);
+	free(ixbbuf);
 	if(l!=length)
 		return(TRUE);
 	return(FALSE);
