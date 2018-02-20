@@ -534,8 +534,6 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int 
 	int width;
 	int height;
 	void *buf;
-	uint32_t *fgb = NULL;
-	uint32_t *bgb = NULL;
 
 	CIOLIB_INIT();
 
@@ -567,10 +565,6 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int 
 
 fail:
 	free(buf);
-	if (fgb)
-		free(fgb);
-	if (bgb)
-		free(bgb);
 	return 0;
 }
 
