@@ -303,35 +303,35 @@ static BOOL zmodem_check_abort(void* vp)
 	time_t					now=time(NULL);
 	int						key;
 
-	if (quitting || zm == NULL) {
+	if (zm == NULL)
+		return TRUE;
+	if (quitting) {
 		zm->cancelled=TRUE;
 		zm->local_abort=TRUE;
 		return TRUE;
 	}
 	if(last_check != now) {
 		last_check=now;
-		if(zm!=NULL) {
-			while(kbhit()) {
-				switch((key=getch())) {
-					case ESC:
-					case CTRL_C:
-					case CTRL_X:
-						zm->cancelled=TRUE;
-						zm->local_abort=TRUE;
-						break;
-					case 0:
-					case 0xe0:
-						key |= (getch() << 8);
-						if(key==CIO_KEY_MOUSE)
-							getmouse(NULL);
-						if (key==CIO_KEY_QUIT) {
-							if (check_exit(FALSE)) {
-								zm->cancelled=TRUE;
-								zm->local_abort=TRUE;
-							}
+		while(kbhit()) {
+			switch((key=getch())) {
+				case ESC:
+				case CTRL_C:
+				case CTRL_X:
+					zm->cancelled=TRUE;
+					zm->local_abort=TRUE;
+					break;
+				case 0:
+				case 0xe0:
+					key |= (getch() << 8);
+					if(key==CIO_KEY_MOUSE)
+						getmouse(NULL);
+					if (key==CIO_KEY_QUIT) {
+						if (check_exit(FALSE)) {
+							zm->cancelled=TRUE;
+							zm->local_abort=TRUE;
 						}
-						break;
-				}
+					}
+					break;
 			}
 		}
 	}
