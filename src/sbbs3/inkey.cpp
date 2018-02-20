@@ -289,6 +289,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					continue;
 				}
 				if(ch!=';' && !isdigit((uchar)ch) && ch!='R') {    /* other ANSI */
+					str[i]=0;
 					switch(ch) {
 						case 'A':
 							return(TERM_KEY_UP);
