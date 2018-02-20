@@ -193,11 +193,11 @@ int sbbs_t::exec_net(csi_t* csi)
 			if(w<1 || w>sizeof(buf)-1)
 				w=sizeof(buf)-1;
 
-			int rd;
-			if((rd=recv(*lp,buf,w
+			int rcv_count;
+			if((rcv_count=recv(*lp,buf,w
 				,*(csi->ip-13)==CS_SOCKET_PEEK ? MSG_PEEK : 0))>0) {
 				csi->logic=LOGIC_TRUE;
-				buf[rd]=0;
+				buf[rcv_count]=0;
 				if(csi->etx) {
 					p=strchr(buf,csi->etx);
 					if(p) *p=0; 
