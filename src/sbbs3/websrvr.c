@@ -1407,6 +1407,7 @@ static int sock_sendfile(http_session_t *session,char *path,unsigned long start,
 		if(start || end) {
 			if(lseek(file, start, SEEK_SET)==-1) {
 				lprintf(LOG_WARNING,"%04d !ERROR %d seeking to position %lu in %s",session->socket,ERROR_VALUE,start,path);
+				close(file);
 				return(0);
 			}
 			remain=end-start+1;
@@ -1417,6 +1418,7 @@ static int sock_sendfile(http_session_t *session,char *path,unsigned long start,
 		while((i=read(file, buf, remain>sizeof(buf)?sizeof(buf):remain))>0) {
 			if(writebuf(session,buf,i)!=i) {
 				lprintf(LOG_WARNING,"%04d !ERROR sending %s",session->socket,path);
+				close(file);
 				return(0);
 			}
 			ret+=i;
@@ -2328,6 +2330,7 @@ static void js_add_header(http_session_t * session, char *key, char *value)
 		return;
 	strlwr(lckey);
 	if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL) {
+		free(lckey);
 		return;
 	}
 	JS_DefineProperty(session->js_cx, session->js_header, lckey, STRING_TO_JSVAL(js_str)
@@ -3710,6 +3713,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 	// TODO: UNIX-domain sockets...
 	if (strncmp(path, "unix:", 5) == 0) {
 		lprintf(LOG_ERR, "%04d UNIX-domain FastCGI sockets not supported (yet)", client_sock);
+		free(path);
 		return INVALID_SOCKET;
 	}
 
@@ -3720,6 +3724,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 	result = getaddrinfo(path, port, &hints, &res);
 	if(result != 0) {
 		lprintf(LOG_ERR, "%04d ERROR resolving FastCGI address %s port %s", client_sock, path, port);
+		free(path);
 		return INVALID_SOCKET;
 	}
 	for(cur=res,result=1; result && cur; cur=cur->ai_next) {
@@ -3750,11 +3755,13 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 	freeaddrinfo(res);
 	if(sock == INVALID_SOCKET) {
 		lprintf(LOG_ERR, "%04d ERROR unable to make FastCGI connection to %s", client_sock, orig_path);
+		free(path);
 		return sock;
 	}
 
 	val = 0;
 	ioctlsocket(sock,FIONBIO,&val);
+	free(path);
 	return sock;
 }
 
@@ -3841,6 +3848,7 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 	for(i=0; env[i]; i++) {
 		if (!fastcgi_add_param(&msg, &end, &size, env[i])) {
 			free(msg);
+			strListFree(&env);
 			return FALSE;
 		}
 		if (end > 32000) {
@@ -3848,11 +3856,13 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 			if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
 				lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
 				free(msg);
+				strListFree(&env);
 				return FALSE;
 			}
 			end = 0;
 		}
 	}
+	strListFree(&env);
 	if (end) {
 		msg->head.len = htons(end);
 		if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
@@ -5152,7 +5162,7 @@ js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 	if(!p)
 		return(JS_FALSE);
 	header+=sprintf(header,"%s",p);
-	free(p);
+	FREE_AND_NULL(p);
 	if(argc>2) {
 		if(!JS_ValueToInt32(cx,argv[2],&i))
 			return JS_FALSE;
@@ -5164,15 +5174,15 @@ js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_MSTRING(cx, argv[3], p, NULL);
 		if(p!=NULL && *p) {
 			header += sprintf(header,"; domain=%s",p);
-			free(p);
 		}
+		FREE_AND_NULL(p);
 	}
 	if(argc>4) {
 		JSVALUE_TO_MSTRING(cx, argv[4], p, NULL);
 		if(p!=NULL && *p) {
 			header += sprintf(header,"; path=%s",p);
-			free(p);
 		}
+		FREE_AND_NULL(p);
 	}
 	if(argc>5) {
 		JS_ValueToBoolean(cx, argv[5], &b);

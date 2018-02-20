@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -171,7 +171,7 @@ void sbbs_t::temp_xfer()
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-						strcat(tmp2,tmp); 
+						SAFECAT(tmp2,tmp); 
 					}
 				ungetkey(useron.prot);
 				ch=(char)getkeys(tmp2,0);

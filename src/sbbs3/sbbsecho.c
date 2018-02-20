@@ -5941,7 +5941,8 @@ int main(int argc, char **argv)
 
 	cmdline[0]=0;
 	for(i=1;i<argc;i++) {
-		sprintf(cmdline+strlen(cmdline), "%s ", argv[i]);
+		SAFECAT(cmdline, argv[i]);
+		SAFECAT(cmdline, " ");
 		if(argv[i][0]=='-'
 #if !defined(__unix__)
 			|| argv[i][0]=='/'

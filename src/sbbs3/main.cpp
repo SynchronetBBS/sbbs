@@ -726,8 +726,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
     for(; i<argc; i++) {
-		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+		if((str=JS_ValueToString(cx, argv[i]))==NULL) {
+			FREE_AND_NULL(line);
 			return(JS_FALSE);
+		}
 		JSSTRING_TO_RASTRING(cx, str, line, &line_sz, NULL);
 		if(line==NULL)
 		    return(JS_FALSE);
@@ -740,7 +742,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 			lprintf(level,"Node %d %s", sbbs->cfg.node_num, line);
 		JS_RESUMEREQUEST(cx, rc);
 	}
-	free(line);
+	if(line != NULL)
+		free(line);
 
 	if(str==NULL)
 		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -844,6 +847,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 			sbbs->bputs(cstr);
 		JS_RESUMEREQUEST(cx, rc);
 	}
+	FREE_AND_NULL(cstr);
 
 	if(str==NULL)
 		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -876,6 +880,8 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 		sbbs->putcom(str, len);
 		JS_RESUMEREQUEST(cx, rc);
 	}
+	if (str != NULL)
+		free(str);
 
     return(JS_TRUE);
 }

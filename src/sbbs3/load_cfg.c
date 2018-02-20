@@ -349,6 +349,7 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error)
 	if((cfg->color=malloc(MIN_COLORS))==NULL) {
 		sprintf(error,"Error allocating memory (%u bytes) for colors"
 			,MIN_COLORS);
+		fclose(instream);
 		return(FALSE);
 	}
 	/* Setup default colors here: */

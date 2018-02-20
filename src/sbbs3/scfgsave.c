@@ -660,6 +660,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 	put_int(cfg->cdt_up_pct,stream);
 	put_int(cfg->cdt_dn_pct,stream);
 	put_int(l,stream);					/* unused */
+	memset(cmd, 0, sizeof(cmd));
 	put_str(cmd,stream);
 	put_int(cfg->leech_pct,stream);
 	put_int(cfg->leech_sec,stream);

@@ -278,6 +278,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 	if(fread(qwkbuf,QWK_BLOCK_LEN,blocks-1,qwk_fp) != blocks-1) {
 		free(qwkbuf);
 		errormsg(WHERE,ERR_READ,"QWK msg blocks",(blocks-1)*QWK_BLOCK_LEN);
+		return false;
 	}
 
 	bodylen=0;

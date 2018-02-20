@@ -1577,6 +1577,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 			fclose(fp);
 			lprintf(LOG_CRIT,"!MALLOC FAILURE");
 			free(default_interfaces);
+			iniFreeStringList(sec_list);
 			return(service);
 		}
 		service=np;

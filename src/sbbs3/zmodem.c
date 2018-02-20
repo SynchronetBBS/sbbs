@@ -2014,6 +2014,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint64_t* bytes_re
 			}
 			start_bytes=filelength(fileno(fp));
 			if(start_bytes < 0) {
+				fclose(fp);
 				lprintf(zm,LOG_ERR,"Invalid file length %"PRId64": %s", start_bytes, fpath);
 				break;
 			}

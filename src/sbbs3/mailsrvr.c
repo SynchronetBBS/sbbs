@@ -2208,11 +2208,13 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result,
 			ai.ai_flags = AI_NUMERICHOST|AI_NUMERICSERV|AI_PASSIVE;
 			if(getaddrinfo(p, NULL, &ai, &res)!=0)
 				break;
-			if(res->ai_family == AF_INET6)
+			if(res->ai_family == AF_INET6) {
 				memcpy(&addr, res->ai_addr, res->ai_addrlen);
-			else
+				freeaddrinfo(res);
+			} else {
+				freeaddrinfo(res);
 				break;
-			freeaddrinfo(res);
+			}
 		}
 		else {
 			strncpy(ip,p,16);

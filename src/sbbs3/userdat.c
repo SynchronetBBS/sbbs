@@ -2039,8 +2039,13 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, const
 		return(-4);
 	}
 
-	if(length==0)	/* auto-length */
+	if(length==0) {	/* auto-length */
 		length=user_rec_len(start);
+		if((long)length < 0) {
+			close(file);
+			return -2;
+		}
+	}
 
 	strcpy(str2,str);
 	if(strlen(str2)<length) {
@@ -2058,8 +2063,10 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, const
 		i++; 
 	}
 
-	if(i>=LOOP_NODEDAB) 
+	if(i>=LOOP_NODEDAB) {
+		close(file);
 		return(-3);
+	}
 
 	write(file,str2,length);
 	unlock(file,(long)((long)(usernumber-1)*U_LEN)+start,length);

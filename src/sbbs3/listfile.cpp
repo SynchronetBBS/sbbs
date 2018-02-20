@@ -294,7 +294,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 				if(tofile) {
 					write(tofile,crlf,2);
 					sprintf(hdr,"%*s",c,nulstr);
-					memset(hdr,'Ä',c);
+					memset(hdr,0xC4,c);
 					strcat(hdr,crlf);
 					write(tofile,hdr,strlen(hdr)); 
 				}
@@ -302,7 +302,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 					CRLF;
 					attr(cfg.color[clr_filelstline]);
 					while(c--)
-						outchar('Ä');
+						outchar('\xC4');
 					CRLF; 
 				} 
 			} 
@@ -1009,11 +1009,13 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 		return(0);
 	l=(long)filelength(file);
 	if(!l) {
+		FREE_AND_NULL(usrxfrbuf);
 		close(file);
 		return(0); 
 	}
 	if((ixbbuf=(uchar *)malloc(l))==NULL) {
 		close(file);
+		FREE_AND_NULL(usrxfrbuf);
 		errormsg(WHERE,ERR_ALLOC,str,l);
 		return(0); 
 	}

@@ -90,12 +90,12 @@ void sbbs_t::printfile(char *str, long mode)
 
 	length=(long)filelength(file);
 	if(length<0) {
-		close(file);
+		fclose(stream);
 		errormsg(WHERE,ERR_CHK,str,length);
 		return;
 	}
 	if((buf=(char*)malloc(length+1L))==NULL) {
-		close(file);
+		fclose(stream);
 		errormsg(WHERE,ERR_ALLOC,str,length+1L);
 		return; 
 	}

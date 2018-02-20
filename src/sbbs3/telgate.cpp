@@ -150,7 +150,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* client_user_name, cha
 	while(online) {
 		if(!(mode&TG_NOCHKTIME))
 			gettimeleft();
-		rd=RingBufRead(&inbuf,buf,sizeof(buf));
+		rd=RingBufRead(&inbuf,buf,sizeof(buf)-1);
 		if(rd) {
 #if 0
 			if(memchr(buf,TELNET_IAC,rd)) {

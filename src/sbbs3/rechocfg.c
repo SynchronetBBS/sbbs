@@ -307,8 +307,10 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/******************/
 	str_list_t archivelist = iniGetSectionList(ini, "archive:");
 	cfg->arcdefs = strListCount(archivelist);
-	if((cfg->arcdef = realloc(cfg->arcdef, sizeof(arcdef_t)*cfg->arcdefs)) == NULL)
+	if((cfg->arcdef = realloc(cfg->arcdef, sizeof(arcdef_t)*cfg->arcdefs)) == NULL) {
+		strListFree(&archivelist);
 		return false;
+	}
 	cfg->arcdefs = 0;
 	char* archive;
 	while((archive=strListRemove(&archivelist, 0)) != NULL) {
@@ -327,8 +329,10 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/****************/
 	str_list_t nodelist = iniGetSectionList(ini, "node:");
 	cfg->nodecfgs = strListCount(nodelist);
-	if((cfg->nodecfg = realloc(cfg->nodecfg, sizeof(nodecfg_t)*cfg->nodecfgs)) == NULL)
+	if((cfg->nodecfg = realloc(cfg->nodecfg, sizeof(nodecfg_t)*cfg->nodecfgs)) == NULL) {
+		strListFree(&nodelist);
 		return false;
+	}
 	cfg->nodecfgs = 0;
 	char* node;
 	while((node=strListRemove(&nodelist, 0)) != NULL) {
@@ -383,8 +387,10 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/**************/
 	str_list_t echolists = iniGetSectionList(ini, "echolist:");
 	cfg->listcfgs = strListCount(echolists);
-	if((cfg->listcfg = realloc(cfg->listcfg, sizeof(echolist_t)*cfg->listcfgs)) == NULL)
+	if((cfg->listcfg = realloc(cfg->listcfg, sizeof(echolist_t)*cfg->listcfgs)) == NULL) {
+		strListFree(&echolists);
 		return false;
+	}
 	cfg->listcfgs = 0;
 	char* echolist;
 	while((echolist=strListRemove(&echolists, 0)) != NULL) {

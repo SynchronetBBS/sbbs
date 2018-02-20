@@ -72,6 +72,7 @@ int sbbs_t::delmail(uint usernumber, int which)
 	}
 	smb_rewind(smb.sid_fp);
 	for(l=0;l<smb.status.total_msgs;) {
+		memset(&msg, 0, sizeof(msg));
 		if(smb_fread(&smb,&msg.idx,sizeof(idxrec_t),smb.sid_fp)!=sizeof(idxrec_t))
 			break;
 		if(!(msg.idx.attr&MSG_PERMANENT)
