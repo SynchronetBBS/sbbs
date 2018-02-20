@@ -1392,7 +1392,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 					break;
 				case '!':	// Repeat
 					p++;
-					if (!p)
+					if (!*p)
 						continue;
 					cterm->sx_repeat = strtoul(p, &p, 10);
 					break;
