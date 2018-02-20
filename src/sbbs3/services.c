@@ -284,7 +284,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	int32		level=LOG_INFO;
 	service_client_t* client;
 	jsrefcount	rc;
-	char		*line;
+	char		*line = NULL;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -302,7 +302,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	str[0]=0;
     for(;i<argc && strlen(str)<(sizeof(str)/2);i++) {
 		JSVALUE_TO_MSTRING(cx, argv[i], line, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, line);
 		if(line==NULL)
 		    return(JS_FALSE);
 		strncat(str,line,sizeof(str)/2);
@@ -628,7 +628,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>1) {
 		JSVALUE_TO_MSTRING(cx, argv[1], cstr, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, cstr);
 		client.user=cstr;
 	}
 

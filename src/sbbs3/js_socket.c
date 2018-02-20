@@ -683,7 +683,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		cp;
+	char*		cp = NULL;
 	size_t		len;
 	JSString*	str;
 	js_socket_private_t*	p;
@@ -701,7 +701,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 
 	str = JS_ValueToString(cx, argv[0]);
 	JSSTRING_TO_MSTRING(cx, str, cp, &len);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, cp);
 	if(cp==NULL)
 		return JS_TRUE;
 
@@ -725,7 +725,7 @@ js_sendline(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		cp;
+	char*		cp = NULL;
 	size_t		len;
 	JSString*	str;
 	js_socket_private_t*	p;
@@ -742,7 +742,7 @@ js_sendline(JSContext *cx, uintN argc, jsval *arglist)
 
 	str = JS_ValueToString(cx, argv[0]);
 	JSSTRING_TO_MSTRING(cx, str, cp, &len);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, cp);
 	if(cp==NULL)
 		return JS_TRUE;
 
@@ -765,7 +765,7 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		cp;
+	char*		cp = NULL;
 	size_t		len;
 	ushort		port;
 	JSString*	data_str;
@@ -788,7 +788,7 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 	/* data */
 	data_str = JS_ValueToString(cx, argv[0]);
 	JSSTRING_TO_MSTRING(cx, data_str, cp, &len);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, cp);
 	if(cp==NULL)
 		return JS_TRUE;
 
@@ -847,7 +847,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		fname;
+	char*		fname = NULL;
 	long		len;
 	int			file;
 	js_socket_private_t*	p;
@@ -863,7 +863,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, fname);
 	if(fname==NULL) {
 		JS_ReportError(cx,"Failure reading filename");
 		return(JS_FALSE);
@@ -1996,7 +1996,7 @@ static JSBool js_socket_resolve(JSContext *cx, JSObject *obj, jsid id)
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx);
+			HANDLE_PENDING(cx, name);
 		}
 	}
 
@@ -2132,7 +2132,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 			from_descriptor = TRUE;
 		else if(protocol==NULL) {
 			JSVALUE_TO_MSTRING(cx, argv[i], protocol, NULL);
-			HANDLE_PENDING(cx);
+			HANDLE_PENDING(cx, protocol);
 		}
 	}
 

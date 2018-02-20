@@ -170,7 +170,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		cp;
+	char*		cp = NULL;
 	size_t		len;
 	private_t*	p;
 	jsrefcount	rc;
@@ -188,7 +188,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	JSVALUE_TO_MSTRING(cx, argv[0], cp, &len);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, cp);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(cp && comWriteBuf(p->com,(uint8_t *)cp,len)==len) {
@@ -212,7 +212,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	long		len;
 	int			file;
-	char*		fname;
+	char*		fname = NULL;
 	private_t*	p;
 	jsrefcount	rc;
 	char		*buf;
@@ -230,7 +230,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, fname);
 	if(fname==NULL) {
 		JS_ReportError(cx,"Failure reading filename");
 		return(JS_FALSE);
@@ -766,7 +766,7 @@ static JSBool js_com_resolve(JSContext *cx, JSObject *obj, jsid id)
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx);
+			HANDLE_PENDING(cx, name);
 		}
 	}
 
@@ -802,13 +802,13 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj;
 	jsval *argv=JS_ARGV(cx, arglist);
 	private_t* p;
-	char*		fname;
+	char*		fname = NULL;
 
 	obj=JS_NewObject(cx, &js_com_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 	if(argc > 0) {
 		JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, fname);
 	}
 	if(argc==0 || fname==NULL) {
 		JS_ReportError(cx,"Failure reading port name");

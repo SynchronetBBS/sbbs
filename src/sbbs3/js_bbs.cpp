@@ -772,7 +772,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 		if((js_str = JS_ValueToString(cx, *vp))==NULL)
 			return(JS_FALSE);
 		JSSTRING_TO_MSTRING(cx, js_str, p, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, p);
 	}
 
 	switch(tiny) {
@@ -4000,7 +4000,7 @@ static JSBool js_bbs_resolve(JSContext *cx, JSObject *obj, jsid id)
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx);
+			HANDLE_PENDING(cx, name);
 		}
 	}
 

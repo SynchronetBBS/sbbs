@@ -1810,7 +1810,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(; i<argc; i++) {
 		JSVALUE_TO_RASTRING(cx, argv[i], lstr, &lstr_sz, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, lstr);
 		if(lstr==NULL)
 			return(JS_TRUE);
 		rc=JS_SUSPENDREQUEST(cx);

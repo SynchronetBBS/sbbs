@@ -235,10 +235,10 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 		case PROP_CLIPBOARD:
 			{
 				size_t	len;
-				char	*bytes;
+				char	*bytes = NULL;
 
 				JSVALUE_TO_MSTRING(cx, *vp, bytes, &len);
-				HANDLE_PENDING(cx);
+				HANDLE_PENDING(cx, bytes);
 				if(!bytes)
 					return JS_FALSE;
 				rc=JS_SUSPENDREQUEST(cx);
@@ -589,12 +589,12 @@ static JSBool
 js_conio_loadfont(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char *	str;
+	char *	str = NULL;
 	jsrefcount	rc;
 
 	if(argc==1) {
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, str);
 		if(str != NULL) {
 			rc=JS_SUSPENDREQUEST(cx);
 			JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(loadfont(str)));
@@ -611,12 +611,12 @@ static JSBool
 js_conio_settitle(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char *	str;
+	char *	str = NULL;
 	jsrefcount	rc;
 
 	if(argc==1) {
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, str);
 		if(str != NULL) {
 			rc=JS_SUSPENDREQUEST(cx);
 			settitle(str);
@@ -634,12 +634,12 @@ static JSBool
 js_conio_setname(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char *	str;
+	char *	str = NULL;
 	jsrefcount	rc;
 
 	if(argc==1) {
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, str);
 		if(str != NULL) {
 			rc=JS_SUSPENDREQUEST(cx);
 			setname(str);
@@ -657,12 +657,12 @@ static JSBool
 js_conio_cputs(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char *	str;
+	char *	str = NULL;
 	jsrefcount	rc;
 
 	if(argc==1) {
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, str);
 		if(str != NULL) {
 			rc=JS_SUSPENDREQUEST(cx);
 			JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(cputs(str)));
@@ -716,13 +716,13 @@ static JSBool
 js_conio_getpass(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char *	str;
+	char *	str = NULL;
 	char *	pwd;
 	jsrefcount	rc;
 
 	if(argc==1) {
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, str);
 		if(str != NULL) {
 			rc=JS_SUSPENDREQUEST(cx);
 			pwd=getpass(str);
@@ -1185,7 +1185,7 @@ static JSBool js_conio_resolve(JSContext *cx, JSObject *obj, jsid id)
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx);
+			HANDLE_PENDING(cx, name);
 			if(name==NULL)
 				return JS_FALSE;
 		}

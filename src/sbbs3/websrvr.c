@@ -5085,7 +5085,7 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, BOOL writeln)
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			continue;
 		JSSTRING_TO_RASTRING(cx, str, cstr, &cstr_sz, &len);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, cstr);
 		rc=JS_SUSPENDREQUEST(cx);
 		js_writebuf(session, cstr, len);
 		if(writeln)
@@ -5125,7 +5125,7 @@ js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char	header_buf[8192];
 	char	*header;
-	char	*p;
+	char	*p = NULL;
 	int32	i;
 	JSBool	b;
 	struct tm tm;
@@ -5142,13 +5142,13 @@ js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 
 	header=header_buf;
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, p);
 	if(!p)
 		return(JS_FALSE);
 	header+=sprintf(header,"Set-Cookie: %s=",p);
-	free(p);
+	FREE_AND_NULL(p);
 	JSVALUE_TO_MSTRING(cx, argv[1], p, NULL);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, p);
 	if(!p)
 		return(JS_FALSE);
 	header+=sprintf(header,"%s",p);

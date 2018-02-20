@@ -217,9 +217,13 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	JSSTRING_TO_STRBUF((cx), JSVTSstr, (ret), (bufsize), lenptr); \
 }
 
-#define HANDLE_PENDING(cx) \
-	if(JS_IsExceptionPending(cx)) \
-		return JS_FALSE;
+#define HANDLE_PENDING(cx, p ) \
+	if(JS_IsExceptionPending(cx)) { \
+		if(p != NULL) \
+			free(p); \
+		p = NULL; \
+		return JS_FALSE; \
+	}
 
 #define JSSTRING_TO_ASTRING(cx, str, ret, maxsize, lenptr) \
 { \

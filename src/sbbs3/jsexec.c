@@ -549,7 +549,7 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
     JSString *	str;
-	char	 *	cstr;
+	char	 *	cstr = NULL;
 	char     *	p;
 	jsrefcount	rc;
 	char		instr[81]="y";
@@ -560,7 +560,7 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 	    return(JS_FALSE);
 
 	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, cstr);
 	if(cstr==NULL)
 		return JS_TRUE;
 	rc=JS_SUSPENDREQUEST(cx);
@@ -582,7 +582,7 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
     JSString *	str;
-	char	 *	cstr;
+	char	 *	cstr = NULL;
 	char     *	p;
 	jsrefcount	rc;
 	char		instr[81];
@@ -593,7 +593,7 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 	    return(JS_FALSE);
 
 	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, cstr);
 	if(cstr==NULL)
 		return JS_TRUE;
 	rc=JS_SUSPENDREQUEST(cx);
@@ -617,13 +617,13 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	char		instr[256];
     JSString *	str;
 	jsrefcount	rc;
-	char		*prstr;
+	char		*prstr = NULL;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc>0 && !JSVAL_IS_VOID(argv[0])) {
 		JSVALUE_TO_MSTRING(cx, argv[0], prstr, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, prstr);
 		if(prstr==NULL)
 			return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
@@ -634,7 +634,7 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>1) {
 		JSVALUE_TO_STRBUF(cx, argv[1], instr, sizeof(instr), NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, NULL);
 	} else
 		instr[0]=0;
 
@@ -659,12 +659,12 @@ static JSBool
 js_chdir(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		p;
+	char*		p = NULL;
 	jsrefcount	rc;
 	BOOL		ret;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, p);
 	if(p==NULL) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 		return(JS_TRUE);
@@ -688,7 +688,7 @@ js_putenv(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc) {
 		JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, p);
 	}
 	if(p==NULL) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));

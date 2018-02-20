@@ -400,7 +400,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	str=NULL;
 	FILE*	fp;
 	jsrefcount	rc;
-	char		*p;
+	char		*p = NULL;
 	size_t		len;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -413,7 +413,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		if (!str)
 		    return JS_FALSE;
 		JSSTRING_TO_MSTRING(cx, str, p, &len);
-		HANDLE_PENDING(cx);
+		HANDLE_PENDING(cx, p);
 		rc=JS_SUSPENDREQUEST(cx);
 		if(p) {
 			fwrite(p, len, 1, fp);

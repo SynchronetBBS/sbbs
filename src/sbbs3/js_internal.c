@@ -292,7 +292,7 @@ static JSBool
 js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(parent_cx, arglist);
-	char*			buf;
+	char*			buf = NULL;
 	size_t			buflen;
 	JSString*		str;
     JSObject*		script;
@@ -308,7 +308,7 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 	if((str=JS_ValueToString(parent_cx, argv[0]))==NULL)
 		return(JS_FALSE);
 	JSSTRING_TO_MSTRING(parent_cx, str, buf, &buflen);
-	HANDLE_PENDING(parent_cx);
+	HANDLE_PENDING(parent_cx, buf);
 	if(buf==NULL)
 		return(JS_TRUE);
 
@@ -376,10 +376,10 @@ static JSBool
 js_report_error(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char	*p;
+	char	*p = NULL;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, p);
 	if(p==NULL)
 		JS_ReportError(cx,"NULL");
 	else {
@@ -404,7 +404,7 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 	global_private_t*	pd;
 	str_list_t	list;
 	str_list_t	oldlist;
-	char		*p;
+	char		*p = NULL;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -424,7 +424,7 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
-	HANDLE_PENDING(cx);
+	HANDLE_PENDING(cx, p);
 	if(!p)
 		return JS_TRUE;
 	oldlist=list;
@@ -531,7 +531,7 @@ static JSBool js_internal_resolve(JSContext *cx, JSObject *obj, jsid id)
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx);
+			HANDLE_PENDING(cx, name);
 		}
 	}
 
