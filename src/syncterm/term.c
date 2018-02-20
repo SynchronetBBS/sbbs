@@ -769,6 +769,9 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 			case 4:
 				raw_upload(fp);
 				break;
+			default:
+				fclose(fp);
+				break;
 		}
 	}
 	uifcbail();
