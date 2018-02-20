@@ -1831,9 +1831,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								}
 							}
+							if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+								strcat(retbuf, tmp);
 						}
-						if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
-							strcat(retbuf, tmp);
 						break;
 					case 's':
 						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
