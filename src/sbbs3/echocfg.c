@@ -348,7 +348,7 @@ int main(int argc, char **argv)
         			exit(0);
 		}
 		else
-			strcpy(str,argv[i]);
+			SAFECOPY(str,argv[i]);
 	}
 	if(str[0]==0) {
 		p=getenv("SBBSCTRL");
@@ -358,14 +358,14 @@ int main(int argc, char **argv)
 				goto USAGE;
 				exit(1); 
 			}
-			strcpy(str,p);
+			SAFECOPY(str,p);
 			backslash(str);
-			strcat(str,"../ctrl/sbbsecho.ini"); 
+			SAFECAT(str,"../ctrl/sbbsecho.ini"); 
 		}
 		else {
-			strcpy(str,p);
+			SAFECOPY(str,p);
 			backslash(str);
-			strcat(str,"sbbsecho.ini"); 
+			SAFECAT(str,"sbbsecho.ini"); 
 		} 
 	}
 	SAFECOPY(cfg.cfgfile,str);
@@ -693,7 +693,7 @@ int main(int argc, char **argv)
 	uifc.helpbuf=
 	"~ Address ~\n\n"
 	"This is the FidoNet style address of this linked node.\n";
-								strcpy(str,faddrtoa(&cfg.nodecfg[i].addr));
+								SAFECOPY(str,faddrtoa(&cfg.nodecfg[i].addr));
 								if(uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Node Address (ALL wildcard allowed)",str
 									,25,K_EDIT|K_UPPER)>0)
@@ -933,7 +933,7 @@ int main(int argc, char **argv)
 	"This option is normally only used with wildcard type node entries\n"
 	"(e.g. `ALL`, or `1:ALL`, `2:ALL`, etc.) and is used to route non-direct\n"
 	"NetMail packets to your uplink node (hub).\n";
-								strcpy(str,faddrtoa(&cfg.nodecfg[i].route));
+								SAFECOPY(str,faddrtoa(&cfg.nodecfg[i].route));
 								if(uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Node Address to Route To",str
 									,25,K_EDIT) >= 0) {
@@ -1232,7 +1232,7 @@ int main(int argc, char **argv)
 					if(cfg.max_netmail_age)
 						duration_to_vstr(cfg.max_netmail_age, str, sizeof(str));
 					else
-						strcpy(str, "None");
+						SAFECOPY(str, "None");
 					snprintf(opt[i++],MAX_OPLN-1,"%-40.40s%s","Maximum Age of Imported NetMail"	, str);
 					opt[i][0]=0;
 					j=uifc.list(WIN_ACT|WIN_SAV,0,0,0,&netmail_opt,0,"NetMail Settings",opt);
@@ -1333,7 +1333,7 @@ int main(int argc, char **argv)
 							if(cfg.max_netmail_age)
 								duration_to_vstr(cfg.max_netmail_age, str, sizeof(str));
 							else
-								strcpy(str, "None");
+								SAFECOPY(str, "None");
 							if(uifc.input(WIN_MID|WIN_BOT|WIN_SAV,0,0,"Maximum NetMail Age"
 								,str, 10, K_EDIT) >= 0)
 								cfg.max_netmail_age = (ulong)parse_duration(str);
@@ -1447,12 +1447,12 @@ int main(int argc, char **argv)
 					if(cfg.zone_blind)
 						sprintf(str,"Zones 1-%u", cfg.zone_blind_threshold);
 					else
-						strcpy(str,"Disabled");
+						SAFECOPY(str,"Disabled");
 					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%s","Zone Blind SEEN-BY and PATH Lines", str);
 					if(cfg.max_echomail_age)
 						duration_to_vstr(cfg.max_echomail_age, str, sizeof(str));
 					else
-						strcpy(str, "None");
+						SAFECOPY(str, "None");
 					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%s","Maximum Age of Imported EchoMail", str);
 					opt[i][0]=0;
 					j=uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&echomail_opt,0,"EchoMail Settings",opt);
@@ -1599,7 +1599,7 @@ int main(int argc, char **argv)
 							if(cfg.max_echomail_age)
 								duration_to_vstr(cfg.max_echomail_age, str, sizeof(str));
 							else
-								strcpy(str, "None");
+								SAFECOPY(str, "None");
 							if(uifc.input(WIN_MID|WIN_BOT|WIN_SAV,0,0,"Maximum EchoMail Age"
 								,str, 10, K_EDIT) >= 0)
 								cfg.max_echomail_age = (ulong)parse_duration(str);
@@ -1646,7 +1646,7 @@ int main(int argc, char **argv)
 							printf("\nMemory Allocation Error\n");
 							exit(1); 
 						}
-						strcpy(cfg.arcdef[i].name,str);
+						SAFECOPY(cfg.arcdef[i].name,str);
 						continue; 
 					}
 
@@ -1822,7 +1822,7 @@ int main(int argc, char **argv)
 							printf("\nMemory Allocation Error\n");
 							exit(1); 
 						}
-						strcpy(cfg.listcfg[i].listpath,str);
+						SAFECOPY(cfg.listcfg[i].listpath,str);
 						continue; 
 					}
 
@@ -1926,7 +1926,7 @@ int main(int argc, char **argv)
 								break;
 							case 2:
 								if(cfg.listcfg[i].hub.zone)
-									strcpy(str,faddrtoa(&cfg.listcfg[i].hub));
+									SAFECOPY(str,faddrtoa(&cfg.listcfg[i].hub));
 								else
 									str[0]=0;
 								uifc.input(WIN_MID|WIN_SAV,0,0
@@ -1973,10 +1973,7 @@ int main(int argc, char **argv)
 		"Select `Yes` to save the config file, `No` to quit without saving,\n"
 		"or hit ~ ESC ~ to go back to the menu.\n\n";
 					i=0;
-					strcpy(opt[0],"Yes");
-					strcpy(opt[1],"No");
-					opt[2][0]=0;
-					i=uifc.list(WIN_MID,0,0,0,&i,0,"Save Config File",opt);
+					i=uifc.list(WIN_MID,0,0,0,&i,0,"Save Config File",uifcYesNoOpts);
 					if(i==-1) break;
 					if(i) {uifc.bail(); exit(0);}
 					if(!sbbsecho_write_ini(&cfg))
