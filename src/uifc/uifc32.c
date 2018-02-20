@@ -2293,6 +2293,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					continue;
 				case CIO_KEY_QUIT:
 					api->exit_flags |= UIFC_XF_QUIT;
+					/* Fall-through */
 				case CIO_KEY_ABORTED:
 				case ESC:
 					{
