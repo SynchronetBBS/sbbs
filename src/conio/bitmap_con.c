@@ -989,6 +989,8 @@ int bitmap_setfont(int font, int force, int font_num)
 			new=malloc(ti.screenwidth*ti.screenheight*sizeof(*new));
 			if(!new) {
 				free(old);
+				pthread_mutex_unlock(&vstatlock);
+				pthread_mutex_unlock(&blinker_lock);
 				return 0;
 			}
 			pold=old;
@@ -1459,6 +1461,7 @@ void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
 	if (id < CONIO_FIRST_FREE_FONT) {
 		free(name);
 		free(data);
+		pthread_mutex_unlock(&blinker_lock);
 		return;
 	}
 
@@ -1607,11 +1610,13 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 	pthread_mutex_lock(&vstatlock);
 	vstat.vmem=NULL;
 	vstat.flags = VIDMODES_FLAG_PALETTE_VMEM;
+	pthread_mutex_lock(&screen.screenlock);
 	for (i = 0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++) {
 		palette[i].red = dac_default[i].red;
 		palette[i].green = dac_default[i].green;
 		palette[i].blue = dac_default[i].blue;
 	}
+	pthread_mutex_unlock(&screen.screenlock);
 	pthread_mutex_unlock(&vstatlock);
 
 	callbacks.drawrect=drawrect_cb;
