@@ -1816,7 +1816,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 								break;
 							}
 							if(edit_list(list, list[opt],settings.list_path,FALSE)) {
-								load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?strdup(list[opt]->name):NULL);
+								load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, strdup(list[opt]->name));
 								oldopt=-1;
 							}
 							break;
