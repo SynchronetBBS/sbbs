@@ -1240,8 +1240,10 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 		 */
 		if(format_len < (format_len-this_format_len+j)) {
 			newbuf=(char *)realloc(format, format_len-this_format_len+j);
-			if(newbuf==NULL)
+			if(newbuf==NULL) {
+				FREE_AND_NULL(entry);
 				return(NULL);
+			}
 			format=newbuf;
 		}
 		/* Move trailing end to make space */
