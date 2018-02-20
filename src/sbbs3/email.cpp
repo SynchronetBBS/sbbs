@@ -150,7 +150,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 		for(x=0;x<cfg.total_prots;x++)
 			if(cfg.prot[x]->ulcmd[0] && chk_ar(cfg.prot[x]->ar,&useron,&client)) {
 				sprintf(tmp,"%c",cfg.prot[x]->mnemonic);
-				strcat(str,tmp); 
+				SAFECAT(str,tmp); 
 			}
 		ch=(char)getkeys(str,0);
 		if(ch==text[YNQP][2] || sys_status&SS_ABORT) {

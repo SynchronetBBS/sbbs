@@ -44,7 +44,7 @@
 /****************************************************************************/
 void sbbs_t::downloadfile(file_t* f)
 {
-    char		str[256],fname[13];
+    char		str[MAX_PATH+1],fname[13];
 	char 		tmp[512];
     int			i,file;
 	long		mod;
