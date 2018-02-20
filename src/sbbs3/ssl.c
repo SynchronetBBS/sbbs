@@ -6,8 +6,6 @@
 #include "ssl.h"
 //#include "js_socket.h"	// TODO... move this stuff in here?
 
-static scfg_t	scfg;
-
 void DLLCALL free_crypt_attrstr(char *attr)
 {
 	free(attr);
