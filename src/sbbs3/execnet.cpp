@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -193,10 +193,11 @@ int sbbs_t::exec_net(csi_t* csi)
 			if(w<1 || w>sizeof(buf)-1)
 				w=sizeof(buf)-1;
 
-			if((i=recv(*lp,buf,w
+			int rd;
+			if((rd=recv(*lp,buf,w
 				,*(csi->ip-13)==CS_SOCKET_PEEK ? MSG_PEEK : 0))>0) {
 				csi->logic=LOGIC_TRUE;
-				buf[i]=0;
+				buf[rd]=0;
 				if(csi->etx) {
 					p=strchr(buf,csi->etx);
 					if(p) *p=0; 
@@ -817,6 +818,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 		|| atoi(rsp)!=150 /* Open data connection */) {
 		bprintf("ftp: failure, line %d",__LINE__);
 		close_socket(data_sock);
+		fclose(fp);
 		return(false);
 	}
 
@@ -833,6 +835,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 		if(result<1) {
 			csi->socket_error=ERROR_VALUE;
 			closesocket(data_sock);
+			fclose(fp);
 			return(false);
 		}
 
@@ -843,6 +846,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 			==INVALID_SOCKET) {
 			csi->socket_error=ERROR_VALUE;
 			closesocket(data_sock);
+			fclose(fp);
 			return(false);
 		}
 
