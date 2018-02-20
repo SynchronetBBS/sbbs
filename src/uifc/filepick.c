@@ -673,6 +673,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					if(i==CIO_KEY_MOUSE)
 						currfield=mousetofield(currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
 					if(i==ESC || i==CIO_KEY_QUIT) {
+						FREE_AND_NULL(p);
 						if (api->exit_flags & UIFC_XF_QUIT) {
 							retval=fp->files=0;
 							goto cleanup;
