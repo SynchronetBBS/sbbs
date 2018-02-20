@@ -1398,7 +1398,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 					break;
 				case '#':	// Colour Introducer
 					p++;
-					if (!p)
+					if (!*p)
 						continue;
 					cterm->sx_fg = strtoul(p, &p, 10) + TOTAL_DAC_SIZE + 16;
 					/* Do we want to redefine it while we're here? */
@@ -1636,6 +1636,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								struct text_info ti;
 								int vmode;
 
+								tmp[0] = 0;
 								GETTEXTINFO(&ti);
 								vmode = find_vmode(ti.currmode);
 								if (vmode != -1)
@@ -1644,6 +1645,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									strcat(retbuf, tmp);
 							}
 						}
+						break;
 					case 'c':
 						/* SyncTERM Device Attributes */
 						if (seq->param_str[0] == '<' && parse_parameters(seq)) {
@@ -3310,8 +3312,10 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 								cterm->string = 0;
 								FREE_AND_NULL(cterm->strbuf);
 								cterm->strbuflen = cterm->strbufsize = 0;
-								cterm_write(cterm, "\x1b", 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
-								cterm_write(cterm, &ch[0], 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
+								if (retbuf) {
+									cterm_write(cterm, "\x1b", 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
+									cterm_write(cterm, &ch[0], 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
+								}
 							}
 							else {
 								if (cterm->strbuf == NULL) {
