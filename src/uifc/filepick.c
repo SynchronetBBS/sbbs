@@ -672,12 +672,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					api->getstrxy(SCRN_LEFT+8, SCRN_TOP+height-3, width-7, cmsk, sizeof(cmsk)-1, K_EDIT|K_TABEXIT|K_MOUSEEXIT, &i);
 					if(i==CIO_KEY_MOUSE)
 						currfield=mousetofield(currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
-					if(i==ESC || i==CIO_KEY_QUIT) {
+					if(i==ESC || i==CIO_KEY_QUIT || (api->exit_flags & UIFC_XF_QUIT)) {
 						FREE_AND_NULL(p);
-						if (api->exit_flags & UIFC_XF_QUIT) {
-							retval=fp->files=0;
-							goto cleanup;
-						}
 						retval=fp->files=0;
 						goto cleanup;
 					}
