@@ -118,6 +118,13 @@ int fixsmb(char* sub)
 	if((p=getfext(smb.file))!=NULL && stricmp(p,".shd")==0)
 		*p=0;	/* Chop off .shd extension, if supplied on command-line */
 
+	char path[MAX_PATH+1];
+	SAFEPRINTF(path, "%s.shd", smb.file);
+	if(!fexistcase(path)) {
+		printf("%s does not exist\n", path);
+		exit(1);
+	}
+
 	printf("Opening %s\n",smb.file);
 
 	if((i=smb_open(&smb))!=0) {
