@@ -1078,7 +1078,7 @@ int main(int argc, char **argv)
 	}
 
 	if(errors)
-		printf("\n'fixsmb' can be used to repair most message base problems.\n");
+		printf("\n'fixsmb' can be used to repair many message base problems.\n");
 
 	return(errors);
 }
