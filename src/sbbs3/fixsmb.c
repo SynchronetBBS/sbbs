@@ -46,8 +46,9 @@
 
 smb_t	smb;
 BOOL	renumber=FALSE;
+BOOL	fixnums=FALSE;
 BOOL	smb_undelete=FALSE;
-char*	usage="usage: fixsmb [-renumber] [-undelete] <smb_file> [[smb_file] [...]]";
+char*	usage="usage: fixsmb [-renumber] [-undelete] [-fixnums] <smb_file> [[smb_file] [...]]";
 
 int compare_index(const idxrec_t* idx1, const idxrec_t* idx2)
 {
@@ -142,6 +143,8 @@ int fixsmb(char* sub)
 		exit(1);
 	}
 
+	uint32_t last_msg = smb.status.last_msg;
+
 	if(!(smb.status.attr&SMB_HYPERALLOC)) {
 
 		if((i=smb_open_ha(&smb))!=0) {
@@ -212,6 +215,11 @@ int fixsmb(char* sub)
 			if(msg.hdr.number == numbers[i])
 				dupe_msgnum = TRUE;
 
+		if(dupe_msgnum && fixnums && msg.hdr.number >= last_msg) {
+			printf("Fixed message number (%lu -> %lu)\n", (ulong)msg.hdr.number, (ulong)highest + 1);
+			msg.hdr.number = highest + 1;
+			dupe_msgnum = FALSE;
+		}
 		if(!dupe_msgnum) {
 			total++;
 			if((numbers = realloc(numbers, total * sizeof(*numbers))) == NULL) {
@@ -323,6 +331,8 @@ int main(int argc, char **argv)
 				renumber=TRUE;
 			else if(!stricmp(argv[i],"-undelete"))
 				smb_undelete=TRUE;
+			else if(!stricmp(argv[i],"-fixnums"))
+				fixnums=TRUE;
 		} else
 			strListPush(&list,argv[i]);
 	}
