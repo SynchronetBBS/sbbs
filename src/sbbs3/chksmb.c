@@ -124,6 +124,7 @@ char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
 			"       h - don't check hash file\n"
 			"       a - don't check allocation files\n"
 			"       t - don't check translation strings\n"
+			"       i - don't check message IDs\n"
 			"       e - display extended info on corrupted msgs\n";
 
 int main(int argc, char **argv)
@@ -135,6 +136,7 @@ int main(int argc, char **argv)
 	int 		h,i,j,x,y,lzh,errors,errlast;
 	BOOL		stop_on_error=FALSE,pause_on_error=FALSE,chkxlat=TRUE,chkalloc=TRUE,chkhash=TRUE
 				,lzhmsg,extinfo=FALSE,msgerr;
+	BOOL		chk_msgids = TRUE;
 	uint16_t	xlat;
 	uint32_t	m;
 	ulong		l,n,size,total=0,orphan,deleted,headers
@@ -211,6 +213,9 @@ int main(int argc, char **argv)
 						break;
 					case 'H':
 						chkhash=FALSE;
+						break;
+					case 'I':
+						chk_msgids = FALSE;
 						break;
 					case 'E':
 						extinfo=TRUE;
@@ -379,7 +384,7 @@ int main(int argc, char **argv)
 			hdrlenerr++; 
 		}
 
-		if(msg.from_net.type == NET_NONE && msg.id == NULL) {
+		if(chk_msgids && msg.from_net.type == NET_NONE && msg.id == NULL) {
 			fprintf(stderr,"%sNo Message-ID\n",beep);
 			msgerr=TRUE;
 			if(extinfo)
@@ -831,7 +836,7 @@ int main(int argc, char **argv)
 			if(!fread(&hash,sizeof(hash),1,smb.hash_fp))
 				break;
 			if(hash.number==0 || hash.number > smb.status.last_msg)
-				fprintf(stderr,"\r%sInvalid message number (%u)\n", beep, hash.number), badhash++;
+				fprintf(stderr,"\r%sInvalid message number (%u > %u)\n", beep, hash.number, smb.status.last_msg), badhash++;
 			else if(hash.time < 0x40000000 || hash.time > (ulong)now)
 				fprintf(stderr,"\r%sInvalid time (0x%08"PRIX32")\n", beep, hash.time), badhash++;
 			else if(hash.length < 1 || hash.length > 1024*1024)
