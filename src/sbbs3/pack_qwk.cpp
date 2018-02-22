@@ -381,8 +381,9 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				mode&=~QM_TO_QNET;
 
 			for(u=0;u<mailmsgs;u++) {
-				bprintf("\b\b\b\b\b\b\b\b\b\b\b\b%4lu of %-4lu"
-					,u+1,mailmsgs);
+				if(cfg.node_num)
+					bprintf("\b\b\b\b\b\b\b\b\b\b\b\b%4lu of %-4lu"
+						,u+1,mailmsgs);
 
 				memset(&msg,0,sizeof(msg));
 				msg.idx=mail[u];
@@ -477,7 +478,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					smb_close(&smb);
 					continue; 
 				}
-				bputs(text[QWKPackingSubboard]);	
+				if(cfg.node_num)
+					bputs(text[QWKPackingSubboard]);	
 				submsgs=0;
 				conf=cfg.sub[usrsub[i][j]]->qwkconf;
 				if(!conf)
@@ -503,7 +505,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					ndx=NULL;
 
 				for(u=0;u<posts && !msgabort();u++) {
-					bprintf("\b\b\b\b\b%-5lu",u+1);
+					if(cfg.node_num)
+						bprintf("\b\b\b\b\b%-5lu",u+1);
 
 					subscan[usrsub[i][j]].ptr=post[u].idx.number;	/* set ptr */
 					subscan[usrsub[i][j]].last=post[u].idx.number; /* set last read */
