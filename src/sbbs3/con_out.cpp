@@ -710,6 +710,8 @@ void sbbs_t::progress(const char* text, int count, int total, int interval)
 {
 	char str[128];
 
+	if(cfg.node_num == 0)
+		return;	// Don't output this for events
 	if((count%interval) != 0)
 		return;
 	if(text == NULL) text = "";
