@@ -414,8 +414,10 @@ void showstatus(void)
 /****************************************************************************/
 void config(void)
 {
+	char str[128];
 	char max_msgs[128],max_crcs[128],max_age[128],header_offset[128],attr[128];
 	int i;
+	uint32_t last_msg = 0;
 
 	i=smb_locksmbhdr(&smb);
 	if(i) {
@@ -430,6 +432,11 @@ void config(void)
 			,beep,i,smb.last_error);
 		return; 
 	}
+	printf("Last Message  =%-6"PRIu32" New Value (CR=No Change): "
+		,smb.status.last_msg);
+	gets(str);
+	if(isdigit(str[0]))
+		last_msg = atol(str);
 	printf("Header offset =%-5"PRIu32"  New value (CR=No Change): "
 		,smb.status.header_offset);
 	gets(header_offset);
@@ -458,6 +465,8 @@ void config(void)
 		smb_unlocksmbhdr(&smb);
 		return; 
 	}
+	if(last_msg != 0)
+		smb.status.last_msg = last_msg;
 	if(isdigit(max_msgs[0]))
 		smb.status.max_msgs=atol(max_msgs);
 	if(isdigit(max_crcs[0]))
@@ -567,7 +576,7 @@ void dumpindex(ulong start, ulong count)
 			printf("V  %04hX  %-10"PRIu32, idx.votes,idx.remsg);
 		else
 			printf("%c  %04hX  %04hX  %04X"
-				,(idx.attr&MSG_POLL_VOTE_MASK) == MSG_POLL_CLOSURE ? 'C' : (idx.attr&MSG_POLL ? 'P':'M')
+				,(idx.attr&MSG_POLL_VOTE_MASK) == MSG_POLL_CLOSURE ? 'C' : (idx.attr&MSG_POLL ? 'P':' ')
 				,idx.from, idx.to, idx.subj);
 		printf("  %04X  %06X  %s\n", idx.attr, idx.offset, my_timestr(idx.time));
 		l++; 
@@ -726,17 +735,13 @@ void maint(void)
 		return; 
 	}
 	fseek(smb.sid_fp,0L,SEEK_SET);
-	for(l=0;l<smb.status.total_msgs;l++) {
-		printf("%lu of %"PRIu32"\r"
-			,l+1,smb.status.total_msgs);
-		if(!fread(&idx[l],1,sizeof(idxrec_t),smb.sid_fp))
-			break; 
-	}
-	printf("\nDone.\n\n");
+	l = fread(idx, sizeof(idxrec_t), smb.status.total_msgs, smb.sid_fp);
+	l /= sizeof(idxrec_t);
 
+	printf("\nDone.\n\n");
 	printf("Scanning for pre-flagged messages...\n");
 	for(m=0;m<l;m++) {
-		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
+//		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 		if(idx[m].attr&MSG_DELETE)
 			flagged++; 
 	}
@@ -746,7 +751,7 @@ void maint(void)
 		printf("Scanning for messages more than %u days old...\n"
 			,smb.status.max_age);
 		for(m=f=0;m<l;m++) {
-			printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
+//			printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 			if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
 				continue;
 			if((ulong)now>idx[m].time && (now-idx[m].time)/(24L*60L*60L)
@@ -761,7 +766,7 @@ void maint(void)
 
 	printf("Scanning for read messages to be killed...\n");
 	for(m=f=0;m<l;m++) {
-		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
+//		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 		if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
 			continue;
 		if((idx[m].attr&(MSG_READ|MSG_KILLREAD))==(MSG_READ|MSG_KILLREAD)) {
@@ -1399,7 +1404,7 @@ void readmsgs(ulong start)
 
 			printf("\n\n");
 
-			if((inbuf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL))!=NULL) {
+			if((inbuf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL|GETMSGTXT_PLAIN))!=NULL) {
 				printf("%s",inbuf);
 				free(inbuf); 
 			}
@@ -1678,7 +1683,7 @@ int main(int argc, char **argv)
 				if((i=smb_open(&smb))!=0) {
 					fprintf(errfp,"\n%s!Error %d (%s) opening %s message base\n"
 						,beep,i,smb.last_error,smb.file);
-					bail(1); 
+					continue; 
 				}
 				if(!filelength(fileno(smb.shd_fp))) {
 					if(!create) {
