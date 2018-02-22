@@ -12,6 +12,7 @@ struct private_data {
 	CRYPT_CONTEXT	ctx;
 };
 
+static JSClass js_cryptcon_class;
 static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 
 // Helpers
@@ -91,6 +92,7 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 {
 	unsigned char t;
 	size_t off=0;
+	size_t off2;
 	size_t sz;
 	char *e;
 	char *n;
@@ -116,7 +118,20 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 				if (strncmp((char *)data+off, "\x2a\x86\x48\x86\xF7\x0D\x01\x01\x01", 9)==0) {
 					// YEP!
 					off += sz;
-					off += 9;
+					for (; off < len;) {
+						off2 = off;
+						t = js_asn1_type(data, len, &off2);
+						if (t == 2)
+							break;
+						off = off2;
+						sz = js_asn1_len(data,len,&off);
+						if (t != 48 && t != 3)
+							off += sz;
+						if (t == 3)
+							off++;
+					}
+					if (off >= len)
+						return;
 					if (js_asn1_type(data, len, &off) == 2) {
 						sz = js_asn1_len(data,len,&off);
 						n = malloc(sz);
@@ -285,7 +300,6 @@ js_generate_key(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsrefcount rc;
 	int status;
-	char kname[32];
 
 	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
@@ -293,10 +307,7 @@ js_generate_key(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sprintf(kname, "Key-%d", p->ctx);
-	status = cryptSetAttributeString(p->ctx, CRYPT_CTXINFO_LABEL, kname, strlen(kname));
-	if (status == CRYPT_OK)
-		status = cryptGenerateKey(p->ctx);
+	status = cryptGenerateKey(p->ctx);
 	JS_RESUMEREQUEST(cx, rc);
 	if (status == CRYPT_OK)
 		js_create_key_object(cx, obj);
@@ -456,6 +467,67 @@ static JSBool
 js_decrypt(JSContext *cx, uintN argc, jsval *arglist)
 {
 	return js_do_encrption(cx, argc, arglist, FALSE);
+}
+
+static JSBool
+js_create_signature(JSContext *cx, uintN argc, jsval *arglist)
+{
+	struct private_data* p;
+	struct private_data* scp;
+	JSObject *sigCtx;
+	JSObject *obj;
+	jsval *argv;
+	int len;
+	char *signature = NULL;
+	int status;
+	jsrefcount rc;
+	JSString* str;
+
+	if (!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	argv = JS_ARGV(cx, arglist);
+
+	obj = JS_THIS_OBJECT(cx, arglist);
+	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx, getprivate_failure, WHERE);
+		return JS_FALSE;
+	}
+	sigCtx = JSVAL_TO_OBJECT(argv[0]);
+	if (!JS_InstanceOf(cx, sigCtx, &js_cryptcon_class, NULL))
+		return JS_FALSE;
+	HANDLE_PENDING(cx, sigCtx);
+	if ((scp=(struct private_data *)JS_GetPrivate(cx,sigCtx))==NULL) {
+		JS_ReportError(cx, getprivate_failure, WHERE);
+		return JS_FALSE;
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	status = cryptCreateSignature(NULL, 0, &len, scp->ctx, p->ctx);
+	if (cryptStatusError(status)) {
+		JS_RESUMEREQUEST(cx, rc);
+		js_cryptcon_error(cx, p->ctx, status);
+		return JS_FALSE;
+	}
+	signature = malloc(len);
+	if (signature == NULL) {
+		lprintf(LOG_ERR, "Unable to allocate %lu bytes\n", len);
+		JS_RESUMEREQUEST(cx, rc);
+		return JS_FALSE;
+	}
+	status = cryptCreateSignature(signature, len, &len, scp->ctx, p->ctx);
+	JS_RESUMEREQUEST(cx, rc);
+	if (cryptStatusError(status)) {
+		free(signature);
+		js_cryptcon_error(cx, p->ctx, status);
+		return JS_FALSE;
+	}
+	str = JS_NewStringCopyN(cx, signature, len);
+	free(signature);
+	if(str==NULL)
+		return(JS_FALSE);
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
+	return JS_TRUE;
 }
 
 // Properties
@@ -632,7 +704,6 @@ js_cryptcon_attrstr_get(JSContext *cx, jsval *vp, CRYPT_CONTEXT ctx, CRYPT_ATTRI
 	status = cryptGetAttributeString(ctx, type, NULL, &len);
 	if (cryptStatusError(status)) {
 		*vp = JSVAL_VOID;
-		return JS_TRUE;
 		js_cryptcon_error(cx, ctx, status);
 		return JS_FALSE;
 	}
@@ -687,6 +758,7 @@ js_cryptcon_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCON_PROP_MODE:
 			return js_cryptcon_attr_get(cx, vp, p->ctx, CRYPT_CTXINFO_MODE);
 		case CRYPTCON_PROP_HASHVALUE:
+			cryptEncrypt(p->ctx, p, 0);
 			return js_cryptcon_attrstr_get(cx, vp, p->ctx, CRYPT_CTXINFO_HASHVALUE);
 		case CRYPTCON_PROP_IV:
 			return js_cryptcon_attrstr_get(cx, vp, p->ctx, CRYPT_CTXINFO_IV);
@@ -739,6 +811,10 @@ static jsSyncMethodSpec js_cryptcon_functions[] = {
 	},
 	{"decrypt",			js_decrypt,			0,	JSTYPE_STRING,	"ciphertext"
 	,JSDOCSTR("Decrypt the string and return as a new string.")
+	,316
+	},
+	{"create_signature",js_create_signature,0,	JSTYPE_STRING,	"sigContext"
+	,JSDOCSTR("Create a signature signed with the sigContext CryptContext object.")
 	,316
 	},
 	{0}
