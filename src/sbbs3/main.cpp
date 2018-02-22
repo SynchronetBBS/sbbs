@@ -168,6 +168,9 @@ int lputs(int level, const char* str)
 
 int eputs(int level, const char *str)
 {
+	if(*str == 0)
+		return 0;
+
 	if(level <= LOG_ERR) {
 		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, str);
 		if(startup!=NULL && startup->errormsg!=NULL)
@@ -204,7 +207,7 @@ int eprintf(int level, const char *fmt, ...)
 
 	strip_ctrl(sbuf, sbuf);
 
-    return(eputs(level,sbuf));
+    return(eputs(level,truncsp(sbuf)));
 }
 
 /* Picks the right log callback function (event or term) based on the sbbs->cfg.node_num value */
