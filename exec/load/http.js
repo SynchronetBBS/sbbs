@@ -81,6 +81,7 @@ function HTTPRequest(username,password,extra_headers)
 		this.AddExtraHeaders();
 		this.body=data;
 		this.request_headers.push("Content-Type: application/x-www-form-urlencoded");
+		//this.request_headers.push("Content-Type: application/jose+json");
 		this.request_headers.push("Content-Length: "+data.length);
 	};
 

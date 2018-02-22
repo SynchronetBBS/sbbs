@@ -1,7 +1,7 @@
 // Based on p5-Net-ACME2 - https://github.com/FGasper/p5-Net-ACME2/
 
 /*
- * var acme = new ACMEv2({key:key, key_id:undefined})
+ * var acme = new ACMEv2({key:CryptContext, key_id:undefined})
  * 
  * // For a new account:
  * {
@@ -72,13 +72,13 @@ ACMEv2.prototype.get_directory = function()
 	return this.directory;
 }
 
-const ACMEv2.prototype.FULL_JWT_METHODS = [
+ACMEv2.prototype.FULL_JWT_METHODS = [
 	'newAccount',
 	'revokeCert'
 ];
 ACMEv2.prototype.create_new_account = function(opts)
 {
-	
+	this.post('newAccount', opts);
 }
 
 ACMEv2.prototype.post = function(link, data)
@@ -94,21 +94,84 @@ ACMEv2.prototype.post = function(link, data)
 	return this.post_url(url, data, post_method);
 }
 
+ACMEv2.prototype.get_nonce = function()
+{
+	var ret;
+
+	if (this.last_nonce === undefined) {
+		ret = this.ua.Head(this.get_directory().newNonce);
+		this.last_nonce = ret['Replay-Nonce'][0];
+	}
+
+	ret = this.last_nonce;
+	this.last_nonce = undefined;
+	return ret;
+}
+
+ACMEv2.prototype.base64url = function(string)
+{
+	string = base64_encode(string);
+	string = string.replace(/=/g,'');
+	string = string.replace(/\+/g,'-');
+	string = string.replace(/\//g,'_');
+	return string;
+}
+
+ACMEv2.prototype.hash_thing = function(data)
+{
+	var shactx;
+
+	shactx = new CryptContext(CryptContext.ALGO.SHA2);
+	shactx.encrypt(data);
+	shactx.encrypt('');
+	var MD = shactx.hashvalue;
+	var D = '';
+	var tmp;
+	var i;
+
+	D = ascii(0x30) + ascii(0x31) + ascii(0x30) + ascii(0x0d) + ascii(0x06) + ascii(0x09) +
+		ascii(0x60) + ascii(0x86) + ascii(0x48) + ascii(0x01) + ascii(0x65) + ascii(0x03) +
+		ascii(0x04) + ascii(0x02) + ascii(0x01) + ascii(0x05) + ascii(0x00) + ascii(0x04) +
+		ascii(0x20) + MD;
+	D = ascii(0) + D;
+	while(D.length < this.key.keysize-2)
+		D = ascii(255)+D;
+	D = ascii(0x00) + ascii(0x01) + D;
+	return this.key.decrypt(D);
+}
+
 ACMEv2.prototype.post_url = function(url, data, post_method)
 {
+	var protected = {};
+	var ret;
+	var msg = {};
+
 	if (post_method === undefined)
 		post_method = 'post_key_id';
 
 	switch(post_method) {
 		case 'post_key_id':
+			protected.nonce = this.get_nonce();
+			protected.url = url;
+			protected.alg = 'RS256';
+			protected.kid = this.key_id;
+			if (protected.kid === undefined)
+				throw("No key_id available!");
 			break;
 		case 'post_full_jwt':
-			
+			protected.nonce = this.get_nonce();
+			protected.url = url;
+			protected.alg = 'RS256';
+			protected.jwk = {e:this.key.public_key.e, kty:'RSA', n:this.key.public_key.n};
 			break;
 	}
-	return this.post_method(url, data);
-}
-
-ACMEv2.prototype.post_method = function(url, data, post_method)
-{
+	msg.protected = this.base64url(JSON.stringify(protected));
+	msg.payload = this.base64url(JSON.stringify(data));
+	msg.signature = this.base64url(this.hash_thing(msg.protected + "." + msg.payload));
+	var body = JSON.stringify(msg);
+	body = body.replace(/:"/g, ': "');
+	body = body.replace(/:{/g, ': {');
+	body = body.replace(/,"/g, ', "');
+	ret = this.ua.Post(url, body);
+	return ret;
 }
