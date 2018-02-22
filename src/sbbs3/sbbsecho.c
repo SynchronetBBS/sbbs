@@ -4369,7 +4369,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 				else {
 					bodylen += sprintf(body, "Your PING request was received at: %s %s\r"
 						,timestr(&scfg, time32(NULL), tmp), smb_zonestr(sys_timezone(&scfg),NULL));
-					bodylen += sprintf(body, "by: %s (sysop: %s) @ %s\r"
+					bodylen += sprintf(body+bodylen, "by: %s (sysop: %s) @ %s\r"
 						,scfg.sys_name, scfg.sys_op, smb_faddrtoa(&scfg.faddr[match], NULL));
 					time_t t = (time_t)fmsgtime(hdr.time);
 					bodylen += sprintf(body+bodylen, "\rThe received message header contained:\r\r"
