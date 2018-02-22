@@ -1898,7 +1898,6 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 			if(!msg_offset_by_id(p
 					,cstr
 					,&msg.offset)) {
-				free(p);
 				free(cstr);
 				JS_RESUMEREQUEST(cx, rc);
 				return JS_TRUE;	/* ID not found */
@@ -1911,10 +1910,8 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	if(!msg_specified) {
-		free(p);
+	if(!msg_specified)
 		return JS_TRUE;
-	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if((p->status=smb_getmsgidx(&(p->smb), &msg))==SMB_SUCCESS
@@ -1926,7 +1923,6 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	}
 
-	free(p);
 	smb_freemsgmem(&msg);
 	JS_RESUMEREQUEST(cx, rc);
 
