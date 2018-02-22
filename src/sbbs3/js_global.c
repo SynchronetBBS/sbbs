@@ -2841,7 +2841,7 @@ js_cfgfname(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+	if(argc < 2 || JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
 	JSVALUE_TO_MSTRING(cx, argv[0], path, NULL);
