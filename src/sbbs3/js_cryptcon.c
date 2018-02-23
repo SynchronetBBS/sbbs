@@ -5,14 +5,11 @@
 #include "sbbs.h"
 #include <cryptlib.h>
 #include "js_request.h"
+#include "js_cryptcon.h"
 #include "ssl.h"
 #include "base64.h"
 
-struct private_data {
-	CRYPT_CONTEXT	ctx;
-};
-
-static JSClass js_cryptcon_class;
+JSClass js_cryptcon_class;
 static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 
 // Helpers
@@ -204,7 +201,7 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 
 static void js_create_key_object(JSContext *cx, JSObject *parent)
 {
-	struct private_data* p;
+	struct js_cryptcon_private_data* p;
 	jsrefcount rc;
 	int status;
 	int val;
@@ -212,7 +209,7 @@ static void js_create_key_object(JSContext *cx, JSObject *parent)
 	CRYPT_CERTIFICATE cert;	// Just to hold the public key...
 	unsigned char *certbuf;
 
-	if ((p=(struct private_data *)JS_GetPrivate(cx,parent))==NULL)
+	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,parent))==NULL)
 		return;
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -280,9 +277,9 @@ resume:
 static void
 js_finalize_cryptcon(JSContext *cx, JSObject *obj)
 {
-	struct private_data* p;
+	struct js_cryptcon_private_data* p;
 
-	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL)
+	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,obj))==NULL)
 		return;
 
 	cryptDestroyContext(p->ctx);
@@ -296,12 +293,12 @@ js_finalize_cryptcon(JSContext *cx, JSObject *obj)
 static JSBool
 js_generate_key(JSContext *cx, uintN argc, jsval *arglist)
 {
-	struct private_data* p;
+	struct js_cryptcon_private_data* p;
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsrefcount rc;
 	int status;
 
-	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
+	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
 	}
@@ -322,7 +319,7 @@ js_generate_key(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_set_key(JSContext *cx, uintN argc, jsval *arglist)
 {
-	struct private_data* p;
+	struct js_cryptcon_private_data* p;
 	JSObject *obj;
 	jsval *argv;
 	size_t len;
@@ -341,7 +338,7 @@ js_set_key(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	obj = JS_THIS_OBJECT(cx, arglist);
-	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
+	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		free(key);
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
@@ -364,7 +361,7 @@ js_set_key(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_derive_key(JSContext *cx, uintN argc, jsval *arglist)
 {
-	struct private_data* p;
+	struct js_cryptcon_private_data* p;
 	JSObject *obj;
 	jsval *argv;
 	size_t len;
@@ -389,7 +386,7 @@ js_derive_key(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	obj = JS_THIS_OBJECT(cx, arglist);
-	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
+	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		free(key);
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
@@ -412,7 +409,7 @@ js_derive_key(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_do_encrption(JSContext *cx, uintN argc, jsval *arglist, int encrypt)
 {
-	struct private_data* p;
+	struct js_cryptcon_private_data* p;
 	JSObject *obj;
 	jsval *argv;
 	size_t len;
@@ -427,7 +424,7 @@ js_do_encrption(JSContext *cx, uintN argc, jsval *arglist, int encrypt)
 	argv = JS_ARGV(cx, arglist);
 
 	obj = JS_THIS_OBJECT(cx, arglist);
-	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
+	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
 	}
@@ -472,8 +469,8 @@ js_decrypt(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_create_signature(JSContext *cx, uintN argc, jsval *arglist)
 {
-	struct private_data* p;
-	struct private_data* scp;
+	struct js_cryptcon_private_data* p;
+	struct js_cryptcon_private_data* scp;
 	JSObject *sigCtx;
 	JSObject *obj;
 	jsval *argv;
@@ -489,7 +486,7 @@ js_create_signature(JSContext *cx, uintN argc, jsval *arglist)
 	argv = JS_ARGV(cx, arglist);
 
 	obj = JS_THIS_OBJECT(cx, arglist);
-	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
+	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
 	}
@@ -497,7 +494,7 @@ js_create_signature(JSContext *cx, uintN argc, jsval *arglist)
 	if (!JS_InstanceOf(cx, sigCtx, &js_cryptcon_class, NULL))
 		return JS_FALSE;
 	HANDLE_PENDING(cx, NULL);
-	if ((scp=(struct private_data *)JS_GetPrivate(cx,sigCtx))==NULL) {
+	if ((scp=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,sigCtx))==NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
 	}
@@ -634,9 +631,9 @@ js_cryptcon_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
 	jsval idval;
     jsint tiny;
-	struct private_data* p;
+	struct js_cryptcon_private_data* p;
 
-	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
+	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
 	}
@@ -731,9 +728,9 @@ js_cryptcon_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval idval;
     jsint tiny;
-	struct private_data* p;
+	struct js_cryptcon_private_data* p;
 
-	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
+	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		return JS_TRUE;
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
@@ -846,7 +843,7 @@ static JSBool js_cryptcon_enumerate(JSContext *cx, JSObject *obj)
 	return(js_cryptcon_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_cryptcon_class = {
+JSClass js_cryptcon_class = {
      "CryptContext"			/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/
@@ -859,6 +856,29 @@ static JSClass js_cryptcon_class = {
 	,js_finalize_cryptcon		/* finalize		*/
 };
 
+JSObject* DLLCALL js_CreateCryptconObject(JSContext* cx, CRYPT_CONTEXT ctx)
+{
+	JSObject *obj;
+	struct js_cryptcon_private_data *p;
+
+	obj=JS_NewObject(cx, &js_cryptcon_class, NULL, NULL);
+
+	if((p=(struct js_cryptcon_private_data *)malloc(sizeof(struct js_cryptcon_private_data)))==NULL) {
+		JS_ReportError(cx,"malloc failed");
+		return NULL;
+	}
+	memset(p,0,sizeof(struct js_cryptcon_private_data));
+	p->ctx = ctx;
+
+	if(!JS_SetPrivate(cx, obj, p)) {
+		JS_ReportError(cx,"JS_SetPrivate failed");
+		return NULL;
+	}
+	js_create_key_object(cx, obj);
+
+	return obj;
+}
+
 // Constructor
 
 static JSBool
@@ -866,7 +886,7 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj;
 	jsval *argv=JS_ARGV(cx, arglist);
-	struct private_data *p;
+	struct js_cryptcon_private_data *p;
 	jsrefcount rc;
 	int status;
 	int algo;
@@ -881,11 +901,11 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if (!JS_ValueToInt32(cx,argv[0],&algo))
 		return JS_FALSE;
 
-	if((p=(struct private_data *)malloc(sizeof(struct private_data)))==NULL) {
+	if((p=(struct js_cryptcon_private_data *)malloc(sizeof(struct js_cryptcon_private_data)))==NULL) {
 		JS_ReportError(cx,"malloc failed");
 		return(JS_FALSE);
 	}
-	memset(p,0,sizeof(struct private_data));
+	memset(p,0,sizeof(struct js_cryptcon_private_data));
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");

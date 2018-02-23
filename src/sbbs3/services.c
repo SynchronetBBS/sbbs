@@ -803,6 +803,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if(js_CreateCryptContextClass(js_cx, *glob)==NULL)
 			break;
 
+		/* CryptKeyset Class */
+		if(js_CreateCryptKeysetClass(js_cx, *glob)==NULL)
+			break;
+
 		/* user-specific objects */
 		if(!js_CreateUserObjects(js_cx, *glob, &scfg, /*user: */NULL, service_client->client, NULL, service_client->subscan)) 
 			break;

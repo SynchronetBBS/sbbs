@@ -254,6 +254,10 @@ BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		if(js_CreateCryptContextClass(js_cx, *glob)==NULL)
 			break;
 
+		/* CryptKeyset Class */
+		if(js_CreateCryptKeysetClass(js_cx, *glob)==NULL)
+			break;
+
 		success=TRUE;
 	} while(0);
 

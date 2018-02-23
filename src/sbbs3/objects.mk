@@ -46,6 +46,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_com$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_console$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_cryptcon$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_cryptkeyset$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_file$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_file_area$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_global$(OFILE)\
