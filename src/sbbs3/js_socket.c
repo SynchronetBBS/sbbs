@@ -117,6 +117,8 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 	ptrdiff_t	total=0;
 	int	copied,ret;
 	
+	if (len == 0)
+		return total;
 	if(p->session==-1)
 		return(recv(p->sock, buf, len, flags));	/* Blocked here, indefinitely, in MSP-UDP service */
 #if 0
