@@ -259,6 +259,39 @@ js_cryptcert_attrstr_get(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYPT
 	return JS_TRUE;
 }
 
+static JSBool
+js_cryptcert_attrtime_get(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYPT_ATTRIBUTE_TYPE type)
+{
+	int status;
+	int len;
+	time_t t;
+	jsdouble msec;
+	JSObject *dobj;
+
+	status = cryptGetAttributeString(cert, type, NULL, &len);
+	if (cryptStatusError(status)) {
+		*vp = JSVAL_VOID;
+		return JS_TRUE;	// Do not return JS_FALSE here, or jsdocs build will break.
+	}
+	if (len != sizeof(t)) {
+		JS_ReportError(cx, "Time size %d not sizeof(time_t) (%d)\n", len, sizeof(t));
+		return JS_FALSE;
+	}
+	status = cryptGetAttributeString(cert, type, &t, &len);
+	if (cryptStatusError(status)) {
+		js_cryptcert_error(cx, cert, status);
+		return JS_FALSE;
+	}
+	msec = t;
+	msec *= 1000;
+	dobj = JS_NewDateObjectMsec(cx, msec);
+	if(dobj==NULL)
+		return(JS_FALSE);
+	*vp = OBJECT_TO_JSVAL(dobj);
+
+	return JS_TRUE;
+}
+
 enum {
 	/**************************/
 	/* Certificate attributes */
@@ -849,9 +882,9 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_ISSUERNAME:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_ISSUERNAME);
 		case CRYPTCERT_PROP_VALIDFROM:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_VALIDFROM);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_VALIDFROM);
 		case CRYPTCERT_PROP_VALIDTO:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_VALIDTO);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_VALIDTO);
 		case CRYPTCERT_PROP_SUBJECTNAME:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_SUBJECTNAME);
 		case CRYPTCERT_PROP_ISSUERUNIQUEID:
@@ -861,11 +894,11 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_CERTREQUEST:
 			return js_cryptcert_attrstr_get(cx, vp, p->cert, CRYPT_CERTINFO_CERTREQUEST);
 		case CRYPTCERT_PROP_THISUPDATE:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_THISUPDATE);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_THISUPDATE);
 		case CRYPTCERT_PROP_NEXTUPDATE:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_NEXTUPDATE);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_NEXTUPDATE);
 		case CRYPTCERT_PROP_REVOCATIONDATE:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_REVOCATIONDATE);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_REVOCATIONDATE);
 		case CRYPTCERT_PROP_REVOCATIONSTATUS:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_REVOCATIONSTATUS);
 		case CRYPTCERT_PROP_CERTSTATUS:
@@ -973,7 +1006,7 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_OCSP_NOCHECK:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_OCSP_NOCHECK);
 		case CRYPTCERT_PROP_OCSP_ARCHIVECUTOFF:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_OCSP_ARCHIVECUTOFF);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_OCSP_ARCHIVECUTOFF);
 		case CRYPTCERT_PROP_SUBJECTINFOACCESS:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_SUBJECTINFOACCESS);
 		case CRYPTCERT_PROP_SUBJECTINFO_TIMESTAMPING:
@@ -987,7 +1020,7 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_SUBJECTINFO_SIGNEDOBJECT:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_SUBJECTINFO_SIGNEDOBJECT);
 		case CRYPTCERT_PROP_SIGG_DATEOFCERTGEN:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_SIGG_DATEOFCERTGEN);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_SIGG_DATEOFCERTGEN);
 		case CRYPTCERT_PROP_SIGG_PROCURATION:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_SIGG_PROCURATION);
 		case CRYPTCERT_PROP_SIGG_PROCURE_COUNTRY:
@@ -1049,9 +1082,9 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_PRIVATEKEYUSAGEPERIOD:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_PRIVATEKEYUSAGEPERIOD);
 		case CRYPTCERT_PROP_PRIVATEKEY_NOTBEFORE:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_PRIVATEKEY_NOTBEFORE);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_PRIVATEKEY_NOTBEFORE);
 		case CRYPTCERT_PROP_PRIVATEKEY_NOTAFTER:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_PRIVATEKEY_NOTAFTER);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_PRIVATEKEY_NOTAFTER);
 		case CRYPTCERT_PROP_SUBJECTALTNAME:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_SUBJECTALTNAME);
 		case CRYPTCERT_PROP_ISSUERALTNAME:
@@ -1069,7 +1102,7 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_HOLDINSTRUCTIONCODE:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_HOLDINSTRUCTIONCODE);
 		case CRYPTCERT_PROP_INVALIDITYDATE:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_INVALIDITYDATE);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_INVALIDITYDATE);
 		case CRYPTCERT_PROP_DELTACRLINDICATOR:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_DELTACRLINDICATOR);
 		case CRYPTCERT_PROP_ISSUINGDISTRIBUTIONPOINT:
@@ -1185,13 +1218,13 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_ORDEREDLIST:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_ORDEREDLIST);
 		case CRYPTCERT_PROP_BASEUPDATETIME:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_BASEUPDATETIME);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_BASEUPDATETIME);
 		case CRYPTCERT_PROP_DELTAINFO:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_DELTAINFO);
 		case CRYPTCERT_PROP_DELTAINFO_LOCATION:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_DELTAINFO_LOCATION);
 		case CRYPTCERT_PROP_DELTAINFO_NEXTDELTA:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_DELTAINFO_NEXTDELTA);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_DELTAINFO_NEXTDELTA);
 		case CRYPTCERT_PROP_INHIBITANYPOLICY:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_INHIBITANYPOLICY);
 		case CRYPTCERT_PROP_TOBEREVOKED:
@@ -1201,7 +1234,7 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_TOBEREVOKED_REASONCODE:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_TOBEREVOKED_REASONCODE);
 		case CRYPTCERT_PROP_TOBEREVOKED_REVOCATIONTIME:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_TOBEREVOKED_REVOCATIONTIME);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_TOBEREVOKED_REVOCATIONTIME);
 		case CRYPTCERT_PROP_TOBEREVOKED_CERTSERIALNUMBER:
 			return js_cryptcert_attrstr_get(cx, vp, p->cert, CRYPT_CERTINFO_TOBEREVOKED_CERTSERIALNUMBER);
 		case CRYPTCERT_PROP_REVOKEDGROUPS:
@@ -1211,13 +1244,13 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_REVOKEDGROUPS_REASONCODE:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_REVOKEDGROUPS_REASONCODE);
 		case CRYPTCERT_PROP_REVOKEDGROUPS_INVALIDITYDATE:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_REVOKEDGROUPS_INVALIDITYDATE);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_REVOKEDGROUPS_INVALIDITYDATE);
 		case CRYPTCERT_PROP_REVOKEDGROUPS_STARTINGNUMBER:
 			return js_cryptcert_attrstr_get(cx, vp, p->cert, CRYPT_CERTINFO_REVOKEDGROUPS_STARTINGNUMBER);
 		case CRYPTCERT_PROP_REVOKEDGROUPS_ENDINGNUMBER:
 			return js_cryptcert_attrstr_get(cx, vp, p->cert, CRYPT_CERTINFO_REVOKEDGROUPS_ENDINGNUMBER);
 		case CRYPTCERT_PROP_EXPIREDCERTSONCRL:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_EXPIREDCERTSONCRL);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_EXPIREDCERTSONCRL);
 		case CRYPTCERT_PROP_AAISSUINGDISTRIBUTIONPOINT:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_AAISSUINGDISTRIBUTIONPOINT);
 		case CRYPTCERT_PROP_AAISSUINGDIST_FULLNAME:
@@ -1289,7 +1322,7 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_CMS_MESSAGEDIGEST:
 			return js_cryptcert_attrstr_get(cx, vp, p->cert, CRYPT_CERTINFO_CMS_MESSAGEDIGEST);
 		case CRYPTCERT_PROP_CMS_SIGNINGTIME:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_CMS_SIGNINGTIME);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_CMS_SIGNINGTIME);
 		case CRYPTCERT_PROP_CMS_COUNTERSIGNATURE:
 			return js_cryptcert_attrstr_get(cx, vp, p->cert, CRYPT_CERTINFO_CMS_COUNTERSIGNATURE);
 		case CRYPTCERT_PROP_CMS_SIGNINGDESCRIPTION:
@@ -1363,7 +1396,7 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CRYPTCERT_PROP_CMS_MLEXP_ENTITYIDENTIFIER:
 			return js_cryptcert_attrstr_get(cx, vp, p->cert, CRYPT_CERTINFO_CMS_MLEXP_ENTITYIDENTIFIER);
 		case CRYPTCERT_PROP_CMS_MLEXP_TIME:
-			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_CMS_MLEXP_TIME);
+			return js_cryptcert_attrtime_get(cx, vp, p->cert, CRYPT_CERTINFO_CMS_MLEXP_TIME);
 		case CRYPTCERT_PROP_CMS_MLEXP_NONE:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_CMS_MLEXP_NONE);
 		case CRYPTCERT_PROP_CMS_MLEXP_INSTEADOF:
@@ -1521,6 +1554,46 @@ js_cryptcert_attrstr_set(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYPT
 }
 
 static JSBool
+js_cryptcert_attrtime_set(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYPT_ATTRIBUTE_TYPE type)
+{
+	int status;
+	time_t t;
+	jsdouble sec;
+
+	if (JSVAL_IS_OBJECT(*vp)) {
+		if (!JS_ObjectIsDate(cx, JSVAL_TO_OBJECT(*vp))) {
+			JS_ReportError(cx, "Invalid Date");
+			return JS_FALSE;
+		}
+		if (!JS_ValueToNumber(cx, *vp, &sec)) {
+			JS_ReportError(cx, "Invalid Date");
+			return JS_FALSE;
+		}
+		sec /= 1000;
+	}
+	else {
+		if (JSVAL_IS_NUMBER(*vp)) {
+			if (!JS_ValueToNumber(cx, *vp, &sec)) {
+				JS_ReportError(cx, "Invalid Date");
+				return JS_FALSE;
+			}
+		}
+		else {
+			JS_ReportError(cx, "Invalid Date");
+			return JS_FALSE;
+		}
+	}
+	t = sec;
+
+	status = cryptSetAttributeString(cert, type, &t, sizeof(t));
+	if (cryptStatusError(status)) {
+		js_cryptcert_error(cx, cert, status);
+		return JS_FALSE;
+	}
+	return JS_TRUE;
+}
+
+static JSBool
 js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
 	jsval idval;
@@ -1571,9 +1644,9 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_ISSUERNAME:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_ISSUERNAME);
 		case CRYPTCERT_PROP_VALIDFROM:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_VALIDFROM);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_VALIDFROM);
 		case CRYPTCERT_PROP_VALIDTO:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_VALIDTO);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_VALIDTO);
 		case CRYPTCERT_PROP_SUBJECTNAME:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_SUBJECTNAME);
 		case CRYPTCERT_PROP_ISSUERUNIQUEID:
@@ -1583,11 +1656,11 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_CERTREQUEST:
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_CERTREQUEST);
 		case CRYPTCERT_PROP_THISUPDATE:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_THISUPDATE);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_THISUPDATE);
 		case CRYPTCERT_PROP_NEXTUPDATE:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_NEXTUPDATE);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_NEXTUPDATE);
 		case CRYPTCERT_PROP_REVOCATIONDATE:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_REVOCATIONDATE);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_REVOCATIONDATE);
 		case CRYPTCERT_PROP_REVOCATIONSTATUS:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_REVOCATIONSTATUS);
 		case CRYPTCERT_PROP_CERTSTATUS:
@@ -1695,7 +1768,7 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_OCSP_NOCHECK:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_OCSP_NOCHECK);
 		case CRYPTCERT_PROP_OCSP_ARCHIVECUTOFF:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_OCSP_ARCHIVECUTOFF);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_OCSP_ARCHIVECUTOFF);
 		case CRYPTCERT_PROP_SUBJECTINFOACCESS:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_SUBJECTINFOACCESS);
 		case CRYPTCERT_PROP_SUBJECTINFO_TIMESTAMPING:
@@ -1709,7 +1782,7 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_SUBJECTINFO_SIGNEDOBJECT:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_SUBJECTINFO_SIGNEDOBJECT);
 		case CRYPTCERT_PROP_SIGG_DATEOFCERTGEN:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_SIGG_DATEOFCERTGEN);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_SIGG_DATEOFCERTGEN);
 		case CRYPTCERT_PROP_SIGG_PROCURATION:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_SIGG_PROCURATION);
 		case CRYPTCERT_PROP_SIGG_PROCURE_COUNTRY:
@@ -1771,9 +1844,9 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_PRIVATEKEYUSAGEPERIOD:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_PRIVATEKEYUSAGEPERIOD);
 		case CRYPTCERT_PROP_PRIVATEKEY_NOTBEFORE:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_PRIVATEKEY_NOTBEFORE);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_PRIVATEKEY_NOTBEFORE);
 		case CRYPTCERT_PROP_PRIVATEKEY_NOTAFTER:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_PRIVATEKEY_NOTAFTER);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_PRIVATEKEY_NOTAFTER);
 		case CRYPTCERT_PROP_SUBJECTALTNAME:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_SUBJECTALTNAME);
 		case CRYPTCERT_PROP_ISSUERALTNAME:
@@ -1791,7 +1864,7 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_HOLDINSTRUCTIONCODE:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_HOLDINSTRUCTIONCODE);
 		case CRYPTCERT_PROP_INVALIDITYDATE:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_INVALIDITYDATE);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_INVALIDITYDATE);
 		case CRYPTCERT_PROP_DELTACRLINDICATOR:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_DELTACRLINDICATOR);
 		case CRYPTCERT_PROP_ISSUINGDISTRIBUTIONPOINT:
@@ -1907,13 +1980,13 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_ORDEREDLIST:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_ORDEREDLIST);
 		case CRYPTCERT_PROP_BASEUPDATETIME:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_BASEUPDATETIME);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_BASEUPDATETIME);
 		case CRYPTCERT_PROP_DELTAINFO:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_DELTAINFO);
 		case CRYPTCERT_PROP_DELTAINFO_LOCATION:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_DELTAINFO_LOCATION);
 		case CRYPTCERT_PROP_DELTAINFO_NEXTDELTA:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_DELTAINFO_NEXTDELTA);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_DELTAINFO_NEXTDELTA);
 		case CRYPTCERT_PROP_INHIBITANYPOLICY:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_INHIBITANYPOLICY);
 		case CRYPTCERT_PROP_TOBEREVOKED:
@@ -1923,7 +1996,7 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_TOBEREVOKED_REASONCODE:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_TOBEREVOKED_REASONCODE);
 		case CRYPTCERT_PROP_TOBEREVOKED_REVOCATIONTIME:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_TOBEREVOKED_REVOCATIONTIME);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_TOBEREVOKED_REVOCATIONTIME);
 		case CRYPTCERT_PROP_TOBEREVOKED_CERTSERIALNUMBER:
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_TOBEREVOKED_CERTSERIALNUMBER);
 		case CRYPTCERT_PROP_REVOKEDGROUPS:
@@ -1933,13 +2006,13 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_REVOKEDGROUPS_REASONCODE:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_REVOKEDGROUPS_REASONCODE);
 		case CRYPTCERT_PROP_REVOKEDGROUPS_INVALIDITYDATE:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_REVOKEDGROUPS_INVALIDITYDATE);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_REVOKEDGROUPS_INVALIDITYDATE);
 		case CRYPTCERT_PROP_REVOKEDGROUPS_STARTINGNUMBER:
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_REVOKEDGROUPS_STARTINGNUMBER);
 		case CRYPTCERT_PROP_REVOKEDGROUPS_ENDINGNUMBER:
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_REVOKEDGROUPS_ENDINGNUMBER);
 		case CRYPTCERT_PROP_EXPIREDCERTSONCRL:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_EXPIREDCERTSONCRL);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_EXPIREDCERTSONCRL);
 		case CRYPTCERT_PROP_AAISSUINGDISTRIBUTIONPOINT:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_AAISSUINGDISTRIBUTIONPOINT);
 		case CRYPTCERT_PROP_AAISSUINGDIST_FULLNAME:
@@ -2011,7 +2084,7 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_CMS_MESSAGEDIGEST:
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_CMS_MESSAGEDIGEST);
 		case CRYPTCERT_PROP_CMS_SIGNINGTIME:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_CMS_SIGNINGTIME);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_CMS_SIGNINGTIME);
 		case CRYPTCERT_PROP_CMS_COUNTERSIGNATURE:
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_CMS_COUNTERSIGNATURE);
 		case CRYPTCERT_PROP_CMS_SIGNINGDESCRIPTION:
@@ -2085,7 +2158,7 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_CMS_MLEXP_ENTITYIDENTIFIER:
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_CMS_MLEXP_ENTITYIDENTIFIER);
 		case CRYPTCERT_PROP_CMS_MLEXP_TIME:
-			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_CMS_MLEXP_TIME);
+			return js_cryptcert_attrtime_set(cx, vp, p->cert, CRYPT_CERTINFO_CMS_MLEXP_TIME);
 		case CRYPTCERT_PROP_CMS_MLEXP_NONE:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_CMS_MLEXP_NONE);
 		case CRYPTCERT_PROP_CMS_MLEXP_INSTEADOF:
