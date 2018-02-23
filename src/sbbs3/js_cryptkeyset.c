@@ -66,7 +66,6 @@ js_add_private_key(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	argv = JS_ARGV(cx, arglist);
 	if ((jspw = JS_ValueToString(cx, argv[1])) == NULL) {
 		JS_ReportError(cx, "Invalid password");
 		return JS_FALSE;
@@ -158,7 +157,6 @@ js_delete_key(JSContext *cx, uintN argc, jsval *arglist)
 	HANDLE_PENDING(cx, label);
 	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptDeleteKey(p->ks, CRYPT_KEYID_NAME, label);
-fprintf(stderr, "cryptDeleteKey(%s) = %d\n", label, status);
 	free(label);
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
@@ -390,7 +388,6 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
-fprintf(stderr, "Name: %s, opts: %02x\n", p->name, opts);
 	status = cryptKeysetOpen(&p->ks, CRYPT_UNUSED, CRYPT_KEYSET_FILE, p->name, opts);
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
