@@ -43,12 +43,18 @@ function ACMEv2(opts)
 		throw('Need "key"!');
 
 	this.key = opts.key;
-	if (opts.key_id !== undefined)
-		this.key_id = opts.key_id;
+	this.key_id = opts.key_id;
 	if (opts.host !== undefined)
 		this.host = opts.host;
 	this.jws_format = 'sha256';
 	this.ua = new HTTPRequest();
+	if (this.key_id === undefined)
+		this.get_key_id();
+}
+
+ACMEv2.prototype.get_key_id = function()
+{
+	this.create_new_account({termsOfServiceAgreed:true,onlyReturnExisting:true});
 }
 
 ACMEv2.prototype.host = "acme-staging-v02.api.letsencrypt.org";
@@ -78,7 +84,7 @@ ACMEv2.prototype.FULL_JWT_METHODS = [
 ];
 ACMEv2.prototype.create_new_account = function(opts)
 {
-	this.post('newAccount', opts);
+	return this.post('newAccount', opts);
 }
 
 ACMEv2.prototype.post = function(link, data)
@@ -140,6 +146,28 @@ ACMEv2.prototype.hash_thing = function(data)
 	return this.key.decrypt(D);
 }
 
+// TODO: Should this be in http.js?
+ACMEv2.prototype.store_headers = function(update_nonce)
+{
+	var h = {};
+
+	if (update_nonce === undefined)
+		update_nonce = false;
+	for(i in this.ua.response_headers) {
+		m = this.ua.response_headers[i].match(/^(.*?):\s*(.*?)\s*$/);
+		if (m) {
+			if (h[m[1]] == undefined)
+				h[m[1]] = [];
+			h[m[1]].push(m[2]);
+		}
+	}
+	if (h['Replay-Nonce'] !== undefined) {
+		if (update_nonce)
+			this.last_nonce = h['Replay-Nonce'][0];
+	}
+	this.last_headers = h;
+}
+
 ACMEv2.prototype.post_url = function(url, data, post_method)
 {
 	var protected = {};
@@ -173,5 +201,8 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 	body = body.replace(/:{/g, ': {');
 	body = body.replace(/,"/g, ', "');
 	ret = this.ua.Post(url, body);
+	this.store_headers(true);
+	if (this.last_headers['Location'] !== undefined)
+		this.key_id = this.last_headers['Location'][0];
 	return ret;
 }
