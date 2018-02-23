@@ -169,6 +169,7 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 							return;
 						}
 						b64_encode(e64, sz*4/3+3, e, sz);
+						free(e);
 						for (e=e64; *e; e++) {
 							if (*e == '+')
 								*e = '-';
@@ -177,7 +178,6 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 							else if (*e == '=')
 								*e = 0;
 						}
-						free(e);
 						obj=JS_NewObject(cx, NULL, NULL, parent);
 						JS_DefineProperty(cx, parent, "public_key", OBJECT_TO_JSVAL(obj), NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 						nstr=JS_NewStringCopyZ(cx, n64);
