@@ -19,7 +19,7 @@ function HTTPRequest(username,password,extra_headers)
 	this.base;
 	this.url;
 	this.body;
-	
+
 	this.username=username;
 	this.password=password;
 
@@ -130,12 +130,17 @@ function HTTPRequest(username,password,extra_headers)
 		this.status_line=this.sock.recvline(4096);
 		if(this.status_line==null)
 			throw("Unable to read status");
+		var m = this.status_line.match(/^HTTP\/[0-9]+\.[0-9]+ ([0-9]{3})/);
+		if (m === null)
+			throw("Unable to parse status line '"+this.status_line+"'");
+		this.response_code = parseInt(m[1], 10);
 	};
 
 	this.ReadHeaders=function() {
 		var header='';
 		var m;
 		this.response_headers=[];
+		this.response_headers_parsed={};
 
 		for(;;) {
 			header=this.sock.recvline(4096, 120);
@@ -147,6 +152,12 @@ function HTTPRequest(username,password,extra_headers)
 			m=header.match(/^Content-length:\s+([0-9]+)$/i);
 			if(m!=null)
 				this.contentlength=parseInt(m[1]);
+			m = header.match(/^(.*?):\s*(.*?)\s*$/);
+			if (m) {
+				if (this.response_headers_parsed[m[1]] == undefined)
+					this.response_headers_parsed[m[1]] = [];
+				this.response_headers_parsed[m[1]].push(m[2]);
+			}
 		}
 	};
 

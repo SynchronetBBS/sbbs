@@ -78,7 +78,7 @@ ACMEv2.prototype.get_directory = function()
 {
 	if (this.directory === undefined) {
 		var ret = this.ua.Get("https://"+this.host+this.dir_path);
-		if (this.get_response_code() != 200)
+		if (this.ua.response_code != 200)
 			throw("Error fetching directory");
 		this.store_headers(true);
 		this.directory = JSON.parse(ret);
@@ -94,7 +94,7 @@ ACMEv2.prototype.create_new_account = function(opts)
 {
 	var ret = this.post('newAccount', opts);
 
-	if (this.get_response_code() != 201)
+	if (this.ua.response_code != 201)
 		throw("newAccount did not return a 201 status!");
 
 	if (this.last_headers['Location'] === undefined)
@@ -110,9 +110,9 @@ ACMEv2.prototype.create_new_order = function(opts)
 	if (opts.identifiers === undefined)
 		throw("create_new_order() requires an identifier in opts");
 	ret = JSON.parse(this.post('newOrder', opts));
-	if (this.get_response_code() != 201) {
+	if (this.ua.response_code != 201) {
 		log(LOG_DEBUG, JSON.stringify(ret));
-		throw("newOrder responded with "+this.get_response_code()+" not 201");
+		throw("newOrder responded with "+this.ua.response_code+" not 201");
 	}
 
 	if (this.last_headers['Location'] === undefined)
@@ -126,7 +126,7 @@ ACMEv2.prototype.accept_challenge = function(challenge)
 {
 	var opts={keyAuthorization:challenge.token+"."+this.thumbprint()};
 	var ret = this.post_url(challenge.url, opts)
-	if (this.get_response_code() != 200)
+	if (this.ua.response_code != 200)
 		throw("accept_challenge did not return 200");
 	return JSON.parse(ret);
 }
@@ -135,7 +135,7 @@ ACMEv2.prototype.poll_authorization = function(auth)
 {
 	var ret = JSON.parse(this.ua.Get(auth));
 
-	if (this.get_response_code() != 200)
+	if (this.ua.response_code != 200)
 		return false;
 	this.store_headers(true);
 
@@ -159,7 +159,7 @@ ACMEv2.prototype.finalize_order = function(order, csr)
 	opts.csr = this.base64url(csr.export(CryptCert.FORMAT.CERTIFICATE));
 
 	var ret = this.post_url(order.finalize, opts)
-	if (this.get_response_code() != 200)
+	if (this.ua.response_code != 200)
 		throw("finalize_order did not return 200");
 
 	return JSON.parse(ret);
@@ -171,7 +171,7 @@ ACMEv2.prototype.poll_order = function(order)
 	if (loc === undefined)
 		throw("No order location!");
 	var ret = this.ua.Get(loc)
-	if (this.get_response_code() != 200)
+	if (this.ua.response_code != 200)
 		throw("order poll did not return 200");
 	this.store_headers(true);
 
@@ -185,7 +185,7 @@ ACMEv2.prototype.get_cert = function(order)
 	if (order.certificate === undefined)
 		throw("Order has no certificate!");
 	var cert = this.ua.Get(order.certificate);
-	if (this.get_response_code() != 200)
+	if (this.ua.response_code != 200)
 		throw("get_cert request did not return 200");
 	this.store_headers(true);
 	return new CryptCert(cert);
@@ -222,7 +222,7 @@ ACMEv2.prototype.get_authorization = function(url)
 {
 	var ret = this.ua.Get(url);
 
-	if (this.get_response_code() != 200)
+	if (this.ua.response_code != 200)
 		throw("get_authorization request did not return 200");
 	this.store_headers(true);
 
@@ -272,21 +272,12 @@ ACMEv2.prototype.get_response_code = function()
 	return parseInt(m[1], 10);
 }
 
-// TODO: Should this be in http.js?
 ACMEv2.prototype.store_headers = function(update_nonce)
 {
-	var h = {};
+	var h = this.ua.response_headers_parsed;
 
 	if (update_nonce === undefined)
 		update_nonce = false;
-	for(i in this.ua.response_headers) {
-		m = this.ua.response_headers[i].match(/^(.*?):\s*(.*?)\s*$/);
-		if (m) {
-			if (h[m[1]] == undefined)
-				h[m[1]] = [];
-			h[m[1]].push(m[2]);
-		}
-	}
 	if (h['Replay-Nonce'] !== undefined) {
 		if (update_nonce)
 			this.last_nonce = h['Replay-Nonce'][0];
@@ -339,9 +330,8 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 	body = body.replace(/:{/g, ': {');
 	body = body.replace(/,"/g, ', "');
 	ret = this.ua.Post(url, body);
-	var resp = this.get_response_code();
 	/* We leave error handling to the caller */
-	if (resp == 200 || resp == 201)
+	if (this.ua.response_code == 200 || this.ua.response_code == 201)
 		this.store_headers(true);
 	return ret;
 }
