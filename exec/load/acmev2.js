@@ -1,4 +1,4 @@
-// Based on p5-Net-ACME2 - https://github.com/FGasper/p5-Net-ACME2/
+// Inspired by p5-Net-ACME2 - https://github.com/FGasper/p5-Net-ACME2/
 
 /*
  * var acme = new ACMEv2({key:CryptContext, key_id:undefined})
