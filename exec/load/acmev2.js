@@ -77,7 +77,11 @@ ACMEv2.prototype.get_terms_of_service = function()
 ACMEv2.prototype.get_directory = function()
 {
 	if (this.directory === undefined) {
-		this.directory = JSON.parse(this.ua.Get("https://"+this.host+this.dir_path));
+		var ret = this.ua.Get("https://"+this.host+this.dir_path);
+		if (this.get_response_code() != 200)
+			throw("Error fetching directory");
+		this.store_headers(true);
+		this.directory = JSON.parse(ret);
 	}
 	return this.directory;
 }
@@ -88,7 +92,15 @@ ACMEv2.prototype.FULL_JWT_METHODS = [
 ];
 ACMEv2.prototype.create_new_account = function(opts)
 {
-	return this.post('newAccount', opts);
+	var ret = this.post('newAccount', opts);
+
+	if (this.get_response_code() != 201)
+		throw("newAccount did not return a 201 status!");
+
+	if (this.last_headers['Location'] === undefined)
+		throw("No Location header in 201 response.");
+	this.key_id = this.last_headers['Location'][0];
+	return JSON.parse(ret);
 }
 
 ACMEv2.prototype.create_new_order = function(opts)
@@ -98,23 +110,34 @@ ACMEv2.prototype.create_new_order = function(opts)
 	if (opts.identifiers === undefined)
 		throw("create_new_order() requires an identifier in opts");
 	ret = JSON.parse(this.post('newOrder', opts));
-	if (this.last_headers.Location !== undefined && this.last_headers.Location[0] !== undefined) {
-		ret.Location=this.last_headers.Location[0];
-		print("Location: "+ret.Location);
+	if (this.get_response_code() != 201) {
+		log(LOG_DEBUG, JSON.stringify(ret));
+		throw("newOrder responded with "+this.get_response_code()+" not 201");
 	}
+
+	if (this.last_headers['Location'] === undefined)
+		throw("No Location header in 201 response.");
+	ret.Location=this.last_headers.Location[0];
+
 	return ret;
 }
 
 ACMEv2.prototype.accept_challenge = function(challenge)
 {
 	var opts={keyAuthorization:challenge.token+"."+this.thumbprint()};
-
-	return JSON.parse(this.post_url(challenge.url, opts));
+	var ret = this.post_url(challenge.url, opts)
+	if (this.get_response_code() != 200)
+		throw("accept_challenge did not return 200");
+	return JSON.parse(ret);
 }
 
 ACMEv2.prototype.poll_authorization = function(auth)
 {
 	var ret = JSON.parse(this.ua.Get(auth));
+
+	if (this.get_response_code() != 200)
+		return false;
+	this.store_headers(true);
 
 	for (var challenge in ret.challenges) {
 		if (ret.challenges[challenge].status == 'valid')
@@ -134,7 +157,12 @@ ACMEv2.prototype.finalize_order = function(order, csr)
 	if (typeof(csr) != 'object' || csr.export === undefined)
 		throw("Invalid csr");
 	opts.csr = this.base64url(csr.export(CryptCert.FORMAT.CERTIFICATE));
-	return JSON.parse(this.post_url(order.finalize, opts));
+
+	var ret = this.post_url(order.finalize, opts)
+	if (this.get_response_code() != 200)
+		throw("finalize_order did not return 200");
+
+	return JSON.parse(ret);
 }
 
 ACMEv2.prototype.poll_order = function(order)
@@ -142,7 +170,12 @@ ACMEv2.prototype.poll_order = function(order)
 	var loc = order.Location;
 	if (loc === undefined)
 		throw("No order location!");
-	var ret = JSON.parse(this.ua.Get(loc));
+	var ret = this.ua.Get(loc)
+	if (this.get_response_code() != 200)
+		throw("order poll did not return 200");
+	this.store_headers(true);
+
+	ret = JSON.parse(ret);
 	ret.Location = loc;
 	return ret;
 }
@@ -152,6 +185,9 @@ ACMEv2.prototype.get_cert = function(order)
 	if (order.certificate === undefined)
 		throw("Order has no certificate!");
 	var cert = this.ua.Get(order.certificate);
+	if (this.get_response_code() != 200)
+		throw("get_cert request did not return 200");
+	this.store_headers(true);
 	return new CryptCert(cert);
 }
 
@@ -184,7 +220,13 @@ ACMEv2.prototype.get_nonce = function()
 
 ACMEv2.prototype.get_authorization = function(url)
 {
-	return JSON.parse(this.ua.Get(url));
+	var ret = this.ua.Get(url);
+
+	if (this.get_response_code() != 200)
+		throw("get_authorization request did not return 200");
+	this.store_headers(true);
+
+	return JSON.parse(ret);
 }
 
 ACMEv2.prototype.base64url = function(string)
@@ -217,6 +259,17 @@ ACMEv2.prototype.hash_thing = function(data)
 		D = ascii(255)+D;
 	D = ascii(0x00) + ascii(0x01) + D;
 	return this.key.decrypt(D);
+}
+
+// TODO: Should this be in http.js?
+ACMEv2.prototype.get_response_code = function()
+{
+	if (this.ua.status_line === undefined)
+		throw("No status line in response!");
+	var m = this.ua.status_line.match(/^HTTP\/[0-9]+\.[0-9]+ ([0-9]{3})/);
+	if (m === null)
+		throw("Unable to parse status line '"+this.ua.status_line+"'");
+	return parseInt(m[1], 10);
 }
 
 // TODO: Should this be in http.js?
@@ -262,8 +315,6 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 	if (post_method === undefined)
 		post_method = 'post_key_id';
 
-print("URL: "+url);
-print("Method: "+post_method);
 	switch(post_method) {
 		case 'post_key_id':
 			protected.nonce = this.get_nonce();
@@ -288,8 +339,9 @@ print("Method: "+post_method);
 	body = body.replace(/:{/g, ': {');
 	body = body.replace(/,"/g, ', "');
 	ret = this.ua.Post(url, body);
-	this.store_headers(true);
-	if (this.last_headers['Location'] !== undefined && this.key_id === undefined)
-		this.key_id = this.last_headers['Location'][0];
+	var resp = this.get_response_code();
+	/* We leave error handling to the caller */
+	if (resp == 200 || resp == 201)
+		this.store_headers(true);
 	return ret;
 }
