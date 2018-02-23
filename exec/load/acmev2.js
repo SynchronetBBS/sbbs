@@ -12,27 +12,27 @@
  * 
  * // Save the key_id somewhere so it can be reused.
  * 
- * var order = acme->create_new_order({identifiers:[{type:'dns',value:'*.example.com'}]);
- * var authz = acme->get_authorization(order->authorizations()[0]);
- * var challenges = authz->challenges();
+ * var order = acme.create_new_order({identifiers:[{type:"dns",value:"example.com"}]});
+ * var authz = acme.get_authorization(order.authorizations[0]);
+ * var challenges = authz.challenges;
  * 
  * // Pick a challenge, and satisfy it.
  * 
- * acme->accept_challenge(challenge);
+ * acme.accept_challenge(challenge);
  * 
- * while (!acme->poll_authorization(authz))
+ * while (!acme->poll_authorization(order.authorizations[0]))
  * 	mswait(1000);
  * 
  * // Make a key and CSR for *.example.com
  * 
- * acme->finalize_order(order, csr);
+ * order = acme.finalize_order(order, csr);
  * 
  * while (order.status !== 'valid') {
  * 	mswait(1000);
- * 	acme->poll_order(order);
+ * 	order = acme.poll_order(order);
  * }
  * 
- * var certificate_url = order->certificate();
+ * var cert = acme.get_cert(order);
  */
 
 require("http.js", "HTTPRequest");
@@ -87,6 +87,70 @@ ACMEv2.prototype.create_new_account = function(opts)
 	return this.post('newAccount', opts);
 }
 
+ACMEv2.prototype.create_new_order = function(opts)
+{
+	var ret;
+
+	if (opts.identifiers === undefined)
+		throw("create_new_order() requires an identifier in opts");
+	ret = JSON.parse(this.post('newOrder', opts));
+	if (this.last_headers.Location !== undefined && this.last_headers.Location[0] !== undefined) {
+		ret.Location=this.last_headers.Location[0];
+		print("Location: "+ret.Location);
+	}
+	return ret;
+}
+
+ACMEv2.prototype.accept_challenge = function(challenge)
+{
+	var opts={keyAuthorization:challenge.token+"."+this.thumbprint()};
+
+	return JSON.parse(this.post_url(challenge.url, opts));
+}
+
+ACMEv2.prototype.poll_authorization = function(auth)
+{
+	var ret = JSON.parse(this.ua.Get(auth));
+
+	for (var challenge in ret.challenges) {
+		if (ret.challenges[challenge].status == 'valid')
+			return true;
+	}
+	return false;
+}
+
+ACMEv2.prototype.finalize_order = function(order, csr)
+{
+	var opts = {};
+
+	if (order === undefined)
+		throw("Missing order");
+	if (csr === undefined)
+		throw("Missing csr");
+	if (typeof(csr) != 'object' || csr.export === undefined)
+		throw("Invalid csr");
+	opts.csr = this.base64url(csr.export(CryptCert.FORMAT.CERTIFICATE));
+	return JSON.parse(this.post_url(order.finalize, opts));
+}
+
+ACMEv2.prototype.poll_order = function(order)
+{
+	var loc = order.Location;
+	if (loc === undefined)
+		throw("No order location!");
+	var ret = JSON.parse(this.ua.Get(loc));
+	ret.Location = loc;
+	return ret;
+}
+
+ACMEv2.prototype.get_cert = function(order)
+{
+	if (order.certificate === undefined)
+		throw("Order has no certificate!");
+	var cert = this.ua.Get(order.certificate);
+	return new CryptCert(cert);
+}
+
 ACMEv2.prototype.post = function(link, data)
 {
 	var post_method;
@@ -97,7 +161,7 @@ ACMEv2.prototype.post = function(link, data)
 	url = this.get_directory(link)[link];
 	if (url === undefined)
 		throw('Unknown link name: "'+link+'"');
-	return this.post_url(url, data, post_method);
+	return this.post_url(url, data);
 }
 
 ACMEv2.prototype.get_nonce = function()
@@ -112,6 +176,11 @@ ACMEv2.prototype.get_nonce = function()
 	ret = this.last_nonce;
 	this.last_nonce = undefined;
 	return ret;
+}
+
+ACMEv2.prototype.get_authorization = function(url)
+{
+	return JSON.parse(this.ua.Get(url));
 }
 
 ACMEv2.prototype.base64url = function(string)
@@ -168,6 +237,18 @@ ACMEv2.prototype.store_headers = function(update_nonce)
 	this.last_headers = h;
 }
 
+ACMEv2.prototype.thumbprint = function()
+{
+	var jwk = JSON.stringify({e:this.key.public_key.e, kty:'RSA', n:this.key.public_key.n});
+	var shactx;
+
+	shactx = new CryptContext(CryptContext.ALGO.SHA2);
+	shactx.encrypt(jwk);
+	shactx.encrypt('');
+	var MD = shactx.hashvalue;
+	return this.base64url(MD);
+}
+
 ACMEv2.prototype.post_url = function(url, data, post_method)
 {
 	var protected = {};
@@ -202,7 +283,7 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 	body = body.replace(/,"/g, ', "');
 	ret = this.ua.Post(url, body);
 	this.store_headers(true);
-	if (this.last_headers['Location'] !== undefined)
+	if (this.last_headers['Location'] !== undefined && this.key_id === undefined)
 		this.key_id = this.last_headers['Location'][0];
 	return ret;
 }
