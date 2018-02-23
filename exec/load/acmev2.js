@@ -48,8 +48,12 @@ function ACMEv2(opts)
 		this.host = opts.host;
 	this.jws_format = 'sha256';
 	this.ua = new HTTPRequest();
-	if (this.key_id === undefined)
-		this.get_key_id();
+	if (this.key_id === undefined) {
+		try {
+			this.get_key_id();
+		}
+		catch(e) {}
+	}
 }
 
 ACMEv2.prototype.get_key_id = function()
@@ -161,7 +165,7 @@ ACMEv2.prototype.post = function(link, data)
 	url = this.get_directory(link)[link];
 	if (url === undefined)
 		throw('Unknown link name: "'+link+'"');
-	return this.post_url(url, data);
+	return this.post_url(url, data, post_method);
 }
 
 ACMEv2.prototype.get_nonce = function()
@@ -258,6 +262,8 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 	if (post_method === undefined)
 		post_method = 'post_key_id';
 
+print("URL: "+url);
+print("Method: "+post_method);
 	switch(post_method) {
 		case 'post_key_id':
 			protected.nonce = this.get_nonce();
