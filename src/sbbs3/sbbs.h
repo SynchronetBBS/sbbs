@@ -1337,6 +1337,9 @@ extern "C" {
 	/* js_cryptkeyset.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent);
 
+	/* js_cryptcert.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent);
+
 #endif
 
 /* str_util.c */

@@ -6,6 +6,7 @@
 #include <cryptlib.h>
 #include "js_request.h"
 #include "js_cryptcon.h"
+#include "js_cryptcert.h"
 #include "ssl.h"
 
 struct private_data {
@@ -90,6 +91,50 @@ js_add_private_key(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (cryptStatusError(status)) {
 		JS_ReportError(cx, "Error %d calling cryptAddPrivateKey()\n", status);
+		return JS_FALSE;
+	}
+	return JS_TRUE;
+}
+
+static JSBool
+js_add_public_key(JSContext *cx, uintN argc, jsval *arglist)
+{
+	struct private_data* p;
+	struct js_cryptcert_private_data* pcert;
+	jsval *argv=JS_ARGV(cx, arglist);
+	int status;
+	jsrefcount rc;
+	JSObject *cert;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+
+	if (!js_argc(cx, argc, 1))
+		return JS_FALSE;
+	if (argc > 1) {
+		JS_ReportError(cx, "Too many arguments");
+		return JS_FALSE;
+	}
+	cert = JSVAL_TO_OBJECT(argv[0]);
+	if (!JS_InstanceOf(cx, cert, &js_cryptcon_class, NULL)) {
+		JS_ReportError(cx, "Invalid CryptContext");
+		return JS_FALSE;
+	}
+
+	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx, getprivate_failure, WHERE);
+		return JS_FALSE;
+	}
+
+	if ((pcert=(struct js_cryptcert_private_data *)JS_GetPrivate(cx,cert))==NULL) {
+		JS_ReportError(cx, getprivate_failure, WHERE);
+		return JS_FALSE;
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	status = cryptAddPublicKey(p->ks, pcert->cert);
+	JS_RESUMEREQUEST(cx, rc);
+
+	if (cryptStatusError(status)) {
+		JS_ReportError(cx, "Error %d calling cryptAddPublicKey()\n", status);
 		return JS_FALSE;
 	}
 	return JS_TRUE;
@@ -226,6 +271,53 @@ js_get_private_key(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static JSBool
+js_get_public_key(JSContext *cx, uintN argc, jsval *arglist)
+{
+	struct private_data* p;
+	jsval *argv=JS_ARGV(cx, arglist);
+	int status;
+	jsrefcount rc;
+	JSObject *cert;
+	char* label = NULL;
+	JSString *jslabel;
+	CRYPT_CERTIFICATE ncert;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+
+	if (!js_argc(cx, argc, 1))
+		return JS_FALSE;
+	if (argc > 1) {
+		JS_ReportError(cx, "Too many arguments");
+		return JS_FALSE;
+	}
+	if ((jslabel = JS_ValueToString(cx, argv[0])) == NULL) {
+		JS_ReportError(cx, "Invalid label");
+		return JS_FALSE;
+	}
+
+	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx, getprivate_failure, WHERE);
+		return JS_FALSE;
+	}
+
+	JSSTRING_TO_MSTRING(cx, jslabel, label, NULL);
+	HANDLE_PENDING(cx, label);
+	rc = JS_SUSPENDREQUEST(cx);
+	status = cryptGetPublicKey(p->ks, &ncert, CRYPT_KEYID_NAME, label);
+	free(label);
+	JS_RESUMEREQUEST(cx, rc);
+	if (cryptStatusError(status)) {
+		JS_ReportError(cx, "Error %d calling cryptGetPublicKey()\n", status);
+		return JS_FALSE;
+	}
+	cert = js_CreateCryptCertObject(cx, ncert);
+	if (cert == NULL)
+		return JS_FALSE;
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(cert));
+
+	return JS_TRUE;
+}
+
 // Properties
 
 static JSBool
@@ -290,6 +382,10 @@ static jsSyncMethodSpec js_cryptkeyset_functions[] = {
 	,JSDOCSTR("Add a private key to the keyset, encrypting it with <password>.")
 	,316
 	},
+	{"add_public_key",	js_add_public_key,	0,	JSTYPE_VOID,	"CryptCert"
+	,JSDOCSTR("Add a public key (certificate) to the keyset.")
+	,316
+	},
 	{"close",			js_close,			0,	JSTYPE_VOID,	""
 	,JSDOCSTR("Close the keyset.")
 	,316
@@ -300,6 +396,10 @@ static jsSyncMethodSpec js_cryptkeyset_functions[] = {
 	},
 	{"get_private_key",	js_get_private_key,	0,	JSTYPE_OBJECT,	"label, password"
 	,JSDOCSTR("Returns a CryptContext from the private key with <label> encrypted with <password>.")
+	,316
+	},
+	{"get_public_key",	js_get_public_key,	0,	JSTYPE_OBJECT,	"label"
+	,JSDOCSTR("Returns a CryptCert from the public key with <label>.")
 	,316
 	},
 	{0}
