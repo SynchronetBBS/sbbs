@@ -185,6 +185,7 @@ function document_properties(name, obj)
 
 		prop_name=name + "." + prop;
 
+log(LOG_ERR, "Prop: "+prop);
 		if(typeof(obj[prop])=="object" 
 			&& prop!="socket" 
 			&& prop!="global"
@@ -324,6 +325,10 @@ if(js.global.COM != undefined) {
 if(js.global.CryptContext != undefined) {
 	var cc = new CryptContext(CryptContext.ALGO.AES);
 	if(cc != undefined)			document_object("CryptContext",cc, "class");
+}
+if(js.global.CryptKeyset != undefined) {
+	var cks = new CryptKeyset("/tmp/tmpkeyset", CryptKeyset.KEYOPT.CREATE);
+	if(cks != undefined)			document_object("CryptKeyset",cks, "class");
 }
 if(js.global.conio != undefined) {
 	document_object("conio",js.global.conio);
