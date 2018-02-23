@@ -33,6 +33,9 @@ var syspass = maincnf.read(40);
 syspass = syspass.replace(/\x00/g,'');
 maincnf.close();
 
+if (!older_than(30))
+	exit(0);
+
 /*
  * Now open/create the keyset and RSA signing key for
  * ACME.  Note that this key is not the one used for the
@@ -185,3 +188,22 @@ sks.add_public_key(cert);
  * Recycle webserver
  */
 file_touch(recycle_sem);
+
+function older_than(days)
+{
+	if (!file_exists(sks_fname))
+		return true;
+	var sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.READONLY);
+	try {
+		var cert = sks.get_public_key("ssl_cert");
+	}
+	catch(e) {
+		sks.close();
+		return true;
+	}
+	sks.close();
+	var now = new Date();
+	var cutoff = cert.validfrom;
+	cutoff.setDate(cutoff.getDate() + days);
+	return now > cutoff;
+}
