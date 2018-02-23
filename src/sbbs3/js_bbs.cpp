@@ -1416,11 +1416,11 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 	if(!len) {
 		sbbs->text[i]=nulstr;
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+		free(p);
 	} else {
 		sbbs->text[i]=p;
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	}
-	free(p);
 
 	return(JS_TRUE);
 }
