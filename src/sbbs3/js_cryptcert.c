@@ -9,7 +9,6 @@
 #include "js_cryptcert.h"
 #include "ssl.h"
 
-static JSClass js_cryptcert_class;
 static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 
 // Helpers
@@ -2564,7 +2563,7 @@ static JSBool js_cryptcert_enumerate(JSContext *cx, JSObject *obj)
 	return(js_cryptcert_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_cryptcert_class = {
+JSClass js_cryptcert_class = {
      "CryptCert"				/* name			*/
     ,JSCLASS_HAS_PRIVATE		/* flags		*/
 	,JS_PropertyStub			/* addProperty	*/

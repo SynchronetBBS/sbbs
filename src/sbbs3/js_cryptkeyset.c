@@ -114,8 +114,8 @@ js_add_public_key(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	cert = JSVAL_TO_OBJECT(argv[0]);
-	if (!JS_InstanceOf(cx, cert, &js_cryptcon_class, NULL)) {
-		JS_ReportError(cx, "Invalid CryptContext");
+	if (!JS_InstanceOf(cx, cert, &js_cryptcert_class, NULL)) {
+		JS_ReportError(cx, "Invalid CryptCert");
 		return JS_FALSE;
 	}
 
