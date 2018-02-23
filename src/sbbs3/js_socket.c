@@ -134,7 +134,8 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 			buf=((uint8_t *)buf) + copied;
 		}
 		else {
-			lprintf(LOG_WARNING,"cryptPopData() returned %d", ret);
+			if (status != CRYPT_ERROR_COMPLETE)
+				lprintf(LOG_WARNING,"cryptPopData() returned %d", ret);
 			if (total > 0)
 				return total;
 			do_js_close(p);
