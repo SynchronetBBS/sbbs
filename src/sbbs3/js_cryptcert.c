@@ -125,8 +125,10 @@ js_export(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Incorrect number of arguments.  Got %d, expected 1.", argc);
 		return JS_FALSE;
 	}
-	if (!JS_ValueToInt32(cx,argv[0],&format))
+	if (!JS_ValueToInt32(cx,argv[0],&format)) {
+		JS_ReportError(cx, "Invalid format.");
 		return JS_FALSE;
+	}
 
 	if ((p=(struct js_cryptcert_private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
@@ -155,11 +157,13 @@ js_export(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	ret = JS_NewStringCopyN(cx, buf, len);
 	free(buf);
-	if (ret == NULL)
+	if (ret == NULL) {
+		JS_ReportError(cx, "Unable to allocate return string\n");
 		return JS_FALSE;
+	}
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(ret));
 
-	return JS_FALSE;
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1472,6 +1476,32 @@ js_cryptcert_attr_set(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYPT_AT
 }
 
 static JSBool
+js_cryptcert_attrkey_set(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYPT_ATTRIBUTE_TYPE type)
+{
+	int status;
+	struct js_cryptcon_private_data* ctx;
+	JSObject *key;
+
+	key = JSVAL_TO_OBJECT(*vp);
+	if (!JS_InstanceOf(cx, key, &js_cryptcon_class, NULL)) {
+		JS_ReportError(cx, "Invalid CryptContext");
+		return JS_FALSE;
+	}
+
+	if ((ctx=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,key))==NULL) {
+		JS_ReportError(cx, getprivate_failure, WHERE);
+		return JS_FALSE;
+	}
+
+	status = cryptSetAttribute(cert, type, ctx->ctx);
+	if (cryptStatusError(status)) {
+		js_cryptcert_error(cx, cert, status);
+		return JS_FALSE;
+	}
+	return JS_TRUE;
+}
+
+static JSBool
 js_cryptcert_attrstr_set(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYPT_ATTRIBUTE_TYPE type)
 {
 	int status;
@@ -1534,7 +1564,7 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		case CRYPTCERT_PROP_SERIALNUMBER:
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_SERIALNUMBER);
 		case CRYPTCERT_PROP_SUBJECTPUBLICKEYINFO:
-			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_SUBJECTPUBLICKEYINFO);
+			return js_cryptcert_attrkey_set(cx, vp, p->cert, CRYPT_CERTINFO_SUBJECTPUBLICKEYINFO);
 		case CRYPTCERT_PROP_CERTIFICATE:
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_CERTIFICATE);
 		case CRYPTCERT_PROP_CACERTIFICATE:
@@ -2693,21 +2723,21 @@ JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DeepFreezeObject(cx, type);
 		}
-		format = JS_DefineObject(cx, constructor, "CERTFORMAT", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+		format = JS_DefineObject(cx, constructor, "FORMAT", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 		if(format != NULL) {
-			JS_DefineProperty(cx, type, "NONE", INT_TO_JSVAL(CRYPT_CERTFORMAT_NONE), NULL, NULL
+			JS_DefineProperty(cx, format, "NONE", INT_TO_JSVAL(CRYPT_CERTFORMAT_NONE), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, type, "CERTIFICATE", INT_TO_JSVAL(CRYPT_CERTFORMAT_CERTIFICATE), NULL, NULL
+			JS_DefineProperty(cx, format, "CERTIFICATE", INT_TO_JSVAL(CRYPT_CERTFORMAT_CERTIFICATE), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, type, "CERTCHAIN", INT_TO_JSVAL(CRYPT_CERTFORMAT_CERTCHAIN), NULL, NULL
+			JS_DefineProperty(cx, format, "CERTCHAIN", INT_TO_JSVAL(CRYPT_CERTFORMAT_CERTCHAIN), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, type, "TEXT_CERTIFICATE", INT_TO_JSVAL(CRYPT_CERTFORMAT_TEXT_CERTIFICATE), NULL, NULL
+			JS_DefineProperty(cx, format, "TEXT_CERTIFICATE", INT_TO_JSVAL(CRYPT_CERTFORMAT_TEXT_CERTIFICATE), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, type, "TEXT_CERTCHAIN", INT_TO_JSVAL(CRYPT_CERTFORMAT_TEXT_CERTCHAIN), NULL, NULL
+			JS_DefineProperty(cx, format, "TEXT_CERTCHAIN", INT_TO_JSVAL(CRYPT_CERTFORMAT_TEXT_CERTCHAIN), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, type, "XML_CERTIFICATE", INT_TO_JSVAL(CRYPT_CERTFORMAT_XML_CERTIFICATE), NULL, NULL
+			JS_DefineProperty(cx, format, "XML_CERTIFICATE", INT_TO_JSVAL(CRYPT_CERTFORMAT_XML_CERTIFICATE), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, type, "XML_CERTCHAIN", INT_TO_JSVAL(CRYPT_CERTFORMAT_XML_CERTCHAIN), NULL, NULL
+			JS_DefineProperty(cx, format, "XML_CERTCHAIN", INT_TO_JSVAL(CRYPT_CERTFORMAT_XML_CERTCHAIN), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DeepFreezeObject(cx, format);
 		}
