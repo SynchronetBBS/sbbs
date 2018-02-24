@@ -107,7 +107,7 @@ for (i in Object.keys(webroots).sort())
 new_domain_hash = md5_calc(new_domain_hash);
 
 if (new_domain_hash === old_domain_hash) {
-	if (!older_than(30))
+	if (!days_remaining(30))
 		exit(0);
 }
 
@@ -249,7 +249,7 @@ settings.iniSetValue("State", "DomainHash", new_domain_hash);
 settings.iniSetValue("State", "Staging", true);
 settings.close();
 
-function older_than(days)
+function days_remaining(days)
 {
 	if (!file_exists(sks_fname))
 		return true;
@@ -263,8 +263,8 @@ function older_than(days)
 	}
 	sks.close();
 	var now = new Date();
-	var cutoff = cert.validfrom;
-	cutoff.setDate(cutoff.getDate() + days);
+	var cutoff = cert.validto;
+	cutoff.setDate(cutoff.getDate() - days);
 	return now > cutoff;
 }
 
