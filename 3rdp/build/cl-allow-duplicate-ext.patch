@@ -1,0 +1,14 @@
+--- cert/ext_add.c.orig	2018-02-24 01:38:55.995138000 -0500
++++ cert/ext_add.c	2018-02-24 01:39:08.783152000 -0500
+@@ -451,9 +451,11 @@
+ 	   a non-blob.  In addition it forces the caller to use the (recommended)
+ 	   normal attribute handling mechanism, which allows for proper type
+ 	   checking */
++#if 0
+ 	if( !( flags & ATTR_FLAG_BLOB ) && \
+ 		oidToAttribute( attributeType, oid, oidLength ) != NULL )
+ 		return( CRYPT_ERROR_PERMISSION );
++#endif
+ 
+ 	/* Find the correct place in the list to insert the new element */
+ 	if( DATAPTR_ISSET( listHead ) )
