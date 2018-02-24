@@ -93,42 +93,47 @@ var order = acme.create_new_order({identifiers:[{type:"dns",value:system.inet_ad
 var authz;
 var challenge;
 var auth;
+var fulfilled;
+var token;
+var completed=0;
 
 /*
  * Find an http-01 authorization
  */
 for (auth in order.authorizations) {
+	fulfilled = false;
 	authz = acme.get_authorization(order.authorizations[auth]);
 	for (challenge in authz.challenges) {
-		if (authz.challenges[challenge].type=='http-01')
-			break;
+		if (authz.challenges[challenge].type=='http-01') {
+			/*
+			 * Create a place to store the challenge and store it there
+			 * 
+			 * TODO: Clean up stale files
+			 */
+			mkpath(webroot+".well-known/acme-challenge");
+			token = new File(backslash(webroot+".well-known/acme-challenge")+authz.challenges[challenge].token);
+			token.open("w");
+			token.write(authz.challenges[challenge].token+"."+acme.thumbprint());
+			token.close();
+			acme.accept_challenge(authz.challenges[challenge]);
+			fulfilled = true;
+		}
 	}
-	if (authz.challenges[challenge].type=='http-01')
-		break;
+	/*
+	 * TODO: We can run all these in parallel rather than in series...
+	 */
+	if (fulfilled) {
+		while (!acme.poll_authorization(order.authorizations[auth]))
+			mswait(1000);
+		completed++;
+	}
 }
-if (authz.challenges[challenge].type!='http-01')
-	throw("No supported challenges!");
-/*
- * Create a place to store the challenge and store it there
- * 
- * TODO: Clean up stale files
- */
-mkpath(webroot+".well-known/acme-challenge");
-var token = new File(backslash(webroot+".well-known/acme-challenge")+authz.challenges[challenge].token);
-token.open("w");
-token.write(authz.challenges[challenge].token+"."+acme.thumbprint());
-token.close();
-
-/*
- * Tell the ACMEv2 server we've created the file.
- */
-var tmp = acme.accept_challenge(authz.challenges[challenge]);
+if (!completed)
+	throw("No challenges fulfilled!");
 
 /*
  * Wait for server to confirm
  */
-while (!acme.poll_authorization(order.authorizations[auth]))
-	mswait(1000);
 
 /*
  * Create CSR
@@ -136,9 +141,6 @@ while (!acme.poll_authorization(order.authorizations[auth]))
  * TODO: SANs, virtual hosts, etc...
  */
 var csr = new CryptCert(CryptCert.TYPE.CERTREQUEST);
-// TODO: Read these from INI file?
-csr.oganizationname=system.name;
-csr.commonname=system.inet_addr;
 
 /*
  * Now open/create the keyset and RSA signing key for
@@ -163,6 +165,11 @@ catch(e) {
 	sks.add_private_key(certrsa, syspass);
 }
 csr.subjectpublickeyinfo=certrsa;
+// TODO: Read these from INI file?
+csr.oganizationname=system.name;
+csr.commonname=system.inet_addr;
+csr.subjectaltname='home.bbsdev.net';
+csr.subjectaltname=system.inet_addr;
 csr.sign(certrsa);
 csr.check();
 var csrenc=csr.export(CryptCert.FORMAT.TEXT_CERTIFICATE);
