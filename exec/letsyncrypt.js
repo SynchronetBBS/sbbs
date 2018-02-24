@@ -11,6 +11,11 @@ var maincnf_fname = backslash(system.ctrl_dir)+"main.cnf";
 var recycle_sem = backslash(system.ctrl_dir)+"recycle.web";
 
 /*
+ * Variables declarations
+ */
+var i;
+
+/*
  * Get the Web Root
  */
 var sbbsini = new File(sbbsini_fname);
@@ -32,9 +37,6 @@ maincnf.position = 186; // Indeed.
 var syspass = maincnf.read(40);
 syspass = syspass.replace(/\x00/g,'');
 maincnf.close();
-
-if (!older_than(30))
-	exit(0);
 
 /*
  * Now open/create the keyset and RSA signing key for
@@ -82,20 +84,49 @@ if (key_id === undefined) {
 	settings.iniSetValue("key_id", system.inet_addr, acme.key_id);
 	key_id = acme.key_id;
 }
+/*
+ * Now generate a list of domains and web roots.
+ */
+var webroots = {};
+webroots[system.inet_addr] = webroot;
+var domain_list = settings.iniGetObject("Domains");
+for (i in domain_list) {
+	if (file_isdir(domain_list[i])) {
+		webroots[i] = backslash(domain_list[i]);
+	}
+	else {
+		log(LOG_ERR, "Web root for "+i+" is not a directory ("+domain_list[i]+")");
+	}
+}
+var old_domain_hash = settings.iniGetValue("State", "DomainHash", "<None>");
 settings.close();
+
+var new_domain_hash = '';
+for (i in Object.keys(webroots).sort())
+	new_domain_hash += i+"/";
+new_domain_hash = md5_calc(new_domain_hash);
+
+if (new_domain_hash === old_domain_hash) {
+	if (!older_than(30))
+		exit(0);
+}
 
 /*
  * Create the order, using system.inet_addr
  * 
  * TODO: SNAs... or something.
  */
-var order = acme.create_new_order({identifiers:[{type:"dns",value:system.inet_addr}]});
+var identifiers = [];
+for (i in webroots)
+	identifiers.push({type:"dns",value:i});
+var order = acme.create_new_order({identifiers:identifiers});
 var authz;
 var challenge;
 var auth;
 var fulfilled;
 var token;
 var completed=0;
+var tokens=[];
 
 /*
  * Find an http-01 authorization
@@ -107,33 +138,37 @@ for (auth in order.authorizations) {
 		if (authz.challenges[challenge].type=='http-01') {
 			/*
 			 * Create a place to store the challenge and store it there
-			 * 
-			 * TODO: Clean up stale files
 			 */
-			mkpath(webroot+".well-known/acme-challenge");
-			token = new File(backslash(webroot+".well-known/acme-challenge")+authz.challenges[challenge].token);
-			token.open("w");
-			token.write(authz.challenges[challenge].token+"."+acme.thumbprint());
-			token.close();
+			for (i in webroots) {
+				mkpath(webroots[i]+".well-known/acme-challenge");
+				token = new File(backslash(webroots[i]+".well-known/acme-challenge")+authz.challenges[challenge].token);
+				if (tokens.indexOf(token.name) < 0) {
+					token.open("w");
+					token.write(authz.challenges[challenge].token+"."+acme.thumbprint());
+					tokens.push(token.name);
+					token.close();
+				}
+			}
 			acme.accept_challenge(authz.challenges[challenge]);
 			fulfilled = true;
 		}
 	}
 	/*
-	 * TODO: We can run all these in parallel rather than in series...
+	 * Wait for server to confirm
+ 	 * TODO: We can run all these in parallel rather than in series...
 	 */
 	if (fulfilled) {
-		while (!acme.poll_authorization(order.authorizations[auth]))
+		while (!acme.poll_authorization(order.authorizations[auth])) {
 			mswait(1000);
+		}
 		completed++;
 	}
 }
 if (!completed)
 	throw("No challenges fulfilled!");
 
-/*
- * Wait for server to confirm
- */
+for (i in tokens)
+	file_remove(tokens[i]);
 
 /*
  * Create CSR
@@ -168,13 +203,19 @@ csr.subjectpublickeyinfo=certrsa;
 // TODO: Read these from INI file?
 csr.oganizationname=system.name;
 csr.commonname=system.inet_addr;
-csr.add_extension("2.5.29.17", false, create_dnsnames([system.inet_addr]));
+var dnsnames=[];
+for (i in webroots)
+	dnsnames.push(i);
+csr.add_extension("2.5.29.17", false, create_dnsnames(dnsnames));
 csr.sign(certrsa);
 csr.check();
 order = acme.finalize_order(order, csr);
 
 while (order.status !== 'valid') {
 	order = acme.poll_order(order);
+	if (order.status == 'invalid')
+		throw("Order "+order.Location+" invalid!");
+	mswait(1000);
 }
 
 var cert = acme.get_cert(order);
@@ -193,6 +234,10 @@ sks.add_public_key(cert);
  * Recycle webserver
  */
 file_touch(recycle_sem);
+
+settings.open(settings.exists ? "r+" : "w+");
+settings.iniSetValue("State", "DomainHash", new_domain_hash);
+settings.close();
 
 function older_than(days)
 {
