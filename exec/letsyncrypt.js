@@ -187,6 +187,20 @@ var sks = new CryptKeyset(sks_fname, opts);
 var certrsa;
 try {
 	certrsa = sks.get_private_key("ssl_cert", syspass);
+	/*
+	 * If this was a self-signed certificate, delete the file and
+	 * regenerate it.
+	 */
+	if (certrsa.keysize < (2048/8)) {
+		sks.close();
+		file_remove(sks_fname);
+		sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.CREATE);
+		certrsa = new CryptContext(CryptContext.ALGO.RSA);
+		certrsa.keysize=2048/8;
+		certrsa.label="ssl_cert";
+		certrsa.generate_key();
+		sks.add_private_key(certrsa, syspass);
+	}
 }
 catch(e) {
 	certrsa = new CryptContext(CryptContext.ALGO.RSA);
