@@ -14,6 +14,7 @@ var recycle_sem = backslash(system.ctrl_dir)+"recycle.web";
  * Variables declarations
  */
 var i;
+var tmp;
 
 /*
  * Get the Web Root
@@ -140,7 +141,14 @@ for (auth in order.authorizations) {
 			 * Create a place to store the challenge and store it there
 			 */
 			for (i in webroots) {
-				mkpath(webroots[i]+".well-known/acme-challenge");
+				if (!file_isdir(webroots[i]+".well-known/acme-challenge")) {
+					if (!mkpath(webroots[i]+".well-known/acme-challenge"))
+						throw("Unable to create webroots[i]+".well-known/acme-challenge);
+					tmp = new File(webroots[i]+".well-known/acme-challenge/"+webctrl.ini);
+					tmp.open("w");
+					tmp.writeln("AccessRequirements=");
+					tmp.close();
+				}
 				token = new File(backslash(webroots[i]+".well-known/acme-challenge")+authz.challenges[challenge].token);
 				if (tokens.indexOf(token.name) < 0) {
 					token.open("w");
@@ -272,7 +280,7 @@ function days_remaining(days)
 
 function create_dnsnames(names) {
 	var ext = '';
-	var tmp;
+	var tmplen;
 	var count;
 
 	function asn1_len(len) {
@@ -280,11 +288,11 @@ function create_dnsnames(names) {
 
 		if (len < 128)
 			return ascii(len);
-		var tmp = len;
+		tmplen = len;
 		var count = 0;
-		while (tmp) {
-			ret = ascii(tmp & 0xff)+ret;
-			tmp >>= 8;
+		while (tmplen) {
+			ret = ascii(tmplen & 0xff)+ret;
+			tmplen >>= 8;
 			count++;
 		}
 		ret = ascii(0x80 | count) + ret;
