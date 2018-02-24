@@ -3351,9 +3351,18 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 	int i;
 	char str[MAX_PATH+1];
 	named_string_t **values;
+	char *p;
 
-	if(iniReadString(file, section, "AccessRequirements", session->req.ars,str)==str)
-		SAFECOPY(session->req.ars,str);
+	p = iniReadExistingString(file, section, "AccessRequirements", session->req.ars, str);
+	/*
+	 * If p == NULL, the key doesn't exist, retain default 
+	 * If p == default, zero-length string present, truncate req.ars
+	 * Otherwise, p is new value and is updated
+	 */
+	if (p == session->req.ars)
+		session->req.ars[0] = 0;
+	else if (p != NULL)
+		SAFECOPY(session->req.ars,p);
 	if(iniReadString(file, section, "Realm", scfg.sys_name,str)==str) {
 		FREE_AND_NULL(session->req.realm);
 		/* FREE()d in close_request() */
