@@ -168,8 +168,7 @@ csr.subjectpublickeyinfo=certrsa;
 // TODO: Read these from INI file?
 csr.oganizationname=system.name;
 csr.commonname=system.inet_addr;
-csr.subjectaltname='home.bbsdev.net';
-csr.subjectaltname=system.inet_addr;
+csr.add_extension("2.5.29.17", false, create_dnsnames([system.inet_addr]));
 csr.sign(certrsa);
 csr.check();
 var csrenc=csr.export(CryptCert.FORMAT.TEXT_CERTIFICATE);
@@ -213,4 +212,35 @@ function older_than(days)
 	var cutoff = cert.validfrom;
 	cutoff.setDate(cutoff.getDate() + days);
 	return now > cutoff;
+}
+
+function create_dnsnames(names) {
+	var ext = '';
+	var tmp;
+	var count;
+
+	function asn1_len(len) {
+		var ret = '';
+
+		if (len < 128)
+			return ascii(len);
+		var tmp = len;
+		var count = 0;
+		while (tmp) {
+			ret = ascii(tmp & 0xff)+ret;
+			tmp >>= 8;
+			count++;
+		}
+		ret = ascii(0x80 | count) + ret;
+		return ret;
+	}
+
+	for (var name in names) {
+		ext = names[name] + ext;
+		ext = asn1_len(names[name].length) + ext;
+		ext = ascii(0x82) + ext;
+	}
+	ext = asn1_len(ext.length) + ext;
+	ext = ascii(0x30) + ext;
+	return ext;
 }
