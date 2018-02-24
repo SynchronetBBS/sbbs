@@ -168,6 +168,8 @@ ACMEv2.prototype.poll_authorization = function(auth)
 	for (var challenge in ret.challenges) {
 		if (ret.challenges[challenge].status == 'valid')
 			return true;
+		if (ret.challenges[challenge].status == 'invalid')
+			throw ("Authorization failed... "+auth);
 	}
 	return false;
 }
