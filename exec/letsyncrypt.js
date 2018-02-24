@@ -26,6 +26,40 @@ var webroot = backslash(sbbsini.iniGetValue("Web", "RootDirectory", "../web/root
 sbbsini.close();
 
 /*
+ * Now generate a list of domains and web roots.
+ */
+var settings = new File(setting_fname);
+var webroots = {};
+webroots[system.inet_addr] = webroot;
+var domain_list;
+if (settings.open("r")) {
+	domain_list = settings.iniGetObject("Domains");
+	for (i in domain_list) {
+		if (file_isdir(domain_list[i])) {
+			webroots[i] = backslash(domain_list[i]);
+		}
+		else {
+			log(LOG_ERR, "Web root for "+i+" is not a directory ("+domain_list[i]+")");
+		}
+	}
+	var old_domain_hash = settings.iniGetValue("State", "DomainHash", "<None>");
+	settings.close();
+}
+
+var new_domain_hash = '';
+for (i in Object.keys(webroots).sort())
+	new_domain_hash += i+"/";
+new_domain_hash = md5_calc(new_domain_hash);
+
+/*
+ * Do we need to do anything?
+ */
+if (new_domain_hash === old_domain_hash) {
+	if (!days_remaining(30))
+		exit(0);
+}
+
+/*
  * Now read in the system password which must be used to encrypt the 
  * private key.
  * 
@@ -70,7 +104,6 @@ catch(e) {
  * We store the key ID in our ini file so we don't need an extra
  * round-trip each session to discover it.
  */
-var settings = new File(setting_fname);
 settings.open(settings.exists ? "r+" : "w+");
 var key_id = settings.iniGetValue("key_id", system.inet_addr, undefined);
 var acme = new ACMEv2({key:rsa, key_id:key_id});
@@ -85,32 +118,7 @@ if (key_id === undefined) {
 	settings.iniSetValue("key_id", system.inet_addr, acme.key_id);
 	key_id = acme.key_id;
 }
-/*
- * Now generate a list of domains and web roots.
- */
-var webroots = {};
-webroots[system.inet_addr] = webroot;
-var domain_list = settings.iniGetObject("Domains");
-for (i in domain_list) {
-	if (file_isdir(domain_list[i])) {
-		webroots[i] = backslash(domain_list[i]);
-	}
-	else {
-		log(LOG_ERR, "Web root for "+i+" is not a directory ("+domain_list[i]+")");
-	}
-}
-var old_domain_hash = settings.iniGetValue("State", "DomainHash", "<None>");
 settings.close();
-
-var new_domain_hash = '';
-for (i in Object.keys(webroots).sort())
-	new_domain_hash += i+"/";
-new_domain_hash = md5_calc(new_domain_hash);
-
-if (new_domain_hash === old_domain_hash) {
-	if (!days_remaining(30))
-		exit(0);
-}
 
 /*
  * Create the order, using system.inet_addr
@@ -256,10 +264,22 @@ sks.add_public_key(cert);
  */
 file_touch(recycle_sem);
 
-settings.open(settings.exists ? "r+" : "w+");
-settings.iniSetValue("State", "DomainHash", new_domain_hash);
-settings.iniSetValue("State", "Staging", true);
-settings.close();
+/*
+ * Save the domain hash and any other state information.
+ * If the certificate was from the staging server, note that, so when
+ * we move to non-staging, we can update automatically.
+ */
+if (settings.open(settings.exists ? "r+" : "w+")) {
+	settings.iniSetValue("State", "DomainHash", new_domain_hash);
+	settings.iniSetValue("State", "Staging", true);
+	settings.close();
+}
+else {
+	// SO CLOSE!
+	log(LOG_ERR, "!ERROR! Unable to save state after getting certificate");
+	log(LOG_ERR, "!ERROR! THIS IS VERY BAD");
+	throw("Unable to open "+settings.name+" to save state information!");
+}
 
 function days_remaining(days)
 {
