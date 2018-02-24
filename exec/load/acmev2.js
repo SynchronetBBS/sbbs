@@ -76,8 +76,10 @@ ACMEv2.prototype.get_directory = function()
 {
 	if (this.directory === undefined) {
 		var ret = this.ua.Get("https://"+this.host+this.dir_path);
-		if (this.ua.response_code != 200)
+		if (this.ua.response_code != 200) {
+			log(LOG_DEBUG, ret);
 			throw("Error fetching directory");
+		}
 		this.update_nonce();
 		this.directory = JSON.parse(ret);
 	}
@@ -92,11 +94,15 @@ ACMEv2.prototype.create_new_account = function(opts)
 {
 	var ret = this.post('newAccount', opts);
 
-	if (this.ua.response_code != 201 && this.ua.response_code != 200)
+	if (this.ua.response_code != 201 && this.ua.response_code != 200) {
+		log(LOG_DEBUG, ret);
 		throw("newAccount returned "+this.ua.response_code+", not a 200 or 201 status!");
+	}
 
-	if (this.ua.response_headers_parsed['Location'] === undefined)
+	if (this.ua.response_headers_parsed['Location'] === undefined) {
+		log(LOG_DEBUG, this.ua.response_headers.join("\n"));
 		throw("No Location header in newAccount response.");
+	}
 	this.key_id = this.ua.response_headers_parsed['Location'][0];
 	return JSON.parse(ret);
 }
@@ -106,8 +112,10 @@ ACMEv2.prototype.update_account = function(opts)
 	this.get_key_id();
 	var ret = this.post_url(this.key_id, opts);
 
-	if (this.ua.response_code != 201 && this.ua.response_code != 200)
+	if (this.ua.response_code != 201 && this.ua.response_code != 200) {
+		log(LOG_DEBUG, ret);
 		throw("update_account returned "+this.ua.response_code+", not a 200 or 201 status!");
+	}
 	return JSON.parse(ret);
 }
 
@@ -122,14 +130,17 @@ ACMEv2.prototype.create_new_order = function(opts)
 
 	if (opts.identifiers === undefined)
 		throw("create_new_order() requires an identifier in opts");
-	ret = JSON.parse(this.post('newOrder', opts));
+	ret = this.post('newOrder', opts);
 	if (this.ua.response_code != 201) {
-		log(LOG_DEBUG, JSON.stringify(ret));
+		log(LOG_DEBUG, ret);
 		throw("newOrder responded with "+this.ua.response_code+" not 201");
 	}
+	ret = JSON.parse(ret);
 
-	if (this.ua.response_headers_parsed['Location'] === undefined)
+	if (this.ua.response_headers_parsed['Location'] === undefined) {
+		log(LOG_DEBUG, this.ua.response_headers.join("\n"));
 		throw("No Location header in 201 response.");
+	}
 	ret.Location=this.ua.response_headers_parsed.Location[0];
 
 	return ret;
@@ -139,8 +150,10 @@ ACMEv2.prototype.accept_challenge = function(challenge)
 {
 	var opts={keyAuthorization:challenge.token+"."+this.thumbprint()};
 	var ret = this.post_url(challenge.url, opts)
-	if (this.ua.response_code != 200)
+	if (this.ua.response_code != 200) {
+		log(LOG_DEBUG, ret);
 		throw("accept_challenge did not return 200");
+	}
 	return JSON.parse(ret);
 }
 
@@ -172,8 +185,10 @@ ACMEv2.prototype.finalize_order = function(order, csr)
 	opts.csr = this.base64url(csr.export(CryptCert.FORMAT.CERTIFICATE));
 
 	var ret = this.post_url(order.finalize, opts)
-	if (this.ua.response_code != 200)
+	if (this.ua.response_code != 200) {
+		log(LOG_DEBUG, ret);
 		throw("finalize_order did not return 200");
+	}
 
 	return JSON.parse(ret);
 }
@@ -184,8 +199,10 @@ ACMEv2.prototype.poll_order = function(order)
 	if (loc === undefined)
 		throw("No order location!");
 	var ret = this.ua.Get(loc)
-	if (this.ua.response_code != 200)
+	if (this.ua.response_code != 200) {
+		log(LOG_DEBUG, ret);
 		throw("order poll did not return 200");
+	}
 	this.update_nonce();
 
 	ret = JSON.parse(ret);
@@ -235,8 +252,10 @@ ACMEv2.prototype.get_authorization = function(url)
 {
 	var ret = this.ua.Get(url);
 
-	if (this.ua.response_code != 200)
+	if (this.ua.response_code != 200) {
+		log(LOG_DEBUG, ret);
 		throw("get_authorization request did not return 200");
+	}
 	this.update_nonce();
 
 	return JSON.parse(ret);
@@ -272,16 +291,6 @@ ACMEv2.prototype.hash_thing = function(data)
 		D = ascii(255)+D;
 	D = ascii(0x00) + ascii(0x01) + D;
 	return this.key.decrypt(D);
-}
-
-ACMEv2.prototype.get_response_code = function()
-{
-	if (this.ua.status_line === undefined)
-		throw("No status line in response!");
-	var m = this.ua.status_line.match(/^HTTP\/[0-9]+\.[0-9]+ ([0-9]{3})/);
-	if (m === null)
-		throw("Unable to parse status line '"+this.ua.status_line+"'");
-	return parseInt(m[1], 10);
 }
 
 ACMEv2.prototype.update_nonce = function()
