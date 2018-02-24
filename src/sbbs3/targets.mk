@@ -47,7 +47,7 @@ UTILS		= $(FIXSMB) $(CHKSMB) \
 			  $(DELFILES) $(DUPEFIND) $(SMBACTIV) \
 			  $(SEXYZ) $(DSTSEDIT) $(READSAUCE)
 
-all:	dlls utils console
+all:	dlls utils console scfg uedit umonitor
 
 console:	$(JS_DEPS) xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
@@ -65,6 +65,19 @@ dlls:	$(JS_DEPS) smblib xpdev-mt \
 mono:	xpdev-mt smblib \
 		$(MTOBJODIR) $(EXEODIR) \
 		$(SBBSMONO)
+
+.PHONY: scfg
+scfg:
+	$(MAKE) -C scfg $(MAKEFLAGS)
+
+.PHONY: uedit
+uedit:
+	$(MAKE) -C uedit $(MAKEFLAGS)
+
+.PHONY: umonitor
+umonitor:
+	$(MAKE) -C umonitor $(MAKEFLAGS)
+
 
 ifdef SBBSEXEC
 .PHONY: install
