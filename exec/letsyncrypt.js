@@ -113,8 +113,6 @@ if (new_domain_hash === old_domain_hash) {
 
 /*
  * Create the order, using system.inet_addr
- * 
- * TODO: SNAs... or something.
  */
 var identifiers = [];
 for (i in webroots)
@@ -172,8 +170,6 @@ for (i in tokens)
 
 /*
  * Create CSR
- * 
- * TODO: SANs, virtual hosts, etc...
  */
 var csr = new CryptCert(CryptCert.TYPE.CERTREQUEST);
 
@@ -200,7 +196,6 @@ catch(e) {
 	sks.add_private_key(certrsa, syspass);
 }
 csr.subjectpublickeyinfo=certrsa;
-// TODO: Read these from INI file?
 csr.oganizationname=system.name;
 csr.commonname=system.inet_addr;
 var dnsnames=[];
@@ -237,6 +232,7 @@ file_touch(recycle_sem);
 
 settings.open(settings.exists ? "r+" : "w+");
 settings.iniSetValue("State", "DomainHash", new_domain_hash);
+settings.iniSetValue("State", "Staging", true);
 settings.close();
 
 function older_than(days)
