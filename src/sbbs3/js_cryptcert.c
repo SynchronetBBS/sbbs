@@ -61,6 +61,62 @@ js_finalize_cryptcert(JSContext *cx, JSObject *obj)
 // Methods
 
 static JSBool
+js_add_extension(JSContext *cx, uintN argc, jsval *arglist)
+{
+	struct js_cryptcert_private_data* p;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsrefcount rc;
+	int status;
+	jsval *argv=JS_ARGV(cx, arglist);
+	JSString *jsoid;
+	JSBool critical;
+	JSString *jsextension;
+	char *oid;
+	char *extension;
+	size_t oid_len;
+	size_t ext_len;
+
+	if ((p=(struct js_cryptcert_private_data *)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx, getprivate_failure, WHERE);
+		return JS_FALSE;
+	}
+
+	if (argc != 3) {
+		JS_ReportError(cx, "Incorrect number of arguments.  Got %d, expected 3.", argc);
+		return JS_FALSE;
+	}
+
+	if ((jsoid = JS_ValueToString(cx, argv[0])) == NULL) {
+		JS_ReportError(cx, "Invalid oid");
+		return JS_FALSE;
+	}
+	if (!JS_ValueToBoolean(cx, argv[1], &critical)) {
+		JS_ReportError(cx, "Invalid critical flag");
+		return JS_FALSE;
+	}
+	if ((jsextension = JS_ValueToString(cx, argv[2])) == NULL) {
+		JS_ReportError(cx, "Invalid extension");
+		return JS_FALSE;
+	}
+	JSSTRING_TO_MSTRING(cx, jsoid, oid, &oid_len);
+	HANDLE_PENDING(cx, oid);
+	JSSTRING_TO_MSTRING(cx, jsextension, extension, &ext_len);
+	if (JS_IsExceptionPending(cx)) {
+		FREE_AND_NULL(oid);
+		FREE_AND_NULL(extension);
+		return JS_FALSE;
+	}
+	rc = JS_SUSPENDREQUEST(cx);
+	status = cryptAddCertExtension(p->cert, oid, critical, extension, ext_len);
+	JS_RESUMEREQUEST(cx, rc);
+	if (cryptStatusError(status)) {
+		js_cryptcert_error(cx, p->cert, status);
+		return JS_FALSE;
+	}
+	return JS_TRUE;
+}
+
+static JSBool
 js_check(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
@@ -490,6 +546,7 @@ js_sign(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
+	cryptSetAttribute(p->cert, CRYPT_OPTION_CERT_SIGNUNRECOGNISEDATTRIBUTES, 1);
 	status = cryptSignCert(p->cert, ctx->ctx);
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
@@ -2883,6 +2940,10 @@ static jsSyncPropertySpec js_cryptcert_properties[] = {
 };
 
 static jsSyncMethodSpec js_cryptcert_functions[] = {
+	{"add_extension", js_add_extension, 0, JSTYPE_VOID, "oid, critical, extension"
+	,JSDOCSTR("Adds a DER encoded certificate extension.")
+	,316
+	},
 	{"check",	js_check,	0,	JSTYPE_BOOLEAN,	""
 	,JSDOCSTR("Checks the certificate for validity.")
 	,316
