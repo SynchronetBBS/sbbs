@@ -133,8 +133,10 @@ var tokens=[];
 for (auth in order.authorizations) {
 	fulfilled = false;
 	authz = acme.get_authorization(order.authorizations[auth]);
-	if (authz.status == 'valid')
+	if (authz.status == 'valid') {
 		completed++;
+		continue;
+	}
 	for (challenge in authz.challenges) {
 		if (authz.challenges[challenge].type=='http-01') {
 			/*
