@@ -171,7 +171,6 @@ csr.commonname=system.inet_addr;
 csr.add_extension("2.5.29.17", false, create_dnsnames([system.inet_addr]));
 csr.sign(certrsa);
 csr.check();
-var csrenc=csr.export(CryptCert.FORMAT.TEXT_CERTIFICATE);
 order = acme.finalize_order(order, csr);
 
 while (order.status !== 'valid') {
