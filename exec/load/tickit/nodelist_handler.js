@@ -121,7 +121,8 @@ function Handle_TIC(tic, ctx, arg)
 	}
 
 	log(LOG_DEBUG, "Copying "+fl[0]+" to "+ctx.FIDO.FTNDomains.nodeListFN[cfg.domain]+" from "+tic.file);
-	file_copy(fl[0], ctx.FIDO.FTNDomains.nodeListFN[cfg.domain]);
+	if (file_copy(fl[0], ctx.FIDO.FTNDomains.nodeListFN[cfg.domain]))
+		log(LOG_ERR, "Failed to copy  "+fl[0]+" to "+ctx.FIDO.FTNDomains.nodeListFN[cfg.domain]+" from "+tic.file);
 
 	// Return false so it is still moved into the appropriate dir
 	return false;
