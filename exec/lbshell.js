@@ -631,7 +631,7 @@ while(bbs.online) {
 			done=false;
 			var xtrnsec=new Xtrnsecs;
 			menus_displayed.push(xtrnsec);
-			while(!done) {
+			while(!done && bbs.online) {
 				x_sec=xtrnsec.getval();
 				if(x_sec==KEY_LEFT)
 					x_sec=(xtrnsec.current-1).toString();
