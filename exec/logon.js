@@ -254,7 +254,7 @@ if(options
 	&& console.term_supports(USER_ANSI) 
 	&& options && options.set_avatar == true) {
 	var avatar = Avatar.read_localuser(user.number);
-	if(!avatar || !avatar.data) {
+	if(!avatar || (!avatar.data && !avatar.disabled)) {
 		alert("You have not selected an avatar.");
 		if(console.yesno("Select avatar now"))
 			load("avatar_chooser.js");
