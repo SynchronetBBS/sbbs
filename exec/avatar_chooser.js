@@ -428,6 +428,7 @@ function CollectionLister(dir, parent_frame) {
 			if (typeof ret == 'number') {
 				if (ret >= 0) {
 					avatar_lib.update_localuser(user.number, base64_encode(get_avatar(ret)));
+                    avatar_lib.enable_localuser(user.number, true);
 				}
 				state.cb.close();
 				state.cb = null;
@@ -585,7 +586,8 @@ function MainMenu(parent_frame) {
         ed_item : null,
 		timer : new Timer(),
 		utime : file_exists(user_fname) ? file_date(user_fname) : -1,
-        user_avatar : null
+        user_avatar : null,
+        opt_out_item : null
 	};
 
 	function load_user_avatar() {
@@ -615,7 +617,10 @@ function MainMenu(parent_frame) {
                 }
                 frames.user_avatar.invalidate();
             }
-            if (state.ed_item instanceof TreeItem) state.ed_item.show();
+            if (state.ed_item instanceof TreeItem) {
+                state.ed_item.enable();
+                state.ed_item.show();
+            }
 		}
 	}
 
@@ -650,7 +655,7 @@ function MainMenu(parent_frame) {
 			frames.parent.x + 1,
 			frames.parent.y + 3,
 			Math.floor((frames.parent.width - 2) / 2),
-			5,
+			6,
 			BG_BLACK,
 			frames.container
 		);
@@ -737,7 +742,18 @@ function MainMenu(parent_frame) {
             tree_strings[state.user_avatar !== null && state.user_avatar.disabled ? 'enable' : 'disable'],
             enable_disable
         );
-        if (state.user_avatar == null) state.ed_item.hide();
+        if (state.user_avatar === null) {
+            state.ed_item.disable();
+            state.ed_item.hide();
+            state.opt_out_item = state.tree.addItem(
+                "I don't want an avatar", function () {
+                    avatar_lib.update_localuser(user.number, '');
+                    avatar_lib.enable_localuser(user.number, false);
+                    state.opt_out_item.hide();
+                    state.tree.getcmd(KEY_UP);
+                }
+            );
+        }
 		state.tree.open();
 
 		state.timer.addEvent(2000, true, test_user_file);
@@ -754,6 +770,10 @@ function MainMenu(parent_frame) {
 				state.cl = null;
 				frames.parent.attr = BG_BLACK|LIGHTGRAY;
 				state.tree.open();
+                if (state.user_avatar !== null) {
+                    state.opt_out_item.disable();
+                    state.opt_out_item.hide();
+                }
 			}
 		} else if (cmd.toLowerCase() == 'q') {
 			return false;
