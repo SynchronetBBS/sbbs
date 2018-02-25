@@ -42,8 +42,9 @@ function required(mask) {
 function cleanParam(param) {
 	if (paramExists(param)) {
 		return http_request.query[param][0].replace(/[\x00-\x19\x7F]/g, '');
-	}
-	return "";
+	} else {
+	   return "";
+    }
 }
 
 function paramExists(param) {
@@ -51,8 +52,9 @@ function paramExists(param) {
 		http_request.query[param][0] !== ''
 	) {
 		return true;
-	}
-	return false;
+	} else {
+	    return false;
+    }
 }
 
 function paramLength(param) {
@@ -147,63 +149,53 @@ if (!paramExists('netmail') && !required(UQ_NONETMAIL)) {
 	prepUser.netmail = cleanParam('netmail');
 }
 
-if (required(UQ_REALNAME) &&
-	(	!paramExists('realname') ||
-		paramLength('realname') < MIN_REALNAME ||
-		paramLength('realname') > LEN_NAME
-	)
+if (paramExists('realname') &&
+    paramLength('realname') >= MIN_REALNAME &&
+    paramLength('realname') <= LEN_NAME
 ) {
-	reply.errors.push(_rl.error_invalid_name);
-} else {
-	prepUser.name = cleanParam('realname');
+    prepUser.name = cleanParam('realname');
+} else if (required(UQ_REALNAME)) {
+    reply.errors.push(_rl.error_invalid_name);
 }
 
-if (required(UQ_LOCATION) &&
-	(	!paramExists('location') ||
-		paramLength('location') < MIN_LOCATION ||
-		paramLength('location') > LEN_LOCATION
-	)
+if (paramExists('location') &&
+    paramLength('location') >= MIN_LOCATION &&
+    paramLength('location') <= LEN_LOCATION
 ) {
-	reply.errors.push(_rl.error_invalid_location);
-} else {
-	prepUser.location = cleanParam('location');
+    prepUser.location = cleanParam('location');
+} else if (required(UQ_LOCATION)) {
+    reply.errors.push(_rl.error_invalid_location);
 }
 
-if (required(UQ_ADDRESS) &&
-	(	!paramExists('address') ||
-		paramLength('address') < MIN_ADDRESS ||
-		paramLength('address') > LEN_ADDRESS ||
-		!paramExists('zipcode') ||
-		paramLength('zipcode') < 3 ||
-		paramLength('zipcode') > LEN_ADDRESS
-	)
+if (paramExists('address') &&
+    paramLength('address') >= MIN_ADDRESS &&
+    paramLength('address') <= LEN_ADDRESS &&
+    paramExists('zipcode') &&
+    paramLength('zipcode') >= 3 &&
+    paramLength('zipcode') <= LEN_ADDRESS
 ) {
-	reply.errors.push(_rl.error_invalid_street_address);
-} else {
-	prepUser.address = cleanParam('address');
-	prepUser.zipcode = cleanParam('zipcode');
+    prepUser.address = cleanParam('address');
+    prepUser.zipcode = cleanParam('zipcode');
+} else if (required(UQ_ADDRESS)) {
+    reply.errors.push(_rl.error_invalid_street_address);
 }
 
-if (required(UQ_PHONE) &&
-	(	!paramExists('phone') ||
-		paramLength('phone') < MIN_PHONE ||
-		paramLength('phone') > LEN_PHONE
-	)
+if (paramExists('phone') &&
+    paramLength('phone') >= MIN_PHONE &&
+    paramLength('phone') <= LEN_PHONE
 ) {
-	reply.errors.push(_rl.error_invalid_phone);
-} else {
-	prepUser.phone = cleanParam('phone');
+    prepUser.phone = cleanParam('phone');
+} else if (required(UQ_PHONE)) {
+    reply.errors.push(_rl.error_invalid_phone);
 }
 
-if (required(UQ_SEX) &&
-	(	!paramExists('gender') ||
-		paramLength('gender') != 1 ||
-		['X','M','F','O'].indexOf(http_request.query.gender[0]) < 0
-	)
+if (paramExists('gender') &&
+    paramLength('gender') == 1 &&
+    ['X', 'M', 'F', 'O'].indexOf(http_request.query.gender[0] > -1)
 ) {
-	reply.errors.push(_rl.error_invalid_gender);
-} else {
-	prepUser.gender = http_request.query.gender[0];
+    prepUser.gender = http_request.query.gender[0];
+} else if (required(UQ_SEX)) {
+    reply.errors.push(_rl.error_invalid_gender);
 }
 
 if (paramExists('birth') &&
