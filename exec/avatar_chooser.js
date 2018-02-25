@@ -590,7 +590,7 @@ function MainMenu(parent_frame) {
 
 	function load_user_avatar() {
 		var user_avatar = avatar_lib.read_localuser(user.number);
-		if (user_avatar) {
+		if (user_avatar && user_avatar.data) {
             frames.user_avatar.clear();
 			frames.user_avatar.drawBorder(BORDER);
 			frames.user_avatar.blit(
