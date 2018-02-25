@@ -76,6 +76,15 @@ if(0) {
         	+'</pre></table>');
 }
 
+/**
+ * Convert a string to HTML entities
+ */
+String.prototype.toHtmlEntities = function() {
+    return this.replace(/./gm, function(s) {
+        return "&#" + s.charCodeAt(0) + ";";
+    });
+};
+
 function encode_text(str)
 {
 	return html_encode(str
@@ -117,7 +126,7 @@ function bbs_service(service)
 function bbs_sysop(sysop)
 {
     if(sysop.email && sysop.email.length)
-        return format('<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;%s">%s</a>', encodeURI(sysop.email), encode_text(sysop.name));
+        return format('<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;%s">%s</a>', sysop.email.toHtmlEntities(), encode_text(sysop.name));
     return(encode_text(sysop.name));
 }
 
