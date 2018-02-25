@@ -1039,6 +1039,9 @@ int main(int argc, char** argv)  {
 		}
 
 		if(j==0) {
+			BOOL sysop_avail = sysop_available(&cfg);
+			int sysop_chat_opt;
+
 			/* System Options */
 			i=0;
 			strcpy(opt[i++],"Run SCFG");
@@ -1050,6 +1053,7 @@ int main(int argc, char** argv)  {
 			strcpy(opt[i++],"Recycle servers");
 			strcpy(opt[i++],"Edit CFG/INI files");
 			strcpy(opt[i++],"Edit trashcan files");
+			sysop_chat_opt = i++;
 			opt[i][0]=0;
 			uifc.helpbuf=	"`System Options`\n"
 			                "`------------`\n\n"
@@ -1069,6 +1073,7 @@ int main(int argc, char** argv)  {
 			done=0;
 			i=0;
 			while(!done) {
+				sprintf(opt[sysop_chat_opt], "Turn Sysop Chat availability %s", sysop_avail ? "Off" : "On");
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"System Options",opt))  {
 					case -1:
 						done=1;
@@ -1117,6 +1122,10 @@ int main(int argc, char** argv)  {
 						break;
 					case 8:
 						edit_can(&cfg);
+						break;
+					case 9:
+						sysop_avail = !sysop_avail;
+						set_sysop_availability(&cfg, sysop_avail);
 						break;
 				}
 			}
