@@ -144,6 +144,8 @@ DLLEXPORT BOOL	DLLCALL user_adjust_minutes(scfg_t*, user_t*, long amount);
 DLLEXPORT time_t DLLCALL gettimeleft(scfg_t*, user_t*, time_t starttime);
 
 DLLEXPORT BOOL	DLLCALL check_name(scfg_t*, const char* name);
+DLLEXPORT BOOL	DLLCALL sysop_available(scfg_t*);
+DLLEXPORT BOOL	DLLCALL set_sysop_availability(scfg_t*, BOOL available);
 
 /* Login attempt/hack tracking */
 typedef struct {
