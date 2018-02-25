@@ -15,6 +15,57 @@ var recycle_sem = backslash(system.ctrl_dir)+"recycle.web";
  */
 var i;
 var tmp;
+var opts;
+
+function days_remaining(days)
+{
+	if (!file_exists(sks_fname))
+		return true;
+	var sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.READONLY);
+	try {
+		var cert = sks.get_public_key("ssl_cert");
+	}
+	catch(e1) {
+		sks.close();
+		return true;
+	}
+	sks.close();
+	var now = new Date();
+	var cutoff = cert.validto;
+	cutoff.setDate(cutoff.getDate() - days);
+	return now > cutoff;
+}
+
+function create_dnsnames(names) {
+	var ext = '';
+	var tmplen;
+	var count;
+
+	function asn1_len(len) {
+		var ret = '';
+
+		if (len < 128)
+			return ascii(len);
+		tmplen = len;
+		var count = 0;
+		while (tmplen) {
+			ret = ascii(tmplen & 0xff)+ret;
+			tmplen >>= 8;
+			count++;
+		}
+		ret = ascii(0x80 | count) + ret;
+		return ret;
+	}
+
+	for (var name in names) {
+		ext = names[name] + ext;
+		ext = asn1_len(names[name].length) + ext;
+		ext = ascii(0x82) + ext;
+	}
+	ext = asn1_len(ext.length) + ext;
+	ext = ascii(0x30) + ext;
+	return ext;
+}
 
 /*
  * Get the Web Root
@@ -78,7 +129,7 @@ maincnf.close();
  * ACME.  Note that this key is not the one used for the
  * final certificate.
  */
-var opts = CryptKeyset.KEYOPT.NONE;
+opts = CryptKeyset.KEYOPT.NONE;
 if (!file_exists(ks_fname))
 	opts = CryptKeyset.KEYOPT.CREATE;
 var ks = new CryptKeyset(ks_fname, opts);
@@ -92,7 +143,7 @@ var rsa;
 try {
 	rsa = ks.get_private_key("ACMEv2", syspass);
 }
-catch(e) {
+catch(e2) {
 	rsa = new CryptContext(CryptContext.ALGO.RSA);
 	rsa.keysize=2048/8;
 	rsa.label="ACMEv2";
@@ -153,8 +204,8 @@ for (auth in order.authorizations) {
 			for (i in webroots) {
 				if (!file_isdir(webroots[i]+".well-known/acme-challenge")) {
 					if (!mkpath(webroots[i]+".well-known/acme-challenge"))
-						throw("Unable to create webroots[i]+".well-known/acme-challenge);
-					tmp = new File(webroots[i]+".well-known/acme-challenge/"+webctrl.ini);
+						throw("Unable to create "+webroots[i]+".well-known/acme-challenge");
+					tmp = new File(webroots[i]+".well-known/acme-challenge/webctrl.ini");
 					tmp.open("w");
 					tmp.writeln("AccessRequirements=");
 					tmp.close();
@@ -199,7 +250,7 @@ var csr = new CryptCert(CryptCert.TYPE.CERTREQUEST);
  * 
  * TODO: Regenerate keys etc.
  */
-var opts = CryptKeyset.KEYOPT.NONE;
+opts = CryptKeyset.KEYOPT.NONE;
 if (!file_exists(sks_fname))
 	opts = CryptKeyset.KEYOPT.CREATE;
 var sks = new CryptKeyset(sks_fname, opts);
@@ -222,7 +273,7 @@ try {
 		sks.add_private_key(certrsa, syspass);
 	}
 }
-catch(e) {
+catch(e3) {
 	certrsa = new CryptContext(CryptContext.ALGO.RSA);
 	certrsa.keysize=2048/8;
 	certrsa.label="ssl_cert";
@@ -254,9 +305,9 @@ cert.label = "ssl_cert";
  * Delete the old certificate
  */
 try {
-	sks.delete_key(ssl_cert);
+	sks.delete_key("ssl_cert");
 }
-catch(e) {}
+catch(e4) {}
 sks.add_public_key(cert);
 
 /*
@@ -279,54 +330,4 @@ else {
 	log(LOG_ERR, "!ERROR! Unable to save state after getting certificate");
 	log(LOG_ERR, "!ERROR! THIS IS VERY BAD");
 	throw("Unable to open "+settings.name+" to save state information!");
-}
-
-function days_remaining(days)
-{
-	if (!file_exists(sks_fname))
-		return true;
-	var sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.READONLY);
-	try {
-		var cert = sks.get_public_key("ssl_cert");
-	}
-	catch(e) {
-		sks.close();
-		return true;
-	}
-	sks.close();
-	var now = new Date();
-	var cutoff = cert.validto;
-	cutoff.setDate(cutoff.getDate() - days);
-	return now > cutoff;
-}
-
-function create_dnsnames(names) {
-	var ext = '';
-	var tmplen;
-	var count;
-
-	function asn1_len(len) {
-		var ret = '';
-
-		if (len < 128)
-			return ascii(len);
-		tmplen = len;
-		var count = 0;
-		while (tmplen) {
-			ret = ascii(tmplen & 0xff)+ret;
-			tmplen >>= 8;
-			count++;
-		}
-		ret = ascii(0x80 | count) + ret;
-		return ret;
-	}
-
-	for (var name in names) {
-		ext = names[name] + ext;
-		ext = asn1_len(names[name].length) + ext;
-		ext = ascii(0x82) + ext;
-	}
-	ext = asn1_len(ext.length) + ext;
-	ext = ascii(0x30) + ext;
-	return ext;
 }

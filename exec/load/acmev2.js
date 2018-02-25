@@ -57,7 +57,7 @@ ACMEv2.prototype.get_key_id = function()
 {
 	if (this.key_id === undefined)
 		return(this.create_new_account({onlyReturnExisting:true}));
-}
+};
 
 ACMEv2.prototype.host = "acme-staging-v02.api.letsencrypt.org";
 ACMEv2.prototype.dir_path = "/directory";
@@ -70,7 +70,7 @@ ACMEv2.prototype.get_terms_of_service = function()
 	if (dir.meta.termsOfService === undefined)
 		throw('No "termsOfService" in directory metadata');
 	return dir.meta.termsOfService;
-}
+};
 
 ACMEv2.prototype.get_directory = function()
 {
@@ -84,7 +84,7 @@ ACMEv2.prototype.get_directory = function()
 		this.directory = JSON.parse(ret);
 	}
 	return this.directory;
-}
+};
 
 ACMEv2.prototype.FULL_JWT_METHODS = [
 	'newAccount',
@@ -99,13 +99,13 @@ ACMEv2.prototype.create_new_account = function(opts)
 		throw("newAccount returned "+this.ua.response_code+", not a 200 or 201 status!");
 	}
 
-	if (this.ua.response_headers_parsed['Location'] === undefined) {
+	if (this.ua.response_headers_parsed.Location === undefined) {
 		log(LOG_DEBUG, this.ua.response_headers.join("\n"));
 		throw("No Location header in newAccount response.");
 	}
-	this.key_id = this.ua.response_headers_parsed['Location'][0];
+	this.key_id = this.ua.response_headers_parsed.Location[0];
 	return JSON.parse(ret);
-}
+};
 
 ACMEv2.prototype.update_account = function(opts)
 {
@@ -117,12 +117,12 @@ ACMEv2.prototype.update_account = function(opts)
 		throw("update_account returned "+this.ua.response_code+", not a 200 or 201 status!");
 	}
 	return JSON.parse(ret);
-}
+};
 
 ACMEv2.prototype.get_account = function()
 {
 	return this.update_account({});
-}
+};
 
 ACMEv2.prototype.create_new_order = function(opts)
 {
@@ -137,25 +137,25 @@ ACMEv2.prototype.create_new_order = function(opts)
 	}
 	ret = JSON.parse(ret);
 
-	if (this.ua.response_headers_parsed['Location'] === undefined) {
+	if (this.ua.response_headers_parsed.Location === undefined) {
 		log(LOG_DEBUG, this.ua.response_headers.join("\n"));
 		throw("No Location header in 201 response.");
 	}
 	ret.Location=this.ua.response_headers_parsed.Location[0];
 
 	return ret;
-}
+};
 
 ACMEv2.prototype.accept_challenge = function(challenge)
 {
 	var opts={keyAuthorization:challenge.token+"."+this.thumbprint()};
-	var ret = this.post_url(challenge.url, opts)
+	var ret = this.post_url(challenge.url, opts);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
 		throw("accept_challenge did not return 200");
 	}
 	return JSON.parse(ret);
-}
+};
 
 ACMEv2.prototype.poll_authorization = function(auth)
 {
@@ -172,7 +172,7 @@ ACMEv2.prototype.poll_authorization = function(auth)
 			throw ("Authorization failed... "+auth);
 	}
 	return false;
-}
+};
 
 ACMEv2.prototype.finalize_order = function(order, csr)
 {
@@ -182,25 +182,25 @@ ACMEv2.prototype.finalize_order = function(order, csr)
 		throw("Missing order");
 	if (csr === undefined)
 		throw("Missing csr");
-	if (typeof(csr) != 'object' || csr.export === undefined)
+	if (typeof(csr) != 'object' || csr.export_cert === undefined)
 		throw("Invalid csr");
-	opts.csr = this.base64url(csr.export(CryptCert.FORMAT.CERTIFICATE));
+	opts.csr = this.base64url(csr.export_cert(CryptCert.FORMAT.CERTIFICATE));
 
-	var ret = this.post_url(order.finalize, opts)
+	var ret = this.post_url(order.finalize, opts);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
 		throw("finalize_order did not return 200");
 	}
 
 	return JSON.parse(ret);
-}
+};
 
 ACMEv2.prototype.poll_order = function(order)
 {
 	var loc = order.Location;
 	if (loc === undefined)
 		throw("No order location!");
-	var ret = this.ua.Get(loc)
+	var ret = this.ua.Get(loc);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
 		throw("order poll did not return 200");
@@ -210,7 +210,7 @@ ACMEv2.prototype.poll_order = function(order)
 	ret = JSON.parse(ret);
 	ret.Location = loc;
 	return ret;
-}
+};
 
 ACMEv2.prototype.get_cert = function(order)
 {
@@ -221,7 +221,7 @@ ACMEv2.prototype.get_cert = function(order)
 		throw("get_cert request did not return 200");
 	this.update_nonce();
 	return new CryptCert(cert);
-}
+};
 
 ACMEv2.prototype.post = function(link, data)
 {
@@ -234,7 +234,7 @@ ACMEv2.prototype.post = function(link, data)
 	if (url === undefined)
 		throw('Unknown link name: "'+link+'"');
 	return this.post_url(url, data, post_method);
-}
+};
 
 ACMEv2.prototype.get_nonce = function()
 {
@@ -248,7 +248,7 @@ ACMEv2.prototype.get_nonce = function()
 	ret = this.last_nonce;
 	this.last_nonce = undefined;
 	return ret;
-}
+};
 
 ACMEv2.prototype.get_authorization = function(url)
 {
@@ -261,16 +261,16 @@ ACMEv2.prototype.get_authorization = function(url)
 	this.update_nonce();
 
 	return JSON.parse(ret);
-}
+};
 
 ACMEv2.prototype.base64url = function(string)
 {
 	string = base64_encode(string);
-	string = string.replace(/=/g,'');
+	string = string.replace(/\=/g,'');
 	string = string.replace(/\+/g,'-');
 	string = string.replace(/\//g,'_');
 	return string;
-}
+};
 
 ACMEv2.prototype.hash_thing = function(data)
 {
@@ -293,13 +293,13 @@ ACMEv2.prototype.hash_thing = function(data)
 		D = ascii(255)+D;
 	D = ascii(0x00) + ascii(0x01) + D;
 	return this.key.decrypt(D);
-}
+};
 
 ACMEv2.prototype.update_nonce = function()
 {
 	if (this.ua.response_headers_parsed['Replay-Nonce'] !== undefined)
 		this.last_nonce = this.ua.response_headers_parsed['Replay-Nonce'][0];
-}
+};
 
 ACMEv2.prototype.thumbprint = function()
 {
@@ -311,7 +311,7 @@ ACMEv2.prototype.thumbprint = function()
 	shactx.encrypt('');
 	var MD = shactx.hashvalue;
 	return this.base64url(MD);
-}
+};
 
 ACMEv2.prototype.post_url = function(url, data, post_method)
 {
@@ -343,14 +343,14 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 	msg.signature = this.base64url(this.hash_thing(msg.protected + "." + msg.payload));
 	var body = JSON.stringify(msg);
 	body = body.replace(/:"/g, ': "');
-	body = body.replace(/:{/g, ': {');
+	body = body.replace(/:\{/g, ': {');
 	body = body.replace(/,"/g, ', "');
 	ret = this.ua.Post(url, body);
 	/* We leave error handling to the caller */
 	if (this.ua.response_code == 200 || this.ua.response_code == 201)
 		this.update_nonce();
 	return ret;
-}
+};
 
 // TODO: keyChange
 // TODO: revokeCert
