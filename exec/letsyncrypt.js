@@ -286,6 +286,7 @@ cert.label = "ssl_certchain";
 for (i=0; i < 10; i++) {
 	if (file_remove(sks_fname))
 		break;
+	mswait(100);
 }
 if (i == 10)
 	throw("Unable to delete file "+sks_fname);
