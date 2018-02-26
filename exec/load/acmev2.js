@@ -86,10 +86,6 @@ ACMEv2.prototype.get_directory = function()
 	return this.directory;
 };
 
-ACMEv2.prototype.FULL_JWT_METHODS = [
-	'newAccount',
-	'revokeCert'
-];
 ACMEv2.prototype.create_new_account = function(opts)
 {
 	var ret = this.post('newAccount', opts);
@@ -266,6 +262,10 @@ ACMEv2.prototype.get_cert = function(order)
 	return new CryptCert(this.create_pkcs7(cert));
 };
 
+ACMEv2.prototype.FULL_JWT_METHODS = [
+	'newAccount',
+	'revokeCert'
+];
 ACMEv2.prototype.post = function(link, data)
 {
 	var post_method;
