@@ -41,28 +41,12 @@ function create_dnsnames(names) {
 	var tmplen;
 	var count;
 
-	function asn1_len(len) {
-		var ret = '';
-
-		if (len < 128)
-			return ascii(len);
-		tmplen = len;
-		var count = 0;
-		while (tmplen) {
-			ret = ascii(tmplen & 0xff)+ret;
-			tmplen >>= 8;
-			count++;
-		}
-		ret = ascii(0x80 | count) + ret;
-		return ret;
-	}
-
 	for (var name in names) {
 		ext = names[name] + ext;
-		ext = asn1_len(names[name].length) + ext;
+		ext = ACMEv2.prototype.asn1_len(names[name].length) + ext;
 		ext = ascii(0x82) + ext;
 	}
-	ext = asn1_len(ext.length) + ext;
+	ext = ACMEv2.prototype.asn1_len(ext.length) + ext;
 	ext = ascii(0x30) + ext;
 	return ext;
 }
@@ -280,6 +264,7 @@ catch(e3) {
 	certrsa.generate_key();
 	sks.add_private_key(certrsa, syspass);
 }
+sks.close();
 csr.subjectpublickeyinfo=certrsa;
 csr.oganizationname=system.name;
 csr.commonname=system.inet_addr;
@@ -299,16 +284,15 @@ while (order.status !== 'valid') {
 }
 
 var cert = acme.get_cert(order);
-cert.label = "ssl_cert";
+cert.label = "ssl_certchain";
 
-/*
- * Delete the old certificate
- */
+sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.NONE);
 try {
-	sks.delete_key("ssl_cert");
+	sks.delete_key("ssl_certchain");
 }
 catch(e4) {}
 sks.add_public_key(cert);
+sks.close();
 
 /*
  * Recycle webserver
