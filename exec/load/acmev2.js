@@ -388,7 +388,7 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 	body = body.replace(/:"/g, ': "');
 	body = body.replace(/:\{/g, ': {');
 	body = body.replace(/,"/g, ', "');
-	ret = this.ua.Post(url, body);
+	ret = this.ua.Post(url, body, undefined, undefined, "application/jose+json");
 	/* We leave error handling to the caller */
 	if (this.ua.response_code == 200 || this.ua.response_code == 201)
 		this.update_nonce();
