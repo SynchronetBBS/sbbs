@@ -212,6 +212,48 @@ ACMEv2.prototype.poll_order = function(order)
 	return ret;
 };
 
+ACMEv2.prototype.asn1_len = function (len) {
+	var ret = '';
+
+	if (len < 128)
+		return ascii(len);
+	tmplen = len;
+	var count = 0;
+	while (tmplen) {
+		ret = ascii(tmplen & 0xff)+ret;
+		tmplen >>= 8;
+		count++;
+	}
+	ret = ascii(0x80 | count) + ret;
+	return ret;
+}
+
+ACMEv2.prototype.create_pkcs7 = function(cert)
+{
+	var ret = '';
+
+	var certs = [];
+	var m;
+	var rex = /(-+BEGIN[^-]+-+[^-]+-+END[^-]+-+\n)/g;
+	while ((m = rex.exec(cert)) != null) {
+		onecert = new CryptCert(m[1]);
+		ret = ret + onecert.export_cert(CryptCert.FORMAT.CERTIFICATE);
+	}
+	ret = this.asn1_len(ret.length) + ret;
+	ret = ascii(0xa0) + ret;
+	ret = ret + ascii(0x31) + ascii(0x00);
+	ret = ascii(0x02) + ascii(0x01) + ascii(0x01) + ascii(0x31) + ascii(0x00) + ascii(0x30) + ascii(0x0B) + ascii(0x06) + ascii(0x09) + ascii(0x2A) + ascii(0x86) + ascii(0x48) + ascii(0x86) + ascii(0xF7) + ascii(0x0D) + ascii(0x01) + ascii(0x07) + ascii(0x01) + ret;
+	ret = this.asn1_len(ret.length) + ret;
+	ret = ascii(0x30) + ret;
+	ret = this.asn1_len(ret.length) + ret;
+	ret = ascii(0xa0) + ret;
+	ret = ascii(0x06) + ascii(0x09) + ascii(0x2A) + ascii(0x86) + ascii(0x48) + ascii(0x86) + ascii(0xF7) + ascii(0x0D) + ascii(0x01) + ascii(0x07) + ascii(0x02) + ret;
+	ret = this.asn1_len(ret.length) + ret;
+	ret = ascii(0x30) + ret;
+
+	return ret;
+}
+
 ACMEv2.prototype.get_cert = function(order)
 {
 	if (order.certificate === undefined)
@@ -220,7 +262,8 @@ ACMEv2.prototype.get_cert = function(order)
 	if (this.ua.response_code != 200)
 		throw("get_cert request did not return 200");
 	this.update_nonce();
-	return new CryptCert(cert);
+
+	return new CryptCert(this.create_pkcs7(cert));
 };
 
 ACMEv2.prototype.post = function(link, data)
