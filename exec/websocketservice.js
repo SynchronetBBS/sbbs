@@ -51,7 +51,7 @@ var FWebSocketState = WEBSOCKET_NEED_PACKET_START;
 try {
     // Parse and respond to the WebSocket handshake request
     if (ShakeHands()) {
-        SendToWebSocketClient(StringToBytes("Re-directing to telnet server...\r\n"));
+        SendToWebSocketClient("Re-directing to telnet server...".split(""));
 
         // Connect to the local synchronet server
         FServerSocket = new Socket();
@@ -91,7 +91,7 @@ try {
         } else {
             // FServerSocket.connect() failed
             log(LOG_ERR, "Unable to connect to telnet server");
-            SendToWebSocketClient(StringToBytes("ERROR: Unable to connect to telnet server\r\n"));
+            SendToWebSocketClient("Unable to connect to telnet server".split(""));
             mswait(2500);
         }
     } else {
@@ -125,7 +125,7 @@ function GetFromTelnetServer() {
     var Result = [];
     var InByte = 0;
     
-    while (FServerSocket.data_waiting && (Result.length <= 4096)) {
+    while (FServerSocket.data_waiting) {
         InByte =  FServerSocket.recvBin(1);
         
         switch (FTelnetState) {
@@ -203,7 +203,6 @@ function GetFromWebSocketClient() {
         case 0: return GetFromWebSocketClientDraft0();
 		case 7: 
 		case 8: 
-        case 13:
 			return GetFromWebSocketClientVersion7();
     }
 }
@@ -289,14 +288,17 @@ function GetFromWebSocketClientVersion7() {
 				InByte = (client.socket.recvBin(1) ^ FFrameMask[FFramePayloadReceived++ % 4]);
 
 				// Check if the byte needs to be UTF-8 decoded
-				if ((InByte & 0x80) === 0) {
+				if (InByte < 128) {
 					Result.push(InByte);
-				} else if ((InByte & 0xE0) === 0xC0) {
+				} else if ((InByte > 191) && (InByte < 224)) {
 					// Handle UTF-8 decode
 					InByte2 = (client.socket.recvBin(1) ^ FFrameMask[FFramePayloadReceived++ % 4]);
 					Result.push(((InByte & 31) << 6) | (InByte2 & 63));
 				} else {
-					log(LOG_ERR, "Byte out of range: " + InByte);
+					// Handle UTF-8 decode (should never need this, but included anyway)
+					InByte2 = (client.socket.recvBin(1) ^ FFrameMask[FFramePayloadReceived++ % 4]);
+					InByte3 = (client.socket.recvBin(1) ^ FFrameMask[FFramePayloadReceived++ % 4]);
+					Result.push(((InByte & 15) << 12) | ((InByte2 & 63) << 6) | (InByte3 & 63));
 				}
 
 				// Check if we've received the full payload
@@ -326,7 +328,6 @@ function SendToWebSocketClient(AData) {
 			break;
 		case 7: 
 		case 8: 
-        case 13:
 			SendToWebSocketClientVersion7(AData); 
 			break;
     }
@@ -338,14 +339,12 @@ function SendToWebSocketClientDraft0(AData) {
 
     for (var i = 0; i < AData.length; i++) {
         // Check if the byte needs to be UTF-8 encoded
-        if ((AData[i] & 0xFF) <= 127) {
+        if (AData[i] < 128) {
             client.socket.sendBin(AData[i], 1);
-        } else if ((AData[i] & 0xFF) <= 2047) {
+        } else {
             // Handle UTF-8 encode
             client.socket.sendBin((AData[i] >> 6) | 192, 1);
             client.socket.sendBin((AData[i] & 63) | 128, 1);
-        } else {
-            log(LOG_ERR, "Byte out of range: " + AData[i]);
         }
     }
 
@@ -377,14 +376,9 @@ function SendToWebSocketClientVersion7(AData) {
 			client.socket.sendBin(126, 1);
 			client.socket.sendBin(ToSend.length, 2);
 		} else {
-            // NOTE: client.socket.sendBin(ToSend.length, 8); didn't work, so this
-            //       modification limits the send to 2^32 bytes (probably not an issue)
-            //       Probably should look into a proper fix at some point though
-            client.socket.sendBin(127, 1);
-            client.socket.sendBin(0, 4);
-            client.socket.sendBin(ToSend.length, 4);
+			client.socket.sendBin(127, 1);
+			client.socket.sendBin(ToSend.length, 8);
 		}
-        
 		for (var i = 0; i < ToSend.length; i++) {
 			client.socket.sendBin(ToSend[i] & 0xFF, 1);
 		}
@@ -413,7 +407,6 @@ function ShakeHands() {
 						return ShakeHandsDraft0();
 					case 7: 
 					case 8: 
-                    case 13:
 						return ShakeHandsVersion7();
 					default: 
 						//		    TODO If this version does not
@@ -550,7 +543,7 @@ function ShakeHandsVersion7() {
 					   "Upgrade: websocket\r\n" +
 					   "Connection: Upgrade\r\n" +
 					   "Sec-WebSocket-Accept: " + Encoded + "\r\n";
-		if ('SubProtocol' in FWebSocketHeader) Response += "Sec-WebSocket-Protocol: plain\r\n"; // Only sub-protocol we support
+		if ('SubProtocol' in FWebSocketHeader) Response += "Sec-WebSocket-Protocol: " + FWebSocketHeader['SubProtocol'] + "\r\n";
 		Response += "\r\n";
 		
 		// Send the response and return

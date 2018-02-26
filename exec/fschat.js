@@ -111,13 +111,6 @@
 			// console.write(stamp + " ");
 		// }
 		
-		
-		if(!msg.nick) {
-			console.attributes = chat_settings.NOTICE_COLOR;
-			console.writeln(msg.str);
-			return;
-		}
-		
 		console.attributes = chat_settings.CHANNEL_COLOR;
 		console.write("[" + chan.name + "] ");
 		
@@ -156,7 +149,7 @@
 			case '/':
 				console.attributes = chat_settings.COMMAND_COLOR;
 				console.write(k);
-				chat.getcmd(channels[channel_index],console.getstr(500));
+				chat.handle_command(channels[channel_index],console.getstr(500));
 				break;
 			/* process a sysop command */
 			case ';':

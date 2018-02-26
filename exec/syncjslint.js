@@ -183,7 +183,7 @@ SOFTWARE.
     list_named_queues,flags_str,
     argc,argv,errno,errnostr,socket_errno,
     global,js,system,server,client,user,bbs,console,msg_area,
-    file_area,xtrn_area,MsgBase,File,Queue,Socket,User,COM,CryptContext,
+    file_area,xtrn_area,MsgBase,File,Queue,Socket,User,COM,CryptContext,CryptKeyset, CryptCert,
 	LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR, LOG_ERROR, LOG_WARNING, LOG_NOTICE,
 	LOG_INFO, LOG_DEBUG, fullpath, mkpath
 
@@ -715,6 +715,7 @@ var JSLINT = function () {
 			login		: true,
 			fullpath	: true,
 			mkpath		: true,
+			require		: true,
 
 			argc		: true,
 			argv		: true,
@@ -740,6 +741,8 @@ var JSLINT = function () {
 			User		: true,
 			COM			: true,
 			CryptContext: true,
+			CryptKeyset: true,
+			CryptCert: true,
 
 			LOG_EMERG	: true,
 			LOG_ALERT	: true,
