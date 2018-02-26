@@ -2952,7 +2952,7 @@ static jsSyncMethodSpec js_cryptcert_functions[] = {
 	,JSDOCSTR("Destroys the certificate.")
 	,316
 	},
-	{"export",	js_export,	0,	JSTYPE_STRING,	"format"
+	{"export_cert",	js_export,	0,	JSTYPE_STRING,	"format"
 	,JSDOCSTR("Exports the certificate in the format chosen from CryptCert.CERTFORMAT.")
 	,316
 	},
