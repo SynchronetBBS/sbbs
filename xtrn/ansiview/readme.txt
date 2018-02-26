@@ -94,6 +94,12 @@ echicken -at- bbs.electronicchicken.com
 		- 'sfg' is the foreground color of the path & status bars
 		- 'sbg' is the background color of the path & status bars
 
+	Optional settings that can be added to the root section of 'settings.ini':
+
+		top_level - Text to use in place of the default menu name (Gallery Menu)
+		pause - true/false, whether pausing is on or off by default
+		speed - 300,600,1200,2400,4800,9600,19200,38400,57600,76800,115200		
+
 	Any additional sections in 'settings.ini' will be treated as configuration
 	sections for local or online art archives.
 
