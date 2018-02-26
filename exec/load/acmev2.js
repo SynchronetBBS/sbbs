@@ -231,6 +231,7 @@ ACMEv2.prototype.change_key = function(new_key)
 {
 	var inner = {protected:{}, payload:{}};
 	var old_key = this.key;
+	var ret;
 
 	if (new_key === undefined)
 		throw("change_key() requires a new key.");
@@ -252,7 +253,59 @@ ACMEv2.prototype.change_key = function(new_key)
 	}
 	this.key = new_key;
 	return JSON.parse(ret);
-}
+};
+
+ACMEv2.prototype.revoke = function(cert, reason)
+{
+	var opts = {};
+	var ret;
+
+	if (reason === undefined)
+		reason = 0;
+	if (typeof(reason) === 'string') {
+		switch(reason) {
+			case 'unspecified':
+				reason = 0;
+				break;
+			case 'keyCompromise':
+				reason = 1;
+				break;
+			case 'cACompromise':
+				reason = 2;
+				break;
+			case 'affiliationChanged':
+				reason = 3;
+				break;
+			case 'superseded':
+				reason = 4;
+				break;
+			case 'cessationOfOperation':
+				reason = 5;
+				break;
+			case 'certificateHold':
+				reason = 6;
+				break;
+			case 'removeFromCRL':
+				reason = 8;
+				break;
+			case 'privilegeWithdrawn':
+				reason = 9;
+				break;
+			case 'aACompromise':
+				reason = 10;
+				break;
+		}
+	}
+	reason = parseInt(reason);
+	opts.certificate = this.base64url(cert.export_cert(CryptCert.FORMAT.CERTIFICATE));
+	opts.reason = reason;
+	ret = this.post('revokeCert', opts);
+	if (this.ua.response_code != 200) {
+		log(LOG_DEBUG, ret);
+		throw("revokeCert did not return 200");
+	}
+	return;
+};
 
 ACMEv2.prototype.create_pkcs7 = function(cert)
 {
@@ -297,7 +350,6 @@ ACMEv2.prototype.get_cert = function(order)
 
 ACMEv2.prototype.FULL_JWT_METHODS = [
 	'newAccount',
-	'revokeCert'
 ];
 ACMEv2.prototype.post = function(link, data)
 {
@@ -428,6 +480,4 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 	return ret;
 };
 
-// TODO: keyChange
-// TODO: revokeCert
 // TODO: Deactivate an Authorization
