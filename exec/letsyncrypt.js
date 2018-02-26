@@ -67,6 +67,10 @@ var settings = new File(setting_fname);
 var webroots = {};
 webroots[system.inet_addr] = webroot;
 var domain_list;
+var old_domain_hash;
+var old_host;
+var new_host = "acme-staging-v02.api.letsencrypt.org";
+var dir_path = "/directory";
 if (settings.open("r")) {
 	domain_list = settings.iniGetObject("Domains");
 	for (i in domain_list) {
@@ -77,7 +81,11 @@ if (settings.open("r")) {
 			log(LOG_ERR, "Web root for "+i+" is not a directory ("+domain_list[i]+")");
 		}
 	}
-	var old_domain_hash = settings.iniGetValue("State", "DomainHash", "<None>");
+	old_domain_hash = settings.iniGetValue("State", "DomainHash", "<None>");
+	old_host = settings.iniGetValue("State", "Host", "acme-staging-v02.api.letsencrypt.org");
+	new_host = settings.iniGetValue(null, "Host", new_host);
+	dir_path = settings.iniGetValue(null, "Directory", dir_path);
+
 	settings.close();
 }
 
@@ -90,9 +98,12 @@ new_domain_hash = md5_calc(new_domain_hash);
  * Do we need to do anything?
  */
 var force = false;
-if (argv !== undefined)
+if (argv !== undefined) {
 	if (argv.indexOf('--force') > -1)
 		force = true;
+}
+if (old_host != new_host)
+	force = true;
 
 if (!force) {
 	if (new_domain_hash === old_domain_hash) {
@@ -126,18 +137,18 @@ if (!file_exists(ks_fname))
 var ks = new CryptKeyset(ks_fname, opts);
 
 /*
- * The ACME key uses "ACMEv2" as the label.
+ * The ACME key uses the service hostname as the label.
  * 
  * TODO: Regenerate keys etc.
  */
 var rsa;
 try {
-	rsa = ks.get_private_key("ACMEv2", syspass);
+	rsa = ks.get_private_key(new_host, syspass);
 }
 catch(e2) {
 	rsa = new CryptContext(CryptContext.ALGO.RSA);
 	rsa.keysize=2048/8;
-	rsa.label="ACMEv2";
+	rsa.label=new_host;
 	rsa.generate_key();
 	ks.add_private_key(rsa, syspass);
 }
@@ -147,8 +158,10 @@ catch(e2) {
  * round-trip each session to discover it.
  */
 settings.open(settings.exists ? "r+" : "w+");
-var key_id = settings.iniGetValue("key_id", system.inet_addr, undefined);
+var key_id = settings.iniGetValue("key_id", new_host, undefined);
 var acme = new ACMEv2({key:rsa, key_id:key_id});
+acme.host = new_host;
+acme.dir_path = dir_path;
 if (acme.key_id === undefined) {
 	acme.create_new_account({termsOfServiceAgreed:true,contact:["mailto:sysop@"+system.inet_addr]});
 }
@@ -157,7 +170,7 @@ if (acme.key_id === undefined) {
  * Write it to our ini if it wasn't there already.
  */
 if (key_id === undefined) {
-	settings.iniSetValue("key_id", system.inet_addr, acme.key_id);
+	settings.iniSetValue("key_id", new_host, acme.key_id);
 	key_id = acme.key_id;
 }
 settings.close();
@@ -313,7 +326,8 @@ file_touch(recycle_sem);
  */
 if (settings.open(settings.exists ? "r+" : "w+")) {
 	settings.iniSetValue("State", "DomainHash", new_domain_hash);
-	settings.iniSetValue("State", "Staging", true);
+	settings.iniSetValue("State", "Host", new_host);
+	settings.iniRemoveKey("State", "Staging");
 	settings.close();
 }
 else {
