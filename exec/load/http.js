@@ -67,7 +67,9 @@ HTTPRequest.prototype.SetupGet=function(url, referer, base) {
 	this.AddExtraHeaders();
 };
 
-HTTPRequest.prototype.SetupPost=function(url, referer, base, data) {
+HTTPRequest.prototype.SetupPost=function(url, referer, base, data, content_type) {
+	if (content_type === undefined)
+		content_type = 'application/x-www-form-urlencoded';
 	this.referer=referer;
 	this.base=base;
 	this.url=new URL(url, this.base);
@@ -80,8 +82,7 @@ HTTPRequest.prototype.SetupPost=function(url, referer, base, data) {
 	this.AddDefaultHeaders();
 	this.AddExtraHeaders();
 	this.body=data;
-	this.request_headers.push("Content-Type: application/x-www-form-urlencoded");
-	//this.request_headers.push("Content-Type: application/jose+json");
+	this.request_headers.push("Content-Type: "+content_type);
 	this.request_headers.push("Content-Length: "+data.length);
 };
 
@@ -203,8 +204,8 @@ HTTPRequest.prototype.Get=function(url, referer, base) {
 	return(this.body);
 };
 
-HTTPRequest.prototype.Post=function(url, data, referer, base) {
-	this.SetupPost(url,referer,base,data);
+HTTPRequest.prototype.Post=function(url, data, referer, base, content_type) {
+	this.SetupPost(url,referer,base,data, content_type);
 	this.BasicAuth();
 	this.SendRequest();
 	this.ReadResponse();
