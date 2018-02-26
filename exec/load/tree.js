@@ -534,7 +534,6 @@ Tree.prototype.refresh=function() {
 			return;
 		this.generate();
 		//var offset = 0;
-		log(LOG_DEBUG,"line: " + this.line + " offset: " + this.__properties__.offset + " height: " + this.frame.height);
 		if(this.line - this.__properties__.offset > this.frame.height) {
 			this.__properties__.offset = this.line-this.frame.height;
 		}
