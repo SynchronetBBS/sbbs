@@ -16,6 +16,9 @@ var recycle_sem = backslash(system.ctrl_dir)+"recycle.web";
 var i;
 var tmp;
 var opts;
+var rsa;
+var rekey = false;
+var renew = true;
 
 function days_remaining(days)
 {
@@ -95,6 +98,12 @@ for (i in Object.keys(webroots).sort())
 new_domain_hash = md5_calc(new_domain_hash);
 
 /*
+ * Rekey?
+ */
+if (argv.indexOf('--new-key') > -1)
+	rekey = true;
+
+/*
  * Do we need to do anything?
  */
 var force = false;
@@ -108,9 +117,13 @@ if (old_host != new_host)
 if (!force) {
 	if (new_domain_hash === old_domain_hash) {
 		if (!days_remaining(30))
-			exit(0);
+			renew = false;
 	}
 }
+
+// Nothing to be done.
+if (!renew && !rekey)
+	exit(0);
 
 /*
  * Now read in the system password which must be used to encrypt the 
@@ -141,7 +154,6 @@ var ks = new CryptKeyset(ks_fname, opts);
  * 
  * TODO: Regenerate keys etc.
  */
-var rsa;
 try {
 	rsa = ks.get_private_key(new_host, syspass);
 }
@@ -174,6 +186,22 @@ if (key_id === undefined) {
 	key_id = acme.key_id;
 }
 settings.close();
+
+if (rekey) {
+	rsa = new CryptContext(CryptContext.ALGO.RSA);
+	rsa.keysize=2048/8;
+	rsa.label=new_host;
+	rsa.generate_key();
+	acme.change_key(rsa);
+	try {
+		ks.delete_key(new_host);
+	}
+	catch(dkerr) {}
+	ks.add_private_key(rsa, syspass);
+}
+
+if (!renew)
+	exit(0);
 
 /*
  * Create the order, using system.inet_addr
