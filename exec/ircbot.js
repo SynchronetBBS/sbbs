@@ -190,7 +190,7 @@ function init_users() {
 			while (uid_str[0] == "0") {
 				uid_str = uid_str.slice(1);
 			}
-			printf("***Reading: " + us_file.name + "\r\n");
+			log("***Reading: " + us_file.name + "\r\n");
 			var read_Masks = us_file.iniGetValue(null, "masks");
 			if (read_Masks)
 				Masks[parseInt(uid_str)] = read_Masks.split(",");
@@ -341,8 +341,8 @@ function main() {
 					continue;
 				var usr = new User(system.matchuser(DCC_Chats[c].id));
 				var cmd = line.split(" ");
+				cmd[0] = cmd[0].toUpperCase();
 				try {
-					cmd[0] = cmd[0].toUpperCase();
 					DCC_Chats[c].bot_command(cmd);
 				} catch (err) {
 					DCC_Chats[c].o(null,err);
