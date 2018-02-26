@@ -17,8 +17,10 @@ var i;
 var tmp;
 var opts;
 var rsa;
+var sks;
 var rekey = false;
 var renew = true;
+var revoke = false;
 
 function days_remaining(days)
 {
@@ -102,6 +104,10 @@ new_domain_hash = md5_calc(new_domain_hash);
  */
 if (argv.indexOf('--new-key') > -1)
 	rekey = true;
+if (argv.indexOf('--revoke') > -1) {
+	revoke = true;
+	force = true;
+}
 
 /*
  * Do we need to do anything?
@@ -122,7 +128,7 @@ if (!force) {
 }
 
 // Nothing to be done.
-if (!renew && !rekey)
+if (!renew && !rekey && !revoke)
 	exit(0);
 
 /*
@@ -198,6 +204,17 @@ if (rekey) {
 	}
 	catch(dkerr) {}
 	ks.add_private_key(rsa, syspass);
+}
+
+/*
+ * Now revoke the current certificate
+ */
+if (revoke) {
+	sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.READONLY);
+	var oldcert = sks.get_public_key("ssl_cert");
+	sks.close();
+	acme.revoke(oldcert);
+	renew=true;
 }
 
 if (!renew)
@@ -319,7 +336,7 @@ for (i=0; i < 10; i++) {
 if (i == 10)
 	throw("Unable to delete file "+sks_fname);
 
-var sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.CREATE);
+sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.CREATE);
 sks.add_private_key(certrsa, syspass);
 sks.add_public_key(cert);
 sks.close();
