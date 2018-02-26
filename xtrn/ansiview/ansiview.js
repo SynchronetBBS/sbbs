@@ -413,13 +413,7 @@ function initSettings() {
     if (typeof settings.top_level != 'string') {
         settings.top_level = 'Gallery Menu';
     }
-    if (typeof settings.pause != 'undefined' &&
-        (   typeof settings.pause == 'string' &&
-            ['yes', 'on', 'true'].indexOf(settings.pause.toLowerCase()) > -1
-        ) || (typeof settings.pause == 'number' && settings.pause == 1)
-    ) {
-        state.pausing = true;
-    }
+    if (settings.pause == true) state.pausing = true;
     if (typeof settings.speed == 'number') {
         var s = speedMap.indexOf(settings.speed);
         if (s > -1) state.speed = s;
