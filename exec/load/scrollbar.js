@@ -2,7 +2,7 @@
 	echicken -at- bbs.electronicchicken.com
 
 	Usage: var s = new ScrollBar(frame, options);
-	
+
 		'frame' is the frame you want to assign the scrollbar to.  If you want
 		to put a scrollbar beside a Tree, supply the Tree object instead.
 
@@ -157,12 +157,10 @@ var ScrollBar = function (frame, opts) {
 		bar.y = scrollArea.y;
 		bar.height = (isNaN(adj) || adj < 1) ? 1 : adj;
 
+		var ma = scrollArea.height - bar.height; // maximum scrollbar y position relative to its frame
 		var adj = Math.min(
-			scrollArea.height - bar.height,
-			Math.round(
-				(scrollArea.height - bar.height) * (
-					Math.max(0, settings.tree.line - frame.height) / (height - frame.height)
-				)
+			ma, Math.round(
+				ma * (settings.tree.offset / (settings.tree.items.length - frame.height))
 			)
 		);
 		bar.y = scrollArea.y + (isNaN(adj) ? 0 : adj);
@@ -194,12 +192,10 @@ var ScrollBar = function (frame, opts) {
 		bar.y = scrollArea.y;
 		bar.height = (isNaN(adj) || adj < 1) ? 1 : adj;
 
+		var ma = scrollArea.height - bar.height;
 		var adj = Math.min(
-			scrollArea.height - bar.height,
-			Math.round(
-				(scrollArea.height - bar.height) * (
-					frame.offset.y / (frame.data_height - frame.height)
-				)
+			ma, Math.round(
+				ma * (frame.offset.y / (frame.data_height - frame.height))
 			)
 		);
 		bar.y = scrollArea.y + (isNaN(adj) ? 0 : adj);
@@ -228,12 +224,10 @@ var ScrollBar = function (frame, opts) {
 		bar.x = scrollArea.x;
 		bar.width = (isNaN(adj) || adj < 1) ? 1 : adj;
 
+		var ma = scrollArea.width - bar.width;
 		var adj = Math.min(
-			scrollArea.width - bar.width,
-			Math.round(
-				(scrollArea.width - bar.width) * (
-					frame.offset.x / (frame.data_width - frame.width)
-				)
+			ma, Math.round(
+				ma * (frame.offset.x / (frame.data_width - frame.width))
 			)
 		);
 		bar.x = scrollArea.x + (isNaN(adj) ? 0 : adj);
@@ -298,9 +292,9 @@ function Scrollbar(x,y,length,orientation,color)
 		var ch='\xB0';
 		for(var i=1;i<=this.length;i++)	{
 			console.gotoxy(this.x,this.y+i);
-			if(i == s) 
+			if(i == s)
 				ch='\1h\xDB';
-			else if(i > f) 
+			else if(i > f)
 				ch='\xB0';
 			console.putmsg(ch,P_SAVEATR);
 		}
@@ -316,7 +310,7 @@ function Scrollbar(x,y,length,orientation,color)
 		console.gotoxy(this);
 		console.putmsg('\1n' + this.color + ascii(17),P_SAVEATR);
 		for(i=1;i<=this.length;i++)	{
-			if(i == s) 
+			if(i == s)
 				ch='\1h\xDB';
 			else if(i == f+1)
 				ch='\xB0';

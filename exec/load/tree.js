@@ -326,7 +326,11 @@ Tree.prototype.__defineSetter__(
         this.__properties__.first_letter_search = value;
     }
 );
-
+Tree.prototype.__defineGetter__(
+	"offset", function () {
+		return this.__properties__.offset;
+	}
+);
 
 /* tree methods */
 Tree.prototype.cycle = function() {
