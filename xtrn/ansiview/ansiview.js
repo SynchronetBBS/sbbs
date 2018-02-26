@@ -269,7 +269,7 @@ var GalleryChooser = function() {
 	this.open = function () {
 
 		areaFrame.clear();
-		areaFrame.putmsg("Gallery Menu");
+		areaFrame.putmsg(settings.top_level);
 
 		frames.frame = new Frame(
 			browserFrame.x,
@@ -391,7 +391,7 @@ function initDisplay() {
 
 	frame.drawBorder(settings.border);
 	frame.gotoxy(frame.width - 24, 1);
-	frame.putmsg(ascii(180) + "\1h\1kansiview by echicken\1h\1w" + ascii(195));
+	frame.putmsg(ascii(180) + "\1h\1kansiview\1h\1w" + ascii(195));
 
 	frame.open();
 
@@ -410,6 +410,20 @@ function initSettings() {
 	settings.sbg = getColor(settings.sbg);
 	settings.border = settings.border.split(",");
 	settings.border.forEach(function (e, i, a) { a[i] = getColor(e); });
+    if (typeof settings.top_level != 'string') {
+        settings.top_level = 'Gallery Menu';
+    }
+    if (typeof settings.pause != 'undefined' &&
+        (   typeof settings.pause == 'string' &&
+            ['yes', 'on', 'true'].indexOf(settings.pause.toLowerCase()) > -1
+        ) || (typeof settings.pause == 'number' && settings.pause == 1)
+    ) {
+        state.pausing = true;
+    }
+    if (typeof settings.speed == 'number') {
+        var s = speedMap.indexOf(settings.speed);
+        if (s > -1) state.speed = s;
+    }
 }
 
 function init() {
@@ -417,8 +431,6 @@ function init() {
 	bbs.sys_status&=(~SS_PAUSEOFF);
 	state.syncTerm = isSyncTerm();
 	initSettings();
-	if(settings.pause == true)
-		state.pausing = true;
 	initDisplay();
 	state.browser = new GalleryChooser();
 	state.browser.open();
