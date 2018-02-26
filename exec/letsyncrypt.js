@@ -89,9 +89,16 @@ new_domain_hash = md5_calc(new_domain_hash);
 /*
  * Do we need to do anything?
  */
-if (new_domain_hash === old_domain_hash) {
-	if (!days_remaining(30))
-		exit(0);
+var force = false;
+if (argv !== undefined)
+	if (argv.indexOf('--force') > -1)
+		force = true;
+
+if (!force) {
+	if (new_domain_hash === old_domain_hash) {
+		if (!days_remaining(30))
+			exit(0);
+	}
 }
 
 /*
