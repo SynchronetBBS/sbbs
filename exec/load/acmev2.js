@@ -210,6 +210,7 @@ ACMEv2.prototype.poll_order = function(order)
 
 ACMEv2.prototype.asn1_len = function (len) {
 	var ret = '';
+	var tmplen;
 
 	if (len < 128)
 		return ascii(len);
@@ -222,15 +223,16 @@ ACMEv2.prototype.asn1_len = function (len) {
 	}
 	ret = ascii(0x80 | count) + ret;
 	return ret;
-}
+};
 
 ACMEv2.prototype.create_pkcs7 = function(cert)
 {
 	var ret = '';
-
 	var certs = [];
 	var m;
-	var rex = /(-+BEGIN[^-]+-+[^-]+-+END[^-]+-+\n)/g;
+	var onecert;
+	var rex = /(-+BEGIN[^\-]+-+[^\-]+-+END[^\-]+-+\n)/g;
+
 	while ((m = rex.exec(cert)) != null) {
 		onecert = new CryptCert(m[1]);
 		ret = ret + onecert.export_cert(CryptCert.FORMAT.CERTIFICATE);
@@ -248,7 +250,7 @@ ACMEv2.prototype.create_pkcs7 = function(cert)
 	ret = ascii(0x30) + ret;
 
 	return ret;
-}
+};
 
 ACMEv2.prototype.get_cert = function(order)
 {
