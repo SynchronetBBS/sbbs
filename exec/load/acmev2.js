@@ -164,8 +164,10 @@ ACMEv2.prototype.poll_authorization = function(auth)
 	for (var challenge in ret.challenges) {
 		if (ret.challenges[challenge].status == 'valid')
 			return true;
-		if (ret.challenges[challenge].status == 'invalid')
+		if (ret.challenges[challenge].status == 'invalid') {
+			log(LOG_DEBUG, JSON.stringify(ret.challenges[challenge]));
 			throw ("Authorization failed... "+auth);
+		}
 	}
 	return false;
 };
@@ -257,8 +259,10 @@ ACMEv2.prototype.get_cert = function(order)
 	if (order.certificate === undefined)
 		throw("Order has no certificate!");
 	var cert = this.ua.Get(order.certificate);
-	if (this.ua.response_code != 200)
+	if (this.ua.response_code != 200) {
+		log(LOG_DEBUG, cert);
 		throw("get_cert request did not return 200");
+	}
 	this.update_nonce();
 
 	return new CryptCert(this.create_pkcs7(cert));
