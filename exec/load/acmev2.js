@@ -227,6 +227,33 @@ ACMEv2.prototype.asn1_len = function (len) {
 	return ret;
 };
 
+ACMEv2.prototype.change_key = function(new_key)
+{
+	var inner = {protected:{}, payload:{}};
+	var old_key = this.key;
+
+	if (new_key === undefined)
+		throw("change_key() requires a new key.");
+	/* Create the inner object signed with old key */
+	inner.protected.alg = 'RS256';
+	inner.protected.jwk = {e:new_key.public_key.e, kty:'RSA', n:new_key.public_key.n};
+	inner.protected.url = this.get_directory().keyChange;
+	inner.payload.account = this.key_id;
+	inner.payload.newKey = inner.protected.jwk;
+	inner.protected = this.base64url(JSON.stringify(inner.protected));
+	inner.payload = this.base64url(JSON.stringify(inner.payload));
+	this.key = new_key;
+	inner.signature = this.base64url(this.hash_thing(inner.protected + "." + inner.payload));
+	this.key = old_key;
+	ret = this.post('keyChange', inner);
+	if (this.ua.response_code != 200) {
+		log(LOG_DEBUG, ret);
+		throw("keyChange did not return 200");
+	}
+	this.key = new_key;
+	return JSON.parse(ret);
+}
+
 ACMEv2.prototype.create_pkcs7 = function(cert)
 {
 	var ret = '';
@@ -279,7 +306,7 @@ ACMEv2.prototype.post = function(link, data)
 
 	if (this.FULL_JWT_METHODS.indexOf(link) > -1)
 		post_method = 'post_full_jwt';
-	url = this.get_directory(link)[link];
+	url = this.get_directory()[link];
 	if (url === undefined)
 		throw('Unknown link name: "'+link+'"');
 	return this.post_url(url, data, post_method);
