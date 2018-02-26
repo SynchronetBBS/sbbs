@@ -417,6 +417,8 @@ function init() {
 	bbs.sys_status&=(~SS_PAUSEOFF);
 	state.syncTerm = isSyncTerm();
 	initSettings();
+	if(settings.pause == true)
+		state.pausing = true;
 	initDisplay();
 	state.browser = new GalleryChooser();
 	state.browser.open();
