@@ -249,42 +249,16 @@ for (i in tokens)
 var csr = new CryptCert(CryptCert.TYPE.CERTREQUEST);
 
 /*
- * Now open/create the keyset and RSA signing key for
- * Synchronet.
- * 
- * TODO: Regenerate keys etc.
+ * We want to use a new key since there's no reason to
+ * keep using the old one, and changing the key often
+ * is good for security.
  */
-opts = CryptKeyset.KEYOPT.NONE;
-if (!file_exists(sks_fname))
-	opts = CryptKeyset.KEYOPT.CREATE;
-var sks = new CryptKeyset(sks_fname, opts);
 
-var certrsa;
-try {
-	certrsa = sks.get_private_key("ssl_cert", syspass);
-	/*
-	 * If this was a self-signed certificate, delete the file and
-	 * regenerate it.
-	 */
-	if (certrsa.keysize < (2048/8)) {
-		sks.close();
-		file_remove(sks_fname);
-		sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.CREATE);
-		certrsa = new CryptContext(CryptContext.ALGO.RSA);
-		certrsa.keysize=2048/8;
-		certrsa.label="ssl_cert";
-		certrsa.generate_key();
-		sks.add_private_key(certrsa, syspass);
-	}
-}
-catch(e3) {
-	certrsa = new CryptContext(CryptContext.ALGO.RSA);
-	certrsa.keysize=2048/8;
-	certrsa.label="ssl_cert";
-	certrsa.generate_key();
-	sks.add_private_key(certrsa, syspass);
-}
-sks.close();
+var certrsa = new CryptContext(CryptContext.ALGO.RSA);
+certrsa.keysize=2048/8;
+certrsa.label="ssl_cert";
+certrsa.generate_key();
+
 csr.subjectpublickeyinfo=certrsa;
 csr.oganizationname=system.name;
 csr.commonname=system.inet_addr;
@@ -306,11 +280,18 @@ while (order.status !== 'valid') {
 var cert = acme.get_cert(order);
 cert.label = "ssl_certchain";
 
-sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.NONE);
-try {
-	sks.delete_key("ssl_certchain");
+/*
+ * Now delete/create the keyset with the key and cert
+ */
+for (i=0; i < 10; i++) {
+	if (file_remove(sks_fname))
+		break;
 }
-catch(e4) {}
+if (i == 10)
+	throw("Unable to delete file "+sks_fname);
+
+var sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.CREATE);
+sks.add_private_key(certrsa, syspass);
 sks.add_public_key(cert);
 sks.close();
 
