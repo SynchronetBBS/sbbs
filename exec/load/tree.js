@@ -78,6 +78,7 @@ function Tree(frame,text,tree) {
 		parent:undefined,
 		status:this.__flags__.CLOSED,
 		index:0,
+		offset:0,
 		text:"",
 		line:1,
 		attr:undefined,
@@ -532,10 +533,15 @@ Tree.prototype.refresh=function() {
 		if(!this.frame)
 			return;
 		this.generate();
-		var offset = 0;
-		if(this.line > this.frame.height)
-			offset = this.line-this.frame.height;
-		var output = this.__properties__.list.splice(offset,this.frame.height);
+		//var offset = 0;
+		log(LOG_DEBUG,"line: " + this.line + " offset: " + this.__properties__.offset + " height: " + this.frame.height);
+		if(this.line - this.__properties__.offset > this.frame.height) {
+			this.__properties__.offset = this.line-this.frame.height;
+		}
+		else if(this.line <= this.__properties__.offset) {
+			this.__properties__.offset = this.line - 1;
+		}
+		var output = this.__properties__.list.splice(this.__properties__.offset,this.frame.height);
 
 		var y;
 		var x;
