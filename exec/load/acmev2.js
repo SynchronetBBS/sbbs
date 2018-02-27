@@ -46,6 +46,8 @@ function ACMEv2(opts)
 	this.key_id = opts.key_id;
 	if (opts.host !== undefined)
 		this.host = opts.host;
+	if (opts.dir_path !== undefined)
+		this.dir_path = opts.dir_path;
 	this.ua = new HTTPRequest();
 	if (opts.user_agent !== undefined)
 		this.ua.user_agent = opts.user_agent;
