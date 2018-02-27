@@ -23,7 +23,7 @@ function HTTPRequest(username,password,extra_headers)
 	this.extra_headers = extra_headers;
 	this.username=username;
 	this.password=password;
-	thus.user_agent = 'SYNXv0.1';
+	this.user_agent='SYNXv0.1';
 }
 
 HTTPRequest.prototype.AddDefaultHeaders=function(){
