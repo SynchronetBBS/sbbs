@@ -152,6 +152,8 @@ var settings = new File(setting_fname);
 var syspass;
 var webroot;
 var webroots = {};
+var usersa = true;	// TODO: Make configurable
+var keysize = 256;	// TODO: Make configurable... ECC sizes are 32, 48, and 66 (66 is not supported by Let's Encrypt)
 
 /*
  * Get the Web Root
@@ -239,8 +241,14 @@ if (renew || rekey || revoke) {
 		rsa = ks.get_private_key(new_host, syspass);
 	}
 	catch(e2) {
-		rsa = new CryptContext(CryptContext.ALGO.RSA);
-		rsa.keysize=2048/8;
+		if (usersa) {
+			rsa = new CryptContext(CryptContext.ALGO.RSA);
+			rsa.keysize=keysize;
+		}
+		else {
+			rsa = new CryptContext(CryptContext.ALGO.ECDSA);
+			rsa.keysize=keysize;
+		}
 		rsa.label=new_host;
 		rsa.generate_key();
 		ks.add_private_key(rsa, syspass);
@@ -268,8 +276,14 @@ if (renew || rekey || revoke) {
 }
 
 if (rekey) {
-	rsa = new CryptContext(CryptContext.ALGO.RSA);
-	rsa.keysize=2048/8;
+	if (usersa) {
+		rsa = new CryptContext(CryptContext.ALGO.RSA);
+		rsa.keysize=keysize;
+	}
+	else {
+		rsa = new CryptContext(CryptContext.ALGO.ECDSA);
+		rsa.keysize=keysize;
+	}
 	rsa.label=new_host;
 	rsa.generate_key();
 	acme.change_key(rsa);
@@ -309,8 +323,14 @@ if (renew) {
 	 * is good for security.
 	 */
 
-	rsa = new CryptContext(CryptContext.ALGO.RSA);
-	rsa.keysize=2048/8;
+	if (usersa) {
+		rsa = new CryptContext(CryptContext.ALGO.RSA);
+		rsa.keysize=keysize;
+	}
+	else {
+		rsa = new CryptContext(CryptContext.ALGO.ECDSA);
+		rsa.keysize=keysize;
+	}
 	rsa.label="ssl_cert";
 	rsa.generate_key();
 
