@@ -231,25 +231,67 @@ ACMEv2.prototype.asn1_len = function (len) {
 	return ret;
 };
 
+ACMEv2.prototype.get_jwk = function(key)
+{
+	var ret = {};
+
+	if (key === undefined)
+		throw("change_key() requires a new key.");
+	/* Create the inner object signed with old key */
+	switch(key.algo) {
+		case CryptContext.ALGO.RSA:
+			ret.alg = 'RS256';	// Always use SHA-256 with RSA.
+			ret.jwk = {e:key.public_key.e, kty:'RSA', n:key.public_key.n};
+			ret.shalen = 256;
+			break;
+		case CryptContext.ALGO.ECDSA:
+			switch(key.keysize) {
+				case 32:
+					ret.alg = 'ES256';
+					ret.jwk = {crv:'P-256',kty:'EC'};
+					ret.shalen = 256;
+					break;
+				case 48:
+					ret.alg = 'ES384';
+					ret.jwk = {crv:'P-384',kty:'EC'};
+					ret.shalen = 384;
+					break;
+				case 66:
+					ret.alg = 'ES512';
+					ret.jwk = {crv:'P-521',kty:'EC'};
+					ret.shalen = 512;
+					break;
+				default:
+					throw("Unhandled ECC curve size "+key.keysize);
+			}
+			ret.jwk.x = key.public_key.x;
+			ret.jwk.y = key.public_key.y;
+			break;
+		default:
+			throw("Unknown algorithm in new key");
+	}
+	return ret;
+};
+
 ACMEv2.prototype.change_key = function(new_key)
 {
 	var inner = {protected:{}, payload:{}};
 	var old_key = this.key;
 	var ret;
+	var jwk;
 
 	if (new_key === undefined)
 		throw("change_key() requires a new key.");
 	/* Create the inner object signed with old key */
-	inner.protected.alg = 'RS256';
-	inner.protected.jwk = {e:new_key.public_key.e, kty:'RSA', n:new_key.public_key.n};
+	jwk = this.get_jwk(new_key);
+	inner.protected.alg = jwk.alg;
+	inner.protected.jwk = jwk.jwk;
 	inner.protected.url = this.get_directory().keyChange;
 	inner.payload.account = this.key_id;
 	inner.payload.newKey = inner.protected.jwk;
 	inner.protected = this.base64url(JSON.stringify(inner.protected));
 	inner.payload = this.base64url(JSON.stringify(inner.payload));
-	this.key = new_key;
-	inner.signature = this.base64url(this.hash_thing(inner.protected + "." + inner.payload));
-	this.key = old_key;
+	inner.signature = this.base64url(this.hash_thing(inner.protected + "." + inner.payload, new_key));
 	ret = this.post('keyChange', inner);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
@@ -404,27 +446,83 @@ ACMEv2.prototype.base64url = function(string)
 	return string;
 };
 
-ACMEv2.prototype.hash_thing = function(data)
+ACMEv2.prototype.hash_thing = function(data, key)
 {
 	var shactx;
+	var jwk;
 
+	function rsa_hash(shactx, key) {
+		var MD = shactx.hashvalue;
+		var D = '';
+
+		D = ascii(0x30) + ascii(0x31) + ascii(0x30) + ascii(0x0d) + ascii(0x06) + ascii(0x09) +
+			ascii(0x60) + ascii(0x86) + ascii(0x48) + ascii(0x01) + ascii(0x65) + ascii(0x03) +
+			ascii(0x04) + ascii(0x02) + ascii(0x01) + ascii(0x05) + ascii(0x00) + ascii(0x04) +
+			ascii(0x20) + MD;
+		D = ascii(0) + D;
+		while(D.length < key.keysize-2)
+			D = ascii(255)+D;
+		D = ascii(0x00) + ascii(0x01) + D;
+		return key.decrypt(D);
+	}
+
+	function ecc_hash(shactx, key) {
+		var offset = 0;
+		var t;
+		var len;
+		var llen;
+		var i;
+		var ints = [];
+		var sig = shactx.create_signature(key);
+
+		while (offset < sig.length && offset > -1) {
+			t = ascii(sig.substr(offset, 1));
+			if ((t & 0x1f) == 0x1f) {
+				for (offset++; offset < sig.length; offset++) {
+					if ((ascii(sig.substr(offset,1)) & 0x80) == 0)
+						break;
+				}
+				t = -1;
+			}
+			else
+				offset++;
+			len = ascii(sig.substr(offset, 1));
+			offset++;
+			if (len > 127) {
+				llen = len & 0x7f;
+				len = 0;
+				for (i = 0; i<llen; i++) {
+					len <<= 8;
+					len |= ascii(sig.substr(offset,1));
+					offset++;
+				}
+			}
+			if (t == 2) {
+				ints.push(sig.substr(offset, len).replace(/^\x00/,''));
+				offset += len;
+			}
+			else if (t == 0x30 || t == 4) {
+			}
+			else
+				offset += len;
+		}
+
+		return(ints[1] + ints[2]);
+	}
+
+	jwk = this.get_jwk(key);
 	shactx = new CryptContext(CryptContext.ALGO.SHA2);
+	shactx.blocksize = jwk.shalen/8;
 	shactx.encrypt(data);
 	shactx.encrypt('');
-	var MD = shactx.hashvalue;
-	var D = '';
 	var tmp;
 	var i;
 
-	D = ascii(0x30) + ascii(0x31) + ascii(0x30) + ascii(0x0d) + ascii(0x06) + ascii(0x09) +
-		ascii(0x60) + ascii(0x86) + ascii(0x48) + ascii(0x01) + ascii(0x65) + ascii(0x03) +
-		ascii(0x04) + ascii(0x02) + ascii(0x01) + ascii(0x05) + ascii(0x00) + ascii(0x04) +
-		ascii(0x20) + MD;
-	D = ascii(0) + D;
-	while(D.length < this.key.keysize-2)
-		D = ascii(255)+D;
-	D = ascii(0x00) + ascii(0x01) + D;
-	return this.key.decrypt(D);
+	if (jwk.alg == 'RS256')
+		return rsa_hash(shactx, key);
+	else {
+		return ecc_hash(shactx, key);
+	}
 };
 
 ACMEv2.prototype.update_nonce = function()
@@ -435,11 +533,11 @@ ACMEv2.prototype.update_nonce = function()
 
 ACMEv2.prototype.thumbprint = function()
 {
-	var jwk = JSON.stringify({e:this.key.public_key.e, kty:'RSA', n:this.key.public_key.n});
+	var jwk = this.get_jwk(this.key);
 	var shactx;
 
 	shactx = new CryptContext(CryptContext.ALGO.SHA2);
-	shactx.encrypt(jwk);
+	shactx.encrypt(JSON.stringify(jwk.jwk));
 	shactx.encrypt('');
 	var MD = shactx.hashvalue;
 	return this.base64url(MD);
@@ -450,15 +548,17 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 	var protected = {};
 	var ret;
 	var msg = {};
+	var jwk;
 
 	if (post_method === undefined)
 		post_method = 'post_key_id';
 
+	jwk = this.get_jwk(this.key);
 	switch(post_method) {
 		case 'post_key_id':
 			protected.nonce = this.get_nonce();
 			protected.url = url;
-			protected.alg = 'RS256';
+			protected.alg = jwk.alg;
 			protected.kid = this.key_id;
 			if (protected.kid === undefined)
 				throw("No key_id available!");
@@ -466,13 +566,13 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 		case 'post_full_jwt':
 			protected.nonce = this.get_nonce();
 			protected.url = url;
-			protected.alg = 'RS256';
-			protected.jwk = {e:this.key.public_key.e, kty:'RSA', n:this.key.public_key.n};
+			protected.alg = jwk.alg;
+			protected.jwk = jwk.jwk;
 			break;
 	}
 	msg.protected = this.base64url(JSON.stringify(protected));
 	msg.payload = this.base64url(JSON.stringify(data));
-	msg.signature = this.base64url(this.hash_thing(msg.protected + "." + msg.payload));
+	msg.signature = this.base64url(this.hash_thing(msg.protected + "." + msg.payload, this.key));
 	var body = JSON.stringify(msg);
 	body = body.replace(/:"/g, ': "');
 	body = body.replace(/:\{/g, ': {');
