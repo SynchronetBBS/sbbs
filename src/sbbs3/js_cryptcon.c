@@ -93,6 +93,8 @@ static int js_ecc_to_prop(unsigned char *data, size_t len, size_t *off, JSContex
 	JSString* ystr;
 	char *x;
 	char *y;
+	unsigned char *z;
+	size_t zcnt;
 	char *x64;
 	char *y64;
 	size_t half;
@@ -104,13 +106,14 @@ static int js_ecc_to_prop(unsigned char *data, size_t len, size_t *off, JSContex
 			x = malloc(half);
 			if (x == NULL)
 				return 0;
-			memcpy(x, data+(*off)+2, half);
-			x64 = malloc(half*4/3+3);
+			for (z=data+(*off)+2, zcnt=half; *z==0 && half; z++, zcnt--);
+			memcpy(x, z, zcnt);
+			x64 = malloc(zcnt*4/3+3);
 			if (x64 == NULL) {
 				free(x);
 				return 0;
 			}
-			b64_encode(x64, half*4/3+3, x, half);
+			b64_encode(x64, zcnt*4/3+3, x, zcnt);
 			free(x);
 			for (x=x64; *x; x++) {
 				if (*x == '+')
@@ -124,13 +127,14 @@ static int js_ecc_to_prop(unsigned char *data, size_t len, size_t *off, JSContex
 			y = malloc(half);
 			if (y == NULL)
 				return 0;
-			memcpy(y, data+(*off)+2+half, half);
-			y64 = malloc(half*4/3+3);
+			for (z=data+(*off)+2+half, zcnt=half; *z==0 && half; z++, zcnt--);
+			memcpy(y, z, zcnt);
+			y64 = malloc(zcnt*4/3+3);
 			if (y64 == NULL) {
 				free(y);
 				return 0;
 			}
-			b64_encode(y64, half*4/3+3, x, half);
+			b64_encode(y64, zcnt*4/3+3, y, zcnt);
 			free(y);
 			for (y=y64; *y; y++) {
 				if (*y == '+')
