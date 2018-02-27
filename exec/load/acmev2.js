@@ -47,6 +47,8 @@ function ACMEv2(opts)
 	if (opts.host !== undefined)
 		this.host = opts.host;
 	this.ua = new HTTPRequest();
+	if (opts.user_agent !== undefined)
+		this.ua.user_agent = opts.user_agent;
 	try {
 		this.get_key_id();
 	}
