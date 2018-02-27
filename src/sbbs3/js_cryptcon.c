@@ -85,6 +85,79 @@ static unsigned char js_asn1_type(unsigned char *data, size_t len, size_t *off)
 	return t;
 }
 
+static int js_ecc_to_prop(unsigned char *data, size_t len, size_t *off, JSContext *cx, JSObject *parent)
+{
+	size_t sz;
+	JSObject *obj;
+	JSString* xstr;
+	JSString* ystr;
+	char *x;
+	char *y;
+	char *x64;
+	char *y64;
+	size_t half;
+
+	if (js_asn1_type(data, len, off) == 3) {
+		sz = js_asn1_len(data,len,off);
+		if (data[*off] == 0 && data[(*off)+1] == 4 && ((sz%1)==0)) {
+			half = (sz - 2) / 2;
+			x = malloc(half);
+			if (x == NULL)
+				return 0;
+			memcpy(x, data+(*off)+2, half);
+			x64 = malloc(half*4/3+3);
+			if (x64 == NULL) {
+				free(x);
+				return 0;
+			}
+			b64_encode(x64, half*4/3+3, x, half);
+			free(x);
+			for (x=x64; *x; x++) {
+				if (*x == '+')
+					*x = '-';
+				else if (*x == '/')
+					*x = '_';
+				else if (*x == '=')
+					*x = 0;
+			}
+
+			y = malloc(half);
+			if (y == NULL)
+				return 0;
+			memcpy(y, data+(*off)+2+half, half);
+			y64 = malloc(half*4/3+3);
+			if (y64 == NULL) {
+				free(y);
+				return 0;
+			}
+			b64_encode(y64, half*4/3+3, x, half);
+			free(y);
+			for (y=y64; *y; y++) {
+				if (*y == '+')
+					*y = '-';
+				else if (*y == '/')
+					*y = '_';
+				else if (*y == '=')
+					*y = 0;
+			}
+
+			obj=JS_NewObject(cx, NULL, NULL, parent);
+			JS_DefineProperty(cx, parent, "public_key", OBJECT_TO_JSVAL(obj), NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+			xstr=JS_NewStringCopyZ(cx, x64);
+			free(x64);
+			if (xstr != NULL)
+				JS_DefineProperty(cx, obj, "x", STRING_TO_JSVAL(xstr), NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+			ystr=JS_NewStringCopyZ(cx, y64);
+			free(y64);
+			if (ystr != NULL)
+				JS_DefineProperty(cx, obj, "y", STRING_TO_JSVAL(ystr), NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DeepFreezeObject(cx, obj);
+			return 1;
+		}
+	}
+	return 0;
+}
+
 static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObject *parent)
 {
 	unsigned char t;
@@ -189,16 +262,37 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 						obj=JS_NewObject(cx, NULL, NULL, parent);
 						JS_DefineProperty(cx, parent, "public_key", OBJECT_TO_JSVAL(obj), NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 						nstr=JS_NewStringCopyZ(cx, n64);
+						free(n64);
 						if (nstr != NULL)
 							JS_DefineProperty(cx, obj, "n", STRING_TO_JSVAL(nstr), NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 						estr=JS_NewStringCopyZ(cx, e64);
+						free(e64);
 						if (estr != NULL)
 							JS_DefineProperty(cx, obj, "e", STRING_TO_JSVAL(estr), NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 						JS_DeepFreezeObject(cx, obj);
 					}
 					off = len;
 				}
-				off += sz;
+				else if (strncmp((char *)data+off, "\x2A\x86\x48\xCE\x3D\x03\x01\x07", 8) == 0) {
+					// P-256
+					off += sz;
+					if (js_ecc_to_prop(data, len, &off, cx, parent))
+						off = len;
+				}
+				else if (strncmp((char *)data+off, "\x2B\x81\x04\x00\x22", 5) == 0) {
+					// P-384
+					off += sz;
+					if (js_ecc_to_prop(data, len, &off, cx, parent))
+						off = len;
+				}
+				else if (strncmp((char *)data+off, "\x2B\x81\x04\x00\x23", 5) == 0) {
+					// P-521
+					off += sz;
+					if (js_ecc_to_prop(data, len, &off, cx, parent))
+						off = len;
+				}
+				if (off < len)
+					off += sz;
 				break;
 			default:
 				off += sz;
@@ -227,7 +321,7 @@ static void js_create_key_object(JSContext *cx, JSObject *parent)
 		lprintf(LOG_ERR, "cryptGetAttribute(ALGO) returned %d\n", status);
 		goto resume;
 	}
-	if (val != CRYPT_ALGO_RSA)
+	if (val != CRYPT_ALGO_RSA && val != CRYPT_ALGO_ECDSA)
 		goto resume;
 
 	status = cryptCreateCert(&cert, CRYPT_UNUSED, CRYPT_CERTTYPE_CERTIFICATE);
