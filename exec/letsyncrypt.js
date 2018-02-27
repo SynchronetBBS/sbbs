@@ -10,45 +10,6 @@ var sbbsini_fname = backslash(system.ctrl_dir)+"sbbs.ini";
 var maincnf_fname = backslash(system.ctrl_dir)+"main.cnf";
 var recycle_sem = backslash(system.ctrl_dir)+"recycle.web";
 
-/*
- * Variables declarations
- */
-var acme;
-var auth;
-var authz;
-var cert;
-var challenge;
-var completed=0;
-var csr;
-var dir_path = "/directory";
-var dnsnames=[];
-var domain_list;
-var fulfilled;
-var i;
-var identifiers = [];
-var ks;
-var key_id;
-var maincnf = new File(maincnf_fname);
-var new_host = "acme-staging-v02.api.letsencrypt.org";
-var new_domain_hash = '';
-var old_domain_hash;
-var old_host;
-var oldcert;
-var order;
-var rekey = false;
-var renew = false;
-var revoke = false;
-var rsa;
-var sks;
-var sbbsini = new File(sbbsini_fname);
-var settings = new File(setting_fname);
-var syspass;
-var tmp;
-var token;
-var tokens=[];
-var webroot;
-var webroots = {};
-
 function days_remaining_at_least(days)
 {
 	var sks;
@@ -88,6 +49,109 @@ function create_dnsnames(names) {
 	ext = ascii(0x30) + ext;
 	return ext;
 }
+
+function authorize_order(acme, order, webroots)
+{
+	var auth;
+	var authz;
+	var challenge;
+	var completed=0;
+	var fulfilled;
+	var i;
+	var tmp;
+	var token;
+	var tokens=[];
+
+	/*
+	 * Find an http-01 authorization
+	 */
+	try {
+		for (auth in order.authorizations) {
+			fulfilled = false;
+			authz = acme.get_authorization(order.authorizations[auth]);
+			if (authz.status == 'valid') {
+				completed++;
+				continue;
+			}
+			for (challenge in authz.challenges) {
+				if (authz.challenges[challenge].type=='http-01') {
+					/*
+					 * Create a place to store the challenge and store it there
+					 */
+					for (i in webroots) {
+						if (!file_isdir(webroots[i]+".well-known/acme-challenge")) {
+							if (!mkpath(webroots[i]+".well-known/acme-challenge"))
+								throw("Unable to create "+webroots[i]+".well-known/acme-challenge");
+							tmp = new File(webroots[i]+".well-known/acme-challenge/webctrl.ini");
+							tmp.open("w");
+							tmp.writeln("AccessRequirements=");
+							tmp.close();
+						}
+						token = new File(webroots[i]+".well-known/acme-challenge/"+authz.challenges[challenge].token);
+						if (tokens.indexOf(token.name) < 0) {
+							token.open("w");
+							token.write(authz.challenges[challenge].token+"."+acme.thumbprint());
+							tokens.push(token.name);
+							token.close();
+						}
+					}
+					acme.accept_challenge(authz.challenges[challenge]);
+					fulfilled = true;
+				}
+			}
+			/*
+			 * Wait for server to confirm
+			 */
+			if (fulfilled) {
+				while (!acme.poll_authorization(order.authorizations[auth])) {
+					mswait(1000);
+				}
+				completed++;
+			}
+		}
+	}
+	catch (autherr) {
+		for (i in tokens)
+			file_remove(tokens[i]);
+		throw(autherr);
+	}
+	if (!completed)
+		throw("No challenges fulfilled!");
+
+	for (i in tokens)
+		file_remove(tokens[i]);
+}
+
+/*
+ * Variables declarations
+ */
+var acme;
+var cert;
+var csr;
+var dir_path = "/directory";
+var dnsnames=[];
+var domain_list;
+var i;
+var identifiers = [];
+var ks;
+var key_id;
+var maincnf = new File(maincnf_fname);
+var new_host = "acme-staging-v02.api.letsencrypt.org";
+var new_domain_hash = '';
+var old_domain_hash;
+var old_host;
+var oldcert;
+var order;
+var rekey = false;
+var renew = false;
+var revoke = false;
+var rsa;
+var sks;
+var sbbsini = new File(sbbsini_fname);
+var settings = new File(setting_fname);
+var syspass;
+var webroot;
+var webroots = {};
 
 /*
  * Get the Web Root
@@ -147,65 +211,63 @@ else if (new_domain_hash != old_domain_hash)
 else if (!days_remaining_at_least(30))
 	renew = true;
 
-// Nothing to be done.
-if (!renew && !rekey && !revoke)
-	exit(0);
+if (renew || rekey || revoke) {
+	/*
+	 * Now read in the system password which must be used to encrypt the 
+	 * private key.
+	 * 
+	 * TODO: What happens when the system password changes?
+	 */
+	if (!maincnf.open("rb", true))
+		throw("Unable to open "+maincnf.name);
+	maincnf.position = 186; // Indeed.
+	syspass = maincnf.read(40);
+	syspass = syspass.replace(/\x00/g,'');
+	maincnf.close();
 
-/*
- * Now read in the system password which must be used to encrypt the 
- * private key.
- * 
- * TODO: What happens when the system password changes?
- */
-if (!maincnf.open("rb", true))
-	throw("Unable to open "+maincnf.name);
-maincnf.position = 186; // Indeed.
-syspass = maincnf.read(40);
-syspass = syspass.replace(/\x00/g,'');
-maincnf.close();
+	/*
+	 * Now open/create the keyset and RSA signing key for
+	 * ACME.  Note that this key is not the one used for the
+	 * final certificate.
+	 */
+	ks = new CryptKeyset(ks_fname, file_exists(ks_fname) ? CryptKeyset.KEYOPT.NONE : CryptKeyset.KEYOPT.CREATE);
 
-/*
- * Now open/create the keyset and RSA signing key for
- * ACME.  Note that this key is not the one used for the
- * final certificate.
- */
-ks = new CryptKeyset(ks_fname, file_exists(ks_fname) ? CryptKeyset.KEYOPT.NONE : CryptKeyset.KEYOPT.CREATE);
+	/*
+	 * The ACME key uses the service hostname as the label.
+	 */
+	try {
+		rsa = ks.get_private_key(new_host, syspass);
+	}
+	catch(e2) {
+		rsa = new CryptContext(CryptContext.ALGO.RSA);
+		rsa.keysize=2048/8;
+		rsa.label=new_host;
+		rsa.generate_key();
+		ks.add_private_key(rsa, syspass);
+	}
 
-/*
- * The ACME key uses the service hostname as the label.
- */
-try {
-	rsa = ks.get_private_key(new_host, syspass);
+	/*
+	 * We store the key ID in our ini file so we don't need an extra
+	 * round-trip each session to discover it.
+	 */
+	settings.open(settings.exists ? "r+" : "w+");
+	key_id = settings.iniGetValue("key_id", new_host, undefined);
+	acme = new ACMEv2({key:rsa, key_id:key_id, user_agent:'LetSyncrypt '+("$Revision$".split(' ')[1])});
+	acme.host = new_host;
+	acme.dir_path = dir_path;
+	if (acme.key_id === undefined) {
+		acme.create_new_account({termsOfServiceAgreed:true,contact:["mailto:sysop@"+system.inet_addr]});
+	}
+	/*
+	 * After the ACMEv2 object is created, we will always have a key_id
+	 * Write it to our ini if it wasn't there already.
+	 */
+	if (key_id === undefined) {
+		settings.iniSetValue("key_id", new_host, acme.key_id);
+		key_id = acme.key_id;
+	}
+	settings.close();
 }
-catch(e2) {
-	rsa = new CryptContext(CryptContext.ALGO.RSA);
-	rsa.keysize=2048/8;
-	rsa.label=new_host;
-	rsa.generate_key();
-	ks.add_private_key(rsa, syspass);
-}
-
-/*
- * We store the key ID in our ini file so we don't need an extra
- * round-trip each session to discover it.
- */
-settings.open(settings.exists ? "r+" : "w+");
-key_id = settings.iniGetValue("key_id", new_host, undefined);
-acme = new ACMEv2({key:rsa, key_id:key_id, user_agent:'LetSyncrypt '+("$Revision$".split(' ')[1])});
-acme.host = new_host;
-acme.dir_path = dir_path;
-if (acme.key_id === undefined) {
-	acme.create_new_account({termsOfServiceAgreed:true,contact:["mailto:sysop@"+system.inet_addr]});
-}
-/*
- * After the ACMEv2 object is created, we will always have a key_id
- * Write it to our ini if it wasn't there already.
- */
-if (key_id === undefined) {
-	settings.iniSetValue("key_id", new_host, acme.key_id);
-	key_id = acme.key_id;
-}
-settings.close();
 
 if (rekey) {
 	rsa = new CryptContext(CryptContext.ALGO.RSA);
@@ -236,64 +298,7 @@ if (renew) {
 		identifiers.push({type:"dns",value:i});
 	order = acme.create_new_order({identifiers:identifiers});
 
-	/*
-	 * Find an http-01 authorization
-	 */
-	try {
-		for (auth in order.authorizations) {
-			fulfilled = false;
-			authz = acme.get_authorization(order.authorizations[auth]);
-			if (authz.status == 'valid') {
-				completed++;
-				continue;
-			}
-			for (challenge in authz.challenges) {
-				if (authz.challenges[challenge].type=='http-01') {
-					/*
-					 * Create a place to store the challenge and store it there
-					 */
-					for (i in webroots) {
-						if (!file_isdir(webroots[i]+".well-known/acme-challenge")) {
-							if (!mkpath(webroots[i]+".well-known/acme-challenge"))
-								throw("Unable to create "+webroots[i]+".well-known/acme-challenge");
-							tmp = new File(webroots[i]+".well-known/acme-challenge/webctrl.ini");
-							tmp.open("w");
-							tmp.writeln("AccessRequirements=");
-							tmp.close();
-						}
-						token = new File(backslash(webroots[i]+".well-known/acme-challenge")+authz.challenges[challenge].token);
-						if (tokens.indexOf(token.name) < 0) {
-							token.open("w");
-							token.write(authz.challenges[challenge].token+"."+acme.thumbprint());
-							tokens.push(token.name);
-							token.close();
-						}
-					}
-					acme.accept_challenge(authz.challenges[challenge]);
-					fulfilled = true;
-				}
-			}
-			/*
-			 * Wait for server to confirm
-			 */
-			if (fulfilled) {
-				while (!acme.poll_authorization(order.authorizations[auth])) {
-					mswait(1000);
-				}
-				completed++;
-			}
-		}
-	}
-	catch (autherr) {
-		for (i in tokens)
-			file_remove(tokens[i]);
-		throw(autherr);
-	}
-	if (!completed)
-		throw("No challenges fulfilled!");
-
-	for (i in tokens)
-		file_remove(tokens[i]);
+	authorize_order(acme, order, webroots);
 
 	/*
 	 * Create CSR
