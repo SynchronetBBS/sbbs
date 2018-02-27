@@ -502,7 +502,7 @@ function Xtrnsec(sec)
 
 	xtrnsecprogwidth=0;
 	// Figure out the correct width
-	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length; j++) {
+	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j < (console.screen_rows-2); j++) {
 		if(xtrn_area.sec_list[sec].prog_list[j].name.length > xtrnsecprogwidth)
 			xtrnsecprogwidth=xtrn_area.sec_list[sec].prog_list[j].name.length;
 	}
