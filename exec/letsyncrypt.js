@@ -177,7 +177,7 @@ catch(e2) {
  */
 settings.open(settings.exists ? "r+" : "w+");
 var key_id = settings.iniGetValue("key_id", new_host, undefined);
-var acme = new ACMEv2({key:rsa, key_id:key_id});
+var acme = new ACMEv2({key:rsa, key_id:key_id, user_agent:'LetSyncrypt '+("$Revision$".split(' ')[1])});
 acme.host = new_host;
 acme.dir_path = dir_path;
 if (acme.key_id === undefined) {
