@@ -228,4 +228,6 @@ bool sbbs_t::menu_exists(const char *code)
 		return fexistcase(menu_file) ? true : false;
 
 	backslash(menu_dir);
-	SAFEPRINTF3(path, "%smenu/%s%s.asc", cfg.text_dir, menu_di
+	SAFEPRINTF3(path, "%smenu/%s%s.asc", cfg.text_dir, menu_dir, code);
+	return fexistcase(path) ? true : false;
+}
