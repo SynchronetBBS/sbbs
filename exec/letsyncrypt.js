@@ -10,7 +10,7 @@ var sbbsini_fname = backslash(system.ctrl_dir)+"sbbs.ini";
 var maincnf_fname = backslash(system.ctrl_dir)+"main.cnf";
 var recycle_sem = backslash(system.ctrl_dir)+"recycle.web";
 
-function days_remaining_at_least(days)
+function at_least_a_third()
 {
 	var sks;
 	var now;
@@ -29,8 +29,7 @@ function days_remaining_at_least(days)
 	}
 	sks.close();
 	now = new Date();
-	cutoff = cert.validto;
-	cutoff.setDate(cutoff.getDate() - days);
+	cutoff = new Date(cert.validfrom.valueOf() + ((cert.validto.valueOf() - cert.validfrom.valueOf())/3)*2);
 	return now < cutoff;
 }
 
@@ -210,7 +209,7 @@ if (old_host != new_host)
 	renew = true;
 else if (new_domain_hash != old_domain_hash)
 	renew = true;
-else if (!days_remaining_at_least(30))
+else if (!at_least_a_third())
 	renew = true;
 
 if (renew || rekey || revoke) {
