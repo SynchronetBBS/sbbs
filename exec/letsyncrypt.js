@@ -147,6 +147,7 @@ var old_domain_hash;
 var old_host;
 var oldcert;
 var order;
+var print_tos = false;
 var rekey = false;
 var renew = false;
 var revoke = false;
@@ -209,6 +210,8 @@ if (argv !== undefined) {
 	}
 	if (argv.indexOf('--force') > -1)
 		renew = true;
+	if (argv.indexOf('--tos') > -1)
+		print_tos = true;
 }
 
 /*
@@ -221,7 +224,7 @@ else if (new_domain_hash != old_domain_hash)
 else if (!at_least_a_third())
 	renew = true;
 
-if (renew || rekey || revoke) {
+if (renew || rekey || revoke || print_tos) {
 	/*
 	 * Now read in the system password which must be used to encrypt the 
 	 * private key.
@@ -269,31 +272,36 @@ if (renew || rekey || revoke) {
 	settings.open(settings.exists ? "r+" : "w+");
 	key_id = settings.iniGetValue("key_id", new_host, undefined);
 	acme = new ACMEv2({key:rsa, key_id:key_id, host:new_host, dir_path:dir_path, user_agent:'LetSyncrypt '+("$Revision$".split(' ')[1])});
-	if (acme.key_id === undefined) {
-		if (TOSAgreed)
-			acme.create_new_account({termsOfServiceAgreed:TOSAgreed,contact:["mailto:sysop@"+system.inet_addr]});
-		else {
-			try {
-				acme.create_new_account({contact:["mailto:sysop@"+system.inet_addr]});
-			}
-			catch (e) {
-				log(LOG_ERR, "Creating account without agreeing to ToS failed.");
-				log(LOG_ERR, "Please visit "+acme.get_terms_of_service()+" and review the ToS");
-				log(LOG_ERR, "Then set TOSAgreed=true in "+settings.name);
-				throw(e);
+	if (renew || rekey || revoke) {
+		if (acme.key_id === undefined) {
+			if (TOSAgreed)
+				acme.create_new_account({termsOfServiceAgreed:TOSAgreed,contact:["mailto:sysop@"+system.inet_addr]});
+			else {
+				try {
+					acme.create_new_account({contact:["mailto:sysop@"+system.inet_addr]});
+				}
+				catch (e) {
+					log(LOG_ERR, "Creating account without agreeing to ToS failed.");
+					log(LOG_ERR, "Please visit "+acme.get_terms_of_service()+" and review the ToS");
+					log(LOG_ERR, "Then set TOSAgreed=true in "+settings.name);
+					throw(e);
+				}
 			}
 		}
-	}
-	/*
-	 * After the ACMEv2 object is created, we will always have a key_id
-	 * Write it to our ini if it wasn't there already.
-	 */
-	if (key_id === undefined) {
-		settings.iniSetValue("key_id", new_host, acme.key_id);
-		key_id = acme.key_id;
+		/*
+		 * After the ACMEv2 object is created, we will always have a key_id
+		 * Write it to our ini if it wasn't there already.
+		 */
+		if (key_id === undefined) {
+			settings.iniSetValue("key_id", new_host, acme.key_id);
+			key_id = acme.key_id;
+		}
 	}
 	settings.close();
 }
+
+if (print_tos)
+	print("ToS: "+acme.get_terms_of_service());
 
 if (rekey) {
 	if (usersa) {
