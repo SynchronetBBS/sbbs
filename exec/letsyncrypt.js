@@ -160,6 +160,7 @@ var webroots = {};
 var usersa = true;	// TODO: Make configurable
 var keysize = 256;	// TODO: Make configurable... ECC sizes are 32, 48, and 66 (66 is not supported by Let's Encrypt)
 var waittime;
+var TOSAgreed=false;
 
 /*
  * Get the Web Root
@@ -187,6 +188,7 @@ if (settings.open("r")) {
 	old_host = settings.iniGetValue("State", "Host", "acme-staging-v02.api.letsencrypt.org");
 	new_host = settings.iniGetValue(null, "Host", new_host);
 	dir_path = settings.iniGetValue(null, "Directory", dir_path);
+	TOSAgreed = settings.iniGetValue(null, "TOSAgreed", TOSAgreed);
 
 	settings.close();
 }
@@ -268,7 +270,19 @@ if (renew || rekey || revoke) {
 	key_id = settings.iniGetValue("key_id", new_host, undefined);
 	acme = new ACMEv2({key:rsa, key_id:key_id, host:new_host, dir_path:dir_path, user_agent:'LetSyncrypt '+("$Revision$".split(' ')[1])});
 	if (acme.key_id === undefined) {
-		acme.create_new_account({termsOfServiceAgreed:true,contact:["mailto:sysop@"+system.inet_addr]});
+		if (TOSAgreed)
+			acme.create_new_account({termsOfServiceAgreed:TOSAgreed,contact:["mailto:sysop@"+system.inet_addr]});
+		else {
+			try {
+				acme.create_new_account({contact:["mailto:sysop@"+system.inet_addr]});
+			}
+			catch (e) {
+				log(LOG_ERR, "Creating account without agreeing to ToS failed.");
+				log(LOG_ERR, "Please visit "+acme.get_terms_of_service()+" and review the ToS");
+				log(LOG_ERR, "Then set TOSAgreed=true in "+settings.name);
+				throw(e);
+			}
+		}
 	}
 	/*
 	 * After the ACMEv2 object is created, we will always have a key_id
