@@ -79,7 +79,9 @@ ACMEv2.prototype.get_terms_of_service = function()
 ACMEv2.prototype.get_directory = function()
 {
 	if (this.directory === undefined) {
+		log(LOG_DEBUG, "Getting directory.");
 		var ret = this.ua.Get("https://"+this.host+this.dir_path);
+		this.log_headers();
 		if (this.ua.response_code != 200) {
 			log(LOG_DEBUG, ret);
 			throw("Error fetching directory");
@@ -110,6 +112,7 @@ ACMEv2.prototype.create_new_account = function(opts)
 ACMEv2.prototype.update_account = function(opts)
 {
 	this.get_key_id();
+	log(LOG_DEBUG, "Updating account.");
 	var ret = this.post_url(this.key_id, opts);
 
 	if (this.ua.response_code != 201 && this.ua.response_code != 200) {
@@ -149,6 +152,7 @@ ACMEv2.prototype.create_new_order = function(opts)
 ACMEv2.prototype.accept_challenge = function(challenge)
 {
 	var opts={keyAuthorization:challenge.token+"."+this.thumbprint()};
+	log(LOG_DEBUG, "Accepting challenge.");
 	var ret = this.post_url(challenge.url, opts);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
@@ -159,8 +163,10 @@ ACMEv2.prototype.accept_challenge = function(challenge)
 
 ACMEv2.prototype.poll_authorization = function(auth)
 {
+	log(LOG_DEBUG, "Polling authorization.");
 	var ret = JSON.parse(this.ua.Get(auth));
 
+	this.log_headers();
 	if (this.ua.response_code != 200)
 		return false;
 	this.update_nonce();
@@ -188,6 +194,7 @@ ACMEv2.prototype.finalize_order = function(order, csr)
 		throw("Invalid csr");
 	opts.csr = this.base64url(csr.export_cert(CryptCert.FORMAT.CERTIFICATE));
 
+	log(LOG_DEBUG, "Finalizing order.");
 	var ret = this.post_url(order.finalize, opts);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
@@ -202,7 +209,9 @@ ACMEv2.prototype.poll_order = function(order)
 	var loc = order.Location;
 	if (loc === undefined)
 		throw("No order location!");
+	log(LOG_DEBUG, "Polling oder.");
 	var ret = this.ua.Get(loc);
+	this.log_headers();
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
 		throw("order poll did not return 200");
@@ -384,7 +393,9 @@ ACMEv2.prototype.get_cert = function(order)
 {
 	if (order.certificate === undefined)
 		throw("Order has no certificate!");
+	log(LOG_DEBUG, "Getting certificate.");
 	var cert = this.ua.Get(order.certificate);
+	this.log_headers();
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, cert);
 		throw("get_cert request did not return 200");
@@ -407,6 +418,7 @@ ACMEv2.prototype.post = function(link, data)
 	url = this.get_directory()[link];
 	if (url === undefined)
 		throw('Unknown link name: "'+link+'"');
+	log(LOG_DEBUG, "Calling "+link+".");
 	return this.post_url(url, data, post_method);
 };
 
@@ -426,8 +438,10 @@ ACMEv2.prototype.get_nonce = function()
 
 ACMEv2.prototype.get_authorization = function(url)
 {
+	log(LOG_DEBUG, "Getting authorization.");
 	var ret = this.ua.Get(url);
 
+	this.log_headers();
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
 		throw("get_authorization request did not return 200");
@@ -543,6 +557,19 @@ ACMEv2.prototype.thumbprint = function()
 	return this.base64url(MD);
 };
 
+ACMEv2.prototype.log_headers = function()
+{
+	var i;
+
+	if (this.ua.response_headers_parsed.Location !== undefined)
+		for (i in this.ua.response_headers_parsed.Location)
+			log(LOG_DEBUG, "Link: "+this.ua.response_headers_parsed.Location[i]);
+	if (this.ua.response_headers_parsed.Link !== undefined)
+		for (i in this.ua.response_headers_parsed.Link)
+			log(LOG_DEBUG, "Link: "+this.ua.response_headers_parsed.Link[i]);
+
+}
+
 ACMEv2.prototype.post_url = function(url, data, post_method)
 {
 	var protected = {};
@@ -578,6 +605,7 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 	body = body.replace(/:\{/g, ': {');
 	body = body.replace(/,"/g, ', "');
 	ret = this.ua.Post(url, body, undefined, undefined, "application/jose+json");
+	this.log_headers();
 	/* We leave error handling to the caller */
 	if (this.ua.response_code == 200 || this.ua.response_code == 201)
 		this.update_nonce();
