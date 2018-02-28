@@ -68,15 +68,15 @@ mono:	xpdev-mt smblib \
 
 .PHONY: scfg
 scfg:
-	$(MAKE) -C scfg $(MAKEFLAGS)
+	$(MAKE) -C scfg
 
 .PHONY: uedit
 uedit:
-	$(MAKE) -C uedit $(MAKEFLAGS)
+	$(MAKE) -C uedit
 
 .PHONY: umonitor
 umonitor:
-	$(MAKE) -C umonitor $(MAKEFLAGS)
+	$(MAKE) -C umonitor
 
 
 ifdef SBBSEXEC
