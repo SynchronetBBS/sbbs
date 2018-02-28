@@ -408,8 +408,10 @@ BOOL DLLCALL  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
 					}
 				}
 				else {
-					if(FD_ISSET(p->sock, fds))
-						return TRUE;
+					if (p->sock != INVALID_SOCKET) {
+						if(FD_ISSET(p->sock, fds))
+							return TRUE;
+					}
 				}
 			}
 		}
