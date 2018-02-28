@@ -141,21 +141,12 @@ endif
 
 all: binaries baja externals
 
-binaries:	sbbs3 scfg umonitor uedit gtkuseredit gtkchat gtkmonitor gtkuserlist syncview sexpots
+binaries:	sbbs3 gtkuseredit gtkchat gtkmonitor gtkuserlist syncview sexpots
 
 externals:	sbj sbl dpoker tbd
 
 sbbs3:	src $(SBBSDIR)/3rdp/dist
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
-
-scfg:	src
-	$(MAKE) -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)
-
-umonitor:	src
-	$(MAKE) -C $(SBBSDIR)/src/sbbs3/umonitor $(MKFLAGS)
-
-uedit:	src
-	$(MAKE) -C $(SBBSDIR)/src/sbbs3/uedit $(MKFLAGS)
 
 sexpots:	src
 	$(MAKE) -C $(SBBSDIR)/src/sexpots $(MKFLAGS)
