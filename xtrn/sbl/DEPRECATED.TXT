@@ -1,0 +1,6 @@
+This project (Synchronet BBS List, SBL, the native C version) has been
+retired and deprecated in favor of the new Synchronet BBS List (v4, 
+JavaScript version), a.k.a. exec/sbbslist.js.
+
+See http://wiki.synchro.net/module:sbbslist for details about migrating to the
+new Synchronet BBS List.
