@@ -861,6 +861,8 @@ BinkP.prototype.sendCmd = function(cmd, data)
 		return false;
 	switch(cmd) {
 		case this.command.M_EOB:
+			if (this.senteob)
+				this.sentempty=true;
 			this.senteob=true;
 			break;
 		case this.command.M_ERR:
