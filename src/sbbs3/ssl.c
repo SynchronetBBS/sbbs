@@ -100,10 +100,9 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 	if(!do_cryptInit())
 		return -1;
 	pthread_mutex_lock(&ssl_cert_mutex);
-	memset(&ssl_context, 0, sizeof(ssl_context));
 	/* Get the certificate... first try loading it from a file... */
 	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,"ssl.cert");
-	if(cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_NONE))) {
+	if(cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_READONLY))) {
 		if(!DO(cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
 			pthread_mutex_unlock(&ssl_cert_mutex);
 			return -1;
@@ -151,10 +150,9 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 		cryptKeysetClose(ssl_keyset);
 		cryptDestroyContext(ssl_context);
 		// Finally, load it from the file.
-		if(cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_NONE))) {
+		if(cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_READONLY))) {
 			if(!DO(cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
-				pthread_mutex_unlock(&ssl_cert_mutex);
-				return -1;
+				ssl_context = -1;
 			}
 		}
 	}
