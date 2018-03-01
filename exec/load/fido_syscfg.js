@@ -37,9 +37,11 @@ function SBBSEchoCfg ()
 			throw("Unable to open '"+ecfg.name+"'");
 
 		this.inbound = ecfg.iniGetValue(null, "Inbound", "../fido/nonsecure");
+		backslash(this.inbound);
 		if (this.inbound !== null)
 			this.inb.push(this.inbound);
 		this.secure_inbound = ecfg.iniGetValue(null, "SecureInbound", "../fido/inbound");
+		backslash(this.secure_inbound);
 		if (this.secure_inbound !== null)
 			this.inb.push(this.secure_inbound);
 		this.outbound = ecfg.iniGetValue(null, "Outbound", "../fido/outbound");
