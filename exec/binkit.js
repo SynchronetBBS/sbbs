@@ -13,8 +13,6 @@
  *    zone.  That is, if the default zone is zone 1, and the outbound
  *    is "/path/to/outbound", it will not correctly handle the case
  *    where there is a "/path/to/outbound.001" directory.
- * 3) Flow files are processed in alphabetical order, not the recommended
- *    order from FTS-5005.
  * 
  * See FTS-5005 for details.
  */
@@ -624,91 +622,108 @@ function run_one_outbound_dir(dir, scfg, semaphores, ran)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var locks = [];
+	var addr;
+	var lock_files;
+	var ext;
+	var i;
+	var flow_files;
 
 	log(LOG_DEBUG, "Running outbound dir "+dir);
 
-	function check_flavour(wildcard, typename)
-	{
-		var addr;
-		var flow_files;
-		var lock_files;
-		var ext;
-		var i;
+	flow_files = directory(dir+'*.?ut').concat(directory(dir+'*.?lo'));
 
-		while (!js.terminated) {
-			flow_files = directory(dir+wildcard);
-			if (flow_files.length == 0)
-				break;
-			flow_file_loop:
-			for (i=0; i<flow_files.length; i++) {
-				try {
-					addr = FIDO.parse_flo_file_path(flow_files[i], myaddr.zone);
-				}
-				catch(addr_e) {
-					log(LOG_WARNING, addr_e+" when checking '"+flow_files[i]+"' (default zone: "+myaddr.zone+")");
+	function flow_order(a, b) {
+		var flavour_order=['i','c','d','o','f','h'];
+		var type_order=['ut', 'lo'];
+
+		var aext = flavour_order.indexOf(a.substr(-3, 1).toLowerCase());
+		var bext = flavour_order.indexOf(b.substr(-3, 1).toLowerCase());
+
+		if (aext !== bext)
+			return aext - bext;
+
+		aext = type_order.indexOf(a.substr(-2, 2).toLowerCase());
+		bext = type_order.indexOf(b.substr(-2, 2).toLowerCase());
+
+		if (aext !== bext)
+			return aext - bext;
+
+		if (a < b)
+			return -1;
+		if (b < a)
+			return 1;
+		return 0;
+	}
+
+	while (!js.terminated) {
+		if (flow_files.length == 0)
+			break;
+		flow_files.sort(flow_order);
+		flow_file_loop:
+		for (i=0; i<flow_files.length; i++) {
+			try {
+				addr = FIDO.parse_flo_file_path(flow_files[i], myaddr.zone);
+			}
+			catch(addr_e) {
+				log(LOG_WARNING, addr_e+" when checking '"+flow_files[i]+"' (default zone: "+myaddr.zone+")");
+				continue;
+			}
+			if (ran[addr] !== undefined)
+				continue;
+			ext = file_getext(flow_files[i]);
+
+			// Ensure this is the "right" outbound (file case, etc)
+			if (flow_files[i] !== outbound_root(addr, scfg)+addr.flo_outbound(myaddr.zone)+ext.substr(1)) {
+				log(LOG_WARNING, "Unexpected file path '"+flow_files[i]+"' expected '"+outbound_root(addr, scfg)+addr.flo_outbound(myaddr.zone)+ext.substr(1)+"' (skipped)");
+				continue;
+			}
+
+			switch(ext.substr(0, 2)) {
+				case '.h':
+					log(LOG_DEBUG, "Skipping hold flavoured flow file '"+flow_files[i]+"'.");
 					continue;
-				}
-				if (ran[addr] !== undefined)
-					continue;
-				ext = file_getext(flow_files[i]);
-
-				// Ensure this is the "right" outbound (file case, etc)
-				if (flow_files[i] !== outbound_root(addr, scfg)+addr.flo_outbound(myaddr.zone)+ext.substr(1)) {
-					log(LOG_WARNING, "Unexpected file path '"+flow_files[i]+"' expected '"+outbound_root(addr, scfg)+addr.flo_outbound(myaddr.zone)+ext.substr(1)+"' (skipped)");
-					continue;
-				}
-
-				switch(ext.substr(0, 2)) {
-					case '.h':
-						log(LOG_DEBUG, "Skipping hold flavoured flow file '"+flow_files[i]+"'.");
-						continue;
-					case '.c':
-					case '.d':
-					case '.i':
-						break;
-					case '.f':
-						if (wildcard === '*.?lo')
-							break;
-						continue;
-					case '.o':
-						if (wildcard === '*.?ut')
-							break;
-						continue;
-					default:
-						log(LOG_WARNING, "Unknown flow file flavour '"+flow_files[i]+"'.");
-						continue;
-				}
-
-				if ((lock_files = lock_flow(flow_files[i]))!==undefined) {
-					if (check_held(addr, scfg, myaddr)) {
-						unlock_flow(lock_files);
-						continue;
-					}
+				case '.c':
+				case '.d':
+				case '.i':
 					break;
+				case '.f':
+					if (ext === '.flo')
+						break;
+					log(LOG_WARNING, "Unknown flow file flavour '"+flow_files[i]+"'.");
+					continue;
+				case '.o':
+					if (ext === '.out')
+						break;
+					log(LOG_WARNING, "Unknown flow file flavour '"+flow_files[i]+"'.");
+					continue;
+				default:
+					log(LOG_WARNING, "Unknown flow file flavour '"+flow_files[i]+"'.");
+					continue;
+			}
+
+			if ((lock_files = lock_flow(flow_files[i]))!==undefined) {
+				if (check_held(addr, scfg, myaddr)) {
+					unlock_flow(lock_files);
+					continue;
 				}
-			}
-			if (i<flow_files.length) {
-				log(LOG_INFO, "Attempting callout for file "+flow_files[i]);
-				locks.push(lock_files);
-				// Use a try/catch to ensure we clean up the lock files.
-				callout(addr, scfg, semaphores, locks);
-				ran[addr] = true;
-				locks.forEach(unlock_flow);
-			}
-			else {
-				log(LOG_DEBUG, "No "+typename+" typed flow files to be processed.");
 				break;
 			}
 		}
+		if (i<flow_files.length) {
+			log(LOG_INFO, "Attempting callout for file "+flow_files[i]);
+			locks.push(lock_files);
+			// Use a try/catch to ensure we clean up the lock files.
+			callout(addr, scfg, semaphores, locks);
+			ran[addr] = true;
+			locks.forEach(unlock_flow);
+		}
+		else {
+			log(LOG_DEBUG, "No flow files to be processed.");
+			break;
+		}
 	}
 
-	// First, look for any node with pending netmail and handle that node.
-	check_flavour('*.?ut', "netmail");
-	log(LOG_DEBUG, "Done checking netmail in "+dir+", checking file references.");
-
-	// Now check for pending file reference
-	check_flavour('*.?lo', "file reference");
-	log(LOG_DEBUG, "Done checking file references in "+dir+".");
+	log(LOG_DEBUG, "Done checking in "+dir+".");
 }
 
 function run_outbound(ran)
