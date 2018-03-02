@@ -450,6 +450,11 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 			return false;
 	}
 
+	if (password !== '-')
+		this.authenticated = 'secure';
+	else
+		this.authenticated = 'non-secure';
+
 	if (auth_cb !== undefined)
 		auth_cb(this.authenticated, this);
 
