@@ -1052,7 +1052,7 @@ var addr;
 if (sock !== undefined && sock.descriptor !== -1)
 	run_inbound(sock);
 else {
-	if (argv.indexOf('install' !== -1)) {
+	if (argv.indexOf('install') !== -1) {
 		var result = install();
 		if (result != true) {
 			alert(result);
