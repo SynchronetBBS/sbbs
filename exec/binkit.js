@@ -80,7 +80,7 @@ function lock_flow(file)
 	log(LOG_DEBUG, "Locking "+ret.bsy.name);
 	if (!ret.bsy.open("web")) {
 		if (!take_lockfile(ret.bsy)) {
-			log(LOG_DEBUG, "Lock on "+ret.bsy.name+" failed.");
+			log(LOG_NOTICE, "Lock on "+ret.bsy.name+" failed.");
 			return undefined;
 		}
 	}
@@ -369,6 +369,7 @@ function rx_callback(fname, bp)
 			}
 		}
 		else {
+			log(LOG_WARNING, "Non-secure session type: " + format("'%s'", bp.authenticated));
 			if (inbound === undefined)
 				log(LOG_ERROR, "No inbound configured in sbbsecho!  Leaving insecure file as '"+fname+"'.");
 			else {
@@ -795,6 +796,7 @@ function inbound_auth_cb(pwd, bp)
 	bp.remote_addrs.forEach(function(addr) {
 		var cpw;
 		if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
+			log(LOG_INFO, "Inbound session for: " + addr);
 			cpw = bp.cb_data.binkitcfg.node[addr].pass;
 			if (cpw === undefined)
 				cpw = '-';
@@ -803,7 +805,8 @@ function inbound_auth_cb(pwd, bp)
 					addrs.push(addr);
 					check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
 					ret = cpw;
-				}
+				} else
+					log(LOG_WARNING, "CRAM-MD5 of password does not match");
 			}
 			else {
 				// TODO: Deal with arrays of passwords?
@@ -936,6 +939,91 @@ function run_polls(ran)
 	});
 }
 
+// First-time installation routine (only)
+function install()
+{
+	var cnflib = load({}, "cnflib.js");
+	var xtrn_cnf = cnflib.read("xtrn.cnf");
+	if (!xtrn_cnf)
+		return "Failed to read xtrn.cnf";
+
+	var changed = false;
+	if (!xtrn_area.event["binkout"]) {
+		printf("Adding timed event: BINKOUT\r\n");
+		xtrn_cnf.event.push( {
+				"code": "BINKOUT",
+				"cmd": "?binkit",
+				"days": 255,
+				"time": 0,
+				"node": 1,
+				"misc": 0,
+				"dir": "",
+				"freq": 0,
+				"mdays": 0,
+				"months": 0
+				});
+		changed = true;
+	}
+
+	if (!xtrn_area.event["binkpoll"]) {
+		printf("Adding timed event: BINKPOLL\r\n");
+		xtrn_cnf.event.push( {
+				"code": "BINKPOLL",
+				"cmd": "?binkit -p",
+				"days": 255,
+				"time": 0,
+				"node": 1,
+				"misc": 0,
+				"dir": "",
+				"freq": 60,
+				"mdays": 0,
+				"months": 0
+				});
+		changed = true;
+	}
+
+	if (changed && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
+		return "Failed to write xtrn.cnf";
+
+	var ini = new File(file_cfgname(system.ctrl_dir, "sbbsecho.ini"));
+	if (!ini.open(file_exists(ini.name) ? 'r+':'w+'))
+		return ini.name + " open error " + ini.error;
+	printf("Updating %s\r\n", ini.name);
+	ini.iniSetValue(null, "BinkleyStyleOutbound", true);
+	ini.iniSetValue(null, "OutgoingSemaphore", "../data/binkout.now");
+	var links = ini.iniGetAllObjects("addr", "node:");
+	ini.close();
+
+	ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
+	if (!ini.open(file_exists(ini.name) ? 'r+':'w+'))
+		return ini.name + " open error " + ini.error;
+	printf("Updating %s\r\n", ini.name);
+	var section = "BINKP";
+	ini.iniSetValue(section, "Enabled", true);
+	ini.iniSetValue(section, "Command", "binkit.js");
+	ini.iniSetValue(section, "Port", 24554);
+	ini.close();
+
+	ini = new File(file_cfgname(system.ctrl_dir, "binkit.ini"));
+	if (!file_exists(ini.name)) {
+		if (!ini.open('wt'))
+			return ini.name + " create error " + ini.error;
+		printf("Creating %s\r\n", ini.name);
+		for (var i in links) {
+			if (links[i].addr.toUpperCase().indexOf('ALL') >= 0)	// Don't include wildcard links
+				continue;
+			ini.writeln(format("[%s]", links[i].addr));
+			var password = links[i].PacketPwd ? links[i].PacketPwd : links[i].AreaFixPwd;
+			ini.writeln(format("Password=%s", password === undefined ? '' : password));
+			ini.writeln(format("Poll=%s", links[i].GroupHub ? true : false));
+			ini.writeln();
+		}
+		ini.close();
+	}
+	return true;
+}
+
+
 var sock;
 try {
 	sock = client.socket;
@@ -949,6 +1037,14 @@ var addr;
 if (sock !== undefined && sock.descriptor !== -1)
 	run_inbound(sock);
 else {
+	if (argv.indexOf('install' !== -1)) {
+		var result = install();
+		if (result != true) {
+			alert(result);
+			exit(1);
+		}
+		exit(0);
+	}
 	if (argv.indexOf('-l') !== -1) {
 		for (i=0; i<argv.length; i++) {
 			if (argv[i] === '-l') {
