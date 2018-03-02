@@ -327,6 +327,7 @@ function BinkITCfg()
 	}
 	else {
 		this.caps = f.iniGetValue(null, 'Capabilities');
+		this.sysop = f.iniGetValue(null, 'Sysop', system.operator);
 		sects = f.iniGetSections();
 		sects.forEach(function(section) {
 			var sec = new FIDO.parse_addr(section.toLowerCase(), 1, 'fidonet');
