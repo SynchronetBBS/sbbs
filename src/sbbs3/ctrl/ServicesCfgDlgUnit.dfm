@@ -1,6 +1,6 @@
 object ServicesCfgDlg: TServicesCfgDlg
-  Left = 727
-  Top = 149
+  Left = 893
+  Top = 235
   BorderStyle = bsDialog
   Caption = 'Services Configuration'
   ClientHeight = 245
@@ -50,8 +50,8 @@ object ServicesCfgDlg: TServicesCfgDlg
     Top = 3
     Width = 278
     Height = 199
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = ServicesTabSheet
+    TabIndex = 1
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -143,7 +143,7 @@ object ServicesCfgDlg: TServicesCfgDlg
         Top = 88
         Width = 250
         Height = 75
-        Hint = 'Service settings'
+        Hint = 'Service settings (use Insert to add new values)'
         KeyOptions = [keyEdit, keyAdd, keyDelete, keyUnique]
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goEditing, goThumbTracking]
         ParentShowHint = False
