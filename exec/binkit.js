@@ -503,6 +503,7 @@ function callout(addr, scfg, semaphores, locks, bicfg)
 	log(LOG_INFO, "Callout to "+addr+" started.");
 	if (bicfg === undefined)
 		bicfg = new BinkITCfg();
+	bp.system_operator = bicfg.sysop;
 	bp.cb_data = {
 		binkitcfg:bicfg,
 		binkit_to_addr:addr,
@@ -873,6 +874,7 @@ function run_inbound(sock)
 		binkit_create_semaphores:semaphores,
 		binkit_locks:locks
 	};
+	bp.system_operator = bp.cb_data.binkitcfg.sysop;
 
 	// TODO: Force debug mode for now...
 	bp.debug = true;
