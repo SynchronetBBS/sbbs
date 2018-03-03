@@ -115,6 +115,17 @@ BOOL contains_ctrl_chars(char* str)
 	return FALSE;
 }
 
+void print_hash(hash_t* hash)
+{
+	printf("\t%-20s = %lu\n"		,"hash.number"	, (ulong)hash->number);
+	printf("\t%-20s = 0x%08lX\n"	,"hash.time"	, (ulong)hash->time);
+	printf("\t%-20s = %lu\n"		,"hash.length"	, (ulong)hash->length);
+	printf("\t%-20s = 0x%02X\n"		,"hash.source"	, (unsigned)hash->source);
+	printf("\t%-20s = 0x%02X\n"		,"hash.flags"	, (unsigned)hash->flags);
+	printf("\t%-20s = 0x%04hX\n"	,"hash.crc16"	, hash->crc16);
+	printf("\t%-20s = 0x%08X\n"		,"hash.crc32"	, hash->crc32);
+}
+
 char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
 			"\n"
 			" opts:\n"
@@ -324,6 +335,7 @@ int main(int argc, char **argv)
 	dfieldlength=dfieldoffset=0;
 	msgids = 0;
 	ctrl_chars = 0;
+	oldest = 0;
 
 	for(l=smb.status.header_offset;l<shd_length;l+=size) {
 		size=SHD_BLOCK_LEN;
@@ -836,13 +848,13 @@ int main(int argc, char **argv)
 			if(!fread(&hash,sizeof(hash),1,smb.hash_fp))
 				break;
 			if(hash.number==0 || hash.number > smb.status.last_msg)
-				fprintf(stderr,"\r%sInvalid message number (%u > %u)\n", beep, hash.number, smb.status.last_msg), badhash++;
+				fprintf(stderr,"\r%sInvalid message number (%u > %u)\n", beep, hash.number, smb.status.last_msg), badhash++, print_hash(&hash);
 			else if(hash.time < 0x40000000 || hash.time > (ulong)now)
-				fprintf(stderr,"\r%sInvalid time (0x%08"PRIX32")\n", beep, hash.time), badhash++;
+				fprintf(stderr,"\r%sInvalid time (0x%08"PRIX32")\n", beep, hash.time), badhash++, print_hash(&hash);
 			else if(hash.length < 1 || hash.length > 1024*1024)
-				fprintf(stderr,"\r%sInvalid length (%"PRIu32")\n", beep, hash.length), badhash++;
+				fprintf(stderr,"\r%sInvalid length (%"PRIu32")\n", beep, hash.length), badhash++, print_hash(&hash);
 			else if(hash.source >= SMB_HASH_SOURCE_TYPES)
-				fprintf(stderr,"\r%sInvalid source type (%u)\n", beep, hash.source), badhash++;
+				fprintf(stderr,"\r%sInvalid source type (%u)\n", beep, hash.source), badhash++, print_hash(&hash);
 		}
 
 		smb_close_hash(&smb);
