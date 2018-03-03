@@ -210,6 +210,11 @@ while (!js.terminated) {
 			var client_sock=open_plines[pl].accept();
 			if(client_sock) {
 				client_sock.nonblocking = true;
+				switch(client_sock.local_port) {
+					case 994:
+					case 6697:
+						client_sock.ssl_server=1;
+				}
 				if (!client_sock.remote_ip_address) {
 					log(LOG_DEBUG,"Socket has no IP address.  Closing.");
 					client_sock.close();
