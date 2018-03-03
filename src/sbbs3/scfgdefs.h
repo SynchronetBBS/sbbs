@@ -601,6 +601,8 @@ typedef struct
 	uint16_t		user_backup_level;
 	uint16_t		mail_backup_level;
 
+	int				tls_certificate;
+
 } scfg_t;
 
 #endif /* Don't add anything after this line */

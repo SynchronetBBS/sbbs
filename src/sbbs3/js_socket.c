@@ -1651,6 +1651,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 	BOOL		b;
 	int32		i;
 	char ssl_estr[SSL_ESTR_LEN];
+	scfg_t *scfg;
 
 	if((p=(js_socket_private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		// Prototype access
@@ -1714,14 +1715,21 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 								do_cryptAttribute(p->session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_REDUCED);
 								if (tiny == SOCK_PROP_SSL_SESSION) {
 									ret=do_cryptAttributeString(p->session, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname));
-									p->context = -1;
+									p->tls_server = FALSE;
 								}
 								else {
-									p->context = get_ssl_cert(JS_GetRuntimePrivate(JS_GetRuntime(cx)), ssl_estr);
-									if (p->context == -1)
-										ret = CRYPT_ERROR_PARAM1;
+									scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+									if (scfg == NULL) {
+										ret = CRYPT_ERROR_NOTAVAIL;
+									}
 									else {
-										ret = cryptSetAttribute(p->session, CRYPT_SESSINFO_PRIVATEKEY, p->context);
+										get_ssl_cert(scfg, ssl_estr);
+										if (scfg->tls_certificate == -1)
+											ret = CRYPT_ERROR_NOTAVAIL;
+										else {
+											ret = cryptSetAttribute(p->session, CRYPT_SESSINFO_PRIVATEKEY, scfg->tls_certificate);
+										}
 									}
 								}
 								if(ret==CRYPT_OK) {
@@ -1885,7 +1893,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = BOOLEAN_TO_JSVAL(p->session != -1);
 			break;
 		case SOCK_PROP_SSL_SERVER:
-			*vp = BOOLEAN_TO_JSVAL(p->session != -1 && p->context != -1);
+			*vp = BOOLEAN_TO_JSVAL(p->session != -1 && p->tls_server);
 			break;
 	}
 

@@ -178,8 +178,6 @@ static BOOL winsock_startup(void)
 
 #endif
 
-static CRYPT_CONTEXT tls_context = -1;
-
 static ulong active_clients(void)
 {
 	ulong i;
@@ -1036,8 +1034,8 @@ static void js_service_thread(void* arg)
 			}
 		}
 #endif
-		if (tls_context != -1) {
-			HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_PRIVATEKEY, tls_context), &service_client);
+		if (scfg.tls_certificate != -1) {
+			HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate), &service_client);
 		}
 		BOOL nodelay=TRUE;
 		setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
@@ -1615,11 +1613,6 @@ static void cleanup(int code)
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 
-	if (tls_context != -1) {
-		cryptDestroyContext(tls_context);
-		tls_context = -1;
-	}
-
 	update_clients();
 
 #ifdef _WINSOCKAPI_	
@@ -1847,9 +1840,9 @@ void DLLCALL services_thread(void* arg)
 					lprintf(LOG_ERR, "Option error, TLS not yet supported for static services (%s)", service[i].protocol);
 					continue;
 				}
-				if(tls_context == -1) {
-					tls_context = get_ssl_cert(&scfg, ssl_estr);
-					if (tls_context == -1) {
+				if(scfg.tls_certificate == -1) {
+					get_ssl_cert(&scfg, ssl_estr);
+					if (scfg.tls_certificate == -1) {
 						lprintf(LOG_ERR, "Error creating TLS certificate: %s", ssl_estr);
 						continue;
 					}

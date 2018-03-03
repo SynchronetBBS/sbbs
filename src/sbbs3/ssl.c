@@ -100,6 +100,10 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 	if(!do_cryptInit())
 		return -1;
 	pthread_mutex_lock(&ssl_cert_mutex);
+	if (cfg->tls_certificate != -1 || !cfg->prepped) {
+		pthread_mutex_unlock(&ssl_cert_mutex);
+		return cfg->tls_certificate;
+	}
 	/* Get the certificate... first try loading it from a file... */
 	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,"ssl.cert");
 	if(cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_READONLY))) {
@@ -112,7 +116,8 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 		/* Couldn't do that... create a new context and use the cert from there... */
 		if(!cryptStatusOK(i=cryptCreateContext(&ssl_context, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
 			pthread_mutex_unlock(&ssl_cert_mutex);
-			sprintf(estr, "cryptlib error %d creating SSL context",i);
+			if (estr)
+				sprintf(estr, "cryptlib error %d creating SSL context",i);
 			return -1;
 		}
 		if(!DO(cryptSetAttributeString(ssl_context, CRYPT_CTXINFO_LABEL, "ssl_cert", 8)))
@@ -159,6 +164,7 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 
 	cryptKeysetClose(ssl_keyset);
 	pthread_mutex_unlock(&ssl_cert_mutex);
+	cfg->tls_certificate = ssl_context;
 	return ssl_context;
 
 failure_return_3:
