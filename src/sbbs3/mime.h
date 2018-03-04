@@ -38,10 +38,10 @@
 
 /* mime.c */
 char *  mimegetboundary(void);
-void    mimeheaders(SOCKET socket, char * boundary);
-void    mimeblurb(SOCKET socket, char * boundary);
-void    mimetextpartheader(SOCKET socket, char * boundary, const char* charset);
-BOOL    mimeattach(SOCKET socket, char * boundary, char * pathfile);
-void    endmime(SOCKET socket, char * boundary);
+void    mimeheaders(SOCKET socket, int sess, char * boundary);
+void    mimeblurb(SOCKET socket, int sess, char * boundary);
+void    mimetextpartheader(SOCKET socket, int sess, char * boundary, const char* charset);
+BOOL    mimeattach(SOCKET socket, int sess, char * boundary, char * pathfile);
+void    endmime(SOCKET socket, int sess, char * boundary);
 
 #endif	/* Don't add anything after this line */

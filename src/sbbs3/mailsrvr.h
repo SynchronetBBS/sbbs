@@ -250,6 +250,6 @@ int mail_close_socket(SOCKET sock);
 }
 #endif
 
-int sockprintf(SOCKET sock, char *fmt, ...);
+int sockprintf(SOCKET sock, int sess, char *fmt, ...);
 
 #endif /* Don't add anything after this line */
