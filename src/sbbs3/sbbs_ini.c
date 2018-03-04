@@ -502,11 +502,15 @@ void sbbs_read_ini(
 			=iniGetShortInt(list,section,"SMTPPort",IPPORT_SMTP);
 		mail->submission_port
 			=iniGetShortInt(list,section,"SubmissionPort",IPPORT_SUBMISSION);
+		mail->submissions_port
+			=iniGetShortInt(list,section,"SubmissionsPort",IPPORT_SUBMISSIONS);
 		iniFreeStringList(mail->pop3_interfaces);
 		mail->pop3_interfaces
 			=iniGetStringList(list,section,"POP3Interface",",",global_interfaces);
 		mail->pop3_port
 			=iniGetShortInt(list,section,"POP3Port",IPPORT_POP3);
+		mail->pop3s_port
+			=iniGetShortInt(list,section,"POP3SPort",IPPORT_POP3S);
 		mail->relay_port
 			=iniGetShortInt(list,section,"RelayPort",IPPORT_SMTP);
 		mail->max_clients

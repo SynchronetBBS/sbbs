@@ -141,6 +141,7 @@ typedef struct {
 	SOCKET			socket;
 	union xp_sockaddr	client_addr;
 	socklen_t		client_addr_len;
+	BOOL			tls_port;
 } smtp_t,pop3_t;
 
 static int lprintf(int level, const char *fmt, ...)
@@ -955,6 +956,57 @@ static void pop3_thread(void* arg)
 
 	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP) && (startup->options&MAIL_OPT_DEBUG_POP3))
 		lprintf(LOG_INFO,"%04d POP3 Hostname: %s", socket, host_name);
+
+	if (pop3.tls_port) {
+		if (get_ssl_cert(&scfg, NULL) == -1) {
+			lprintf(LOG_ERR, "Unable to get TLS certificate");
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
+			lprintf(LOG_ERR, "Unable to create TLS session");
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
+			lprintf(LOG_ERR, "Unable to disable certificate verification");
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
+			lprintf(LOG_ERR, "Unable to set private key");
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		nodelay = TRUE;
+		setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
+		nb=0;
+		ioctlsocket(socket,FIONBIO,&nb);
+		if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
+			lprintf(LOG_ERR, "Unable to set session socket (%d, %d)", rd, socket);
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
+			lprintf(LOG_ERR, "Unable to set session active");
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		if (startup->max_inactivity) {
+			if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
+				lprintf(LOG_ERR, "Unable to set max inactivity");
+				mail_close_socket(socket);
+				thread_down();
+				return;
+			}
+		}
+	}
 
 	ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
 	if(banned || trashcan(&scfg,host_ip,"ip")) {
@@ -2683,6 +2735,63 @@ static void smtp_thread(void* arg)
 #endif
 
 	addr_len=sizeof(server_addr);
+
+	if(smtp.tls_port) {
+		if (get_ssl_cert(&scfg, NULL) == -1) {
+			lprintf(LOG_ERR, "Unable to get certificate");
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
+			lprintf(LOG_ERR, "Unable to create TLS session");
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
+			lprintf(LOG_ERR, "Unable to disable certificate verification");
+			cryptDestroySession(session);
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
+			lprintf(LOG_ERR, "Unable to set private key");
+			cryptDestroySession(session);
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		nodelay = TRUE;
+		setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
+		nb=0;
+		ioctlsocket(socket,FIONBIO,&nb);
+		if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
+			lprintf(LOG_ERR, "Unable to set network socket");
+			cryptDestroySession(session);
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
+			lprintf(LOG_ERR, "Unable to set session active");
+			cryptDestroySession(session);
+			mail_close_socket(socket);
+			thread_down();
+			return;
+		}
+		if (startup->max_inactivity) {
+			if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
+				lprintf(LOG_ERR, "Unable to set max inactivity");
+				cryptDestroySession(session);
+				mail_close_socket(socket);
+				thread_down();
+				return;
+			}
+		}
+	}
+
 	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
 		lprintf(LOG_CRIT,"%04d !SMTP ERROR %d (%d) getting address/port"
 			,socket, i, ERROR_VALUE);
@@ -3698,12 +3807,11 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,session,"250-SOML");
 			sockprintf(socket,session,"250-SAML");
 			sockprintf(socket,session,"250-8BITMIME");
-			if (!startup->max_msg_size)
-				sockprintf(socket,session,"250 STARTTLS");
-			else {
+			if (session != -1)
 				sockprintf(socket,session,"250-STARTTLS");
-				sockprintf(socket,session,"250 SIZE %lu", startup->max_msg_size);
-			}
+			if (startup->max_msg_size)
+				sockprintf(socket,session,"250-SIZE %lu", startup->max_msg_size);
+			sockprintf(socket,session,ok_rsp);
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
@@ -4512,7 +4620,7 @@ static void smtp_thread(void* arg)
 			hdr_lines=0;
 			continue;
 		}
-		if(!stricmp(buf,"STARTTLS")) {
+		if(session == -1 && !stricmp(buf,"STARTTLS")) {
 			if (get_ssl_cert(&scfg, NULL) == -1) {
 				lprintf(LOG_ERR, "Unable to get certificate");
 				sockprintf(socket, session, "454 TLS not available");
@@ -5620,8 +5728,10 @@ void DLLCALL mail_server(void* arg)
 		/* Setup intelligent defaults */
 		if(startup->relay_port==0)				startup->relay_port=IPPORT_SMTP;
 		if(startup->submission_port==0)			startup->submission_port=IPPORT_SUBMISSION;
+		if(startup->submissions_port==0)		startup->submissions_port=IPPORT_SUBMISSIONS;
 		if(startup->smtp_port==0)				startup->smtp_port=IPPORT_SMTP;
 		if(startup->pop3_port==0)				startup->pop3_port=IPPORT_POP3;
+		if(startup->pop3s_port==0)				startup->pop3s_port=IPPORT_POP3S;
 		if(startup->rescan_frequency==0)		startup->rescan_frequency=MAIL_DEFAULT_RESCAN_FREQUENCY;
 		if(startup->max_delivery_attempts==0)	startup->max_delivery_attempts=MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS;
 		if(startup->max_inactivity==0) 			startup->max_inactivity=MAIL_DEFAULT_MAX_INACTIVITY; /* seconds */
@@ -5772,12 +5882,25 @@ void DLLCALL mail_server(void* arg)
 				lprintf(LOG_INFO,"SUBMISSION Server listening");
 		}
 
+		if(startup->options&MAIL_OPT_USE_SUBMISSIONS_PORT) {
+			if(xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->submissions_port, "TLS/SMTP Submission Agent", mail_open_socket, startup->seteuid, "submissions"))
+				lprintf(LOG_INFO,"SUBMISSIONS Server listening");
+		}
+
 		if(startup->options&MAIL_OPT_ALLOW_POP3) {
 
 			/* open a socket and wait for a client */
 			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces, startup->pop3_port, "POP3 Server", mail_open_socket, startup->seteuid, "pop3"))
-				lprintf(LOG_INFO,"SMTP No extra interfaces listening");
+				lprintf(LOG_INFO,"POP3 No extra interfaces listening");
 			lprintf(LOG_INFO,"POP3 Server listening");
+		}
+
+		if(startup->options&MAIL_OPT_USE_POP3S_PORT) {
+
+			/* open a socket and wait for a client */
+			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces, startup->pop3s_port, "TLS/POP3 Server", mail_open_socket, startup->seteuid, "pop3s"))
+				lprintf(LOG_INFO,"POP3S No extra interfaces listening");
+			lprintf(LOG_INFO,"POP3S Server listening");
 		}
 
 		sem_init(&sendmail_wakeup_sem,0,0);
@@ -5868,7 +5991,7 @@ void DLLCALL mail_server(void* arg)
 					continue;
 				}
 
-				if(strcmp((char *)cbdata, "pop3")) { /* Not POP3 */
+				if(strcmp((char *)cbdata, "pop3") && strcmp((char *)cbdata, "pop3s")) { /* Not POP3 */
 					if((smtp=malloc(sizeof(smtp_t)))==NULL) {
 						lprintf(LOG_CRIT,"%04d SMTP !ERROR allocating %u bytes of memory for smtp_t"
 							,client_socket, sizeof(smtp_t));
@@ -5879,6 +6002,7 @@ void DLLCALL mail_server(void* arg)
 					smtp->socket=client_socket;
 					memcpy(&smtp->client_addr, &client_addr, client_addr_len);
 					smtp->client_addr_len=client_addr_len;
+					smtp->tls_port = (strcmp((char *)cbdata, "submissions") == 0);
 					protected_uint32_adjust(&thread_count,1);
 					_beginthread(smtp_thread, 0, smtp);
 					stats.connections_served++;
@@ -5896,6 +6020,7 @@ void DLLCALL mail_server(void* arg)
 					pop3->socket=client_socket;
 					memcpy(&pop3->client_addr, &client_addr, client_addr_len);
 					pop3->client_addr_len=client_addr_len;
+					pop3->tls_port = (strcmp((char *)cbdata, "pop3s") == 0);
 					protected_uint32_adjust(&thread_count,1);
 					_beginthread(pop3_thread, 0, pop3);
 					stats.connections_served++;

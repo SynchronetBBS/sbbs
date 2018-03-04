@@ -45,7 +45,9 @@ typedef struct {
 	DWORD	size;				/* sizeof(mail_startup_t) */
 	WORD	smtp_port;
 	WORD	pop3_port;
+	WORD	pop3s_port;
 	WORD	submission_port;
+	WORD	submissions_port;
 	WORD	max_clients;
 #define MAIL_DEFAULT_MAX_CLIENTS			10
 	WORD	max_inactivity;
@@ -132,6 +134,9 @@ typedef struct {
 static struct init_field mail_init_fields[] = { 
 	 OFFSET_AND_SIZE(mail_startup_t,smtp_port)
 	,OFFSET_AND_SIZE(mail_startup_t,pop3_port)
+	,OFFSET_AND_SIZE(mail_startup_t,pop3s_port)
+	,OFFSET_AND_SIZE(mail_startup_t,submission_port)
+	,OFFSET_AND_SIZE(mail_startup_t,submissions_port)
 	,OFFSET_AND_SIZE(mail_startup_t,interfaces)
 	,OFFSET_AND_SIZE(mail_startup_t,ctrl_dir)
 	,{ 0,0 }	/* terminator */
@@ -167,6 +172,8 @@ static struct init_field mail_init_fields[] = {
 #define MAIL_OPT_NO_AUTO_EXEMPT			(1<<26)	/* Do not auto DNSBL-exempt recipient e-mail addresses */
 #define MAIL_OPT_NO_RECYCLE				(1<<27)	/* Disable recycling of server		*/
 #define MAIL_OPT_KILL_READ_SPAM			(1<<28)	/* Set the KILLREAD flag on SPAM msgs */
+#define MAIL_OPT_USE_SUBMISSIONS_PORT	(1<<29)	/* Listen on the TLS "MSA" service port for mail submissions */
+#define MAIL_OPT_USE_POP3S_PORT			(1<<30)	/* Listen on the TLS "MSA" service port for mail submissions */
 #define MAIL_OPT_MUTE					(1<<31)
 
 #define MAIL_OPT_RELAY_AUTH_MASK		(MAIL_OPT_RELAY_AUTH_PLAIN|MAIL_OPT_RELAY_AUTH_LOGIN|MAIL_OPT_RELAY_AUTH_CRAM_MD5)
@@ -206,6 +213,8 @@ static ini_bitdesc_t mail_options[] = {
 	{ MAIL_OPT_NO_AUTO_EXEMPT		,"NO_AUTO_EXEMPT"		},
 	{ MAIL_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ MAIL_OPT_KILL_READ_SPAM		,"KILL_READ_SPAM"		},
+	{ MAIL_OPT_USE_SUBMISSIONS_PORT	,"USE_SUBMISSIONS_PORT"	},
+	{ MAIL_OPT_USE_POP3S_PORT		,"USE_POP3SS_PORT"		},
 	{ MAIL_OPT_MUTE					,"MUTE"					},
 	/* terminator */
 	{ 0 							,NULL					}
