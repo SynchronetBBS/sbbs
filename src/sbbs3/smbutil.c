@@ -1267,6 +1267,10 @@ void packmsgs(ulong packable)
 			,beep,i,smb.last_error,smb.file);
 		return; 
 	}
+	if((i=smb_lock(&smb)) != SMB_SUCCESS)
+		fprintf(errfp,"\n%s!ERROR %d (%s) locking %s\n"
+			,beep,i,smb.last_error,smb.file);
+
 	if((i=smb_locksmbhdr(&smb))!=0)
 		fprintf(errfp,"\n%s!smb_locksmbhdr returned %d: %s\n"
 			,beep,i,smb.last_error);
