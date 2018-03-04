@@ -5882,7 +5882,7 @@ void DLLCALL mail_server(void* arg)
 				lprintf(LOG_INFO,"SUBMISSION Server listening");
 		}
 
-		if(startup->options&MAIL_OPT_USE_SUBMISSIONS_PORT) {
+		if(startup->options&MAIL_OPT_TLS_SUBMISSION) {
 			if(xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->submissions_port, "TLS/SMTP Submission Agent", mail_open_socket, startup->seteuid, "submissions"))
 				lprintf(LOG_INFO,"SUBMISSIONS Server listening");
 		}
@@ -5895,7 +5895,7 @@ void DLLCALL mail_server(void* arg)
 			lprintf(LOG_INFO,"POP3 Server listening");
 		}
 
-		if(startup->options&MAIL_OPT_USE_POP3S_PORT) {
+		if(startup->options&MAIL_OPT_TLS_POP3) {
 
 			/* open a socket and wait for a client */
 			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces, startup->pop3s_port, "TLS/POP3 Server", mail_open_socket, startup->seteuid, "pop3s"))

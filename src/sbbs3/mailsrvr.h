@@ -172,8 +172,8 @@ static struct init_field mail_init_fields[] = {
 #define MAIL_OPT_NO_AUTO_EXEMPT			(1<<26)	/* Do not auto DNSBL-exempt recipient e-mail addresses */
 #define MAIL_OPT_NO_RECYCLE				(1<<27)	/* Disable recycling of server		*/
 #define MAIL_OPT_KILL_READ_SPAM			(1<<28)	/* Set the KILLREAD flag on SPAM msgs */
-#define MAIL_OPT_USE_SUBMISSIONS_PORT	(1<<29)	/* Listen on the TLS "MSA" service port for mail submissions */
-#define MAIL_OPT_USE_POP3S_PORT			(1<<30)	/* Listen on the TLS "MSA" service port for mail submissions */
+#define MAIL_OPT_TLS_SUBMISSION			(1<<29)	/* Listen on the TLS "MSA" service port for mail submissions */
+#define MAIL_OPT_TLS_POP3				(1<<30)	/* POP3S */
 #define MAIL_OPT_MUTE					(1<<31)
 
 #define MAIL_OPT_RELAY_AUTH_MASK		(MAIL_OPT_RELAY_AUTH_PLAIN|MAIL_OPT_RELAY_AUTH_LOGIN|MAIL_OPT_RELAY_AUTH_CRAM_MD5)
@@ -213,8 +213,8 @@ static ini_bitdesc_t mail_options[] = {
 	{ MAIL_OPT_NO_AUTO_EXEMPT		,"NO_AUTO_EXEMPT"		},
 	{ MAIL_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ MAIL_OPT_KILL_READ_SPAM		,"KILL_READ_SPAM"		},
-	{ MAIL_OPT_USE_SUBMISSIONS_PORT	,"USE_SUBMISSIONS_PORT"	},
-	{ MAIL_OPT_USE_POP3S_PORT		,"USE_POP3SS_PORT"		},
+	{ MAIL_OPT_TLS_SUBMISSION		,"TLS_SUBMISSION"		},
+	{ MAIL_OPT_TLS_POP3				,"TLS_POP3"				},
 	{ MAIL_OPT_MUTE					,"MUTE"					},
 	/* terminator */
 	{ 0 							,NULL					}
