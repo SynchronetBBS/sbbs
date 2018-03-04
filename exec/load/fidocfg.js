@@ -356,7 +356,7 @@ function BinkITCfg()
 			}
 			if (this.node[sec].nocrypt == undefined)
 				this.node[sec].nocrypt = false;
-			else if (typeoof(this.node[sec].nocrypt) == 'string'){
+			else if (typeof(this.node[sec].nocrypt) == 'string'){
 				switch(this.node[sec].nocrypt.toUpperCase()) {
 					case 'YES':
 					case 'TRUE':
