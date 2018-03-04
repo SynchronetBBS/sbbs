@@ -342,7 +342,7 @@ function BinkITCfg()
 			this.node[sec].host = f.iniGetValue(section, 'Host');
 			if (this.node[sec].nomd5 == undefined)
 				this.node[sec].nomd5 = false;
-			else {
+			else if (typeof(this.node[sec].nomd5) == 'string'){
 				switch(this.node[sec].nomd5.toUpperCase()) {
 					case 'YES':
 					case 'TRUE':
@@ -356,7 +356,7 @@ function BinkITCfg()
 			}
 			if (this.node[sec].nocrypt == undefined)
 				this.node[sec].nocrypt = false;
-			else {
+			else if (typeoof(this.node[sec].nocrypt) == 'string'){
 				switch(this.node[sec].nocrypt.toUpperCase()) {
 					case 'YES':
 					case 'TRUE':
@@ -370,7 +370,7 @@ function BinkITCfg()
 			}
 			if (this.node[sec].poll == undefined)
 				this.node[sec].poll = false;
-			else {
+			else if (typeof(this.node[sec].poll) == 'string') {
 				switch(this.node[sec].poll.toUpperCase()) {
 					case 'YES':
 					case 'TRUE':
