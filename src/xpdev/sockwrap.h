@@ -257,11 +257,17 @@ DLLEXPORT BOOL DLLCALL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockadd
 #ifndef IPPORT_POP3
 #define IPPORT_POP3			110
 #endif
+#ifndef IPPORT_POP3S
+#define IPPORT_POP3S			995
+#endif
 #ifndef IPPORT_IDENT
 #define IPPORT_IDENT		113
 #endif
 #ifndef IPPORT_SUBMISSION
 #define IPPORT_SUBMISSION	587
+#endif
+#ifndef IPPORT_SUBMISSIONS
+#define IPPORT_SUBMISSIONS	465
 #endif
 
 
