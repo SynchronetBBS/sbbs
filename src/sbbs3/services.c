@@ -2099,7 +2099,6 @@ void DLLCALL services_thread(void* arg)
 					if(service[i].max_clients && service[i].clients+1>service[i].max_clients) {
 						lprintf(LOG_WARNING,"%04d !%s MAXIMUM CLIENTS (%u) reached, access denied"
 							,client_socket, service[i].protocol, service[i].max_clients);
-						mswait(3000);
 						close_socket(client_socket);
 						continue;
 					}
@@ -2115,7 +2114,6 @@ void DLLCALL services_thread(void* arg)
 							lprintf(LOG_NOTICE,"%04d !%s CLIENT BLOCKED in ip.can: %s"
 								,client_socket, service[i].protocol, host_ip);
 						FREE_AND_NULL(udp_buf);
-						mswait(3000);
 						close_socket(client_socket);
 						continue;
 					}
@@ -2130,7 +2128,6 @@ void DLLCALL services_thread(void* arg)
 						FREE_AND_NULL(udp_buf);
 						lprintf(LOG_CRIT,"%04d !%s ERROR allocating %u bytes of memory for service_client"
 							,client_socket, service[i].protocol, sizeof(service_client_t));
-						mswait(3000);
 						close_socket(client_socket);
 						continue;
 					}
