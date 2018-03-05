@@ -2,22 +2,22 @@
 
 // websocketservice.js 
 
-// Synchronet Service for redirecting incoming WebSocket connections to the Telnet server
-// Intended to be used by SysOps who want to provide web based access to their BBS with an HTML5 client, such as HtmlTerm
-// HtmlTerm can be found at http://www.ftelnet.ca
+// Synchronet Service for redirecting incoming WebSocket connections to the Telnet and/or RLogin server
+// Mainly to be used in conjunction with fTelnet
 
 // Example configuration (in ctrl/services.ini)
 //
-// ; WebSocket Service (used with HtmlTerm)
-// [WebSocket]
+// ; WebSocket to RLogin
+// [WebSocket-RLogin]
+// Port=11513
+// Options=NO_HOST_LOOKUP
+// Command=websocketservice.js localhost 513
+//
+// ; WebSocket to Telnet
+// [WebSocket-Telnet]
 // Port=1123
 // Options=NO_HOST_LOOKUP
-// Command=websocketservice.js
-
-// Developer notes:
-//  - Telnet negotiation commands are filtered by this service, and are not passed on to the websocket client.
-//    (They are just ignored, and not answered, which seems to be fine with the Synchronet telnet server)
-//    (When file xfer support is added to HtmlTerm, the negotiation may need to be implemented (to enable binary mode for example))
+// Command=websocketservice.js localhost 23
 
 //include definitions for synchronet
 load("nodedefs.js");
@@ -27,11 +27,6 @@ load("ftelnethelper.js");
 load("sha1.js");
 
 // Global constants
-const TELNET_DATA                   = 0;
-const TELNET_IAC                    = 1;
-const TELNET_SUBNEGOTIATE           = 2;
-const TELNET_SUBNEGOTIATE_IAC       = 3;
-const TELNET_WWDD                   = 4;
 const WEBSOCKET_NEED_PACKET_START   = 0;
 const WEBSOCKET_NEED_PAYLOAD_LENGTH = 1;
 const WEBSOCKET_NEED_MASKING_KEY	= 2;
@@ -43,7 +38,6 @@ var FFrameOpCode = 0;
 var FFramePayloadLength = 0;
 var FFramePayloadReceived = 0;
 var FServerSocket = null;
-var FTelnetState = TELNET_DATA;
 var FWebSocketHeader = [];
 var FWebSocketState = WEBSOCKET_NEED_PACKET_START;
 
@@ -51,11 +45,21 @@ var FWebSocketState = WEBSOCKET_NEED_PACKET_START;
 try {
     // Parse and respond to the WebSocket handshake request
     if (ShakeHands()) {
-        SendToWebSocketClient(StringToBytes("Re-directing to telnet server...\r\n"));
+        SendToWebSocketClient(StringToBytes("Redirecting to server...\r\n"));
 
-        // Connect to the local synchronet server
+        // Determine where to connect
+		var TargetHostname = system.local_host_name;
+		var TargetPort = GetTelnetPort();
+		if (argc === 1) {
+			TargetPort = parseInt(argv[0]);
+		} else if (argc === 2) {
+			TargetHostname = argv[0];
+			TargetPort = parseInt(argv[1]);
+		}
+		
+		// Connect to the server
         FServerSocket = new Socket();
-        if (FServerSocket.connect(system.local_host_name, GetTelnetPort())) {
+        if (FServerSocket.connect(TargetHostname, TargetPort)) {
             // Variables we'll use in the loop
             var DoYield = true;
             var ClientData = [];
@@ -69,12 +73,12 @@ try {
                 // Check if the client sent anything
                 ClientData = GetFromWebSocketClient();
                 if (ClientData.length > 0) {
-                    SendToTelnetServer(ClientData);
+                    SendToServer(ClientData);
                     DoYield = false;
                 }
                 
                 // Check if the server sent anything
-                ServerData = GetFromTelnetServer();
+                ServerData = GetFromServer();
                 if (ServerData.length > 0) {
                     SendToWebSocketClient(ServerData);
                     DoYield = false;
@@ -90,8 +94,8 @@ try {
 			if (!FServerSocket.is_connected) log(LOG_DEBUG, 'Server socket no longer connected');
         } else {
             // FServerSocket.connect() failed
-            log(LOG_ERR, "Unable to connect to telnet server");
-            SendToWebSocketClient(StringToBytes("ERROR: Unable to connect to telnet server\r\n"));
+            log(LOG_ERR, "Unable to connect to server");
+            SendToWebSocketClient(StringToBytes("ERROR: Unable to connect to server\r\n"));
             mswait(2500);
         }
     } else {
@@ -121,78 +125,13 @@ function CalculateWebSocketKey(InLine) {
     return Digits / Spaces;
 }
 
-function GetFromTelnetServer() {
+function GetFromServer() {
     var Result = [];
     var InByte = 0;
     
     while (FServerSocket.data_waiting && (Result.length <= 4096)) {
         InByte =  FServerSocket.recvBin(1);
-        
-        switch (FTelnetState) {
-            case TELNET_DATA: 
-                // We're receiving data, so check for 0xFF, which indicates we may be receiving a telnet negotiation sequence
-                if (InByte == 0xFF) {
-                    FTelnetState = TELNET_IAC;
-                } else {
-                    Result.push(InByte);
-                }
-                break;
-            case TELNET_IAC:
-                // We're starting a telnet negotiation sequence, see what type
-                switch (InByte) {
-                    case 0xF1: // NOP: No operation.
-                    case 0xF2: // Data Mark: The data stream portion of a Synch. This should always be accompanied by a TCP Urgent notification.
-                    case 0xF3: // Break: NVT character BRK.
-                    case 0xF4: // Interrupt Process: The function IP.
-                    case 0xF5: // Abort output: The function AO.
-                    case 0xF6: // Are You There: The function AYT.
-                    case 0xF7: // Erase character: The function EC.
-                    case 0xF8: // Erase Line: The function EL.
-                    case 0xF9: // Go ahead: The GA signal
-                        // Ignore these single byte commands
-                        FTelnetState = TELNET_DATA;
-                        break;
-                    case 0xFA: // Subnegotiation
-                        FTelnetState = TELNET_SUBNEGOTIATE;
-                        break;
-                    case 0xFB: // Will
-                    case 0xFC: // Wont
-                    case 0xFD: // Do
-                    case 0xFE: // Dont
-                        FTelnetState = TELNET_WWDD;
-                        break;
-                    case 0xFF: // 0xFF's get doubled, so this is really a data byte
-                        Result.push(0xFF);
-                        FTelnetState = TELNET_DATA;
-                        break;
-                }
-                break;
-            case TELNET_SUBNEGOTIATE:
-                // We're receiving subnegotiation data, so check for 0xFF, which indicates we may be done subnegotiating
-                if (InByte == 0xFF) {
-                    FTelnetState = TELNET_SUBNEGOTIATE_IAC;
-                } else {
-                    // Just subnegotiation data that we're going to ignore
-                }
-                break;
-            case TELNET_SUBNEGOTIATE_IAC:
-                // We're subnegotiating and expecting to receive the end sequence character here
-                if (InByte == 0xFF) {
-                    // 0xFF's get doubled, so this is really a subnegotiation data byte
-                    FTelnetState = TELNET_SUBNEGOTIATE;
-                } else if (InByte == 0xF0) {
-                    // We're finished subnegotiation
-                    FTelnetState = TELNET_DATA;
-                } else {
-                    // This was unexpected!
-                    FTelnetState = TELNET_DATA;
-                }
-                break;
-            case TELNET_WWDD:
-                // Ignore this command
-                FTelnetState = TELNET_DATA;
-                break;
-        }
+		Result.push(InByte);
     }
     
     return Result;
@@ -283,7 +222,7 @@ function GetFromWebSocketClientVersion7() {
 				FFrameMask[1] = (InByte & 0x00FF0000) >> 16;
 				FFrameMask[2] = (InByte & 0x0000FF00) >> 8;
 				FFrameMask[3] = InByte & 0x000000FF;
-				FWebSocketState = WEBSOCKET_DATA;
+                FWebSocketState = (FFramePayloadLength > 0 ? WEBSOCKET_DATA : WEBSOCKET_NEED_PACKET_START); // NB: Might not be any data to read, so check for payload length before setting state
 				break;
             case WEBSOCKET_DATA:
 				InByte = (client.socket.recvBin(1) ^ FFrameMask[FFramePayloadReceived++ % 4]);
@@ -296,7 +235,7 @@ function GetFromWebSocketClientVersion7() {
 					InByte2 = (client.socket.recvBin(1) ^ FFrameMask[FFramePayloadReceived++ % 4]);
 					Result.push(((InByte & 31) << 6) | (InByte2 & 63));
 				} else {
-					log(LOG_ERR, "Byte out of range: " + InByte);
+					log(LOG_ERR, "GetFromWebSocketClientVersion7 Byte out of range: " + InByte);
 				}
 
 				// Check if we've received the full payload
@@ -308,14 +247,9 @@ function GetFromWebSocketClientVersion7() {
     return Result;
 }
 
-function SendToTelnetServer(AData) {
+function SendToServer(AData) {
     for (var i = 0; i < AData.length; i++) {
         FServerSocket.sendBin(AData[i], 1);
-        
-        // Check for 0xFF, which needs to be doubled up for telnet
-        if (AData[i] == 0xFF) {
-            FServerSocket.sendBin(0xFF, 1);
-        }
     }
 }
 
@@ -345,7 +279,7 @@ function SendToWebSocketClientDraft0(AData) {
             client.socket.sendBin((AData[i] >> 6) | 192, 1);
             client.socket.sendBin((AData[i] & 63) | 128, 1);
         } else {
-            log(LOG_ERR, "Byte out of range: " + AData[i]);
+            log(LOG_ERR, "SendToWebSocketClientDraft0 Byte out of range: " + AData[i]);
         }
     }
 
@@ -366,7 +300,7 @@ function SendToWebSocketClientVersion7(AData) {
 	            ToSend.push((AData[i] >> 6) | 192);
 	            ToSend.push((AData[i] & 63) | 128);
 	        } else {
-				log(LOG_ERR, "Byte out of range: " + AData[i]);
+				log(LOG_ERR, "SendToWebSocketClientVersion7 Byte out of range: " + AData[i]);
 			}
 	    }
 

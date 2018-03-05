@@ -39,14 +39,14 @@
 var FLoadedSBBSIni = false;
 var FBBSOptions    = "";
 var FRLoginPort    = -1;
-var FSSHPort       = -1;
 var FTelnetPort    = -1;
 
 // Values from services.ini
 var FLoadedServicesIni               = false;
-var FFlashSocketPolicyServiceEnabled = false;
-var FFlashSocketPolicyServicePort    = -1;
-var FServicePorts                    = "";
+var FWebSocketToRLoginServiceEnabled = false;
+var FWebSocketToRLoginServicePort    = -1;
+var FWebSocketToTelnetServiceEnabled = false;
+var FWebSocketToTelnetServicePort    = -1;
 
 // Credit to echicken for port lookup code
 function GetSBBSIniValues() {
@@ -58,7 +58,6 @@ function GetSBBSIniValues() {
 			if (f.open("r", true)) {
 				FBBSOptions = f.iniGetValue("BBS", "Options", "");
 				FRLoginPort = f.iniGetValue("BBS", "RLoginPort", -1);
-				FSSHPort    = f.iniGetValue("BBS", "SSHPort", -1);
 				FTelnetPort = f.iniGetValue("BBS", "TelnetPort", -1);
 				f.close();
 			}
@@ -75,28 +74,14 @@ function GetServicesIniValues() {
 		try {
 			var f = new File(file_cfgname(system.ctrl_dir, "services.ini"));
 			if (f.open("r", true)) {
-				// Try to get the flash socket policy server port
-                FFlashSocketPolicyServicePort = f.iniGetValue("FlashPolicy", "Port", -1);
-                FFlashSocketPolicyServiceEnabled = f.iniGetValue("FlashPolicy", "Enabled", true);
-
-				// Try to get the ports from all the enabled services (also look for entry for flash socket policy server if it wasn't found above)
-				var Sections = f.iniGetSections();
-				for (var i = 0; i < Sections.length; i++) {
-					// If we don't know the flash socket policy port yet, check if this could be it
-					if (FFlashSocketPolicyServicePort === -1) {
-						if (f.iniGetValue(Sections[i], "Port", -1) === 843) {
-							FFlashSocketPolicyServicePort = 843;
-							FFlashSocketPolicyServiceEnabled = f.iniGetValue(Sections[i], "Enabled", true);
-						}
-					}
-					
-					// If this service is enabled (and not UDP), add it to the port list
-					if ((f.iniGetValue(Sections[i], "Enabled", true)) && (f.iniGetValue(Sections[i], "Options", "").toUpperCase().indexOf("UDP") === -1)) {
-						if (FServicePorts != "") FServicePorts += ",";
-						FServicePorts += f.iniGetValue(Sections[i], "Port", -1);
-					}
-				}
+				// Try to get the WebSocket to RLogin port
+                FWebSocketToRLoginServicePort = f.iniGetValue("WebSocket-RLogin", "Port", -1);
+                FWebSocketToRLoginServiceEnabled = (FWebSocketToRLoginServicePort > 0) && f.iniGetValue("WebSocket-RLogin", "Enabled", true);
 				
+				// Try to get the WebSocket to Telnet port
+                FWebSocketToTelnetServicePort = f.iniGetValue("WebSocket-Telnet", "Port", -1);
+                FWebSocketToTelnetServiceEnabled = (FWebSocketToTelnetServicePort > 0) && f.iniGetValue("WebSocket-Telnet", "Enabled", true);
+
 				f.close();
 			}
 		} catch (err) {
@@ -105,24 +90,9 @@ function GetServicesIniValues() {
 	}
 }
 
-function GetFlashSocketPolicyServicePort() {
-	GetServicesIniValues();
-	return FFlashSocketPolicyServicePort;
-}
-
 function GetRLoginPort() {
 	GetSBBSIniValues();
 	return FRLoginPort;
-}
-
-function GetServicePorts() {
-	GetServicesIniValues();
-	return FServicePorts;
-}
-
-function GetSSHPort() {
-	GetSBBSIniValues();
-	return FSSHPort;
 }
 
 function GetTelnetPort() {
@@ -130,27 +100,29 @@ function GetTelnetPort() {
 	return FTelnetPort;
 }
 
-function GetTerminalServerPorts() {
-	var Ports = GetTelnetPort();
-	if (IsRLoginEnabled()) Ports += "," + GetRLoginPort();
-	if (IsSSHEnabled()) Ports += "," + GetSSHPort();
-	Ports += "," + GetServicePorts();
-	return Ports;
+function GetWebSocketToRLoginPort() {
+	GetServicesIniValues();
+	return FWebSocketToRLoginServicePort;
 }
 
-function IsFlashSocketPolicyServerEnabled() {
+function GetWebSocketToTelnetPort() {
 	GetServicesIniValues();
-	return FFlashSocketPolicyServiceEnabled;
+	return FWebSocketToTelnetServicePort;
+}
+
+function IsWebSocketToRLoginServiceEnabled() {
+	GetServicesIniValues();
+	return FWebSocketToRLoginServiceEnabled;
+}
+
+function IsWebSocketToTelnetServiceEnabled() {
+	GetServicesIniValues();
+	return FWebSocketToTelnetServiceEnabled;
 }
 
 function IsRLoginEnabled() {
 	GetSBBSIniValues();
 	return (FBBSOptions.indexOf("ALLOW_RLOGIN") !== -1);
-}
-
-function IsSSHEnabled() {
-	GetSBBSIniValues();
-	return (FBBSOptions.indexOf("ALLOW_SSH") !== -1);
 }
 
 function StringToBytes(InLine) {
