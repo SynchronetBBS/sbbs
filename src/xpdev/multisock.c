@@ -31,8 +31,9 @@ void DLLCALL xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET
 	for(i=0; i<xpms_set->sock_count; i++) {
 		if(xpms_set->socks[i].sock != INVALID_SOCKET) {
 			if(xpms_set->lprintf!=NULL)
-				xpms_set->lprintf(LOG_INFO, "%04d closing %s socket on port %d"
+				xpms_set->lprintf(LOG_INFO, "%04d closing %s socket on %s port %d"
 						, xpms_set->socks[i].sock, xpms_set->socks[i].prot?xpms_set->socks[i].prot:"unknown"
+						, xpms_set->socks[i].address
 						, xpms_set->socks[i].port);
 			closesocket(xpms_set->socks[i].sock);
 			if(sock_destroy)
