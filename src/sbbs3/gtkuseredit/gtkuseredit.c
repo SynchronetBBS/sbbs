@@ -51,9 +51,7 @@ int refresh_globals(void)
 		cEE = gtk_list_store_new(1, G_TYPE_STRING);
 		gtk_combo_box_set_model(cExternalEditor, GTK_TREE_MODEL(cEE));
 		gtk_list_store_insert(cEE, &curr, 0);
-printf("Adding default\n");
 		gtk_list_store_set(cEE, &curr, 0, "Internal Editor", -1);
-printf("Edded default\n");
 		column = gtk_cell_renderer_text_new();
 		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(cExternalEditor), column, TRUE);
 		gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(cExternalEditor), column,
