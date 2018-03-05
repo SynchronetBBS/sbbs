@@ -1906,26 +1906,30 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 
 	if (get_ssl_cert(&scfg, NULL) == -1) {
 		lprintf(LOG_ERR, "Unable to get certificate");
-		sockprintf(*sock, *sess, "431 TLS not available");
+		if (resp)
+			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
 	}
 	if (cryptCreateSession(sess, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
 		lprintf(LOG_ERR, "Unable to create TLS session");
-		sockprintf(*sock, *sess, "431 TLS not available");
+		if (resp)
+			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
 	}
 	if (cryptSetAttribute(*sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
 		lprintf(LOG_ERR, "Unable to disable certificate verification");
 		cryptDestroySession(*sess);
 		*sess = -1;
-		sockprintf(*sock, *sess, "431 TLS not available");
+		if(resp)
+			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
 	}
 	if (cryptSetAttribute(*sess, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
 		lprintf(LOG_ERR, "Unable to set private key");
 		cryptDestroySession(*sess);
 		*sess = -1;
-		sockprintf(*sock, *sess, "431 TLS not available");
+		if (resp)
+			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
 	}
 	nodelay = TRUE;
@@ -1936,7 +1940,8 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 		lprintf(LOG_ERR, "Unable to set network socket");
 		cryptDestroySession(*sess);
 		*sess = -1;
-		sockprintf(*sock, *sess, "431 TLS not available");
+		if (resp)
+			sockprintf(*sock, *sess, "431 TLS not available");
 		return TRUE;
 	}
 	if (resp)
