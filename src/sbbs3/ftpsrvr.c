@@ -2768,7 +2768,6 @@ static void ctrl_thread(void* arg)
 			sockprintf(sock,sess," AUTH TLS");
 			sockprintf(sock,sess," PBSZ");
 			sockprintf(sock,sess," PROT");
-			sockprintf(sock,sess," CCC");
 			sockprintf(sock,sess,"211 End");
 			continue;
 		}
