@@ -406,8 +406,8 @@ void __fastcall TMailCfgDlg::POP3EnabledCheckBoxClick(TObject *Sender)
 {
 	POP3PortEdit->Enabled=POP3EnabledCheckBox->Checked;
     POP3PortLabel->Enabled=POP3EnabledCheckBox->Checked;
-	TLSPOP3PortEdit->Enabled=POP3EnabledCheckBox->Checked;
-    TLSPOP3PortLabel->Enabled=POP3EnabledCheckBox->Checked;
+	TLSPOP3PortEdit->Enabled=TLSPOP3EnabledCheckBox->Checked;
+    TLSPOP3PortLabel->Enabled=TLSPOP3EnabledCheckBox->Checked;
 
     bool enabled = POP3EnabledCheckBox->Checked || TLSPOP3EnabledCheckBox->Checked;
     
@@ -511,4 +511,5 @@ void __fastcall TMailCfgDlg::TLSSubPortCheckBoxClick(TObject *Sender)
 
 }
 //---------------------------------------------------------------------------
+
 
