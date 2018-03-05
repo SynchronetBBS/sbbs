@@ -7,38 +7,27 @@
 
 <!-- fTelnet --> 
 
-		<p style="text-align: center;"><span id="ClientContainer"></span></p>
-		<p style="text-align: center;">Keyboard Shortcuts: CTRL+UP ARROW = Scrollback, CTRL+PAGE UP = Upload, CTRL+PAGE DOWN = Download</p>
-		
-		<script type="text/javascript" src="/ftelnet/ClientVars.js"></script>
-		<script type="text/javascript" src="/ftelnet/ClientFuncs.js"></script>
-		<script type="text/javascript" src="/ftelnet/swfobject.js"></script>
-		<script type="text/javascript">
-			ClientVars.RLogin = 1;
-			ClientVars.RLoginClientUserName = "@@ClientUserName@@";
-			ClientVars.RLoginHostName = "@@HostName@@";
-			ClientVars.RLoginPort = @@Port@@;
-			ClientVars.RLoginServerUserName = "@@ServerUserName@@";
-			ClientVars.RLoginTerminalType = "@@TerminalType@@";
-			ClientVars.ServerName = "@@ServerName@@";
-			ClientVars.SocketPolicyPort = @@SocketPolicyPort@@;
-			swfobject.embedSWF(
-				"/ftelnet/fTelnet.swf",
-				"ClientContainer",
-				"100%",
-				"100%",
-				"10.0.0",
-				"/ftelnet/playerProductInstall.swf",
-				ClientVars,
-				{ allowfullscreen: "true", allowscriptaccess: "sameDomain", bgcolor: "#ffffff", quality: "high" },
-				{ align: "middle", id: "fTelnet", name: "fTelnet", swliveconnect: "true" },
-				function (callbackObj) {
-					if (!callbackObj.success) {
-						// Failed to use fTelnet, and this method has no fall-back
-						alert("Sorry, I wasn't able to load fTelnet\n\nTry again with Flash 10+ installed");
-					}
-				}
-			);
+		<div id="fTelnetContainer" class="fTelnetContainer"></div>
+		<script>document.write('<script src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"><\/script>');</script>
+		<script>
+			var Options = new fTelnetOptions();
+			Options.BareLFtoCRLF = false;
+			Options.BitsPerSecond = 57600;
+			Options.ConnectionType = 'rlogin';
+			Options.Emulation = 'ansi-bbs';
+			Options.Enter = '\r';
+			Options.Font = 'CP437';
+			Options.ForceWss = false;
+			Options.Hostname = '@@HostName@@';
+			Options.LocalEcho = false;
+			Options.Port = @@Port@@;
+			Options.RLoginClientUsername = '@@ClientUserName@@';
+			Options.RLoginServerUsername = '@@ServerUserName@@';
+			Options.RLoginTerminalType = '@@TerminalType@@';
+			Options.ScreenColumns = 80;
+			Options.ScreenRows = 25;
+			var fTelnet = new fTelnetClient('fTelnetContainer', Options);
+			fTelnet.Connect();
 		</script>
 
 <!-- end fTelnet -->

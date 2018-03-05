@@ -25,10 +25,10 @@ if (!options) {
     if (user.security.level >= 90) {
         template.SysOpMessage = "Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the rlogin_auto_xtrn feature of the logon module<ul><li>To do this, ensure that the <b>rlogin_auto_xtrn=</b> line in the <b>[logon]</b> section of <b>sbbs/ctrl/modopts.ini</b> is set to <b>true</b></li><li>(Currently, it's set to <b>" + options.rlogin_auto_xtrn + "</b>)</ul>";
     }
-} else if (!IsFlashSocketPolicyServerEnabled()) {
+} else if (!IsWebSocketToRLoginServiceEnabled()) {
 	templatefile = "ftelnet_disabled.inc";
 	if (user.security.level >= 90) {
-		template.SysOpMessage = "Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the Flash Socket Policy Service<ul><li>To do this, add this block to your <b>sbbs/ctrl/services.ini file<pre>[FlashPolicy]\r\nPort=843\r\nOptions=NO_HOST_LOOKUP\r\nCommand=flashpolicyserver.js</pre></li></ul>";
+		template.SysOpMessage = "Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the WebSocket to RLogin Proxy Service<ul><li>To do this, add this block to your <b>sbbs/ctrl/services.ini file<pre>[WebSocket-RLogin]\r\nPort=11513\r\nOptions=NO_HOST_LOOKUP\r\nCommand=websocketservice.js localhost " + GetRLoginPort() + "</pre></li></ul><strong>NOTE:</strong> You may need to tweak the Command= line if your server is listening on a specific IP address (ie change 'localhost' to the correct IP).";
 	}
 } else if (!IsRLoginEnabled()) {
 	templatefile = "ftelnet_disabled.inc";
@@ -61,9 +61,7 @@ if (!options) {
 		template.ServerUserName = user.alias;
 		template.TerminalType = "xtrn=" + http_request.query.code;
 		template.HostName = system.host_name;
-		template.Port = GetRLoginPort();
-		template.ServerName = system.name;
-		template.SocketPolicyPort = GetFlashSocketPolicyServicePort();
+		template.Port = GetWebSocketToRLoginPort();
 	}
 }
 

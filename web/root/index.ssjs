@@ -45,7 +45,7 @@ if(do_leftnav)
     if(host==undefined || !host.length)
         host = system.host_name;
 	  
-	template.additional_services ='[' + ("flash telnet".link("ftelnet.ssjs")) + '] ';
+	template.additional_services ='[' + ("web telnet".link("ftelnet.ssjs")) + '] ';
 	template.additional_services+='[' + ("java telnet".link("telnet/")) + '] ';
     template.additional_services+='[' + ("telnet".link("telnet://"+host +telnet_port)) + '] ';
     template.additional_services+='[' + ("rlogin".link("rlogin://"+host +rlogin_port)) + '] ';
