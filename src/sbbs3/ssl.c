@@ -91,7 +91,7 @@ bool DLLCALL is_crypt_initialized(void)
 CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 {
 	CRYPT_KEYSET		ssl_keyset;
-	CRYPT_CONTEXT		ssl_context = -1;
+	CRYPT_CONTEXT		ssl_context = -1;	// MSVC requires this to be initialized
 	CRYPT_CERTIFICATE	ssl_cert;
 	int					i;
 	char				sysop_email[sizeof(cfg->sys_inetaddr)+6];
