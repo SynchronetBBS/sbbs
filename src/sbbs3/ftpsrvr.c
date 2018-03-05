@@ -4872,6 +4872,7 @@ static void ctrl_thread(void* arg)
 				,sock,user.alias,cmd);
 			ftp_hacklog("FTP", user.alias, cmd, host_name, &ftp.client_addr);
 		}		
+		// TODO: STAT is mandatory
 		sockprintf(sock,sess,"500 Syntax error: '%s'",cmd);
 		lprintf(LOG_WARNING,"%04d !UNSUPPORTED COMMAND from %s: '%s'"
 			,sock,user.alias,cmd);
