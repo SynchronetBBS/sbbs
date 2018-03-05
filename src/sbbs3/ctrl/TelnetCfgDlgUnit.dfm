@@ -17,8 +17,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 3
     Width = 278
     Height = 186
-    ActivePage = SshTabSheet
-    TabIndex = 3
+    ActivePage = GeneralTabSheet
+    TabIndex = 0
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -55,7 +55,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Auto Startup'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 4
       end
       object FirstNodeEdit: TEdit
         Left = 85
@@ -76,7 +76,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Minimize Externals'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 5
       end
       object LastNodeEdit: TEdit
         Left = 85
@@ -97,7 +97,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Hostname Lookup'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 3
       end
       object QWKEventsCheckBox: TCheckBox
         Left = 148
@@ -108,7 +108,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'QWK Msg Events'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 7
       end
       object JavaScriptCheckBox: TCheckBox
         Left = 148
@@ -119,7 +119,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'JavaScript Support'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 8
       end
       object EventsCheckBox: TCheckBox
         Left = 148
@@ -130,7 +130,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Events Enabled'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 6
       end
       object DosSupportCheckBox: TCheckBox
         Left = 7
@@ -141,7 +141,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'DOS Program Support'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 9
       end
       object IdentityCheckBox: TCheckBox
         Left = 7
@@ -152,7 +152,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Identity Lookup'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 9
+        TabOrder = 10
       end
       object MaxConConEdit: TEdit
         Left = 85
@@ -164,7 +164,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
           'nlimited)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 10
+        TabOrder = 2
       end
     end
     object TelnetTabSheet: TTabSheet
