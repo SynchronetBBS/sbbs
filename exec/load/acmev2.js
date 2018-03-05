@@ -563,7 +563,7 @@ ACMEv2.prototype.log_headers = function()
 
 	if (this.ua.response_headers_parsed.Location !== undefined)
 		for (i in this.ua.response_headers_parsed.Location)
-			log(LOG_DEBUG, "Link: "+this.ua.response_headers_parsed.Location[i]);
+			log(LOG_DEBUG, "Location: "+this.ua.response_headers_parsed.Location[i]);
 	if (this.ua.response_headers_parsed.Link !== undefined)
 		for (i in this.ua.response_headers_parsed.Link)
 			log(LOG_DEBUG, "Link: "+this.ua.response_headers_parsed.Link[i]);
