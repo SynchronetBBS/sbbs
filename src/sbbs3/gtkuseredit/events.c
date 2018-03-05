@@ -1981,7 +1981,6 @@ G_MODULE_EXPORT void close_this_window(GtkWidget *t, gpointer data)
 
 G_MODULE_EXPORT void hide_this_window(GtkWidget *t, gpointer data)
 {
-	printf("Hiding the window!");
 	gtk_widget_hide(GTK_WIDGET(gtk_widget_get_toplevel(t)));
 }
 
