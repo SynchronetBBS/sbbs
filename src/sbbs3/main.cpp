@@ -5366,6 +5366,7 @@ NO_SSH:
 				lprintf(LOG_WARNING,"Node %d !ERROR %d receiving on Cryptlib session", sbbs->cfg.node_num, err);
 				i=0;
 			}
+			// TODO: Here is where we'll be able to check the subsystem and do sftp
 			sbbs->online=ON_REMOTE;
 		}
 #endif
