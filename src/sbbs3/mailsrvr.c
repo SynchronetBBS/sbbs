@@ -5220,7 +5220,8 @@ static void sendmail_thread(void* arg)
 			if(!port)
 				port=IPPORT_SMTP;
 
-			sendmail_open_socket(&sock, &smb, &msg);
+			if (!sendmail_open_socket(&sock, &smb, &msg))
+				continue;
 
 			strcpy(err,"UNKNOWN ERROR");
 			success=FALSE;
@@ -5323,10 +5324,15 @@ static void sendmail_thread(void* arg)
 								lprintf(LOG_WARNING,"%04d !SEND ERROR %d creating TLS session to SMTP server: %s"
 									,sock
 									,i, server);
+								if (!sendmail_open_socket(&sock, &smb, &msg)) {
+									remove_msg_intransit(&smb,&msg);
+									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
+									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
+									continue;
+								}
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
-								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
@@ -5335,10 +5341,15 @@ static void sendmail_thread(void* arg)
 									,sock
 									,i, server);
 								session = -1;
+								if (!sendmail_open_socket(&sock, &smb, &msg)) {
+									remove_msg_intransit(&smb,&msg);
+									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
+									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
+									continue;
+								}
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
-								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							if ((i=cryptSetAttribute(session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_OBLIVIOUS)) != CRYPT_OK) {
@@ -5347,10 +5358,15 @@ static void sendmail_thread(void* arg)
 									,sock
 									,i, server);
 								session = -1;
+								if (!sendmail_open_socket(&sock, &smb, &msg)) {
+									remove_msg_intransit(&smb,&msg);
+									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
+									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
+									continue;
+								}
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
-								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
@@ -5359,10 +5375,15 @@ static void sendmail_thread(void* arg)
 									,sock
 									,i, server);
 								session = -1;
+								if (!sendmail_open_socket(&sock, &smb, &msg)) {
+									remove_msg_intransit(&smb,&msg);
+									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
+									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
+									continue;
+								}
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
-								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							nodelay = TRUE;
@@ -5375,10 +5396,15 @@ static void sendmail_thread(void* arg)
 									,sock
 									,i, server);
 								session = -1;
+								if (!sendmail_open_socket(&sock, &smb, &msg)) {
+									remove_msg_intransit(&smb,&msg);
+									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
+									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
+									continue;
+								}
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
-								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
@@ -5387,10 +5413,15 @@ static void sendmail_thread(void* arg)
 									,sock
 									,i, server);
 								session = -1;
+								if (!sendmail_open_socket(&sock, &smb, &msg)) {
+									remove_msg_intransit(&smb,&msg);
+									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
+									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
+									continue;
+								}
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
-								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							if (startup->max_inactivity) {
@@ -5403,10 +5434,15 @@ static void sendmail_thread(void* arg)
 									if (p)
 										free_crypt_attrstr(p);
 									session = -1;
+									if (!sendmail_open_socket(&sock, &smb, &msg)) {
+										remove_msg_intransit(&smb,&msg);
+										SAFEPRINTF3(err,badrsp_err,server,buf,"250");
+										bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
+										continue;
+									}
 									success = FALSE;
 									tls_failed = TRUE;
 									j--;
-									sendmail_open_socket(&sock, &smb, &msg);
 									continue;
 								}
 							}
