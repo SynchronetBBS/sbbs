@@ -5409,9 +5409,12 @@ static void sendmail_thread(void* arg)
 							}
 							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
 								cryptDestroySession(session);
-								lprintf(LOG_WARNING,"%04d !SEND ERROR %d activating TLS session with SMTP server: %s"
+								p = get_crypt_error(session);
+								lprintf(LOG_WARNING,"%04d !SEND ERROR %d (%s) activating TLS session with SMTP server: %s"
 									,sock
-									,i, server);
+									,i, p ? p : "<unknown>", server);
+								if (p)
+									free_crypt_attrstr(p);
 								session = -1;
 								if (!sendmail_open_socket(&sock, &smb, &msg)) {
 									remove_msg_intransit(&smb,&msg);
