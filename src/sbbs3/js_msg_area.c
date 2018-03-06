@@ -155,24 +155,29 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 		SAFECOPY(str,sub->newsgroup);
 	else {
 		sprintf(str,"%s.%s",cfg->grp[sub->grp]->sname,sub->sname);
+		/*
+		 * From RFC5536:
+		 * newsgroup-name  =  component *( "." component )
+		 * component       =  1*component-char
+		 * component-char  =  ALPHA / DIGIT / "+" / "-" / "_"
+		 */
+		if (str[0] == '.')
+			str[0] = '_';
 		for(c=0;str[c];c++) {
-			if (str[c] >= 0 && str[c] < 0x22)
-				str[c] = '_';
-			switch(str[c]) {
-				// Illegal chars:
-				case '*':
-				case ',':
-				case '?':
-				case '[':
-				case '\\':
-				case ']':
-				case 0x7f:
-					str[c]='_';
-					break;
-				default:
-					break;
-			}
+			/* Legal characters */
+			if ((str[c] >= 'A' && str[c] <= 'Z')
+					|| (str[c] >= 'a' && str[c] <= 'z')
+					|| (str[c] >= '0' && str[c] <= '9')
+					|| str[c] == '+'
+					|| str[c] == '-'
+					|| str[c] == '_'
+					|| str[c] == '.')
+				continue;
+			str[c] = '_';
 		}
+		c--;
+		if (str[c] == '.')
+			str[0] = '_';
 	}
 	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
 		return(FALSE);
