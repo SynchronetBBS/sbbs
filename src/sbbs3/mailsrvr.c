@@ -4902,6 +4902,44 @@ void get_dns_server(char* dns_server, size_t len)
 	}
 }
 
+static BOOL sendmail_open_socket(SOCKET *sock, smb_t *smb, 	smbmsg_t *msg)
+{
+	int i;
+	SOCKADDR_IN	addr;
+
+	if (*sock != INVALID_SOCKET)
+		mail_close_socket(*sock);
+
+	if((*sock=socket(AF_INET, SOCK_STREAM, IPPROTO_IP))==INVALID_SOCKET) {
+		remove_msg_intransit(smb,msg);
+		lprintf(LOG_ERR,"0000 !SEND ERROR %d opening socket", ERROR_VALUE);
+		return FALSE;
+	}
+	mail_open_socket(*sock,"smtp|sendmail");
+
+	if(startup->connect_timeout) {	/* Use non-blocking socket */
+		long nbio=1;
+		if((i=ioctlsocket(*sock, FIONBIO, &nbio))!=0) {
+			remove_msg_intransit(smb,msg);
+			lprintf(LOG_ERR,"%04d !SEND ERROR %d (%d) disabling blocking on socket"
+				,*sock, i, ERROR_VALUE);
+			return FALSE;
+		}
+	}
+
+	memset(&addr,0,sizeof(addr));
+	addr.sin_addr.s_addr = htonl(startup->outgoing4.s_addr);
+	addr.sin_family = AF_INET;
+
+	i=bind(*sock,(struct sockaddr *)&addr, sizeof(addr));
+	if(i!=0) {
+		remove_msg_intransit(smb,msg);
+		lprintf(LOG_ERR,"%04d !SEND ERROR %d (%d) binding socket", *sock, i, ERROR_VALUE);
+		return FALSE;
+	}
+	return TRUE;
+}
+
 /* TODO: IPv6 etc. */
 #ifdef __BORLANDC__
 #pragma argsused
@@ -4939,7 +4977,6 @@ static void sendmail_thread(void* arg)
 	BOOL		success;
 	BOOL		first_cycle=TRUE;
 	SOCKET		sock=INVALID_SOCKET;
-	SOCKADDR_IN	addr;
 	union xp_sockaddr	server_addr;
 	char		server_ip[INET6_ADDRSTRLEN];
 	time_t		last_scan=0;
@@ -5180,33 +5217,7 @@ static void sendmail_thread(void* arg)
 			if(!port)
 				port=IPPORT_SMTP;
 
-			if((sock=socket(AF_INET, SOCK_STREAM, IPPROTO_IP))==INVALID_SOCKET) {
-				remove_msg_intransit(&smb,&msg);
-				lprintf(LOG_ERR,"0000 !SEND ERROR %d opening socket", ERROR_VALUE);
-				continue;
-			}
-			mail_open_socket(sock,"smtp|sendmail");
-
-			if(startup->connect_timeout) {	/* Use non-blocking socket */
-				long nbio=1;
-				if((i=ioctlsocket(sock, FIONBIO, &nbio))!=0) {
-					remove_msg_intransit(&smb,&msg);
-					lprintf(LOG_ERR,"%04d !SEND ERROR %d (%d) disabling blocking on socket"
-						,sock, i, ERROR_VALUE);
-					continue;
-				}
-			}
-
-			memset(&addr,0,sizeof(addr));
-			addr.sin_addr.s_addr = htonl(startup->outgoing4.s_addr);
-			addr.sin_family = AF_INET;
-
-			i=bind(sock,(struct sockaddr *)&addr, sizeof(addr));
-			if(i!=0) {
-				remove_msg_intransit(&smb,&msg);
-				lprintf(LOG_ERR,"%04d !SEND ERROR %d (%d) binding socket", sock, i, ERROR_VALUE);
-				continue;
-			}
+			sendmail_open_socket(&sock, &smb, &msg);
 
 			strcpy(err,"UNKNOWN ERROR");
 			success=FALSE;
@@ -5312,6 +5323,7 @@ static void sendmail_thread(void* arg)
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
+								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
@@ -5323,6 +5335,7 @@ static void sendmail_thread(void* arg)
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
+								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							if ((i=cryptSetAttribute(session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_OBLIVIOUS)) != CRYPT_OK) {
@@ -5334,6 +5347,7 @@ static void sendmail_thread(void* arg)
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
+								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
@@ -5345,6 +5359,7 @@ static void sendmail_thread(void* arg)
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
+								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							nodelay = TRUE;
@@ -5360,6 +5375,7 @@ static void sendmail_thread(void* arg)
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
+								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
@@ -5371,6 +5387,7 @@ static void sendmail_thread(void* arg)
 								success = FALSE;
 								tls_failed = TRUE;
 								j--;
+								sendmail_open_socket(&sock, &smb, &msg);
 								continue;
 							}
 							if (startup->max_inactivity) {
@@ -5386,6 +5403,7 @@ static void sendmail_thread(void* arg)
 									success = FALSE;
 									tls_failed = TRUE;
 									j--;
+									sendmail_open_socket(&sock, &smb, &msg);
 									continue;
 								}
 							}
