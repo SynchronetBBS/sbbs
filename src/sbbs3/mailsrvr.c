@@ -5305,36 +5305,44 @@ static void sendmail_thread(void* arg)
 					if ((!tls_failed) && get_ssl_cert(&scfg, NULL) != -1) {
 						sockprintf(sock, session, "STARTTLS");
 						if (sockgetrsp(sock, session, "220", buf, sizeof(buf))) {
-							if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL) != CRYPT_OK) {
-								remove_msg_intransit(&smb,&msg);
-								bounce(sock, &smb,&msg,"Unable to create TLS session",/* immediate: */buf[0]=='5');
+							if ((i=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL)) != CRYPT_OK) {
+								lprintf(LOG_WARNING,"%04d !SEND ERROR %d creating TLS session to SMTP server: %s"
+									,sock
+									,i, server);
+								success = FALSE;
 								tls_failed = TRUE;
 								j--;
 								continue;
 							}
-							if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
+							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 								cryptDestroySession(session);
+								lprintf(LOG_WARNING,"%04d !SEND ERROR %d disabling certificate verification with SMTP server: %s"
+									,sock
+									,i, server);
 								session = -1;
-								remove_msg_intransit(&smb,&msg);
-								bounce(sock, &smb,&msg,"Unable to disable certverify",/* immediate: */buf[0]=='5');
+								success = FALSE;
 								tls_failed = TRUE;
 								j--;
 								continue;
 							}
-							if (cryptSetAttribute(session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_OBLIVIOUS) != CRYPT_OK) {
+							if ((i=cryptSetAttribute(session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_OBLIVIOUS)) != CRYPT_OK) {
 								cryptDestroySession(session);
+								lprintf(LOG_WARNING,"%04d !SEND ERROR %d setting oblivious certificate compliance level with SMTP server: %s"
+									,sock
+									,i, server);
 								session = -1;
-								remove_msg_intransit(&smb,&msg);
-								bounce(sock, &smb,&msg,"Unable to disable certverify",/* immediate: */buf[0]=='5');
+								success = FALSE;
 								tls_failed = TRUE;
 								j--;
 								continue;
 							}
-							if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
+							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
 								cryptDestroySession(session);
+								lprintf(LOG_WARNING,"%04d !SEND ERROR %d setting private key with SMTP server: %s"
+									,sock
+									,i, server);
 								session = -1;
-								remove_msg_intransit(&smb,&msg);
-								bounce(sock, &smb,&msg,"Unable to set private key",/* immediate: */buf[0]=='5');
+								success = FALSE;
 								tls_failed = TRUE;
 								j--;
 								continue;
@@ -5343,30 +5351,39 @@ static void sendmail_thread(void* arg)
 							setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 							nb=0;
 							ioctlsocket(sock,FIONBIO,&nb);
-							if (cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, sock) != CRYPT_OK) {
+							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, sock)) != CRYPT_OK) {
 								cryptDestroySession(session);
+								lprintf(LOG_WARNING,"%04d !SEND ERROR %d setting network socket with SMTP server: %s"
+									,sock
+									,i, server);
 								session = -1;
-								remove_msg_intransit(&smb,&msg);
-								bounce(sock, &smb,&msg,"Unable to set TLS network socket",/* immediate: */buf[0]=='5');
+								success = FALSE;
 								tls_failed = TRUE;
 								j--;
 								continue;
 							}
-							if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
+							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
 								cryptDestroySession(session);
+								lprintf(LOG_WARNING,"%04d !SEND ERROR %d activating TLS session with SMTP server: %s"
+									,sock
+									,i, server);
 								session = -1;
-								remove_msg_intransit(&smb,&msg);
-								bounce(sock, &smb,&msg,"Unable to set session active",/* immediate: */buf[0]=='5');
+								success = FALSE;
 								tls_failed = TRUE;
 								j--;
 								continue;
 							}
 							if (startup->max_inactivity) {
-								if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
+								if ((i=cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity)) != CRYPT_OK) {
 									cryptDestroySession(session);
+									p = get_crypt_error(session);
+									lprintf(LOG_WARNING,"%04d !SEND ERROR %d (%s) setting max inactivity with SMTP server: %s"
+										,sock
+										,i, p ? p : "<unknown>", server);
+									if (p)
+										free_crypt_attrstr(p);
 									session = -1;
-									remove_msg_intransit(&smb,&msg);
-									bounce(sock, &smb,&msg,"Unable to set max inactivity",/* immediate: */buf[0]=='5');
+									success = FALSE;
 									tls_failed = TRUE;
 									j--;
 									continue;
