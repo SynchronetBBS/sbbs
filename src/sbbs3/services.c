@@ -1707,6 +1707,7 @@ void DLLCALL services_thread(void* arg)
 	struct timeval	tv;
 	service_client_t* client;
 	char			ssl_estr[SSL_ESTR_LEN];
+	BOOL			need_cert = FALSE;
 
 	services_ver();
 
@@ -1841,11 +1842,7 @@ void DLLCALL services_thread(void* arg)
 					continue;
 				}
 				if(scfg.tls_certificate == -1) {
-					get_ssl_cert(&scfg, ssl_estr);
-					if (scfg.tls_certificate == -1) {
-						lprintf(LOG_ERR, "Error creating TLS certificate: %s", ssl_estr);
-						continue;
-					}
+					need_cert = TRUE;
 				}
 			}
 			service[i].set=xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
@@ -1910,6 +1907,12 @@ void DLLCALL services_thread(void* arg)
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)
     		startup->started(startup->cbdata);
+
+		if (need_cert) {
+			get_ssl_cert(&scfg, ssl_estr);
+			if (scfg.tls_certificate == -1)
+				lprintf(LOG_ERR, "Error creating TLS certificate: %s", ssl_estr);
+		}
 
 		lprintf(LOG_INFO,"0000 Services thread started (%u service sockets bound)", total_sockets);
 
