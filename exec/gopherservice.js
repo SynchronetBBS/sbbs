@@ -219,6 +219,10 @@ switch(field[0]) {
 			}
 		break;
 	case "sub":
+		if(!msg_area.sub[field[1]]) {
+			writeln(log(LOG_NOTICE, "Invalid message area: " + field[1]));
+			break;
+		}
 		msgbase = new MsgBase(field[1]);
 		if(msgbase.open!=undefined && msgbase.open()==false) {
 			writeln("!ERROR " + msgbase.last_error);
