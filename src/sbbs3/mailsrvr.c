@@ -5014,7 +5014,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 			if((i=nonblocking_connect(sock, (struct sockaddr *)&server_addr, xp_sockaddr_len(&server_addr), startup->connect_timeout))!=0) {
 				SAFEPRINTF2(err,"ERROR %d connecting to SMTP server: %s"
 					,i, server);
-				lprintf(LOG_WARNING,"%04d !SEND %s" ,sock, err);
+				lprintf(LOG_INFO,"%04d !SEND %s" ,sock, err);
 				listAddNodeData(failed_server_list,&server_addr,sizeof(server_addr),i,NULL);
 				continue;
 			}
@@ -5024,7 +5024,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 			/* HELO */
 			if(!sockgetrsp(sock,*session,"220",buf,sizeof(buf))) {
 				SAFEPRINTF3(err,badrsp_err,server,buf,"220");
-				lprintf(LOG_WARNING, "%04d SEND %s", sock, err);
+				lprintf(LOG_INFO, "%04d SEND %s", sock, err);
 				continue;
 			}
 			success=TRUE;
@@ -5064,22 +5064,22 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 					if (sockgetrsp(sock, *session, "220", buf, sizeof(buf))) {
 						if ((status=cryptCreateSession(session, CRYPT_UNUSED, CRYPT_SESSION_SSL)) != CRYPT_OK) {
 							SAFEPRINTF2(err, "ERROR %d creating TLS session to SMTP server: %s", status, server);
-							lprintf(LOG_WARNING,"%04d !SEND %s", sock, err);
+							lprintf(LOG_INFO,"%04d !SEND %s", sock, err);
 							continue;
 						}
 						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 							SAFEPRINTF2(err, "ERROR %d disabling certificate validation with SMTP server: %s", status, server);
-							lprintf(LOG_WARNING,"%04d !SEND %s" ,sock, err);
+							lprintf(LOG_INFO,"%04d !SEND %s" ,sock, err);
 							continue;
 						}
 						if ((status=cryptSetAttribute(*session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_OBLIVIOUS)) != CRYPT_OK) {
 							SAFEPRINTF2(err, "ERROR %d setting oblivious certificate compliance level with SMTP server: %s", status, server);
-							lprintf(LOG_WARNING,"%04d !SEND %s" ,sock, err);
+							lprintf(LOG_INFO,"%04d !SEND %s" ,sock, err);
 							continue;
 						}
 						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
 							SAFEPRINTF2(err, "ERROR %d setting private key with SMTP server: %s", status, server);
-							lprintf(LOG_WARNING,"%04d !SEND %s", sock, err);
+							lprintf(LOG_INFO,"%04d !SEND %s", sock, err);
 							continue;
 						}
 						nodelay = TRUE;
@@ -5088,7 +5088,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 						ioctlsocket(sock,FIONBIO,&nb);
 						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_NETWORKSOCKET, sock)) != CRYPT_OK) {
 							SAFEPRINTF2(err, "ERROR %d setting network socket with SMTP server: %s", status, server);
-							lprintf(LOG_WARNING,"%04d !SEND %s", sock, err);
+							lprintf(LOG_INFO,"%04d !SEND %s", sock, err);
 							continue;
 						}
 						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
@@ -5096,7 +5096,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 							SAFEPRINTF3(err, "ERROR %d (%s) activating TLS session with SMTP server: %s", status, estr ? estr : "<unknown>", server);
 							if (estr)
 								free_crypt_attrstr(estr);
-							lprintf(LOG_WARNING,"%04d !SEND %s", sock, err);
+							lprintf(LOG_INFO,"%04d !SEND %s", sock, err);
 							continue;
 						}
 						if (startup->max_inactivity) {
@@ -5105,14 +5105,14 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 								SAFEPRINTF3(err, "ERROR %d (%s) setting max inactivity with SMTP server: %s", status, estr ? estr : "<unknown>", server);
 								if (estr)
 									free_crypt_attrstr(estr);
-								lprintf(LOG_WARNING,"%04d !SEND %s", sock, err);
+								lprintf(LOG_INFO,"%04d !SEND %s", sock, err);
 								continue;
 							}
 						}
 						sockprintf(sock,*session,"EHLO %s",startup->host_name);
 						if(!sockgetrsp(sock,*session,"250",buf,sizeof(buf))) {
 							SAFEPRINTF3(err,badrsp_err,server,buf,"220");
-							lprintf(LOG_WARNING, "%04d SEND %s", sock, err);
+							lprintf(LOG_INFO, "%04d SEND %s", sock, err);
 							continue;
 						}
 					}
