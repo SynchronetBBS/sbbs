@@ -5352,15 +5352,6 @@ static void sendmail_thread(void* arg)
 								j--;
 								continue;
 							}
-							if (cryptSetAttribute(session, CRYPT_SESSINFO_VERSION, 1) != CRYPT_OK) {
-								cryptDestroySession(session);
-								session = -1;
-								remove_msg_intransit(&smb,&msg);
-								bounce(sock, &smb,&msg,"Unable to set TLS version to 1.0",/* immediate: */buf[0]=='5');
-								tls_failed = TRUE;
-								j--;
-								continue;
-							}
 							if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
 								cryptDestroySession(session);
 								session = -1;
