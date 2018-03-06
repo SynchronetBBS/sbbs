@@ -155,9 +155,24 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 		SAFECOPY(str,sub->newsgroup);
 	else {
 		sprintf(str,"%s.%s",cfg->grp[sub->grp]->sname,sub->sname);
-		for(c=0;str[c];c++)
-			if(str[c]==' ')
-				str[c]='_';
+		for(c=0;str[c];c++) {
+			if (str[c] >= 0 && str[c] < 0x22)
+				str[c] = '_';
+			switch(str[c]) {
+				// Illegal chars:
+				case '*':
+				case ',':
+				case '?':
+				case '[':
+				case '\\':
+				case ']':
+				case 0x7f:
+					str[c]='_';
+					break;
+				default:
+					break;
+			}
+		}
 	}
 	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
 		return(FALSE);
