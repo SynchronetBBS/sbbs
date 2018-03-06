@@ -2590,6 +2590,21 @@ end:
 	return(usernum);
 }
 
+#define WITH_ESMTP	(1<<0)
+#define WITH_AUTH	(1<<1)
+#define WITH_TLS	(1<<2)
+
+char *with_clauses[] = {
+	"SMTP",			// No WITH_*
+	"ESMTP",		// WITH_ESMTP
+	"SMTP",			// WITH_AUTH
+	"ESMTPA",		// WITH_ESMTP | WITH_AUTH
+	"SMTP",			// WITH_TLS
+	"ESMTPS",		// WITH_ESMTP | WITH_TLS
+	"SMTP",			// WITH_TLS | WITH_AUTH
+	"ESMTPSA"		// WITH_TLS | WITH_AUTH | WITH_ESMTP
+};
+
 static void smtp_thread(void* arg)
 {
 	int			i,j;
@@ -2694,6 +2709,7 @@ static void smtp_thread(void* arg)
 	int session = -1;
 	BOOL nodelay=TRUE;
 	ulong nb = 0;
+	unsigned	with_val;
 
 	enum {
 			 SMTP_STATE_INITIAL
@@ -3605,6 +3621,14 @@ static void smtp_thread(void* arg)
 						break;
 					}
 
+					with_val = 0;
+					if (esmtp)
+						with_val |= WITH_ESMTP;
+					if (auth_login)
+						with_val |= WITH_AUTH;
+					if (session != -1)
+						with_val |= WITH_TLS;
+
 					snprintf(hdrfield,sizeof(hdrfield),
 						"from %s (%s [%s%s])\r\n"
 						"          by %s [%s%s] (%s %s-%s) with %s\r\n"
@@ -3618,7 +3642,7 @@ static void smtp_thread(void* arg)
 						,server_ip
 						,server_name
 						,revision,PLATFORM_DESC
-						,esmtp ? (auth_login ? "ESMTPA" : "ESMTP") : "SMTP"
+						,with_clauses[with_val]
 						,rcpt_to,msgdate(msg.hdr.when_imported,date)
 						,reverse_path);
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */TRUE);
