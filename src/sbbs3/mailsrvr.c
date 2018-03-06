@@ -959,25 +959,25 @@ static void pop3_thread(void* arg)
 
 	if (pop3.tls_port) {
 		if (get_ssl_cert(&scfg, NULL) == -1) {
-			lprintf(LOG_ERR, "Unable to get TLS certificate");
+			lprintf(LOG_ERR, "%04d !POP3 Unable to get TLS certificate", socket);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to create TLS session");
+			lprintf(LOG_ERR, "%04d !POP3 Unable to create TLS session", socket);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to disable certificate verification");
+			lprintf(LOG_ERR, "%04d !POP3 Unable to disable certificate verification", socket);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to set private key");
+			lprintf(LOG_ERR, "%04d !POP3 Unable to set private key", socket);
 			mail_close_socket(socket);
 			thread_down();
 			return;
@@ -987,20 +987,20 @@ static void pop3_thread(void* arg)
 		nb=0;
 		ioctlsocket(socket,FIONBIO,&nb);
 		if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to set session socket (%d, %d)", rd, socket);
+			lprintf(LOG_ERR, "%04d !POP3 Unable to set session socket (%d)", socket, rd);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to set session active");
+			lprintf(LOG_ERR, "%04d !POP3 Unable to set session active", socket);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (startup->max_inactivity) {
 			if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-				lprintf(LOG_ERR, "Unable to set max inactivity");
+				lprintf(LOG_ERR, "%04d !POP3 Unable to set max inactivity", socket);
 				mail_close_socket(socket);
 				thread_down();
 				return;
@@ -1098,17 +1098,17 @@ static void pop3_thread(void* arg)
 				}
 				sockprintf(socket,session,"+OK Begin TLS negotiation");
 				if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-					lprintf(LOG_ERR, "Unable to create TLS session");
+					lprintf(LOG_ERR, "%04d !POP3 Unable to create TLS session", socket);
 					buf[0] = 0;
 					break;
 				}
 				if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-					lprintf(LOG_ERR, "Unable to disable certificate verification");
+					lprintf(LOG_ERR, "%04d !POP3 Unable to disable certificate verification", socket);
 					buf[0] = 0;
 					break;
 				}
 				if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
-					lprintf(LOG_ERR, "Unable to set private key");
+					lprintf(LOG_ERR, "%04d !POP3 Unable to set private key", socket);
 					buf[0] = 0;
 					break;
 				}
@@ -1117,18 +1117,18 @@ static void pop3_thread(void* arg)
 				nb=0;
 				ioctlsocket(socket,FIONBIO,&nb);
 				if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
-					lprintf(LOG_ERR, "Unable to set session socket (%d, %d)", rd, socket);
+					lprintf(LOG_ERR, "%04d !POP3 Unable to set session socket (%d)", socket, rd);
 					buf[0] = 0;
 					break;
 				}
 				if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
-					lprintf(LOG_ERR, "Unable to set session active");
+					lprintf(LOG_ERR, "%04d !POP3 Unable to set session active", socket);
 					buf[0] = 0;
 					break;
 				}
 				if (startup->max_inactivity) {
 					if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-						lprintf(LOG_ERR, "Unable to set max inactivity");
+						lprintf(LOG_ERR, "%04d !POP3 Unable to set max inactivity", socket);
 						buf[0] = 0;
 						break;
 					}
@@ -2754,26 +2754,26 @@ static void smtp_thread(void* arg)
 
 	if(smtp.tls_port) {
 		if (get_ssl_cert(&scfg, NULL) == -1) {
-			lprintf(LOG_ERR, "Unable to get certificate");
+			lprintf(LOG_ERR, "%04d !SMTP Unable to get certificate", socket);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to create TLS session");
+			lprintf(LOG_ERR, "%04d !SMTP Unable to create TLS session", socket);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to disable certificate verification");
+			lprintf(LOG_ERR, "%04d !SMTP Unable to disable certificate verification", socket);
 			cryptDestroySession(session);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to set private key");
+			lprintf(LOG_ERR, "%04d !SMTP Unable to set private key", socket);
 			cryptDestroySession(session);
 			mail_close_socket(socket);
 			thread_down();
@@ -2784,14 +2784,14 @@ static void smtp_thread(void* arg)
 		nb=0;
 		ioctlsocket(socket,FIONBIO,&nb);
 		if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to set network socket");
+			lprintf(LOG_ERR, "%04d !SMTP Unable to set network socket", socket);
 			cryptDestroySession(session);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to set session active");
+			lprintf(LOG_ERR, "%04d !SMTP Unable to set session active", socket);
 			cryptDestroySession(session);
 			mail_close_socket(socket);
 			thread_down();
@@ -2799,7 +2799,7 @@ static void smtp_thread(void* arg)
 		}
 		if (startup->max_inactivity) {
 			if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-				lprintf(LOG_ERR, "Unable to set max inactivity");
+				lprintf(LOG_ERR, "%04d !SMTP Unable to set max inactivity", socket);
 				cryptDestroySession(session);
 				mail_close_socket(socket);
 				thread_down();
@@ -4646,24 +4646,24 @@ static void smtp_thread(void* arg)
 		}
 		if(session == -1 && !stricmp(buf,"STARTTLS")) {
 			if (get_ssl_cert(&scfg, NULL) == -1) {
-				lprintf(LOG_ERR, "Unable to get certificate");
+				lprintf(LOG_ERR, "%04d !SMTP Unable to get certificate", socket);
 				sockprintf(socket, session, "454 TLS not available");
 				continue;
 			}
 			if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-				lprintf(LOG_ERR, "Unable to create TLS session");
+				lprintf(LOG_ERR, "%04d !SMTP Unable to create TLS session", socket);
 				sockprintf(socket, session, "454 TLS not available");
 				continue;
 			}
 			if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-				lprintf(LOG_ERR, "Unable to disable certificate verification");
+				lprintf(LOG_ERR, "%04d !SMTP Unable to disable certificate verification", socket);
 				cryptDestroySession(session);
 				session = -1;
 				sockprintf(socket, session, "454 TLS not available");
 				continue;
 			}
 			if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
-				lprintf(LOG_ERR, "Unable to set private key");
+				lprintf(LOG_ERR, "%04d !SMTP Unable to set private key", socket);
 				cryptDestroySession(session);
 				session = -1;
 				sockprintf(socket, session, "454 TLS not available");
@@ -4674,7 +4674,7 @@ static void smtp_thread(void* arg)
 			nb=0;
 			ioctlsocket(socket,FIONBIO,&nb);
 			if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
-				lprintf(LOG_ERR, "Unable to set network socket");
+				lprintf(LOG_ERR, "%04d !SMTP Unable to set network socket", socket);
 				cryptDestroySession(session);
 				session = -1;
 				sockprintf(socket, session, "454 TLS not available");
@@ -4682,7 +4682,7 @@ static void smtp_thread(void* arg)
 			}
 			sockprintf(socket, -1, "220 Ready to start TLS");
 			if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
-				lprintf(LOG_ERR, "Unable to set session active");
+				lprintf(LOG_ERR, "%04d !SMTP Unable to set session active", socket);
 				cryptDestroySession(session);
 				mail_close_socket(socket);
 				thread_down();
@@ -4692,7 +4692,7 @@ static void smtp_thread(void* arg)
 			}
 			if (startup->max_inactivity) {
 				if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-					lprintf(LOG_ERR, "Unable to set max inactivity");
+					lprintf(LOG_ERR, "%04d !SMTP Unable to set max inactivity", socket);
 					cryptDestroySession(session);
 					mail_close_socket(socket);
 					thread_down();
@@ -6033,7 +6033,7 @@ void DLLCALL mail_server(void* arg)
 				}
 				else {
 					if((pop3=malloc(sizeof(pop3_t)))==NULL) {
-						lprintf(LOG_CRIT,"%04d POP3 !ERROR allocating %u bytes of memory for pop3_t"
+						lprintf(LOG_CRIT,"%04d !POP3 ERROR allocating %u bytes of memory for pop3_t"
 							,client_socket,sizeof(pop3_t));
 						sockprintf(client_socket,session,"-ERR System error, please try again later.");
 						mswait(3000);
