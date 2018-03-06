@@ -400,12 +400,13 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t star
 				case CRYPT_OK:
 					break;
 				case CRYPT_ERROR_TIMEOUT:
-					lprintf(LOG_WARNING,"%04d !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET",socket,startup->max_inactivity);
+					lprintf(LOG_WARNING,"%04d !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET"
+						,sock, startup->max_inactivity);
 					return -1;
 				case CRYPT_ERROR_COMPLETE:
 					return 0;
 				default:
-					lprintf(LOG_WARNING,"%04d !Cryptlib error in sock_recvbyte:  %d",socket,ret);
+					lprintf(LOG_WARNING,"%04d !Cryptlib error in sock_recvbyte:  %d", sock, ret);
 					if (ret < -1)
 						return ret;
 					return -2;
@@ -413,7 +414,8 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t star
 			if (len)
 				return len;
 			if(startup->max_inactivity && (time(NULL)-start)>startup->max_inactivity) {
-				lprintf(LOG_WARNING,"%04d !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET",socket,startup->max_inactivity);
+				lprintf(LOG_WARNING,"%04d !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET"
+					,sock, startup->max_inactivity);
 				return(-1);
 			}
 		}
@@ -430,7 +432,8 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t star
 		if(i<1) {
 			if(i==0) {
 				if(startup->max_inactivity && (time(NULL)-start)>startup->max_inactivity) {
-					lprintf(LOG_WARNING,"%04d !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET",socket,startup->max_inactivity);
+					lprintf(LOG_WARNING,"%04d !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET"
+						,sock, startup->max_inactivity);
 					return(-1);
 				}
 				return 0;
@@ -491,7 +494,7 @@ static BOOL sockgetrsp(SOCKET socket, CRYPT_SESSION sess, char* rsp, char *buf, 
 	while(1) {
 		rd = sockreadline(socket, sess, buf, len);
 		if(rd<1) {
-			if(rd==0)
+			if(rd==0 && rsp != NULL)
 				lprintf(LOG_WARNING,"%04d !RECEIVED BLANK RESPONSE, Expected '%s'", socket, rsp);
 			return(FALSE);
 		}
@@ -959,25 +962,25 @@ static void pop3_thread(void* arg)
 
 	if (pop3.tls_port) {
 		if (get_ssl_cert(&scfg, NULL) == -1) {
-			lprintf(LOG_ERR, "%04d !POP3 Unable to get TLS certificate", socket);
+			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to get TLS certificate", socket, host_ip);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !POP3 Unable to create TLS session", socket);
+			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to create TLS session", socket, host_ip);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !POP3 Unable to disable certificate verification", socket);
+			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to disable certificate verification", socket, host_ip);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !POP3 Unable to set private key", socket);
+			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set private key", socket, host_ip);
 			mail_close_socket(socket);
 			thread_down();
 			return;
@@ -987,20 +990,20 @@ static void pop3_thread(void* arg)
 		nb=0;
 		ioctlsocket(socket,FIONBIO,&nb);
 		if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !POP3 Unable to set session socket (%d)", socket, rd);
+			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set session socket (%d)", socket, host_ip, rd);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !POP3 Unable to set session active", socket);
+			lprintf(LOG_WARNING, "%04d !POP3 [%s] Unable to set session active", socket, host_ip);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (startup->max_inactivity) {
 			if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-				lprintf(LOG_ERR, "%04d !POP3 Unable to set max inactivity", socket);
+				lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set max inactivity", socket, host_ip);
 				mail_close_socket(socket);
 				thread_down();
 				return;
@@ -1012,7 +1015,7 @@ static void pop3_thread(void* arg)
 	if(banned || trashcan(&scfg,host_ip,"ip")) {
 		if(banned) {
 			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%u login attempts, last: %s) - remaining: %s"
+			lprintf(LOG_NOTICE, "%04d !POP3 TEMPORARY BAN of %s (%u login attempts, last: %s) - remaining: %s"
 				,socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 		}
 		else
@@ -1098,17 +1101,17 @@ static void pop3_thread(void* arg)
 				}
 				sockprintf(socket,session,"+OK Begin TLS negotiation");
 				if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-					lprintf(LOG_ERR, "%04d !POP3 Unable to create TLS session", socket);
+					lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to create TLS session", socket, host_ip);
 					buf[0] = 0;
 					break;
 				}
 				if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-					lprintf(LOG_ERR, "%04d !POP3 Unable to disable certificate verification", socket);
+					lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to disable certificate verification", socket, host_ip);
 					buf[0] = 0;
 					break;
 				}
 				if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
-					lprintf(LOG_ERR, "%04d !POP3 Unable to set private key", socket);
+					lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set private key", socket, host_ip);
 					buf[0] = 0;
 					break;
 				}
@@ -1117,18 +1120,18 @@ static void pop3_thread(void* arg)
 				nb=0;
 				ioctlsocket(socket,FIONBIO,&nb);
 				if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
-					lprintf(LOG_ERR, "%04d !POP3 Unable to set session socket (%d)", socket, rd);
+					lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set session socket (%d)", socket, host_ip, rd);
 					buf[0] = 0;
 					break;
 				}
 				if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
-					lprintf(LOG_ERR, "%04d !POP3 Unable to set session active", socket);
+					lprintf(LOG_WARNING, "%04d !POP3 [%s] Unable to set session active", socket, host_ip);
 					buf[0] = 0;
 					break;
 				}
 				if (startup->max_inactivity) {
 					if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-						lprintf(LOG_ERR, "%04d !POP3 Unable to set max inactivity", socket);
+						lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set max inactivity", socket, host_ip);
 						buf[0] = 0;
 						break;
 					}
@@ -1168,23 +1171,23 @@ static void pop3_thread(void* arg)
 		user.number=matchuser(&scfg,username,FALSE /*sysop_alias*/);
 		if(!user.number) {
 			if(scfg.sys_misc&SM_ECHO_PW)
-				lprintf(LOG_NOTICE,"%04d !POP3 UNKNOWN USER: '%s' (password: %s)"
-					,socket, username, password);
+				lprintf(LOG_NOTICE,"%04d !POP3 [%s] UNKNOWN USER: '%s' (password: %s)"
+					,socket, host_ip, username, password);
 			else
-				lprintf(LOG_NOTICE,"%04d !POP3 UNKNOWN USER: '%s'"
-					,socket, username);
+				lprintf(LOG_NOTICE,"%04d !POP3 [%s] UNKNOWN USER: '%s'"
+					,socket, host_ip, username);
 			badlogin(socket, session, client.protocol, pop_err, username, password, host_name, &pop3.client_addr);
 			break;
 		}
 		if((i=getuserdat(&scfg, &user))!=0) {
-			lprintf(LOG_ERR,"%04d !POP3 ERROR %d getting data on user (%s)"
-				,socket, i, username);
+			lprintf(LOG_ERR,"%04d !POP3 [%s] ERROR %d getting data on user (%s)"
+				,socket, host_ip, i, username);
 			badlogin(socket, session, client.protocol, pop_err, NULL, NULL, NULL, NULL);
 			break;
 		}
 		if(user.misc&(DELETED|INACTIVE)) {
-			lprintf(LOG_NOTICE,"%04d !POP3 DELETED or INACTIVE user #%u (%s)"
-				,socket, user.number, username);
+			lprintf(LOG_NOTICE,"%04d !POP3 [%s] DELETED or INACTIVE user #%u (%s)"
+				,socket, host_ip, user.number, username);
 			badlogin(socket, session, client.protocol, pop_err, NULL, NULL, NULL, NULL);
 			break;
 		}
@@ -1194,8 +1197,8 @@ static void pop3_thread(void* arg)
 			MD5_calc(digest,challenge,strlen(challenge));
 			MD5_hex((BYTE*)str,digest);
 			if(strcmp(str,response)) {
-				lprintf(LOG_NOTICE,"%04d !POP3 %s FAILED APOP authentication"
-					,socket,username);
+				lprintf(LOG_NOTICE,"%04d !POP3 [%s] FAILED APOP authentication: %s"
+					,socket, host_ip, username);
 #if 0
 				lprintf(LOG_DEBUG,"%04d !POP3 digest data: %s",socket,challenge);
 				lprintf(LOG_DEBUG,"%04d !POP3 calc digest: %s",socket,str);
@@ -1206,11 +1209,11 @@ static void pop3_thread(void* arg)
 			}
 		} else if(stricmp(password,user.pass)) {
 			if(scfg.sys_misc&SM_ECHO_PW)
-				lprintf(LOG_NOTICE,"%04d !POP3 FAILED Password attempt for user %s: '%s' expected '%s'"
-					,socket, username, password, user.pass);
+				lprintf(LOG_NOTICE,"%04d !POP3 [%s] FAILED Password attempt for user %s: '%s' expected '%s'"
+					,socket, host_ip, username, password, user.pass);
 			else
-				lprintf(LOG_NOTICE,"%04d !POP3 FAILED Password attempt for user %s"
-					,socket, username);
+				lprintf(LOG_NOTICE,"%04d !POP3 [%s] FAILED Password attempt for user %s"
+					,socket, host_ip, username);
 			badlogin(socket, session, client.protocol, pop_err, username, password, host_name, &pop3.client_addr);
 			break;
 		}
@@ -1227,20 +1230,20 @@ static void pop3_thread(void* arg)
 		activity=FALSE;
 
 		if(startup->options&MAIL_OPT_DEBUG_POP3)		
-			lprintf(LOG_INFO,"%04d POP3 %s logged in %s", socket, user.alias, apop ? "via APOP":"");
+			lprintf(LOG_INFO,"%04d POP3 [%s] %s logged in %s", socket, host_ip, user.alias, apop ? "via APOP":"");
 		SAFEPRINTF(str,"POP3: %s",user.alias);
 		status(str);
 
 		SAFEPRINTF(smb.file,"%smail",scfg.data_dir);
 		if(smb_islocked(&smb)) {
-			lprintf(LOG_WARNING,"%04d !POP3 MAIL BASE LOCKED: %s",socket,smb.last_error);
+			lprintf(LOG_WARNING,"%04d !POP3 <%s> MAIL BASE LOCKED: %s",socket, user.alias, smb.last_error);
 			sockprintf(socket,session,"-ERR database locked, try again later");
 			break;
 		}
 		smb.retry_time=scfg.smb_retry_time;
 		smb.subnum=INVALID_SUB;
 		if((i=smb_open(&smb))!=SMB_SUCCESS) {
-			lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) opening %s",socket,i,smb.last_error,smb.file);
+			lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) opening %s", socket, user.alias, i, smb.last_error,smb.file);
 			sockprintf(socket,session,"-ERR %d opening %s",i,smb.file);
 			break;
 		}
@@ -1250,20 +1253,20 @@ static void pop3_thread(void* arg)
 		for(l=bytes=0;l<msgs;l++) {
 			msg.hdr.number=mail[l].number;
 			if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-				lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message index"
-					,socket, i, smb.last_error);
+				lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) getting message index"
+					,socket, user.alias, i, smb.last_error);
 				break;
 			}
 			if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) {
-				lprintf(LOG_WARNING,"%04d !POP3 ERROR %d (%s) locking message header #%lu"
-					,socket, i, smb.last_error, msg.hdr.number);
+				lprintf(LOG_WARNING,"%04d !POP3 <%s> ERROR %d (%s) locking message header #%lu"
+					,socket, user.alias, i, smb.last_error, msg.hdr.number);
 				break; 
 			}
 			i=smb_getmsghdr(&smb,&msg);
 			smb_unlockmsghdr(&smb,&msg);
 			if(i!=0) {
-				lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) line %u, msg #%lu"
-					,socket, i, smb.last_error, __LINE__, msg.hdr.number);
+				lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) line %u, msg #%lu"
+					,socket, user.alias, i, smb.last_error, __LINE__, msg.hdr.number);
 				break;
 			}
 			bytes+=smb_getmsgtxtlen(&msg);
@@ -1299,33 +1302,33 @@ static void pop3_thread(void* arg)
 			}
 			if(!stricmp(buf, "RSET")) {
 				if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) locking message base"
-						,socket, i, smb.last_error);
+					lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) locking message base"
+						,socket, user.alias, i, smb.last_error);
 					sockprintf(socket,session,"-ERR %d locking message base",i);
 					continue;
 				}
 				for(l=0;l<msgs;l++) {
 					msg.hdr.number=mail[l].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message index"
-							,socket, i, smb.last_error);
+						lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) getting message index"
+							,socket, user.alias, i, smb.last_error);
 						break;
 					}
 					if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_WARNING,"%04d !POP3 ERROR %d (%s) locking message header #%lu"
-							,socket, i, smb.last_error, msg.hdr.number);
+						lprintf(LOG_WARNING,"%04d !POP3 <%s> ERROR %d (%s) locking message header #%lu"
+							,socket, user.alias, i, smb.last_error, msg.hdr.number);
 						break; 
 					}
 					if((i=smb_getmsghdr(&smb,&msg))!=SMB_SUCCESS) {
 						smb_unlockmsghdr(&smb,&msg);
-						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) line %u, msg #%lu"
-							,socket, i, smb.last_error, __LINE__, msg.hdr.number);
+						lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) line %u, msg #%lu"
+							,socket, user.alias, i, smb.last_error, __LINE__, msg.hdr.number);
 						break;
 					}
 					msg.hdr.attr=mail[l].attr;
 					if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS)
-						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) updating message index"
-							,socket, i, smb.last_error);
+						lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) updating message index"
+							,socket, user.alias, i, smb.last_error);
 					smb_unlockmsghdr(&smb,&msg);
 					smb_freemsgmem(&msg);
 				}
@@ -1343,27 +1346,27 @@ static void pop3_thread(void* arg)
 				if(isdigit((uchar)*p)) {
 					msgnum=strtoul(p, NULL, 10);
 					if(msgnum<1 || msgnum>msgs) {
-						lprintf(LOG_NOTICE,"%04d !POP3 INVALID message #%" PRIu32
-							,socket, msgnum);
+						lprintf(LOG_NOTICE,"%04d !POP3 <%s> INVALID message #%" PRIu32
+							,socket, user.alias, msgnum);
 						sockprintf(socket,session,"-ERR no such message");
 						continue;
 					}
 					msg.hdr.number=mail[msgnum-1].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message index"
-							,socket, i, smb.last_error);
+						lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) getting message index"
+							,socket, user.alias, i, smb.last_error);
 						sockprintf(socket,session,"-ERR %d getting message index",i);
 						break;
 					}
 					if(msg.idx.attr&MSG_DELETE) {
-						lprintf(LOG_NOTICE,"%04d !POP3 ATTEMPT to list DELETED message"
-							,socket);
+						lprintf(LOG_NOTICE,"%04d !POP3 <%s> ATTEMPT to list DELETED message"
+							,socket, user.alias);
 						sockprintf(socket,session,"-ERR message deleted");
 						continue;
 					}
 					if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_WARNING,"%04d !POP3 ERROR %d (%s) locking message header #%lu"
-							,socket, i, smb.last_error, msg.hdr.number);
+						lprintf(LOG_WARNING,"%04d !POP3 <%s> ERROR %d (%s) locking message header #%lu"
+							,socket, user.alias, i, smb.last_error, msg.hdr.number);
 						sockprintf(socket,session,"-ERR %d locking message header",i);
 						continue; 
 					}
@@ -1371,8 +1374,8 @@ static void pop3_thread(void* arg)
 					smb_unlockmsghdr(&smb,&msg);
 					if(i!=0) {
 						smb_freemsgmem(&msg);
-						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) line %u, msg #%lu"
-							,socket, i, smb.last_error, __LINE__, msg.hdr.number);
+						lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) line %u, msg #%lu"
+							,socket, user.alias, i, smb.last_error, __LINE__, msg.hdr.number);
 						sockprintf(socket,session,"-ERR %d getting message header",i);
 						continue;
 					}
@@ -1389,23 +1392,23 @@ static void pop3_thread(void* arg)
 				for(l=0;l<msgs;l++) {
 					msg.hdr.number=mail[l].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message index"
-							,socket, i, smb.last_error);
+						lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) getting message index"
+							,socket, user.alias, i, smb.last_error);
 						break;
 					}
 					if(msg.idx.attr&MSG_DELETE) 
 						continue;
 					if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_WARNING,"%04d !POP3 ERROR %d (%s) locking message header #%lu"
-							,socket, i, smb.last_error, msg.hdr.number);
+						lprintf(LOG_WARNING,"%04d !POP3 <%s> ERROR %d (%s) locking message header #%lu"
+							,socket, user.alias, i, smb.last_error, msg.hdr.number);
 						break; 
 					}
 					i=smb_getmsghdr(&smb,&msg);
 					smb_unlockmsghdr(&smb,&msg);
 					if(i!=0) {
 						smb_freemsgmem(&msg);
-						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) line %u, msg #%lu"
-							,socket, i, smb.last_error, __LINE__, msg.hdr.number);
+						lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) line %u, msg #%lu"
+							,socket, user.alias, i, smb.last_error, __LINE__, msg.hdr.number);
 						break;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
@@ -1434,47 +1437,47 @@ static void pop3_thread(void* arg)
 					lines=atol(p);
 				}
 				if(msgnum<1 || msgnum>msgs) {
-					lprintf(LOG_NOTICE,"%04d !POP3 %s ATTEMPTED to retrieve an INVALID message #%" PRIu32
+					lprintf(LOG_NOTICE,"%04d !POP3 <%s> ATTEMPTED to retrieve an INVALID message #%" PRIu32
 						,socket, user.alias, msgnum);
 					sockprintf(socket,session,"-ERR no such message");
 					continue;
 				}
 				msg.hdr.number=mail[msgnum-1].number;
 
-				lprintf(LOG_INFO,"%04d POP3 %s retrieving message #%ld with command: %s"
+				lprintf(LOG_INFO,"%04d POP3 <%s> retrieving message #%ld with command: %s"
 					,socket, user.alias, msg.hdr.number, buf);
 
 				if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message index"
-						,socket, i, smb.last_error);
+					lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) getting message index"
+						,socket, user.alias, i, smb.last_error);
 					sockprintf(socket,session,"-ERR %d getting message index",i);
 					continue;
 				}
 				if(msg.idx.attr&MSG_DELETE) {
-					lprintf(LOG_NOTICE,"%04d !POP3 ATTEMPT to retrieve DELETED message"
-						,socket);
+					lprintf(LOG_NOTICE,"%04d !POP3 <%s> ATTEMPT to retrieve DELETED message"
+						,socket, user.alias);
 					sockprintf(socket,session,"-ERR message deleted");
 					continue;
 				}
 				if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) {
-					lprintf(LOG_WARNING,"%04d !POP3 ERROR %d (%s) locking message header #%lu"
-						,socket, i, smb.last_error, msg.hdr.number);
+					lprintf(LOG_WARNING,"%04d !POP3 <%s> ERROR %d (%s) locking message header #%lu"
+						,socket, user.alias, i, smb.last_error, msg.hdr.number);
 					sockprintf(socket,session,"-ERR %d locking message header",i);
 					continue; 
 				}
 				i=smb_getmsghdr(&smb,&msg);
 				smb_unlockmsghdr(&smb,&msg);
 				if(i!=0) {
-					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) line %u, msg #%lu"
-						,socket, i, smb.last_error, __LINE__, msg.hdr.number);
+					lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) line %u, msg #%lu"
+						,socket, user.alias, i, smb.last_error, __LINE__, msg.hdr.number);
 					sockprintf(socket,session,"-ERR %d getting message header",i);
 					continue;
 				}
 
 				if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL))==NULL) {
 					smb_freemsgmem(&msg);
-					lprintf(LOG_ERR,"%04d !POP3 ERROR (%s) retrieving message %lu text"
-						,socket, smb.last_error, msg.hdr.number);
+					lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR (%s) retrieving message %lu text"
+						,socket, user.alias, smb.last_error, msg.hdr.number);
 					sockprintf(socket,session,"-ERR retrieving message text");
 					continue;
 				}
@@ -1486,34 +1489,34 @@ static void pop3_thread(void* arg)
 					lines=-1;					
 
 				sockprintf(socket,session,"+OK message follows");
-				lprintf(LOG_DEBUG,"%04d POP3 sending message text (%u bytes)"
-					,socket,strlen(msgtxt));
+				lprintf(LOG_DEBUG,"%04d POP3 <%s> sending message text (%u bytes)"
+					,socket, user.alias, strlen(msgtxt));
 				lines_sent=sockmsgtxt(socket,session,&msg,msgtxt,lines);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
 				if(lines!=-1 && lines_sent<lines)	/* could send *more* lines */
-					lprintf(LOG_WARNING,"%04d !POP3 ERROR sending message text (sent %ld of %ld lines)"
-						,socket,lines_sent,lines);
+					lprintf(LOG_WARNING,"%04d !POP3 <%s> ERROR sending message text (sent %ld of %ld lines)"
+						,socket, user.alias, lines_sent, lines);
 				else {
-					lprintf(LOG_DEBUG,"%04d POP3 message transfer complete (%lu lines)"
-						,socket,lines_sent);
+					lprintf(LOG_DEBUG,"%04d POP3 <%s> message transfer complete (%lu lines)"
+						,socket, user.alias, lines_sent);
 
 					if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) locking message base"
-							,socket, i, smb.last_error);
+						lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) locking message base"
+							,socket, user.alias, i, smb.last_error);
 					} else {
 						if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-							lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message index"
-								,socket, i, smb.last_error);
+							lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) getting message index"
+								,socket, user.alias, i, smb.last_error);
 						} else {
 							msg.hdr.attr|=MSG_READ;
 							msg.hdr.netattr|=MSG_SENT;
 
 							if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) 
-								lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) locking message header #%lu"
-									,socket, i, smb.last_error, msg.hdr.number);
+								lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) locking message header #%lu"
+									,socket, user.alias, i, smb.last_error, msg.hdr.number);
 							if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS)
-								lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) marking message #%lu as read"
-									,socket, i, smb.last_error, msg.hdr.number);
+								lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) marking message #%lu as read"
+									,socket, user.alias, i, smb.last_error, msg.hdr.number);
 							smb_unlockmsghdr(&smb,&msg);
 						}
 						smb_unlocksmbhdr(&smb);
@@ -1529,41 +1532,41 @@ static void pop3_thread(void* arg)
 				msgnum=strtoul(p, NULL, 10);
 
 				if(msgnum<1 || msgnum>msgs) {
-					lprintf(LOG_NOTICE,"%04d !POP3 %s ATTEMPTED to delete an INVALID message #%" PRIu32
+					lprintf(LOG_NOTICE,"%04d !POP3 <%s> ATTEMPTED to delete an INVALID message #%" PRIu32
 						,socket, user.alias, msgnum);
 					sockprintf(socket,session,"-ERR no such message");
 					continue;
 				}
 				msg.hdr.number=mail[msgnum-1].number;
 
-				lprintf(LOG_INFO,"%04d POP3 %s deleting message #%ld"
+				lprintf(LOG_INFO,"%04d POP3 <%s> deleting message #%ld"
 					,socket, user.alias, msg.hdr.number);
 
 				if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) locking message base"
-						,socket, i, smb.last_error);
+					lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) locking message base"
+						,socket, user.alias, i, smb.last_error);
 					sockprintf(socket,session,"-ERR %d locking message base",i);
 					continue;
 				}
 				if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
 					smb_unlocksmbhdr(&smb);
-					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message index"
-						,socket, i, smb.last_error);
+					lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) getting message index"
+						,socket, user.alias, i, smb.last_error);
 					sockprintf(socket,session,"-ERR %d getting message index",i);
 					continue;
 				}
 				if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) {
 					smb_unlocksmbhdr(&smb);
-					lprintf(LOG_WARNING,"%04d !POP3 ERROR %d (%s) locking message header #%lu"
-						,socket, i, smb.last_error, msg.hdr.number);
+					lprintf(LOG_WARNING,"%04d !POP3 <%s> ERROR %d (%s) locking message header #%lu"
+						,socket, user.alias, i, smb.last_error, msg.hdr.number);
 					sockprintf(socket,session,"-ERR %d locking message header",i);
 					continue; 
 				}
 				if((i=smb_getmsghdr(&smb,&msg))!=SMB_SUCCESS) {
 					smb_unlockmsghdr(&smb,&msg);
 					smb_unlocksmbhdr(&smb);
-					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) line %u, msg #%lu"
-						,socket, i, smb.last_error, __LINE__, msg.hdr.number);
+					lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) line %u, msg #%lu"
+						,socket, user.alias, i, smb.last_error, __LINE__, msg.hdr.number);
 					sockprintf(socket,session,"-ERR %d getting message header",i);
 					continue;
 				}
@@ -1575,30 +1578,30 @@ static void pop3_thread(void* arg)
 				smb_unlocksmbhdr(&smb);
 				smb_freemsgmem(&msg);
 				if(i!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) marking message as read"
-						, socket, i, smb.last_error);
+					lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) marking message as read"
+						, socket, user.alias, i, smb.last_error);
 					sockprintf(socket,session,"-ERR %d marking message for deletion",i);
 					continue;
 				}
 				sockprintf(socket,session,"+OK");
 				if(startup->options&MAIL_OPT_DEBUG_POP3)
-					lprintf(LOG_INFO,"%04d POP3 message deleted", socket);
+					lprintf(LOG_INFO,"%04d POP3 <%s> message deleted", socket, user.alias);
 				continue;
 			}
-			lprintf(LOG_NOTICE,"%04d !POP3 UNSUPPORTED COMMAND from %s: '%s'"
+			lprintf(LOG_NOTICE,"%04d !POP3 <%s> UNSUPPORTED COMMAND: '%s'"
 				,socket, user.alias, buf);
 			sockprintf(socket,session,"-ERR UNSUPPORTED COMMAND: %s",buf);
 		}
 		if(user.number) {
 			if(!logoutuserdat(&scfg,&user,time(NULL),client.time))
-				lprintf(LOG_ERR,"%04d !ERROR in logoutuserdat", socket);
+				lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR in logoutuserdat", socket, user.alias);
 		}
 
 	} while(0);
 
 	if(activity) {
 		if(user.number)
-			lprintf(LOG_INFO,"%04d POP3 %s logged out from port %u on %s [%s]"
+			lprintf(LOG_INFO,"%04d POP3 <%s> logged out from port %u on %s [%s]"
 				,socket, user.alias, inet_addrport(&pop3.client_addr), host_name, host_ip);
 		else
 			lprintf(LOG_INFO,"%04d POP3 client disconnected from port %u on %s [%s]"
