@@ -31,7 +31,7 @@ void DLLCALL xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET
 	for(i=0; i<xpms_set->sock_count; i++) {
 		if(xpms_set->socks[i].sock != INVALID_SOCKET) {
 			if(xpms_set->lprintf!=NULL)
-				xpms_set->lprintf(LOG_INFO, "%04d closing %s socket on %s port %d"
+				xpms_set->lprintf(LOG_INFO, "%04d %s closing socket %s port %d"
 						, xpms_set->socks[i].sock, xpms_set->socks[i].prot?xpms_set->socks[i].prot:"unknown"
 						, xpms_set->socks[i].address
 						, xpms_set->socks[i].port);
@@ -73,7 +73,7 @@ BOOL DLLCALL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 
 		if(strlen(addr) >= sizeof(un_addr.sun_path)) {
 			if(xpms_set->lprintf)
-				xpms_set->lprintf(LOG_ERR, "!ERROR %s is too long for a portable AF_UNIX socket", addr);
+				xpms_set->lprintf(LOG_ERR, "!%s ERROR %s is too long for a portable AF_UNIX socket", prot, addr);
 			return FALSE;
 		}
 		strcpy(un_addr.sun_path,addr);
@@ -100,7 +100,7 @@ BOOL DLLCALL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		sprintf(port_str, "%hu", port);
 		if((ret=getaddrinfo(addr, port_str, &hints, &res))!=0) {
 			if(xpms_set->lprintf)
-				xpms_set->lprintf(LOG_CRIT, "!ERROR %d calling getaddrinfo() on %s", ret, addr);
+				xpms_set->lprintf(LOG_CRIT, "!%s ERROR %d calling getaddrinfo() on %s", prot, ret, addr);
 			return FALSE;
 		}
 	}
@@ -110,7 +110,7 @@ BOOL DLLCALL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		if(new_socks==NULL) {
 			/* This may be a partial failure */
 			if(xpms_set->lprintf)
-				xpms_set->lprintf(LOG_CRIT, "!ERROR out of memory adding to multisocket");
+				xpms_set->lprintf(LOG_CRIT, "!%s ERROR out of memory adding to multisocket", prot);
 			break;
 		}
 		xpms_set->socks=new_socks;
@@ -152,8 +152,8 @@ BOOL DLLCALL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		if(type != SOCK_DGRAM) {
 			if(listen(xpms_set->socks[xpms_set->sock_count].sock, SOMAXCONN)==-1) {
 				if(xpms_set->lprintf)
-					xpms_set->lprintf(LOG_WARNING, "%04d !ERROR %d listen()ing on port %d"
-							, xpms_set->socks[xpms_set->sock_count].sock, ERROR_VALUE, port);
+					xpms_set->lprintf(LOG_WARNING, "%04d !%s ERROR %d listen()ing on port %d"
+							,xpms_set->socks[xpms_set->sock_count].sock, prot, ERROR_VALUE, port);
 				closesocket(xpms_set->socks[xpms_set->sock_count].sock);
 				FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].address);
 				FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
@@ -210,7 +210,7 @@ BOOL DLLCALL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 			sscanf(p, "%hu", &port);
 		}
 		if(xpms_set->lprintf)
-			xpms_set->lprintf(LOG_INFO, "Adding %s listening socket on %s port %hu", prot, host_str, port);
+			xpms_set->lprintf(LOG_INFO, "%s listening on socket %s port %hu", prot, host_str, port);
 		if(xpms_add(xpms_set, domain, type, protocol, host_str, port, prot, sock_init, bind_init, cbdata))
 			one_good=TRUE;
 		free(host);
