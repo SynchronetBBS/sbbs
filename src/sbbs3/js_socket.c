@@ -104,8 +104,10 @@ static void do_js_close(js_socket_private_t *p)
 		cryptDestroySession(p->session);
 		p->session=-1;
 	}
-	if(p->sock==INVALID_SOCKET)
+	if(p->sock==INVALID_SOCKET) {
+		p->is_connected = FALSE;
 		return;
+	}
 	if(p->external==FALSE) {
 		close_socket(p->sock);
 		p->last_error = ERROR_VALUE;
