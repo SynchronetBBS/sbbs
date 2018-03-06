@@ -106,8 +106,11 @@ static void do_js_close(js_socket_private_t *p)
 	}
 	if(p->sock==INVALID_SOCKET)
 		return;
-	close_socket(p->sock);
-	p->last_error = ERROR_VALUE;
+	if(p->external==FALSE) {
+		close_socket(p->sock);
+		p->last_error = ERROR_VALUE;
+	}
+	// This is a lie for external sockets... don't tell anyone.
 	p->sock = INVALID_SOCKET; 
 	p->is_connected = FALSE;
 }
@@ -1747,8 +1750,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 							cryptDestroySession(p->session);
 						p->session=-1;
 						ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
-						closesocket(p->sock);
-						p->sock = INVALID_SOCKET;
+						do_js_close(p);
 					}
 				}
 			}
@@ -1757,8 +1759,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 					cryptDestroySession(p->session);
 					p->session=-1;
 					ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
-					closesocket(p->sock);
-					p->sock = INVALID_SOCKET;
+					do_js_close(p);
 				}
 			}
 			JS_RESUMEREQUEST(cx, rc);
