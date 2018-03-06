@@ -521,7 +521,7 @@ static int sockgetrsp_opt(SOCKET socket, CRYPT_SESSION sess, char* rsp, char *op
 	size_t moptlen;
 	char *mopt;
 
-	moptlen = strlen(rsp)+strlen(opt);
+	moptlen = strlen(rsp)+strlen(opt) + 1;
 	mopt = malloc(moptlen+1);
 	if (mopt == NULL)
 		return -1;
