@@ -523,9 +523,9 @@ FIDO.Addr.prototype.flo_outbound = function(default_zone, default_domain)
 			ret += format(".%03x", this.zone);
 	}
 	ret = backslash(ret);
-	if (this.point !== undefined)
-		ret += backslash(format("%08x.pnt", this.point));
 	ret += format("%04x%04x.", this.net, this.node);
+	if (this.point !== undefined)
+		ret = backslash(ret + "pnt") + format("%08x.", this.point);
 	return ret.substr(1);
 };
 Object.defineProperties(FIDO.Node.prototype, {
