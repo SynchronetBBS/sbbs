@@ -656,7 +656,7 @@ function verify_services(address, timeout)
         var service = udp_services[i];
         printf("Verifying %-10s UDP connection at %s\r\n", service, address);
         if(!udp_socket.sendto("\r\n", address, standard_service_port[service]))
-            log(LOG_ERR,format("FAILED Send to %s UDP service at %s", service, address));
+            log(LOG_NOTICE,format("FAILED Send to %s UDP service at %s", service, address));
     }
 
     for(i in tcp_services) {
@@ -678,7 +678,7 @@ function verify_services(address, timeout)
             break;
 		var msg=udp_socket.recvfrom(32*1024);
         if(msg==null)
-            log(LOG_ERR, "FAILED (UDP recv)");
+            log(LOG_NOTICE, "FAILED (UDP recv)");
         else {
             log(LOG_DEBUG, format("UDP message (%u bytes) from %s port %u", msg.data.length, msg.ip_address, msg.port));
             if(msg.ip_address != address)
@@ -1963,25 +1963,25 @@ function install()
 		"sec": 0,
 		"name": "Synchronet BBS List",
 		"code": "SBBSLIST",
-		"arstr": "",
-		"run_arstr": "",
+		"ars": "",
+		"run_ars": "",
 		"type": 0,
-		"misc": 1,
+		"settings": 1,
 		"event": 0,
 		"cost": 0,
 		"cmd": "?sbbslist.js browse",
-		"clean": "",
-		"path": "",
+		"clean_cmd": "",
+		"startup_dir": "",
 		"textra": 0,
-		"maxtime": 0
+		"max_time": 0
 		};
 	var smb2sbl_cfg = {
 		"code": "SMB2SBL",
 		"cmd": "?sbbslist import",
 		"days": 255,
 		"time": 0,
-		"node": 1,
-		"misc": 0,
+		"node_num": 1,
+		"settings": 0,
 		"dir": "",
 		"freq": 360,
 		"mdays": 0,
@@ -1992,8 +1992,8 @@ function install()
         "cmd": "?sbbslist export",
         "days": 255,
         "time": 0,
-        "node": 1,
-        "misc": 0,
+        "node_num": 1,
+        "settings": 0,
         "dir": "",
         "freq": 360,
         "mdays": 0,
@@ -2004,8 +2004,8 @@ function install()
         "cmd": "?sbbslist update -preview",
         "days": 255,
         "time": 0,
-        "node": 1,
-        "misc": 0,
+        "node_num": 1,
+        "settings": 0,
         "dir": "",
         "freq": 0,
         "mdays": 2,
@@ -2016,8 +2016,8 @@ function install()
         "cmd": "?sbbslist maint",
         "days": 255,
         "time": 0,
-        "node": 1,
-        "misc": 0,
+        "node_num": 1,
+        "settings": 0,
         "dir": "",
         "freq": 0,
         "mdays": 0,
@@ -2340,7 +2340,7 @@ function main()
 				bbs.total = lib.system_stats();
 				bbs.terminal.nodes = system.nodes;
 				if(preview) {
-					log("Capturing preview from: " + bbs.name);
+					log(LOG_INFO,"Capturing preview from: " + bbs.name);
 					var result = capture_preview(bbs, addr);
 					if(result != true)
 						alert(result);

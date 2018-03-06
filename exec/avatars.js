@@ -290,12 +290,14 @@ function import_from_msgbase(msgbase, import_ptr, limit, all)
 			break;
     }
 
-    if(ini.open(file_exists(ini.name) ? 'r+':'w+')) {
-        print("new import_ptr = " + highest);
-        ini.iniSetValue("avatars","import_ptr",highest);
-        ini.close();
-    } else
-        print("Error opening/creating " + ini.name);
+	if(highest != import_ptr) {
+		if(ini.open(file_exists(ini.name) ? 'r+':'w+')) {
+			print("new import_ptr = " + highest);
+			ini.iniSetValue("avatars","import_ptr",highest);
+			ini.close();
+		} else
+			print("Error opening/creating " + ini.name);
+	}
     print("Imported " + count + " messages");
 }
 
@@ -466,17 +468,17 @@ function install()
 				"sec": 0,
 				"name": "Avatar Chooser",
 				"code": "AVATCHOO",
-				"arstr": "",
-				"run_arstr": "ANSI & !GUEST & REST ! Q",
+				"ars": "",
+				"run_ars": "ANSI & !GUEST & REST ! Q",
 				"type": 0,
-				"misc": 1,
+				"settings": 1,
 				"event": 3,
 				"cost": 0,
 				"cmd": "?avatar_chooser",
-				"clean": "",
-				"path": "",
+				"clean_cmd": "",
+				"startup_dir": "",
 				"textra": 0,
-				"maxtime": 0
+				"max_time": 0
 				});
 		changed = true;
 	}
@@ -488,9 +490,9 @@ function install()
 				"cmd": "?avatars import",
 				"days": 255,
 				"time": 0,
-				"node": 1,
-				"misc": 0,
-				"dir": "",
+				"node_num": 1,
+				"settings": 0,
+				"startup_dir": "",
 				"freq": 30,
 				"mdays": 0,
 				"months": 0
@@ -505,9 +507,9 @@ function install()
 				"cmd": "?avatars export",
 				"days": 255,
 				"time": 0,
-				"node": 1,
-				"misc": 0,
-				"dir": "",
+				"node_num": 1,
+				"settings": 0,
+				"startup_dir": "",
 				"freq": 30,
 				"mdays": 0,
 				"months": 0
@@ -593,6 +595,7 @@ function main()
 			case "install":
 			case "normalize":
 			case "count":
+			case "colls":
 				cmds.push(arg);
 				break;
 			default:
@@ -817,6 +820,43 @@ function main()
 						var count = sauce.filesize / lib.size;
 						printf("%u\r\n", count);
 						total += count;
+					}
+					printf("%u total\r\n", total);
+					break;
+				}
+			case "colls":
+				if(!files.length) {
+					var total = 0;
+					files = directory(lib.local_library() + "*.bin");
+					for(var i in files) {
+						var filename = files[i];
+						if(filename.search(EXCLUDE_FILES) >= 0)
+							continue;
+						printf("%-32s : ", file_getname(filename));
+						var sauce = SAUCE.read(filename);
+						if(!sauce) {
+							printf("no SAUCE\r\n");
+							conintue;
+						}
+						var count = sauce.filesize / lib.size;
+						printf("%u\r\n", count);
+						total += count;
+						var f = new File(filename);
+						if(!f.open('rb')) {
+							alert("Error " + f.error + " opening " + f.name);
+							continue;
+						}
+						var buf = f.read();
+						f.close();
+						for(var a = 0; a < count; a++) {
+							var avatar = buf.substr(a * lib.size, lib.size);
+							var b64 = base64_encode(avatar);
+							printf("%s #%u: ", file_getname(filename), a+1);
+							if(sauce.comment[a])
+								print(sauce.comment[a]);
+							print(b64);
+							print(LZString.compressToBase64(avatar));
+						}
 					}
 					printf("%u total\r\n", total);
 					break;

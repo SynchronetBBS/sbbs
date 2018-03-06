@@ -6,6 +6,11 @@
 (if adding definitions to this file, make sure the required
 constants are defined... if not, add them */
 
+/* Note: rev 1.3 (and earlier) of this file used field names derived from the
+ * C/C++ source code (sbbsdefs.h), while rev 1.4 and later now use field
+ * names which correlate with the Synchronet JS object model (jsobjs.html).
+ */
+
 var LEN_DIR = 		63;
 var LEN_CMD = 		63;
 var LEN_ARSTR =		40;
@@ -36,52 +41,52 @@ struct.swap_t={
 struct.xedit_t={
 	name:		{bytes:41,				type:"str"},
 	code:		{bytes:LEN_CODE+1,		type:"str"},
-	lcmd:		{bytes:LEN_CMD+1,		type:"str"},
-	rcmd:		{bytes:LEN_CMD+1,		type:"str"},
-	misc:		{bytes:UINT32_T,		type:"int"},
-	arstr:		{bytes:LEN_ARSTR+1,		type:"str"},
+	cmd:		{bytes:LEN_CMD+1,		type:"str"},	// was lcmd
+	rcmd:		{bytes:LEN_CMD+1,		type:"str"},	// unused
+	settings:	{bytes:UINT32_T,		type:"int"},	// was misc
+	ars:		{bytes:LEN_ARSTR+1,		type:"str"},	// was arstr
 	type:		{bytes:UCHAR,			type:"int"},
 	__PADDING__:15
 };
 struct.xtrnsec_t={
 	name:		{bytes:41,				type:"str"},
 	code:		{bytes:LEN_CODE+1,		type:"str"},
-	arstr:		{bytes:LEN_ARSTR+1,		type:"str"},
+	ars:		{bytes:LEN_ARSTR+1,		type:"str"},	// was arstr
 	__PADDING__:16
 };
 struct.xtrn_t={
-	sec:		{bytes:UINT16_T,		type:"int"},
-	name:		{bytes:41,				type:"str"},
-	code:		{bytes:LEN_CODE+1,		type:"str"},
-	arstr:		{bytes:LEN_ARSTR+1,		type:"str"},
-	run_arstr:	{bytes:LEN_ARSTR+1,		type:"str"},
-	type:		{bytes:UCHAR,			type:"int"},
-	misc:		{bytes:UINT32_T,		type:"int"},
-	event:		{bytes:UCHAR,			type:"int"},
-	cost:		{bytes:UINT32_T,		type:"int"},
-	cmd:		{bytes:LEN_CMD+1,		type:"str"},
-	clean:		{bytes:LEN_CMD+1,		type:"str"},
-	path:		{bytes:LEN_DIR+1,		type:"str"},
-	textra:		{bytes:UCHAR,			type:"int"},
-	maxtime:	{bytes:UCHAR,			type:"int"},
+	sec:			{bytes:UINT16_T,		type:"int"},
+	name:			{bytes:41,				type:"str"},
+	code:			{bytes:LEN_CODE+1,		type:"str"},
+	ars:			{bytes:LEN_ARSTR+1,		type:"str"},	// was arstr
+	execution_ars:	{bytes:LEN_ARSTR+1,		type:"str"},	// was run_arstr
+	type:			{bytes:UCHAR,			type:"int"},
+	settings:		{bytes:UINT32_T,		type:"int"},	// was misc
+	event:			{bytes:UCHAR,			type:"int"},
+	cost:			{bytes:UINT32_T,		type:"int"},
+	cmd:			{bytes:LEN_CMD+1,		type:"str"},
+	clean_cmd:		{bytes:LEN_CMD+1,		type:"str"},	// was clean
+	startup_dir:	{bytes:LEN_DIR+1,		type:"str"},	// was path
+	textra:			{bytes:UCHAR,			type:"int"},
+	max_time:		{bytes:UCHAR,			type:"int"},	// was maxtime
 	__PADDING__:14
 };
 struct.event_t={
-	code:		{bytes:LEN_CODE+1,		type:"str"},
-	cmd:		{bytes:LEN_CMD+1,		type:"str"},
-	days:		{bytes:1,				type:"int"},
-	time:		{bytes:UINT16_T,		type:"int"},
-	node:		{bytes:UINT16_T,		type:"int"},
-	misc:		{bytes:UINT32_T,		type:"int"},
-	dir:		{bytes:LEN_DIR+1,		type:"str"},
-	freq:		{bytes:UINT16_T,		type:"int"},
-	mdays:		{bytes:UINT32_T,		type:"int"},
-	months:		{bytes:UINT16_T,		type:"int"},
+	code:			{bytes:LEN_CODE+1,		type:"str"},
+	cmd:			{bytes:LEN_CMD+1,		type:"str"},
+	days:			{bytes:1,				type:"int"},
+	time:			{bytes:UINT16_T,		type:"int"},
+	node_num:		{bytes:UINT16_T,		type:"int"},	// was node
+	settings:		{bytes:UINT32_T,		type:"int"},	// was misc
+	startup_dir:	{bytes:LEN_DIR+1,		type:"str"},	// was dir
+	freq:			{bytes:UINT16_T,		type:"int"},
+	mdays:			{bytes:UINT32_T,		type:"int"},
+	months:			{bytes:UINT16_T,		type:"int"},
 	__PADDING__:8
 };
 struct.natvpgm_t={
 	name:		{bytes:13,				type:"str"},
-	misc:		{bytes:UINT32_T,		type:"int"}
+	misc:		{bytes:UINT32_T,		type:"int"}			// unused
 };
 struct.hotkey_t={
 	key:		{bytes:UCHAR,			type:"int"},
@@ -97,40 +102,40 @@ struct.faddr_t={
 	faddr4:		{bytes:2,				type:"int"}
 };
 struct.sub_t={
-	grp:		{bytes:UINT16_T,		type:"int"},
-	lname:		{bytes:LEN_SLNAME+1,	type:"str"},
-	sname:		{bytes:LEN_SSNAME+1,	type:"str"},
-	qwkname:	{bytes:11,				type:"str"},
-	code_suffix:{bytes:LEN_CODE+1,		type:"str"},
-	data_dir:	{bytes:LEN_DIR+1,		type:"str"},
-	arstr:		{bytes:LEN_ARSTR+1,		type:"str"},
-	read_arstr:	{bytes:LEN_ARSTR+1,		type:"str"},
-	post_arstr:	{bytes:LEN_ARSTR+1,		type:"str"},
-	op_arstr:	{bytes:LEN_ARSTR+1,		type:"str"},
+	grp_number:		{bytes:UINT16_T,		type:"int"},	// was grp
+	description:	{bytes:LEN_SLNAME+1,	type:"str"},	// was lname
+	name:			{bytes:LEN_SSNAME+1,	type:"str"},	// was sname
+	qwk_name:		{bytes:11,				type:"str"},	// was qwkname
+	code_suffix:	{bytes:LEN_CODE+1,		type:"str"},
+	data_dir:		{bytes:LEN_DIR+1,		type:"str"},
+	ars:			{bytes:LEN_ARSTR+1,		type:"str"},	// was arstr
+	read_ars:		{bytes:LEN_ARSTR+1,		type:"str"},	// was read_arstr
+	post_ars:		{bytes:LEN_ARSTR+1,		type:"str"},	// was post_arstr
+	op_ars:			{bytes:LEN_ARSTR+1,		type:"str"},	// was op_arstr
 	// uchar		*ar,
 				// *read_ar,
 				// *post_ar,
 				// *op_ar,
-	misc:		{bytes:UINT32_T,		type:"int"},
-	tagline:	{bytes:81,				type:"str"},
-	origline:	{bytes:51,				type:"str"},
-	post_sem:	{bytes:LEN_DIR+1,		type:"str"},
-	newsgroup:	{bytes:LEN_DIR+1,		type:"str"},
-	faddr:		{bytes:struct.faddr_t,	type:"obj"},
-	maxmsgs:	{bytes:UINT32_T,		type:"int"},
-	maxcrcs:	{bytes:UINT32_T,		type:"int"},
-	maxage:		{bytes:UINT16_T,		type:"int"},
-	ptridx:		{bytes:UINT16_T,		type:"int"},
-	mod_arstr:	{bytes:LEN_ARSTR+1,		type:"str"},
+	settings:		{bytes:UINT32_T,		type:"int"},	// was misc
+	qwknet_tagline:	{bytes:81,				type:"str"},	// was tagline
+	fidonet_origin:	{bytes:51,				type:"str"},	// was origline
+	post_sem:		{bytes:LEN_DIR+1,		type:"str"},
+	newsgroup:		{bytes:LEN_DIR+1,		type:"str"},
+	faddr:			{bytes:struct.faddr_t,	type:"obj"},
+	max_msgs:		{bytes:UINT32_T,		type:"int"},	// was maxmsgs
+	max_crcs:		{bytes:UINT32_T,		type:"int"},	// was maxcrcs
+	max_age:		{bytes:UINT16_T,		type:"int"},	// was maxage
+	ptridx:			{bytes:UINT16_T,		type:"int"},
+	mod_ars:		{bytes:LEN_ARSTR+1,		type:"str"},	// was mod_arstr
 	// *mod_ar;
-	qwkconf:	{bytes:UINT16_T,		type:"int"},
+	qwk_conf:		{bytes:UINT16_T,		type:"int"},	// was qwkconf
 	__PADDING__:53
 };
 struct.grp_t={
-	lname:		{bytes:LEN_GLNAME+1,	type:"str"},
-	sname:		{bytes:LEN_GSNAME+1,	type:"str"},
-	arstr:		{bytes:LEN_ARSTR+1,		type:"str"},
-	code_prefix:{bytes:LEN_CODE+1,		type:"str"},
+	description:	{bytes:LEN_GLNAME+1,	type:"str"},	// was lname
+	name:			{bytes:LEN_GSNAME+1,	type:"str"},	// was sname
+	ars:			{bytes:LEN_ARSTR+1,		type:"str"},	// was arstr
+	code_prefix:	{bytes:LEN_CODE+1,		type:"str"},
 	// uchar		*ar;
 	__PADDING__:87
 };
