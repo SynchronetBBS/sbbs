@@ -836,7 +836,7 @@ static ulong sockmsgtxt(SOCKET socket, CRYPT_SESSION sess, smbmsg_t* msg, char* 
 	return(retval);
 }
 
-static u_long resolve_ip(char *inaddr)
+static u_long resolve_ip(const char *inaddr)
 {
 	char*		p;
 	char*		addr;
@@ -4943,13 +4943,200 @@ static BOOL sendmail_open_socket(SOCKET *sock, smb_t *smb, 	smbmsg_t *msg)
 	return TRUE;
 }
 
+static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *msg, const char *mx, const char *mx2, const char *server, link_list_t *failed_server_list, ushort port)
+{
+	int i;
+	int tls_retry;
+	SOCKET sock;
+	list_node_t*	node;
+	ulong		ip_addr;
+	union xp_sockaddr	server_addr;
+	char		server_ip[INET6_ADDRSTRLEN];
+	BOOL		success;
+	BOOL nodelay=TRUE;
+	ulong nb = 0;
+	int status;
+	char *estr;
+	char		buf[512];
+	char		err[1024];
+
+	strcpy(err,"UNKNOWN ERROR");
+
+	for (tls_retry = 0; tls_retry < 2; tls_retry++) {
+		if (*session != -1) {
+			cryptDestroySession(*session);
+			*session = -1;
+		}
+		if (!sendmail_open_socket(&sock, smb, msg))
+			continue;
+
+		success=FALSE;
+		for(i=0;i<2 && !success;i++) {
+			if(i) {
+				if(startup->options&MAIL_OPT_RELAY_TX || !mx2[0])
+					break;
+				lprintf(LOG_DEBUG,"%04d SEND reverting to second MX: %s", sock, mx2);
+				server=mx2;	/* Give second mx record a try */
+			}
+
+			lprintf(LOG_DEBUG,"%04d SEND resolving SMTP hostname: %s", sock, server);
+			ip_addr=resolve_ip(server);
+			if(ip_addr==INADDR_NONE) {
+				SAFEPRINTF(err, "Error resolving hostname %s", server);
+				lprintf(LOG_WARNING,"%04d !SEND failure resolving hostname: %s", sock, server);
+				continue;
+			}
+
+			memset(&server_addr,0,sizeof(server_addr));
+			server_addr.in.sin_addr.s_addr = ip_addr;
+			server_addr.in.sin_family = AF_INET;
+			server_addr.in.sin_port = htons(port);
+			inet_addrtop(&server_addr,server_ip,sizeof(server_ip));
+
+			if((node=listFindNode(failed_server_list,&server_addr,sizeof(server_addr))) != NULL) {
+				SAFEPRINTF4(err, "Error %ld connecting to port %u on %s [%s]", node->tag, inet_addrport(&server_addr), server, server_ip);
+				lprintf(LOG_INFO,"%04d SEND skipping failed SMTP server: %s", sock, err);
+				continue;
+			}
+
+			if((server==mx || server==mx2) 
+				&& ((ip_addr&0xff)==127 || ip_addr==0)) {
+				SAFEPRINTF2(err,"Bad IP address (%s) for MX server: %s"
+					,server_ip,server);
+				lprintf(LOG_INFO, "%04d SEND %s", err);
+				continue;
+			}
+
+			lprintf(LOG_INFO,"%04d SEND connecting to port %u on %s [%s]"
+				,sock
+				,inet_addrport(&server_addr)
+				,server,server_ip);
+			if((i=nonblocking_connect(sock, (struct sockaddr *)&server_addr, xp_sockaddr_len(&server_addr), startup->connect_timeout))!=0) {
+				SAFEPRINTF2(err,"ERROR %d connecting to SMTP server: %s"
+					,i, server);
+				lprintf(LOG_WARNING,"%04d !SEND %s" ,sock, err);
+				listAddNodeData(failed_server_list,&server_addr,sizeof(server_addr),i,NULL);
+				continue;
+			}
+
+			lprintf(LOG_DEBUG,"%04d SEND connected to %s",sock,server);
+
+			/* HELO */
+			if(!sockgetrsp(sock,*session,"220",buf,sizeof(buf))) {
+				SAFEPRINTF3(err,badrsp_err,server,buf,"220");
+				lprintf(LOG_WARNING, "%04d SEND %s", sock, err);
+				continue;
+			}
+			success=TRUE;
+		}
+		if(!success) {	/* Failed to connect to an MX, so bounce */
+			remove_msg_intransit(smb,msg);
+			bounce(sock /* Should be zero? */, smb,msg,err,/* immediate: */FALSE);	
+			mail_close_socket(sock);
+			return INVALID_SOCKET;
+		}
+
+		sockprintf(sock,*session,"EHLO %s",startup->host_name);
+		switch (sockgetrsp_opt(sock,*session,"250", "STARTTLS", buf, sizeof(buf))) {
+			case -1:
+				if(startup->options&MAIL_OPT_RELAY_TX 
+					&& (startup->options&MAIL_OPT_RELAY_AUTH_MASK)!=0) {	/* Requires ESMTP */
+					SAFEPRINTF3(err,badrsp_err,server,buf,"250");
+					remove_msg_intransit(smb,msg);
+					bounce(sock, smb,msg,err,/* immediate: */buf[0]=='5');
+					mail_close_socket(sock);
+					return INVALID_SOCKET;
+				}
+				sockprintf(sock,*session,"HELO %s",startup->host_name);
+				if(!sockgetrsp(sock,*session,"250",buf,sizeof(buf))) {
+					SAFEPRINTF3(err,badrsp_err,server,buf,"250");
+					remove_msg_intransit(smb,msg);
+					bounce(sock, smb,msg,err,/* immediate: */buf[0]=='5');
+					mail_close_socket(sock);
+					return INVALID_SOCKET;
+				}
+				return sock;
+			case 0:
+				return sock;
+			case 1:
+				if ((!tls_retry) && get_ssl_cert(&scfg, NULL) != -1) {
+					sockprintf(sock, *session, "STARTTLS");
+					if (sockgetrsp(sock, *session, "220", buf, sizeof(buf))) {
+						if ((status=cryptCreateSession(session, CRYPT_UNUSED, CRYPT_SESSION_SSL)) != CRYPT_OK) {
+							SAFEPRINTF2(err, "ERROR %d creating TLS session to SMTP server: %s", status, server);
+							lprintf(LOG_WARNING,"%04d !SEND %s", sock, err);
+							continue;
+						}
+						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+							SAFEPRINTF2(err, "ERROR %d disabling certificate validation with SMTP server: %s", status, server);
+							lprintf(LOG_WARNING,"%04d !SEND %s" ,sock, err);
+							continue;
+						}
+						if ((status=cryptSetAttribute(*session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_OBLIVIOUS)) != CRYPT_OK) {
+							SAFEPRINTF2(err, "ERROR %d setting oblivious certificate compliance level with SMTP server: %s", status, server);
+							lprintf(LOG_WARNING,"%04d !SEND %s" ,sock, err);
+							continue;
+						}
+						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
+							SAFEPRINTF2(err, "ERROR %d setting private key with SMTP server: %s", status, server);
+							lprintf(LOG_WARNING,"%04d !SEND %s", sock, err);
+							continue;
+						}
+						nodelay = TRUE;
+						setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
+						nb=0;
+						ioctlsocket(sock,FIONBIO,&nb);
+						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_NETWORKSOCKET, sock)) != CRYPT_OK) {
+							SAFEPRINTF2(err, "ERROR %d setting network socket with SMTP server: %s", status, server);
+							lprintf(LOG_WARNING,"%04d !SEND %s", sock, err);
+							continue;
+						}
+						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
+							estr = get_crypt_error(*session);
+							SAFEPRINTF3(err, "ERROR %d (%s) activating TLS session with SMTP server: %s", status, estr ? estr : "<unknown>", server);
+							if (estr)
+								free_crypt_attrstr(estr);
+							lprintf(LOG_WARNING,"%04d !SEND %s", sock, err);
+							continue;
+						}
+						if (startup->max_inactivity) {
+							if ((status=cryptSetAttribute(*session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity)) != CRYPT_OK) {
+								estr = get_crypt_error(*session);
+								SAFEPRINTF3(err, "ERROR %d (%s) setting max inactivity with SMTP server: %s", status, estr ? estr : "<unknown>", server);
+								if (estr)
+									free_crypt_attrstr(estr);
+								lprintf(LOG_WARNING,"%04d !SEND %s", sock, err);
+								continue;
+							}
+						}
+						sockprintf(sock,*session,"EHLO %s",startup->host_name);
+						if(!sockgetrsp(sock,*session,"250",buf,sizeof(buf))) {
+							SAFEPRINTF3(err,badrsp_err,server,buf,"220");
+							lprintf(LOG_WARNING, "%04d SEND %s", sock, err);
+							continue;
+						}
+					}
+				}
+				return sock;
+		}
+	}
+	remove_msg_intransit(smb,msg);
+	bounce(sock, smb,msg,err,/* immediate: */FALSE);	
+	if (*session != -1) {
+		cryptDestroySession(*session);
+		*session = -1;
+	}
+	mail_close_socket(sock);
+	return INVALID_SOCKET;
+}
+
 /* TODO: IPv6 etc. */
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
 static void sendmail_thread(void* arg)
 {
-	int			i,j;
+	int			i;
 	char		to[128];
 	char		mx[128];
 	char		mx2[128];
@@ -4973,15 +5160,11 @@ static void sendmail_thread(void* arg)
 	char*		tp;
 	ushort		port;
 	ulong		last_msg=0;
-	ulong		ip_addr;
 	ulong		dns;
 	ulong		lines;
 	ulong		bytes;
-	BOOL		success;
 	BOOL		first_cycle=TRUE;
 	SOCKET		sock=INVALID_SOCKET;
-	union xp_sockaddr	server_addr;
-	char		server_ip[INET6_ADDRSTRLEN];
 	time_t		last_scan=0;
 	smb_t		smb;
 	smbmsg_t	msg;
@@ -4992,9 +5175,6 @@ static void sendmail_thread(void* arg)
 	BOOL		sending_locally=FALSE;
 	link_list_t	failed_server_list;
 	CRYPT_SESSION session = -1;
-	BOOL nodelay=TRUE;
-	ulong nb = 0;
-	BOOL		tls_failed;
 
 	SetThreadName("sbbs/sendMail");
 	thread_up(TRUE /* setuid */);
@@ -5220,245 +5400,9 @@ static void sendmail_thread(void* arg)
 			if(!port)
 				port=IPPORT_SMTP;
 
-			if (!sendmail_open_socket(&sock, &smb, &msg))
+			sock = sendmail_negotiate(&session, &smb, &msg, mx, mx2, server, &failed_server_list, port);
+			if (sock == INVALID_SOCKET)
 				continue;
-
-			strcpy(err,"UNKNOWN ERROR");
-			success=FALSE;
-			tls_failed = FALSE;
-			for(j=0;j<2 && !success;j++) {
-				list_node_t*	node;
-
-				if(j) {
-					if(startup->options&MAIL_OPT_RELAY_TX || !mx2[0])
-						break;
-					lprintf(LOG_DEBUG,"%04d SEND reverting to second MX: %s", sock, mx2);
-					server=mx2;	/* Give second mx record a try */
-				}
-				
-				lprintf(LOG_DEBUG,"%04d SEND resolving SMTP hostname: %s", sock, server);
-				ip_addr=resolve_ip(server);
-				if(ip_addr==INADDR_NONE) {
-					SAFEPRINTF(err,"Failed to resolve SMTP hostname: %s",server);
-					lprintf(LOG_WARNING,"%04d !SEND failure resolving hostname: %s", sock, server);
-					continue;
-				}
-
-				memset(&server_addr,0,sizeof(server_addr));
-				server_addr.in.sin_addr.s_addr = ip_addr;
-				server_addr.in.sin_family = AF_INET;
-				server_addr.in.sin_port = htons(port);
-				inet_addrtop(&server_addr,server_ip,sizeof(server_ip));
-
-				if((node=listFindNode(&failed_server_list,&server_addr,sizeof(server_addr))) != NULL) {
-					lprintf(LOG_INFO,"%04d SEND skipping failed SMTP server: Error %d connecting to port %u on %s [%s]"
-					,sock
-					,node->tag
-					,inet_addrport(&server_addr)
-					,server,server_ip);
-					SAFEPRINTF2(err,"Error %d connecting to SMTP server: %s"
-						,node->tag, server);
-					continue;
-				}
-
-				if((server==mx || server==mx2) 
-					&& ((ip_addr&0xff)==127 || ip_addr==0)) {
-					SAFEPRINTF2(err,"Bad IP address (%s) for MX server: %s"
-						,server_ip,server);
-					continue;
-				}
-				
-				lprintf(LOG_INFO,"%04d SEND connecting to port %u on %s [%s]"
-					,sock
-					,inet_addrport(&server_addr)
-					,server,server_ip);
-				if((i=nonblocking_connect(sock, (struct sockaddr *)&server_addr, xp_sockaddr_len(&server_addr), startup->connect_timeout))!=0) {
-					lprintf(LOG_WARNING,"%04d !SEND ERROR %d connecting to SMTP server: %s"
-						,sock
-						,i, server);
-					SAFEPRINTF2(err,"Error %d connecting to SMTP server: %s"
-						,i, server);
-					listAddNodeData(&failed_server_list,&server_addr,sizeof(server_addr),i,NULL);
-					continue;
-				}
-				success=TRUE;
-			}
-			if(!success) {	/* Failed to send, so bounce */
-				remove_msg_intransit(&smb,&msg);
-				bounce(sock, &smb,&msg,err,/* immediate: */FALSE);	
-				continue;
-			}
-
-			lprintf(LOG_DEBUG,"%04d SEND connected to %s",sock,server);
-
-			/* HELO */
-			if(!sockgetrsp(sock,session,"220",buf,sizeof(buf))) {
-				remove_msg_intransit(&smb,&msg);
-				SAFEPRINTF3(err,badrsp_err,server,buf,"220");
-				bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-				continue;
-			}
-			sockprintf(sock,session,"EHLO %s",startup->host_name);
-			switch (sockgetrsp_opt(sock,session,"250", "STARTTLS", buf, sizeof(buf))) {
-				case -1:
-					if(startup->options&MAIL_OPT_RELAY_TX 
-						&& (startup->options&MAIL_OPT_RELAY_AUTH_MASK)!=0) {	/* Requires ESMTP */
-						remove_msg_intransit(&smb,&msg);
-						SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-						bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-						continue;
-					}
-					sockprintf(sock,session,"HELO %s",startup->host_name);
-					if(!sockgetrsp(sock,session,"250",buf,sizeof(buf))) {
-						remove_msg_intransit(&smb,&msg);
-						SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-						bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-						continue;
-					}
-					break;
-				case 1:
-					if ((!tls_failed) && get_ssl_cert(&scfg, NULL) != -1) {
-						sockprintf(sock, session, "STARTTLS");
-						if (sockgetrsp(sock, session, "220", buf, sizeof(buf))) {
-							if ((i=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL)) != CRYPT_OK) {
-								lprintf(LOG_WARNING,"%04d !SEND ERROR %d creating TLS session to SMTP server: %s"
-									,sock
-									,i, server);
-								if (!sendmail_open_socket(&sock, &smb, &msg)) {
-									remove_msg_intransit(&smb,&msg);
-									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-									continue;
-								}
-								success = FALSE;
-								tls_failed = TRUE;
-								j--;
-								continue;
-							}
-							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
-								cryptDestroySession(session);
-								lprintf(LOG_WARNING,"%04d !SEND ERROR %d disabling certificate verification with SMTP server: %s"
-									,sock
-									,i, server);
-								session = -1;
-								if (!sendmail_open_socket(&sock, &smb, &msg)) {
-									remove_msg_intransit(&smb,&msg);
-									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-									continue;
-								}
-								success = FALSE;
-								tls_failed = TRUE;
-								j--;
-								continue;
-							}
-							if ((i=cryptSetAttribute(session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_OBLIVIOUS)) != CRYPT_OK) {
-								cryptDestroySession(session);
-								lprintf(LOG_WARNING,"%04d !SEND ERROR %d setting oblivious certificate compliance level with SMTP server: %s"
-									,sock
-									,i, server);
-								session = -1;
-								if (!sendmail_open_socket(&sock, &smb, &msg)) {
-									remove_msg_intransit(&smb,&msg);
-									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-									continue;
-								}
-								success = FALSE;
-								tls_failed = TRUE;
-								j--;
-								continue;
-							}
-							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
-								cryptDestroySession(session);
-								lprintf(LOG_WARNING,"%04d !SEND ERROR %d setting private key with SMTP server: %s"
-									,sock
-									,i, server);
-								session = -1;
-								if (!sendmail_open_socket(&sock, &smb, &msg)) {
-									remove_msg_intransit(&smb,&msg);
-									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-									continue;
-								}
-								success = FALSE;
-								tls_failed = TRUE;
-								j--;
-								continue;
-							}
-							nodelay = TRUE;
-							setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
-							nb=0;
-							ioctlsocket(sock,FIONBIO,&nb);
-							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, sock)) != CRYPT_OK) {
-								cryptDestroySession(session);
-								lprintf(LOG_WARNING,"%04d !SEND ERROR %d setting network socket with SMTP server: %s"
-									,sock
-									,i, server);
-								session = -1;
-								if (!sendmail_open_socket(&sock, &smb, &msg)) {
-									remove_msg_intransit(&smb,&msg);
-									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-									continue;
-								}
-								success = FALSE;
-								tls_failed = TRUE;
-								j--;
-								continue;
-							}
-							if ((i=cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
-								cryptDestroySession(session);
-								p = get_crypt_error(session);
-								lprintf(LOG_WARNING,"%04d !SEND ERROR %d (%s) activating TLS session with SMTP server: %s"
-									,sock
-									,i, p ? p : "<unknown>", server);
-								if (p)
-									free_crypt_attrstr(p);
-								session = -1;
-								if (!sendmail_open_socket(&sock, &smb, &msg)) {
-									remove_msg_intransit(&smb,&msg);
-									SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-									bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-									continue;
-								}
-								success = FALSE;
-								tls_failed = TRUE;
-								j--;
-								continue;
-							}
-							if (startup->max_inactivity) {
-								if ((i=cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity)) != CRYPT_OK) {
-									cryptDestroySession(session);
-									p = get_crypt_error(session);
-									lprintf(LOG_WARNING,"%04d !SEND ERROR %d (%s) setting max inactivity with SMTP server: %s"
-										,sock
-										,i, p ? p : "<unknown>", server);
-									if (p)
-										free_crypt_attrstr(p);
-									session = -1;
-									if (!sendmail_open_socket(&sock, &smb, &msg)) {
-										remove_msg_intransit(&smb,&msg);
-										SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-										bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-										continue;
-									}
-									success = FALSE;
-									tls_failed = TRUE;
-									j--;
-									continue;
-								}
-							}
-							sockprintf(sock,session,"EHLO %s",startup->host_name);
-							if(!sockgetrsp(sock,session,"250",buf,sizeof(buf))) {
-								remove_msg_intransit(&smb,&msg);
-								SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-								bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-								continue;
-							}
-						}
-					}
-			}
 
 			/* AUTH */
 			if(startup->options&MAIL_OPT_RELAY_TX 
