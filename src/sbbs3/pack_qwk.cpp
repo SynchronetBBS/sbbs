@@ -417,7 +417,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				} 
 				YIELD();	/* yield */
 			}
-			bprintf(text[QWKPackedEmail],mailmsgs);
+			if(cfg.node_num)
+				bprintf(text[QWKPackedEmail],mailmsgs);
 			if(ndx)
 				fclose(ndx); 
 		}
@@ -447,9 +448,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 						subscan[usrsub[i][j]].ptr=lastmsg;	/* so fix automatically */
 					if(subscan[usrsub[i][j]].last>lastmsg)
 						subscan[usrsub[i][j]].last=lastmsg; 
-					bprintf(text[NScanStatusFmt]
-						,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
-						,cfg.sub[usrsub[i][j]]->lname,0L,msgs);
+					if(cfg.node_num)
+						bprintf(text[NScanStatusFmt]
+							,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
+							,cfg.sub[usrsub[i][j]]->lname,0L,msgs);
 					continue; 
 				}
 
@@ -470,10 +472,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				if(useron.qwk&QWK_VOTING)
 					k|=LP_POLLS|LP_VOTES;
 				post=loadposts(&posts,usrsub[i][j],subscan[usrsub[i][j]].ptr,k,NULL);
-
-				bprintf(text[NScanStatusFmt]
-					,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
-					,cfg.sub[usrsub[i][j]]->lname,posts,msgs);
+				
+				if(cfg.node_num)
+					bprintf(text[NScanStatusFmt]
+						,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
+						,cfg.sub[usrsub[i][j]]->lname,posts,msgs);
 				if(!posts)	{ /* no new messages */
 					smb_close(&smb);
 					continue; 
@@ -568,7 +571,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					if(!(u%50))
 						YIELD();	/* yield */
 				}
-				if(!(sys_status&SS_ABORT))
+				if(cfg.node_num && !(sys_status&SS_ABORT))
 					bprintf(text[QWKPackedSubboard],submsgs,(*msgcnt));
 				if(ndx) {
 					fclose(ndx);
@@ -594,18 +597,22 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		lprintf(LOG_INFO,"Node %d %s scanned %lu sub-boards for new messages"
 			,cfg.node_num,useron.alias,subs_scanned);
 
-	if((*msgcnt)+mailmsgs && time(NULL)-start) {
-		bprintf("\r\n\r\n\1n\1hPacked %lu messages (%lu bytes) in %lu seconds "
-			"(%lu messages/second)."
-			,(*msgcnt)+mailmsgs
-			,ftell(qwk)
-			,time(NULL)-start
-			,((*msgcnt)+mailmsgs)/(time(NULL)-start));
+	if((*msgcnt)+mailmsgs) {
+		time_t elapsed = time(NULL)-start;
+		if(elapsed < 1)
+			elapsed = 1;
+		if(cfg.node_num)
+			bprintf("\r\n\r\n\1n\1hPacked %lu messages (%lu bytes) in %lu seconds "
+				"(%lu messages/second)."
+				,(*msgcnt)+mailmsgs
+				,ftell(qwk)
+				,elapsed
+				,((*msgcnt)+mailmsgs) / elapsed);
 		SAFEPRINTF4(str,"Packed %lu messages (%lu bytes) in %lu seconds (%lu msgs/sec)"
 			,(*msgcnt)+mailmsgs
 			,ftell(qwk)
-			,(ulong)(time(NULL)-start)
-			,((*msgcnt)+mailmsgs)/(time(NULL)-start));
+			,(ulong)elapsed
+			,((*msgcnt)+mailmsgs)/elapsed);
 		if(online==ON_LOCAL) /* event */
 			eprintf(LOG_INFO,"%s",str);
 		else
