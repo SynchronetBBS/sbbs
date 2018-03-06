@@ -5181,7 +5181,7 @@ static void sendmail_thread(void* arg)
 
 	terminate_sendmail=FALSE;
 
-	lprintf(LOG_INFO,"0000 SendMail thread started");
+	lprintf(LOG_INFO,"SendMail thread started");
 
 	memset(&msg,0,sizeof(msg));
 	memset(&smb,0,sizeof(smb));
@@ -5909,34 +5909,32 @@ void DLLCALL mail_server(void* arg)
 			return;
 		}
 		terminated=FALSE;
-		if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->smtp_port, "SMTP Server", mail_open_socket, startup->seteuid, "smtp"))
+		if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces
+			, startup->smtp_port, "SMTP Transfer Agent", mail_open_socket, startup->seteuid, "smtp"))
 			lprintf(LOG_INFO,"SMTP No extra interfaces listening");
-		lprintf(LOG_INFO,"SMTP Server listening");
 
 		if(startup->options&MAIL_OPT_USE_SUBMISSION_PORT) {
-			if(xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->submission_port, "SMTP Submission Agent", mail_open_socket, startup->seteuid, "submission"))
-				lprintf(LOG_INFO,"SUBMISSION Server listening");
+			xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces
+				, startup->submission_port, "SMTP Submission Agent", mail_open_socket, startup->seteuid, "submission");
 		}
 
 		if(startup->options&MAIL_OPT_TLS_SUBMISSION) {
-			if(xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->submissions_port, "TLS/SMTP Submission Agent", mail_open_socket, startup->seteuid, "submissions"))
-				lprintf(LOG_INFO,"SUBMISSIONS Server listening");
+			xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->submissions_port
+				, "SMTPS Submission Agent", mail_open_socket, startup->seteuid, "submissions");
 		}
 
 		if(startup->options&MAIL_OPT_ALLOW_POP3) {
-
 			/* open a socket and wait for a client */
-			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces, startup->pop3_port, "POP3 Server", mail_open_socket, startup->seteuid, "pop3"))
+			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces, startup->pop3_port
+				, "POP3 Server", mail_open_socket, startup->seteuid, "pop3"))
 				lprintf(LOG_INFO,"POP3 No extra interfaces listening");
-			lprintf(LOG_INFO,"POP3 Server listening");
 		}
 
 		if(startup->options&MAIL_OPT_TLS_POP3) {
-
 			/* open a socket and wait for a client */
-			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces, startup->pop3s_port, "TLS/POP3 Server", mail_open_socket, startup->seteuid, "pop3s"))
+			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces
+				, startup->pop3s_port, "POP3S Server", mail_open_socket, startup->seteuid, "pop3s"))
 				lprintf(LOG_INFO,"POP3S No extra interfaces listening");
-			lprintf(LOG_INFO,"POP3S Server listening");
 		}
 
 		sem_init(&sendmail_wakeup_sem,0,0);
