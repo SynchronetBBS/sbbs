@@ -3618,7 +3618,7 @@ static void smtp_thread(void* arg)
 						,server_ip
 						,server_name
 						,revision,PLATFORM_DESC
-						,esmtp ? "ESMTP" : "SMTP"
+						,esmtp ? (auth_login ? "ESMTPA" : "ESMTP") : "SMTP"
 						,rcpt_to,msgdate(msg.hdr.when_imported,date)
 						,reverse_path);
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */TRUE);
