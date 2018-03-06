@@ -59,16 +59,21 @@ function lock_flow(file)
 
 		// TODO: This is hacked for a signed 32-bit time_t... watch out in 2038!
 		orig_date = f.date;
-		if (orig_date > (now - 60*60*6))
+		if (orig_date > (now - 60*60*6)) {
+			log(LOG_WARNING, format("%ld > %ld", orig_date, now-60*60*6));
 			return false;
+		}
 		remain = 0x80000000 - now;
 		future = now + random(remain);
 		f.date = future;
 		mswait(1000);
-		if (f.date != future)
+		if (f.date != future) {
+			log(LOG_WARNING, format("%ld != future(%ld)", f.date, future));
 			return false;
+		}
 		if (!f.open("wb")) {
 			f.date = orig_date;
+			log(LOG_WARNING, "Error " + f.error + " opening " + f.name);
 			return false;
 		}
 		f.date = now;
@@ -77,6 +82,7 @@ function lock_flow(file)
 
 	log(LOG_DEBUG, "Locking "+ret.bsy.name);
 	if (!ret.bsy.open("web")) {
+		log(LOG_WARNING, "Error " + ret.bsy.error + " creating " + ret.bsy.name);
 		if (!take_lockfile(ret.bsy)) {
 			log(LOG_NOTICE, "Lock on "+ret.bsy.name+" failed.");
 			return undefined;
