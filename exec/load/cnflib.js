@@ -35,6 +35,8 @@ var CNF = new (function() {
 		if(typeof length !== 'undefined' && length) {
 			setInt(file,length,str.length);
 		}
+		if(str === undefined)
+			str = '';
 		file.write(str,bytes);
 	}
 
