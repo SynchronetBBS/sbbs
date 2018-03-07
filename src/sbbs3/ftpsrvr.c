@@ -2719,8 +2719,79 @@ static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client,
 	*p = 0;
 }
 
+static void get_owner_name(file_t *file, char *namestr)
+{
+	char *p;
+
+	if (file) {
+		if (file->misc & FM_ANON)
+			strcpy(namestr, ANONYMOUS);
+		else
+			strcpy(namestr, file->uler);
+	}
+	else
+		strcpy(namestr, scfg.sys_id);
+
+	// Now ensure it's an RCHAR string.
+	for (p=namestr; *p; p++) {
+		if (*p >= '!' && *p <= ')')
+			continue;
+		else if (*p >= '+' && *p <= ':')
+			continue;
+		else if (*p >= '?' && *p <= 'Z')
+			continue;
+		else if (*p == '\\')
+			continue;
+		else if (*p == '^')
+			continue;
+		else if (*p == '_')
+			continue;
+		else if (*p >= 'a' && *p <= 'z')
+			continue;
+		else if (*p == ' ')
+			*p = '.';
+		else
+			*p = '_';
+	}
+}
+
+#define MLSX_TYPE	(1<<0)
+#define MLSX_PERM	(1<<1)
+#define MLSX_SIZE	(1<<2)
+#define MLSX_MODIFY	(1<<3)
+#define MLSX_OWNER	(1<<4)
+
+static void send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned feats, char *type, char *perm, uint64_t size, uint64_t modify, char *owner, char *fname)
+{
+	char line[1024];
+	char *end;
+	BOOL need_owner = FALSE;
+
+	end=line;
+	*end=0;
+	if (type != NULL && (feats & MLSX_TYPE))
+		end += sprintf(end, "Type=%s;", type);
+	if (perm != NULL && (feats & MLSX_PERM))
+		end += sprintf(end, "Perm=%s;", perm);
+	if (size != UINT64_MAX && (feats & MLSX_SIZE))
+		end += sprintf(end, "Size=%" PRIu64 ";", size);
+	if (modify != UINT64_MAX && (feats & MLSX_MODIFY))
+		end += sprintf(end, "Modify=%" PRIu64 ";", modify);
+	// Owner can contain percents, so let send_mlsx() deal with it
+	if (owner != NULL && (feats & MLSX_OWNER)) {
+		strcat(end, "UNIX.ownername=%s;");
+		need_owner = TRUE;
+	}
+	strcat(end, " %s");
+	if (need_owner)
+		send_mlsx(fp, sock, sess, line, owner, fname==NULL ? "" : fname);
+	else
+		send_mlsx(fp, sock, sess, line, fname==NULL ? "" : fname);
+}
+
 static void ctrl_thread(void* arg)
 {
+	unsigned	mlsx_feats = (MLSX_TYPE | MLSX_PERM | MLSX_SIZE | MLSX_MODIFY | MLSX_OWNER);
 	char		buf[512];
 	char		str[128];
 	char*		cmd;
@@ -3014,12 +3085,49 @@ static void ctrl_thread(void* arg)
 			sockprintf(sock,sess," AUTH TLS");
 			sockprintf(sock,sess," PBSZ");
 			sockprintf(sock,sess," PROT");
-			sockprintf(sock,sess," MLST");
+			sockprintf(sock,sess," MLST Type%s;Perm%s;Size%s;Modify%s;UNIX.ownername%s;",
+				(mlsx_feats & MLSX_TYPE) ? "*" : "",
+				(mlsx_feats & MLSX_PERM) ? "*" : "",
+				(mlsx_feats & MLSX_SIZE) ? "*" : "",
+				(mlsx_feats & MLSX_MODIFY) ? "*" : "",
+				(mlsx_feats & MLSX_OWNER) ? "*" : ""
+			);
 			sockprintf(sock,sess,"211 End");
 			continue;
 		}
+		if(!strnicmp(cmd, "OPTS MLST",9)) {
+			if (cmd[9] == 0) {
+				mlsx_feats = 0;
+				continue;
+			}
+			if (cmd[9] != ' ') {
+				sockprintf(sock,sess,"501 Option not supported.");
+				continue;
+			}
+			mlsx_feats = 0;
+			for (p = cmd; *p; p++)
+				*p = toupper(*p);
+			if (strstr(cmd, "TYPE;"))
+				mlsx_feats |= MLSX_TYPE;
+			if (strstr(cmd, "PERM;"))
+				mlsx_feats |= MLSX_PERM;
+			if (strstr(cmd, "SIZE;"))
+				mlsx_feats |= MLSX_SIZE;
+			if (strstr(cmd, "MODIFY;"))
+				mlsx_feats |= MLSX_MODIFY;
+			if (strstr(cmd, "UNIX.OWNERNAME;"))
+				mlsx_feats |= MLSX_OWNER;
+			sockprintf(sock,sess,"200 %s%s%s%s%s",
+				(mlsx_feats & MLSX_TYPE) ? "Type;" : "",
+				(mlsx_feats & MLSX_PERM) ? "Perm;" : "",
+				(mlsx_feats & MLSX_SIZE) ? "Size;" : "",
+				(mlsx_feats & MLSX_MODIFY) ? "Modify;" : "",
+				(mlsx_feats & MLSX_OWNER) ? "UNIX.ownername;" : ""
+			);
+			continue;
+		}
 		if(!strnicmp(cmd, "OPTS",4)) {
-			sockprintf(sock,sess,"501 No options supported.");
+			sockprintf(sock,sess,"501 Option not supported.");
 			continue;
 		}
 		if(!stricmp(cmd, "QUIT")) {
@@ -4145,7 +4253,8 @@ static void ctrl_thread(void* arg)
 						&& (cmd[3] == 'D' || strcmp(startup->index_file_name, mls_fname) == 0)) {
 					if (cmd[3] == 'T')
 						sockprintf(sock,sess, "250- Listing %s", startup->index_file_name);
-					send_mlsx(fp, sock, sess, "Type=file;Perm=r; %s",cmd[3] == 'T' ? mls_path : startup->index_file_name);
+					get_owner_name(NULL, str);
+					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, UINT64_MAX, str, cmd[3] == 'T' ? mls_path : startup->index_file_name);
 					l++;
 				}
 				/* HTML Index File */
@@ -4153,26 +4262,28 @@ static void ctrl_thread(void* arg)
 						&& (cmd[3] == 'D' || strcmp(startup->html_index_file, mls_fname) == 0)) {
 					if (cmd[3] == 'T')
 						sockprintf(sock,sess, "250- Listing %s", startup->html_index_file);
-					send_mlsx(fp, sock, sess, "Type=file;Perm=r; %s",cmd[3] == 'T' ? mls_path : startup->html_index_file);
+					get_owner_name(NULL, str);
+					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, UINT64_MAX, str, cmd[3] == 'T' ? mls_path : startup->html_index_file);
 					l++;
 				}
 
 				if(lib<0) { /* Root dir */
 					if (cmd[3] == 'T' && !*mls_path) {
 						sockprintf(sock,sess, "250- Listing root");
-						send_mlsx(fp, sock, sess, "Type=dir;Perm=el%s %s", (startup->options&FTP_OPT_ALLOW_QWK) ? "c" : "", mls_path);
+						get_owner_name(NULL, str);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, UINT64_MAX, str, mls_path);
 						l++;
 					}
 					lprintf(LOG_INFO,"%04d %s listing: root in %s mode",sock,user.alias, mode);
 
-					// TODO: Can upload files to root dir if QWK REPs are allowed.
 					/* QWK Packet */
 					if(startup->options&FTP_OPT_ALLOW_QWK) {
 						SAFEPRINTF(str,"%s.qwk",scfg.sys_id);
 						if (cmd[3] == 'D' || strcmp(str, mls_fname) == 0) {
 							if (cmd[3] == 'T')
 								sockprintf(sock,sess, "250- Listing %s", str);
-							send_mlsx(fp, sock, sess, "Type=file;Perm=r; %s", cmd[3] == 'T' ? mls_path : str);
+							get_owner_name(NULL, str);
+							send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, UINT64_MAX, str, cmd[3] == 'T' ? mls_path : str);
 							l++;
 						}
 					}
@@ -4238,9 +4349,9 @@ static void ctrl_thread(void* arg)
 								if (cmd[3] == 'T')
 									sockprintf(sock,sess, "250- Listing %s", p);
 								if (alias_dir==TRUE)
-									send_mlsx(fp, sock, sess, "Type=dir;Perm=el; %s",cmd[3] == 'T' ? mls_path : p);
+									send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, UINT64_MAX, NULL, cmd[3] == 'T' ? mls_path : p);
 								else
-									send_mlsx(fp, sock, sess, "Type=file;Perm=r;Size=%" PRIu64 ";Modify=%" PRIu64 "; %s",(uint64_t)flength(np), (uint64_t)fdate(np),cmd[3] == 'T' ? mls_path : p);
+									send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", (uint64_t)flength(np), (uint64_t)fdate(np), NULL, cmd[3] == 'T' ? mls_path : p);
 								l++;
 							}
 						}
@@ -4257,13 +4368,16 @@ static void ctrl_thread(void* arg)
 						if (cmd[3] == 'T')
 							sockprintf(sock,sess, "250- Listing %s", scfg.lib[i]->sname);
 						get_libperm(scfg.lib[i], &user, &client, permstr);
-						send_mlsx(fp, sock, sess, "Type=dir;Perm=%s; %s", permstr, cmd[3] == 'T' ? mls_path : scfg.lib[i]->sname);
+						get_owner_name(NULL, str);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, UINT64_MAX, str, cmd[3] == 'T' ? mls_path : scfg.lib[i]->sname);
 						l++;
 					}
 				} else if(dir<0) {
 					if (cmd[3] == 'T' && !*mls_path) {
 						sockprintf(sock,sess, "250- Listing %s", scfg.lib[lib]->sname);
-						send_mlsx(fp, sock, sess, "Type=dir;Perm=el %s", mls_path);
+						get_owner_name(NULL, str);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, UINT64_MAX, str, mls_path);
+						send_mlsx(fp, sock, sess, "Type=dir;Perm=el;UNIX.ownername=%s; %s", str, mls_path);
 						l++;
 					}
 					lprintf(LOG_INFO,"%04d %s listing: %s library in %s mode"
@@ -4279,7 +4393,8 @@ static void ctrl_thread(void* arg)
 						if (cmd[3] == 'T')
 							sockprintf(sock,sess, "250- Listing %s", scfg.dir[i]->code_suffix);
 						get_dirperm(scfg.lib[lib], scfg.dir[i], &user, &client, permstr);
-						send_mlsx(fp, sock, sess, "Type=dir;Perm=%s; %s", permstr, cmd[3] == 'T' ? mls_path : scfg.dir[i]->code_suffix);
+						get_owner_name(NULL, str);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, UINT64_MAX, str, cmd[3] == 'T' ? mls_path : scfg.dir[i]->code_suffix);
 						l++;
 					}
 				} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user,&client)) {
@@ -4288,7 +4403,8 @@ static void ctrl_thread(void* arg)
 
 					if (cmd[3] == 'T' && !*mls_path) {
 						sockprintf(sock,sess, "250- Listing %s/%s",scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix);
-						send_mlsx(fp, sock, sess, "Type=dir;Perm=el%s %s", (startup->options&FTP_OPT_ALLOW_QWK) ? "c" : "", mls_path);
+						get_owner_name(NULL, str);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, UINT64_MAX, str, mls_path);
 						l++;
 					}
 
@@ -4313,7 +4429,8 @@ static void ctrl_thread(void* arg)
 						if (cmd[3] == 'T')
 							sockprintf(sock,sess, "250- Listing %s", p);
 						get_fileperm(scfg.lib[lib], scfg.dir[dir], &user, &client, &f, permstr);
-						send_mlsx(fp, sock, sess, "Type=file;Perm=%s;Size=%" PRIu64 ";Modify=%" PRIu64 "; %s", permstr, (uint64_t)flength(g.gl_pathv[i]), (uint64_t)fdate(g.gl_pathv[i]), cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
+						get_owner_name(&f, str);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, (uint64_t)flength(g.gl_pathv[i]), (uint64_t)fdate(g.gl_pathv[i]), str, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
 						l++;
 					}
 					globfree(&g);
