@@ -1126,8 +1126,13 @@ void dir_cfg(uint libnum)
 				else 
 					prep_dir(cfg.ctrl_dir, str, sizeof(str));
 			} else {
-				SAFEPRINTF3(str, "[%sdirs/%s%s/]"
-					,cfg.data_dir 
+				if (!cfg.dir[dirnum[i]]->data_dir[0])
+					SAFEPRINTF(data_dir, "%sdirs/", cfg.data_dir);
+				else
+					SAFECOPY(data_dir, cfg.dir[dirnum[i]]->data_dir);
+				backslash(data_dir);
+				SAFEPRINTF3(str, "[%s%s%s/]"
+					,data_dir 
 					,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
 			}
 			strlwr(str);
