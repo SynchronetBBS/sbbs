@@ -1032,7 +1032,7 @@ BOOL DLLCALL isfullpath(const char* filename)
 {
 	return(filename[0]=='/'
 #ifdef WIN32
-		|| filename[0]=='\\' || (isalpha(filename[0] && filename[1]==':')
+		|| filename[0]=='\\' || (isalpha(filename[0]) && filename[1]==':')
 #endif
 		);
 }
