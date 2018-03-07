@@ -814,8 +814,8 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 							, cfg->lib[cfg->dir[i]->lib]->code_prefix
 							, cfg->dir[i]->code_suffix);
 						strlwr(str);
-						safe_snprintf(path, sizeof(path), "%sdirs/%s/"
-							, cfg->data_dir
+						safe_snprintf(path, sizeof(path), "%s%s/"
+							, cfg->dir[i]->data_dir
 							, str);
 					}
 					else if (cfg->lib[cfg->dir[i]->lib]->parent_path[0]) {
