@@ -520,7 +520,8 @@ BinkP.prototype.accept = function(sock, auth_cb)
 	if (this.sock == undefined || !this.sock.is_connected)
 		return false;
 
-	for (i=0; i<128; i++)
+	// IREX VER Internet Rex 2.29 Win32 (binkp/1.1) doesn't work with longer challenges
+	for (i=0; i<32; i++)
 		challenge += random(16).toString(16);
 
 	// Avoid warning from syncjslint by putting this in a closure.
