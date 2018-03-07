@@ -2208,95 +2208,126 @@ char* dotname(char* in, char* out)
 	return(out);
 }
 
+static BOOL can_list(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
+{
+	if (!chk_ar(&scfg,lib->ar,user,client))
+		return FALSE;
+	if (dir->dirnum == scfg.sysop_dir)
+		return TRUE;
+	if (dir->dirnum == scfg.upload_dir)
+		return TRUE;
+	if (chk_ar(&scfg, dir->ar, user, client))
+		return TRUE;
+	return FALSE;
+}
+
+/*
+ * Parses a path into *curlib, *curdir, and sets *pp to point to the filename
+ */
 static int parsepath(char** pp, user_t* user, client_t* client, int* curlib, int* curdir)
 {
-	char*	p;
-	char*	tp;
-	char	path[MAX_PATH+1];
-	int		dir=*curdir;
-	int		lib=*curlib;
-	int	ret = 0;
+	int lib = *curlib;
+	int dir = *curdir;
+	char *p = *pp;
+	char *fname = strchr(p, 0);
+	int ret = 0;
+	size_t len;
 
-	SAFECOPY(path,*pp);
-	p=path;
-
-	if(*p=='/') {
+	if (*p == '/') {
+		lib = -1;
+		dir = -1;
 		p++;
-		lib=-1;
 	}
-	else if(!strncmp(p,"./",2))
-		p+=2;
 
-	if(!strncmp(p,"..",2)) {
-		p+=2;
-		if(dir>=0)
-			dir=-1;
-		else if(lib>=0)
-			lib=-1;
-		else
-			ret = -1;
-		if(*p=='/')
+	while (*p) {
+lprintf(LOG_DEBUG, "Parsing '%s'", p);
+		/* Relative path stuff */
+		if (strcmp(p, "..") == 0) {
+			if (dir >= 0)
+				dir = -1;
+			else if (lib >= 0)
+				lib = -1;
+			else
+				ret = -1;
+			p += 2;
+		}
+		else if(strncmp(p, "../", 3) == 0) {
+			if (dir >= 0)
+				dir = -1;
+			else if (lib >= 0)
+				lib = -1;
+			else
+				ret = -1;
+			p += 3;
+		}
+		else if(strcmp(p, ".") == 0)
 			p++;
-	}
-
-	if(*p==0) {
-		*curlib=lib;
-		*curdir=dir;
-		return ret;
-	}
-
-	if(lib<0) { /* root */
-		tp=strchr(p,'/');
-		if(tp)
-			*(tp++)=0;
-		else
-			tp=p+strlen(p);
-		for(lib=0;lib<scfg.total_libs;lib++) {
-			if(!chk_ar(&scfg,scfg.lib[lib]->ar,user,client))
-				continue;
-			if(!stricmp(scfg.lib[lib]->sname,p))
-				break;
+		else if(strncmp(p, "./", 2) == 0)
+			p += 2;
+		/* Path component */
+		else if (lib < 0) {
+lprintf(LOG_DEBUG, "Finding a lib");
+			for(lib=0;lib<scfg.total_libs;lib++) {
+				if(!chk_ar(&scfg,scfg.lib[lib]->ar,user,client))
+					continue;
+				len = strlen(scfg.lib[lib]->sname);
+				if (strlen(p) < len)
+					continue;
+				if (p[len] != 0 && p[len] != '/')
+					continue;
+				if(!strnicmp(scfg.lib[lib]->sname,p,len)) {
+					p += len;
+					if (*p)
+						p++;
+					break;
+				}
+			}
+			if (lib == scfg.total_libs) {
+				ret = -1;
+				lib = -1;
+			}
 		}
-		if(lib>=scfg.total_libs) { /* not found */
-			*curlib=-1;
-			return -1;
+		else if (dir < 0) {
+lprintf(LOG_DEBUG, "Finding a dir");
+			for(dir=0;dir<scfg.total_dirs;dir++) {
+				if(scfg.dir[dir]->lib!=lib)
+					continue;
+				if (!can_list(scfg.lib[lib], scfg.dir[dir], user, client))
+					continue;
+				len = strlen(scfg.dir[dir]->code_suffix);
+				if (strlen(p) < len)
+					continue;
+				if (p[len] != 0 && p[len] != '/')
+					continue;
+				if(!strnicmp(scfg.dir[dir]->code_suffix,p,len)) {
+					p += len;
+					if (*p)
+						p++;
+					break;
+				}
+			}
+			if (dir == scfg.total_dirs) {
+				ret = -1;
+				dir = -1;
+			}
 		}
-		*curlib=lib;
-
-		if(*(tp)==0) {
-			*curdir=-1;
-			*pp+=tp-path;	/* skip "lib" or "lib/" */
-			return ret;
+		else {	// Filename
+lprintf(LOG_DEBUG, "Thats a filename");
+			if (strchr(p, '/') != NULL) {
+				ret = -1;
+				p = strchr(p, '/');
+				p++;
+			}
+			else {
+				fname = p;
+				p += strlen(fname);
+			}
 		}
-
-		p=tp;
 	}
-
-	tp=strchr(p,'/');
-	if(tp!=NULL) {
-		*tp=0;
-		tp++;
-	} else 
-		tp=p+strlen(p);
-
-	for(dir=0;dir<scfg.total_dirs;dir++) {
-		if(scfg.dir[dir]->lib!=lib)
-			continue;
-		if(dir!=scfg.sysop_dir && dir!=scfg.upload_dir 
-			&& !chk_ar(&scfg,scfg.dir[dir]->ar,user,client))
-			continue;
-		if(!stricmp(scfg.dir[dir]->code_suffix,p))
-			break;
-	}
-
-	if(dir>=scfg.total_dirs) {  /* not found */
-		*pp+=p-path;			/* skip /lib/filespec */
-		return -1;
-	}
-
-	*curdir=dir;
-
-	*pp+=tp-path;	/* skip "lib/dir/" */
+lprintf(LOG_DEBUG, "ret=%d lib=%d dir=%d fname='%s'\n", ret, lib, dir, fname);
+	*curdir = dir;
+	*curlib = lib;
+	*pp = fname;
 	return ret;
 }
 
@@ -2593,19 +2624,6 @@ static BOOL can_upload(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
 	if (chk_ar(&scfg, dir->ul_ar,user,client))
 		return TRUE;
 	if ((user->exempt & FLAG('U')))
-		return TRUE;
-	return FALSE;
-}
-
-static BOOL can_list(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
-{
-	if (!chk_ar(&scfg,lib->ar,user,client))
-		return FALSE;
-	if (dir->dirnum == scfg.sysop_dir)
-		return TRUE;
-	if (dir->dirnum == scfg.upload_dir)
-		return TRUE;
-	if (chk_ar(&scfg, dir->ar, user, client))
 		return TRUE;
 	return FALSE;
 }
@@ -4233,7 +4251,7 @@ static void ctrl_thread(void* arg)
 					}
 					strcpy(mls_path, p);
 				}
-				mls_fname = getfname(mls_path);
+				mls_fname = p;
 
 				fp = NULL;
 				if (cmd[3] == 'D') {
@@ -4268,7 +4286,7 @@ static void ctrl_thread(void* arg)
 				}
 
 				if(lib<0) { /* Root dir */
-					if (cmd[3] == 'T' && !*mls_path) {
+					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing root");
 						get_owner_name(NULL, str);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, UINT64_MAX, str, mls_path);
@@ -4373,7 +4391,7 @@ static void ctrl_thread(void* arg)
 						l++;
 					}
 				} else if(dir<0) {
-					if (cmd[3] == 'T' && !*mls_path) {
+					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing %s", scfg.lib[lib]->sname);
 						get_owner_name(NULL, str);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, UINT64_MAX, str, mls_path);
@@ -4401,7 +4419,7 @@ static void ctrl_thread(void* arg)
 					lprintf(LOG_INFO,"%04d %s listing: %s/%s directory in %s mode"
 						,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix,mode);
 
-					if (cmd[3] == 'T' && !*mls_path) {
+					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing %s/%s",scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix);
 						get_owner_name(NULL, str);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, UINT64_MAX, str, mls_path);
