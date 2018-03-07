@@ -2208,13 +2208,14 @@ char* dotname(char* in, char* out)
 	return(out);
 }
 
-void parsepath(char** pp, user_t* user, client_t* client, int* curlib, int* curdir)
+static int parsepath(char** pp, user_t* user, client_t* client, int* curlib, int* curdir)
 {
 	char*	p;
 	char*	tp;
 	char	path[MAX_PATH+1];
 	int		dir=*curdir;
 	int		lib=*curlib;
+	int	ret = 0;
 
 	SAFECOPY(path,*pp);
 	p=path;
@@ -2232,6 +2233,8 @@ void parsepath(char** pp, user_t* user, client_t* client, int* curlib, int* curd
 			dir=-1;
 		else if(lib>=0)
 			lib=-1;
+		else
+			ret = -1;
 		if(*p=='/')
 			p++;
 	}
@@ -2239,7 +2242,7 @@ void parsepath(char** pp, user_t* user, client_t* client, int* curlib, int* curd
 	if(*p==0) {
 		*curlib=lib;
 		*curdir=dir;
-		return;
+		return ret;
 	}
 
 	if(lib<0) { /* root */
@@ -2256,14 +2259,14 @@ void parsepath(char** pp, user_t* user, client_t* client, int* curlib, int* curd
 		}
 		if(lib>=scfg.total_libs) { /* not found */
 			*curlib=-1;
-			return;
+			return -1;
 		}
 		*curlib=lib;
 
 		if(*(tp)==0) {
 			*curdir=-1;
 			*pp+=tp-path;	/* skip "lib" or "lib/" */
-			return;
+			return ret;
 		}
 
 		p=tp;
@@ -2288,12 +2291,13 @@ void parsepath(char** pp, user_t* user, client_t* client, int* curlib, int* curd
 
 	if(dir>=scfg.total_dirs) {  /* not found */
 		*pp+=p-path;			/* skip /lib/filespec */
-		return;
+		return -1;
 	}
 
 	*curdir=dir;
 
 	*pp+=tp-path;	/* skip "lib/dir/" */
+	return ret;
 }
 
 static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* client, int* curdir)
@@ -2482,6 +2486,239 @@ static char* ftp_tmpfname(char* fname, char* ext, SOCKET sock)
 	return(fname);
 }
 
+static BOOL send_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, const char *format, ...)
+{
+	va_list va;
+	char *str;
+
+	if (fp == NULL && sock == INVALID_SOCKET)
+		return FALSE;
+	va_start(va, format);
+	if (vasprintf(&str, format, va) == -1)
+		return FALSE;
+	if (fp != NULL)
+		fprintf(fp, "%s\r\n", str);
+	else
+		sockprintf(sock, sess, " %s", str);
+	free(str);
+	return TRUE;
+}
+
+static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, const char *path)
+{
+	const char *type;
+	char permstr[11];
+	char *p;
+	BOOL is_file = FALSE;
+
+	if (!strcmp(path, "."))
+		type="cdir";
+	else if (!strcmp(path, ".."))
+		type="pdir";
+	else if (isdir(path))
+		type="dir";
+	else {
+		is_file = TRUE;
+		type="file";
+	}
+	// TODO: Check for deletability 'd'
+	// TODO: Check for renamability 'f'
+	p = permstr;
+	if (is_file) {
+		if (access(path, W_OK) == 0) {
+			// Can append ('a') and write ('w')
+			*(p++)='a';
+			*(p++)='w';
+		}
+		if (access(path, R_OK) == 0) {
+			// Can read ('r')
+			*(p++)='r';
+		}
+	}
+	else {
+		// TODO: Check these on Windows...
+		if (access(path, W_OK) == 0) {
+			// Can create files ('c'), directories ('m') and delete files ('p')
+			*(p++)='c';
+			*(p++)='m';
+			*(p++)='p';
+		}
+		if (access(path, R_OK) == 0) {
+			// Can change to the directory ('e'), and list files ('l')
+			*(p++)='e';
+			*(p++)='l';
+		}
+	}
+	*p=0;
+	return send_mlsx(fp, sock, sess, "Type=%s;Perm=%s;Size=%" PRIu64 ";Modify=%" PRIu64 "; %s", type, permstr, (uint64_t)flength(path), (uint64_t)fdate(path), path);
+}
+
+/*
+ * Nobody can do anything but list files and change to dirs.
+ */
+static void get_libperm(lib_t *lib, user_t *user, client_t *client, char *permstr)
+{
+	char *p = permstr;
+
+	if (chk_ar(&scfg,lib->ar,user,client)) {
+		//*(p++) = 'a';	// File may be appended to
+		//*(p++) = 'c';	// Files may be created in dir
+		//*(p++) = 'd';	// Item may be depeted (dir or file)
+		*(p++) = 'e';	// Can change to the dir
+		//*(p++) = 'f';	// Item may be renamed
+		*(p++) = 'l';	// Directory contents can be listed
+		//*(p++) = 'm';	// New subdirectories may be created
+		//*(p++) = 'p';	// Files/Dirs in directory may be deleted
+		//*(p++) = 'r';	// File may be retrieved
+		//*(p++) = 'w';	// File may be overwritten
+	}
+	*p=0;
+}
+
+static BOOL can_upload(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
+{
+	if (!chk_ar(&scfg,lib->ar,user,client))
+		return FALSE;
+	if (user->rest & FLAG('U'))
+		return FALSE;
+	if (dir_op(&scfg, user, client, dir->dirnum))
+		return TRUE;
+	// The rest can only upload if there's room
+	if(dir->maxfiles && getfiles(&scfg,dir->dirnum)>=dir->maxfiles)
+		return FALSE;
+	if (dir->dirnum == scfg.sysop_dir)
+		return TRUE;
+	if (dir->dirnum == scfg.upload_dir)
+		return TRUE;
+	if (chk_ar(&scfg, dir->ul_ar,user,client))
+		return TRUE;
+	if ((user->exempt & FLAG('U')))
+		return TRUE;
+	return FALSE;
+}
+
+static BOOL can_list(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
+{
+	if (!chk_ar(&scfg,lib->ar,user,client))
+		return FALSE;
+	if (dir->dirnum == scfg.sysop_dir)
+		return TRUE;
+	if (dir->dirnum == scfg.upload_dir)
+		return TRUE;
+	if (chk_ar(&scfg, dir->ar, user, client))
+		return TRUE;
+	return FALSE;
+}
+
+static BOOL can_delete_files(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
+{
+	if (!chk_ar(&scfg,lib->ar,user,client))
+		return FALSE;
+	if (user->rest&FLAG('D'))
+		return FALSE;
+	if (!chk_ar(&scfg,dir->ar,user,client))
+		return FALSE;
+	if (dir_op(&scfg,user,client,dir->dirnum))
+		return TRUE;
+	if (user->exempt&FLAG('R'))
+		return TRUE;
+	return FALSE;
+}
+
+static void get_dirperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, char *permstr)
+{
+	char *p = permstr;
+
+	//*(p++) = 'a';	// File may be appended to
+	if (can_upload(lib, dir, user, client))
+		*(p++) = 'c';	// Files may be created in dir
+	//*(p++) = 'd';	// Item may be depeted (dir or file)
+	if (can_list(lib, dir, user, client)) {
+		*(p++) = 'e';	// Can change to the dir
+		//*(p++) = 'f';	// Item may be renamed
+		*(p++) = 'l';	// Directory contents can be listed
+	}
+	//*(p++) = 'm';	// New subdirectories may be created
+	if (can_delete_files(lib, dir, user, client))
+		*(p++) = 'p';	// Files/Dirs in directory may be deleted
+	//*(p++) = 'r';	// File may be retrieved
+	//*(p++) = 'w';	// File may be overwritten
+	*p=0;
+}
+
+static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
+{
+	if (!chk_ar(&scfg,lib->ar,user,client))
+		return FALSE;
+	if (user->rest&FLAG('U'))
+		return FALSE;
+	if (dir->dirnum != scfg.sysop_dir && dir->dirnum != scfg.upload_dir && !chk_ar(&scfg,dir->ar,user,client))
+		return FALSE;
+	if(!dir_op(&scfg,user,client,dir->dirnum) && !(user->exempt&FLAG('U'))) {
+		if(!chk_ar(&scfg,dir->ul_ar,user,client))
+			return FALSE;
+	}
+	if(!getfileixb(&scfg,file) || !getfiledat(&scfg,file))
+		return FALSE;
+	if (stricmp(file->uler,user->alias))
+		return FALSE;
+	// Check credits?
+	return TRUE;
+}
+
+static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
+{
+	if (user->rest&FLAG('D'))
+		return FALSE;
+	if (!chk_ar(&scfg,lib->ar,user,client))
+		return FALSE;
+	if (!chk_ar(&scfg,dir->ar,user,client))
+		return FALSE;
+	if (!dir_op(&scfg, user, client, dir->dirnum))
+		return FALSE;
+	if (!(user->exempt&FLAG('R')))
+		return FALSE;
+	if(!getfileixb(&scfg,file) && !(startup->options&FTP_OPT_DIR_FILES) && !(dir->misc&DIR_FILES))
+		return FALSE;
+	return TRUE;
+}
+
+static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
+{
+	if (user->rest&FLAG('D'))
+		return FALSE;
+	if (!chk_ar(&scfg,lib->ar,user,client))
+		return FALSE;
+	if (!chk_ar(&scfg,dir->ar,user,client))
+		return FALSE;
+	if (!chk_ar(&scfg,dir->dl_ar,user,client))
+		return FALSE;
+	if(!getfileixb(&scfg,file) && !(startup->options&FTP_OPT_DIR_FILES) && !(dir->misc&DIR_FILES))
+		return FALSE;
+	// TODO: Verify credits
+	return TRUE;
+}
+
+static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file, char *permstr)
+{
+	char *p = permstr;
+
+	if (can_append(lib, dir, user, client, file))
+		*(p++) = 'a';	// File may be appended to
+	//*(p++) = 'c';	// Files may be created in dir
+	if (can_delete(lib, dir, user, client, file))
+		*(p++) = 'd';	// Item may be depeted (dir or file)
+	//*(p++) = 'e';	// Can change to the dir
+	//*(p++) = 'f';	// Item may be renamed
+	//*(p++) = 'l';	// Directory contents can be listed
+	//*(p++) = 'm';	// New subdirectories may be created
+	//*(p++) = 'p';	// Files/Dirs in directory may be deleted
+	if (can_download(lib, dir, user, client, file))
+		*(p++) = 'r';	// File may be retrieved
+	//*(p++) = 'w';	// File may be overwritten
+	*p = 0;
+}
+
 static void ctrl_thread(void* arg)
 {
 	char		buf[512];
@@ -2499,6 +2736,9 @@ static void ctrl_thread(void* arg)
 	char		fname[MAX_PATH+1];
 	char		qwkfile[MAX_PATH+1];
 	char		aliasfile[MAX_PATH+1];
+	char		mls_path[MAX_PATH+1];
+	char		*mls_fname;
+	char		permstr[11];
 	char		aliasline[512];
 	char		desc[501]="";
 	char		sys_pass[128];
@@ -2761,6 +3001,7 @@ static void ctrl_thread(void* arg)
 			sockprintf(sock,sess," SIZE    MDTM    RETR    STOR    REST    ALLO    ABOR    SYST");
 			sockprintf(sock,sess," TYPE    STRU    MODE    SITE    RNFR*   RNTO*   DELE*   DESC#");
 			sockprintf(sock,sess," FEAT#   OPTS#   EPRT    EPSV    AUTH#   PBSZ#   PROT#   CCC#");
+			sockprintf(sock,sess," MLSD#");
 			sockprintf(sock,sess,"214 Direct comments to sysop@%s.",scfg.sys_inetaddr);
 			continue;
 		}
@@ -2773,6 +3014,7 @@ static void ctrl_thread(void* arg)
 			sockprintf(sock,sess," AUTH TLS");
 			sockprintf(sock,sess," PBSZ");
 			sockprintf(sock,sess," PROT");
+			sockprintf(sock,sess," MLST");
 			sockprintf(sock,sess,"211 End");
 			continue;
 		}
@@ -3495,16 +3737,84 @@ static void ctrl_thread(void* arg)
 				&& local_dir[strlen(local_dir)-1]!='/')
 				strcat(local_dir,"/");
 
-			if(!strnicmp(cmd, "LIST", 4) || !strnicmp(cmd, "NLST", 4)) {	
+			if(!strnicmp(cmd, "MLS", 3)) {
+				if (cmd[3] == 'T' || cmd[3] == 'D') {
+					if (cmd[3] == 'D') {
+						if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
+							lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
+							sockprintf(sock,sess, "451 Insufficient system storage");
+							continue;
+						}
+					}
+
+					p=cmd+4;
+					SKIP_WHITESPACE(p);
+
+					filespec=p;
+					if (!local_dir[0])
+						strcpy(local_dir, "/");
+					SAFEPRINTF2(path,"%s%s",local_dir, filespec);
+					p=FULLPATH(NULL, path, 0);
+					strcpy(path, p);
+					free(p);
+					if (cmd[3] == 'T') {
+						if (access(path, 0) == -1) {
+							sockprintf(sock,sess, "550 No such path %s", path);
+							continue;
+						}
+						sockprintf(sock,sess, "250- Listing %s", path);
+					}
+					else {
+						if (access(path, 0) == -1) {
+							sockprintf(sock,sess, "550 No such path %s", path);
+							continue;
+						}
+						if (!isdir(path)) {
+							sockprintf(sock,sess, "501 Not a directory");
+							continue;
+						}
+						sockprintf(sock,sess, "150 Directory of %s", path);
+						backslash(path);
+						strcat(path, "*");
+					}
+
+					lprintf(LOG_INFO,"%04d %s MLSx listing: %s in %s mode", sock, user.alias, path, mode);
+
+					now=time(NULL);
+					if(localtime_r(&now,&cur_tm)==NULL)
+						memset(&cur_tm,0,sizeof(cur_tm));
+
+					if (cmd[3] == 'T') {
+						write_local_mlsx(NULL, sock, sess, path);
+						sockprintf(sock, sess, "250 End");
+					}
+					else {
+						glob(path,0,NULL,&g);
+						for(i=0;i<(int)g.gl_pathc;i++)
+							write_local_mlsx(fp, INVALID_SOCKET, -1, g.gl_pathv[i]);
+						globfree(&g);
+						fclose(fp);
+						filexfer(&data_addr,sock,sess,pasv_sock,pasv_sess,&data_sock,&data_sess,fname,0L
+							,&transfer_inprogress,&transfer_aborted
+							,TRUE	/* delfile */
+							,TRUE	/* tmpfile */
+							,&lastactive,&user,&client,-1,FALSE,FALSE,FALSE,NULL,protection);
+					}
+					continue;
+				}
+			}
+
+			if(!strnicmp(cmd, "LIST", 4) || !strnicmp(cmd, "NLST", 4)) {
+				if(!strnicmp(cmd, "LIST", 4))
+					detail=TRUE;
+				else
+					detail=FALSE;
+
 				if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
 					lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
 					sockprintf(sock,sess, "451 Insufficient system storage");
 					continue;
 				}
-				if(!strnicmp(cmd, "LIST", 4))
-					detail=TRUE;
-				else
-					detail=FALSE;
 
 				p=cmd+4;
 				SKIP_WHITESPACE(p);
@@ -3558,7 +3868,7 @@ static void ctrl_thread(void* arg)
 					,&lastactive,&user,&client,-1,FALSE,FALSE,FALSE,NULL,protection);
 				continue;
 			} /* Local LIST/NLST */
-				
+
 			if(!strnicmp(cmd, "CWD ", 4) || !strnicmp(cmd,"XCWD ",5)) {
 			    if(!strnicmp(cmd,"CWD ",4))
 					p=cmd+4;
@@ -3777,6 +4087,256 @@ static void ctrl_thread(void* arg)
 				filepos=0;
 				continue;
 			} /* Local STOR */
+		}
+
+		if (!strnicmp(cmd, "MLS", 3)) {
+			if (cmd[3] == 'D' || cmd[3] == 'T') {
+				dir=curdir;
+				lib=curlib;
+				l = 0;
+
+				if(cmd[4]!=0)
+					lprintf(LOG_DEBUG,"%04d MLSx: %s",sock,cmd);
+
+				/* path specified? */
+				p=cmd+4;
+				if (*p == ' ')
+					p++;
+
+				if (parsepath(&p,&user,&client,&lib,&dir) == -1) {
+					sockprintf(sock,sess, "550 No such path");
+					continue;
+				}
+				
+				if (strchr(p, '/')) {
+					sockprintf(sock,sess, "550 No such path");
+					continue;
+				}
+				if (cmd[3] == 'T') {
+					if (cmd[4])
+						strcpy(mls_path, cmd+5);
+					else
+						strcpy(mls_path, p);
+				}
+				else {
+					if (*p) {
+						sockprintf(sock,sess, "501 Not a directory");
+						continue;
+					}
+					strcpy(mls_path, p);
+				}
+				mls_fname = getfname(mls_path);
+
+				fp = NULL;
+				if (cmd[3] == 'D') {
+					if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
+						lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
+						sockprintf(sock,sess, "451 Insufficient system storage");
+						continue;
+					}
+					sockprintf(sock,sess,"150 Opening ASCII mode data connection for MLSD.");
+				}
+				now=time(NULL);
+				if(localtime_r(&now,&cur_tm)==NULL)
+					memset(&cur_tm,0,sizeof(cur_tm));
+
+				/* ASCII Index File */
+				if(startup->options&FTP_OPT_INDEX_FILE && startup->index_file_name[0]
+						&& (cmd[3] == 'D' || strcmp(startup->index_file_name, mls_fname) == 0)) {
+					if (cmd[3] == 'T')
+						sockprintf(sock,sess, "250- Listing %s", startup->index_file_name);
+					send_mlsx(fp, sock, sess, "Type=file;Perm=r; %s",cmd[3] == 'T' ? mls_path : startup->index_file_name);
+					l++;
+				}
+				/* HTML Index File */
+				if(startup->options&FTP_OPT_INDEX_FILE && startup->html_index_file[0]
+						&& (cmd[3] == 'D' || strcmp(startup->html_index_file, mls_fname) == 0)) {
+					if (cmd[3] == 'T')
+						sockprintf(sock,sess, "250- Listing %s", startup->html_index_file);
+					send_mlsx(fp, sock, sess, "Type=file;Perm=r; %s",cmd[3] == 'T' ? mls_path : startup->html_index_file);
+					l++;
+				}
+
+				if(lib<0) { /* Root dir */
+					if (cmd[3] == 'T' && !*mls_path) {
+						sockprintf(sock,sess, "250- Listing root");
+						send_mlsx(fp, sock, sess, "Type=dir;Perm=el%s %s", (startup->options&FTP_OPT_ALLOW_QWK) ? "c" : "", mls_path);
+						l++;
+					}
+					lprintf(LOG_INFO,"%04d %s listing: root in %s mode",sock,user.alias, mode);
+
+					// TODO: Can upload files to root dir if QWK REPs are allowed.
+					/* QWK Packet */
+					if(startup->options&FTP_OPT_ALLOW_QWK) {
+						SAFEPRINTF(str,"%s.qwk",scfg.sys_id);
+						if (cmd[3] == 'D' || strcmp(str, mls_fname) == 0) {
+							if (cmd[3] == 'T')
+								sockprintf(sock,sess, "250- Listing %s", str);
+							send_mlsx(fp, sock, sess, "Type=file;Perm=r; %s", cmd[3] == 'T' ? mls_path : str);
+							l++;
+						}
+					}
+
+					/* File Aliases */
+					sprintf(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
+					if((alias_fp=fopen(aliasfile,"r"))!=NULL) {
+
+						while(!feof(alias_fp)) {
+							if(!fgets(aliasline,sizeof(aliasline),alias_fp))
+								break;
+
+							alias_dir=FALSE;
+
+							p=aliasline;		/* alias pointer */
+							SKIP_WHITESPACE(p);
+
+							if(*p==';')	/* comment */
+								continue;
+
+							tp=p;		/* terminator pointer */
+							FIND_WHITESPACE(tp);
+							if(*tp) *tp=0;
+
+							np=tp+1;	/* filename pointer */
+							SKIP_WHITESPACE(np);
+
+							tp=np;		/* terminator pointer */
+							FIND_WHITESPACE(tp);
+							if(*tp) *tp=0;
+
+							dp=tp+1;	/* description pointer */
+							SKIP_WHITESPACE(dp);
+							truncsp(dp);
+
+							if(stricmp(dp,BBS_HIDDEN_ALIAS)==0)
+								continue;
+
+							/* Virtual Path? */
+							if(!strnicmp(np,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
+								if((dir=getdir(np+strlen(BBS_VIRTUAL_PATH),&user,&client))<0) {
+									lprintf(LOG_WARNING,"0000 !Invalid virtual path (%s) for %s",np,user.alias);
+									continue; /* No access or invalid virtual path */
+								}
+								tp=strrchr(np,'/');
+								if(tp==NULL) 
+									continue;
+								tp++;
+								if(*tp) {
+									SAFEPRINTF2(aliasfile,"%s%s",scfg.dir[dir]->path,tp);
+									np=aliasfile;
+								}
+								else 
+									alias_dir=TRUE;
+							}
+
+							if(!alias_dir && !fexist(np)) {
+								lprintf(LOG_WARNING,"0000 !Missing aliased file (%s) for %s",np,user.alias);
+								continue;
+							}
+
+							if(cmd[3] == 'D' || strcmp(startup->html_index_file, mls_fname) == 0) {
+								if (cmd[3] == 'T')
+									sockprintf(sock,sess, "250- Listing %s", p);
+								if (alias_dir==TRUE)
+									send_mlsx(fp, sock, sess, "Type=dir;Perm=el; %s",cmd[3] == 'T' ? mls_path : p);
+								else
+									send_mlsx(fp, sock, sess, "Type=file;Perm=r;Size=%" PRIu64 ";Modify=%" PRIu64 "; %s",(uint64_t)flength(np), (uint64_t)fdate(np),cmd[3] == 'T' ? mls_path : p);
+								l++;
+							}
+						}
+
+						fclose(alias_fp);
+					}
+
+					/* Library folders */
+					for(i=0;i<scfg.total_libs;i++) {
+						if(!chk_ar(&scfg,scfg.lib[i]->ar,&user,&client))
+							continue;
+						if (cmd[3] != 'D' && strcmp(scfg.lib[i]->sname, mls_fname) != 0)
+							continue;
+						if (cmd[3] == 'T')
+							sockprintf(sock,sess, "250- Listing %s", scfg.lib[i]->sname);
+						get_libperm(scfg.lib[i], &user, &client, permstr);
+						send_mlsx(fp, sock, sess, "Type=dir;Perm=%s; %s", permstr, cmd[3] == 'T' ? mls_path : scfg.lib[i]->sname);
+						l++;
+					}
+				} else if(dir<0) {
+					if (cmd[3] == 'T' && !*mls_path) {
+						sockprintf(sock,sess, "250- Listing %s", scfg.lib[lib]->sname);
+						send_mlsx(fp, sock, sess, "Type=dir;Perm=el %s", mls_path);
+						l++;
+					}
+					lprintf(LOG_INFO,"%04d %s listing: %s library in %s mode"
+						,sock,user.alias,scfg.lib[lib]->sname,mode);
+					for(i=0;i<scfg.total_dirs;i++) {
+						if(scfg.dir[i]->lib!=lib)
+							continue;
+						if(i!=(int)scfg.sysop_dir && i!=(int)scfg.upload_dir 
+							&& !chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
+							continue;
+						if (cmd[3] != 'D' && strcmp(scfg.dir[i]->code_suffix, mls_fname) != 0)
+							continue;
+						if (cmd[3] == 'T')
+							sockprintf(sock,sess, "250- Listing %s", scfg.dir[i]->code_suffix);
+						get_dirperm(scfg.lib[lib], scfg.dir[i], &user, &client, permstr);
+						send_mlsx(fp, sock, sess, "Type=dir;Perm=%s; %s", permstr, cmd[3] == 'T' ? mls_path : scfg.dir[i]->code_suffix);
+						l++;
+					}
+				} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user,&client)) {
+					lprintf(LOG_INFO,"%04d %s listing: %s/%s directory in %s mode"
+						,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix,mode);
+
+					if (cmd[3] == 'T' && !*mls_path) {
+						sockprintf(sock,sess, "250- Listing %s/%s",scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix);
+						send_mlsx(fp, sock, sess, "Type=dir;Perm=el%s %s", (startup->options&FTP_OPT_ALLOW_QWK) ? "c" : "", mls_path);
+						l++;
+					}
+
+					SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,"*");
+					glob(path,0,NULL,&g);
+					for(i=0;i<(int)g.gl_pathc;i++) {
+						if(isdir(g.gl_pathv[i]))
+							continue;
+#ifdef _WIN32
+						GetShortPathName(g.gl_pathv[i], str, sizeof(str));
+#else
+						SAFECOPY(str,g.gl_pathv[i]);
+#endif
+						padfname(getfname(str),f.name);
+						f.dir=dir;
+						if((filedat=getfileixb(&scfg,&f))==FALSE
+							&& !(startup->options&FTP_OPT_DIR_FILES)
+							&& !(scfg.dir[dir]->misc&DIR_FILES))
+							continue;
+						if (cmd[3] != 'D' && strcmp(getfname(g.gl_pathv[i]), mls_fname) != 0)
+							continue;
+						if (cmd[3] == 'T')
+							sockprintf(sock,sess, "250- Listing %s", p);
+						get_fileperm(scfg.lib[lib], scfg.dir[dir], &user, &client, &f, permstr);
+						send_mlsx(fp, sock, sess, "Type=file;Perm=%s;Size=%" PRIu64 ";Modify=%" PRIu64 "; %s", permstr, (uint64_t)flength(g.gl_pathv[i]), (uint64_t)fdate(g.gl_pathv[i]), cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
+						l++;
+					}
+					globfree(&g);
+				} else 
+					lprintf(LOG_INFO,"%04d %s listing: %s/%s directory in %s mode (empty - no access)"
+						,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix,mode);
+
+				if (cmd[3] == 'D') {
+					fclose(fp);
+					filexfer(&data_addr,sock,sess,pasv_sock,pasv_sess,&data_sock,&data_sess,fname,0L
+						,&transfer_inprogress,&transfer_aborted
+						,TRUE /* delfile */
+						,TRUE /* tmpfile */
+						,&lastactive,&user,&client,dir,FALSE,FALSE,FALSE,NULL,protection);
+				}
+				else {
+					if (l==0)
+						sockprintf(sock,sess, "550 No such path");
+					else
+						sockprintf(sock, sess, "250 End");
+				}
+				continue;
+			}
 		}
 
 		if(!strnicmp(cmd, "LIST", 4) || !strnicmp(cmd, "NLST", 4)) {	
@@ -4662,7 +5222,7 @@ static void ctrl_thread(void* arg)
 						continue;
 					}
 
-					if(scfg.dir[dir]->maxfiles && getfiles(&scfg,dir)>=scfg.dir[dir]->maxfiles) {
+					if(!append && scfg.dir[dir]->maxfiles && getfiles(&scfg,dir)>=scfg.dir[dir]->maxfiles) {
 						lprintf(LOG_WARNING,"%04d !%s cannot upload to /%s/%s (directory full: %u files)"
 							,sock,user.alias
 							,scfg.lib[scfg.dir[dir]->lib]->sname
