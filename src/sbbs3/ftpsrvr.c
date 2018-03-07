@@ -78,6 +78,12 @@
 
 #define	NAME_LEN				15		/* User name length for listings */
 
+#define MLSX_TYPE	(1<<0)
+#define MLSX_PERM	(1<<1)
+#define MLSX_SIZE	(1<<2)
+#define MLSX_MODIFY	(1<<3)
+#define MLSX_OWNER	(1<<4)
+
 static ftp_startup_t*	startup=NULL;
 static scfg_t	scfg;
 static struct xpms_set *ftp_set = NULL;
@@ -2535,7 +2541,34 @@ static BOOL send_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, const char *for
 	return TRUE;
 }
 
-static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, const char *path)
+static BOOL send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned feats, const char *type, const char *perm, uint64_t size, uint64_t modify, const char *owner, const char *fname)
+{
+	char line[1024];
+	char *end;
+	BOOL need_owner = FALSE;
+
+	end=line;
+	*end=0;
+	if (type != NULL && (feats & MLSX_TYPE))
+		end += sprintf(end, "Type=%s;", type);
+	if (perm != NULL && (feats & MLSX_PERM))
+		end += sprintf(end, "Perm=%s;", perm);
+	if (size != UINT64_MAX && (feats & MLSX_SIZE))
+		end += sprintf(end, "Size=%" PRIu64 ";", size);
+	if (modify != UINT64_MAX && (feats & MLSX_MODIFY))
+		end += sprintf(end, "Modify=%" PRIu64 ";", modify);
+	// Owner can contain percents, so let send_mlsx() deal with it
+	if (owner != NULL && (feats & MLSX_OWNER)) {
+		strcat(end, "UNIX.ownername=%s;");
+		need_owner = TRUE;
+	}
+	strcat(end, " %s");
+	if (need_owner)
+		return send_mlsx(fp, sock, sess, line, owner, fname==NULL ? "" : fname);
+	return send_mlsx(fp, sock, sess, line, fname==NULL ? "" : fname);
+}
+
+static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned feats, const char *path)
 {
 	const char *type;
 	char permstr[11];
@@ -2581,7 +2614,7 @@ static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, const ch
 		}
 	}
 	*p=0;
-	return send_mlsx(fp, sock, sess, "Type=%s;Perm=%s;Size=%" PRIu64 ";Modify=%" PRIu64 "; %s", type, permstr, (uint64_t)flength(path), (uint64_t)fdate(path), path);
+	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)flength(path), (uint64_t)fdate(path), NULL, path);
 }
 
 /*
@@ -2771,40 +2804,6 @@ static void get_owner_name(file_t *file, char *namestr)
 		else
 			*p = '_';
 	}
-}
-
-#define MLSX_TYPE	(1<<0)
-#define MLSX_PERM	(1<<1)
-#define MLSX_SIZE	(1<<2)
-#define MLSX_MODIFY	(1<<3)
-#define MLSX_OWNER	(1<<4)
-
-static void send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned feats, char *type, char *perm, uint64_t size, uint64_t modify, char *owner, char *fname)
-{
-	char line[1024];
-	char *end;
-	BOOL need_owner = FALSE;
-
-	end=line;
-	*end=0;
-	if (type != NULL && (feats & MLSX_TYPE))
-		end += sprintf(end, "Type=%s;", type);
-	if (perm != NULL && (feats & MLSX_PERM))
-		end += sprintf(end, "Perm=%s;", perm);
-	if (size != UINT64_MAX && (feats & MLSX_SIZE))
-		end += sprintf(end, "Size=%" PRIu64 ";", size);
-	if (modify != UINT64_MAX && (feats & MLSX_MODIFY))
-		end += sprintf(end, "Modify=%" PRIu64 ";", modify);
-	// Owner can contain percents, so let send_mlsx() deal with it
-	if (owner != NULL && (feats & MLSX_OWNER)) {
-		strcat(end, "UNIX.ownername=%s;");
-		need_owner = TRUE;
-	}
-	strcat(end, " %s");
-	if (need_owner)
-		send_mlsx(fp, sock, sess, line, owner, fname==NULL ? "" : fname);
-	else
-		send_mlsx(fp, sock, sess, line, fname==NULL ? "" : fname);
 }
 
 static void ctrl_thread(void* arg)
@@ -3110,6 +3109,7 @@ static void ctrl_thread(void* arg)
 				(mlsx_feats & MLSX_MODIFY) ? "*" : "",
 				(mlsx_feats & MLSX_OWNER) ? "*" : ""
 			);
+			sockprintf(sock,sess," TVFS");
 			sockprintf(sock,sess,"211 End");
 			continue;
 		}
@@ -3911,13 +3911,13 @@ static void ctrl_thread(void* arg)
 						memset(&cur_tm,0,sizeof(cur_tm));
 
 					if (cmd[3] == 'T') {
-						write_local_mlsx(NULL, sock, sess, path);
+						write_local_mlsx(NULL, sock, sess, mlsx_feats, path);
 						sockprintf(sock, sess, "250 End");
 					}
 					else {
 						glob(path,0,NULL,&g);
 						for(i=0;i<(int)g.gl_pathc;i++)
-							write_local_mlsx(fp, INVALID_SOCKET, -1, g.gl_pathv[i]);
+							write_local_mlsx(fp, INVALID_SOCKET, -1, mlsx_feats, g.gl_pathv[i]);
 						globfree(&g);
 						fclose(fp);
 						filexfer(&data_addr,sock,sess,pasv_sock,pasv_sess,&data_sock,&data_sess,fname,0L
@@ -4395,8 +4395,11 @@ static void ctrl_thread(void* arg)
 						sockprintf(sock,sess, "250- Listing %s", scfg.lib[lib]->sname);
 						get_owner_name(NULL, str);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, UINT64_MAX, str, mls_path);
-						send_mlsx(fp, sock, sess, "Type=dir;Perm=el;UNIX.ownername=%s; %s", str, mls_path);
 						l++;
+					}
+					if (cmd[3] == 'D') {
+						get_owner_name(NULL, str);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, UINT64_MAX, str, "..");
 					}
 					lprintf(LOG_INFO,"%04d %s listing: %s library in %s mode"
 						,sock,user.alias,scfg.lib[lib]->sname,mode);
@@ -4424,6 +4427,11 @@ static void ctrl_thread(void* arg)
 						get_owner_name(NULL, str);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, UINT64_MAX, str, mls_path);
 						l++;
+					}
+					if (cmd[3] == 'D') {
+						get_libperm(scfg.lib[lib], &user, &client, permstr);
+						get_owner_name(NULL, str);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", permstr, UINT64_MAX, UINT64_MAX, str, "..");
 					}
 
 					SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,"*");
