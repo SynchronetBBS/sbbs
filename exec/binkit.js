@@ -347,6 +347,7 @@ function rx_callback(fname, bp)
 	if (secure_inbound == undefined)
 		secure_inbound = inbound;
 
+	log(LOG_INFO, "Received file: " + fname + format(" (%1.1fKB)", file_size(fname) / 1024.0));
 	if (fname.search(/\.(?:pkt|su.|mo.|tu.|we.|th.|fr.|sa.)$/i) !== -1) {
 		semname = system.data_dir + 'fidoin.now';
 		if (bp.cb_data.binkit_create_semaphores.indexOf(semname) == -1)

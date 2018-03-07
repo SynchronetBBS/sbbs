@@ -678,6 +678,7 @@ BinkP.prototype.session = function()
 									this.receiving_name = args[0];
 									this.receiving_len = parseInt(args[1], 10);
 									this.receiving_date = parseInt(args[2], 10);
+									log(LOG_INFO, "Receiving file: " + this.receiving.name + format(" (%1.1fKB)", this.receiving_len / 1024.0));
 								}
 								break;
 							default:
@@ -792,6 +793,7 @@ BinkP.prototype.session = function()
 			else {
 				this.sentempty = false;
 				this.pending_ack.push(this.sending);
+				log(LOG_INFO, "Sending file: " + this.sending.file.name + format(" (%1.1fKB)", this.sending.file.length / 1024.0));
 				if (this.nonreliable && (this.sending.waitingForGet === undefined || this.sending.waitingForGet)) {
 					this.sendCmd(this.command.M_FILE, this.escapeFileName(this.sending.sendas)+' '+this.sending.file.length+' '+this.sending.file.date+' -1');
 					this.sending.waitingForGet = true;
@@ -809,6 +811,7 @@ BinkP.prototype.session = function()
 				if(this.sendData(this.sending.file.read(32767)))
 					last = Date.now();
 				if (this.eof || this.sending.file.position >= this.sending.file.length) {
+					log(LOG_INFO, "Sent file: " + this.sending.file.name + format(" (%1.1fKB)", this.sending.file.position / 1024.0));
 					this.sending.file.close();
 					this.sending = undefined;
 				}
