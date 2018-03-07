@@ -4695,6 +4695,7 @@ static void smtp_thread(void* arg)
 				protected_uint32_adjust(&active_clients, -1);
 				update_clients();
 				free(mailproc_to_match);
+				break;
 			}
 			if (startup->max_inactivity) {
 				if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
