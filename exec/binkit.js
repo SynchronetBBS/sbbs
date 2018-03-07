@@ -827,8 +827,10 @@ function inbound_auth_cb(pwd, bp)
 					addrs.push(addr);
 					check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
 					ret = cpw;
-				} else
+				} else {
 					log(LOG_WARNING, "CRAM-MD5 of password does not match");
+					ret = false;	// How do we break out of this forEach loop?!?
+				}
 			}
 			else {
 				// TODO: Deal with arrays of passwords?
