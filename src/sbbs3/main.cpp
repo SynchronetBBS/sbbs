@@ -268,6 +268,7 @@ SOCKET open_socket(int type, const char* protocol)
 	return(sock);
 }
 
+// Used by sbbs_t::ftp_put():
 SOCKET accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen)
 {
 	SOCKET	sock;
@@ -5144,6 +5145,10 @@ NO_SSH:
 
 		if(client_socket == INVALID_SOCKET)
 			continue;
+
+		// Count the socket:
+		if(startup->socket_open!=NULL)
+			startup->socket_open(startup->cbdata, TRUE);
 
 		bool rlogin = false;
 #ifdef USE_CRYPTLIB
