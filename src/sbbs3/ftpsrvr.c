@@ -4505,21 +4505,31 @@ static void ctrl_thread(void* arg)
 				SKIP_WHITESPACE(p);
 			}
 
-			parsepath(&p,&user,&client,&lib,&dir);
-			filespec=p;
-			if(*filespec==0)
-				filespec="*";
-
 			if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
 				lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
 				sockprintf(sock,sess, "451 Insufficient system storage");
 				continue;
 			}
+			sockprintf(sock,sess,"150 Opening ASCII mode data connection for /bin/ls.");
+
+			if (parsepath(&p,&user,&client,&lib,&dir) == -1) {
+				/* Empty list */
+				fclose(fp);
+				filexfer(&data_addr,sock,sess,pasv_sock,pasv_sess,&data_sock,&data_sess,fname,0L
+					,&transfer_inprogress,&transfer_aborted
+					,TRUE /* delfile */
+					,TRUE /* tmpfile */
+					,&lastactive,&user,&client,dir,FALSE,FALSE,FALSE,NULL,protection);
+				continue;
+			}
+			filespec=p;
+			if(*filespec==0)
+				filespec="*";
+
 			if(!strnicmp(cmd, "LIST", 4))
 				detail=TRUE;
 			else
 				detail=FALSE;
-			sockprintf(sock,sess,"150 Opening ASCII mode data connection for /bin/ls.");
 			now=time(NULL);
 			if(localtime_r(&now,&cur_tm)==NULL) 
 				memset(&cur_tm,0,sizeof(cur_tm));
