@@ -880,6 +880,9 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* prot, const ch
 	char	reason[128];
 	char	ip[INET6_ADDRSTRLEN];
 	ulong	count;
+	
+	if(user == NULL)
+		user = "<unspecified>";
 
 	if(addr!=NULL) {
 		SAFEPRINTF(reason,"%s LOGIN", prot);
@@ -3853,27 +3856,27 @@ static void smtp_thread(void* arg)
 				sockprintf(socket,session,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
 				if((rd=sockreadline(socket, session, buf, sizeof(buf)))<1) {
 					lprintf(LOG_WARNING,"%04d !SMTP missing AUTH LOGIN username argument", socket);
-					sockprintf(socket,session,badarg_rsp);
+					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
 					lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
 				if(b64_decode(user_name,sizeof(user_name),buf,rd)<1) {
 					lprintf(LOG_WARNING,"%04d !SMTP bad AUTH LOGIN username argument", socket);
-					sockprintf(socket,session,badarg_rsp);
+					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				sockprintf(socket,session,"334 UGFzc3dvcmQ6");	/* Base64-encoded "Password:" */
 				if((rd=sockreadline(socket, session, buf, sizeof(buf)))<1) {
 					lprintf(LOG_WARNING,"%04d !SMTP missing AUTH LOGIN password argument", socket);
-					sockprintf(socket,session,badarg_rsp);
+					badlogin(socket, session, client.protocol, badarg_rsp, user_name, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
 					lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
 				if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1) {
 					lprintf(LOG_WARNING,"%04d !SMTP bad AUTH LOGIN password argument", socket);
-					sockprintf(socket,session,badarg_rsp);
+					badlogin(socket, session, client.protocol, badarg_rsp, user_name, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 			} else {	/* AUTH PLAIN b64(<username>\0<user-id>\0<password>) */
@@ -3881,13 +3884,13 @@ static void smtp_thread(void* arg)
 				SKIP_WHITESPACE(p);
 				if(*p==0) {
 					lprintf(LOG_WARNING,"%04d !SMTP missing AUTH PLAIN argument", socket);
-					sockprintf(socket,session,badarg_rsp);
+					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				ZERO_VAR(tmp);
 				if(b64_decode(tmp,sizeof(tmp),p,strlen(p))<1) {
 					lprintf(LOG_WARNING,"%04d !SMTP bad AUTH PLAIN argument", socket);
-					sockprintf(socket,session,badarg_rsp);
+					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				p=tmp;
@@ -3895,7 +3898,7 @@ static void smtp_thread(void* arg)
 				p++;			/* skip NULL */
 				if(*p==0) {
 					lprintf(LOG_WARNING,"%04d !SMTP missing AUTH PLAIN user-id argument", socket);
-					sockprintf(socket,session,badarg_rsp);
+					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				SAFECOPY(user_name,p);
@@ -3903,7 +3906,7 @@ static void smtp_thread(void* arg)
 				p++;			/* skip NULL */
 				if(*p==0) {
 					lprintf(LOG_WARNING,"%04d !SMTP missing AUTH PLAIN password argument", socket);
-					sockprintf(socket,session,badarg_rsp);
+					badlogin(socket, session, client.protocol, badarg_rsp, user_name, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				SAFECOPY(user_pass,p);
