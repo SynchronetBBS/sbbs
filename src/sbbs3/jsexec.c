@@ -1358,8 +1358,11 @@ int main(int argc, char **argv, char** env)
 	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
 #elif defined(__unix__)
 	signal(SIGQUIT,break_handler);
+	siginterrupt(SIGQUIT, 1);
 	signal(SIGINT,break_handler);
+	siginterrupt(SIGINT, 1);
 	signal(SIGTERM,break_handler);
+	siginterrupt(SIGTERM, 1);
 
 	signal(SIGHUP,recycle_handler);
 
