@@ -2566,11 +2566,12 @@ static BOOL send_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, const char *for
 	return TRUE;
 }
 
-static BOOL send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned feats, const char *type, const char *perm, uint64_t size, uint64_t modify, const char *owner, const char *fname)
+static BOOL send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned feats, const char *type, const char *perm, uint64_t size, time_t modify, const char *owner, const char *fname)
 {
 	char line[1024];
 	char *end;
 	BOOL need_owner = FALSE;
+	struct tm mtime;
 
 	end=line;
 	*end=0;
@@ -2580,8 +2581,12 @@ static BOOL send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned 
 		end += sprintf(end, "Perm=%s;", perm);
 	if (size != UINT64_MAX && (feats & MLSX_SIZE))
 		end += sprintf(end, "Size=%" PRIu64 ";", size);
-	if (modify != UINT64_MAX && (feats & MLSX_MODIFY))
-		end += sprintf(end, "Modify=%" PRIu64 ";", modify);
+	if (modify != 0 && (feats & MLSX_MODIFY)) {
+		mtime = *gmtime(&modify);
+		end += sprintf(end, "Modify=%04d%02d%02d%02d%02d%02d;",
+		    mtime.tm_year+1900, mtime.tm_mon+1, mtime.tm_mday,
+		    mtime.tm_hour, mtime.tm_min, mtime.tm_sec);
+	}
 	// Owner can contain percents, so let send_mlsx() deal with it
 	if (owner != NULL && (feats & MLSX_OWNER)) {
 		strcat(end, "UNIX.ownername=%s;");
@@ -2639,7 +2644,7 @@ static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned
 		}
 	}
 	*p=0;
-	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)flength(path), (uint64_t)fdate(path), NULL, path);
+	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)flength(path), fdate(path), NULL, path);
 }
 
 /*
@@ -4297,7 +4302,7 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'T')
 						sockprintf(sock,sess, "250- Listing %s", startup->index_file_name);
 					get_owner_name(NULL, str);
-					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, UINT64_MAX, str, cmd[3] == 'T' ? mls_path : startup->index_file_name);
+					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, cmd[3] == 'T' ? mls_path : startup->index_file_name);
 					l++;
 				}
 				/* HTML Index File */
@@ -4306,7 +4311,7 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'T')
 						sockprintf(sock,sess, "250- Listing %s", startup->html_index_file);
 					get_owner_name(NULL, str);
-					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, UINT64_MAX, str, cmd[3] == 'T' ? mls_path : startup->html_index_file);
+					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, cmd[3] == 'T' ? mls_path : startup->html_index_file);
 					l++;
 				}
 
@@ -4314,7 +4319,7 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing root");
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, UINT64_MAX, str, mls_path);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, mls_path);
 						l++;
 					}
 					lprintf(LOG_INFO,"%04d %s listing: root in %s mode",sock,user.alias, mode);
@@ -4326,7 +4331,7 @@ static void ctrl_thread(void* arg)
 							if (cmd[3] == 'T')
 								sockprintf(sock,sess, "250- Listing %s", str);
 							get_owner_name(NULL, str);
-							send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, UINT64_MAX, str, cmd[3] == 'T' ? mls_path : str);
+							send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, cmd[3] == 'T' ? mls_path : str);
 							l++;
 						}
 					}
@@ -4391,10 +4396,12 @@ static void ctrl_thread(void* arg)
 							if(cmd[3] == 'D' || strcmp(startup->html_index_file, mls_fname) == 0) {
 								if (cmd[3] == 'T')
 									sockprintf(sock,sess, "250- Listing %s", p);
-								if (alias_dir==TRUE)
-									send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, UINT64_MAX, NULL, cmd[3] == 'T' ? mls_path : p);
-								else
-									send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", (uint64_t)flength(np), (uint64_t)fdate(np), NULL, cmd[3] == 'T' ? mls_path : p);
+								if (alias_dir==TRUE) {
+									send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, NULL, cmd[3] == 'T' ? mls_path : p);
+								}
+								else {
+									send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", (uint64_t)flength(np), fdate(np), NULL, cmd[3] == 'T' ? mls_path : p);
+								}
 								l++;
 							}
 						}
@@ -4412,19 +4419,19 @@ static void ctrl_thread(void* arg)
 							sockprintf(sock,sess, "250- Listing %s", scfg.lib[i]->sname);
 						get_libperm(scfg.lib[i], &user, &client, permstr);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, UINT64_MAX, str, cmd[3] == 'T' ? mls_path : scfg.lib[i]->sname);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, cmd[3] == 'T' ? mls_path : scfg.lib[i]->sname);
 						l++;
 					}
 				} else if(dir<0) {
 					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing %s", scfg.lib[lib]->sname);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, UINT64_MAX, str, mls_path);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, str, mls_path);
 						l++;
 					}
 					if (cmd[3] == 'D') {
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, UINT64_MAX, str, "..");
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, "..");
 					}
 					lprintf(LOG_INFO,"%04d %s listing: %s library in %s mode"
 						,sock,user.alias,scfg.lib[lib]->sname,mode);
@@ -4440,7 +4447,7 @@ static void ctrl_thread(void* arg)
 							sockprintf(sock,sess, "250- Listing %s", scfg.dir[i]->code_suffix);
 						get_dirperm(scfg.lib[lib], scfg.dir[i], &user, &client, permstr);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, UINT64_MAX, str, cmd[3] == 'T' ? mls_path : scfg.dir[i]->code_suffix);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, cmd[3] == 'T' ? mls_path : scfg.dir[i]->code_suffix);
 						l++;
 					}
 				} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user,&client)) {
@@ -4450,13 +4457,13 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing %s/%s",scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, UINT64_MAX, str, mls_path);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, mls_path);
 						l++;
 					}
 					if (cmd[3] == 'D') {
 						get_libperm(scfg.lib[lib], &user, &client, permstr);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", permstr, UINT64_MAX, UINT64_MAX, str, "..");
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", permstr, UINT64_MAX, 0, str, "..");
 					}
 
 					SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,"*");
@@ -4481,7 +4488,7 @@ static void ctrl_thread(void* arg)
 							sockprintf(sock,sess, "250- Listing %s", p);
 						get_fileperm(scfg.lib[lib], scfg.dir[dir], &user, &client, &f, permstr);
 						get_owner_name(&f, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, (uint64_t)flength(g.gl_pathv[i]), (uint64_t)fdate(g.gl_pathv[i]), str, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, (uint64_t)flength(g.gl_pathv[i]), fdate(g.gl_pathv[i]), str, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
 						l++;
 					}
 					globfree(&g);
