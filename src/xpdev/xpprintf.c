@@ -1,4 +1,5 @@
 /* xpprintf.c */
+// vi: tabstop=4
 
 /* Deuce's vs[n]printf() replacement */
 
@@ -8,7 +9,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -35,7 +36,9 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define _GNU_SOURCE	// asprintf() on Linux
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+	#define _GNU_SOURCE	// asprintf() on Linux
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
