@@ -2228,123 +2228,6 @@ static BOOL can_list(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
 	return FALSE;
 }
 
-/*
- * Parses a path into *curlib, *curdir, and sets *pp to point to the filename
- */
-static int parsepath(char** pp, user_t* user, client_t* client, int* curlib, int* curdir)
-{
-	int lib = *curlib;
-	int dir = *curdir;
-	char *p = *pp;
-	char *fname = strchr(p, 0);
-	int ret = 0;
-	size_t len;
-
-	if (*p == '/') {
-		lib = -1;
-		dir = -1;
-		p++;
-	}
-
-	while (*p) {
-		/* Relative path stuff */
-		if (strcmp(p, "..") == 0) {
-			if (dir >= 0)
-				dir = -1;
-			else if (lib >= 0)
-				lib = -1;
-			else
-				ret = -1;
-			p += 2;
-		}
-		else if(strncmp(p, "../", 3) == 0) {
-			if (dir >= 0)
-				dir = -1;
-			else if (lib >= 0)
-				lib = -1;
-			else
-				ret = -1;
-			p += 3;
-		}
-		else if(strcmp(p, ".") == 0)
-			p++;
-		else if(strncmp(p, "./", 2) == 0)
-			p += 2;
-		/* Path component */
-		else if (lib < 0) {
-			for(lib=0;lib<scfg.total_libs;lib++) {
-				if(!chk_ar(&scfg,scfg.lib[lib]->ar,user,client))
-					continue;
-				len = strlen(scfg.lib[lib]->sname);
-				if (strlen(p) < len)
-					continue;
-				if (p[len] != 0 && p[len] != '/')
-					continue;
-				if(!strnicmp(scfg.lib[lib]->sname,p,len)) {
-					p += len;
-					if (*p)
-						p++;
-					break;
-				}
-			}
-			if (lib == scfg.total_libs) {
-				ret = -1;
-				lib = -1;
-				if (strchr(p, '/') != NULL) {
-					p = strchr(p, '/');
-					p++;
-				}
-				else
-					p = strchr(p, 0);
-			}
-		}
-		else if (dir < 0) {
-			for(dir=0;dir<scfg.total_dirs;dir++) {
-				if(scfg.dir[dir]->lib!=lib)
-					continue;
-				if (!can_list(scfg.lib[lib], scfg.dir[dir], user, client))
-					continue;
-				len = strlen(scfg.dir[dir]->code_suffix);
-				if (strlen(p) < len)
-					continue;
-				if (p[len] != 0 && p[len] != '/')
-					continue;
-				if(!strnicmp(scfg.dir[dir]->code_suffix,p,len)) {
-					p += len;
-					if (*p)
-						p++;
-					break;
-				}
-			}
-			if (dir == scfg.total_dirs) {
-				ret = -1;
-				dir = -1;
-				if (strchr(p, '/') != NULL) {
-					p = strchr(p, '/');
-					p++;
-				}
-				else
-					p = strchr(p, 0);
-			}
-		}
-		else {	// Filename
-			if (strchr(p, '/') != NULL) {
-				ret = -1;
-				p = strchr(p, '/');
-				p++;
-			}
-			else {
-				fname = p;
-				p += strlen(fname);
-			}
-		}
-	}
-	*curdir = dir;
-	*curlib = lib;
-	*pp = fname;
-	return ret;
-}
-
 static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* client, int* curdir)
 {
 	char*	p;
@@ -2420,6 +2303,140 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 	if(curdir!=NULL)
 		*curdir=dir;
 	return(result);
+}
+
+/*
+ * Parses a path into *curlib, *curdir, and sets *pp to point to the filename
+ */
+static int parsepath(char** pp, user_t* user, client_t* client, int* curlib, int* curdir)
+{
+	char filename[MAX_PATH+1];
+	int lib = *curlib;
+	int dir = *curdir;
+	char *p = *pp;
+	char *tmp;
+	char *fname = strchr(p, 0);
+	int ret = 0;
+	size_t len;
+
+	if (*p == '/') {
+		lib = -1;
+		dir = -1;
+		p++;
+	}
+
+	while (*p) {
+		/* Relative path stuff */
+		if (strcmp(p, "..") == 0) {
+			if (dir >= 0)
+				dir = -1;
+			else if (lib >= 0)
+				lib = -1;
+			else
+				ret = -1;
+			p += 2;
+		}
+		else if(strncmp(p, "../", 3) == 0) {
+			if (dir >= 0)
+				dir = -1;
+			else if (lib >= 0)
+				lib = -1;
+			else
+				ret = -1;
+			p += 3;
+		}
+		else if(strcmp(p, ".") == 0)
+			p++;
+		else if(strncmp(p, "./", 2) == 0)
+			p += 2;
+		/* Path component */
+		else if (lib < 0) {
+			for(lib=0;lib<scfg.total_libs;lib++) {
+				if(!chk_ar(&scfg,scfg.lib[lib]->ar,user,client))
+					continue;
+				len = strlen(scfg.lib[lib]->sname);
+				if (strlen(p) < len)
+					continue;
+				if (p[len] != 0 && p[len] != '/')
+					continue;
+				if(!strnicmp(scfg.lib[lib]->sname,p,len)) {
+					p += len;
+					if (*p)
+						p++;
+					break;
+				}
+			}
+			if (lib == scfg.total_libs) {
+				strcpy(filename, p);
+				tmp = strchr(filename, '/');
+				if (tmp != NULL)
+					*tmp = 0;
+				if (ftpalias(filename, filename, user, client, &dir) == TRUE) {
+					lib = scfg.dir[dir]->lib;
+					if (strchr(p, '/') != NULL) {
+						p = strchr(p, '/');
+						p++;
+					}
+					else
+						p = strchr(p, 0);
+				}
+				else {
+					ret = -1;
+					lib = -1;
+					if (strchr(p, '/') != NULL) {
+						p = strchr(p, '/');
+						p++;
+					}
+					else
+						p = strchr(p, 0);
+				}
+			}
+		}
+		else if (dir < 0) {
+			for(dir=0;dir<scfg.total_dirs;dir++) {
+				if(scfg.dir[dir]->lib!=lib)
+					continue;
+				if (!can_list(scfg.lib[lib], scfg.dir[dir], user, client))
+					continue;
+				len = strlen(scfg.dir[dir]->code_suffix);
+				if (strlen(p) < len)
+					continue;
+				if (p[len] != 0 && p[len] != '/')
+					continue;
+				if(!strnicmp(scfg.dir[dir]->code_suffix,p,len)) {
+					p += len;
+					if (*p)
+						p++;
+					break;
+				}
+			}
+			if (dir == scfg.total_dirs) {
+				ret = -1;
+				dir = -1;
+				if (strchr(p, '/') != NULL) {
+					p = strchr(p, '/');
+					p++;
+				}
+				else
+					p = strchr(p, 0);
+			}
+		}
+		else {	// Filename
+			if (strchr(p, '/') != NULL) {
+				ret = -1;
+				p = strchr(p, '/');
+				p++;
+			}
+			else {
+				fname = p;
+				p += strlen(fname);
+			}
+		}
+	}
+	*curdir = dir;
+	*curlib = lib;
+	*pp = fname;
+	return ret;
 }
 
 char* root_dir(char* path)
