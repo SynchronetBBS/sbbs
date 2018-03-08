@@ -56,6 +56,7 @@
 #include "ssl.h"
 #include "cryptlib.h"
 #include "xpprintf.h"		// vasprintf
+#include "md5.h"
 
 /* Constants */
 
@@ -84,6 +85,7 @@
 #define MLSX_SIZE	(1<<2)
 #define MLSX_MODIFY	(1<<3)
 #define MLSX_OWNER	(1<<4)
+#define MLSX_UNIQUE	(1<<5)
 
 static ftp_startup_t*	startup=NULL;
 static scfg_t	scfg;
@@ -2566,7 +2568,19 @@ static BOOL send_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, const char *for
 	return TRUE;
 }
 
-static BOOL send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned feats, const char *type, const char *perm, uint64_t size, time_t modify, const char *owner, const char *fname)
+static char *get_unique(const char *path, char *uniq)
+{
+	BYTE digest[MD5_DIGEST_SIZE];
+
+	if (path == NULL)
+		return NULL;
+
+	MD5_calc(digest, path, strlen(path));
+	MD5_hex((BYTE*)uniq, digest);
+	return uniq;
+}
+
+static BOOL send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned feats, const char *type, const char *perm, uint64_t size, time_t modify, const char *owner, const char *unique, const char *fname)
 {
 	char line[1024];
 	char *end;
@@ -2587,6 +2601,8 @@ static BOOL send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned 
 		    mtime.tm_year+1900, mtime.tm_mon+1, mtime.tm_mday,
 		    mtime.tm_hour, mtime.tm_min, mtime.tm_sec);
 	}
+	if (unique != NULL && (feats & MLSX_UNIQUE))
+		end += sprintf(end, "Unique=%s;", unique);
 	// Owner can contain percents, so let send_mlsx() deal with it
 	if (owner != NULL && (feats & MLSX_OWNER)) {
 		strcat(end, "UNIX.ownername=%s;");
@@ -2644,7 +2660,7 @@ static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned
 		}
 	}
 	*p=0;
-	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)flength(path), fdate(path), NULL, path);
+	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)flength(path), fdate(path), NULL, NULL, path);
 }
 
 /*
@@ -2838,9 +2854,10 @@ static void get_owner_name(file_t *file, char *namestr)
 
 static void ctrl_thread(void* arg)
 {
-	unsigned	mlsx_feats = (MLSX_TYPE | MLSX_PERM | MLSX_SIZE | MLSX_MODIFY | MLSX_OWNER);
+	unsigned	mlsx_feats = (MLSX_TYPE | MLSX_PERM | MLSX_SIZE | MLSX_MODIFY | MLSX_OWNER | MLSX_UNIQUE);
 	char		buf[512];
 	char		str[128];
+	char		uniq[33];
 	char*		cmd;
 	char*		p;
 	char*		np;
@@ -2854,6 +2871,7 @@ static void ctrl_thread(void* arg)
 	char		fname[MAX_PATH+1];
 	char		qwkfile[MAX_PATH+1];
 	char		aliasfile[MAX_PATH+1];
+	char		aliaspath[MAX_PATH+1];
 	char		mls_path[MAX_PATH+1];
 	char		*mls_fname;
 	char		permstr[11];
@@ -3137,7 +3155,8 @@ static void ctrl_thread(void* arg)
 				(mlsx_feats & MLSX_PERM) ? "*" : "",
 				(mlsx_feats & MLSX_SIZE) ? "*" : "",
 				(mlsx_feats & MLSX_MODIFY) ? "*" : "",
-				(mlsx_feats & MLSX_OWNER) ? "*" : ""
+				(mlsx_feats & MLSX_OWNER) ? "*" : "",
+				(mlsx_feats & MLSX_UNIQUE) ? "*" : ""
 			);
 			sockprintf(sock,sess," TVFS");
 			sockprintf(sock,sess,"211 End");
@@ -3165,12 +3184,15 @@ static void ctrl_thread(void* arg)
 				mlsx_feats |= MLSX_MODIFY;
 			if (strstr(cmd, "UNIX.OWNERNAME;"))
 				mlsx_feats |= MLSX_OWNER;
+			if (strstr(cmd, "UNIQUE;"))
+				mlsx_feats |= MLSX_OWNER;
 			sockprintf(sock,sess,"200 %s%s%s%s%s",
 				(mlsx_feats & MLSX_TYPE) ? "Type;" : "",
 				(mlsx_feats & MLSX_PERM) ? "Perm;" : "",
 				(mlsx_feats & MLSX_SIZE) ? "Size;" : "",
 				(mlsx_feats & MLSX_MODIFY) ? "Modify;" : "",
-				(mlsx_feats & MLSX_OWNER) ? "UNIX.ownername;" : ""
+				(mlsx_feats & MLSX_OWNER) ? "UNIX.ownername;" : "",
+				(mlsx_feats & MLSX_UNIQUE) ? "Unique;" : ""
 			);
 			continue;
 		}
@@ -4263,7 +4285,7 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,sess, "550 No such path");
 					continue;
 				}
-				
+
 				if (strchr(p, '/')) {
 					sockprintf(sock,sess, "550 No such path");
 					continue;
@@ -4302,7 +4324,7 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'T')
 						sockprintf(sock,sess, "250- Listing %s", startup->index_file_name);
 					get_owner_name(NULL, str);
-					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, cmd[3] == 'T' ? mls_path : startup->index_file_name);
+					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, NULL, cmd[3] == 'T' ? mls_path : startup->index_file_name);
 					l++;
 				}
 				/* HTML Index File */
@@ -4311,7 +4333,7 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'T')
 						sockprintf(sock,sess, "250- Listing %s", startup->html_index_file);
 					get_owner_name(NULL, str);
-					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, cmd[3] == 'T' ? mls_path : startup->html_index_file);
+					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, NULL, cmd[3] == 'T' ? mls_path : startup->html_index_file);
 					l++;
 				}
 
@@ -4319,7 +4341,8 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing root");
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, mls_path);
+						strcpy(aliaspath, "/");
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, aliaspath);
 						l++;
 					}
 					lprintf(LOG_INFO,"%04d %s listing: root in %s mode",sock,user.alias, mode);
@@ -4331,7 +4354,7 @@ static void ctrl_thread(void* arg)
 							if (cmd[3] == 'T')
 								sockprintf(sock,sess, "250- Listing %s", str);
 							get_owner_name(NULL, str);
-							send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, cmd[3] == 'T' ? mls_path : str);
+							send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, NULL, cmd[3] == 'T' ? mls_path : str);
 							l++;
 						}
 					}
@@ -4371,6 +4394,7 @@ static void ctrl_thread(void* arg)
 								continue;
 
 							/* Virtual Path? */
+							aliaspath[0]=0;
 							if(!strnicmp(np,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
 								if((dir=getdir(np+strlen(BBS_VIRTUAL_PATH),&user,&client))<0) {
 									lprintf(LOG_WARNING,"0000 !Invalid virtual path (%s) for %s",np,user.alias);
@@ -4383,9 +4407,12 @@ static void ctrl_thread(void* arg)
 								if(*tp) {
 									SAFEPRINTF2(aliasfile,"%s%s",scfg.dir[dir]->path,tp);
 									np=aliasfile;
+									SAFEPRINTF3(aliaspath,"/%s/%s/%s", scfg.lib[scfg.dir[dir]->lib]->sname, scfg.dir[dir]->code_suffix, tp);
 								}
-								else 
+								else {
 									alias_dir=TRUE;
+									SAFEPRINTF2(aliaspath,"/%s/%s", scfg.lib[scfg.dir[dir]->lib]->sname, scfg.dir[dir]->code_suffix);
+								}
 							}
 
 							if(!alias_dir && !fexist(np)) {
@@ -4396,11 +4423,18 @@ static void ctrl_thread(void* arg)
 							if(cmd[3] == 'D' || strcmp(startup->html_index_file, mls_fname) == 0) {
 								if (cmd[3] == 'T')
 									sockprintf(sock,sess, "250- Listing %s", p);
-								if (alias_dir==TRUE) {
-									send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, NULL, cmd[3] == 'T' ? mls_path : p);
+								get_unique(aliaspath, uniq);
+								if (cmd[3] == 'D') {
+									if (alias_dir==TRUE)
+										send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, NULL, uniq, p);
+									else
+										send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", (uint64_t)flength(np), fdate(np), NULL, uniq, p);
 								}
 								else {
-									send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", (uint64_t)flength(np), fdate(np), NULL, cmd[3] == 'T' ? mls_path : p);
+									if (alias_dir==TRUE)
+										send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, NULL, uniq, aliaspath[0] ? aliaspath : mls_path);
+									else
+										send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", (uint64_t)flength(np), fdate(np), NULL, uniq, mls_path);
 								}
 								l++;
 							}
@@ -4419,19 +4453,20 @@ static void ctrl_thread(void* arg)
 							sockprintf(sock,sess, "250- Listing %s", scfg.lib[i]->sname);
 						get_libperm(scfg.lib[i], &user, &client, permstr);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, cmd[3] == 'T' ? mls_path : scfg.lib[i]->sname);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, NULL, cmd[3] == 'T' ? mls_path : scfg.lib[i]->sname);
 						l++;
 					}
 				} else if(dir<0) {
 					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing %s", scfg.lib[lib]->sname);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, str, mls_path);
+						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->sname);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, str, NULL, aliaspath);
 						l++;
 					}
 					if (cmd[3] == 'D') {
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, "..");
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, "..");
 					}
 					lprintf(LOG_INFO,"%04d %s listing: %s library in %s mode"
 						,sock,user.alias,scfg.lib[lib]->sname,mode);
@@ -4447,7 +4482,9 @@ static void ctrl_thread(void* arg)
 							sockprintf(sock,sess, "250- Listing %s", scfg.dir[i]->code_suffix);
 						get_dirperm(scfg.lib[lib], scfg.dir[i], &user, &client, permstr);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, cmd[3] == 'T' ? mls_path : scfg.dir[i]->code_suffix);
+						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->sname, scfg.dir[i]->code_suffix);
+						get_unique(aliaspath, uniq);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, uniq, cmd[3] == 'T' ? mls_path : scfg.dir[i]->code_suffix);
 						l++;
 					}
 				} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user,&client)) {
@@ -4457,13 +4494,15 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing %s/%s",scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, mls_path);
+						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix);
+						get_unique(aliaspath, uniq);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, uniq, aliaspath);
 						l++;
 					}
 					if (cmd[3] == 'D') {
 						get_libperm(scfg.lib[lib], &user, &client, permstr);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", permstr, UINT64_MAX, 0, str, "..");
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", permstr, UINT64_MAX, 0, str, NULL, "..");
 					}
 
 					SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,"*");
@@ -4488,7 +4527,9 @@ static void ctrl_thread(void* arg)
 							sockprintf(sock,sess, "250- Listing %s", p);
 						get_fileperm(scfg.lib[lib], scfg.dir[dir], &user, &client, &f, permstr);
 						get_owner_name(&f, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, (uint64_t)flength(g.gl_pathv[i]), fdate(g.gl_pathv[i]), str, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
+						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, getfname(g.gl_pathv[i]));
+						get_unique(aliaspath, uniq);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, (uint64_t)flength(g.gl_pathv[i]), fdate(g.gl_pathv[i]), str, uniq, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
 						l++;
 					}
 					globfree(&g);
