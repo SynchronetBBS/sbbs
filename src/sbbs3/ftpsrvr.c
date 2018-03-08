@@ -55,6 +55,7 @@
 #include "multisock.h"
 #include "ssl.h"
 #include "cryptlib.h"
+#include "xpprintf.h"		// vasprintf
 
 /* Constants */
 
