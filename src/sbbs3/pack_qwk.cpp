@@ -381,7 +381,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				mode&=~QM_TO_QNET;
 
 			for(u=0;u<mailmsgs;u++) {
-				if(cfg.node_num)
+				if(online == ON_REMOTE)
 					bprintf("\b\b\b\b\b\b\b\b\b\b\b\b%4lu of %-4lu"
 						,u+1,mailmsgs);
 
@@ -417,7 +417,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				} 
 				YIELD();	/* yield */
 			}
-			if(cfg.node_num)
+			if(online == ON_REMOTE)
 				bprintf(text[QWKPackedEmail],mailmsgs);
 			if(ndx)
 				fclose(ndx); 
@@ -448,7 +448,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 						subscan[usrsub[i][j]].ptr=lastmsg;	/* so fix automatically */
 					if(subscan[usrsub[i][j]].last>lastmsg)
 						subscan[usrsub[i][j]].last=lastmsg; 
-					if(cfg.node_num)
+					if(online == ON_REMOTE)
 						bprintf(text[NScanStatusFmt]
 							,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
 							,cfg.sub[usrsub[i][j]]->lname,0L,msgs);
@@ -473,7 +473,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					k|=LP_POLLS|LP_VOTES;
 				post=loadposts(&posts,usrsub[i][j],subscan[usrsub[i][j]].ptr,k,NULL);
 				
-				if(cfg.node_num)
+				if(online == ON_REMOTE)
 					bprintf(text[NScanStatusFmt]
 						,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
 						,cfg.sub[usrsub[i][j]]->lname,posts,msgs);
@@ -481,7 +481,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					smb_close(&smb);
 					continue; 
 				}
-				if(cfg.node_num)
+				if(online == ON_REMOTE)
 					bputs(text[QWKPackingSubboard]);	
 				submsgs=0;
 				conf=cfg.sub[usrsub[i][j]]->qwkconf;
@@ -508,7 +508,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					ndx=NULL;
 
 				for(u=0;u<posts && !msgabort();u++) {
-					if(cfg.node_num)
+					if(online == ON_REMOTE)
 						bprintf("\b\b\b\b\b%-5lu",u+1);
 
 					subscan[usrsub[i][j]].ptr=post[u].idx.number;	/* set ptr */
@@ -571,7 +571,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					if(!(u%50))
 						YIELD();	/* yield */
 				}
-				if(cfg.node_num && !(sys_status&SS_ABORT))
+				if(online == ON_REMOTE && !(sys_status&SS_ABORT))
 					bprintf(text[QWKPackedSubboard],submsgs,(*msgcnt));
 				if(ndx) {
 					fclose(ndx);
@@ -601,7 +601,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		time_t elapsed = time(NULL)-start;
 		if(elapsed < 1)
 			elapsed = 1;
-		if(cfg.node_num)
+		if(online == ON_REMOTE)
 			bprintf("\r\n\r\n\1n\1hPacked %lu messages (%lu bytes) in %lu seconds "
 				"(%lu messages/second)."
 				,(*msgcnt)+mailmsgs
@@ -707,7 +707,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 	if(!(*msgcnt) && !mailmsgs && !files && !netfiles && !batdn_total && !voting_data
 		&& (prepack || !preqwk)) {
-		bputs(text[QWKNoNewMessages]);
+		if(online == ON_REMOTE)
+			bputs(text[QWKNoNewMessages]);
 		return(false); 
 	}
 
