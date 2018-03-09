@@ -950,7 +950,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 	rewind(smb->shd_fp);
 	if(fseek(smb->shd_fp,msg->idx.offset,SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s %d '%s' seeking to %lu in header", __FUNCTION__
+			,"%s %d '%s' seeking to %lu in header file", __FUNCTION__
 			,get_errno(),STRERROR(get_errno())
 			,msg->idx.offset);
 		return(SMB_ERR_SEEK);
@@ -1763,7 +1763,7 @@ int SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 	}
 	if(fseek(smb->sid_fp,msg->offset*sizeof(idxrec_t),SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s %d '%s' seeking to %u in header", __FUNCTION__
+			,"%s %d '%s' seeking to %u in index file", __FUNCTION__
 			,get_errno(),STRERROR(get_errno())
 			,(unsigned)(msg->offset*sizeof(idxrec_t)));
 		return(SMB_ERR_SEEK);
@@ -1800,7 +1800,7 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	clearerr(smb->shd_fp);
 	if(fseek(smb->shd_fp,msg->idx.offset,SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s %d '%s' seeking to %lu in index", __FUNCTION__
+			,"%s %d '%s' seeking to %lu in header file", __FUNCTION__
 			,get_errno(),STRERROR(get_errno()),msg->idx.offset);
 		return(SMB_ERR_SEEK);
 	}
