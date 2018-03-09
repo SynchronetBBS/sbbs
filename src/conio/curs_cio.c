@@ -1048,4 +1048,5 @@ void curs_setvideoflags(int flags)
 	flags &= (CIOLIB_VIDEO_NOBRIGHT|CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK);
 	if (COLORS < 16)
 		flags &= ~CIOLIB_VIDEO_BGBRIGHT;
+	vflags = flags;
 }
