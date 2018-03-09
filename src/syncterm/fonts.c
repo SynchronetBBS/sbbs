@@ -377,4 +377,5 @@ void font_management(void)
 			}
 		}
 	}
+	free_font_files(fonts);
 }
