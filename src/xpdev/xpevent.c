@@ -173,7 +173,6 @@ WaitForEvent(xpevent_t event, DWORD ms)
 		retval=WAIT_OBJECT_0;
 
 	while ((!(event->value)) || (event->verify!=NULL && !event->verify(event->cbdata))) {
-		retval=WAIT_FAILED;
 		event->nwaiters++;
 		switch(ms) {
 			case 0:
