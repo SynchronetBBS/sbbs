@@ -921,7 +921,7 @@ void msgs_cfg()
 					}
 
 					/* QWK Conference number range */
-					int min_confnum, max_confnum;
+					int min_confnum = 1, max_confnum = 99999;
 					if(k == IMPORT_LIST_TYPE_QWK_CONTROL_DAT) {
 						strcpy(str, "1000");
 						uifc.helpbuf = "`Minimum / Maximum QWK Conference Number:`\n"
