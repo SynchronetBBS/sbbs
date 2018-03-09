@@ -2621,7 +2621,7 @@ static BOOL send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned 
 	return send_mlsx(fp, sock, sess, line, fname==NULL ? "" : fname);
 }
 
-static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned feats, const char *path)
+static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned feats, const char *path, BOOL full_path)
 {
 	const char *type;
 	char permstr[11];
@@ -2667,7 +2667,9 @@ static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned
 		}
 	}
 	*p=0;
-	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)flength(path), fdate(path), NULL, NULL, 0, path);
+	if (is_file)
+		full_path = FALSE;
+	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)flength(path), fdate(path), NULL, NULL, 0, full_path ? path : getfname(path));
 }
 
 /*
@@ -3974,13 +3976,13 @@ static void ctrl_thread(void* arg)
 						memset(&cur_tm,0,sizeof(cur_tm));
 
 					if (cmd[3] == 'T') {
-						write_local_mlsx(NULL, sock, sess, mlsx_feats, path);
+						write_local_mlsx(NULL, sock, sess, mlsx_feats, path, TRUE);
 						sockprintf(sock, sess, "250 End");
 					}
 					else {
 						glob(path,0,NULL,&g);
 						for(i=0;i<(int)g.gl_pathc;i++)
-							write_local_mlsx(fp, INVALID_SOCKET, -1, mlsx_feats, g.gl_pathv[i]);
+							write_local_mlsx(fp, INVALID_SOCKET, -1, mlsx_feats, g.gl_pathv[i], FALSE);
 						globfree(&g);
 						fclose(fp);
 						filexfer(&data_addr,sock,sess,pasv_sock,pasv_sess,&data_sock,&data_sess,fname,0L
@@ -4080,8 +4082,12 @@ static void ctrl_thread(void* arg)
 
 				if(p[1]==':' || !strncmp(p,"\\\\",2))
 					SAFECOPY(path,p);
-				else if(*p=='/' || *p=='\\')
-					SAFEPRINTF2(path,"%s%s",root_dir(local_dir),p);
+				else if(*p=='/' || *p=='\\') {
+					SAFEPRINTF2(path,"%s%s",root_dir(local_dir),p+1);
+					p = FULLPATH(NULL, path, 0);
+					SAFECOPY(path, p);
+					free(p);
+				}
 				else {
 					SAFEPRINTF2(fname,"%s%s",local_dir,p);
 					FULLPATH(path,fname,sizeof(path));
@@ -4356,6 +4362,9 @@ static void ctrl_thread(void* arg)
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, aliaspath);
 						l++;
 					}
+					else {
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "cdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, "/");
+					}
 					lprintf(LOG_INFO,"%04d %s listing: root in %s mode",sock,user.alias, mode);
 
 					/* QWK Packet */
@@ -4477,7 +4486,9 @@ static void ctrl_thread(void* arg)
 					}
 					if (cmd[3] == 'D') {
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, "..");
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, "/");
+						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->sname);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "cdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, aliaspath);
 					}
 					lprintf(LOG_INFO,"%04d %s listing: %s library in %s mode"
 						,sock,user.alias,scfg.lib[lib]->sname,mode);
@@ -4513,7 +4524,11 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'D') {
 						get_libperm(scfg.lib[lib], &user, &client, permstr);
 						get_owner_name(NULL, str);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", permstr, UINT64_MAX, 0, str, NULL, 0, "..");
+						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->sname);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", permstr, UINT64_MAX, 0, str, NULL, 0, aliaspath);
+						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix);
+						get_unique(aliaspath, uniq);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "cdir", permstr, UINT64_MAX, 0, str, NULL, 0, aliaspath);
 					}
 
 					SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,"*");
