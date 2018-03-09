@@ -680,7 +680,6 @@ static int update_from_vmem(int force)
 	unsigned int pos;
 
 	int	redraw_cursor=0;
-	int	lastcharupdated=0;
 	int bright_attr_changed=0;
 	int blink_attr_changed=0;
 
@@ -754,7 +753,6 @@ static int update_from_vmem(int force)
 			}
 			pos++;
 		}
-		lastcharupdated=0;
 	}
 	release_vmem(vmem_ptr);
 
