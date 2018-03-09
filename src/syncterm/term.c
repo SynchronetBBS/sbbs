@@ -1532,7 +1532,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					goto end; 
 				}
 				file_bytes=total_bytes=0;
-				ftime=total_files=0;
+				total_files=0;
 				i=sscanf(((char *)block)+strlen((char *)block)+1,"%"PRId64" %lo %lo %lo %d %"PRId64
 					,&file_bytes			/* file size (decimal) */
 					,&tmpftime 				/* file time (octal unix format) */
@@ -2395,7 +2395,6 @@ BOOL doterm(struct bbslist *bbs)
 						ch[0]=0;
 						ch[1]=key>>8;
 						conn_send(ch,2,0);
-						key=0;
 						continue;
 					}
 				}
@@ -2409,7 +2408,6 @@ BOOL doterm(struct bbslist *bbs)
 					switch(mevent.event) {
 						case CIOLIB_BUTTON_1_DRAG_START:
 							mousedrag(scrollback_buf);
-							key = 0;
 							break;
 						case CIOLIB_BUTTON_2_CLICK:
 						case CIOLIB_BUTTON_3_CLICK:
@@ -2426,7 +2424,6 @@ BOOL doterm(struct bbslist *bbs)
 								}
 								free(p);
 							}
-							key = 0;
 							break;
 					}
 
