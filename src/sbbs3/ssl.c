@@ -11,7 +11,7 @@ void DLLCALL free_crypt_attrstr(char *attr)
 	free(attr);
 }
 
-char* DLLCALL get_crypt_attribute(CRYPT_SESSION sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
+char* DLLCALL get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
 {
 	int		len = 0;
 	char	*estr = NULL;
@@ -27,12 +27,12 @@ char* DLLCALL get_crypt_attribute(CRYPT_SESSION sess, C_IN CRYPT_ATTRIBUTE_TYPE 
 	return NULL;
 }
 
-char* DLLCALL get_crypt_error(CRYPT_SESSION sess)
+char* DLLCALL get_crypt_error(CRYPT_HANDLE sess)
 {
 	return get_crypt_attribute(sess, CRYPT_ATTRIBUTE_ERRORMESSAGE);
 }
 
-bool get_crypt_error_string(int status, CRYPT_SESSION sess, char estr[SSL_ESTR_LEN], char *file, int line)
+bool get_crypt_error_string(int status, CRYPT_HANDLE sess, char estr[SSL_ESTR_LEN], char *file, int line)
 {
 	char	*emsg;
 
