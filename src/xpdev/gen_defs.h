@@ -252,7 +252,7 @@ typedef int32_t         time32_t;
 #    define PRIuOFF     "lu"
 #  endif
 #elif defined(__linux__) || defined(__sun__)
-#  if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS==64)
+#  if (defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS==64)) || defined(__LP64__)
 #    define PRIdOFF     PRId64
 #    define PRIuOFF     PRIu64
 #  else
