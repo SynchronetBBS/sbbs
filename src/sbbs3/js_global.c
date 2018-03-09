@@ -931,6 +931,7 @@ js_chksum(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	ulong		sum=0;
 	char*		p = NULL;
+	char*		sp;
 	size_t		len;
 	jsrefcount	rc;
 
@@ -945,7 +946,8 @@ js_chksum(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);	/* 3.8 seconds on Deuce's computer when len==UINT_MAX/8 */
-	while(len--) sum+=*(p++);
+	sp = 0;
+	while(len--) sum+=*(sp++);
 	free(p);
 	JS_RESUMEREQUEST(cx, rc);
 
