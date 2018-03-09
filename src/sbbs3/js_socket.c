@@ -112,6 +112,8 @@ static void do_js_close(js_socket_private_t *p)
 		close_socket(p->sock);
 		p->last_error = ERROR_VALUE;
 	}
+	else
+		shutdown(p->sock, SHUT_RDWR);
 	// This is a lie for external sockets... don't tell anyone.
 	p->sock = INVALID_SOCKET; 
 	p->is_connected = FALSE;
