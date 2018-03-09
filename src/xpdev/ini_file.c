@@ -430,7 +430,7 @@ BOOL DLLCALL iniRemoveSection(str_list_t* list, const char* section)
 
 BOOL DLLCALL iniRemoveSections(str_list_t* list, const char* prefix)
 {
-	str_list_t sections = iniGetSectionList(*list, prefix);
+	str_list_t sections;
 	const char* section;
 
 	if (list == NULL || *list == NULL)
