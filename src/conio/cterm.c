@@ -621,7 +621,6 @@ static void playnote_thread(void *args)
 		if(device_open) {
 			if(!listSemTryWaitBlock(&cterm->notes,5000)) {
 				xptone_close();
-				device_open=FALSE;
 				listSemWait(&cterm->notes);
 			}
 		}
@@ -1081,7 +1080,6 @@ static bool parse_parameters(struct esc_seq *seq)
 	}
 	else if (start) {
 		/* End of parameter, add to string list */
-		last_was_sc = true;
 		*p = 0;
 		while(*start == '0' && start[1])
 			start++;
@@ -1408,7 +1406,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						unsigned long t,r,g,b;
 
 						p++;
-						t=r=g=b=0;
+						r=g=b=0;
 						t = strtoul(p, &p, 10);
 						if (*p == ';') {
 							p++;
@@ -2381,7 +2379,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						if(i>cterm->width-WHEREX())
 							i=cterm->width-WHEREX();
 						vc=malloc(i*sizeof(*vc));
-						j=0;
 						for(k=0;k<i;k++) {
 							vc[k].ch=' ';
 							vc[k].legacy_attr=cterm->attr;
@@ -3140,7 +3137,7 @@ static void parse_sixel_intro(struct cterminal *cterm)
 		SETCURSORTYPE(cterm->cursor);
 		GOTOXY(ti.winright - ti.winleft + 1, ti.winbottom - ti.wintop + 1);
 		*cterm->hold_update = 1;
-		ratio = cterm->sx_trans = hgrid = 0;
+		cterm->sx_trans = hgrid = 0;
 		ratio = strtoul(cterm->strbuf, &p, 10);
 		if (*p == ';') {
 			p++;
@@ -3500,7 +3497,6 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									GOTOXY(1,WHEREY());
 									break;
 								case 157:	/* Insert Line */
-									l=WHEREX();
 									k=WHEREY();
 									if(k<cterm->height)
 										MOVETEXT(cterm->x,cterm->y+k-1
