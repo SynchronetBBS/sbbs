@@ -1107,7 +1107,6 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 	/* UNIX */
 	char	*home=getenv("HOME");
 
-	home=getenv("HOME");
 	if (!shared) {
 		if((home==NULL || strlen(home) > MAX_PATH-32)) {	/* $HOME just too damn big */
 			if(type==SYNCTERM_DEFAULT_TRANSFER_PATH || type==SYNCTERM_PATH_CACHE) {
