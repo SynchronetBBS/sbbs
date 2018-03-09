@@ -371,6 +371,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	}
 	smb_freemsgmem(&msg);
 
+	fprintf(statfp, "Message (%u bytes) added to %s successfully\n", strlen(msgtxt), smb.file);
 	FREE_AND_NULL(msgtxt);
 }
 
