@@ -459,7 +459,8 @@ static void dirtyuserdat(scfg_t* cfg, uint usernumber)
 	for(i=1;i<=cfg->sys_nodes;i++) { /* instant user data update */
 //		if(i==cfg->node_num)
 //			continue;
-		getnodedat(cfg, i,&node,NULL);
+		if(getnodedat(cfg, i,&node,NULL) != 0)
+			continue;
 		if(node.useron==usernumber && (node.status==NODE_INUSE
 			|| node.status==NODE_QUIET)) {
 			if(getnodedat(cfg, i,&node,&file) == 0) {
@@ -2939,6 +2940,8 @@ ulong DLLCALL loginFailure(link_list_t* list, const union xp_sockaddr* addr, con
 		return 0;
 	memset(&first, 0, sizeof(first));
 	listLock(list);
+	if(user == NULL)
+		user = "<unspecified>";
 	if((node=login_attempted(list, addr)) != NULL) {
 		attempt=node->data;
 		/* Don't count consecutive duplicate attempts (same name and password): */
