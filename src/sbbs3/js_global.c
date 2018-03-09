@@ -946,7 +946,7 @@ js_chksum(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);	/* 3.8 seconds on Deuce's computer when len==UINT_MAX/8 */
-	sp = 0;
+	sp = p;
 	while(len--) sum+=*(sp++);
 	free(p);
 	JS_RESUMEREQUEST(cx, rc);
