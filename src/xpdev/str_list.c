@@ -269,7 +269,7 @@ char* DLLCALL strListInsert(str_list_t* list, const char* str, size_t index)
 
 	ret = str_list_insert(list,buf,index);
 	if (ret == NULL)
-		free(str);
+		free(buf);
 	return ret;
 }
 
