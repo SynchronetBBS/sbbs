@@ -227,6 +227,7 @@ BOOL DLLCALL strListSwap(const str_list_t list, size_t index1, size_t index2)
 char* DLLCALL strListAppend(str_list_t* list, const char* str, size_t index)
 {
 	char* buf;
+	char *ret;
 
 	if(str==NULL)
 		return(NULL);
@@ -237,7 +238,10 @@ char* DLLCALL strListAppend(str_list_t* list, const char* str, size_t index)
 	if(index==STR_LIST_LAST_INDEX)
 		index=strListCount(*list);
 
-	return(str_list_append(list,buf,index));
+	ret = str_list_append(list,buf,index);
+	if (ret == NULL)
+		free(buf);
+	return ret;
 }
 
 size_t DLLCALL	strListAppendList(str_list_t* list, const str_list_t add_list)
@@ -255,6 +259,7 @@ size_t DLLCALL	strListAppendList(str_list_t* list, const str_list_t add_list)
 char* DLLCALL strListInsert(str_list_t* list, const char* str, size_t index)
 {
 	char* buf;
+	char* ret;
 
 	if(str==NULL)
 		return(NULL);
@@ -262,7 +267,10 @@ char* DLLCALL strListInsert(str_list_t* list, const char* str, size_t index)
 	if((buf=strdup(str))==NULL)
 		return(NULL);
 
-	return(str_list_insert(list,buf,index));
+	ret = str_list_insert(list,buf,index);
+	if (ret == NULL)
+		free(str);
+	return ret;
 }
 
 size_t DLLCALL strListInsertList(str_list_t* list, const str_list_t add_list, size_t index)
