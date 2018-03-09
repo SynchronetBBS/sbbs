@@ -1001,6 +1001,8 @@ static bool parse_sub_parameters(struct sub_params *sub, struct esc_seq *seq, un
 	for (p=seq->param[param]; *p; p++)
 		if (*p == ':')
 			sub->param_count++;
+	if (sub->param_count == 0)
+		return true;
 	sub->param_int = malloc(sub->param_count * sizeof(sub->param_int[0]));
 	if (sub->param_int == NULL)
 		return false;
