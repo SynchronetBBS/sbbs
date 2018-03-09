@@ -433,6 +433,9 @@ BOOL DLLCALL iniRemoveSections(str_list_t* list, const char* prefix)
 	str_list_t sections = iniGetSectionList(*list, prefix);
 	const char* section;
 
+	if (list == NULL)
+		return FALSE;
+	sections = iniGetSectionList(*list, prefix);
 	while((section = strListPop(&sections)) != NULL)
 		if(!iniRemoveSection(list, section))
 			return(FALSE);
