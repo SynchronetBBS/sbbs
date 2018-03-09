@@ -3657,6 +3657,12 @@ static void smtp_thread(void* arg)
 						char* tp = strchr(rcpt_name, '@');
 						if(tp != NULL)
 							*tp = 0;
+						// Remove "(ftn_addr)" portion of to name
+						SAFEPRINTF(str,"(%s)", rcpt_addr);
+						if((tp = strstr(rcpt_name, str)) != NULL && tp != rcpt_name) {
+							*tp = 0;
+							truncsp(rcpt_name);
+						}
 					}
 					smb_hfield_str(&newmsg, RECIPIENT, rcpt_name);
 
