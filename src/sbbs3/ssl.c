@@ -167,6 +167,21 @@ bool DLLCALL get_crypt_error_string(int status, CRYPT_HANDLE sess, char estr[SSL
 	return false;
 }
 
+int DLLCALL crypt_ll(int error)
+{
+	switch(error) {
+		case CRYPT_ERROR_INCOMPLETE:
+			return LOG_WARNING;
+		case CRYPT_ERROR_COMPLETE:
+		case CRYPT_ERROR_READ:
+		case CRYPT_ERROR_WRITE:
+			return LOG_DEBUG;
+		case CRYPT_ERROR_TIMEOUT:
+			return LOG_INFO;
+	}
+	return LOG_ERR;
+}
+
 static pthread_once_t crypt_init_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t ssl_cert_mutex;
 static bool cryptlib_initialized;
