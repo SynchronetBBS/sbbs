@@ -720,10 +720,8 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_gettextinfo(struct text_info *info)
 {
 	CIOLIB_INIT()
 
-	if(cio_api.gettextinfo) {
+	if(cio_api.gettextinfo)
 		cio_api.gettextinfo(&cio_textinfo);
-		return;
-	}
 
 	if(info!=&cio_textinfo)
 		*info=cio_textinfo;
