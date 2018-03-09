@@ -40,6 +40,121 @@ static bool get_error_string(int status, CRYPT_SESSION sess, char estr[SSL_ESTR_
 		return true;
 
 	emsg = get_crypt_error(sess);
+	if (emsg == NULL) {
+		switch(status) {
+			case CRYPT_ERROR_PARAM1:
+				emsg = strdup("Bad argument, parameter 1");
+				break;
+			case CRYPT_ERROR_PARAM2:
+				emsg = strdup("Bad argument, parameter 2");
+				break;
+			case CRYPT_ERROR_PARAM3:
+				emsg = strdup("Bad argument, parameter 3");
+				break;
+			case CRYPT_ERROR_PARAM4:
+				emsg = strdup("Bad argument, parameter 4");
+				break;
+			case CRYPT_ERROR_PARAM5:
+				emsg = strdup("Bad argument, parameter 5");
+				break;
+			case CRYPT_ERROR_PARAM6:
+				emsg = strdup("Bad argument, parameter 6");
+				break;
+			case CRYPT_ERROR_PARAM7:
+				emsg = strdup("Bad argument, parameter 7");
+				break;
+
+			/* Errors due to insufficient resources */
+
+			case CRYPT_ERROR_MEMORY:
+				emsg = strdup("Out of memory");
+				break;
+			case CRYPT_ERROR_NOTINITED:
+				emsg = strdup("Data has not been initialised");
+				break;
+			case CRYPT_ERROR_INITED:
+				emsg = strdup("Data has already been init'd");
+				break;
+			case CRYPT_ERROR_NOSECURE:
+				emsg = strdup("Opn.not avail.at requested sec.level");
+				break;
+			case CRYPT_ERROR_RANDOM:
+				emsg = strdup("No reliable random data available");
+				break;
+			case CRYPT_ERROR_FAILED:
+				emsg = strdup("Operation failed");
+				break;
+			case CRYPT_ERROR_INTERNAL:
+				emsg = strdup("Internal consistency check failed");
+				break;
+
+			/* Security violations */
+
+			case CRYPT_ERROR_NOTAVAIL:
+				emsg = strdup("This type of opn.not available");
+				break;
+			case CRYPT_ERROR_PERMISSION:
+				emsg = strdup("No permiss.to perform this operation");
+				break;
+			case CRYPT_ERROR_WRONGKEY:
+				emsg = strdup("Incorrect key used to decrypt data");
+				break;
+			case CRYPT_ERROR_INCOMPLETE:
+				emsg = strdup("Operation incomplete/still in progress");
+				break;
+			case CRYPT_ERROR_COMPLETE:
+				emsg = strdup("Operation complete/can't continue");
+				break;
+			case CRYPT_ERROR_TIMEOUT:
+				emsg = strdup("Operation timed out before completion");
+				break;
+			case CRYPT_ERROR_INVALID:
+				emsg = strdup("Invalid/inconsistent information");
+				break;
+			case CRYPT_ERROR_SIGNALLED:
+				emsg = strdup("Resource destroyed by extnl.event");
+				break;
+			   
+			/* High-level function errors */
+
+			case CRYPT_ERROR_OVERFLOW:
+				emsg = strdup("Resources/space exhausted");
+				break;
+			case CRYPT_ERROR_UNDERFLOW:
+				emsg = strdup("Not enough data available");
+				break;
+			case CRYPT_ERROR_BADDATA:
+				emsg = strdup("Bad/unrecognised data format");
+				break;
+			case CRYPT_ERROR_SIGNATURE:
+				emsg = strdup("Signature/integrity check failed");
+				break;
+
+			/* Data access function errors */
+
+			case CRYPT_ERROR_OPEN:
+				emsg = strdup("Cannot open object");
+				break;
+			case CRYPT_ERROR_READ:
+				emsg = strdup("Cannot read item from object");
+				break;
+			case CRYPT_ERROR_WRITE:
+				emsg = strdup("Cannot write item to object");
+				break;
+			case CRYPT_ERROR_NOTFOUND:
+				emsg = strdup("Requested item not found in object");
+				break;
+			case CRYPT_ERROR_DUPLICATE:
+				emsg = strdup("Item already present in object");
+				break;
+
+			/* Data enveloping errors */
+
+			case CRYPT_ENVELOPE_RESOURCE:
+				emsg = strdup("Need resource to proceed");
+				break;
+		}
+	}
 	if (emsg) {
 		safe_snprintf(estr, SSL_ESTR_LEN, "cryptlib error %d at %s:%d (%s)", status, file, line, emsg);
 		free_crypt_attrstr(emsg);
