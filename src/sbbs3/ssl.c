@@ -32,7 +32,7 @@ char* DLLCALL get_crypt_error(CRYPT_SESSION sess)
 	return get_crypt_attribute(sess, CRYPT_ATTRIBUTE_ERRORMESSAGE);
 }
 
-static bool get_error_string(int status, CRYPT_SESSION sess, char estr[SSL_ESTR_LEN], char *file, int line)
+bool get_crypt_error_string(int status, CRYPT_SESSION sess, char estr[SSL_ESTR_LEN], char *file, int line)
 {
 	char	*emsg;
 
@@ -201,7 +201,7 @@ bool DLLCALL is_crypt_initialized(void)
 	return cryptlib_initialized;
 }
 
-#define DO(x)	get_error_string(x, ssl_context, estr, __FILE__, __LINE__)
+#define DO(x)	get_crypt_error_string(x, ssl_context, estr, __FILE__, __LINE__)
 
 CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 {

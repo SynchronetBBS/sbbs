@@ -40,6 +40,7 @@ DLLEXPORT char* DLLCALL get_crypt_error(CRYPT_SESSION sess);
 DLLEXPORT CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN]);
 DLLEXPORT int DLLCALL do_cryptInit(void);
 DLLEXPORT bool DLLCALL is_crypt_initialized(void);
+DLLEXPORT bool DLLCALL get_crypt_error_string(int status, CRYPT_SESSION sess, char estr[SSL_ESTR_LEN], char *file, int line)
 
 #if defined(__cplusplus)
 }
