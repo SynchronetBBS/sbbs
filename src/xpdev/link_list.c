@@ -57,7 +57,7 @@ link_list_t* DLLCALL listInit(link_list_t* list, long flags)
 
 #if defined(LINK_LIST_THREADSAFE)
 	if(list->flags&LINK_LIST_MUTEX) {
-		list->mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+		list->mutex = pthread_mutex_initializer_np(/* recursive: */TRUE);
 	}
 
 	if(list->flags&LINK_LIST_SEMAPHORE)
