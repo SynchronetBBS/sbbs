@@ -2797,6 +2797,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									char *collast;
 									uint16_t rgb[3];
 									int ccount = 0;
+									bool broken=false;
 
 									p4 = &p[4];
 									while (ccount < 3 && (p3 = strtok_r(p4, "/", &collast))!=NULL) {
@@ -2818,10 +2819,13 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											case 4:
 												rgb[ccount] = v;
 												break;
+											default:
+												broken = true;
+												break;
 										}
 										ccount++;
 									}
-									if (ccount == 3)
+									if (ccount == 3 && !broken)
 										setpalette(index+16, rgb[0], rgb[1], rgb[2]);
 									index = ULONG_MAX;
 								}
