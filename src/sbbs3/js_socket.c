@@ -421,7 +421,9 @@ BOOL DLLCALL  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
 					}
 				}
 				else {
-					if (p->sock != INVALID_SOCKET) {
+					if (*p->sock == INVALID_SOCKET)
+						return TRUE;
+					else {
 						if(FD_ISSET(p->sock, fds))
 							return TRUE;
 					}
