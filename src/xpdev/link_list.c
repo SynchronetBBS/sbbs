@@ -803,6 +803,8 @@ long DLLCALL listRemoveNodes(link_list_t* list, list_node_t* node, long max, BOO
 
 	if(node==FIRST_NODE)
 		node=list->first;
+	if(node==LAST_NODE)
+		node=list->last;
 
 	for(count=0; node!=NULL && count<max; node=next_node, count++) {
 		next_node = node->next;
