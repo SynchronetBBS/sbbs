@@ -302,6 +302,7 @@ static int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...)
 	char	sbuf[1024];
 	fd_set	socket_set;
 	struct timeval tv;
+	char	estr[SSL_ESTR_LEN];
 
     va_start(argptr,fmt);
     len=vsnprintf(sbuf,maxlen=sizeof(sbuf)-2,fmt,argptr);
@@ -344,13 +345,15 @@ static int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...)
 			if (result == CRYPT_OK)
 				sent += tls_sent;
 			else {
-				lprintf(LOG_DEBUG, "pushData returned %d\n", result);
-				if (result != -25)
-				return 0;
+				get_crypt_error_string(result, sess, estr, "sending data");
+				lprintf(LOG_DEBUG, "%04d !ERROR %s", sock, estr);
+				if (result != CRYPT_ERROR_TIMEOUT)
+					return 0;
 			}
 			result = cryptFlushData(sess);
 			if (result != CRYPT_OK) {
-				lprintf(LOG_DEBUG, "cryptFlushData() returned %d\n", result);
+				get_crypt_error_string(result, sess, estr, "flushing data");
+				lprintf(LOG_DEBUG, "%04d error %s", sock, estr);
 				return 0;
 			}
 		}
@@ -1163,6 +1166,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 	struct	timeval	tv;
 	int ret;
 	int i;
+	char estr[SSL_ESTR_LEN];
 
 	if(ftp_set==NULL || terminate_server) {
 		sockprintf(sock,sess,"421 Server downed, aborting.");
@@ -1171,7 +1175,10 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 	}
 	if (sess > -1) {
 		/* Try a read with no timeout first. */
-		cryptSetAttribute(sess, CRYPT_OPTION_NET_READTIMEOUT, 0);
+		if ((ret = cryptSetAttribute(sess, CRYPT_OPTION_NET_READTIMEOUT, 0)) != CRYPT_OK) {
+				get_crypt_error_string(ret, sess, estr, "setting read timeout");
+				lprintf(LOG_DEBUG, "%04d !ERROR %s", sock, estr);
+		}
 		while (1) {
 			ret = cryptPopData(sess, buf, 1, &len);
 			/* Successive reads will be with the full timeout after a select() */
@@ -1180,12 +1187,14 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 				case CRYPT_OK:
 					break;
 				case CRYPT_ERROR_TIMEOUT:
-					lprintf(LOG_WARNING,"%04d !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET",sock,startup->max_inactivity);
+					get_crypt_error_string(ret, sess, estr, "popping data");
+					lprintf(LOG_WARNING, "%04d !TIMEOUT %s (%u seconds)", sock, estr, startup->max_inactivity);
 					return -1;
 				case CRYPT_ERROR_COMPLETE:
 					return 0;
 				default:
-					lprintf(LOG_WARNING,"%04d !Cryptlib error in sock_recvbyte:  %d",sock,ret);
+					get_crypt_error_string(ret, sess, estr, "popping data");
+					lprintf(LOG_WARNING, "%04d !ERROR %s", sock, estr);
 					if (ret < -1)
 						return ret;
 					return -2;
@@ -1357,6 +1366,7 @@ static void send_thread(void* arg)
 	socklen_t	addr_len;
 	fd_set		socket_set;
 	struct timeval tv;
+	char		estr[SSL_ESTR_LEN];
 
 	xfer=*(xfer_t*)arg;
 	free(arg);
@@ -1449,13 +1459,15 @@ static void send_thread(void* arg)
 		if (*xfer.data_sess != -1) {
 			int status = cryptPushData(*xfer.data_sess, buf, rd, &wr);
 			if (status != CRYPT_OK) {
-				lprintf(LOG_DEBUG, "PushData() returned %d\n", status);
+				get_crypt_error_string(status, *xfer.data_sess, estr, "pushing data");
+				lprintf(LOG_DEBUG, "%04d !ERROR %s", *xfer.data_sock, estr);
 				wr = -1;
 			}
 			else {
 				status = cryptFlushData(*xfer.data_sess);
 				if (status != CRYPT_OK) {
-					lprintf(LOG_DEBUG, "cryptFlushData() returned %d\n", status);
+					get_crypt_error_string(status, *xfer.data_sess, estr, "flushing data");
+					lprintf(LOG_DEBUG, "%04d !ERROR %s", *xfer.data_sock, estr);
 					wr = -1;
 				}
 			}
@@ -1633,6 +1645,7 @@ static void receive_thread(void* arg)
 	fd_set		socket_set;
 	struct timeval tv;
 	CRYPT_SESSION	sess = -1;
+	char		estr[SSL_ESTR_LEN];
 
 	xfer=*(xfer_t*)arg;
 	free(arg);
@@ -1721,8 +1734,11 @@ static void receive_thread(void* arg)
 #endif
 		if (*xfer.data_sess != -1) {
 			int status = cryptPopData(*xfer.data_sess, buf, sizeof(buf), &rd);
-			if (status != CRYPT_OK)
+			if (status != CRYPT_OK) {
+				get_crypt_error_string(status, *xfer.data_sess, estr, "flushing data");
+				lprintf(LOG_DEBUG, "%04d !ERROR %s", *xfer.data_sock, estr);
 				rd = -1;
+			}
 		}
 		else {
 			rd=recv(*xfer.data_sock,buf,sizeof(buf),0);
@@ -1912,30 +1928,33 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	BOOL nodelay;
 	ulong nb;
 	int status;
-	char *estr;
+	char estr[SSL_ESTR_LEN];
 
-	if (get_ssl_cert(&scfg, NULL) == -1) {
-		lprintf(LOG_ERR, "Unable to get certificate");
+	if (get_ssl_cert(&scfg, estr) == -1) {
+		lprintf(LOG_ERR, "Unable to get certificate %s", estr);
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
 	}
-	if (cryptCreateSession(sess, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-		lprintf(LOG_ERR, "Unable to create TLS session");
+	if ((status = cryptCreateSession(sess, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER)) != CRYPT_OK) {
+		get_crypt_error_string(status, CRYPT_UNUSED, estr, "creating session");
+		lprintf(LOG_ERR, "%04d FTP ERROR %s", *sock, estr);
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
 	}
-	if (cryptSetAttribute(*sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-		lprintf(LOG_ERR, "Unable to disable certificate verification");
+	if ((status = cryptSetAttribute(*sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+		get_crypt_error_string(status, *sess, estr, "disabling certificate verification");
+		lprintf(LOG_ERR, "%04d FTP ERROR %s", *sock, estr);
 		cryptDestroySession(*sess);
 		*sess = -1;
 		if(resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
 	}
-	if (cryptSetAttribute(*sess, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
-		lprintf(LOG_ERR, "Unable to set private key");
+	if ((status=cryptSetAttribute(*sess, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
+		get_crypt_error_string(status, *sess, estr, "setting private key");
+		lprintf(LOG_ERR, "%04d FTP ERROR %s", *sock, estr);
 		cryptDestroySession(*sess);
 		*sess = -1;
 		if (resp)
@@ -1946,8 +1965,9 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	setsockopt(*sock,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 	nb=0;
 	ioctlsocket(*sock,FIONBIO,&nb);
-	if (cryptSetAttribute(*sess, CRYPT_SESSINFO_NETWORKSOCKET, *sock) != CRYPT_OK) {
-		lprintf(LOG_ERR, "Unable to set network socket");
+	if ((status = cryptSetAttribute(*sess, CRYPT_SESSINFO_NETWORKSOCKET, *sock)) != CRYPT_OK) {
+		get_crypt_error_string(status, *sess, estr, "setting network socket");
+		lprintf(LOG_ERR, "%04d FTP ERROR %s", *sock, estr);
 		cryptDestroySession(*sess);
 		*sess = -1;
 		if (resp)
@@ -1957,14 +1977,14 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	if (resp)
 		sockprintf(*sock, -1, "234 Ready to start TLS");
 	if ((status = cryptSetAttribute(*sess, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
-		estr = get_crypt_error(*sess);
-		lprintf(LOG_ERR, "Unable to set session active (%d:%s)", status, estr);
-		free_crypt_attrstr(estr);
+		get_crypt_error_string(status, *sess, estr, "setting session active");
+		lprintf(LOG_ERR, "%04d FTP ERROR %s", *sock, estr);
 		return TRUE;
 	}
 	if (startup->max_inactivity) {
-		if (cryptSetAttribute(*sess, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-			lprintf(LOG_ERR, "Unable to set max inactivity");
+		if ((status = cryptSetAttribute(*sess, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity)) != CRYPT_OK) {
+			get_crypt_error_string(status, *sess, estr, "setting read timeout");
+			lprintf(LOG_ERR, "%04d FTP ERROR %s", *sock, estr);
 			return TRUE;
 		}
 	}
