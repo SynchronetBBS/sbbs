@@ -1393,7 +1393,7 @@ int main(int argc, char **argv, char** env)
 		YIELD();
 
 		if(result)
-			lprintf(LOG_ERR,"!Module set exit_code: %ld", result);
+			lprintf(LOG_ERR,"!Module (%s) set exit_code: %ld", module, result);
 
 		fprintf(statfp,"\n");
 		fprintf(statfp,"JavaScript: Destroying context\n");
