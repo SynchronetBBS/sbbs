@@ -1655,10 +1655,8 @@ int main(int argc, char **argv)
 		}
 		bbs=NULL;
 	}
-	if (bbs_alloc) {
-		bbs_alloc=FALSE;
+	if (bbs_alloc)
 		free(bbs);
-	}
 	if (last_bbs)
 		free(last_bbs);
 	// Save changed settings
@@ -1689,10 +1687,8 @@ int main(int argc, char **argv)
 	return(0);
 
 	USAGE:
-	if (bbs_alloc) {
-		bbs_alloc=FALSE;
+	if (bbs_alloc)
 		free(bbs);
-	}
 	uifcbail();
 	clrscr();
     gettextinfo(&txtinfo);
