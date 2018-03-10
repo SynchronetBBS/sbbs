@@ -108,7 +108,7 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 	}                                                                                    \
 } while(0)
 
-static void do_CryptFlush(js_socket_private_t *p)
+static bool do_CryptFlush(js_socket_private_t *p)
 {
 	int ret;
 	char	*estr;
@@ -118,10 +118,12 @@ static void do_CryptFlush(js_socket_private_t *p)
 
 		if(ret==CRYPT_OK) {
 			p->unflushed = 0;
+			return true;
 		}
-		else
-			GCES(ret, p, estr, "flushing data");
+		GCES(ret, p, estr, "flushing data");
+		return false;
 	}
+	return true;
 }
 
 static void do_js_close(js_socket_private_t *p)
@@ -201,7 +203,8 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 	do {
 		if((ret=cryptPushData(p->session, msg, len, &copied))==CRYPT_OK) {
 			p->unflushed += copied;
-			if(flush) do_CryptFlush(p);
+			if(flush)
+				do_CryptFlush(p);
 			if(p->nonblocking)
 				return copied;
 			total += copied;
@@ -213,13 +216,15 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 		}
 		else {
 			GCES(ret, p, estr, "pushing data");
-			if(flush) do_CryptFlush(p);
+			if(flush)
+				do_CryptFlush(p);
 			return total;
 		}
 		if(!socket_check(p->sock,NULL,NULL,0))
 			break;
 	} while(len);
-	if(flush) do_CryptFlush(p);
+	if(flush)
+		do_CryptFlush(p);
 	return total;
 }
 
