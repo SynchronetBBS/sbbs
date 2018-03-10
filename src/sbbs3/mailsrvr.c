@@ -2993,7 +2993,7 @@ static void smtp_thread(void* arg)
 
 	srand((unsigned int)(time(NULL) ^ (time_t)GetCurrentThreadId()));	/* seed random number generator */
 	rand();	/* throw-away first result */
-	SAFEPRINTF4(session_id,"%x%x%x%lx",getpid(),socket,rand(),clock());
+	SAFEPRINTF4(session_id,"%x%x%x%lx",getpid(),socket,rand(),(long)clock());
 	lprintf(LOG_DEBUG,"%04d SMTP Session ID=%s", socket, session_id);
 	SAFEPRINTF2(msgtxt_fname,"%sSBBS_SMTP.%s.msg", scfg.temp_dir, session_id);
 	SAFEPRINTF2(newtxt_fname,"%sSBBS_SMTP.%s.new", scfg.temp_dir, session_id);

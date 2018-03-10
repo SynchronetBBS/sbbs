@@ -109,34 +109,34 @@ static	link_list_t current_connections;
 int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
 #endif
 
-#define GCES(status, node, sess, action) do {                                  \
-	char *GCES_estr;                                                       \
-	int GCES_level;                                                        \
-	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level); \
+#define GCES(status, node, sess, action) do {                              \
+	char *GCES_estr;                                                    \
+	int GCES_level;                                                      \
+	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                       \
-		lprintf(GCES_level, "Node %d SSH %s", node, GCES_estr);        \
-		free_crypt_attrstr(GCES_estr);                                               \
-	}                                                                      \
+		lprintf(GCES_level, "Node %d SSH %s", node, GCES_estr);         \
+		free_crypt_attrstr(GCES_estr);                                   \
+	}                                                                         \
 } while (0)
 
-#define GCESNN(status, sess, action) do {                                      \
-	char *GCES_estr;                                                       \
-	int GCES_level;                                                        \
-	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level); \
+#define GCESNN(status, sess, action) do {                                  \
+	char *GCES_estr;                                                    \
+	int GCES_level;                                                      \
+	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                       \
-		lprintf(GCES_level, "SSH %s", GCES_estr);                      \
-		free_crypt_attrstr(GCES_estr);                                               \
-	}                                                                      \
+		lprintf(GCES_level, "SSH %s", GCES_estr);                       \
+		free_crypt_attrstr(GCES_estr);                                   \
+	}                                                                         \
 } while (0)
 
-#define GCESS(status, sock, sess, action) do {                                 \
-	char *GCES_estr;                                                       \
-	int GCES_level;                                                        \
-	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level); \
+#define GCESS(status, sock, sess, action) do {                             \
+	char *GCES_estr;                                                    \
+	int GCES_level;                                                      \
+	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                       \
-		lprintf(GCES_level, "%04d SSH %s", sock, GCES_estr);           \
-		free_crypt_attrstr(GCES_estr);                                               \
-	}                                                                      \
+		lprintf(GCES_level, "%04d SSH %s", sock, GCES_estr);            \
+		free_crypt_attrstr(GCES_estr);                                   \
+	}                                                                         \
 } while (0)
 
 extern "C" {
@@ -4976,7 +4976,7 @@ void DLLCALL bbs_thread(void* arg)
 		}
 		/* Get the private key... first try loading it from a file... */
 		SAFEPRINTF2(str,"%s%s",scfg.ctrl_dir,"cryptlib.key");
-		if(cryptStatusOK(cryptKeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_NONE))) {
+		if(cryptStatusOK(cryptKeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_READONLY))) {
 			if(!cryptStatusOK(i=cryptGetPrivateKey(ssh_keyset, &ssh_context, CRYPT_KEYID_NAME, "ssh_server", scfg.sys_pass))) {
 				GCESNN(i, ssh_keyset, "getting private key");
 				goto NO_SSH;
