@@ -44,6 +44,7 @@ static int DLLCALL crypt_ll(int error)
 		case CRYPT_ERROR_COMPLETE:
 		case CRYPT_ERROR_READ:
 		case CRYPT_ERROR_WRITE:
+		case CRYPT_ENVELOPE_RESOURCE:
 			return LOG_DEBUG;
 		case CRYPT_ERROR_TIMEOUT:
 			return LOG_INFO;
