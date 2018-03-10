@@ -1286,7 +1286,7 @@ int sockreadline(SOCKET socket, CRYPT_SESSION sess, char* buf, int len, time_t* 
 	while(rd<len-1) {
 		i = sock_recvbyte(socket, sess, &ch, lastactive);
 
-		if(i<1) {
+		if(i<1 && sess == -1) {
 			recverror(socket,i,__LINE__);
 			return(i);
 		}
