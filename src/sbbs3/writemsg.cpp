@@ -1061,7 +1061,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 			return false;
 		l=process_edited_file(msgtmp, path, /* mode: */WM_EDIT, &lines,maxlines);
 		if(l>0) {
-			SAFEPRINTF4(str,"%s created or edited file: %s (%u bytes, %u lines)"
+			SAFEPRINTF4(str,"%s created or edited file: %s (%ld bytes, %u lines)"
 				,useron.alias, path, l, lines);
 			logline(LOG_NOTICE,nulstr,str);
 		}
