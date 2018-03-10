@@ -880,6 +880,8 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_RASTRING(cx, argv[i], str, &str_sz, &len);
 		if(str==NULL)
 		    return(JS_FALSE);
+		if(len < 1)
+			continue;
 		rc=JS_SUSPENDREQUEST(cx);
 		sbbs->putcom(str, len);
 		JS_RESUMEREQUEST(cx, rc);
