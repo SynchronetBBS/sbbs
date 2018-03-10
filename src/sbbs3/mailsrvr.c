@@ -144,23 +144,23 @@ typedef struct {
 	BOOL			tls_port;
 } smtp_t,pop3_t;
 
-#define GCES(status, server, sock, sess, action) do {                                 \
+#define GCES(status, server, sock, sess, action) do {                             \
 	char *GCES_estr;                                                               \
 	int GCES_level;                                                                 \
 	get_crypt_error_string(status, sess, &GCES_estr, "flushing data", &GCES_level);  \
 	if (GCES_estr) {                                                                  \
-		lprintf(GCES_level, "%04d %s%s", sock, server, GCES_estr);                 \
-		free_crypt_attrstr(GCES_estr);                                              \
+		lprintf(GCES_level, "%04d %s%s", sock, server, GCES_estr);                     \
+		free_crypt_attrstr(GCES_estr);                                                  \
 	}                                                                                    \
 } while(0)
 
-#define GCESH(status, server, sock, host, sess, action) do {                          \
+#define GCESH(status, server, sock, host, sess, action) do {                      \
 	char *GCES_estr;                                                               \
 	int GCES_level;                                                                 \
 	get_crypt_error_string(status, sess, &GCES_estr, "flushing data", &GCES_level);  \
 	if (GCES_estr) {                                                                  \
-		lprintf(GCES_level, "%04d %s [%s] %s", sock, server, host, GCES_estr);     \
-		free_crypt_attrstr(GCES_estr);                                              \
+		lprintf(GCES_level, "%04d %s [%s] %s", sock, server, host, GCES_estr);         \
+		free_crypt_attrstr(GCES_estr);                                                  \
 	}                                                                                    \
 } while(0)
 
