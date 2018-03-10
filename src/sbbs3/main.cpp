@@ -4723,7 +4723,7 @@ void DLLCALL bbs_thread(void* arg)
 	char*			p;
     char			str[MAX_PATH+1];
 	char			logstr[256];
-	union xp_sockaddr	server_addr={0};
+	union xp_sockaddr	server_addr={{0}};
 	union xp_sockaddr	client_addr;
 	socklen_t		client_addr_len;
 	SOCKET			client_socket=INVALID_SOCKET;

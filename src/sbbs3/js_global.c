@@ -2421,7 +2421,7 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 		}
 
 		if(strcmp(token,"bull")==0) {	/* bullet  */
-			outbuf[j++] = 249;
+			outbuf[j++] = (char)249;
 			continue;
 		}
 

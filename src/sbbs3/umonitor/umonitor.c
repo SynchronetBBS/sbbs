@@ -866,14 +866,14 @@ int main(int argc, char** argv)  {
 
 	uifc.esc_delay=500;
 
-	boxch.ls=186;
-	boxch.rs=186;
-	boxch.ts=205;
-	boxch.bs=205;
-	boxch.tl=201;
-	boxch.tr=187;
-	boxch.bl=200;
-	boxch.br=188;
+	boxch.ls=(char)186;
+	boxch.rs=(char)186;
+	boxch.ts=(char)205;
+	boxch.bs=(char)205;
+	boxch.tl=(char)201;
+	boxch.tr=(char)187;
+	boxch.bl=(char)200;
+	boxch.br=(char)188;
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
             )
