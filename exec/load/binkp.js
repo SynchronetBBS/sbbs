@@ -79,6 +79,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.sent_nr = false;
 	this.ver1_1 = false;
 	this.require_md5 = true;
+	this.cram_challenge_length = 16;
 	this.require_crypt = true;
 	this.timeout = 120;
 	this.addr_list = [];
@@ -523,7 +524,7 @@ BinkP.prototype.accept = function(sock, auth_cb)
 		return false;
 
 	// IREX VER Internet Rex 2.29 Win32 (binkp/1.1) doesn't work with longer challenges
-	for (i=0; i<32; i++)
+	for (i=0; i < this.cram_challenge_length * 2; i++)
 		challenge += random(16).toString(16);
 
 	// Avoid warning from syncjslint by putting this in a closure.

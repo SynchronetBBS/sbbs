@@ -895,6 +895,8 @@ function run_inbound(sock)
 	bp.want_callback = callout_want_callback;
 	if (bp.cb_data.binkitcfg.caps !== undefined)
 		bp.capabilities = bp.cb_data.binkitcfg.caps;
+	if (bp.cb_data.binkitcfg.cram_challenge_length !== undefined)
+		bp.cram_challenge_length = bp.cb_data.binkitcfg.cram_challenge_length;
 
 	// We can't use the defaults since the defaults are only 4D addresses.
 	bp.addr_list = [];
