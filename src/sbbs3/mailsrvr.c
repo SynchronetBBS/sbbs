@@ -144,23 +144,23 @@ typedef struct {
 	BOOL			tls_port;
 } smtp_t,pop3_t;
 
-#define GCES(status, server, sock, sess, action) do {                                        \
-	char *GCES_estr;                                                                     \
-	int GCES_level;                                                                      \
-	get_crypt_error_string(status, sess, &GCES_estr, "flushing data", &GCES_level);      \
-	if (GCES_estr) {                                                                     \
-		lprintf(GCES_level, "%04d %s%s", sock, server, GCES_estr);                   \
-		free_crypt_attrstr(GCES_estr);                                               \
+#define GCES(status, server, sock, sess, action) do {                                 \
+	char *GCES_estr;                                                               \
+	int GCES_level;                                                                 \
+	get_crypt_error_string(status, sess, &GCES_estr, "flushing data", &GCES_level);  \
+	if (GCES_estr) {                                                                  \
+		lprintf(GCES_level, "%04d %s%s", sock, server, GCES_estr);                 \
+		free_crypt_attrstr(GCES_estr);                                              \
 	}                                                                                    \
 } while(0)
 
-#define GCESH(status, server, sock, host, sess, action) do {                                 \
-	char *GCES_estr;                                                                     \
-	int GCES_level;                                                                      \
-	get_crypt_error_string(status, sess, &GCES_estr, "flushing data", &GCES_level);      \
-	if (GCES_estr) {                                                                     \
-		lprintf(GCES_level, "%04d %s [%s] %s", sock, server, host, GCES_estr);       \
-		free_crypt_attrstr(GCES_estr);                                               \
+#define GCESH(status, server, sock, host, sess, action) do {                          \
+	char *GCES_estr;                                                               \
+	int GCES_level;                                                                 \
+	get_crypt_error_string(status, sess, &GCES_estr, "flushing data", &GCES_level);  \
+	if (GCES_estr) {                                                                  \
+		lprintf(GCES_level, "%04d %s [%s] %s", sock, server, host, GCES_estr);     \
+		free_crypt_attrstr(GCES_estr);                                              \
 	}                                                                                    \
 } while(0)
 
@@ -2993,7 +2993,7 @@ static void smtp_thread(void* arg)
 
 	srand((unsigned int)(time(NULL) ^ (time_t)GetCurrentThreadId()));	/* seed random number generator */
 	rand();	/* throw-away first result */
-	SAFEPRINTF4(session_id,"%x%x%x%lx",getpid(),socket,rand(),(long)clock());
+	SAFEPRINTF4(session_id,"%x%x%x%lx",getpid(),socket,rand(),clock());
 	lprintf(LOG_DEBUG,"%04d SMTP Session ID=%s", socket, session_id);
 	SAFEPRINTF2(msgtxt_fname,"%sSBBS_SMTP.%s.msg", scfg.temp_dir, session_id);
 	SAFEPRINTF2(newtxt_fname,"%sSBBS_SMTP.%s.new", scfg.temp_dir, session_id);
@@ -4342,30 +4342,20 @@ static void smtp_thread(void* arg)
 				if(relay_user.number && scfg.total_faddrs) {
 					char* ftn_tld = strstr(dest_host, FIDO_TLD);
 					if(ftn_tld != NULL && ftn_tld[strlen(FIDO_TLD)] == 0) {
-						short point, node, net, zone;
-
 						fidoaddr_t faddr = scfg.faddr[0];
 						faddr.point = 0;
-						point = faddr.point;
-						node = faddr.node;
-						net = faddr.net;
-						zone = faddr.zone;
 						if((sscanf(dest_host,"p%hu.f%hu.n%hu.z%hu.fidonet"
-							,&point
-							,&node
-							,&net
-							,&zone)==4
+							,&faddr.point
+							,&faddr.node
+							,&faddr.net
+							,&faddr.zone)==4
 							||
 							sscanf(dest_host,"f%hu.n%hu.z%hu.fidonet"
-							,&node
-							,&net
-							,&zone)==3
-							) && zone) {
+							,&faddr.node
+							,&faddr.net
+							,&faddr.zone)==3
+							) && faddr.zone) {
 
-							faddr.point = point;
-							faddr.node = node;
-							faddr.net = net;
-							faddr.zone = zone;
 							lprintf(LOG_INFO,"%04d SMTP %s relaying to FidoNet address: %s (%s)"
 								,socket, relay_user.alias, tp+1, smb_faddrtoa(&faddr, NULL));
 
