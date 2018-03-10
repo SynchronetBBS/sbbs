@@ -4992,7 +4992,6 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 	BOOL nodelay=TRUE;
 	ulong nb = 0;
 	int status;
-	char *estr;
 	char		buf[512];
 	char		err[1024];
 
