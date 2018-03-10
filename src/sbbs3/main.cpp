@@ -114,7 +114,7 @@ int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
 	int GCES_level;                                                        \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level); \
 	if (GCES_estr) {                                                       \
-		lprintf(GCES_level, "Node %d %s", node, GCES_estr);            \
+		lprintf(GCES_level, "Node %d SSH %s", node, GCES_estr);        \
 		free(GCES_estr);                                               \
 	}                                                                      \
 } while (0)
@@ -124,7 +124,7 @@ int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
 	int GCES_level;                                                        \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level); \
 	if (GCES_estr) {                                                       \
-		lprintf(GCES_level, "%s", GCES_estr);                          \
+		lprintf(GCES_level, "SSH %s", GCES_estr);                      \
 		free(GCES_estr);                                               \
 	}                                                                      \
 } while (0)
@@ -134,7 +134,7 @@ int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
 	int GCES_level;                                                        \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level); \
 	if (GCES_estr) {                                                       \
-		lprintf(GCES_level, "%04d %s", sock, GCES_estr);               \
+		lprintf(GCES_level, "%04d SSH %s", sock, GCES_estr);           \
 		free(GCES_estr);                                               \
 	}                                                                      \
 } while (0)
