@@ -54,6 +54,7 @@ static bool new_timed_event(unsigned new_event_num)
 
 	event_t** new_event_list = realloc(cfg.event, sizeof(event_t *)*(cfg.total_events + 1));
 	if (new_event_list == NULL) {
+		free(new_event);
 		errormsg(WHERE, ERR_ALLOC, "timed event list", cfg.total_events + 1);
 		return false;
 	}
@@ -78,6 +79,7 @@ static bool new_external_program_section(unsigned new_section_num)
 
 	xtrnsec_t** new_xtrnsec_list = realloc(cfg.xtrnsec, sizeof(xtrnsec_t *)*(cfg.total_xtrnsecs + 1));
 	if (new_xtrnsec_list == NULL) {
+		free(new_xtrnsec);
 		errormsg(WHERE, ERR_ALLOC, "external program section list", cfg.total_xtrnsecs + 1);
 		return false;
 	}
@@ -107,6 +109,7 @@ static bool new_external_program(unsigned new_xtrn_num, unsigned section)
 
 	xtrn_t ** new_xtrn_list = realloc(cfg.xtrn, sizeof(xtrn_t *)*(cfg.total_xtrns + 1));
 	if (new_xtrn_list == NULL) {
+		free(new_xtrn);
 		errormsg(WHERE, ERR_ALLOC, "external program list", cfg.total_xtrns + 1);
 		return false;
 	}
@@ -130,6 +133,7 @@ static bool new_external_editor(unsigned new_xedit_num)
 
 	xedit_t** new_xedit_list = realloc(cfg.xedit, sizeof(xedit_t *)*(cfg.total_xedits + 1));
 	if (new_xedit_list == NULL) {
+		free(new_xedit);
 		errormsg(WHERE, ERR_ALLOC, "external editor list", cfg.total_xedits + 1);
 		return false;
 	}

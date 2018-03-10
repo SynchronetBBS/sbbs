@@ -3090,6 +3090,7 @@ js_cmdstr(JSContext *cx, uintN argc, jsval *arglist)
 				if(fpath==NULL) {
 					if(fspec != def)
 						free(fspec);
+					free(p);
 					return JS_FALSE;
 				}
 			}
@@ -3098,6 +3099,7 @@ js_cmdstr(JSContext *cx, uintN argc, jsval *arglist)
 				if(fspec==NULL) {
 					if(fpath != def)
 						free(fpath);
+					free(p);
 					return JS_FALSE;
 				}
 			}
@@ -3175,8 +3177,11 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&mode))
+			if(!JS_ValueToInt32(cx,argv[i],&mode)) {
+				if(fspec != def)
+					FREE_AND_NULL(fspec);
 				return JS_FALSE;
+			}
 		}
 		else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);

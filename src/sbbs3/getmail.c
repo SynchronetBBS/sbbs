@@ -161,11 +161,13 @@ mail_t* DLLCALL loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 			continue;
 		if(mode&LM_SPAMONLY && !(idx.attr&MSG_SPAM))
 			continue;
-		if((mail=(mail_t *)realloc(mail,sizeof(mail_t)*(l+1)))
-			==NULL) {
+		mail_t* np;
+		if((np = realloc(mail, sizeof(mail_t) * (l+1))) == NULL) {
+			free(mail);
 			smb_unlocksmbhdr(smb);
 			return(NULL); 
 		}
+		mail = np;
 		mail[l]=idx;
 		l++; 
 	}

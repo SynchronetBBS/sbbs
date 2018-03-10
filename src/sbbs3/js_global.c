@@ -2704,6 +2704,7 @@ js_truncstr(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_MSTRING(cx, argv[1], set, NULL);
 	if(JS_IsExceptionPending(cx)) {
 		free(str);
+		FREE_AND_NULL(set);
 		return JS_FALSE;
 	}
 	if(set==NULL) {
@@ -3007,6 +3008,7 @@ js_fcopy(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_MSTRING(cx, argv[1], dest, NULL);
 	if(JS_IsExceptionPending(cx)) {
 		free(src);
+		FREE_AND_NULL(dest);
 		return JS_FALSE;
 	}
 	if(dest==NULL) {
@@ -3339,6 +3341,7 @@ js_fmutex(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_MSTRING(cx, argv[argn], text, NULL);
 		argn++;
 		if(JS_IsExceptionPending(cx)) {
+			FREE_AND_NULL(text);
 			free(fname);
 			return JS_FALSE;
 		}
@@ -3482,6 +3485,8 @@ js_wildmatch(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 		if(JS_IsExceptionPending(cx)) {
 			free(fname);
+			if(spec != NULL && spec != spec_def)
+				free(spec);
 			return JS_FALSE;
 		}
 		if(spec==NULL) {

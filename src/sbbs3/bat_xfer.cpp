@@ -439,10 +439,13 @@ BOOL sbbs_t::start_batch_download()
 			list_len=0;
 		else
 			list_len=strlen(list)+1;	/* add one for ' ' */
-		if((list=(char*)realloc(list,list_len+strlen(path)+1	/* add one for '\0'*/))==NULL) {
+		char* np;
+		if((np=(char*)realloc(list,list_len+strlen(path)+1	/* add one for '\0'*/))==NULL) {
+			free(list);
 			errormsg(WHERE,ERR_ALLOC,"list",list_len+strlen(path));
 			return(FALSE);
 		}
+		list = np;
 		if(!list_len)
 			strcpy(list,path);
 		else {

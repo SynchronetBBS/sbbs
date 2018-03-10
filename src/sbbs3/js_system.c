@@ -930,6 +930,7 @@ js_trashcan(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSSTRING_TO_MSTRING(cx, js_str, str, NULL);
 	if(JS_IsExceptionPending(cx)) {
+		FREE_AND_NULL(str);
 		free(can);
 		return JS_FALSE;
 	}

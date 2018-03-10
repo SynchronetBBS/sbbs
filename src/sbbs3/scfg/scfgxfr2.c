@@ -63,6 +63,7 @@ static bool new_dir(unsigned new_dirnum, unsigned libnum)
 
 	dir_t** new_dir_list;
 	if ((new_dir_list = (dir_t **)realloc(cfg.dir, sizeof(dir_t *)*(cfg.total_dirs + 1))) == NULL) {
+		free(new_directory);
 		errormsg(WHERE, ERR_ALLOC, "directory list", cfg.total_dirs + 1);
 		return false;
 	}
@@ -89,6 +90,7 @@ static bool new_lib(unsigned new_libnum)
 
 	lib_t** new_lib_list;
 	if ((new_lib_list = (lib_t **)realloc(cfg.lib, sizeof(lib_t *)*(cfg.total_libs + 1))) == NULL) {
+		free(new_library);
 		errormsg(WHERE, ERR_ALLOC, "library list", cfg.total_libs + 1);
 		return false;
 	}
