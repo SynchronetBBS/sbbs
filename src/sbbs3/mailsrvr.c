@@ -144,6 +144,26 @@ typedef struct {
 	BOOL			tls_port;
 } smtp_t,pop3_t;
 
+#define GCES(status, server, sock, sess, action) do {                                        \
+	char *GCES_estr;                                                                     \
+	int GCES_level;                                                                      \
+	get_crypt_error_string(status, sess, &GCES_estr, "flushing data", &GCES_level);      \
+	if (GCES_estr) {                                                                     \
+		lprintf(GCES_level, "%04d %s%s", sock, server, GCES_estr);                   \
+		free(GCES_estr);                                                             \
+	}                                                                                    \
+} while(0)
+
+#define GCESH(status, server, sock, host, sess, action) do {                                 \
+	char *GCES_estr;                                                                     \
+	int GCES_level;                                                                      \
+	get_crypt_error_string(status, sess, &GCES_estr, "flushing data", &GCES_level);      \
+	if (GCES_estr) {                                                                     \
+		lprintf(GCES_level, "%04d %s [%s] %s", sock, server, host, GCES_estr);       \
+		free(GCES_estr);                                                             \
+	}                                                                                    \
+} while(0)
+
 static int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
@@ -337,11 +357,15 @@ int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...)
 			result = cryptPushData(sess, sbuf+sent, len-sent, &tls_sent);
 			if (result == CRYPT_OK)
 				sent += tls_sent;
-			else
+			else {
+				GCES(result, "", sock, sess, "pushing data");
 				return 0;
+			}
 		}
-		if (cryptFlushData(sess) != CRYPT_OK)
+		if ((result = cryptFlushData(sess)) != CRYPT_OK) {
+			GCES(result, "", sock, sess, "flushing data");
 			return 0;
+		}
 	}
 	else {
 		// It looks like this could stutter on partial sends -- Deuce
@@ -396,17 +420,15 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t star
 	if (sess > -1) {
 		while (1) {
 			ret = cryptPopData(sess, buf, 1, &len);
+			GCES(ret, "", sock, sess, "popping data");
 			switch(ret) {
 				case CRYPT_OK:
 					break;
 				case CRYPT_ERROR_TIMEOUT:
-					lprintf(LOG_WARNING,"%04d !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET"
-						,sock, startup->max_inactivity);
 					return -1;
 				case CRYPT_ERROR_COMPLETE:
 					return 0;
 				default:
-					lprintf(LOG_WARNING,"%04d !Cryptlib error in sock_recvbyte:  %d", sock, ret);
 					if (ret < -1)
 						return ret;
 					return -2;
@@ -935,6 +957,9 @@ static void pop3_thread(void* arg)
 	CRYPT_SESSION	session = -1;
 	BOOL nodelay=TRUE;
 	ulong nb = 0;
+	char *estr;
+	int level;
+	int stat;
 
 	SetThreadName("sbbs/pop3");
 	thread_up(TRUE /* setuid */);
@@ -964,26 +989,29 @@ static void pop3_thread(void* arg)
 		lprintf(LOG_INFO,"%04d POP3 Hostname: %s", socket, host_name);
 
 	if (pop3.tls_port) {
-		if (get_ssl_cert(&scfg, NULL, NULL) == -1) {
-			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to get TLS certificate", socket, host_ip);
+		if (get_ssl_cert(&scfg, &estr, &level) == -1) {
+			if (estr) {
+				lprintf(level, "%04d !POP3 [%s] %s", socket, host_ip);
+				free(estr);
+			}
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
-		if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to create TLS session", socket, host_ip);
+		if ((stat=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER)) != CRYPT_OK) {
+			GCESH(stat, "POP3", socket, host_ip, CRYPT_UNUSED, "creating session");
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
-		if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to disable certificate verification", socket, host_ip);
+		if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+			GCESH(stat, "POP3", socket, host_ip, session, "disabling certificate verification");
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
-		if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set private key", socket, host_ip);
+		if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
+			GCESH(stat, "POP3", socket, host_ip, session, "setting private key");
 			mail_close_socket(socket);
 			thread_down();
 			return;
@@ -992,21 +1020,21 @@ static void pop3_thread(void* arg)
 		setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 		nb=0;
 		ioctlsocket(socket,FIONBIO,&nb);
-		if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set session socket (%d)", socket, host_ip, rd);
+		if ((stat = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
+			GCESH(stat, "POP3", socket, host_ip, session, "setting session socket");
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
-		if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
-			lprintf(LOG_WARNING, "%04d !POP3 [%s] Unable to set session active", socket, host_ip);
+		if ((stat = cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
+			GCESH(stat, "POP3", socket, host_ip, session, "setting session active");
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (startup->max_inactivity) {
 			if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-				lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set max inactivity", socket, host_ip);
+				GCESH(stat, "POP3", socket, host_ip, session, "setting read timeout");
 				mail_close_socket(socket);
 				thread_down();
 				return;
@@ -1103,18 +1131,18 @@ static void pop3_thread(void* arg)
 					continue;
 				}
 				sockprintf(socket,session,"+OK Begin TLS negotiation");
-				if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-					lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to create TLS session", socket, host_ip);
+				if ((stat=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER)) != CRYPT_OK) {
+					GCESH(stat, "POP3", socket, host_ip, CRYPT_UNUSED, "creating session");
 					buf[0] = 0;
 					break;
 				}
-				if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-					lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to disable certificate verification", socket, host_ip);
+				if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+					GCESH(stat, "POP3", socket, host_ip, session, "creating session");
 					buf[0] = 0;
 					break;
 				}
-				if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
-					lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set private key", socket, host_ip);
+				if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
+					GCESH(stat, "POP3", socket, host_ip, session, "setting private key");
 					buf[0] = 0;
 					break;
 				}
@@ -1122,19 +1150,19 @@ static void pop3_thread(void* arg)
 				setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 				nb=0;
 				ioctlsocket(socket,FIONBIO,&nb);
-				if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
-					lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set session socket (%d)", socket, host_ip, rd);
+				if ((stat = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
+					GCESH(stat, "POP3", socket, host_ip, session, "setting network socket");
 					buf[0] = 0;
 					break;
 				}
-				if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
-					lprintf(LOG_WARNING, "%04d !POP3 [%s] Unable to set session active", socket, host_ip);
+				if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
+					GCESH(stat, "POP3", socket, host_ip, session, "setting session active");
 					buf[0] = 0;
 					break;
 				}
 				if (startup->max_inactivity) {
-					if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-						lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to set max inactivity", socket, host_ip);
+					if ((stat=cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity)) != CRYPT_OK) {
+						GCESH(stat, "POP3", socket, host_ip, session, "setting read timeout");
 						buf[0] = 0;
 						break;
 					}
@@ -2716,6 +2744,9 @@ static void smtp_thread(void* arg)
 	BOOL nodelay=TRUE;
 	ulong nb = 0;
 	unsigned	with_val;
+	int level;
+	int cstat;
+	char *estr;
 
 	enum {
 			 SMTP_STATE_INITIAL
@@ -2759,27 +2790,30 @@ static void smtp_thread(void* arg)
 	addr_len=sizeof(server_addr);
 
 	if(smtp.tls_port) {
-		if (get_ssl_cert(&scfg, NULL, NULL) == -1) {
-			lprintf(LOG_ERR, "%04d !SMTP Unable to get certificate", socket);
+		if (get_ssl_cert(&scfg, &estr, &level) == -1) {
+			if (estr) {
+				lprintf(level, "%04d !SMTP %s", socket, estr);
+				free(estr);
+			}
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
-		if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !SMTP Unable to create TLS session", socket);
+		if ((cstat = cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER)) != CRYPT_OK) {
+			GCES(cstat, "SMTP", socket, CRYPT_UNUSED, "setting network socket");
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
-		if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !SMTP Unable to disable certificate verification", socket);
+		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+			GCES(cstat, "SMTP", socket, CRYPT_UNUSED, "disabling certificate verification");
 			cryptDestroySession(session);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
-		if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !SMTP Unable to set private key", socket);
+		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
+			GCES(cstat, "SMTP", socket, CRYPT_UNUSED, "setting private key");
 			cryptDestroySession(session);
 			mail_close_socket(socket);
 			thread_down();
@@ -2789,23 +2823,23 @@ static void smtp_thread(void* arg)
 		setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 		nb=0;
 		ioctlsocket(socket,FIONBIO,&nb);
-		if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !SMTP Unable to set network socket", socket);
+		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
+			GCES(cstat, "SMTP", socket, CRYPT_UNUSED, "setting network socket");
 			cryptDestroySession(session);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
-		if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
-			lprintf(LOG_ERR, "%04d !SMTP Unable to set session active", socket);
+		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
+			GCES(cstat, "SMTP", socket, CRYPT_UNUSED, "setting session active");
 			cryptDestroySession(session);
 			mail_close_socket(socket);
 			thread_down();
 			return;
 		}
 		if (startup->max_inactivity) {
-			if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-				lprintf(LOG_ERR, "%04d !SMTP Unable to set max inactivity", socket);
+			if ((cstat = cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity)) != CRYPT_OK) {
+				GCES(cstat, "SMTP", socket, CRYPT_UNUSED, "setting read timeout");
 				cryptDestroySession(session);
 				mail_close_socket(socket);
 				thread_down();
@@ -4657,24 +4691,28 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		if(session == -1 && !stricmp(buf,"STARTTLS")) {
-			if (get_ssl_cert(&scfg, NULL, NULL) == -1) {
-				lprintf(LOG_ERR, "%04d !SMTP Unable to get certificate", socket);
+			if (get_ssl_cert(&scfg, &estr, &level) == -1) {
+				if (estr) {
+					lprintf(level, "%04d !SMTP %s", socket, estr);
+					free(estr);
+				}
 				sockprintf(socket, session, "454 TLS not available");
 				continue;
 			}
-			if (cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER) != CRYPT_OK) {
-				lprintf(LOG_ERR, "%04d !SMTP Unable to create TLS session", socket);
+			if ((cstat=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER)) != CRYPT_OK) {
+				GCES(cstat, "SMTP", socket, CRYPT_UNUSED, "creating TLS session");
 				sockprintf(socket, session, "454 TLS not available");
 				continue;
 			}
-			if (cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY) != CRYPT_OK) {
-				lprintf(LOG_ERR, "%04d !SMTP Unable to disable certificate verification", socket);
+			if ((cstat=cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+				GCES(cstat, "SMTP", socket, session, "disabling certificate verification");
 				cryptDestroySession(session);
 				session = -1;
 				sockprintf(socket, session, "454 TLS not available");
 				continue;
 			}
-			if (cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate) != CRYPT_OK) {
+			if ((cstat=cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
+				GCES(cstat, "SMTP", socket, session, "setting private key");
 				lprintf(LOG_ERR, "%04d !SMTP Unable to set private key", socket);
 				cryptDestroySession(session);
 				session = -1;
@@ -4685,21 +4723,21 @@ static void smtp_thread(void* arg)
 			setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 			nb=0;
 			ioctlsocket(socket,FIONBIO,&nb);
-			if ((rd = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
-				lprintf(LOG_ERR, "%04d !SMTP Unable to set network socket", socket);
+			if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
+				GCES(cstat, "SMTP", socket, session, "setting network socket");
 				cryptDestroySession(session);
 				session = -1;
 				sockprintf(socket, session, "454 TLS not available");
 				continue;
 			}
 			sockprintf(socket, -1, "220 Ready to start TLS");
-			if (cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1) != CRYPT_OK) {
-				lprintf(LOG_ERR, "%04d !SMTP Unable to set session active", socket);
+			if ((cstat=cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
+				GCES(cstat, "SMTP", socket, session, "setting session active");
 				break;
 			}
 			if (startup->max_inactivity) {
-				if (cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity) != CRYPT_OK) {
-					lprintf(LOG_ERR, "%04d !SMTP Unable to set max inactivity", socket);
+				if ((cstat=cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity)) != CRYPT_OK) {
+					GCES(cstat, "SMTP", socket, session, "setting read timeout");
 					break;
 				}
 			}
@@ -5057,27 +5095,24 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 			case 0:
 				return sock;
 			case 1:
+				/* We NEVER bounce() because of TLS errors, so we don't need to set err */
 				if ((!tls_retry) && get_ssl_cert(&scfg, NULL, NULL) != -1) {
 					sockprintf(sock, *session, "STARTTLS");
 					if (sockgetrsp(sock, *session, "220", buf, sizeof(buf))) {
 						if ((status=cryptCreateSession(session, CRYPT_UNUSED, CRYPT_SESSION_SSL)) != CRYPT_OK) {
-							SAFEPRINTF2(err, "ERROR %d creating TLS session to SMTP server: %s", status, server);
-							lprintf(LOG_INFO,"%04d !SEND %s", sock, err);
+							GCESH(status, "SMTP", sock, server, CRYPT_UNUSED, "creating TLS session");
 							continue;
 						}
 						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
-							SAFEPRINTF2(err, "ERROR %d disabling certificate validation with SMTP server: %s", status, server);
-							lprintf(LOG_INFO,"%04d !SEND %s" ,sock, err);
+							GCESH(status, "SMTP", sock, server, *session, "creating TLS session");
 							continue;
 						}
 						if ((status=cryptSetAttribute(*session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_OBLIVIOUS)) != CRYPT_OK) {
-							SAFEPRINTF2(err, "ERROR %d setting oblivious certificate compliance level with SMTP server: %s", status, server);
-							lprintf(LOG_INFO,"%04d !SEND %s" ,sock, err);
+							GCESH(status, "SMTP", sock, server, *session, "setting certificate compliance level");
 							continue;
 						}
 						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
-							SAFEPRINTF2(err, "ERROR %d setting private key with SMTP server: %s", status, server);
-							lprintf(LOG_INFO,"%04d !SEND %s", sock, err);
+							GCESH(status, "SMTP", sock, server, *session, "setting private key");
 							continue;
 						}
 						nodelay = TRUE;
@@ -5085,25 +5120,16 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 						nb=0;
 						ioctlsocket(sock,FIONBIO,&nb);
 						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_NETWORKSOCKET, sock)) != CRYPT_OK) {
-							SAFEPRINTF2(err, "ERROR %d setting network socket with SMTP server: %s", status, server);
-							lprintf(LOG_INFO,"%04d !SEND %s", sock, err);
+							GCESH(status, "SMTP", sock, server, *session, "setting network socket");
 							continue;
 						}
 						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
-							estr = get_crypt_error(*session);
-							SAFEPRINTF3(err, "ERROR %d (%s) activating TLS session with SMTP server: %s", status, estr ? estr : "<unknown>", server);
-							if (estr)
-								free_crypt_attrstr(estr);
-							lprintf(LOG_INFO,"%04d !SEND %s", sock, err);
+							GCESH(status, "SMTP", sock, server, *session, "setting network socket");
 							continue;
 						}
 						if (startup->max_inactivity) {
 							if ((status=cryptSetAttribute(*session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity)) != CRYPT_OK) {
-								estr = get_crypt_error(*session);
-								SAFEPRINTF3(err, "ERROR %d (%s) setting max inactivity with SMTP server: %s", status, estr ? estr : "<unknown>", server);
-								if (estr)
-									free_crypt_attrstr(estr);
-								lprintf(LOG_INFO,"%04d !SEND %s", sock, err);
+								GCESH(status, "SMTP", sock, server, *session, "setting read timeout");
 								continue;
 							}
 						}
