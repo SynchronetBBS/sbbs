@@ -1,12 +1,24 @@
 // Lightbar file library/directory browser
 load("sbbsdefs.js");
+load("cga_defs.js"); // For color definitions
 load("file_size.js");
 load("filedir.js");
 load("frame.js");
 load("tree.js");
 load("scrollbar.js");
 
-// See exec/load/sbbsdefs.js for color names
+// File library index: bbs.curlib
+// File directory index: bbs.curdir
+// File directory internal code: bbs.curdir_code
+var gStartupDirCode = "";
+if (argv.length > 0)
+	gStartupDirCode = argv[0];
+
+// gViewableFileTypesCfg will be set to an array containing the
+// viewable file types
+var gViewableFileTypesCfg = null;
+
+// See exec/load/cfa_defs.js for color names
 var colors = {
 	'fg' : WHITE,      // Non-highlighted item foreground
 	'bg' : BG_BLACK,   // Non-highlighted item background
@@ -425,10 +437,8 @@ var fileChooser = function(code) {
 		)
 	);
 	state.chooser.footerFrame.putmsg(
-		format(
-			"[Enter] Info %s T)ag %s D)ownload %s U)pload %s G)o back %s %s",
-			divider, divider, divider, divider, divider, standardHelp
-		)
+		format("[Enter] Info %s T)ag %s V)iew %s D)load %s U)pload %s G)o back %s %s",
+		       divider, divider, divider, divider, divider, divider, standardHelp)
 	);
 }
 
@@ -509,7 +519,6 @@ var canDownload = function() {
 }
 
 var inputHandler = function(userInput) {
-
 	if(userInput == "")
 		return;
 
@@ -567,6 +576,49 @@ var inputHandler = function(userInput) {
 				fileChooser(state.dir);
 			}
 			break;
+		case "V": // View file
+			if(state.browse == BROWSE_FILES) {
+				ret = true;
+				// Populate gViewableFileTypesCfg if it hasn't been populated yet
+				if (gViewableFileTypesCfg == null)
+					gViewableFileTypesCfg = readViewableFileTypesConfig();
+				// Get the filename extension
+				var filenameExt = file_getext(state.chooser.tree.currentItem.fileItem.fullPath);
+				if (typeof(filenameExt) == "string")
+				{
+					filenameExt = filenameExt.substr(1);
+					// See if the filename extension is in the list of viewable file types
+					var filenameExtUpper = filenameExt.toUpperCase();
+					var fileViewCmd = "";
+					for (var i = 0; i < gViewableFileTypesCfg.length; ++i)
+					{
+						if (filenameExtUpper == gViewableFileTypesCfg[i].ext.toUpperCase())
+						{
+							// Get the file view command, and substitute %f or %s
+							// with the filename.
+							fileViewCmd = gViewableFileTypesCfg[i].viewCmd;
+							fileViewCmd = fileViewCmd.replace(/%f/i, state.chooser.tree.currentItem.fileItem.fullPath);
+							fileViewCmd = fileViewCmd.replace(/%s/i, state.chooser.tree.currentItem.fileItem.fullPath);
+							break;
+						}
+					}
+					// View the file if we got a file view command, or an eror if not.
+					console.print("\1n");
+					console.crlf();
+					if (fileViewCmd != "")
+						bbs.exec(fileViewCmd);
+					else
+					{
+						console.print("\1h\1yThat file is not viewable.\1n");
+						console.crlf();
+						console.pause();
+					}
+					console.clear(BG_BLACK|LIGHTGRAY);
+					frame.invalidate();
+					fileChooser(state.dir);
+				}
+			}
+			break;
 		default:
 			break;
 	}
@@ -592,9 +644,20 @@ var initDisplay = function() {
 }
 
 var init = function() {
-	bbs.sys_status|=SS_MOFF;
+	bbs.sys_status |= SS_MOFF;
 	initDisplay();
-	libraryChooser();
+	// If this script was given a directory code, and the code is valid, then
+	// list the files in that directory.  Otherwise, start with the file library
+	// chooser.
+	if ((gStartupDirCode != "") && dirCodeIsValid(gStartupDirCode))
+	{
+		fileChooser(gStartupDirCode);
+		state.dir = gStartupDirCode;
+		state.lib = file_area.dir[gStartupDirCode].lib_index;
+		state.browse = BROWSE_FILES;
+	}
+	else
+		libraryChooser();
 }
 
 var main = function() {
@@ -617,6 +680,118 @@ var cleanUp = function() {
 	console.clear();
 	exit(0);
 }
+
+// Reads the viewable file types configuration from Synchronet's file.cnf
+//
+// Return value: An array containing objects with the following properties:
+//               ext: The filename extension
+//               viewCmd: The command to view the file
+function readViewableFileTypesConfig()
+{
+	var viewableFileInfos = [];
+	var fileCnfFile = new File(system.ctrl_dir + "file.cnf");
+	if (fileCnfFile.open("r"))
+	{
+		// file.cnf should be read as in src\sbbs3\scfglib2.c
+		// in the read_file_config function.
+		// http://cvs.synchro.net/cgi-bin/viewcvs.cgi/src/sbbs3/scfglib2.c?view=log
+		// It can also help to see scfgdefs.h
+
+		////////////////////////////
+		// Extractable File Types //
+		////////////////////////////
+		var numExtFileTypesFilePos = 152;
+		fileCnfFile.position = numExtFileTypesFilePos;
+		var numExtractableFileTypes = fileCnfFile.readBin(2);
+		// Each extractable file type is 125 bytes
+		var extFileTypeRecordLen = 125;
+		// Skip past the extractable file type configs
+		fileCnfFile.position = numExtFileTypesFilePos + 2 + (numExtractableFileTypes * extFileTypeRecordLen);
+		/*
+		for (var i = 0; i < numExtractableFileTypes; ++i)
+		{
+			fileCnfFile.position = numExtFileTypesFilePos + 2 + (i * extFileTypeRecordLen);
+			var extFileType = fileCnfFile.read(extFileTypeRecordLen);
+			var extFileExt = getActualString(extFileType, 0, 3);
+			var extFileCmd = getActualString(extFileType, 4, extFileType.length);
+		}
+		*/
+
+		/////////////////////////////
+		// Compressable File Types //
+		/////////////////////////////
+		var numCompressableFileTypesFilePos = fileCnfFile.position;
+		var numCompressableFileTypes = fileCnfFile.readBin(2);
+		// Each extractable file type is 125 bytes
+		var cmpFileTypeRecordLen = 125;
+		// Skip past the compressable file type configs
+		fileCnfFile.position = numCompressableFileTypesFilePos + 2 + (numCompressableFileTypes * cmpFileTypeRecordLen);
+		
+		/////////////////////////
+		// Viewable File Types //
+		/////////////////////////
+		var numViewableFileTypesFilePos = fileCnfFile.position;
+		var numViewableFileTypes = fileCnfFile.readBin(2);
+		// A record for a viewable file type seems to be 125 bytes
+		const viewableFileTypeRecordLen = 125;
+		for (var i = 0; i <  numViewableFileTypes; ++i)
+		{
+			fileCnfFile.position = numViewableFileTypesFilePos + 2 + (i * viewableFileTypeRecordLen);
+			var fileInfo = fileCnfFile.read(viewableFileTypeRecordLen);
+			// Read the file extension & view command.  When we get
+			// to zeros in each one, then we know we've reached the
+			// end of the string.
+			var fileExt = getActualString(fileInfo, 0, 3);
+			var fileViewCmd = getActualString(fileInfo, 4, fileInfo.length);
+			viewableFileInfos.push({ "ext": fileExt, "viewCmd": fileViewCmd });
+		}
+
+		fileCnfFile.close();
+	}
+	return viewableFileInfos;
+}
+// Extracts a string from a string variable containing a string and zero-value bytes.
+//
+// Parameters:
+//  pStr: The string variable to extract from
+//  pStartIdx: The start index in the string variable
+//  pEndIdx: One past the last index in the string variable
+//
+// Return value: The string extracted from the given string variable
+function getActualString(pStr, pStartIdx, pEndIdx)
+{
+	var theStr = "";
+	for (var i = pStartIdx; i < pEndIdx; ++i)
+	{
+		if (ascii(pStr.charAt(i)) != 0)
+			theStr += pStr.charAt(i);
+		else
+			break;
+	}
+	return theStr;
+}
+
+// Returns whether or not an internal file directory code is valid.
+function dirCodeIsValid(pDirCode)
+{
+	if (typeof(pDirCode) != "string")
+		return false;
+
+	var dirCodeUpper = pDirCode.toUpperCase();
+	var codeIsValid = false;
+	for (var dirCode in file_area.dir)
+	{
+		if (dirCode.toUpperCase() == dirCodeUpper)
+		{
+			codeIsValid = true;
+			break;
+		}
+	}
+	return codeIsValid;
+}
+
+//////////////////////////////////////////////////
+// Main script code
 
 init();
 main();
