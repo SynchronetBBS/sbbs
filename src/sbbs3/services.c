@@ -1915,8 +1915,10 @@ void DLLCALL services_thread(void* arg)
 
 		if (need_cert) {
 			if (get_ssl_cert(&scfg, &ssl_estr, &level) == -1) {
-				lprintf(level, "No TLS certificiate %s", ssl_estr);
-				free(ssl_estr);
+				if (ssl_estr) {
+					lprintf(level, "No TLS certificiate %s", ssl_estr);
+					free(ssl_estr);
+				}
 			}
 		}
 
