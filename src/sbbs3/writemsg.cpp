@@ -1109,7 +1109,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 	bprintf(text[SavedNBytes],l,lines);
 	fclose(stream);
 	free(buf);
-	SAFEPRINTF4(str,"%s created or edited file: %s (%u bytes, %u lines)"
+	SAFEPRINTF4(str,"%s created or edited file: %s (%ld bytes, %u lines)"
 		,useron.alias, fname, l, lines);
 	logline(nulstr,str);
 	return true;
