@@ -5,6 +5,15 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.16     2018-03-09   Bug fix for off-by-one issue when there is a file group
+                      with no directories or a message group with no
+                      sub-boards
+1.15     2017-12-18   Updated the definitions of the KEY_PAGE_UP and
+                      KEY_PAGE_DOWN variables to match what they are in
+                      sbbsdefs.js (if defined) from December 18, 2017 so that
+                      the PageUp and PageDown keys continue to work properly.
+                      These scripts should still also work with older builds
+                      of Synchronet.
 1.14     2017-08-30   Bug fix in the message area chooser: A function was not
                       implemented (result of a copy & paste where I didn't
                       include the missing function that was called).

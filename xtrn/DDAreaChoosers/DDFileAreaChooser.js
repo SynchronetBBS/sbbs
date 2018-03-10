@@ -69,6 +69,7 @@
  *                                  from December 18, 2017 so that the PageUp and PageDown keys
  *                                  continue to work properly.  This script should still also work
  *                                  with older builds of Synchronet.
+ * 2018-03-07 Eric Oulashin 1.16    Bug fix for off-by-one when a file directory has no libraries.
  */
 
 /* Command-line arguments:
@@ -97,8 +98,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.15";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2017-12-18";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.16";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2018-03-09";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
@@ -186,11 +187,6 @@ function DDFileAreaChooser()
 	// user's terminal supports ANSI.
 	this.useLightbarInterface = true;
 
-	// Store whether or not bbs.curlib and bbs.curdir are valid (they might not
-	// be for a new user).
-	this.curlibValid = ((bbs.curlib != null) && (typeof(bbs.curlib) == "number"));
-	this.curdirValid = ((bbs.curdir != null) && (typeof(bbs.curdir) == "number"));
-
 	this.areaNumLen = 4;
 	this.descFieldLen = 67; // Description field length
 
@@ -204,7 +200,7 @@ function DDFileAreaChooser()
 	this.SelectFileArea_Traditional = DDFileAreaChooser_selectFileArea_Traditional;
 	this.SelectDirWithinFileLib_Traditional = DDFileAreaChooser_selectDirWithinFileLib_Traditional;
 	this.ListFileLibs = DDFileAreaChooser_listFileLibs_Traditional;
-	this.ListDirsInFileLib = DDFileAreaChooser_listDirsInFileLib_Traditional;
+	this.ListDirsInFileLib_Traditional = DDFileAreaChooser_listDirsInFileLib_Traditional;
 	this.WriteLibListHdrLine = DDFileAreaChooser_writeLibListTopHdrLine;
 	this.WriteDirListHdr1Line = DDFileAreaChooser_writeDirListHdr1Line;
 	// Lightbar-specific functions
@@ -344,6 +340,14 @@ function DDFileAreaChooser_selectFileArea_Traditional(pChooseLib)
 		return;
 	}
 
+	var curLibIdx = 0;
+	var curDirIdx = 0;
+	if (typeof(bbs.curdir_code) == "string")
+	{
+		curLibIdx = file_area.dir[bbs.curdir_code].lib_index;
+		curDirIdx = file_area.dir[bbs.curdir_code].index;
+	}
+
 	var chooseLib = (typeof(pChooseLib) == "boolean" ? pChooseLib : true);
 	if (chooseLib)
 	{
@@ -362,14 +366,14 @@ function DDFileAreaChooser_selectFileArea_Traditional(pChooseLib)
 			if (this.areaChangeHdrLines.length > 0)
 				console.crlf();
 			this.ListFileLibs();
-			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + +(bbs.curlib+1) + "\1n\1c]:\1h ");
+			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + +(curLibIdx+1) + "\1n\1c]:\1h ");
 			// Accept Q (quit) or a file library number
 			selectedLib = console.getkeys("Q", file_area.lib_list.length);
 
 			// If the user just pressed enter (selectedLib would be blank),
 			// default to the current library.
 			if (selectedLib.toString() == "")
-				selectedLib = bbs.curlib + 1;
+				selectedLib = curLibIdx + 1;
 
 			// If the user chose to quit, then set continueChooseFileLib to
 			// false so we'll exit the loop.  Otherwise, let the user chose
@@ -377,13 +381,19 @@ function DDFileAreaChooser_selectFileArea_Traditional(pChooseLib)
 			if (selectedLib.toString() == "Q")
 				continueChooseFileLib = false;
 			else
+			{
+				if (selectedLib-1 == curLibIdx)
+					selectedDir = curDirIdx + 1;
+				else
+					selectedDir = 1;
 				continueChooseFileLib = !this.SelectDirWithinFileLib_Traditional(selectedLib, selectedDir);
+			}
 		}
 	}
 	else
 	{
 		// Don't choose a library, just a directory within the user's current library.
-		this.SelectDirWithinFileLib_Traditional(bbs.curlib+1, bbs.curdir+1);
+		this.SelectDirWithinFileLib_Traditional(curLibIdx, curDirIdx);
 	}
 }
 
@@ -392,52 +402,65 @@ function DDFileAreaChooser_selectFileArea_Traditional(pChooseLib)
 //
 // Parameters:
 //  pLibNumber: The file library number
-//  pSelectedDir: The currently-selected file area
+//  pSelectedDir: The currently-selected file directory
 //
 // Return value: Boolean - Whether or not the user chose a file area.
 function DDFileAreaChooser_selectDirWithinFileLib_Traditional(pLibNumber, pSelectedDir)
 {
+	// If pLibNumber is invalid, then just return false.
+	if (pLibNumber <= 0)
+		return false;
+
 	var userChoseAnArea = false;
+	var libIdx = pLibNumber - 1;
 
-	// If the file library number is valid, then
-	// set it and let the user choose a file directory
-	// within the library.
-	if (pLibNumber > 0)
+	// If there are no sub-boards in the given message group, then show
+	// an error and return.
+	if (file_area.lib_list[libIdx].dir_list.length == 0)
 	{
-		// Ensure that the file directory printf information is created for
-		// this file library.
-		this.BuildFileDirPrintfInfoForLib(pLibNumber-1);
-
-		// Set the default directory #: The current directory, or if the
-		// user chose a different file library, then this should be set
-		// to the first directory.
-		var defaultDir = bbs.curdir + 1;
-		if (pLibNumber-1 != bbs.curlib)
-			defaultDir = 1;
-
 		console.clear("\1n");
-		this.DisplayAreaChgHdr(1);
-		if (this.areaChangeHdrLines.length > 0)
-			console.crlf();
-		this.ListDirsInFileLib(pLibNumber - 1, defaultDir - 1);
-		console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + defaultDir +
-		              "\1n\1c]: \1h");
-		// Accept Q (quit) or a file directory number
-		var selectedDir = console.getkeys("Q", file_area.lib_list[pLibNumber - 1].dir_list.length);
+		console.print("\1y\1hThere are no directories in this library.\r\n\1p");
+		return false;
+	}
 
-		// If the user just pressed enter (selectedDir would be blank),
-		// default the selected directory.
-		if (selectedDir.toString() == "")
-			selectedDir = defaultDir;
+	// Ensure that the file directory printf information is created for
+	// this file library.
+	this.BuildFileDirPrintfInfoForLib(libIdx);
 
-		// If the user chose a directory, then set bbs.curlib &
-		// bbs.curdir and quit the file library loop.
-		if ((pLibNumber.toString() != "Q") && (selectedDir > 0))
-		{
-			bbs.curlib = pLibNumber - 1;
-			bbs.curdir = selectedDir - 1;
-			userChoseAnArea = true;
-		}
+	// Set the default directory #: The current directory, or if the
+	// user chose a different file library, then this should be set
+	// to the first directory.
+	var defaultDir = 0;
+	if (typeof(pSelectedDir) == "number")
+		defaultDir = pSelectedDir;
+	else if (typeof(bbs.curdir_code) == "string")
+	{
+		if (libIdx != file_area.dir[bbs.curdir_code].lib_index)
+			defaultDir = 1;
+		else
+			defaultDir = file_area.dir[bbs.curdir_code].index;
+	}
+
+	console.clear("\1n");
+	this.DisplayAreaChgHdr(1);
+	if (this.areaChangeHdrLines.length > 0)
+		console.crlf();
+	this.ListDirsInFileLib_Traditional(libIdx, defaultDir - 1);
+	console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + defaultDir +
+				  "\1n\1c]: \1h");
+	// Accept Q (quit) or a file directory number
+	var selectedDir = console.getkeys("Q", file_area.lib_list[libIdx].dir_list.length);
+
+	// If the user just pressed enter (selectedDir would be blank),
+	// default the selected directory.
+	if (selectedDir.toString() == "")
+		selectedDir = defaultDir;
+
+	// If the user chose a directory, then set the user's file directory.
+	if ((pLibNumber.toString() != "Q") && (selectedDir > 0))
+	{
+		bbs.curdir_code = file_area.lib_list[libIdx].dir_list[selectedDir-1].code;
+		userChoseAnArea = true;
 	}
 
 	return userChoseAnArea;
@@ -447,28 +470,24 @@ function DDFileAreaChooser_selectDirWithinFileLib_Traditional(pLibNumber, pSelec
 // the file groups
 function DDFileAreaChooser_listFileLibs_Traditional()
 {
-   // See if bbs.curlib is valid (it might not be for brand-new users).
-   var curlibValid = ((bbs.curlib != null) && (typeof(bbs.curlib) != "undefined"));
-
-   // See if bbs.curlib and bbs.curdir are valid, since we'll be testing
-   // with them.
-   var curDirLibValid =  ((typeof(bbs.curlib) == "number") && (typeof(bbs.curdir) == "number"));
-
-   // Print the list header
-   printf(this.fileLibListHdrPrintfStr, "Lib #", "Description", "# Dirs");
-   console.crlf();
-   console.print("\1n");
-   // Print the information for each file library
-   var currentDir = false;
-   for (var i = 0; i < file_area.lib_list.length; ++i)
-   {
-      // Print the library information.
-      console.print(curDirLibValid && (i == bbs.curlib) ? this.colors.areaMark + "*" : " ");
-      printf(this.fileLibPrintfStr, +(i+1),
-             file_area.lib_list[i].description.substr(0, this.descFieldLen),
-             file_area.lib_list[i].dir_list.length);
-      console.crlf();
-   }
+	// Print the list header
+	printf(this.fileLibListHdrPrintfStr, "Lib #", "Description", "# Dirs");
+	console.crlf();
+	console.print("\1n");
+	// Print the information for each file library
+	var currentDir = false;
+	for (var i = 0; i < file_area.lib_list.length; ++i)
+	{
+		// Print the library information.
+		var curLibIdx = 0;
+		if (typeof(bbs.curdir_code) == "string")
+			curLibIdx = file_area.dir[bbs.curdir_code].lib_index;
+		console.print(i == curLibIdx ? this.colors.areaMark + "*" : " ");
+		printf(this.fileLibPrintfStr, +(i+1),
+		file_area.lib_list[i].description.substr(0, this.descFieldLen),
+		file_area.lib_list[i].dir_list.length);
+		console.crlf();
+	}
 }
 
 // For the DDFileAreaChooser class: Traditional user interface for listing
@@ -477,27 +496,23 @@ function DDFileAreaChooser_listFileLibs_Traditional()
 // Parameters:
 //  pLibIndex: The index of the file library (0-based)
 //  pMarkIndex: An index of a file library to display the "current" mark
-//              next to.  This is optional; if left off, this will default
-//              to the current directory.
+//              next to.  This is optional.
 function DDFileAreaChooser_listDirsInFileLib_Traditional(pLibIndex, pMarkIndex)
 {
 	// set libIndex, the library index
-	var libIndex = bbs.curlib;
+	var libIndex = 0;
 	if (typeof(pLibIndex) == "number")
 		libIndex = pLibIndex;
+	else if (typeof(bbs.curdir_code) == "string")
+		libIndex = file_area.dir[bbs.curdir_code].lib_index;
 
 	// Set markIndex, the index of the item to highlight
-	var markIndex = bbs.curdir;
+	var markIndex = -1;
 	if (typeof(pMarkIndex) == "number")
-		markIndex = pMarkIndex;
-
-	// Make sure markIndex is valid (it might not be for brand-new users).
-	if ((markIndex == null) || (typeof(markIndex) == "undefined"))
-		markIndex = 0;
-
-	// See if bbs.curlib and bbs.curdir are valid, since we'll be testing with
-	// them.
-	var curDirLibValid = ((typeof(bbs.curlib) == "number") && (typeof(bbs.curdir) == "number"));
+	{
+		if ((pMarkIndex >= 0) && (pMarkIndex < file_area.lib_list[libIndex].dir_list.length))
+			markIndex = pMarkIndex;
+	}
 
 	// Ensure that the file directory printf information is created for
 	// this file library.
@@ -511,16 +526,13 @@ function DDFileAreaChooser_listDirsInFileLib_Traditional(pLibIndex, pMarkIndex)
 	console.crlf();
 	console.print("\1n");
 	// Print the file directories
-	var isSelectedDir = false;
 	for (var i = 0; i < file_area.lib_list[libIndex].dir_list.length; ++i)
 	{
 		// See if this is the currently-selected directory.
-		if (curDirLibValid)
-			isSelectedDir = ((libIndex == bbs.curlib) && (i == markIndex));
-		console.print(isSelectedDir ? this.colors.areaMark + "*" : " ");
+		console.print(markIndex > -1 && i == markIndex ? this.colors.areaMark + "*" : " ");
 		printf(this.fileDirListPrintfInfo[libIndex].printfStr, +(i+1),
-		file_area.lib_list[libIndex].dir_list[i].description.substr(0, this.descFieldLen),
-		this.fileDirListPrintfInfo[libIndex].fileCounts[i]);
+		       file_area.lib_list[libIndex].dir_list[i].description.substr(0, this.descFieldLen),
+		       this.fileDirListPrintfInfo[libIndex].fileCounts[i]);
 		console.crlf();
 	}
 }
@@ -611,8 +623,8 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 
 		// Figure out the index of the user's currently-selected file library
 		var selectedLibIndex = 0;
-		if ((bbs.curlib != null) && (typeof(bbs.curlib) == "number"))
-			selectedLibIndex = bbs.curlib;
+		if (typeof(bbs.curdir_code) == "string")
+			selectedLibIndex = file_area.dir[bbs.curdir_code].lib_index;
 
 		var listStartRow = 2+this.areaChangeHdrLines.length; // The row on the screen where the list will start
 		var listEndRow = console.screen_rows - 1; // Row on screen where list will end
@@ -650,7 +662,7 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 			// If we didn't find the correct page for some reason, then set the
 			// variables to display page 1 and select the first message group.
 			var foundCorrectPage = ((topFileLibIndex < file_area.lib_list.length) &&
-			(selectedLibIndex >= topFileLibIndex) && (selectedLibIndex <= bottomFileLibIndex));
+			                        (selectedLibIndex >= topFileLibIndex) && (selectedLibIndex <= bottomFileLibIndex));
 			if (!foundCorrectPage)
 			{
 				topFileLibIndex = 0;
@@ -764,14 +776,13 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 						// Note: curpos.y is set at the start of the while loop.
 					}
 					break;
-				case KEY_ENTER: // Select the currently-highlighted message group
+				case KEY_ENTER: // Select the currently-highlighted file group
 					retObj = this.SelectDirWithinFileLib_Lightbar(selectedLibIndex);
-					// If the user chose an area, then set bbs.curlib and
-					// bbs.curdir, and don't continue the input loop anymore.
+					// If the user chose an area, then set the user's file directory,
+					// and don't continue the input loop anymore.
 					if (retObj.fileDirChosen)
 					{
-						bbs.curlib = selectedLibIndex;
-						bbs.curdir = retObj.fileLibIndex;
+						bbs.curdir_code = retObj.fileDirCode;
 						continueChoosingFileArea = false;
 					}
 					else
@@ -869,12 +880,11 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 						{
 							var selectedLibIndex = userInput - 1;
 							var retObj = this.SelectDirWithinFileLib_Lightbar(selectedLibIndex);
-							// If the user chose a sub-board, then set bbs.curlib and
-							// bbs.curdir, and don't continue the input loop anymore.
+							// If the user chose a sub-board, then set the user's
+							// file directory, and don't continue the input loop anymore.
 							if (retObj.fileDirChosen)
 							{
-								bbs.curlib = selectedLibIndex;
-								bbs.curdir = retObj.fileLibIndex;
+								bbs.curdir_code = retObj.fileDirCode;
 								continueChoosingFileArea = false;
 							}
 							else
@@ -905,9 +915,9 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 		// Don't choose a library, just let the user choose a directory within
 		// their current library.
 		retObj = this.SelectDirWithinFileLib_Lightbar(selectedLibIndex);
-		// If the user chose an area, then set bbs.curdir
+		// If the user chose an area, then set the user's file directory
 		if (retObj.fileDirChosen)
-			bbs.curdir = retObj.fileLibIndex;
+			bbs.curdir_code = retObj.fileDirCode;
 	}
 }
 
@@ -916,48 +926,37 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 //
 // Parameters:
 //  pLibIndex: The index of the message group to choose from.  This is
-//             optional; if not specified, bbs.curlib will be used.
-//  pHighlightIndex: An index of a message group to highlight.  This
+//             optional; if not specified, the user's current directory will be used.
+//  pHighlightIndex: An index of a file directory to highlight.  This
 //                   is optional; if left off, this will default to
 //                   the current sub-board.
 //
 // Return value: An object containing the following values:
 //               fileDirChosen: Boolean - Whether or not a sub-board was chosen.
-//               fileLibIndex: Numeric - The sub-board that was chosen (if any).
-//                             Will be -1 if none chosen.
+//               fileDirIdx: Numeric - The index of the file dir that was chosen (if any).
+//                           Will be -1 if none chosen.
+//               fileDirCode: The internal code of the file directory chosen ("" if none chosen)
 function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlightIndex)
 {
 	// Create the return object.
-	var retObj = new Object();
-	retObj.fileDirChosen = false;
-	retObj.fileLibIndex = -1;
+	var retObj = {
+		fileDirChosen: false,
+		fileDirIdx: -1,
+		fileDirCode: ""
+	};
 
 	var libIndex = 0;
 	if (typeof(pLibIndex) == "number")
 		libIndex = pLibIndex;
-	else if ((bbs.curlib != null) && (typeof(bbs.curlib) == "number"))
-		libIndex = bbs.curlib;
+	else if (typeof(bbs.curdir_code) == "string")
+		libIndex = file_area.dir[bbs.curdir_code].lib_index;
 	// Double-check libIndex
 	if (libIndex < 0)
 		libIndex = 0;
 	else if (libIndex >= file_area.lib_list.length)
 		libIndex = file_area.lib_list.length - 1;
 
-	var highlightIndex = 0;
-	if ((pHighlightIndex != null) && (typeof(pHighlightIndex) == "number"))
-		highlightIndex = pHighlightIndex;
-	else if ((bbs.curdir != null) && (typeof(bbs.curdir) == "number") &&
-			(bbs.curlib == pLibIndex))
-	{
-		highlightIndex = bbs.curdir;
-	}
-	// Double-check highlightIndex
-	if (highlightIndex < 0)
-		highlightIndex = 0;
-	else if (highlightIndex >= file_area.lib_list[libIndex].dir_list.length)
-		highlightIndex = file_area.lib_list[libIndex].dir_list.length - 1;
-
-	// If there are no sub-boards in the given message group, then show
+	// If there are no sub-boards in the given file group, then show
 	// an error and return.
 	if (file_area.lib_list[libIndex].dir_list.length == 0)
 	{
@@ -965,6 +964,22 @@ function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlight
 		console.print("\1y\1hThere are no directories in the chosen library.\r\n\1p");
 		return retObj;
 	}
+
+	var highlightIndex = 0;
+	if ((pHighlightIndex != null) && (typeof(pHighlightIndex) == "number"))
+		highlightIndex = pHighlightIndex;
+	else if (typeof(bbs.curdir_code) == "string")
+		highlightIndex = file_area.dir[bbs.curdir_code].index;
+	// Sanity checking for highlightIndex
+	if (typeof(bbs.curdir_code) == "string")
+	{
+		if (libIndex != file_area.dir[bbs.curdir_code].lib_index)
+			highlightIndex = 0;
+	}
+	if (highlightIndex < 0)
+		highlightIndex = 0;
+	else if (highlightIndex >= file_area.lib_list[libIndex].dir_list.length)
+		highlightIndex = file_area.lib_list[libIndex].dir_list.length - 1;
 
 	// Ensure that the file directory printf information is created for
 	// this file library.
@@ -988,10 +1003,16 @@ function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlight
 
 	// Figure out the index of the user's currently-selected sub-board.
 	var selectedDirIndex = 0;
-	if ((bbs.curdir != null) && (typeof(bbs.curdir) == "number"))
+	if (typeof(bbs.curdir_code) == "string")
 	{
-		if ((bbs.curlib != null) && (typeof(bbs.curlib) == "number") && (bbs.curlib == pLibIndex))
-			selectedDirIndex = bbs.curdir;
+		selectedDirIndex = file_area.dir[bbs.curdir_code].index;
+		if (selectedDirIndex < 0)
+			selectedDirIndex = 0;
+		else if (selectedDirIndex >= file_area.lib_list[libIndex].dir_list.length)
+			selectedDirIndex = file_area.lib_list[libIndex].dir_list.length - 1;
+		// Sanity check
+		if (libIndex != file_area.dir[bbs.curdir_code].lib_index)
+			selectedDirIndex = 0;
 	}
 
 	var listStartRow = 3+this.areaChangeHdrLines.length;      // The row on the screen where the list will start
@@ -1151,7 +1172,8 @@ function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlight
 			case KEY_ENTER: // Select the currently-highlighted sub-board; and we're done.
 				continueChoosingFileDir = false;
 				retObj.fileDirChosen = true;
-				retObj.fileLibIndex = selectedDirIndex;
+				retObj.fileDirIdx = selectedDirIndex;
+				retObj.fileDirCode = file_area.lib_list[libIndex].dir_list[selectedDirIndex].code;
 				break;
 			case KEY_PAGE_DOWN: // Go to the next page
 				var nextPageTopIndex = topDirIndex + numItemsPerPage;
@@ -1247,7 +1269,8 @@ function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlight
 					{
 						continueChoosingFileDir = false;
 						retObj.fileDirChosen = true;
-						retObj.fileLibIndex = userInput - 1;
+						retObj.fileDirIdx = userInput - 1;
+						retObj.fileDirCode = file_area.lib_list[libIndex].dir_list[retObj.fileDirIdx].code;
 					}
 					else
 					{
@@ -1282,67 +1305,64 @@ function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlight
 //                  screen row if there aren't enough message groups to fill
 //                  the screen.
 function DDFileAreaChooser_listScreenfulOfFileLibs(pStartIndex, pStartScreenRow,
-                                                    pEndScreenRow, pClearScreenFirst,
-                                                    pBlankToEndRow)
+                                                   pEndScreenRow, pClearScreenFirst,
+                                                   pBlankToEndRow)
 {
-   // Check the parameters; If they're bad, then just return.
-   if ((typeof(pStartIndex) != "number") ||
-       (typeof(pStartScreenRow) != "number") ||
-       (typeof(pEndScreenRow) != "number"))
-   {
-      return;
-   }
-   if ((pStartIndex < 0) || (pStartIndex >= file_area.lib_list.length))
-      return;
-   if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
-      return;
-   if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
-      return;
+	// Check the parameters; If they're bad, then just return.
+	if ((typeof(pStartIndex) != "number") ||
+	    (typeof(pStartScreenRow) != "number") ||
+	    (typeof(pEndScreenRow) != "number"))
+	{
+		return;
+	}
+	if ((pStartIndex < 0) || (pStartIndex >= file_area.lib_list.length))
+		return;
+	if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
+		return;
+	if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
+		return;
 
-   // If pStartScreenRow is greather than pEndScreenRow, then swap them.
-   if (pStartScreenRow > pEndScreenRow)
-   {
-      var temp = pStartScreenRow;
-      pStartScreenRow = pEndScreenRow;
-      pEndScreenRow = temp;
-   }
+	// If pStartScreenRow is greather than pEndScreenRow, then swap them.
+	if (pStartScreenRow > pEndScreenRow)
+	{
+		var temp = pStartScreenRow;
+		pStartScreenRow = pEndScreenRow;
+		pEndScreenRow = temp;
+	}
 
-   // Calculate the ending index to use for the file libraries array.
-   var endIndex = pStartIndex + (pEndScreenRow-pStartScreenRow);
-   if (endIndex >= file_area.lib_list.length)
-      endIndex = file_area.lib_list.length - 1;
-   var onePastEndIndex = endIndex + 1;
+	// Calculate the ending index to use for the file libraries array.
+	var endIndex = pStartIndex + (pEndScreenRow-pStartScreenRow);
+	if (endIndex >= file_area.lib_list.length)
+		endIndex = file_area.lib_list.length - 1;
+	var onePastEndIndex = endIndex + 1;
 
-   // Check to make sure bbs.curlib is valid (it might not be for brand-new users).
-   var curlibValid = ((bbs.curlib != null) && (typeof(bbs.curlib) != "undefined"));
+	// Clear the screen, go to the specified screen row, and display the message
+	// group information.
+	if (pClearScreenFirst)
+		console.clear("\1n");
+	console.gotoxy(1, pStartScreenRow);
+	var libIndex = pStartIndex;
+	for (; libIndex < onePastEndIndex; ++libIndex)
+	{
+		this.WriteFileLibLine(libIndex, false);
+		if (libIndex < endIndex)
+			console.crlf();
+	}
 
-   // Clear the screen, go to the specified screen row, and display the message
-   // group information.
-   if (pClearScreenFirst)
-      console.clear("\1n");
-   console.gotoxy(1, pStartScreenRow);
-   var libIndex = pStartIndex;
-   for (; libIndex < onePastEndIndex; ++libIndex)
-   {
-      this.WriteFileLibLine(libIndex, false);
-      if (libIndex < endIndex)
-         console.crlf();
-   }
-
-   // If pBlankToEndRow is true and we're not at the end row yet, then
-   // write blank lines to the end row.
-   if (pBlankToEndRow)
-   {
-      var screenRow = pStartScreenRow + (endIndex - pStartIndex) + 1;
-      if (screenRow <= pEndScreenRow)
-      {
-         for (; screenRow <= pEndScreenRow; ++screenRow)
-         {
-            console.gotoxy(1, screenRow);
-            console.clearline("\1n");
-         }
-      }
-   }
+	// If pBlankToEndRow is true and we're not at the end row yet, then
+	// write blank lines to the end row.
+	if (pBlankToEndRow)
+	{
+		var screenRow = pStartScreenRow + (endIndex - pStartIndex) + 1;
+		if (screenRow <= pEndScreenRow)
+		{
+			for (; screenRow <= pEndScreenRow; ++screenRow)
+			{
+				console.gotoxy(1, screenRow);
+				console.clearline("\1n");
+			}
+		}
+	}
 }
 
 // For the DDFileAreaChooser class - Writes a file library information line.
@@ -1352,20 +1372,21 @@ function DDFileAreaChooser_listScreenfulOfFileLibs(pStartIndex, pStartScreenRow,
 //  pHighlight: Boolean - Whether or not to write the line highlighted.
 function DDFileAreaChooser_writeFileLibLine(pLibIndex, pHighlight)
 {
-   console.print("\1n");
-   // Write the highlight background color if pHighlight is true.
-   if (pHighlight)
-      console.print(this.colors.bkgHighlight);
+	console.print("\1n");
+	// Write the highlight background color if pHighlight is true.
+	if (pHighlight)
+		console.print(this.colors.bkgHighlight);
 
-   var curlibValid = (typeof(bbs.curlib) == "number");
-
-   // Write the message group information line
-   console.print((curlibValid && (pLibIndex == bbs.curlib)) ? this.colors.areaMark + "*" : " ");
-   printf((pHighlight ? this.fileLibHighlightPrintfStr : this.fileLibPrintfStr),
-          +(pLibIndex+1),
-          file_area.lib_list[pLibIndex].description.substr(0, this.descFieldLen),
-          file_area.lib_list[pLibIndex].dir_list.length);
-   console.cleartoeol("\1n");
+	// Write the message group information line
+	curLibIdx = 0;
+	if (typeof(bbs.curdir_code) == "string")
+		curLibIdx = file_area.dir[bbs.curdir_code].lib_index;
+	console.print(pLibIndex == curLibIdx ? this.colors.areaMark + "*" : " ");
+	printf((pHighlight ? this.fileLibHighlightPrintfStr : this.fileLibPrintfStr),
+	       +(pLibIndex+1),
+	       file_area.lib_list[pLibIndex].description.substr(0, this.descFieldLen),
+	       file_area.lib_list[pLibIndex].dir_list.length);
+	console.cleartoeol("\1n");
 }
 
 // For the DDFileAreaChooser class: Writes a file directory information line.
@@ -1376,23 +1397,23 @@ function DDFileAreaChooser_writeFileLibLine(pLibIndex, pHighlight)
 //  pHighlight: Boolean - Whether or not to write the line highlighted.
 function DDFileAreaChooser_writeFileLibDirLine(pLibIndex, pDirIndex, pHighlight)
 {
-   console.print("\1n");
-   // Write the highlight background color if pHighlight is true.
-   if (pHighlight)
-      console.print(this.colors.bkgHighlight);
+	console.print("\1n");
+	// Write the highlight background color if pHighlight is true.
+	if (pHighlight)
+		console.print(this.colors.bkgHighlight);
 
-   // Determine if pLibIndex and pDirIndex specify the user's
-   // currently-selected file library & directory.
-   var currentDir = false;
-   if ((typeof(bbs.curlib) == "number") && (typeof(bbs.curdir) == "number"))
-      currentDir = ((pLibIndex == bbs.curlib) && (pDirIndex == bbs.curdir));
+	// Determine if pLibIndex and pDirIndex specify the user's
+	// currently-selected file library & directory.
+	var currentDir = false;
+	if (typeof(bbs.curdir_code) == "string")
+		currentDir = ((pLibIndex == file_area.dir[bbs.curdir_code].lib_index) && (pDirIndex == file_area.dir[bbs.curdir_code].index));
 
-   // Print the directory information line
-   console.print(currentDir ? this.colors.areaMark + "*" : " ");
-   printf((pHighlight ? this.fileDirListPrintfInfo[pLibIndex].highlightPrintfStr : this.fileDirListPrintfInfo[pLibIndex].printfStr),
-          +(pDirIndex+1),
-          file_area.lib_list[pLibIndex].dir_list[pDirIndex].description.substr(0, this.descFieldLen),
-          this.fileDirListPrintfInfo[pLibIndex].fileCounts[pDirIndex]);
+	// Print the directory information line
+	console.print(currentDir ? this.colors.areaMark + "*" : " ");
+	printf((pHighlight ? this.fileDirListPrintfInfo[pLibIndex].highlightPrintfStr : this.fileDirListPrintfInfo[pLibIndex].printfStr),
+	       +(pDirIndex+1),
+	       file_area.lib_list[pLibIndex].dir_list[pDirIndex].description.substr(0, this.descFieldLen),
+	this.fileDirListPrintfInfo[pLibIndex].fileCounts[pDirIndex]);
 }
 
 // Updates the page number text in the file group/area list header line on the screen.
