@@ -59,8 +59,10 @@ int DLLCALL vasprintf(char **strptr, const char *format, va_list va)
 	va_copy(va2, va);
 	ret = _vscprintf(format, va);
 	*strptr = (char *)malloc(ret+1);
-	if (*strptr == NULL)
+	if (*strptr == NULL) {
+		va_end(va2);
 		return -1;
+	}
 	ret = vsprintf(*strptr, format, va2);
 	va_end(va2);
 	return ret;
