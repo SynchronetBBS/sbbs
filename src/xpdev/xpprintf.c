@@ -49,7 +49,7 @@
 #include "gen_defs.h"
 
 #if defined(_MSC_VER) || defined(__MSVCRT__)
-int DLLCALL vasprintf(char **strptr, char *format, va_list va)
+int DLLCALL vasprintf(char **strptr, const char *format, va_list va)
 {
 	va_list	va2;
 	int		ret;
@@ -66,7 +66,7 @@ int DLLCALL vasprintf(char **strptr, char *format, va_list va)
 	return ret;
 }
 
-int DLLCALL asprintf(char **strptr, char *format, ...)
+int DLLCALL asprintf(char **strptr, const char *format, ...)
 {
 	va_list	va;
 	int		ret;
