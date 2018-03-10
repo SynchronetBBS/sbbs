@@ -22,6 +22,9 @@ load('fidocfg.js');
 load('binkp.js');
 load('freqit_common.js');
 
+var REVISION = "$Revision$".split(' ')[1];
+var version_notice = "BinkIT/" + REVISION;
+
 FREQIT.add_file = function(filename, bp, cfg)
 {
 	if (filename === undefined)
@@ -500,14 +503,14 @@ function callout_done(bp, semaphores)
 function callout(addr, scfg, semaphores, locks, bicfg)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
-	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
+	var bp = new BinkP(version_notice, undefined, rx_callback, tx_callback);
 	var port;
 	var host;
 	var f;
 	var success = false;
 	var src_addr;
 
-	log(LOG_INFO, "Callout to "+addr+" started.");
+	log(LOG_INFO, format("%s callout to %s started", bp.revision, addr));
 	if (bicfg === undefined)
 		bicfg = new BinkITCfg();
 	bp.system_operator = bicfg.sysop;
@@ -867,14 +870,14 @@ function inbound_auth_cb(pwd, bp)
 function run_inbound(sock)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
-	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
+	var bp = new BinkP(version_notice, undefined, rx_callback, tx_callback);
 	var port;
 	var f;
 	var success = false;
 	var semaphores = [];
 	var locks = [];
 
-	log(LOG_INFO, "Got inbound call from "+sock.remote_ip_address+":"+sock.remote_port);
+	log(LOG_INFO, bp.revision + " inbound connection from " +sock.remote_ip_address+":"+sock.remote_port);
 	bp.cb_data = {
 		binkitcfg:new BinkITCfg(),
 		binkit_scfg:new SBBSEchoCfg(),
@@ -1058,6 +1061,8 @@ catch(e) {}
 var ran = {};
 var i;
 var addr;
+
+log(LOG_INFO, version_notice + " invoked with options: " + argv.join(' '));
 
 // If we're running as a service, call run_inbound().
 if (sock !== undefined && sock.descriptor !== -1)
