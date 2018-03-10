@@ -979,6 +979,7 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSSTRING_TO_MSTRING(cx, js_str, str, NULL);
 	if(JS_IsExceptionPending(cx)) {
+		FREE_AND_NULL(str);
 		free(fname);
 		return JS_FALSE;
 	}
