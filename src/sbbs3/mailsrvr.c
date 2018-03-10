@@ -2993,7 +2993,7 @@ static void smtp_thread(void* arg)
 
 	srand((unsigned int)(time(NULL) ^ (time_t)GetCurrentThreadId()));	/* seed random number generator */
 	rand();	/* throw-away first result */
-	SAFEPRINTF4(session_id,"%x%x%x%lx",getpid(),socket,rand(),clock());
+	SAFEPRINTF4(session_id,"%x%x%x%lx",getpid(),socket,rand(),(long)clock());
 	lprintf(LOG_DEBUG,"%04d SMTP Session ID=%s", socket, session_id);
 	SAFEPRINTF2(msgtxt_fname,"%sSBBS_SMTP.%s.msg", scfg.temp_dir, session_id);
 	SAFEPRINTF2(newtxt_fname,"%sSBBS_SMTP.%s.new", scfg.temp_dir, session_id);
@@ -4342,20 +4342,30 @@ static void smtp_thread(void* arg)
 				if(relay_user.number && scfg.total_faddrs) {
 					char* ftn_tld = strstr(dest_host, FIDO_TLD);
 					if(ftn_tld != NULL && ftn_tld[strlen(FIDO_TLD)] == 0) {
+						short point, node, net, zone;
+
 						fidoaddr_t faddr = scfg.faddr[0];
 						faddr.point = 0;
+						point = faddr.point;
+						node = faddr.node;
+						net = faddr.net;
+						zone = faddr.zone;
 						if((sscanf(dest_host,"p%hu.f%hu.n%hu.z%hu.fidonet"
-							,&faddr.point
-							,&faddr.node
-							,&faddr.net
-							,&faddr.zone)==4
+							,&point
+							,&node
+							,&net
+							,&zone)==4
 							||
 							sscanf(dest_host,"f%hu.n%hu.z%hu.fidonet"
-							,&faddr.node
-							,&faddr.net
-							,&faddr.zone)==3
-							) && faddr.zone) {
+							,&node
+							,&net
+							,&zone)==3
+							) && zone) {
 
+							faddr.point = point;
+							faddr.node = node;
+							faddr.net = net;
+							faddr.zone = zone;
 							lprintf(LOG_INFO,"%04d SMTP %s relaying to FidoNet address: %s (%s)"
 								,socket, relay_user.alias, tp+1, smb_faddrtoa(&faddr, NULL));
 
