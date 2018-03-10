@@ -19,7 +19,10 @@ char* DLLCALL get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE a
 	if (cryptStatusOK(cryptGetAttributeString(sess, attr, NULL, &len))) {
 		estr = malloc(len + 1);
 		if (estr) {
-			cryptGetAttributeString(sess, attr, estr, &len);
+			if (cryptStatusError(cryptGetAttributeString(sess, attr, estr, &len))) {
+				free(estr);
+				return NULL;
+			}
 			estr[len] = 0;
 			return estr;
 		}
@@ -32,142 +35,7 @@ char* DLLCALL get_crypt_error(CRYPT_HANDLE sess)
 	return get_crypt_attribute(sess, CRYPT_ATTRIBUTE_ERRORMESSAGE);
 }
 
-bool DLLCALL get_crypt_error_string(int status, CRYPT_HANDLE sess, char estr[SSL_ESTR_LEN], const char *action)
-{
-	char	*emsg = NULL;
-
-	if (cryptStatusOK(status))
-		return true;
-
-	if (estr) {
-		if (sess != CRYPT_UNUSED)
-			emsg = get_crypt_error(sess);
-		if (emsg == NULL) {
-			switch(status) {
-				case CRYPT_ERROR_PARAM1:
-					emsg = strdup("Bad argument, parameter 1");
-					break;
-				case CRYPT_ERROR_PARAM2:
-					emsg = strdup("Bad argument, parameter 2");
-					break;
-				case CRYPT_ERROR_PARAM3:
-					emsg = strdup("Bad argument, parameter 3");
-					break;
-				case CRYPT_ERROR_PARAM4:
-					emsg = strdup("Bad argument, parameter 4");
-					break;
-				case CRYPT_ERROR_PARAM5:
-					emsg = strdup("Bad argument, parameter 5");
-					break;
-				case CRYPT_ERROR_PARAM6:
-					emsg = strdup("Bad argument, parameter 6");
-					break;
-				case CRYPT_ERROR_PARAM7:
-					emsg = strdup("Bad argument, parameter 7");
-					break;
-
-				/* Errors due to insufficient resources */
-
-				case CRYPT_ERROR_MEMORY:
-					emsg = strdup("Out of memory");
-					break;
-				case CRYPT_ERROR_NOTINITED:
-					emsg = strdup("Data has not been initialised");
-					break;
-				case CRYPT_ERROR_INITED:
-					emsg = strdup("Data has already been init'd");
-					break;
-				case CRYPT_ERROR_NOSECURE:
-					emsg = strdup("Opn.not avail.at requested sec.level");
-					break;
-				case CRYPT_ERROR_RANDOM:
-					emsg = strdup("No reliable random data available");
-					break;
-				case CRYPT_ERROR_FAILED:
-					emsg = strdup("Operation failed");
-					break;
-				case CRYPT_ERROR_INTERNAL:
-					emsg = strdup("Internal consistency check failed");
-					break;
-
-				/* Security violations */
-
-				case CRYPT_ERROR_NOTAVAIL:
-					emsg = strdup("This type of opn.not available");
-					break;
-				case CRYPT_ERROR_PERMISSION:
-					emsg = strdup("No permiss.to perform this operation");
-					break;
-				case CRYPT_ERROR_WRONGKEY:
-					emsg = strdup("Incorrect key used to decrypt data");
-					break;
-				case CRYPT_ERROR_INCOMPLETE:
-					emsg = strdup("Operation incomplete/still in progress");
-					break;
-				case CRYPT_ERROR_COMPLETE:
-					emsg = strdup("Operation complete/can't continue");
-					break;
-				case CRYPT_ERROR_TIMEOUT:
-					emsg = strdup("Operation timed out before completion");
-					break;
-				case CRYPT_ERROR_INVALID:
-					emsg = strdup("Invalid/inconsistent information");
-					break;
-				case CRYPT_ERROR_SIGNALLED:
-					emsg = strdup("Resource destroyed by extnl.event");
-					break;
-
-				/* High-level function errors */
-
-				case CRYPT_ERROR_OVERFLOW:
-					emsg = strdup("Resources/space exhausted");
-					break;
-				case CRYPT_ERROR_UNDERFLOW:
-					emsg = strdup("Not enough data available");
-					break;
-				case CRYPT_ERROR_BADDATA:
-					emsg = strdup("Bad/unrecognised data format");
-					break;
-				case CRYPT_ERROR_SIGNATURE:
-					emsg = strdup("Signature/integrity check failed");
-					break;
-
-				/* Data access function errors */
-
-				case CRYPT_ERROR_OPEN:
-					emsg = strdup("Cannot open object");
-					break;
-				case CRYPT_ERROR_READ:
-					emsg = strdup("Cannot read item from object");
-					break;
-				case CRYPT_ERROR_WRITE:
-					emsg = strdup("Cannot write item to object");
-					break;
-				case CRYPT_ERROR_NOTFOUND:
-					emsg = strdup("Requested item not found in object");
-					break;
-				case CRYPT_ERROR_DUPLICATE:
-					emsg = strdup("Item already present in object");
-					break;
-
-				/* Data enveloping errors */
-
-				case CRYPT_ENVELOPE_RESOURCE:
-					emsg = strdup("Need resource to proceed");
-					break;
-			}
-		}
-		if (emsg) {
-			safe_snprintf(estr, SSL_ESTR_LEN, "'%s' (%d) %s", emsg, status, action);
-			free_crypt_attrstr(emsg);
-		}
-		else
-			safe_snprintf(estr, SSL_ESTR_LEN, "(%d) %s", status, action);
-	}
-	return false;
-}
-
-int DLLCALL crypt_ll(int error)
+static int DLLCALL crypt_ll(int error)
 {
 	switch(error) {
 		case CRYPT_ERROR_INCOMPLETE:
@@ -180,6 +48,173 @@ int DLLCALL crypt_ll(int error)
 			return LOG_INFO;
 	}
 	return LOG_ERR;
+}
+
+static const char *crypt_lstr(int level)
+{
+	switch(level) {
+		case LOG_EMERG:
+			return "!ERROR";
+		case LOG_ALERT:
+			return "!ERROR";
+		case LOG_CRIT:
+			return "!ERROR";
+		case LOG_ERR:
+			return "ERROR";
+		case LOG_WARNING:
+			return "WARNING";
+		case LOG_NOTICE:
+			return "note";
+		case LOG_INFO:
+			return "info";
+		case LOG_DEBUG:
+			return "dbg";
+	}
+	return "!!!!!!!!";
+}
+
+bool DLLCALL get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const char *action, int *lvl)
+{
+	char	*emsg = NULL;
+	bool	allocated = false;
+	int	level;
+
+	if (cryptStatusOK(status))
+		return true;
+
+	level = crypt_ll(status);
+	if (lvl)
+		*lvl = level;
+
+	if (estr) {
+		if (sess != CRYPT_UNUSED)
+			emsg = get_crypt_error(sess);
+		if (emsg != NULL)
+			allocated = true;
+		if (emsg == NULL) {
+			switch(status) {
+				case CRYPT_ERROR_PARAM1:
+					emsg = "Bad argument, parameter 1";
+					break;
+				case CRYPT_ERROR_PARAM2:
+					emsg = "Bad argument, parameter 2";
+					break;
+				case CRYPT_ERROR_PARAM3:
+					emsg = "Bad argument, parameter 3";
+					break;
+				case CRYPT_ERROR_PARAM4:
+					emsg = "Bad argument, parameter 4";
+					break;
+				case CRYPT_ERROR_PARAM5:
+					emsg = "Bad argument, parameter 5";
+					break;
+				case CRYPT_ERROR_PARAM6:
+					emsg = "Bad argument, parameter 6";
+					break;
+				case CRYPT_ERROR_PARAM7:
+					emsg = "Bad argument, parameter 7";
+					break;
+
+				/* Errors due to insufficient resources */
+
+				case CRYPT_ERROR_MEMORY:
+					emsg = "Out of memory";
+					break;
+				case CRYPT_ERROR_NOTINITED:
+					emsg = "Data has not been initialised";
+					break;
+				case CRYPT_ERROR_INITED:
+					emsg = "Data has already been init'd";
+					break;
+				case CRYPT_ERROR_NOSECURE:
+					emsg = "Opn.not avail.at requested sec.level";
+					break;
+				case CRYPT_ERROR_RANDOM:
+					emsg = "No reliable random data available";
+					break;
+				case CRYPT_ERROR_FAILED:
+					emsg = "Operation failed";
+					break;
+				case CRYPT_ERROR_INTERNAL:
+					emsg = "Internal consistency check failed";
+					break;
+
+				/* Security violations */
+
+				case CRYPT_ERROR_NOTAVAIL:
+					emsg = "This type of opn.not available";
+					break;
+				case CRYPT_ERROR_PERMISSION:
+					emsg = "No permiss.to perform this operation";
+					break;
+				case CRYPT_ERROR_WRONGKEY:
+					emsg = "Incorrect key used to decrypt data";
+					break;
+				case CRYPT_ERROR_INCOMPLETE:
+					emsg = "Operation incomplete/still in progress";
+					break;
+				case CRYPT_ERROR_COMPLETE:
+					emsg = "Operation complete/can't continue";
+					break;
+				case CRYPT_ERROR_TIMEOUT:
+					emsg = "Operation timed out before completion";
+					break;
+				case CRYPT_ERROR_INVALID:
+					emsg = "Invalid/inconsistent information";
+					break;
+				case CRYPT_ERROR_SIGNALLED:
+					emsg = "Resource destroyed by extnl.event";
+					break;
+
+				/* High-level function errors */
+
+				case CRYPT_ERROR_OVERFLOW:
+					emsg = "Resources/space exhausted";
+					break;
+				case CRYPT_ERROR_UNDERFLOW:
+					emsg = "Not enough data available";
+					break;
+				case CRYPT_ERROR_BADDATA:
+					emsg = "Bad/unrecognised data format";
+					break;
+				case CRYPT_ERROR_SIGNATURE:
+					emsg = "Signature/integrity check failed";
+					break;
+
+				/* Data access function errors */
+
+				case CRYPT_ERROR_OPEN:
+					emsg = "Cannot open object";
+					break;
+				case CRYPT_ERROR_READ:
+					emsg = "Cannot read item from object";
+					break;
+				case CRYPT_ERROR_WRITE:
+					emsg = "Cannot write item to object";
+					break;
+				case CRYPT_ERROR_NOTFOUND:
+					emsg = "Requested item not found in object";
+					break;
+				case CRYPT_ERROR_DUPLICATE:
+					emsg = "Item already present in object";
+					break;
+
+				/* Data enveloping errors */
+
+				case CRYPT_ENVELOPE_RESOURCE:
+					emsg = "Need resource to proceed";
+					break;
+			}
+		}
+		if (emsg) {
+			asprintf(estr, "%s '%s' (%d) %s", crypt_lstr(level), emsg, status, action);
+			if (allocated)
+				free_crypt_attrstr(emsg);
+		}
+		else
+			asprintf(estr, "%s (%d) %s", crypt_lstr(level), status, action);
+	}
+	return false;
 }
 
 static pthread_once_t crypt_init_once = PTHREAD_ONCE_INIT;
@@ -219,16 +254,16 @@ bool DLLCALL is_crypt_initialized(void)
 	return cryptlib_initialized;
 }
 
-#define DO(action, handle, x)	get_crypt_error_string(x, handle, estr, action)
+#define DO(action, handle, x)	get_crypt_error_string(x, handle, estr, action, level)
 
-CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
+CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 {
 	CRYPT_KEYSET		ssl_keyset;
 	CRYPT_CONTEXT		ssl_context = -1;	// MSVC requires this to be initialized
 	CRYPT_CERTIFICATE	ssl_cert;
 	int					i;
 	char				sysop_email[sizeof(cfg->sys_inetaddr)+6];
-    char				str[MAX_PATH+1];
+	char				str[MAX_PATH+1];
 
 	if(!do_cryptInit())
 		return -1;

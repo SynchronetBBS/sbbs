@@ -964,7 +964,7 @@ static void pop3_thread(void* arg)
 		lprintf(LOG_INFO,"%04d POP3 Hostname: %s", socket, host_name);
 
 	if (pop3.tls_port) {
-		if (get_ssl_cert(&scfg, NULL) == -1) {
+		if (get_ssl_cert(&scfg, NULL, NULL) == -1) {
 			lprintf(LOG_ERR, "%04d !POP3 [%s] Unable to get TLS certificate", socket, host_ip);
 			mail_close_socket(socket);
 			thread_down();
@@ -1094,11 +1094,11 @@ static void pop3_thread(void* arg)
 			else if (!stricmp(buf, "CAPA")) {
 				// Capabilities
 				sockprintf(socket,session, "+OK Capability list follows");
-				sockprintf(socket,session, "TOP\r\nUSER\r\nPIPELINING\r\nUIDL\r\nIMPLEMENTATION Synchronet POP3 Server %s-%s\r\n%s.", revision, PLATFORM_DESC, (session != -1 || get_ssl_cert(&scfg, NULL) == -1) ? "" : "STLS\r\n");
+				sockprintf(socket,session, "TOP\r\nUSER\r\nPIPELINING\r\nUIDL\r\nIMPLEMENTATION Synchronet POP3 Server %s-%s\r\n%s.", revision, PLATFORM_DESC, (session != -1 || get_ssl_cert(&scfg, NULL, NULL) == -1) ? "" : "STLS\r\n");
 				i++;
 			}
 			else if (!stricmp(buf, "STLS")) {
-				if (get_ssl_cert(&scfg, NULL) == -1) {
+				if (get_ssl_cert(&scfg, NULL, NULL) == -1) {
 					sockprintf(socket,session,"-ERR STLS command not supported");
 					continue;
 				}
@@ -2759,7 +2759,7 @@ static void smtp_thread(void* arg)
 	addr_len=sizeof(server_addr);
 
 	if(smtp.tls_port) {
-		if (get_ssl_cert(&scfg, NULL) == -1) {
+		if (get_ssl_cert(&scfg, NULL, NULL) == -1) {
 			lprintf(LOG_ERR, "%04d !SMTP Unable to get certificate", socket);
 			mail_close_socket(socket);
 			thread_down();
@@ -4657,7 +4657,7 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		if(session == -1 && !stricmp(buf,"STARTTLS")) {
-			if (get_ssl_cert(&scfg, NULL) == -1) {
+			if (get_ssl_cert(&scfg, NULL, NULL) == -1) {
 				lprintf(LOG_ERR, "%04d !SMTP Unable to get certificate", socket);
 				sockprintf(socket, session, "454 TLS not available");
 				continue;
@@ -5057,7 +5057,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 			case 0:
 				return sock;
 			case 1:
-				if ((!tls_retry) && get_ssl_cert(&scfg, NULL) != -1) {
+				if ((!tls_retry) && get_ssl_cert(&scfg, NULL, NULL) != -1) {
 					sockprintf(sock, *session, "STARTTLS");
 					if (sockgetrsp(sock, *session, "220", buf, sizeof(buf))) {
 						if ((status=cryptCreateSession(session, CRYPT_UNUSED, CRYPT_SESSION_SSL)) != CRYPT_OK) {

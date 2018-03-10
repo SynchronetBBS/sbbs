@@ -1667,7 +1667,6 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 	jsrefcount	rc;
 	BOOL		b;
 	int32		i;
-	char ssl_estr[SSL_ESTR_LEN];
 	scfg_t *scfg;
 
 	if((p=(js_socket_private_t*)JS_GetPrivate(cx,obj))==NULL) {
@@ -1741,7 +1740,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 										ret = CRYPT_ERROR_NOTAVAIL;
 									}
 									else {
-										get_ssl_cert(scfg, ssl_estr);
+										get_ssl_cert(scfg, NULL, NULL);
 										if (scfg->tls_certificate == -1)
 											ret = CRYPT_ERROR_NOTAVAIL;
 										else {
