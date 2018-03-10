@@ -150,7 +150,7 @@ typedef struct {
 	get_crypt_error_string(status, sess, &GCES_estr, "flushing data", &GCES_level);      \
 	if (GCES_estr) {                                                                     \
 		lprintf(GCES_level, "%04d %s%s", sock, server, GCES_estr);                   \
-		free(GCES_estr);                                                             \
+		free_crypt_attrstr(GCES_estr);                                               \
 	}                                                                                    \
 } while(0)
 
@@ -160,7 +160,7 @@ typedef struct {
 	get_crypt_error_string(status, sess, &GCES_estr, "flushing data", &GCES_level);      \
 	if (GCES_estr) {                                                                     \
 		lprintf(GCES_level, "%04d %s [%s] %s", sock, server, host, GCES_estr);       \
-		free(GCES_estr);                                                             \
+		free_crypt_attrstr(GCES_estr);                                               \
 	}                                                                                    \
 } while(0)
 
@@ -992,7 +992,7 @@ static void pop3_thread(void* arg)
 		if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 			if (estr) {
 				lprintf(level, "%04d !POP3 [%s] %s", socket, host_ip);
-				free(estr);
+				free_crypt_attrstr(estr);
 			}
 			mail_close_socket(socket);
 			thread_down();
@@ -2793,7 +2793,7 @@ static void smtp_thread(void* arg)
 		if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 			if (estr) {
 				lprintf(level, "%04d !SMTP %s", socket, estr);
-				free(estr);
+				free_crypt_attrstr(estr);
 			}
 			mail_close_socket(socket);
 			thread_down();
@@ -4694,7 +4694,7 @@ static void smtp_thread(void* arg)
 			if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 				if (estr) {
 					lprintf(level, "%04d !SMTP %s", socket, estr);
-					free(estr);
+					free_crypt_attrstr(estr);
 				}
 				sockprintf(socket, session, "454 TLS not available");
 				continue;

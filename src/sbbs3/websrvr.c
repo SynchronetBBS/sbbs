@@ -400,7 +400,7 @@ enum  {
 	get_crypt_error_string(status, sess->tls_sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                                \
 		lprintf(GCES_level, "%04d %s", sess->socket, GCES_estr);                \
-		free(GCES_estr);                                                        \
+		free_crypt_attrstr(GCES_estr);                                                        \
 	}                                                                               \
 } while (0)
 
@@ -6789,7 +6789,7 @@ void DLLCALL web_server(void* arg)
 			if (get_ssl_cert(&scfg, &ssl_estr, &lvl) == -1) {
 				if (ssl_estr) {
 					lprintf(lvl, "%s", ssl_estr);
-					free(ssl_estr);
+					free_crypt_attrstr(ssl_estr);
 				}
 			}
 		}

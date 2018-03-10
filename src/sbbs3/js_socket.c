@@ -68,7 +68,7 @@ static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE a
 		get_crypt_error_string(ret, session, &estr, "setting attribute", &level);
 		if (estr) {
 			lprintf(level, "%s", estr);
-			free(estr);
+			free_crypt_attrstr(estr);
 		}
 	}
 	return ret;
@@ -84,7 +84,7 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 		get_crypt_error_string(ret, session, &estr, "setting attribute string", &level);
 		if (estr) {
 			lprintf(level, "%s", estr);
-			free(estr);
+			free_crypt_attrstr(estr);
 		}
 	}
 	return ret;
@@ -95,7 +95,7 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 	get_crypt_error_string(status, pdata->session, &estr, "flushing data", &GCES_level); \
 	if (estr) {                                                                          \
 		lprintf(GCES_level, "%04d %s", p->sock, estr);                               \
-		free(estr);                                                                  \
+		free_crypt_attrstr(estr);                                                                  \
 	}                                                                                    \
 } while(0)
 
@@ -104,7 +104,7 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 	get_crypt_error_string(status, handle, &estr, "flushing data", &GCESH_level);        \
 	if (estr) {                                                                          \
 		lprintf(GCESH_level, "%04d %s", socket, estr);                               \
-		free(estr);                                                                  \
+		free_crypt_attrstr(estr);                                                                  \
 	}                                                                                    \
 } while(0)
 
@@ -1772,7 +1772,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 										if (get_ssl_cert(scfg, &estr, &level) == -1) {
 											if (estr) {
 												lprintf(level, "%04d %s", p->sock, estr);
-												free(estr);
+												free_crypt_attrstr(estr);
 											}
 										}
 										if (scfg->tls_certificate == -1)

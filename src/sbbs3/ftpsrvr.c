@@ -298,7 +298,7 @@ static int ftp_close_socket(SOCKET* sock, CRYPT_SESSION *sess, int line)
 	get_crypt_error_string(status, session, &estr, action, &GCES_level);\
 	if (estr) {                                                         \
 		lprintf(GCES_level, "%04d %s", sock, estr);                 \
-		free(estr);                                                 \
+		free_crypt_attrstr(estr);                                   \
 	}                                                                   \
 } while (0)
 
@@ -1935,7 +1935,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 		if (estr) {
 			lprintf(level, "%04d FTP %s", estr);
-			free(estr);
+			free_crypt_attrstr(estr);
 		}
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");

@@ -944,7 +944,7 @@ static BOOL handle_crypt_call(int status, service_client_t *service_client, cons
 			get_crypt_error_string(status, sess, &estr, action, &level);
 			if (estr) {
 				lprintf(level, "%04d %s", sock, estr);
-				free(estr);
+				free_crypt_attrstr(estr);
 			}
 		}
 	}
@@ -1917,7 +1917,7 @@ void DLLCALL services_thread(void* arg)
 			if (get_ssl_cert(&scfg, &ssl_estr, &level) == -1) {
 				if (ssl_estr) {
 					lprintf(level, "No TLS certificiate %s", ssl_estr);
-					free(ssl_estr);
+					free_crypt_attrstr(ssl_estr);
 				}
 			}
 		}
