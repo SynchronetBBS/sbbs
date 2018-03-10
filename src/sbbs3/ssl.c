@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include <threadwrap.h>
+#include "xpprintf.h"
 
 #include "ssl.h"
 //#include "js_socket.h"	// TODO... move this stuff in here?
