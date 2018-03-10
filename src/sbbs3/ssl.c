@@ -271,7 +271,7 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 	char				str[MAX_PATH+1];
 
 	if (estr)
-		estr = NULL;
+		*estr = NULL;
 	if(!do_cryptInit())
 		return -1;
 	pthread_mutex_lock(&ssl_cert_mutex);
