@@ -931,7 +931,7 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(strcmp(ftp->host_name,global->host_name)==0
-            || strcmp(bbs->host_name,cfg->sys_inetaddr)==0)
+            || (bbs != NULL && strcmp(bbs->host_name,cfg->sys_inetaddr)==0))
 			iniRemoveKey(lp,section,strHostName);
 		else if(!iniSetString(lp,section,strHostName,ftp->host_name,&style))
 			break;
@@ -1033,7 +1033,7 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(strcmp(mail->host_name,global->host_name)==0
-            || strcmp(bbs->host_name,cfg->sys_inetaddr)==0)
+            || (bbs != NULL && strcmp(bbs->host_name,cfg->sys_inetaddr)==0))
 			iniRemoveKey(lp,section,strHostName);
 		else if(!iniSetString(lp,section,strHostName,mail->host_name,&style))
 			break;
@@ -1131,7 +1131,7 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(strcmp(services->host_name,global->host_name)==0
-            || strcmp(bbs->host_name,cfg->sys_inetaddr)==0)
+            || (bbs != NULL && strcmp(bbs->host_name,cfg->sys_inetaddr)==0))
 			iniRemoveKey(lp,section,strHostName);
 		else if(!iniSetString(lp,section,strHostName,services->host_name,&style))
 			break;
@@ -1201,7 +1201,7 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(strcmp(web->host_name,global->host_name)==0
-            || strcmp(bbs->host_name,cfg->sys_inetaddr)==0)
+            || (bbs != NULL && strcmp(bbs->host_name,cfg->sys_inetaddr)==0))
 			iniRemoveKey(lp,section,strHostName);
 		else if(!iniSetString(lp,section,strHostName,web->host_name,&style))
 			break;
