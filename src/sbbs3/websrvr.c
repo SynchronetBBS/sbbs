@@ -6655,7 +6655,7 @@ void DLLCALL web_server(void* arg)
 	http_session_t *	session=NULL;
 	void			*acc_type;
 	char			*ssl_estr;
-	int			level;
+	int			lvl;
 
 	startup=(web_startup_t*)arg;
 
@@ -6788,9 +6788,9 @@ void DLLCALL web_server(void* arg)
 
 		if(startup->options&WEB_OPT_ALLOW_TLS) {
 			lprintf(LOG_DEBUG,"Loading/Creating TLS certificate");
-			if (get_ssl_cert(&scfg, &ssl_estr, &level) == -1) {
+			if (get_ssl_cert(&scfg, &ssl_estr, &lvl) == -1) {
 				if (ssl_estr) {
-					lprintf(level, "%s", ssl_estr);
+					lprintf(lvl, "%s", ssl_estr);
 					free(ssl_estr);
 				}
 			}
