@@ -430,7 +430,6 @@ int x_init(void)
 	}
 
 	_beginthread(x11_event_thread,1<<16,NULL);
-	_beginthread(x11_mouse_thread,1<<16,NULL);
 	sem_wait(&init_complete);
 	if(!x11_initialized) {
 		xp_dlclose(dl);
@@ -441,6 +440,7 @@ int x_init(void)
 		pthread_mutex_destroy(&copybuf_mutex);
 		return(-1);
 	}
+	_beginthread(x11_mouse_thread,1<<16,NULL);
 	cio_api.options |= CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
 	return(0);
 }
