@@ -371,7 +371,8 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	}
 	smb_freemsgmem(&msg);
 
-	fprintf(statfp, "Message (%u bytes) added to %s successfully\n", strlen((char *)msgtxt), smb.file);
+	// MSVC can't do %zu for size_t until MSVC 2017 it seems...
+	fprintf(statfp, "Message (%" PRIu64 " bytes) added to %s successfully\n", (uint64_t)strlen((char *)msgtxt), smb.file);
 	FREE_AND_NULL(msgtxt);
 }
 
