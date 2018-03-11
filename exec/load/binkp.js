@@ -1112,6 +1112,7 @@ BinkP.prototype.recvFrame = function(timeout)
 							}
 							break;
 						case 'VER':
+							log(LOG_INFO, "Peer version: " + args.slice(1).join(' '));
 							tmp = ret.data.split(/ /);
 							if (tmp.length >= 3) {
 								if (tmp[2].substr(0, 6) === 'binkp/') {
