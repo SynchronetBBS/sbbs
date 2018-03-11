@@ -162,6 +162,7 @@ void net_cfg()
 			,qhub_dflt,phub_dflt;
 	char	str[81],done;
 	int 	i,j,k,l;
+	int		mode;
 
 	while(1) {
 		i=0;
@@ -280,6 +281,7 @@ void net_cfg()
 		}
 
 		else if(i==2) { 	/* FidoNet Stuff */
+			static faddr_t savfaddr;
 			done=0;
 			while(!done) {
 				i=0;
@@ -335,9 +337,13 @@ void net_cfg()
 						uifc.helpbuf=
 							"`System FidoNet Addresses:`\n"
 							"\n"
-							"This is the FidoNet address of this system used to receive NetMail.\n"
-							"The Main address is also used as the default address for sub-boards.\n"
-							"Format: `Zone:Net/Node[.Point]`\n"
+							"These are the FidoNet-style addresses of your system, used to receive\n"
+							"FidoNet-style NetMail and EchoMail over FidoNet Technology Networks.\n"
+							"\n"
+							"The `Main` address is also used as the default address for Fido-Networked\n"
+							"sub-boards (EchoMail areas).\n"
+							"\n"
+							"The supported address format (so-called 3D or 4D): `Zone:Net/Node[.Point]`\n"
 						;
 						k=l=0;
 						while(1) {
@@ -346,29 +352,32 @@ void net_cfg()
 									strcpy(str,"Main");
 								else
 									sprintf(str,"AKA %u",i);
-								sprintf(opt[i],"%-8.8s %-16s"
+								sprintf(opt[i],"%-8.8s %16s"
 									,str,smb_faddrtoa(&cfg.faddr[i],tmp)); 
 							}
 							opt[i][0]=0;
-							j=WIN_RHT|WIN_SAV|WIN_ACT|WIN_INSACT;
+							mode=WIN_RHT|WIN_SAV|WIN_ACT|WIN_INSACT;
 							if(cfg.total_faddrs<MAX_OPTS)
-								j|=WIN_INS|WIN_XTR;
+								mode |= WIN_INS|WIN_XTR;
 							if(cfg.total_faddrs)
-								j|=WIN_DEL;
-							i=uifc.list(j,0,0,0,&k,&l
+								mode |= WIN_DEL|WIN_COPY|WIN_CUT;
+							if(savfaddr.zone)
+								mode |= WIN_PASTE | WIN_PASTEXTR;
+							i=uifc.list(mode,0,0,0,&k,&l
 								,"System Addresses",opt);
 							if(i==-1)
 								break;
 							int msk = i & MSK_ON;
 							i &= MSK_OFF;
-							if (msk == MSK_INS) {
-								if(!cfg.total_faddrs)
-									strcpy(str,"1:1/0");
-								else
-									smb_faddrtoa(&cfg.faddr[0],str);
-								if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Address"
-									,str,25,K_EDIT|K_UPPER))
-									continue;
+							if (msk == MSK_INS || msk == MSK_PASTE) {
+								faddr_t newfaddr;
+								if(msk == MSK_INS) {
+									if(uifc.input(WIN_MID|WIN_SAV,0,0,"Address (e.g. 1:2/3 or 1:2/3.4)"
+										,str,25,K_UPPER) < 1)
+										continue;
+									newfaddr = atofaddr(str);
+								} else
+									newfaddr = savfaddr;
 
 								if((cfg.faddr=(faddr_t *)realloc(cfg.faddr
 									,sizeof(faddr_t)*(cfg.total_faddrs+1)))==NULL) {
@@ -382,12 +391,18 @@ void net_cfg()
 								for(j=cfg.total_faddrs;j>i;j--)
 									cfg.faddr[j]=cfg.faddr[j-1];
 
-								cfg.faddr[i]=atofaddr(str);
+								cfg.faddr[i]=newfaddr;
 								cfg.total_faddrs++;
 								uifc.changes=1;
 								continue; 
 							}
-							if (msk == MSK_DEL) {
+							if (msk == MSK_COPY) {
+								savfaddr = cfg.faddr[i];
+								continue;
+							}
+							if (msk == MSK_DEL || msk == MSK_CUT) {
+								if(msk == MSK_CUT)
+									savfaddr = cfg.faddr[i];
 								cfg.total_faddrs--;
 								while(i<cfg.total_faddrs) {
 									cfg.faddr[i]=cfg.faddr[i+1];
@@ -397,9 +412,9 @@ void net_cfg()
 								continue; 
 							}
 							smb_faddrtoa(&cfg.faddr[i],str);
-							uifc.input(WIN_MID|WIN_SAV,0,0,"Address"
-								,str,25,K_EDIT);
-							cfg.faddr[i]=atofaddr(str); 
+							if(uifc.input(WIN_MID|WIN_SAV,0,0,"Address"
+								,str,25,K_EDIT|K_UPPER) >= 1)
+								cfg.faddr[i]=atofaddr(str); 
 						}
 						break;
 					case 1:
