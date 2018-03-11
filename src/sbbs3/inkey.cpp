@@ -239,6 +239,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				,sectostr((uint)(now-logontime),tmp));
 			bprintf(text[TiTimeLeft]
 				,sectostr(timeleft,tmp));
+			if(sys_status&SS_EVENT)
+				bprintf(text[ReducedTime],timestr(event_time));
 			SYNC;
 			RESTORELINE;
 			lncntr=0;
