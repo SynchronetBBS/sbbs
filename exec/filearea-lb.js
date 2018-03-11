@@ -18,7 +18,7 @@ if (argv.length > 0)
 // gFileCnf will contain the settings from file.cnf
 var gFileCnf = null;
 
-// See exec/load/cfa_defs.js for color names
+// See exec/load/cga_defs.js for color names
 var colors = {
 	'fg' : WHITE,      // Non-highlighted item foreground
 	'bg' : BG_BLACK,   // Non-highlighted item background
