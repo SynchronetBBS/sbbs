@@ -1,5 +1,6 @@
 // Lightbar file library/directory browser
 load("sbbsdefs.js");
+load("nodedefs.js");
 load("cga_defs.js"); // For color definitions
 load("file_size.js");
 load("filedir.js");
@@ -661,6 +662,9 @@ var init = function() {
 }
 
 var main = function() {
+	var previousNodeAction = bbs.node_action;
+	bbs.node_action = NODE_LFIL;
+	bbs.nodesync();
 	while(!js.terminated) {
 		var userInput = console.inkey(K_NONE, 5);
 		if(!inputHandler(userInput)) {
@@ -670,6 +674,8 @@ var main = function() {
 		if(frame.cycle())
 			console.gotoxy(console.screen_columns, console.screen_rows);
 	}
+	bbs.node_action = previousNodeAction;
+	bbs.nodesync();
 }
 
 var cleanUp = function() {
