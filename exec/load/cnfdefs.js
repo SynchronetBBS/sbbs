@@ -197,7 +197,7 @@ struct.msg={
 	smb_retry_time:	{bytes:UCHAR, 			type:"int"},
 	max_qwkmsgage:	{bytes:UINT16_T, 		type:"int"},
 	__PADDING1__:466,
-	msg_misc:		{bytes:UINT32_T, 		type:"int"},
+	settings:		{bytes:UINT32_T, 		type:"int"},	// was msg_misc
 	__PADDING2__:510,
 	grp:			{bytes:struct.grp_t, 	type:"lst"},
 	sub:			{bytes:struct.sub_t, 	type:"lst"},
