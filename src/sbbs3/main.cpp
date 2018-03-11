@@ -290,28 +290,34 @@ void sock_close_cb(SOCKET sock, void *cb_data)
 		su->socket_open(su->cbdata, FALSE);
 }
 
+void call_socket_open_callback(BOOL open)
+{
+	if(startup!=NULL && startup->socket_open!=NULL) 
+		startup->socket_open(startup->cbdata, open);
+}
+
 SOCKET open_socket(int type, const char* protocol)
 {
 	SOCKET	sock;
 	char	error[256];
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
-	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(startup->cbdata,TRUE);
+	if(sock!=INVALID_SOCKET)
+		call_socket_open_callback(TRUE);
 	if(sock!=INVALID_SOCKET && set_socket_options(&scfg, sock, protocol, error, sizeof(error)))
 		lprintf(LOG_ERR,"%04d !ERROR %s",sock,error);
 
 	return(sock);
 }
 
-// Used by sbbs_t::ftp_put():
+// Used by sbbs_t::ftp_put() and js_accept()
 SOCKET accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen)
 {
 	SOCKET	sock;
 
 	sock=accept(s,&addr->addr,addrlen);
-	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL)
-		startup->socket_open(startup->cbdata,TRUE);
+	if(sock!=INVALID_SOCKET)
+		call_socket_open_callback(TRUE);
 
 	return(sock);
 }
@@ -325,8 +331,7 @@ int close_socket(SOCKET sock)
 
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
-	if(startup!=NULL && startup->socket_open!=NULL)
-		startup->socket_open(startup->cbdata,FALSE);
+	call_socket_open_callback(FALSE);
 	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
 		lprintf(LOG_WARNING,"!ERROR %d closing socket %d",ERROR_VALUE,sock);
 	return(result);
@@ -5244,8 +5249,7 @@ NO_SSH:
 		}
 
 		// Count the socket:
-		if(startup->socket_open!=NULL)
-			startup->socket_open(startup->cbdata, TRUE);
+		call_socket_open_callback(TRUE);
 
 		if(client_socket == INVALID_SOCKET)	{
 #if 0	/* is this necessary still? */
