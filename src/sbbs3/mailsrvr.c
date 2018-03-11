@@ -3560,6 +3560,7 @@ static void smtp_thread(void* arg)
 								,socket, smb_hashsourcetype(hashes[i]->source)
 								,hashes[i]->crc32, hashes[i]->flags, hashes[i]->length);
 
+						lprintf(LOG_DEBUG, "%04d SMTP Searching SPAM database for a match", socket);
 						if((i=smb_findhash(&spam, hashes, &found, sources, /* Mark: */TRUE))==SMB_SUCCESS) {
 							SAFEPRINTF3(str,"%s (%s) found in SPAM database (added on %s)"
 								,smb_hashsourcetype(found.source)
@@ -3572,9 +3573,12 @@ static void smtp_thread(void* arg)
 									,str, host_name, host_ip, rcpt_addr, reverse_path);
 								is_spam=TRUE;
 							}
-						} else if(i!=SMB_ERR_NOT_FOUND)
-							lprintf(LOG_ERR,"%04d !SMTP ERROR %d (%s) opening SPAM database"
-								,socket, i, spam.last_error);
+						} else {
+							lprintf(LOG_DEBUG, "%04d SMTP Done searching SPAM database", socket);
+							if(i!=SMB_ERR_NOT_FOUND)
+								lprintf(LOG_ERR,"%04d !SMTP ERROR %d (%s) opening SPAM database"
+									,socket, i, spam.last_error);
+						}
 						
 						if(is_spam) {
 							size_t	n,total=0;
@@ -3619,6 +3623,8 @@ static void smtp_thread(void* arg)
 					}
 				}
 
+				lprintf(LOG_DEBUG,"%04d SMTP Saving message to: '%s'", socket, rcpt_name);
+
 				/* E-mail */
 				smb.subnum=INVALID_SUB;
 				/* creates message data, but no header or index records (since msg.to==NULL) */
@@ -3633,7 +3639,7 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 
-				lprintf(LOG_DEBUG,"%04d SMTP Recipient name: '%s'", socket, rcpt_name);
+				lprintf(LOG_DEBUG,"%04d SMTP Saved message data to: '%s'", socket, rcpt_name);
 
 				sec_list=iniReadSectionList(rcptlst,NULL);	/* Each section is a recipient */
 				for(rcpt_count=0; sec_list!=NULL
