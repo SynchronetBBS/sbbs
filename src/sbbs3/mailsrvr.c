@@ -570,7 +570,7 @@ static int sockgetrsp_opt(SOCKET socket, CRYPT_SESSION sess, char* rsp, char *op
 		}
 		break;
 	}
-	mopt[3] = ' ';
+	mopt[strlen(rsp)] = ' ';
 	if (strncmp(buf, mopt, moptlen) == 0)
 		ret = 1;
 	free(mopt);
