@@ -4995,7 +4995,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 {
 	int i;
 	int tls_retry;
-	SOCKET sock;
+	SOCKET sock=INVALID_SOCKET;
 	list_node_t*	node;
 	ulong		ip_addr;
 	union xp_sockaddr	server_addr;
