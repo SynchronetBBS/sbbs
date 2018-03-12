@@ -67,7 +67,7 @@ static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE a
 	if(ret != CRYPT_OK) {
 		get_crypt_error_string(ret, session, &estr, "setting attribute", &level);
 		if (estr) {
-			lprintf(level, "%s", estr);
+			lprintf(level, "TLS %s", estr);
 			free_crypt_attrstr(estr);
 		}
 	}
@@ -83,7 +83,7 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 	if(ret != CRYPT_OK) {
 		get_crypt_error_string(ret, session, &estr, "setting attribute string", &level);
 		if (estr) {
-			lprintf(level, "%s", estr);
+			lprintf(level, "TLS %s", estr);
 			free_crypt_attrstr(estr);
 		}
 	}
@@ -94,7 +94,7 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 	int GCES_level;                                                                      \
 	get_crypt_error_string(status, pdata->session, &estr, action, &GCES_level); \
 	if (estr) {                                                                          \
-		lprintf(GCES_level, "%04d %s", p->sock, estr);                               \
+		lprintf(GCES_level, "%04d TLS %s", p->sock, estr);                               \
 		free_crypt_attrstr(estr);                                                                  \
 	}                                                                                    \
 } while(0)
@@ -103,7 +103,7 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 	int GCESH_level;                                                                     \
 	get_crypt_error_string(status, handle, &estr, action, &GCESH_level);        \
 	if (estr) {                                                                          \
-		lprintf(GCESH_level, "%04d %s", socket, estr);                               \
+		lprintf(GCESH_level, "%04d TLS %s", socket, estr);                               \
 		free_crypt_attrstr(estr);                                                                  \
 	}                                                                                    \
 } while(0)

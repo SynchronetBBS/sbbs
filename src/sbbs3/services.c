@@ -943,7 +943,7 @@ static BOOL handle_crypt_call(int status, service_client_t *service_client, cons
 				sess = CRYPT_UNUSED;
 			get_crypt_error_string(status, sess, &estr, action, &level);
 			if (estr) {
-				lprintf(level, "%04d %s", sock, estr);
+				lprintf(level, "%04d %s/TLS %s", sock, service_client->service->protocol, estr);
 				free_crypt_attrstr(estr);
 			}
 		}

@@ -394,13 +394,13 @@ enum  {
 	,MOVED_STAT
 };
 
-#define GCES(status, sess, action) do {                                                 \
+#define GCES(status, sess, action) do {                                             \
 	char *GCES_estr;                                                                \
 	int GCES_level;                                                                 \
 	get_crypt_error_string(status, sess->tls_sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                                \
-		lprintf(GCES_level, "%04d %s", sess->socket, GCES_estr);                \
-		free_crypt_attrstr(GCES_estr);                                                        \
+		lprintf(GCES_level, "%04d TLS %s", sess->socket, GCES_estr);                \
+		free_crypt_attrstr(GCES_estr);                                              \
 	}                                                                               \
 } while (0)
 

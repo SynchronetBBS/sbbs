@@ -149,7 +149,7 @@ typedef struct {
 	int GCES_level;                                                                 \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);  \
 	if (GCES_estr) {                                                                  \
-		lprintf(GCES_level, "%04d %s%s", sock, server, GCES_estr);                     \
+		lprintf(GCES_level, "%04d %s/TLS %s", sock, server, GCES_estr);                     \
 		free_crypt_attrstr(GCES_estr);                                                  \
 	}                                                                                    \
 } while(0)
@@ -159,7 +159,7 @@ typedef struct {
 	int GCES_level;                                                                 \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);  \
 	if (GCES_estr) {                                                                  \
-		lprintf(GCES_level, "%04d %s [%s] %s", sock, server, host, GCES_estr);         \
+		lprintf(GCES_level, "%04d %s/TLS [%s] %s", sock, server, host, GCES_estr);         \
 		free_crypt_attrstr(GCES_estr);                                                  \
 	}                                                                                    \
 } while(0)

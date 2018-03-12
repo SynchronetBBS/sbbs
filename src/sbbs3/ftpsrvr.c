@@ -297,7 +297,7 @@ static int ftp_close_socket(SOCKET* sock, CRYPT_SESSION *sess, int line)
 	int GCES_level;                                                     \
 	get_crypt_error_string(status, session, &estr, action, &GCES_level);\
 	if (estr) {                                                         \
-		lprintf(GCES_level, "%04d %s", sock, estr);                 \
+		lprintf(GCES_level, "%04d TLS %s", sock, estr);                 \
 		free_crypt_attrstr(estr);                                   \
 	}                                                                   \
 } while (0)
