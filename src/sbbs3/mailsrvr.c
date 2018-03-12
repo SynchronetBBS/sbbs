@@ -572,6 +572,7 @@ static int sockgetrsp_opt(SOCKET socket, CRYPT_SESSION sess, char* rsp, char *op
 	}
 	mopt[3] = ' ';
 	if (strncmp(buf, mopt, moptlen) == 0)
+		ret = 1;
 	free(mopt);
 	if(startup->options&MAIL_OPT_DEBUG_RX_RSP)
 		lprintf(LOG_DEBUG,"%04d RX%s: %s",socket,sess != -1 ? "S" : "", buf);
