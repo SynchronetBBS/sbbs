@@ -328,6 +328,7 @@ public:
 	char	local_addr[INET6_ADDRSTRLEN];
 #ifdef USE_CRYPTLIB
 	CRYPT_SESSION	ssh_session;
+	int		session_channel;
 	bool	ssh_mode;
 	SOCKET	passthru_socket;
     bool	passthru_output_thread_running;

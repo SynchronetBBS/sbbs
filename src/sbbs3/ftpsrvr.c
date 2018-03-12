@@ -1737,7 +1737,7 @@ static void receive_thread(void* arg)
 		if (*xfer.data_sess != -1) {
 			int status = cryptPopData(*xfer.data_sess, buf, sizeof(buf), &rd);
 			if (status != CRYPT_OK) {
-				GCES(status, *xfer.data_sock, *xfer.data_sess, estr, "flushing data");
+				GCES(status, *xfer.data_sock, *xfer.data_sess, estr, "popping data");
 				rd = -1;
 			}
 		}
