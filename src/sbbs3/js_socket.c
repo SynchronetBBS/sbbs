@@ -120,7 +120,8 @@ static bool do_CryptFlush(js_socket_private_t *p)
 			p->unflushed = 0;
 			return true;
 		}
-		GCES(ret, p, estr, "flushing data");
+		if (ret != CRYPT_ERROR_COMPLETE)
+			GCES(ret, p, estr, "flushing data");
 		return false;
 	}
 	return true;
@@ -180,7 +181,8 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 			buf=((uint8_t *)buf) + copied;
 		}
 		else {
-			GCES(ret, p, estr, "popping data");
+			if (ret != CRYPT_ERROR_COMPLETE)
+				GCES(ret, p, estr, "popping data");
 			if (total > 0)
 				return total;
 			do_js_close(p);
@@ -216,7 +218,8 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 			msg=((uint8_t *)msg) + copied;
 		}
 		else {
-			GCES(ret, p, estr, "pushing data");
+			if (ret != CRYPT_ERROR_COMPLETE)
+				GCES(ret, p, estr, "pushing data");
 			if(flush)
 				do_CryptFlush(p);
 			return total;
