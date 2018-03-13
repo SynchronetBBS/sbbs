@@ -146,7 +146,7 @@ var identifiers = [];
 var ks;
 var key_id;
 var maincnf = new File(maincnf_fname);
-var new_host = "acme-staging-v02.api.letsencrypt.org";
+var new_host = "acme-v02.api.letsencrypt.org";
 var new_domain_hash = '';
 var old_domain_hash;
 var old_host;
@@ -191,7 +191,7 @@ if (settings.open("r")) {
 		}
 	}
 	old_domain_hash = settings.iniGetValue("State", "DomainHash", "<None>");
-	old_host = settings.iniGetValue("State", "Host", "acme-staging-v02.api.letsencrypt.org");
+	old_host = settings.iniGetValue("State", "Host", "acme-v02.api.letsencrypt.org");
 	new_host = settings.iniGetValue(null, "Host", new_host);
 	dir_path = settings.iniGetValue(null, "Directory", dir_path);
 	TOSAgreed = settings.iniGetValue(null, "TOSAgreed", TOSAgreed);
