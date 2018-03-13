@@ -5438,19 +5438,12 @@ NO_SSH:
 							i=cryptGetAttributeString(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE, tname, &tnamelen);
 							GCESS(i, client_socket, sbbs->ssh_session, "getting channel type");
 							if (tnamelen != 7 || strnicmp(tname, "session", 7)) {
-								i = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, cid);
-								GCESS(i, client_socket, sbbs->ssh_session, "getting channel id");
-								i = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
-								GCESS(i, client_socket, sbbs->ssh_session, "closing channel");
-								if (i == CRYPT_ERROR_PERMISSION) {
-									// Fail because there's no session.
-									ssh_failed = 3;
-								}
+								lprintf(LOG_INFO, "%04d SSH active channel '%s' is not 'session', disconnecting.", client_socket, tname);
+								// Fail because there's no session.
+								ssh_failed = 3;
 							}
-							else {
+							else
 								sbbs->session_channel = cid;
-								lprintf(LOG_DEBUG, "Session channel id=%d", sbbs->session_channel);
-							}
 						}
 					}
 					else {
