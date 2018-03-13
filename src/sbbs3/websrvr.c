@@ -638,11 +638,15 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 						status = CRYPT_OK;
 					}
 					if(cryptStatusOK(status)) {
-						HANDLE_CRYPT_CALL_EXCEPT(cryptFlushData(session->tls_sess), session, "flushing data", CRYPT_ERROR_COMPLETE);
-						if (failed)
-							*failed=TRUE;
+						HANDLE_CRYPT_CALL_EXCEPT(status = cryptFlushData(session->tls_sess), session, "flushing data", CRYPT_ERROR_COMPLETE);
+						if (cryptStatusError(status)) {
+							if (failed)
+								*failed=TRUE;
+						}
 						return tls_sent;
 					}
+					if (failed)
+						*failed=TRUE;
 					result = tls_sent;
 				}
 				else {
@@ -6240,7 +6244,7 @@ void http_session_thread(void* arg)
 			thread_down();
 			return;
 		}
-		HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_OPTION_NET_READTIMEOUT, 1), &session, "setting read timeout");
+		HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_OPTION_NET_READTIMEOUT, 0), &session, "setting read timeout");
 	}
 
 	/* Start up the output buffer */
