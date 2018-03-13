@@ -13,7 +13,7 @@
  *    zone.  That is, if the default zone is zone 1, and the outbound
  *    is "/path/to/outbound", it will not correctly handle the case
  *    where there is a "/path/to/outbound.001" directory.
- * 
+ *
  * See FTS-5005 for details.
  */
 
@@ -115,7 +115,7 @@ function outbound_root(addr, scfg)
 /*
  * Given a list of addresses to rescan, calls
  * bp.addFile() for any pending file transfers.
- * 
+ *
  * TODO: Call this after sending a M_EOB to rescan per FSP-1024?  We
  * 		 hold the lock files, so nothing should be changing the flow
  * 		 files (per FTS-5005) though.  This is mostly for REQ handling,
@@ -397,7 +397,7 @@ function callout_want_callback(fobj, fsize, fdate, offset, bp)
 	 * Likely we'll want magical handling for control files (*.TIC,
 	 * *.REQ, and *.PKT, Bundle Files, and the default handling for the
 	 * rest.
-	 * 
+	 *
 	 * We should lower-case incoming filenames here too...
 	 *
 	 * Also, for partial files, we can cancel the remote and do an M_GET resume.
@@ -828,21 +828,27 @@ function inbound_auth_cb(pwd, bp)
 				cpw = '-';
 			if (pwd[0].substr(0, 9) === 'CRAM-MD5-') {
 				if (bp.getCRAM('MD5', cpw) === pwd[0]) {
+					log(LOG_INFO, "CRAM-MD5 password match for " + addr);
 					addrs.push(addr);
 					check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
 					ret = cpw;
 				} else {
-					log(LOG_WARNING, "CRAM-MD5 of password does not match");
+					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr);
 					ret = false;	// How do we break out of this forEach loop?!?
 				}
 			}
 			else {
 				// TODO: Deal with arrays of passwords?
-				if (bp.cb_data.binkitcfg.node[addr].nomd5 === false && bp.cb_data.binkitcfg.node[addr].pass === pwd[0]) {
+				if (bp.cb_data.binkitcfg.node[addr].nomd5)
+					log(LOG_WARNING, "CRAM-MD5 required (and not provided) by " + addr);
+				else if (bp.cb_data.binkitcfg.node[addr].pass === pwd[0]) {
+					log(LOG_INFO, "Plain-text password match for " + addr);
 					addrs.push(addr);
 					check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
 					ret = cpw;
 				}
+				else
+					log(LOG_WARNING, "Plain-text password mismatch for " + addr);
 			}
 		}
 		else
