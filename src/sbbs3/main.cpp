@@ -1763,14 +1763,14 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 			status = cryptGetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &cid);
 			if (status == CRYPT_OK) {
 				if (cid != sbbs->session_channel) {
-					cname = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE);
-					lprintf(LOG_ERR, "%04d ERROR attempt to use channel '%s' (%d != %d)", sbbs->client_socket, cname ? cname : "<unknown>", cid, sbbs->session_channel);
-					if (cname)
-						free_crypt_attrstr(cname);
 					if (cryptStatusError(status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, cid))) {
 						GCESS(status, sbbs->client_socket, sbbs->ssh_session, "setting channel");
 						return status;
 					}
+					cname = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE);
+					lprintf(LOG_ERR, "%04d SSH ERROR attempt to use channel '%s' (%d != %d)", sbbs->client_socket, cname ? cname : "<unknown>", cid, sbbs->session_channel);
+					if (cname)
+						free_crypt_attrstr(cname);
 					if (cryptStatusError(status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0))) {
 						GCESS(status, sbbs->client_socket, sbbs->ssh_session, "closing channel");
 						return status;
