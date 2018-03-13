@@ -1,0 +1,138 @@
+<!--Games-->
+<?xjs
+
+	if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
+	load(settings.web_lib + 'ftelnet.js');
+
+	if (typeof settings.xtrn_blacklist === 'string') {
+		settings.xtrn_blacklist = settings.xtrn_blacklist.toLowerCase().split(',');
+	} else {
+		settings.xtrn_blacklist = [];
+	}
+
+	var xtrn = {};
+	xtrn_area.sec_list.forEach(
+		function (sec) {
+			if (!sec.can_access || sec.prog_list.length < 1) return;
+			if (settings.xtrn_blacklist.indexOf(sec.code.toLowerCase()) > -1) {
+				return;
+			}
+			var x = [];
+			sec.prog_list.forEach(
+				function (prog) {
+					if (!prog.can_access || !prog.can_run) return;
+					if (settings.xtrn_blacklist.indexOf(prog.code.toLowerCase()) > -1) {
+						return;
+					}
+					x.push({ c : prog.code, n : prog.name });
+				}
+			);
+			if (x.length > 0) xtrn[sec.name] = x;
+		}
+	);
+
+    var options = null;
+    try {
+      load("ftelnethelper.js");
+      options = load("modopts.js", "logon");
+    } catch (e) {
+      // Ignore, just means modopts.js doesn't exist and so an error will be displayed below
+    }
+
+    if (!options) {
+        write("<p>Sorry, this BBS is not currently configured in a way that supports this feature.  Please ask the SysOp to enable it!</p>");
+        if (user.security.level >= 90) {
+            write("<p>Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Check out the latest <b><a href='http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/ftelnethelper.js'>exec/load/ftelnethelper.js</a></b>, <b><a href='http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/modopts.js'>exec/load/modopts.js</a></b> and <b><a href='http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/ctrl/modopts.ini'>ctrl/modopts.ini</a></b> files from CVS</li></ul></p>");
+        }
+    } else if (!options.rlogin_auto_xtrn) {
+        templatefile = "ftelnet_disabled.inc";
+        if (user.security.level >= 90) {
+            write("<p>Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the rlogin_auto_xtrn feature of the logon module<ul><li>To do this, ensure that the <b>rlogin_auto_xtrn=</b> line in the <b>[logon]</b> section of <b>sbbs/ctrl/modopts.ini</b> is set to <b>true</b></li><li>(Currently, it's set to <b>" + options.rlogin_auto_xtrn + "</b>)</ul></p>");
+        }
+    } else if (!IsWebSocketToRLoginServiceEnabled()) {
+        templatefile = "ftelnet_disabled.inc";
+        if (user.security.level >= 90) {
+            write("<p>Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the WebSocket to RLogin Proxy Service<ul><li>To do this, add this block to your <b>sbbs/ctrl/services.ini file<pre>[WebSocket-RLogin]\r\nPort=11513\r\nOptions=NO_HOST_LOOKUP\r\nCommand=websocketservice.js localhost " + GetRLoginPort() + "</pre></li></ul><strong>NOTE:</strong> You may need to tweak the Command= line if your server is listening on a specific IP address (ie change 'localhost' to the correct IP).</p>");
+        }
+    } else if (!IsRLoginEnabled()) {
+        templatefile = "ftelnet_disabled.inc";
+        if (user.security.level >= 90) {
+            write("<p>Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Allow RLogin connections<ul><li>To do this, ensure that the <b>Options=</b> line in the <b>[BBS]</b> section of <b>sbbs/ctrl/sbbs.ini</b> includes the <b>ALLOW_RLOGIN</b> option.</li><li>Or, if you're running Windows, open the Synchronet Control Panel and click <b>Terminal -> Configure -> RLogin -> Enabled</b> and then click <b>OK</b>.</li></ul></li></ul></p>");
+        }
+    } else {
+?>
+
+<style>.fTelnetStatusBar { display : none; }</style>
+
+<a name="fTelnet"></a>
+<div id="fTelnetContainer" class="fTelnetContainer" style="margin-bottom:1em;"></div>
+
+<div id="xtrn-list" class="list-group">
+	<div id="xtrn-list-template" class="list-group-item" style="display:none;">
+		<h4></h4>
+		<ul class="nav nav-pills">
+			<li id="xtrn-item-template" role="presentation" style="display:none;">
+			<a href="#fTelnet"></a>
+			</li>
+		</ul>
+	</div>
+</div>
+
+<script>document.write('<script src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"><\/script>');</script>
+<script type="text/javascript">
+
+	var Options = new fTelnetOptions();
+	Options.BareLFtoCRLF = false;
+	Options.BitsPerSecond = 57600;
+	Options.ConnectionType = 'rlogin';
+	Options.Emulation = 'ansi-bbs';
+	Options.Enter = '\r';
+	Options.Font = 'CP437';
+	Options.ForceWss = false;
+	Options.Hostname = '<?xjs write(http_request.vhost); ?>';
+	Options.LocalEcho = false;
+	Options.Port = <?xjs write(GetWebSocketToRLoginPort()); ?>;
+	Options.RLoginClientUsername = '<?xjs write(user.security.password); ?>';
+	Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
+	// Options.RLoginTerminalType = 'xtrn=' + http_request.query.code;
+	Options.ScreenColumns = 80;
+	Options.ScreenRows = 25;
+    Options.SplashScreen = Options.SplashScreen = '<?xjs write(getSplash()); ?>';
+	var fTelnet = new fTelnetClient('fTelnetContainer', Options);
+	fTelnet.OnConnectionClose = function () { window.location.reload(); };
+
+	function launchXtrn(code) {
+		$.getJSON(
+			'./api/system.ssjs?call=set-xtrn-intent&code=' + code,
+			function(data) { 
+				fTelnet._Options.RLoginTerminalType = 'xtrn=' + code;
+                fTelnet.Connect(); 
+            }
+		);
+	}
+
+	var xtrn = <?xjs write(JSON.stringify(xtrn)); ?>;
+	Object.keys(xtrn).forEach(
+		function (x) {
+			var e = $('#xtrn-list-template').clone();
+			$($(e).find('h4')[0]).text(x);
+			var ul = $($(e).find('ul')[0]);
+			xtrn[x].forEach(
+				function (xx) {
+					var li = $('#xtrn-item-template').clone();
+					var a = $(li).find('a')[0];
+					$(a).text(xx.n);
+					$(a).click(function () { launchXtrn(xx.c); });
+					$(ul).append(li);
+					$(li).show();
+				}
+			);
+			$(e).append(ul);
+			$('#xtrn-list').append(e);
+			$(e).show();
+		}
+	);
+
+</script>
+
+<?xjs } ?>
