@@ -2970,6 +2970,7 @@ void event_thread(void* arg)
 
 		/* Timed Events */
 		for(i=0;i<sbbs->cfg.total_events && !sbbs->terminated;i++) {
+			char event_code[LEN_CODE+1];
 			if(!sbbs->cfg.event[i]->node 
 				|| sbbs->cfg.event[i]->node>sbbs->cfg.sys_nodes)
 				continue;	// ignore events for invalid nodes
@@ -2981,6 +2982,9 @@ void event_thread(void* arg)
 				|| sbbs->cfg.event[i]->node>last_node)
 				&& !(sbbs->cfg.event[i]->misc&EVENT_EXCL))
 				continue;	// ignore non-exclusive events for other instances
+
+			SAFECOPY(event_code, sbbs->cfg.event[i]->code);
+			strupr(event_code);
 
 			tmptime=sbbs->cfg.event[i]->last;
 			if(localtime_r(&tmptime,&tm)==NULL)
@@ -3002,9 +3006,9 @@ void event_thread(void* arg)
 					if(sbbs->cfg.event[i]->node<first_node
 						|| sbbs->cfg.event[i]->node>last_node) {
 						eprintf(LOG_INFO,"Waiting for node %d to run timed event: %s"
-							,sbbs->cfg.event[i]->node,sbbs->cfg.event[i]->code);
+							,sbbs->cfg.event[i]->node, event_code);
 						eprintf(LOG_DEBUG,"%s event last run: %s (0x%08lx)"
-							,sbbs->cfg.event[i]->code
+							,event_code
 							,timestr(&sbbs->cfg, sbbs->cfg.event[i]->last, str)
 							,sbbs->cfg.event[i]->last);
 						lastnodechk=0;	 /* really last event time check */
@@ -3036,7 +3040,7 @@ void event_thread(void* arg)
 							if(now-sbbs->cfg.event[i]->last<(60*60))	/* event is done */
 								break; 
 							if(now-start>(90*60)) {
-								eprintf(LOG_WARNING,"!TIMEOUT waiting for event to complete");
+								eprintf(LOG_WARNING,"!TIMEOUT waiting for event (%s) to complete", event_code);
 								break;
 							}
 						}
@@ -3046,7 +3050,7 @@ void event_thread(void* arg)
 						sbbs->cfg.event[i]->last=(time32_t)now;
 					} else {	// Exclusive event to run on a node under our control
 						eprintf(LOG_INFO,"Waiting for all nodes to become inactive before "
-							"running timed event: %s",sbbs->cfg.event[i]->code);
+							"running timed event: %s", event_code);
 						lastnodechk=0;
 						start=time(NULL);
 						while(!sbbs->terminated) {
@@ -3083,9 +3087,11 @@ void event_thread(void* arg)
 							}
 							if(j>sbbs->cfg.sys_nodes) /* all nodes either offline or in limbo */
 								break;
-							eprintf(LOG_DEBUG,"Waiting for node %d (status=%d)",j,node.status);
+							eprintf(LOG_DEBUG,"Waiting for node %d (status=%d), event: %s"
+								,j, node.status, event_code);
 							if(now-start>(90*60)) {
-								eprintf(LOG_WARNING,"!TIMEOUT waiting for node %d to become inactive",j);
+								eprintf(LOG_WARNING,"!TIMEOUT waiting for node %d to become inactive (status=%d), event: %s"
+									,j, node.status, event_code);
 								break;
 							}
 						} 
@@ -3100,8 +3106,8 @@ void event_thread(void* arg)
 #endif
 				if(sbbs->cfg.event[i]->node<first_node 
 					|| sbbs->cfg.event[i]->node>last_node) {
-					eprintf(LOG_NOTICE,"Changing node status for nodes %d through %d to WFC"
-						,first_node,last_node);
+					eprintf(LOG_NOTICE,"Changing node status for nodes %d through %d to WFC, event: %s"
+						,first_node,last_node, event_code);
 					sbbs->cfg.event[i]->last=(time32_t)now;
 					for(j=first_node;j<=last_node;j++) {
 						node.status=NODE_INVALID_STATUS;
@@ -3134,11 +3140,10 @@ void event_thread(void* arg)
 					ex_mode|=(sbbs->cfg.event[i]->misc&EX_NATIVE);
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
-					strcpy(str,sbbs->cfg.event[i]->code);
 					eprintf(LOG_INFO,"Running %s%stimed event: %s"
 						,(ex_mode&EX_NATIVE)	? "native ":""
 						,(ex_mode&EX_BG)		? "background ":""
-						,strupr(str));
+						,event_code);
 					{
 						int result=
 							sbbs->external(
@@ -3146,7 +3151,7 @@ void event_thread(void* arg)
 								,ex_mode
 								,sbbs->cfg.event[i]->dir);
 						if(!(ex_mode&EX_BG))
-							eprintf(result ? LOG_ERR : LOG_INFO,"Timed event: %s returned %d",strupr(str), result);
+							eprintf(result ? LOG_ERR : LOG_INFO,"Timed event: %s returned %d", event_code, result);
 					}
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=FALSE;
