@@ -154,7 +154,7 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 	fd_set		socket_set;
 	struct		timeval tv = {0, 0};
 	char *estr;
-	
+
 	if (len == 0)
 		return total;
 	if(p->session==-1) {
@@ -201,7 +201,8 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 	if(p->session==-1)
 		return sendsocket(p->sock, msg, len);
 	do {
-		if((ret=cryptPushData(p->session, msg, len, &copied))==CRYPT_OK) {
+		// If we don't limit this, we occasionally get errors on large sends...
+		if((ret=cryptPushData(p->session, msg, len > 0x2000 ? 0x2000 : len, &copied))==CRYPT_OK) {
 			p->unflushed += copied;
 			if(flush)
 				do_CryptFlush(p);
