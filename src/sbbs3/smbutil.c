@@ -740,7 +740,6 @@ void maint(void)
 	}
 	fseek(smb.sid_fp,0L,SEEK_SET);
 	l = fread(idx, sizeof(idxrec_t), smb.status.total_msgs, smb.sid_fp);
-	l /= sizeof(idxrec_t);
 
 	printf("\nDone.\n\n");
 	printf("Scanning for pre-flagged messages...\n");
