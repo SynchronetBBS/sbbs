@@ -79,6 +79,8 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.sent_nr = false;
 	this.ver1_1 = false;
 	this.require_md5 = true;
+	// IREX VER Internet Rex 2.29 Win32 (binkp/1.1) doesn't work with longer challenges
+	// TODO: Remove this knob
 	this.cram_challenge_length = 16;
 	this.require_crypt = true;
 	this.timeout = 120;
@@ -529,7 +531,7 @@ BinkP.prototype.accept = function(sock, auth_cb)
 	if (this.sock == undefined || !this.sock.is_connected)
 		return false;
 
-	// IREX VER Internet Rex 2.29 Win32 (binkp/1.1) doesn't work with longer challenges
+	// IREX VER Internet Rex 2.29 Win32 (binkp/1.1) doesn't work with challenges longer than 32 chars
 	for (i=0; i < this.cram_challenge_length * 2; i++)
 		challenge += random(16).toString(16);
 
