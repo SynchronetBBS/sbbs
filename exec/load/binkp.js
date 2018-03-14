@@ -90,6 +90,8 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.want_callback = this.default_want;
 	this.wont_crypt = false;
 	this.will_crypt = false;
+	this.will_tls = false;
+	this.cant_tls = false;
 	this.in_keys = undefined;
 	this.out_keys = undefined;
 	this.capabilities = '115200,TCP,BINKP';
@@ -417,6 +419,10 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 		this.wont_crypt = true;
 		this.require_crypt = false;
 	}
+	/* Check if the first remote comand is an M_NUL "OPT TLS" */
+	pkt = this.recvFrame(this.timeout);
+	if (pkt === undefined)
+		return false;
 	this.sendCmd(this.command.M_NUL, "SYS "+this.system_name);
 	this.sendCmd(this.command.M_NUL, "ZYZ "+this.system_operator);
 	this.sendCmd(this.command.M_NUL, "LOC "+this.system_location);
@@ -535,6 +541,10 @@ BinkP.prototype.accept = function(sock, auth_cb)
 
 	this.cram = {algo:'MD5', challenge:challenge.replace(/[0-9a-fA-F]{2}/g, hex2ascii)};
 	this.authenticated = undefined;
+	this.sendCmd(this.command.M_NUL, "OPT TLS");
+	pkt = this.recvFrame(this.timeout);
+	if (pkt === undefined)
+		return false;
 	this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge+(this.wont_crypt?"":" CRYPT"));
 	this.sendCmd(this.command.M_NUL, "SYS "+this.system_name);
 	this.sendCmd(this.command.M_NUL, "ZYZ "+this.system_operator);
@@ -922,6 +932,7 @@ BinkP.prototype.recvFrame = function(timeout)
 	var avail;
 	var nullpos;
 	var buf;
+	var oldctls = this.cant_tls;
 
 	// Avoid warning from syncjslint by putting this in a closure.
 	function hex2ascii(hex)
@@ -1028,6 +1039,7 @@ BinkP.prototype.recvFrame = function(timeout)
 	if (ret.data.length < ret.length)
 		this.partialFrame = ret;
 	else {
+		this.cant_tls = true;
 		this.partialFrame = undefined;
 		if (ret.is_cmd) {
 			ret.command = ret.data.charCodeAt(0);
@@ -1107,6 +1119,22 @@ BinkP.prototype.recvFrame = function(timeout)
 												log(LOG_INFO, "Will encrypt session.");
 											}
 											break;
+										case 'TLS':
+											if (oldctls == false) {
+												if (this.outgoing) {
+													this.sendCmd(this.command.M_NUL, "OPT TLS");
+													this.sock.ssl_session = 1;
+												}
+												else
+													this.sock.ssl_server = 1;
+												this.will_tls = true;
+												this.wont_crypt = true;
+												this.require_crypt = false;
+											}
+											else {
+												this.sendCmd(this.command.M_ERR, "TLS must be negotiated before any other traffic");
+												return undefined;
+											}
 									}
 								}
 							}
