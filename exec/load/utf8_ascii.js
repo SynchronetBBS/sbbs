@@ -17,7 +17,7 @@ function utf8_ascii(uni)
 			uc |= ch.charCodeAt(i) & 0x3f;
 		}
 
-		nch = unicode_ascii(uc);
+		nch = unicode_cp437(uc);
 		if (nch.charCodeAt(0) > 0x7f)
 			nch = '?';
 		return nch;
