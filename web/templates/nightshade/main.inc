@@ -8,7 +8,7 @@
 				<p>
 				There are several minor annoyances for users of Internet Explorer (See notes below)</p><br />
 				<p>I strongly urge you to download and use Firefox or Opera for better standards compliance and better security.</p><br />
-				<p align="center"><a href="http://www.spreadfirefox.com/?q=affiliates&amp;id=0&amp;t=58"><img border="0" alt="Get Firefox!" title="Get Firefox!" src="http://sfx-images.mozilla.org/affiliates/Buttons/180x60/get.gif"/></a>&nbsp;&nbsp;<a href="http://my.opera.com/RuneMaster/affiliate/"><img src="http://promote.opera.com/buttons/official/180x60/png-8/180x60noads.png" alt="No ads. Better browsing" border="0" /></a></p><br />
+				<p align="center"><a href="http://www.spreadfirefox.com/?q=affiliates&amp;id=0&amp;t=58"><img border="0" alt="Get Firefox!" title="Get Firefox!" src="https://sfx-images.mozilla.org/affiliates/Buttons/180x60/get.gif"/></a>&nbsp;&nbsp;<a href="http://my.opera.com/RuneMaster/affiliate/"><img src="https://promote.opera.com/buttons/official/180x60/png-8/180x60noads.png" alt="No ads. Better browsing" border="0" /></a></p><br />
 				<p>
 				--RuneMaster
 				</p>
