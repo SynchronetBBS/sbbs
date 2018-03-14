@@ -209,7 +209,6 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	uchar*		msgtxt=NULL;
 	uchar*		newtxt;
 	long		msgtxtlen;
-	ushort		net;
 	int 		i;
 	ushort		agent=AGENT_SMBUTIL;
 	smbmsg_t	msg;
@@ -283,23 +282,17 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 
 	if(smb.status.attr&SMB_EMAIL && (type=='N' || to_address!=NULL)) {
 		if(to_address==NULL) {
-			printf("To Address (e.g. user@host): ");
+			printf("To Address (e.g. user@host or 1:2/3): ");
 			gets(str);
 		} else
 			SAFECOPY(str,to_address);
 		truncsp(str);
 		if(*str) {
-			net=smb_netaddr_type(str);
-			if((i=smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(net),&net))!=SMB_SUCCESS) {
-				fprintf(errfp,"\n%s!smb_hfield(0x%02X) returned %d: %s\n"
-					,beep,RECIPIENTNETTYPE,i,smb.last_error);
-				bail(1); 
-			}
-			if((i=smb_hfield_str(&msg,RECIPIENTNETADDR,str))!=SMB_SUCCESS) {
-				fprintf(errfp,"\n%s!smb_hfield_str(0x%02X) returned %d: %s\n"
+			if((i=smb_hfield_netaddr(&msg,RECIPIENTNETADDR,str,NULL))!=SMB_SUCCESS) {
+				fprintf(errfp,"\n%s!smb_hfield_netaddr(0x%02X) returned %d: %s\n"
 					,beep,RECIPIENTNETADDR,i,smb.last_error);
 				bail(1); 
-			} 
+			}
 		} 
 	}
 
