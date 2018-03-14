@@ -78,7 +78,7 @@ if(!sub_code) {
 	exit();
 }
 
-if(!msg_area.sub[sub_code.toLowerCase()]) {
+if(sub_code != 'mail' && !msg_area.sub[sub_code.toLowerCase()]) {
 	alert("Invalid sub-code: " + sub_code);
 	print();
 	print("Valid sub-codes:");
