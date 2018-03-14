@@ -5444,6 +5444,15 @@ NO_SSH:
 							GCESS(i, client_socket, sbbs->ssh_session, "getting channel type");
 							if (tnamelen != 7 || strnicmp(tname, "session", 7)) {
 								lprintf(LOG_INFO, "%04d SSH active channel '%s' is not 'session', disconnecting.", client_socket, tname);
+								identity = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_USERNAME);
+								p = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_PASSWORD);
+								sbbs->badlogin(identity, p);
+								if (identity != NULL)
+									free_crypt_attrstr(identity);
+								identity = NULL;
+								if (p != NULL)
+									free_crypt_attrstr(p);
+								p = NULL;
 								// Fail because there's no session.
 								ssh_failed = 3;
 							}
