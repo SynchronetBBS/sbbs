@@ -30,6 +30,7 @@ var msg_ptrs={};
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
 var saved_config={mail:{scan_ptr:0}};
 var scan_ptr;
+var cfgfile;
 
 /**********************/
 /* Encoding functions */
@@ -285,6 +286,8 @@ function send_fetch_response(msgnum, fmat, uid)
 			}
 		}
 		else {
+			lock_cfg();
+			read_cfg(index.code, false);
 			if(saved_config[index.code] == undefined)
 				saved_config[index.code] = {};
 			if(saved_config[index.code].Seen == undefined)
@@ -292,6 +295,9 @@ function send_fetch_response(msgnum, fmat, uid)
 			if(saved_config[index.code].Seen[msgnum] != 1)
 				seen_changed=true;
 			saved_config[index.code].Seen[msgnum]=1;
+			save_cfg(false);
+			apply_seen();
+			unlock_cfg();
 			idx.attr |= MSG_READ;
 		}
 	}
@@ -536,8 +542,6 @@ function send_fetch_response(msgnum, fmat, uid)
 			}
 		}
 	}
-	if(seen_changed)
-		save_cfg();
 	if(seen_changed && !sent_flags) {
 		get_header();
 		resp += "FLAGS ("+calc_msgflags(idx.attr, hdr.netattr, base.subnum, msgnum, readonly)+") ";
@@ -794,7 +798,6 @@ var any_state_command_handlers = {
 			var elapsed=0;
 
 			client.socket.send("+ Ooo, Idling... my favorite.\r\n");
-			save_cfg();
 			while(1) {
 				line=client.socket.recvline(10240, 5);
 				if(line==null) {
@@ -842,6 +845,11 @@ var unauthenticated_command_handlers = {
 				args=base64_decode(line).split(/\x00/);
 				if(!login(args[1],args[2])) {
 					tagged(tag, "NO", "No AUTH for you.");
+					return;
+				}
+				cfgfile=new File(format(system.data_dir+"user/%04d.imap", user.number));
+				if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true)) {
+					tagged(tag, "NO", "Can't open imap state file");
 					return;
 				}
 				tagged(tag, "OK", "Howdy.");
@@ -1211,6 +1219,18 @@ function send_updates()
 	}
 }
 
+function get_base_code()
+{
+	var base_code;
+
+	if (base.cfg !== undefined)
+		base_code = base.cfg.code;
+	else
+		base_code = 'mail';
+
+	return base_code;
+}
+
 function read_index(base)
 {
 	var i;
@@ -1224,10 +1244,7 @@ function read_index(base)
 	index.subnum=base.subnum;
 	index.total=base.total_msgs;
 
-	if(base.cfg != undefined)
-		index.code=base.cfg.code;
-	else
-		index.code='mail';
+	index.code = get_base_code();
 	for(i=0; i<index.total; i++) {
 		idx=base.get_msg_index(true,i);
 		if(idx==null)
@@ -1252,30 +1269,58 @@ function read_index(base)
 	return(index);
 }
 
+function apply_seen()
+{
+	var i;
+
+	if (index.code == 'mail')
+		return;
+	for(i in index.idx) {
+		// Fake \Seen
+		index.idx[i].attr &= ~MSG_READ;
+		if(saved_config[index.code].Seen != undefined && saved_config[index.code].Seen[index.idx[i].number] == 1)
+			index.idx[i].attr |= MSG_READ;
+	}
+}
+
+function lock_cfg()
+{
+	while(!cfgfile.lock(0, 1))
+		mswait(10);
+}
+
+function unlock_cfg()
+{
+	cfgfile.unlock(0, 1);
+}
+
 function exit_func()
 {
 	close_sub();
-	save_cfg();
+	unlock_cfg();
+	save_cfg(true);
 }
 
-function save_cfg()
+function save_cfg(lck)
 {
 	var cfg;
 	var s;
 
 	if(user.number > 0) {
-		cfg=new File(format(system.data_dir+"user/%04d.imap", user.number));
-		if(cfg.open()) {
-			for(sub in saved_config) {
-				s=saved_config[sub].Seen;
-				delete saved_config[sub].Seen;
-				cfg.iniSetObject(sub,saved_config[sub]);
-				if(s != undefined)
-					cfg.iniSetObject(sub+'.seen',s);
-				saved_config[sub].Seen=s;
-			}
-			cfg.close();
+		if (lck)
+			lock_cfg();
+		cfgfile.rewind();
+		for(sub in saved_config) {
+			s=saved_config[sub].Seen;
+			delete saved_config[sub].Seen;
+			cfgfile.iniSetObject(sub,saved_config[sub]);
+			if(s != undefined)
+				cfgfile.iniSetObject(sub+'.seen',s);
+			saved_config[sub].Seen=s;
 		}
+		cfgfile.flush();
+		if (lck)
+			unlock_cfg();
 	}
 }
 
@@ -1285,7 +1330,10 @@ function close_sub()
 		msg_ptrs[base.subnum]=scan_ptr;
 		if(msg_ptrs[base.subnum]!=orig_ptrs[base.subnum]) {
 			if(base.subnum==-1) {
-				saved_config.mail.scan_ptr=scan_ptr;
+				if (saved_config.mail.scan_ptr!=scan_ptr) {
+					saved_config.mail.scan_ptr=scan_ptr;
+					save_cfg(true);
+				}
 			}
 			else
 				msg_area.sub[base.cfg.code].scan_ptr=scan_ptr;
@@ -1311,7 +1359,7 @@ function open_sub(sub)
 			msg_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
 		}
 	}
-	read_cfg(sub);
+	read_cfg(sub, true);
 
 	scan_ptr=orig_ptrs[base.subnum];
 	update_status();
@@ -1490,15 +1538,12 @@ var authenticated_command_handlers = {
 			}
 			if(base.cfg != undefined && orig_ptrs[base.subnum]==undefined)
 				orig_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
-			
-			if(base.cfg != undefined)
-				base_code=base.cfg.code;
-			else
-				base_code='mail';
+
+			base_code = get_base_code();
 			if (saved_config[base_code] != undefined)
 				old_saved = saved_config[base_code];
-			read_cfg(base_code);
-			index=read_index(base);
+			read_cfg(base_code, true);
+			apply_seen();
 			delete saved_config[base_code];
 			if (old_saved != undefined)
 				saved_config[base_code] = old_saved;
@@ -1593,23 +1638,26 @@ function do_store(seq, uid, item, data)
 			}
 		}
 		if(mod_seen && base.cfg != undefined) {
-			if(saved_config[base.cfg.code] == undefined)
+			lock_cfg();
+			read_cfg(base.cfg.code, false);
+			if(saved_config[base.cfg.code] == undefined) {
 				saved_config[base.cfg.code] = {};
+			}
 			if(saved_config[base.cfg.code].Seen == undefined) {
 				saved_config[base.cfg.code].Seen = {};
 				saved_config[base.cfg.code].Seen[header.number]=0;
 			}
 			saved_config[base.cfg.code].Seen[seq[i]] ^= 1;
-			changed=true;
+			save_cfg(false);
+			apply_seen();
+			unlock_cfg();
 		}
 		if(!silent)
 			send_fetch_response(seq[i], ["FLAGS"], uid);
 	}
 	js.gc();
-	if(changed) {
-		save_cfg();
+	if(changed)
 		index=read_index(base);
-	}
 }
 
 function datestr(date)
@@ -1963,6 +2011,8 @@ var selected_command_handlers = {
 			var data_items=parse_data_items(args[2]);
 			var i;
 
+			read_cfg(get_base_code(), true);
+			apply_seen();
 			for(i in seq) {
 				send_fetch_response(seq[i], data_items, false);
 			}
@@ -2012,6 +2062,8 @@ var selected_command_handlers = {
 					}
 					seq=parse_seq_set(args[2],true);
 					data_items=parse_data_items(args[3]);
+					read_cfg(get_base_code(), true);
+					apply_seen();
 					for(i in seq) {
 						send_fetch_response(seq[i], data_items, true);
 					}
@@ -2046,9 +2098,8 @@ var selected_command_handlers = {
 	},
 };
 
-function read_cfg(sub)
+function read_cfg(sub, lck)
 {
-	var cfg=new File(format(system.data_dir+"user/%04d.imap",user.number));
 	var secs;
 	var sec;
 	var seen;
@@ -2057,30 +2108,32 @@ function read_cfg(sub)
 	if(saved_config[sub]==undefined)
 		saved_config[sub]={};
 
-	if(cfg.open("r+")) {
-		secs=cfg.iniGetSections();
-		for(sec in secs) {
-			if(secs[sec].search(/\.seen$/)!=-1) {
-				this_sec = secs[sec].replace(/(?:\.seen)+$/,'');
-				if(saved_config[this_sec]==undefined)
-					saved_config[this_sec]={};
-				saved_config[this_sec].Seen=cfg.iniGetObject(secs[sec]);
-				if(saved_config[this_sec].Seen==null)
-					saved_config[this_sec].Seen={};
-			}
-			else {
-				if(saved_config[secs[sec]] != undefined && saved_config[secs[sec]].Seen != undefined)
-					seen = saved_config[secs[sec]].Seen;
-				else
-					seen = {};
-				saved_config[secs[sec]]=cfg.iniGetObject(secs[sec]);
-				if(saved_config[secs[sec]]==null)
-					saved_config[secs[sec]]={};
-				saved_config[secs[sec]].Seen=seen;
-			}
+	if (lck)
+		lock_cfg();
+	cfgfile.rewind();
+	secs=cfgfile.iniGetSections();
+	for(sec in secs) {
+		if(secs[sec].search(/\.seen$/)!=-1) {
+			this_sec = secs[sec].replace(/(?:\.seen)+$/,'');
+			if(saved_config[this_sec]==undefined)
+				saved_config[this_sec]={};
+			saved_config[this_sec].Seen=cfgfile.iniGetObject(secs[sec]);
+			if(saved_config[this_sec].Seen==null)
+				saved_config[this_sec].Seen={};
 		}
-		cfg.close();
+		else {
+			if(saved_config[secs[sec]] != undefined && saved_config[secs[sec]].Seen != undefined)
+				seen = saved_config[secs[sec]].Seen;
+			else
+				seen = {};
+			saved_config[secs[sec]]=cfgfile.iniGetObject(secs[sec]);
+			if(saved_config[secs[sec]]==null)
+				saved_config[secs[sec]]={};
+			saved_config[secs[sec]].Seen=seen;
+		}
 	}
+	if (lck)
+		unlock_cfg();
 
 	if(sub == 'mail') {
 		msg_ptrs[-1]=saved_config.mail.scan_ptr;
