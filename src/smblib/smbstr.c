@@ -324,16 +324,18 @@ char* SMBCALL smb_netaddrstr(net_t* net, char* fidoaddr_buf)
 }
 
 /****************************************************************************/
-/* Returns net_type for passed e-mail address (i.e. "user@addr")			*/
+/* Returns net_type for passed e-mail address (e.g. "user@addr")			*/
+/* QWKnet and Internet addresses must have an '@'.							*/
+/* FidoNet addresses may be in form: "user@addr" or just "addr".			*/
 /****************************************************************************/
 enum smb_net_type SMBCALL smb_netaddr_type(const char* str)
 {
-	char*	p;
+	const char*	p;
 
 	if((p=strchr(str,'@'))==NULL)
-		return(NET_NONE);
-
-	p++;
+		p = str;
+	else
+		p++;
 	SKIP_WHITESPACE(p);
 	if(*p==0)
 		return(NET_UNKNOWN);
