@@ -808,6 +808,7 @@ function inbound_auth_cb(pwd, bp)
 	var addrs = [];
 	var ret = '-';
 	var nocrypt;
+	var invalid=false;
 
 	function check_nocrypt(node) {
 		if (node) {
@@ -834,7 +835,7 @@ function inbound_auth_cb(pwd, bp)
 					ret = cpw;
 				} else {
 					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr);
-					ret = false;	// How do we break out of this forEach loop?!?
+					invalid = true;
 				}
 			}
 			else {
@@ -847,18 +848,25 @@ function inbound_auth_cb(pwd, bp)
 					check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
 					ret = cpw;
 				}
-				else
+				else {
 					log(LOG_WARNING, "Plain-text password mismatch for " + addr);
+					invalid = true;
+				}
 			}
 		}
 		else
 			log(LOG_DEBUG, "Unconfigured address "+addr);
 	});
 	if (addrs.length === 0) {
-		// If we have NONE of their nodes configured, we can send them files for ALL of them.
-		addrs = bp.remote_addrs;
-		// And allow unencrypted sessions.
-		nocrypt = true;
+		if (invalid) {
+			bp.sendCmd(this.command.M_ERR, "Password mismatch");
+		}
+		else {
+			// If we have NONE of their nodes configured, we can send them files for ALL of them.
+			addrs = bp.remote_addrs;
+			// And allow unencrypted sessions.
+			nocrypt = true;
+		}
 	}
 	else {
 		// If we have SOME of their nodes configured, only send them files for authenticated ones.
