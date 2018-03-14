@@ -567,10 +567,6 @@ BinkP.prototype.accept = function(sock, auth_cb)
 							this.sendCmd(this.command.M_ERR, "Encryption requires CRAM-MD5 auth");
 					}
 					pwd = auth_cb(args, this);
-					if (pwd === false) {
-						this.sendCmd(this.command.M_ERR, "Password mismatch");
-						break;
-					}
 					if (pwd === undefined)
 						pwd = '-';
 					if (pwd === '-') {
