@@ -191,7 +191,7 @@ function tagged(tag, msg, desc)
 function untagged(msg)
 {
 	client.socket.send("* "+msg+"\r\n");
-	debug_log("Send: * "+msg, false);
+	debug_log("Send: * "+msg.length+": "+msg, false);
 }
 
 
@@ -380,8 +380,12 @@ function send_fetch_response(msgnum, fmat, uid)
 
 	function add_part(mime) {
 		var i;
-		var ret='(';
+		var ret='(NIL) ';
 
+		if (mime.mime.parsed == undefined) {
+			log(LOG_WARNING, "MIME part was not actually parsed!");
+			return '';
+		}
 		if(mime.mime.parts != undefined) {
 			for(i in mime.mime.parts)
 				ret += add_part(mime.mime.parts[i]);
