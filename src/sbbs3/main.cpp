@@ -2416,8 +2416,8 @@ void output_thread(void* arg)
 				}
 				else {
 					// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
-					if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 1)))
-						GCESS(i, sbbs->client_socket, sbbs->ssh_session, "setting write timeout");
+					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 5)))
+						GCESS(err, sbbs->client_socket, sbbs->ssh_session, "setting write timeout");
 					if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
 						GCES(err, sbbs->cfg.node_num, sbbs->ssh_session, "flushing data");
 						ssh_errors++;
@@ -2427,8 +2427,8 @@ void output_thread(void* arg)
 						}
 					}
 					// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
-					if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 0)))
-						GCESS(i, sbbs->client_socket, sbbs->ssh_session, "setting write timeout");
+					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 0)))
+						GCESS(err, sbbs->client_socket, sbbs->ssh_session, "setting write timeout");
 				}
 			}
 			pthread_mutex_unlock(&sbbs->ssh_mutex);
