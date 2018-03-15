@@ -406,8 +406,12 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 		return false;
 	}
 
+	/* Check if the first remote comand is an M_NUL "OPT TLS" */
+	pkt = this.recvFrame(this.timeout);
+	if (pkt === undefined)
+		return false;
 	this.authenticated = undefined;
-	if (password !== '-')
+	if (password !== '-' && !this.will_tls)
 		this.sendCmd(this.command.M_NUL, "OPT CRYPT");
 	else {
 		/*
@@ -421,10 +425,6 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 		this.wont_crypt = true;
 		this.require_crypt = false;
 	}
-	/* Check if the first remote comand is an M_NUL "OPT TLS" */
-	pkt = this.recvFrame(this.timeout);
-	if (pkt === undefined)
-		return false;
 	this.sendCmd(this.command.M_NUL, "SYS "+this.system_name);
 	this.sendCmd(this.command.M_NUL, "ZYZ "+this.system_operator);
 	this.sendCmd(this.command.M_NUL, "LOC "+this.system_location);
