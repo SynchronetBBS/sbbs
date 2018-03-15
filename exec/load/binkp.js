@@ -715,8 +715,12 @@ BinkP.prototype.session = function()
 							if (!(this.sentempty && this.gotempty))
 								this.senteob = false;
 						}
-						if (this.senteob && this.pending_ack.length === 0)
-							break outer;
+						if (this.senteob) {
+							if (this.pending_ack.length === 0)
+								break outer;
+							else
+								log(LOG_WARNING, "We got an M_EOB, but there are still "+this.pending_ack.length+" files pending M_GOT");
+						}
 						this.gotempty = true;
 						break;
 					case this.command.M_GOT:
@@ -775,13 +779,13 @@ BinkP.prototype.session = function()
 						args = this.parseArgs(pkt.data);
 						for (i=0; i<this.pending_ack.length; i++) {
 							if (this.pending_ack[i].sendas == args[0]) {
+								this.failed_sent_files.push({path:this.pending_ack[i].file.name, sendas:this.pending_ack[i].sendas});
 								this.pending_ack.splice(i, 1);
 								i--;
 							}
 						}
 						if (this.sending !== undefined && this.sending.sendas === args[0]) {
 							this.sending.file.close();
-							this.failed_sent_files.push({path:this.sending.file.name, sendas:this.sending.sendas});
 							this.sending = undefined;
 						}
 						break;
