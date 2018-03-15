@@ -543,11 +543,10 @@ BinkP.prototype.accept = function(sock, auth_cb)
 
 	this.cram = {algo:'MD5', challenge:challenge.replace(/[0-9a-fA-F]{2}/g, hex2ascii)};
 	this.authenticated = undefined;
-	this.sendCmd(this.command.M_NUL, "OPT TLS");
+	this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge+(this.wont_crypt?"":" CRYPT")+" TLS");
 	pkt = this.recvFrame(this.timeout);
 	if (pkt === undefined)
 		return false;
-	this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge+(this.wont_crypt?"":" CRYPT"));
 	this.sendCmd(this.command.M_NUL, "SYS "+this.system_name);
 	this.sendCmd(this.command.M_NUL, "ZYZ "+this.system_operator);
 	this.sendCmd(this.command.M_NUL, "LOC "+this.system_location);
@@ -1058,7 +1057,7 @@ BinkP.prototype.recvFrame = function(timeout)
 											this.nonreliable = true;
 											break;
 										case 'CRYPT':
-											if (!this.wont_crypt) {
+											if (!this.wont_crypt && !this.will_tls) {
 												this.will_crypt = true;
 												log(LOG_INFO, "Will encrypt session.");
 											}
@@ -1074,6 +1073,7 @@ BinkP.prototype.recvFrame = function(timeout)
 												this.will_tls = true;
 												this.wont_crypt = true;
 												this.require_crypt = false;
+												this.will_crypt = false;
 											}
 											else {
 												this.sendCmd(this.command.M_ERR, "TLS must be negotiated before any other traffic");
