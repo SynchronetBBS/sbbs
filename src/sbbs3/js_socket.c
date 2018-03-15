@@ -155,39 +155,56 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 	fd_set		socket_set;
 	struct		timeval tv = {0, 0};
 	char *estr;
+	time_t now = time(NULL);
+	int status;
 
 	if (len == 0)
 		return total;
-	if(p->session==-1) {
-		FD_ZERO(&socket_set);
-		FD_SET(p->sock,&socket_set);
-		tv.tv_sec = timeout;
-		if(select(p->sock+1,&socket_set,NULL,NULL,&tv)==1)
-			return(recv(p->sock, buf, len, flags));	/* Blocked here, indefinitely, in MSP-UDP service */
-		return 0;
+	if (p->session != -1) {
+		if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, p->nonblocking?0:timeout) != CRYPT_OK)
+			return -1;
 	}
-	if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, p->nonblocking?0:timeout) != CRYPT_OK)
-		return -1;
 	do {
-		if((ret=cryptPopData(p->session, buf, len, &copied))==CRYPT_OK) {
-			if(p->nonblocking)
-				return copied;
-			total += copied;
-			if(total>=(ptrdiff_t)len)
-				return total;
-			len-=copied;
-			buf=((uint8_t *)buf) + copied;
+		if(p->session==-1) {
+			FD_ZERO(&socket_set);
+			FD_SET(p->sock,&socket_set);
+			tv.tv_sec = timeout;
+			if(select(p->sock+1,&socket_set,NULL,NULL,&tv)==1)
+				ret = recv(p->sock, buf, len, flags);
+			return 0;
 		}
 		else {
-			if (ret != CRYPT_ERROR_COMPLETE)
-				GCES(ret, p, estr, "popping data");
+			status = cryptPopData(p->session, buf, len, &copied);
+			if(cryptStatusOK(status))
+				ret = copied;
+			else {
+				ret = -1;
+				if (status == CRYPT_ERROR_TIMEOUT)
+					ret = 0;
+				else if (status != CRYPT_ERROR_COMPLETE)
+					GCES(ret, p, estr, "popping data");
+			}
+		}
+		if (ret == -1) {
 			if (total > 0)
 				return total;
-			do_js_close(p);
+			return ret;
+		}
+		if (!(flags & MSG_WAITALL) || p->nonblocking)
+			return ret;
+		total += copied;
+		if(total>=(ptrdiff_t)len)
+			return total;
+		len-=copied;
+		buf=((uint8_t *)buf) + copied;
+
+		if(!socket_check(p->sock,NULL,NULL,0)) {
+			if (total > 0)
+				return total;
 			return -1;
 		}
-		if(!socket_check(p->sock,NULL,NULL,0))
-			break;
+		if (now + timeout > time(NULL))
+			return total;
 	} while(len);
 	return total;
 }
@@ -1405,18 +1422,18 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	switch(size) {
 		case sizeof(BYTE):
-			if((rd=js_socket_recv(p,&b,size,0,120))==size)
+			if((rd=js_socket_recv(p,&b,size,MSG_WAITALL,120))==size)
 				JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(b));
 			break;
 		case sizeof(WORD):
-			if((rd=js_socket_recv(p,(BYTE*)&w,size,0,120))==size) {
+			if((rd=js_socket_recv(p,(BYTE*)&w,size,MSG_WAITALL,120))==size) {
 				if(p->network_byte_order)
 					w=ntohs(w);
 				JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(w));
 			}
 			break;
 		case sizeof(DWORD):
-			if((rd=js_socket_recv(p,(BYTE*)&l,size,0,120))==size) {
+			if((rd=js_socket_recv(p,(BYTE*)&l,size,MSG_WAITALL,120))==size) {
 				if(p->network_byte_order)
 					l=ntohl(l);
 				JS_SET_RVAL(cx, arglist, UINT_TO_JSVAL(l));
