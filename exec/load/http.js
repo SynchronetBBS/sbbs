@@ -49,7 +49,7 @@ HTTPRequest.prototype.AddExtraHeaders = function () {
 	var self = this;
 	Object.keys(this.extra_headers).forEach(
 		function (e) {
-			self.request_headers.push(e + ': ' + this.extra_headers[e]);
+			self.request_headers.push(e + ': ' + self.extra_headers[e]);
 		}
 	);
 };
