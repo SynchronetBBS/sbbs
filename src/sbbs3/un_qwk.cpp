@@ -355,13 +355,15 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 	delfiles(cfg.temp_dir,"*.NDX");
 	SAFEPRINTF(str,"%sMESSAGES.DAT",cfg.temp_dir);
-	remove(str);
+	removecase(str);
 	SAFEPRINTF(str,"%sDOOR.ID",cfg.temp_dir);
-	remove(str);
+	removecase(str);
 	SAFEPRINTF(str,"%sCONTROL.DAT",cfg.temp_dir);
-	remove(str);
+	removecase(str);
 	SAFEPRINTF(str,"%sNETFLAGS.DAT",cfg.temp_dir);
-	remove(str);
+	removecase(str);
+	SAFEPRINTF(str,"%sTOREADER.EXT",cfg.temp_dir);
+	removecase(str);
 
 	dir=opendir(cfg.temp_dir);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
