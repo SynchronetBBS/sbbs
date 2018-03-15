@@ -166,10 +166,8 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 			return(recv(p->sock, buf, len, flags));	/* Blocked here, indefinitely, in MSP-UDP service */
 		return 0;
 	}
-#if 0
 	if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, p->nonblocking?0:timeout) != CRYPT_OK)
 		return -1;
-#endif
 	do {
 		if((ret=cryptPopData(p->session, buf, len, &copied))==CRYPT_OK) {
 			if(p->nonblocking)
