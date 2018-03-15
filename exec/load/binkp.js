@@ -230,6 +230,19 @@ BinkP.prototype.crypt = {
 		return ret;
 	},
 };
+BinkP.prototype.send_chunks = function(str) {
+	var ret;
+	var sent = 0;
+
+	while (sent < str.length) {
+		ret = this.sock.send(str.substr(sent));
+		if (ret >= 0)
+			sent += ret;
+		else
+			return false;
+	}
+	return true;
+};
 BinkP.prototype.send_buf = function(str) {
 	if (this.out_keys === undefined)
 		return str;
@@ -880,7 +893,7 @@ BinkP.prototype.sendCmd = function(cmd, data)
 	len |= 0x8000;
 	// We'll send it all in one go to avoid sending small packets...
 	var sstr = this.send_buf(ascii((len & 0xff00)>>8) + ascii(len & 0xff) + ascii(cmd) + data);
-	if (this.sock.send(sstr) !== sstr.length)
+	if (!this.send_chunks(sstr))
 		return false;
 	switch(cmd) {
 		case this.command.M_EOB:
@@ -913,7 +926,7 @@ BinkP.prototype.sendData = function(data)
 		log(LOG_DEBUG, "Sending "+data.length+" bytes of data");
 	// We'll send it all in one go to avoid sending small packets...
 	var sstr = this.send_buf(ascii((len & 0xff00)>>8) + ascii(len & 0xff) + data);
-	if (!this.sock.send(sstr) != sstr.length)
+	if (!this.send_chunks(sstr))
 		return false;
 	return true;
 };
