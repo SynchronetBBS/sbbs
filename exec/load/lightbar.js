@@ -464,7 +464,7 @@ Lightbar.prototype.draw = function(current)
 			k++;
 		}
 
-		// Ouput the right padding
+		// Output the right padding
 		if(rpadding != undefined && rpadding != null) {
 			console.attributes=attr;
 			console.write(rpadding);
