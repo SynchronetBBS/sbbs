@@ -591,7 +591,7 @@ BinkP.prototype.accept = function(sock, auth_cb)
 		log(LOG_DEBUG, "Initializing crypt keys.");
 		this.out_keys = [0, 0, 0];
 		this.in_keys = [0, 0, 0];
-    	this.crypt.init_keys(this.in_keys, pwd);
+		this.crypt.init_keys(this.in_keys, pwd);
 		this.crypt.init_keys(this.out_keys,  "-");
 		for (i=0; i<pwd.length; i++)
 			this.crypt.update_keys(this.out_keys, pwd[i]);
@@ -947,20 +947,40 @@ BinkP.prototype.recvFrame = function(timeout)
 
 	if (this.partialFrame === undefined) {
 		ret = new this.Frame();
-		buf = this.sock.recv(1, timeout);
-		if (buf === null || buf.length !== 1) {
-			log(LOG_INFO, "Error in recv() timeout or disconnect");
+		i = this.sock.recv(1, timeout);
+		if (i === null) {
+			log(LOG_INFO, "Error in recv() of first byte of packet header");
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
 		}
-		buf += this.sock.recv(1, timeout);
-		if (buf.length !== 2) {
-			log(LOG_ERROR, "Remote disconnected or timed out before sending second byte of packet header!");
+		if (i.length != 1) {
+			if (timeout) {
+				log(LOG_WARNING, "Timed out receiving first byte of packet header!");
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			}
+			return null;
+		}
+		buf = i;
+		i = this.sock.recv(1, this.timeout);
+		if (i === null) {
+			log(LOG_INFO, "Error in recv() of second byte of packet header");
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
 		}
+		if (i.length != 1) {
+			if (timeout) {
+				log(LOG_WARNING, "Timed out receiving second byte of packet header!");
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			}
+			return null;
+		}
+		buf += i;
 		buf = this.recv_buf(buf);
 		ret.length = (ascii(buf[0]) << 8) | ascii(buf[1]);
 		ret.is_cmd = (ret.length & 0x8000) ? true : false;
@@ -971,11 +991,19 @@ BinkP.prototype.recvFrame = function(timeout)
 		ret = this.partialFrame;
 
 	i = this.recv_buf(this.sock.recv(ret.length - ret.data.length));
-	if (i == null || i.length == 0) {
-		log(LOG_ERROR, "Remote disconnected or timed out while receiving packet data!");
+	if (i == null) {
+		log(LOG_INFO, "Error in recv() of packet data");
 		this.sock.close();
 		this.sock = undefined;
 		return undefined;
+	}
+	if (i.length == 0) {
+		if (timeout) {
+			log(LOG_ERROR, "Timed out receiving packet data!");
+			this.sock.close();
+			this.sock = undefined;
+			return undefined;
+		}
 	}
 	ret.data += i;
 
