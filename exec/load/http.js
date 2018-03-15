@@ -46,11 +46,10 @@ HTTPRequest.prototype.AddDefaultHeaders=function(){
 
 HTTPRequest.prototype.AddExtraHeaders = function () {
 	if (typeof this.extra_headers !== 'object') return;
-	var self = this;
 	Object.keys(this.extra_headers).forEach(
 		function (e) {
-			self.request_headers.push(e + ': ' + self.extra_headers[e]);
-		}
+			this.request_headers.push(e + ': ' + this.extra_headers[e]);
+		}, this
 	);
 };
 
