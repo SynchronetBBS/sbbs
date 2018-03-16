@@ -1088,6 +1088,7 @@ function sublist(group, match, subscribed)
 	var fmatch;
 	var re;
 	var has_sep=false;
+	var base;
 
 	if(match=='')
 		return([""]);
@@ -1117,8 +1118,13 @@ function sublist(group, match, subscribed)
 
 		for(sub in msg_area.grp_list[grp].sub_list) {
 			if(re.test(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description)) {
-				if((!subscribed) || (msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW && (!(msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_YONLY))))
+				if((!subscribed) || (msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW && (!(msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_YONLY)))) {
+					base=new MsgBase(msg_area.grp_list[grp].sub_list[sub].code);
+					if(base == undefined || sub=="NONE!!!" || (!base.open()))
+						continue;
+					base.close();
 					ret.push((msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description).replace(/&/g,'&-'));
+				}
 			}
 		}
 	}
