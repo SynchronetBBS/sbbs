@@ -1331,7 +1331,6 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	start=time(NULL);
 	rc=JS_SUSPENDREQUEST(cx);
 	for(i=0;i<len;) {
-
 		if(p->session==-1) {
 			switch(js_sock_read_check(p,start,timeout,i)) {
 				case 1:
@@ -1353,21 +1352,13 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 				break;
 			}
 			else {
+				if (got == 0) {
+					free(buf);
+					return(JS_TRUE);	/* time-out */
+				}
 				if (got == -1) {
 					len = 0;
 					continue;
-				}
-				switch(js_sock_read_check(p,start,timeout,i)) {
-					case 1:
-						JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-						JS_RESUMEREQUEST(cx, rc);
-						free(buf);
-						return(JS_TRUE);	/* time-out */
-					case 2:
-						len=0;
-						continue;
-					case 3:
-						continue;
 				}
 			}
 		}
