@@ -643,7 +643,7 @@ BinkP.prototype.session = function()
 	while(!js.terminated && this.sock !== undefined) {
 		// We want to wait if we have no more files to send or if we're
 		// skipping files.
-log(LOG_DEBUG, "Loop: senteob='"+this.senteob+"', sentempty='"+this.sentempty+"', goteob='"+this.goteob+"', gotempty='"+this.gotempty+"', pending_ack.length='"+this.pending_ack.length+"', receiving undefined = '"+(this.receiving === undefined)+"');
+log(LOG_DEBUG, "Loop: senteob='"+this.senteob+"', sentempty='"+this.sentempty+"', goteob='"+this.goteob+"', gotempty='"+this.gotempty+"', pending_ack.length='"+this.pending_ack.length+"', receiving undefined = '"+(this.receiving === undefined)+"'");
 		cur_timeout = 0;
 		if (this.senteob)
 			cur_timeout = this.timeout;
