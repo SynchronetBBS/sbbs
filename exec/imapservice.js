@@ -2157,7 +2157,7 @@ client.socket.send("* OK Give 'er\r\n");
 var waited=0;
 if (argv.indexOf('-d') >= 0)
 	debug = true;
-if (argc.indexOf('-r') >= 0)
+if (argv.indexOf('-r') >= 0)
 	debugRX = true;
 while(1) {
 	line=client.socket.recvline(10240, 1);
