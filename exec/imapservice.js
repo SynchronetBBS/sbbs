@@ -13,8 +13,8 @@ load("822header.js");
 load("mime.js");
 
 var sepchar="|";
-var debug=true;
-var debugRX=true;
+var debug=false;
+var debugRX=false;
 
 // Global variables
 const UnAuthenticated=0;
@@ -2155,6 +2155,10 @@ function read_cfg(sub, lck)
 js.on_exit("exit_func()");
 client.socket.send("* OK Give 'er\r\n");
 var waited=0;
+if (argv.indexOf('-d') >= 0)
+	debug = true;
+if (argc.indexOf('-r') >= 0)
+	debugRX = true;
 while(1) {
 	line=client.socket.recvline(10240, 1);
 	if(line != null && line != '') {
