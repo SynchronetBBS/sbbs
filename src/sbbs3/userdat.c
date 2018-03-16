@@ -3214,3 +3214,57 @@ BOOL DLLCALL set_sysop_availability(scfg_t* scfg, BOOL available)
 		return ftouch(sysop_available_semfile(scfg));
 	return remove(sysop_available_semfile(scfg)) == 0;
 }
+
+/************************************/
+/* user .ini file get/set functions */
+/************************************/
+
+static FILE* user_ini_open(scfg_t* scfg, unsigned user_number, BOOL create)
+{
+	char path[MAX_PATH+1];
+
+	SAFEPRINTF2(path, "%suser/%04u.ini", scfg->data_dir, user_number);
+	return iniOpenFile(path, create);
+}
+
+BOOL DLLCALL user_get_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, char* value)
+{
+	FILE* fp;
+
+	fp = user_ini_open(scfg, user_number, /* create: */FALSE);
+	if(fp == NULL)
+		return FALSE;
+	char* result = iniReadValue(fp, section, key, NULL, value);
+	iniCloseFile(fp);
+	return result != NULL;
+}
+
+BOOL DLLCALL user_set_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, const char* value)
+{
+	FILE* fp;
+
+	fp = user_ini_open(scfg, user_number, /* create: */TRUE);
+	if(fp == NULL)
+		return FALSE;
+	str_list_t ini = iniReadFile(fp);
+	char* result = iniSetValue(&ini, section, key, value, /* style */NULL);
+	iniWriteFile(fp, ini);
+	iniFreeStringList(ini);
+	iniCloseFile(fp);
+	return result != NULL;
+}
+
+BOOL DLLCALL user_set_time_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, time_t value)
+{
+	FILE* fp;
+
+	fp = user_ini_open(scfg, user_number, /* create: */TRUE);
+	if(fp == NULL)
+		return FALSE;
+	str_list_t ini = iniReadFile(fp);
+	char* result = iniSetDateTime(&ini, section, key, /* include_time */TRUE, value, /* style */NULL);
+	iniWriteFile(fp, ini);
+	iniFreeStringList(ini);
+	iniCloseFile(fp);
+	return result != NULL;
+}

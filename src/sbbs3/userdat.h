@@ -126,6 +126,11 @@ DLLEXPORT BOOL	DLLCALL is_host_exempt(scfg_t*, const char* ip_addr, const char* 
 DLLEXPORT BOOL	DLLCALL filter_ip(scfg_t*, const char* prot, const char* reason, const char* host
 								  ,const char* ip_addr, const char* username, const char* fname);
 
+/* user .ini file access */
+DLLEXPORT BOOL DLLCALL user_get_property(scfg_t*, unsigned user_number, const char* section, const char* key, char* value);
+DLLEXPORT BOOL DLLCALL user_set_property(scfg_t*, unsigned user_number, const char* section, const char* key, const char* value);
+DLLEXPORT BOOL DLLCALL user_set_time_property(scfg_t*, unsigned user_number, const char* section, const char* key, time_t);
+
 /* New-message-scan pointer functions: */
 DLLEXPORT BOOL	DLLCALL getmsgptrs(scfg_t*, user_t*, subscan_t*, void (*progress)(void*, int, int), void* cbdata);
 DLLEXPORT BOOL	DLLCALL putmsgptrs(scfg_t*, user_t*, subscan_t*);
