@@ -1219,7 +1219,7 @@ function send_updates()
 	}
 }
 
-function get_base_code()
+function get_base_code(base)
 {
 	var base_code;
 
@@ -1244,7 +1244,7 @@ function read_index(base)
 	index.subnum=base.subnum;
 	index.total=base.total_msgs;
 
-	index.code = get_base_code();
+	index.code = get_base_code(base);
 	for(i=0; i<index.total; i++) {
 		idx=base.get_msg_index(true,i);
 		if(idx==null)
@@ -1539,7 +1539,7 @@ var authenticated_command_handlers = {
 			if(base.cfg != undefined && orig_ptrs[base.subnum]==undefined)
 				orig_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
 
-			base_code = get_base_code();
+			base_code = get_base_code(base);
 			if (saved_config[base_code] != undefined)
 				old_saved = saved_config[base_code];
 			read_cfg(base_code, true);
@@ -2011,7 +2011,7 @@ var selected_command_handlers = {
 			var data_items=parse_data_items(args[2]);
 			var i;
 
-			read_cfg(get_base_code(), true);
+			read_cfg(get_base_code(base), true);
 			apply_seen();
 			for(i in seq) {
 				send_fetch_response(seq[i], data_items, false);
@@ -2062,7 +2062,7 @@ var selected_command_handlers = {
 					}
 					seq=parse_seq_set(args[2],true);
 					data_items=parse_data_items(args[3]);
-					read_cfg(get_base_code(), true);
+					read_cfg(get_base_code(base), true);
 					apply_seen();
 					for(i in seq) {
 						send_fetch_response(seq[i], data_items, true);
@@ -2150,7 +2150,7 @@ client.socket.send("* OK Give 'er\r\n");
 var waited=0;
 while(1) {
 	line=client.socket.recvline(10240, 1);
-	if(line != null) {
+	if(line != null && line != '') {
 		waited = 0;
 		debug_log("RECV: "+line, true);
 		parse_command(line);
