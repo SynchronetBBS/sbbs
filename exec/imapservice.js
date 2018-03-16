@@ -1307,9 +1307,69 @@ function exit_func()
 	save_cfg(true);
 }
 
+function binify(seen)
+{
+	var i;
+	var ret = {};
+	var s;
+	var base = -1;
+	var bstr = '';
+	var byte;
+	var bo;
+	var bit;
+
+	// We don't need to save zeros, delete 'em.
+	for (i in seen) {
+		if (seen[i] == 0)
+			delete seen[i];
+		
+	}
+	// Get an array of bits to set...
+	s=Object.keys(seen);
+	// Convert them to numbers...
+	for (i in s)
+		s[i] = parseInt(s[i], 10);
+	// Sort them...
+	s = s.sort(function(a,b) { return a-b });
+	// Now go through them building up strings...
+	for (i=0; i<s.length; i++) {
+		// Starting a new string?
+		if (bstr == '') {
+			// Don't start a string for the last bit.
+			if (i+1 == s.length)
+				continue;
+			// If the next bit isn't within 4 bytes, don't bother starting a string
+			if (s[i+1] > s[i]+32)
+				continue;
+			base = s[i];
+			bstr = ascii(1);
+			delete seen[s[i]];
+		}
+		else {
+			bo = Math.floor((s[i]-base)/8);
+			while (bstr.length < bo)
+				bstr += ascii(0);
+			byte = ascii(bstr[bo]);
+			bit = (s[i]-base)-(bo*8);
+			byte |= 1<<bit;
+			delete seen[s[i]];
+			bstr = bstr.substr(0, bo)+ascii(byte);
+			// Last bit?
+			if (i+1 == s.length || s[i+1] > s[i]+32) {
+				ret[base]=base64_encode(bstr);
+				bstr = '';
+			}
+		}
+	}
+	if (Object.keys(ret).length == 0)
+		return undefined;
+	return ret;
+}
+
 function save_cfg(lck)
 {
 	var cfg;
+	var b;
 	var s;
 
 	if(user.number > 0) {
@@ -1320,8 +1380,16 @@ function save_cfg(lck)
 			s=saved_config[sub].Seen;
 			delete saved_config[sub].Seen;
 			cfgfile.iniSetObject(sub,saved_config[sub]);
-			if(s != undefined)
-				cfgfile.iniSetObject(sub+'.seen',s);
+			if(s != undefined) {
+				// First, try any "binary" Seen compression
+				b = binify(s);
+				cfgfile.iniRemoveSection(sub+'.bseen');
+				if (b != undefined)
+					cfgfile.iniSetObject(sub+'.bseen',b);
+				cfgfile.iniRemoveSection(sub+'.seen');
+				if (Object.keys(s).length > 0)
+					cfgfile.iniSetObject(sub+'.seen',s);
+			}
 			saved_config[sub].Seen=s;
 		}
 		cfgfile.flush();
@@ -2111,6 +2179,14 @@ function read_cfg(sub, lck)
 	var sec;
 	var seen;
 	var this_sec;
+	var got_bseen=[];
+	var bseen;
+	var i;
+	var j;
+
+	var byte;
+	var bit;
+	var asc;
 
 	if(saved_config[sub]==undefined)
 		saved_config[sub]={};
@@ -2128,6 +2204,14 @@ function read_cfg(sub, lck)
 			if(saved_config[this_sec].Seen==null)
 				saved_config[this_sec].Seen={};
 		}
+		else if(secs[sec].search(/\.bseen$/)!=-1) {
+			got_bseen.push(secs[sec]);
+			this_sec = secs[sec].replace(/(?:\.bseen)+$/,'');
+			if(saved_config[this_sec]==undefined)
+				saved_config[this_sec]={};
+			if(saved_config[this_sec].Seen==undefined)
+				saved_config[this_sec].Seen={};
+		}
 		else {
 			if(saved_config[secs[sec]] != undefined && saved_config[secs[sec]].Seen != undefined)
 				seen = saved_config[secs[sec]].Seen;
@@ -2137,6 +2221,25 @@ function read_cfg(sub, lck)
 			if(saved_config[secs[sec]]==null)
 				saved_config[secs[sec]]={};
 			saved_config[secs[sec]].Seen=seen;
+		}
+	}
+	for (i in got_bseen) {
+		this_sec = got_bseen[i].replace(/(?:\.bseen)+$/,'');
+		bseen = cfgfile.iniGetObject(got_bseen[i]);
+		if (bseen == null)
+			continue;
+		for (j in bseen) {
+			base = parseInt(j, 10);
+			bstr = base64_decode(bseen[j]);
+			for (byte = 0; byte < bstr.length; byte++) {
+				asc = ascii(bstr[byte]);
+				if (asc == 0)
+					continue;
+				for (bit=0; bit<8; bit++) {
+					if (asc & (1<<bit))
+						saved_config[this_sec].Seen[base+(byte*8+bit)]=1;
+				}
+			}
 		}
 	}
 	if (lck)
