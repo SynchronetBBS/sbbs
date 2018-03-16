@@ -211,6 +211,8 @@ DLLEXPORT char* DLLCALL		iniSetString(str_list_t*, const char* section, const ch
 					,ini_style_t*);
 DLLEXPORT char* DLLCALL		iniSetStringLiteral(str_list_t*, const char* section, const char* key, const char* value
 					,ini_style_t*);
+DLLEXPORT char* DLLCALL		iniSetValue(str_list_t*, const char* section, const char* key, const char* value
+					,ini_style_t*);
 DLLEXPORT char* DLLCALL		iniSetInteger(str_list_t*, const char* section, const char* key, long value
 					,ini_style_t*);
 DLLEXPORT char* DLLCALL		iniSetShortInt(str_list_t*, const char* section, const char* key, ushort value

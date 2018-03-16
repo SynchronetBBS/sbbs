@@ -572,6 +572,12 @@ char* DLLCALL iniSetStringLiteral(str_list_t* list, const char* section, const c
 	return ini_set_string(list, section, key, value, /* literal: */TRUE, style);
 }
 
+char* DLLCALL iniSetValue(str_list_t* list, const char* section, const char* key, const char* value
+				 ,ini_style_t* style)
+{
+	return ini_set_string(list, section, key, value, /* literal: */FALSE, style);
+}
+
 char* DLLCALL iniSetInteger(str_list_t* list, const char* section, const char* key, long value
 					,ini_style_t* style)
 {
