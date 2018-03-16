@@ -1768,7 +1768,7 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 						return status;
 					}
 					cname = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE);
-					lprintf(LOG_ERR, "%04d SSH ERROR attempt to use channel '%s' (%d != %d)", sbbs->client_socket, cname ? cname : "<unknown>", cid, sbbs->session_channel);
+					lprintf(LOG_WARNING, "%04d SSH ERROR attempt to use channel '%s' (%d != %d)", sbbs->client_socket, cname ? cname : "<unknown>", cid, sbbs->session_channel);
 					if (cname)
 						free_crypt_attrstr(cname);
 					if (cryptStatusError(status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0))) {
@@ -5372,8 +5372,9 @@ NO_SSH:
 		if(banned || sbbs->trashcan(host_ip,"ip")) {
 			if(banned) {
 				char ban_duration[128];
-				lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%u login attempts, last: %s) - remaining: %s"
-					,client_socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
+				lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%u login attempts%s%s) - remaining: %s"
+					,client_socket, host_ip, attempted.count-attempted.dupes
+					,attempted.user[0] ? ", last: " : "", attempted.user, seconds_to_str(banned, ban_duration));
 			} else
 				lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", client_socket, host_ip);
 			SSH_END();
@@ -5642,11 +5643,13 @@ NO_SSH:
     		tmp_sock = open_socket(SOCK_STREAM, "passthru");
 
 			if(tmp_sock == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"!ERROR %d creating passthru listen socket", ERROR_VALUE);
+				lprintf(LOG_ERR,"Node %d SSH !ERROR %d creating passthru listen socket"
+					,new_node->cfg.node_num, ERROR_VALUE);
 				goto NO_PASSTHRU;
 			}
 
-    		lprintf(LOG_DEBUG,"passthru listen socket %d opened",tmp_sock);
+    		lprintf(LOG_DEBUG,"Node %d SSH passthru listen socket %d opened"
+				,new_node->cfg.node_num, tmp_sock);
 
 			/*****************************/
 			/* Listen for incoming calls */
@@ -5667,7 +5670,8 @@ NO_SSH:
 		    result = listen(tmp_sock, 1);
 
 			if(result != 0) {
-				lprintf(LOG_ERR,"!ERROR %d (%d) listening on passthru socket", result, ERROR_VALUE);
+				lprintf(LOG_ERR,"Node %d SSH !ERROR %d (%d) listening on passthru socket"
+					,new_node->cfg.node_num, result, ERROR_VALUE);
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;
 			}
@@ -5677,16 +5681,19 @@ NO_SSH:
     		new_node->passthru_socket = open_socket(SOCK_STREAM, "passthru");
 
 			if(new_node->passthru_socket == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"!ERROR %d creating passthru connecting socket", ERROR_VALUE);
+				lprintf(LOG_ERR,"Node %d SSH !ERROR %d creating passthru connecting socket"
+					,new_node->cfg.node_num, ERROR_VALUE);
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;
 			}
 
-			lprintf(LOG_DEBUG,"passthru connect socket %d opened",new_node->passthru_socket);
+			lprintf(LOG_DEBUG,"Node %d SSH passthru connect socket %d opened"
+				,new_node->cfg.node_num, new_node->passthru_socket);
 
 			tmp_addr_len=sizeof(tmp_addr);
 			if(getsockname(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len)) {
-				lprintf(LOG_ERR,"!ERROR %d getting passthru listener address", ERROR_VALUE);
+				lprintf(LOG_ERR,"Node %d SSH !ERROR %d getting passthru listener address"
+					,new_node->cfg.node_num, ERROR_VALUE);
 				close_socket(tmp_sock);
 				close_socket(new_node->passthru_socket);
 				new_node->passthru_socket=INVALID_SOCKET;
@@ -5696,7 +5703,8 @@ NO_SSH:
 			result = connect(new_node->passthru_socket, (struct sockaddr *)&tmp_addr, tmp_addr_len);
 
 			if(result != 0) {
-				lprintf(LOG_ERR,"!ERROR %d (%d) connecting to passthru socket", result, ERROR_VALUE);
+				lprintf(LOG_ERR,"Node %d SSH !ERROR %d (%d) connecting to passthru socket"
+					,new_node->cfg.node_num, result, ERROR_VALUE);
 				close_socket(new_node->passthru_socket);
 				new_node->passthru_socket=INVALID_SOCKET;
 				close_socket(tmp_sock);
@@ -5706,8 +5714,10 @@ NO_SSH:
 			new_node->client_socket_dup=accept(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len);
 
 			if(new_node->client_socket_dup == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"!ERROR (%d) connecting accept()ing on passthru socket", ERROR_VALUE);
-				lprintf(LOG_WARNING,"!WARNING native doors which use sockets will not function");
+				lprintf(LOG_ERR,"Node %d SSH !ERROR (%d) connecting accept()ing on passthru socket"
+					,new_node->cfg.node_num, ERROR_VALUE);
+				lprintf(LOG_WARNING,"Node %d SSH !WARNING native doors which use sockets will not function"
+					,new_node->cfg.node_num);
 				close_socket(new_node->passthru_socket);
 				new_node->passthru_socket=INVALID_SOCKET;
 				close_socket(tmp_sock);
