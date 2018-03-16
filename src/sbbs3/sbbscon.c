@@ -1885,10 +1885,11 @@ int main(int argc, char** argv)
         }
 	}
 
-    if(!isatty(fileno(stdin)))  			/* redirected */
-	   	while(1) {
-	    	select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
-		lputs(LOG_WARNING,"select(NULL) returned!");
+	if(!isatty(fileno(stdin))) {  			/* redirected */
+		while(1) {
+			select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
+			lputs(LOG_WARNING,"select(NULL) returned!");
+		}
 	}
 	else 								/* interactive */
 #endif
