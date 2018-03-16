@@ -296,7 +296,7 @@ function send_fetch_response(msgnum, fmat, uid)
 				seen_changed=true;
 			saved_config[index.code].Seen[msgnum]=1;
 			save_cfg(false);
-			apply_seen();
+			apply_seen(index);
 			unlock_cfg();
 			idx.attr |= MSG_READ;
 		}
@@ -1269,7 +1269,7 @@ function read_index(base)
 	return(index);
 }
 
-function apply_seen()
+function apply_seen(index)
 {
 	var i;
 
@@ -1543,7 +1543,8 @@ var authenticated_command_handlers = {
 			if (saved_config[base_code] != undefined)
 				old_saved = saved_config[base_code];
 			read_cfg(base_code, true);
-			apply_seen();
+			index = read_index(base_code);
+			apply_seen(index);
 			delete saved_config[base_code];
 			if (old_saved != undefined)
 				saved_config[base_code] = old_saved;
@@ -1649,7 +1650,7 @@ function do_store(seq, uid, item, data)
 			}
 			saved_config[base.cfg.code].Seen[seq[i]] ^= 1;
 			save_cfg(false);
-			apply_seen();
+			apply_seen(index);
 			unlock_cfg();
 		}
 		if(!silent)
@@ -2012,7 +2013,7 @@ var selected_command_handlers = {
 			var i;
 
 			read_cfg(get_base_code(base), true);
-			apply_seen();
+			apply_seen(index);
 			for(i in seq) {
 				send_fetch_response(seq[i], data_items, false);
 			}
@@ -2063,7 +2064,7 @@ var selected_command_handlers = {
 					seq=parse_seq_set(args[2],true);
 					data_items=parse_data_items(args[3]);
 					read_cfg(get_base_code(base), true);
-					apply_seen();
+					apply_seen(index);
 					for(i in seq) {
 						send_fetch_response(seq[i], data_items, true);
 					}
