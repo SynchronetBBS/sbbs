@@ -228,6 +228,10 @@ BinkP.prototype.crypt = {
 		return ret;
 	},
 };
+BinkP.prototype.reset_eob = function() {
+	if (this.ver1_1)
+		this.senteob = this.goteob = 0;
+};
 BinkP.prototype.send_chunks = function(str) {
 	var ret;
 	var sent = 0;
@@ -711,13 +715,15 @@ BinkP.prototype.session = function()
 						this.ack_file();
 						if (this.pending_ack.length > 0)
 							log(LOG_WARNING, "We got an M_EOB, but there are still "+this.pending_ack.length+" files pending M_GOT");
-						if (this.ver1_1) {
-							if (this.senteob >= 2 && this.goteob >= 2)
-								break outer;
-						}
 						else {
-							if (this.senteob > 0)
-								break outer;
+							if (this.ver1_1) {
+								if (this.senteob >= 2 && this.goteob >= 2)
+									break outer;
+							}
+							else {
+								if (this.senteob > 0 && this.goteob > 0)
+									break outer;
+							}
 						}
 						break;
 					case this.command.M_GOT:
@@ -812,7 +818,12 @@ BinkP.prototype.session = function()
 		if (this.sending === undefined) {
 			this.sending = this.tx_queue.shift();
 			if (this.sending === undefined) {
-				this.sendCmd(this.command.M_EOB);
+				if (this.ver1_1)
+					this.sendCmd(this.command.M_EOB);
+				else {
+					if (!this.senteob)
+						this.sendCmd(this.command.M_EOB);
+				}
 			}
 			else {
 				this.pending_ack.push(this.sending);
@@ -828,13 +839,15 @@ BinkP.prototype.session = function()
 			}
 		}
 		if (this.sending !== undefined) {
-			if (this.sending.waitingForGet !== undefined && !this.sending.waitingForGet) {
-				if(this.sendData(this.sending.file.read(32767)))
-					last = Date.now();
-				if (this.eof || this.sending.file.position >= this.sending.file.length) {
-					log(LOG_INFO, "Sent file: " + this.sending.file.name + format(" (%1.1fKB)", this.sending.file.position / 1024.0));
-					this.sending.file.close();
-					this.sending = undefined;
+			if (this.ver1_1 || this.senteob === 0) {
+				if (this.sending.waitingForGet !== undefined && !this.sending.waitingForGet) {
+					if(this.sendData(this.sending.file.read(32767)))
+						last = Date.now();
+					if (this.eof || this.sending.file.position >= this.sending.file.length) {
+						log(LOG_INFO, "Sent file: " + this.sending.file.name + format(" (%1.1fKB)", this.sending.file.position / 1024.0));
+						this.sending.file.close();
+						this.sending = undefined;
+					}
 				}
 			}
 		}
@@ -917,7 +930,7 @@ BinkP.prototype.sendCmd = function(cmd, data)
 			}
 			break;
 		default:
-			this.senteob=this.goteob=0;
+			this.reset_eob();
 	}
 	return true;
 };
@@ -1051,7 +1064,7 @@ BinkP.prototype.recvFrame = function(timeout)
 			if (nullpos > -1)
 				ret.data = ret.data.substr(0, nullpos);
 			if (ret.command != this.command.M_EOB)
-				this.goteob = this.senteob = 0;
+				this.reset_eob();
 			switch(ret.command) {
 				case this.command.M_ERR:
 					log(LOG_ERROR, "BinkP got fatal error from remote: '"+ret.data+"'.");
@@ -1159,7 +1172,7 @@ BinkP.prototype.recvFrame = function(timeout)
 			}
 		}
 		else
-			this.goteob = this.senteob = 0;
+			this.reset_eob();
 	}
 	return ret;
 };
