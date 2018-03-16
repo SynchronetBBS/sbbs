@@ -67,10 +67,8 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.default_zone = 1;
 	addr = FIDO.parse_addr(system.fido_addr_list[0], this.default_zone);
 	this.default_zone = addr.zone;
-	this.senteob = false;
-	this.sentempty = true;
-	this.goteob = false;
-	this.gotempty = true;
+	this.senteob = 0;
+	this.goteob = 0;
 	this.pending_ack = [];
 	this.pending_get = [];
 	this.tx_queue=[];
@@ -643,7 +641,6 @@ BinkP.prototype.session = function()
 	while(!js.terminated && this.sock !== undefined) {
 		// We want to wait if we have no more files to send or if we're
 		// skipping files.
-log(LOG_DEBUG, "Loop: senteob='"+this.senteob+"', sentempty='"+this.sentempty+"', goteob='"+this.goteob+"', gotempty='"+this.gotempty+"', pending_ack.length='"+this.pending_ack.length+"', receiving undefined = '"+(this.receiving === undefined)+"'");
 		cur_timeout = 0;
 		if (this.senteob)
 			cur_timeout = this.timeout;
@@ -659,8 +656,8 @@ log(LOG_DEBUG, "Loop: senteob='"+this.senteob+"', sentempty='"+this.sentempty+"'
 						// Ignore
 						break;
 					case this.command.M_FILE:
-						this.gotempty = false;
 						this.ack_file();
+						this.senteof = 0;
 						args = this.parseArgs(pkt.data);
 						if (args.length < 4) {
 							log(LOG_ERROR, "Invalid M_FILE command args: '"+pkt.data+"'");
@@ -712,17 +709,16 @@ log(LOG_DEBUG, "Loop: senteob='"+this.senteob+"', sentempty='"+this.sentempty+"'
 						break;
 					case this.command.M_EOB:
 						this.ack_file();
+						if (this.pending_ack.length > 0)
+							log(LOG_WARNING, "We got an M_EOB, but there are still "+this.pending_ack.length+" files pending M_GOT");
 						if (this.ver1_1) {
-							if (!(this.sentempty && this.gotempty))
-								this.senteob = false;
-						}
-						if (this.senteob) {
-							if (this.pending_ack.length === 0)
+							if (this.senteob >= 2 && this.goteob >= 2)
 								break outer;
-							else
-								log(LOG_WARNING, "We got an M_EOB, but there are still "+this.pending_ack.length+" files pending M_GOT");
 						}
-						this.gotempty = true;
+						else {
+							if (this.senteob > 0)
+								break outer;
+						}
 						break;
 					case this.command.M_GOT:
 						args = this.parseArgs(pkt.data);
@@ -813,13 +809,12 @@ log(LOG_DEBUG, "Loop: senteob='"+this.senteob+"', sentempty='"+this.sentempty+"'
 				}
 			}
 		}
-		if (this.sending === undefined && !this.senteob) {
+		if (this.sending === undefined) {
 			this.sending = this.tx_queue.shift();
 			if (this.sending === undefined) {
 				this.sendCmd(this.command.M_EOB);
 			}
 			else {
-				this.sentempty = false;
 				this.pending_ack.push(this.sending);
 				log(LOG_INFO, "Sending file: " + this.sending.file.name + format(" (%1.1fKB)", this.sending.file.length / 1024.0));
 				if (this.nonreliable && (this.sending.waitingForGet === undefined || this.sending.waitingForGet)) {
@@ -830,8 +825,6 @@ log(LOG_DEBUG, "Loop: senteob='"+this.senteob+"', sentempty='"+this.sentempty+"'
 					this.sendCmd(this.command.M_FILE, this.escapeFileName(this.sending.sendas)+' '+this.sending.file.length+' '+this.sending.file.date+' '+this.sending.file.position);
 					this.sending.waitingForGet = false;
 				}
-				if (this.ver1_1)
-					this.goteob = false;
 			}
 		}
 		if (this.sending !== undefined) {
@@ -870,8 +863,13 @@ BinkP.prototype.close = function()
 	if ((!this.goteob) || this.tx_queue.length || this.pending_ack.length || this.pending_get.length)
 		this.sendCmd(this.command.M_ERR, "Forced Shutdown");
 	else {
-		if (!this.senteob) {
-			this.sendCmd(this.command.M_EOB);
+		if (this.ver1_1) {
+			if (this.senteob < 2)
+				this.sendCmd(this.command.M_EOB);
+		}
+		else {
+			if (this.senteob < 1)
+				this.sendCmd(this.command.M_EOB);
 		}
 	}
 	this.tx_queue.forEach(function(file) {
@@ -902,22 +900,24 @@ BinkP.prototype.sendCmd = function(cmd, data)
 		return false;
 	switch(cmd) {
 		case this.command.M_EOB:
-			if (this.senteob)
-				this.sentempty=true;
-			this.senteob=true;
+			this.senteob++;
 			break;
 		case this.command.M_ERR:
 		case this.command.M_BSY:
+			this.senteob=this.goteob=0;
 			this.sock.close();
 			this.sock = undefined;
 			break;
 		case this.command.M_NUL:
+			this.senteob=this.goteob=0;
 			if (data.substr(0, 4) === 'OPT ') {
 				tmp = data.substr(4).split(/ /);
 				if (tmp.indexOf('NR'))
 					this.sent_nr = true;
 			}
 			break;
+		default:
+			this.senteob=this.goteob=0;
 	}
 	return true;
 };
@@ -925,6 +925,7 @@ BinkP.prototype.sendData = function(data)
 {
 	var len = data.length;
 
+	this.senteob=this.goteob=0;
 	if (this.sock === undefined)
 		return false;
 	if (this.debug)
@@ -1049,6 +1050,8 @@ BinkP.prototype.recvFrame = function(timeout)
 			nullpos = ret.data.indexOf(ascii(0));
 			if (nullpos > -1)
 				ret.data = ret.data.substr(0, nullpos);
+			if (ret.command != this.command.M_EOB)
+				this.goteob = this.senteob = 0;
 			switch(ret.command) {
 				case this.command.M_ERR:
 					log(LOG_ERROR, "BinkP got fatal error from remote: '"+ret.data+"'.");
@@ -1061,7 +1064,7 @@ BinkP.prototype.recvFrame = function(timeout)
 					this.socket = undefined;
 					return undefined;
 				case this.command.M_EOB:
-					this.goteob = true;
+					this.goteob++;
 					break;
 				case this.command.M_ADR:
 					if (this.remote_addrs !== undefined) {
@@ -1155,6 +1158,8 @@ BinkP.prototype.recvFrame = function(timeout)
 					}
 			}
 		}
+		else
+			this.goteob = this.senteob = 0;
 	}
 	return ret;
 };
@@ -1170,8 +1175,6 @@ BinkP.prototype.addFile = function(path, sendas, waitget)
 		log(LOG_WARNING, "Unable to open '"+file.name+"'.  Not sending.");
 		return false;
 	}
-	if (this.ver1_1)
-		this.senteob = false;
 	if (this.debug)
 		log(LOG_DEBUG, "Adding '"+path+"' as '"+sendas+"'");
 	this.tx_queue.push({file:file, sendas:sendas, waitingForGet:waitget});
