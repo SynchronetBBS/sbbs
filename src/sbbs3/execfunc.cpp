@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -48,9 +48,9 @@ int sbbs_t::exec_function(csi_t *csi)
 	long	l;
 	node_t	node;
 	struct	tm tm;
+	uint8_t	cmd = *(csi->ip++);
 
-	switch(*(csi->ip++)) {
-
+	switch(cmd) {
 
 		case CS_PRINTFILE_STR:
 			printfile(csi->str,P_NOATCODES);
@@ -194,25 +194,23 @@ int sbbs_t::exec_function(csi_t *csi)
 			csi->logic=!i;
 			return(0);
 		case CS_MAIL_SEND_NETMAIL:
-			bputs(text[EnterNetMailAddress]);
-			if(getstr(str,60,K_LINE)) {
-				netmail(str,nulstr,0);
-				csi->logic=LOGIC_TRUE; 
-			}
-			else
-				csi->logic=LOGIC_FALSE;
-			return(0);
-
 		case CS_MAIL_SEND_NETFILE:
+		{
+			char addr[INI_MAX_VALUE_LEN+1];
+			const char* section = "netmail sent";
+			ZERO_VAR(addr);
+			user_get_property(&cfg, useron.number, section, "address", addr);
 			bputs(text[EnterNetMailAddress]);
-			if(getstr(str,60,K_LINE)) {
-				netmail(str,nulstr,WM_FILE);
-				csi->logic=LOGIC_TRUE; 
+			csi->logic=LOGIC_FALSE;
+			if(getstr(addr,60,K_LINE|K_EDIT)) {
+				if(netmail(addr,nulstr,cmd == CS_MAIL_SEND_NETFILE ? WM_FILE : 0)) {
+					csi->logic=LOGIC_TRUE; 
+					user_set_property(&cfg, useron.number, section, "address", addr);
+					user_set_time_property(&cfg, useron.number, section, "localtime", time(NULL));
+				}
 			}
-			else
-				csi->logic=LOGIC_FALSE;
 			return(0);
-
+		}
 		case CS_MAIL_SEND_FILE:   /* Upload Attached File to E-mail */
 			if(strchr(csi->str,'@')) {
 				i=1;
