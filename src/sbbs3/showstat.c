@@ -122,16 +122,21 @@ int main(int argc, char **argv)
 				t = msg->msg.client_on.client.time; /* sigh */
 				msg->msg.client_on.client.protocol = msg->msg.client_on.strdata;
 				msg->msg.client_on.client.user = strchr(msg->msg.client_on.strdata, 0)+1;
-				printf("Client %s%s: sock: %d\n addr: %s\n host: %s\n port: %" PRIu16 "\n %s at %s via %s\n",
-					msg->msg.client_on.on ? "on" : "off",
-					msg->msg.client_on.update ? " update" : "",
-					msg->msg.client_on.sock,
-					msg->msg.client_on.client.addr,
-					msg->msg.client_on.client.host,
-					msg->msg.client_on.client.port,
-					msg->msg.client_on.client.user,
-					ctime(&t),
-					msg->msg.client_on.client.protocol);
+				if (msg->msg.client_on.on) {
+					printf("Client %s%s: sock: %d\n addr: %s\n host: %s\n port: %" PRIu16 "\n %s at %s via %s\n",
+						msg->msg.client_on.on ? "on" : "off",
+						msg->msg.client_on.update ? " update" : "",
+						msg->msg.client_on.sock,
+						msg->msg.client_on.client.addr,
+						msg->msg.client_on.client.host,
+						msg->msg.client_on.client.port,
+						msg->msg.client_on.client.user,
+						ctime(&t),
+						msg->msg.client_on.client.protocol);
+				}
+				else {
+					printf("Client off: sock: %d\n", msg->msg.client_on.sock);
+				}
 				break;
 			case STATUS_ERRORMSG:
 				printf("%d - %s\n", msg->msg.errormsg.level, msg->msg.errormsg.msg);
