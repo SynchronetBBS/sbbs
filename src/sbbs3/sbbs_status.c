@@ -112,6 +112,7 @@ static void sendsmsg(struct sbbs_status_msg *msg)
 			if (ERROR_VALUE != EAGAIN) {
 				closesocket(*sock);
 				if (!os_init) {
+					os_init = true;
 					listInit(&off_socks, 0);
 				}
 				listPushNode(&off_socks, sock);
@@ -126,6 +127,7 @@ static void sendsmsg(struct sbbs_status_msg *msg)
 			next = node->next;
 			sock = node->data;
 			client_off(*sock);
+			free(sock);
 			protected_uint32_adjust(&active_clients, -1);
 			update_clients();
 		}
