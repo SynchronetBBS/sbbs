@@ -598,7 +598,6 @@ function callout(addr, scfg, semaphores, locks, bicfg)
 
 	// We won't add files until the auth finishes...
 	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port, host);
-
 	callout_done(bp, semaphores);
 }
 
@@ -859,7 +858,7 @@ function inbound_auth_cb(pwd, bp)
 	});
 	if (addrs.length === 0) {
 		if (invalid) {
-			bp.sendCmd(this.command.M_ERR, "Password mismatch");
+			bp.sendCmd(bp.command.M_ERR, "Password mismatch");
 		}
 		else {
 			// If we have NONE of their nodes configured, we can send them files for ALL of them.
