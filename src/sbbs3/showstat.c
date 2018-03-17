@@ -16,6 +16,7 @@ int main(int argc, char **argv)
 	socklen_t addrlen;
 	char *buf[4096];
 	struct sbbs_status_msg *msg;
+	time_t t;
 
 	if (argc != 2) {
 		usage();
@@ -75,7 +76,19 @@ int main(int argc, char **argv)
 				printf("%d clients\n", msg->msg.clients.active);
 				break;
 			case STATUS_CLIENT_ON:
-				printf("got client_on\n");
+				t = msg->msg.client_on.client.time; /* sigh */
+				msg->msg.client_on.client.protocol = msg->msg.client_on.strdata;
+				msg->msg.client_on.client.user = strchr(msg->msg.client_on.strdata, 0)+1;
+				printf("Client %s%s: sock: %d\n addr: %s\n host: %s\n port: %" PRIu16 "\n %s at %s via %s",
+					msg->msg.client_on.on ? "on" : "off",
+					msg->msg.client_on.update ? " update" : "",
+					msg->msg.client_on.sock,
+					msg->msg.client_on.client.addr,
+					msg->msg.client_on.client.host,
+					msg->msg.client_on.client.port,
+					msg->msg.client_on.client.user,
+					ctime(&t),
+					msg->msg.client_on.client.protocol);
 				break;
 			case STATUS_ERRORMSG:
 				printf("%d - %s\n", msg->msg.errormsg.level, msg->msg.errormsg.msg);

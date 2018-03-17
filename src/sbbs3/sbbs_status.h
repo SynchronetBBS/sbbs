@@ -73,6 +73,7 @@ struct sbbs_status_msg {
 			SOCKET		sock;
 			client_t	client;
 			BOOL		update;
+			char		strdata[];
 		} client_on;
 		struct {
 			uint64_t	error_count;
