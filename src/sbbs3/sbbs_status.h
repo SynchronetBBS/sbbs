@@ -3,6 +3,7 @@
 
 #include "client.h"
 #include "gen_defs.h"
+#include "dirwrap.h"
 
 enum sbbs_status_service {
 	SERVICE_FTP,
@@ -11,6 +12,7 @@ enum sbbs_status_service {
 	SERVICE_WEB,
 	SERVICE_SERVICES,
 	SERVICE_EVENT,
+	SERVICE_STATUS,
 	SERVICE_COUNT
 };
 
@@ -25,7 +27,7 @@ enum sbbs_status_type {
 	STATUS_THREAD_UP,
 	STATUS_SOCKET_OPEN,
 	STATUS_CLIENT_ON,
-	STATUS_STATS
+	STATUS_STATS,
 };
 
 struct sbbs_status_msg_hdr {
@@ -87,6 +89,26 @@ struct sbbs_status_msg {
 	} msg;
 };
 
+typedef struct sbbs_status_startup {
+	size_t size;
+	void *cbdata;
+	char sock_fname[MAX_PATH+1];
+	char host_name[128];
+	char ctrl_dir[128];
+	int log_level;
+	void (*thread_up)(void*, BOOL up, BOOL setuid);
+	void (*socket_open)(void*, BOOL open);
+	void (*errormsg)(void*, int level, const char* msg);
+	void (*client_on)(void*, BOOL on, int sock, client_t*, BOOL update);
+	void (*started)(void*);
+	void (*terminated)(void*, int code);
+	void (*clients)(void*, int active);
+	void (*status)(void*, const char*);
+	int (*lputs)(void*, int level, const char* msg);
+	BOOL (*seteuid)(BOOL user);
+	BOOL (*setuid)(BOOL force);
+} sbbs_status_startup_t;
+
 void status_lputs(enum sbbs_status_service svc, int level, const char *str);
 void status_errormsg(enum sbbs_status_service svc, int level, const char *str);
 void status_status(enum sbbs_status_service svc, const char *str);
@@ -118,6 +140,7 @@ makestubs(term);
 makestubs(web);
 makestubs(services);
 makestubs(event);
+makestubs(status);
 #undef makestubs
 
 #endif

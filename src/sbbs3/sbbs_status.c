@@ -1,10 +1,16 @@
 #include <sys/stat.h>
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef SBBS
+#undef SBBS
+#endif
+
+#include "sbbs.h"
 #include "sbbs_status.h"
 
 #include "genwrap.h"
@@ -24,6 +30,39 @@ static link_list_t status_sock;
 static pthread_once_t init_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t status_mutex[SERVICE_COUNT];
 static pthread_mutex_t status_thread_mutex;
+static sbbs_status_startup_t* startup;
+static scfg_t scfg;
+static protected_uint32_t active_clients;
+static protected_uint32_t thread_count;
+
+static int lprintf(int level, const char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+	va_start(argptr,fmt);
+	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+	va_end(argptr);
+
+	if(level <= LOG_ERR) {
+		char errmsg[sizeof(sbuf)+16];
+		SAFEPRINTF(errmsg, "ftp %s", sbuf);
+		errorlog(&scfg, startup==NULL ? NULL:startup->host_name, errmsg);
+		if(startup!=NULL && startup->errormsg!=NULL)
+			startup->errormsg(startup->cbdata,level,errmsg);
+	}
+
+	if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
+		return(0);
+
+#if defined(_WIN32)
+	if(IsBadCodePtr((FARPROC)startup->lputs))
+		return(0);
+#endif
+
+	return startup->lputs(startup->cbdata,level,sbuf);
+}
 
 static void init_lists(void)
 {
@@ -37,12 +76,34 @@ static void init_lists(void)
 	}
 }
 
+static void client_on(SOCKET sock, client_t* client, BOOL update)
+{
+lprintf(LOG_DEBUG, "User: %s", client->user);
+lprintf(LOG_DEBUG, "Prot: %s", client->protocol);
+	if(startup!=NULL && startup->client_on!=NULL)
+		startup->client_on(startup->cbdata,TRUE,sock,client,update);
+}
+
+static void client_off(SOCKET sock)
+{
+	if(startup!=NULL && startup->client_on!=NULL)
+		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
+}
+
+static void update_clients(void)
+{
+	if (startup != NULL && startup->clients != NULL)
+		startup->clients(startup->cbdata, protected_uint32_value(active_clients));
+}
+
 static void sendsmsg(struct sbbs_status_msg *msg)
 {
 	int ret;
 	list_node_t* node;
 	list_node_t* next;
 	SOCKET *sock;
+	static link_list_t off_socks;
+	bool os_init = false;
 
 	listLock(&status_sock);
 	for(node=status_sock.first; node!=NULL; node=next) {
@@ -52,11 +113,26 @@ static void sendsmsg(struct sbbs_status_msg *msg)
 		if (ret == SOCKET_ERROR) {
 			if (ERROR_VALUE != EAGAIN) {
 				closesocket(*sock);
-				listRemoveNode(&status_sock, node, TRUE);
+				if (!os_init) {
+					listInit(&off_socks, 0);
+				}
+				listPushNode(&off_socks, sock);
+				listRemoveNode(&status_sock, node, FALSE);
 			}
 		}
 	}
 	listUnlock(&status_sock);
+
+	if (os_init) {
+		for (node = off_socks.first; node != NULL; node=next) {
+			next = node->next;
+			sock = node->data;
+			client_off(*sock);
+			protected_uint32_adjust(&active_clients, -1);
+			update_clients();
+		}
+		listFree(&off_socks);
+	}
 }
 
 void status_lputs(enum sbbs_status_service svc, int level, const char *str)
@@ -288,6 +364,7 @@ void status_client_on(enum sbbs_status_service svc, BOOL on, SOCKET sock, client
 		listRemoveTaggedNode(&svc_client_list[svc], sock, /* free_data: */TRUE);
 
 	pthread_mutex_unlock(&status_mutex[svc]);
+
 	if (status_sock.count == 0)
 		return;
 	if (client)
@@ -329,7 +406,6 @@ void status_thread(void *arg)
 {
 	SOCKET sock;
 	struct sockaddr_un addr;
-	char *fname = strdup(arg);
 	socklen_t addrlen;
 	fd_set fd;
 	struct timeval tv;
@@ -341,20 +417,77 @@ void status_thread(void *arg)
 	int i;
 	int nb;
 	list_node_t* node;
+	list_node_t* next;
 	struct stat st;
+	char error[256];
+	client_t client = {0};
+	user_t user;
+	char *p;
+	int rc = 0;
+
+	startup = arg;
+	SetThreadName("sbbs/status");
+
+#ifdef _THREAD_SUID_BROKEN
+	if (thread_suid_broken)
+		startup->seteuid(TRUE);
+#endif
+
+	if (startup == NULL) {
+		sbbs_beep(100, 500);
+		fprintf(stderr, "No status startup structure passed!\n");
+		return;
+	}
+
+	if (startup->size != sizeof(sbbs_status_startup_t)) {	/* verify size */
+		sbbs_beep(100, 500);
+		sbbs_beep(300, 500);
+		sbbs_beep(100, 500);
+		fprintf(stderr, "Invalud status strartup structure!\n");
+		return;
+	}
+
+	protected_uint32_init(&thread_count, 0);
 
 	pthread_once(&init_once, init_lists);
-	SetThreadName("status");
-	//thread_up(TRUE);
-	if (stat(fname, &st) == 0) {
+	startup->status(startup->cbdata, "Initializing");
+	strcpy(client.addr, startup->sock_fname);
+	strcpy(client.host, "<unix-domain>");
+	client.protocol = "STATUS";
+	client.size = sizeof(client);
+
+	memset(&scfg, 0, sizeof(scfg));
+
+	if (chdir(startup->ctrl_dir) != 0)
+		lprintf(LOG_ERR, "!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
+
+        /* Initial configuration and load from CNF files */
+	SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);
+	lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
+	scfg.size=sizeof(scfg);
+	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
+	if(!load_cfg(&scfg, NULL, TRUE, error)) {
+		lprintf(LOG_CRIT,"!ERROR %s",error);
+		lprintf(LOG_CRIT,"!Failed to load configuration files");
+		return;
+	}
+
+	if(startup->host_name[0]==0)
+		SAFECOPY(startup->host_name,scfg.sys_inetaddr);
+	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
+	protected_uint32_init(&active_clients, 0);
+	update_clients();
+
+	startup->thread_up(startup->cbdata, TRUE, TRUE);
+	if (stat(startup->sock_fname, &st) == 0) {
 		if ((st.st_mode & S_IFMT) == S_IFSOCK)
-			unlink(fname);
+			unlink(startup->sock_fname);
 	}
 	sock = socket(PF_UNIX, SOCK_SEQPACKET, 0);
 	if (sock == INVALID_SOCKET)
 		return;
 	memset(&addr, 0, sizeof(addr));
-	SAFECOPY(addr.sun_path, fname);
+	SAFECOPY(addr.sun_path, startup->sock_fname);
 	addr.sun_family = AF_UNIX;
 #ifdef SUN_LEN
 	addrlen = SUN_LEN(&addr);
@@ -362,15 +495,18 @@ void status_thread(void *arg)
 	addrlen = offsetof(struct sockaddr_un, un_addr.sun_path) + strlen(addr.sun_path) + 1;
 #endif
 	if (bind(sock, (void *)&addr, addrlen) != 0) {
+		lprintf(LOG_ERR, "Unable to bind to %s", addr.sun_path);
 		closesocket(sock);
-		free(fname);
 		return;
 	}
 	if (listen(sock, 2) != 0) {
+		lprintf(LOG_ERR, "Unable to listen on %s", addr.sun_path);
 		closesocket(sock);
-		free(fname);
 		return;
 	}
+
+	startup->status(startup->cbdata, "Listening");
+	startup->started(startup->cbdata);
 
 	pthread_mutex_lock(&status_thread_mutex);
 	while (!status_thread_terminated) {
@@ -381,9 +517,13 @@ void status_thread(void *arg)
 		tv.tv_sec = 1;
 		if (select(sock+1, &fd, NULL, NULL, &tv) == 1) {
 			csock = malloc(sizeof(SOCKET));
-			if (csock == NULL)
+			if (csock == NULL) {
+				lprintf(LOG_CRIT, "Error allocating memory!");
+				rc = 1;
 				break;
+			}
 			*csock = accept(sock, (void *)&addr, &addrlen);
+			lprintf(LOG_DEBUG, "accept()ed new stat socket %d", *csock);
 			if (*csock != INVALID_SOCKET) {
 				nb = 1;
 				ioctlsocket(*csock, FIONBIO, &nb);
@@ -397,9 +537,83 @@ void status_thread(void *arg)
 						closesocket(*csock);
 						free(csock);
 						pthread_mutex_lock(&status_thread_mutex);
+						lprintf(LOG_CRIT, "Error recv returned %d (%d)!", len, errno);
 						continue;
 					}
 					// TODO: Check auth... "User\0Pass\0SysPass"
+					client.user = auth;
+					user.number = matchuser(&scfg, auth, TRUE);
+					if (user.number == 0) {
+						closesocket(*csock);
+						free(csock);
+						lprintf(LOG_WARNING, "Invalid username \"%s\"", auth);
+						pthread_mutex_lock(&status_thread_mutex);
+						continue;
+					}
+					if (getuserdat(&scfg, &user) != 0) {
+						closesocket(*csock);
+						free(csock);
+						lprintf(LOG_WARNING, "Unable to read data for \"%s\"", auth);
+						pthread_mutex_lock(&status_thread_mutex);
+						continue;
+					}
+					p = strchr(auth, 0);
+					p++;
+					if (p-auth >= len) {
+						closesocket(*csock);
+						free(csock);
+						lprintf(LOG_WARNING, "No password specified");
+						pthread_mutex_lock(&status_thread_mutex);
+						continue;
+					}
+					if (stricmp(p, user.pass)) {
+						closesocket(*csock);
+						free(csock);
+						if (scfg.sys_misc & SM_ECHO_PW)
+							lprintf(LOG_WARNING, "Invalid password %s", p);
+						else
+							lprintf(LOG_WARNING, "Invalid password");
+						pthread_mutex_lock(&status_thread_mutex);
+						continue;
+					}
+					if (user.misc & (DELETED|INACTIVE)) {
+						closesocket(*csock);
+						free(csock);
+						lprintf(LOG_WARNING, "!DELETED or INACTIVE user #%d (%s)", user.number, user.alias);
+						pthread_mutex_lock(&status_thread_mutex);
+						continue;
+					}
+					if (user.pass[0] == 0) {
+						closesocket(*csock);
+						free(csock);
+						lprintf(LOG_WARNING, "User with empty password #%d (%s)", user.number, user.alias);
+						pthread_mutex_lock(&status_thread_mutex);
+						continue;
+					}
+					if (user.level < SYSOP_LEVEL) {
+						closesocket(*csock);
+						free(csock);
+						lprintf(LOG_WARNING, "User not SysOp #%d (%s)", user.number, user.alias);
+						pthread_mutex_lock(&status_thread_mutex);
+						continue;
+					}
+					p = strchr(p, 0);
+					p++;
+					if (p-auth >= len) {
+						closesocket(*csock);
+						free(csock);
+						lprintf(LOG_WARNING, "No syspass specified", p);
+						pthread_mutex_lock(&status_thread_mutex);
+						continue;
+					}
+					if (stricmp(p, scfg.sys_pass)) {
+						closesocket(*csock);
+						free(csock);
+						lprintf(LOG_WARNING, "Invalid syspass %s", p);
+						pthread_mutex_lock(&status_thread_mutex);
+						continue;
+					}
+					client.time = time(NULL);
 					listLock(&status_sock);
 					listPushNode(&status_sock, csock);
 					for (i=0; i<SERVICE_COUNT; i++) {
@@ -448,24 +662,43 @@ void status_thread(void *arg)
 					}
 					// Send current status
 					listUnlock(&status_sock);
+					client_on(*csock, &client, FALSE);
+					protected_uint32_adjust(&active_clients, 1);
+					update_clients();
 				}
 				else {
 					closesocket(*csock);
 					free(csock);
+					lprintf(LOG_WARNING, "select() for recv() failed");
 					pthread_mutex_lock(&status_thread_mutex);
 					continue;
 				}
 			}
 			else {
 				free(csock);
+				lprintf(LOG_WARNING, "accept() failed");
 				pthread_mutex_lock(&status_thread_mutex);
 				continue;
 			}
 		}
 		pthread_mutex_lock(&status_thread_mutex);
 	}
-	unlink(fname);
-	free(fname);
+	if (sock != INVALID_SOCKET)
+		closesocket(sock);
+	unlink(startup->sock_fname);
+	listLock(&status_sock);
+	for(node=status_sock.first; node!=NULL; node=next) {
+		next = node->next;
+		csock = node->data;
+		closesocket(*csock);
+		listRemoveNode(&status_sock, node, FALSE);
+	}
+	listUnlock(&status_sock);
+	protected_uint32_destroy(thread_count);
+	protected_uint32_destroy(active_clients);
+
+	startup->thread_up(startup->cbdata, FALSE, FALSE);
+	startup->terminated(startup->cbdata, rc);
 }
 
 #define makestubs(lower, UPPER)                                                                                          \
@@ -486,3 +719,4 @@ makestubs(term, TERM);
 makestubs(web, WEB);
 makestubs(services, SERVICES);
 makestubs(event, EVENT);
+makestubs(status, STATUS);
