@@ -120,6 +120,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 
 # Must add new additions to MONO_OBJS too!
 CON_OBJS	= $(MTOBJODIR)$(DIRSEP)sbbscon$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)sbbs_status$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)sbbs_ini$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
@@ -339,4 +340,7 @@ DSTSEDIT_OBJS = \
 
 READSAUCE_OBJS = \
 			$(OBJODIR)$(DIRSEP)readsauce$(OFILE)
+
+SHOWSTAT_OBJS = \
+			$(OBJODIR)$(DIRSEP)showstat$(OFILE)
 

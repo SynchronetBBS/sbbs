@@ -60,6 +60,7 @@
 #include "threadwrap.h"	/* pthread_mutex_t */
 
 #ifdef __unix__
+#include "sbbs_status.h"
 
 #ifdef USE_LINUX_CAPS
 #include <sys/capability.h>
@@ -114,7 +115,10 @@ char				ini_file[MAX_PATH+1];
 link_list_t			login_attempt_list;
 link_list_t			client_list;
 
+BOOL				status_running=FALSE;
 #ifdef __unix__
+sbbs_status_startup_t	status_startup;
+BOOL				status_stopped=FALSE;
 char				new_uid_name[32];
 char				new_gid_name[32];
 uid_t				new_uid;
@@ -220,6 +224,7 @@ static const char* web_usage  = "Web server settings:\n"
 							"\two<value>  set Web server option value (advanced)\n"
 							"\tw-         disable Web server (no services module)\n"
 							;
+
 static int lputs(int level, char *str)
 {
 	static pthread_mutex_t mutex;
@@ -263,8 +268,22 @@ static int lputs(int level, char *str)
     return(prompt_len);
 }
 
-static void errormsg(void* cbdata, int level, const char* msg)
+static void errormsg(void *cbdata, int level, const char *msg)
 {
+#ifdef __unix__
+	if(cbdata==&bbs_startup)
+		status_errormsg(SERVICE_TERM, level, msg);
+	else if(cbdata==&ftp_startup)
+		status_errormsg(SERVICE_FTP, level, msg);
+	else if(cbdata==&web_startup)
+		status_errormsg(SERVICE_WEB, level, msg);
+	else if(cbdata==&mail_startup)
+		status_errormsg(SERVICE_MAIL, level, msg);
+	else if(cbdata==&services_startup)
+		status_errormsg(SERVICE_SERVICES, level, msg);
+	else if(cbdata==&status_startup)
+		status_errormsg(SERVICE_STATUS, level, msg);
+#endif
 	error_count++;
 }
 
@@ -540,6 +559,21 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
    	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
 
+#ifdef __unix__
+	if(p==&bbs_startup)
+		status_thread_up(SERVICE_TERM, up, setuid);
+	else if(p==&ftp_startup)
+		status_thread_up(SERVICE_FTP, up, setuid);
+	else if(p==&web_startup)
+		status_thread_up(SERVICE_WEB, up, setuid);
+	else if(p==&mail_startup)
+		status_thread_up(SERVICE_MAIL, up, setuid);
+	else if(p==&services_startup)
+		status_thread_up(SERVICE_SERVICES, up, setuid);
+	else if(p==&status_startup)
+		status_thread_up(SERVICE_STATUS, up, setuid);
+#endif
+
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken && up && setuid) {
 		do_seteuid(FALSE);
@@ -572,6 +606,21 @@ static void socket_open(void* p, BOOL open)
 		mutex_initialized=TRUE;
 	}
 
+#ifdef __unix__
+	if(p==&bbs_startup)
+		status_socket_open(SERVICE_TERM, open);
+	else if(p==&ftp_startup)
+		status_socket_open(SERVICE_FTP, open);
+	else if(p==&web_startup)
+		status_socket_open(SERVICE_WEB, open);
+	else if(p==&mail_startup)
+		status_socket_open(SERVICE_MAIL, open);
+	else if(p==&services_startup)
+		status_socket_open(SERVICE_SERVICES, open);
+	else if(p==&status_startup)
+		status_socket_open(SERVICE_STATUS, open);
+#endif
+
 	pthread_mutex_lock(&mutex);
 	if(open)
 	    socket_count++;
@@ -583,6 +632,21 @@ static void socket_open(void* p, BOOL open)
 
 static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 {
+#ifdef __unix__
+	if(p==&bbs_startup)
+		status_client_on(SERVICE_TERM, on, sock, client, update);
+	else if(p==&ftp_startup)
+		status_client_on(SERVICE_FTP, on, sock, client, update);
+	else if(p==&web_startup)
+		status_client_on(SERVICE_WEB, on, sock, client, update);
+	else if(p==&mail_startup)
+		status_client_on(SERVICE_MAIL, on, sock, client, update);
+	else if(p==&services_startup)
+		status_client_on(SERVICE_SERVICES, on, sock, client, update);
+	else if(p==&status_startup)
+		status_client_on(SERVICE_STATUS, on, sock, client, update);
+#endif
+
 	if(on) {
 		if(update) {
 			list_node_t*	node;
@@ -615,6 +679,7 @@ static int bbs_lputs(void* p, int level, const char *str)
 		return(0);
 
 #ifdef __unix__
+	status_lputs(SERVICE_TERM, level, str);
 	if (is_daemon || syslog_always)  {
 		if(str==NULL)
 			return(0);
@@ -644,21 +709,89 @@ static int bbs_lputs(void* p, int level, const char *str)
 
 static void bbs_started(void* p)
 {
+#ifdef __unix__
+	status_started(SERVICE_TERM);
+#endif
 	bbs_running=TRUE;
 	bbs_stopped=FALSE;
-    #ifdef _THREAD_SUID_BROKEN
+#ifdef _THREAD_SUID_BROKEN
         if(thread_suid_broken) {
             do_seteuid(FALSE);
             do_setuid(FALSE);
         }
-    #endif
+#endif
 }
 
 static void bbs_terminated(void* p, int code)
 {
+#ifdef __unix__
+	status_terminated(SERVICE_TERM, code);
+#endif
 	bbs_running=FALSE;
 	bbs_stopped=TRUE;
 }
+
+/****************************************************************************/
+/* Status local/log print routine										*/
+/****************************************************************************/
+#ifdef __unix__
+static int stat_lputs(void* p, int level, const char *str)
+{
+	char		logline[512];
+	char		tstr[64];
+	time_t		t;
+	struct tm	tm;
+
+	if(level > bbs_startup.log_level)
+		return(0);
+
+	status_lputs(SERVICE_TERM, level, str);
+	if (is_daemon || syslog_always)  {
+		if(str==NULL)
+			return(0);
+		if (std_facilities)
+			syslog(level|LOG_AUTH,"%s",str);
+		else
+			syslog(level,"stat %s",str);
+		if(is_daemon)
+			return(strlen(str));
+	}
+
+	t=time(NULL);
+	if(localtime_r(&t,&tm)==NULL)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm.tm_mon+1,tm.tm_mday
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
+
+	sprintf(logline,"%sstat %.*s",tstr,(int)sizeof(logline)-32,str);
+	truncsp(logline);
+	lputs(level,logline);
+	
+	return(strlen(logline)+1);
+}
+
+static void stat_started(void* p)
+{
+	status_started(SERVICE_TERM);
+	status_running=TRUE;
+	status_stopped=FALSE;
+#ifdef _THREAD_SUID_BROKEN
+        if(thread_suid_broken) {
+            do_seteuid(FALSE);
+            do_setuid(FALSE);
+        }
+#endif
+}
+
+static void stat_terminated(void* p, int code)
+{
+	status_terminated(SERVICE_TERM, code);
+	status_running=FALSE;
+	status_stopped=TRUE;
+}
+#endif
 
 /****************************************************************************/
 /* FTP local/log print routine												*/
@@ -674,6 +807,7 @@ static int ftp_lputs(void* p, int level, const char *str)
 		return(0);
 
 #ifdef __unix__
+	status_lputs(SERVICE_FTP, level, str);
 	if (is_daemon || syslog_always)  {
 		if(str==NULL)
 			return(0);
@@ -707,18 +841,24 @@ static int ftp_lputs(void* p, int level, const char *str)
 
 static void ftp_started(void* p)
 {
+#ifdef __unix__
+	status_started(SERVICE_FTP);
+#endif
 	ftp_running=TRUE;
 	ftp_stopped=FALSE;
-	#ifdef _THREAD_SUID_BROKEN
-		if(thread_suid_broken) {
-	    	do_seteuid(FALSE);
-	    	do_setuid(FALSE);
-		}
-	#endif
+#ifdef _THREAD_SUID_BROKEN
+	if(thread_suid_broken) {
+		do_seteuid(FALSE);
+		do_setuid(FALSE);
+	}
+#endif
 }
 
 static void ftp_terminated(void* p, int code)
 {
+#ifdef __unix__
+	status_terminated(SERVICE_FTP, code);
+#endif
 	ftp_running=FALSE;
 	ftp_stopped=TRUE;
 }
@@ -737,6 +877,7 @@ static int mail_lputs(void* p, int level, const char *str)
 		return(0);
 
 #ifdef __unix__
+	status_lputs(SERVICE_MAIL, level, str);
 	if (is_daemon || syslog_always)  {
 		if(str==NULL)
 			return(0);
@@ -766,18 +907,24 @@ static int mail_lputs(void* p, int level, const char *str)
 
 static void mail_started(void* p)
 {
+#ifdef __unix__
+	status_started(SERVICE_MAIL);
+#endif
 	mail_running=TRUE;
 	mail_stopped=FALSE;
-	#ifdef _THREAD_SUID_BROKEN
-		if(thread_suid_broken) {
-	    	do_seteuid(FALSE);
-	    	do_setuid(FALSE);
-		}
-	#endif
+#ifdef _THREAD_SUID_BROKEN
+	if(thread_suid_broken) {
+		do_seteuid(FALSE);
+		do_setuid(FALSE);
+	}
+#endif
 }
 
 static void mail_terminated(void* p, int code)
 {
+#ifdef __unix__
+	status_terminated(SERVICE_MAIL, code);
+#endif
 	mail_running=FALSE;
 	mail_stopped=TRUE;
 }
@@ -796,6 +943,7 @@ static int services_lputs(void* p, int level, const char *str)
 		return(0);
 
 #ifdef __unix__
+	status_lputs(SERVICE_SERVICES, level, str);
 	if (is_daemon || syslog_always)  {
 		if(str==NULL)
 			return(0);
@@ -825,6 +973,9 @@ static int services_lputs(void* p, int level, const char *str)
 
 static void services_started(void* p)
 {
+#ifdef __unix__
+	status_started(SERVICE_SERVICES);
+#endif
 	services_running=TRUE;
 	services_stopped=FALSE;
 	#ifdef _THREAD_SUID_BROKEN
@@ -837,6 +988,9 @@ static void services_started(void* p)
 
 static void services_terminated(void* p, int code)
 {
+#ifdef __unix__
+	status_terminated(SERVICE_SERVICES, code);
+#endif
 	services_running=FALSE;
 	services_stopped=TRUE;
 }
@@ -855,6 +1009,7 @@ static int event_lputs(void* p, int level, const char *str)
 		return(0);
 
 #ifdef __unix__
+	status_lputs(SERVICE_EVENT, level, str);
 	if (is_daemon || syslog_always)  {
 		if(str==NULL)
 			return(0);
@@ -896,6 +1051,7 @@ static int web_lputs(void* p, int level, const char *str)
 		return(0);
 
 #ifdef __unix__
+	status_lputs(SERVICE_WEB, level, str);
 	if (is_daemon || syslog_always)  {
 		if(str==NULL)
 			return(0);
@@ -925,18 +1081,24 @@ static int web_lputs(void* p, int level, const char *str)
 
 static void web_started(void* p)
 {
+#ifdef __unix__
+	status_started(SERVICE_WEB);
+#endif
 	web_running=TRUE;
 	web_stopped=FALSE;
-	#ifdef _THREAD_SUID_BROKEN
-		if(thread_suid_broken) {
-	    	do_seteuid(FALSE);
-	    	do_setuid(FALSE);
-		}
-	#endif
+#ifdef _THREAD_SUID_BROKEN
+	if(thread_suid_broken) {
+		do_seteuid(FALSE);
+		do_setuid(FALSE);
+	}
+#endif
 }
 
 static void web_terminated(void* p, int code)
 {
+#ifdef __unix__
+	status_terminated(SERVICE_WEB, code);
+#endif
 	web_running=FALSE;
 	web_stopped=TRUE;
 }
@@ -946,6 +1108,9 @@ static void terminate(void)
 	ulong count=0;
 
 	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu  Errors: %lu] Terminating... ";
+#ifdef __unix__
+	status_thread_terminate();
+#endif
 	if(bbs_running)
 		bbs_terminate();
 	if(ftp_running)
@@ -961,7 +1126,7 @@ static void terminate(void)
 		services_terminate();
 #endif
 
-	while(bbs_running || ftp_running || web_running || mail_running || services_running)  {
+	while(bbs_running || ftp_running || web_running || mail_running || services_running || status_running)  {
 		if(count && (count%10)==0) {
 			if(bbs_running)
 				lputs(LOG_INFO,"Terminal Server thread still running");
@@ -973,6 +1138,8 @@ static void terminate(void)
 				lprintf(LOG_INFO,"Mail Server thread still running (inactivity timeout: %u seconds)", mail_startup.max_inactivity);
 			if(services_running)
 				lputs(LOG_INFO,"Services thread still running");
+			if (status_running)
+				lputs(LOG_INFO,"Status thread still running");
 		}
 		count++;
 		SLEEP(1000);
@@ -1035,16 +1202,36 @@ void recycle(void* cbdata)
 	mail_startup_t* mail=NULL;
 	services_startup_t* services=NULL;
 
-	if(cbdata==&bbs_startup)
+	if(cbdata==&bbs_startup) {
+#ifdef __unix__
+		status_recycle(SERVICE_TERM);
+#endif
 		bbs=cbdata;
-	else if(cbdata==&ftp_startup)
+	}
+	else if(cbdata==&ftp_startup) {
+#ifdef __unix__
+		status_recycle(SERVICE_FTP);
+#endif
 		ftp=cbdata;
-	else if(cbdata==&web_startup)
+	}
+	else if(cbdata==&web_startup) {
+#ifdef __unix__
+		status_recycle(SERVICE_WEB);
+#endif
 		web=cbdata;
-	else if(cbdata==&mail_startup)
+	}
+	else if(cbdata==&mail_startup) {
+#ifdef __unix__
+		status_recycle(SERVICE_MAIL);
+#endif
 		mail=cbdata;
-	else if(cbdata==&services_startup)
+	}
+	else if(cbdata==&services_startup) {
+#ifdef __unix__
+		status_recycle(SERVICE_SERVICES);
+#endif
 		services=cbdata;
+	}
 
 	read_startup_ini(/* recycle? */TRUE,bbs,ftp,web,mail,services);
 }
@@ -1229,7 +1416,6 @@ int main(int argc, char** argv)
 		return(-1);
 
 	sbbs_get_ini_fname(ini_file, ctrl_dir, host_name);
-
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
@@ -1247,13 +1433,35 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	bbs_startup.seteuid=do_seteuid;
 	bbs_startup.setuid=do_setuid;
+    bbs_startup.status=status_term_status;
+    bbs_startup.clients=status_term_clients;
 #endif
-/*	These callbacks haven't been created yet
-    bbs_startup.status=bbs_status;
-    bbs_startup.clients=bbs_clients;
-*/
 	bbs_startup.login_attempt_list=&login_attempt_list;
     strcpy(bbs_startup.ctrl_dir,ctrl_dir);
+
+#ifdef __unix__
+
+#endif
+
+	/* Initialize status startup structure */
+    memset(&status_startup,0,sizeof(status_startup));
+    status_startup.size=sizeof(status_startup);
+	status_startup.cbdata=&status_startup;
+	status_startup.log_level = LOG_DEBUG;
+	status_startup.lputs=stat_lputs;
+	status_startup.errormsg=errormsg;
+    status_startup.started=stat_started;
+    status_startup.terminated=stat_terminated;
+	status_startup.thread_up=thread_up;
+    status_startup.socket_open=socket_open;
+    status_startup.client_on=client_on;
+#ifdef __unix__
+	status_startup.seteuid=do_seteuid;
+	status_startup.setuid=do_setuid;
+	status_startup.clients=status_status_clients;
+	status_startup.status=status_status_status;	// Heh.
+#endif
+    strcpy(status_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize FTP startup structure */
     memset(&ftp_startup,0,sizeof(ftp_startup));
@@ -1271,6 +1479,8 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	ftp_startup.seteuid=do_seteuid;
 	ftp_startup.setuid=do_setuid;
+	ftp_startup.clients=status_ftp_clients;
+	ftp_startup.status=status_ftp_status;
 #endif
 	ftp_startup.login_attempt_list=&login_attempt_list;
     strcpy(ftp_startup.index_file_name,"00index");
@@ -1292,6 +1502,8 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	web_startup.seteuid=do_seteuid;
 	web_startup.setuid=do_setuid;
+	web_startup.clients=status_web_clients;
+	web_startup.status=status_web_status;
 #endif
 	web_startup.login_attempt_list=&login_attempt_list;
     strcpy(web_startup.ctrl_dir,ctrl_dir);
@@ -1312,6 +1524,8 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	mail_startup.seteuid=do_seteuid;
 	mail_startup.setuid=do_setuid;
+	mail_startup.clients=status_mail_clients;
+	mail_startup.status=status_mail_status;
 #endif
 	mail_startup.login_attempt_list=&login_attempt_list;
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
@@ -1332,6 +1546,8 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	services_startup.seteuid=do_seteuid;
 	services_startup.setuid=do_setuid;
+	services_startup.clients=status_services_clients;
+	services_startup.status=status_services_status;
 #endif
 	services_startup.login_attempt_list=&login_attempt_list;
     strcpy(services_startup.ctrl_dir,ctrl_dir);
@@ -1350,6 +1566,25 @@ int main(int argc, char** argv)
 			break;
 		}
 	}
+
+#ifdef __unix__
+	SAFECOPY(status_startup.sock_fname, ini_file);
+	{
+		p = getfname(status_startup.sock_fname);
+		if (p && *p) {
+			char *ext = getfext(p);
+			if (ext == NULL)
+				ext = strchr(p, 0);
+			sprintf(ext, ".sock");
+			if (strncmp(p, "sbbs.", 5)==0)
+				SAFECOPY(str, p+5);
+			else
+				SAFECOPY(str, p);
+			sprintf(p, "status.%s", str);
+			_beginthread(status_thread, 0, &status_startup);
+		}
+	}
+#endif
 
 	read_startup_ini(/* recycle? */FALSE
 		,&bbs_startup, &ftp_startup, &web_startup, &mail_startup, &services_startup);
@@ -1563,12 +1798,18 @@ int main(int argc, char** argv)
 							SAFECOPY(mail_startup.host_name,arg);
 							SAFECOPY(services_startup.host_name,arg);
 							SAFECOPY(web_startup.host_name,arg);
+#ifdef __unix__
+							SAFECOPY(status_startup.host_name,arg);
+#endif
 						} else {
 							SAFECOPY(bbs_startup.host_name,host_name);
 							SAFECOPY(ftp_startup.host_name,host_name);
 							SAFECOPY(mail_startup.host_name,host_name);
 							SAFECOPY(services_startup.host_name,host_name);
 							SAFECOPY(web_startup.host_name,host_name);
+#ifdef __unix__
+							SAFECOPY(status_startup.host_name,host_name);
+#endif
 						}
 						printf("Setting hostname: %s\n",bbs_startup.host_name);
 						break;
