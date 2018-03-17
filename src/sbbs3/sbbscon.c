@@ -1581,7 +1581,6 @@ int main(int argc, char** argv)
 			else
 				SAFECOPY(str, p);
 			sprintf(p, "status.%s", str);
-			_beginthread(status_thread, 0, &status_startup);
 		}
 	}
 #endif
@@ -2070,6 +2069,7 @@ int main(int argc, char** argv)
 #endif /* !defined(DONT_BLAME_SYNCHRONET) */
     	}
     } /* end if(!capabilities_set) */    
+	_beginthread(status_thread, 0, &status_startup);
 #endif /* defined(__unix__) */
 
 	if(run_bbs)
