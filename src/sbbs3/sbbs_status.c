@@ -265,6 +265,7 @@ void status_socket_open(enum sbbs_status_service svc, BOOL open)
 
 void status_client_on(enum sbbs_status_service svc, BOOL on, SOCKET sock, client_t *client, BOOL update)
 {
+	client_t tmpc = {0};
 	struct sbbs_status_msg *msg;
 	size_t sz;
 	char *p;
@@ -289,6 +290,13 @@ void status_client_on(enum sbbs_status_service svc, BOOL on, SOCKET sock, client
 	pthread_mutex_unlock(&status_mutex[svc]);
 	if (status_sock.count == 0)
 		return;
+	if (client)
+		tmpc = *client;
+	client = &tmpc;
+	if (client->protocol == NULL)
+		client->protocol = "<null>";
+	if (client->user == NULL)
+		client->user = "<null>";
 	sz = offsetof(struct sbbs_status_msg, msg.client_on) + sizeof(msg->msg.client_on) + strlen(client->protocol) + 1 + strlen(client->user) + 1;
 	msg = malloc(sz);
 	if (msg == NULL)
@@ -300,10 +308,10 @@ void status_client_on(enum sbbs_status_service svc, BOOL on, SOCKET sock, client
 	msg->msg.client_on.sock = sock;
 	msg->msg.client_on.client = *client;
 	msg->msg.client_on.update = update;
-	strcpy(msg->msg.client_on.strdata, client->protocol ? client->protocol : "<null>");
+	strcpy(msg->msg.client_on.strdata, client->protocol);
 	p = strchr(msg->msg.client_on.strdata, 0);
 	p++;
-	strcpy(p, client->user ? client->user : "<null>");
+	strcpy(p, client->user);
 	sendsmsg(msg);
 	free(msg);
 }
