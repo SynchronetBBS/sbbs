@@ -3076,7 +3076,7 @@ static void ctrl_thread(void* arg)
 		return;
 	} 
 
-	protected_uint32_adjust(&active_clients, 1), 
+	protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 
 	/* Initialize client display */
