@@ -267,6 +267,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	for(i=0;i<cfg->altpaths;i++) {
 		if(feof(instream)) break;
 		fread(str,LEN_DIR+1,1,instream);
+		str[LEN_DIR] = 0;
 		offset+=LEN_DIR+1;
 		backslash(str);
 		j=LEN_DIR+1;

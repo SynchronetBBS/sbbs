@@ -582,8 +582,8 @@ bool sbbs_t::guru_page(void)
 		return(false);
 	}
 	if((gurubuf=(char *)malloc((size_t)filelength(file)+1))==NULL) {
-		close(file);
 		errormsg(WHERE,ERR_ALLOC,path,(size_t)filelength(file)+1);
+		close(file);
 		return(false);
 	}
 	read(file,gurubuf,(size_t)filelength(file));

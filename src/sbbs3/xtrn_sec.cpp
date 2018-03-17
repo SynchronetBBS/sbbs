@@ -989,9 +989,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		i=cfg.level_timepercall[useron.level];	/* Time allowed on */
 		write(file,&i,2);
 
+		c=0;
 		i=0;									/* Allowed K-bytes for D/L */
 		write(file,&i,2);
-		write(file,&i,1);						/* Conference user was in */
+		write(file,&c,1);						/* Conference user was in */
 		write(file,&i,2);						/* Conferences joined */
 		write(file,&i,2);						/* "" */
 		write(file,&i,2);						/* "" */

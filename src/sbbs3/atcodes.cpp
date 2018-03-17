@@ -158,7 +158,9 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(COPYRIGHT_NOTICE);
 
 	if(!strcmp(sp,"COMPILER")) {
-		DESCRIBE_COMPILER(str);
+		char compiler[32];
+		DESCRIBE_COMPILER(compiler);
+		strncpy(str, compiler, maxlen);
 		return(str);
 	}
 

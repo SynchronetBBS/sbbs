@@ -164,7 +164,6 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	uchar	*ixbbuf,idx[3];
     int		i,file;
 	long	l,length;
-	time_t	now;
 	time_t	uldate;
 
 	/************************/
@@ -224,9 +223,9 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	/*******************************************/
 	SAFEPRINTF2(str,"%s%s.dab",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_WRONLY|O_CREAT|O_BINARY,SH_DENYRW,DEFFILEMODE))!=-1) {
-		now=time(NULL);
-		/* TODO: 32-bit *or* LE required */
-		write(file,&now,4);
+		time32_t now=time32(NULL);
+		/* TODO: LE required */
+		write(file,&now,sizeof(time32_t));
 		close(file); 
 	}
 

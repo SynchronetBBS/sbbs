@@ -356,7 +356,6 @@ int main(int argc, char **argv)
 			p=getenv("SBBSNODE");
 			if(!p) {
 				goto USAGE;
-				exit(1); 
 			}
 			SAFECOPY(str,p);
 			backslash(str);

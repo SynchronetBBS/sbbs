@@ -43,6 +43,7 @@
 							  offset+=sizeof(var); }
 #define get_str(var,stream) { if(!fread(var,1,sizeof(var),stream)) \
 								memset(var,0,sizeof(var)); \
+ 							  else var[sizeof(var)-1] = 0; \
                               offset+=sizeof(var); }
 
 #ifdef __cplusplus
