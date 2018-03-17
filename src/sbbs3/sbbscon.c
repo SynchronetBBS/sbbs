@@ -745,7 +745,7 @@ static int stat_lputs(void* p, int level, const char *str)
 	if(level > bbs_startup.log_level)
 		return(0);
 
-	status_lputs(SERVICE_TERM, level, str);
+	status_lputs(SERVICE_STATUS, level, str);
 	if (is_daemon || syslog_always)  {
 		if(str==NULL)
 			return(0);
@@ -774,7 +774,7 @@ static int stat_lputs(void* p, int level, const char *str)
 
 static void stat_started(void* p)
 {
-	status_started(SERVICE_TERM);
+	status_started(SERVICE_STATUS);
 	status_running=TRUE;
 	status_stopped=FALSE;
 #ifdef _THREAD_SUID_BROKEN
@@ -787,7 +787,7 @@ static void stat_started(void* p)
 
 static void stat_terminated(void* p, int code)
 {
-	status_terminated(SERVICE_TERM, code);
+	status_terminated(SERVICE_STATUS, code);
 	status_running=FALSE;
 	status_stopped=TRUE;
 }
