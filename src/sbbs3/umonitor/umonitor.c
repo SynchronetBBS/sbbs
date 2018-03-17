@@ -83,19 +83,19 @@ int lprintf(char *fmt, ...)
 
 void bail(int code)
 {
-    if(code) {
-        puts("\nHit a key...");
-        getch();
+	if(code) {
+		puts("\nHit a key...");
+		getch();
 	}
-    uifc.bail();
+	uifc.bail();
 
-    exit(code);
+	exit(code);
 }
 
 void allocfail(uint size)
 {
-    printf("\7Error allocating %u bytes of memory.\n",size);
-    bail(1);
+	printf("\7Error allocating %u bytes of memory.\n",size);
+	bail(1);
 }
 
 void node_toggles(scfg_t *cfg,int nodenum)  {
@@ -114,17 +114,17 @@ void node_toggles(scfg_t *cfg,int nodenum)  {
 	i=0;
 	uifc.helpbuf=	"`Node Toggles\n"
 	                "`------------`\n\n"
-					"`The following are `Yes/No `options.  Hitting Enter toggles between.\n\n"
-					"`Locked for SysOps only : `Locks the node so that only SysOps may \n"
-					"                         logon to them.\n"
-					"`Interrupt (Hangup)     : `The current user will be kicked as soon as it \n"
-					"                         is safe to do so.  A brief message is given\n"
-					"                         to user.\n"
-					"`Re-run on logoff       : `Toggles the system to reload the configuration\n"
-					"                         files when the current user logs off.\n"
-					"`Down node after logoff : `Takes the node offline after current user logs\n"
-					"                         off.\n\n"
-					"`[Note] `These toggles take effect immediately.";
+	                "`The following are `Yes/No `options.  Hitting Enter toggles between.\n\n"
+	                "`Locked for SysOps only : `Locks the node so that only SysOps may \n"
+	                "                         logon to them.\n"
+	                "`Interrupt (Hangup)     : `The current user will be kicked as soon as it \n"
+	                "                         is safe to do so.  A brief message is given\n"
+	                "                         to user.\n"
+	                "`Re-run on logoff       : `Toggles the system to reload the configuration\n"
+	                "                         files when the current user logs off.\n"
+	                "`Down node after logoff : `Takes the node offline after current user logs\n"
+	                "                         off.\n\n"
+	                "`[Note] `These toggles take effect immediately.";
 	while(save==0) {
 		if(getnodedat(cfg,nodenum,&node,&nodefile)) {
 			uifc.msg("Error reading node data!");
@@ -179,7 +179,7 @@ int dospy(int nodenum, bbs_startup_t *bbs_startup)  {
 	int i;
 
 	if(bbs_startup->temp_dir[0])
-    	snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup->temp_dir, nodenum);
+		snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup->temp_dir, nodenum);
 	else
 		snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup->ctrl_dir, nodenum);
 	i=spyon(str);
@@ -462,16 +462,16 @@ int view_logs(scfg_t *cfg)
 	opt[i][0]=0;
 	i=0;
 	uifc.helpbuf=	"`View Logs\n"
-					"`---------\n\n"
-					"`Today's callers     : `View a list of Today's callers.\n"
-					"`Yesterday's callers : `View a list of Yesterday's callers.\n"
-					"`Error log           : `View the Error log.\n"
-					"`Today's log         : `View Today's system activity.\n"
-					"`Yesterday's log     : `View Yesterday's system activity.\n"
-					"`Spam log            : `View the log of Spam E-Mail sent to the system.\n"
-					"`SBBSEcho log        : `View the SBBSecho tosser log.\n"
-					"`Guru log            : `View the transcriptions of chats with the Guru.\n"
-					"`Hack log            : `View the Hack attempt log.";
+	                "`---------\n\n"
+	                "`Today's callers     : `View a list of Today's callers.\n"
+	                "`Yesterday's callers : `View a list of Yesterday's callers.\n"
+	                "`Error log           : `View the Error log.\n"
+	                "`Today's log         : `View Today's system activity.\n"
+	                "`Yesterday's log     : `View Yesterday's system activity.\n"
+	                "`Spam log            : `View the log of Spam E-Mail sent to the system.\n"
+	                "`SBBSEcho log        : `View the SBBSecho tosser log.\n"
+	                "`Guru log            : `View the transcriptions of chats with the Guru.\n"
+	                "`Hack log            : `View the Hack attempt log.";
 
 	while(1) {
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"View Logs",opt))  {
@@ -807,8 +807,8 @@ int main(int argc, char** argv)  {
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-    printf("\nSynchronet UNIX Monitor %s-%s  Copyright %s "
-        "Rob Swindell\n",revision,PLATFORM_DESC,__DATE__+7);
+	printf("\nSynchronet UNIX Monitor %s-%s  Copyright %s "
+		"Rob Swindell\n",revision,PLATFORM_DESC,__DATE__+7);
 
 	p=getenv("SBBSCTRL");
 	if(p==NULL) {
@@ -827,9 +827,9 @@ int main(int argc, char** argv)  {
 	sbbs_get_ini_fname(ini_file, ctrl_dir, str);
 
 	/* Initialize BBS startup structure */
-    memset(&bbs_startup,0,sizeof(bbs_startup));
-    bbs_startup.size=sizeof(bbs_startup);
-    strcpy(bbs_startup.ctrl_dir,ctrl_dir);
+	memset(&bbs_startup,0,sizeof(bbs_startup));
+	bbs_startup.size=sizeof(bbs_startup);
+	strcpy(bbs_startup.ctrl_dir,ctrl_dir);
 
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
@@ -852,7 +852,7 @@ int main(int argc, char** argv)  {
 	chdir(bbs_startup.ctrl_dir);
 
 	/* Read .cfg files here */
-    memset(&cfg,0,sizeof(cfg));
+	memset(&cfg,0,sizeof(cfg));
 	cfg.size=sizeof(cfg);
 	SAFECOPY(cfg.ctrl_dir,bbs_startup.ctrl_dir);
 	if(!load_cfg(&cfg, NULL, TRUE, str)) {
@@ -861,7 +861,7 @@ int main(int argc, char** argv)  {
 	}
 	prep_dir(cfg.data_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 
-    memset(&uifc,0,sizeof(uifc));
+	memset(&uifc,0,sizeof(uifc));
 	uifc.mode|=UIFC_NOCTRL;
 
 	uifc.esc_delay=500;
@@ -875,18 +875,17 @@ int main(int argc, char** argv)  {
 	boxch.bl=(char)200;
 	boxch.br=(char)188;
 	for(i=1;i<argc;i++) {
-        if(argv[i][0]=='-'
-            )
-            switch(toupper(argv[i][1])) {
-                case 'C':
-        			uifc.mode|=UIFC_COLOR;
-                    break;
-                case 'L':
-                    uifc.scrn_len=atoi(argv[i]+2);
-                    break;
-                case 'E':
-                    uifc.esc_delay=atoi(argv[i]+2);
-                    break;
+		if(argv[i][0]=='-')
+			switch(toupper(argv[i][1])) {
+				case 'C':
+					uifc.mode|=UIFC_COLOR;
+					break;
+					case 'L':
+					uifc.scrn_len=atoi(argv[i]+2);
+					break;
+				case 'E':
+					uifc.esc_delay=atoi(argv[i]+2);
+					break;
 				case 'S':
 					idle_sleep=atoi(argv[i]+2);
 					break;
@@ -914,29 +913,29 @@ int main(int argc, char** argv)  {
 							goto USAGE;
 					}
 					break;
-                default:
-					USAGE:
-                    printf("\nusage: %s [ctrl_dir] [options]"
-                        "\n\noptions:\n\n"
-                        "-c  =  force color mode\n"
-                        "-e# =  set escape delay to #msec\n"
-						"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
+				default:
+USAGE:
+					printf("\nusage: %s [ctrl_dir] [options]\r\n"
+					         "options:\n\n"
+					         "-c  =  force color mode\n"
+					         "-e# =  set escape delay to #msec\n"
+					         "-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
 #ifdef __unix__
-						"       X = X11 mode\r\n"
-						"       C = Curses mode\r\n"
-						"       F = Curses mode with forced IBM charset\r\n"
+					         "       X = X11 mode\r\n"
+					         "       C = Curses mode\r\n"
+					         "       F = Curses mode with forced IBM charset\r\n"
 #else
-						"       W = Win32 native mode\r\n"
+					         "       W = Win32 native mode\r\n"
 #endif
-						"       A = ANSI mode\r\n"
-                        "-l# =  set screen lines to #\n"
-						"-s# =  set idle slsep to # milliseconds (defualt: %d)\n"
-						,argv[0]
-						,idle_sleep
-                        );
-        			exit(0);
-           }
-    }
+					         "       A = ANSI mode\r\n"
+					         "-l# =  set screen lines to #\n"
+					         "-s# =  set idle slsep to # milliseconds (defualt: %d)\n"
+					    ,argv[0]
+					    ,idle_sleep
+					);
+					exit(0);
+			}
+	}
 
 #ifdef SIGPIPE
 	signal(SIGPIPE, SIG_IGN);
@@ -945,8 +944,8 @@ int main(int argc, char** argv)  {
 	uifc.size=sizeof(uifc);
 	i=initciolib(ciolib_mode);
 	if(i!=0) {
-    	printf("ciolib library init returned error %d\n",i);
-    	exit(1);
+		printf("ciolib library init returned error %d\n",i);
+		exit(1);
 	}
 	i=uifcini32(&uifc);  /* curses */
 	if(i!=0) {
@@ -996,15 +995,15 @@ int main(int argc, char** argv)  {
 		                "You can scroll through the list starting at \"System Options\" \n"
 		                "Pressing Enter on each will give a menu of option to perform.\n"
 		                "Additionally these keys are available from this screen:\n\n"
-						"`CTRL-E : `Displays the error log\n"
-						"`F12    : `Spys on the currently selected node\n"
-						"`F11    : `Send message to the currently selected node\n"
-						"`F10    : `Chats with the user on the currently selected node\n"
-						"`DEL    : `Clear errors on currently selected node\n"
-						"`CTRL-L : `Lock node toggle\n"
-						"`CTRL-R : `Rerun node\n"
-						"`CTRL-D : `Down node toggle\n"
-						"`CTRL-I : `Interrupt node\n";
+		               "`CTRL-E : `Displays the error log\n"
+		               "`F12    : `Spys on the currently selected node\n"
+		               "`F11    : `Send message to the currently selected node\n"
+		               "`F10    : `Chats with the user on the currently selected node\n"
+		               "`DEL    : `Clear errors on currently selected node\n"
+		               "`CTRL-L : `Lock node toggle\n"
+		               "`CTRL-R : `Rerun node\n"
+		               "`CTRL-D : `Down node toggle\n"
+		               "`CTRL-I : `Interrupt node\n";
 
 		drawstats(&cfg, main_dflt, &node, &main_dflt, &main_bar);
 
@@ -1057,18 +1056,18 @@ int main(int argc, char** argv)  {
 			opt[i][0]=0;
 			uifc.helpbuf=	"`System Options`\n"
 			                "`------------`\n\n"
-							"`Run SCFG              : `Run the Synchronet Configuration Utility.\n"
-							"`Run User Editor       : `Call up the User Editor.\n"
-							"`Run SyncTERM          : `Run SyncTERM for RLogin.  SyncTERM must be\n"
-							"                        in the exec directory.\n"
-							"`View logs             : `View the various system logs.\n"
-							"`Force QWK Net callout : `Force a callout to QWK Net Hub.  Select which\n"
-							"                        Hub from a popup list of configured Hubs.\n"
-							"`Run Event             : `Call up a menu of system events that can be\n"
-							"                        manually.\n"
-							"`Recycle Servers       : `Have the Servers reload their configuration \n"
-							"                        files.\n"
-							"`Edit trashcan files   : `Edit the various .can files.  i.e.; ip.can";
+			                "`Run SCFG              : `Run the Synchronet Configuration Utility.\n"
+			                "`Run User Editor       : `Call up the User Editor.\n"
+			                "`Run SyncTERM          : `Run SyncTERM for RLogin.  SyncTERM must be\n"
+			                 "                        in the exec directory.\n"
+			                "`View logs             : `View the various system logs.\n"
+			                "`Force QWK Net callout : `Force a callout to QWK Net Hub.  Select which\n"
+			                 "                        Hub from a popup list of configured Hubs.\n"
+			                "`Run Event             : `Call up a menu of system events that can be\n"
+			                "                        manually.\n"
+			                "`Recycle Servers       : `Have the Servers reload their configuration \n"
+			                "                        files.\n"
+			                "`Edit trashcan files   : `Edit the various .can files.  i.e.; ip.can";
 
 			done=0;
 			i=0;
@@ -1227,142 +1226,134 @@ int main(int argc, char** argv)  {
 			continue;
 
 		if(j<=cfg.sys_nodes && j>0) {
-		  if((node.status==NODE_INUSE) && node.useron) {
-      		i=0;
-   			strcpy(opt[i++],"Edit User");
-   			strcpy(opt[i++],"Spy on node");
-			strcpy(opt[i++],"Send message to user");
-			strcpy(opt[i++],"Chat with user");
-			strcpy(opt[i++],"Node toggles");
-			strcpy(opt[i++],"Clear Errors");
-			strcpy(opt[i++],"View node log");
-			strcpy(opt[i++],"View crash log");
+			if((node.status==NODE_INUSE) && node.useron) {
+				i=0;
+				strcpy(opt[i++],"Edit User");
+				strcpy(opt[i++],"Spy on node");
+				strcpy(opt[i++],"Send message to user");
+				strcpy(opt[i++],"Chat with user");
+				strcpy(opt[i++],"Node toggles");
+				strcpy(opt[i++],"Clear Errors");
+				strcpy(opt[i++],"View node log");
+				strcpy(opt[i++],"View crash log");
 
-			opt[i][0]=0;
-			i=0;
-			uifc.helpbuf=	"`Node Options\n"
-			                "`------------\n\n"
-							"`Edit User            : `Call up the user editor to edit current user.\n"
-							"`Spy on User          : `Spy on current user.\n"
-							"`Send message to user : `Send on online message to user.\n"
-							"`Chat with user       : `Initiate private split-screen chat wityh user.\n"
-							"`Node Toggles         : `Call up Node Toggles menu to set various toggles\n"
-							"                       for current node.\n"
-							"`Clear Errors         : `Clears the error count for node.\n"
-							"`View node log        : `View activity log for current node.\n"
-							"`View crash log       : `View the crash log for current node.";
-			done=0;
-			while(!done) {
-				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
+				opt[i][0]=0;
+				i=0;
+				uifc.helpbuf=	"`Node Options\n"
+						"`------------\n\n"
+						"`Edit User            : `Call up the user editor to edit current user.\n"
+						"`Spy on User          : `Spy on current user.\n"
+						"`Send message to user : `Send on online message to user.\n"
+						"`Chat with user       : `Initiate private split-screen chat wityh user.\n"
+						"`Node Toggles         : `Call up Node Toggles menu to set various toggles\n"
+						 "                       for current node.\n"
+						"`Clear Errors         : `Clears the error count for node.\n"
+						"`View node log        : `View activity log for current node.\n"
+						"`View crash log       : `View the crash log for current node.";
+				done=0;
+				while(!done) {
+					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
 
-					case 0:  /* Edit Users */
-						sprintf(str,"%suedit %d",cfg.exec_dir,node.useron);
-						for(j=1; j<argc; j++) {
-						  strcat(str,"'");
-						  strcat(str,argv[j]);
-						  strcat(str,"' ");
-						}
-						do_cmd(str);
-						break;
+						case 0:  /* Edit Users */
+							sprintf(str,"%suedit %d",cfg.exec_dir,node.useron);
+							for(j=1; j<argc; j++) {
+							  strcat(str,"'");
+							  strcat(str,argv[j]);
+							  strcat(str,"' ");
+							}
+							do_cmd(str);
+							break;
 
-				    case 1:	/* Spy */
-						dospy(j,&bbs_startup);
-						break;
+						case 1:	/* Spy */
+							dospy(j,&bbs_startup);
+							break;
 
-					case 2:	/* Send message */
-						sendmessage(&cfg, j,&node);
-						break;
+						case 2:	/* Send message */
+							sendmessage(&cfg, j,&node);
+							break;
 
-					case 3: /* Chat with User */
-						chat(&cfg,main_dflt,&node,&boxch,NULL);
-						break;
+						case 3: /* Chat with User */
+							chat(&cfg,main_dflt,&node,&boxch,NULL);
+							break;
 
-					case 4: /* Node Toggles */
-						node_toggles(&cfg, j);
-						break;
+						case 4: /* Node Toggles */
+							node_toggles(&cfg, j);
+							break;
 
-					case 5:
-						clearerrors(&cfg, j,&node);
-						break;
+						case 5:
+							clearerrors(&cfg, j,&node);
+							break;
 
-					case 6: /* Node log */
-						sprintf(str,"%snode.log",cfg.node_path[j-1]);
-						view_log(str,"Node Log");
-						break;
+						case 6: /* Node log */
+							sprintf(str,"%snode.log",cfg.node_path[j-1]);
+							view_log(str,"Node Log");
+							break;
 
-					case 7: /* Crash log */
-						sprintf(str,"%scrash.log",cfg.node_path[j-1]);
-						view_log(str,"Crash Log");
-						break;
+						case 7: /* Crash log */
+							sprintf(str,"%scrash.log",cfg.node_path[j-1]);
+							view_log(str,"Crash Log");
+							break;
 
-					case -1:
-						done=1;
-						break;
+						case -1:
+							done=1;
+							break;
 
-					default:
-						uifc.msg("Option not implemented");
-						break;
+						default:
+							uifc.msg("Option not implemented");
+							break;
 					}
 				}
-            }
-         }
+			}
+		}
 		if(j<=cfg.sys_nodes && j>0) {
-		  if(!((node.status==NODE_INUSE) && node.useron)) {
+			if(!((node.status==NODE_INUSE) && node.useron)) {
+				i=0;
+				strcpy(opt[i++],"Node toggles");
+				strcpy(opt[i++],"Clear Errors");
+				strcpy(opt[i++],"View node log");
+				strcpy(opt[i++],"View crash log");
 
-           	i=0;
-			strcpy(opt[i++],"Node toggles");
-			strcpy(opt[i++],"Clear Errors");
-			strcpy(opt[i++],"View node log");
-			strcpy(opt[i++],"View crash log");
+				opt[i][0]=0;
+				i=0;
+				uifc.helpbuf="`Node Options\n"
+				             "`------------\n\n"
+				             "`Node Toggles   : `Call up Node Toggles menu to set various toggles\n"
+				              "                 for current node.\n"
+				             "`Clear Errors   : `Clears the error count for node.\n"
+				             "`View node log  : `View activity log for current node.\n"
+				             "`View crash log : `View the crash log for current node.";
+				done=0;
+				while(!done) {
+					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
 
-			opt[i][0]=0;
-			i=0;
-			uifc.helpbuf=	"`Node Options\n"
-			                "`------------\n\n"
-							"`Node Toggles   : `Call up Node Toggles menu to set various toggles\n"
-							"                 for current node.\n"
-							"`Clear Errors   : `Clears the error count for node.\n"
-							"`View node log  : `View activity log for current node.\n"
-							"`View crash log : `View the crash log for current node.";
-			done=0;
-			while(!done) {
-				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
+						case 0: /* Node Toggles */
+							node_toggles(&cfg, j);
+							break;
 
-					case 0: /* Node Toggles */
-						node_toggles(&cfg, j);
-						break;
+						case 1:
+							clearerrors(&cfg, j,&node);
+							break;
 
-					case 1:
-						clearerrors(&cfg, j,&node);
-						break;
+						case 2: /* Node log */
+							sprintf(str,"%snode.log",cfg.node_path[j-1]);
+							view_log(str,"Node Log");
+							break;
 
-					case 2: /* Node log */
-						sprintf(str,"%snode.log",cfg.node_path[j-1]);
-						view_log(str,"Node Log");
-						break;
+						case 3: /* Crash log */
+							sprintf(str,"%scrash.log",cfg.node_path[j-1]);
+							view_log(str,"Crash Log");
+							break;
 
-					case 3: /* Crash log */
-						sprintf(str,"%scrash.log",cfg.node_path[j-1]);
-						view_log(str,"Crash Log");
-						break;
+						case -1:
+							done=1;
+							break;
 
-         			case -1:
-						done=1;
-						break;
-
-					default:
-						uifc.msg("Option not implemented");
-						break;
+						default:
+							uifc.msg("Option not implemented");
+							break;
 					}
 				}
-            }
-       	}
+			}
+		}
 	}
 }
-
-
-
-
-
-
-
