@@ -78,8 +78,6 @@ static void init_lists(void)
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
-lprintf(LOG_DEBUG, "User: %s", client->user);
-lprintf(LOG_DEBUG, "Prot: %s", client->protocol);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 }
@@ -345,20 +343,47 @@ void status_client_on(enum sbbs_status_service svc, BOOL on, SOCKET sock, client
 	struct sbbs_status_msg *msg;
 	size_t sz;
 	char *p;
+	const char *prot;
+	const char *user;
+	list_node_t *node;
+	client_t *clientp;
 
 	pthread_once(&init_once, init_lists);
 	pthread_mutex_lock(&status_mutex[svc]);
 	if(on) {
+		prot = client->protocol;
+		if (client == NULL || prot == NULL)
+			prot = "<null>";
+		user = client->user;
+		if (client == NULL || user == NULL)
+			user = "<null>";
 		if(update) {
 			list_node_t*	node;
+			list_node_t*	old_node;
 
 			listLock(&svc_client_list[svc]);
-			if((node=listFindTaggedNode(&svc_client_list[svc], sock)) != NULL)
-				memcpy(node->data, client, sizeof(client_t));
+			if((old_node=listFindTaggedNode(&svc_client_list[svc], sock)) != NULL) {
+				node = listAddNodeData(&svc_client_list[svc], client, sizeof(client_t) + strlen(prot) + 1 + strlen(user) + 1, sock, LAST_NODE);
+				if (node != NULL) {
+					clientp = node->data;
+					clientp->protocol = ((char *)node->data)+sizeof(client_t);
+					strcpy((char *)clientp->protocol, prot);
+					clientp->user = clientp->protocol + strlen(prot) + 1;
+					strcpy((char *)clientp->user, user);
+				}
+				listRemoveNode(&svc_client_list[svc], old_node, TRUE);
+			}
 			listUnlock(&svc_client_list[svc]);
 		} else {
 			served[svc]++;
-			listAddNodeData(&svc_client_list[svc], client, sizeof(client_t), sock, LAST_NODE);
+			node = listAddNodeData(&svc_client_list[svc], client, sizeof(client_t) + strlen(prot) + 1 + strlen(user) + 1, sock, LAST_NODE);
+			if (node != NULL) {
+				clientp = node->data;
+				clientp->protocol = ((char *)node->data)+sizeof(client_t);
+				strcpy((char *)clientp->protocol, prot);
+				clientp->user = clientp->protocol + strlen(prot) + 1;
+				strcpy((char *)clientp->user, user);
+			}
 		}
 	} else
 		listRemoveTaggedNode(&svc_client_list[svc], sock, /* free_data: */TRUE);
@@ -421,9 +446,12 @@ void status_thread(void *arg)
 	struct stat st;
 	char error[256];
 	client_t client = {0};
+	client_t *clientp;
 	user_t user;
 	char *p;
 	int rc = 0;
+	const char *prot;
+	const char *cuser;
 
 	startup = arg;
 	SetThreadName("sbbs/status");
@@ -557,6 +585,7 @@ void status_thread(void *arg)
 						pthread_mutex_lock(&status_thread_mutex);
 						continue;
 					}
+					client.user = user.alias;
 					p = strchr(auth, 0);
 					p++;
 					if (p-auth >= len) {
@@ -642,22 +671,33 @@ void status_thread(void *arg)
 							free(msg);
 						}
 						// Now send all the client info...
-						mlen = offsetof(struct sbbs_status_msg, msg.client_on) + sizeof(msg->msg.client_on);
-						msg = malloc(mlen);
-						if (msg != NULL) {
-							msg->hdr.service = i;
-							msg->hdr.type = STATUS_CLIENT_ON;
-							msg->hdr.len = mlen;
-							msg->msg.client_on.on = TRUE;
-							msg->msg.client_on.update = FALSE;
-							listLock(&svc_client_list[i]);
-							for (node = svc_client_list[i].first; node != NULL; node = node->next) {
+						listLock(&svc_client_list[i]);
+						for (node = svc_client_list[i].first; node != NULL; node = node->next) {
+							clientp = node->data;
+							prot = clientp->protocol;
+							if (prot == NULL)
+								prot = "<null>";
+							cuser = clientp->user;
+							if (cuser == NULL)
+								cuser = "<null>";
+							mlen = offsetof(struct sbbs_status_msg, msg.client_on) + sizeof(msg->msg.client_on) + strlen(prot) + 1 + strlen(cuser) + 1;
+							msg = malloc(mlen);
+							if (msg != NULL) {
+								msg->hdr.service = i;
+								msg->hdr.type = STATUS_CLIENT_ON;
+								msg->hdr.len = mlen;
+								msg->msg.client_on.on = TRUE;
+								msg->msg.client_on.update = FALSE;
 								msg->msg.client_on.sock = node->tag;
-								msg->msg.client_on.client = *(client_t*)(node->data);
+								msg->msg.client_on.client = *clientp;
+								msg->msg.client_on.client.protocol = msg->msg.client_on.strdata;
+								msg->msg.client_on.client.user = msg->msg.client_on.strdata + strlen(prot) + 1;
+								strcpy((char *)msg->msg.client_on.client.protocol, prot);
+								strcpy((char *)msg->msg.client_on.client.user, cuser);
 								send(*csock, msg, msg->hdr.len, 0);
 							}
-							listUnlock(&svc_client_list[i]);
 						}
+						listUnlock(&svc_client_list[i]);
 						pthread_mutex_unlock(&status_mutex[i]);
 					}
 					// Send current status
