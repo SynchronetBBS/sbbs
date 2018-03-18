@@ -1303,8 +1303,10 @@ function unlock_cfg()
 function exit_func()
 {
 	close_sub();
-	unlock_cfg();
-	save_cfg(true);
+	if (cfgile !== undefined) {
+		unlock_cfg();
+		save_cfg(true);
+	}
 }
 
 function binify(seen)
