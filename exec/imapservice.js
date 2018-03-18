@@ -1303,7 +1303,7 @@ function unlock_cfg()
 function exit_func()
 {
 	close_sub();
-	if (cfgile !== undefined) {
+	if (cfgfile !== undefined) {
 		unlock_cfg();
 		save_cfg(true);
 	}
