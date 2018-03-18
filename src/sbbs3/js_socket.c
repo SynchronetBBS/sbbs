@@ -50,6 +50,7 @@ static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE a
 	int ret;
 	int level;
 	char *estr;
+	char action[32];
 
 	/* Force "sane" values (requirements) */
 	switch(attr) {
@@ -65,7 +66,8 @@ static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE a
 
 	ret=cryptSetAttribute(session, attr, val);
 	if(ret != CRYPT_OK) {
-		get_crypt_error_string(ret, session, &estr, "setting attribute", &level);
+		sprintf(action, "setting attribute %d", attr);
+		get_crypt_error_string(ret, session, &estr, action, &level);
 		if (estr) {
 			lprintf(level, "TLS %s", estr);
 			free_crypt_attrstr(estr);
@@ -78,9 +80,11 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 {
 	int level;
 	char *estr;
+	char action[48];
 
 	int ret=cryptSetAttributeString(session, attr, val, len);
 	if(ret != CRYPT_OK) {
+		sprintf(action, "setting attribute string %d", attr);
 		get_crypt_error_string(ret, session, &estr, "setting attribute string", &level);
 		if (estr) {
 			lprintf(level, "TLS %s", estr);
