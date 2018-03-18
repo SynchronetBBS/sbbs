@@ -736,6 +736,14 @@ function run_one_outbound_dir(dir, scfg, semaphores, ran)
 	log(LOG_DEBUG, "Done checking in "+dir+".");
 }
 
+function touch_semaphores(semaphores)
+{
+	semaphores.forEach(function(semname) {
+		log(LOG_DEBUG, "Touching semaphore file: " + semname);
+		file_touch(semname);
+	});
+}
+
 function run_outbound(ran)
 {
 	var scfg;
@@ -793,9 +801,7 @@ function run_outbound(ran)
 		run_one_outbound_dir(dir, scfg, semaphores, ran);
 	});
 
-	semaphores.forEach(function(semname) {
-		file_touch(semname);
-	});
+	touch_semaphores(semaphores);
 }
 
 function inbound_auth_cb(pwd, bp)
@@ -924,14 +930,11 @@ function run_inbound(sock)
 		unlock_flow(lock);
 	});
 
-	semaphores.forEach(function(semname) {
-		file_touch(semname);
-	});
+	touch_semaphores(semaphores);
 }
 
-function poll_node(addr_str, scfg, bicfg, myaddr)
+function poll_node(addr_str, scfg, bicfg, myaddr, semaphores)
 {
-	var semaphores = [];
 	var lock_files;
 	var locks = [];
 
@@ -978,9 +981,11 @@ function run_polls(ran)
 
 		if (ran[addr] !== undefined)
 			return;
-		poll_node(addr_str, scfg, bicfg, myaddr);
+		poll_node(addr_str, scfg, bicfg, myaddr, semaphores);
 		ran[addr] = true;
 	});
+
+	touch_semaphores(semaphores);
 }
 
 // First-time installation routine (only)
@@ -1041,11 +1046,13 @@ function install()
 	ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
 	if (!ini.open(file_exists(ini.name) ? 'r+':'w+'))
 		return ini.name + " open error " + ini.error;
-	printf("Updating %s\r\n", ini.name);
-	var section = "BINKP";
-	ini.iniSetValue(section, "Enabled", true);
-	ini.iniSetValue(section, "Command", "binkit.js");
-	ini.iniSetValue(section, "Port", 24554);
+	if(!ini.GetObject("BINKP") && !ini.GetObject("BINKIT")) {
+		printf("Updating %s\r\n", ini.name);
+		var section = "BINKP";
+		ini.iniSetValue(section, "Enabled", true);
+		ini.iniSetValue(section, "Command", "binkit.js");
+		ini.iniSetValue(section, "Port", 24554);
+	}
 	ini.close();
 
 	ini = new File(file_cfgname(system.ctrl_dir, "binkit.ini"));
