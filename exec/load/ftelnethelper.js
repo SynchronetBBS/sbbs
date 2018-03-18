@@ -42,11 +42,11 @@ var FRLoginPort    = -1;
 var FTelnetPort    = -1;
 
 // Values from services.ini
-var FLoadedServicesIni               = false;
-var FWebSocketToRLoginServiceEnabled = false;
-var FWebSocketToRLoginServicePort    = -1;
-var FWebSocketToTelnetServiceEnabled = false;
-var FWebSocketToTelnetServicePort    = -1;
+var FLoadedServicesIni = false;
+var FWSEnabled         = false;
+var FWSPort            = -1;
+var FWSSEnabled        = false;
+var FWSSPort           = -1;
 
 // Credit to echicken for port lookup code
 function GetSBBSIniValues() {
@@ -74,13 +74,13 @@ function GetServicesIniValues() {
 		try {
 			var f = new File(file_cfgname(system.ctrl_dir, "services.ini"));
 			if (f.open("r", true)) {
-				// Try to get the WebSocket to RLogin port
-                FWebSocketToRLoginServicePort = f.iniGetValue("WebSocket-RLogin", "Port", -1);
-                FWebSocketToRLoginServiceEnabled = (FWebSocketToRLoginServicePort > 0) && f.iniGetValue("WebSocket-RLogin", "Enabled", true);
+				// Try to get the WS service port
+                FWSPort = f.iniGetValue("WS", "Port", -1);
+                FWSEnabled = (FWSPort > 0) && f.iniGetValue("WS", "Enabled", true);
 				
-				// Try to get the WebSocket to Telnet port
-                FWebSocketToTelnetServicePort = f.iniGetValue("WebSocket-Telnet", "Port", -1);
-                FWebSocketToTelnetServiceEnabled = (FWebSocketToTelnetServicePort > 0) && f.iniGetValue("WebSocket-Telnet", "Enabled", true);
+				// Try to get the WSS service port
+                FWSSPort = f.iniGetValue("WSS", "Port", -1);
+                FWSSEnabled = (FWSSPort > 0) && f.iniGetValue("WSS", "Enabled", true);
 
 				f.close();
 			}
@@ -92,7 +92,7 @@ function GetServicesIniValues() {
 
 function GetRLoginPort() {
 	GetSBBSIniValues();
-	return FRLoginPort;
+	return (IsRLoginEnabled() ? FRLoginPort : -1);
 }
 
 function GetTelnetPort() {
@@ -100,24 +100,14 @@ function GetTelnetPort() {
 	return FTelnetPort;
 }
 
-function GetWebSocketToRLoginPort() {
+function GetWebSocketServicePort(wss) {
 	GetServicesIniValues();
-	return FWebSocketToRLoginServicePort;
+	return (wss ? FWSSPort : FWSPort);
 }
 
-function GetWebSocketToTelnetPort() {
+function IsWebSocketServiceEnabled(wss) {
 	GetServicesIniValues();
-	return FWebSocketToTelnetServicePort;
-}
-
-function IsWebSocketToRLoginServiceEnabled() {
-	GetServicesIniValues();
-	return FWebSocketToRLoginServiceEnabled;
-}
-
-function IsWebSocketToTelnetServiceEnabled() {
-	GetServicesIniValues();
-	return FWebSocketToTelnetServiceEnabled;
+	return (wss ? FWSSEnabled : FWSEnabled);
 }
 
 function IsRLoginEnabled() {

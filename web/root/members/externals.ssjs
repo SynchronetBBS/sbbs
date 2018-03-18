@@ -12,7 +12,7 @@ try {
   load("ftelnethelper.js");
   options = load("modopts.js", "logon");
 } catch (e) {
-  // Ignore, just means modopts.js doesn't exist and so an error will be displayed below
+  log(LOG_ERR, e);
 }
 
 if (!options) {
@@ -25,10 +25,10 @@ if (!options) {
     if (user.security.level >= 90) {
         template.SysOpMessage = "Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the rlogin_auto_xtrn feature of the logon module<ul><li>To do this, ensure that the <b>rlogin_auto_xtrn=</b> line in the <b>[logon]</b> section of <b>sbbs/ctrl/modopts.ini</b> is set to <b>true</b></li><li>(Currently, it's set to <b>" + options.rlogin_auto_xtrn + "</b>)</ul>";
     }
-} else if (!IsWebSocketToRLoginServiceEnabled()) {
+} else if (!IsWebSocketServiceEnabled(false) || !IsWebSocketServiceEnabled(true)) {
 	templatefile = "ftelnet_disabled.inc";
 	if (user.security.level >= 90) {
-		template.SysOpMessage = "Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the WebSocket to RLogin Proxy Service<ul><li>To do this, add this block to your <b>sbbs/ctrl/services.ini file<pre>[WebSocket-RLogin]\r\nPort=11513\r\nOptions=NO_HOST_LOOKUP\r\nCommand=websocketservice.js localhost " + GetRLoginPort() + "</pre></li></ul><strong>NOTE:</strong> You may need to tweak the Command= line if your server is listening on a specific IP address (ie change 'localhost' to the correct IP).";
+		template.SysOpMessage = "Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the WS and WSS services<ul><li>To do this, add this block to your <b>sbbs/ctrl/services.ini file<pre>;WebSocket service (for fTelnet loaded via http://).\r\n;For troubleshooting, please see https://www.ftelnet.ca/synchronet/\r\n[WS]\r\nPort=1123\r\nOptions=NO_HOST_LOOKUP\r\nCommand=websocketservice.js\r\n\r\n;WebSocket Secure service (for fTelnet loaded via https://).\r\n;For troubleshooting, please see https://www.ftelnet.ca/synchronet/\r\n[WSS]\r\nPort=11235\r\nOptions=NO_HOST_LOOKUP | TLS\r\nCommand=websocketservice.js</pre></li></ul><strong>NOTE:</strong> Don't forget to open ports 1123 and 11235 on your firewall and/or add the correct port forwarding rules, if necessary.";
 	}
 } else if (!IsRLoginEnabled()) {
 	templatefile = "ftelnet_disabled.inc";
@@ -60,8 +60,10 @@ if (!options) {
 		template.ClientUserName = user.security.password;
 		template.ServerUserName = user.alias;
 		template.TerminalType = "xtrn=" + http_request.query.code;
-		template.HostName = system.host_name;
-		template.Port = GetWebSocketToRLoginPort();
+		template.HostName = http_request.vhost; // system.host_name;
+        template.RLoginPort = GetRLoginPort();
+        template.WSPort = GetWebSocketServicePort(false);
+        template.WSSPort = GetWebSocketServicePort(true);
 	}
 }
 

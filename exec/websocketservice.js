@@ -47,16 +47,32 @@ try {
     if (ShakeHands()) {
         SendToWebSocketClient(StringToBytes("Redirecting to server...\r\n"));
 
-        // Determine where to connect
-		var TargetHostname = system.local_host_name;
+        // Default to localhost on the telnet port
+		var TargetHostname = 'localhost';
 		var TargetPort = GetTelnetPort();
-		if (argc === 1) {
-			TargetPort = parseInt(argv[0]);
-		} else if (argc === 2) {
-			TargetHostname = argv[0];
-			TargetPort = parseInt(argv[1]);
-		}
-		
+        
+        // If fTelnet client sent a port on the querystring, try to use that
+        var Path = ParsePathHeader();
+        if (Path.query.Port) {
+            RequestedPort = parseInt(Path.query.Port);
+
+            // Confirm the user requested either the telnet or rlogin ports (we don't want to allow them to request any arbitrary port as that would be a gaping security hole)
+            if ((RequestedPort > 0) && (RequestedPort <= 65535) && ((RequestedPort == GetTelnetPort()) || (RequestedPort == GetRLoginPort()))) {
+                TargetPort = RequestedPort;
+                log(LOG_INFO, "Using user-requested port " + Path.query.Port);
+            } else {
+                log(LOG_NOTICE, "Denying user-requested port " + Path.query.Port);
+            }
+        } else {
+            // If SysOp gave an alternate hostname/port when installing the service, use that instead
+            if (argc === 1) {
+                TargetPort = parseInt(argv[0]);
+            } else if (argc === 2) {
+                TargetHostname = argv[0];
+                TargetPort = parseInt(argv[1]);
+            }
+        }
+        
 		// Connect to the server
         FServerSocket = new Socket();
         if (FServerSocket.connect(TargetHostname, TargetPort)) {
@@ -244,6 +260,29 @@ function GetFromWebSocketClientVersion7() {
         }
     }
 
+    return Result;
+}
+
+function ParsePathHeader() {
+    var Result = {};
+    Result.query = {};
+    
+    var Path = FWebSocketHeader['Path'];
+    if (Path) {
+        if (Path.indexOf('?') === -1) {
+            // No querystring
+            Result.path_info = Path;
+        } else {
+            // Have querystring, so parse it out
+            Result.path_info = Path.split('?')[0];
+            var KeyValues = Path.split('?')[1].split('&');
+            for (var i = 0; i < KeyValues.length; i++) {
+                var KeyValue = KeyValues[i].split('=');
+                Result.query[KeyValue[0]] = KeyValue[1];
+            }
+        }
+    }
+    
     return Result;
 }
 
