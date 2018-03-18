@@ -3215,6 +3215,8 @@ BOOL DLLCALL set_sysop_availability(scfg_t* scfg, BOOL available)
 	return remove(sysop_available_semfile(scfg)) == 0;
 }
 
+#if !defined(NO_SOCKET_SUPPORT)	/* This brings in xpdev which then requires socket lib */
+
 /************************************/
 /* user .ini file get/set functions */
 /************************************/
@@ -3268,3 +3270,5 @@ BOOL DLLCALL user_set_time_property(scfg_t* scfg, unsigned user_number, const ch
 	iniCloseFile(fp);
 	return result != NULL;
 }
+
+#endif /* !NO_SOCKET_SUPPORT */
