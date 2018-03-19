@@ -988,8 +988,8 @@ USAGE:
 		}
 		mopt[i][0]=0;
 
-		uifc.helpbuf=	"`Synchronet UNIX Monitor\n"
-		                "`------------------\n"
+		uifc.helpbuf=  "`Synchronet UNIX Monitor\n"
+		               "`------------------\n"
 		                "Welcome to the Synchronet UNIX Monitor.\n"
 		                "Displayed on this screen are the statitics for the BBS\n"
 		                "You can scroll through the list starting at \"System Options\" \n"
