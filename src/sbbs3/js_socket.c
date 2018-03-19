@@ -238,10 +238,8 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 			FD_ZERO(&socket_set);
 			FD_SET(p->sock,&socket_set);
 			tv.tv_sec = timeout;
-			if(select(p->sock+1,&socket_set,NULL,NULL,&tv)==1)
+			if((ret = select(p->sock+1,&socket_set,NULL,NULL,&tv))==1)
 				ret = recv(p->sock, buf, len, flags);
-			else
-				ret = 0;
 		}
 		else {
 			status = cryptPopData(p->session, buf, len, &copied);
