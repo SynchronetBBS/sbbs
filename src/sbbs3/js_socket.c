@@ -45,6 +45,44 @@
 
 static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 
+static void dbprintf(BOOL error, js_socket_private_t* p, char* fmt, ...);
+static bool do_CryptFlush(js_socket_private_t *p);
+static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val);
+static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len);
+static void do_js_close(js_socket_private_t *p);
+static BOOL js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type);
+static JSBool js_accept(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_bind(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_close(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_connect(JSContext *cx, uintN argc, jsval *arglist);
+static void js_finalize_socket(JSContext *cx, JSObject *obj);
+static JSBool js_ioctlsocket(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_listen(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_getsockopt(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_peek(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_poll(JSContext *cx, uintN argc, jsval *arglist);
+static ushort js_port(JSContext* cx, jsval val, int type);
+static JSBool js_recv(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_recvbin(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_recvfrom(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_recvline(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_send(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_sendbin(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_sendfile(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_sendline(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_sendto(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_setsockopt(JSContext *cx, uintN argc, jsval *arglist);
+static int js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i);
+static JSBool js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist);
+static JSBool js_socket_enumerate(JSContext *cx, JSObject *obj);
+static BOOL js_socket_peek_byte(js_socket_private_t *p);
+static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp);
+static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, int flags, int timeout);
+static JSBool js_socket_resolve(JSContext *cx, JSObject *obj, jsid id);
+static int js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *offset, off_t count);
+static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, size_t len, int flush);
+static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp);
+
 static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val)
 {
 	int ret;
@@ -152,6 +190,19 @@ static void do_js_close(js_socket_private_t *p)
 	p->is_connected = FALSE;
 }
 
+static BOOL js_socket_peek_byte(js_socket_private_t *p)
+{
+	if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, 0) != CRYPT_OK)
+		return FALSE;
+	if (p->peeked)
+		return TRUE;
+	if (js_socket_recv(p, &p->peeked_byte, 1, 0, 0) == 1) {
+		p->peeked = TRUE;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, int flags, int timeout)
 {
 	ptrdiff_t	total=0;
@@ -165,6 +216,20 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 	if (len == 0)
 		return total;
 	if (p->session != -1) {
+		if (flags & MSG_PEEK)
+			js_socket_peek_byte(p);
+		if (p->peeked) {
+			*(uint8_t *)buf = p->peeked_byte;
+			buf=((uint8_t *)buf) + 1;
+			if (!(flags & MSG_PEEK))
+				p->peeked = FALSE;
+			total++;
+			len--;
+			if (len == 0)
+				return total;
+		}
+		if (flags & MSG_PEEK)
+			return total;
 		if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, p->nonblocking?0:timeout) != CRYPT_OK)
 			return -1;
 	}
@@ -1639,7 +1704,10 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	else
 		rd_set=&socket_set;
 
-	result = select(high+1,rd_set,wr_set,NULL,&tv);
+	if (p->peeked && !poll_for_write)
+		result = 1;
+	else
+		result = select(high+1,rd_set,wr_set,NULL,&tv);
 
 	p->last_error=ERROR_VALUE;
 
@@ -1684,7 +1752,7 @@ static char* socket_prop_desc[] = {
 	,"<i>true</i> if socket can accept written data - Setting to false will shutdown the write end of the socket."
 	,"alias for is_writeable"
 	,"<i>true</i> if data is waiting to be read from socket - <small>READ ONLY</small>"
-	,"number of bytes waiting to be read - <small>READ ONLY</small>"
+	,"number of bytes waiting to be read - TLS sockets will never return more than 1 - <small>READ ONLY</small>"
 	,"enable debug logging"
 	,"socket descriptor (advanced uses only)"
 	,"use non-blocking operation (default is <i>false</i>)"
@@ -1880,8 +1948,14 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SOCK_PROP_DATA_WAITING:
 			if(p->sock==INVALID_SOCKET && p->set)
 				rd = FALSE;
-			else
-				socket_check(p->sock,&rd,NULL,0);
+			else {
+				if (p->peeked)
+					rd = TRUE;
+				else if (p->session != -1)
+					rd = js_socket_peek_byte(p);
+				else
+					socket_check(p->sock,&rd,NULL,0);
+			}
 			*vp = BOOLEAN_TO_JSVAL(rd);
 			break;
 		case SOCK_PROP_NREAD:
@@ -1890,7 +1964,13 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				break;
 			}
 			cnt=0;
-			if(ioctlsocket(p->sock, FIONREAD, &cnt)==0) {
+			if (p->session != -1) {
+				if (js_socket_peek_byte(p))
+					*vp=DOUBLE_TO_JSVAL((double)1);
+				else
+					*vp = JSVAL_ZERO;
+			}
+			else if(ioctlsocket(p->sock, FIONREAD, &cnt)==0) {
 				*vp=DOUBLE_TO_JSVAL((double)cnt);
 			}
 			else
@@ -2045,7 +2125,7 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	,310
 	},
 	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>]")
-	,JSDOCSTR("receive a string, default maxlen is 512 characters, leaves string in receive buffer")
+	,JSDOCSTR("receive a string, default maxlen is 512 characters, leaves string in receive buffer (TLS sockets will never return more than one byte)")
 	,310
 	},
 	{"readline",	js_recvline,	0,	JSTYPE_ALIAS },

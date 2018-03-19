@@ -22,6 +22,8 @@ typedef struct
 	char	*hostname;
 	struct xpms_set	*set;
 	size_t	unflushed;
+	char	peeked_byte;
+	BOOL	peeked;
 } js_socket_private_t;
 
 #ifdef __cplusplus
