@@ -922,20 +922,23 @@ BinkP.prototype.sendCmd = function(cmd, data)
 			break;
 		case this.command.M_ERR:
 		case this.command.M_BSY:
-			this.senteob=this.goteob=0;
 			this.sock.close();
 			this.sock = undefined;
 			break;
 		case this.command.M_NUL:
-			this.senteob=this.goteob=0;
 			if (data.substr(0, 4) === 'OPT ') {
 				tmp = data.substr(4).split(/ /);
 				if (tmp.indexOf('NR'))
 					this.sent_nr = true;
 			}
 			break;
+		case this.command.M_ADR:
+		case this.command.M_PWD:
+		case this.command.M_OK:
+			break;
 		default:
 			this.reset_eob();
+			break;
 	}
 	return true;
 };
@@ -943,7 +946,7 @@ BinkP.prototype.sendData = function(data)
 {
 	var len = data.length;
 
-	this.senteob=this.goteob=0;
+	this.reset_eob();
 	if (this.sock === undefined)
 		return false;
 	if (this.debug)
