@@ -641,11 +641,7 @@ BinkP.prototype.session = function()
 		// skipping files.
 		cur_timeout = 0;
 		if (this.ver1_1) {
-			/*
-			 * Radius/4.010/21.01.2005,13:56(Final-Release)/Win32
-			 * apparently will not send an M_EOB after an empty poll
-			 * until it gets two from the originator.
-			 */
+			// Don't increase the timeout until we've sent the second M_EOB
 			if (this.senteob >= 2)
 				cur_timeout = this.timeout;
 		}
@@ -824,8 +820,10 @@ BinkP.prototype.session = function()
 			this.sending = this.tx_queue.shift();
 			if (this.sending === undefined) {
 				if (this.receiving === undefined) {
-					if (this.ver1_1)
-						this.sendCmd(this.command.M_EOB);
+					if (this.ver1_1) {
+						if (this.senteob == 0 || (this.goteob))
+							this.sendCmd(this.command.M_EOB);
+					}
 					else {
 						if (!this.senteob)
 							this.sendCmd(this.command.M_EOB);
