@@ -640,8 +640,14 @@ BinkP.prototype.session = function()
 		// We want to wait if we have no more files to send or if we're
 		// skipping files.
 		cur_timeout = 0;
-		if (this.senteob)
-			cur_timeout = this.timeout;
+		if (this.ver1_1) {
+			if (this.senteob < 2)
+				cur_timeout = this.timeout;
+		}
+		else {
+			if (this.senteob)
+				cur_timeout = this.timeout;
+		}
 		if (this.sending !== undefined && this.sending.waitingForGet !== undefined && this.sending.waitingForGet)
 			cur_timeout = this.timeout;
 		pkt = this.recvFrame(cur_timeout);
