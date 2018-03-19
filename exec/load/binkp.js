@@ -641,7 +641,12 @@ BinkP.prototype.session = function()
 		// skipping files.
 		cur_timeout = 0;
 		if (this.ver1_1) {
-			if (this.senteob < 2)
+			/*
+			 * Radius/4.010/21.01.2005,13:56(Final-Release)/Win32
+			 * apparently will not send an M_EOB after an empty poll
+			 * until it gets two from the originator.
+			 */
+			if (this.senteob >= 2)
 				cur_timeout = this.timeout;
 		}
 		else {
