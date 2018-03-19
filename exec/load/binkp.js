@@ -994,8 +994,14 @@ BinkP.prototype.recvFrame = function(timeout)
 			return undefined;
 		}
 		if (i.length != 1) {
-			if (timeout) {
-				log(LOG_WARNING, "Timed out receiving first byte of packet header: " + timeout);
+			if (!this.sock.is_connected) {
+				log(LOG_DEBUG, "Remote host closed socket");
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			}
+			else if (timeout) {
+				log(LOG_WARNING, "Timed out receiving first byte of packet header!");
 				this.sock.close();
 				this.sock = undefined;
 				return undefined;
@@ -1011,8 +1017,14 @@ BinkP.prototype.recvFrame = function(timeout)
 			return undefined;
 		}
 		if (i.length != 1) {
-			if (timeout) {
-				log(LOG_WARNING, "Timed out receiving second byte of packet header: " + timeout);
+			if (!this.sock.is_connected) {
+				log(LOG_DEBUG, "Remote host closed socket");
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			}
+			else if (timeout) {
+				log(LOG_WARNING, "Timed out receiving second byte of packet header!");
 				this.sock.close();
 				this.sock = undefined;
 				return undefined;
@@ -1037,8 +1049,14 @@ BinkP.prototype.recvFrame = function(timeout)
 		return undefined;
 	}
 	if (i.length == 0) {
-		if (timeout) {
-			log(LOG_ERROR, "Timed out receiving packet data: " + timeout);
+		if (!this.sock.is_connected) {
+			log(LOG_DEBUG, "Remote host closed socket");
+			this.sock.close();
+			this.sock = undefined;
+			return undefined;
+		}
+		else if (timeout) {
+			log(LOG_ERROR, "Timed out receiving packet data!");
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
