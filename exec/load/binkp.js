@@ -995,7 +995,7 @@ BinkP.prototype.recvFrame = function(timeout)
 		}
 		if (i.length != 1) {
 			if (timeout) {
-				log(LOG_WARNING, "Timed out receiving first byte of packet header!");
+				log(LOG_WARNING, "Timed out receiving first byte of packet header: " + timeout);
 				this.sock.close();
 				this.sock = undefined;
 				return undefined;
@@ -1012,7 +1012,7 @@ BinkP.prototype.recvFrame = function(timeout)
 		}
 		if (i.length != 1) {
 			if (timeout) {
-				log(LOG_WARNING, "Timed out receiving second byte of packet header!");
+				log(LOG_WARNING, "Timed out receiving second byte of packet header: " + timeout);
 				this.sock.close();
 				this.sock = undefined;
 				return undefined;
@@ -1038,7 +1038,7 @@ BinkP.prototype.recvFrame = function(timeout)
 	}
 	if (i.length == 0) {
 		if (timeout) {
-			log(LOG_ERROR, "Timed out receiving packet data!");
+			log(LOG_ERROR, "Timed out receiving packet data: " + timeout);
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
@@ -1106,8 +1106,10 @@ BinkP.prototype.recvFrame = function(timeout)
 						this.sendCmd(this.command.M_ERR, "Authentication already complete.");
 						return undefined;
 					}
-					else
+					else {
+						log(LOG_INFO, "Authentication successful: " + ret.data);
 						this.authenticated = ret.data;
+					}
 					break;
 				case this.command.M_NUL:
 					args = ret.data.split(/ /);
