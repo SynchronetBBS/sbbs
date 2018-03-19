@@ -93,6 +93,7 @@ function lock_flow(file)
 		}
 	}
 	ret.bsy.writeln("BinkIT");
+	ret.bsy.flush();
 	log(LOG_DEBUG, "Lock successful.");
 	return ret;
 }
