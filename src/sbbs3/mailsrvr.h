@@ -254,7 +254,7 @@ DLLEXPORT const	char*	DLLCALL mail_ver(void);
 
 /* for mxlookup.c: */
 void mail_open_socket(SOCKET sock, void* cb_protocol);
-int mail_close_socket(SOCKET sock);
+int mail_close_socket(SOCKET *sock, int *sess);
 #ifdef __cplusplus
 }
 #endif
