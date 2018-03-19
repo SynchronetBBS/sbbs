@@ -812,11 +812,13 @@ BinkP.prototype.session = function()
 		if (this.sending === undefined) {
 			this.sending = this.tx_queue.shift();
 			if (this.sending === undefined) {
-				if (this.ver1_1)
-					this.sendCmd(this.command.M_EOB);
-				else {
-					if (!this.senteob)
+				if (this.receiving === undefined) {
+					if (this.ver1_1)
 						this.sendCmd(this.command.M_EOB);
+					else {
+						if (!this.senteob)
+							this.sendCmd(this.command.M_EOB);
+					}
 				}
 			}
 			else {
