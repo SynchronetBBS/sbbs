@@ -1015,7 +1015,7 @@ BinkP.prototype.recvFrame = function(timeout)
 	else
 		ret = this.partialFrame;
 
-	i = this.recv_buf(this.sock.recv(ret.length - ret.data.length));
+	i = this.recv_buf(this.sock.recv(ret.length - ret.data.length, timeout));
 	if (i == null) {
 		log(LOG_INFO, "Error in recv() of packet data");
 		this.sock.close();
