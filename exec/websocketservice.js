@@ -34,6 +34,7 @@ const WEBSOCKET_DATA                = 3;
 
 // Global variables
 var FFrameMask = [];
+var FFrameMasked = false;
 var FFrameOpCode = 0;
 var FFramePayloadLength = 0;
 var FFramePayloadReceived = 0;
@@ -59,9 +60,9 @@ try {
             // Confirm the user requested either the telnet or rlogin ports (we don't want to allow them to request any arbitrary port as that would be a gaping security hole)
             if ((RequestedPort > 0) && (RequestedPort <= 65535) && ((RequestedPort == GetTelnetPort()) || (RequestedPort == GetRLoginPort()))) {
                 TargetPort = RequestedPort;
-                log(LOG_INFO, "Using user-requested port " + Path.query.Port);
+                log(LOG_DEBUG, "Using user-requested port " + Path.query.Port);
             } else {
-                log(LOG_NOTICE, "Denying user-requested port " + Path.query.Port);
+                log(LOG_NOTICE, "Client requested to connect to port " + Path.query.Port + ", which was denied");
             }
         } else {
             // If SysOp gave an alternate hostname/port when installing the service, use that instead
@@ -110,12 +111,12 @@ try {
 			if (!FServerSocket.is_connected) log(LOG_DEBUG, 'Server socket no longer connected');
         } else {
             // FServerSocket.connect() failed
-            log(LOG_ERR, "Unable to connect to server");
+            log(LOG_ERR, "Unable to connect to server at " + TargetHostname + ":" + TargetPort);
             SendToWebSocketClient(StringToBytes("ERROR: Unable to connect to server\r\n"));
             mswait(2500);
         }
     } else {
-        log(LOG_ERR, "ShakeHands() failed");
+        log(LOG_DEBUG, "WebSocket handshake failed (likely a port scanner)");
     }
 } catch (err) {
     log(LOG_ERR, err.toString());
@@ -217,20 +218,62 @@ function GetFromWebSocketClientVersion7() {
         switch (FWebSocketState) {
             case WEBSOCKET_NEED_PACKET_START:
 				// Next byte will give us the opcode, and also tell is if the message is fragmented
+				FFrameOpCode = client.socket.recvBin(1) & 0x0F;
+                switch (FFrameOpCode) {
+                    case 0: // Continuation frame 
+                    case 1: // Text frame
+                        break;
+                        
+                    case 2: // Binary frame
+                        log(LOG_DEBUG, "Client sent a binary frame, which is unsupported");
+                        client.socket.close();
+                        return [];
+
+                    case 8: // Close frame
+                        log(LOG_DEBUG, "Client sent a close frame");
+                        // TODO Protocol says to respond with a close frame
+                        client.socket.close();
+                        return [];
+                        
+                    case 9: // Ping frame
+                        log(LOG_DEBUG, "Client setnt a ping frame");
+                        // TODO Protocol says to respond with a pong frame
+                        break;
+                        
+                    case 10: // Pong frame
+                        log(LOG_DEBUG, "Client sent a pong frame");
+                        break;
+                        
+                    default: // Reserved or unknown frame
+                        log(LOG_DEBUG, "Client sent a reserved/unknown frame: " + FFrameOpCode);
+                        client.socket.close();
+                        return [];
+                }
+
+                // If we get here, we want to move on to the next state
 				FFrameMask = [];
-				FFrameOpCode = client.socket.recvBin(1);
-				FFramePayloadLength = 0;
-				FFramePayloadReceived = 0;
-				FWebSocketState = WEBSOCKET_NEED_PAYLOAD_LENGTH;
+                FFrameMasked = false;
+                FFramePayloadLength = 0;
+                FFramePayloadReceived = 0;
+                FWebSocketState = WEBSOCKET_NEED_PAYLOAD_LENGTH;
                 break;
             case WEBSOCKET_NEED_PAYLOAD_LENGTH:
-				FFramePayloadLength = (client.socket.recvBin(1) & 0x7F);
+                InByte = client.socket.recvBin(1);
+                
+                FFrameMasked = ((InByte & 0x80) == 128);
+
+                FFramePayloadLength = (InByte & 0x7F);
 				if (FFramePayloadLength === 126) {
 					FFramePayloadLength = client.socket.recvBin(2);
 				} else if (FFramePayloadLength === 127) {
 					FFramePayloadLength = client.socket.recvBin(8);
 				}
-				FWebSocketState = WEBSOCKET_NEED_MASKING_KEY;
+                
+                if (FFrameMasked) {
+                    FWebSocketState = WEBSOCKET_NEED_MASKING_KEY;
+                } else {
+                    FWebSocketState = (FFramePayloadLength > 0 ? WEBSOCKET_DATA : WEBSOCKET_NEED_PACKET_START); // NB: Might not be any data to read, so check for payload length before setting state
+                }
 				break;
             case WEBSOCKET_NEED_MASKING_KEY:
 				InByte = client.socket.recvBin(4);
@@ -241,17 +284,19 @@ function GetFromWebSocketClientVersion7() {
                 FWebSocketState = (FFramePayloadLength > 0 ? WEBSOCKET_DATA : WEBSOCKET_NEED_PACKET_START); // NB: Might not be any data to read, so check for payload length before setting state
 				break;
             case WEBSOCKET_DATA:
-				InByte = (client.socket.recvBin(1) ^ FFrameMask[FFramePayloadReceived++ % 4]);
+				InByte = client.socket.recvBin(1);
+                if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
 
 				// Check if the byte needs to be UTF-8 decoded
 				if ((InByte & 0x80) === 0) {
 					Result.push(InByte);
 				} else if ((InByte & 0xE0) === 0xC0) {
 					// Handle UTF-8 decode
-					InByte2 = (client.socket.recvBin(1) ^ FFrameMask[FFramePayloadReceived++ % 4]);
+					InByte2 = client.socket.recvBin(1);
+                    if (FFrameMasked) InByte2 ^= FFrameMask[FFramePayloadReceived++ % 4];
 					Result.push(((InByte & 31) << 6) | (InByte2 & 63));
 				} else {
-					log(LOG_ERR, "GetFromWebSocketClientVersion7 Byte out of range: " + InByte);
+					log(LOG_DEBUG, "GetFromWebSocketClientVersion7 Byte out of range: " + InByte);
 				}
 
 				// Check if we've received the full payload
@@ -318,7 +363,7 @@ function SendToWebSocketClientDraft0(AData) {
             client.socket.sendBin((AData[i] >> 6) | 192, 1);
             client.socket.sendBin((AData[i] & 63) | 128, 1);
         } else {
-            log(LOG_ERR, "SendToWebSocketClientDraft0 Byte out of range: " + AData[i]);
+            log(LOG_DEBUG, "SendToWebSocketClientDraft0 Byte out of range: " + AData[i]);
         }
     }
 
@@ -339,7 +384,7 @@ function SendToWebSocketClientVersion7(AData) {
 	            ToSend.push((AData[i] >> 6) | 192);
 	            ToSend.push((AData[i] & 63) | 128);
 	        } else {
-				log(LOG_ERR, "SendToWebSocketClientVersion7 Byte out of range: " + AData[i]);
+				log(LOG_DEBUG, "SendToWebSocketClientVersion7 Byte out of range: " + AData[i]);
 			}
 	    }
 
@@ -373,7 +418,7 @@ function ShakeHands() {
             // Read another line, and abort if we don't get one within 5 seconds
             var InLine = client.socket.recvline(512, 5);
             if (InLine === null) {
-                log(LOG_ERR, "Timeout exceeded while waiting for complete handshake");
+                log(LOG_DEBUG, "Timeout exceeded while waiting for complete handshake");
                 return false;
             }
 
@@ -447,7 +492,7 @@ function ShakeHands() {
 			}
         }
     } catch (err) {
-        log(LOG_ERR, "ShakeHands() error: " + err.toString());
+        log(LOG_DEBUG, "ShakeHands() error: " + err.toString());
     }
     
     return false;
@@ -492,9 +537,9 @@ function ShakeHandsDraft0() {
 		return true;
 	} else {
 		// We're missing some pice of data, log what we do have
-		log(LOG_ERR, "Missing some piece of handshake data.  Here's what we have:");
+		log(LOG_DEBUG, "Missing some piece of handshake data.  Here's what we have:");
 		for(var x in FWebSocketHeader) { 
-			log(LOG_ERR, x + " => " + FWebSocketHeader[x]); 
+			log(LOG_DEBUG, x + " => " + FWebSocketHeader[x]); 
 		}
 		return false;
 	}
@@ -531,9 +576,9 @@ function ShakeHandsVersion7() {
 		return true;
 	} else {
 		// We're missing some pice of data, log what we do have
-		log(LOG_ERR, "Missing some piece of handshake data.  Here's what we have:");
+		log(LOG_DEBUG, "Missing some piece of handshake data.  Here's what we have:");
 		for(var x in FWebSocketHeader) { 
-			log(LOG_ERR, x + " => " + FWebSocketHeader[x]); 
+			log(LOG_DEBUG, x + " => " + FWebSocketHeader[x]); 
 		}
 		return false;
 	}
