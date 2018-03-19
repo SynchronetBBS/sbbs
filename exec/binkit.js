@@ -24,6 +24,7 @@ load('freqit_common.js');
 
 var REVISION = "$Revision$".split(' ')[1];
 var version_notice = "BinkIT/" + REVISION;
+var semaphores = [];
 
 FREQIT.add_file = function(filename, bp, cfg)
 {
@@ -353,13 +354,13 @@ function rx_callback(fname, bp)
 	log(LOG_INFO, "Received file: " + fname + format(" (%1.1fKB)", file_size(fname) / 1024.0));
 	if (fname.search(/\.(?:pkt|su.|mo.|tu.|we.|th.|fr.|sa.)$/i) !== -1) {
 		semname = system.data_dir + 'fidoin.now';
-		if (bp.cb_data.binkit_create_semaphores.indexOf(semname) == -1)
-			bp.cb_data.binkit_create_semaphores.push(semname);
+		if (semaphores.indexOf(semname) == -1)
+			semaphores.push(semname);
 	}
 	else if (fname.search(/\.tic$/i) !== -1) {
 		semname = system.data_dir + 'tickit.now';
-		if (bp.cb_data.binkit_create_semaphores.indexOf(semname) == -1)
-			bp.cb_data.binkit_create_semaphores.push(semname);
+		if (semaphores.indexOf(semname) == -1)
+			semaphores.push(semname);
 	}
 
 	if (fname.search(/\.req$/i) !== -1) {
@@ -429,7 +430,7 @@ function callout_want_callback(fobj, fsize, fdate, offset, bp)
 	return this.file.ACCEPT;
 }
 
-function callout_done(bp, semaphores)
+function callout_done(bp)
 {
 	var f;
 	var lines;
@@ -500,7 +501,7 @@ function callout_done(bp, semaphores)
 	});
 }
 
-function callout(addr, scfg, semaphores, locks, bicfg)
+function callout(addr, scfg, locks, bicfg)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var bp = new BinkP(version_notice, undefined, rx_callback, tx_callback);
@@ -520,7 +521,6 @@ function callout(addr, scfg, semaphores, locks, bicfg)
 		binkit_scfg:scfg,
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
-		binkit_create_semaphores:semaphores,
 		binkit_locks:locks
 	};
 	if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
@@ -598,7 +598,7 @@ function callout(addr, scfg, semaphores, locks, bicfg)
 
 	// We won't add files until the auth finishes...
 	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port, host);
-	callout_done(bp, semaphores);
+	callout_done(bp);
 }
 
 function check_held(addr, scfg, myaddr)
@@ -628,7 +628,7 @@ function check_held(addr, scfg, myaddr)
 	return true;
 }
 
-function run_one_outbound_dir(dir, scfg, semaphores, ran)
+function run_one_outbound_dir(dir, scfg, ran)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var locks = [];
@@ -723,7 +723,7 @@ function run_one_outbound_dir(dir, scfg, semaphores, ran)
 			log(LOG_INFO, "Attempting callout for file "+flow_files[i]);
 			locks.push(lock_files);
 			// Use a try/catch to ensure we clean up the lock files.
-			callout(addr, scfg, semaphores, locks);
+			callout(addr, scfg, locks);
 			ran[addr] = true;
 			locks.forEach(unlock_flow);
 		}
@@ -736,7 +736,7 @@ function run_one_outbound_dir(dir, scfg, semaphores, ran)
 	log(LOG_DEBUG, "Done checking in "+dir+".");
 }
 
-function touch_semaphores(semaphores)
+function touch_semaphores()
 {
 	semaphores.forEach(function(semname) {
 		log(LOG_DEBUG, "Touching semaphore file: " + semname);
@@ -749,7 +749,6 @@ function run_outbound(ran)
 	var scfg;
 	var outbound_dirs=[];
 	var outbound_roots=[];
-	var semaphores = [];
 
 	log(LOG_INFO, "Running outbound");
 	scfg = new SBBSEchoCfg();
@@ -798,10 +797,8 @@ function run_outbound(ran)
 		});
 	});
 	outbound_dirs.forEach(function(dir) {
-		run_one_outbound_dir(dir, scfg, semaphores, ran);
+		run_one_outbound_dir(dir, scfg, ran);
 	});
-
-	touch_semaphores(semaphores);
 }
 
 function inbound_auth_cb(pwd, bp)
@@ -893,7 +890,6 @@ function run_inbound(sock)
 	var port;
 	var f;
 	var success = false;
-	var semaphores = [];
 	var locks = [];
 
 	log(LOG_INFO, bp.revision + " inbound connection from " +sock.remote_ip_address+":"+sock.remote_port);
@@ -902,7 +898,6 @@ function run_inbound(sock)
 		binkit_scfg:new SBBSEchoCfg(),
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
-		binkit_create_semaphores:semaphores,
 		binkit_locks:locks
 	};
 	bp.system_operator = bp.cb_data.binkitcfg.sysop;
@@ -924,16 +919,14 @@ function run_inbound(sock)
 	// We won't add files until the auth finishes...
 	success = bp.accept(sock, inbound_auth_cb);
 
-	callout_done(bp, semaphores);
+	callout_done(bp);
 
 	locks.forEach(function(lock) {
 		unlock_flow(lock);
 	});
-
-	touch_semaphores(semaphores);
 }
 
-function poll_node(addr_str, scfg, bicfg, myaddr, semaphores)
+function poll_node(addr_str, scfg, bicfg, myaddr)
 {
 	var lock_files;
 	var locks = [];
@@ -943,9 +936,6 @@ function poll_node(addr_str, scfg, bicfg, myaddr, semaphores)
 
 	if (myaddr === undefined)
 		myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
-
-	if (semaphores === undefined)
-		semaphores = [];
 
 	var addr = FIDO.parse_addr(addr_str, 1, 'fidonet');
 
@@ -960,7 +950,7 @@ function poll_node(addr_str, scfg, bicfg, myaddr, semaphores)
 	log(LOG_INFO, "Attempting poll for node "+addr);
 	locks.push(lock_files);
 	// Use a try/catch to ensure we clean up the lock files.
-	callout(addr, scfg, semaphores, locks, bicfg);
+	callout(addr, scfg, locks, bicfg);
 	locks.forEach(unlock_flow);
 }
 
@@ -968,7 +958,6 @@ function run_polls(ran)
 {
 	var scfg;
 	var bicfg;
-	var semaphores = [];
 	var myaddr;
 	var locks = [];
 
@@ -984,11 +973,9 @@ function run_polls(ran)
 
 		if (ran[addr] !== undefined)
 			return;
-		poll_node(addr_str, scfg, bicfg, myaddr, semaphores);
+		poll_node(addr_str, scfg, bicfg, myaddr);
 		ran[addr] = true;
 	});
-
-	touch_semaphores(semaphores);
 }
 
 // First-time installation routine (only)
@@ -1130,3 +1117,4 @@ else {
 		}
 	}
 }
+touch_semaphores();
