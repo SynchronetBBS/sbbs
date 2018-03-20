@@ -313,6 +313,7 @@ static void log_msg(TRichEdit* Log, log_msg_t* msg)
 	if(msg->repeated)
 		Line += " [x" + AnsiString(msg->repeated) + "]";
     Log->SelLength=0;
+	Log->SelStart=-1;
     Log->SelAttributes->Assign(
         MainForm->LogAttributes(msg->level, Log->Color, Log->Font));
 	Log->Lines->Add(Line);
