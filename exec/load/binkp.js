@@ -226,9 +226,12 @@ BinkP.prototype.crypt = {
 		return ret;
 	},
 };
-BinkP.prototype.reset_eob = function() {
-	if (this.ver1_1)
-		this.senteob = this.goteob = 0;
+BinkP.prototype.reset_eob = function(also_sent) {
+	if (this.ver1_1) {
+		this.goteob = 0;
+		if (also_sent)
+			this.senteob = 0;
+	}
 };
 BinkP.prototype.send_chunks = function(str) {
 	var ret;
@@ -662,7 +665,6 @@ BinkP.prototype.session = function()
 						break;
 					case this.command.M_FILE:
 						this.ack_file();
-						this.senteof = 0;
 						args = this.parseArgs(pkt.data);
 						if (args.length < 4) {
 							log(LOG_ERROR, "Invalid M_FILE command args: '"+pkt.data+"'");
@@ -884,6 +886,8 @@ BinkP.prototype.close = function()
 		if (this.ver1_1) {
 			if (this.senteob < 2)
 				this.sendCmd(this.command.M_EOB);
+			if (this.senteob < 2)
+				this.sendCmd(this.command.M_EOB);
 		}
 		else {
 			if (this.senteob < 1)
@@ -937,7 +941,7 @@ BinkP.prototype.sendCmd = function(cmd, data)
 		case this.command.M_OK:
 			break;
 		default:
-			this.reset_eob();
+			this.reset_eob(false);
 			break;
 	}
 	return true;
@@ -946,7 +950,7 @@ BinkP.prototype.sendData = function(data)
 {
 	var len = data.length;
 
-	this.reset_eob();
+	this.reset_eob(false);
 	if (this.sock === undefined)
 		return false;
 	if (this.debug)
@@ -1088,7 +1092,7 @@ BinkP.prototype.recvFrame = function(timeout)
 			if (nullpos > -1)
 				ret.data = ret.data.substr(0, nullpos);
 			if (ret.command != this.command.M_EOB)
-				this.reset_eob();
+				this.reset_eob(false);
 			switch(ret.command) {
 				case this.command.M_ERR:
 					log(LOG_ERROR, "BinkP got fatal error from remote: '"+ret.data+"'.");
@@ -1181,7 +1185,7 @@ BinkP.prototype.recvFrame = function(timeout)
 			}
 		}
 		else
-			this.reset_eob();
+			this.reset_eob(false);
 	}
 	return ret;
 };
@@ -1189,6 +1193,7 @@ BinkP.prototype.addFile = function(path, sendas, waitget)
 {
 	var file = new File(path);
 
+	reset_eob(true);
 	if (sendas === undefined)
 		sendas = file_getname(path);
 	if (waitget === undefined)
