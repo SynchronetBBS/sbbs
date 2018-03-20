@@ -1193,7 +1193,7 @@ BinkP.prototype.addFile = function(path, sendas, waitget)
 {
 	var file = new File(path);
 
-	reset_eob(true);
+	this.reset_eob(true);
 	if (sendas === undefined)
 		sendas = file_getname(path);
 	if (waitget === undefined)
