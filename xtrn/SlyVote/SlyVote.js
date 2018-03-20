@@ -101,6 +101,10 @@
  * 2018-01-28 Eric Oulashin     Version 0.34 beta
  *                              Updated to display avatars for the person who posted
  *                              a poll.
+ * 2018-03-19 Eric Oulashin     Version 0.35 beta
+ *                              Made a fix for non-lightbar voting input - It wasn't
+ *                              accepting Q to quit out of voting (a blank input worked
+ *                              though).
  */
 
 load("sbbsdefs.js");
@@ -152,8 +156,8 @@ load("smbdefs.js");
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.34 Beta";
-var SLYVOTE_DATE = "2018-01-28";
+var SLYVOTE_VERSION = "0.35 Beta";
+var SLYVOTE_DATE = "2018-03-19";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -1552,10 +1556,10 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 				if (pMsgHdr.votes > 1)
 				{
 					// Support multiple answers from the user
-					console.print("\1n\1gYour vote numbers, separated by commas, up to \1h" + pMsgHdr.votes + "\1n\1g (Q=quit):");
+					console.print("\1n\1gYour vote numbers, separated by commas, up to \1h" + pMsgHdr.votes + "\1n\1g (Blank/Q=Quit):");
 					console.crlf();
 					console.print("\1c\1h");
-					var userInput = consoleGetStrWithValidKeys("0123456789,");
+					var userInput = consoleGetStrWithValidKeys("0123456789,Q", null, false);
 					if ((userInput.length > 0) && (userInput.toUpperCase() != "Q"))
 					{
 						var userAnswers = userInput.split(",");
