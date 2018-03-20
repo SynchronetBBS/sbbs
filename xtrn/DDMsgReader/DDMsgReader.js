@@ -105,6 +105,13 @@
  *                              When replying to a message, the reader will
  *                              strip any control characters that might be in the
  *                              subject line.
+ * 2018-02-09 Eric Oulashin     Version 1.17 beta 57
+ *                              Started working on a 'bypass' (B) command while reading when
+ *                              doing a message scan/newscan.
+ * 2018-03-19 Eric Oulashin     Made a fix for voting input - It wasn't accepting
+ *                              Q to quit out of voting (a blank input worked though).
+ *                              Releasing this, even though the 'bypass' command
+ *                              isn't finished yet.
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -191,8 +198,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 56";
-var READER_DATE = "2018-02-01";
+var READER_VERSION = "1.17 Beta 58";
+var READER_DATE = "2018-03-19";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -959,7 +966,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		forwardMsg: "O",
 		vote: "V",
 		showVotes: "T",
-		closePoll: "!"
+		closePoll: "!",
+		bypassSubBoardInNewScan: "B"
 	};
 	if (gIsSysop)
 		this.enhReaderKeys.validateMsg = "A";
@@ -1578,21 +1586,21 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode)
 		// Output the prompt text to the user (for modes where a prompt is needed)
 		switch (this.searchType)
 		{
-		case SEARCH_KEYWORD:
-			console.print("\1n" + this.text.searchTextPromptText);
-			break;
-		case SEARCH_FROM_NAME:
-			console.print("\1n" + this.text.fromNamePromptText);
-			break;
-		case SEARCH_TO_NAME_CUR_MSG_AREA:
-			console.print("\1n" + this.text.toNamePromptText);
-			break;
-		case SEARCH_TO_USER_CUR_MSG_AREA:
-			// Note: No prompt needed for this - Will search for the user's name/handle
-			console.line_counter = 0; // To prevent a pause before the message list comes up
-			break;
-		default:
-			break;
+			case SEARCH_KEYWORD:
+				console.print("\1n" + this.text.searchTextPromptText);
+				break;
+			case SEARCH_FROM_NAME:
+				console.print("\1n" + this.text.fromNamePromptText);
+				break;
+			case SEARCH_TO_NAME_CUR_MSG_AREA:
+				console.print("\1n" + this.text.toNamePromptText);
+				break;
+			case SEARCH_TO_USER_CUR_MSG_AREA:
+				// Note: No prompt needed for this - Will search for the user's name/handle
+				console.line_counter = 0; // To prevent a pause before the message list comes up
+				break;
+			default:
+				break;
 		}
 		//var promptUserForText = this.SearchTypePopulatesSearchResults();
 		var promptUserForText = this.SearchTypeRequiresSearchText();
@@ -5362,6 +5370,39 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false;
 				break;
+			case this.enhReaderKeys.bypassSubBoardInNewScan:
+				writeMessage = false; // TODO: Finish
+				/*
+				if (this.doingMsgScan)
+				{
+					console.print("\1n");
+					var originalCurpos = console.getxy();
+					// The 2nd to last row of the screen is where the user will
+					// be prompted for confirmation to delete the message.
+					// Ideally, I'd like to put the cursor on the last row of
+					// the screen for this, but console.noyes() lets the enter
+					// key shift everything on screen up one row, and there's
+					// no way to avoid that.  So, to optimize screen refreshing,
+					// the cursor is placed on the 2nd to the last row on the
+					// screen to prompt for confirmation.
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+					if (!console.noyes("Bypass this sub-board in newscans"))
+					{
+						continueOn = false;
+						msg_area.sub[this.subBoardCode].scan_cfg &= SCAN_CFG_NEW;
+					}
+					else
+					{
+						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+						// Move the cursor back to its original position
+						console.gotoxy(originalCurpos);
+						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+					}
+				}
+				else
+					writeMessage = false;
+				*/
+				break;
 			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
 				continueOn = false;
@@ -6126,6 +6167,26 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				}
 				else
 					writeMessage = false;
+				break;
+			case this.enhReaderKeys.bypassSubBoardInNewScan:
+				// TODO: Finish
+				writeMessage = false;
+				/*
+				if (this.doingMsgScan)
+				{
+					console.print("\1n");
+					console.crlf();
+					if (!console.noyes("Bypass this sub-board in newscans"))
+					{
+						continueOn = false;
+						msg_area.sub[this.subBoardCode].scan_cfg &= SCAN_CFG_NEW;
+					}
+					else
+						writeMessage = true;
+				}
+				else
+					writeMessage = false;
+				*/
 				break;
 			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
@@ -13951,11 +14012,10 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 			if (pMsgHdr.votes > 1)
 			{
 				// Support multiple answers from the user
-				console.print("\1n\1gYour vote numbers, separated by commas, up to \1h" + pMsgHdr.votes + "\1n\1g (Q=quit):");
+				console.print("\1n\1gYour vote numbers, separated by commas, up to \1h" + pMsgHdr.votes + "\1n\1g (Blank/Q=Quit):");
 				console.crlf();
 				console.print("\1c\1h");
-				//consoleGetStrWithValidKeys(pKeys, pMaxNumChars, pCaseSensitive)
-				var userInput = consoleGetStrWithValidKeys("0123456789,");
+				var userInput = consoleGetStrWithValidKeys("0123456789,Q", null, false);
 				if ((userInput.length > 0) && (userInput.toUpperCase() != "Q"))
 				{
 					var userAnswers = userInput.split(",");
@@ -14489,7 +14549,7 @@ function DigDistMsgReader_RecalcMsgListWidthsAndFormatStrs(pMsgNumLen)
 // Displays the program information.
 function DisplayProgramInfo()
 {
-   displayTextWithLineBelow("Digital Distortion Message Reader", true, "\1n\1c\1h", "\1k\1h")
+	displayTextWithLineBelow("Digital Distortion Message Reader", true, "\1n\1c\1h", "\1k\1h")
 	console.center("\1n\1cVersion \1g" + READER_VERSION + " \1w\1h(\1b" + READER_DATE + "\1w)");
 	console.crlf();
 }
