@@ -2265,14 +2265,14 @@ void output_thread(void* arg)
 {
 	char		node[128];
 	char		stats[128];
-    BYTE		buf[IO_THREAD_BUF_SIZE];
+	BYTE		buf[IO_THREAD_BUF_SIZE];
 	int			i=0;	// Assignment to silence Valgrind
-    ulong		avail;
+	ulong		avail;
 	ulong		total_sent=0;
 	ulong		total_pkts=0;
 	ulong		short_sends=0;
-    ulong		bufbot=0;
-    ulong		buftop=0;
+	ulong		bufbot=0;
+	ulong		buftop=0;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	fd_set		socket_set;
 	struct timeval tv;
@@ -2282,10 +2282,10 @@ void output_thread(void* arg)
 	SetThreadName("sbbs/termOutput");
 	thread_up(TRUE /* setuid */);
 
-    if(sbbs->cfg.node_num)
-    	SAFEPRINTF(node,"Node %d",sbbs->cfg.node_num);
-    else
-    	SAFECOPY(node,sbbs->client_name);
+	if(sbbs->cfg.node_num)
+		SAFEPRINTF(node,"Node %d",sbbs->cfg.node_num);
+	else
+		SAFECOPY(node,sbbs->client_name);
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG,"%s output thread started",node);
 #endif
@@ -2295,7 +2295,7 @@ void output_thread(void* arg)
 #ifdef TCP_MAXSEG
 	/*
 	 * Auto-tune the highwater mark to be the negotiated MSS for the
-     * socket (when possible)
+	 * socket (when possible)
 	 */
 	if(!sbbs->outbuf.highwater_mark) {
 		socklen_t	sl;
@@ -2347,7 +2347,7 @@ void output_thread(void* arg)
 				if(avail<sbbs->outbuf.highwater_mark) {
 					sem_trywait_block(&sbbs->outbuf.highwater_sem,startup->outbuf_drain_timeout);
 					/* We (potentially) blocked, so get fill level again */
-		    		avail=RingBufFull(&sbbs->outbuf);
+					avail=RingBufFull(&sbbs->outbuf);
 				} else
 					sem_trywait(&sbbs->outbuf.highwater_sem);	
 			}
@@ -2358,16 +2358,16 @@ void output_thread(void* arg)
 			 * passed or we've hit highwater.  Read ring buffer
 			 * into linear buffer.
 			 */
-           	if(avail>sizeof(buf)) {
-               	lprintf(LOG_WARNING,"%s !Insufficient linear output buffer (%lu > %lu)"
+			if(avail>sizeof(buf)) {
+				lprintf(LOG_WARNING,"%s !Insufficient linear output buffer (%lu > %lu)"
 					,node, avail, sizeof(buf));
-               	avail=sizeof(buf);
-           	}
+				avail=sizeof(buf);
+			}
 			/* If we know the MSS, use it as the max send() size. */
 			if(avail>mss)
 				avail=mss;
-           	buftop=RingBufRead(&sbbs->outbuf, buf, avail);
-           	bufbot=0;
+			buftop=RingBufRead(&sbbs->outbuf, buf, avail);
+			bufbot=0;
 			if (buftop == 0)
 				continue;
 		}
@@ -2478,11 +2478,11 @@ void output_thread(void* arg)
 		bufbot+=i;
 		total_sent+=i;
 		total_pkts++;
-    }
+	}
 
 	sbbs->spymsg("Disconnected");
 
-    sbbs->output_thread_running = false;
+	sbbs->output_thread_running = false;
 
 	if(total_sent)
 		safe_snprintf(stats,sizeof(stats),"(sent %lu bytes in %lu blocks, %lu average, %lu short)"
@@ -3191,7 +3191,7 @@ void event_thread(void* arg)
 	sbbs->cfg.node_num=0;
 	sbbs->js_cleanup(sbbs->client_name);
 
-    sbbs->event_thread_running = false;
+	sbbs->event_thread_running = false;
 
 	thread_down();
 	eprintf(LOG_INFO,"BBS Events thread terminated");
