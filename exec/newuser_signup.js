@@ -386,12 +386,12 @@ function create_newuser()
 				js.auto_terminate = orig_at;
 				return false;
 			}
-			copy_user_template_to_user(useron, user);
 			tmp = newuser.security.password;
 			newuser.security.password = '';
 			if (bbs.login(newuser.alias, bbs.text(PasswordPrompt))) {
-				user.security.password = tmp;
 				user.number = newuser.number;
+				user.security.password = tmp;
+				copy_user_template_to_user(useron, user);
 				bbs.user_sync();
 				logline(LOG_INFO, '', "Created user record #"+user.number+": "+user.alias);
 				useron = user;
