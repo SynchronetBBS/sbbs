@@ -1724,7 +1724,7 @@ function edit_object(title, obj, props, max_lens, prop_descs)
 		print("Editing " + title + ": " + obj[props[0]]);
 		console.crlf();
 		for(var i in props)
-			print(format("%2u %-12s : %s", Number(i)+1, props[i].capitalize(), obj[props[i]]));
+			print(format("\1n%2u \1h%-12s \1n: \1h%s", Number(i)+1, props[i].capitalize(), obj[props[i]]));
 		console.mnemonics("\r\nWhich or ~Quit: ");
 		var which = console.getnum(props.length);
 		if(which < 1)
@@ -1739,10 +1739,10 @@ function edit_array(title, arr, props, max_lens, prop_descs, max_array_len)
 {
 	while(bbs.online) {
 		console.clear(LIGHTGRAY);
-		print("Editing " + title + " List");
+		print("\1h\1yEditing \1w" + title + "\1y List");
 		console.crlf();
 		for(var i in arr)
-			print(format("%2u %-*s %s", Number(i)+1, max_lens[0], arr[i][props[0]], arr[i][props[1]]));
+			print(format("\1n%2u \1h%-*s \1n%s", Number(i)+1, max_lens[0], arr[i][props[0]], arr[i][props[1]]));
 
 		var keys = "Q";
 		var prompt = "\r\nWhich";
@@ -1813,20 +1813,20 @@ function edit(bbs)
 		var sysop = "";
 		if(bbs.sysop.length)
 			sysop = format("%s <%s>", bbs.sysop[0].name, bbs.sysop[0].email);
-		printf("\1n%2u \1h%-*s : %s\r\n"	, opts++, optlen, "Since", bbs.first_online.substring(0,10));
-		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Sysop", optmax, sysop);
-		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Location", optmax, bbs.location);
-		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Web-site", optmax, bbs.web_site);
-		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Software", optmax, bbs.software);
-		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Description", optmax, bbs.description.join(" "));
-		printf("\1n%2u \1h%-*s : %u\r\n"	, opts++, optlen, "Terminal Nodes", bbs.terminal.nodes);
+		printf("\1n%2u \1h%-*s \1n:\1h %s\r\n"	, opts++, optlen, "Since", bbs.first_online.substring(0,10));
+		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Sysop", optmax, sysop);
+		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Location", optmax, bbs.location);
+		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Web-site", optmax, bbs.web_site);
+		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Software", optmax, bbs.software);
+		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Description", optmax, bbs.description.join(" "));
+		printf("\1n%2u \1h%-*s \1n:\1h %u\r\n"	, opts++, optlen, "Terminal Nodes", bbs.terminal.nodes);
 		var term_types = "";
 		if(bbs.terminal.types)
 			term_types = bbs.terminal.types.join(", ");
-		printf("\1n%2u \1h%-*s : %.*s\r\n"	, opts++, optlen, "Terminal Types", optmax, term_types);
-		printf("\1n%2u \1hTotals...\r\n"	, opts++);
-		printf("\1n%2u \1hNetworks...\r\n"	, opts++);
-		printf("\1n%2u \1hServices...\r\n"	, opts++);
+		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Terminal Types", optmax, term_types);
+		printf("\1n%2u \1hTotals\1n...\r\n"	, opts++);
+		printf("\1n%2u \1hNetworks\1n...\r\n"	, opts++);
+		printf("\1n%2u \1hServices\1n...\r\n"	, opts++);
 
 		console.mnemonics("\r\nWhich, ~Save or ~Abort: ");
 		var which = console.getkeys("SQA", opts);
@@ -1892,7 +1892,7 @@ function edit(bbs)
 					var prop = [];
 					for(var i in bbs.total) {
 						prop[opts] = i;
-						printf("\1n%2u \1h%-*s : ", opts++, optlen, i.capitalize());
+						printf("\1n%2u \1h%-*s \1n:\1h ", opts++, optlen, i.capitalize());
 						print(bbs.total[i]);
 					}
 					console.mnemonics("\r\nWhich or ~Quit: ");
@@ -2244,6 +2244,8 @@ function main()
 				break;
 			case "browse":	// BBS-only
 				browse(list);
+				console.clear();
+				print("Returning to " + system.name);
 				break;
 			case "save":
 				lib.write_list(list);
