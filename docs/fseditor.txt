@@ -40,8 +40,8 @@ J   - Down one line
 K   - List keybindings
 L   - Insert line
 M   - Carriage Return
-O   - Page Up
-P   - Page Down
+N   - Page Down
+P   - Page Up
 T   - Change the title
 Q   - Quick abort
 R   - Redraw screen
@@ -61,8 +61,8 @@ CTRL-B - Home (Top of document)
 CTRL-E - End of document
 CTRL-J - Down one line
 CTRL-K - List keybindings
-CTRL-O - Page Up
-CTRL-P - Page Down
+CTRL-N - Page Down
+CTRL-P - Page Up
 CTRL-Q - Quick abort... FLOW CONTROL CHAR!!!
 CTRL-R - Redraw screen
 CTRL-^ - Up one line
@@ -84,13 +84,10 @@ ones fall into three catagories:
 
 The breakdown is as follows:
 Keepers:  ABCEFGHIJLMRWZ
-Lukewarm: KOPVY
-Changers: QU_
+Lukewarm: KVY
+Changers: NPQU_
 
-The reason O and P are in lukewarm instead of changers is that PgUp/PgDn should
-be both close together and enterable with one hand in my opinion.
-
-The following CTRL keys are currently unused: DNPSTX\
+The following CTRL keys are currently unused: DOSTX\
 
 CTRL-Q and CTRL-S I do *not* want to use without alternates as they are the
 Xon/Xoff chars used in flow control and are sometimes impossible to send from
