@@ -110,6 +110,8 @@ function export_entry(bbs, msgbase)
          }
     }
     for(i in bbs.network) {
+		if(i >= sbl_defs.MAX_NETS)
+			break;
         body += "Network:       " + bbs.network[i].name + "\r\n";
         body += "Address:       " + bbs.network[i].address + "\r\n";
     }
@@ -1909,7 +1911,7 @@ function edit(bbs)
 					,[ "name", "address" ]
 					,[ lib.max_len.network_name, lib.max_len.network_address ]
 					,[ "Network name" ,"Network node address (e.g. QWK-ID or FTN node address)" ]
-					,sbl_defs.MAX_NETS);
+					,20);	// Note: twice as many as sbl_defs.MAX_NETS (10)
 				break;
 			case 11:
 				edit_array("Service"
