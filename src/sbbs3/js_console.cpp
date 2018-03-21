@@ -355,6 +355,7 @@ static char* con_prop_desc[] = {
 	,"bit-field of automatically detected terminal settings "
 		"(see <tt>USER_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"terminal type description (e.g. 'ANSI')"
+	,"detected CTerm (SyncTERM) version as an integer > 1000 where major version is cterm_version / 1000 and minor version is cterm_version % 1000"
 	,"number of seconds before displaying warning (Are you really there?) due to user/keyboard inactivity"
 	,"number of seconds before disconnection due to user/keyboard inactivity"
 	,"user/keyboard inactivity timeout reference value (time_t format)"
