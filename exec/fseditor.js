@@ -1871,7 +1871,7 @@ else {
 bbs.sys_status&=~SS_PAUSEON;
 bbs.sys_status|=SS_PAUSEOFF;
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+console.ctrlkey_passthru="+ACGKLNPQRTUVWXYZ_";
 /* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
 console.write("\033[=1M");
 console.clear();
