@@ -28,6 +28,7 @@ The key bindings for using fseditor.js are:
 In edit mode, the following CTRL keys function:
 CTRL-Key  Action
 --------------------------------
+@   - Colour (same as CTRL-A)
 A   - Colour
 B   - Home cursor (Beginning of line)
 C   - Center line in message
@@ -42,14 +43,16 @@ L   - Insert line
 M   - Carriage Return
 N   - Page Down
 P   - Page Up
-T   - Change the title
-Q   - Quick abort
+Q   - Quick abort (Xoff)
 R   - Redraw screen
+S   - Edit Subject (Xon)
+T   - Change tab size
 U   - Quote
 V   - Toggle insert mode
 W   - Delete word backwards
 Y   - Delete Line
 Z   - Save and exit
+\   - Edit Subject (Same as Xon CTRL-S)
 ]   - Move left
 ^   - Move up
 _   - Quick abort (Same as Xoff CTRL-Q)
@@ -57,6 +60,7 @@ _   - Quick abort (Same as Xoff CTRL-Q)
 
 Quote Mode:
 -----------
+CTRL-A - Select All (Same as a plain 'A')
 CTRL-B - Home (Top of document)
 CTRL-E - End of document
 CTRL-J - Down one line
@@ -84,10 +88,10 @@ ones fall into three catagories:
 
 The breakdown is as follows:
 Keepers:  ABCEFGHIJLMRWZ
-Lukewarm: KVY
-Changers: NPQU_
+Lukewarm: KSTVY\]
+Changers: @NPQU_
 
-The following CTRL keys are currently unused: DOSTX\
+The following CTRL keys are currently unused: DOX[
 
 CTRL-Q and CTRL-S I do *not* want to use without alternates as they are the
 Xon/Xoff chars used in flow control and are sometimes impossible to send from
