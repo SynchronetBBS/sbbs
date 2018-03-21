@@ -1410,6 +1410,17 @@ function edit(quote_first)
 {
 	var key;
 
+	function edit_subject()
+	{
+		if(edit_top==5) {
+			console.gotoxy(7,1);
+			var newsubj=console.getstr(subj, 70, K_LINE|K_EDIT|K_AUTODEL);
+			if(newsubj!='')
+				subj=newsubj;
+			redraw_screen();
+		}
+	}
+
 	redraw_screen();
 	if(quote_first) {
 		if(quote_mode()) {
@@ -1614,7 +1625,7 @@ function edit(quote_first)
 				console.write("\r\n CTRL-N - Page Down                      CTRL-^ - Move up one line");
 				console.cleartoeol();
 				console.write("\r\n CTRL-P - Page Up                        CTRL-_ - Quick Abort (no save)");
-				console.cleartoeol();
+				console.cleartoeol();	
 				console.write('\r\n');
 				console.cleartoeol();
 				console.write('\r\n');
@@ -1699,13 +1710,7 @@ function edit(quote_first)
 				redraw_screen();
 				break;
 			case '\x13':	/* CTRL-S (Edit Subject) (Xon)  */
-				if(edit_top==5) {
-					console.gotoxy(7,1);
-					var newsubj=console.getstr(subj, 70, K_LINE|K_EDIT|K_AUTODEL);
-					if(newsubj!='')
-						subj=newsubj;
-					redraw_screen();
-				}
+				edit_subject();
 				break;
 			case '\x14':	/* CTRL-T (Adjust Tabs) (Justify Line in SyncEdit) */
                 tab_width/=2;
@@ -1808,6 +1813,8 @@ function edit(quote_first)
 			case '\x1b':	/* ESC (This should parse extra ANSI sequences) */
 				break;
 			case '\x1c':	/* CTRL-\ (RegExp) */
+				/* Same as CTRL-S (Edit Subject) */
+				edit_subject();
 				break;
 			case '\x1d':	/* CTRL-] KEY_LEFT */
 				last_xpos=-1;
