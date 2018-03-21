@@ -1237,8 +1237,7 @@ function quote_mode()
 					draw_quote_selection(quote_topline+i);
 				break;
 			case 'n':
-			case 'N':
-			case '\x0e':	/* Unselect all */
+			case 'N':	/* Unselect all */
 				for(i=0;i<quote_line.length;i++)
 					quote_line[i].selected=false;
 				for(i=0; i< quote_height; i++)
