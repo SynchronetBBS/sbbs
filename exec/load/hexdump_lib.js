@@ -1,25 +1,33 @@
 // $Id$
 
-function hexdump(title, val)
+// Returns an array
+function generate(title, val, include_ascii)
 {
 	var i;
+	var output = [];
+
+	if(include_ascii === undefined)
+		include_ascii = true;
 
 	if(!val) {
-		printf("%s: (null)\r\n", title);
-		return false;
+		return [format("%s: (null)\r\n", title)];
 	}
-	printf("%s: %u bytes\r\n", title, val.length);
+	if(title)
+		output.push(format("%s: %u bytes", title, val.length));
+	var line = '';
 	var ascii = '';
 	for(i=0; i < val.length; i++) {
 		var ch = val.charCodeAt(i);
 		if(i && i%16 == 0) {
-			printf("  %s\r\n", ascii);
+			output.push(line + format("  %s", ascii));
 			ascii = '';
+			line = '';
 		}
 		else if(i && i%8 == 0)
-			printf("- ");
-		printf("%02X ", ch);
-		ascii += format("%c", (ch >= 0x20 && ch < 0x7f) ? ch : '.');
+			line += "- ";
+		line += format("%02X ", ch);
+		if(include_ascii)
+			ascii += format("%c", (ch >= 0x20 && ch < 0x7f) ? ch : '.');
 	}
 	if(ascii) {
 		var gap = 0;
@@ -28,15 +36,17 @@ function hexdump(title, val)
 			if((i%16) < 8)
 				gap += 2;
 		}
-		printf("%*s  %s\r\n", gap, "", ascii);
+		output.push(line + format("%*s  %s\r\n", gap, "", ascii));
 	}
-	print();
-	return true;
+	return output;
 }
 
-function hexdump_file(file)
+function file(file, include_ascii)
 {
 	var buf = file.read();
 
-	hexdump(file.name, buf);
+	return this.generate(file.name, buf, include_ascii);
 }
+
+// Leave as last line, so maybe used as a lib
+this;
