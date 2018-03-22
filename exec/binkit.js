@@ -751,7 +751,7 @@ function run_outbound(ran)
 	var outbound_dirs=[];
 	var outbound_roots=[];
 
-	log(LOG_INFO, "Running outbound");
+	log(LOG_DEBUG, "Running outbound");
 	scfg = new SBBSEchoCfg();
 
 	if (!scfg.is_flo) {
@@ -774,8 +774,10 @@ function run_outbound(ran)
 
 		if (file_isdir(oroot))
 			addDir(oroot);
-		else
+		else {
+			log(LOG_NOTICE, "Skipping non-existent outbound directory: " + oroot);
 			return;
+		}
 		dirs = directory(oroot+'.*', 0);
 		dirs.forEach(function(dir) {
 			var pnts;
@@ -800,6 +802,7 @@ function run_outbound(ran)
 				log(LOG_WARNING, "Unhandled outbound '"+dir+"'.");
 		});
 	});
+	log(LOG_DEBUG, "Outbound dirs: " + JSON.stringify(outbound_dirs, null, 0));
 	outbound_dirs.forEach(function(dir) {
 		run_one_outbound_dir(dir, scfg, ran);
 	});
@@ -943,16 +946,21 @@ function poll_node(addr_str, scfg, bicfg, myaddr)
 
 	var addr = FIDO.parse_addr(addr_str, 1, 'fidonet');
 
-	if ((lock_files = lock_flow(outbound_root(addr, scfg)+addr.flo_outbound(myaddr.zone))) === undefined)
-		return;
-	else {
-		if (check_held(addr, scfg, myaddr)) {
-			unlock_flow(lock_files);
+	var outbound_dir = outbound_root(addr, scfg);
+	log(LOG_DEBUG, "poll_node " + addr_str + ", outbound_dir: " + outbound_dir);
+	if(file_isdir(outbound_dir)) {
+		if ((lock_files = lock_flow(outbound_dir + addr.flo_outbound(myaddr.zone))) === undefined)
 			return;
+		else {
+			if (check_held(addr, scfg, myaddr)) {
+				unlock_flow(lock_files);
+				return;
+			}
 		}
 	}
 	log(LOG_INFO, "Attempting poll for node "+addr);
-	locks.push(lock_files);
+	if(lock_files)
+		locks.push(lock_files);
 	// Use a try/catch to ensure we clean up the lock files.
 	callout(addr, scfg, locks, bicfg);
 	locks.forEach(unlock_flow);
@@ -965,6 +973,7 @@ function run_polls(ran)
 	var myaddr;
 	var locks = [];
 
+	log(LOG_DEBUG, "Running polls");
 	scfg = new SBBSEchoCfg();
 	bicfg = new BinkITCfg();
 	myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
