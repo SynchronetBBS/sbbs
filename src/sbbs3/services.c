@@ -991,6 +991,7 @@ static void js_service_thread(void* arg)
 
 	SetThreadName("sbbs/jsService");
 	thread_up(TRUE /* setuid */);
+	sbbs_srand();	/* Seed random number generator */
 	protected_uint32_adjust(&threads_pending_start, -1);
 
 	/* Host name lookup and filtering */
@@ -1194,6 +1195,7 @@ static void js_static_service_thread(void* arg)
 
 	SetThreadName("sbbs/jsStatic");
 	thread_up(TRUE /* setuid */);
+	sbbs_srand();	/* Seed random number generator */
 	protected_uint32_adjust(&threads_pending_start, -1);
 
 	memset(&service_client,0,sizeof(service_client));
@@ -1767,8 +1769,6 @@ void DLLCALL services_thread(void* arg)
 		DESCRIBE_COMPILER(compiler);
 
 		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
-
-		sbbs_srand();	/* Seed random number generator */
 
 		protected_uint32_init(&threads_pending_start,0);
 
