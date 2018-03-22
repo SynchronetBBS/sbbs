@@ -473,7 +473,7 @@ void status_thread(void *arg)
 		sbbs_beep(100, 500);
 		sbbs_beep(300, 500);
 		sbbs_beep(100, 500);
-		fprintf(stderr, "Invalud status strartup structure!\n");
+		fprintf(stderr, "Invalid status startup structure!\n");
 		return;
 	}
 
