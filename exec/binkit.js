@@ -775,7 +775,7 @@ function run_outbound(ran)
 		if (file_isdir(oroot))
 			addDir(oroot);
 		else
-			mkpath(oroot);
+			return;
 		dirs = directory(oroot+'.*', 0);
 		dirs.forEach(function(dir) {
 			var pnts;
