@@ -61,6 +61,8 @@ function lock_flow(file)
 		var remain;
 		var now = time();
 
+		if (!f.exists)
+			return false;
 		// TODO: This is hacked for a signed 32-bit time_t... watch out in 2038!
 		orig_date = f.date;
 		if (orig_date > (now - 60*60*6)) {
