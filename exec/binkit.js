@@ -959,7 +959,7 @@ function poll_node(addr_str, scfg, bicfg, myaddr)
 		}
 	}
 	log(LOG_INFO, "Attempting poll for node "+addr);
-	if(lock_files)
+	if(lock_files !== undefined)
 		locks.push(lock_files);
 	// Use a try/catch to ensure we clean up the lock files.
 	callout(addr, scfg, locks, bicfg);
