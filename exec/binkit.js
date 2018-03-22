@@ -762,6 +762,7 @@ function run_outbound(ran)
 	Object.keys(FIDO.FTNDomains.outboundMap).forEach(function(key) {
 		outbound_roots.push(FIDO.FTNDomains.outboundMap[key]);
 	});
+	log(LOG_DEBUG, "Outbound roots: " + JSON.stringify(outbound_roots, null, 0));
 	outbound_roots.forEach(function(oroot) {
 		var dirs;
 
@@ -773,6 +774,8 @@ function run_outbound(ran)
 
 		if (file_isdir(oroot))
 			addDir(oroot);
+		else
+			mkpath(oroot);
 		dirs = directory(oroot+'.*', 0);
 		dirs.forEach(function(dir) {
 			var pnts;
