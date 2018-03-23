@@ -3244,11 +3244,12 @@ BOOL DLLCALL user_get_property(scfg_t* scfg, unsigned user_number, const char* s
 BOOL DLLCALL user_set_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, const char* value)
 {
 	FILE* fp;
+	str_list_t ini;
 
 	fp = user_ini_open(scfg, user_number, /* create: */TRUE);
 	if(fp == NULL)
 		return FALSE;
-	str_list_t ini = iniReadFile(fp);
+	ini = iniReadFile(fp);
 	char* result = iniSetValue(&ini, section, key, value, /* style */NULL);
 	iniWriteFile(fp, ini);
 	iniFreeStringList(ini);
@@ -3259,11 +3260,12 @@ BOOL DLLCALL user_set_property(scfg_t* scfg, unsigned user_number, const char* s
 BOOL DLLCALL user_set_time_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, time_t value)
 {
 	FILE* fp;
+	str_list_t ini;
 
 	fp = user_ini_open(scfg, user_number, /* create: */TRUE);
 	if(fp == NULL)
 		return FALSE;
-	str_list_t ini = iniReadFile(fp);
+	ini = iniReadFile(fp);
 	char* result = iniSetDateTime(&ini, section, key, /* include_time */TRUE, value, /* style */NULL);
 	iniWriteFile(fp, ini);
 	iniFreeStringList(ini);
