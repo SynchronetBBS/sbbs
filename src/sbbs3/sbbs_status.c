@@ -537,6 +537,7 @@ void status_thread(void *arg)
 
 	startup->status(startup->cbdata, "Listening");
 	startup->started(startup->cbdata);
+	lprintf(LOG_INFO, "Listening on %s", startup->sock_fname);
 
 	pthread_mutex_lock(&status_thread_mutex);
 	while (!status_thread_terminated) {
