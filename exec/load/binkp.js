@@ -907,12 +907,12 @@ BinkP.prototype.sendCmd = function(cmd, data)
 		return false;
 	if (data === undefined)
 		data = '';
-	if (this.debug) {
+	if (this.debug || cmd == this.command.M_ERR) {
 		if (cmd < this.command_name.length)
 			type = this.command_name[cmd];
 		else
 			type = 'Unknown Command '+cmd;
-		log(LOG_DEBUG, "Sent "+type+" command args: "+data);
+		log(cmd == this.command.M_ERR ? LOG_NOTICE : LOG_DEBUG, "Sent "+type+" command args: "+data);
 	}
 	var len = data.length+1;
 	len |= 0x8000;
