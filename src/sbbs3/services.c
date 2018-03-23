@@ -1605,7 +1605,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 static void cleanup(int code)
 {
 	while(protected_uint32_value(threads_pending_start)) {
-		lprintf(LOG_NOTICE,"#### Services cleanup waiting on %d threads pending start",protected_uint32_value(threads_pending_start));
+		lprintf(LOG_NOTICE,"0000 Services cleanup waiting on %d threads pending start",protected_uint32_value(threads_pending_start));
 		SLEEP(1000);
 	}
 	protected_uint32_destroy(threads_pending_start);
@@ -2182,11 +2182,11 @@ void DLLCALL services_thread(void* arg)
 
 		/* Wait for Dynamic Service Threads to terminate */
 		if(active_clients()) {
-			lprintf(LOG_DEBUG,"0000 Waiting for %d clients to disconnect",active_clients());
+			lprintf(LOG_INFO,"0000 Waiting for %d clients to disconnect",active_clients());
 			while(active_clients()) {
 				mswait(500);
 			}
-			lprintf(LOG_DEBUG,"0000 Done waiting");
+			lprintf(LOG_INFO,"0000 Done waiting for clients to disconnect");
 		}
 
 		/* Wait for Static Service Threads to terminate */
@@ -2194,7 +2194,7 @@ void DLLCALL services_thread(void* arg)
 		for(i=0;i<(int)services;i++) 
 			total_running+=service[i].running;
 		if(total_running) {
-			lprintf(LOG_DEBUG,"0000 Waiting for %d static services to terminate",total_running);
+			lprintf(LOG_INFO,"0000 Waiting for %d static services to terminate",total_running);
 			while(1) {
 				total_running=0;
 				for(i=0;i<(int)services;i++) 
@@ -2203,7 +2203,7 @@ void DLLCALL services_thread(void* arg)
 					break;
 				mswait(500);
 			}
-			lprintf(LOG_DEBUG,"0000 Done waiting");
+			lprintf(LOG_INFO,"0000 Done waiting for static services to terminate");
 		}
 
 		cleanup(0);

@@ -3211,7 +3211,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
     else
     	SAFECOPY(nodestr,name);
 
-	lprintf(LOG_DEBUG,"%s constructor using socket %d (settings=%lx)"
+	::lprintf(LOG_DEBUG,"%s constructor using socket %d (settings=%lx)"
 		,nodestr, sd, global_cfg->node_misc);
 
 	startup = ::startup;	// Convert from global to class member
@@ -3240,7 +3240,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 			SAFECOPY(cfg.temp_dir,path);
 		}
 	}
-	lprintf(LOG_DEBUG,"%s temporary file directory: %s", nodestr, cfg.temp_dir);
+	::lprintf(LOG_DEBUG,"%s temporary file directory: %s", nodestr, cfg.temp_dir);
 
 	terminated = false;
 	event_thread_running = false;
@@ -4452,7 +4452,7 @@ void node_thread(void* arg)
 		|| sbbs->passthru_input_thread_running || sbbs->passthru_output_thread_running
 #endif
 		) {
-		lprintf(LOG_DEBUG,"Node %d Waiting for %s to terminate..."
+		lprintf(LOG_INFO,"Node %d Waiting for %s to terminate..."
 			,sbbs->cfg.node_num
 			,(sbbs->input_thread_running && sbbs->output_thread_running) ?
                	"I/O threads" : sbbs->input_thread_running
@@ -5788,6 +5788,7 @@ NO_PASSTHRU:
 			}
 			mswait(100);
 		}
+		lprintf(LOG_INFO, "Done waiting for node threads to terminate");
 	}
 
 	// Wait for Events thread to terminate
@@ -5804,6 +5805,7 @@ NO_PASSTHRU:
 #endif
 			mswait(100);
 		}
+		lprintf(LOG_INFO, "Done waiting for events thread to terminate");
 	}
 
     // Wait for BBS output thread to terminate
@@ -5818,6 +5820,7 @@ NO_PASSTHRU:
 			}
 			mswait(100);
 		}
+		lprintf(LOG_INFO, "Done waiting for system output thread to terminate");
 	}
 
     // Wait for BBS passthru input thread to terminate
@@ -5833,6 +5836,7 @@ NO_PASSTHRU:
 			}
 			mswait(100);
 		}
+		lprintf(LOG_INFO, "Done waiting for passthru I/O threads to terminate");
 	}
 
     // Set all nodes' status to OFFLINE

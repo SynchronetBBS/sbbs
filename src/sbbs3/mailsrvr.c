@@ -5593,10 +5593,11 @@ static void cleanup(int code)
 	int					i;
 
 	if(protected_uint32_value(thread_count) > 1) {
-		lprintf(LOG_DEBUG,"#### Waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
+		lprintf(LOG_INFO, "0000 Waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
 		while(protected_uint32_value(thread_count) > 1) {
 			mswait(100);
 		}
+		lprintf(LOG_INFO, "0000 Done waiting for child threads to terminate");
 	}
 
 	free_cfg(&scfg);
@@ -5622,7 +5623,7 @@ static void cleanup(int code)
 	update_clients();	/* active_clients is destroyed below */
 
 	if(protected_uint32_value(active_clients))
-		lprintf(LOG_WARNING,"#### !Mail Server terminating with %ld active clients", protected_uint32_value(active_clients));
+		lprintf(LOG_WARNING,"!!!! Terminating with %ld active clients", protected_uint32_value(active_clients));
 	else
 		protected_uint32_destroy(active_clients);
 
@@ -6049,7 +6050,7 @@ void DLLCALL mail_server(void* arg)
 		}
 
 		if(protected_uint32_value(active_clients)) {
-			lprintf(LOG_DEBUG,"Waiting for %d active clients to disconnect..."
+			lprintf(LOG_INFO,"Waiting for %d active clients to disconnect..."
 				, protected_uint32_value(active_clients));
 			start=time(NULL);
 			while(protected_uint32_value(active_clients)) {
@@ -6060,6 +6061,7 @@ void DLLCALL mail_server(void* arg)
 				}
 				mswait(100);
 			}
+			lprintf(LOG_INFO, "Done waiting for active clients to disconnect");
 		}
 
 		if(sendmail_running) {
@@ -6068,15 +6070,16 @@ void DLLCALL mail_server(void* arg)
 			mswait(100);
 		}
 		if(sendmail_running) {
-			lprintf(LOG_DEBUG,"Waiting for SendMail thread to terminate...");
+			lprintf(LOG_INFO, "Waiting for SendMail thread to terminate...");
 			start=time(NULL);
 			while(sendmail_running) {
 				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-					lprintf(LOG_WARNING,"!TIMEOUT waiting for sendmail thread to terminate");
+					lprintf(LOG_WARNING, "!TIMEOUT waiting for SendMail thread to terminate");
 					break;
 				}
 				mswait(500);
 			}
+			lprintf(LOG_INFO, "Done waiting for SendMail thread to terminate");
 		}
 		if(!sendmail_running) {
 			while(sem_destroy(&sendmail_wakeup_sem)==-1 && errno==EBUSY) {

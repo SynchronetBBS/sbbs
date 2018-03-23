@@ -5824,10 +5824,11 @@ static void cleanup(int code, int line)
 #endif
 
 	if(protected_uint32_value(thread_count) > 1) {
-		lprintf(LOG_DEBUG,"#### FTP Server waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
+		lprintf(LOG_INFO, "0000 Waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
 		while(protected_uint32_value(thread_count) > 1) {
 			mswait(100);
 		}
+		lprintf(LOG_INFO, "0000 Done waiting for child threads to terminate");
 	}
 
 	free_cfg(&scfg);
@@ -5844,7 +5845,7 @@ static void cleanup(int code, int line)
 	update_clients();	/* active_clients is destroyed below */
 
 	if(protected_uint32_value(active_clients))
-		lprintf(LOG_WARNING,"#### !FTP Server terminating with %ld active clients", protected_uint32_value(active_clients));
+		lprintf(LOG_WARNING,"!!!! Terminating with %ld active clients", protected_uint32_value(active_clients));
 	else
 		protected_uint32_destroy(active_clients);
 
@@ -6170,17 +6171,18 @@ void DLLCALL ftp_server(void* arg)
 		lprintf(LOG_DEBUG,"0000 terminate_server: %d",terminate_server);
 #endif
 		if(protected_uint32_value(active_clients)) {
-			lprintf(LOG_DEBUG,"Waiting for %d active clients to disconnect..."
+			lprintf(LOG_INFO,"0000 Waiting for %d active clients to disconnect..."
 				, protected_uint32_value(active_clients));
 			start=time(NULL);
 			while(protected_uint32_value(active_clients)) {
 				if(time(NULL)-start>startup->max_inactivity) {
-					lprintf(LOG_WARNING,"!TIMEOUT waiting for %d active clients"
+					lprintf(LOG_WARNING,"0000 !TIMEOUT waiting for %d active clients"
 						, protected_uint32_value(active_clients));
 					break;
 				}
 				mswait(100);
 			}
+			lprintf(LOG_INFO, "0000 Done waiting for active clients to disconnect");
 		}
 
 		cleanup(0,__LINE__);
