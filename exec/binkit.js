@@ -842,13 +842,15 @@ function inbound_auth_cb(pwd, bp)
 			if (cpw === undefined)
 				cpw = '-';
 			if (pwd[0].substr(0, 9) === 'CRAM-MD5-') {
-				if (bp.getCRAM('MD5', cpw) === pwd[0]) {
+				var expected = bp.getCRAM('MD5', cpw);
+				if (expected === pwd[0]) {
 					log(LOG_INFO, "CRAM-MD5 password match for " + addr);
 					addrs.push(addr);
 					check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
 					ret = cpw;
 				} else {
-					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr);
+					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr 
+						+ format(" (expected: %s, received: %s)", expected, pwd[0]));
 					invalid = true;
 				}
 			}
@@ -921,8 +923,6 @@ function run_inbound(sock)
 	bp.want_callback = callout_want_callback;
 	if (bp.cb_data.binkitcfg.caps !== undefined)
 		bp.capabilities = bp.cb_data.binkitcfg.caps;
-	if (bp.cb_data.binkitcfg.cram_challenge_length !== undefined)
-		bp.cram_challenge_length = bp.cb_data.binkitcfg.cram_challenge_length;
 
 	// We can't use the defaults since the defaults are only 4D addresses.
 	bp.addr_list = [];
