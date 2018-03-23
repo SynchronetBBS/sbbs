@@ -311,7 +311,7 @@ static void log_msg(TRichEdit* Log, log_msg_t* msg)
     AnsiString Line=SystemTimeToDateTime(msg->time).FormatString(LOG_TIME_FMT)+"  ";
     Line+=AnsiString(msg->buf).Trim();
 	if(msg->repeated)
-		Line += " [x" + AnsiString(msg->repeated) + "]";
+		Line += " [x" + AnsiString(msg->repeated + 1) + "]";
     Log->SelLength=0;
 	Log->SelStart=-1;
     Log->SelAttributes->Assign(
@@ -479,7 +479,7 @@ static void mail_log_msg(log_msg_t* msg)
 			AnsiString Line=SystemTimeToDateTime(msg->time).FormatString("hh:mm:ss")+"  ";
 		    Line+=AnsiString(msg->buf).Trim();
 			if(msg->repeated)
-				Line += " [x" + AnsiString(msg->repeated) + "]";
+				Line += " [x" + AnsiString(msg->repeated + 1) + "]";
 	        Line+="\n";
         	fwrite(AnsiString(Line).c_str(),1,Line.Length(),LogStream);
         }
@@ -588,7 +588,7 @@ static void ftp_log_msg(log_msg_t* msg)
             AnsiString Line=SystemTimeToDateTime(msg->time).FormatString("hh:mm:ss")+"  ";
             Line+=AnsiString(msg->buf).Trim();
 			if(msg->repeated)
-				Line += " [x" + AnsiString(msg->repeated) + "]";
+				Line += " [x" + AnsiString(msg->repeated + 1) + "]";
             Line+="\n";
         	fwrite(AnsiString(Line).c_str(),1,Line.Length(),LogStream);
         }
@@ -2848,6 +2848,7 @@ void __fastcall TMainForm::ForceTimedEventMenuItemClick(TObject *Sender)
 {
 	int i,file;
 	char str[MAX_PATH+1];
+	static int selection;
 
 	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
 	CodeInputForm->Label->Caption="Event Internal Code";
@@ -2855,7 +2856,7 @@ void __fastcall TMainForm::ForceTimedEventMenuItemClick(TObject *Sender)
     for(i=0;i<cfg.total_events;i++)
     	CodeInputForm->ComboBox->Items->Add(
             AnsiString(cfg.event[i]->code).UpperCase());
-    CodeInputForm->ComboBox->ItemIndex=0;
+    CodeInputForm->ComboBox->ItemIndex=selection;
     if(CodeInputForm->ShowModal()==mrOk
        	&& CodeInputForm->ComboBox->Text.Length()) {
         for(i=0;i<cfg.total_events;i++) {
@@ -2864,6 +2865,7 @@ void __fastcall TMainForm::ForceTimedEventMenuItemClick(TObject *Sender)
             	if((file=_sopen(str,O_CREAT|O_TRUNC|O_WRONLY
 	                ,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
 	                close(file);
+				selection = i;
                 break;
 	   		}
         }
