@@ -5476,6 +5476,7 @@ NO_SSH:
 				}
 			}
 			if(ssh_failed) {
+				lprintf(LOG_NOTICE, "%04d SSH session establishment failed", client_socket);
 				cryptDestroySession(sbbs->ssh_session);
 				close_socket(client_socket);
 				continue;
