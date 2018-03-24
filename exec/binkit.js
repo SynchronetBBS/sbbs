@@ -851,7 +851,21 @@ function inbound_auth_cb(pwd, bp)
 				} else {
 					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr 
 						+ format(" (expected: %s, received: %s)", expected, pwd[0]));
-					invalid = true;
+					if (bp.mystic_detected) {
+						log(LOG_INFO, "Checking Mystic pass...");
+						bp.cram.challenge += '\x00\x00\x00';
+						expected = bp.getCRAM('MD5', cpw);
+						if (expected === pwd[0]) {
+							log(LOG_INFO, "CRAM-MD5 password match for " + addr);
+							addrs.push(addr);
+							check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
+							ret = cpw;
+						}
+						else
+							invalid = true;
+					}
+					else
+						invalid = true;
 				}
 			}
 			else {
