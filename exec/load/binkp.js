@@ -1165,6 +1165,10 @@ BinkP.prototype.recvFrame = function(timeout)
 							tmp = ret.data.split(/ /);
 							if (tmp.length >= 3) {
 								if (tmp[1].substr(0, 7) === 'Mystic/') {
+									/*
+									 * This allows work-arounds for Mystic binkp
+									 * bugs.  See binkit.js for details.
+									 */
 									this.mystic_detected = true;
 								}
 								if (tmp[2].substr(0, 6) === 'binkp/') {
