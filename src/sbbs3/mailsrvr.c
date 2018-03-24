@@ -3503,13 +3503,13 @@ static void smtp_thread(void* arg)
 
 					smb.subnum=subnum;
 					if((i=savemsg(&scfg, &smb, &msg, &client, startup->host_name, msgbuf))!=SMB_SUCCESS) {
-						lprintf(LOG_WARNING,"%04d !SMTP ERROR %d (%s) saving message"
-							,socket,i,smb.last_error);
-						sockprintf(socket,session, "452 ERROR %d (%s) saving message"
+						lprintf(LOG_WARNING,"%04d !SMTP ERROR %d (%s) posting message to %s (%s)"
+							,socket, i, smb.last_error, scfg.sub[subnum]->sname, smb.file);
+						sockprintf(socket,session, "452 ERROR %d (%s) posting message"
 							,i,smb.last_error);
 					} else {
-						lprintf(LOG_INFO,"%04d SMTP %s posted a message on %s"
-							,socket, sender_addr, scfg.sub[subnum]->sname);
+						lprintf(LOG_INFO,"%04d SMTP %s posted a message on %s (%s)"
+							,socket, sender_addr, scfg.sub[subnum]->sname, smb.file);
 						sockprintf(socket,session,ok_rsp);
 						if(relay_user.number != 0)
 							user_posted_msg(&scfg, &relay_user, 1);
