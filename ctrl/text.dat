@@ -147,9 +147,9 @@
 "\r\n\1r\1hNo other active nodes.\1n\r\n"                 122 NoOtherActiveNodes
 "\r\n\r\nYou can't use the external programs.\r\n"      123 R_ExternalPrograms
 "\r\n\1-\1gUsage Statistics for \1h%s #%d\1n\r\n\r\n"       124 UserStats
-"\1-\1gSub-boards of \1h%-40s      \1n\1gPosts"\             125 SubLstHdr
+"\1-\1gSub-boards of \1h%-40s       \1n\1gPosts"\             125 SubLstHdr
 	"\r\n\r\n\1h"
-"\1n\1g[\1h%u\1n\1g] %-40s %12s \1h%4u\r\n"                  126 SubLstFmt
+"\1n\1g[\1h%u\1n\1g] %-40s %12s \1h%5u\r\n"                  126 SubLstFmt
 "\r\n\1q\1_\1g\1hMessage Groups\1n\1g                    "\     127 GrpLstHdr
 	"                        Sub-boards\r\n\r\n\1h"
 "\1n\1g[\1h%u\1n\1g] %-40s %12s \1h%4u\r\n"                  128 GrpLstFmt
