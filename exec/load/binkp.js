@@ -93,8 +93,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.in_keys = undefined;
 	this.out_keys = undefined;
 	this.capabilities = '115200,TCP,BINKP';
-	this.mystic_bug = false;
-	this.mystic_detected = false;
+	this.remote_ver = undefined;
 
 	this.sent_files = [];
 	this.failed_sent_files = [];
@@ -1164,13 +1163,7 @@ BinkP.prototype.recvFrame = function(timeout)
 							log(LOG_INFO, "Peer version: " + args.slice(1).join(' '));
 							tmp = ret.data.split(/ /);
 							if (tmp.length >= 3) {
-								if (tmp[1].substr(0, 7) === 'Mystic/') {
-									/*
-									 * This allows work-arounds for Mystic binkp
-									 * bugs.  See binkit.js for details.
-									 */
-									this.mystic_detected = true;
-								}
+								this.remote_ver = tmp[1];
 								if (tmp[2].substr(0, 6) === 'binkp/') {
 									ver = tmp[2].substr(6).split(/\./);
 									if (ver.length >= 2) {

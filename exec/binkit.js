@@ -851,7 +851,7 @@ function inbound_auth_cb(pwd, bp)
 				} else {
 					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr 
 						+ format(" (expected: %s, received: %s)", expected, pwd[0]));
-					if (bp.mystic_detected) {
+					if (bp.remote_ver.substr(0, 7) === 'Mystic/') {
 						/*
 						 * MysticBBS v1.12A39 at least has an issue when the CRYPT
 						 * option is included after the CRAM-MD5 challenge.  It appends
