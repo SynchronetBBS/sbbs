@@ -852,6 +852,12 @@ function inbound_auth_cb(pwd, bp)
 					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr 
 						+ format(" (expected: %s, received: %s)", expected, pwd[0]));
 					if (bp.mystic_detected) {
+						/*
+						 * MysticBBS v1.12A39 at least has an issue when the CRYPT
+						 * option is included after the CRAM-MD5 challenge.  It appends
+						 * three NULs to the end of the challenge data.  If the remote told
+						 * us it was Mystic, see if that matches.
+						 */
 						log(LOG_INFO, "Checking Mystic pass...");
 						bp.cram.challenge += '\x00\x00\x00';
 						expected = bp.getCRAM('MD5', cpw);
