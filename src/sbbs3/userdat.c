@@ -3114,7 +3114,8 @@ BOOL DLLCALL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 	if (fp == NULL)
 		return FALSE;
 	str_list_t ini = iniReadFile(fp);
-	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "\n" };
+	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
+	BOOL modified = FALSE;
 	for(i=0; i < cfg->total_subs; i++) {
 		BOOL exists = iniSectionExists(ini, cfg->sub[i]->code);
 		if(subscan[i].sav_ptr==subscan[i].ptr 
@@ -3126,8 +3127,10 @@ BOOL DLLCALL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 		iniSetLongInt(&ini, cfg->sub[i]->code, "last", subscan[i].last, &ini_style);
 		iniSetHexInt(&ini, cfg->sub[i]->code, "cfg", subscan[i].cfg, &ini_style);
 		iniSetDateTime(&ini, cfg->sub[i]->code, "updated", /* include_time: */TRUE, now, &ini_style);
+		modified = TRUE;
 	}
-	iniWriteFile(fp, ini);
+	if(modified)
+		iniWriteFile(fp, ini);
 	iniFreeStringList(ini);
 	fclose(fp);
 
