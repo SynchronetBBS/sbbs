@@ -1596,6 +1596,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 	char	*p2;
 	char	tmp[1024];
 	int		i,j,k,l;
+	int	flags;
 	int		row,col;
 	int		max_row;
 	struct text_info ti;
@@ -1693,29 +1694,29 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										SETCURSORTYPE(cterm->cursor);
 										break;
 									case 31:
-										i=GETVIDEOFLAGS();
-										i|=CIOLIB_VIDEO_ALTCHARS;
-										SETVIDEOFLAGS(i);
+										flags = GETVIDEOFLAGS();
+										flags |= CIOLIB_VIDEO_ALTCHARS;
+										SETVIDEOFLAGS(flags);
 										break;
 									case 32:
-										i=GETVIDEOFLAGS();
-										i|=CIOLIB_VIDEO_NOBRIGHT;
-										SETVIDEOFLAGS(i);
+										flags = GETVIDEOFLAGS();
+										flags |= CIOLIB_VIDEO_NOBRIGHT;
+										SETVIDEOFLAGS(flags);
 										break;
 									case 33:
-										i=GETVIDEOFLAGS();
-										i|=CIOLIB_VIDEO_BGBRIGHT;
-										SETVIDEOFLAGS(i);
+										flags = GETVIDEOFLAGS();
+										flags |= CIOLIB_VIDEO_BGBRIGHT;
+										SETVIDEOFLAGS(flags);
 										break;
 									case 34:
-										i=GETVIDEOFLAGS();
-										i|=CIOLIB_VIDEO_BLINKALTCHARS;
-										SETVIDEOFLAGS(i);
+										flags = GETVIDEOFLAGS();
+										flags |= CIOLIB_VIDEO_BLINKALTCHARS;
+										SETVIDEOFLAGS(flags);
 										break;
 									case 35:
-										i=GETVIDEOFLAGS();
-										i|=CIOLIB_VIDEO_NOBLINK;
-										SETVIDEOFLAGS(i);
+										flags = GETVIDEOFLAGS();
+										flags |= CIOLIB_VIDEO_NOBLINK;
+										SETVIDEOFLAGS(flags);
 										break;
 									case 80:
 										cterm->sx_scroll_mode = 1;
@@ -1747,29 +1748,29 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										SETCURSORTYPE(cterm->cursor);
 										break;
 									case 31:
-										i=GETVIDEOFLAGS();
-										i&=~CIOLIB_VIDEO_ALTCHARS;
-										SETVIDEOFLAGS(i);
+										flags = GETVIDEOFLAGS();
+										flags &= ~CIOLIB_VIDEO_ALTCHARS;
+										SETVIDEOFLAGS(flags);
 										break;
 									case 32:
-										i=GETVIDEOFLAGS();
-										i&=~CIOLIB_VIDEO_NOBRIGHT;
-										SETVIDEOFLAGS(i);
+										flags = GETVIDEOFLAGS();
+										flags &= ~CIOLIB_VIDEO_NOBRIGHT;
+										SETVIDEOFLAGS(flags);
 										break;
 									case 33:
-										i=GETVIDEOFLAGS();
-										i&=~CIOLIB_VIDEO_BGBRIGHT;
-										SETVIDEOFLAGS(i);
+										flags = GETVIDEOFLAGS();
+										flags &= ~CIOLIB_VIDEO_BGBRIGHT;
+										SETVIDEOFLAGS(flags);
 										break;
 									case 34:
-										i=GETVIDEOFLAGS();
-										i&=~CIOLIB_VIDEO_BLINKALTCHARS;
-										SETVIDEOFLAGS(i);
+										flags = GETVIDEOFLAGS();
+										flags &= ~CIOLIB_VIDEO_BLINKALTCHARS;
+										SETVIDEOFLAGS(flags);
 										break;
 									case 35:
-										i=GETVIDEOFLAGS();
-										i&=~CIOLIB_VIDEO_NOBLINK;
-										SETVIDEOFLAGS(i);
+										flags = GETVIDEOFLAGS();
+										flags &= ~CIOLIB_VIDEO_NOBLINK;
+										SETVIDEOFLAGS(flags);
 										break;
 									case 80:
 										cterm->sx_scroll_mode = 0;
@@ -1848,18 +1849,18 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					case 's':
 						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
 							GETTEXTINFO(&ti);
-							i=GETVIDEOFLAGS();
+							flags = GETVIDEOFLAGS();
 							if(seq->param_count == 0) {
 								/* All the save stuff... */
 								cterm->saved_mode_mask |= (CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN|CTERM_SAVEMODE_SIXEL_SCROLL);
 								cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN|CTERM_SAVEMODE_SIXEL_SCROLL);
 								cterm->saved_mode |= (cterm->autowrap)?CTERM_SAVEMODE_AUTOWRAP:0;
 								cterm->saved_mode |= (cterm->cursor==_NORMALCURSOR)?CTERM_SAVEMODE_CURSOR:0;
-								cterm->saved_mode |= (i&CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
-								cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
-								cterm->saved_mode |= (i&CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
-								cterm->saved_mode |= (i&CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
-								cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
+								cterm->saved_mode |= (flags & CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
+								cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
+								cterm->saved_mode |= (flags & CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
+								cterm->saved_mode |= (flags & CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
+								cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
 								cterm->saved_mode |= (cterm->origin_mode)?CTERM_SAVEMODE_ORIGIN:0;
 								cterm->saved_mode |= (cterm->sx_scroll_mode)?CTERM_SAVEMODE_SIXEL_SCROLL:0;
 								break;
@@ -1885,27 +1886,27 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										case 31:
 											cterm->saved_mode_mask |= CTERM_SAVEMODE_ALTCHARS;
 											cterm->saved_mode &= ~(CTERM_SAVEMODE_ALTCHARS);
-											cterm->saved_mode |= (i&CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
+											cterm->saved_mode |= (flags & CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
 											break;
 										case 32:
 											cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBRIGHT;
 											cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBRIGHT);
-											cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
+											cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
 											break;
 										case 33:
 											cterm->saved_mode_mask |= CTERM_SAVEMODE_BGBRIGHT;
 											cterm->saved_mode &= ~(CTERM_SAVEMODE_BGBRIGHT);
-											cterm->saved_mode |= (i&CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
+											cterm->saved_mode |= (flags & CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
 											break;
 										case 34:
 											cterm->saved_mode_mask |= CTERM_SAVEMODE_BLINKALTCHARS;
 											cterm->saved_mode &= ~(CTERM_SAVEMODE_BLINKALTCHARS);
-											cterm->saved_mode |= (i&CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
+											cterm->saved_mode |= (flags & CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
 											break;
 										case 35:
 											cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBLINK;
 											cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBLINK);
-											cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
+											cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
 											break;
 										case 80:
 											cterm->saved_mode_mask |= CTERM_SAVEMODE_SIXEL_SCROLL;
@@ -1920,7 +1921,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					case 'u':
 						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
 							GETTEXTINFO(&ti);
-							i=GETVIDEOFLAGS();
+							flags = GETVIDEOFLAGS();
 							attr2palette(cterm->attr, &oldfg, &oldbg);
 							updfg = (oldfg == cterm->fg_color);
 							updbg = (oldfg == cterm->bg_color);
@@ -1938,35 +1939,35 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_ALTCHARS) {
 									if(cterm->saved_mode & CTERM_SAVEMODE_ALTCHARS)
-										i |= CIOLIB_VIDEO_ALTCHARS;
+										flags |= CIOLIB_VIDEO_ALTCHARS;
 									else
-										i &= ~CIOLIB_VIDEO_ALTCHARS;
+										flags &= ~CIOLIB_VIDEO_ALTCHARS;
 								}
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_BLINKALTCHARS) {
 									if(cterm->saved_mode & CTERM_SAVEMODE_BLINKALTCHARS)
-										i |= CIOLIB_VIDEO_BLINKALTCHARS;
+										flags |= CIOLIB_VIDEO_BLINKALTCHARS;
 									else
-										i &= ~CIOLIB_VIDEO_BLINKALTCHARS;
+										flags &= ~CIOLIB_VIDEO_BLINKALTCHARS;
 								}
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBRIGHT) {
 									if(cterm->saved_mode & CTERM_SAVEMODE_NOBRIGHT)
-										i |= CIOLIB_VIDEO_NOBRIGHT;
+										flags |= CIOLIB_VIDEO_NOBRIGHT;
 									else
-										i &= ~CIOLIB_VIDEO_NOBRIGHT;
+										flags &= ~CIOLIB_VIDEO_NOBRIGHT;
 								}
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBLINK) {
 									if(cterm->saved_mode & CTERM_SAVEMODE_NOBLINK)
-										i |= CIOLIB_VIDEO_NOBLINK;
+										flags |= CIOLIB_VIDEO_NOBLINK;
 									else
-										i &= ~CIOLIB_VIDEO_NOBLINK;
+										flags &= ~CIOLIB_VIDEO_NOBLINK;
 								}
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_BGBRIGHT) {
 									if(cterm->saved_mode & CTERM_SAVEMODE_BGBRIGHT)
-										i |= CIOLIB_VIDEO_BGBRIGHT;
+										flags |= CIOLIB_VIDEO_BGBRIGHT;
 									else
-										i &= ~CIOLIB_VIDEO_BGBRIGHT;
+										flags &= ~CIOLIB_VIDEO_BGBRIGHT;
 								}
-								SETVIDEOFLAGS(i);
+								SETVIDEOFLAGS(flags);
 								break;
 							}
 							else {
@@ -1989,46 +1990,46 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										case 31:
 											if(cterm->saved_mode_mask & CTERM_SAVEMODE_ALTCHARS) {
 												if(cterm->saved_mode & CTERM_SAVEMODE_ALTCHARS)
-													i |= CIOLIB_VIDEO_ALTCHARS;
+													flags |= CIOLIB_VIDEO_ALTCHARS;
 												else
-													i &= ~CIOLIB_VIDEO_ALTCHARS;
-												SETVIDEOFLAGS(i);
+													flags &= ~CIOLIB_VIDEO_ALTCHARS;
+												SETVIDEOFLAGS(flags);
 											}
 											break;
 										case 32:
 											if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBRIGHT) {
 												if(cterm->saved_mode & CTERM_SAVEMODE_NOBRIGHT)
-													i |= CIOLIB_VIDEO_NOBRIGHT;
+													flags |= CIOLIB_VIDEO_NOBRIGHT;
 												else
-													i &= ~CIOLIB_VIDEO_NOBRIGHT;
-												SETVIDEOFLAGS(i);
+													flags &= ~CIOLIB_VIDEO_NOBRIGHT;
+												SETVIDEOFLAGS(flags);
 											}
 											break;
 										case 33:
 											if(cterm->saved_mode_mask & CTERM_SAVEMODE_BGBRIGHT) {
 												if(cterm->saved_mode & CTERM_SAVEMODE_BGBRIGHT)
-													i |= CIOLIB_VIDEO_BGBRIGHT;
+													flags |= CIOLIB_VIDEO_BGBRIGHT;
 												else
-													i &= ~CIOLIB_VIDEO_BGBRIGHT;
-												SETVIDEOFLAGS(i);
+													flags &= ~CIOLIB_VIDEO_BGBRIGHT;
+												SETVIDEOFLAGS(flags);
 											}
 											break;
 										case 34:
 											if(cterm->saved_mode_mask & CTERM_SAVEMODE_BLINKALTCHARS) {
 												if(cterm->saved_mode & CTERM_SAVEMODE_BLINKALTCHARS)
-													i |= CIOLIB_VIDEO_BLINKALTCHARS;
+													flags |= CIOLIB_VIDEO_BLINKALTCHARS;
 												else
-													i &= ~CIOLIB_VIDEO_BLINKALTCHARS;
-												SETVIDEOFLAGS(i);
+													flags &= ~CIOLIB_VIDEO_BLINKALTCHARS;
+												SETVIDEOFLAGS(flags);
 											}
 											break;
 										case 35:
 											if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBLINK) {
 												if(cterm->saved_mode & CTERM_SAVEMODE_NOBLINK)
-													i |= CIOLIB_VIDEO_NOBLINK;
+													flags |= CIOLIB_VIDEO_NOBLINK;
 												else
-													i &= ~CIOLIB_VIDEO_NOBLINK;
-												SETVIDEOFLAGS(i);
+													flags &= ~CIOLIB_VIDEO_NOBLINK;
+												SETVIDEOFLAGS(flags);
 											}
 											break;
 										case 80:
@@ -2449,7 +2450,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					case 'm':	/* Select Graphic Rendition */
 						seq_default(seq, 0, 0);
 						GETTEXTINFO(&ti);
-						j = GETVIDEOFLAGS();
+						flags = GETVIDEOFLAGS();
 						for (i=0; i < seq->param_count; i++) {
 							switch(seq->param_int[i]) {
 								case 0:
@@ -2458,12 +2459,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 1:
 									cterm->attr|=8;
-									if (!(j & CIOLIB_VIDEO_NOBRIGHT))
+									if (!(flags & CIOLIB_VIDEO_NOBRIGHT))
 										attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 2:
 									cterm->attr&=247;
-									if (!(j & CIOLIB_VIDEO_NOBRIGHT))
+									if (!(flags & CIOLIB_VIDEO_NOBRIGHT))
 										attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 4:	/* Underscore */
@@ -2471,7 +2472,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								case 5:
 								case 6:
 									cterm->attr|=128;
-									if (j & CIOLIB_VIDEO_BGBRIGHT)
+									if (flags & CIOLIB_VIDEO_BGBRIGHT)
 										attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 7:
@@ -2488,12 +2489,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 22:
 									cterm->attr &= 0xf7;
-									if (!(j & CIOLIB_VIDEO_NOBRIGHT))
+									if (!(flags & CIOLIB_VIDEO_NOBRIGHT))
 										attr2palette(cterm->attr, &cterm->fg_color, NULL);
 									break;
 								case 25:
 									cterm->attr &= 0x7f;
-									if (j & CIOLIB_VIDEO_BGBRIGHT)
+									if (flags & CIOLIB_VIDEO_BGBRIGHT)
 										attr2palette(cterm->attr, NULL, &cterm->bg_color);
 									break;
 								case 27:
