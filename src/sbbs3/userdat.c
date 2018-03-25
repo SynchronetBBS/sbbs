@@ -3097,7 +3097,7 @@ BOOL DLLCALL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*pr
 }
 
 /****************************************************************************/
-/* Writes to data/user/*.subs the msgptr array for the current user			*/
+/* Writes to data/user/####.subs the msgptr array for the current user		*/
 /* Pass usernumber value of 0 to indicate "Guest" login						*/
 /****************************************************************************/
 BOOL DLLCALL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
