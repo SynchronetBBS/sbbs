@@ -3045,7 +3045,30 @@ BOOL DLLCALL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*pr
 
 	if(user->rest&FLAG('G'))
 		return initmsgptrs(cfg, subscan, cfg->guest_msgscan_init, progress, cbdata);
+
+	/* New way: */
+	SAFEPRINTF2(path,"%suser/%4.4u.subs", cfg->data_dir, user->number);
+	FILE* fp = fnopen(NULL, path, O_RDONLY|O_TEXT);
+	if (fp != NULL) {
+		str_list_t ini = iniReadFile(fp);
+		for(i = 0; i < cfg->total_subs; i++) {
+			if(progress != NULL)
+				progress(cbdata, i, cfg->total_subs);
+			subscan[i].ptr	= iniGetLongInt(ini, cfg->sub[i]->code, "ptr"	, subscan[i].ptr);
+			subscan[i].last	= iniGetLongInt(ini, cfg->sub[i]->code, "last"	, subscan[i].last);
+			subscan[i].cfg	= iniGetShortInt(ini, cfg->sub[i]->code, "cfg"	, subscan[i].cfg);
+			subscan[i].sav_ptr	= subscan[i].ptr;
+			subscan[i].sav_last	= subscan[i].last;
+			subscan[i].sav_cfg	= subscan[i].cfg; 
+		}
+		iniFreeStringList(ini);
+		fclose(fp);
+		if(progress != NULL)
+			progress(cbdata, i, cfg->total_subs);
+		return TRUE;
+	}
 	
+	/* Old way: */
 	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, user->number);
 	if((stream=fnopen(&file,path,O_RDONLY))==NULL) {
 		if(fexist(path))
@@ -3074,61 +3097,41 @@ BOOL DLLCALL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*pr
 }
 
 /****************************************************************************/
-/* Writes to data/user/ptrs/####.ixb the msgptr array for the current user	*/
+/* Writes to data/user/*.subs the msgptr array for the current user			*/
 /* Pass usernumber value of 0 to indicate "Guest" login						*/
 /****************************************************************************/
 BOOL DLLCALL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 {
 	char		path[MAX_PATH+1];
-	ushort		idx;
-	uint16_t	scancfg;
-	uint		i,j;
-	int 		file;
-	ulong		length;
-	uint32_t	l=0L;
+	uint		i;
+	time_t		now = time(NULL);
 
 	if(user->number==0 || (user->rest&FLAG('G')))	/* Guest */
 		return(TRUE);
-	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, user->number);
-	if((file=nopen(path,O_WRONLY|O_CREAT))==-1) {
-		return(FALSE); 
-	}
-	fixmsgptrs(cfg, subscan);
-	length=(ulong)filelength(file);
-	for(i=0;i<cfg->total_subs;i++) {
+
+	SAFEPRINTF2(path,"%suser/%4.4u.subs", cfg->data_dir, user->number);
+	FILE* fp = fnopen(NULL, path, O_RDWR|O_CREAT|O_TEXT);
+	if (fp == NULL)
+		return FALSE;
+	str_list_t ini = iniReadFile(fp);
+	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "\n" };
+	for(i=0; i < cfg->total_subs; i++) {
+		BOOL exists = iniSectionExists(ini, cfg->sub[i]->code);
 		if(subscan[i].sav_ptr==subscan[i].ptr 
 			&& subscan[i].sav_last==subscan[i].last
-			&& length>=((cfg->sub[i]->ptridx+1)*10UL)
-			&& subscan[i].sav_cfg==subscan[i].cfg)
+			&& subscan[i].sav_cfg==subscan[i].cfg
+			&& exists)
 			continue;
-		while(filelength(file)<(long)(cfg->sub[i]->ptridx)*10) {
-			lseek(file,0L,SEEK_END);
-			idx=(ushort)(tell(file)/10);
-			for(j=0;j<cfg->total_subs;j++)
-				if(cfg->sub[j]->ptridx==idx)
-					break;
-			write(file,&l,sizeof(l));
-			write(file,&l,sizeof(l));
-			scancfg=0xff;					
-			if(j<cfg->total_subs) {
-				if(!(cfg->sub[j]->misc&SUB_NSDEF))
-					scancfg&=~SUB_CFG_NSCAN;
-				if(!(cfg->sub[j]->misc&SUB_SSDEF))
-					scancfg&=~SUB_CFG_SSCAN; 
-			} else	/* default to scan OFF for unknown sub */
-				scancfg&=~(SUB_CFG_NSCAN|SUB_CFG_SSCAN);
-			write(file,&scancfg,sizeof(scancfg)); 
-		}
-		lseek(file,(long)((long)(cfg->sub[i]->ptridx)*10),SEEK_SET);
-		write(file,&(subscan[i].ptr),sizeof(subscan[i].ptr));
-		write(file,&(subscan[i].last),sizeof(subscan[i].last));
-		write(file,&(subscan[i].cfg),sizeof(subscan[i].cfg));
+		iniSetLongInt(&ini, cfg->sub[i]->code, "ptr", subscan[i].ptr, &ini_style);
+		iniSetLongInt(&ini, cfg->sub[i]->code, "last", subscan[i].last, &ini_style);
+		iniSetHexInt(&ini, cfg->sub[i]->code, "cfg", subscan[i].cfg, &ini_style);
+		iniSetDateTime(&ini, cfg->sub[i]->code, "updated", /* include_time: */TRUE, now, &ini_style);
 	}
-	close(file);
-	if(!flength(path))			/* Don't leave 0 byte files */
-		remove(path);
+	iniWriteFile(fp, ini);
+	iniFreeStringList(ini);
+	fclose(fp);
 
-	return(TRUE);
+	return TRUE;
 }
 
 /****************************************************************************/
