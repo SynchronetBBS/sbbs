@@ -2044,6 +2044,7 @@ void input_thread(void *arg)
 	sbbs->sys_status|=SS_ABORT;	/* as though Ctrl-C were hit */
 
     sbbs->input_thread_running = false;
+	sbbs->terminate_output_thread = true;
 	if(node_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)	// Shutdown locally
 		sbbs->terminated = true;	// Signal JS to stop execution
 
@@ -2318,9 +2319,10 @@ void output_thread(void* arg)
 		}
 	}
 #endif
+	sbbs->terminate_output_thread = false;
 
 	/* Note: do not terminate when online==FALSE, that is expected for the terminal server output_thread */
-	while(sbbs->client_socket!=INVALID_SOCKET && !terminate_server) {
+	while(sbbs->client_socket!=INVALID_SOCKET && !terminate_server && !sbbs->terminate_output_thread) {
 		/*
 		 * I'd like to check the linear buffer against the highwater
 		 * at this point, but it would get too clumsy imho - Deuce
@@ -2328,7 +2330,7 @@ void output_thread(void* arg)
 		 * Actually, another option would just be to have the size
 		 * of the linear buffer equal to the MSS... any larger and
 		 * you could have small sends off the end.  this would
-		 * probobly be even clumbsier
+		 * probably be even clumsier
 		 */
 		if(bufbot == buftop) {
 			/* Wait for something to output in the RingBuffer */

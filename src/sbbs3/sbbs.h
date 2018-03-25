@@ -380,6 +380,7 @@ public:
 	bool	event_thread_running;
     bool	output_thread_running;
     bool	input_thread_running;
+	bool	terminate_output_thread;
 
 #ifdef JAVASCRIPT
 
