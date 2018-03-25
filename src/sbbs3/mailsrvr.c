@@ -4332,13 +4332,13 @@ static void smtp_thread(void* arg)
 
 						fidoaddr_t faddr = scfg.faddr[0];
 						point = 0;
-						if((sscanf(dest_host,"p%hu.f%hu.n%hu.z%hu.fidonet"
+						if((sscanf(dest_host,"p%hu.f%hu.n%hu.z%hu"FIDO_TLD
 							,&point
 							,&node
 							,&net
 							,&zone)==4
 							||
-							sscanf(dest_host,"f%hu.n%hu.z%hu.fidonet"
+							sscanf(dest_host,"f%hu.n%hu.z%hu"FIDO_TLD
 							,&node
 							,&net
 							,&zone)==3
