@@ -3015,7 +3015,6 @@ ulong DLLCALL loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const cha
 	}
 	return 0;
 }
-#endif
 
 /****************************************************************************/
 /* Message-new-scan pointer/configuration functions							*/
@@ -3220,8 +3219,6 @@ BOOL DLLCALL set_sysop_availability(scfg_t* scfg, BOOL available)
 		return ftouch(sysop_available_semfile(scfg));
 	return remove(sysop_available_semfile(scfg)) == 0;
 }
-
-#if !defined(NO_SOCKET_SUPPORT)	/* This brings in xpdev which then requires socket lib */
 
 /************************************/
 /* user .ini file get/set functions */
