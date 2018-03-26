@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.35 Beta
-                           Release date: 2018-03-19
+                                 Version 0.36 Beta
+                           Release date: 2018-03-25
 
                                      by
 
@@ -229,10 +229,10 @@ For sysops, polls can be deleted when viewing results from SlyVote.
 SlyVote uses the following lines from Synchronet's text.dat file (located in
 the sbbs/ctrl directory):
 120 (CantPostOnSub)
-501 (SelectItemHdr)
 503 (SelectItemWhich)
 759 (CantReadSub)
 779 (VotingNotAllowed)
 780 (VotedAlready)
 781 (R_Voting)
 787 (PollVoteNotice)
+791 (BallotHdr)

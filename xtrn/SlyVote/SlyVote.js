@@ -105,6 +105,9 @@
  *                              Made a fix for non-lightbar voting input - It wasn't
  *                              accepting Q to quit out of voting (a blank input worked
  *                              though).
+ * 2018-03-25 Eric Oulashin     Version 0.36 Beta
+ *                              For non-lightbar voting, updated to use BallotHdr (791)
+ *                              instead of SelectHdr (501).
  */
 
 load("sbbsdefs.js");
@@ -156,8 +159,8 @@ load("smbdefs.js");
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.35 Beta";
-var SLYVOTE_DATE = "2018-03-19";
+var SLYVOTE_VERSION = "0.36 Beta";
+var SLYVOTE_DATE = "2018-03-25";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -1539,7 +1542,7 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 			if (typeof(pUserVoteNumber) != "number")
 			{
 				console.clear("\1n");
-				var selectHdr = bbs.text(SelectItemHdr);
+				var selectHdr = bbs.text(BallotHdr);
 				printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
 				var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
 				var optionNum = 1;
@@ -2010,7 +2013,9 @@ function ViewVoteResults(pSubBoardCode)
 			else if (scrollRetObj.lastKeypress == gReaderKeys.vote)
 			{
 				// Let the user vote on the poll in interactive mode (this uses
-				// traditional style interaction rather than usinga lightbar).
+				// traditional style interaction rather than using a lightbar).
+				// TODO: Change this to use the lightbar menu at some point?
+				// Using the traditional voting interface:
 				var voteRetObj = VoteOnPoll(pSubBoardCode, msgbase, pollMsgHdrs[currentMsgIdx], user, null, true);
 				drawKeyHelpLine = true;
 				// If the user's vote was saved, then update the message header so that it includes
@@ -2042,6 +2047,17 @@ function ViewVoteResults(pSubBoardCode)
 					drawMsg = true;
 					drawKeyHelpLine = false;
 				}
+				// Lightbar voting:
+				/*
+				console.clear("\n");
+				var listTopRow = 2;
+				var drawColRetObj = DrawVoteColumns(listTopRow);
+				var startCol = drawColRetObj.columnX1+drawColRetObj.colWidth-1;
+				var menuHeight = gBottomBorderRow-listTopRow;
+				var voteRetObj = DisplayPollOptionsAndVote(gSubBoardCode, pollMsgHdrs[currentMsgIdx].number, startCol, listTopRow, drawColRetObj.textLen, menuHeight);
+				if (voteRetObj.errorMsg.length > 0)
+					DisplayErrorWithPause(voteRetObj.errorMsg, gMessageRow, voteRetObj.mnemonicsRequiredForErrorMsg);
+				*/
 			}
 			else if (scrollRetObj.lastKeypress == gReaderKeys.close)
 			{
