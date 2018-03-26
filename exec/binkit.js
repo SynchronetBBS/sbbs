@@ -1074,7 +1074,7 @@ function install()
 	ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
 	if (!ini.open(file_exists(ini.name) ? 'r+':'w+'))
 		return ini.name + " open error " + ini.error;
-	if(!ini.GetObject("BINKP") && !ini.GetObject("BINKIT")) {
+	if(!ini.iniGetObject("BINKP") && !ini.iniGetObject("BINKIT")) {
 		printf("Updating %s\r\n", ini.name);
 		var section = "BINKP";
 		ini.iniSetValue(section, "Enabled", true);
