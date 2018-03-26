@@ -112,6 +112,9 @@
  *                              Q to quit out of voting (a blank input worked though).
  *                              Releasing this, even though the 'bypass' command
  *                              isn't finished yet.
+ * 2018-03-25 Eric Oulashin     Version 1.17 beta 58
+ *                              For voting, updated to use BallotHdr (791)
+ *                              instead of SelectHdr (501).
  */
 
  // TODO: Add a command for closing a poll (only available to the user who opened the
@@ -13994,7 +13997,7 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 		if (pMsgHdr.hasOwnProperty("field_list"))
 		{
 			console.clear("\1n");
-			var selectHdr = bbs.text(typeof(SelectItemHdr) != "undefined" ? SelectItemHdr : 501);
+			var selectHdr = bbs.text(typeof(BallotHdr) != "undefined" ? BallotHdr : 791);
 			printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
 			var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
 			var optionNum = 1;
