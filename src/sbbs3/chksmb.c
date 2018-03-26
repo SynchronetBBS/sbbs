@@ -267,7 +267,7 @@ int main(int argc, char **argv)
 		continue; 
 	}
 
-	if(shd_length < smb.status.header_offset) {
+	if(shd_length < (off_t)smb.status.header_offset) {
 		printf("!Status header corruption (header offset: %lu)\n", (ulong)smb.status.header_offset);
 		smb_close(&smb);
 		continue;
@@ -337,7 +337,7 @@ int main(int argc, char **argv)
 	ctrl_chars = 0;
 	oldest = 0;
 
-	for(l=smb.status.header_offset;l<shd_length;l+=size) {
+	for(l=smb.status.header_offset; l < (uint32_t)shd_length;l+=size) {
 		size=SHD_BLOCK_LEN;
 		fprintf(stderr,"\r%2lu%%  ",(long)(100.0/((float)shd_length/l)));
 		fflush(stderr);
@@ -404,8 +404,8 @@ int main(int argc, char **argv)
 			msgids++;
 		}
 
-		long age = now - msg.hdr.when_imported.time;
-		if(!(msg.hdr.attr&MSG_DELETE) && age  > oldest)
+		long age = (long)(now - msg.hdr.when_imported.time);
+		if(!(msg.hdr.attr&MSG_DELETE) && age  > (long)oldest)
 			oldest = age;
 
 		/* Test reading of the message text (body and tails) */
@@ -734,7 +734,7 @@ int main(int argc, char **argv)
 		off_t sda_length=filelength(fileno(smb.sda_fp));
 
 		fseek(smb.sda_fp,0L,SEEK_SET);
-		for(l=0;l<sda_length;l+=2) {
+		for(l=0;l < (ulong)sda_length;l+=2) {
 			if((l%10)==0)
 				fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)sda_length/l)) : 0);
 			/* TODO: LE Only */
@@ -842,7 +842,7 @@ int main(int argc, char **argv)
 		off_t hash_length=filelength(fileno(smb.hash_fp));
 
 		fseek(smb.hash_fp,0L,SEEK_SET);
-		for(l=0;l<hash_length;l+=sizeof(hash_t)) {
+		for(l=0; l < (ulong)hash_length; l+=sizeof(hash_t)) {
 			if(((l/sizeof(hash_t))%10)==0)
 				fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)hash_length/l)) : 0);
 			if(!fread(&hash,sizeof(hash),1,smb.hash_fp))
