@@ -813,6 +813,57 @@ function run_outbound(ran)
 	});
 }
 
+/*
+ * MysticBBS v1.12A39 at least has an issue when the CRYPT
+ * option is included after the CRAM-MD5 challenge.  It appends
+ * three NULs to the end of the challenge data.  If the remote told
+ * us it was Mystic, see if that matches.
+ */
+function mystic_broken_cram(bp)
+{
+	var dot;
+	var min;
+	var ver;
+
+	if (bp.remote_ver.substr(0, 7) !== 'Mystic/')
+		return false;
+	if (bp.wont_crypt)
+		return false;
+	/*
+	 * TODO: This is in case Mystic/1.12A39 has both a working and
+	 * non-working build.  Hopefully, this is not the case, and this
+	 * block can be removed.
+	 */
+	if (bp.remote_ver === 'Mystic/1.12A39')
+		return false;
+
+	ver = bp.remote_ver.substr(7);
+
+	for (dot = 0; dot < ver.length; dot++) {
+		if (ver[dot] == '.')
+			break;
+	}
+	if (parseInt(ver.substr(0, dot), 10) < 1)
+		return true;
+	if (parseInt(ver.substr(0, dot), 10) > 1)
+		return false;
+	for (min = dot + 1; min < ver.length; min++) {
+		if (ver[min] < '0' || ver[min] > '9')
+			break;
+	}
+	if (parseInt(ver.substr(dot+1, min-1), 10) < 12)
+		return true;
+	if (parseInt(ver.substr(dot+1, min-1), 10) > 12)
+		return false;
+	if (min > ver.length)
+		return false;
+	if (ver[min] != 'A')
+		return false;
+	if (parseInt(ver.substr(min+1), 10) <= 39)
+		return true;
+	return false;
+}
+
 function inbound_auth_cb(pwd, bp)
 {
 	/*
@@ -842,6 +893,8 @@ function inbound_auth_cb(pwd, bp)
 			if (cpw === undefined)
 				cpw = '-';
 			if (pwd[0].substr(0, 9) === 'CRAM-MD5-') {
+				if (mystic_broken_cram(bp))
+					bp.cram.challenge += '\x00\x00\x00';
 				var expected = bp.getCRAM('MD5', cpw);
 				if (expected === pwd[0]) {
 					log(LOG_INFO, "CRAM-MD5 password match for " + addr);
@@ -851,13 +904,12 @@ function inbound_auth_cb(pwd, bp)
 				} else {
 					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr 
 						+ format(" (expected: %s, received: %s)", expected, pwd[0]));
-					if (bp.remote_ver.substr(0, 7) === 'Mystic/') {
-						/*
-						 * MysticBBS v1.12A39 at least has an issue when the CRYPT
-						 * option is included after the CRAM-MD5 challenge.  It appends
-						 * three NULs to the end of the challenge data.  If the remote told
-						 * us it was Mystic, see if that matches.
-						 */
+					/*
+					 * TODO: This is in case Mystic/1.12A39 has both a working and
+					 * non-working build.  Hopefully, this is not the case, and this
+					 * block can be removed.
+					 */
+					if (bp.remote_ver === 'Mystic/1.12A39') {
 						log(LOG_INFO, "Checking Mystic pass...");
 						bp.cram.challenge += '\x00\x00\x00';
 						expected = bp.getCRAM('MD5', cpw);
