@@ -1754,6 +1754,7 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 	int cid;
 	char *cname;
 	int ret;
+	int closing_channel = -1;
 
 	*got=0;
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
@@ -1762,6 +1763,8 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 		if (ret == CRYPT_OK) {
 			status = cryptGetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &cid);
 			if (status == CRYPT_OK) {
+				if (cid == closing_channel)
+					continue;
 				if (cid != sbbs->session_channel) {
 					if (cryptStatusError(status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, cid))) {
 						GCESS(status, sbbs->client_socket, sbbs->ssh_session, "setting channel");
@@ -1771,6 +1774,7 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 					lprintf(LOG_WARNING, "%04d SSH ERROR attempt to use channel '%s' (%d != %d)", sbbs->client_socket, cname ? cname : "<unknown>", cid, sbbs->session_channel);
 					if (cname)
 						free_crypt_attrstr(cname);
+					closing_channel = cid;
 					if (cryptStatusError(status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0))) {
 						GCESS(status, sbbs->client_socket, sbbs->ssh_session, "closing channel");
 						return status;
