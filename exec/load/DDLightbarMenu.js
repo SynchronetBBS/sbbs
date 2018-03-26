@@ -1120,7 +1120,7 @@ function DDLightbarMenu_SetBorderChars(pBorderChars)
 	                        "top", "bottom", "left", "right" ];
 	for (var i = 0; i < borderPropNames.length; ++i)
 	{
-		if (pBorderChars.hasOwnProperty(borderPropNames))
+		if (pBorderChars.hasOwnProperty(borderPropNames[i]))
 			this.borderChars[borderPropNames[i]] = pBorderChars[borderPropNames[i]];
 	}
 }
