@@ -825,6 +825,8 @@ function mystic_broken_cram(bp)
 	var min;
 	var ver;
 
+	if (bp.remote_ver === undefined)
+		return false;
 	if (bp.remote_ver.substr(0, 7) !== 'Mystic/')
 		return false;
 	if (bp.wont_crypt)
@@ -909,7 +911,7 @@ function inbound_auth_cb(pwd, bp)
 					 * non-working build.  Hopefully, this is not the case, and this
 					 * block can be removed.
 					 */
-					if (bp.remote_ver === 'Mystic/1.12A39') {
+					if (bp.remote_ver !== undefined && bp.remote_ver === 'Mystic/1.12A39') {
 						log(LOG_INFO, "Checking Mystic pass...");
 						bp.cram.challenge += '\x00\x00\x00';
 						expected = bp.getCRAM('MD5', cpw);
