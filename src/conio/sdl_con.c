@@ -1421,6 +1421,7 @@ static int sdl_mouse_thread(void *data)
 		if(mouse_wait())
 			sdl_add_key(CIO_KEY_MOUSE);
 	}
+	return 0;
 }
 
 static int win_to_text_xpos(int winpos)
