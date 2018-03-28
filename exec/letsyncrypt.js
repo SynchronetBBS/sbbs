@@ -398,7 +398,7 @@ if (renew) {
 	/*
 	 * Now delete/create the keyset with the key and cert
 	 */
-	for (i=0; i < 10; i++) {
+	for (i=0; i < 10 && file_exists(sks_fname); i++) {
 		if (file_remove(sks_fname))
 			break;
 		mswait(100);
