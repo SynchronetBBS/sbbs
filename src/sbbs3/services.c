@@ -1019,6 +1019,7 @@ static void js_service_thread(void* arg)
 		return;
 	}
 
+	service_client.tls_sess = -1;
 	if (service_client.service->options & SERVICE_OPT_TLS) {
 		/* Create and initialize the TLS session */
 		if (!HANDLE_CRYPT_CALL(cryptCreateSession(&service_client.tls_sess, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER), &service_client, "creating session")) {
@@ -1047,12 +1048,12 @@ static void js_service_thread(void* arg)
 
 		HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_NETWORKSOCKET, socket), &service_client, "setting network socket");
 		if (!HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_ACTIVE, 1), &service_client, "setting session active")) {
+			if (service_client.tls_sess != -1)
+				cryptDestroySession(service_client.tls_sess);
 			js_service_failure_cleanup(service, socket);
 			return;
 		}
 	}
-	else
-		service_client.tls_sess = -1;
 
 #if 0	/* Need to export from SBBS.DLL */
 	identity=NULL;
@@ -1085,6 +1086,8 @@ static void js_service_thread(void* arg)
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
 		lprintf(LOG_ERR,"%04d !%s ERROR initializing JavaScript context"
 			,socket,service->protocol);
+		if (service_client.tls_sess != -1)
+			cryptDestroySession(service_client.tls_sess);
 		client_off(socket);
 		close_socket(socket);
 		if(service->clients)
@@ -1131,7 +1134,7 @@ static void js_service_thread(void* arg)
 
 	js_script=JS_CompileFile(js_cx, js_glob, spath);
 
-	if(js_script==NULL) 
+	if(js_script==NULL)
 		lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)",socket,spath);
 	else  {
 		js_PrepareToExecute(js_cx, js_glob, spath, /* startup_dir */NULL, js_glob);
