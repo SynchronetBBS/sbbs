@@ -2272,6 +2272,8 @@ while(1) {
 		parse_command(line);
 	}
 	else {
+		if (!client.socket.is_connected())
+			exit(0);
 		js.gc();
 		waited++;
 		if (waited >= 1800) {
