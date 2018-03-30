@@ -112,6 +112,8 @@ DLLEXPORT unsigned DLLCALL	iniReadEnum(FILE*, const char* section, const char* k
 					,str_list_t names, unsigned deflt);
 DLLEXPORT unsigned* DLLCALL	iniReadEnumList(FILE*, const char* section, const char* key
 					,str_list_t names, unsigned* count, const char* sep, const char* deflt);
+DLLEXPORT int* DLLCALL		iniReadIntList(FILE*, const char* section, const char* key
+					,unsigned* count, const char* sep, const char* deflt);
 DLLEXPORT long DLLCALL		iniReadNamedInt(FILE*, const char* section, const char* key
 					,named_long_t*, long deflt);
 DLLEXPORT ulong DLLCALL		iniReadNamedLongInt(FILE*, const char* section, const char* key
@@ -177,6 +179,8 @@ DLLEXPORT unsigned DLLCALL	iniGetEnum(str_list_t, const char* section, const cha
 					,str_list_t names, unsigned deflt);
 DLLEXPORT unsigned* DLLCALL	iniGetEnumList(str_list_t, const char* section, const char* key
 					,str_list_t names, unsigned* count, const char* sep, const char* deflt);
+DLLEXPORT int* DLLCALL		iniGetIntList(str_list_t, const char* section, const char* key
+					,unsigned* count, const char* sep, const char* deflt);
 DLLEXPORT long DLLCALL		iniGetNamedInt(str_list_t, const char* section, const char* key
 					,named_long_t*, long deflt);
 DLLEXPORT ulong DLLCALL		iniGetNamedLongInt(str_list_t, const char* section, const char* key
@@ -248,6 +252,8 @@ DLLEXPORT char* DLLCALL		iniSetBitField(str_list_t*, const char* section, const 
 DLLEXPORT char* DLLCALL		iniSetStringList(str_list_t*, const char* section, const char* key
 					,const char* sep, str_list_t value, ini_style_t*);
 #define		iniSetLogLevel(l,s,k,v,style) iniSetEnum(l,s,k,iniLogLevelStringList(),v,style)
+DLLEXPORT char*	DLLCALL		iniSetIntList(str_list_t*, const char* section, const char* key
+					,const char* sep, int* value, unsigned count, ini_style_t*);
 
 DLLEXPORT size_t DLLCALL		iniAddSection(str_list_t*, const char* section
 					,ini_style_t*);
@@ -270,6 +276,7 @@ DLLEXPORT BOOL DLLCALL		iniRenameSection(str_list_t*, const char* section, const
  * Too handy to leave internal
  */
 DLLEXPORT unsigned* DLLCALL parseEnumList(const char* values, const char* sep, str_list_t names, unsigned* count);
+DLLEXPORT int*		DLLCALL parseIntList(const char* values, const char* sep, unsigned* count);
 
 #if defined(__cplusplus)
 }

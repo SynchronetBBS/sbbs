@@ -828,6 +828,26 @@ char* DLLCALL iniSetStringList(str_list_t* list, const char* section, const char
 	return iniSetString(list, section, key, strListCombine(val_list, value, sizeof(value), sep), style);
 }
 
+char* DLLCALL iniSetIntList(str_list_t* list, const char* section, const char* key
+					,const char* sep, int* val_list, unsigned count, ini_style_t* style)
+{
+	char	value[INI_MAX_VALUE_LEN];
+
+	if(sep == NULL)
+		sep = ",";
+	for(unsigned i = 0; i < count; i++) {
+		if(i) {
+			int len = strlen(value);
+			if(len > INI_MAX_VALUE_LEN - 20)
+				return NULL;
+			sprintf(value + len, "%s%d", sep, *(val_list + i));
+		} else
+			sprintf(value, "%d", *val_list);
+	}
+
+	return iniSetString(list, section, key, value, style);
+}
+
 static char* default_value(const char* deflt, char* value)
 {
 	if(deflt!=NULL && deflt!=value && value!=NULL)
@@ -2197,6 +2217,79 @@ ulong DLLCALL iniGetBitField(str_list_t list, const char* section, const char* k
 		return(deflt);
 
 	return(parseBitField(vp,bitdesc));
+}
+
+int* DLLCALL parseIntList(const char* values, const char* sep, unsigned* count)
+{
+	char*		vals;
+	str_list_t	list;
+	int*		int_list;
+	size_t		i;
+
+	*count = 0;
+
+	if(values == NULL)
+		return NULL;
+
+	if((vals = strdup(values)) == NULL)
+		return NULL;
+
+	list = splitList(vals, sep);
+
+	free(vals);
+
+	if((*count = strListCount(list)) < 1) {
+		strListFree(&list);
+		return NULL;
+	}
+
+	if((int_list = malloc((*count)*sizeof(int))) != NULL) {
+		for(i = 0; i < *count; i++)
+			int_list[i] = atoi(list[i]);
+	}
+
+	strListFree(&list);
+
+	return int_list;
+}
+
+int* DLLCALL iniGetIntList(str_list_t list, const char* section, const char* key
+						 ,unsigned* cp, const char* sep, const char* deflt)
+{
+	char*		vp=NULL;
+	unsigned	count;
+
+	if(cp == NULL)
+		cp = &count;
+
+	*cp=0;
+
+	get_value(list, section, key, NULL, &vp, /* literals_supported: */FALSE);
+
+	if(vp == NULL || *vp == 0 /* blank value or missing key */) {
+		if(deflt == NULL)
+			return NULL;
+		vp = (char*)deflt;
+	}
+	return parseIntList(vp, sep, cp);
+}
+
+int* DLLCALL iniReadIntList(FILE* fp, const char* section, const char* key
+						 ,unsigned* cp, const char* sep, const char* deflt)
+{
+	char*		value;
+	char		buf[INI_MAX_VALUE_LEN];
+	unsigned	count;
+
+	if(cp == NULL)
+		cp = &count;
+
+	*cp = 0;
+
+	if((value = read_value(fp, section, key, buf, /* literals_supported: */FALSE)) == NULL || *value == 0 /* blank */)
+		value = (char*)deflt;
+
+	return parseIntList(value, sep, cp);
 }
 
 FILE* DLLCALL iniOpenFile(const char* fname, BOOL create)
