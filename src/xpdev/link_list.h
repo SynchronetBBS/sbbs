@@ -110,7 +110,7 @@ DLLEXPORT BOOL	DLLCALL	listSemTryWaitBlock(link_list_t*, unsigned long timeout);
 #endif
 
 /* Lock/unlock linked lists (works best for mutex-protected lists) */
-/* Locks are recusive (e.g. must call Unlock for each call to Lock */
+/* Locks are recursive (e.g. must call Unlock for each call to Lock */
 DLLEXPORT BOOL	DLLCALL	listLock(link_list_t*);
 DLLEXPORT BOOL	DLLCALL	listUnlock(link_list_t*);
 DLLEXPORT BOOL	DLLCALL	listIsLocked(const link_list_t*);
