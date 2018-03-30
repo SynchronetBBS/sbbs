@@ -1175,6 +1175,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 	int ret;
 	int i;
 	char *estr;
+	BOOL first = TRUE;
 
 	if(ftp_set==NULL || terminate_server) {
 		sockprintf(sock,sess,"421 Server downed, aborting.");
@@ -1193,8 +1194,11 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 				case CRYPT_OK:
 					break;
 				case CRYPT_ERROR_TIMEOUT:
-					GCES(ret, sock, sess, estr, "popping data");
-					return -1;
+					if (!first) {
+						GCES(ret, sock, sess, estr, "popping data");
+						return -1;
+					}
+					break;
 				case CRYPT_ERROR_COMPLETE:
 					return 0;
 				default:
@@ -1203,6 +1207,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 						return ret;
 					return -2;
 			}
+			first = FALSE;
 			if (len)
 				return len;
 			
@@ -1256,7 +1261,6 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 					}
 					continue;
 				}
-				recverror(sock,i,__LINE__);
 				return(i);
 			}
 	#ifdef SOCKET_DEBUG_RECV_CHAR
@@ -1286,8 +1290,9 @@ int sockreadline(SOCKET socket, CRYPT_SESSION sess, char* buf, int len, time_t* 
 	while(rd<len-1) {
 		i = sock_recvbyte(socket, sess, &ch, lastactive);
 
-		if(i<1 && sess == -1) {
-			recverror(socket,i,__LINE__);
+		if(i<1) {
+			if (sess != -1)
+				recverror(socket,i,__LINE__);
 			return(i);
 		}
 		if(ch=='\n' /* && rd>=1 */) { /* Mar-9-2003: terminate on sole LF */
