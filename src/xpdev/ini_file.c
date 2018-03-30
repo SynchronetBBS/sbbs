@@ -831,11 +831,12 @@ char* DLLCALL iniSetStringList(str_list_t* list, const char* section, const char
 char* DLLCALL iniSetIntList(str_list_t* list, const char* section, const char* key
 					,const char* sep, int* val_list, unsigned count, ini_style_t* style)
 {
+	unsigned i;
 	char	value[INI_MAX_VALUE_LEN];
 
 	if(sep == NULL)
 		sep = ",";
-	for(unsigned i = 0; i < count; i++) {
+	for(i = 0; i < count; i++) {
 		if(i) {
 			int len = strlen(value);
 			if(len > INI_MAX_VALUE_LEN - 20)
