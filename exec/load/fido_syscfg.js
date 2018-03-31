@@ -1,14 +1,14 @@
 /*
- * Parse as much as needed from the SBBSEcho conifguration.
- * v2 uses sbbsecho.cfg and v3 uses sbbsecho.ini.
+ * Parse as much as needed from the SBBSecho configuration.
+ * v3+ uses sbbsecho.ini.
  *
  * SBBSEchoCfg Properties:
  * inbound			non-secure default inbound directory path
- *					TODO: SBBSEcho supports per-node inbound via fileboxes... a method to get the inbound for a node should exist
+ *					TODO: SBBSecho supports per-node inbound via fileboxes... a method to get the inbound for a node should exist
  * secure_inbound	secure inbound directory path
- *					TODO: SBBSEcho supports per-node inbound via fileboxes... a method to get the inbound for a node should exist
+ *					TODO: SBBSecho supports per-node inbound via fileboxes... a method to get the inbound for a node should exist
  * outbound			default oubound path, may end with a path separator
- *					TODO: SBBSEcho supports per-node outbound via fileboxes... a method to get the outbound for a node should exist
+ *					TODO: SBBSecho supports per-node outbound via fileboxes... a method to get the outbound for a node should exist
  * is_flow			boolean indicating it is a FLO style mailer... most things will require this to be true
  * pktpass{}		object with a separate property for each node addres (wildcards included as "ALL").
  *					Should be accessed using get_pw() and match_pw() methods.
@@ -19,7 +19,6 @@
  */
 function SBBSEchoCfg ()
 {
-	var ecfg = new File(system.ctrl_dir+'sbbsecho.cfg');
 	var line;
 	var m;
 
@@ -31,76 +30,32 @@ function SBBSEchoCfg ()
 	this.outbound = undefined;
 	var packer = undefined;
 
-	if (!ecfg.open("r")) {
-		ecfg = new File(system.ctrl_dir+'sbbsecho.ini');
-		if (!ecfg.open("r"))
-			throw("Unable to open '"+ecfg.name+"'");
+	ecfg = new File(file_cfgname(system.ctrl_dir, 'sbbsecho.ini'));
+	if (!ecfg.open("r"))
+		throw("Unable to open '"+ecfg.name+"'");
 
-		this.inbound = backslash(ecfg.iniGetValue(null, "Inbound", "../fido/nonsecure"));
-		if (this.inbound !== null)
-			this.inb.push(this.inbound);
-		this.secure_inbound = backslash(ecfg.iniGetValue(null, "SecureInbound", "../fido/inbound"));
-		if (this.secure_inbound !== null)
-			this.inb.push(this.secure_inbound);
-		this.outbound = ecfg.iniGetValue(null, "Outbound", "../fido/outbound");
-		this.is_flo = ecfg.iniGetValue(null, "BinkleyStyleOutbound", false);
-		ecfg.iniGetSections('node:').forEach(function(section) {
-			this.pktpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'PacketPwd', '');
-		}, this);
-		ecfg.iniGetSections('node:').forEach(function(section) {
-			this.ticpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'TicFilePwd', '');
-		}, this);
-		ecfg.iniGetSections('archive:').forEach(function(packer) {
-			this.packer[packer] = {};
-			this.packer[packer].offset = ecfg.iniGetValue(packer, 'SigOffset', 0);
-			this.packer[packer].sig = ecfg.iniGetValue(packer, 'Sig', '');
-			this.packer[packer].pack = ecfg.iniGetValue(packer, 'Pack', '');
-			this.packer[packer].unpack = ecfg.iniGetValue(packer, 'Unpack', '');
-		}, this);
-	}
-	else {
-		while ((line=ecfg.readln(65535)) != undefined) {
-			if (packer !== undefined) {
-				if ((m = line.match(/^\s*PACK\s+(.*)$/i)) !== null)
-					this.packer[packer].pack = m[1];
-				if ((m = line.match(/^\s*UNPACK\s+(.*)$/i)) !== null)
-					this.packer[packer].unpack = m[1];
-				if (line.search(/^\s*END\s*$/i) != -1)
-					packer = undefined;
-			}
-			else {
-				m = line.match(/^\s*(secure_|)inbound\s+(.*)$/i);
-				if (m !== null) {
-					this.inb.push(backslash(m[2]));
-					this[m[1].toLowerCase()+'inbound'] = m[2];
-				}
+	this.inbound = backslash(ecfg.iniGetValue(null, "Inbound", "../fido/nonsecure"));
+	if (this.inbound !== null)
+		this.inb.push(this.inbound);
+	this.secure_inbound = backslash(ecfg.iniGetValue(null, "SecureInbound", "../fido/inbound"));
+	if (this.secure_inbound !== null)
+		this.inb.push(this.secure_inbound);
+	this.outbound = ecfg.iniGetValue(null, "Outbound", "../fido/outbound");
+	this.is_flo = ecfg.iniGetValue(null, "BinkleyStyleOutbound", false);
+	ecfg.iniGetSections('node:').forEach(function(section) {
+		this.pktpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'PacketPwd', '');
+	}, this);
+	ecfg.iniGetSections('node:').forEach(function(section) {
+		this.ticpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'TicFilePwd', '');
+	}, this);
+	ecfg.iniGetSections('archive:').forEach(function(packer) {
+		this.packer[packer] = {};
+		this.packer[packer].offset = ecfg.iniGetValue(packer, 'SigOffset', 0);
+		this.packer[packer].sig = ecfg.iniGetValue(packer, 'Sig', '');
+		this.packer[packer].pack = ecfg.iniGetValue(packer, 'Pack', '');
+		this.packer[packer].unpack = ecfg.iniGetValue(packer, 'Unpack', '');
+	}, this);
 
-				m = line.match(/^\s*pktpwd\s+(.*?)\s+(.*)\s*$/i);
-				if (m !== null)
-					this.pktpass[m[1].toUpperCase()] = m[2].toUpperCase();
-
-				m = line.match(/^\s*ticpwd\s+(.*?)\s+(.*)\s*$/i);
-				if (m !== null)
-					this.ticpass[m[1].toUpperCase()] = m[2].toUpperCase();
-
-				m = line.match(/^\s*outbound\s+(.*?)\s*$/i);
-				if (m !== null)
-					this.outbound = m[1];
-
-				m = line.match(/^\s*flo_mailer\s*$/i);
-				if (m !== null)
-					this.is_flo = true;
-
-				m = line.match(/^\s*packer\s+([^\s]+)\s+([0-9]+)\s+([0-9a-f]+)\s*$/i);
-				if (m !== null) {
-					packer = m[1];
-					this.packer[packer] = {};
-					this.packer[packer].offset = parseInt(m[2]);
-					this.packer[packer].sig = m[3].toUpperCase();
-				}
-			}
-		}
-	}
 	ecfg.close();
 }
 SBBSEchoCfg.prototype.get_ticpw = function(node)
@@ -179,9 +134,10 @@ SBBSEchoCfg.prototype.match_pw = function(node, pw)
 
 function FTNDomains()
 {
-	var f = new File(system.ctrl_dir+'ftn_domains.ini');
+	var f = new File(file_cfgname(system.ctrl_dir, 'sbbsecho.ini'));
 	var used_zones = {};
 	var ecfg = new SBBSEchoCfg();
+	var domains;
 
 	if (f.open("r")) {
 		this.domainMap = {};
@@ -189,8 +145,8 @@ function FTNDomains()
 		this.outboundMap = {};
 		this.nodeListFN = {};
 		this.nodeList = {};
-		var domains = f.iniGetSections().forEach(function(domain) {
-			var d = domain.toLowerCase().substr(0,8);
+		domains = f.iniGetSections("domain:").forEach(function(domain) {
+			var d = domain.toLowerCase().substr(7);
 			var zones = f.iniGetValue(domain, 'Zones', '');
 			if (zones != undefined) {
 				zones.split(/\s*,\s*/).forEach(function(zone) {
@@ -213,7 +169,7 @@ function FTNDomains()
 		}, this);
 		f.close();
 	}
-	else {
+	if(!domains) {
 		this.outboundMap = {
 			'fidonet':ecfg.outbound.replace(/[\\\/]$/, '')
 		};

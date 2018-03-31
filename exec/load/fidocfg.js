@@ -318,7 +318,7 @@ FREQITCfg.prototype.save = function()
 
 function BinkITCfg()
 {
-	var f=new File(system.ctrl_dir+'binkit.ini');
+	var f=new File(file_cfgname(system.ctrl_dir, 'sbbsecho.ini'));
 	var sects;
 
 	this.node = {};
@@ -326,20 +326,24 @@ function BinkITCfg()
 		log(LOG_ERROR, "Unable to open '"+f.name+"'");
 	}
 	else {
-		this.caps = f.iniGetValue(null, 'Capabilities');
-		this.sysop = f.iniGetValue(null, 'Sysop', system.operator);
-		sects = f.iniGetSections();
+		this.caps = f.iniGetValue('BinkP', 'Capabilities');
+		this.sysop = f.iniGetValue('BinkP', 'Sysop', system.operator);
+		sects = f.iniGetSections('node:');
 		sects.forEach(function(section) {
-			var sec = new FIDO.parse_addr(section.toLowerCase(), 1, 'fidonet');
-
+			var addr = section.substr(5);
+			try {
+			var sec = new FIDO.parse_addr(section.substr(5).toLowerCase(), 1, 'fidonet');
+			} catch(e) {
+				return;		// Ignore addresses with wildcards (e.g. 'ALL')
+			}
 			this.node[sec] = {};
-			this.node[sec].pass = f.iniGetValue(section, 'Password');
-			this.node[sec].nomd5 = f.iniGetValue(section, 'AllowPlainPassword', false);
-			this.node[sec].nocrypt = f.iniGetValue(section, 'AllowUnencrypted', false);
-			this.node[sec].poll = f.iniGetValue(section, 'Poll', false);
-			this.node[sec].port = f.iniGetValue(section, 'Port');
-			this.node[sec].src = f.iniGetValue(section, 'SourceAddress');
-			this.node[sec].host = f.iniGetValue(section, 'Host');
+			this.node[sec].pass = f.iniGetValue(section, 'SessionPwd');
+			this.node[sec].nomd5 = f.iniGetValue(section, 'BinkpAllowPlainAuth', false);
+			this.node[sec].nocrypt = f.iniGetValue(section, 'BinkpAllowPlainText', false);
+			this.node[sec].poll = f.iniGetValue(section, 'BinkpPoll', false);
+			this.node[sec].port = f.iniGetValue(section, 'BinkpPort');
+			this.node[sec].src = f.iniGetValue(section, 'BinkpSourceAddress');
+			this.node[sec].host = f.iniGetValue(section, 'BinkpHost');
 		}, this);
 		f.close();
 	}
