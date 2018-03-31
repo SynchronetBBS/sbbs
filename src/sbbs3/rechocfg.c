@@ -221,7 +221,6 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->delete_netmail				= true;
 	cfg->echomail_notify			= true;
 	cfg->kill_empty_netmail			= true;
-	cfg->use_ftn_domains			= false;
 	cfg->strict_packet_passwords	= true;
 	cfg->relay_filtered_msgs		= false;
 	cfg->umask						= 077;
@@ -238,6 +237,11 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	FILE*		fp;
 	str_list_t	ini;
 	char		value[INI_MAX_VALUE_LEN];
+
+	for(unsigned i = 0; i < cfg->domain_count; i++) {
+		FREE_AND_NULL(cfg->domain_list[i].zone_list);
+		cfg->domain_list[i].zone_count = 0;
+	}
 
 	get_default_echocfg(cfg);
 
@@ -266,7 +270,6 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->bsy_timeout			= (ulong)iniGetDuration(ini, ROOT_SECTION, "BsyTimeout", cfg->bsy_timeout);
 	cfg->bso_lock_attempts		= iniGetLongInt(ini, ROOT_SECTION, "BsoLockAttempts", cfg->bso_lock_attempts);
 	cfg->bso_lock_delay			= (ulong)iniGetDuration(ini, ROOT_SECTION, "BsoLockDelay", cfg->bso_lock_delay);
-	cfg->use_ftn_domains		= iniGetBool(ini, ROOT_SECTION, "UseFTNDomains", cfg->use_ftn_domains);
 	cfg->strict_packet_passwords= iniGetBool(ini, ROOT_SECTION, "StrictPacketPasswords", cfg->strict_packet_passwords);
 	cfg->relay_filtered_msgs	= iniGetBool(ini, ROOT_SECTION, "RelayFilteredMsgs", cfg->relay_filtered_msgs);
 	cfg->umask					= iniGetInteger(ini, ROOT_SECTION, "umask", cfg->umask);
@@ -301,6 +304,10 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->delete_netmail				= iniGetBool(ini, ROOT_SECTION, "DeleteNetmail", cfg->delete_netmail);
 	cfg->delete_packets				= iniGetBool(ini, ROOT_SECTION, "DeletePackets", cfg->delete_packets);
 	cfg->max_netmail_age			= (ulong)iniGetDuration(ini, ROOT_SECTION, "MaxNetmailAge", cfg->max_netmail_age);
+
+	/* BinkP options: */
+	SAFECOPY(cfg->binkp_caps, iniGetString(ini, "BinkP", "Capabilities", "", value));
+	SAFECOPY(cfg->binkp_sysop, iniGetString(ini, "BinkP", "Sysop", "", value));
 
 	/******************/
 	/* Archive Types: */
@@ -339,10 +346,14 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		nodecfg_t* ncfg = &cfg->nodecfg[cfg->nodecfgs++];
 		memset(ncfg, 0, sizeof(nodecfg_t));
 		ncfg->addr = atofaddr(node+5);
+		char* domain = strchr(node+5, '@');
+		if(domain != NULL)
+			SAFECOPY(ncfg->domain, domain + 1);
 		if(iniGetString(ini, node, "route", NULL, value) != NULL && value[0])
 			ncfg->route = atofaddr(value);
 		SAFECOPY(ncfg->password	, iniGetString(ini, node, "AreaFixPwd", "", value));
 		SAFECOPY(ncfg->pktpwd	, iniGetString(ini, node, "PacketPwd", "", value));
+		SAFECOPY(ncfg->sesspwd	, iniGetString(ini, node, "SessionPwd", "", value));
 		SAFECOPY(ncfg->ticpwd	, iniGetString(ini, node, "TicFilePwd", "", value));
 		SAFECOPY(ncfg->name		, iniGetString(ini, node, "Name", "", value));
 		SAFECOPY(ncfg->comment	, iniGetString(ini, node, "Comment", "", value));
@@ -379,6 +390,13 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 				break;
 			}
 		}
+		/* BinkP settings */
+		SAFECOPY(ncfg->binkp_src	, iniGetString(ini, node, "BinkpSourceAddress", "", value));
+		SAFECOPY(ncfg->binkp_host	, iniGetString(ini, node, "BinkpHost", "", value));
+		ncfg->binkp_port			= iniGetShortInt(ini, node, "BinkpPort", 24554);
+		ncfg->binkp_poll			= iniGetBool(ini, node, "BinkpPoll", FALSE);
+		ncfg->binkp_allowPlainAuth	= iniGetBool(ini, node, "BinkpAllowPlainAuth", FALSE);
+		ncfg->binkp_allowPlainText	= iniGetBool(ini, node, "BinkpAllowPlainText", FALSE);
 	}
 	strListFree(&nodelist);
 
@@ -406,6 +424,28 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	}
 	strListFree(&echolists);
 
+	/***********/
+	/* Domains */
+	/***********/
+	str_list_t domains = iniGetSectionList(ini, "domain:");
+	cfg->domain_count = strListCount(domains);
+	if((cfg->domain_list = realloc(cfg->domain_list, sizeof(struct fido_domain)*cfg->domain_count)) == NULL) {
+		strListFree(&domains);
+		return false;
+	}
+	cfg->domain_count = 0;
+	char* domain;
+	while((domain = strListRemove(&domains, 0)) != NULL) {
+		struct fido_domain* dom = &cfg->domain_list[cfg->domain_count++];
+		memset(dom, 0, sizeof(*dom));
+		dom->zone_list = iniGetIntList(ini, domain, "Zones", &dom->zone_count, ",", NULL);
+		SAFECOPY(dom->name, domain + 7);
+		SAFECOPY(dom->root, iniGetString(ini, domain, "OutboundRoot", cfg->outbound, value));
+		SAFECOPY(dom->nodelist, iniGetString(ini, domain, "NodeList", "", value));
+		SAFECOPY(dom->dns_suffix, iniGetString(ini, domain, "DNSSuffix", "", value));
+	}
+	strListFree(&domains);
+
 	/* make sure we have some sane "maximum" size values here: */
 	if(cfg->maxpktsize<1024)
 		cfg->maxpktsize=DFLT_PKT_SIZE;
@@ -414,59 +454,6 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 
 	strListFree(&ini);
 
-	return true;
-}
-
-bool sbbsecho_read_ftn_domains(sbbsecho_cfg_t* cfg, const char * ctrl_dir)
-{
-	FILE*		fp;
-	str_list_t	ini;
-	char		path[MAX_PATH+1];
-	str_list_t	domains;
-	const char *	domain;
-	str_list_t	zones;
-	const char *	zone;
-	struct zone_mapping * mapping;
-	struct zone_mapping * old_mapping;
-
-	// First, free any old mappings...
-	for (mapping = cfg->zone_map; mapping;) {
-		FREE_AND_NULL(mapping->domain);
-		FREE_AND_NULL(mapping->root);
-		old_mapping = mapping;
-		mapping = old_mapping->next;
-		FREE_AND_NULL(old_mapping);
-	}
-	cfg->zone_map = NULL;
-
-	if(cfg->use_ftn_domains) {
-		SAFEPRINTF(path, "%sftn_domains.ini", ctrl_dir);
-		if((fp=iniOpenFile(path, /* create: */false))==NULL)
-			return false;
-		ini = iniReadFile(fp);
-		iniCloseFile(fp);
-		domains = iniGetSectionList(ini, NULL);
-		while((domain = strListRemove(&domains, 0)) != NULL) {
-			zones = iniGetStringList(ini, domain, "Zones", ",", NULL);
-			while((zone = strListRemove(&zones, 0)) != NULL) {
-				mapping = (struct zone_mapping *)malloc(sizeof(struct zone_mapping));
-
-				if (mapping == NULL) {
-					strListFree(&zones);
-					strListFree(&domains);
-					return false;
-				}
-				mapping->zone = (uint16_t)strtol(zone, NULL, 10);
-				mapping->domain = strdup(domain);
-				mapping->root = strdup(iniGetString(ini, domain, "OutboundRoot", cfg->outbound, path));
-				mapping->next = cfg->zone_map;
-				cfg->zone_map = mapping;
-			}
-			strListFree(&zones);
-		}
-		strListFree(&domains);
-		strListFree(&ini);
-	}
 	return true;
 }
 
@@ -538,9 +525,13 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailLocalAttr"	,cfg->ignore_netmail_local_attr	,NULL);
 	iniSetString(&ini,		ROOT_SECTION, "DefaultRecipient"		,cfg->default_recipient			,NULL);
 
-	iniSetBool(&ini,		ROOT_SECTION, "UseFTNDomains"			,cfg->use_ftn_domains			,NULL);
-
 	style.key_prefix = "\t";
+
+	/******************/
+	/* BinkP Settings */
+	/******************/
+	iniSetString(&ini,		"BinkP"	,	"Capabilities"				,cfg->binkp_caps				,&style);
+	iniSetString(&ini,		"BinkP"	,	"Sysop"						,cfg->binkp_sysop				,&style);
 
 	/******************/
 	/* Archive Types: */
@@ -564,6 +555,8 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	for(uint i=0; i<cfg->nodecfgs; i++) {
 		nodecfg_t*	node = &cfg->nodecfg[i];
 		SAFEPRINTF(section,"node:%s", faddrtoa(&node->addr));
+		if(node->domain[0])
+			sprintf(section + strlen(section), "@%s", node->domain);
 		iniSetString(&ini	,section,	"Name"			,node->name			,&style);
 		iniSetString(&ini	,section,	"Comment"		,node->comment		,&style);
 		iniSetString(&ini	,section,	"Archive"		,node->archive == SBBSECHO_ARCHIVE_NONE ? "None" : node->archive->name, &style);
@@ -571,6 +564,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		iniSetString(&ini	,section,	"PacketPwd"		,node->pktpwd		,&style);
 		iniSetBool(&ini		,section,	"AreaFix"		,node->areafix		,&style);
 		iniSetString(&ini	,section,	"AreaFixPwd"	,node->password		,&style);
+		iniSetString(&ini	,section,	"SessionPwd"	,node->sesspwd		,&style);
 		iniSetString(&ini	,section,	"TicFilePwd"	,node->ticpwd		,&style);
 		iniSetString(&ini	,section,	"Inbox"			,node->inbox		,&style);
 		iniSetString(&ini	,section,	"Outbox"		,node->outbox		,&style);
@@ -584,6 +578,13 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		else
 			iniRemoveKey(&ini,section,	"Route");
 		iniSetStringList(&ini, section, "GroupHub", ","	,node->grphub		,&style);
+		/* BinkP-related */
+		iniSetString(&ini	,section,	"BinkpHost"		,node->binkp_host	,&style);
+		iniSetShortInt(&ini	,section,	"BinkpPort"		,node->binkp_port	,&style);
+		iniSetBool(&ini		,section,	"BinkpPoll"		,node->binkp_poll	,&style);
+		iniSetBool(&ini		,section,	"BinkpAllowPlainAuth",node->binkp_allowPlainAuth, &style);
+		iniSetBool(&ini		,section,	"BinkpAllowPlainText",node->binkp_allowPlainText, &style);
+		iniSetString(&ini	,section,	"BinkpSourceAddress",node->binkp_src, &style);
 	}
 
 	/**************/
@@ -600,6 +601,20 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		iniSetString(&ini	,section,	"Pwd"		,elist->password					,&style);
 		iniSetBool(&ini		,section,	"Fwd"		,elist->forward						,&style);
 		iniSetStringList(&ini,section,	"Keys", ","	,elist->keys						,&style);
+	}
+
+	/* Domains */
+	iniRemoveSections(&ini, "domain:");
+	for(unsigned i=0; i < cfg->domain_count; i++) {
+		struct fido_domain* dom = &cfg->domain_list[i];
+		if(dom->name[0] == 0)
+			continue;
+		SAFEPRINTF(section, "domain:%s", dom->name);
+		iniSetIntList(&ini,	section,	"Zones", ",",	dom->zone_list, dom->zone_count, &style);
+		iniSetString(&ini,	section,	"DNSSuffix",	dom->dns_suffix, &style);
+		if(strcmp(cfg->outbound, dom->root) != 0)
+			iniSetString(&ini,	section,	"OutboundRoot",	dom->root, &style);
+		iniSetString(&ini,	section,	"NodeList",		dom->nodelist, &style);
 	}
 
 	iniWriteFile(fp, ini);

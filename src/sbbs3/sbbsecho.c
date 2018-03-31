@@ -147,28 +147,20 @@ const char default_domain[] = "fidonet";
 
 const char* zone_domain(uint16_t zone)
 {
-	struct zone_mapping *i;
-
-	if (!cfg.use_ftn_domains)
-		return default_domain;
-
-	for (i=cfg.zone_map; i; i=i->next)
-		if (i->zone == zone)
-			return i->domain;
+	for(unsigned i = 0; i < cfg.domain_count; i++)
+		for(unsigned j = 0; j < cfg.domain_list[i].zone_count; j++)
+			if(cfg.domain_list[i].zone_list[j] == zone)
+				return cfg.domain_list[i].name;
 
 	return default_domain;
 }
 
 const char* zone_root_outbound(uint16_t zone)
 {
-	struct zone_mapping *i;
-
-	if (!cfg.use_ftn_domains)
-		return cfg.outbound;
-
-	for (i=cfg.zone_map; i; i=i->next)
-		if (i->zone == zone)
-			return i->root;
+	for(unsigned i = 0; i < cfg.domain_count; i++)
+		for(unsigned j = 0; j < cfg.domain_list[i].zone_count; j++)
+			if(cfg.domain_list[i].zone_list[j] == zone)
+				return cfg.domain_list[i].root;
 
 	return cfg.outbound;
 }
@@ -6085,11 +6077,6 @@ int main(int argc, char **argv)
 
 	if(!sbbsecho_read_ini(&cfg)) {
 		fprintf(stderr, "ERROR %d (%s) reading %s\n", errno, strerror(errno), cfg.cfgfile);
-		bail(1);
-	}
-
-	if(!sbbsecho_read_ftn_domains(&cfg, scfg.ctrl_dir)) {
-		fprintf(stderr, "ERROR %d (%s) reading %sftn_domains.ini\n", errno, strerror(errno), scfg.ctrl_dir);
 		bail(1);
 	}
 
