@@ -1,6 +1,5 @@
 <!--User List-->
 <?xjs
-	if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 
 	var pageSize = 500;
 
@@ -37,7 +36,7 @@
 		http_request.host,
 		http_request.request_string.split("&")[0]
 	);
-	
+
 	function sortUser(a, b, sortOrder, type) {
 		if (type === 'string') {
 			a = a.toUpperCase();
@@ -81,7 +80,7 @@
 		}
 		return ret;
 	}
-	
+
 	function makeSortURLs(field, order) {
 		return format(
 			'<a class="icon" ' +
@@ -121,7 +120,7 @@
 		}
 		return ret;
 	}
-	
+
 	function copyProperties(source, dest) {
 		for (var property in source) {
 			if ((	typeof source[property] === 'string' ||

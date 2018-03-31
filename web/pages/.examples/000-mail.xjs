@@ -2,7 +2,6 @@
 
 <?xjs
 
-if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 if (user.number == 0 || user.alias == settings.guest) exit();
 
 load('sbbsdefs.js');
@@ -30,12 +29,12 @@ function sent() {
 				</div>
 			</div>
 			<div class="col-sm-11" style="cursor:pointer;" onclick="getMailBody(<?xjs write(header.number); ?>)">
-				<?xjs write(!sent() ? _mpl.label_message_from : _mpl.label_message_to); ?>: 
-				<strong><?xjs write(!sent() ? header.from : header.to); ?></strong> 
+				<?xjs write(!sent() ? _mpl.label_message_from : _mpl.label_message_to); ?>:
+				<strong><?xjs write(!sent() ? header.from : header.to); ?></strong>
 				<?xjs write(_mpl.label_message_date); ?>
 				<?xjs write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
 				<p>
-					<?xjs write(_mpl.label_message_subject); ?>: 
+					<?xjs write(_mpl.label_message_subject); ?>:
 					<strong><?xjs write(header.subject); ?></strong>
 				</p>
 			</div>

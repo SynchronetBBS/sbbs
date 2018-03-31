@@ -1,7 +1,6 @@
 <!--Files-->
 
 <?xjs
-	if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 	load(system.exec_dir + '../web/lib/init.js');
 	load(settings.web_lib + 'files.js');
 
@@ -73,8 +72,8 @@
 		<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;dir=<?xjs write(dir.dir.code); ?>" class="list-group-item striped">
 			<h4><strong><?xjs write(dir.dir.name); ?></strong></h4>
 			<p>
-				<?xjs write(dir.dir.description); ?>: 
-				<?xjs write(dir.fileCount); ?> 
+				<?xjs write(dir.dir.description); ?>:
+				<?xjs write(dir.fileCount); ?>
 				<?xjs write(dir.fileCount === 1 ? _fpl.stat_suffix_file : _fpl.stat_suffix_files); ?>
 			</p>
 		</a>
@@ -98,8 +97,8 @@
 		<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;library=<?xjs write(library.index); ?>" class="list-group-item striped">
 			<h3><strong><?xjs write(library.name); ?></strong></h3>
 			<p>
-				<?xjs write(library.description); ?>: 
-				<?xjs write(library.dir_list.length); ?> 
+				<?xjs write(library.description); ?>:
+				<?xjs write(library.dir_list.length); ?>
 				<?xjs write(library.dir_list.length === 1 ? _fpl.stat_suffix_directory : _fpl.stat_suffix_directories); ?>
 			</p>
 		</a>

@@ -27,9 +27,7 @@ function webCtrlTest(ini, filename) {
 
 function getCtrlLine(file) {
 
-	if (fullpath(file).indexOf(fullpath(settings.web_root + '/pages')) !== 0) {
-		return;
-	}
+	if (fullpath(file).indexOf(fullpath(settings.web_pages)) !== 0) return;
 
 	var f = new File(file);
 	var ctrl = '';
@@ -80,9 +78,7 @@ function getCtrlLine(file) {
 function getPageList(dir) {
 
 	dir = backslash(fullpath(dir));
-	if (dir.indexOf(backslash(fullpath(settings.web_root + '/pages'))) !== 0) {
-		return {};
-	}
+	if (dir.indexOf(settings.web_pages) !== 0) return {};
 
 	var webctrl = getWebCtrl(dir);
 
@@ -91,6 +87,7 @@ function getPageList(dir) {
 		function (e) {
 			if (file_isdir(e)) {
 				e = fullpath(e);
+                if (e.search(/\.examples.$/) > -1) return;
 				var list = getPageList(e);
 				if (Object.keys(list).length > 0) {
 					pages[e.split(e.substr(-1, 1)).slice(-2, -1)] = list;
@@ -116,7 +113,7 @@ function getPage(page) {
 
 	var ret = '';
 
-	page = settings.web_root + 'pages/' + page;
+	page = settings.web_pages + page;
 
 	if (!file_exists(page)) return ret;
 
