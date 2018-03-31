@@ -49,12 +49,16 @@ A web interface for Synchronet BBS
 	maximum_telegram_length = 800
 	; Where (absolute or relative to 'exec') the 'lib' and 'root' directories live
 	web_directory = ../web
+    ; Path to a .ans file to use as the ftelnet splash screen
+    ftelnet_splash = ../text/synch.ans
 	; Enable or disable keyboard navigation in message threads
 	keyboard_navigation = false
 	; Display upvote/downvote buttons in message threads (3.17)
 	vote_functions = true
 	; Refresh nodelist, vote counts, etc. this often (in milliseconds)
 	refresh_interval = 60000
+    ; External Programs (or entire sections) to exclude from the Games page
+    xtrn_blacklist = scfg,oneliner
 	; Disable the sidebar altogether
 	layout_sidebar_off = false
 	; Place the sidebar on the left-hand side of the page
@@ -70,6 +74,7 @@ A web interface for Synchronet BBS
 ### Configuration
 
 - Ensure that the *guest* user specified in the [web] section of *ctrl/modopts.ini* exists and has only the permissions that you want an unauthenticated visitor from the web to have.  This user probably shouldn't be able to post messages, and definitely shouldn't be able to post to networked message areas.
+- Customise the *xtrn_blacklist* setting in the [web] section of *ctrl/modopts.ini*.  This is a comma-separated list of *internal codes* of any programs (or Online Program Sections) that you wish to *exclude* from your games page.
 
 #### Optional Settings
 
