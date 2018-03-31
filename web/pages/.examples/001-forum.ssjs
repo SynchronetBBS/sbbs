@@ -1,5 +1,4 @@
 //Forum
-if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 
 load('sbbsdefs.js');
 load(system.exec_dir + '../web/lib/init.js');

@@ -1,7 +1,6 @@
 <!--Games-->
 <?xjs
 
-	if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 	load(settings.web_lib + 'ftelnet.js');
 
 	if (typeof settings.xtrn_blacklist === 'string') {
