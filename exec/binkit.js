@@ -916,7 +916,7 @@ function inbound_auth_cb(pwd, bp)
 						bp.cram.challenge += '\x00\x00\x00';
 						expected = bp.getCRAM('MD5', cpw);
 						if (expected === pwd[0]) {
-							log(LOG_INFO, "CRAM-MD5 password match for " + addr);
+							log(LOG_INFO, "Mystic CRAM-MD5 password match for " + addr);
 							addrs.push(addr);
 							check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
 							ret = cpw;
@@ -1123,6 +1123,13 @@ function install()
 	ini.iniSetValue(null, "BinkleyStyleOutbound", true);
 	ini.iniSetValue(null, "OutgoingSemaphore", "../data/binkout.now");
 	var links = ini.iniGetAllObjects("addr", "node:");
+	for (var i in links) {
+		if (links[i].addr.toUpperCase().indexOf('ALL') >= 0)	// Don't include wildcard links
+			continue;
+		var password = links[i].PacketPwd ? links[i].PacketPwd : links[i].AreaFixPwd;
+		ini.iniSetValue("node:"+links[i].addr, "SessionPwd", password === undefined ? '' : password);
+		ini.iniSetValue("node:"+links[i].addr, "Poll", links[i].GroupHub ? true : false);
+	}
 	ini.close();
 
 	ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
@@ -1137,25 +1144,69 @@ function install()
 	}
 	ini.close();
 
-	ini = new File(file_cfgname(system.ctrl_dir, "binkit.ini"));
-	if (!file_exists(ini.name)) {
-		if (!ini.open('wt'))
-			return ini.name + " create error " + ini.error;
-		printf("Creating %s\r\n", ini.name);
-		for (var i in links) {
-			if (links[i].addr.toUpperCase().indexOf('ALL') >= 0)	// Don't include wildcard links
-				continue;
-			ini.writeln(format("[%s]", links[i].addr));
-			var password = links[i].PacketPwd ? links[i].PacketPwd : links[i].AreaFixPwd;
-			ini.writeln(format("Password=%s", password === undefined ? '' : password));
-			ini.writeln(format("Poll=%s", links[i].GroupHub ? true : false));
-			ini.writeln();
-		}
-		ini.close();
-	}
 	return true;
 }
 
+// Upgrade from separate binkit.ini/sbbsecho.ini/ftn_domains.ini to a combined sbbsecho.ini
+function upgrade()
+{
+	var sbbsecho_ini = new File(file_cfgname(system.ctrl_dir, "sbbsecho.ini"));
+	if (!sbbsecho_ini.open('r+'))
+		return sbbsecho_ini.name + " open error " + sbbsecho_ini.error;
+	printf("Updating %s\r\n", sbbsecho_ini.name);
+
+	var binkit_ini = new File(file_cfgname(system.ctrl_dir, "binkit.ini"));
+	if(binkit_ini.open("r")) {
+		
+		sbbsecho_ini.iniSetValue("BinkP", "Capabilities", binkit_ini.iniGetValue(null, "Capabilities", ""));
+		sbbsecho_ini.iniSetValue("BinkP", "Sysop", binkit_ini.iniGetValue(null, "Sysop", ""));
+
+		var nodes = sbbsecho_ini.iniGetSections("node:");
+		var links = binkit_ini.iniGetSections();
+		for(var i in links) {
+			var section = "node:" + links[i];
+			for(var n in nodes) {
+				if(nodes[n] + '@' == section.substr(0, nodes[n].length + 1)) {
+					section = nodes[n];
+					break;
+				}
+			}
+			var obj = sbbsecho_ini.iniGetObject(section);
+			if(obj == null)
+				obj = {};
+			sbbsecho_ini.iniRemoveSection(section);
+			obj.SessionPwd = binkit_ini.iniGetValue(links[i], "Password", "");
+			obj.BinkpHost = binkit_ini.iniGetValue(links[i], "host", "");
+			obj.BinkpPort = binkit_ini.iniGetValue(links[i], "port", 24554);
+			obj.BinkpPoll = binkit_ini.iniGetValue(links[i], "poll", false);
+			obj.BinkpAllowPlainAuth = binkit_ini.iniGetValue(links[i], "AllowPlainPassword", false);
+			obj.BinkpAllowPlainText = binkit_ini.iniGetValue(links[i], "AllowUnencrypted", false);
+			obj.BinkpSourceAddress = binkit_ini.iniGetValue(links[i], "SourceAddress", "");
+			print("Writing");
+			print(JSON.stringify(obj, null, 4));
+			sbbsecho_ini.iniSetObject("node:" + links[i], obj);
+		}
+		binkit_ini.close();
+
+		file_rename(binkit_ini.name, binkit_ini.name + ".old");
+	}
+
+	/* Merge ftn_domains.ini -> sbbsecho.ini */
+	var domains_ini = new File(file_cfgname(system.ctrl_dir, "ftn_domains.ini"));
+	if(domains_ini.open("r")) {
+		
+		var domains = domains_ini.iniGetAllObjects("name");
+		for(var d in domains) {
+			var section = "domain:" + domains[d].name;
+			delete domains[d].name;
+			sbbsecho_ini.iniSetObject(section, domains[d]);
+		}
+		domains_ini.close();
+		file_rename(domains_ini.name, domains_ini.name + ".old");
+	}
+	sbbsecho_ini.close();
+	return true;
+}
 
 var sock;
 try {
@@ -1174,6 +1225,14 @@ if (sock !== undefined && sock.descriptor !== -1)
 else {
 	if (argv.indexOf('install') !== -1) {
 		var result = install();
+		if (result != true) {
+			alert(result);
+			exit(1);
+		}
+		exit(0);
+	}
+	if (argv.indexOf('upgrade') !== -1) {
+		var result = upgrade();
 		if (result != true) {
 			alert(result);
 			exit(1);
