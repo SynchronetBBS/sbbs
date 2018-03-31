@@ -230,6 +230,10 @@ if (modopts_web.ftelnet) {
     wss.Port = get_setting('WebSocket service port for HTTP clients', wss.Port);
     wsss.Port = get_setting('WebSocket secure service port for HTTPS clients', wsss.Port);
     writeln('Updating services.ini ...');
+    if (!file_backup(system.ctrl_dir + 'services.ini')) {
+        writeln('Failed to back up services.ini.  Exiting.');
+        exit();
+    }
     if(!set_service_ini('WS', wss)) writeln('Failed to configure WS service.');
     if (!set_service_ini('WSS', wsss)) writeln('Failed to configure WSS service.');
 }
