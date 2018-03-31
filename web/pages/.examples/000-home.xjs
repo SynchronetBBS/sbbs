@@ -1,103 +1,44 @@
 <!--Home-->
-<?xjs
-	load(settings.web_lib + 'ftelnet.js');
-	var _hpl = getLanguage(settings.language_file || 'english.ini', 'page_home');
-
-    var ftelnethelperloaded = false;
-    try {
-      load("ftelnethelper.js");
-      ftelnethelperloaded = true;
-    } catch (e) {
-      // Ignore, we'll display an error below
-    }
-
-    if (!ftelnethelperloaded) {
-?>
-        <p>Sorry, this BBS is not currently configured in a way that supports this feature.  Please ask the SysOp to enable it!</p>
-<?xjs
-        if (user.security.level >= 90) {
-?>
-            <p>
-                Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br />
-                <ul>
-                    <li>Check out the latest <b><a href='http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/ftelnethelper.js'>exec/load/ftelnethelper.js</a></b> file from CVS</li>
-                </ul>
-            </p>
-<?xjs
-        }
-    } else if (!IsWebSocketServiceEnabled()) {
-?>
-        <p>Sorry, this BBS is not currently configured in a way that supports this feature.  Please ask the SysOp to enable it!</p>
-<?xjs
-        if (user.security.level >= 90) {
-?>
-            <p>
-                Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br />
-                <ul>
-                    <li>Enable the WebSocket Proxy Service</li>
-                    <li>Enable the WS and WSS services
-                        <ul>
-                            <li>To do this, add this block to your <b>sbbs/ctrl/services.ini file
-                                <pre>
-                                ;WebSocket service (for fTelnet loaded via http://).
-                                ;For troubleshooting, please see https://www.ftelnet.ca/synchronet/
-                                [WS]
-                                Port=1123
-                                Options=NO_HOST_LOOKUP
-                                Command=websocketservice.js
-                                ;WebSocket Secure service (for fTelnet loaded via https://).
-                                ;For troubleshooting, please see https://www.ftelnet.ca/synchronet/
-                                [WSS]
-                                Port=11235
-                                Options=NO_HOST_LOOKUP | TLS
-                                Command=websocketservice.js
-                                </pre>
-                            </li>
-                        </ul>
-                        <strong>NOTE:</strong> Don't forget to open ports 1123 and 11235 on your firewall and/or add the correct port forwarding rules, if necessary
-                    </li>
-                </ul>
-                <strong>NOTE:</strong> You may need to tweak the Command= line if your server is listening on a specific IP address (ie change 'localhost' to the correct IP).
-            </p>
-<?xjs
-        }
-    } else {
-?>
+<?xjs var _hpl = getLanguage(settings.language_file || 'english.ini', 'page_home'); ?>
 
 <!-- fTelnet -->
-
-    <style>.fTelnetStatusBar { display : none; }</style>
-	<div id="fTelnetContainer" class="fTelnetContainer"></div>
-    <div class="row">
-        <div class="center-block" style="width:200px;margin-bottom:1em;margin-top:1em;">
-            <button id="ftelnet-connect" class="btn btn-primary">
-                <?xjs write(_hpl.button_ftelnet); ?>
-            </button>
+<?xjs
+    if (settings.ftelnet) {
+        load(settings.web_lib + 'ftelnet.js');
+        load('ftelnethelper.js');
+?>
+        <style>.fTelnetStatusBar { display : none; }</style>
+    	<div id="fTelnetContainer" class="fTelnetContainer"></div>
+        <div class="row">
+            <div class="center-block" style="width:200px;margin-bottom:1em;margin-top:1em;">
+                <button id="ftelnet-connect" class="btn btn-primary">
+                    <?xjs write(_hpl.button_ftelnet); ?>
+                </button>
+            </div>
         </div>
-    </div>
 
-	<script>document.write('<script src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"><\/script>');</script>
-	<script>
-        var wsp = <?xjs write(GetWebSocketServicePort()); ?>;
-        var wssp = <?xjs write(GetWebSocketServicePort(true)); ?>;
-		var Options = new fTelnetOptions();
-		Options.BareLFtoCRLF = false;
-		Options.BitsPerSecond = 57600;
-		Options.ConnectionType = 'telnet';
-		Options.Emulation = 'ansi-bbs';
-		Options.Enter = '\r';
-		Options.Font = 'CP437';
-		Options.ForceWss = false;
-		Options.Hostname = '<?xjs write(http_request.vhost); ?>';
-		Options.LocalEcho = false;
-		Options.Port = location.protocol == 'https:' ? wssp : wsp;
-		Options.ScreenColumns = 80;
-		Options.ScreenRows = 25;
-        Options.SplashScreen = '<?xjs write(getSplash()); ?>';
-		var fTelnet = new fTelnetClient('fTelnetContainer', Options);
-        $('#ftelnet-connect').click(function() { fTelnet.Connect(); });
-	</script>
-
-<!-- end fTelnet -->
+    	<script>document.write('<script src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"><\/script>');</script>
+    	<script>
+            var wsp = <?xjs write(GetWebSocketServicePort()); ?>;
+            var wssp = <?xjs write(GetWebSocketServicePort(true)); ?>;
+    		var Options = new fTelnetOptions();
+    		Options.BareLFtoCRLF = false;
+    		Options.BitsPerSecond = 57600;
+    		Options.ConnectionType = 'telnet';
+    		Options.Emulation = 'ansi-bbs';
+    		Options.Enter = '\r';
+    		Options.Font = 'CP437';
+    		Options.ForceWss = false;
+    		Options.Hostname = '<?xjs write(http_request.vhost); ?>';
+    		Options.LocalEcho = false;
+    		Options.Port = location.protocol == 'https:' ? wssp : wsp;
+    		Options.ScreenColumns = 80;
+    		Options.ScreenRows = 25;
+            Options.SplashScreen = '<?xjs write(getSplash()); ?>';
+    		var fTelnet = new fTelnetClient('fTelnetContainer', Options);
+            $('#ftelnet-connect').click(function() { fTelnet.Connect(); });
+    	</script>
 
 <?xjs } ?>
+
+<!-- end fTelnet -->
