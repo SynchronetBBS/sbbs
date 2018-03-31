@@ -71,6 +71,13 @@ if(file_exists(sbbsecho_cfg) && !file_exists(sbbsecho_ini)) {
 		load({}, "sbbsecho_upgrade.js");
 }
 
+var binkit_ini = system.ctrl_dir + "binkit.ini";
+if(file_exists(binkit_ini) && file_exists(sbbsecho_ini)) {
+	printf("Merging %s with %s: ", binkit_ini, sbbsecho_ini);
+	if(!test)
+		load({}, "binkit.js", "upgrade");
+}
+
 if(!file_exists(system.data_dir + "sbbslist.json")) {
 	print("Installing SBBSLIST v4 (replacing SBL v3)");
 	if(!test)
