@@ -2406,6 +2406,10 @@ void output_thread(void* arg)
 		if(sbbs->ssh_mode) {
 			int err;
 			pthread_mutex_lock(&sbbs->ssh_mutex);
+			if(sbbs->terminate_output_thread) {
+				pthread_mutex_unlock(&sbbs->ssh_mutex);
+				break;
+			}
 			if (cryptStatusError((err=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))) {
 				GCES(err, sbbs->cfg.node_num, sbbs->ssh_session, "setting channel");
 				ssh_errors++;
