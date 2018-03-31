@@ -206,6 +206,10 @@ file_remove(download_target);
 write('\r\n---\r\n\r\n');
 write('Configuration - press enter to accept default/current value.\r\n\r\n');
 modopts_web.guest = get_setting('Guest user alias', modopts_web.guest);
+if (!system.matchuser(modopts_web.guest)) {
+    writeln('Guest user does not exist. Exiting.');
+    exit();
+}
 modopts_web.user_registration = confirm_setting('Allow new user registration via the web', modopts_web.user_registration);
 modopts_web.ftelnet = confirm_setting('Enable fTelnet', modopts_web.ftelnet);
 if (modopts_web.ftelnet) {
