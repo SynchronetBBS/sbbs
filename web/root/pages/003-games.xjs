@@ -45,17 +45,14 @@
             write("<p>Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Check out the latest <b><a href='http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/ftelnethelper.js'>exec/load/ftelnethelper.js</a></b>, <b><a href='http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/modopts.js'>exec/load/modopts.js</a></b> and <b><a href='http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/ctrl/modopts.ini'>ctrl/modopts.ini</a></b> files from CVS</li></ul></p>");
         }
     } else if (!options.rlogin_auto_xtrn) {
-        templatefile = "ftelnet_disabled.inc";
         if (user.security.level >= 90) {
             write("<p>Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the rlogin_auto_xtrn feature of the logon module<ul><li>To do this, ensure that the <b>rlogin_auto_xtrn=</b> line in the <b>[logon]</b> section of <b>sbbs/ctrl/modopts.ini</b> is set to <b>true</b></li><li>(Currently, it's set to <b>" + options.rlogin_auto_xtrn + "</b>)</ul></p>");
         }
     } else if (!IsWebSocketToRLoginServiceEnabled()) {
-        templatefile = "ftelnet_disabled.inc";
         if (user.security.level >= 90) {
             write("<p>Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the WebSocket to RLogin Proxy Service<ul><li>To do this, add this block to your <b>sbbs/ctrl/services.ini file<pre>[WebSocket-RLogin]\r\nPort=11513\r\nOptions=NO_HOST_LOOKUP\r\nCommand=websocketservice.js localhost " + GetRLoginPort() + "</pre></li></ul><strong>NOTE:</strong> You may need to tweak the Command= line if your server is listening on a specific IP address (ie change 'localhost' to the correct IP).</p>");
         }
     } else if (!IsRLoginEnabled()) {
-        templatefile = "ftelnet_disabled.inc";
         if (user.security.level >= 90) {
             write("<p>Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Allow RLogin connections<ul><li>To do this, ensure that the <b>Options=</b> line in the <b>[BBS]</b> section of <b>sbbs/ctrl/sbbs.ini</b> includes the <b>ALLOW_RLOGIN</b> option.</li><li>Or, if you're running Windows, open the Synchronet Control Panel and click <b>Terminal -> Configure -> RLogin -> Enabled</b> and then click <b>OK</b>.</li></ul></li></ul></p>");
         }
@@ -80,7 +77,8 @@
 
 <script>document.write('<script src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"><\/script>');</script>
 <script type="text/javascript">
-
+    var wsp = <?xjs write(GetWebSocketServicePort()); ?>;
+    var wssp = <?xjs write(GetWebSocketServicePort(true)); ?>;
 	var Options = new fTelnetOptions();
 	Options.BareLFtoCRLF = false;
 	Options.BitsPerSecond = 57600;
@@ -91,22 +89,22 @@
 	Options.ForceWss = false;
 	Options.Hostname = '<?xjs write(http_request.vhost); ?>';
 	Options.LocalEcho = false;
-	Options.Port = <?xjs write(GetWebSocketToRLoginPort()); ?>;
+    Options.Port = location.protocol == 'https:' ? wssp : wsp;
 	Options.RLoginClientUsername = '<?xjs write(user.security.password); ?>';
 	Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
-	// Options.RLoginTerminalType = 'xtrn=' + http_request.query.code;
 	Options.ScreenColumns = 80;
 	Options.ScreenRows = 25;
     Options.SplashScreen = Options.SplashScreen = '<?xjs write(getSplash()); ?>';
+    Options.WebSocketUrlPath = '?Port=<?xjs write(GetRLoginPort()); ?>';
 	var fTelnet = new fTelnetClient('fTelnetContainer', Options);
 	fTelnet.OnConnectionClose = function () { window.location.reload(); };
 
 	function launchXtrn(code) {
 		$.getJSON(
 			'./api/system.ssjs?call=set-xtrn-intent&code=' + code,
-			function(data) { 
+			function(data) {
 				fTelnet._Options.RLoginTerminalType = 'xtrn=' + code;
-                fTelnet.Connect(); 
+                fTelnet.Connect();
             }
 		);
 	}
