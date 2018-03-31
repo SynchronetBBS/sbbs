@@ -3,7 +3,7 @@
 	if (typeof argv[0] != 'boolean' || !argv[0]) exit();
 	load(settings.web_lib + 'ftelnet.js');
 	var _hpl = getLanguage(settings.language_file || 'english.ini', 'page_home');
-    
+
     var ftelnethelperloaded = false;
     try {
       load("ftelnethelper.js");
@@ -11,7 +11,7 @@
     } catch (e) {
       // Ignore, we'll display an error below
     }
-    
+
     if (!ftelnethelperloaded) {
         write("<p>Sorry, this BBS is not currently configured in a way that supports this feature.  Please ask the SysOp to enable it!</p>");
         if (user.security.level >= 90) {
@@ -25,7 +25,7 @@
     } else {
 ?>
 
-<!-- fTelnet --> 
+<!-- fTelnet -->
 
     <style>.fTelnetStatusBar { display : none; }</style>
 	<div id="fTelnetContainer" class="fTelnetContainer"></div>
@@ -36,9 +36,11 @@
             </button>
         </div>
     </div>
-    
+
 	<script>document.write('<script src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"><\/script>');</script>
 	<script>
+        var wsp = <?xjs write(GetWebSocketServicePort()); ?>;
+        var wssp = <?xjs write(GetWebSocketServicePort(true)); ?>;
 		var Options = new fTelnetOptions();
 		Options.BareLFtoCRLF = false;
 		Options.BitsPerSecond = 57600;
@@ -49,7 +51,7 @@
 		Options.ForceWss = false;
 		Options.Hostname = '<?xjs write(http_request.vhost); ?>';
 		Options.LocalEcho = false;
-		Options.Port = <?xjs write(GetWebSocketToTelnetPort()); ?>;
+		Options.Port = location.protocol == 'https:' ? wssp : wsp;
 		Options.ScreenColumns = 80;
 		Options.ScreenRows = 25;
         Options.SplashScreen = '<?xjs write(getSplash()); ?>';
