@@ -49,14 +49,15 @@ function get_modopts_ini() {
     return ini;
 }
 
+function get_setting(text, value) {
+    const i = prompt(text + ' [' + value + ']');
+    return (i == '' ? value : i);
+}
+
 function get_settings(modopts) {
     writeln('---');
-    var i;
-    i = prompt('Guest user alias [' + modopts.guest + ']');
-    if (i != '') modopts.guest = i;
-    i = prompt('Path to ftelnet background .ans [' + modopts.ftelnet_splash + ']');
-    if (i != '') modopts.splash = i;
-    writeln('---');
+    modopts.guest = get_setting('Guest user alias', modopts.guest);
+    modopts.ftelnet_splash = get_setting('Path to ftelnet background .ans', modopts.ftelnet_splash);
     return modopts;
 }
 
