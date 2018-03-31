@@ -9,7 +9,7 @@ function getFileContents(file) {
 }
 
 function getSidebarModules() {
-	return directory(settings.web_root + 'sidebar/*').filter(
+	return directory(settings.web_sidebar + '*').filter(
 		function (e, i, a) { return (!file_isdir(e)); }
 	);
 }
