@@ -35,8 +35,28 @@
             <p>
                 Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br />
                 <ul>
-                    <li>Enable the WebSocket to Telnet Proxy Service
-                    <li>To do this, add this block to your <b>sbbs/ctrl/services.ini file<pre>[WS]\r\nPort=1123\r\nOptions=NO_HOST_LOOKUP\r\nCommand=websocketservice.js localhost " + GetTelnetPort() + "</pre></li>
+                    <li>Enable the WebSocket to Telnet Proxy Service</li>
+                    <li>Enable the WS and WSS services
+                        <ul>
+                            <li>To do this, add this block to your <b>sbbs/ctrl/services.ini file
+                                <pre>
+                                ;WebSocket service (for fTelnet loaded via http://).
+                                ;For troubleshooting, please see https://www.ftelnet.ca/synchronet/
+                                [WS]
+                                Port=1123
+                                Options=NO_HOST_LOOKUP
+                                Command=websocketservice.js
+                                ;WebSocket Secure service (for fTelnet loaded via https://).
+                                ;For troubleshooting, please see https://www.ftelnet.ca/synchronet/
+                                [WSS]
+                                Port=11235
+                                Options=NO_HOST_LOOKUP | TLS
+                                Command=websocketservice.js
+                                </pre>
+                            </li>
+                        </ul>
+                        <strong>NOTE:</strong> Don't forget to open ports 1123 and 11235 on your firewall and/or add the correct port forwarding rules, if necessary
+                    </li>
                 </ul>
                 <strong>NOTE:</strong> You may need to tweak the Command= line if your server is listening on a specific IP address (ie change 'localhost' to the correct IP).
             </p>
