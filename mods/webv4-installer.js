@@ -169,7 +169,14 @@ if (!wsss) {
 write('\r\n---\r\n\r\n');
 writeln('ecwebv4 installer/updater');
 writeln('https://github.com/echicken/synchronet-web-v4');
+
+if (system.version_num < 31700) {
+    writeln('Synchronet versions earlier than 3.17a are not supported. Exiting.');
+    exit();
+}
+
 write('\r\nIt is strongly recommended that you back up your BBS before proceeding.\r\n\r\n');
+
 if (deny('Proceed with installation/update')) {
     writeln('Install/update aborted.  Exiting.');
     exit();
