@@ -281,7 +281,7 @@ static char* int_list(int* list, unsigned count)
 
 void binkp_settings(nodecfg_t* node)
 {
-	static cur;
+	static int cur;
 
 	while(1) {
 		char str[128];
