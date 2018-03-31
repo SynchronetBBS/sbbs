@@ -38,17 +38,19 @@
 
 #include "gen_defs.h"
 
-#define FIDO_TLD		".fidonet"	/* Fake TLD for gating netmail through SMTP  */
+#define FIDO_TLD		".fidonet"	/* Fake top-level domain for gating netmail through SMTP  */
 #define FIDO_ORIGIN_PREFIX_FORM_1	"\r * Origin: "
 #define FIDO_ORIGIN_PREFIX_FORM_2	"\n * Origin: "
 #define FIDO_PING_NAME		"PING"		/* 'To' username for PING netmail (FTS-5001) */
-#define FIDO_AREAMGR_NAME	"AreaFix"	/* Defacto psuedo-standard */
+#define FIDO_AREAMGR_NAME	"AreaFix"	/* De-facto pseudo-standard */
 #define FIDO_CONFMGR_NAME	"ConfMgr"	/* FSC-0057 */
 
 #define FIDO_NAME_LEN			36	/* Includes '\0' terminator				*/
 #define FIDO_SUBJ_LEN			72	/* Includes '\0' terminator				*/
 #define FIDO_TIME_LEN			20	/* Includes '\0' terminator				*/
-#define FIDO_PASS_LEN			8	/* Does NOT include '\0' terminator		*/
+#define FIDO_PASS_LEN			8	/* May NOT include '\0' terminator		*/
+#define FIDO_DOMAIN_LEN			8	/* May NOT include '\0' terminator		*/
+#define FIDO_PRODDATA_LEN		4	/* Product-specific Data */
 #define FIDO_AREATAG_LEN		35	/* Echo "areatag" (NOT including '\0')	*/
 #define FIDO_ORIGIN_PREFIX_LEN	12	/* Includes new-line character			*/
 
@@ -132,7 +134,7 @@ typedef struct _PACK {				/* Fidonet Packet Header (Type-2+), FSC-48 and FSC-39.
 	uint16_t	destzone; 			// Zone of Packet Receiver or NULL
 	uint16_t	origpoint;			// Origination Point of Packet
 	uint16_t	destpoint;			// Destination Point of Packet
-	uint8_t		proddata[4];		// Product Specific Data
+	uint8_t		proddata[FIDO_PRODDATA_LEN];		// Product Specific Data
 } fpkthdr2plus_t;
 
 typedef struct _PACK {				/* Fidonet Packet Header (Type-2.2), FSC-45 */
@@ -151,9 +153,9 @@ typedef struct _PACK {				/* Fidonet Packet Header (Type-2.2), FSC-45 */
 	uint16_t	origzone;			// Origination Zone of Packet or NULL (added in rev 12 of FTS-1)
 	uint16_t	destzone;			// Destination Zone of Packet or NULL (added in rev 12 of FTS-1)
 	/* 2 Fill data area: */
-	uint8_t		origdomn[8];		// Origination Domain
-	uint8_t		destdomn[8];		// Destination Domain
-	uint8_t		proddata[4];		// Product Specific Data
+	uint8_t		origdomn[FIDO_DOMAIN_LEN];		// Origination Domain
+	uint8_t		destdomn[FIDO_DOMAIN_LEN];		// Destination Domain
+	uint8_t		proddata[FIDO_PRODDATA_LEN];		// Product Specific Data
 } fpkthdr2_2_t;
 
 
@@ -200,17 +202,16 @@ typedef struct _PACK {				/* FidoNet Stored Message Header *.msg	*/
 			next;					/* Next message number in stream		*/
 } fmsghdr_t;
 
-#define FIDO_STORED_MSG_HDR_LEN		190
-#define FIDO_STORED_MSG_TERMINATOR	'\0'	/* 8-bits */
-
-typedef struct _PACK {		/* FidoNet 4D address (zone:net/node.point) */
-
+struct _PACK fidoaddr {		/* FidoNet 5D address (zone:net/node.point@domain) */
 	uint16_t	zone;
 	uint16_t	net;
 	uint16_t	node;
 	uint16_t	point;
+	char		domain[FIDO_DOMAIN_LEN + 1];
+};
 
-} faddr4d_t;
+#define FIDO_STORED_MSG_HDR_LEN		190
+#define FIDO_STORED_MSG_TERMINATOR	'\0'	/* 8-bits */
 
 #if defined(PRAGMA_PACK)
 #pragma pack(pop)		/* original packing */
