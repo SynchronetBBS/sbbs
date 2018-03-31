@@ -49,6 +49,22 @@ function get_modopts_ini() {
     return ini;
 }
 
+function get_service_ini(section) {
+    const f = new File(system.ctrl_dir + 'services.ini');
+    if (!f.open('r')) return false;
+    const ini = f.iniGetObject(section);
+    f.close();
+    return ini;
+}
+
+function set_service_ini(section, obj) {
+    const f = new File(system.ctrl_dir + 'services.ini');
+    if (!f.open('r+')) return false;
+    if (!f.iniSetObject(section, obj)) return false;
+    f.close();
+    return true;
+}
+
 function get_setting(text, value) {
     const i = prompt(text + ' [' + value + ']');
     return (i == '' ? value : i);
@@ -60,17 +76,6 @@ function confirm_setting(text, value) {
     } else {
         return confirm(text + ' [' + value + ']');
     }
-}
-
-function get_settings(modopts) {
-    write('\r\n---\r\n\r\n');
-    write('Configuration - press enter to accept default/current value.\r\n\r\n');
-    modopts.guest = get_setting('Guest user alias', modopts.guest);
-    modopts.ftelnet = confirm_setting('Enable fTelnet', modopts.ftelnet);
-    if (modopts.ftelnet) modopts.ftelnet_splash = get_setting('Path to ftelnet background .ans', modopts.ftelnet_splash);
-    modopts.user_registration = confirm_setting('Allow new user registration via the web', modopts.user_registration);
-    write('\r\n\r\n---\r\n\r\n');
-    return modopts;
 }
 
 function copy_dir_contents(src, dest, overwrite) {
@@ -143,6 +148,24 @@ if (!modopts_web) {
     };
 }
 
+var wss = get_service_ini('WS');
+if (!wss) {
+    var wss = {
+        Port : 1123,
+        Options : 'NO_HOST_LOOKUP',
+        Command : 'websocketservice.js'
+    };
+}
+
+var wsss = get_service_ini('WSS');
+if (!wsss) {
+    var wsss = {
+        Port : 11235,
+        Options : 'NO_HOST_LOOKUP|TLS',
+        Command : 'websocketservice.js'
+    };
+}
+
 write('\r\n---\r\n\r\n');
 writeln('ecwebv4 installer/updater');
 writeln('https://github.com/echicken/synchronet-web-v4');
@@ -180,7 +203,25 @@ remove_dir(temp_dir + '/web/sidebar/.examples');
 remove_dir(temp_dir);
 file_remove(download_target);
 
-modopts_web = get_settings(modopts_web);
+write('\r\n---\r\n\r\n');
+write('Configuration - press enter to accept default/current value.\r\n\r\n');
+modopts_web.guest = get_setting('Guest user alias', modopts_web.guest);
+modopts_web.user_registration = confirm_setting('Allow new user registration via the web', modopts_web.user_registration);
+modopts_web.ftelnet = confirm_setting('Enable fTelnet', modopts_web.ftelnet);
+if (modopts_web.ftelnet) {
+    modopts_web.ftelnet_splash = get_setting('Path to ftelnet background .ans', modopts_web.ftelnet_splash);
+    write('\r\nUse of fTelnet requires a WebSocket proxy service.\r\n');
+    writeln('A websocket proxy server routes traffic between a browser-based');
+    writeln('application and some other arbitrary server.  Here you will configure');
+    writeln('the ports that your WebSocket and WebSocket Secure proxy services will');
+    writeln('listen on. Be sure to open these ports in your firewall.');
+    write('\r\n');
+    wss.Port = get_setting('WebSocket service port for HTTP clients', wss.Port);
+    wsss.Port = get_setting('WebSocket secure service port for HTTPS clients', wsss.Port);
+    writeln('Updating services.ini ...');
+    if(!set_service_ini('WS', wss)) writeln('Failed to configure WS service.');
+    if (!set_service_ini('WSS', wsss)) writeln('Failed to configure WSS service.');
+}
 
 writeln('Updating modopts.ini ...');
 if (!update_modopts_ini(modopts_web)) {
