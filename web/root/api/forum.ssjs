@@ -3,7 +3,10 @@
     is done here; otherwise all permission checking is done at the function
     level. */
 
-load(system.exec_dir + '../web/lib/init.js');
+load('modopts.js');
+var settings = get_mod_options('web');
+
+load(settings.web_lib + 'init.js');
 load(settings.web_lib + 'auth.js');
 load(settings.web_lib + 'forum.js');
 
@@ -26,17 +29,17 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
             case 'get-mail-unread-count':
                 reply.count = getMailUnreadCount();
                 break;
-            
+
             case 'get-mail-body':
                 if (typeof http_request.query.number !== 'undefined') {
                     reply = getMailBody(http_request.query.number[0]);
                 }
                 break;
-            
+
             case 'get-signature':
                 reply.signature = getSignature();
                 break;
-            
+
             case 'post-reply':
                 if (typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.body !== 'undefined' &&
@@ -51,7 +54,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     reply.success = false;
                 }
                 break;
-            
+
             case 'post':
                 if (typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.to !== 'undefined' &&
@@ -68,7 +71,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     reply.success = false;
                 }
                 break;
-            
+
             case 'delete-message':
                 if (typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.number !== 'undefined'
@@ -153,14 +156,14 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
             default:
                 handled = false;
                 break;
-                
+
         }
 
     }
 
     // Unauthenticated calls
     if (!handled) {
-    
+
         switch(http_request.query.call[0].toLowerCase()) {
 
             case 'get-thread-votes':
@@ -176,13 +179,13 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     }
                 }
                 break;
-            
+
             case 'get-sub-votes':
                 if (typeof http_request.query.sub !== 'undefined') {
                     reply = getVotesInThreads(http_request.query.sub[0]);
                 }
                 break;
-            
+
             case 'get-poll-results':
                 if (typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.id !== 'undefined'
@@ -197,13 +200,13 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
             case 'list-groups':
                 reply = listGroups();
                 break;
-            
+
             case 'list-subs':
                 if (typeof http_request.query.group !== 'undefined') {
                     reply = listSubs(http_request.query.group[0]);
                 }
                 break;
-            
+
             case 'list-threads':
                 if (typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.offset !== 'undefined'
@@ -218,7 +221,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     );
                 }
                 break;
-            
+
             case 'get-group-unread-count':
                 if (typeof http_request.query.group !== 'undefined') {
                     http_request.query.group.forEach(
@@ -238,12 +241,12 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     );
                 }
                 break;
-            
+
             default:
                 break;
-        
+
         }
-    
+
     }
 
 }

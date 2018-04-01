@@ -1,7 +1,3 @@
-load('modopts.js');
-
-var settings = get_mod_options('web');
-
 // Paths
 settings.web_directory = fullpath(
 	backslash(
