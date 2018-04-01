@@ -98,7 +98,9 @@ echicken -at- bbs.electronicchicken.com
 
 		top_level - Text to use in place of the default menu name (Gallery Menu)
 		pause - true/false, whether pausing is on or off by default
-		speed - 300,600,1200,2400,4800,9600,19200,38400,57600,76800,115200		
+		speed - 300,600,1200,2400,4800,9600,19200,38400,57600,76800,115200
+        header - The path to a .ans graphic file to display above the browser
+        header_rows - The number of lines the header graphic occupies
 
 	Any additional sections in 'settings.ini' will be treated as configuration
 	sections for local or online art archives.

@@ -336,6 +336,13 @@ function initDisplay() {
 		console.screen_rows,
 		BG_BLACK|LIGHTGRAY
 	);
+    if (settings.header && settings.header_rows) {
+        frame.height -= settings.header_rows;
+        frame.y += settings.header_rows;
+        var headerFrame = new Frame(
+            1, 1, frame.width, settings.header_rows, BG_BLACK|LIGHTGRAY, frame
+        );
+    }
 
 	browserFrame = new Frame(
 		frame.x + 1,
@@ -348,7 +355,7 @@ function initDisplay() {
 
 	statusBarFrame = new Frame(
 		frame.x + 1,
-		frame.x + frame.height - 2,
+		frame.y + frame.height - 2,
 		frame.width - 2,
 		1,
 		settings.sbg|settings.sfg,
@@ -389,11 +396,12 @@ function initDisplay() {
 	);
 	showPause();
 
-	frame.drawBorder(settings.border);
+	frame.open();
+    if (typeof headerFrame !=  'undefined') headerFrame.load(settings.header);
+
+    frame.drawBorder(settings.border);
 	frame.gotoxy(frame.width - 24, 1);
 	frame.putmsg(ascii(180) + "\1h\1kansiview\1h\1w" + ascii(195));
-
-	frame.open();
 
 }
 
