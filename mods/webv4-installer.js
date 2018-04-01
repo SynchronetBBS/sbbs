@@ -175,7 +175,8 @@ if (system.version_num < 31700) {
     exit();
 }
 
-write('\r\nIt is strongly recommended that you back up your BBS before proceeding.\r\n\r\n');
+write('\r\nIt is strongly recommended that you back up your BBS before proceeding.\r\n');
+write('\r\nIf this is a new intallation, you must also shut down your BBS now.\r\n\r\n');
 
 if (deny('Proceed with installation/update')) {
     writeln('Install/update aborted.  Exiting.');
@@ -251,7 +252,7 @@ if (!update_sbbs_ini(root_directory, error_directory)) {
 } else {
     write('\r\n---\r\n\r\n');
     writeln('Install/update complete.');
-    writeln('Changes will take effect once your BBS has been restarted.');
+    writeln('If you shut down your BBS, you can restart it now.');
     writeln('For additional configuration and customization steps,');
     writeln('visit https://github.com/echicken/synchronet-web-v4');
     write('\r\n\r\n---\r\n\r\n');
