@@ -136,7 +136,7 @@
 						<span class="icon-bar"></span>
 					</button>
 					<a class="navbar-brand" href="./">
-						<?xjs write(system.name); ?>
+						<?xjs write(settings.brand || system.name); ?>
 					</a>
 				</div>
 				<div id="navbar" class="collapse navbar-collapse">
