@@ -787,9 +787,10 @@ function run_outbound(ran)
 		dirs.forEach(function(dir) {
 			var pnts;
 
-			if (dir.indexOf('.') === -1)
+			var ext = file_getext(dir);
+			if (ext === undefined)
 				return;
-			if (file_getext(dir).search(/^\.[0-9a-f]+$/) == 0) {
+			if (ext.search(/^\.[0-9a-f]+$/) == 0) {
 				if (file_isdir(dir)) {
 					addDir(dir);
 					pnts = directory(backslash(dir)+'.pnt', false);
