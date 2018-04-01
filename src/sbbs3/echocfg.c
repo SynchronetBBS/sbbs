@@ -928,8 +928,8 @@ int main(int argc, char **argv)
 							case __COUNTER__:
 	uifc.helpbuf=
 	"~ AreaFix Support ~\n\n"
-	"If you wish for this node to be able to remotely configure their configuration\n"
-	"via `AreaFix` NetMail messages, set to option to `Yes`.\n";
+	"If you wish for this node to be able to remotely query or change their\n"
+	"configuration via `AreaFix` NetMail messages, set to option to `Yes`.\n";
 								k = cfg.nodecfg[i].areafix;
 								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 									,"AreaFix Support",uifcYesNoOpts)) {
@@ -950,8 +950,8 @@ int main(int argc, char **argv)
 							case __COUNTER__:
 	uifc.helpbuf=
 	"~ EchoList Keys ~\n\n"
-	"These are a named-keys to be given to this node allowing access to one or\n"
-	"more of the configured `EchoLists`\n";
+	"These are a named-keys to be given to this node allowing access to one\n"
+	"or more of the configured `EchoLists` for remote area-add requests.\n";
 								while(1) {
 									for(j=0; cfg.nodecfg[i].keys!=NULL && cfg.nodecfg[i].keys[j]!=NULL ;j++)
 										strcpy(opt[j],cfg.nodecfg[i].keys[j]);
