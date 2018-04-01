@@ -1,7 +1,9 @@
 //Forum
 
 load('sbbsdefs.js');
-load(system.exec_dir + '../web/lib/init.js');
+load('modopts.js');
+var settings = get_mod_options('web');
+load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'forum.js');
 load(settings.web_lib + 'avatars.js');
 
