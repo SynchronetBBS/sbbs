@@ -1837,7 +1837,7 @@ bool add_sub_to_areafile(sub_t* sub, fidoaddr_t uplink)
 	if(added++ == 0)
 		backup(cfg.areafile, cfg.areafile_backups, /* ren: */FALSE);
 
-	fp = fopen(cfg.areafile, "r+");
+	fp = fopen(cfg.areafile, fexist(cfg.areafile) ? "r+" : "w+");
 	if(fp == NULL) {
 		lprintf(LOG_ERR, "Error %d opening %s", errno, cfg.areafile);
 		return false;
