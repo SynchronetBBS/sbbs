@@ -169,7 +169,7 @@ function FTNDomains()
 		}, this);
 		f.close();
 	}
-	if(!this.domainMap || !this.domainMap.keys) {
+	if(!this.domainMap || !Object.keys(this.domainMap).length) {
 		this.outboundMap = {
 			'fidonet':ecfg.outbound.replace(/[\\\/]$/, '')
 		};
