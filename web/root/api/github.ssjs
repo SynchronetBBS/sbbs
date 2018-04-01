@@ -22,7 +22,10 @@ load('sbbsdefs.js');
 load('hmac.js');
 var options = load({}, 'modopts.js', 'github_notify');
 
-load(system.exec_dir + '../web/lib/init.js');
+load('modopts.js');
+var settings = get_mod_options('web');
+
+load(settings.web_lib + 'init.js');
 
 function b2h(str) {
 	return str.split('').map(
@@ -62,7 +65,7 @@ var header = {
 var body = payload.commits.map(
 	function (e) {
 		var ret = [
-			'Commit ID: ' + e.id, 
+			'Commit ID: ' + e.id,
 			'Author: ' + e.author.username,
 		];
 		if (e.added.length > 0) ret.push('Added: ' + e.added.join(', '));
