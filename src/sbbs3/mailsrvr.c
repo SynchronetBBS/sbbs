@@ -3801,6 +3801,9 @@ static void smtp_thread(void* arg)
 				if(startup->lines_per_yield &&
 					!(lines%startup->lines_per_yield))	
 					YIELD();
+				if((lines%100) == 0 && (msgtxt != NULL))
+					lprintf(LOG_DEBUG,"%04d SMTP received %lu lines (%lu bytes) of body text"
+						,socket, lines, ftell(msgtxt)-hdr_len);
 				continue;
 			}
 			/* RFC822 Header parsing */
