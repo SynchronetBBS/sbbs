@@ -14,6 +14,8 @@ settings.web_root = fullpath(
 	)
 );
 settings.web_lib = backslash(settings.web_directory + 'lib/');
+settings.web_pages = fullpath(backslash(settings.web_directory + 'pages'));
+settings.web_sidebar = fullpath(backslash(settings.web_directory + 'pages'));
 
 // Guest
 if (typeof settings.guest === 'undefined') settings.guest = 'Guest';
