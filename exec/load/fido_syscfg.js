@@ -7,10 +7,10 @@
  *					TODO: SBBSecho supports per-node inbound via fileboxes... a method to get the inbound for a node should exist
  * secure_inbound	secure inbound directory path
  *					TODO: SBBSecho supports per-node inbound via fileboxes... a method to get the inbound for a node should exist
- * outbound			default oubound path, may end with a path separator
+ * outbound			default outbound path, may end with a path separator
  *					TODO: SBBSecho supports per-node outbound via fileboxes... a method to get the outbound for a node should exist
  * is_flow			boolean indicating it is a FLO style mailer... most things will require this to be true
- * pktpass{}		object with a separate property for each node addres (wildcards included as "ALL").
+ * pktpass{}		object with a separate property for each node address (wildcards included as "ALL").
  *					Should be accessed using get_pw() and match_pw() methods.
  *
  * SBBSEchoCfg Methods:
@@ -98,17 +98,17 @@ SBBSEchoCfg.prototype.match_ticpw = function(node, pw)
 	if (ticpw === undefined || ticpw == '') {
 		if (pw === '' || pw === undefined)
 			return true;
-		log(LOG_WARNING, "Configued TicFilePwd is empty, but TIC file has a password");
+		log(LOG_WARNING, "Configured TicFilePwd is empty, but TIC file has a password, node: " + node);
 		return false;
 	}
 	if (pw === undefined || pw === '') {
-		log(LOG_WARNING, "TicFilePwd ("+ticpw+") configured, but TIC file has no password");
+		log(LOG_WARNING, "TicFilePwd ("+ticpw+") configured, but TIC file has no password, node: " + node);
 		return false;
 	}
 	if (pw.toUpperCase() === ticpw.toUpperCase())
 		return true;
 
-	log(LOG_WARNING, "Incorrect TIC password "+pw+" (expected "+ticpw+")");
+	log(LOG_WARNING, "Incorrect TIC password "+pw+" (expected "+ticpw+"), node: " + node);
 	return false;
 };
 SBBSEchoCfg.prototype.match_pw = function(node, pw)
@@ -118,17 +118,17 @@ SBBSEchoCfg.prototype.match_pw = function(node, pw)
 	if (pktpw === undefined || pktpw == '') {
 		if (pw === '' || pw === undefined)
 			return true;
-		log(LOG_WARNING, "Configured packet password is empty, but packet has a password");
+		log(LOG_WARNING, "Configured packet password is empty, but packet has a password, node: " + node);
 		return false;
 	}
 	if (pw === undefined || pw === '') {
-		log(LOG_WARNING, "Configured packet password ("+pktpw+") configured, but packet has no password");
+		log(LOG_WARNING, "Configured packet password ("+pktpw+") configured, but packet has no password, node: " + node);
 		return false;
 	}
 	if (pw.toUpperCase() === pktpw.toUpperCase())
 		return true;
 
-	log(LOG_WARNING, "Incorrect packet password "+pw+" (expected "+pktpw+")");
+	log(LOG_WARNING, "Incorrect packet password "+pw+" (expected "+pktpw+"), node: " + node);
 	return false;
 };
 
