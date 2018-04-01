@@ -25,7 +25,7 @@ var options = load({}, 'modopts.js', 'github_notify');
 load('modopts.js');
 var settings = get_mod_options('web');
 
-load(settings.web_lib + 'init.js');
+load(settings.web_directory + '/lib/init.js');
 
 function b2h(str) {
 	return str.split('').map(
