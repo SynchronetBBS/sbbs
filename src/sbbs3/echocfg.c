@@ -218,6 +218,7 @@ static bool new_node(unsigned new_nodenum)
 
 	cfg.nodecfgs++;
 	memset(&cfg.nodecfg[new_nodenum], 0, sizeof(nodecfg_t));
+	cfg.nodecfg[new_nodenum].binkp_allowPlainText = true;
 	return true;
 }
 
