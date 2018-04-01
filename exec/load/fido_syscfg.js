@@ -1,3 +1,4 @@
+// $Id$
 /*
  * Parse as much as needed from the SBBSecho configuration.
  * v3+ uses sbbsecho.ini.

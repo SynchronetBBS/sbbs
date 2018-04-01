@@ -1,3 +1,4 @@
+// $Id$
 require('fido.js', 'FIDO');
 
 /*

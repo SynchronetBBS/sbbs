@@ -1,3 +1,4 @@
+// $Id$
 require('fido_syscfg.js', 'FTNDomains');
 
 /*
