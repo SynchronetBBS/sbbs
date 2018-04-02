@@ -177,7 +177,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 			if(fdomode && e) {
 				/* Remove deprecated (never-worked, non-standard) 'e'xclusive mode char (and warn): */
 				for(e=strchr(fdomode, 'e'); e ; e=strchr(e, 'e')) {
-					JS_ReportWarning(cx, "Deprecated open flag used: 'e'");
+					JS_ReportWarning(cx, "Deprecated file open mode: 'e'");
 					memmove(e, e+1, strlen(e));
 				}
 				/* Remove (C11 standard) 'x'clusive mode char to avoid MSVC assertion: */
