@@ -105,6 +105,8 @@ HTTPRequest.prototype.SendRequest=function() {
 		return true;
 	}
 
+	if (this.sock != undefined)
+		this.sock.close();
 	if((this.sock=new Socket(SOCK_STREAM))==null)
 		throw("Unable to create socket");
 	if(!this.sock.connect(this.url.host, this.url.port?this.url.port:(this.url.scheme=='http'?80:443))) {
