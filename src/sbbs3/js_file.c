@@ -84,7 +84,6 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 }
 
 /* Converts fopen() style 'mode' string into open() style 'flags' integer */
-
 static int fopenflags(char *mode)
 {
 	int flags=0;
@@ -93,6 +92,9 @@ static int fopenflags(char *mode)
 		flags|=O_BINARY;
 	else
 		flags|=O_TEXT;
+
+	if(strchr(mode,'x'))
+		flags|=O_EXCL;
 
 	if(strchr(mode,'w')) {
 		flags|=O_CREAT|O_TRUNC;
@@ -118,9 +120,6 @@ static int fopenflags(char *mode)
 		else
 			flags|=O_RDONLY;
 	}
-
-	if(strchr(mode,'e'))
-		flags|=O_EXCL;
 
 	return(flags);
 }
@@ -176,7 +175,13 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 			char *e=fdomode;
 
 			if(fdomode && e) {
-				for(e=strchr(fdomode, 'e'); e ; e=strchr(e, 'e'))
+				/* Remove deprecated (never-worked, non-standard) 'e'xclusive mode char (and warn): */
+				for(e=strchr(fdomode, 'e'); e ; e=strchr(e, 'e')) {
+					JS_ReportWarning(cx, "Deprecated open flag used: 'e'");
+					memmove(e, e+1, strlen(e));
+				}
+				/* Remove (C11 standard) 'x'clusive mode char to avoid MSVC assertion: */
+				for(e=strchr(fdomode, 'x'); e ; e=strchr(e, 'x'))
 					memmove(e, e+1, strlen(e));
 				if((p->fp=fdopen(file,fdomode))==NULL)
 					close(file);
@@ -2578,7 +2583,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"<tt>w+</tt> open an empty file for both reading and writing; if the given file exists, its contents are destroyed<br>"
 		"<tt>a+</tt> open for reading and appending<br>"
 		"<tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br>"
-		"<tt>e&nbsp</tt> open a <i>non-shareable</i> file (that must not already exist) for <i>exclusive</i> access <i>(introduced in v3.12)</i><br>"
+		"<tt>x&nbsp</tt> open a <i>non-shareable</i> file (that must not already exist) for <i>exclusive</i> access <i>(introduced in v3.17)</i><br>"
 		"<br><b>Note:</b> When using the <tt>iniSet</tt> methods to modify a <tt>.ini</tt> file, "
 		"the file must be opened for both reading and writing.<br>"
 		"<br><b>Note:</b> To open an existing or create a new file for both reading and writing "
