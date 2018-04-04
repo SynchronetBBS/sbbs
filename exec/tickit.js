@@ -30,7 +30,7 @@ load("fido.js");
 var sbbsecho = new SBBSEchoCfg();
 var tickit = new TickITCfg();
 var files_bbs={};
-var always_replace = false;
+var force_replace = false;
 
 if (!String.prototype.repeat) {
   String.prototype.repeat = function(count) {
@@ -199,7 +199,7 @@ function process_tic(tic)
 
 	log(LOG_DEBUG, "Moving file from "+tic.full_path+" to "+path+".");
 	// TODO: optionally delete replaced files even if it's not an overwrite
-	if (file_exists(path+tic.file) && !always_replace) {
+	if (file_exists(path+tic.file) && !force_replace) {
 		if (tic.replaces === undefined || !wildmatch(tic.file, tic.replaces)) {
 			log(LOG_ERROR, "'"+tic.full_path+"' already exists in '"+path+"' and TIC does not have matching Replaces line.");
 			return false;
@@ -572,8 +572,8 @@ function main() {
 	var processed = 0;
 
 	for (i in argv)
-		if(argv[i] == "-replace")
-			always_replace = true;
+		if(argv[i] == "-force-replace")
+			force_replace = true;
 
 	for (i=0; i<sbbsecho.inb.length; i++) {
 		if (tickit.gcfg.secureonly) {
