@@ -145,18 +145,33 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 	return(LOGIC_TRUE);
 }
 
-void sbbs_t::badlogin(char* user, char* passwd)
+void sbbs_t::badlogin(char* user, char* passwd, char* protocol, xp_sockaddr* addr, bool delay)
 {
 	char reason[128];
+	char host_name[128];
 	ulong count;
 
-	SAFEPRINTF(reason,"%s LOGIN", connection);
-	count=loginFailure(startup->login_attempt_list, &client_addr, connection, user, passwd);
-	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold)
-		::hacklog(&cfg, reason, user, passwd, client_name, &client_addr);
-	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold)
-		filter_ip(&cfg, connection, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
-			,client_name, client_ipaddr, user, /* fname: */NULL);
+	if(protocol == NULL)
+		protocol = connection;
+	if(addr == NULL)
+		addr = &client_addr;
 
-	mswait(startup->login_attempt.delay);
+	SAFECOPY(host_name, "<no name>");
+	socklen_t addr_len = sizeof(*addr);
+	SAFEPRINTF(reason,"%s LOGIN", protocol);
+	count=loginFailure(startup->login_attempt_list, addr, protocol, user, passwd);
+	if(user!=NULL && startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
+		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
+		::hacklog(&cfg, reason, user, passwd, host_name, addr);
+	}
+	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
+		char ipaddr[INET6_ADDRSTRLEN];
+		inet_addrtop(addr, ipaddr, sizeof(ipaddr));
+		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
+		SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
+		filter_ip(&cfg, protocol, reason, host_name, ipaddr, user, /* fname: */NULL);
+	}
+
+	if(delay)
+		mswait(startup->login_attempt.delay);
 }
