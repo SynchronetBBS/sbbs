@@ -2552,9 +2552,10 @@ static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts, cha
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold)
 			ftp_hacklog("FTP LOGIN", user, passwd, host, addr);
 		if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
+			char reason[128];
+			SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
 			inet_addrtop(addr, host_ip, sizeof(host_ip));
-			filter_ip(&scfg, "FTP", "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
-				,host, host_ip, user, /* fname: */NULL);
+			filter_ip(&scfg, "FTP", reason, host, host_ip, user, /* fname: */NULL);
 		}
 		if(count > *login_attempts)
 			*login_attempts=count;

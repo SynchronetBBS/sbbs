@@ -332,8 +332,8 @@ static void badlogin(SOCKET sock, char* prot, char* user, char* passwd, char* ho
 		hacklog(&scfg, reason, user, passwd, host, addr);
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 		inet_addrtop(addr, addr_ip, sizeof(addr_ip));
-		filter_ip(&scfg, prot, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
-			,host, addr_ip, user, /* fname: */NULL);
+		SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
+		filter_ip(&scfg, prot, reason, host, addr_ip, user, /* fname: */NULL);
 	}
 
 	mswait(startup->login_attempt.delay);

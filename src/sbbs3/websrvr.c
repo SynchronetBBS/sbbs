@@ -1806,9 +1806,11 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 			PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 	}
-	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold)
-		filter_ip(&scfg, prot, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
+	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
+		SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
+		filter_ip(&scfg, prot, reason
 			,host, inet_addrtop(addr, addrstr, sizeof(addrstr)), user, /* fname: */NULL);
+	}
 	if(count>1)
 		mswait(startup->login_attempt.delay);
 }
