@@ -3016,7 +3016,7 @@ ushort matchname(const char *inname)
 	ulong l;
 
 	if(!total_users) {		/* Load CRCs */
-		fprintf(stderr,"\n%-25s","Loading user names...");
+		fprintf(stdout,"\n%-25s","Loading user names...");
 		sprintf(str,"%suser/user.dat",scfg.data_dir);
 		if((userdat=nopen(str,O_RDONLY|O_DENYNONE))==-1)
 			return(0);
@@ -3058,8 +3058,8 @@ ushort matchname(const char *inname)
 			SAFECOPY(username[total_users].real, name);
 		}
 		close(userdat);
-		fprintf(stderr,"     \b\b\b\b\b");  /* Clear counter */
-		fprintf(stderr,
+		fprintf(stdout,"     \b\b\b\b\b");  /* Clear counter */
+		fprintf(stdout,
 			"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
 			"%25s"
 			"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
