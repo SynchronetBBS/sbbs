@@ -1950,7 +1950,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 		GCES(status, *sock, CRYPT_UNUSED, estr, "creating session");
 		if (estr) {
 			lprintf(level, "%04d FTP %s", *sock, estr);
-			free(estr);
+			free_crypt_attrstr(estr);
 		}
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
