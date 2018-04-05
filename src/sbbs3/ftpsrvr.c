@@ -1934,7 +1934,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	BOOL nodelay;
 	ulong nb;
 	int status;
-	char *estr;
+	char *estr = NULL;
 	int level;
 
 	if (get_ssl_cert(&scfg, &estr, &level) == -1) {
