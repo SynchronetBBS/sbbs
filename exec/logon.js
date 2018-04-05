@@ -224,7 +224,7 @@ else {
 
 	if(console.term_supports(USER_ANSI)) {
 		Avatar.draw(user.number, /* name: */null, /* netaddr: */null, /* above: */false, /* right: */true);
-		console.attributes = 0;	// Clear the background attribute
+		console.attributes = 7;	// Clear the background attribute
 	}
 }
 
