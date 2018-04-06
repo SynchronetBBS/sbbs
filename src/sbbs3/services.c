@@ -122,6 +122,9 @@ typedef struct {
 static service_t	*service=NULL;
 static uint32_t		services=0;
 
+#if defined(__GNUC__)   // Catch printf-format errors with lprintf
+static int lprintf(int level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+#endif
 static int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
@@ -1100,7 +1103,7 @@ static void js_service_thread(void* arg)
 
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &service_client.addr)) > 1) {
-		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%u login attempts)"
+		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%lu login attempts)"
 			,socket, service->protocol, client.addr, login_attempts);
 		mswait(login_attempts*startup->login_attempt.throttle);
 	}
@@ -1168,7 +1171,7 @@ static void js_service_thread(void* arg)
 #endif
 
 	thread_down();
-	lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %d total, %lu served)"
+	lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %lu total, %lu served)"
 		,socket, service->protocol, service->clients, active_clients(), service->served);
 
 	client_off(socket);
@@ -1332,7 +1335,7 @@ static void native_static_service_thread(void* arg)
 
 	thread_down();
 	lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients served)"
-		,socket, service->protocol, service->served);
+		,inst.socket, service->protocol, service->served);
 
 	close_socket(inst.socket);
 	closesocket(socket_dup);	/* close duplicate handle */
@@ -1443,7 +1446,7 @@ static void native_service_thread(void* arg)
 
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &service_client.addr)) > 1) {
-		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%u login attempts)"
+		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%lu login attempts)"
 			,socket, service->protocol, client.addr, login_attempts);
 		mswait(login_attempts*startup->login_attempt.throttle);
 	}
@@ -1468,7 +1471,7 @@ static void native_service_thread(void* arg)
 #endif
 
 	thread_down();
-	lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %d total, %lu served)"
+	lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %lu total, %lu served)"
 		,socket, service->protocol, service->clients, active_clients(), service->served);
 
 	client_off(socket);
@@ -1781,7 +1784,7 @@ void DLLCALL services_thread(void* arg)
 		}
 
 		t=time(NULL);
-		lprintf(LOG_INFO,"Initializing on %.24s with options: %lx"
+		lprintf(LOG_INFO,"Initializing on %.24s with options: %x"
 			,ctime_r(&t,str),startup->options);
 
 		if(chdir(startup->ctrl_dir)!=0)
@@ -1924,7 +1927,7 @@ void DLLCALL services_thread(void* arg)
 			}
 		}
 
-		lprintf(LOG_INFO,"0000 Services thread started (%u service sockets bound)", total_sockets);
+		lprintf(LOG_INFO,"0000 Services thread started (%lu service sockets bound)", total_sockets);
 
 		/* Main Server Loop */
 		while(!terminated) {
@@ -2121,7 +2124,7 @@ void DLLCALL services_thread(void* arg)
 					if(banned || trashcan(&scfg,host_ip,"ip")) {
 						if(banned) {
 							char ban_duration[128];
-							lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%u login attempts, last: %s) - remaining: %s"
+							lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
 								,client_socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 						} else
 							lprintf(LOG_NOTICE,"%04d !%s CLIENT BLOCKED in ip.can: %s"
@@ -2139,7 +2142,7 @@ void DLLCALL services_thread(void* arg)
 
 					if((client=malloc(sizeof(service_client_t)))==NULL) {
 						FREE_AND_NULL(udp_buf);
-						lprintf(LOG_CRIT,"%04d !%s ERROR allocating %u bytes of memory for service_client"
+						lprintf(LOG_CRIT,"%04d !%s ERROR allocating %lu bytes of memory for service_client"
 							,client_socket, service[i].protocol, sizeof(service_client_t));
 						close_socket(client_socket);
 						continue;
@@ -2185,7 +2188,7 @@ void DLLCALL services_thread(void* arg)
 
 		/* Wait for Dynamic Service Threads to terminate */
 		if(active_clients()) {
-			lprintf(LOG_INFO,"0000 Waiting for %d clients to disconnect",active_clients());
+			lprintf(LOG_INFO,"0000 Waiting for %lu clients to disconnect",active_clients());
 			while(active_clients()) {
 				mswait(500);
 			}
@@ -2197,7 +2200,7 @@ void DLLCALL services_thread(void* arg)
 		for(i=0;i<(int)services;i++) 
 			total_running+=service[i].running;
 		if(total_running) {
-			lprintf(LOG_INFO,"0000 Waiting for %d static services to terminate",total_running);
+			lprintf(LOG_INFO,"0000 Waiting for %lu static services to terminate",total_running);
 			while(1) {
 				total_running=0;
 				for(i=0;i<(int)services;i++) 
