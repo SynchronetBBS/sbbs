@@ -1939,7 +1939,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 
 	if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 		if (estr) {
-			lprintf(level, "%04d FTP %s", estr);
+			lprintf(level, "%04d TLS %s", *sock, estr);
 			free_crypt_attrstr(estr);
 		}
 		if (resp)
@@ -1949,7 +1949,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	if ((status = cryptCreateSession(sess, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER)) != CRYPT_OK) {
 		GCES(status, *sock, CRYPT_UNUSED, estr, "creating session");
 		if (estr) {
-			lprintf(level, "%04d FTP %s", *sock, estr);
+			lprintf(level, "%04d TLS %s", *sock, estr);
 			free_crypt_attrstr(estr);
 		}
 		if (resp)
