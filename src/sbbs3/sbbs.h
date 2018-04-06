@@ -760,7 +760,7 @@ public:
 
 	/* login.ccp */
 	int		login(char *user_name, char *pw_prompt, const char* user_pw = NULL, const char* sys_pw = NULL);
-	void	badlogin(char* user, char* passwd, char* protocol=NULL, xp_sockaddr* addr=NULL, bool delay=true);
+	void	badlogin(char* user, char* passwd, const char* protocol=NULL, xp_sockaddr* addr=NULL, bool delay=true);
 
 	/* answer.cpp */
 	bool	answer();

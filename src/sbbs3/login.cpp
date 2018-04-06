@@ -145,7 +145,7 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 	return(LOGIC_TRUE);
 }
 
-void sbbs_t::badlogin(char* user, char* passwd, char* protocol, xp_sockaddr* addr, bool delay)
+void sbbs_t::badlogin(char* user, char* passwd, const char* protocol, xp_sockaddr* addr, bool delay)
 {
 	char reason[128];
 	char host_name[128];
