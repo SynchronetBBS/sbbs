@@ -166,7 +166,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			&& (now-msg.hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
 			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to age: %u days"
 				,msg.from
-				,(now-msg.hdr.when_written.time)/(24*60*60)); 
+				,(unsigned int)(now-msg.hdr.when_written.time)/(24*60*60)); 
 			continue;
 		}
 

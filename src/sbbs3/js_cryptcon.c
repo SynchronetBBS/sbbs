@@ -614,7 +614,7 @@ js_create_signature(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	signature = malloc(len);
 	if (signature == NULL) {
-		lprintf(LOG_ERR, "Unable to allocate %lu bytes\n", len);
+		lprintf(LOG_ERR, "Unable to allocate %u bytes\n", len);
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_FALSE;
 	}

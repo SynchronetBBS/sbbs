@@ -158,7 +158,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			smb_freemsgmem(&msg); 
 			YIELD();	/* yield */
 		}
-		eprintf(LOG_INFO,"Packed %d NetMail messages",packedmail); 
+		eprintf(LOG_INFO,"Packed %ld NetMail messages",packedmail); 
 	}
 	smb_close(&smb);					/* Close the e-mail */
 	if(mailmsgs)
@@ -353,7 +353,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		smb_close(&smb);
 		if(mailmsgs)
 			free(mail); 
-		eprintf(LOG_INFO,"Deleted %d sent NetMail messages",deleted); 
+		eprintf(LOG_INFO,"Deleted %ld sent NetMail messages",deleted); 
 	}
 
 	return(true);

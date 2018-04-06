@@ -23,7 +23,7 @@ char *readtext(long *line,FILE *stream,long dflt)
 	p=strrchr(buf,'"');
 	if(!p) {
 		if(line)
-			lprintf(LOG_WARNING,"No quotation marks in line %d of text.dat",*line);
+			lprintf(LOG_WARNING,"No quotation marks in line %ld of text.dat",*line);
 		goto use_default;
 	}
 	if(*(p+1)=='\\')	/* merge multiple lines */

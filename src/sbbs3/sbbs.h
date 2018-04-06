@@ -1357,8 +1357,16 @@ char*	prep_code(char *str, const char* prefix);
 
 	/* main.c */
 	int 	lputs(int level, const char *);			/* log output */
-	int 	lprintf(int level, const char *fmt, ...);	/* log output */
-	int 	eprintf(int level, const char *fmt, ...);	/* event log */
+	int 	lprintf(int level, const char *fmt, ...)	/* log output */
+#if defined(__GNUC__)   // Catch printf-format errors
+    __attribute__ ((format (printf, 2, 3)));
+#endif
+	;
+	int 	eprintf(int level, const char *fmt, ...)	/* event log */
+#if defined(__GNUC__)   // Catch printf-format errors
+    __attribute__ ((format (printf, 2, 3)));
+#endif
+	;
 	void	call_socket_open_callback(BOOL open);
 	SOCKET	open_socket(int type, const char* protocol);
 	SOCKET	accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen);
