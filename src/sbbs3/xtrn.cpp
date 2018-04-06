@@ -1,4 +1,5 @@
 /* xtrn.cpp */
+// vi: tabstop=4
 
 /* Synchronet external program support routines */
 
@@ -34,7 +35,7 @@
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
-
+#define XTERN_LOG_STDERR
 #include "sbbs.h"
 #include "cmdshell.h"
 #include "telnet.h"
@@ -1305,7 +1306,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	char	fullpath[MAX_PATH+1];
 	char	fullcmdline[MAX_PATH+1];
 	char*	argv[MAX_ARGS];
-	char*	p;
 	BYTE*	bp;
 	BYTE	buf[XTRN_IO_BUF_LEN];
     BYTE 	output_buf[XTRN_IO_BUF_LEN*2];
@@ -1581,7 +1581,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		SAFECOPY(tok,cmdline);
 		truncstr(tok," ");
 
-		p = strstr(tok, ".bat");  /*  check if it's a bat file  */
+		char* p = strstr(tok, ".bat");  /*  check if it's a bat file  */
 		if (p)
 			fprintf(dosemubat,"call ");  /* if so, "call" it */
 
@@ -2229,7 +2229,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
 
 	if(cmd==NULL)	cmd=buf;
     len=strlen(instr);
-    for(i=j=0; i<len && j < sizeof(buf)-1; i++) {
+    for(i=j=0; i<len && j < (int)sizeof(buf)-1; i++) {
         if(instr[i]=='%') {
             i++;
             cmd[j]=0;
