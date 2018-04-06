@@ -6475,8 +6475,9 @@ int main(int argc, char **argv)
 
 	if(cfg.outgoing_sem[0]) {
 		if (exported_netmail || exported_echomail || packed_netmail || packets_sent || bundles_sent) {
-			lprintf(LOG_DEBUG, "Touching outgoing semfile: %s\n", cfg.outgoing_sem);
-			ftouch(cfg.outgoing_sem);
+			lprintf(LOG_DEBUG, "Touching outgoing semfile: %s", cfg.outgoing_sem);
+			if(!ftouch(cfg.outgoing_sem))
+				lprintf(LOG_ERR, "Error %d (%s) touching outgoing semfile: %s", errno, strerror(errno), cfg.outgoing_sem);
 		}
 	}
 	bail(0);
