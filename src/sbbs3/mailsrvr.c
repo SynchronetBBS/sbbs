@@ -999,7 +999,7 @@ static void pop3_thread(void* arg)
 	if (pop3.tls_port) {
 		if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 			if (estr) {
-				lprintf(level, "%04d !POP3 [%s] %s", socket, host_ip);
+				lprintf(level, "%04d !POP3/TLS Failure getting certificate: %s", socket, estr);
 				free_crypt_attrstr(estr);
 			}
 			mail_close_socket(&socket, &session);
