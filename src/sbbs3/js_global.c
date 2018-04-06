@@ -672,7 +672,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
  * It does assume the args are always last though (which seems reasonable
  * since it's variable length)
  */
-#define JS_ARGS_OFFSET	((unsigned)(JS_ARGV(0, (jsval *)NULL))/sizeof(jsval *))
+#define JS_ARGS_OFFSET	((unsigned long)(JS_ARGV(0, (jsval *)NULL))/sizeof(jsval *))
 
 static JSBool
 js_require(JSContext *cx, uintN argc, jsval *arglist)
