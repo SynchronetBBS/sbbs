@@ -70,17 +70,16 @@ static const char*	server_name="Synchronet Mail Server";
 int dns_getmx(char* name, char* mx, char* mx2
 			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout);
 
-static char* pop_err	=	"-ERR";
-static char* ok_rsp		=	"250 OK";
-static char* auth_ok	=	"235 User Authenticated";
-static char* sys_error	=	"421 System error";
-static char* sys_unavail=	"421 System unavailable, try again later";
-static char* insuf_stor =	"452 Insufficient system storage";
-static char* badarg_rsp =	"501 Bad argument";
-static char* badseq_rsp	=	"503 Bad sequence of commands";
-static char* badauth_rsp=	"535 Authentication failure";
-static char* badrsp_err	=	"%s replied with:\r\n\"%s\"\r\n"
-							"instead of the expected reply:\r\n\"%s ...\"";
+#define pop_err			"-ERR"
+#define ok_rsp			"250 OK"
+#define auth_ok			"235 User Authenticated"
+#define sys_error		"421 System error"
+#define sys_unavail		"421 System unavailable, try again later"
+#define insuf_stor		"452 Insufficient system storage"
+#define badarg_rsp 		"501 Bad argument"
+#define badseq_rsp		"503 Bad sequence of commands"
+#define badauth_rsp		"535 Authentication failure"
+#define badrsp_err		"%s replied with:\r\n\"%s\"\r\ninstead of the expected reply:\r\n\"%s ...\""
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define DNSBL_THROTTLE_VALUE	1000	/* Milliseconds */
@@ -929,7 +928,7 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* prot, const ch
 	}
 
 	mswait(startup->login_attempt.delay);
-	sockprintf(sock,sess,(char*)resp);
+	sockprintf(sock,sess, "%s", resp);
 }
 
 static void pop3_thread(void* arg)
