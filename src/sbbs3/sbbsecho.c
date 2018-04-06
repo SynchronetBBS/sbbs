@@ -106,7 +106,11 @@ bool terminated=false;
 
 str_list_t	locked_bso_nodes;
 
-int lprintf(int level, char *fmt, ...);
+int lprintf(int level, char *fmt, ...)
+#if defined(__GNUC__)   // Catch printf-format errors
+    __attribute__ ((format (printf, 2, 3)));
+#endif
+;
 int mv(const char *insrc, const char *indest, bool copy);
 time32_t fmsgtime(const char *str);
 void export_echomail(const char *sub_code, const nodecfg_t*, bool rescan);
@@ -418,7 +422,7 @@ size_t read_echostats(const char* fname, echostat_t **echostat)
 	iniFreeStringList(echoes);
 	iniFreeStringList(ini);
 
-	lprintf(LOG_DEBUG, "Read %u echo statistics from %s", echo_count, fname);
+	lprintf(LOG_DEBUG, "Read %lu echo statistics from %s", echo_count, fname);
 	return echo_count;
 }
 
@@ -1487,7 +1491,7 @@ void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 			fclose(fp);
 		}
 	}
-	lprintf(LOG_INFO,"AreaFix (for %s) Created response netmail with %s (%u areas)"
+	lprintf(LOG_INFO,"AreaFix (for %s) Created response netmail with %s (%lu areas)"
 		, smb_faddrtoa(&addr, NULL), title, strListCount(area_list));
 	strListFree(&area_list);
 }
@@ -1811,10 +1815,10 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 	fclose(nmfile);
 	fclose(afileout);
 	if(added)
-		lprintf(LOG_DEBUG, "AreaFix (for %s) Added links to %u areas in %s"
+		lprintf(LOG_DEBUG, "AreaFix (for %s) Added links to %lu areas in %s"
 			,smb_faddrtoa(&addr,NULL), added, cfg.areafile);
 	if(deleted)
-		lprintf(LOG_DEBUG, "AreaFix (for %s) Removed links to %u areas in %s"
+		lprintf(LOG_DEBUG, "AreaFix (for %s) Removed links to %lu areas in %s"
 			,smb_faddrtoa(&addr,NULL), deleted, cfg.areafile);
 	if(added || deleted) {
 		if(cfg.areafile_backups == 0 || !backup(cfg.areafile, cfg.areafile_backups, /* ren: */TRUE))
@@ -2920,7 +2924,7 @@ void cleanup(void)
 	char		path[MAX_PATH+1];
 
 	if(bad_areas != NULL) {
-		lprintf(LOG_DEBUG, "Writing %u areas to %s", strListCount(bad_areas), cfg.badareafile);
+		lprintf(LOG_DEBUG, "Writing %lu areas to %s", strListCount(bad_areas), cfg.badareafile);
 		FILE* fp = fopen(cfg.badareafile, "wt");
 		if(fp == NULL) {
 			lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), cfg.badareafile);
@@ -5116,7 +5120,7 @@ int export_netmail(void)
 					int result = fwrite(filedata, filelen, 1, fp);
 					fclose(fp);
 					if(!result)
-						lprintf(LOG_ERR, "!ERROR %d (%s) writing %lu bytes to %s", errno, strerror(errno), filelen, fpath);
+						lprintf(LOG_ERR, "!ERROR %d (%s) writing %u bytes to %s", errno, strerror(errno), filelen, fpath);
 					else {
 						lprintf(LOG_DEBUG, "Decoded MIME attachment stored as: %s", fpath);
 						file_attached = true;
@@ -5128,7 +5132,7 @@ int export_netmail(void)
 		}
 
 		if((txt=smb_getmsgtxt(email,&msg,GETMSGTXT_ALL|GETMSGTXT_PLAIN)) == NULL) {
-			lprintf(LOG_ERR,"!ERROR %d getting message text for mail msg #%u"
+			lprintf(LOG_ERR,"!ERROR %s getting message text for mail msg #%u"
 				, email->last_error, msg.hdr.number);
 			continue;
 		}
@@ -5149,7 +5153,7 @@ int export_netmail(void)
 			/* Just mark as "sent" */
 			msg.hdr.netattr |= MSG_SENT;
 			if(smb_putmsghdr(email, &msg) != SMB_SUCCESS)
-				lprintf(LOG_ERR,"!ERROR %d updating msg header for mail msg #%u"
+				lprintf(LOG_ERR,"!ERROR %s updating msg header for mail msg #%u"
 					, email->last_error, msg.hdr.number);
 			if(msg.hdr.auxattr&MSG_KILLFILE)
 				delfattach(&scfg, &msg);
@@ -5442,7 +5446,7 @@ void find_stray_packets(void)
 			continue; 
 		}
 		if(fread(&pkthdr,sizeof(pkthdr),1,fp)!=1) {
-			lprintf(LOG_ERR,"ERROR reading header (%u bytes) from stray packet: %s"
+			lprintf(LOG_ERR,"ERROR reading header (%lu bytes) from stray packet: %s"
 				,sizeof(pkthdr), packet);
 			fclose(fp);
 			delfile(packet, __LINE__);
@@ -5485,7 +5489,7 @@ void find_stray_packets(void)
 		listAddNode(&outpkt_list, pkt, 0, LAST_NODE);
 	}
 	if(g.gl_pathc)
-		lprintf(LOG_DEBUG, "%u stray outbound packets (%u total pkts) found in %s"
+		lprintf(LOG_DEBUG, "%lu stray outbound packets (%lu total pkts) found in %s"
 			,listCountNodes(&outpkt_list), g.gl_pathc, cfg.temp_dir);
 	globfree(&g);
 }
@@ -5569,7 +5573,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 		(void)fseek(fidomsg,0L,SEEK_SET);
 		if(fread(&pkthdr,sizeof(pkthdr),1,fidomsg)!=1) {
 			fclose(fidomsg);
-			lprintf(LOG_ERR,"ERROR line %d reading %u bytes from %s",__LINE__
+			lprintf(LOG_ERR,"ERROR line %d reading %lu bytes from %s",__LINE__
 				,sizeof(pkthdr),packet);
 			rename_bad_packet(packet);
 			continue; 
@@ -5638,7 +5642,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				hdr.cost		= pkdmsg.cost;
 				SAFECOPY(hdr.time,pkdmsg.time);
 			} else {
-				lprintf(LOG_NOTICE, "Grunged message (type %d) from %s at offset %u in packet: %s"
+				lprintf(LOG_NOTICE, "Grunged message (type %d) from %s at offset %ld in packet: %s"
 					, pkdmsg.type, smb_faddrtoa(&pkt_orig, NULL), msg_offset, packet);
 				printf("Grunged message!\n");
 				bad_packet = true;
