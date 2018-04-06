@@ -1423,7 +1423,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		FILE *dosemubat;
 		int setup_override;
 		char tok[MAX_PATH+1];
- 
+ 		char* p;
+
 		char dosemuconf[MAX_PATH+1];
 		char dosemubinloc[MAX_PATH+1];
 		char virtualconf[75];
@@ -1581,7 +1582,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		SAFECOPY(tok,cmdline);
 		truncstr(tok," ");
 
-		char* p = strstr(tok, ".bat");  /*  check if it's a bat file  */
+		p = strstr(tok, ".bat");  /*  check if it's a bat file  */
 		if (p)
 			fprintf(dosemubat,"call ");  /* if so, "call" it */
 
