@@ -4344,7 +4344,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 		addr.net=hdr.orignet;
 		addr.node=hdr.orignode;
 		addr.point=hdr.origpoint;
-		lprintf(LOG_INFO, info);
+		lprintf(LOG_INFO, "%s", info);
 		if(stricmp(hdr.from, FIDO_PING_NAME) == 0
 			|| stricmp(hdr.from, FIDO_AREAMGR_NAME) == 0
 			)
