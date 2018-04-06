@@ -4445,7 +4445,8 @@ static void smtp_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d SMTP NAME ALIAS: %s (for %s)"
 					,socket,p,rcpt_addr);
 		
-			/* Check if message is to be processed by an external mail processor */
+			/* Check if message is to be processed by one or more external mail processors */
+			mailproc_match = INT_MAX;	// no match, by default
 			for(i=0;i<mailproc_count;i++) {
 
 				if(!mailproc_list[i].process_dnsbl && dnsbl_result.s_addr)
@@ -4459,10 +4460,10 @@ static void smtp_thread(void* arg)
 
 				if(findstr_in_list(p, mailproc_list[i].to) || findstr_in_list(rcpt_addr, mailproc_list[i].to)) {
 					mailproc_to_match[i]=TRUE;
-					break;
+					if(!mailproc_list[i].passthru)
+						mailproc_match = i;
 				}
 			}
-			mailproc_match=i;
 
 			if(!strnicmp(p,"sub:",4)) {		/* Post on a sub-board */
 				p+=4;
