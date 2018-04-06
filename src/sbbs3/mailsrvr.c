@@ -646,7 +646,7 @@ static ulong sockmimetext(SOCKET socket, CRYPT_SESSION sess, smbmsg_t* msg, char
 
 	for(i=0;i<msg->total_hfields;i++)
 		if(msg->hfield[i].type == SMTPRECEIVED && msg->hfield_dat[i]!=NULL) 
-			if(!sockprintf(socket,sess,"Received: %s", msg->hfield_dat[i]))
+			if(!sockprintf(socket,sess,"Received: %s", (char*)msg->hfield_dat[i]))
 				return(0);
 
 	if(!sockprintf(socket,sess,"Date: %s",msgdate(msg->hdr.when_written,date)))
@@ -1317,7 +1317,7 @@ static void pop3_thread(void* arg)
 			break;
 		}
 
-		sockprintf(socket,session,"+OK %lu messages (%lu bytes)",msgs,bytes);
+		sockprintf(socket,session,"+OK %u messages (%lu bytes)",msgs,bytes);
 
 		while(1) {	/* TRANSACTION STATE */
 			rd = sockreadline(socket, session, buf, sizeof(buf));
@@ -1335,7 +1335,7 @@ static void pop3_thread(void* arg)
 				break;
 			}
 			if(!stricmp(buf, "STAT")) {
-				sockprintf(socket,session,"+OK %lu %lu",msgs,bytes);
+				sockprintf(socket,session,"+OK %u %lu",msgs,bytes);
 				continue;
 			}
 			if(!stricmp(buf, "RSET")) {
@@ -1375,7 +1375,7 @@ static void pop3_thread(void* arg)
 				if(l<msgs)
 					sockprintf(socket,session,"-ERR %d messages reset (ERROR: %d)",l,i);
 				else
-					sockprintf(socket,session,"+OK %lu messages (%lu bytes)",msgs,bytes);
+					sockprintf(socket,session,"+OK %u messages (%lu bytes)",msgs,bytes);
 				continue;
 			}
 			if(!strnicmp(buf, "LIST",4) || !strnicmp(buf,"UIDL",4)) {
@@ -1420,13 +1420,13 @@ static void pop3_thread(void* arg)
 					if(!strnicmp(buf, "LIST",4)) {
 						sockprintf(socket,session,"+OK %" PRIu32 " %lu",msgnum,smb_getmsgtxtlen(&msg));
 					} else /* UIDL */
-						sockprintf(socket,session,"+OK %" PRIu32 " %lu",msgnum,msg.hdr.number);
+						sockprintf(socket,session,"+OK %" PRIu32 " %u",msgnum,msg.hdr.number);
 
 					smb_freemsgmem(&msg);
 					continue;
 				}
 				/* List ALL messages */
-				sockprintf(socket,session,"+OK %lu messages (%lu bytes)",msgs,bytes);
+				sockprintf(socket,session,"+OK %u messages (%lu bytes)",msgs,bytes);
 				for(l=0;l<msgs;l++) {
 					msg.hdr.number=mail[l].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
@@ -1450,9 +1450,9 @@ static void pop3_thread(void* arg)
 						break;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
-						sockprintf(socket,session,"%lu %lu",l+1,smb_getmsgtxtlen(&msg));
+						sockprintf(socket,session,"%u %lu",l+1,smb_getmsgtxtlen(&msg));
 					} else /* UIDL */
-						sockprintf(socket,session,"%lu %lu",l+1,msg.hdr.number);
+						sockprintf(socket,session,"%u %u",l+1,msg.hdr.number);
 
 					smb_freemsgmem(&msg);
 				}			
@@ -3873,7 +3873,7 @@ static void smtp_thread(void* arg)
 			if (session != -1)
 				sockprintf(socket,session,"250-STARTTLS");
 			if (startup->max_msg_size)
-				sockprintf(socket,session,"250-SIZE %lu", startup->max_msg_size);
+				sockprintf(socket,session,"250-SIZE %u", startup->max_msg_size);
 			sockprintf(socket,session,ok_rsp);
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
