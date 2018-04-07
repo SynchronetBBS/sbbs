@@ -3389,7 +3389,7 @@ static void smtp_thread(void* arg)
 					}
 				}
 				if(smb_error!=SMB_SUCCESS) {	/* SMB Error */
-					sockprintf(socket,session, errmsg);
+					sockprintf(socket,session, "%s", errmsg);
 					stats.msgs_refused++;
 					continue;
 				}
