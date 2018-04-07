@@ -103,7 +103,7 @@ BOOL base64out(SOCKET socket, int sess, char* pathfile)
     while(1) {
         bytesread=fread(in,1,sizeof(in),fp);
 		if((b64_encode(out,sizeof(out),in,bytesread)==-1)
-				|| !sockprintf(socket,sess,out))  {
+				|| !sockprintf(socket,sess, "%s", out))  {
 			fclose(fp);
 			return(FALSE);
 		}
