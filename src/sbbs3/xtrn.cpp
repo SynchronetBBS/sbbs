@@ -1514,7 +1514,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		/* same deal for emusetup.bat. */
 
 		sprintf(str,"%semusetup.bat",startup_dir);
-		fprintf(stderr, str);
 		if (!fexist(str)) {
 
 		/* If we can't find it in the door dir, look for a global one
