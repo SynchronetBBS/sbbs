@@ -725,7 +725,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 							i=(int)ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
-							i=(int)pntr;
+							i=(long)pntr;
 							break;
 						case XP_PRINTF_TYPE_SIZET:
 							i=s;
@@ -764,7 +764,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 							i=(int)ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
-							i=(int)pntr;
+							i=(long)pntr;
 							break;
 						case XP_PRINTF_TYPE_SIZET:
 							i=s;
@@ -803,7 +803,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 							ui=(unsigned)ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
-							ui=(unsigned int)pntr;
+							ui=(unsigned long)pntr;
 							break;
 						case XP_PRINTF_TYPE_SIZET:
 							ui=s;
