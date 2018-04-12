@@ -25,7 +25,7 @@ const max_len = {
 	created_on:			28,
 	updated_on:			28,
 	verified_on:		28,
-	service_address:	28,
+	service_address:	35,		// Increased from 28
 	software:			15,
 	since:				4,		/* just the year portion of the first_online date */
 	nodes:				4,
