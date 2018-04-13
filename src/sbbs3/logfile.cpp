@@ -285,9 +285,11 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 		,src, line, function, action, object, access
 		,extinfo==NULL ? "":"info="
 		,extinfo==NULL ? "":extinfo);
-	if(online==ON_LOCAL)
+	if(online==ON_LOCAL) {
+		if(useron.number)
+			safe_snprintf(str+strlen(str),sizeof(str)-strlen(str)," (useron=%s)", useron.alias);
 		eprintf(LOG_ERR,"%s",str);
-	else {
+	} else {
 		int savatr=curatr;
 		if(useron.number)
 			safe_snprintf(str+strlen(str),sizeof(str)-strlen(str)," (useron=%s)", useron.alias);
