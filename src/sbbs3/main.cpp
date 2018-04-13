@@ -4030,7 +4030,7 @@ void sbbs_t::hangup(void)
 		client_off(client_socket);
 		if(ssh_mode) {
 			pthread_mutex_lock(&sbbs->ssh_mutex);
-			cryptDestroySession(sbbs->ssh_session);
+			cryptDestroySession(ssh_session);
 			pthread_mutex_unlock(&sbbs->ssh_mutex);
 		}
 		close_socket(client_socket);
