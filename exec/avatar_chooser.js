@@ -172,7 +172,7 @@ function CollectionBrowser(filename, parent_frame) {
 		for (var a = 0; a < collection.count; a++) {
 			frames.container.blit(avatars.substr(a * avatar_lib.size, avatar_lib.size), avatar_lib.defs.width, avatar_lib.defs.height, x, y, collection.descriptions[a], WHITE);
 			x += avatar_lib.defs.width + 2;
-			if (x + avatar_lib.defs.width >= frames.container.x + frames.container.width) {
+			if (x + avatar_lib.defs.width >= frames.container.x + frames.container.width - 1) {
 				x = 1;
 				y += avatar_lib.defs.height + 2;
 			}
