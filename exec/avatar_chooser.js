@@ -263,6 +263,18 @@ function CollectionBrowser(filename, parent_frame) {
 					highlight();
 				}
 				break;
+            case KEY_HOME:
+                if (state.selected > 0) {
+                    state.selected = 0;
+                    highlight();
+                }
+                break;
+            case KEY_END:
+                if (state.selected < collection.count - 1) {
+                    state.selected = collection.count - 1;
+                    highlight();
+                }
+                break;
 			case '\r':
 			case '\n':
 				flashy_flashy();
