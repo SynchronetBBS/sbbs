@@ -771,7 +771,7 @@ function MainMenu(parent_frame) {
 				state.cl = null;
 				frames.parent.attr = BG_BLACK|LIGHTGRAY;
 				state.tree.open();
-                if (state.user_avatar !== null) {
+                if (state.user_avatar !== null && state.opt_out_item !== null) {
                     state.opt_out_item.disable();
                     state.opt_out_item.hide();
                 }
