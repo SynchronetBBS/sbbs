@@ -189,10 +189,11 @@ function CollectionBrowser(filename, parent_frame) {
 		// Actual x, y coordinates of avatar graphic within frames.container
 		var x = 1 + (col * avatar_lib.defs.width) + (2 * col);
 		var y = 2 + (row * avatar_lib.defs.height) + (2 * row);
+        var sy = row == 0 ? y - 2 : (y - 1);
 		if (y - 1 + avatar_lib.defs.height + 3 > frames.container.height) {
-			frames.container.scrollTo(0, y - 1);
+			frames.container.scrollTo(0, sy);
 		} else if (y - 1 < frames.container.offset.y) {
-			frames.container.scrollTo(0, y - 1);
+			frames.container.scrollTo(0, sy);
 		}
 		frames.highlight.moveTo(frames.container.x + x - 1, frames.container.y + y - 1 - frames.container.offset.y);
 	}
