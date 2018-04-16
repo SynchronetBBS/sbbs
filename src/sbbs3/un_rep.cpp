@@ -37,7 +37,7 @@
 #include "qwk.h"
 
 /****************************************************************************/
-/* Unpacks .REP packet, 'repname' is the path and filename of the packet    */
+/* Unpacks .REP packet, 'repfile' is the path and filename of the packet    */
 /****************************************************************************/
 bool sbbs_t::unpack_rep(char* repfile)
 {
@@ -54,6 +54,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	long	l,size,misc;
 	ulong	n;
 	ulong	ex;
+	ulong	errors = 0;
 	node_t	node;
 	FILE*	rep;
 	FILE*	fp;
@@ -136,6 +137,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 			else {
 				voting=iniReadFile(fp);
 				fclose(fp);
+#ifdef _DEBUG
+				for(uint u=0; voting[u]; u++)
+					lprintf(LOG_DEBUG, "VOTING.DAT: %s", voting[u]);
+#endif
 			}
 		}
 		remove(fname);
@@ -177,21 +182,25 @@ bool sbbs_t::unpack_rep(char* repfile)
 		lncntr=0;					/* defeat pause */
 		if(fseek(rep,l,SEEK_SET)!=0) {
 			errormsg(WHERE,ERR_SEEK,msg_fname,l);
+			errors++;
 			break;
 		}
 		if(fread(block,1,QWK_BLOCK_LEN,rep)!=QWK_BLOCK_LEN) {
 			errormsg(WHERE,ERR_READ,msg_fname,(long)ftell(rep));
+			errors++;
 			break;
 		}
 		sprintf(tmp,"%.6s",block+116);
 		blocks=atoi(tmp);  /* i = number of blocks */
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
-				qwk_voting(&voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias);
+				if(!qwk_voting(&voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias))
+					errors++;
 				continue;
 			}
 			SAFEPRINTF3(str,"%s blocks (read '%s' at offset %ld)", msg_fname, tmp, l);
 			errormsg(WHERE,ERR_CHK,str,blocks);
+			errors++;
 			blocks=1;
 			continue; 
 		}
@@ -296,6 +305,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			smb.subnum=INVALID_SUB;
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
+				errors++;
 				continue; 
 			}
 
@@ -307,6 +317,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				if((k=smb_create(&smb))!=0) {
 					smb_close(&smb);
 					errormsg(WHERE,ERR_CREATE,smb.file,k,smb.last_error);
+					errors++;
 					continue; 
 				} 
 			}
@@ -314,12 +325,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_LOCK,smb.file,k,smb.last_error);
+				errors++;
 				continue; 
 			}
 
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_READ,smb.file,k,smb.last_error);
+				errors++;
 				continue; 
 			}
 
@@ -364,7 +377,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 					SAFEPRINTF(str,text[UserSentYouMail],msg.from);
 					putsmsg(&cfg,usernum,str); 
 				} 
-			}
+			} else
+				errors++;
 			smb_close(&smb);
 		}    /* end of email */
 
@@ -375,6 +389,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				bprintf(text[QWKInvalidConferenceN],confnum);
 				SAFEPRINTF2(str,"%s: Invalid QWK conference number %ld",useron.alias,confnum);
 				logline(LOG_NOTICE,"P!",str);
+				errors++;
 				continue; 
 			}
 
@@ -476,6 +491,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				smb.subnum=n;
 				if((j=smb_open(&smb))!=0) {
 					errormsg(WHERE,ERR_OPEN,smb.file,j,smb.last_error);
+					errors++;
 					continue; 
 				}
 
@@ -488,6 +504,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 						smb_close(&smb);
 						lastsub=INVALID_SUB;
 						errormsg(WHERE,ERR_CREATE,smb.file,j,smb.last_error);
+						errors++;
 						continue; 
 					} 
 				}
@@ -496,12 +513,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 					smb_close(&smb);
 					lastsub=INVALID_SUB;
 					errormsg(WHERE,ERR_LOCK,smb.file,j,smb.last_error);
+					errors++;
 					continue; 
 				}
 				if((j=smb_getstatus(&smb))!=0) {
 					smb_close(&smb);
 					lastsub=INVALID_SUB;
 					errormsg(WHERE,ERR_READ,smb.file,j,smb.last_error);
+					errors++;
 					continue; 
 				}
 				smb_unlocksmbhdr(&smb);
@@ -520,7 +539,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 				logline("P+",str); 
 				if(!(useron.rest&FLAG('Q')))
 					user_event(EVENT_POST);
-			}
+			} else
+				errors++;
 		}   /* end of public message */
 	}
 
@@ -595,8 +615,6 @@ bool sbbs_t::unpack_rep(char* repfile)
 	if(useron.rest&FLAG('Q')) {             /* QWK Net Node */
 		if(fexistcase(msg_fname))
 			remove(msg_fname);
-		if(fexistcase(rep_fname))
-			remove(rep_fname);
 		SAFEPRINTF(fname,"%sATTXREF.DAT",cfg.temp_dir);
 		if(fexistcase(fname))
 			remove(fname);
@@ -630,5 +648,5 @@ bool sbbs_t::unpack_rep(char* repfile)
 	/**********************************************/
 	autohangup();
 
-	return(true);
+	return errors == 0;
 }

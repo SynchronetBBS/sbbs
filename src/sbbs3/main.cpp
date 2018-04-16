@@ -71,15 +71,32 @@
 #endif // _WIN32
 
 #ifdef USE_CRYPTLIB
-	#define SSH_END() do {                                  \
-		if(ssh) {                                       \
-			pthread_mutex_lock(&sbbs->ssh_mutex);   \
-			cryptDestroySession(sbbs->ssh_session); \
-			pthread_mutex_unlock(&sbbs->ssh_mutex); \
-		}                                               \
+
+	static	protected_uint32_t	ssh_sessions;
+
+	void ssh_session_destroy(SOCKET sock, CRYPT_SESSION session, int line)
+	{
+		int result = cryptDestroySession(session);
+
+		if(result != 0)
+			lprintf(LOG_ERR, "%04d SSH Error %d destroying Cryptlib Session %d from line %d"
+				, sock, result, session, line);
+		else {
+			int32_t remain = protected_uint32_adjust(&ssh_sessions, -1);
+			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session %d destroyed from line %d (%d remain)"
+				, sock, session, line, remain);
+		}
+	}
+
+	#define SSH_END(sock) do {										\
+		if(ssh) {													\
+			pthread_mutex_lock(&sbbs->ssh_mutex);					\
+			ssh_session_destroy(sock, sbbs->ssh_session, __LINE__);	\
+			pthread_mutex_unlock(&sbbs->ssh_mutex);					\
+		}															\
 	} while(0)
 #else
-	#define	SSH_END()
+	#define	SSH_END(x)
 #endif
 
 volatile time_t	uptime=0;
@@ -1782,7 +1799,8 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 						return status;
 					}
 					cname = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE);
-					lprintf(LOG_WARNING, "%04d SSH ERROR attempt to use channel '%s' (%d != %d)", sbbs->client_socket, cname ? cname : "<unknown>", cid, sbbs->session_channel);
+					lprintf(LOG_WARNING, "Node %d SSH WARNING: attempt to use channel '%s' (%d != %d)"
+						, sbbs->cfg.node_num, cname ? cname : "<unknown>", cid, sbbs->session_channel);
 					if (cname)
 						free_crypt_attrstr(cname);
 					closing_channel = cid;
@@ -2651,7 +2669,7 @@ void event_thread(void* arg)
 					sbbs->console|=CON_L_ECHO;
 					eprintf(LOG_INFO,"Un-packing QWK Reply packet from %s",sbbs->useron.alias);
 					sbbs->getusrsubs();
-					sbbs->unpack_rep(g.gl_pathv[i]);
+					bool success = sbbs->unpack_rep(g.gl_pathv[i]);
 					delfiles(sbbs->cfg.temp_dir,ALLFILES);		/* clean-up temp_dir after unpacking */
 					sbbs->batch_create_list();	/* FREQs? */
 					sbbs->batdn_total=0;
@@ -2659,7 +2677,14 @@ void event_thread(void* arg)
 					sbbs->console&=~CON_L_ECHO;
 					
 					/* putuserdat? */
-					remove(g.gl_pathv[i]);
+					if(success)
+						remove(g.gl_pathv[i]);
+					else {
+						char badpkt[MAX_PATH+1];
+						SAFECOPY(badpkt, g.gl_pathv[i]);
+						SAFEPRINTF(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
+						rename(g.gl_pathv[i], badpkt);
+					}
 					remove(semfile);
 				}
 			}
@@ -3449,8 +3474,8 @@ bool sbbs_t::init()
 		} 
 		inet_addrtop(&addr, local_addr, sizeof(local_addr));
 		inet_addrtop(&client_addr, client_ipaddr, sizeof(client_ipaddr));
-		lprintf(LOG_INFO,"Node %d attached to local interface %s port %u"
-			,cfg.node_num, local_addr, inet_addrport(&addr));
+		lprintf(LOG_INFO,"Node %d socket %u attached to local interface %s port %u"
+			,cfg.node_num, client_socket, local_addr, inet_addrport(&addr));
 
 	}
 
@@ -4030,7 +4055,7 @@ void sbbs_t::hangup(void)
 		client_off(client_socket);
 		if(ssh_mode) {
 			pthread_mutex_lock(&sbbs->ssh_mutex);
-			cryptDestroySession(ssh_session);
+			ssh_session_destroy(client_socket, ssh_session, __LINE__);
 			pthread_mutex_unlock(&sbbs->ssh_mutex);
 		}
 		close_socket(client_socket);
@@ -4774,6 +4799,7 @@ static void cleanup(int code)
 	listFree(&current_connections);
 
 	protected_uint32_destroy(node_threads_running);
+	protected_uint32_destroy(ssh_sessions);
 
 #ifdef _WIN32
 	if(exec_mutex!=NULL) {
@@ -4885,6 +4911,7 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->temp_dir[0])				backslash(startup->temp_dir);
 
 	protected_uint32_init(&node_threads_running,0);
+	protected_uint32_init(&ssh_sessions,0);
 
 	thread_up(FALSE /* setuid */);
 	if(startup->seteuid!=NULL)
@@ -5353,7 +5380,6 @@ NO_SSH:
 		inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 
 		if(trashcan(&scfg,host_ip,"ip-silent")) {
-			SSH_END();
 			close_socket(client_socket);
 			continue;
 		}
@@ -5376,7 +5402,6 @@ NO_SSH:
 				&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
 				lprintf(LOG_NOTICE, "%04d !Maximum concurrent connections without login (%u) reached from host: %s"
  					,client_socket, startup->max_concurrent_connections, host_ip);
-				SSH_END();
 				close_socket(client_socket);
 				SAFEPRINTF(logstr, "Too many concurrent connections without login from host: %s",host_ip);
 				sbbs->syslog("@!",logstr);
@@ -5398,7 +5423,6 @@ NO_SSH:
 					,attempted.user[0] ? ", last: " : "", attempted.user, seconds_to_str(banned, ban_duration));
 			} else
 				lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", client_socket, host_ip);
-			SSH_END();
 			close_socket(client_socket);
 			SAFEPRINTF(logstr, "Blocked IP: %s",host_ip);
 			sbbs->syslog("@!",logstr);
@@ -5426,13 +5450,14 @@ NO_SSH:
 				continue;
 			}
 			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d", client_socket, sbbs->ssh_session);
+			protected_uint32_adjust(&ssh_sessions, 1);
 
 			if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_CONNECTTIMEOUT, startup->ssh_connect_timeout)))
 				GCESS(i, client_socket, sbbs->ssh_session, "setting connect timeout");
 
 			if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_PRIVATEKEY, ssh_context))) {
 				GCESS(i, client_socket, sbbs->ssh_session, "setting private key");
-				cryptDestroySession(sbbs->ssh_session);
+				ssh_session_destroy(client_socket, sbbs->ssh_session, __LINE__);
 				close_socket(client_socket);
 				continue;
 			}
@@ -5440,7 +5465,7 @@ NO_SSH:
 			ioctlsocket(client_socket,FIONBIO,&nb);
 			if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, client_socket))) {
 				GCESS(i, client_socket, sbbs->ssh_session, "setting network socket");
-				cryptDestroySession(sbbs->ssh_session);
+				ssh_session_destroy(client_socket, sbbs->ssh_session, __LINE__);
 				close_socket(client_socket);
 				continue;
 			}
@@ -5473,7 +5498,7 @@ NO_SSH:
 							i=cryptGetAttributeString(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE, tname, &tnamelen);
 							GCESS(i, client_socket, sbbs->ssh_session, "getting channel type");
 							if (tnamelen != 7 || strnicmp(tname, "session", 7)) {
-								lprintf(LOG_INFO, "%04d SSH active channel '%.*s' is not 'session', disconnecting.", client_socket, tnamelen, tname);
+								lprintf(LOG_NOTICE, "%04d SSH active channel '%.*s' is not 'session', disconnecting.", client_socket, tnamelen, tname);
 								sbbs->badlogin(/* user: */NULL, /* passwd: */NULL, "SSH", &client_addr, /* delay: */false);
 								// Fail because there's no session.
 								ssh_failed = 3;
@@ -5498,7 +5523,7 @@ NO_SSH:
 			}
 			if(ssh_failed) {
 				lprintf(LOG_NOTICE, "%04d SSH session establishment failed", client_socket);
-				cryptDestroySession(sbbs->ssh_session);
+				ssh_session_destroy(client_socket, sbbs->ssh_session, __LINE__);
 				close_socket(client_socket);
 				continue;
 			}
@@ -5535,7 +5560,7 @@ NO_SSH:
 		}
 
 		if(sbbs->trashcan(host_name,"host")) {
-			SSH_END();
+			SSH_END(client_socket);
 			close_socket(client_socket);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s"
 				,client_socket, host_name);
@@ -5603,7 +5628,7 @@ NO_SSH:
 			}
 			mswait(3000);
 			client_off(client_socket);
-			SSH_END();
+			SSH_END(client_socket);
 			close_socket(client_socket);
 			continue;
 		}
@@ -5642,7 +5667,7 @@ NO_SSH:
 			delete new_node;
 			node_socket[i-1]=INVALID_SOCKET;
 			client_off(client_socket);
-			SSH_END();
+			SSH_END(client_socket);
 			close_socket(client_socket);
 			continue;
 		}
