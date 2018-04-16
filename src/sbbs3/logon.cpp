@@ -212,9 +212,11 @@ bool sbbs_t::logon()
 		rows=useron.rows;
 	unixtodstr(&cfg,(time32_t)logontime,str);
 	if(!strncmp(str,useron.birth,5) && !(useron.rest&FLAG('Q'))) {
-		bputs(text[HappyBirthday]);
-		pause();
-		CLS;
+		if(text[HappyBirthday][0]) {
+			bputs(text[HappyBirthday]);
+			pause();
+			CLS;
+		}
 		user_event(EVENT_BIRTHDAY); 
 	}
 	useron.ltoday++;
