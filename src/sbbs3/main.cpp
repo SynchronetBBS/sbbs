@@ -2682,7 +2682,7 @@ void event_thread(void* arg)
 					else {
 						char badpkt[MAX_PATH+1];
 						SAFECOPY(badpkt, g.gl_pathv[i]);
-						SAFEPRINTF(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
+						SAFEPRINTF2(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
 						rename(g.gl_pathv[i], badpkt);
 					}
 					remove(semfile);
