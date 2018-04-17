@@ -814,6 +814,7 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	const char* flo_filename;
 	char attachment[MAX_PATH+1];
 	char searchstr[MAX_PATH+1];
+	char* p;
 	FILE *fp;
 	nodecfg_t* nodecfg;
 
@@ -829,7 +830,12 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	if(flo_filename == NULL)
 		return -2;
 
+#ifdef __unix__
+	if(isalpha(infile[0]) && infile[1] == ':')	// Ignore "C:" prefix
+		infile += 2;
+#endif
 	SAFECOPY(attachment, infile);
+	REPLACE_CHARS(attachment, '\\', '/', p);
 	if(!fexistcase(attachment))	{ /* just in-case it's the wrong case for a Unix file system */
 		lprintf(LOG_ERR, "ERROR line %u, attachment file not found: %s", __LINE__, attachment);
 		return -1;
