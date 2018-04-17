@@ -76,46 +76,13 @@ if (!String.prototype.repeat) {
   };
 }
 
-/*
- * TODO: Copied from binkit.js
- */
 function rename_or_move(src, dst)
 {
-	var sf;
-	var df;
-	var buf;
-	var remain;
-
 	if (file_rename(src, dst))
 		return true;
-	sf = new File(src);
-	if (!sf.open("rb"))
+	if (!file_copy(src, dst))
 		return false;
-	df = new File(dst);
-	if (!df.open("web")) {
-		sf.close();
-		return false;
-	}
-	while (!sf.eof) {
-		// Read 2MB at a time...
-		remain = sf.length - sf.position;
-		if (remain === 0)
-			break;
-		if (remain > 0x200000)
-			remain = 0x200000;
-		buf = sf.read(remain);
-		if (!df.write(buf)) {
-			df.close();
-			df.remove();
-			sf.close();
-			return false;
-		}
-	}
-	df.close();
-	sf.close();
-	df.date = sf.date;
-	sf.remove();
-	return true;
+	return file_remove(src);
 }
 
 function process_tic(tic)
