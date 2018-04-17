@@ -126,9 +126,10 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 		return(false); 
 	}
 
-	if(mode&WM_FILE && !SYSOP && !(cfg.sys_misc&SM_FILE_EM))
+	if(mode&WM_FILE && !SYSOP && !(cfg.sys_misc&SM_FILE_EM)) {
+		bputs(text[EmailFilesNotAllowed]);
 		mode&=~WM_FILE;
-
+	}
 
 	if(mode&WM_FILE) {
 		if(!checkfname(title)) {
