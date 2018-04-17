@@ -319,19 +319,24 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	SAFECOPY(text_dir,cfg.text_dir);
 	SAFECOPY(temp_dir,cfg.temp_dir);
 
-#ifdef _WIN32
-
 	if(!(misc&XTRN_NATIVE)) {
+#ifdef _WIN32
 		/* Put Micros~1 shortened paths in drop files when running 16-bit DOS programs */
 		GetShortPathName(cfg.node_dir,node_dir,sizeof(node_dir));
-		GetShortPathName(cfg.ctrl_dir,node_dir,sizeof(ctrl_dir));
+		GetShortPathName(cfg.ctrl_dir,ctrl_dir,sizeof(ctrl_dir));
 		GetShortPathName(cfg.data_dir,data_dir,sizeof(data_dir));
 		GetShortPathName(cfg.exec_dir,exec_dir,sizeof(exec_dir));
 		GetShortPathName(cfg.text_dir,text_dir,sizeof(text_dir));
 		GetShortPathName(cfg.temp_dir,temp_dir,sizeof(temp_dir));
+#elif defined(__linux__) && defined(USE_DOSEMU)
+		/* These drive mappings must match the Linux/DOSEMU patch in xtrn.cpp: */
+		SAFECOPY(node_dir, "D:");
+		SAFECOPY(ctrl_dir, "F:");
+		SAFECOPY(data_dir, "G:");
+		SAFECOPY(exec_dir, "H:");
+#endif
 	}
 
-#endif
 
 	if(type==XTRN_SBBS) {	/* SBBS XTRN.DAT file */
 		strcpy(tmp,"XTRN.DAT");
