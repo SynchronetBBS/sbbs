@@ -261,6 +261,8 @@ struct ciolib_pixels {
 struct ciolib_screen {
 	uint32_t		fg_colour;
 	uint32_t		bg_colour;
+	int			flags;
+	int			fonts[5];
 	struct ciolib_pixels	*pixels;
 	void			*vmem;
 	uint32_t		*foreground;
