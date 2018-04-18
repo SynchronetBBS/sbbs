@@ -377,8 +377,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 					SAFEPRINTF(str,text[UserSentYouMail],msg.from);
 					putsmsg(&cfg,usernum,str); 
 				} 
-			} else
-				errors++;
+			}
 			smb_close(&smb);
 		}    /* end of email */
 
@@ -539,8 +538,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				logline("P+",str); 
 				if(!(useron.rest&FLAG('Q')))
 					user_event(EVENT_POST);
-			} else
-				errors++;
+			}
 		}   /* end of public message */
 	}
 
