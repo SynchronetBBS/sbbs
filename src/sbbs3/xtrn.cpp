@@ -1327,6 +1327,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	fd_set ibits;
 	int	high_fd;
 	struct timeval timeout;
+    BYTE 	wwiv_buf[XTRN_IO_BUF_LEN*2];
+    bool	wwiv_flag=false;
 
 	if(online!=ON_REMOTE || cfg.node_num==0)
 		eprintf(LOG_DEBUG,"Executing external: %s",cmdline);
@@ -1933,8 +1935,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			} else if ((mode & EX_STDIO) != EX_STDIO) {
 				/* LF to CRLF expansion */
 				bp=lf_expand(buf, rd, output_buf, output_len);
-			}
-			else {
+			} else if(mode&EX_WWIV) {
+                bp=wwiv_expand(buf, rd, wwiv_buf, output_len, useron.misc, wwiv_flag);
+				if(output_len > sizeof(wwiv_buf))
+					lprintf(LOG_ERR, "WWIV_BUF OVERRUN");
+			} else {
 				bp=buf;
 				output_len=rd;
 			}
