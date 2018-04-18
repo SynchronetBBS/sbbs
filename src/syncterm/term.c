@@ -720,6 +720,10 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 
 	init_uifc(FALSE, FALSE);
 	result=filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
@@ -803,6 +807,10 @@ void begin_download(struct bbslist *bbs)
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
+		setfont(0, FALSE, 1);
+		setfont(0, FALSE, 2);
+		setfont(0, FALSE, 3);
+		setfont(0, FALSE, 4);
 
 	init_uifc(FALSE, FALSE);
 
@@ -991,6 +999,10 @@ BOOL zmodem_duplicate_callback(void *cbdata, void *zm_void)
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
 	init_uifc(FALSE, FALSE);
 	hold_update=FALSE;
@@ -1371,6 +1383,10 @@ BOOL xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t path
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
 
 	init_uifc(FALSE, FALSE);
@@ -1725,6 +1741,10 @@ void music_control(struct bbslist *bbs)
 
    	gettextinfo(&txtinfo);
    	savscrn = savescreen();
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 	init_uifc(FALSE, FALSE);
 
 	i=cterm->music_enable;
@@ -1769,6 +1789,10 @@ void font_control(struct bbslist *bbs)
 		return;
    	gettextinfo(&txtinfo);
    	savscrn = savescreen();
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 	init_uifc(FALSE, FALSE);
 
 	switch(cio_api.mode) {
@@ -1829,6 +1853,10 @@ void capture_control(struct bbslist *bbs)
 		return;
    	gettextinfo(&txtinfo);
    	savscrn = savescreen();
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 	cap=(char *)alloca(cterm->height*cterm->width*2);
 	gettext(cterm->x, cterm->y, cterm->x+cterm->width-1, cterm->y+cterm->height-1, cap);
 
@@ -2448,6 +2476,10 @@ BOOL doterm(struct bbslist *bbs)
 					{
 						struct ciolib_screen *savscrn;
 						savscrn = savescreen();
+						setfont(0, FALSE, 1);
+						setfont(0, FALSE, 2);
+						setfont(0, FALSE, 3);
+						setfont(0, FALSE, 4);
 						show_bbslist(bbs->name, TRUE);
 						uifcbail();
 						setup_mouse_events();
@@ -2513,6 +2545,10 @@ BOOL doterm(struct bbslist *bbs)
 					{
 						struct ciolib_screen *savscrn;
 						savscrn = savescreen();
+						setfont(0, FALSE, 1);
+						setfont(0, FALSE, 2);
+						setfont(0, FALSE, 3);
+						setfont(0, FALSE, 4);
 						if(quitting || confirm("Disconnect... Are you sure?", "Selecting Yes closes the connection\n")) {
 							freescreen(savscrn);
 							setup_mouse_events();
@@ -2599,6 +2635,10 @@ BOOL doterm(struct bbslist *bbs)
 								struct ciolib_screen *savscrn;
 
 								savscrn = savescreen();
+								setfont(0, FALSE, 1);
+								setfont(0, FALSE, 2);
+								setfont(0, FALSE, 3);
+								setfont(0, FALSE, 4);
 								show_bbslist(bbs->name, TRUE);
 								restorescreen(savscrn);
 								freescreen(savscrn);

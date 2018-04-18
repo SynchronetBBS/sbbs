@@ -37,6 +37,10 @@ void viewscroll(void)
 	memcpy(scrollback,cterm->scrollback,term.width*sizeof(*scrollback)*settings.backlines);
 	vmem_gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm->backpos)*cterm->width);
 	savscrn = savescreen();
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 	drawwin();
 	top=cterm->backpos;
 	gotoxy(1,1);
@@ -151,6 +155,10 @@ int syncmenu(struct bbslist *bbs, int *speed)
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 
 	if(cio_api.mode!=CIOLIB_MODE_CURSES
 			&& cio_api.mode!=CIOLIB_MODE_CURSES_IBM
