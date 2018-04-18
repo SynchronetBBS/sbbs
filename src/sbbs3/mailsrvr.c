@@ -1303,7 +1303,7 @@ static void pop3_thread(void* arg)
 			smb_unlockmsghdr(&smb,&msg);
 			if(i!=0) {
 				lprintf(LOG_ERR,"%04d !POP3 <%s> ERROR %d (%s) line %u, msg #%u"
-					,socket, user.alias, i, smb.last_error, __LINE__, msg.hdr.number);
+					,socket, user.alias, i, smb.last_error, __LINE__, mail[l].number);
 				break;
 			}
 			bytes+=smb_getmsgtxtlen(&msg);
