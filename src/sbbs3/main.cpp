@@ -2012,8 +2012,8 @@ void input_thread(void *arg)
 #ifdef __unix__
 			} else  {
 				if(ERROR_VALUE != EAGAIN)  {
-					lprintf(LOG_ERR,"Node %d !ERROR %d on local spy socket %d receive"
-						, sbbs->cfg.node_num, errno, sock);
+					lprintf(LOG_ERR,"Node %d !ERROR %d (%s) on local spy socket %d receive"
+						, sbbs->cfg.node_num, errno, strerror(errno), sock);
 					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				}
@@ -2683,7 +2683,12 @@ void event_thread(void* arg)
 						char badpkt[MAX_PATH+1];
 						SAFECOPY(badpkt, g.gl_pathv[i]);
 						SAFEPRINTF2(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
-						rename(g.gl_pathv[i], badpkt);
+						remove(badpkt);
+						if(rename(g.gl_pathv[i], badpkt) == 0)
+							eprintf(LOG_NOTICE, "%s renamed to %s", g.gl_pathv[i], badpkt);
+						else
+							eprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
+								,errno, strerror(errno), g.gl_pathv[i], badpkt);
 					}
 					remove(semfile);
 				}
@@ -2886,11 +2891,11 @@ void event_thread(void* arg)
 							char newname[MAX_PATH+1];
 							SAFEPRINTF2(newname,"%s.%lx.bad",str,(long)now);
 							remove(newname);
-							if(rename(str,newname)==0) {
-								char logmsg[MAX_PATH*3];
-								SAFEPRINTF2(logmsg,"%s renamed to %s",str,newname);
-								sbbs->logline(LOG_NOTICE,"Q!",logmsg);
-							}
+							if(rename(str,newname)==0)
+								eprintf(LOG_NOTICE, "%s renamed to %s", str, newname);
+							else
+								eprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
+									,errno, strerror(errno), str, newname);
 						}
 						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
@@ -4985,7 +4990,7 @@ void DLLCALL bbs_thread(void* arg)
 		,ctime_r(&t,str),startup->options);
 
 	if(chdir(startup->ctrl_dir)!=0)
-		lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
+		lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), startup->ctrl_dir);
 
 	/* Initial configuration and load from CNF files */
     SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
@@ -5032,7 +5037,7 @@ void DLLCALL bbs_thread(void* arg)
 		SAFEPRINTF(str,"%sdsts.dab",i ? scfg.node_path[i-1] : scfg.ctrl_dir);
 		if(flength(str)<DSTSDABLEN) {
 			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO, DEFFILEMODE))==-1) {
-				lprintf(LOG_CRIT,"!ERROR %d creating %s",errno, str);
+				lprintf(LOG_CRIT,"!ERROR %d (%s) creating %s",errno, strerror(errno), str);
 				cleanup(1);
 				return; 
 			}
@@ -5229,8 +5234,8 @@ NO_SSH:
 			if(xpms_add(ts_set, PF_UNIX, SOCK_STREAM, 0, str, 0, "Spy Socket", sock_cb, NULL, &uspy_cb[i-1]))
 				lprintf(LOG_INFO,"Node %d local spy using socket %s", i, str);
 			else
-				lprintf(LOG_ERR,"Node %d !ERROR %d creating local spy socket %s"
-					, i, errno, str);
+				lprintf(LOG_ERR,"Node %d !ERROR %d (%s) creating local spy socket %s"
+					, i, errno, strerror(errno), str);
 	    }
 	}
 #endif // __unix__ (unix-domain spy sockets)
