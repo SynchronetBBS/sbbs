@@ -2875,6 +2875,7 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	if((cterm=malloc(sizeof(struct cterminal)))==NULL)
 		return cterm;
 	memset(cterm, 0, sizeof(struct cterminal));
+	cterm->altfont[0] = cterm->altfont[1] = cterm->altfont[2] = cterm->altfont[3] = getfont(1);
 	cterm->x=xpos;
 	cterm->y=ypos;
 	cterm->height=height;
