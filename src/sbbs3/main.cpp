@@ -2439,6 +2439,10 @@ void output_thread(void* arg)
 				pthread_mutex_unlock(&sbbs->ssh_mutex);
 				break;
 			}
+			if(!sbbs->ssh_mode) {
+				pthread_mutex_unlock(&sbbs->ssh_mutex);
+				continue;
+			}
 			if (cryptStatusError((err=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))) {
 				GCESSTR(err, node, sbbs->ssh_session, "setting channel");
 				ssh_errors++;
@@ -5790,8 +5794,10 @@ NO_PASSTHRU:
 			/* Wait for pending data to be sent then turn off ssh_mode for uber-output */
 			while(sbbs->output_thread_running && RingBufFull(&sbbs->outbuf))
 				SLEEP(1);
+			pthread_mutex_lock(&sbbs->ssh_mutex);
 			sbbs->ssh_mode=false;
 			sbbs->ssh_session=0; // Don't allow subsequent SSH connections to affect this one (!)
+			pthread_mutex_unlock(&sbbs->ssh_mutex);
 		}
 #endif
 
