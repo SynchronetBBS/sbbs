@@ -83,7 +83,7 @@
 				, sock, result, session, line);
 		else {
 			int32_t remain = protected_uint32_adjust(&ssh_sessions, -1);
-			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session %d destroyed from line %d (%d remain)"
+			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d destroyed from line %d (%d remain)"
 				, sock, session, line, remain);
 		}
 	}
@@ -162,7 +162,7 @@ int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
 	int GCES_level;                                                      \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                       \
-		lprintf(GCES_level, "%s SSH %s from %s", str, GCES_estr, __FUNCTION__);                \
+		lprintf(GCES_level, "%s SSH %s from %s (session %d)", str, GCES_estr, __FUNCTION__, sess);                \
 		free_crypt_attrstr(GCES_estr);                                       \
 	}                                                                         \
 } while (0)
@@ -5327,7 +5327,6 @@ NO_SSH:
 		} else if(ts_cb == &ssh_cb) {
 			ssh = true;
 			is_client=TRUE;
-			sbbs->ssh_mode=true;
 #endif
 		} else {
 #ifdef __unix__
@@ -5460,8 +5459,9 @@ NO_SSH:
 				close_socket(client_socket);
 				continue;
 			}
-			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d", client_socket, sbbs->ssh_session);
+			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d created", client_socket, sbbs->ssh_session);
 			protected_uint32_adjust(&ssh_sessions, 1);
+			sbbs->ssh_mode = true;
 
 			if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_CONNECTTIMEOUT, startup->ssh_connect_timeout)))
 				GCESS(i, client_socket, sbbs->ssh_session, "setting connect timeout");
