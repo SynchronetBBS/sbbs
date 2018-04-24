@@ -115,10 +115,14 @@
  * 2018-03-25 Eric Oulashin     Version 1.17 beta 58
  *                              For voting, updated to use BallotHdr (791)
  *                              instead of SelectHdr (501).
+ * 2018-04-23 Eric Oulashin     Version 1.17 beta 59
+ *                              When submitting a vote, the thread_id field is now
+ *                              set to the message/poll's message ID, not message number.
  */
 
- // TODO: Add a command for closing a poll (only available to the user who opened the
- // poll).
+// TODO: Support anonymous posts?  Bit values for sub[x].settings:
+//SUB_ANON		=(1<<8);	// Allow anonymous posts on sub
+//SUB_AONLY		=(1<<9);	// Anonymous only
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
    option):
@@ -201,8 +205,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 58";
-var READER_DATE = "2018-03-19";
+var READER_VERSION = "1.17 Beta 59";
+var READER_DATE = "2018-04-23";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -10065,7 +10069,7 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 					}
 				}
 				// Delete any vote response messages for this message
-				var voteDelRetObj = deleteVoteMsgs(msgbase, msgHeader.number, (this.subBoardCode == "mail"));
+				var voteDelRetObj = deleteVoteMsgs(msgbase, msgHeader.number, msgHeader.id, (this.subBoardCode == "mail"));
 				if (!voteDelRetObj.allVoteMsgsDeleted)
 				{
 					console.print("\1n");
@@ -13591,7 +13595,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 						delete this.selectedMessages[subBoardCode][msgIdx];
 
 						// Delete any vote response messages that may exist for this message
-						var voteDelRetObj = deleteVoteMsgs(msgBase, msgHdr.number, (subBoardCode == "mail"));
+						var voteDelRetObj = deleteVoteMsgs(msgBase, msgHdr.number, msgHdr.id, (subBoardCode == "mail"));
 						// TODO: If the main messages was deleted, does it matter if vote response messages
 						// are deleted?
 						if (!voteDelRetObj.allVoteMsgsDeleted)
@@ -13981,7 +13985,7 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	// saved to the messagebase
 	var voteMsgHdr = new Object();
 	voteMsgHdr.thread_back = pMsgHdr.number;
-	voteMsgHdr.reply_id = pMsgHdr.number;
+	voteMsgHdr.reply_id = pMsgHdr.id;
 	voteMsgHdr.from = (msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias;
 	if (pMsgHdr.from.hasOwnProperty("from_net_type"))
 	{
@@ -14248,7 +14252,7 @@ function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
 						continue;
 					// If this header's thread_back or reply_id matches the poll message
 					// number, then append the 'user voted' string to the message body.
-					if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.number))
+					if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
 					{
 						var tmpMessageBody = msgbase.get_msg_body(false, tmpHdrs[tmpProp].number);
 						if ((tmpHdrs[tmpProp].field_list.length == 0) && (tmpMessageBody.length == 0))
@@ -14394,7 +14398,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 							continue;
 						// If this header's thread_back or reply_id matches the poll message
 						// number, then append the 'user voted' string to the message body.
-						if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.number))
+						if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
 						{
 							var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 							var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
@@ -18769,13 +18773,14 @@ function numReadableMsgs(pMsgbase, pSubBoardCode)
 // Parameters:
 //  pMsgbase: A MessageBase object containing the messages to be deleted
 //  pMsgNum: The number of the message for which vote messages should be deleted
+//  pMsgID: The ID of the message for which vote messages should be deleted
 //  pIsMailSub: Boolean - Whether or not it's the personal email area
 //
 // Return value: An object containing the following properties:
 //               numVoteMsgs: The number of vote messages for the given message number
 //               numVoteMsgsDeleted: The number of vote messages that were deleted
 //               allVoteMsgsDeleted: Boolean - Whether or not all vote messages were deleted
-function deleteVoteMsgs(pMsgbase, pMsgNum, pIsEmailSub)
+function deleteVoteMsgs(pMsgbase, pMsgNum, pMsgID, pIsEmailSub)
 {
 	var retObj = {
 		numVoteMsgs: 0,
@@ -18800,10 +18805,10 @@ function deleteVoteMsgs(pMsgbase, pMsgNum, pIsEmailSub)
 		{
 			if (msgHdrs[msgHdrsProp] == null)
 				continue;
-			// If this header is a vote header and its thread_back or reply_id matches the given message
-			// number, then we can delete this message.
+			// If this header is a vote header and its thread_back or reply_id matches the given message,
+			// then we can delete this message.
 			var isVoteMsg = (((msgHdrs[msgHdrsProp].attr & MSG_VOTE) == MSG_VOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_UPVOTE) == MSG_UPVOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_DOWNVOTE) == MSG_DOWNVOTE));
-			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgNum))
+			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgID))
 			{
 				++retObj.numVoteMsgs;
 				msgWasDeleted = pMsgbase.remove_msg(false, msgHdrs[msgHdrsProp].number);
