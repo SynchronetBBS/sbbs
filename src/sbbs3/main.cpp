@@ -215,9 +215,11 @@ static void thread_down()
 int lputs(int level, const char* str)
 {
 	if(level <= LOG_ERR) {
-		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, str);
+		char errmsg[1024];
+		SAFEPRINTF(errmsg, "term %s", str);
+		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
-			startup->errormsg(startup->cbdata,level,str);
+			startup->errormsg(startup->cbdata,level,errmsg);
 	}
 
 	if(startup==NULL || startup->lputs==NULL || str==NULL || level > startup->log_level)
