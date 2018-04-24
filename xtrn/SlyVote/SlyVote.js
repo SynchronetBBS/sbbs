@@ -108,6 +108,9 @@
  * 2018-03-25 Eric Oulashin     Version 0.36 Beta
  *                              For non-lightbar voting, updated to use BallotHdr (791)
  *                              instead of SelectHdr (501).
+ * 2018-04-23 Eric Oulashin     Version 0.37 Beta
+ *                              When submitting a vote, the thread_id field is now
+ *                              set to the message/poll's message ID, not message number.
  */
 
 load("sbbsdefs.js");
@@ -159,8 +162,8 @@ load("smbdefs.js");
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.36 Beta";
-var SLYVOTE_DATE = "2018-03-25";
+var SLYVOTE_VERSION = "0.37 Beta";
+var SLYVOTE_DATE = "2018-04-23";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -1299,7 +1302,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 							continue;
 						// If this header's thread_back or reply_id matches the poll message
 						// number, then append the 'user voted' string to the message body.
-						if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.number))
+						if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
 						{
 							var msgWrittenLocalTime = MsgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 							var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
@@ -1523,7 +1526,7 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 	// saved to the messagebase
 	var voteMsgHdr = new Object();
 	voteMsgHdr.thread_back = pMsgHdr.number;
-	voteMsgHdr.reply_id = pMsgHdr.number;
+	voteMsgHdr.reply_id = pMsgHdr.id;
 	voteMsgHdr.from = (pMsgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias;
 	if (pMsgHdr.from.hasOwnProperty("from_net_type"))
 	{
@@ -3093,11 +3096,13 @@ function DeleteMessage(pMsgbase, pMsgNum, pSubBoardCode)
 		allVoteMsgsDeleted: false
 	};
 
+	var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, true);
+	var msgID = (msgHdr == null ? "" : msgHdr.id);
 	retObj.messageDeleted = pMsgbase.remove_msg(false, pMsgNum);
 	if (retObj.messageDeleted)
 	{
 		// Delete any vote response messages for this message
-		var voteDelRetObj = DeleteVoteMsgs(pMsgbase, pMsgNum, (pSubBoardCode == "mail"));
+		var voteDelRetObj = DeleteVoteMsgs(pMsgbase, pMsgNum, msgID, (pSubBoardCode == "mail"));
 		retObj.allVoteMsgsDeleted = voteDelRetObj.allVoteMsgsDeleted;
 	}
 
@@ -3110,13 +3115,14 @@ function DeleteMessage(pMsgbase, pMsgNum, pSubBoardCode)
 // Parameters:
 //  pMsgbase: A MessageBase object containing the messages to be deleted
 //  pMsgNum: The number of the message for which vote messages should be deleted
+//  pMsgID: The ID of the message for which vote messages should be deleted
 //  pIsMailSub: Boolean - Whether or not it's the personal email area
 //
 // Return value: An object containing the following properties:
 //               numVoteMsgs: The number of vote messages for the given message number
 //               numVoteMsgsDeleted: The number of vote messages that were deleted
 //               allVoteMsgsDeleted: Boolean - Whether or not all vote messages were deleted
-function DeleteVoteMsgs(pMsgbase, pMsgNum, pIsEmailSub)
+function DeleteVoteMsgs(pMsgbase, pMsgNum, pMsgID, pIsEmailSub)
 {
 	var retObj = {
 		numVoteMsgs: 0,
@@ -3141,10 +3147,10 @@ function DeleteVoteMsgs(pMsgbase, pMsgNum, pIsEmailSub)
 		{
 			if (msgHdrs[msgHdrsProp] == null)
 				continue;
-			// If this header is a vote header and its thread_back or reply_id matches the given message
-			// number, then we can delete this message.
+			// If this header is a vote header and its thread_back or reply_id matches the given message,
+			// then we can delete this message.
 			var isVoteMsg = (((msgHdrs[msgHdrsProp].attr & MSG_VOTE) == MSG_VOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_UPVOTE) == MSG_UPVOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_DOWNVOTE) == MSG_DOWNVOTE));
-			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgNum))
+			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgID))
 			{
 				++retObj.numVoteMsgs;
 				msgWasDeleted = pMsgbase.remove_msg(false, msgHdrs[msgHdrsProp].number);
