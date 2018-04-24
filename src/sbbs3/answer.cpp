@@ -1,4 +1,5 @@
 /* Synchronet answer "caller" function */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -163,9 +164,9 @@ bool sbbs_t::answer()
 			}
 			else {
 				if(cfg.sys_misc&SM_ECHO_PW)
-					lprintf(LOG_INFO,"Node %d RLogin: UNKNOWN USER: '%s' (password: %s)",cfg.node_num, rlogin_name, rlogin_pass);
+					lprintf(LOG_NOTICE, "Node %d RLogin !UNKNOWN USER: '%s' (password: %s)",cfg.node_num, rlogin_name, rlogin_pass);
 				else
-					lprintf(LOG_INFO,"Node %d RLogin: UNKNOWN USER: '%s'",cfg.node_num,rlogin_name);
+					lprintf(LOG_NOTICE, "Node %d RLogin !UNKNOWN USER: '%s'",cfg.node_num,rlogin_name);
 				badlogin(rlogin_name, rlogin_pass);
 			}
 		}
@@ -262,9 +263,9 @@ bool sbbs_t::answer()
 		}
 		else {
 			if(cfg.sys_misc&SM_ECHO_PW)
-				lprintf(LOG_INFO,"Node %d SSH: UNKNOWN USER: '%s' (password: %s)",cfg.node_num,rlogin_name, truncsp(tmp));
+				lprintf(LOG_NOTICE, "Node %d SSH !UNKNOWN USER: '%s' (password: %s)",cfg.node_num,rlogin_name, truncsp(tmp));
 			else
-				lprintf(LOG_INFO,"Node %d SSH: UNKNOWN USER: '%s'",cfg.node_num,rlogin_name);
+				lprintf(LOG_NOTICE, "Node %d SSH !UNKNOWN USER: '%s'",cfg.node_num,rlogin_name);
 			badlogin(rlogin_name, tmp);
 		}
 	}
@@ -428,7 +429,7 @@ bool sbbs_t::answer()
 		&& !(cfg.sys_misc&SM_CLOSED) 
 		&& !matchuser(&cfg, rlogin_name, /* Sysop alias: */FALSE)
 		&& !::trashcan(&cfg, rlogin_name, "name")) {
-		lprintf(LOG_INFO, "Node %d UNKNOWN %s-specified username: '%s', starting new user signup"
+		lprintf(LOG_INFO, "Node %d %s !UNKNOWN specified username: '%s', starting new user signup"
 			,cfg.node_num,client.protocol,rlogin_name);
 		bprintf("%s: %s\r\n", text[UNKNOWN_USER], rlogin_name);
 		newuser();
