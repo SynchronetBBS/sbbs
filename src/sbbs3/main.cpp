@@ -92,6 +92,7 @@
 		if(ssh) {													\
 			pthread_mutex_lock(&sbbs->ssh_mutex);					\
 			ssh_session_destroy(sock, sbbs->ssh_session, __LINE__);	\
+			sbbs->ssh_mode = false;									\
 			pthread_mutex_unlock(&sbbs->ssh_mutex);					\
 		}															\
 	} while(0)
@@ -4065,6 +4066,7 @@ void sbbs_t::hangup(void)
 		if(ssh_mode) {
 			pthread_mutex_lock(&sbbs->ssh_mutex);
 			ssh_session_destroy(client_socket, ssh_session, __LINE__);
+			sbbs->ssh_mode = false;
 			pthread_mutex_unlock(&sbbs->ssh_mutex);
 		}
 		close_socket(client_socket);
@@ -5466,7 +5468,7 @@ NO_SSH:
 
 			if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_PRIVATEKEY, ssh_context))) {
 				GCESS(i, client_socket, sbbs->ssh_session, "setting private key");
-				ssh_session_destroy(client_socket, sbbs->ssh_session, __LINE__);
+				SSH_END(client_socket);
 				close_socket(client_socket);
 				continue;
 			}
@@ -5474,7 +5476,7 @@ NO_SSH:
 			ioctlsocket(client_socket,FIONBIO,&nb);
 			if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, client_socket))) {
 				GCESS(i, client_socket, sbbs->ssh_session, "setting network socket");
-				ssh_session_destroy(client_socket, sbbs->ssh_session, __LINE__);
+				SSH_END(client_socket);
 				close_socket(client_socket);
 				continue;
 			}
@@ -5532,7 +5534,7 @@ NO_SSH:
 			}
 			if(ssh_failed) {
 				lprintf(LOG_NOTICE, "%04d SSH session establishment failed", client_socket);
-				ssh_session_destroy(client_socket, sbbs->ssh_session, __LINE__);
+				SSH_END(client_socket);
 				close_socket(client_socket);
 				continue;
 			}
