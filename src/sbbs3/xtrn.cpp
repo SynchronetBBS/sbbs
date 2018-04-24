@@ -1329,6 +1329,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	struct timeval timeout;
     BYTE 	wwiv_buf[XTRN_IO_BUF_LEN*2];
     bool	wwiv_flag=false;
+#if defined(__FreeBSD__) || (defined(__linux__) && defined(USE_DOSEMU))
+ 	char* p;
+#endif
 
 	if(online!=ON_REMOTE || cfg.node_num==0)
 		eprintf(LOG_DEBUG,"Executing external: %s",cmdline);
@@ -1425,7 +1428,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		FILE *dosemubat;
 		int setup_override;
 		char tok[MAX_PATH+1];
- 		char* p;
 
 		char dosemuconf[MAX_PATH+1];
 		char dosemubinloc[MAX_PATH+1];
