@@ -36,6 +36,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>	/* atoi, qsort */
+#include <stdbool.h>
 #include <string.h>	/* strnicmp */
 #include <ctype.h>	/* toupper */
 
@@ -92,11 +93,15 @@ void sort_index(smb_t* smb)
 	printf("\n");
 }
 
+bool we_locked_the_base = false;
+
 void unlock_msgbase(void)
 {
 	int i;
-	if(smb_islocked(&smb) && (i=smb_unlock(&smb))!=0)
+	if(we_locked_the_base && smb_islocked(&smb) && (i=smb_unlock(&smb))!=0)
 		printf("smb_unlock returned %d: %s\n",i,smb.last_error);
+	else
+		we_locked_the_base = false;
 }
 
 int fixsmb(char* sub)
@@ -108,7 +113,7 @@ int fixsmb(char* sub)
 	ulong		l,length,size,n;
 	smbmsg_t	msg;
 	uint32_t*	numbers = NULL;
-	uint32_t	total = 0;
+	long		total = 0;
 	BOOL		dupe_msgnum;
 	uint32_t	highest = 0;
 
@@ -137,6 +142,7 @@ int fixsmb(char* sub)
 		printf("smb_lock returned %d: %s\n",i,smb.last_error);
 		exit(1);
 	}
+	we_locked_the_base = true;
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
