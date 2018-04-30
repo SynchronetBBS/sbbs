@@ -113,19 +113,17 @@ int sbbs_t::delmail(uint usernumber, int which)
 		l++; 
 	}
 	smb_rewind(smb.sid_fp);
-	if(smb_fsetlength(smb.sid_fp,0) != 0)
-		errormsg(WHERE, "truncating", smb.file, 0);
-	else {
-		for(i=0;i<l;i++) {
-			if(smb_fwrite(&smb,&idxbuf[i],sizeof(idxrec_t),smb.sid_fp) != sizeof(idxrec_t)) {
-				errormsg(WHERE, ERR_WRITE, smb.file, i);
-				break;
-			}
+	for(i=0;i<l;i++) {
+		if(smb_fwrite(&smb,&idxbuf[i],sizeof(idxrec_t),smb.sid_fp) != sizeof(idxrec_t)) {
+			errormsg(WHERE, ERR_WRITE, smb.file, i);
+			break;
 		}
-		smb.status.total_msgs=i;
-		smb_putstatus(&smb);
-		smb_fflush(smb.sid_fp);
 	}
+	smb_fflush(smb.sid_fp);
+	if(smb_fsetlength(smb.sid_fp, i * sizeof(idxrec_t)) != 0)
+		errormsg(WHERE, "truncating", smb.file, i * sizeof(idxrec_t));
+	smb.status.total_msgs=i;
+	smb_putstatus(&smb);
 	free(idxbuf);
 	smb_close_ha(&smb);
 	smb_close_da(&smb);
