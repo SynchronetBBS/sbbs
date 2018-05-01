@@ -619,8 +619,12 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 	fd_set	wr_set;
 	struct timeval tv;
 	int status;
+	BOOL local_failed = FALSE;
 
-	while(sent<len && session->socket!=INVALID_SOCKET) {
+	if (failed == NULL)
+		failed = &local_failed;
+
+	while(sent<len && session->socket!=INVALID_SOCKET && *failed == FALSE) {
 		FD_ZERO(&wr_set);
 		FD_SET(session->socket,&wr_set);
 		/* Convert timeout from ms to sec/usec */
@@ -642,14 +646,11 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 					}
 					if(cryptStatusOK(status)) {
 						HANDLE_CRYPT_CALL_EXCEPT(status = cryptFlushData(session->tls_sess), session, "flushing data", CRYPT_ERROR_COMPLETE);
-						if (cryptStatusError(status)) {
-							if (failed)
-								*failed=TRUE;
-						}
+						if (cryptStatusError(status))
+							*failed=TRUE;
 						return tls_sent;
 					}
-					if (failed)
-						*failed=TRUE;
+					*failed=TRUE;
 					result = tls_sent;
 				}
 				else {
@@ -665,26 +666,23 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 #endif
 						else
 							lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",session->socket,ERROR_VALUE);
-						if (failed)
-							*failed=TRUE;
+						*failed=TRUE;
 						return(sent);
 					}
 				}
 				break;
 			case 0:
 				lprintf(LOG_WARNING,"%04d Timeout selecting socket for write",session->socket);
-				if(failed)
-					*failed=TRUE;
+				*failed=TRUE;
 				return(sent);
 			case -1:
 				lprintf(LOG_WARNING,"%04d !ERROR %d selecting socket for write",session->socket,ERROR_VALUE);
-				if(failed)
-					*failed=TRUE;
+				*failed=TRUE;
 				return(sent);
 		}
 		sent+=result;
 	}
-	if(failed && sent<len)
+	if(sent<len)
 		*failed=TRUE;
 	if(session->is_tls)
 		HANDLE_CRYPT_CALL(cryptFlushData(session->tls_sess), session, "flushing data");
