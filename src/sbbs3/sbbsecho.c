@@ -2690,10 +2690,14 @@ bool unpack_bundle(const char* inbound)
 			gi++;
 			lprintf(LOG_INFO,"Unpacking bundle: %s (%1.1fKB)", fname, flength(fname)/1024.0);
 			if(unpack(fname, inbound)) {	/* failure */
-				lprintf(LOG_ERR,"!Unpack failure");
+				lprintf(LOG_ERR, "!Unpack failure: %s", fname);
 				if(fdate(fname)+(48L*60L*60L)<time(NULL)) {	
-					/* If bundle file older than 48 hours, give up and rename
-					   to "*.?_?" or (if it exists) "*.?-?" */
+					/* If bundle file older than 48 hours, give up */
+					if(flength(fname) < 1) {
+						delfile(fname, __LINE__);	/* Delete it if it's a 0-byte file */
+						continue;
+					}
+					/* rename to "*.?_?" or (if it exists) "*.?-?" */
 					SAFECOPY(str,fname);
 					str[strlen(str)-2]='_';
 					if(fexistcase(str))
