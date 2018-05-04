@@ -161,7 +161,11 @@ function add_outbound_files(addrs, bp)
 				var fnchars = '0123456789abcdefghijklmnopqrstuvwxyz';
 				var fname;
 
-				switch(file_getext(file).toLowerCase()) {
+				var ext = file_getext(file);
+				if (ext !== undefined)
+					ext = ext.toLowerCase();
+				
+				switch(ext) {
 					case '.clo':
 					case '.dlo':
 					case '.flo':
@@ -684,6 +688,10 @@ function run_one_outbound_dir(dir, scfg, ran)
 			if (ran[addr] !== undefined)
 				continue;
 			ext = file_getext(flow_files[i]);
+			if (ext === undefined) {
+				log(LOG_WARNING, "Unknown flow file flavour '"+flow_files[i]+"'.");
+				continue;
+			}
 
 			// Ensure this is the "right" outbound (file case, etc)
 			if (flow_files[i] !== outbound_root(addr, scfg)+addr.flo_outbound(myaddr.zone)+ext.substr(1)) {
