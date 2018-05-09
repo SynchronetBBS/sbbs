@@ -333,6 +333,17 @@ function article_listed(list, article)
 	return(false);
 }
 
+function save_ptr(ini_file, name, value)
+{
+	/* Save Pointers */
+	if(!ini_file.open(ini_file.exists ? "r+":"w+"))
+		printf("!ERROR %d creating/opening %s\r\n",errno,ini_file.name);
+	else {
+		ini_file.iniSetValue("NewsLink", name, value);
+		ini_file.close();
+	}
+}
+
 printf("Scanning %lu message bases...\r\n",area.length);
 for(i in area) {
 	
@@ -379,18 +390,7 @@ for(i in area) {
 	import_ptr = NaN;			// Set to highest possible message number (by default)
 	if(flags.indexOf('i')>=0)	// import all
 		import_ptr = 0;
-	/* Old way to store pointers: */
-	ptr_fname = msgbase.file + ".snl";
-	ptr_file = new File(ptr_fname);
-	if(ptr_file.open("rb")) {
-		export_ptr = ptr_file.readBin();
-		printf("%s.snl export ptr: %ld\r\n",sub,export_ptr);
-		import_ptr = ptr_file.readBin();
-		printf("%s.snl import ptr: %ld\r\n",sub,import_ptr);
-		ptr_file.close();
-	}
-	delete ptr_file;
-	/* New way to store pointers: */
+
 	ini_fname = msgbase.file + ".ini";
 	ini_file = new File(ini_fname);
 	if(ini_file.open("r")) {
@@ -430,22 +430,36 @@ for(i in area) {
 			/* retrieve by offset? */	false,
 			/* message number */		ptr
 			);
-		if(hdr == null)
+		if(hdr == null) {
+			alert("Failed to read msg header #" + ptr);
 			continue;
-		if(hdr.attr&MSG_DELETE)	/* marked for deletion */
+		}
+		if(hdr.attr&MSG_DELETE)	{ /* marked for deletion */
+			if(debug)
+				printf("skipping deleting msg #" + ptr);
 			continue;
+		}
 		if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
 			print("Stopping at unvalidated moderated message: " + ptr);
 			ptr--;
 			break;
 		}
-		if(hdr.attr&MSG_PRIVATE)/* no private messages on NNTP */
+		if(hdr.attr&MSG_PRIVATE) { /* no private messages on NNTP */
+			if(debug)
+				printf("skipping deleted msg #" + ptr);
 			continue;
-		if(hdr.from_net_type==NET_INTERNET)	/* no dupe loop */
+		}
+		if(hdr.from_net_type==NET_INTERNET)	{ /* no dupe loop */
+			if(debug)
+				printf("skipping msg from the Internet #" + ptr);
 			continue;
+		}
 		if(hdr.from_net_type	/* don't gate messages between net types */
-			&& msgbase.cfg!=undefined && !(msgbase.cfg.settings&SUB_GATE))
+			&& msgbase.cfg!=undefined && !(msgbase.cfg.settings&SUB_GATE)) {
+			if(debug)
+				printf("skipping (not gating) networked message #" + ptr);
 			continue;
+		}
 
 		body = msgbase.get_msg_body(
 				 false	/* retrieve by offset */
@@ -533,6 +547,7 @@ for(i in area) {
 	if(ptr > msgbase.last_msg)
 		ptr = msgbase.last_msg;
 	export_ptr = ptr;
+	save_ptr(ini_file, "export_ptr", export_ptr);
 
 	/***************************/
 	/* IMPORT Network Messages */
@@ -930,16 +945,7 @@ for(i in area) {
 		ptr = last_msg;
 	import_ptr = ptr;
 
-	/* Save Pointers */
-	if(!ini_file.open(ini_file.exists ? "r+":"w+"))
-		printf("!ERROR %d creating/opening %s\r\n",errno,ini_file.name);
-	else {
-		ini_file.iniSetValue("NewsLink", "export_ptr", export_ptr);
-		ini_file.iniSetValue("NewsLink", "import_ptr", import_ptr);
-		ini_file.close();
-		if(file_exists(ptr_fname))
-			file_remove(ptr_fname);
-	}
+	save_ptr(ini_file, "import_ptr", import_ptr);
 	delete ini_file;
 	msgbase.close();
 	delete msgbase;
