@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.17 beta 59
-                           Release date: 2018-04-23
+                                 Version 1.17 beta 60
+                           Release date: 2018-05-08
 
                                      by
 
