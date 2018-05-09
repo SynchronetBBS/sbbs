@@ -118,6 +118,9 @@
  * 2018-04-23 Eric Oulashin     Version 1.17 beta 59
  *                              When submitting a vote, the thread_id field is now
  *                              set to the message/poll's message ID, not message number.
+ * 2018-05-08 Eric Oulashin     Version 1.17 beta 60
+ *                              When a non-sysop is reading anonymous posts, the
+ *                              "from" name is now shown as "Anonymous".
  */
 
 // TODO: Support anonymous posts?  Bit values for sub[x].settings:
@@ -205,8 +208,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 59";
-var READER_DATE = "2018-04-23";
+var READER_VERSION = "1.17 Beta 60";
+var READER_DATE = "2018-05-08";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -8522,9 +8525,6 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 		msgVoteScore = pMsgHdr.upvotes - msgDownvotes;
 	}
 	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
-	                         .replace(/@MSG_FROM@/gi, pMsgHdr["from"])
-	                         .replace(/@MSG_FROM_AND_FROM_NET@/gi, pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : ""))
-	                         .replace(/@MSG_FROM_EXT@/gi, (typeof(pMsgHdr["from_ext"]) == "string" ? pMsgHdr["from_ext"] : ""))
 	                         .replace(/@MSG_TO@/gi, pMsgHdr["to"])
 	                         .replace(/@MSG_TO_NAME@/gi, pMsgHdr["to"])
 	                         .replace(/@MSG_TO_EXT@/gi, (typeof(pMsgHdr["to_ext"]) == "string" ? pMsgHdr["to_ext"] : ""))
@@ -8558,6 +8558,22 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 							 .replace(/@MSG_UPVOTES@/gi, msgUpvotes)
 							 .replace(/@MSG_DOWNVOTES@/gi, msgDownvotes)
 							 .replace(/@MSG_SCORE@/gi, msgVoteScore);
+	// If the user is not the sysop and the message was posted anonymously,
+	// then replace the from name @-codes with "Anonymous".  Otherwise,
+	// replace the from name @-codes with the actual from name.
+	//if (!gIsSysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+	if (true && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+	{
+		newTxtLine = newTxtLine.replace(/@MSG_FROM@/gi, "Anonymous")
+		                       .replace(/@MSG_FROM_AND_FROM_NET@/gi, "Anonymous")
+		                       .replace(/@MSG_FROM_EXT@/gi, "Anonymous");
+	}
+	else
+	{
+		newTxtLine = newTxtLine.replace(/@MSG_FROM@/gi, pMsgHdr["from"])
+		                       .replace(/@MSG_FROM_AND_FROM_NET@/gi, pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : ""))
+		                       .replace(/@MSG_FROM_EXT@/gi, (typeof(pMsgHdr["from_ext"]) == "string" ? pMsgHdr["from_ext"] : ""));
+	}
 	if (!pAllowCLS)
 		newTxtLine = newTxtLine.replace(/@CLS@/gi, "");
 	return newTxtLine;
@@ -8595,13 +8611,37 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
 	var replacementTxt = "";
 	if (pAtCodeStr.indexOf("@MSG_FROM_AND_FROM_NET") > -1)
 	{
-		var fromWithNet = pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : "");
-		replacementTxt = fromWithNet.substr(0, pSpecifiedLen);
+		// If the user is not the sysop and the message was posted anonymously,
+		// then replace the from name @-codes with "Anonymous".  Otherwise,
+		// replace the from name @-codes with the actual from name.
+		if (!gIsSysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+			replacementTxt = "Anonymous".substr(0, pSpecifiedLen);
+		else
+		{
+			var fromWithNet = pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : "");
+			replacementTxt = fromWithNet.substr(0, pSpecifiedLen);
+		}
 	}
 	else if (pAtCodeStr.indexOf("@MSG_FROM") > -1)
-		replacementTxt = pMsgHdr["from"].substr(0, pSpecifiedLen);
+	{
+		// If the user is not the sysop and the message was posted anonymously,
+		// then replace the from name @-codes with "Anonymous".  Otherwise,
+		// replace the from name @-codes with the actual from name.
+		if (!gIsSysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+			replacementTxt = "Anonymous".substr(0, pSpecifiedLen);
+		else
+			replacementTxt = pMsgHdr["from"].substr(0, pSpecifiedLen);
+	}
 	else if (pAtCodeStr.indexOf("@MSG_FROM_EXT") > -1)
-		replacementTxt = (typeof pMsgHdr["from_ext"] === "undefined" ? "" : pMsgHdr["from_ext"].substr(0, pSpecifiedLen));
+	{
+		// If the user is not the sysop and the message was posted anonymously,
+		// then replace the from name @-codes with "Anonymous".  Otherwise,
+		// replace the from name @-codes with the actual from name.
+		if (!gIsSysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+			replacementTxt = "Anonymous".substr(0, pSpecifiedLen);
+		else
+			replacementTxt = (typeof pMsgHdr["from_ext"] === "undefined" ? "" : pMsgHdr["from_ext"].substr(0, pSpecifiedLen));
+	}
 	else if ((pAtCodeStr.indexOf("@MSG_TO") > -1) || (pAtCodeStr.indexOf("@MSG_TO_NAME") > -1))
 		replacementTxt = pMsgHdr["to"].substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_TO_EXT") > -1)
@@ -12286,7 +12326,7 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	// script, etc., and I don't want users on message networks to do anything
 	// malicious to users on other BBSes.
 	if (this.readingPersonalEmail)
-		msgTextAltered = replaceAtCodesInStr(msgTextAltered, pMsgHdr); // Or this.ParseMsgAtCodes(msgTextAltered, pMsgHdr) to replace only some @ codes
+		msgTextAltered = replaceAtCodesInStr(msgTextAltered); // Or this.ParseMsgAtCodes(msgTextAltered, pMsgHdr) to replace only some @ codes
 	msgTextAltered = msgTextAltered.replace(/\t/g, this.tabReplacementText);
 	// Convert other BBS color codes to Synchronet attribute codes if the settings
 	// to do so are enabled.
