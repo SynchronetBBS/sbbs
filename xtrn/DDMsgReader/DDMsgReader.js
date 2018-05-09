@@ -8561,8 +8561,7 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	// If the user is not the sysop and the message was posted anonymously,
 	// then replace the from name @-codes with "Anonymous".  Otherwise,
 	// replace the from name @-codes with the actual from name.
-	//if (!gIsSysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
-	if (true && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+	if (!gIsSysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
 	{
 		newTxtLine = newTxtLine.replace(/@MSG_FROM@/gi, "Anonymous")
 		                       .replace(/@MSG_FROM_AND_FROM_NET@/gi, "Anonymous")
