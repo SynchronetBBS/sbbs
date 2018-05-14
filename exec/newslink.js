@@ -434,6 +434,10 @@ for(i in area) {
 			alert("Failed to read msg header #" + ptr);
 			continue;
 		}
+		if(!hdr.id) {
+			alert("Message #" + ptr + " is missing a Message-ID header field");
+			continue;
+		}
 		if(hdr.attr&MSG_DELETE)	{ /* marked for deletion */
 			if(debug)
 				printf("skipping deleting msg #" + ptr);
