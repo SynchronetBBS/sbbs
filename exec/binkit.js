@@ -161,6 +161,8 @@ function add_outbound_files(addrs, bp)
 				var fnchars = '0123456789abcdefghijklmnopqrstuvwxyz';
 				var fname;
 
+				if(file_isdir(file))
+					return;
 				var ext = file_getext(file);
 				if (ext !== undefined)
 					ext = ext.toLowerCase();
