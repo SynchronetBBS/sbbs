@@ -926,7 +926,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 	memset(&msg,0,sizeof(msg));
 
 	n=0;
-	if(JSVAL_IS_BOOLEAN(argv[n]))
+	if(n < argc && JSVAL_IS_BOOLEAN(argv[n]))
 		by_offset = JSVAL_TO_BOOLEAN(argv[n++]);
 
 	for(;n<argc;n++) {
@@ -1465,11 +1465,11 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 
 	p->expand_fields=JS_TRUE;	/* This parameter defaults to true */
 	n=0;
-	if(JSVAL_IS_BOOLEAN(argv[n]))
+	if(n < argc && JSVAL_IS_BOOLEAN(argv[n]))
 		by_offset = JSVAL_TO_BOOLEAN(argv[n++]);
 
 	/* Now parse message offset/id and get message */
-	if(JSVAL_IS_NUMBER(argv[n])) {
+	if(n < argc && JSVAL_IS_NUMBER(argv[n])) {
 		if(by_offset) {							/* Get by offset */
 			if(!JS_ValueToInt32(cx,argv[n++],(int32*)&(p->msg).offset)) {
 				free(p);
@@ -1505,7 +1505,7 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 
 		smb_unlockmsghdr(&(p->p->smb),&(p->msg)); 
 		JS_RESUMEREQUEST(cx, rc);
-	} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
+	} else if(n < argc && JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
 		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[n]), cstr, NULL);
 		n++;
 		if(JS_IsExceptionPending(cx)) {
@@ -1532,10 +1532,10 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 
-	if(JSVAL_IS_BOOLEAN(argv[n]))
+	if(n < argc && JSVAL_IS_BOOLEAN(argv[n]))
 		p->expand_fields = JSVAL_TO_BOOLEAN(argv[n++]);
 
-	if(JSVAL_IS_BOOLEAN(argv[n]))
+	if(n < argc && JSVAL_IS_BOOLEAN(argv[n]))
 		include_votes = JSVAL_TO_BOOLEAN(argv[n++]);
 
 	if(!include_votes && (p->msg.hdr.attr&MSG_VOTE)) {
