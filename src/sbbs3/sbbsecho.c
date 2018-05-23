@@ -4792,6 +4792,9 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			else					/* generate TID */
 				f+=sprintf(fmsgbuf+f,"\1TID: %s\r", sbbsecho_pid());
 
+			if(rescan)
+				f+=sprintf(fmsgbuf+f,"\1RESCANNED %s\r", smb_faddrtoa(&scfg.sub[subnum]->faddr,NULL));
+
 			/* Unknown kludge lines are added here */
 			for(l=0;l<msg.total_hfields && f<fmsgbuflen;l++)
 				if(msg.hfield[l].type == FIDOCTRL)
