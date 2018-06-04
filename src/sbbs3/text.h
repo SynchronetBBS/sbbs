@@ -811,6 +811,7 @@ enum {
 	,MsgHdrBodySeparator
 	,FileHdrDescSeparator
 	,RemoveFileQ
+	,OriginFidoAddr
 
 	,TOTAL_TEXT
 };
