@@ -269,6 +269,8 @@ DLLEXPORT BOOL DLLCALL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockadd
 #ifndef IPPORT_SUBMISSIONS
 #define IPPORT_SUBMISSIONS	465
 #endif
-
+#ifndef IPPORT_BINKP
+#define IPPORT_BINKP		24554
+#endif
 
 #endif	/* Don't add anything after this line */
