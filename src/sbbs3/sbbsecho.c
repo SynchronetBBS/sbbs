@@ -688,14 +688,17 @@ int execute(char *cmdline)
 /******************************************************************************
  Returns the system address with the same zone as the address passed
 ******************************************************************************/
-fidoaddr_t getsysfaddr(short zone)
+fidoaddr_t getsysfaddr(short zone, short net)
 {
 	int i;
 
+	for(i=0; i<scfg.total_faddrs && net != 0; i++)
+		if(scfg.faddr[i].zone == zone && scfg.faddr[i].net == net)
+			return scfg.faddr[i];
 	for(i=0;i<scfg.total_faddrs;i++)
 		if(scfg.faddr[i].zone==zone)
-			return(scfg.faddr[i]);
-	return(sys_faddr);
+			return scfg.faddr[i];
+	return sys_faddr;
 }
 
 int get_outbound(fidoaddr_t dest, char* outbound, size_t maxlen, bool fileboxes)
@@ -1131,7 +1134,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		return(-1); 
 	}
 
-	faddr=getsysfaddr(dest.zone);
+	faddr=getsysfaddr(dest.zone, dest.net);
 	memset(&hdr,0,sizeof(fmsghdr_t));
 	hdr.origzone=faddr.zone;
 	hdr.orignet=faddr.net;
@@ -3663,7 +3666,7 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 	fpkdmsg_t pkdmsg;
 	size_t len;
 
-	addr=getsysfaddr(hdr->destzone);
+	addr=getsysfaddr(hdr->destzone, hdr->destnet);
 
 	/* Write fixed-length header fields */
 	memset(&pkdmsg,0,sizeof(pkdmsg));
@@ -3792,7 +3795,7 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 			lastlen=7;
 			net_exists=0;
 			fprintf(stream,"\r\1PATH:");
-			addr=getsysfaddr(hdr->destzone);
+			addr=getsysfaddr(hdr->destzone, hdr->destnet);
 			for(u=0;u<paths.addrs;u++) {			  /* Put back the original PATH */
 				if(paths.addr[u].net == 0)
 					continue;	// Invalid node number/address, don't include "0/0" in PATH
@@ -3821,7 +3824,7 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 			}
 
 			strcpy(seenby," ");         /* Add first address with same zone to PATH */
-			sysaddr=getsysfaddr(hdr->destzone);
+			sysaddr=getsysfaddr(hdr->destzone, hdr->destnet);
 			if(sysaddr.net!=0 && sysaddr.point==0 
 				&& (paths.addrs==0 || lasthop.net!=sysaddr.net || lasthop.node!=sysaddr.node)) {
 				if(sysaddr.net!=addr.net || !net_exists) {
@@ -4164,7 +4167,7 @@ void pkt_to_pkt(const char *fbuf, area_t area, const fidoaddr_t* faddr
 		nodecfg_t* nodecfg = findnodecfg(&cfg, area.link[u],0);
 		if(nodecfg != NULL && nodecfg->passive)
 			continue;
-		sysaddr = getsysfaddr(area.link[u].zone);
+		sysaddr = getsysfaddr(area.link[u].zone, area.link[u].net);
 		printf("%s ",smb_faddrtoa(&area.link[u],NULL));
 		outpkt_t* pkt = get_outpkt(sysaddr, area.link[u], nodecfg);
 		if(pkt == NULL) {
@@ -5394,7 +5397,7 @@ void pack_netmail(void)
 			newpkt="new ";
 			chsize(file,0);
 			rewind(stream);
-			new_pkthdr(&pkthdr, getsysfaddr(addr.zone), addr, nodecfg);
+			new_pkthdr(&pkthdr, getsysfaddr(addr.zone, addr.net), addr, nodecfg);
 			(void)fwrite(&pkthdr,sizeof(pkthdr),1,stream); 
 		} else
 			(void)fseek(stream,find_packet_terminator(stream),SEEK_SET);
