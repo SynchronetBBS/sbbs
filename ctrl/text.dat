@@ -967,3 +967,4 @@
 "\1/@EXEC:SHOWMSGAVATAR@\r\n"				798 MsgHdrBodySeparator
 "\1/\r\n@EXEC:SHOWFILEAVATAR@"				799 FileHdrDescSeparator
 "Remove file"                               800 RemoveFileQ
+"Originating Address"                       801 OriginFidoAddr
