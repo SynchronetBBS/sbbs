@@ -3,7 +3,7 @@
  * which is a JavaScript Date object representing the birthdate.
  */
 
-User.prototype.__defineGetter("birthDate", function() {
+User.prototype.__defineGetter__("birthDate", function() {
 	var mfirst=system.datestr(1728000).substr(0,2)=='01';
 	var match;
 	var m,d,y;
