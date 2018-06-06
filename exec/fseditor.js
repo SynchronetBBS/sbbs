@@ -1858,7 +1858,6 @@ function edit(quote_first)
 	}
 }
 
-var old_status=bbs.sys_status;
 var input_filename=system.node_dir+"QUOTES.TXT";
 var use_quotes=true;
 input_filename=file_getcase(input_filename);
@@ -1883,9 +1882,10 @@ else {
 	if(newest_filename != undefined)
 		input_filename=newest_filename;
 }
+js.on_exit("bbs.sys_status = " + bbs.sys_status);
 bbs.sys_status&=~SS_PAUSEON;
 bbs.sys_status|=SS_PAUSEOFF;
-var oldpass=console.ctrlkey_passthru;
+js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 console.ctrlkey_passthru="+ACGKLNPQRTUVWXYZ_";
 /* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
 console.write("\033[=1M");
@@ -1942,7 +1942,5 @@ if(edit_top==5 && info[0]!=subj) {
 		drop_file.close();
 	}
 }
-console.ctrlkey_passthru=oldpass;
-bbs.sys_status=old_status;
 console.clear();
 exit(exit_code);
