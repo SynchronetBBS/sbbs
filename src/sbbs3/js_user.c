@@ -1,6 +1,5 @@
-/* js_user.c */
-
 /* Synchronet JavaScript "User" Object */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -46,6 +45,7 @@ typedef struct
 	user_t		storage;
 	BOOL		cached;
 	client_t*	client;
+	int			file;		// for fast read operations, only
 
 } private_t;
 
@@ -129,7 +129,9 @@ enum {
 static void js_getuserdat(scfg_t* scfg, private_t* p)
 {
 	if(!p->cached) {
-		if(getuserdat(scfg,p->user)==0)
+		if(p->file < 1)
+			p->file = openuserdat(scfg, /* for_modify: */FALSE);
+		if(fgetuserdat(scfg, p->user, p->file)==0)
 			p->cached=TRUE;
 	}
 }
@@ -952,15 +954,15 @@ static char* user_stats_prop_desc[] = {
 
 static void js_user_finalize(JSContext *cx, JSObject *obj)
 {
-	private_t* p;
+	private_t* p = (private_t*)JS_GetPrivate(cx,obj);
 
-	p=(private_t*)JS_GetPrivate(cx,obj);
-
-	if(p!=NULL)
+	if(p!=NULL) {
+		if(p->file > 0)
+			closeuserdat(p->file);
 		free(p);
+	}
 
-	p=NULL;
-	JS_SetPrivate(cx,obj,p);
+	JS_SetPrivate(cx, obj, NULL);
 }
 
 static JSBool
