@@ -802,13 +802,14 @@ void sbbs_t::readmail(uint usernumber, int which)
 				if(!(lm_mode&LM_UNREAD)) {
 					if(getmail(&cfg, usernumber, /* Sent: */FALSE, /* attr: */0)
 						== getmail(&cfg, usernumber, /* Sent: */FALSE, /* attr: */MSG_READ)) {
-						bprintf(text[NoMailWaiting], "Un-read");
+						bprintf(text[NoMailWaiting], "un-read mail");
 						break;
 					}
 				}
 				lm_mode ^= LM_UNREAD;
-				bputs(text[DisplayUnreadMessagesOnlyQ]);
-				bputs((lm_mode&LM_UNREAD) ? text[On] : text[Off]);
+				bprintf("%s: %s"
+					,text[DisplayUnreadMessagesOnlyQ]
+					,(lm_mode&LM_UNREAD) ? text[On] : text[Off]);
 				CRLF;
 				break;
 			}
