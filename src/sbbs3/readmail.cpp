@@ -800,7 +800,8 @@ void sbbs_t::readmail(uint usernumber, int which)
 			{
 				domsg = false;
 				if(!(lm_mode&LM_UNREAD)) {
-					if(!getmail(&cfg, usernumber, /* Sent: */FALSE, /* attr: */0)) {
+					if(getmail(&cfg, usernumber, /* Sent: */FALSE, /* attr: */0)
+						== getmail(&cfg, usernumber, /* Sent: */FALSE, /* attr: */MSG_READ)) {
 						bprintf(text[NoMailWaiting], "Un-read");
 						break;
 					}
