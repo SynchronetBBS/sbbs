@@ -364,15 +364,15 @@ var   NM_NOPAUSESPIN=(1<<18);	/* No spinning cursor at pause prompt		*/
 					    		/********************************************/
 
 						    	/********************************************/
-							    /* netmail_misc								*/
+							    /* msg_area.[fido|inet]_netmail_settings	*/
 							    /********************************************/
-var   NMAIL_ALLOW 	=(1<<0);	/* Allow NetMail							*/
-var   NMAIL_CRASH 	=(1<<1);	/* Default netmail to crash					*/
-var   NMAIL_HOLD	=(1<<2);	/* Default netmail to hold					*/
-var   NMAIL_KILL	=(1<<3);	/* Default netmail to kill after sent		*/
-var   NMAIL_ALIAS 	=(1<<4);	/* Use Aliases in NetMail					*/
-var   NMAIL_FILE	=(1<<5);	/* Allow file attachments					*/
-var   NMAIL_DIRECT	=(1<<6);	/* Default netmail to direct				*/
+var   NMAIL_ALLOW 	=(1<<0);	/* Allow users to send NetMail				*/
+var   NMAIL_CRASH 	=(1<<1);	/* Default Fido netmail to crash			*/
+var   NMAIL_HOLD	=(1<<2);	/* Default Fido netmail to hold				*/
+var   NMAIL_KILL	=(1<<3);	/* Default Fido netmail to kill after sent	*/
+var   NMAIL_ALIAS 	=(1<<4);	/* Use Aliases when sending NetMail			*/
+var   NMAIL_FILE	=(1<<5);	/* Allow file attachments in sent NetMail	*/
+var   NMAIL_DIRECT	=(1<<6);	/* Default Fido netmail to direct			*/
 					    		/********************************************/
 
     							/********************************************/
@@ -565,6 +565,10 @@ var SCAN_POLLS		=(1<<7);	/* Scan for polls only (no messages)		*/
 								/* user enabled Automatic New File Scan		*/
 					    		/********************************************/
 
+								/* Bit values for msg_area.settings */
+var MM_REALNAME		=(1<<16);	/* Allow receipt of e-mail using real names	*/
+var MM_EMAILSIG		=(1<<17);	/* Include user signatures in e-mail msgs */
+
 								/********************************************/
 								/* Bits in msg_area.sub[].scan_cfg			*/
 								/********************************************/
@@ -630,6 +634,12 @@ var GLOB_APPEND		=(1<<5);	/* Append to results of a previous call.  */
 var GLOB_NOESCAPE   =(1<<6);	/* Backslashes don't quote metacharacters.  */
 var GLOB_PERIOD     =(1<<7); 	/* Leading `.' can be matched by metachars.  */
 var GLOB_ONLYDIR    =(1<<13);	/* Match only directories.  */
+
+								/* Bits in the lm_mode of bbs.read_mail()	*/
+var LM_UNREAD		=(1<<0)		/* Include un-read mail only				*/
+var LM_INCDEL		=(1<<1)		/* Include deleted mail		 				*/
+var LM_NOSPAM		=(1<<2)		/* Exclude SPAM								*/
+var LM_SPAMONLY		=(1<<3)		/* Load SPAM only							*/
 
 								/********************************************/
 								/* Values for which in bbs.read_mail()		*/
