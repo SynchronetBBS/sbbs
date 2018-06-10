@@ -86,38 +86,31 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr)
 /***************************/
 void DLLCALL delfattach(scfg_t* cfg, smbmsg_t* msg)
 {
-    char str[MAX_PATH+1];
-	char str2[MAX_PATH+1];
+    char dir[MAX_PATH+1];
+	char path[MAX_PATH+1];
+	char files[128];
 	char *tp,*sp,*p;
 
-	if(msg->idx.to==0) {	/* netmail */
-		SAFEPRINTF3(str,"%sfile/%04u.out/%s"
-			,cfg->data_dir,msg->idx.from,getfname(msg->subj));
-		remove(str);
-		SAFEPRINTF2(str,"%sfile/%04u.out"
-			,cfg->data_dir,msg->idx.from);
-		rmdir(str);
-		return;
-	}
+	if(msg->idx.to==0) 	/* netmail */
+		SAFEPRINTF2(dir, "%sfile/%04u.out", cfg->data_dir, msg->idx.from);
+	else
+		SAFEPRINTF2(dir, "%sfile/%04u.in", cfg->data_dir, msg->idx.to);
 		
-	SAFECOPY(str,msg->subj);
-	tp=str;
+	SAFECOPY(files, msg->subj);
+	tp=files;
 	while(1) {
 		p=strchr(tp,' ');
 		if(p) *p=0;
 		sp=strrchr(tp,'/');              /* sp is slash pointer */
 		if(!sp) sp=strrchr(tp,'\\');
 		if(sp) tp=sp+1;
-		SAFEPRINTF3(str2,"%sfile/%04u.in/%s"  /* str2 is path/fname */
-			,cfg->data_dir,msg->idx.to,tp);
-		remove(str2);
+		SAFEPRINTF2(path, "%s/%s", dir, tp);
+		remove(path);
 		if(!p)
 			break;
 		tp=p+1; 
-
 	}
-	SAFEPRINTF2(str,"%sfile/%04u.in",cfg->data_dir,msg->idx.to);
-	rmdir(str);                     /* remove the dir if it's empty */
+	rmdir(dir);                     /* remove the dir if it's empty */
 }
 
 /****************************************************************************/
