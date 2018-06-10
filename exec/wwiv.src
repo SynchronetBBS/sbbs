@@ -138,7 +138,7 @@ cmdkey D
 	end_cmd
 
 cmdkey E
-	call E-mail
+	exec_bin email_sec
 	end_cmd
 
 cmdkey F
@@ -292,79 +292,6 @@ end_cmd
 print "Problem in command shell."
 pause
 hangup
-
-############################### E-mail Section ################################
-
-:e-mail
-cmd_home
-compare_ars expert
-if_false
-	menu E-MAIL
-	end_if
-async
-print "\r\nyhE-mail: n"
-getcmd ?SRFNUKQ\r
-logkey
-
-cmdkey ?
-	compare_ars expert
-	if_true
-		menu E-MAIL
-		end_if
-	end_cmd
-
-cmdkey S
-	print "_\r\nbhE-mail (User name or number): w"
-	getname 40
-	compare_str ""
-	if_true
-		end_cmd
-		end_if
-	compare_str "SYSOP"
-	if_true
-		setstr "1"
-		end_if
-	mail_send
-	end_cmd
-
-cmdkey U
-	print "_\r\nbhE-mail (User name or number): w"
-	getname 40
-	compare_str ""
-	if_true
-		end_cmd
-		end_if
-	compare_str "SYSOP"
-	if_true
-		setstr "1"
-		end_if
-	mail_send_file
-        end_cmd
-
-cmdkey R
-	mail_read
-	end_cmd
-
-cmdkey F
-	setstr "1"
-	mail_send_feedback
-	end_cmd
-
-cmdkey N
-	mail_send_netmail
-	end_cmd
-
-cmdkey K
-	mail_read_sent
-	end_cmd
-
-cmdkey Q
-	cmd_pop
-	return
-	end_cmd
-
-cmd_pop
-return
 
 ############################ Main Info Section	###############################
 
