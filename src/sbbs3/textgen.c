@@ -268,6 +268,7 @@ int main(int argc, char **argv)
 	fclose(text_h);
 	fputs("\n",text_js);
 	fprintf(text_js, "var TOTAL_TEXT=%d;\n",i);
+	fprintf(text_js, "\nthis;\n");
 	fclose(text_js);
 	fputs("};\n",text_defaults_c);
 	fclose(text_defaults_c);
