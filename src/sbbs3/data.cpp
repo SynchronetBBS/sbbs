@@ -1,6 +1,4 @@
-/* data.cpp */
-
-/* Synchronet data access routines */
+/* Synchronet (oh, so old) data access routines */
 
 /* $Id$ */
 
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -47,7 +45,7 @@
 /* Returns the number of the matched user or 0 if unsuccessful				*/
 /* Called from functions main_sec, useredit and readmailw					*/
 /****************************************************************************/
-uint sbbs_t::finduser(char *instr)
+uint sbbs_t::finduser(char *instr, bool silent_failure)
 {
 	int file,i;
 	char str[128],str2[256],str3[256],ynq[25],c,pass=1;
@@ -107,7 +105,8 @@ uint sbbs_t::finduser(char *instr)
 		}
 		pass++; 
 	}
-	bputs(text[UnknownUser]);
+	if(!silent_failure)
+		bputs(text[UnknownUser]);
 	fclose(stream);
 	return(0);
 }
