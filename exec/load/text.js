@@ -809,5 +809,8 @@ var MIMEDecodedPlainText=797;
 var MsgHdrBodySeparator=798;
 var FileHdrDescSeparator=799;
 var RemoveFileQ=800;
+var OriginFidoAddr=801;
 
-var TOTAL_TEXT=801;
+var TOTAL_TEXT=802;
+
+this;
