@@ -57,7 +57,8 @@ void sbbs_t::getmsgptrs()
 
 void sbbs_t::putmsgptrs()
 {
-	::putmsgptrs(&cfg,&useron,subscan);
+	if(!::putmsgptrs(&cfg,&useron,subscan))
+		errormsg(WHERE, ERR_WRITE, "message pointers", 0);
 }
 
 static void ProgressSearchingUsers(void* cbdata, int count, int total)
