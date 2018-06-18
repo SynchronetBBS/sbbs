@@ -3297,6 +3297,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 			backslash(path);
 			SAFECOPY(cfg.temp_dir,path);
 		}
+		syspage_semfile[0] = 0;
 	}
 	::lprintf(LOG_DEBUG,"%s temporary file directory: %s", nodestr, cfg.temp_dir);
 
@@ -3315,6 +3316,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	SAFECOPY(client_name, name);
 	client_socket_dup=INVALID_SOCKET;
 	client_ident[0]=0;
+	client_ipaddr[0]=0;
 
 	telnet_location[0]=0;
 	terminal[0]=0;
@@ -3405,6 +3407,8 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	global_int_var_name=NULL;
 	sysvar_li=0;
 	sysvar_pi=0;
+	memset(sysvar_p, 0, sizeof(sysvar_p));
+	memset(sysvar_l, 0, sizeof(sysvar_l));
 
 	cursub=NULL;
 	cursubnum=INVALID_SUB;

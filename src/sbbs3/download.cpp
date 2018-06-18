@@ -75,6 +75,7 @@ void sbbs_t::downloadfile(file_t* f)
 	/* Update Uploader's Info */
 	/**************************/
 	i=matchuser(&cfg,f->uler,TRUE /*sysop_alias*/);
+	memset(&uploader, 0, sizeof(uploader));
 	uploader.number=i;
 	getuserdat(&cfg,&uploader);
 	if(i && i!=useron.number && uploader.firston<f->dateuled) {
