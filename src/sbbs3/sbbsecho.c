@@ -4151,11 +4151,19 @@ outpkt_t* get_outpkt(fidoaddr_t orig, fidoaddr_t dest, nodecfg_t* nodecfg)
 /******************************************************************************
  This is where we put outgoing messages into packets.
 ******************************************************************************/
-void pkt_to_pkt(const char *fbuf, area_t area, const fidoaddr_t* faddr
-	,fmsghdr_t* hdr, addrlist_t seenbys, addrlist_t paths)
+bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr
+	,fmsghdr_t* hdr, addrlist_t seenbys, addrlist_t paths, bool rescan)
 {
 	unsigned u;
 	fidoaddr_t sysaddr;
+	unsigned pkts_written = 0;
+	char* p;
+	
+	if(!rescan && (p = parse_control_line(fbuf, "RESCANNED ")) != NULL) {
+		lprintf(LOG_DEBUG, "NOT EXPORTING previously-rescanned message from: %s", p);
+		free(p);
+		return false;
+	}
 
 	for(u=0; u<area.links; u++) {
 		if(faddr != NULL && memcmp(faddr,&area.link[u], sizeof(fidoaddr_t)) != 0)
@@ -4178,12 +4186,15 @@ void pkt_to_pkt(const char *fbuf, area_t area, const fidoaddr_t* faddr
 			bail(1);
 		}
 		hdr->destnode	= area.link[u].node;
-		hdr->destnet		= area.link[u].net;
+		hdr->destnet	= area.link[u].net;
 		hdr->destzone	= area.link[u].zone;
 		lprintf(LOG_DEBUG, "Adding %s message from %s (%s) to packet for %s: %s"
 			,area.tag, hdr->from, fmsghdr_srcaddr_str(hdr), smb_faddrtoa(&area.link[u], NULL), pkt->filename);
-		putfmsg(pkt->fp, fbuf, hdr, area, seenbys, paths); 
+		putfmsg(pkt->fp, fbuf, hdr, area, seenbys, paths);
+		pkts_written++;
 	}
+	
+	return pkts_written > 0;
 }
 
 int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inbound)
@@ -4871,8 +4882,8 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			for(uint u=0; u < cfg.areas; u++) {
 				if(cfg.area[u].sub == subnum) {
 					cfg.area[u].exported++;
-					pkt_to_pkt(fmsgbuf, cfg.area[u]
-						,nodecfg ? &nodecfg->addr : NULL, &hdr, msg_seen, msg_path);
+					write_to_pkts(fmsgbuf, cfg.area[u]
+						,nodecfg ? &nodecfg->addr : NULL, &hdr, msg_seen, msg_path, rescan);
 					break; 
 				}
 			}
@@ -5755,7 +5766,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 			if(cfg.area[i].sub==INVALID_SUB) {			/* Passthru */
 				strip_psb(fmsgbuf);
-				pkt_to_pkt(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path);
+				write_to_pkts(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path, /* rescan: */false);
 				printf("\n");
 				continue; 
 			} 						/* On to the next message */
@@ -5799,7 +5810,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					fputs(str,stdout);
 					lprintf(LOG_ERR, "%s", str);
 					strip_psb(fmsgbuf);
-					pkt_to_pkt(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path);
+					write_to_pkts(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path, /* rescan: */false);
 					printf("\n");
 					continue; 
 				}
@@ -5815,7 +5826,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 						lprintf(LOG_ERR, "%s", str);
 						smb_close(&smb[cur_smb]);
 						strip_psb(fmsgbuf);
-						pkt_to_pkt(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path);
+						write_to_pkts(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path, /* rescan: */false);
 						printf("\n");
 						continue; 
 					} 
@@ -5828,7 +5839,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				lprintf(LOG_NOTICE, "%s: Private posts disallowed from %s (%s) to %s, subject: %s"
 					,areatag, hdr.from, fmsghdr_srcaddr_str(&hdr), hdr.to, hdr.subj);
 				strip_psb(fmsgbuf);
-				pkt_to_pkt(fmsgbuf, curarea, NULL,&hdr, msg_seen, msg_path);
+				write_to_pkts(fmsgbuf, curarea, NULL,&hdr, msg_seen, msg_path, /* rescan: */false);
 				printf("\n");
 				continue; 
 			}
@@ -5850,7 +5861,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			}
 			else if(result==IMPORT_SUCCESS || (result==IMPORT_FILTERED_AGE && cfg.relay_filtered_msgs)) {	   /* Not a dupe */
 				strip_psb(fmsgbuf);
-				pkt_to_pkt(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path); 
+				write_to_pkts(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path, /* rescan: */false); 
 			}
 
 			if(result==SMB_SUCCESS) {		/* Successful import */
