@@ -1239,7 +1239,7 @@ void xtrn_cfg(uint section)
 					uifc.helpbuf=
 						"`Use Shell to Execute Command:`\n"
 						"\n"
-						"If this command-line requires the system command shell to execute, (Unix \n"
+						"If this command-line requires the system command shell to execute, (Unix\n"
 						"shell script or DOS batch file), set this option to ~Yes~.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
