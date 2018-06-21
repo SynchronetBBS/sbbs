@@ -1569,7 +1569,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			gamedir = getfname(str);
 		}
 		if(*gamedir == 0) {
-			lprintf(LOG_ERR, "No startup directory configured for: %s", cmdline);
+			lprintf(LOG_ERR, "No startup directory configured for DOS command-line: %s", cmdline);
 			return -1;
 		}
 		fprintf(dosemubat,"cd %s\r\n", gamedir);
