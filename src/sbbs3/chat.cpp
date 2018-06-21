@@ -717,8 +717,14 @@ bool sbbs_t::sysop_page(void)
 				break;
 		if(i<cfg.total_pages) {
 			bprintf(text[PagingGuru],cfg.sys_op);
-			external(cmdstr(cfg.page[i]->cmd,nulstr,nulstr,NULL)
-				,cfg.page[i]->misc&XTRN_STDIO ? EX_STDIO : 0); 
+			long mode = 0;
+			if(cfg.page[i]->misc&XTRN_STDIO)
+				mode |= EX_STDIO;
+			if(cfg.page[i]->misc&XTRN_NATIVE)
+				mode|= EX_NATIVE;
+			if(cfg.page[i]->misc&XTRN_SH)
+				mode |= EX_SH;
+			external(cmdstr(cfg.page[i]->cmd,nulstr,nulstr,NULL), mode); 
 		}
 		else if(cfg.sys_misc&SM_SHRTPAGE) {
 			bprintf(text[PagingGuru],cfg.sys_op);

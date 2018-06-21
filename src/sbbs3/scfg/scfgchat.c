@@ -130,6 +130,10 @@ void page_cfg()
 			sprintf(opt[k++],"%-27.27s%s","Intercept I/O"
 				,(cfg.page[i]->misc&XTRN_STDIO) ? "Standard"
 					:cfg.page[i]->misc&XTRN_CONIO ? "Console":"No");
+			sprintf(opt[k++],"%-27.27s%s","Native Executable"
+				,cfg.page[i]->misc&XTRN_NATIVE ? "Yes" : "No");
+			sprintf(opt[k++],"%-27.27s%s","Use Shell to Execute"
+				,cfg.page[i]->misc&XTRN_SH ? "Yes" : "No");
 			opt[k][0]=0;
 			sprintf(str,"Sysop Chat Pager #%d",i+1);
 			switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&j,0,str,opt)) {
@@ -196,6 +200,45 @@ void page_cfg()
 						break;
 					}
 					break;
+				case 3:
+					k=(cfg.page[i]->misc&XTRN_NATIVE) ? 0:1;
+					uifc.helpbuf=
+						"`Native Executable:`\n"
+						"\n"
+						"If this online program is a native (e.g. non-DOS) executable,\n"
+						"set this option to `Yes`.\n"
+					;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+						,"Native",uifcYesNoOpts);
+					if(!k && !(cfg.page[i]->misc&XTRN_NATIVE)) {
+						cfg.page[i]->misc|=XTRN_NATIVE;
+						uifc.changes=TRUE; 
+					}
+					else if(k==1 && (cfg.page[i]->misc&XTRN_NATIVE)) {
+						cfg.page[i]->misc&=~XTRN_NATIVE;
+						uifc.changes=TRUE; 
+					}
+					break;
+				case 4:
+					k=(cfg.page[i]->misc&XTRN_SH) ? 0:1;
+					uifc.helpbuf=
+						"`Use Shell to Execute Command:`\n"
+						"\n"
+						"If this command-line requires the system command shell to execute, (Unix\n"
+						"shell script or DOS batch file), set this option to ~Yes~.\n"
+					;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+						,"Use Shell",uifcYesNoOpts);
+					if(!k && !(cfg.page[i]->misc&XTRN_SH)) {
+						cfg.page[i]->misc|=XTRN_SH;
+						uifc.changes=TRUE; 
+					}
+					else if(k==1 && (cfg.page[i]->misc&XTRN_SH)) {
+						cfg.page[i]->misc&=~XTRN_SH;
+						uifc.changes=TRUE; 
+					}
+					break;
+
 			} 
 		} 
 	}
