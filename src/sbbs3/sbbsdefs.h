@@ -211,6 +211,7 @@ typedef struct js_callback {
 #define NMAIL_ALIAS 	(1<<4)		/* Use Aliases in NetMail */
 #define NMAIL_FILE		(1<<5)		/* Allow file attachments */
 #define NMAIL_DIRECT	(1<<6)		/* Default netmail to direct */
+#define NMAIL_CHSRCADDR	(1<<7)		/* Allow sender to choose source address */
 
 									/* Bit values for subscan_t.cfg and sav_cfg	*/
 #define SUB_CFG_NSCAN	0x0005		/* Auto-scan for new messages				*/
