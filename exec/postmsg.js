@@ -11,7 +11,7 @@ function usage()
 	print();
 	print("usage: postmsg.js [-option] [-option] [...] <sub-code>");
 	print();
-	print("<sub-code> must be a valid sub-board (msgbase) internal code");
+	print("<sub-code> must be a valid sub-board (msgbase) internal code or 'mail'");
 	print();
 	print("options:");
 	print("\t-i<filename>  import text from filename rather than stdin");
@@ -83,6 +83,7 @@ if(sub_code != 'mail' && !msg_area.sub[sub_code.toLowerCase()]) {
 	print();
 	print("Valid sub-codes:");
 	print();
+	print('mail');
 	for(var s in msg_area.sub)
 		print(s);
 	exit();
