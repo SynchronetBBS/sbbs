@@ -208,8 +208,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 61";
-var READER_DATE = "2018-06-24";
+var READER_VERSION = "1.17 Beta 62";
+var READER_DATE = "2018-06-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -13776,9 +13776,13 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 
 			var confirmedForwardMsg = true;
 
-			// If the user entered an email address, then forward the message
-			// via Internet/FidoNet email.
-			if (gEmailRegex.test(msgDest) || gFTNEmailregex.test(msgDest))
+			// If the destination is in the format anything@anything, then
+			// accept it as the message destination.  It could be an Internet
+			// address (someone@somewhere.com), FidoNet address (sysop@1:327/4),
+			// or a QWK address (someone@HOST).
+			// We could specifically use gEmailRegex and gFTNEmailregex to test
+			// msgDest, but just using those would be too restrictive.
+			if (/^.*@.*$/.test(msgDest))
 			{
 				confirmedForwardMsg = console.yesno("Forward via email to " + msgDest);
 				if (confirmedForwardMsg)
