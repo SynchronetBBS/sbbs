@@ -208,8 +208,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 60";
-var READER_DATE = "2018-05-08";
+var READER_VERSION = "1.17 Beta 61";
+var READER_DATE = "2018-06-24";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -405,6 +405,8 @@ gNetMsgAttrStrs[MSG_TYPENET] = "ForNetmail";
 
 // A regular expression to check whether a string is an email address
 var gEmailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+// A regular expression to check whether a string is a FidoNet email address
+var gFTNEmailregex = /^.*@[0-9]+:[0-9]+\/[0-9]+$/;
 // An array of regular expressions for checking for ANSI codes (globally in a string & ignore case)
 var gANSIRegexes = [ new RegExp(ascii(27) + "\[[0-9]+[mM]", "gi"),
                      new RegExp(ascii(27) + "\[[0-9]+(;[0-9]+)+[mM]", "gi"),
@@ -13775,8 +13777,8 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 			var confirmedForwardMsg = true;
 
 			// If the user entered an email address, then forward the message
-			// via Internet email.
-			if (gEmailRegex.test(msgDest))
+			// via Internet/FidoNet email.
+			if (gEmailRegex.test(msgDest) || gFTNEmailregex.test(msgDest))
 			{
 				confirmedForwardMsg = console.yesno("Forward via email to " + msgDest);
 				if (confirmedForwardMsg)
