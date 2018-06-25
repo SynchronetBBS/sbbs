@@ -283,40 +283,48 @@ void net_cfg()
 			done=0;
 			while(!done) {
 				i=0;
-				sprintf(opt[i++],"%-27.27s%s"
-					,"System Addresses",cfg.total_faddrs
-                		? smb_faddrtoa(&cfg.faddr[0],tmp) : nulstr);
-				sprintf(opt[i++],"%-27.27s"
-					,"Default Origin Line");
-				sprintf(opt[i++],"%-27.27s%.40s"
+				tmp[0] = 0;
+				for(j=0; j < cfg.total_faddrs && strlen(tmp) < 24; j++)
+					sprintf(tmp + strlen(tmp), "%s%s", j ? ", " : "", smb_faddrtoa(&cfg.faddr[j], NULL));
+				if(j < cfg.total_faddrs)
+					strcat(tmp, ", ...");
+				sprintf(opt[i++],"%-33.33s%s"
+					,"System Addresses",tmp);
+				sprintf(opt[i++],"%-33.33s%.40s"
+					,"Default Origin Line", cfg.origline);
+				sprintf(opt[i++],"%-33.33s%.40s"
 					,"NetMail Semaphore",cfg.netmail_sem);
-				sprintf(opt[i++],"%-27.27s%.40s"
+				sprintf(opt[i++],"%-33.33s%.40s"
 					,"EchoMail Semaphore",cfg.echomail_sem);
-				sprintf(opt[i++],"%-27.27s%.40s"
+				sprintf(opt[i++],"%-33.33s%.40s"
 					,"NetMail Directory",cfg.netmail_dir);
-				sprintf(opt[i++],"%-27.27s%s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"Allow Sending of NetMail"
 					,cfg.netmail_misc&NMAIL_ALLOW ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"Allow File Attachments"
 					,cfg.netmail_misc&NMAIL_FILE ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"Send NetMail Using Alias"
 					,cfg.netmail_misc&NMAIL_ALIAS ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"NetMail Defaults to Crash"
 					,cfg.netmail_misc&NMAIL_CRASH ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"NetMail Defaults to Direct"
 					,cfg.netmail_misc&NMAIL_DIRECT ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"NetMail Defaults to Hold"
 					,cfg.netmail_misc&NMAIL_HOLD ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"Kill NetMail After Sent"
 					,cfg.netmail_misc&NMAIL_KILL ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%"PRIu32
+				sprintf(opt[i++],"%-33.33s%"PRIu32
 					,"Cost to Send NetMail",cfg.netmail_cost);
+				if(cfg.total_faddrs > 1)
+					sprintf(opt[i++],"%-33.33s%s"
+						,"Choose NetMail Source Address"
+						,cfg.netmail_misc&NMAIL_CHSRCADDR ? "Yes":"No");
 				opt[i][0]=0;
 				uifc.helpbuf=
 					"`FidoNet EchoMail and NetMail:`\n"
@@ -325,7 +333,7 @@ void net_cfg()
 					"networking E-mail (NetMail) and sub-boards (EchoMail) through networks\n"
 					"using FidoNet technology.\n"
 				;
-				i=uifc.list(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&fnet_dflt,0
+				i=uifc.list(WIN_ACT|WIN_MID|WIN_CHE,0,0,68,&fnet_dflt,0
 					,"FidoNet EchoMail and NetMail",opt);
 				switch(i) {
 					case -1:	/* ESC */
@@ -341,7 +349,7 @@ void net_cfg()
 							"The `Main` address is also used as the default address for Fido-Networked\n"
 							"sub-boards (EchoMail areas).\n"
 							"\n"
-							"The supported address format (so-called 3D or 4D): `Zone:Net/Node[.Point]`\n"
+							"The supported address format (so-called 3D or 4D): `Zone`:`Net`/`Node`[.`Point`]\n"
 						;
 						k=l=0;
 						while(1) {
@@ -606,6 +614,26 @@ void net_cfg()
 							,str,10,K_EDIT|K_NUMBER);
 						cfg.netmail_cost=atol(str);
 						break; 
+					case 13:
+						i=0;
+						uifc.helpbuf=
+							"`Choose NetMail Source Address:`\n"
+							"\n"
+							"When the system has multiple FidoNet-style addresses, you can allow\n"
+							"users to choose the source address when sending NetMail messages by\n"
+							"setting this option to `Yes`.\n"
+						;
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+							,"Allow Senders of NetMail to Choose the Source Address",uifcYesNoOpts);
+						if(!i && !(cfg.netmail_misc&NMAIL_CHSRCADDR)) {
+							uifc.changes=1;
+							cfg.netmail_misc|=NMAIL_CHSRCADDR; 
+						}
+						else if(i==1 && cfg.netmail_misc&NMAIL_CHSRCADDR) {
+							uifc.changes=1;
+							cfg.netmail_misc&=~NMAIL_CHSRCADDR; 
+						}
+						break;
 				} 
 			} 
 		}
