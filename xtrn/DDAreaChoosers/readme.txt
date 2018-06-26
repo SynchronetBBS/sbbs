@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.16
-                        Release date: 2018-03-09
+                              Version 1.17
+                        Release date: 2018-06-25
 
                                   by
 
@@ -229,6 +229,11 @@ areaChooserHdrFilenameBase            The filename to use (without the
 
 areaChooserHdrMaxLines                The maximum number of lines to use from
                                       the message area chooser header file
+
+showDatesInSubBoardList               Specifies whether or not to show the date
+                                      & time of the latest message in the
+                                      sub-boards.  Valid values are true and
+                                      false.
 
 Colors section: Message area chooser
 ------------------------------------

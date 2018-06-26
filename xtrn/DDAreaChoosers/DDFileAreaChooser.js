@@ -70,6 +70,7 @@
  *                                  continue to work properly.  This script should still also work
  *                                  with older builds of Synchronet.
  * 2018-03-07 Eric Oulashin 1.16    Bug fix for off-by-one when a file directory has no libraries.
+ * 2018-06-25 Eric Oulashin 1.17    Updated the version number to match my message area chooser.
  */
 
 /* Command-line arguments:
@@ -98,8 +99,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.16";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2018-03-09";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.17";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2018-06-25";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";

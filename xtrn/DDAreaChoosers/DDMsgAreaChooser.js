@@ -43,7 +43,7 @@
  *                                  saying page 1, even if on another page).
  * 2015-04-19 Eric Oulashin 1.08    Added color settings for the lightbar help text
  *                                  at the bottom of the screen.  Also, added the
- *									ability to use the PageUp & PageDown keys instead
+ *									                ability to use the PageUp & PageDown keys instead
  *                                  of P and N in the lightbar lists.
  * 2016-01-17 Eric Oulashin 1.09    Updated to allow choosing only the sub-board within
  *                                  the user's current message group.  The first command-
@@ -70,6 +70,10 @@
  *                                  continue to work properly.  This script should still also work
  *                                  with older builds of Synchronet.
  * 2018-03-09 Eric Oulashin 1.16B   Bug fix for off-by-one when a message group has no sub-boards.
+ * 2018-06-25 Eric Oulashin 1.17    Added a new configuration file option, showDatesInSubBoardList,
+ *                                  that specifies whether or not to show the date & time of
+ *                                  the latest message in the sub-boards.
+ *                                  
 */
 
 /* Command-line arguments:
@@ -98,8 +102,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.16";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2018-03-09";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.17";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2018-06-25";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
@@ -201,23 +205,13 @@ function DDMsgAreaChooser()
 	// user's terminal supports ANSI.
 	this.useLightbarInterface = true;
 
-	// These variables store the lengths of the various columns displayed in
-	// the message group/sub-board lists.
-	// Sub-board info field lengths
-	this.areaNumLen = 4;
-	this.numItemsLen = 4;
-	this.dateLen = 10; // i.e., YYYY-MM-DD
-	this.timeLen = 8;  // i.e., HH:MM:SS
-	// Sub-board name length - This should be 47 for an 80-column display.
-	this.subBoardNameLen = console.screen_columns - this.areaNumLen -
-	this.numItemsLen - this.dateLen - this.timeLen - 7;
-	// Message group description length (67 chars on an 80-column screen)
-	this.msgGrpDescLen = console.screen_columns - this.areaNumLen -
-	this.numItemsLen - 5;
-
 	// Filename base of a header to display above the area list
 	this.areaChooserHdrFilenameBase = "msgAreaChgHeader";
 	this.areaChooserHdrMaxLines = 5;
+
+	// Whether or not to show the latest message date/time in the
+	// sub-board list
+	this.showDatesInSubBoardList = true;
 
 	// Set the function pointers for the object
 	this.ReadConfigFile = DDMsgAreaChooser_ReadConfigFile;
@@ -246,6 +240,20 @@ function DDMsgAreaChooser()
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
+	
+	// These variables store the lengths of the various columns displayed in
+	// the message group/sub-board lists.
+	// Sub-board info field lengths
+	this.areaNumLen = 4;
+	this.numItemsLen = 4;
+	this.dateLen = 10; // i.e., YYYY-MM-DD
+	this.timeLen = 8;  // i.e., HH:MM:SS
+	// Sub-board name length - This should be 47 for an 80-column display.
+	this.subBoardNameLen = console.screen_columns - this.areaNumLen - this.numItemsLen - 5;
+	if (this.showDatesInSubBoardList)
+		this.subBoardNameLen -= (this.dateLen + this.timeLen + 2);
+	// Message group description length (67 chars on an 80-column screen)
+	this.msgGrpDescLen = console.screen_columns - this.areaNumLen - this.numItemsLen - 5;
 
 	// printf strings for various things
 	// Message group information (printf strings)
@@ -266,7 +274,9 @@ function DDMsgAreaChooser()
 	                            + +(this.msgGrpDescLen-8) + "s %-12s";
 	// Sub-board information header (printf string)
 	this.subBoardListHdrPrintfStr = this.colors.header + " %5s %-"
-	                              + +(this.subBoardNameLen-3) + "s %-7s %-19s";
+	                              + +(this.subBoardNameLen-3) + "s %-7s";
+	if (this.showDatesInSubBoardList)
+		this.subBoardListHdrPrintfStr += " %-19s";
 	// Lightbar mode key help line
 	this.lightbarKeyHelpText = "\1n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + UP_ARROW
@@ -882,7 +892,10 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 	curpos.x = 1;
 	curpos.y = 2+this.areaChangeHdrLines.length;
 	console.gotoxy(curpos);
-	printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+	if (this.showDatesInSubBoardList)
+		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+	else
+		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts");
 	this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, false);
 	// Start of the input loop.
 	var highlightScrenRow = 0; // The row on the screen for the highlighted group
@@ -1044,7 +1057,10 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 				console.cleartoeol("\1n");
 				this.WriteKeyHelpLine();
 				console.gotoxy(1, 2+this.areaChangeHdrLines.length);
-				printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+				if (this.showDatesInSubBoardList)
+					printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+				else
+					printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts");
 				this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
 				break;
 			default:
@@ -1082,7 +1098,10 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 						console.cleartoeol("\1n");
 						this.WriteKeyHelpLine();
 						console.gotoxy(1, 2);
-						printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+						if (this.showDatesInSubBoardList)
+							printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+						else
+							printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts");
 						this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
 					}
 				}
@@ -1281,7 +1300,10 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 	// Print the headers
 	this.WriteSubBrdListHdr1Line(grpIndex);
 	console.crlf();
-	printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+	if (this.showDatesInSubBoardList)
+		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+	else
+		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts");
 	console.print("\1n");
 
 	// List each sub-board in the message group.
@@ -1397,10 +1419,19 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 					showSubBoardMark = ((grpIndex == msg_area.sub[bbs.cursub_code].grp_index) && (highlightIndex == subBoardArray[i].subBoardIdx));
 			}
 			console.print(showSubBoardMark ? "\1n" + this.colors.areaMark + "*" : " ");
-			printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
-			       subBoardArray[i].description.substr(0, this.subBoardNameLen),
-			       subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate),
-			strftime("%H:%M:%S", subBoardArray[i].newestPostDate));
+			if (this.showDatesInSubBoardList)
+			{
+				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
+				       subBoardArray[i].description.substr(0, this.subBoardNameLen),
+				       subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate),
+				       strftime("%H:%M:%S", subBoardArray[i].newestPostDate));
+			}
+			else
+			{
+				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
+				       subBoardArray[i].description.substr(0, this.subBoardNameLen),
+				       subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate));
+			}
 		}
 	}
 	// If no sort type is specified, then output the sub-board information in
@@ -1455,9 +1486,18 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				subBoardNum = +(arrSubBoardNum);
 				console.crlf();
 				console.print((subBoardNum == highlightIndex) ? "\1n" + this.colors.areaMark + "*" : " ");
-				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-				       msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-				       numMsgs, newestDate.date, newestDate.time);
+				if (this.showDatesInSubBoardList)
+				{
+					printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
+					       msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
+					       numMsgs, newestDate.date, newestDate.time);
+				}
+				else
+				{
+					printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
+					       msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
+					       numMsgs);
+				}
 
 				msgBase.close();
 			}
@@ -1748,10 +1788,20 @@ function DDMsgAreaChooser_writeMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 
 		// Print the sub-board information line.
 		console.print(currentSub ? this.colors.areaMark + "*" : " ");
-		printf((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
-		       +(pSubIndex+1),
-		       msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
-		       numMsgs, newestDate.date, newestDate.time);
+		if (this.showDatesInSubBoardList)
+		{
+			printf((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
+			       +(pSubIndex+1),
+			       msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
+			       numMsgs, newestDate.date, newestDate.time);
+		}
+		else
+		{
+			printf((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
+			       +(pSubIndex+1),
+			       msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
+			       numMsgs);
+		}
 		 msgBase.close();
 
 		// Free some memory?
@@ -1844,6 +1894,8 @@ function DDMsgAreaChooser_ReadConfigFile()
 						if (maxNumLines > 0)
 							this.areaChooserHdrMaxLines = maxNumLines;
 					}
+					else if (settingUpper == "SHOWDATESINSUBBOARDLIST")
+						this.showDatesInSubBoardList = (value.toUpperCase() == "TRUE");
 				}
 				else if (settingsMode == "colors")
 					this.colors[setting] = value;
@@ -1921,47 +1973,53 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 //  pGrpIndex: The index of the message group
 function DDMsgAreaChooser_buildSubBoardPrintfInfoForGrp(pGrpIndex)
 {
-   // If the array of sub-board printf strings doesn't contain the printf
-   // strings for this message group, then figure out the largest number
-   // of messages in the message group and add the printf strings.
-   if (typeof(this.subBoardListPrintfInfo[pGrpIndex]) == "undefined")
-   {
-      var greatestNumMsgs = getGreatestNumMsgs(pGrpIndex);
+	// If the array of sub-board printf strings doesn't contain the printf
+	// strings for this message group, then figure out the largest number
+	// of messages in the message group and add the printf strings.
+	if (typeof(this.subBoardListPrintfInfo[pGrpIndex]) == "undefined")
+	{
+		var greatestNumMsgs = getGreatestNumMsgs(pGrpIndex);
 
-      this.subBoardListPrintfInfo[pGrpIndex] = new Object();
-      this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen = greatestNumMsgs.toString().length;
-      // Sub-board name length: With a # items length of 4, this should be
-      // 47 for an 80-column display.
-      this.subBoardListPrintfInfo[pGrpIndex].nameLen = console.screen_columns -
-                                   this.areaNumLen -
-                                   this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen -
-                                   this.dateLen - this.timeLen - 7;
-      // Create the printf strings
-      this.subBoardListPrintfInfo[pGrpIndex].printfStr =
-               " " + this.colors.areaNum
-               + "%" + this.areaNumLen + "d "
-               + this.colors.desc + "%-"
-               + this.subBoardListPrintfInfo[pGrpIndex].nameLen + "s "
-               + this.colors.numItems + "%"
-               + this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen + "d "
-               + this.colors.latestDate + "%" + this.dateLen + "s "
-               + this.colors.latestTime + "%" + this.timeLen + "s";
-      this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr =
-                              "\1n" + this.colors.bkgHighlight + " "
-                              + "\1n" + this.colors.bkgHighlight
-                              + this.colors.areaNumHighlight
-                              + "%" + this.areaNumLen + "d \1n"
-                              + this.colors.bkgHighlight
-                              + this.colors.descHighlight + "%-"
-                              + this.subBoardListPrintfInfo[pGrpIndex].nameLen + "s \1n"
-                              + this.colors.bkgHighlight
-                              + this.colors.numItemsHighlight + "%"
-                              + this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen + "d \1n"
-                              + this.colors.bkgHighlight
-                              + this.colors.dateHighlight + "%" + this.dateLen + "s \1n"
-                              + this.colors.bkgHighlight
-                              + this.colors.timeHighlight + "%" + this.timeLen + "s\1n";
-   }
+		this.subBoardListPrintfInfo[pGrpIndex] = new Object();
+		this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen = greatestNumMsgs.toString().length;
+		// Sub-board name length: With a # items length of 4, this should be
+		// 47 for an 80-column display.
+		this.subBoardListPrintfInfo[pGrpIndex].nameLen = console.screen_columns - this.areaNumLen - this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen - 5;
+		if (this.showDatesInSubBoardList)
+			this.subBoardListPrintfInfo[pGrpIndex].nameLen -= (this.dateLen + this.timeLen + 2);
+		// Create the printf strings
+		this.subBoardListPrintfInfo[pGrpIndex].printfStr = " " + this.colors.areaNum
+		                                                 + "%" + this.areaNumLen + "d "
+		                                                 + this.colors.desc + "%-"
+		                                                 + this.subBoardListPrintfInfo[pGrpIndex].nameLen + "s "
+		                                                 + this.colors.numItems + "%"
+		                                                 + this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen + "d";
+		if (this.showDatesInSubBoardList)
+		{
+			this.subBoardListPrintfInfo[pGrpIndex].printfStr += " "
+			                                                 + this.colors.latestDate + "%" + this.dateLen + "s "
+			                                                 + this.colors.latestTime + "%" + this.timeLen + "s";
+		}
+		this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr = "\1n" + this.colors.bkgHighlight
+		                                                          + " " + "\1n"
+		                                                          + this.colors.bkgHighlight
+		                                                          + this.colors.areaNumHighlight
+		                                                          + "%" + this.areaNumLen + "d \1n"
+		                                                          + this.colors.bkgHighlight
+		                                                          + this.colors.descHighlight + "%-"
+		                                                          + this.subBoardListPrintfInfo[pGrpIndex].nameLen + "s \1n"
+		                                                          + this.colors.bkgHighlight
+		                                                          + this.colors.numItemsHighlight + "%"
+		                                                          + this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen + "d";
+		if (this.showDatesInSubBoardList)
+		{
+			this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr += " \1n"
+			                                                          + this.colors.bkgHighlight
+			                                                          + this.colors.dateHighlight + "%" + this.dateLen + "s \1n"
+			                                                          + this.colors.bkgHighlight
+			                                                          + this.colors.timeHighlight + "%" + this.timeLen + "s\1n";
+		}
+	}
 }
 
 // For the DDMsgAreaChooser class: Displays the area chooser header

@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.17     2018-06-25   For the message area chooser, added a new configuration
+                      file option, showDatesInSubBoardList, that specifies
+                      whether or not to show the date & time of the latest
+                      message in the sub-boards.
 1.16     2018-03-09   Bug fix for off-by-one issue when there is a file group
                       with no directories or a message group with no
                       sub-boards
