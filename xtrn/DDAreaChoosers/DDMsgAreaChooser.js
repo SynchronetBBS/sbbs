@@ -1331,7 +1331,7 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
 
 				// Get the date & time when the last message was imported.
-				if (subBoardInfo.numPosts > 0)
+				if (this.showDatesInSubBoardList && (subBoardInfo.numPosts > 0))
 				{
 					//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
 					var msgHeader = null;
@@ -1378,17 +1378,20 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 		}
 		else if (pSortType == "dateDesc")
 		{
-			subBoardArray.sort(function(pA, pB)
+			if (this.showDatesInSubBoardList)
 			{
-				// Return -1, 0, or 1, depending on whether pA's date comes
-				// after, is equal to, or comes before pB's date.
-				var returnValue = 0;
-				if (pA.newestPostDate > pB.newestPostDate)
-					returnValue = -1;
-				else if (pA.newestPostDate < pB.newestPostDate)
-					returnValue = 1;
-				return returnValue;
-			});
+				subBoardArray.sort(function(pA, pB)
+				{
+					// Return -1, 0, or 1, depending on whether pA's date comes
+					// after, is equal to, or comes before pB's date.
+					var returnValue = 0;
+					if (pA.newestPostDate > pB.newestPostDate)
+						returnValue = -1;
+					else if (pA.newestPostDate < pB.newestPostDate)
+						returnValue = 1;
+					return returnValue;
+				});
+			}
 		}
 		else if (pSortType == "description")
 		{
@@ -1750,7 +1753,7 @@ function DDMsgAreaChooser_writeMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 		var newestDate = new Object(); // For storing the date of the newest post
 		// Get the date & time when the last message was imported.
 		var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-		if (numMsgs > 0)
+		if (this.showDatesInSubBoardList && (numMsgs > 0))
 		{
 			//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
 			var msgHeader = null;
