@@ -9,7 +9,7 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 
 var ShowMsgs=GET_ALL_MESSAGES;
 var MAX_NAME_LEN=25;
-var MAX_SUBJ_LEN=50;
+var MAX_SUBJ_LEN=70;
 
 if(file_exists(prefs_dir +format("%04d.html_prefs",user.number))) {
   prefsfile=new File(prefs_dir +format("%04d.html_prefs",user.number));
