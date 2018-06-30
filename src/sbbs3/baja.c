@@ -3414,6 +3414,12 @@ int main(int argc, char **argv)
 
 	sscanf("$Revision$", "%*s %s", revision);
 
+	p = getenv("BAJAINCLUDE");
+	if(p != NULL) {
+		SAFECOPY(include_dir, p);
+		backslash(include_dir);
+	}
+
 	for(i=1;i<argc;i++)
 		if(argv[i][0]=='-'
 #ifdef _WIN32
