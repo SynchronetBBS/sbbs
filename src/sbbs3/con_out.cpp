@@ -230,7 +230,7 @@ void sbbs_t::outchar(char ch)
 		outchar_esc=0;
 	if(term_supports(NO_EXASCII) && ch&0x80)
 		ch=exascii_to_ascii_char(ch);  /* seven bit table */
-	if(ch==FF && lncntr>1 && !tos) {
+	if(ch==FF && lncntr > 0 && !tos) {
 		lncntr=0;
 		CRLF;
 		if(!(sys_status&SS_PAUSEOFF)) {

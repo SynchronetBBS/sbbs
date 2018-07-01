@@ -160,8 +160,9 @@ bool sbbs_t::chksyspass(const char* sys_pw)
 		SAFECOPY(str, sys_pw);
 	else {
 		bputs(text[SystemPassword]);
-		getstr(str, 40, K_UPPER | K_NOECHO);
+		getstr(str, sizeof(cfg.sys_pass)-1, K_UPPER | K_NOECHO);
 		CRLF;
+		lncntr=0;
 	}
 	if(stricmp(cfg.sys_pass,str)) {
 		if(cfg.sys_misc&SM_ECHO_PW) 
