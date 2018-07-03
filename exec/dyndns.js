@@ -58,6 +58,8 @@ for(h in host_list) {
 	var count=0;
 	while(sock.is_connected && count++<10) {
 		str=sock.readline();
+		if(str == null)
+			break;
 		print(str);
 		switch(str) {
 			case "id?":
