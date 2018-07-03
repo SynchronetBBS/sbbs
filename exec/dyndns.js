@@ -20,6 +20,7 @@ function writeln(str)
 
 var mx_record;
 var ip_address;
+var ip6_address;
 var host_name = system.qwk_id;
 
 for(i=1;i<argc;i++) {
@@ -29,6 +30,10 @@ for(i=1;i<argc;i++) {
 			break;
 		case "-hn":
 			host_name = argv[++i];
+			break;
+		case "-ip6":
+		case "-ipv6":
+			ip6_address = argv[++i];
 			break;
 		default:
 			ip_address = argv[i];
@@ -64,6 +69,12 @@ for(h in host_list) {
 			case "ip?":
 				if(ip_address)
 					writeln(ip_address);
+				else
+					writeln("");
+				break;
+			case "ip6?":
+				if(ip6_address)
+					writeln(ip6_address);
 				else
 					writeln("");
 				break;
