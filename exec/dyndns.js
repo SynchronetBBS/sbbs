@@ -18,9 +18,13 @@ function writeln(str)
 	print(str);
 }
 
-var mx_record;
-var ip_address;
-var ip6_address;
+var options=load({}, "modopts.js", "dyndns");
+if(!options)
+	options = {};
+
+var mx_record = options.mx;
+var ip_address = options.ip;
+var ip6_address = options.ip6;
 var host_name = system.qwk_id;
 
 for(i=1;i<argc;i++) {
