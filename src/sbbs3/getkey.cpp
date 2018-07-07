@@ -339,8 +339,16 @@ void sbbs_t::mnemonics(const char *str)
 				if(toupper(str[l])=='Z')	/* EOF */
 					break;
 				ctrl_a(str[l++]);
-			} else
-				outchar(str[l++]); 
+			} else {
+				if(str[l] == '@') {
+					int i = show_atcode(str + l);
+					if(i) {
+						l += i;
+						continue;
+					}
+				}
+				outchar(str[l++]);
+			}
 		} 
 	}
 	if(!ctrl_a_codes)
