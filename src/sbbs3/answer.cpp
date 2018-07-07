@@ -105,7 +105,7 @@ bool sbbs_t::answer()
 			/* Truncate terminal speed (e.g. "/57600") from terminal-type string 
 			   (but keep full terminal type/speed string in rlogin_term): */
 			truncstr(terminal,"/");	
-			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name);
+			useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
 				useron.misc&=~TERM_FLAGS;
@@ -209,7 +209,7 @@ bool sbbs_t::answer()
 			rlogin_name[0] = 0;
 			pthread_mutex_unlock(&ssh_mutex);
 		}
-		useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name);
+		useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
 			useron.misc&=~TERM_FLAGS;
