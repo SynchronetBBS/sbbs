@@ -756,8 +756,8 @@
 "\1n\1m\r\nSending NetMail To: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"\  619 NetMailing
 	"              From: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"
 "Remove this sub-board from your new-scan list"         620 RemoveFromNewScanQ
-"\r\n~Sub-board, ~Group, or ~All: "                     621 SubGroupOrAll
-"\r\n~Directory, ~Library, or ~All: "                   622 DirLibOrAll
+"\r\n~Sub-board: @SUB@, ~Group: @GRP@, or ~All: "       621 SubGroupOrAll
+"\r\n~Directory: @DIR@, ~Library: @LIB@, or ~All: "     622 DirLibOrAll
 "\r\n\1_\1y\1hEnter path: "                                623 EnterPath
 "\r\nSearch and display extended information"           624 SearchExtendedQ
 "\r\nDisplay Subjects Only"                             625 DisplaySubjectsOnlyQ
