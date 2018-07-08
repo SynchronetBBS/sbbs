@@ -3166,7 +3166,7 @@ BOOL DLLCALL initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days, void (*
 			continue;
 		if(days == 0)
 			subscan[i].ptr = smb.status.last_msg;
-		else if(smb_getmsgidx_by_time(&smb, &idx, t) == SMB_SUCCESS)
+		else if(smb_getmsgidx_by_time(&smb, &idx, t) >= SMB_SUCCESS)
 			subscan[i].ptr = idx.number;
 		smb_close(&smb);
 	}
