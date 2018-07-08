@@ -1512,6 +1512,20 @@ short str2tzone(const char* str)
 	return 0;	/* UTC */
 }
 
+long getmsgnum(const char* str)
+{
+	if(*str == '-') {
+		time_t t = time(NULL) - (atol(str+1) * 24 * 60 * 60);
+		printf("%.24s\n", ctime(&t));
+		idxrec_t	idx;
+		int result = smb_getmsgidx_by_time(&smb, &idx, t);
+		printf("match = %d, num %d\n", result, idx.number);
+		if(result >= 0)
+			return result + 1;	/* 1-based offset */
+	}
+	return atol(str);
+}
+
 /***************/
 /* Entry point */
 /***************/
@@ -1736,11 +1750,11 @@ int main(int argc, char **argv)
 							config();
 							break;
 						case 'l':
-							listmsgs(atol(cmd+1),count);
+							listmsgs(getmsgnum(cmd+1),count);
 							y=strlen(cmd)-1;
 							break;
 						case 'x':
-							dumpindex(atol(cmd+1),count);
+							dumpindex(getmsgnum(cmd+1),count);
 							y=strlen(cmd)-1;
 							break;
 						case 'p':
@@ -1771,7 +1785,7 @@ int main(int argc, char **argv)
 								fprintf(errfp, "\nError %d (%s) unlocking %s\n", i, smb.last_error, smb.file);
 							break;
 						case 'r':
-							readmsgs(atol(cmd+1));
+							readmsgs(getmsgnum(cmd+1));
 							y=strlen(cmd)-1;
 							break;
 						case 'R':
@@ -1804,7 +1818,7 @@ int main(int argc, char **argv)
 							break;
 						case 'v':
 						case 'V':
-							viewmsgs(atol(cmd+1),count,cmd[y]=='V');
+							viewmsgs(getmsgnum(cmd+1),count,cmd[y]=='V');
 							y=strlen(cmd)-1;
 							break;
 						case 'h':
