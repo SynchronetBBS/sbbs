@@ -417,11 +417,13 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	if (this.sock === undefined)
 		this.sock = new Socket(SOCK_STREAM, "binkp");
 
+	log(LOG_INFO, "Connecting to "+inet_host+":"+port);
 	if(!this.sock.connect(inet_host, port)) {
 		this.sock = undefined;
 		log(LOG_WARNING, "Connection to "+inet_host+":"+port+" failed.");
 		return false;
 	}
+	log(LOG_DEBUG, "Connection to "+inet_host+":"+port+" successful");
 
 	this.authenticated = undefined;
 	if (password !== '-')
