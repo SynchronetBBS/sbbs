@@ -26,6 +26,11 @@ var REVISION = "$Revision$".split(' ')[1];
 var version_notice = "BinkIT/" + REVISION;
 var semaphores = [];
 
+function log(level, str)
+{
+	return js.global.log(level, "BinkIT: " + str);
+}
+
 FREQIT.add_file = function(filename, bp, cfg)
 {
 	if (filename === undefined)
@@ -429,6 +434,7 @@ function callout_want_callback(fobj, fsize, fdate, offset, bp)
 		return this.file.REJECT;
 	// Reject or skip existing files.
 	if (file_exists(fobj.name)) {
+		log(LOG_WARNING, "Inbound file already exists: " + fobj.name);
 		// If the size and date are the same, reject it.
 		if (fsize == file_size(fobj.name) && fdate == file_date(fobj.name))
 			return this.file.REJECT;
@@ -605,6 +611,7 @@ function callout(addr, scfg, locks, bicfg)
 		return 0;
 	});
 
+	log(LOG_DEBUG, format("connecting to %s at %s", addr, host));
 	// We won't add files until the auth finishes...
 	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port, host);
 	callout_done(bp);
