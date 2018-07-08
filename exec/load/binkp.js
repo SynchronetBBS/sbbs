@@ -240,7 +240,7 @@ BinkP.prototype.send_chunks = function(str) {
 
 	while (sent < str.length) {
 		ret = this.sock.send(str.substr(sent));
-		if (ret >= 0)
+		if (ret > 0)
 			sent += ret;
 		else
 			return false;
