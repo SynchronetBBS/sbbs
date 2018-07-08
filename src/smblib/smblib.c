@@ -290,7 +290,7 @@ int SMBCALL smb_stack(smb_t* smb, int op)
 
 /****************************************************************************/
 /* Truncates header file													*/
-/* Retrys for smb.retry_time number of seconds								*/
+/* Retries for smb.retry_time number of seconds								*/
 /* Return 0 on success, non-zero otherwise									*/
 /****************************************************************************/
 int SMBCALL smb_trunchdr(smb_t* smb)
@@ -336,6 +336,9 @@ int SMBCALL smb_locksmbhdr(smb_t* smb)
 {
 	time_t	start=0;
 
+	if(smb->locked)
+		return SMB_SUCCESS;
+
 	if(smb->shd_fp==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s msgbase not open", __FUNCTION__);
 		return(SMB_ERR_NOT_OPEN);
@@ -348,8 +351,8 @@ int SMBCALL smb_locksmbhdr(smb_t* smb)
 		if(!start)
 			start=time(NULL);
 		else
-			if(time(NULL)-start>=(time_t)smb->retry_time) 
-				break;						
+			if(time(NULL)-start>=(time_t)smb->retry_time)
+				break;
 		/* In case we've already locked it */
 		if(unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))==0)
 			smb->locked=FALSE;
