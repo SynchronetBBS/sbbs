@@ -26,11 +26,6 @@ var REVISION = "$Revision$".split(' ')[1];
 var version_notice = "BinkIT/" + REVISION;
 var semaphores = [];
 
-function log(level, str)
-{
-	return js.global.log(level, "BinkIT: " + str);
-}
-
 FREQIT.add_file = function(filename, bp, cfg)
 {
 	if (filename === undefined)
