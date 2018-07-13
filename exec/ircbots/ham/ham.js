@@ -6,6 +6,7 @@ if(!js.global || js.global.USCallsign==undefined)
 // Comment these...
 //Bot_Commands={};
 //function Bot_Command(x,y,z){}
+//function get_cmd_prefix(){}
 //js.global.config_filename='hambot.ini';
 
 var last_update=0;
@@ -848,6 +849,61 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 	}
 }
 
+Bot_Commands["BANDS"] = new Bot_Command(0,false,false);
+Bot_Commands["BANDS"].usage = get_cmd_prefix() + "BANDS [band]";
+Bot_Commands["BANDS"].help = "Displays the current band conditions";
+Bot_Commands["BANDS"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	var band;
+	var i;
+	var req;
+	var resp;
+	var m;
+	var re;
+
+	// Remove empty cmd args
+	for (i=1; i<cmd.length; i++) {
+		if (cmd[i].search(/^\s*$/)==0) {
+			cmd.splice(i,1);
+			i--;
+		}
+	}
+
+	if (cmd.length == 2) {
+		band = cmd[1];
+		if ([160,80,40,30,20,17,15].indexOf(parseInt(band,10)) == -1)
+			return true;
+	}
+	else if (cmd.length != 1)
+		return true;
+
+	function condx(val) {
+		var v = parseInt(val, 10);
+		if (v >= 100)
+			return "\x031,9QRP\x03";
+		if (v >= 70)
+			return "\x030,3Barefoot\x03";
+		if (v >= 51)
+			return "\x031,8AMP, High lobe\x03";
+		if (v >= 36)
+			return "\x030,7AMP, Low lobe\x03";
+		if (v >= 19)
+			return "\x030,4NVIS\x03";
+		return "\x030,5Groundwave ONLY\x03";
+	}
+
+	req = new HTTPRequest();
+	resp = req.Get("http://www.bandconditions.com/");
+	m = resp.match(/frame src="([^"]*)"/);
+	if (m != null) {
+		resp = req.Get(m[1]);
+		re = /^([0-9]{1,3})\<IMG SRC="http:\/\/www\.bandcondx\.com\/([0-9]{1,3})\.jpg/ym;
+		while ((m = re.exec(resp)) != null) {
+			if (band === undefined || band == m[1])
+				srv.o(target, m[1]+"m: "+condx(m[2]));
+		}
+	}
+}
+
 //var dumb={o:function(x,y) {log(y);}};
 //Bot_Commands["GEO"].command(undefined, undefined, undefined,dumb,undefined,['GEO']);
 //Bot_Commands["HF"].command(undefined, undefined, undefined,dumb,undefined,['GEO']);
@@ -856,3 +912,5 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','kj6pxy']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','va6rrx']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','g1xkz']);
+//Bot_Commands["BANDS"].command(undefined, undefined, undefined,dumb,undefined,['BANDS']);
+//Bot_Commands["BANDS"].command(undefined, undefined, undefined,dumb,undefined,['BANDS','80']);
