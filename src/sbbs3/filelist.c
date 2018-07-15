@@ -149,7 +149,8 @@ int main(int argc, char **argv)
 		printf("          -+        Include extended description indicator (+)\n");
 		printf("          --        Include offline file indicator (-)\n");
 		printf("          -*        Short-hand for -pad -hdr -cdt -+ --\n");
-		exit(0); }
+		exit(0); 
+	}
 
 	p=getenv("SBBSCTRL");
 	if(p==NULL) {
@@ -185,43 +186,55 @@ int main(int argc, char **argv)
 				break;
 		if(i>=scfg.total_dirs) {
 			printf("\nDirectory code '%s' not found.\n",argv[1]);
-			exit(1); }
-		dirnum=i; }
+			exit(1); 
+		}
+		dirnum=i; 
+	}
 	for(i=1;i<argc;i++) {
 		if(!stricmp(argv[i],"-lib")) {
 			if(dirnum!=-1) {
 				printf("\nBoth directory code and -lib parameters were used.\n");
-				exit(1); }
+				exit(1); 
+			}
 			i++;
 			if(i>=argc) {
 				printf("\nLibrary short name must follow -lib parameter.\n");
-				exit(1); }
+				exit(1); 
+			}
 			strupr(argv[i]);
 			for(j=0;j<scfg.total_libs;j++)
 				if(!stricmp(scfg.lib[j]->sname,argv[i]))
 					break;
 			if(j>=scfg.total_libs) {
 				printf("\nLibrary short name '%s' not found.\n",argv[i]);
-				exit(1); }
-			libnum=j; }
+				exit(1); 
+			}
+			libnum=j; 
+		}
 		else if(!stricmp(argv[i],"-not")) {
 			if(nots>=MAX_NOTS) {
 				printf("\nMaximum number of -not options (%u) exceeded.\n"
 					,MAX_NOTS);
-				exit(1); }
+				exit(1); 
+			}
 			i++;
 			if(i>=argc) {
 				printf("\nDirectory internal code must follow -not parameter.\n");
-				exit(1); }
-			sprintf(not[nots++],"%.8s",argv[i]); }
+				exit(1); 
+			}
+			sprintf(not[nots++],"%.8s",argv[i]); 
+		}
 		else if(!stricmp(argv[i],"-all")) {
 			if(dirnum!=-1) {
 				printf("\nBoth directory code and -all parameters were used.\n");
-				exit(1); }
+				exit(1); 
+			}
 			if(libnum!=-1) {
 				printf("\nBoth library name and -all parameters were used.\n");
-				exit(1); }
-			misc|=ALL; }
+				exit(1); 
+			}
+			misc|=ALL; 
+		}
 		else if(!stricmp(argv[i],"-new")) {
 			i++;
 			if(i>=argc) {
@@ -268,16 +281,21 @@ int main(int argc, char **argv)
 		else if(i!=1) {
 			if(argv[i][0]=='*' || strcmp(argv[i],"-")==0) {
 				misc|=AUTO;
-				continue; }
+				continue; 
+			}
 			if((j=nopen(argv[i],omode))==-1) {
 				printf("\nError opening/creating %s for output.\n",argv[i]);
-				exit(1); }
-			out=fdopen(j,"wb"); } }
+				exit(1); 
+			}
+			out=fdopen(j,"wb"); 
+		} 
+	}
 
 	if(!out && !(misc&AUTO)) {
 		printf("\nOutput file not specified, using FILES.BBS in each "
 			"directory.\n");
-		misc|=AUTO; }
+		misc|=AUTO; 
+	}
 
 	for(i=0;i<scfg.total_dirs;i++) {
 		dir_files=0;
@@ -299,51 +317,60 @@ int main(int argc, char **argv)
 			sprintf(str,"%sFILES.BBS",scfg.dir[i]->path);
 			if((j=nopen(str,omode))==-1) {
 				printf("\nError opening/creating %s for output.\n",str);
-				exit(1); }
-			out=fdopen(j,"wb"); }
+				exit(1); 
+			}
+			out=fdopen(j,"wb"); 
+		}
 		if(misc&HDR) {
 			sprintf(fname,"%-*s      %-*s       Files: %4lu"
 				,LEN_GSNAME,scfg.lib[scfg.dir[i]->lib]->sname
 				,LEN_SLNAME,scfg.dir[i]->lname,l/F_IXBSIZE);
 			fprintf(out,"%s\r\n",fname);
 			memset(fname,'-',strlen(fname));
-			fprintf(out,"%s\r\n",fname); }
+			fprintf(out,"%s\r\n",fname); 
+		}
 		if(!l) {
 			close(file);
 			if(misc&AUTO) fclose(out);
-			continue; }
+			continue; 
+		}
 		if((ixbbuf=(uchar *)malloc(l))==NULL) {
 			close(file);
 			if(misc&AUTO) fclose(out);
 			printf("\7ERR_ALLOC %s %lu\n",str,l);
-			continue; }
+			continue; 
+		}
 		if(read(file,ixbbuf,l)!=(int)l) {
 			close(file);
 			if(misc&AUTO) fclose(out);
 			printf("\7ERR_READ %s %lu\n",str,l);
 			free((char *)ixbbuf);
-			continue; }
+			continue; 
+		}
 		close(file);
 		sprintf(str,"%s%s.dat",scfg.dir[i]->data_dir,scfg.dir[i]->code);
 		if((file=nopen(str,O_RDONLY))==-1) {
 			printf("\7ERR_OPEN %s %u\n",str,O_RDONLY);
 			free((char *)ixbbuf);
 			if(misc&AUTO) fclose(out);
-			continue; }
+			continue; 
+		}
 		datbuflen=filelength(file);
 		if((datbuf=malloc(datbuflen))==NULL) {
 			close(file);
 			printf("\7ERR_ALLOC %s %lu\n",str,datbuflen);
 			free((char *)ixbbuf);
 			if(misc&AUTO) fclose(out);
-			continue; }
+			continue; 
+		}
 		if(read(file,datbuf,datbuflen)!=(int)datbuflen) {
 			close(file);
 			printf("\7ERR_READ %s %lu\n",str,datbuflen);
 			free((char *)datbuf);
 			free((char *)ixbbuf);
 			if(misc&AUTO) fclose(out);
-			continue; }
+			continue; 
+		}
 		close(file);
 		m=0L;
 		while(m<l && !ferror(out)) {
@@ -365,7 +392,8 @@ int main(int argc, char **argv)
 				|| datbuf[n+F_DESC+LEN_FDESC]!=CR) {	/* corrupted data */
 				fprintf(stderr,"\n\7%s%s is corrupted!\n"
 					,scfg.dir[i]->data_dir,scfg.dir[i]->code);
-				exit(-1); }
+				exit(-1); 
+			}
 			
 			if(max_age && ((now - uld) / (24*60*60) > max_age))
 				continue;
@@ -388,14 +416,17 @@ int main(int argc, char **argv)
 				total_cdt+=cdt;
 				if(misc&CDT_) {
 					fprintf(out,"%7lu",cdt);
-					desc_off+=7; } }
+					desc_off+=7; 
+				} 
+			}
 
 			if(misc&MINUS) {
 				sprintf(str,"%s%s",scfg.dir[i]->path,fname);
 				if(!fexistcase(str))
 					fputc('-',out);
 				else
-					fputc(' ',out); }
+					fputc(' ',out); 
+			}
 			else
 				fputc(' ',out);
 			desc_off++;
@@ -403,26 +434,31 @@ int main(int argc, char **argv)
 			if(misc&DFD) {
 				sprintf(str,"%s%s",scfg.dir[i]->path,fname);
 				fprintf(out,"%s ",unixtodstr(&scfg,(time32_t)fdate(str),str));
-				desc_off+=9; }
+				desc_off+=9; 
+			}
 
 			if(misc&ULD) {
 				fprintf(out,"%s ",unixtodstr(&scfg,uld,str));
-				desc_off+=9; }
+				desc_off+=9; 
+			}
 
 			if(misc&ULN) {
 				getrec((char *)&datbuf[n],F_ULER,25,str);
 				fprintf(out,"%-25s ",str);
-				desc_off+=26; }
+				desc_off+=26; 
+			}
 
 			if(misc&DLD) {
 				fprintf(out,"%s ",unixtodstr(&scfg,dld,str));
-				desc_off+=9; }
+				desc_off+=9; 
+			}
 
 			if(misc&DLS) {
 				getrec((char *)&datbuf[n],F_TIMESDLED,5,str);
 				j=atoi(str);
 				fprintf(out,"%5u ",j);
-				desc_off+=6; }
+				desc_off+=6; 
+			}
 
 			if(datbuf[n+F_MISC]!=ETX && (datbuf[n+F_MISC]-' ')&FM_EXTDESC)
 				ext=1;	/* extended description exists */
@@ -431,7 +467,8 @@ int main(int argc, char **argv)
 
 			if(!(misc&NOD) && !(misc&NOE && ext)) {
 				getrec((char *)&datbuf[n],F_DESC,LEN_FDESC,str);
-				fprintf(out,"%s",str); }
+				fprintf(out,"%s",str); 
+			}
 
 			if(misc&EXT && ext) {							/* Print ext desc */
 
@@ -440,15 +477,18 @@ int main(int argc, char **argv)
 					continue;
 				if((j=nopen(str,O_RDONLY))==-1) {
 					printf("\7ERR_OPEN %s %u\n",str,O_RDONLY);
-					continue; }
+					continue; 
+				}
 				if((in=fdopen(j,"rb"))==NULL) {
 					close(j);
-					continue; }
+					continue; 
+				}
 				fseek(in,(n/F_LEN)*512L,SEEK_SET);
 				lines=0;
 				if(!(misc&NOE)) {
 					fprintf(out,"\r\n");
-					lines++; }
+					lines++; 
+				}
 				while(!feof(in) && !ferror(in)
 					&& ftell(in)<(long)((n/F_LEN)+1)*512L) {
 					if(!fgets(str,128,in) || !str[0])
@@ -459,14 +499,18 @@ int main(int argc, char **argv)
 							fprintf(out,"%*s",desc_off,"");
 						fputc(' ',out);				/* indent one character */ }
 					fprintf(out,"%s",str);
-					lines++; }
-				fclose(in); }
-			fprintf(out,"\r\n"); }
+					lines++; 
+				}
+				fclose(in); 
+			}
+			fprintf(out,"\r\n"); 
+		}
 		free((char *)datbuf);
 		free((char *)ixbbuf);
 		if(dir_files)
 			fprintf(out,"\r\n"); /* blank line at end of dir */
-		if(misc&AUTO) fclose(out); }
+		if(misc&AUTO) fclose(out); 
+	}
 
 	if(misc&TOT && !(misc&AUTO))
 		fprintf(out,"TOTALS\n------\n%lu credits/bytes in %lu files.\r\n"
