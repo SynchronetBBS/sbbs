@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 		if(stop_on_error && errors)
 			break;
 		if(pause_on_error && errlast!=errors) {
-			fprintf(stderr,"\7\nHit any key to continue...");
+			fprintf(stderr,"%s\nHit any key to continue...", beep);
 			if(!getch())
 				getch();
 			printf("\n"); 
@@ -1088,7 +1088,7 @@ int main(int argc, char **argv)
 			,totaldelmsgs,ultoac(packable,str));
 
 	if(pause_on_error && errlast!=errors) {
-		fprintf(stderr,"\7\nHit any key to continue...");
+		fprintf(stderr,"%s\nHit any key to continue...", beep);
 		if(!getch())
 			getch();
 		fprintf(stderr,"\n"); 
