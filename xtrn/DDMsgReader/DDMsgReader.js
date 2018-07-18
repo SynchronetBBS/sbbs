@@ -121,6 +121,11 @@
  * 2018-05-08 Eric Oulashin     Version 1.17 beta 60
  *                              When a non-sysop is reading anonymous posts, the
  *                              "from" name is now shown as "Anonymous".
+ * 2018-07-17 Eric Oulashin     Version 1.17 beta 63
+ *                              Just before showing the message list or changing
+ *                              to another message area from the reader interface,
+ *                              it now writes "Loading..." in case there are a
+ *                              very large number of messages or sub-boards.
  */
 
 // TODO: Support anonymous posts?  Bit values for sub[x].settings:
@@ -208,8 +213,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 62";
-var READER_DATE = "2018-06-25";
+var READER_VERSION = "1.17 Beta 63";
+var READER_DATE = "2018-07-17";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5053,6 +5058,9 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				// and let the calling function, this.ReadMessages(), handle the
 				// action.
 			case this.enhReaderKeys.showMsgList: // Message list
+				console.print("\1n");
+				console.crlf();
+				console.print("Loading...");
 				retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
 				continueOn = false;
 				break;
@@ -5939,6 +5947,9 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				// and let the calling function, this.ReadMessages(), handle the
 				// action.
 			case this.enhReaderKeys.showMsgList: // Message list
+				console.print("\1n");
+				console.crlf();
+				console.print("Loading...");
 				retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
 				continueOn = false;
 				break;
@@ -10302,16 +10313,16 @@ function DigDistMsgReader_WriteGrpListTopHdrLine(pNumPages, pPageNum)
 //            then it won't be used.
 function DMsgAreaChooser_WriteSubBrdListHdr1Line(pGrpIndex, pNumPages, pPageNum)
 {
-  var descFormatStr = "\1n" + this.colors.areaChooserSubBoardHeaderColor + "Sub-boards of \1h%-25s     \1n"
-                     + this.colors.areaChooserSubBoardHeaderColor;
-  if ((typeof(pPageNum) == "number") && (typeof(pNumPages) == "number"))
-    descFormatStr += "(Page " + pPageNum + " of " + pNumPages + ")";
-  else if ((typeof(pPageNum) == "number") && (typeof(pNumPages) != "number"))
-    descFormatStr += "(Page " + pPageNum + ")";
-  else if ((typeof(pPageNum) != "number") && (typeof(pNumPages) == "number"))
-    descFormatStr += "(" + pNumPages + (pNumPages == 1 ? " page)" : " pages)");
-  printf(descFormatStr, msg_area.grp_list[pGrpIndex].description.substr(0, 25));
-  console.cleartoeol("\1n");
+	var descFormatStr = "\1n" + this.colors.areaChooserSubBoardHeaderColor + "Sub-boards of \1h%-25s     \1n"
+	                  + this.colors.areaChooserSubBoardHeaderColor;
+	if ((typeof(pPageNum) == "number") && (typeof(pNumPages) == "number"))
+		descFormatStr += "(Page " + pPageNum + " of " + pNumPages + ")";
+	else if ((typeof(pPageNum) == "number") && (typeof(pNumPages) != "number"))
+		descFormatStr += "(Page " + pPageNum + ")";
+	else if ((typeof(pPageNum) != "number") && (typeof(pNumPages) == "number"))
+		descFormatStr += "(" + pNumPages + (pNumPages == 1 ? " page)" : " pages)");
+	printf(descFormatStr, msg_area.grp_list[pGrpIndex].description.substr(0, 25));
+	console.cleartoeol("\1n");
 }
 
 // For the DigDistMsgReader class: Lets the user choose a message group and
@@ -10525,6 +10536,11 @@ function DigDistMsgReader_SelectMsgArea_Lightbar()
 				}
 				break;
 			case KEY_ENTER: // Select the currently-highlighted message group
+				// Show a "Loading..." text in case there are many sub-boards in
+				// the chosen message group
+				console.gotoxy(1, console.getxy().y);
+				console.print("\1nLoading...        ");
+				console.cleartoeol();
 				retObj = this.SelectSubBoard_Lightbar(selectedGrpIndex);
 				// If the user chose a sub-board, then set bbs.curgrp and
 				// bbs.cursub, and don't continue the input loop anymore.
@@ -10635,6 +10651,10 @@ function DigDistMsgReader_SelectMsgArea_Lightbar()
 					if (userInput > 0)
 					{
 						var msgGroupIndex = userInput - 1;
+						// Show a "Loading..." text in case there are many sub-boards in
+						// the chosen message group
+						console.crlf();
+						console.print("\1nLoading...");
 						retObj = this.SelectSubBoard_Lightbar(msgGroupIndex);
 						// If the user chose a sub-board, then set bbs.curgrp and
 						// bbs.cursub, and don't continue the input loop anymore.
