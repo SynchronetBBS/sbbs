@@ -79,6 +79,8 @@ void global_settings(void)
 		sprintf(opt[i++], "%-25s %s", "Log Timestamp Format", cfg.logtime);
 		sprintf(opt[i++], "%-25s %s", "Strict Packet Passwords", cfg.strict_packet_passwords ? "Enabled" : "Disabled");
 		sprintf(opt[i++], "%-25s %u", "Config File Backups", cfg.cfgfile_backups);
+		sprintf(opt[i++], "%-25s %s bytes", "Minimum Free Disk Space"
+			, byte_count_to_str(cfg.min_free_diskspace, str, sizeof(str)));
 		sprintf(opt[i++], "%-25s %s", "BSY Mutex File Timeout", duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration)));
 		if(cfg.flo_mailer) {
 			sprintf(opt[i++], "%-25s %s", "BSO Lock Attempt Delay", duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration)));
@@ -118,6 +120,11 @@ void global_settings(void)
 			"`Config File Backups` determines the number of automatic backups of your\n"
 			"    SBBSecho configuration file (e.g. `sbbsecho.ini`) that will be\n"
 			"    maintained by FidoNet Config (`echocfg`) and SBBSecho AreaFix.\n"
+			"\n"
+			"`Minimum Free Disk Space` determines the minimum amount of free disk\n"
+			"    space for SBBSecho to run.  SBBSecho will just exit with an error\n"
+			"    message (and an error level of 1) if the minimum amount of free\n"
+			"    space is not found in directories into which SBBSecho may write.\n"
 			"\n"
 			"`BSY Mutex File Timeout` determines the maximum age of an existing\n"
 			"    mutex file (`*.bsy`) before SBBSecho will act as though the mutex\n"
@@ -185,29 +192,35 @@ void global_settings(void)
 				break;
 
 			case 5:
+				byte_count_to_str(cfg.min_free_diskspace, str, sizeof(str));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Minimum Free Disk Space (in bytes)", str, 10, K_EDIT) > 0)
+					cfg.min_free_diskspace = parse_byte_count(str, 1);
+				break;
+
+			case 6:
 				duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "BSY Mutex File Timeout", duration, 10, K_EDIT) > 0)
 					cfg.bsy_timeout = (ulong)parse_duration(duration);
 				break;
 
-			case 6:
+			case 7:
 				duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Delay Between BSO Lock Attempts", duration, 10, K_EDIT) > 0)
 					cfg.bso_lock_delay = (ulong)parse_duration(duration);
 				break;
 
-			case 7:
+			case 8:
 				sprintf(str, "%lu", cfg.bso_lock_attempts);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum BSO Lock Attempts", str, 5, K_EDIT|K_NUMBER) > 0)
 					cfg.bso_lock_attempts = atoi(str);
 				break;
 
-			case 8:
+			case 9:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Capabilities (BinkIT)", cfg.binkp_caps, sizeof(cfg.binkp_caps)-1, K_EDIT);
 				break;
 
-			case 9:
+			case 10:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Sysop Name (BinkIT)", cfg.binkp_sysop, sizeof(cfg.binkp_sysop)-1, K_EDIT);
 				break;
@@ -587,7 +600,7 @@ int main(int argc, char **argv)
 	"\n"
 	"The `Archive Types` sub-menu is where you configure your archive\n"
 	"programs (a.k.a. \"packers\") used for the packing and unpacking of\n"
-	"EchoMail bundle files (usually in 'zip' format).\n"
+	"EchoMail bundle files (usually in 'PKZIP' format).\n"
 	"\n"
 	"The `NetMail Settings` sub-menu is where you configure settings specific\n"
 	"to NetMail (private one-on-one networked mail).\n"

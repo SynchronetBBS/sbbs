@@ -227,6 +227,7 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->areafile_backups			= 100;
 	cfg->cfgfile_backups			= 100;
 	cfg->auto_add_subs				= true;
+	cfg->min_free_diskspace			= 10*1024*1024;
 }
 
 char* pktTypeStringList[] = {"2+", "2e", "2.2", "2", NULL};		// Must match enum pkt_type
@@ -275,6 +276,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->umask					= iniGetInteger(ini, ROOT_SECTION, "umask", cfg->umask);
 	cfg->areafile_backups		= iniGetInteger(ini, ROOT_SECTION, "AreaFileBackups", cfg->areafile_backups);
 	cfg->cfgfile_backups		= iniGetInteger(ini, ROOT_SECTION, "CfgFileBackups", cfg->cfgfile_backups);
+	cfg->min_free_diskspace		= iniGetBytes(ini, ROOT_SECTION, "MinFreeDiskSpace", 1, cfg->min_free_diskspace);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -482,6 +484,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetString(&ini,		ROOT_SECTION, "AreaFile"				,cfg->areafile					,NULL);
 	iniSetInteger(&ini,		ROOT_SECTION, "AreaFileBackups"			,cfg->areafile_backups			,NULL);
 	iniSetInteger(&ini,		ROOT_SECTION, "CfgFileBackups"			,cfg->cfgfile_backups			,NULL);
+	iniSetBytes(&ini,		ROOT_SECTION, "MinFreeDiskSpace"		,1,cfg->min_free_diskspace		,NULL);
 	iniSetString(&ini,		ROOT_SECTION, "BadAreaFile"				,cfg->badareafile				,NULL);
 	iniSetString(&ini,		ROOT_SECTION, "EchoStats"				,cfg->echostats					,NULL);
 	if(cfg->logfile[0])

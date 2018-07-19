@@ -213,6 +213,7 @@ typedef struct {
 	ulong		bso_lock_delay;			/* in seconds */
 	ulong		max_netmail_age;
 	ulong		max_echomail_age;
+	int64_t		min_free_diskspace;
 	struct fido_domain* domain_list;
 	unsigned	domain_count;
 	char		binkp_caps[64];
