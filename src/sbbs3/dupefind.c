@@ -11,7 +11,7 @@ char* crlf="\r\n";
 
 void bail(int code)
 {
-exit(code);
+	exit(code);
 }
 
 long lputs(char *str)
@@ -19,14 +19,14 @@ long lputs(char *str)
     char tmp[256];
     int i,j,k;
 
-j=strlen(str);
-for(i=k=0;i<j;i++)      /* remove CRs */
-    if(str[i]==CR && str[i+1]==LF)
-        continue;
-    else
-        tmp[k++]=str[i];
-tmp[k]=0;
-return(fputs(tmp,stderr));
+	j=strlen(str);
+	for(i=k=0;i<j;i++)      /* remove CRs */
+		if(str[i]==CR && str[i+1]==LF)
+			continue;
+		else
+			tmp[k++]=str[i];
+	tmp[k]=0;
+	return(fputs(tmp,stderr));
 }
 
 /****************************************************************************/
@@ -39,11 +39,11 @@ int lprintf(const char *fmat, ...)
 	char sbuf[256];
 	int chcount;
 
-va_start(argptr,fmat);
-chcount=vsprintf(sbuf,fmat,argptr);
-va_end(argptr);
-lputs(sbuf);
-return(chcount);
+	va_start(argptr,fmat);
+	chcount=vsprintf(sbuf,fmat,argptr);
+	va_end(argptr);
+	lputs(sbuf);
+	return(chcount);
 }
 
 char *display_filename(scfg_t *cfg, ushort dir_num,ushort fil_off)
@@ -73,11 +73,11 @@ int main(int argc,char **argv)
     long l,m;
 	scfg_t cfg;
 
-putenv("TZ=UCT0");
-setvbuf(stdout,NULL,_IONBF,0);
+	putenv("TZ=UCT0");
+	setvbuf(stdout,NULL,_IONBF,0);
 
-fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
-	"Finder\n", DUPEFIND_VER, PLATFORM_DESC);
+	fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
+		"Finder\n", DUPEFIND_VER, PLATFORM_DESC);
 
     p=getenv("SBBSCTRL");
     if(p==NULL) {
@@ -87,14 +87,16 @@ fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 #else
 		fprintf(stderr,"\nExample: SET SBBSCTRL=C:\\SBBS\\CTRL\n");
 #endif
-        return(1); }
+        return(1); 
+	}
 
 	if(argc>1 && (!stricmp(argv[1],"/?") || !stricmp(argv[1],"?") || !stricmp(argv[1],"-?"))) {
 		fprintf(stderr,"\n");
 		fprintf(stderr,"usage: DUPEFIND [start] [end]\n");
 		fprintf(stderr,"where: [start] is the starting library number to check\n");
 		fprintf(stderr,"       [end]   is the final library number to check\n");
-		return(0); }
+		return(0); 
+	}
 
 	memset(&cfg,0,sizeof(cfg));
 	cfg.size=sizeof(cfg);
@@ -118,7 +120,8 @@ fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 
 	if((fcrc=(ulong **)malloc(cfg.total_dirs*sizeof(ulong *)))==NULL) {
 		printf("Not enough memory for CRCs.\r\n");
-		return(1); }
+		return(1); 
+	}
 
 	for(i=0;i<cfg.total_dirs;i++) {
 		fprintf(stderr,"Reading directory index %u of %u\r",i+1,cfg.total_dirs);
@@ -126,26 +129,31 @@ fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 		if((file=nopen(str,O_RDONLY|O_BINARY))==-1) {
 			fcrc[i]=(ulong *)malloc(1*sizeof(ulong));
             fcrc[i][0]=0;
-			continue; }
+			continue; 
+		}
         l=filelength(file);
 		if(!l || (cfg.dir[i]->lib<start_lib || cfg.dir[i]->lib>end_lib)) {
             close(file);
 			fcrc[i]=(ulong *)malloc(1*sizeof(ulong));
 			fcrc[i][0]=0;
-            continue; }
+            continue; 
+		}
 		if((fcrc[i]=(ulong *)malloc((l/22+2)*sizeof(ulong)))==NULL) {
             printf("Not enough memory for CRCs.\r\n");
-            return(1); }
+            return(1); 
+		}
 		fcrc[i][0]=(ulong)(l/22);
         if((ixbbuf=(char *)malloc(l))==NULL) {
             close(file);
             printf("\7Error allocating memory for index %s.\r\n",str);
-            continue; }
+            continue; 
+		}
         if(read(file,ixbbuf,l)!=l) {
             close(file);
             printf("\7Error reading %s.\r\n",str);
 			free(ixbbuf);
-            continue; }
+            continue; 
+		}
         close(file);
 		j=1;
 		m=0L;
@@ -153,8 +161,10 @@ fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 			sprintf(str,"%-11.11s",(ixbbuf+m));
 			strupr(str);
 			fcrc[i][j++]=crc32(str,0);
-			m+=22; }
-		free(ixbbuf); }
+			m+=22; 
+		}
+		free(ixbbuf); 
+	}
 	lputs("\n");
 
 	foundcrc=0L;
@@ -172,13 +182,16 @@ fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 							found=k;
 							for(g=0;g<total_found;g++) {
 								if(foundcrc[g]==fcrc[i][k])
-									g=total_found+1; }
+									g=total_found+1; 
+							}
 							if(g==total_found) {
 								++total_found;
 								if((foundcrc=(ulong *)realloc(foundcrc
 									,total_found*sizeof(ulong)))==NULL) {
 								printf("Out of memory reallocating\r\n");
-								return(1); } }
+								return(1); 
+								} 
+							}
 							else
 								found=0;
 							printf("\n%-12s is located in : %-*s  %s\n"
@@ -191,14 +204,20 @@ fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 								,LEN_GSNAME
 								,cfg.lib[cfg.dir[j]->lib]->sname
 								,cfg.dir[j]->sname
-								); }
+								); 
+						}
 						else
 							printf("%-12s           and : %-*s  %s\n"
 								,""
 								,LEN_GSNAME
 								,cfg.lib[cfg.dir[j]->lib]->sname
 								,cfg.dir[j]->sname
-								); } } } } }
+								); 
+					} 
+				} 
+			} 
+		} 
+	}
 	return(0);
 }
 
