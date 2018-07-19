@@ -78,6 +78,25 @@ int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 	return(numchars);
 }
 
+#ifdef _MSC_VER
+/****************************************************************************/
+/* Case insensitive version of strstr()										*/
+/****************************************************************************/
+char* DLLCALL strcasestr(const char* haystack, const char* needle)
+{
+	char* h = strdup(haystack);
+	char* n = strdup(needle);
+	char* p = NULL;
+	if(h != NULL && n != NULL)
+		p = strstr(strupr(h), strupr(n));
+	FREE_AND_NULL(h);
+	FREE_AND_NULL(n);
+	if(p == NULL)
+		return NULL;
+	return (char*)haystack + (p-h);
+}
+#endif
+
 /****************************************************************************/
 /* Return last character of string											*/
 /****************************************************************************/

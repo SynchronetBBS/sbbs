@@ -244,6 +244,10 @@ extern "C" {
 	#endif
 #endif
 
+#if defined(_MSC_VER)
+	DLLEXPORT char* DLLCALL strcasestr(const char* haystack, const char* needle);
+#endif
+
 /* Skip white-space chars at beginning of string */
 DLLEXPORT char*		DLLCALL skipsp(char* str);
 /* Truncate white-space chars off end of string */
