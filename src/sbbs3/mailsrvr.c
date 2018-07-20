@@ -4951,7 +4951,7 @@ void get_dns_server(char* dns_server, size_t len)
 	}
 }
 
-static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session, smb_t *smb, smbmsg_t *msg)
+static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session)
 {
 	int i;
 	SOCKADDR_IN	addr;
@@ -4960,7 +4960,6 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session, smb_t *sm
 		mail_close_socket(sock, session);
 
 	if((*sock=socket(AF_INET, SOCK_STREAM, IPPROTO_IP))==INVALID_SOCKET) {
-		remove_msg_intransit(smb,msg);
 		lprintf(LOG_ERR,"0000 SEND !ERROR %d opening socket", ERROR_VALUE);
 		return FALSE;
 	}
@@ -4969,7 +4968,6 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session, smb_t *sm
 	if(startup->connect_timeout) {	/* Use non-blocking socket */
 		long nbio=1;
 		if((i=ioctlsocket(*sock, FIONBIO, &nbio))!=0) {
-			remove_msg_intransit(smb,msg);
 			lprintf(LOG_ERR,"%04d SEND !ERROR %d (%d) disabling blocking on socket"
 				,*sock, i, ERROR_VALUE);
 			return FALSE;
@@ -4982,7 +4980,6 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session, smb_t *sm
 
 	i=bind(*sock,(struct sockaddr *)&addr, sizeof(addr));
 	if(i!=0) {
-		remove_msg_intransit(smb,msg);
 		lprintf(LOG_ERR,"%04d SEND !ERROR %d (%d) binding socket", *sock, i, ERROR_VALUE);
 		return FALSE;
 	}
@@ -5008,7 +5005,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 	strcpy(err,"UNKNOWN ERROR");
 
 	for (tls_retry = 0; tls_retry < 2; tls_retry++) {
-		if (!sendmail_open_socket(&sock, session, smb, msg))
+		if (!sendmail_open_socket(&sock, session))
 			continue;
 
 		success=FALSE;
