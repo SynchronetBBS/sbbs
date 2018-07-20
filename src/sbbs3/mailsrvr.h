@@ -263,7 +263,7 @@ int mail_close_socket(SOCKET *sock, int *sess);
 #pragma GCC diagnostic ignored "-Wformat-zero-length"
 #endif
 
-int sockprintf(SOCKET sock, int sess, char *fmt, ...)
+int sockprintf(SOCKET sock, const char* prot, int sess, char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors 
 	__attribute__ ((format (printf, 3, 4)));
 #endif

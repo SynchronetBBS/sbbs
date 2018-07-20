@@ -1013,7 +1013,7 @@ static void js_service_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d !%s CLIENT BLOCKED in host.can: %s"
+		lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in host.can: %s"
 			,socket, service->protocol, host_name);
 		close_socket(socket);
 		if(service->clients)
@@ -1087,7 +1087,7 @@ static void js_service_thread(void* arg)
 
 	if((js_runtime=jsrt_GetNew(service->js.max_bytes, 5000, __FILE__, __LINE__))==NULL
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
-		lprintf(LOG_ERR,"%04d !%s ERROR initializing JavaScript context"
+		lprintf(LOG_ERR,"%04d %s !ERROR initializing JavaScript context"
 			,socket,service->protocol);
 		if (service_client.tls_sess != -1)
 			cryptDestroySession(service_client.tls_sess);
@@ -1214,7 +1214,7 @@ static void js_static_service_thread(void* arg)
 	service_client.callback.auto_terminate = TRUE;
 
 	if((js_runtime=jsrt_GetNew(service->js.max_bytes, 5000, __FILE__, __LINE__))==NULL) {
-		lprintf(LOG_ERR,"!%s ERROR initializing JavaScript runtime"
+		lprintf(LOG_ERR,"%s !ERROR initializing JavaScript runtime"
 			,service->protocol);
 		xpms_destroy(service->set, close_socket_cb, service);
 		service->set = NULL;
@@ -1230,7 +1230,7 @@ static void js_static_service_thread(void* arg)
 
 	do {
 		if((js_cx=js_initcx(js_runtime,INVALID_SOCKET,&service_client,&js_glob))==NULL) {
-			lprintf(LOG_ERR,"!%s ERROR initializing JavaScript context"
+			lprintf(LOG_ERR,"%s !ERROR initializing JavaScript context"
 				,service->protocol);
 			break;
 		}
@@ -1311,7 +1311,7 @@ static void native_static_service_thread(void* arg)
 			0,
 			TRUE, /* Inheritable */
 			DUPLICATE_SAME_ACCESS)) {
-		lprintf(LOG_ERR,"%04d !%s ERROR %d duplicating socket descriptor"
+		lprintf(LOG_ERR,"%04d %s !ERROR %d duplicating socket descriptor"
 			,inst.socket,inst.service->protocol,GetLastError());
 		close_socket(inst.socket);
 		thread_down();
@@ -1388,7 +1388,7 @@ static void native_service_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d !%s CLIENT BLOCKED in host.can: %s"
+		lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in host.can: %s"
 			,socket, service->protocol, host_name);
 		close_socket(socket);
 		if(service->clients)
@@ -1429,7 +1429,7 @@ static void native_service_thread(void* arg)
 		0,
 		TRUE, /* Inheritable */
 		DUPLICATE_SAME_ACCESS)) {
-		lprintf(LOG_ERR,"%04d !%s ERROR %d duplicating socket descriptor"
+		lprintf(LOG_ERR,"%04d %s !ERROR %d duplicating socket descriptor"
 			,socket,service->protocol,GetLastError());
 		close_socket(socket);
 		thread_down();
@@ -2113,7 +2113,7 @@ void DLLCALL services_thread(void* arg)
 						,service[i].protocol, host_ip, inet_addrport(&client_addr));
 
 					if(service[i].max_clients && service[i].clients+1>service[i].max_clients) {
-						lprintf(LOG_WARNING,"%04d !%s MAXIMUM CLIENTS (%u) reached, access denied"
+						lprintf(LOG_WARNING,"%04d %s !MAXIMUM CLIENTS (%u) reached, access denied"
 							,client_socket, service[i].protocol, service[i].max_clients);
 						close_socket(client_socket);
 						continue;
@@ -2127,7 +2127,7 @@ void DLLCALL services_thread(void* arg)
 							lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
 								,client_socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 						} else
-							lprintf(LOG_NOTICE,"%04d !%s CLIENT BLOCKED in ip.can: %s"
+							lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in ip.can: %s"
 								,client_socket, service[i].protocol, host_ip);
 						FREE_AND_NULL(udp_buf);
 						close_socket(client_socket);
@@ -2142,7 +2142,7 @@ void DLLCALL services_thread(void* arg)
 
 					if((client=malloc(sizeof(service_client_t)))==NULL) {
 						FREE_AND_NULL(udp_buf);
-						lprintf(LOG_CRIT,"%04d !%s ERROR allocating %lu bytes of memory for service_client"
+						lprintf(LOG_CRIT,"%04d %s !ERROR allocating %lu bytes of memory for service_client"
 							,client_socket, service[i].protocol, sizeof(service_client_t));
 						close_socket(client_socket);
 						continue;

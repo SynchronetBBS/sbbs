@@ -68,30 +68,30 @@ char* mimegetboundary()
     return boundaryString;
 }
 
-void mimeheaders(SOCKET socket, int sess, char* boundary)
+void mimeheaders(SOCKET socket, const char* prot, int sess, char* boundary)
 {
-    sockprintf(socket,sess,"MIME-Version: 1.0");
-    sockprintf(socket,sess,"Content-Type: multipart/mixed;");
-    sockprintf(socket,sess," boundary=\"%s\"",boundary);
+    sockprintf(socket,prot,sess,"MIME-Version: 1.0");
+    sockprintf(socket,prot,sess,"Content-Type: multipart/mixed;");
+    sockprintf(socket,prot,sess," boundary=\"%s\"",boundary);
 }
 
-void mimeblurb(SOCKET socket, int sess, char* boundary)
+void mimeblurb(SOCKET socket, const char* prot, int sess, char* boundary)
 {
-    sockprintf(socket,sess,"This is a multi-part message in MIME format.");
-    sockprintf(socket,sess,"");
+    sockprintf(socket,prot,sess,"This is a multi-part message in MIME format.");
+    sockprintf(socket,prot,sess,"");
 }
 
-void mimetextpartheader(SOCKET socket, int sess, char* boundary, const char* charset)
+void mimetextpartheader(SOCKET socket, const char* prot, int sess, char* boundary, const char* charset)
 {
 	if(charset == NULL || *charset == 0)
 		charset = "iso-8859-1";
-    sockprintf(socket,sess,"--%s",boundary);
-    sockprintf(socket,sess,"Content-Type: text/plain;");
-    sockprintf(socket,sess," charset=\"%s\"", charset);
-    sockprintf(socket,sess,"Content-Transfer-Encoding: 7bit");
+    sockprintf(socket,prot,sess,"--%s",boundary);
+    sockprintf(socket,prot,sess,"Content-Type: text/plain;");
+    sockprintf(socket,prot,sess," charset=\"%s\"", charset);
+    sockprintf(socket,prot,sess,"Content-Transfer-Encoding: 7bit");
 }
 
-BOOL base64out(SOCKET socket, int sess, char* pathfile)
+BOOL base64out(SOCKET socket, const char* prot, int sess, char* pathfile)
 {
     FILE *  fp;
     char    in[57];
@@ -103,7 +103,7 @@ BOOL base64out(SOCKET socket, int sess, char* pathfile)
     while(1) {
         bytesread=fread(in,1,sizeof(in),fp);
 		if((b64_encode(out,sizeof(out),in,bytesread)==-1)
-				|| !sockprintf(socket,sess, "%s", out))  {
+				|| !sockprintf(socket,prot,sess, "%s", out))  {
 			fclose(fp);
 			return(FALSE);
 		}
@@ -111,30 +111,30 @@ BOOL base64out(SOCKET socket, int sess, char* pathfile)
             break;
     }
 	fclose(fp);
-    sockprintf(socket,sess,"");
+    sockprintf(socket,prot,sess,"");
 	return(TRUE);
 }
 
-BOOL mimeattach(SOCKET socket, int sess, char* boundary, char* pathfile)
+BOOL mimeattach(SOCKET socket, const char* prot, int sess, char* boundary, char* pathfile)
 {
     char* fname = getfname(pathfile);
 
-    sockprintf(socket,sess,"--%s",boundary);
-    sockprintf(socket,sess,"Content-Type: application/octet-stream;");
-    sockprintf(socket,sess," name=\"%s\"",fname);
-    sockprintf(socket,sess,"Content-Transfer-Encoding: base64");
-    sockprintf(socket,sess,"Content-Disposition: attachment;");
-    sockprintf(socket,sess," filename=\"%s\"",fname);
-    sockprintf(socket,sess,"");
-    if(!base64out(socket,sess,pathfile))
+    sockprintf(socket,prot,sess,"--%s",boundary);
+    sockprintf(socket,prot,sess,"Content-Type: application/octet-stream;");
+    sockprintf(socket,prot,sess," name=\"%s\"",fname);
+    sockprintf(socket,prot,sess,"Content-Transfer-Encoding: base64");
+    sockprintf(socket,prot,sess,"Content-Disposition: attachment;");
+    sockprintf(socket,prot,sess," filename=\"%s\"",fname);
+    sockprintf(socket,prot,sess,"");
+    if(!base64out(socket,prot,sess,pathfile))
 		return(FALSE);
-    sockprintf(socket,sess,"");
+    sockprintf(socket,prot,sess,"");
 	return(TRUE);
 }
 
-void endmime(SOCKET socket, int sess, char* boundary)
+void endmime(SOCKET socket, const char* prot, int sess, char* boundary)
 {
 	/* last boundary */
-    sockprintf(socket,sess,"--%s--",boundary);
-    sockprintf(socket,sess,"");
+    sockprintf(socket,prot,sess,"--%s--",boundary);
+    sockprintf(socket,prot,sess,"");
 }
