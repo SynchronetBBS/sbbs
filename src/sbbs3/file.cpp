@@ -43,6 +43,7 @@ void sbbs_t::fileinfo(file_t* f)
 {
 	char	ext[513];
 	char 	tmp[512];
+	char	tmp2[64];
 	char	path[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
 	char*	real_fname;
@@ -66,7 +67,8 @@ void sbbs_t::fileinfo(file_t* f)
 		bprintf(text[FiFilename], real_fname);
 
 	if(f->size!=-1L)
-		bprintf(text[FiFileSize],ultoac(f->size,tmp));
+		bprintf(text[FiFileSize],ultoac(f->size,tmp)
+			, byte_estimate_to_str(f->size, tmp2, sizeof(tmp2), /* units: */1024, /* precision: */1));
 	bprintf(text[FiCredits]
 		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cdt) ? "FREE" : ultoac(f->cdt,tmp));
 	bprintf(text[FiDescription],f->desc);

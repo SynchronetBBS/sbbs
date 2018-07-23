@@ -374,7 +374,7 @@
 "\r\n\1n\1gLibrary          :\1h (%u) %s"                  314 FiLib
 "\r\n\1n\1gDirectory        :\1h (%u) %s"                  315 FiDir
 "\r\n\1n\1gFilename         :\1h %s"                       316 FiFilename
-"\r\n\1n\1gFile size        :\1h %s"                       317 FiFileSize
+"\r\n\1n\1gFile size        :\1h %s (%s) bytes"            317 FiFileSize
 "\r\n\1n\1gCredit value     :\1h %s"                       318 FiCredits
 "\r\n\1n\1gDescription      :\1h %s"                       319 FiDescription
 "\r\n\1n\1gUploaded by      :\1h %s"                       320 FiUploadedBy
