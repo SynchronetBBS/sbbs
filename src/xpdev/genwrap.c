@@ -311,16 +311,16 @@ char* DLLCALL byte_count_to_str(int64_t bytes, char* str, size_t size)
    This function also appends 'B' for exact byte counts (< 1024).
    'unit' is the smallest divisor used.
 */
-char* DLLCALL byte_estimate_to_str(int64_t bytes, char* str, size_t size, ulong unit)
+char* DLLCALL byte_estimate_to_str(int64_t bytes, char* str, size_t size, ulong unit, int precision)
 {
 	if(bytes >= one_tebibyte)
-		safe_snprintf(str, size, "%1.1fT", bytes/one_tebibyte);
+		safe_snprintf(str, size, "%1.*fT", precision, bytes/one_tebibyte);
 	else if(bytes >= one_gibibyte || unit == one_gibibyte)
-		safe_snprintf(str, size, "%1.1fG", bytes/one_gibibyte);
+		safe_snprintf(str, size, "%1.*fG", precision, bytes/one_gibibyte);
 	else if(bytes >= one_mebibyte || unit == one_mebibyte)
-		safe_snprintf(str, size, "%1.1fM", bytes/one_mebibyte);
+		safe_snprintf(str, size, "%1.*fM", precision, bytes/one_mebibyte);
 	else if(bytes >= one_kibibyte || unit == one_kibibyte)
-		safe_snprintf(str, size, "%1.1fK", bytes/one_kibibyte);
+		safe_snprintf(str, size, "%1.*fK", precision, bytes/one_kibibyte);
 	else
 		safe_snprintf(str, size, "%"PRIi64"B", bytes);
 
