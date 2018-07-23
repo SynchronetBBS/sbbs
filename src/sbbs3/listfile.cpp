@@ -716,10 +716,9 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 				f.datoffset=bf[0].datoffset;
 				f.size=0;
 				getfiledat(&cfg,&f);
+				addtobatdl(&f);
 				if(ch=='D')
-					downloadfile(&f);
-				else
-					addtobatdl(&f);
+					start_batch_download();
 				CRLF;
 				return(2); 
 			}
