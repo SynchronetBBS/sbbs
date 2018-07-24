@@ -218,17 +218,7 @@ static void svc_ctrl_handler(sbbs_ntsvc_t* svc, DWORD dwCtrlCode)
 /* Service-specific control handler stub functions */
 static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode)
 {
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_SYSOP_AVAILABLE:
-			bbs_startup.options|=BBS_OPT_SYSOP_AVAILABLE;
-			break;
-		case SERVICE_CONTROL_SYSOP_UNAVAILABLE:
-			bbs_startup.options&=~BBS_OPT_SYSOP_AVAILABLE;
-			break;
-		default:
-			svc_ctrl_handler(&bbs, dwCtrlCode);
-			break;
-	}
+	svc_ctrl_handler(&bbs, dwCtrlCode);
 }
 
 static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode)

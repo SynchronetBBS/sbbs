@@ -191,7 +191,6 @@ static const char* telnet_usage  = "Terminal server settings:\n\n"
 							"\tto<value>  set Terminal server options value (advanced)\n"
 							"\tta         enable auto-logon via IP address\n"
 							"\ttd         enable Telnet command debug output\n"
-							"\ttc         enable sysop availability for chat\n"
 							"\ttq         disable QWK events\n"
 							"\tt-         disable Terminal server\n"
 							;
@@ -1641,9 +1640,6 @@ int main(int argc, char** argv)
 						break;
 					case 'Q': /* No QWK events */
 						bbs_startup.options|=BBS_OPT_NO_QWK_EVENTS;
-						break;
-					case 'C': /* Sysop available for chat */
-						bbs_startup.options|=BBS_OPT_SYSOP_AVAILABLE;
 						break;
 					case 'O': /* Set options */
 						bbs_startup.options=strtoul(arg,NULL,0);
