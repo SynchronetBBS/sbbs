@@ -140,8 +140,9 @@
 
 	function loadUsers(offset, pageSize) {
 		var users = [];
+    var usr = new User(1);
 		for (var u = 1; u < system.lastuser; u++) {
-			var usr = new User(u);
+			usr.number = u;
 			if (usr.settings&USER_DELETED ||
 				usr.compare_ars('REST Q') ||
 				usr.alias === 'Guest' ||
