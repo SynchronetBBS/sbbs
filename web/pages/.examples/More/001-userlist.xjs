@@ -152,6 +152,7 @@
 			}
 			users.push(copyProperties(usr, {}));
 		}
+    usr = undefined;
 		users.sort(sortUsers);
 		return users.slice(offset, offset + pageSize);
 	}
