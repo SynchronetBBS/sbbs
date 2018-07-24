@@ -150,10 +150,15 @@ int SMBCALL smb_open(smb_t* smb)
 	if((i=smb_open_fp(smb,&smb->sdt_fp,SH_DENYNO))!=SMB_SUCCESS)
 		return(i);
 
-	if((i=smb_open_fp(smb,&smb->sid_fp,SH_DENYNO))!=SMB_SUCCESS)
-		return(i);
+	if((i=smb_open_index(smb)) != SMB_SUCCESS)
+		return i;
 
 	return(SMB_SUCCESS);
+}
+
+int SMBCALL smb_open_index(smb_t* smb)
+{
+	return smb_open_fp(smb, &smb->sid_fp, SH_DENYNO);
 }
 
 /****************************************************************************/
@@ -652,6 +657,8 @@ int SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx)
 
 /****************************************************************************/
 /* Finds index of last message imported at or after specified time			*/
+/* If you want the message base locked during this operation, the caller	*/
+/* must call smb_locksmbhdr() before, smb_unlocksmbhdr() after.				*/
 /* Returns >= 0 on success, negative (SMB_* error) on failure.				*/
 /****************************************************************************/
 long SMBCALL smb_getmsgidx_by_time(smb_t* smb, idxrec_t* match, time_t t)
@@ -674,15 +681,10 @@ long SMBCALL smb_getmsgidx_by_time(smb_t* smb, idxrec_t* match, time_t t)
 	if(!total)	/* Empty base */
 		return SMB_ERR_NOT_FOUND;
 
-	if((result=smb_locksmbhdr(smb)) != SMB_SUCCESS)
-		return result;
-
 	if((result=smb_getlastidx(smb, &idx)) != SMB_SUCCESS) {
-		smb_unlocksmbhdr(smb);
 		return result;
 	}
 	if((time_t)idx.time < t) {
-		smb_unlocksmbhdr(smb);
 		return SMB_ERR_NOT_FOUND;
 	}
 
@@ -695,9 +697,9 @@ long SMBCALL smb_getmsgidx_by_time(smb_t* smb, idxrec_t* match, time_t t)
 	while(bot <= top) {
 		long idx_offset = (bot + top) / 2;
 		if(fseek(smb->sid_fp, idx_offset * sizeof(idxrec_t), SEEK_SET) != 0)
-			break;
+			return SMB_ERR_SEEK;
 		if(fread(&idx, 1, sizeof(idx), smb->sid_fp) != sizeof(idxrec_t))
-			break;
+			return SMB_ERR_READ;
 		if((time_t)idx.time < t) {
 			bot = idx_offset + 1;
 			continue;
@@ -710,7 +712,6 @@ long SMBCALL smb_getmsgidx_by_time(smb_t* smb, idxrec_t* match, time_t t)
 		}
 		break;
 	}
-	smb_unlocksmbhdr(smb);
 	return match_offset;
 }
 

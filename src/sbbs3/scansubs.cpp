@@ -301,6 +301,10 @@ void sbbs_t::new_scan_ptr_cfg()
 				for(j=0;j<usrsubs[i] && online;j++) {
 					progress(text[LoadingMsgPtrs], subs++, total_subs, 10);
 					checkline();
+					if(s == 0) {
+						subscan[usrsub[i][j]].ptr = ~0;
+						continue;
+					}
 					getlastmsg(usrsub[i][j],&l,0);
 					if(s>(long)l)
 						subscan[usrsub[i][j]].ptr=0;
@@ -358,6 +362,10 @@ void sbbs_t::new_scan_ptr_cfg()
 				for(j=0;j<usrsubs[i] && online;j++) {
 					progress(text[LoadingMsgPtrs], j, usrsubs[i], 10);
 					checkline();
+					if(s == 0) {
+						subscan[usrsub[i][j]].ptr = ~0;
+						continue;
+					}
 					getlastmsg(usrsub[i][j],&l,0);
 					if(s>(long)l)
 						subscan[usrsub[i][j]].ptr=0;
@@ -382,8 +390,10 @@ void sbbs_t::new_scan_ptr_cfg()
 					}
 					continue; 
 				}
-				if(s=='L')
-					s=0;
+				if(s=='L') {
+					subscan[usrsub[i][j]].ptr = ~0;
+					continue;
+				}
 				if(s)
 					s&=~0x80000000L;
 				getlastmsg(usrsub[i][j],&l,0);

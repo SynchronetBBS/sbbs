@@ -1106,8 +1106,11 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL seconds_to_str(uint, char*);
 	DLLEXPORT char *	DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
 	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time32_t intime, char* str);
+
+	/* msgdate.c */
 	DLLEXPORT when_t	DLLCALL rfc822date(char* p);
 	DLLEXPORT char *	DLLCALL msgdate(when_t when, char* buf);
+	DLLEXPORT BOOL		DLLCALL newmsgs(smb_t*, time_t);
 
 	/* load_cfg.c */
 	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error);

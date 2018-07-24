@@ -131,6 +131,7 @@ extern "C" {
 SMBEXPORT int 		SMBCALL smb_ver(void);
 SMBEXPORT char*		SMBCALL smb_lib_ver(void);
 SMBEXPORT int 		SMBCALL smb_open(smb_t* smb);
+SMBEXPORT int		SMBCALL smb_open_index(smb_t* smb);
 SMBEXPORT void		SMBCALL smb_close(smb_t* smb);
 SMBEXPORT int 		SMBCALL smb_initsmbhdr(smb_t* smb);
 SMBEXPORT int 		SMBCALL smb_create(smb_t* smb);

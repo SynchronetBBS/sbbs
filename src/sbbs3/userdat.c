@@ -3111,6 +3111,7 @@ BOOL DLLCALL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 	if(user->number==0 || (user->rest&FLAG('G')))	/* Guest */
 		return(TRUE);
 
+	fixmsgptrs(cfg, subscan);
 	SAFEPRINTF2(path,"%suser/%4.4u.subs", cfg->data_dir, user->number);
 	FILE* fp = fnopen(NULL, path, O_RDWR|O_CREAT|O_TEXT);
 	if (fp == NULL)
@@ -3153,21 +3154,25 @@ BOOL DLLCALL initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days, void (*
 	for(i=0;i<cfg->total_subs;i++) {
 		if(progress != NULL)
 			progress(cbdata, i, cfg->total_subs);
-		if(days == 0) {
-			/* This value will be "fixed" (changed to the last msg) when saving */
-			subscan[i].ptr = ~0;
+		/* This value will be "fixed" (changed to the last msg) when saving */
+		subscan[i].ptr = ~0;
+		if(days == 0)
 			continue;
-		}
 		ZERO_VAR(smb);
 		SAFEPRINTF2(smb.file,"%s%s",cfg->sub[i]->data_dir,cfg->sub[i]->code);
+
+		if(!newmsgs(&smb, t))
+			continue;
+
 		smb.retry_time=cfg->smb_retry_time;
 		smb.subnum=i;
-		if(smb_open(&smb) != SMB_SUCCESS)
+		if(smb_open_index(&smb) != SMB_SUCCESS)
 			continue;
-		if(days == 0)
-			subscan[i].ptr = smb.status.last_msg;
-		else if(smb_getmsgidx_by_time(&smb, &idx, t) >= SMB_SUCCESS)
-			subscan[i].ptr = idx.number;
+		memset(&idx, 0, sizeof(idx));
+		smb_getlastidx(&smb, &idx);
+		subscan[i].ptr = idx.number;
+		if(smb_getmsgidx_by_time(&smb, &idx, t) >= SMB_SUCCESS)
+			subscan[i].ptr = idx.number - 1;
 		smb_close(&smb);
 	}
 	if(progress != NULL)
@@ -3187,18 +3192,21 @@ BOOL DLLCALL fixmsgptrs(scfg_t* cfg, subscan_t* subscan)
 	for(i=0;i<cfg->total_subs;i++) {
 		if(subscan[i].ptr == 0)
 			continue;
-		if(subscan[i].sav_ptr == subscan[i].ptr)
+		if(subscan[i].ptr < ~0 && subscan[i].sav_ptr == subscan[i].ptr)
 			continue;
 		ZERO_VAR(smb);
 		SAFEPRINTF2(smb.file,"%s%s",cfg->sub[i]->data_dir,cfg->sub[i]->code);
 		smb.retry_time=cfg->smb_retry_time;
 		smb.subnum=i;
-		if(smb_open(&smb) != SMB_SUCCESS)
+		if(smb_open_index(&smb) != SMB_SUCCESS)
 			continue;
-		if(subscan[i].ptr > smb.status.last_msg)
-			subscan[i].ptr = smb.status.last_msg;
-		if(subscan[i].last > smb.status.last_msg)
-			subscan[i].last = smb.status.last_msg;
+		idxrec_t idx;
+		memset(&idx, 0xff, sizeof(idx));
+		smb_getlastidx(&smb, &idx);
+		if(subscan[i].ptr > idx.number)
+			subscan[i].ptr = idx.number;
+		if(subscan[i].last > idx.number)
+			subscan[i].last = idx.number;
 		smb_close(&smb);
 	}
 	return TRUE;
