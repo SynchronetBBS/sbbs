@@ -3055,12 +3055,16 @@ BOOL DLLCALL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*pr
 		for(i = 0; i < cfg->total_subs; i++) {
 			if(progress != NULL)
 				progress(cbdata, i, cfg->total_subs);
-			subscan[i].ptr	= iniGetLongInt(ini, cfg->sub[i]->code, "ptr"	, subscan[i].ptr);
-			subscan[i].last	= iniGetLongInt(ini, cfg->sub[i]->code, "last"	, subscan[i].last);
-			subscan[i].cfg	= iniGetShortInt(ini, cfg->sub[i]->code, "cfg"	, subscan[i].cfg);
+			str_list_t keys = iniGetSection(ini, cfg->sub[i]->code);
+			if(keys == NULL)
+				continue;
+			subscan[i].ptr	= iniGetLongInt(keys, cfg->sub[i]->code, "ptr"	, subscan[i].ptr);
+			subscan[i].last	= iniGetLongInt(keys, cfg->sub[i]->code, "last"	, subscan[i].last);
+			subscan[i].cfg	= iniGetShortInt(keys, cfg->sub[i]->code, "cfg"	, subscan[i].cfg);
 			subscan[i].sav_ptr	= subscan[i].ptr;
 			subscan[i].sav_last	= subscan[i].last;
 			subscan[i].sav_cfg	= subscan[i].cfg; 
+			iniFreeStringList(keys);
 		}
 		iniFreeStringList(ini);
 		fclose(fp);
