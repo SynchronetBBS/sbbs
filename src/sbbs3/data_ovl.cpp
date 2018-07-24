@@ -50,7 +50,9 @@ void sbbs_t::getmsgptrs()
 {
 	if(!useron.number)
 		return;
+	msclock_t start = msclock();
 	::getmsgptrs(&cfg,&useron,subscan,online == ON_REMOTE ? ProgressLoadingMsgPtrs : NULL,this);
+	lprintf(LOG_DEBUG, "Node %d %s read message configuration/pointers (%lu ms)", cfg.node_num, useron.alias, msclock() - start);
 	if(online == ON_REMOTE)
 		bputs(text[LoadedMsgPtrs]);
 }

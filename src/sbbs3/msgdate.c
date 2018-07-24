@@ -180,5 +180,5 @@ BOOL DLLCALL newmsgs(smb_t* smb, time_t t)
 	char index_fname[MAX_PATH + 1];
 
 	SAFEPRINTF(index_fname, "%s.sid", smb->file);
-	return fdate(index_fname) > t;
+	return fdate(index_fname) >= t;
 }
