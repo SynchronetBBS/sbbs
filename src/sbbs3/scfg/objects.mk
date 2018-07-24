@@ -24,5 +24,6 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)scfg$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)nopen$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
+            $(MTOBJODIR)$(DIRSEP)msgdate$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)date_str$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE)
