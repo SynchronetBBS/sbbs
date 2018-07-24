@@ -48,6 +48,7 @@ function setCookie(usr, sessionKey) {
 
 function validateSession(cookies) {
 
+  var usr = new User(0);
 	for (var c in cookies) {
 
 		if (cookies[c].search(/^\d+,\w+$/) < 0) continue;
@@ -55,7 +56,7 @@ function validateSession(cookies) {
 		var cookie = cookies[c].split(',');
 
 		try {
-			var usr = new User(cookie[0]);
+			usr.number = cookie[0];
 			if (usr.number < 1) {
 				throw 'Invalid user number ' + cookie[0] + ' in cookie.';
 			}
@@ -70,17 +71,20 @@ function validateSession(cookies) {
 			continue;
 		}
 
-		authenticate(usr.alias, usr.security.password);
+		var _usr = authenticate(usr.alias, usr.security.password);
+    _usr = undefined;
 		setCookie(usr, session.key);
 		setSessionValue(usr.number, 'ip_address', client.ip_address);
 		break;
 
 	}
+  usr = undefined;
 
 }
 
 function destroySession(cookies) {
 
+  var usr = new User(0);
 	for (var c in cookies) {
 
 		if (cookies[c].search(/^\d+,\w+$/) < 0)	continue;
@@ -89,7 +93,7 @@ function destroySession(cookies) {
 
 		try {
 
-			var usr = new User(cookie[0]);
+			usr.number = cookie[0];
 			if(usr.number < 1) {
 				throw 'Invalid user number ' + cookie[0] + ' in cookie.';
 			}
@@ -123,6 +127,7 @@ function destroySession(cookies) {
 		}
 
 	}
+  usr = undefined;
 
 }
 
@@ -174,6 +179,7 @@ if (user.number === 0) {
 	if (gn > 0) {
 		var gu = new User(gn);
 		login(gu.alias, gu.security.password);
+    gu = undefined;
 	} else {
 		// Otherwise just kill the script, for security's sake
 		exit();
