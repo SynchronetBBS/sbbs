@@ -19,22 +19,15 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 	switch (http_request.query.call[0]) {
 
 		case 'node-list':
-			reply = system.node_list.map(
-				function (node) {
-					if (node.status === 3) var usr = new User(node.useron);
-					return (
-						{	status : format(
-								NodeStatus[node.status], node.aux, node.extaux
-							),
-							action : format(
-								NodeAction[node.action], node.aux, node.extaux
-							),
-							user : (typeof usr === 'undefined' ? '' : usr.alias)
-						}
-					);
-				}
-			);
-			var usr = new User(1);
+      var usr = new User(1);
+			reply = system.node_list.map(function (node) {
+        usr.number = node.useron;
+				return ({
+          status : format(NodeStatus[node.status], node.aux, node.extaux),
+					action : format(NodeAction[node.action], node.aux, node.extaux),
+          user : (node.status == 3 ? usr.alias : '')
+				});
+			});
 			for (var un = 1; un < system.lastuser; un++) {
 				usr.number = un;
 				if (usr.connection !== 'HTTP') continue;
@@ -43,12 +36,11 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				if (usr.logontime < time() - settings.inactivity) continue;
 				var webAction = getSessionValue(usr.number, 'action');
 				if (webAction === null) continue;
-				reply.push(
-					{	status : '',
-						action : _language.nodelist_action_prefix + ' ' + webAction,
-						user : usr.alias
-					}
-				);
+				reply.push({
+          status : '',
+					action : _language.nodelist_action_prefix + ' ' + webAction,
+					user : usr.alias
+				});
 			}
 			break;
 
@@ -68,8 +60,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 			var un = system.matchuser(http_request.query.user[0]);
 			if (un < 1) break;
 			system.put_telegram(
-				un,
-				format(
+				un, format(
 					_language.telegram_header_format,
 					user.alias, (new Date()).toLocaleString()
 				) + '\r\n' + http_request.query.telegram[0] + '\r\n'
