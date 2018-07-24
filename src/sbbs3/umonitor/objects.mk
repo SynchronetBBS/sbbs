@@ -6,6 +6,7 @@ OBJS	:=	\
 			$(MTOBJODIR)$(DIRSEP)getmail$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)getstats$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)load_cfg$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)msgdate$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)sbbs_ini$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE) \

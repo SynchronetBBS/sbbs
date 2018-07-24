@@ -189,6 +189,7 @@ SBBSECHO_OBJS = \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)rechocfg$(OFILE) \
 			$(OBJODIR)$(DIRSEP)msg_id$(OFILE) \
+			$(OBJODIR)$(DIRSEP)msgdate$(OFILE) \
 			$(OBJODIR)$(DIRSEP)getmail$(OFILE) \
 			$(SMB_OBJS)
 
@@ -210,6 +211,7 @@ ADDFILES_OBJS = \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)msgdate$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE)
 
 FILELIST_OBJS = \
@@ -234,7 +236,8 @@ MAKEUSER_OBJS = \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
-			$(OBJODIR)$(DIRSEP)userdat$(OFILE)
+			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)msgdate$(OFILE)
 
 JSEXEC_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)jsexec$(OFILE) \
