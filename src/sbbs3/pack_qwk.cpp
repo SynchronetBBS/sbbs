@@ -382,7 +382,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 			for(u=0;u<mailmsgs;u++) {
 				if(online == ON_REMOTE)
-					bprintf("\b\b\b\b\b\b\b\b\b\b\b\b%4lu of %-4lu"
+					bprintf("\b\b\b\b\b\b\b\b\b\b\b\b%4u of %-4u"
 						,u+1,mailmsgs);
 
 				memset(&msg,0,sizeof(msg));
@@ -509,7 +509,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 				for(u=0;u<posts && !msgabort();u++) {
 					if(online == ON_REMOTE)
-						bprintf("\b\b\b\b\b%-5lu",u+1);
+						bprintf("\b\b\b\b\b%-5u",u+1);
 
 					subscan[usrsub[i][j]].ptr=post[u].idx.number;	/* set ptr */
 					subscan[usrsub[i][j]].last=post[u].idx.number; /* set last read */

@@ -1067,7 +1067,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 		return(false);
 	}
 	if(spy_socket[i-1]!=INVALID_SOCKET) {
-		bprintf("Node %d already being spied (%lx)\r\n",i,spy_socket[i-1]);
+		bprintf("Node %d already being spied (%x)\r\n",i,spy_socket[i-1]);
 		return(false);
 	}
 	bprintf("*** Synchronet Remote Spy on Node %d: Ctrl-C to Abort ***"

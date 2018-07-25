@@ -827,14 +827,14 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 		if(sys_status&SS_ABORT) {
 			if(line==lines)
 				free(str[line]);
-			continue; 
+			continue;
 		}
 		if(strin[0]=='/' && strlen(strin)<8) {
 			if(!stricmp(strin,"/DEBUG") && SYSOP) {
 				if(line==lines)
 					free(str[line]);
-				bprintf("\r\nline=%d lines=%d rows=%d\r\n",line,lines,rows);
-				continue; 
+				bprintf("\r\nline=%d lines=%d rows=%ld\r\n",line,lines,rows);
+				continue;
 			}
 			else if(!stricmp(strin,"/ABT")) {
 				if(line==lines) 		/* delete a line */
@@ -842,7 +842,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				for(i=0;i<lines;i++)
 					free(str[i]);
 				free(str);
-				return(0); 
+				return(0);
 			}
 			else if(toupper(strin[1])=='D') {
 				if(line==lines)         /* delete a line */

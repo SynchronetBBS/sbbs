@@ -136,53 +136,53 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 	}
 
 	/* fixed fields */
-	bprintf("%-16.16s %08lX %04hX %.24s %s\r\n","when_written"	
+	bprintf("%-16.16s %08X %04hX %.24s %s\r\n","when_written"	
 		,msg->hdr.when_written.time, msg->hdr.when_written.zone
 		,timestr(msg->hdr.when_written.time)
 		,smb_zonestr(msg->hdr.when_written.zone,NULL));
-	bprintf("%-16.16s %08lX %04hX %.24s %s\r\n","when_imported"	
+	bprintf("%-16.16s %08X %04hX %.24s %s\r\n","when_imported"	
 		,msg->hdr.when_imported.time, msg->hdr.when_imported.zone
 		,timestr(msg->hdr.when_imported.time)
 		,smb_zonestr(msg->hdr.when_imported.zone,NULL));
-	bprintf("%-16.16s %04Xh\r\n","type"				,msg->hdr.type);
-	bprintf("%-16.16s %04Xh\r\n","version"			,msg->hdr.version);
-	bprintf("%-16.16s %04Xh\r\n","attr"				,msg->hdr.attr);
-	bprintf("%-16.16s %08lXh\r\n","auxattr"			,msg->hdr.auxattr);
-	bprintf("%-16.16s %08lXh\r\n","netattr"			,msg->hdr.netattr);
-	bprintf("%-16.16s %06lXh\r\n","header offset"	,msg->idx.offset);
-	bprintf("%-16.16s %u\r\n"	 ,"header length"	,msg->hdr.length);
-	bprintf("%-16.16s %ld\r\n"	 ,"number"			,msg->hdr.number);
+	bprintf("%-16.16s %04Xh\r\n"	,"type"			,msg->hdr.type);
+	bprintf("%-16.16s %04Xh\r\n"	,"version"		,msg->hdr.version);
+	bprintf("%-16.16s %04Xh\r\n"	,"attr"			,msg->hdr.attr);
+	bprintf("%-16.16s %08Xh\r\n"	,"auxattr"		,msg->hdr.auxattr);
+	bprintf("%-16.16s %08Xh\r\n"	,"netattr"		,msg->hdr.netattr);
+	bprintf("%-16.16s %06Xh\r\n"	,"header offset"	,msg->idx.offset);
+	bprintf("%-16.16s %u\r\n"	,"header length"	,msg->hdr.length);
+	bprintf("%-16.16s %d\r\n"	,"number"		,msg->hdr.number);
 
 	/* optional fixed fields */
 	if(msg->hdr.thread_id)
-		bprintf("%-16.16s %ld\r\n"	,"thread_id"		,msg->hdr.thread_id);
+		bprintf("%-16.16s %d\r\n"	,"thread_id"		,msg->hdr.thread_id);
 	if(msg->hdr.thread_back)
-		bprintf("%-16.16s %ld\r\n"	,"thread_back"		,msg->hdr.thread_back);
+		bprintf("%-16.16s %d\r\n"	,"thread_back"		,msg->hdr.thread_back);
 	if(msg->hdr.thread_next)
-		bprintf("%-16.16s %ld\r\n"	,"thread_next"		,msg->hdr.thread_next);
+		bprintf("%-16.16s %d\r\n"	,"thread_next"		,msg->hdr.thread_next);
 	if(msg->hdr.thread_first)
-		bprintf("%-16.16s %ld\r\n"	,"thread_first"		,msg->hdr.thread_first);
+		bprintf("%-16.16s %d\r\n"	,"thread_first"		,msg->hdr.thread_first);
 	if(msg->hdr.delivery_attempts)
-		bprintf("%-16.16s %hu\r\n"	,"delivery_attempts",msg->hdr.delivery_attempts);
+		bprintf("%-16.16s %hu\r\n"	,"delivery_attempts"	,msg->hdr.delivery_attempts);
 	if(msg->hdr.times_downloaded)
-		bprintf("%-16.16s %lu\r\n"	,"times_downloaded"	,msg->hdr.times_downloaded);
+		bprintf("%-16.16s %u\r\n"	,"times_downloaded"	,msg->hdr.times_downloaded);
 	if(msg->hdr.last_downloaded)
 		bprintf("%-16.16s %s\r\n"	,"last_downloaded"	,timestr(msg->hdr.last_downloaded));
 	if(msg->hdr.votes)
-		bprintf("%-16.16s %hu\r\n"	,"votes"			,msg->hdr.votes);
+		bprintf("%-16.16s %hu\r\n"	,"votes"		,msg->hdr.votes);
 
 	/* convenience integers */
 	if(msg->expiration)
-		bprintf("%-16.16s %s\r\n"	,"expiration"	
+		bprintf("%-16.16s %s\r\n"	,"expiration"
 			,timestr(msg->expiration));
 	if(msg->priority)
-		bprintf("%-16.16s %lu\r\n"	,"priority"			,msg->priority);
+		bprintf("%-16.16s %u\r\n"	,"priority"			,msg->priority);
 	if(msg->cost)
-		bprintf("%-16.16s %lu\r\n"	,"cost"				,msg->cost);
+		bprintf("%-16.16s %u\r\n"	,"cost"				,msg->cost);
 
-	bprintf("%-16.16s %06lXh\r\n"	,"data offset"		,msg->hdr.offset);
+	bprintf("%-16.16s %06Xh\r\n"	,"data offset"		,msg->hdr.offset);
 	for(i=0;i<msg->hdr.total_dfields;i++)
-		bprintf("data field[%u]    %s, offset %lu, length %lu\r\n"
+		bprintf("data field[%u]    %s, offset %u, length %u\r\n"
 				,i
 				,smb_dfieldtype(msg->dfield[i].type)
 				,msg->dfield[i].offset
@@ -461,8 +461,8 @@ void sbbs_t::show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thr
 //		,msg.hdr.number
 		,(unsigned)i == curmsg ? '>' : ':');
 	bprintf("\1w%-*.*s\1g%c\1g%c \1w%s\r\n"
-		,cols-column-12
-		,cols-column-12
+		,(int)(cols-column-12)
+		,(int)(cols-column-12)
 		,msg.hdr.attr&MSG_ANONYMOUS && !sub_op(smb.subnum)
 			? text[Anonymous] : msg.from
 		,(unsigned)i == curmsg ? '<' : ' '
@@ -735,7 +735,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				break;
 			}
 			bprintf("\1n\1l\1h\1bThread\1n\1b: \1h\1c");
-			bprintf("%-.*s\r\n", cols-(column+1), msg.subj);
+			bprintf("%-.*s\r\n", (int)(cols-(column+1)), msg.subj);
 			show_thread(first, post, smb.curmsg);
 			subscan[subnum].last = post[smb.curmsg].idx.number;
 		}

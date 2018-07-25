@@ -85,7 +85,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					if(!pp || !*pp) {
 						lp=getintvar(csi,*(int32_t *)csi->ip);
 						if(lp)
-							bprintf("%ld",*lp); 
+							bprintf("%d",*lp);
 					}
 					else
 						putmsg(cmdstr(*pp,path,csi->str,buf)
@@ -107,25 +107,25 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					free(p);
 					return(0);
 				case SHOW_VARS:
-					bprintf("shell     str=(%08lX) %s\r\n"
+					bprintf("shell     str=(%p) %s\r\n"
 						,csi->str,csi->str);
 					for(i=0;i<csi->str_vars;i++)
-						bprintf("local  str[%d]=(%08lX) (%08lX) %s\r\n"
+						bprintf("local  str[%d]=(%08X) (%p) %s\r\n"
 							,i,csi->str_var_name[i]
 							,csi->str_var[i]
 							,csi->str_var[i]);
 					for(i=0;i<csi->int_vars;i++)
-						bprintf("local  int[%d]=(%08lX) (%08lX) %ld\r\n"
+						bprintf("local  int[%d]=(%08X) (%08X) %d\r\n"
 							,i,csi->int_var_name[i]
 							,csi->int_var[i]
 							,csi->int_var[i]);
 					for(i=0;i<global_str_vars;i++)
-						bprintf("global str[%d]=(%08lX) (%08lX) %s\r\n"
+						bprintf("global str[%d]=(%08X) (%p) %s\r\n"
 							,i,global_str_var_name[i]
 							,global_str_var[i]
 							,global_str_var[i]);
 					for(i=0;i<global_int_vars;i++)
-						bprintf("global int[%d]=(%08lX) (%08lX) %ld\r\n"
+						bprintf("global int[%d]=(%08X) (%08X) %d\r\n"
 							,i,global_int_var_name[i]
 							,global_int_var[i]
 							,global_int_var[i]);

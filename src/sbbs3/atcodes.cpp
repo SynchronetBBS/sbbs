@@ -101,7 +101,7 @@ int sbbs_t::show_atcode(const char *instr)
 	} else if(zero_padded) {
 		int vlen = strlen(cp);
 		if(vlen < disp_len)
-			bprintf("%-.*s%s", disp_len - strlen(cp), "0000000000", cp);
+			bprintf("%-.*s%s", (int)(disp_len - strlen(cp)), "0000000000", cp);
 		else
 			bprintf("%.*s", disp_len, cp);
 	} else

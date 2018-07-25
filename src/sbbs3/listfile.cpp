@@ -530,7 +530,7 @@ bool sbbs_t::listfile(const char *fname, const char *buf, uint dirnum
 			attr(cfg.color[clr_filedesc]^HIGH);
 			bprintf("%.*s",i,str+j);
 			attr(cfg.color[clr_filedesc]);
-			bprintf("%.*s",strlen(str)-(j+i),str+j+i); 
+			bprintf("%.*s",(int)(strlen(str)-(j+i)),str+j+i); 
 		}
 		else
 			bputs(str);

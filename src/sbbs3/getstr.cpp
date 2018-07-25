@@ -153,7 +153,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						l++;
 					for(x=l;x>i;x--)
 						str1[x]=str1[x-1];
-					column+=rprintf("%.*s",l-i,str1+i);
+					column+=rprintf("%.*s",(int)(l-i),str1+i);
 					cursor_left(l-i);
 #if 0
 					if(i==maxlen-1)
@@ -526,7 +526,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 							l++;
 						for(x=l;x>i;x--)
 							str1[x]=str1[x-1];
-						column+=rprintf("%.*s",l-i,str1+i);
+						column+=rprintf("%.*s",(int)(l-i),str1+i);
 						cursor_left(l-i);
 #if 0
 						if(i==maxlen-1) {
