@@ -116,7 +116,8 @@ function remove_dir(dir) {
     rmdir(dir);
 }
 
-const zip_url = 'https://codeload.github.com/echicken/synchronet-web-v4/zip/master';
+const url_suffix = argc > 0 ? argv[0] : master;
+const zip_url = 'https://codeload.github.com/echicken/synchronet-web-v4/zip/' + url_suffix;
 const download_target = system.temp_dir + 'webv4.zip';
 const extract_dir = fullpath(system.temp_dir);
 const temp_dir = fullpath(extract_dir + '/synchronet-web-v4-master');
