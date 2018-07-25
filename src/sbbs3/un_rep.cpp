@@ -1,4 +1,5 @@
 /* Synchronet QWK replay (REP) packet unpacking routine */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -198,11 +199,13 @@ bool sbbs_t::unpack_rep(char* repfile)
 					errors++;
 				continue;
 			}
-			SAFEPRINTF3(str,"%s blocks (read '%s' at offset %ld)", msg_fname, tmp, l);
-			errormsg(WHERE,ERR_CHK,str,blocks);
+			snprintf(str, sizeof(str)-1
+				, "%s blocks (read '%c' at offset %ld, '%s' at offset %ld)"
+				, msg_fname, block[0], l, tmp, l + 116);
+			errormsg(WHERE, ERR_CHK, tmp, blocks, str);
 			errors++;
 			blocks=1;
-			continue; 
+			continue;
 		}
 
 		long confnum = atol((char *)block+1);
