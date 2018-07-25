@@ -1047,7 +1047,7 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(sbbs->online==ON_LOCAL)
-		eprintf(LOG_WARNING, "%s", cstr);
+		lputs(LOG_WARNING, cstr);
 	else {
 		sbbs->attr(sbbs->cfg.color[clr_err]);
 		sbbs->bputs(cstr);
@@ -1220,18 +1220,12 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	const char*	warning;
 	jsrefcount	rc;
 	int		log_level;
-	char	nodestr[128];
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return;
 
-    if(sbbs->cfg.node_num)
-    	SAFEPRINTF(nodestr,"Node %d",sbbs->cfg.node_num);
-    else
-    	SAFECOPY(nodestr,sbbs->client_name);
-
 	if(report==NULL) {
-		lprintf(LOG_ERR,"%s !JavaScript: %s", nodestr, message);
+		sbbs->lprintf(LOG_ERR,"!JavaScript: %s", message);
 		return;
     }
 
@@ -1257,12 +1251,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(sbbs->online==ON_LOCAL)
-		eprintf(log_level,"!JavaScript %s%s%s: %s",warning,file,line,message);
-	else {
-		lprintf(log_level,"%s !JavaScript %s%s%s: %s",nodestr,warning,file,line,message);
+	sbbs->lprintf(log_level, "!JavaScript %s%s%s: %s",warning,file,line,message);
+	if(sbbs->online==ON_REMOTE)
 		sbbs->bprintf("!JavaScript %s%s%s: %s\r\n",warning,file,line,message);
-	}
 	JS_RESUMEREQUEST(cx, rc);
 }
 
@@ -2909,9 +2900,9 @@ void event_thread(void* arg)
 							SAFEPRINTF2(newname,"%s.%lx.bad",str,(long)now);
 							remove(newname);
 							if(rename(str,newname)==0)
-								eprintf(LOG_NOTICE, "%s renamed to %s", str, newname);
+								sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", str, newname);
 							else
-								eprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
+								sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
 									,errno, strerror(errno), str, newname);
 						}
 						delfiles(sbbs->cfg.temp_dir,ALLFILES);
@@ -3082,10 +3073,9 @@ void event_thread(void* arg)
 
 					if(sbbs->cfg.event[i]->node<first_node
 						|| sbbs->cfg.event[i]->node>last_node) {
-						eprintf(LOG_INFO,"Waiting for node %d to run timed event: %s"
+						sbbs->lprintf(LOG_INFO,"Waiting for node %d to run timed event: %s"
 							,sbbs->cfg.event[i]->node, event_code);
-						eprintf(LOG_DEBUG,"%s event last run: %s (0x%08x)"
-							,event_code
+						sbbs->lprintf(LOG_DEBUG,"event last run: %s (0x%08x)"
 							,timestr(&sbbs->cfg, sbbs->cfg.event[i]->last, str)
 							,sbbs->cfg.event[i]->last);
 						lastnodechk=0;	 /* really last event time check */
@@ -3117,7 +3107,7 @@ void event_thread(void* arg)
 							if(now-sbbs->cfg.event[i]->last<(60*60))	/* event is done */
 								break;
 							if(now-start>(90*60)) {
-								eprintf(LOG_WARNING,"!TIMEOUT waiting for event (%s) to complete", event_code);
+								sbbs->lprintf(LOG_WARNING,"!TIMEOUT waiting for event to complete");
 								break;
 							}
 						}
@@ -3126,8 +3116,7 @@ void event_thread(void* arg)
 							remove(str);
 						sbbs->cfg.event[i]->last=(time32_t)now;
 					} else {	// Exclusive event to run on a node under our control
-						eprintf(LOG_INFO,"Waiting for all nodes to become inactive before "
-							"running timed event: %s", event_code);
+						sbbs->lprintf(LOG_INFO,"Waiting for all nodes to become inactive before running timed event");
 						lastnodechk=0;
 						start=time(NULL);
 						while(!sbbs->terminated) {
@@ -3164,11 +3153,11 @@ void event_thread(void* arg)
 							}
 							if(j>sbbs->cfg.sys_nodes) /* all nodes either offline or in limbo */
 								break;
-							eprintf(LOG_DEBUG,"Waiting for node %d (status=%d), event: %s"
-								,j, node.status, event_code);
+							sbbs->lprintf(LOG_DEBUG,"Waiting for node %d (status=%d)"
+								,j, node.status);
 							if(now-start>(90*60)) {
-								eprintf(LOG_WARNING,"!TIMEOUT waiting for node %d to become inactive (status=%d), event: %s"
-									,j, node.status, event_code);
+								sbbs->lprintf(LOG_WARNING,"!TIMEOUT waiting for node %d to become inactive (status=%d)"
+									,j, node.status);
 								break;
 							}
 						}
@@ -3183,8 +3172,8 @@ void event_thread(void* arg)
 #endif
 				if(sbbs->cfg.event[i]->node<first_node
 					|| sbbs->cfg.event[i]->node>last_node) {
-					eprintf(LOG_NOTICE,"Changing node status for nodes %d through %d to WFC, event: %s"
-						,first_node,last_node, event_code);
+					sbbs->lprintf(LOG_NOTICE,"Changing node status for nodes %d through %d to WFC"
+						,first_node,last_node);
 					sbbs->cfg.event[i]->last=(time32_t)now;
 					for(j=first_node;j<=last_node;j++) {
 						node.status=NODE_INVALID_STATUS;
