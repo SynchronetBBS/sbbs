@@ -3255,6 +3255,7 @@ void event_thread(void* arg)
 		mswait(1000);
 	}
 	sbbs->cfg.node_num=0;
+	sbbs->useron.number = 0;
 	sbbs->js_cleanup();
 
 	sbbs->event_thread_running = false;
