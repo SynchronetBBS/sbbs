@@ -376,7 +376,7 @@ public:
 	xpevent_t	telnet_ack_event;
 
 	time_t	event_time;				// Time of next exclusive event
-	char*	event_code;				// Internal code of next exclusive event
+	const char*	event_code;				// Internal code of next exclusive event
 	bool	is_event_thread;
 	bool	event_thread_running;
     bool	output_thread_running;
