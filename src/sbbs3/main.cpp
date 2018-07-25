@@ -2671,12 +2671,12 @@ void event_thread(void* arg)
 				if(sbbs->useron.number && flength(g.gl_pathv[i])>0) {
 					SAFEPRINTF(semfile,"%s.lock",g.gl_pathv[i]);
 					if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE)) {
-						eprintf(LOG_INFO,"%s exists (unpack in progress?)", semfile);
+						sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?)", semfile);
 						continue;
 					}
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
-					eprintf(LOG_INFO,"Un-packing QWK Reply packet from %s",sbbs->useron.alias);
+					sbbs->lprintf(LOG_INFO, "Un-packing QWK Reply packet");
 					sbbs->getusrsubs();
 					bool success = sbbs->unpack_rep(g.gl_pathv[i]);
 					delfiles(sbbs->cfg.temp_dir,ALLFILES);		/* clean-up temp_dir after unpacking */
@@ -2694,9 +2694,9 @@ void event_thread(void* arg)
 						SAFEPRINTF2(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
 						remove(badpkt);
 						if(rename(g.gl_pathv[i], badpkt) == 0)
-							eprintf(LOG_NOTICE, "%s renamed to %s", g.gl_pathv[i], badpkt);
+							sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", g.gl_pathv[i], badpkt);
 						else
-							eprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
+							sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
 								,errno, strerror(errno), g.gl_pathv[i], badpkt);
 					}
 					remove(semfile);
@@ -2710,16 +2710,16 @@ void event_thread(void* arg)
 			offset=strlen(sbbs->cfg.data_dir)+4;
 			glob(str,0,NULL,&g);
 			for(i=0;i<(int)g.gl_pathc && !sbbs->terminated;i++) {
-				eprintf(LOG_INFO,"QWK pack semaphore signaled: %s", g.gl_pathv[i]);
+				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", g.gl_pathv[i]);
 				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
 				SAFEPRINTF2(semfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
 				if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE)) {
-					eprintf(LOG_INFO,"%s exists (pack in progress?)", semfile);
+					sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?)", semfile);
 					continue;
 				}
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
-					eprintf(LOG_INFO,"Packing QWK Message Packet for %s",sbbs->useron.alias);
+					sbbs->lprintf(LOG_INFO, "Packing QWK Message Packet");
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
 					sbbs->getmsgptrs();
@@ -2733,12 +2733,12 @@ void event_thread(void* arg)
 					SAFEPRINTF3(str,"%sfile%c%04u.qwk"
 						,sbbs->cfg.data_dir,PATH_DELIM,sbbs->useron.number);
 					if(sbbs->pack_qwk(str,&l,true /* pre-pack/off-line */)) {
-						eprintf(LOG_INFO,"Packing completed: %s", str);
+						sbbs->lprintf(LOG_INFO, "Packing completed: %s", str);
 						sbbs->qwk_success(l,0,1);
 						sbbs->putmsgptrs();
 						remove(bat_list);
 					} else
-						eprintf(LOG_INFO,"No packet created (no new messages)");
+						sbbs->lputs(LOG_INFO, "No packet created (no new messages)");
 					delfiles(sbbs->cfg.temp_dir,ALLFILES);
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=FALSE;
@@ -2754,7 +2754,7 @@ void event_thread(void* arg)
 			if(sbbs->cfg.preqwk_ar[0]
 				&& (fexistcase(semfile) || (now-lastprepack)/60>(60*24))) {
 				j=lastuser(&sbbs->cfg);
-				eprintf(LOG_INFO,"Pre-packing QWK Message packets...");
+				sbbs->lputs(LOG_INFO,"Pre-packing QWK Message packets...");
 				int userfile = openuserdat(&sbbs->cfg, /* for_modify: */FALSE);
 				for(i=1;i<=j;i++) {
 
@@ -2775,7 +2775,7 @@ void event_thread(void* arg)
 						}
 						if(k<=sbbs->cfg.sys_nodes)	/* Don't pre-pack with user online */
 							continue;
-						eprintf(LOG_INFO,"Pre-packing QWK for %s",sbbs->useron.alias);
+						sbbs->lprintf(LOG_INFO, "Pre-packing QWK");
 						sbbs->online=ON_LOCAL;
 						sbbs->console|=CON_L_ECHO;
 						sbbs->getmsgptrs();
@@ -2831,7 +2831,7 @@ void event_thread(void* arg)
 						sbbs->cfg.node_num=i;
 						strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[i-1]);
 
-						eprintf(LOG_INFO,"Running node %d daily event",i);
+						sbbs->lprintf(LOG_INFO,"Running node %d daily event",i);
 						sbbs->online=ON_LOCAL;
 						sbbs->console|=CON_L_ECHO;
 						sbbs->logentry("!:","Run node daily event");
