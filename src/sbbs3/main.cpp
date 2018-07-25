@@ -2703,9 +2703,10 @@ void event_thread(void* arg)
 				}
 			}
 			globfree(&g);
+			sbbs->useron.number = 0;
 
-			sbbs->event_code = "packQWK";
 			/* Create any QWK files that have magically appeared (via FTP perhaps) */
+			sbbs->event_code = "packQWK";
 			SAFEPRINTF(str,"%spack*.now",sbbs->cfg.data_dir);
 			offset=strlen(sbbs->cfg.data_dir)+4;
 			glob(str,0,NULL,&g);
@@ -2747,6 +2748,7 @@ void event_thread(void* arg)
 				remove(semfile);
 			}
 			globfree(&g);
+			sbbs->useron.number = 0;
 
 			/* Create (pre-pack) QWK files for users configured as such */
 			sbbs->event_code = "prepackQWK";
@@ -2806,6 +2808,7 @@ void event_thread(void* arg)
 				remove(semfile);
 				//status(STATUS_WFC);
 			}
+			sbbs->useron.number = 0;
 		}
 
 		if(check_semaphores) {
