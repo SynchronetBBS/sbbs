@@ -1,3 +1,11 @@
+const named_parameters = {};
+if (argv.length > 0) {
+  argv.forEach(function (e) {
+    const m = /-?((\w+)(?:=("[^"]+"|[^\s"]+))?)(?:\s+|$)/.exec(e);
+    named_parameters[m[2]] = (m[3] ? m[3] : null);
+  });
+}
+
 load('http.js');
 
 function download(url, target) {
@@ -66,16 +74,19 @@ function set_service_ini(section, obj) {
 }
 
 function get_setting(text, value) {
-    const i = prompt(text + ' [' + value + ']');
-    return (i == '' ? value : i);
+  if (typeof named_parameters.defaults != 'undefined') return value;
+  const i = prompt(text + ' [' + value + ']');
+  return (i == '' ? value : i);
 }
 
 function confirm_setting(text, value) {
-    if (!value) {
-        return !deny(text + ' [' + value + ']');
-    } else {
-        return confirm(text + ' [' + value + ']');
-    }
+  if (typeof named_parameters.defaults != 'undefined') {
+    return value;
+  } else if (!value) {
+    return !deny(text + ' [' + value + ']');
+  } else {
+    return confirm(text + ' [' + value + ']');
+  }
 }
 
 function copy_dir_contents(src, dest, overwrite) {
@@ -116,7 +127,7 @@ function remove_dir(dir) {
     rmdir(dir);
 }
 
-const url_suffix = argc > 0 ? argv[0] : master;
+const url_suffix = named_parameters.release ? named_parameters.release : 'master';
 const zip_url = 'https://codeload.github.com/echicken/synchronet-web-v4/zip/' + url_suffix;
 const download_target = system.temp_dir + 'webv4.zip';
 const extract_dir = fullpath(system.temp_dir);
@@ -135,7 +146,7 @@ if (!modopts_web) {
     	minimum_password_length : 6,
     	maximum_telegram_length : 800,
     	web_directory : install_dir,
-        ftelnet : true,
+      ftelnet : true,
     	ftelnet_splash : '../text/synch.ans',
     	keyboard_navigation : false,
     	vote_functions : true,
@@ -179,7 +190,7 @@ if (system.version_num < 31700) {
 write('\r\nIt is strongly recommended that you back up your BBS before proceeding.\r\n');
 write('\r\nIf this is a new intallation, you must also shut down your BBS now.\r\n\r\n');
 
-if (deny('Proceed with installation/update')) {
+if (typeof named_parameters.defaults == 'undefined' && deny('Proceed with installation/update')) {
     writeln('Install/update aborted.  Exiting.');
     exit();
 }
