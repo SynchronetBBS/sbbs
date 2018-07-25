@@ -231,7 +231,7 @@ DLLEXPORT ulong		DLLCALL getfilecount(const char *inpath, const char* spec);
 DLLEXPORT long		DLLCALL	getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only);
 DLLEXPORT ulong		DLLCALL getdisksize(const char* path, ulong unit);
 DLLEXPORT ulong		DLLCALL getfreediskspace(const char* path, ulong unit);
-DLLEXPORT ulong		DLLCALL delfiles(const char *inpath, const char *spec);
+DLLEXPORT long		DLLCALL delfiles(const char *inpath, const char *spec);
 DLLEXPORT char*		DLLCALL backslash(char* path);
 DLLEXPORT BOOL 		DLLCALL wildmatch(const char *fname, const char *spec, BOOL path);
 DLLEXPORT BOOL 		DLLCALL wildmatchi(const char *fname, const char *spec, BOOL path);

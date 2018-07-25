@@ -722,11 +722,13 @@ int removecase(const char *path)
 /* Deletes all files in dir 'path' that match file spec 'spec'              */
 /* Returns number of files deleted or negative on error						*/
 /****************************************************************************/
-ulong DLLCALL delfiles(const char *inpath, const char *spec)
+long DLLCALL delfiles(const char *inpath, const char *spec)
 {
 	char	*path;
 	char	lastch;
-    uint	i,files=0;
+	size_t	i;
+    long	files = 0;
+	long	errors = 0;
 	glob_t	g;
 	size_t	inpath_len=strlen(inpath);
 
@@ -747,12 +749,16 @@ ulong DLLCALL delfiles(const char *inpath, const char *spec)
 	for(i=0;i<g.gl_pathc;i++) {
 		if(isdir(g.gl_pathv[i]))
 			continue;
-		CHMOD(g.gl_pathv[i],S_IWRITE);	/* Incase it's been marked RDONLY */
+		CHMOD(g.gl_pathv[i],S_IWRITE);	/* In case it's been marked RDONLY */
 		if(remove(g.gl_pathv[i])==0)
 			files++;
+		else
+			errors++;
 	}
 	globfree(&g);
-	return(files);
+	if(errors)
+		return -errors;
+	return files;
 }
 
 /****************************************************************************/
