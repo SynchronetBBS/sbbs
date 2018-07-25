@@ -1330,8 +1330,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
  	char* p;
 #endif
 
-	if(online!=ON_REMOTE || cfg.node_num==0)
-		eprintf(LOG_DEBUG,"Executing external: %s",cmdline);
+	lprintf(LOG_DEBUG, "Executing external: %s", cmdline);
 
 	if(startup_dir!=NULL && startup_dir[0] && !isdir(startup_dir)) {
 		errormsg(WHERE, ERR_CHK, startup_dir, 0);
