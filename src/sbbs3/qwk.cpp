@@ -295,7 +295,9 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 		SAFECOPY(id,useron.alias);
 		strlwr(id);
 		sprintf(str,"%sqnet/%s.out/",cfg.data_dir,id);
-		delfiles(str,ALLFILES);
+		long result = delfiles(str,ALLFILES);
+		if(result < 0)
+			errormsg(WHERE, ERR_REMOVE, str, result);
 	}
 
 	if(!prepack) {
