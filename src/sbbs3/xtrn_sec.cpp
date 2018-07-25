@@ -1703,8 +1703,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	xtrndat(name,dropdir,cfg.xtrn[xtrnnum]->type,tleft,cfg.xtrn[xtrnnum]->misc);
 	if(!online)
 		return(false);
-	sprintf(str,"%s running external program: %s"
-		,useron.alias,cfg.xtrn[xtrnnum]->name);
+	sprintf(str, "running external program: %s", cfg.xtrn[xtrnnum]->name);
 	logline("X-",str);
 	if(cfg.xtrn[xtrnnum]->cmd[0]!='*' && logfile_fp!=NULL) {
 		fclose(logfile_fp);

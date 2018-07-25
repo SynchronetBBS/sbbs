@@ -400,10 +400,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	sbbsexec_start_t start;
 	OPENVXDHANDLE OpenVxDHandle;
 
-	if(online!=ON_REMOTE || cfg.node_num==0)
-		eprintf(LOG_DEBUG,"Executing external: %s",cmdline);
-	else
-		lprintf(LOG_DEBUG,"Node %d Executing external: %s",cfg.node_num,cmdline);
+	lprintf(LOG_DEBUG,"Executing external: %s",cmdline);
 
 	if(startup_dir!=NULL && startup_dir[0] && !isdir(startup_dir)) {
 		errormsg(WHERE, ERR_CHK, startup_dir, 0);
@@ -818,7 +815,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	            was_online=false;
             }
             if(hungup && time(NULL)-hungup>5 && !processTerminated) {
-				lprintf(LOG_INFO,"Node %d Terminating process from line %d",cfg.node_num,__LINE__);
+				lprintf(LOG_INFO,"Terminating process from line %d", __LINE__);
 				processTerminated=TerminateProcess(process_info.hProcess, 2112);
 			}
         }
@@ -845,9 +842,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 							,FILE_ATTRIBUTE_NORMAL
 							,(HANDLE) NULL);
 						if(wrslot==INVALID_HANDLE_VALUE)
-							lprintf(LOG_DEBUG,"Node %d !ERROR %u opening %s", cfg.node_num, GetLastError(), str);
+							lprintf(LOG_DEBUG,"!ERROR %u opening %s", GetLastError(), str);
 						else
-							lprintf(LOG_DEBUG,"Node %d CreateFile(%s)=0x%x", cfg.node_num, str, wrslot);
+							lprintf(LOG_DEBUG,"CreateFile(%s)=0x%x", str, wrslot);
 					}
 					
 					/* CR expansion */
@@ -858,16 +855,16 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 					len=0;
 					if(wrslot==INVALID_HANDLE_VALUE)
-						lprintf(LOG_WARNING,"Node %d VDD Open failed (not loaded yet?)",cfg.node_num);
+						lprintf(LOG_WARNING,"VDD Open failed (not loaded yet?)");
 					else if(!WriteFile(wrslot,bp,wr,&len,NULL)) {
-						lprintf(LOG_ERR,"Node %d !VDD WriteFile(0x%x, %u) FAILURE (Error=%u)", cfg.node_num, wrslot, wr, GetLastError());
+						lprintf(LOG_ERR,"!VDD WriteFile(0x%x, %u) FAILURE (Error=%u)", wrslot, wr, GetLastError());
 						if(GetMailslotInfo(wrslot,&wr,NULL,NULL,NULL))
-							lprintf(LOG_DEBUG,"Node %d !VDD MailSlot max_msg_size=%u", cfg.node_num, wr);
+							lprintf(LOG_DEBUG,"!VDD MailSlot max_msg_size=%u", wr);
 						else
-							lprintf(LOG_DEBUG,"Node %d !GetMailslotInfo(0x%x)=%u", cfg.node_num, wrslot, GetLastError());
+							lprintf(LOG_DEBUG,"!GetMailslotInfo(0x%x)=%u", wrslot, GetLastError());
 					} else {
 						if(len!=wr)
-							lprintf(LOG_WARNING,"Node %d VDD short write (%u instead of %u)",cfg.node_num,len,wr);
+							lprintf(LOG_WARNING,"VDD short write (%u instead of %u)", len,wr);
 						RingBufRead(&inbuf, NULL, len);
 						if(use_pipes && !(mode&EX_NOECHO)) {
 							/* echo */

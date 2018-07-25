@@ -51,7 +51,7 @@ int sbbs_t::bputs(const char *str)
     ulong l=0;
 
 	if(online==ON_LOCAL && console&CON_L_ECHO) 	/* script running as event */
-		return(eprintf(LOG_INFO,"%s",str));
+		return(lputs(LOG_INFO, str));
 
 	while(str[l] && online) {
 		if(str[l]==CTRL_A && str[l+1]!=0) {

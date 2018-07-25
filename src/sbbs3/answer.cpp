@@ -94,8 +94,7 @@ bool sbbs_t::answer()
 				terminal[i]=in;
 			}
 			terminal[i]=0;
-			lprintf(LOG_DEBUG,"Node %d RLogin: '%.*s' / '%.*s' / '%s'"
-				,cfg.node_num
+			lprintf(LOG_DEBUG,"RLogin: '%.*s' / '%.*s' / '%s'"
 				,LEN_ALIAS*2,str
 				,LEN_ALIAS*2,str2
 				,terminal);
@@ -155,8 +154,7 @@ bool sbbs_t::answer()
 							badlogin(useron.alias, tmp);
 							bputs(text[InvalidLogon]);
 						}
-						lprintf(LOG_WARNING,"Node %d !CLIENT IP NOT LISTED in %s"
-							,cfg.node_num,path);
+						lprintf(LOG_WARNING,"!CLIENT IP NOT LISTED in %s", path);
 						useron.number=0;
 						hangup();
 					}
@@ -164,14 +162,14 @@ bool sbbs_t::answer()
 			}
 			else {
 				if(cfg.sys_misc&SM_ECHO_PW)
-					lprintf(LOG_NOTICE, "Node %d RLogin !UNKNOWN USER: '%s' (password: %s)",cfg.node_num, rlogin_name, rlogin_pass);
+					lprintf(LOG_NOTICE, "RLogin !UNKNOWN USER: '%s' (password: %s)", rlogin_name, rlogin_pass);
 				else
-					lprintf(LOG_NOTICE, "Node %d RLogin !UNKNOWN USER: '%s'",cfg.node_num,rlogin_name);
+					lprintf(LOG_NOTICE, "RLogin !UNKNOWN USER: '%s'",rlogin_name);
 				badlogin(rlogin_name, rlogin_pass);
 			}
 		}
 		if(rlogin_name[0]==0) {
-			lprintf(LOG_NOTICE,"Node %d !RLogin: No user name received",cfg.node_num);
+			lprintf(LOG_NOTICE,"!RLogin: No user name received");
 			sys_status&=~SS_RLOGIN;
 		}
 	}
@@ -202,8 +200,7 @@ bool sbbs_t::answer()
 				free_crypt_attrstr(ctmp);
 			}
 			pthread_mutex_unlock(&ssh_mutex);
-			lprintf(LOG_DEBUG,"Node %d SSH login: '%s'"
-				,cfg.node_num, rlogin_name);
+			lprintf(LOG_DEBUG,"SSH login: '%s'", rlogin_name);
 		}
 		else {
 			rlogin_name[0] = 0;
@@ -263,9 +260,9 @@ bool sbbs_t::answer()
 		}
 		else {
 			if(cfg.sys_misc&SM_ECHO_PW)
-				lprintf(LOG_NOTICE, "Node %d SSH !UNKNOWN USER: '%s' (password: %s)",cfg.node_num,rlogin_name, truncsp(tmp));
+				lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s' (password: %s)", rlogin_name, truncsp(tmp));
 			else
-				lprintf(LOG_NOTICE, "Node %d SSH !UNKNOWN USER: '%s'",cfg.node_num,rlogin_name);
+				lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s'", rlogin_name);
 			badlogin(rlogin_name, tmp);
 		}
 	}
@@ -320,8 +317,7 @@ bool sbbs_t::answer()
     if(l) {
 		truncsp(str);
 		c_escape_str(str,tmp,sizeof(tmp)-1,TRUE);
-		lprintf(LOG_DEBUG,"Node %d received terminal auto-detection response: '%s'"
-			,cfg.node_num,tmp);
+		lprintf(LOG_DEBUG,"received terminal auto-detection response: '%s'", tmp);
 
 		if(strstr(str,"RIPSCRIP")) {
 			if(terminal[0]==0)
@@ -347,14 +343,12 @@ bool sbbs_t::answer()
 				SAFECOPY(terminal,"ANSI");
 			autoterm|=(ANSI|COLOR);
 			if(sscanf(p, "[%u;%uR", &y, &x) == 2) {
-				lprintf(LOG_DEBUG,"Node %d received ANSI cursor position report: %ux%u"
-					,cfg.node_num, x, y);
+				lprintf(LOG_DEBUG,"received ANSI cursor position report: %ux%u", x, y);
 				/* Sanity check the coordinates in the response: */
 				if(x>=40 && x<=255) cols=x; 
 				if(y>=10 && y<=255) rows=y;
 			} else if(sscanf(p, "[=67;84;101;114;109;%u;%u", &x, &y) == 2 && *lastchar(p) == 'c') {
-				lprintf(LOG_INFO,"Node %d received CTerm version report: %u.%u"
-					,cfg.node_num, x, y);
+				lprintf(LOG_INFO,"received CTerm version report: %u.%u", x, y);
 				cterm_version = (x*1000) + y;
 				if(cterm_version >= 1061)
 					autoterm |= CTERM_FONTS;
@@ -369,8 +363,7 @@ bool sbbs_t::answer()
 
 	if(!autoterm && str[0]) {
 		c_escape_str(str,tmp,sizeof(tmp)-1,TRUE);
-		lprintf(LOG_NOTICE,"Node %d terminal auto-detection failed, response: '%s'"
-			,cfg.node_num, tmp);
+		lprintf(LOG_NOTICE,"terminal auto-detection failed, response: '%s'", tmp);
 	}
 
 	/* AutoLogon via IP or Caller ID here */
@@ -429,8 +422,7 @@ bool sbbs_t::answer()
 		&& !(cfg.sys_misc&SM_CLOSED) 
 		&& !matchuser(&cfg, rlogin_name, /* Sysop alias: */FALSE)
 		&& !::trashcan(&cfg, rlogin_name, "name")) {
-		lprintf(LOG_INFO, "Node %d %s !UNKNOWN specified username: '%s', starting new user signup"
-			,cfg.node_num,client.protocol,rlogin_name);
+		lprintf(LOG_INFO, "%s !UNKNOWN specified username: '%s', starting new user signup", client.protocol,rlogin_name);
 		bprintf("%s: %s\r\n", text[UNKNOWN_USER], rlogin_name);
 		newuser();
 	}

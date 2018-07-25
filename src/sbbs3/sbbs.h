@@ -310,7 +310,7 @@ class sbbs_t
 public:
 
 	sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const char* host_name, SOCKET
-		,scfg_t*, char* text[], client_t* client_info);
+		,scfg_t*, char* text[], client_t* client_info, bool is_event_thread = false);
 	~sbbs_t();
 
 	bbs_startup_t*	startup;
@@ -377,6 +377,7 @@ public:
 
 	time_t	event_time;				// Time of next exclusive event
 	char*	event_code;				// Internal code of next exclusive event
+	bool	is_event_thread;
 	bool	event_thread_running;
     bool	output_thread_running;
     bool	input_thread_running;
@@ -390,7 +391,7 @@ public:
 	js_callback_t	js_callback;
 	long			js_execfile(const char *fname, const char* startup_dir, JSObject* scope=NULL);
 	bool			js_init(ulong* stack_frame);
-	void			js_cleanup(const char* node);
+	void			js_cleanup(void);
 	void			js_create_user_objects(void);
 
 #endif

@@ -278,11 +278,25 @@ int eprintf(int level, const char *fmt, ...)
 }
 
 /* Picks the right log callback function (event or term) based on the sbbs->cfg.node_num value */
+/* Prepends the current node number and user alias (if applicable) */
 int sbbs_t::lputs(int level, const char* str)
 {
-	if(cfg.node_num == 0)
-		return ::eputs(level, str);
-	return ::lputs(level, str);
+	char msg[2048];
+	char prefix[32] = "";
+	char user_str[64] = "";
+
+	if(is_event_thread && event_code != NULL && *event_code)
+		SAFEPRINTF(prefix, "%s ", event_code);
+	else if(cfg.node_num && !is_event_thread)
+		SAFEPRINTF(prefix, "Node %d ", cfg.node_num);
+	else if(client_name[0])
+		SAFEPRINTF(prefix, "%s ", client_name);
+	if(useron.number)
+		SAFEPRINTF(user_str, "%s ", useron.alias);
+	SAFEPRINTF3(msg, "%s%s%s", prefix, user_str, str);
+	if(is_event_thread)
+		return ::eputs(level, msg);
+	return ::lputs(level, msg);
 }
 
 int sbbs_t::lprintf(int level, const char *fmt, ...)
@@ -810,12 +824,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		if(line==NULL)
 		    return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
-		if(sbbs->online==ON_LOCAL) {
-			if(startup!=NULL && startup->event_lputs!=NULL && level <= startup->log_level) {
-				startup->event_lputs(startup->event_cbdata,level,line);
-			}
-		} else
-			lprintf(level,"Node %d %s", sbbs->cfg.node_num, line);
+		sbbs->lputs(level, line);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	if(line != NULL)
@@ -920,7 +929,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		    return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
 		if(sbbs->online==ON_LOCAL)
-			eprintf(LOG_INFO,"%s",cstr);
+			sbbs->lputs(LOG_INFO, cstr);
 		else
 			sbbs->bputs(cstr);
 		JS_RESUMEREQUEST(cx, rc);
@@ -1006,7 +1015,7 @@ js_printf(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(sbbs->online==ON_LOCAL)
-		eprintf(LOG_INFO,"%s",p);
+		sbbs->lputs(LOG_INFO, p);
 	else
 		sbbs->bputs(p);
 	JS_RESUMEREQUEST(cx, rc);
@@ -1258,24 +1267,17 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 
 bool sbbs_t::js_init(ulong* stack_frame)
 {
-	char		node[128];
-
-    if(cfg.node_num)
-    	SAFEPRINTF(node,"Node %d",cfg.node_num);
-    else
-    	SAFECOPY(node,client_name);
-
 	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
-	lprintf(LOG_DEBUG,"%s JavaScript: Creating runtime: %lu bytes"
-		,node,startup->js.max_bytes);
+	lprintf(LOG_DEBUG,"JavaScript: Creating runtime: %lu bytes"
+		,startup->js.max_bytes);
 
 	if((js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL)
 		return(false);
 
-	lprintf(LOG_DEBUG,"%s JavaScript: Initializing context (stack: %lu bytes)"
-		,node,startup->js.cx_stack);
+	lprintf(LOG_DEBUG,"JavaScript: Initializing context (stack: %lu bytes)"
+		,startup->js.cx_stack);
 
     if((js_cx = JS_NewContext(js_runtime, startup->js.cx_stack))==NULL)
 		return(false);
@@ -1340,11 +1342,11 @@ bool sbbs_t::js_init(ulong* stack_frame)
 	return(true);
 }
 
-void sbbs_t::js_cleanup(const char* node)
+void sbbs_t::js_cleanup(void)
 {
 	/* Free Context */
 	if(js_cx!=NULL) {
-		lprintf(LOG_DEBUG,"%s JavaScript: Destroying context",node);
+		lprintf(LOG_DEBUG,"JavaScript: Destroying context");
 		JS_BEGINREQUEST(js_cx);
 		JS_RemoveObjectRoot(js_cx, &js_glob);
 		JS_ENDREQUEST(js_cx);
@@ -1353,7 +1355,7 @@ void sbbs_t::js_cleanup(const char* node)
 	}
 
 	if(js_runtime!=NULL) {
-		lprintf(LOG_DEBUG,"%s JavaScript: Destroying runtime",node);
+		lprintf(LOG_DEBUG,"JavaScript: Destroying runtime");
 		jsrt_Release(js_runtime);
 		js_runtime=NULL;
 	}
@@ -1741,15 +1743,13 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 
 	if(cmd<TELNET_WILL) {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
-            lprintf(LOG_DEBUG,"Node %d sending telnet cmd: %s"
-	            ,cfg.node_num
+            lprintf(LOG_DEBUG,"sending telnet cmd: %s"
                 ,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
 		putcom(buf,2);
 	} else {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
-			lprintf(LOG_DEBUG,"Node %d sending telnet cmd: %s %s"
-				,cfg.node_num
+			lprintf(LOG_DEBUG,"sending telnet cmd: %s %s"
 				,telnet_cmd_desc(cmd)
 				,telnet_opt_desc(opt));
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
@@ -2565,6 +2565,7 @@ void event_thread(void* arg)
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	struct tm	now_tm;
 	struct tm	tm;
+	char		event_code[LEN_CODE+1];
 
 	eprintf(LOG_INFO,"BBS Events thread started");
 
@@ -2657,6 +2658,7 @@ void event_thread(void* arg)
 		sbbs->online=FALSE;	/* reset this from ON_LOCAL */
 
 		/* QWK events */
+		sbbs->event_code = "unQWK";
 		if(check_semaphores && !(startup->options&BBS_OPT_NO_QWK_EVENTS)) {
 			/* Import any REP files that have magically appeared (via FTP perhaps) */
 			SAFEPRINTF(str,"%sfile/",sbbs->cfg.data_dir);
@@ -2702,6 +2704,7 @@ void event_thread(void* arg)
 			}
 			globfree(&g);
 
+			sbbs->event_code = "packQWK";
 			/* Create any QWK files that have magically appeared (via FTP perhaps) */
 			SAFEPRINTF(str,"%spack*.now",sbbs->cfg.data_dir);
 			offset=strlen(sbbs->cfg.data_dir)+4;
@@ -2746,6 +2749,7 @@ void event_thread(void* arg)
 			globfree(&g);
 
 			/* Create (pre-pack) QWK files for users configured as such */
+			sbbs->event_code = "prepackQWK";
 			SAFEPRINTF(semfile,"%sprepack.now",sbbs->cfg.data_dir);
 			if(sbbs->cfg.preqwk_ar[0]
 				&& (fexistcase(semfile) || (now-lastprepack)/60>(60*24))) {
@@ -2813,6 +2817,7 @@ void event_thread(void* arg)
 				sbbs->daily_maint();
 
 			/* Node Daily Events */
+			sbbs->event_code = "DAILY";
 			for(i=first_node;i<=last_node;i++) {
 				// Node Daily Event
 				node.status=NODE_INVALID_STATUS;
@@ -2879,6 +2884,7 @@ void event_thread(void* arg)
 		}
 
 		/* QWK Networking Call-out Events */
+		sbbs->event_code = "QNET";
 		for(i=0;i<sbbs->cfg.total_qhubs && !sbbs->terminated;i++) {
 			if(sbbs->cfg.qhub[i]->node<first_node ||
 				sbbs->cfg.qhub[i]->node>last_node)
@@ -2991,6 +2997,7 @@ void event_thread(void* arg)
 		}
 
 		/* PostLink Networking Call-out Events */
+		sbbs->event_code = "PostLink";
 		for(i=0;i<sbbs->cfg.total_phubs && !sbbs->terminated;i++) {
 			if(sbbs->cfg.phub[i]->node<first_node
 				|| sbbs->cfg.phub[i]->node>last_node)
@@ -3036,7 +3043,6 @@ void event_thread(void* arg)
 
 		/* Timed Events */
 		for(i=0;i<sbbs->cfg.total_events && !sbbs->terminated;i++) {
-			char event_code[LEN_CODE+1];
 			if(!sbbs->cfg.event[i]->node
 				|| sbbs->cfg.event[i]->node>sbbs->cfg.sys_nodes)
 				continue;	// ignore events for invalid nodes
@@ -3051,6 +3057,7 @@ void event_thread(void* arg)
 
 			SAFECOPY(event_code, sbbs->cfg.event[i]->code);
 			strupr(event_code);
+			sbbs->event_code = event_code;
 
 			tmptime=sbbs->cfg.event[i]->last;
 			if(localtime_r(&tmptime,&tm)==NULL)
@@ -3244,10 +3251,11 @@ void event_thread(void* arg)
 				}
 			}
 		}
+		sbbs->event_code = nulstr;
 		mswait(1000);
 	}
 	sbbs->cfg.node_num=0;
-	sbbs->js_cleanup(sbbs->client_name);
+	sbbs->js_cleanup();
 
 	sbbs->event_thread_running = false;
 
@@ -3258,25 +3266,26 @@ void event_thread(void* arg)
 
 //****************************************************************************
 sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const char* name, SOCKET sd,
-			   scfg_t* global_cfg, char* global_text[], client_t* client_info)
+			   scfg_t* global_cfg, char* global_text[], client_t* client_info, bool is_event_thread)
 {
-	char	nodestr[32];
 	char	path[MAX_PATH+1];
 	uint	i;
 
-    if(node_num)
-    	SAFEPRINTF(nodestr,"Node %d",node_num);
-    else
-    	SAFECOPY(nodestr,name);
+	// Initialize some member variables used by lputs:
+	this->is_event_thread = is_event_thread;
+	cfg.node_num = node_num;
+	event_code = nulstr;
+	ZERO_VAR(useron);
+	SAFECOPY(client_name, name);
 
-	::lprintf(LOG_DEBUG,"%s constructor using socket %d (settings=%x)"
-		,nodestr, sd, global_cfg->node_misc);
+    lprintf(LOG_DEBUG,"constructor using socket %d (settings=%x)"
+		,sd, global_cfg->node_misc);
 
 	startup = ::startup;	// Convert from global to class member
 
 	memcpy(&cfg, global_cfg, sizeof(cfg));
+	cfg.node_num = node_num;	// Restore the node_num passed to the constructor
 
-	cfg.node_num=node_num;
 	if(node_num>0) {
 		strcpy(cfg.node_dir, cfg.node_path[node_num-1]);
 		prep_dir(cfg.node_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
@@ -3299,7 +3308,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 		}
 		syspage_semfile[0] = 0;
 	}
-	::lprintf(LOG_DEBUG,"%s temporary file directory: %s", nodestr, cfg.temp_dir);
+	lprintf(LOG_DEBUG, "temporary file directory: %s", cfg.temp_dir);
 
 	terminated = false;
 	event_thread_running = false;
@@ -3313,7 +3322,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 		memcpy(&client,client_info,sizeof(client));
 	client_addr.store = addr->store;
 	client_socket = sd;
-	SAFECOPY(client_name, name);
 	client_socket_dup=INVALID_SOCKET;
 	client_ident[0]=0;
 	client_ipaddr[0]=0;
@@ -3342,7 +3350,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	nodemsg_inside = 0;	/* allows single nest */
 	hotkey_inside = 0;	/* allows single nest */
 	event_time = 0;
-	event_code = nulstr;
 	nodesync_inside = false;
 	errormsg_inside = false;
 	gettimeleft_inside = false;
@@ -3392,7 +3399,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 
 	ZERO_VAR(main_csi);
 	ZERO_VAR(thisnode);
-	ZERO_VAR(useron);
 	ZERO_VAR(inbuf);
 	ZERO_VAR(outbuf);
 	ZERO_VAR(smb);
@@ -3477,21 +3483,21 @@ bool sbbs_t::init()
 			errormsg(WHERE,ERR_CREATE,"duplicate socket handle",client_socket);
 			return(false);
 		}
-		lprintf(LOG_DEBUG,"Node %d socket %u duplicated as %u", cfg.node_num, client_socket, client_socket_dup);
+		lprintf(LOG_DEBUG,"socket %u duplicated as %u", client_socket, client_socket_dup);
 #else
 		client_socket_dup = client_socket;
 #endif
 
 		addr_len=sizeof(addr);
 		if((result=getsockname(client_socket, &addr.addr, &addr_len))!=0) {
-			lprintf(LOG_ERR,"Node %d !ERROR %d (%d) getting address/port"
-				,cfg.node_num, result, ERROR_VALUE);
+			lprintf(LOG_ERR,"!ERROR %d (%d) getting address/port"
+				,result, ERROR_VALUE);
 			return(false);
 		}
 		inet_addrtop(&addr, local_addr, sizeof(local_addr));
 		inet_addrtop(&client_addr, client_ipaddr, sizeof(client_ipaddr));
-		lprintf(LOG_INFO,"Node %d socket %u attached to local interface %s port %u"
-			,cfg.node_num, client_socket, local_addr, inet_addrport(&addr));
+		lprintf(LOG_INFO,"socket %u attached to local interface %s port %u"
+			,client_socket, local_addr, inet_addrport(&addr));
 
 	}
 
@@ -3751,14 +3757,11 @@ bool sbbs_t::init()
 sbbs_t::~sbbs_t()
 {
 	uint i;
-	char node[32];
 
-    if(cfg.node_num)
-    	SAFEPRINTF(node,"Node %d", cfg.node_num);
-    else
-    	SAFECOPY(node,client_name);
+	useron.number = 0;
+
 #ifdef _DEBUG
-	lprintf(LOG_DEBUG,"%s destructor begin", node);
+	lprintf(LOG_DEBUG,"destructor begin");
 #endif
 
 //	if(!cfg.node_num)
@@ -3800,7 +3803,7 @@ sbbs_t::~sbbs_t()
 	/* Free allocated class members */
 	/********************************/
 
-	js_cleanup(node);
+	js_cleanup();
 
 	/* Reset text.dat */
 
@@ -3883,7 +3886,7 @@ sbbs_t::~sbbs_t()
 #endif
 
 #ifdef _DEBUG
-	lprintf(LOG_DEBUG,"%s destructor end", node);
+	lprintf(LOG_DEBUG, "destructor end");
 #endif
 }
 
@@ -4059,7 +4062,7 @@ int sbbs_t::mv(char *src, char *dest, char copy)
 void sbbs_t::hangup(void)
 {
 	if(online) {
-		lprintf(LOG_DEBUG,"Node %d disconnecting client", cfg.node_num);
+		lprintf(LOG_DEBUG,"disconnecting client");
 		online=FALSE;	// moved from the bottom of this function on Jan-25-2009
 	}
 	if(client_socket_dup!=INVALID_SOCKET && client_socket_dup!=client_socket)
@@ -5160,7 +5163,7 @@ NO_SSH:
 
 	if(!(startup->options&BBS_OPT_NO_EVENTS)) {
 		events = new sbbs_t(0, &server_addr, sizeof(server_addr)
-			,"BBS Events", INVALID_SOCKET, &scfg, text, NULL);
+			,"BBS Events", INVALID_SOCKET, &scfg, text, NULL, true);
 		if(events->init()==false) {
 			lputs(LOG_CRIT,"!Events initialization failed");
 			cleanup(1);
