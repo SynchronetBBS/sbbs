@@ -294,6 +294,7 @@ int sbbs_t::lputs(int level, const char* str)
 	if(useron.number)
 		SAFEPRINTF(user_str, "%s ", useron.alias);
 	SAFEPRINTF3(msg, "%s%s%s", prefix, user_str, str);
+	strip_ctrl(msg, msg);
 	if(is_event_thread)
 		return ::eputs(level, msg);
 	return ::lputs(level, msg);
