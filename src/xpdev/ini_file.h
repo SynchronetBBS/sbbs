@@ -261,6 +261,9 @@ DLLEXPORT size_t DLLCALL		iniAddSection(str_list_t*, const char* section
 DLLEXPORT size_t DLLCALL		iniAppendSection(str_list_t*, const char* section
 					,ini_style_t*);
 
+DLLEXPORT size_t DLLCALL		iniAppendSectionWithKeys(str_list_t*, const char* section, const str_list_t keys
+					,ini_style_t*);
+
 DLLEXPORT BOOL DLLCALL		iniSectionExists(str_list_t, const char* section);
 DLLEXPORT BOOL DLLCALL		iniKeyExists(str_list_t, const char* section, const char* key);
 DLLEXPORT BOOL DLLCALL		iniValueExists(str_list_t, const char* section, const char* key);
@@ -269,7 +272,7 @@ DLLEXPORT char* DLLCALL		iniPopString(str_list_t*, const char* section, const ch
 DLLEXPORT BOOL DLLCALL		iniRemoveKey(str_list_t*, const char* section, const char* key);
 DLLEXPORT BOOL DLLCALL		iniRemoveValue(str_list_t*, const char* section, const char* key);
 DLLEXPORT BOOL DLLCALL		iniRemoveSection(str_list_t*, const char* section);
-DLLEXPORT BOOL DLLCALL		iniRemoveSections(str_list_t*, const char* prefex);
+DLLEXPORT BOOL DLLCALL		iniRemoveSections(str_list_t*, const char* prefix);
 DLLEXPORT BOOL DLLCALL		iniRenameSection(str_list_t*, const char* section, const char* newname);
 
 /*

@@ -358,7 +358,8 @@ str_list_t DLLCALL	iniGetSection(str_list_t list, const char *section)
 			SKIP_WHITESPACE(p);
 			if(*p==INI_OPEN_SECTION_CHAR)
 				break;
-			strListPush(&retval, list[i]);
+			if(*p)
+				strListPush(&retval, list[i]);
 		}
 	}
 	return(retval);
@@ -502,6 +503,17 @@ size_t DLLCALL iniAppendSection(str_list_t* list, const char* section, ini_style
 		return(0);
 
 	return ini_add_section(list,section,style,strListCount(*list));
+}
+
+size_t DLLCALL iniAppendSectionWithKeys(str_list_t* list, const char* section, const str_list_t keys
+	, ini_style_t* style)
+{
+	if(section==ROOT_SECTION)
+		return(0);
+
+	ini_add_section(list,section,style,strListCount(*list));
+
+	return strListAppendList(list, keys);
 }
 
 static BOOL str_contains_ctrl_char(const char* str)
