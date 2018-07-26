@@ -81,7 +81,7 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 		}
 		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
 		rd=read(nodefile,node,sizeof(node_t));
-		if(!lockit || rd!=sizeof(node_t))
+		if(rd!=sizeof(node_t))
 			unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 		if(rd==sizeof(node_t))
 			break;
