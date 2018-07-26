@@ -91,7 +91,6 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 	}
 
 	number--;	/* make zero based */
-	lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 	for(attempts=0;attempts<10;attempts++) {
 		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
 		wr=write(nodefile,node,sizeof(node_t));
