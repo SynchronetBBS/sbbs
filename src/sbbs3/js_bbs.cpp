@@ -2993,38 +2993,104 @@ static JSBool
 js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
+	uintN		argn = 0;
 	sbbs_t*		sbbs;
-	int32		node=0;
+	int32		nodenum = 0;
 	JSString*	js_msg;
-	char*		msg;
+	char*		msg = NULL;
+	char 		str[256];
+	char		tmp[512];
 	jsrefcount	rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
- 	if(!js_argc(cx, argc, 2))
-		return(JS_FALSE);
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	if(JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&node))
+	/* Get the destination node number */
+	if(argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn], &nodenum))
 			return JS_FALSE;
+		argn++;
+	} else {
+		rc=JS_SUSPENDREQUEST(cx);
+		nodenum = sbbs->getnodetopage(/* all: */TRUE, /* telegram: */FALSE);
+		JS_RESUMEREQUEST(cx, rc);
 	}
-	else
+	if(nodenum == 0)
+		return JS_TRUE;
+
+	int usernumber = 0;
+	node_t node;
+	if(nodenum >= 1) {	/* !all */
+		sbbs->getnodedat(nodenum, &node, false);
+		usernumber = node.useron;
+		if((node.misc&NODE_POFF) && sbbs->useron.level < SYSOP_LEVEL) {
+			sbbs->bprintf(sbbs->text[CantPageNode]
+				, node.misc&NODE_ANON ? sbbs->text[UNKNOWN_USER] : username(&sbbs->cfg,node.useron,tmp));
+			return JS_TRUE;
+		}
+	}
+
+	/* Get the node message text */
+	if(argn < argc) {
+		if((js_msg = JS_ValueToString(cx, argv[argn])) == NULL)
+			return JS_FALSE;
+		argn++;
+		JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
+	} else {
+		if(nodenum >= 1)
+			sbbs->bprintf(sbbs->text[SendingMessageToUser]
+				,node.misc&NODE_ANON ? sbbs->text[UNKNOWN_USER]
+				: username(&sbbs->cfg,node.useron, tmp)
+				,node.misc&NODE_ANON ? 0 : node.useron);
+		sbbs->bputs(sbbs->text[NodeMsgPrompt]);
+		rc=JS_SUSPENDREQUEST(cx);
+		char line[128];
+		int result = sbbs->getstr(line,69,K_LINE);
+		JS_RESUMEREQUEST(cx, rc);
+		if(result < 1)
+			return JS_TRUE;
+
+		sprintf(str, sbbs->text[nodenum >= 1 ? NodeMsgFmt : AllNodeMsgFmt]
+			,sbbs->cfg.node_num
+			,sbbs->thisnode.misc&NODE_ANON
+				? sbbs->text[UNKNOWN_USER] : sbbs->useron.alias, line);
+		msg = strdup(str);
+	}
+
+	if(msg == NULL)
 		return JS_FALSE;
 
-	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL)
-		return(JS_FALSE);
-
-	JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
-	if(msg==NULL)
-		return(JS_FALSE);
-
+	/* Send the message(s) */
+	BOOL result = TRUE;
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(putnmsg(&sbbs->cfg,node,msg)==0));
-	free(msg);
+	if(nodenum < 0 ) {	/* ALL */
+		for(int i=1; i<=sbbs->cfg.sys_nodes; i++) {
+			if(i==sbbs->cfg.node_num)
+				continue;
+			sbbs->getnodedat(i, &node, false);
+			if((node.status==NODE_INUSE
+				|| (sbbs->useron.level >= SYSOP_LEVEL && node.status==NODE_QUIET))
+				&& (sbbs->useron.level >= SYSOP_LEVEL || !(node.misc&NODE_POFF)))
+				if(putnmsg(&sbbs->cfg, i, msg) != 0)
+					result = FALSE;
+		}
+		sbbs->logline("C", "sent message to all nodes");
+		sbbs->logline(nulstr, msg);
+	} else {
+		result = putnmsg(&sbbs->cfg, nodenum, msg) == 0;
+		if(!(node.misc&NODE_ANON))
+			sbbs->bprintf(sbbs->text[MsgSentToUser],"Message"
+				,username(&sbbs->cfg,usernumber,tmp), usernumber);
+		SAFEPRINTF2(str, "sent message to %s on node %d:"
+			,username(&sbbs->cfg, usernumber, tmp), nodenum);
+		sbbs->logline("C",str);
+		sbbs->logline(nulstr, msg);
+	}
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 	JS_RESUMEREQUEST(cx, rc);
+	free(msg);
 
 	return(JS_TRUE);
 }
@@ -3071,9 +3137,6 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
- 	if(!js_argc(cx, argc, 2))
-		return(JS_FALSE);
-
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -3082,8 +3145,11 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 		if(!JS_ValueToInt32(cx,argv[argn], &usernumber))
 			return JS_FALSE;
 		argn++;
-	} else
+	} else {
+		rc=JS_SUSPENDREQUEST(cx);
 		usernumber = sbbs->getnodetopage(/* all: */FALSE, /* telegram: */TRUE);
+		JS_RESUMEREQUEST(cx, rc);
+	}
 
 	/* Validate the destination user number */
 	if(usernumber < 1)
@@ -4097,9 +4163,9 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("receive and display an inter-node message")
 	,310
 	},
-	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("node_number, text")
-	,JSDOCSTR("send an inter-node message")
-	,310
+	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("[node_number] [,text]")
+	,JSDOCSTR("send an inter-node message (specify a <i>node_number</i> value of <tt>-1</tt> for 'all active nodes')")
+	,31700
 	},
 	{"get_telegram",	js_get_telegram,	1,	JSTYPE_VOID,	JSDOCSTR("[user_number=<i>current</i>]")
 	,JSDOCSTR("receive and display waiting telegrams for specified (or current) user")
