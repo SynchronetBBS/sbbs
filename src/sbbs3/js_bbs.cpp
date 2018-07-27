@@ -93,7 +93,7 @@ enum {
 	,BBS_PROP_ERRORLEVEL		/* READ ONLY */
 
 	/* READ ONLY */
-	,BBS_PROP_SMB_GROUP		
+	,BBS_PROP_SMB_GROUP
 	,BBS_PROP_SMB_GROUP_DESC
 	,BBS_PROP_SMB_GROUP_NUM
 	,BBS_PROP_SMB_SUB
@@ -867,7 +867,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 						if(!stricmp(sbbs->cfg.sub[sbbs->usrsub[i][j]]->code,p)) {
 							sbbs->curgrp=i;
 							sbbs->cursub[i]=j;
-							break; 
+							break;
 						}
 				break;
 			}
@@ -895,7 +895,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 						if(!stricmp(sbbs->cfg.dir[sbbs->usrdir[i][j]]->code,p)) {
 							sbbs->curlib=i;
 							sbbs->curdir[i]=j;
-							break; 
+							break;
 						}
 				break;
 			}
@@ -938,9 +938,9 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 		sbbs->cursubnum=sbbs->usrsub[sbbs->curgrp][sbbs->cursub[sbbs->curgrp]];		/* Used for ARS */
 	else
 		sbbs->cursubnum=INVALID_SUB;
-	if(sbbs->usrlibs) 
+	if(sbbs->usrlibs)
 		sbbs->curdirnum=sbbs->usrdir[sbbs->curlib][sbbs->curdir[sbbs->curlib]];		/* Used for ARS */
-	else 
+	else
 		sbbs->curdirnum=INVALID_DIR;
 
 	return(JS_TRUE);
@@ -1005,7 +1005,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"smb_total_msgs"	,BBS_PROP_SMB_TOTAL_MSGS	,PROP_READONLY	,310},
 	{	"smb_msgs"			,BBS_PROP_SMB_MSGS			,PROP_READONLY	,310},
 	{	"smb_curmsg"		,BBS_PROP_SMB_CURMSG		,PROP_READONLY	,310},
-																		
+
 	{	"msg_to"			,BBS_PROP_MSG_TO			,PROP_READONLY	,310},
 	{	"msg_to_ext"		,BBS_PROP_MSG_TO_EXT		,PROP_READONLY	,310},
 	{	"msg_to_net"		,BBS_PROP_MSG_TO_NET		,PROP_READONLY	,310},
@@ -1124,14 +1124,14 @@ js_menu(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
  	str = JS_ValueToString(cx, argv[0]);
  	if (!str)
  		return(JS_FALSE);
- 
+
 	JSSTRING_TO_MSTRING(cx, str, menu, NULL);
 	if(!menu)
 		return JS_FALSE;
@@ -1144,7 +1144,7 @@ js_menu(JSContext *cx, uintN argc, jsval *arglist)
 
     return(JS_TRUE);
 }
- 
+
 static JSBool
 js_hangup(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -1199,7 +1199,7 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -1338,7 +1338,7 @@ js_chkpass(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	JSString* str=JS_ValueToString(cx,argv[0]);
 
 	JSSTRING_TO_ASTRING(cx, str, cstr, LEN_PASS+2, NULL);
@@ -1395,7 +1395,7 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 2))
 		return(JS_FALSE);
- 
+
 	if(JSVAL_IS_NUMBER(argv[0])) {
 		if(!JS_ValueToInt32(cx,argv[0],&i))
 			return JS_FALSE;
@@ -1447,7 +1447,7 @@ js_revert_text(JSContext *cx, uintN argc, jsval *arglist)
 		for(i=0;i<TOTAL_TEXT;i++) {
 			if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
 				free(sbbs->text[i]);
-			sbbs->text[i]=sbbs->text_sav[i]; 
+			sbbs->text[i]=sbbs->text_sav[i];
 		}
 	} else {
 		if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
@@ -1476,7 +1476,7 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -1493,7 +1493,7 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 		if(sbbs->text[i]!=sbbs->text_sav[i]) {
 			if(sbbs->text[i]!=nulstr)
 				free(sbbs->text[i]);
-			sbbs->text[i]=sbbs->text_sav[i]; 
+			sbbs->text[i]=sbbs->text_sav[i];
 		}
 	}
 	sprintf(path,"%s%s.dat"
@@ -1508,18 +1508,18 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 	for(i=0;i<TOTAL_TEXT && !feof(stream);i++) {
 		if((sbbs->text[i]=readtext((long *)NULL,stream,i))==NULL) {
 			i--;
-			continue; 
+			continue;
 		}
 		if(!strcmp(sbbs->text[i],sbbs->text_sav[i])) {	/* If identical */
 			free(sbbs->text[i]);					/* Don't alloc */
-			sbbs->text[i]=sbbs->text_sav[i]; 
+			sbbs->text[i]=sbbs->text_sav[i];
 		}
 		else if(sbbs->text[i][0]==0) {
 			free(sbbs->text[i]);
-			sbbs->text[i]=nulstr; 
-		} 
+			sbbs->text[i]=nulstr;
+		}
 	}
-	if(i<TOTAL_TEXT) 
+	if(i<TOTAL_TEXT)
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 	else
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
@@ -1547,7 +1547,7 @@ js_atcode(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -1646,7 +1646,7 @@ js_logstr(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -1683,7 +1683,7 @@ js_finduser(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -1720,7 +1720,7 @@ js_trashcan(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 2))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -1808,11 +1808,11 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 2))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	if((js_name=JS_ValueToString(cx, argv[0]))==NULL) 
+	if((js_name=JS_ValueToString(cx, argv[0]))==NULL)
 		return(JS_FALSE);
 
 	if(argc > 1)
@@ -1823,7 +1823,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		js_sys_pw = JS_ValueToString(cx, argv[3]);
 
 	JSSTRING_TO_ASTRING(cx, js_name, name, (LEN_ALIAS > LEN_NAME) ? LEN_ALIAS+2 : LEN_NAME+2, NULL);
-	if(name==NULL) 
+	if(name==NULL)
 		return(JS_FALSE);
 
 	JSSTRING_TO_MSTRING(cx, js_pw_prompt, pw_prompt, NULL);
@@ -1862,7 +1862,7 @@ js_logoff(JSContext *cx, uintN argc, jsval *arglist)
 			sbbs->exec_bin(sbbs->cfg.logoff_mod,&sbbs->main_csi);
 		sbbs->user_event(EVENT_LOGOFF);
 		sbbs->menu("logoff");
-		sbbs->hangup(); 
+		sbbs->hangup();
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -2042,7 +2042,7 @@ js_batchaddlist(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -2074,7 +2074,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if(argc>1) {
 		JSVALUE_TO_ASTRING(cx, argv[1], p, 2, NULL);
 		if(p!=NULL)
@@ -2109,7 +2109,7 @@ js_recvfile(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if(argc>1) {
 		JSVALUE_TO_ASTRING(cx, argv[1], p, 2, NULL);
  		if(p!=NULL)
@@ -2457,7 +2457,7 @@ js_spy(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -2529,7 +2529,7 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if(JSVAL_IS_NUMBER(argv[0])) {
 		if(!JS_ValueToInt32(cx,argv[0],&usernumber))
 			return JS_FALSE;
@@ -2583,7 +2583,7 @@ js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -2745,15 +2745,15 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	if((js_addr=JS_ValueToString(cx, argv[0]))==NULL) 
+	if((js_addr=JS_ValueToString(cx, argv[0]))==NULL)
 		return(JS_FALSE);
 
 	JSSTRING_TO_MSTRING(cx, js_addr, addr, NULL);
-	if(addr==NULL) 
+	if(addr==NULL)
 		return(JS_FALSE);
 
 	if(argc>1 && JSVAL_IS_NUMBER(argv[1])) {
@@ -2767,7 +2767,7 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 	sbbs->telnet_gate(addr,mode);
 	free(addr);
 	JS_RESUMEREQUEST(cx, rc);
-	
+
 	return(JS_TRUE);
 }
 
@@ -2790,15 +2790,15 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
 		return(JS_FALSE);
 
 	JSSTRING_TO_MSTRING(cx, js_str, addr, NULL);
-	if(addr==NULL) 
+	if(addr==NULL)
 		return(JS_FALSE);
 
 	/* Parse optional arguments if provided */
@@ -2808,7 +2808,7 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 				fail = true;
 				break;
 			}
-			if(client_user_name==NULL) {	
+			if(client_user_name==NULL) {
 				JSSTRING_TO_MSTRING(cx, js_str, client_user_name, NULL);
 			} else if(server_user_name==NULL) {
 				JSSTRING_TO_MSTRING(cx, js_str, server_user_name, NULL);
@@ -2831,7 +2831,7 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 	FREE_AND_NULL(client_user_name);
 	FREE_AND_NULL(server_user_name);
 	FREE_AND_NULL(term_type);
-	
+
 	return(fail ? JS_FALSE : JS_TRUE);
 }
 
@@ -2967,7 +2967,7 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 2))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -2978,11 +2978,11 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 	else
 		return JS_FALSE;
 
-	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
+	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL)
 		return(JS_FALSE);
 
 	JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
-	if(msg==NULL) 
+	if(msg==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -3033,7 +3033,7 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 2))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -3044,11 +3044,11 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 	else
 		return JS_FALSE;
 
-	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
+	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL)
 		return(JS_FALSE);
 
 	JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
-	if(msg==NULL) 
+	if(msg==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -3075,7 +3075,7 @@ js_cmdstr(JSContext *cx, uintN argc, jsval *arglist)
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
- 
+
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
@@ -3364,7 +3364,7 @@ js_msgscan_reinit(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	for(uint i=0;i<sbbs->cfg.total_subs;i++) {
 		sbbs->subscan[i].ptr=sbbs->subscan[i].sav_ptr;
-		sbbs->subscan[i].last=sbbs->subscan[i].sav_last; 
+		sbbs->subscan[i].last=sbbs->subscan[i].sav_last;
 	}
 	sbbs->bputs(sbbs->text[MsgPtrsInitialized]);
 	JS_RESUMEREQUEST(cx, rc);
@@ -3647,6 +3647,43 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static JSBool
+js_select_node(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+	BOOL		all = FALSE;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	if(argc > 0 && JSVAL_IS_BOOLEAN(argv[0]))
+		all = JSVAL_TO_BOOLEAN(argv[0]);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->getnodetopage(all, /* telegram: */FALSE)));
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_select_user(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->getnodetopage(/* all: */FALSE, /* telegram: */TRUE)));
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
 static jsSyncMethodSpec js_bbs_functions[] = {
 	{"atcode",			js_atcode,			1,	JSTYPE_STRING,	JSDOCSTR("code_string")
 	,JSDOCSTR("returns @-code value, specified <i>code</i> string does not include @ character delimiters")
@@ -3704,35 +3741,35 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"auto_msg",		js_automsg,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("read/create system's auto-message")
 	,310
-	},		
+	},
 	{"time_bank",		js_time_bank,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the time banking system")
 	,310
-	},		
+	},
 	{"qwk_sec",			js_qwk_sec,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the QWK message packet upload/download/config section")
 	,310
-	},		
+	},
 	{"text_sec",		js_text_sec,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the text files section")
 	,310
-	},		
+	},
 	{"xtrn_sec",		js_xtrn_sec,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the external programs section")
 	,310
-	},		
+	},
 	{"xfer_policy",		js_xfer_policy,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display the file transfer policy")
 	,310
-	},		
+	},
 	{"batch_menu",		js_batchmenu,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the batch file transfer menu")
 	,310
-	},		
+	},
 	{"batch_download",	js_batchdownload,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("start a batch download")
 	,310
-	},		
+	},
 	{"batch_add_list",	js_batchaddlist,	1,	JSTYPE_VOID,	JSDOCSTR("list_filename")
 	,JSDOCSTR("add file list to batch download queue")
 	,310
@@ -3750,184 +3787,184 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"temp_xfer",		js_temp_xfer,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the temporary file tranfer menu")
 	,310
-	},		
+	},
 	{"user_sync",		js_user_sync,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("read the current user data from the database")
 	,310
-	},		
+	},
 	{"user_config",		js_user_config,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the user settings configuration menu")
 	,310
-	},		
+	},
 	{"sys_info",		js_sys_info,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display system information")
 	,310
-	},		
+	},
 	{"sub_info",		js_sub_info,		1,	JSTYPE_VOID,	JSDOCSTR("[sub-board=<i>current</i>]")
 	,JSDOCSTR("display message sub-board information (current <i>sub-board</i>, if unspecified)")
 	,310
-	},		
+	},
 	{"dir_info",		js_dir_info,		0,	JSTYPE_VOID,	JSDOCSTR("[directory=<i>current</i>]")
 	,JSDOCSTR("display file directory information (current <i>directory</i>, if unspecified)")
 	,310
-	},		
+	},
 	{"user_info",		js_user_info,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display current user information")
 	,310
-	},		
+	},
 	{"ver",				js_ver,				0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display software version information")
 	,310
-	},		
+	},
 	{"sys_stats",		js_sys_stats,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display system statistics")
 	,310
-	},		
+	},
 	{"node_stats",		js_node_stats,		0,	JSTYPE_VOID,	JSDOCSTR("[node_number=<i>current</i>]")
 	,JSDOCSTR("display current (or specified) node statistics")
 	,310
-	},		
+	},
 	{"list_users",		js_userlist,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>UL_ALL</tt>]")
 	,JSDOCSTR("display user list"
 	"(see <tt>UL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> values)")
 	,310
-	},		
+	},
 	{"edit_user",		js_useredit,		0,	JSTYPE_VOID,	JSDOCSTR("[user_number=<i>current</i>]")
 	,JSDOCSTR("enter the user editor")
 	,310
-	},		
+	},
 	{"change_user",		js_change_user,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("change to a different user")
 	,310
-	},		
+	},
 	{"list_logons",		js_logonlist,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display the logon list")
 	,310
-	},		
+	},
 	{"read_mail",		js_readmail,		0,	JSTYPE_VOID,	JSDOCSTR("[which=<tt>MAIL_YOUR</tt>] [,user_number=<i>current</i>] [,loadmail_mode=<tt>0</tt>]")
 	,JSDOCSTR("read private e-mail"
 	"(see <tt>MAIL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>which</i> values)")
 	,310
-	},		
+	},
 	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("to_user_number [,mode=<tt>WM_EMAIL</tt>] [,top=<i>none</i>] [,subject=<i>none</i>]")
 	,JSDOCSTR("send private e-mail to a local user")
 	,310
-	},		
+	},
 	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("address [,mode=<tt>WM_NONE</tt>] [,subject=<i>none</i>]")
 	,JSDOCSTR("send private netmail")
 	,310
-	},		
+	},
 	{"bulk_mail",		js_bulkmail,		0,	JSTYPE_VOID,	JSDOCSTR("[ars]")
 	,JSDOCSTR("send bulk private e-mail, if <i>ars</i> not specified, prompt for destination users")
 	,310
-	},		
+	},
 	{"upload_file",		js_upload_file,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
 	,JSDOCSTR("upload file to file directory specified by number or internal code")
 	,310
-	},		
+	},
 	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
 	,JSDOCSTR("add files (already in local storage path) to file directory "
 		"specified by number or internal code")
 	,310
-	},		
+	},
 	{"resort_dir",		js_resort_dir,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
 	,JSDOCSTR("re-sort the file directory specified by number or internal code)")
 	,310
-	},		
+	},
 	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt> or search_string] [,mode=<tt>FL_NONE</tt>]")
 	,JSDOCSTR("list files in the specified file directory, "
 		"optionally specifying a file specification (wildcards) or a description search string, "
 		"and <i>mode</i> (bitfield)")
 	,310
-	},		
+	},
 	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt>] [,mode=<tt>FI_INFO</tt>]")
 	,JSDOCSTR("list extended file information for files in the specified file directory")
 	,310
-	},		
+	},
 	{"post_msg",		js_postmsg,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>WM_MODE</tt>] [,object reply_header]")
 	,JSDOCSTR("post a message in the specified message sub-board (number or internal code) "
 		"with optinal <i>mode</i> (bitfield)<br>"
 		"If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header "
 		"will be used for the in-reply-to header fields (this argument added in v3.13)")
 	,313
-	},		
+	},
 	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("[type=<tt>SCAN_CFG_NEW</tt>]")
 	,JSDOCSTR("configure message scan "
 		"(<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)")
 	,310
-	},		
+	},
 	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("change message scan pointer values")
 	,310
-	},		
+	},
 	{"reinit_msg_ptrs",	js_msgscan_reinit,	0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("re-initialize new message scan pointers")
 	,310
-	},		
+	},
 	{"scan_subs",		js_scansubs,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>SCAN_NEW</tt>] [,all=<tt>false</tt>]")
 	,JSDOCSTR("scan sub-boards for messages")
 	,310
-	},		
+	},
 	{"scan_dirs",		js_scandirs,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>FL_NONE</tt>] [,all=<tt>false</tt>]")
 	,JSDOCSTR("scan directories for files")
 	,310
-	},		
+	},
 	{"scan_posts",		js_scanposts,		1,	JSTYPE_ALIAS },
 	{"scan_msgs",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,string find]")
 	,JSDOCSTR("scan messages in the specified message sub-board (number or internal code), "
 		"optionally search for 'find' string (AKA scan_posts)")
 	,310
-	},		
+	},
 	{"list_msgs",		js_listmsgs,		1,	JSTYPE_NUMBER,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,message_number=<tt>0</tt>] [,string find]")
 	,JSDOCSTR("list messages in the specified message sub-board (number or internal code), "
 		"optionally search for 'find' string, returns number of messages listed")
 	,314
-	},		
+	},
 	/* menuing */
 	{"menu",			js_menu,			1,	JSTYPE_VOID,	JSDOCSTR("base_filename")
 	,JSDOCSTR("display a menu file from the text/menu directory")
 	,310
-	},		
+	},
 	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key [,comma=<tt>false</tt>]")
 	,JSDOCSTR("log key to node.log (comma optional)")
 	,310
-	},		
+	},
 	{"log_str",			js_logstr,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
 	,JSDOCSTR("log string to node.log")
 	,310
-	},		
+	},
 	/* users */
 	{"finduser",		js_finduser,		1,	JSTYPE_NUMBER,	JSDOCSTR("username_or_number")
 	,JSDOCSTR("find user name (partial name support), interactive")
 	,310
-	},		
+	},
 	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename, search_string")
 	,JSDOCSTR("search file for psuedo-regexp (search string) in trashcan file (text/base_filename.can)")
 	,310
-	},		
+	},
 	/* xtrn programs/modules */
 	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline [,mode=<tt>EX_NONE</tt>] [,string startup_dir]")
 	,JSDOCSTR("execute a program, optionally changing current directory to <i>startup_dir</i> "
 	"(see <tt>EX_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
 	,310
-	},		
+	},
 	{"exec_xtrn",		js_exec_xtrn,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("xtrn_number_or_code")
 	,JSDOCSTR("execute external program by number or internal code")
 	,310
-	},		
+	},
 	{"user_event",		js_user_event,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("event_type")
 	,JSDOCSTR("execute user event by event type "
 	"(see <tt>EVENT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)")
 	,310
-	},		
+	},
 	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,mode=<tt>TG_NONE</tt>]")
 	,JSDOCSTR("external Telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
 	,310
-	},		
+	},
 	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,client-user-name=<tt>user.alias</tt>, server-user-name=<tt>user.name</tt>, terminal=<tt>console.terminal</tt>] [,mode=<tt>TG_NONE</tt>]")
 	,JSDOCSTR("external RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
 	,316
-	},		
+	},
 	/* security */
 	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[sys_pw]")
 	,JSDOCSTR("verify system password, prompting for the password if not passed as an argument")
@@ -3942,65 +3979,65 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"page_sysop",		js_pagesysop,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("page the sysop for chat, returns <i>false</i> if the sysop could not be paged")
 	,310
-	},		
+	},
 	{"page_guru",		js_pageguru,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("page the guru for chat")
 	,310
-	},		
+	},
 	{"multinode_chat",	js_multinode_chat,	0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter multi-node chat")
 	,310
-	},		
+	},
 	{"private_message",	js_private_message,	0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("use the private inter-node message prompt")
 	,310
-	},		
+	},
 	{"private_chat",	js_private_chat,	0,	JSTYPE_VOID,	JSDOCSTR("[local=<i>false</i>]")
 	,JSDOCSTR("enter private inter-node chat, or local sysop chat (if <i>local</i>=<i>true</i>)")
 	,310
-	},		
+	},
 	{"get_node_message",js_get_node_message,0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("receive and display an inter-node message")
 	,310
-	},		
+	},
 	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("node_number, text")
 	,JSDOCSTR("send an inter-node message")
 	,310
-	},		
+	},
 	{"get_telegram",	js_get_telegram,	1,	JSTYPE_VOID,	JSDOCSTR("[user_number=<i>current</i>]")
 	,JSDOCSTR("receive and display waiting telegrams for specified (or current) user")
 	,310
-	},		
+	},
 	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number, text")
 	,JSDOCSTR("send a telegram to a user")
 	,310
-	},		
+	},
 	{"list_nodes",		js_nodelist,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("list all nodes")
 	,310
-	},		
+	},
 	{"whos_online",		js_whos_online,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("list active nodes only (who's online)")
 	,310
-	},		
+	},
 	{"spy",				js_spy,				1,	JSTYPE_VOID,	JSDOCSTR("node_number")
 	,JSDOCSTR("spy on a node")
 	,310
-	},		
+	},
 	/* misc */
 	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("command_string [,string fpath=<tt>\"\"</tt>] [,string fspec=<tt>\"\"</tt>]")
 	,JSDOCSTR("return expanded command string using Synchronet command-line specifiers")
 	,310
-	},		
+	},
 	/* input */
-	{"get_filespec",	js_getfilespec,		0,	JSTYPE_STRING,	JSDOCSTR("")	
+	{"get_filespec",	js_getfilespec,		0,	JSTYPE_STRING,	JSDOCSTR("")
 	,JSDOCSTR("returns a file specification input by the user (optionally with wildcards)")
 	,310
-	},		
+	},
 	{"get_newscantime",	js_getnstime,		1,	JSTYPE_NUMBER,	JSDOCSTR("time=<i>current</i>")
 	,JSDOCSTR("confirm or change a new-scan time, returns the new new-scan time value (<i>time_t</i> format)")
 	,310
-	},		
+	},
 	{"select_shell",	js_select_shell,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("prompt user to select a new command shell")
 	,310
@@ -4017,7 +4054,15 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"compare_ars",		js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string ars")
 	,JSDOCSTR("verify the current user online meets the specified Access Requirements String")
 	,315
-	},		
+	},
+	{"select_node",		js_select_node,		1,	JSTYPE_NUMBER,	JSDOCSTR("all_is_an_option=<i>false</i>")
+	,JSDOCSTR("Choose an active node to interact with.<br>Returns the selected node number, 0 (for none) or -1 for 'All'.")
+	,31700
+	},
+	{"select_user",		js_select_user,		1,	JSTYPE_NUMBER,	JSDOCSTR("")
+	,JSDOCSTR("Choose a user to interact with.")
+	,31700
+	},
 	{0}
 };
 
@@ -4028,7 +4073,7 @@ static JSBool js_bbs_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
-		
+
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
