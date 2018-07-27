@@ -373,7 +373,7 @@ BOOL sbbs_t::newuser()
 
 		c=0;
 		while(online) {
-			bprintf(text[NewUserPasswordVerify]);
+			bputs(text[NewUserPasswordVerify]);
 			console|=CON_R_ECHOX;
 			str[0]=0;
 			getstr(str,LEN_PASS*2,K_UPPER);
