@@ -3059,13 +3059,17 @@ static JSBool
 js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
+	uintN		argn = 0;
 	sbbs_t*		sbbs;
-	int32		usernumber=0;
-	JSString*	js_msg;
-	char*		msg;
+	int32		usernumber = 0;
+	JSString*	js_msg = NULL;
+	char*		msg = NULL;
+	char 		str[256];
+	char		tmp[512];
+	char		logbuf[512] = "";
 	jsrefcount	rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
  	if(!js_argc(cx, argc, 2))
 		return(JS_FALSE);
@@ -3073,23 +3077,79 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	if(argc && JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&usernumber))
+	/* Get the destination user number */
+	if(argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn], &usernumber))
 			return JS_FALSE;
+		argn++;
+	} else
+		usernumber = sbbs->getnodetopage(/* all: */FALSE, /* telegram: */TRUE);
+
+	/* Validate the destination user number */
+	if(usernumber < 1)
+		return JS_TRUE;
+
+	if(usernumber == 1 && sbbs->useron.rest&FLAG('S')) { /* ! val fback */
+		sbbs->bprintf(sbbs->text[R_Feedback], sbbs->cfg.sys_op);
+		return JS_TRUE;
 	}
-	else
-		return JS_FALSE;
+	if(usernumber > 1 && sbbs->useron.rest&FLAG('E')) {
+		sbbs->bputs(sbbs->text[R_Email]);
+		return JS_TRUE;
+	}
 
-	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL)
-		return(JS_FALSE);
+	/* Get the telegram message text */
+	if(argn < argc) {
+		if((js_msg = JS_ValueToString(cx, argv[argn])) == NULL)
+			return JS_FALSE;
+		argn++;
+		JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
+	} else {
+		char buf[512];
 
-	JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
+		rc=JS_SUSPENDREQUEST(cx);
+		sbbs->bprintf(sbbs->text[SendingTelegramToUser]
+			,username(&sbbs->cfg,usernumber,tmp),usernumber);
+		SAFEPRINTF2(buf,sbbs->text[TelegramFmt]
+			,sbbs->thisnode.misc&NODE_ANON ? sbbs->text[UNKNOWN_USER] : sbbs->useron.alias
+			,sbbs->timestr(time(NULL)));
+		int i=0;
+		while(sbbs->online && i<5) {
+			char line[256];
+			sbbs->bprintf("%4s",nulstr);
+			if(!sbbs->getstr(line, 70, K_WRAP|K_MSG))
+				break;
+			sprintf(str,"%4s%s\r\n",nulstr,line);
+			SAFECAT(buf, str);
+			if(i && line[0])
+				SAFECAT(logbuf, " ");
+			SAFECAT(logbuf, line);
+			i++;
+		}
+		JS_RESUMEREQUEST(cx, rc);
+		if(!i)
+			return JS_TRUE;
+		if(sbbs->sys_status&SS_ABORT) {
+			sbbs->bputs(crlf);
+			return JS_TRUE;
+		}
+		msg = strdup(buf);
+	}
+
 	if(msg==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(putsmsg(&sbbs->cfg,usernumber,msg)==0));
 	free(msg);
+
+	SAFEPRINTF2(str,"sent telegram to %s #%u"
+		,username(&sbbs->cfg,usernumber,tmp), usernumber);
+	sbbs->logline("C",str);
+	if(logbuf[0])
+		sbbs->logline(nulstr,logbuf);
+	sbbs->bprintf(sbbs->text[MsgSentToUser], "Telegram", username(&sbbs->cfg,usernumber,tmp), usernumber);
+
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -3557,9 +3617,10 @@ js_listmsgs(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
-		JSVALUE_TO_MSTRING(cx, argv[argn++], find, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[argn], find, NULL);
 		if(find==NULL)
 			return JS_FALSE;
+		argn++;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -3730,7 +3791,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("returns specified text string from text.dat")
 	,310
 	},
-	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("line_number, string text")
+	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("line_number, text")
 	,JSDOCSTR("replaces specified text string in memory")
 	,310
 	},
@@ -3946,12 +4007,12 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	{"scan_posts",		js_scanposts,		1,	JSTYPE_ALIAS },
-	{"scan_msgs",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,string find]")
+	{"scan_msgs",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,find]")
 	,JSDOCSTR("scan messages in the specified message sub-board (number or internal code), "
 		"optionally search for 'find' string (AKA scan_posts)")
 	,310
 	},
-	{"list_msgs",		js_listmsgs,		1,	JSTYPE_NUMBER,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,message_number=<tt>0</tt>] [,string find]")
+	{"list_msgs",		js_listmsgs,		1,	JSTYPE_NUMBER,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,message_number=<tt>0</tt>] [,find]")
 	,JSDOCSTR("list messages in the specified message sub-board (number or internal code), "
 		"optionally search for 'find' string, returns number of messages listed")
 	,314
@@ -3979,7 +4040,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	/* xtrn programs/modules */
-	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline [,mode=<tt>EX_NONE</tt>] [,string startup_dir]")
+	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline [,mode=<tt>EX_NONE</tt>] [,startup_dir]")
 	,JSDOCSTR("execute a program, optionally changing current directory to <i>startup_dir</i> "
 	"(see <tt>EX_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
 	,310
@@ -4044,9 +4105,9 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("receive and display waiting telegrams for specified (or current) user")
 	,310
 	},
-	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number, text")
-	,JSDOCSTR("send a telegram to a user")
-	,310
+	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("[user_number] [,text]")
+	,JSDOCSTR("send a telegram (short multi-line stored message) to a user")
+	,31700
 	},
 	{"list_nodes",		js_nodelist,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("list all nodes")
@@ -4061,7 +4122,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	/* misc */
-	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("command_string [,string fpath=<tt>\"\"</tt>] [,string fspec=<tt>\"\"</tt>]")
+	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("command_string [,fpath=<tt>\"\"</tt>] [,fspec=<tt>\"\"</tt>]")
 	,JSDOCSTR("return expanded command string using Synchronet command-line specifiers")
 	,310
 	},
@@ -4087,7 +4148,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	"This method will inform (and disconnect) the user when they are out of time")
 	,31401
 	},
-	{"compare_ars",		js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string ars")
+	{"compare_ars",		js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("ars")
 	,JSDOCSTR("verify the current user online meets the specified Access Requirements String")
 	,315
 	},
