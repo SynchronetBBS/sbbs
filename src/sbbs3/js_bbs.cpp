@@ -57,8 +57,15 @@ enum {
 	,BBS_PROP_EVENT_CODE
 
 	,BBS_PROP_NODE_NUM
-	,BBS_PROP_NODE_MISC
+	,BBS_PROP_NODE_SETTINGS
+	,BBS_PROP_NODE_STATUS
+	,BBS_PROP_NODE_ERRORS
 	,BBS_PROP_NODE_ACTION
+	,BBS_PROP_NODE_USERON
+	,BBS_PROP_NODE_CONNECTION
+	,BBS_PROP_NODE_MISC
+	,BBS_PROP_NODE_AUX
+	,BBS_PROP_NODE_EXTAUX
 	,BBS_PROP_NODE_VAL_USER
 
 	,BBS_PROP_LOGON_ULB
@@ -340,12 +347,34 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case BBS_PROP_NODE_NUM:
 			val=sbbs->cfg.node_num;
 			break;
-		case BBS_PROP_NODE_MISC:
+		case BBS_PROP_NODE_SETTINGS:
 			val=sbbs->cfg.node_misc;
+			break;
+		case BBS_PROP_NODE_STATUS:
+			val=sbbs->thisnode.action;
+			break;
+		case BBS_PROP_NODE_ERRORS:
+			val=sbbs->thisnode.action;
 			break;
 		case BBS_PROP_NODE_ACTION:
 			val=sbbs->action;
 			break;
+		case BBS_PROP_NODE_USERON:
+			val=sbbs->thisnode.useron;
+			break;
+		case BBS_PROP_NODE_CONNECTION:
+			val=sbbs->thisnode.connection;
+			break;
+		case BBS_PROP_NODE_MISC:
+			val=sbbs->thisnode.misc;
+			break;
+		case BBS_PROP_NODE_AUX:
+			val=sbbs->thisnode.aux;
+			break;
+		case BBS_PROP_NODE_EXTAUX:
+			val=sbbs->thisnode.extaux;
+			break;
+
 		case BBS_PROP_NODE_VAL_USER:
 			val=sbbs->cfg.node_valuser;
 			break;
@@ -800,7 +829,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 		case BBS_PROP_ONLINE:
 			sbbs->online=val;
 			break;
-		case BBS_PROP_NODE_MISC:
+		case BBS_PROP_NODE_SETTINGS:
 			sbbs->cfg.node_misc=val;
 			break;
 		case BBS_PROP_NODE_ACTION:
@@ -964,8 +993,15 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"event_time"		,BBS_PROP_EVENT_TIME	,PROP_READONLY		,311},
 	{	"event_code"		,BBS_PROP_EVENT_CODE	,PROP_READONLY		,311},
 	{	"node_num"			,BBS_PROP_NODE_NUM		,PROP_READONLY		,310},
-	{	"node_settings"		,BBS_PROP_NODE_MISC		,JSPROP_ENUMERATE	,310},
+	{	"node_settings"		,BBS_PROP_NODE_SETTINGS	,JSPROP_ENUMERATE	,310},
+	{	"node_status"		,BBS_PROP_NODE_STATUS	,PROP_READONLY		,31700},
+	{	"node_errors"		,BBS_PROP_NODE_ERRORS	,PROP_READONLY		,31700},
 	{	"node_action"		,BBS_PROP_NODE_ACTION	,JSPROP_ENUMERATE	,310},
+	{	"node_useron"		,BBS_PROP_NODE_USERON	,PROP_READONLY		,31700},
+	{	"node_connection"	,BBS_PROP_NODE_CONNECTION,PROP_READONLY		,31700},
+	{	"node_misc"			,BBS_PROP_NODE_MISC		,PROP_READONLY		,31700},
+	{	"node_aux"			,BBS_PROP_NODE_AUX		,PROP_READONLY		,31700},
+	{	"node_extaux"		,BBS_PROP_NODE_EXTAUX	,PROP_READONLY		,31700},
 	{	"node_val_user"		,BBS_PROP_NODE_VAL_USER	,JSPROP_ENUMERATE	,310},
 	{	"logon_ulb"			,BBS_PROP_LOGON_ULB		,JSPROP_ENUMERATE	,310},
 	{	"logon_dlb"			,BBS_PROP_LOGON_DLB		,JSPROP_ENUMERATE	,310},
