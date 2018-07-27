@@ -351,10 +351,10 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val=sbbs->cfg.node_misc;
 			break;
 		case BBS_PROP_NODE_STATUS:
-			val=sbbs->thisnode.action;
+			val=sbbs->thisnode.status;
 			break;
 		case BBS_PROP_NODE_ERRORS:
-			val=sbbs->thisnode.action;
+			val=sbbs->thisnode.errors;
 			break;
 		case BBS_PROP_NODE_ACTION:
 			val=sbbs->action;
