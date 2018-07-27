@@ -3970,7 +3970,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("verify system password, prompting for the password if not passed as an argument")
 	,310
 	},
-	{"good_password",	js_chkpass,			1,	JSTYPE_STRING,	JSDOCSTR("password")
+	{"good_password",	js_chkpass,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("password")
 	,JSDOCSTR("check if requested user password meets minimum password requirements "
 		"(length, uniqueness, etc.)")
 	,310
