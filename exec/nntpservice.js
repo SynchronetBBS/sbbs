@@ -366,18 +366,17 @@ while(client.socket.is_connected && !quit) {
 					if(ini_file.open("r")) {
 						var created = ini_file.iniGetValue(null, "Created", 0);
 						ini_file.close();
-						if(created < compare.getTime() / 1000)
-							continue;
+						if(created >= compare.getTime() / 1000 
+							&& msgbase.open()) {
+							writeln(format("%s %u %u %s"
+								,msg_area.grp_list[g].sub_list[s].newsgroup
+								,msgbase.last_msg
+								,msgbase.first_msg
+								,msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n"
+								));
+							msgbase.close();
+						}
 					}
-					if(msgbase.open!=undefined && msgbase.open()==false)
-						continue;
-					writeln(format("%s %u %u %s"
-						,msg_area.grp_list[g].sub_list[s].newsgroup
-						,msgbase.last_msg
-						,msgbase.first_msg
-						,msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n"
-						));
-					msgbase.close();
 				}
 			}
 
