@@ -341,6 +341,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	int32_t	l;
 	FILE	*stream;
 	smb_t	smb;
+	BOOL	result = TRUE;
 
 	if(cfg->prepped)
 		return(FALSE);
@@ -447,14 +448,15 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 				else
 					SAFECOPY(smb.file,cfg->sub[i]->data_dir);
 				prep_dir(cfg->ctrl_dir,smb.file,sizeof(smb.file));
+				md(smb.file);
 				SAFEPRINTF2(str,"%s%s"
 					,cfg->grp[cfg->sub[i]->grp]->code_prefix
 					,cfg->sub[i]->code_suffix);
 				strlwr(str);
 				strcat(smb.file,str);
-				if(smb_open(&smb)!=0) {
-					/* errormsg(WHERE,ERR_OPEN,smb.file,x); */
-					continue; 
+				if(smb_open(&smb) != SMB_SUCCESS) {
+					result = FALSE;
+					continue;
 				}
 				if(!filelength(fileno(smb.shd_fp))) {
 					smb.status.max_crcs=cfg->sub[i]->maxcrcs;
@@ -594,6 +596,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	if(!no_msghdr) {
 		strcpy(dir,cfg->data_dir);
 		prep_dir(cfg->ctrl_dir,dir,sizeof(dir));
+		md(dir);
 		SAFEPRINTF(smb.file,"%smail",dir);
 		if(smb_open(&smb)!=0) {
 			return(FALSE); 
@@ -625,7 +628,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		smb_close(&smb); 
 	}
 
-	return(TRUE);
+	return result;
 }
 
 
