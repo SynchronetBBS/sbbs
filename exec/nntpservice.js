@@ -341,7 +341,7 @@ while(client.socket.is_connected && !quit) {
 			if(!date || !time) {
 				writeln("411 no date or time specified");
 				break;
-			}	
+			}
 			var zone = cmd[3];
 			var year, month, day, hour, minute, second;
 			if(date.length == 6) {
@@ -364,14 +364,23 @@ while(client.socket.is_connected && !quit) {
 					msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 					if(file_cdate(msgbase.file + ".shd") < compare.getTime()/1000)
 						continue;
+					var ini_file = new File(msgbase.file + ".ini");
+					if(ini_file.open("r")) {
+						var created = ini_file.iniGetValue(null, "Created", 0);
+						ini_file.close();
+						if(created && created < compare.getTime() / 1000)
+							continue;
+					}
 					if(msgbase.open!=undefined && msgbase.open()==false)
 						continue;
-					writeln(format("%s %u %u %s"
-						,msg_area.grp_list[g].sub_list[s].newsgroup
-						,msgbase.last_msg
-						,msgbase.first_msg
-						,msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n"
-						));
+					var idx = msgbase.get_msg_index(/* by_offset: */true, /* oldest message */0);
+					if(!idx || idx.time >= compare.getTime() / 1000)
+						writeln(format("%s %u %u %s"
+							,msg_area.grp_list[g].sub_list[s].newsgroup
+							,msgbase.last_msg
+							,msgbase.first_msg
+							,msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n"
+							));
 					msgbase.close();
 				}
 			}
@@ -590,7 +599,7 @@ while(client.socket.is_connected && !quit) {
 				else
 					current_article=Number(cmd[1]);
 			}
-			if(typeof(current_article)=="number" 
+			if(typeof(current_article)=="number"
 				&& (current_article<1 || isNaN(current_article))) {
 				writeln("420 no current article has been selected");
 				break;
@@ -689,11 +698,11 @@ while(client.socket.is_connected && !quit) {
 					hdr.newsgroups = selected.newsgroup;
 				else {	/* Tracker1's mod for adding the correct newsgroup name		*/
 					var ng_found = false;					/* Requires sbbs v3.13	*/
-					var ng_list = hdr.newsgroups.split(','); 
-					for(n in ng_list) 
+					var ng_list = hdr.newsgroups.split(',');
+					for(n in ng_list)
 						if(ng_list[n].toLowerCase() == selected.newsgroup.toLowerCase()) {
-							ng_found = true; 
-							break;  
+							ng_found = true;
+							break;
 						}
 					if(!ng_found)
 						hdr.newsgroups = selected.newsgroup + ',' + hdr.newsgroups;
@@ -782,7 +791,7 @@ while(client.socket.is_connected && !quit) {
 
 				if((line.charAt(0)==' ' || line.charAt(0)=='\t') && hfields.length) {
 					while(line.charAt(0)==' '	// trim prepended spaces
-						|| line.charAt(0)=='\t')	
+						|| line.charAt(0)=='\t')
 						line=line.slice(1);
 					hfields[hfields.length-1] += line;	// folded header field
 				} else
@@ -867,7 +876,7 @@ while(client.socket.is_connected && !quit) {
 													posted=true;
 													log(LOG_NOTICE,"Message deleted: " + ctrl_msg[1]);
 												} else
-													log(LOG_ERR,"!ERROR " + msgbase.error + 
+													log(LOG_ERR,"!ERROR " + msgbase.error +
 														" deleting message: " + ctrl_msg[1]);
 												continue;
 											}
