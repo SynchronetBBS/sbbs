@@ -45,7 +45,7 @@ bool new_sub(unsigned new_subnum, unsigned group_num)
 	if (cfg.total_faddrs)
 		new_subboard->faddr = cfg.faddr[0];
 	/* ToDo: Define these defaults somewhere else: */
-	new_subboard->misc = (SUB_NSDEF | SUB_SSDEF | SUB_QUOTE | SUB_TOUSER | SUB_HDRMOD | SUB_FAST);
+	new_subboard->misc = (SUB_NSDEF | SUB_SSDEF | SUB_QUOTE | SUB_TOUSER | SUB_FAST);
 	new_subboard->maxmsgs = 500;
 
 	/* Use last sub in group (if exists) as a template for new subs */
@@ -57,8 +57,9 @@ bool new_sub(unsigned new_subnum, unsigned group_num)
 				break;
 		}
 	}
+	new_subboard->misc |= SUB_HDRMOD;
 
-	/* Allocate a new (unused) pointer index */
+	/* Allocate a new (unused) pointer index (deprecated!) */
 	for (; new_subboard->ptridx < USHRT_MAX; new_subboard->ptridx++) {
 		int n;
 		for (n = 0; n < cfg.total_subs; n++)
