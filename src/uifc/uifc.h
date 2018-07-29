@@ -96,7 +96,7 @@
 	#endif
 #endif
 
-#define MAX_OPTS			10000
+#define MAX_OPTS			100000
 #define MSK_ON				0xf0000000
 #define MSK_OFF 			0x0fffffff
 #define MSK_INS 			0x10000000
