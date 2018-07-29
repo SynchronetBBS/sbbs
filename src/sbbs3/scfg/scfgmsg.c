@@ -67,60 +67,6 @@ char *stou(char *str)
 	return(out);
 }
 
-void clearptrs(int subnum)
-{
-	char str[256];
-	ushort idx,scancfg;
-	int file, i;
-	size_t gi;
-	long l=0L;
-	glob_t g;
-
-    uifc.pop("Clearing Pointers...");
-    sprintf(str,"%suser/ptrs/*.ixb",cfg.data_dir);
-
-	glob(str,0,NULL,&g);
-   	for(gi=0;gi<g.gl_pathc;gi++) {
-
-        if(flength(g.gl_pathv[gi])>=((long)cfg.sub[subnum]->ptridx+1L)*10L) {
-            if((file=nopen(g.gl_pathv[gi],O_WRONLY))==-1) {
-                errormsg(WHERE,ERR_OPEN,g.gl_pathv[gi],O_WRONLY);
-                bail(1);
-            }
-            while(filelength(file)<(long)(cfg.sub[subnum]->ptridx)*10) {
-                lseek(file,0L,SEEK_END);
-                idx=(ushort)(tell(file)/10);
-                for(i=0;i<cfg.total_subs;i++)
-                    if(cfg.sub[i]->ptridx==idx)
-                        break;
-                write(file,&l,sizeof(l));
-                write(file,&l,sizeof(l));
-                scancfg=0xff;
-                if(i<cfg.total_subs) {
-                    if(!(cfg.sub[i]->misc&SUB_NSDEF))
-                        scancfg&=~SUB_CFG_NSCAN;
-                    if(!(cfg.sub[i]->misc&SUB_SSDEF))
-                        scancfg&=~SUB_CFG_SSCAN; 
-				} else	/* Default to scan OFF for unknown sub */
-					scancfg&=~(SUB_CFG_NSCAN|SUB_CFG_SSCAN);
-                write(file,&scancfg,sizeof(scancfg)); 
-			}
-            lseek(file,((long)cfg.sub[subnum]->ptridx)*10L,SEEK_SET);
-            write(file,&l,sizeof(l));	/* date set to null */
-            write(file,&l,sizeof(l));	/* date set to null */
-            scancfg=0xff;
-            if(!(cfg.sub[subnum]->misc&SUB_NSDEF))
-                scancfg&=~SUB_CFG_NSCAN;
-            if(!(cfg.sub[subnum]->misc&SUB_SSDEF))
-                scancfg&=~SUB_CFG_SSCAN;
-            write(file,&scancfg,sizeof(scancfg));
-            close(file); 
-		}
-    }
-	globfree(&g);
-    uifc.pop(0);
-}
-
 static bool new_grp(unsigned new_grpnum)
 {
 	grp_t* new_group = malloc(sizeof(grp_t));
@@ -559,22 +505,23 @@ void msgs_cfg()
 				j = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &j, 0, "Delete All Data in Group", opt);
 				if (j == -1)
 					continue;
+				uifc.pop("Deleting Data Files...");
 				if (j == 0) {
 					for (j = 0; j < cfg.total_subs; j++) {
 						if (cfg.sub[j]->grp == grpnum) {
-							sprintf(str, "%s%s.s*"
+							sprintf(str, "%s%s.*"
 								, cfg.grp[cfg.sub[j]->grp]->code_prefix
 								, cfg.sub[j]->code_suffix);
 							strlwr(str);
 							if (!cfg.sub[j]->data_dir[0])
-								sprintf(tmp, "[%ssubs/]", cfg.data_dir);
+								sprintf(tmp, "%ssubs/", cfg.data_dir);
 							else
 								strcpy(tmp, cfg.sub[j]->data_dir);
 							delfiles(tmp, str);
-							clearptrs(j);
 						}
 					}
 				}
+				uifc.pop(NULL);
 			}
 			if(msk == MSK_CUT)
 				savgrp = *cfg.grp[grpnum];

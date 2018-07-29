@@ -285,10 +285,8 @@ void sub_cfg(uint grpnum)
 						,str2,uifcYesNoOpts);
 					if(j==-1)
 						continue;
-					if(j==0) {
-							delfiles(data_dir,str);
-							clearptrs(subnum[i]); 
-					}
+					if(j==0)
+						delfiles(data_dir,str);
 				}
 			}
 			if(msk == MSK_CUT)
@@ -1350,7 +1348,7 @@ void sub_cfg(uint grpnum)
 									opt[2][0]=0;
 									m=0;
 									if(uifc.list(WIN_SAV|WIN_MID,0,0,0,&m,0
-										,"Delete all messages in this sub-board?",opt)!=0)
+										,"Delete all data for this sub-board?",opt)!=0)
 										break;
 									if(cfg.sub[i]->data_dir[0])
 										sprintf(str,"%s",cfg.sub[i]->data_dir);
