@@ -297,7 +297,7 @@ int main(int argc, char **argv)
 						"-m  =  force monochrome mode\r\n"
                         "-e# =  set escape delay to #msec\r\n"
 						"-import=<filename> = import a message area list file\r\n"
-						"-g# =  set group number to import into\r\n"
+						"-g# =  set group number (or name) to import into\r\n"
 						"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
 #ifdef __unix__
 						"       X = X11 mode\r\n"
@@ -369,7 +369,7 @@ int main(int argc, char **argv)
 			printf("!Invalid group specified!\n");
 			return EXIT_FAILURE;
 		}
-		printf("Importing %s from %s\n", "Areas", fname);
+		printf("\nImporting %s from %s\n", "Areas", fname);
 		long ported = 0;
 		long added = 0;
 		switch(base) {
