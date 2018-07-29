@@ -96,7 +96,7 @@ void node_menu()
 		if(msk == MSK_INS) {
 			SAFECOPY(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
 			i=cfg.sys_nodes+1;
-			uifc.pop("Reading NODE.CNF...");
+			uifc.pop("Reading node.cnf ...");
 			read_node_cfg(&cfg,error);
 			uifc.pop(0);
 			sprintf(str,"../node%d/",i);
@@ -135,7 +135,7 @@ void node_menu()
 				free_node_cfg(&cfg);
 			i&=MSK_OFF;
 			SAFECOPY(cfg.node_dir,cfg.node_path[i]);
-			uifc.pop("Reading NODE.CNF...");
+			uifc.pop("Reading node.cnf ...");
 			read_node_cfg(&cfg,error);
 			uifc.pop(0);
 			savnode=1;
@@ -158,7 +158,7 @@ void node_menu()
 		SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 		prep_dir(cfg.ctrl_dir, cfg.node_dir, sizeof(cfg.node_dir));
 
-		uifc.pop("Reading NODE.CNF...");
+		uifc.pop("Reading node.cnf ...");
 		read_node_cfg(&cfg,error);
 		uifc.pop(0);
 		if (cfg.node_num != i + 1) { 	/* Node number isn't right? */
