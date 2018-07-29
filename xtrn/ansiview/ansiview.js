@@ -112,9 +112,10 @@ function draw(file, cols, rows)
 function drawFile(file) {
 
 	var sauce = Sauce.read(file);
-	var is_xbin = file_getext(file).toLowerCase() == ".xb" || file_getext(file).toLowerCase() == ".xbin";
+  var ext = (file_getext(file) || '').toLowerCase();
+	var is_xbin = (ext == ".xb" || ext == ".xbin");
 
-	if (file_getext(file).toLowerCase() == ".bin" || is_xbin) {
+	if (ext == ".bin" || is_xbin) {
 		if (!state.syncTerm)
 			return "Sorry, this file format is not supported by your terminal";
 		if (!is_xbin	&& (!sauce || sauce.datatype != Sauce.defs.datatype.bin)) {
