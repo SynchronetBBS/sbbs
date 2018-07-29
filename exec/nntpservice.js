@@ -343,7 +343,7 @@ while(client.socket.is_connected && !quit) {
 				break;
 			}
 			var zone = cmd[3];
-			var year, month, day, hour, minute, second;
+			var year, month, day;
 			if(date.length == 6) {
 				year = 2000 + parseInt(date.substr(0, 2));
 				month = parseInt(date.substr(2, 2)) - 1;
@@ -353,11 +353,19 @@ while(client.socket.is_connected && !quit) {
 				month = parseInt(date.substr(4, 2)) - 1;
 				day = parseInt(date.substr(6, 2));
 			}
-			var compare = new Date(Date.UTC(year, month, day,
+			var compare;
+			if(zone == "GMT")
+				compare = new Date(Date.UTC(year, month, day,
 											/* hour: */parseInt(time.substr(0, 2)),
 											/* minute: */parseInt(time.substr(2, 2)),
 											/* seconds: */parseInt(time.substr(4, 2))
 											));
+			else
+				compare = new Date(year, month, day,
+											/* hour: */parseInt(time.substr(0, 2)),
+											/* minute: */parseInt(time.substr(2, 2)),
+											/* seconds: */parseInt(time.substr(4, 2))
+											);
 			writeln("231 list of new newsgroups since " + compare.toISOString() + " follows");
 			for(g in msg_area.grp_list) {
 				for(s in msg_area.grp_list[g].sub_list) {
