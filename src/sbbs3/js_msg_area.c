@@ -179,7 +179,7 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 		}
 		c--;
 		if (str[c] == '.')
-			str[0] = '_';
+			str[c] = '_';
 	}
 	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
 		return(FALSE);
