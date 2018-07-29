@@ -198,7 +198,7 @@ int sbbs_t::exec_function(csi_t *csi)
 		{
 			bputs(text[EnterNetMailAddress]);
 			csi->logic=LOGIC_FALSE;
-			if(getstr(str,60,K_LINE|K_EDIT)) {
+			if(getstr(str,60,K_LINE)) {
 				if(netmail(str,nulstr,cmd == CS_MAIL_SEND_NETFILE ? WM_FILE : 0)) {
 					csi->logic=LOGIC_TRUE; 
 				}
