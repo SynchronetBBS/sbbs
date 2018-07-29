@@ -164,6 +164,8 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 	int			read_qwk_confs = 0;
 	int			qwk_confnum;
 	size_t		grpname_len = strlen(cfg.grp[grpnum]->sname);
+	char		duplicate_code[LEN_CODE+1]="";
+	uint		duplicate_codes = 0;	// consecutive duplicate codes
 
 	if(added != NULL)
 		*added = 0;
@@ -290,6 +292,8 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 				SAFECOPY(tmp_code,p);		/* Copy tag to internal code */
 				SAFECOPY(tmpsub.lname,utos(p));
 				SAFECOPY(tmpsub.sname,tmpsub.lname);
+				if(strlen(p) > sizeof(tmpsub.sname) - 1)
+					SAFECOPY(tmpsub.newsgroup, p);
 			}
 			else if(type == IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS) { /* AREAS.BBS SBBSecho */
 				p=str;
@@ -303,6 +307,8 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 				truncstr(p," \t");			/* Truncate tag */
 				SAFECOPY(tmpsub.lname,utos(p));
 				SAFECOPY(tmpsub.sname,tmpsub.lname);
+				if(strlen(p) > sizeof(tmpsub.sname) - 1)
+					SAFECOPY(tmpsub.newsgroup, p);
 			}
 			else if(type == IMPORT_LIST_TYPE_BACKBONE_NA) { /* BACKBONE.NA */
 				p=str;
@@ -312,6 +318,8 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 				*tp=0;						/* Truncate echo tag */
 				SAFECOPY(tmp_code,p);		/* Copy tag to internal code suffix */
 				SAFECOPY(tmpsub.sname,utos(p));	/* ... to short name, converting underscores to spaces */
+				if(strlen(p) > sizeof(tmpsub.sname) - 1)
+					SAFECOPY(tmpsub.newsgroup, p);
 				p=tp+1;
 				SKIP_WHITESPACE(p);			/* Find description */
 				SAFECOPY(tmpsub.lname,p);	/* Copy description to long name */
@@ -327,16 +335,29 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 		if(tmpsub.code_suffix[0]==0	|| tmpsub.sname[0]==0)
 			continue;
 
-		if(tmpsub.lname[0] == 0)
-			SAFECOPY(tmpsub.lname, tmpsub.sname);
+		if(tmpsub.lname[0] == 0) {
+			if(tmpsub.newsgroup[0])
+				SAFECOPY(tmpsub.lname, tmpsub.newsgroup);
+			else
+				SAFECOPY(tmpsub.lname, tmpsub.sname);
+		}
 
 		uint j;
-		int mod_offset = LEN_CODE-1;
-		for(j=0; j < cfg.total_subs && mod_offset >= 0; j++) {
+		int attempts = 0;	// attempts to generate a unique internal code
+		if(stricmp(tmpsub.code_suffix, duplicate_code) == 0)
+			attempts = ++duplicate_codes;
+		else
+			duplicate_codes = 0;
+		for(j=0; j < cfg.total_subs && attempts < (36*36*36); j++) {
 			/* same group and duplicate name/echotag or QWK confname? overwrite the sub entry */
 			if(cfg.sub[j]->grp == grpnum) {
-				if(stricmp(cfg.sub[j]->sname, tmpsub.sname) == 0)
-					break;
+				if(cfg.sub[j]->newsgroup[0] || tmpsub.newsgroup[0]) {
+					if(stricmp(cfg.sub[j]->newsgroup, tmpsub.newsgroup) == 0)
+						break;
+				} else {
+					if(stricmp(cfg.sub[j]->sname, tmpsub.sname) == 0)
+						break;
+				}				
 			} else {
 				if((cfg.grp[grpnum]->code_prefix[0] || cfg.grp[cfg.sub[j]->grp]->code_prefix[0]))
 					continue;
@@ -344,26 +365,26 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			if(stricmp(cfg.sub[j]->code_suffix, tmpsub.code_suffix) == 0) {
 				if(type == IMPORT_LIST_TYPE_SUBS_TXT)	/* subs.txt import (don't modify internal code) */
 					break;
+				if(attempts == 0)
+					SAFECOPY(duplicate_code, tmpsub.code_suffix);
 				int code_len = strlen(tmpsub.code_suffix);
 				if(code_len < 1)
 					break;
-				if(code_len < LEN_CODE)
-					memset(tmpsub.code_suffix + code_len, '0', LEN_CODE - code_len);
-				else if(tmpsub.code_suffix[mod_offset] == 'Z')
-					tmpsub.code_suffix[mod_offset] = '0';
-				else if(tmpsub.code_suffix[mod_offset] == '9')
-					mod_offset--;
-				else 
-					tmpsub.code_suffix[mod_offset]++;
+				tmpsub.code_suffix[code_len-1] = random_code_char();
+				if(attempts > 10 && code_len > 1)
+					tmpsub.code_suffix[code_len-2] = random_code_char();
+				if(attempts > 100 && code_len > 2)
+					tmpsub.code_suffix[code_len-3] = random_code_char();
 				j=0;
+				attempts++;
 			}
 		}
-		if(mod_offset < 0)
-			break;
+		if(attempts >= (36*36*36))
+			return -2;
 
 		if(j==cfg.total_subs) {
 			if(!new_sub(j, grpnum))
-				break;
+				return -3;
 			if(added != NULL)
 				(*added)++;
 		}
@@ -378,10 +399,11 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			SAFECOPY(cfg.sub[j]->code_suffix,tmpsub.code_suffix);
 			SAFECOPY(cfg.sub[j]->sname,tmpsub.sname);
 			SAFECOPY(cfg.sub[j]->lname,tmpsub.lname);
+			SAFECOPY(cfg.sub[j]->newsgroup,tmpsub.newsgroup);
 			SAFECOPY(cfg.sub[j]->qwkname,tmpsub.qwkname);
 			SAFECOPY(cfg.sub[j]->data_dir,tmpsub.data_dir);
-			if(j==cfg.total_subs)
-				cfg.sub[j]->maxmsgs=1000;
+//			if(j==cfg.total_subs)
+//				cfg.sub[j]->maxmsgs=1000;
 		}
 		if(qhub != NULL)
 			new_qhub_sub(qhub, qhub->subs, cfg.sub[j], qwk_confnum);
@@ -821,13 +843,16 @@ void msgs_cfg()
 
 							fprintf(stream,"%-*s %-*s %s\n"
 								,LEN_EXTCODE, extcode
-								,FIDO_AREATAG_LEN, stou(cfg.sub[j]->sname)
+								,FIDO_AREATAG_LEN
+								,cfg.sub[j]->newsgroup[0] ? cfg.sub[j]->newsgroup : stou(cfg.sub[j]->sname)
 								,str2);
 							continue; 
 						}
 						if(k==2) {		/* BACKBONE.NA */
 							fprintf(stream,"%-*s %s\n"
-								,FIDO_AREATAG_LEN, stou(cfg.sub[j]->sname),cfg.sub[j]->lname);
+								,FIDO_AREATAG_LEN
+								,cfg.sub[j]->newsgroup[0] ? cfg.sub[j]->newsgroup : stou(cfg.sub[j]->sname)
+								,cfg.sub[j]->lname);
 							continue; 
 						}
 						fprintf(stream,"%s\n%s\n%s\n%s\n%s\n%s\n"

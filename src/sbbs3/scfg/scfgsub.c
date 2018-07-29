@@ -421,11 +421,16 @@ void sub_cfg(uint grpnum)
 					break;
 				case 4:
 					uifc.helpbuf=
-						"Newsgroup Name:\n"
+						"`Newsgroup Name:`\n"
 						"\n"
 						"This is the name of the sub-board used for newsgroup readers. If no name\n"
 						"is configured here, a name will be automatically generated from the\n"
 						"Sub-board's Short Name and message group's Short Name.\n"
+						"\n"
+						"This field may also be used to specify the FidoNet-style `Echo Tag` for\n"
+						"this message area.\n"
+						"\n"
+						"This name should ~ not ~ contain spaces."
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,""
 						,cfg.sub[i]->newsgroup,sizeof(cfg.sub[i]->newsgroup)-1,K_EDIT);
