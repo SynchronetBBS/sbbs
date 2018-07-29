@@ -450,7 +450,7 @@ char* prep_code(char *str, const char* prefix)
 			str+=i;
 	}
 	for(i=j=0;str[i] && i<sizeof(tmp);i++)
-		if(str[i]>' ' && !(str[i]&0x80) && str[i]!='*' && str[i]!='?'
+		if(str[i]>' ' && !(str[i]&0x80) && str[i]!='*' && str[i]!='?' && str[i]!='.'
 			&& strchr(ILLEGAL_FILENAME_CHARS,str[i])==NULL)
 			tmp[j++]=toupper(str[i]);
 	tmp[j]=0;
