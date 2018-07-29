@@ -500,6 +500,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 	sbbs_t*		sbbs;
     JSString*	js_str=NULL;
 	jsrefcount	rc;
+	str_list_t	history = NULL;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -516,12 +517,32 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 				if(!JS_ValueToInt32(cx,argv[i],&mode))
 					return JS_FALSE;
 			}
-			continue;
 		}
-		if(JSVAL_IS_STRING(argv[i])) {
+		else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
 			if (!js_str)
 			    return(JS_FALSE);
+		}
+		else if(JSVAL_IS_OBJECT(argv[i])) {
+			JSObject* array = JSVAL_TO_OBJECT(argv[i]);
+			jsuint len=0;
+			if(!JS_GetArrayLength(cx, array, &len))
+				return JS_FALSE;
+			history = (str_list_t)alloca(sizeof(char*) * (len + 1));
+			memset(history, 0, sizeof(char*) * (len + 1));
+			for(jsuint j=0; j < len; j++) {
+				jsval		val;
+				if(!JS_GetElement(cx, array, j, &val))
+					break;
+				JSString* hist = JS_ValueToString(cx, val);
+				if (hist == NULL)
+					return JS_FALSE;
+				char* cstr = NULL;
+				JSSTRING_TO_ASTRING(cx, hist, cstr, (uint)(maxlen ? maxlen : 80), NULL);
+				if(cstr == NULL)
+					return JS_FALSE;
+				history[j] = cstr;
+			}
 		}
 	}
 
@@ -541,7 +562,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->getstr(p,maxlen,mode);
+	sbbs->getstr(p, maxlen, mode, history);
 	JS_RESUMEREQUEST(cx, rc);
 
 	js_str = JS_NewStringCopyZ(cx, p);

@@ -714,7 +714,7 @@ public:
 
 	/* getstr.cpp */
 	size_t	getstr_offset;
-	size_t	getstr(char *str, size_t length, long mode);
+	size_t	getstr(char *str, size_t length, long mode, const str_list_t history = NULL);
 	long	getnum(ulong max, ulong dflt=0);
 	void	insert_indicator(void);
 

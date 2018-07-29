@@ -43,13 +43,14 @@
 /* a word, ^X backspaces a line, ^Gs, BSs, TABs are processed, LFs ignored. */
 /* ^N non-destructive BS, ^V center line. Valid keys are echoed.            */
 /****************************************************************************/
-size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
+size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t history)
 {
     size_t	i,l,x,z;    /* i=current position, l=length, j=printed chars */
                     /* x&z=misc */
 	char	str1[256],str2[256],undo[256];
     uchar	ch;
 	uchar	atr;
+	int		hidx = -1;
 
 	console&=~(CON_UPARROW|CON_DOWNARROW|CON_LEFTARROW|CON_BACKSPACE|CON_DELETELINE);
 	if(!(mode&K_WRAP))
@@ -436,7 +437,40 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					i--; 
 				}
 				break;
+			case TERM_KEY_DOWN:
+				if(history != NULL) {
+					if(hidx < 0) {
+						outchar(BEL);
+						break;
+					}
+					hidx--;
+					if(hidx < 0)
+						SAFECOPY(str1, undo);
+					else
+						SAFECOPY(str1, history[hidx]);
+					while(i--)
+						backspace();
+					i=l=strlen(str1);
+					rputs(str1);
+					cleartoeol();
+					break;
+				}
+				break;
 			case TERM_KEY_UP:  /* Ctrl-^/Up Arrow */
+				if(history != NULL) {
+					if(history[hidx + 1] == NULL) {
+						outchar(BEL);
+						break;
+					}
+					hidx++;
+					while(i--)
+						backspace();
+					SAFECOPY(str1, history[hidx]);
+					i=l=strlen(str1);
+					rputs(str1);
+					cleartoeol();
+					break;
+				}
 				if(!(mode&K_EDIT))
 					break;
 #if 1
