@@ -1869,9 +1869,13 @@ bool add_sub_to_areafile(sub_t* sub, fidoaddr_t uplink)
 
 	/* Replace spaces in the sub short-name with underscores (for use as the echotag) */
 	char echotag[FIDO_AREATAG_LEN+1];
-	SAFECOPY(echotag, sub->sname);
-	char* p;
-	REPLACE_CHARS(echotag, ' ', '_', p);
+	if(sub->newsgroup[0])
+		SAFECOPY(echotag, sub->newsgroup);
+	else {
+		SAFECOPY(echotag, sub->sname);
+		char* p;
+		REPLACE_CHARS(echotag, ' ', '_', p);
+	}
 	strupr(echotag);
 	fprintf(fp, "%-*s %-*s %s\n"
 		,LEN_EXTCODE, sub->code, FIDO_AREATAG_LEN, echotag, smb_faddrtoa(&uplink, NULL));
