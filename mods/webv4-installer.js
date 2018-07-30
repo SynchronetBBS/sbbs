@@ -134,7 +134,7 @@ const extract_dir = fullpath(system.temp_dir);
 const temp_dir = fullpath(extract_dir + '/synchronet-web-v4-master');
 const install_dir = fullpath(system.exec_dir + '../webv4');
 const root_directory = fullpath(install_dir + '/root');
-const error_directory = fullpath(root_directory + '/errors');
+const error_directory = fullpath(root_directory + '/error');
 
 var modopts_web = get_modopts_ini();
 if (!modopts_web) {
