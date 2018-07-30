@@ -31,7 +31,7 @@
 
 	function writePage() {
 		var ini = getWebCtrl(
-			settings.web_root + 'pages/' + page.replace(file_getname(page), '')
+			settings.web_pages +  '/' + page.replace(file_getname(page), '')
 		);
 		if ((typeof ini === "boolean" && !ini) || webCtrlTest(ini, page)) {
 			write(getPage(page));
