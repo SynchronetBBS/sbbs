@@ -1810,7 +1810,9 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 	char	tmp[128];
 
 	SKIP_WHITESPACE(p);
-	if(*p=='<') p++;		/* Skip '<' */
+	char* lt = strrchr(p, '<');
+	if(lt!= NULL)
+		p = lt+1;
 	SAFECOPY(addr,p);
 	truncstr(addr,">( ");
 
