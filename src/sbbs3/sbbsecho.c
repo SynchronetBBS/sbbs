@@ -1735,7 +1735,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		fprintf(afileout,"%s\n",fields);	/* No match so write back line */
 	}
 	fclose(afilein);
-	if(nomatch || (add_area[0] != NULL && stricmp(add_area[0],"+ALL") == 0)) {
+	if(nomatch || (add_count && stricmp(add_area[0],"+ALL") == 0)) {
 		nodecfg_t* nodecfg=findnodecfg(&cfg, addr,0);
 		if(nodecfg != NULL) {
 			for(j=0;j<cfg.listcfgs;j++) {
@@ -1810,7 +1810,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 			} 
 		} 
 	}
-	if(strListCount(add_area) && stricmp(add_area[0],"+ALL")) {
+	if(add_count && stricmp(add_area[0],"+ALL")) {
 		for(u=0;add_area[u]!=NULL;u++)
 			if(add_area[u][0]) {
 				fprintf(nmfile,"%s not found.\r\n",add_area[u]); 
