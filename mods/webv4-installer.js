@@ -27,7 +27,7 @@ function extract(file, target) {
 	if (!file_isdir(install_dir)) {
         if (!mkdir(install_dir)) return false;
     }
-	return system.exec(system.exec_dir + 'unzip -uqo ' + file + ' -d ' + target) == 0;
+	return system.exec('unzip -uqo ' + file + ' -d ' + target) == 0;
 }
 
 function update_sbbs_ini(root_directory, error_directory) {
