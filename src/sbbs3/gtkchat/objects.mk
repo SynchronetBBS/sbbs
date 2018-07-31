@@ -7,6 +7,7 @@ OBJS	:=	\
 			$(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)msgdate$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)chatfuncs$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)interface$(OFILE) \
