@@ -341,13 +341,13 @@ while(client.socket.is_connected && !quit) {
 			var zone = cmd[3];
 			var year, month, day;
 			if(date.length == 6) {
-				year = 2000 + parseInt(date.substr(0, 2));
-				month = date.substr(2, 2) - 1;
-				day = date.substr(4, 2);
+				year = 2000 + parseInt(date.substr(0, 2), 10);
+				month = parseInt(date.substr(2, 2), 10) - 1;
+				day = parseInt(date.substr(4, 2), 10);
 			} else {
 				year = parseInt(date.substr(0, 4));
-				month = date.substr(4, 2) - 1;
-				day = date.substr(6, 2);
+				month = parseInt(date.substr(4, 2), 10) - 1;
+				day = parseInt(date.substr(6, 2), 10);
 			}
 			var compare;
 			if(zone == "GMT")
