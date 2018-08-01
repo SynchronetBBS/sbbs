@@ -341,7 +341,14 @@ while(client.socket.is_connected && !quit) {
 			var zone = cmd[3];
 			var year, month, day;
 			if(date.length == 6) {
-				year = 2000 + parseInt(date.substr(0, 2), 10);
+				var ng_year = '' + new Date().getFullYear();
+				year = parseInt(date.substr(0, 2), 10);
+				if (parseInt(year, 10) <= parseInt(ng_year.substr(2, 2), 10)) {
+					year = parseInt(ng_year.substr(0, 2) + year, 10);
+				} else {
+					var ng_pc = parseInt(ng_year.substr(0, 2)) - 1;
+					year = parseInt('' + ng_pc + year, 10);
+				}
 				month = parseInt(date.substr(2, 2), 10) - 1;
 				day = parseInt(date.substr(4, 2), 10);
 			} else {
