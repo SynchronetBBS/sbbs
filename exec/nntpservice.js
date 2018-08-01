@@ -334,10 +334,6 @@ while(client.socket.is_connected && !quit) {
 		case "NEWGROUPS":
 			var date = cmd[1];
 			var time = cmd[2];
-			if(js.global.file_cdate == undefined) {
-				writeln("500 Command Unsupported");
-				break;
-			}
 			if(!date || !time) {
 				writeln("411 no date or time specified");
 				break;
@@ -346,12 +342,12 @@ while(client.socket.is_connected && !quit) {
 			var year, month, day;
 			if(date.length == 6) {
 				year = 2000 + parseInt(date.substr(0, 2));
-				month = parseInt(date.substr(2, 2)) - 1;
-				day = parseInt(date.substr(4, 2));
+				month = date.substr(2, 2) - 1;
+				day = date.substr(4, 2);
 			} else {
 				year = parseInt(date.substr(0, 4));
-				month = parseInt(date.substr(4, 2)) - 1;
-				day = parseInt(date.substr(6, 2));
+				month = date.substr(4, 2) - 1;
+				day = date.substr(6, 2);
 			}
 			var compare;
 			if(zone == "GMT")
