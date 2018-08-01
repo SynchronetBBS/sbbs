@@ -5,7 +5,7 @@ function filename(usernum)
 	return system.data_dir + format("user/%04u.ini", usernum);
 }
 
-function get(section, key, usernum)
+function get(section, key, deflt, usernum)
 {
 	if(!usernum)
 		usernum = user.number;
@@ -18,7 +18,7 @@ function get(section, key, usernum)
 	else if(!key)
 		result = file.iniGetObject(section);
 	else 
-		result = file.iniGetValue(section, key);
+		result = file.iniGetValue(section, key, deflt);
 	file.close();
 	return result;
 }
