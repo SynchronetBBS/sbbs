@@ -393,7 +393,7 @@ int main(int argc, char **argv)
 			printf("!ERROR %ld importing areas from %s\n", ported, fname);
 		else {
 			printf("Imported %ld areas (%ld added) from %s\n", ported, added, fname);
-			printf("Saving configuration (%lu message areas) ... ", cfg.total_subs);
+			printf("Saving configuration (%u message areas) ... ", cfg.total_subs);
 			write_msgs_cfg(&cfg,backup_level);
 			printf("done.\n");
 			refresh_cfg(&cfg);
