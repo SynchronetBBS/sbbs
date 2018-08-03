@@ -128,8 +128,8 @@ void sbbs_t::temp_xfer()
 					break;
 				if(!checkfname(str))
 					break;
-				SAFEPRINTF3(tmp2,"%s added %s to %s"
-					,useron.alias,str,f.name);
+				SAFEPRINTF2(tmp2,"added %s to %s"
+					,str,f.name);
 				logline(nulstr,tmp2);
 				SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,str);
 				SAFEPRINTF2(str,"%s%s",cfg.temp_dir,f.name);
@@ -414,7 +414,7 @@ void sbbs_t::extract(uint dirnum)
 					errormsg(WHERE,ERR_EXEC,cmdstr(excmd,path,str,NULL),i);
 					return; 
 				}
-				SAFEPRINTF3(tmp,"%s extracted %s from %s",useron.alias,str,path);
+				SAFEPRINTF2(tmp,"extracted %s from %s", str,path);
 				logline(nulstr,tmp);
 				CRLF;
 				break;

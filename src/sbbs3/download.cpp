@@ -60,8 +60,7 @@ void sbbs_t::downloadfile(file_t* f)
 		logon_dls++;
 	}
 	bprintf(text[FileNBytesSent],f->name,ultoac(length,tmp));
-	sprintf(str,"%s downloaded %s from %s %s"
-		,useron.alias
+	sprintf(str,"downloaded %s from %s %s"
 		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	logline("D-",str);
@@ -387,16 +386,14 @@ bool sbbs_t::checkprotresult(prot_t* prot, int error, file_t* f)
 	if(!success) {
 		bprintf(text[FileNotSent],f->name);
 		if(f->dir<cfg.total_dirs)
-			sprintf(str,"%s attempted to download %s (%s) from %s %s"
-				,useron.alias
+			sprintf(str,"attempted to download %s (%s) from %s %s"
 				,f->name,ultoac(f->size,tmp)
 				,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		else if(f->dir==cfg.total_dirs)
-			sprintf(str,"%s attempted to download QWK packet"
-				,useron.alias);
+			SAFECOPY(str,"attempted to download QWK packet");
 		else if(f->dir==cfg.total_dirs+1)
-			sprintf(str,"%s attempted to download attached file: %s"
-				,useron.alias,f->name);
+			sprintf(str,"attempted to download attached file: %s"
+				,f->name);
 		logline(LOG_NOTICE,"D!",str);
 		return(false); 
 	}
@@ -492,14 +489,14 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc)
 		ultoac(length, bytes);
 		bprintf(text[FileNBytesSent], getfname(fname), bytes);
 		char str[128];
-		SAFEPRINTF4(str, "%s downloaded %s: %s (%s bytes)"
-			,useron.alias, desc == NULL ? "file" : desc, fname, bytes);
+		SAFEPRINTF3(str, "downloaded %s: %s (%s bytes)"
+			,desc == NULL ? "file" : desc, fname, bytes);
 		logline("D-",str); 
 		autohangup(); 
 	} else {
 		char str[128];
 		bprintf(text[FileNotSent], getfname(fname));
-		sprintf(str,"%s attempted to download attached file: %s", useron.alias, fname);
+		sprintf(str,"attempted to download attached file: %s", fname);
 		logline(LOG_NOTICE,"D!",str);
 	}
 	return result;

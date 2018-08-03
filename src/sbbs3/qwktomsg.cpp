@@ -462,11 +462,10 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 		bprintf("\r\n!%s\r\n",smb.last_error);
 		if(!fromhub) {
 			if(subnum==INVALID_SUB) {
-				SAFEPRINTF2(str,"%s duplicate e-mail attempt (%s)",useron.alias,smb.last_error);
+				SAFEPRINTF(str,"duplicate e-mail attempt (%s)", smb.last_error);
 				logline(LOG_NOTICE,"E!",str); 
 			} else {
-				SAFEPRINTF4(str,"%s duplicate message attempt in %s %s (%s)"
-					,useron.alias
+				SAFEPRINTF3(str,"duplicate message attempt in %s %s (%s)"
 					,cfg.grp[cfg.sub[subnum]->grp]->sname
 					,cfg.sub[subnum]->lname
 					,smb.last_error);

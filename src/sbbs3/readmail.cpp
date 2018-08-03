@@ -181,14 +181,11 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 			domsg=0; 
 	}
 	if(which==MAIL_SENT) {
-		sprintf(str,"%s read sent mail",useron.alias);
-		logline("E",str);
+		logline("E","read sent mail");
 	} else if(which==MAIL_ALL) {
-		sprintf(str,"%s read all mail",useron.alias);
-		logline("S+",str);
+		logline("S+","read all mail");
 	} else {
-		sprintf(str,"%s read mail",useron.alias);
-		logline("E",str);
+		logline("E","read mail");
 	}
 	const char* menu_file = (which == MAIL_ALL ? "allmail" : which==MAIL_SENT ? "sentmail" : "mailread");
 	if(useron.misc&RIP)
@@ -350,8 +347,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 										bprintf(text[FileNBytesSent]
 											,fd.name,ultoac(length,tmp));
 										sprintf(str3
-											,"%s downloaded attached file: %s"
-											,useron.alias
+											,"downloaded attached file: %s"
 											,fd.name);
 										logline("D-",str3); 
 									}

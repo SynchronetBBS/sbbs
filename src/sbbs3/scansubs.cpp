@@ -80,8 +80,8 @@ void sbbs_t::scansubs(long mode)
 						found=listsub(usrsub[curgrp][i],SCAN_FIND,0,str);
 						subs_scanned++;
 					}
-				sprintf(tmp,"%s searched %lu sub-boards for '%s'"
-					,useron.alias,subs_scanned,str);
+				sprintf(tmp,"searched %lu sub-boards for '%s'"
+					,subs_scanned,str);
 				logline(nulstr,tmp);
 				if(!found)
 					CRLF;
@@ -185,8 +185,8 @@ void sbbs_t::scanallsubs(long mode)
 				}
 				if(!found)
 					CRLF;
-				sprintf(tmp,"%s searched %lu sub-boards for '%s'"
-					,useron.alias,subs_scanned,str);
+				sprintf(tmp,"searched %lu sub-boards for '%s'"
+					,subs_scanned,str);
 				logline(nulstr,tmp);
 				return; 
 			}

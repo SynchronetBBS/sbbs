@@ -246,8 +246,8 @@ int sbbs_t::text_sec()
 			fexistcase(str);
 			attr(LIGHTGRAY);
 			printfile(str,0);
-			sprintf(str,"%s read text file: %s"
-				,useron.alias,file[i]);
+			sprintf(str,"read text file: %s"
+				,file[i]);
 			logline("T-",str);
 			pause();
 			sys_status&=~SS_ABORT;

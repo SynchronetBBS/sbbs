@@ -69,8 +69,7 @@ bool sbbs_t::uploadfile(file_t *f)
 		mv(tmp,path,0);
 	if(!fexistcase(path)) {
 		bprintf(text[FileNotReceived],f->name);
-		sprintf(str,"%s attempted to upload %s to %s %s (Not received)"
-			,useron.alias
+		sprintf(str,"attempted to upload %s to %s %s (Not received)"
 			,f->name
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline(LOG_NOTICE,"U!",str);
@@ -100,8 +99,7 @@ bool sbbs_t::uploadfile(file_t *f)
 				fclose(stream); 
 			}
 			if(external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),EX_OFFLINE)) {
-				sprintf(str,"%s attempted to upload %s to %s %s (%s Errors)"
-					,useron.alias
+				sprintf(str,"attempted to upload %s to %s %s (%s Errors)"
 					,f->name
 					,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname,cfg.ftest[i]->ext);
 				logline(LOG_NOTICE,"U!",str);
@@ -142,8 +140,7 @@ bool sbbs_t::uploadfile(file_t *f)
 	if((length=(long)flength(path))==0L) {
 		bprintf(text[FileZeroLength],f->name);
 		remove(path);
-		sprintf(str,"%s attempted to upload %s to %s %s (Zero length)"
-			,useron.alias
+		sprintf(str,"attempted to upload %s to %s %s (Zero length)"
 			,f->name
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline(LOG_NOTICE,"U!",str);
@@ -213,8 +210,7 @@ bool sbbs_t::uploadfile(file_t *f)
 	if(f->misc&FM_EXTDESC)
 		putextdesc(&cfg,f->dir,f->datoffset,ext);
 
-	sprintf(str,"%s uploaded %s to %s %s"
-		,useron.alias
+	sprintf(str,"uploaded %s to %s %s"
 		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	if(cfg.dir[f->dir]->upload_sem[0])

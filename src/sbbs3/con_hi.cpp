@@ -169,8 +169,7 @@ bool sbbs_t::chksyspass(const char* sys_pw)
 			SAFEPRINTF3(str2,"%s #%u System password attempt: '%s'"
 				,useron.alias,useron.number,str);
 		else
-			SAFEPRINTF2(str2,"%s #%u System password verification failure"
-				,useron.alias,useron.number);
+			SAFECOPY(str2,"System password verification failure");
 		logline(LOG_NOTICE,"S!",str2);
 		return(false); 
 	}

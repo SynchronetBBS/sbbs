@@ -213,8 +213,8 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 
 	lncntr=0;
 	bprintf(text[Emailing],user.alias,usernum);
-	sprintf(str,"%s bulk-mailed %s #%d"
-		,useron.alias,user.alias,usernum);
+	sprintf(str,"bulk-mailed %s #%d"
+		,user.alias,usernum);
 	logline("E+",str);
 	useron.emails++;
 	logon_emails++;

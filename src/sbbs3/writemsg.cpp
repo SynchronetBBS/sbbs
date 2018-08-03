@@ -1061,8 +1061,8 @@ bool sbbs_t::editfile(char *fname, bool msg)
 			return false;
 		l=process_edited_file(msgtmp, path, /* mode: */WM_EDIT, &lines,maxlines);
 		if(l>0) {
-			SAFEPRINTF4(str,"%s created or edited file: %s (%ld bytes, %u lines)"
-				,useron.alias, path, l, lines);
+			SAFEPRINTF3(str,"created or edited file: %s (%ld bytes, %u lines)"
+				,path, l, lines);
 			logline(LOG_NOTICE,nulstr,str);
 		}
 		rioctl(IOSM|PAUSE|ABORT); 
@@ -1109,8 +1109,8 @@ bool sbbs_t::editfile(char *fname, bool msg)
 	bprintf(text[SavedNBytes],l,lines);
 	fclose(stream);
 	free(buf);
-	SAFEPRINTF4(str,"%s created or edited file: %s (%ld bytes, %u lines)"
-		,useron.alias, fname, l, lines);
+	SAFEPRINTF3(str,"created or edited file: %s (%ld bytes, %u lines)"
+		,fname, l, lines);
 	logline(nulstr,str);
 	return true;
 }
@@ -1217,8 +1217,7 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 		copyfattach(usernumber,useron.number,msg->subj);
 
 	bprintf(text[Forwarded],username(&cfg,usernumber,str),usernumber);
-	SAFEPRINTF3(str,"%s forwarded mail to %s #%d"
-		,useron.alias
+	SAFEPRINTF2(str,"forwarded mail to %s #%d"
 		,username(&cfg,usernumber,tmp)
 		,usernumber);
 	logline("E+",str);
@@ -1525,8 +1524,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 
 	bprintf("\r\nMoved to %s %s\r\n\r\n"
 		,cfg.grp[usrgrp[newgrp]]->sname,cfg.sub[newsub]->lname);
-	safe_snprintf(str,sizeof(str),"%s moved message from %s %s to %s %s"
-		,useron.alias
+	safe_snprintf(str,sizeof(str),"moved message from %s %s to %s %s"
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname
 		,cfg.grp[newgrp]->sname,cfg.sub[newsub]->sname);
 	logline("M+",str);

@@ -364,8 +364,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	user_posted_msg(&cfg, &useron, 1);
 	bprintf(text[Posted],cfg.grp[cfg.sub[subnum]->grp]->sname
 		,cfg.sub[subnum]->lname);
-	sprintf(str,"%s posted on %s %s"
-		,useron.alias,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
+	sprintf(str,"posted on %s %s"
+		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 	logline("P+",str);
 
 	signal_sub_sem(&cfg,subnum);
