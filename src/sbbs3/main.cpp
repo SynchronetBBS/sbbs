@@ -929,7 +929,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		if(cstr==NULL)
 		    return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
-		if(sbbs->online==ON_LOCAL)
+		if(!sbbs->online)
 			sbbs->lputs(LOG_INFO, cstr);
 		else
 			sbbs->bputs(cstr);
@@ -1015,7 +1015,7 @@ js_printf(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(sbbs->online==ON_LOCAL)
+	if(!sbbs->online)
 		sbbs->lputs(LOG_INFO, p);
 	else
 		sbbs->bputs(p);
@@ -1046,7 +1046,7 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	    return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(sbbs->online==ON_LOCAL)
+	if(!sbbs->online)
 		lputs(LOG_WARNING, cstr);
 	else {
 		sbbs->attr(sbbs->cfg.color[clr_err]);
@@ -4564,6 +4564,18 @@ void node_thread(void* arg)
     else
 		lprintf(LOG_WARNING,"Node %d !ORPHANED I/O THREAD(s)",sbbs->cfg.node_num);
 
+	/* crash here July-27-2018:
+ 	ntdll.dll!77282e19()	Unknown
+ 	[Frames below may be incorrect and/or missing, no symbols loaded for ntdll.dll]	
+ 	[External Code]	
+ 	sbbs.dll!pthread_mutex_lock(_RTL_CRITICAL_SECTION * mutex) Line 171	C
+ 	sbbs.dll!protected_uint32_adjust(protected_uint32_t * i, int adjustment) Line 244	C
+ 	sbbs.dll!update_clients() Line 185	C++
+>	sbbs.dll!node_thread(void * arg) Line 4568	C++
+ 	[External Code]	
+
+	node_threads_running	{value=0 mutex={DebugInfo=0x00000000 <NULL> LockCount=-6 RecursionCount=0 ...} }	protected_uint32_t
+	*/
 	update_clients();
 	thread_down();
 }
