@@ -4921,6 +4921,14 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 	exported_echomail += exported;
 }
 
+void del_file_attachments(smbmsg_t* msg)
+{
+	if(!delfattach(&scfg, msg))
+		lprintf(LOG_ERR, "ERROR %d (%s) removing file attachment for message %u (%s)"
+			,errno, strerror(errno), msg->hdr.number, msg->subj);
+}
+		
+
 bool retoss_bad_echomail(void)
 {
 	area_t* badarea;
@@ -5064,7 +5072,7 @@ bool retoss_bad_echomail(void)
 					lprintf(LOG_ERR,"!ERROR %d (%s) deleting msg #%u in bad echo sub"
 						,retval, badsmb.last_error, badmsg.hdr.number);
 				if(badmsg.hdr.auxattr&MSG_FILEATTACH)
-					delfattach(&scfg,&badmsg);
+					del_file_attachments(&badmsg);
 				retossed++;
 			}
 			smb_close(&smb);
@@ -5180,7 +5188,7 @@ int export_netmail(void)
 				lprintf(LOG_ERR,"!ERROR %d (%s) deleting mail msg #%u"
 					,i, email->last_error, msg.hdr.number);
 			if(msg.hdr.auxattr&MSG_FILEATTACH)
-				delfattach(&scfg,&msg);
+				del_file_attachments(&msg);
 			(void)fseek(email->sid_fp, (msg.offset+1)*sizeof(msg.idx), SEEK_SET);
 		} else {
 			/* Just mark as "sent" */
@@ -5189,7 +5197,7 @@ int export_netmail(void)
 				lprintf(LOG_ERR,"!ERROR %s updating msg header for mail msg #%u"
 					, email->last_error, msg.hdr.number);
 			if(msg.hdr.auxattr&MSG_KILLFILE)
-				delfattach(&scfg, &msg);
+				del_file_attachments(&msg);
 		}
 		exported++;
 	}
