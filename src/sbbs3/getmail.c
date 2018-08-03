@@ -84,7 +84,7 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr)
 /***************************/
 /* Delete file attachments */
 /***************************/
-void DLLCALL delfattach(scfg_t* cfg, smbmsg_t* msg)
+BOOL DLLCALL delfattach(scfg_t* cfg, smbmsg_t* msg)
 {
     char dir[MAX_PATH+1];
 	char path[MAX_PATH+1];
@@ -105,12 +105,14 @@ void DLLCALL delfattach(scfg_t* cfg, smbmsg_t* msg)
 		if(!sp) sp=strrchr(tp,'\\');
 		if(sp) tp=sp+1;
 		SAFEPRINTF2(path, "%s/%s", dir, tp);
-		remove(path);
+		if(remove(path) != 0)
+			return FALSE;
 		if(!p)
 			break;
 		tp=p+1; 
 	}
 	rmdir(dir);                     /* remove the dir if it's empty */
+	return TRUE;
 }
 
 /****************************************************************************/
