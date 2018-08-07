@@ -64,7 +64,7 @@ faddr_t atofaddr(const char *instr)
 	*p=0;
 	if(!stricmp(str,"ALL")) {
 		addr.zone=addr.net=addr.node=addr.point=0xffff;
-		return(addr); 
+		return(addr);
 	}
 	addr.zone=addr.net=addr.node=addr.point=0;
 	if((p=strchr(str,':'))!=NULL) {
@@ -134,10 +134,10 @@ const char *faddrtoa(const faddr_t* addr)
 					strcat(str,".ALL");
 				else if(addr->point) {
 					sprintf(tmp,".%u",addr->point);
-					strcat(str,tmp); 
-				} 
-			} 
-		} 
+					strcat(str,tmp);
+				}
+			}
+		}
 	}
 	return(str);
 }
@@ -351,8 +351,16 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		char* domain = strchr(node+5, '@');
 		if(domain != NULL)
 			SAFECOPY(ncfg->domain, domain + 1);
-		if(iniGetString(ini, node, "route", NULL, value) != NULL && value[0])
-			ncfg->route = atofaddr(value);
+		if(iniGetString(ini, node, "route", NULL, value) != NULL && value[0]) {
+			fidoaddr_t addr = atofaddr(value);
+			if(addr.zone != 0 && memcmp(&addr, &ncfg->addr, sizeof(addr)) != 0)
+				ncfg->route = addr;
+		}
+		if(iniGetString(ini, node, "LocalAddress", NULL, value) != NULL && value[0]) {
+			fidoaddr_t addr = atofaddr(value);
+			if(addr.zone != 0 && memcmp(&addr, &ncfg->addr, sizeof(addr)) != 0)
+				ncfg->local_addr = addr;
+		}
 		SAFECOPY(ncfg->password	, iniGetString(ini, node, "AreaFixPwd", "", value));
 		SAFECOPY(ncfg->pktpwd	, iniGetString(ini, node, "PacketPwd", "", value));
 		SAFECOPY(ncfg->sesspwd	, iniGetString(ini, node, "SessionPwd", "", value));
@@ -580,6 +588,10 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 			iniSetString(&ini,section,	"Route"			,faddrtoa(&node->route), &style);
 		else
 			iniRemoveKey(&ini,section,	"Route");
+		if(node->local_addr.zone)
+			iniSetString(&ini,section,	"LocalAddress"	,faddrtoa(&node->local_addr), &style);
+		else
+			iniRemoveKey(&ini,section,	"LocalAddress");
 		iniSetStringList(&ini, section, "GroupHub", ","	,node->grphub		,&style);
 		/* BinkP-related */
 		iniSetString(&ini	,section,	"BinkpHost"		,node->binkp_host	,&style);

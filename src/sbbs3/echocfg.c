@@ -62,7 +62,7 @@ void bail(int code)
 }
 
 /* These correlate with the LOG_* definitions in syslog.h/gen_defs.h */
-static char* logLevelStringList[] 
+static char* logLevelStringList[]
 	= {"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Informational", "Debugging", NULL};
 
 void global_settings(void)
@@ -231,7 +231,7 @@ void global_settings(void)
 static bool new_node(unsigned new_nodenum)
 {
 	nodecfg_t* nodecfg = realloc(cfg.nodecfg, sizeof(nodecfg_t)*(cfg.nodecfgs+1));
-	
+
 	if(nodecfg == NULL)
 		return false;
 
@@ -516,13 +516,13 @@ int main(int argc, char **argv)
 			}
 			SAFECOPY(str,p);
 			backslash(str);
-			SAFECAT(str,"../ctrl/sbbsecho.ini"); 
+			SAFECAT(str,"../ctrl/sbbsecho.ini");
 		}
 		else {
 			SAFECOPY(str,p);
 			backslash(str);
-			SAFECAT(str,"sbbsecho.ini"); 
-		} 
+			SAFECAT(str,"sbbsecho.ini");
+		}
 	}
 	SAFECOPY(cfg.cfgfile,str);
 
@@ -535,12 +535,12 @@ int main(int argc, char **argv)
 	// savnum=0;
 	if((opt=(char **)malloc(sizeof(char *)*1000))==NULL) {
 		puts("memory allocation error\n");
-		exit(1); 
+		exit(1);
 	}
 	for(i=0;i<1000;i++)
 		if((opt[i]=(char *)malloc(MAX_OPLN+1))==NULL) {
 			puts("memory allocation error\n");
-			exit(1); 
+			exit(1);
 		}
 	uifc.size=sizeof(uifc);
 	if(!door_mode) {
@@ -663,7 +663,7 @@ int main(int argc, char **argv)
 							,cfg.nodecfg[u].name[0] ? cfg.nodecfg[u].name : cfg.nodecfg[u].comment);
 					}
 					opt[u][0]=0;
-					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT 
+					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT
 						| WIN_INSACT | WIN_DELACT | WIN_XTR;
 					if(cfg.nodecfgs)
 						mode |= WIN_COPY | WIN_CUT;
@@ -687,11 +687,11 @@ int main(int argc, char **argv)
 							continue;
 						if(!new_node(i)) {
 							printf("\nMemory Allocation Error\n");
-							exit(1); 
+							exit(1);
 						}
 						cfg.nodecfg[i].addr=atofaddr(str);
 						uifc.changes=TRUE;
-						continue; 
+						continue;
 					}
 
 					if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -700,24 +700,24 @@ int main(int argc, char **argv)
 						cfg.nodecfgs--;
 						if(cfg.nodecfgs<=0) {
 							cfg.nodecfgs=0;
-							continue; 
+							continue;
 						}
 						for(u=i;u<cfg.nodecfgs;u++)
 							memcpy(&cfg.nodecfg[u],&cfg.nodecfg[u+1]
 								,sizeof(nodecfg_t));
 						uifc.changes=TRUE;
-						continue; 
+						continue;
 					}
 					if (msk == MSK_COPY) {
 						memcpy(&savnodecfg,&cfg.nodecfg[i],sizeof(nodecfg_t));
-						continue; 
+						continue;
 					}
 					if (msk == MSK_PASTE) {
 						if(!new_node(i))
 							continue;
 						memcpy(&cfg.nodecfg[i],&savnodecfg,sizeof(nodecfg_t));
 						uifc.changes=TRUE;
-						continue; 
+						continue;
 					}
 					while(1) {
 	uifc.helpbuf=
@@ -794,6 +794,12 @@ int main(int argc, char **argv)
 	"    setting is used in combination with the `Auto Add Sub-boards` feature\n"
 	"    to auto-link hubs with the newly added areas in your Area File.\n"
 	"\n"
+	"`Local Address` is an optional local system address (AKA) to use when\n"
+	"    sending packets to this node.  When a Local Address is not specified\n"
+	"    SBBSecho will automatically choose the local address that matches\n"
+	"    the destination address (zone and net number) the closest\n"
+	"    (Best Match).\n"
+	"\n"
 	"`Route To` is only used in Binkley-Style Outbound (BSO/FLO) operating\n"
 	"    mode and is used to set the FTN address to route mail for this node.\n"
 	"\n"
@@ -843,6 +849,9 @@ int main(int argc, char **argv)
 							,cfg.nodecfg[i].send_notify ? "Yes" : "No");
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Uplink for Message Groups"
 							,strListCombine(cfg.nodecfg[i].grphub,str,sizeof(str),","));
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Local Address (AKA)"
+							,cfg.nodecfg[i].local_addr.zone
+							? faddrtoa(&cfg.nodecfg[i].local_addr) : "Best Match");
 						if(cfg.flo_mailer) {
 							snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Route To"
 								,cfg.nodecfg[i].route.zone
@@ -1021,21 +1030,21 @@ int main(int argc, char **argv)
 											continue;
 										strListInsert(&cfg.nodecfg[i].keys, str, k);
 										uifc.changes=TRUE;
-										continue; 
+										continue;
 									}
 
 									if((k&MSK_ON)==MSK_DEL) {
 										k&=MSK_OFF;
 										strListRemove(&cfg.nodecfg[i].keys, k);
 										uifc.changes=TRUE;
-										continue; 
+										continue;
 									}
 									SAFECOPY(str,cfg.nodecfg[i].keys[k]);
 									uifc.input(WIN_MID|WIN_SAV,0,0,"EchoList Key"
 										,str,SBBSECHO_MAX_KEY_LEN,K_EDIT|K_UPPER);
 									strListReplace(cfg.nodecfg[i].keys, k, str);
 									uifc.changes=TRUE;
-									continue; 
+									continue;
 								}
 								break;
 							case __COUNTER__:
@@ -1103,21 +1112,33 @@ int main(int argc, char **argv)
 											continue;
 										strListInsert(&cfg.nodecfg[i].grphub, str, k);
 										uifc.changes=TRUE;
-										continue; 
+										continue;
 									}
 
 									if((k&MSK_ON)==MSK_DEL) {
 										k&=MSK_OFF;
 										strListRemove(&cfg.nodecfg[i].grphub, k);
 										uifc.changes=TRUE;
-										continue; 
+										continue;
 									}
 									SAFECOPY(str,cfg.nodecfg[i].grphub[k]);
 									uifc.input(WIN_MID|WIN_SAV,0,0,"Message Group (short name)"
 										,str,LEN_GSNAME,K_EDIT|K_UPPER);
 									strListReplace(cfg.nodecfg[i].grphub, k, str);
 									uifc.changes=TRUE;
-									continue; 
+									continue;
+								}
+								break;
+							case __COUNTER__:
+								SAFECOPY(str,faddrtoa(&cfg.nodecfg[i].local_addr));
+								if(uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Local Source Address (AKA) to Use",str
+									,25,K_EDIT) >= 0) {
+									if(str[0])
+										cfg.nodecfg[i].local_addr = atofaddr(str);
+									else
+										cfg.nodecfg[i].local_addr.zone = 0;
+									uifc.changes=TRUE;
 								}
 								break;
 							case __COUNTER__:
@@ -1153,8 +1174,8 @@ int main(int argc, char **argv)
 							case __COUNTER__:
 								binkp_settings(&cfg.nodecfg[i]);
 								break;
-						} 
-					} 
+						}
+					}
 				}
 				break;
 
@@ -1312,7 +1333,7 @@ int main(int argc, char **argv)
 							uifc.input(WIN_L2R|WIN_SAV,0,0,"Log File"
 								,cfg.logfile,sizeof(cfg.logfile)-1
 								,K_EDIT);
-							break; 
+							break;
 
 						case 6:
 	uifc.helpbuf=
@@ -1323,7 +1344,7 @@ int main(int argc, char **argv)
 							uifc.input(WIN_L2R|WIN_SAV,0,0,"EchoStats File"
 								,cfg.echostats,sizeof(cfg.echostats)-1
 								,K_EDIT);
-							break; 
+							break;
 
 						case 7:
 	uifc.helpbuf=
@@ -1334,7 +1355,7 @@ int main(int argc, char **argv)
 							uifc.input(WIN_L2R|WIN_SAV,0,0,"Temp Dir"
 								,cfg.temp_dir,sizeof(cfg.temp_dir)-1
 								,K_EDIT);
-							break; 
+							break;
 
 						case 8:
 	uifc.helpbuf=
@@ -1345,8 +1366,8 @@ int main(int argc, char **argv)
 							uifc.input(WIN_L2R|WIN_SAV,0,0,"Outgoing Sem File"
 								,cfg.outgoing_sem,sizeof(cfg.outgoing_sem)-1
 								,K_EDIT);
-							break; 
-					} 
+							break;
+					}
 				}
 				break;
 
@@ -1538,7 +1559,7 @@ int main(int argc, char **argv)
 								cfg.max_netmail_age = (ulong)parse_duration(str);
 							break;
 
-					} 
+					}
 				}
 				break;
 
@@ -1804,7 +1825,7 @@ int main(int argc, char **argv)
 								cfg.max_echomail_age = (ulong)parse_duration(str);
 							break;
 
-					} 
+					}
 				}
 				break;
 
@@ -1843,10 +1864,10 @@ int main(int argc, char **argv)
 							continue;
 						if(!new_arcdef(i)) {
 							printf("\nMemory Allocation Error\n");
-							exit(1); 
+							exit(1);
 						}
 						SAFECOPY(cfg.arcdef[i].name,str);
-						continue; 
+						continue;
 					}
 
 					if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -1855,22 +1876,22 @@ int main(int argc, char **argv)
 						cfg.arcdefs--;
 						if(cfg.arcdefs<=0) {
 							cfg.arcdefs=0;
-							continue; 
+							continue;
 						}
 						for(u=i;u<cfg.arcdefs;u++)
 							memcpy(&cfg.arcdef[u],&cfg.arcdef[u+1]
 								,sizeof(arcdef_t));
-						continue; 
+						continue;
 					}
 					if (msk == MSK_COPY) {
 						memcpy(&savarcdef,&cfg.arcdef[i],sizeof(arcdef_t));
-						continue; 
+						continue;
 					}
 					if (msk == MSK_PASTE) {
 						if(!new_arcdef(i))
 							continue;
 						memcpy(&cfg.arcdef[i],&savarcdef,sizeof(arcdef_t));
-						continue; 
+						continue;
 					}
 					if (msk != 0)
 						continue;
@@ -1981,8 +2002,8 @@ int main(int argc, char **argv)
 									,cfg.arcdef[i].unpack,sizeof(cfg.arcdef[i].unpack)-1
 									,K_EDIT);
 								break;
-						} 
-					} 
+						}
+					}
 				}
 				break;
 
@@ -1996,7 +2017,7 @@ int main(int argc, char **argv)
 						snprintf(opt[u], MAX_OPLN-1, "%-*s  %s"
 							,FIDO_DOMAIN_LEN, cfg.domain_list[u].name, cfg.domain_list[u].dns_suffix);
 					opt[u][0]=0;
-					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT 
+					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT
 						| WIN_INSACT | WIN_DELACT | WIN_XTR;
 					if(cfg.domain_count)
 						mode |= WIN_COPY | WIN_CUT;
@@ -2017,10 +2038,10 @@ int main(int argc, char **argv)
 							continue;
 						if(!new_domain(i)) {
 							printf("\nMemory Allocation Error\n");
-							exit(1); 
+							exit(1);
 						}
 						SAFECOPY(cfg.domain_list[i].name, str);
-						continue; 
+						continue;
 					}
 
 					if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -2029,21 +2050,21 @@ int main(int argc, char **argv)
 						cfg.domain_count--;
 						if(cfg.domain_count <= 0) {
 							cfg.domain_count = 0;
-							continue; 
+							continue;
 						}
 						for(u=i; u < cfg.domain_count; u++)
 							memcpy(&cfg.domain_list[u], &cfg.domain_list[u+1], sizeof(struct fido_domain));
-						continue; 
+						continue;
 					}
 					if (msk == MSK_COPY) {
 						memcpy(&savedomain, &cfg.domain_list[i], sizeof(savedomain));
-						continue; 
+						continue;
 					}
 					if (msk == MSK_PASTE) {
 						if(!new_domain(i))
 							continue;
 						memcpy(&cfg.domain_list[i], &savedomain, sizeof(savedomain));
-						continue; 
+						continue;
 					}
 					if (msk != 0)
 						continue;
@@ -2102,8 +2123,8 @@ int main(int argc, char **argv)
 									,cfg.domain_list[i].nodelist,sizeof(cfg.domain_list[i].nodelist)-1
 									,K_EDIT);
 								break;
-						} 
-					} 
+						}
+					}
 				}
 				break;
 
@@ -2118,7 +2139,7 @@ int main(int argc, char **argv)
 					for(u=0;u<cfg.listcfgs;u++)
 						snprintf(opt[u],MAX_OPLN-1,"%s",cfg.listcfg[u].listpath);
 					opt[u][0]=0;
-					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT 
+					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT
 						| WIN_INSACT | WIN_DELACT | WIN_XTR;
 					if(cfg.listcfgs)
 						mode |= WIN_COPY | WIN_CUT;
@@ -2140,10 +2161,10 @@ int main(int argc, char **argv)
 							continue;
 						if(!new_list(i)) {
 							printf("\nMemory Allocation Error\n");
-							exit(1); 
+							exit(1);
 						}
 						SAFECOPY(cfg.listcfg[i].listpath,str);
-						continue; 
+						continue;
 					}
 
 					if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -2152,22 +2173,22 @@ int main(int argc, char **argv)
 						cfg.listcfgs--;
 						if(cfg.listcfgs<=0) {
 							cfg.listcfgs=0;
-							continue; 
+							continue;
 						}
 						for(u=i;u<cfg.listcfgs;u++)
 							memcpy(&cfg.listcfg[u],&cfg.listcfg[u+1]
 								,sizeof(echolist_t));
-						continue; 
+						continue;
 					}
 					if (msk == MSK_COPY) {
 						memcpy(&savlistcfg,&cfg.listcfg[i],sizeof(echolist_t));
-						continue; 
+						continue;
 					}
 					if (msk == MSK_PASTE) {
 						if(!new_list(i))
 							continue;
 						memcpy(&cfg.listcfg[i],&savlistcfg,sizeof(echolist_t));
-						continue; 
+						continue;
 					}
 					if (msk != 0)
 						continue;
@@ -2229,19 +2250,19 @@ int main(int argc, char **argv)
 											,K_EDIT|K_UPPER)<1)
 											continue;
 										strListInsert(&cfg.listcfg[i].keys,str,x);
-										continue; 
+										continue;
 									}
 
 									if((x&MSK_ON)==MSK_DEL) {
 										x&=MSK_OFF;
 										strListRemove(&cfg.listcfg[i].keys,x);
-										continue; 
+										continue;
 									}
 									SAFECOPY(str,cfg.listcfg[i].keys[x]);
 										uifc.input(WIN_MID|WIN_SAV,0,0,"EchoList Keys"
 											,str,SBBSECHO_MAX_KEY_LEN,K_EDIT|K_UPPER);
 										strListReplace(cfg.listcfg[i].keys,x,str);
-										continue; 
+										continue;
 								}
 								break;
 							case 2:
@@ -2273,8 +2294,8 @@ int main(int argc, char **argv)
 									,cfg.listcfg[i].password,sizeof(cfg.listcfg[i].password)-1
 									,K_EDIT|K_UPPER);
 								break;
-						} 
-					} 
+						}
+					}
 				}
 				break;
 
