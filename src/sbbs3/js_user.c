@@ -128,7 +128,7 @@ enum {
 
 static void js_getuserdat(scfg_t* scfg, private_t* p)
 {
-	if(!p->cached) {
+	if(p->user->number != 0 && !p->cached) {
 		if(p->file < 1)
 			p->file = openuserdat(scfg, /* for_modify: */FALSE);
 		if(fgetuserdat(scfg, p->user, p->file)==0)
