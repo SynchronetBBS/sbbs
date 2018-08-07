@@ -1568,6 +1568,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 		p->storage = *user;
 		if(global_user)
 			p->user = user;
+		p->cached = TRUE;
 	}
 
 	JS_SetPrivate(cx, userobj, p);	
