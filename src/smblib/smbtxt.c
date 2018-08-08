@@ -313,6 +313,9 @@ static BOOL mime_getattachment(char* beg, char* end, char* attachment)
 			term = filename + sizeof(fname) - 1;
 		memcpy(fname, filename, term - filename);
 		fname[term - filename] = 0;
+		term = fname;
+		FIND_WHITESPACE(term);
+		*term = 0;
 		strcpy(attachment, getfname(fname));
 		return TRUE;
 	}
