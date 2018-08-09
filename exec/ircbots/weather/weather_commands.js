@@ -54,6 +54,7 @@ Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 				str += " - " + Weather.weather;
 				str += ", "+ Weather.temp_c+" degrees ("+(parseInt(Weather.temp_c)+273)+"K, "+Weather.temp_f+"F)";
 				str += " Wind "+Weather.wind_string;
+				str += " Relative Humidity: "+Weather.relative_humidity;
 				if(Weather.display_location.city != Weather.observation_location.city)
 					str += " (Observed at: " + Weather.observation_location.city + ")";
 				str += ' (Provided by Weather Underground, Inc.)';
