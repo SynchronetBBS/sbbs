@@ -36,6 +36,8 @@ function get_posts_by(name, subs)
 			msgs=mb.total_msgs;
 			for(i=0; i<msgs; i++) {
 				idx=mb.get_msg_index(true, i);
+				if (idx == null)
+					continue;
 				if(idx.attr & MSG_DELETE)
 					continue;
 				if(idx.from==crc) {
