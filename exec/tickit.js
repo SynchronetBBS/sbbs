@@ -24,8 +24,8 @@
  */
 
 load("sbbsdefs.js");
-load("fidocfg.js");
-load("fido.js");
+require("fidocfg.js", 'TickITCfg');
+require("fido.js", 'FIDO');
 
 var sbbsecho = new SBBSEchoCfg();
 var tickit = new TickITCfg();
@@ -214,34 +214,6 @@ function add_links(seenbys, links, list)
 	}
 }
 
-function parse_addr(addr, dz)
-{
-	var m;
-	var ret={zone:dz, net:0, node:0, point:0};
-
-	m = addr.match(/^([0-9]+):/);
-	if (m !== null)
-		ret.zone = parseInt(m[1], 10);
-
-	m = addr.match(/([0-9]+)\//);
-	if (m !== null)
-		ret.net = parseInt(m[1], 10);
-
-	m = addr.match(/\/([0-9]+)/);
-	if (m !== null)
-		ret.node = parseInt(m[1], 10);
-
-	m = addr.match(/\.([0-9]+)/);
-	if (m !== null)
-		ret.point = parseInt(m[1], 10);
-
-	m = addr.match(/@.+$/);
-	if (m !== null)
-		ret.domain = m[1];
-
-	return ret;
-}
-
 function get_zone(addr)
 {
 	var m;
@@ -268,12 +240,17 @@ function forward_tic(tic)
 	var flobase;
 	var pw;
 	var i;
+	var addrs;
+	var saddr;
 
 	defzone = get_zone(system.fido_addr_list[0]);
 	if (defzone === undefined) {
-		log(LOG_ERROR, "Unable to detect default zone!");
+		log(LOG_ERROR, "Unable to detect fido_addr_listdefault zone!");
 		return false;
 	}
+
+	for (saddr in system.fido_addr_list)
+		addrs.push(FIDO.parse_addr(system.fido_addr_list[saddr]));
 
 	// Add us to the path...
 	tic.path.push(system.fido_addr_list[0]);
@@ -310,7 +287,7 @@ function forward_tic(tic)
 			pw = '';
 
 		// Figure out the outbound dir...
-		addr = parse_addr(link, defzone);
+		addr = FIDO.parse_addr(link, defzone);
 		if (addr.zone === undefined)
 			addr.zone = defzone;
 
@@ -341,7 +318,9 @@ function forward_tic(tic)
 		}
 		tf.write(tic[' forward'].join("\r\n"));
 		tf.write('\r\n');
-		tf.write('From '+system.fido_addr_list[0]+'\r\n');
+		// TODO: Use BinkpSourceAddress?
+		FIDO.distance_sort(addrs, addr);
+		tf.write('From '+addrs[0]+'\r\n');
 		tf.write('To '+link+'\r\n');
 		tf.write('Pw '+pw+'\r\n');
 		for (i=0; i<tic.path.length; i++)

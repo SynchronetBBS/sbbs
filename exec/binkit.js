@@ -566,45 +566,7 @@ function callout(addr, scfg, locks, bicfg)
 	else
 		src_addr = addr;
 	// Sort by "distance" from src_addr address.
-	bp.addr_list.sort(function(addr1, addr2) {
-		var dist1;
-		var dist2;
-
-		if (addr1.str === src_addr.str)
-			return -1;
-		if (addr2.str === src_addr.str)
-			return 1;
-		if (addr1.domain !== addr2.domain) {
-			if (addr1.domain === src_addr.domain)
-				return -1;
-			if (addr2.domain === src_addr.domain)
-				return 1;
-			if (addr1.domain < addr2.domain)
-				return -1;
-			return 1;
-		}
-		if (addr1.zone !== addr2.zone) {
-			dist1 = Math.abs(addr1.zone - src_addr.zone);
-			dist2 = Math.abs(addr2.zone - src_addr.zone);
-			return dist1-dist2;
-		}
-		if (addr1.net !== addr2.net) {
-			dist1 = Math.abs(addr1.net - src_addr.net);
-			dist2 = Math.abs(addr2.net - src_addr.net);
-			return dist1-dist2;
-		}
-		if (addr1.node !== addr2.node) {
-			dist1 = Math.abs(addr1.node - src_addr.node);
-			dist2 = Math.abs(addr2.node - src_addr.node);
-			return dist1-dist2;
-		}
-		if (addr1.point !== addr2.point) {
-			dist1 = Math.abs(addr1.point - src_addr.point);
-			dist2 = Math.abs(addr2.point - src_addr.point);
-			return dist1-dist2;
-		}
-		return 0;
-	});
+	FIDO.distance_sort(bp.addr_list, src_addr);
 
 	log(LOG_DEBUG, format("connecting to %s at %s", addr, host));
 	// We won't add files until the auth finishes...

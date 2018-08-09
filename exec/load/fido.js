@@ -37,6 +37,10 @@ require('fido_syscfg.js', 'FTNDomains');
  * 		it containing all the nodelist entries (4D address is the key
  * 		unless domain is specified in which case 5D address is the key).
  * 		If warn is true, will warn on "illegal" values (per FTS-0005).
+ *
+ * FIDO.distance_sort(array, anchor)
+ *		Sorts an array of addresses by increasing distance from anchor.
+ *		The elements of the array and anchor should be FIDO.Addr objects.
  */
 
 var FIDO = {
@@ -424,7 +428,7 @@ var FIDO = {
 				this.messages.push(new FIDO.PackedMessage(this, offset));
 			}
 		}
-	}
+	},
 	/*
 	 * Suggested kludge lines:
 	 * INTL: (FTS-0001)
@@ -433,6 +437,49 @@ var FIDO = {
 	 * TZUTC: (FTS-4008)
 	 * PID: (FTS-
 	 */
+	distance_sort:function(addrs, anchor)
+	{
+		// Sort by "distance" from anchor.
+		addrs.sort(function(addr1, addr2) {
+			var dist1;
+			var dist2;
+
+			if (addr1.str === anchor.str)
+				return -1;
+			if (addr2.str === anchor.str)
+				return 1;
+			if (addr1.domain !== addr2.domain) {
+				if (addr1.domain === anchor.domain)
+					return -1;
+				if (addr2.domain === anchor.domain)
+					return 1;
+				if (addr1.domain < addr2.domain)
+					return -1;
+				return 1;
+			}
+			if (addr1.zone !== addr2.zone) {
+				dist1 = Math.abs(addr1.zone - anchor.zone);
+				dist2 = Math.abs(addr2.zone - anchor.zone);
+				return dist1-dist2;
+			}
+			if (addr1.net !== addr2.net) {
+				dist1 = Math.abs(addr1.net - anchor.net);
+				dist2 = Math.abs(addr2.net - anchor.net);
+				return dist1-dist2;
+			}
+			if (addr1.node !== addr2.node) {
+				dist1 = Math.abs(addr1.node - anchor.node);
+				dist2 = Math.abs(addr2.node - anchor.node);
+				return dist1-dist2;
+			}
+			if (addr1.point !== addr2.point) {
+				dist1 = Math.abs(addr1.point - anchor.point);
+				dist2 = Math.abs(addr2.point - anchor.point);
+				return dist1-dist2;
+			}
+			return 0;
+		});
+	}
 };
 Object.defineProperties(FIDO.Addr.prototype, {
 	'str': {
