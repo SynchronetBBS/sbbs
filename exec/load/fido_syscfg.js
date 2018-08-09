@@ -22,6 +22,7 @@ function SBBSEchoCfg ()
 {
 	var line;
 	var m;
+	var ecfg;
 
 	this.inb = [];
 	this.pktpass = {};
