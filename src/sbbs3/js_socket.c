@@ -1411,7 +1411,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 			}
 		}
 
-		if((got=js_socket_recv(p, &ch, 1, 0, i?1000:timeout))!=1) {
+		if((got=js_socket_recv(p, &ch, 1, 0, i?1:timeout))!=1) {
 			if(p->session==-1) {
 				p->last_error=ERROR_VALUE;
 				break;
