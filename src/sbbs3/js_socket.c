@@ -203,6 +203,9 @@ static BOOL js_socket_peek_byte(js_socket_private_t *p)
 	return FALSE;
 }
 
+/* Returns > 0 upon successful data received (even if there was an error or disconnection) */
+/* Returns -1 upon error (and no data received) */
+/* Returns 0 upon timeout or disconnection (and no data received) */
 static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, int flags, int timeout)
 {
 	ptrdiff_t	total=0;
@@ -1332,6 +1335,10 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+/* Returns 0 if there is rx data waiting */
+/* Returns 1 if the 'timeout' period has elapsed (with no data waiting) */
+/* Returns 2 if the socket has been disconnected (regardless of any data waiting) */
+/* Returns 3 if there was no rx data waiting and the 'timeout' period has not yet elapsed */
 static int
 js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i)
 {
@@ -1344,9 +1351,6 @@ js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i)
 
 	if(!socket_check(p->sock,&rd,NULL,1000)) {
 		p->last_error=ERROR_VALUE;
-		if(i==0) {
-			return 1;
-		}
 		return 2;
 	}
 
@@ -1360,6 +1364,7 @@ js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i)
 	return 0;
 }
 
+/* This method is to return null on error/timeout, not void/undefined */
 static JSBool
 js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -1375,7 +1380,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	js_socket_private_t*	p;
 	jsrefcount	rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
 	if((p=(js_socket_private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -1398,34 +1403,30 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	for(i=0;i<len;) {
 		if(p->session==-1) {
 			switch(js_sock_read_check(p,start,timeout,i)) {
-				case 1:
-					JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+				case 1:	// time-out */
+				case 2: // disconnected
+					if(i) {		// some data was received before the error/disconnection
+						len=0;	// so break the loop
+						continue;
+					}
+					// no data received, so just return null
 					JS_RESUMEREQUEST(cx, rc);
 					free(buf);
-					return(JS_TRUE);	/* time-out */
-				case 2:
-					len=0;
-					continue;
-				case 3:
+					return JS_TRUE;
+				case 3:	// no data and no time-out... yet
 					continue;
 			}
 		}
 
 		if((got=js_socket_recv(p, &ch, 1, 0, i?1:timeout))!=1) {
-			if(p->session==-1) {
-				p->last_error=ERROR_VALUE;
-				break;
+			if(p->session == -1)
+				p->last_error = ERROR_VALUE;
+			if (i == 0) {			// no data received
+				JS_RESUMEREQUEST(cx, rc);
+				free(buf);			// so return null (not an empty string)
+				return(JS_TRUE);
 			}
-			else {
-				if (got == 0) {
-					free(buf);
-					return(JS_TRUE);	/* time-out */
-				}
-				if (got == -1) {
-					len = 0;
-					continue;
-				}
-			}
+			break;
 		}
 
 		if(ch=='\n' /* && i>=1 */) /* Mar-9-2003: terminate on sole LF */
