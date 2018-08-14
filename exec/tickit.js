@@ -240,7 +240,7 @@ function forward_tic(tic)
 	var flobase;
 	var pw;
 	var i;
-	var addrs;
+	var addrs = [];
 	var saddr;
 
 	defzone = get_zone(system.fido_addr_list[0]);
