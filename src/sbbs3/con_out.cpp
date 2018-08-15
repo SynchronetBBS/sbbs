@@ -300,7 +300,7 @@ void sbbs_t::outchar(char ch)
 		outchar_esc=0;
 
 	if(lncntr==rows-1 && ((useron.misc&UPAUSE) || sys_status&SS_PAUSEON) 
-		&& !(sys_status&SS_PAUSEOFF)) {
+		&& !(sys_status&(SS_PAUSEOFF|SS_ABORT))) {
 		lncntr=0;
 		pause(); 
 	}
