@@ -134,6 +134,22 @@ if(!no_anonymous)
 
 while(client.socket.is_connected && !quit) {
 
+	if(bogus_cmd_counter) {
+		log(LOG_DEBUG, "Throttling bogus command sending clinet for " + bogus_cmd_counter + " seconds");
+		sleep(bogus_cmd_counter * 1000);	// Throttle
+	}
+
+	if(user.security.restrictions&UFLAG_G	/* Only guest/anonymous logins can be "bogus" */
+		&& bogus_cmd_counter >= max_bogus_cmds) {
+		log(format("!TOO MANY BOGUS COMMANDS (%u)", bogus_cmd_counter));
+		if(filter_bogus_clients) {
+			log(LOG_NOTICE,"!FILTERING CLIENT'S IP ADDRESS: " + client.ip_address);
+			system.filter_ip("NNTP","- TOO MANY BOGUS COMMANDS (Example: " + cmdline +")"
+				, client.host_name, client.ip_address, client.user_name);
+		}
+		break;
+	}
+
 	// Get Request
 	cmdline = client.socket.recvline(1024 /*maxlen*/, 300 /*timeout*/);
 
@@ -145,8 +161,10 @@ while(client.socket.is_connected && !quit) {
 		break;
 	}
 
-	if(cmdline=="") 	/* ignore blank commands */
+	if(cmdline=="") {	/* ignore blank commands */
+		bogus_cmd_counter++;
 		continue;
+	}
 
 	log((selected==null ? "":("["+selected.newsgroup+"] ")) +format("cmd: %s",cmdline));
 
@@ -923,17 +941,6 @@ while(client.socket.is_connected && !quit) {
 			writeln("500 Syntax error or unknown command");
 			log(LOG_NOTICE,"!unknown command");
 			break;
-	}
-
-	if(user.security.restrictions&UFLAG_G	/* Only guest/anonymous logins can be "bogus" */
-		&& bogus_cmd_counter >= max_bogus_cmds) {
-		log(format("!TOO MANY BOGUS COMMANDS (%u)", bogus_cmd_counter));
-		if(filter_bogus_clients) {
-			log(LOG_NOTICE,"!FILTERING CLIENT'S IP ADDRESS: " + client.ip_address);
-			system.filter_ip("NNTP","- TOO MANY BOGUS COMMANDS (Example: " + cmdline +")"
-				, client.host_name, client.ip_address, client.user_name);
-		}
-		break;
 	}
 }
 
