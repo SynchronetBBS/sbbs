@@ -841,6 +841,8 @@ void xfer_cfg()
 								if(tmpdir.path[0]
 									&& strcmp(cfg.dir[j]->path, tmpdir.path) == 0)	/* same path? overwrite the dir entry */
 									break;
+								if(stricmp(cfg.dir[j]->sname, tmpdir.sname) == 0)
+									break;
 							} else {
 								if((cfg.lib[i]->code_prefix[0] || cfg.lib[cfg.dir[j]->lib]->code_prefix[0]))
 									continue;
