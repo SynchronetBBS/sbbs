@@ -38,7 +38,7 @@ while(bbs.online) {
 			if(!name)
 				break;
 			if(name.indexOf('@') > 0) {
-				bbs.netmail(name); 
+				bbs.netmail(name);
 				break;
 			}
 			var number = bbs.finduser(name);
@@ -57,7 +57,7 @@ while(bbs.online) {
 			if((netmail&NMAIL_FILE) && !console.noyes("Attach a file"))
 				wm_mode = WM_FILE;
 			console.print(bbs.text(text.EnterNetMailAddress));
-			var addr_list = userprops.get("netmail sent", "address", []);
+			var addr_list = userprops.get("netmail sent", "address", []) || [];
 			var addr = console.getstr(60, K_LINE, addr_list);
 			if(!addr || console.aborted)
 				break;
