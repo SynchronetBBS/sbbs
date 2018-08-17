@@ -11,7 +11,7 @@ function get(section, key, deflt, usernum)
 		usernum = user.number;
 	var file = new File(filename(usernum));
 	if(!file.open('r'))
-		return false;
+		return deflt;
 	var result;
 	if(!section)
 		result = file.iniGetAllObjects();
@@ -30,8 +30,9 @@ function set(section, key, value, usernum)
 	var file = new File(filename(usernum));
 	if(!file.open(file.exists ? 'r+':'w+'))
 		return false;
-	file.iniSetValue(section, key, value);
+	var result = file.iniSetValue(section, key, value);
 	file.close();
+	return result;
 }
 
 this;
