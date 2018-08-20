@@ -356,11 +356,11 @@ function getMailBody(number) {
 
     var decoded = mimeDecode(header, body, 'mail');
     ret.type = decoded.type;
-    if (ret.type == 'html') {
-      ret.body = html_decode(decoded.body);
-    } else {
+//    if (ret.type == 'html') {
+//      ret.body = html_decode(decoded.body);
+//    } else {
       ret.body = formatMessage(decoded.body);
-    }
+//    }
     ret.inlines = decoded.inlines;
     ret.attachments = decoded.attachments;
 
