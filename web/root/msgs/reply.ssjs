@@ -81,10 +81,15 @@ if(sub=='mail') {
 }
 
 title="Reply to message";
-write_template("header.inc");
-load(topnav_html);
-load(leftnav_html);
+
+if(do_header)
+    write_template("header.inc");
+if(do_topnav)
+    load(topnav_html);
+if(do_leftnav)
+    load(leftnav_html);
 write_template("msgs/reply.inc");
-write_template("footer.inc");
+if(do_footer)
+    write_template("footer.inc");
 
 msgs_done();
