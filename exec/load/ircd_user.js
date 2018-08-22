@@ -310,6 +310,7 @@ function User_Work(cmdline) {
 			this.numeric(409,":No origin specified.");
 			break;
 		}
+    if (cmd[1][0] == ":") cmd[1] = cmd[1].slice(1);
 		if (cmd[2]) {
 			if (cmd[2][0] == ":")
 				cmd[2] = cmd[2].slice(1);
@@ -651,7 +652,7 @@ function User_Work(cmdline) {
 		case "U":
 			for (myuser in Users) {
 				var usr = Users[myuser];
-				this.server_notice(usr.nick + "," + usr.local + "," 
+				this.server_notice(usr.nick + "," + usr.local + ","
 					+ usr.parent + "," + usr.id);
 			}
 			break;
@@ -1155,7 +1156,7 @@ function User_Work(cmdline) {
 					+ " is rehashing akills");
 				for (kl in KLines) {
 					if(KLines[kl].type == "A")
-						delete KLines[kl];                                              
+						delete KLines[kl];
 				}
 				break;
 			default:
@@ -1566,4 +1567,3 @@ function User_IsSilenced(sil_mask) {
 	}
 	return 0; /* Not Silenced. */
 }
-
