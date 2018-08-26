@@ -69,6 +69,8 @@ SBBSEchoCfg.prototype.get_ticpw = function(node)
 			return this.ticpass[n];
 		if (n === 'ALL')
 			break;
+		if (n.indexOf('@') !== -1)
+			n = n.replace(/@.*$/,'');
 		if (n.indexOf('ALL') !== -1)
 			n = n.replace(/[0-9]+[^0-9]ALL$/, 'ALL');
 		else
