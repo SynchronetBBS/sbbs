@@ -469,7 +469,7 @@ typedef struct {
 /********************************/
 /* Handy Pointer-freeing Macros */
 /********************************/
-#define FREE_AND_NULL(x)                if(x!=NULL) { FREE(x); x=NULL; }
+#define FREE_AND_NULL(x)                if((x)!=NULL) { FREE(x); (x)=NULL; }
 #define FREE_LIST_ITEMS(list,i)         if(list!=NULL) {                                \
 											for(i=0;list[i]!=NULL;i++)      \
 												FREE_AND_NULL(list[i]); \
