@@ -532,7 +532,9 @@ static char* ini_set_string(str_list_t* list, const char* section, const char* k
 	char	str[INI_MAX_LINE_LEN];
 	char	litstr[INI_MAX_VALUE_LEN];
 	char	curval[INI_MAX_VALUE_LEN];
-	const char*	value_separator;
+	const char* key_prefix = "";
+	const char* value_separator = "=";
+	const char* literal_separator = ":";
 	size_t	i;
 
 	if(style==NULL)
@@ -543,22 +545,21 @@ static char* ini_set_string(str_list_t* list, const char* section, const char* k
 	if(key==NULL)
 		return(NULL);
 	if(style->key_prefix==NULL)
-		style->key_prefix="";
+		key_prefix = style->key_prefix;
 	if(style->value_separator==NULL)
-		style->value_separator="=";
+		value_separator = style->value_separator;
 	if(style->literal_separator==NULL)
-		style->literal_separator=":";
+		literal_separator = style->literal_separator;
 	if(value==NULL)
 		value="";
 	if(literal) {
 		char cstr[INI_MAX_VALUE_LEN];
 		SAFEPRINTF(litstr, "\"%s\"", c_escape_str(value, cstr, sizeof(cstr)-1, /* ctrl_only: */FALSE));
 		value = litstr;
-		value_separator = style->literal_separator;
-	} else
-		value_separator = style->value_separator;
+		value_separator = literal_separator;
+	}
 	safe_snprintf(str, sizeof(str), "%s%-*s%s%s"
-		,style->key_prefix, style->key_len, key, value_separator, value);
+		,key_prefix, style->key_len, key, value_separator, value);
 	i=get_value(*list, section, key, curval, NULL, /* literals_supported: */literal);
 	if((*list)[i]==NULL || *(*list)[i]==INI_OPEN_SECTION_CHAR) {
         while(i && *(*list)[i-1]==0) i--;   /* Insert before blank lines, not after */
@@ -574,7 +575,7 @@ char* DLLCALL iniSetString(str_list_t* list, const char* section, const char* ke
 				 ,ini_style_t* style)
 {
 	BOOL literal = value != NULL && (str_contains_ctrl_char(value) || *value==' ' || *lastchar(value)==' ');
-		
+
 	return ini_set_string(list, section, key, value, literal, style);
 }
 
@@ -807,23 +808,24 @@ char* DLLCALL iniSetBitField(str_list_t* list, const char* section, const char* 
 {
 	char	str[INI_MAX_VALUE_LEN];
 	int		i;
+	const char* bit_separator = "|";
 
 	if(style==NULL)
 		style=&default_style;
 	if(style->bit_separator==NULL)
-		style->bit_separator="|";
+		bit_separator = style->bit_separator;
 	str[0]=0;
 	for(i=0;bitdesc[i].name;i++) {
 		if((value&bitdesc[i].bit)==0)
 			continue;
 		if(str[0])
-			strcat(str,style->bit_separator);
+			strcat(str, bit_separator);
 		strcat(str,bitdesc[i].name);
 		value&=~bitdesc[i].bit;
 	}
 	if(value) {	/* left over bits? */
 		if(str[0])
-			strcat(str,style->bit_separator);
+			strcat(str, bit_separator);
 		sprintf(str+strlen(str), "0x%lX", value);
 	}
 	return iniSetString(list, section, key, str, style);
@@ -1358,7 +1360,7 @@ static BOOL isTrue(const char* value)
 	char*	str;
 	char*	p;
 	BOOL	is_true;
-	
+
 	if(!isalpha(*value))
 		return FALSE;
 
@@ -1370,7 +1372,7 @@ static BOOL isTrue(const char* value)
 	p=str;
 	FIND_CHARSET(p, "; \t");
 	*p=0;
-	
+
 	is_true = (stricmp(str,"TRUE")==0 || stricmp(str,"YES")==0 || stricmp(str,"ON")==0);
 	free(str);
 	return is_true;
@@ -1544,7 +1546,7 @@ int DLLCALL iniGetSocketOptions(str_list_t list, const char* section, SOCKET soc
 	}
 #endif
 	for(i=0;socket_options[i].name!=NULL;i++) {
-		if(socket_options[i].type != 0 
+		if(socket_options[i].type != 0
 				&& socket_options[i].type != type)
 			continue;
 #ifdef IPPROTO_IPV6
