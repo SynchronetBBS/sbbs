@@ -52,12 +52,12 @@ typedef struct {
 } ini_bitdesc_t;
 
 typedef struct {
-	int			key_len;
-	const char* key_prefix;
-	const char* section_separator;
-	const char* value_separator;
-	const char*	bit_separator;
-	const char* literal_separator;
+	int		key_len;
+	char*	key_prefix;
+	char*	section_separator;
+	char*	value_separator;
+	char*	bit_separator;
+	char*	literal_separator;
 } ini_style_t;
 
 #if defined(__cplusplus)
@@ -237,7 +237,7 @@ DLLEXPORT char* DLLCALL		iniSetDateTime(str_list_t*, const char* section, const 
 					,ini_style_t*);
 DLLEXPORT char* DLLCALL		iniSetEnum(str_list_t*, const char* section, const char* key, str_list_t names
 					,unsigned value, ini_style_t*);
-DLLEXPORT char* DLLCALL		iniSetEnumList(str_list_t*, const char* section, const char* key 
+DLLEXPORT char* DLLCALL		iniSetEnumList(str_list_t*, const char* section, const char* key
 					,const char* sep, str_list_t names, unsigned* values, unsigned count, ini_style_t*);
 DLLEXPORT char* DLLCALL		iniSetNamedInt(str_list_t*, const char* section, const char* key, named_long_t*
 					,long value, ini_style_t*);
