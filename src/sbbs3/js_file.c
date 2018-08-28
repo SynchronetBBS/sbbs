@@ -1,4 +1,5 @@
 /* Synchronet JavaScript "File" Object */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -916,14 +917,14 @@ js_iniSetValue_internal(JSContext *cx, JSObject *obj, uintN argc, jsval* argv, s
 
 	if(value==JSVAL_VOID) { 	/* unspecified value */
 		rc=JS_SUSPENDREQUEST(cx);
-		result = iniSetString(list,section,key,"",NULL);
+		result = iniSetString(list,section,key,"",&p->ini_style);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	else if(JSVAL_IS_BOOLEAN(value)) {
-		result = iniSetBool(list,section,key,JSVAL_TO_BOOLEAN(value),NULL);
+		result = iniSetBool(list,section,key,JSVAL_TO_BOOLEAN(value),&p->ini_style);
 	}
 	else if(JSVAL_IS_DOUBLE(value)) {
-		result = iniSetFloat(list,section,key,JSVAL_TO_DOUBLE(value),NULL);
+		result = iniSetFloat(list,section,key,JSVAL_TO_DOUBLE(value),&p->ini_style);
 	}
 	else if(JSVAL_IS_NUMBER(value)) {
 		if(!JS_ValueToInt32(cx,value,&i)) {
@@ -932,14 +933,14 @@ js_iniSetValue_internal(JSContext *cx, JSObject *obj, uintN argc, jsval* argv, s
 			return JS_FALSE;
 		}
 		rc=JS_SUSPENDREQUEST(cx);
-		result = iniSetInteger(list,section,key,i,NULL);
+		result = iniSetInteger(list,section,key,i,&p->ini_style);
 		JS_RESUMEREQUEST(cx, rc);
 	} else if(JSVAL_IS_OBJECT(value)
 			&& (value_obj = JSVAL_TO_OBJECT(value))!=NULL
 			&& (strcmp("Date",JS_GetClass(cx, value_obj)->name)==0)) {
 		tt=(time_t)(js_DateGetMsecSinceEpoch(cx,value_obj)/1000.0);
 		rc=JS_SUSPENDREQUEST(cx);
-		result = iniSetDateTime(list,section,key,/* include_time */TRUE, tt,NULL);
+		result = iniSetDateTime(list,section,key,/* include_time */TRUE, tt, &p->ini_style);
 		JS_RESUMEREQUEST(cx, rc);
 	} else {
 		cstr=NULL;
@@ -951,7 +952,7 @@ js_iniSetValue_internal(JSContext *cx, JSObject *obj, uintN argc, jsval* argv, s
 			return JS_FALSE;
 		}
 		rc=JS_SUSPENDREQUEST(cx);
-		result = iniSetString(list,section,key, cstr,NULL);
+		result = iniSetString(list,section,key, cstr, &p->ini_style);
 		FREE_AND_NULL(cstr);
 		JS_RESUMEREQUEST(cx, rc);
 	}
@@ -2312,29 +2313,44 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			p->ini_style.key_len = i;
 			break;
 		case FILE_INI_KEY_PREFIX:
-			JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
-			HANDLE_PENDING(cx, str);
-			p->ini_style.key_prefix = str;
+			FREE_AND_NULL(p->ini_style.key_prefix);
+			if(!JSVAL_NULL_OR_VOID(*vp)) {
+				JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
+				HANDLE_PENDING(cx, str);
+				p->ini_style.key_prefix = str;
+			}
 			break;
 		case FILE_INI_SECTION_SEPARATOR:
-			JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
-			HANDLE_PENDING(cx, str);
-			p->ini_style.section_separator = str;
+			FREE_AND_NULL(p->ini_style.section_separator);
+			if(!JSVAL_NULL_OR_VOID(*vp)) {
+				JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
+				HANDLE_PENDING(cx, str);
+				p->ini_style.section_separator = str;
+			}
 			break;
 		case FILE_INI_VALUE_SEPARATOR:
-			JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
-			HANDLE_PENDING(cx, str);
-			p->ini_style.value_separator = str;
+			FREE_AND_NULL(p->ini_style.value_separator);
+			if(!JSVAL_NULL_OR_VOID(*vp)) {
+				JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
+				HANDLE_PENDING(cx, str);
+				p->ini_style.value_separator = str;
+			}
 			break;
 		case FILE_INI_BIT_SEPARATOR:
-			JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
-			HANDLE_PENDING(cx, str);
-			p->ini_style.bit_separator = str;
+			FREE_AND_NULL(p->ini_style.bit_separator);
+			if(!JSVAL_NULL_OR_VOID(*vp)) {
+				JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
+				HANDLE_PENDING(cx, str);
+				p->ini_style.bit_separator = str;
+			}
 			break;
 		case FILE_INI_LITERAL_SEPARATOR:
-			JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
-			HANDLE_PENDING(cx, str);
-			p->ini_style.literal_separator = str;
+			FREE_AND_NULL(p->ini_style.literal_separator);
+			if(!JSVAL_NULL_OR_VOID(*vp)) {
+				JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
+				HANDLE_PENDING(cx, str);
+				p->ini_style.literal_separator = str;
+			}
 			break;
 	}
 
@@ -2545,18 +2561,28 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case FILE_INI_KEY_PREFIX:
 			s = p->ini_style.key_prefix;
+			if(s == NULL)
+				*vp = JSVAL_NULL;
 			break;
 		case FILE_INI_SECTION_SEPARATOR:
 			s = p->ini_style.section_separator;
+			if(s == NULL)
+				*vp = JSVAL_NULL;
 			break;
 		case FILE_INI_VALUE_SEPARATOR:
 			s = p->ini_style.value_separator;
+			if(s == NULL)
+				*vp = JSVAL_NULL;
 			break;
 		case FILE_INI_BIT_SEPARATOR:
 			s = p->ini_style.bit_separator;
+			if(s == NULL)
+				*vp = JSVAL_NULL;
 			break;
 		case FILE_INI_LITERAL_SEPARATOR:
 			s = p->ini_style.literal_separator;
+			if(s == NULL)
+				*vp = JSVAL_NULL;
 			break;
 
 	}
@@ -2634,11 +2660,11 @@ static char* file_prop_desc[] = {
 	,"calculated 128-bit MD5 digest of file contents as hexadecimal string - <small>READ ONLY</small>"
 	,"calculated 128-bit MD5 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
 	,"ini style: minimum key length (for left-justified white-space padded keys)"
-	,"ini style: key prefix (e.g. ' ', or '\t')"
-	,"ini style: section separator (e.g. '\n')"
-	,"ini style: value separator (e.g. '=' or ' = ')"
-	,"ini style: bit separator (e.g. '|' or ' | ')"
-	,"ini style: literal separator (e.g. ':' or ' : ')"
+	,"ini style: key prefix (e.g. '\t', null = default prefix)"
+	,"ini style: section separator (e.g. '\n', null = default separator)"
+	,"ini style: value separator (e.g. ' = ', null = default separator)"
+	,"ini style: bit separator (e.g. ' | ', null = default separator)"
+	,"ini style: literal separator (null = default separator)"
 	,NULL
 };
 #endif
@@ -2916,7 +2942,7 @@ js_file_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	obj=JS_NewObject(cx, &js_file_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
-	if((str = JS_ValueToString(cx, argv[0]))==NULL) {
+	if(argc < 1 || (str = JS_ValueToString(cx, argv[0]))==NULL) {
 		JS_ReportError(cx,"No filename specified");
 		return(JS_FALSE);
 	}
