@@ -565,17 +565,32 @@ extern "C" int DLLCALL votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const cha
 			(stricmp(remsg.from, user.alias) == 0 || stricmp(remsg.from, user.name) == 0)) {
 			char from[256];
 			char tstr[128];
-			char smsg[256];
+			char smsg[4000];
+			char votes[3000] = "";
 			if(msg->from_net.type)
 				safe_snprintf(from, sizeof(from), "%s (%s)", msg->from, smb_netaddr(&msg->from_net));
 			else
 				SAFECOPY(from, msg->from);
+			if(remsg.hdr.type == SMB_MSG_TYPE_POLL) {
+				int answers = 0;
+				for(int i=0; i<remsg.total_hfields; i++) {
+					if(remsg.hfield[i].type == SMB_POLL_ANSWER) {
+						if(msg->hdr.votes&(1<<answers)) {
+							char vote[128];
+							SAFEPRINTF(vote, " %.78s\r\n", (char*)remsg.hfield_dat[i]);
+							SAFECAT(votes, vote);
+						}
+						answers++;
+					}
+				}
+			}
 			safe_snprintf(smsg, sizeof(smsg), smsgfmt
 				,timestr(cfg, msg->hdr.when_written.time, tstr)
 				,cfg->grp[cfg->sub[smb->subnum]->grp]->sname
 				,cfg->sub[smb->subnum]->sname
 				,from
-				,remsg.subj);
+				,remsg.subj
+				,votes);
 			putsmsg(cfg, user.number, smsg);
 		}
 	}
