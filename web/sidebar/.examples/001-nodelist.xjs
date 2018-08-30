@@ -2,50 +2,55 @@
 
 <div id="sbbs-nodelist"></div>
 <script type="text/javascript">
-var nodeList = function() {
+var nodeList = function () {
 	$.getJSON(
 		'./api/system.ssjs?call=node-list',
 		function (data) {
-			$('#sbbs-nodelist').html(
-				"<h4><?xjs write(_nll.label_title); ?></h4>" +
-				'<table id="sbbs-nodelist-table" ' +
-				'class="table table-condensed table-responsive table-striped">'+
-				'<thead><tr><th><?xjs write(_nll.label_node_column); ?></th><th><?xjs write(_nll.label_status_column); ?></th></tr></thead>' +
-				'<tbody></tbody>' +
-				'</table>'
-			);
-			data.forEach(
-				function (n, index) {
-					var nll = <?xjs write(system.node_list.length); ?>;
-					$('#sbbs-nodelist-table').append(
-						'<tr>' +
-						'<th scope="row">' +
-						(index >= nll ? "W" : (index + 1)) +
-						'</th>' +
-						'<td id="nodelist-' + index + '">' +
-						(	n.user == ''
-							? n.status
-							: ('<strong>' + n.user + '</strong> ' + n.action)
-						) +
-						'</td>' +
-						'</tr>'
-					);
-					if (n.user != '' &&
-						<?xjs write(user.alias!=settings.guest); ?>
-					) {
-						$('#nodelist-' + index).attr(
-							'title',
-							'<?xjs write(_nll.label_send_telegram); ?>'
-						);
-						$('#nodelist-' + index).css('cursor', 'pointer');
-						$('#nodelist-' + index).click(
-							function () {
-								sendTelegram(n.user);
-							}
-						);
-					}
-				}
-			);
+      if (!data.length) {
+        $('#sbbs-nodelist').parent().addClass('hidden');
+      } else {
+        $('#sbbs-nodelist').parent().removeClass('hidden');
+  			$('#sbbs-nodelist').html(
+  				"<h4><?xjs write(_nll.label_title); ?></h4>" +
+  				'<table id="sbbs-nodelist-table" ' +
+  				'class="table table-condensed table-responsive table-striped">'+
+  				'<thead><tr><th><?xjs write(_nll.label_node_column); ?></th><th><?xjs write(_nll.label_status_column); ?></th></tr></thead>' +
+  				'<tbody></tbody>' +
+  				'</table>'
+  			);
+  			data.forEach(
+  				function (n, index) {
+  					var nll = <?xjs write(system.node_list.length); ?>;
+  					$('#sbbs-nodelist-table').append(
+  						'<tr>' +
+  						'<th scope="row">' +
+  						n.connection + //(index >= nll ? "W" : (index + 1)) +
+  						'</th>' +
+  						'<td id="nodelist-' + index + '">' +
+  						(	n.user == ''
+  							? n.status
+  							: ('<strong>' + n.user + '</strong> ' + n.action)
+  						) +
+  						'</td>' +
+  						'</tr>'
+  					);
+  					if (n.user != '' &&
+  						<?xjs write(user.alias!=settings.guest); ?>
+  					) {
+  						$('#nodelist-' + index).attr(
+  							'title',
+  							'<?xjs write(_nll.label_send_telegram); ?>'
+  						);
+  						$('#nodelist-' + index).css('cursor', 'pointer');
+  						$('#nodelist-' + index).click(
+  							function () {
+  								sendTelegram(n.user);
+  							}
+  						);
+  					}
+  				}
+  			);
+      }
 		}
 	);
 }

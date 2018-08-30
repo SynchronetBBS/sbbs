@@ -19,15 +19,18 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 	switch (http_request.query.call[0]) {
 
 		case 'node-list':
-      var usr = new User(0);
-			reply = system.node_list.map(function (node) {
-        usr.number = node.useron;
-				return ({
-          status : format(NodeStatus[node.status], node.aux, node.extaux),
-					action : format(NodeAction[node.action], node.aux, node.extaux),
-          user : (node.status == 3 ? usr.alias : '')
+      var usr = new User(1);
+			reply = system.node_list.reduce(function (a, c) {
+        if (c.status !== 3) return a;
+        usr.number = c.useron;
+				a.push({
+          status : format(NodeStatus[c.status], c.aux, c.extaux),
+					action : format(NodeAction[c.action], c.aux, c.extaux),
+          user : usr.alias,
+          connection : usr.connection
 				});
-			});
+        return a;
+			}, []);
 			for (var un = 1; un < system.lastuser; un++) {
 				usr.number = un;
 				if (usr.connection !== 'HTTP') continue;
@@ -39,7 +42,8 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				reply.push({
           status : '',
 					action : _language.nodelist_action_prefix + ' ' + webAction,
-					user : usr.alias
+					user : usr.alias,
+          connection : 'W'
 				});
 			}
       usr = undefined;
