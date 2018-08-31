@@ -20,10 +20,11 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 
 		case 'node-list':
       var usr = new User(1);
-			reply = system.node_list.reduce(function (a, c) {
+			reply = system.node_list.reduce(function (a, c, i) {
         if (c.status !== 3) return a;
         usr.number = c.useron;
 				a.push({
+          node : i,
           status : format(NodeStatus[c.status], c.aux, c.extaux),
 					action : format(NodeAction[c.action], c.aux, c.extaux),
           user : usr.alias,
