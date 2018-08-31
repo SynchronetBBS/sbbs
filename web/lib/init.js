@@ -1,3 +1,7 @@
+load('modopts.js');
+
+var settings = get_mod_options('web');
+
 // Paths
 settings.web_directory = fullpath(
 	backslash(
@@ -14,8 +18,9 @@ settings.web_root = fullpath(
 	)
 );
 settings.web_lib = backslash(settings.web_directory + 'lib/');
-settings.web_pages = fullpath(backslash(settings.web_directory + 'pages'));
-settings.web_sidebar = fullpath(backslash(settings.web_directory + 'sidebar'));
+
+settings.web_pages = backslash(fullpath(settings.web_root + '../pages'));
+settings.web_sidebar = backslash(fullpath(settings.web_root + '../sidebar'));
 
 // Guest
 if (typeof settings.guest === 'undefined') settings.guest = 'Guest';
@@ -53,4 +58,8 @@ if (typeof settings.page_size !== 'number' || settings.page_size < 1) {
 
 if (typeof settings.forum_extended_ascii !== 'boolean') {
 	settings.forum_extended_ascii = true;
+}
+
+if (typeof settings.active_node_list !== 'boolean') {
+  settings.active_node_list = true;
 }
