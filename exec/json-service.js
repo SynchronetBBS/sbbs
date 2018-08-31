@@ -5,7 +5,7 @@ load("json-sock.js");
 load("json-db.js");
 
 /**** SERVICE MODULES
- * 
+ *
  * 	main service (socket service)
  * 		socket output
  * 		socket input
@@ -13,42 +13,42 @@ load("json-db.js");
  * 			module engine
  * 			service administration
  * 			chat engine
- * 
+ *
  * 	module engine (game service)
  * 		database queries
  * 		module administration
  * 		module events
- * 
+ *
  * 	event timer
  * 		timed events
- * 			
- * 	service administration 
+ *
+ * 	service administration
  * 		user authentication
  * 		service control
  * 		access control
  * 		service information
- * 
- * 	chat engine 
+ *
+ * 	chat engine
  * 		database queries
  * 		administration
  * */
- 
+
 /**** PACKET DATA
- * 
- * 	module = 
+ *
+ * 	module =
  * 		"SOCKET"
  * 		"SERVICE"
  * 		"CHAT"
  * 		(module name)
  *
- * 	func = 
+ * 	func =
  * 		"QUERY"
  *		"ADMIN"
  *		(other function)
- * 
+ *
  *	data =
  *		{..}
- * 
+ *
  * */
 
 /* Running from jsexec presumably... */
@@ -71,7 +71,7 @@ function init(fileName) {
 	if(fileName != undefined) {
 		if(file_exists(system.ctrl_dir + fileName))
 			serviceIniFile = system.ctrl_dir + fileName;
-		else 
+		else
 			throw("service initialization file missing: " + system.ctrl_dir + fileName);
 	}
 	else {
@@ -99,7 +99,7 @@ function checkUpdate() {
 	if(file_date(serviceIniFile) > serviceIniFileDate)
 		exit(0);
 }
-	
+
 /* error values */
 var errors = {
 	UNKNOWN_MODULE:"Unknown module: %s",
@@ -112,7 +112,7 @@ var errors = {
 	NOT_AUTHORIZED:"You are not authorized to use that command",
 	INVALID_PASSWORD:"Password incorrect"
 };
- 
+
 /* server object */
 service = new (function() {
 
@@ -122,15 +122,15 @@ service = new (function() {
 	this.sockets = [];
 	this.denyhosts = [];
 	this.timeout = 1;
-	
+
 	/* initialize server */
 	this.init = function() {
- 
+
 		/* method called when socket is selected for reading */
 		Socket.prototype.cycle = function() {
 			var packet=this.recvJSON();
 			/* if nothing was received, return */
-			if(!packet) 
+			if(!packet)
 				return false;
 			/* if no module was specified, data assumed invalid */
 			if(!packet.scope)
@@ -154,7 +154,7 @@ service = new (function() {
 				break;
 			}
 		}
-		
+
 		/* configure server socket */
 		server.socket.nonblocking = true;
 		server.socket.cycle = function() {
@@ -169,8 +169,8 @@ service = new (function() {
 				log(LOG_WARNING,"<--" + client.descriptor + ": " + client.remote_ip_address + " blocked");
 				client.close();
 				return;
-			} 
-			
+			}
+
 			/* log and initialize normal connections */
 			log(LOG_INFO,"<--" + client.descriptor + ": " + client.remote_ip_address + " connected");
 			client.nonblocking = true;
@@ -178,7 +178,7 @@ service = new (function() {
 			service.sockets.push(client);
 			log(LOG_DEBUG,"JSON service clients: " + (service.sockets.length - 1));
 		}
-		
+
 		this.sockets.push(server.socket);
 		log(LOG_INFO,"server initialized (v" + this.VERSION + ")");
 	}
@@ -204,19 +204,19 @@ service = new (function() {
 		}
 		for(var s=1;s<this.sockets.length;s++) {
 			if(!this.sockets[s].is_connected) {
-				log(LOG_INFO,"<--" + this.sockets[s].descriptor + ": " 
+				log(LOG_INFO,"<--" + this.sockets[s].descriptor + ": "
 					+ this.sockets[s].remote_ip_address + " disconnected");
 				this.release(this.sockets[s]);
 				this.sockets.splice(s--,1);
 			}
 			// else if(!this.verify(this.sockets[s])) {
-				// log(LOG_WARNING,"<--" + this.sockets[s].descriptor + ": " 
+				// log(LOG_WARNING,"<--" + this.sockets[s].descriptor + ": "
 					// + this.sockets[s].remote_ip_address + " terminated");
 				// this.release(this.sockets[s]);
 				// this.sockets[s].close();
 				// this.sockets.splice(s--,1);
 			// }
-		} 
+		}
 	}
 	/* check ip/host against ip/host.can && this.denyhosts[] */
 	this.verify = function(client) {
@@ -240,7 +240,7 @@ service = new (function() {
 		this.online = false;
 		for(var s=1;s<this.sockets.length;s++) {
 			if(this.sockets[s].descriptor != client.descriptor) {
-				log(LOG_INFO,"<--" + this.sockets[s].descriptor + ": " 
+				log(LOG_INFO,"<--" + this.sockets[s].descriptor + ": "
 					+ this.sockets[s].remote_ip_address + " disconnected");
 				this.sockets[s].close();
 				this.release(this.sockets[s]);
@@ -262,7 +262,7 @@ chat = new (function() {
 	this.db = new JSONdb(system.data_dir+"chat.json","CHAT");
 	this.authenticated = [];
 	this.deny_hosts = [];
-	
+
 	this.cycle = function() {
 		this.db.cycle();
 	}
@@ -299,7 +299,7 @@ chat = new (function() {
 		}
 		var usr = new User(usernum);
 		var pass = md5_calc(usr.security.password.toUpperCase(),true);
-		
+
 		if(md5_calc(usr.security.password.toUpperCase(),true) != pw) {
 			error(client,"(chat) " + errors.INVALID_PASSWORD);
 			return false;
@@ -379,7 +379,7 @@ admin = new (function() {
 	}
 	/* release a socket from the list of authenticated users */
 	this.time = function(client) {
-		client.sendJSON({ 
+		client.sendJSON({
 			scope:undefined,
 			func:"RESPONSE",
 			oper:"TIME",
@@ -451,7 +451,7 @@ engine = new (function() {
 	this.modules = [];
 	this.queue = undefined;
 	this.file = new File(serviceIniFile);
-	
+
 	/* load module list */
 	this.init = function() {
 		/* if there is no module initialization file, fuck it */
@@ -461,11 +461,15 @@ engine = new (function() {
 		var modules=this.file.iniGetAllObjects();
 		this.file.close();
 		for each(var m in modules) {
-			this.modules[m.name.toUpperCase()]=new Module(m.name,m.dir,m.read,m.write);
-			log(LOG_DEBUG,"loaded module: " + m.name);
+      try {
+  			this.modules[m.name.toUpperCase()]=new Module(m.name,m.dir,m.read,m.write);
+  			log(LOG_DEBUG,"loaded module: " + m.name);
+      } catch (err) {
+        log(LOG_ERROR, 'Failed to load module: ' + m.name + ', ' + err);
+      }
 		}
 	}
-	
+
 	/* cycle module databases */
 	this.cycle = function() {
 		for each(var m in this.modules) {
@@ -482,17 +486,17 @@ engine = new (function() {
 			error(client,errors.UNKNOWN_MODULE,packet.scope);
 			return false;
 		}
-		
+
 		/* flag command as not handled */
 		var handled = false;
-		
+
 		/* pass command to module method if it exists */
 		if(module.commands && module.commands[packet.func.toUpperCase()])
 			handled = module.commands[packet.func.toUpperCase()](client,packet);
-	
+
 		if(handled)
 			return true;
-			
+
 		switch(packet.func.toUpperCase()) {
 		case "QUERY":
 			if(!this.verify(client,packet,module)) {
@@ -546,7 +550,7 @@ engine = new (function() {
 			error(client,"(" + module.name + ") " + errors.UNKNOWN_FUNCTION,packet.func);
 			break;
 		}
-		
+
 		return true;
 	}
 
@@ -596,7 +600,7 @@ engine = new (function() {
 		this.read = read;
 		this.write = write;
 		this.db;
-		
+
 		this.init = function() {
 			this.db=new JSONdb(this.dir+this.name+".json", this.name);
 			/* load module background service file */
@@ -613,12 +617,13 @@ engine = new (function() {
 					load(this.commands,this.dir + "commands.js",this.dir);
 				} catch(e) {
 					log(LOG_ERROR,"(" + this.name + ") error loading module commands");
+          log(e);
 				}
 			}
 		}
 		this.init();
 	}
-	
+
 	this.init();
 })();
 
