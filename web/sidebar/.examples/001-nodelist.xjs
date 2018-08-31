@@ -31,7 +31,7 @@
 
   function _sb_nodelist() {
   	$.getJSON('./api/system.ssjs?call=node-list', function (data) {
-      if (anl && !data.node_list.length) {
+      if (anl && !data.length) {
         $('#sbbs-nodelist').parent().addClass('hidden');
       } else {
         if (anl) $('#sbbs-nodelist').parent().removeClass('hidden');
@@ -47,7 +47,7 @@
   			);
         if (!anl) {
           const nodes = Array(nll);
-          data.node_list.forEach(function (e) { nodes[e.node] = e; });
+          data.forEach(function (e) { nodes[e.node] = e; });
           for (var n = 0; n < nll; n++) {
             if (!nodes[n]) {
               _sb_list_node({ node: n, user: '', status :'Waiting for call' });
@@ -56,8 +56,12 @@
             }
           }
         } else {
-          data.node_list.forEach(_sb_list_node);
+          data.forEach(_sb_list_node);
         }
+        // Spans with these classes are used in the 'system stats' sidebar module.
+        // Update the nodes in use / available counters there.
+        $('#sidebar').find('.sb-nodes-in-use').text(data.length);
+        $('#sidebar').find('.sb-nodes-available').text(nll - data.length);
       }
   	});
   }
