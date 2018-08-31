@@ -63,3 +63,7 @@ if (typeof settings.forum_extended_ascii !== 'boolean') {
 if (typeof settings.active_node_list !== 'boolean') {
   settings.active_node_list = true;
 }
+
+if (typeof settings.hide_empty_stats !== 'boolean') {
+  settings.hide_empty_stats = true;
+}
