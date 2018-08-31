@@ -47,7 +47,13 @@
   			);
         if (!anl) {
           const nodes = Array(nll);
-          data.forEach(function (e) { nodes[e.node] = e; });
+          data.forEach(function (e) {
+            if (typeof e.node == 'number') {
+              nodes[e.node] = e;
+            } else {
+              nodes.push(e); // Web user
+            }
+          });
           for (var n = 0; n < nll; n++) {
             if (!nodes[n]) {
               _sb_list_node({ node: n, user: '', status :'Waiting for call' });
