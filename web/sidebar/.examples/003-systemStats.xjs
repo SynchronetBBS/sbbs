@@ -9,18 +9,22 @@
 <h4>System Info</h4>
 <table class="table table-condensed table-responsive table-striped">
 	<tbody>
+
 		<tr>
 			<th scope="row"><?xjs write(_sill.label_sysop); ?></th>
 			<td><?xjs write(system.operator); ?></td>
 		</tr>
+
 		<tr>
 			<th scope="row"><?xjs write(_sill.label_location); ?></th>
 			<td><?xjs write(system.location); ?></td>
 		</tr>
+
 		<tr>
 			<th scope="row"><?xjs write(_sill.label_users); ?></th>
 			<td><?xjs write(system.stats.total_users); ?></td>
 		</tr>
+
 		<tr>
 			<th scope="row"><?xjs write(_sill.label_nodes); ?></th>
       <td>
@@ -30,49 +34,70 @@
          <span title="Available" class="text-success sb-nodes-available"><?xjs write(system.nodes - _sb_niu); ?></span>)
       </td>
 		</tr>
+
 		<tr>
 			<th scope="row"><?xjs write(_sill.label_uptime); ?></th>
 			<td><?xjs write(system.secondstr(time() - system.uptime)); ?></td>
 		</tr>
+
 		<tr>
 			<th scope="row"><?xjs write(_sill.label_calls_total); ?></th>
 			<td><?xjs write(system.stats.total_logons); ?></td>
 		</tr>
-		<tr>
-			<th scope="row"><?xjs write(_sill.label_calls_today); ?></th>
-			<td><?xjs write(system.stats.logons_today); ?></td>
-		</tr>
-		<tr>
-			<th scope="row"><?xjs write(_sill.label_files_total); ?></th>
-			<td><?xjs write(system.stats.total_files); ?></td>
-		</tr>
-		<tr>
-			<th scope="row"><?xjs write(_sill.label_files_uploaded_today); ?></th>
-			<td>
-				<?xjs write(system.stats.files_uploaded_today); ?>
-				<?xjs write(_sill.stat_suffix_files); ?>
-				<br>
-				(<?xjs write(system.stats.bytes_uploaded_today); ?>
-				<?xjs write(_sill.stat_suffix_bytes); ?>)
-			</td>
-		</tr>
-		<tr>
-			<th scope="row"><?xjs write(_sill.label_files_downloaded_today); ?></th>
-			<td>
-				<?xjs write(system.stats.files_downloaded_today); ?>
-				<?xjs write(_sill.stat_suffix_files); ?>
-				<br>
-				(<?xjs write(system.stats.bytes_downloaded_today); ?>
-				<?xjs write(_sill.stat_suffix_bytes); ?>)
-			</td>
-		</tr>
-		<tr>
-			<th scope="row"><?xjs write(_sill.label_messages_total); ?></th>
-			<td><?xjs write(system.stats.total_messages); ?></td>
-		</tr>
-		<tr>
-			<th scope="row"><?xjs write(_sill.label_messages_posted_today); ?></th>
-			<td><?xjs write(system.stats.messages_posted_today); ?></td>
-		</tr>
+
+    <?xjs if (!settings.hide_empty_stats || system.stats.logons_today) { ?>
+  		<tr>
+  			<th scope="row"><?xjs write(_sill.label_calls_today); ?></th>
+  			<td><?xjs write(system.stats.logons_today); ?></td>
+  		</tr>
+    <?xjs } ?>
+
+    <?xjs if (!settings.hide_empty_stats || system.stats.total_files) { ?>
+  		<tr>
+  			<th scope="row"><?xjs write(_sill.label_files_total); ?></th>
+  			<td><?xjs write(system.stats.total_files); ?></td>
+  		</tr>
+    <?xjs } ?>
+
+    <?xjs if (!settings.hide_empty_stats || system.stats.files_uploaded_today) { ?>
+  		<tr>
+  			<th scope="row"><?xjs write(_sill.label_files_uploaded_today); ?></th>
+  			<td>
+  				<?xjs write(system.stats.files_uploaded_today); ?>
+  				<?xjs write(_sill.stat_suffix_files); ?>
+  				<br>
+  				(<?xjs write(system.stats.bytes_uploaded_today); ?>
+  				<?xjs write(_sill.stat_suffix_bytes); ?>)
+  			</td>
+  		</tr>
+    <?xjs } ?>
+
+    <?xjs if (!settings.hide_empty_stats || system.stats.files_downloaded_today) { ?>
+  		<tr>
+  			<th scope="row"><?xjs write(_sill.label_files_downloaded_today); ?></th>
+  			<td>
+  				<?xjs write(system.stats.files_downloaded_today); ?>
+  				<?xjs write(_sill.stat_suffix_files); ?>
+  				<br>
+  				(<?xjs write(system.stats.bytes_downloaded_today); ?>
+  				<?xjs write(_sill.stat_suffix_bytes); ?>)
+  			</td>
+  		</tr>
+    <?xjs } ?>
+
+    <?xjs if (!settings.hide_empty_stats || system.stats.total_messages) { ?>
+  		<tr>
+  			<th scope="row"><?xjs write(_sill.label_messages_total); ?></th>
+  			<td><?xjs write(system.stats.total_messages); ?></td>
+  		</tr>
+    <?xjs } ?>
+
+    <?xjs if (!settings.hide_empty_stats || system.stats.messages_posted_today) { ?>
+  		<tr>
+  			<th scope="row"><?xjs write(_sill.label_messages_posted_today); ?></th>
+  			<td><?xjs write(system.stats.messages_posted_today); ?></td>
+  		</tr>
+    <?xjs } ?>
+
 	</tbody>
 </table>
