@@ -1,3 +1,4 @@
+load('sbbsdefs.js');
 load('modopts.js');
 
 var settings = get_mod_options('web');
@@ -22,48 +23,46 @@ settings.web_lib = backslash(settings.web_directory + 'lib/');
 settings.web_pages = backslash(fullpath(settings.web_root + '../pages'));
 settings.web_sidebar = backslash(fullpath(settings.web_root + '../sidebar'));
 
-// Guest
-if (typeof settings.guest === 'undefined') settings.guest = 'Guest';
-if (system.matchuser(settings.guest) == 0) exit();
+var defaults = {
+  guest : {
+    default : 'Guest',
+    test : function () {
+      return system.matchuser(settings.guest) ? null : 'Guest account unavailable';
+    }
+  },
+  timeout : { default : 43200 },
+  user_registration : { default : false },
+  minimum_password_length : { default : 4 },
+  email_validation : { default : true },
+  email_validation_level : { default : 50 },
+  max_messages : {
+    default : 0,
+    test : function () {
+      return settings.max_messages >= 0 ? null : 'max_messages must be >= 0';
+    }
+  },
+  page_size : {
+    default : 25,
+    test : function () {
+      return settings.page_size >= 1 ? null : 'page_size must be >= 1';
+    }
+  },
+  forum_extended_ascii : { default : true },
+  active_node_list : { default : true },
+  hide_empty_stats : { default : true }
+};
 
-// Timeout
-if (typeof settings.timeout !== 'number') settings.timeout = 43200;
-
-// Registration
-if (typeof settings.user_registration !== 'boolean') {
-	settings.user_registration = false;
-} else {
-
-	if (typeof settings.minimum_password_length !== 'number') {
-		settings.minimum_password_length = 4;
-	}
-
-	if (typeof settings.email_validation !== 'boolean') {
-		settings.email_validation = true;
-	}
-
-	if (typeof settings.email_validation_level !== 'number') {
-		settings.email_validation_level = 50;
-	}
-
-}
-
-if (typeof settings.max_messages !== 'number' || settings.max_messages < 0) {
-	settings.max_messages = 0;
-}
-
-if (typeof settings.page_size !== 'number' || settings.page_size < 1) {
-	settings.page_size = 25;
-}
-
-if (typeof settings.forum_extended_ascii !== 'boolean') {
-	settings.forum_extended_ascii = true;
-}
-
-if (typeof settings.active_node_list !== 'boolean') {
-  settings.active_node_list = true;
-}
-
-if (typeof settings.hide_empty_stats !== 'boolean') {
-  settings.hide_empty_stats = true;
-}
+Object.keys(defaults).forEach(function (e) {
+  if (typeof settings[e] == 'undefined') {
+    settings[e] = defaults[e].default;
+  } else if (typeof settings[e] != typeof defaults[e].default) {
+    log(LOG_ERROR, 'Invalid ' + e + ' setting: ' + settings[e]);
+    exit();
+  } else if (typeof defaults[e].test == 'function') {
+    const t = defaults[e].test();
+    if (t !== null) {
+      log(LOG_ERROR, t);
+      exit();
+    }
+  }
+});
