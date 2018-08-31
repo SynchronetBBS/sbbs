@@ -1,59 +1,68 @@
 <?xjs var _nll = getLanguage(settings.language_file || 'english.ini', 'sidebar_node_list'); ?>
 
 <div id="sbbs-nodelist"></div>
+
 <script type="text/javascript">
-var nodeList = function () {
-	$.getJSON(
-		'./api/system.ssjs?call=node-list',
-		function (data) {
-      if (!data.length) {
+
+  const anl = <?xjs write(settings.active_node_list); ?>;
+  const nch = '<?xjs write(settings.active_node_list ? _nll.label_connection_column : _nll.label_node_column) ?>';
+  const nll = <?xjs write(system.node_list.length); ?>;
+
+  function _sb_list_node(e) {
+    $('#sbbs-nodelist-table').append(
+      '<tr>' +
+        '<th scope="row">' + (anl ? e.connection : (e.node + 1)) + '</th>' +
+        '<td id="nodelist-' + e.node + '">' +
+          (	e.user == ''
+            ? e.status
+            : ('<strong>' + e.user + '</strong> ' + e.action)
+          ) +
+        '</td>' +
+      '</tr>'
+    );
+    if (e.user != '' && <?xjs write(user.alias != settings.guest); ?>) {
+      $('#nodelist-' + e.node).attr(
+        'title', '<?xjs write(_nll.label_send_telegram); ?>'
+      );
+      $('#nodelist-' + e.node).css('cursor', 'pointer');
+      $('#nodelist-' + e.node).click(function () { sendTelegram(e.user); });
+    }
+  }
+
+  function _sb_nodelist() {
+  	$.getJSON('./api/system.ssjs?call=node-list', function (data) {
+      if (anl && !data.node_list.length) {
         $('#sbbs-nodelist').parent().addClass('hidden');
       } else {
-        $('#sbbs-nodelist').parent().removeClass('hidden');
+        if (anl) $('#sbbs-nodelist').parent().removeClass('hidden');
   			$('#sbbs-nodelist').html(
   				"<h4><?xjs write(_nll.label_title); ?></h4>" +
-  				'<table id="sbbs-nodelist-table" ' +
-  				'class="table table-condensed table-responsive table-striped">'+
-  				'<thead><tr><th><?xjs write(_nll.label_node_column); ?></th><th><?xjs write(_nll.label_status_column); ?></th></tr></thead>' +
-  				'<tbody></tbody>' +
+  				'<table id="sbbs-nodelist-table" class="table table-condensed table-responsive table-striped">' +
+    				'<thead><tr>' +
+              '<th>' + nch + '</th>' +
+              '<th><?xjs write(_nll.label_status_column); ?></th>' +
+            '</tr></thead>' +
+  				  '<tbody></tbody>' +
   				'</table>'
   			);
-  			data.forEach(
-  				function (n, index) {
-  					var nll = <?xjs write(system.node_list.length); ?>;
-  					$('#sbbs-nodelist-table').append(
-  						'<tr>' +
-  						'<th scope="row">' +
-  						n.connection + //(index >= nll ? "W" : (index + 1)) +
-  						'</th>' +
-  						'<td id="nodelist-' + index + '">' +
-  						(	n.user == ''
-  							? n.status
-  							: ('<strong>' + n.user + '</strong> ' + n.action)
-  						) +
-  						'</td>' +
-  						'</tr>'
-  					);
-  					if (n.user != '' &&
-  						<?xjs write(user.alias!=settings.guest); ?>
-  					) {
-  						$('#nodelist-' + index).attr(
-  							'title',
-  							'<?xjs write(_nll.label_send_telegram); ?>'
-  						);
-  						$('#nodelist-' + index).css('cursor', 'pointer');
-  						$('#nodelist-' + index).click(
-  							function () {
-  								sendTelegram(n.user);
-  							}
-  						);
-  					}
-  				}
-  			);
+        if (!anl) {
+          const nodes = Array(nll);
+          data.node_list.forEach(function (e) { nodes[e.node] = e; });
+          for (var n = 0; n < nll; n++) {
+            if (!nodes[n]) {
+              _sb_list_node({ node: n, user: '', status :'Waiting for call' });
+            } else {
+              _sb_list_node(nodes[n], n);
+            }
+          }
+        } else {
+          data.node_list.forEach(_sb_list_node);
+        }
       }
-		}
-	);
-}
-nodeList();
-setInterval(nodeList, <?xjs write(settings.refresh_interval || 60000); ?>);
+  	});
+  }
+
+  _sb_nodelist();
+  setInterval(_sb_nodelist, <?xjs write(settings.refresh_interval || 60000); ?>);
+
 </script>
