@@ -1,5 +1,11 @@
 <?xjs var _sill = getLanguage(settings.language_file || 'english.ini', 'sidebar_system_info'); ?>
 
+<?xjs
+  const _sb_niu = system.node_list.reduce(function (a, c) {
+    return (c.status == 3 ? a + 1 : a);
+  }, 0);
+?>
+
 <h4>System Info</h4>
 <table class="table table-condensed table-responsive table-striped">
 	<tbody>
@@ -17,7 +23,12 @@
 		</tr>
 		<tr>
 			<th scope="row"><?xjs write(_sill.label_nodes); ?></th>
-			<td><?xjs write(system.nodes); ?></td>
+      <td>
+        <?xjs write(system.nodes); ?>
+        (<span title="In use" class="text-danger sb-nodes-in-use"><?xjs write(_sb_niu); ?></span>
+         /
+         <span title="Available" class="text-success sb-nodes-available"><?xjs write(system.nodes - _sb_niu); ?></span>)
+      </td>
 		</tr>
 		<tr>
 			<th scope="row"><?xjs write(_sill.label_uptime); ?></th>
@@ -38,20 +49,20 @@
 		<tr>
 			<th scope="row"><?xjs write(_sill.label_files_uploaded_today); ?></th>
 			<td>
-				<?xjs write(system.stats.files_uploaded_today); ?> 
+				<?xjs write(system.stats.files_uploaded_today); ?>
 				<?xjs write(_sill.stat_suffix_files); ?>
 				<br>
-				(<?xjs write(system.stats.bytes_uploaded_today); ?> 
+				(<?xjs write(system.stats.bytes_uploaded_today); ?>
 				<?xjs write(_sill.stat_suffix_bytes); ?>)
 			</td>
 		</tr>
 		<tr>
 			<th scope="row"><?xjs write(_sill.label_files_downloaded_today); ?></th>
 			<td>
-				<?xjs write(system.stats.files_downloaded_today); ?> 
+				<?xjs write(system.stats.files_downloaded_today); ?>
 				<?xjs write(_sill.stat_suffix_files); ?>
 				<br>
-				(<?xjs write(system.stats.bytes_downloaded_today); ?> 
+				(<?xjs write(system.stats.bytes_downloaded_today); ?>
 				<?xjs write(_sill.stat_suffix_bytes); ?>)
 			</td>
 		</tr>
