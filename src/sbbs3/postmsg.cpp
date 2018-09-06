@@ -1,4 +1,5 @@
 /* Synchronet user create/post public message routine */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -518,7 +519,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 	return(i);
 }
 
-extern "C" int DLLCALL votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const char* smsgfmt)
+extern "C" int DLLCALL votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const char* smsgfmt, const char* votefmt)
 {
 	int result;
 	smbmsg_t remsg;
@@ -571,13 +572,13 @@ extern "C" int DLLCALL votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const cha
 				safe_snprintf(from, sizeof(from), "%s (%s)", msg->from, smb_netaddr(&msg->from_net));
 			else
 				SAFECOPY(from, msg->from);
-			if(remsg.hdr.type == SMB_MSG_TYPE_POLL) {
+			if(remsg.hdr.type == SMB_MSG_TYPE_POLL && votefmt != NULL) {
 				int answers = 0;
 				for(int i=0; i<remsg.total_hfields; i++) {
 					if(remsg.hfield[i].type == SMB_POLL_ANSWER) {
 						if(msg->hdr.votes&(1<<answers)) {
 							char vote[128];
-							SAFEPRINTF(vote, " %.78s\r\n", (char*)remsg.hfield_dat[i]);
+							SAFEPRINTF(vote, votefmt, (char*)remsg.hfield_dat[i]);
 							SAFECAT(votes, vote);
 						}
 						answers++;
@@ -589,8 +590,8 @@ extern "C" int DLLCALL votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const cha
 				,cfg->grp[cfg->sub[smb->subnum]->grp]->sname
 				,cfg->sub[smb->subnum]->sname
 				,from
-				,remsg.subj
-				,votes);
+				,remsg.subj);
+			SAFECAT(smsg, votes);
 			putsmsg(cfg, user.number, smsg);
 		}
 	}

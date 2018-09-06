@@ -2418,7 +2418,7 @@ js_vote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if(parse_header_object(cx, p, hdr, &msg, FALSE)) {
 
 		rc = JS_SUSPENDREQUEST(cx);
-		if((p->smb_result=votemsg(scfg, &(p->smb), &msg, NULL)) == SMB_SUCCESS) {
+		if((p->smb_result=votemsg(scfg, &(p->smb), &msg, NULL, NULL)) == SMB_SUCCESS) {
 			JS_RESUMEREQUEST(cx, rc);
 			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		}
