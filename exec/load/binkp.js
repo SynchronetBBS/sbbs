@@ -5,15 +5,16 @@ require('fido.js', 'FIDO');
 
 /*
  * A binkp implementation...
- * 
+ *
  * Create a new instance with New passing a path to place received files
  * in to the constructor (defaults to system.temp_dir).
- * 
+ *
  * Next, adjust defaults as needed...
  * default_zone    - if no zone is specified, use this one for all addresses.
  * default_domain  - if no domain is specified, use this one for all addresses.
  * debug		   - If set, logs all sent/received frames via log(LOG_DEBUG)
- * require_md5	   - Require that the remote support MD5
+ * require_md5	   - Require that the remote support CRAM-MD5 authentication
+ * plain_auth_only - Use plain-text authentication always (no CRAM-MD5 auth, no encryption)
  * timeout		   - Max timeout
  * addr_list       - list of addresses handled by this system.  Defaults to system.fido_addr_list
  * system_name	   - BBS name to send to remote defaults to system.name
@@ -35,12 +36,12 @@ require('fido.js', 'FIDO');
  * tx_callback	   - Function that is called with two arguments, the filename
  * 					 and the BinkP object when a file is sent successfully.
  * name_ver        - Name and version of program in "name/ver.ver.ver" format
- * 
+ *
  * Now add any files you wish to send using the addFile(filename) method
- * 
+ *
  * Finally, call the connect() or accept() method
  * This method will return true if all files were transferred with no errors.
- * 
+ *
  * After return, the sent_files and received_files arrays will contain
  * lists of successfully transferred files.  The failed_sent_files and
  * failed_received_files arrays will contain files that failed to
@@ -77,6 +78,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.sent_nr = false;
 	this.ver1_1 = false;
 	this.require_md5 = true;
+	this.plain_auth_only = false;
 	// IREX VER Internet Rex 2.29 Win32 (binkp/1.1) doesn't work with longer challenges
 	// TODO: Remove this knob
 	this.cram_challenge_length = 16;
@@ -433,7 +435,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 		 * TODO: This is to work around an apparent incompatibility with
 		 * Radius.  I thought this worked with binkd, but it would need
 		 * to be tested again.
-		 * 
+		 *
 		 * Not super-important since using encryption without a password
 		 * is about as "secure" as rot13.
 		 */
@@ -455,7 +457,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	}
 
 	if (this.authenticated === undefined) {
-		if (this.cram === undefined || this.cram.algo !== 'MD5') {
+		if (this.plain_auth_only || this.cram === undefined || this.cram.algo !== 'MD5') {
 			if (this.require_md5)
 				this.sendCmd(this.command.M_ERR, "MD5 Required");
 			else {
@@ -558,7 +560,8 @@ BinkP.prototype.accept = function(sock, auth_cb)
 
 	this.cram = {algo:'MD5', challenge:challenge.replace(/[0-9a-fA-F]{2}/g, hex2ascii)};
 	this.authenticated = undefined;
-	this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge+(this.wont_crypt?"":" CRYPT"));
+	if(!this.plain_auth_only)
+		this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge+(this.wont_crypt?"":" CRYPT"));
 	pkt = this.recvFrame(this.timeout);
 	if (pkt === undefined || pkt === null)
 		return false;

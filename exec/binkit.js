@@ -166,7 +166,7 @@ function add_outbound_files(addrs, bp)
 				var ext = file_getext(file);
 				if (ext !== undefined)
 					ext = ext.toLowerCase();
-				
+
 				switch(ext) {
 					case '.clo':
 					case '.dlo':
@@ -539,6 +539,7 @@ function callout(addr, scfg, locks, bicfg)
 		host = bp.cb_data.binkitcfg.node[addr].host;
 		bp.require_md5 = !(bp.cb_data.binkitcfg.node[addr].nomd5);
 		bp.require_crypt = !(bp.cb_data.binkitcfg.node[addr].nocrypt);
+		bp.plain_auth_only = bp.cb_data.binkitcfg.node[addr].plain_auth_only;
 	}
 	// TODO: Force debug mode for now...
 	bp.debug = true;
@@ -879,7 +880,7 @@ function inbound_auth_cb(pwd, bp)
 					check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
 					ret = cpw;
 				} else {
-					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr 
+					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr
 						+ format(" (expected: %s, received: %s)", expected, pwd[0]));
 					/*
 					 * TODO: This is in case Mystic/1.12A39 has both a working and
@@ -905,7 +906,7 @@ function inbound_auth_cb(pwd, bp)
 			}
 			else {
 				// TODO: Deal with arrays of passwords?
-				if (!bp.cb_data.binkitcfg.node[addr].nomd5)	// AllowPlainPasswords=false
+				if (!bp.cb_data.binkitcfg.node[addr].nomd5)	// BinkpAllowPlainAuth=false
 					log(LOG_WARNING, "CRAM-MD5 required (and not provided) by " + addr);
 				else if (bp.cb_data.binkitcfg.node[addr].pass === pwd[0]) {
 					log(LOG_INFO, "Plain-text password match for " + addr);
@@ -1132,7 +1133,7 @@ function upgrade()
 
 	var binkit_ini = new File(file_cfgname(system.ctrl_dir, "binkit.ini"));
 	if(binkit_ini.open("r")) {
-		
+
 		sbbsecho_ini.iniSetValue("BinkP", "Capabilities", binkit_ini.iniGetValue(null, "Capabilities", ""));
 		sbbsecho_ini.iniSetValue("BinkP", "Sysop", binkit_ini.iniGetValue(null, "Sysop", ""));
 
@@ -1169,7 +1170,7 @@ function upgrade()
 	/* Merge ftn_domains.ini -> sbbsecho.ini */
 	var domains_ini = new File(file_cfgname(system.ctrl_dir, "ftn_domains.ini"));
 	if(domains_ini.open("r")) {
-		
+
 		var domains = domains_ini.iniGetAllObjects("name");
 		for(var d in domains) {
 			var section = "domain:" + domains[d].name;

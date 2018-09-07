@@ -9,7 +9,7 @@ require('fido.js', 'FIDO');
  * acfg{}{}		per-address config objects all keys converted to lower-case
  * 				Each object supports 'Links', 'Dir', 'Path', and 'Handler'
  * 				properties.
- * 
+ *
  * A handler is a load() path to a script which must define a
  * Handle_TIC(tic, obj) method.  This method takes two arguments, the
  * tic object and the "this" context of the caller.  If Handle_TIC()
@@ -22,9 +22,9 @@ require('fido.js', 'FIDO');
  * sending to any of the configured links.  Failing to do this will result
  * in TIC files without the corresponding attachment being send to downlinks.
  * Further, the load file must not have a null last statement.
- * 
+ *
  * cset			character set used in base-X file naming
- * 
+ *
  * TickITCfg Methods:
  * get_next_tick_filename()		returns a string representing the next
  * 								sequential unique filename for a tic file
@@ -206,7 +206,7 @@ TickITCfg.prototype.save = function()
 
 /*
  * FREQITCfg configuration object
- * 
+ *
  * FREQITCfg properties
  * dirs[]			Array of directories that can be FREQed from
  * securedirs[]		Array of seucrely FREQable directories
@@ -341,6 +341,7 @@ function BinkITCfg()
 			this.node[sec].pass = f.iniGetValue(section, 'SessionPwd');
 			this.node[sec].nomd5 = f.iniGetValue(section, 'BinkpAllowPlainAuth', false);
 			this.node[sec].nocrypt = f.iniGetValue(section, 'BinkpAllowPlainText', false);
+			this.node[sec].plain_auth_only = f.iniGetValue(section, 'BinkpPlainAuthOnly', false);
 			this.node[sec].poll = f.iniGetValue(section, 'BinkpPoll', false);
 			this.node[sec].port = f.iniGetValue(section, 'BinkpPort');
 			this.node[sec].src = f.iniGetValue(section, 'BinkpSourceAddress');
