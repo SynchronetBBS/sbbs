@@ -11,26 +11,6 @@
 FILE* nulfp;
 FILE* bodyfp;
 
-/****************************************************************************/
-/* Returns an ASCII string for FidoNet address 'addr'                       */
-/****************************************************************************/
-char *faddrtoa(faddr4d_t* addr, char* outstr)
-{
-	static char str[64];
-    char point[25];
-
-	if(addr==NULL)
-		return("0:0/0");
-	sprintf(str,"%hu:%hu/%hu",addr->zone,addr->net,addr->node);
-	if(addr->point) {
-		sprintf(point,".%hu",addr->point);
-		strcat(str,point); }
-	if(outstr==NULL)
-		return(str);
-	strcpy(outstr,str);
-	return(outstr);
-}
-
 char* freadstr(FILE* fp, char* str, size_t maxlen)
 {
 	int		ch;
@@ -46,7 +26,6 @@ char* freadstr(FILE* fp, char* str, size_t maxlen)
 
 	return(str);
 }
-	
 
 int msgdump(FILE* fp, const char* fname)
 {
