@@ -125,6 +125,7 @@ typedef struct {
 	arcdef_t*	archive;
 	str_list_t	grphub;			/* This link is hub of these groups (short names */
 	/* BinkP settings */
+	bool		binkp_plainAuthOnly;
 	bool		binkp_allowPlainAuth;
 	bool		binkp_allowPlainText;
 	bool		binkp_poll;

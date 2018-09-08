@@ -314,8 +314,17 @@ void binkp_settings(nodecfg_t* node)
 		sprintf(opt[i++], "%-20s %s", "Host", node->binkp_host);
 		sprintf(opt[i++], "%-20s %u", "Port", node->binkp_port);
 		sprintf(opt[i++], "%-20s %s", "Poll", node->binkp_poll ? "Yes" : "No");
-		sprintf(opt[i++], "%-20s %s", "Allow Plain Auth", node->binkp_allowPlainAuth ? "Yes" : "No");
-		sprintf(opt[i++], "%-20s %s", "Allow Plain Text", node->binkp_allowPlainText ? "Yes" : "No");
+		char* auth = "Plain Only";
+		char* crypt = "Unsupported";
+		if(!node->binkp_plainAuthOnly) {
+			crypt = node->binkp_allowPlainText ? "Supported" : "Required";
+			if(node->binkp_allowPlainAuth) 
+				auth = "Plain or CRAM-MD5";
+			else
+				auth = "CRAM-MD5 Only";
+		}
+		sprintf(opt[i++], "%-20s %s", "Authentication", auth);
+		sprintf(opt[i++], "%-20s %s", "Encryption", crypt);
 		sprintf(opt[i++], "%-20s %s", "Source Address", node->binkp_src);
 		opt[i][0]=0;
 		char title[128];
@@ -335,13 +344,15 @@ void binkp_settings(nodecfg_t* node)
 			"\n"
 			"`Poll` defines whether or not to periodically poll this linked node.\n"
 			"\n"
-			"`Allow Plain Auth` determines whether plain-text authenticated sessions\n"
-			"    will be allowed.  With this setting set to `No`, ~only~ CRAM-MD5\n"
-			"    authenticated BinkP sessions will be allowed.\n"
+			"`Authentication` determines what types of authentication will be supported\n"
+			"    during both inbound and outbound sessions with this linked node.\n"
+			"    The supported BinkP-auth methods are `Plain-Password` and `CRAM-MD5`.\n"
 			"\n"
-			"`Allow Plain Text` determines whether unencrypted file transfers will\n"
-			"    be allowed.  With this setting set to `No`, ~only~ BinkD-style-encrypted\n"
-			"    BinkP sessions will be supported.\n"
+			"`Encryption` determines whether unencrypted data transfers will be\n"
+			"    supported or required when communicating with this linked node.\n"
+			"    With this setting set to `Required`, ~only~ BinkD-style-encrypted BinkP\n"
+			"    sessions will be supported.\n"
+			"    CRAM-MD5 authentication `must` be used when encrypting BinkP sessions.\n"
 			"\n"
 			"`Source Address` allows you to override the source FTN address used\n"
 			"    with outgoing BinkP mailer sessions with this linked node.\n"
@@ -372,22 +383,47 @@ void binkp_settings(nodecfg_t* node)
 				}
 				break;
 			case 3:
-				k = !node->binkp_allowPlainAuth;
-				strcpy(opt[0], "CRAM-MD5 or Plain Password");
-				strcpy(opt[1], "CRAM-MD5 Only");
-				opt[2][0] = 0;
+				k = node->binkp_plainAuthOnly ? 0 : (1 + !node->binkp_allowPlainAuth);
+				strcpy(opt[0], "Plain-Password Only");
+				strcpy(opt[1], "Plain-Password or CRAM-MD5");
+				strcpy(opt[2], "CRAM-MD5 Only");
+				opt[3][0] = 0;
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-					,"Inbound Authentication",opt)) {
-					case 0:	node->binkp_allowPlainAuth = true;	uifc.changes=TRUE; break;
-					case 1:	node->binkp_allowPlainAuth = false;	uifc.changes=TRUE; break;
+					,"Authentication",opt)) {
+					case 0:	
+						node->binkp_plainAuthOnly = true;
+						node->binkp_allowPlainAuth = true;
+						node->binkp_allowPlainText = true;
+						uifc.changes=TRUE;
+						break;
+					case 1:
+						node->binkp_allowPlainAuth = true;
+						node->binkp_plainAuthOnly = false;
+						node->binkp_allowPlainText = true;
+						uifc.changes=TRUE;
+						break;
+					case 2:
+						node->binkp_allowPlainAuth = false;
+						node->binkp_plainAuthOnly = false;
+						uifc.changes=TRUE;
+						break;
 				}
 				break;
 			case 4:
 				k = !node->binkp_allowPlainText;
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Allow Plain-Text (Unencrypted) Sessions",uifcYesNoOpts)) {
-					case 0:	node->binkp_allowPlainText = true;	uifc.changes=TRUE; break;
-					case 1:	node->binkp_allowPlainText = false;	uifc.changes=TRUE; break;
+					case 0:
+						node->binkp_allowPlainText = true;
+						node->binkp_allowPlainAuth = true;
+						uifc.changes=TRUE;
+						break;
+					case 1:
+						node->binkp_allowPlainText = false;
+						node->binkp_allowPlainAuth = false;
+						node->binkp_plainAuthOnly = false;
+						uifc.changes=TRUE;
+						break;
 				}
 				break;
 			case 5:
@@ -611,6 +647,10 @@ int main(int argc, char **argv)
 	"The `Paths and Filenames` sub-menu is where you configure your system's\n"
 	"directory and file paths used by SBBSecho.\n"
 	"\n"
+	"The `Domains` sub-menu is where FidoNet-style domains (the '@domain'\n"
+	"of 5D FTN address) are mapped to zone numbers, DNS suffixes, NodeLists\n"
+	"and BSO root directories for use by the BinkIT mailer.\n"
+	"\n"
 	"The `EchoLists` sub-menu is for configuring additional (optional)\n"
 	"lists of FidoNet-style message areas (echoes) in `BACKBONE.NA` file\n"
 	"format.  These lists, if configured, are used in addition to your main\n"
@@ -729,7 +769,7 @@ int main(int argc, char **argv)
 	"    will apply to *all* nodes matching that address pattern.\n"
 	"    e.g. '`1:ALL`' matches all nodes within FidoNet Zone 1.\n"
 	"\n"
-	"`Name` is name of the system operator of the configured node. This is\n"
+	"`Name` is name of the system operator of the configured node. This is used\n"
 	"    as the destination name for AreaFix Notification NetMail messages.\n"
 	"\n"
 	"`Comment` is a note to yourself about this node. Setting this to the\n"
@@ -765,7 +805,7 @@ int main(int argc, char **argv)
 	"\n"
 	"`AreaFix Support` is a toggle that determines whether or not this node\n"
 	"    may send AreaFix NetMail requests to your system to perform remote\n"
-	"    area management.\n"
+	"    area and account management.\n"
 	"\n"
 	"`AreaFix Password` is an optional password used to authenticate inbound\n"
 	"    AreaFix NetMail requests (Remote Area Management) from this node.\n"
@@ -2008,9 +2048,12 @@ int main(int argc, char **argv)
 				break;
 
 			case 6:
-	uifc.helpbuf=
-	"~ Domains ~\n\n"
-	;
+				uifc.helpbuf=
+					"~ Domains ~\n\n"
+					"The `Domains` sub-menu is where FidoNet-style domains (the '@domain'\n"
+					"of 5D FTN address) are mapped to zone numbers, DNS suffixes, NodeLists\n"
+					"and BSO root directories for use by the BinkIT mailer.\n"
+				;
 				i=0;
 				while(1) {
 					for(u=0; u < cfg.domain_count; u++)
@@ -2030,9 +2073,6 @@ int main(int argc, char **argv)
 					i &= MSK_OFF;
 					if (msk == MSK_INS) {
 						str[0]=0;
-	uifc.helpbuf=
-	"~ Domain ~\n\n"
-	;
 						if(uifc.input(WIN_MID|WIN_SAV,0,0
 							,"FTN Domain Name", str, FIDO_DOMAIN_LEN, K_EDIT)<1)
 							continue;
@@ -2070,9 +2110,6 @@ int main(int argc, char **argv)
 						continue;
 					while(1) {
 						j=0;
-						uifc.helpbuf=
-						"Configuring a Domain"
-						;
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Name"
 							,cfg.domain_list[i].name);
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Zones"
@@ -2316,12 +2353,15 @@ int main(int argc, char **argv)
 					i=0;
 					i=uifc.list(WIN_MID,0,0,0,&i,0,"Save Config File",uifcYesNoOpts);
 					if(i==-1) break;
-					if(i) {uifc.bail(); exit(0);}
-					if(!sbbsecho_write_ini(&cfg))
-						uifc.msg("Error saving configuration file");
+					if(i == 0) {
+						if(!sbbsecho_write_ini(&cfg))
+							uifc.msg("Error saving configuration file");
+					}
 				}
+				uifc.pop("Exiting");
 				uifc.bail();
 				exit(0);
+				break;
 		}
 	}
 }
