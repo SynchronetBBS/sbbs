@@ -86,7 +86,7 @@ function lock_flow(file)
 		return true;
 	}
 	log(LOG_DEBUG, "Locking "+ret.bsy.name);
-	if(!mkpath(ret.bsy.name.slice(-file_getname(ret.bsy.name).length)))
+	if(!mkpath(ret.bsy.name.slice(0, -file_getname(ret.bsy.name).length)))
 		log(LOG_WARNING, "MKPATH ERROR " + errno + " (" + errno_str + "): " + ret.bsy.name);
 	if (!ret.bsy.open("wb")) {	// Used to include 'e' mode flag (which never worked)
 		log(LOG_WARNING, "Error " + ret.bsy.error + " creating " + ret.bsy.name);
