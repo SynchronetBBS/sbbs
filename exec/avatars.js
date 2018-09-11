@@ -337,6 +337,8 @@ function export_users(msgbase, realnames, all)
 			continue;
 		}
 		var avatar = lib.read_localuser(n);
+		if(!avatar)
+			continue;
 		if(avatar.export_count == undefined)
 			avatar.export_count = 0;
 		var last_exported = 0;
@@ -493,7 +495,7 @@ function install()
 				"node_num": 1,
 				"settings": 0,
 				"startup_dir": "",
-				"freq": 30,
+				"freq": 30,		// interval
 				"mdays": 0,
 				"months": 0
 				});
@@ -510,7 +512,7 @@ function install()
 				"node_num": 1,
 				"settings": 0,
 				"startup_dir": "",
-				"freq": 30,
+				"freq": 1440,	// interval (once a day)
 				"mdays": 0,
 				"months": 0
 				});
@@ -671,7 +673,7 @@ function main()
 					var share_files = directory(filespec);
 					for(var i in share_files) {
 						if(share_files[i].search(EXCLUDE_FILES) >= 0) {
-							printf("Excluding file: %s\r\n", file_getname(share_files[i]));
+							log(LOG_DEBUG, format("Excluding file: %s", file_getname(share_files[i])));
 							continue;
 						}
 						printf("Exporting: %s\r\n", file_getname(share_files[i]));
