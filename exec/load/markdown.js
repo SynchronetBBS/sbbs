@@ -21,21 +21,16 @@
  */
 
  /* To do:
-  * configurable list indentation
-  * configurable heading underline
-  * configurable heading attribute
-  * configurable link attribute
-  * configurable image attribute
-  * configurable class names to add to:
-  * <ul> <ol> <li> <table> <th> <tr> <td> <img> <a>
   * configurable tags instead of <b> and <i>
+  * code blocks / syntax highlighting
  */
 
 load('sbbsdefs.js');
 
 if (typeof Frame == 'undefined') Frame = false;
 
-function Markdown(target) {
+function Markdown(target, settings) {
+
   const state = {
     list_level : 0,
     links : [],
@@ -43,11 +38,52 @@ function Markdown(target) {
     table : [],
     blockquote : false,
     list_stack : []
+  };
+
+  const config = {
+    console : {
+      bold_style : '\1h',
+      list_indent : '\t',
+      heading_underline : true,
+      heading_style : '\1h',
+      link_style : '\1h\1c',
+      image_style : '\1h\1m'
+    },
+    html : {
+      a : '',
+      ul : 'list-group',
+      ol : 'list-group',
+      li : 'list-group-item',
+      table : 'table table-striped',
+      thead : '',
+      tbody : '',
+      th : '',
+      tr : '',
+      td : '',
+      img : '',
+      hr : '',
+      blockquote : 'blockquote'
+    }
+  };
+  if (typeof settings == 'object') {
+    if (typeof settings.console == 'object') {
+      Object.keys(settings.console).forEach(function (e) {
+        config.console[e] = settings.console[e];
+      });
+    }
+    if (typeof settings.html == 'object') {
+      Object.keys(settings.html).forEach(function (e) {
+        config.html[e] = settings.html[e];
+      });
+    }
   }
+
   if (Frame && target instanceof Frame) target.word_wrap = true;
+
   Object.defineProperty(this, 'state', { get : function () {
     return state;
   }});
+
   Object.defineProperty(this, 'target', {
     get : function () {
       return target;
@@ -66,6 +102,7 @@ function Markdown(target) {
       }
     }
   });
+
   Object.defineProperty(this, 'columns', { get : function () {
     if (target == 'html') {
       return 0;
@@ -75,6 +112,22 @@ function Markdown(target) {
       return target.screen_columns;
     }
   }});
+
+  Object.defineProperty(this, 'config', { value : config });
+
+}
+
+Markdown.prototype.html_tag_format = function (tag, attributes) {
+  var ret = '<' + tag;
+  if (this.config.html[tag] != '') {
+    ret += ' class="' + this.config.html[tag] + '"';
+  }
+  if (attributes) {
+    Object.keys(attributes).forEach(function (e) {
+      ret += ' ' + e + '="' + attributes[e] + '"'
+    });
+  }
+  return ret + '>';
 }
 
 Markdown.prototype.colorize_console = function (str) {
@@ -88,15 +141,15 @@ Markdown.prototype.colorize_console = function (str) {
 Markdown.prototype.render_text_console = function (text) {
   const self = this;
   var ret = text.replace(/\*([^\*]+)\*/g, function (m, c) {
-    return '\1+\1h' + c + '\1-';
+    return '\1+' + self.config.console.bold_style + c + '\1-';
   });
   ret = ret.replace(/!\[([^\]]+)\]\(([^\)]+)\)/g, function (m, c1, c2) {
     self.state.images.push({ text : c1, link : c2 });
-    return '\1+\1m' + c1 + ' [' + self.state.images.length + ']\1-';
+    return '\1+' + self.config.console.image_style + c1 + ' [' + self.state.images.length + ']\1-';
   });
   ret = ret.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, function (m, c1, c2) {
     self.state.links.push({ text : c1, link : c2 });
-    return '\1+\1c' + c1 + ' [' + self.state.links.length + ']\1-';
+    return '\1+' + self.config.console.link_style + c1 + ' [' + self.state.links.length + ']\1-';
   });
   return this.colorize_console(ret);
 }
@@ -115,10 +168,10 @@ Markdown.prototype.render_text_html = function (text) {
     return '<b>' + c + '</b>';
   });
   ret = ret.replace(/!\[([^\]]+)\]\(([^\)]+)\)/g, function (m, c1, c2) {
-    return '<img alt="' + c1 + '" src="' + c2 + '">';
+    return self.html_tag_format('img', { alt : c1, src : c2 });
   });
   ret = ret.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, function (m, c1, c2) {
-    return '<a href="' + c2 + '">' + c1 + '</a>';
+    return self.html_tag_format('a', { href : c2 }) + c1 + '</a>';
   });
   return this.italicize(ret);
 }
@@ -139,14 +192,20 @@ Markdown.prototype.render_table = function () {
     });
   });
   if (this.target == 'html') {
-    var ret = '<table>';
+    var ret = this.html_tag_format('table');
     this.state.table.forEach(function (e, i) {
-      ret += '<tr>';
-      const tag = (i == 0 ? ['<th>', '</th>'] : ['<td>', '</td>']);
+      if (i == 0) {
+        ret += self.html_tag_format('thead');
+        var tag = [self.html_tag_format('th'), '</th>'];
+      } else {
+        var tag = [self.html_tag_format('td'), '</td>'];
+      }
+      ret += self.html_tag_format('tr');
       for (var n = 0; n < columns.length; n++) {
         ret += tag[0] + (typeof e[n] == 'undefined' ? '' : e[n]) + tag[1];
       }
       ret += '</tr>';
+      if (i == 0) ret += '</thead>';
     });
     ret += '</table><br>';
     this.state.table = [];
@@ -207,7 +266,7 @@ Markdown.prototype.render_line_console = function (line) {
       this.state.list_level--;
     }
     for (var n = 0; n < this.state.list_level; n++) {
-      ret += ' ';
+      ret += this.config.console.list_indent;
     }
     if (lt == 'ul') {
       ret += match[2];
@@ -233,9 +292,19 @@ Markdown.prototype.render_line_console = function (line) {
   }
 
   // Heading
-  match = line.match(/^#+\s+(.*)$/);
+  match = line.match(/^(#+)\s+(.*)$/);
   if (match !== null) {
-    return ret + '\1+\1h' + this.render_text_console(match[1]) + '\1-\r\n\r\n';
+    ret += '\1+';
+    ret += this.config.console.heading_style;
+    ret += this.render_text_console(match[2]);
+    if (this.config.console.heading_underline) {
+      ret += '\r\n';
+      for (var n = 0; n < match[2].length; n++) {
+        ret += '-';
+      }
+    }
+    ret += '\1-\r\n\r\n';
+    return ret;
   }
 
   // Blockquote
@@ -271,7 +340,7 @@ Markdown.prototype.render_line_html = function (line) {
   if (match !== null) {
     if (this.state.table.length) ret += this.render_table();
     if (!this.state.blockquote) {
-      ret += '<blockquote>';
+      ret += this.html_tag_format('blockquote');
       this.state.blockquote = true;
     }
     return ret + match[1];
@@ -287,17 +356,20 @@ Markdown.prototype.render_line_html = function (line) {
     var lt = (match[2] == '*' ? 'ul' : 'ol');
     if (!match[1].length) {
       while (this.state.list_stack.length > 1) {
-        ret += '</' + this.state.list_stack.pop() + '>';
+        ret += '</' + this.state.list_stack.pop() + '></li>';
       }
       if (this.state.list_stack.length < 1) {
         this.state.list_stack.push(lt);
-        ret += '<' + lt + '>';
+        ret += this.html_tag_format(lt);
       }
-    } else if (match[1].length > this.state.list_stack.length) {
+    } else if (match[1].length >= this.state.list_stack.length) {
       this.state.list_stack.push(lt);
-      ret += '<' + lt + '>';
+      ret += this.html_tag_format('li');
+      ret += this.html_tag_format(lt);
     }
-    ret += '<li>' + this.render_text_html(match[3]) + '</li>';
+    ret += this.html_tag_format('li');
+    ret += this.render_text_html(match[3]);
+    ret += '</li>';
     return ret;
   }
   while (this.state.list_stack.length) {
@@ -327,7 +399,7 @@ Markdown.prototype.render_line_html = function (line) {
   // Horizontal Rule
   match = line.match(/^---+$/);
   if (match !== null) {
-    return ret + '<hr>';
+    return ret + this.html_tag_format('hr');
   }
 
   return ret + this.render_text_html(line) + '<br>';
@@ -343,16 +415,16 @@ Markdown.prototype.render_console = function (text) {
     }
   });
   if (this.state.links.length) {
-    this.target.putmsg('\1+\1cLinks:\1-\r\n');
+    this.target.putmsg('\1+' + self.config.console.link_style + 'Links:\1-\r\n');
     this.state.links.forEach(function (e, i) {
-      self.target.putmsg('\1+\1c[' + (i + 1) + '] ' + e.link + '\1-\r\n');
+      self.target.putmsg('\1+' + self.config.console.link_style + '[' + (i + 1) + '] ' + e.link + '\1-\r\n');
     });
     this.target.putmsg('\r\n');
   }
   if (this.state.images.length) {
-    this.target.putmsg('\1+\1mImages:\1-\r\n');
+    this.target.putmsg('\1+' + self.config.console.image_style + 'Images:\1-\r\n');
     this.state.images.forEach(function (e, i) {
-      self.target.putmsg('\1+\1m[' + (i + 1) + '] ' + e.link + '\1-\r\n');
+      self.target.putmsg('\1+' + self.config.console.image_style + '[' + (i + 1) + '] ' + e.link + '\1-\r\n');
     });
     this.target.putmsg('\r\n');
   }
