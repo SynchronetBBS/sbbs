@@ -86,7 +86,6 @@ Markdown.prototype.colorize_console = function (str) {
 }
 
 Markdown.prototype.render_text_console = function (text) {
-  log('rtc ' + text);
   const self = this;
   var ret = text.replace(/\*([^\*]+)\*/g, function (m, c) {
     return '\1+\1h' + c + '\1-';
@@ -165,11 +164,9 @@ Markdown.prototype.render_table = function () {
         }
         out += s + ' | ';
       }
-      log('prett ' + out);
       while (strip_ctrl(out).length > self.columns - 2) {
         out = out.substring(0, out.length - 1);
       }
-      log('posttt ' + out);
       ret.push(out);
       if (i == 0) {
         out = '|-';
