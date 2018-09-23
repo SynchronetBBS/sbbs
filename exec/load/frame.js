@@ -1,9 +1,9 @@
 /* $Id$ */
 
 /**
- 	Javascript Frame Library 					
- 	for Synchronet v3.15a+ 
- 	by Matt Johnson (mcmlxxix)	
+ 	Javascript Frame Library
+ 	for Synchronet v3.15a+
+ 	by Matt Johnson (mcmlxxix)
 
 DESCRIPTION:
 
@@ -16,11 +16,11 @@ DESCRIPTION:
 
  		x: 			the coordinate representing the top left corner of the frame (horiz)
  		y: 			the coordinate representing the top left corner of the frame (vert)
- 		width: 		the horizontal width of the frame 
+ 		width: 		the horizontal width of the frame
  		height: 	the vertical height of the frame
  		attr:		the default color attributes of the frame
 		parent:		a frame object representing the parent of the new frame
-		
+
 METHODS:
 
 	frame.open()				//populate frame contents in character canvas
@@ -28,7 +28,7 @@ METHODS:
 	frame.delete()				//delete this frame (remove from screen buffer, destroy internal references)
 	frame.invalidate()			//clear screen buffer to redraw contents on cycle() or draw()
 	frame.draw()				//open frame (if not open) move to top (if not on top) and cycle()
-	frame.cycle()				//check the display matrix for updated characters and displays them 
+	frame.cycle()				//check the display matrix for updated characters and displays them
 	frame.refresh()				//flag all frame sectors for potential update
 	frame.load(filename)		//load a binary graphic (.BIN) or ANSI graphic (.ANS) file
 	frame.bottom()				//push frame to bottom of display stack
@@ -57,14 +57,14 @@ METHODS:
 	frame.gotoxy(x,y)
 	frame.pushxy()
 	frame.popxy()
-	
+
 PROPERTIES:
 
 	frame.x						//x screen position
 	frame.y						//y screen position
 	frame.width					//frame width
 	frame.height				//frame height
-	frame.data					//frame data matrix 
+	frame.data					//frame data matrix
 	frame.data_height			//true height of frame contents (READ ONLY)
 	frame.data_width			//true width of frame contents (READ ONLY)
 	frame.attr					//default attributes for frame
@@ -73,7 +73,7 @@ PROPERTIES:
 	frame.v_scroll				//toggle true/false to enable/disable vertical scrolling
 	frame.h_scroll				//toggle true/false to enable/disable horizontal scrolling
 	frame.scrollbars			//toggle true/false to show/hide scrollbars
-	frame.transparent			//toggle true/false to enable transparency mode 
+	frame.transparent			//toggle true/false to enable transparency mode
 								//(do not display frame sectors where char == undefined)
 	frame.offset				//current offset object {x,y}
 	frame.cursor				//current cursor object {x,y}
@@ -86,37 +86,37 @@ USAGE:
 	//create a new frame object at screen position 1,1. 80 characters wide by 24 tall
  	load("frame.js");
  	var frame = new Frame(1,1,80,24,BG_BLUE);
-	
+
 	//add frame to the display canvas
 	frame.open();
- 
+
 	//add a new frame within the frame object that will display on top at position 10,10
 	var subframe = new Frame(10,10,10,10,BG_GREEN,frame);
-	
+
 	//add subframe to the display canvas
 	subframe.open();
-	
+
 	//place cursor at position x:5 y:5 relative to subframe's coordinates
 	subframe.gotoxy(5,5);
 
 	//beware this sample infinite loop
- 	while(!js.terminated) { 
+ 	while(!js.terminated) {
 		//print a message into subframe
 		subframe.putmsg("1");
-		
-		//on first call this will draw the entire initial frame, 
+
+		//on first call this will draw the entire initial frame,
 		//as triggered by the open() method call.
 		//on subsequent calls this will draw only areas that have changed
 		frame.cycle();
 		//NOTE: if frames are linked, only one frame needs to be cycled
 		//		for all frames to update
 	}
-	
+
 	//close out the entire frame tree
 	frame.close();
-	
+
  */
- 
+
 load("sbbsdefs.js");
 function Frame(x,y,width,height,attr,parent) {
 
@@ -132,6 +132,7 @@ function Frame(x,y,width,height,attr,parent) {
 		open:false,
 		ctrl_a:false,
 		curr_attr:undefined,
+    attr_stack:[],
 		id:0
 	};
 	this.__settings__ = {
@@ -152,7 +153,7 @@ function Frame(x,y,width,height,attr,parent) {
 		offset:undefined,
 		stored:undefined
 	};
-		
+
 	function init(x,y,width,height,attr,parent) {
 		if(parent instanceof Frame) {
 			this.__properties__.id = parent.display.nextID;
@@ -164,13 +165,13 @@ function Frame(x,y,width,height,attr,parent) {
 		else {
 			this.__properties__.display = new Display(x,y,width,height);
 		}
-		
+
 		this.x = x;
 		this.y = y;
 		this.width = width;
 		this.height = height;
 		this.attr = attr;
-		
+
 		this.__position__.cursor = new Cursor(0,0,this);
 		this.__position__.offset = new Offset(0,0,this);
 		this.__position__.stored = new Cursor(0,0,this);
@@ -198,9 +199,9 @@ Frame.prototype.__defineSetter__("attr", function(attr) {
 		throw("invalid attribute: " + attr);
 	this.__properties__.attr = attr;
 });
-Frame.prototype.__defineGetter__("x", function() { 
+Frame.prototype.__defineGetter__("x", function() {
 	if(this.__properties__.x == undefined)
-		return this.__properties__.display.x; 
+		return this.__properties__.display.x;
 	return this.__properties__.x;
 });
 Frame.prototype.__defineSetter__("x", function(x) {
@@ -210,9 +211,9 @@ Frame.prototype.__defineSetter__("x", function(x) {
 		throw("invalid x coordinate: " + x);
 	this.__properties__.x = Number(x);
 });
-Frame.prototype.__defineGetter__("y", function() { 
+Frame.prototype.__defineGetter__("y", function() {
 	if(this.__properties__.y == undefined)
-		return this.__properties__.display.y; 
+		return this.__properties__.display.y;
 	return this.__properties__.y;
 });
 Frame.prototype.__defineSetter__("y", function(y) {
@@ -298,7 +299,7 @@ Frame.prototype.__defineSetter__("transparent", function(bool) {
 		this.__settings__.transparent=bool;
 	else
 		throw("non-boolean transparent: " + bool);
-});	
+});
 Frame.prototype.__defineGetter__("lf_strict", function() {
 	return this.__settings__.lf_strict;
 });
@@ -372,9 +373,9 @@ Frame.prototype.setData = function(x,y,ch,attr,use_offset) {
 	//I don't remember why I did this, but it was probably important at the time
 	//if(!this.__properties__.data[py] || !this.__properties__.data[py][px])
 		// throw("Frame.setData() - invalid coordinates: " + px + "," + py);
-	if(!this.__properties__.data[py]) 
+	if(!this.__properties__.data[py])
 		this.__properties__.data[py] = [];
-	if(!this.__properties__.data[py][px]) 
+	if(!this.__properties__.data[py][px])
 		this.__properties__.data[py][px] = new Char();
 	if(this.__properties__.data[py][px].ch == ch && this.__properties__.data[py][px].attr == attr)
 		return;
@@ -382,7 +383,7 @@ Frame.prototype.setData = function(x,y,ch,attr,use_offset) {
 		this.__properties__.data[py][px].ch = ch;
 	if(attr)
 		this.__properties__.data[py][px].attr = attr;
-	if(this.__properties__.open) 
+	if(this.__properties__.open)
 		this.__properties__.display.updateChar(this,x,y);
 }
 Frame.prototype.clearData = function(x,y,use_offset) {
@@ -398,12 +399,12 @@ Frame.prototype.clearData = function(x,y,use_offset) {
 		return;
 	this.__properties__.data[py][px].ch = undefined;
 	this.__properties__.data[py][px].attr = undefined;
-	if(this.__properties__.open) 
+	if(this.__properties__.open)
 		this.__properties__.display.updateChar(this,x,y);
 }
 Frame.prototype.bottom = function() {
 	if(this.__properties__.open) {
-		for each(var c in this.__relations__.child) 
+		for each(var c in this.__relations__.child)
 			c.bottom();
 		this.__properties__.display.bottom(this);
 	}
@@ -411,7 +412,7 @@ Frame.prototype.bottom = function() {
 Frame.prototype.top = function() {
 	if(this.__properties__.open) {
 		this.__properties__.display.top(this);
-		for each(var c in this.__relations__.child) 
+		for each(var c in this.__relations__.child)
 			c.top();
 	}
 }
@@ -427,12 +428,12 @@ Frame.prototype.open = function() {
 Frame.prototype.refresh = function() {
 	if(this.__properties__.open) {
 		this.__properties__.display.updateFrame(this);
-		for each(var c in this.__relations__.child) 
+		for each(var c in this.__relations__.child)
 			c.refresh();
 	}
 }
 Frame.prototype.close = function() {
-	for each(var c in this.__relations__.child) 
+	for each(var c in this.__relations__.child)
 		c.close();
 	if(this.__properties__.open) {
 		this.__properties__.display.close(this);
@@ -470,7 +471,7 @@ Frame.prototype.move = function(x,y) {
 	if(ny !== undefined)
 		this.y=ny;
 	this.__properties__.display.updateFrame(this);
-	for each(var c in this.__relations__.child) 
+	for each(var c in this.__relations__.child)
 		c.move(x,y);
 }
 Frame.prototype.moveTo = function(x,y) {
@@ -580,11 +581,11 @@ Frame.prototype.load = function(filename,width,height) {
 		var i = 0;
 		var y = 0;
 		var saved = {};
-		
-		while(lines.length > 0) {	
+
+		while(lines.length > 0) {
 			var x = 0;
 			var line = lines.shift();
-			/* parse 'ATCODES'?? 
+			/* parse 'ATCODES'??
 			line = line.replace(/@(.*)@/g,
 				function (str, code, offset, s) {
 					return bbs.atcode(code);
@@ -614,7 +615,7 @@ Frame.prototype.load = function(filename,width,height) {
 						case 41:
 							bg = BG_RED;
 							break;
-						case 42: 
+						case 42:
 							bg = BG_GREEN;
 							break;
 						case 43:
@@ -665,12 +666,12 @@ Frame.prototype.load = function(filename,width,height) {
 					attr = bg + fg + i;
 					continue;
 				}
-				
+
 				/* parse absolute character position */
 				var m = line.match(/^\x1b\[(\d*);?(\d*)[Hf]/);
 				if(m !== null) {
 					line = line.substr(m.shift().length);
-					
+
 					if(m.length==0) {
 						x=0;
 						y=0;
@@ -683,14 +684,14 @@ Frame.prototype.load = function(filename,width,height) {
 					}
 					continue;
 				}
-				
+
 				/* ignore a bullshit sequence */
 				var n = line.match(/^\x1b\[\?7h/);
 				if(n !== null) {
 					line = line.substr(n.shift().length);
 					continue;
 				}
-				
+
 				/* parse an up positional sequence */
 				var n = line.match(/^\x1b\[(\d*)A/);
 				if(n !== null) {
@@ -702,7 +703,7 @@ Frame.prototype.load = function(filename,width,height) {
 						y-=Number(chars);
 					continue;
 				}
-				
+
 				/* parse a down positional sequence */
 				var n = line.match(/^\x1b\[(\d*)B/);
 				if(n !== null) {
@@ -714,7 +715,7 @@ Frame.prototype.load = function(filename,width,height) {
 						y+=Number(chars);
 					continue;
 				}
-				
+
 				/* parse a forward positional sequence */
 				var n = line.match(/^\x1b\[(\d*)C/);
 				if(n !== null) {
@@ -726,7 +727,7 @@ Frame.prototype.load = function(filename,width,height) {
 						x+=Number(chars);
 					continue;
 				}
-				
+
 				/* parse a backward positional sequence */
 				var n = line.match(/^\x1b\[(\d*)D/);
 				if(n !== null) {
@@ -738,14 +739,14 @@ Frame.prototype.load = function(filename,width,height) {
 						x-=Number(chars);
 					continue;
 				}
-				
+
 				/* parse a clear screen sequence */
 				var n = line.match(/^\x1b\[2J/);
 				if(n !== null) {
 					line = line.substr(n.shift().length);
 					continue;
 				}
-				
+
 				/* parse save cursor sequence */
 				var n = line.match(/^\x1b\[s/);
 				if(n !== null) {
@@ -767,10 +768,10 @@ Frame.prototype.load = function(filename,width,height) {
 				/* set character and attribute */
 				var ch = line[0];
 				line = line.substr(1);
-				
+
 				/* validate position */
-				if(y<0) 
-					y=0; 
+				if(y<0)
+					y=0;
 				if(x<0)
 					x=0;
 				if(x>=this.width) {
@@ -784,7 +785,7 @@ Frame.prototype.load = function(filename,width,height) {
 				x++;
 			}
 			y++;
-		}			
+		}
 		break;
     case "BIN":
         if (!this.load_bin(contents, width, height, 0)) return false;
@@ -827,7 +828,7 @@ Frame.prototype.scroll = function(x,y) {
 		if(this.__settings__.v_scroll) {
 			var newrow = [];
 			for(var x = 0;x<this.width;x++) {
-				for(var y = 0;y<this.height;y++) 
+				for(var y = 0;y<this.height;y++)
 					this.__properties__.display.updateChar(this,x,y);
 				newrow.push(new Char());
 			}
@@ -961,17 +962,17 @@ Frame.prototype.cleartoeol = function(attr) {
 }
 Frame.prototype.crlf = function() {
 	this.__position__.cursor.x = 0;
-	if(this.__position__.cursor.y < this.height-1) 
+	if(this.__position__.cursor.y < this.height-1)
 		this.__position__.cursor.y += 1;
 	else {}
 }
 Frame.prototype.write = function(str,attr) {
 	if(str == undefined)
 		return;
-	if(this.__settings__.word_wrap) 
+	if(this.__settings__.word_wrap)
 		str = word_wrap(str, this.width,str.length, false);
 	str = str.toString().split('');
-	
+
 	if(attr)
 		this.__properties__.curr_attr = attr;
 	else
@@ -994,7 +995,7 @@ Frame.prototype.putmsg = function(str,attr) {
 		}
 	}
 	str = str.toString().split('');
-	
+
 	if(attr)
 		this.__properties__.curr_attr = attr;
 	else
@@ -1070,9 +1071,15 @@ Frame.prototype.putmsg = function(str,attr) {
 				this.__properties__.curr_attr&=~HIGH;
 				this.__properties__.curr_attr&=~BLINK;
 				break;
+      case '+':
+        this.__properties__.attr_stack.push(this.__properties__.curr_attr);
+        break;
 			case '-':	/* Normal if High, Blink, or BG */
-				if(this.__properties__.curr_attr & 0xf8)
+        if (this.__properties__.attr_stack.length) {
+          this.__properties__.curr_attr = this.__properties__.attr_stack.pop();
+        } else if(this.__properties__.curr_attr & 0xf8) {
 					this.__properties__.curr_attr=this.attr;
+        }
 				break;
 			case '_':	/* Normal if blink/background */
 				if(this.__properties__.curr_attr & 0xf0)
@@ -1083,13 +1090,13 @@ Frame.prototype.putmsg = function(str,attr) {
 				break;
 			case ']':	/* LF */
 				pos.y++;
-				if(this.__settings__.lf_strict && pos.y >= this.height) {	
+				if(this.__settings__.lf_strict && pos.y >= this.height) {
 					this.scroll();
 					pos.y--;
 				}
 				break;
 			default:	/* Other stuff... specifically, check for right movement */
-				if(ch.charCodeAt(0)>127) 
+				if(ch.charCodeAt(0)>127)
 					pos.x+=ch.charCodeAt(0)-127;
 				break;
 			}
@@ -1119,7 +1126,7 @@ Frame.prototype.putmsg = function(str,attr) {
 				break;
 			case '\n':
 				pos.y++;
-				if(this.__settings__.lf_strict && pos.y >= this.height) {	
+				if(this.__settings__.lf_strict && pos.y >= this.height) {
 					this.scroll();
 					pos.y--;
 				}
@@ -1180,7 +1187,7 @@ Frame.prototype.up = function(n) {
 		}
 		else break;
 	}
-	if(n > 0) 
+	if(n > 0)
 		this.scroll(0,-(n));
 	return true;
 }
@@ -1212,7 +1219,7 @@ Frame.prototype.left = function(n) {
 		}
 		else break;
 	}
-	if(n > 0) 
+	if(n > 0)
 		this.scroll(-(n),0);
 	return true;
 }
@@ -1228,42 +1235,42 @@ Frame.prototype.right = function(n) {
 		}
 		else break;
 	}
-	if(n > 0) 
+	if(n > 0)
 		this.scroll(n,0);
 	return true;
 }
 
 /* internal frame methods */
 Frame.prototype.__checkX__ = function(x) {
-	if(	isNaN(x) || (this.__settings__.checkbounds &&  
-		(x > this.__properties__.display.x + this.__properties__.display.width || 
+	if(	isNaN(x) || (this.__settings__.checkbounds &&
+		(x > this.__properties__.display.x + this.__properties__.display.width ||
 		x < this.__properties__.display.x)))
 		return false;
 	return true;
 }
 Frame.prototype.__checkY__ = function(y) {
-	if( isNaN(y) || (this.__settings__.checkbounds && 
-		(y > this.__properties__.display.y + this.__properties__.display.height || 
+	if( isNaN(y) || (this.__settings__.checkbounds &&
+		(y > this.__properties__.display.y + this.__properties__.display.height ||
 		y < this.__properties__.display.y)))
 		return false;
 	return true;
 }
 Frame.prototype.__checkWidth__ = function(x,width) {
-	if(	width < 1 || isNaN(width) || (this.__settings__.checkbounds && 
+	if(	width < 1 || isNaN(width) || (this.__settings__.checkbounds &&
 		x + width > this.__properties__.display.x + this.__properties__.display.width))
 		return false;
 	return true;
 }
 Frame.prototype.__checkHeight__ = function(y,height) {
-	if( height < 1 || isNaN(height) || (this.__settings__.checkbounds && 
+	if( height < 1 || isNaN(height) || (this.__settings__.checkbounds &&
 		y + height > this.__properties__.display.y + this.__properties__.display.height))
 		return false;
 	return true;
 }
 Frame.prototype.__validateCursor__ = function(x,y) {
-	if(x >= this.width) 
+	if(x >= this.width)
 		return false;
-	if(y >= this.height) 	
+	if(y >= this.height)
 		return false;
 	return true;
 }
@@ -1272,7 +1279,7 @@ Frame.prototype.__putChar__ = function(ch,attr) {
 		this.__position__.cursor.x=0;
 		this.__position__.cursor.y++;
 	}
-	if(this.__position__.cursor.y >= this.height) {	
+	if(this.__position__.cursor.y >= this.height) {
 		this.scroll();
 		this.__position__.cursor.y--;
 	}
@@ -1357,7 +1364,7 @@ function Canvas(frame,display) {
 Canvas.prototype.hasData = function(x,y) {
 	var xpos = x-this.xoff;
 	var ypos = y-this.yoff;
-	
+
 	if(xpos < 0 || ypos < 0)
 		return undefined;
 	if(xpos >= this.frame.width || ypos >= this.frame.height)
@@ -1398,7 +1405,7 @@ Display.prototype.__defineSetter__("x", function(x) {
 		this.__properties__.x = 1;
 	else if(isNaN(x))
 		throw("invalid x coordinate: " + x);
-	else 
+	else
 		this.__properties__.x = Number(x);
 });
 Display.prototype.__defineGetter__("y", function() {
@@ -1409,7 +1416,7 @@ Display.prototype.__defineSetter__("y", function(y) {
 		this.__properties__.y = 1;
 	else if(isNaN(y) || y < 1 || y > console.screen_rows)
 		throw("invalid y coordinate: " + y);
-	else 
+	else
 		this.__properties__.y = Number(y);
 });
 Display.prototype.__defineGetter__("width", function() {
@@ -1420,7 +1427,7 @@ Display.prototype.__defineSetter__("width", function(width) {
 		this.__properties__.width = console.screen_columns;
 	else if(isNaN(width) || (this.x + Number(width) - 1) > (console.screen_columns))
 		throw("invalid width: " + width);
-	else 
+	else
 		this.__properties__.width = Number(width);
 });
 Display.prototype.__defineGetter__("height", function() {
@@ -1507,7 +1514,7 @@ Display.prototype.updateChar = function(frame,x,y) {
 }
 Display.prototype.screenShot = function(file,append) {
 	var f = new File(file);
-	if(append) 
+	if(append)
 		f.open('ab',true,4096);
 	else
 		f.open('wb',true,4096) ;
@@ -1528,7 +1535,7 @@ Display.prototype.screenShot = function(file,append) {
 				f.writeBin(0,1);
 		}
 	}
-	
+
 	f.close();
 	return true;
 }
@@ -1564,7 +1571,7 @@ Display.prototype.__getUpdateList__ = function() {
 		for(var x in this.__properties__.update[y]) {
 			var c = this.__getTopCanvas__(x,y);
 			var d = this.__getData__(c,x,y);
-			
+
 			if(d.px < 1 ||  d.py < 1 || d.px > console.screen_columns || d.py > console.screen_rows)
 				continue;
 			if(!this.__properties__.buffer[x]) {
@@ -1573,7 +1580,7 @@ Display.prototype.__getUpdateList__ = function() {
 				list.push(d);
 			}
 			else if(this.__properties__.buffer[x][y] == undefined ||
-				this.__properties__.buffer[x][y].ch != d.ch || 
+				this.__properties__.buffer[x][y].ch != d.ch ||
 				this.__properties__.buffer[x][y].attr != d.attr) {
 				this.__properties__.buffer[x][y] = d;
 				list.push(d);
@@ -1608,11 +1615,11 @@ Display.prototype.__getData__ = function(c,x,y) {
 Display.prototype.__drawChar__ = function(ch,attr,xpos,ypos) {
 	if(attr)
 		console.attributes = attr;
-	if(xpos == console.screen_columns && ypos == console.screen_rows) 
+	if(xpos == console.screen_columns && ypos == console.screen_rows)
 		console.cleartoeol();
 	else if(ch == undefined) {
 		console.write(" ");
-	}	
+	}
 	else {
 		console.write(ch);
 	}
@@ -1639,7 +1646,7 @@ function Cursor(x,y,frame) {
 		y:undefined,
 		frame:undefined
 	}
-	this.__defineGetter__("x", function() { 
+	this.__defineGetter__("x", function() {
 		return this.__properties__.x;
 	});
 	this.__defineSetter__("x", function(x) {
@@ -1647,7 +1654,7 @@ function Cursor(x,y,frame) {
 			throw("invalid x coordinate: " + x);
 		this.__properties__.x = x;
 	});
-	this.__defineGetter__("y", function() { 
+	this.__defineGetter__("y", function() {
 		return this.__properties__.y;
 	});
 	this.__defineSetter__("y", function(y) {
@@ -1655,12 +1662,12 @@ function Cursor(x,y,frame) {
 			throw("invalid y coordinate: " + y);
 		this.__properties__.y = y;
 	});
-	
+
 	if(frame instanceof Frame)
 		this.__properties__.frame = frame;
 	else
 		throw("the frame is not a frame");
-		
+
 	this.x = x;
 	this.y = y;
 }
@@ -1672,7 +1679,7 @@ function Offset(x,y,frame) {
 		y:undefined,
 		frame:undefined
 	}
-	this.__defineGetter__("x", function() { 
+	this.__defineGetter__("x", function() {
 		return this.__properties__.x;
 	});
 	this.__defineSetter__("x", function(x) {
@@ -1680,11 +1687,11 @@ function Offset(x,y,frame) {
 			throw("invalid x offset: " + x);
 		else if(x < 0)
 			x = 0;
-/* 		else if(x > this.__properties__.frame.data_width - this.__properties__.frame.width)	
+/* 		else if(x > this.__properties__.frame.data_width - this.__properties__.frame.width)
 			x = this.__properties__.frame.data_width - this.__properties__.frame.width;
  */		this.__properties__.x = x;
 	});
-	this.__defineGetter__("y", function() { 
+	this.__defineGetter__("y", function() {
 		return this.__properties__.y;
 	});
 	this.__defineSetter__("y", function(y) {
@@ -1696,13 +1703,12 @@ function Offset(x,y,frame) {
 			y = this.__properties__.frame.data_height - this.__properties__.frame.height;
  */		this.__properties__.y = y;
 	});
-	
+
 	if(frame instanceof Frame)
 		this.__properties__.frame = frame;
 	else
 		throw("the frame is not a frame");
-		
+
 	this.x = x;
 	this.y = y;
 }
-
