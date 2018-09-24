@@ -106,6 +106,7 @@ var AGENT_SMBUTIL		=2;		/* Imported via Synchronet SMBUTIL */
 var AGENT_SMTPSYSMSG	=3;		/* Synchronet SMTP server system message */
 
 								/* Message hfield types */
+var SMB_SUMMARY			= 0x61; /* Not currently used for messages */								
 var SMB_COMMENT 		= 0x62; /* Appear in message text, before body */
 var SMB_POLL_ANSWER		= 0xe0;	/* One poll answer (the subject is the question) */
 
