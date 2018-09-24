@@ -755,7 +755,7 @@ BinkP.prototype.session = function()
 								break cmd_switch;
 						}
 						// Is this the current "sending" file?
-						if (this.sending.sendas === args[0]) {
+						if (this.sending !== undefined && this.sending.sendas === args[0]) {
 							// Stop waiting for a M_GET
 							this.sending.waitingForGet = false;
 							// Now, simply adjust the position in the sending file
