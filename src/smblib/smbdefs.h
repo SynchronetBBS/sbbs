@@ -233,6 +233,7 @@
 #define SMB_PRIORITY		0x66
 #define SMB_COST			0x67
 #define	SMB_EDITOR			0x68
+#define SMB_TAGS			0x69	/* List of tags (ala hashtags) related to this message */
 
 #define FILEATTACH			0x70
 #define DESTFILE			0x71
