@@ -1,30 +1,23 @@
 /*
- * Synchronet-flavoured Markdown
- * # Heading
- * Lists end on first line not starting with a list prefix
- * * Unordered list item\r\n
- *  * Unordered list sub-item\r\n
- *   * Unordered list sub-sub-item\r\n ...
- * 1. Numbered list item\r\n ...
- *  1. Numbered list sub-item\r\n ...
- *  2. Another numbered list sub-item\r\n ...
- *   1. Numbered list sub-sub-item\r\n ...
- * 2. Another numbered list item
-  * *Emphasis* (high colour)
- * _ctext_ colour (where c is a CTRL-A colour)
+ * Partial DokuWiki markdown parser/renderer
+ * == h5 ==
+ * ==== h3 ====
+ * ====== h1 ======
+ * [[http://some.web.site/|some link text]]
+ * To-do: image links
+ * {{http://some.web.site/image.png|some alt text}}
+ * ** bold **
+ * // italic //
+ * __ underline __
+ * To-do: monospace '' text
  * > blockquote
- * [Link text](url) a link
- * ![Alt text](url) an image
- * --- A horizontal rule
- * this|is|a|table|header
- * this|is|a|table|row
+ * To-do: nested blockquote in HTML
+ * * Unordered lists
+ *  * With sub-items
+ * - Ordered lists
+ *  - With sub-items
+ *
  */
-
- /* To do:
-  * configurable tags instead of <b> and <i>
-  * code blocks / syntax highlighting
- */
-
 load('sbbsdefs.js');
 
 if (typeof Frame == 'undefined') Frame = false;
@@ -43,6 +36,8 @@ function Markdown(target, settings) {
   const config = {
     console : {
       bold_style : '\1h',
+      italic_style : '\1r',
+      underline_style : '\1g',
       list_indent : '\t',
       heading_underline : true,
       heading_style : '\1h',
@@ -130,50 +125,53 @@ Markdown.prototype.html_tag_format = function (tag, attributes) {
   return ret + '>';
 }
 
-Markdown.prototype.colorize_console = function (str) {
-  const self = this;
-  str = str.replace(/_([krgybmcw0-7])/ig, function (m, c1, c2) {
-    return '\1+\1' + c1;
-  });
-  return str.replace(/_/g, '\1-');
-}
-
 Markdown.prototype.render_text_console = function (text) {
   const self = this;
-  var ret = text.replace(/\*([^\*]+)\*/g, function (m, c) {
+  var ret = text.replace(/\*\*([^\*]+)\*\*/g, function (m, c) {
     return '\1+' + self.config.console.bold_style + c + '\1-';
   });
-  ret = ret.replace(/!\[([^\]]+)\]\(([^\)]+)\)/g, function (m, c1, c2) {
-    self.state.images.push({ text : c1, link : c2 });
-    return '\1+' + self.config.console.image_style + c1 + ' [' + self.state.images.length + ']\1-';
+  ret = ret.replace(/\/\/([^\/]+)\/\//g, function (m, c) {
+    return '\1+' + self.config.console.italic_style + c + '\1-';
   });
-  ret = ret.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, function (m, c1, c2) {
-    self.state.links.push({ text : c1, link : c2 });
-    return '\1+' + self.config.console.link_style + c1 + ' [' + self.state.links.length + ']\1-';
+  ret = ret.replace(/__([^_]+)__/g, function (m, c) {
+    return '\1+' + self.config.console.underline_style + c + '\1-';
   });
-  return this.colorize_console(ret);
-}
-
-Markdown.prototype.italicize = function (str) {
-  const self = this;
-  str = str.replace(/_([krgybmcw0-7])(.+)/ig, function (m, c1, c2) {
-    return '<i>' + self.italicize(c2);
+  ret = ret.replace(/\{\{(.+)\}\}/g, function (m, c) {
+    c = c.split('|');
+    self.state.images.push({ text : (c[1] || c[0]), link : c[0] });
+    return '\1+' + self.config.console.image_style + (c[1] || c[0]) + ' [' + self.state.images.length + ']\1-';
   });
-  return str.replace(/_/g, '</i>');
+  ret = ret.replace(/\[\[([^\]]+)\]\]/g, function (m, c) {
+    c = c.split('|');
+    self.state.links.push({ text : c[1] || c[0], link : c[0] });
+    return '\1+' + self.config.console.link_style + (c[1] || c[0]) + ' [' + self.state.links.length + ']\1-';
+  });
+  return ret;
 }
 
 Markdown.prototype.render_text_html = function (text) {
   const self = this;
-  var ret = text.replace(/\*([^\*]+)\*/g, function (m, c) {
+  var ret = text.replace(/\\1.(.+)\\1./g, function (m, c) {
+    return c;
+  });
+  ret = ret.replace(/\*\*([^\*]+)\*\*/g, function (m, c) {
     return '<b>' + c + '</b>';
   });
-  ret = ret.replace(/!\[([^\]]+)\]\(([^\)]+)\)/g, function (m, c1, c2) {
-    return self.html_tag_format('img', { alt : c1, src : c2 });
+  ret = ret.replace(/\/\/([^\/]+)\/\//g, function (m, c) {
+    return '<i>' + c + '</i>';
   });
-  ret = ret.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, function (m, c1, c2) {
-    return self.html_tag_format('a', { href : c2 }) + c1 + '</a>';
+  ret = ret.replace(/__([^_]+)__/g, function (m, c) {
+    return '<span style="text-decoration:underline;">' + c + '</span>';
   });
-  return this.italicize(ret);
+  ret = ret.replace(/\{\{(.+)\}\}/g, function (m, c) {
+    c = c.split('|');
+    return self.html_tag_format('img', { alt : (c[1] || c[0]), src : c[0] });
+  });
+  ret = ret.replace(/\[\[([^\]]+)\]\]/g, function (m, c) {
+    c = c.split('|');
+    return self.html_tag_format('a', { href : c[0] }) + (c[1] || c[0]) + '</a>';
+  });
+  return ret;
 }
 
 Markdown.prototype.render_table = function () {
@@ -252,12 +250,13 @@ Markdown.prototype.render_table = function () {
 Markdown.prototype.render_line_console = function (line) {
 
   var match;
-  var ret = '';
   const self = this;
+  var ret = this.render_text_console(line);
 
   // Ordered and unordered lists
-  match = line.match(/^(\s*)(\*|\d\.)\s+(.+)$/);
+  match = ret.match(/^(\s*)(\*|-)\s+(.+)$/);
   if (match !== null) {
+    ret = ret.replace(match[0], '');
     if (this.state.table.length) ret += this.render_table();
     var lt = (match[2] == '*' ? 'ul' : 'ol');
     if (match[1].length > this.state.list_level) {
@@ -271,9 +270,9 @@ Markdown.prototype.render_line_console = function (line) {
     if (lt == 'ul') {
       ret += match[2];
     } else {
-      ret += match[2].substring(0, match[2].length - 1) + ')';
+      ret += (this.state.list_level + 1) + '.'; // This is busted; maintain something in list_stack
     }
-    ret += ' ' + this.render_text_console(match[3]) + '\r\n';
+    ret += ' ' + match[3] + '\r\n';
     return ret;
   }
   if (this.state.list_level) {
@@ -281,22 +280,21 @@ Markdown.prototype.render_line_console = function (line) {
     this.state.list_level = 0;
   }
 
-  row = line.split('|');
+  row = ret.split('|');
   if (row.length > 1) {
-    this.state.table.push(row.map(function (e) {
-      return self.render_text_console(e);
-    }));
+    this.state.table.push(row);
     return;
   } else if (this.state.table.length) {
     ret += this.render_table();
   }
 
   // Heading
-  match = line.match(/^(#+)\s+(.*)$/);
+  match = ret.match(/^(==+)\s(.+)\s==+$/);
   if (match !== null) {
+    ret = ret.replace(match[0], '');
     ret += '\1+';
     ret += this.config.console.heading_style;
-    ret += this.render_text_console(match[2]);
+    ret += match[2];
     if (this.config.console.heading_underline) {
       ret += '\r\n';
       for (var n = 0; n < match[2].length; n++) {
@@ -308,36 +306,37 @@ Markdown.prototype.render_line_console = function (line) {
   }
 
   // Blockquote
-  match = line.match(/^\s*>\s(.+)$/);
+  match = ret.match(/^\s*>\s(.+)$/);
   if (match !== null) {
-    return ret + quote_msg(
-      word_wrap(this.render_text_console(match[1])), this.columns - 1
+    return ret.replace(
+      match[0], quote_msg(word_wrap(match[1]), this.columns - 1)
     ) + '\r\n';
   }
 
   // Horizontal Rule
-  match = line.match(/^---+$/);
+  match = ret.match(/^----+$/);
   if (match !== null) {
     var s = '';
     while (s.length < this.columns - 1) {
       s += '-';
     }
-    return ret + s + '\r\n';
+    return ret.replace(match[0], s) + '\r\n';
   }
 
-  return ret + this.render_text_console(line) + '\r\n';
+  return ret + '\r\n';
 
 }
 
 Markdown.prototype.render_line_html = function (line) {
 
   var match;
-  var ret = '';
   const self = this;
+  var ret = this.render_text_html(line);
 
   // Blockquote
-  match = line.match(/^\s*>\s(.+)$/);
+  match = ret.match(/^\s*>\s(.+)$/);
   if (match !== null) {
+    ret = ret.replace(match[0], '');
     if (this.state.table.length) ret += this.render_table();
     if (!this.state.blockquote) {
       ret += this.html_tag_format('blockquote');
@@ -350,8 +349,9 @@ Markdown.prototype.render_line_html = function (line) {
   }
 
   // Ordered and unordered lists
-  match = line.match(/^(\s*)(\*|\d\.)\s+(.+)$/);
+  match = ret.match(/^(\s*)(\*|-)\s+(.+)$/);
   if (match !== null) {
+    ret = ret.replace(match[0], '');
     if (this.state.table.length) ret += this.render_table();
     var lt = (match[2] == '*' ? 'ul' : 'ol');
     if (!match[1].length) {
@@ -368,7 +368,7 @@ Markdown.prototype.render_line_html = function (line) {
       ret += this.html_tag_format(lt);
     }
     ret += this.html_tag_format('li');
-    ret += this.render_text_html(match[3]);
+    ret += match[3];
     ret += '</li>';
     return ret;
   }
@@ -376,33 +376,32 @@ Markdown.prototype.render_line_html = function (line) {
     ret += '</' + this.state.list_stack.pop() + '>';
   }
 
-  row = line.split('|');
+  row = ret.split('|');
   if (row.length > 1) {
-    this.state.table.push(row.map(function (e) {
-      return self.render_text_html(e);
-    }));
+    this.state.table.push(row);
     return;
   } else if (this.state.table.length) {
     ret += this.render_table();
   }
 
   // Heading
-  match = line.match(/^#+\s+(.*)$/);
+  match = ret.match(/^(==+)\s(.+)\s==+$/);
   if (match !== null) {
-    var lvl = Math.min(match[0].split(' ')[0].length, 5);
+    ret = ret.replace(match[0], '');
+    var lvl = 6 - Math.min(match[1].split(' ')[0].length, 5);
     ret += '<h' + lvl + '>';
-    ret += this.render_text_html(match[1]);
+    ret += match[2];
     ret += '</h' + lvl + '>';
     return ret;
   }
 
   // Horizontal Rule
-  match = line.match(/^---+$/);
+  match = ret.match(/^----+$/);
   if (match !== null) {
-    return ret + this.html_tag_format('hr');
+    return ret.replace(match[0], '') + this.html_tag_format('hr');
   }
 
-  return ret + this.render_text_html(line) + '<br>';
+  return ret + '<br>';
 
 }
 
