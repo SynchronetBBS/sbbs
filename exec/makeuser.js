@@ -1,9 +1,11 @@
+// $Id$
+
 writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 
 (function() {
 	
 	function usage() {
-		writeln('usage: jsexec.exe makeuser.js name [-param value] [...]');
+		writeln('usage: jsexec makeuser.js name [-param value] [...]');
 		writeln('');
 		writeln('params:');
 		writeln('');
@@ -112,7 +114,7 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 				writeln("* Invalid telephone number");
 				error = true;
 			}
-			else if(system.trashcan("phone",telephone) {
+			else if(system.trashcan("phone",telephone)) {
 				writeln("* Illegal phone number per " + system.text_dir + "phone.can");
 				error = true;
 			}
@@ -123,7 +125,7 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 				writeln("* Invalid e-mail address");
 				error = true;
 			}
-			else if(system.trashcan("email",email) {
+			else if(system.trashcan("email",email)) {
 				writeln("* Illegal e-mail address per " + system.text_dir + "email.can");
 				error = true;
 			}
