@@ -1,21 +1,25 @@
 /*
- * Partial DokuWiki markdown parser/renderer
+ * Partial DokuWiki markup parser/renderer
  * == h5 ==
  * ==== h3 ====
  * ====== h1 ======
  * [[http://some.web.site/|some link text]]
- * To-do: image links
  * {{http://some.web.site/image.png|some alt text}}
  * ** bold **
  * // italic //
  * __ underline __
  * > blockquote
- * To-do: nested blockquote in HTML
  * * Unordered lists
  *  * With sub-items
  * - Ordered lists
  *  - With sub-items
- *
+ * To do:
+ *  - nested blockquote in HTML
+ *  - image links
+ *  - DokuWiki-style tables
+ *  - code blocks
+ *  - footnotes (HTML & console, not console link/image footnoting)
+ *  - text conversion (HTML only probably)
  */
 load('sbbsdefs.js');
 
@@ -74,6 +78,15 @@ function Markdown(target, settings) {
 
   if (Frame && target instanceof Frame) target.word_wrap = true;
 
+  this.reset = function () {
+    state.list_level = 0;
+    state.links = [];
+    state.images = [];
+    state.table = [];
+    state.blockquote = false;
+    state.list_stack = [];
+  }
+
   Object.defineProperty(this, 'state', { get : function () {
     return state;
   }});
@@ -83,6 +96,7 @@ function Markdown(target, settings) {
       return target;
     },
     set : function (t) {
+      this.reset();
       if (t == 'html') {
         target = t;
       } else if (Frame && t instanceof Frame) {
@@ -263,11 +277,23 @@ Markdown.prototype.render_line_console = function (line) {
   if (match !== null) {
     ret = ret.replace(match[0], '');
     if (this.state.table.length) ret += this.render_table();
-    var lt = (match[2] == '*' ? 'ul' : 'ol');
+    if (match[2] == '*') {
+      lt = 'ul';
+    } else {
+      lt = 'ol';
+    }
     if (match[1].length > this.state.list_level) {
       this.state.list_level++;
+      if (lt == 'ol') this.state.list_stack.push(0);
     } else if (match[1].length < this.state.list_level) {
       this.state.list_level--;
+      if (lt == 'ol') this.state.list_stack.pop();
+    } else if (lt == 'ol') {
+      if (typeof this.state.list_stack[this.state.list_level] != 'number') {
+        this.state.list_stack[this.state.list_level] = 0;
+      } else {
+        this.state.list_stack[this.state.list_level]++;
+      }
     }
     for (var n = 0; n < this.state.list_level; n++) {
       ret += this.config.console.list_indent;
@@ -275,7 +301,7 @@ Markdown.prototype.render_line_console = function (line) {
     if (lt == 'ul') {
       ret += match[2];
     } else {
-      ret += (this.state.list_level + 1) + '.'; // This is busted; maintain something in list_stack
+      ret += (this.state.list_stack[this.state.list_level] + 1) + '.';
     }
     ret += ' ' + match[3] + '\r\n';
     return ret;
@@ -283,6 +309,7 @@ Markdown.prototype.render_line_console = function (line) {
   if (this.state.list_level) {
     ret += '\r\n';
     this.state.list_level = 0;
+    this.state.list_stack = [];
   }
 
   row = ret.split('|');
