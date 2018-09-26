@@ -351,7 +351,7 @@ Markdown.prototype.render_line_console = function (line) {
     if (this.config.console.heading_underline) {
       ret += '\r\n';
       for (var n = 0; n < match[2].length; n++) {
-        ret += '-';
+        ret += user.settings&USER_NO_EXASCII ? '-' : ascii(196);
       }
     }
     ret += '\1-\r\n\r\n';
@@ -371,7 +371,7 @@ Markdown.prototype.render_line_console = function (line) {
   if (match !== null) {
     var s = '';
     while (s.length < this.columns - 1) {
-      s += '-';
+      s += user.settings&USER_NO_EXASCII ? '-' : ascii(196);
     }
     return ret.replace(match[0], s) + '\r\n';
   }
