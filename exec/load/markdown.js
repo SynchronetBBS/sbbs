@@ -234,6 +234,8 @@ Markdown.prototype.render_table = function () {
           }
           if (attr.colspan < 2) delete attr.colspan;
         }
+        if (e[n].search(/^\s\s+/) > -1) attr.style = "text-align:right;";
+        if (e[n].search(/^\s\s+(.+)\s\s+$/) > -1) attr.style = "text-align:center;";
         var tt = i == 0 ? 'th' : 'td';
         var tag = [self.html_tag_format(tt, attr), '</' + tt + '/>'];
         ret += tag[0] + e[n] + tag[1];
