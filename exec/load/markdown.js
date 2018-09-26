@@ -18,7 +18,6 @@
  *  - image links
  *  - DokuWiki-style tables
  *  - code blocks
- *  - footnotes (HTML & console, not console link/image footnoting)
  *  - text conversion (HTML only probably)
  */
 load('sbbsdefs.js');
@@ -31,6 +30,7 @@ function Markdown(target, settings) {
     list_level : 0,
     links : [],
     images : [],
+    footnotes : [],
     table : [],
     blockquote : false,
     list_stack : []
@@ -45,7 +45,8 @@ function Markdown(target, settings) {
       heading_underline : true,
       heading_style : '\1h',
       link_style : '\1h\1c',
-      image_style : '\1h\1m'
+      image_style : '\1h\1m',
+      footnote_style : '\1h\1y'
     },
     html : {
       a : '',
@@ -82,6 +83,7 @@ function Markdown(target, settings) {
     state.list_level = 0;
     state.links = [];
     state.images = [];
+    state.footnotes = [];
     state.table = [];
     state.blockquote = false;
     state.list_stack = [];
@@ -162,6 +164,10 @@ Markdown.prototype.render_text_console = function (text) {
     self.state.links.push({ text : c[1] || c[0], link : c[0] });
     return '\1+' + self.config.console.link_style + (c[1] || c[0]) + ' [' + self.state.links.length + ']\1-';
   });
+  ret = ret.replace(/\(\(([^\)]+)\)\)/g, function (m, c) {
+    self.state.footnotes.push(c);
+    return '\1+' + self.config.console.footnote_style + '[' + self.state.footnotes.length + ']\1-';
+  });
   return ret;
 }
 
@@ -189,6 +195,10 @@ Markdown.prototype.render_text_html = function (text) {
   ret = ret.replace(/\[\[([^\]]+)\]\]/g, function (m, c) {
     c = c.split('|');
     return self.html_tag_format('a', { href : c[0] }) + (c[1] || c[0]) + '</a>';
+  });
+  ret = ret.replace(/\(\(([^\)]+)\)\)/g, function (m, c) {
+    self.state.footnotes.push(c);
+    return self.html_tag_format('a', { href : '#f' + self.state.footnotes.length }) + ' [' + self.state.footnotes.length + ']</a>';
   });
   return ret;
 }
@@ -459,6 +469,12 @@ Markdown.prototype.render_console = function (text) {
     });
     this.target.putmsg('\r\n');
   }
+  if (this.state.footnotes.length) {
+    this.target.putmsg('\1+' + self.config.console.footnote_style + 'Footnotes:\1-\r\n');
+    this.state.footnotes.forEach(function (e, i) {
+      self.target.putmsg('\1+' + self.config.console.footnote_style + '[' + (i + 1) + '] ' + e + '\1-\r\n');
+    });
+  }
 }
 
 Markdown.prototype.render_html = function (text) {
@@ -467,6 +483,12 @@ Markdown.prototype.render_html = function (text) {
     var line = self.render_line_html(e.replace(/\r$/, ''));
     if (typeof line == 'string') writeln(line);
   });
+  if (this.state.footnotes.length) {
+    writeln('<hr>');
+    this.state.footnotes.forEach(function (e, i) {
+      writeln('<a name="f' + (i + 1) + '">' + (i + 1) + ') ' + e + '<br>');
+    });
+  }
 }
 
 Markdown.prototype.render = function (text) {
