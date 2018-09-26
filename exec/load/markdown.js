@@ -210,18 +210,29 @@ Markdown.prototype.render_table = function () {
       if (i == 0) ret += self.html_tag_format('thead');
       for (var n = 0; n < columns.length; n++) {
         if (e[n] == ':::') continue;
-        var nn = i + 1;
+        if (e[n] == '') continue;
         var attr = {};
-        if (self.state.table[nn] && self.state.table[nn][n] == ':::') {
+        var nr = i + 1;
+        if (self.state.table[nr] && self.state.table[nr][n] == ':::') {
           attr.rowspan = 1;
           while (
-            typeof self.state.table[nn] !== 'undefined'
-            && self.state.table[nn][n] == ':::'
+            typeof self.state.table[nr] !== 'undefined'
+            && self.state.table[nr][n] == ':::'
           ) {
             attr.rowspan++;
-            nn++;
+            nr++;
           }
           if (attr.rowspan < 2) delete attr.rowspan;
+        }
+        var nc = n + 1;
+        if (typeof e[nc] != 'undefined' && e[nc] == '') {
+          log('here');
+          attr.colspan = 1;
+          while (typeof e[nc] !== 'undefined' && e[nc] == '') {
+            attr.colspan++;
+            nc++;
+          }
+          if (attr.colspan < 2) delete attr.colspan;
         }
         var tt = i == 0 ? 'th' : 'td';
         var tag = [self.html_tag_format(tt, attr), '</' + tt + '/>'];
@@ -430,7 +441,7 @@ Markdown.prototype.render_line_html = function (line) {
   }
 
   // Table
-  const tre = /([|^])([^|^]+)(?=[|^])/g;
+  const tre = /([|^])([^|^]*)(?=[|^])/g;
   match = tre.exec(ret);
   if (match !== null) {
     const _ret = match.input;
@@ -447,6 +458,7 @@ Markdown.prototype.render_line_html = function (line) {
       match = tre.exec(ret);
     } while (match !== null);
     this.state.table.push(row);
+    log('row ' + JSON.stringify(row));
     ret = ret.replace(_ret, '');
     return ret;
   } else if (this.state.table.length) {
