@@ -142,65 +142,50 @@ Markdown.prototype.html_tag_format = function (tag, attributes) {
 
 Markdown.prototype.render_text_console = function (text) {
   const self = this;
-  var ret = text.replace(/\*\*([^\*]+)\*\*/g, function (m, c) {
+  return text.replace(/\*\*([^\*]+)\*\*/g, function (m, c) {
     return '\1+' + self.config.console.bold_style + c + '\1-';
-  });
-  ret = ret.replace(/\/\/([^\/]+)\/\//g, function (m, c) {
+  }).replace(/\/\/([^\/]+)\/\//g, function (m, c) {
     return '\1+' + self.config.console.italic_style + c + '\1-';
-  });
-  ret = ret.replace(/__([^_]+)__/g, function (m, c) {
+  }).replace(/__([^_]+)__/g, function (m, c) {
     return '\1+' + self.config.console.underline_style + c + '\1-';
-  });
-  ret = ret.replace(/''([^']+)''/g, function (m, c) {
+  }).replace(/''([^']+)''/g, function (m, c) {
     return c;
-  });
-  ret = ret.replace(/\{\{(.+)\}\}/g, function (m, c) {
+  }).replace(/\{\{(.+)\}\}/g, function (m, c) {
     c = c.split('|');
     self.state.images.push({ text : (c[1] || c[0]), link : c[0] });
     return '\1+' + self.config.console.image_style + (c[1] || c[0]) + ' [' + self.state.images.length + ']\1-';
-  });
-  ret = ret.replace(/\[\[([^\]]+)\]\]/g, function (m, c) {
+  }).replace(/\[\[([^\]]+)\]\]/g, function (m, c) {
     c = c.split('|');
     self.state.links.push({ text : c[1] || c[0], link : c[0] });
     return '\1+' + self.config.console.link_style + (c[1] || c[0]) + ' [' + self.state.links.length + ']\1-';
-  });
-  ret = ret.replace(/\(\(([^\)]+)\)\)/g, function (m, c) {
+  }).replace(/\(\(([^\)]+)\)\)/g, function (m, c) {
     self.state.footnotes.push(c);
     return '\1+' + self.config.console.footnote_style + '[' + self.state.footnotes.length + ']\1-';
   });
-  return ret;
 }
 
 Markdown.prototype.render_text_html = function (text) {
   const self = this;
-  var ret = text.replace(/\\1.(.+)\\1./g, function (m, c) {
+  return text.replace(/\\1.(.+)\\1./g, function (m, c) {
     return c;
-  });
-  ret = ret.replace(/\*\*([^\*]+)\*\*/g, function (m, c) {
+  }).replace(/\*\*([^\*]+)\*\*/g, function (m, c) {
     return '<b>' + c + '</b>';
-  });
-  ret = ret.replace(/\/\/([^\/]+)\/\//g, function (m, c) {
+  }).replace(/\/\/([^\/]+)\/\//g, function (m, c) {
     return '<i>' + c + '</i>';
-  });
-  ret = ret.replace(/__([^_]+)__/g, function (m, c) {
+  }).replace(/__([^_]+)__/g, function (m, c) {
     return '<span style="text-decoration:underline;">' + c + '</span>';
-  });
-  ret = ret.replace(/''([^']+)''/g, function (m, c) {
+  }).replace(/''([^']+)''/g, function (m, c) {
     return '<code>' + c + '</code>';
-  });
-  ret = ret.replace(/\{\{(.+)\}\}/g, function (m, c) {
+  }).replace(/\{\{(.+)\}\}/g, function (m, c) {
     c = c.split('|');
     return self.html_tag_format('img', { alt : (c[1] || c[0]), src : c[0] });
-  });
-  ret = ret.replace(/\[\[([^\]]+)\]\]/g, function (m, c) {
+  }).replace(/\[\[([^\]]+)\]\]/g, function (m, c) {
     c = c.split('|');
     return self.html_tag_format('a', { href : c[0] }) + (c[1] || c[0]) + '</a>';
-  });
-  ret = ret.replace(/\(\(([^\)]+)\)\)/g, function (m, c) {
+  }).replace(/\(\(([^\)]+)\)\)/g, function (m, c) {
     self.state.footnotes.push(c);
     return self.html_tag_format('a', { href : '#f' + self.state.footnotes.length }) + ' [' + self.state.footnotes.length + ']</a>';
   });
-  return ret;
 }
 
 Markdown.prototype.render_table = function () {
@@ -220,16 +205,27 @@ Markdown.prototype.render_table = function () {
   });
   if (this.target == 'html') {
     var ret = this.html_tag_format('table');
-    this.state.table.forEach(function (e, i) {
-      if (i == 0) {
-        ret += self.html_tag_format('thead');
-        var tag = [self.html_tag_format('th'), '</th>'];
-      } else {
-        var tag = [self.html_tag_format('td'), '</td>'];
-      }
+    this.state.table.forEach(function (e, i, a) {
       ret += self.html_tag_format('tr');
+      if (i == 0) ret += self.html_tag_format('thead');
       for (var n = 0; n < columns.length; n++) {
-        ret += tag[0] + (typeof e[n] == 'undefined' ? '' : e[n]) + tag[1];
+        if (e[n] == ':::') continue;
+        var nn = i + 1;
+        var attr = {};
+        if (self.state.table[nn] && self.state.table[nn][n] == ':::') {
+          attr.rowspan = 1;
+          while (
+            typeof self.state.table[nn] !== 'undefined'
+            && self.state.table[nn][n] == ':::'
+          ) {
+            attr.rowspan++;
+            nn++;
+          }
+          if (attr.rowspan < 2) delete attr.rowspan;
+        }
+        var tt = i == 0 ? 'th' : 'td';
+        var tag = [self.html_tag_format(tt, attr), '</' + tt + '/>'];
+        ret += tag[0] + e[n] + tag[1];
       }
       ret += '</tr>';
       if (i == 0) ret += '</thead>';
