@@ -322,10 +322,25 @@ Markdown.prototype.render_line_console = function (line) {
     this.state.list_stack = [];
   }
 
-  row = ret.split('|');
-  if (row.length > 1) {
+  // Table
+  const tre = /([|^])([^|^]+)(?=[|^])/g;
+  match = tre.exec(ret);
+  if (match !== null) {
+    const _ret = match.input;
+    const row = [];
+    do {
+      if (match[1] == '^') {
+        row.push(
+          '\1+' + this.config.console.heading_style + match[2] + '\1-'
+        );
+      } else {
+        row.push(match[2]);
+      }
+      match = tre.exec(ret);
+    } while (match !== null);
     this.state.table.push(row);
-    return;
+    ret = ret.replace(_ret, '');
+    return ret;
   } else if (this.state.table.length) {
     ret += this.render_table();
   }
@@ -418,10 +433,26 @@ Markdown.prototype.render_line_html = function (line) {
     ret += '</' + this.state.list_stack.pop() + '>';
   }
 
-  row = ret.split('|');
-  if (row.length > 1) {
+  // Table
+  const tre = /([|^])([^|^]+)(?=[|^])/g;
+  match = tre.exec(ret);
+  if (match !== null) {
+    const _ret = match.input;
+    const row = [];
+    do {
+      if (match[1] == '^') {
+        // This is lousy, but if you want table headings to look special,
+        // then include a 'doku_th' class in your stylesheet.
+        // You're welcome.
+        row.push('<span class="doku_th">' + match[2] + '</span>');
+      } else {
+        row.push(match[2]);
+      }
+      match = tre.exec(ret);
+    } while (match !== null);
     this.state.table.push(row);
-    return;
+    ret = ret.replace(_ret, '');
+    return ret;
   } else if (this.state.table.length) {
     ret += this.render_table();
   }
@@ -484,9 +515,9 @@ Markdown.prototype.render_html = function (text) {
     if (typeof line == 'string') writeln(line);
   });
   if (this.state.footnotes.length) {
-    writeln('<hr>');
+    writeln('<hr>Footnotes:<br>');
     this.state.footnotes.forEach(function (e, i) {
-      writeln('<a name="f' + (i + 1) + '">' + (i + 1) + ') ' + e + '<br>');
+      writeln('<a id="f' + (i + 1) + '">[' + (i + 1) + '] ' + e + '</a><br>');
     });
   }
 }
