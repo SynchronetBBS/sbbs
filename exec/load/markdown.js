@@ -9,7 +9,6 @@
  * ** bold **
  * // italic //
  * __ underline __
- * To-do: monospace '' text
  * > blockquote
  * To-do: nested blockquote in HTML
  * * Unordered lists
@@ -136,6 +135,9 @@ Markdown.prototype.render_text_console = function (text) {
   ret = ret.replace(/__([^_]+)__/g, function (m, c) {
     return '\1+' + self.config.console.underline_style + c + '\1-';
   });
+  ret = ret.replace(/''([^']+)''/g, function (m, c) {
+    return c;
+  });
   ret = ret.replace(/\{\{(.+)\}\}/g, function (m, c) {
     c = c.split('|');
     self.state.images.push({ text : (c[1] || c[0]), link : c[0] });
@@ -162,6 +164,9 @@ Markdown.prototype.render_text_html = function (text) {
   });
   ret = ret.replace(/__([^_]+)__/g, function (m, c) {
     return '<span style="text-decoration:underline;">' + c + '</span>';
+  });
+  ret = ret.replace(/''([^']+)''/g, function (m, c) {
+    return '<code>' + c + '</code>';
   });
   ret = ret.replace(/\{\{(.+)\}\}/g, function (m, c) {
     c = c.split('|');
