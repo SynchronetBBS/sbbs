@@ -317,7 +317,7 @@ Markdown.prototype.render_line_console = function (line) {
   }
 
   // Heading
-  match = ret.match(/^(==+)([^=]+)==+$/m);
+  match = ret.match(/^(==+)([^=]+)==+\s*$/m);
   if (match !== null) {
     ret = ret.replace(match[0], '');
     ret += '\1+';
@@ -429,7 +429,7 @@ Markdown.prototype.render_line_html = function (line) {
   }
 
   // Heading
-  match = ret.match(/^(==+)([^=]+)==+$/m);
+  match = ret.match(/^(==+)([^=]+)==+\s*$/m);
   if (match !== null) {
     ret = ret.replace(match[0], '');
     var lvl = 6 - Math.min(match[1].split(' ')[0].length, 5);
