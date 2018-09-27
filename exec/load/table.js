@@ -108,7 +108,6 @@ function table(data, line_color, heading_color, cell_color, width) {
     for (var row = 0; row < data.length; row++) {
       nr = 0;
       for (var col = 0; col < data[row].length; col++) {
-        data[row][col] = skipsp(truncsp(data[row][col]));
         arr = truncsp(word_wrap(data[row][col], widths[col])).split(/\n/);
         // If the cell has to wrap
         if (arr.length > 1) {
@@ -121,7 +120,6 @@ function table(data, line_color, heading_color, cell_color, width) {
               add_row._stw = true;
               // For each column in the table, add a column to the new row
               for (var c = 0; c < data[row].length; c++) {
-                // Default to rowspan
                 add_row[c] = ' ';
               }
               // Add the new row to the table
@@ -161,7 +159,7 @@ function table(data, line_color, heading_color, cell_color, width) {
         wrapping_colspan[col] = true;
       }
       rowspan = (!lastrow && data[row + 1][col] == ':::');
-      s = ' ' + (data[row][col] || '').replace(':::', '');
+      s = ' ' + skipsp(truncsp((data[row][col] || '').replace(':::', '')));
       while (strip_ctrl(s).length <= widths[col]) {
         s += ' ';
       }
