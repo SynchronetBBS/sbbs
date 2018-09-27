@@ -3604,8 +3604,8 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 	i=smb_addmsg(smbfile, &msg, smb_storage_mode(&scfg, smbfile), dupechk_hashes, xlat, sbody, stail);
 
 	if(i!=SMB_SUCCESS) {
-		lprintf(LOG_ERR,"ERROR smb_addmsg(%s) returned %d: %s"
-			,subnum==INVALID_SUB ? "mail":scfg.sub[subnum]->code, i, smbfile->last_error);
+		lprintf(LOG_ERR,"ERROR %d (%s) line %d adding message to %s"
+			,i, smbfile->last_error, __LINE__, subnum==INVALID_SUB ? "mail":scfg.sub[subnum]->code);
 	}
 	smb_freemsgmem(&msg);
 
@@ -4356,7 +4356,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 		email->status.max_age=scfg.mail_maxage;
 		email->status.attr=SMB_EMAIL;
 		if((i=smb_create(email))!=SMB_SUCCESS) {
-			lprintf(LOG_ERR,"ERROR %d (%s) creating %s",i,email->last_error,email->file);
+			lprintf(LOG_ERR,"ERROR %d (%s) line %d creating %s", i, email->last_error, __LINE__, email->file);
 			bail(1);
 			return -1;
 		}
@@ -4679,7 +4679,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			msg.idx=post[m].idx;
 			if((retval = smb_lockmsghdr(&smb, &msg))!=SMB_SUCCESS) {
 				lprintf(LOG_ERR,"ERROR %d (%s) line %d locking %s msghdr"
-					,retval, smb.last_error,__LINE__,smb.file);
+					,retval, smb.last_error,__LINE__, smb.file);
 				continue;
 			}
 			retval = smb_getmsghdr(&smb, &msg);
@@ -4689,18 +4689,18 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 
 				msg.hdr.number=post[m].idx.number;
 				if((retval=smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
-					lprintf(LOG_ERR,"ERROR %d line %d reading %s index",retval,__LINE__
+					lprintf(LOG_ERR,"ERROR %d (%s) line %d reading %s index", retval, smb.last_error, __LINE__
 						,smb.file);
 					continue;
 				}
 				if((retval = smb_lockmsghdr(&smb, &msg))!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"ERROR %d line %d locking %s msghdr",retval ,__LINE__
+					lprintf(LOG_ERR,"ERROR %d (%s) line %d locking %s msghdr", retval, smb.last_error, __LINE__
 						,smb.file);
 					continue;
 				}
 				if((retval = smb_getmsghdr(&smb, &msg))!=SMB_SUCCESS) {
 					smb_unlockmsghdr(&smb, &msg);
-					lprintf(LOG_ERR,"ERROR %d line %d reading %s msghdr",retval ,__LINE__
+					lprintf(LOG_ERR,"ERROR %d (%s) line %d reading %s msghdr", retval, smb.last_error, __LINE__
 						,smb.file);
 					continue;
 				}
@@ -4986,18 +4986,18 @@ bool retoss_bad_echomail(void)
 
 			badmsg.hdr.number=post[m].idx.number;
 			if((retval=smb_getmsgidx(&badsmb, &badmsg))!=SMB_SUCCESS) {
-				lprintf(LOG_ERR,"ERROR %d line %d reading %s index",retval,__LINE__
+				lprintf(LOG_ERR,"ERROR %d (%s) line %d reading %s index", retval, badsmb.last_error, __LINE__
 					,badsmb.file);
 				continue;
 			}
 			if((retval=smb_lockmsghdr(&badsmb,&badmsg))!=SMB_SUCCESS) {
-				lprintf(LOG_ERR,"ERROR %d line %d locking %s msghdr",retval,__LINE__
+				lprintf(LOG_ERR,"ERROR %d (%s) line %d locking %s msghdr", retval, badsmb.last_error, __LINE__
 					,badsmb.file);
 				continue;
 			}
 			if((retval=smb_getmsghdr(&badsmb,&badmsg))!=SMB_SUCCESS) {
 				smb_unlockmsghdr(&badsmb,&badmsg);
-				lprintf(LOG_ERR,"ERROR %d line %d reading %s msghdr",retval,__LINE__
+				lprintf(LOG_ERR,"ERROR %d (%s) line %d reading %s msghdr", retval, badsmb.last_error, __LINE__
 					,badsmb.file);
 				continue;
 			}
@@ -5070,8 +5070,8 @@ bool retoss_bad_echomail(void)
 			FREE_AND_NULL(tail);
 
 			if(retval != SMB_SUCCESS)
-				lprintf(LOG_ERR,"ERROR smb_addmsg(%s) returned %d: %s"
-					,scfg.sub[subnum]->code, retval, smb.last_error);
+				lprintf(LOG_ERR, "ERROR %d (%s) line %d adding message to sub: %s"
+					,retval, smb.last_error, __LINE__, scfg.sub[subnum]->code);
 			if(retval == SMB_SUCCESS || retval == SMB_DUPE_MSG) {
 				badmsg.hdr.attr |= MSG_DELETE;
 				if((retval = smb_updatemsg(&badsmb, &badmsg)) != SMB_SUCCESS)
@@ -5191,15 +5191,15 @@ int export_netmail(void)
 			/* Delete exported netmail */
 			msg.hdr.attr |= MSG_DELETE;
 			if((i = smb_updatemsg(email, &msg)) != SMB_SUCCESS)
-				lprintf(LOG_ERR,"!ERROR %d (%s) deleting mail msg #%u"
-					,i, email->last_error, msg.hdr.number);
+				lprintf(LOG_ERR,"!ERROR %d (%s) line %d deleting mail msg #%u"
+					,i, email->last_error, __LINE__, msg.hdr.number);
 			(void)fseek(email->sid_fp, (msg.offset+1)*sizeof(msg.idx), SEEK_SET);
 		} else {
 			/* Just mark as "sent" */
 			msg.hdr.netattr |= MSG_SENT;
-			if(smb_putmsghdr(email, &msg) != SMB_SUCCESS)
-				lprintf(LOG_ERR,"!ERROR %s updating msg header for mail msg #%u"
-					, email->last_error, msg.hdr.number);
+			if((i = smb_putmsghdr(email, &msg)) != SMB_SUCCESS)
+				lprintf(LOG_ERR,"!ERROR %d (%s) line %d updating msg header for mail msg #%u"
+					,i, email->last_error, __LINE__, msg.hdr.number);
 		}
 		exported++;
 	}
@@ -5819,10 +5819,8 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					,scfg.sub[cfg.area[i].sub]->code);
 				smb[cur_smb].retry_time=scfg.smb_retry_time;
 				if((result=smb_open(&smb[cur_smb]))!=SMB_SUCCESS) {
-					sprintf(str,"ERROR %d opening %s area #%d, sub #%d)"
-						,result,smb[cur_smb].file,i+1,cfg.area[i].sub+1);
-					fputs(str,stdout);
-					lprintf(LOG_ERR, "%s", str);
+					lprintf(LOG_ERR, "ERROR %d (%s) line %d opening area #%d, sub #%d"
+						,result, smb[cur_smb].last_error, __LINE__, i+1, cfg.area[i].sub+1);
 					strip_psb(fmsgbuf);
 					write_to_pkts(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path, /* rescan: */false);
 					printf("\n");
@@ -5835,9 +5833,8 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					smb[cur_smb].status.attr=scfg.sub[cfg.area[i].sub]->misc&SUB_HYPER
 							? SMB_HYPERALLOC:0;
 					if((result=smb_create(&smb[cur_smb]))!=SMB_SUCCESS) {
-						sprintf(str,"ERROR %d creating %s",result,smb[cur_smb].file);
-						fputs(str,stdout);
-						lprintf(LOG_ERR, "%s", str);
+						lprintf(LOG_ERR,"ERROR %d (%s) line %d creating %s"
+							,result, smb[cur_smb].last_error, __LINE__, smb[cur_smb].file);
 						smb_close(&smb[cur_smb]);
 						strip_psb(fmsgbuf);
 						write_to_pkts(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path, /* rescan: */false);
