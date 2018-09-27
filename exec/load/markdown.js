@@ -16,11 +16,11 @@
  * To do:
  *  - nested blockquote in HTML
  *  - image links
- *  - DokuWiki-style tables
  *  - code blocks
  *  - text conversion (HTML only probably)
  */
 load('sbbsdefs.js');
+load('table.js');
 
 if (typeof Frame == 'undefined') Frame = false;
 
@@ -226,7 +226,6 @@ Markdown.prototype.render_table = function () {
         }
         var nc = n + 1;
         if (typeof e[nc] != 'undefined' && e[nc] == '') {
-          log('here');
           attr.colspan = 1;
           while (typeof e[nc] !== 'undefined' && e[nc] == '') {
             attr.colspan++;
@@ -247,40 +246,9 @@ Markdown.prototype.render_table = function () {
     this.state.table = [];
     return ret;
   } else {
-    // This is pretty bad, but doing it right will be annoying
-    // There is no wrapping of cell contents; long lines just get truncated
-    var ret = [];
-    this.state.table.forEach(function (e, i) {
-      var out = '| ';
-      for (var n = 0; n < columns.length; n++) {
-        var s = e.length < n + 1 ? ' ' : (e[n] == '' ? ' ' : e[n]);
-        while (strip_ctrl(s).length < columns[n]) {
-          s += ' ';
-        }
-        out += s + ' | ';
-      }
-      while (strip_ctrl(out).length > self.columns - 2) {
-        out = out.substring(0, out.length - 1);
-      }
-      ret.push(out);
-      if (i == 0) {
-        out = '|-';
-        for (var n = 0; n < columns.length; n++) {
-          var s = '';
-          while (s.length < columns[n]) {
-            s += '-';
-          }
-          out += s + '-|';
-          if (n < columns.length - 1) out += '-';
-        }
-        while (strip_ctrl(out).length > self.columns - 2) {
-          out = out.substring(0, out.length - 1);
-        }
-        ret.push(out);
-      }
-    });
+    var ret = table(this.state.table);
     this.state.table = [];
-    return ret.join('\r\n') + '\r\n';
+    return ret;
   }
 
 }
@@ -338,13 +306,7 @@ Markdown.prototype.render_line_console = function (line) {
     const _ret = match.input;
     const row = [];
     do {
-      if (match[1] == '^') {
-        row.push(
-          '\1+' + this.config.console.heading_style + match[2] + '\1-'
-        );
-      } else {
-        row.push(match[2]);
-      }
+      row.push(match[2]);
       match = tre.exec(ret);
     } while (match !== null);
     this.state.table.push(row);
@@ -460,7 +422,6 @@ Markdown.prototype.render_line_html = function (line) {
       match = tre.exec(ret);
     } while (match !== null);
     this.state.table.push(row);
-    log('row ' + JSON.stringify(row));
     ret = ret.replace(_ret, '');
     return ret;
   } else if (this.state.table.length) {
