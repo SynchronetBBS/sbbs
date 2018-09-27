@@ -108,6 +108,7 @@ function table(data, line_color, heading_color, cell_color, width) {
     for (var row = 0; row < data.length; row++) {
       nr = 0;
       for (var col = 0; col < data[row].length; col++) {
+        data[row][col] = skipsp(truncsp(data[row][col]));
         arr = truncsp(word_wrap(data[row][col], widths[col])).split(/\n/);
         // If the cell has to wrap
         if (arr.length > 1) {
