@@ -270,11 +270,11 @@ Markdown.prototype.render_line_console = function (line) {
       lt = 'ol';
     }
     if (match[1].length > this.state.list_level) {
-      this.state.list_level++;
+      this.state.list_level = match[1].length;
       if (lt == 'ol') this.state.list_stack[this.state.list_level] = 0;
     } else if (match[1].length < this.state.list_level) {
       if (lt == 'ol') this.state.list_stack.splice(this.state.list_level, 1);
-      this.state.list_level--;
+      this.state.list_level = match[1].length;
     } else if (lt == 'ol') {
       if (typeof this.state.list_stack[this.state.list_level] != 'number') {
         this.state.list_stack[this.state.list_level] = 0;
