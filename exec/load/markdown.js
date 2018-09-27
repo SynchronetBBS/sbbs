@@ -260,7 +260,7 @@ Markdown.prototype.render_line_console = function (line) {
   var ret = this.render_text_console(line);
 
   // Ordered and unordered lists
-  match = ret.match(/^(\s*)(\*|-)\s+(.+)$/);
+  match = ret.match(/^(\s*)(\*|-)\s+(.+)$/m);
   if (match !== null) {
     ret = ret.replace(match[0], '');
     if (this.state.table.length) ret += this.render_table();
@@ -317,7 +317,7 @@ Markdown.prototype.render_line_console = function (line) {
   }
 
   // Heading
-  match = ret.match(/^(==+)\s(.+)\s==+$/);
+  match = ret.match(/^(==+)([^=]+)==+$/m);
   if (match !== null) {
     ret = ret.replace(match[0], '');
     ret += '\1+';
@@ -334,7 +334,7 @@ Markdown.prototype.render_line_console = function (line) {
   }
 
   // Blockquote
-  match = ret.match(/^\s*>\s(.+)$/);
+  match = ret.match(/^\s*>\s(.+)$/m);
   if (match !== null) {
     return ret.replace(
       match[0], quote_msg(word_wrap(match[1]), this.columns - 1)
@@ -342,7 +342,7 @@ Markdown.prototype.render_line_console = function (line) {
   }
 
   // Horizontal Rule
-  match = ret.match(/^----+$/);
+  match = ret.match(/^----+$/m);
   if (match !== null) {
     var s = '';
     while (s.length < this.columns - 1) {
@@ -362,7 +362,7 @@ Markdown.prototype.render_line_html = function (line) {
   var ret = this.render_text_html(line);
 
   // Blockquote
-  match = ret.match(/^\s*>\s(.+)$/);
+  match = ret.match(/^\s*>\s(.+)$/m);
   if (match !== null) {
     ret = ret.replace(match[0], '');
     if (this.state.table.length) ret += this.render_table();
@@ -377,7 +377,7 @@ Markdown.prototype.render_line_html = function (line) {
   }
 
   // Ordered and unordered lists
-  match = ret.match(/^(\s*)(\*|-)\s+(.+)$/);
+  match = ret.match(/^(\s*)(\*|-)\s+(.+)$/m);
   if (match !== null) {
     ret = ret.replace(match[0], '');
     if (this.state.table.length) ret += this.render_table();
@@ -429,7 +429,7 @@ Markdown.prototype.render_line_html = function (line) {
   }
 
   // Heading
-  match = ret.match(/^(==+)\s(.+)\s==+$/);
+  match = ret.match(/^(==+)([^=]+)==+$/m);
   if (match !== null) {
     ret = ret.replace(match[0], '');
     var lvl = 6 - Math.min(match[1].split(' ')[0].length, 5);
@@ -440,7 +440,7 @@ Markdown.prototype.render_line_html = function (line) {
   }
 
   // Horizontal Rule
-  match = ret.match(/^----+$/);
+  match = ret.match(/^----+$/m);
   if (match !== null) {
     return ret.replace(match[0], '') + this.html_tag_format('hr');
   }
