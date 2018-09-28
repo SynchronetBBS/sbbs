@@ -49,7 +49,7 @@ function Markdown(target, settings) {
       bold_style : '\1h',
       italic_style : '\1r',
       underline_style : '\1g',
-      list_indent : '\t',
+      list_indent : '  ',
       heading_underline : true,
       heading_style : '\1h',
       link_style : '\1h\1c',
@@ -462,7 +462,7 @@ Markdown.prototype.render_console = function (text) {
   text.split(/\n/).forEach(function (e) {
     var line = self.render_line_console(e.replace(/\r$/, ''));
     if (typeof line == 'string') {
-      self.target.putmsg(line);//.substr(0, self.columns));
+      self.target.putmsg(self.target instanceof Frame ? line : word_wrap(line, self.columns));
     }
   });
   if (this.state.links.length) {
