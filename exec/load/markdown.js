@@ -22,10 +22,11 @@
  * |this|is|a|table|row|
  * ^you|can|have|headings|anywhere|
  * To do:
- *  - nested blockquote in HTML
- *  - image links
  *  - code blocks
- *  - text conversion (HTML only probably)
+ *    - syntax highlighting
+ *  - image links
+ *  - <nowiki> and inline tags (<code> <file> <sub> <sup> <del>)
+ *  - Table of contents
  */
 load('sbbsdefs.js');
 load('table.js');
@@ -40,8 +41,11 @@ function Markdown(target, settings) {
     images : [],
     footnotes : [],
     table : [],
-    blockquote : false,
-    list_stack : []
+    blockquote : 0,
+    list_stack : [],
+    no_toc : false,
+    no_wiki : false,
+    code_block : false
   };
 
   const config = {
@@ -93,8 +97,11 @@ function Markdown(target, settings) {
     state.images = [];
     state.footnotes = [];
     state.table = [];
-    state.blockquote = false;
+    state.blockquote = 0;
     state.list_stack = [];
+    state.no_toc = false;
+    state.no_wiki = false;
+    state.code_block = false;
   }
 
   Object.defineProperty(this, 'state', { get : function () {
@@ -169,7 +176,14 @@ Markdown.prototype.render_text_console = function (text) {
   }).replace(/\(\(([^\)]+)\)\)/g, function (m, c) {
     self.state.footnotes.push(c);
     return '\1+' + self.config.console.footnote_style + '[' + self.state.footnotes.length + ']\1-';
-  }).replace(/\\\\(\s|$)/g, '\r\n');
+  }).replace(
+    /\\\\(\s|$)/g, '\r\n'
+  ).replace(
+    /~~(NOTOC|NOCACHE)~~/g, function (m, c) {
+      if (c == 'NOTOC') self.state.no_toc = true;
+      return '';
+    }
+  );
 }
 
 Markdown.prototype.render_text_html = function (text) {
@@ -193,7 +207,14 @@ Markdown.prototype.render_text_html = function (text) {
   }).replace(/\(\(([^\)]+)\)\)/g, function (m, c) {
     self.state.footnotes.push(c);
     return self.html_tag_format('a', { href : '#f' + self.state.footnotes.length }) + ' [' + self.state.footnotes.length + ']</a>';
-  }).replace(/\\\\(\s|$)/g, '<br>');
+  }).replace(
+    /\\\\(\s|$)/g, '<br>'
+  ).replace(
+    /~~(NOTOC|NOCACHE)~~/g, function (m, c) {
+      if (c == 'NOTOC') self.state.no_toc = true;
+      return '';
+    }
+  );
 }
 
 Markdown.prototype.render_table = function () {
@@ -370,18 +391,26 @@ Markdown.prototype.render_line_html = function (line) {
   var ret = this.render_text_html(line);
 
   // Blockquote
-  match = ret.match(/^\s*>\s(.+)$/m);
+  match = ret.match(/^(>+)\s+(.+)$/m);
   if (match !== null) {
     ret = ret.replace(match[0], '');
     if (this.state.table.length) ret += this.render_table();
-    if (!this.state.blockquote) {
-      ret += this.html_tag_format('blockquote');
-      this.state.blockquote = true;
+    if (match[1].length > this.state.blockquote) {
+      while (match[1].length > this.state.blockquote) {
+        ret += this.html_tag_format('blockquote');
+        this.state.blockquote++;
+      }
+    } else if (match[1].length < this.state.blockquote) {
+      while (match[1].length < this.state.blockquote) {
+        ret += '</blockquote>';
+        this.state.blockquote--;
+      }
     }
-    return ret + match[1];
-  } else if (this.state.blockquote) {
+    return ret + match[2];
+  }
+  while (this.state.blockquote > 0) {
     ret += '</blockquote>';
-    this.state.blockquote = false;
+    this.state.blockquote--;
   }
 
   // Ordered and unordered lists
