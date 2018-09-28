@@ -1,18 +1,26 @@
 /*
  * Partial DokuWiki markup parser/renderer
  * == h5 ==
+ * === h4 ===
  * ==== h3 ====
+ * ===== h2 =====
  * ====== h1 ======
  * [[http://some.web.site/|some link text]]
  * {{http://some.web.site/image.png|some alt text}}
  * ** bold **
  * // italic //
  * __ underline __
+ * '' monospaced ''
+ * ** // __ '' bold italic underline monospace '' __ // **
  * > blockquote
  * * Unordered lists
  *  * With sub-items
  * - Ordered lists
  *  - With sub-items
+ * Lines\\ with\\ forced\\ line\\ breaks
+ * ^this^is^a^table^heading^
+ * |this|is|a|table|row|
+ * ^you|can|have|headings|anywhere|
  * To do:
  *  - nested blockquote in HTML
  *  - image links
@@ -161,7 +169,7 @@ Markdown.prototype.render_text_console = function (text) {
   }).replace(/\(\(([^\)]+)\)\)/g, function (m, c) {
     self.state.footnotes.push(c);
     return '\1+' + self.config.console.footnote_style + '[' + self.state.footnotes.length + ']\1-';
-  });
+  }).replace(/\\\\(\s|$)/g, '\r\n');
 }
 
 Markdown.prototype.render_text_html = function (text) {
@@ -185,7 +193,7 @@ Markdown.prototype.render_text_html = function (text) {
   }).replace(/\(\(([^\)]+)\)\)/g, function (m, c) {
     self.state.footnotes.push(c);
     return self.html_tag_format('a', { href : '#f' + self.state.footnotes.length }) + ' [' + self.state.footnotes.length + ']</a>';
-  });
+  }).replace(/\\\\(\s|$)/g, '<br>');
 }
 
 Markdown.prototype.render_table = function () {
