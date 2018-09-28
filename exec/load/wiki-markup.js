@@ -33,7 +33,7 @@ load('table.js');
 
 if (typeof Frame == 'undefined') Frame = false;
 
-function Markdown(target, settings) {
+function WikiMarkup(target, settings) {
 
   const state = {
     list_level : 0,
@@ -142,7 +142,7 @@ function Markdown(target, settings) {
 
 }
 
-Markdown.prototype.html_tag_format = function (tag, attributes) {
+WikiMarkup.prototype.html_tag_format = function (tag, attributes) {
   var ret = '<' + tag;
   if (this.config.html[tag] != '') {
     ret += ' class="' + this.config.html[tag] + '"';
@@ -155,7 +155,7 @@ Markdown.prototype.html_tag_format = function (tag, attributes) {
   return ret + '>';
 }
 
-Markdown.prototype.render_text_console = function (text) {
+WikiMarkup.prototype.render_text_console = function (text) {
   const self = this;
   return text.replace(/\*\*([^\*]+)\*\*/g, function (m, c) {
     return '\1+' + self.config.console.bold_style + c + '\1-';
@@ -186,7 +186,7 @@ Markdown.prototype.render_text_console = function (text) {
   );
 }
 
-Markdown.prototype.render_text_html = function (text) {
+WikiMarkup.prototype.render_text_html = function (text) {
   const self = this;
   return text.replace(/\\1.(.+)\\1./g, function (m, c) {
     return c;
@@ -217,7 +217,7 @@ Markdown.prototype.render_text_html = function (text) {
   );
 }
 
-Markdown.prototype.render_table = function () {
+WikiMarkup.prototype.render_table = function () {
 
   const self = this;
   const columns = []; // Length is number of columns, values are column widths
@@ -282,7 +282,7 @@ Markdown.prototype.render_table = function () {
 
 }
 
-Markdown.prototype.render_line_console = function (line) {
+WikiMarkup.prototype.render_line_console = function (line) {
 
   var match;
   const self = this;
@@ -384,7 +384,7 @@ Markdown.prototype.render_line_console = function (line) {
 
 }
 
-Markdown.prototype.render_line_html = function (line) {
+WikiMarkup.prototype.render_line_html = function (line) {
 
   var match;
   const self = this;
@@ -486,7 +486,7 @@ Markdown.prototype.render_line_html = function (line) {
 
 }
 
-Markdown.prototype.render_console = function (text) {
+WikiMarkup.prototype.render_console = function (text) {
   const self = this;
   text.split(/\n/).forEach(function (e) {
     var line = self.render_line_console(e.replace(/\r$/, ''));
@@ -516,7 +516,7 @@ Markdown.prototype.render_console = function (text) {
   }
 }
 
-Markdown.prototype.render_html = function (text) {
+WikiMarkup.prototype.render_html = function (text) {
   const self = this;
   text.split(/\n/).forEach(function (e) {
     var line = self.render_line_html(e.replace(/\r$/, ''));
@@ -530,7 +530,7 @@ Markdown.prototype.render_html = function (text) {
   }
 }
 
-Markdown.prototype.render = function (text) {
+WikiMarkup.prototype.render = function (text) {
   if (this.target == 'html') {
     this.render_html(text);
   } else {
