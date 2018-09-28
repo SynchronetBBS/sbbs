@@ -292,7 +292,7 @@ WikiMarkup.prototype.render_line_console = function (line) {
   match = ret.match(/^(\s*)(\*|-)\s+(.+)$/m);
   if (match !== null) {
     ret = ret.replace(match[0], '');
-    if (this.state.table.length) ret += this.render_table();
+    if (this.state.table.length) ret += '\r\n' + this.render_table();
     if (match[2] == '*') {
       lt = 'ul';
     } else {
@@ -342,7 +342,7 @@ WikiMarkup.prototype.render_line_console = function (line) {
     ret = ret.replace(_ret, '');
     return ret;
   } else if (this.state.table.length) {
-    ret += this.render_table();
+    ret += '\r\n' + this.render_table();
   }
 
   // Heading
@@ -488,7 +488,7 @@ WikiMarkup.prototype.render_line_html = function (line) {
 
 WikiMarkup.prototype.render_console = function (text) {
   const self = this;
-  text.split(/\n/).forEach(function (e) {
+  text.replace(/\\1/g, '\1').split(/\n/).forEach(function (e) {
     var line = self.render_line_console(e.replace(/\r$/, ''));
     if (typeof line == 'string') {
       self.target.putmsg(self.target instanceof Frame ? line : word_wrap(line, self.columns));
