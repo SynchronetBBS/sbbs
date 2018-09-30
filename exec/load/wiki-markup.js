@@ -89,8 +89,6 @@ function WikiMarkup(target, settings) {
     }
   }
 
-  if (Frame && target instanceof Frame) target.word_wrap = true;
-
   this.reset = function () {
     state.list_level = 0;
     state.links = [];
@@ -286,7 +284,7 @@ WikiMarkup.prototype.render_line_console = function (line) {
 
   var match;
   const self = this;
-  var ret = this.render_text_console(line);
+  var ret = word_wrap(this.render_text_console(line));
 
   // Ordered and unordered lists
   match = ret.match(/^(\s*)(\*|-)\s+(.+)$/m);
@@ -491,7 +489,7 @@ WikiMarkup.prototype.render_console = function (text) {
   text.replace(/\\1/g, '\1').split(/\n/).forEach(function (e) {
     var line = self.render_line_console(e.replace(/\r$/, ''));
     if (typeof line == 'string') {
-      self.target.putmsg(self.target instanceof Frame ? line : word_wrap(line, self.columns));
+      self.target.putmsg(line);
     }
   });
   if (this.state.links.length) {
