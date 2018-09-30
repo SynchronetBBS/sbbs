@@ -508,7 +508,10 @@ function import_files()
 		f.write(files_bbs[i]);
 		f.close();
 
-		cmd = system.exec_dir+"addfiles "+i+" -zd +"+f.name+" 24 13";
+		cmd = system.exec_dir+"addfiles "+i;
+		if (tickit.gcfg.uploader !== undefined)
+			cmd += '"-x ' + tickit.gcfg.uploader + '"';
+		cmd += " -zd +"+f.name+" 24 13";
 		log(LOG_DEBUG, "Executing: '"+cmd+"'.");
 		system.exec(cmd);
 	}
