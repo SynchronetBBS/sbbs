@@ -284,7 +284,7 @@ WikiMarkup.prototype.render_line_console = function (line) {
 
   var match;
   const self = this;
-  var ret = word_wrap(this.render_text_console(line));
+  var ret = word_wrap(this.render_text_console(line), this.columns);
 
   // Ordered and unordered lists
   match = ret.match(/^(\s*)(\*|-)\s+(.+)$/m);
