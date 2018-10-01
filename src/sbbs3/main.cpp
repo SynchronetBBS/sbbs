@@ -2678,9 +2678,10 @@ void event_thread(void* arg)
 					sbbs->console&=~CON_L_ECHO;
 
 					/* putuserdat? */
-					if(success)
-						remove(g.gl_pathv[i]);
-					else {
+					if(success) {
+						if(remove(g.gl_pathv[i]))
+							sbbs->errormsg(WHERE, ERR_REMOVE, g.gl_pathv[i], 0);
+					} else {
 						char badpkt[MAX_PATH+1];
 						SAFECOPY(badpkt, g.gl_pathv[i]);
 						SAFEPRINTF2(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
@@ -2691,7 +2692,8 @@ void event_thread(void* arg)
 							sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
 								,errno, strerror(errno), g.gl_pathv[i], badpkt);
 					}
-					remove(semfile);
+					if(remove(semfile))
+						sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
 				}
 			}
 			globfree(&g);
@@ -2736,8 +2738,10 @@ void event_thread(void* arg)
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=FALSE;
 				}
-				remove(g.gl_pathv[i]);
-				remove(semfile);
+				if(remove(g.gl_pathv[i]))
+					sbbs->errormsg(WHERE, ERR_REMOVE, g.gl_pathv[i], 0);
+				if(remove(semfile))
+					sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
 			}
 			globfree(&g);
 			sbbs->useron.number = 0;
@@ -2844,7 +2848,7 @@ void event_thread(void* arg)
 				}
 			}
 
-			/* QWK Networking Call-out sempahores */
+			/* QWK Networking Call-out semaphores */
 			for(i=0;i<sbbs->cfg.total_qhubs;i++) {
 				if(sbbs->cfg.qhub[i]->node<first_node
 					|| sbbs->cfg.qhub[i]->node>last_node)
@@ -2859,7 +2863,7 @@ void event_thread(void* arg)
 				}
 			}
 
-			/* Timed Event sempahores */
+			/* Timed Event semaphores */
 			for(i=0;i<sbbs->cfg.total_events;i++) {
 				if((sbbs->cfg.event[i]->node<first_node
 					|| sbbs->cfg.event[i]->node>last_node)
@@ -2908,7 +2912,8 @@ void event_thread(void* arg)
 						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
 						sbbs->online=FALSE;
-						remove(str);
+						if(remove(str))
+							sbbs->errormsg(WHERE, ERR_REMOVE, str, 0);
 					}
 				}
 				globfree(&g);
@@ -2926,8 +2931,10 @@ void event_thread(void* arg)
 					&& sbbs->cfg.qhub[i]->days&(1<<now_tm.tm_wday))) {
 				SAFEPRINTF2(str,"%sqnet/%s.now"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
-				if(fexistcase(str))
-					remove(str);					/* Remove semaphore file */
+				if(fexistcase(str)) {
+					if(remove(str))					/* Remove semaphore file */
+						sbbs->errormsg(WHERE, ERR_REMOVE, str, 0);
+				}
 				SAFEPRINTF2(str,"%sqnet/%s.ptr"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
 				file=sbbs->nopen(str,O_RDONLY);
@@ -3113,8 +3120,10 @@ void event_thread(void* arg)
 							}
 						}
 						SAFEPRINTF2(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
-						if(fexistcase(str))
-							remove(str);
+						if(fexistcase(str)) {
+							if(remove(str))
+								sbbs->errormsg(WHERE, ERR_REMOVE, str, 0);
+						}
 						sbbs->cfg.event[i]->last=(time32_t)now;
 					} else {	// Exclusive event to run on a node under our control
 						sbbs->lprintf(LOG_INFO,"Waiting for all nodes to become inactive before running timed event");
@@ -3191,8 +3200,10 @@ void event_thread(void* arg)
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
 
 					SAFEPRINTF2(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
-					if(fexistcase(str))
-						remove(str);
+					if(fexistcase(str)) {
+						if(remove(str))
+							sbbs->errormsg(WHERE, ERR_REMOVE, str, 0);
+					}
 					if(sbbs->cfg.event[i]->misc&EVENT_EXCL) {
 						sbbs->getnodedat(sbbs->cfg.event[i]->node,&node,1);
 						node.status=NODE_EVENT_RUNNING;
