@@ -854,6 +854,9 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case SMB_SUMMARY:
 			msg->summary=(char*)hfield_dat;
 			break;
+		case SMB_TAGS:
+			msg->tags=(char*)hfield_dat;
+			break;
 		case SMB_EXPIRATION:
 			msg->expiration=*(uint32_t*)hfield_dat;
 			break;
@@ -919,6 +922,7 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 
 	msg->subj=NULL;
 	msg->summary=NULL;
+	msg->tags=NULL;
 	msg->id=NULL;
 	msg->reply_id=NULL;
 	msg->reverse_path=NULL;
