@@ -350,10 +350,11 @@ WikiMarkup.prototype.render_line_console = function (line) {
     ret = ret.replace(match[0], '');
     ret += '\1+';
     ret += this.config.console.heading_style;
-    ret += match[2];
+    var hs = skipsp(truncsp(match[2]));
+    ret += hs;
     if (this.config.console.heading_underline) {
       ret += '\r\n';
-      for (var n = 0; n < match[2].length; n++) {
+      for (var n = 0; n < hs.length; n++) {
         ret += user.settings&USER_NO_EXASCII ? '-' : ascii(196);
       }
     }
