@@ -173,7 +173,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			i=FIDO_NAME_LEN-1;
 		if(cfg.sub[subnum]->misc&(SUB_PNET|SUB_INET))
 			i=60;
-		getstr(touser,i,K_LINE|K_EDIT|K_AUTODEL);
+		getstr(touser,i,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 		if(stricmp(touser,"ALL")
 		&& !(cfg.sub[subnum]->misc&(SUB_PNET|SUB_FIDO|SUB_QNET|SUB_INET|SUB_ANON))) {
 			if(cfg.sub[subnum]->misc&SUB_NAME) {
@@ -350,12 +350,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		&& (text[TagMessageQ][0]==0 || !noyes(text[TagMessageQ]))) {
 		char tags[64] = "";
 		bputs(text[TagMessagePrompt]);
-		if(getstr(tags, sizeof(tags)-1, K_LINE)) {
-			truncsp(tags);
-			char* p = tags;
-			SKIP_WHITESPACE(p);
-			if(*p)
-				smb_hfield_str(&msg, SMB_TAGS, p);
+		if(getstr(tags, sizeof(tags)-1, K_LINE|K_TRIM)) {
+			smb_hfield_str(&msg, SMB_TAGS, tags);
 		}
 	}
 

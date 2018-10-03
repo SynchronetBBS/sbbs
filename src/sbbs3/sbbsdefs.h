@@ -732,6 +732,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define K_USEOFFSET	(1L<<20)	/* Use getstr_offset for cursor	position	*/
 #define K_NOSPIN	(1L<<21)	/* Do not honor the user's spinning cursor	*/
 #define K_ANSI_CPR	(1L<<22)	/* Expect ANSI Cursor Position Report		*/
+#define K_TRIM		(1L<<23)	/* Trimmed white-space						*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NOABORT  	(1<<0)		/* Disallows abortion of a message          */

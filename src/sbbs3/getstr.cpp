@@ -136,7 +136,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 		}
 		if(ch==TAB && (mode&K_TAB || (!(mode&K_WRAP) && history == NULL)))	/* TAB same as CR */
 			break;
-		if(!i && mode&K_UPRLWR && (ch==' ' || ch==TAB))
+		if(!i && (mode&(K_UPRLWR|K_TRIM)) && (ch==' ' || ch==TAB))
 			continue;	/* ignore beginning white space if upper/lower */
 		if(mode&K_E71DETECT && (uchar)ch==(CR|0x80) && l>1) {
 			if(strstr(str1,"çç")) {
@@ -566,6 +566,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 					return(x); 
 				}
 				if(i<maxlen && ch>=' ') {
+					if(ch==' ' && (mode&K_TRIM) && i && str1[i-1] == ' ')
+						continue;
 					if(mode&K_UPRLWR) {
 						if(!i || (i && (str1[i-1]==' ' || str1[i-1]=='-'
 							|| str1[i-1]=='.' || str1[i-1]=='_')))
@@ -606,6 +608,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 	str1[l]=0;
 	if(!(sys_status&SS_ABORT)) {
 		strcpy(strout,str1);
+		if(mode&K_TRIM)
+			truncsp(strout);
 		if((strip_invalid_attr(strout) || console&CON_INSERT) && !(mode&K_NOECHO))
 			redrwstr(strout,i,l,K_MSG); 
 	}

@@ -401,7 +401,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		max_title_len=cols-column-1;
 		if(max_title_len > LEN_TITLE)
 			max_title_len = LEN_TITLE;
-		if(!getstr(subj,max_title_len,mode&WM_FILE ? K_LINE : K_LINE|K_EDIT|K_AUTODEL)
+		if(!getstr(subj,max_title_len,mode&WM_FILE ? K_LINE|K_TRIM : K_LINE|K_EDIT|K_AUTODEL|K_TRIM)
 			&& useron_level && useron.logons) {
 			free(buf);
 			return(false); 
@@ -958,7 +958,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 					free(str[line]);
 				if(title[0]) {
 					bputs(text[SubjectPrompt]);
-					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL);
+					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 					SYNC;
 					CRLF; 
 				}
