@@ -25,9 +25,10 @@ function download(url, target) {
 
 function extract(file, target) {
 	if (!file_isdir(install_dir)) {
-        if (!mkdir(install_dir)) return false;
-    }
-	return system.exec('unzip -uqo ' + file + ' -d ' + target) == 0;
+    if (!mkdir(install_dir)) return false;
+  }
+  const zp = system.platform.search(/^win/i) > -1 ? system.exec_dir : '';
+	return system.exec(zp + 'unzip -uqo ' + file + ' -d ' + target) == 0;
 }
 
 function update_sbbs_ini(root_directory, error_directory) {
