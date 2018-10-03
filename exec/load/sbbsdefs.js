@@ -297,6 +297,7 @@ var	  K_LEFTEXIT	=(1<<19);	/* Allow exit from getstr() with backspace	*/
 var   K_USEOFFSET	=(1<<20);	/* Use console.getstr_offset with getstr()	*/
 var   K_NOSPIN      =(1<<21);	/* Do not honor user's spinning cursor		*/
 var   K_ANSI_CPR	=(1<<22);	/* ANSI Cursor Position Report expected		*/
+var   K_TRIM        =(1<<23);   /* Trim white-space from both ends of str   */
 					    		/********************************************/
 
 						    	/********************************************/
