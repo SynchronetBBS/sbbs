@@ -346,6 +346,19 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	if(editor!=NULL)
 		smb_hfield_str(&msg,SMB_EDITOR,editor);
 
+	if(cfg.sub[subnum]->misc&SUB_MSGTAGS 
+		&& (text[TagMessageQ][0]==0 || !noyes(text[TagMessageQ]))) {
+		char tags[64] = "";
+		bputs(text[TagMessagePrompt]);
+		if(getstr(tags, sizeof(tags)-1, K_LINE)) {
+			truncsp(tags);
+			char* p = tags;
+			SKIP_WHITESPACE(p);
+			if(*p)
+				smb_hfield_str(&msg, SMB_TAGS, p);
+		}
+	}
+
 	i=smb_addmsg(&smb,&msg,storage,dupechk_hashes,xlat,(uchar*)msgbuf,NULL);
 	free(msgbuf);
 

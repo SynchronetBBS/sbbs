@@ -813,6 +813,8 @@ enum {
 	,RemoveFileQ
 	,OriginFidoAddr
 	,VoteNoticeFmt
+	,TagMessageQ
+	,TagMessagePrompt
 
 	,TOTAL_TEXT
 };
