@@ -136,6 +136,8 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 		menu("msghdr");
 	} else {
 		bprintf(text[MsgSubj],msg->subj);
+		if(msg->tags && *msg->tags)
+			bprintf(text[MsgTags], msg->tags);
 		if(msg->hdr.attr)
 			show_msgattr(msg);
 		if(msg->to && *msg->to) {

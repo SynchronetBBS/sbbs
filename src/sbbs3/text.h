@@ -815,6 +815,7 @@ enum {
 	,VoteNoticeFmt
 	,TagMessageQ
 	,TagMessagePrompt
+	,MsgTags
 
 	,TOTAL_TEXT
 };
