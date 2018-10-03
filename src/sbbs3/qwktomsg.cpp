@@ -138,6 +138,8 @@ static void qwk_parse_header_list(ulong confnum, smbmsg_t* msg, str_list_t* head
 	/* Synchronet */
 	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SMB_EDITOR),value))!=NULL)
 		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SMB_TAGS),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
 
 	/* USENET */
 	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=USENETPATH),value))!=NULL)
