@@ -745,6 +745,36 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		msg->hdr.when_written=rfc822date(cp);
 	}
 
+	const char* prop_name = "summary";
+	uint16_t hfield_type = SMB_SUMMARY;
+	if(JS_GetProperty(cx, hdr, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp==NULL) {
+			JS_ReportError(cx, "Invalid \"%s\" string in header object", prop_name);
+			goto err;
+		}
+		if((p->smb_result=smb_hfield_str(msg, hfield_type, cp))!=SMB_SUCCESS) {
+			JS_ReportError(cx, "Error %d adding %s field to message header", p->smb_result, smb_hfieldtype(hfield_type));
+			goto err;
+		}
+	}
+
+	prop_name = "tags";
+	hfield_type = SMB_TAGS;
+	if(JS_GetProperty(cx, hdr, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp==NULL) {
+			JS_ReportError(cx, "Invalid \"%s\" string in header object", prop_name);
+			goto err;
+		}
+		if((p->smb_result=smb_hfield_str(msg, hfield_type, cp))!=SMB_SUCCESS) {
+			JS_ReportError(cx, "Error %d adding %s field to message header", p->smb_result, smb_hfieldtype(hfield_type));
+			goto err;
+		}
+	}
+
 	/* Numeric Header Fields */
 	if(JS_GetProperty(cx, hdr, "attr", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToInt32(cx,val,&i32))
@@ -1132,6 +1162,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_TRUNCSP("from",p->msg.from, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP("subject",p->msg.subj, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("summary", p->msg.summary, JSPROP_ENUMERATE);
+	LAZY_STRING_TRUNCSP_NULL("tags", p->msg.tags, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("to_ext", p->msg.to_ext, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("from_ext", p->msg.from_ext, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("from_org", p->msg.from_org, JSPROP_ENUMERATE);
@@ -2854,6 +2885,8 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>replyto_net_type</tt><td>Replies should be sent to this network type"
 	"<tr><td align=top><tt>replyto_net_addr</tt><td>Replies should be sent to this network address"
 	"<tr><td align=top><tt>replyto_agent</tt><td>Replies should be sent to this agent type"
+	"<tr><td align=top><tt>summary</tt><td>Message Summary (optional)"
+	"<tr><td align=top><tt>tags</tt><td>Message Tags (space-delimited, optional)"
 	"<tr><td align=top><tt>id</tt><td>Message's RFC-822 compliant Message-ID"
 	"<tr><td align=top><tt>reply_id</tt><td>Message's RFC-822 compliant Reply-ID"
 	"<tr><td align=top><tt>reverse_path</tt><td>Message's SMTP sender address"
