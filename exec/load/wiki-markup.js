@@ -156,13 +156,13 @@ WikiMarkup.prototype.html_tag_format = function (tag, attributes) {
 WikiMarkup.prototype.render_text_console = function (text) {
   const self = this;
   return text.replace(/\*\*([^\*]+)\*\*/g, function (m, c) {
-    return '\1+' + self.config.console.bold_style + c + '\1-';
+    return '\1+' + self.config.console.bold_style + skipsp(truncsp(c)) + '\1-';
   }).replace(/\/\/([^\/]+)\/\//g, function (m, c) {
-    return '\1+' + self.config.console.italic_style + c + '\1-';
+    return '\1+' + self.config.console.italic_style + skipsp(truncsp(c)) + '\1-';
   }).replace(/__([^_]+)__/g, function (m, c) {
-    return '\1+' + self.config.console.underline_style + c + '\1-';
+    return '\1+' + self.config.console.underline_style + skipsp(truncsp(c)) + '\1-';
   }).replace(/''([^']+)''/g, function (m, c) {
-    return c;
+    return skipsp(truncsp(c));
   }).replace(/\{\{(.+)\}\}/g, function (m, c) {
     c = c.split('|');
     self.state.images.push({ text : (c[1] || c[0]), link : c[0] });
@@ -302,6 +302,7 @@ WikiMarkup.prototype.render_line_console = function (line) {
     } else if (match[1].length < this.state.list_level) {
       if (lt == 'ol') this.state.list_stack.splice(this.state.list_level, 1);
       this.state.list_level = match[1].length;
+      if (lt == 'ol') this.state.list_stack[this.state.list_level]++;
     } else if (lt == 'ol') {
       if (typeof this.state.list_stack[this.state.list_level] != 'number') {
         this.state.list_stack[this.state.list_level] = 0;
