@@ -969,3 +969,5 @@
 "Remove file"                               800 RemoveFileQ
 "Originating Address"                       801 OriginFidoAddr
 "\1n\1h\251 \1m%.77s\r\n"		    802 VoteNoticeFmt
+"\r\nTag this message"              803 TagMessageQ
+"Enter (space-separated) Tags: "    804 TagMessagePrompt
