@@ -968,7 +968,7 @@
 "\1/\r\n@EXEC:SHOWFILEAVATAR@"				799 FileHdrDescSeparator
 "Remove file"                               800 RemoveFileQ
 "Originating Address"                       801 OriginFidoAddr
-"\1n\1h\251 \1m%.77s\r\n"		    802 VoteNoticeFmt
-"\r\nTag this message"              803 TagMessageQ
-"Enter (space-separated) Tags: "    804 TagMessagePrompt
-"\r\n³ \1bTags\1n\1b: \1h\1c%.70s"  805 MsgTags
+"\1n\1h\251 \1m%.77s\r\n"		            802 VoteNoticeFmt
+"\r\nTag this message"                      803 TagMessageQ
+"\r\n\1h\1yEnter (space-separated) Tags: "  804 TagMessagePrompt
+"\r\n³ \1bTags\1n\1b: \1h\1c%.70s"          805 MsgTags
