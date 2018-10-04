@@ -27,8 +27,6 @@
 
 // $Id$
 
-const REVISION = "$Revision$".split(' ')[1];
-
 const UDP_RESPONSE_TIMEOUT = 5000	// milliseconds
 
 load("sbbsdefs.js");
@@ -39,13 +37,17 @@ if(!options)
 	options = {};
 if(!options.from_user_prop)
 	options.from_user_prop = "alias";
+var userprops = load({}, "userprops.js");
+var ini_section = "imsg sent";
+var addr_list = userprops.get(ini_section, "address", []);
+var last_send = userprops.get(ini_section, "localtime");
+
+const RcptAddressHistoryLength = 10;
 
 // Global vars
 var imsg_user;
 var last_user=0;
 var users=0;
-
-print("\1n\1hSynchronet \1cInstant Message \1wModule \1n" + REVISION + "\r\n");
 
 // Parse arguments
 for(i=0;i<argc;i++)
@@ -91,7 +93,7 @@ for(i in list) {
 
 function save_sys_list()
 {
-	sys.sort(sortarray);
+//	sys.sort(sortarray);
 	fname = system.ctrl_dir + "sbbsimsg.lst";
 	f = new File(fname);
 	if(!f.open("w"))
@@ -110,7 +112,7 @@ function sortarray(a, b)
 	return(a.reply-b.reply);
 }
 
-function parse_response(response, show, sys)
+function parse_response(response, verbosity, sys)
 {
 	// Skip header
 	while(response.length && response[0].charAt(0)!='-')
@@ -123,25 +125,22 @@ function parse_response(response, show, sys)
 		response.pop();		// Delete trailing blank lines
 
 	if(!response.length) {
-		if(show)
+		if(verbosity > 1)
 			print();
 		return;
 	}
 
-	if(show) {
-		str = format("%lu user%s",response.length,response.length==1 ? "":"s");
-		printf("\1g\1h%-33s Time   Age Sex\r\n",str);
-	}
+	if(verbosity < 1)
+		printf("\1n\1h%-25.25s ", sys.name);
+	printf("\1g\1h                                  Time   Age Sex\r\n");
 
 	for(j in response) {
 		if(response[j]=="")
 			continue;
 
-		if(show) {
-			console.line_counter=0;	// defeat pause
-			print(format("\1h\1y%.25s\1n\1g %.48s"
-				,response[j],response[j].slice(26)));
-		}
+		console.line_counter=0;	// defeat pause
+		print(format("\1h\1y%.25s\1n\1g %.48s"
+			,response[j],response[j].slice(26)));
 		var u = new Object;
 		u.host = sys.addr;
 		u.bbs  = sys.name;
@@ -153,7 +152,7 @@ function parse_response(response, show, sys)
 	}
 }
 
-function list_users(show)
+function list_users(verbosity)
 {
 	imsg_user = new Array();
 	var udp_req=0;
@@ -161,7 +160,7 @@ function list_users(show)
 
 	users = 0;
 	start = new Date();
-	print("\1m\1hListing Systems and Users (Ctrl-C to Abort)...");
+	print(format("\1m\1hListing %sUsers (Ctrl-C to Abort)...", verbosity ? "Systems and " : ""));
 
 	sock = new Socket(SOCK_DGRAM);
 	//sock.debug=true;
@@ -174,37 +173,41 @@ function list_users(show)
 	}
 
 	begin = new Date();
-	while(replies<udp_req && new Date().valueOf()-begin.valueOf() < UDP_RESPONSE_TIMEOUT 
-		&& !(bbs.sys_status&SS_ABORT))
+	for(var loop = 0; replies<udp_req && new Date().valueOf()-begin.valueOf() < UDP_RESPONSE_TIMEOUT
+		&& !(bbs.sys_status&SS_ABORT); loop++)
 	{
-
-		if(!sock.poll(1))
+		printf("%c\r", "/-\\|"[loop%4]);
+		if(!sock.poll(0.25))
 			continue;
 
 		message=sock.recvfrom(20000);
 		if(message==null)
 			continue;
 		var found = get_system_by_ip(message.ip_address);
-		if(!found)
+		if(!found) {
+			printf("Unexpected response from %s\r\n", message.ip_address);
 			continue;
+		}
 		replies++;
 		found.reply=new Date().valueOf()-start.valueOf();
 
 		response=message.data.split("\r\n");
 
-		if(show) {
+		if(verbosity > 1) {
 			console.line_counter=0;	// defeat pause
 			printf("\1n\1h%-25.25s\1n ",found.name);
 		}
 
-		parse_response(response, show, found);
+		parse_response(response, verbosity, found);
 	}
-	
+	console.clearline();
 	sock.close();
 
-	t = new Date().valueOf()-start.valueOf();
-	printf("\1m\1h%lu systems and %lu users listed in %d seconds.\r\n"
-		,replies, users, t/1000);
+	if(verbosity > 1) {
+		t = new Date().valueOf()-start.valueOf();
+		printf("\1m\1h%lu systems and %lu users listed in %d seconds.\r\n"
+			,replies, users, t/1000);
+	}
 	save_sys_list();
 }
 
@@ -213,7 +216,6 @@ function get_system_by_ip(ip)
 	for(var i in sys)
 		if(sys[i].ip==ip)
 			return(sys[i]);
-	printf("Unexpected response from %s\r\n",ip);
 	return null;
 }
 
@@ -235,11 +237,21 @@ function send_msg(dest, msg)
 			alert("MSP Connection to " + host + " failed with error " + sock.last_error);
 		}
 		else {
-			sock.send("B"+destuser+"\0"+/* Dest node +*/"\0"+msg+"\0"+user[options.from_user_prop]+"\0"+"Node: "+bbs.node_num+"\0\0"+system.name+"\0");
+			sock.send("B"+destuser+"\0"+/* Dest node +*/"\0"+msg+"\0"+user[options.from_user_prop]+"\0"+"\0\0"+system.name+"\0");
 		}
 	} while(0);
 
 	sock.close();
+
+	var addr_idx = addr_list.indexOf(dest);
+	if(addr_idx >= 0)
+		addr_list.splice(addr_idx, 1);
+	addr_list.unshift(dest);
+	if(addr_list.length > RcptAddressHistoryLength)
+		addr_list.length = RcptAddressHistoryLength;
+	userprops.set(ini_section, "address", addr_list);
+	last_send = new Date().toString();
+	userprops.set(ini_section, "localtime", last_send);
 }
 
 function getmsg()
@@ -268,10 +280,29 @@ function getmsg()
 	return(msg);
 }
 
-list_users(true);	// Needed to initialize imsg_user[]
+function get_default_dest()
+{
+	var rx = userprops.get("imsg received");
+	
+	if(rx && rx.localtime && (!last_send || new Date(rx.localtime) > new Date(last_send))) {
+		var sys = get_system_by_ip(rx.ip_address);
+		print(sys);
+		if(sys)
+			return rx.name + '@' + sys.addr;
+		return rx.name + '@' + rx.ip_address;
+	}
+	if(addr_list.length)
+		return addr_list[0];
+	if(imsg_user.length)
+		return format("%s@%s",imsg_user[last_user].name,imsg_user[last_user].host);
+	return "";
+}
+
+list_users(0);	// Needed to initialize imsg_user[]
 console.crlf();
 
 var key;
+menu:
 while(bbs.online) {
 	console.line_counter=0;	// defeat pause
 	console.print("\1n\1h\1bInter-BBS: ");
@@ -294,17 +325,13 @@ while(bbs.online) {
 	switch(key) {
 		case 'L':
 			print("\1h\1cList\r\n");
-			list_users(true);
+			list_users(0);
 			console.crlf();
 			break;
 		case 'T':
 			printf("\1h\1cTelegram\r\n\r\n");
 			printf("\1n\1h\1y(user@hostname): \1w");
-			if(imsg_user.length)
-				dest=format("%s@%s",imsg_user[last_user].name,imsg_user[last_user].host);
-			else
-				dest="";
-			dest=console.getstr(dest,64,K_EDIT|K_AUTODEL);
+			dest=console.getstr(get_default_dest(),64,K_EDIT|K_AUTODEL, addr_list);
 			if(dest==null || dest=='' || bbs.sys_status&SS_ABORT)
 				break;
 			if((msg=getmsg())=='')
@@ -315,7 +342,7 @@ while(bbs.online) {
 		case 'M':
 			print("\1h\1cMessage\r\n");
 			if(!imsg_user.length) {
-				alert("No users!\r\n");
+				alert("No active users!\r\n");
 				break;
 			}
 			done=false;
@@ -364,7 +391,6 @@ while(bbs.online) {
 			break;
 		default:
 			print("\1h\1cQuit");
-			exit();
-			break;
+			break menu;
 	}
 }
