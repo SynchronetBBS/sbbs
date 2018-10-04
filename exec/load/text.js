@@ -810,7 +810,11 @@ var MsgHdrBodySeparator=798;
 var FileHdrDescSeparator=799;
 var RemoveFileQ=800;
 var OriginFidoAddr=801;
+var VoteNoticeFmt=802;
+var TagMessageQ=803;
+var TagMessagePrompt=804;
+var MsgTags=805;
 
-var TOTAL_TEXT=802;
+var TOTAL_TEXT=806;
 
 this;
