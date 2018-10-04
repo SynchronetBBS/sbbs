@@ -19,7 +19,8 @@
 
 load("sockdefs.js");
 load("nodedefs.js");
-
+var userprops = load({}, "userprops.js");
+var section = "imsg received";
 var output_buf = "";
 var version=0;
 var send_response=false;
@@ -67,6 +68,20 @@ function read_str(msg)
 	}
 }
 
+function update_user_imsg(usernum, sender, bbs, client, count)
+{
+	var last = {
+		"name": sender,
+		"BBS": bbs,
+		"ip_address": client.ip_address,
+		"host_name": client.host_name,
+		"protocol": client.protocol,
+		"localtime": new Date(),
+		"count": count
+	};
+	return userprops.set(section, /* key: */null, last, usernum);
+}
+
 var b;
 var recipient="";
 var recip_node="";
@@ -79,7 +94,7 @@ var signature="";
 var usernum=0;
 
 /* Read version */
-if(!client.socket.data_waiting && !client.socket.is_connected)
+if(!client.socket.data_waiting || !client.socket.is_connected)
 	done();
 b=client.socket.recvBin(1);
 if(client.socket.type==SOCK_DGRAM)
@@ -123,7 +138,7 @@ var telegram_buf="\1n\1h\1cInstant Message\1n from \1h\1y";
 telegram_buf += sender;
 if(sender_term != "")
 	telegram_buf += " \1n"+sender_term+"\1h";
-telegram_buf += "\r\n\1w[\1n";
+telegram_buf += " \1w[\1n";
 if(signature != "") {
 	telegram_buf += signature;
 	telegram_buf += "\1h]"
@@ -137,8 +152,23 @@ else {
 		telegram_buf += "\1h)";
 	}
 }
-telegram_buf += "\1n:\r\n\1h";
-telegram_buf += message;
+var last = userprops.get(section, /* key: */null, /* deflt: */null, usernum);
+telegram_buf += "\1n:";
+if(signature.length && (!last || signature != last.BBS || sender != last.name)) {
+	var avatar_lib = load({}, "avatar_lib.js");
+	var avatar = avatar_lib.read(null, sender, signature);
+	if(avatar_lib.is_enabled(avatar)) {
+		load('graphic.js');
+		var graphic = new Graphic(avatar_lib.defs.width, avatar_lib.defs.height);
+		try {
+			graphic.BIN = base64_decode(avatar.data);
+			telegram_buf += "\r\n" + graphic.MSG;
+		} catch(e) {
+			log(LOG_ERR, e);
+		};
+	}
+}
+telegram_buf += "\1n\r\n\1h" + message;
 
 /* TODO cache cookies and prevent dupes */
 if(recipient != "") {
@@ -153,6 +183,8 @@ if(recipient != "") {
 	else {
 		send_response=system.put_telegram(usernum, telegram_buf);
 		log("Attempt to send telegram: "+(send_response?"Success":"Failure"));
+		if(send_response)
+			update_user_imsg(usernum, sender, signature, client, last ? last.count + 1 : 1);
 	}
 }
 else if(to_node) {
