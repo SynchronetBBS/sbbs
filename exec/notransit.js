@@ -10,6 +10,7 @@ if(!mail.open()) {
 	exit();
 }
 var total_msgs = mail.total_msgs;
+var removed = 0;
 for(i=0;i<total_msgs;i++) {
 	hdr = mail.get_msg_header(	/* by_offset:		*/	true, 
 								/* offset:			*/	i, 
@@ -20,7 +21,13 @@ for(i=0;i<total_msgs;i++) {
 		printf("Removing in-transit attribute from message #%lu\r\n",hdr.number);
 		if(!mail.put_msg_header(true,i,hdr))
 			alert(mail.last_error);
+		else {
+			removed++;
+		}
 	}
 }
 
 mail.close();
+
+print();
+print(format("Removed %u in-transit flags", removed));
