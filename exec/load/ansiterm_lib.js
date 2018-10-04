@@ -203,6 +203,7 @@ function set_attributes(a)
 
 function send(a,b,c,d)
 {
+	log(LOG_DEBUG, "ansterm.sending: " + this[a][b](c,d));
 	console.write(this[a][b](c,d));
 }
 

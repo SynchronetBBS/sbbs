@@ -562,6 +562,8 @@ function syncterm_list(list, dir)
     if(!f.open("w")) {
 		return false;
     }
+	f.writeln(format("; Exported from %s on %s", system.name, new Date().toString()));
+	f.writeln();
     for(i in list) {
         for(j in list[i].service) {
             if(!list[i].service[j].protocol)
