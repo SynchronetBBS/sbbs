@@ -675,7 +675,7 @@ function verify_services(address, timeout)
             print("Failed");
     }
     print("Waiting for UDP replies");
-    while(verified.udp.length < udp_services.length && udp_socket.poll(1)) {
+    while(verified.udp.length < udp_services.length && udp_socket.poll(3)) {
         if(js.terminated)
             break;
 		var msg=udp_socket.recvfrom(32*1024);
@@ -688,7 +688,7 @@ function verify_services(address, timeout)
             for(i in udp_services) {
                 var service = udp_services[i];
                 if(standard_service_port[service] == msg.port) {
-                    print("Valid UDP reply for " + service);
+                    print("Valid UDP reply for service: " + service);
                     verified.udp.push(service);
                 }
             }
@@ -764,14 +764,6 @@ function verify_list(list)
         if(js.terminated)
             break;
     }
-}
-
-function unique_strings(a, offset)
-{
-    var seen = {};
-    return a.filter(function(item) {
-        return seen.hasOwnProperty(item.substring(offset)) ? false : (seen[item.substring(offset)] = true);
-    });
 }
 
 function console_color(arg, selected)
@@ -2197,23 +2189,33 @@ function main()
 				var ibbs = [];
 				for(i in list) {
 					var bbs = list[i];
-					if(!bbs.entry.autoverify.success)
+					if(!bbs.entry.autoverify || !bbs.entry.autoverify.success)
 						continue;
 					if(!lib.imsg_capable_system(bbs))
 						continue;
-					ibbs.push(format("%-63s\t%s\t%s",
-						bbs.entry.autoverify.last_success.service.address,
-						bbs.entry.autoverify.last_success.ip_address,
-						bbs.name));
+					if(!ibbs.every(function(element) {
+							return element.service_address != bbs.entry.autoverify.last_success.service.address
+								&& element.ip_address != bbs.entry.autoverify.last_success.ip_address
+								&& element.name != bbs.name;
+							}))
+						continue;
+					ibbs.push( {
+						service_address: bbs.entry.autoverify.last_success.service.address,
+						ip_address: bbs.entry.autoverify.last_success.ip_address,
+						name: bbs.name
+						} );
 				}
-				ibbs = unique_strings(ibbs, /* offset: */64);
 				file_backup("sbbsimsg.lst", limit ? limit : options.backup_level);
 				var f = new File("sbbsimsg.lst");
 				if(!f.open("w")) {
 					log(LOG_ERR,"Error opening " + f.name);
 					exit();
 				}
-				f.writeAll(ibbs);
+				for(i in ibbs)
+					f.writeln(format("%-63s\t%s\t%s",
+						ibbs[i].service_address,
+						ibbs[i].ip_address,
+						ibbs[i].name));
 				f.close();
 				print(ibbs.length + " BBS entries exported to: " + f.name);
 				break;
