@@ -37,14 +37,14 @@
 #include "wordwrap.h"
 
 /****************************************************************************/
-/* Outputs a NULL terminated string locally and remotely (if applicable)	*/
+/* Outputs a NULL terminated string with @-code parsing,                    */
 /* checking for message aborts, pauses, ANSI escape and ^A sequences.		*/
-/* Changes local text attributes if necessary. Max length of str is 4 gig	*/
+/* Changes local text attributes if necessary.                              */
 /* Returns the last char of the buffer access.. 0 if not aborted.           */
 /* If P_SAVEATR bit is set in mode, the attributes set by the message       */
 /* will be the current attributes after the message is displayed, otherwise */
-/* the attributes prior to diplaying the message are always restored.       */
-/* Ignores Ctrl-Z's  (only in P_CPM_EOF mode)                               */
+/* the attributes prior to displaying the message are always restored.      */
+/* Stops parsing/displaying upon CTRL-Z (only in P_CPM_EOF mode).           */
 /****************************************************************************/
 char sbbs_t::putmsg(const char *buf, long mode)
 {
