@@ -107,6 +107,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	char	touser[64];
 	char	from[64];
 	char	pid[128];
+	char	tags[64] = "";
 	char*	editor=NULL;
 	char*	msgbuf=NULL;
 	uint16_t xlat;
@@ -133,7 +134,9 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		msgattr=(ushort)(remsg->hdr.attr&MSG_PRIVATE);
 		sprintf(top,text[RegardingByToOn],title,from,remsg->to
 			,timestr(remsg->hdr.when_written.time)
-			,smb_zonestr(remsg->hdr.when_written.zone,NULL)); 
+			,smb_zonestr(remsg->hdr.when_written.zone,NULL));
+		if(remsg->tags != NULL)
+			SAFECOPY(tags, remsg->tags);
 	} else {
 		title[0]=0;
 		touser[0]=0;
@@ -345,15 +348,14 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	if(editor!=NULL)
 		smb_hfield_str(&msg,SMB_EDITOR,editor);
-
-	if(cfg.sub[subnum]->misc&SUB_MSGTAGS 
-		&& (text[TagMessageQ][0]==0 || !noyes(text[TagMessageQ]))) {
-		char tags[64] = "";
+	
+	if((cfg.sub[subnum]->misc&SUB_MSGTAGS)
+		&& (tags[0] || text[TagMessageQ][0] == 0 || !noyes(text[TagMessageQ]))) {
 		bputs(text[TagMessagePrompt]);
-		if(getstr(tags, sizeof(tags)-1, K_LINE|K_TRIM)) {
-			smb_hfield_str(&msg, SMB_TAGS, tags);
-		}
+		getstr(tags, sizeof(tags)-1, K_EDIT|K_LINE|K_TRIM);
 	}
+	if(tags[0])
+		smb_hfield_str(&msg, SMB_TAGS, tags);
 
 	i=smb_addmsg(&smb,&msg,storage,dupechk_hashes,xlat,(uchar*)msgbuf,NULL);
 	free(msgbuf);
