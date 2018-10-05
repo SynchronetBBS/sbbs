@@ -99,7 +99,10 @@ function populate_net_tree(filename, zone, tree, settings) {
       populate_node_tree(filename, zone, zn[2], net_tree, settings);
       if (settings.auto_close_net) {
         tree.items.forEach(function (e) {
-          if (e.text != net_tree.text) e.close();
+          if (e.text != net_tree.text) {
+            e.close();
+            e.index = -1;
+          }
         });
       }
       tree.refresh();
@@ -130,7 +133,10 @@ function populate_zone_tree(filename, tree, settings) {
       populate_net_tree(filename, zone, zone_tree, settings);
       if (settings.auto_close_zone) {
         tree.items.forEach(function (e) {
-          if (e.text != zone_tree.text) e.close();
+          if (e.text != zone_tree.text) {
+            e.close();
+            e.index = -1;
+          }
         });
       }
       tree.refresh();
@@ -156,7 +162,10 @@ function populate_domain_tree(filename, tree, settings) {
     populate_zone_tree(filename, domain_tree, settings);
     if (settings.auto_close_domain) {
       tree.items.forEach(function (e) {
-        if (e.text != nodelist.domain) e.close();
+        if (e.text != nodelist.domain) {
+          e.close();
+          e.index = -1;
+        }
       });
     }
     tree.refresh();
