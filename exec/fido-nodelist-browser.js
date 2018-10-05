@@ -179,10 +179,11 @@ function populate_domain_tree(filename, tree, settings) {
 function populate_tree(tree, settings) {
   const ftn_domains = new FTNDomains();
   Object.keys(ftn_domains.nodeListFN).forEach(function (e) {
+    if (!file_exists(ftn_domains.nodeListFN[e])) return;
     populate_domain_tree(ftn_domains.nodeListFN[e], tree, settings);
   });
   Object.keys(settings).forEach(function (e) {
-    if (e.search(/^nodelist_/) > -1) {
+    if (e.search(/^nodelist_/) > -1 && file_exists(settings[e])) {
       populate_domain_tree(settings[e], tree, settings);
     }
   });
