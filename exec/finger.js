@@ -4,7 +4,7 @@
 
 load('sockdefs.js');
 var dest;
-var udp = false;
+var use_udp = false;
 var protocol = "finger";
 
 var i;
