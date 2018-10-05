@@ -1394,7 +1394,8 @@ static void send_thread(void* arg)
 
 	if((fp=fnopen(NULL,xfer.filename,O_RDONLY|O_BINARY))==NULL	/* non-shareable open failed */
 		&& (fp=fopen(xfer.filename,"rb"))==NULL) {				/* shareable open failed */
-		lprintf(LOG_ERR,"%04d !DATA ERROR %d opening %s",xfer.ctrl_sock,errno,xfer.filename);
+		lprintf(LOG_ERR,"%04d !DATA ERROR %d (%s) line %d opening %s (useron=%s)"
+			,xfer.ctrl_sock, errno, strerror(errno), __LINE__, xfer.filename, xfer.user->alias);
 		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 ERROR %d opening %s.",errno,xfer.filename);
 		if(xfer.tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 			ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename);
@@ -1668,7 +1669,8 @@ static void receive_thread(void* arg)
 	thread_up(TRUE /* setuid */);
 
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
-		lprintf(LOG_ERR,"%04d !DATA ERROR %d opening %s",xfer.ctrl_sock,errno,xfer.filename);
+		lprintf(LOG_ERR,"%04d !DATA ERROR %d (%s) line %d opening %s (useron=%s)"
+			,xfer.ctrl_sock, errno, strerror(errno), __LINE__, xfer.filename, xfer.user->alias);
 		sockprintf(xfer.ctrl_sock,sess,"450 ERROR %d opening %s.",errno,xfer.filename);
 		ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);
 		*xfer.inprogress=FALSE;
@@ -3967,7 +3969,8 @@ static void ctrl_thread(void* arg)
 				if (cmd[3] == 'T' || cmd[3] == 'D') {
 					if (cmd[3] == 'D') {
 						if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
-							lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
+							lprintf(LOG_ERR,"%04d !ERROR %d (%s) line %d opening %s (useron=%s)"
+								,sock, errno, strerror(errno), __LINE__, fname, user.alias);
 							sockprintf(sock,sess, "451 Insufficient system storage");
 							continue;
 						}
@@ -4037,7 +4040,8 @@ static void ctrl_thread(void* arg)
 					detail=FALSE;
 
 				if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
-					lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
+					lprintf(LOG_ERR,"%04d !ERROR %d (%s) line %d opening %s (useron=%s)"
+						,sock, errno, strerror(errno), __LINE__, fname, user.alias);
 					sockprintf(sock,sess, "451 Insufficient system storage");
 					continue;
 				}
@@ -4360,7 +4364,8 @@ static void ctrl_thread(void* arg)
 				fp = NULL;
 				if (cmd[3] == 'D') {
 					if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
-						lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
+						lprintf(LOG_ERR,"%04d !ERROR %d (%s) line %d opening %s (useron=%s)"
+							,sock, errno, strerror(errno), __LINE__, fname, user.alias);
 						sockprintf(sock,sess, "451 Insufficient system storage");
 						continue;
 					}
@@ -4634,7 +4639,8 @@ static void ctrl_thread(void* arg)
 			}
 
 			if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
-				lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
+				lprintf(LOG_ERR,"%04d !ERROR %d (%s) line %d opening %s (useron=%s)"
+					,sock, errno, strerror(errno), __LINE__, fname, user.alias);
 				sockprintf(sock,sess, "451 Insufficient system storage");
 				continue;
 			}
@@ -5049,7 +5055,8 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if((fp=fopen(ftp_tmpfname(fname,"ndx",sock),"w+b"))==NULL) {
-					lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
+					lprintf(LOG_ERR,"%04d !ERROR %d (%s) line %d opening %s (useron=%s)"
+						,sock, errno, strerror(errno), __LINE__, fname, user.alias);
 					sockprintf(sock,sess, "451 Insufficient system storage");
 					filepos=0;
 					continue;
@@ -5257,7 +5264,8 @@ static void ctrl_thread(void* arg)
 					JS_ENDREQUEST(js_cx);
 #endif
 					if((fp=fopen(ftp_tmpfname(fname,"html",sock),"w+b"))==NULL) {
-						lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
+						lprintf(LOG_ERR,"%04d !ERROR %d (%s) line %d opening %s (useron=%s)"
+							,sock, errno, strerror(errno), __LINE__, fname, user.alias);
 						sockprintf(sock,sess, "451 Insufficient system storage");
 						filepos=0;
 						continue;
