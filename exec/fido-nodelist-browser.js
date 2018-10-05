@@ -156,7 +156,12 @@ function populate_zone_tree(filename, tree, settings) {
 }
 
 function populate_domain_tree(filename, tree, settings) {
-  const nodelist = new NodeList(filename);
+  try {
+    const nodelist = new NodeList(filename);
+  } catch (err) {
+    log(LOG_ERR, format('Error parsing %s: %s', filename, err));
+    return;
+  }
   const domain_tree = tree.addTree(nodelist.domain);
   const idx = tree.items.length - 1;
   domain_tree.onOpen = function () {
