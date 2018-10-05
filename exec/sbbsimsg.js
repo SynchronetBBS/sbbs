@@ -260,7 +260,7 @@ function getmsg()
 	var msg="";
 	const max_lines = 5;
 
-	printf("\1n\1g\1h%lu\1n\1g lines maximum (blank line ends)\r\n",max_lines);
+	printf("\1n\1g\1h%lu\1n\1g lines maximum (blank line sends, Ctrl-C to abort)\r\n",max_lines);
 	while(bbs.online && lines<max_lines) {
 		console.print("\1n: \1h");
 		mode=0;
@@ -286,7 +286,6 @@ function get_default_dest()
 	
 	if(rx && rx.localtime && (!last_send || new Date(rx.localtime) > new Date(last_send))) {
 		var sys = get_system_by_ip(rx.ip_address);
-		print(sys);
 		if(sys)
 			return rx.name + '@' + sys.addr;
 		return rx.name + '@' + rx.ip_address;
