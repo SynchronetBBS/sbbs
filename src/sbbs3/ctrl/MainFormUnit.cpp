@@ -2865,7 +2865,7 @@ void __fastcall TMainForm::ForceTimedEventMenuItemClick(TObject *Sender)
             	if((file=_sopen(str,O_CREAT|O_TRUNC|O_WRONLY
 	                ,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
 	                close(file);
-				selection = i;
+				selection = CodeInputForm->ComboBox->ItemIndex;
                 break;
 	   		}
         }
