@@ -155,20 +155,20 @@ function populate_zone_tree(filename, tree, settings) {
   });
 }
 
-function populate_domain_tree(filename, tree, settings) {
+function populate_domain_tree(filename, domain, tree, settings) {
   try {
     const nodelist = new NodeList(filename);
   } catch (err) {
     log(LOG_ERR, format('Error parsing %s: %s', filename, err));
     return;
   }
-  const domain_tree = tree.addTree(nodelist.domain);
+  const domain_tree = tree.addTree(domain);
   const idx = tree.items.length - 1;
   domain_tree.onOpen = function () {
     populate_zone_tree(filename, domain_tree, settings);
     if (settings.auto_close_domain) {
       tree.items.forEach(function (e) {
-        if (e.text != nodelist.domain) {
+        if (e.text != domain_tree.text) {
           e.close();
           e.index = -1;
         }
@@ -185,11 +185,13 @@ function populate_tree(tree, settings) {
   const ftn_domains = new FTNDomains();
   Object.keys(ftn_domains.nodeListFN).forEach(function (e) {
     if (!file_exists(ftn_domains.nodeListFN[e])) return;
-    populate_domain_tree(ftn_domains.nodeListFN[e], tree, settings);
+    const dn = settings['domain_' + e] || e;
+    populate_domain_tree(ftn_domains.nodeListFN[e], dn, tree, settings);
   });
   Object.keys(settings).forEach(function (e) {
     if (e.search(/^nodelist_/) > -1 && file_exists(settings[e])) {
-      populate_domain_tree(settings[e], tree, settings);
+      const dn = e.replace(/^nodelist_/, '');
+      populate_domain_tree(settings[e], dn, tree, settings);
     }
   });
   tree.items.sort(function (a, b) {
