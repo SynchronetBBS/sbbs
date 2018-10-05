@@ -54,6 +54,7 @@ function node_info_popup(node, frame, settings) {
   other = undefined;
   popup.open();
   frame.cycle();
+  console.gotoxy(console.screen_columns, console.screen_rows);
   var user_input;
   while((user_input = console.inkey(K_NONE).toLowerCase()) == '') {
     yield();
