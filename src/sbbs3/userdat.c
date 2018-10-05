@@ -1302,6 +1302,7 @@ char* DLLCALL getsmsg(scfg_t* cfg, int usernumber)
 	chsize(file,0L);
 	close(file);
 	buf[length]=0;
+	strip_invalid_attr(buf);
 
 	return(buf);	/* caller must free */
 }

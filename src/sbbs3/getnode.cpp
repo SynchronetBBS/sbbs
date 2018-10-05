@@ -319,6 +319,8 @@ int sbbs_t::getsmsg(int usernumber)
 	int		i;
 
 	for(i=1;i<=cfg.sys_nodes;i++) {	/* clear msg waiting flag */
+		if(getnodedat(i,&node,false) != 0 || node.useron != usernumber)
+			continue;
 		if(getnodedat(i,&node,true)==0) {
 			if(node.useron==usernumber
 					&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
@@ -352,7 +354,8 @@ int sbbs_t::getsmsg(int usernumber)
 	buf[length]=0;
 	getnodedat(cfg.node_num,&thisnode,0);
 	if(cols)
-		CRLF; 
+		CRLF;
+	strip_invalid_attr(buf);
 	putmsg(buf,P_NOATCODES);
 	free(buf);
 
@@ -372,7 +375,7 @@ int sbbs_t::whos_online(bool listself)
 	CRLF;
 	bputs(text[NodeLstHdr]);
 	for(j=0,i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
-		getnodedat(i,&node,0);
+		getnodedat(i,&node,false);
 		if(i==cfg.node_num) {
 			if(listself)
 				printnodedat(i,&node);
@@ -397,7 +400,7 @@ void sbbs_t::nodelist(void)
 	CRLF;
 	bputs(text[NodeLstHdr]);
 	for(int i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
-		getnodedat(i,&node,0);
+		getnodedat(i,&node,false);
 		printnodedat(i,&node); 
 	}
 }
