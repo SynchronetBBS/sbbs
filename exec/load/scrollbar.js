@@ -160,10 +160,10 @@ var ScrollBar = function (frame, opts) {
 		var ma = scrollArea.height - bar.height; // maximum scrollbar y position relative to its frame
 		var adj = Math.min(
 			ma, Math.round(
-				ma * (settings.tree.offset / (settings.tree.items.length - frame.height))
+				ma * (settings.tree.offset / (settings.tree.height - settings.tree.frame.height))
 			)
 		);
-		bar.y = scrollArea.y + (isNaN(adj) ? 0 : adj);
+		bar.y = scrollArea.y + (isNaN(adj) || adj < 0 ? 0 : adj);
 
 		if (bh != bar.height || by != bar.y) scrollBarFrame.invalidate();
 
@@ -198,7 +198,7 @@ var ScrollBar = function (frame, opts) {
 				ma * (frame.offset.y / (frame.data_height - frame.height))
 			)
 		);
-		bar.y = scrollArea.y + (isNaN(adj) ? 0 : adj);
+		bar.y = scrollArea.y + (isNaN(adj) || adj < 0 ? 0 : adj);
 
 	}
 
@@ -230,7 +230,7 @@ var ScrollBar = function (frame, opts) {
 				ma * (frame.offset.x / (frame.data_width - frame.width))
 			)
 		);
-		bar.x = scrollArea.x + (isNaN(adj) ? 0 : adj);
+		bar.x = scrollArea.x + (isNaN(adj) || adj < 0 ? 0 : adj);
 
 	}
 
