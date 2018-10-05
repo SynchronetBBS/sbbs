@@ -790,7 +790,12 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 
 	memcpy(&bin,csi,sizeof(csi_t));
 	clearvars(&bin);
-	bin.length=(uint32_t)filelength(file);
+	bin.length = filelength(file);
+	if(bin.length < 1) {
+		close(file);
+		errormsg(WHERE, ERR_LEN, str, bin.length);
+		return -1;
+	}
 	if((bin.cs=(uchar *)malloc(bin.length))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,bin.length);
