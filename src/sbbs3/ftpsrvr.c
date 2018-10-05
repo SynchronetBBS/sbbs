@@ -5022,7 +5022,7 @@ static void ctrl_thread(void* arg)
 						lprintf(LOG_ERR,"%04d <%s> !ERROR creating semaphore file: %s"
 							,sock, user.alias, str);
 					t=time(NULL);
-					while(fexist(str)) {
+					while(fexist(str) && !terminate_server) {
 						if(!socket_check(sock,NULL,NULL,0))
 							break;
 						if(time(NULL)-t>startup->qwk_timeout)
@@ -6204,7 +6204,7 @@ void DLLCALL ftp_server(void* arg)
 				, protected_uint32_value(active_clients));
 			start=time(NULL);
 			while(protected_uint32_value(active_clients)) {
-				if(time(NULL)-start>startup->max_inactivity) {
+				if(time(NULL)-start > startup->max_inactivity * 2) {
 					lprintf(LOG_WARNING,"0000 !TIMEOUT waiting for %d active clients"
 						, protected_uint32_value(active_clients));
 					break;
