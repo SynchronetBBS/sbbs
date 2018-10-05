@@ -119,6 +119,11 @@ char *usage=
 "       p[k] = pack msg base (k specifies minimum packable Kbytes)\n"
 "       L    = lock a msg base for exclusive-access/backup\n"
 "       U    = unlock a msg base\n"
+"\n"
+"            [n] may represent 1-based message index offset, or\n"
+"            [#n] actual message number, or\n"
+"            [-n] message age (in days)\n"
+"\n"
 "opts:\n"
 "      -c[m] = create message base if it doesn't exist (m=max msgs)\n"
 "      -a    = always pack msg base (disable compression analysis)\n"
@@ -1391,7 +1396,7 @@ void readmsgs(ulong start)
 				break; 
 			}
 
-			printf("\n%"PRIu32" (%d)\n",msg.hdr.number,msg.offset+1);
+			printf("\n#%"PRIu32" (%d)\n",msg.hdr.number,msg.offset+1);
 			printf("Subj : %s\n",msg.subj);
 			printf("Attr : %04hX\n", msg.hdr.attr);
 			printf("To   : %s",msg.to);
@@ -1519,9 +1524,17 @@ long getmsgnum(const char* str)
 		printf("%.24s\n", ctime(&t));
 		idxrec_t	idx;
 		int result = smb_getmsgidx_by_time(&smb, &idx, t);
-		printf("match = %d, num %d\n", result, idx.number);
+//		printf("match = %d, num %d\n", result, idx.number);
 		if(result >= 0)
 			return result + 1;	/* 1-based offset */
+	}
+	if(*str == '#') {
+		smbmsg_t msg;
+		ZERO_VAR(msg);
+		msg.hdr.number = atol(str + 1);
+		int result = smb_getmsgidx(&smb, &msg);
+		if(result == SMB_SUCCESS)
+			return msg.offset + 1;
 	}
 	return atol(str);
 }
