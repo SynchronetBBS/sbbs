@@ -91,24 +91,22 @@ function table(data, line_color, heading_color, cell_color, width) {
     // We can display the table somewhere between its minimum and full size
     const w = width - (ts.min + adj);
     const d = ts.max - ts.min;
-    // This needs some work to better fill the terminal width
     widths = cs.map(function (e) {
       return Math.ceil(e.min + (d / ((e.max - e.min) * w)));
     });
-
-    // Something is quite wrong here.
     const tw = widths.reduce(function (a, c) { return a + c; }, 0) + adj;
     var wd = width - tw;
     for (var n = 0; n < wd; n++) {
       widths[n % widths.length]++;
     }
-
     var nr; // New rows
     var arr; // Wrapped cell
     for (var row = 0; row < data.length; row++) {
       nr = 0;
       for (var col = 0; col < data[row].length; col++) {
-        arr = truncsp(word_wrap(data[row][col], widths[col])).split(/\n/);
+        var ralign = data[row][col].search(/^\s\s+/) > -1;
+        var calign = ralign && data[row][col].search(/\s\s+$/) > -1;
+        arr = word_wrap(data[row][col], widths[col]).replace(/\r*\n$/, '').split(/\n/);
         // If the cell has to wrap
         if (arr.length > 1) {
           // For each wrapped line in this cell
@@ -126,6 +124,8 @@ function table(data, line_color, heading_color, cell_color, width) {
               data.splice(row + r, 0, add_row);
             }
             // Add this line of wrapped text to the column in the added row
+            if (ralign && r > 0) arr[r] = '  ' + arr[r];
+            if (calign && r < arr.length - 1) arr[r] += '  ';
             data[row + r][col] = arr[r];
           }
         }
@@ -145,6 +145,8 @@ function table(data, line_color, heading_color, cell_color, width) {
   var rowspan;
   var wrap; // Next row is a wrap
   var wrapping_colspan = [];
+  var ralign;
+  var calign;
   const ret = [];
   for (var row = 0; row < data.length; row++) {
     lastrow = (row == data.length - 1);
@@ -153,15 +155,33 @@ function table(data, line_color, heading_color, cell_color, width) {
     line1 = '\1+' + line_color + ldc.vertical + '\1-';
     line2 = '';
     for (var col = 0; col < widths.length; col++) {
+      ralign = data[row][col].search(/^\s\s+/) > -1;
+      calign = data[row][col].search(/\s\s+$/) > -1;
       lastcol = (col == (widths.length - 1));
       colspan = (!lastcol && !data[row][col + 1]);
       if (!wrapping_colspan[col] && colspan && wrap) {
         wrapping_colspan[col] = true;
       }
       rowspan = (!lastrow && data[row + 1][col] == ':::');
-      s = ' ' + skipsp(truncsp((data[row][col] || '').replace(':::', '')));
-      while (strip_ctrl(s).length <= widths[col]) {
-        s += ' ';
+      s = ' ';
+      if (calign) {
+        var con = skipsp(truncsp((data[row][col] || '').replace(':::', '')));
+        while (con.length < widths[col]) {
+          con = ' ' + con + ' ';
+        }
+        if (con.length > widths[col]) con = con.substr(0, widths[col]);
+        s += con;
+      } else if (ralign) {
+        var con = skipsp(truncsp((data[row][col] || '').replace(':::', '')));
+        while (con.length < widths[col]) {
+          con = ' ' + con;
+        }
+        s += con;
+      } else {
+        s += skipsp(truncsp((data[row][col] || '').replace(':::', '')));
+        while (strip_ctrl(s).length <= widths[col]) {
+          s += ' ';
+        }
       }
       line1 += '\1+' + (row == 0 ? heading_color : cell_color) + s + ' ' + '\1-';
       // line1
