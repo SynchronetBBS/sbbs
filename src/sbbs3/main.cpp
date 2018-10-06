@@ -3620,7 +3620,7 @@ bool sbbs_t::init()
 		}
 	}
 	if(cfg.total_subs) {
-		if((subscan=(subscan_t *)malloc(sizeof(subscan_t)*cfg.total_subs))==NULL) {
+		if((subscan=(subscan_t *)calloc(cfg.total_subs, sizeof(subscan_t)))==NULL) {
 			errormsg(WHERE, ERR_ALLOC, "subscan", sizeof(subscan_t)*cfg.total_subs);
 			return(false);
 		}
@@ -4633,22 +4633,37 @@ void sbbs_t::daily_maint(void)
 
 	if(cfg.mail_backup_level) {
 		lputs(LOG_INFO,"DAILY: Backing-up mail data...");
-		SAFEPRINTF(str,"%smail.shd",cfg.data_dir);
-		backup(str,cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.sha",cfg.data_dir);
-		backup(str,cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.sdt",cfg.data_dir);
-		backup(str,cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.sda",cfg.data_dir);
-		backup(str,cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.sid",cfg.data_dir);
-		backup(str,cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.sch",cfg.data_dir);
-		backup(str,cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.hash",cfg.data_dir);
-		backup(str,cfg.mail_backup_level,FALSE);
-		SAFEPRINTF(str,"%smail.ini",cfg.data_dir);
-		backup(str,cfg.mail_backup_level,FALSE);
+		smb_t mail;
+		int result = smb_open_sub(&cfg, &mail, INVALID_SUB);
+		if(result != SMB_SUCCESS)
+			lprintf(LOG_ERR, "ERROR %d (%s) opening mail base", result, mail.last_error);
+		else {
+			result = smb_lock(&mail);
+			if(result != SMB_SUCCESS)
+				lprintf(LOG_ERR, "ERROR %d (%s) locking mail base", result, mail.last_error);
+			else {
+				SAFEPRINTF(str,"%smail.shd",cfg.data_dir);
+				backup(str,cfg.mail_backup_level,FALSE);
+				SAFEPRINTF(str,"%smail.sha",cfg.data_dir);
+				backup(str,cfg.mail_backup_level,FALSE);
+				SAFEPRINTF(str,"%smail.sdt",cfg.data_dir);
+				backup(str,cfg.mail_backup_level,FALSE);
+				SAFEPRINTF(str,"%smail.sda",cfg.data_dir);
+				backup(str,cfg.mail_backup_level,FALSE);
+				SAFEPRINTF(str,"%smail.sid",cfg.data_dir);
+				backup(str,cfg.mail_backup_level,FALSE);
+				SAFEPRINTF(str,"%smail.sch",cfg.data_dir);
+				backup(str,cfg.mail_backup_level,FALSE);
+				SAFEPRINTF(str,"%smail.hash",cfg.data_dir);
+				backup(str,cfg.mail_backup_level,FALSE);
+				SAFEPRINTF(str,"%smail.ini",cfg.data_dir);
+				backup(str,cfg.mail_backup_level,FALSE);
+				result = smb_unlock(&mail);
+				if(result != SMB_SUCCESS)
+					lprintf(LOG_ERR, "ERROR %d (%s) unlocking mail base", result, mail.last_error);
+			}
+			smb_close(&mail);
+		}
 	}
 
 	lputs(LOG_INFO, "DAILY: Checking for inactive/expired user records...");
