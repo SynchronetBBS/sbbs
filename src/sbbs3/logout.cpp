@@ -108,7 +108,9 @@ void sbbs_t::logout()
 		remove(path);
 
 	delfiles(cfg.temp_dir,ALLFILES);
-	putmsgptrs();
+	if(sys_status&SS_USERON) {	// Insures the useron actually when through logon()/getmsgptrs() first
+		putmsgptrs();
+	}
 	if(!REALSYSOP)
 		logofflist();
 	useron.laston=(time32_t)now;
