@@ -425,7 +425,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	putuserdat(&scfg,&client->user);
 	if(client->subscan==NULL) {
-		client->subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
+		client->subscan=(subscan_t*)calloc(scfg.total_subs, sizeof(subscan_t));
 		if(client->subscan==NULL)
 			lprintf(LOG_CRIT,"!MALLOC FAILURE");
 	}
