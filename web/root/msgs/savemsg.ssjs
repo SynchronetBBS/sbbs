@@ -25,11 +25,13 @@ if(sub!='mail')  {
 	}
 }
 else {
-	hdrs.to_net_type=netaddr_type(to);
+	hdrs.to_net_type = NET_NONE;
+    var at = to.indexOf('@');
+    if(at > 0)
+		hdrs.to_net_type=netaddr_type(to);
 	if(hdrs.to_net_type!=NET_NONE) {
 		if(user.security.restrictions&UFLAG_M)
 			error("You do not have permission to send netmail");
-        var at = to.indexOf('@');
         if(hdrs.to_net_type!=NET_INTERNET && at > 0) {
             hdrs.to_net_addr = to.slice(at + 1);
             to = to.slice(0, at);
