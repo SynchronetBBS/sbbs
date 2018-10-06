@@ -6331,7 +6331,7 @@ void http_session_thread(void* arg)
 	session.last_js_user_num=-1;
 	session.logon_time=0;
 
-	session.subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
+	session.subscan=(subscan_t*)calloc(scfg.total_subs, sizeof(subscan_t));
 
 	while(!session.finished) {
 		init_error=FALSE;
@@ -6443,7 +6443,7 @@ void http_session_thread(void* arg)
 	sem_wait(&session.output_thread_terminated);
 	sem_destroy(&session.output_thread_terminated);
 	RingBufDispose(&session.outbuf);
-	free(session.subscan);
+	FREE_AND_NULL(session.subscan);
 
 	clients_remain=protected_uint32_adjust(&active_clients, -1);
 	update_clients();
