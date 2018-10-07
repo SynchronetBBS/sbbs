@@ -100,8 +100,8 @@ function NodeList(filename, warn)
 		if (line[0] === ';')
 			continue;
 		fields = line.split(/,/);
-    if (fields.length < 7) {
-      log(LOG_WARNING, 'Invalid nodelist line #' + lineno + ': ' + line);
+    if (fields.length < 7 && fields[0] != '\x1a') {
+      log(LOG_WARNING, 'Invalid nodelist line ' + lineno + ' of ' + f.name + ': ' + line);
       continue;
     }
 		switch(fields[0]) {
