@@ -203,7 +203,9 @@ function populate_tree(tree, settings) {
 function search(frame, settings) {
 
   const sframe = new Frame(frame.x, frame.y + 4, frame.width, 3, BG_BLUE|WHITE, frame);
-  sframe.putmsg('Type your search terms and wait a second for results')
+  sframe.putmsg('Search by address, system name, sysop, or location:');
+  sframe.gotoxy(1, 3);
+  sframe.putmsg("Type a query and wait for results, don't hit enter.");
   sframe.open();
 
   const typeahead = new Typeahead({
