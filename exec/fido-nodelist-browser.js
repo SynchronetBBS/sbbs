@@ -195,7 +195,7 @@ function populate_tree(tree, settings) {
     }
   });
   tree.items.sort(function (a, b) {
-    return a.text < b.text ? -1 : 1;
+    return a.text.toLowerCase() < b.text.toLowerCase() ? -1 : 1;
   });
   tree.refresh();
 }
