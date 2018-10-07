@@ -10,6 +10,7 @@
 
 FILE* nulfp;
 FILE* bodyfp;
+FILE* ctrlfp;
 
 char* freadstr(FILE* fp, char* str, size_t maxlen)
 {
@@ -25,6 +26,34 @@ char* freadstr(FILE* fp, char* str, size_t maxlen)
 	str[maxlen-1]=0;
 
 	return(str);
+}
+
+const char* fmsgattr_str(uint16_t attr)
+{
+	char str[64] = "";
+
+#define FIDO_ATTR_CHECK(a, f) if(a&FIDO_##f)	sprintf(str + strlen(str), "%s%s", str[0] == 0 ? "" : ", ", #f);
+	FIDO_ATTR_CHECK(attr, PRIVATE);
+	FIDO_ATTR_CHECK(attr, CRASH);
+	FIDO_ATTR_CHECK(attr, RECV);
+	FIDO_ATTR_CHECK(attr, SENT);
+	FIDO_ATTR_CHECK(attr, FILE);
+	FIDO_ATTR_CHECK(attr, INTRANS);
+	FIDO_ATTR_CHECK(attr, ORPHAN);
+	FIDO_ATTR_CHECK(attr, KILLSENT);
+	FIDO_ATTR_CHECK(attr, LOCAL);
+	FIDO_ATTR_CHECK(attr, HOLD);
+	FIDO_ATTR_CHECK(attr, FREQ);
+	FIDO_ATTR_CHECK(attr, RRREQ);
+	FIDO_ATTR_CHECK(attr, RR);
+	FIDO_ATTR_CHECK(attr, AUDIT);
+	FIDO_ATTR_CHECK(attr, FUPREQ);
+	if(str[0] == 0)
+		return "";
+
+	static char buf[64];
+	sprintf(buf, "(%s)", str);
+	return buf;
 }
 
 int msgdump(FILE* fp, const char* fname)
@@ -59,7 +88,7 @@ int msgdump(FILE* fp, const char* fname)
 
 
 	printf("Subj: %.*s\n", (int)sizeof(hdr.subj)-1, hdr.subj);
-	printf("Attr: %04hX\n", hdr.attr);
+	printf("Attr: 0x%04hX %s\n", hdr.attr, fmsgattr_str(hdr.attr));
 	printf("To  : %.*s (%u.%u/%u.%u)\n", (int)sizeof(hdr.to)-1, hdr.to
 		,hdr.destzone, hdr.destnet, hdr.destnode, hdr.destpoint);
 	printf("From: %.*s (%u.%u/%u.%u)\n", (int)sizeof(hdr.from)-1, hdr.from
@@ -72,20 +101,42 @@ int msgdump(FILE* fp, const char* fname)
 	}
 
 	char* body = calloc((end - sizeof(hdr)) + 1, 1);
+	if(body == NULL) {
+		fprintf(stderr, "!MALLOC failure\n");
+		return __COUNTER__;
+	}
 	fseek(fp, sizeof(hdr), SEEK_SET);
 	fread(body, end - sizeof(hdr), 1, fp);
-	char* tp;
-	REPLACE_CHARS(body, '\r', '\n', tp);
-	REPLACE_CHARS(body, '\1', '@', tp);	
-	fprintf(bodyfp,"\n-start of message text-\n");
-	fprintf(bodyfp,body);
-	fprintf(bodyfp,"\n-end of message text-\n");
+	fprintf(bodyfp, "\n-start of message text-\n");
+	char* p = body;
+	while(*p) {
+		if((p == body || *(p - 1) == '\r') && *p == 1) {
+			fputc('@', ctrlfp);
+			p++;
+			while(*p && *p != '\r')
+				fputc(*(p++), ctrlfp);
+			if(*p)
+				p++;
+			fputc('\n', ctrlfp);
+			continue;
+		}
+		for(; *p && *p != '\r'; p++) {
+			if(*p != '\n')
+				fputc(*p, bodyfp);
+		}
+		if(*p) {
+			p++;
+			fputc('\n', bodyfp);
+		}
+	}
+	fprintf(bodyfp, "-end of message text-\n");
 
+	free(body);
 	printf("\n");
 	return(0);
 }
 
-char* usage = "usage: fmsgdump [-body] <file1.msg> [file2.msg] [...]\n";
+char* usage = "usage: fmsgdump [-body] [-ctrl] <file1.msg> [file2.msg] [...]\n";
 
 int main(int argc, char** argv)
 {
@@ -109,6 +160,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	bodyfp=nulfp;
+	ctrlfp=nulfp;
 
 	if(sizeof(fmsghdr_t)!=FIDO_STORED_MSG_HDR_LEN) {
 		printf("sizeof(fmsghdr_t)=%" XP_PRIsize_t "u, expected: %d\n",sizeof(fmsghdr_t),FIDO_STORED_MSG_HDR_LEN);
@@ -119,7 +171,9 @@ int main(int argc, char** argv)
 		if(argv[i][0]=='-') {
 			switch(tolower(argv[i][1])) {
 				case 'b':
-					bodyfp=stdout;;
+					bodyfp=stdout;
+				case 'c':
+					ctrlfp=stdout;
 					break;
 				default:
 					printf("%s",usage);
