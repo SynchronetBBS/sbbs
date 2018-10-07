@@ -100,6 +100,10 @@ function NodeList(filename, warn)
 		if (line[0] === ';')
 			continue;
 		fields = line.split(/,/);
+    if (fields.length < 7) {
+      log(LOG_WARNING, 'Invalid nodelist line #' + lineno + ': ' + line);
+      continue;
+    }
 		switch(fields[0]) {
 			case 'Zone':
 				node.zone = parseInt(fields[1], 10);
