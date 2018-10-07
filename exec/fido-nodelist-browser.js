@@ -224,6 +224,7 @@ function search(frame, settings) {
           if (e.search(/^nodelist_/) > -1) files.push(settings[e]);
         });
         files.forEach(function (e) {
+          if (!file_exists(e)) return
           const nodelist = new NodeList(e);
           nodelist.entries.forEach(function (e) {
             var r = ['addr', 'sysop', 'name', 'location'].some(function (ee) {
