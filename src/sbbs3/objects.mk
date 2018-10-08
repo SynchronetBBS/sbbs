@@ -138,7 +138,6 @@ MAIL_OBJS	= $(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE) \
 WEB_OBJS	= $(MTOBJODIR)$(DIRSEP)websrvr$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE)
-			
 
 # Must add new additions to MONO_OBJS too!
 SERVICE_OBJS	= $(MTOBJODIR)$(DIRSEP)services$(OFILE) \
@@ -346,4 +345,8 @@ READSAUCE_OBJS = \
 
 SHOWSTAT_OBJS = \
 			$(OBJODIR)$(DIRSEP)showstat$(OFILE)
+
+PKTDUMP_OBJS =		$(OBJODIR)$(DIRSEP)pktdump$(OFILE)
+
+FMSGDUMP_OBJS = 	$(OBJODIR)$(DIRSEP)fmsgdump$(OFILE)
 
