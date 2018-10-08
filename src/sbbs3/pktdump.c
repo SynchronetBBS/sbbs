@@ -120,7 +120,7 @@ int pktdump(FILE* fp, const char* fname)
 	printf(" to %s\n"	,faddrtoa(&dest,NULL));
 
 	if(pkthdr.type2.password[0])
-		fprintf(stdout,"Password: '%.*s'\n",sizeof(pkthdr.type2.password),pkthdr.type2.password);
+		fprintf(stdout,"Password: '%.*s'\n",(int)sizeof(pkthdr.type2.password),pkthdr.type2.password);
 
 	fseek(fp,sizeof(pkthdr),SEEK_SET);
 
