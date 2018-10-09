@@ -115,7 +115,7 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 /* Assumes that getnodedat(node_num,&thisnode,0) was called right before it */
 /* is called.  																*/
 /****************************************************************************/
-void sbbs_t::nodesync()
+void sbbs_t::nodesync(bool clearline)
 {
 	char	str[256],today[32];
 	int		atr=curatr;
@@ -162,9 +162,9 @@ void sbbs_t::nodesync()
 		}
 		if(!(sys_status&SS_MOFF)) {
 			if(thisnode.misc&NODE_MSGW)
-				getsmsg(useron.number); 	/* getsmsg clears MSGW flag */
+				getsmsg(useron.number, clearline); 	/* getsmsg clears MSGW flag */
 			if(thisnode.misc&NODE_NMSG)
-				getnmsg();					/* getnmsg clears NMSG flag */
+				getnmsg(clearline);					/* getnmsg clears NMSG flag */
 		}
 	}
 
@@ -208,7 +208,7 @@ void sbbs_t::nodesync()
 /****************************************************************************/
 /* Prints short messages waiting for this node, if any...                   */
 /****************************************************************************/
-int sbbs_t::getnmsg()
+int sbbs_t::getnmsg(bool clearline)
 {
 	char	str[MAX_PATH+1], *buf;
 	int		file;
@@ -248,7 +248,9 @@ int sbbs_t::getnmsg()
 	close(file);
 	buf[length]=0;
 
-	if(cols)
+	if(clearline)
+		this->clearline();
+	else if(cols)
 		CRLF; 
 	putmsg(buf,P_NOATCODES);
 	free(buf);
@@ -308,9 +310,9 @@ int sbbs_t::getnodeext(uint number, char *ext)
 
 /****************************************************************************/
 /* Prints short messages waiting for 'usernumber', if any...                */
-/* then deletes them.                                                       */
+/* then truncates the file.                                                 */
 /****************************************************************************/
-int sbbs_t::getsmsg(int usernumber)
+int sbbs_t::getsmsg(int usernumber, bool clearline)
 {
 	char	str[MAX_PATH+1], *buf;
     int		file;
@@ -353,8 +355,11 @@ int sbbs_t::getsmsg(int usernumber)
 	close(file);
 	buf[length]=0;
 	getnodedat(cfg.node_num,&thisnode,0);
-	if(cols)
-		CRLF;
+	if(clearline)
+		this->clearline();
+	else
+		if(cols)
+			CRLF;
 	strip_invalid_attr(buf);
 	putmsg(buf,P_NOATCODES);
 	free(buf);
