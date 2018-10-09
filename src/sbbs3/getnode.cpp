@@ -250,7 +250,7 @@ int sbbs_t::getnmsg(bool clearline)
 
 	if(clearline)
 		this->clearline();
-	else if(cols)
+	else if(column)
 		CRLF; 
 	putmsg(buf,P_NOATCODES);
 	free(buf);
@@ -358,7 +358,7 @@ int sbbs_t::getsmsg(int usernumber, bool clearline)
 	if(clearline)
 		this->clearline();
 	else
-		if(cols)
+		if(column)
 			CRLF;
 	strip_invalid_attr(buf);
 	putmsg(buf,P_NOATCODES);
