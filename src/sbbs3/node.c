@@ -262,7 +262,7 @@ void printnodedat(int number, node_t node)
 			printf("At login prompt");
 			break;
 		case NODE_LOGOUT:
-			printf("Logging out");
+			printf("User #%d logging out", node.useron);
 			break;
 		case NODE_EVENT_WAITING:
 			printf("Waiting for all nodes to become inactive");
