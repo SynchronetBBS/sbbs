@@ -75,7 +75,7 @@
 #define JAVASCRIPT_CONTEXT_STACK	(16*1024)
 #define JAVASCRIPT_TIME_LIMIT		(24*60*600)			/* in 100ms ticks */
 #define JAVASCRIPT_YIELD_INTERVAL	10000
-#define JAVASCRIPT_GC_INTERVAL		100 
+#define JAVASCRIPT_GC_INTERVAL		100
 #define JAVASCRIPT_LOAD_PATH		"load"
 #define JAVASCRIPT_LOAD_PATH_LIST	"load_path_list"
 
@@ -125,7 +125,7 @@ typedef struct js_callback {
 #define LEN_GLNAME	40		/* Group/Lib long name						*/
 #define LEN_SSNAME	25		/* Sub/Dir short name						*/
 #define LEN_SLNAME	40		/* Sub/Dir long name						*/
-						
+
 									/* User Questions (e.g. for new users)	*/
 #define UQ_ALIASES		(1L<<0) 	/* Ask for alias						*/
 #define UQ_LOCATION		(1L<<1) 	/* Ask for location 					*/
@@ -148,8 +148,8 @@ typedef struct js_callback {
 #define UQ_NONETMAIL	(1L<<18)	/* Don't ask for e-mail/netmail address	*/
 #define UQ_NOUPRLWR		(1L<<19)	/* Don't force upper/lower case strings */
 #define UQ_COLORTERM	(1L<<20)	/* Ask if new user has color terminal	*/
-						
-						
+
+
 									/* Different bits in sys_misc				*/
 #define SM_CLOSED		(1L<<0) 	/* System is clsoed to New Users			*/
 #define SM_SYSSTAT		(1L<<1) 	/* Sysops activity included in statistics	*/
@@ -183,7 +183,7 @@ typedef struct js_callback {
 #define SM_DELEMAIL		(1L<<29)	/* Physically remove deleted e-mail immed.	*/
 #define SM_USRVDELM		(1L<<30)	/* Users can see deleted msgs				*/
 #define SM_SYSVDELM		(1L<<31)	/* Sysops can see deleted msgs				*/
-						
+
 									/* Different bits in node_misc				*/
 #define NM_NO_NUM		(1<<8)		/* Don't allow logons by user number        */
 #define NM_LOGON_R		(1<<9)		/* Allow logons by user real name			*/
@@ -192,7 +192,7 @@ typedef struct js_callback {
 #define NM_7BITONLY		(1L<<16)	/* Except 7-bit input only (E71 terminals)	*/
 #define NM_NOPAUSESPIN	(1L<<18)	/* No spinning cursor at pause prompt		*/
 #define NM_CLOSENODEDAB	(1L<<19)	/* Keep node.dab file closed (for Samba)	*/
-					
+
 									/* Bit values for level_misc[x] 	*/
 #define LEVEL_EXPTOLVL	(1<<0)		/* Expire to level_expireto[x]		*/
 #define LEVEL_EXPTOVAL	(1<<1)		/* Expire to val[level_expireto[x]] */
@@ -306,7 +306,7 @@ typedef struct js_callback {
 #define ERR_CREATE	"creating" 		/* creating */
 #define ERR_LOCK	"locking"		/* locking */
 #define ERR_UNLOCK 	"unlocking"		/* unlocking */
-#define ERR_TIMEOUT	"timeout"		/* timeout waiting for resource */	
+#define ERR_TIMEOUT	"timeout"		/* timeout waiting for resource */
 #define ERR_IOCTL	"sending IOCTL"	/* IOCTL error */
 #define ERR_SEEK	"seeking"		/* SEEKing error */
 
@@ -348,7 +348,7 @@ enum {
 	,clr_votes_empty
 	,clr_progress_full
 	,clr_progress_empty
-	,MIN_COLORS 
+	,MIN_COLORS
 };
 
 enum {								/* Values for xtrn_t.type				*/
@@ -365,8 +365,8 @@ enum {								/* Values for xtrn_t.type				*/
 	,XTRN_RBBS1 					/* DORINFO1.DEF always					*/
 	,XTRN_TRIBBS					/* TRIBBS.SYS							*/
 	,XTRN_DOOR32					/* DOOR32.SYS							*/
-	};																		
-																			
+	};
+
 typedef enum {						/* Values for xtrn_t.event				*/
 	 EVENT_NONE 					/* Only accessible by menu				*/
 	,EVENT_LOGON					/* Execute during logon sequence		*/
@@ -377,8 +377,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 	,EVENT_UPLOAD					/* Execute after uploading a file		*/
 	,EVENT_DOWNLOAD					/* Execute after downloading a file		*/
 	,EVENT_LOCAL_CHAT				/* Execute upon local/sysop chat		*/
-} user_event_t;																
-																			
+} user_event_t;
+
 									/* Misc bits for event_t.misc			*/
 #define EVENT_EXCL		(1<<0) 		/* Exclusive							*/
 #define EVENT_FORCE		(1<<1) 		/* Force users off-line for event		*/
@@ -448,27 +448,26 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QHUB_NOKLUDGES	(1<<14)		/* Don't include @-kludges */
 #define QHUB_NOHEADERS	(1<<16)		/* Don't include HEADERS.DAT */
 #define QHUB_NOVOTING	(1<<17)		/* Don't include VOTING.DAT */
-																			
+
 							/* Bits in user.chat							*/
 #define CHAT_ECHO	(1<<0)	/* Multinode chat echo							*/
 #define CHAT_ACTION (1<<1)	/* Chat actions 								*/
 #define CHAT_NOPAGE (1<<2)	/* Can't be paged								*/
 #define CHAT_NOACT	(1<<3)	/* No activity alerts							*/
 #define CHAT_SPLITP (1<<4)	/* Split screen private chat					*/
-																			
-																			
+
+
 #define INVALID_DIR ((uint)-1)	/* Invalid directory value					*/
 #define INVALID_SUB ((uint)-1)	/* Invalid sub-board value					*/
-																			
+
 #define KEY_BUFSIZE 1024	/* Size of keyboard input buffer				*/
-#define SAVE_LINES	 4		/* Maximum number of lines to save				*/
 #define LINE_BUFSIZE 512	/* Size of line output buffer					*/
-																			
-																			
+
+
 #define EDIT_TABSIZE 4		/* Tab size for internal message/line editor	*/
-																		
+
 #define DSTSDABLEN	50		/* Length of dsts.dab file						*/
-																			
+
 								/* Console I/O Bits	(console)				*/
 #define CON_R_ECHO		(1<<0)	/* Echo remotely							*/
 #define CON_R_ECHOX		(1<<1)	/* Echo X's to remote user					*/
@@ -489,10 +488,10 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CON_HIGH_FONT	(1<<19)	/* Alt high-intensity font activated		*/
 #define CON_BLINK_FONT	(1<<20)	/* Alt blink attribute font activated		*/
 #define CON_HBLINK_FONT	(1<<21)	/* Alt high-blink attribute font activated	*/
-																			
+
 							/* Number of milliseconds						*/
 #define DELAY_AUTOHG 1500	/* Delay for auto-hangup (xfer) 				*/
-																			
+
 #define SEC_LOGON	1800	/* 30 minutes allowed to logon					*/
 #define SEC_BILLING   90	/* under 2 minutes per billing call 			*/
 #define SEC_OK		   5	/* Attempt to get an OK response from modem		*/
@@ -500,10 +499,10 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SEC_ANSWER	  30	/* Retries to get an answer code from modem		*/
 #define SEC_CID 	  10	/* Ten second pause for caller ID				*/
 #define SEC_RING	   6	/* Maximum seconds between rings				*/
-																			
+
 #define LOOP_NOPEN	  50	/* Retries before file access denied			*/
 #define LOOP_NODEDAB  50	/* Retries on node.dab locking/unlocking		*/
-																			
+
 							/* String lengths								*/
 #define LEN_ALIAS		25	/* User alias									*/
 #define LEN_NAME		25	/* User name									*/
@@ -523,9 +522,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_FCDT		 9	/* 9 digits for file credit values				*/
 #define LEN_TITLE		70	/* Message title								*/
 #define LEN_MAIN_CMD	34	/* Storage in user.dat for custom commands		*/
-#define LEN_XFER_CMD	40													
-#define LEN_SCAN_CMD	35													
-#define LEN_IPADDR	45													
+#define LEN_XFER_CMD	40
+#define LEN_SCAN_CMD	35
+#define LEN_IPADDR	45
 #define LEN_CID 		45	/* Caller ID (phone number) 					*/
 #define LEN_ARSTR		40	/* Max length of Access Requirement string		*/
 #define LEN_CHATACTCMD	 9	/* Chat action command							*/
@@ -537,51 +536,51 @@ typedef enum {						/* Values for xtrn_t.event				*/
 /****************************************************************************/
 #define U_ALIAS 	0					/* Offset to alias */
 #define U_NAME		U_ALIAS+LEN_ALIAS  /* Offset to name */
-#define U_HANDLE	U_NAME+LEN_NAME 
-#define U_NOTE		U_HANDLE+LEN_HANDLE+2 
-#define U_COMP		U_NOTE+LEN_NOTE 
-#define U_COMMENT	U_COMP+LEN_COMP+2 
+#define U_HANDLE	U_NAME+LEN_NAME
+#define U_NOTE		U_HANDLE+LEN_HANDLE+2
+#define U_COMP		U_NOTE+LEN_NOTE
+#define U_COMMENT	U_COMP+LEN_COMP+2
 
-#define U_NETMAIL	U_COMMENT+LEN_COMMENT+2 
+#define U_NETMAIL	U_COMMENT+LEN_COMMENT+2
 
-#define U_ADDRESS	U_NETMAIL+LEN_NETMAIL+2 
-#define U_LOCATION	U_ADDRESS+LEN_ADDRESS 
-#define U_ZIPCODE	U_LOCATION+LEN_LOCATION 
+#define U_ADDRESS	U_NETMAIL+LEN_NETMAIL+2
+#define U_LOCATION	U_ADDRESS+LEN_ADDRESS
+#define U_ZIPCODE	U_LOCATION+LEN_LOCATION
 
-#define U_PASS		U_ZIPCODE+LEN_ZIPCODE+2 
+#define U_PASS		U_ZIPCODE+LEN_ZIPCODE+2
 #define U_PHONE  	U_PASS+8  			/* Offset to phone-number */
 #define U_BIRTH  	U_PHONE+12 		/* Offset to users birthday	*/
-#define U_MODEM     U_BIRTH+8 
-#define U_LASTON	U_MODEM+8 
-#define U_FIRSTON	U_LASTON+8 
-#define U_EXPIRE    U_FIRSTON+8 
-#define U_PWMOD     U_EXPIRE+8 
+#define U_MODEM     U_BIRTH+8
+#define U_LASTON	U_MODEM+8
+#define U_FIRSTON	U_LASTON+8
+#define U_EXPIRE    U_FIRSTON+8
+#define U_PWMOD     U_EXPIRE+8
 
-#define U_LOGONS    U_PWMOD+8+2 
-#define U_LTODAY    U_LOGONS+5 
-#define U_TIMEON    U_LTODAY+5 
-#define U_TEXTRA  	U_TIMEON+5 
-#define U_TTODAY    U_TEXTRA+5 
-#define U_TLAST     U_TTODAY+5 
-#define U_POSTS     U_TLAST+5 
-#define U_EMAILS    U_POSTS+5 
-#define U_FBACKS    U_EMAILS+5 
-#define U_ETODAY	U_FBACKS+5 
-#define U_PTODAY	U_ETODAY+5 
+#define U_LOGONS    U_PWMOD+8+2
+#define U_LTODAY    U_LOGONS+5
+#define U_TIMEON    U_LTODAY+5
+#define U_TEXTRA  	U_TIMEON+5
+#define U_TTODAY    U_TEXTRA+5
+#define U_TLAST     U_TTODAY+5
+#define U_POSTS     U_TLAST+5
+#define U_EMAILS    U_POSTS+5
+#define U_FBACKS    U_EMAILS+5
+#define U_ETODAY	U_FBACKS+5
+#define U_PTODAY	U_ETODAY+5
 
-#define U_ULB       U_PTODAY+5+2 
-#define U_ULS       U_ULB+10 
-#define U_DLB       U_ULS+5 
-#define U_DLS       U_DLB+10 
-#define U_CDT		U_DLS+5 
-#define U_MIN		U_CDT+10 
+#define U_ULB       U_PTODAY+5+2
+#define U_ULS       U_ULB+10
+#define U_DLB       U_ULS+5
+#define U_DLS       U_DLB+10
+#define U_CDT		U_DLS+5
+#define U_MIN		U_CDT+10
 
 #define U_LEVEL 	U_MIN+10+2 	/* Offset to Security Level    */
 #define U_FLAGS1	U_LEVEL+2  	/* Offset to Flags */
 #define U_TL		U_FLAGS1+8 	/* Offset to unused field */
-#define U_FLAGS2	U_TL+2 
-#define U_EXEMPT	U_FLAGS2+8 
-#define U_REST		U_EXEMPT+8 
+#define U_FLAGS2	U_TL+2
+#define U_EXEMPT	U_FLAGS2+8
+#define U_REST		U_EXEMPT+8
 #define U_ROWS		U_REST+8+2 	/* Number of Rows on user's monitor */
 #define U_SEX		U_ROWS+2 		/* Sex, Del, ANSI, color etc.		*/
 #define U_MISC		U_SEX+1 		/* Miscellaneous flags in 8byte hex */
@@ -593,7 +592,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_XFER_CMD	U_MAIN_CMD+LEN_MAIN_CMD 		/* unused */
 #define U_SCAN_CMD	U_XFER_CMD+LEN_XFER_CMD+2  	/* unused */
 #define U_IPADDR	U_SCAN_CMD+LEN_SCAN_CMD 		/* unused */
-#define U_FREECDT	U_IPADDR+LEN_IPADDR+2 
+#define U_FREECDT	U_IPADDR+LEN_IPADDR+2
 #define U_FLAGS3	U_FREECDT+10 	/* Flag set #3 */
 #define U_FLAGS4	U_FLAGS3+8 	/* Flag set #4 */
 #define U_XEDIT 	U_FLAGS4+8 	/* External editor (code  */
@@ -615,20 +614,20 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define F_DESC		(F_CDT+LEN_FCDT)/* Description							*/
 #define F_ULER		(F_DESC+LEN_FDESC+2)   /* Uploader						*/
 #define F_TIMESDLED (F_ULER+30+2) 	/* Number of times downloaded 			*/
-#define F_OPENCOUNT	(F_TIMESDLED+5+2)										
-#define F_MISC		(F_OPENCOUNT+3+2)										
-#define F_ALTPATH	(F_MISC+1)		/* Two hex digit alternate path */		
+#define F_OPENCOUNT	(F_TIMESDLED+5+2)
+#define F_MISC		(F_OPENCOUNT+3+2)
+#define F_ALTPATH	(F_MISC+1)		/* Two hex digit alternate path */
 #define F_LEN		(F_ALTPATH+2+2) /* Total length of all fdat in file		*/
-																			
+
 #define F_IXBSIZE	22				/* Length of each index entry			*/
-																			
+
 #define F_EXBSIZE	512				/* Length of each ext-desc entry		*/
-																			
-																			
+
+
 #define SIF_MAXBUF  0x7000			/* Maximum buffer size of SIF data		*/
-																			
+
 /* NOTE: Do not change the values of the following block of defines!		*/
-																			
+
 #define DELETED 	(1L<<0) 		/* Bit values for user.misc 			*/
 #define ANSI		(1L<<1) 		/* Supports ANSI terminal emulation		*/
 #define COLOR		(1L<<2) 		/* Send color codes 					*/
@@ -670,11 +669,11 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define TERM_KEY_ABORT	CTRL_C
 #define TERM_KEY_PAGEUP	CTRL_P
 #define TERM_KEY_PAGEDN	CTRL_N
-																			
+
 							/* Online status (online)						*/
 #define ON_LOCAL	1	 	/* Online locally								*/
 #define ON_REMOTE   2  		/* Online remotely								*/
-																			
+
 							/* Various SYSTEM parameters for sys_status		*/
 #define SS_UNUSED	(1L<<0)	/* Unused          								*/
 #define SS_INITIAL  (1L<<1)	/* The bbs data has been initialized.			*/
@@ -745,7 +744,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define P_NOCRLF	(1<<6)		/* Don't prepend a CRLF	in printfile()		*/
 #define P_WORDWRAP	(1<<7)		/* Word-wrap long lines for user's terminal	*/
 #define P_CPM_EOF	(1<<8)		/* Ignore Ctrl-Z chars (CPM End-of-File)	*/
-								
+
 								/* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1<<0)		/* List files by upload time                */
 #define FL_DLTIME   (1<<1)		/* List files by download time              */
@@ -753,7 +752,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define FL_FINDDESC (1<<3)		/* Find text in description                 */
 #define FL_EXFIND   (1<<4)		/* Find text in description - extended info */
 #define FL_VIEW     (1<<5)		/* View ZIP/ARC/GIF etc. info               */
-								
+
 								/* Bits in the mode of writemsg and email() */
 #define WM_EXTDESC	(1<<0)		/* Writing extended file description		*/
 #define WM_EMAIL	(1<<1)		/* Writing e-mail							*/
@@ -767,7 +766,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define WM_SUBJ_RO	(1<<9)		/* Subject/title is read-only				*/
 #define WM_EDIT		(1<<10)		/* Editing existing message					*/
 #define WM_FORCEFWD	(1<<11)		/* Force "yes" to ForwardMailQ for email	*/
-								
+
 								/* Bits in the mode of loadposts()			*/
 #define LP_BYSELF	(1<<0)		/* Include messages sent by self			*/
 #define LP_OTHERS	(1<<1)		/* Include messages sent to others			*/
@@ -777,20 +776,20 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LP_POLLS	(1<<5)		/* Include polls							*/
 #define LP_VOTES	(1<<6)		/* Include votes							*/
 #define LP_NOMSGS	(1<<7)		/* Don't include regular messages			*/
-								
+
 								/* Bits in the mode of loadmail()			*/
 #define LM_UNREAD	(1<<0)		/* Include un-read mail only				*/
 #define LM_INCDEL	(1<<1)		/* Include deleted mail		 				*/
 #define LM_NOSPAM	(1<<2)		/* Exclude SPAM								*/
 #define LM_SPAMONLY	(1<<3)		/* Load SPAM only							*/
-								
+
 enum {							/* readmail and delmailidx which types		*/
 	 MAIL_YOUR					/* mail sent to you							*/
 	,MAIL_SENT					/* mail you have sent						*/
 	,MAIL_ANY					/* mail sent to or from you					*/
 	,MAIL_ALL					/* all mail (ignores usernumber arg)		*/
-	};							
-								
+	};
+
 								/* Bits in the mode of external()           */
 #define EX_SH       (1<<0)		/* Use command shell to load other process  */
 #define EX_STDOUT   (1<<1)		/* Copy DOS output to remote                */
@@ -813,8 +812,8 @@ enum {							/* readmail and delmailidx which types		*/
 #else
 #define EX_WILDCARD	0
 #endif
-								
-								/* telnet_gate() mode bits					*/							
+
+								/* telnet_gate() mode bits					*/
 #define TG_ECHO			(1<<0)	/* Turn on telnet echo						*/
 #define TG_CRLF			(1<<1)	/* Expand sole CR to CRLF					*/
 #define TG_LINEMODE		(1<<2)	/* Send entire lines only					*/
@@ -827,7 +826,7 @@ enum {							/* readmail and delmailidx which types		*/
 #define TG_SENDPASS		(1<<9)	/* Send password instead of real name (RLogin) - DEPRECATED	(it sent the password as the server user name) */
 #define TG_NOLF			(1<<10)	/* Do not send line-feeds (opposite of TG_CRLF) */
 #define TG_RLOGINSWAP	(1<<11)	/* Swap the RLogin alias/real-names			*/
-								
+
 enum {							/* Values for 'mode' in listfileinfo        */
 	 FI_INFO            		/* Just list file information               */
 	,FI_REMOVE           		/* Remove/Move/Edit file information        */
@@ -837,7 +836,7 @@ enum {							/* Values for 'mode' in listfileinfo        */
 	,FI_OFFLINE   				/* Search/Remove files not online			*/
 	,FI_USERXFER  				/* User Xfer Download                       */
 	,FI_CLOSE 	  				/* Close any open records					*/
-	};							
+	};
 
 enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
 	 XFER_UPLOAD
@@ -846,10 +845,10 @@ enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
 	,XFER_BATCH_DOWNLOAD
 	,XFER_BIDIR
 };
-	
+
 #define L_LOGON     1			/* Logon List maintenance                   */
 #define LOL_SIZE    81			/* Length of each logon list entry          */
-								
+
 								/* Bits in mode of scanposts() function 	*/
 #define SCAN_CONST		(1<<0)	/* Continuous message scanning				*/
 #define SCAN_NEW		(1<<1)	/* New scanning								*/
@@ -857,23 +856,23 @@ enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
 #define SCAN_TOYOU		(1<<3)	/* Scan for messages to you 				*/
 #define SCAN_FIND		(1<<4)	/* Scan for text in messages				*/
 #define SCAN_UNREAD		(1<<5)	/* Display un-read messages only			*/
-#define SCAN_MSGSONLY	(1<<6)	/* Do not do a new file scan even if the    
+#define SCAN_MSGSONLY	(1<<6)	/* Do not do a new file scan even if the
 								 * user enabled Automatic New File Scan		*/
 #define SCAN_POLLS		(1<<7)	/* Scan for polls (only)					*/
 
 								/* Bits in misc of chan_t					*/
 #define CHAN_PW 	(1<<0)		/* Can be password protected				*/
 #define CHAN_GURU	(1<<1)		/* Guru joins empty channel 				*/
-								
+
 enum {							/* Values of mode for userlist function     */
 	 UL_ALL						/* List all users in userlist				*/
 	,UL_SUB      				/* List all users with access to cursub     */
 	,UL_DIR						/* List all users with access to curdir 	*/
-	};							
-								
-								
+	};
+
+
 #define BO_LEN		16			/* backout.dab record length				*/
-								
+
 #define BO_OPENFILE 0			/* Backout types */
 
 /**********/
@@ -887,16 +886,8 @@ enum {							/* Values of mode for userlist function     */
 #define FLAG(x) 		(ulong)(1UL<<(x-'A'))
 #define CLS         	outchar(FF)
 #define WHERE       	__LINE__,__FUNCTION__,getfname(__FILE__)
-#define SAVELINE		{ if(slcnt<SAVE_LINES) { \
-							slatr[slcnt]=latr; \
-							slcuratr[slcnt]=curatr; \
-							sprintf(slbuf[slcnt],"%.*s",lbuflen,lbuf); \
-							slcnt++; \
-							lbuflen=0; } }
-#define RESTORELINE 	{ lbuflen=0; if(slcnt) --slcnt; \
-							attr(slatr[slcnt]); \
-							rputs(slbuf[slcnt]); \
-							curatr=slcuratr[slcnt]; }
+#define SAVELINE		saveline()
+#define RESTORELINE 	restoreline()
 #define SYNC			{ getnodedat(cfg.node_num,&thisnode,0); \
 						  nodesync(); }
 #define ASYNC			{ getnodedat(cfg.node_num,&thisnode,0); \

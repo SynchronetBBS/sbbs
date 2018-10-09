@@ -3378,7 +3378,8 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	telnet_last_rxch=0;
 	telnet_ack_event=CreateEvent(NULL, /* Manual Reset: */FALSE,/* InitialState */FALSE,NULL);
 
-	sys_status=lncntr=tos=criterrs=slcnt=0L;
+	listInit(&savedlines, /* flags: */0);
+	sys_status=lncntr=tos=criterrs=0L;
 	column=0;
 	lastlinelen=0;
 	curatr=LIGHTGRAY;
@@ -3880,6 +3881,8 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(batdn_cdt);
 	FREE_AND_NULL(batdn_alt);
 
+	listFree(&savedlines);
+
 #ifdef USE_CRYPTLIB
 	while(ssh_mutex_created && pthread_mutex_destroy(&ssh_mutex)==EBUSY)
 		mswait(1);
@@ -4258,7 +4261,6 @@ void sbbs_t::reset_logon_vars(void)
     autoterm=0;
 	cterm_version = 0;
     lbuflen=0;
-    slcnt=0;
     altul=0;
     timeleft_warn=0;
 	keybufbot=keybuftop=0;
@@ -4579,13 +4581,13 @@ void node_thread(void* arg)
 
 	/* crash here July-27-2018:
  	ntdll.dll!77282e19()	Unknown
- 	[Frames below may be incorrect and/or missing, no symbols loaded for ntdll.dll]	
- 	[External Code]	
+ 	[Frames below may be incorrect and/or missing, no symbols loaded for ntdll.dll]
+ 	[External Code]
  	sbbs.dll!pthread_mutex_lock(_RTL_CRITICAL_SECTION * mutex) Line 171	C
  	sbbs.dll!protected_uint32_adjust(protected_uint32_t * i, int adjustment) Line 244	C
  	sbbs.dll!update_clients() Line 185	C++
 >	sbbs.dll!node_thread(void * arg) Line 4568	C++
- 	[External Code]	
+ 	[External Code]
 
 	node_threads_running	{value=0 mutex={DebugInfo=0x00000000 <NULL> LockCount=-6 RecursionCount=0 ...} }	protected_uint32_t
 	*/

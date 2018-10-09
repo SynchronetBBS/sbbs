@@ -59,7 +59,7 @@ int sbbs_t::bputs(const char *str)
 			if(toupper(str[l])=='Z')	/* EOF */
 				break;
 			ctrl_a(str[l++]);
-			continue; 
+			continue;
 		}
 		if(str[l]=='@') {           /* '@' */
 			if(str==mnestr			/* Mnemonic string or */
@@ -68,7 +68,7 @@ int sbbs_t::bputs(const char *str)
 				i=show_atcode(str+l);	/* return 0 if not valid @ code */
 				l+=i;					/* i is length of code string */
 				if(i)					/* if valid string, go to top */
-					continue; 
+					continue;
 			}
 			for(i=0;i<TOTAL_TEXT;i++)
 				if(str==text[i])
@@ -77,10 +77,10 @@ int sbbs_t::bputs(const char *str)
 				i=show_atcode(str+l);
 				l+=i;
 				if(i)
-					continue; 
-			} 
+					continue;
+			}
 		}
-		outchar(str[l++]); 
+		outchar(str[l++]);
 	}
 	return(l);
 }
@@ -105,7 +105,7 @@ int sbbs_t::rputs(const char *str, size_t len)
 		if(outcom(str[l])!=0)
 			break;
 		if(lbuflen<LINE_BUFSIZE)
-			lbuf[lbuflen++]=str[l]; 
+			lbuf[lbuflen++]=str[l];
 	}
 	return(l);
 }
@@ -236,7 +236,7 @@ void sbbs_t::outchar(char ch)
 		if(!(sys_status&SS_PAUSEOFF)) {
 			pause();
 			while(lncntr && online && !(sys_status&SS_ABORT))
-				pause(); 
+				pause();
 		}
 	}
 
@@ -252,7 +252,7 @@ void sbbs_t::outchar(char ch)
 			if(ch==(char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
 				outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
 			outcom(ch);
-		} 
+		}
 	}
 	if(!outchar_esc) {
 		if((uchar)ch>=' ') {
@@ -294,15 +294,15 @@ void sbbs_t::outchar(char ch)
 		if(!lbuflen)
 			latr=curatr;
 		if(lbuflen<LINE_BUFSIZE)
-			lbuf[lbuflen++]=ch; 
+			lbuf[lbuflen++]=ch;
 	}
 	if(outchar_esc==3)
 		outchar_esc=0;
 
-	if(lncntr==rows-1 && ((useron.misc&UPAUSE) || sys_status&SS_PAUSEON) 
+	if(lncntr==rows-1 && ((useron.misc&UPAUSE) || sys_status&SS_PAUSEON)
 		&& !(sys_status&(SS_PAUSEOFF|SS_ABORT))) {
 		lncntr=0;
-		pause(); 
+		pause();
 	}
 }
 
@@ -407,7 +407,7 @@ void sbbs_t::cleartoeol(void)
 		while(++i<cols)
 			outcom(' ');
 		while(++j<cols)
-			outcom(BS); 
+			outcom(BS);
 	}
 }
 
@@ -428,11 +428,11 @@ void sbbs_t::ctrl_a(char x)
 	if(x && (uchar)x<=CTRL_Z) {    /* Ctrl-A through Ctrl-Z for users with MF only */
 		if(!(useron.flags1&FLAG(x+64)))
 			console^=(CON_ECHO_OFF);
-		return; 
+		return;
 	}
 	if((uchar)x>0x7f) {
 		cursor_right((uchar)x-0x7f);
-		return; 
+		return;
 	}
 	switch(toupper(x)) {
 		case '!':   /* level 10 or higher */
@@ -637,7 +637,7 @@ void sbbs_t::ctrl_a(char x)
 		case '7':	/* White Background */
 			atr=(atr&0x8f)|(uchar)BG_LIGHTGRAY;
 			attr(atr);
-			break; 
+			break;
 	}
 }
 
@@ -670,7 +670,7 @@ bool sbbs_t::msgabort()
 {
 	static ulong counter;
 
-	if(sys_status&SS_SYSPAGE && !(++counter%100)) 
+	if(sys_status&SS_SYSPAGE && !(++counter%100))
 		sbbs_beep(sbbs_random(800),1);
 
 	checkline();
@@ -718,4 +718,37 @@ void sbbs_t::progress(const char* text, int count, int total, int interval)
 	float pct = ((float)count/total)*100.0F;
 	SAFEPRINTF2(str, "[ %-8s  %4.1f%% ]", text, pct);
 	cursor_left(backfill(str, pct, cfg.color[clr_progress_full], cfg.color[clr_progress_empty]));
+}
+
+struct savedline {
+	char 	buf[LINE_BUFSIZE+1];	/* Line buffer (i.e. ANSI-encoded) */
+	char 	beg_attr;				/* Starting attribute of each line */
+	char 	end_attr;				/* Ending attribute of each line */
+	long	column;					/* Current column number */
+};
+
+bool sbbs_t::saveline(void)
+{
+	struct savedline line;
+	line.beg_attr = latr;
+	line.end_attr = curatr;
+	line.column = column;
+	snprintf(line.buf, sizeof(line.buf), "%.*s", lbuflen, lbuf);
+	TERMINATE(line.buf);
+	lbuflen=0;
+	return listPushNodeData(&savedlines, &line, sizeof(line)) != NULL;
+}
+
+bool sbbs_t::restoreline(void)
+{
+	struct savedline* line = (struct savedline*)listPopNode(&savedlines);
+	if(line == NULL)
+		return false;
+	lbuflen=0;
+	attr(line->beg_attr);
+	rputs(line->buf);
+	curatr = line->end_attr;
+	column = line->column;
+	free(line);
+	return true;
 }

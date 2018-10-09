@@ -463,10 +463,7 @@ public:
 	long	lastlinelen;	/* The previously displayed line length */
 	long 	autoterm;		/* Auto-detected terminal type */
 	long	cterm_version;	/* (MajorVer*1000) + MinorVer */
-	char 	slbuf[SAVE_LINES][LINE_BUFSIZE+1]; /* Saved for redisplay */
-	char 	slatr[SAVE_LINES];	/* Starting attribute of each line */
-	char 	slcuratr[SAVE_LINES];	/* Ending attribute of each line */
-	int 	slcnt;			/* Number of lines currently saved */
+	link_list_t savedlines;
 	char 	lbuf[LINE_BUFSIZE+1];/* Temp storage for each line output */
 	int		lbuflen;		/* Number of characters in line buffer */
 	char 	latr;			/* Starting attribute of line buffer */
@@ -531,7 +528,7 @@ public:
 	csi_t	main_csi;		/* Main Command Shell Image */
 
 	smbmsg_t*	current_msg;	/* For message header @-codes */
-	file_t*		current_file;	
+	file_t*		current_file;
 
 			/* Global command shell variables */
 	uint	global_str_vars;
@@ -711,6 +708,8 @@ public:
 	long	term_supports(long cmp_flags=0);
 	int		backfill(const char* str, float pct, int full_attr, int empty_attr);
 	void	progress(const char* str, int count, int total, int interval=1);
+	bool	saveline(void);
+	bool	restoreline(void);
 
 	/* getstr.cpp */
 	size_t	getstr_offset;
