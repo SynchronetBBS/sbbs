@@ -263,27 +263,27 @@ char sbbs_t::getkey(long mode)
 		}
 			
 		if(online==ON_REMOTE && !(console&CON_NO_INACT)
-			&& now-timeout>=cfg.sec_warn) { 					/* warning */
-			if(sys_status&SS_USERON && cfg.sec_warn!=cfg.sec_hangup) {
+			&& (now-timeout >= cfg.sec_warn || now-timeout >= cfg.sec_hangup)) {
+			if(sys_status&SS_USERON && cfg.sec_warn < cfg.sec_hangup) {
 				SAVELINE;
 				bputs(text[AreYouThere]); 
 			}
 			else
 				bputs("\7\7");
-			while(!inkey(K_NONE,100) && online && now-timeout>=cfg.sec_warn) {
+			while(!inkey(K_NONE,100) && online && now-timeout < cfg.sec_hangup) {
 				now=time(NULL);
-				if(now-timeout>=cfg.sec_hangup) {
-					if(online==ON_REMOTE) {
-						console|=CON_R_ECHO;
-						console&=~CON_R_ECHOX; 
-					}
-					bputs(text[CallBackWhenYoureThere]);
-					logline(LOG_NOTICE,nulstr,"Inactive");
-					hangup();
-					return(0); 
-				}
 			}
-			if(sys_status&SS_USERON && cfg.sec_warn!=cfg.sec_hangup) {
+			if(now-timeout >= cfg.sec_hangup) {
+				if(online==ON_REMOTE) {
+					console|=CON_R_ECHO;
+					console&=~CON_R_ECHOX; 
+				}
+				bputs(text[CallBackWhenYoureThere]);
+				logline(LOG_NOTICE,nulstr,"Inactive");
+				hangup();
+				return(0); 
+			}
+			if(sys_status&SS_USERON) {
 				bputs("\r\1n\1>");
 				RESTORELINE; 
 			}
