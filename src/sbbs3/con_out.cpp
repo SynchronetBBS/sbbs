@@ -1,4 +1,5 @@
 /* Synchronet console output routines */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -89,7 +90,7 @@ int sbbs_t::bputs(const char *str)
 /* Raw put string (remotely)												*/
 /* Performs Telnet IAC escaping												*/
 /* Performs saveline buffering (for restoreline)							*/
-/* DOES NOT expand ctrl-A codes, track colunms, lines, auto-pause, etc.     */
+/* DOES NOT expand ctrl-A codes, track columns, lines, auto-pause, etc.     */
 /****************************************************************************/
 int sbbs_t::rputs(const char *str, size_t len)
 {
@@ -474,7 +475,7 @@ void sbbs_t::ctrl_a(char x)
 		case ')':   /* turn echo back on */
 			console&=~CON_ECHO_OFF;
 			break;
-		case '+':	/* push current attribte */
+		case '+':	/* push current attribute */
 			if(attr_sp<(int)sizeof(attr_stack))
 				attr_stack[attr_sp++]=curatr;
 			break;
@@ -556,6 +557,9 @@ void sbbs_t::ctrl_a(char x)
 			break;
 		case 'A':   /* Ctrl-A */
 			outchar(CTRL_A);
+			break;
+		case 'Z':	/* Ctrl-Z */
+			outchar(CTRL_Z);
 			break;
 		case 'H': 	/* High intensity */
 			atr|=HIGH;

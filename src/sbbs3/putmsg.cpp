@@ -1,4 +1,5 @@
 /* Synchronet message/menu display routine */
+// vi: tabstop=4
  
 /* $Id$ */
 
@@ -88,8 +89,6 @@ char sbbs_t::putmsg(const char *buf, long mode)
 				printfile(tmp3,0);
 				sys_status&=~SS_NEST_PF; 
 			}
-			else if(toupper(str[l+1])=='Z')             /* Ctrl-AZ==EOF */
-				break;
 			else {
 				ctrl_a(str[l+1]);
 				if((sys_status&SS_ABORT) && !lines_printed)	/* Aborted at (auto) pause prompt (e.g. due to CLS)? */
