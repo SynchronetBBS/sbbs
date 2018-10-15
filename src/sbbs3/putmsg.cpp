@@ -247,6 +247,8 @@ char sbbs_t::putmsg(const char *buf, long mode)
 			if(str[l]==ESC && str[l+1]=='$')    /* WIP command */
 				lncntr=0;
 			if(str[l]=='@' && !(mode&P_NOATCODES)) {
+				if(memcmp(str+l, "@EOF@", 5) == 0)
+					break;
 				/* In HTML mode, defer PAUSE and MORE to end and supress message */
 				if(mode&P_HTML) {
 					if(!memcmp(str+l,"@MORE@",6)) {
