@@ -52,7 +52,7 @@ function request_active_users()
 {
 	var requests_sent = 0;
 	for(var i in sys_list) {
-		if(!sock.sendto("\r\n", i, IPPORT_SYSTAT))	// Get list of active users
+		if(!sock.sendto("?active-users.json\r\n", i, IPPORT_SYSTAT))	// Get list of active users (in JSON fmt, if available)
 			continue;
 		requests_sent++;
 	}
@@ -67,6 +67,15 @@ function find_name(arr, name)
 	return false;
 }
 
+// Converts HH:MM:SS to seconds
+function parseTimeOn(str)
+{
+	var arr = str.match(/(\d+)\:(\d+)\:(\d+)$/);
+	if(!arr)
+		return 0;
+	return parseInt(arr[1]*60*60, 10) + parseInt(arr[2]*60, 10) + parseInt(arr[3], 10);
+}
+
 function parse_active_users(message, logon_callback, logoff_callback)
 {
 	if(!message)
@@ -78,37 +87,39 @@ function parse_active_users(message, logon_callback, logoff_callback)
 	}
 	
 	sys.last_response = time();
-	
-	var response = message.data.split("\r\n");
-	
-	// Skip header
-	while(response.length && response[0].charAt(0)!='-')
-		response.shift();
-	if(response.length && response[0].charAt(0)=='-')
-		response.shift();	// Delete the separator line
-	while(response.length && !response[0].length)
-		response.shift();	// Delete any blank lines
-	while(response.length && !response[response.length-1].length)
-		response.pop();		// Delete trailing blank lines
-	
 	var old_users = sys.users.slice();
-	sys.users = [];
-
-	for(var i in response) {
-		if(response[i]=="")
-			continue;
-
-		sys.users.push( { 
-			name: format("%.25s",response[i]).trimRight(),
-			action: response[i].substr(26, 31).trimLeft().trimRight(),
-			timeon: response[i].substr(57, 9).trimLeft(),
-			age: response[i].substr(67, 3).trimLeft(),
-			sex: response[i].substr(71, 3).trimLeft(),
-			node: response[i].substr(75, 4).trimLeft(),
-			time: time() 
-			} );
-	}
 	
+	if(message.data[0] == '[')
+		sys.users = JSON.parse(message.data);
+	else {
+		var response = message.data.split("\r\n");
+		
+		// Skip header
+		while(response.length && response[0].charAt(0)!='-')
+			response.shift();
+		if(response.length && response[0].charAt(0)=='-')
+			response.shift();	// Delete the separator line
+		while(response.length && !response[0].length)
+			response.shift();	// Delete any blank lines
+		while(response.length && !response[response.length-1].length)
+			response.pop();		// Delete trailing blank lines
+		
+		sys.users = [];
+
+		for(var i in response) {
+			if(response[i]=="")
+				continue;
+
+			sys.users.push( { 
+				name: format("%.25s",response[i]).trimRight(),
+				action: response[i].substr(26, 31).trimLeft().trimRight(),
+				timeon: parseTimeOn(response[i].substr(57, 9).trimLeft()),
+				age: response[i].substr(67, 3).trimLeft(),
+				sex: response[i].substr(71, 3).trimLeft(),
+				node: response[i].substr(75, 4).trimLeft()
+				} );
+		}
+	}
 	if(logon_callback) {
 		var count = 0;
 		for(var i in sys.users) {
