@@ -27,8 +27,6 @@
 
 // $Id$
 
-const UDP_RESPONSE_TIMEOUT = 5000	// milliseconds
-
 load("sbbsdefs.js");
 load("nodedefs.js");
 load("sockdefs.js");	// SOCK_DGRAM
@@ -41,217 +39,78 @@ var userprops = load({}, "userprops.js");
 var ini_section = "imsg sent";
 var addr_list = userprops.get(ini_section, "address", []);
 var last_send = userprops.get(ini_section, "localtime");
+var lib = load({}, "sbbsimsg_lib.js");
 
 const RcptAddressHistoryLength = 10;
 
-// Global vars
-var imsg_user;
 var last_user=0;
-var users=0;
+
+lib.read_sys_list();
 
 // Parse arguments
-for(i=0;i<argc;i++)
+for(i=0; i<argc; i++) {
 	if(argv[i].toLowerCase()=="-l") {
-		list_users(true);
+		var timeout = 5000;
+		var sent = lib.request_active_users();
+		if(parseInt(argv[i+1]))
+			timeout = parseInt(argv[i+1]);
+		function poll_callback(loop)
+		{
+			printf("%c\r", "/-\\|"[loop%4]);
+		}
+		lib.poll_systems(sent, 0.25, timeout, poll_callback);
+		list_users();
 		exit();
 	}
-
-// Read the list of systems into list array
-fname = system.ctrl_dir + "sbbsimsg.lst";
-
-f = new File(fname);
-if(!f.open("r")) {
-	alert("Error opening " + fname);
-	exit();
-}
-
-var sys = new Array();
-list = f.readAll();
-f.close();
-for(i in list) {
-	if(list[i]==null)
-		break;
-	var line = list[i].trimLeft();
-	if(line.charAt(0)==';')		// comment? 
-		continue;
-
-	var word = line.split('\t');
-	var host = word[0].trimRight();
-
-	if(host == system.host_name
-		|| host == system.inetaddr)		// local system?
-		continue;						// ignore
-
-	var ip_addr = word[1];
-	var bbs_name = word[2];
-
-	if(ip_addr == client.socket.local_ip_address || ip_addr == server.interface_ip_address)
-		continue;
-
-	sys.push( { addr: host, ip : ip_addr, name: bbs_name, failed: false, reply: 999999 } );
-}
-
-function save_sys_list()
-{
-//	sys.sort(sortarray);
-	fname = system.ctrl_dir + "sbbsimsg.lst";
-	f = new File(fname);
-	if(!f.open("w"))
-		return;
-	for(i=0;sys[i]!=undefined;i++) {
-		if(sys[i].ip == undefined)
-			f.writeln(sys[i].addr);
-		else
-			f.writeln(format("%-63s\t%s\t%s", sys[i].addr, sys[i].ip, sys[i].name));
-	}
-	f.close();
-}
-
-function sortarray(a, b)
-{
-	return(a.reply-b.reply);
-}
-
-function parse_response(response, verbosity, sys)
-{
-	// Skip header
-	while(response.length && response[0].charAt(0)!='-')
-		response.shift();
-	if(response.length && response[0].charAt(0)=='-')
-		response.shift();	// Delete the separator line
-	while(response.length && !response[0].length)
-		response.shift();	// Delete any blank lines
-	while(response.length && !response[response.length-1].length)
-		response.pop();		// Delete trailing blank lines
-
-	if(!response.length) {
-		if(verbosity > 1)
-			print();
-		return;
-	}
-
-	if(verbosity < 1)
-		printf("\1n\1h%-25.25s ", sys.name);
-	printf("\1g\1h                                  Time   Age Sex\r\n");
-
-	for(j in response) {
-		if(response[j]=="")
-			continue;
-
-		console.line_counter=0;	// defeat pause
-		print(format("\1h\1y%.25s\1n\1g %.48s"
-			,response[j],response[j].slice(26)));
-		var u = new Object;
-		u.host = sys.addr;
-		u.bbs  = sys.name;
-		u.ip   = sys.ip;
-		u.name = format("%.25s",response[j]);
-		u.name = truncsp(u.name);
-		imsg_user.push(u);
-		users++;
+	if(argv[i].toLowerCase()=="-d") {
+		print(lfexpand(JSON.stringify(lib.sys_list, null, 4)));
+		exit();
 	}
 }
 
-function list_users(verbosity)
+function print_header(sys)
 {
-	imsg_user = new Array();
-	var udp_req=0;
-	var replies=0;
+	printf("\1n\1c%-25.25s \1h%-34.34s\1h\1gTime   Age Sex\r\n", sys.name, sys.host);
+}
 
-	users = 0;
-	start = new Date();
-	print(format("\1m\1hListing %sUsers (Ctrl-C to Abort)...", verbosity ? "Systems and " : ""));
+function list_user(user, sys)
+{
+	if(sys)
+		print_header(sys);
+	var action = user.action;
+	if(user.do_not_disturb)
+		action += " (P)";
+	else if(user.msg_waiting)
+		action += " (M)";
+	print(format("\1h\1y%-25.25s \1n\1g%-31.31s%9s %3s %3s"	
+		,user.name
+		,action
+		,system.secondstr(user.timeon)
+		,user.age
+		,user.sex
+		));
+}
 
-	sock = new Socket(SOCK_DGRAM);
-	//sock.debug=true;
-	for(var i=0; sys[i]!=undefined && !(bbs.sys_status&SS_ABORT);i++) {
-		if(sys[i].ip==undefined)
+function list_users()
+{
+	for(var i in lib.sys_list) {
+		var sys = lib.sys_list[i];
+		if(!sys.users.length)
 			continue;
-		if(!sock.sendto("\r\n",sys[i].ip,IPPORT_SYSTAT))	// Get list of active users
-			continue;
-		udp_req++;
-	}
-
-	begin = new Date();
-	for(var loop = 0; replies<udp_req && new Date().valueOf()-begin.valueOf() < UDP_RESPONSE_TIMEOUT
-		&& !(bbs.sys_status&SS_ABORT); loop++)
-	{
-		printf("%c\r", "/-\\|"[loop%4]);
-		if(!sock.poll(0.25))
-			continue;
-
-		message=sock.recvfrom(20000);
-		if(message==null)
-			continue;
-		var found = get_system_by_ip(message.ip_address);
-		if(!found) {
-			printf("Unexpected response from %s\r\n", message.ip_address);
-			continue;
+		print_header(sys);
+		for(var u in sys.users) {
+			list_user(sys.users[u]);
 		}
-		replies++;
-		found.reply=new Date().valueOf()-start.valueOf();
-
-		response=message.data.split("\r\n");
-
-		if(verbosity > 1) {
-			console.line_counter=0;	// defeat pause
-			printf("\1n\1h%-25.25s\1n ",found.name);
-		}
-
-		parse_response(response, verbosity, found);
 	}
-	console.clearline();
-	sock.close();
-
-	if(verbosity > 1) {
-		t = new Date().valueOf()-start.valueOf();
-		printf("\1m\1h%lu systems and %lu users listed in %d seconds.\r\n"
-			,replies, users, t/1000);
-	}
-	save_sys_list();
-}
-
-function get_system_by_ip(ip)
-{
-	for(var i in sys)
-		if(sys[i].ip==ip)
-			return(sys[i]);
-	return null;
 }
 
 function send_msg(dest, msg)
 {
-
-	if((hp = dest.indexOf('@'))==-1) {
-		alert("Invalid user");
-		exit();
-	}
-	host = dest.slice(hp+1);
-	destuser = dest.substr(0,hp);
-
-	printf("\1h\1ySending...\r\1w");
-	sock = new Socket();
-	//sock.debug = true;
-	do {
-		if(!sock.connect(host,IPPORT_MSP)) {
-			alert("MSP Connection to " + host + " failed with error " + sock.last_error);
-		}
-		else {
-			sock.send("B"+destuser+"\0"+/* Dest node +*/"\0"+msg+"\0"+user[options.from_user_prop]+"\0"+"\0\0"+system.name+"\0");
-		}
-	} while(0);
-
-	sock.close();
-
-	var addr_idx = addr_list.indexOf(dest);
-	if(addr_idx >= 0)
-		addr_list.splice(addr_idx, 1);
-	addr_list.unshift(dest);
-	if(addr_list.length > RcptAddressHistoryLength)
-		addr_list.length = RcptAddressHistoryLength;
-	userprops.set(ini_section, "address", addr_list);
-	last_send = new Date().toString();
-	userprops.set(ini_section, "localtime", last_send);
+	var result = lib.send_msg(dest, msg, user[options.from_user_prop]);
+	if(result == true)
+		print("\1nMessage sent to: \1h" + dest);
+	else
+		alert(result);
 }
 
 function getmsg()
@@ -280,52 +139,87 @@ function getmsg()
 	return(msg);
 }
 
+function imsg_user_list()
+{
+	var imsg_user = [];
+	for(var i in lib.sys_list) {
+		var sys = lib.sys_list[i];
+		for(var u in sys.users) {
+			var user = sys.users[u];
+			imsg_user.push( { name: user.name, host: sys.host, bbs: sys.name } );
+		}
+	}
+	return imsg_user;
+}
+
 function get_default_dest()
 {
 	var rx = userprops.get("imsg received");
 	
 	if(rx && rx.localtime && (!last_send || new Date(rx.localtime) > new Date(last_send))) {
-		var sys = get_system_by_ip(rx.ip_address);
+		var sys = lib.sys_list[rx.ip_address];
 		if(sys)
 			return rx.name + '@' + sys.addr;
 		return rx.name + '@' + rx.ip_address;
 	}
 	if(addr_list.length)
 		return addr_list[0];
+	var imsg_user = imsg_user_list();
 	if(imsg_user.length)
 		return format("%s@%s",imsg_user[last_user].name,imsg_user[last_user].host);
 	return "";
 }
 
-list_users(0);	// Needed to initialize imsg_user[]
-console.crlf();
+function logon_callback(user, sys)
+{
+	console.clearline();
+	list_user(user, sys);
+	console.line_counter=0;	// defeat pause
+}
 
-var key;
-menu:
+function logoff_callback(user, sys)
+{
+	console.clearline();
+	print(format("\1n\1h\1y%s \1n\1glogged-off \1h\1w%s\1n", user.name, sys.name));
+	console.line_counter=0;	// defeat pause
+}
+
+prompt:
 while(bbs.online) {
 	console.line_counter=0;	// defeat pause
+	console.clearline();
 	console.print("\1n\1h\1bInter-BBS: ");
-	console.mnemonics("~Telegram, ~Message, ~List, or ~Quit: ");
+	console.mnemonics("Anyone: ~Telegram, Active-Users: ~Message/~List, or ~Quit: ");
 	bbs.sys_status&=~SS_ABORT;
+	var key;
+	var last_request = 0;
+	var request_interval = 60;	// seconds
 	while(bbs.online && !(bbs.sys_status&SS_ABORT)) {
+		if(time() - last_request >= request_interval) {
+			lib.request_active_users();
+			last_request = time();
+		}
+		console.line_counter=0;	// defeat pause
+		while(lib.sock.poll(0.1) && bbs.online) {
+			var message = lib.receive_active_users();
+			if(message) {
+				var result = lib.parse_active_users(message, logon_callback, logoff_callback);
+				if(!result)
+					log(LOG_WARNING, "Failure to parse: "+ JSON.stringify(message));
+			}
+		}
+		bbs.nodesync(true);
+		if(console.current_column == 0) {
+			continue prompt;
+		}
 		key=console.inkey(K_UPPER, 500);
 		if(key=='Q' || key=='L' || key=='T' || key=='M' || key=='\r')
 			break;
-		if(system.node_list[bbs.node_num-1].misc&(NODE_MSGW|NODE_NMSG)) {
-			console.line_counter=0;	// defeat pause
-			console.saveline();
-			console.crlf();
-			bbs.nodesync();
-			console.crlf();
-			console.restoreline();
-		}
 	}
-//	printf("key=%s\r\n",key);
 	switch(key) {
 		case 'L':
 			print("\1h\1cList\r\n");
-			list_users(0);
-			console.crlf();
+			list_users();
 			break;
 		case 'T':
 			printf("\1h\1cTelegram\r\n\r\n");
@@ -335,17 +229,18 @@ while(bbs.online) {
 				break;
 			if((msg=getmsg())=='')
 				break;
-			send_msg(dest,msg);
+			send_msg(dest, msg);
 			console.crlf();
 			break;
 		case 'M':
 			print("\1h\1cMessage\r\n");
+			var imsg_user = imsg_user_list();
 			if(!imsg_user.length) {
 				alert("No active users!\r\n");
 				break;
 			}
 			done=false;
-			while(bbs.online && !done) {
+			while(bbs.online && !done && !console.aborted) {
 				printf("\r\1n\1h\x11\1n-[\1hQ\1nuit]-\1h\x10 \1y%-25s \1c%s\1>"
 					,imsg_user[last_user].name,imsg_user[last_user].bbs);
 				switch(console.getkey(K_UPPER|K_NOECHO)) {
@@ -382,7 +277,7 @@ while(bbs.online) {
 						printf("\r\1n\1cSending message to \1h%s\1>\r\n",dest);
 						if((msg=getmsg())=='')
 							break;
-						send_msg(dest,msg);
+						send_msg(dest, msg);
 						console.crlf();
 						break;
 				}
@@ -390,6 +285,6 @@ while(bbs.online) {
 			break;
 		default:
 			print("\1h\1cQuit");
-			break menu;
+			break prompt;
 	}
 }
