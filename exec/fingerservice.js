@@ -1,4 +1,5 @@
 // fingerservice.js
+// vi: tabstop=4
 
 // Synchronet Service for the Finger protocol (RFC 1288)
 // and/or the Active Users protocol (RFC 866)
@@ -138,9 +139,23 @@ function done()
 	exit();
 }
 
+function node_misc(node)
+{
+	var str = '';
+	if(node.misc&(NODE_AOFF|NODE_POFF|NODE_NMSG|NODE_MSGW)) {
+		str += " (";
+		if(node.misc&NODE_LOCK) str += 'L';
+		if(node.misc&NODE_AOFF) str += 'A';
+		if(node.misc&NODE_POFF) str += 'P';
+		if(node.misc&(NODE_NMSG|NODE_MSGW)) str += 'M';
+		str += ")";
+	}
+	return str;
+}
+
 var request="";
 
-if(!active_users) {
+if(datagram || !active_users) {
 
     // Get Finger Request (the main entry point) 
     if(datagram == undefined) 	// TCP
@@ -176,14 +191,17 @@ if(request=="") {	// no specific user requested, give list of active users
 		,dashes));
 	var u = new User(1);
 	for(n=0;n<system.node_list.length;n++) {
-		if(system.node_list[n].status!=NODE_INUSE)
+		var node = system.node_list[n];
+		if(node.status!=NODE_INUSE)
 			continue;
-		u.number=system.node_list[n].useron;
-		if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
+		if(node.misc&NODE_ANON)
+			continue;
+		u.number=node.useron;
+		if(node.action==NODE_XTRN && node.aux)
 			action=format("running %s",xtrn_name(u.curxtrn));
 		else
-			action=format(NodeAction[system.node_list[n].action]
-							,system.node_list[n].aux);
+			action=format(NodeAction[node.action],node.aux);
+		action += node_misc(node);
 		t=time()-u.logontime;
 		if(t&0x80000000) t=0;
 		write(format("%-25.25s %-31.31s%3u:%02u:%02u %3s %3s %4d\r\n"
@@ -271,25 +289,66 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 				,days,hours,min,sec));
 			break;
 
+		case "stats.json":
+			write(JSON.stringify(system.stats));
+			break;
+
 		case "nodelist":
 			var u = new User(1);
 			for(n=0;n<system.node_list.length;n++) {
 				write(format("Node %2d ",n+1));
-				if(system.node_list[n].status==NODE_INUSE) {
-					u.number=system.node_list[n].useron;
-					write(format("%s (%u %s) ", u.alias, u.age, u.gender));
-					if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
+				var node = system.node_list[n];
+				if(node.status==NODE_INUSE
+					&& !(node.misc&NODE_ANON)) {
+					u.number=node.useron;
+					if(include_age_gender)
+						write(format("%s (%u %s) ", u.alias, u.age, u.gender));
+					else
+						write(u.alias + ' ');
+					if(node.action==NODE_XTRN && node.aux)
 						write(format("running %s",xtrn_name(u.curxtrn)));
 					else
-						write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
+						write(format(NodeAction[node.action],node.aux));
 					t=time()-u.logontime;
 					if(t&0x80000000) t=0;
 					write(format(" for %u minutes",Math.floor(t/60)));
+					write(node_misc(node));
 				} else
-					write(format(NodeStatus[system.node_list[n].status],system.node_list[n].aux));
+					write(format(NodeStatus[node.status],node.aux));
 
 				write("\r\n");
-			}			
+			}
+			break;
+
+		case "active-users.json":
+			var u = new User(1);
+			var list = [];
+			for(n=0;n<system.node_list.length;n++) {
+			var node = system.node_list[n];
+				if(node.status!=NODE_INUSE)
+					continue;
+				if(node.misc&(NODE_ANON|NODE_POFF))
+					continue;
+				u.number=node.useron;
+				if(node.action==NODE_XTRN && node.aux)
+					action=format("running %s",xtrn_name(u.curxtrn));
+				else
+					action=format(NodeAction[node.action]
+								,node.aux);
+				t = time()-u.logontime;
+				if(t&0x80000000) t = 0;
+				var obj =  { name: u.alias, action: action, timeon: t, node: n + 1, location: u.location };
+				if(include_age_gender) {
+					obj.age = u.age;
+					obj.sex = u.gender;
+				}
+				if(u.chat_settings & CHAT_NOPAGE)
+					obj.do_not_disturb = true;
+				if(node.misc&(NODE_NMSG|NODE_MSGW))
+					obj.msg_waiting = true;
+				list.push(obj);
+			}
+			write(JSON.stringify(list));
 			break;
 
 		case "services":	/* Services running on this host */
