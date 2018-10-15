@@ -28,6 +28,11 @@ else {
 		template.showall_toggle+='Yes">'+showall_subs_enable_html;
 	template.showall_toggle+='</a>';
 }
+if(!msg_area.grp[grp]) {
+    http_reply.status="404 Not Found";
+    write("<html><head><title>404 Error</title></head><body>Message group " + grp + " does not exist</body></html>");
+    exit();
+}
 template.title="Message Subs in Group: "+msg_area.grp[grp].description;
 
 if(do_header)
