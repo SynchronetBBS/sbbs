@@ -861,7 +861,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	while(l<length) {
 		if(qwkbuf[l]==CTRL_A) {   /* Ctrl-A, so skip it and the next char */
 			l++;
-			if(l>=length || toupper(qwkbuf[l])=='Z')	/* EOF */
+			if(l>=length)
 				break;
 			if((ch=ctrl_a_to_ascii_char(qwkbuf[l])) != 0)
 				write(fido,&ch,1);

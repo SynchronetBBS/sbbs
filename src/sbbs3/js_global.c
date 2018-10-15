@@ -2188,7 +2188,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 						hpos=0;
 						break;
 					case 'Z':
-						outbuf[j++]=0;
+						outbuf[j++]=CTRL_Z;
 						break;
 					case 'A':
 					default:

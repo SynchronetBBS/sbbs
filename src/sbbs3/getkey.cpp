@@ -336,8 +336,6 @@ void sbbs_t::mnemonics(const char *str)
 		else {
 			if(str[l]==CTRL_A && str[l+1]!=0) {
 				l++;
-				if(toupper(str[l])=='Z')	/* EOF */
-					break;
 				ctrl_a(str[l++]);
 			} else {
 				if(str[l] == '@') {

@@ -57,8 +57,6 @@ int sbbs_t::bputs(const char *str)
 	while(str[l] && online) {
 		if(str[l]==CTRL_A && str[l+1]!=0) {
 			l++;
-			if(toupper(str[l])=='Z')	/* EOF */
-				break;
 			ctrl_a(str[l++]);
 			continue;
 		}

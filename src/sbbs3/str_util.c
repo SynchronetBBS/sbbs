@@ -52,8 +52,6 @@ char* DLLCALL remove_ctrl_a(const char *str, char *dest)
 	for(i=j=0;str[i];i++) {
 		if(str[i]==CTRL_A) {
 			i++;
-			if(str[i]==0 || toupper(str[i])=='Z')	/* EOF */
-				break;
 			/* convert non-destructive backspace to a destructive backspace */
 			if(str[i]=='<' && j)	
 				j--;
@@ -73,8 +71,6 @@ char* DLLCALL strip_ctrl(const char *str, char* dest)
 	for(i=j=0;str[i];i++) {
 		if(str[i]==CTRL_A) {
 			i++;
-			if(str[i]==0 || toupper(str[i])=='Z')	/* EOF */
-				break;
 			/* convert non-destructive backspace to a destructive backspace */
 			if(str[i]=='<' && j)	
 				j--;
@@ -121,8 +117,6 @@ char* DLLCALL prep_file_desc(const char *str, char* dest)
 	for(i=j=0;str[i];i++)
 		if(str[i]==CTRL_A && str[i+1]!=0) {
 			i++;
-			if(toupper(str[i])=='Z')	/* EOF */
-				break;
 			/* convert non-destructive backspace to a destructive backspace */
 			if(str[i]=='<' && j)	
 				j--;
@@ -346,8 +340,6 @@ size_t bstrlen(const char *str)
 	while(*str) {
 		if(*str==CTRL_A) {
 			str++;
-			if(toupper(*str)=='Z')	/* EOF */
-				break;
 			if(*str=='[')
 				i=0;
 			else if(*str=='<' && i)

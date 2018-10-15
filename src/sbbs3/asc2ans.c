@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 	while((ch=fgetc(in))!=EOF) {
 		if(ch==CTRL_A) { /* ctrl-a */
 			ch=fgetc(in);
-			if(ch==EOF || toupper(ch)=='Z')	/* EOF */
+			if(ch==EOF)	/* EOF */
 				break;
 			if(ch>0x7f) {					/* move cursor right x columns */
 				int cnt=ch-0x7f;
