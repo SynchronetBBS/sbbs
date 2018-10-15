@@ -19,6 +19,7 @@
 
 load("sockdefs.js");
 load("nodedefs.js");
+load("sbbsdefs.js");
 var userprops = load({}, "userprops.js");
 var section = "imsg received";
 var output_buf = "";
@@ -173,14 +174,19 @@ telegram_buf += "\1n\r\n\1h" + message;
 /* TODO cache cookies and prevent dupes */
 if(recipient != "") {
 	if(to_node) {
-		if(system.node_list[to_node-1].useron==usernum) {
+		if(system.node_list[to_node-1].useron==usernum && !(system.node_list[to_node-1].misc&NODE_POFF)) {
 			send_response=system.put_node_message(to_node, telegram_buf);
 			log("Attempt to send node message: "+(send_response?"Success":"Failure"));
 		}
 		else
-			log("Cannot send to user "+recipient+" on node "+to_node);
+			log("Cannot send to user ("+recipient+") on node "+to_node);
 	}
 	else {
+		var u = User(usernum);
+		if(u.chat_settings & CHAT_NOPAGE) {
+			log(LOG_NOTICE, "Attempt to send telegram to user (" + recipient + ") with paging disabled");
+			done();
+		}
 		send_response=system.put_telegram(usernum, telegram_buf);
 		log("Attempt to send telegram: "+(send_response?"Success":"Failure"));
 		if(send_response)
