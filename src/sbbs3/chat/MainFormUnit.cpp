@@ -307,3 +307,12 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
 
 
 
+
+void __fastcall TMainForm::LocalEnter(TObject *Sender)
+{
+    Local->SelLength=0;
+    Local->SelStart=Local->Text.Length();
+   
+}
+//---------------------------------------------------------------------------
+
