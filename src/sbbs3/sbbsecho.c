@@ -494,12 +494,14 @@ bool write_echostats(const char* fname, echostat_t* echostat, size_t echo_count)
 	return true;
 }
 
-echostat_t* get_echostat(const char* tag)
+echostat_t* get_echostat(const char* tag, bool create)
 {
 	for(unsigned int i = 0; i < echostat_count; i++) {
 		if(stricmp(echostat[i].tag, tag) == 0)
 			return &echostat[i];
 	}
+	if(!create)
+		return NULL;
 	echostat_t* new_echostat = realloc(echostat, sizeof(echostat_t) * (echostat_count + 1));
 	if(new_echostat == NULL)
 		return NULL;
@@ -2129,7 +2131,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 		char* p = instr;
 		FIND_WHITESPACE(p);
 		SKIP_WHITESPACE(p);
-		echostat_t* stat = get_echostat(p);
+		echostat_t* stat = get_echostat(p, /* create: */false);
 		if(stat == NULL) {
 			lprintf(LOG_INFO, "AreaFix (for %s) EchoStats request for unknown echo: %s", faddrtoa(&addr), p);
 		} else {
@@ -4665,7 +4667,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			continue;
 		}
 
-		echostat_t* stat = get_echostat(tag);
+		echostat_t* stat = get_echostat(tag, /* create: */true);
 		if(stat == NULL) {
 			lprintf(LOG_CRIT, "Failed to allocated memory for echostats!");
 			break;
@@ -5711,7 +5713,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			truncstr(areatag, " \t\r\n");
 			printf("%21s: ", areatag);          /* Show areatag/echotag: */
 
-			echostat_t* stat = get_echostat(areatag);
+			echostat_t* stat = get_echostat(areatag, /* create: */true);
 			if(stat == NULL) {
 				lprintf(LOG_CRIT, "Failed to allocate memory for echostats!");
 				break;
