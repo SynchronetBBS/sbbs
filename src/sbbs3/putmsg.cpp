@@ -83,11 +83,13 @@ char sbbs_t::putmsg(const char *buf, long mode)
 				i=0;
 				while(i<(int)sizeof(tmp2)-1 && isprint((unsigned char)str[l]) && str[l]!='\\' && str[l]!='/')
 					tmp2[i++]=str[l++];
-				tmp2[i]=0;
-				sys_status|=SS_NEST_PF; 	/* keep it only one message deep! */
-				SAFEPRINTF2(tmp3,"%s%s",cfg.text_dir,tmp2);
-				printfile(tmp3,0);
-				sys_status&=~SS_NEST_PF; 
+				if(i > 0) {
+					tmp2[i]=0;
+					sys_status|=SS_NEST_PF; 	/* keep it only one message deep! */
+					SAFEPRINTF2(tmp3,"%s%s",cfg.text_dir,tmp2);
+					printfile(tmp3,0);
+					sys_status&=~SS_NEST_PF; 
+				}
 			}
 			else {
 				ctrl_a(str[l+1]);
