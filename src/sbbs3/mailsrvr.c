@@ -802,11 +802,11 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			&& !(lines%startup->lines_per_yield))	
 			YIELD();
 		if((lines%100) == 0)
-			lprintf(LOG_DEBUG,"%04d %s sent %lu lines (%lu bytes) of body text"
-				,socket, prot, lines, np-msgtxt);
+			lprintf(LOG_DEBUG,"%04d %s sent %lu lines (%ld bytes) of body text"
+				,socket, prot, lines, (long)(np-msgtxt));
 	}
-	lprintf(LOG_DEBUG,"%04d %s sent %lu lines (%lu bytes) of body text"
-		,socket, prot, lines, np-msgtxt);
+	lprintf(LOG_DEBUG,"%04d %s sent %lu lines (%ld bytes) of body text"
+		,socket, prot, lines, (long)(np-msgtxt));
 	if(file_list!=NULL) {
 		for(i=0;file_list[i];i++) { 
 			sockprintf(socket,prot,sess,"");
@@ -1538,7 +1538,7 @@ static void pop3_thread(void* arg)
 
 				sockprintf(socket,client.protocol,session,"+OK message follows");
 				lprintf(LOG_DEBUG,"%04d %s <%s> sending message text (%lu bytes)"
-					,socket, client.protocol, user.alias, strlen(msgtxt));
+					,socket, client.protocol, user.alias, (ulong)strlen(msgtxt));
 				lines_sent=sockmsgtxt(socket, client.protocol, session, &msg, msgtxt, lines);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
 				if(lines!=-1 && lines_sent<lines)	/* could send *more* lines */
@@ -3156,7 +3156,7 @@ static void smtp_thread(void* arg)
 
 						if((i=putsmsg(&scfg,usernum,telegram_buf))==0)
 							lprintf(LOG_INFO,"%04d %s Created telegram (%ld/%lu bytes) from %s to %s <%s>"
-								,socket, client.protocol, length, strlen(telegram_buf), sender_addr, rcpt_to, rcpt_addr);
+								,socket, client.protocol, length, (ulong)strlen(telegram_buf), sender_addr, rcpt_to, rcpt_addr);
 						else
 							lprintf(LOG_ERR,"%04d %s !ERROR %d creating telegram from %s to %s <%s>"
 								,socket, client.protocol, i, sender_addr, rcpt_to, rcpt_addr);
@@ -3548,7 +3548,7 @@ static void smtp_thread(void* arg)
 						is_spam=TRUE;
 
 					lprintf(LOG_DEBUG,"%04d %s Calculating message hashes (sources=%lx, msglen=%lu)"
-						,socket, client.protocol, sources, strlen(msgbuf));
+						,socket, client.protocol, sources, (ulong)strlen(msgbuf));
 					if((hashes=smb_msghashes(&msg, (uchar*)msgbuf, sources)) != NULL) {
 						hash_t	found;
 
@@ -3589,7 +3589,7 @@ static void smtp_thread(void* arg)
 									total++;
 								}
 							if(total) {
-								lprintf(LOG_DEBUG,"%04d %s Adding %lu message hashes to SPAM database", socket, client.protocol, total);
+								lprintf(LOG_DEBUG,"%04d %s Adding %lu message hashes to SPAM database", socket, client.protocol, (ulong)total);
 								smb_addhashes(&spam, hashes, /* skip_marked: */TRUE);
 							}
 							if(i!=SMB_SUCCESS && !spam_bait_result && (dnsbl_recvhdr || dnsbl_result.s_addr))
@@ -6047,7 +6047,7 @@ void DLLCALL mail_server(void* arg)
 				if(strcmp((char *)cbdata, "pop3") && strcmp((char *)cbdata, "pop3s")) { /* Not POP3 */
 					if((smtp=malloc(sizeof(smtp_t)))==NULL) {
 						lprintf(LOG_CRIT,"%04d SMTP !ERROR allocating %lu bytes of memory for smtp_t"
-							,client_socket, sizeof(smtp_t));
+							,client_socket, (ulong)sizeof(smtp_t));
 						mail_close_socket(&client_socket, &session);
 						continue;
 					}
@@ -6063,7 +6063,7 @@ void DLLCALL mail_server(void* arg)
 				else {
 					if((pop3=malloc(sizeof(pop3_t)))==NULL) {
 						lprintf(LOG_CRIT,"%04d !POP3 ERROR allocating %lu bytes of memory for pop3_t"
-							,client_socket,sizeof(pop3_t));
+							,client_socket,(ulong)sizeof(pop3_t));
 						sockprintf(client_socket, "POP3", session,"-ERR System error, please try again later.");
 						mswait(3000);
 						mail_close_socket(&client_socket, &session);
