@@ -2038,7 +2038,7 @@ void input_thread(void *arg)
 		else
 			wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
 		if(wr > (int)sizeof(telbuf))
-			lprintf(LOG_ERR,"!TELBUF OVERFLOW (%d>%lu)",wr,sizeof(telbuf));
+			lprintf(LOG_ERR,"!TELBUF OVERFLOW (%d>%u)",wr,sizeof(telbuf));
 
 		/* First level Ctrl-C checking */
 		if(!(sbbs->cfg.ctrlkey_passthru&(1<<CTRL_C))
@@ -2193,7 +2193,7 @@ void passthru_output_thread(void* arg)
 		else
 			wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
 		if(wr > (int)sizeof(telbuf))
-			lprintf(LOG_ERR,"!TELBUF OVERFLOW (%d>%lu)",wr,sizeof(telbuf));
+			lprintf(LOG_ERR,"!TELBUF OVERFLOW (%d>%u)",wr,sizeof(telbuf));
 
 		/*
 		 * TODO: This should check for writability etc.
@@ -2389,7 +2389,7 @@ void output_thread(void* arg)
 			 * into linear buffer.
 			 */
 			if(avail>sizeof(buf)) {
-				lprintf(LOG_WARNING,"%s !Insufficient linear output buffer (%lu > %lu)"
+				lprintf(LOG_WARNING,"%s !Insufficient linear output buffer (%lu > %u)"
 					,node, avail, sizeof(buf));
 				avail=sizeof(buf);
 			}
@@ -5018,7 +5018,7 @@ void DLLCALL bbs_thread(void* arg)
 	#pragma warn -8066	/* Disable "Unreachable code" warning */
 #endif
 	if(sizeof(node_t)!=SIZEOF_NODE_T) {
-		lprintf(LOG_CRIT,"!COMPILER ERROR: sizeof(node_t)=%lu instead of %d"
+		lprintf(LOG_CRIT,"!COMPILER ERROR: sizeof(node_t)=%u instead of %d"
 			,sizeof(node_t),SIZEOF_NODE_T);
 		cleanup(1);
 		return;
