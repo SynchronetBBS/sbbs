@@ -2143,7 +2143,7 @@ void DLLCALL services_thread(void* arg)
 					if((client=malloc(sizeof(service_client_t)))==NULL) {
 						FREE_AND_NULL(udp_buf);
 						lprintf(LOG_CRIT,"%04d %s !ERROR allocating %lu bytes of memory for service_client"
-							,client_socket, service[i].protocol, sizeof(service_client_t));
+							,client_socket, service[i].protocol, (ulong)sizeof(service_client_t));
 						close_socket(client_socket);
 						continue;
 					}

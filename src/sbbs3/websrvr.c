@@ -1992,7 +1992,7 @@ static named_string_t** read_ini_list(char* path, char* section, char* desc
 		COUNT_LIST_ITEMS(list,i);
 		if(i)
 			lprintf(LOG_DEBUG,"Read %lu %s from %s section of %s"
-				,i,desc,section==NULL ? "root":section,path);
+				,(ulong)i,desc,section==NULL ? "root":section,path);
 	} else
 		lprintf(LOG_WARNING, "Error %d opening %s", errno, path);
 	return(list);
@@ -5964,7 +5964,7 @@ int read_post_data(http_session_t * session)
 					/* FREE()d in close_request */
 					p=realloc(session->req.post_data, s);
 					if(p==NULL) {
-						lprintf(LOG_CRIT,"%04d !ERROR Allocating %lu bytes of memory",session->socket,session->req.post_len);
+						lprintf(LOG_CRIT,"%04d !ERROR Allocating %lu bytes of memory",session->socket, (ulong)session->req.post_len);
 						send_error(session,__LINE__,"413 Request entity too large");
 						if(fp) fclose(fp);
 						return(FALSE);
@@ -6021,14 +6021,14 @@ int read_post_data(http_session_t * session)
 				if(s < (MAX_POST_LEN+1) && (session->req.post_data=malloc((size_t)(s+1))) != NULL)
 					session->req.post_len=recvbufsocket(session,session->req.post_data,s);
 				else  {
-					lprintf(LOG_CRIT,"%04d !ERROR Allocating %lu bytes of memory",session->socket,s);
+					lprintf(LOG_CRIT,"%04d !ERROR Allocating %lu bytes of memory",session->socket, (ulong)s);
 					send_error(session,__LINE__,"413 Request entity too large");
 					return(FALSE);
 				}
 			}
 		}
 		if(session->req.post_len != s)
-				lprintf(LOG_DEBUG,"%04d !ERROR Browser said they sent %lu bytes, but I got %lu",session->socket,s,session->req.post_len);
+				lprintf(LOG_DEBUG,"%04d !ERROR Browser said they sent %lu bytes, but I got %lu",session->socket, (ulong)s, (ulong)session->req.post_len);
 		if(session->req.post_len > s)
 			session->req.post_len = s;
 		session->req.post_data[session->req.post_len]=0;
@@ -6922,7 +6922,7 @@ void DLLCALL web_server(void* arg)
 			if(session==NULL) {
 				/* FREE()d at the start of the session thread */
 				if((session=malloc(sizeof(http_session_t)))==NULL) {
-					lprintf(LOG_CRIT,"!ERROR allocating %lu bytes of memory for http_session_t", sizeof(http_session_t));
+					lprintf(LOG_CRIT,"!ERROR allocating %lu bytes of memory for http_session_t", (ulong)sizeof(http_session_t));
 					continue;
 				}
 				memset(session, 0, sizeof(http_session_t));
