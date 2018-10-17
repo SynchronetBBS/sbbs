@@ -154,9 +154,11 @@ while(client.socket.is_connected && !quit) {
 	cmdline = client.socket.recvline(1024 /*maxlen*/, 300 /*timeout*/);
 
 	if(cmdline==null) {
-		if(client.socket.is_connected)
+		if(client.socket.is_connected) {
+			if(user.security.exemptions&UFLAG_H)
+				continue;
 			log(LOG_WARNING, "!TIMEOUT waiting for request");
-		else
+		} else
 			log(LOG_WARNING, "!client disconnected");
 		break;
 	}
