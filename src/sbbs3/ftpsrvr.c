@@ -1710,9 +1710,9 @@ static void receive_thread(void* arg)
 			last_report=now;
 		}
 		if(startup->max_fsize && (xfer.filepos+total) > startup->max_fsize) {
-			lprintf(LOG_WARNING,"%04d <%s> !DATA received %lu bytes of %s exceeds maximum allowed (%lu bytes)"
+			lprintf(LOG_WARNING,"%04d <%s> !DATA received %lu bytes of %s exceeds maximum allowed (%"PRIu64" bytes)"
 				,xfer.ctrl_sock, xfer.user->alias, xfer.filepos+total, xfer.filename, startup->max_fsize);
-			sockprintf(xfer.ctrl_sock,sess,"552 File size exceeds maximum allowed (%lu bytes)", startup->max_fsize);
+			sockprintf(xfer.ctrl_sock,sess,"552 File size exceeds maximum allowed (%"PRIu64" bytes)", startup->max_fsize);
 			error=TRUE;
 			break;
 		}
@@ -1813,9 +1813,9 @@ static void receive_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d <%s> DATA socket %d closed",xfer.ctrl_sock, xfer.user->alias,*xfer.data_sock);
 	
 	if(xfer.filepos+total < startup->min_fsize) {
-		lprintf(LOG_WARNING,"%04d <%s> DATA received %lu bytes for %s, less than minimum required (%lu bytes)"
+		lprintf(LOG_WARNING,"%04d <%s> DATA received %lu bytes for %s, less than minimum required (%"PRIu64" bytes)"
 			,xfer.ctrl_sock, xfer.user->alias, xfer.filepos+total, xfer.filename, startup->min_fsize);
-		sockprintf(xfer.ctrl_sock,sess,"550 File size less than minimum required (%lu bytes)"
+		sockprintf(xfer.ctrl_sock,sess,"550 File size less than minimum required (%"PRIu64" bytes)"
 			,startup->min_fsize);
 		error=TRUE;
 	}
@@ -6179,8 +6179,8 @@ void DLLCALL ftp_server(void* arg)
 			}
 
 			if((ftp=malloc(sizeof(ftp_t)))==NULL) {
-				lprintf(LOG_CRIT,"%04d !ERROR allocating %lu bytes of memory for ftp_t"
-					,client_socket,sizeof(ftp_t));
+				lprintf(LOG_CRIT,"%04d !ERROR allocating %d bytes of memory for ftp_t"
+					,client_socket,(int)sizeof(ftp_t));
 				sockprintf(client_socket,-1,"421 System error, please try again later.");
 				mswait(3000);
 				ftp_close_socket(&client_socket,&none,__LINE__);
