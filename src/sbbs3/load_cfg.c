@@ -331,7 +331,7 @@ BOOL md(char *inpath)
 	if(!isdir(path)) {
 		/* lprintf("Creating directory: %s",path); */
 		if(mkpath(path)) {
-			lprintf(LOG_WARNING,"!ERROR %d creating directory: %s",errno,path);
+			lprintf(LOG_WARNING,"!ERROR %d (%s) creating directory: %s", errno, strerror(errno), path);
 			return(FALSE); 
 		} 
 	}
