@@ -86,9 +86,9 @@ struct video_params vparams[] = {
 	/* Commodore 64 40x25 mode */
 	{C64_40X25, C64_PALETTE, 40, 25, 0, 7, 8, 8, 1},
 	/* Commodore 128 40x25 mode */
-	{C128_40X25, COLOUR_PALETTE, 40, 25, 0, 7, 8, 8, 1},
+	{C128_40X25, C64_PALETTE, 40, 25, 0, 7, 8, 8, 1},
 	/* Commodore 128 80x25 mode */
-	{C128_80X25, COLOUR_PALETTE, 80, 25, 0, 7, 8, 8, 2},
+	{C128_80X25, C64_PALETTE, 80, 25, 0, 7, 8, 8, 2},
 	/* Atari 800 40x24 mode */
 	{ATARI_40X24, ATARI_PALETTE, 40, 24, 0, 7, 8, 8, 1},
 	/* Atari 800 XEP80 80x25 mode */
