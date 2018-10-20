@@ -88,11 +88,17 @@ ifdef SBBSEXEC
 install: all
 	install $(EXEODIR)/* $(SBBSEXEC)
 	install $(LIBODIR)/* $(SBBSEXEC)
+	install scfg/$(EXEODIR)/* $(SBBSEXEC)
+	install uedit/$(EXEODIR)/* $(SBBSEXEC)
+	install umonitor/$(EXEODIR)/* $(SBBSEXEC)
 
 .PHONY: symlinks
 symlinks: all
 	ln -sfr $(EXEODIR)/* $(SBBSEXEC)
 	ln -sfr $(LIBODIR)/* $(SBBSEXEC)
+	ln -sfr scfg/$(EXEODIR)/* $(SBBSEXEC)
+	ln -sfr uedit/$(EXEODIR)/* $(SBBSEXEC)
+	ln -sfr umonitor/$(EXEODIR)/* $(SBBSEXEC)
 endif
 
 .PHONY: sexyz
