@@ -3650,55 +3650,109 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							case 158:	/* Yellow */
 							case 159:	/* Cyan */
 								cterm->attr &= 0xf0;
-								switch(buf[j]) {
-									case 5:		/* White */
-										cterm->attr |= 1;
-										break;
-									case 28:	/* Red */
-										cterm->attr |= 2;
-										break;
-									case 30:	/* Green */
-										cterm->attr |= 5;
-										break;
-									case 31:	/* Blue */
-										cterm->attr |= 6;
-										break;
-									case 129:	/* Orange */
-										cterm->attr |= 8;
-										break;
-									case 144:	/* Black */
-										cterm->attr |= 0;
-										break;
-									case 149:	/* Brown */
-										cterm->attr |= 9;
-										break;
-									case 150:	/* Light Red */
-										cterm->attr |= 10;
-										break;
-									case 151:	/* Dark Gray */
-										cterm->attr |= 11;
-										break;
-									case 152:	/* Grey */
-										cterm->attr |= 12;
-										break;
-									case 153:	/* Light Green */
-										cterm->attr |= 13;
-										break;
-									case 154:	/* Light Blue */
-										cterm->attr |= 14;
-										break;
-									case 155:	/* Light Gray */
-										cterm->attr |= 15;
-										break;
-									case 156:	/* Purple */
-										cterm->attr |= 4;
-										break;
-									case 158:	/* Yellow */
-										cterm->attr |= 7;
-										break;
-									case 159:	/* Cyan */
-										cterm->attr |= 3;
-										break;
+								if (ti.currmode == C64_40X25) {
+									switch(buf[j]) {
+										case 5:		/* White/Bright White */
+											cterm->attr |= 1;
+											break;
+										case 28:	/* Red*/
+											cterm->attr |= 2;
+											break;
+										case 30:	/* Green */
+											cterm->attr |= 5;
+											break;
+										case 31:	/* Blue */
+											cterm->attr |= 6;
+											break;
+										case 129:	/* Orange/Magenta */
+											cterm->attr |= 8;
+											break;
+										case 144:	/* Black */
+											cterm->attr |= 0;
+											break;
+										case 149:	/* Brown */
+											cterm->attr |= 9;
+											break;
+										case 150:	/* Light Red/Bright Red */
+											cterm->attr |= 10;
+											break;
+										case 151:	/* Dark Gray/Cyan */
+											cterm->attr |= 11;
+											break;
+										case 152:	/* Grey/Bright Black */
+											cterm->attr |= 12;
+											break;
+										case 153:	/* Light Green/Bright Green */
+											cterm->attr |= 13;
+											break;
+										case 154:	/* Light Blue/Bright Blue */
+											cterm->attr |= 14;
+											break;
+										case 155:	/* Light Gray/White */
+											cterm->attr |= 15;
+											break;
+										case 156:	/* Purple/Bright Magenta */
+											cterm->attr |= 4;
+											break;
+										case 158:	/* Yellow/Bright Yellow */
+											cterm->attr |= 7;
+											break;
+										case 159:	/* Cyan/Bright Cyan */
+											cterm->attr |= 3;
+											break;
+									}
+								else {
+									// C128
+									switch(buf[j]) {
+										case 5:		/* White/Bright White */
+											cterm->attr |= 15;
+											break;
+										case 28:	/* Red*/
+											cterm->attr |= 4;
+											break;
+										case 30:	/* Green */
+											cterm->attr |= 2;
+											break;
+										case 31:	/* Blue */
+											cterm->attr |= 1;
+											break;
+										case 129:	/* Orange/Magenta */
+											cterm->attr |= 5;
+											break;
+										case 144:	/* Black */
+											cterm->attr |= 0;
+											break;
+										case 149:	/* Brown */
+											cterm->attr |= 6;
+											break;
+										case 150:	/* Light Red/Bright Red */
+											cterm->attr |= 12;
+											break;
+										case 151:	/* Dark Gray/Cyan */
+											cterm->attr |= 3;
+											break;
+										case 152:	/* Grey/Bright Black */
+											cterm->attr |= 8;
+											break;
+										case 153:	/* Light Green/Bright Green */
+											cterm->attr |= 10;
+											break;
+										case 154:	/* Light Blue/Bright Blue */
+											cterm->attr |= 9;
+											break;
+										case 155:	/* Light Gray/White */
+											cterm->attr |= 7;
+											break;
+										case 156:	/* Purple/Bright Magenta */
+											cterm->attr |= 13;
+											break;
+										case 158:	/* Yellow/Bright Yellow */
+											cterm->attr |= 14;
+											break;
+										case 159:	/* Cyan/Bright Cyan */
+											cterm->attr |= 11;
+											break;
+									}
 								}
 								TEXTATTR(cterm->attr);
 								attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
