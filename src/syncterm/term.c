@@ -2745,6 +2745,10 @@ BOOL doterm(struct bbslist *bbs)
 						ch[0]=19;
 						conn_send(ch,1,0);
 						break;
+					case CIO_KEY_END:
+						ch[0]=147;			/* Clear / Shift-Home */
+						conn_send(ch,1,0);
+						break;
 					case '\b':
 					case CIO_KEY_DC:		/* "Delete" key */
 						ch[0]=20;
