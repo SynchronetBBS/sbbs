@@ -3701,6 +3701,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 											cterm->attr |= 3;
 											break;
 									}
+								}
 								else {
 									// C128
 									switch(buf[j]) {
