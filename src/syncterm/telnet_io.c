@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "term.h"
+#include "cterm.h"
 
 #include "genwrap.h"
 #include "sockwrap.h"
@@ -158,11 +159,21 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE && telnet_cmd[3]==TELNET_TERM_SEND) {
 						char buf[32];
-						int len=sprintf(buf,"%c%c%c%cANSI%c%c"
+						const char *termtype = "ANSI";
+						switch(cterm->emulation) {
+							case CTERM_EMULATION_PETASCII:
+								termtype = "PETSCII";
+								break;
+							case CTERM_EMULATION_ATASCII:
+								termtype = "ATASCII";
+								break;
+						}
+						int len=sprintf(buf,"%c%c%c%c%s%c%c"
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_TYPE,TELNET_TERM_IS
+							,termtype
 							,TELNET_IAC,TELNET_SE);
-						lprintf(LOG_INFO,"TX: Terminal Type is ANSI");
+						lprintf(LOG_INFO,"TX: Terminal Type is %s", termtype);
 						putcom(buf,len);
 						request_telnet_opt(TELNET_WILL, TELNET_NEGOTIATE_WINDOW_SIZE);
 					}
