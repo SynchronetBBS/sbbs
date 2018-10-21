@@ -3761,6 +3761,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 
 							/* Movement */
 							case 13:	/* "\r\n" and disabled reverse. */
+								cterm->c64reversemode = 0;
 							case 141:
 								GOTOXY(1, WHEREY());
 								/* Fall-through */
