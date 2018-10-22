@@ -159,7 +159,7 @@ function get_default_dest()
 	if(rx && rx.localtime && (!last_send || new Date(rx.localtime) > new Date(last_send))) {
 		var sys = lib.sys_list[rx.ip_address];
 		if(sys)
-			return rx.name + '@' + sys.addr;
+			return rx.name + '@' + sys.host;
 		return rx.name + '@' + rx.ip_address;
 	}
 	if(addr_list.length)
