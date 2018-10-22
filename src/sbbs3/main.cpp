@@ -239,9 +239,11 @@ int eputs(int level, const char *str)
 		return 0;
 
 	if(level <= LOG_ERR) {
-		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, str);
+		char errmsg[1024];
+		SAFEPRINTF(errmsg, "evnt %s", str);
+		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
-			startup->errormsg(startup->cbdata,level,str);
+			startup->errormsg(startup->cbdata, level, errmsg);
 	}
 
     if(startup==NULL || startup->event_lputs==NULL || level > startup->log_level)
