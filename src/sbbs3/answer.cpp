@@ -367,7 +367,7 @@ bool sbbs_t::answer()
 			lprintf(LOG_NOTICE,"terminal auto-detection failed, response: '%s'", tmp);
 		}
 		if(terminal[0])
-			lprintf(LOG_DEBUG, "auto-detected terminal type: %ux%u %s", cols, rows, terminal);
+			lprintf(LOG_DEBUG, "auto-detected terminal type: %lux%lu %s", cols, rows, terminal);
 		else
 			SAFECOPY(terminal,"DUMB");
 	}
@@ -434,7 +434,7 @@ bool sbbs_t::answer()
 		pthread_mutex_unlock(&input_thread_mutex);
 		input_thread_mutex_locked = false;
 	}
-	lprintf(LOG_INFO, "terminal type: %ux%u %s", cols, rows, terminal);
+	lprintf(LOG_INFO, "terminal type: %lux%lu %s", cols, rows, terminal);
 	useron.misc&=~TERM_FLAGS;
 	useron.misc|=autoterm;
 	SAFECOPY(client_ipaddr, cid);	/* Over-ride IP address with Caller-ID info */
