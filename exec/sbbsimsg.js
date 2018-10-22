@@ -56,7 +56,7 @@ for(i=0; i<argc; i++) {
 			timeout = parseInt(argv[i+1]);
 		function poll_callback(loop)
 		{
-			printf("%c\r", "/-\\|"[loop%4]);
+			printf("%c\1[", "/-\\|"[loop%4]);
 		}
 		lib.poll_systems(sent, 0.25, timeout, poll_callback);
 		list_users();
@@ -108,7 +108,7 @@ function send_msg(dest, msg)
 {
 	var result = lib.send_msg(dest, msg, user[options.from_user_prop]);
 	if(result == true)
-		print("\1nMessage sent to: \1h" + dest);
+		print("\1nMessage sent to: \1h" + dest + "\1n successfully");
 	else
 		alert(result);
 }
@@ -209,7 +209,7 @@ while(bbs.online) {
 			}
 		}
 		bbs.nodesync(true);
-		if(console.current_column == 0) {
+		if(console.current_column == 0 || console.line_counter != 0) {
 			continue prompt;
 		}
 		key=console.inkey(K_UPPER, 500);
@@ -241,7 +241,7 @@ while(bbs.online) {
 			}
 			done=false;
 			while(bbs.online && !done && !console.aborted) {
-				printf("\r\1n\1h\x11\1n-[\1hQ\1nuit]-\1h\x10 \1y%-25s \1c%s\1>"
+				printf("\1[\1n\1h\x11\1n-[\1hQ\1nuit/\1hA\1nll]-\1h\x10 \1y%-25s \1c%s\1>"
 					,imsg_user[last_user].name,imsg_user[last_user].bbs);
 				switch(console.getkey(K_UPPER|K_NOECHO)) {
 					case '+':
@@ -278,6 +278,19 @@ while(bbs.online) {
 						if((msg=getmsg())=='')
 							break;
 						send_msg(dest, msg);
+						console.crlf();
+						break;
+					case 'A':
+						done=true;
+						printf("\r\1n\1cSending message to \1h%s (%u users)\1>\r\n", "All", imsg_user.length);
+						if((msg=getmsg())=='')
+							break;
+						for(var u in imsg_user) {
+							dest=format("%s@%s"
+								,imsg_user[u].name,imsg_user[u].host);
+							printf("\r\1n\1cSending message: \1h%s\1>\r\n", dest);
+							send_msg(dest, msg);
+						}
 						console.crlf();
 						break;
 				}
