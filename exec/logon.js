@@ -211,7 +211,7 @@ else {
 		printf("\1n\1g\1hYou are the first caller of the day!\r\n");
 	else {
 		printf("\1n\1g\1hLast few callers:\1n\r\n");
-		console.printtail(logonlst,4,P_NOATCODES);      // args: filename, lines, mode
+		console.printtail(logonlst,4,P_NOATCODES|P_TRUNCATE);      // args: filename, lines, mode
 	}
 	console.crlf();
 
@@ -219,8 +219,8 @@ else {
 	auto_msg=system.data_dir + "msgs/auto.msg"
 	if(file_size(auto_msg)>0) {
 		console.printfile(auto_msg,P_NOATCODES);
-		console.crlf();
 	}
+	console.crlf();
 
 	if(console.term_supports(USER_ANSI)) {
 		Avatar.draw(user.number, /* name: */null, /* netaddr: */null, /* above: */false, /* right: */true);
