@@ -1319,14 +1319,14 @@ function browse(list)
 	}
 }
 
-function print_additional_services(bbs, addr, start)
+function print_additional_services(bbs, addr, prot, start)
 {
 	for(var i=start; i < bbs.service.length; i++) {
         if(JSON.stringify(bbs.service[i]).toLowerCase() == JSON.stringify(bbs.service[i-1]).toLowerCase())
             continue;
 		if(!bbs.service[i] || bbs.service[i].address != addr)
 			continue;
-		printf(", %s", bbs.service[i].protocol);
+		printf(", %s", bbs.service[i].protocol == prot ? bbs.service[i].description : bbs.service[i].protocol);
 		if(bbs.service[i].port && bbs.service[i].port != standard_service_port[bbs.service[i].protocol.toLowerCase()])
 			printf(":%u", bbs.service[i].port);
 	}
@@ -1491,7 +1491,7 @@ function view(list, current)
 				printf(" %u+bps", bbs.service[i].min_rate);
 			else if(bbs.service[i].max_rate)
 				printf(" %ubps", bbs.service[i].max_rate);
-			print_additional_services(bbs, bbs.service[i].address, i+1);
+			print_additional_services(bbs, bbs.service[i].address, bbs.service[i].protocol, i+1);
 			listed_hosts.push(bbs.service[i].address);
 			console.crlf();
 		}
@@ -1759,10 +1759,12 @@ function edit_array(title, arr, props, max_lens, prop_descs, max_array_len)
 			var obj = {};
 			for(var i in props) {
 				printf("\r\n%s\r\n", prop_descs[i]);
-				do {
 					obj[props[i]] = getstr(props[i].capitalize(), max_lens[i]);
-				} while(i==0 && !obj[props[i]]);
+				if(!obj[props[i]])
+					break;
 			}
+			if(!obj[props[0]])
+				continue;
 			if(which == 'A')
 				arr.push(obj);
 			else
