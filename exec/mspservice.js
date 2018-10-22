@@ -116,7 +116,7 @@ usernum=system.matchuser(recipient,true);
 recip_node=read_str();
 if(recip_node.substr(0,6)=="Node: ")
 	to_node=parseInt(recip_node.substr(6));
-message=read_str(true);
+message = '  ' + read_str(true).replace(/\n/g, '\n  ').trimRight() + '\r\n';
 if(version==2) {
 	sender=read_str();
 	sender_term=read_str();
