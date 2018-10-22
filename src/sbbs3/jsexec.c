@@ -1015,7 +1015,7 @@ long js_exec(const char *fname, char** args)
 		len=strlen(line);
 		if((js_buf=realloc(js_buf,js_buflen+len))==NULL) {
 			lprintf(LOG_ERR,"!Error allocating %lu bytes of memory"
-				,js_buflen+len);
+				,(ulong)(js_buflen+len));
 			if(fp!=stdin)
 				fclose(fp);
 			return(-1);
