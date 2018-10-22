@@ -88,6 +88,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 		artype=(**ptrptr);
 		switch(artype) {
 			case AR_ANSI:				/* No arguments */
+			case AR_PETSCII:
 			case AR_RIP:
 			case AR_WIP:
 			case AR_LOCAL:
@@ -149,16 +150,37 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				if(!(user->misc&ANSI))
 					result=_not;
 				else result=!_not;
+				if(!result) {
+					noaccess_str=text[NoAccessTerminal];
+					noaccess_val=ANSI; 
+				}
+				break;
+			case AR_PETSCII:
+				if(!(user->misc&PETSCII))
+					result=_not;
+				else result=!_not;
+				if(!result) {
+					noaccess_str=text[NoAccessTerminal];
+					noaccess_val=PETSCII; 
+				}
 				break;
 			case AR_RIP:
 				if(!(user->misc&RIP))
 					result=_not;
 				else result=!_not;
+				if(!result) {
+					noaccess_str=text[NoAccessTerminal];
+					noaccess_val=RIP; 
+				}
 				break;
 			case AR_WIP:
 				if(!(user->misc&WIP))
 					result=_not;
 				else result=!_not;
+				if(!result) {
+					noaccess_str=text[NoAccessTerminal];
+					noaccess_val=WIP; 
+				}
 				break;
 			case AR_OS2:
 				#ifndef __OS2__
@@ -643,6 +665,38 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 					result=!_not;
 				while(*(*ptrptr))
 					(*ptrptr)++;
+				break;
+			case AR_TERM:
+				if(!findstr_in_string(terminal, (char*)*ptrptr))
+					result=_not;
+				else
+					result=!_not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				if(!result) {
+					noaccess_str=text[NoAccessTerminal];
+					noaccess_val=0; 
+				}
+				break;
+			case AR_COLS:
+				if((equal && cols != n) || (!equal && cols < (long)n))
+					result=_not;
+				else
+					result=!_not;
+				if(!result) {
+					noaccess_str=text[NoAccessTerminal];
+					noaccess_val=n; 
+				}
+				break;
+			case AR_ROWS:
+				if((equal && rows != n) || (!equal && rows < (long)n))
+					result=_not;
+				else
+					result=!_not;
+				if(!result) {
+					noaccess_str=text[NoAccessTerminal];
+					noaccess_val=n; 
+				}
 				break;
 		}
 	}

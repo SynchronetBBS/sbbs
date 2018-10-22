@@ -301,6 +301,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "telnet.h"
 #include "nopen.h"
 #include "text.h"
+#include "petdefs.h"
 
 /* Synchronet Node Instance class definition */
 #ifdef __cplusplus
@@ -370,9 +371,14 @@ public:
     uchar	telnet_cmd[64];
     uint	telnet_cmdlen;
 	ulong	telnet_mode;
+	/* 	input_thread() writes to these variables: */
 	uchar	telnet_last_rxch;
 	char	telnet_location[128];
-	char	terminal[TELNET_TERM_MAXLEN+1];
+	char	telnet_terminal[TELNET_TERM_MAXLEN+1];
+	long 	telnet_rows;	
+	long	telnet_cols;
+	long	telnet_speed;
+
 	xpevent_t	telnet_ack_event;
 
 	time_t	event_time;				// Time of next exclusive event
@@ -460,8 +466,10 @@ public:
 	long 	rows;			/* Current number of Rows for User */
 	long	cols;			/* Current number of Columns for User */
 	long	column;			/* Current column counter (for line counter) */
+	long	tabstop;		/* Current symmetric-tabstop (size) */
 	long	lastlinelen;	/* The previously displayed line length */
 	long 	autoterm;		/* Auto-detected terminal type */
+	char	terminal[TELNET_TERM_MAXLEN+1];	// <- answer() writes to this
 	long	cterm_version;	/* (MajorVer*1000) + MinorVer */
 	link_list_t savedlines;
 	char 	lbuf[LINE_BUFSIZE+1];/* Temp storage for each line output */
@@ -705,6 +713,9 @@ public:
 	void	cursor_down(int count=1);
 	void	cursor_left(int count=1);
 	void	cursor_right(int count=1);
+	void	carriage_return(void);
+	void	line_feed(void);
+	void	newline(void);
 	long	term_supports(long cmp_flags=0);
 	int		backfill(const char* str, float pct, int full_attr, int empty_attr);
 	void	progress(const char* str, int count, int total, int interval=1);

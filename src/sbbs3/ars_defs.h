@@ -124,6 +124,10 @@ enum {                              /* Access requirement binaries */
 	,AR_DLM
 	,AR_HOST	/* Remote/client hostname (wildcards allowed) */
 	,AR_IP		/* Remote/client IP address (wildcards allowed) */
+	,AR_TERM
+	,AR_COLS
+	,AR_ROWS
+	,AR_PETSCII
     };
 
 #endif		/* Don't add anything after this line */

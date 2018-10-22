@@ -66,17 +66,34 @@ char sbbs_t::putmsg(const char *buf, long mode)
 		sys_status|=SS_PAUSEOFF;
 	if(mode&P_HTML)
 		putcom("\x02\x02");
+	if(!(mode&P_NOATCODES) && memcmp(str, "@WORDWRAP@", 10) == 0) {
+		mode |= P_WORDWRAP;
+		l += 10;
+	}
 	if(mode&P_WORDWRAP) {
 		char *wrapped;
-		if((wrapped=::wordwrap((char*)buf, cols-1, 79, /* handle_quotes: */TRUE)) == NULL)
+		if((wrapped=::wordwrap((char*)str+l, cols-1, 79, /* handle_quotes: */TRUE)) == NULL)
 			errormsg(WHERE,ERR_ALLOC,"wordwrap buffer",0);
 		else {
 			truncsp_lines(wrapped);
 			str=wrapped;
+			l=0;
 		}
 	}
 
 	while(str[l] && (mode&P_NOABORT || !msgabort()) && online) {
+		if((mode&P_TRUNCATE) && column >= (cols - 1)) {
+			switch(str[l]) {
+				case '\r':
+				case '\n':
+				case FF:
+				case CTRL_A:
+					break;
+				default:
+					l++;
+					continue;
+			}
+		}
 		if(str[l]==CTRL_A && str[l+1]!=0) {
 			if(str[l+1]=='"' && !(sys_status&SS_NEST_PF)) {  /* Quote a file */
 				l+=2;
@@ -251,7 +268,34 @@ char sbbs_t::putmsg(const char *buf, long mode)
 			if(str[l]=='@' && !(mode&P_NOATCODES)) {
 				if(memcmp(str+l, "@EOF@", 5) == 0)
 					break;
-				/* In HTML mode, defer PAUSE and MORE to end and supress message */
+				if(memcmp(str+l, "@CLEAR@", 7) == 0) {
+					CLS;
+					l += 7;
+					while(str[l] != 0 && (str[l] == '\r' || str[l] == '\n'))
+						l++;
+					continue;
+				}
+				if(memcmp(str+l, "@CENTER@", 8) == 0) {
+					l += 8;
+					i=0;
+					while(i<(int)sizeof(tmp2)-1 && str[l] != 0 && str[l] != '\r')
+						tmp2[i++] = str[l++];
+					tmp2[i] = 0;
+					truncsp(tmp2);
+					center(tmp2);
+					if(str[l] == '\r')
+						l++;
+					if(str[l] == '\n')
+						l++;
+					continue;
+				}
+				if(memcmp(str+l, "@SYSONLY@", 9) == 0) {
+					if(!SYSOP)
+						console^=CON_ECHO_OFF;
+					l += 9;
+					continue;
+				}
+				/* In HTML mode, defer PAUSE and MORE to end and suppress message */
 				if(mode&P_HTML) {
 					if(!memcmp(str+l,"@MORE@",6)) {
 						defered_pause=TRUE;

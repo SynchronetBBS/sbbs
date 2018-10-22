@@ -205,6 +205,17 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(str);
 	}
 
+	if(!strcmp(sp,"COLS")) {
+		safe_snprintf(str,maxlen,"%lu",cols);
+		return(str);
+	}
+	if(!strcmp(sp,"ROWS")) {
+		safe_snprintf(str,maxlen,"%lu",rows);
+		return(str);
+	}
+	if(!strcmp(sp,"TERM"))
+		return(terminal);
+
 	if(!strcmp(sp,"CONN"))
 		return(connection);
 
@@ -299,7 +310,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		|| !strcmp(sp,"LASTCALLERSYSTEM"))
 		return(lastuseron);
 
-	if(!strcmp(sp,"CLS")) {
+	if(!strcmp(sp,"CLS") || !strcmp(sp,"CLEAR")) {
 		CLS;
 		return(nulstr);
 	}

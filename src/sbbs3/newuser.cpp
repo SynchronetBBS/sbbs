@@ -169,7 +169,7 @@ BOOL sbbs_t::newuser()
 		}
 		else
 			useron.rows=24;
-		if(text[ExAsciiTerminalQ][0] && !yesno(text[ExAsciiTerminalQ]))
+		if(!(useron.misc&PETSCII) && text[ExAsciiTerminalQ][0] && !yesno(text[ExAsciiTerminalQ]))
 			useron.misc|=NO_EXASCII;
 		else
 			useron.misc&=~NO_EXASCII;

@@ -1539,11 +1539,12 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE
 						&& sbbs->telnet_cmd[3]==TELNET_TERM_IS) {
-						safe_snprintf(sbbs->terminal,sizeof(sbbs->terminal),"%.*s",(int)sbbs->telnet_cmdlen-6,sbbs->telnet_cmd+4);
+						safe_snprintf(sbbs->telnet_terminal,sizeof(sbbs->telnet_terminal),"%.*s"
+							,(int)sbbs->telnet_cmdlen-6,sbbs->telnet_cmd+4);
 						lprintf(LOG_DEBUG,"Node %d %s telnet terminal type: %s"
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
-							,sbbs->terminal);
+							,sbbs->telnet_terminal);
 
 					} else if(option==TELNET_TERM_SPEED
 						&& sbbs->telnet_cmd[3]==TELNET_TERM_IS) {
@@ -1553,8 +1554,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 							,speed);
-						sbbs->cur_rate=atoi(speed);
-						sbbs->cur_cps=sbbs->cur_rate/10;
+						sbbs->telnet_speed=atoi(speed);
 #ifdef SBBS_TELNET_ENVIRON_SUPPORT
 					} else if(option==TELNET_NEW_ENVIRON
 						&& sbbs->telnet_cmd[3]==TELNET_ENVIRON_IS) {
@@ -1610,11 +1610,8 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 							,cols
 							,rows);
-						if(rows && !sbbs->useron.rows)	/* auto-detect rows */
-							sbbs->rows=rows;
-						if(cols)
-							sbbs->cols=cols;
-
+						sbbs->telnet_cols = cols;
+						sbbs->telnet_rows = rows;
 					} else if(startup->options&BBS_OPT_DEBUG_TELNET)
             			lprintf(LOG_DEBUG,"Node %d %s unsupported telnet sub-negotiation cmd: %s, 0x%02X"
 	                		,sbbs->cfg.node_num
@@ -3332,8 +3329,12 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	client_ident[0]=0;
 	client_ipaddr[0]=0;
 
-	telnet_location[0]=0;
 	terminal[0]=0;
+	telnet_location[0]=0;
+	telnet_terminal[0]=0;
+	telnet_cols=0;
+	telnet_rows=0;
+	telnet_speed=0;
 	rlogin_name[0]=0;
 	rlogin_pass[0]=0;
 	rlogin_term[0]=0;
@@ -3381,6 +3382,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	listInit(&savedlines, /* flags: */0);
 	sys_status=lncntr=tos=criterrs=0L;
 	column=0;
+	tabstop=8;
 	lastlinelen=0;
 	curatr=LIGHTGRAY;
 	attr_sp=0;	/* attribute stack pointer */
@@ -4255,8 +4257,8 @@ void sbbs_t::reset_logon_vars(void)
     question[0]=0;
     menu_dir[0]=0;
     menu_file[0]=0;
-    rows=24;
-	cols=80;
+    rows = TERM_ROWS_DEFAULT;
+	cols = TERM_COLS_DEFAULT;
     lncntr=0;
     autoterm=0;
 	cterm_version = 0;
@@ -4480,7 +4482,7 @@ void node_thread(void* arg)
 				sbbs->main_csi.ip=sbbs->main_csi.cs;
 				sbbs->menu_dir[0]=0;
 				sbbs->menu_file[0]=0;
-				}
+			}
 			if(sbbs->exec(&sbbs->main_csi))
 				break;
 		}
@@ -5603,10 +5605,20 @@ NO_SSH:
 		if(rlogin)
 			sbbs->outcom(0); /* acknowledge RLogin per RFC 1282 */
 
-		sbbs->putcom(crlf);
-		sbbs->putcom(VERSION_NOTICE);
-		sbbs->putcom(crlf);
+		sbbs->autoterm=0;
+		sbbs->cols = TERM_COLS_DEFAULT;
+		SOCKADDR_IN local_addr;
+		memset(&local_addr, 0, sizeof(local_addr));
+		socklen_t addr_len=sizeof(local_addr);
+		if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) == 0 
+			&& (ntohs(local_addr.sin_port) == startup->pet40_port 
+				|| ntohs(local_addr.sin_port) == startup->pet80_port)) {
+			sbbs->autoterm = PETSCII;
+			sbbs->cols = ntohs(local_addr.sin_port) == startup->pet40_port ? 40 : 80;
+			sbbs->outcom(PETSCII_UPPERLOWER);
+		}
 
+		sbbs->bprintf("\r\n%s\r\n", VERSION_NOTICE);
 		sbbs->bprintf("%s connection from: %s\r\n", client.protocol, host_ip);
 
 		SAFECOPY(host_name, "<no name>");
@@ -5854,6 +5866,8 @@ NO_PASSTHRU:
 	    new_node->input_thread_running = true;
 		new_node->input_thread=(HANDLE)_beginthread(input_thread,0, new_node);
 	    new_node->output_thread_running = true;
+		new_node->autoterm = sbbs->autoterm;
+		new_node->cols = sbbs->cols;
 		_beginthread(output_thread, 0, new_node);
 		_beginthread(node_thread, 0, new_node);
 		served++;

@@ -79,14 +79,14 @@ bool sbbs_t::logon()
 	if(useron.rest&FLAG('G')) {     /* Guest account */
 		useron.misc=(cfg.new_misc&(~ASK_NSCAN));
 		useron.rows=0;
-		useron.misc&=~(ANSI|RIP|WIP|NO_EXASCII|COLOR|HTML);
+		useron.misc&=~(ANSI|RIP|WIP|NO_EXASCII|COLOR|HTML|PETSCII);
 		useron.misc|=autoterm;
-		if(!(useron.misc&ANSI) && text[AnsiTerminalQ][0] && yesno(text[AnsiTerminalQ]))
+		if(!(useron.misc&(ANSI|PETSCII)) && text[AnsiTerminalQ][0] && yesno(text[AnsiTerminalQ]))
 			useron.misc|=ANSI;
 		if(useron.misc&(RIP|WIP|HTML)
-			|| (useron.misc&ANSI && text[ColorTerminalQ][0] && yesno(text[ColorTerminalQ])))
+			|| (useron.misc&(ANSI|PETSCII) && text[ColorTerminalQ][0] && yesno(text[ColorTerminalQ])))
 			useron.misc|=COLOR;
-		if(text[ExAsciiTerminalQ][0] && !yesno(text[ExAsciiTerminalQ]))
+		if(!(useron.misc&(NO_EXASCII|PETSCII)) && text[ExAsciiTerminalQ][0] && !yesno(text[ExAsciiTerminalQ]))
 			useron.misc|=NO_EXASCII;
 		for(i=0;i<cfg.total_xedits;i++)
 			if(!stricmp(cfg.xedit[i]->code,cfg.new_xedit)
@@ -175,8 +175,8 @@ bool sbbs_t::logon()
 
 
 	if(useron.misc&AUTOTERM) {
-		useron.misc&=~(ANSI|RIP|WIP|HTML);
-		useron.misc|=autoterm; 
+		useron.misc&=~(ANSI|RIP|WIP|HTML|PETSCII);
+		useron.misc|=autoterm;
 	}
 
 	if(!chk_ar(cfg.shell[useron.shell]->ar,&useron,&client)) {

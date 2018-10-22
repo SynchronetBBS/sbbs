@@ -654,8 +654,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define HTML		(1L<<23)		/* Using Zuul/HTML terminal				*/
 #define NOPAUSESPIN	(1L<<24)		/* No spinning cursor at pause prompt	*/
 #define CTERM_FONTS	(1L<<25)		/* Loadable fonts are supported			*/
+#define PETSCII		(1L<<26)		/* Commodore PET/CBM terminal			*/
 
-#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|CTERM_FONTS)
+#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|CTERM_FONTS|PETSCII)
 
 									/* Special terminal key mappings */
 #define TERM_KEY_HOME	CTRL_B
@@ -669,6 +670,13 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define TERM_KEY_ABORT	CTRL_C
 #define TERM_KEY_PAGEUP	CTRL_P
 #define TERM_KEY_PAGEDN	CTRL_N
+
+#define TERM_COLS_MIN		40
+#define TERM_COLS_MAX		255
+#define TERM_COLS_DEFAULT	80
+#define TERM_ROWS_MIN		10
+#define TERM_ROWS_MAX		255
+#define TERM_ROWS_DEFAULT	24
 
 							/* Online status (online)						*/
 #define ON_LOCAL	1	 	/* Online locally								*/
@@ -735,7 +743,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NOABORT  	(1<<0)		/* Disallows abortion of a message          */
-#define P_SAVEATR   (1<<1)		/* Save the new current attributres after	*/
+#define P_SAVEATR   (1<<1)		/* Save the new current attributes after	*/
 								/* msg has printed. */
 #define P_NOATCODES (1<<2)		/* Don't allow @ codes                      */
 #define P_OPENCLOSE (1<<3)		/* Open and close the file					*/
@@ -744,6 +752,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define P_NOCRLF	(1<<6)		/* Don't prepend a CRLF	in printfile()		*/
 #define P_WORDWRAP	(1<<7)		/* Word-wrap long lines for user's terminal	*/
 #define P_CPM_EOF	(1<<8)		/* Ignore Ctrl-Z chars (CPM End-of-File)	*/
+#define	P_TRUNCATE	(1<<9)		/* Truncate (don't display) long lines		*/
 
 								/* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1<<0)		/* List files by upload time                */

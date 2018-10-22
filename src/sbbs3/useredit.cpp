@@ -810,7 +810,13 @@ void sbbs_t::maindflts(user_t* user)
 		if(user->rows)
 			rows=user->rows;
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
-		safe_snprintf(str,sizeof(str),"%s%s%s%s%s"
+		if(user->misc&PETSCII)
+			safe_snprintf(str,sizeof(str),"%sPETSCII %s%u cols"
+							,user->misc&AUTOTERM ? "Auto Detect ":nulstr
+							,user->misc&COLOR ? "(Color) ":"(Mono) "
+							,cols);
+		else
+			safe_snprintf(str,sizeof(str),"%s%s%s%s%s"
 							,user->misc&AUTOTERM ? "Auto Detect ":nulstr
 							,user->misc&ANSI ? "ANSI ":"TTY "
 							,user->misc&COLOR ? "(Color) ":"(Mono) "
@@ -905,13 +911,13 @@ void sbbs_t::maindflts(user_t* user)
 					else
 						user->misc&=~(ANSI|COLOR); 
 				}
-				if(user->misc&ANSI) {
+				if(user->misc&(ANSI|PETSCII)) {
 					if(yesno(text[ColorTerminalQ]))
 						user->misc|=COLOR;
 					else
 						user->misc&=~COLOR; 
 				}
-				if(!yesno(text[ExAsciiTerminalQ]))
+				if(!(user->misc&PETSCII) && !yesno(text[ExAsciiTerminalQ]))
 					user->misc|=NO_EXASCII;
 				else
 					user->misc&=~NO_EXASCII;

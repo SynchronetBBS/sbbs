@@ -35,10 +35,6 @@
 
 #include "sbbs.h"
 
-#define LAST_STAT_LINE 16
-
-#define nosound()	
-
 int kbincom(sbbs_t* sbbs, unsigned long timeout)
 {
 	int	ch;
@@ -64,13 +60,8 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 	ch=kbincom(this,timeout); 
 
 	if(ch==0) {
-		// moved here from getkey() on AUG-29-2001
 		if(sys_status&SS_SYSPAGE) 
 			sbbs_beep(sbbs_random(800),100);
-#if 0
-		if(!(mode&K_GETSTR) || mode&K_LOWPRIO || cfg.node_misc&NM_LOWPRIO)
-			YIELD();
-#endif
 		return(0);
 	}
 
@@ -79,6 +70,31 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 		ch&=0x7f; 
 
 	this->timeout=time(NULL);
+
+	if(term_supports(PETSCII)) {
+		switch(ch) {
+			case PETSCII_HOME:
+				return TERM_KEY_HOME;
+			case PETSCII_CLEAR:
+				return TERM_KEY_END;
+			case PETSCII_INSERT:
+				return TERM_KEY_INSERT;
+			case PETSCII_DELETE:
+				return TERM_KEY_DELETE;
+			case PETSCII_LEFT:
+				return TERM_KEY_LEFT;
+			case PETSCII_RIGHT:
+				return TERM_KEY_RIGHT;
+			case PETSCII_UP:
+				return TERM_KEY_UP;
+			case PETSCII_DOWN:
+				return TERM_KEY_DOWN;
+		}
+		if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
+			ch = 0x60 | (ch&0x1f);
+		if(isalpha((unsigned char)ch))
+			ch ^= 0x20;	/* Swap upper/lower case */
+	}
 
 	/* Is this a control key */
 	if(ch<' ') {
@@ -343,8 +359,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 							lprintf(LOG_DEBUG,"Node %d received ANSI cursor position report: %ux%u"
 								,cfg.node_num, x, y);
 							/* Sanity check the coordinates in the response: */
-							if(x>=40 && x<=255) cols=x; 
-							if(y>=10 && y<=255) rows=y;
+							if(x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x;
+							if(y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
 						}
 					}
 					return(0); 

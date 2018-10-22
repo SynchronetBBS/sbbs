@@ -61,7 +61,10 @@ void sbbs_t::userlist(long mode)
 		if(sort && (online==ON_LOCAL || !rioctl(TXBC)))
 			bprintf("%-4d\b\b\b\b",i);
 		user.number=i;
-		fgetuserdat(&cfg, &user, userfile);
+		if(fgetuserdat(&cfg, &user, userfile) != 0)
+			continue;
+		if(user.alias[0] <= ' ')
+			continue;
 		if(user.misc&(DELETED|INACTIVE))
 			continue;
 		users++;
@@ -1043,7 +1046,7 @@ void sbbs_t::logonlist(void)
 		bputs(text[NoOneHasLoggedOnToday]); 
 	} else {
 		bputs(text[CallersToday]);
-		printfile(str,P_NOATCODES|P_OPENCLOSE);
+		printfile(str,P_NOATCODES|P_OPENCLOSE|P_TRUNCATE);
 		CRLF; 
 	}
 }

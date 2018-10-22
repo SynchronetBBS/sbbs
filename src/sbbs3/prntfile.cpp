@@ -200,14 +200,18 @@ void sbbs_t::menu(const char *code)
 			backslash(menu_dir);
 			SAFEPRINTF3(str, "%smenu/%s%s", cfg.text_dir, menu_dir, code);
 		}
-		sprintf(path,"%s.%s",str,term_supports(WIP) ? "wip": term_supports(RIP) ? "rip" : "html");
-		if(!(term_supports()&(RIP|WIP|HTML)) || !fexistcase(path)) {
+		long term = term_supports();
+		sprintf(path,"%s.%s",str, (term&WIP) ? "wip": (term&RIP) ? "rip" : "html");
+		if(!(term&(RIP|WIP|HTML)) || !fexistcase(path)) {
 			SAFEPRINTF(path, "%s.mon", str);
-			if((term_supports()&(COLOR|ANSI))!=ANSI || !fexistcase(path)) {
+			if((term&(COLOR|ANSI))!=ANSI || !fexistcase(path)) {
 				SAFEPRINTF(path, "%s.ans", str);
-				if(!term_supports(ANSI) || !fexistcase(path))
-					SAFEPRINTF(path, "%s.asc", str); 
-			} 
+				if(!(term&ANSI) || !fexistcase(path)) {
+					SAFEPRINTF2(path, "%s.%ucol.asc", str, cols);
+					if(!fexistcase(path))
+						SAFEPRINTF(path, "%s.asc", str); 
+				}
+			}
 		} 
 	}
 
@@ -225,6 +229,9 @@ bool sbbs_t::menu_exists(const char *code)
 		return fexistcase(menu_file) ? true : false;
 
 	backslash(menu_dir);
+	SAFEPRINTF4(path, "%smenu/%s%s.%ucol.asc", cfg.text_dir, menu_dir, code, cols);
+	if(fexistcase(path))
+		return true;
 	SAFEPRINTF3(path, "%smenu/%s%s.asc", cfg.text_dir, menu_dir, code);
 	return fexistcase(path) ? true : false;
 }

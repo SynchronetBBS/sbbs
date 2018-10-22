@@ -53,13 +53,15 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 	uchar	atr;
 	int		hidx = -1;
 
+	long term = term_supports();
 	console&=~(CON_UPARROW|CON_DOWNARROW|CON_LEFTARROW|CON_BACKSPACE|CON_DELETELINE);
 	if(!(mode&K_WRAP))
 		console&=~CON_INSERT;
 	sys_status&=~SS_ABORT;
-	if(mode&K_LINE && term_supports(ANSI) && !(mode&K_NOECHO)) {
-		if(column + (long)maxlen >= cols)	/* Don't cause the terminal to line-wrap, just shorten the max input string length instead */
-			maxlen = cols-column-1;
+	if(cols >= TERM_COLS_MIN
+		&& column + (long)maxlen >= cols)	/* Don't allow the terminal to auto line-wrap */
+		maxlen = cols-column-1;
+	if(mode&K_LINE && (term&(ANSI|PETSCII)) && !(mode&K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
 		for(i=0;i<maxlen;i++)
 			outchar(' ');
@@ -117,7 +119,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 		}
 	}
 
-	if(console&CON_INSERT && term_supports(ANSI) && !(mode&K_NOECHO))
+	if(console&CON_INSERT && !(mode&K_NOECHO))
 		insert_indicator();
 
 	while(!(sys_status&SS_ABORT) && online && input_thread_running) {
@@ -196,13 +198,13 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 				}
 				break;
 			case TERM_KEY_END: /* Ctrl-E End of line */
-				if(term_supports(ANSI) && i<l) {
+				if(term&(ANSI|PETSCII) && i<l) {
 					cursor_right(l-i);  /* move cursor to eol */
 					i=l; 
 				}
 				break;
 			case TERM_KEY_RIGHT: /* Ctrl-F move cursor forward */
-				if(i<l && term_supports(ANSI)) {
+				if(i<l && term&(ANSI|PETSCII)) {
 					cursor_right();   /* move cursor right one */
 					i++; 
 				}
@@ -349,7 +351,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 				return(l);
 
 			case CTRL_N:    /* Ctrl-N Next word */
-				if(i<l && term_supports(ANSI)) {
+				if(i<l && term&(ANSI|PETSCII)) {
 					x=i;
 					while(str1[i]!=' ' && i<l)
 						i++;
@@ -617,9 +619,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 		l=0;
 	if(mode&K_LINE && !(mode&K_NOECHO)) attr(LIGHTGRAY);
 	if(!(mode&(K_NOCRLF|K_NOECHO))) {
-		outchar(CR);
-		if(!(mode&K_MSG && sys_status&SS_ABORT))
-			outchar(LF);
+		if(!(mode&K_MSG && sys_status&SS_ABORT)) {
+			CRLF;
+		} else
+			carriage_return();
 		lncntr=0; 
 	}
 	return(l);

@@ -84,6 +84,80 @@ int sbbs_t::bputs(const char *str)
 	return(l);
 }
 
+/* Perform PETSCII terminal output translation */
+static unsigned char petscii(unsigned char ch)
+{
+	if(isalpha(ch))
+		return ch ^ 0x20;	/* swap upper/lower case */
+	switch(ch) {
+		case '\1':		return '@';
+		case '|':		return PETSCII_VERTLINE;
+		case '\\':		return PETSCII_BACKSLASH;
+		case '`':		return PETSCII_BACKTICK;
+		case '~':		return PETSCII_TILDE;
+		case '_':		return PETSCII_UNDERSCORE;
+		case '{':		return '(';
+		case '}':		return ')';
+		case '\b':		return PETSCII_LEFT;
+		case 156:		return PETSCII_BRITPOUND;
+		case 251:		return PETSCII_CHECKMARK;
+		case 176:		return PETSCII_LIGHTHASH;
+		case 177:		return PETSCII_MEDIUMHASH;
+		case 178:		return PETSCII_HEAVYHASH;
+		case 219:		return PETSCII_SOLID;
+		case 220:		return PETSCII_BOTTOMHALF;
+		case 221:		return PETSCII_LEFTHALF;
+		case 222:		return PETSCII_RIGHTHALF;
+		case 223:		return PETSCII_TOPHALF;
+		case 254:		return PETSCII_UPRLFTBOX;
+		/* Line drawing chars */
+		case 186:
+		case 179:		return PETSCII_VERTLINE;
+		case 205:
+		case 196:		return PETSCII_HORZLINE;
+		case 206:
+		case 215:
+		case 216:
+		case 197:		return PETSCII_CROSS;
+		case 188:
+		case 189:
+		case 190:
+		case 217:		return '\xBD';
+		case 201:
+		case 213:
+		case 214:
+		case 218:		return '\xB0';
+		case 183:
+		case 184:
+		case 187:
+		case 191:		return '\xAE';
+		case 200:
+		case 211:
+		case 212:
+		case 192:		return '\xAD';
+		case 198:
+		case 199:
+		case 204:
+		case 195:		return '\xAB';
+		case 180:
+		case 181:
+		case 182:
+		case 185:		return '\xB3';
+		case 203:
+		case 209:
+		case 210:
+		case 194:		return '\xB2';
+		case 202:
+		case 207:
+		case 208:
+		case 193:		return '\xB1';
+
+	}
+	if(ch&0x80)
+		return exascii_to_ascii_char(ch);
+	return ch;
+}
+
 /****************************************************************************/
 /* Raw put string (remotely)												*/
 /* Performs Telnet IAC escaping												*/
@@ -98,13 +172,17 @@ int sbbs_t::rputs(const char *str, size_t len)
 		return 0;
 	if(len==0)
 		len=strlen(str);
+	long term = term_supports();
 	for(l=0;l<len && online;l++) {
 		if(str[l]==(char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
 			outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
-		if(outcom(str[l])!=0)
+		char ch = str[l];
+		if(term&PETSCII)
+			ch = petscii(ch);
+		if(outcom(ch)!=0)
 			break;
 		if(lbuflen<LINE_BUFSIZE)
-			lbuf[lbuflen++]=str[l];
+			lbuf[lbuflen++] = ch;
 	}
 	return(l);
 }
@@ -142,14 +220,18 @@ int sbbs_t::rprintf(const char *fmt, ...)
 }
 
 /****************************************************************************/
-/* Outputs destructive backspace locally and remotely (if applicable),		*/
+/* Outputs destructive backspace 											*/
 /****************************************************************************/
 void sbbs_t::backspace(void)
 {
 	if(!(console&CON_ECHO_OFF)) {
-		outcom('\b');
-		outcom(' ');
-		outcom('\b');
+		if(term_supports(PETSCII))
+			outcom(PETSCII_DELETE);
+		else {
+			outcom('\b');
+			outcom(' ');
+			outcom('\b');
+		}
 		if(column)
 			column--;
 	}
@@ -171,6 +253,7 @@ long sbbs_t::term_supports(long cmp_flags)
 /* Outputs character														*/
 /* Performs terminal translations (e.g. EXASCII-to-ASCII, FF->ESC[2J)		*/
 /* Performs Telnet IAC escaping												*/
+/* Performs tab expansion													*/
 /* Performs column counting, line counting, and auto-pausing				*/
 /* Performs saveline buffering (for restoreline)							*/
 /****************************************************************************/
@@ -227,11 +310,13 @@ void sbbs_t::outchar(char ch)
 	}
 	else
 		outchar_esc=0;
-	if(term_supports(NO_EXASCII) && ch&0x80)
+	long term = term_supports();
+	if((term&(PETSCII|NO_EXASCII)) == NO_EXASCII && ch&0x80)
 		ch=exascii_to_ascii_char(ch);  /* seven bit table */
+
 	if(ch==FF && lncntr > 0 && !tos) {
 		lncntr=0;
-		CRLF;
+		newline();
 		if(!(sys_status&SS_PAUSEOFF)) {
 			pause();
 			while(lncntr && online && !(sys_status&SS_ABORT))
@@ -244,13 +329,34 @@ void sbbs_t::outchar(char ch)
 			ch=text[YNQP][3];
 			if(text[YNQP][2]==0 || ch==0) ch='X';
 		}
-		if(ch==FF && term_supports(ANSI)) {
-			putcom("\x1b[2J\x1b[H");	/* clear screen, home cursor */
+		if(ch==FF) {
+			if(term&ANSI)
+				putcom("\x1b[2J\x1b[H");	/* clear screen, home cursor */
+			else if(term&PETSCII)
+				outcom(PETSCII_CLEAR);
+			else
+				outcom(FF);
+		}
+		else if(ch == '\t') {
+			outcom(' ');
+			column++;
+			while(column%tabstop) {
+				outcom(' ');
+				column++;
+			}
 		}
 		else {
 			if(ch==(char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
 				outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
-			outcom(ch);
+			if(term&PETSCII) {
+				char pet = petscii(ch);
+				if(pet == PETSCII_SOLID)
+					outcom(PETSCII_REVERSE_ON);
+				outcom(pet);
+				if(pet == PETSCII_SOLID)
+					outcom(PETSCII_REVERSE_OFF);
+			} else
+				outcom(ch);
 		}
 	}
 	if(!outchar_esc) {
@@ -271,11 +377,6 @@ void sbbs_t::outchar(char ch)
 		else if(ch=='\b') {
 			if(column)
 				column--;
-		}
-		else if(ch=='\t') {
-			column++;
-			while(column%8)
-				column++;
 		}
 	}
 	if(ch==LF) {
@@ -313,23 +414,51 @@ void sbbs_t::center(char *instr)
 	SAFECOPY(str,instr);
 	truncsp(str);
 	j=bstrlen(str);
-	for(i=0;i<(cols-j)/2;i++)
-		outchar(' ');
+	if(j < cols)
+		for(i=0;i<(cols-j)/2;i++)
+			outchar(' ');
 	bputs(str);
-	CRLF;
+	newline();
+}
+
+// Send a bare carriage return, hopefully moving the cursor to the far left, current row
+void sbbs_t::carriage_return(void)
+{
+	if(term_supports(PETSCII))
+		cursor_left(column);
+	else
+		outcom('\r');
+	column = 0;
+}
+
+// Send a bare line_feed, hopefully moving the cursor down one row, current column
+void sbbs_t::line_feed(void)
+{
+	if(term_supports(PETSCII))
+		outcom(PETSCII_DOWN);
+	else 
+		outcom('\n');
+}
+
+void sbbs_t::newline(void)
+{
+	outchar('\r');
+	outchar('\n');
 }
 
 void sbbs_t::clearline(void)
 {
-	outcom(CR);
-	column=0;
+	carriage_return();
 	cleartoeol();
 }
 
 void sbbs_t::cursor_home(void)
 {
-	if(term_supports(ANSI))
+	long term = term_supports();
+	if(term&ANSI)
 		rputs("\x1b[H");
+	else if(term&PETSCII)
+		outcom(PETSCII_HOME);
 	else
 		outchar(FF);	/* this will clear some terminals, do nothing with others */
 	tos=1;
@@ -340,38 +469,52 @@ void sbbs_t::cursor_up(int count)
 {
 	if(count<1)
 		return;
-	if(!term_supports(ANSI))
-		return;
-	if(count>1)
-		rprintf("\x1b[%dA",count);
-	else
-		rputs("\x1b[A");
+	long term = term_supports();
+	if(term&ANSI) {
+		if(count>1)
+			rprintf("\x1b[%dA",count);
+		else
+			rputs("\x1b[A");
+	} else {
+		if(term&PETSCII) {
+			for(int i=0;i<count;i++)
+				outcom(PETSCII_UP);
+		}
+	}
 }
 
 void sbbs_t::cursor_down(int count)
 {
 	if(count<1)
 		return;
-	if(!term_supports(ANSI))
-		return;
-	if(count>1)
-		rprintf("\x1b[%dB",count);
-	else
-		rputs("\x1b[B");
+	if(term_supports(ANSI)) {
+		if(count>1)
+			rprintf("\x1b[%dB",count);
+		else
+			rputs("\x1b[B");
+	} else {
+		for(int i=0;i<count;i++)
+			line_feed();
+	}
 }
 
 void sbbs_t::cursor_right(int count)
 {
 	if(count<1)
 		return;
-	if(term_supports(ANSI)) {
+	long term = term_supports();
+	if(term&ANSI) {
 		if(count>1)
 			rprintf("\x1b[%dC",count);
 		else
 			rputs("\x1b[C");
 	} else {
-		for(int i=0;i<count;i++)
-			outcom(' ');
+		for(int i=0;i<count;i++) {
+			if(term&PETSCII)
+				outcom(PETSCII_RIGHT);
+			else
+				outcom(' ');
+		}
 	}
 	column+=count;
 }
@@ -380,14 +523,19 @@ void sbbs_t::cursor_left(int count)
 {
 	if(count<1)
 		return;
-	if(term_supports(ANSI)) {
+	long term = term_supports();
+	if(term&ANSI) {
 		if(count>1)
 			rprintf("\x1b[%dD",count);
 		else
 			rputs("\x1b[D");
 	} else {
-		for(int i=0;i<count;i++)
-			outcom('\b');
+		for(int i=0;i<count;i++) {
+			if(term&PETSCII)
+				outcom(PETSCII_LEFT);
+			else
+				outcom('\b');
+		}
 	}
 	if(column > count)
 		column-=count;
@@ -399,14 +547,19 @@ void sbbs_t::cleartoeol(void)
 {
 	int i,j;
 
-	if(term_supports(ANSI))
+	long term = term_supports();
+	if(term&ANSI)
 		rputs("\x1b[K");
 	else {
 		i=j=column;
 		while(++i<cols)
 			outcom(' ');
-		while(++j<cols)
-			outcom(BS);
+		while(++j<cols) {
+			if(term&PETSCII)
+				outcom(PETSCII_LEFT);
+			else
+				outcom('\b');
+		}
 	}
 }
 
@@ -535,23 +688,27 @@ void sbbs_t::ctrl_a(char x)
 			cleartoeol();
 			break;
 		case '<':   /* Non-destructive backspace */
-			outchar(BS);
+			cursor_left();
 			break;
 		case '/':	/* Conditional new-line */
 			if(column > 0)
-				CRLF;
+				newline();
+			break;
+		case '\\':	/* Conditional New-line / Continuation prefix (if cols < 80) */
+			if(column > 0 && cols < TERM_COLS_DEFAULT)
+				bputs(text[LongLineContinuationPrefix]);
 			break;
 		case '?':	/* Conditional blank-line */
 			if(column > 0)
-				CRLF;
+				newline();
 			if(lastlinelen)
-				CRLF;
+				newline();
 			break;
 		case '[':   /* Carriage return */
-			outchar(CR);
+			carriage_return();
 			break;
 		case ']':   /* Line feed */
-			outchar(LF);
+			line_feed();
 			break;
 		case 'A':   /* Ctrl-A */
 			outchar(CTRL_A);
@@ -643,22 +800,79 @@ void sbbs_t::ctrl_a(char x)
 	}
 }
 
-/***************************************************************************/
-/* Changes local and remote text attributes accounting for monochrome      */
-/***************************************************************************/
 /****************************************************************************/
-/* Sends ansi codes to change remote ansi terminal's colors                 */
-/* Only sends necessary codes - tracks remote terminal's current attributes */
-/* through the 'curatr' variable                                            */
+/* Sends terminal control codes to change remote terminal colors/attributes */
 /****************************************************************************/
 void sbbs_t::attr(int atr)
 {
 	char	str[16];
+	int		newatr = atr;
 
-	if(!term_supports(ANSI))
-		return;
-	rputs(ansi(atr,curatr,str));
-	curatr=atr;
+	long term = term_supports();
+	if(term&PETSCII) {
+		if(atr&0x70) {
+			atr >>= 4;
+			outcom(PETSCII_REVERSE_ON);
+		} else
+			outcom(PETSCII_REVERSE_OFF);
+		if(atr&BLINK)
+			outcom(PETSCII_FLASH_ON);
+		else
+			outcom(PETSCII_FLASH_OFF);
+		switch(atr&0x0f) {
+			case BLACK:
+				outcom(PETSCII_BLACK);
+				break;
+			case WHITE:
+				outcom(PETSCII_WHITE);
+				break;
+			case DARKGRAY:
+				outcom(PETSCII_DARKGRAY);
+				break;
+			case LIGHTGRAY:
+				outcom(PETSCII_LIGHTGRAY);
+				break;
+			case BLUE:
+				outcom(PETSCII_BLUE);
+				break;
+			case LIGHTBLUE:
+				outcom(PETSCII_LIGHTBLUE);
+				break;
+			case CYAN:
+				outcom(PETSCII_MEDIUMGRAY);
+				break;
+			case LIGHTCYAN:
+				outcom(PETSCII_CYAN);
+				break;
+			case YELLOW:
+				outcom(PETSCII_YELLOW);
+				break;
+			case BROWN:
+				outcom(PETSCII_BROWN);
+				break;
+			case RED:
+				outcom(PETSCII_RED);
+				break;
+			case LIGHTRED:
+				outcom(PETSCII_LIGHTRED);
+				break;
+			case GREEN:
+				outcom(PETSCII_GREEN);
+				break;
+			case LIGHTGREEN:
+				outcom(PETSCII_LIGHTGREEN);
+				break;
+			case MAGENTA:
+				outcom(PETSCII_ORANGE);
+				break;
+			case LIGHTMAGENTA:
+				outcom(PETSCII_PURPLE);
+				break;
+		}
+	}
+	else if(term&ANSI)
+		rputs(ansi(newatr,curatr,str));
+	curatr=newatr;
 }
 
 /****************************************************************************/

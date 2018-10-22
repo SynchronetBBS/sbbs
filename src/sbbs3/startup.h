@@ -91,6 +91,8 @@ typedef struct {
     WORD	last_node;
 	WORD	telnet_port;
 	WORD	rlogin_port;
+	WORD	pet40_port;			// 40-column PETSCII terminal server
+	WORD	pet80_port;			// 80-column PETSCII terminal server
 	WORD	ssh_port;
 	WORD	ssh_connect_timeout;
 	WORD	outbuf_highwater_mark;	/* output block size control */

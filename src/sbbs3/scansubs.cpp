@@ -123,13 +123,13 @@ void sbbs_t::scansubs(long mode)
 			if((mode&SCAN_POLLS) && cfg.sub[usrsub[curgrp][i]]->misc&SUB_NOVOTING)
 				continue;
 			if(mode&SCAN_POLLS)
-				progress("Scanning", i, usrsubs[curgrp], 10);
+				progress(text[Scanning], i, usrsubs[curgrp], 10);
 			if(scanposts(usrsub[curgrp][i],mode,str)) 
 				break;
 			subs_scanned++;
 		}
 		if(mode&SCAN_POLLS) {
-			progress("Done", subs_scanned, usrsubs[curgrp]);
+			progress(text[Done], subs_scanned, usrsubs[curgrp]);
 			cleartoeol();
 		}
 		bputs(text[MessageScan]);
@@ -224,14 +224,14 @@ void sbbs_t::scanallsubs(long mode)
 		}
 	for(i=0; i<total_subs && !msgabort(); i++) {
 		if(mode&SCAN_POLLS)
-			progress("Scanning", i, total_subs, 10);
+			progress(text[Scanning], i, total_subs, 10);
 		if(scanposts(sub[i],mode,str)) 
 			break;
 	}
 	subs_scanned = i;
 	free(sub);
 	if(mode&SCAN_POLLS) {
-		progress("Done", subs_scanned, total_subs);
+		progress(text[Done], subs_scanned, total_subs);
 		cleartoeol();
 	}
 	bputs(text[MessageScan]);

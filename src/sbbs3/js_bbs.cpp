@@ -1182,6 +1182,39 @@ js_menu(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_menu_exists(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+    JSString*	str;
+ 	sbbs_t*		sbbs;
+	jsrefcount	rc;
+	char		*menu;
+
+ 	if(!js_argc(cx, argc, 1))
+		return(JS_FALSE);
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+ 	str = JS_ValueToString(cx, argv[0]);
+ 	if (!str)
+ 		return(JS_FALSE);
+
+	JSSTRING_TO_MSTRING(cx, str, menu, NULL);
+	if(!menu)
+		return JS_FALSE;
+	rc=JS_SUSPENDREQUEST(cx);
+	bool result = sbbs->menu_exists(menu);
+	free(menu);
+	JS_RESUMEREQUEST(cx, rc);
+
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+
+    return(JS_TRUE);
+}
+
+
+static JSBool
 js_hangup(JSContext *cx, uintN argc, jsval *arglist)
 {
 	sbbs_t*		sbbs;
@@ -4105,6 +4138,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"menu",			js_menu,			1,	JSTYPE_VOID,	JSDOCSTR("base_filename")
 	,JSDOCSTR("display a menu file from the text/menu directory")
 	,310
+	},
+	{"menu_exists",		js_menu_exists,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
+	,JSDOCSTR("returns true if the referenced menu file exists (i.e. in the text/menu directory)")
+	,31700
 	},
 	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key [,comma=<tt>false</tt>]")
 	,JSDOCSTR("log key to node.log (comma optional)")
