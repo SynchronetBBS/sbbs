@@ -57,6 +57,8 @@ while(bbs.online) {
 			console.crlf();
 			if((netmail&NMAIL_FILE) && !console.noyes("Attach a file"))
 				wm_mode = WM_FILE;
+			if(console.aborted)
+				break;
 			console.print(bbs.text(text.EnterNetMailAddress));
 			var addr_list = userprops.get(ini_section, "address", []) || [];
 			var addr = console.getstr(60, K_LINE, addr_list);
