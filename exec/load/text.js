@@ -814,7 +814,12 @@ var VoteNoticeFmt=802;
 var TagMessageQ=803;
 var TagMessagePrompt=804;
 var MsgTags=805;
+var NoAccessTerminal=806;
+var LongLineContinuationPrefix=807;
+var Scanning=808;
+var Done=809;
+var Scanned=810;
 
-var TOTAL_TEXT=806;
+var TOTAL_TEXT=811;
 
 this;
