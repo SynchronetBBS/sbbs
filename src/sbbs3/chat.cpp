@@ -1271,8 +1271,10 @@ int sbbs_t::getnodetopage(int all, int telegram)
 
 	strcpy(str,lastnodemsguser);
 	getstr(str,LEN_ALIAS,K_UPRLWR|K_LINE|K_EDIT|K_AUTODEL);
-	if(sys_status&SS_ABORT)
+	if(sys_status&SS_ABORT) {
+		sys_status&= ~SS_ABORT;
 		return(0);
+	}
 	if(!str[0])
 		return(0);
 
