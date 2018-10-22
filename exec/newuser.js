@@ -24,7 +24,7 @@ if(options && options.qwk_settings)
 console.clear();
 
 if(!user.address.length && user.number>1) {
-	printf("\1y\1hWhere did you hear about this BBS? ");
+	print("\1y\1hWhere did you hear about this BBS?");
 	user.address=console.getstr(30,K_LINE);
 }
 
