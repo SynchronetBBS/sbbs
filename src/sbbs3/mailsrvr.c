@@ -2977,7 +2977,7 @@ static void smtp_thread(void* arg)
 
 	SAFEPRINTF(smb.file,"%smail",scfg.data_dir);
 	if(smb_islocked(&smb)) {
-		lprintf(LOG_CRIT,"%04d %s !MAIL BASE LOCKED: %s"
+		lprintf(LOG_WARNING,"%04d %s !MAIL BASE LOCKED: %s"
 			,socket, client.protocol, smb.last_error);
 		sockprintf(socket,client.protocol,session,sys_unavail);
 		mail_close_socket(&socket, &session);
