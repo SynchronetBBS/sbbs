@@ -11,6 +11,8 @@ if((options=load("modopts.js","login")) == null)
 	options={email_passwords: true};
 if(!options.login_prompts)
 	options.login_prompts = 10;
+if(!options.inactive_hangup)
+	options.inactive_hangup = 30;	 // seconds
 
 // The following 2 lines are only required for "Re-login" capability
 bbs.logout();
@@ -21,8 +23,8 @@ var guest = system.matchuser("guest");
 if(!bbs.online)
 	exit();
 if(!console.autoterm) {
-	console.inactivity_hangup *= .25;
-	log(LOG_NOTICE, "Terminal not detected, reducing inactivity hang-up timeout to " + console.inactivity_hangup + " seconds");
+	console.inactivity_hangup = options.inactive_hangup;
+	log(LOG_NOTICE, "terminal not detected, reducing inactivity hang-up timeout to " + console.inactivity_hangup + " seconds");
 }
 for(var c=0; c < options.login_prompts; c++) {
 
@@ -30,14 +32,15 @@ for(var c=0; c < options.login_prompts; c++) {
 	bbs.nodesync();
 
 	// Display login prompt
-	console.print("\r\n\1n\1h\1cEnter \1wUser Name");
+	var str = "\r\n\1n\1h\1cEnter \1wUser Name";
 	if(!(bbs.node_settings&NM_NO_NUM))
-		console.print("\1c or \1wNumber");
+		str += "\1c or \1wNumber";
 	if(!(system.settings&SYS_CLOSED))
-		console.print("\1c or '\1yNew\1c'");
+		str += "\1c or '\1yNew\1c'";
 	if(guest)
-		console.print("\1c or '\1yGuest\1c'");
-	console.print("\r\nNN:\b\b\bLogin: \1w");
+		str += "\1c or '\1yGuest\1c'";
+	str += "\r\nLogin: \1w";
+	console.print(word_wrap(str, console.screen_columns-1).trimRight());
 
 	// Get login string
 	var str;
