@@ -17,9 +17,13 @@ var max_line_length = 256*1024;
 var error="";
 
 function capture()
-{
+{ 
+	if(!address) {
+		error = "No address specified";
+		return false;
+	}
     if(rows == undefined)
-            rows=24;
+		rows=24;
     if(port == undefined) {
         switch(protocol) {
             case "telnet":  port=23; break;
