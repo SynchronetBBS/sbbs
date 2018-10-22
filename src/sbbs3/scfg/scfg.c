@@ -1072,6 +1072,7 @@ void shell_cfg()
 		j=0;
 		done=0;
 		while(!done) {
+			static int bar;
 			k=0;
 			sprintf(opt[k++],"%-27.27s%s","Name",cfg.shell[i]->name);
 			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
@@ -1091,7 +1092,7 @@ void shell_cfg()
 				"Synchronet to interpret. See the example `.src` files in the `exec`\n"
 				"directory and the documentation for the Baja compiler for more details.\n"
 			;
-			switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.shell[i]->name
+			switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,&bar,cfg.shell[i]->name
 				,opt)) {
 				case -1:
 					done=1;
