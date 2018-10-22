@@ -49,14 +49,14 @@ if_true
 	end_if
 
 # Display main Prompt
-print "-c\r\nþ bhMain ncþ h"
+print "\1-\1c\r\nþ \1b\1hMain \1n\1cþ \1h"
 compare_ars exempt T
 if_true
 	print "@TUSED@"
 else
 	print "@TLEFT@"
 	end_if
-print " nc[h@GN@nc] @GRP@ [h@SN@nc] @SUB@: n"
+print " \1n\1c[\1h@GN@\1n\1c] @GRP@\1\\ [\1h@SN@\1n\1c] @SUB@: \1n"
 
 # Get key (with / extended commands allowed)
 compare_user_misc UM_COLDKEYS
@@ -106,10 +106,16 @@ if_false
 	endif
 
 # Next sub-board
+cmdkey ^^
+	msg_subboard_up
+	end_cmd
 cmdkey >
 	msg_subboard_up
 	end_cmd
 cmdkey }
+	msg_subboard_up
+	end_cmd
+cmdkey )
 	msg_subboard_up
 	end_cmd
 cmdkey +
@@ -120,10 +126,16 @@ cmdkey =
 	end_cmd
 
 # Previous sub-board
+cmdkey ^J
+	msg_subboard_down
+	end_cmd
 cmdkey <
 	msg_subboard_down
 	end_cmd
 cmdkey {
+	msg_subboard_down
+	end_cmd
+cmdkey (
 	msg_subboard_down
 	end_cmd
 cmdkey -
@@ -131,11 +143,17 @@ cmdkey -
 	end_cmd
 
 # Next group
+cmdkey ^F
+	msg_group_up
+	end_cmd
 cmdkey ]
 	msg_group_up
 	end_cmd
 
 # Previous group
+cmdkey ^]
+	msg_group_down
+	end_cmd
 cmdkey [
 	msg_group_down
 	end_cmd
@@ -199,7 +217,7 @@ cmdkey /A
 	end_cmd
 
 cmdkey B
-	print "\r\nchBrowse/New Message Scan\r\n"
+	print "\r\n\1c\1hBrowse/New Message Scan\r\n"
 	msg_browse_scan
 	end_cmd
 
@@ -216,7 +234,7 @@ cmdkey E
 	end_cmd
 
 cmdkey F
-	print "\r\nchFind Text in Messages\r\n"
+	print "\r\n\1c\1hFind Text in Messages\r\n"
 	msg_find_text
 	end_cmd
 
@@ -245,7 +263,7 @@ cmdkey M
 	end_cmd
 
 cmdkey N
-	print "\r\nchNew Message Scan\r\n"
+	print "\r\n\1c\1hNew Message Scan\r\n"
 	msg_new_scan
 	end_cmd
 
@@ -286,7 +304,7 @@ cmdkey R
 	end_cmd
 
 cmdkey S
-	print "\r\nchScan for Messages Posted to You\r\n"
+	print "\r\n\1c\1hScan for Messages Posted to You\r\n"
 	msg_your_scan
 	end_cmd
 
@@ -295,7 +313,7 @@ cmdkey /S
 	end_cmd
 
 cmdkey U
-	print "\r\nchList Users\r\n"
+	print "\r\n\1c\1hList Users\r\n"
 	mnemonics "\r\n~Logons Today, ~Sub-board, or ~All: "
 	getcmd LSA\r
 
@@ -329,7 +347,7 @@ cmdkey X
 	end_cmd
 
 cmdkey Z
-	print "\r\nchContinuous New Message Scan\r\n"
+	print "\r\n\1c\1hContinuous New Message Scan\r\n"
 	msg_cont_scan
 	end_cmd
 
@@ -350,18 +368,18 @@ cmdkey &
 	end_cmd
 
 cmdkey #
-	print "\r\nchType the actual number, not the symbol.\r\n"
+	print "\r\n\1c\1hType the actual number, not the symbol.\r\n"
 	end_cmd
 
 cmdkey /#
-	print "\r\nchType the actual number, not the symbol.\r\n"
+	print "\r\n\1c\1hType the actual number, not the symbol.\r\n"
         end_cmd
 
 # fall through
-print "\r\nchUnrecognized command."
+print "\r\n\1c\1hUnrecognized command."
 compare_user_misc UM_expert
 if_true
-	print " Hit 'i?nch' for a menu."
+	print " Hit '\1i?\1n\1c\1h' for a menu."
 	end_if
 crlf
 end_cmd
@@ -381,7 +399,7 @@ if_false
 	menu maininfo
 	end_if
 async
-print "\r\nyhInfo: n"
+print "\r\n\1y\1hInfo: \1n"
 getcmd ?QISVY\r
 logkey
 
@@ -425,7 +443,7 @@ if_false
 	menu maincfg
 	end_if
 async
-print "\r\nyhConfig: n"
+print "\r\n\1y\1hConfig: \1n"
 getcmd ?QNPIS\r
 logkey
 
@@ -492,14 +510,14 @@ async
 inc_file_cmds
 
 # Display main Prompt
-print "-c\r\nþ bhFile ncþ h"
+print "\1-\1c\r\nþ \1b\1hFile \1n\1cþ \1h"
 compare_ars exempt T
 if_true
 	print "@TUSED@"
 else
 	print "@TLEFT@"
 	end_if
-print " nc(h@LN@nc) @LIB@ (h@DN@nc) @DIR@: n"
+print " \1n\1c(\1h@LN@\1n\1c) @LIB@\1\\ (\1h@DN@\1n\1c) @DIR@: \1n"
 
 # Get key (with / extended commands allowed)
 compare_user_misc UM_COLDKEYS
@@ -554,10 +572,16 @@ if_false
         endif
 
 # Next directory
+cmdkey ^^
+	file_directory_up
+	end_cmd
 cmdkey >
 	file_directory_up
 	end_cmd
 cmdkey }
+	file_directory_up
+	end_cmd
+cmdkey )
 	file_directory_up
 	end_cmd
 cmdkey +
@@ -568,10 +592,16 @@ cmdkey =
 	end_cmd
 
 # Previous directory
+cmdkey ^J
+	file_directory_down
+	end_cmd
 cmdkey <
 	file_directory_down
 	end_cmd
 cmdkey {
+	file_directory_down
+	end_cmd
+cmdkey (
 	file_directory_down
 	end_cmd
 cmdkey -
@@ -579,11 +609,17 @@ cmdkey -
 	end_cmd
 
 # Next library
+cmdkey ^F
+	file_library_up
+	end_cmd
 cmdkey ]
 	file_library_up
 	end_cmd
 
 # Previous library
+cmdkey ^]
+	file_library_down
+	end_cmd
 cmdkey [
 	file_library_down
 	end_cmd
@@ -637,7 +673,7 @@ cmdkey C
 	end_cmd
 
 cmdkey D
-	print "\r\nchDownload File(s)\r\n"
+	print "\r\n\1c\1hDownload File(s)\r\n"
 	file_download_batch
 	if_true
 		end_cmd
@@ -649,12 +685,12 @@ cmdkey D
 	end_cmd
 
 cmdkey /D
-	print "\r\nchDownload File(s) from User(s)\r\n"
+	print "\r\n\1c\1hDownload File(s) from User(s)\r\n"
 	file_download_user
 	end_cmd
 
 cmdkey E
-	print "\r\nchList Extended File Information\r\n"
+	print "\r\n\1c\1hList Extended File Information\r\n"
 	getfilespec
 	if_true
 		file_list_extended
@@ -662,7 +698,7 @@ cmdkey E
 	end_cmd
 
 cmdkey F
-	print "\r\nchFind Text in File Descriptions (no wildcards)\r\n"
+	print "\r\n\1c\1hFind Text in File Descriptions (no wildcards)\r\n"
 	file_find_text
 	end_cmd
 
@@ -688,7 +724,7 @@ cmdkey /L
 	end_cmd
 
 cmdkey N
-	print "\r\nchNew File Scan\r\n"
+	print "\r\n\1c\1hNew File Scan\r\n"
 	file_new_scan
 	end_cmd
 
@@ -713,7 +749,7 @@ cmdkey /O
         end_cmd
 
 cmdkey R
-	print "\r\nchRemove/Edit File(s)\r\n"
+	print "\r\n\1c\1hRemove/Edit File(s)\r\n"
 	getfilespec
 	if_true
 		file_remove
@@ -721,7 +757,7 @@ cmdkey R
 	end_cmd
 
 cmdkey S
-	print "\r\nchSearch for Filename(s)\r\n"
+	print "\r\n\1c\1hSearch for Filename(s)\r\n"
 	file_find_name
 	end_cmd
 
@@ -734,7 +770,7 @@ cmdkey T
 	end_cmd
 
 cmdkey U
-	print "\r\nchUpload File\r\n"
+	print "\r\n\1c\1hUpload File\r\n"
 	chkfile "%zmenu/upload.*"
 	if_true
 		menu upload
@@ -743,12 +779,12 @@ cmdkey U
 	end_cmd
 
 cmdkey /U
-	print "\r\nchUpload File to User\r\n"
+	print "\r\n\1c\1hUpload File to User\r\n"
 	file_upload_user
 	end_cmd
 
 cmdkey V
-	print "\r\nchView File(s)\r\n"
+	print "\r\n\1c\1hView File(s)\r\n"
 	getfilespec
 	if_true
 		file_view
@@ -756,7 +792,7 @@ cmdkey V
 	end_cmd
 
 cmdkey Z
-	print "\r\nchUpload File to Sysop\r\n"
+	print "\r\n\1c\1hUpload File to Sysop\r\n"
 	file_upload_sysop
 	end_cmd
 
@@ -775,7 +811,7 @@ cmdkey &
 		menu xfercfg
 		end_if
 	async
-	print "\r\nyhConfig: n"
+	print "\r\n\1y\1hConfig: \1n"
 	getcmd ?QBEP\r
 	logkey
 
@@ -819,18 +855,18 @@ cmdkey &
 	end_cmd
 
 cmdkey #
-	print "\r\nchType the actual number, not the symbol.\r\n"
+	print "\r\n\1c\1hType the actual number, not the symbol.\r\n"
 	end_cmd
 
 cmdkey /#
-	print "\r\nchType the actual number, not the symbol.\r\n"
+	print "\r\n\1c\1hType the actual number, not the symbol.\r\n"
         end_cmd
 
 # fall through
-print "\r\nchUnrecognized command."
+print "\r\n\1c\1hUnrecognized command."
 compare_user_misc UM_expert
 if_true
-	print " Hit 'i?nch' for a menu."
+	print " Hit '\1i?\1n\1c\1h' for a menu."
 	end_if
 crlf
 end_cmd
@@ -849,7 +885,7 @@ if_false
 	menu xferinfo
 	end_if
 async
-print "\r\nyhInfo: n"
+print "\r\n\1y\1hInfo: \1n"
 getcmd ?TYDUQ\r
 logkey
 
