@@ -1287,7 +1287,7 @@ int	SMBCALL smb_hfield_add_netaddr(smbmsg_t* msg, uint16_t type, const char* add
 			p++;
 			SKIP_WHITESPACE(p);
 			if(*p == 0)
-				return SMB_ERR_NOT_FOUND;;
+				return SMB_ERR_NOT_FOUND;
 			addr = p;
 		}
 	}
