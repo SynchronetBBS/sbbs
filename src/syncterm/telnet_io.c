@@ -159,13 +159,16 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE && telnet_cmd[3]==TELNET_TERM_SEND) {
 						char buf[32];
-						const char *termtype = "ANSI";
+						const char *termtype;
 						switch(cterm->emulation) {
 							case CTERM_EMULATION_PETASCII:
 								termtype = "PETSCII";
 								break;
 							case CTERM_EMULATION_ATASCII:
 								termtype = "ATASCII";
+								break;
+							default:
+								termtype = "ANSI";
 								break;
 						}
 						int len=sprintf(buf,"%c%c%c%c%s%c%c"
