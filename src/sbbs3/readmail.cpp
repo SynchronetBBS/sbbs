@@ -402,7 +402,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 			bprintf(text[ReadingAllMail],smb.curmsg+1,smb.msgs);
 		else
 			bprintf(text[ReadingMail],smb.curmsg+1,smb.msgs);
-		sprintf(str,"ADFLNQRT?<>[]{}-+/");
+		sprintf(str,"ADFLNQRT?<>[]{}()-+/");
 		if(SYSOP)
 			strcat(str,"CUSPH");
 		if(which == MAIL_YOUR)
@@ -650,6 +650,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 					bputs(text[NoMessagesFound]);
 				}
 				break;
+			case ')':
 			case '}':   /* Search Author forward */
 				strcpy(str,msg.from);
 				for(u=smb.curmsg+1;u<smb.msgs;u++)
@@ -673,6 +674,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 					bputs(text[NoMessagesFound]);
 				}
 				break;
+			case '(':
 			case '{':   /* Search Author backward */
 				strcpy(str,msg.from);
 				if(smb.curmsg > 0) {
