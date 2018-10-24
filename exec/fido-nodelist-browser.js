@@ -9,9 +9,9 @@ function node_info_popup(node, frame, settings) {
   const fmt = "%10s: \1+\1h\1c%s\1-\r\n";
   const popup = new Frame(
     frame.x + 1,
-    Math.floor((frame.y + frame.height - 16) / 2),
+    Math.floor((frame.y + frame.height - 17) / 2),
     frame.width - 2,
-    16,
+    17,
     BG_BLUE|WHITE,
     frame
   );
@@ -43,15 +43,20 @@ function node_info_popup(node, frame, settings) {
   if (email.length) popup.putmsg(format(fmt, 'Email', email.join(', ')));
   email = undefined;
   if (node.flags.PING) popup.putmsg('Accepts PING\r\n');
-  const other = [
+  var other = [
     'ZEC', 'REC', 'NEC', 'NC', 'SDS', 'SMH', 'RPK', 'NPK', 'ENC', 'CDP'
   ].filter(function (e) {
     return typeof node.flags[e] != 'undefined';
   });
   if (other.length) popup.putmsg(format(fmt, 'Flags', other.join(', ')));
-  popup.gotoxy(1, 15);
-  popup.putmsg(' \1h\1cS\1h\1wend netmail  \1h\1cC\1h\1wlose');
+  other = ['Private', 'Hold', 'Down'].reduce(function (a, c) {
+    if (node[c.toLowerCase()]) a.push(c);
+    return a;
+  }, []);
+  if (other.length) popup.putmsg(format(fmt, 'Status', other.join(', ')));
   other = undefined;
+  popup.gotoxy(1, 16);
+  popup.putmsg(' \1h\1cS\1h\1wend netmail  \1h\1cC\1h\1wlose');
   popup.open();
   frame.cycle();
   console.gotoxy(console.screen_columns, console.screen_rows);
