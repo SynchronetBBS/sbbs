@@ -186,52 +186,64 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 /****************************************************************************/
 /* Displays a menu file (e.g. from the text/menu directory)                 */
 /****************************************************************************/
-void sbbs_t::menu(const char *code)
+void sbbs_t::menu(const char *code, long mode)
 {
-    char str[MAX_PATH-5],path[MAX_PATH+1];
+    char path[MAX_PATH+1];
+	const char *next= "msg";
+	const char *last = "asc";
 
 	sys_status&=~SS_ABORT;
 	if(menu_file[0])
 		SAFECOPY(path,menu_file);
 	else {
-		if(isfullpath(code))
-			SAFECOPY(str, code);
-		else {
-			backslash(menu_dir);
-			SAFEPRINTF3(str, "%smenu/%s%s", cfg.text_dir, menu_dir, code);
-		}
 		long term = term_supports();
-		sprintf(path,"%s.%s",str, (term&WIP) ? "wip": (term&RIP) ? "rip" : "html");
-		if(!(term&(RIP|WIP|HTML)) || !fexistcase(path)) {
-			SAFEPRINTF(path, "%s.mon", str);
-			if((term&(COLOR|ANSI))!=ANSI || !fexistcase(path)) {
-				SAFEPRINTF(path, "%s.ans", str);
-				if(!(term&ANSI) || !fexistcase(path)) {
-					SAFEPRINTF2(path, "%s.%ucol.asc", str, cols);
-					if(!fexistcase(path))
-						SAFEPRINTF(path, "%s.asc", str); 
-				}
+		do {
+			if((term&RIP) && menu_exists(code, "rip", path))
+				break;
+			if((term&(ANSI|COLOR)) == ANSI && menu_exists(code, "mon", path))
+				break;
+			if((term&ANSI) && menu_exists(code, "ans", path))
+				break;
+			if((term&PETSCII) && menu_exists(code, "seq", path))
+				break;
+			if(term&NO_EXASCII) {
+				next = "asc";
+				last = "msg";
 			}
-		} 
+			if(menu_exists(code, next, path))
+				break;
+			menu_exists(code, last, path);
+		} while(0);
 	}
 
-	long mode = P_OPENCLOSE | P_CPM_EOF;
+	mode |= P_OPENCLOSE | P_CPM_EOF;
 	if(column == 0)
 		mode |= P_NOCRLF;
 	printfile(path, mode);
 }
 
-bool sbbs_t::menu_exists(const char *code)
+bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 {
-	char path[MAX_PATH+1];
+	char pathbuf[MAX_PATH+1];
+	if(path == NULL)
+		path = pathbuf;
 
-	if(menu_file[0])
-		return fexistcase(menu_file) ? true : false;
+	if(menu_file[0]) {
+		strncpy(path, menu_file, MAX_PATH);
+		return fexistcase(path) ? true : false;
+	}
+
+	/* Either <menu>.asc or <menu>.msg is required */
+	if(ext == NULL)
+		return menu_exists(code, "asc", path)
+			|| menu_exists(code, "msg", path);
 
 	backslash(menu_dir);
-	SAFEPRINTF4(path, "%smenu/%s%s.%ucol.asc", cfg.text_dir, menu_dir, code, cols);
+	safe_snprintf(path, MAX_PATH, "%smenu/%s%s.%ucol.%s"
+		,cfg.text_dir, menu_dir, code, cols, ext);
 	if(fexistcase(path))
 		return true;
-	SAFEPRINTF3(path, "%smenu/%s%s.asc", cfg.text_dir, menu_dir, code);
+	safe_snprintf(path, MAX_PATH, "%smenu/%s%s.%s"
+		,cfg.text_dir, menu_dir, code, ext);
 	return fexistcase(path) ? true : false;
 }
