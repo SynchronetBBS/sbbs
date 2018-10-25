@@ -810,19 +810,18 @@ void sbbs_t::maindflts(user_t* user)
 		if(user->rows)
 			rows=user->rows;
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
-		if(user->misc&PETSCII)
-			safe_snprintf(str,sizeof(str),"%sPETSCII %s%u cols"
+		long term = (user == &useron) ? term_supports() : user->misc;
+		if(term&PETSCII)
+			safe_snprintf(str,sizeof(str),"%sPETSCII %u columns"
 							,user->misc&AUTOTERM ? "Auto Detect ":nulstr
-							,user->misc&COLOR ? "(Color) ":"(Mono) "
 							,cols);
 		else
 			safe_snprintf(str,sizeof(str),"%s%s%s%s%s"
 							,user->misc&AUTOTERM ? "Auto Detect ":nulstr
-							,user->misc&ANSI ? "ANSI ":"TTY "
-							,user->misc&COLOR ? "(Color) ":"(Mono) "
-							,user->misc&WIP	? "WIP" : user->misc&RIP ? "RIP "
-								: user->misc&HTML ? "HTML " : nulstr
-							,user->misc&NO_EXASCII ? "ASCII Only":nulstr);
+							,term&ANSI ? "ANSI ":"TTY "
+							,term&COLOR ? "(Color) ":"(Mono) "
+							,term&RIP ? "RIP " : nulstr
+							,term&NO_EXASCII ? "ASCII":"CP437");
 		bprintf(text[UserDefaultsTerminal],str);
 		if(cfg.total_xedits)
 			bprintf(text[UserDefaultsXeditor]
@@ -864,7 +863,7 @@ void sbbs_t::maindflts(user_t* user)
 		if(startup->options&BBS_OPT_AUTO_LOGON && user->exempt&FLAG('V'))
 			bprintf(text[UserDefaultsAutoLogon]
 			,user->misc&AUTOLOGON ? text[On] : text[Off]);
-		if(useron.exempt&FLAG('Q') || user->misc&QUIET)
+		if(user->exempt&FLAG('Q') || user->misc&QUIET)
 			bprintf(text[UserDefaultsQuiet]
 				,user->misc&QUIET ? text[On] : text[Off]);
 		SAFECOPY(str,"None");
@@ -884,7 +883,7 @@ void sbbs_t::maindflts(user_t* user)
 		SAFECOPY(str,"HTBALPRSYFNCQXZ\r");
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
 			strcat(str,"W");
-		if(useron.exempt&FLAG('Q') || user->misc&QUIET)
+		if(user->exempt&FLAG('Q') || user->misc&QUIET)
 			strcat(str,"D");
 		if(cfg.total_xedits)
 			strcat(str,"E");
