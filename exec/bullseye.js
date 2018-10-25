@@ -66,7 +66,10 @@ while(1) {
 			str=truncsp(str);
 			fname=str;
 			bbs.replace_text(563,"\001n\001h\001b{\001wContinue? Yes/No\001b} ");
-			if(str.search(/\.htm/)!=-1)
+			var ext = file_getext(fname);
+			if(ext == ".*")
+				bbs.menu(fname.slice(0, -2));
+			else if(str.search(/\.htm/)!=-1)
 				load(new Object, "typehtml.js", "-color", str);
 			else
 				load(new Object, "typeasc.js", str, "BullsEye Bulletin #"+b);
