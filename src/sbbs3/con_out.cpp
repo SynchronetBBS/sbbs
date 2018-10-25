@@ -244,7 +244,7 @@ void sbbs_t::backspace(void)
 /****************************************************************************/
 long sbbs_t::term_supports(long cmp_flags)
 {
-	long flags = sys_status&SS_USERON ? useron.misc : autoterm;
+	long flags = ((sys_status&SS_USERON) && !(useron.misc&AUTOTERM)) ? useron.misc : autoterm;
 
 	return(cmp_flags ? ((flags&cmp_flags)==cmp_flags) : (flags&TERM_FLAGS));
 }
