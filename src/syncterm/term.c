@@ -2276,7 +2276,6 @@ BOOL doterm(struct bbslist *bbs)
 	}
 	cterm=cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf, emulation);
 	if(!cterm) {
-		FREE_AND_NULL(cterm);
 		return FALSE;
 	}
 	cterm->apc_handler = apc_handler;
@@ -2315,6 +2314,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
 							cterm_end(cterm);
+							cterm=NULL;
 							conn_close();
 							hidemouse();
 							return(FALSE);
@@ -2565,6 +2565,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_clearscreen(cterm,cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
 							cterm_end(cterm);
+							cterm=NULL;
 							conn_close();
 							hidemouse();
 							hold_update=oldmc;
@@ -2592,6 +2593,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
 							cterm_end(cterm);
+							cterm=NULL;
 							conn_close();
 							hidemouse();
 							hold_update=oldmc;
@@ -2632,6 +2634,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
 							cterm_end(cterm);
+							cterm=NULL;
 							conn_close();
 							hidemouse();
 							hold_update=oldmc;
