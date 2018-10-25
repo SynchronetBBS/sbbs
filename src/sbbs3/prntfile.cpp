@@ -43,7 +43,7 @@
 /* for pauses, aborts and ANSI. 'str' is the path of the file to print      */
 /* Called from functions menu and text_sec                                  */
 /****************************************************************************/
-void sbbs_t::printfile(char *str, long mode)
+bool sbbs_t::printfile(char *str, long mode)
 {
 	char* buf;
 	char* p;
@@ -82,24 +82,26 @@ void sbbs_t::printfile(char *str, long mode)
 
 	fexistcase(str);
 	if((stream=fnopen(&file,str,O_RDONLY|O_DENYNONE))==NULL) {
-		lprintf(LOG_NOTICE,"Node %d !Error %d (%s) opening: %s"
-			,cfg.node_num,errno,strerror(errno),str);
-		bputs(text[FileNotFound]);
-		if(SYSOP) bputs(str);
-		CRLF;
-		return; 
+		if(!(mode&P_NOERROR)) {
+			lprintf(LOG_NOTICE,"!Error %d (%s) opening: %s"
+				,errno,strerror(errno),str);
+			bputs(text[FileNotFound]);
+			if(SYSOP) bputs(str);
+			CRLF;
+		}
+		return false; 
 	}
 
 	length=(long)filelength(file);
 	if(length<0) {
 		fclose(stream);
 		errormsg(WHERE,ERR_CHK,str,length);
-		return;
+		return false;
 	}
 	if((buf=(char*)malloc(length+1L))==NULL) {
 		fclose(stream);
 		errormsg(WHERE,ERR_ALLOC,str,length+1L);
-		return; 
+		return false; 
 	}
 	l=lread(file,buf,length);
 	fclose(stream);
@@ -118,9 +120,10 @@ void sbbs_t::printfile(char *str, long mode)
 	if(rip)
 		ansi_getlines();
 	console=savcon;
+	return true;
 }
 
-void sbbs_t::printtail(char *str, int lines, long mode)
+bool sbbs_t::printtail(char *str, int lines, long mode)
 {
 	char*	buf;
 	char*	p;
@@ -139,23 +142,25 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 	}
 	fexistcase(str);
 	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
-		lprintf(LOG_NOTICE,"Node %d !Error %d (%s) opening: %s"
-			,cfg.node_num,errno,strerror(errno),str);
-		bputs(text[FileNotFound]);
-		if(SYSOP) bputs(str);
-		CRLF;
-		return; 
+		if(!(mode&P_NOERROR)) {
+			lprintf(LOG_NOTICE,"!Error %d (%s) opening: %s"
+				,errno,strerror(errno),str);
+			bputs(text[FileNotFound]);
+			if(SYSOP) bputs(str);
+			CRLF;
+		}
+		return false; 
 	}
 	length=(long)filelength(file);
 	if(length<0) {
 		close(file);
 		errormsg(WHERE,ERR_CHK,str,length);
-		return;
+		return false;
 	}
 	if((buf=(char*)malloc(length+1L))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length+1L);
-		return; 
+		return false; 
 	}
 	l=lread(file,buf,length);
 	close(file);
@@ -181,12 +186,13 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 		rioctl(IOSM|ABORT); 
 	}
 	free(buf);
+	return true;
 }
 
 /****************************************************************************/
 /* Displays a menu file (e.g. from the text/menu directory)                 */
 /****************************************************************************/
-void sbbs_t::menu(const char *code, long mode)
+bool sbbs_t::menu(const char *code, long mode)
 {
     char path[MAX_PATH+1];
 	const char *next= "msg";
@@ -219,7 +225,7 @@ void sbbs_t::menu(const char *code, long mode)
 	mode |= P_OPENCLOSE | P_CPM_EOF;
 	if(column == 0)
 		mode |= P_NOCRLF;
-	printfile(path, mode);
+	return printfile(path, mode);
 }
 
 bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)

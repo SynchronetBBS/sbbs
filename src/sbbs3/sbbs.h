@@ -744,9 +744,9 @@ public:
 	char	handle_ctrlkey(char ch, long mode=0);
 
 	/* prntfile.cpp */
-	void	printfile(char *str, long mode);
-	void	printtail(char *str, int lines, long mode);
-	void	menu(const char *code, long mode = 0);
+	bool	printfile(char *str, long mode);
+	bool	printtail(char *str, int lines, long mode);
+	bool	menu(const char *code, long mode = 0);
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
 
 	int		uselect(int add, uint n, const char *title, const char *item, const uchar *ar);
