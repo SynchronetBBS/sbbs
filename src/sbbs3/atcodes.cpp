@@ -647,6 +647,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(nulstr);
 	}
 
+	if(!strncmp(sp,"CONDMENU:",9)) {
+		menu(sp+9, P_NOERROR);
+		return(nulstr);
+	}
+
 	if(!strncmp(sp,"TYPE:",5)) {
 		printfile(cmdstr(sp+5,nulstr,nulstr,str),0);
 		return(nulstr);
