@@ -52,13 +52,8 @@ while((str=file.readln())!=null) {
 
 menu:
 while(1) {
-	if(html) {
-		console.printfile(system.text_dir+"bullseye.html");
-	}
-	else {
-		console.printfile(system.text_dir+"bullseye.asc");
-		write("\001n\r\n\001b\001hEnter number of bulletin to view or press (\001wENTER\001b) to continue: \001w");
-	}
+	bbs.menu("../bullseye");
+	write("\001n\r\n\001b\001hEnter number of bulletin to view or press (\001wENTER\001b) to continue: \001w");
 	b=console.getnum(total);
 	if(b<1)
 		exit(0);
