@@ -282,13 +282,9 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 		,extinfo==NULL ? "":"info="
 		,extinfo==NULL ? "":extinfo);
 	if(online==ON_LOCAL) {
-		if(useron.number)
-			safe_snprintf(str+strlen(str),sizeof(str)-strlen(str)," (useron=%s)", useron.alias);
 		eprintf(LOG_ERR,"%s",str);
 	} else {
 		int savatr=curatr;
-		if(useron.number)
-			safe_snprintf(str+strlen(str),sizeof(str)-strlen(str)," (useron=%s)", useron.alias);
 		lprintf(LOG_ERR, "!%s", str);
 		attr(cfg.color[clr_err]);
 		bprintf("\7\r\n!ERROR %s %s\r\n", action, object);   /* tell user about error */
