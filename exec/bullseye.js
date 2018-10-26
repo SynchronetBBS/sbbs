@@ -53,7 +53,7 @@ while((str=file.readln())!=null) {
 menu:
 while(1) {
 	bbs.menu("../bullseye");
-	write("\001n\r\n\001b\001hEnter number of bulletin to view or press (\001wENTER\001b) to continue: \001w");
+	console.mnemonics("\r\nEnter number of bulletin or [~Quit]: ");
 	b=console.getnum(total);
 	if(b<1)
 		exit(0);
