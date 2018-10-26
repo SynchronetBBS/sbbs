@@ -673,13 +673,13 @@
 "\1bTime Used       : \1c%s\r\n"                                554 TiTimeon
 "\1bTime Remaining  : \1c%s\r\n\r\n"                            555 TiTimeLeft
 "\r\n\r\n\1nCtrl-Key Commands (from most anywhere)\r\n"\ 556 ControlKeyMenu
-    "\r\n\1hCtrl-K  \1nThis Menu"\
-	"\r\n\1hCtrl-C  \1nAbort Current Process"\
-	"\r\n\1hCtrl-O  \1nToggle Pause Prompt Temporarily"\
-	"\r\n\1hCtrl-Z  \1nToggle Raw Input/Output Mode (e.g. for ASCII-uploading message text)"\
-	"\r\n\1hCtrl-U  \1nList Users Online"\
-	"\r\n\1hCtrl-P  \1nSend Private Message To or Chat with Another Node"\
-	"\r\n\1hCtrl-T  \1nTime Information\r\n\r\n"
+    "\r\n\1h^K  \1nThis Menu"\
+	"\r\n\1h^C  \1nAbort Current Process"\
+	"\r\n\1h^O  \1nToggle Pause Prompt Temporarily"\
+	"\r\n\1h^Z  \1nToggle Raw Input/Output Mode\1\\ (e.g. for ASCII-uploading msg text)"\
+	"\r\n\1h^U  \1nList Users Online"\
+	"\r\n\1h^P  \1nSend Instant-Messages and Telegrams"\
+	"\r\n\1h^T  \1nTime Information\r\n\r\n"
 "\r\n\1nYou've taken too long to log on.\r\n"            557 TakenTooLongToLogon
 "\r\n\1nYou've been inactive too long.\r\n"              558 CallBackWhenYoureThere
 "@EXEC:yesnobar@"                                       559 YesNoQuestion
