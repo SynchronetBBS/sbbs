@@ -3574,7 +3574,7 @@ bool sbbs_t::init()
 				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900);
 			logline(LOG_NOTICE,"L!",str);
 			log(crlf);
-			catsyslog(1);
+			catsyslog(TRUE);
 		}
 
 		getnodedat(cfg.node_num,&thisnode,1);
@@ -4435,8 +4435,10 @@ void node_thread(void* arg)
 		mswait(login_attempts*startup->login_attempt.throttle);
 	}
 
+	bool login_success = false;
 	if(sbbs->answer()) {
 
+		login_success = true;
 		listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr)+1, sbbs->cfg.node_num, LAST_NODE);
 		if(sbbs->qwklogon) {
 			sbbs->getsmsg(sbbs->useron.number);
@@ -4556,7 +4558,12 @@ void node_thread(void* arg)
 		}
 	}
 
-	sbbs->catsyslog(0);
+	if(login_success)
+		sbbs->catsyslog(/* Crash: */FALSE);
+	else {
+		rewind(sbbs->logfile_fp);
+		chsize(fileno(sbbs->logfile_fp), 0);
+	}
 
 	status(STATUS_WFC);
 
@@ -5464,8 +5471,6 @@ NO_SSH:
 				lprintf(LOG_NOTICE, "%04d %s !Maximum concurrent connections without login (%u) reached from host: %s"
  					,client_socket, client.protocol, startup->max_concurrent_connections, host_ip);
 				close_socket(client_socket);
-				SAFEPRINTF(logstr, "Too many concurrent connections without login from host: %s",host_ip);
-				sbbs->syslog("@!",logstr);
 				continue;
 			}
 		}
@@ -5485,8 +5490,6 @@ NO_SSH:
 			} else
 				lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in ip.can: %s", client_socket, client.protocol, host_ip);
 			close_socket(client_socket);
-			SAFEPRINTF(logstr, "Blocked IP: %s",host_ip);
-			sbbs->syslog("@!",logstr);
 			continue;
 		}
 
@@ -5636,8 +5639,6 @@ NO_SSH:
 			close_socket(client_socket);
 			lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in host.can: %s"
 				,client_socket, client.protocol, host_name);
-			SAFEPRINTF(logstr, "Blocked Hostname: %s",host_name);
-			sbbs->syslog("@!",logstr);
 			continue;
 		}
 
