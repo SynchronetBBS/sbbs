@@ -53,9 +53,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			while(online) {
 				j=0;
 				if(usrlibs>1) {
-					if(menu_exists("libs"))
-						menu("libs");
-					else {
+					if(!menu("libs", P_NOERROR)) {
 						bputs(text[CfgLibLstHdr]);
 						for(i=0;i<usrlibs && !msgabort();i++) {
 							if(i==curlib)
@@ -78,10 +76,7 @@ int sbbs_t::exec_file(csi_t *csi)
 						j--; 
 				}
 				sprintf(str,"dirs%u",usrlib[j]+1);
-				if(menu_exists(str)) {
-					menu(str); 
-				}
-				else {
+				if(!menu(str, P_NOERROR)) {
 					CLS;
 					bprintf(text[DirLstHdr], cfg.lib[usrlib[j]]->lname);
 					for(i=0;i<usrdirs[j] && !msgabort();i++) {
@@ -200,8 +195,7 @@ int sbbs_t::exec_file(csi_t *csi)
 
 		case CS_FILE_SHOW_LIBRARIES:
 			if(!usrlibs) return(0);
-			if(menu_exists("libs")) {
-				menu("libs");
+			if(menu("libs"), P_NOERROR) {
 				return(0); 
 			}
 			bputs(text[LibLstHdr]);
@@ -218,8 +212,7 @@ int sbbs_t::exec_file(csi_t *csi)
 		case CS_FILE_SHOW_DIRECTORIES:
 			if(!usrlibs) return(0);
 			sprintf(str,"dirs%u",usrlib[curlib]+1);
-			if(menu_exists(str)) {
-				menu(str);
+			if(menu(str, P_NOERROR)) {
 				return(0); 
 			}
 			CRLF;

@@ -368,9 +368,7 @@ void sbbs_t::multinodechat(int channel)
 						done=1;
 						break;
 					case '*':
-						if(menu_exists("chan"))
-							menu("chan");
-						else {
+						if(!menu("chan", P_NOERROR)) {
 							bputs(text[ChatChanLstHdr]);
 							bputs(text[ChatChanLstTitles]);
 							if(cfg.total_chans>=10) {

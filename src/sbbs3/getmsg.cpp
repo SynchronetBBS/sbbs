@@ -132,9 +132,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	else
 		CRLF;
 
-	if(menu_exists("msghdr")) {
-		menu("msghdr");
-	} else {
+	if(!menu("msghdr", P_NOERROR)) {
 		bprintf(text[MsgSubj],msg->subj);
 		if(msg->tags && *msg->tags)
 			bprintf(text[MsgTags], msg->tags);

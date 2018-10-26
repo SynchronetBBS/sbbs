@@ -941,15 +941,13 @@ void sbbs_t::user_info()
 void sbbs_t::xfer_policy()
 {
 	if(!usrlibs) return;
-	if(menu_exists("tpolicy"))
-		menu("tpolicy");
-	else {
+	if(!menu("tpolicy", P_NOERROR)) {
 		bprintf(text[TransferPolicyHdr],cfg.sys_name);
 		bprintf(text[TpUpload]
 			,cfg.dir[usrdir[curlib][curdir[curlib]]]->up_pct);
 		bprintf(text[TpDownload]
 			,cfg.dir[usrdir[curlib][curdir[curlib]]]->dn_pct);
-		}
+	}
 }
 
 const char* prot_menu_file[] = {
@@ -962,8 +960,7 @@ const char* prot_menu_file[] = {
 
 void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
 {
-	if(menu_exists(prot_menu_file[type])) {
-		menu(prot_menu_file[type]);
+	if(menu(prot_menu_file[type], P_NOERROR)) {
 		return;
 	}
 

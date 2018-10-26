@@ -51,9 +51,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 			while(online) {
 				j=0;
 				if(usrgrps>1) {
-					if(menu_exists("grps"))
-						menu("grps");
-					else {
+					if(!menu("grps", P_NOERROR)) {
 						bputs(text[CfgGrpLstHdr]);
 						for(i=0;i<usrgrps && !msgabort();i++) {
 							if(i==curgrp)
@@ -75,10 +73,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 						j--; 
 				}
 				sprintf(str,"subs%u",usrgrp[j]+1);
-				if(menu_exists(str)) {
-					menu(str); 
-				}
-				else {
+				if(!menu(str, P_NOERROR)) {
 					CLS;
 					bprintf(text[SubLstHdr], cfg.grp[usrgrp[j]]->lname);
 					for(i=0;i<usrsubs[j] && !msgabort();i++) {
@@ -207,8 +202,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 
 		case CS_MSG_SHOW_GROUPS:
 			if(!usrgrps) return(0);
-			if(menu_exists("grps")) {
-				menu("grps");
+			if(menu("grps", P_NOERROR)) {
 				return(0); 
 			}
 			bputs(text[GrpLstHdr]);
@@ -225,8 +219,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 		case CS_MSG_SHOW_SUBBOARDS:
 			if(!usrgrps) return(0);
 			sprintf(str,"subs%u",usrgrp[curgrp]+1);
-			if(menu_exists(str)) {
-				menu(str);
+			if(menu(str, P_NOERROR)) {
 				return(0); 
 			}
 			CRLF;

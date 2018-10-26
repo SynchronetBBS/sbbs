@@ -81,9 +81,7 @@ BOOL sbbs_t::newuser()
 			logline(LOG_NOTICE,"N!",tmp); 
 		}
 		if(c==4) {
-			const char* nupguess = "../nupguess";
-			if(menu_exists(nupguess))
-				menu(nupguess, P_NOABORT);
+			menu("../nupguess", P_NOABORT|P_NOERROR);
 			hangup();
 			return(FALSE); 
 		} 
@@ -162,14 +160,14 @@ BOOL sbbs_t::newuser()
 
 		if(useron.misc&ANSI) {
 			useron.rows=0;	/* Auto-rows */
-			if(!(cfg.uq&UQ_COLORTERM) || useron.misc&(RIP|WIP|HTML) || text[ColorTerminalQ][0]==0 || yesno(text[ColorTerminalQ]))
+			if(!(cfg.uq&UQ_COLORTERM) || useron.misc&(RIP|WIP|HTML) || yesno(text[ColorTerminalQ]))
 				useron.misc|=COLOR; 
 			else
 				useron.misc&=~COLOR;
 		}
 		else
 			useron.rows=24;
-		if(!(useron.misc&PETSCII) && text[ExAsciiTerminalQ][0] && !yesno(text[ExAsciiTerminalQ]))
+		if(!(useron.misc&PETSCII) && !yesno(text[ExAsciiTerminalQ]))
 			useron.misc|=NO_EXASCII;
 		else
 			useron.misc&=~NO_EXASCII;
@@ -306,15 +304,9 @@ BOOL sbbs_t::newuser()
 	SAFEPRINTF(str,"New user: %s",useron.alias);
 	logline("N",str);
 	if(!online) return(FALSE);
-	const char* fname = "../sbbs";
-	if(menu_exists(fname))
-		menu(fname, P_NOABORT);
-	fname = "../system";
-	if(menu_exists(fname))
-		menu(fname, P_NOABORT);
-	fname = "../newuser";
-	if(menu_exists(fname))
-		menu(fname, P_NOABORT);
+	menu("../sbbs", P_NOABORT|P_NOERROR);
+	menu("../system", P_NOABORT|P_NOERROR);
+	menu("../newuser", P_NOABORT|P_NOERROR);
 	answertime=time(NULL);		/* could take 10 minutes to get this far */
 
 	/* Default editor (moved here, after terminal type setup Jan-2003) */
@@ -429,9 +421,7 @@ BOOL sbbs_t::newuser()
 	delallmail(useron.number, MAIL_ANY);
 
 	if(useron.number!=1 && cfg.node_valuser) {
-		const char* fname = "../feedback";
-		if(menu_exists(fname))
-			menu(fname, P_NOABORT);
+		menu("../feedback", P_NOABORT|P_NOERROR);
 		safe_snprintf(str,sizeof(str),text[NewUserFeedbackHdr]
 			,nulstr,getage(&cfg,useron.birth),useron.sex,useron.birth
 			,useron.name,useron.phone,useron.comp,useron.modem);
