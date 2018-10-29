@@ -1376,7 +1376,7 @@ void gen_notify_list(nodecfg_t* nodecfg)
 		if(nodecfg != NULL && &cfg.nodecfg[k] != nodecfg)
 			continue;
 
-		if(!cfg.nodecfg[k].send_notify)
+		if(!cfg.nodecfg[k].send_notify || cfg.nodecfg[k].passive)
 			continue;
 
 		if((tmpf=tmpfile())==NULL) {
