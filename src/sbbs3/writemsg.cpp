@@ -790,7 +790,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 		bprintf("\r\nMessage editor: Read in %d lines\r\n",lines);
 	bprintf(text[EnterMsgNow],maxlines);
 
-	if(!menu("msgtabs")) {
+	if(!menu("msgtabs", P_NOERROR)) {
 		for(i=0; i < (cols-1); i++) {
 			if(i%EDIT_TABSIZE || !i)
 				outchar('-');
