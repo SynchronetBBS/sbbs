@@ -80,6 +80,10 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 	char*	wrapped=NULL;
 	FILE*	fp;
 	ushort useron_xedit = useron.xedit;
+	uint8_t	org_cols = TERM_COLS_DEFAULT;
+
+	if(msg->columns != 0)
+		org_cols = msg->columns;
 
 	if(useron_xedit && !chk_ar(cfg.xedit[useron_xedit-1]->ar, &useron, &client))
 		useron_xedit = 0;
@@ -94,8 +98,8 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 
 	if((buf=smb_getmsgtxt(&smb,msg,tails)) != NULL) {
 		strip_invalid_attr(buf);
-		if(useron_xedit && (cfg.xedit[useron_xedit-1]->misc&QUOTEWRAP))
-			wrapped=::wordwrap(buf, cols-4, cols-1, /* handle_quotes: */TRUE);
+		if(!useron_xedit || (useron_xedit && (cfg.xedit[useron_xedit-1]->misc&QUOTEWRAP)))
+			wrapped=::wordwrap(buf, cols-4, org_cols - 1, /* handle_quotes: */TRUE);
 		if(wrapped!=NULL) {
 			fputs(wrapped,fp);
 			free(wrapped);

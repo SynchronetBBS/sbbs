@@ -204,6 +204,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 		/* Synchronet */
 		if((p=(char*)smb_get_hfield(msg,hfield_type=SMB_EDITOR,NULL))!=NULL)	
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
+		if((p=(char*)smb_get_hfield(msg,hfield_type=SMB_COLUMNS,NULL))!=NULL)	
+			fprintf(hdrs,"%s: %u\n", smb_hfieldtype(hfield_type), *(uint8_t*)p);
 		if((p=(char*)smb_get_hfield(msg,hfield_type=SMB_TAGS,NULL))!=NULL)	
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
 

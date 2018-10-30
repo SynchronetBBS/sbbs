@@ -120,9 +120,12 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 
 	/* variable fields */
 	for(i=0;i<msg->total_hfields;i++) {
-		char *p;
+		char* p = str;
 		bprintf("%-16.16s ",smb_hfieldtype(msg->hfield[i].type));
 		switch(msg->hfield[i].type) {
+			case SMB_COLUMNS:
+				sprintf(str, "%u", *(uint8_t*)msg->hfield_dat[i]);
+				break;
 			case SENDERNETTYPE:
 			case RECIPIENTNETTYPE:
 			case REPLYTONETTYPE:

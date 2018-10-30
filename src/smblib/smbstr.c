@@ -80,6 +80,7 @@ char* SMBCALL smb_hfieldtype(uint16_t type)
 		case SMB_COST:			return("Cost");
 		case SMB_EDITOR:		return("Editor");
 		case SMB_TAGS:			return("Tags");
+		case SMB_COLUMNS:		return("Columns");
 		case FORWARDED:			return("Forwarded");
 
 		/* All X-FTN-* are RFC-compliant */

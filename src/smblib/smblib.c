@@ -857,6 +857,9 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case SMB_TAGS:
 			msg->tags=(char*)hfield_dat;
 			break;
+		case SMB_COLUMNS:
+			msg->columns=*(uint8_t*)hfield_dat;
+			break;
 		case SMB_EXPIRATION:
 			msg->expiration=*(uint32_t*)hfield_dat;
 			break;
