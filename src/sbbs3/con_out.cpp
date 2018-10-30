@@ -84,8 +84,8 @@ int sbbs_t::bputs(const char *str)
 	return(l);
 }
 
-/* Perform PETSCII terminal output translation */
-static unsigned char petscii(unsigned char ch)
+/* Perform PETSCII terminal output translation (from ASCII/CP437) */
+unsigned char cp437_to_petscii(unsigned char ch)
 {
 	if(isalpha(ch))
 		return ch ^ 0x20;	/* swap upper/lower case */
@@ -151,12 +151,91 @@ static unsigned char petscii(unsigned char ch)
 		case 207:
 		case 208:
 		case 193:		return '\xB1';
-
 	}
 	if(ch&0x80)
 		return exascii_to_ascii_char(ch);
 	return ch;
 }
+
+/* Perform PETSCII conversion to ANSI-BBS/CP437 */
+int sbbs_t::petscii_to_ansibbs(unsigned char ch)
+{
+	if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
+		ch = 0x60 | (ch&0x1f);
+	if(isalpha(ch))
+		return outchar(ch ^ 0x20);	/* swap upper/lower case */
+	switch(ch) {
+		case '\r':					newline();		break;
+		case PETSCII_HOME:			cursor_home();	break;
+		case PETSCII_CLEAR:			return CLS;
+		case PETSCII_DELETE:		backspace();	break;
+		case PETSCII_LEFT:			cursor_left();	break;
+		case PETSCII_RIGHT:			cursor_right();	break;
+		case PETSCII_UP:			cursor_up();	break;
+		case PETSCII_DOWN:			cursor_down();	break;
+
+		case PETSCII_BRITPOUND:		return outchar((char)156);
+		case PETSCII_CHECKMARK:		return outchar((char)251);
+		case PETSCII_CHECKERBRD:
+		case PETSCII_LIGHTHASH:		return outchar((char)176);
+		case 0x7e:
+		case PETSCII_MEDIUMHASH:	return outchar((char)177);
+		case PETSCII_HEAVYHASH:		return outchar((char)178);
+		case PETSCII_SOLID:			return outchar((char)219);
+		case PETSCII_BOTTOMHALF:	return outchar((char)220);
+		case PETSCII_LEFTHALF:		return outchar((char)221);
+		case PETSCII_RIGHTHALF:		return outchar((char)222);
+		case PETSCII_TOPHALF:		return outchar((char)223);
+		case PETSCII_LWRLFTBOX:
+		case PETSCII_LWRRHTBOX:
+		case PETSCII_UPRRHTBOX:
+		case PETSCII_UPRLFTBOX:		return outchar((char)254);
+
+		/* Line drawing chars */
+		case 0x7D:
+		case PETSCII_VERTLINE:		return outchar((char)179);
+		case PETSCII_HORZLINE:		return outchar((char)196);
+		case 0x7B:
+		case PETSCII_CROSS:			return outchar((char)197);
+		case (uchar)'\xBD':			return outchar((char)217);
+		case (uchar)'\xB0':			return outchar((char)218);
+		case (uchar)'\xAE':			return outchar((char)191);
+		case (uchar)'\xAD':			return outchar((char)192);
+		case (uchar)'\xAB':			return outchar((char)195);
+		case (uchar)'\xB3':			return outchar((char)180);
+		case (uchar)'\xB2':			return outchar((char)194);
+		case (uchar)'\xB1':			return outchar((char)193);
+		case PETSCII_BLACK:			return attr(BLACK);
+		case PETSCII_WHITE:			return attr(WHITE);
+		case PETSCII_RED:			return attr(RED);
+		case PETSCII_GREEN:			return attr(GREEN);
+		case PETSCII_BLUE:			return attr(BLUE);
+		case PETSCII_ORANGE:		return attr(MAGENTA);
+		case PETSCII_BROWN:			return attr(BROWN);
+		case PETSCII_YELLOW:		return attr(YELLOW);
+		case PETSCII_CYAN:			return attr(LIGHTCYAN);
+		case PETSCII_LIGHTRED:		return attr(LIGHTRED);
+		case PETSCII_DARKGRAY:		return attr(DARKGRAY);
+		case PETSCII_MEDIUMGRAY:	return attr(CYAN);
+		case PETSCII_LIGHTGREEN:	return attr(LIGHTGREEN);
+		case PETSCII_LIGHTBLUE:		return attr(LIGHTBLUE);
+		case PETSCII_LIGHTGRAY:		return attr(LIGHTGRAY);
+		case PETSCII_PURPLE:		return attr(LIGHTMAGENTA);
+		case PETSCII_REVERSE_ON:	return attr((curatr&0x07) << 4);
+		case PETSCII_REVERSE_OFF:	return attr(curatr >> 4);
+		case PETSCII_FLASH_ON:		return attr(curatr | BLINK);
+		case PETSCII_FLASH_OFF:		return attr(curatr & ~BLINK);
+		default:					
+			if(ch&0x80)				return bprintf("#%3d", ch);
+			return outchar(ch);
+		case PETSCII_UPPERLOWER:
+		case PETSCII_UPPERGRFX:
+			/* Do nothing */
+			return 0;
+	}
+	return 0;
+}
+
 
 /****************************************************************************/
 /* Raw put string (remotely)												*/
@@ -176,9 +255,9 @@ int sbbs_t::rputs(const char *str, size_t len)
 	for(l=0;l<len && online;l++) {
 		if(str[l]==(char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
 			outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
-		char ch = str[l];
+		uchar ch = str[l];
 		if(term&PETSCII)
-			ch = petscii(ch);
+			ch = cp437_to_petscii(ch);
 		if(outcom(ch)!=0)
 			break;
 		if(lbuflen<LINE_BUFSIZE)
@@ -257,7 +336,7 @@ long sbbs_t::term_supports(long cmp_flags)
 /* Performs column counting, line counting, and auto-pausing				*/
 /* Performs saveline buffering (for restoreline)							*/
 /****************************************************************************/
-void sbbs_t::outchar(char ch)
+int sbbs_t::outchar(char ch)
 {
 	/*
 	 * outchar_esc values:
@@ -271,7 +350,7 @@ void sbbs_t::outchar(char ch)
      */
 
 	if(console&CON_ECHO_OFF)
-		return;
+		return 0;
 	if(ch==ESC && outchar_esc < 4)
 		outchar_esc=1;
 	else if(outchar_esc==1) {
@@ -349,7 +428,7 @@ void sbbs_t::outchar(char ch)
 			if(ch==(char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
 				outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
 			if(term&PETSCII) {
-				char pet = petscii(ch);
+				uchar pet = cp437_to_petscii(ch);
 				if(pet == PETSCII_SOLID)
 					outcom(PETSCII_REVERSE_ON);
 				outcom(pet);
@@ -404,6 +483,7 @@ void sbbs_t::outchar(char ch)
 		lncntr=0;
 		pause();
 	}
+	return 0;
 }
 
 void sbbs_t::center(char *instr)
@@ -803,7 +883,7 @@ void sbbs_t::ctrl_a(char x)
 /****************************************************************************/
 /* Sends terminal control codes to change remote terminal colors/attributes */
 /****************************************************************************/
-void sbbs_t::attr(int atr)
+int sbbs_t::attr(int atr)
 {
 	char	str[16];
 	int		newatr = atr;
@@ -873,6 +953,7 @@ void sbbs_t::attr(int atr)
 	else if(term&ANSI)
 		rputs(ansi(newatr,curatr,str));
 	curatr=newatr;
+	return 0;
 }
 
 /****************************************************************************/

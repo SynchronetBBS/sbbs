@@ -76,28 +76,28 @@ enum petscii_char {
 	/* Symbols (which don't align with ASCII) */
 	PETSCII_BRITPOUND	= 92,
 	/* Graphic chars */
-	PETSCII_LIGHTHASH	= '\xA6',
-	PETSCII_MEDIUMHASH	= '\xDE',
-	PETSCII_HEAVYHASH	= '\xA9',
-	PETSCII_SOLID		= '\xA0',	// Actually inversed solid (empty)
-	PETSCII_LEFTHALF	= '\xA1',
-	PETSCII_RIGHTHALF	= '\xB6',	// Not quite a full half
-	PETSCII_TOPHALF		= '\xB8',	// Not quite a full half
-	PETSCII_BOTTOMHALF	= '\xA2',
-	PETSCII_CHECKMARK	= '\xBA',
-	PETSCII_CROSS		= '\xDB',
-	PETSCII_HORZLINE	= '\xC0',
-	PETSCII_VERTLINE	= '\xDD',
-	PETSCII_LWRRHTBOX	= '\xAC',
-	PETSCII_LWRLFTBOX	= '\xBB',
-	PETSCII_UPRRHTBOX	= '\xBC',
-	PETSCII_UPRLFTBOX	= '\xBE',
-	PETSCII_CHECKERBRD	= '\xBF',
+	PETSCII_LIGHTHASH	= 0xA6,
+	PETSCII_MEDIUMHASH	= 0xDE,
+	PETSCII_HEAVYHASH	= 0xA9,
+	PETSCII_SOLID		= 0xA0,	// Actually inversed solid (empty)
+	PETSCII_LEFTHALF	= 0xA1,
+	PETSCII_RIGHTHALF	= 0xB6,	// Not quite a full half
+	PETSCII_TOPHALF		= 0xB8,	// Not quite a full half
+	PETSCII_BOTTOMHALF	= 0xA2,
+	PETSCII_CHECKMARK	= 0xBA,
+	PETSCII_CROSS		= 0xDB,
+	PETSCII_HORZLINE	= 0xC0,
+	PETSCII_VERTLINE	= 0xDD,
+	PETSCII_LWRRHTBOX	= 0xAC,
+	PETSCII_LWRLFTBOX	= 0xBB,
+	PETSCII_UPRRHTBOX	= 0xBC,
+	PETSCII_UPRLFTBOX	= 0xBE,
+	PETSCII_CHECKERBRD	= 0xBF,
 	/* Replacement chars (missing ASCII chars) */
-	PETSCII_BACKSLASH	= '/',		// the 109 graphics char is an 'M' in shifted/text mode :-(
-	PETSCII_BACKTICK	= '\xAD',	// a graphics char actually
-	PETSCII_TILDE		= '\xA8',	// a graphics char actually
-	PETSCII_UNDERSCORE	= '\xA4',	// a graphics char actually
+	PETSCII_BACKSLASH	= '/',	// the 109 graphics char is an 'M' in shifted/text mode :-(
+	PETSCII_BACKTICK	= 0xAD,	// a graphics char actually
+	PETSCII_TILDE		= 0xA8,	// a graphics char actually
+	PETSCII_UNDERSCORE	= 0xA4,	// a graphics char actually
 };
 
 #endif /* Don't add anything after this line */

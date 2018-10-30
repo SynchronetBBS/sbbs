@@ -43,32 +43,29 @@
 /* for pauses, aborts and ANSI. 'str' is the path of the file to print      */
 /* Called from functions menu and text_sec                                  */
 /****************************************************************************/
-bool sbbs_t::printfile(char *str, long mode)
+bool sbbs_t::printfile(const char* fname, long mode)
 {
 	char* buf;
+	char fpath[MAX_PATH+1];
 	char* p;
 	int file;
-	BOOL wip=FALSE,rip=FALSE,html=FALSE;
+	BOOL rip=FALSE;
 	long l,length,savcon=console;
 	FILE *stream;
 
-	p=strrchr(str,'.');
+	SAFECOPY(fpath, fname);
+	fexistcase(fpath);
+	p=getfext(fpath);
 	if(p!=NULL) {
-		if(stricmp(p,".wip")==0) {
-			wip=TRUE;
-			mode|=P_NOPAUSE;
-		}
-		else if(stricmp(p,".rip")==0) {
+		if(stricmp(p,".rip")==0) {
 			rip=TRUE;
 			mode|=P_NOPAUSE;
-		}
-		else if(stricmp(p,".html")==0)  {
-			html=TRUE;
-			mode|=(P_HTML|P_NOPAUSE);
+		} else if(stricmp(p, ".seq") == 0) {
+			mode |= P_PETSCII;
 		}
 	}
 
-	if(mode&P_NOABORT || wip || rip || html) {
+	if(mode&P_NOABORT || rip) {
 		if(online==ON_REMOTE && console&CON_R_ECHO) {
 			rioctl(IOCM|ABORT);
 			rioctl(IOCS|ABORT); 
@@ -76,17 +73,16 @@ bool sbbs_t::printfile(char *str, long mode)
 		sys_status&=~SS_ABORT; 
 	}
 
-	if(!(mode&P_NOCRLF) && !tos && !wip && !rip && !html) {
+	if(!(mode&P_NOCRLF) && !tos && !rip) {
 		CRLF;
 	}
 
-	fexistcase(str);
-	if((stream=fnopen(&file,str,O_RDONLY|O_DENYNONE))==NULL) {
+	if((stream=fnopen(&file,fpath,O_RDONLY|O_DENYNONE))==NULL) {
 		if(!(mode&P_NOERROR)) {
 			lprintf(LOG_NOTICE,"!Error %d (%s) opening: %s"
-				,errno,strerror(errno),str);
+				,errno,strerror(errno),fpath);
 			bputs(text[FileNotFound]);
-			if(SYSOP) bputs(str);
+			if(SYSOP) bputs(fpath);
 			CRLF;
 		}
 		return false; 
@@ -95,25 +91,25 @@ bool sbbs_t::printfile(char *str, long mode)
 	length=(long)filelength(file);
 	if(length<0) {
 		fclose(stream);
-		errormsg(WHERE,ERR_CHK,str,length);
+		errormsg(WHERE,ERR_CHK,fpath,length);
 		return false;
 	}
 	if((buf=(char*)malloc(length+1L))==NULL) {
 		fclose(stream);
-		errormsg(WHERE,ERR_ALLOC,str,length+1L);
+		errormsg(WHERE,ERR_ALLOC,fpath,length+1L);
 		return false; 
 	}
 	l=lread(file,buf,length);
 	fclose(stream);
 	if(l!=length)
-		errormsg(WHERE,ERR_READ,str,length);
+		errormsg(WHERE,ERR_READ,fpath,length);
 	else {
 		buf[l]=0;
 		putmsg(buf,mode);
 	}
 	free(buf); 
 
-	if((mode&P_NOABORT || wip || rip || html) && online==ON_REMOTE) {
+	if((mode&P_NOABORT || rip) && online==ON_REMOTE) {
 		SYNC;
 		rioctl(IOSM|ABORT); 
 	}
@@ -123,13 +119,16 @@ bool sbbs_t::printfile(char *str, long mode)
 	return true;
 }
 
-bool sbbs_t::printtail(char *str, int lines, long mode)
+bool sbbs_t::printtail(const char* fname, int lines, long mode)
 {
 	char*	buf;
+	char	fpath[MAX_PATH+1];
 	char*	p;
 	int		file,cur=0;
 	long	length,l;
 
+	SAFECOPY(fpath, fname);
+	fexistcase(fpath);
 	if(mode&P_NOABORT) {
 		if(online==ON_REMOTE) {
 			rioctl(IOCM|ABORT);
@@ -140,13 +139,12 @@ bool sbbs_t::printtail(char *str, int lines, long mode)
 	if(!tos) {
 		CRLF; 
 	}
-	fexistcase(str);
-	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
+	if((file=nopen(fpath,O_RDONLY|O_DENYNONE))==-1) {
 		if(!(mode&P_NOERROR)) {
 			lprintf(LOG_NOTICE,"!Error %d (%s) opening: %s"
-				,errno,strerror(errno),str);
+				,errno,strerror(errno),fpath);
 			bputs(text[FileNotFound]);
-			if(SYSOP) bputs(str);
+			if(SYSOP) bputs(fpath);
 			CRLF;
 		}
 		return false; 
@@ -154,18 +152,18 @@ bool sbbs_t::printtail(char *str, int lines, long mode)
 	length=(long)filelength(file);
 	if(length<0) {
 		close(file);
-		errormsg(WHERE,ERR_CHK,str,length);
+		errormsg(WHERE,ERR_CHK,fpath,length);
 		return false;
 	}
 	if((buf=(char*)malloc(length+1L))==NULL) {
 		close(file);
-		errormsg(WHERE,ERR_ALLOC,str,length+1L);
+		errormsg(WHERE,ERR_ALLOC,fpath,length+1L);
 		return false; 
 	}
 	l=lread(file,buf,length);
 	close(file);
 	if(l!=length)
-		errormsg(WHERE,ERR_READ,str,length);
+		errormsg(WHERE,ERR_READ,fpath,length);
 	else {
 		buf[l]=0;
 		p=(buf+l)-1;

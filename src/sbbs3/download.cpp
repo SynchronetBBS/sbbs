@@ -226,12 +226,12 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	/* enable telnet binary transmission in both directions */
 	request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
 	request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
-	ex_mode=0;
+	ex_mode = EX_BIN;
 	if(prot->misc&PROT_NATIVE)
 		ex_mode|=EX_NATIVE;
 #ifdef __unix__		/* file xfer progs must use stdio on Unix */
 	if(!(prot->misc&PROT_SOCKET))
-		ex_mode|=(EX_STDIO|EX_BIN);
+		ex_mode|=EX_STDIO;
 #endif
 
 	i=external(cmdline,ex_mode,p);

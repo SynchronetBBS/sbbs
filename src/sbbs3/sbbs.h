@@ -703,7 +703,7 @@ public:
 #endif
 	;
 	void	backspace(void);				/* Output a destructive backspace via outchar */
-	void	outchar(char ch);				/* Output a char - check echo and emu.  */
+	int		outchar(char ch);				/* Output a char - check echo and emu.  */
 	void	center(char *str);
 	void	clearline(void);
 	void	cleartoeol(void);
@@ -721,6 +721,9 @@ public:
 	void	progress(const char* str, int count, int total, int interval=1);
 	bool	saveline(void);
 	bool	restoreline(void);
+	int		petscii_to_ansibbs(unsigned char);
+	int		attr(int);				/* Change text color/attributes */
+	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
 
 	/* getstr.cpp */
 	size_t	getstr_offset;
@@ -744,8 +747,8 @@ public:
 	char	handle_ctrlkey(char ch, long mode=0);
 
 	/* prntfile.cpp */
-	bool	printfile(char *str, long mode);
-	bool	printtail(char *str, int lines, long mode);
+	bool	printfile(const char* fname, long mode);
+	bool	printtail(const char* fname, int lines, long mode);
 	bool	menu(const char *code, long mode = 0);
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
 
@@ -755,8 +758,6 @@ public:
 	long	mselect(const char *title, str_list_t list, unsigned max_selections, const char* item_fmt, const char* selected_str, const char* unselected_str, const char* prompt_fmt);
 
 	void	redrwstr(char *strin, int i, int l, long mode);
-	void	attr(int atr);				/* Change local and remote text attributes */
-	void	ctrl_a(char x);			/* Peforms the Ctrl-Ax attribute changes */
 
 	/* atcodes.cpp */
 	int		show_atcode(const char *code);
@@ -1174,6 +1175,9 @@ extern "C" {
 
 	/* qwk.cpp */
 	DLLEXPORT int		qwk_route(scfg_t*, const char *inaddr, char *fulladdr, size_t maxlen);
+
+	/* con_out.cpp */
+	unsigned char		cp437_to_petscii(unsigned char);
 
 #ifdef JAVASCRIPT
 

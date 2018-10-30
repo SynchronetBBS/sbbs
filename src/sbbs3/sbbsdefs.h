@@ -754,6 +754,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define P_CPM_EOF	(1<<8)		/* Ignore Ctrl-Z chars (CPM End-of-File)	*/
 #define	P_TRUNCATE	(1<<9)		/* Truncate (don't display) long lines		*/
 #define P_NOERROR	(1<<10)		/* Don't report error if file doesn't exist	*/
+#define P_PETSCII	(1<<11)		/* Message is native PETSCII				*/
 
 								/* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1<<0)		/* List files by upload time                */
