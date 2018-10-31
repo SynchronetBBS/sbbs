@@ -2289,10 +2289,11 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 		return(FALSE);
 
 	SAFECOPY(alias,fullalias);
-	p=strrchr(alias+1,'/');
+	p = getfname(alias);
 	if(p) {
-		*p=0;
-		fname=p+1;
+		fname = p;
+		if(p != alias)
+			*(p-1) = 0;
 	}
 
 	if(filename==NULL /* directory */ && *fname /* filename specified */) {
@@ -5715,7 +5716,7 @@ static void ctrl_thread(void* arg)
 			if(success)
 				sockprintf(sock,sess,"250 CWD command successful.");
 			else {
-				sockprintf(sock,sess,"550 %s: No such file or directory.",p);
+				sockprintf(sock,sess,"550 %s: No such directory.",p);
 				curlib=orglib;
 				curdir=orgdir;
 			}
