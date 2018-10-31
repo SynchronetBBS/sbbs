@@ -189,6 +189,7 @@ static struct init_field {
 #define BBS_OPT_NO_HOST_LOOKUP		(1<<11)
 #define BBS_OPT_ALLOW_SSH			(1<<12)	/* Allow logins via BSD SSH			*/
 #define BBS_OPT_NO_DOS				(1<<13) /* Don't attempt to run 16-bit DOS programs */
+#define BBS_OPT_NO_NEWDAY_EVENTS	(1<<14)	/* Don't check for a new day in event thread */
 #define BBS_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
 #define BBS_OPT_GET_IDENT			(1<<28)	/* Get Identity (RFC 1413)			*/
 #define BBS_OPT_NO_JAVASCRIPT		(1<<29)	/* JavaScript disabled				*/
@@ -213,6 +214,7 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_NO_SPY_SOCKETS		,"NO_SPY_SOCKETS"		},
 	{ BBS_OPT_ALLOW_SSH				,"ALLOW_SSH"			},
 	{ BBS_OPT_NO_DOS				,"NO_DOS"				},
+	{ BBS_OPT_NO_NEWDAY_EVENTS		,"NO_NEWDAY_EVENTS"		},
 	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
 	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
