@@ -398,7 +398,7 @@ bool sbbs_t::noyes(const char *str)
     char ch;
 
 	if(*str == 0)
-		return false;
+		return true;
 	SAFECOPY(question,str);
 	SYNC;
 	bprintf(text[NoYesQuestion],str);
