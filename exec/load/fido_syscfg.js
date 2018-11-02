@@ -18,7 +18,7 @@
  * get_pw(node)		node is a address string to look up a password for.  matches against wildcards.
  * match_pw(node, pw)	checks that the specified password string (pw) matches the password for the given node address (node).
  */
-var fido_addr = load({}, 'fidoaddr.js');
+var fidoaddr = load({}, 'fidoaddr.js');
 
 function SBBSEchoCfg ()
 {
@@ -64,7 +64,7 @@ function SBBSEchoCfg ()
 }
 SBBSEchoCfg.prototype.get_ticpw = function(node)
 {
-  if (!fido_addr.is_valid(node)) throw 'get_ticpw: Invalid address ' + node;
+  if (!fidoaddr.is_valid(node)) throw 'get_ticpw: Invalid address ' + node;
 	var n = node;
 	while(n) {
 		if (this.ticpass[n] !== undefined)
@@ -82,7 +82,7 @@ SBBSEchoCfg.prototype.get_ticpw = function(node)
 };
 SBBSEchoCfg.prototype.get_pw = function(node)
 {
-  if (!fido_addr.is_valid(node)) throw 'get_pw: Invalid address ' + node;
+  if (!fidoaddr.is_valid(node)) throw 'get_pw: Invalid address ' + node;
 	var n = node;
 	while(n) {
 		if (this.pktpass[n] !== undefined)
