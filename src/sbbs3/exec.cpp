@@ -39,7 +39,7 @@
 #include "cmdshell.h"
 #include "js_request.h"
 
-char ** sbbs_t::getstrvar(csi_t *bin, int32_t name)
+char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 {
 	uint i;
 
@@ -124,7 +124,7 @@ char ** sbbs_t::getstrvar(csi_t *bin, int32_t name)
 	return((char **)&sysvar_p[sysvar_pi++]);
 }
 
-int32_t * sbbs_t::getintvar(csi_t *bin, int32_t name)
+int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 {
 	uint i;
 
