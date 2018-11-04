@@ -234,9 +234,10 @@ void sys_cfg(void)
 				strcpy(opt[i++],"Bangkok");
 				strcpy(opt[i++],"Hong Kong");
 				strcpy(opt[i++],"Tokyo");
-				strcpy(opt[i++],"Sydney");
+				strcpy(opt[i++],"Australian Central");
+				strcpy(opt[i++],"Australian Eastern");
 				strcpy(opt[i++],"Noumea");
-				strcpy(opt[i++],"Wellington");
+				strcpy(opt[i++],"New Zealand");
 				strcpy(opt[i++],"Other...");
 				opt[i][0]=0;
 				i=0;
@@ -324,13 +325,16 @@ void sys_cfg(void)
 						cfg.sys_timezone=TOK;
 						break;
 					case 22:
-						cfg.sys_timezone=SYD;
+						cfg.sys_timezone=ACST;
 						break;
 					case 23:
-						cfg.sys_timezone=NOU;
+						cfg.sys_timezone=AEST;
 						break;
 					case 24:
-						cfg.sys_timezone=WEL;
+						cfg.sys_timezone=NOU;
+						break;
+					case 25:
+						cfg.sys_timezone=NZST;
 						configure_dst();
 						break;
 					default:

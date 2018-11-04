@@ -123,7 +123,7 @@
 #define HDT 				0xC258		/* Hawaii/Alaska		(-09:00) */
 #define BDT 				0xC294		/* Bering				(-10:00) */
 
-										/* Non-standard Time Zones */
+										/* Non-US Time Zones */
 #define MID 				0x2294		/* Midway				(-11:00) */
 #define VAN 				0x21E0		/* Vancouver			(-08:00) */
 #define EDM 				0x21A4		/* Edmonton 			(-07:00) */
@@ -149,13 +149,18 @@
 #define BAN 				0x11A4		/* Bangkok				(+07:00) */
 #define HON 				0x11E0		/* Hong Kong			(+08:00) */
 #define TOK 				0x121C		/* Tokyo				(+09:00) */
-#define SYD 				0x1258		/* Sydney				(+10:00) */
+#define ACST				0x123a		/* Australian Central	(+09:30) */
+#define AEST 				0x1258		/* Australian Eastern	(+10:00) (Sydney) */
+#define ACDT				0x923a		/* Australian Central D	(+10:30) */
+#define AEDT 				0x9258		/* Australian Eastern D	(+11:00) (Sydney) */
 #define NOU 				0x1294		/* Noumea				(+11:00) */
-#define WEL 				0x12D0		/* Wellington			(+12:00) */
+#define NZST 				0x12D0		/* New Zealand 			(+12:00) (Wellington) */
+#define NZDT				0x92D0		/* New Zealand Daylight	(+13:00) (Wellington) */
 
 #define OTHER_ZONE(zone) (zone<=1000 && zone>=-1000)
 
-#define SMB_TZ_HAS_DST(zone)	((!OTHER_ZONE(zone)) && ((zone&(US_ZONE|DAYLIGHT)) || zone==WET || zone==CET || zone==EET || zone==WEL))
+#define SMB_TZ_HAS_DST(zone)	((!OTHER_ZONE(zone)) && ((zone&(US_ZONE|DAYLIGHT)) \
+								|| zone==WET || zone==CET || zone==EET || zone==NZST || zone==AEST || zone==ACST))
 
 										/* Valid hfield_t.types */
 #define SENDER				0x00

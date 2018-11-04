@@ -228,9 +228,13 @@ char* SMBCALL smb_zonestr(int16_t zone, char* str)
 		case BAN:   return("BAN");
 		case HON:   return("HON");
 		case TOK:   return("TOK");
-		case SYD:   return("SYD");
+		case ACST:	return("ACST");
+		case ACDT:	return("ACDT");
+		case AEST:	return("AEST");
+		case AEDT:	return("AEDT");
 		case NOU:   return("NOU");
-		case WEL:   return("WEL");
+		case NZST:  return("NZST");
+		case NZDT:  return("NZDT");
 	}
 
 	if(!OTHER_ZONE(zone)) {
