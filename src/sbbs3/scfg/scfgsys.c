@@ -331,6 +331,7 @@ void sys_cfg(void)
 						break;
 					case 24:
 						cfg.sys_timezone=WEL;
+						configure_dst();
 						break;
 					default:
 						if(cfg.sys_timezone>720 || cfg.sys_timezone<-720)

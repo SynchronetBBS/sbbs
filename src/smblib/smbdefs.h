@@ -155,7 +155,7 @@
 
 #define OTHER_ZONE(zone) (zone<=1000 && zone>=-1000)
 
-#define SMB_TZ_HAS_DST(zone)	((!OTHER_ZONE(zone)) && ((zone&(US_ZONE|DAYLIGHT)) || zone==WET || zone==CET || zone==EET))
+#define SMB_TZ_HAS_DST(zone)	((!OTHER_ZONE(zone)) && ((zone&(US_ZONE|DAYLIGHT)) || zone==WET || zone==CET || zone==EET || zone==WEL))
 
 										/* Valid hfield_t.types */
 #define SENDER				0x00
