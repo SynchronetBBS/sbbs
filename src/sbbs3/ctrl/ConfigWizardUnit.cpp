@@ -82,9 +82,10 @@ short tz_val[]= {
     ,BAN
     ,HON
     ,TOK
-    ,SYD
+    ,ACST
+    ,AEST
     ,NOU
-    ,WEL
+    ,NZST
 };
 
 char* tz_str[]={
@@ -119,9 +120,10 @@ char* tz_str[]={
     ,"Bangkok"
     ,"Hong Kong"
     ,"Tokyo"
-    ,"Sydney"
+    ,"Australian Central"
+    ,"Australian Eastern"
     ,"Noumea"
-    ,"Wellington"
+    ,"New Zealand"
 };
 
 //---------------------------------------------------------------------------
