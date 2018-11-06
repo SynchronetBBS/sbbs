@@ -339,8 +339,9 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	/* Generate FTN (FTS-9) MSGID */
 	if(cfg.sub[subnum]->misc&SUB_FIDO) {
-		ftn_msgid(cfg.sub[subnum],&msg,msg_id,sizeof(msg_id));
-		smb_hfield_str(&msg,FIDOMSGID,msg_id);
+		char* p;
+		if((p = ftn_msgid(cfg.sub[subnum],&msg,msg_id,sizeof(msg_id))) != NULL)
+			smb_hfield_str(&msg, FIDOMSGID, p);
 	}
 
 	/* Generate FidoNet Program Identifier */
@@ -512,8 +513,9 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
  	/* Generate FidoNet MSGID (for FidoNet sub-boards) */
  	if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FIDO 
 		&& msg->ftn_msgid==NULL) {
- 		ftn_msgid(cfg->sub[smb->subnum],msg,msg_id,sizeof(msg_id));
- 		smb_hfield_str(msg,FIDOMSGID,msg_id);
+		char* p;
+ 		if((p = ftn_msgid(cfg->sub[smb->subnum],msg,msg_id,sizeof(msg_id))) != NULL)
+ 			smb_hfield_str(msg, FIDOMSGID, p);
  	}
 
 	/* Generate FidoNet Program Identifier */
