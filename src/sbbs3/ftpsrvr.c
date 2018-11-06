@@ -2296,11 +2296,6 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 			*(p-1) = 0;
 	}
 
-	if(filename==NULL /* directory */ && *fname /* filename specified */) {
-		fclose(fp);
-		return(FALSE);
-	}
-
 	while(!feof(fp)) {
 		if(!fgets(line,sizeof(line),fp))
 			break;
@@ -2323,6 +2318,9 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 		tp=p;		/* terminator */
 		FIND_WHITESPACE(tp);
 		if(*tp) *tp=0;
+
+		if(filename == NULL /* CWD? */ && *lastchar(p) != '/')
+			return FALSE;
 
 		if(!strnicmp(p,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
 			if((dir=getdir(p+strlen(BBS_VIRTUAL_PATH),user,client))<0)	{
