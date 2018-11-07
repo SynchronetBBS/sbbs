@@ -127,7 +127,7 @@ DLLEXPORT BOOL	DLLCALL filter_ip(scfg_t*, const char* prot, const char* reason, 
 								  ,const char* ip_addr, const char* username, const char* fname);
 
 /* user .ini file access */
-DLLEXPORT BOOL DLLCALL user_get_property(scfg_t*, unsigned user_number, const char* section, const char* key, char* value);
+DLLEXPORT BOOL DLLCALL user_get_property(scfg_t*, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen);
 DLLEXPORT BOOL DLLCALL user_set_property(scfg_t*, unsigned user_number, const char* section, const char* key, const char* value);
 DLLEXPORT BOOL DLLCALL user_set_time_property(scfg_t*, unsigned user_number, const char* section, const char* key, time_t);
 

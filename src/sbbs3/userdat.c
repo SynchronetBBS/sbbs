@@ -3277,14 +3277,17 @@ static FILE* user_ini_open(scfg_t* scfg, unsigned user_number, BOOL create)
 	return iniOpenFile(path, create);
 }
 
-BOOL DLLCALL user_get_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, char* value)
+BOOL DLLCALL user_get_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen)
 {
 	FILE* fp;
+	char buf[INI_MAX_VALUE_LEN];
 
 	fp = user_ini_open(scfg, user_number, /* create: */FALSE);
 	if(fp == NULL)
 		return FALSE;
-	char* result = iniReadValue(fp, section, key, NULL, value);
+	char* result = iniReadValue(fp, section, key, NULL, buf);
+	if(result != NULL)
+		safe_snprintf(value, maxlen, "%s", result);
 	iniCloseFile(fp);
 	return result != NULL;
 }
