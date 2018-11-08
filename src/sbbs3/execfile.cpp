@@ -195,7 +195,7 @@ int sbbs_t::exec_file(csi_t *csi)
 
 		case CS_FILE_SHOW_LIBRARIES:
 			if(!usrlibs) return(0);
-			if(menu("libs"), P_NOERROR) {
+			if(menu("libs", P_NOERROR)) {
 				return(0); 
 			}
 			bputs(text[LibLstHdr]);
