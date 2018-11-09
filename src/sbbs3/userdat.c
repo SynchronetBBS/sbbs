@@ -3318,7 +3318,8 @@ BOOL DLLCALL user_set_time_property(scfg_t* scfg, unsigned user_number, const ch
 	if(fp == NULL)
 		return FALSE;
 	ini = iniReadFile(fp);
-	char* result = iniSetDateTime(&ini, section, key, /* include_time */TRUE, value, /* style */NULL);
+	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "", .value_separator = " = " };
+	char* result = iniSetDateTime(&ini, section, key, /* include_time */TRUE, value, &ini_style);
 	iniWriteFile(fp, ini);
 	iniFreeStringList(ini);
 	iniCloseFile(fp);
