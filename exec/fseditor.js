@@ -1410,6 +1410,19 @@ function add_char(key)
 		draw_line(ypos,xpos-1,false);
 }
 
+function save_file()
+{
+	var f=new File((argc==0?system.temp_dir+"INPUT.MSG":argv[0]));
+	if(!f.open("wb")) {
+		alert("Error " + f.error + " opening " + f.name);
+		return false;
+	}
+	var s=make_strings(/* soft-CRs: */true, /* embed-colors: */true);
+	f.write(s[0]);
+	f.close();
+	return true;
+}
+
 function edit(quote_first)
 {
 	var key;
@@ -1434,7 +1447,11 @@ function edit(quote_first)
 	}
 	while(1) {
 		set_cursor();
-		key=console.inkey(0,10000);
+		key=console.inkey(/* mode: */0, /* timeout (ms): */10000);
+		if(!bbs.online) {
+			save_file();
+			return 1;	// aborted
+		}
 		if(key=='')
 			continue;
 		switch(key) {
@@ -1811,11 +1828,7 @@ function edit(quote_first)
 				status_line();
 				break;
 			case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
-				var f=new File((argc==0?system.temp_dir+"INPUT.MSG":argv[0]));
-				f.open("wb");
-				var s=make_strings(true,true);
-				f.write(s[0]);
-				f.close();
+				save_file();
 				console.line_counter=0;
 				return;
 			case '\x1b':	/* ESC (This should parse extra ANSI sequences) */
@@ -1937,7 +1950,7 @@ while(result!=undefined) {
 if(edit_top==5 && info[0]!=subj) {
 	drop_file = new File(system.node_dir + "result.ed");
 	if(drop_file.open("w")) {
-		drop_file.writeln("0");
+		drop_file.writeln("0");	// anonymous
 		drop_file.writeln(subj);
 		drop_file.close();
 	}
