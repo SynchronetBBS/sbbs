@@ -517,8 +517,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 
 		checkline();
 		if(!online)	 { // save draft due to disconnection
-			mv(msgtmp, draft, /* copy: */true);
-			user_set_property(&cfg, useron.number, draft_desc, "subject", subj);
+			if(mv(msgtmp, draft, /* copy: */true) == 0) {
+				user_set_property(&cfg, useron.number, draft_desc, "subject", subj);
+				user_set_time_property(&cfg, useron.number, draft_desc, "created", time(NULL));
+				lprintf(LOG_NOTICE, "Draft message saved: %s", draft);
+			}
 		}
 
 		if(result != EXIT_SUCCESS || !fexistcase(msgtmp) || !online
