@@ -3301,7 +3301,8 @@ BOOL DLLCALL user_set_property(scfg_t* scfg, unsigned user_number, const char* s
 	if(fp == NULL)
 		return FALSE;
 	ini = iniReadFile(fp);
-	char* result = iniSetValue(&ini, section, key, value, /* style */NULL);
+	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "", .value_separator = " = " };
+	char* result = iniSetValue(&ini, section, key, value, &ini_style);
 	iniWriteFile(fp, ini);
 	iniFreeStringList(ini);
 	iniCloseFile(fp);
