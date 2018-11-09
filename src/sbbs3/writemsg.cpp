@@ -1,4 +1,5 @@
 /* Synchronet message creation routines */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -209,6 +210,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 				,useron_level;
 	char	msgtmp[MAX_PATH+1];
 	char	tagfile[MAX_PATH+1];
+	char	draft_desc[128];
+	char	draft[MAX_PATH + 1];
 	char 	tmp[512];
 	int		i,j,file,linesquoted=0;
 	long	length,qlen=0,qtime=0,ex_mode=0;
@@ -243,10 +246,16 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		mode|=WM_NOTOP;
 
 	msg_tmp_fname(useron_xedit, msgtmp, sizeof(msgtmp));
+	removecase(msgtmp);
 	SAFEPRINTF(tagfile,"%seditor.tag",cfg.temp_dir);
 	removecase(tagfile);
+	SAFEPRINTF(draft_desc, "draft.%s.msg", subnum >= cfg.total_subs ? "mail" : cfg.sub[subnum]->code);
+	SAFEPRINTF3(draft, "%suser/%04u.%s", cfg.data_dir, useron.number, draft_desc);
 
-	if(mode&WM_QUOTE && !(useron.rest&FLAG('J'))
+	bool draft_restored = false;
+	if(fexist(draft) && (time(NULL) - fdate(draft)) < 48L*60L*60L && yesno("Unsaved draft message found. Use it"))
+		draft_restored = mv(draft, msgtmp, /* copy: */true) == 0;
+	else if(mode&WM_QUOTE && !(useron.rest&FLAG('J'))
 		&& ((mode&(WM_EMAIL|WM_NETMAIL) && cfg.sys_misc&SM_QUOTE_EM)
 		|| (!(mode&(WM_EMAIL|WM_NETMAIL)) && (uint)subnum!=INVALID_SUB
 			&& cfg.sub[subnum]->misc&SUB_QUOTE))) {
@@ -260,7 +269,6 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 				free(buf);
 				return(false); 
 			}
-			removecase(msgtmp);
 			if((file=nopen(msgtmp,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 				errormsg(WHERE,ERR_OPEN,msgtmp,O_WRONLY|O_CREAT|O_TRUNC);
 				free(buf);
@@ -410,6 +418,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		max_title_len=cols-column-1;
 		if(max_title_len > LEN_TITLE)
 			max_title_len = LEN_TITLE;
+		if(draft_restored)
+			user_get_property(&cfg, useron.number, draft_desc, "subject", subj, max_title_len);
 		if(!getstr(subj,max_title_len,mode&WM_FILE ? K_LINE|K_TRIM : K_LINE|K_EDIT|K_AUTODEL|K_TRIM)
 			&& useron_level && useron.logons) {
 			free(buf);
@@ -489,20 +499,29 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		if(cfg.xedit[useron_xedit-1]->misc&XTRN_SH)
 			ex_mode|=EX_SH;
 
-		if(!linesquoted)
-			removecase(msgtmp);
-		else {
-			qlen=(long)flength(msgtmp);
-			qtime=(long)fdate(msgtmp); 
+		if(!draft_restored) {
+			if(!linesquoted)
+				removecase(msgtmp);
+			else {
+				qlen=(long)flength(msgtmp);
+				qtime=(long)fdate(msgtmp); 
+			}
 		}
 
 		CLS;
 		rioctl(IOCM|PAUSE|ABORT);
-		external(cmdstr(cfg.xedit[useron_xedit-1]->rcmd,msgtmp,nulstr,NULL),ex_mode,cfg.node_dir);
+		const char* cmd = cmdstr(cfg.xedit[useron_xedit-1]->rcmd, msgtmp, nulstr, NULL);
+		int result = external(cmd, ex_mode, cfg.node_dir);
+		lprintf(LOG_DEBUG, "'%s' returned %d", cmd, result);
 		rioctl(IOSM|PAUSE|ABORT); 
 
 		checkline();
-		if(!fexistcase(msgtmp) || !online
+		if(!online)	 { // save draft due to disconnection
+			mv(msgtmp, draft, /* copy: */true);
+			user_set_property(&cfg, useron.number, draft_desc, "subject", subj);
+		}
+
+		if(result != EXIT_SUCCESS || !fexistcase(msgtmp) || !online
 			|| (linesquoted && qlen==flength(msgtmp) && qtime==fdate(msgtmp))) {
 			free(buf);
 			return(false); 
@@ -542,7 +561,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 	}
 	else {
 		buf[0]=0;
-		if(linesquoted) {
+		if(linesquoted || draft_restored) {
 			if((file=nopen(msgtmp,O_RDONLY))!=-1) {
 				length=(long)filelength(file);
 				l=length>(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-1
@@ -554,6 +573,16 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 			} 
 		}
 		if(!(msgeditor((char *)buf,mode&WM_NOTOP ? nulstr : top, subj))) {
+			if(!online) {
+				FILE* fp = fopen(draft, "wb");
+				if(fp == NULL)
+					errormsg(WHERE, ERR_CREATE, draft, O_WRONLY);
+				else {
+					fputs(buf, fp);
+					fclose(fp);
+					user_set_property(&cfg, useron.number, draft_desc, "subject", subj);
+				}
+			}
 			free(buf);	/* Assertion here Dec-17-2003, think I fixed in block above (rev 1.52) */
 			return(false); 
 		} 
@@ -602,12 +631,14 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		}
 	}
 
+	remove(draft);
 	fclose(stream);
 	free((char *)buf);
 	bprintf(text[SavedNBytes],l,lines);
 	return(true);
 }
 
+/****************************************************************************/
 /****************************************************************************/
 /* Modify 'str' to for quoted format. Remove ^A codes, etc.                 */
 /****************************************************************************/
@@ -1005,19 +1036,18 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 			line-=2; 
 		}
 	}
-	if(!online) {
-		for(i=0;i<lines;i++)
-			free(str[i]);
-		free(str);
-		return(0); 
-	}
-	strcpy(buf,top);
+	if(online)
+		strcpy(buf,top);
+	else
+		buf[0]=0;
 	for(i=0;i<lines;i++) {
 		strcat(buf,str[i]);
 		strcat(buf,crlf);
 		free(str[i]); 
 	}
 	free(str);
+	if(!online)
+		return 0;
 	return(lines);
 }
 
