@@ -673,7 +673,7 @@ BinkP.prototype.session = function()
 						this.ack_file();
 						args = this.parseArgs(pkt.data);
 						if (args.length < 4) {
-							log(LOG_ERROR, "Invalid M_FILE command args: '"+pkt.data+"'");
+							log(LOG_ERROR, "Invalid M_FILE command args: '"+pkt.data+"' from: " + this.remote_addrs);
 							this.sendCmd(this.command.M_ERR, "Invalid M_FILE command args: '"+pkt.data+"'");
 						}
 						tmp = new File(this.inbound + file_getname(args[0]));
@@ -700,11 +700,11 @@ BinkP.prototype.session = function()
 								}
 								else {
 									if (parseInt(args[3], 10) > size) {
-										log(LOG_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
+										log(LOG_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size + " from remote: " + this.remote_addrs);
 										this.sendCmd(this.command.M_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
 									}
 									if (!tmp.open(tmp.exists ? "r+b" : "wb")) {
-										log(LOG_ERROR, "Unable to open file "+tmp.name);
+										log(LOG_ERROR, "Unable to open file "+tmp.name  + " from remote: " + this.remote_addrs );
 										this.sendCmd(this.command.M_SKIP, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]);
 										break;
 									}
@@ -716,7 +716,7 @@ BinkP.prototype.session = function()
 								}
 								break;
 							default:
-								log(LOG_ERR, "Invalid return value from want_callback!");
+								log(LOG_ERR, "Invalid return value from want_callback from remote: " + this.remote_addrs);
 								this.sendCmd(this.command.M_ERR, "Implementation bug at my end, sorry.");
 						}
 						break;
@@ -806,7 +806,7 @@ BinkP.prototype.session = function()
 							tmp = this.command_name[pkt.command];
 						else
 							tmp = 'Unknown Command '+pkt.command;
-						log(LOG_ERROR, "Unhandled "+tmp+" command from remote. Aborting session.");
+						log(LOG_ERROR, "Unhandled "+tmp+" command from remote: " + this.remote_addrs);
 						this.sendCmd(this.command.M_ERR, "Unhandled command.");
 				}
 			}
@@ -1071,7 +1071,7 @@ BinkP.prototype.recvFrame = function(timeout)
 			return undefined;
 		}
 		else if (timeout) {
-			log(LOG_ERROR, "Timed out receiving packet data!");
+			log(LOG_ERROR, "Timed out receiving packet data from remote: " + this.remote_addrs);
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
@@ -1106,12 +1106,12 @@ BinkP.prototype.recvFrame = function(timeout)
 				this.reset_eob(false);
 			switch(ret.command) {
 				case this.command.M_ERR:
-					log(LOG_ERROR, "BinkP got fatal error from remote: '"+ret.data+"'.");
+					log(LOG_ERROR, "BinkP got fatal error '"+ret.data+"' from remote: " + this.remote_addrs);
 					this.sock.close();
 					this.socket = undefined;
 					return undefined;
 				case this.command.M_BSY:
-					log(LOG_WARNING, "BinkP got non-fatal error from remote: '"+ret.data+"'.");
+					log(LOG_WARNING, "BinkP got non-fatal error '"+ret.data+"' from remote: " + this.remote_addrs);
 					this.sock.close();
 					this.socket = undefined;
 					return undefined;
