@@ -95,7 +95,7 @@ function lock_flow(file)
 			return undefined;
 		}
 	}
-	ret.bsy.writeln("BinkIT");
+	ret.bsy.writeln(version_notice + " args: " + argv.join(' '));
 	ret.bsy.flush();
 	log(LOG_DEBUG, "Lock successful.");
 	return ret;
@@ -868,6 +868,7 @@ function inbound_auth_cb(pwd, bp)
 		}
 	}
 
+	log(LOG_INFO, "Remote addresses: " + bp.remote_addrs.join(' '));
 	bp.remote_addrs.forEach(function(addr) {
 		var cpw;
 		if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
