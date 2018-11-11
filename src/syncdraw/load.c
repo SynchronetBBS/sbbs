@@ -793,7 +793,7 @@ load(void)
 					else
 						attr=7;
 				}
-				bufprintf(buf+x*77*2,attr,"%-12s ", dirs[1 + x + z]);
+				bufprintf(buf+x*77*2,attr,"%-12.12s ", dirs[1 + x + z]);
 				if (isdir[1 + x + z] == 0) {
 					if (y == x)
 						attr=(7 + 16);
@@ -805,7 +805,7 @@ load(void)
 						attr=(15 + 16);
 					else
 						attr=(15);
-					bufprintf(buf+(x*77+14)*2,attr," %-27s", titel[1 + x + z]);
+					bufprintf(buf+(x*77+14)*2,attr," %-27.27s", titel[1 + x + z]);
 					if (y == x)
 						attr=(7 + 16);
 					else
@@ -816,7 +816,7 @@ load(void)
 						attr=(15 + 16);
 					else
 						attr=(15);
-					bufprintf(buf+(x*77+43)*2,attr," %-17s", paintrec[1 + x + z]);
+					bufprintf(buf+(x*77+43)*2,attr," %-17.17s", paintrec[1 + x + z]);
 					if (y == x)
 						textattr(7 + 16);
 					else
@@ -827,7 +827,7 @@ load(void)
 						attr=(15 + 16);
 					else
 						attr=(15);
-					bufprintf(buf+(x*77+62)*2,attr," %-14s", grouprec[1 + x + z]);
+					bufprintf(buf+(x*77+62)*2,attr," %-14.14s", grouprec[1 + x + z]);
 				} else {
 					if (y == x)
 						attr=(8 + 16);
