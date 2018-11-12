@@ -34,6 +34,14 @@
  *                              or more non-space characters before the >.  Also
  *                              fixed an issue where wrapped quote lines were
  *                              sometimes missing the quote line prefix.
+ * 2018-08-03 Eric Oulashin     Version 1.61
+ *                              Updated to delete instances of User objects that
+ *                              are created, due to an optimization in Synchronet
+ *                              3.17 that leaves user.dat open
+ * 2018-11-11 Eric Oulashin     Version 1.62
+ *                              Updated to save the message if the user disconnects,
+ *                              to support Synchronet's message draft feature
+ *                              that was added recently.
  */
 
 /* Command-line arguments:
@@ -111,8 +119,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.54";
-const EDITOR_VER_DATE = "2017-12-26";
+const EDITOR_VERSION = "1.62";
+const EDITOR_VER_DATE = "2018-11-11";
 
 
 // Program variables
@@ -644,31 +652,34 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 		}
 	}
 	if (saveMsgFile)
+		saveMessageToFile();
+}
+
+function saveMessageToFile()
+{
+	// Open the output filename.  If no arguments were passed, then use
+	// INPUT.MSG in the node's temporary directory; otherwise, use the
+	// first program argument.
+	var msgFile = new File(argc == 0 ? system.temp_dir + "INPUT.MSG" : argv[0]);
+	if (msgFile.open("w"))
 	{
-		// Open the output filename.  If no arguments were passed, then use
-		// INPUT.MSG in the node's temporary directory; otherwise, use the
-		// first program argument.
-		var msgFile = new File((argc == 0 ? system.temp_dir + "INPUT.MSG" : argv[0]));
-		if (msgFile.open("w"))
+		// Write each line of the message to the file.  Note: The
+		// "Expand Line Feeds to CRLF" option should be turned on
+		// in SCFG for this to work properly for all platforms.
+		for (var i = 0; i < gEditLines.length; ++i)
+			msgFile.writeln(gEditLines[i].text);
+		// Auto-sign the message if the user's setting to do so is enabled
+		if (gUserSettings.autoSignMessages)
 		{
-			// Write each line of the message to the file.  Note: The
-			// "Expand Line Feeds to CRLF" option should be turned on
-			// in SCFG for this to work properly for all platforms.
-			for (var i = 0; i < gEditLines.length; ++i)
-				msgFile.writeln(gEditLines[i].text);
-			// Auto-sign the message if the user's setting to do so is enabled
-			if (gUserSettings.autoSignMessages)
-			{
-				msgFile.writeln("");
-				var subCode = (postingInMsgSubBoard(gMsgArea) ? gMsgAreaInfo.subBoardCode : "mail");
-				msgFile.writeln(getSignName(subCode, gUserSettings.autoSignRealNameOnlyFirst, gUserSettings.autoSignEmailsRealName));
-			}
-			msgFile.close();
-			savedTheMessage = true;
+			msgFile.writeln("");
+			var subCode = (postingInMsgSubBoard(gMsgArea) ? gMsgAreaInfo.subBoardCode : "mail");
+			msgFile.writeln(getSignName(subCode, gUserSettings.autoSignRealNameOnlyFirst, gUserSettings.autoSignEmailsRealName));
 		}
-		else
-			console.print("nrh* Unable to save the message!n\r\n");
+		msgFile.close();
+		savedTheMessage = true;
 	}
+	else
+		console.print("\1n\1r\1h* Unable to save the message!\1n\r\n");
 }
 
 /*
@@ -860,9 +871,18 @@ function doEditLoop()
 	while (continueOn)
 	{
 		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
+		if (!bbs.online)
+		{
+			var logStr = "SlyEdit: User is no longer online (" + user.alias + " on node " + bbs.node_num + ")";
+			bbs.log_str(logStr);
+			log(LOG_INFO, logStr);
+			continueOn = false;
+			returnCode = 1; // Aborted
+			saveMessageToFile();
+		}
 		// If userInput is blank, then the input timeout was probably
 		// reached, so abort.
-		if (userInput == "")
+		else if (userInput == "")
 		{
 			returnCode = 1; // Aborted
 			continueOn = false;
@@ -927,12 +947,12 @@ function doEditLoop()
 				// Let the user choose & insert quote lines into the message.
 				if (gUseQuotes)
 				{
-					var retObject = doQuoteSelection(curpos, currentWordLength);
-					curpos.x = retObject.x;
-					curpos.y = retObject.y;
-					currentWordLength = retObject.currentWordLength;
+					var quoteRetObj = doQuoteSelection(curpos, currentWordLength);
+					curpos.x = quoteRetObj.x;
+					curpos.y = quoteRetObj.y;
+					currentWordLength = quoteRetObj.currentWordLength;
 					// If user input timed out, then abort.
-					if (retObject.timedOut)
+					if (quoteRetObj.timedOut)
 					{
 						returnCode = 1; // Aborted
 						continueOn = false;
@@ -946,21 +966,21 @@ function doEditLoop()
 				// Let the user change the text color.
 				/*if (gConfigSettings.allowColorSelection)
 				{
-					var retObj = doColorSelection(gTextAttrs, curpos, currentWordLength);
-					if (!retObj.timedOut)
+					var chgColorRetobj = doColorSelection(gTextAttrs, curpos, currentWordLength);
+					if (!chgColorRetobj.timedOut)
 					{
 						// Note: DoColorSelection() will prefix the color with the normal
 						// attribute.
-						gTextAttrs = retObj.txtAttrs;
+						gTextAttrs = chgColorRetobj.txtAttrs;
 						console.print(gTextAttrs);
-						curpos.x = retObj.x;
-						curpos.y = retObj.y;
-						currentWordLength = retObj.currentWordLength;
+						curpos.x = chgColorRetobj.x;
+						curpos.y = chgColorRetobj.y;
+						currentWordLength = chgColorRetobj.currentWordLength;
 					}
 					else
 					{
 						// User input timed out, so abort.
-						returnCode = 1; // Aborted
+						chgColorRetobj.returnCode = 1; // Aborted
 						continueOn = false;
 						console.crlf();
 						console.print("\1n\1h\1r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
@@ -1158,10 +1178,10 @@ function doEditLoop()
 				// Delete the previous character
 				if (textLineIsEditable(gEditLinesIndex))
 				{
-					var retObject = doBackspace(curpos, currentWordLength);
-					curpos.x = retObject.x;
-					curpos.y = retObject.y;
-					currentWordLength = retObject.currentWordLength;
+					var backspRetObj = doBackspace(curpos, currentWordLength);
+					curpos.x = backspRetObj.x;
+					curpos.y = backspRetObj.y;
+					currentWordLength = backspRetObj.currentWordLength;
 					// Make sure the edit color is correct
 					console.print(chooseEditColor());
 				}
@@ -1170,10 +1190,10 @@ function doEditLoop()
 				// Delete the next character
 				if (textLineIsEditable(gEditLinesIndex))
 				{
-					var retObject = doDeleteKey(curpos, currentWordLength);
-					curpos.x = retObject.x;
-					curpos.y = retObject.y;
-					currentWordLength = retObject.currentWordLength;
+					var delRetObj = doDeleteKey(curpos, currentWordLength);
+					curpos.x = delRetObj.x;
+					curpos.y = delRetObj.y;
+					currentWordLength = delRetObj.currentWordLength;
 					// Make sure the edit color is correct
 					console.print(chooseEditColor());
 				}
@@ -1183,26 +1203,26 @@ function doEditLoop()
 				var letUserEditLine = (cursorAtBeginningOrEnd ? true : textLineIsEditable(gEditLinesIndex));
 				if (letUserEditLine)
 				{
-					var retObject = doEnterKey(curpos, currentWordLength);
-					curpos.x = retObject.x;
-					curpos.y = retObject.y;
-					currentWordLength = retObject.currentWordLength;
-					returnCode = retObject.returnCode;
-					continueOn = retObject.continueOn;
+					var enterRetObj = doEnterKey(curpos, currentWordLength);
+					curpos.x = enterRetObj.x;
+					curpos.y = enterRetObj.y;
+					currentWordLength = enterRetObj.currentWordLength;
+					returnCode = enterRetObj.returnCode;
+					continueOn = enterRetObj.continueOn;
 					// Check for whether we should do quote selection or
 					// show the help screen (if the user entered /Q or /?)
 					if (continueOn)
 					{
-						if (retObject.doQuoteSelection)
+						if (enterRetObj.doQuoteSelection)
 						{
 							if (gUseQuotes)
 							{
-								retObject = doQuoteSelection(curpos, currentWordLength);
-								curpos.x = retObject.x;
-								curpos.y = retObject.y;
-								currentWordLength = retObject.currentWordLength;
+								enterRetObj = doQuoteSelection(curpos, currentWordLength);
+								curpos.x = enterRetObj.x;
+								curpos.y = enterRetObj.y;
+								currentWordLength = enterRetObj.currentWordLength;
 								// If user input timed out, then abort.
-								if (retObject.timedOut)
+								if (enterRetObj.timedOut)
 								{
 									returnCode = 1; // Aborted
 									continueOn = false;
@@ -1212,7 +1232,7 @@ function doEditLoop()
 								}
 							}
 						}
-						else if (retObject.showHelp)
+						else if (enterRetObj.showHelp)
 						{
 							displayProgramInfo(true, false);
 							displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop,
@@ -1223,7 +1243,7 @@ function doEditLoop()
 							displayEditLines);
 							console.gotoxy(curpos);
 						}
-						else if (retObject.doCrossPostSelection)
+						else if (enterRetObj.doCrossPostSelection)
 						{
 							if (gCanCrossPost)
 								doCrossPosting();
@@ -1243,12 +1263,12 @@ function doEditLoop()
 				break;
 			case KEY_ESC:
 				// Do the ESC menu
-				var retObj = fpHandleESCMenu(curpos, currentWordLength);
-				returnCode = retObj.returnCode;
-				continueOn = retObj.continueOn;
-				curpos.x = retObj.x;
-				curpos.y = retObj.y;
-				currentWordLength = retObj.currentWordLength;
+				var escRetObj = fpHandleESCMenu(curpos, currentWordLength);
+				returnCode = escRetObj.returnCode;
+				continueOn = escRetObj.continueOn;
+				curpos.x = escRetObj.x;
+				curpos.y = escRetObj.y;
+				currentWordLength = escRetObj.currentWordLength;
 				// If we can continue on, put the cursor back
 				// where it should be.
 				if (continueOn)
@@ -1259,19 +1279,19 @@ function doEditLoop()
 				}
 				break;
 			case SEARCH_TEXT_KEY:
-				var retObj = findText(curpos);
-				curpos.x = retObj.x;
-				curpos.y = retObj.y;
+				var searchRetObj = findText(curpos);
+				curpos.x = searchRetObj.x;
+				curpos.y = searchRetObj.y;
 				console.print(chooseEditColor()); // Make sure the edit color is correct
 				break;
 			case IMPORT_FILE_KEY:
 				// Only let sysops import files.
 				if (gConfigSettings.userIsSysop)
 				{
-					var retObj = importFile(gConfigSettings.userIsSysop, curpos);
-					curpos.x = retObj.x;
-					curpos.y = retObj.y;
-					currentWordLength = retObj.currentWordLength;
+					var importRetObj = importFile(gConfigSettings.userIsSysop, curpos);
+					curpos.x = importRetObj.x;
+					curpos.y = importRetObj.y;
+					currentWordLength = importRetObj.currentWordLength;
 					console.print(chooseEditColor()); // Make sure the edit color is correct
 				}
 				break;
@@ -1284,10 +1304,10 @@ function doEditLoop()
 				}
 				break;
 			case DELETE_LINE_KEY:
-				var retObj = doDeleteLine(curpos);
-				curpos.x = retObj.x;
-				curpos.y = retObj.y;
-				currentWordLength = retObj.currentWordLength;
+				var delRetObj = doDeleteLine(curpos);
+				curpos.x = delRetObj.x;
+				curpos.y = delRetObj.y;
+				currentWordLength = delRetObj.currentWordLength;
 				console.print(chooseEditColor()); // Make sure the edit color is correct
 				break;
 			case KEY_PAGE_UP: // Move 1 page up in the message
