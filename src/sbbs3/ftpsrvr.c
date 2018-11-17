@@ -2319,8 +2319,10 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 		FIND_WHITESPACE(tp);
 		if(*tp) *tp=0;
 
-		if(filename == NULL /* CWD? */ && *lastchar(p) != '/')
+		if(filename == NULL /* CWD? */ && (*lastchar(p) != '/' || *fname != 0)) {
+			fclose(fp);
 			return FALSE;
+		}
 
 		if(!strnicmp(p,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
 			if((dir=getdir(p+strlen(BBS_VIRTUAL_PATH),user,client))<0)	{
