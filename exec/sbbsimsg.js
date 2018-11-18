@@ -86,8 +86,8 @@ function list_user(user, sys)
 		,user.name
 		,action
 		,system.secondstr(user.timeon)
-		,user.age
-		,user.sex
+		,user.age ? user.age : ''
+		,user.sex ? user.sex : ''
 		));
 }
 
