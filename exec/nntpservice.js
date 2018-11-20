@@ -454,18 +454,28 @@ while(client.socket.is_connected && !quit) {
 				break;
 			}
 
-			if(cmd[0].toUpperCase()=="GROUP")
+			if(cmd[0].toUpperCase()=="GROUP") {
+				var total_msgs = msgbase.total_msgs;
+				var count = 0;
+				for(i=0;i<total_msgs;i++) {
+					var idx=msgbase.get_msg_index(/* by_offset */true,i);
+					if(idx==null)
+						continue;
+					if(idx.attr&MSG_DELETE)	/* marked for deletion */
+						continue;
+					count++;
+				}
 				writeln(format("211 %u %u %d %s group selected"
-					,msgbase.total_msgs	// articles in group
+					,count	// articles in group
 					,msgbase.first_msg
-					,(msgbase.total_msgs==0) ? (msgbase.first_msg-1):msgbase.last_msg
+					,(count==0) ? (msgbase.first_msg-1):msgbase.last_msg
 					,selected.newsgroup
 					));
-			else {	// LISTGROUP
+			} else {	// LISTGROUP
 				writeln("211 list of article numbers follow");
 				var total_msgs = msgbase.total_msgs;
 				for(i=0;i<total_msgs;i++) {
-					idx=msgbase.get_msg_index(/* by_offset */true,i);
+					var idx=msgbase.get_msg_index(/* by_offset */true,i);
 					if(idx==null)
 						continue;
 					if(idx.attr&MSG_DELETE)	/* marked for deletion */
