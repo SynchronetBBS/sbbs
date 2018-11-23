@@ -171,7 +171,7 @@ BOOL fcopy(const char* src, const char* dest)
 			break;
 		}
 		if(((count++)%(32*1024))==0)
-			YIELD();
+			MAYBE_YIELD();
 	}
 
 	fclose(in);
