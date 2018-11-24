@@ -457,18 +457,20 @@ while(client.socket.is_connected && !quit) {
 			if(cmd[0].toUpperCase()=="GROUP") {
 				var total_msgs = msgbase.total_msgs;
 				var count = 0;
+				var high = 0;
 				for(i=0;i<total_msgs;i++) {
 					var idx=msgbase.get_msg_index(/* by_offset */true,i);
 					if(idx==null)
 						continue;
 					if(idx.attr&MSG_DELETE)	/* marked for deletion */
 						continue;
+					high = idx.number;
 					count++;
 				}
 				writeln(format("211 %u %u %d %s group selected"
 					,count	// articles in group
 					,msgbase.first_msg
-					,(count==0) ? (msgbase.first_msg-1):msgbase.last_msg
+					,(count==0) ? (msgbase.first_msg-1) : high
 					,selected.newsgroup
 					));
 			} else {	// LISTGROUP
