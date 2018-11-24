@@ -1,16 +1,31 @@
 // $Id$
 
+// Validate a numeric component of an FTN address
+// FSP-1028: Zone/Net/Node/Point must be int 0 - 32767
+function is_valid_numeric(n) {
+  return (typeof n == 'number' && !isNaN(n) && n >= 0 && n <= 32767);
+}
+
+// Should parse anything except a 'node candidate' address
 function parse(str)
 {
-	var addr = str.match(/^(\d+):(\d+)\/(\d+)$/);				// 3D
-	if(!addr)
-		addr = str.match(/^(\d+):(\d+)\/(\d+)\.(\d+)$/);		// 4D
-	if(!addr)
-		return false;
-	for(var i=1; i < addr.length; i++)
-		if(parseInt(addr[i], 10) > 0xffff)
-			return false;
-	return { zone: addr[1], net: addr[2], node: addr[3], point: addr[4] };
+  // FSP-1028: Domain must contain only a-z, 0-9, -, _, and ~
+  // Ignores 'implementation note' re; 9 character ASCIIZ string for domain
+  const re = /^(\d{1,5}):(\d{1,5})\/(\d{1,5})(\.(\d{1,5}))?(@([a-z0-9~_-]+))?$/;
+  const addr = str.match(re);
+  if (!addr) return false;
+  const ret = {
+    zone: parseInt(addr[1]),
+    net: parseInt(addr[2]),
+    node: parseInt(addr[3]),
+    point: (typeof addr[5] == 'undefined' ? addr[5] : parseInt(addr[5])),
+    domain: addr[7]
+  };
+  if (![ret.zone, ret.net, ret.node].every(is_valid_numeric)) return false;
+  if (typeof ret.point != 'undefined' && !is_valid_numeric(ret.point)) {
+    return false;
+  }
+  return ret;
 }
 
 function is_valid(str)
