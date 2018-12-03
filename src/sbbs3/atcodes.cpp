@@ -1,4 +1,5 @@
 /* Synchronet "@code" functions */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -234,6 +235,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		safe_snprintf(str,maxlen,"%u",cfg.sys_nodes);
 		return(str);
 	}
+
+	if(strcmp(sp, "PAGER") == 0)
+		return (thisnode.misc&NODE_POFF) ? text[Off] : text[On];
+
+	if(strcmp(sp, "ALERTS") == 0)
+		return (thisnode.misc&NODE_AOFF) ? text[Off] : text[On];
 
 	if(!strcmp(sp,"INETADDR"))
 		return(cfg.sys_inetaddr);
