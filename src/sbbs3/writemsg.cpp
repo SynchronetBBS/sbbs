@@ -251,6 +251,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 	removecase(tagfile);
 	SAFEPRINTF(draft_desc, "draft.%s.msg", subnum >= cfg.total_subs ? "mail" : cfg.sub[subnum]->code);
 	SAFEPRINTF3(draft, "%suser/%04u.%s", cfg.data_dir, useron.number, draft_desc);
+	quotes_fname(useron_xedit, str, sizeof(str));
+	removecase(str);
 
 	bool draft_restored = false;
 	if(flength(draft) > 0 && (time(NULL) - fdate(draft)) < 48L*60L*60L && yesno("Unsaved draft message found. Use it")) {
@@ -399,10 +401,6 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 			fclose(stream);
 			close(file); 
 		} 
-	}
-	else {
-		quotes_fname(useron_xedit, str, sizeof(str));
-		removecase(str); 
 	}
 
 	if(!online || sys_status&SS_ABORT) {
