@@ -316,7 +316,7 @@ function forward_tic(tic)
 		// Create TIC file first...
 		tf = new File(outb+tickit.get_next_tic_filename());
 		if(!tf.open("wb")) {
-			log(LOG_ERROR, "Unable to create TIC file for "+link+".  He will not get file '"+tic.file+"'!");
+			log(LOG_ERROR, "Unable to create TIC file for "+link+".  They will not get file '"+tic.file+"'!");
 			continue;
 		}
 		tf.write(tic[' forward'].join("\r\n"));
@@ -347,7 +347,7 @@ function forward_tic(tic)
 		// Append to FLO file...
 		ff = new File(flobase+'.flo');
 		if (!ff.open('ab+')) {
-			log(LOG_ERROR, "Unable to append to '"+ff.name+"' for "+link+".  He will not get file '"+tic.file+"'!");
+			log(LOG_ERROR, "Unable to append to '"+ff.name+"' for "+link+".  They will not get file '"+tic.file+"'!");
 			bf.close();
 			bf.remove();
 			continue;
