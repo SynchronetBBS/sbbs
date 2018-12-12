@@ -1338,7 +1338,7 @@ int main(int argc, char **argv, char** env)
 	if(daemonize) {
 		fprintf(statfp,"\nRunning as daemon\n");
 		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
-			fprintf(statfp,"!ERROR %d running as daemon\n",errno);
+			fprintf(statfp,"!ERROR %d (%s) running as daemon\n", errno, strerror(errno));
 			daemonize=FALSE;
 		}
 	}

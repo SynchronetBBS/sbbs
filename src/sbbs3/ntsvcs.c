@@ -1288,7 +1288,7 @@ int main(int argc, char** argv)
 		fclose(fp);
 
 	if(chdir(ctrl_dir)!=0) {
-		sprintf(str,"!ERROR %d changing directory to: %s", errno, ctrl_dir);
+		sprintf(str,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), ctrl_dir);
 		svc_lputs(NULL,LOG_ERR,str);
 	}
 

@@ -1396,7 +1396,7 @@ static void send_thread(void* arg)
 		&& (fp=fopen(xfer.filename,"rb"))==NULL) {				/* shareable open failed */
 		lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d (%s) line %d opening %s"
 			,xfer.ctrl_sock, xfer.user->alias, errno, strerror(errno), __LINE__, xfer.filename);
-		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 ERROR %d opening %s.",errno,xfer.filename);
+		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 ERROR %d (%s) opening %s", errno, strerror(errno), xfer.filename);
 		if(xfer.tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 			ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename);
 		ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);
@@ -1673,7 +1673,7 @@ static void receive_thread(void* arg)
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
 		lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d (%s) line %d opening %s"
 			,xfer.ctrl_sock, xfer.user->alias, errno, strerror(errno), __LINE__, xfer.filename);
-		sockprintf(xfer.ctrl_sock,sess,"450 ERROR %d opening %s.",errno,xfer.filename);
+		sockprintf(xfer.ctrl_sock,sess,"450 ERROR %d (%s) opening %s", errno, strerror(errno), xfer.filename);
 		ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);
 		*xfer.inprogress=FALSE;
 		thread_down();
@@ -2313,7 +2313,7 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 		FIND_WHITESPACE(tp);
 		if(*tp) *tp=0;
 
-		if(stricmp(p,alias))	/* Not a match */
+		if(stricmp(p, alias))	/* Not a match */
 			continue;
 
 		p=tp+1;		/* filename */
@@ -6023,7 +6023,7 @@ void DLLCALL ftp_server(void* arg)
 			,ctime_r(&t,str),startup->options);
 
 		if(chdir(startup->ctrl_dir)!=0)
-			lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
+			lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), startup->ctrl_dir);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);

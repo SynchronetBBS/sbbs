@@ -1513,7 +1513,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 	char		*default_interfaces;
 
 	if((fp=fopen(services_ini,"r"))==NULL) {
-		lprintf(LOG_CRIT,"!ERROR %d opening %s", errno, services_ini);
+		lprintf(LOG_CRIT,"!ERROR %d (%s) opening %s", errno, strerror(errno), services_ini);
 		return(NULL);
 	}
 
@@ -1788,7 +1788,7 @@ void DLLCALL services_thread(void* arg)
 			,ctime_r(&t,str),startup->options);
 
 		if(chdir(startup->ctrl_dir)!=0)
-			lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
+			lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), startup->ctrl_dir);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);

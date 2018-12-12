@@ -848,7 +848,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 							,FILE_ATTRIBUTE_NORMAL
 							,(HANDLE) NULL);
 						if(wrslot==INVALID_HANDLE_VALUE)
-							lprintf(LOG_DEBUG,"!ERROR %u opening %s", GetLastError(), str);
+							lprintf(LOG_DEBUG,"!ERROR %u (%s) opening %s", GetLastError(), strerror(errno), str);
 						else
 							lprintf(LOG_DEBUG,"CreateFile(%s)=0x%x", str, wrslot);
 					}
@@ -1820,12 +1820,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 #endif
 	
 		execvp(argv[0],argv);
-		lprintf(LOG_ERR,"Node %d !ERROR %d executing %s",cfg.node_num,errno,argv[0]);
+		lprintf(LOG_ERR,"!ERROR %d (%s) executing: %s", errno, strerror(errno), argv[0]);
 		_exit(-1);	/* should never get here */
 	}
 
 	if(online==ON_REMOTE)
-		lprintf(LOG_INFO,"Node %d executing external: %s",cfg.node_num,fullcmdline);
+		lprintf(LOG_INFO,"executing external: %s", fullcmdline);
 
 	/* Disable Ctrl-C checking */
 	if(!(mode&EX_OFFLINE))

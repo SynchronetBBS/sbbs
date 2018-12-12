@@ -817,7 +817,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 				endmime(socket,prot,sess,mime_boundary);
 				if(msg->hdr.auxattr&MSG_KILLFILE)
 					if(remove(file_list[i])!=0)
-						lprintf(LOG_WARNING,"%04u %s !ERROR %d removing %s", socket, prot, errno, file_list[i]);
+						lprintf(LOG_WARNING,"%04u %s !ERROR %d (%s) removing %s", socket, prot, errno, strerror(errno), file_list[i]);
 			}
 		}
 	}
@@ -5829,7 +5829,7 @@ void DLLCALL mail_server(void* arg)
 			,ctime_r(&t,str),startup->options);
 
 		if(chdir(startup->ctrl_dir)!=0)
-			lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
+			lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), startup->ctrl_dir);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
