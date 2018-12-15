@@ -50,7 +50,7 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr)
 
 	ZERO_VAR(smb);
 	SAFEPRINTF(smb.file,"%smail",cfg->data_dir);
-	smb.retry_time=cfg->smb_retry_time;
+	smb.retry_time=1;	//cfg->smb_retry_time;
 	SAFEPRINTF(path,"%s.sid",smb.file);
 	l=(long)flength(path);
 	if(l<(long)sizeof(idxrec_t))
