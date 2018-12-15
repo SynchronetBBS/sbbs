@@ -284,7 +284,7 @@ char sbbs_t::putmsg(const char *buf, long mode)
 				if(memcmp(str+l, "@CENTER@", 8) == 0) {
 					l += 8;
 					i=0;
-					while(i<(int)sizeof(tmp2)-1 && str[l] != 0 && str[l] != '\r')
+					while(i<(int)sizeof(tmp2)-1 && str[l] != 0 && str[l] != '\r' && str[l] != '\n')
 						tmp2[i++] = str[l++];
 					tmp2[i] = 0;
 					truncsp(tmp2);
