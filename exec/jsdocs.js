@@ -191,6 +191,8 @@ log(LOG_ERR, "Prop: "+prop);
 			&& prop!="global"
 			&& prop!="scope"
             ) {
+			if(obj[prop]===null)
+				continue;
 			if(obj[prop].length!=undefined) {
 				if(typeof(obj[prop][0])=="object") {	// array ?
 					document_object(prop_name /*+ "[]"*/,obj[prop][0], "array");
