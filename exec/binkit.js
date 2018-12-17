@@ -753,39 +753,42 @@ function run_outbound(ran)
 
 		function addDir(dir) {
 			var bdir = backslash(dir);
-			if (outbound_dirs.indexOf(bdir) == -1)
-				outbound_dirs.push(bdir);
+			if (outbound_dirs.indexOf(bdir) == -1) outbound_dirs.push(bdir);
 		}
 
-		if (file_isdir(oroot))
+        function addPoints(dir) {
+            var pnts = directory(backslash(dir) + '*.pnt', false);
+            pnts.forEach(function (pdir) {
+                if (pdir.search(/[\\\/][0-9a-z]{8}.pnt$/) >= 0 && file_isdir(pdir)) {
+                    addDir(pdir);
+                } else {
+                    log(LOG_WARNING, "Unhandled/Unexpected point path '"+pdir+"'.");
+                }
+            });
+        }
+
+		if (file_isdir(oroot)) {
 			addDir(oroot);
-		else {
+            addPoints(oroot);
+		} else {
 			log(LOG_NOTICE, "Skipping non-existent outbound directory: " + oroot);
 			return;
 		}
 		dirs = directory(oroot+'.*', 0);
 		dirs.forEach(function(dir) {
-			var pnts;
-
 			var ext = file_getext(dir);
 			if (ext === undefined)
 				return;
 			if (ext.search(/^\.[0-9a-f]+$/) == 0) {
 				if (file_isdir(dir)) {
 					addDir(dir);
-					pnts = directory(backslash(dir)+'*.pnt', false);
-					pnts.forEach(function(pdir) {
-						if (pdir.search(/[\\\/][0-9a-z]{8}.pnt$/) >= 0 && file_isdir(pdir))
-							addDir(pdir);
-						else
-							log(LOG_WARNING, "Unhandled/Unexpected point path '"+pdir+"'.");
-					});
-				}
-				else
+                    addPoints(dir);
+				} else {
 					log(LOG_WARNING, "Unexpected file in outbound '"+dir+"'.");
-			}
-			else
+                }
+			} else {
 				log(LOG_WARNING, "Unhandled outbound '"+dir+"'.");
+            }
 		});
 	});
 	log(LOG_DEBUG, "Outbound dirs: " + JSON.stringify(outbound_dirs, null, 0));
