@@ -627,15 +627,21 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if(isdir(str))
 				continue;
 
+			if(::trashcan(&cfg, dirent->d_name, "file")) {
+				lprintf(LOG_NOTICE, "Ignored blocked filename: %s", dirent->d_name);
+				continue;
+			}
+
 			// Create directory if necessary
 			SAFEPRINTF2(inbox,"%sqnet/%s.in",cfg.data_dir,useron.alias);
-			MKDIR(inbox); 
+			MKDIR(inbox);
 
 			SAFEPRINTF2(fname,"%s/%s",inbox,dirent->d_name);
 			mv(str,fname,1);
 			SAFEPRINTF2(str,text[ReceivedFileViaQWK],dirent->d_name,useron.alias);
 			putsmsg(&cfg,1,str);
-		} 
+			lprintf(LOG_NOTICE, "Received file: %s", dirent->d_name);
+		}
 		if(dir!=NULL)
 			closedir(dir);
 		SAFEPRINTF(fname,"%sqnet-rep.now",cfg.data_dir);
