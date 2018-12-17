@@ -170,18 +170,17 @@ function process_tic(tic)
 	log(LOG_DEBUG, "Moving file from "+tic.full_path+" to "+path+".");
 	// TODO: optionally delete replaced files even if it's not an overwrite
 	if (file_exists(path+tic.file) && !force_replace && !force_replace_area) {
-		if (tic.replaces === undefined || !wildmatch(tic.file, tic.replaces)) {
+        if (typeof tic.replaces == 'undefined') {
+            log(LOG_ERROR, format('"%s" already exists in "%s", but has no matching Replaces line', tic.file, path));
+            return false;
+        } else if (!wildmatch(tic.file, tic.replaces)) {
             log(LOG_ERROR, format('"%s" already exists in "%s", but TIC Replaces line is "%s"', tic.file, path, tic.replaces));
 			return false;
+		} else {
+			if (!do_move(path, tic)) return false;
 		}
-		else {
-			if (!do_move(path, tic))
-				return false;
-		}
-	}
-	else {
-		if (!do_move(path, tic))
-			return false;
+	} else {
+		if (!do_move(path, tic)) return false;
 	}
 
 	if (dir !== undefined) {
