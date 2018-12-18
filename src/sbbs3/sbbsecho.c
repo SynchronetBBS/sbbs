@@ -4368,7 +4368,9 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 		}
 	}
 
-	if(stricmp(hdr.to, FIDO_AREAMGR_NAME) == 0 || stricmp(hdr.to, FIDO_PING_NAME) == 0) {
+	if(stricmp(hdr.to, FIDO_AREAMGR_NAME) == 0 
+		|| stricmp(hdr.to, "SBBSecho") == 0
+		|| stricmp(hdr.to, FIDO_PING_NAME) == 0) {
 		fmsgbuf=getfmsg(fp,NULL);
 		if(path[0]) {
 			if(cfg.delete_netmail && opt_delete_netmail) {
@@ -4387,9 +4389,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 		addr.node=hdr.orignode;
 		addr.point=hdr.origpoint;
 		lprintf(LOG_INFO, "%s", info);
-		if(stricmp(hdr.from, FIDO_PING_NAME) == 0
-			|| stricmp(hdr.from, FIDO_AREAMGR_NAME) == 0
-			)
+		if(stricmp(hdr.from, hdr.to) == 0)
 			lprintf(LOG_NOTICE, "Refusing to auto-reply to NetMail from %s", hdr.from);
 		else {
 			if(stricmp(hdr.to, FIDO_PING_NAME) == 0) {
