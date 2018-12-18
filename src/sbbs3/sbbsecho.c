@@ -5753,8 +5753,10 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			} else {
 				stat->known = false;
 				printf("(Unknown) ");
-				if(bad_areas != NULL && strListFind(bad_areas, areatag, /* case_sensitive: */false) < 0)
+				if(bad_areas != NULL && strListFind(bad_areas, areatag, /* case_sensitive: */false) < 0) {
+					lprintf(LOG_NOTICE, "Adding unknown area (%s) to bad area list: %s", areatag, cfg.badareafile);
 					strListPush(&bad_areas, areatag);
+				}
 				if(cfg.badecho>=0) {
 					i=cfg.badecho;
 					if(cfg.area[i].sub!=INVALID_SUB)
