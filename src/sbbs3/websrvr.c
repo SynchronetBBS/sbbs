@@ -4380,6 +4380,12 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, BOOL orig_
 									break;
 								case HEAD_STATUS:
 									SAFECOPY(cgi_status,value);
+									/*
+									 * 1xx, 204, and 304 responses don't have bodies, so don't
+									 * need a Location or Content-Type header to be valid.
+									 */
+									if (value[0] == '1' || ((value[0] == '2' || value[0] == '3') && value[1] == '0' && value[2] == '4'))
+										ret |= CGI_STUFF_VALID_HEADERS;
 									break;
 								case HEAD_LENGTH:
 									session->req.keep_alive=orig_keep;
