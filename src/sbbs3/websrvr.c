@@ -4361,6 +4361,7 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, BOOL orig_
 						directive=strtok_r(header,":",&last);
 						if(directive != NULL)  {
 							value=strtok_r(NULL,"",&last);
+							SKIP_WHITESPACE(value);
 							i=get_header_type(directive);
 							switch (i)  {
 								case HEAD_LOCATION:
