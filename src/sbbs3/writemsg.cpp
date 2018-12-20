@@ -99,6 +99,7 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 
 	if((buf=smb_getmsgtxt(&smb,msg,tails)) != NULL) {
 		strip_invalid_attr(buf);
+		truncsp(buf);
 		if(!useron_xedit || (useron_xedit && (cfg.xedit[useron_xedit-1]->misc&QUOTEWRAP)))
 			wrapped=::wordwrap(buf, cols-4, org_cols - 1, /* handle_quotes: */TRUE);
 		if(wrapped!=NULL) {
