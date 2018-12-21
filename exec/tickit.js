@@ -509,7 +509,7 @@ function import_files()
 
 		cmd = system.exec_dir+"addfiles "+i;
 		if (tickit.gcfg.uploader !== undefined)
-			cmd += '"-x ' + tickit.gcfg.uploader + '"';
+			cmd += ' -x "' + tickit.gcfg.uploader + '"';
 		cmd += " -zd +"+f.name+" 24 13";
 		log(LOG_DEBUG, "Executing: '"+cmd+"'.");
 		system.exec(cmd);
