@@ -12,7 +12,6 @@ if(user.number==0) {
 	exit();
 }
 
-
 /* Flags for clean_msg_headers() */
 var CLEAN_MSG_REPLY	=	(1<<0);
 
@@ -193,7 +192,7 @@ function idx_to_user(fromidx)
 }
 
 function make_links(str) {
-	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news):\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w-+_%]*)?(?:\/(?:[\w\-._\?\,\/\\\+&;%\$#\=~\*]*))?/gi,function(str) {
+	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news):\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w-+_%]*)?(?:\/(?:[\w\-._\?\,\/\\\+&;:%\$#\=~\*]*))?/gi,function(str) {
 //					 | Protocol                                    |Hostname  |TLD     | Port        | Path									  |
 		var text=str;
 		var uri=str;
