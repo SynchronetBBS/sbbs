@@ -47,6 +47,8 @@ Frame.prototype.drawBorder = function (color) {
 	this.popxy();
 }
 
+const root = js.startup_dir; // Stash this now; can be overridden by other things (custom pause prompt via text.dat, etc.)
+
 var settings,
 	frame,
 	browserFrame,
@@ -194,26 +196,6 @@ function printFile(file) {
 	}
 }
 
-
-// Basic check for SyncTERM; we don't really care which version it is
-function isSyncTerm() {
-	console.clear(BG_BLACK|LIGHTGRAY);
-	console.write("Checking for SyncTERM ...");
-	var ret = true;
-	const cTerm = "\x1B[=67;84;101;114;109;".split("");
-    const ckpt = console.ctrlkey_passthru;
-	console.ctrlkey_passthru = -1;
-	console.write("\x1B[0c");
-	while (cTerm.length > 0) {
-		if (console.inkey(K_NONE, 5000) == cTerm.shift()) continue;
-		ret = false;
-		break;
-	}
-	console.clearkeybuffer();
-	console.ctrlkey_passthru = ckpt;
-	return ret;
-}
-
 function showSpeed() {
 	speedFrame.clear();
 	speedFrame.putmsg(state.speed == 0 ? "Full" : speedMap[state.speed]);
@@ -231,7 +213,7 @@ function GalleryChooser() {
     var scrollBar;
 
 	function getList() {
-		const f = new File(js.exec_dir + "settings.ini");
+		const f = new File(root + "settings.ini");
 		f.open("r");
 		const galleries = f.iniGetAllObjects();
 		f.close();
@@ -261,7 +243,7 @@ function GalleryChooser() {
 			e.colors = settings;
 			tree.addItem(format("%-32s %s", e.name, e.description), function () {
 				state.browser.close();
-				state.browser = load(js.exec_dir + e.module, JSON.stringify(e));
+				state.browser = load(root + e.module, JSON.stringify(e));
 				state.browser.open();
 				areaFrame.clear();
 				areaFrame.putmsg(e.name);
@@ -324,7 +306,7 @@ function initDisplay() {
 }
 
 function initSettings() {
-	const f = new File(js.exec_dir + "settings.ini");
+	const f = new File(root + "settings.ini");
 	f.open("r");
 	settings = f.iniGetObject();
 	f.close();
@@ -349,7 +331,7 @@ function initSettings() {
 function init() {
 	bbs.sys_status|=(SS_MOFF|SS_PAUSEON);
 	bbs.sys_status&=(~SS_PAUSEOFF);
-	state.syncTerm = isSyncTerm();
+	state.syncTerm = cterm.query_da() !== false;
 	initSettings();
 	initDisplay();
 	state.browser = new GalleryChooser();
