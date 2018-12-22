@@ -162,8 +162,9 @@ function str_cmds(str)
 			writeln("NS <#>\tDisplays the current node stats for node #.");
 		if(word=="NS") {
 			str=str.substr(2);
-			str=str.replace(/^\s+/,"");
-			bbs.node_stats(parseInt(str));
+			i=parseInt(get_arg(str));
+			if(!i) i=bbs.node_num;
+			bbs.node_stats(i);
 			return;
 		}
 
