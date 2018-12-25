@@ -115,7 +115,7 @@ function str_cmds(str)
 		if(word=="LIST") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				console.printfile(get_arg(str));
+				console.printfile(get_filename(str));
 				return;
 			}
 		}
@@ -162,7 +162,7 @@ function str_cmds(str)
 			writeln("NS <#>\tDisplays the current node stats for node #.");
 		if(word=="NS") {
 			str=str.substr(2);
-			i=parseInt(get_arg(str));
+			i=parseInt(get_nodenum(str));
 			if(!i) i=bbs.node_num;
 			bbs.node_stats(i);
 			return;
@@ -175,7 +175,7 @@ function str_cmds(str)
 		if(word=="EXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				str=get_arg(str);
+				str=get_cmdline(str);
 				if(str)
 					bbs.exec(str,EX_OUTR|EX_INR);
 			}
@@ -190,7 +190,7 @@ function str_cmds(str)
 		if(word=="NEXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(5);
-				str=get_arg(str);
+				str=get_cmdline(str);
 				if(str)
 					bbs.exec(str,EX_OUTR|EX_INR|EX_NATIVE);
 			}
@@ -205,7 +205,7 @@ function str_cmds(str)
 		if(word=="FOSSIL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(6);
-				str=get_arg(str);
+				str=get_cmdline(str);
 				if(str)
 					bbs.exec(str);
 			}
@@ -214,17 +214,46 @@ function str_cmds(str)
 
 		if(str=="HELP") {
 			writeln("CALL <HubID>");
-			writeln("\tforces callout to HubID");
+			writeln("\tforces a callout to QWKnet HubID");
 		}
 		if(word=="CALL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				file=new File(system.data_dir+"qnet/"+get_arg(str)+".now");
-				if(file.open("w"))
-					file.close();
+				str=get_arg(str, "QWKnet ID");
+				if(str)
+					file_touch(system.data_dir + "qnet/" + str + ".now");
 			}
 			return;
 		}
+		
+		if(str=="HELP") {
+			writeln("EVENT [EventID]");
+			writeln("\tforces a timed-event to execute via semfile");
+		}
+		if(word=="EVENT") {
+			if(bbs.check_syspass()) {
+				str = str.substr(5);
+				if(str)
+					str = get_arg(str);
+				else {
+					var codes = [];
+					for(var i in xtrn_area.event) {
+						if(xtrn_area.event[i].settings & EVENT_DISABLED)
+							continue;
+						console.uselect(codes.length, "Event", i);
+						codes.push(i);
+					}
+					var selection = console.uselect();
+					if(selection >= 0)
+						str = codes[selection];
+					alert(str);
+				}
+				if(str)
+					file_touch(system.data_dir + str + ".now");
+			}
+			return;
+		}
+		
 
 		if(str=="HELP") {
 			writeln("NODE [parameters]");
@@ -241,7 +270,7 @@ function str_cmds(str)
 		}
 		if(word=="DOWN") {
 			str=str.substr(4);
-			i=parseInt(get_arg(str));
+			i=parseInt(get_nodenum(str));
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
@@ -262,7 +291,7 @@ function str_cmds(str)
 		}
 		if(word=="RERUN") {
 			str=str.substr(5);
-			i=parseInt(get_arg(str));
+			i=parseInt(get_nodenum(str));
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
@@ -292,7 +321,7 @@ function str_cmds(str)
 		}
 		if(word=="NLOG") {
 			str=str.substr(5);
-			bbs.exec(system.exec_dir+"slog "+system.node_dir+"../node"+get_arg(str)+" /p",EX_OUTR|EX_INR|EX_NATIVE);
+			bbs.exec(system.exec_dir+"slog "+system.node_dir+"../node"+get_nodenum(str)+" /p",EX_OUTR|EX_INR|EX_NATIVE);
 			return;
 		}
 
@@ -304,7 +333,7 @@ function str_cmds(str)
 			// Prompts for syspass
 			str=str.substr(5);
 			if(str.length)
-				bbs.edit_user(bbs.finduser(get_arg(str)));
+				bbs.edit_user(bbs.finduser(get_arg(str, "User Alias")));
 			else
 				bbs.edit_user();
 			return;
@@ -361,7 +390,7 @@ function str_cmds(str)
 				str=str.substr(3);
 				writeln("");
 				try {	// May throw on parseInt()
-					bbs.spy(parseInt(get_arg(str)));
+					bbs.spy(parseInt(get_nodenum(str)));
 					write("\1n\r\nSpy session complete.\r\n");
 				}
 				catch (e) {}
@@ -415,7 +444,7 @@ function str_cmds(str)
 				var bytes=0;
 				var dirs=0;
 				str=str.substr(3);
-				str=get_arg(str);
+				str=get_arg(str, "Path");
 				str=backslash(str);
 				write("\r\nDirectory of: "+str+"\r\n\r\n");
 				a=directory(str+"*",GLOB_NOSORT);
@@ -450,7 +479,7 @@ function str_cmds(str)
 		}
 		if(word=="LOAD") {
 			str=str.substr(4);
-			bbs.load_text(get_arg(str));
+			bbs.load_text(get_filename(str));
 			return;
 		}
 
@@ -698,7 +727,7 @@ function str_cmds(str)
 		}
 		if(word=="LOCK") {
 			str=str.substr(4);
-			i=parseInt(get_arg(str));
+			i=parseInt(get_nodenum(str));
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
@@ -719,7 +748,7 @@ function str_cmds(str)
 		}
 		if(word=="INTR") {
 			str=str.substr(4);
-			i=parseInt(get_arg(str));
+			i=parseInt(get_nodenum(str));
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
@@ -776,15 +805,32 @@ function str_cmds(str)
 
 //### Generic routine to ask user for parameter if one wasn't specified ###
 
-function get_arg(str)
+function get_arg(str, parm)
 {
+	if(parm == undefined)
+		parm = "Parameter(s)";
 	str=str.replace(/^\s+/,"");
 	if(str=="") {
-		write("Parameter(s): ");
+		write(format("%s: ", parm));
 		str=console.getstr();
 	}
 
 	return(str);
+}
+
+function get_nodenum(str)
+{
+	return get_arg(str, "Node Number");
+}
+
+function get_cmdline(str)
+{
+	return get_arg(str, "Command-line");
+}
+
+function get_filename(str)
+{
+	return get_arg(str, "Filename");
 }
 
 function display_node(node_num)
