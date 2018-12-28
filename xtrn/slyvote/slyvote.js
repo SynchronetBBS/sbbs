@@ -301,11 +301,11 @@ if (gUserIsSysop)
 var gSlyVoteCfg = ReadConfigFile();
 if (gSlyVoteCfg.cfgReadError.length > 0)
 {
-	log(LOG_ERR, "SlyVote: Error reading SlyVote.cfg");
-	bbs.log_str("SlyVote: Error reading SlyVote.cfg");
+	log(LOG_ERR, "SlyVote: Error reading slyvote.cfg");
+	bbs.log_str("SlyVote: Error reading slyvote.cfg");
 	console.print("\1n");
 	console.crlf();
-	console.print("\1h\1y* Error reading SlyVote.cfg\1n");
+	console.print("\1h\1y* Error reading slyvote.cfg\1n");
 	console.crlf();
 	console.pause();
 	exit();
@@ -322,7 +322,7 @@ if (gSlyVoteCfg.subBoardCodes.length == 0)
 
 // Read the user settings file
 // The name of the user's settings file for SlyVote
-var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".SlyVote.cfg";
+var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".slyvote.cfg";
 var gUserSettings = ReadUserSettingsFile(gUserSettingsFilename);
 
 // Determine which sub-board to use - If there is more than one, let the user choose.
@@ -896,7 +896,7 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 	return pString;
 }
 
-// Reads the configuration file (SlyVote.cfg).  Returns an object with the following
+// Reads the configuration file (slyvote.cfg).  Returns an object with the following
 // properties:
 //  cfgReadError: A string which will contain a message if failed to read the configuration file
 //  useAllAvailableSubBoards: Boolean - Whether or not to use all available sub-boards where
@@ -914,7 +914,7 @@ function ReadConfigFile()
 
 	// Open the main configuration file.  First look for it in the sbbs/mods
 	// directory, then sbbs/ctrl, then in the same directory as this script.
-	var filename = "SlyVote.cfg";
+	var filename = "slyvote.cfg";
 	var cfgFilename = system.mods_dir + filename;
 	if (!file_exists(cfgFilename))
 		cfgFilename = system.ctrl_dir + filename;
@@ -990,7 +990,7 @@ function ReadConfigFile()
 		cfgFile.close();
 	}
 	else // Unable to read the configuration file
-		retObj.cfgReadError = "Unable to open the configuration file: SlyVote.cfg";
+		retObj.cfgReadError = "Unable to open the configuration file: slyvote.cfg";
 
 	// If we're set to use all available sub-boards, then populate the array
 	// of internal codes of all sub-boards where voting is enabled.
