@@ -218,7 +218,7 @@ static char* prop_desc[] = {
 #endif
 	,"global (top level) object - <small>READ ONLY</small>"
 	/* New properties go here... */
-	,"load() search path array.<br>For relative load paths (e.g. not beginning with '/' or '\'), "
+	,"load() search path array.<br>For relative load paths (e.g. not beginning with '/' or '\\'), "
 		"the path is assumed to be a sub-directory of the (configurable) mods or exec directories "
 		"and is searched accordingly. "
 		"So, by default, load(\"somefile.js\") will search in this order:<br>"
