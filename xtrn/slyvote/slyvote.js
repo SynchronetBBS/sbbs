@@ -113,6 +113,9 @@
  *                              set to the message/poll's message ID, not message number.
  * 2018-12-23 Eric Oulashin     Version 0.38 Beta
  *                              Renamed DDLightbarMenu to dd_lightbar_menu.js
+ * 2018-12-29 Eric Oulashin     Version 0.39 Beta
+ *                              Made use of file_cfgname() when looking for and
+ *                              loading the configuration file.
  */
 
 load("sbbsdefs.js");
@@ -164,8 +167,8 @@ load("smbdefs.js");
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.38 Beta";
-var SLYVOTE_DATE = "2018-12-23";
+var SLYVOTE_VERSION = "0.39 Beta";
+var SLYVOTE_DATE = "2018-12-29";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -915,11 +918,12 @@ function ReadConfigFile()
 	// Open the main configuration file.  First look for it in the sbbs/mods
 	// directory, then sbbs/ctrl, then in the same directory as this script.
 	var filename = "slyvote.cfg";
-	var cfgFilename = system.mods_dir + filename;
+	//var cfgFilename = system.mods_dir + filename;
+	var cfgFilename = file_cfgname(system.mods_dir, filename);
 	if (!file_exists(cfgFilename))
-		cfgFilename = system.ctrl_dir + filename;
+		cfgFilename = file_cfgname(system.ctrl_dir, filename);
 	if (!file_exists(cfgFilename))
-		cfgFilename = gStartupPath + filename;
+		cfgFilename = file_cfgname(gStartupPath, filename);
 	var cfgFile = new File(cfgFilename);
 	if (cfgFile.open("r"))
 	{

@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.38 Beta
-                           Release date: 2018-12-23
+                                 Version 0.39 Beta
+                           Release date: 2018-12-29
 
                                      by
 
@@ -8,7 +8,7 @@
                                 AKA Nightfox
                           Sysop of Digital Distortion
                   BBS internet address: digitaldistortionbbs.com
-                     Alternate address: digdist.bbsindex.com
+                     Alternate address: digdist.synchro.net
                         Email: eric.oulashin@gmail.com
 
 
@@ -40,7 +40,7 @@ along with the latest JavaScript files for Synchronet, such as the following:
 - text.js
 - frame.js
 - scrollbar.js
-- DDLightbarMenu.js
+- dd_lightbar_menu.js
 - smbdefs.js
 - avatar_lib.js
 - Possibly other JavaScript files
@@ -104,7 +104,7 @@ SlyVote is comprised of the following files:
 
 2. SlyVote.cfg            The SlyVote configuration file
 
-3. DDLightbarMenu.js      A JavaScript lightbar menu class used by SlyVote.
+3. dd_lightbar_menu.js    A JavaScript lightbar menu class used by SlyVote.
                           You do not need to edit or use this file directly.
                           You can keep this file in the SlyVote directory or
                           copy it to your sbbs/exec/load directory if it's
