@@ -108,6 +108,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 
 	if(cfg.sys_misc&SM_SYSVDELM && (SYSOP || cfg.sys_misc&SM_USRVDELM))
 		lm_mode |= LM_INCDEL;
+	lm_mode |= LM_REVERSE;
 	mail=loadmail(&smb,&smb.msgs,usernumber,which,lm_mode);
 	last_mode = lm_mode;
 	if(!smb.msgs) {
@@ -402,7 +403,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 			bprintf(text[ReadingAllMail],smb.curmsg+1,smb.msgs);
 		else
 			bprintf(text[ReadingMail],smb.curmsg+1,smb.msgs);
-		sprintf(str,"ADFLNQRT?<>[]{}()-+/");
+		sprintf(str,"ADFLNQRT?<>[]{}()-+/!");
 		if(SYSOP)
 			strcat(str,"CUSPH");
 		if(which == MAIL_YOUR)
@@ -419,6 +420,10 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 			continue; 
 		}
 		switch(l) {
+			case '!':
+				lm_mode ^= LM_REVERSE;
+				domsg=0;
+				break;
 			case 'A':   /* Auto-reply to last piece */
 			case 'R':
 				if(l==(cfg.sys_misc&SM_RA_EMU ? 'A' : 'R'))  /* re-read last message */
