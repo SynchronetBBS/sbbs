@@ -683,7 +683,7 @@ public:
 	/* readmail.cpp */
 	void	readmail(uint usernumber, int which, long lm_mode = 0);
 	bool	readmail_inside;
-	long	searchmail(mail_t*, long start, long msgss, int which, const char *search);
+	long	searchmail(mail_t*, long start, long msgss, int which, const char *search, const char* order);
 
 	/* bulkmail.cpp */
 	bool	bulkmail(uchar *ar);

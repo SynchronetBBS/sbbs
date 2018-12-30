@@ -131,11 +131,12 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 	else
 		act=NODE_RMAL;
 	action=act;
+	char* order = (lm_mode&LM_REVERSE) ? "newest" : "oldest";
 	if(smb.msgs>1 && which!=MAIL_ALL) {
 		if(which==MAIL_SENT)
-			bputs(text[MailSentLstHdr]);
+			bprintf(text[MailSentLstHdr], order);
 		else
-			bputs(text[MailWaitingLstHdr]);
+			bprintf(text[MailWaitingLstHdr], order);
 
 		for(smb.curmsg=0;smb.curmsg<smb.msgs && !msgabort();smb.curmsg++) {
 			if(msg.total_hfields)
@@ -219,6 +220,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 		if(smb.status.last_msg!=last || lm_mode != last_mode) { 	/* New messages */
 			last=smb.status.last_msg;
 			free(mail);
+			order = (lm_mode&LM_REVERSE) ? "newest" : "oldest";
 			mail=loadmail(&smb,&smb.msgs,usernumber,which,lm_mode);   /* So re-load */
 			if(!smb.msgs)
 				break;
@@ -582,11 +584,11 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				else
 					i=smb.curmsg;
 				if(which==MAIL_SENT)
-					bputs(text[MailSentLstHdr]);
+					bprintf(text[MailSentLstHdr], order);
 				else if(which==MAIL_ALL)
-					bputs(text[MailOnSystemLstHdr]);
+					bprintf(text[MailOnSystemLstHdr], order);
 				else
-					bputs(text[MailWaitingLstHdr]);
+					bprintf(text[MailWaitingLstHdr], order);
 				for(u=i;u<smb.msgs && !msgabort();u++) {
 					if(msg.total_hfields)
 						smb_freemsgmem(&msg);
@@ -753,11 +755,11 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 					v=smb.msgs;
 
 				if(which==MAIL_SENT)
-					bputs(text[MailSentLstHdr]);
+					bprintf(text[MailSentLstHdr], order);
 				else if(which==MAIL_ALL)
-					bputs(text[MailOnSystemLstHdr]);
+					bprintf(text[MailOnSystemLstHdr], order);
 				else
-					bputs(text[MailWaitingLstHdr]);
+					bprintf(text[MailWaitingLstHdr], order);
 				for(;u<v;u++) {
 					if(msg.total_hfields)
 						smb_freemsgmem(&msg);
@@ -867,7 +869,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				bputs(text[SearchStringPrompt]);
 				if(!getstr(search_str,40,K_LINE|K_UPPER|K_EDIT|K_AUTODEL))
 					break;
-				searchmail(mail, (long)i64, smb.msgs, which, search_str);
+				searchmail(mail, (long)i64, smb.msgs, which, search_str, order);
 				break;
 			case '?':
 				menu(menu_file);
@@ -903,7 +905,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 	current_msg=NULL;
 }
 
-long sbbs_t::searchmail(mail_t *mail, long start, long msgs, int which, const char *search)
+long sbbs_t::searchmail(mail_t *mail, long start, long msgs, int which, const char *search, const char* order)
 {
 	char*	buf;
 	char	subj[128];
@@ -928,11 +930,11 @@ long sbbs_t::searchmail(mail_t *mail, long start, long msgs, int which, const ch
 		if(strstr(buf,search) || strstr(subj,search)) {
 			if(!found) {
 				if(which==MAIL_SENT)
-					bputs(text[MailSentLstHdr]);
+					bprintf(text[MailSentLstHdr], order);
 				else if(which==MAIL_ALL)
-					bputs(text[MailOnSystemLstHdr]);
+					bprintf(text[MailOnSystemLstHdr], order);
 				else
-					bputs(text[MailWaitingLstHdr]);
+					bprintf(text[MailWaitingLstHdr], order);
 			}
 			if(which==MAIL_ALL)
 				bprintf(text[MailOnSystemLstFmt]
