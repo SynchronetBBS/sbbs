@@ -121,7 +121,7 @@ size_t SMBCALL smb_fwrite(smb_t* smb, const void* buf, size_t bytes, FILE* fp)
 
 /****************************************************************************/
 /* Opens a non-shareable file (FILE*) associated with a message base		*/
-/* Retrys for retry_time number of seconds									*/
+/* Retries for retry_time number of seconds									*/
 /* Return 0 on success, non-zero otherwise									*/
 /****************************************************************************/
 int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
