@@ -481,7 +481,7 @@ void DLLCALL strListFreeStrings(str_list_t list)
 
 void DLLCALL strListFree(str_list_t* list)
 {
-	if(*list!=NULL) {
+	if(list != NULL && *list != NULL) {
 		strListFreeStrings(*list);
 		FREE_AND_NULL(*list);
 	}
