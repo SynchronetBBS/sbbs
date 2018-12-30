@@ -648,10 +648,11 @@ var GLOB_PERIOD     =(1<<7); 	/* Leading `.' can be matched by metachars.  */
 var GLOB_ONLYDIR    =(1<<13);	/* Match only directories.  */
 
 								/* Bits in the lm_mode of bbs.read_mail()	*/
-var LM_UNREAD		=(1<<0)		/* Include un-read mail only				*/
-var LM_INCDEL		=(1<<1)		/* Include deleted mail		 				*/
-var LM_NOSPAM		=(1<<2)		/* Exclude SPAM								*/
-var LM_SPAMONLY		=(1<<3)		/* Load SPAM only							*/
+var LM_UNREAD		=(1<<0);	/* Include un-read mail only				*/
+var LM_INCDEL		=(1<<1);	/* Include deleted mail		 				*/
+var LM_NOSPAM		=(1<<2);	/* Exclude SPAM								*/
+var LM_SPAMONLY		=(1<<3);	/* Load SPAM only							*/
+var LM_REVERSE		=(1<<4);	/* Reverse the index order (newest-first)	*/
 
 								/********************************************/
 								/* Values for which in bbs.read_mail()		*/
