@@ -2650,7 +2650,7 @@ void event_thread(void* arg)
 
 		/* QWK events */
 		if(check_semaphores && !(startup->options&BBS_OPT_NO_QWK_EVENTS)) {
-			sbbs->event_code = "unQWK";
+			sbbs->event_code = "unpackREP";
 			/* Import any REP files that have magically appeared (via FTP perhaps) */
 			SAFEPRINTF(str,"%sfile/",sbbs->cfg.data_dir);
 			offset=strlen(str);
