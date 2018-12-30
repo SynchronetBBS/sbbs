@@ -108,7 +108,6 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 
 	if(cfg.sys_misc&SM_SYSVDELM && (SYSOP || cfg.sys_misc&SM_USRVDELM))
 		lm_mode |= LM_INCDEL;
-	lm_mode |= LM_REVERSE;
 	mail=loadmail(&smb,&smb.msgs,usernumber,which,lm_mode);
 	last_mode = lm_mode;
 	if(!smb.msgs) {
