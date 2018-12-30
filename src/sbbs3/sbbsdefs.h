@@ -793,6 +793,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LM_INCDEL	(1<<1)		/* Include deleted mail		 				*/
 #define LM_NOSPAM	(1<<2)		/* Exclude SPAM								*/
 #define LM_SPAMONLY	(1<<3)		/* Load SPAM only							*/
+#define LM_REVERSE	(1<<4)		/* Reverse the index order (newest-first)	*/
 
 enum {							/* readmail and delmailidx which types		*/
 	 MAIL_YOUR					/* mail sent to you							*/

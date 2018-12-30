@@ -168,6 +168,17 @@ mail_t* DLLCALL loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 	}
 	smb_unlocksmbhdr(smb);
 	*msgs=l;
+	if(l && (mode&LM_REVERSE)) {
+		mail_t*	reversed = malloc(sizeof(mail_t) * l);
+		if(reversed == NULL) {
+			free(mail);
+			return NULL;
+		}
+		for(ulong n = 0; n < l; n++)
+			reversed[n] = mail[l - (n + 1)];
+		free(mail);
+		mail = reversed;
+	}
 	return(mail);
 }
 
