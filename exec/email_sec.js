@@ -20,10 +20,10 @@ while(bbs.online) {
 	var cmdkeys = "SARUFNKQ?\r";
 	switch(console.getkeys(cmdkeys,K_UPPER)) {
 		case 'R':	// Read your mail
-			bbs.read_mail(MAIL_YOUR, user.number);
+			bbs.read_mail(MAIL_YOUR, user.number, LM_REVERSE);
 			break;
 		case 'U':	// Read your un-read mail
-			bbs.read_mail(MAIL_YOUR, user.number, LM_UNREAD);
+			bbs.read_mail(MAIL_YOUR, user.number, LM_UNREAD|LM_REVERSE);
 			break;
 		case 'K':	// Read/Kill sent mail
 			bbs.read_mail(MAIL_SENT, user.number);
