@@ -11,7 +11,7 @@
 	"\1wÀÄÄÄÄÄÄ\1cÄÄÄÄÄÄÄÄÄ\1nÄÄÄÄÄÄÄÄÄÄ\1h\1kÄÄÄÄ"\
 	"ÄÄÄÄ\1n\1cÄÄÄÄÄÄÄ\1bÄÄÄÄÄÄÄúúúúúú\1n"
 "\1_\r\n\1b\1hE-mail (User name or number): \1w"            010 Email
-"\r\nPost on %s %s"                                     011 Post
+"\r\nPost on %s\1\\ %s"                                     011 Post
 "\1r\1h\r\n\7You have sent too many E-mails today.\r\n"   012 TooManyEmailsToday
 "\1r\1h\r\n\7You have posted too many times today.\r\n"   013 TooManyPostsToday
 "\1[\7\1n\1r\1hCannot add \1w%s\1r to queue - \1n"             014 CantAddToQueue
@@ -49,7 +49,7 @@
 "\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
 "\1n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
 "\1n\r\nYou have no %s.\r\n"                           045 NoMailWaiting
-"\1_\r\n\1q\1g\1hMail Waiting:\r\n\r\n"                       046 MailWaitingLstHdr
+"\1_\r\n\1q\1g\1hMail Waiting (%s first):\r\n\r\n"     046 MailWaitingLstHdr
 "\1g\1h%4d \1n\1g%-25.25s \1h%c\1n\1g %.46s\r\n"              047 MailWaitingLstFmt
 "\1_\r\n\1y\1hStart with number [\1w%u\1y]: \1w"             048 StartWithN
 "\r\n\1n\1cş \1b\1hReading E-mail \1n\1cş \1b\1h(\1w?\1b=Menu)"\  049 ReadingMail
@@ -67,7 +67,7 @@
 "Save/Append message to another file"                  057 SaveMsgToFile
 "\1_\1y\1hPath/Filename to write to: \1n"                   058 FileToWriteTo
 "\1n\r\nYou have no sent messages pending.\r\n"          059 NoMailSent
-"\r\n\1q\1g\1hMail that you've sent still pending:"\         060 MailSentLstHdr
+"\r\n\1q\1g\1hMail that you've sent still pending (%s first):"\ 060 MailSentLstHdr
 	"\r\n\r\n\1n"
 "\1n\r\n\1cş \1h\1bReading Sent E-mail \1n\1cş \1h\1b"\		061 ReadingSentMail
 	"(\1w?\1b=Menu) (\1w%u\1b of \1w%u\1b): \1n"
@@ -239,9 +239,9 @@
 "\r\n\1r\1hBad filename.\r\n"                             203 BadFilename
 "Upload '%s' to Sysop directory"                        204 UploadToSysopDirQ
 "Upload '%s' to User directory"                         205 UploadToUserDirQ
-"Upload '%s' to %s %s"                                  206 UploadToCurDirQ
+"Upload '%s' to %s\1\\ %s"                                  206 UploadToCurDirQ
 "\r\n\1r\1h\1iThat file is already there!\1n\r\n"           207 FileAlreadyThere
-"That file is already on disk. Add to data base"        208 FileOnDiskAddQ
+"That file is already on disk.\1\\ Add to data base"        208 FileOnDiskAddQ
 "\r\n\1r\1h\1iThat file is not on disk!\1n\r\n"             209 FileNotOnDisk
 "\r\n\1r\1h\1iPlease upload files with the following "\    210 TheseFileExtsOnly
 	"extensions only:\1n\r\n\1w\1h"
@@ -258,7 +258,7 @@
 "\r\n\1-\1gHow do you rate the content of this file "\    218 RateThisFile
 	"(\1h\1wG\1n\1g, \1h\1wR\1n\1g, or \1h\1wX\1n\1g): \1n"
 "[%c] "                                                 219 Rated
-"Is this upload part of a set (multiple files)"         220 MultipleDiskQ
+"Is this upload part of a set\1\\ (multiple files)"         220 MultipleDiskQ
 "\1_\1y\1hHow many files total: \1n"                        221 HowManyDisksTotal
 "\1_\1y\1hWhich file number is your upload: \1n"            222 NumberOfFile
 " [%2.2d/%2.2d]"                                        223 FileOneOfTen
