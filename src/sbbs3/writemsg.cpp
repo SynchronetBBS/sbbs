@@ -875,7 +875,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 		}
 		if(strin[0]=='/' && strlen(strin)<8) {
 			if(!stricmp(strin,"/DEBUG") && SYSOP) {
-				bprintf("\r\nline=%d lines=%d (%d), rows=%ld\r\n",line,lines,strListCount(str), rows);
+				bprintf("\r\nline=%d lines=%d (%d), rows=%ld\r\n",line,lines,(int)strListCount(str), rows);
 				continue;
 			}
 			else if(!stricmp(strin,"/ABT")) {
