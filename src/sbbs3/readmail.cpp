@@ -131,7 +131,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 	else
 		act=NODE_RMAL;
 	action=act;
-	char* order = (lm_mode&LM_REVERSE) ? "newest" : "oldest";
+	const char* order = (lm_mode&LM_REVERSE) ? "newest" : "oldest";
 	if(smb.msgs>1 && which!=MAIL_ALL) {
 		if(which==MAIL_SENT)
 			bprintf(text[MailSentLstHdr], order);
