@@ -1188,13 +1188,21 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 			notice = text[PollVoteNotice];
 		}
 		result = votemsg(&cfg, &smb, &msg, notice, text[VoteNoticeFmt]);
-		if(result != SMB_SUCCESS && result != SMB_DUPE_MSG)
-			errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
+		if(result != SMB_SUCCESS && result != SMB_DUPE_MSG) {
+			if(hubnum >= 0)
+				lprintf(LOG_DEBUG, "Error %s (%d) writing vote-msg to %s", smb.last_error, result, smb.file);
+			else
+				errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
+		}
 	}
 	else if(strnicmp(section, "close:", 6) == 0) {
 		smb_hfield_str(&msg, RFC822MSGID, section + 6);
-		if((result = smb_addpollclosure(&smb, &msg, smb_storage_mode(&cfg, &smb))) != SMB_SUCCESS)
-			errormsg(WHERE,ERR_WRITE,smb.file,result,smb.last_error);
+		if((result = smb_addpollclosure(&smb, &msg, smb_storage_mode(&cfg, &smb))) != SMB_SUCCESS) {
+			if(hubnum >= 0)
+				lprintf(LOG_DEBUG, "Error %s (%d) writing poll-close-msg to %s", smb.last_error, result, smb.file);
+			else
+				errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
+		}
 	}
 	else result = SMB_SUCCESS;
 
