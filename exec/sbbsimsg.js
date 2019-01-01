@@ -50,7 +50,8 @@ lib.read_sys_list();
 // Parse arguments
 for(i=0; i<argc; i++) {
 	if(argv[i].toLowerCase()=="-l") {
-		var timeout = 5000;
+		writeln("Inter-BBS Active Users:");
+		var timeout = 2500;
 		var sent = lib.request_active_users();
 		if(parseInt(argv[i+1]))
 			timeout = parseInt(argv[i+1]);
