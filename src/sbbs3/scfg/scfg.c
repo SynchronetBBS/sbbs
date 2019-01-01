@@ -213,7 +213,7 @@ int main(int argc, char **argv)
         			uifc.mode|=UIFC_COLOR;
                     break;
                 case 'D':
-					printf("NOTICE: The -d option is depreciated, use -id instead\r\n");
+					printf("NOTICE: The -d option is deprecated, use -id instead\r\n");
 					SLEEP(2000);
                     door_mode=TRUE;
                     break;
