@@ -1138,7 +1138,7 @@ function browse(list)
 				var prompt = "";
 				if(!options.add_ars || user.compare_ars(options.add_ars))
 					prompt += "~Add, ";
-				if(can_edit(list[current]))
+				if(list.length && can_edit(list[current]))
 					prompt += "~Edit, ~Remove, ";
 				console.mnemonics(prompt + "~Download, ~Sort, ~Format, ~Quit, ~Help ~?");
 				var key = console.getkey(K_UPPER);
@@ -1150,6 +1150,10 @@ function browse(list)
 						list = orglist.slice();
 						continue;
 					case 'E':
+						if(!list[current] || !can_edit(list[current])) {
+							console_beep();
+							continue;
+						}
 						console.clear();
 						/* Edit a clone, not the original (allowing the user to abort the edit) */
 						var bbs = edit(objcopy(list[current]));
@@ -1164,7 +1168,7 @@ function browse(list)
 						continue;
 					case KEY_DEL:
 					case 'R':
-						if(!can_edit(list[current])) {
+						if(!list[current] || !can_edit(list[current])) {
 							console_beep();
 							continue;
 						}
