@@ -50,15 +50,15 @@
 /*************/
 
 #define VERSION 	"3.17"  /* Version: Major.minor  */
-#define REVISION	'a'     /* Revision: lowercase letter */
+#define REVISION	'b'     /* Revision: lowercase letter */
 #define VERSION_NUM	(31700	 + (tolower(REVISION)-'a'))
 #define VERSION_HEX	(0x31700 + (tolower(REVISION)-'a'))
 
 #define VERSION_NOTICE		"Synchronet BBS for " PLATFORM_DESC\
 								"  Version " VERSION
 #define SYNCHRONET_CRC		0x9BCDD162
-#define COPYRIGHT_NOTICE	"Copyright 2018 Rob Swindell"
-#define COPYRIGHT_CRC		0x930AE2A9
+#define COPYRIGHT_NOTICE	"Copyright 2019 Rob Swindell"
+#define COPYRIGHT_CRC		0x0E0503DF
 
 #define Y2K_2DIGIT_WINDOW	70
 
