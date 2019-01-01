@@ -20,7 +20,7 @@ function	Lock(fileName)
 {
 	var fname=(root+fileName+".lck");
 	var lockfile=new File(fname);
-		lockfile.open('we', false); 
+		lockfile.open('wx', false); 
 	if(!lockfile.is_open) 
 		return false;
 	else  {
