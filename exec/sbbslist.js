@@ -2341,7 +2341,7 @@ function main()
 				var index = lib.system_index(list, system.name);
 				if(index < 0) {
 					alert("System '" + system.name + "' does not exist");
-					exit(-1);
+					exit(0);
 				}
 				var bbs=list[index];
 				bbs.software = "Synchronet";
