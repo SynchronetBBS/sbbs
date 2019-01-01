@@ -122,12 +122,10 @@ function str_cmds(str)
 
 		if(str=="HELP")
 			writeln("EDIT\tEdits a specified file using your message editor.");
-		if(str=="EDIT") {
+		if(word=="EDIT") {
 			if(bbs.check_syspass()) {
-				write(bbs.text(Filename));
-				if((str=console.getstr("",60))!=null) {
-					console.editfile(str);
-				}
+				str=str.substr(4);
+				console.editfile(get_filename(str));
 			}
 		}
 
