@@ -124,6 +124,17 @@ if(random_list.length)
 console.clear();
 bbs.user_event(EVENT_LOGON);
 
+if(user.security.level==99				/* Sysop logging on */
+	&& !system.matchuser("guest")		/* Guest account does not yet exist */
+	&& user.security.flags4&UFLAG_G		/* Sysop has not asked to stop this question */
+	) {
+	if(console.yesno("Create Guest/Anonymous user account (highly recommended)"))
+		load("makeguest.js");
+	else if(!console.yesno("Ask again later"))
+		user.security.flags4&=~UFLAG_G;	/* Turn off flag 4G to not ask again */
+	console.crlf();
+}
+
 /*
 	* Disable HTML mode if not using an HTML shell
 	* If you don't do this, you'll get HTML menus that flash on
@@ -226,21 +237,6 @@ else {
 		Avatar.draw(user.number, /* name: */null, /* netaddr: */null, /* above: */false, /* right: */true);
 		console.attributes = 7;	// Clear the background attribute
 	}
-}
-
-// Automatically set shell to WIPSHELL
-if(user.settings&USER_WIP)
-	user.command_shell="WIPSHELL";
-
-if(user.security.level==99				/* Sysop logging on */
-	&& !system.matchuser("guest")		/* Guest account does not yet exist */
-	&& user.security.flags4&UFLAG_G		/* Sysop has not asked to stop this question */
-	) {
-	if(console.yesno("Create Guest/Anonymous user account (highly recommended)"))
-		load("makeguest.js");
-	else if(!console.yesno("Ask again later"))
-		user.security.flags4&=~UFLAG_G;	/* Turn off flag 4G to not ask again */
-	console.crlf();
 }
 
 // Set rlogin_xtrn_menu=true in [logon] section of ctrl/modopts.ini
