@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 0.39 Beta
-                           Release date: 2018-12-29
+                                 Version 1.00
+                           Release date: 2019-01-02
 
                                      by
 
@@ -45,14 +45,12 @@ along with the latest JavaScript files for Synchronet, such as the following:
 - avatar_lib.js
 - Possibly other JavaScript files
 
-If you are using a beta build of Synchronet 3.17, you must use one built on
-August 19, 2017 or newer.  On August 14, 2017, multi-answer polls were added,
-and the functionality changed slightly.  Also, the August 19, 2017 build of
-Synchronet 3.17 added a new messagebase function, close_poll(), which is used
-by SlyVote.
+SlyVote requiers Synchronet 3.17 or newer, since SlyVote makes use of the
+messagebase poll feature and user avatar feature, both of which were added in
+Synchronet 3.17.
 
-SlyVote requires an ANSI terminal, since SlyVote makes use of lightbar menus
-which do cursor movement, etc.
+SlyVote also requires an ANSI terminal, since SlyVote makes use of lightbar
+menus which do cursor movement, etc.
 
 Since SlyVote makes use of Synchronet's messagebase, SlyVote can be configured
 to use one or more of your message sub-boards to work with.  If more than one
@@ -78,15 +76,11 @@ poll results.  Even though Synchronet can keep track of the user's last-read
 message numbers, they are stored separately by SlyVote so that they don't
 interfere with the user's normal message reading.  The SlyVote user
 configuration files are stored in sbbs/data/user, with the filenames in the
-format <user number>.SlyVote.cfg.  The user number is 0-padded up to 4 digits.
-For example, user 1 would be 0001.SlyVote.cfg.
+format <user number>.slyvote.cfg.  The user number is 0-padded up to 4 digits.
+For example, user 1 would be 0001.slyvote.cfg.
 
 SlyVote's look and feel was initially based on DCT Vote, a voting booth door
 which was available in the 1990s.
-
-NOTE: SlyVote is currently considered beta, though it has been tested and seems
-to be fairly stable.  The first non-beta version of SlyVote might not be
-released until an official non-beta Synchronet 3.17 is released.
 
 
 3. Installation & Setup
@@ -100,9 +94,9 @@ BBS of Synchronet).  See the section below titled "Updating Synchronet".
 Setting up SlyVote
 ------------------
 SlyVote is comprised of the following files:
-1. SlyVote.js             The SlyVote script
+1. slyvote.js             The SlyVote script
 
-2. SlyVote.cfg            The SlyVote configuration file
+2. slyvote.cfg            The SlyVote configuration file
 
 3. dd_lightbar_menu.js    A JavaScript lightbar menu class used by SlyVote.
                           You do not need to edit or use this file directly.
@@ -114,12 +108,12 @@ SlyVote is comprised of the following files:
                           Synchronet setup if you have updated your JavaScript
                           files.
 
-SlyVote.cfg is a plain text file, so it can be edited using any text editor.
+slyvote.cfg is a plain text file, so it can be edited using any text editor.
 
 Installing into Synchronet's external programs menu
 ---------------------------------------------------
 This section assumes that SlyVote is installed in the directory
-sbbs/xtrn/SlyVote.
+sbbs/xtrn/slyvote.
 
 To set up SlyVote in the Synchronet external programs menu:
 1. Run SCFG
@@ -130,8 +124,8 @@ To set up SlyVote in the Synchronet external programs menu:
 ¦----------------------------------------------------------¦
 ¦ ¦Name                       SlyVote                      ¦
 ¦ ¦Internal Code              SLYVOTE                      ¦
-¦ ¦Start-up Directory         ../xtrn/SlyVote              ¦
-¦ ¦Command Line               ?SlyVote.js                  ¦
+¦ ¦Start-up Directory         ../xtrn/slyvote              ¦
+¦ ¦Command Line               ?slyvote.js                  ¦
 ¦ ¦Clean-up Command Line                                   ¦
 ¦ ¦Execution Cost             None                         ¦
 ¦ ¦Access Requirements        ANSI                         ¦
@@ -151,39 +145,34 @@ To set up SlyVote in the Synchronet external programs menu:
 Installing into a command shell
 -------------------------------
 This section assumes that SlyVote is installed in the directory
-sbbs/xtrn/SlyVote.
+sbbs/xtrn/slyvote.
 
 If you are unsure which command shell you are using, you are likely using
 Synchronet's "default" command shell, which is contained in the files
 default.src and default.bin in the synchronet/exec directory.  To modify the
 default command shell, you'll need to open default.src with a text editor.
 Then, you can add a menu command to run SlyVote as follows:
-  exec "?../xtrn/SlyVote/SlyVote.js"
+  exec "?../xtrn/slyvote/slyvote.js"
 
 If you are using a JavaScript command shell, the process would be similar.  You
 can add a menu command to run SlyVote as follows:
-bbs.exec("?../xtrn/SlyVote/SlyVote.js");
+bbs.exec("?../xtrn/slyvote/slyvote.js");
 
 
 Updating Synchronet
 -------------------
 SlyVote requires Synchronet 3.17 or higher, along with the latest Synchronet
-JavaScript files.
-Daily-built Windows beta binaries can be downloaded from this URL:
-ftp://vert.synchro.net/main/SBBS/sbbs_dev.zip
-Daily-built Linux x64 binaries can be downloaded here:
-ftp://vert.synchro.net/main/SBBS/sbbs_dev.tgz
-To update your JavaScript files, first download the sbbs_run archive - Either
-one of the following:
-With CRLF line endings: ftp://vert.synchro.net/main/SBBS/sbbs_run.zip
-With CR line endings: ftp://vert.synchro.net/main/SBBS/sbbs_run.tgz
-Then, extract the archive and copy the files from sbbs/exec/load into your
-sbbs/exec/load directory.
+JavaScript files - at least the ones which were included with Synchronet 3.17.
+The Synchronet 3.17 fresh installer can be downloaded here:
+ftp://ftp.synchro.net/sbbs317b.zip
+The Synchroent 3.17 update package (for upgrading from older versions of
+Synchronet) can be downloaded here:
+ftp://ftp.synchro.net/sbup317b.zip
 
 
 4. Configuration file
 =====================
-The format of SlyVote.cfg is setting=value.  SlyVote.cfg supports the following
+The format of slyvote.cfg is setting=value.  slyvote.cfg supports the following
 settings:
 
 Setting                               Description
@@ -208,7 +197,7 @@ subBoardCodes                         A comma-separated list of internal
                                       specified if you only want to use one
                                       sub-board with SlyVote.  Also,
                                       subBoardCodes can appear multiple times
-                                      in SlyVote.cfg, and all specified
+                                      in slyvote.cfg, and all specified
                                       sub-boards will be used.  If any of the
                                       specified sub-board codes don't exist or
                                       refer to sub-boards that don't allow

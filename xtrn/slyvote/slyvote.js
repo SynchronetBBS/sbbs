@@ -116,6 +116,9 @@
  * 2018-12-29 Eric Oulashin     Version 0.39 Beta
  *                              Made use of file_cfgname() when looking for and
  *                              loading the configuration file.
+ * 2019-01-02 Eric Oulashin     Version 1.00
+ *                              Changed the version to 1.00 after the official release
+ *                              of Synchronet 3.17b
  */
 
 load("sbbsdefs.js");
@@ -167,8 +170,8 @@ load("smbdefs.js");
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "0.39 Beta";
-var SLYVOTE_DATE = "2018-12-29";
+var SLYVOTE_VERSION = "1.00";
+var SLYVOTE_DATE = "2019-01-02";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
