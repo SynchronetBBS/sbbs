@@ -4,6 +4,7 @@
   const _sb_niu = system.node_list.reduce(function (a, c) {
     return (c.status == 3 ? a + 1 : a);
   }, 0);
+  require('file_size.js', 'file_size_str');
 ?>
 
 <h4>System Info</h4>
@@ -66,7 +67,7 @@
   				<?xjs write(system.stats.files_uploaded_today); ?>
   				<?xjs write(_sill.stat_suffix_files); ?>
   				<br>
-  				(<?xjs write(system.stats.bytes_uploaded_today); ?>
+  				(<?xjs write(file_size_str(system.stats.bytes_uploaded_today)); ?>
   				<?xjs write(_sill.stat_suffix_bytes); ?>)
   			</td>
   		</tr>
@@ -79,7 +80,7 @@
   				<?xjs write(system.stats.files_downloaded_today); ?>
   				<?xjs write(_sill.stat_suffix_files); ?>
   				<br>
-  				(<?xjs write(system.stats.bytes_downloaded_today); ?>
+  				(<?xjs write(file_size_str(system.stats.bytes_downloaded_today)); ?>
   				<?xjs write(_sill.stat_suffix_bytes); ?>)
   			</td>
   		</tr>
