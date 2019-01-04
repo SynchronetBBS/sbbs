@@ -252,7 +252,10 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 		,extinfo==NULL ? "":"info="
 		,extinfo==NULL ? "":extinfo);
 	if(online==ON_LOCAL) {
-		eprintf(LOG_ERR,"%s",str);
+		if(useron.number)
+			eprintf(LOG_ERR, "<%s> %s", useron.alias, str);
+		else
+			eprintf(LOG_ERR, "%s", str);
 	} else {
 		int savatr=curatr;
 		lprintf(LOG_ERR, "!%s", str);
