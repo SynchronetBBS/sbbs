@@ -5,7 +5,7 @@ function count_files(dir) {
     var n = 0;
     const fn = format("%s%s.ixb", file_area.dir[dir].data_dir, dir);
     if (!file_exists(fn)) return n;
-    return Math.floor(file_size(fn) / 22);
+    return Math.floor(file_size(fn) / 22); // ixb record length is 22 bytes
 }
 
 function listLibraries() {
@@ -19,14 +19,13 @@ function listDirectories(library) {
 	file_area.lib_list[library].dir_list.forEach(function (dir) {
         const fc = count_files(dir.code);
         if (fc < 1) return;
-		dirs.push({'dir' : dir, 'fileCount' : fc });
+		dirs.push({ dir: dir, fileCount: fc });
 	});
 	return dirs;
 }
 
 function listFiles(dir) {
-	var fd = new FileBase(file_area.dir[dir].code);
-	return fd.map(function (df) {
+	return (new FileBase(file_area.dir[dir].code)).map(function (df) {
         df.size = df.path ? file_size_str(file_size(df.path)) : 'Unknown';
 		return df;
 	});
