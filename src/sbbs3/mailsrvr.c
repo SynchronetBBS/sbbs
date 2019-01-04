@@ -4651,7 +4651,7 @@ static void smtp_thread(void* arg)
 					,socket, client.protocol, user.netmail);
 				fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_INTERNET);
 				fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),user.netmail);
-				sockprintf(socket,client.protocol,session,"251 User not local; will forward to %s", user.netmail);
+				sockprintf(socket,client.protocol,session,ok_rsp);	// used to be a 251 response, changed per RFC2821
 			} else { /* Local (no-forward) */
 				if(routed) { /* QWKnet */
 					fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_QWK);
