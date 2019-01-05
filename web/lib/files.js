@@ -1,39 +1,32 @@
 load('filebase.js');
 load('file_size.js');
 
+function count_files(dir) {
+    var n = 0;
+    const fn = format("%s%s.ixb", file_area.dir[dir].data_dir, dir);
+    if (!file_exists(fn)) return n;
+    return Math.floor(file_size(fn) / 22); // ixb record length is 22 bytes
+}
+
 function listLibraries() {
-	return file_area.lib_list.filter(
-		function (library) {
-            if (library.dir_list.length < 1) return false;
-            var dirs = listDirectories(library.index);
-            return dirs.length > 0;
-        }
-	);
+	return file_area.lib_list.filter(function (library) {
+        return library.dir_list.length >= 1;
+    });
 }
 
 function listDirectories(library) {
 	var dirs = [];
-	file_area.lib_list[library].dir_list.forEach(
-		function (dir) {
-			var fd = new FileBase(dir.code);
-			if (fd.length < 1) return;
-			dirs.push({'dir' : dir, 'fileCount' : fd.length });
-		}
-	);
+	file_area.lib_list[library].dir_list.forEach(function (dir) {
+        const fc = count_files(dir.code);
+        if (fc < 1) return;
+		dirs.push({ dir: dir, fileCount: fc });
+	});
 	return dirs;
 }
 
 function listFiles(dir) {
-	var fd = new FileBase(file_area.dir[dir].code);
-	var files = fd.map(
-		function (df) {
-			if (typeof df.path !== 'undefined') {
-				df.size = file_size_str(file_size(df.path));
-			} else {
-				df.size = 'Unknown';
-			}
-			return df;
-		}
-	);
-	return files;
+	return (new FileBase(file_area.dir[dir].code)).map(function (df) {
+        df.size = df.path ? file_size_str(file_size(df.path)) : 'Unknown';
+		return df;
+	});
 }
