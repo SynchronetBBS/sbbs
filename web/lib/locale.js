@@ -4,4 +4,4 @@ if (!settings.locale) {
     load(backslash(settings.web_lib + 'locale/') + settings.locale + '.js');
 }
 
-const locale = new Locale();
+var locale = new Locale();
