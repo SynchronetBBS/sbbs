@@ -1,5 +1,3 @@
-<?xjs var _sill = getLanguage(settings.language_file || 'english.ini', 'sidebar_system_info'); ?>
-
 <?xjs
   const _sb_niu = system.node_list.reduce(function (a, c) {
     return (c.status == 3 ? a + 1 : a);
@@ -12,22 +10,22 @@
 	<tbody>
 
 		<tr>
-			<th scope="row"><?xjs write(_sill.label_sysop); ?></th>
+			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_sysop); ?></th>
 			<td><?xjs write(system.operator); ?></td>
 		</tr>
 
 		<tr>
-			<th scope="row"><?xjs write(_sill.label_location); ?></th>
+			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_location); ?></th>
 			<td><?xjs write(system.location); ?></td>
 		</tr>
 
 		<tr>
-			<th scope="row"><?xjs write(_sill.label_users); ?></th>
-			<td><?xjs write(system.stats.total_users); ?></td>
+			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_users); ?></th>
+			<td><?xjs write(locale.group_numbers(system.stats.total_users)); ?></td>
 		</tr>
 
 		<tr>
-			<th scope="row"><?xjs write(_sill.label_nodes); ?></th>
+			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_nodes); ?></th>
       <td>
         <?xjs write(system.nodes); ?>
         (<span title="In use" class="text-danger sb-nodes-in-use"><?xjs write(_sb_niu); ?></span>
@@ -37,66 +35,66 @@
 		</tr>
 
 		<tr>
-			<th scope="row"><?xjs write(_sill.label_uptime); ?></th>
+			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_uptime); ?></th>
 			<td><?xjs write(system.secondstr(time() - system.uptime)); ?></td>
 		</tr>
 
 		<tr>
-			<th scope="row"><?xjs write(_sill.label_calls_total); ?></th>
-			<td><?xjs write(system.stats.total_logons); ?></td>
+			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_calls_total); ?></th>
+			<td><?xjs write(locale.group_numbers(system.stats.total_logons)); ?></td>
 		</tr>
 
     <?xjs if (!settings.hide_empty_stats || system.stats.logons_today) { ?>
   		<tr>
-  			<th scope="row"><?xjs write(_sill.label_calls_today); ?></th>
-  			<td><?xjs write(system.stats.logons_today); ?></td>
+  			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_calls_today); ?></th>
+  			<td><?xjs write(local.group_numbers(system.stats.logons_today)); ?></td>
   		</tr>
     <?xjs } ?>
 
     <?xjs if (!settings.hide_empty_stats || system.stats.total_files) { ?>
   		<tr>
-  			<th scope="row"><?xjs write(_sill.label_files_total); ?></th>
-  			<td><?xjs write(system.stats.total_files); ?></td>
+  			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_files_total); ?></th>
+  			<td><?xjs write(locale.group_numbers(system.stats.total_files)); ?></td>
   		</tr>
     <?xjs } ?>
 
     <?xjs if (!settings.hide_empty_stats || system.stats.files_uploaded_today) { ?>
   		<tr>
-  			<th scope="row"><?xjs write(_sill.label_files_uploaded_today); ?></th>
+  			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_files_uploaded_today); ?></th>
   			<td>
-  				<?xjs write(system.stats.files_uploaded_today); ?>
-  				<?xjs write(_sill.stat_suffix_files); ?>
+  				<?xjs write(locale.group_numbers(system.stats.files_uploaded_today)); ?>
+  				<?xjs write(locale.strings.sidebar_system_info.stat_suffix_files); ?>
   				<br>
   				(<?xjs write(file_size_str(system.stats.bytes_uploaded_today)); ?>
-  				<?xjs write(_sill.stat_suffix_bytes); ?>)
+  				<?xjs write(locale.strings.sidebar_system_info.stat_suffix_bytes); ?>)
   			</td>
   		</tr>
     <?xjs } ?>
 
     <?xjs if (!settings.hide_empty_stats || system.stats.files_downloaded_today) { ?>
   		<tr>
-  			<th scope="row"><?xjs write(_sill.label_files_downloaded_today); ?></th>
+  			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_files_downloaded_today); ?></th>
   			<td>
-  				<?xjs write(system.stats.files_downloaded_today); ?>
-  				<?xjs write(_sill.stat_suffix_files); ?>
+  				<?xjs write(locale.group_numbers(system.stats.files_downloaded_today)); ?>
+  				<?xjs write(locale.strings.sidebar_system_info.stat_suffix_files); ?>
   				<br>
   				(<?xjs write(file_size_str(system.stats.bytes_downloaded_today)); ?>
-  				<?xjs write(_sill.stat_suffix_bytes); ?>)
+  				<?xjs write(locale.strings.sidebar_system_info.stat_suffix_bytes); ?>)
   			</td>
   		</tr>
     <?xjs } ?>
 
     <?xjs if (!settings.hide_empty_stats || system.stats.total_messages) { ?>
   		<tr>
-  			<th scope="row"><?xjs write(_sill.label_messages_total); ?></th>
-  			<td><?xjs write(system.stats.total_messages); ?></td>
+  			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_messages_total); ?></th>
+  			<td><?xjs write(locale.group_numbers(system.stats.total_messages)); ?></td>
   		</tr>
     <?xjs } ?>
 
     <?xjs if (!settings.hide_empty_stats || system.stats.messages_posted_today) { ?>
   		<tr>
-  			<th scope="row"><?xjs write(_sill.label_messages_posted_today); ?></th>
-  			<td><?xjs write(system.stats.messages_posted_today); ?></td>
+  			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_messages_posted_today); ?></th>
+  			<td><?xjs write(locale.group_numbers(system.stats.messages_posted_today)); ?></td>
   		</tr>
     <?xjs } ?>
 
