@@ -47,7 +47,7 @@
     <?xjs if (!settings.hide_empty_stats || system.stats.logons_today) { ?>
   		<tr>
   			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_calls_today); ?></th>
-  			<td><?xjs write(local.group_numbers(system.stats.logons_today)); ?></td>
+  			<td><?xjs write(locale.group_numbers(system.stats.logons_today)); ?></td>
   		</tr>
     <?xjs } ?>
 
