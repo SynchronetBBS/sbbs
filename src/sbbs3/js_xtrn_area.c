@@ -255,13 +255,13 @@ JSBool DLLCALL js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			if((secobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 				return JS_FALSE;
 
+			val=OBJECT_TO_JSVAL(secobj);
 			sec_index=-1;
 			if(p->user==NULL || chk_ar(p->cfg,p->cfg->xtrnsec[l]->ar,p->user,p->client)) {
 
 				if(!JS_GetArrayLength(cx, sec_list, &sec_index))
 					return JS_FALSE;
 
-				val=OBJECT_TO_JSVAL(secobj);
 				if(!JS_SetElement(cx, sec_list, sec_index, &val))
 					return JS_FALSE;
 			}
@@ -323,6 +323,7 @@ JSBool DLLCALL js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				if((progobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 					return JS_FALSE;
 
+				val=OBJECT_TO_JSVAL(progobj);
 				prog_index=-1;
 				if((p->user==NULL || chk_ar(p->cfg,p->cfg->xtrn[d]->ar,p->user,p->client))
 					&& !(p->cfg->xtrn[d]->event && p->cfg->xtrn[d]->misc&EVENTONLY)) {
@@ -330,7 +331,6 @@ JSBool DLLCALL js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 					if(!JS_GetArrayLength(cx, prog_list, &prog_index))
 						return JS_FALSE;
 
-					val=OBJECT_TO_JSVAL(progobj);
 					if(!JS_SetElement(cx, prog_list, prog_index, &val))
 						return JS_FALSE;
 				}
