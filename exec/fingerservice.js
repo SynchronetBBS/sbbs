@@ -1,30 +1,17 @@
-// fingerservice.js
+// $Id$
 // vi: tabstop=4
 
 // Synchronet Service for the Finger protocol (RFC 1288)
-// and/or the Active Users protocol (RFC 866)
-
-// $Id$
+// and/or the Active Users (SYSTAT) protocol (RFC 866)
 
 // Example configurations (in ctrl/services.ini)
 // [Finger]
 // Port=79
-// Options=NO_HOST_LOOKUP
 // Command=fingerservice.js
-
-// [Finger-UDP]
-// Port=79
-// Options=UDP | NO_HOST_LOOKUP
-// Command=fingerservice.js
-
-// [ActiveUser]
-// Port=11
-// Options=NO_HOST_LOOKUP
-// Command=fingerservice.js -u
 
 // [ActiveUser-UDP]
 // Port=11
-// Options=UDP | NO_HOST_LOOKUP
+// Options=UDP
 // Command=fingerservice.js -u
 
 // Command-line options:
@@ -42,30 +29,42 @@
 // available to ANYONE using this service. If there is anything in
 // this script that you do not want to be made available to anyone
 // and everyone, please comment-out (using /* and */) that portion
-// of the script.
+// of the script or use the command-line options or modopts.ini to
+// disable those elements.
 
+"use strict";
 const REVISION = "$Revision$".split(' ')[1];
 
-var include_age_gender=true;
-var include_real_name=true;
-var findfile=true;
-var active_users=false;
+var active_users = false;	// Active-Users/SYSTAT protocol mode (Finger when false)
+var options = load({}, 'modopts.js', 'fingerservice');
+if(!options)
+	options = {};
+if(options.include_age_gender === undefined)
+	options.include_age_gender = true;
+if(options.include_real_name === undefined)
+	options.include_real_name = true;
+if(options.findfile === undefined)
+	options.findfile = true;
+if(options.bbslist === undefined)
+	options.bbslist = false;
 
 load("nodedefs.js");
 load("sockdefs.js");
 load("sbbsdefs.js");
 load("portdefs.js");
+if(options.bbslist)
+	var sbbslist = load({}, "sbbslist_lib.js");
 
 for(i=0;i<argc;i++) {
 	switch(argv[i].toLowerCase()) {
 		case "-n":	// no age or gender
-			include_age_gender = false;
+			options.include_age_gender = false;
 			break;
 		case "-a":	// aliases only
-			include_real_name = false;
+			options.include_real_name = false;
 			break;
 		case "-ff":	// enable findfile (requires "guest" account)
-			findfile=true;
+			options.findfile=true;
 			break;
         case "-u": // Active Users only
             active_users=true;
@@ -97,20 +96,20 @@ function writeln(str)
 // Send the contents of a text file to the client socket
 function send_file(fname)
 {
-	f = new File(fname);
+	var f = new File(fname);
 	if(!f.open("r")) 
 		return;
-	txt = f.readAll();
+	var txt = f.readAll();
 	f.close();
-	for(l in txt)
+	for(var l in txt)
 		writeln(txt[l]);
 }
 
 // Returns true if a connection on the local 'port' was succesful
 function test_port(port)
 {
-	sock = new Socket();
-	success = sock.connect(system.host_name,port);
+	var sock = new Socket();
+	var success = sock.connect(system.host_name,port);
 	sock.close();
 
 	return(success);
@@ -118,11 +117,11 @@ function test_port(port)
 
 function xtrn_name(code)
 {
-	if(this.xtrn_area==undefined)
+	if(js.global.xtrn_area==undefined)
 		return(code);
 
 	if(xtrn_area.prog!=undefined)
-		if(xtrn_area.prog[code]!=undefined)
+		if(xtrn_area.prog[code]!=undefined && xtrn_area.prog[code].name!=undefined)
 			return(xtrn_area.prog[code].name);
 	else {	/* old way */
 		for(s in xtrn_area.sec_list)
@@ -182,12 +181,12 @@ if(datagram || !active_users) {
 if(request=="") {	// no specific user requested, give list of active users
 	log("client requested active user list");
 	write(format("%-25.25s %-31.31s   Time   %7s Node\r\n"
-		,"User","Action",include_age_gender ? "Age Sex":""));
+		,"User","Action",options.include_age_gender ? "Age Sex":""));
 	var dashes="----------------------------------------";
 	write(format("%-25.25s %-31.31s %8.8s %3.3s %3.3s %4.4s\r\n"
 		,dashes,dashes,dashes
-		,include_age_gender ? dashes : ""
-		,include_age_gender ? dashes : ""
+		,options.include_age_gender ? dashes : ""
+		,options.include_age_gender ? dashes : ""
 		,dashes));
 	var u = new User(1);
 	for(n=0;n<system.node_list.length;n++) {
@@ -210,8 +209,8 @@ if(request=="") {	// no specific user requested, give list of active users
 			,Math.floor(t/(60*60))
 			,Math.floor(t/60)%60
 			,t%60
-			,include_age_gender ? u.age.toString() : ""
-			,include_age_gender ? u.gender : ""
+			,options.include_age_gender ? u.age.toString() : ""
+			,options.include_age_gender ? u.gender : ""
 			,n+1
 			));
 	}
@@ -220,7 +219,7 @@ if(request=="") {	// no specific user requested, give list of active users
 
 // MODIFICATION BY MERLIN PART 1 STARTS HERE...
 
-if(findfile && 0) {	// What is this supposed to do?
+if(options.findfile && 0) {	// What is this supposed to do?
 
 	if ((request.slice(0,9)) == "?findfile")  {
 		request=request.slice(9);
@@ -277,13 +276,13 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 			for(i in system.stats)
 				writeln(format("%-25s = ", i) + system.stats[i]);
 
-			total	= time()-system.uptime;
-			days	= Math.floor(total/(24*60*60));
+			var total	= time()-system.uptime;
+			var days	= Math.floor(total/(24*60*60));
 		    if(days) 
 				total%=(24*60*60);
-			hours	= Math.floor(total/(60*60));
-			min		= (Math.floor(total/60))%60;
-			sec		= total%60;
+			var hours	= Math.floor(total/(60*60));
+			var min		= (Math.floor(total/60))%60;
+			var sec		= total%60;
 
 			writeln(format("uptime = %u days, %u hours, %u minutes and %u seconds"
 				,days,hours,min,sec));
@@ -301,7 +300,7 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 				if(node.status==NODE_INUSE
 					&& !(node.misc&NODE_ANON)) {
 					u.number=node.useron;
-					if(include_age_gender)
+					if(options.include_age_gender)
 						write(format("%s (%u %s) ", u.alias, u.age, u.gender));
 					else
 						write(u.alias + ' ');
@@ -323,22 +322,23 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 		case "active-users.json":
 			var u = new User(1);
 			var list = [];
-			for(n=0;n<system.node_list.length;n++) {
-			var node = system.node_list[n];
+			for(var n=0;n<system.node_list.length;n++) {
+				var node = system.node_list[n];
 				if(node.status!=NODE_INUSE)
 					continue;
 				if(node.misc&(NODE_ANON|NODE_POFF))
 					continue;
 				u.number=node.useron;
+				var action;
 				if(node.action==NODE_XTRN && node.aux)
 					action=format("running %s",xtrn_name(u.curxtrn));
 				else
 					action=format(NodeAction[node.action]
 								,node.aux);
-				t = time()-u.logontime;
+				var t = time()-u.logontime;
 				if(t&0x80000000) t = 0;
-				var obj =  { name: u.alias, action: action, timeon: t, node: n + 1, location: u.location };
-				if(include_age_gender) {
+				var obj =  { name: u.alias, action: action, naction: node.action, aux: node.aux, xtrn: xtrn_name(u.curxtrn), timeon: t, node: n + 1, location: u.location };
+				if(options.include_age_gender) {
 					obj.age = u.age;
 					obj.sex = u.gender;
 				}
@@ -364,7 +364,25 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
             }
 			break;
 
+		case "bbslist":
+			if(options.bbslist) {
+				var list = sbbslist.read_list();
+				for(var i in list)
+					writeln(list[i].name);
+			}
+			break;
+
 		default:
+			if(options.bbslist && request.indexOf("bbs:") == 0) {
+				var list = sbbslist.read_list();
+				var index = sbbslist.system_index(list, request.slice(4));
+				if(index < 0) {
+					writeln("!BBS NOT FOUND");
+					break;
+				}
+				writeln(JSON.stringify(list[index]));
+				break;
+			}
 			if(file_exists(system.data_dir + "finger/" + file_getname(request))) {
 				send_file(system.data_dir + "finger/" + file_getname(request));
 				break;
@@ -373,11 +391,17 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 			writeln("\tver");
 			writeln("\ttime");
 			writeln("\tstats");
+			writeln("\tstats.json");
 			writeln("\tservices");
 			writeln("\tsockopts");
 			writeln("\tnodelist");
-			if(findfile)
+			writeln("\tactive-users.json");
+			if(options.findfile)
 				writeln("\tfindfile");
+			if(options.bbslist) {
+				writeln("\tbbslist");
+				writeln("\tbbs:<name>");
+			}
             writeln("\tauto.msg");
 			writeln("\tlogon.lst");
 			var more = directory(system.data_dir + "finger/*");
@@ -392,7 +416,7 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 
 // MODIFICATION BY MERLIN PART 3 STARTS HERE...
 
-if(findfile) {
+if(options.findfile) {
 	request=request.toLowerCase();
 
 	if ((request.slice(0,9)) == "filefind?")  {
@@ -433,16 +457,16 @@ if(findfile) {
 			done();
 		}
 
-		notfound = true;
+		var notfound = true;
 		writeln(format(" searching for '%s'...",request));
 		log(format("FindFile searching for: '%s'",request));
-		writeln("");        
+		writeln("");
 		for(l in file_area.lib_list) {
 			for(d in file_area.lib_list[l].dir_list) {
-				dirpath=file_area.lib_list[l].dir_list[d].path
+				var dirpath=file_area.lib_list[l].dir_list[d].path;
 				dirpath=dirpath.concat(request);
 				if (file_exists(dirpath)) {
-					path="ftp://".concat(system.inetaddr,file_area.lib_list[l].dir_list[d].link,request);
+					var path="ftp://".concat(system.inetaddr,file_area.lib_list[l].dir_list[d].link,request);
 					path=path.toLowerCase();
 					writeln(format("Found at %s",path));
 					notfound=false;
@@ -481,12 +505,12 @@ if(u == null) {
 
 uname = format("%s #%d", u.alias, u.number);
 write(format("User: %-30s", uname));
-if(include_real_name)
+if(options.include_real_name)
 	write(format(" In real life: %s", u.name));
 write("\r\n");
 
 write(format("From: %-36s Handle: %s\r\n",u.location,u.handle));
-if(include_age_gender) {
+if(options.include_age_gender) {
 	birth=format("Birth: %s (Age: %u years)"
 		  ,u.birthdate,u.age);
 	write(format("%-42s Gender: %s\r\n"
