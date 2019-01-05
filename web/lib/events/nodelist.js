@@ -28,7 +28,7 @@ function cycle() {
         if (webAction === null) continue;
         reply.push({
             status : '',
-            action : locale.strings.sidebar_node_list.label_status_column + ' ' + webAction,
+            action : locale.strings.sidebar_node_list.label_status_web + ' ' + webAction,
             user : usr.alias,
             connection : 'W'
         });
