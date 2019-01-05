@@ -38,7 +38,6 @@ if (file_isdir(settings.web_lib + 'events')) {
 }
 
 ping();
-write('event: cocks\ndata: wangs\n\n');
 while (client.socket.is_connected) {
     callbacks.forEach(function (e) {
         e.cycle();
