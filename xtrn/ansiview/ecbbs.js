@@ -7,7 +7,7 @@
 		this.list = function (path) {
             if (typeof path !== 'string') path = '';
 			try {
-                var resp = new HTTPRequest().Get(format('%s?path=%s', url, encodeURIComponent(path)));
+                var resp = (new HTTPRequest()).Get(format('%s?path=%s', url, encodeURIComponent(path)));
 				return JSON.parse(resp);
 			} catch (err) {
                 log(err);
@@ -18,7 +18,7 @@
 			if (typeof path != "string") return null;
 			try {
                 var http = new HTTPRequest();
-				return base64_decode(new http.Get(format('%s?path=%s', url, encodeURIComponent(path))));
+				return base64_decode((new HTTPRequest()).Get(format('%s?path=%s', url, encodeURIComponent(path))));
 			} catch(err) {
                 log(err);
 				return null;
