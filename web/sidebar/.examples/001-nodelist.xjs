@@ -26,51 +26,50 @@
         if (typeof e.node == 'number' && e.user != '') niu++;
     }
 
-    function _sb_nodelist() {
-        $.getJSON('./api/system.ssjs?call=node-list', function (data) {
-            if (anl && !data.length) {
-                $('#sbbs-nodelist').parent().addClass('hidden');
-            } else {
-                if (anl) $('#sbbs-nodelist').parent().removeClass('hidden');
-    			$('#sbbs-nodelist').html(
-    				"<h4><?xjs write(locale.strings.sidebar_node_list.label_title); ?></h4>" +
-    				'<table id="sbbs-nodelist-table" class="table table-condensed table-responsive table-striped">' +
-                    '<thead><tr>' +
-                    '<th>' + nch + '</th>' +
-                    '<th><?xjs write(locale.strings.sidebar_node_list.label_status_column); ?></th>' +
-                    '</tr></thead>' +
-    				'<tbody></tbody>' +
-    				'</table>'
-    			);
-                niu = 0;
-                if (!anl) {
-                    const nodes = Array(nll);
-                    data.forEach(function (e) {
-                        if (typeof e.node == 'number') {
-                            nodes[e.node] = e;
-                        } else {
-                            nodes.push(e); // Web user
-                        }
-                    });
-                    for (var n = 0; n < nodes.length; n++) {
-                        if (!nodes[n]) {
-                            _sb_list_node({ node: n, user: '', status :'Waiting for call' });
-                        } else {
-                            _sb_list_node(nodes[n], n);
-                        }
+    function _sb_nodelist(evt) {
+        const data = JSON.parse(evt.data);
+        console.log('updating nodelist', data);
+        if (anl && !data.length) {
+            $('#sbbs-nodelist').parent().addClass('hidden');
+        } else {
+            if (anl) $('#sbbs-nodelist').parent().removeClass('hidden');
+			$('#sbbs-nodelist').html(
+				"<h4><?xjs write(locale.strings.sidebar_node_list.label_title); ?></h4>" +
+				'<table id="sbbs-nodelist-table" class="table table-condensed table-responsive table-striped">' +
+                '<thead><tr>' +
+                '<th>' + nch + '</th>' +
+                '<th><?xjs write(locale.strings.sidebar_node_list.label_status_column); ?></th>' +
+                '</tr></thead>' +
+				'<tbody></tbody>' +
+				'</table>'
+			);
+            niu = 0;
+            if (!anl) {
+                const nodes = Array(nll);
+                data.forEach(function (e) {
+                    if (typeof e.node == 'number') {
+                        nodes[e.node] = e;
+                    } else {
+                        nodes.push(e); // Web user
                     }
-                } else {
-                    data.forEach(_sb_list_node);
+                });
+                for (var n = 0; n < nodes.length; n++) {
+                    if (!nodes[n]) {
+                        _sb_list_node({ node: n, user: '', status :'Waiting for call' });
+                    } else {
+                        _sb_list_node(nodes[n], n);
+                    }
                 }
-                // Spans with these classes are used in the 'system stats' sidebar module.
-                // Update the nodes in use / available counters there.
-                $('#sidebar').find('.sb-nodes-in-use').text(niu);
-                $('#sidebar').find('.sb-nodes-available').text(nll - niu);
+            } else {
+                data.forEach(_sb_list_node);
             }
-  	    });
+            // Spans with these classes are used in the 'system stats' sidebar module.
+            // Update the nodes in use / available counters there.
+            $('#sidebar').find('.sb-nodes-in-use').text(niu);
+            $('#sidebar').find('.sb-nodes-available').text(nll - niu);
+        }
     }
 
-    _sb_nodelist();
-    setInterval(_sb_nodelist, <?xjs write(settings.refresh_interval || 60000); ?>);
+    _sbbs_events.nodelist = _sb_nodelist;
 
 </script>
