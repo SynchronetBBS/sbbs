@@ -1,11 +1,9 @@
-/* DUPEFIND.C */
-
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
+/* $Id$ */
 
 #include "sbbs.h"
 #include "crc32.h"
 
-#define DUPEFIND_VER "1.01"
+#define DUPEFIND_VER "1.02"
 
 char* crlf="\r\n";
 
@@ -52,7 +50,7 @@ char *display_filename(scfg_t *cfg, ushort dir_num,ushort fil_off)
 	char fname[13];
 	int file;
 
-	sprintf(str,"%s%s.IXB",cfg->dir[dir_num]->data_dir,cfg->dir[dir_num]->code);
+	sprintf(str,"%s%s.ixb",cfg->dir[dir_num]->data_dir,cfg->dir[dir_num]->code);
 	if((file=nopen(str,O_RDONLY))==-1)
 		return("UNKNOWN");
 	lseek(file,(long)(22*(fil_off-1)),SEEK_SET);
@@ -73,7 +71,6 @@ int main(int argc,char **argv)
     long l,m;
 	scfg_t cfg;
 
-	putenv("TZ=UCT0");
 	setvbuf(stdout,NULL,_IONBF,0);
 
 	fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
@@ -92,7 +89,7 @@ int main(int argc,char **argv)
 
 	if(argc>1 && (!stricmp(argv[1],"/?") || !stricmp(argv[1],"?") || !stricmp(argv[1],"-?"))) {
 		fprintf(stderr,"\n");
-		fprintf(stderr,"usage: DUPEFIND [start] [end]\n");
+		fprintf(stderr,"usage: %s [start] [end]\n", argv[0]);
 		fprintf(stderr,"where: [start] is the starting library number to check\n");
 		fprintf(stderr,"       [end]   is the final library number to check\n");
 		return(0); 
