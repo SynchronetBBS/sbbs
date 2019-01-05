@@ -66,3 +66,5 @@ Object.keys(defaults).forEach(function (e) {
     }
   }
 });
+
+load(settings.web_lib + 'locale.js');
