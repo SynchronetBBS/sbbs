@@ -18,7 +18,6 @@ function ping() {
 }
 
 function emit(obj) {
-    log('emitting ' + JSON.stringify(obj));
     Object.keys(obj).forEach(function (e) {
         write(e + ': ' + (typeof obj[e] == 'object' ? JSON.stringify(obj[e]) : obj[e]) + '\n');
     });
