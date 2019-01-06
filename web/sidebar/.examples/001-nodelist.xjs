@@ -9,7 +9,6 @@
 
     function _sb_list_node(e) {
         if (e.action === null || e.user === null) return;
-        console.log('NODE', e);
         $('#sbbs-nodelist-table').append(
             '<tr>' +
                 '<th scope="row">' +

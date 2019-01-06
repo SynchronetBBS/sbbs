@@ -242,11 +242,7 @@
                 return a + (i == 0 ? '?' : '&') + 'subscribe=' + c; }, ''
             );
             const _es = new EventSource('/api/events.ssjs' + _evtqs);
-            _es.onopen = function () {
-                console.log('Connected to event source');
-            }
             Object.keys(_sbbs_events).forEach(function (e) {
-                console.log('adding event listener ' + e);
                 _es.addEventListener(e, _sbbs_events[e]);
             });
     	</script>
