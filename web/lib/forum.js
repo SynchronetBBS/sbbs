@@ -242,22 +242,6 @@ function getUserPollData(sub, id) {
     return ret;
 }
 
-function getMailUnreadCount() {
-    var count = 0;
-    var msgBase = new MsgBase('mail');
-    msgBase.open();
-    for (var m = msgBase.first_msg; m <= msgBase.last_msg; m++) {
-        var index = msgBase.get_msg_header(m);
-        if (index === null) continue;
-        if (index.to_ext != user.number) continue;
-        if (index.attr&MSG_READ) continue;
-        if (index.attr&MSG_DELETE) continue;
-        count++;
-    }
-    msgBase.close();
-    return count;
-}
-
 function getMailHeaders(sent, ascending) {
     if (typeof sent !== 'undefined' &&
         sent &&

@@ -27,7 +27,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
         switch(http_request.query.call[0].toLowerCase()) {
 
             case 'get-mail-unread-count':
-                reply.count = getMailUnreadCount();
+                reply.count = user.stats.mail_waiting;
                 break;
 
             case 'get-mail-body':
