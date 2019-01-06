@@ -39,13 +39,6 @@ function scrollUp() {
 	window.scrollBy(0, -document.getElementById('navbar').offsetHeight);
 }
 
-function getMailUnreadCount() {
-	$.getJSON('./api/forum.ssjs?call=get-mail-unread-count', function (data) {
-		$('#badge-unread-mail').text(data.count < 1 ? '' : data.count);
-		$('#badge-unread-mail-inner').text(data.count < 1 ? '' : data.count);
-	});
-}
-
 function sendTelegram(alias) {
 	$('#popUpModalTitle').html('Send a telegram to ' + alias);
 	$('#popUpModalBody').html(
@@ -84,10 +77,12 @@ window.onload =	function () {
 
 	if ($('#button-logout').length > 0) {
 
-        // Write backing event module
-        // Switch to event subscription & callback
-		getMailUnreadCount();
-		setInterval(getMailUnreadCount, updateInterval);
+        _sbbs_events.mail = function (e) {
+            const data = JSON.parse(e.data);
+            if (typeof data.count != 'number') return;
+            $('#badge-unread-mail').text(data.count < 1 ? '' : data.count);
+            $('#badge-unread-mail-inner').text(data.count < 1 ? '' : data.count);
+        }
 
         _sbbs_events.telegram = function (e) {
             const tg = JSON.parse(e.data).replace(/\1./g, '').replace(
