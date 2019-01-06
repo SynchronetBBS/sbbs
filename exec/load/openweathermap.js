@@ -14,34 +14,61 @@ function OpenWeatherMap() {
     if (!this.settings.rate_window) this.settings.rate_window = 60; // Seconds
     if (!this.settings.rate_limit) this.settings.rate_limit = 60; // Requests per window
     if (!this.settings.data_refresh) this.settings.data_refresh = 7200; // Seconds
-    this.cache = {};
-    this.requests = [];
+    this.cache_file = new File(system.data_dir + 'openweathermap_cache.json');
+    this.rate_file = new File(system.data_dir + 'openweathermap_rate.json');
 }
 
 OpenWeatherMap.prototype.write_cache = function (endpoint, params, response) {
     const hash = base64_encode(endpoint + JSON.stringify(params));
-    this.cache[hash] = { time: time(), data: response };
+    if (!this.cache_file.exists) {
+        var cache = {};
+        cache[hash] = { time: time(), data: response };
+        this.cache_file.open('w');
+        this.cache_file.write(JSON.stringify(cache));
+        this.cache_file.close();
+    } else {
+        this.cache_file.open('r+');
+        var cache = JSON.parse(this.cache_file.read());
+        cache[hash] = { time: time(), data: response };
+        this.cache_file.truncate();
+        this.cache_file.write(JSON.stringify(cache));
+        this.cache_file.close();
+    }
 }
 
 OpenWeatherMap.prototype.read_cache = function (endpoint, params) {
+    if (!this.cache_file.exists) return;
+    this.cache_file.open('r');
+    const cache = JSON.parse(this.cache_file.read());
+    this.cache_file.close();
     const hash = base64_encode(endpoint + JSON.stringify(params));
-    if (!this.cache[hash]) return;
+    if (!cache[hash]) return;
     // This is probably not the right way, but it'll do
-    if (time() - this.cache[hash].time > this.settings.data_refresh) return;
-    return this.cache[hash].data;
+    if (time() - cache[hash].time > this.settings.data_refresh) return;
+    return cache[hash].data;
 }
 
 OpenWeatherMap.prototype.rate_limit = function () {
     const now = time();
-    this.requests = this.requests.filter(function (e) {
+    if (!this.rate_file.exists) {
+        this.rate_file.open('w');
+        var rate = [];
+    } else {
+        this.rate_file.open('r+');
+        var rate = JSON.parse(this.rate_file.read());
+    }
+    rate = rate.filter(function (e) {
         return now - e < this.settings.rate_window;
     }, this);
-    if (this.requests.length < this.settings.rate_limit) {
-        this.requests.push(now);
-        return true;
-    } else {
-        return false;
+    var ret = false;
+    if (rate.length < this.settings.rate_limit) {
+        rate.push(now);
+        ret = true;
     }
+    this.rate_file.truncate();
+    this.rate_file.write(JSON.stringify(rate));
+    this.rate_file.close();
+    return ret;
 }
 
 OpenWeatherMap.prototype.call_api = function (endpoint, params) {
