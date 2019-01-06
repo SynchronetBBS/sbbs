@@ -1,7 +1,7 @@
 load(settings.web_lib + 'forum.js');
 
 var last_run = 0;
-var frequency = 10;
+var frequency = 30;
 
 function cycle() {
     if (user.number < 1 || user.alias == settings.guest) return;
