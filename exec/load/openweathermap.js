@@ -78,3 +78,29 @@ OpenWeatherMap.prototype.call_api = function (endpoint, params) {
 
     return response;
 }
+
+OpenWeatherMap.prototype.wind_direction = function (deg) {
+    var ret = '';
+    if (deg >= 337.5 || deg < 22.5) {
+        ret = 'N';
+    } else if (deg >= 22.5 && deg < 67.5) {
+        ret = 'NE';
+    } else if (deg >= 67.5 && deg < 112.5) {
+        ret = 'E';
+    } else if (deg >= 112.5 && deg < 157.5) {
+        ret = 'SE';
+    } else if (deg >= 157.5 && deg < 202.5) {
+        ret = 'S';
+    } else if (deg >= 202.5 && deg < 247.5) {
+        ret = 'SW';
+    } else if (deg >= 247.5 && deg < 292.5) {
+        ret = 'W';
+    } else if (deg >= 292.5 && deg < 337.5) {
+        ret = 'NW';
+    }
+    return ret;
+}
+
+OpenWeatherMap.prototype.c_to_f = function (c) {
+    return (c * (9/5)) + 32;
+}
