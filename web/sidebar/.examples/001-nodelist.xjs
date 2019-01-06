@@ -8,6 +8,8 @@
     var niu = 0;
 
     function _sb_list_node(e) {
+        if (e.action === null || e.user === null) return;
+        console.log('NODE', e);
         $('#sbbs-nodelist-table').append(
             '<tr>' +
                 '<th scope="row">' +
@@ -28,7 +30,6 @@
 
     function _sb_nodelist(evt) {
         const data = JSON.parse(evt.data);
-        console.log('updating nodelist', data);
         if (anl && !data.length) {
             $('#sbbs-nodelist').parent().addClass('hidden');
         } else {
