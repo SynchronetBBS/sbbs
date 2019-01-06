@@ -3,6 +3,12 @@ if(js.global.get_geoip==undefined)
 if(js.global.get_nicklocation==undefined)
 	js.global.load(js.global, "nicklocate.js");
 
+if (!js.global.OpenWeatherMap) {
+    js.global.load(js.global, 'openweathermap.js');
+}
+
+const owm = new OpenWeatherMap();
+
 function get_nickcoords(uh, sn, n) {
 	var geo=get_nicklocation(uh, sn, n);
 	if(!geo)
@@ -16,3 +22,6 @@ function get_nickcoords(uh, sn, n) {
 	return ret;
 }
 
+function temperature_str(n) {
+    return n + '\xB0C (' + owm.c_to_f(n) + '\xB0F)';
+}
