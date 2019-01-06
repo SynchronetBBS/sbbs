@@ -11,11 +11,13 @@ function EN_US(name) {
     f.close();
     f = undefined;
 
+    const _strings = {};
     const strings = {};
     sections.forEach(function (e) {
         Object.defineProperty(strings, e, {
             enumerable: true,
             get: function () {
+                if (_strings[e]) return _strings[e];
                 var f = new File(ini_path);
                 f.open('r');
                 const o = f.iniGetObject(e);
@@ -32,6 +34,7 @@ function EN_US(name) {
                     }
                 }
                 f = undefined;
+                _strings[e] = o;
                 return o;
             }
         });
