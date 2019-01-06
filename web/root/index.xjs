@@ -98,9 +98,6 @@
 		<?xjs if (file_exists(settings.web_root + 'css/custom.css')) { ?>
 			<link href="./css/custom.css" rel="stylesheet">
 		<?xjs } ?>
-        <script type="text/javascript">
-            const _sbbs_events = {};
-        </script>
 	</head>
 
 	<body>
@@ -238,13 +235,6 @@
     				);
     			}
     		);
-            const _evtqs = Object.keys(_sbbs_events).reduce(function (a, c, i) {
-                return a + (i == 0 ? '?' : '&') + 'subscribe=' + c; }, ''
-            );
-            const _es = new EventSource('/api/events.ssjs' + _evtqs);
-            Object.keys(_sbbs_events).forEach(function (e) {
-                _es.addEventListener(e, _sbbs_events[e]);
-            });
     	</script>
 
 	</body>
