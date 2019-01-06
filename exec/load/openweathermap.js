@@ -14,38 +14,27 @@ function OpenWeatherMap() {
     if (!this.settings.rate_window) this.settings.rate_window = 60; // Seconds
     if (!this.settings.rate_limit) this.settings.rate_limit = 60; // Requests per window
     if (!this.settings.data_refresh) this.settings.data_refresh = 7200; // Seconds
-    this.cache_file = new File(system.data_dir + 'openweathermap_cache.json');
-    this.rate_file = new File(system.data_dir + 'openweathermap_rate.json');
+    this.rate_file = new File(system.temp_dir + 'openweathermap_rate.json');
 }
 
 OpenWeatherMap.prototype.write_cache = function (endpoint, params, response) {
     const hash = base64_encode(endpoint + JSON.stringify(params));
-    if (!this.cache_file.exists) {
-        var cache = {};
-        cache[hash] = { time: time(), data: response };
-        this.cache_file.open('w');
-        this.cache_file.write(JSON.stringify(cache));
-        this.cache_file.close();
-    } else {
-        this.cache_file.open('r+');
-        var cache = JSON.parse(this.cache_file.read());
-        cache[hash] = { time: time(), data: response };
-        this.cache_file.truncate();
-        this.cache_file.write(JSON.stringify(cache));
-        this.cache_file.close();
-    }
+    cache_file = new File(system.temp_dir + 'openweathermap_' + hash + '.json');
+    cache_file.open('w');
+    cache_file.write(JSON.stringify({ time: time(), data: response }));
+    cache_file.close();
 }
 
 OpenWeatherMap.prototype.read_cache = function (endpoint, params) {
-    if (!this.cache_file.exists) return;
-    this.cache_file.open('r');
-    const cache = JSON.parse(this.cache_file.read());
-    this.cache_file.close();
     const hash = base64_encode(endpoint + JSON.stringify(params));
-    if (!cache[hash]) return;
+    cache_file = new File(system.temp_dir + 'openweathermap_' + hash + '.json');
+    if (!cache_file.exists) return;
+    cache_file.open('r');
+    const cache = JSON.parse(cache_file.read());
+    cache_file.close();
     // This is probably not the right way, but it'll do
-    if (time() - cache[hash].time > this.settings.data_refresh) return;
-    return cache[hash].data;
+    if (time() - cache.time > this.settings.data_refresh) return;
+    return cache.data;
 }
 
 OpenWeatherMap.prototype.rate_limit = function () {
