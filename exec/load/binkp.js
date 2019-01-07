@@ -99,6 +99,9 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.remote_operator = undefined;
 	this.remote_capabilities = undefined;
 	this.remote_info = {};
+	this.connect_host = undefined;
+	this.connect_port = undefined;
+	this.connect_error = undefined;
 
 	this.sent_files = [];
 	this.failed_sent_files = [];
@@ -423,7 +426,10 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 		this.sock = new Socket(SOCK_STREAM, "binkp");
 
 	log(LOG_INFO, "Connecting to "+inet_host+":"+port);
+	this.connect_host = inet_host;
+	this.connect_port = port;
 	if(!this.sock.connect(inet_host, port)) {
+		this.connect_error = this.sock.error;
 		this.sock = undefined;
 		log(LOG_WARNING, "Connection to "+inet_host+":"+port+" failed.");
 		return false;
