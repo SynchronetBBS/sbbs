@@ -29,15 +29,15 @@ function Server_command(srv,cmdline,onick,ouh) {
 		if(chan	&& chan.modules[m] != true) {
 			continue;
 		}
-		if(module 
-			&& module.enabled 
+		if(module
+			&& module.enabled
 			&& module.Server_Commands[main_cmd]) {
 			try {
 				cmd=IRC_parsecommand(cmdline);
 				if (cmd === 0)
 					return;
 				cmd.shift();
-				module.Server_Commands[main_cmd](srv,cmd,onick,ouh);	
+				module.Server_Commands[main_cmd](srv,cmd,onick,ouh);
 			} catch(e) {
 				log(m + " module error: " + e);
 				module.enabled=false;
@@ -103,7 +103,7 @@ function Server_bot_command(srv,bot_cmds,target,onick,ouh,cmdline) {
 	var cmd=IRC_parsecommand(cmdline);
 	if (cmd === 0)
 		return 0;
-	
+
 	var access_level = srv.bot_access(onick,ouh);
 	var botcmd = bot_cmds[cmd[0].toUpperCase()];
 	if (botcmd) {
@@ -156,10 +156,10 @@ function Server_bot_access(nick,uh) { // return the access level of this user.
 
 function Server_writeout(str) {
 	log("--> " + this.host + ": " + str);
-	
+
 	var target="~";
 	var target_buffer=false;
-	
+
 	for(t=0;t<this.buffers.length;t++) {
 		if(this.buffers[t].target==target) {
 			target_buffer=this.buffers[t];
@@ -323,4 +323,65 @@ function true_array_len(my_array) {
 function login_user(usr) {
 	usr.connection = "IRC";
 	usr.logontime = time();
+}
+
+function ctrl_a_to_mirc(s) {
+
+    var ctrl_a = false;
+    var bright = false;
+    var ret = '';
+
+    function add_fg_colour(nn, nb) {
+        ret += ascii(3) + (bright ? nb : nn);
+    }
+
+    s = s.split('');
+    while (s.length) {
+        var c = s.shift();
+        if (c == '\1') {
+            ctrl_a = true;
+        } else if (ctrl_a) {
+            switch (c.toUpperCase()) {
+                case 'H':
+                    bright = true;
+                    break;
+                case 'N':
+                    bright = false;
+                    break;
+                case 'K':
+                    add_fg_colour(1, 14);
+                    break;
+                case 'R':
+                    add_fg_colour(4, 7); // Red -> light red, high red -> orange
+                    break;
+                case 'G':
+                    add_fg_colour(3, 9);
+                    break;
+                case 'Y':
+                    add_fg_colour(5, 8);
+                    break;
+                case 'B':
+                    add_fg_colour(2, 12);
+                    break;
+                case 'M':
+                    add_fg_colour(6, 13);
+                    break;
+                case 'C':
+                    add_fg_colour(10, 11);
+                    break;
+                case 'W':
+                    add_fg_colour(15, 0);
+                    break;
+                default:
+                    break;
+            }
+            ctrl_a = false;
+        } else {
+            set_fg = false;
+            ret += c;
+        }
+    }
+
+    return ret;
+
 }
