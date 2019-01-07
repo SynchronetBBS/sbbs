@@ -25,6 +25,57 @@ load('freqit_common.js');
 var REVISION = "$Revision$".split(' ')[1];
 var version_notice = "BinkIT/" + REVISION;
 var semaphores = [];
+// data/binkstats.ini
+var stats = { inbound: { true: {}, false: {} }, callout: { true: {}, false: {} }, totals: {} };
+
+function update_stats(stats, addr, bp, host)
+{
+	stats[addr] = {};
+	if(bp.remote_operator)
+		stats[addr].oper = bp.remote_operator;
+	if(bp.remote_addrs)
+		stats[addr].AKAs = bp.remote_addrs;
+	if(bp.remote_capabilities)
+		stats[addr].caps = bp.remote_capabilities;
+	if(bp.remote_ver)
+		stats[addr].vers = bp.remote_ver;
+	if(host)
+		stats[addr].host = host;
+	for(var i in bp.remote_info)
+		stats[addr]['info.' + i.toLowerCase()] = bp.remote_info[i];
+
+	stats[addr].localtime = new Date();
+	if(bp.sent_files.length)
+		stats[addr].sent_files = bp.sent_files;
+	if(bp.failed_sent_files.length)
+		stats[addr].failed_sent_files = bp.failed_sent_files;
+	if(bp.received_files.length)
+		stats[addr].received_files = bp.received_files;
+	if(bp.failed_received_files.length)
+		stats[addr].failed_received_files = bp.failed_received_files;
+}
+
+function update_totals(stats, addr, bp, callout, success)
+{
+	if(!stats[addr])
+		stats[addr] = {};
+	var counter = format("%s_%s", success ? "successful" : "failed", callout ? "callouts":"inbounds");
+	if(!stats[addr][counter])
+		stats[addr][counter] = 0;
+	stats[addr][counter]++;
+	if(!stats[addr].sent_files)
+		stats[addr].sent_files = 0;
+	stats[addr].sent_files += bp.sent_files.length;
+	if(!stats[addr].received_files)
+		stats[addr].received_files = 0;
+	stats[addr].received_files += bp.received_files.length;
+	if(!stats[addr].failed_sent_files)
+		stats[addr].failed_sent_files = 0;
+	stats[addr].failed_sent_files += bp.failed_sent_files.length;
+	if(!stats[addr].failed_received_files)
+		stats[addr].failed_received_files = 0;
+	stats[addr].failed_received_files += bp.failed_received_files.length;
+}
 
 FREQIT.add_file = function(filename, bp, cfg)
 {
@@ -577,6 +628,9 @@ function callout(addr, scfg, locks, bicfg)
 	log(LOG_DEBUG, format("connecting to %s at %s", addr, host));
 	// We won't add files until the auth finishes...
 	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port, host);
+	// Statistics
+	update_stats(stats.callout[success], addr, bp, host);
+	update_totals(stats.totals, addr, bp, true, success);
 	callout_done(bp);
 }
 
@@ -989,7 +1043,13 @@ function run_inbound(sock)
 
 	// We won't add files until the auth finishes...
 	success = bp.accept(sock, inbound_auth_cb);
-
+	
+	// Statistics
+	var addr = bp.remote_addrs[0];
+	if(addr) {
+		update_stats(stats.inbound[success], addr, bp, sock.remote_ip_address);
+		update_totals(stats.totals, addr, bp, false, success);
+	}
 	callout_done(bp);
 
 	locks.forEach(function(lock) {
@@ -1201,6 +1261,14 @@ catch(e) {}
 var ran = {};
 var i;
 var addr;
+var stats_file = new File(system.data_dir + 'binkstats.ini');
+if(stats_file.open("r")) {
+	var sections = stats_file.iniGetSections("totals: ");
+	for(i in sections) {
+		stats.totals[sections[i].slice(8)] = stats_file.iniGetObject(sections[i]);
+	}
+	stats_file.close();
+}
 
 log(LOG_INFO, version_notice + " invoked with options: " + argv.join(' '));
 
@@ -1252,5 +1320,25 @@ else {
 				run_polls(ran);
 		}
 	}
+}
+
+// Update binkstats.ini
+if(stats_file.open(stats_file.exists ? 'r+':'w+')) {
+	stats_file.ini_key_prefix = '\t';
+	stats_file.ini_section_separator = '';
+	stats_file.ini_value_separator = ' = ';
+	stats_file.iniReplaceObject = function(sec, obj) { this.iniRemoveSection(sec); this.iniSetObject(sec, obj); };
+
+	for(i in stats.totals)
+		stats_file.iniSetObject('totals: ' + i, stats.totals[i]);
+	for(i in stats.callout[true])
+		stats_file.iniReplaceObject('callout success: ' + i, stats.callout[true][i]);
+	for(i in stats.callout[false])
+		stats_file.iniReplaceObject('callout failure: ' + i, stats.callout[false][i]);
+	for(i in stats.inbound[true])
+		stats_file.iniReplaceObject('inbound success: ' + i, stats.inbound[true][i]);
+	for(i in stats.inbound[false])
+		stats_file.iniReplaceObject('inbound failure: ' + i, stats.inbound[false][i]);
+	stats_file.close();
 }
 touch_semaphores();
