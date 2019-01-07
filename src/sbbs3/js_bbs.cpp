@@ -181,7 +181,14 @@ enum {
 
 	,"current node number"
 	,"current node settings bitfield (see <tt>NM_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"current node status value (see <tt>nodedefs.js</tt> for valid values)"
+	,"current node error counter"
 	,"current node action (see <tt>nodedefs.js</tt> for valid values)"
+	,"current node user number (<i>useron</i> value)"
+	,"current node connection type (see <tt>nodedefs.js</tt> for valid values)"
+	,"current node misc value (see <tt>nodedefs.js</tt> for valid values)"
+	,"current node aux value"
+	,"current node extended aux (<i>extaux</i>) value"
 	,"validation feedback user for this node (or 0 for no validation feedback required)"
 
 	,"bytes uploaded during this session"
