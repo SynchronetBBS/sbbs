@@ -39,8 +39,14 @@ function update_stats(stats, addr, bp, host)
 		stats[addr].caps = bp.remote_capabilities;
 	if(bp.remote_ver)
 		stats[addr].vers = bp.remote_ver;
-	if(host)
+	if(bp.connect_host)
+		stats[addr].host = bp.connect_host;
+	else if(host)
 		stats[addr].host = host;
+	if(bp.connect_port)
+		stats[addr].port = bp.connect_port;
+	if(bp.connect_error !== undefined)
+		stats[addr].connect_error = bp.connect_error;
 	for(var i in bp.remote_info)
 		stats[addr]['info.' + i.toLowerCase()] = bp.remote_info[i];
 
