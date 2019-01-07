@@ -42,6 +42,24 @@ function sort_by_name(a, b)
 	return 0;
 } 
 
+function exec_xtrn(prog)
+{
+	if(options.clear_screen_on_exec)
+		console.clear();
+	if(options.eval_before_exec)
+		eval(options.eval_before_exec);
+	load('fonts.js', 'xtrn:' + prog.code);
+	bbs.exec_xtrn(prog.code); 
+	load('fonts.js', 'default');
+	if(options.eval_after_exec)
+		eval(options.eval_after_exec);
+
+	if(prog.settings&XTRN_PAUSE)
+		console.pause();
+	else
+		console.line_counter=0;
+}
+
 function external_program_menu(xsec)
 {
     var i,j;
@@ -64,11 +82,7 @@ function external_program_menu(xsec)
 
 		// If there's only one program available to the user in the section, just run it (or try to)
 		if(options.autoexec && prog_list.length == 1) {
-			if(options.clear_screen_on_exec)
-				console.clear();
-			bbs.exec_xtrn(prog_list[0].code); 
-			if(prog_list[0].settings&XTRN_PAUSE)
-				console.pause();
+			exec_xtrn(prog_list[0]); 
 			break;
 		}
 
@@ -128,16 +142,7 @@ function external_program_menu(xsec)
 			bbs.menu("xtrn/" + prog_list[i].code);
 			console.line_counter=0;
 		}
-		if(options.clear_screen_on_exec)
-			console.clear();
-		load('fonts.js', 'xtrn:' + prog_list[i].code);
-		bbs.exec_xtrn(prog_list[i].code); 
-		load('fonts.js', 'default');
-
-		if(prog_list[i].settings&XTRN_PAUSE)
-			console.pause();
-		else
-			console.line_counter=0;
+		exec_xtrn(prog_list[i]); 
 	}
 }
 
