@@ -96,6 +96,9 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.out_keys = undefined;
 	this.capabilities = '115200,TCP,BINKP';
 	this.remote_ver = undefined;
+	this.remote_operator = undefined;
+	this.remote_capabilities = undefined;
+	this.remote_info = {};
 
 	this.sent_files = [];
 	this.failed_sent_files = [];
@@ -1193,6 +1196,16 @@ BinkP.prototype.recvFrame = function(timeout)
 									}
 								}
 							}
+							break;
+						case 'ZYZ':
+							this.remote_operator = args.slice(1).join(' ');
+							break;
+						case 'NDL':
+							this.remote_capabilities = args.slice(1).join(' ');
+							break;
+						default:
+							this.remote_info[args[0]] = args.slice(1).join(' ');
+							break;
 					}
 			}
 		}
