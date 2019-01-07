@@ -21,7 +21,7 @@ OpenWeatherMap.prototype.write_cache = function (endpoint, params, response) {
     const hash = base64_encode(endpoint + JSON.stringify(params));
     cache_file = new File(system.temp_dir + 'openweathermap_' + hash + '.json');
     cache_file.open('w');
-    cache_file.write(JSON.stringify({ time: time(), data: response }));
+    cache_file.write(JSON.stringify(response));
     cache_file.close();
 }
 
@@ -33,8 +33,8 @@ OpenWeatherMap.prototype.read_cache = function (endpoint, params) {
     const cache = JSON.parse(cache_file.read());
     cache_file.close();
     // This is probably not the right way, but it'll do
-    if (time() - cache.time > this.settings.data_refresh) return;
-    return cache.data;
+    if (time() - cache.dt > this.settings.data_refresh) return;
+    return cache;
 }
 
 OpenWeatherMap.prototype.rate_limit = function () {
@@ -102,5 +102,5 @@ OpenWeatherMap.prototype.wind_direction = function (deg) {
 }
 
 OpenWeatherMap.prototype.c_to_f = function (c) {
-    return (c * (9/5)) + 32;
+    return Math.round((c * (9/5)) + 32);
 }
