@@ -166,7 +166,7 @@ enum {
 };
 
 #ifdef BUILD_JSDOCS
-	static char* bbs_prop_desc[] = {
+	static const char* bbs_prop_desc[] = {
 	 "system status bitfield (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"startup options bitfield (see <tt>BBS_OPT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"answer time, in <i>time_t</i> format"
