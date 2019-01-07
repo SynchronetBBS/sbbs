@@ -329,10 +329,12 @@ function ctrl_a_to_mirc(s) {
 
     var ctrl_a = false;
     var bright = false;
+    var last_colour = '';
     var ret = '';
 
-    function add_fg_colour(nn, nb) {
+    function add_fg_colour(nn, nb, c) {
         ret += ascii(3) + (bright ? nb : nn);
+        last_colour = c.toUpperCase();
     }
 
     s = s.split('');
@@ -347,30 +349,32 @@ function ctrl_a_to_mirc(s) {
                     break;
                 case 'N':
                     bright = false;
+                    s.unshift(last_colour);
+                    s.unshift('\1');
                     break;
                 case 'K':
-                    add_fg_colour(1, 14);
+                    add_fg_colour(1, 14, c);
                     break;
                 case 'R':
-                    add_fg_colour(4, 7); // Red -> light red, high red -> orange
+                    add_fg_colour(4, 7, c); // Red -> light red, high red -> orange
                     break;
                 case 'G':
-                    add_fg_colour(3, 9);
+                    add_fg_colour(3, 9, c);
                     break;
                 case 'Y':
-                    add_fg_colour(5, 8);
+                    add_fg_colour(5, 8, c);
                     break;
                 case 'B':
-                    add_fg_colour(2, 12);
+                    add_fg_colour(2, 12, c);
                     break;
                 case 'M':
-                    add_fg_colour(6, 13);
+                    add_fg_colour(6, 13, c);
                     break;
                 case 'C':
-                    add_fg_colour(10, 11);
+                    add_fg_colour(10, 11, c);
                     break;
                 case 'W':
-                    add_fg_colour(15, 0);
+                    add_fg_colour(15, 0, c);
                     break;
                 default:
                     break;
