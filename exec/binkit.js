@@ -1051,10 +1051,12 @@ function run_inbound(sock)
 	success = bp.accept(sock, inbound_auth_cb);
 	
 	// Statistics
-	var addr = bp.remote_addrs[0];
-	if(addr) {
-		update_stats(stats.inbound[success], addr, bp, sock.remote_ip_address);
-		update_totals(stats.totals, addr, bp, false, success);
+	if(bp.remote_addrs !== undefined && bp.remote_addrs.length) {
+		var addr = bp.remote_addrs[0];
+		if(addr) {
+			update_stats(stats.inbound[success], addr, bp, sock.remote_ip_address);
+			update_totals(stats.totals, addr, bp, false, success);
+		}
 	}
 	callout_done(bp);
 
