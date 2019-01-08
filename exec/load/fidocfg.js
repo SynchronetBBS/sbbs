@@ -334,7 +334,7 @@ function BinkITCfg()
 				return;		// Ignore addresses with wildcards (e.g. 'ALL')
 			}
 			this.node[sec] = {};
-			this.node[sec].pass = f.iniGetValue(section, 'SessionPwd');
+			this.node[sec].pass = f.iniGetValue(section, 'SessionPwd', '');
 			this.node[sec].nomd5 = f.iniGetValue(section, 'BinkpAllowPlainAuth', false);
 			this.node[sec].nocrypt = f.iniGetValue(section, 'BinkpAllowPlainText', false);
 			this.node[sec].plain_auth_only = f.iniGetValue(section, 'BinkpPlainAuthOnly', false);
