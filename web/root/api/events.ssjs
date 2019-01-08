@@ -1,3 +1,4 @@
+load('sbbsdefs.js');
 load('modopts.js');
 const settings = get_mod_options('web');
 load(settings.web_directory + '/lib/init.js');
@@ -25,21 +26,30 @@ function emit(obj) {
     last_send = time();
 }
 
-const callbacks = [];
+const callbacks = {};
 if (file_isdir(settings.web_lib + 'events')) {
     if (Array.isArray(http_request.query.subscribe)) {
         http_request.query.subscribe.forEach(function (e) {
             const base = file_getname(e).replace(file_getext(e), '');
             const script = settings.web_lib + 'events/' + base + '.js';
-            if (file_exists(script)) callbacks.push(load({}, script));
+            try {
+                if (file_exists(script)) callbacks[e] = load({}, script);
+            } catch (err) {
+                log(LOG_ERR, 'Failed to load event module ' + e + ': ' + err);
+            }
         });
     }
 }
 
 ping();
 while (client.socket.is_connected) {
-    callbacks.forEach(function (e) {
-        e.cycle();
+    Object.keys(callbacks).forEach(function (e) {
+        try {
+            callbacks[e].cycle();
+        } catch (err) {
+            log(LOG_ERR, 'Callback ' + e + ' failed: ' + err);
+            delete callbacks[e];
+        }
     });
     yield();
     ping();
