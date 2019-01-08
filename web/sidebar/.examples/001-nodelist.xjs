@@ -1,4 +1,7 @@
 <div id="sbbs-nodelist"></div>
+<?xjs if (settings.nodelist_ibbs) { ?>
+    <div id="sbbsimsg-nodelist"></div>
+<?xjs } ?>
 
 <script type="text/javascript">
 
@@ -22,7 +25,9 @@
         if (e.user != '' && <?xjs write(user.alias != settings.guest); ?>) {
             $('#nodelist-' + e.node).attr('title', '<?xjs write(locale.strings.sidebar_node_list.label_send_telegram); ?>');
             $('#nodelist-' + e.node).css('cursor', 'pointer');
-            $('#nodelist-' + e.node).click(function () { sendTelegram(e.user); });
+            $('#nodelist-' + e.node).click(function () {
+                sendTelegram(e.user);
+            });
         }
         if (typeof e.node == 'number' && e.user != '') niu++;
     }
@@ -69,5 +74,59 @@
     }
 
     _sbbs_events.nodelist = _sb_nodelist;
+
+    <?xjs if (settings.nodelist_ibbs) { ?>
+
+
+        function _send_ibbs_telegram(sys, host, user) {
+            $('#popUpModalTitle').html('Send a telegram to ' + user + '@' + sys);
+        	$('#popUpModalBody').html('<input type="text" class="form-control" placeholder="My message" name="telegram" id="telegram">');
+        	$('#popUpModalActionButton').show();
+        	$('#popUpModalActionButton').click(function () {
+        		$.getJSON(
+        			'./api/sbbsimsg.ssjs?call=send_telegram'
+                    + '&username=' + user
+                    + '&host=' + host
+                    + '&message=' + $('#telegram').val(),
+        			function (data) {
+
+                    }
+        		);
+                $('#popUpModal').modal('hide');
+        	});
+        	$('#popUpModal').modal('show');
+        }
+
+        _sbbs_events.sbbsimsg = function (e) {
+            const data = JSON.parse(e.data);
+            var users = 0;
+            $('#sbbsimsg-nodelist').addClass('hidden');
+            $('#sbbsimsg-nodelist').html('<h4>Other systems</h4>');
+            Object.keys(data).forEach(function (e, i) {
+                if (!data[e].users.length) return;
+                const id = 'sbbsimsg-nodelist-' + i;
+                $('#sbbsimsg-nodelist').append(
+                    '<table id="' + id + '" class="table table-condensed table-responsive table-striped">'
+                    + '<tr><td><strong>' + e + '</strong></td></tr>'
+                    + '</table>'
+                );
+                data[e].users.forEach(function (ee, ii) {
+                    const nid = id + '-' + ii;
+                    $('#' + id).append(
+                        '<tr>'
+                            + '<td id="' + nid + '">'
+                                + '<strong>' + ee.name + '</strong> ' + ee.action
+                            + '</td>'
+                        +'</tr>'
+                    );
+                    $('#' + nid).click(function () {
+                        _send_ibbs_telegram(e, data[e].host, ee.name);
+                    });
+                });
+                users += data[e].users.length;
+            });
+            if (users) $('#sbbsimsg-nodelist').removeClass('hidden');
+        }
+    <?xjs } ?>
 
 </script>
