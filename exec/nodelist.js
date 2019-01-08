@@ -167,7 +167,7 @@ function nodelist(active, listself)
 		if(node_misc&NODE_MSGW)
 			flags += 'M';
 		if(node_misc&NODE_NMSG)
-			flasg += 'N';
+			flags += 'N';
 		if(node_misc&NODE_POFF)
 			flags += 'P';
 		if(flags)
