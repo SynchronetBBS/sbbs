@@ -1,6 +1,6 @@
 /* nodedefs.js */
 
-/* Synchronet NODE.DAB var  ants definitions - (mostly bit-fields) */
+/* Synchronet node.dab file constants definitions - (mostly bit-fields) */
 
 /* $Id$ */
 
@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -143,4 +143,9 @@ var   NODE_NMSG   	=(1<<11);   /* Node message waiting (new way)			*/
 var   NODE_EXT    	=(1<<12);   /* Extended info on node action				*/
 var   NODE_LCHAT	=(1<<13);   /* Being pulled into local chat				*/
 								/********************************************/
-
+								
+/* Values for bbs.node_connection			*/
+var NODE_CONNECTION_LOCAL   = 0;
+var NODE_CONNECTION_TELNET  = 0xffff;
+var NODE_CONNECTION_RLOGIN  = 0xfffe;
+var NODE_CONNECTION_SSH     = 0xfffd;
