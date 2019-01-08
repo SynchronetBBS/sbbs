@@ -9,6 +9,7 @@
     const nch = '<?xjs write(settings.active_node_list ? locale.strings.sidebar_node_list.label_connection_column : locale.strings.sidebar_node_list.label_node_column) ?>';
     const nll = <?xjs write(system.node_list.length); ?>;
     var niu = 0;
+    var ns = 0;
 
     function _sb_list_node(e) {
         if (e.action === null || e.user === null) return;
@@ -30,6 +31,7 @@
             });
         }
         if (typeof e.node == 'number' && e.user != '') niu++;
+        ns++;
     }
 
     function _sb_nodelist(evt) {
@@ -46,6 +48,7 @@
 			'</table>'
 		);
         niu = 0;
+        ns = 0;
         if (!anl) {
             const nodes = Array(nll);
             data.forEach(function (e) {
@@ -65,7 +68,7 @@
             $('#sbbs-nodelist').parent().removeClass('hidden');
         } else {
             data.forEach(_sb_list_node);
-            if (niu) $('#sbbs-nodelist').parent().removeClass('hidden');
+            if (ns) $('#sbbs-nodelist').parent().removeClass('hidden');
         }
         // Spans with these classes are used in the 'system stats' sidebar module.
         // Update the nodes in use / available counters there.
@@ -123,6 +126,8 @@
                         $('#' + nid).click(function () {
                             _send_ibbs_telegram(e, data[e].host, ee.name);
                         });
+                        $('#' + nid).attr('title', '<?xjs write(locale.strings.sidebar_node_list.label_send_telegram); ?>');
+                        $('#' + nid).css('cursor', 'pointer');
                     }
                 });
                 users += data[e].users.length;
