@@ -56,7 +56,8 @@ function get_params(cmd, nick, srv) {
         }
     }
     // Maybe a city name
-    return { q : cmd.join(' ').split(',')[0] };
+    ret.q = cmd.join(' ').split(',')[0];
+    return ret;
 }
 
 function temperature_str(n) {
