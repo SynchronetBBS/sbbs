@@ -101,7 +101,7 @@
             const data = JSON.parse(e.data);
             var users = 0;
             $('#sbbsimsg-nodelist').addClass('hidden');
-            $('#sbbsimsg-nodelist').html('<h4>Other systems</h4>');
+            $('#sbbsimsg-nodelist').html('<h4>Other Systems</h4>');
             Object.keys(data).forEach(function (e, i) {
                 if (!data[e].users.length) return;
                 const id = 'sbbsimsg-nodelist-' + i;
