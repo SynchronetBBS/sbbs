@@ -7,7 +7,8 @@ const node_state = system.node_list.map(function (e, i) {
         action: -1,
         aux: -1,
         extaux: -1,
-        useron: -1
+        useron: -1,
+        connection : -1
     };
 });
 
@@ -27,7 +28,8 @@ function scan_nodes() {
                 action: n.action,
                 aux: n.aux,
                 extaux: n.extaux,
-                useron: n.useron
+                useron: n.useron,
+                connection: n.connection
             };
             node_state[i] = obj;
         }
@@ -80,7 +82,7 @@ function scan() {
                     status: format(NodeStatus[e.status], e.aux, e.extaux),
                     action: format(NodeAction[e.action], e.aux, e.extaux),
                     user: usr.alias,
-                    connection: usr.connection == 'HTTP' ? 'BBS' : usr.connection
+                    connection : NodeConnectionProper[e.connection] ? NodeConnectionProper[e.connection] : (e.connection + ' bps')
                 };
             }
         });
