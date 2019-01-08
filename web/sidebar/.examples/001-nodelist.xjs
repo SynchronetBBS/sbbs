@@ -9,7 +9,6 @@
 
     function _sb_list_node(e) {
         if (e.action === null || e.user === null) return;
-        niu++;
         $('#sbbs-nodelist-table').append(
             '<tr>' +
                 '<th scope="row">' +
@@ -56,7 +55,6 @@
                     _sb_list_node({ node: n, user: '', status :'Waiting for call' });
                 } else {
                     _sb_list_node(nodes[n], n);
-                    ns++;
                 }
             }
             $('#sbbs-nodelist').parent().removeClass('hidden');
