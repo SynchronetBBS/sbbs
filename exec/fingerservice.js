@@ -39,12 +39,14 @@ var active_users = false;	// Active-Users/SYSTAT protocol mode (Finger when fals
 var options = load({}, 'modopts.js', 'fingerservice');
 if(!options)
 	options = {};
-if(options.include_age_gender === undefined)
-	options.include_age_gender = true;
+if(options.include_age === undefined)
+	options.include_age = true;
+if(options.include_gender === undefined)
+	options.include_gender = true;
 if(options.include_real_name === undefined)
 	options.include_real_name = true;
 if(options.findfile === undefined)
-	options.findfile = true;
+	options.findfile = false;
 if(options.bbslist === undefined)
 	options.bbslist = false;
 
@@ -58,7 +60,8 @@ if(options.bbslist)
 for(i=0;i<argc;i++) {
 	switch(argv[i].toLowerCase()) {
 		case "-n":	// no age or gender
-			options.include_age_gender = false;
+			options.include_age = false;
+			options.include_gender = false;
 			break;
 		case "-a":	// aliases only
 			options.include_real_name = false;
@@ -180,13 +183,16 @@ if(datagram || !active_users) {
 
 if(request=="") {	// no specific user requested, give list of active users
 	log("client requested active user list");
-	write(format("%-25.25s %-31.31s   Time   %7s Node\r\n"
-		,"User","Action",options.include_age_gender ? "Age Sex":""));
+	write(format("%-25.25s %-31.31s   Time   %3s %3s Node\r\n"
+		,"User","Action"
+		,options.include_age ? "Age":""
+		,options.include_gender ? "Sex":""
+		));
 	var dashes="----------------------------------------";
 	write(format("%-25.25s %-31.31s %8.8s %3.3s %3.3s %4.4s\r\n"
 		,dashes,dashes,dashes
-		,options.include_age_gender ? dashes : ""
-		,options.include_age_gender ? dashes : ""
+		,options.include_age ? dashes : ""
+		,options.include_gender ? dashes : ""
 		,dashes));
 	var u = new User(1);
 	for(n=0;n<system.node_list.length;n++) {
@@ -209,8 +215,8 @@ if(request=="") {	// no specific user requested, give list of active users
 			,Math.floor(t/(60*60))
 			,Math.floor(t/60)%60
 			,t%60
-			,options.include_age_gender ? u.age.toString() : ""
-			,options.include_age_gender ? u.gender : ""
+			,options.include_age ? u.age.toString() : ""
+			,options.include_gender ? u.gender : ""
 			,n+1
 			));
 	}
@@ -300,10 +306,16 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 				if(node.status==NODE_INUSE
 					&& !(node.misc&NODE_ANON)) {
 					u.number=node.useron;
-					if(options.include_age_gender)
-						write(format("%s (%u %s) ", u.alias, u.age, u.gender));
-					else
-						write(u.alias + ' ');
+					write(u.alias);
+					if(options.include_age || options.include_gender) {
+						write(" (");
+						if(options.include_age)
+							write(u.age);
+						if(options.include_gender)
+							write((options.include_age ? ' ' : '') + u.gender);
+						write(")");
+					}
+					write(' ');
 					if(node.action==NODE_XTRN && node.aux)
 						write(format("running %s",xtrn_name(u.curxtrn)));
 					else
@@ -338,10 +350,10 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 				var t = time()-u.logontime;
 				if(t&0x80000000) t = 0;
 				var obj =  { name: u.alias, action: action, naction: node.action, aux: node.aux, xtrn: xtrn_name(u.curxtrn), timeon: t, node: n + 1, location: u.location };
-				if(options.include_age_gender) {
+				if(options.include_age)
 					obj.age = u.age;
+				if(options.include_gender)
 					obj.sex = u.gender;
-				}
 				if(u.chat_settings & CHAT_NOPAGE)
 					obj.do_not_disturb = true;
 				if(node.misc&(NODE_NMSG|NODE_MSGW))
@@ -503,19 +515,20 @@ if(u == null) {
 	exit();
 }
 
-uname = format("%s #%d", u.alias, u.number);
+var uname = format("%s #%d", u.alias, u.number);
 write(format("User: %-30s", uname));
 if(options.include_real_name)
 	write(format(" In real life: %s", u.name));
 write("\r\n");
 
 write(format("From: %-36s Handle: %s\r\n",u.location,u.handle));
-if(options.include_age_gender) {
-	birth=format("Birth: %s (Age: %u years)"
-		  ,u.birthdate,u.age);
-	write(format("%-42s Gender: %s\r\n"
-		  ,birth,u.gender));
-}
+if(options.include_age)
+	write(format("%-42s ", format("Birth: %s (Age: %u years)" , u.birthdate,u.age)));
+if(options.include_gender)
+	write(format("Gender: %s", u.gender));
+if(options.include_age || options.include_gender)
+	write("\r\n");
+
 write(format("Shell: %-34s  Editor: %s\r\n"
 	  ,u.command_shell,u.editor));
 write(format("Last login %s %s\r\nvia %s from %s [%s]\r\n"
