@@ -14,7 +14,7 @@ Bot_Commands["WEATHER"].command = function (target, onick, ouh, srv, lvl, cmd) {
         const params = get_params(cmd, onick, srv);
         if (params) {
             const res = owm.call_api('weather', params);
-            var str = '\1n\1rWeather for \1h\1c' + res.name + '\1n\1r: '
+            var str = '\0010\1n\1rWeather for \1h\1c' + res.name + '\1n\1r: '
                 + '\1h\1c' + res.weather[0].main + ' \1n\1r(\1c' + res.weather[0].description + '\1r), '
                 + '\1h\1c' + res.clouds.all + '% cloudy\1n\1r, '
                 + 'Current temp: \1h\1c' + temperature_str(res.main.temp) + '\1n\1r, '
