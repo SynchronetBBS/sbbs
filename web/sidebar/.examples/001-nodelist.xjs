@@ -119,9 +119,11 @@
                             + '</td>'
                         +'</tr>'
                     );
-                    $('#' + nid).click(function () {
-                        _send_ibbs_telegram(e, data[e].host, ee.name);
-                    });
+                    if (<?xjs write(user.alias != settings.guest); ?>) {
+                        $('#' + nid).click(function () {
+                            _send_ibbs_telegram(e, data[e].host, ee.name);
+                        });
+                    }
                 });
                 users += data[e].users.length;
             });
