@@ -3,7 +3,7 @@ load("nodedefs.js");
 const sbbsimsg = load({}, "sbbsimsg_lib.js");
 
 var last_run = 0;
-const frequency = 30;
+const frequency = 60;
 const timeout = 2500;
 
 function list() {
