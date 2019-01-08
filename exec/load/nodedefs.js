@@ -149,3 +149,18 @@ var NODE_CONNECTION_LOCAL   = 0;
 var NODE_CONNECTION_TELNET  = 0xffff;
 var NODE_CONNECTION_RLOGIN  = 0xfffe;
 var NODE_CONNECTION_SSH     = 0xfffd;
+
+var NodeConnection = {
+	0:      "local",
+	0xffff: "telnet",
+	0xfffe: "rlogin",
+	0xfffd: "ssh"
+};
+
+var NodeConnectionProper = {
+	0:      "Local",
+	0xffff: "Telnet",
+	0xfffe: "RLogin",
+	0xfffd: "SSH"
+};
+
