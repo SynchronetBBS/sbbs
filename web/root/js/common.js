@@ -40,20 +40,24 @@ function scrollUp() {
 }
 
 function sendTelegram(alias) {
+    function send_tg(evt) {
+        if (typeof evt !== 'undefined') evt.preventDefault();
+        $.getJSON('./api/system.ssjs?call=send-telegram&user=' + alias + '&telegram=' + $('#telegram').val(),
+            function(data) {
+            }
+        );
+        $('#popUpModal').modal('hide');
+    }
 	$('#popUpModalTitle').html('Send a telegram to ' + alias);
 	$('#popUpModalBody').html(
-		'<input type="text" class="form-control" ' +
-		'placeholder="My message" name="telegram" id="telegram">'
+        '<form id="send-telegram-form">'
+		+ '<input type="text" class="form-control" placeholder="My message" name="telegram" id="telegram">'
+        + '<input type="submit" value="submit" class="hidden">'
+        + '</form>'
 	);
 	$('#popUpModalActionButton').show();
-	$('#popUpModalActionButton').click(function () {
-		$.getJSON(
-			'./api/system.ssjs?call=send-telegram&user=' +
-			alias + '&telegram=' + $('#telegram').val(),
-			function(data) {}
-		);
-        $('#popUpModal').modal('hide');
-	});
+    $('#send-telegram-form').submit(send_tg);
+	$('#popUpModalActionButton').click(send_tg);
 	$('#popUpModal').modal('show');
 }
 
