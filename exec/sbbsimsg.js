@@ -58,6 +58,8 @@ for(i=0; i<argc; i++) {
 		function poll_callback(loop)
 		{
 			printf("%c\1[", "/-\\|"[loop%4]);
+			if(console.inkey(0))
+				return true;
 		}
 		lib.poll_systems(sent, 0.25, timeout, poll_callback);
 		list_users();
