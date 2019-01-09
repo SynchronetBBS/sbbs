@@ -2683,10 +2683,10 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"<tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br>"
 		"<tt>x&nbsp</tt> open a <i>non-shareable</i> file (that must not already exist) for <i>exclusive</i> access <i>(introduced in v3.17)</i><br>"
 		"<br><b>Note:</b> When using the <tt>iniSet</tt> methods to modify a <tt>.ini</tt> file, "
-		"the file must be opened for both reading and writing.<br>"
+		"the file must be opened for both reading <b>and</b> writing.<br>"
 		"<br><b>Note:</b> To open an existing or create a new file for both reading and writing "
 		"(e.g. updating an <tt>.ini</tt> file) "
-		"use the <i>exists</i> property like so:<br>"
+		"use the <i>exists</i> property like so:<br>"e
 		"<tt>file.open(file.exists ? 'r+':'w+');</tt>"
 		"<br><b>Note:</b> When <i>shareable</i> is false, uses nopen() which will lock the file "
 		"and perform automatic retries.  The lock mode is as follows:<br>"
@@ -2823,7 +2823,9 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"returns the specified <i>default</i> value if the key or value is missing or invalid. "
 		"to parse a key from the <i>root</i> section, pass <i>null</i> for <i>section</i>. "
 		"will return a <i>bool</i>, <i>number</i>, <i>string</i>, or an <i>array of strings</i> "
-		"determined by the type of <i>default</i> value specified")
+		"determined by the type of <i>default</i> value specified. "
+		"<br><b>Note:</b> To insure that any/all values are returned as a string (e.g. numeric passwords are <b>not</b> returned as a <i>number</i>), "
+		"pass an empty string ('') for the <i>default</i> value." )
 	,311
 	},
 	{"iniSetValue",		js_iniSetValue,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("section, key, [value=<i>none</i>]")
@@ -2835,13 +2837,15 @@ static jsSyncMethodSpec js_file_functions[] = {
 	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("[section=<i>root</i>]")
 	,JSDOCSTR("parse an entire section from a .ini file "
 		"and return all of its keys and values as properties of an object. "
-		"if <i>section</i> is undefined, returns key and values from the <i>root</i> section")
+		"if <i>section</i> is undefined, returns keys and values from the <i>root</i> section")
 	,311
 	},
 	{"iniSetObject",	js_iniSetObject,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("section, object")
 	,JSDOCSTR("write all the properties of the specified <i>object</i> as separate <tt>key=value</tt> pairs "
 		"in the specified <i>section</i> of a <tt>.ini</tt> file. "
-		"to write an object in the <i>root</i> section, pass <i>null</i> for <i>section</i>. ")
+		"to write an object in the <i>root</i> section, pass <i>null</i> for <i>section</i>. "
+		"<br><b>Note:</b> this method does not remove unreferenced keys from an existing section. "
+		"If your intention is to <i>replace</i> an existing section, use the <tt>iniRemoveSection</tt> function first." )
 	,312
 	},
 	{"iniGetAllObjects",js_iniGetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("[name_property] [,prefix=<i>none</i>]")
