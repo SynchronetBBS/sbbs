@@ -1,6 +1,5 @@
 load('sbbsdefs.js');
 load('modopts.js');
-var settings = get_mod_options('web');
 
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'mime-decode.js');
