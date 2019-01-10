@@ -39,6 +39,13 @@
 #include <ctype.h>		/* toupper */
 #include <string.h>		/* strcmp */
 
+#ifdef _WIN32
+	#include <Windows.h>	/* SetConsoleMode */
+	#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+	#endif
+#endif
+
 #define CTRL_A	'\1'
 #define ANSI	fprintf(out,"\x1b[")
 
@@ -87,6 +94,15 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
+#ifdef _WIN32
+	if(out == stdout) {
+		DWORD conmode = 0;
+		if(GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &conmode)) {
+			SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+		}
+	}
+#endif
 
 	while((ch=fgetc(in))!=EOF) {
 		if(ch==CTRL_A) { /* ctrl-a */
