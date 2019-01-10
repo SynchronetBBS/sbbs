@@ -52,7 +52,7 @@ function node_misc(node, is_sysop)
 {
 	var output = '';
 	var node_misc = node.misc;
-	
+
 	if(!is_sysop && node.status != NODE_INUSE)
 		node_misc &= ~(NODE_AOFF|NODE_POFF|NODE_MSGW|NODE_NMSG);
 	var flags = '';
@@ -96,7 +96,7 @@ function node_misc(node, is_sysop)
 function user_age_and_gender(user, options)
 {
 	var output = '';
-	
+
 	if(options.include_age || options.include_gender) {
 		output += " (";
 		if(options.include_age) {
@@ -144,7 +144,7 @@ function node_status(node, is_sysop, options)
 		case NODE_INUSE:
 		{
 			var u = new User();
-		
+
 			u.number = node.useron;
 			if(options.username_prefix)
 				output += options.username_prefix;
@@ -187,9 +187,9 @@ function node_status(node, is_sysop, options)
 			output += format(NodeStatus[node_status], node.aux);
 			break;
 	}
-	
+
 	output += node_misc(node, is_sysop);
-		
+
 	if(node.errors && is_sysop) {
 		if(options.errors_prefix)
 			output += options.errors_prefix;
@@ -213,7 +213,7 @@ function web_user_misc(web_user)
 function web_user_status(web_user, options)
 {
 	var output = '';
-	
+
 	if(options.username_prefix)
 		output += options.username_prefix;
 	output += web_user.name;
@@ -232,14 +232,14 @@ function web_user_status(web_user, options)
 }
 
 function web_users(max_inactivity)
-{	
+{
 	var user = User();
 	var users = [];
 	const lastuser = system.lastuser;
     const sessions = directory(system.data_dir + 'user/*.web');
 	if(!max_inactivity)
 		max_inactivity = 15 * 60;
-	
+
     sessions.forEach(function (e) {
 		const base = file_getname(e).replace(file_getext(e), '');
         const un = parseInt(base);
@@ -249,16 +249,21 @@ function web_users(max_inactivity)
 		user.number = un;
 		if(user.settings & (USER_DELETED|USER_QUIET))
 			return;
-		users.push({ 
-			name: user.alias, 
-			action: undefined,	// TODO!
+        const f = new File(e);
+        if (f.open('r')) {
+            const session = f.iniGetObject();
+            f.close();
+        }
+		users.push({
+			name: user.alias,
+			action: session && session.action ? 'viewing ' + session.action : undefined,
 			age: user.age,
 			gender: user.gender,
 			location: user.location,
 			logontime: file_date(e), // TODO: this is probably not the actual logon time, but more like "last activity" time (?)
 			do_not_disturb: (user.chat_settings & CHAT_NOPAGE) ? true : undefined,
 			msg_waiting: (file_size(format(system.data_dir + "msgs/%04u.msg", un)) > 0) ? true : undefined
-			});
+		});
 	});
 	return users;
 }
@@ -273,10 +278,10 @@ function nodelist(print, active, listself, is_sysop, options)
 {
 	var others = 0;
 	var output = [];
-	
+
 	if(!options.format)
 		options.format = "%3d  %s";
-	
+
 	var n;
 	for(n = 0; n < system.node_list.length; n++) {
 		var node = system.node_list[n];
@@ -287,7 +292,7 @@ function nodelist(print, active, listself, is_sysop, options)
 				continue;
 		} else
 			others++;
-		
+
 		var line = format(options.format, n + 1, node_status(node, is_sysop, options));
 		if(print)
 			writeln(line);
