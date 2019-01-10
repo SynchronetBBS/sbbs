@@ -190,6 +190,22 @@ if(request=="") {	// no specific user requested, give list of active users
 			,n+1
 			));
 	}
+	var web_user = presence.web_users(options.web_inactivity_timeout);
+	for(var w in web_user) {
+		var u = web_user[w];
+		t=time()-u.logontime;
+		if(t&0x80000000) t=0;
+		write(format("%-25.25s %-31.31s%3u:%02u:%02u %3s %3s %4d\r\n"
+			,u.name
+			,u.action ? u.action : ''
+			,Math.floor(t/(60*60))
+			,Math.floor(t/60)%60
+			,t%60
+			,options.include_age ? u.age.toString() : ""
+			,options.include_gender ? u.gender : ""
+			,++n
+			));
+	}
 	done();
 }
 
@@ -301,7 +317,8 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 					xtrn: presence.xtrn_name(u.curxtrn), 
 					timeon: t, 
 					node: n + 1, 
-					location: u.location 
+					prot: NodeConnection[node.connection],
+					location: u.location
 				};
 				if(options.include_age)
 					obj.age = u.age;
@@ -311,6 +328,21 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 					obj.do_not_disturb = true;
 				if(node.misc&(NODE_NMSG|NODE_MSGW))
 					obj.msg_waiting = true;
+				list.push(obj);
+			}
+			var web_user = presence.web_users(options.web_inactivity_timeout);
+			for(var w in web_user) {
+				var u = web_user[w];
+				t=time()-u.logontime;
+				if(t&0x80000000) t=0;
+				var obj = { 
+					name: u.name, 
+					action: u.action,
+					timeon: t, 
+					node: ++n,
+					prot: "web",
+					location: u.location 
+				}
 				list.push(obj);
 			}
 			write(JSON.stringify(list));
