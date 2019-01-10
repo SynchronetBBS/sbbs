@@ -1,3 +1,4 @@
+<h4><?xjs write(locale.strings.sidebar_node_list.label_title); ?></h4>
 <div id="sbbs-nodelist"></div>
 <?xjs if (settings.nodelist_ibbs) { ?>
     <div id="sbbsimsg-nodelist"></div>
@@ -37,8 +38,8 @@
     function _sb_nodelist(evt) {
         const data = JSON.parse(evt.data);
         $('#sbbs-nodelist').parent().addClass('hidden');
+        $('#sbbs-nodelist').addClass('hidden');
 		$('#sbbs-nodelist').html(
-			"<h4><?xjs write(locale.strings.sidebar_node_list.label_title); ?></h4>" +
 			'<table id="sbbs-nodelist-table" class="table table-condensed table-responsive table-striped">' +
             '<thead><tr>' +
             '<th>' + nch + '</th>' +
@@ -68,7 +69,10 @@
             $('#sbbs-nodelist').parent().removeClass('hidden');
         } else {
             data.forEach(_sb_list_node);
-            if (ns) $('#sbbs-nodelist').parent().removeClass('hidden');
+            if (ns) {
+                $('#sbbs-nodelist').parent().removeClass('hidden');
+                $('#sbbs-nodelist').removeClass('hidden');
+            }
         }
         // Spans with these classes are used in the 'system stats' sidebar module.
         // Update the nodes in use / available counters there.
@@ -80,8 +84,10 @@
 
     <?xjs if (settings.nodelist_ibbs) { ?>
         function _send_ibbs_telegram(sys, host, user) {
-            function send_ibbs_tg(evt) {
-                if (typeof evt !== 'undefined') evt.preventDefault();
+            $('#popUpModalTitle').html('Send a telegram to ' + user + '@' + sys);
+        	$('#popUpModalBody').html('<input type="text" class="form-control" placeholder="My message" name="telegram" id="telegram">');
+        	$('#popUpModalActionButton').show();
+        	$('#popUpModalActionButton').click(function () {
         		$.getJSON(
         			'./api/sbbsimsg.ssjs?call=send_telegram'
                     + '&username=' + user
@@ -91,21 +97,12 @@
                     }
         		);
                 $('#popUpModal').modal('hide');
-        	}
-            $('#popUpModalTitle').html('Send a telegram to ' + user + '@' + sys);
-        	$('#popUpModalBody').html(
-                '<form id="ibbs-telegram-form">'
-                + '<input type="text" class="form-control" placeholder="My message" name="telegram" id="telegram">'
-                + '<input type="submit" value="submit" class="hidden">'
-                + '</form>'
-            );
-        	$('#popUpModalActionButton').show();
-            $('#ibbs-telegram-form').submit(send_ibbs_tg);
-        	$('#popUpModalActionButton').click(send_ibbs_tg);
+        	});
         	$('#popUpModal').modal('show');
         }
 
         _sbbs_events.sbbsimsg = function (e) {
+            console.log('tg', e);
             const data = JSON.parse(e.data);
             var users = 0;
             $('#sbbsimsg-nodelist').addClass('hidden');
@@ -137,7 +134,10 @@
                 });
                 users += data[e].users.length;
             });
-            if (users) $('#sbbsimsg-nodelist').removeClass('hidden');
+            if (users) {
+                $('#sbbsimsg-nodelist').removeClass('hidden');
+                $('#sbbs-nodelist').parent().removeClass('hidden');
+            }
         }
     <?xjs } ?>
 
