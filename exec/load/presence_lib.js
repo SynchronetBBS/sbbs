@@ -242,7 +242,7 @@ function web_users(max_inactivity)
 
     sessions.forEach(function (e) {
 		const base = file_getname(e).replace(file_getext(e), '');
-        const un = parseInt(base);
+        const un = parseInt(base, 10);
         if (isNaN(un) || un < 1 || un > lastuser) return;
         if (time() - file_date(e) >= max_inactivity)
 			return;
