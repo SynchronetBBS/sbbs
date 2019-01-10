@@ -5,17 +5,28 @@
 // and/or the Active Users (SYSTAT) protocol (RFC 866)
 
 // Example configurations (in ctrl/services.ini)
+//
 // [Finger]
 // Port=79
 // Command=fingerservice.js
-
+//
 // [ActiveUser-UDP]
 // Port=11
 // Options=UDP
 // Command=fingerservice.js -u
 
-// Command-line options:
+// Example configuration (in ctrl/modopts.ini) with default values:
+//
+// [fingerservice]
+// include_age = true
+// include_gender = true
+// include_location = true
+// include_real_name = true
+// findfile = false
+// bbslist = false
 
+// Command-line options:
+//
 // -n	add to the Command line to eliminate user age and gender
 //		information from the query results.
 // -a	report aliases only (no real names)
@@ -43,6 +54,8 @@ if(options.include_age === undefined)
 	options.include_age = true;
 if(options.include_gender === undefined)
 	options.include_gender = true;
+if(options.include_location === undefined)
+	options.include_location = true;
 if(options.include_real_name === undefined)
 	options.include_real_name = true;
 if(options.findfile === undefined)
@@ -75,7 +88,6 @@ for(i=0;i<argc;i++) {
             break;
 	}
 }
-
 
 var output_buf = "";
 
@@ -172,6 +184,7 @@ if(request=="") {	// no specific user requested, give list of active users
 		if(node.misc&NODE_ANON)
 			continue;
 		u.number=node.useron;
+		var action;
 		if(node.action==NODE_XTRN && node.aux)
 			action=format("running %s", presence.xtrn_name(u.curxtrn));
 		else
@@ -195,9 +208,11 @@ if(request=="") {	// no specific user requested, give list of active users
 		var u = web_user[w];
 		t=time()-u.logontime;
 		if(t&0x80000000) t=0;
+		var action = u.action ? u.action : '';
+		action += presence.web_user_misc(u);
 		write(format("%-25.25s %-31.31s%3u:%02u:%02u %3s %3s %4d\r\n"
 			,u.name
-			,u.action ? u.action : ''
+			,action
 			,Math.floor(t/(60*60))
 			,Math.floor(t/60)%60
 			,t%60
@@ -298,7 +313,7 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 				var node = system.node_list[n];
 				if(node.status!=NODE_INUSE)
 					continue;
-				if(node.misc&(NODE_ANON|NODE_POFF))
+				if(node.misc&NODE_ANON)
 					continue;
 				u.number=node.useron;
 				var action;
@@ -309,7 +324,7 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 								,node.aux);
 				var t = time()-u.logontime;
 				if(t&0x80000000) t = 0;
-				var obj =  { 
+				list.push({ 
 					name: u.alias, 
 					action: action, 
 					naction: node.action, 
@@ -318,32 +333,30 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 					timeon: t, 
 					node: n + 1, 
 					prot: NodeConnection[node.connection],
-					location: u.location
-				};
-				if(options.include_age)
-					obj.age = u.age;
-				if(options.include_gender)
-					obj.sex = u.gender;
-				if(u.chat_settings & CHAT_NOPAGE)
-					obj.do_not_disturb = true;
-				if(node.misc&(NODE_NMSG|NODE_MSGW))
-					obj.msg_waiting = true;
-				list.push(obj);
+					age: options.include_age ? u.age : undefined,
+					sex: options.include_gender ? u.gender: undefined, 
+					location: options.include_location ? u.location : undefined,
+					do_not_disturb: u.chat_settings & CHAT_NOPAGE ? true : undefined,
+					msg_waiting: node.misc&(NODE_NMSG|NODE_MSGW) ? true: undefined
+				});
 			}
 			var web_user = presence.web_users(options.web_inactivity_timeout);
 			for(var w in web_user) {
 				var u = web_user[w];
 				t=time()-u.logontime;
 				if(t&0x80000000) t=0;
-				var obj = { 
+				list.push({ 
 					name: u.name, 
 					action: u.action,
 					timeon: t, 
 					node: ++n,
 					prot: "web",
-					location: u.location 
-				}
-				list.push(obj);
+					age: options.include_age ? u.age : undefined,
+					sex: options.include_gender ? u.gender: undefined, 
+					location: options.include_location ? u.location : undefined,
+					do_not_disturb: u.do_not_disturb,
+					msg_waiting: u.msg_waiting
+				});
 			}
 			write(JSON.stringify(list));
 			break;
@@ -506,7 +519,7 @@ if(options.include_real_name)
 	write(format(" In real life: %s", u.name));
 write("\r\n");
 
-write(format("From: %-36s Handle: %s\r\n",u.location,u.handle));
+write(format("From: %-36s Handle: %s\r\n", options.include_location ? u.location : "undisclosed" ,u.handle));
 if(options.include_age)
 	write(format("%-42s ", format("Birth: %s (Age: %u years)" , u.birthdate,u.age)));
 if(options.include_gender)
