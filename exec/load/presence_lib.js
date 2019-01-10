@@ -257,7 +257,7 @@ function web_users(max_inactivity)
 			location: user.location,
 			logontime: file_date(e), // TODO: this is probably not the actual logon time, but more like "last activity" time (?)
 			do_not_disturb: (user.chat_settings & CHAT_NOPAGE) ? true : undefined,
-			msg_waiting: file_exists(format(system.data_dir + "msgs/%04u.msg", un)) ? true : undefined
+			msg_waiting: (file_size(format(system.data_dir + "msgs/%04u.msg", un)) > 0) ? true : undefined
 			});
 	});
 	return users;
