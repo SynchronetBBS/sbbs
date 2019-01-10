@@ -54,6 +54,7 @@ load("nodedefs.js");
 load("sockdefs.js");
 load("sbbsdefs.js");
 load("portdefs.js");
+var presence = load({}, "presence_lib.js");
 if(options.bbslist)
 	var sbbslist = load({}, "sbbslist_lib.js");
 
@@ -118,41 +119,10 @@ function test_port(port)
 	return(success);
 }
 
-function xtrn_name(code)
-{
-	if(js.global.xtrn_area==undefined)
-		return(code);
-
-	if(xtrn_area.prog!=undefined)
-		if(xtrn_area.prog[code]!=undefined && xtrn_area.prog[code].name!=undefined)
-			return(xtrn_area.prog[code].name);
-	else {	/* old way */
-		for(s in xtrn_area.sec_list)
-			for(p in xtrn_area.sec_list[s].prog_list)
-				if(xtrn_area.sec_list[s].prog_list[p].code.toLowerCase()==code.toLowerCase())
-					return(xtrn_area.sec_list[s].prog_list[p].name);
-	}
-	return(code);
-}
-
 function done()
 {
 	flush();
 	exit();
-}
-
-function node_misc(node)
-{
-	var str = '';
-	if(node.misc&(NODE_AOFF|NODE_POFF|NODE_NMSG|NODE_MSGW)) {
-		str += " (";
-		if(node.misc&NODE_LOCK) str += 'L';
-		if(node.misc&NODE_AOFF) str += 'A';
-		if(node.misc&NODE_POFF) str += 'P';
-		if(node.misc&(NODE_NMSG|NODE_MSGW)) str += 'M';
-		str += ")";
-	}
-	return str;
 }
 
 var request="";
@@ -183,7 +153,7 @@ if(datagram || !active_users) {
 
 if(request=="") {	// no specific user requested, give list of active users
 	log("client requested active user list");
-	write(format("%-25.25s %-31.31s   Time   %3s %3s Node\r\n"
+	write(format("%-25.25s %-31.31s  Time-on %3s %3s Node\r\n"
 		,"User","Action"
 		,options.include_age ? "Age":""
 		,options.include_gender ? "Sex":""
@@ -194,7 +164,7 @@ if(request=="") {	// no specific user requested, give list of active users
 		,options.include_age ? dashes : ""
 		,options.include_gender ? dashes : ""
 		,dashes));
-	var u = new User(1);
+	var u = new User();
 	for(n=0;n<system.node_list.length;n++) {
 		var node = system.node_list[n];
 		if(node.status!=NODE_INUSE)
@@ -203,10 +173,10 @@ if(request=="") {	// no specific user requested, give list of active users
 			continue;
 		u.number=node.useron;
 		if(node.action==NODE_XTRN && node.aux)
-			action=format("running %s",xtrn_name(u.curxtrn));
+			action=format("running %s", presence.xtrn_name(u.curxtrn));
 		else
 			action=format(NodeAction[node.action],node.aux);
-		action += node_misc(node);
+		action += presence.node_misc(node, /* is_sysop: */false);
 		t=time()-u.logontime;
 		if(t&0x80000000) t=0;
 		write(format("%-25.25s %-31.31s%3u:%02u:%02u %3s %3s %4d\r\n"
@@ -299,40 +269,14 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 			break;
 
 		case "nodelist":
-			var u = new User(1);
-			for(n=0;n<system.node_list.length;n++) {
-				write(format("Node %2d ",n+1));
-				var node = system.node_list[n];
-				if(node.status==NODE_INUSE
-					&& !(node.misc&NODE_ANON)) {
-					u.number=node.useron;
-					write(u.alias);
-					if(options.include_age || options.include_gender) {
-						write(" (");
-						if(options.include_age)
-							write(u.age);
-						if(options.include_gender)
-							write((options.include_age ? ' ' : '') + u.gender);
-						write(")");
-					}
-					write(' ');
-					if(node.action==NODE_XTRN && node.aux)
-						write(format("running %s",xtrn_name(u.curxtrn)));
-					else
-						write(format(NodeAction[node.action],node.aux));
-					t=time()-u.logontime;
-					if(t&0x80000000) t=0;
-					write(format(" for %u minutes",Math.floor(t/60)));
-					write(node_misc(node));
-				} else
-					write(format(NodeStatus[node.status],node.aux));
-
-				write("\r\n");
-			}
+			options.format = "Node %2d %s";
+			var output = presence.nodelist(/* print: */false, /* active: */false, /* self: */true, /* is_sysop: */false, options);
+			for(var i in output)
+				writeln(output[i]);
 			break;
 
 		case "active-users.json":
-			var u = new User(1);
+			var u = new User();
 			var list = [];
 			for(var n=0;n<system.node_list.length;n++) {
 				var node = system.node_list[n];
@@ -343,13 +287,22 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 				u.number=node.useron;
 				var action;
 				if(node.action==NODE_XTRN && node.aux)
-					action=format("running %s",xtrn_name(u.curxtrn));
+					action=format("running %s", presence.xtrn_name(u.curxtrn));
 				else
 					action=format(NodeAction[node.action]
 								,node.aux);
 				var t = time()-u.logontime;
 				if(t&0x80000000) t = 0;
-				var obj =  { name: u.alias, action: action, naction: node.action, aux: node.aux, xtrn: xtrn_name(u.curxtrn), timeon: t, node: n + 1, location: u.location };
+				var obj =  { 
+					name: u.alias, 
+					action: action, 
+					naction: node.action, 
+					aux: node.aux, 
+					xtrn: presence.xtrn_name(u.curxtrn), 
+					timeon: t, 
+					node: n + 1, 
+					location: u.location 
+				};
 				if(options.include_age)
 					obj.age = u.age;
 				if(options.include_gender)
