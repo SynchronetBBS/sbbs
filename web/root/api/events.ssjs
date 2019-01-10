@@ -1,6 +1,6 @@
 load('sbbsdefs.js');
 load('modopts.js');
-const settings = get_mod_options('web');
+var settings = get_mod_options('web');
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
 
