@@ -1,7 +1,7 @@
 load('sbbsdefs.js');
 load('modopts.js');
 
-var settings = get_mod_options('web');
+if (!settings) var settings = get_mod_options('web');
 
 // Paths
 settings.web_directory = fullpath(
