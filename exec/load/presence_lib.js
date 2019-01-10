@@ -198,6 +198,18 @@ function node_status(node, is_sysop, options)
 	return output;
 }
 
+function web_user_misc(web_user)
+{
+	var flags = '';
+	if(web_user.msg_waiting)
+		flags += 'M';
+	if(web_user.do_not_disturb)
+		flags += 'P';
+	if(flags)
+		return format(" (%s)", flags);
+	return '';
+}
+
 function web_user_status(web_user, options)
 {
 	var output = '';
@@ -215,6 +227,7 @@ function web_user_status(web_user, options)
 	if(options.connection_prefix)
 		output += options.connection_prefix;
 	output += " via web";
+	output += web_user_misc(web_user);
 	return output;
 }
 
@@ -242,7 +255,9 @@ function web_users(max_inactivity)
 			age: user.age,
 			gender: user.gender,
 			location: user.location,
-			logontime: file_date(e) // TODO: this is probably not the actual logon time, but more like "last activity" time (?)
+			logontime: file_date(e), // TODO: this is probably not the actual logon time, but more like "last activity" time (?)
+			do_not_disturb: (user.chat_settings & CHAT_NOPAGE) ? true : undefined,
+			msg_waiting: file_exists(format(system.data_dir + "msgs/%04u.msg", un)) ? true : undefined
 			});
 	});
 	return users;
