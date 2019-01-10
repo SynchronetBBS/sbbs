@@ -5,6 +5,7 @@
 
 require("nodedefs.js", 'NODE_INUSE');
 require("text.js", 'UNKNOWN_USER');
+require("sbbsdefs.js", 'USER_DELETED');
 
 "use strict";
 
@@ -90,7 +91,33 @@ function node_misc(node, is_sysop)
 			output += format(" [%s]", flags);
 	}
 	return output;
-}	
+}
+
+function user_age_and_gender(user, options)
+{
+	var output = '';
+	
+	if(options.include_age || options.include_gender) {
+		output += " (";
+		if(options.include_age) {
+			if(options.age_prefix)
+				output += options.age_prefix;
+			output += user.age;
+		}
+		if(options.include_gender) {
+			if(options.gender_prefix)
+				output += options.gender_prefix;
+			var sep = options.gender_separator;
+			if(sep == undefined)
+				sep = ' ';
+			output += (options.include_age ?  sep : '') + user.gender;
+		}
+		if(options.status_prefix)
+			output += options.status_prefix;
+		output += ")";
+	}
+	return output;
+}
 
 // Returns a string describing the node status, suitable for printing on a single line
 //
@@ -127,25 +154,7 @@ function node_status(node, is_sysop, options)
 				output += u.alias;
 			if(options.status_prefix)
 				output += options.status_prefix;
-			if(options.include_age || options.include_gender) {
-				output += " (";
-				if(options.include_age) {
-					if(options.age_prefix)
-						output += options.age_prefix;
-					output += u.age;
-				}
-				if(options.include_gender) {
-					if(options.gender_prefix)
-						output += options.gender_prefix;
-					var sep = options.gender_separator;
-					if(sep == undefined)
-						sep = ' ';
-					output += (options.include_age ?  sep : '') + u.gender;
-				}
-				if(options.status_prefix)
-					output += options.status_prefix;
-				output += ")";
-			}
+			output += user_age_and_gender(u, options);
 			output += " ";
 			switch(node.action) {
 				case NODE_PCHT:
@@ -189,6 +198,56 @@ function node_status(node, is_sysop, options)
 	return output;
 }
 
+function web_user_status(web_user, options)
+{
+	var output = '';
+	
+	if(options.username_prefix)
+		output += options.username_prefix;
+	output += web_user.name;
+	if(options.status_prefix)
+		output += options.status_prefix;
+	output += user_age_and_gender(web_user, options);
+	if(web_user.action) {
+		output += " ";
+		output += web_user.action;
+	}
+	if(options.connection_prefix)
+		output += options.connection_prefix;
+	output += " via web";
+	return output;
+}
+
+function web_users(max_inactivity)
+{	
+	var user = User();
+	var users = [];
+	const lastuser = system.lastuser;
+    const sessions = directory(system.data_dir + 'user/*.web');
+	if(!max_inactivity)
+		max_inactivity = 15 * 60;
+	
+    sessions.forEach(function (e) {
+		const base = file_getname(e).replace(file_getext(e), '');
+        const un = parseInt(base);
+        if (isNaN(un) || un < 1 || un > lastuser) return;
+        if (time() - file_date(e) >= max_inactivity)
+			return;
+		user.number = un;
+		if(user.settings & (USER_DELETED|USER_QUIET))
+			return;
+		users.push({ 
+			name: user.alias, 
+			action: undefined,	// TODO!
+			age: user.age,
+			gender: user.gender,
+			location: user.location,
+			logontime: file_date(e) // TODO: this is probably not the actual logon time, but more like "last activity" time (?)
+			});
+	});
+	return users;
+}
+
 // Returns either:
 // 1. number of nodes printed other than 'self' or (if print is false):
 // 2. an array of lines suitable for printing
@@ -203,7 +262,8 @@ function nodelist(print, active, listself, is_sysop, options)
 	if(!options.format)
 		options.format = "%3d  %s";
 	
-	for(var n = 0; n < system.node_list.length; n++) {
+	var n;
+	for(n = 0; n < system.node_list.length; n++) {
 		var node = system.node_list[n];
 		if(active && node.status != NODE_INUSE)
 			continue;
@@ -213,11 +273,22 @@ function nodelist(print, active, listself, is_sysop, options)
 		} else
 			others++;
 		
-		var line = format(options.format, n + 1, this.node_status(node, is_sysop, options));
+		var line = format(options.format, n + 1, node_status(node, is_sysop, options));
 		if(print)
 			writeln(line);
 		else
 			output.push(line);
+	}
+	if(active) {
+		var web_user = web_users(options.web_inactivity_timeout);
+		for(var w in web_user) {
+			var line = format(options.format, ++n, web_user_status(web_user[w], options));
+			if(print)
+				writeln(line);
+			else
+				output.push(line);
+			others++;
+		}
 	}
 	if(print)
 		return others;
