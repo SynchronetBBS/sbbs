@@ -4,16 +4,15 @@
 
 // $Id$
 
-load("sbbsdefs.js");
+"use strict";
 
-if(system.lastuser==undefined)	/* v3.10 */
-	lastuser=system.stats.total_users;
-else							/* v3.11 */
-	lastuser=system.lastuser;
-var u = new User(1);
+require("sbbsdefs.js", 'USER_DELETED');
 
-for(i=1;i<=lastuser;i++) {
-	u.number=i;
+var lastuser = system.lastuser;
+var u = new User;
+
+for(var i = 1; i <= lastuser; i++) {
+	u.number = i;
 	if(u.settings&USER_DELETED)
 		continue;
 	printf("%d/%d ",i,lastuser);
@@ -22,6 +21,6 @@ for(i=1;i<=lastuser;i++) {
 		,u.location
 		,u.connection
 		);
-	if(this.bbs!=undefined && bbs.sys_status&SS_ABORT)
+	if(js.global.console != undefined && console.aborted == true)
 		break;
-}	
+}
