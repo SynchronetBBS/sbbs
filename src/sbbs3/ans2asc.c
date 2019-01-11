@@ -40,6 +40,10 @@
 #include <ctype.h>		/* isdigit */
 #include <string.h>		/* strcmp */
 
+#ifndef CTRL_Z
+#define CTRL_Z 0x1a
+#endif
+
 static void print_usage(const char* prog)
 {
 	char revision[16];
@@ -106,7 +110,7 @@ int main(int argc, char **argv)
 	if(clear)
 		fprintf(out,"\1n\1l");
 	esc=0;
-	while((ch=fgetc(in))!=EOF) {
+	while((ch=fgetc(in))!=EOF && ch != CTRL_Z) {
 		if(ch=='[' && esc) {    /* ANSI escape sequence */
 			ni=0;				/* zero number index */
 			memset(n,1,sizeof(n));
@@ -140,9 +144,16 @@ int main(int argc, char **argv)
 						if(isdigit(ch)) ch=fgetc(in);
 						if(isdigit(ch)) fgetc(in);
 						break;
+					case 'f':
+					case 'H':
+						if(n[0]<=1 && n[1]<=1)			/* home cursor */
+							fputs("\1`", out);
+						break;
 					case 'J':
 						if(n[0]==2) 					/* clear screen */
-							fputs("\1l",out);           /* ctrl-al */
+							fputs("\1L",out);           /* ctrl-aL */
+						else if(n[0]==0)				/* clear to EOS */
+							fputs("\1J",out);           /* ctrl-aJ */
 						break;
 					case 'K':
 						fputs("\1>",out);               /* clear to eol */
@@ -153,44 +164,44 @@ int main(int argc, char **argv)
 							switch(n[i]) {
 								case 0:
 								case 2: 				/* no attribute */
-									fputc('n',out);
+									fputc('N',out);
 									break;
 								case 1: 				/* high intensity */
-									fputc('h',out);
+									fputc('H',out);
 									break;
 								case 3:
 								case 4:
 								case 5: 				/* blink */
 								case 6:
 								case 7:
-									fputc('i',out);
+									fputc('I',out);
 									break;
 								case 8: 				/* concealed */
-									fputc('e',out);		/* Elite-text, long unsupported (but should be resurrected?) */
+									fputc('E',out);		/* Elite-text, long unsupported (but should be resurrected?) */
 									break;
 								case 30:
-									fputc('k',out);
+									fputc('K',out);
 									break;
 								case 31:
-									fputc('r',out);
+									fputc('R',out);
 									break;
 								case 32:
-									fputc('g',out);
+									fputc('G',out);
 									break;
 								case 33:
-									fputc('y',out);
+									fputc('Y',out);
 									break;
 								case 34:
-									fputc('b',out);
+									fputc('B',out);
 									break;
 								case 35:
-									fputc('m',out);
+									fputc('M',out);
 									break;
 								case 36:
-									fputc('c',out);
+									fputc('C',out);
 									break;
 								case 37:
-									fputc('w',out);
+									fputc('W',out);
 									break;
 								case 40:
 									fputc('0',out);
@@ -224,7 +235,7 @@ int main(int argc, char **argv)
 						break;
 					case 'B':	/* cursor down */
 						while(n[0]) {
-							fprintf(out,"\n");
+							fprintf(out,"\1]");	/* linefeed */
 							n[0]--;
 						}
 						break;
@@ -233,10 +244,10 @@ int main(int argc, char **argv)
 						break;
 					case 'D':	/* cursor left */
 						if(n[0]>=80)
-							fprintf(out,"\r");
+							fprintf(out,"\1[");
 						else
 							while(n[0]) {
-								fprintf(out,"\b");
+								fprintf(out,"\1<");
 								n[0]--;
 							}
 						break;
