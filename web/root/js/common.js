@@ -42,10 +42,8 @@ function scrollUp() {
 function sendTelegram(alias) {
     function send_tg(evt) {
         if (typeof evt !== 'undefined') evt.preventDefault();
-        $.getJSON('./api/system.ssjs?call=send-telegram&user=' + alias + '&telegram=' + $('#telegram').val(),
-            function(data) {
-            }
-        );
+        $.getJSON('./api/system.ssjs?call=send-telegram&user=' + alias + '&telegram=' + $('#telegram').val(), function(data) {
+        });
         $('#popUpModal').modal('hide');
     }
 	$('#popUpModalTitle').html('Send a telegram to ' + alias);
@@ -55,9 +53,9 @@ function sendTelegram(alias) {
         + '<input type="submit" value="submit" class="hidden">'
         + '</form>'
 	);
-	$('#popUpModalActionButton').show();
     $('#send-telegram-form').submit(send_tg);
 	$('#popUpModalActionButton').click(send_tg);
+    $('#popUpModalActionButton').show();
 	$('#popUpModal').modal('show');
 }
 
