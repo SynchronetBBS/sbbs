@@ -110,7 +110,6 @@
         }
 
         _sbbs_events.sbbsimsg = function (e) {
-            console.log('tg', e);
             const data = JSON.parse(e.data);
             var users = 0;
             $('#sbbsimsg-nodelist').addClass('hidden');
