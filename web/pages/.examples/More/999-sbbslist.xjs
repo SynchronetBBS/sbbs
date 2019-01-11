@@ -40,7 +40,7 @@
 
 	function bbs_preview(bbs) {
 	    var graphic=new Graphic();
-	    graphic.base64_decode(bbs.preview);
+	    graphic.BIN = lib.decode_preview(bbs.preview);
 		writeln(
 			'<div class="pull-left" ' +
 			'style="margin-right:5px;" ' +
@@ -71,6 +71,8 @@
 				Sysops : e.sysop.map(function (ee) { return ee.name; }).join(', '),
 				Services : e.service.map(
 					function (ee) {
+                        if (!ee.protocol)
+                            return '';
 						var r = ee.protocol[0].toUpperCase() + ee.protocol.slice(1) + ': ' + ee.address;
 						if (typeof ee.port === 'number') r += ':' + ee.port;
 						return r;
