@@ -3,11 +3,19 @@
 // Node Listing / Who's Online display script, replaces the bbs.whos_online() function
 // Installable as a Ctrl-U key handler ('jsexec nodelist install') or as an
 // 'exec/node list' replacement ('jexec nodelist').
+//
+// Command-line / load() options supported:
+// -active      Include active users/nodes only
+// -noself      Exclude current/own node from list/output
+// -noweb       Exclude web users from list/output
+
+// The modopts.ini [nodelist] settings are only used when executing from the BBS/terminal server
+// (e.g. not when executed via JSexec)
+
+"use strict";
 
 if(js.global.bbs)
 	require("text.js", 'NodeLstHdr');
-
-"use strict";
 
 var presence = load({}, "presence_lib.js");
 
@@ -34,23 +42,28 @@ if(js.global.bbs) {
 	if(!options)
 		options = {};
 	if(!options.format)
-		options.format = "\1n\1h%3d  \1n\1g%s";
+		options.format = "\x01n\x01h%3d  \x01n\x01g%s";
 	if(!options.username_prefix)
-		options.username_prefix = '\1h';
+		options.username_prefix = '\x01h';
 	if(!options.status_prefix)
-		options.status_prefix = '\1n\1g';	
+		options.status_prefix = '\x01n\x01g';	
 	if(!options.errors_prefix)
-		options.errors_prefix = '\1h\1r';	
+		options.errors_prefix = '\x01h\x01r';
 	console.print(bbs.text(NodeLstHdr));
 } else{ // e.g. invoked via JSexec
 	var REVISION = "$Revision$".split(' ')[1];
-	options = { format: "Node %2d: %s", include_age: true, include_gender: true };
+	options = { 
+		format: "Node %2d: %s", 
+		include_age: true, 
+		include_gender: true, 
+		include_web_users: argv.indexOf('-noweb') == -1
+	};
 	writeln("Synchronet Node Display Module v" + REVISION);
 	writeln();
 }
 
 var active = argv.indexOf('-active') >= 0;
-var listself = argv.indexOf('-notself') < 0;
+var listself = argv.indexOf('-noself') < 0;
 var is_sysop = js.global.bbs ? user.is_sysop : true;
 
 var output = presence.nodelist(/* print: */true, active, listself, is_sysop, options);
