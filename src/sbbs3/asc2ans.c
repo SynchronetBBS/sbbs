@@ -134,9 +134,15 @@ int main(int argc, char **argv)
 				case ']':
 					fputc('\n',out);
 					break;
+				case 'J':				
+					ANSI;	
+					fprintf(out,"J");	/* clear to EOS */
+					break;
 				case 'L':
 					ANSI;	
 					fprintf(out,"2J");	/* clear screen */
+					/* fall-through */
+				case '`':
 					ANSI;	
 					fprintf(out,"H");	/* home cursor */
 					break;
