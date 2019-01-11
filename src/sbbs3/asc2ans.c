@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 	while((ch=fgetc(in))!=EOF) {
 		if(ch==CTRL_A) { /* ctrl-a */
 			ch=fgetc(in);
-			if(ch==EOF)	/* EOF */
+			if(ch==EOF || ch=='Z')	/* EOF */
 				break;
 			if(ch>0x7f) {					/* move cursor right x columns */
 				int cnt=ch-0x7f;
@@ -217,6 +217,9 @@ int main(int argc, char **argv)
 				case '7':
 					ANSI;
 					fprintf(out,"47m");
+					break;
+				case 'Z':	/* Actually a lower-case 'z' */
+					fputc('\x1a',out);	/* Ctrl-Z (substitute) char */
 					break;
 				default:
 					if(!strip)

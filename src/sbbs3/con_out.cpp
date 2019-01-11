@@ -57,6 +57,8 @@ int sbbs_t::bputs(const char *str)
 	while(str[l] && online) {
 		if(str[l]==CTRL_A && str[l+1]!=0) {
 			l++;
+			if(str[l] == 'Z')	/* EOF (uppercase 'Z' only) */
+				break;
 			ctrl_a(str[l++]);
 			continue;
 		}

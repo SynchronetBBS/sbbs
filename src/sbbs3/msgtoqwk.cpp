@@ -381,7 +381,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 
 			if(ch==CTRL_A) {
 				ch=buf[++l];
-				if(ch==0)
+				if(ch==0 || ch=='Z')	/* EOF */
 					break;
 				if((asc=ctrl_a_to_ascii_char(ch)) != 0) {
 					fputc(asc,qwk_fp);

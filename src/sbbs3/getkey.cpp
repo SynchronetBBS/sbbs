@@ -297,7 +297,7 @@ char sbbs_t::getkey(long mode)
 
 
 /****************************************************************************/
-/* Outputs a string highlighting characters preceeded by a tilde            */
+/* Outputs a string highlighting characters preceded by a tilde             */
 /****************************************************************************/
 void sbbs_t::mnemonics(const char *str)
 {
@@ -337,6 +337,8 @@ void sbbs_t::mnemonics(const char *str)
 		else {
 			if(str[l]==CTRL_A && str[l+1]!=0) {
 				l++;
+				if(str[l] == 'Z')	/* EOF (uppercase 'Z') */
+					break;
 				ctrl_a(str[l++]);
 			} else {
 				if(str[l] == '@') {

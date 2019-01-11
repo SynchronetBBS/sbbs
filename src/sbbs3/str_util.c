@@ -52,6 +52,8 @@ char* DLLCALL remove_ctrl_a(const char *str, char *dest)
 	for(i=j=0;str[i];i++) {
 		if(str[i]==CTRL_A) {
 			i++;
+			if(str[i]==0 || str[i]=='Z')	/* EOF */
+				break;
 			/* convert non-destructive backspace to a destructive backspace */
 			if(str[i]=='<' && j)	
 				j--;
@@ -71,6 +73,8 @@ char* DLLCALL strip_ctrl(const char *str, char* dest)
 	for(i=j=0;str[i];i++) {
 		if(str[i]==CTRL_A) {
 			i++;
+			if(str[i]==0 || str[i]=='Z')	/* EOF */
+				break;
 			/* convert non-destructive backspace to a destructive backspace */
 			if(str[i]=='<' && j)	
 				j--;
@@ -117,6 +121,8 @@ char* DLLCALL prep_file_desc(const char *str, char* dest)
 	for(i=j=0;str[i];i++)
 		if(str[i]==CTRL_A && str[i+1]!=0) {
 			i++;
+			if(str[i]==0 || str[i]=='Z')	/* EOF */
+				break;
 			/* convert non-destructive backspace to a destructive backspace */
 			if(str[i]=='<' && j)	
 				j--;
@@ -330,8 +336,7 @@ str_list_t DLLCALL trashcan_list(scfg_t* cfg, const char* name)
 }
 
 /****************************************************************************/
-/* Returns the number of characters in 'str' not counting ctrl-ax codes		*/
-/* or the null terminator													*/
+/* Returns the printed columns from 'str' accounting for Ctrl-A codes		*/
 /****************************************************************************/
 size_t bstrlen(const char *str)
 {
@@ -340,6 +345,8 @@ size_t bstrlen(const char *str)
 	while(*str) {
 		if(*str==CTRL_A) {
 			str++;
+			if(*str==0 || *str=='Z')	/* EOF */
+				break;
 			if(*str=='[')
 				i=0;
 			else if(*str=='<' && i)
