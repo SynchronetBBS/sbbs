@@ -89,7 +89,7 @@ function scan() {
     }
     if (node_change || web_change) {
         out = out.concat(Object.keys(web_state).map(function (e) {
-            usr.number = parseInt(e);
+            usr.number = parseInt(e, 10);
             return {
                 node: 'W',
                 action: locale.strings.sidebar_node_list.label_status_web + ' ' + web_state[e],
