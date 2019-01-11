@@ -42,7 +42,7 @@ function scan_web() {
     const sessions = directory(system.data_dir + 'user/*.web');
     sessions.forEach(function (e) {
         const base = file_getname(e).replace(file_getext(e), '');
-        const un = parseInt(base);
+        const un = parseInt(base, 10);
         if (isNaN(un) || un < 1 || un > system.lastuser) return;
         if (time() - file_date(e) >= settings.inactivity) {
             if (web_state[base]) {
@@ -89,7 +89,7 @@ function scan() {
     }
     if (node_change || web_change) {
         out = out.concat(Object.keys(web_state).map(function (e) {
-            usr.number = parseInt(e);
+            usr.number = parseInt(e, 10);
             return {
                 node: 'W',
                 action: locale.strings.sidebar_node_list.label_status_web + ' ' + web_state[e],
