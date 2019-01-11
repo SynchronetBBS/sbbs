@@ -468,7 +468,13 @@ end_cmd
 
 compare_word nodes
 if_true
-	nodelist_all
+	exec_bin "nodelist"
+	return
+	end_if
+    
+compare_word who
+if_true
+	exec_bin "nodelist -active"
 	return
 	end_if
 

@@ -198,7 +198,7 @@ cmdstr P
 #List users online
 cmdstr L
 	cls
-	nodelist_users
+	exec_bin "nodelist -active"
 	end_cmd
 
 #List files

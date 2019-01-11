@@ -234,8 +234,12 @@ cmdstr I
 	menu pcboard/welcome
 	end_cmd
 
+cmdstr NODES
+	exec_bin "nodelist"
+	end_cmd
+    
 cmdstr WHO
-	nodelist_users
+	exec_bin "nodelist -active"
 	end_cmd
 
 cmdstr CHAT

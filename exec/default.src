@@ -255,9 +255,13 @@ cmdkey J
 	end_cmd
 
 cmdkey /L
-	nodelist_all
+	exec_bin "nodelist"
 	end_cmd
 
+cmdkey W
+	exec_bin "nodelist -active"
+	end_cmd
+    
 cmdkey M
 	minute_bank
 	end_cmd
@@ -720,9 +724,13 @@ cmdkey L
 	end_cmd
 
 cmdkey /L
-	nodelist_all
+	exec_bin "nodelist"
 	end_cmd
-
+    
+cmdkey W
+	exec_bin "nodelist -active"
+	end_cmd
+   
 cmdkey N
 	print "\r\n\1c\1hNew File Scan\r\n"
 	file_new_scan

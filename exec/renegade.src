@@ -124,7 +124,7 @@ cmdkey I
 	end_cmd
 
 cmdkey W
-	nodelist_users
+	exec_bin "nodelist -active"
 	end_cmd
 
 cmdkey L
@@ -132,7 +132,7 @@ cmdkey L
 	end_cmd
 
 cmdkey /L
-	nodelist_all
+	exec_bin "nodelist"
 	end_cmd
 
 cmdkey $
@@ -531,7 +531,11 @@ cmdkey L
 	end_cmd
 
 cmdkey /L
-	nodelist_all
+	exec_bin "nodelist"
+	end_cmd
+    
+cmdkey W
+	exec_bin "nodelist -active"
 	end_cmd
 
 cmdkey M
@@ -745,7 +749,11 @@ cmdkey C
 	end_cmd
 
 cmdkey /L
-	nodelist_all
+	exec_bin "nodelist"
+	end_cmd
+    
+cmdkey W
+	exec_bin "nodelist -active"
 	end_cmd
 
 cmdkey N

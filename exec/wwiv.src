@@ -167,8 +167,12 @@ cmdkey L
 	end_cmd
 
 cmdkey /L
-	nodelist_all
+	exec_bin "nodelist"
 	end_cmd
+    
+cmdkey W
+    exec_bin "nodelist -active"
+    end_cmd
 
 cmdkey $
 	minute_bank
@@ -563,8 +567,12 @@ cmdkey L
 	end_cmd
 
 cmdkey /L
-	nodelist_all
+	exec_bin "nodelist"
 	end_cmd
+    
+cmdkey W
+    exec_bin "nodelist -active"
+    end_cmd
 
 cmdkey N
 	print "\r\nchNew File Scan\r\n"
