@@ -3,8 +3,8 @@
 // Library for reporting user presence (e.g. BBS node listings, who's online)
 // Much of the code was derived from src/sbbs3/getnode.cpp: nodelist(), whos_online(), printnodedat()
 
-require("nodedefs.js", 'NODE_INUSE');
 require("text.js", 'UNKNOWN_USER');
+require("nodedefs.js", 'NODE_INUSE');
 require("sbbsdefs.js", 'USER_DELETED');
 
 "use strict";
@@ -97,20 +97,20 @@ function user_age_and_gender(user, options)
 {
 	var output = '';
 
-	if(options.include_age || options.include_gender) {
+	if((options.include_age && user.age) || (options.include_gender && user.gender > ' ')) {
 		output += " (";
-		if(options.include_age) {
+		if(options.include_age && user.age) {
 			if(options.age_prefix)
 				output += options.age_prefix;
 			output += user.age;
 		}
-		if(options.include_gender) {
+		if(options.include_gender && user.gender > ' ') {
 			if(options.gender_prefix)
 				output += options.gender_prefix;
 			var sep = options.gender_separator;
 			if(sep == undefined)
 				sep = ' ';
-			output += (options.include_age ?  sep : '') + user.gender;
+			output += ((options.include_age && user.age )?  sep : '') + user.gender;
 		}
 		if(options.status_prefix)
 			output += options.status_prefix;
@@ -276,7 +276,7 @@ function web_users(max_inactivity, browsing)
 // In addition to the options properties supported by node_status(), also supports:
 // options.format - a printf-style format for the node status line (e.g. "%d %s")
 // options.include_web_users - if false, don't include web users in output/result
-// options.web_inactivity_timeout - seconds before considering a web user offline
+// options.web_inactivity - seconds before considering a web user offline
 // options.web_browsing - string to use to represent web actions (default: 'browsing')
 function nodelist(print, active, listself, is_sysop, options)
 {
@@ -304,7 +304,7 @@ function nodelist(print, active, listself, is_sysop, options)
 			output.push(line);
 	}
 	if(options.include_web_users !== false) {
-		var web_user = web_users(options.web_inactivity_timeout, options.web_browsing);
+		var web_user = web_users(options.web_inactivity, options.web_browsing);
 		for(var w in web_user) {
 			var line = format(options.format, ++n, web_user_status(web_user[w], options));
 			if(print)
