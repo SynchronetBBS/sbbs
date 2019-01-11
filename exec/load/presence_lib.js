@@ -230,7 +230,7 @@ function web_user_status(web_user, options)
 	return output;
 }
 
-function web_users(max_inactivity)
+function web_users(max_inactivity, browsing)
 {
 	var user = new User;
 	var users = [];
@@ -238,6 +238,8 @@ function web_users(max_inactivity)
     const sessions = directory(system.data_dir + 'user/*.web');
 	if(!max_inactivity)
 		max_inactivity = 15 * 60;
+	if(!browsing)
+		browsing = 'browsing';
 
     sessions.forEach(function (e) {
 		const base = file_getname(e).replace(file_getext(e), '');
@@ -255,7 +257,7 @@ function web_users(max_inactivity)
         }
 		users.push({
 			name: user.alias,
-			action: session && session.action ? 'viewing ' + session.action : undefined,
+			action: session && session.action ? (browsing + ' ' + session.action) : undefined,
 			age: user.age,
 			gender: user.gender,
 			location: user.location,
@@ -274,6 +276,8 @@ function web_users(max_inactivity)
 // In addition to the options properties supported by node_status(), also supports:
 // options.format - a printf-style format for the node status line (e.g. "%d %s")
 // options.include_web_users - if false, don't include web users in output/result
+// options.web_inactivity_timeout - seconds before considering a web user offline
+// options.web_browsing - string to use to represent web actions (default: 'browsing')
 function nodelist(print, active, listself, is_sysop, options)
 {
 	var others = 0;
@@ -300,7 +304,7 @@ function nodelist(print, active, listself, is_sysop, options)
 			output.push(line);
 	}
 	if(options.include_web_users !== false) {
-		var web_user = web_users(options.web_inactivity_timeout);
+		var web_user = web_users(options.web_inactivity_timeout, options.web_browsing);
 		for(var w in web_user) {
 			var line = format(options.format, ++n, web_user_status(web_user[w], options));
 			if(print)
