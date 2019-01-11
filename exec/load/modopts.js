@@ -12,19 +12,26 @@
    options=load(new Object, "modopts.js", "your_module_name");
 */
 
+// Another valid use is to request the value of a single module option, like this:
+//		opt_value = load({}, "modopts.js", "your_module", "opt_name");
+// or:
+//		opt_value = load({}, "modopts.js", "your_module", "opt_name", default_opt_value);
 
-function get_mod_options(modname)
+"use strict";
+function get_mod_options(modname, optname, default_optval)
 {
 	var ini_file = new File(file_cfgname(system.ctrl_dir, "modopts.ini"));
 	if(!ini_file.open("r")) {
-		delete ini_file;
 		return undefined;
 	}
 
-	var obj = ini_file.iniGetObject(modname);
+	var val;
+	if(optname)	// Get a specific option value (optionally, with default value)
+		val = ini_file.iniGetValue(modname, optname, default_optval);
+	else // Get all options
+		val = ini_file.iniGetObject(modname);
 	ini_file.close();
-	delete ini_file;
-	return obj;
+	return val;
 }
 
-get_mod_options(argv[0]);
+get_mod_options(argv[0], argv[1], argv[2]);
