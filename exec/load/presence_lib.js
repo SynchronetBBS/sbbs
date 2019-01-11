@@ -143,18 +143,17 @@ function node_status(node, is_sysop, options)
 			/* Fall-through */
 		case NODE_INUSE:
 		{
-			var u = new User();
+			var user = new User(node.useron);
 
-			u.number = node.useron;
 			if(options.username_prefix)
 				output += options.username_prefix;
 			if(js.global.bbs && (node.misc&NODE_ANON) && !is_sysop)
 				output += bbs.text(UNKNOWN_USER);
 			else
-				output += u.alias;
+				output += user.alias;
 			if(options.status_prefix)
 				output += options.status_prefix;
-			output += user_age_and_gender(u, options);
+			output += user_age_and_gender(user, options);
 			output += " ";
 			switch(node.action) {
 				case NODE_PCHT:
@@ -165,7 +164,7 @@ function node_status(node, is_sysop, options)
 					break;
 				case NODE_XTRN:
 					if(node.aux)
-						output += "running " + xtrn_name(u.curxtrn);
+						output += "running " + xtrn_name(user.curxtrn);
 					else
 						output += format(NodeAction[node.action], node.aux);
 					break;
@@ -233,7 +232,7 @@ function web_user_status(web_user, options)
 
 function web_users(max_inactivity)
 {
-	var user = User();
+	var user = new User;
 	var users = [];
 	const lastuser = system.lastuser;
     const sessions = directory(system.data_dir + 'user/*.web');
@@ -274,6 +273,7 @@ function web_users(max_inactivity)
 //
 // In addition to the options properties supported by node_status(), also supports:
 // options.format - a printf-style format for the node status line (e.g. "%d %s")
+// options.include_web_users - if false, don't include web users in output/result
 function nodelist(print, active, listself, is_sysop, options)
 {
 	var others = 0;
@@ -299,7 +299,7 @@ function nodelist(print, active, listself, is_sysop, options)
 		else
 			output.push(line);
 	}
-	if(active) {
+	if(options.include_web_users !== false) {
 		var web_user = web_users(options.web_inactivity_timeout);
 		for(var w in web_user) {
 			var line = format(options.format, ++n, web_user_status(web_user[w], options));
