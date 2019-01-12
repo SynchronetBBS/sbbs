@@ -42,7 +42,8 @@
 #include <fcntl.h>			/* O_WRONLY, O_RDONLY, etc. */
 #include <errno.h>			/* EACCES */
 #include <ctype.h>			/* toupper */
-#include <sys/stat.h>		/* S_IWRITE */
+#include <sys/types.h>
+#include <sys/stat.h>
 
 /* Synchronet-specific headers */
 #undef SBBS	/* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
@@ -629,6 +630,9 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 	jsval		val;
 	jsuint		index;
 
+	if(uploaded == 0)
+		uploaded = time;
+
 	if((file=JS_NewObject(js_cx, NULL, NULL, NULL))==NULL)
 		return(FALSE);
 
@@ -947,7 +951,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 						,flength(np)	/* size */
 						,0				/* credits */
 						,fdate(np)		/* time */
-						,fdate(np)		/* uploaded */
+						,0				/* uploaded */
 						,0				/* last downloaded */
 						,0				/* times downloaded */
 						,0				/* misc */
@@ -1025,53 +1029,69 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 		} else if(chk_ar(&scfg,scfg.dir[dir]->ar,user,client)){
 			SAFEPRINTF(path,"%s*",scfg.dir[dir]->path);
 			rc=JS_SUSPENDREQUEST(js_cx);
-			glob(path,0,NULL,&g);
+			time_t start = time(NULL);
+			glob(path, GLOB_MARK, NULL, &g);
 			for(i=0;i<(int)g.gl_pathc;i++) {
-				if(isdir(g.gl_pathv[i]))
+				if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
 					continue;
 	#ifdef _WIN32
 				GetShortPathName(g.gl_pathv[i], str, sizeof(str));
 	#else
 				SAFECOPY(str,g.gl_pathv[i]);
 	#endif
+				memset(&f, 0, sizeof(f));
 				padfname(getfname(str),f.name);
 				f.dir=dir;
-				if(getfileixb(&scfg,&f)) {
-					f.size=0; /* flength(g.gl_pathv[i]); */
-					getfiledat(&scfg,&f);
-					if(f.misc&FM_EXTDESC) {
-						extdesc[0]=0;
-						getextdesc(&scfg, dir, f.datoffset, extdesc);
-						/* Remove Ctrl-A Codes and Ex-ASCII code */
-						remove_ctrl_a(extdesc,extdesc);
-					}
-					SAFEPRINTF3(vpath,"/%s/%s/%s"
-						,scfg.lib[scfg.dir[dir]->lib]->sname
-						,scfg.dir[dir]->code_suffix
-						,getfname(g.gl_pathv[i]));
-					JS_RESUMEREQUEST(js_cx, rc);
-					js_add_file(js_cx
-						,file_array 
-						,getfname(g.gl_pathv[i])	/* filename */
-						,f.desc						/* description */
-						,f.misc&FM_EXTDESC ? extdesc : NULL
-						,f.size						/* size */
-						,f.cdt						/* credits */
-						,f.date						/* time */
-						,f.dateuled					/* uploaded */
-						,f.datedled					/* last downloaded */
-						,f.timesdled				/* times downloaded */
-						,f.misc						/* misc */
-						,f.uler						/* uploader */
-						,getfname(g.gl_pathv[i])	/* link */
-						);
-					rc=JS_SUSPENDREQUEST(js_cx);
+				BOOL filedat;
+				if((filedat=getfileixb(&scfg,&f))==FALSE
+					&& !(startup->options&FTP_OPT_DIR_FILES)
+					&& !(scfg.dir[dir]->misc&DIR_FILES))
+					continue;
+				if(filedat) {
+					if(!getfiledat(&scfg,&f))
+						continue;
+				} else {
+					struct stat st;
+					if(stat(g.gl_pathv[i], &st) != 0)
+						continue;
+					f.cdt = st.st_size;
+					f.size = st.st_size;
+					f.date = (time32_t)st.st_mtime;
 				}
+				if(f.misc&FM_EXTDESC) {
+					extdesc[0]=0;
+					getextdesc(&scfg, dir, f.datoffset, extdesc);
+					/* Remove Ctrl-A Codes and Ex-ASCII code */
+					remove_ctrl_a(extdesc,extdesc);
+				}
+				SAFEPRINTF3(vpath,"/%s/%s/%s"
+					,scfg.lib[scfg.dir[dir]->lib]->sname
+					,scfg.dir[dir]->code_suffix
+					,getfname(g.gl_pathv[i]));
+				JS_RESUMEREQUEST(js_cx, rc);
+				js_add_file(js_cx
+					,file_array 
+					,getfname(g.gl_pathv[i])	/* filename */
+					,f.desc						/* description */
+					,f.misc&FM_EXTDESC ? extdesc : NULL
+					,f.size						/* size */
+					,f.cdt						/* credits */
+					,f.date						/* time */
+					,f.dateuled					/* uploaded */
+					,f.datedled					/* last downloaded */
+					,f.timesdled				/* times downloaded */
+					,f.misc						/* misc */
+					,f.uler						/* uploader */
+					,getfname(g.gl_pathv[i])	/* link */
+					);
+				rc=JS_SUSPENDREQUEST(js_cx);
 			}
+			lprintf(LOG_INFO, "%04d <%s> JavaScript array of /%s/%s (%lu files) created in %ld seconds"
+				,sock, user->alias, scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
+				,(ulong)g.gl_pathc,(long)time(NULL) - start);
 			globfree(&g);
 			JS_RESUMEREQUEST(js_cx, rc);
 		}
-
 
 		/* RUN SCRIPT */
 		JS_ClearPendingException(js_cx);
@@ -2677,12 +2697,15 @@ static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned
 	char permstr[11];
 	char *p;
 	BOOL is_file = FALSE;
+	struct stat st;
 
+	if(stat(path, &st) != 0)
+		return FALSE;
 	if (!strcmp(path, "."))
 		type="cdir";
 	else if (!strcmp(path, ".."))
 		type="pdir";
-	else if (isdir(path))
+	else if (*lastchar(path) == '/')	/* is directory */
 		type="dir";
 	else {
 		is_file = TRUE;
@@ -2719,7 +2742,7 @@ static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned
 	*p=0;
 	if (is_file)
 		full_path = FALSE;
-	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)flength(path), fdate(path), NULL, NULL, 0, full_path ? path : getfname(path));
+	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)st.st_size, st.st_mtime, NULL, NULL, 0, full_path ? path : getfname(path));
 }
 
 /*
@@ -3152,7 +3175,10 @@ static void ctrl_thread(void* arg)
 #endif
 		if(rd<1) {
 			if(transfer_inprogress==TRUE) {
-				lprintf(LOG_WARNING,"%04d !Aborting transfer due to receive error",sock);
+				if(user.number)
+					lprintf(LOG_WARNING,"%04d <%s> !Aborting transfer due to CTRL socket receive error", sock, user.alias);
+				else
+					lprintf(LOG_WARNING,"%04d !Aborting transfer due to CTRL socket receive error", sock);
 				transfer_aborted=TRUE;
 			}
 			break;
@@ -3937,7 +3963,7 @@ static void ctrl_thread(void* arg)
 
 		if(!stricmp(cmd, "ABOR")) {
 			if(!transfer_inprogress)
-				sockprintf(sock,sess,"226 No tranfer in progress.");
+				sockprintf(sock,sess,"226 No transfer in progress.");
 			else {
 				lprintf(LOG_WARNING,"%04d <%s> aborting transfer"
 					,sock,user.alias);
@@ -4032,9 +4058,13 @@ static void ctrl_thread(void* arg)
 						sockprintf(sock, sess, "250 End");
 					}
 					else {
-						glob(path,0,NULL,&g);
+						time_t start = time(NULL);
+						glob(path, GLOB_MARK, NULL, &g);
 						for(i=0;i<(int)g.gl_pathc;i++)
 							write_local_mlsx(fp, INVALID_SOCKET, -1, mlsx_feats, g.gl_pathv[i], FALSE);
+						lprintf(LOG_INFO, "%04d <%s> local-listing (%lu bytes) of %s (%lu files) created in %ld seconds"
+							,sock, user.alias, ftell(fp), path
+							,(ulong)g.gl_pathc, (long)time(NULL) - start);
 						globfree(&g);
 						fclose(fp);
 						filexfer(&data_addr,sock,sess,pasv_sock,pasv_sess,&data_sock,&data_sess,fname,0L
@@ -4080,15 +4110,19 @@ static void ctrl_thread(void* arg)
 				if(localtime_r(&now,&cur_tm)==NULL) 
 					memset(&cur_tm,0,sizeof(cur_tm));
 			
-				glob(path,0,NULL,&g);
+				time_t start = time(NULL);
+				glob(path, GLOB_MARK, NULL, &g);
 				for(i=0;i<(int)g.gl_pathc;i++) {
 					if(detail) {
-						f.size=flength(g.gl_pathv[i]);
-						t=fdate(g.gl_pathv[i]);
+						struct stat st;
+						if(stat(g.gl_pathv[i], &st) != 0)
+							continue;
+						f.size = st.st_size;
+						t = st.st_mtime;
 						if(localtime_r(&t,&tm)==NULL)
 							memset(&tm,0,sizeof(tm));
 						fprintf(fp,"%crw-r--r--   1 %-8s local %9"PRId32" %s %2d "
-							,isdir(g.gl_pathv[i]) ? 'd':'-'
+							,*lastchar(g.gl_pathv[i]) == '/' ? 'd':'-'
 							,scfg.sys_id
 							,f.size
 							,ftp_mon[tm.tm_mon],tm.tm_mday);
@@ -4103,6 +4137,9 @@ static void ctrl_thread(void* arg)
 					} else
 						fprintf(fp,"%s\r\n",getfname(g.gl_pathv[i]));
 				}
+				lprintf(LOG_INFO, "%04d <%s> %slocal-listing (%lu bytes) of %s (%lu files) created in %ld seconds"
+					,sock, user.alias, detail ? "detailed ":"", ftell(fp), path
+					,(ulong)g.gl_pathc, (long)time(NULL) - start);
 				globfree(&g);
 				fclose(fp);
 				filexfer(&data_addr,sock,sess,pasv_sock,pasv_sess,&data_sock,&data_sess,fname,0L
@@ -4585,10 +4622,11 @@ static void ctrl_thread(void* arg)
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "cdir", permstr, UINT64_MAX, 0, str, NULL, 0, aliaspath);
 					}
 
+					time_t start = time(NULL);
 					SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,"*");
-					glob(path,0,NULL,&g);
+					glob(path, GLOB_MARK, NULL, &g);
 					for(i=0;i<(int)g.gl_pathc;i++) {
-						if(isdir(g.gl_pathv[i]))
+						if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
 							continue;
 #ifdef _WIN32
 						GetShortPathName(g.gl_pathv[i], str, sizeof(str));
@@ -4610,9 +4648,15 @@ static void ctrl_thread(void* arg)
 						get_owner_name(&f, str);
 						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, getfname(g.gl_pathv[i]));
 						get_unique(aliaspath, uniq);
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, (uint64_t)flength(g.gl_pathv[i]), fdate(g.gl_pathv[i]), str, uniq, f.dateuled, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
+						struct stat st;
+						if(stat(g.gl_pathv[i], &st) != 0)
+							continue;
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, (uint64_t)st.st_size, st.st_mtime, str, uniq, f.dateuled, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
 						l++;
 					}
+					lprintf(LOG_INFO, "%04d <%s> %s-listing (%lu bytes) of /%s/%s (%lu files) created in %ld seconds"
+						,sock, user.alias, cmd, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
+						,(ulong)g.gl_pathc, (long)time(NULL) - start);
 					globfree(&g);
 				} else 
 					lprintf(LOG_INFO,"%04d <%s> listing: %s/%s directory in %s mode (empty - no access)"
@@ -4876,10 +4920,11 @@ static void ctrl_thread(void* arg)
 				lprintf(LOG_INFO,"%04d <%s> listing: %s/%s directory in %s mode"
 					,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix,mode);
 
+				time_t start = time(NULL);
 				SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,filespec);
-				glob(path,0,NULL,&g);
+				glob(path, GLOB_MARK, NULL, &g);
 				for(i=0;i<(int)g.gl_pathc;i++) {
-					if(isdir(g.gl_pathv[i]))
+					if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
 						continue;
 #ifdef _WIN32
 					GetShortPathName(g.gl_pathv[i], str, sizeof(str));
@@ -4893,9 +4938,13 @@ static void ctrl_thread(void* arg)
 						&& !(scfg.dir[dir]->misc&DIR_FILES))
 						continue;
 					if(detail) {
-						f.size=flength(g.gl_pathv[i]);
-						getfiledat(&scfg,&f);
-						t=fdate(g.gl_pathv[i]);
+						struct stat st;
+						if(stat(g.gl_pathv[i], &st) != 0)
+							continue;
+						f.size = st.st_size;
+						if(filedat && !getfiledat(&scfg,&f))
+							continue;
+						t = st.st_mtime;
 						if(localtime_r(&t,&tm)==NULL)
 							memset(&tm,0,sizeof(tm));
 						if(filedat) {
@@ -4922,8 +4971,11 @@ static void ctrl_thread(void* arg)
 					} else
 						fprintf(fp,"%s\r\n",getfname(g.gl_pathv[i]));
 				}
+				lprintf(LOG_INFO, "%04d <%s> %slisting (%lu bytes) of /%s/%s (%lu files) created in %ld seconds"
+					,sock, user.alias, detail ? "detailed ":"", ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
+					,(ulong)g.gl_pathc, (long)time(NULL) - start);
 				globfree(&g);
-			} else 
+			} else
 				lprintf(LOG_INFO,"%04d <%s> listing: %s/%s directory in %s mode (empty - no access)"
 					,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix,mode);
 
@@ -5152,24 +5204,32 @@ static void ctrl_thread(void* arg)
 						}
 					} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user,&client)){
 						sprintf(cmd,"%s*",scfg.dir[dir]->path);
-						glob(cmd,0,NULL,&g);
+						time_t start = time(NULL);
+						glob(cmd, GLOB_MARK, NULL, &g);
 						for(i=0;i<(int)g.gl_pathc;i++) {
-							if(isdir(g.gl_pathv[i]))
+							if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
 								continue;
 	#ifdef _WIN32
 							GetShortPathName(g.gl_pathv[i], str, sizeof(str));
 	#else
 							SAFECOPY(str,g.gl_pathv[i]);
 	#endif
+							memset(&f, 0, sizeof(f));
 							padfname(getfname(str),f.name);
 							f.dir=dir;
-							if(getfileixb(&scfg,&f)) {
-								f.size=flength(g.gl_pathv[i]);
-								getfiledat(&scfg,&f);
-								fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN
-									,getfname(g.gl_pathv[i]),f.desc);
-							}
+							if((filedat=getfileixb(&scfg,&f))==FALSE
+								&& !(startup->options&FTP_OPT_DIR_FILES)
+								&& !(scfg.dir[dir]->misc&DIR_FILES))
+								continue;
+							f.size = -1;	// Not used, don't query
+							if(filedat && !getfiledat(&scfg,&f))
+								continue;
+							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN
+								,getfname(g.gl_pathv[i]),f.desc);
 						}
+						lprintf(LOG_INFO, "%04d <%s> index (%lu bytes) of /%s/%s (%lu files) created in %ld seconds"
+							,sock, user.alias, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
+							,(ulong)g.gl_pathc, (long)time(NULL) - start);
 						globfree(&g);
 					}
 					fclose(fp);
