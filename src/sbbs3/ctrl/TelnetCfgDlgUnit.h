@@ -89,7 +89,6 @@ __published:
     TCheckBox *RLoginEnabledCheckBox;
     TButton *RLoginIPallowButton;
         TCheckBox *QWKEventsCheckBox;
-    TCheckBox *JavaScriptCheckBox;
 	TCheckBox *EventsCheckBox;
     TTabSheet *SshTabSheet;
     TLabel *SshPortLabel;
@@ -98,7 +97,6 @@ __published:
     TLabel *SshInterfaceLabel;
     TEdit *SshInterfaceEdit;
         TCheckBox *DosSupportCheckBox;
-    TCheckBox *IdentityCheckBox;
     TLabel *MaxConConLabel;
     TEdit *MaxConConEdit;
     TLabel *SshConnectTimeoutLabel;

@@ -110,17 +110,6 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ShowHint = True
         TabOrder = 7
       end
-      object JavaScriptCheckBox: TCheckBox
-        Left = 148
-        Top = 114
-        Width = 117
-        Height = 20
-        Hint = 'Enable JavaScript Support'
-        Caption = 'JavaScript Support'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 8
-      end
       object EventsCheckBox: TCheckBox
         Left = 148
         Top = 62
@@ -141,18 +130,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'DOS Program Support'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 9
-      end
-      object IdentityCheckBox: TCheckBox
-        Left = 7
-        Top = 114
-        Width = 117
-        Height = 20
-        Hint = 'Automatically lookup client'#39's identity via IDENT protocol'
-        Caption = 'Identity Lookup'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 10
+        TabOrder = 8
       end
       object MaxConConEdit: TEdit
         Left = 85

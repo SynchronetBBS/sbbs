@@ -106,8 +106,6 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_QWK_EVENTS);
     EventsCheckBox->Checked
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_EVENTS);
-    JavaScriptCheckBox->Checked
-        =!(MainForm->bbs_startup.options&BBS_OPT_NO_JAVASCRIPT);
 
     RLoginEnabledCheckBoxClick(Sender);
     SshEnabledCheckBoxClick(Sender);
@@ -156,10 +154,6 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
         MainForm->bbs_startup.options&=~BBS_OPT_NO_EVENTS;
     else
         MainForm->bbs_startup.options|=BBS_OPT_NO_EVENTS;
-    if(JavaScriptCheckBox->Checked==true)
-        MainForm->bbs_startup.options&=~BBS_OPT_NO_JAVASCRIPT;
-    else
-        MainForm->bbs_startup.options|=BBS_OPT_NO_JAVASCRIPT;
     if(DosSupportCheckBox->Checked==true)
         MainForm->bbs_startup.options&=~BBS_OPT_NO_DOS;
     else
