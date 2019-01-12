@@ -1,10 +1,9 @@
 <!--Home-->
-<?xjs var _hpl = getLanguage(settings.language_file || 'english.ini', 'page_home'); ?>
 
 <!-- fTelnet -->
 <?xjs
     if (settings.ftelnet) {
-        load(settings.web_lib + 'ftelnet.js');
+        const ftelnet_lib = load({}, settings.web_lib + 'ftelnet.js');
         load('ftelnethelper.js');
 ?>
         <style>.fTelnetStatusBar { display : none; }</style>
@@ -12,15 +11,15 @@
         <div class="row">
             <div class="center-block" style="width:200px;margin-bottom:1em;margin-top:1em;">
                 <button id="ftelnet-connect" class="btn btn-primary">
-                    <?xjs write(_hpl.button_ftelnet); ?>
+                    <?xjs write(locale.strings.page_home.button_ftelnet); ?>
                 </button>
             </div>
         </div>
 
-    	<script>document.write('<script src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"><\/script>');</script>
+    	<script id="fTelnetScript" src="<?xjs write(ftelnet_lib.get_url()); ?>"></script>
     	<script>
-            var wsp = <?xjs write(GetWebSocketServicePort()); ?>;
-            var wssp = <?xjs write(GetWebSocketServicePort(true)); ?>;
+            var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
+            var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
     		var Options = new fTelnetOptions();
     		Options.BareLFtoCRLF = false;
     		Options.BitsPerSecond = 57600;
@@ -34,9 +33,11 @@
     		Options.Port = location.protocol == 'https:' ? wssp : wsp;
     		Options.ScreenColumns = 80;
     		Options.ScreenRows = 25;
-            Options.SplashScreen = '<?xjs write(getSplash()); ?>';
+            Options.SplashScreen = '<?xjs write(ftelnet_lib.get_splash()); ?>';
     		var fTelnet = new fTelnetClient('fTelnetContainer', Options);
-            $('#ftelnet-connect').click(function() { fTelnet.Connect(); });
+            $('#ftelnet-connect').click(function() {
+                fTelnet.Connect();
+            });
     	</script>
 
 <?xjs } ?>
