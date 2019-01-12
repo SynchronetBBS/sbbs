@@ -97,6 +97,54 @@ function set_location(obj)
 	}
 }
 
+function set_akamatching(obj)
+{
+	switch(uifc.list(WIN_MID, "AKA Matching", ["Yes", "No"])) {
+	case 0:
+		obj.akamatching = true;
+		break;
+	case 1:
+		obj.akamatching = false;
+		break;
+	}
+}
+
+function set_secureonly(obj)
+{
+	switch(uifc.list(WIN_MID, "Secure Only", ["Yes", "No"])) {
+	case 0:
+		obj.secureonly = true;
+		break;
+	case 1:
+		obj.secureonly = false;
+		break;
+	}
+}
+
+function set_ignorepassword(obj)
+{
+	switch(uifc.list(WIN_MID, "Ignore Password", ["Yes", "No"])) {
+	case 0:
+		obj.ignorepassword = true;
+		break;
+	case 1:
+		obj.ignorepassword = false;
+		break;
+	}
+}
+
+function set_forcereplace(obj)
+{
+	switch(uifc.list(WIN_MID, "Force Replace", ["Yes", "No"])) {
+	case 0:
+		obj.forcereplace = true;
+		break;
+	case 1:
+		obj.forcereplace = false;
+		break;
+	}
+}
+
 function edit_links(links)
 {
 	var tmp;
@@ -123,12 +171,43 @@ function edit_links(links)
 	return links;
 }
 
+function edit_sourceaddress(obj)
+{
+	var tmp;
+
+	tmp = null;
+	while(tmp !== undefined) {
+		tmp = uifc.input(WIN_SAV|WIN_MID, "Source Address", obj.sourceaddress === undefined ? '' : obj.sourceaddress, 32, K_EDIT);
+		if (tmp != undefined) {
+			obj.sourceaddress = tmp;
+		}
+	}
+}
+
+function edit_uploader(obj)
+{
+	var tmp;
+
+	tmp = null;
+	while(tmp !== undefined) {
+		tmp = uifc.input(WIN_SAV|WIN_MID, "Uploader", obj.uploader === undefined ? '' : obj.uploader, 32, K_EDIT);
+		if (tmp != undefined) {
+			obj.uploader = tmp;
+		}
+	}
+}
+
 function edit_area(obj, name)
 {
 	var cmd = 0;
 	var link = 0;
 	var links;
-	var menu = ["Location", "Links"];
+	var menu = ["AKA Matching   : "+(obj.akamatching === true ? "Yes" : "No"),
+				"Force Replace  : "+(obj.forcereplace === true ? "Yes" : "No"),
+				"Source Address : "+(obj.sourceaddress === undefined ? "" : obj.sourceaddress),
+				"Uploader Name  : "+(obj.uploader === undefined ? "" : obj.uploader),
+				"Location       : ",
+				"Links          : "];
 	var tmp;
 	var tmp2;
 	var ctx = new uifc.list.CTX();
@@ -137,9 +216,21 @@ function edit_area(obj, name)
 		cmd = uifc.list(WIN_SAV|WIN_ACT|WIN_BOT|WIN_RHT, name+" Options", menu, ctx);
 		switch(cmd) {
 			case 0:
-				set_location(obj);
+				set_akamatching(obj);
 				break;
 			case 1:
+				edit_sourceaddress(obj);
+				break;
+			case 2:
+				edit_uploader(obj);
+				break;
+			case 3:
+				set_forcereplace(obj);
+				break;
+			case 4:
+				set_location(obj);
+				break;
+			case 5:
 				if (obj.links === undefined)
 					links = [];
 				else
@@ -231,7 +322,15 @@ function main()
 	var cmd = 0;
 	var link = 0;
 	var links;
-	var menu = ["Global Location", "Global Links", "Areas..."];
+	var menu = ["Global AKA Matching   : "+(tickit.gcfg.akamatching === true ? "Yes" : "No"),
+				"Global Force Replace  : "+(tickit.gcfg.forcereplace === true ? "Yes" : "No"),
+				"Global Ignore Password: "+(tickit.gcfg.ignorepassword === true ? "Yes" : "No"),
+				"Global Secure Only    : "+(tickit.gcfg.secureonly === true ? "Yes" : "No"),
+				"Global Source Address : "+(tickit.gcfg.sourceaddress === undefined ? "" : tickit.gcfg.sourceaddress),
+				"Global Uploader Name  : "+(tickit.gcfg.uploader === undefined ? "" : tickit.gcfg.uploader),
+				"Global Location       : ",
+				"Global Links          : ",
+				"Areas..."];
 	var tmp;
 	var tmp2;
 	var ctx = new uifc.list.CTX();
@@ -240,9 +339,27 @@ function main()
 		cmd = uifc.list(WIN_ORG|WIN_ACT|WIN_MID, "Global Options", menu, ctx);
 		switch(cmd) {
 			case 0:
-				set_location(tickit.gcfg);
+				set_akamatching(tickit.gcfg);
 				break;
 			case 1:
+				set_forcereplace(tickit.gcfg);
+				break;
+			case 2:
+				set_ignorepassword(tickit.gcfg);
+				break;
+			case 3:
+				set_secureonly(tickit.gcfg);
+				break;
+			case 4:
+				edit_sourceaddress(tickit.gcfg);
+				break;
+			case 5:
+				edit_uploader(tickit.gcfg);
+				break;
+			case 6:
+				set_location(tickit.gcfg);
+				break;
+			case 7:
 				if (tickit.gcfg.links === undefined)
 					links = [];
 				else
@@ -253,7 +370,7 @@ function main()
 				else
 					tickit.gcfg.links = tmp.join(',');
 				break;
-			case 2:
+			case 8:
 				edit_areas();
 				break;
 			case -1:

@@ -42,11 +42,11 @@ function TickITCfg() {
 
 	this.cfgfile = tcfg.name;
 	function get_bool(val) {
-    if (typeof val == 'undefined') return false;
-    if (typeof val == 'boolean') return val;
-    if (typeof val == 'number') return val != 0;
+		if (typeof val == 'undefined') return false;
+		if (typeof val == 'boolean') return val;
+		if (typeof val == 'number') return val != 0;
 		if (typeof val != 'string') return false;
-    return ['TRUE', 'YES', 'ON'].indexOf(val.toUpperCase()) > -1;
+		return ['TRUE', 'YES', 'ON'].indexOf(val.toUpperCase()) > -1;
 	}
 
 	function lcprops(obj)
@@ -87,6 +87,9 @@ function TickITCfg() {
 		}
 	}
 	tcfg.close();
+	this.gcfg.addfileslogcap = get_bool(this.gcfg.addfileslogcap);
+	this.gcfg.akamatching = get_bool(this.gcfg.akamatching);
+	this.gcfg.forcereplace = get_bool(this.gcfg.forcereplace);
 	this.gcfg.ignorepassword = get_bool(this.gcfg.ignorepassword);
 	this.gcfg.secureonly = get_bool(this.gcfg.secureonly);
 }
@@ -182,6 +185,42 @@ TickITCfg.prototype.save = function()
 			tcfg.iniRemoveKey(section, 'Path');
 		else
 			tcfg.iniSetValue(section, 'Path', obj.path);
+
+		if (obj.sourceaddress === undefined)
+			tcfg.iniRemoveKey(section, 'SourceAddress');
+		else
+			tcfg.iniSetValue(section, 'SourceAddress', obj.sourceaddress);
+
+		if (obj.uploader === undefined)
+			tcfg.iniRemoveKey(section, 'Uploader');
+		else
+			tcfg.iniSetValue(section, 'Uploader', obj.uploader);
+
+		if (obj.addfileslogcap === undefined)
+			tcfg.iniRemoveKey(section, 'AddFilesLogCap');
+		else
+			tcfg.iniSetValue(section, 'AddFilesLogCap', obj.addfileslogcap);
+
+		if (obj.akamatching === undefined)
+			tcfg.iniRemoveKey(section, 'AKAMatching');
+		else
+			tcfg.iniSetValue(section, 'AKAMatching', obj.akamatching);
+
+		if (obj.forcereplace === undefined)
+			tcfg.iniRemoveKey(section, 'ForceReplace');
+		else
+			tcfg.iniSetValue(section, 'ForceReplace', obj.forcereplace);
+
+		if (obj.ignorepassword === undefined)
+			tcfg.iniRemoveKey(section, 'IgnorePassword');
+		else
+			tcfg.iniSetValue(section, 'IgnorePassword', obj.ignorepassword);
+
+		if (obj.secureonly === undefined)
+			tcfg.iniRemoveKey(section, 'SecureOnly');
+		else
+			tcfg.iniSetValue(section, 'SecureOnly', obj.secureonly);
+
 	}
 
 	if (!tcfg.open(tcfg.exists ? 'r+':'w+'))
