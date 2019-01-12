@@ -82,8 +82,6 @@ __published:	// IDE-managed Components
     TButton *ApplyBtn;
     TLabel *ErrorSubDirLabel;
     TLabel *ServerSideJsExtLabel;
-    TLabel *EmbeddedJsExtLabel;
-    TEdit *EmbeddedJsExtEdit;
     TCheckBox *VirtualHostsCheckBox;
     TEdit *LogBaseNameEdit;
     TLabel *LogBaseLabel;

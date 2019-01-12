@@ -87,7 +87,6 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
     HtmlRootEdit->Text=AnsiString(MainForm->web_startup.root_dir);
     ErrorSubDirEdit->Text=AnsiString(MainForm->web_startup.error_dir);
     CGIDirEdit->Text=AnsiString(MainForm->web_startup.cgi_dir);
-    EmbeddedJsExtEdit->Text=AnsiString(MainForm->web_startup.js_ext);
     ServerSideJsExtEdit->Text=AnsiString(MainForm->web_startup.ssjs_ext);
 
     CGIContentEdit->Text=AnsiString(MainForm->web_startup.default_cgi_content);
@@ -145,8 +144,6 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
         ,ErrorSubDirEdit->Text.c_str());
     SAFECOPY(MainForm->web_startup.cgi_dir
         ,CGIDirEdit->Text.c_str());
-    SAFECOPY(MainForm->web_startup.js_ext
-        ,EmbeddedJsExtEdit->Text.c_str());
     SAFECOPY(MainForm->web_startup.ssjs_ext
         ,ServerSideJsExtEdit->Text.c_str());
 
