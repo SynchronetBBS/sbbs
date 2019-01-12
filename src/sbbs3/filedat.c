@@ -72,18 +72,15 @@ BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 	getrec(buf,F_CDT,LEN_FCDT,str);
 	f->cdt=atol(str);
 
-	if(!f->size) {					/* only read disk if this is null */
-			getfilepath(cfg,f,str);
-			if((f->size=(long)flength(str))>=0)
-				f->date=(time32_t)fdate(str);
-	/*
-			}
-		else {
-			f->size=f->cdt;
-			f->date=0; 
-			}
-	*/
-			}
+	if(f->size == 0) {					// only read disk if f->size == 0
+		struct stat st;
+		getfilepath(cfg,f,str);
+		if(stat(str, &st) == 0) {
+			f->size = st.st_size;
+			f->date = (time32_t)st.st_mtime;
+		} else
+			f->size = -1;	// indicates file does not exist
+	}
 #if 0
 	if((f->size>0L) && cur_cps)
 		f->timetodl=(ushort)(f->size/(ulong)cur_cps);
