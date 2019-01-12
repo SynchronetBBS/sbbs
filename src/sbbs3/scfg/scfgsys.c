@@ -125,7 +125,7 @@ void sys_cfg(void)
 					break;
 				if(!i) {
 					cfg.new_install=new_install;
-					write_main_cfg(&cfg,backup_level);
+					save_main_cfg(&cfg,backup_level);
 					refresh_cfg(&cfg);
 				}
 				return;

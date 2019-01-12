@@ -148,8 +148,19 @@ void sort_subs(int grpnum);
 void sort_dirs(int libnum);
 unsigned subs_in_group(unsigned grpnum);
 char random_code_char(void);
+BOOL load_main_cfg(scfg_t*, char*);
+BOOL load_node_cfg(scfg_t*, char*);
+BOOL load_msgs_cfg(scfg_t*, char*);
+BOOL load_file_cfg(scfg_t*, char*);
+BOOL load_chat_cfg(scfg_t*, char*);
+BOOL load_xtrn_cfg(scfg_t*, char*);
+BOOL save_main_cfg(scfg_t*, int);
+BOOL save_node_cfg(scfg_t*, int);
+BOOL save_msgs_cfg(scfg_t*, int);
+BOOL save_file_cfg(scfg_t*, int);
+BOOL save_chat_cfg(scfg_t*, int);	
+BOOL save_xtrn_cfg(scfg_t*, int);
 
-	
 long import_msg_areas(enum import_list_type, FILE*, unsigned grpnum, int min_confnum, int max_confnum, qhub_t*, long* added);
 
 /* Prepare a string to be used as an internal code; Note: use the return value, Luke */

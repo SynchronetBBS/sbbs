@@ -785,7 +785,7 @@ void net_cfg()
 			if(i==-1)
 				continue;
 			if(!i) {
-				write_msgs_cfg(&cfg,backup_level);
+				save_msgs_cfg(&cfg,backup_level);
 				refresh_cfg(&cfg);
 			}
 			break;
@@ -1246,7 +1246,7 @@ BOOL import_qwk_conferences(uint qhubnum)
 	long added = 0;
 	long ported = import_msg_areas(IMPORT_LIST_TYPE_QWK_CONTROL_DAT, fp, grpnum, min_confnum, max_confnum, cfg.qhub[qhubnum], &added);
 	fclose(fp);
-	uifc.pop(0);
+	uifc.pop(NULL);
 	if(ported < 0)
 		sprintf(str, "!ERROR %ld imported message areas", ported);
 	else {

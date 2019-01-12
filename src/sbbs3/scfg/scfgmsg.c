@@ -449,7 +449,7 @@ void msgs_cfg()
 			if(j==-1)
 			   continue;
 			if(!j) {
-				write_msgs_cfg(&cfg,backup_level);
+				save_msgs_cfg(&cfg,backup_level);
 				refresh_cfg(&cfg);
 			}
 			return;
@@ -1024,8 +1024,8 @@ void msg_opts()
 				   continue;
 				if(!i) {
 					cfg.new_install=new_install;
-					write_msgs_cfg(&cfg,backup_level);
-					write_main_cfg(&cfg,backup_level);
+					save_msgs_cfg(&cfg,backup_level);
+					save_main_cfg(&cfg,backup_level);
                     refresh_cfg(&cfg);
                 }
 				return;

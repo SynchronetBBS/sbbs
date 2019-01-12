@@ -102,7 +102,7 @@ void xfer_opts()
 				if(i==-1)
 					break;
 				if(!i) {
-					write_file_cfg(&cfg,backup_level);
+					save_file_cfg(&cfg,backup_level);
 					refresh_cfg(&cfg);
 				}
 				return;
