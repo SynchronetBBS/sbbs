@@ -30,8 +30,8 @@ var quit=0;
 var nick=user.handle;
 var nicks=new Array();
 var loading=true;
-var init_passthru=console.ctrlkey_passthru;
 var real_names=true;
+js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 console.ctrlkey_passthru=~(134217728);
 
 /* Command-line options go BEFORE command-line args */
@@ -835,7 +835,6 @@ function get_nick(prefix)  {
 }
 
 function clean_exit()  {
-	console.ctrlkey_passthru=init_passthru;
 	exit();
 }
 
