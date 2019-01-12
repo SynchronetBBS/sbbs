@@ -1002,7 +1002,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     long bbs_ver = bbs_ver_num();
     if(bbs_ver != VERSION_HEX) {
         char str[128];
-        sprintf(str,"Incorrect SBBS.DLL Version (%lX)",bbs_ver);
+        sprintf(str,"Incorrect SBBS.DLL Version (%lX, expected %lx)", bbs_ver, VERSION_HEX);
     	Application->MessageBox(str,"ERROR",MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
     }
