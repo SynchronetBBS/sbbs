@@ -13,16 +13,35 @@ function get_splash() {
     }
 }
 
-function get_url() {
-    try {
-        const str = (new HTTPRequest()).Get('http://embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime());
-        const match = str.match(/^.+\ssrc="(.*)"\s.+/);
-        if (match !== null) return match[1];
-        throw 'Failed to fetch fTelnet version';
-    } catch (err) {
-        log(LOG_ERR, err);
+function get_cached_url(f) {
+    if (f.open('r')) {
+        const ret = f.read();
+        f.close();
+        return ret;
     }
     return 'http://embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=2018-09-14';
+}
+
+function get_url() {
+
+    const f = new File(system.temp_dir + 'ftelnet.url');
+    if (!f.exists || time() - f.date > 86400) {
+        try {
+            var str = (new HTTPRequest()).Get('http://embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime());
+        } catch (err) {
+            log(LOG_ERR, 'Failed to fetch fTelnet URL');
+            str = '';
+        }
+        const match = str.match(/^.+\ssrc="(.*)"\s.+/);
+        if (match !== null) {
+            if (f.open('w')) {
+                f.write(match[1]);
+                f.close();
+            }
+            return match[1];
+        }
+    }
+    return get_cached_url(f);
 }
 
 this;
