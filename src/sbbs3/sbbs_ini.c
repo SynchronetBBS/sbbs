@@ -740,8 +740,14 @@ BOOL sbbs_write_ini(
 	BOOL		result=FALSE;
 	str_list_t	list;
 	str_list_t*	lp;
-	ini_style_t style = { .key_prefix = "\t", .section_separator = "", .value_separator = " = ", .bit_separator = " | " };
+	ini_style_t style;
 	global_startup_t	global_buf;
+
+	memset(&style, 0, sizeof(style));
+	style.key_prefix = "\t";
+	style.section_separator = "";
+	style.value_separator = " = ";
+	style.bit_separator = " | ";
 
 	if((list=iniReadFile(fp))==NULL)
 		return(FALSE);
