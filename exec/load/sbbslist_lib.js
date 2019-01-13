@@ -45,6 +45,14 @@ const max_len = {
 	description:		250,
 };
 
+// Services supported by BBS clients (e.g. SyncTERM)
+const common_bbs_services = [
+    "telnet",
+    "rlogin",
+	"ssh",
+	"modem"
+];
+
 function compare(a, b)
 {
 	var val1="";
@@ -342,7 +350,7 @@ function parse(f)
 function read_list()
 {
     var f = new File(list_fname);
-    log(LOG_INFO, "Opening list file: " + f.name);
+    log(LOG_DEBUG, "Opening list file: " + f.name);
     if(!f.open("r")) {
         log(LOG_ERR, "SBBSLIST: Error " + f.error + " opening " + f.name);
         return [];
@@ -355,12 +363,12 @@ function read_list()
 function write_list(list)
 {
     var out = new File(list_fname);
-    log(LOG_INFO, "SBBSLIST: Opening / creating list file: " + list_fname);
+    log(LOG_DEBUG, "SBBSLIST: Opening / creating list file: " + list_fname);
     if(!out.open("w+")) {
         log(LOG_ERR, "SBBSLIST: Error " + out.error + " creating " + out.name);
         return false;
     }
-    log(LOG_INFO, "SBBSLIST: Writing list file: " + out.name + " (" + list.length + " BBS entries)");
+    log(LOG_DEBUG, "SBBSLIST: Writing list file: " + out.name + " (" + list.length + " BBS entries)");
     out.write(JSON.stringify(list, null, 4));
     out.close();
     return true;
@@ -369,14 +377,14 @@ function write_list(list)
 function append(bbs)
 {
     var f = new File(list_fname);
-    log(LOG_INFO, "SBBSLIST: Opening / creating list file: " + list_fname);
+    log(LOG_DEBUG, "SBBSLIST: Opening / creating list file: " + list_fname);
     if(!f.open(f.exists ? 'r+':'w+')) {
         log(LOG_ERR, "SBBSLIST: Error " + f.error + " creating " + f.name);
         return false;
     }
 	var list = parse(f);
 	list.push(bbs);
-    log(LOG_INFO, "SBBSLIST: Writing list file: " + f.name + " (" + list.length + " BBS entries)");
+    log(LOG_DEBUG, "SBBSLIST: Writing list file: " + f.name + " (" + list.length + " BBS entries)");
 	f.truncate();
     f.write(JSON.stringify(list, null, 4));
     f.close();
@@ -454,6 +462,8 @@ function remove_dupes(list)
 
 function imsg_capable_system(bbs)
 {
+	if(bbs.imsg_capable == true)
+		return true;
 	if(!bbs.entry.autoverify || !bbs.entry.autoverify.last_success)
 		return false;
 	var services = bbs.entry.autoverify.last_success.other_services;
@@ -564,16 +574,33 @@ function syncterm_list(list, dir)
     }
 	f.writeln(format("; Exported from %s on %s", system.name, new Date().toString()));
 	f.writeln();
+	var sections = [];
     for(i in list) {
         for(j in list[i].service) {
             if(!list[i].service[j].protocol)
                 continue;
+			if(common_bbs_services.indexOf(list[i].service[j].protocol.toLowerCase()) < 0)
+				continue;
+			var section;
             if(j > 0)
-                f.writeln(format("[%-23.23s %6.6s]", list[i].name, list[i].service[j].protocol));
+                section = format("%-23.23s %6.6s", list[i].name, list[i].service[j].protocol);
             else
-                f.writeln(format("[%s]", list[i].name));
-            f.writeln(format("ConnectionType=%s", list[i].service[j].protocol));
-            f.writeln(format("Address=%s", list[i].service[j].address));
+                section = list[i].name;
+			if(sections.indexOf(section) >= 0) {	// duplicate
+				if(list[i].service[j].description)
+					section = format("%-20.20s%10.10s", list[i].name, list[i].service[j].description);
+				else if(list[i].service[j].port)
+					section = format("%-24.24s %5u", list[i].name, list[i].service[j].port);
+				if(sections.indexOf(section) >= 0)	// duplicate
+					continue;
+			}
+			sections.push(section);
+			sections.push(format("%-23.23s %6.6s", list[i].name, list[i].service[j].protocol));
+			f.writeln(format("[%s]", section));
+            f.writeln(format("\tConnectionType=%s", list[i].service[j].protocol));
+            f.writeln(format("\tAddress=%s", list[i].service[j].address));
+			if(list[i].service[j].port)
+				f.writeln(format("\tPort=%s", list[i].service[j].port));	
             f.writeln();
         }
     }
