@@ -1,20 +1,16 @@
 <!--HIDDEN:Mail-->
 
 <?xjs
+    if (user.number == 0 || user.alias == settings.guest) exit();
 
-if (user.number == 0 || user.alias == settings.guest) exit();
+    load('sbbsdefs.js');
+    load(settings.web_lib + 'forum.js');
 
-load('sbbsdefs.js');
-load(settings.web_lib + 'forum.js');
-
-var _mpl = getLanguage(settings.language_file || 'english.ini', 'page_mail');
-
-function sent() {
-	if (typeof http_request.query.sent === 'undefined') return false;
-	if (http_request.query.sent[0] == '0') return false;
-	return true;
-}
-
+    function sent() {
+    	if (typeof http_request.query.sent === 'undefined') return false;
+    	if (http_request.query.sent[0] == '0') return false;
+    	return true;
+    }
 ?>
 
 <?xjs function writeMessage(header) { ?>
@@ -28,12 +24,12 @@ function sent() {
 				</div>
 			</div>
 			<div class="col-sm-11" style="cursor:pointer;" onclick="getMailBody(<?xjs write(header.number); ?>)">
-				<?xjs write(!sent() ? _mpl.label_message_from : _mpl.label_message_to); ?>:
+				<?xjs write(!sent() ? locale.strings.page_mail.label_message_from : locale.strings.page_mail.label_message_to); ?>:
 				<strong><?xjs write(!sent() ? header.from : header.to); ?></strong>
-				<?xjs write(_mpl.label_message_date); ?>
+				<?xjs write(locale.strings.page_mail.label_message_date); ?>
 				<?xjs write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
 				<p>
-					<?xjs write(_mpl.label_message_subject); ?>:
+					<?xjs write(locale.strings.page_mail.label_message_subject); ?>:
 					<strong><?xjs write(header.subject); ?></strong>
 				</p>
 			</div>
@@ -46,47 +42,46 @@ function sent() {
 
 <script type="text/javascript">
 
-	function selectAllMail() {
-		$('input.mail-select').each(
-			function () {
-				$(this).prop('checked', $(this).prop('checked') ? false : true);
-			}
-		);
-	}
+    function selectAllMail() {
+        $('input.mail-select').each(function () {
+            $(this).prop('checked', $(this).prop('checked') ? false : true);
+        });
+    }
 
-	function deleteSelectedMail() {
-		var numbers = [];
-		$('input.mail-select:checked').each(
-			function () { numbers.push($(this).attr('id').split('-')[1]); }
-		);
-		$.getJSON(
-			'./api/forum.ssjs?call=delete-mail&number=' + numbers.join('&number='),
-			function (data) {
-				if (!data.success) return;
-				numbers.forEach(function (e) { $('#li-' + e).remove(); });
-			}
-		);
-	}
+    function deleteSelectedMail() {
+        var numbers = [];
+        $('input.mail-select:checked').each(function () {
+            numbers.push($(this).attr('id').split('-')[1]);
+        });
+        $.getJSON('./api/forum.ssjs?call=delete-mail&number=' + numbers.join('&number='), function (data) {
+            if (!data.success) return;
+            numbers.forEach(function (e) {
+                $('#li-' + e).remove();
+            });
+        });
+    }
 
 </script>
 
 <?xjs if (typeof http_request.query.notice != "undefined") { ?>
-	<div id="noticebox" class="alert alert-warning">
-		<?xjs write(http_request.query.notice[0]); ?>
-	</div>
-	<script type="text/javascript">
-		$("#noticebox").fadeOut(3000, function () { $("#noticebox").remove(); });
-	</script>
+    <div id="noticebox" class="alert alert-warning">
+        <?xjs write(http_request.query.notice[0]); ?>
+    </div>
+    <script type="text/javascript">
+        $("#noticebox").fadeOut(3000, function () {
+            $("#noticebox").remove();
+        });
+    </script>
 <?xjs } ?>
 
 <?xjs if (!(user.security.restrictions&UFLAG_E) && !(user.security.restrictions&UFLAG_M)) { ?>
-	<button class="btn btn-default icon" aria-label="<?xjs write(_mpl.button_post_new); ?>" title="<?xjs write(_mpl.button_post_new); ?>" onclick="addNew('mail')">
+	<button class="btn btn-default icon" aria-label="<?xjs write(locale.strings.page_mail.button_post_new); ?>" title="<?xjs write(locale.strings.page_mail.button_post_new); ?>" onclick="addNew('mail')">
 		<span class="glyphicon glyphicon-pencil"></span>
 	</button>
-	<button class="btn btn-default icon" aria-label="<?xjs write(_mpl.button_select_all); ?>" title="<?xjs write(_mpl.button_select_all); ?>" onclick="selectAllMail()">
+	<button class="btn btn-default icon" aria-label="<?xjs write(locale.strings.page_mail.button_select_all); ?>" title="<?xjs write(locale.strings.page_mail.button_select_all); ?>" onclick="selectAllMail()">
 		<span class="glyphicon glyphicon-check"></span>
 	</button>
-	<button class="btn btn-default icon" aria-label="<?xjs write(_mpl.button_delete_selected); ?>" title="<?xjs write(_mpl.button_delete_selected); ?>" onclick="deleteSelectedMail()">
+	<button class="btn btn-default icon" aria-label="<?xjs write(locale.strings.page_mail.button_delete_selected); ?>" title="<?xjs write(locale.strings.page_mail.button_delete_selected); ?>" onclick="deleteSelectedMail()">
 		<span class="glyphicon glyphicon-trash"></span>
 	</button>
 <?xjs } ?>
@@ -94,12 +89,12 @@ function sent() {
 <ul class="nav nav-tabs">
 	<li role="presentation" class="<?xjs write(!sent() ? ' active' : ''); ?>">
 		<a href="./?page=<?xjs write(page); ?>&amp;sent=0">
-			<?xjs write(_mpl.label_tab_inbox); ?>
+			<?xjs write(locale.strings.page_mail.label_tab_inbox); ?>
 		</a>
 	</li>
 	<li role="presentation" class="<?xjs write(sent() ? ' active' : ''); ?>">
 		<a href="./?page=<?xjs write(page); ?>&amp;sent=1">
-			<?xjs write(_mpl.label_tab_sent); ?>
+			<?xjs write(locale.strings.page_mail.label_tab_sent); ?>
 		</a>
 	</li>
 </ul>
