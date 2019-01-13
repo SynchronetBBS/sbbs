@@ -849,17 +849,6 @@ function test_port(port)
 	return(success);
 }
 
-var common_bbs_services=[
-    "telnet",
-    "rlogin",
-	"ssh",
-    "ftp", 
-    "nntp",
-	"smtp",
-	"binkp",
-	"irc",
-];
-
 function this_bbs()
 {
 	var bbs = lib.new_system(system.name, system.nodes, lib.system_stats());
@@ -874,8 +863,10 @@ function this_bbs()
 		bbs.network.push({ name: "FidoNet", address: system.fido_addr_list[0] });
 	print("Testing common BBS service ports");
     var ports = [];
-    for(var i in common_bbs_services) {
-		var prot = common_bbs_services[i];
+    for(var i in lib.common_bbs_services) {
+		var prot = lib.common_bbs_services[i];
+		if(prot == "modem")	// No method to test
+			continue;
         if(ports.indexOf(standard_service_port[prot]) >= 0) // Already tested this port
             continue;
 		printf("%s ", prot);
