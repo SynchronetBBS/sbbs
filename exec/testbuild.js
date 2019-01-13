@@ -31,23 +31,17 @@ var make = (platform=="win32" ? "make":"gmake");
 var build_output = "build_output.txt";
 var archive;
 var archive_cmd;
-var lib;
-var lib_cmd;
 var lib_alias="lib";
 var cleanup;
 
 if(platform=="win32") {
 	archive="sbbs_src.zip";
 	archive_cmd="pkzip25 -exclude=*output.txt -add -dir -max " + archive;
-	lib="lib-win32.zip";
-	lib_cmd="pkzip25 -exclude=*output.txt -add -dir -max ../" + lib;
 	cleanup="rmdir /s /q ";
 	lib_alias="lib-win32";
 } else {
 	archive="sbbs_src.tgz";
 	archive_cmd="tar --exclude=*output.txt -czvf " + archive + " *";
-	lib="lib-" + platform + ".tgz";
-	lib_cmd="tar --exclude=*output.txt -czvf ../" + lib + " *";
 	cleanup="rm -r -f "
 }
 
@@ -56,12 +50,12 @@ var builds
 		[""					,"cvs co src-sbbs3"					,"2> " + build_output],
 		[""					,"cvs co "+lib_alias				,"2> " + build_output],
 		[""					,archive_cmd						,"2> " + build_output],
-		["3rdp"				,lib_cmd							,"2> " + build_output],
+//		["3rdp"				,lib_cmd							,"2> " + build_output],
 	];
 
 /* Platform-specific (or non-ported) projects */
 if(platform=="win32") {
-	/* Requires Visual C++ 2010 */
+	/* Requires Visual C++ 2013 */
 	builds.push(["src/sbbs3"			,'build.bat /v:m "/p:Configuration=Release"'
 																,"> " + build_output]);
 	/* Requires C++Builder */
@@ -75,10 +69,6 @@ if(platform=="win32") {
 																,"> " + build_output]);
 } else {	/* Unix */
 	builds.push(["src/sbbs3"			,"gmake RELEASE=1"		,"2> " + build_output]);
-	builds.push(["src/sbbs3/scfg"		,"gmake RELEASE=1"		,"2> " + build_output]);
-	builds.push(["src/sbbs3/install"	,"gmake"				,"2> " + build_output]);
-	builds.push(["src/sbbs3/umonitor"	,"gmake RELEASE=1"		,"2> " + build_output]);
-	builds.push(["src/sbbs3/uedit"		,"gmake RELEASE=1"		,"2> " + build_output]);
 }
 
 var win32_dist
@@ -125,8 +115,7 @@ if(file.open("wt")) {
 	file.writeln(system_description);
 	file.writeln();
 	file.writeln("For more details, see http://wiki.synchro.net/dev:source");
-	if(platform!="win32")
-		file.writeln("and http://wiki.synchro.net/install:nix");
+	file.writeln("and http://wiki.synchro.net/install:dev");
 	file.close();
 }
 
@@ -147,7 +136,7 @@ for(i in builds) {
 	var build_dir = temp_dir + "/" + sub_dir;
 	var subject = system.platform + " build failure in " + sub_dir;
 
-	log(LOG_DEBUG,"Build " + i + " of " + builds.length);
+	log(LOG_DEBUG,"Build " + i+1 + " of " + builds.length);
 	if(sub_dir.length)
 		log(LOG_INFO, "Build sub-directory: " + sub_dir);
 	if(!chdir(build_dir)) {
@@ -194,11 +183,6 @@ var dest = file_area.dir["sbbs"].path+archive;
 log(LOG_INFO,format("Copying %s to %s",archive,dest));
 if(!file_copy(archive,dest))
 	log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
-
-dest = file_area.dir["sbbs"].path+lib;
-log(LOG_INFO,format("Copying %s to %s",lib,dest));
-if(!file_copy(lib,dest))
-	log(LOG_ERR,format("!ERROR copying %s to %s",lib,dest));
 
 var file = new File("README.TXT");
 if(file.open("wt")) {
