@@ -94,7 +94,7 @@ function scan() {
                 node: 'W',
                 action: locale.strings.sidebar_node_list.label_status_web + ' ' + web_state[e],
                 user: usr.alias,
-                connection: 'HTTP'
+                connection: 'Web'
             };
         }));
     }
