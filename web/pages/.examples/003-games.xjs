@@ -2,34 +2,26 @@
 <?xjs
 
     load("ftelnethelper.js");
-	load(settings.web_lib + 'ftelnet.js');
+    const ftelnet_lib = load({}, settings.web_lib + 'ftelnet.js');
 
-	if (typeof settings.xtrn_blacklist === 'string') {
-		settings.xtrn_blacklist = settings.xtrn_blacklist.toLowerCase().split(',');
-	} else {
-		settings.xtrn_blacklist = [];
-	}
+    if (typeof settings.xtrn_blacklist === 'string') {
+        settings.xtrn_blacklist = settings.xtrn_blacklist.toLowerCase().split(',');
+    } else {
+        settings.xtrn_blacklist = [];
+    }
 
-	var xtrn = {};
-	xtrn_area.sec_list.forEach(
-		function (sec) {
-			if (!sec.can_access || sec.prog_list.length < 1) return;
-			if (settings.xtrn_blacklist.indexOf(sec.code.toLowerCase()) > -1) {
-				return;
-			}
-			var x = [];
-			sec.prog_list.forEach(
-				function (prog) {
-					if (!prog.can_access || !prog.can_run) return;
-					if (settings.xtrn_blacklist.indexOf(prog.code.toLowerCase()) > -1) {
-						return;
-					}
-					x.push({ c : prog.code, n : prog.name });
-				}
-			);
-			if (x.length > 0) xtrn[sec.name] = x;
-		}
-	);
+    var xtrn = {};
+    xtrn_area.sec_list.forEach(function (sec) {
+        if (!sec.can_access || sec.prog_list.length < 1) return;
+        if (settings.xtrn_blacklist.indexOf(sec.code.toLowerCase()) > -1) return;
+        var x = [];
+        sec.prog_list.forEach(function (prog) {
+            if (!prog.can_access || !prog.can_run) return;
+            if (settings.xtrn_blacklist.indexOf(prog.code.toLowerCase()) > -1) return;
+            x.push({ c : prog.code, n : prog.name });
+        });
+        if (x.length > 0) xtrn[sec.name] = x;
+    });
 
 ?>
 
@@ -51,58 +43,53 @@
 
 <script>document.write('<script src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"><\/script>');</script>
 <script type="text/javascript">
-    var wsp = <?xjs write(GetWebSocketServicePort()); ?>;
-    var wssp = <?xjs write(GetWebSocketServicePort(true)); ?>;
-	var Options = new fTelnetOptions();
-	Options.BareLFtoCRLF = false;
-	Options.BitsPerSecond = 57600;
-	Options.ConnectionType = 'rlogin';
-	Options.Emulation = 'ansi-bbs';
-	Options.Enter = '\r';
-	Options.Font = 'CP437';
-	Options.ForceWss = false;
-	Options.Hostname = '<?xjs write(http_request.vhost); ?>';
-	Options.LocalEcho = false;
+    var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
+    var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
+    var Options = new fTelnetOptions();
+    Options.BareLFtoCRLF = false;
+    Options.BitsPerSecond = 57600;
+    Options.ConnectionType = 'rlogin';
+    Options.Emulation = 'ansi-bbs';
+    Options.Enter = '\r';
+    Options.Font = 'CP437';
+    Options.ForceWss = false;
+    Options.Hostname = '<?xjs write(http_request.vhost); ?>';
+    Options.LocalEcho = false;
     Options.Port = location.protocol == 'https:' ? wssp : wsp;
-	Options.RLoginClientUsername = '<?xjs write(user.security.password); ?>';
-	Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
-	Options.ScreenColumns = 80;
-	Options.ScreenRows = 25;
-    Options.SplashScreen = Options.SplashScreen = '<?xjs write(getSplash()); ?>';
+    Options.RLoginClientUsername = '<?xjs write(user.security.password); ?>';
+    Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
+    Options.ScreenColumns = 80;
+    Options.ScreenRows = 25;
+    Options.SplashScreen = Options.SplashScreen = '<?xjs write(ftelnet_lib.get_splash()); ?>';
     Options.WebSocketUrlPath = '?Port=<?xjs write(GetRLoginPort()); ?>';
-	var fTelnet = new fTelnetClient('fTelnetContainer', Options);
-	fTelnet.OnConnectionClose = function () { window.location.reload(); };
+    var fTelnet = new fTelnetClient('fTelnetContainer', Options);
+    fTelnet.OnConnectionClose = function () {
+        window.location.reload();
+    };
 
-	function launchXtrn(code) {
-		$.getJSON(
-			'./api/system.ssjs?call=set-xtrn-intent&code=' + code,
-			function(data) {
-				fTelnet._Options.RLoginTerminalType = 'xtrn=' + code;
-                fTelnet.Connect();
-            }
-		);
-	}
+    function launchXtrn(code) {
+        $.getJSON('./api/system.ssjs?call=set-xtrn-intent&code=' + code, function(data) {
+            fTelnet._Options.RLoginTerminalType = 'xtrn=' + code;
+            fTelnet.Connect();
+        });
+    }
 
-	var xtrn = <?xjs write(JSON.stringify(xtrn)); ?>;
-	Object.keys(xtrn).forEach(
-		function (x) {
-			var e = $('#xtrn-list-template').clone();
-			$($(e).find('h4')[0]).text(x);
-			var ul = $($(e).find('ul')[0]);
-			xtrn[x].forEach(
-				function (xx) {
-					var li = $('#xtrn-item-template').clone();
-					var a = $(li).find('a')[0];
-					$(a).text(xx.n);
-					$(a).click(function () { launchXtrn(xx.c); });
-					$(ul).append(li);
-					$(li).show();
-				}
-			);
-			$(e).append(ul);
-			$('#xtrn-list').append(e);
-			$(e).show();
-		}
-	);
+    var xtrn = <?xjs write(JSON.stringify(xtrn)); ?>;
+    Object.keys(xtrn).forEach(function (x) {
+        var e = $('#xtrn-list-template').clone();
+        $($(e).find('h4')[0]).text(x);
+        var ul = $($(e).find('ul')[0]);
+        xtrn[x].forEach(function (xx) {
+            var li = $('#xtrn-item-template').clone();
+            var a = $(li).find('a')[0];
+            $(a).text(xx.n);
+            $(a).click(function () { launchXtrn(xx.c); });
+            $(ul).append(li);
+            $(li).show();
+        });
+        $(e).append(ul);
+        $('#xtrn-list').append(e);
+        $(e).show();
+    });
 
 </script>
