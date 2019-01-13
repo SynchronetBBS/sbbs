@@ -879,6 +879,7 @@ function getMessageThreads(sub, max) {
             auxattr : header.auxattr,
             number : header.number,
             from : header.from,
+			from_ext : header.from_ext,
             from_net_addr : header.from_net_addr,
             to : header.to,
             when_written_time : header.when_written_time,
