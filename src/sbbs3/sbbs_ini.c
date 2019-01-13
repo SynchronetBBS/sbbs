@@ -692,8 +692,6 @@ void sbbs_read_ini(
 			=iniGetStringList(list,section,"CGIExtensions", "," ,".cgi");
 		SAFECOPY(web->ssjs_ext
 			,iniGetString(list,section,"JavaScriptExtension",".ssjs",value));
-		SAFECOPY(web->js_ext
-			,iniGetString(list,section,"EmbJavaScriptExtension",".bbs",value));
 
 		web->max_cgi_inactivity
 			=iniGetShortInt(list,section,"MaxCgiInactivity",WEB_DEFAULT_MAX_CGI_INACTIVITY);	/* seconds */

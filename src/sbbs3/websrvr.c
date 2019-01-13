@@ -325,7 +325,6 @@ static char* methods[] = {
 enum {
 	 IS_STATIC
 	,IS_CGI
-	,IS_JS
 	,IS_SSJS
 	,IS_FASTCGI
 };
@@ -1098,7 +1097,7 @@ static void close_request(http_session_t * session)
 	if(session->socket==INVALID_SOCKET)
 		session->finished=TRUE;
 
-	if(session->js_cx!=NULL && (session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)) {
+	if(session->js_cx!=NULL && (session->req.dynamic==IS_SSJS)) {
 		JS_BEGINREQUEST(session->js_cx);
 		JS_GC(session->js_cx);
 		JS_ENDREQUEST(session->js_cx);
@@ -1592,7 +1591,7 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 
 BOOL http_checkuser(http_session_t * session)
 {
-	if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS) {
+	if(session->req.dynamic==IS_SSJS) {
 		if(session->last_js_user_num==session->user.number)
 			return(TRUE);
 		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing User Objects",session->socket);
@@ -2741,7 +2740,7 @@ static BOOL parse_js_headers(http_session_t * session)
 			js_add_header(session,head_line,value);
 			switch(i) {
 				case HEAD_TYPE:
-					if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS) {
+					if(session->req.dynamic==IS_SSJS) {
 						/*
 						 * We need to parse out the files based on RFC1867
 						 *
@@ -2774,7 +2773,7 @@ static BOOL parse_js_headers(http_session_t * session)
 					}
 					break;
 				case HEAD_COOKIE:
-					if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS) {
+					if(session->req.dynamic==IS_SSJS) {
 						char	*key;
 						char	*val;
 
@@ -2837,8 +2836,6 @@ static int is_dynamic_req(http_session_t* session)
 		i=IS_SSJS;
 	else if(get_xjs_handler(ext,session))
 		i=IS_SSJS;
-	else if(stricmp(ext,startup->js_ext)==0)
-		i=IS_JS;
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && i)  {
 		lprintf(LOG_DEBUG,"%04d Setting up JavaScript support", session->socket);
 		if(!js_setup(session)) {
@@ -6732,7 +6729,6 @@ void DLLCALL web_server(void* arg)
 		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 		if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 		if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,".ssjs");
-		if(startup->js_ext[0]==0)				SAFECOPY(startup->js_ext,".bbs");
 
 		protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
