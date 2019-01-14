@@ -24,17 +24,21 @@
 
 // If you specify property names on the command-line, only those configuration
 // properties will be included in the output. You may also follow a property
-// name with the -fmt <format> or -upr options to specify a printf-style
-// format string or to convert the value to uppercase before printing. a -lwr
-// (lowercase) option is also available.
+// name with =<format> to specify a printf-style format string to use when
+// outputting the property value. You can also *follow* property names with the
+// -upr or -lwr options to convert the property value to uppercase or lowercase
+// respectively.
 
 // As an example, to generate a RAID/FILEBONE.NA/FILEGATE.ZXX format listing:
-// jsexec fileareas.js code -upr -fmt "Area %-16s 0 !" description
+// jsexec fileareas.js code="Area %-16s 0 !" -upr description
 
-// When using the -json or -json_space command-line options, the output will
-// be formatted as JSON objects and certain options (e.g. -delim, -hdr, -quote)
-// will have no effect on the output. For example, to output a pretty-printed
-// JSON represenation of all file areas:
+// For a list of available properties, see this:
+// http://synchro.net/docs/jsobjs.html#file_area.lib_list.dir_list_properties
+
+// When using the -json or command-line option, the output will be formatted
+// as JSON objects and certain options (e.g. -delim, -hdr, -quote) will have no
+// effect on the output. For example, to output a pretty-printed JSON
+// representation of all file areas:
 // jsexec fileareas.js -json 4 > fileareas.json
 
 // NOTE:
@@ -66,30 +70,38 @@ var lib = [];
 
 for(var i = 0; i < argc; i++) {
 	if(argv[i].charAt(0) != '-') {
-		props.push(argv[i]);
+		var arg = argv[i]; 
+		var eq = arg.indexOf('=');
+		if(eq >= 0) {
+			if(eq < 1)
+				throw("invalid format: " + arg);
+			arg = arg.slice(0, eq);
+			fmt[arg] = argv[i].slice(eq + 1);
+		}
+		props.push(arg);
 		continue;
 	}
 	switch(argv[i]) {
 		case '-lib':
 			lib.push(argv[++i].toLowerCase());
 			continue;
-		case '-fmt':
+		case '-fmt':	// Alternate syntax to <prop>=<fmt>
 			if(props.length > 0)
 				fmt[props[props.length - 1]] = argv[++i];
 			else
-				throw(argv[i] + " must follow a property specificatoin");
+				throw(argv[i] + " must follow a property specification");
 			continue;
 		case '-upr':
 			if(props.length > 0)
 				upr[props[props.length - 1]] = true;
 			else
-				throw(argv[i] + " must follow a property specificatoin");
+				throw(argv[i] + " must follow a property specification");
 			continue;
 		case '-lwr':
 			if(props.length > 0)
 				lwr[props[props.length - 1]] = true;
 			else
-				throw(argv[i] + " must follow a property specificatoin");
+				throw(argv[i] + " must follow a property specification");
 			continue;
 		case '-delim':
 			delim = argv[++i];
@@ -104,7 +116,7 @@ for(var i = 0; i < argc; i++) {
 		default:
 			var arg = argv[i].slice(1);
 			if(options[arg] === undefined) {
-				writeln("usage: fileareas.js [[-lib <name>] [...]] [[-option] [...]] [[[prop] [-fmt <format>] [-upr | -lwr]] [...]]");
+				writeln("usage: fileareas.js [[-lib <name>] [...]] [[-option] [...]] [[[prop][=<format> [-upr | -lwr]] [...]]");
 				writeln("options:");
 				writeln(format("\t%-12s <default>", "<option>"));
 				for(var o in options)
