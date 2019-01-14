@@ -3,8 +3,6 @@
 <?xjs
 	load(settings.web_lib + 'files.js');
 
-	var _fpl = getLanguage(settings.language_file || 'english.ini', 'page_files');
-
 	if (typeof http_request.query.dir !== 'undefined' &&
 		typeof file_area.dir[http_request.query.dir[0]] !== 'undefined'
 	) {
@@ -12,7 +10,7 @@
 	<ol class="breadcrumb">
 		<li>
 			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>">
-				<?xjs write(_fpl.title); ?>
+				<?xjs write(locale.strings.page_files.title); ?>
 			</a>
 		</li>
 		<li>
@@ -56,7 +54,7 @@
 	<ol class="breadcrumb">
 		<li>
 			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>">
-				<?xjs write(_fpl.title); ?>
+				<?xjs write(locale.strings.page_files.title); ?>
 			</a>
 		</li>
 		<li>
@@ -73,7 +71,7 @@
 			<p>
 				<?xjs write(dir.dir.description); ?>:
 				<?xjs write(dir.fileCount); ?>
-				<?xjs write(dir.fileCount === 1 ? _fpl.stat_suffix_file : _fpl.stat_suffix_files); ?>
+				<?xjs write(dir.fileCount === 1 ? locale.strings.page_files.stat_suffix_file : locale.strings.page_files.stat_suffix_files); ?>
 			</p>
 		</a>
 	<?xjs } ?>
@@ -87,7 +85,7 @@
 	<ol class="breadcrumb">
 		<li>
 			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>">
-				<?xjs write(_fpl.title); ?>
+				<?xjs write(locale.strings.page_files.title); ?>
 			</a>
 		</li>
 	</ol>
@@ -98,7 +96,7 @@
 			<p>
 				<?xjs write(library.description); ?>:
 				<?xjs write(library.dir_list.length); ?>
-				<?xjs write(library.dir_list.length === 1 ? _fpl.stat_suffix_directory : _fpl.stat_suffix_directories); ?>
+				<?xjs write(library.dir_list.length === 1 ? locale.strings.page_files.stat_suffix_directory : locale.strings.page_files.stat_suffix_directories); ?>
 			</p>
 		</a>
 	<?xjs } ?>
