@@ -1,7 +1,3 @@
-load('sbbsdefs.js');
-load('modopts.js');
-
-load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'mime-decode.js');
 
 function listGroups() {
@@ -272,36 +268,26 @@ function getMailHeaders(sent, ascending) {
 }
 
 function mimeDecode(header, body, code) {
-    var ret = {
+    const ret = {
         type : '',
-        body : [],
-        inlines : [],
-        attachments : []
+        body : []
     };
-    var msg = mime_decode(header, body, code);
-    if (typeof msg.inlines !== 'undefined') {
-        msg.inlines.forEach(
-            function (inline) {
-                ret.inlines.push(
-                    format(
-                        '<a href="./api/attachments.ssjs?sub=%s&amp;msg=%s&amp;cid=%s" target="_blank">%s</a>',
-                        code, header.number, inline, inline
-                    )
-                );
-            }
-        );
+    const msg = mime_decode(header, body, code);
+    if (msg.inlines) {
+        ret.inlines = msg.inlines.map(function (e) {
+            return format(
+                '<a href="./api/attachments.ssjs?sub=%s&amp;msg=%s&amp;cid=%s" target="_blank">%s</a>',
+                code, header.number, e, e
+            );
+        });
     }
-    if (typeof msg.attachments !== 'undefined') {
-        msg.attachments.forEach(
-            function (attachment) {
-                ret.attachments.push(
-                    format(
-                        '<a href="./api/attachments.ssjs?sub=%s&amp;msg=%s&amp;filename=%s" target="_blank">%s</a>',
-                        code, header.number, attachment, attachment
-                    )
-                );
-            }
-        );
+    if (msg.attachments) {
+        ret.attachments = msg.attachments.map(function (e) {
+            return format(
+                '<a href="./api/attachments.ssjs?sub=%s&amp;msg=%s&amp;filename=%s" target="_blank">%s</a>',
+                code, header.number, e, e
+            );
+        });
     }
     ret.type = msg.type;
     ret.body = msg.body;
@@ -312,9 +298,7 @@ function getMailBody(number) {
 
     var ret = {
         type : '',
-        body : '',
-        inlines : [],
-        attachments : []
+        body : ''
     };
 
     number = Number(number);
@@ -323,27 +307,20 @@ function getMailBody(number) {
     var msgBase = new MsgBase('mail');
     if (!msgBase.open()) return ret;
     var header = msgBase.get_msg_header(false, number, false);
-    if (header !== null &&
-        (   header.to_ext == user.number ||
-            header.from_ext == user.number
-        )
-    ) {
-        var body = msgBase.get_msg_body(false, number, header);
+    if (header !== null && (header.to_ext == user.number || header.from_ext == user.number)) {
+        const body = msgBase.get_msg_body(false, number, header);
+        const pt_body = msgBase.get_msg_body(false, number, header, false, false, true, true); // Plaintext body - this doesn't work.
         if (header.to_ext == user.number && (header.attr^MSG_READ)) {
             header.attr|=MSG_READ;
             msgBase.put_msg_header(false, number, header);
         }
     }
     msgBase.close();
-    if (typeof body === 'undefined' || body === null) return ret;
+    if (!body) return ret;
 
     var decoded = mimeDecode(header, body, 'mail');
     ret.type = decoded.type;
-//    if (ret.type == 'html') {
-//      ret.body = html_decode(decoded.body);
-//    } else {
-      ret.body = formatMessage(decoded.body);
-//    }
+    ret.body = formatMessage(pt_body == body ? decoded.body : pt_body); // See above re: pt_body
     ret.inlines = decoded.inlines;
     ret.attachments = decoded.attachments;
 
@@ -879,7 +856,6 @@ function getMessageThreads(sub, max) {
             auxattr : header.auxattr,
             number : header.number,
             from : header.from,
-			from_ext : header.from_ext,
             from_net_addr : header.from_net_addr,
             to : header.to,
             when_written_time : header.when_written_time,
