@@ -8,7 +8,6 @@
 	load(settings.web_lib + 'auth.js');
 	load(settings.web_lib + 'pages.js');
 	load(settings.web_lib + 'sidebar.js');
-	load(settings.web_lib + 'language.js');
 
 	var page = (
 		(	typeof http_request.query.page === 'undefined' ||
