@@ -16,11 +16,11 @@
 // jsexec fileareas.js -hdr > fileareas.tab
 
 // To restrict the output to specific libraries, specify one or more 
-// '-lib <library_name>' options on the command-line.
+// '-lib=<library_name>' options on the command-line.
 
 // To output a comma-delimited file (e.g. suitable for import into spreadsheet
-// applications), you may to quote string values, for example:
-// jsexec fileareas.js -delim , -quote > fileareas.cvs
+// applications), you may want to quote string values, for example:
+// jsexec fileareas.js -delim=, -quote > fileareas.cvs
 
 // If you specify property names on the command-line, only those configuration
 // properties will be included in the output. You may also follow a property
@@ -39,7 +39,7 @@
 // as JSON objects and certain options (e.g. -delim, -hdr, -quote) will have no
 // effect on the output. For example, to output a pretty-printed JSON
 // representation of all file areas:
-// jsexec fileareas.js -json 4 > fileareas.json
+// jsexec fileareas.js -json=4 > fileareas.json
 
 // NOTE:
 // By default, JSexec will change the current working directory to your
@@ -56,12 +56,13 @@
 
 var options = {
 	hdr: false,
-	sort: false,
+	delim: '\t',
 	quote: false,
 	quiet: false,
+	sort: false,
+	json: false,
 };
-var json;
-var delim = '\t';
+var defaults = JSON.parse(JSON.stringify(options));
 var props = [];
 var fmt = {}
 var upr = [];
@@ -69,25 +70,31 @@ var lwr = [];
 var lib = [];
 
 for(var i = 0; i < argc; i++) {
-	if(argv[i].charAt(0) != '-') {
-		var arg = argv[i]; 
-		var eq = arg.indexOf('=');
-		if(eq >= 0) {
-			if(eq < 1)
-				throw("invalid format: " + arg);
-			arg = arg.slice(0, eq);
-			fmt[arg] = argv[i].slice(eq + 1);
-		}
+	var value = undefined;
+	var arg = argv[i]; 
+	var eq = arg.indexOf('=');
+	if(eq >= 0) {
+		if(eq < 1)
+			throw("invalid format: " + arg);
+		arg = arg.slice(0, eq);
+		value = argv[i].slice(eq + 1);
+	}
+	if(arg.charAt(0) != '-') {
 		props.push(arg);
+		fmt[arg] = value;
 		continue;
 	}
-	switch(argv[i]) {
+	switch(arg) {
 		case '-lib':
-			lib.push(argv[++i].toLowerCase());
+			if(value === undefined)
+				value = argv[++i];
+			lib.push(value.toLowerCase());
 			continue;
 		case '-fmt':	// Alternate syntax to <prop>=<fmt>
+			if(value === undefined)
+				value = argv[++i];
 			if(props.length > 0)
-				fmt[props[props.length - 1]] = argv[++i];
+				fmt[props[props.length - 1]] = value;
 			else
 				throw(argv[i] + " must follow a property specification");
 			continue;
@@ -103,33 +110,33 @@ for(var i = 0; i < argc; i++) {
 			else
 				throw(argv[i] + " must follow a property specification");
 			continue;
-		case '-delim':
-			delim = argv[++i];
-			continue;
-		case '-json':
-			var spacing = parseInt(argv[i + 1], 10);
-			if(!isNaN(spacing))
-				json = spacing, i++;
-			else
-				json = 0;
-			break;
 		default:
-			var arg = argv[i].slice(1);
+			var arg = arg.slice(1);
 			if(options[arg] === undefined) {
-				writeln("usage: fileareas.js [[-lib <name>] [...]] [[-option] [...]] [[[prop][=<format> [-upr | -lwr]] [...]]");
+				alert('unrecognized option: ' + arg);
+				writeln("usage: fileareas.js [[-lib=<name>] [...]] [[-option][=<value>] [...]] [[[prop][=<format> [-upr | -lwr]] [...]]");
 				writeln("options:");
 				writeln(format("\t%-12s <default>", "<option>"));
-				for(var o in options)
-					writeln(format("\t%-12s %s", '-' + o, JSON.stringify(options[o])));
-				writeln(format("\t%-12s \\t", "-delim"));
-				writeln(format("\t%-12s undefined (specify a numeric argument for pretty-printing)", "-json"));
+				for(var o in defaults)
+					writeln(format("\t%-12s =%s", '-' + o, JSON.stringify(defaults[o])));
+				writeln(format("\t%-12s (use -json=4 for pretty-printing)", ""));
 				exit(0);
 			}
-			var value = parseInt(argv[i + 1], 10);
-			if(value >= 0)
-				options[arg] = value, i++;
-			else
-				options[arg] = true;
+			if(value !== undefined)
+				options[arg] = value;
+			else {
+				if(typeof options[arg] == 'string') {
+					options[arg] = argv[++i];
+					if(options[arg] === undefined)
+						throw("option value undefined: -" + arg);
+				} else {
+					var value = parseInt(argv[i + 1], 10);
+					if(value >= 0)
+						options[arg] = value, i++;
+					else
+						options[arg] = true;
+				}
+			}
 			continue;
 	}
 }
@@ -154,8 +161,8 @@ for(var i in file_area.dir) {
 			obj[props[f]] = value;
 		}
 	var line = '';
-	if(json !== undefined)
-		line = JSON.stringify(obj, null, json);
+	if(options.json !== false)
+		line = JSON.stringify(obj, null, parseInt(options.json, 10));
 	else {
 		if(options.hdr == true && !output.length) {
 			for(var f in obj) {	
@@ -163,7 +170,7 @@ for(var i in file_area.dir) {
 					write(format(fmt[f], f));
 				else
 					write(f);
-				write(delim);
+				write(options.delim);
 			}
 			writeln();
 		}
@@ -174,7 +181,7 @@ for(var i in file_area.dir) {
 			if(options.quote)
 				value = JSON.stringify(value);
 			if(line.length)
-				line += delim;
+				line += options.delim;
 			if(fmt[f])
 				line += format(fmt[f], value);
 			else
