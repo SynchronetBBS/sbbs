@@ -1,15 +1,9 @@
 load('sbbsdefs.js');
-load('modopts.js');
-var settings = get_mod_options('web');
-
-load(settings.web_directory + '/lib/init.js');
+load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + '/auth.js');
-load(settings.web_lib + '/language.js');
 
 if (user.alias !== settings.guest) exit();
 if (!settings.user_registration) exit();
-
-var _rl = getLanguage(settings.language_file || 'english.ini', 'api_register');
 
 var MIN_ALIAS = 1,
 	MIN_REALNAME = 3,
@@ -17,7 +11,6 @@ var MIN_ALIAS = 1,
 	MIN_LOCATION = 4,
 	MIN_ADDRESS = 6,
 	MIN_PHONE = 3;
-
 
 var reply = {
 	errors : [],
@@ -45,9 +38,8 @@ function required(mask) {
 function cleanParam(param) {
 	if (paramExists(param)) {
 		return http_request.query[param][0].replace(/[\x00-\x19\x7F]/g, '');
-	} else {
-	   return "";
-    }
+	}
+	return "";
 }
 
 function paramExists(param) {
@@ -55,9 +47,8 @@ function paramExists(param) {
 		http_request.query[param][0] !== ''
 	) {
 		return true;
-	} else {
-	    return false;
-    }
+	}
+	return false;
 }
 
 function paramLength(param) {
@@ -75,10 +66,10 @@ function paramLength(param) {
 function newUser() {
 	var usr = system.new_user(prepUser.alias);
 	if (typeof usr === 'number') {
-		reply.errors.push(_rl.error_failed);
+		reply.errors.push(locale.strings.api_register.error_failed);
 		return;
 	}
-	log(LOG_INFO, format(_rl.log_success, usr.number));
+	log(LOG_INFO, format(locale.strings.api_register.log_success, usr.number));
 	usr.security.password = prepUser.password;
 	for (var property in prepUser) {
 		if (property === 'alias' || property === 'password') continue;
@@ -95,7 +86,7 @@ if ((	paramExists('send-me-free-stuff') &&
 		http_request.query['subscribe-to-newsletter'][0] !== ''
 	)
 ) {
-	log(LOG_WARNING, _rl.log_bot_attempt);
+	log(LOG_WARNING, locale.strings.api_register.log_bot_attempt);
 	exit();
 }
 
@@ -104,7 +95,7 @@ if (system.newuser_password !== '' &&
 		http_request.query['newuser-password'][0] != system.newuser_password
 	)
 ) {
-	reply.errors.push(_rl.error_bad_syspass);
+	reply.errors.push(locale.strings.api_register.error_bad_syspass);
 }
 
 // More could be done to respect certain newuser question toggles
@@ -114,9 +105,9 @@ if (!paramExists('alias') ||
 	paramLength('alias') < MIN_ALIAS ||
 	paramLength('alias') > LEN_ALIAS
 ) {
-	reply.errors.push(_rl.error_invalid_alias);
+	reply.errors.push(locale.strings.api_register.error_invalid_alias);
 } else if (system.matchuser(http_request.query.alias[0]) > 0) {
-	reply.errors.push(_rl.error_alias_taken);
+	reply.errors.push(locale.strings.api_register.error_alias_taken);
 } else {
 	prepUser.alias = cleanParam('alias');
 	prepUser.handle = cleanParam('alias');
@@ -125,14 +116,14 @@ if (!paramExists('alias') ||
 if ((!paramExists('password1') || !paramExists('password2')) ||
 	http_request.query.password1[0] !== http_request.query.password2[0]
 ) {
-	reply.errors.push(_rl.error_password_mismatch);
+	reply.errors.push(locale.strings.api_register.error_password_mismatch);
 } else if (
 	paramLength('password1') < settings.minimum_password_length ||
 	paramLength('password1') > LEN_PASS
 ) {
 	reply.errors.push(
 		format(
-			_rl.error_password_length,
+			locale.strings.api_register.error_password_length,
 			settings.minimum_password_length, LEN_PASS
 		)
 	);
@@ -141,64 +132,74 @@ if ((!paramExists('password1') || !paramExists('password2')) ||
 }
 
 if (!paramExists('netmail') && !required(UQ_NONETMAIL)) {
-	reply.errors.push(_rl.error_email_required);
+	reply.errors.push(locale.strings.api_register.error_email_required);
 } else if (
 	(	paramLength('netmail') < MIN_NETMAIL ||
 		paramLength('netmail') > LEN_NETMAIL
 	) && !required(UQ_NONETMAIL)
 ) {
-	reply.errors.push(_rl.error_invalid_email);
+	reply.errors.push(locale.strings.api_register.error_invalid_email);
 } else {
 	prepUser.netmail = cleanParam('netmail');
 }
 
-if (paramExists('realname') &&
-    paramLength('realname') >= MIN_REALNAME &&
-    paramLength('realname') <= LEN_NAME
+if (required(UQ_REALNAME) &&
+	(	!paramExists('realname') ||
+		paramLength('realname') < MIN_REALNAME ||
+		paramLength('realname') > LEN_NAME
+	)
 ) {
-    prepUser.name = cleanParam('realname');
-} else if (required(UQ_REALNAME)) {
-    reply.errors.push(_rl.error_invalid_name);
+	reply.errors.push(locale.strings.api_register.error_invalid_name);
+} else {
+	prepUser.name = cleanParam('realname');
 }
 
-if (paramExists('location') &&
-    paramLength('location') >= MIN_LOCATION &&
-    paramLength('location') <= LEN_LOCATION
+if (required(UQ_LOCATION) &&
+	(	!paramExists('location') ||
+		paramLength('location') < MIN_LOCATION ||
+		paramLength('location') > LEN_LOCATION
+	)
 ) {
-    prepUser.location = cleanParam('location');
-} else if (required(UQ_LOCATION)) {
-    reply.errors.push(_rl.error_invalid_location);
+	reply.errors.push(locale.strings.api_register.error_invalid_location);
+} else {
+	prepUser.location = cleanParam('location');
 }
 
-if (paramExists('address') &&
-    paramLength('address') >= MIN_ADDRESS &&
-    paramLength('address') <= LEN_ADDRESS &&
-    paramExists('zipcode') &&
-    paramLength('zipcode') >= 3 &&
-    paramLength('zipcode') <= LEN_ADDRESS
+if (required(UQ_ADDRESS) &&
+	(	!paramExists('address') ||
+		paramLength('address') < MIN_ADDRESS ||
+		paramLength('address') > LEN_ADDRESS ||
+		!paramExists('zipcode') ||
+		paramLength('zipcode') < 3 ||
+		paramLength('zipcode') > LEN_ADDRESS
+	)
 ) {
-    prepUser.address = cleanParam('address');
-    prepUser.zipcode = cleanParam('zipcode');
-} else if (required(UQ_ADDRESS)) {
-    reply.errors.push(_rl.error_invalid_street_address);
+	reply.errors.push(locale.strings.api_register.error_invalid_street_address);
+} else {
+	prepUser.address = cleanParam('address');
+	prepUser.zipcode = cleanParam('zipcode');
 }
 
-if (paramExists('phone') &&
-    paramLength('phone') >= MIN_PHONE &&
-    paramLength('phone') <= LEN_PHONE
+if (required(UQ_PHONE) &&
+	(	!paramExists('phone') ||
+		paramLength('phone') < MIN_PHONE ||
+		paramLength('phone') > LEN_PHONE
+	)
 ) {
-    prepUser.phone = cleanParam('phone');
-} else if (required(UQ_PHONE)) {
-    reply.errors.push(_rl.error_invalid_phone);
+	reply.errors.push(locale.strings.api_register.error_invalid_phone);
+} else {
+	prepUser.phone = cleanParam('phone');
 }
 
-if (paramExists('gender') &&
-    paramLength('gender') == 1 &&
-    ['X', 'M', 'F', 'O'].indexOf(http_request.query.gender[0] > -1)
+if (required(UQ_SEX) &&
+	(	!paramExists('gender') ||
+		paramLength('gender') != 1 ||
+		['X','M','F','O'].indexOf(http_request.query.gender[0]) < 0
+	)
 ) {
-    prepUser.gender = http_request.query.gender[0];
-} else if (required(UQ_SEX)) {
-    reply.errors.push(_rl.error_invalid_gender);
+	reply.errors.push(locale.strings.api_register.error_invalid_gender);
+} else {
+	prepUser.gender = http_request.query.gender[0];
 }
 
 if (paramExists('birth') &&
@@ -207,7 +208,7 @@ if (paramExists('birth') &&
 	// Should really test for valid date (and date format per system config)
 	prepUser.birthdate = cleanParam('birth');
 } else if (required(UQ_BIRTH)) {
-	reply.errors.push(_rl.error_invalid_birthdate);
+	reply.errors.push(locale.strings.api_register.error_invalid_birthdate);
 }
 
 if (reply.errors.length < 1) newUser();
