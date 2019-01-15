@@ -2054,7 +2054,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,31700
 	},
 	{"putbyte",			js_putbyte,			1, JSTYPE_BOOLEAN,	JSDOCSTR("value")
-	,JSDOCSTR("sends an unprocessed byte value to the remot terminal")
+	,JSDOCSTR("sends an unprocessed byte value to the remote terminal")
 	,31700
 	},
 	{0}
