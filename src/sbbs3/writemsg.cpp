@@ -1016,6 +1016,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 		strcpy(buf,top);
 	else
 		buf[0]=0;
+	lines = strListCount(str);
 	for(i=0;i<lines;i++) {
 		strcat(buf,str[i]);
 		strcat(buf,crlf);
