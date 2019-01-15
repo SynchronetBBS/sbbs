@@ -148,26 +148,6 @@ char *insensitive_mask(char *mask)
 #endif
 }
 
-char *getdirname(char *path)
-{
-	char *p1;
-	char *p2;
-
-	p1=strrchr(path,'/');
-#ifdef _WIN32
-	p2=strrchr(path,'\\');
-	if(p2 > p1)
-		p1=p2;
-#endif
-	p2 = path;
-	if(p1 > path) {
-		for(p2=p1-1; p2>path && !IS_PATH_DELIM(*p2); p2--);
-		if(IS_PATH_DELIM(*p2) && *(p2+1))
-			p2++;
-	}
-	return(p2);
-}
-
 char **get_file_opt_list(char **fns, int files, int dirsonly, int root)
 {
 	char **opts;
