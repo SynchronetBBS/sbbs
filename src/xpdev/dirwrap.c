@@ -117,11 +117,11 @@ char* DLLCALL getdirname(const char* path)
 	if(*last == '/') {
 		if(last == path)
 			return last;
-		for(last--; last > path; last--) {
-			if(*last == '/' || *last == '\\')
+		for(last--; last >= path; last--) {
+			if(IS_PATH_DELIM(*last))
 				return last + 1;
 		}
-		return last;
+		return (char*)path;
 	}
 	return getfname(path);
 }
