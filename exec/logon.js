@@ -101,7 +101,7 @@ for(var i=0;;i++) {
 	var fname="logon";
 	if(i)
 		fname+=i;
-	if(!file_exists(system.text_dir + "menu/" + fname + ".asc")) {
+	if(!bbs.menu_exists(fname)) {
 		if(i>1)
 			break;
 		continue;
@@ -111,8 +111,8 @@ for(var i=0;;i++) {
 }
 
 // Print logon screens based on security level
-if(user.security.level > highest_printed_logon_screen 
-    && file_exists(system.text_dir + "menu/logon" + user.security.level + ".*"))
+if(user.security.level > highest_printed_logon_screen
+    && bbs.menu_exists("logon" + user.security.level))
 	bbs.menu("logon" + user.security.level);
 
 // Print one of text/menu/random*.*, picked at random
