@@ -441,6 +441,7 @@ function forward_tic(tic)
 		}
 		// write existing Path lines to the new TIC...
 		for (i=0; i<tic.path.length; i++)
+			tf.write('Path '+tic.path[i]+'\r\n');
 		// now generate our Path line with date/time stamp in UTC per
 		// http://ftsc.org/docs/fts-5006.001 and write it to the TIC - wk42
 		//
