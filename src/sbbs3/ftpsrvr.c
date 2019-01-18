@@ -1051,12 +1051,16 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 					if(!getfiledat(&scfg,&f))
 						continue;
 				} else {
-					struct stat st;
-					if(stat(g.gl_pathv[i], &st) != 0)
-						continue;
-					f.cdt = st.st_size;
-					f.size = st.st_size;
-					f.date = (time32_t)st.st_mtime;
+					f.size = f.cdt;
+					f.date = f.dateuled;
+					if(!filedat || (scfg.dir[dir]->misc&DIR_FCHK)) {
+						struct stat st;
+						if(stat(g.gl_pathv[i], &st) != 0)
+							continue;
+						f.cdt = st.st_size;
+						f.size = st.st_size;
+						f.date = (time32_t)st.st_mtime;
+					}
 				}
 				if(f.misc&FM_EXTDESC) {
 					extdesc[0]=0;
@@ -4658,10 +4662,16 @@ static void ctrl_thread(void* arg)
 						get_owner_name(&f, str);
 						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, getfname(g.gl_pathv[i]));
 						get_unique(aliaspath, uniq);
-						struct stat st;
-						if(stat(g.gl_pathv[i], &st) != 0)
-							continue;
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, (uint64_t)st.st_size, st.st_mtime, str, uniq, f.dateuled, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
+						f.size = f.cdt;
+						f.date = f.dateuled;
+						if(!filedat || (scfg.dir[dir]->misc&DIR_FCHK)) {
+							struct stat st;
+							if(stat(g.gl_pathv[i], &st) != 0)
+								continue;
+							f.size = st.st_size;
+							f.date = (time32_t)st.st_mtime;
+						}
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, f.size, f.date, str, uniq, f.dateuled, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
 						l++;
 					}
 					lprintf(LOG_INFO, "%04d <%s> %s listing (%lu bytes) of /%s/%s (%lu files) created in %ld seconds"
@@ -4949,13 +4959,17 @@ static void ctrl_thread(void* arg)
 						&& !(scfg.dir[dir]->misc&DIR_FILES))
 						continue;
 					if(detail) {
-						struct stat st;
-						if(stat(g.gl_pathv[i], &st) != 0)
-							continue;
-						f.size = st.st_size;
 						if(filedat && !getfiledat(&scfg,&f))
 							continue;
-						t = st.st_mtime;
+						f.size = f.cdt;
+						t = f.dateuled;
+						if(!filedat || (scfg.dir[dir]->misc&DIR_FCHK)) {
+							struct stat st;
+							if(stat(g.gl_pathv[i], &st) != 0)
+								continue;
+							f.size = st.st_size;
+							t = st.st_mtime;
+						}
 						if(localtime_r(&t,&tm)==NULL)
 							memset(&tm,0,sizeof(tm));
 						if(filedat) {
@@ -5131,7 +5145,7 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,sess, "550 Size not available for dynamically generated files");
 					continue;
 				}
-				if((fp=fopen(ftp_tmpfname(fname,"ndx",sock),"w+b"))==NULL) {
+				if((fp=fopen(ftp_tmpfname(fname,"ndx",sock),"wb"))==NULL) {
 					lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) line %d opening %s"
 						,sock, user.alias, errno, strerror(errno), __LINE__, fname);
 					sockprintf(sock,sess, "451 Insufficient system storage");
@@ -5142,8 +5156,8 @@ static void ctrl_thread(void* arg)
 				if(getdate)
 					file_date=time(NULL);
 				else {
-					lprintf(LOG_INFO,"%04d <%s> downloading index for %s in %s mode"
-						,sock,user.alias,genvpath(lib,dir,str)
+					lprintf(LOG_INFO,"%04d <%s> downloading %s for %s in %s mode"
+						,sock, user.alias, startup->index_file_name, genvpath(lib,dir,str)
 						,mode);
 					credits=FALSE;
 					tmpfile=TRUE;
@@ -5355,8 +5369,8 @@ static void ctrl_thread(void* arg)
 						filepos=0;
 						continue;
 					}
-					lprintf(LOG_INFO,"%04d <%s> downloading HTML index for %s in %s mode"
-						,sock,user.alias,genvpath(lib,dir,str)
+					lprintf(LOG_INFO,"%04d <%s> downloading %s for %s in %s mode"
+						,sock, user.alias, startup->html_index_file, genvpath(lib,dir,str)
 						,mode);
 					credits=FALSE;
 					tmpfile=TRUE;
