@@ -135,7 +135,7 @@ if(!file.open("w")) {
 	exit();
 }
 
-file.writeln("; Converted from " + cfgfile + " using " + js.exec_file + " " + REVISION);
+file.writeln("; Converted from " + cfgfile + " using sbbsecho_upgrade.js " + REVISION);
 file.writeln("CheckPathsForDupes = " + !Boolean(bool_opts["nopathcheck"])), delete bool_opts["nopathcheck"];
 delete bool_opts["nocircularfwd"];
 file.writeln("KillEmptyNetmail = " + Boolean(bool_opts["kill_empty"])), delete bool_opts["kill_empty"];
