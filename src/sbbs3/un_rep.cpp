@@ -199,10 +199,9 @@ bool sbbs_t::unpack_rep(char* repfile)
 					errors++;
 				continue;
 			}
-			snprintf(str, sizeof(str)-1
-				, "%s blocks (read '%c' at offset %ld, '%s' at offset %ld)"
-				, msg_fname, block[0], l, tmp, l + 116);
-			errormsg(WHERE, ERR_CHK, tmp, blocks, str);
+			lprintf(LOG_WARNING
+				, "%s msg blocks less than 2 (read '%c' at offset %ld, '%s' at offset %ld)"
+				, getfname(msg_fname), block[0], l, tmp, l + 116);
 			errors++;
 			blocks=1;
 			continue;
