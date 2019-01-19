@@ -39,6 +39,15 @@ function add_channel_itunes_attribute(name) {
 	add_channel_opt_attribute_rename('IT'+name, 'itunes:'+name.substr(0,1).toLowerCase()+name.substr(1));
 }
 
+function add_lost_episodes(out) {
+	var f = new File(system.data_dir + "podcast_lost_episodes.xml");
+	if(!f.open("r"))
+		return;
+	var xml = f.readAll();
+	f.close();
+	out.writeAll(xml);
+}
+
 function create_item_xml(base, hdr) {
 	var info;
 	var item;
@@ -125,7 +134,7 @@ if (!base.open()) {
 }
 
 out = new File(opts.Filename+'.new');
-if (!out.open("web")) {
+if (!out.open("wxb")) {
 	log("Unable to open temorary file "+out.name+".");
 	exit(1);
 }
@@ -207,6 +216,8 @@ for (i=hdrs.length - 1; i >= 0; i--) {
 	if (item != undefined)
 		out.write(item);
 }
+
+add_lost_episodes(out);	// These messages were purged from dove-net/entertainment (oops)
 
 out.write('\t</channel>\n');
 out.write('</rss>\n');
