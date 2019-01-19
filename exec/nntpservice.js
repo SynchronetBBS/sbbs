@@ -247,7 +247,7 @@ while(client.socket.is_connected && !quit) {
 	if(!logged_in) {
 		if (auto_login) {
 			log(LOG_DEBUG,"Autologin Search: Started");
-			var oUser = new User(1);
+			var oUser = new User;
 			sUser = false;
 			sPassword = ""
 			iLastOn = 0;
