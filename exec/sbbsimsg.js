@@ -27,9 +27,8 @@
 
 // $Id$
 
-load("sbbsdefs.js");
-load("nodedefs.js");
-load("sockdefs.js");	// SOCK_DGRAM
+require("sbbsdefs.js", 'K_UPPER');
+require("sockdefs.js", 'SOCK_DGRAM');
 var options=load({}, "modopts.js", "sbbsimsg");
 if(!options)
 	options = {};
@@ -136,7 +135,7 @@ function getmsg()
 		lines++;
 	}
 
-	if(!lines || !bbs.online || bbs.sys_status&SS_ABORT)
+	if(!lines || !bbs.online || console.aborted)
 		return("");
 
 	return(msg);
@@ -191,13 +190,13 @@ prompt:
 while(bbs.online) {
 	console.line_counter=0;	// defeat pause
 	console.clearline();
-	console.print("\1n\1h\1bInter-BBS: ");
+	console.print("\1n\1h\1bInterBBS: ");
 	console.mnemonics("Anyone: ~Telegram, Active-Users: ~Message/~List, or ~Quit: ");
-	bbs.sys_status&=~SS_ABORT;
+	console.aborted = false;
 	var key;
 	var last_request = 0;
 	var request_interval = 60;	// seconds
-	while(bbs.online && !(bbs.sys_status&SS_ABORT)) {
+	while(bbs.online && !console.aborted) {
 		if(time() - last_request >= request_interval) {
 			lib.request_active_users();
 			last_request = time();
@@ -228,7 +227,7 @@ while(bbs.online) {
 			printf("\1h\1cTelegram\r\n\r\n");
 			printf("\1n\1h\1y(user@hostname): \1w");
 			dest=console.getstr(get_default_dest(),64,K_EDIT|K_AUTODEL, addr_list);
-			if(dest==null || dest=='' || bbs.sys_status&SS_ABORT)
+			if(dest==null || dest=='' || console.aborted)
 				break;
 			if((msg=getmsg())=='')
 				break;
