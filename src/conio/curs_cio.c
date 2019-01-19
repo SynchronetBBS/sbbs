@@ -55,6 +55,7 @@ static unsigned char curs_nextgetch=0;
 static int lastattr=0;
 static long mode;
 static int vflags=0;
+static int suspended = 0;
 
 static short curses_color(short color)
 {
@@ -666,8 +667,11 @@ void curs_gotoxy(int x, int y)
 
 void curs_suspend(void)
 {
-	noraw();
-	endwin();
+	if (!suspended) {
+		noraw();
+		endwin();
+	}
+	suspended = 1;
 }
 
 void curs_resume(void)
@@ -676,6 +680,7 @@ void curs_resume(void)
 	timeout(10);
 	refresh();
 	getch();
+	suspended = 0;
 }
 
 int curs_initciolib(long inmode)
@@ -711,6 +716,7 @@ int curs_initciolib(long inmode)
 	raw();
 	timeout(10);
 	atexit(curs_suspend);
+	suspended = 0;
 
 	/* Set up color pairs */
 	if (COLORS >= 16) {
