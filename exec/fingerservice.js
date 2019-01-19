@@ -176,7 +176,7 @@ if(request=="") {	// no specific user requested, give list of active users
 		,options.include_age ? dashes : ""
 		,options.include_gender ? dashes : ""
 		,dashes));
-	var u = new User();
+	var u = new User;
 	for(n=0;n<system.node_list.length;n++) {
 		var node = system.node_list[n];
 		if(node.status!=NODE_INUSE)
@@ -307,7 +307,7 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 			break;
 
 		case "active-users.json":
-			var u = new User();
+			var u = new User;
 			var list = [];
 			for(var n=0;n<system.node_list.length;n++) {
 				var node = system.node_list[n];
