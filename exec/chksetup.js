@@ -15,10 +15,10 @@ function check_codes(desc, grp_list, sub_list)
 			var sub = grp_list[g][sub_list][s];
 			var code = sub.code.toUpperCase();
 			if(list.indexOf(code) >= 0)
-				output.push("Duplicate " + desc +" internal code: " + code);
+				output.push("Duplicate " + desc +" internal code in " + grp_list[g].name + ": " + code);
 			else {
 				if(file_getname(code) != code)
-					output.push("Invalid " + desc + " internal code: " + code);
+					output.push("Invalid " + desc + " internal code in " + grp_list[g].name + ": " + code);
 				list.push(code);
 			}
 		}
