@@ -54,6 +54,7 @@ function usage(msg)
 	writeln("\t[[-grp=<msg_area.grp.name | file_area.lib.name | xtrn_area.sec.code>] [...]]");
 	writeln("\t[-<option>[=<value>] [...]]");
 	writeln("\t[[[property][=<printf-format> [-upper | -lower | -under]] [...]]");
+	writeln("\t[[-ex=<property>] [...]]");
 	writeln();
 	writeln("cfg-types (choose one):");
 	for(var c in cfgtypes)
