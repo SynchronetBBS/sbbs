@@ -398,11 +398,11 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		if (JS_HasProperty(cx, obj, "console", &success) && success)
 			js_CreateConsoleObject(bg->cx, bg->obj);
 		if (JS_HasProperty(cx, obj, "stdin", &success) && success)
-			js_CreateFileObject(bg->cx, bg->obj, "stdin", stdin);
+			js_CreateFileObject(bg->cx, bg->obj, "stdin", STDIN_FILENO, "r");
 		if (JS_HasProperty(cx, obj, "stdout", &success) && success)
-			js_CreateFileObject(bg->cx, bg->obj, "stdout", stdout);
+			js_CreateFileObject(bg->cx, bg->obj, "stdout", STDOUT_FILENO, "w");
 		if (JS_HasProperty(cx, obj, "stderr", &success) && success)
-			js_CreateFileObject(bg->cx, bg->obj, "stderr", stderr);
+			js_CreateFileObject(bg->cx, bg->obj, "stderr", STDERR_FILENO, "w");
 		JS_SetContextPrivate(bg->cx, bg);
 
 		exec_cx = bg->cx;

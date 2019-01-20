@@ -3015,10 +3015,14 @@ JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent)
 	return(obj);
 }
 
-JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, FILE* fp)
+JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, int fd, const char* mode)
 {
 	JSObject* obj;
 	private_t*	p;
+	FILE* fp = fdopen(fd, mode);
+
+	if(fp == NULL)
+		return NULL;
 
 	obj = JS_DefineObject(cx, parent, name, &js_file_class, NULL
 		,JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -3037,7 +3041,6 @@ JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *nam
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
 		return(NULL);
 	}
-
 	dbprintf(FALSE, p, "object created");
 
 	return(obj);

@@ -856,17 +856,17 @@ static BOOL js_init(char** env)
 	}
 
 	/* STDIO objects */
-	if(!js_CreateFileObject(js_cx, js_glob, "stdout", stdout)) {
+	if(!js_CreateFileObject(js_cx, js_glob, "stdout", STDOUT_FILENO, "w")) {
 		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
 
-	if(!js_CreateFileObject(js_cx, js_glob, "stdin", stdin)) {
+	if(!js_CreateFileObject(js_cx, js_glob, "stdin", STDIN_FILENO, "r")) {
 		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
 
-	if(!js_CreateFileObject(js_cx, js_glob, "stderr", stderr)) {
+	if(!js_CreateFileObject(js_cx, js_glob, "stderr", STDERR_FILENO, "w")) {
 		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
