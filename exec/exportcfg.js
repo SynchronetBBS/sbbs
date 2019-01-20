@@ -29,8 +29,10 @@ var popts = {
 };
 var props = [];
 var	propfmt = {};	// printf-style format string
-var exclude = [];
+var propex = [];	// properties to exclude
 var grp = [];
+var include = [];	// items to include
+var exclude = [];	// items to exclude
 var cfgtype;
 var cfgtypes = {
 	'msg-grps': 	msg_area.grp,
@@ -52,6 +54,7 @@ function usage(msg)
 	}
 	writeln("usage: exportcfg.js <cfg-type>");
 	writeln("\t[[-grp=<msg_area.grp.name | file_area.lib.name | xtrn_area.sec.code>] [...]]");
+	writeln("\t[[-inc=<internal_code> | -exc=<internal_code>] [...]]");
 	writeln("\t[-<option>[=<value>] [...]]");
 	writeln("\t[[[property][=<printf-format> [-upper | -lower | -under]] [...]]");
 	writeln("\t[[-ex=<property>] [...]]");
@@ -99,8 +102,19 @@ for(var i = 0; i < argc; i++) {
 	while(arg.charAt(0) == '-')
 		arg = arg.slice(1);
 	switch(arg) {
+		case 'inc':	// include item (by code)
+			if(value === undefined)
+				value = argv[++i];
+			include.push(value.toLowerCase());
+			continue;
+		case 'exc':	// exclude item (by code)
+			if(value === undefined)
+				value = argv[++i];
+			exclude.push(value.toLowerCase());
+			continue;
 		case 'lib':
 		case 'grp':
+		case 'sec':
 			if(value === undefined)
 				value = argv[++i];
 			grp.push(value.toLowerCase());
@@ -108,7 +122,7 @@ for(var i = 0; i < argc; i++) {
 		case 'ex':	// exclude property
 			if(value === undefined)
 				value = argv[++i];
-			exclude.push(value);
+			propex.push(value);
 			continue;
 		case '?':
 		case 'help':
@@ -194,12 +208,21 @@ for(var i in cfglist) {
 				break;
 		}
 	}
+	if(include.length && include.indexOf(i) < 0)
+		continue;
+	if(exclude.length && exclude.indexOf(i) >= 0)
+		continue;
 	var obj = {};
-	if(props.length == 0)
+	if(props.length == 0) {
 		obj = item; //JSON.parse(JSON.stringify(item));
+		if(obj.code === undefined)
+			obj.code = i;
+	}
 	else {
 		for(var f in props) {
 			var value = item[props[f]];
+			if(value === undefined && props[f] == 'code')
+				value = i;
 			if(typeof value == 'string') {
 				if(popts.under[props[f]])
 					value = value.replace(' ', '_');
@@ -212,8 +235,8 @@ for(var i in cfglist) {
 		}
 	}
 	// Remove excluded properties
-	for(var e in exclude)
-		delete obj[exclude[e]];
+	for(var e in propex)
+		delete obj[propex[e]];
 	for(var p in obj) {
 		if(typeof obj[p] == 'object')
 			delete obj[p];
