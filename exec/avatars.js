@@ -330,7 +330,7 @@ function export_users(msgbase, realnames, all)
 		var u = new User(n);
 		if((u.settings&USER_DELETED)
 			|| !u.stats.total_posts			// No need to export avatars for users that have never posted
-			|| (u.security_restrictions&(UFLAG_P|UFLAG_N|UFLAG_Q)) // or will never post
+			|| (u.security.restrictions&(UFLAG_P|UFLAG_N|UFLAG_Q)) // or will never post
 			) {
 			if(verbosity)
 				printf("User #%u hasn't or can't post, skipping\r\n", n);
