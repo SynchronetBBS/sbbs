@@ -865,6 +865,10 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 			line--; 
 			continue;
 		}
+		if(console&CON_DELETELINE) {
+			strListDelete(&str, line);
+			continue;
+		}
 		newline();
 		if(console&CON_DOWNARROW) {
 			if(str[line] != NULL) {
