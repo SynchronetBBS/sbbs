@@ -308,8 +308,8 @@ function getMailBody(number) {
     if (!msgBase.open()) return ret;
     var header = msgBase.get_msg_header(false, number, false);
     if (header !== null && (header.to_ext == user.number || header.from_ext == user.number)) {
-        const body = msgBase.get_msg_body(false, number, header);
-        const pt_body = msgBase.get_msg_body(false, number, header, false, false, true, true); // Plaintext body - this doesn't work.
+        const body = msgBase.get_msg_body(false, header);
+        const pt_body = msgBase.get_msg_body(false, header, false, false, true, true);
         if (header.to_ext == user.number && (header.attr^MSG_READ)) {
             header.attr|=MSG_READ;
             msgBase.put_msg_header(false, number, header);
