@@ -32,7 +32,6 @@ OpenWeatherMap.prototype.read_cache = function (endpoint, params) {
     cache_file.open('r');
     const cache = JSON.parse(cache_file.read());
     cache_file.close();
-    // This is probably not the right way, but it'll do
     if (time() - cache.dt > this.settings.data_refresh) return;
     return cache;
 }
@@ -60,7 +59,7 @@ OpenWeatherMap.prototype.rate_limit = function () {
     return ret;
 }
 
-OpenWeatherMap.prototype.call_api = function (endpoint, params) {
+OpenWeatherMap.prototype.call_api = function (endpoint, params, raw) {
 
     const cache = this.read_cache(endpoint, params);
     if (cache) return cache;
@@ -73,7 +72,12 @@ OpenWeatherMap.prototype.call_api = function (endpoint, params) {
     }, '');
     url += '&APPID=' + this.settings.api_key;
 
-    const response = JSON.parse((new HTTPRequest()).Get(url));
+    var response = (new HTTPRequest()).Get(url);
+    if (!raw) {
+        response = JSON.parse(response);
+    } else {
+        response = { data: response, dt: time() };
+    }
     this.write_cache(endpoint, params, response);
 
     return response;
