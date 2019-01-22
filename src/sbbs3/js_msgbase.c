@@ -3062,12 +3062,12 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	js_DescribeSyncConstructor(cx,obj,"To create a new MsgBase object: "
 		"<tt>var msgbase = new MsgBase('<i>code</i>')</tt><br>"
 		"where <i>code</i> is a sub-board internal code, or <tt>mail</tt> for the e-mail message base."
-		"<br>"
+		"<p>"
 		"The MsgBase retrieval methods that accept a <tt>by_offset</tt> argument as their optional first boolean argument "
 		"will interpret the following <i>number</i> argument as either a 1-based unique message number (by_offset=<tt>false</tt>) "
 		"or a 0-based message index-offset (by_offset=<tt>true</tt>). Retrieving messages by offset is faster than by number or "
 		"message-id (string). Passing an existing message header to the retrieval methods that support it (e.g. <tt>get_msg_body()</tt>) "
-		"is the even faster. "
+		"is even faster. "
 		);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", msgbase_prop_desc, JSPROP_READONLY);
 #endif
