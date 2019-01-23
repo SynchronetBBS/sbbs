@@ -496,7 +496,7 @@ void sbbs_t::show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thr
 int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 {
 	char	str[256],str2[256],do_find=true,mismatches=0
-			,done=0,domsg=1,*buf,*p;
+			,done=0,domsg=1,*buf;
 	char	find_buf[128];
 	char	tmp[128];
 	int		i;
@@ -1127,23 +1127,22 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 
 				FREE_AND_NULL(post);
 				quotemsg(&msg,/* include tails: */TRUE);
-				if(smb_netaddr_type(str)==NET_INTERNET)
-					inetmail(str,msg.subj,WM_QUOTE|WM_NETMAIL);
-				else {
-					p=strrchr(str,'@');
-					if(p)								/* FidoNet or QWKnet */
+				if(strchr(str, '@') != NULL) {
+					if(smb_netaddr_type(str)==NET_INTERNET)
+						inetmail(str,msg.subj,WM_QUOTE|WM_NETMAIL);
+					else	/* FidoNet or QWKnet */
 						netmail(str,msg.subj,WM_QUOTE);
-					else {
-						i=atoi(str);
-						if(!i) {
-							if(cfg.sub[subnum]->misc&SUB_NAME)
-								i=userdatdupe(0,U_NAME,LEN_NAME,str);
-							else
-								i=matchuser(&cfg,str,TRUE /* sysop_alias */); 
-						}
-						email(i,str2,msg.subj,WM_EMAIL|WM_QUOTE); 
-					} 
 				}
+				else {
+					i=atoi(str);
+					if(!i) {
+						if(cfg.sub[subnum]->misc&SUB_NAME)
+							i=userdatdupe(0,U_NAME,LEN_NAME,str);
+						else
+							i=matchuser(&cfg,str,TRUE /* sysop_alias */); 
+					}
+					email(i,str2,msg.subj,WM_EMAIL|WM_QUOTE); 
+				} 
 				break;
 			case 'P':   /* Post message on sub-board */
 				domsg=0;
