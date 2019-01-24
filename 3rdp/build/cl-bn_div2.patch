@@ -1,0 +1,12 @@
+--- bn/bn_div.c.orig	2017-03-23 01:27:30.000000000 -0400
++++ bn/bn_div.c	2019-01-21 17:23:06.478306000 -0500
+@@ -229,6 +229,9 @@
+ #  endif                        /* __GNUC__ */
+ # endif                         /* OPENSSL_NO_ASM */
+ 
++#undef REMAINDER_IS_ALREADY_CALCULATED
++#undef bn_div_words
++
+ /*-
+  * BN_div computes  dv := num / divisor,  rounding towards
+  * zero, and sets up rm  such that  dv*divisor + rm = num  holds.
