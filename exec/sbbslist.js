@@ -583,7 +583,7 @@ function upgrade_list(sbl_dab)
         if(js.terminated)
             break;
         var bbs = read_dab_entry(dab);
-        if(bbs==null || !bbs.name.length)
+        if(bbs==null || !bbs.name.length || bbs.name.charAt(0) == 0)
             continue;
 //        print(bbs.name);
         list.push(bbs);
