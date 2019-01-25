@@ -199,6 +199,16 @@ function export_to_msgbase(list, msgbase, limit, all)
 		lib.write_list(list);
 }
 
+function delete_in_msgbase(msgbase, bbs)
+{
+    var i;
+    var hdr = { to:'SBL-Remove', from:bbs.entry.created.by, subject:bbs.name };
+
+    var body = "Name:          " + bbs.name + "\r\n";
+	
+    return msgbase.save_msg(hdr, body);
+}
+
 function import_entry(name, text)
 {
     var i;
@@ -351,6 +361,7 @@ function import_from_msgbase(list, msgbase, import_ptr, limit, all)
     var count=0;
     var highest;
     var sbl_crc=crc16_calc("sbl");
+	var sbl_remove_crc=crc16_calc("sbl-remove");
 
     var ini = new File(msgbase.file + ".ini");
 	if(import_ptr == undefined) {
@@ -386,10 +397,13 @@ function import_from_msgbase(list, msgbase, import_ptr, limit, all)
             continue;
         if(idx.number > highest)
             highest = idx.number;
-        if(idx.to != sbl_crc)
+        if(idx.to != sbl_crc && idx.to != sbl_remove_crc)
             continue;
         var hdr = msgbase.get_msg_header(/* by_offset: */true, i);
-		if(!hdr.to || hdr.to.toLowerCase() != "sbl")
+		if(!hdr.to) 
+			continue;
+		var sbl_remove = hdr.to.toLowerCase() == "sbl-remove";
+		if(hdr.to.toLowerCase() != "sbl" && !sbl_remove)
 			continue;
         var l;
         var msg_from = hdr.from;
@@ -423,8 +437,16 @@ function import_from_msgbase(list, msgbase, import_ptr, limit, all)
 					+ bbs_name + " (" + entry.created.by + "@" + entry.created.at + " did)");
                 continue;
             }
-            print("Updating existing entry: " + bbs_name + " (by " + entry.created.by + ")");
+            print((sbl_remove ? "Removing" : "Updating") 
+				+ " existing entry: " + bbs_name + " (by " + entry.created.by + ")");
+			if(sbl_remove) {
+				if(!lib.remove(entry))
+					alert("Failed to remove: " + bbs_name);
+				continue;
+			}
         } else {
+			if(sbl_remove)
+				continue;
             print(msg_from + " creating new entry: " + bbs_name);
             entry = { created: { on:new Date().toISOString(), by:hdr.from, at:hdr.from_net_addr } };
         }
@@ -2059,6 +2081,7 @@ function main()
 	var limit;
 	var addr;
 	var preview;
+	var remote = false;
 
     for(i in argv) {
 		var arg = argv[i];
@@ -2112,6 +2135,9 @@ function main()
 				break;
 			case "-reverse":
 				options.reverse = !options.reverse;
+				break;
+			case "-remote":
+				remote = true;
 				break;
 			case "-debug":
 				debug = true;
@@ -2320,17 +2346,38 @@ function main()
 				lib.append(bbs);
 				print(system.name + " added successfully");
 				break;
+			case "delete":
+				if(optval[cmd] == '')
+					optval[cmd] = system.name;
+				/* fall-through */
 			case "remove":
-				if(optval[cmd]) {
-					var index = lib.system_index(list, optval[cmd]);
-					if(index < 0)
-						alert(optval[cmd] + " not found");
-					else
-						if(lib.remove(list[index]))
-							print(list[index].name + " removed successfully");
+				if(optval[cmd] == '') {
+					alert("usage: remove=<name>");
 					break;
 				}
-				alert("usage: remove=bbs_name");
+				alert("This command will remove '" + optval[cmd] +
+					"' from the local " + (remote ? "and remote ":"") + "database");
+				if(deny("Are you sure"))
+					break;
+				var index = lib.system_index(list, optval[cmd]);
+				if(index < 0) {
+					alert(optval[cmd] + " not found");
+					break;
+				}
+				var bbs=list[index];
+				if(!lib.remove(bbs))
+					break;
+				print(bbs.name + " removed successfully");
+				if(!remote)
+					break;
+				var msgbase = new MsgBase(options.sub);
+				print("Opening msgbase " + msgbase.file);
+				if(!msgbase.open()) {
+					alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
+					exit(-1);
+				}
+				delete_in_msgbase(msgbase, bbs);
+				msgbase.close();
 				break;
 			case "update":
 				var index = lib.system_index(list, system.name);
