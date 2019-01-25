@@ -95,6 +95,10 @@ var tests = {
 				continue;
 			if(usr.settings & (USER_DELETED|USER_INACTIVE))
 				continue;
+			if(!(usr.security.restrictions & UFLAG_G) && usr.security.password == '') {
+				output.push(format("User #%-4u has no password", usr.number));
+				continue;
+			}
 			if(!system.trashcan("password", usr.security.password))
 				continue;
 			output.push(format("User #%-4u has a disallowed password%s"
@@ -152,6 +156,26 @@ var tests = {
 		var list = lib.read_list();
 		if(!lib.system_exists(list, system.name))
 			return system.name + " is not listed in " + lib.list_fname;
+		var finger_host = "vert.synchro.net";
+		var finger_query = "?bbs:" + system.name;
+		var finger_result = load({}, "finger_lib.js").request(finger_host, finger_query);
+		var finger_obj;
+		try {
+			finger_obj = JSON.parse(finger_result.join(''));
+		} catch(e) {
+			return 'finger ' + finger_query + '@' + finger_host + ' result: ' + e;
+		}
+		var bbs = list[lib.system_index(list, system.name)];
+		bbs.entry = undefined;
+		finger_obj.entry = undefined;
+		if(JSON.stringify(finger_obj) != JSON.stringify(bbs))
+			return format("'%s' BBS entry on %s is different than local", system.name, finger_host);
+	},
+	
+	check_syncdata: function(options)
+	{
+		if(!load({}, "syncdata.js").find())
+			return "SYNCDATA sub-board could not be found in message area configuration";
 	},
 	
 	check_sub_codes: function(options)
@@ -168,14 +192,13 @@ var tests = {
 	{
 		return check_codes("external program (door)", xtrn_area.sec_list, 'prog_list');
 	},
-
 };
 
 var options = { verbose: argv.indexOf('-v') >= 0 };
 
 var issues = 0;
 for(var i in tests) {
-	print(i);
+	print('Invoking: ' + i);
 	var result;
 	switch(typeof (result = tests[i](options))) {
 		case 'string':
