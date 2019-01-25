@@ -72,13 +72,16 @@ OpenWeatherMap.prototype.call_api = function (endpoint, params, raw) {
     }, '');
     url += '&APPID=' + this.settings.api_key;
 
-    var response = (new HTTPRequest()).Get(url);
+    const req = new HTTPRequest();
+    var response = req.Get(url);
     if (!raw) {
         response = JSON.parse(response);
     } else {
         response = { data: response, dt: time() };
     }
-    this.write_cache(endpoint, params, response);
+    if (req.response_code >= 200 && req.response_code < 300) {
+        this.write_cache(endpoint, params, response);
+    }
 
     return response;
 }
