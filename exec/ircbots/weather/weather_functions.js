@@ -61,5 +61,5 @@ function get_params(cmd, nick, srv) {
 }
 
 function temperature_str(n) {
-    return n + '\xB0C \1n\1r(\1h\1c' + owm.c_to_f(n) + '\xB0F\1n\1r)';
+    return n + '\xC2\xB0C \1n\1r(\1h\1c' + owm.c_to_f(n) + '\xC2\xB0F\1n\1r)';
 }
