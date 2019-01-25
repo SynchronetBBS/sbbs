@@ -209,8 +209,10 @@ function web_user_misc(web_user)
 	return '';
 }
 
-function web_user_status(web_user, options)
+function web_user_status(web_user, browsing, options)
 {
+	if(!browsing)
+		browsing = 'browsing';
 	var output = '';
 
 	if(options.username_prefix)
@@ -220,7 +222,7 @@ function web_user_status(web_user, options)
 		output += options.status_prefix;
 	output += user_age_and_gender(web_user, options);
 	if(web_user.action) {
-		output += " ";
+		output += " " + browsing + " ";
 		output += web_user.action;
 	}
 	if(options.connection_prefix)
@@ -230,7 +232,7 @@ function web_user_status(web_user, options)
 	return output;
 }
 
-function web_users(max_inactivity, browsing)
+function web_users(max_inactivity)
 {
 	var user = new User;
 	var users = [];
@@ -238,8 +240,6 @@ function web_users(max_inactivity, browsing)
     const sessions = directory(system.data_dir + 'user/*.web');
 	if(!max_inactivity)
 		max_inactivity = 15 * 60;
-	if(!browsing)
-		browsing = 'browsing';
 
     sessions.forEach(function (e) {
 		const base = file_getname(e).replace(file_getext(e), '');
@@ -257,7 +257,8 @@ function web_users(max_inactivity, browsing)
         }
 		users.push({
 			name: user.alias,
-			action: session && session.action ? (browsing + ' ' + session.action) : undefined,
+			usernum: un,
+			action: session.action,
 			age: user.age,
 			gender: user.gender,
 			location: user.location,
@@ -304,9 +305,9 @@ function nodelist(print, active, listself, is_sysop, options)
 			output.push(line);
 	}
 	if(options.include_web_users !== false) {
-		var web_user = web_users(options.web_inactivity, options.web_browsing);
+		var web_user = web_users(options.web_inactivity);
 		for(var w in web_user) {
-			var line = format(options.format, ++n, web_user_status(web_user[w], options));
+			var line = format(options.format, ++n, web_user_status(web_user[w], options.web_browsing, options));
 			if(print)
 				writeln(line);
 			else
