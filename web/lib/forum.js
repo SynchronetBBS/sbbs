@@ -267,6 +267,30 @@ function getMailHeaders(sent, ascending) {
     return headers;
 }
 
+function get_mail_headers(filter, ascending) {
+    if (filter == 'sent') {
+        if (user.security.restrictions&UFLAG_K) return []; // I don't remember what this is for.
+    }
+    const headers = [];
+    const msg_base = new MsgBase('mail');
+    if (!msg_base.open()) return headers;
+    for (var n = msg_base.first_msg; n <= msg_base.last_msg; n++) {
+        var h = msg_base.get_msg_header(n);
+        if (h === null || h.attr&MSG_DELETE) continue;
+        if (filter == 'sent') {
+            if (h.from_ext == user.number) headers.push(h);
+        } else if (h.to_ext == user.number) {
+            if (h.subject.search(/^SPAM:/) > -1) {
+                if (filter == 'spam') headers.push(h);
+            } else if (filter != 'spam') {
+                headers.push(h);
+            }
+        }
+    }
+    msg_base.close();
+    return ascending ? headers.reverse() : headers;
+}
+
 function mimeDecode(header, body, code) {
     const ret = {
         type : '',
