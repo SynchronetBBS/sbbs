@@ -63,9 +63,9 @@ function date_to_str(date)
 function date_from_str(str)
 {
 	var a = str.split("/");
-	var month = parseInt(a[0]);
-	var day = parseInt(a[1]);
-	var year = parseInt(a[2]);
+	var month = parseInt(a[0], 10);
+	var day = parseInt(a[1], 10);
+	var year = parseInt(a[2], 10);
 	year += 1900;
 	if(year < 1970)
 		year += 100;
@@ -1707,8 +1707,14 @@ function edit_field(obj, field, max_len)
 	if(max_len == undefined)
 		max_len = 3;
 	var str = console.getstr(obj[field], max_len, K_EDIT|K_LINE|K_AUTODEL);
-	if(str !== false)
-		obj[field] = str;
+	if(str !== false) {
+		if(lib.max_val[field] !== undefined) {
+			var value = parseInt(str, 10);
+			if(!isNan(value) && value <= lib.max_val[field])
+				obj[field] = value;
+		} else
+			obj[field] = str;
+	}
 }
 
 function can_edit(bbs)
@@ -1883,7 +1889,8 @@ function edit(bbs)
 			case 7:
 				printf("\1n\1h\1yTerminal server nodes\1w: ");
 				var nodes = console.getstr(String(bbs.terminal.nodes), 3, K_NUMBER|K_EDIT|K_AUTODEL);
-				if(nodes > 0)
+				nodes = parseInt(nodes, 10);
+				if(!isNaN(nodes) && nodes > 0 && nodes <= lib.max_val.nodes)
 					bbs.terminal.nodes = nodes;
 				break;
 			case 8:
@@ -2143,8 +2150,8 @@ function main()
 				debug = true;
 				break;
 			default:
-				if(parseInt(arg) < 0)
-					limit = -parseInt(arg);
+				if(parseInt(arg, 10) < 0)
+					limit = -parseInt(arg, 10);
 				else
 					cmds.push(arg);
 				break;
