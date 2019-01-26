@@ -45,6 +45,22 @@ const max_len = {
 	description:		250,
 };
 
+// Some of these max values are hard-technical limits (e.g. port), some are legacy
+// SBL limits (e.g. 16-bit min/max_rate) and some are just limited for cosmetic reasons
+const max_val = {
+	port:				65535,
+	nodes:				255,
+	users:				9999,
+	subs:				99999,
+	dirs:				99999,
+	doors:				99999,
+	msgs:				99999999,
+	files:				9999999,
+	storage:			9999999,
+	min_rate:			65535,
+	max_rate:			65535,
+};
+
 // Services supported by BBS clients (e.g. SyncTERM)
 const common_bbs_services = [
     "telnet",
