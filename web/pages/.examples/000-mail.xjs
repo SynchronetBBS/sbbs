@@ -6,10 +6,10 @@
     load('sbbsdefs.js');
     load(settings.web_lib + 'forum.js');
 
-    function sent() {
-    	if (typeof http_request.query.sent === 'undefined') return false;
-    	if (http_request.query.sent[0] == '0') return false;
-    	return true;
+    const _mail_tab = http_request.query.tab ? http_request.query.tab[0] : 'inbox';
+
+    function _active_tab(tab) {
+        return tab == _mail_tab ? 'active' : '';
     }
 ?>
 
@@ -24,8 +24,8 @@
 				</div>
 			</div>
 			<div class="col-sm-11" style="cursor:pointer;" onclick="getMailBody(<?xjs write(header.number); ?>)">
-				<?xjs write(!sent() ? locale.strings.page_mail.label_message_from : locale.strings.page_mail.label_message_to); ?>:
-				<strong><?xjs write(!sent() ? header.from : header.to); ?></strong>
+				<?xjs write(_mail_tab == 'sent' ? locale.strings.page_mail.label_message_from : locale.strings.page_mail.label_message_to); ?>:
+				<strong><?xjs write(_mail_tab == 'sent' ? header.from : header.to); ?></strong>
 				<?xjs write(locale.strings.page_mail.label_message_date); ?>
 				<?xjs write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
 				<p>
@@ -87,13 +87,18 @@
 <?xjs } ?>
 
 <ul class="nav nav-tabs">
-	<li role="presentation" class="<?xjs write(!sent() ? ' active' : ''); ?>">
-		<a href="./?page=<?xjs write(page); ?>&amp;sent=0">
+	<li role="presentation" class="<?xjs write(_active_tab('inbox')); ?>">
+		<a href="./?page=<?xjs write(page); ?>&amp;tab=inbox">
 			<?xjs write(locale.strings.page_mail.label_tab_inbox); ?>
 		</a>
 	</li>
-	<li role="presentation" class="<?xjs write(sent() ? ' active' : ''); ?>">
-		<a href="./?page=<?xjs write(page); ?>&amp;sent=1">
+    <li role="presentation" class="<?xjs write(_active_tab('spam')); ?>">
+		<a href="./?page=<?xjs write(page); ?>&amp;tab=spam">
+			Spam
+		</a>
+	</li>
+	<li role="presentation" class="<?xjs write(_active_tab('sent')); ?>">
+		<a href="./?page=<?xjs write(page); ?>&amp;tab=sent">
 			<?xjs write(locale.strings.page_mail.label_tab_sent); ?>
 		</a>
 	</li>
@@ -101,5 +106,5 @@
 <br>
 
 <ul id="forum-list-container" class="list-group">
-	<?xjs getMailHeaders(sent()).forEach(writeMessage); ?>
+    <?xjs get_mail_headers(_mail_tab).forEach(writeMessage); ?>
 </ul>
