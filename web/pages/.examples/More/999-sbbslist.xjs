@@ -36,6 +36,7 @@
 <?xjs
 
 	load('graphic.js');
+	require('portdefs.js', 'standard_service_port');
 	var lib = load({}, "sbbslist_lib.js");
 
 	function bbs_preview(bbs) {
@@ -61,8 +62,7 @@
 
 	var list = lib.read_list();
 	if (list === null) list = [];
-	lib.sort(list, "verified_on");
-	list.reverse();
+	lib.sort(list, "verify");
 
 	list.forEach(
 		function (e) {
@@ -73,8 +73,12 @@
 					function (ee) {
                         if (!ee.protocol)
                             return '';
-						var r = ee.protocol[0].toUpperCase() + ee.protocol.slice(1) + ': ' + ee.address;
-						if (typeof ee.port === 'number') r += ':' + ee.port;
+						var r = ee.protocol + ': ' + ee.address;
+						if (typeof ee.port === 'number'
+                            && ee.port != standard_service_port[ee.protocol])
+                            r += ':' + ee.port;
+                        if (ee.description !== undefined && ee.description.length > 0)
+                            r += ' (' + ee.description + ')';
 						return r;
 					}
 				).join ('<br>'),
