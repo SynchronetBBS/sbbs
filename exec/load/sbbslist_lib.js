@@ -26,6 +26,7 @@ const max_len = {
 	updated_on:			28,
 	verified_on:		28,
 	service_address:	35,		// Increased from 28
+	service_description:15,
 	software:			15,
 	since:				4,		/* just the year portion of the first_online date */
 	nodes:				4,
@@ -36,6 +37,10 @@ const max_len = {
 	msgs:				8,
 	files:				7,
 	storage:			7,
+	min_rate:			5,
+	max_rate:			5,
+	port:				5,
+	protocol:			15,
 	protocols:			60,
 	tcp_services:		33,
 	udp_services:		20,
@@ -56,7 +61,6 @@ const max_val = {
 	doors:				99999,
 	msgs:				99999999,
 	files:				9999999,
-	storage:			9999999,
 	min_rate:			65535,
 	max_rate:			65535,
 };
