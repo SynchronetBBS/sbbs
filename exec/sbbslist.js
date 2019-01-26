@@ -908,7 +908,7 @@ function getstr(prmpt, maxlen, mode)
 	if(!js.global.console)
 		return prompt(prmpt);
 	printf("\1n\1y\1h%s\1w: ", prmpt);
-	return console.getstr(maxlen, mode !==undefined ? mode : K_LINE);
+	return console.getstr(maxlen, mode !==undefined ? (mode|K_TRIM) : (K_LINE|K_TRIM));
 }
 
 function get_description()
@@ -1706,13 +1706,27 @@ function edit_field(obj, field, max_len)
 		max_len = lib.max_len[field];
 	if(max_len == undefined)
 		max_len = 3;
-	var str = console.getstr(obj[field], max_len, K_EDIT|K_LINE|K_AUTODEL);
-	if(str !== false) {
-		if(lib.max_val[field] !== undefined) {
+	if(lib.max_val[field] !== undefined) {	// Numeric value?
+		var value = obj[field];
+		if (value == undefined)
+			value = '';
+		var str = console.getstr(String(value), max_len, K_EDIT|K_LINE|K_AUTODEL|K_NUMBER);
+		if(str === false)
+			return;
+		if(str === '')
+			obj[field] = undefined;
+		else {
 			var value = parseInt(str, 10);
-			if(!isNan(value) && value <= lib.max_val[field])
+			if(!isNaN(value) && value <= lib.max_val[field])
 				obj[field] = value;
-		} else
+		}
+		return;
+	}
+	// String value
+	var str = console.getstr(obj[field], max_len, K_EDIT|K_LINE|K_AUTODEL|K_TRIM);
+	if(str !== false) {
+		obj[field] = undefined;
+		if(str.length > 0)
 			obj[field] = str;
 	}
 }
@@ -1738,8 +1752,11 @@ function edit_object(title, obj, props, max_lens, prop_descs)
 		console.clear(LIGHTGRAY);
 		print("Editing " + title + ": " + obj[props[0]]);
 		console.crlf();
-		for(var i in props)
-			print(format("\1n%2u \1h%-12s \1n: \1h%s", Number(i)+1, props[i].capitalize(), obj[props[i]]));
+		for(var i = 0; i < props.length; i++)
+			print(format("\1n%2u \1h%-12s \1n: %s%s"
+				, i+1, props[i].capitalize()
+				, typeof obj[props[i]] == 'string' ? '\1h' : ''
+				, obj[props[i]]));
 		console.mnemonics("\r\nWhich or ~Quit: ");
 		var which = console.getnum(props.length);
 		if(which < 1)
@@ -1782,9 +1799,18 @@ function edit_array(title, arr, props, max_lens, prop_descs, max_array_len)
 			var obj = {};
 			for(var i in props) {
 				printf("\r\n%s\r\n", prop_descs[i]);
-					obj[props[i]] = getstr(props[i].capitalize(), max_lens[i]);
-				if(!obj[props[i]])
+				var mode = undefined;
+				if(lib.max_val[props[i]])
+					mode = K_NUMBER;
+				var value = getstr(props[i].capitalize(), max_lens[i], mode);
+				if(value === false || !value.length)
 					break;
+				if(mode == K_NUMBER) {
+					value = parseInt(value, 10);
+					if(isNaN(value) || value > lib.max_val[props[i]])
+						break;
+				}
+				obj[props[i]] = value;
 			}
 			if(!obj[props[0]])
 				continue;
@@ -1884,7 +1910,7 @@ function edit(bbs)
 					print(bbs.description[i]);
 				console.home();
 				for(var i=0; i < sbl_defs.DESC_LINES && !console.aborted; i++)
-					bbs.description[i] = console.getstr(bbs.description[i], sbl_defs.DESC_LINE_LEN, K_EDIT|K_MSG);
+					bbs.description[i] = console.getstr(bbs.description[i], sbl_defs.DESC_LINE_LEN, K_EDIT|K_MSG|K_TRIM);
 				break;
 			case 7:
 				printf("\1n\1h\1yTerminal server nodes\1w: ");
@@ -1896,7 +1922,7 @@ function edit(bbs)
 			case 8:
 				printf("\1n\1h\1yTerminal types supported\1w: ");
 				var terms = bbs.terminal.types.join(", ");
-				terms = console.getstr(terms, 40, K_EDIT|K_LINE|K_UPPER);
+				terms = console.getstr(terms, 40, K_EDIT|K_LINE|K_UPPER|K_TRIM);
 				if(terms)
 					bbs.terminal.types = terms.split(/\s*,\s*/, sbl_defs.MAX_TERMS);
 				break;
@@ -1918,9 +1944,15 @@ function edit(bbs)
 					if(which < 1)
 						break;
 					printf("\1h\1yTotal %s\1w: ", prop[which]);
-					var newval = console.getstr(20);
-					if(newval !== false && newval.length)
-						bbs.total[prop[which]] = newval;
+					var newval = console.getstr(String(Number(bbs.total[prop[which]])), 20, K_EDIT|K_NUMBER);
+					if(newval !== false && newval.length) {
+						var value = parseInt(newval, 10);
+						if(!isNaN(value)) {
+							if(lib.max_val[prop[which]] === undefined
+								|| value <= lib.max_val[prop[which]])
+								bbs.total[prop[which]] = value;
+						}
+					}
 				}
 				break;
 			case 10:
@@ -1935,7 +1967,13 @@ function edit(bbs)
 				edit_array("Service"
 					,bbs.service
 					,[ "address", "protocol", "port", "min_rate", "max_rate", "description" ]
-					,[ lib.max_len.service_address, 15, 5, 5, 5, 15 ]
+					,[ lib.max_len.service_address
+					  ,lib.max_len.protocol
+					  ,lib.max_len.port
+					  ,lib.max_len.min_rate
+					  ,lib.max_len.max_rate
+					  ,lib.max_len.service_description
+					 ]
 					,[ "Terminal service host name, IP address (excluding port number), or phone number" 
 					  ,"TCP protocol name (e.g. telnet, ssh, rlogin) or 'modem' for traditional dial-up"
 					  ,"TCP Port number, if non-standard"
