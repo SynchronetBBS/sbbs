@@ -268,27 +268,34 @@ function getMailHeaders(sent, ascending) {
 }
 
 function get_mail_headers(filter, ascending) {
-    if (filter == 'sent') {
-        if (user.security.restrictions&UFLAG_K) return []; // I don't remember what this is for.
-    }
-    const headers = [];
+    const ret = {
+        headers: [],
+        sent: { read: 0, unread: 0 },
+        spam: { read: 0, unread: 0 },
+        inbox: { read: 0, unread: 0 }
+    };
+    if (filter == 'sent' && user.security.restrictions&UFLAG_K) return ret; // I don't remember what this is for.
     const msg_base = new MsgBase('mail');
-    if (!msg_base.open()) return headers;
+    if (!msg_base.open()) return ret;
     for (var n = msg_base.first_msg; n <= msg_base.last_msg; n++) {
         var h = msg_base.get_msg_header(n);
         if (h === null || h.attr&MSG_DELETE) continue;
-        if (filter == 'sent') {
-            if (h.from_ext == user.number) headers.push(h);
+        if (h.from_ext == user.number) {
+            h.attr&MSG_READ ? ret.sent.read++ : (ret.sent.unread++);
+            if (filter == 'sent') ret.headers.push(h);
         } else if (h.to_ext == user.number) {
             if (h.subject.search(/^SPAM:/) > -1) {
-                if (filter == 'spam') headers.push(h);
-            } else if (filter != 'spam') {
-                headers.push(h);
+                h.attr&MSG_READ ? ret.spam.read++ : (ret.spam.unread++);
+                if (filter == 'spam') ret.headers.push(h);
+            } else {
+                h.attr&MSG_READ ? ret.inbox.read++ : (ret.inbox.unread++);
+                if (filter != 'spam') ret.headers.push(h);
             }
         }
     }
     msg_base.close();
-    return ascending ? headers.reverse() : headers;
+    if (ascending) ret.headers.reverse();
+    return ret;
 }
 
 function mimeDecode(header, body, code) {

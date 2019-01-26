@@ -2,12 +2,10 @@
 
 <?xjs
     if (user.number == 0 || user.alias == settings.guest) exit();
-
     load('sbbsdefs.js');
     load(settings.web_lib + 'forum.js');
-
     const _mail_tab = http_request.query.tab ? http_request.query.tab[0] : 'inbox';
-
+    const _mail = get_mail_headers(_mail_tab, true);
     function _active_tab(tab) {
         return tab == _mail_tab ? 'active' : '';
     }
@@ -37,6 +35,19 @@
 		<div class="message" id="message-<?xjs write(header.number); ?>" hidden></div>
 	</li>
 <?xjs } ?>
+
+<?xjs
+    function _read_unread(tab) {
+        write('(');
+        if (_mail[tab].unread) {
+            write('<strong>' + _mail[tab].unread + '</strong>');
+        } else {
+            write(_mail[tab].unread);
+        }
+        write('/' + _mail[tab].read);
+        write(')');
+    }
+?>
 
 <script type="text/javascript" src="./js/forum.js"></script>
 
@@ -90,21 +101,24 @@
 	<li role="presentation" class="<?xjs write(_active_tab('inbox')); ?>">
 		<a href="./?page=<?xjs write(page); ?>&amp;tab=inbox">
 			<?xjs write(locale.strings.page_mail.label_tab_inbox); ?>
+            <?xjs _read_unread('inbox'); ?>
 		</a>
 	</li>
     <li role="presentation" class="<?xjs write(_active_tab('spam')); ?>">
 		<a href="./?page=<?xjs write(page); ?>&amp;tab=spam">
 			Spam
+            <?xjs _read_unread('spam'); ?>
 		</a>
 	</li>
 	<li role="presentation" class="<?xjs write(_active_tab('sent')); ?>">
 		<a href="./?page=<?xjs write(page); ?>&amp;tab=sent">
 			<?xjs write(locale.strings.page_mail.label_tab_sent); ?>
+            <?xjs _read_unread('sent'); ?>
 		</a>
 	</li>
 </ul>
 <br>
 
 <ul id="forum-list-container" class="list-group">
-    <?xjs get_mail_headers(_mail_tab).forEach(writeMessage); ?>
+    <?xjs _mail.headers.forEach(writeMessage); ?>
 </ul>
