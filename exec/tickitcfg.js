@@ -175,26 +175,18 @@ function edit_sourceaddress(obj)
 {
 	var tmp;
 
-	tmp = null;
-	while(tmp !== undefined) {
-		tmp = uifc.input(WIN_SAV|WIN_MID, "Source Address", obj.sourceaddress === undefined ? '' : obj.sourceaddress, 32, K_EDIT);
-		if (tmp != undefined) {
-			obj.sourceaddress = tmp;
-		}
-	}
+	tmp = uifc.input(WIN_SAV|WIN_MID, "Source Address", obj.sourceaddress === undefined ? '' : obj.sourceaddress, 32, K_EDIT);
+	if (tmp != undefined)
+		obj.sourceaddress = tmp;
 }
 
 function edit_uploader(obj)
 {
 	var tmp;
 
-	tmp = null;
-	while(tmp !== undefined) {
-		tmp = uifc.input(WIN_SAV|WIN_MID, "Uploader", obj.uploader === undefined ? '' : obj.uploader, 32, K_EDIT);
-		if (tmp != undefined) {
-			obj.uploader = tmp;
-		}
-	}
+	tmp = uifc.input(WIN_SAV|WIN_MID, "Uploader", obj.uploader === undefined ? '' : obj.uploader, 32, K_EDIT);
+	if (tmp != undefined)
+		obj.uploader = tmp;
 }
 
 function edit_area(obj, name)
@@ -310,6 +302,7 @@ function import_areas(libname)
 	file.close();
 }
 
+var unexpected_exit = true;
 function main()
 {
 
@@ -318,6 +311,8 @@ function main()
 			return import_areas(argv[i].substr(7));
 
 	uifc.init("TickIT Config Program");
+	js.on_exit("uifc.bail();");
+	js.on_exit("if(unexpected_exit) uifc.msg('Abnormal Exit');");
 
 	var cmd = 0;
 	var link = 0;
@@ -382,8 +377,8 @@ function main()
 						/* fall-through */
 					case 1:
 						uifc.pop("Exiting");
-						uifc.bail();
-						break;
+						unexpected_exit = false;
+						return;
 					default:
 						cmd = 0;
 						break;
