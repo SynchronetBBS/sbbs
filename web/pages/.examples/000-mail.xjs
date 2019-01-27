@@ -22,8 +22,8 @@
 				</div>
 			</div>
 			<div class="col-sm-11" style="cursor:pointer;" onclick="getMailBody(<?xjs write(header.number); ?>)">
-				<?xjs write(_mail_tab == 'sent' ? locale.strings.page_mail.label_message_from : locale.strings.page_mail.label_message_to); ?>:
-				<strong><?xjs write(_mail_tab == 'sent' ? header.from : header.to); ?></strong>
+				<?xjs write(_mail_tab == 'sent' ? locale.strings.page_mail.label_message_to : locale.strings.page_mail.label_message_from); ?>:
+				<strong><?xjs write(_mail_tab == 'sent' ? header.to : header.from); ?></strong>
 				<?xjs write(locale.strings.page_mail.label_message_date); ?>
 				<?xjs write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
 				<p>
