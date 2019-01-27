@@ -336,7 +336,7 @@ function main()
 	var ctx = new uifc.list.CTX();
 
 	while(cmd >= 0) {
-		cmd = uifc.list(WIN_ORG|WIN_ACT|WIN_MID, "Global Options", menu, ctx);
+		cmd = uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_ESC, "Global Options", menu, ctx);
 		switch(cmd) {
 			case 0:
 				set_akamatching(tickit.gcfg);
@@ -374,12 +374,14 @@ function main()
 				edit_areas();
 				break;
 			case -1:
-				switch(uifc.list(WIN_MID, "Write INI", ["Yes", "No"])) {
+				switch(uifc.list(WIN_MID|WIN_SAV, "Write INI", ["Yes", "No"])) {
 					case 0:
-						tickit.save();
-						uifc.bail();
-						break;
+						var result = tickit.save();
+						if(result !== true)
+							uifc.msg(result);
+						/* fall-through */
 					case 1:
+						uifc.pop("Exiting");
 						uifc.bail();
 						break;
 					default:
