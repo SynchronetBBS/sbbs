@@ -112,6 +112,7 @@ var tests = {
 	{
 		var output = [];
 		var long = 0;
+		var short = 0;
 		const maxlen = 79 - " * Synchronet * ".length;
 		for(var s in msg_area.sub) {
 			var sub = msg_area.sub[s];
@@ -120,13 +121,24 @@ var tests = {
 			var len = strip_ctrl(sub.fidonet_origin).length;
 			if(js.global.console)
 				len = console.strlen(sub.fidonet_origin);
-			if(len > maxlen)
+			if(len > maxlen) {
+				if(options.verbose)
+					alert(format("QWK-networked sub (%s) has a long tagline", s));
 				long++;
+			}
+			if(len < 1) {
+				if(options.verbose)
+					alert(format("QWK-networked sub (%s) has a short tagline", s));
+				short++;
+			}
 		}
 		if(long)
 			output.push(long 
 				+ " msg sub-boards have QWKnet taglines exceeding " 
 				+ maxlen + " printed characters");
+		if(short)
+			output.push(short
+				+ " msg sub-boards have QWKnet taglines with no content");
 		return output;
 	},
 
@@ -134,19 +146,31 @@ var tests = {
 	{
 		var output = [];
 		var long = 0;
+		var short = 0;
 		const maxlen = 79 - " * Origin: ".length;
 		for(var s in msg_area.sub) {
 			var sub = msg_area.sub[s];
 			if(!(sub.settings & SUB_FIDO))
 				continue;
 			var len = sub.fidonet_origin.length;
-			if(len > maxlen)
+			if(len > maxlen) {
+				if(options.verbose)
+					alert(format("Fido-networked sub (%s) has a long origin line", s));
 				long++;
+			}
+			if(len < 1) {
+				if(options.verbose)
+					alert(format("Fido-networked sub (%s) has a short origin line", s));
+				short++;
+			}
 		}
 		if(long)
 			output.push(long 
 				+ " msg sub-boards have FidoNet origin lines exceeding "
 				+ maxlen + " printed characters");
+		if(short)
+			output.push(short
+				+ " msg sub-boards have FidoNet origin lines with no content");
 		return output;
 	},
 	
@@ -192,6 +216,24 @@ var tests = {
 	{
 		return check_codes("external program (door)", xtrn_area.sec_list, 'prog_list');
 	},
+	
+	check_sockopts_ini: function(options)
+	{
+		var output = [];
+		var file = new File(file_cfgname(system.ctrl_dir, "sockopts.ini"));
+		if(file.open("r")) {
+			if(file.iniGetValue(null, "SNDBUF"))
+				output.push(file.name + " has SNDBUF set");
+			if(file.iniGetValue(null, "RCVBUF"))
+				output.push(file.name + " has RCVBUF set");
+			if(file.iniGetValue("tcp", "SNDBUF"))
+				output.push(file.name + " has [tcp] SNDBUF set");
+			if(file.iniGetValue("tcp", "RCVBUF"))
+				output.push(file.name + " has [tcp] RCVBUF set");
+			file.close();
+		}
+		return output;
+	}
 };
 
 var options = { verbose: argv.indexOf('-v') >= 0 };
