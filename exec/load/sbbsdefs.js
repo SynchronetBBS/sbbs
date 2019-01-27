@@ -33,9 +33,9 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'nodedefs.js', 'NODE_WFC');
-load('smbdefs.js');
-load('cga_defs.js');
+require('nodedefs.js', 'NODE_WFC');
+require('smbdefs.js', 'SMB_SUCCESS');
+require('cga_defs.js', 'BLACK');
 
 /* Would rather use const than var, but end up with redeclaration errors.	*/
 
