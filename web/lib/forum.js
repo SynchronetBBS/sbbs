@@ -289,7 +289,7 @@ function get_mail_headers(filter, ascending) {
                 if (filter == 'spam') ret.headers.push(h);
             } else {
                 h.attr&MSG_READ ? ret.inbox.read++ : (ret.inbox.unread++);
-                if (filter != 'spam') ret.headers.push(h);
+                if (filter == 'inbox') ret.headers.push(h);
             }
         }
     }
