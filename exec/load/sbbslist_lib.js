@@ -179,41 +179,41 @@ function property_value(bbs, property)
 				value = bbs.first_online.substring(0,4);
 			break;
 		case "nodes":
-			if(bbs.terminal && bbs.terminal.nodes)
+			if(bbs.terminal && bbs.terminal.nodes !== undefined)
 				value = bbs.terminal.nodes;
 			break;
 		case "users":
-			if(bbs.total && bbs.total.users)
+			if(bbs.total && bbs.total.users !== undefined)
 				value = bbs.total.users;
 			break;
 		case "subs":
-			if(bbs.total && bbs.total.subs)
+			if(bbs.total && bbs.total.subs !== undefined)
 				value = bbs.total.subs;
 			break;
 		case "dirs":
-			if(bbs.total && bbs.total.dirs)
+			if(bbs.total && bbs.total.dirs !== undefined)
 				value = bbs.total.dirs;
 			break;
 		case "doors":
-			if(bbs.total && bbs.total.doors)
+			if(bbs.total && bbs.total.doors !== undefined)
 				value = bbs.total.doors;
 			break;
 		case "msgs":
-			if(bbs.total && bbs.total.msgs) {
+			if(bbs.total && bbs.total.msgs !== undefined) {
 				value = bbs.total.msgs;
 				if(value >= 1000000)
 					value = Math.ceil(value / 1000000) + "M";
 			}
 			break;
 		case "files":
-			if(bbs.total && bbs.total.files) {
+			if(bbs.total && bbs.total.files !== undefined) {
 				value = bbs.total.files;
 				if(value >= 1000000)
 					value = Math.ceil(value / 1000000) + "M";
 			}
 			break;
 		case "storage":
-			if(bbs.total && bbs.total.storage) {
+			if(bbs.total && bbs.total.storage && !isNaN(bbs.total.storage)) {
 				if(bbs.total.storage > 1024*1024*1024*1024)
 					value = Math.ceil(bbs.total.storage / (1024*1024*1024*1024)) + "TB";
 				else if(bbs.total.storage > 1024*1024*1024)
@@ -284,6 +284,14 @@ function property_value(bbs, property)
 	return value;
 }
 
+function numeric_sort_value(value)
+{
+	value = parseInt(value, 10);
+	if(isNaN(value))
+		return -1;
+	return value;
+}
+
 /* Some properties are nested within arrays of objects, lets simplify those properties here */
 function property_sort_value(bbs, property)
 {
@@ -296,15 +304,35 @@ function property_sort_value(bbs, property)
 			return bbs.name;
 		case "storage":
 			if(bbs.total)
-				return bbs.total.storage;
+				return numeric_sort_value(bbs.total.storage);
 			break;
 		case "files":
 			if(bbs.total)
-				return bbs.total.files;
+				return numeric_sort_value(bbs.total.files);
 			brak;
 		case "msgs":
 			if(bbs.total)
-				return bbs.total.msgs;
+				return numeric_sort_value(bbs.total.msgs);
+			break;
+		case "dirs":
+			if(bbs.total)
+				return numeric_sort_value(bbs.total.dirs);
+			break;
+		case "subs":
+			if(bbs.total)
+				return numeric_sort_value(bbs.total.subs);
+			break;
+		case "users":
+			if(bbs.total)
+				return numeric_sort_value(bbs.total.users);
+			break;
+		case "doors":
+			if(bbs.total)
+				return numeric_sort_value(bbs.total.doors);
+			break;
+		case "nodes":
+			if(bbs.terminal)
+				return numeric_sort_value(bbs.terminal.nodes);
 			break;
 		case "created_on":
 			return new Date(bbs.entry.created.on).valueOf();
