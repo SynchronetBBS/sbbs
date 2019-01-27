@@ -219,13 +219,13 @@ function edit_area(obj, name)
 				set_akamatching(obj);
 				break;
 			case 1:
-				edit_sourceaddress(obj);
+				set_forcereplace(obj);
 				break;
 			case 2:
-				edit_uploader(obj);
+				edit_sourceaddress(obj);
 				break;
 			case 3:
-				set_forcereplace(obj);
+				edit_uploader(obj);
 				break;
 			case 4:
 				set_location(obj);
