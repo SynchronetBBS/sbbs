@@ -322,20 +322,20 @@ function main()
 	var cmd = 0;
 	var link = 0;
 	var links;
-	var menu = ["Global AKA Matching   : "+(tickit.gcfg.akamatching === true ? "Yes" : "No"),
-				"Global Force Replace  : "+(tickit.gcfg.forcereplace === true ? "Yes" : "No"),
-				"Global Ignore Password: "+(tickit.gcfg.ignorepassword === true ? "Yes" : "No"),
-				"Global Secure Only    : "+(tickit.gcfg.secureonly === true ? "Yes" : "No"),
-				"Global Source Address : "+(tickit.gcfg.sourceaddress === undefined ? "" : tickit.gcfg.sourceaddress),
-				"Global Uploader Name  : "+(tickit.gcfg.uploader === undefined ? "" : tickit.gcfg.uploader),
-				"Global Location       : ",
-				"Global Links          : ",
-				"Areas..."];
 	var tmp;
 	var tmp2;
 	var ctx = new uifc.list.CTX();
 
 	while(cmd >= 0) {
+		var menu = ["Global AKA Matching   : "+(tickit.gcfg.akamatching === true ? "Yes" : "No"),
+					"Global Force Replace  : "+(tickit.gcfg.forcereplace === true ? "Yes" : "No"),
+					"Global Ignore Password: "+(tickit.gcfg.ignorepassword === true ? "Yes" : "No"),
+					"Global Secure Only    : "+(tickit.gcfg.secureonly === true ? "Yes" : "No"),
+					"Global Source Address : "+(tickit.gcfg.sourceaddress === undefined ? "" : tickit.gcfg.sourceaddress),
+					"Global Uploader Name  : "+(tickit.gcfg.uploader === undefined ? "" : tickit.gcfg.uploader),
+					"Global Location       : ",
+					"Global Links          : ",
+					"Areas..."];
 		cmd = uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_ESC, "Global Options", menu, ctx);
 		switch(cmd) {
 			case 0:
