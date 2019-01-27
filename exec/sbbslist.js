@@ -931,6 +931,16 @@ function add_entry(list)
 		alert("Sorry, you cannot do that");
 		return true;
 	}
+	console.attributes = WHITE;
+	print("Adding a BBS to the BBS List");
+	console.attributes = CYAN;
+	print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	console.attributes = LIGHTCYAN;
+	print("Required fields:");
+	console.attributes = CYAN;
+	print("\t- BBS Name");
+	print("\t- Terminal Server Host Name");
+	print("\t- Description");
 	var bbs_name = getstr("BBS Name", lib.max_len.name);
 	if(!bbs_name)
 		return false;
@@ -945,7 +955,11 @@ function add_entry(list)
 	bbs.web_site = getstr("Web-Site (address/URL)", lib.max_len.web_site);
 	bbs.terminal.types.push("TTY", "ANSI");
 	// Automatically test ports here?
-	var host_name = getstr("Terminal server host name or IP address", lib.max_len.service_address);
+	var host_name = getstr("Terminal Server Host Name or IP Address", lib.max_len.service_address);
+	if(typeof host_name !== 'string' || host_name.length < 3) {
+		alert("You must provide a valid terminal server address");
+		return true;
+	}
 	bbs.service.push({ protocol: 'telnet', address: host_name, port: standard_service_port['telnet'] });
 	bbs.description = get_description();
 	if(!bbs.description.length) {
@@ -1798,13 +1812,13 @@ function edit_array(title, arr, props, max_lens, prop_descs, max_array_len)
 			}
 			var obj = {};
 			for(var i in props) {
-				printf("\r\n%s\r\n", prop_descs[i]);
+				printf("\r\n\1n\1h%s\r\n", prop_descs[i]);
 				var mode = undefined;
 				if(lib.max_val[props[i]])
 					mode = K_NUMBER;
 				var value = getstr(props[i].capitalize(), max_lens[i], mode);
 				if(value === false || !value.length)
-					break;
+					continue;
 				if(mode == K_NUMBER) {
 					value = parseInt(value, 10);
 					if(isNaN(value) || value > lib.max_val[props[i]])
@@ -1845,7 +1859,7 @@ function edit(bbs)
 		return false;
 	}
 	if(!bbs.first_online)
-			bbs.first_online="";
+		bbs.first_online="";
 	while(js.global.bbs.online) {
 		console.clear();
 		printf("\1nEditing BBS entry: \1h%s\r\n", bbs.name);
@@ -1856,13 +1870,13 @@ function edit(bbs)
 		var sysop = "";
 		if(bbs.sysop.length)
 			sysop = format("%s <%s>", bbs.sysop[0].name, bbs.sysop[0].email);
-		printf("\1n%2u \1h%-*s \1n:\1h %s\r\n"	, opts++, optlen, "Since", bbs.first_online.substring(0,10));
+		printf("\1n%2u \1h%-*s \1n:\1h %s\r\n"		, opts++, optlen, "Since", bbs.first_online.substring(0,10));
 		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Sysop", optmax, sysop);
 		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Location", optmax, bbs.location);
 		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Web-site", optmax, bbs.web_site);
 		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Software", optmax, bbs.software);
 		printf("\1n%2u \1h%-*s \1n:\1h %.*s\r\n"	, opts++, optlen, "Description", optmax, bbs.description.join(" "));
-		printf("\1n%2u \1h%-*s \1n:\1h %u\r\n"	, opts++, optlen, "Terminal Nodes", bbs.terminal.nodes);
+		printf("\1n%2u \1h%-*s \1n:\1h %u\r\n"		, opts++, optlen, "Terminal Nodes", bbs.terminal.nodes);
 		var term_types = "";
 		if(bbs.terminal.types)
 			term_types = bbs.terminal.types.join(", ");
@@ -1881,8 +1895,13 @@ function edit(bbs)
 			case 1:
 				printf("\1n\1h\1ySince (\1cYYYY\1y-\1cMM\1y-\1cDD\1y)\1w: ");
 				var value = console.gettemplate("NNNN-NN-NN", bbs.first_online.substring(0,10), K_LINE|K_EDIT);
-				if(value)
-					bbs.first_online = new Date(value).toISOString();
+				if(value) {
+					value = new Date(value);
+					if(value.valueOf())
+						bbs.first_online = value.toISOString();
+					else
+						alert("Invalid date");
+				}
 				break;
 			case 2:
 				edit_array("Operator"
