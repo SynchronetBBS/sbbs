@@ -99,7 +99,7 @@ function set_location(obj)
 
 function set_akamatching(obj)
 {
-	switch(uifc.list(WIN_MID, "AKA Matching", ["Yes", "No"])) {
+	switch(uifc.list(WIN_MID|WIN_SAV, "AKA Matching", ["Yes", "No"])) {
 	case 0:
 		obj.akamatching = true;
 		break;
@@ -111,7 +111,7 @@ function set_akamatching(obj)
 
 function set_secureonly(obj)
 {
-	switch(uifc.list(WIN_MID, "Secure Only", ["Yes", "No"])) {
+	switch(uifc.list(WIN_MID|WIN_SAV, "Secure Only", ["Yes", "No"])) {
 	case 0:
 		obj.secureonly = true;
 		break;
@@ -123,7 +123,7 @@ function set_secureonly(obj)
 
 function set_ignorepassword(obj)
 {
-	switch(uifc.list(WIN_MID, "Ignore Password", ["Yes", "No"])) {
+	switch(uifc.list(WIN_MID|WIN_SAV, "Ignore Password", ["Yes", "No"])) {
 	case 0:
 		obj.ignorepassword = true;
 		break;
@@ -135,7 +135,7 @@ function set_ignorepassword(obj)
 
 function set_forcereplace(obj)
 {
-	switch(uifc.list(WIN_MID, "Force Replace", ["Yes", "No"])) {
+	switch(uifc.list(WIN_MID|WIN_SAV, "Force Replace", ["Yes", "No"])) {
 	case 0:
 		obj.forcereplace = true;
 		break;
@@ -202,17 +202,17 @@ function edit_area(obj, name)
 	var cmd = 0;
 	var link = 0;
 	var links;
-	var menu = ["AKA Matching   : "+(obj.akamatching === true ? "Yes" : "No"),
-				"Force Replace  : "+(obj.forcereplace === true ? "Yes" : "No"),
-				"Source Address : "+(obj.sourceaddress === undefined ? "" : obj.sourceaddress),
-				"Uploader Name  : "+(obj.uploader === undefined ? "" : obj.uploader),
-				"Location       : ",
-				"Links          : "];
 	var tmp;
 	var tmp2;
 	var ctx = new uifc.list.CTX();
-
-	while(cmd >= 0) {
+	
+	while(obj && cmd >= 0) {
+		var menu = ["AKA Matching   : "+(obj.akamatching === true ? "Yes" : "No"),
+					"Force Replace  : "+(obj.forcereplace === true ? "Yes" : "No"),
+					"Source Address : "+(obj.sourceaddress === undefined ? "" : obj.sourceaddress),
+					"Uploader Name  : "+(obj.uploader === undefined ? "" : obj.uploader),
+					"Location       : ",
+					"Links          : "];
 		cmd = uifc.list(WIN_SAV|WIN_ACT|WIN_BOT|WIN_RHT, name+" Options", menu, ctx);
 		switch(cmd) {
 			case 0:
