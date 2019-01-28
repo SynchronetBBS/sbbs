@@ -1592,8 +1592,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		SAFECOPY(tok,cmdline);
 		truncstr(tok," ");
 
-		p = strstr(tok, ".bat");  /*  check if it's a bat file  */
-		if (p)
+		p = getfext(tok);  /*  check if it's a bat file  */
+		if (p != NULL && stricmp(p, ".bat") == 0)
 			fprintf(dosemubat,"call ");  /* if so, "call" it */
 
 		fprintf(dosemubat,"%s\r\n",cmdline);
