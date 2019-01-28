@@ -2086,128 +2086,129 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
         if(instr[i]=='%') {
             i++;
             cmd[j]=0;
+			int avail = maxlen - j;
 			char ch=instr[i];
 			if(isalpha(ch))
 				ch=toupper(ch);
             switch(ch) {
                 case 'A':   /* User alias */
-                    strcat(cmd,QUOTED_STRING(instr[i],useron.alias,str,sizeof(str)));
+                    strncat(cmd,QUOTED_STRING(instr[i],useron.alias,str,sizeof(str)), avail);
                     break;
                 case 'B':   /* Baud (DTE) Rate */
-                    strcat(cmd,ultoa(dte_rate,str,10));
+                    strncat(cmd,ultoa(dte_rate,str,10), avail);
                     break;
                 case 'C':   /* Connect Description */
-                    strcat(cmd,connection);
+                    strncat(cmd,connection, avail);
                     break;
                 case 'D':   /* Connect (DCE) Rate */
-                    strcat(cmd,ultoa((ulong)cur_rate,str,10));
+                    strncat(cmd,ultoa((ulong)cur_rate,str,10), avail);
                     break;
                 case 'E':   /* Estimated Rate */
-                    strcat(cmd,ultoa((ulong)cur_cps*10,str,10));
+                    strncat(cmd,ultoa((ulong)cur_cps*10,str,10), avail);
                     break;
                 case 'F':   /* File path */
-                    strcat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)));
+                    strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
                     break;
                 case 'G':   /* Temp directory */
-                    strcat(cmd,cfg.temp_dir);
+                    strncat(cmd,cfg.temp_dir, avail);
                     break;
                 case 'H':   /* Socket Handle */
-                    strcat(cmd,ultoa(client_socket_dup,str,10));
+                    strncat(cmd,ultoa(client_socket_dup,str,10), avail);
                     break;
                 case 'I':   /* IP address */
-                    strcat(cmd,cid);
+                    strncat(cmd,cid, avail);
                     break;
                 case 'J':
-                    strcat(cmd,cfg.data_dir);
+                    strncat(cmd,cfg.data_dir, avail);
                     break;
                 case 'K':
-                    strcat(cmd,cfg.ctrl_dir);
+                    strncat(cmd,cfg.ctrl_dir, avail);
                     break;
                 case 'L':   /* Lines per message */
-                    strcat(cmd,ultoa(cfg.level_linespermsg[useron.level],str,10));
+                    strncat(cmd,ultoa(cfg.level_linespermsg[useron.level],str,10), avail);
                     break;
                 case 'M':   /* Minutes (credits) for user */
-                    strcat(cmd,ultoa(useron.min,str,10));
+                    strncat(cmd,ultoa(useron.min,str,10), avail);
                     break;
                 case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-                    strcat(cmd,cfg.node_dir);
+                    strncat(cmd,cfg.node_dir, avail);
                     break;
                 case 'O':   /* SysOp */
-                    strcat(cmd,QUOTED_STRING(instr[i],cfg.sys_op,str,sizeof(str)));
+                    strncat(cmd,QUOTED_STRING(instr[i],cfg.sys_op,str,sizeof(str)), avail);
                     break;
                 case 'P':   /* Client protocol */
-                    strcat(cmd,client.protocol);
+                    strncat(cmd,client.protocol, avail);
                     break;
                 case 'Q':   /* QWK ID */
-                    strcat(cmd,cfg.sys_id);
+                    strncat(cmd,cfg.sys_id, avail);
                     break;
                 case 'R':   /* Rows */
-                    strcat(cmd,ultoa(rows,str,10));
+                    strncat(cmd,ultoa(rows,str,10), avail);
                     break;
                 case 'S':   /* File Spec (or Baja command str) */
-                    strncat(cmd, fspec, maxlen - j);
+                    strncat(cmd, fspec, avail);
                     break;
                 case 'T':   /* Time left in seconds */
                     gettimeleft();
-                    strcat(cmd,ultoa(timeleft,str,10));
+                    strncat(cmd,ultoa(timeleft,str,10), avail);
                     break;
                 case 'U':   /* UART I/O Address (in hex) */
-                    strcat(cmd,ultoa(cfg.com_base,str,16));
+                    strncat(cmd,ultoa(cfg.com_base,str,16), avail);
                     break;
                 case 'V':   /* Synchronet Version */
                     sprintf(str,"%s%c",VERSION,REVISION);
-					strcat(cmd,str);
+					strncat(cmd,str, avail);
                     break;
                 case 'W':   /* Columns (width) */
-                    strcat(cmd,ultoa(cols,str,10));
+                    strncat(cmd,ultoa(cols,str,10), avail);
                     break;
                 case 'X':
-                    strcat(cmd,cfg.shell[useron.shell]->code);
+                    strncat(cmd,cfg.shell[useron.shell]->code, avail);
                     break;
                 case '&':   /* Address of msr */
                     break;
                 case 'Y':
-                    strcat(cmd,comspec);
+                    strncat(cmd,comspec, avail);
                     break;
                 case 'Z':
-                    strcat(cmd,cfg.text_dir);
+                    strncat(cmd,cfg.text_dir, avail);
                     break;
 				case '~':	/* DOS-compatible (8.3) filename */
 #ifdef _WIN32
 					char sfpath[MAX_PATH+1];
 					SAFECOPY(sfpath,fpath);
 					GetShortPathName(fpath,sfpath,sizeof(sfpath));
-					strcat(cmd,sfpath);
+					strncat(cmd,sfpath, avail);
 #else
-                    strcat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)));
+                    strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
 #endif			
 					break;
                 case '!':   /* EXEC Directory */
-                    strcat(cmd,cfg.exec_dir);
+                    strncat(cmd,cfg.exec_dir, avail);
                     break;
                 case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
 #ifndef __unix__
-                    strcat(cmd,cfg.exec_dir);
+                    strncat(cmd,cfg.exec_dir, avail);
 #endif
                     break;
 
                 case '#':   /* Node number (same as SBBSNNUM environment var) */
                     sprintf(str,"%d",cfg.node_num);
-                    strcat(cmd,str);
+                    strncat(cmd,str, avail);
                     break;
                 case '*':
                     sprintf(str,"%03d",cfg.node_num);
-                    strcat(cmd,str);
+                    strncat(cmd,str, avail);
                     break;
                 case '$':   /* Credits */
-                    strcat(cmd,ultoa(useron.cdt+useron.freecdt,str,10));
+                    strncat(cmd,ultoa(useron.cdt+useron.freecdt,str,10), avail);
                     break;
                 case '%':   /* %% for percent sign */
-                    strcat(cmd,"%");
+                    strncat(cmd,"%", avail);
                     break;
 				case '.':	/* .exe for DOS/OS2/Win32, blank for Unix */
 #ifndef __unix__
-					strcat(cmd,".exe");
+					strncat(cmd,".exe", avail);
 #endif
 					break;
 				case '?':	/* Platform */
@@ -2217,12 +2218,12 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 					strcpy(str,PLATFORM_DESC);
 #endif
 					strlwr(str);
-					strcat(cmd,str);
+					strncat(cmd,str, avail);
 					break;
                 default:    /* unknown specification */
                     if(isdigit(instr[i])) {
                         sprintf(str,"%0*d",instr[i]&0xf,useron.number);
-                        strcat(cmd,str); }
+                        strncat(cmd,str, avail); }
                     break; }
             j=strlen(cmd); }
         else
@@ -2251,127 +2252,128 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
         if(instr[i]=='%') {
             i++;
             cmd[j]=0;
+			int avail = maxlen - j;
 			char ch=instr[i];
 			if(isalpha(ch))
 				ch=toupper(ch);
             switch(ch) {
                 case 'A':   /* User alias */
 					if(user!=NULL)
-						strcat(cmd,QUOTED_STRING(instr[i],user->alias,str,sizeof(str)));
+						strncat(cmd,QUOTED_STRING(instr[i],user->alias,str,sizeof(str)), avail);
                     break;
                 case 'B':   /* Baud (DTE) Rate */
                     break;
                 case 'C':   /* Connect Description */
 					if(user!=NULL)
-						strcat(cmd,user->modem);
+						strncat(cmd,user->modem, avail);
                     break;
                 case 'D':   /* Connect (DCE) Rate */
                     break;
                 case 'E':   /* Estimated Rate */
                     break;
                 case 'F':   /* File path */
-                    strcat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)));
+                    strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
                     break;
                 case 'G':   /* Temp directory */
-                    strcat(cmd,cfg->temp_dir);
+                    strncat(cmd,cfg->temp_dir, avail);
                     break;
                 case 'H':   /* Port Handle or Hardware Flow Control */
                     break;
                 case 'I':   /* IP address */
 					if(user!=NULL)
-						strcat(cmd,user->note);
+						strncat(cmd,user->note, avail);
                     break;
                 case 'J':
-                    strcat(cmd,cfg->data_dir);
+                    strncat(cmd,cfg->data_dir, avail);
                     break;
                 case 'K':
-                    strcat(cmd,cfg->ctrl_dir);
+                    strncat(cmd,cfg->ctrl_dir, avail);
                     break;
                 case 'L':   /* Lines per message */
 					if(user!=NULL)
-						strcat(cmd,ultoa(cfg->level_linespermsg[user->level],str,10));
+						strncat(cmd,ultoa(cfg->level_linespermsg[user->level],str,10), avail);
                     break;
                 case 'M':   /* Minutes (credits) for user */
 					if(user!=NULL)
-						strcat(cmd,ultoa(user->min,str,10));
+						strncat(cmd,ultoa(user->min,str,10), avail);
                     break;
                 case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-                    strcat(cmd,cfg->node_dir);
+                    strncat(cmd,cfg->node_dir, avail);
                     break;
                 case 'O':   /* SysOp */
-                    strcat(cmd,QUOTED_STRING(instr[i],cfg->sys_op,str,sizeof(str)));
+                    strncat(cmd,QUOTED_STRING(instr[i],cfg->sys_op,str,sizeof(str)), avail);
                     break;
                 case 'P':   /* Client protocol */
                     break;
                 case 'Q':   /* QWK ID */
-                    strcat(cmd,cfg->sys_id);
+                    strncat(cmd,cfg->sys_id, avail);
                     break;
                 case 'R':   /* Rows */
 					if(user!=NULL)
-						strcat(cmd,ultoa(user->rows,str,10));
+						strncat(cmd,ultoa(user->rows,str,10), avail);
                     break;
                 case 'S':   /* File Spec */
-                    strncat(cmd, fspec, maxlen - j);
+                    strncat(cmd, fspec, avail);
                     break;
                 case 'T':   /* Time left in seconds */
                     break;
                 case 'U':   /* UART I/O Address (in hex) */
-                    strcat(cmd,ultoa(cfg->com_base,str,16));
+                    strncat(cmd,ultoa(cfg->com_base,str,16), avail);
                     break;
                 case 'V':   /* Synchronet Version */
                     sprintf(str,"%s%c",VERSION,REVISION);
-					strcat(cmd,str);
+					strncat(cmd,str, avail);
                     break;
                 case 'W':   /* Columns/width */
                     break;
                 case 'X':
 					if(user!=NULL)
-						strcat(cmd,cfg->shell[user->shell]->code);
+						strncat(cmd,cfg->shell[user->shell]->code, avail);
                     break;
                 case '&':   /* Address of msr */
                     break;
                 case 'Y':
                     break;
                 case 'Z':
-                    strcat(cmd,cfg->text_dir);
+                    strncat(cmd,cfg->text_dir, avail);
                     break;
 				case '~':	/* DOS-compatible (8.3) filename */
 #ifdef _WIN32
 					char sfpath[MAX_PATH+1];
 					SAFECOPY(sfpath,fpath);
 					GetShortPathName(fpath,sfpath,sizeof(sfpath));
-					strcat(cmd,sfpath);
+					strncat(cmd,sfpath, avail);
 #else
-                    strcat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)));
+                    strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)));
 #endif			
 					break;
                 case '!':   /* EXEC Directory */
-                    strcat(cmd,cfg->exec_dir);
+                    strncat(cmd,cfg->exec_dir, avail);
                     break;
                 case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
 #ifndef __unix__
-                    strcat(cmd,cfg->exec_dir);
+                    strncat(cmd,cfg->exec_dir, avail);
 #endif
                     break;
 
                 case '#':   /* Node number (same as SBBSNNUM environment var) */
                     sprintf(str,"%d",cfg->node_num);
-                    strcat(cmd,str);
+                    strncat(cmd,str, avail);
                     break;
                 case '*':
                     sprintf(str,"%03d",cfg->node_num);
-                    strcat(cmd,str);
+                    strncat(cmd,str, avail);
                     break;
                 case '$':   /* Credits */
 					if(user!=NULL)
-						strcat(cmd,ultoa(user->cdt+user->freecdt,str,10));
+						strncat(cmd,ultoa(user->cdt+user->freecdt,str,10), avail);
                     break;
                 case '%':   /* %% for percent sign */
-                    strcat(cmd,"%");
+                    strncat(cmd,"%", avail);
                     break;
 				case '.':	/* .exe for DOS/OS2/Win32, blank for Unix */
 #ifndef __unix__
-					strcat(cmd,".exe");
+					strncat(cmd,".exe", avail);
 #endif
 					break;
 				case '?':	/* Platform */
@@ -2381,12 +2383,12 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
 					strcpy(str,PLATFORM_DESC);
 #endif
 					strlwr(str);
-					strcat(cmd,str);
+					strncat(cmd,str, avail);
 					break;
                 default:    /* unknown specification */
                     if(isdigit(instr[i]) && user!=NULL) {
                         sprintf(str,"%0*d",instr[i]&0xf,user->number);
-                        strcat(cmd,str); 
+                        strncat(cmd,str, avail); 
 					}
                     break; 
 			}
