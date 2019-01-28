@@ -220,7 +220,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	else
 		p=NULL;
 	cmdline=cmdstr(protcmdline(prot,type),fpath,fspec,NULL);
-	sprintf(msg,"Transferring %s",cmdline);
+	SAFEPRINTF(msg,"Transferring %s",cmdline);
 	spymsg(msg);
 	sys_status|=SS_FILEXFER;	/* disable spy during file xfer */
 	/* enable telnet binary transmission in both directions */
