@@ -4,7 +4,11 @@
 
 // $Id$
 
-load("sockdefs.js");	// SOCK_DGRAM
+require("sockdefs.js", 'SOCK_DGRAM');
+
+const SentAddressHistoryLength = 10;
+const props_sent = "imsg sent";
+const props_recv = "imsg received";
 
 // Read the list of systems into list array
 var filename = system.ctrl_dir + "sbbsimsg.lst";
@@ -159,6 +163,7 @@ function poll_systems(sent, interval, timeout, callback)
 		var message = receive_active_users();
 		if(message == null)
 			continue;
+		
 		replies++;
 
 		var result = parse_active_users(message);
@@ -183,6 +188,17 @@ function send_msg(dest, msg, from)
 	sock.close();
 	if(result < 1)
 		return "MSP Send to " + host + " failed with error " + sock.last_error;
+	
+	var userprops = load({}, "userprops.js")
+	var addr_list = userprops.get(props_sent, "address", []);
+	var addr_idx = addr_list.indexOf(dest);
+	if(addr_idx >= 0)	 
+		addr_list.splice(addr_idx, 1);
+	addr_list.unshift(dest);
+	if(addr_list.length > SentAddressHistoryLength)
+		addr_list.length = SentAddressHistoryLength;
+	userprops.set(props_sent, "address", addr_list);
+	userprops.set(props_sent, "localtime", new Date().toString());
 	return true;
 }
 
