@@ -104,6 +104,7 @@ function addNew(sub) {
 		$('#newmessage-body').val(
             $('#newmessage-body').val() + '\r\n' + data.signature
 		);
+        $("#newmessage-body")[0].setSelectionRange(0,0);
 	});
 	window.location.hash = '#newmessage';
 	$('#newmessage-body').keydown(function (evt) {
@@ -270,6 +271,8 @@ function addReply(sub, id) {
 	);
 	$.getJSON('./api/forum.ssjs?call=get-signature', function (data) {
 		$('#replytext-' + id).val($('#replytext-' + id).val() + '\r\n' + data.signature);
+        $('#replytext-' + id)[0].setSelectionRange(0,0);
+
 	});
 	$('#replytext-' + id).keydown(function (evt) {
 		evt.stopImmediatePropagation();
