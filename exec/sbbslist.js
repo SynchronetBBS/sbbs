@@ -38,6 +38,8 @@ if(!options)
 	options = {};
 if(!options.sub)
     options.sub = load({}, "syncdata.js").find();
+if(!options.max_inactivity)
+	options.max_inactivity = 180;	// Days
 if(options && options.format > 0)
 	list_format = options.format;
 if(options && options.export_freq > 0)
@@ -2493,7 +2495,10 @@ function main()
 				}
 				break;
 			case "maint":
-				alert("Not yet implemented");
+				print(list.length + " BBS entries before maintenance");
+				var list = lib.remove_inactive(list, options.max_inactivity, verbose);
+				print(list.length + " BBS entries after maintenance");
+				lib.write_list(list);
 				break;
 			case "install":
 				var result = install();
