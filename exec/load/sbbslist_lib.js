@@ -115,6 +115,11 @@ function verify_compare(a, b)
     return diff;
 }
 
+function active_compare(a, b)
+{
+	return last_active(b) - last_active(a);
+}
+
 function date_string(date)
 {
 	return new Date(date).toString().substr(4,11);
@@ -352,6 +357,8 @@ function sort(list, property)
 {
 	if(property=="verify")
 		list.sort(verify_compare);
+	else if(property=="active")
+		list.sort(active_compare);
 	else {	
 		if(property)
 			sort_property=property;
@@ -483,7 +490,7 @@ function replace(bbs)
     return true;
 }
 
-function remove_dupes(list)
+function remove_dupes(list, verbose)
 {
     var new_list=[];
     var names=[];
@@ -491,21 +498,43 @@ function remove_dupes(list)
     var i;
 
     for(i in list) {
-		var name = list[i].name.toLowerCase();
+		var bbs = list[i]
+		var name = bbs.name.toLowerCase();
 		if(name.slice(-4) == " bbs")
 			name = name.slice(0, -4);
 		if(name.slice(0, 4) == "the ")
 			name = name.slice(4);
 		if(names.indexOf(name) >= 0)
 			continue;
-		if(list[i].service.length
-			&& address.indexOf(list[i].service[0].address.toLowerCase()) >= 0)
+		if(bbs.service.length
+			&& address.indexOf(bbs.service[0].address.toLowerCase()) >= 0) {
+			if(verbose)
+				print(format("%-25s : Duplicated name", bbs.name));
 			continue;
+		}
 		names.push(name);
-		address.push(list[i].service[0].address.toLowerCase());
-		new_list.push(list[i]);
+		address.push(bbs.service[0].address.toLowerCase());
+		new_list.push(bbs);
 	}
     return new_list;
+}
+
+function last_active(bbs)
+{
+	var active = 0;
+	if(bbs.entry.created)
+		active = new Date(bbs.entry.created.on);
+	var updated = 0;
+	if(bbs.entry.updated)
+		updated = new Date(bbs.entry.updated.on);
+	if(updated > active)
+		active = updated;
+	var verified = 0;
+	if(bbs.entry.verified)
+		verified = new Date(bbs.entry.verified.on);
+	if(verified > active)
+		active = verified;
+	return active;
 }
 
 function remove_inactive(list, max, verbose)
@@ -515,25 +544,13 @@ function remove_inactive(list, max, verbose)
 
     for(i in list) {
 		var bbs = list[i];
-		var updated = 0;
-		if(bbs.entry.updated)
-			updated = new Date(bbs.entry.updated.on);
-		var created = 0;
-		if(bbs.entry.created)
-			created = new Date(bbs.entry.created.on);
-		if(created > updated)
-			updated = created;
-		var verified = 0;
-		if(bbs.entry.verified)
-			verified = new Date(bbs.entry.verified.on);
-		if(verified > updated)
-			updated = verified;
-		var diff = new Date().valueOf() - updated.valueOf();
+		var active = last_active(bbs);
+		var diff = new Date().valueOf() - active.valueOf();
 		var days = diff / (24 * 60 * 60 * 1000);
 		if(days > max) {
 			if(verbose)
 				print(format("%-25s : Inactive since %.10s (%d days)"
-					, bbs.name, updated.toISOString(), days));
+					, bbs.name, active.toISOString(), days));
 			continue;
 		}
 		new_list.push(list[i]);
