@@ -35,12 +35,7 @@ if(!options)
 if(!options.from_user_prop)
 	options.from_user_prop = "alias";
 var userprops = load({}, "userprops.js");
-var ini_section = "imsg sent";
-var addr_list = userprops.get(ini_section, "address", []);
-var last_send = userprops.get(ini_section, "localtime");
 var lib = load({}, "sbbsimsg_lib.js");
-
-const RcptAddressHistoryLength = 10;
 
 var last_user=0;
 
@@ -154,9 +149,9 @@ function imsg_user_list()
 	return imsg_user;
 }
 
-function get_default_dest()
+function get_default_dest(addr_list, last_send)
 {
-	var rx = userprops.get("imsg received");
+	var rx = userprops.get(lib.props_recv);
 	
 	if(rx && rx.localtime && (!last_send || new Date(rx.localtime) > new Date(last_send))) {
 		var sys = lib.sys_list[rx.ip_address];
@@ -225,8 +220,10 @@ while(bbs.online) {
 			break;
 		case 'T':
 			printf("\1h\1cTelegram\r\n\r\n");
+			var addr_list = userprops.get(lib.props_sent, "address", []);
+			var last_send = userprops.get(lib.props_sent, "localtime");
 			printf("\1n\1h\1y(user@hostname): \1w");
-			dest=console.getstr(get_default_dest(),64,K_EDIT|K_AUTODEL, addr_list);
+			dest=console.getstr(get_default_dest(addr_list, last_send),64,K_EDIT|K_AUTODEL, addr_list);
 			if(dest==null || dest=='' || console.aborted)
 				break;
 			if((msg=getmsg())=='')
