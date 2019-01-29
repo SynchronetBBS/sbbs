@@ -2148,6 +2148,7 @@ function main()
 	var addr;
 	var preview;
 	var remote = false;
+	var test = false;
 
     for(i in argv) {
 		var arg = argv[i];
@@ -2164,6 +2165,13 @@ function main()
             case "-v":
                 verbose++;
                 break;
+			case "-f":
+				if(!val) {
+					alert("no filename specified");
+					return;
+				}
+				lib.list_fname = val;
+				break;
 			case "-quiet":
 				quiet = true;
 				break;
@@ -2207,6 +2215,9 @@ function main()
 				break;
 			case "-debug":
 				debug = true;
+				break;
+			case "-test":
+				test = true;
 				break;
 			default:
 				if(parseInt(arg, 10) < 0)
@@ -2482,9 +2493,10 @@ function main()
 				break;
 			case "dedupe":
 				print(list.length + " BBS entries before de-duplication");
-				var list = lib.remove_dupes(list);
+				var list = lib.remove_dupes(list, verbose);
 				print(list.length + " BBS entries after de-duplication");
-				lib.write_list(list);
+				if(!test)
+					lib.write_list(list);
 				break;
 			case "check":
 				for(var i=0; i < list.length; i++) {
@@ -2494,11 +2506,19 @@ function main()
 					}
 				}
 				break;
+			case "active":
+				for(var i = 0; i < list.length; i++) {
+					var entry = list[i];
+					print(format("%-25s last active: %.10s"
+						, entry.name, lib.last_active(entry).toISOString()));
+				}
+				break;
 			case "maint":
 				print(list.length + " BBS entries before maintenance");
 				var list = lib.remove_inactive(list, options.max_inactivity, verbose);
 				print(list.length + " BBS entries after maintenance");
-				lib.write_list(list);
+				if(!test)
+					lib.write_list(list);
 				break;
 			case "install":
 				var result = install();
