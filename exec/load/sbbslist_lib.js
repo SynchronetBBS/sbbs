@@ -508,6 +508,39 @@ function remove_dupes(list)
     return new_list;
 }
 
+function remove_inactive(list, max, verbose)
+{
+    var new_list=[];
+    var i;
+
+    for(i in list) {
+		var bbs = list[i];
+		var updated = 0;
+		if(bbs.entry.updated)
+			updated = new Date(bbs.entry.updated.on);
+		var created = 0;
+		if(bbs.entry.created)
+			created = new Date(bbs.entry.created.on);
+		if(created > updated)
+			updated = created;
+		var verified = 0;
+		if(bbs.entry.verified)
+			verified = new Date(bbs.entry.verified.on);
+		if(verified > updated)
+			updated = verified;
+		var diff = new Date().valueOf() - updated.valueOf();
+		var days = diff / (24 * 60 * 60 * 1000);
+		if(days > max) {
+			if(verbose)
+				print(format("%-25s : Inactive since %.10s (%d days)"
+					, bbs.name, updated.toISOString(), days));
+			continue;
+		}
+		new_list.push(list[i]);
+	}
+	return new_list;
+}
+
 function imsg_capable_system(bbs)
 {
 	if(bbs.imsg_capable == true)
