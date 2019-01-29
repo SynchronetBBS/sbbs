@@ -65,7 +65,10 @@ while(bbs.online && !(console.aborted)) {
 		case 'T':   /* Telegram */
 		{
 			writeln("Telegram");
-			writeln();
+			var SentHistoryLength = 10;
+			var userprops = load({}, "userprops.js");
+			var props_section = "telegram sent";
+			var to_list = userprops.get(props_section, "to", []);
 			var shown = 0;
 			var nodelist_options = bbs.mods.nodelist_options;
 			if(!nodelist_options)
@@ -83,8 +86,10 @@ while(bbs.online && !(console.aborted)) {
 					continue;
 				if(node.useron == user.number)
 					continue;
-				if(!shown)
+				if(!shown) {
+					writeln();
 					write(bbs.text(NodeLstHdr));
+				}
 				writeln(format(nodelist_options.format, n + 1
 					,presence.node_status(node, user.is_sysop, nodelist_options)));
 				users[n] = node.useron;
@@ -97,21 +102,28 @@ while(bbs.online && !(console.aborted)) {
 					continue;
 				if(web_user.do_not_disturb)
 					continue;
-				if(!shown)
+				if(!shown) {
+					writeln();
 					write(bbs.text(NodeLstHdr));
+				}
 				writeln(format(nodelist_options.format, n + w + 1
 					,presence.web_user_status(web_user, nodelist_options.web_browsing, nodelist_options)));
 				shown++;
 				users[n + w] = web_user.usernum;
 			}
 			console.mnemonics(bbs.text(NodeToPrivateChat));
-			var str = console.getstr(LEN_ALIAS, K_LINE);
+			var str = console.getstr(to_list[0], LEN_ALIAS, K_LINE|K_EDIT, to_list.slice(1));
 			if(!str)
 				break;
 			var node_num = parseInt(str, 10);
 			var user_num;
-			if(node_num > 0 && users[node_num - 1] != undefined)
+			if(node_num > 0) {
+				if(users[node_num - 1] == undefined) {
+					write(format(bbs.text(NodeNIsNotInUse), node_num));
+					break;
+				}
 				user_num = users[node_num - 1];
+			}
 			else if(str.charAt(0) == '#')
 				user_num = parseInt(str.slice(1), 10);
 			else if(str.charAt(0) == '\'')
@@ -120,12 +132,13 @@ while(bbs.online && !(console.aborted)) {
 				user_num = system.matchuser(str, /* sysop-alias */true);
 			if(!user_num || system.username(user_num) == '') {
 				user_num = bbs.finduser(str);
-				if(!user_num ) {
-					alert(bbs.text(UnknownUser));
+				if(!user_num) {
+					write(bbs.text(UnknownUser));
 					break;
 				}
 			}
-			write(format(bbs.text(SendingTelegramToUser), system.username(user_num), user_num));
+			var user_name = system.username(user_num);
+			write(format(bbs.text(SendingTelegramToUser), user_name, user_num));
 			var msg = [];
 			while(msg.length < 5) {
 				write("\1n: \1h");
@@ -137,9 +150,19 @@ while(bbs.online && !(console.aborted)) {
 			if(!msg.length || console.aborted)
 				break;
 			var telegram = format(bbs.text(TelegramFmt), user.alias, system.timestr());
-			telegram += '    ' + msg.join('\r\n    ');
-			if(system.put_telegram(user_num, telegram))
+			telegram += '    ' + msg.join('\r\n    ') + '\r\n';
+			if(system.put_telegram(user_num, telegram)) {
+				var to_idx = to_list.indexOf(user_name);
+				if(to_idx >= 0)	 
+					to_list.splice(to_idx, 1);
+				to_list.unshift(user_name);
+				if(to_list.length > SentHistoryLength)
+					to_list.length = SentHistoryLength;
+				userprops.set(props_section, "to", to_list);
+				userprops.set(props_section, "localtime", new Date().toString());
+				
 				write(format(bbs.text(MsgSentToUser), "Telegram", system.username(user_num), user_num));
+			}
 			else
 				alert("Failure sending telegram");
 			break;
