@@ -1,4 +1,5 @@
 /* $Id$ */
+// vi: tabstop=4
 
 var REVISION = "$Revision$".split(' ')[1];
 
@@ -58,8 +59,8 @@ load("graphic.js");
 
 //writeln('<body><font face="Arial" size="-1">');
 
-list=list.filter(function(obj) { return obj.software && obj.software.substr(0,10).toLowerCase() == "synchronet"; });
-
+list=list.filter(function(obj) { return (obj.software && obj.software.substr(0,10).toLowerCase() == "synchronet") ||
+	(obj.entry && obj.entry.autoverify && obj.entry.autoverify.success && obj.entry.autoverify.last_success.result.substr(0,14) == "Synchronet BBS"); });
 
 writeln('<h1 style="text-align: center;"><i>' + 'Synchronet'.link('http://www.synchro.net') + ' BBS List</i></h1>');
 
@@ -120,7 +121,15 @@ function bbs_service(service)
 
         uri=format('%s:%s%s%s', protocol, sep, service.address, port);
     }
-    return encode_text(service.address).link(encodeURI(uri)) + " ("+encode_text(service.protocol)+")";
+	var desc = service.description;
+	if(!desc)
+		desc = '';
+	var prot = service.protocol;
+	if(!prot)
+		prot = '';
+	else
+		prot = " ("+encode_text(prot)+") ";
+    return encode_text(service.address).link(encodeURI(uri)) + prot + desc;
 }
 
 function bbs_sysop(sysop)
