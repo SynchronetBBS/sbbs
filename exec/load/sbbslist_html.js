@@ -64,16 +64,16 @@ list=list.filter(function(obj) { return (obj.software && obj.software.substr(0,1
 
 writeln('<h1 style="text-align: center;"><i>' + 'Synchronet'.link('http://www.synchro.net') + ' BBS List</i></h1>');
 
-if(0) {
+if(false) {
 	var synch_ansi="";
-	var f=new File(system.text_dir + "menu/logon.asc");
+	var f=new File(system.text_dir + "synch.ans");
 	if(f.open("rb")) {
     		synch_ansi=f.read();
     		f.close();
 	}
 
-	writeln('<table><tr><td><pre style="background-color:lightgrey;">'
-        	+html_encode(synch_ansi, true, false, true, true).replace(/background-color: black;/g, 'background-color: lightgrey')
+	writeln('<table align="center"><tr><td><pre style="background-color:black;">'
+        	+html_encode(synch_ansi, true, false, true, true) //.replace(/background-color: black;/g, 'background-color: lightgrey')
         	+'</pre></table>');
 }
 
@@ -198,7 +198,8 @@ function bbs_table_entry(num, bbs)
 
     writeln('<tr><td><table>');
     /* Name: */
-    writeln('<tr class="row"><td class="bbsName">');
+    writeln(format('<tr class="row"><td class="bbsName"><a name="%s"/></a>'
+		, encodeURI(bbs.name.toLowerCase())));
     var uri = bbs.web_site;
     if(uri && uri.length) {
         if(uri.indexOf('://')<1)
@@ -206,7 +207,6 @@ function bbs_table_entry(num, bbs)
         writeln(encode_text(bbs.name).link(encodeURI(uri)));
     } else
         writeln(encode_text(bbs.name));
-    writeln('</b>');
     writeln('<tr><td>' + encode_text(bbs.description.join("\r\n")));
     writeln('</table>');
 
