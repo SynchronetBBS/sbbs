@@ -2344,7 +2344,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
 					GetShortPathName(fpath,sfpath,sizeof(sfpath));
 					strncat(cmd,sfpath, avail);
 #else
-                    strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)));
+                    strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
 #endif			
 					break;
                 case '!':   /* EXEC Directory */
