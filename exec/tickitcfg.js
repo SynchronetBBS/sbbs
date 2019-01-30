@@ -47,7 +47,7 @@ function pick_dir(obj)
 			}
 			dir = uifc.list(WIN_SAV|WIN_ACT|WIN_BOT, "Select Dir", dirs, dctx);
 			if (dir >= 0) {
-				return dirs[dir];
+				return dircodes[dir];
 			}
 		}
 	}
