@@ -80,7 +80,7 @@ function set_location(obj)
 		case 1:
 			dir = null;
 			while(dir !== undefined) {
-				dir = uifc.input(WIN_SAV|WIN_MID, "Path", tickit.gcfg.path === undefined ? '' : tickit.gcfg.path, 1024, K_EDIT);
+				dir = uifc.input(WIN_SAV|WIN_MID, "Path", obj.path === undefined ? '' : obj.path, 1024, K_EDIT);
 				if (dir != undefined) {
 					if (file_isdir(dir)) {
 						delete obj.dir;
@@ -199,6 +199,8 @@ function edit_uploader(obj)
 		obj.uploader = tmp;
 }
 
+const menu_fmt = "%-20s %s";
+
 function edit_area(obj, name)
 {
 	var cmd = 0;
@@ -208,12 +210,12 @@ function edit_area(obj, name)
 	var ctx = new uifc.list.CTX();
 
 	while(obj && cmd >= 0) {
-		var menu = ["AKA Matching   : "+(obj.akamatching === true ? "Yes" : "No"),
-					"Force Replace  : "+(obj.forcereplace === true ? "Yes" : "No"),
-					"Source Address : "+(obj.sourceaddress === undefined ? "" : obj.sourceaddress),
-					"Uploader Name  : "+(obj.uploader === undefined ? "" : obj.uploader),
-					"Location       : ",
-					"Links          : "];
+		var menu = [format(menu_fmt, "AKA Matching", (obj.akamatching === true ? "Yes" : "No")),
+					format(menu_fmt, "Force Replace", (obj.forcereplace === true ? "Yes" : "No")),
+					format(menu_fmt, "Source Address", (obj.sourceaddress === undefined ? "" : obj.sourceaddress)),
+					format(menu_fmt, "Uploader Name", (obj.uploader === undefined ? "" : obj.uploader)),
+					format(menu_fmt, "Location", (obj.path === undefined ? obj.dir : obj.path)),
+					"Links..."];
 		cmd = uifc.list(WIN_SAV|WIN_ACT|WIN_BOT|WIN_RHT, name+" Options", menu, ctx);
 		switch(cmd) {
 			case 0:
@@ -311,7 +313,7 @@ function import_areas(libname)
 	file.close();
 }
 
-function edit_globals()
+function edit_globals(obj)
 {
 
 	var cmd = 0;
@@ -321,47 +323,47 @@ function edit_globals()
 	var ctx = new uifc.list.CTX();
 
 	while(cmd >= 0) {
-		var menu = ["AKA Matching   : "+(tickit.gcfg.akamatching === true ? "Yes" : "No"),
-					"Force Replace  : "+(tickit.gcfg.forcereplace === true ? "Yes" : "No"),
-					"Ignore Password: "+(tickit.gcfg.ignorepassword === true ? "Yes" : "No"),
-					"Secure Only    : "+(tickit.gcfg.secureonly === true ? "Yes" : "No"),
-					"Source Address : "+(tickit.gcfg.sourceaddress === undefined ? "" : tickit.gcfg.sourceaddress),
-					"Uploader Name  : "+(tickit.gcfg.uploader === undefined ? "" : tickit.gcfg.uploader),
-					"Location       : ",
-					"Links          : "];
+		var menu = [format(menu_fmt, "AKA Matching", (obj.akamatching === true ? "Yes" : "No")),
+					format(menu_fmt, "Force Replace", (obj.forcereplace === true ? "Yes" : "No")),
+					format(menu_fmt, "Ignore Password", (obj.ignorepassword === true ? "Yes" : "No")),
+					format(menu_fmt, "Secure Only", (obj.secureonly === true ? "Yes" : "No")),
+					format(menu_fmt, "Source Address", (obj.sourceaddress === undefined ? "" : obj.sourceaddress)),
+					format(menu_fmt, "Uploader Name", (obj.uploader === undefined ? "" : obj.uploader)),
+					format(menu_fmt, "Location", (obj.path === undefined ? obj.dir : obj.path)),
+					"Links..."];
 		cmd = uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, "Global Options", menu, ctx);
 		switch(cmd) {
 			case 0:
-				set_akamatching(tickit.gcfg);
+				set_akamatching(obj);
 				break;
 			case 1:
-				set_forcereplace(tickit.gcfg);
+				set_forcereplace(obj);
 				break;
 			case 2:
-				set_ignorepassword(tickit.gcfg);
+				set_ignorepassword(obj);
 				break;
 			case 3:
-				set_secureonly(tickit.gcfg);
+				set_secureonly(obj);
 				break;
 			case 4:
-				select_sourceaddress(tickit.gcfg);
+				select_sourceaddress(obj);
 				break;
 			case 5:
-				edit_uploader(tickit.gcfg);
+				edit_uploader(obj);
 				break;
 			case 6:
-				set_location(tickit.gcfg);
+				set_location(obj);
 				break;
 			case 7:
-				if (tickit.gcfg.links === undefined)
+				if (obj.links === undefined)
 					links = [];
 				else
-					links = tickit.gcfg.links.split(/,/);
+					links = obj.links.split(/,/);
 				tmp = edit_links(links);
 				if (tmp.length === 0)
-					delete tickit.gcfg.links;
+					delete obj.links;
 				else
-					tickit.gcfg.links = tmp.join(',');
+					obj.links = tmp.join(',');
 				break;
 			case -1:
 				break;
@@ -392,7 +394,7 @@ function main()
 		cmd = uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_ESC, "TickIT Options", menu, ctx);
 		switch(cmd) {
 			case 0:
-				edit_globals();
+				edit_globals(tickit.gcfg);
 				break;
 			case 1:
 				edit_areas();
