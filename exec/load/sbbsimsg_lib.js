@@ -15,7 +15,7 @@ var filename = system.ctrl_dir + "sbbsimsg.lst";
 var sys_list = {};
 var sock = new Socket(SOCK_DGRAM);
 
-function read_sys_list()
+function read_sys_list(include_self)
 {
 	var f = new File(filename);
 	if(!f.open("r")) {
@@ -33,18 +33,18 @@ function read_sys_list()
 
 		var word = line.split('\t');
 		var host = word[0].trimRight();
-
-		if(host == system.host_name
-			|| host == system.inetaddr)		// local system?
-			continue;						// ignore
-
 		var ip_addr = word[1];
 		var name = word[2];
 
-//		if(js.global.client && ip_addr == client.socket.local_ip_address)
-//			continue;
-		if(js.global.server && ip_addr == server.interface_ip_address)
-			continue;
+		if(!include_self) {
+			if(host == system.host_name
+				|| host == system.inetaddr)		// local system?
+				continue;						// ignore
+	//		if(js.global.client && ip_addr == client.socket.local_ip_address)
+	//			continue;
+			if(js.global.server && ip_addr == server.interface_ip_address)
+				continue;
+		}
 
 		this.sys_list[ip_addr] = { host: host, name: name, users: [] };
 	}
@@ -173,12 +173,20 @@ function poll_systems(sent, interval, timeout, callback)
 	return replies;
 }
 
-// Returns true on success, string (error) on failure
-function send_msg(dest, msg, from)
+function dest_host(dest)
 {
 	var hp = dest.indexOf('@');
 	if(hp < 0)
-		return "Invalid user";
+		return false;
+	return hp;
+}
+
+// Returns true on success, string (error) on failure
+function send_msg(dest, msg, from)
+{
+	var hp = dest_host(dest);
+	if(!hp)
+		return "Invalid destination";
 	var host = dest.slice(hp+1);
 	var destuser = dest.substr(0, hp);
 	var sock = new Socket();
