@@ -202,6 +202,14 @@ var tests = {
 			return "SYNCDATA sub-board could not be found in message area configuration";
 	},
 	
+	check_imsg_list: function(options)
+	{
+		var lib = load({}, "sbbsimsg_lib.js");
+		var list = lib.read_sys_list(/* include_self: */true);
+		if(!lib.find_name(list, system.name))
+			return format("'%s' not listed in %s", system.name, lib.filename);
+	},
+	
 	check_sub_codes: function(options)
 	{
 		return check_codes("msg sub-board", msg_area.grp_list, 'sub_list');
@@ -252,4 +260,7 @@ for(var i in tests) {
 			break;
 	}
 }
-writeln(issues + " issues discovered");
+if(issues)
+	alert(issues + " issues discovered");
+else
+	writeln("No issues discovered");
