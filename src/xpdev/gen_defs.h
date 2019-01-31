@@ -362,6 +362,23 @@ typedef struct {
 /* Data Block Length Alignment Macro (returns required padding length for proper alignment) */
 #define PAD_LENGTH_FOR_ALIGNMENT(len,blk)       (((len)%(blk))==0 ? 0 : (blk)-((len)%(blk)))
 
+#define HEX_DIGITS(n)   ( n > 0xfffffff  ? 8 \
+                        : n > 0x0ffffff  ? 7 \
+                        : n > 0x00fffff  ? 6 \
+                        : n > 0x000ffff  ? 5 \
+                        : n > 0x0000fff  ? 4 \
+                        : n > 0x00000ff  ? 3 \
+                        : n > 0x000000f  ? 2 : 1 )
+#define DEC_DIGITS(n)   ( n < 10         ? 1 \
+                        : n < 100        ? 2 \
+                        : n < 1000       ? 3 \
+                        : n < 10000      ? 4 \
+                        : n < 100000     ? 5 \
+                        : n < 1000000    ? 6 \
+                        : n < 10000000   ? 7 \
+                        : n < 100000000  ? 8 \
+                        : n < 1000000000 ? 9 : 10 )
+
 /***********************/
 /* Handy String Macros */
 /***********************/
