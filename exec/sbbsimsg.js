@@ -44,6 +44,7 @@ lib.read_sys_list();
 // Parse arguments
 for(i=0; i<argc; i++) {
 	if(argv[i].toLowerCase()=="-l") {
+		console.clear();
 		writeln("Inter-BBS Active Users:");
 		var timeout = 2500;
 		var sent = lib.request_active_users();
