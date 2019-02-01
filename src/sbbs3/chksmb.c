@@ -185,7 +185,7 @@ int main(int argc, char **argv)
 
 	if(argc<2) {
 		printf("%s",usage);
-		exit(1); 
+		exit(1);
 	}
 
 	errlast=errors=0;
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
 			fprintf(stderr,"%s\nHit any key to continue...", beep);
 			if(!getch())
 				getch();
-			printf("\n"); 
+			printf("\n");
 		}
 		errlast=errors;
 		if(argv[x][0]=='-'
@@ -235,9 +235,9 @@ int main(int argc, char **argv)
 						break;
 					default:
 						printf("%s",usage);
-						exit(1); 
+						exit(1);
 			}
-			continue; 
+			continue;
 		}
 
 	SAFECOPY(smb.file,argv[x]);
@@ -245,10 +245,10 @@ int main(int argc, char **argv)
 	s=strrchr(smb.file,'\\');
 	if(p>s) *p=0;
 
-	sprintf(str,"%s.shd",smb.file);
+	SAFEPRINTF(str, "%s.shd", smb.file);
 	if(!fexist(str)) {
 		printf("\n%s doesn't exist.\n",smb.file);
-		continue; 
+		continue;
 	}
 
 	fprintf(stderr,"\nChecking %s Headers\n\n",smb.file);
@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 	if((i=smb_open(&smb))!=0) {
 		printf("smb_open returned %d: %s\n",i,smb.last_error);
 		errors++;
-		continue; 
+		continue;
 	}
 
 	/* File size sanity checks here: */
@@ -266,7 +266,7 @@ int main(int argc, char **argv)
 	if(shd_length < sizeof(smbhdr_t)) {
 		printf("Empty\n");
 		smb_close(&smb);
-		continue; 
+		continue;
 	}
 
 	if(shd_length < (off_t)smb.status.header_offset) {
@@ -284,16 +284,16 @@ int main(int argc, char **argv)
 		smb_close(&smb);
 		printf("smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 		errors++;
-		continue; 
+		continue;
 	}
 
-	if((shd_hdrs/SHD_BLOCK_LEN)*sizeof(ulong)) {
+	if(((shd_hdrs/SHD_BLOCK_LEN)*sizeof(ulong)) != 0) {
 		if((number=malloc(((shd_hdrs/SHD_BLOCK_LEN)+2)*sizeof(ulong)))
 			==NULL) {
 			printf("Error allocating %lu bytes of memory\n"
 				,(shd_hdrs/SHD_BLOCK_LEN)*sizeof(ulong));
-			return(++errors); 
-		} 
+			return(++errors);
+		}
 	}
 	else
 		number=NULL;
@@ -306,7 +306,7 @@ int main(int argc, char **argv)
 	if(chkalloc && !(smb.status.attr&SMB_HYPERALLOC)) {
 		if((i=smb_open_ha(&smb))!=0) {
 			printf("smb_open_ha returned %d: %s\n",i,smb.last_error);
-			return(++errors); 
+			return(++errors);
 		}
 		if(filelength(fileno(smb.shd_fp)) != smb.status.header_offset
 			+ (filelength(fileno(smb.sha_fp)) * SHD_BLOCK_LEN))
@@ -316,8 +316,8 @@ int main(int argc, char **argv)
 
 		if((i=smb_open_da(&smb))!=0) {
 			printf("smb_open_da returned %d: %s\n",i,smb.last_error);
-			return(++errors); 
-		} 
+			return(++errors);
+		}
 		if((filelength(fileno(smb.sda_fp)))/sizeof(uint16_t) != filelength(fileno(smb.sdt_fp))/SDT_BLOCK_LEN)
 			printf("!Size of SDA file (%lu) does not match SDT file (%lu)\n"
 				,filelength(fileno(smb.sda_fp))
@@ -352,7 +352,7 @@ int main(int argc, char **argv)
 			printf("\n(%06lX) smb_lockmsghdr returned %d: %s\n",l,i,smb.last_error);
 			lockerr++;
 			headers++;
-			continue; 
+			continue;
 		}
 		if((i=smb_getmsghdr(&smb,&msg))!=0) {
 			smb_unlockmsghdr(&smb,&msg);
@@ -362,16 +362,16 @@ int main(int argc, char **argv)
 				j=fgetc(smb.sha_fp);
 				if(j) { 			/* Allocated block or at EOF */
 					printf("%s\n(%06lX) smb_getmsghdr returned %d: %s\n",beep,l,i,smb.last_error);
-					hdrerr++; 
+					hdrerr++;
 				}
 				else
-					delhdrblocks++; 
+					delhdrblocks++;
 			}
 			else {
 				/* printf("%s\n(%06lX) smb_getmsghdr returned %d\n",beep,l,i); */
-				delhdrblocks++; 
+				delhdrblocks++;
 			}
-			continue; 
+			continue;
 		}
 		smb_unlockmsghdr(&smb,&msg);
 		size=smb_hdrblocks(smb_getmsghdrlen(&msg))*SHD_BLOCK_LEN;
@@ -397,7 +397,7 @@ int main(int argc, char **argv)
 			if(extinfo)
 				printf("MSGERR: Header length (%hu) does not match calculcated length (%lu)\n"
 					,msg.hdr.length,smb_getmsghdrlen(&msg));
-			hdrlenerr++; 
+			hdrlenerr++;
 		}
 
 		if(chk_msgids && msg.from_net.type == NET_NONE && msg.id == NULL) {
@@ -435,8 +435,8 @@ int main(int argc, char **argv)
 		if(!(smb.status.attr&SMB_EMAIL) && chkhash) {
 			/* Look-up the message hashes */
 			hashes=smb_msghashes(&msg,(uchar*)body,SMB_HASH_SOURCE_DUPE);
-			if(hashes!=NULL 
-				&& hashes[0]!=NULL 
+			if(hashes!=NULL
+				&& hashes[0]!=NULL
 				&& (i=smb_findhash(&smb,hashes,NULL,SMB_HASH_SOURCE_DUPE,/* mark */TRUE ))
 					!=SMB_SUCCESS) {
 				for(h=0;hashes[h]!=NULL;h++) {
@@ -467,7 +467,7 @@ int main(int argc, char **argv)
 					hasherr++;
 				}
 			}
-			
+
 			smb_close_hash(&smb);	/* just incase */
 
 			FREE_LIST(hashes,i);
@@ -496,7 +496,7 @@ int main(int argc, char **argv)
 				if(extinfo)
 					printf("MSGERR: Header number (%"PRIu32") greater than last (%"PRIu32")\n"
 						,msg.hdr.number,smb.status.last_msg);
-				hdrnumerr++; 
+				hdrnumerr++;
 			}
 			if(smb_getmsgidx(&smb,&msg) || msg.idx.offset != l) {
 				fprintf(stderr,"%sNot found in index\n",beep);
@@ -504,7 +504,7 @@ int main(int argc, char **argv)
 				if(extinfo)
 					printf("MSGERR: Header number (%"PRIu32") not found in index\n"
 						,msg.hdr.number);
-				orphan++; 
+				orphan++;
 			}
 			else {
 				if(msg.hdr.attr!=msg.idx.attr) {
@@ -514,7 +514,7 @@ int main(int argc, char **argv)
 						printf("MSGERR: Header attributes (%04X) do not match index "
 							"attributes (%04X)\n"
 							,msg.hdr.attr,msg.idx.attr);
-					attr++; 
+					attr++;
 				}
 				if(msg.hdr.when_imported.time!=msg.idx.time) {
 					fprintf(stderr,"%sImport date/time mismatch\n",beep);
@@ -522,7 +522,7 @@ int main(int argc, char **argv)
 					if(extinfo)
 						printf("MSGERR: Header import date/time does not match "
 							"index import date/time\n");
-					timeerr++; 
+					timeerr++;
 				}
 				if(msg.hdr.type != SMB_MSG_TYPE_BALLOT
 					&& msg.idx.subj!=smb_subject_crc(msg.subj)) {
@@ -532,10 +532,10 @@ int main(int argc, char **argv)
 						printf("MSGERR: Subject (%04X) does not match index "
 							"CRC (%04X)\n"
 							,smb_subject_crc(msg.subj),msg.idx.subj);
-					subjcrc++; 
+					subjcrc++;
 				}
-				if(smb.status.attr&SMB_EMAIL 
-					&& (msg.from_ext!=NULL || msg.idx.from) 
+				if(smb.status.attr&SMB_EMAIL
+					&& (msg.from_ext!=NULL || msg.idx.from)
 					&& (msg.from_ext==NULL || msg.idx.from!=atoi(msg.from_ext))) {
 					fprintf(stderr,"%sFrom extension mismatch\n",beep);
 					msgerr=TRUE;
@@ -543,9 +543,9 @@ int main(int argc, char **argv)
 						printf("MSGERR: From extension (%s) does not match index "
 							"(%u)\n"
 							,msg.from_ext,msg.idx.from);
-					fromcrc++; 
+					fromcrc++;
 				}
-				if(!(smb.status.attr&SMB_EMAIL) 
+				if(!(smb.status.attr&SMB_EMAIL)
 					&& msg.hdr.type != SMB_MSG_TYPE_BALLOT
 					&& msg.idx.from!=smb_name_crc(msg.from)) {
 					fprintf(stderr,"%sFrom CRC mismatch\n",beep);
@@ -554,10 +554,10 @@ int main(int argc, char **argv)
 						printf("MSGERR: From (%04X) does not match index "
 							"CRC (%04X)\n"
 							,smb_name_crc(msg.from),msg.idx.from);
-					fromcrc++; 
+					fromcrc++;
 				}
-				if(smb.status.attr&SMB_EMAIL 
-					&& (msg.to_ext!=NULL || msg.idx.to) 
+				if(smb.status.attr&SMB_EMAIL
+					&& (msg.to_ext!=NULL || msg.idx.to)
 					&& (msg.to_ext==NULL || msg.idx.to!=atoi(msg.to_ext))) {
 					fprintf(stderr,"%sTo extension mismatch\n",beep);
 					msgerr=TRUE;
@@ -565,9 +565,9 @@ int main(int argc, char **argv)
 						printf("MSGERR: To extension (%s) does not match index "
 							"(%u)\n"
 							,msg.to_ext,msg.idx.to);
-					tocrc++; 
+					tocrc++;
 				}
-				if(!(smb.status.attr&SMB_EMAIL) 
+				if(!(smb.status.attr&SMB_EMAIL)
 					&& msg.hdr.type != SMB_MSG_TYPE_BALLOT
 					&& msg.to_ext==NULL && msg.idx.to!=smb_name_crc(msg.to)) {
 					fprintf(stderr,"%sTo CRC mismatch\n",beep);
@@ -576,7 +576,7 @@ int main(int argc, char **argv)
 						printf("MSGERR: To (%04X) does not match index "
 							"CRC (%04X)\n"
 							,smb_name_crc(msg.to),msg.idx.to);
-					tocrc++; 
+					tocrc++;
 				}
 				if(msg.hdr.netattr&MSG_INTRANSIT) {
 					fprintf(stderr,"%sIn transit\n",beep);
@@ -598,7 +598,7 @@ int main(int argc, char **argv)
 				msgerr=TRUE;
 				if(extinfo)
 					printf("MSGERR: Header number is zero (invalid)\n");
-				zeronum++; 
+				zeronum++;
 			}
 			if(number) {
 				for(m=0;m<headers;m++)
@@ -609,9 +609,9 @@ int main(int argc, char **argv)
 							printf("MSGERR: Header number (%"PRIu32") duplicated\n"
 								,msg.hdr.number);
 						dupenumhdr++;
-						break; 
+						break;
 					}
-				number[headers]=msg.hdr.number; 
+				number[headers]=msg.hdr.number;
 			}
 			if(chkxlat) {		/* Check translation strings */
 				for(i=0;i<msg.hdr.total_dfields;i++) {
@@ -622,7 +622,7 @@ int main(int argc, char **argv)
 					if(xlat==XLAT_LZH) {
 						lzh=1;
 						if(!fread(&xlat,2,1,smb.sdt_fp))
-							xlat=0xffff; 
+							xlat=0xffff;
 					}
 					if(xlat!=XLAT_NONE) {
 						fprintf(stderr,"%sUnsupported Xlat %04X dfield[%u]\n"
@@ -668,8 +668,8 @@ int main(int argc, char **argv)
 						printf("MSGERR: Active header block %"PRIu32" marked %02X "
 							"instead of 01\n"
 							,m/SHD_BLOCK_LEN,i);
-					actalloc++; 
-				} 
+					actalloc++;
+				}
 			}
 
 			if(!(msg.hdr.attr&MSG_DELETE)) {
@@ -680,14 +680,14 @@ int main(int argc, char **argv)
 						if(extinfo)
 							printf("MSGERR: Invalid Data Field [%lu] Offset: %"PRIu32"\n"
 								,n,msg.dfield[n].offset);
-						dfieldoffset++; 
+						dfieldoffset++;
 					}
 					if(msg.dfield[n].length&0x80000000UL) {
 						msgerr=TRUE;
 						if(extinfo)
 							printf("MSGERR: Invalid Data Field [%lu] Length: %"PRIu32"\n"
 								,n,msg.dfield[n].length);
-						dfieldlength++; 
+						dfieldlength++;
 					}
 					fseek(smb.sda_fp
 						,((msg.hdr.offset+msg.dfield[n].offset)/SDT_BLOCK_LEN)*2
@@ -704,20 +704,20 @@ int main(int argc, char **argv)
 								printf("MSGERR: Active Data Block %lu.%"PRIu32" "
 									"marked free\n"
 									,n,m/SHD_BLOCK_LEN);
-							datactalloc++; 
-						} 
-					} 
-				} 
+							datactalloc++;
+						}
+					}
+				}
 			}
 			else
-				delhdrblocks+=(size/SHD_BLOCK_LEN); 
+				delhdrblocks+=(size/SHD_BLOCK_LEN);
 		}
 
 		else {	 /* Hyper Alloc */
 			if(msg.hdr.attr&MSG_DELETE)
 				delhdrblocks+=(size/SHD_BLOCK_LEN);
 			else
-				acthdrblocks+=(size/SHD_BLOCK_LEN); 
+				acthdrblocks+=(size/SHD_BLOCK_LEN);
 		}
 
 		totallzhmsgs+=lzhmsg;
@@ -726,10 +726,10 @@ int main(int argc, char **argv)
 			printf("\n");
 			printf("%-20s %s\n","message base",smb.file);
 			smb_dump_msghdr(stdout,&msg);
-			printf("\n"); 
+			printf("\n");
 		}
 
-		smb_freemsgmem(&msg); 
+		smb_freemsgmem(&msg);
 	}
 
 	FREE_AND_NULL(number);
@@ -751,13 +751,13 @@ int main(int argc, char **argv)
 			if(!fread(&i,2,1,smb.sda_fp))
 				break;
 			if(!i)
-				deldatblocks++; 
+				deldatblocks++;
 		}
 
 		smb_close_ha(&smb);
 		smb_close_da(&smb);
 
-		fprintf(stderr,"\r%79s\r100%%\n",""); 
+		fprintf(stderr,"\r%79s\r100%%\n","");
 	}
 
 	total=filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
@@ -770,11 +770,11 @@ int main(int argc, char **argv)
 
 	if((offset=(ulong *)malloc(total*sizeof(ulong)))==NULL) {
 		printf("Error allocating %lu bytes of memory\n",total*sizeof(ulong));
-		return(++errors); 
+		return(++errors);
 	}
 	if((number=(ulong *)malloc(total*sizeof(ulong)))==NULL) {
 		printf("Error allocating %lu bytes of memory\n",total*sizeof(ulong));
-		return(++errors); 
+		return(++errors);
 	}
 	fseek(smb.sid_fp,0L,SEEK_SET);
 
@@ -786,42 +786,42 @@ int main(int argc, char **argv)
 		if(idx.attr&MSG_DELETE) {
 			/* Message Disabled... why?  ToDo */
 			/* fprintf(stderr,"%sMarked for deletion\n",beep); */
-			delidx++; 
+			delidx++;
 		}
 		for(m=0;m<l;m++)
 			if(number[m]==idx.number) {
 				fprintf(stderr,"%sDuplicate message number\n",beep);
 				dupenum++;
-				break; 
+				break;
 			}
 		for(m=0;m<l;m++)
 			if(offset[m]==idx.offset) {
 				fprintf(stderr,"%sDuplicate offset: %"PRIu32"\n",beep,idx.offset);
 				dupeoff++;
-				break; 
+				break;
 			}
 		if(idx.offset<smb.status.header_offset) {
 			fprintf(stderr,"%sInvalid offset\n",beep);
 			idxofferr++;
-			break; 
+			break;
 		}
 		if(idx.number==0) {
 			fprintf(stderr,"%sZero message number\n",beep);
 			idxzeronum++;
-			break; 
+			break;
 		}
 		if(idx.number>smb.status.last_msg) {
 			fprintf(stderr,"%sOut-Of-Range message number\n",beep);
 			idxnumerr++;
-			break; 
+			break;
 		}
 		number[l]=idx.number;
-		offset[l]=idx.offset; 
+		offset[l]=idx.offset;
 	}
 
 	if(l<total) {
 		fprintf(stderr,"%sError reading index record\n",beep);
-		idxerr=1; 
+		idxerr=1;
 	}
 	else {
 		fprintf(stderr,"\r%79s\r","");
@@ -833,10 +833,10 @@ int main(int argc, char **argv)
 					fprintf(stderr,"%sMisordered message number\n",beep);
 					misnumbered++;
 					number[n]=0;
-					break; 
-				} 
+					break;
+				}
 		}
-		fprintf(stderr,"\r%79s\r100%%\n",""); 
+		fprintf(stderr,"\r%79s\r100%%\n","");
 	}
 	FREE_AND_NULL(number);
 	FREE_AND_NULL(offset);
@@ -868,7 +868,7 @@ int main(int argc, char **argv)
 
 		smb_close_hash(&smb);
 
-		fprintf(stderr,"\r%79s\r100%%\n",""); 
+		fprintf(stderr,"\r%79s\r100%%\n","");
 	}
 
 
@@ -1069,12 +1069,12 @@ int main(int argc, char **argv)
 		|| getbodyerr || gettailerr
 		|| orphan || dupenumhdr || dupenum || dupeoff || attr
 		|| lockerr || hdrerr || hdrnumerr || idxnumerr || idxofferr
-		|| actalloc || datactalloc || misnumbered || timeerr 
+		|| actalloc || datactalloc || misnumbered || timeerr
 		|| intransit || unvalidated || ctrl_chars
 		|| subjcrc || fromcrc || tocrc
 		|| dfieldoffset || dfieldlength || xlaterr || idxerr) {
 		printf("%shas Errors!\n",beep);
-		errors++; 
+		errors++;
 	}
 	else
 		printf("is OK\n");
@@ -1103,7 +1103,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"%s\nHit any key to continue...", beep);
 		if(!getch())
 			getch();
-		fprintf(stderr,"\n"); 
+		fprintf(stderr,"\n");
 	}
 
 	if(errors)
