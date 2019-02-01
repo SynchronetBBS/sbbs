@@ -598,7 +598,7 @@ static void timedisplay(BOOL force)
 	now=time(NULL);
 	if(force || difftime(now,savetime)>=60) {
 		uprintf(api->scrn_width-25,1,api->bclr|(api->cclr<<4),utimestr(&now));
-		savetime=now; 
+		savetime=now;
 	}
 }
 
@@ -984,7 +984,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					b=width-hbrdrsize-2;
 				for(c=0;c<b;c++) {
 					*(ptr++)=option[i][c];
-					*(ptr++)=a; 
+					*(ptr++)=a;
 				}
 			}
 			else
@@ -999,14 +999,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				*(ptr++)=hclr|(bclr<<4);
 			}
 			i++;
-			j++; 
+			j++;
 		}
 		if(!(mode&WIN_NOBRDR)) {
 			*(ptr++)=api->chars->list_bottom_left;
 			*(ptr++)=hclr|(bclr<<4);
 			for(i=0;i<width-2;i++) {
 				*(ptr++)=api->chars->list_bottom;
-				*(ptr++)=hclr|(bclr<<4); 
+				*(ptr++)=hclr|(bclr<<4);
 			}
 			*(ptr++)=api->chars->list_bottom_right;
 			*(ptr)=hclr|(bclr<<4);	/* Not incremented to shut up BCC */
@@ -1022,14 +1022,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
 			textattr(lclr|(bclr<<4));
 			putch(api->chars->down_arrow);	   /* put down arrow */
-			textattr(hclr|(bclr<<4)); 
+			textattr(hclr|(bclr<<4));
 		}
 
 		if(bar && (*bar)!=(*cur)) {
 			gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
 			textattr(lclr|(bclr<<4));
 			putch(api->chars->up_arrow);	   /* put the up arrow */
-			textattr(hclr|(bclr<<4)); 
+			textattr(hclr|(bclr<<4));
 		}
 
 		if(!(mode&WIN_NOBRDR)) {
@@ -1073,7 +1073,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					b=width-hbrdrsize-2;
 				for(c=0;c<b;c++) {
 					*(ptr++)=option[i][c];
-					*(ptr++)=a; 
+					*(ptr++)=a;
 				}
 			}
 			else
@@ -1081,10 +1081,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			while(c<width-hbrdrsize-2) {
 				*(ptr++)=' ';
 				*(ptr++)=a;
-				c++; 
+				c++;
 			}
 			i++;
-			j++; 
+			j++;
 			puttext(s_left+left+lbrdrwidth+2,s_top+top+j,s_left+left+width-rbrdrwidth-1
 				,s_top+top+j,tmp_buffer);
 		}
@@ -1288,7 +1288,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(bar)
 								(*bar)=0;
 							y=top+tbrdrwidth;
-							break; 
+							break;
 						}
 						gettext(s_left+left+lbrdrwidth+2,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
@@ -1325,7 +1325,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(bar)
 								(*bar)=optheight-vbrdrsize-1;
 							y=top+optheight-bbrdrwidth-1;
-							break; 
+							break;
 						}
 						gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
@@ -1337,13 +1337,13 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							y=top+optheight-bbrdrwidth-1;
 							(*cur)=opts-1;
 							if(bar)
-								(*bar)=optheight-vbrdrsize-1; 
+								(*bar)=optheight-vbrdrsize-1;
 						}
 						else {
 							(*cur)--;
 							y--;
 							if(bar && *bar)
-								(*bar)--; 
+								(*bar)--;
 						}
 						if(y<top+tbrdrwidth) {	/* scroll */
 							if(!(*cur)) {
@@ -1442,7 +1442,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							y=top+optheight-bbrdrwidth-1;
 							if(bar)
 								(*bar)=optheight-vbrdrsize-1;
-							break; 
+							break;
 						}
 						gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
@@ -1481,7 +1481,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							y=top+tbrdrwidth;
 							if(bar)
 								(*bar)=0;
-							break; 
+							break;
 						}
 						gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
@@ -1494,7 +1494,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							y=top+tbrdrwidth;
 							if(bar) {
 								/* gotoxy(1,1); cprintf("bar=%08lX ",bar); */
-								(*bar)=0; 
+								(*bar)=0;
 							}
 						}
 						else {
@@ -1502,7 +1502,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							y++;
 							if(bar && (*bar)<height-vbrdrsize-1) {
 								/* gotoxy(1,1); cprintf("bar=%08lX ",bar); */
-								(*bar)++; 
+								(*bar)++;
 							}
 						}
 						if(y==top+height-bbrdrwidth) {	/* scroll */
@@ -1589,7 +1589,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 										,sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
-							return((*cur)|MSK_EDIT); 
+							return((*cur)|MSK_EDIT);
 						}
 						break;
 					case CIO_KEY_F(5):		/* F5 - Copy */
@@ -1631,9 +1631,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							if(!opts) {
-								return(MSK_INS); 
+								return(MSK_INS);
 							}
-							return((*cur)|MSK_INS); 
+							return((*cur)|MSK_INS);
 						}
 						break;
 					case CIO_KEY_DC:	/* delete */
@@ -1662,14 +1662,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 										,sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
-							return((*cur)|MSK_DEL); 
+							return((*cur)|MSK_DEL);
 						}
 						break;
 					default:
 						if(mode&WIN_EXTKEYS)
 							return(-2-gotkey);
 						break;
-				} 
+				}
 			}
 			else {
 				gotkey&=0xff;
@@ -1679,15 +1679,15 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					for(j=(*cur)+1,a=b=0;a<2;j++) {   /* a = search count */
 						if(j==opts) {					/* j = option count */
 							j=-1;						/* b = letter count */
-							continue; 
+							continue;
 						}
 						if(j==(*cur)) {
 							b++;
-							continue; 
+							continue;
 						}
 						if(b>=longopt) {
 							b=0;
-							a++; 
+							a++;
 						}
 						if(a==1 && !s)
 							break;
@@ -1714,7 +1714,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								y=top+height-bbrdrwidth-1;
 								if(bar)
 									(*bar)=optheight-vbrdrsize-1;
-								break; 
+								break;
 							}
 							if(y-((*cur)-j)<top+tbrdrwidth) {
 								(*cur)=j;
@@ -1735,7 +1735,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								y=top+tbrdrwidth;
 								if(bar)
 									(*bar)=0;
-								break; 
+								break;
 							}
 							gettext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
@@ -1751,7 +1751,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								if((*cur)>j)
 									(*bar)-=(*cur)-j;
 								else
-									(*bar)+=j-(*cur); 
+									(*bar)+=j-(*cur);
 							}
 							(*cur)=j;
 							gettext(s_left+lbrdrwidth+2+left,s_top+y
@@ -1760,8 +1760,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								line[i]=lbclr;
 							puttext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
-							break; 
-						} 
+							break;
+						}
 					}
 					if(a==2)
 						s=0;
@@ -1949,12 +1949,12 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 
 	if(plen) {
 		in_win[i++]=' ';
-		in_win[i++]=api->lclr|(api->bclr<<4); 
+		in_win[i++]=api->lclr|(api->bclr<<4);
 	}
 
 	for(j=0;prompt[j];j++) {
 		in_win[i++]=prompt[j];
-		in_win[i++]=api->lclr|(api->bclr<<4); 
+		in_win[i++]=api->lclr|(api->bclr<<4);
 	}
 
 	if(plen) {
@@ -1964,7 +1964,7 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 
 	for(j=0;j<iwidth+2;j++) {
 		in_win[i++]=' ';
-		in_win[i++]=api->lclr|(api->bclr<<4); 
+		in_win[i++]=api->lclr|(api->bclr<<4);
 	}
 
 	if(!(mode&WIN_NOBRDR)) {
@@ -1974,7 +1974,7 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 		in_win[i++]=api->hclr|(api->bclr<<4);
 		for(j=1;j<width-1;j++) {
 			in_win[i++]=api->chars->input_bottom;
-			in_win[i++]=api->hclr|(api->bclr<<4); 
+			in_win[i++]=api->hclr|(api->bclr<<4);
 		}
 		in_win[i++]=api->chars->input_bottom_right;
 		in_win[i]=api->hclr|(api->bclr<<4);	/* I is not incremented to shut up BCC */
@@ -1996,7 +1996,7 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 			for(j=1;j<width*2;j+=2)
 				shade[j]=DARKGRAY;
 			puttext(s_left+left+2,s_top+top+3,s_left+left+width+1
-				,s_top+top+height,shade); 
+				,s_top+top+height,shade);
 		}
 	}
 
@@ -2071,7 +2071,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,(max+1));
 		_setcursortype(cursor);
-		return(-1); 
+		return(-1);
 	}
 	gotoxy(left,top);
 	_setcursortype(cursor = api->insert_mode ? _SOLIDCURSOR : _NORMALCURSOR);
@@ -2138,9 +2138,9 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 			}
 		}
 
-		if(f == CR 
-				|| (f >= 0xff && f != CIO_KEY_DC) 
-				|| (f == '\t' && mode&K_TABEXIT) 
+		if(f == CR
+				|| (f >= 0xff && f != CIO_KEY_DC)
+				|| (f == '\t' && mode&K_TABEXIT)
 				|| (f == '%' && mode&K_SCANNING)
 				|| f==CTRL_B
 				|| f==CTRL_E
@@ -2183,7 +2183,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 			if(ch==CIO_KEY_MOUSE) {
 				ch=uifc_getmouse(&mevnt);
 				if(ch==0 || (ch==ESC && mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
-					if(mode & K_MOUSEEXIT 
+					if(mode & K_MOUSEEXIT
 							&& (mevnt.starty != top
 								|| mevnt.startx > left+width
 						    	|| mevnt.startx < left)
@@ -2275,7 +2275,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 							if(str[i]=='.')
 								gotdecimal=FALSE;
 							for(k=i;k<=j;k++)
-								str[k]=str[k+1]; 
+								str[k]=str[k+1];
 						}
 						continue;
 					}
@@ -2361,7 +2361,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					for(k=++j;k>i;k--)
 						str[k]=str[k-1];
 				}
-				str[i++]=ch; 
+				str[i++]=ch;
 			}
 		}
 	}
@@ -2401,7 +2401,7 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
     va_end(argptr);
     for(i=j=0;str[i];i++) {
         buf[j++]=str[i];
-        buf[j++]=attr; 
+        buf[j++]=attr;
 	}
     puttext(x,y,x+(i-1),y,buf);
     return(i);
@@ -2443,7 +2443,7 @@ void bottomline(int mode)
 	if(mode&WIN_PASTE) {
 		if(api->mode&UIFC_NOCTRL)
 			i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F6 ");
-		else 
+		else
 			i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"^V ");
 		i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Paste  ");
 	}
@@ -2495,7 +2495,7 @@ char *utimestr(time_t *intime)
 			break;
 		case 6:
 			strcpy(wday,"Sat");
-			break; 
+			break;
 	}
 	switch(gm->tm_mon) {
 		case 0:
@@ -2533,18 +2533,18 @@ char *utimestr(time_t *intime)
 			break;
 		case 11:
 			strcpy(mon,"Dec");
-			break; 
+			break;
 	}
 	if(gm->tm_hour>12) {
 		strcpy(mer,"pm");
-		hour=gm->tm_hour-12; 
+		hour=gm->tm_hour-12;
 	}
 	else {
 		if(!gm->tm_hour)
 			hour=12;
 		else
 			hour=gm->tm_hour;
-		strcpy(mer,"am"); 
+		strcpy(mer,"am");
 	}
 	sprintf(str,"%s %s %02d %4d %02d:%02d %s",wday,mon,gm->tm_mday,1900+gm->tm_year
 		,hour,gm->tm_min,mer);
@@ -2626,7 +2626,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 
 	api->exit_flags = 0;
 	_setcursortype(_NOCURSOR);
-	
+
 	title_len=strlen(title);
 	if(api->mode&UIFC_MOUSE)
 		title_len+=6;
@@ -2706,7 +2706,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		for(k=0;k<(height-2);k++) { 		/* the sides of the box */
 	        tmp_buffer2[j]=api->chars->help_left; j+=2;
 			j+=((width-2)*2);
-        	tmp_buffer2[j]=api->chars->help_right; j+=2; 
+        	tmp_buffer2[j]=api->chars->help_right; j+=2;
 		}
 	    tmp_buffer2[j]=api->chars->help_bottom_left; j+=2;
 		if(!(mode&WIN_DYN) && (width>31)) {
@@ -2778,7 +2778,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,(width-2-pad-pad)*lines*2);
 		_setcursortype(cursor);
-		return; 
+		return;
 	}
 	memset(textbuf,' ',(width-2-pad-pad)*lines*2);
 	for(i=1;i<(width-2-pad-pad)*lines*2;i+=2)
@@ -2789,17 +2789,17 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	for(j=i;j<len;j++,i+=2) {
 		if(hbuf[j]==LF) {
 			i+=2;
-			while(i%((width-2-pad-pad)*2))	
+			while(i%((width-2-pad-pad)*2))
 				i++;
 			i-=2;
 		}
 		else if(mode&WIN_HLP && (hbuf[j]==2 || hbuf[j]=='~')) {		 /* Ctrl-b toggles inverse */
 			inverse=!inverse;
-			i-=2; 
+			i-=2;
 		}
 		else if(mode&WIN_HLP && (hbuf[j]==1 || hbuf[j]=='`')) {		 /* Ctrl-a toggles high intensity */
 			high=!high;
-			i-=2; 
+			i-=2;
 		}
 		else if(hbuf[j]!=CR) {
 			textbuf[i]=hbuf[j];
@@ -2881,7 +2881,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 					case CIO_KEY_UP:	/* up arrow */
 						p = p-((width-2-pad-pad)*2);
 						break;
-					
+
 					case CIO_KEY_PPAGE:	/* PgUp */
 						p = p-((width-2-pad-pad)*2*(height-5));
 						break;
@@ -2935,7 +2935,7 @@ static void help(void)
 
     if(!api->helpbuf) {
         if((fp=fopen(api->helpixbfile,"rb"))==NULL)
-            sprintf(hbuf,"ERROR: Cannot open help index: %s"
+            SAFEPRINTF(hbuf,"ERROR: Cannot open help index: %s"
                 ,api->helpixbfile);
         else {
             p=strrchr(helpfile,'/');
@@ -2963,24 +2963,24 @@ static void help(void)
             }
             fclose(fp);
             if(l==-1L)
-                sprintf(hbuf,"ERROR: Cannot locate help key (%s:%u) in: %s"
+                SAFEPRINTF3(hbuf,"ERROR: Cannot locate help key (%s:%u) in: %s"
                     ,p,helpline,api->helpixbfile);
             else {
                 if((fp=fopen(api->helpdatfile,"rb"))==NULL)
-                    sprintf(hbuf,"ERROR: Cannot open help file: %s"
+                    SAFEPRINTF(hbuf,"ERROR: Cannot open help file: %s"
                         ,api->helpdatfile);
                 else {
                     if(fseek(fp,l,SEEK_SET)!=0) {
-						sprintf(hbuf,"ERROR: Cannot seek to help key (%s:%u) at %ld in: %s"
+						SAFEPRINTF4(hbuf,"ERROR: Cannot seek to help key (%s:%u) at %ld in: %s"
 							,p,helpline,l,api->helpixbfile);
 					}
 					else {
 						if(fread(hbuf,1,HELPBUF_SIZE,fp)<1) {
-							sprintf(hbuf,"ERROR: Cannot read help key (%s:%u) at %ld in: %s"
+							SAFEPRINTF4(hbuf,"ERROR: Cannot read help key (%s:%u) at %ld in: %s"
 								,p,helpline,l,api->helpixbfile);
 						}
 					}
-					fclose(fp); 
+					fclose(fp);
 				}
 			}
 		}

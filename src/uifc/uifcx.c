@@ -33,6 +33,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "gen_defs.h"
 #include "uifc.h"
 
 #include <sys/types.h>
@@ -154,10 +155,10 @@ static int getstr(char* str, int maxlen)
 			str[len++]=ch;
 	}
     str[len]=0;	/* we need The Terminator */
-    
+
 	return(len);
 }
-	
+
 
 /****************************************************************************/
 /* Local utility function.													*/
@@ -268,7 +269,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
         }
         str[0]=0;
         getstr(str,sizeof(str)-1);
-        
+
         truncsp(str);
         i=atoi(str);
         if(i>0 && i<=opts) {
@@ -356,7 +357,7 @@ int uinput(int mode, int left, int top, char *prompt, char *outstr,
 	int max, int kmode)
 {
     char str[256];
-    
+
     while(1) {
         printf("%s (maxlen=%u): ",prompt,max);
 
@@ -370,7 +371,7 @@ int uinput(int mode, int left, int top, char *prompt, char *outstr,
 		api->changes=1;
     if(kmode&K_UPPER)	/* convert to uppercase? */
     	strupr(str);
-    strcpy(outstr,str);    
+    strcpy(outstr,str);
     return(strlen(outstr));
 }
 
@@ -426,7 +427,7 @@ void help()
     printf("\n");
     if(!api->helpbuf) {
         if((fp=fopen(api->helpixbfile,"rb"))==NULL)
-            sprintf(hbuf,"ERROR: Cannot open help index: %s"
+            SAFEPRINTF(hbuf,"ERROR: Cannot open help index: %.128s"
                 ,api->helpixbfile);
         else {
             p=strrchr(helpfile,'/');
@@ -454,25 +455,25 @@ void help()
             }
             fclose(fp);
             if(l==-1L)
-                sprintf(hbuf,"ERROR: Cannot locate help key (%s:%u) in: %s"
+                SAFEPRINTF3(hbuf,"ERROR: Cannot locate help key (%s:%u) in: %.128s"
                     ,p,helpline,api->helpixbfile);
             else {
                 if((fp=fopen(api->helpdatfile,"rb"))==NULL)
-                    sprintf(hbuf,"ERROR: Cannot open help file: %s"
+                    SAFEPRINTF(hbuf,"ERROR: Cannot open help file: %.128s"
                         ,api->helpdatfile);
                 else {
                     if(fseek(fp,l,SEEK_SET)!=0) {
-						sprintf(hbuf,"ERROR: Cannot seek to help key (%s:%u) at %ld in: %s"
+						SAFEPRINTF4(hbuf,"ERROR: Cannot seek to help key (%s:%u) at %ld in: %.128s"
 							,p,helpline,l,api->helpixbfile);
 					}
 					else {
 						if(fread(hbuf,1,HELPBUF_SIZE,fp)<1) {
-							sprintf(hbuf,"ERROR: Cannot read help key (%s:%u) at %ld in: %s"
+							SAFEPRINTF4(hbuf,"ERROR: Cannot read help key (%s:%u) at %ld in: %.128s"
 								,p,helpline,l,api->helpixbfile);
 						}
 						hbuf[HELPBUF_SIZE-1] = 0;
 					}
-					fclose(fp); 
+					fclose(fp);
 				}
 			}
 		}
