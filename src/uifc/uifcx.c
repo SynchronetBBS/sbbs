@@ -180,22 +180,6 @@ static int which(char* prompt, int max)
 }
 
 /****************************************************************************/
-/* Convert ASCIIZ string to upper case										*/
-/****************************************************************************/
-#if defined(__unix__) && !defined(__HAIKU__)
-static char* strupr(char* str)
-{
-	char*	p=str;
-
-	while(*p) {
-		*p=toupper(*p);
-		p++;
-	}
-	return(str);
-}
-#endif
-
-/****************************************************************************/
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
 int ulist(int mode, int left, int top, int width, int *cur, int *bar
