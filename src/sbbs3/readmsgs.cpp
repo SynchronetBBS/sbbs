@@ -1281,7 +1281,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					if(!(useron.misc&EXPERT))
 						menu("sysmscan");
 					bputs(text[OperatorPrompt]);
-					strcpy(str,"?ACEHMQUV");
+					strcpy(str,"?ADCEHMQUV");
 					if(SYSOP)
 						strcat(str,"SP");
 					switch(getkeys(str,0)) {
@@ -1387,6 +1387,49 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 								smb_unlocksmbhdr(&smb);
 							}
 							break;
+						case 'D':	/* Delete a range of posts */
+						{
+							domsg = false;
+							bprintf("\r\nFirst message to delete [%u]: ", smb.curmsg + 1);
+							long first = getnum(LONG_MAX, smb.curmsg + 1);
+							if(first < 1 || first > (long)smb.msgs)
+								break;
+							bprintf(" Last message to delete [%u]: ", smb.msgs);
+							long last = getnum(LONG_MAX, smb.msgs);
+							if(first > last || last > (long)smb.msgs)
+								break;
+							ulong already = 0;
+							ulong deleted = 0;
+							ulong failed = 0;
+							if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
+								for(long n = first; n <= last; n++) {
+									if(post[n - 1].idx.attr & MSG_DELETE) {
+										already++;
+										continue;	// Already deleted
+									}
+									smb_freemsgmem(&msg);
+									msg.idx.offset = 0;
+									msg.idx.number = post[n - 1].idx.number;
+									if(loadmsg(&msg,msg.idx.number) >= SMB_SUCCESS) {
+										msg.idx.attr|=MSG_DELETE;
+										msg.hdr.attr=msg.idx.attr;
+										if((i=smb_putmsg(&smb,&msg)) != SMB_SUCCESS) {
+											errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
+											failed++;
+										} else
+											deleted++;
+										smb_unlockmsghdr(&smb,&msg);
+									} else {
+										bprintf("Error loading message");
+										failed++;
+									}
+								}
+								smb_unlocksmbhdr(&smb);
+							}
+							bprintf("Messages-deleted: %lu, Already-deleted: %lu, Failed-to-delete: %lu\n"
+								, deleted, already, failed);
+							break;
+						}
 						default:
 							continue; 
 					}
