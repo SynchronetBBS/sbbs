@@ -1134,7 +1134,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_lowvideo(void)
 CIOLIBEXPORT void CIOLIBCALL ciolib_normvideo(void)
 {
 	CIOLIB_INIT();
-	
+
 	if(cio_api.normvideo) {
 		cio_api.normvideo();
 		return;
@@ -1209,7 +1209,7 @@ static char c64_color_xlat(char colour)
 			return 15;
 		case DARKGRAY:
 			return 11;
-		case LIGHTBLUE:	
+		case LIGHTBLUE:
 			return 14;
 		case LIGHTGREEN:
 			return 13;
@@ -1556,7 +1556,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int ch)
 	puttext_can_move=old_puttext_can_move;
 
 	return(a1);
-	
+
 }
 
 /* **MUST** be implemented */
@@ -1673,7 +1673,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_loadfont(char *filename)
 CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int *xpos, int *ypos)
 {
 	CIOLIB_INIT();
-	
+
 	if(cio_api.get_window_info!=NULL)
 		return(cio_api.get_window_info(width,height,xpos,ypos));
 	else {
@@ -1965,7 +1965,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_attrfont(uint8_t attr)
 	flags = ciolib_getvideoflags();
 	if ((flags & CIOLIB_VIDEO_ALTCHARS) && (attr & 0x08))
 		font |= 1;
-	if ((flags * CIOLIB_VIDEO_BLINKALTCHARS) && (attr & 0x80))
+	if ((flags & CIOLIB_VIDEO_BLINKALTCHARS) && (attr & 0x80))
 		font |= 2;
 	return ciolib_getfont(font+1);
 }
