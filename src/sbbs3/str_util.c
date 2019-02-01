@@ -159,7 +159,7 @@ BOOL DLLCALL findstr_in_string(const char* insearchof, char* string)
 	SAFECOPY(str,string);
 
 	p=str;	
-	SKIP_WHITESPACE(p);
+//	SKIP_WHITESPACE(p);
 
 	if(*p==';')		/* comment */
 		return(FALSE);
