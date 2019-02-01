@@ -562,6 +562,8 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		smb_stack(&smb,SMB_STACK_POP);
 		return(0); 
 	}
+	usub = getusrsub(subnum);
+	ugrp = getusrgrp(subnum);
 
 	if(!(mode&SCAN_TOYOU)
 		&& (!mode || mode&SCAN_FIND || !(subscan[subnum].cfg&SUB_CFG_YSCAN)))
@@ -668,15 +670,6 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		}
 
 		while(smb.curmsg>=smb.msgs) smb.curmsg--;
-
-		for(ugrp=0;ugrp<usrgrps;ugrp++)
-			if(usrgrp[ugrp]==cfg.sub[subnum]->grp)
-				break;
-		for(usub=0;usub<usrsubs[ugrp];usub++)
-			if(usrsub[ugrp][usub]==subnum)
-				break;
-		usub++;
-		ugrp++;
 
 		msg.idx=post[smb.curmsg].idx;
 
@@ -1674,8 +1667,13 @@ long sbbs_t::listsub(uint subnum, long mode, long start, const char* search)
 	if(!(cfg.sub[subnum]->misc&SUB_NOVOTING))
 		lp_mode |= LP_POLLS;
 	post=loadposts(&posts,subnum,0,lp_mode,NULL,&total);
-	bprintf(text[SearchSubFmt]
-		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,total);
+	char grp[128];
+	char sub[128];
+	uint ugrp = getusrgrp(subnum);
+	uint usub = getusrsub(subnum);
+	SAFEPRINTF4(grp, "%*s[%u] %s", DEC_DIGITS(usrgrps) - DEC_DIGITS(ugrp), "", ugrp, cfg.grp[cfg.sub[subnum]->grp]->sname);
+	SAFEPRINTF4(sub, "%*s[%u] %s", DEC_DIGITS(usrsubs[ugrp - 1]) - DEC_DIGITS(usub), "", usub, cfg.sub[subnum]->lname);
+	bprintf(text[SearchSubFmt], grp, sub, total);
 	if(posts) {
 		if(mode&SCAN_FIND)
 			displayed=searchposts(subnum, post, start, posts, search);
