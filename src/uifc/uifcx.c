@@ -33,6 +33,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "genwrap.h"
 #include "gen_defs.h"
 #include "uifc.h"
 
@@ -176,18 +177,6 @@ static int which(char* prompt, int max)
         if(i>0 && i<=max)
             return(i-1);
     }
-}
-
-/****************************************************************************/
-/* Truncates white-space chars off end of 'str'								*/
-/****************************************************************************/
-static void truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
 }
 
 /****************************************************************************/
