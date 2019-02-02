@@ -81,7 +81,7 @@
 "\1g\1h%5d\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %.25s\r\n"     066 MailOnSystemLstFmt
 "\1-\r\n\1c%-15.15s \1y\1h%-44.44s "\                 067 NScanStatusFmt
 	"\1n\1cNew:\1h%5u \1n\1cof\1h %-u"
-"\1-\r\n\1c%-15.15s \1y\1h%-44.44s \1w%u"             068 SearchSubFmt
+"\1-\r\n\1c%-20s \1y\1h%-50s \1w%6u"             068 SearchSubFmt
 "\r\nNo messages have been posted on %s %s\r\n"         069 NoMsgsOnSub
 "\r\n\1n\1cPost : [\1h%u\1n\1c][\1h%u\1n\1c] \1h%u\1n\1c/\1h%u"   070 ZScanPostHdr
 "\1n\r\n\1cþ \1h\1bReading \1n\1cþ %4u\b\b\b\b%s\1\\"\           071 ReadingSub
@@ -902,7 +902,7 @@
 "\1n\1b[\1h\1wX\1n\1b] \1hExtended (QWKE) Packet Format\1n\1b: \1c%s\r\n"	755 QWKSettingsExtended
 "\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   	756 QWKSettingsWhich
 "\1n\r\nSorry, you can't edit this message.\r\n"	757 CantEditMsg
-"\1n\r\nSorry, you can't delete this message.\r\n"	758 CantDeleteMsg
+"\1n\r\nSorry, you can't delete message #%lu.\r\n"	758 CantDeleteMsg
 "\1n\r\nSorry, you can't read messages on %s %s\r\n"	759 CantReadSub
 "\1n\r\nSorry, you can't post that message.\r\n"	760 CantPostMsg
 "\r\n\1y\1hOperator: \1w"				761 OperatorPrompt
