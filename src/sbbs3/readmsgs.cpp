@@ -73,7 +73,7 @@ long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts)
 		smb_unlockmsghdr(&smb,&msg);
 		if(listed==0)
 			bputs(text[MailOnSystemLstHdr]);
-		bprintf(text[SubMsgLstFmt],post[i].num
+		bprintf(text[SubMsgLstFmt], i+1
 			,msg.hdr.attr&MSG_ANONYMOUS && !sub_op(subnum)
 			? text[Anonymous] : msg.from
 			,msg.to
@@ -964,7 +964,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						break; 
 					}
 					if(cfg.sub[subnum]->misc&SUB_DELLAST && smb.curmsg!=(smb.msgs-1)) {
-						bputs(text[CantDeleteMsg]);
+						bprintf(text[CantDeleteMsg], smb.curmsg + 1);
 						domsg=0;
 						break;
 					}
@@ -977,7 +977,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					} 
 				}
 				if(msg.hdr.attr&MSG_PERMANENT) {
-					bputs(text[CantDeleteMsg]);
+					bprintf(text[CantDeleteMsg], smb.curmsg + 1);
 					domsg=0;
 					break; 
 				}
@@ -1406,6 +1406,11 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 									if(post[n - 1].idx.attr & MSG_DELETE) {
 										already++;
 										continue;	// Already deleted
+									}
+									if(post[n - 1].idx.attr & MSG_PERMANENT) {
+										bprintf(text[CantDeleteMsg], smb.curmsg + 1);
+										failed++;
+										continue;
 									}
 									smb_freemsgmem(&msg);
 									msg.idx.offset = 0;
