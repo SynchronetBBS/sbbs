@@ -242,12 +242,16 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		return menu_exists(code, "asc", path)
 			|| menu_exists(code, "msg", path);
 
-	backslash(menu_dir);
-	safe_snprintf(path, MAX_PATH, "%smenu/%s%s.%ucol.%s"
-		,cfg.text_dir, menu_dir, code, cols, ext);
+	char prefix[MAX_PATH];
+	if(isfullpath(code))
+		SAFECOPY(prefix, code);
+	else {
+		backslash(menu_dir);
+		SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, menu_dir, code);
+	}
+	safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, cols, ext);
 	if(fexistcase(path))
 		return true;
-	safe_snprintf(path, MAX_PATH, "%smenu/%s%s.%s"
-		,cfg.text_dir, menu_dir, code, ext);
+	safe_snprintf(path, MAX_PATH, "%s.%s", prefix, ext);
 	return fexistcase(path) ? true : false;
 }
