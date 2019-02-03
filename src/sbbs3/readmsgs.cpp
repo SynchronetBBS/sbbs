@@ -59,7 +59,7 @@ uchar sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg, post_t* post)
 	return ' ';
 }
 
-long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts)
+long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts, bool reading)
 {
 	smbmsg_t msg;
 	long listed=0;
@@ -73,7 +73,7 @@ long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts)
 		smb_unlockmsghdr(&smb,&msg);
 		if(listed==0)
 			bputs(text[MailOnSystemLstHdr]);
-		bprintf(text[SubMsgLstFmt], i+1
+		bprintf(text[SubMsgLstFmt], reading ? (i+1) : post[i].num
 			,msg.hdr.attr&MSG_ANONYMOUS && !sub_op(subnum)
 			? text[Anonymous] : msg.from
 			,msg.to
@@ -1726,7 +1726,7 @@ long sbbs_t::listsub(uint subnum, long mode, long start, const char* search)
 		if(mode&SCAN_FIND)
 			displayed=searchposts(subnum, post, start, posts, search);
 		else
-			displayed=listmsgs(subnum, mode, post, start, posts);
+			displayed=listmsgs(subnum, mode, post, start, posts, /* reading: */false);
 		free(post);
 	}
 	smb_close(&smb);
