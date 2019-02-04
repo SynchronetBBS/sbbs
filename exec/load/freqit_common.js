@@ -47,7 +47,7 @@ var FREQIT = {
 					self.dircache[dir] = new FileBase(dir);
 				self.dircache[dir].forEach(function(fent) {
 					if (wildmatch(fent.name, match, true))
-						self.add_file(fent.path, cb_data);
+						self.add_file(fent.path, cb_data, cfg);
 				});
 			});
 		}
