@@ -258,7 +258,7 @@ BOOL DLLCALL findstr_in_list(const char* insearchof, str_list_t list)
 	ip_addr = parse_ipv4_address(insearchof);
 	for(index=0; list[index]!=NULL; index++) {
 		p=list[index];
-		SKIP_WHITESPACE(p);
+//		SKIP_WHITESPACE(p);
 		if(ip_addr != 0 && (cidr = parse_cidr(p, &subnet)) != 0)
 			found = is_cidr_match(p, ip_addr, cidr, subnet);
 		else
