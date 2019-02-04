@@ -40,13 +40,14 @@ var FREQIT = {
 		var file=undefined;
 		var count=0;
 
+        const self = this;
 		function handle_list(list) {
 			list.forEach(function(dir) {
-				if (this.dircache[dir] === undefined)
-					this.dircache[dir] = new FileBase(dir);
-				this.dircache[dir].forEach(function(fent) {
+				if (self.dircache[dir] === undefined)
+					self.dircache[dir] = new FileBase(dir);
+				self.dircache[dir].forEach(function(fent) {
 					if (wildmatch(fent.name, match, true))
-						this.add_file(fent.path, cb_data);
+						self.add_file(fent.path, cb_data);
 				});
 			});
 		}
