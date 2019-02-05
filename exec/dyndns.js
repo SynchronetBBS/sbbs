@@ -7,6 +7,8 @@
 // usage: ?dyndns <password> [ip_address] [-mx address]
 
 const REVISION = "$Revision$".split(' ')[1];
+const rx_log_level = LOG_INFO;
+const tx_log_level = LOG_DEBUG;
 
 printf("Synchronet Dynamic DNS Client %s\r\n", REVISION);
 
@@ -15,7 +17,7 @@ host_list=["dyndns.synchro.net", "rob.synchro.net", "bbs.synchro.net", "cvs.sync
 function writeln(str)
 {
 	sock.send(str + "\r\n");
-	print(str);
+	log(tx_log_level, "TX: " + str);
 }
 
 var options=load({}, "modopts.js", "dyndns");
@@ -45,7 +47,7 @@ for(i=1;i<argc;i++) {
 }
 
 
-		
+
 for(h in host_list) {
 	sock = new Socket();
 	if( (this.server != undefined) &&
@@ -64,7 +66,7 @@ for(h in host_list) {
 		str=sock.readline();
 		if(str == null)
 			break;
-		print(str);
+		log(rx_log_level, "RX: " + str);
 		switch(str) {
 			case "id?":
 				writeln(host_name);
@@ -90,6 +92,9 @@ for(h in host_list) {
 				else
 					writeln("");
 				break;
+			case "ok":
+				exit(0);
+				break;
 			default:
 				writeln("");
 				break;
@@ -97,3 +102,4 @@ for(h in host_list) {
 	}
 	break;
 }
+exit(1);
