@@ -14,10 +14,13 @@ printf("Synchronet Dynamic DNS Client %s\r\n", REVISION);
 
 host_list=["dyndns.synchro.net", "rob.synchro.net", "bbs.synchro.net", "cvs.synchro.net"];
 
+var quiet = false;
+
 function writeln(str)
 {
 	sock.send(str + "\r\n");
-	log(tx_log_level, "TX: " + str);
+	if(!quiet)
+		log(tx_log_level, "TX: " + str);
 }
 
 var options=load({}, "modopts.js", "dyndns");
@@ -31,6 +34,9 @@ var host_name = system.qwk_id;
 
 for(i=1;i<argc;i++) {
 	switch (argv[i].toLowerCase()) {
+		case "-q":
+			quiet = true;
+			break;
 		case "-mx":
 			mx_record = argv[++i];
 			break;
@@ -66,7 +72,8 @@ for(h in host_list) {
 		str=sock.readline();
 		if(str == null)
 			break;
-		log(rx_log_level, "RX: " + str);
+		if(!quiet)
+			log(rx_log_level, "RX: " + str);
 		switch(str) {
 			case "id?":
 				writeln(host_name);
@@ -96,10 +103,13 @@ for(h in host_list) {
 				exit(0);
 				break;
 			default:
+				alert("Unexpected message from server: " + str);
+			case "ttl?":
 				writeln("");
 				break;
 		}
 	}
 	break;
 }
+alert("Unexpected termination by server");
 exit(1);
