@@ -90,7 +90,7 @@ ulong bundles_unpacked=0;
 
 int cur_smb=0;
 FILE *fidologfile=NULL;
-bool twit_list;
+str_list_t twit_list;
 str_list_t bad_areas;
 
 fidoaddr_t		sys_faddr = {1,1,1,0};		/* Default system address: 1:1/1.0 */
@@ -3293,17 +3293,13 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 	long	dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 	fidoaddr_t faddr,origaddr,destaddr;
 	smb_t*	smbfile;
-	char	fname[MAX_PATH+1];
 	smbmsg_t	msg;
 	time32_t now=time32(NULL);
 	ulong	max_msg_age = (subnum == INVALID_SUB) ? cfg.max_netmail_age : cfg.max_echomail_age;
 
-	if(twit_list) {
-		sprintf(fname,"%stwitlist.cfg",scfg.ctrl_dir);
-		if(findstr(hdr->from,fname) || findstr(hdr->to,fname)) {
-			lprintf(LOG_INFO,"Filtering message from %s to %s",hdr->from,hdr->to);
-			return IMPORT_FILTERED_TWIT;
-		}
+	if(findstr_in_list(hdr->from, twit_list) || findstr_in_list(hdr->to, twit_list)) {
+		lprintf(LOG_INFO,"Filtering message from %s to %s",hdr->from,hdr->to);
+		return IMPORT_FILTERED_TWIT;
 	}
 
 	memset(&msg,0,sizeof(smbmsg_t));
@@ -6132,7 +6128,7 @@ int main(int argc, char **argv)
 	}
 
 	SAFEPRINTF(str,"%stwitlist.cfg",scfg.ctrl_dir);
-	twit_list=fexist(str);
+	twit_list=findstr_list(str);
 
 	if(scfg.total_faddrs)
 		sys_faddr=scfg.faddr[0];

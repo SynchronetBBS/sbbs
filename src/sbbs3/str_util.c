@@ -290,10 +290,13 @@ BOOL DLLCALL findstr(const char* insearchof, const char* fname)
 	while(!feof(fp) && !ferror(fp) && !found) {
 		if(!fgets(str,sizeof(str),fp))
 			break;
-		if(ip_addr !=0 && (cidr = parse_cidr(str, &subnet)) != 0)
-			found = is_cidr_match(str, ip_addr, cidr, subnet);
+		char* p = str;
+		SKIP_WHITESPACE(p);
+		c_unescape_str(p);
+		if(ip_addr !=0 && (cidr = parse_cidr(p, &subnet)) != 0)
+			found = is_cidr_match(p, ip_addr, cidr, subnet);
 		else
-			found = findstr_in_string(insearchof, str);
+			found = findstr_in_string(insearchof, p);
 	}
 
 	fclose(fp);
@@ -318,21 +321,35 @@ char* DLLCALL trashcan_fname(scfg_t* cfg, const char* name, char* fname, size_t 
 	return fname;
 }
 
-/****************************************************************************/
-str_list_t DLLCALL trashcan_list(scfg_t* cfg, const char* name)
+static char* process_findstr_item(size_t index, char *str, void* cbdata)
 {
-	char	fname[MAX_PATH+1];
+	SKIP_WHITESPACE(str);
+	return c_unescape_str(str);
+}
+
+/****************************************************************************/
+str_list_t DLLCALL findstr_list(const char* fname)
+{
 	FILE*	fp;
 	str_list_t	list;
 
-	if((fp=fopen(trashcan_fname(cfg, name, fname, sizeof(fname)),"r"))==NULL)
+	if((fp=fopen(fname,"r"))==NULL)
 		return NULL;
 
-	list=strListReadFile(fp,NULL,255);
+	list=strListReadFile(fp, NULL, /* Max line length: */255);
+	strListModifyEach(list, process_findstr_item, /* cbdata: */NULL);
 
 	fclose(fp);
 
 	return list;
+}
+
+/****************************************************************************/
+str_list_t DLLCALL trashcan_list(scfg_t* cfg, const char* name)
+{
+	char	fname[MAX_PATH+1];
+
+	return findstr_list(trashcan_fname(cfg, name, fname, sizeof(fname)));
 }
 
 /****************************************************************************/
