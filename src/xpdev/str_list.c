@@ -202,10 +202,11 @@ size_t DLLCALL strListModifyEach(const str_list_t list, char*(modify(size_t, cha
 {
 	size_t	i;
 	for(i = 0; list[i] != NULL; i++) {
+		char* p;
 		char* str = modify(i, list[i], cbdata);
 		if(str == NULL || str == list[i])	// Same old pointer (or NULL), no realloc() needed
 			continue;
-		char* p = realloc(list[i], strlen(str) + 1);
+		p = realloc(list[i], strlen(str) + 1);
 		if(p == NULL)
 			break;
 		list[i] = p;
