@@ -58,7 +58,6 @@ bool sbbs_t::unpack_rep(char* repfile)
 	ulong	errors = 0;
 	node_t	node;
 	FILE*	rep;
-	FILE*	fp;
 	DIR*	dir;
 	DIRENT*	dirent;
 	smbmsg_t	msg;
