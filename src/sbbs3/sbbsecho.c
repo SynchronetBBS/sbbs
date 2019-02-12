@@ -840,6 +840,9 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	if(flo_filename == NULL)
 		return -2;
 
+	if(*infile == '^')  /* work-around for BRE/FE inter-BBS attachment bug */
+		infile++;
+
 #ifdef __unix__
 	if(isalpha(infile[0]) && infile[1] == ':')	// Ignore "C:" prefix
 		infile += 2;
