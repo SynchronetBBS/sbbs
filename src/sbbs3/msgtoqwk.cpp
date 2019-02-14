@@ -322,7 +322,10 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 			} 
 		}
 
-		buf=smb_getmsgtxt(&smb,msg,GETMSGTXT_ALL);
+		ulong getmsgtxt_mode = GETMSGTXT_ALL;
+		if(!(mode&QM_TO_QNET))	// Get just the plain-text portion of MIME-encoded messages
+			getmsgtxt_mode |= GETMSGTXT_PLAIN;
+		buf=smb_getmsgtxt(&smb, msg, getmsgtxt_mode);
 		if(!buf)
 			return(0);
 
