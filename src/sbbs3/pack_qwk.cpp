@@ -165,7 +165,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		}
 		p="CONTROLTYPE = ";
 		fprintf(stream,"DOOR = %.10s\r\nVERSION = %s%c\r\n"
-			"SYSTEM = %s\r\n"
+			"SYSTEM = %s%c\r\n"
 			"CONTROLNAME = SBBS\r\n"
 			"%sADD\r\n"
 			"%sDROP\r\n"
@@ -186,7 +186,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			"MIXEDCASE = YES\r\n"
 			,VERSION_NOTICE
 			,VERSION,REVISION
-			,VERSION_NOTICE
+			,VERSION_NOTICE,REVISION
 			,p,p,p,p
 			,p,p,p,p
 			,p,p,p,p
