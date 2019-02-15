@@ -165,6 +165,7 @@ typedef struct {
 
 DLLEXPORT link_list_t*		DLLCALL	loginAttemptListInit(link_list_t*);
 DLLEXPORT BOOL				DLLCALL	loginAttemptListFree(link_list_t*);
+DLLEXPORT long				DLLCALL	loginAttemptListCount(link_list_t*);
 DLLEXPORT long				DLLCALL	loginAttemptListClear(link_list_t*);
 DLLEXPORT long				DLLCALL loginAttempts(link_list_t*, const union xp_sockaddr*);
 DLLEXPORT void				DLLCALL	loginSuccess(link_list_t*, const union xp_sockaddr*);

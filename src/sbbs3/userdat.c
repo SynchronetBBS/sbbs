@@ -2878,6 +2878,17 @@ BOOL DLLCALL loginAttemptListFree(link_list_t* list)
 }
 
 /****************************************************************************/
+long DLLCALL loginAttemptListCount(link_list_t* list)
+{	
+	long count;
+	
+	listLock(list);
+	count=listCountNodes(list);
+	listUnlock(list);
+	return count;
+}
+
+/****************************************************************************/
 long DLLCALL loginAttemptListClear(link_list_t* list)
 {	
 	long count;
@@ -2888,6 +2899,7 @@ long DLLCALL loginAttemptListClear(link_list_t* list)
 	listUnlock(list);
 	return count;
 }
+
 
 /****************************************************************************/
 static list_node_t* login_attempted(link_list_t* list, const union xp_sockaddr* addr)
