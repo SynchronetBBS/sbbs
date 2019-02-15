@@ -39,18 +39,25 @@ void xfer_opts()
 	int		i,j,l;
 	static int xfr_dflt;
 	static int fextr_dflt;
+	static int fextr_bar;
 	static int fextr_opt;
 	static int fview_dflt;
+	static int fview_bar;
 	static int fview_opt;
 	static int ftest_dflt;
+	static int ftest_bar;
 	static int ftest_opt;
 	static int fcomp_dflt;
+	static int fcomp_bar;
 	static int fcomp_opt;
 	static int prot_dflt;
+	static int prot_bar;
 	static int prot_opt;
 	static int dlevent_dflt;
+	static int dlevent_bar;
 	static int dlevent_opt;
 	static int altpath_dflt;
+	static int altpath_bar;
 	static fextr_t savfextr;
 	static fview_t savfview;
 	static ftest_t savftest;
@@ -245,7 +252,7 @@ void xfer_opts()
 						"viewed on the Terminal Server through the execution of an external\n"
 						"program."
 					;
-					i=uifc.list(i,0,0,50,&fview_dflt,NULL,"Viewable File Types",opt);
+					i=uifc.list(i,0,0,50,&fview_dflt,&fview_bar,"Viewable File Types",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -372,7 +379,7 @@ void xfer_opts()
 						"This `working string` can be set for each file type and command line\n"
 						"listed.\n"
 					;
-					i=uifc.list(i,0,0,50,&ftest_dflt,NULL,"Testable File Types",opt);
+					i=uifc.list(i,0,0,50,&ftest_dflt,&ftest_bar,"Testable File Types",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -506,7 +513,7 @@ void xfer_opts()
 						"a text string is displayed to the user. This `working string` can be set\n"
 						"for each file type and command line listed.\n"
 					;
-					i=uifc.list(i,0,0,50,&dlevent_dflt,NULL,"Download Events",opt);
+					i=uifc.list(i,0,0,50,&dlevent_dflt,&dlevent_bar,"Download Events",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -634,7 +641,7 @@ void xfer_opts()
 						"extension. For each file type you must specify the command line used to\n"
 						"extract the file(s).\n"
 					;
-					i=uifc.list(i,0,0,50,&fextr_dflt,NULL,"Extractable File Types",opt);
+					i=uifc.list(i,0,0,50,&fextr_dflt,&fextr_bar,"Extractable File Types",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -753,7 +760,7 @@ void xfer_opts()
 						"These will be used for items such as creating QWK packets, temporary\n"
 						"files from the transfer section, and more.\n"
 					;
-					i=uifc.list(i,0,0,50,&fcomp_dflt,NULL,"Compressable File Types",opt);
+					i=uifc.list(i,0,0,50,&fcomp_dflt,&fcomp_bar,"Compressable File Types",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -879,7 +886,7 @@ void xfer_opts()
 						"don't wish it to be available for a certain method of transfer, leave\n"
 						"the command line for that method blank.\n"
 					;
-					i=uifc.list(i,0,0,50,&prot_dflt,NULL,"File Transfer Protocols",opt);
+					i=uifc.list(i,0,0,50,&prot_dflt,&prot_bar,"File Transfer Protocols",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -1075,7 +1082,7 @@ void xfer_opts()
 						"have file directories where they wish to have files listed from\n"
 						"multiple CD-ROMs or hard disks.\n"
 					;
-					i=uifc.list(i,0,0,50,&altpath_dflt,NULL,"Alternate File Paths",opt);
+					i=uifc.list(i,0,0,50,&altpath_dflt,&altpath_bar,"Alternate File Paths",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
