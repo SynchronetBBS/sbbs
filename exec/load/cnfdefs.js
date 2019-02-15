@@ -308,7 +308,7 @@ struct.dlevent_t={
 
 /* File Transfer Protocol (drivers) */
 struct.prot_t={
-	mnemonic:		{bytes:1,				type:"str"},
+	key:			{bytes:UCHAR,			type:"str"},
 	name:			{bytes:26,				type:"str"},
 	ulcmd:			{bytes:LEN_CMD+1,		type:"str"},
 	dlcmd:			{bytes:LEN_CMD+1,		type:"str"},
