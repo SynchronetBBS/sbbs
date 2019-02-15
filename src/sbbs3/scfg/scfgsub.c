@@ -385,15 +385,17 @@ void sub_cfg(uint grpnum)
 					break;
 				case 0:
 					uifc.helpbuf=sub_long_name_help;
-					SAFECOPY(str,cfg.sub[i]->lname);	/* save */
+					SAFECOPY(str, cfg.sub[i]->lname);
 					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Listings"
-						,cfg.sub[i]->lname,LEN_SLNAME,K_EDIT) == 0)
-						SAFECOPY(cfg.sub[i]->lname,str);	/* restore */
+						,str,LEN_SLNAME,K_EDIT) > 0)
+						SAFECOPY(cfg.sub[i]->lname, str);
 					break;
 				case 1:
 					uifc.helpbuf=sub_short_name_help;
-					uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Prompts"
-						,cfg.sub[i]->sname,LEN_SSNAME,K_EDIT);
+					SAFECOPY(str, cfg.sub[i]->sname);
+					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Prompts"
+						,str,LEN_SSNAME,K_EDIT) > 0)
+						SAFECOPY(cfg.sub[i]->sname, str);
 					break;
 				case 2:
 					uifc.helpbuf=

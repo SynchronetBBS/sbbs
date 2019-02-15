@@ -414,21 +414,34 @@ void xfer_cfg()
 					break;
 				case __COUNTER__:
 					uifc.helpbuf=lib_long_name_help;
-					strcpy(str,cfg.lib[i]->lname);	/* save */
-					if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Name to use for Listings"
-						,cfg.lib[i]->lname,LEN_GLNAME,K_EDIT))
-						strcpy(cfg.lib[i]->lname,str);	/* restore */
+					SAFECOPY(str, cfg.lib[i]->lname);
+					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Name to use for Listings"
+						,str,LEN_GLNAME,K_EDIT) > 0)
+						SAFECOPY(cfg.lib[i]->lname,str);
 					break;
 				case __COUNTER__:
 					uifc.helpbuf=lib_short_name_help;
-					uifc.input(WIN_MID|WIN_SAV,0,0,"Name to use for Prompts"
-						,cfg.lib[i]->sname,LEN_GSNAME,K_EDIT);
+					SAFECOPY(str, cfg.lib[i]->sname);
+					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Name to use for Prompts"
+						,str,LEN_GSNAME,K_EDIT) > 0)
+						SAFECOPY(cfg.lib[i]->sname,str);
 					break;
 				case __COUNTER__:
+				{
+					char code_prefix[LEN_CODE+1];
+					SAFECOPY(code_prefix, cfg.lib[i]->code_prefix);
 					uifc.helpbuf=lib_code_prefix_help;
-					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
-						,cfg.lib[i]->code_prefix,LEN_CODE,K_EDIT|K_UPPER);
+					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
+						,code_prefix,LEN_CODE,K_EDIT|K_UPPER) < 0)
+						continue;
+					if(code_prefix[0] == 0 || code_ok(code_prefix)) {
+						SAFECOPY(cfg.lib[i]->code_prefix, code_prefix);
+					} else {
+						uifc.helpbuf = invalid_code;
+						uifc.msg("Invalid Code Prefix");
+					}
 					break;
+				}
 				case __COUNTER__:
 					uifc.helpbuf=
 						"`Parent Directory:`\n"
@@ -1048,10 +1061,10 @@ void dir_cfg(uint libnum)
 
 			if(stricmp(str2,"OFFLINE") == 0)
 				cfg.dir[dirnum[i]]->misc = 0;
-			strcpy(cfg.dir[dirnum[i]]->code_suffix,code);
-			strcpy(cfg.dir[dirnum[i]]->lname,str);
-			strcpy(cfg.dir[dirnum[i]]->sname,str2);
-			strcpy(cfg.dir[dirnum[i]]->path,path);
+			SAFECOPY(cfg.dir[dirnum[i]]->code_suffix,code);
+			SAFECOPY(cfg.dir[dirnum[i]]->lname,str);
+			SAFECOPY(cfg.dir[dirnum[i]]->sname,str2);
+			SAFECOPY(cfg.dir[dirnum[i]]->path,path);
 			uifc.changes=1;
 			continue;
 		}
@@ -1170,23 +1183,25 @@ void dir_cfg(uint libnum)
 					break;
 				case 0:
 					uifc.helpbuf=dir_long_name_help;
-					strcpy(str,cfg.dir[i]->lname);	/* save */
-					if(!uifc.input(WIN_L2R|WIN_SAV,0,17,"Name to use for Listings"
-						,cfg.dir[i]->lname,LEN_SLNAME,K_EDIT))
-						strcpy(cfg.dir[i]->lname,str);
+					SAFECOPY(str, cfg.dir[i]->lname);
+					if(uifc.input(WIN_L2R|WIN_SAV,0,17,"Name to use for Listings"
+						,str,LEN_SLNAME,K_EDIT) > 0)
+						SAFECOPY(cfg.dir[i]->lname, str);
 					break;
 				case 1:
 					uifc.helpbuf=dir_short_name_help;
-					uifc.input(WIN_L2R|WIN_SAV,0,17,"Name to use for Prompts"
-						,cfg.dir[i]->sname,LEN_SSNAME,K_EDIT);
+					SAFECOPY(str, cfg.dir[i]->sname);
+					if(uifc.input(WIN_L2R|WIN_SAV,0,17,"Name to use for Prompts"
+						,str,LEN_SSNAME,K_EDIT) > 0)
+						SAFECOPY(cfg.dir[i]->sname, str);
 					break;
 				case 2:
 					uifc.helpbuf=dir_code_help;
-					strcpy(str,cfg.dir[i]->code_suffix);
+					SAFECOPY(str,cfg.dir[i]->code_suffix);
 					uifc.input(WIN_L2R|WIN_SAV,0,17,"Internal Code Suffix (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
 					if(code_ok(str))
-						strcpy(cfg.dir[i]->code_suffix,str);
+						SAFECOPY(cfg.dir[i]->code_suffix,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
