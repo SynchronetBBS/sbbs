@@ -398,12 +398,19 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	/* Calculate and save the actual number (total) of sub-boards that will be written */
 	n = 0;
 	for(i=0; i<cfg->total_subs; i++)
-		if(cfg->sub[i]->grp < cfg->total_grps)	/* total VALID sub-boards */
+		if(cfg->sub[i]->grp < cfg->total_grps	/* total VALID sub-boards */
+			&& cfg->sub[i]->lname[0]
+			&& cfg->sub[i]->sname[0]
+			&& cfg->sub[i]->code_suffix[0])
 			n++;
 	put_int(n,stream);
 	unsigned int subnum = 0;	/* New sub-board numbering (as saved) */
 	for(unsigned grp = 0; grp < cfg->total_grps; grp++) {
 		for(i=0;i<cfg->total_subs;i++) {
+			if(cfg->sub[i]->lname[0] == 0
+				|| cfg->sub[i]->sname[0] == 0
+				|| cfg->sub[i]->code_suffix[0] == 0)
+				continue;
 			if(cfg->sub[i]->grp != grp)
 				continue;
 			cfg->sub[i]->subnum = subnum++;
@@ -784,12 +791,19 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 	/* Calculate and save the actual number (total) of dirs that will be written */
 	n = 0;
 	for (i = 0; i < cfg->total_dirs; i++)
-		if (cfg->dir[i]->lib < cfg->total_libs)	/* total VALID file dirs */
+		if (cfg->dir[i]->lib < cfg->total_libs	/* total VALID file dirs */
+			&& cfg->dir[i]->lname[0]
+			&& cfg->dir[i]->sname[0]
+			&& cfg->dir[i]->code_suffix[0])
 			n++;
 	put_int(n,stream);
 	unsigned int dirnum = 0;	/* New directory numbering (as saved) */
 	for (j = 0; j < cfg->total_libs; j++) {
 		for (i = 0; i < cfg->total_dirs; i++) {
+			if (cfg->dir[i]->lname[0] == 0
+				|| cfg->dir[i]->sname[0] == 0
+				|| cfg->dir[i]->code_suffix[0] == 0)
+				continue;
 			if (cfg->dir[i]->lib == j) {
 				cfg->dir[i]->dirnum = dirnum++;
 				put_int(cfg->dir[i]->lib, stream);
