@@ -85,7 +85,7 @@
 TMainForm *MainForm;
 
 #define LOG_TIME_FMT "  m/d  hh:mm:ssa/p"
-#define STATUSBAR_LAST_PANEL  5
+#define STATUSBAR_LAST_PANEL  6
 
 /* Service functions are NT-only, must call dynamically :-( */
 typedef WINADVAPI SC_HANDLE (WINAPI *OpenSCManager_t)(LPCTSTR,LPCTSTR,DWORD);
@@ -2993,10 +2993,15 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
     if(MainForm->StatusBar->Panels->Items[3]->Text!=Str)
 		MainForm->StatusBar->Panels->Items[3]->Text=Str;
 
-    sprintf(str,"Errors: %u",errors);
+    sprintf(str,"Failed: %u",loginAttemptListCount(&login_attempt_list));
     Str=AnsiString(str);
     if(MainForm->StatusBar->Panels->Items[4]->Text!=Str)
 		MainForm->StatusBar->Panels->Items[4]->Text=Str;
+
+    sprintf(str,"Errors: %u",errors);
+    Str=AnsiString(str);
+    if(MainForm->StatusBar->Panels->Items[5]->Text!=Str)
+		MainForm->StatusBar->Panels->Items[5]->Text=Str;
 
 #if 0
     THeapStatus hp=GetHeapStatus();
@@ -3904,6 +3909,13 @@ void __fastcall TMainForm::LogPopupCopyClick(TObject *Sender)
 {
     TRichEdit* Log = (TRichEdit*)LogPopupMenu->PopupComponent;
     Log->CopyToClipboard();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::ClearFailedLoginsPopupMenuItemClick(
+      TObject *Sender)
+{
+    loginAttemptListClear(&login_attempt_list);
 }
 //---------------------------------------------------------------------------
 

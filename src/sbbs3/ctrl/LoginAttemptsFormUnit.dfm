@@ -22,7 +22,7 @@ object LoginAttemptsForm: TLoginAttemptsForm
     Left = 0
     Top = 0
     Width = 480
-    Height = 754
+    Height = 755
     Align = alClient
     Columns = <
       item
@@ -85,6 +85,10 @@ object LoginAttemptsForm: TLoginAttemptsForm
     object FilterIpMenuItem: TMenuItem
       Caption = 'Filter IP Address'
       OnClick = FilterIpMenuItemClick
+    end
+    object ClearListMenuItem: TMenuItem
+      Caption = 'Clear List'
+      OnClick = ClearListMenuItemClick
     end
   end
 end

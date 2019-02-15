@@ -275,3 +275,9 @@ void __fastcall TLoginAttemptsForm::ResolveHostnameMenuItemClick(
 }
 //---------------------------------------------------------------------------
 
+void __fastcall TLoginAttemptsForm::ClearListMenuItemClick(TObject *Sender)
+{
+    loginAttemptListClear(&login_attempt_list);    
+}
+//---------------------------------------------------------------------------
+
