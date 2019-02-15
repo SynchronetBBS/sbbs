@@ -121,6 +121,7 @@ static	WORD	last_node;
 static	bool	terminate_server=false;
 static	str_list_t recycle_semfiles;
 static	str_list_t shutdown_semfiles;
+static	str_list_t clear_attempts_semfiles;
 static	link_list_t current_logins;
 static	link_list_t current_connections;
 #ifdef _THREAD_SUID_BROKEN
@@ -4865,6 +4866,7 @@ static void cleanup(int code)
 
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
+	semfile_list_free(&clear_attempts_semfiles);
 
 	listFree(&current_logins);
 	listFree(&current_connections);
@@ -5271,11 +5273,10 @@ NO_SSH:
 #endif // _WIN32 && _DEBUG && _MSC_VER
 
 	/* Setup recycle/shutdown semaphore file lists */
-	shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","telnet");
-	recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","telnet");
+	shutdown_semfiles = semfile_list_init(scfg.ctrl_dir,"shutdown", "term");
+	recycle_semfiles = semfile_list_init(scfg.ctrl_dir,"recycle", "term");
+	clear_attempts_semfiles = semfile_list_init(scfg.ctrl_dir,"clear", "term");
 	semfile_list_add(&recycle_semfiles,startup->ini_fname);
-	SAFEPRINTF(str,"%stelnet.rec",scfg.ctrl_dir);	/* legacy */
-	semfile_list_add(&recycle_semfiles,str);
 	SAFEPRINTF(str,"%stext.dat",scfg.ctrl_dir);
 	semfile_list_add(&recycle_semfiles,str);
 	SAFEPRINTF(str,"%sattr.cfg",scfg.ctrl_dir);
@@ -5283,6 +5284,7 @@ NO_SSH:
 	if(!initialized)
 		semfile_list_check(&initialized,shutdown_semfiles);
 	semfile_list_check(&initialized,recycle_semfiles);
+	semfile_list_check(&initialized,clear_attempts_semfiles);
 
 	listInit(&current_logins, LINK_LIST_MUTEX);
 	listInit(&current_connections, LINK_LIST_MUTEX);
@@ -5368,6 +5370,11 @@ NO_SSH:
 
 		if(terminate_server)	/* terminated */
 			break;
+
+		if((p=semfile_list_check(&initialized,clear_attempts_semfiles))!=NULL) {
+			lprintf(LOG_INFO,"Clear Failed Login Attempts semaphore file (%s) detected", p);
+			loginAttemptListClear(startup->login_attempt_list);
+		}
 
 		if(client_socket == INVALID_SOCKET)
 			continue;
