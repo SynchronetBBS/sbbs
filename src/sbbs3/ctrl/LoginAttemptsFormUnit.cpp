@@ -47,6 +47,7 @@
 #pragma resource "*.dfm"
 TLoginAttemptsForm *LoginAttemptsForm;
 extern link_list_t login_attempt_list;
+extern bool clearLoginAttemptList;
 
 //---------------------------------------------------------------------------
 __fastcall TLoginAttemptsForm::TLoginAttemptsForm(TComponent* Owner)
@@ -277,7 +278,10 @@ void __fastcall TLoginAttemptsForm::ResolveHostnameMenuItemClick(
 
 void __fastcall TLoginAttemptsForm::ClearListMenuItemClick(TObject *Sender)
 {
-    loginAttemptListClear(&login_attempt_list);    
+    clearLoginAttemptList = true;
+    ListView->Items->BeginUpdate();
+    ListView->Items->Clear();
+    ListView->Items->EndUpdate();    
 }
 //---------------------------------------------------------------------------
 
