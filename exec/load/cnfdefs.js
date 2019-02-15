@@ -97,10 +97,10 @@ struct.hotkey_t={
 
 /* message group/sub record structures */
 struct.faddr_t={
-	faddr1:		{bytes:2,				type:"int"},
-	faddr2:		{bytes:2,				type:"int"},
-	faddr3:		{bytes:2,				type:"int"},
-	faddr4:		{bytes:2,				type:"int"}
+	zone:		{bytes:2,				type:"int"},
+	net:		{bytes:2,				type:"int"},
+	node:		{bytes:2,				type:"int"},
+	point:		{bytes:2,				type:"int"}
 };
 struct.sub_t={
 	grp_number:		{bytes:UINT16_T,		type:"int"},	// was grp
@@ -122,7 +122,7 @@ struct.sub_t={
 	fidonet_origin:	{bytes:51,				type:"str"},	// was origline
 	post_sem:		{bytes:LEN_DIR+1,		type:"str"},
 	newsgroup:		{bytes:LEN_DIR+1,		type:"str"},
-	faddr:			{bytes:struct.faddr_t,	type:"obj"},
+	fidonet_addr:	{bytes:struct.faddr_t,	type:"obj"},
 	max_msgs:		{bytes:UINT32_T,		type:"int"},	// was maxmsgs
 	max_crcs:		{bytes:UINT32_T,		type:"int"},	// was maxcrcs
 	max_age:		{bytes:UINT16_T,		type:"int"},	// was maxage
@@ -201,24 +201,24 @@ struct.msg={
 	__PADDING2__:510,
 	grp:			{bytes:struct.grp_t, 	type:"lst"},
 	sub:			{bytes:struct.sub_t, 	type:"lst"},
-	faddr:			{bytes:struct.faddr_t, 	type:"lst"},
-	origline:		{bytes:51, 				type:"str"},
-	netmail_sem:	{bytes:LEN_DIR+1, 		type:"str"},
-	echomail_sem:	{bytes:LEN_DIR+1, 		type:"str"},
-	netmail_dir:	{bytes:LEN_DIR+1, 		type:"str"},
-	echomail_dir:	{bytes:LEN_DIR+1, 		type:"str"},
-	fidofile_dir:	{bytes:LEN_DIR+1, 		type:"str"},
-	netmail_misc:	{bytes:UINT16_T, 		type:"int"},
-	netmail_cost:	{bytes:UINT32_T, 		type:"int"},
-	dflt_faddr:		{bytes:struct.faddr_t, 	type:"obj"},
+	fido_addr_list:	{bytes:struct.faddr_t, 	type:"lst"},
+	fido_default_origin:{bytes:51, 			type:"str"},
+	fido_netmail_sem:	{bytes:LEN_DIR+1, 	type:"str"},
+	fido_echomail_sem:	{bytes:LEN_DIR+1, 	type:"str"},
+	fido_netmail_dir:	{bytes:LEN_DIR+1, 	type:"str"},
+	fido_echomail_dir:	{bytes:LEN_DIR+1, 	type:"str"},
+	fido_file_dir:		{bytes:LEN_DIR+1, 	type:"str"},
+	fido_netmail_misc:	{bytes:UINT16_T, 	type:"int"},
+	fido_netmail_cost:	{bytes:UINT32_T, 	type:"int"},
+	fido_default_addr:	{bytes:struct.faddr_t, 	type:"obj"},
 	__PADDING3__:56,
-	qnet_tagline:	{bytes:128, 			type:"str"},
-	qhub:			{bytes:struct.qhub_t, 	type:"lst"},
+	qwknet_default_tagline:{bytes:128, 		type:"str"},
+	qwknet_hub:		{bytes:struct.qhub_t, 	type:"lst"},
 	__PADDING4__:64,
 	__PADDING5__:11,
-	sys_psnum:		{bytes:UINT32_T, 		type:"int"},
-	phub:			{bytes:struct.phub_t, 	type:"lst"},
-	sys_psname:		{bytes:13, 				type:"str"},
+	postlink_num:	{bytes:UINT32_T, 		type:"int"},
+	postlink_hub:	{bytes:struct.phub_t, 	type:"lst"},
+	postlink_name:	{bytes:13, 				type:"str"},
 	__PADDING6__:64,
 	sys_inetaddr:	{bytes:128, 			type:"str"},
 	inetmail_sem:	{bytes:LEN_DIR+1, 		type:"str"},
