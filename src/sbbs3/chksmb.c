@@ -166,6 +166,7 @@ int main(int argc, char **argv)
 				,totalmsgs=0,totallzhmsgs=0,totaldelmsgs=0,totalmsgbytes=0L
 				,lzhblocks,lzhsaved
 				,ctrl_chars;
+	ulong		hdr_overlap;
 	off_t		shd_length;
 	ulong		oldest=0;
 	ulong		largest=0;
@@ -173,6 +174,7 @@ int main(int argc, char **argv)
 	ulong		msgids = 0;
 	smb_t		smb;
 	idxrec_t	idx;
+	idxrec_t*	idxrec = NULL;
 	smbmsg_t	msg;
 	hash_t**	hashes;
 	char		revision[16];
@@ -275,6 +277,28 @@ int main(int argc, char **argv)
 		continue;
 	}
 
+	off_t sid_length = filelength(fileno(smb.sid_fp));
+	if(sid_length != smb.status.total_msgs * sizeof(idxrec_t)) {
+		printf("!Size of index file (%ld) is incorrect (expected: %ld)\n", sid_length, smb.status.total_msgs * sizeof(idxrec_t));
+		smb_close(&smb);
+		errors++;
+		continue;
+	}
+
+	FREE_AND_NULL(idxrec);
+	if((idxrec = calloc(smb.status.total_msgs, sizeof(*idxrec))) == NULL) {
+		printf("!Error allocating %lu index record\n", (ulong)smb.status.total_msgs);
+		smb_close(&smb);
+		errors++;
+		continue;
+	}
+	if(fread(idxrec, sizeof(*idxrec), smb.status.total_msgs, smb.sid_fp) != smb.status.total_msgs) {
+		printf("!Error reading %lu index records\n", (ulong)smb.status.total_msgs);
+		smb_close(&smb);
+		errors++;
+		continue;
+	}
+
 	off_t shd_hdrs = shd_length - smb.status.header_offset;
 
 	if(shd_hdrs && (shd_hdrs%SHD_BLOCK_LEN) != 0)
@@ -337,6 +361,7 @@ int main(int argc, char **argv)
 	dfieldlength=dfieldoffset=0;
 	msgids = 0;
 	ctrl_chars = 0;
+	hdr_overlap = 0;
 	oldest = 0;
 	largest = 0;
 	largest_msgnum = 0;
@@ -380,6 +405,20 @@ int main(int argc, char **argv)
 		truncsp(from);
 		strip_ctrl(from);
 		fprintf(stderr,"#%-5"PRIu32" (%06lX) %-25.25s ",msg.hdr.number,l,from);
+
+		for(n = 0; n < smb.status.total_msgs; n++) {
+			if(idxrec[n].number == msg.hdr.number)
+				continue;
+			if(idxrec[n].offset >= l && idxrec[n].offset < l + (smb_hdrblocks(msg.hdr.length) * SHD_BLOCK_LEN)) {
+				fprintf(stderr,"%sMessage header overlap\n", beep);
+				msgerr=TRUE;
+				if(extinfo)
+					printf("MSGERR: Header for message #%lu overlaps with message #%lu\n"
+						,(ulong)idxrec[n].number, (ulong)msg.hdr.number);
+				hdr_overlap++;
+				break;
+			}
+		}
 
 		if(contains_ctrl_chars(msg.to)
 			|| (msg.to_net.type != NET_FIDO && contains_ctrl_chars(msg.to_net.addr))
@@ -1059,6 +1098,11 @@ int main(int argc, char **argv)
 		printf("%-35.35s (!): %lu\n"
 			,"Control Characters in Header Fields"
 			,ctrl_chars);
+
+	if(hdr_overlap)
+		printf("%-35.35s (!): %lu\n"
+			,"Overlapping Headers"
+			,hdr_overlap);
 
 	printf("\n%s Message Base ",smb.file);
 	if(/* (headers-deleted)!=smb.status.total_msgs || */
