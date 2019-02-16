@@ -1618,6 +1618,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 	char		numstr[16];
 	JSBool		include_votes=JS_FALSE;
 	post_t*		post;
+	idxrec_t*	idx;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
@@ -1629,11 +1630,15 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 	if(!SMB_IS_OPEN(&(priv->smb)))
 		return JS_TRUE;
 
-	if((post = malloc(priv->smb.status.total_msgs * sizeof(post_t))) == NULL) {
+	if((post = calloc(priv->smb.status.total_msgs, sizeof(*post))) == NULL) {
 		JS_ReportError(cx, "malloc error", WHERE);
 		return JS_FALSE;
 	}
-	memset(post, 0, priv->smb.status.total_msgs * sizeof(post_t));
+	if((idx = calloc(priv->smb.status.total_msgs, sizeof(*idx))) == NULL) {
+		JS_ReportError(cx, "malloc error", WHERE);
+		free(post);
+		return JS_FALSE;
+	}
 
 	if(argc && JSVAL_IS_BOOLEAN(argv[0]))
 		include_votes = JSVAL_TO_BOOLEAN(argv[0]);
@@ -1645,6 +1650,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 	if((priv->smb_result=smb_locksmbhdr(&(priv->smb)))!=SMB_SUCCESS) {
 		JS_RESUMEREQUEST(cx, rc);
 		free(post);
+		free(idx);
 		return JS_TRUE;
 	}
 	JS_RESUMEREQUEST(cx, rc);
@@ -1659,29 +1665,23 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 	else
 		proto=NULL;
 
+	if(fread(idx, sizeof(*idx), priv->smb.status.total_msgs, priv->smb.sid_fp) != priv->smb.status.total_msgs) {
+		smb_unlocksmbhdr(&(priv->smb)); 
+		JS_ReportError(cx,"index read (%lu) failed", priv->smb.status.total_msgs);
+		free(post);
+		free(idx);
+		return JS_FALSE;
+	}
 	for(off=0; off < priv->smb.status.total_msgs; off++) {
-		smbmsg_t msg;
-
-		ZERO_VAR(msg);
-		msg.offset = off;
-
-		rc=JS_SUSPENDREQUEST(cx);
-		priv->smb_result = smb_getmsgidx(&(priv->smb), &msg);
-		JS_RESUMEREQUEST(cx, rc);
-		if(priv->smb_result != SMB_SUCCESS) {
-			smb_unlocksmbhdr(&(priv->smb)); 
-			free(post);
-			return JS_TRUE;
-		}
-		post[off].idx = msg.idx;
-		if(msg.idx.attr&MSG_VOTE && !(msg.idx.attr&MSG_POLL)) {
+		post[off].idx = idx[off];
+		if(idx[off].attr&MSG_VOTE && !(idx[off].attr&MSG_POLL)) {
 			ulong u;
 			for(u = 0; u < off; u++)
-				if(post[u].idx.number == msg.idx.remsg)
+				if(post[u].idx.number == idx[off].remsg)
 					break;
 			if(u < off) {
 				post[u].total_votes++;
-				switch(msg.idx.attr&MSG_VOTE) {
+				switch(idx[off].attr&MSG_VOTE) {
 				case MSG_UPVOTE:
 					post[u].upvotes++;
 					break;
@@ -1690,13 +1690,14 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 					break;
 				default:
 					for(int b=0; b < MSG_POLL_MAX_ANSWERS; b++) {
-						if(msg.idx.votes&(1<<b))
+						if(idx[off].votes&(1<<b))
 							post[u].votes[b]++;
 					}
 				}
 			}
 		}
 	}
+	free(idx);
 
 	for(off=0; off < priv->smb.status.total_msgs; off++) {
 		if((!include_votes) && (post[off].idx.attr&MSG_VOTE))
