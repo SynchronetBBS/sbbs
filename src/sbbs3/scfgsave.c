@@ -1025,11 +1025,16 @@ BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 	/* Calculate and save the actual number (total) of xtrn programs that will be written */
 	n = 0;
 	for (i = 0; i < cfg->total_xtrns; i++)
-		if (cfg->xtrn[i]->sec < cfg->total_xtrnsecs)	/* Total VALID xtrn progs */
+		if (cfg->xtrn[i]->sec < cfg->total_xtrnsecs	/* Total VALID xtrn progs */
+			&& cfg->xtrn[i]->name[0]
+			&& cfg->xtrn[i]->code[0])
 			n++;
 	put_int(n,stream);
 	for(sec=0;sec<cfg->total_xtrnsecs;sec++)
 		for(i=0;i<cfg->total_xtrns;i++) {
+			if(cfg->xtrn[i]->name[0] == 0
+				|| cfg->xtrn[i]->code[0] == 0)
+				continue;
 			if(cfg->xtrn[i]->sec!=sec)
 				continue;
 			put_int(cfg->xtrn[i]->sec,stream);
