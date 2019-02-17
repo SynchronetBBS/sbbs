@@ -382,6 +382,8 @@ var   NMAIL_DIRECT	=(1<<6);	/* Default Fido netmail to direct			*/
 							    /* Bit values for sub[x].settings			*/
 							    /********************************************/
 var   SUB_NOVOTING	=(1<<0);	/* No voting allowed in this sub-board		*/
+var   SUB_TEMPLATE  =(1<<1);	/* Use this sub as template for new subs    */
+var   SUB_MSGTAGS   =(1<<2);    /* Allow messages to be tagged              */
 var   SUB_QNET		=(1<<3);	/* Sub-board is netted via QWK network		*/
 var   SUB_PNET		=(1<<4);	/* Sub-board is netted via PostLink			*/
 var   SUB_FIDO		=(1<<5);	/* Sub-board is netted via FidoNet			*/
