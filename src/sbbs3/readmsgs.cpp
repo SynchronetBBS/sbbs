@@ -1,4 +1,5 @@
 /* Synchronet public message reading function */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -999,6 +1000,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							sprintf(str,"removed post from %s %s"
 								,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 							logline("P-",str);
+							center(text[Deleted]);
 							if(!stricmp(cfg.sub[subnum]->misc&SUB_NAME
 								? useron.name : useron.alias, msg.from))
 								useron.posts=(ushort)adjustuserrec(&cfg,useron.number
