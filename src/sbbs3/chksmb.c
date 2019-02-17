@@ -409,7 +409,7 @@ int main(int argc, char **argv)
 		for(n = 0; n < smb.status.total_msgs; n++) {
 			if(idxrec[n].number == msg.hdr.number)
 				continue;
-			if(idxrec[n].offset >= l && idxrec[n].offset < l + (smb_hdrblocks(msg.hdr.length) * SHD_BLOCK_LEN)) {
+			if(idxrec[n].offset > l && idxrec[n].offset < l + (smb_hdrblocks(msg.hdr.length) * SHD_BLOCK_LEN)) {
 				fprintf(stderr,"%sMessage header overlap\n", beep);
 				msgerr=TRUE;
 				if(extinfo)
