@@ -2658,9 +2658,13 @@ void event_thread(void* arg)
 			strcat(str,"*.rep");
 			glob(str,0,NULL,&g);
 			for(i=0;i<(int)g.gl_pathc && !sbbs->terminated;i++) {
-				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
+				if(flength(g.gl_pathv[i]) < 1)
+					continue;
+				sbbs->useron.number = 0;
+				sbbs->lprintf(LOG_DEBUG, "Inbound QWK Reply Packet detected: %s", g.gl_pathv[i]);
+				sbbs->useron.number = atoi(g.gl_pathv[i]+offset);
 				getuserdat(&sbbs->cfg,&sbbs->useron);
-				if(sbbs->useron.number && flength(g.gl_pathv[i])>0) {
+				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					SAFEPRINTF(semfile,"%s.lock",g.gl_pathv[i]);
 					if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE)) {
 						sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?)", semfile);
@@ -2668,7 +2672,6 @@ void event_thread(void* arg)
 					}
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
-					sbbs->lprintf(LOG_INFO, "Un-packing QWK Reply packet");
 					sbbs->getusrsubs();
 					bool success = sbbs->unpack_rep(g.gl_pathv[i]);
 					delfiles(sbbs->cfg.temp_dir,ALLFILES);		/* clean-up temp_dir after unpacking */
@@ -2695,6 +2698,11 @@ void event_thread(void* arg)
 					if(remove(semfile))
 						sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
 				}
+				else {
+					sbbs->lprintf(LOG_INFO, "Removing: %s", g.gl_pathv[i]);
+					if(remove(g.gl_pathv[i]))
+						sbbs->errormsg(WHERE, ERR_REMOVE, g.gl_pathv[i], 0);
+				}
 			}
 			globfree(&g);
 			sbbs->useron.number = 0;
@@ -2705,15 +2713,16 @@ void event_thread(void* arg)
 			offset=strlen(sbbs->cfg.data_dir)+4;
 			glob(str,0,NULL,&g);
 			for(i=0;i<(int)g.gl_pathc && !sbbs->terminated;i++) {
+				sbbs->useron.number = 0;
 				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", g.gl_pathv[i]);
-				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
+				sbbs->useron.number = atoi(g.gl_pathv[i]+offset);
 				SAFEPRINTF2(semfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
 				if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE)) {
 					sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?)", semfile);
 					continue;
 				}
 				getuserdat(&sbbs->cfg,&sbbs->useron);
-				if(sbbs->useron.number && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
+				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					sbbs->lprintf(LOG_INFO, "Packing QWK Message Packet");
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;

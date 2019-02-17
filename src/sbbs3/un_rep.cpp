@@ -156,11 +156,13 @@ bool sbbs_t::unpack_rep(char* repfile)
 		logline(LOG_NOTICE,nulstr,"Incorrect QWK BBS ID");
 		return(false); 
 	}
-	logline("U+","Uploaded REP packet");
 	/********************/
 	/* Process messages */
 	/********************/
-	bputs(text[QWKUnpacking]);
+	if(online == ON_REMOTE) {
+		logline("U+","Uploaded REP packet");
+		bputs(text[QWKUnpacking]);
+	}
 
 	ip_can=trashcan_list(&cfg,"ip");
 	host_can=trashcan_list(&cfg,"host");
@@ -198,7 +200,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			lprintf(LOG_WARNING
 				, "%s msg blocks less than 2 (read '%c' at offset %ld, '%s' at offset %ld)"
 				, getfname(msg_fname), block[0], l, tmp, l + 116);
-			errors++;
+			if(l > QWK_BLOCK_LEN)
+				errors++;
 			blocks=1;
 			continue;
 		}
@@ -242,7 +245,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 		}
 
 		if(confnum == 0) {						/* E-mail */
-			bprintf("E-mail from %s to %s\r\n", msg.from, msg.to);
+			if(msg.from == NULL)
+				bprintf("E-mail to %s: %s\r\n", msg.to, msg.subj);
+			else
+				bprintf("E-mail from %s to %s\r\n", msg.from, msg.to);
 			if(useron.rest&FLAG('E')) {
 				bputs(text[R_Email]);
 				continue;
@@ -355,7 +361,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 				useron.etoday++;
 				putuserrec(&cfg,useron.number,U_ETODAY,5
 					,ultoa(useron.etoday,tmp,10));
-				bprintf(text[Emailed],username(&cfg,usernum,tmp),usernum);
+				if(online == ON_REMOTE)
+					bprintf(text[Emailed],username(&cfg,usernum,tmp),usernum);
 				SAFEPRINTF2(str,"sent QWK e-mail to %s #%d"
 					,username(&cfg,usernum,tmp),usernum);
 				logline("E+",str);
@@ -529,8 +536,9 @@ bool sbbs_t::unpack_rep(char* repfile)
 				,/* fromhub: */0,/* subnum: */n,/* touser: */0,&msg)) {
 				logon_posts++;
 				user_posted_msg(&cfg, &useron, 1);
-				bprintf(text[Posted],cfg.grp[cfg.sub[n]->grp]->sname
-					,cfg.sub[n]->lname);
+				if(online == ON_REMOTE)
+					bprintf(text[Posted],cfg.grp[cfg.sub[n]->grp]->sname
+						,cfg.sub[n]->lname);
 				SAFEPRINTF2(str,"posted QWK message on %s %s"
 					,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
 				signal_sub_sem(&cfg,n);
@@ -644,12 +652,15 @@ bool sbbs_t::unpack_rep(char* repfile)
 		ftouch(fname);
 	}
 
-	bputs(text[QWKUnpacked]);
-	CRLF;
-	/**********************************************/
-	/* Hang-up now if that's what the user wanted */
-	/**********************************************/
-	autohangup();
+	if(online == ON_REMOTE) {
+		bputs(text[QWKUnpacked]);
+		CRLF;
+		/**********************************************/
+		/* Hang-up now if that's what the user wanted */
+		/**********************************************/
+		autohangup();
+	} else
+		lprintf(LOG_INFO, "Unpacking completed: %s", rep_fname);
 
 	return errors == 0;
 }
