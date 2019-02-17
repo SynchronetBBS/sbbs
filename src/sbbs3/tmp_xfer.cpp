@@ -1,6 +1,7 @@
 /* tmp_xfer.cpp */
 
 /* Synchronet temp directory file transfer routines */
+// vi: tabstop=4
 
 /* $Id$ */
 
@@ -439,16 +440,17 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 	uint	i,j,d;
 	ulong	l,k;
 
-	bprintf(text[CreatingFileList],name);
+	if(online == ON_REMOTE)
+		bprintf(text[CreatingFileList],name);
 	SAFEPRINTF2(str,"%s%s",cfg.temp_dir,name);
 	if((file=nopen(str,O_CREAT|O_WRONLY|O_APPEND))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_APPEND);
-		return(0); 
+		return(0);
 	}
 	k=0;
 	if(mode&FL_ULTIME) {
 		SAFEPRINTF(str,"New files since: %s\r\n",timestr(ns_time));
-		write(file,str,strlen(str)); 
+		write(file,str,strlen(str));
 	}
 	for(i=j=d=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i];j++,d++) {
@@ -462,22 +464,23 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 			l=listfiles(usrdir[i][j],nulstr,file,mode);
 			if((long)l==-1)
 				break;
-			k+=l; 
+			k+=l;
 		}
 		if(j<usrdirs[i])
-			break; 
+			break;
 	}
 	if(k>1) {
 		SAFEPRINTF(str,"\r\n%ld Files Listed.\r\n",k);
-		write(file,str,strlen(str)); 
+		write(file,str,strlen(str));
 	}
 	close(file);
 	if(k)
 		bprintf(text[CreatedFileList],name);
 	else {
-		bputs(text[NoFiles]);
+		if(online == ON_REMOTE)
+			bputs(text[NoFiles]);
 		SAFEPRINTF2(str,"%s%s",cfg.temp_dir,name);
-		remove(str); 
+		remove(str);
 	}
 	SAFECOPY(temp_file,name);
 	SAFECOPY(temp_uler,"File List");
