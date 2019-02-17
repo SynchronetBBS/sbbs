@@ -72,16 +72,25 @@ for(var c=0; c < options.login_prompts; c++) {
 	}
 	console.clearkeybuffer();	// Clear pending input (e.g. mistyped system password)
 	bbs.rlogin_name='';		// Clear user/login name (if supplied via protocol)
-	if(options && options.email_passwords) {
-		var usernum = system.matchuser(str);
-		if(usernum) {
+	var usernum = system.matchuser(str);
+	if(usernum) {
+		system.put_telegram(usernum,
+			format("\1n\1h%s %s \1rFailed login attempt\1c\r\n" +
+				"from %s [%s] via %s (TCP port %u)\1n\r\n"
+				,system.timestr(), system.zonestr()
+				,client.host_name, client.ip_address
+				,client.protocol, client.port));
+		if(options && options.email_passwords) {
 			var u = new User(usernum);
 			if(!(u.settings&(USER_DELETED|USER_INACTIVE))
 				&& u.security.level < 90
 				&& netaddr_type(u.netmail) == NET_INTERNET
-				&& !console.noyes("Did you forget your password")) {
-				console.print("\1n\1c\1hPlease confirm your Internet e-mail address: \1y");
-				var email_addr = console.getstr(LEN_NETMAIL);
+				&& !console.noyes("Email your password to you")) {
+				var email_addr = u.netmail;
+				if(options.confirm_email_address !== false) {
+					console.print("\1n\1c\1hPlease confirm your Internet e-mail address: \1y");
+					var email_addr = console.getstr(LEN_NETMAIL);
+				}
 				if(email_addr.toLowerCase() == u.netmail.toLowerCase()) {
 
 					var msgbase = new MsgBase("mail");
@@ -109,7 +118,11 @@ for(var c=0; c < options.login_prompts; c++) {
 						msgtxt += "Password Last Modified: " + system.datestr(u.security.password_date) + "\r\n";
 
 						if(msgbase.save_msg(hdr, msgtxt)) {
-							console.print("\r\n\1n\1h\1yAccount information e-mailed to: \1w" + u.netmail + "\r\n");
+							console.print("\r\n\1n\1h\1mAccount Information Emailed Successfully\r\n");
+							system.put_telegram(usernum, 
+								format("\1n\1h%s %s \1rEmailed account info\1c\r\nto \1w%s\1n\r\n"
+									,system.timestr(), system.zonestr()
+									,u.netmail));
 							log(LOG_NOTICE, "Account information (i.e. password) e-mailed to: " + u.netmail);
 						} else
 							alert(log(LOG_ERR,"!ERROR " + msgbase.last_error + "saving bulkmail message"));
