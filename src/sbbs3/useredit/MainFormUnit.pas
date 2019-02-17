@@ -838,9 +838,9 @@ begin
     { Open file and read current user record }
     Str:=data_dir+'user/user.dat';
     if FileExists(Str) then
-        f:=TFileStream.Create(Str,fmOpenReadWrite or fmShareExclusive)
+        f:=TFileStream.Create(Str,fmOpenReadWrite or fmShareDenyNone)
     else
-        f:=TFileStream.Create(Str,fmCreate or fmShareExclusive);
+        f:=TFileStream.Create(Str,fmCreate or fmShareDenyNone);
 
     f.Seek((usernumber-1)*U_LEN,soFromBeginning);
     f.Read(buf,U_LEN);
