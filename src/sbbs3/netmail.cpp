@@ -259,8 +259,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode)
 
 	smb_hfield_str(&msg,SUBJECT,title);
 
-	/* Generate FidoNet Program Identifier */
-	smb_hfield_str(&msg,FIDOPID,msg_program_id(pid));
+	add_msg_ids(&cfg, &smb, &msg, /* remsg: */NULL);
 
 	if(editor!=NULL)
 		smb_hfield_str(&msg,SMB_EDITOR,editor);
@@ -466,8 +465,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 
 	smb_hfield_str(&msg,SUBJECT,title);
 
-	/* Generate FidoNet Program Identifier */
-	smb_hfield_str(&msg,FIDOPID,msg_program_id(pid));
+	add_msg_ids(&cfg, &smb, &msg, /* remsg: */NULL);
 
 	if(editor!=NULL)
 		smb_hfield_str(&msg,SMB_EDITOR,editor);

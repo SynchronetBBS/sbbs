@@ -49,7 +49,6 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 				,buf[SDT_BLOCK_LEN];
 	char 		tmp[512];
 	char		pid[128];
-	char		msg_id[128];
 	char*		editor=NULL;
 	uint16_t	msgattr=0;
 	uint16_t	xlat=XLAT_NONE;
@@ -315,10 +314,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 
 	smb_hfield_str(&msg,SUBJECT,title);
 
-	/* Generate FidoNet Program Identifier */
-	smb_hfield_str(&msg,FIDOPID,msg_program_id(pid));
-
- 	smb_hfield_str(&msg, RFC822MSGID, get_msgid(&cfg, INVALID_SUB, &msg, msg_id, sizeof(msg_id)));
+	add_msg_ids(&cfg, &smb, &msg, /* remsg: */NULL);
 
 	if(editor!=NULL)
 		smb_hfield_str(&msg,SMB_EDITOR,editor);

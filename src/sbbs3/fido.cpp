@@ -649,6 +649,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			smb_freemsgmem(&msg);
 			return; 
 		}
+		add_msg_ids(&cfg, &smb, &msg, /* remsg: */NULL);
 
 		if(smb_fgetlength(smb.shd_fp)<1L) {   /* Create it if it doesn't exist */
 			smb.status.max_crcs=cfg.mail_maxcrcs;
