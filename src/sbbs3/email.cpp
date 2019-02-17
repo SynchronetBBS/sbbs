@@ -48,7 +48,6 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 	char		str[256],str2[256],msgpath[256],title[LEN_TITLE+1],ch
 				,buf[SDT_BLOCK_LEN];
 	char 		tmp[512];
-	char		pid[128];
 	char*		editor=NULL;
 	uint16_t	msgattr=0;
 	uint16_t	xlat=XLAT_NONE;
