@@ -241,10 +241,11 @@ bool sbbs_t::unpack_rep(char* repfile)
 			continue;
 		}
 
-		if(confnum==0) {						/**********/
-			if(useron.rest&FLAG('E')) {         /* E-mail */
-				bputs(text[R_Email]);			/**********/
-				continue; 
+		if(confnum == 0) {						/* E-mail */
+			bprintf("E-mail from %s to %s\r\n", msg.from, msg.to);
+			if(useron.rest&FLAG('E')) {
+				bputs(text[R_Email]);
+				continue;
 			}
 
 			if(msg.to!=NULL) {
