@@ -632,6 +632,7 @@ typedef struct {				/* Message */
 	char*		summary;		/* Summary  */
 	char*		subj;			/* Subject  */
 	char*		tags;			/* Message tags (space-delimited) */
+	char*		editor;			/* Message editor (if known) */
 	uint16_t	to_agent,		/* Type of agent message is to */
 				from_agent, 	/* Type of agent message is from */
 				replyto_agent;	/* Type of agent replies should be sent to */
