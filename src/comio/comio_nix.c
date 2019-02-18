@@ -37,6 +37,7 @@
 
 #include <sys/ioctl.h>
 #include <sys/file.h>
+#include <fcntl.h>		// O_NONBLOCK
 #include "comio.h"
 #include "genwrap.h"
 
