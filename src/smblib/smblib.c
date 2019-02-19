@@ -496,7 +496,6 @@ int SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 /* if msg.hdr.number does not equal 0, then msg->offset is filled too.		*/
 /* Either msg->hdr.number or msg->offset must be initialized before 		*/
 /* calling this function													*/
-/* Returns 1 if message number wasn't found, 0 if it was                    */
 /****************************************************************************/
 int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 {
@@ -1432,7 +1431,7 @@ int SMBCALL smb_dfield(smbmsg_t* msg, uint16_t type, ulong length)
 }
 
 /****************************************************************************/
-/* Checks CRC history file for duplicate crc. If found, returns 1.			*/
+/* Checks CRC history file for duplicate crc. If found, returns SMB_DUPE_MSG*/
 /* If no dupe, adds to CRC history and returns 0, or negative if error. 	*/
 /****************************************************************************/
 int SMBCALL smb_addcrc(smb_t* smb, uint32_t crc)
