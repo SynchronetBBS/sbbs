@@ -77,8 +77,8 @@ int msgbase_open(scfg_t* cfg, smb_t* smb, int* storage, long* dupechk_hashes, ui
 
 
 /****************************************************************************/
-/* Posts a message on subboard number sub, with 'top' as top of message.    */
-/* Returns 1 if posted, 0 if not.                                           */
+/* Posts a message on sub-board number 'subnum'								*/
+/* Returns true if posted, false if not.                                    */
 /****************************************************************************/
 bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 {
@@ -98,14 +98,15 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	uint	reason;
 
 	if(remsg) {
-		sprintf(title,"%.*s",LEN_TITLE,remsg->subj);
+		SAFECOPY(title, remsg->subj);
 		if(remsg->hdr.attr&MSG_ANONYMOUS)
 			SAFECOPY(from,text[Anonymous]);
 		else
 			SAFECOPY(from,remsg->from);
 		// If user posted this message, reply to the original recipient again
-		if((remsg->from_ext!=NULL && atoi(remsg->from_ext)==useron.number)
-			|| stricmp(useron.alias,remsg->from)==0 || stricmp(useron.name,remsg->from)==0)
+		if(remsg->to != NULL
+			&& ((remsg->from_ext != NULL && atoi(remsg->from_ext)==useron.number)
+				|| stricmp(useron.alias,remsg->from) == 0 || stricmp(useron.name,remsg->from) == 0))
 			SAFECOPY(touser,remsg->to);
 		else
 			SAFECOPY(touser,from);
@@ -208,15 +209,6 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		bputs(text[UsingRealName]);
 
 	msg_tmp_fname(useron.xedit, str, sizeof(str));
-	if(!writemsg(str,top,title,wm_mode,subnum,touser
-		,/* from: */cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias
-		,&editor)
-		|| (length=(long)flength(str))<1) {	/* Bugfix Aug-20-2003: Reject negative length */
-		bputs(text[Aborted]);
-		return(false); 
-	}
-
-	bputs(text[WritingIndx]);
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i,smb.last_error);
@@ -229,6 +221,23 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		smb_stack(&smb,SMB_STACK_POP);
 		return(false); 
 	}
+
+	if(remsg != NULL && (wm_mode&WM_QUOTE)) {
+		if(!quotemsg(&smb, remsg, /* include tails: */FALSE))
+			wm_mode &= ~WM_QUOTE;
+	}
+
+	if(!writemsg(str,top,title,wm_mode,subnum,touser
+		,/* from: */cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias
+		,&editor)
+		|| (length=(long)flength(str))<1) {	/* Bugfix Aug-20-2003: Reject negative length */
+		bputs(text[Aborted]);
+		smb_close(&smb);
+		smb_stack(&smb,SMB_STACK_POP);
+		return(false); 
+	}
+
+	bputs(text[WritingIndx]);
 
 	if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
 		smb_close(&smb);

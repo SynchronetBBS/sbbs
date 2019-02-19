@@ -74,7 +74,7 @@ char* sbbs_t::quotes_fname(int xedit, char *path, size_t len)
 
 /****************************************************************************/
 /****************************************************************************/
-void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
+bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* remsg, int tails)
 {
 	char	fname[MAX_PATH+1];
 	char*	buf;
@@ -83,8 +83,8 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 	ushort useron_xedit = useron.xedit;
 	uint8_t	org_cols = TERM_COLS_DEFAULT;
 
-	if(msg->columns != 0)
-		org_cols = msg->columns;
+	if(remsg->columns != 0)
+		org_cols = remsg->columns;
 
 	if(useron_xedit && !chk_ar(cfg.xedit[useron_xedit-1]->ar, &useron, &client))
 		useron_xedit = 0;
@@ -94,23 +94,35 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 
 	if((fp=fopen(fname,"w"))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,0);
-		return; 
+		return false; 
 	}
 
-	if((buf=smb_getmsgtxt(&smb,msg,tails)) != NULL) {
-		strip_invalid_attr(buf);
-		truncsp(buf);
-		if(!useron_xedit || (useron_xedit && (cfg.xedit[useron_xedit-1]->misc&QUOTEWRAP)))
-			wrapped=::wordwrap(buf, cols-4, org_cols - 1, /* handle_quotes: */TRUE);
-		if(wrapped!=NULL) {
-			fputs(wrapped,fp);
-			free(wrapped);
-		} else
-			fputs(buf,fp);
-		smb_freemsgtxt(buf); 
-	} else if(smb_getmsgdatlen(msg)>2)
-		errormsg(WHERE,ERR_READ,smb.file,smb_getmsgdatlen(msg));
+	bool result = false;
+
+	smbmsg_t msg;
+	ZERO_VAR(msg);
+	msg.hdr.number = remsg->hdr.number;
+	if(smb_getmsgidx(smb, &msg) == SMB_SUCCESS && smb_getmsghdr(smb, &msg) == SMB_SUCCESS) {
+
+		if((buf=smb_getmsgtxt(smb, &msg, tails)) != NULL) {
+			strip_invalid_attr(buf);
+			truncsp(buf);
+			if(!useron_xedit || (useron_xedit && (cfg.xedit[useron_xedit-1]->misc&QUOTEWRAP)))
+				wrapped=::wordwrap(buf, cols-4, org_cols - 1, /* handle_quotes: */TRUE);
+			if(wrapped!=NULL) {
+				fputs(wrapped,fp);
+				free(wrapped);
+			} else
+				fputs(buf,fp);
+			smb_freemsgtxt(buf); 
+			result = true;
+		} else if(smb_getmsgdatlen(&msg)>2)
+			errormsg(WHERE,ERR_READ,smb->file,smb_getmsgdatlen(&msg));
+
+		smb_freemsgmem(&msg);
+	}
 	fclose(fp);
+	return result;
 }
 
 /****************************************************************************/

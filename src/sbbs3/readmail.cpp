@@ -437,7 +437,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 					break; 
 				}
 
-				quotemsg(&msg,/* include tails: */TRUE);
+				quotemsg(&smb, &msg,/* include tails: */TRUE);
 
 				if(msg.from_net.addr==NULL)
 					SAFECOPY(str,msg.from);

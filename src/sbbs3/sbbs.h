@@ -653,7 +653,7 @@ public:
 	ulong	msgeditor(char *buf, const char *top, char *title);
 	bool	editfile(char *path, bool msg=false);
 	ushort	chmsgattr(smbmsg_t);
-	void	quotemsg(smbmsg_t* msg, int tails);
+	bool	quotemsg(smb_t*, smbmsg_t*, int tails);
 	void	editmsg(smbmsg_t* msg, uint subnum);
 	void	editor_inf(int xeditnum, const char *to, const char* from, const char *subj, long mode
 				,uint subnum, const char* tagfile);

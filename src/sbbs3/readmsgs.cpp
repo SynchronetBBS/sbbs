@@ -919,7 +919,6 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					bputs(text[CantReplyToMsg]);
 					break; 
 				}
-				quotemsg(&msg,/* include tails: */FALSE);
 				FREE_AND_NULL(post);
 				postmsg(subnum,&msg,WM_QUOTE);
 				if(mode&SCAN_TOYOU)
@@ -1121,7 +1120,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					break;
 
 				FREE_AND_NULL(post);
-				quotemsg(&msg,/* include tails: */TRUE);
+				quotemsg(&smb, &msg, /* include tails: */TRUE);
 				if(strchr(str, '@') != NULL) {
 					if(smb_netaddr_type(str)==NET_INTERNET)
 						inetmail(str,msg.subj,WM_QUOTE|WM_NETMAIL);
