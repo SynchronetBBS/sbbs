@@ -9,11 +9,17 @@
 load("sbbsdefs.js");
 load("text.js");
 var Avatar = load({}, "avatar_lib.js");
-var options = load("modopts.js", "logon");
 load("fonts.js", "preload", "default");
+var options = load("modopts.js", "logon");
+if(!options)
+	options = {};
+if(options.show_avatar === undefined)
+	options.show_avatar = true;
+if(options.draw_avatar_right === undefined)
+	options.draw_avatar_right = true;
 
 // Check if we're being asked to auto-run an external (web interface external programs section uses this)
-if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
+if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
     var external_code = console.terminal.substring(5);
     if (!bbs.exec_xtrn(external_code)) {
         alert(log(LOG_ERR,"!ERROR Unable to launch external: '" + external_code + "'"));
@@ -233,22 +239,24 @@ else {
 	}
 	console.crlf();
 
-	if(console.term_supports(USER_ANSI)) {
-		Avatar.draw(user.number, /* name: */null, /* netaddr: */null, /* above: */false, /* right: */true);
+	if(options.show_avatar && console.term_supports(USER_ANSI)) {
+		if(options.draw_avatar_above || options.draw_avatar_right)
+			Avatar.draw(user.number, /* name: */null, /* netaddr: */null, options.draw_avatar_above, options.draw_avatar_right);
+		else
+			Avatar.show(user.number);
 		console.attributes = 7;	// Clear the background attribute
 	}
 }
 
 // Set rlogin_xtrn_menu=true in [logon] section of ctrl/modopts.ini
 // if you want your RLogin server to act as a door game server only
-if(options
-	&& options.rlogin_xtrn_menu
+if(options.rlogin_xtrn_menu
 	&& bbs.sys_status&SS_RLOGIN) {
 	bbs.xtrn_sec();
 	bbs.hangup();
 } else if(!(user.security.restrictions&UFLAG_G)
 	&& console.term_supports(USER_ANSI) 
-	&& options && options.set_avatar == true) {
+	&& options.set_avatar == true) {
 	var avatar = Avatar.read_localuser(user.number);
 	if(!avatar || (!avatar.data && !avatar.disabled)) {
 		alert("You have not selected an avatar.");
