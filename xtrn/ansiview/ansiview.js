@@ -47,7 +47,7 @@ Frame.prototype.drawBorder = function (color) {
 	this.popxy();
 }
 
-const root = js.startup_dir; // Stash this now; can be overridden by other things (custom pause prompt via text.dat, etc.)
+const root = js.exec_dir;
 
 var settings,
 	frame,
