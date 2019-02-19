@@ -931,14 +931,14 @@ err:
 /* obj must've been previously returned from get_msg_header() */
 BOOL DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg)
 {
-	private_t*	p;
+	privatemsg_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(FALSE);
 	}
 
-	if(!parse_header_object(cx, p, obj, msg, /* recipient */ TRUE)) {
+	if(!parse_header_object(cx, p->p, obj, msg, /* recipient */ TRUE)) {
 		smb_freemsgmem(msg);
 		return(FALSE);
 	}
