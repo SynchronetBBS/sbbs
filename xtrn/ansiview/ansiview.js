@@ -308,11 +308,11 @@ function initDisplay() {
 function initSettings() {
 	const f = new File(root + "settings.ini");
 	if(f.open("r")) {
-		var obj = f.iniGetObject();
-		if(obj)
-			settings = obj;
+		settings = f.iniGetObject();
 		f.close();
 	}
+	if(!settings)
+		settings = {};
 	settings.fg = getColor(settings.fg);
 	settings.bg = getColor(settings.bg);
 	settings.lfg = getColor(settings.lfg);
