@@ -920,7 +920,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					break; 
 				}
 				FREE_AND_NULL(post);
-				postmsg(subnum,&msg,WM_QUOTE);
+				postmsg(subnum, WM_NONE, &smb, &msg);
 				if(mode&SCAN_TOYOU)
 					domsg=1;
 				break;
@@ -1120,10 +1120,10 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					break;
 
 				FREE_AND_NULL(post);
-				quotemsg(&smb, &msg, /* include tails: */TRUE);
+				quotemsg(&smb, &msg, /* include tails: */true);
 				if(strchr(str, '@') != NULL) {
 					if(smb_netaddr_type(str)==NET_INTERNET)
-						inetmail(str,msg.subj,WM_QUOTE|WM_NETMAIL);
+						inetmail(str,msg.subj,WM_QUOTE);
 					else	/* FidoNet or QWKnet */
 						netmail(str,msg.subj,WM_QUOTE);
 				}
@@ -1135,7 +1135,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						else
 							i=matchuser(&cfg,str,TRUE /* sysop_alias */); 
 					}
-					email(i,str2,msg.subj,WM_EMAIL|WM_QUOTE); 
+					email(i,str2,msg.subj,WM_QUOTE); 
 				} 
 				break;
 			case 'P':   /* Post message on sub-board */

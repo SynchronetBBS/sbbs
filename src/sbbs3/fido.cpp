@@ -100,12 +100,12 @@ bool sbbs_t::lookup_netuser(char *into)
 /****************************************************************************/
 /* Send FidoNet/QWK/Internet NetMail from BBS								*/
 /****************************************************************************/
-bool sbbs_t::netmail(const char *into, const char *title, long mode)
+bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resmb, smbmsg_t* remsg)
 {
 	char	str[256],fname[128],*buf,*p,ch;
-	char	to[FIDO_NAME_LEN];
-	char	from[FIDO_NAME_LEN];
-	char	subj[FIDO_SUBJ_LEN];
+	char	to[FIDO_NAME_LEN] = "";
+	char	from[FIDO_NAME_LEN]= "";
+	char	subj[FIDO_SUBJ_LEN]= "";
 	char	msgpath[MAX_PATH+1];
 	char 	tmp[512];
 	char*	editor=NULL;
@@ -127,9 +127,19 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 		bputs(text[NoNetMailAllowed]);
 		return false;
 	}
-
-	SAFECOPY(subj, title);
-	SAFECOPY(to, into);
+	
+	if(title != NULL)
+		SAFECOPY(subj, title);
+	if(into != NULL)
+		SAFECOPY(to, into);
+	if(remsg != NULL) {
+		if(subj[0] == 0 && remsg->subj != NULL)
+			SAFECOPY(subj, remsg->subj);
+		if(to[0] == 0 && remsg->from != NULL)
+			SAFECOPY(to, remsg->from);
+//		if(addr[0] == 0 && remsg->from_net.addr != NULL)
+//			smb_netaddrstr(&remsg->from_net, addr);
+	}
 
 	lookup_netuser(to);
 
@@ -140,7 +150,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 			bputs(text[EmailFilesNotAllowed]);
 			mode&=~WM_FILE;
 		}
-		qnetmail(to,title,mode|WM_NETMAIL);
+		qnetmail(to, title, mode);
 		return false; 
 	}
 	if(net_type == NET_INTERNET) {
@@ -152,7 +162,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 			bputs(text[EmailFilesNotAllowed]);
 			mode&=~WM_FILE;
 		}
-		return inetmail(into,title,mode|WM_NETMAIL);
+		return inetmail(into, title, mode, resmb, remsg);
 	}
 	p=strrchr(to,'@');      /* Find '@' in name@addr */
 	if(p==NULL || net_type != NET_FIDO) {
@@ -217,6 +227,11 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 	if(cfg.netmail_misc&NMAIL_HOLD)  msg.hdr.netattr |= MSG_HOLD;
 	if(cfg.netmail_misc&NMAIL_KILL)  msg.hdr.netattr |= MSG_KILLSENT;
 	if(mode&WM_FILE) msg.hdr.auxattr |= MSG_FILEATTACH; 
+
+	if(remsg != NULL && resmb != NULL && !(mode&WM_QUOTE)) {
+		if(quotemsg(resmb, remsg, /* include tails: */true))
+			mode |= WM_QUOTE;
+	}
 
 	msg_tmp_fname(useron.xedit, msgpath, sizeof(msgpath));
 	if(!writemsg(msgpath,nulstr,subj,WM_NETMAIL|mode,INVALID_SUB, into, from, &editor)) {
@@ -339,7 +354,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 	smb_t smb;
 	memset(&smb, 0, sizeof(smb));
 	smb.subnum = INVALID_SUB;
-	int result = savemsg(&cfg, &smb, &msg, &client, startup->host_name, buf);
+	int result = savemsg(&cfg, &smb, &msg, &client, startup->host_name, buf, remsg);
 	free(buf);
 	smb_close(&smb);
 	smb_freemsgmem(&msg);

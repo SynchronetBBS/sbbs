@@ -117,7 +117,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 
 	memset(&smb,0,sizeof(smb));
 	smb.subnum=INVALID_SUB;	/* mail database */
-	i=savemsg(&cfg, &smb, &msg, &client, startup->host_name, msgbuf);
+	i=savemsg(&cfg, &smb, &msg, &client, startup->host_name, msgbuf, /* remsg: */NULL);
 	free(msgbuf);
 	if(i!=0) {
 		smb_close(&smb);

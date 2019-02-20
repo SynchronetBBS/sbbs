@@ -2600,9 +2600,14 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 	char*		subj=(char *)def;
 	JSString*	js_top=NULL;
 	JSString*	js_subj=NULL;
+	JSObject*	hdrobj;
 	sbbs_t*		sbbs;
+	smb_t*		resmb = NULL;
+	smbmsg_t*	remsg = NULL;
+	smbmsg_t	msg;
 	jsrefcount	rc;
 
+	ZERO_VAR(msg);
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
@@ -2624,6 +2629,15 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 			js_top=JS_ValueToString(cx,argv[i]);
 		else if(JSVAL_IS_STRING(argv[i]))
 			js_subj=JS_ValueToString(cx,argv[i]);
+		else if(JSVAL_IS_OBJECT(argv[i])) {
+			if((hdrobj = JSVAL_TO_OBJECT(argv[i])) == NULL)
+				return JS_FALSE;
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &resmb, &remsg)) {
+				if(!js_ParseMsgHeaderObject(cx, hdrobj, &msg))
+					return JS_FALSE;
+				remsg = &msg;
+			}
+		}
 	}
 
 	if(js_top!=NULL)
@@ -2639,7 +2653,8 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->email(usernumber,top,subj,mode)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->email(usernumber, top, subj, mode, resmb, remsg)));
+	smb_freemsgmem(&msg);
 	if(top != def)
 		free(top);
 	if(subj != def)
@@ -2647,6 +2662,7 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
+
 static JSBool
 js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -2656,10 +2672,15 @@ js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 	char*		subj=(char *)def;
 	JSString*	js_to;
 	JSString*	js_subj=NULL;
+	JSObject*	hdrobj;
 	sbbs_t*		sbbs;
 	char*		cstr;
+	smb_t*		resmb = NULL;
+	smbmsg_t*	remsg = NULL;
+	smbmsg_t	msg;
 	jsrefcount	rc;
 
+	ZERO_VAR(msg);
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
  	if(!js_argc(cx, argc, 1))
@@ -2678,6 +2699,15 @@ js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		else if(JSVAL_IS_STRING(argv[i]))
 			js_subj=JS_ValueToString(cx,argv[i]);
+		else if(JSVAL_IS_OBJECT(argv[i])) {
+			if((hdrobj = JSVAL_TO_OBJECT(argv[i])) == NULL)
+				return JS_FALSE;
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &resmb, &remsg)) {
+				if(!js_ParseMsgHeaderObject(cx, hdrobj, &msg))
+					return JS_FALSE;
+				remsg = &msg;
+			}
+		}
 	}
 
 	if(js_subj!=NULL) {
@@ -2693,7 +2723,8 @@ js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->netmail(cstr,subj,mode)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->netmail(cstr, subj, mode, resmb, remsg)));
+	smb_freemsgmem(&msg);
 	if(subj != def)
 		free(subj);
 	free(cstr);
@@ -3487,7 +3518,8 @@ js_post_msg(JSContext *cx, uintN argc, jsval *arglist)
 	uintN		n;
 	JSObject*	hdrobj;
 	sbbs_t*		sbbs;
-	smbmsg_t*	remsg=NULL;
+	smb_t*		resmb = NULL;
+	smbmsg_t*	remsg = NULL;
 	smbmsg_t	msg;
 	jsrefcount	rc;
 
@@ -3510,15 +3542,17 @@ js_post_msg(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		else if(JSVAL_IS_OBJECT(argv[n])) {
 			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL)
-				return(JS_TRUE);
-			remsg=&msg;
-			if(!js_ParseMsgHeaderObject(cx,hdrobj,remsg))
-				return(JS_FALSE);
+				return JS_FALSE;
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &resmb, &remsg)) {
+				if(!js_ParseMsgHeaderObject(cx, hdrobj, &msg))
+					return JS_FALSE;
+				remsg = &msg;
+			}
 		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->postmsg(subnum,remsg,mode)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->postmsg(subnum, mode, resmb, remsg)));
 	smb_freemsgmem(&msg);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -4067,12 +4101,12 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	"(see <tt>MAIL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>which</i> values)")
 	,310
 	},
-	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("to_user_number [,mode=<tt>WM_EMAIL</tt>] [,top=<i>none</i>] [,subject=<i>none</i>]")
-	,JSDOCSTR("send private e-mail to a local user")
+	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("to_user_number [,mode=<tt>WM_EMAIL</tt>] [,top=<i>none</i>] [,subject=<i>none</i>] [,object reply_header]")
+	,JSDOCSTR("send private e-mail to a local user (<i>reply_header</i> added in v3.17c)")
 	,310
 	},
-	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("address [,mode=<tt>WM_NONE</tt>] [,subject=<i>none</i>]")
-	,JSDOCSTR("send private netmail")
+	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("address [,mode=<tt>WM_NONE</tt>] [,subject=<i>none</i>] [,object reply_header]")
+	,JSDOCSTR("send private netmail (<i>reply_header</i> added in v3.17c)")
 	,310
 	},
 	{"bulk_mail",		js_bulkmail,		0,	JSTYPE_VOID,	JSDOCSTR("[ars]")
@@ -4106,7 +4140,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("post a message in the specified message sub-board (number or internal code) "
 		"with optinal <i>mode</i> (bitfield)<br>"
 		"If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header "
-		"will be used for the in-reply-to header fields (this argument added in v3.13)")
+		"will be used for the in-reply-to header fields.")
 	,313
 	},
 	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("[type=<tt>SCAN_CFG_NEW</tt>]")
