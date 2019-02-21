@@ -1,4 +1,5 @@
 /* exec.cpp */
+// vi: tabstop=4
 
 /* Synchronet command shell/module interpretter */
 

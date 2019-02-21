@@ -385,6 +385,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define EVENT_INIT		(1<<2)		/* Always run event after init			*/
 #define EVENT_DISABLED	(1<<3)		/* Disabled								*/
 
+#define NODE_ANY		0			/* special qhub/event_t.node value		*/
+
 									/* Bits in xtrn_t.misc					*/
 #define MULTIUSER		(1<<0) 		/* allow multi simultaneous users		*/
 #define XTRN_ANSI		(1<<1)		/* LEGACY (not used)                    */

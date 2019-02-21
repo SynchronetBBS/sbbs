@@ -1,4 +1,5 @@
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -253,7 +254,7 @@ void net_cfg()
 								SAFECOPY(cfg.qhub[i]->pack,"%@zip -jD %f %s");
 								SAFECOPY(cfg.qhub[i]->unpack,"%@unzip -Coj %f %s -d %g");
 								SAFECOPY(cfg.qhub[i]->call,"*qnet-ftp %s hub.address YOURPASS");
-								cfg.qhub[i]->node=1;
+								cfg.qhub[i]->node = NODE_ANY;
 								cfg.qhub[i]->days=(uchar)0xff; /* all days */
 								uifc.changes=1;
 								continue; 
@@ -805,7 +806,11 @@ void qhub_edit(int num)
 		sprintf(opt[i++],"%-27.27s%.40s","Pack Command Line",cfg.qhub[num]->pack);
 		sprintf(opt[i++],"%-27.27s%.40s","Unpack Command Line",cfg.qhub[num]->unpack);
 		sprintf(opt[i++],"%-27.27s%.40s","Call-out Command Line",cfg.qhub[num]->call);
-		sprintf(opt[i++],"%-27.27s%u","Call-out Node",cfg.qhub[num]->node);
+		if(cfg.qhub[num]->node == NODE_ANY)
+			SAFECOPY(str, "Any");
+		else
+			SAFEPRINTF(str, "%u", cfg.qhub[num]->node);
+		sprintf(opt[i++],"%-27.27s%s","Call-out Node", str);
 		sprintf(opt[i++],"%-27.27s%s","Call-out Days",daystr(cfg.qhub[num]->days));
 		if(cfg.qhub[num]->freq) {
 			sprintf(str,"%u times a day",1440/cfg.qhub[num]->freq);
@@ -915,16 +920,23 @@ void qhub_edit(int num)
 					,cfg.qhub[num]->call,sizeof(cfg.qhub[num]->call)-1,K_EDIT);
 				break;
 			case 4:
-				sprintf(str,"%u",cfg.qhub[num]->node);
+				if(cfg.qhub[num]->node == NODE_ANY)
+					SAFECOPY(str, "Any");
+				else
+					SAFEPRINTF(str, "%u", cfg.qhub[num]->node);
 				uifc.helpbuf=
 					"`Node to Perform Call-out:`\n"
 					"\n"
 					"This is the number of the node to perform the call-out for this QWK\n"
 					"network hub.\n"
 				;
-				uifc.input(WIN_MID|WIN_SAV,0,0
-					,"Node to Perform Call-out",str,3,K_EDIT|K_NUMBER);
-				cfg.qhub[num]->node=atoi(str);
+				if(uifc.input(WIN_MID|WIN_SAV,0,0
+					,"Node to Perform Call-out",str,3,K_EDIT) > 0) {
+					if(isdigit(*str))
+						cfg.qhub[num]->node=atoi(str);
+					else
+						cfg.qhub[num]->node = NODE_ANY;
+				}
 				break;
 			case 5:
 				j=0;

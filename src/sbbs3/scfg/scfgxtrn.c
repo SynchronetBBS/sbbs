@@ -1,4 +1,5 @@
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -49,7 +50,7 @@ static bool new_timed_event(unsigned new_event_num)
 		return false;
 	}
 	memset(new_event, 0, sizeof(*new_event));
-	new_event->node = 1;
+	new_event->node = NODE_ANY;
 	new_event->days = (uchar)0xff;
 
 	event_t** new_event_list = realloc(cfg.event, sizeof(event_t *)*(cfg.total_events + 1));
@@ -483,7 +484,11 @@ void tevents_cfg()
 			sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.event[i]->cmd);
 			sprintf(opt[k++],"%-32.32s%s","Enabled"
 				,cfg.event[i]->misc&EVENT_DISABLED ? "No":"Yes");
-			sprintf(opt[k++],"%-32.32s%u","Execution Node",cfg.event[i]->node);
+			if(cfg.event[i]->node == NODE_ANY)
+				SAFECOPY(str, "Any");
+			else
+				SAFEPRINTF(str, "%u", cfg.event[i]->node);
+			sprintf(opt[k++],"%-32.32s%s","Execution Node", str);
 			sprintf(opt[k++],"%-32.32s%s","Execution Months"
 				,monthstr(cfg.event[i]->months));
 			sprintf(opt[k++],"%-32.32s%s","Execution Days of Month"
@@ -590,10 +595,17 @@ void tevents_cfg()
 						"\n"
 						"This is the node number to execute the timed event.\n"
 					;
-					sprintf(str,"%u",cfg.event[i]->node);
-					uifc.input(WIN_MID|WIN_SAV,0,0,"Node Number"
-						,str,3,K_EDIT|K_NUMBER);
-					cfg.event[i]->node=atoi(str);
+					if(cfg.event[i]->node == NODE_ANY)
+						SAFECOPY(str, "Any");
+					else
+						SAFEPRINTF(str, "%u", cfg.event[i]->node);
+					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Node Number"
+						,str,3,K_EDIT) > 0) {
+						if(isdigit(*str))
+							cfg.event[i]->node=atoi(str);
+						else
+							cfg.event[i]->node = NODE_ANY;
+					}
 					break;
 				case 5:
 					uifc.helpbuf=

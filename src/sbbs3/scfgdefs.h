@@ -1,4 +1,5 @@
 /* Synchronet configuration structure (scfg_t) definition */
+// vi: tabstop=4
 
 /* $Id$ */
 
