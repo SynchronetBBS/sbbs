@@ -109,9 +109,10 @@ HTTPRequest.prototype.SendRequest=function() {
 		this.sock.close();
 	if((this.sock=new Socket(SOCK_STREAM))==null)
 		throw("Unable to create socket");
-	if(!this.sock.connect(this.url.host, this.url.port?this.url.port:(this.url.scheme=='http'?80:443))) {
+	var port = this.url.port?this.url.port:(this.url.scheme=='http'?80:443);
+	if(!this.sock.connect(this.url.host, port)) {
 		this.sock.close();
-		throw("Unable to connect");
+		throw(format("Unable to connect to %s:%u", this.url.host, this.url.port));
 	}
 	if(this.url.scheme=='https')
 		this.sock.ssl_session=true;
