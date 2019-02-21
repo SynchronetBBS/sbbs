@@ -593,7 +593,7 @@ void tevents_cfg()
 					uifc.helpbuf=
 						"`Timed Event Node:`\n"
 						"\n"
-						"This is the node number to execute the timed event.\n"
+						"This is the node number to execute the timed event (or `Any`).\n"
 					;
 					if(cfg.event[i]->node == NODE_ANY)
 						SAFECOPY(str, "Any");

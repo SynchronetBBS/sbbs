@@ -928,7 +928,7 @@ void qhub_edit(int num)
 					"`Node to Perform Call-out:`\n"
 					"\n"
 					"This is the number of the node to perform the call-out for this QWK\n"
-					"network hub.\n"
+					"network hub (or `Any`).\n"
 				;
 				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Node to Perform Call-out",str,3,K_EDIT) > 0) {
