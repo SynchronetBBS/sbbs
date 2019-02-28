@@ -13,6 +13,31 @@ const FTN_4D_PATTERN = /^(\d+):(\d+)\/(\d+)\.(\d+)$/;
 
 const size = defs.width * defs.height * 2;	// 2 bytes per cell for char and attributes
 
+var cache = {};
+if(js.global.bbs) {
+	if(!bbs.mods.avatar_cache)
+		bbs.mods.avatar_cache = {};
+	cache = bbs.mods.avatar_cache;
+}
+
+function cache_key(username, netaddr)
+{
+	var key = username;
+	if(netaddr)
+		key += ( '@' + netaddr );
+	return key;
+}
+
+function cache_set(username, obj, netaddr)
+{
+	cache[cache_key(username, netaddr)] = obj;
+}
+
+function cache_get(username, netaddr)
+{
+	return cache[cache_key(username, netaddr)];
+}
+
 function local_library()
 {
 	return format("%savatars/", system.text_dir);
@@ -94,6 +119,7 @@ function write_localuser(usernum, obj)
 	}
 	var result = file.iniSetObject("avatar", obj);
 	file.close();
+	cache_set(usernum, obj);
 	return result;
 }
 
@@ -111,7 +137,8 @@ function enable_localuser(usernum, enabled)
 		obj.disabled = !enabled;
 		obj.updated = new Date();
 		result = file.iniSetObject("avatar", obj);
-	}	
+		cache_set(usernum, obj);
+	}
 	file.close();
 	return result;
 }
@@ -124,6 +151,7 @@ function remove_localuser(usernum)
 	}
 	var result = file.iniRemoveSection("avatar");
 	file.close();
+	cache_set(usernum, undefined);
 	return result;
 }
 
@@ -135,6 +163,7 @@ function write_netuser(username, netaddr, obj)
 	}
 	var result = file.iniSetObject(username, obj);
 	file.close();
+	cache_set(username, obj, netaddr);
 	return result;
 }
 
@@ -155,7 +184,7 @@ function read_localuser(usernum)
 function read_netuser(username, netaddr)
 {
 	var filename = this.netuser_fname(netaddr);
-	if(!filename)
+	if(!filename && netaddr.indexOf('@') == -1)
 		filename = this.bbsuser_fname(netaddr);
 	if(!filename)
 		return false;
@@ -170,12 +199,18 @@ function read_netuser(username, netaddr)
 
 function read(usernum, username, netaddr)
 {
-	if(parseInt(usernum, 10) >= 1)
-		return read_localuser(usernum);
+	var usernum = parseInt(usernum, 10);
+	var obj = cache_get(usernum >= 1 ? usernum : username, netaddr);
+	if(obj !== undefined)	// null and false are also valid cached avatar values
+		return obj;
+	if(usernum >= 1)
+		obj = read_localuser(usernum);
 	else if(!netaddr)
-		return read_localuser(system.matchuser(username));
+		obj = read_localuser(system.matchuser(username));
 	else
-		return read_netuser(username, netaddr);
+		obj = read_netuser(username, netaddr);
+	cache_set(usernum >= 1 ? usernum : username, obj, netaddr);
+	return obj;
 }
 
 function update_localuser(usernum, data)
