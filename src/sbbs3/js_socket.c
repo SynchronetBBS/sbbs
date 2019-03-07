@@ -1866,15 +1866,20 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 										if (scfg->tls_certificate == -1)
 											ret = CRYPT_ERROR_NOTAVAIL;
 										else {
+											lock_ssl_cert();
 											ret = cryptSetAttribute(p->session, CRYPT_SESSINFO_PRIVATEKEY, scfg->tls_certificate);
-											if (ret != CRYPT_OK)
+											if (ret != CRYPT_OK) {
+												unlock_ssl_cert();
 												GCES(ret, p, estr, "setting private key");
+											}
 										}
 									}
 								}
 								if(ret==CRYPT_OK) {
 									if((ret=do_cryptAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1))!=CRYPT_OK)
 										GCES(ret, p, estr, "setting session active");
+									if (tiny == SOCK_PROP_SSL_SERVER)
+										unlock_ssl_cert();
 								}
 							}
 						}

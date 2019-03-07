@@ -264,6 +264,16 @@ bool DLLCALL is_crypt_initialized(void)
 	return cryptlib_initialized;
 }
 
+void lock_ssl_cert(void)
+{
+	pthread_mutex_lock(&ssl_cert_mutex);
+}
+
+void unlock_ssl_cert(void)
+{
+	pthread_mutex_unlock(&ssl_cert_mutex);
+}
+
 #define DO(action, handle, x)	get_crypt_error_string(x, handle, estr, action, level)
 
 CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char **estr, int *level)

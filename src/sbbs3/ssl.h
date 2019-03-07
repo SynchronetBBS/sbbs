@@ -41,6 +41,8 @@ DLLEXPORT CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char **estr, int *leve
 DLLEXPORT int DLLCALL do_cryptInit(void);
 DLLEXPORT bool DLLCALL is_crypt_initialized(void);
 DLLEXPORT bool DLLCALL get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const char *action, int *level);
+DLLEXPORT void lock_ssl_cert(void);
+DLLEXPORT void unlock_ssl_cert(void);
 
 #if defined(__cplusplus)
 }
