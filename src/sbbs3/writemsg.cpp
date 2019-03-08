@@ -233,6 +233,9 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		return false;
 	}
 
+	if(top == NULL)
+		top = "";
+
 	if(useron_xedit && !chk_ar(cfg.xedit[useron_xedit-1]->ar, &useron, &client))
 		useron_xedit = 0;
 
