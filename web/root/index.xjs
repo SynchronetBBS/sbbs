@@ -9,27 +9,20 @@
 	load(settings.web_lib + 'pages.js');
 	load(settings.web_lib + 'sidebar.js');
 
-	var page = (
-		(	typeof http_request.query.page === 'undefined' ||
-			!file_exists(
-				fullpath(
-					settings.web_pages + http_request.query.page[0]
-				)
-			) ||
-			fullpath(
-				settings.web_pages + http_request.query.page[0]
-			).indexOf(fullpath(settings.web_pages)) !== 0
-		)
-		? '000-home.xjs'
-		: http_request.query.page[0]
-	);
+	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
+    if (page.search(/(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/i) > -1) {
+        http_reply.status = '301 Moved Permanently';
+        http_reply.header['Location'] = page;
+        exit();
+    }
 
+    if (!file_exists(fullpath(settings.web_pages + page)) || fullpath(settings.web_pages + page).indexOf(fullpath(settings.web_pages)) !== 0) {
+        page = '000-home.xjs';
+    }
 	var page_ctrl = getCtrlLine(settings.web_pages + page);
 
 	function writePage() {
-		var ini = getWebCtrl(
-			settings.web_pages +  '/' + page.replace(file_getname(page), '')
-		);
+		var ini = getWebCtrl(settings.web_pages +  '/' + page.replace(file_getname(page), ''));
 		if ((typeof ini === "boolean" && !ini) || webCtrlTest(ini, page)) {
 			write(getPage(page));
 		}
@@ -51,23 +44,17 @@
 
 <?xjs
 	function _menu(obj, path) {
-		Object.keys(obj).forEach(
-			function (e) {
-				if (typeof obj[e] === 'object') {
-					_subMenu(obj[e], e, (path || '') + e + '/');
-				} else {
+		Object.keys(obj).forEach(function (e) {
+			if (typeof obj[e] == 'object') {
+				_subMenu(obj[e], e, (path || '') + e + '/');
+			} else {
 ?>
-				<li>
-					<a href="./?page=<?xjs write((path || '') + obj[e]); ?>">
-						<?xjs write(e); ?>
-					</a>
-				</li>
-<?xjs
-				}
-			}
-		);
-	}
-?>
+    		<li>
+        		<a href="./?page=<?xjs write((path || '') + obj[e]); ?>">
+                    <?xjs write(e); ?>
+                </a>
+    		</li>
+<?xjs }});} ?>
 
 <?xjs function _sidebar() {
 		if (settings.layout_sidebar_off || page_ctrl.options.no_sidebar) return;
@@ -220,18 +207,14 @@
 		<script src="./js/offcanvas.js"></script>
 
     	<script>
-    		$(document).ready(
-    			function () {
-    				$('a.dropdown-toggle').on(
-    					"click", function (e) {
-    						$(this).next('ul').toggle();
-    						$(this).next('div').toggle();
-    						e.stopPropagation();
-    						e.preventDefault();
-    					}
-    				);
-    			}
-    		);
+    		$(document).ready(function () {
+				$('a.dropdown-toggle').on('click', function (e) {
+					$(this).next('ul').toggle();
+					$(this).next('div').toggle();
+					e.stopPropagation();
+					e.preventDefault();
+				});
+			});
     	</script>
 
 	</body>
