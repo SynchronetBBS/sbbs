@@ -80,30 +80,36 @@ function getPageList(dir) {
 	dir = backslash(fullpath(dir));
 	if (dir.indexOf(settings.web_pages) !== 0) return {};
 
-	var webctrl = getWebCtrl(dir);
+	const webctrl = getWebCtrl(dir);
 
-	var pages = {};
-	directory(dir + '*').forEach(
-		function (e) {
-			if (file_isdir(e)) {
-				e = fullpath(e);
-                if (e.search(/\.examples.$/) > -1) return;
-				var list = getPageList(e);
-				if (Object.keys(list).length > 0) {
-					pages[e.split(e.substr(-1, 1)).slice(-2, -1)] = list;
-				}
-			} else if (e.search(/(\.xjs\.ssjs|webctrl\.ini)$/i) < 0) {
-				var fn = file_getname(e);
-				var ctrl = getCtrlLine(e);
-				if ((	typeof webctrl === 'undefined' ||
-						webCtrlTest(webctrl, fn)
-					) && !ctrl.options.hidden
-				) {
-					pages[ctrl.title] = file_getname(e);
-				}
-			}
-		}
-	);
+    const pages = directory(dir + '*').reduce(function (a, c) {
+        if (file_isdir(c)) {
+            const list = getPageList(c);
+            if (Object.keys(list).length) {
+                a[c.split(c.substr(-1, 1)).slice(-2, -1)] = list;
+            }
+            return a;
+        }
+        const ext = file_getext(c).toUpperCase();
+        if (c.search(/(\.xjs\.ssjs|webctrl\.ini)$/i) < 0
+            && ['.HTML', '.SSJS', '.XJS', '.TXT', '.LINK'].indexOf(ext) > -1
+        ) {
+            const fn = file_getname(c);
+            if (webctrl && !webCtrlTest(webctrl, fn)) return a;
+            if (ext == '.LINK') {
+                const f = new File(c);
+                if (!f.open('r')) return a;
+                const l = f.readln().split(',');
+                f.close();
+                if (l.length < 2) return a;
+                a[l[1]] = l[0];
+            } else {
+                const ctrl = getCtrlLine(c);
+                if (!ctrl.options.hidden) a[ctrl.title] = file_getname(c);
+            }
+        }
+        return a;
+    }, {});
 
 	return pages;
 
