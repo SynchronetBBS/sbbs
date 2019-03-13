@@ -453,7 +453,9 @@ function postNew(sub, to, subject, body) {
         subject : subject
     };
     if (sub === 'mail') {
-        header.to_net_addr = header.to;
+	header.to_ext = system.matchuser(to);
+	if (header.to_ext === 0)
+		header.to_net_addr = header.to;
         return postMail(header, body);
     } else {
         return postMessage(sub, header, body);
