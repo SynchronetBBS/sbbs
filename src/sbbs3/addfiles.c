@@ -34,8 +34,9 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include <stdbool.h>
 
-#define ADDFILES_VER "3.03"
+#define ADDFILES_VER "3.04"
 
 scfg_t scfg;
 
@@ -202,48 +203,59 @@ void updatestats(ulong size)
 	close(file);
 }
 
-void get_file_diz(file_t* f, const char* filepath)
+bool get_file_diz(file_t* f, const char* filepath)
 {
 	int i,file;
 	char tmp[MAX_PATH+1];
 	char ext[1024],tmpext[513];
 
 	for(i=0;i<scfg.total_fextrs;i++)
-		if(!stricmp(scfg.fextr[i]->ext,f->name+9) && chk_ar(&scfg,scfg.fextr[i]->ar,/* user: */NULL, /* client: */NULL))
+		if(!stricmp(scfg.fextr[i]->ext,f->name+9)
+			&& chk_ar(&scfg,scfg.fextr[i]->ar,/* user: */NULL, /* client: */NULL))
 			break;
-	if(i<scfg.total_fextrs) {
-		sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
-		removecase(tmp);
-		system(mycmdstr(scfg.fextr[i]->cmd,filepath,"FILE_ID.DIZ",NULL));
-		if(!fexistcase(tmp)) {
-			sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
-			removecase(tmp);
-			system(mycmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL));
-			fexistcase(tmp);
-		}
-		if((file=nopen(tmp,O_RDONLY|O_BINARY))!=-1) {
-			memset(ext,0,513);
-			read(file,ext,512);
-			for(i=512;i;i--)
-				if(ext[i-1]>' ' || ext[i-1]<0)
-					break;
-			ext[i]=0;
-			if(mode&ASCII_ONLY)
-				strip_exascii(ext, ext);
-			if(!(mode&KEEP_DESC)) {
-				sprintf(tmpext,"%.256s",ext);
-				prep_desc(tmpext);
-				for(i=0;tmpext[i];i++)
-					if(isalpha((uchar)tmpext[i]))
-						break;
-				sprintf(f->desc,"%.*s",LEN_FDESC,tmpext+i);
-				for(i=0;(f->desc[i]>=' ' || f->desc[i]<0) && i<LEN_FDESC;i++)
-					;
-				f->desc[i]=0; }
-			close(file);
-			f->misc|=FM_EXTDESC;
-		}
+	// If we could not find an extractor which matches our requirements, use any
+	if(i >= scfg.total_fextrs) {
+		for(i=0;i<scfg.total_fextrs;i++)
+			if(!stricmp(scfg.fextr[i]->ext,f->name+9))
+				break;
 	}
+	if(i >= scfg.total_fextrs)
+		return false;
+
+	SAFEPRINTF(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
+	removecase(tmp);
+	system(mycmdstr(scfg.fextr[i]->cmd,filepath,"FILE_ID.DIZ",NULL));
+	if(!fexistcase(tmp)) {
+		SAFEPRINTF(tmp,"%sDESC.SDI",scfg.temp_dir);
+		removecase(tmp);
+		system(mycmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL));
+		fexistcase(tmp);
+	}
+
+	if((file=nopen(tmp,O_RDONLY|O_BINARY)) == -1)
+		return false;
+
+	memset(ext,0,513);
+	read(file,ext,512);
+	for(i=512;i;i--)
+		if(ext[i-1]>' ' || ext[i-1]<0)
+			break;
+	ext[i]=0;
+	if(mode&ASCII_ONLY)
+		strip_exascii(ext, ext);
+	if(!(mode&KEEP_DESC)) {
+		sprintf(tmpext,"%.256s",ext);
+		prep_desc(tmpext);
+		for(i=0;tmpext[i];i++)
+			if(isalpha((uchar)tmpext[i]))
+				break;
+		sprintf(f->desc,"%.*s",LEN_FDESC,tmpext+i);
+		for(i=0;(f->desc[i]>=' ' || f->desc[i]<0) && i<LEN_FDESC;i++)
+			;
+		f->desc[i]=0; }
+	close(file);
+	f->misc|=FM_EXTDESC;
+	return true;
 }
 
 void addlist(char *inpath, file_t f, uint dskip, uint sskip)
