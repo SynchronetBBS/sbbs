@@ -283,7 +283,8 @@ function get_mail_headers(filter, ascending) {
         if (h.from_ext == user.number) {
             h.attr&MSG_READ ? ret.sent.read++ : (ret.sent.unread++);
             if (filter == 'sent') ret.headers.push(h);
-        } else if (h.to_ext == user.number) {
+        }
+	if (h.to_ext == user.number) {
             if ((h.attr&MSG_SPAM) || (h.subject.search(/^SPAM:/) > -1)) {
                 h.attr&MSG_READ ? ret.spam.read++ : (ret.spam.unread++);
                 if (filter == 'spam') ret.headers.push(h);
