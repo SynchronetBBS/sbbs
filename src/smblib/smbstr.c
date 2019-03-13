@@ -343,8 +343,9 @@ enum smb_net_type SMBCALL smb_netaddr_type(const char* str)
 		SKIP_WHITESPACE(p);
 		if(*p == 0)
 			return NET_NONE;
-		if(strspn(p, "1234567890:/.") != strlen(p))
-			return NET_NONE;
+		if(smb_get_net_type_by_addr(p) == NET_FIDO)
+			return NET_FIDO;
+		return NET_NONE;
 	}
 	else
 		p++;
@@ -359,11 +360,15 @@ enum smb_net_type SMBCALL smb_netaddr_type(const char* str)
 /* Returns net_type for passed network address 								*/
 /* The only addresses expected with an '@' are Internet/SMTP addresses		*/
 /* Examples:																*/
+/*  ""					= NET_NONE											*/
+/*	"@"					= NET_NONE											*/
 /*	"VERT"				= NET_QWK											*/
+/*	"VERT/NIX"			= NET_QWK											*/
 /*	"1:103/705"			= NET_FIDO											*/
 /*	"705.0"				= NET_FIDO											*/
 /*	"705"				= NET_FIDO											*/
 /*	"192.168.1.0"		= NET_INTERNET										*/
+/*  "::1"				= NET_INTERNET										*/
 /*	"some.host"			= NET_INTERNET										*/
 /*	"someone@anywhere"	= NET_INTERNET										*/
 /*	"someone@some.host"	= NET_INTERNET										*/
@@ -372,28 +377,55 @@ enum smb_net_type SMBCALL smb_get_net_type_by_addr(const char* addr)
 {
 	const char*	p = addr;
 	const char*	tp;
-	char*	firstdot;
-	char*	lastdot;
 
-	if(strchr(p,'@') != NULL)
-		return(NET_INTERNET);
+	char* at = strchr(p,'@');
+	if(at != NULL)
+		p = at + 1;
 
-	firstdot=strchr(p,'.');
-	lastdot=strrchr(p,'.');
+	if(*p == 0)
+		return NET_NONE;
 
-	if(isalpha(*p) && firstdot==NULL)
-		return(NET_QWK);
+	char* dot = strchr(p,'.');
+	char* colon = strchr(p,':');
+	char* slash = strchr(p,'/');
 
-	for(tp=p;*tp;tp++) {
-		if(!isdigit(*tp) && *tp!=':' && *tp!='/' && *tp!='.')
-			break;
+	if(at == NULL && isalpha(*p) && dot == NULL && colon == NULL)
+		return NET_QWK;
+
+	char last = 0;
+	for(tp = p; *tp != '\0'; tp++) {
+		last = *tp;
+		if(isdigit(*tp))
+			continue;
+		if(*tp == ':') {
+			if(tp != colon)
+				break;
+			if(dot != NULL && tp > dot)
+				break;
+			if(slash != NULL && tp > slash)
+				break;
+			continue;
+		}
+		if(*tp == '/') {
+			if(tp != slash)
+				break;
+			if(dot != NULL && tp > dot)
+				break;
+			continue;
+		}
+		if(*tp == '.') {
+			if(tp != dot)
+				break;
+			continue;
+		}
+		break;
 	}
-	if(isdigit(*p) && *tp==0 && firstdot==lastdot)
-		return(NET_FIDO);
-	if(isalnum(*p))
-		return(NET_INTERNET);
+	if(at == NULL && isdigit(*p) && *tp == '\0' && isdigit(last))
+		return NET_FIDO;
+	if(slash == NULL && (isalnum(*p) || p == colon))
+		return NET_INTERNET;
 
-	return(NET_UNKNOWN);
+	return NET_UNKNOWN;
 }
 
 char* SMBCALL smb_nettype(enum smb_net_type type)
