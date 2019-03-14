@@ -27,16 +27,22 @@ function webCtrlTest(ini, filename) {
 
 function getCtrlLine(file) {
 
-	if (fullpath(file).indexOf(fullpath(settings.web_pages)) !== 0) return;
+	if (fullpath(file).indexOf(fullpath(settings.web_pages)) != 0) return;
 
-	var f = new File(file);
-	var ctrl = '';
-	var ext = file_getext(file).toUpperCase();
+    var ctrl = '';
+	const f = new File(file);
+	const ext = file_getext(file).toUpperCase();
 	switch (ext) {
 		case '.JS':
 		case '.SSJS':
 			if (!f.open('r')) return;
-			ctrl = f.readln().replace(/\/\//g, '');
+            while (!f.eof) {
+                var i = f.readln().match(/\/\/(.*?)$/);
+                if (i !== null && i.length > 1) {
+                    ctrl = i[1];
+                    break;
+                }
+            }
 			f.close();
 			break;
 		case '.XJS':
@@ -66,11 +72,11 @@ function getCtrlLine(file) {
 	var title = ctrl.replace(/^.*\:/, '');
 
 	return {
-		options : {
-			hidden : (opts.indexOf('HIDDEN') >= 0),
-			no_sidebar : (opts.indexOf('NO_SIDEBAR') >= 0)
+		options: {
+			hidden: (opts.indexOf('HIDDEN') >= 0),
+			no_sidebar: (opts.indexOf('NO_SIDEBAR') >= 0)
 		},
-		title : title
+		title: title || file_getname(file)
 	};
 
 }
