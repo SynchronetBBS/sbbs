@@ -27,7 +27,15 @@ function webCtrlTest(ini, filename) {
 
 function getCtrlLine(file) {
 
-	if (fullpath(file).indexOf(fullpath(settings.web_pages)) != 0) return;
+    const ret = {
+        options: {
+            hidden: false,
+            no_sidebar: false
+        },
+        title: file_getname(file)
+    };
+
+	if (fullpath(file).indexOf(fullpath(settings.web_pages)) != 0) return ret;
 
     var ctrl = '';
 	const f = new File(file);
@@ -35,7 +43,7 @@ function getCtrlLine(file) {
 	switch (ext) {
 		case '.JS':
 		case '.SSJS':
-			if (!f.open('r')) return;
+			if (!f.open('r')) return ret;
             while (!f.eof) {
                 var i = f.readln().match(/\/\/(.*?)$/);
                 if (i !== null && i.length > 1) {
@@ -47,7 +55,7 @@ function getCtrlLine(file) {
 			break;
 		case '.XJS':
 		case '.HTML':
-			if (!f.open('r')) return;
+			if (!f.open('r')) return ret;
 			while (!f.eof) {
 				var i = f.readln().match(/\<\!\-\-(.*?)\-\-\>/);
 				if (i !== null && i.length > 1) {
@@ -70,14 +78,11 @@ function getCtrlLine(file) {
 	}
 
 	var title = ctrl.replace(/^.*\:/, '');
+    if (opts.indexOf('HIDDEN') > -1) ret.options.hidden = true;
+    if (opts.indexOf('NO_SIDEBAR') > -1) ret.options.no_sidebar = true;
+    if (title != '') ret.title = title;
 
-	return {
-		options: {
-			hidden: (opts.indexOf('HIDDEN') >= 0),
-			no_sidebar: (opts.indexOf('NO_SIDEBAR') >= 0)
-		},
-		title: title || file_getname(file)
-	};
+    return ret;
 
 }
 
