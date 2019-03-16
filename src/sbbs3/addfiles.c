@@ -394,11 +394,10 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		if(p) *p=0;
 		else				   /* no space after filename? */
 			continue;
-#if 0
-		strupr(fname);
-#endif
-		SAFECOPY(fname,unpadfname(fname,tmp));
 
+		if(!isalnum(*fname)) {	// filename doesn't begin with an alpha-numeric char?
+			continue;
+		}
 		sprintf(filepath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 			: scfg.dir[f.dir]->path,fname);
 
@@ -499,18 +498,16 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		}
 
 
-		if(sskip) l=atol(fname+sskip);
-		else {
-			l=flength(filepath);
-			if(l<0L) {
-				printf("%s not found.\n",filepath);
-				continue;
-			}
-			if(l == 0L) {
-				printf("%s is a zero-0length file.\n",filepath);
-				continue;
-			}
+		l=flength(filepath);
+		if(l<0L) {
+			printf("%s not found.\n",filepath);
+			continue;
 		}
+		if(l == 0L) {
+			printf("%s is a zero length file.\n",filepath);
+			continue;
+		}
+		if(sskip) l=atol(fname+sskip);
 
 		if(mode&FILE_ID)
 			get_file_diz(&f, filepath);
