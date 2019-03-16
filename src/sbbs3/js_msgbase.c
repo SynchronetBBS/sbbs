@@ -1687,11 +1687,20 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 	if(!SMB_IS_OPEN(&(priv->smb)))
 		return JS_TRUE;
 
-	if((post = calloc(priv->smb.status.total_msgs, sizeof(*post))) == NULL) {
+	off_t index_length = filelength(fileno(priv->smb.sid_fp));
+	if(index_length < sizeof(*idx))
+		return JS_TRUE;
+	uint32_t total_msgs = index_length / sizeof(*idx);
+	if(total_msgs > priv->smb.status.total_msgs)
+		total_msgs = priv->smb.status.total_msgs;
+	if(total_msgs < 1)
+		return JS_TRUE;
+
+	if((post = calloc(total_msgs, sizeof(*post))) == NULL) {
 		JS_ReportError(cx, "malloc error", WHERE);
 		return JS_FALSE;
 	}
-	if((idx = calloc(priv->smb.status.total_msgs, sizeof(*idx))) == NULL) {
+	if((idx = calloc(total_msgs, sizeof(*idx))) == NULL) {
 		JS_ReportError(cx, "malloc error", WHERE);
 		free(post);
 		return JS_FALSE;
@@ -1723,14 +1732,15 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 		proto=NULL;
 
 	rewind(priv->smb.sid_fp);
-	if(fread(idx, sizeof(*idx), priv->smb.status.total_msgs, priv->smb.sid_fp) != priv->smb.status.total_msgs) {
+	size_t fread_result = fread(idx, sizeof(*idx), total_msgs, priv->smb.sid_fp);
+	if(fread_result != total_msgs) {
 		smb_unlocksmbhdr(&(priv->smb));
-		JS_ReportError(cx,"index read (%lu) failed", priv->smb.status.total_msgs);
+		JS_ReportError(cx,"index read failed (%lu instead of %lu)", fread_result, total_msgs);
 		free(post);
 		free(idx);
 		return JS_FALSE;
 	}
-	for(off=0; off < priv->smb.status.total_msgs; off++) {
+	for(off=0; off < total_msgs; off++) {
 		post[off].idx = idx[off];
 		if(idx[off].attr&MSG_VOTE && !(idx[off].attr&MSG_POLL)) {
 			ulong u;
@@ -1757,7 +1767,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	free(idx);
 
-	for(off=0; off < priv->smb.status.total_msgs; off++) {
+	for(off=0; off < total_msgs; off++) {
 		if((!include_votes) && (post[off].idx.attr&MSG_VOTE))
 			continue;
 
