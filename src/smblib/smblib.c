@@ -1450,7 +1450,7 @@ int SMBCALL smb_addcrc(smb_t* smb, uint32_t crc)
 
 	SAFEPRINTF(str,"%s.sch",smb->file);
 	while(1) {
-		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
+		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW, DEFFILEMODE))!=-1)
 			break;
 		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
