@@ -1213,6 +1213,8 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	if(hdr.origpoint)
 		fprintf(fp,"\1FMPT %hu\r",hdr.origpoint);
 	fprintf(fp,"\1PID: %s\r", (msg==NULL || msg->ftn_pid==NULL) ? sbbsecho_pid() : msg->ftn_pid);
+	if(msg->columns)
+		fprintf(fp,"\1COLS: %u\r", (unsigned int)msg->columns);
 	if(msg != NULL) {
 		/* Unknown kludge lines are added here */
 		for(int i=0; i<msg->total_hfields; i++)
@@ -3470,6 +3472,13 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 				l+=11;
 				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				msg.hdr.when_written.zone = fmsgzone(fbuf+l);
+			}
+
+			else if(!strncmp((char *)fbuf+l+1,"COLS:", 5)) {	/* SBBSecho */
+				l+=5;
+				while(l<length && fbuf[l] <= ' ' && fbuf[l] >= 0) l++;
+				uint8_t columns = atoi(fbuf + l);
+				smb_hfield_bin(&msg, SMB_COLUMNS, columns);
 			}
 
 			else {		/* Unknown kludge line */
