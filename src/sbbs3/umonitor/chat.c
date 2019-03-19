@@ -152,12 +152,12 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 
 	sprintf(outpath,"%slchat.dab",cfg->node_path[nodenum-1]);
 	if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
-		,S_IREAD|S_IWRITE))==-1)
+		,DEFFILEMODE))==-1)
 		return(-1);
 
 	sprintf(inpath,"%schat.dab",cfg->node_path[nodenum-1]);
 	if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
-		,S_IREAD|S_IWRITE))==-1) {
+		,DEFFILEMODE))==-1) {
 		close(out);
 		return(-1);
     }
