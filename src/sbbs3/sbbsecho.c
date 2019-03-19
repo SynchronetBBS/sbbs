@@ -177,7 +177,7 @@ char* parse_control_line(const char* fmsgbuf, const char* kludge)
 
 	if(fmsgbuf == NULL)
 		return NULL;
-	sprintf(str, "\1%s", kludge);
+	SAFEPRINTF(str, "\1%s", kludge);
 	p = strstr(fmsgbuf, str);
 	if(p == NULL)
 		return NULL;
@@ -3474,11 +3474,12 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 				msg.hdr.when_written.zone = fmsgzone(fbuf+l);
 			}
 
-			else if(!strncmp((char *)fbuf+l+1,"COLS:", 5)) {	/* SBBSecho */
-				l+=5;
+			else if(!strncmp((char *)fbuf + l + 1, "COLS:", 5)) {	/* SBBSecho */
+				l += 6;
 				while(l<length && fbuf[l] <= ' ' && fbuf[l] >= 0) l++;
 				uint8_t columns = atoi(fbuf + l);
-				smb_hfield_bin(&msg, SMB_COLUMNS, columns);
+				if(columns > 0)
+					smb_hfield_bin(&msg, SMB_COLUMNS, columns);
 			}
 
 			else {		/* Unknown kludge line */
