@@ -1139,13 +1139,15 @@ function browse(list)
 					for(index = 0; index < list.length; index++) {
 						var n;
 						for(n = 0; n < list[index].network.length; n++) {
-							if(list[index].network[n].address.toUpperCase() == name)
+							if(list[index].network[n].address
+								&& list[index].network[n].address.toUpperCase() == name)
 								break;
 						}
 						if(n < list[index].network.length)
 							break;
 						for(n = 0; n < list[index].service.length; n++) {
-							if(list[index].service[n].address.toUpperCase() == name)
+							if(list[index].service[n].address
+								&& list[index].service[n].address.toUpperCase() == name)
 								break;
 						}
 						if(n < list[index].service.length)
@@ -1287,7 +1289,7 @@ function browse(list)
 				break;
 			case 'S':
 				if(sort == undefined)
-					sort = "name";
+					sort = (key == 'S') ? list_formats[list_format][list_formats[list_format].length - 1] : "name";
 				else {
 					var sort_field = list_formats[list_format].indexOf(sort);
 					if(sort_field >= list_formats[list_format].length)
@@ -2255,7 +2257,11 @@ function main()
                 print(list.length + " BBS entries upgraded from " + sbl_dir + "sbl.dab");
 				break;
 			case "backup":
-				file_backup(lib.list_fname, limit ? limit : options.backup_level);
+				if(!lib.lock("backup"))
+					break;
+				if(!file_backup(lib.list_fname, limit ? limit : options.backup_level))
+					print("!Backup failure: " + lib.list_fname);
+				lib.unlock();
 				break;
 			case "import":
 			case "export":
@@ -2476,6 +2482,8 @@ function main()
 				if(debug) print(JSON.stringify(bbs, null, 1));
 				if(lib.replace(bbs))
 					print(system.name + " updated successfully");
+				else
+					print("!Failure updating system: " + system.name);
 				break;
 			case "preview":
 				var index = lib.system_index(list, optval[cmd]);
