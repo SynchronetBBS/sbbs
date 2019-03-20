@@ -2170,7 +2170,7 @@ function main()
 			case "-f":
 				if(!val) {
 					alert("no filename specified");
-					return;
+					return -1;
 				}
 				lib.list_fname = val;
 				break;
@@ -2232,6 +2232,14 @@ function main()
 
 	if(!quiet)
 		print(version_notice);
+	
+	if(cmds.indexOf("lock") >= 0) {
+		return lib.lock("lock") == true ? 0 : -1;
+	}
+	if(cmds.indexOf("unlock") >= 0) {
+		return lib.unlock() == true ? 0: -1;
+		return 0;
+	}
 
     if(!file_exists(lib.list_fname)) {
 		var dab = sbl_dir + "sbl.dab";
@@ -2241,6 +2249,10 @@ function main()
 			list=[];
     } else
         list=lib.read_list();
+	if(list === false) {
+		alert("Failed to read BBS list");
+		return -1;
+	}
 	if(options && options.sort)
 		lib.sort(list, options.sort);
 	if(options && options.reverse)
@@ -2269,7 +2281,7 @@ function main()
 				print("Opening msgbase " + msgbase.file);
 				if(!msgbase.open()) {
 					alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
-					exit(-1);
+					return -1;
 				}
 				if(cmd == "import")
 					import_from_msgbase(list, msgbase, ptr, limit, all);
@@ -2285,7 +2297,7 @@ function main()
 				var f = new File("sbbslist.html");
 				if(!f.open("wb")) {
 					log(LOG_ERR,"Error opening " + f.name);
-					exit();
+					return -1;
 				}
 				load(f, "sbbslist_html.js", lib, list);
 				f.close();
@@ -2315,7 +2327,7 @@ function main()
 				var f = new File("sbbsimsg.lst");
 				if(!f.open("w")) {
 					log(LOG_ERR,"Error opening " + f.name);
-					exit();
+					return -1;
 				}
 				for(i in ibbs)
 					f.writeln(format("%-63s\t%s\t%s",
@@ -2421,7 +2433,7 @@ function main()
 			case "add":
 				if(lib.system_exists(list, system.name)) {
 					alert("System '" + system.name + "' already exists");
-					exit(-1);
+					return -1;
 				}
 				var bbs = this_bbs();
 				bbs.description = get_description();
@@ -2457,7 +2469,7 @@ function main()
 				print("Opening msgbase " + msgbase.file);
 				if(!msgbase.open()) {
 					alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
-					exit(-1);
+					return -1;
 				}
 				delete_in_msgbase(msgbase, bbs);
 				msgbase.close();
@@ -2466,7 +2478,7 @@ function main()
 				var index = lib.system_index(list, system.name);
 				if(index < 0) {
 					alert("System '" + system.name + "' does not exist");
-					exit(0);
+					return 0;
 				}
 				var bbs=list[index];
 				bbs.software = "Synchronet";
@@ -2489,7 +2501,7 @@ function main()
 				var index = lib.system_index(list, optval[cmd]);
 				if(index < 0) {
 					alert("System '" + system.name + "' does not exist");
-					exit(-1);
+					return -1;
 				}
 				var result = capture_preview(list[index], addr);
 				if(result == true) {
@@ -2534,6 +2546,7 @@ function main()
 				break;
 		}
     }
+	return 0;
 }
 
-main();
+exit(main());
