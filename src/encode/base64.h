@@ -43,7 +43,7 @@
 		#define B64EXPORT	__declspec(dllexport)
 	#endif
 	#if defined(__BORLANDC__)
-		#define B64CALL __stdcall
+		#define B64CALL
 	#else
 		#define B64CALL
 	#endif

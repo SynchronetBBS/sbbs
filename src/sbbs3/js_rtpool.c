@@ -6,19 +6,6 @@
 #include <genwrap.h>		/* SLEEP() */
 #include <link_list.h>
 
-#ifdef DLLCALL
-#undef DLLCALL
-#endif
-#ifdef _WIN32
-	#ifdef __BORLANDC__
-		#define DLLCALL __stdcall
-	#else
-		#define DLLCALL
-	#endif
-#else	/* !_WIN32 */
-	#define DLLCALL
-#endif
-
 static pthread_mutex_t		jsrt_mutex;
 static int			initialized=0;
 static link_list_t	rt_list;

@@ -48,7 +48,7 @@
 		#define CRCEXPORT	__declspec(dllexport)
 	#endif
 	#if defined(__BORLANDC__)
-		#define CRCCALL __stdcall
+		#define CRCCALL
 	#else
 		#define CRCCALL
 	#endif

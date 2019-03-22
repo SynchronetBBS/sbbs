@@ -49,7 +49,7 @@
 		#define DLLEXPORT	__declspec(dllexport)
 	#endif
 	#if defined(__BORLANDC__)
-		#define DLLCALL __stdcall
+		#define DLLCALL
 	#else
 		#define DLLCALL
 	#endif

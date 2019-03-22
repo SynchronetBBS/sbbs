@@ -40,7 +40,7 @@
 
 #ifdef _WIN32
 	#ifdef __BORLANDC__
-		#define LZHCALL __stdcall
+		#define LZHCALL
 	#else
 		#define LZHCALL
 	#endif

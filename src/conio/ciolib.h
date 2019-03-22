@@ -43,7 +43,7 @@
 
 #ifdef _WIN32
         #ifdef __BORLANDC__
-                #define CIOLIBCALL __stdcall
+                #define CIOLIBCALL
         #else
                 #define CIOLIBCALL
         #endif

@@ -55,7 +55,7 @@ typedef struct
 		#define MD5EXPORT	__declspec(dllexport)
 	#endif
 	#if defined(__BORLANDC__)
-		#define MD5CALL __stdcall
+		#define MD5CALL
 	#else
 		#define MD5CALL
 	#endif

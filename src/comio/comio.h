@@ -44,7 +44,7 @@
 
 #ifdef _WIN32
 	#ifdef __BORLANDC__
-		#define COMIOCALL __stdcall
+		#define COMIOCALL
 	#else
 		#define COMIOCALL
 	#endif

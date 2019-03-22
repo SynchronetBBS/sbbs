@@ -53,7 +53,7 @@
 
 #ifdef _WIN32
         #ifdef __BORLANDC__
-                #define UIFCCALL __stdcall
+                #define UIFCCALL
         #else
                 #define UIFCCALL
         #endif

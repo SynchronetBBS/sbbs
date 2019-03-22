@@ -8,8 +8,8 @@ if '%1'=='' goto implib
 set dllsrc=%1
 :implib
 echo Creating import libraries from %dllsrc%
-implib sbbs.lib 	%dllsrc%\sbbs.dll
-implib mailsrvr.lib 	%dllsrc%\mailsrvr.dll
-implib ftpsrvr.lib 	%dllsrc%\ftpsrvr.dll
-implib websrvr.lib 	%dllsrc%\websrvr.dll
-implib services.lib	%dllsrc%\services.dll
+implib -a sbbs.lib 	%dllsrc%\sbbs.dll
+implib -a mailsrvr.lib 	%dllsrc%\mailsrvr.dll
+implib -a ftpsrvr.lib 	%dllsrc%\ftpsrvr.dll
+implib -a websrvr.lib 	%dllsrc%\websrvr.dll
+implib -a services.lib	%dllsrc%\services.dll

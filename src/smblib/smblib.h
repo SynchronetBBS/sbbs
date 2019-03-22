@@ -45,7 +45,7 @@
 
 #ifdef _WIN32
 	#ifdef __BORLANDC__
-		#define SMBCALL __stdcall
+		#define SMBCALL
 	#else
 		#define SMBCALL
 	#endif
