@@ -24,7 +24,7 @@ function capture()
 	}
     if(rows == undefined)
 		rows=24;
-    if(port == undefined) {
+    if(!port) {
         switch(protocol) {
             case "telnet":  port=23; break;
     //        case "ssh":     port=22; break;
