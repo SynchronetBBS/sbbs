@@ -119,7 +119,18 @@
  * 2019-01-02 Eric Oulashin     Version 1.00
  *                              Changed the version to 1.00 after the official release
  *                              of Synchronet 3.17b
+ * 2019-03-21 Eric Oulashin     Version 1.01 Beta
+ *                              Changed "voting area" verbage to "sub-board".  Updated
+ *                              the main screen to show the number of polls the user
+ *                              has voted on & the number remaining.
+ *                              Started working on updating to do sub-board selection
+ *                              with group selection first.
+ * 2019-03-22 Eric Oulashin     Version 1.01
+ *                              Releasing this version
  */
+
+// TODO: Have a messsage group selection so that it doesn't have to display all
+// sub-boards, which can potentially take a long time
 
 load("sbbsdefs.js");
 
@@ -170,8 +181,8 @@ load("smbdefs.js");
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.00";
-var SLYVOTE_DATE = "2019-01-02";
+var SLYVOTE_VERSION = "1.01";
+var SLYVOTE_DATE = "2019-03-22";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -302,8 +313,6 @@ if (gUserIsSysop)
 	gReaderKeys.validateMsg = "A";
 
 
-//  cfgReadError: A string which will contain a message if failed to read the configuration file
-//  subBoardCodes: An array containing sub-board codes read from the configuration file
 var gSlyVoteCfg = ReadConfigFile();
 if (gSlyVoteCfg.cfgReadError.length > 0)
 {
@@ -316,15 +325,29 @@ if (gSlyVoteCfg.cfgReadError.length > 0)
 	console.pause();
 	exit();
 }
-if (gSlyVoteCfg.subBoardCodes.length == 0)
+// Ensure there are sub-boards configured
+var subBoardsConfigured = false;
+if (Object.keys(gSlyVoteCfg.msgGroups).length > 0)
+{
+	for (var grpName in gSlyVoteCfg.msgGroups)
+	{
+		if (gSlyVoteCfg.msgGroups[grpName].length > 0)
+		{
+			subBoardsConfigured = true;
+			break;
+		}
+	}
+}
+if (!subBoardsConfigured)
 {
 	console.print("\1n");
 	console.crlf();
-	console.print("\1cThere are no voting areas configured.\1n");
+	console.print("\1cThere are no sub-boards configured.\1n");
 	console.crlf();
 	console.pause();
 	exit();
 }
+
 
 // Read the user settings file
 // The name of the user's settings file for SlyVote
@@ -333,8 +356,14 @@ var gUserSettings = ReadUserSettingsFile(gUserSettingsFilename);
 
 // Determine which sub-board to use - If there is more than one, let the user choose.
 var gSubBoardCode = "";
-if (gSlyVoteCfg.subBoardCodes.length == 1)
-	gSubBoardCode = gSlyVoteCfg.subBoardCodes[0];
+if (gSlyVoteCfg.numSubBoards == 1)
+{
+	for (var grpIdx in gSlyVoteCfg.msgGroups)
+	{
+		gSubBoardCode = gSlyVoteCfg.msgGroups[grpIdx][0];
+		break;
+	}
+}
 else
 {
 	// If the startup sub-board code is set, then automatically start
@@ -343,7 +372,7 @@ else
 		gSubBoardCode = gSlyVoteCfg.startupSubBoardCode;
 	else
 	{
-		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.subBoardCodes);
+		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.msgGroups);
 		gSubBoardCode = chooseSubRetObj.subBoardChoice;
 		// Exit if the user pressed ESC rather than choosing an area
 		if (gSubBoardCode == null)
@@ -352,7 +381,7 @@ else
 			console.gotoxy(1, chooseSubRetObj.menuPos.y + chooseSubRetObj.menuSize.height + 1);
 	}
 }
-var gSubBoardPollCountObj = countPollsInSubBoard(gSubBoardCode);
+var gSubBoardPollCountObj = CountPollsInSubBoard(gSubBoardCode);
 
 // Program states
 var MAIN_MENU = 0;
@@ -405,13 +434,14 @@ if (!WriteUserSettingsFile(gUserSettings, gUserSettingsFilename))
 // configured.
 //
 // Parameters:
-//  pSubBoardCodes: An array of sub-board codes
+//  pMsgGrps: An object of message group indexes, where each item has an
+//            array of sub-board codes
 //
 // Return value: An object containing the following properties:
 //               subBoardChoice: The user's choice of sub-board (internal code), or null if the user aborted.
 //               menuPos: The menu position
 //               menuSize: The menu size
-function ChooseVotingSubBoard(pSubBoardCodes)
+function ChooseVotingSubBoard(pMsgGrps)
 {
 	// Clear the screen & display the SlyVote stylized text
 	console.clear("\1n");
@@ -421,46 +451,146 @@ function ChooseVotingSubBoard(pSubBoardCodes)
 	var listTopRow = 8;
 	var drawColRetObj = DrawVoteColumns(listTopRow, gBottomBorderRow-1, 17, 63);
 
-	// Display the "choose a voting area" text
-	console.gotoxy(drawColRetObj.columnX1+2, listTopRow-1);
-	console.print("\1n\1b\1hChoose a voting area (\1cESC\1g=\1n\1cExit\1h\1b)  \1y\1h" + CHECK_CHAR + "\1n\1c=\1b\1hHas polls\1n");
+	// If the message group and sub-board menus haven't been created yet, then create them
+	if (typeof(ChooseVotingSubBoard.grpMenu) != "object")
+		ChooseVotingSubBoard.grpMenu = CreateMsgGrpMenu(listTopRow, drawColRetObj, pMsgGrps);
 
-	// If the voting area menu hasn't been created yet, then create it
-	if (typeof(ChooseVotingSubBoard.areaMenu) != "object")
+	// If there is only one message group, then just let the user choose sub-boards
+	// within that message group.  Otherwise, display the group menu and let the user
+	// choose a message group and then a sub-board.
+	var chosenGrpIdx = -1;
+	var continueChoosingSubBoard = true;
+	while (continueChoosingSubBoard)
 	{
-		var topItemIndex = 0;
-		var selectedItemIndex = 0;
-		console.gotoxy(drawColRetObj.columnX1+2, listTopRow);
-		console.print("\1n\1cLoading areas\1i...\1n"); // In case loading areas takes a while
-		var areaNameLen = drawColRetObj.textLen - 2;
-		ChooseVotingSubBoard.areaMenu = new DDLightbarMenu(drawColRetObj.columnX1+drawColRetObj.colWidth-1, listTopRow, drawColRetObj.textLen, drawColRetObj.colHeight);
-		ChooseVotingSubBoard.areaMenu.ampersandHotkeysInItems = false;
-		for (var idx = 0; idx < pSubBoardCodes.length; ++idx)
+		if (ChooseVotingSubBoard.grpMenu.items.length == 1)
+			chosenGrpIdx = ChooseVotingSubBoard.grpMenu.items[0].retval;
+		else
 		{
-			var subBoardGrpAndName = msg_area.sub[pSubBoardCodes[idx]].grp_name + " - " + msg_area.sub[pSubBoardCodes[idx]].name;
-			var hasPollsChar = (subBoardHasPolls(pSubBoardCodes[idx]) ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
-			var itemText = format("%-" + areaNameLen + "s %s", subBoardGrpAndName.substr(0, areaNameLen), hasPollsChar);
-			ChooseVotingSubBoard.areaMenu.Add(itemText, pSubBoardCodes[idx]);
-			if (pSubBoardCodes[idx] == gSubBoardCode)
+			// Display the "choose a group" text
+			console.gotoxy(drawColRetObj.columnX1+10, listTopRow-1);
+			console.print("\1n\1b\1hChoose a group (\1cESC\1g/\1cQ\1g=\1n\1cExit\1h\1b)\1n");
+			chosenGrpIdx = ChooseVotingSubBoard.grpMenu.GetVal();
+			// Note: If the user quits out of the menu without making a selection,
+			// chosenGrpIdx will be null.
+		}
+		// Sub-board selection within a message group
+		if (typeof(ChooseVotingSubBoard.subBoardMenus) != "object")
+			ChooseVotingSubBoard.subBoardMenus = {};
+		var chosenSubBoard = null;
+		if ((chosenGrpIdx != null) && (chosenGrpIdx > -1))
+		{
+			// If the sub-board menu for the chosen group name doesn't exist, then create it
+			if (!ChooseVotingSubBoard.subBoardMenus.hasOwnProperty(chosenGrpIdx))
 			{
-				topItemIndex = idx;
-				selectedItemIndex = idx;
+				// In case it takes a while to load the sub-board information, display
+				// some text saying we're loading the sub-boards
+				console.gotoxy(drawColRetObj.columnX1+2, listTopRow);
+				console.print("\1n\1cLoading sub-boards\1i...\1n"); // In case loading sub-boards takes a while
+				ChooseVotingSubBoard.subBoardMenus[chosenGrpIdx] = CreateSubBoardMenu(chosenGrpIdx, listTopRow, drawColRetObj, pMsgGrps);
+			}
+
+			// Display the message group
+			var msgGrpText = "\1n\1b\1hGroup: \1w" + msg_area.grp_list[chosenGrpIdx].name + "\1n";
+			var txtDisplayLen = strip_ctrl(msgGrpText).length;
+			var textX = (console.screen_columns/2) - (txtDisplayLen/2);
+			console.gotoxy(textX, listTopRow-2);
+			console.print(msgGrpText);
+			// Display the "choose a sub-board" text
+			console.gotoxy(drawColRetObj.columnX1+2, listTopRow-1);
+			var chooseASubBoardText = "\1n\1b\1hChoose a sub-board (\1cESC\1g/\1cQ\1g=\1n\1cExit\1h\1b)  \1y\1h" + CHECK_CHAR + "\1n\1c=\1b\1hHas polls\1n";
+			console.print(chooseASubBoardText);
+			// Let the user choose a sub-board
+			chosenSubBoard = ChooseVotingSubBoard.subBoardMenus[chosenGrpIdx].GetVal();
+			continueChoosingSubBoard = (chosenSubBoard == null) && (ChooseVotingSubBoard.grpMenu.items.length > 1);
+
+			// If we will go back to the message group menu, then erase the message group
+			// text and "choose a sub-board" text
+			if (continueChoosingSubBoard)
+			{
+				// Erase the message group text
+				textX = (console.screen_columns/2) - (txtDisplayLen/2);
+				console.gotoxy(textX, listTopRow-2);
+				console.print(format("\1n%-" + txtDisplayLen + "s", ""));
+				txtDisplayLen = strip_ctrl(chooseASubBoardText).length;
+				// Erase the "choose a sub-board" text
+				console.gotoxy(drawColRetObj.columnX1+2, listTopRow-1);
+				console.print(format("\1n%-" + txtDisplayLen + "s", ""));
 			}
 		}
-		// If the top item index is on the last page of the menu, then
-		// set the top item index to the first item on the last page.
-		if ((topItemIndex <= ChooseVotingSubBoard.areaMenu.items.length - 1) && (topItemIndex >= ChooseVotingSubBoard.areaMenu.GetTopItemIdxToTopOfLastPage()))
-			ChooseVotingSubBoard.areaMenu.SetTopItemIdxToTopOfLastPage();
 		else
-			ChooseVotingSubBoard.areaMenu.topItemIdx = topItemIndex;
-		ChooseVotingSubBoard.areaMenu.selectedItemIdx = selectedItemIndex;
+			continueChoosingSubBoard = false;
 	}
-	// Display the menu of voting areas, get the user's choice, and return it
+
+	// Create the return object
 	var retObj = new Object();
-	retObj.subBoardChoice = ChooseVotingSubBoard.areaMenu.GetVal();
-	retObj.menuPos = ChooseVotingSubBoard.areaMenu.pos;
-	retObj.menuSize = ChooseVotingSubBoard.areaMenu.size;
+	retObj.subBoardChoice = chosenSubBoard;
+	retObj.menuPos = ChooseVotingSubBoard.grpMenu.pos;
+	retObj.menuSize = ChooseVotingSubBoard.grpMenu.size;
 	return retObj;
+}
+// Helper for ChooseVotingSubBoard().  Creates the message group menu.
+//
+// Parameters:
+//  pListTopRow: The top row on the screen for the menu
+//  pDrawColRetObj: The return object from DrawVoteColumns()
+//  pMsgGrps: An object of message group indexes, where each item has an
+//            array of sub-board codes
+//
+// Return value: A DDLightbarMenu object for the message group menu
+function CreateMsgGrpMenu(pListTopRow, pDrawColRetObj, pMsgGrps)
+{
+	var grpNameLen = pDrawColRetObj.textLen - 2;
+	grpMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
+	grpMenu.ampersandHotkeysInItems = false;
+	grpMenu.AddAdditionalQuitKeys(["q", "Q"]);
+	for (var grpIdx in pMsgGrps)
+	{
+		var grpName = msg_area.grp_list[grpIdx].name;
+		var itemText = format("%-" + grpNameLen + "s", grpName.substr(0, grpNameLen));
+		grpMenu.Add(itemText, grpIdx);
+	}
+	return grpMenu;
+}
+// Helper for ChooseVotingSubBoard().  Creates a sub-board menu.
+//
+// Parameters:
+//  pGrpIdx: The index of the message group
+//  pListTopRow: The top row on the screen for the menu
+//  pDrawColRetObj: The return object from DrawVoteColumns()
+//  pMsgGrps: An object of message group indexes, where each item has an
+//            array of sub-board codes
+//
+// Return value: A DDLightbarMenu object for the message group menu
+function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
+{
+	var topItemIndex = 0;
+	var selectedItemIndex = 0;
+	// Populate the sub-board menu for the group with its list of sub-boards
+	var areaNameLen = pDrawColRetObj.textLen - 2;
+	subBoardMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
+	subBoardMenu.ampersandHotkeysInItems = false;
+	subBoardMenu.AddAdditionalQuitKeys(["q", "Q"]);
+	for (var i = 0; i < pMsgGrps[pGrpIdx].length; ++i)
+	{
+		var subCode = pMsgGrps[pGrpIdx][i];
+		var hasPollsChar = (subBoardHasPolls(subCode) ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
+		var itemText = format("%-" + areaNameLen + "s %s", msg_area.sub[subCode].name.substr(0, areaNameLen), hasPollsChar);
+		subBoardMenu.Add(itemText, subCode);
+		if (subCode == gSubBoardCode)
+		{
+			topItemIndex = i;
+			selectedItemIndex = i;
+		}
+	}
+	// If the top item index is on the last page of the menu, then
+	// set the top item index to the first item on the last page.
+	if ((topItemIndex <= subBoardMenu.items.length - 1) && (topItemIndex >= subBoardMenu.GetTopItemIdxToTopOfLastPage()))
+		subBoardMenu.SetTopItemIdxToTopOfLastPage();
+	else
+		subBoardMenu.topItemIdx = topItemIndex;
+	subBoardMenu.selectedItemIdx = selectedItemIndex;
+
+	return subBoardMenu;
 }
 
 var gMainMenu = null;
@@ -484,7 +614,7 @@ function DoMainMenu()
 	if (gMainMenu == null)
 	{
 		var mainMenuHeight = 6;
-		if (gSlyVoteCfg.subBoardCodes.length > 1)
+		if (gSlyVoteCfg.numSubBoards > 1)
 			++mainMenuHeight;
 		gMainMenu = new DDLightbarMenu(mainScrRetObj.optMenuX, mainScrRetObj.optMenuY, 17, mainMenuHeight);
 		gMainMenu.hotkeyCaseSensitive = false;
@@ -493,9 +623,9 @@ function DoMainMenu()
 		gMainMenu.Add("&Create A Poll", createPollOpt, "3");
 		gMainMenu.Add("View &Results", viewResultsOpt, "4");
 		gMainMenu.Add("View &Stats", viewStatsOpt, "5");
-		if (gSlyVoteCfg.subBoardCodes.length > 1)
+		if (gSlyVoteCfg.numSubBoards > 1)
 		{
-			gMainMenu.Add("Change Area", changeVotingAreaOpt, "6");
+			gMainMenu.Add("Change Sub-Board", changeVotingAreaOpt, "6");
 			gMainMenu.Add("&Quit To BBS", quitToBBSOpt, "7");
 		}
 		else
@@ -537,7 +667,7 @@ function DoMainMenu()
 			bbs.cursub_code = curSubCodeBackup;
 			// Assuming the poll was posted successfully, update the poll count
 			// in the current sub-board.
-			gSubBoardPollCountObj = countPollsInSubBoard(gSubBoardCode);
+			gSubBoardPollCountObj = CountPollsInSubBoard(gSubBoardCode);
 		}
 		else
 			DisplayErrorWithPause("\1y\1h" + RemoveCRLFCodes(bbs.text(CantPostOnSub)), gMessageRow, false);
@@ -561,13 +691,13 @@ function DoMainMenu()
 	}
 	else if (userChoice == changeVotingAreaOpt)
 	{
-		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.subBoardCodes);
+		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.msgGroups);
 		var chosenSubBoardCode = chooseSubRetObj.subBoardChoice;
 		// If the user didn't abort choosing an area, then set gSubBoardCode.
 		if (chosenSubBoardCode != null)
 		{
 			gSubBoardCode = chosenSubBoardCode;
-			gSubBoardPollCountObj = countPollsInSubBoard(gSubBoardCode);
+			gSubBoardPollCountObj = CountPollsInSubBoard(gSubBoardCode);
 		}
 	}
 	else if ((userChoice == quitToBBSOpt) || (userChoice == null))
@@ -822,6 +952,7 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 					{
 						console.print("\1gYour vote was successfully saved.");
 						firstLineEraseLength = 33;
+						IncrementNumPollsVotedForUser();
 					}
 					mswait(ERROR_PAUSE_WAIT_MS);
 				}
@@ -907,13 +1038,18 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 //  cfgReadError: A string which will contain a message if failed to read the configuration file
 //  useAllAvailableSubBoards: Boolean - Whether or not to use all available sub-boards where
 //                            voting is allowed
-//  subBoardCodes: An array containing sub-board codes read from the configuration file
+//  msgGroups: An object of message group indexes, and for each message group, an array of sub-board
+//             codes within it
+//  numSubBoards: The total number of sub-boards in the configuration
+//  startupSubBoardCode: The sub-board to use on startup of SlyVote
+//  showAvatars: Whether or not to show user avatars when showing the polls
 function ReadConfigFile()
 {
 	var retObj = {
 		cfgReadError: "",
 		useAllAvailableSubBoards: true,
-		subBoardCodes: [],
+		msgGroups: {},
+		numSubBoards: 0,
 		startupSubBoardCode: "",
 		showAvatars: true
 	};
@@ -976,7 +1112,8 @@ function ReadConfigFile()
 				else if (settingUpper == "SUBBOARDCODES")
 				{
 					// Split the value on commas and add all sub-board codes to
-					// retObj.subBoardCodes, as long as they're valid sub-board codes.
+					// the appropriate array in retObj (based on its group index), as
+					// long as they're valid sub-board codes.
 					var valueLower = value.toLowerCase();
 					var subCodeArray = valueLower.split(",");
 					for (var idx = 0; idx < subCodeArray.length; ++idx)
@@ -985,7 +1122,12 @@ function ReadConfigFile()
 						if (msg_area.sub.hasOwnProperty(subCodeArray[idx]))
 						{
 							if ((msg_area.sub[subCodeArray[idx]].settings & SUB_NOVOTING) == 0)
-								retObj.subBoardCodes.push(subCodeArray[idx]);
+							{
+								var groupIdx = msg_area.sub[subCodeArray[idx]].grp_index;
+								if (!retObj.msgGroups.hasOwnProperty(groupIdx))
+									retObj.msgGroups[groupIdx] = [];
+								retObj.msgGroups[groupIdx].push(subCodeArray[idx]);
+							}
 						}
 					}
 				}
@@ -1003,31 +1145,50 @@ function ReadConfigFile()
 	// of internal codes of all sub-boards where voting is enabled.
 	if (retObj.useAllAvailableSubBoards && retObj.cfgReadError.length == 0)
 	{
-		retObj.subBoardCodes = [];
+		retObj.msgGroups = {};
 		for (var grp in msg_area.grp_list)
 		{
 			for (var sub in msg_area.grp_list[grp].sub_list)
 			{
 				if ((msg_area.grp_list[grp].sub_list[sub].settings & SUB_NOVOTING) == 0)
-					retObj.subBoardCodes.push(msg_area.grp_list[grp].sub_list[sub].code);
+				{
+					var groupIdx = msg_area.grp_list[grp].sub_list[sub].grp_index;
+					if (!retObj.msgGroups.hasOwnProperty(groupIdx))
+						retObj.msgGroups[groupIdx] = [];
+					retObj.msgGroups[groupIdx].push(msg_area.grp_list[grp].sub_list[sub].code);
+				}
 			}
 		}
 	}
 
-	// If the subBoardCodes array has only one code in it, then copy it to
+	// If there is only one sub-board configured, then copy it to
 	// startupSubBoardCode (don't worry if it's different - It should be the same)
-	if (retObj.subBoardCodes.length == 1)
-		retObj.startupSubBoardCode = retObj.subBoardCodes[0];
+	retObj.numSubBoards = 0;
+	for (var grpIdx in retObj.msgGroups)
+		retObj.numSubBoards += retObj.msgGroups[grpIdx].length;
+	if (retObj.numSubBoards == 1)
+	{
+		for (var grpIdx in retObj.msgGroups)
+		{
+			retObj.startupSubBoardCode = retObj.msgGroups[grpIdx][0];
+			break;
+		}
+	}
 	// If there are multiple sub-board codes, make sure the startup code is in
 	// there.  Otherwise, set the startup sub-board code to a blank string.
-	else if (retObj.subBoardCodes.length > 1)
+	else if (retObj.numSubBoards > 1)
 	{
 		if (retObj.startupSubBoardCode.length > 0)
 		{
 			var sawStartupCode = false;
 			var startupCodeUpper = retObj.startupSubBoardCode.toUpperCase(); // For case-insensitive match
-			for (var i = 0; (i < retObj.subBoardCodes.length) && !sawStartupCode; ++i)
-				sawStartupCode = (retObj.subBoardCodes[i].toUpperCase() == startupCodeUpper);
+			for (var grpIdx in retObj.msgGroups)
+			{
+				for (var i = 0; (i < retObj.msgGroups[grpIdx].length) && !sawStartupCode; ++i)
+					sawStartupCode = (retObj.msgGroups[grpIdx][i].toUpperCase() == startupCodeUpper);
+				if (sawStartupCode)
+					break;
+			}
 			if (!sawStartupCode)
 				retObj.startupSubBoardCode = "";
 		}
@@ -1677,16 +1838,31 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	DisplayBottomScreenBorder();
 	// Write the current sub-board
 	var subBoardText = msg_area.sub[gSubBoardCode].grp_name + " - " + msg_area.sub[gSubBoardCode].name;
-	subBoardText = "\1n\1b\1hCurrent voting area: \1w" + subBoardText.substr(0, console.scren_columns);
+	subBoardText = "\1n\1b\1hCurrent sub-board: \1w" + subBoardText.substr(0, console.scren_columns);
 	var subBoardTextX = (console.screen_columns/2) - (strip_ctrl(subBoardText).length/2);
 	console.gotoxy(subBoardTextX, 9);
 	console.print(subBoardText);
 	// Write the number of polls in the sub-board
-	var numPollsText = format("\1n\1b\1hThere are \1w%d \1bpolls in this area (\1w%d\1b open)",
-	                          gSubBoardPollCountObj.numPolls,
-	                          gSubBoardPollCountObj.numPolls-gSubBoardPollCountObj.numClosedPolls);
+	var numOpenPolls = gSubBoardPollCountObj.numPolls-gSubBoardPollCountObj.numClosedPolls;
+	var numPollsText = format("\1n\1b\1hThere are \1w%d \1bopen polls in this sub-board (\1w%d\1b total)",
+	                          numOpenPolls,
+							  gSubBoardPollCountObj.numPolls);
 	var numPollsTextX = (console.screen_columns/2) - (strip_ctrl(numPollsText).length/2);
 	console.gotoxy(numPollsTextX, 10);
+	console.print(numPollsText);
+	// Write the number of polls the user has voted on and not voted on
+	var numPollsVotedOn = 0;
+	if (gSubBoardPollCountObj.numPollsRemainingForUser == 0)
+	{
+		if (numOpenPolls > 0)
+			numPollsVotedOn = "all";
+	}
+	else
+		numPollsVotedOn = gSubBoardPollCountObj.numPollsUserVotedOn;
+	numPollsText = format("\1n\1b\1hYou have voted on \1w%s \1bpolls in this sub-board (\1w%d\1b remaining)",
+	                      numPollsVotedOn, gSubBoardPollCountObj.numPollsRemainingForUser);
+	var numPollsTextX = (console.screen_columns/2) - (strip_ctrl(numPollsText).length/2);
+	console.gotoxy(numPollsTextX, 11);
 	console.print(numPollsText);
 	// Write the SlyVote version centered
 	console.print("\1n");
@@ -1698,11 +1874,11 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	console.print(CenterText("\1n\1h" + system.operator + "\1n", fieldWidth));
 	console.gotoxy(41, 18);
 	console.print(CenterText("\1n\1h" + system.name + "\1n", fieldWidth));
-	// Write the option numbers
-	var curPos = { x: 7, y: 12 };
+	// Write the menu of options
+	var curPos = { x: 7, y: 13 };
 	var retObj = { optMenuX: curPos.x+4, optMenuY: curPos.y }; // For the option menu to be used later
 	var numMenuOptions = 6;
-	if (gSlyVoteCfg.subBoardCodes.length > 1)
+	if (gSlyVoteCfg.numSubBoards > 1)
 		++numMenuOptions;
 	for (var optNum = 1; optNum <= numMenuOptions; ++optNum)
 	{
@@ -2037,6 +2213,7 @@ function ViewVoteResults(pSubBoardCode)
 					var msgHdrs = msgbase.get_all_msg_headers(true);
 					pollMsgHdrs[currentMsgIdx] = msgHdrs[pollMsgHdrs[currentMsgIdx].number];
 					delete msgHdrs;
+					IncrementNumPollsVotedForUser();
 				}
 				// If there is an error message, then display it at the bottom row.
 				if (voteRetObj.errorMsg.length > 0)
@@ -3588,11 +3765,16 @@ function RemoveCRLFCodes(pText)
 // Return value: An object containing the following properties:
 //               numPolls: The total number of polls in the sub-board
 //               numClosedPolls: The number of polls in the sub-board that are closed
-function countPollsInSubBoard(pSubBoardCode)
+//               numPollsUserVotedOn: The number of polls the user has voted on
+//               numPollsRemainingForUser: The number of polls remaining for the user
+//                                         (numPolls - numPollsUserVotedOn - numClosedPolls, or 0)
+function CountPollsInSubBoard(pSubBoardCode)
 {
 	var retObj = {
 		numPolls: 0,
-		numClosedPolls: 0
+		numClosedPolls: 0,
+		numPollsUserVotedOn: 0,
+		numPollsRemainingForUser: 0
 	};
 
 	var msgbase = new MsgBase(pSubBoardCode);
@@ -3605,14 +3787,32 @@ function countPollsInSubBoard(pSubBoardCode)
 			if ((msgHdr == null) || ((msgHdr.attr & MSG_DELETE) == MSG_DELETE) || !IsReadableMsgHdr(msgHdr, pSubBoardCode))
 				continue;
 			if ((msgHdr.attr & MSG_POLL) == MSG_POLL)
+			{
 				++retObj.numPolls;
+				if (HasUserVotedOnMsg(msgHdr.number, pSubBoardCode, msgbase, user))
+					++retObj.numPollsUserVotedOn;
+			}
 			if ((msgHdr.auxattr & POLL_CLOSED) == POLL_CLOSED)
 				++retObj.numClosedPolls;
 		}
 
 		msgbase.close();
+
+		retObj.numPollsRemainingForUser = retObj.numPolls - retObj.numPollsUserVotedOn - retObj.numClosedPolls;
+		if (retObj.numPollsRemainingForUser < 0)
+			retObj.numPollsRemainingForUser = 0;
 	}
 	return retObj;
+}
+
+// Increments the numPollsUserVotedOn member in gSubBoardPollCountObj by 1.
+// Decrements numPollsRemainingForUser and if it goes below 0, sets it to 0.
+function IncrementNumPollsVotedForUser()
+{
+	++gSubBoardPollCountObj.numPollsUserVotedOn;
+	--gSubBoardPollCountObj.numPollsRemainingForUser;
+	if (gSubBoardPollCountObj.numPollsRemainingForUser < 0)
+		gSubBoardPollCountObj.numPollsRemainingForUser = 0;
 }
 
 // Returns whether or not a sub-board has at least one poll in it.
