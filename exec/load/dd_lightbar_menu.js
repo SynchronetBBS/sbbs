@@ -131,6 +131,10 @@ lbMenu.borderChars.upperLeft = "\xDA"; // Single-line upper-left character
 If you want hotkeys to be case-sensitive, you can set the hotkeyCaseSensitive
 property to true (it is false by default).  For example:
 lbMenu.hotkeyCaseSensitive = true;
+
+To add additional key characters as quit keys (in addition to ESC), call
+AddAdditionalQuitKeys() with an array of keys as strings.  For example:
+lbMenu.AddAdditionalQuitKeys(["q", "Q"]);
 */
 
 load("sbbsdefs.js");
@@ -237,6 +241,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.multiSelectItemChar = CHECK_CHAR; // The character to display for a selected item in multi-select mode
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
+	this.additionalQuitKeys = []; // An array of additional keys besides ESC to quit out of the menu
 
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
@@ -260,6 +265,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.GetNumItemsPerPage = DDLightbarMenu_GetNumItemsPerPage;
 	this.GetTopItemIdxToTopOfLastPage = DDLightbarMenu_GetTopItemIdxToTopOfLastPage;
 	this.SetTopItemIdxToTopOfLastPage = DDLightbarMenu_SetTopItemIdxToTopOfLastPage;
+	this.AddAdditionalQuitKeys = DDLightbarMenu_AddAdditionalQuitKeys;
+	this.QuitKeysIncludes = DDLightbarMenu_QuitKeysIncludes;
 
 	// Set some things based on the parameters passed in
 	if ((typeof(pX) == "number") && (typeof(pY) == "number"))
@@ -982,7 +989,7 @@ function DDLightbarMenu_GetVal(pDraw)
 				}
 			}
 		}
-		else if (userInput == KEY_ESC)
+		else if ((userInput == KEY_ESC) || (this.QuitKeysIncludes(userInput)))
 		{
 			continueOn = false;
 			// Ensure any returned choice objects are null/empty to signal
@@ -1155,6 +1162,32 @@ function DDLightbarMenu_SetTopItemIdxToTopOfLastPage()
 	this.topItemIdx = this.items.length - numItemsPerPage;
 	if (this.topItemIdx < 0)
 		this.topItemIdx = 0;
+}
+
+// Adds additional key characters to cause quitting out of the menu
+// in addition to ESC.  The keys will be case-sensitive.
+//
+// Parameters:
+//  pAdditionalQuitKeys: An array of key characters
+function DDLightbarMenu_AddAdditionalQuitKeys(pAdditionalQuitKeys)
+{
+	this.additionalQuitKeys = this.additionalQuitKeys.concat(pAdditionalQuitKeys);
+}
+
+// Returns whether or not the additional quit keys array contains a given
+// key character.
+//
+// Parameters:
+//  pKey: The key to look for in the additional quit keys
+//
+// Return value: Boolean - Whether or not the additional quit keys includes
+//               pKey
+function DDLightbarMenu_QuitKeysIncludes(pKey)
+{
+	var includesKey = false;
+	for (var i = 0; (i < this.additionalQuitKeys.length) && !includesKey; ++i)
+		includesKey = (this.additionalQuitKeys[i] == pKey);
+	return includesKey;
 }
 
 // Inputs a keypress from the user and handles some ESC-based
