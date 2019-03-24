@@ -318,9 +318,11 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 {
-	char	str[256],msgpath[128],title[128],to[128],fulladdr[128]
+	char	str[256],msgpath[128],fulladdr[128]
 			,buf[SDT_BLOCK_LEN],*addr;
 	char 	tmp[512];
+	char	title[128] = "";
+	char	to[128] = "";
 	char*	editor=NULL;
 	ushort	xlat=XLAT_NONE,net=NET_QWK,touser;
 	int 	i,j,x,file;
@@ -333,8 +335,10 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 		return(false); 
 	}
 
-	SAFECOPY(to,into);
-	SAFECOPY(title,subj);
+	if(into != NULL)
+		SAFECOPY(to,into);
+	if(subj != NULL)
+		SAFECOPY(title,subj);
 
 	if(useron.rest&FLAG('M')) {
 		bputs(text[NoNetMailAllowed]);
