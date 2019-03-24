@@ -47,7 +47,7 @@
 /* the attributes prior to displaying the message are always restored.      */
 /* Stops parsing/displaying upon CTRL-Z (only in P_CPM_EOF mode).           */
 /****************************************************************************/
-char sbbs_t::putmsg(const char *buf, long mode)
+char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 {
 	char	tmpatr,tmp2[256],tmp3[128];
 	char	ret;
@@ -77,7 +77,9 @@ char sbbs_t::putmsg(const char *buf, long mode)
 				*wrapoff = 0;
 		}
 		char *wrapped;
-		if((wrapped=::wordwrap((char*)str+l, cols-1, 79, /* handle_quotes: */TRUE)) == NULL)
+		if(org_cols < TERM_COLS_MIN)
+			org_cols = TERM_COLS_DEFAULT;
+		if((wrapped=::wordwrap((char*)str+l, cols - 1, org_cols - 1, /* handle_quotes: */TRUE)) == NULL)
 			errormsg(WHERE,ERR_ALLOC,"wordwrap buffer",0);
 		else {
 			truncsp_lines(wrapped);
@@ -305,7 +307,7 @@ char sbbs_t::putmsg(const char *buf, long mode)
 				}
 				if(memcmp(str+l, "@WORDWRAP@", 10) == 0) {
 					l += 10;
-					putmsg(str+l, mode|P_WORDWRAP);
+					putmsg(str+l, mode|P_WORDWRAP, org_cols);
 					break;
 				}
 

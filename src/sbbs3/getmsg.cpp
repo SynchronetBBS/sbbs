@@ -119,19 +119,24 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 /****************************************************************************/
 /* Displays a message header to the screen                                  */
 /****************************************************************************/
-void sbbs_t::show_msghdr(smbmsg_t* msg)
+void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg)
 {
 	char	str[MAX_PATH+1];
 	char	age[64];
 	char	*sender=NULL;
 	int 	i;
+	smb_t	saved_smb = this->smb;
+
+	this->smb = *smb;	// Needed for @-codes and JS bbs.smb_* properties
+	current_msg = msg;	// Needed for @-codes and JS bbs.msg_* properties
 
 	attr(LIGHTGRAY);
-	if(useron.misc&CLRSCRN)
-		outchar(FF);
-	else
-		CRLF;
-
+	if(!tos) {
+		if(useron.misc&CLRSCRN)
+			outchar(FF);
+		else
+			CRLF;
+	}
 	if(!menu("msghdr", P_NOERROR)) {
 		bprintf(text[MsgSubj],msg->subj);
 		if(msg->tags && *msg->tags)
@@ -170,23 +175,24 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 			bprintf(text[ForwardedFrom],sender
 				,timestr(*(time32_t *)msg->hfield_dat[i])); 
 	}
+	this->smb = saved_smb;
 }
 
 /****************************************************************************/
 /* Displays message header and text (if not deleted)                        */
 /****************************************************************************/
-void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
+bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 {
 	char*	txt;
 
 	if((msg->hdr.type == SMB_MSG_TYPE_NORMAL && post != NULL && (post->upvotes || post->downvotes))
 		|| msg->hdr.type == SMB_MSG_TYPE_POLL)
-		msg->user_voted = smb_voted_already(&smb, msg->hdr.number
-					,cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
+		msg->user_voted = smb_voted_already(smb, msg->hdr.number
+					,cfg.sub[smb->subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
 
-	show_msghdr(msg);
+	show_msghdr(smb, msg);
 
-	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && smb.subnum < cfg.total_subs) {
+	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && smb->subnum < cfg.total_subs) {
 		char* answer;
 		int longest_answer = 0;
 
@@ -222,8 +228,8 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 			bool results_visible = false;
 			if((msg->hdr.auxattr&POLL_RESULTS_MASK) == POLL_RESULTS_OPEN)
 				results_visible = true;
-			else if((msg->from_net.type == NET_NONE && sub_op(smb.subnum)) 
-				|| smb_msg_is_from(msg, cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL))
+			else if((msg->from_net.type == NET_NONE && sub_op(smb->subnum)) 
+				|| smb_msg_is_from(msg, cfg.sub[smb->subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL))
 				results_visible = true;
 			else if((msg->hdr.auxattr&POLL_RESULTS_MASK) == POLL_RESULTS_CLOSED)
 				results_visible = (msg->hdr.auxattr&POLL_CLOSED) ? true : false;
@@ -244,44 +250,46 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 		}
 		if(!msg->user_voted && !(useron.misc&EXPERT) && !(msg->hdr.auxattr&POLL_CLOSED) && !(useron.rest&FLAG('V')))
 			mnemonics(text[VoteInThisPollNow]);
-		return;
+		return true;
 	}
-	if((txt=smb_getmsgtxt(&smb, msg, 0)) != NULL) {
-		char* p = txt;
-		if(!(console&CON_RAW_IN)) {
-			mode|=P_WORDWRAP;
-			p = smb_getplaintext(msg, txt);
-			if(p == NULL)
-				p = txt;
-			else
-				bputs(text[MIMEDecodedPlainText]);
-		}
-		truncsp(p);
-		SKIP_CRLF(p);
-		putmsg(p, mode);
-		smb_freemsgtxt(txt);
-		if(column)
-			CRLF;
+	if((txt=smb_getmsgtxt(smb, msg, 0)) == NULL)
+		return false;
+	char* p = txt;
+	if(!(console&CON_RAW_IN)) {
+		p_mode|=P_WORDWRAP;
+		p = smb_getplaintext(msg, txt);
+		if(p == NULL)
+			p = txt;
+		else
+			bputs(text[MIMEDecodedPlainText]);
 	}
-	if((txt=smb_getmsgtxt(&smb,msg,GETMSGTXT_TAIL_ONLY))!=NULL) {
-		putmsg(txt, mode&(~P_WORDWRAP));
-		smb_freemsgtxt(txt);
-	}
+	truncsp(p);
+	SKIP_CRLF(p);
+	putmsg(p, p_mode, msg->columns);
+	smb_freemsgtxt(txt);
+	if(column)
+		CRLF;
+	if((txt=smb_getmsgtxt(smb,msg,GETMSGTXT_TAIL_ONLY))==NULL)
+		return false;
+
+	putmsg(txt, p_mode&(~P_WORDWRAP));
+	smb_freemsgtxt(txt);
+	return true;
 }
 
 /****************************************************************************/
 /* Writes message header and text data to a text file						*/
 /****************************************************************************/
-void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, bool header, ulong mode)
+bool sbbs_t::msgtotxt(smb_t* smb, smbmsg_t* msg, const char *fname, bool header, ulong gettxt_mode)
 {
 	char	*buf;
 	char	tmp[128];
 	int 	i;
 	FILE	*out;
 
-	if((out=fnopen(&i,str,O_WRONLY|O_CREAT|O_APPEND))==NULL) {
-		errormsg(WHERE,ERR_OPEN,str,0);
-		return; 
+	if((out=fnopen(&i,fname,O_WRONLY|O_CREAT|O_APPEND))==NULL) {
+		errormsg(WHERE,ERR_OPEN,fname,0);
+		return false; 
 	}
 	if(header) {
 		fprintf(out,"\r\n");
@@ -302,14 +310,17 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, bool header, ulong mode)
 		fprintf(out,"\r\n\r\n"); 
 	}
 
-	buf=smb_getmsgtxt(&smb,msg,mode);
+	bool result = false;
+	buf=smb_getmsgtxt(smb, msg, gettxt_mode);
 	if(buf!=NULL) {
 		strip_invalid_attr(buf);
 		fputs(buf,out);
 		smb_freemsgtxt(buf); 
+		result = true;
 	} else if(smb_getmsgdatlen(msg)>2)
-		errormsg(WHERE,ERR_READ,smb.file,smb_getmsgdatlen(msg));
+		errormsg(WHERE,ERR_READ,smb->file,smb_getmsgdatlen(msg));
 	fclose(out);
+	return result;
 }
 
 /****************************************************************************/

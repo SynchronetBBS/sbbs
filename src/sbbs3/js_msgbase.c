@@ -53,6 +53,7 @@ typedef struct
 	private_t	*p;
 	BOOL		expand_fields;
 	smbmsg_t	msg;
+	post_t		post;
 
 } privatemsg_t;
 
@@ -954,7 +955,7 @@ BOOL DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg
 }
 
 /* obj must've been previously returned from get_msg_header() */
-BOOL DLLCALL js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* obj, smb_t** smb, smbmsg_t** msg)
+BOOL DLLCALL js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* obj, smb_t** smb, smbmsg_t** msg, post_t** post)
 {
 	privatemsg_t*	p;
 
@@ -968,6 +969,8 @@ BOOL DLLCALL js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* obj, smb_t**
 	}
 	if(msg != NULL)
 		*msg = &p->msg;
+	if(post != NULL)
+		*post = &p->post;
 
 	return TRUE;
 }
@@ -1674,6 +1677,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
     JSObject*	retobj;
 	char		numstr[16];
 	JSBool		include_votes=JS_FALSE;
+	JSBool		expand_fields=JS_TRUE;
 	post_t*		post;
 	idxrec_t*	idx;
 
@@ -1706,8 +1710,15 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if(argc && JSVAL_IS_BOOLEAN(argv[0]))
-		include_votes = JSVAL_TO_BOOLEAN(argv[0]);
+	uintN argn = 0;
+	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+		include_votes = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
+	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+		expand_fields = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
 
     retobj = JS_NewObject(cx, NULL, NULL, obj);
     JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(retobj));
@@ -1782,9 +1793,10 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 
 		/* Parse boolean arguments first */
 		p->p=priv;
-		p->expand_fields=JS_TRUE;	/* This parameter defaults to true */
+		p->expand_fields = expand_fields;
 
 		p->msg.idx = post[off].idx;
+		p->post = post[off];
 
 		rc=JS_SUSPENDREQUEST(cx);
 		priv->smb_result = smb_getmsghdr(&(priv->smb), &(p->msg));
@@ -1848,8 +1860,8 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	uintN		n;
 	JSBool		by_offset=JS_FALSE;
-	JSBool		msg_specified=JS_FALSE;
 	smbmsg_t	msg;
+	smbmsg_t*	modmsg = &msg;
 	JSObject*	hdr=NULL;
 	private_t*	p;
 	jsrefcount	rc;
@@ -1880,9 +1892,6 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number))
 					return JS_FALSE;
 			}
-			msg_specified=JS_TRUE;
-			n++;
-			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[n]), cstr, NULL);
 			HANDLE_PENDING(cx, cstr);
@@ -1896,59 +1905,57 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			}
 			free(cstr);
 			JS_RESUMEREQUEST(cx, rc);
-			msg_specified=JS_TRUE;
-			n++;
-			break;
+		}
+		else if(JSVAL_IS_OBJECT(argv[n])) {
+			hdr = JSVAL_TO_OBJECT(argv[n++]);
 		}
 	}
 
-	if(!msg_specified)
+	if(hdr == NULL)		/* no header supplied? */
 		return JS_TRUE;
-
-	if(n==argc || !JSVAL_IS_OBJECT(argv[n])) /* no header supplied? */
-		return JS_TRUE;
-
-	hdr = JSVAL_TO_OBJECT(argv[n++]);
 
 	privatemsg_t* mp;
 	mp=(privatemsg_t*)JS_GetPrivate(cx,hdr);
-	if(mp != NULL && mp->expand_fields) {
-		JS_ReportError(cx, "Message header has 'expanded fields'", WHERE);
-		return JS_FALSE;
+	if(mp != NULL) {
+		if(mp->expand_fields) {
+			JS_ReportError(cx, "Message header has 'expanded fields'", WHERE);
+			return JS_FALSE;
+		}
+		modmsg = &mp->msg;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if((p->smb_result=smb_getmsgidx(&(p->smb), &msg))!=SMB_SUCCESS) {
+	if((p->smb_result=smb_getmsgidx(&(p->smb), modmsg))!=SMB_SUCCESS) {
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
 
-	if((p->smb_result=smb_lockmsghdr(&(p->smb),&msg))!=SMB_SUCCESS) {
+	if((p->smb_result=smb_lockmsghdr(&(p->smb),modmsg))!=SMB_SUCCESS) {
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
 
 	do {
-		if((p->smb_result=smb_getmsghdr(&(p->smb), &msg))!=SMB_SUCCESS)
+		if((p->smb_result=smb_getmsghdr(&(p->smb), modmsg))!=SMB_SUCCESS)
 			break;
 
-		smb_freemsghdrmem(&msg);	/* prevent duplicate header fields */
+		smb_freemsghdrmem(modmsg);	/* prevent duplicate header fields */
 
 		JS_RESUMEREQUEST(cx, rc);
-		if(!parse_header_object(cx, p, hdr, &msg, TRUE)) {
+		if(!parse_header_object(cx, p, hdr, modmsg, TRUE)) {
 			SAFECOPY(p->smb.last_error,"Header parsing failure (required field missing?)");
 			ret=JS_FALSE;
 			break;
 		}
 		rc=JS_SUSPENDREQUEST(cx);
 
-		if((p->smb_result=smb_putmsg(&(p->smb), &msg))!=SMB_SUCCESS)
+		if((p->smb_result=smb_putmsg(&(p->smb), modmsg))!=SMB_SUCCESS)
 			break;
 
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} while(0);
 
-	smb_unlockmsghdr(&(p->smb),&msg);
+	smb_unlockmsghdr(&(p->smb),modmsg); 
 	smb_freemsgmem(&msg);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -2876,14 +2883,14 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"if you will be re-writing the header later with <i>put_msg_header()</i>")
 	,312
 	},
-	{"get_all_msg_headers", js_get_all_msg_headers, 1, JSTYPE_ARRAY, JSDOCSTR("[include_votes=<tt>false</tt>]")
+	{"get_all_msg_headers", js_get_all_msg_headers, 1, JSTYPE_ARRAY, JSDOCSTR("[include_votes=<tt>false</tt>] [,expand_fields=<tt>true</tt>]")
 	,JSDOCSTR("returns an object of all message headers indexed by message number.<br>"
 	"Message headers returned by this function include 2 additional properties: <tt>upvotes</tt> and <tt>downvotes</tt>.<br>"
 	"Vote messages are excluded by default.")
 	,316
 	},
-	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset, object header")
-	,JSDOCSTR("modify an existing message header")
+	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[by_offset=<tt>false</tt>,] [number_or_offset_or_id,] object header")
+	,JSDOCSTR("modify an existing message header (must have been 'got' without expanded fields)")
 	,310
 	},
 	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id_or_header [,strip_ctrl_a=<tt>false</tt>] "

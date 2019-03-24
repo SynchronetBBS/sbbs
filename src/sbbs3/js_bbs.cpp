@@ -2632,7 +2632,7 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 		else if(JSVAL_IS_OBJECT(argv[i])) {
 			if((hdrobj = JSVAL_TO_OBJECT(argv[i])) == NULL)
 				return JS_FALSE;
-			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &resmb, &remsg)) {
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &resmb, &remsg, /* post: */NULL)) {
 				if(!js_ParseMsgHeaderObject(cx, hdrobj, &msg))
 					return JS_FALSE;
 				remsg = &msg;
@@ -2668,13 +2668,11 @@ js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32		mode=0;
-	const char	*def="";
-	char*		subj=(char *)def;
-	JSString*	js_to;
-	JSString*	js_subj=NULL;
+	char*		to = NULL;
+	char*		subj = NULL;
+	JSString*	js_str;
 	JSObject*	hdrobj;
 	sbbs_t*		sbbs;
-	char*		cstr;
 	smb_t*		resmb = NULL;
 	smbmsg_t*	remsg = NULL;
 	smbmsg_t	msg;
@@ -2689,20 +2687,23 @@ js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	if((js_to=JS_ValueToString(cx, argv[0]))==NULL)
-		return(JS_FALSE);
-
-	for(uintN i=1;i<argc;i++) {
+	for(uintN i=0; i<argc; i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
 			if(!JS_ValueToInt32(cx,argv[i],&mode))
 				return JS_FALSE;
 		}
-		else if(JSVAL_IS_STRING(argv[i]))
-			js_subj=JS_ValueToString(cx,argv[i]);
+		else if(JSVAL_IS_STRING(argv[i])) {
+			js_str = JS_ValueToString(cx, argv[i]);
+			if(to == NULL) {
+				JSSTRING_TO_MSTRING(cx, js_str, to, NULL);
+			} else if(subj == NULL) {
+				JSSTRING_TO_MSTRING(cx, js_str, subj, NULL);
+			}
+		}
 		else if(JSVAL_IS_OBJECT(argv[i])) {
 			if((hdrobj = JSVAL_TO_OBJECT(argv[i])) == NULL)
 				return JS_FALSE;
-			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &resmb, &remsg)) {
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &resmb, &remsg, /* post: */NULL)) {
 				if(!js_ParseMsgHeaderObject(cx, hdrobj, &msg))
 					return JS_FALSE;
 				remsg = &msg;
@@ -2710,24 +2711,11 @@ js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	if(js_subj!=NULL) {
-		JSSTRING_TO_MSTRING(cx, js_subj, subj, NULL);
-		if(subj==NULL)
-			return JS_FALSE;
-	}
-
-	JSSTRING_TO_MSTRING(cx, js_to, cstr, NULL);
-	if(cstr==NULL) {
-		if(subj != def)
-			free(subj);
-		return JS_FALSE;
-	}
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->netmail(cstr, subj, mode, resmb, remsg)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->netmail(to, subj, mode, resmb, remsg)));
 	smb_freemsgmem(&msg);
-	if(subj != def)
-		free(subj);
-	free(cstr);
+	FREE_AND_NULL(subj);
+	FREE_AND_NULL(to);
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
@@ -3543,7 +3531,7 @@ js_post_msg(JSContext *cx, uintN argc, jsval *arglist)
 		else if(JSVAL_IS_OBJECT(argv[n])) {
 			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL)
 				return JS_FALSE;
-			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &resmb, &remsg)) {
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &resmb, &remsg, /* post: */NULL)) {
 				if(!js_ParseMsgHeaderObject(cx, hdrobj, &msg))
 					return JS_FALSE;
 				remsg = &msg;
@@ -3554,6 +3542,82 @@ js_post_msg(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->postmsg(subnum, mode, resmb, remsg)));
 	smb_freemsgmem(&msg);
+	JS_RESUMEREQUEST(cx, rc);
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_show_msg(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	int32		p_mode = 0;
+	uintN		n;
+	JSObject*	hdrobj;
+	sbbs_t*		sbbs;
+	smb_t*		smb = NULL;
+	smbmsg_t*	msg = NULL;
+	post_t*		post = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	for(n=0; n<argc; n++) {
+		if(JSVAL_IS_NUMBER(argv[n])) {
+			if(!JS_ValueToInt32(cx, argv[n], &p_mode))
+				return JS_FALSE;
+		}
+		else if(JSVAL_IS_OBJECT(argv[n])) {
+			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL)
+				return JS_FALSE;
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &smb, &msg, &post)) {
+				return JS_FALSE;
+			}
+		}
+	}
+	if(smb == NULL || msg == NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->show_msg(smb, msg, p_mode, post)));
+	JS_RESUMEREQUEST(cx, rc);
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_show_msg_header(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	uintN		n;
+	JSObject*	hdrobj;
+	sbbs_t*		sbbs;
+	smb_t*		smb = NULL;
+	smbmsg_t*	msg = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	for(n=0; n<argc; n++) {
+		if(JSVAL_IS_OBJECT(argv[n])) {
+			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL)
+				return JS_FALSE;
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &smb, &msg, NULL)) {
+				return JS_FALSE;
+			}
+		}
+	}
+	if(smb == NULL || msg == NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->show_msghdr(smb, msg);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -4138,10 +4202,20 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},
 	{"post_msg",		js_post_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>WM_NONE</tt>] [,object reply_header]")
 	,JSDOCSTR("post a message in the specified message sub-board (number or internal code) "
-		"with optinal <i>mode</i> (bitfield)<br>"
+		"with optional <i>mode</i> (bitfield)<br>"
 		"If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header "
 		"will be used for the in-reply-to header fields.")
 	,313
+	},
+	{"show_msg",		js_show_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[object header] [,mode=<tt>P_NONE</tt>] ")
+	,JSDOCSTR("show a message's header and body (text) with optional print <i>mode</i> (bitfield)<br>"
+		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
+	,31702
+	},
+	{"show_msg_header",	js_show_msg_header,	1,	JSTYPE_VOID,	JSDOCSTR("[object header]")
+	,JSDOCSTR("show a message's header (only)<br>"
+		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
+	,31702
 	},
 	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("[type=<tt>SCAN_CFG_NEW</tt>]")
 	,JSDOCSTR("configure message scan "
