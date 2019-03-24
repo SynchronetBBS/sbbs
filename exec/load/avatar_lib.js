@@ -265,15 +265,15 @@ function is_enabled(obj)
 }
 
 // Uses Graphic.draw() at an absolute screen coordinate
-function draw(usernum, username, netaddr, above, right)
+function draw(usernum, username, netaddr, above, right, top)
 {
 	var avatar = this.read(usernum, username, netaddr);
 	if(!is_enabled(avatar))
 		return false;
-	return draw_bin(avatar.data, above, right);
+	return draw_bin(avatar.data, above, right, top);
 }
 
-function draw_bin(data, above, right)
+function draw_bin(data, above, right, top)
 {
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
@@ -283,7 +283,9 @@ function draw_bin(data, above, right)
 		var pos = console.getxy();
 		var x = pos.x;
 		var y = pos.y;
-		if(above)
+		if(top)
+			y = 1;
+		else if(above)
 			y -= this.defs.height;
 		if(right)
 			x = console.screen_columns - (this.defs.width + 1);
