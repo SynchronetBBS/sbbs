@@ -316,7 +316,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	return(true);
 }
 
-bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
+bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resmb, smbmsg_t* remsg)
 {
 	char	str[256],msgpath[128],fulladdr[128]
 			,buf[SDT_BLOCK_LEN],*addr;
@@ -369,6 +369,11 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 		,useron.alias,cfg.sys_id);
 	action=NODE_SMAL;
 	nodesync();
+
+	if(remsg != NULL && resmb != NULL && !(mode&WM_QUOTE)) {
+		if(quotemsg(resmb, remsg, /* include tails: */true))
+			mode |= WM_QUOTE;
+	}
 
 	SAFEPRINTF(msgpath,"%snetmail.msg",cfg.node_dir);
 	if(!writemsg(msgpath,nulstr,title, (mode|WM_QWKNET|WM_NETMAIL) ,INVALID_SUB,to,/* from: */useron.alias,&editor)) {

@@ -157,7 +157,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 			bputs(text[EmailFilesNotAllowed]);
 			mode&=~WM_FILE;
 		}
-		qnetmail(to, title, mode);
+		qnetmail(to, title, mode, resmb, remsg);
 		return false; 
 	}
 	if(net_type == NET_INTERNET) {
