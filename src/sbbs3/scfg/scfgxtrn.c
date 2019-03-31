@@ -131,6 +131,7 @@ static bool new_external_editor(unsigned new_xedit_num)
 		return false;
 	}
 	memset(new_xedit, 0, sizeof(*new_xedit));
+	new_xedit->misc |= QUOTEWRAP;
 
 	xedit_t** new_xedit_list = realloc(cfg.xedit, sizeof(xedit_t *)*(cfg.total_xedits + 1));
 	if (new_xedit_list == NULL) {
@@ -1651,7 +1652,7 @@ void xedit_cfg()
 				,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s","Use Shell to Execute"
 				,cfg.xedit[i]->misc&XTRN_SH ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s","Word Wrap Quoted Text"
+			sprintf(opt[k++],"%-32.32s%s","Word-wrap Quoted Text"
 				,cfg.xedit[i]->misc&QUOTEWRAP ? "Yes":"No");
 			sprintf(opt[k++],"%-32.32s%s","Automatically Quoted Text"
 				,cfg.xedit[i]->misc&QUOTEALL ? "All":cfg.xedit[i]->misc&QUOTENONE
@@ -1670,8 +1671,8 @@ void xedit_cfg()
 				"\n"
 				"This menu allows you to change the settings for the selected external\n"
 				"message editor. External message editors are very common on BBSs. Some\n"
-				"popular editors include `SyncEdit`, `WWIVedit`, `FEdit`, `GEdit`, `IceEdit`,\n"
-				"and many others.\n"
+				"popular editors include `fseditor.js`, `SyncEdit`, `SlyEdit`, `WWIVedit`, `FEdit`,\n"
+				"`GEdit`, `IceEdit`, and many others.\n"
 			;
 
 			sprintf(str,"%s Editor",cfg.xedit[i]->name);
@@ -1825,12 +1826,17 @@ void xedit_cfg()
 				case 7:
 					k=(cfg.xedit[i]->misc&QUOTEWRAP) ? 0:1;
 					uifc.helpbuf=
-						"`Word Wrap Quoted Text:`\n"
+						"`Word-wrap Quoted Text:`\n"
 						"\n"
-						"FIXME\n"
+						"Set to `Yes` to have Synchronet word-wrap quoted message text when\n"
+						"creating the quote file (e.g. QUOTES.TXT) or initial message text file\n"
+						"(e.g. MSGTMP) used by some external message editors.\n"
+						"\n"
+						"When set to `No`, the original unmodified message text is written to the\n"
+						"quote / message text file."
 					;
 					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Word Wrap Quoted Text",uifcYesNoOpts)) {
+						,"Word-wrap Quoted Text",uifcYesNoOpts)) {
 						case 0:
 							if(!(cfg.xedit[i]->misc&QUOTEWRAP)) {
 								cfg.xedit[i]->misc|=QUOTEWRAP;
