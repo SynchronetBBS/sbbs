@@ -2043,23 +2043,32 @@ int main(int argc, char** argv)
 #if !defined(DONT_BLAME_SYNCHRONET)
     		if(!thread_suid_broken) {
      			if(bbs_startup.telnet_port < IPPORT_RESERVED
-    				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
+    				|| ((bbs_startup.options & BBS_OPT_ALLOW_RLOGIN)
     					&& bbs_startup.rlogin_port < IPPORT_RESERVED)
 #ifdef USE_CRYPTLIB
-    				|| (bbs_startup.options & BBS_OPT_ALLOW_SSH
+    				|| ((bbs_startup.options & BBS_OPT_ALLOW_SSH)
     					&& bbs_startup.ssh_port < IPPORT_RESERVED)
 #endif
-    				)
+    				) {
+					lputs(LOG_WARNING, "Disabling Terminal Server recycle support");
     				bbs_startup.options|=BBS_OPT_NO_RECYCLE;
-    			if(ftp_startup.port < IPPORT_RESERVED)
+				}
+    			if(ftp_startup.port < IPPORT_RESERVED) {
+					lputs(LOG_WARNING, "Disabling FTP Server recycle support");
     				ftp_startup.options|=FTP_OPT_NO_RECYCLE;
-    			if(web_startup.port < IPPORT_RESERVED)
+				}
+    			if(web_startup.port < IPPORT_RESERVED) {
+					lputs(LOG_WARNING, "Disabling Web Server recycle support");
     				web_startup.options|=BBS_OPT_NO_RECYCLE;
-    			if((mail_startup.options & MAIL_OPT_ALLOW_POP3
+				}
+    			if(((mail_startup.options & MAIL_OPT_ALLOW_POP3)
     				&& mail_startup.pop3_port < IPPORT_RESERVED)
-    				|| mail_startup.smtp_port < IPPORT_RESERVED)
+    				|| mail_startup.smtp_port < IPPORT_RESERVED) {
+					lputs(LOG_WARNING, "Disabling Mail Server recycle support");
     				mail_startup.options|=MAIL_OPT_NO_RECYCLE;
-    			/* Perhaps a BBS_OPT_NO_RECYCLE_LOW option? */
+				}
+				/* Perhaps a BBS_OPT_NO_RECYCLE_LOW option? */
+				lputs(LOG_WARNING, "Disabling Services recycle support");
     			services_startup.options|=BBS_OPT_NO_RECYCLE;
     		}
 #endif /* !defined(DONT_BLAME_SYNCHRONET) */
