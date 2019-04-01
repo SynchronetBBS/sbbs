@@ -1861,7 +1861,6 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 	uintN		n;
 	JSBool		by_offset=JS_FALSE;
 	smbmsg_t	msg;
-	smbmsg_t*	modmsg = &msg;
 	JSObject*	hdr=NULL;
 	private_t*	p;
 	jsrefcount	rc;
@@ -1907,7 +1906,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			JS_RESUMEREQUEST(cx, rc);
 		}
 		else if(JSVAL_IS_OBJECT(argv[n])) {
-			hdr = JSVAL_TO_OBJECT(argv[n++]);
+			hdr = JSVAL_TO_OBJECT(argv[n]);
 		}
 	}
 
@@ -1921,41 +1920,41 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			JS_ReportError(cx, "Message header has 'expanded fields'", WHERE);
 			return JS_FALSE;
 		}
-		modmsg = &mp->msg;
+		msg.offset = mp->msg.offset;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if((p->smb_result=smb_getmsgidx(&(p->smb), modmsg))!=SMB_SUCCESS) {
+	if((p->smb_result=smb_getmsgidx(&(p->smb), &msg))!=SMB_SUCCESS) {
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
 
-	if((p->smb_result=smb_lockmsghdr(&(p->smb),modmsg))!=SMB_SUCCESS) {
+	if((p->smb_result=smb_lockmsghdr(&(p->smb), &msg))!=SMB_SUCCESS) {
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
 
 	do {
-		if((p->smb_result=smb_getmsghdr(&(p->smb), modmsg))!=SMB_SUCCESS)
+		if((p->smb_result=smb_getmsghdr(&(p->smb), &msg))!=SMB_SUCCESS)
 			break;
 
-		smb_freemsghdrmem(modmsg);	/* prevent duplicate header fields */
+		smb_freemsghdrmem(&msg);	/* prevent duplicate header fields */
 
 		JS_RESUMEREQUEST(cx, rc);
-		if(!parse_header_object(cx, p, hdr, modmsg, TRUE)) {
+		if(!parse_header_object(cx, p, hdr, &msg, TRUE)) {
 			SAFECOPY(p->smb.last_error,"Header parsing failure (required field missing?)");
 			ret=JS_FALSE;
 			break;
 		}
 		rc=JS_SUSPENDREQUEST(cx);
 
-		if((p->smb_result=smb_putmsg(&(p->smb), modmsg))!=SMB_SUCCESS)
+		if((p->smb_result=smb_putmsg(&(p->smb), &msg))!=SMB_SUCCESS)
 			break;
 
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} while(0);
 
-	smb_unlockmsghdr(&(p->smb),modmsg); 
+	smb_unlockmsghdr(&(p->smb), &msg); 
 	smb_freemsgmem(&msg);
 	JS_RESUMEREQUEST(cx, rc);
 
