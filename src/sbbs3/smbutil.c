@@ -143,7 +143,7 @@ char *usage=
 "      -s<s> = set 'subject' for imported message\n"
 "      -z[n] = set time zone (n=min +/- from UT or 'EST','EDT','CST',etc)\n"
 #ifdef __unix__
-"      -U[n] = set umask to specified value\n"
+"      -U[n] = set umask to specified value (use leading 0 for octal, e.g. 022)\n"
 #endif
 "      -#    = set number of messages to view/list (e.g. -1)\n"
 ;
