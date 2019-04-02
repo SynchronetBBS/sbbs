@@ -950,11 +950,6 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 						break;
 					}
-					SAFEPRINTF(str, text[DeleteTextFileQ], "Poll");
-					if(!yesno(str)) {
-						domsg=0;
-						break;
-					}
 				}
 				domsg=0;
 				if(!sub_op(subnum)) {
@@ -980,6 +975,14 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					bprintf(text[CantDeleteMsg], smb.curmsg + 1);
 					domsg=0;
 					break; 
+				}
+				if(msg.hdr.type == SMB_MSG_TYPE_POLL)
+					SAFEPRINTF(str, text[DeleteTextFileQ], "Poll");
+				else
+					SAFEPRINTF2(str,text[DeletePostQ], smb.curmsg+1, msg.subj);
+				if(!(msg.hdr.attr&MSG_DELETE) && noyes(str)) {
+					domsg = false;
+					break;
 				}
 
 				FREE_AND_NULL(post);
@@ -1344,7 +1347,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 									errormsg(WHERE,ERR_READ,smb.file,msg.idx.number);
 									break; 
 								}
-								sprintf(str,text[DeletePostQ],msg.hdr.number,msg.subj);
+								SAFEPRINTF2(str,text[DeletePostQ], smb.curmsg+1, msg.subj);
 								if(movemsg(&msg,subnum) && yesno(str)) {
 									msg.idx.attr|=MSG_DELETE;
 									msg.hdr.attr=msg.idx.attr;
