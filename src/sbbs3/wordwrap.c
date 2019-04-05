@@ -372,10 +372,12 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 				case '\x1f':	// Strip delete chars.
 					break;
 				case '\x01':	// CTRL-A code.
+#if 0 // I'm not sure what this is supposed to be doing, but a literal Ctrl-A sequence is Ctrl-A/'A' (not Ctrl-A/Ctrl-A)
 					if (inbuf[inpos] == '\x01') {
 						// This is a literal CTRL-A... col advances and we can wrap
 						incol++;
 					}
+#endif
 					if (!paragraph_append(&ret[paragraph], inbuf+inpos, 2))
 						goto fail_return;
 					inpos++;
