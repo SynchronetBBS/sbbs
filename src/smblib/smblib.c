@@ -1129,6 +1129,7 @@ int SMBCALL smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 	int i;
 
 	memcpy(msg,srcmsg,sizeof(smbmsg_t));
+	clear_convenience_ptrs(msg);
 
 	/* data field types/lengths */
 	if(msg->hdr.total_dfields>0) {
@@ -1172,6 +1173,7 @@ int SMBCALL smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 			}
 			memset(msg->hfield_dat[i],0,msg->hfield[i].length+1);
 			memcpy(msg->hfield_dat[i],srcmsg->hfield_dat[i],msg->hfield[i].length);
+			set_convenience_ptr(msg, msg->hfield[i].type, msg->hfield_dat[i]);
 		}
 	}
 
