@@ -2043,6 +2043,11 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 		if((p->smb_result=smb_putmsg(&(p->smb), &msg))!=SMB_SUCCESS)
 			break;
 
+		if(mp != NULL) {
+			smb_freemsgmem(&mp->msg);
+			smb_copymsgmem(&(p->smb), &mp->msg, &msg);
+		}
+
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} while(0);
 
