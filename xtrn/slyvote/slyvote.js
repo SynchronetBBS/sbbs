@@ -127,6 +127,12 @@
  *                              with group selection first.
  * 2019-03-22 Eric Oulashin     Version 1.01
  *                              Releasing this version
+ * 2019-04-07 Eric Oulashin     Version 1.02
+ *                              Updated to use the new get_index() messagebase function,
+ *                              if available, for getting the message index objects
+ *                              in subBoardHasPolls().  get_index() is faster than
+ *                              iterating through all messages and calling
+ *                              get_msg_index() for each message.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -181,8 +187,8 @@ load("smbdefs.js");
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.01";
-var SLYVOTE_DATE = "2019-03-22";
+var SLYVOTE_VERSION = "1.02";
+var SLYVOTE_DATE = "2019-04-07";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -3823,23 +3829,34 @@ function IncrementNumPollsVotedForUser()
 // Return value: Boolean - Whether or not the sub-board has any poolls in it
 function subBoardHasPolls(pSubBoardCode)
 {
-	var subBoardHasPolls = false;
+	var pollsExistInSubBoard = false;
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
 	{
-		var numMessages = msgbase.total_msgs;
-		for (var i = 0; !subBoardHasPolls && (i < numMessages); ++i)
+		// If the new get_index function exists, then use it,
+		// since it's faster than iterating through all messages
+		// and calling msg_get_index() for each one.
+		var msgIndexes = null;
+		if (typeof(msgbase.get_index) === "function")
+			msgIndexes = msgbase.get_index();
+		else
 		{
-			var msgIdx = msgbase.get_msg_index(true, i);
-			if ((msgIdx == null) || ((msgIdx.attr & MSG_DELETE) == MSG_DELETE))
+			msgIndexes = [];
+			var numMessages = msgbase.total_msgs;
+			for (var i = 0; !pollsExistInSubBoard && (i < numMessages); ++i)
+				msgIndexes.push(msgbase.get_msg_index(true, i));
+		}
+		for (var i = 0; !pollsExistInSubBoard && (i < msgIndexes.length); ++i)
+		{
+			if ((msgIndexes[i] == null) || ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE))
 				continue;
-			if ((msgIdx.attr & MSG_POLL) == MSG_POLL)
-				subBoardHasPolls = true;
+			if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
+				pollsExistInSubBoard = true;
 		}
 		
 		msgbase.close();
 	}
-	return subBoardHasPolls;
+	return pollsExistInSubBoard;
 }
 
 // Returns whether a given name matches the logged-in user's handle, alias, or
