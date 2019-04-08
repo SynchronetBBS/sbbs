@@ -127,12 +127,19 @@
  *                              with group selection first.
  * 2019-03-22 Eric Oulashin     Version 1.01
  *                              Releasing this version
- * 2019-04-07 Eric Oulashin     Version 1.02
+ * 2019-04-07 Eric Oulashin     
  *                              Updated to use the new get_index() messagebase function,
  *                              if available, for getting the message index objects
  *                              in subBoardHasPolls().  get_index() is faster than
  *                              iterating through all messages and calling
  *                              get_msg_index() for each message.
+ * 2019-04-08 Eric Oulashin     Version 1.02
+ *                              Further optimization: When checking a sub-board if it
+ *                              has polls, check in reverse rather than forward.  Since
+ *                              polls & voting is a relatively recent feature in
+ *                              Synchronet, hopefully it should finish faster going
+ *                              in reverse.  Also, updated CountPollsInSubBoard() to
+ *                              use get_msg_index() if available so that it runs faster.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -188,7 +195,7 @@ var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
 var SLYVOTE_VERSION = "1.02";
-var SLYVOTE_DATE = "2019-04-07";
+var SLYVOTE_DATE = "2019-04-08";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -745,9 +752,9 @@ function ChooseVotePoll(pLetUserChoose)
 		console.gotoxy(1, gMessageRow);
 		console.print("\1n\1g");
 		if (votePollInfo.pollsExist)
-			console.print("You have already voted on all polls in this section, or all polls are closed");
+			console.print("You have already voted on all polls in this sub-board, or all polls are closed");
 		else
-			console.print("There are no polls to vote on in this section");
+			console.print("There are no polls to vote on in this sub-board");
 		console.print("\1n");
 		console.crlf();
 		console.pause();
@@ -2005,30 +2012,72 @@ function GetPollHdrs(pSubBoardCode, pCheckIfUserVoted, pOnlyOpenPolls)
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
 	{
-		var msgHdrs = msgbase.get_all_msg_headers(true);
-		for (var prop in msgHdrs)
+		if (typeof(msgbase.get_index) === "function")
 		{
-			// Skip deleted and unreadable messages
-			if ((msgHdrs[prop].attr & MSG_DELETE) == MSG_DELETE)
-				continue;
-			if (!IsReadableMsgHdr(msgHdrs[prop], pSubBoardCode))
-				continue;
-
-			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+			var msgIndexes = msgbase.get_index();
+			for (var i = 0; i < msgIndexes.length; ++i)
 			{
-				var includeThisPoll = true;
-				if (pOnlyOpenPolls)
-					includeThisPoll = ((msgHdrs[prop].auxattr & POLL_CLOSED) == 0);
-				if (includeThisPoll)
+				// Skip deleted and unreadable messages
+				if ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE)
+					continue;
+
+				if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
 				{
-					retObj.pollsExist = true;
-					if (pCheckIfUserVoted)
+					var msgHdr = msgbase.get_msg_header(false, msgIndexes[i].number, true);
+					if (msgHdr != null)
 					{
-						if (!HasUserVotedOnMsg(msgHdrs[prop].number, pSubBoardCode, msgbase, user))
+						// Note: IsReadableMsgHdr() checks the 'to' name for unvalidated messages
+						// for the sysop if the sub-board requires validation, but when using get_index(),
+						// the 'to' field seems to be numbers or undefined, so we use the full
+						// header for this check.
+						if (!IsReadableMsgHdr(msgHdr, pSubBoardCode))
+							continue;
+
+						var includeThisPoll = true;
+						if (pOnlyOpenPolls)
+							includeThisPoll = ((msgHdr.auxattr & POLL_CLOSED) == 0);
+						if (includeThisPoll)
+						{
+							retObj.pollsExist = true;
+							if (pCheckIfUserVoted)
+							{
+								if (!HasUserVotedOnMsg(msgHdr.number, pSubBoardCode, msgbase, user))
+									retObj.msgHdrs.push(msgHdr);
+							}
+							else
+								retObj.msgHdrs.push(msgHdr);
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			var msgHdrs = msgbase.get_all_msg_headers(true);
+			for (var prop in msgHdrs)
+			{
+				// Skip deleted and unreadable messages
+				if ((msgHdrs[prop].attr & MSG_DELETE) == MSG_DELETE)
+					continue;
+				if (!IsReadableMsgHdr(msgHdrs[prop], pSubBoardCode))
+					continue;
+
+				if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+				{
+					var includeThisPoll = true;
+					if (pOnlyOpenPolls)
+						includeThisPoll = ((msgHdrs[prop].auxattr & POLL_CLOSED) == 0);
+					if (includeThisPoll)
+					{
+						retObj.pollsExist = true;
+						if (pCheckIfUserVoted)
+						{
+							if (!HasUserVotedOnMsg(msgHdrs[prop].number, pSubBoardCode, msgbase, user))
+								retObj.msgHdrs.push(msgHdrs[prop]);
+						}
+						else
 							retObj.msgHdrs.push(msgHdrs[prop]);
 					}
-					else
-						retObj.msgHdrs.push(msgHdrs[prop]);
 				}
 			}
 		}
@@ -3786,20 +3835,48 @@ function CountPollsInSubBoard(pSubBoardCode)
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
 	{
-		var numMessages = msgbase.total_msgs;
-		for (var i = 0; i < numMessages; ++i)
+		if (typeof(msgbase.get_index) === "function")
 		{
-			var msgHdr = msgbase.get_msg_header(true, i);
-			if ((msgHdr == null) || ((msgHdr.attr & MSG_DELETE) == MSG_DELETE) || !IsReadableMsgHdr(msgHdr, pSubBoardCode))
-				continue;
-			if ((msgHdr.attr & MSG_POLL) == MSG_POLL)
+			var msgIndexes = msgbase.get_index();
+			for (var i = 0; i < msgIndexes.length; ++i)
 			{
-				++retObj.numPolls;
-				if (HasUserVotedOnMsg(msgHdr.number, pSubBoardCode, msgbase, user))
-					++retObj.numPollsUserVotedOn;
+				// Note: IsReadableMsgHdr() checks the 'to' name for unvalidated messages
+				// for the sysop if the sub-board requires validation, but when using get_index(),
+				// the 'to' field seems to be numbers or undefined, so for now this won't
+				// call IsReadableMsgHdr().
+				if ((msgIndexes[i] == null) || ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE) /*|| !IsReadableMsgHdr(msgHdr, pSubBoardCode)*/)
+					continue;
+				if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
+				{
+					++retObj.numPolls;
+					if (HasUserVotedOnMsg(msgIndexes[i].number, pSubBoardCode, msgbase, user))
+						++retObj.numPollsUserVotedOn;
+				}
+				var msgHdr = msgbase.get_msg_header(false, msgIndexes[i].number, true);
+				if (msgHdr != null)
+				{
+					if ((msgIndexes[i].auxattr & POLL_CLOSED) == POLL_CLOSED)
+						++retObj.numClosedPolls;
+				}
 			}
-			if ((msgHdr.auxattr & POLL_CLOSED) == POLL_CLOSED)
-				++retObj.numClosedPolls;
+		}
+		else
+		{
+			var numMessages = msgbase.total_msgs;
+			for (var i = 0; i < numMessages; ++i)
+			{
+				var msgHdr = msgbase.get_msg_header(true, i);
+				if ((msgHdr == null) || ((msgHdr.attr & MSG_DELETE) == MSG_DELETE) || !IsReadableMsgHdr(msgHdr, pSubBoardCode))
+					continue;
+				if ((msgHdr.attr & MSG_POLL) == MSG_POLL)
+				{
+					++retObj.numPolls;
+					if (HasUserVotedOnMsg(msgHdr.number, pSubBoardCode, msgbase, user))
+						++retObj.numPollsUserVotedOn;
+				}
+				if ((msgHdr.auxattr & POLL_CLOSED) == POLL_CLOSED)
+					++retObj.numClosedPolls;
+			}
 		}
 
 		msgbase.close();
@@ -3836,22 +3913,27 @@ function subBoardHasPolls(pSubBoardCode)
 		// If the new get_index function exists, then use it,
 		// since it's faster than iterating through all messages
 		// and calling msg_get_index() for each one.
-		var msgIndexes = null;
 		if (typeof(msgbase.get_index) === "function")
-			msgIndexes = msgbase.get_index();
+		{
+			var msgIndexes = msgbase.get_index();
+			for (var i = msgIndexes.length-1; !pollsExistInSubBoard && (i >= 0); --i)
+			{
+				if ((msgIndexes[i] == null) || ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE))
+					continue;
+				if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
+					pollsExistInSubBoard = true;
+			}
+		}
 		else
 		{
-			msgIndexes = [];
-			var numMessages = msgbase.total_msgs;
-			for (var i = 0; !pollsExistInSubBoard && (i < numMessages); ++i)
-				msgIndexes.push(msgbase.get_msg_index(true, i));
-		}
-		for (var i = 0; !pollsExistInSubBoard && (i < msgIndexes.length); ++i)
-		{
-			if ((msgIndexes[i] == null) || ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE))
-				continue;
-			if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
-				pollsExistInSubBoard = true;
+			for (var i = msgbase.total_msgs-1; !pollsExistInSubBoard && (i >= 0); --i)
+			{
+				var msgIndex = msgbase.get_msg_index(true, i)
+				if ((msgIndex == null) || ((msgIndex.attr & MSG_DELETE) == MSG_DELETE))
+					continue;
+				if ((msgIndex.attr & MSG_POLL) == MSG_POLL)
+					pollsExistInSubBoard = true;
+			}
 		}
 		
 		msgbase.close();
