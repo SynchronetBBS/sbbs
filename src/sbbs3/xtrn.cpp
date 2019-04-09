@@ -1911,7 +1911,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				timeout.tv_sec=0;
 				timeout.tv_usec=1000;
 			}
-			if(i)
+			if(i && !(mode&EX_NOLOG))
 				lprintf(LOG_NOTICE,"%.*s",i,buf);		/* lprintf mangles i? */
 
 			/* Eat stderr if mode is EX_BIN */
