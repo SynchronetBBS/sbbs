@@ -97,7 +97,7 @@ function getPageList(dir) {
         if (file_isdir(c)) {
             const list = getPageList(c);
             if (Object.keys(list).length) {
-                a[c.split(c.substr(-1, 1)).slice(-2, -1)] = list;
+                a[c.split(backslash(c).substr(-1, 1)).slice(-2, -1)] = list;
             }
             return a;
         }
