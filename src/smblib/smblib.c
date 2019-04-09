@@ -240,57 +240,6 @@ BOOL SMBCALL smb_islocked(smb_t* smb)
 }
 
 /****************************************************************************/
-/* If the parameter 'push' is non-zero, this function stores the currently  */
-/* open message base to the "virtual" smb stack. Up to SMB_STACK_LEN        */
-/* message bases may be stored (defined in SMBDEFS.H).						*/
-/* The parameter 'op' is the operation to perform on the stack. Either      */
-/* SMB_STACK_PUSH, SMB_STACK_POP, or SMB_STACK_XCHNG						*/
-/* If the operation is SMB_STACK_POP, this function restores a message base */
-/* previously saved with a SMB_STACK_PUSH call to this same function.		*/
-/* If the operation is SMB_STACK_XCHNG, then the current message base is	*/
-/* exchanged with the message base on the top of the stack (most recently	*/
-/* pushed.																	*/
-/* If the current message base is not open, the SMB_STACK_PUSH and			*/
-/* SMB_STACK_XCHNG operations do nothing									*/
-/* Returns 0 on success, non-zero if stack full.                            */
-/* If operation is SMB_STACK_POP or SMB_STACK_XCHNG, it always returns 0.	*/
-/****************************************************************************/
-int SMBCALL smb_stack(smb_t* smb, int op)
-{
-	static smb_t stack[SMB_STACK_LEN];
-	static int	stack_idx;
-	smb_t		tmp_smb;
-
-	if(op==SMB_STACK_PUSH) {
-		if(stack_idx>=SMB_STACK_LEN) {
-			safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s SMB stack overflow", __FUNCTION__);
-			return(SMB_FAILURE);
-		}
-		if(smb->shd_fp==NULL || smb->sdt_fp==NULL || smb->sid_fp==NULL)
-			return(SMB_SUCCESS);	  /* Msg base not open, do nothing */
-		memcpy(&stack[stack_idx],smb,sizeof(smb_t));
-		stack_idx++;
-		return(SMB_SUCCESS); 
-	}
-	/* pop or xchng */
-	if(!stack_idx)	/* Nothing on the stack, so do nothing */
-		return(SMB_SUCCESS);
-	if(op==SMB_STACK_XCHNG) {
-		if(smb->shd_fp==NULL)
-			return(SMB_SUCCESS);
-		memcpy(&tmp_smb,smb,sizeof(smb_t));
-	}
-
-	stack_idx--;
-	memcpy(smb,&stack[stack_idx],sizeof(smb_t));
-	if(op==SMB_STACK_XCHNG) {
-		memcpy(&stack[stack_idx],&tmp_smb,sizeof(smb_t));
-		stack_idx++;
-	}
-	return(SMB_SUCCESS);
-}
-
-/****************************************************************************/
 /* Truncates header file													*/
 /* Retries for smb.retry_time number of seconds								*/
 /* Return 0 on success, non-zero otherwise									*/
