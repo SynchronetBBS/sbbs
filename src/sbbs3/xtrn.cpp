@@ -35,7 +35,6 @@
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
-#define XTERN_LOG_STDERR
 #include "sbbs.h"
 #include "cmdshell.h"
 #include "telnet.h"
@@ -1329,9 +1328,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	pid_t	pid;
 	int		in_pipe[2];
 	int		out_pipe[2];
-#ifdef XTERN_LOG_STDERR
 	int		err_pipe[2];
-#endif
 	fd_set ibits;
 	int	high_fd;
 	struct timeval timeout;
@@ -1697,12 +1694,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		input_thread_mutex_locked=true;
 	}
 
-#ifdef XTERN_LOG_STDERR
-	if(pipe(err_pipe)!=0) {
+	if(!(mode&EX_NOLOG) && pipe(err_pipe)!=0) {
 		errormsg(WHERE,ERR_CREATE,"err_pipe",0);
 		return(-1);
 	}
-#endif
 
 	if((mode&EX_STDIO)==EX_STDIO)  {
 		struct winsize winsize;
@@ -1807,9 +1802,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		if(mode&EX_STDOUT && !(mode&EX_STDIN)) {
 			close(out_pipe[0]);		/* close read-end of pipe */
 			dup2(out_pipe[1],1);	/* stdout */
-#ifndef XTERN_LOG_STDERR
-			dup2(out_pipe[1],2);	/* stderr */
-#endif
+			if(!(mode&EX_NOLOG))
+				dup2(out_pipe[1],2);	/* stderr */
 			close(out_pipe[1]);		/* close excess file descriptor */
 		}
 
@@ -1820,9 +1814,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			if ((fd = open(_PATH_DEVNULL, O_RDWR, 0)) != -1) {
 				dup2(fd, STDIN_FILENO);
 				dup2(fd, STDOUT_FILENO);
-#ifndef XTERN_LOG_STDERR
-				dup2(fd, STDERR_FILENO);
-#endif
+				if(!(mode&EX_NOLOG))
+					dup2(fd, STDERR_FILENO);
 				if (fd > 2)
 					close(fd);
 			}
@@ -1834,10 +1827,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			daemon(TRUE,FALSE);
    	    }
 
-#ifdef XTERN_LOG_STDERR
-		close(err_pipe[0]);		/* close read-end of pipe */
-		dup2(err_pipe[1],2);	/* stderr */
-#endif
+		if(!(mode&EX_NOLOG)) {
+			close(err_pipe[0]);		/* close read-end of pipe */
+			dup2(err_pipe[1],2);	/* stderr */
+		}
 
 		execvp(argv[0],argv);
 		lprintf(LOG_ERR,"!ERROR %d (%s) executing: %s", errno, strerror(errno), argv[0]);
@@ -1851,9 +1844,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(!(mode&EX_OFFLINE))
 		rio_abortable=false;
 
-#ifdef XTERN_LOG_STDERR
-	close(err_pipe[1]);	/* close write-end of pipe */
-#endif
+	if(!(mode&EX_NOLOG))
+		close(err_pipe[1]);	/* close write-end of pipe */
 
 	if(mode&EX_STDOUT) {
 		if(!(mode&EX_STDIN))
@@ -1878,48 +1870,47 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 			/* Error Output */
 			FD_ZERO(&ibits);
-#ifdef XTERN_LOG_STDERR
-			FD_SET(err_pipe[0],&ibits);
-			high_fd=err_pipe[0];
-#endif
+			if(!(mode&EX_NOLOG)) {
+				FD_SET(err_pipe[0],&ibits);
+				high_fd=err_pipe[0];
+			}
 			FD_SET(out_pipe[0],&ibits);
-#ifdef XTERN_LOG_STDERR
-			if(out_pipe[0]>err_pipe[0])
+			if(!(mode&EX_NOLOG)) {
+				if(out_pipe[0]>err_pipe[0])
+					high_fd=out_pipe[0];
+			} else
 				high_fd=out_pipe[0];
-#else
-			high_fd=out_pipe[0];
-#endif
 			timeout.tv_sec=0;
 			timeout.tv_usec=1000;
 			bp=buf;
 			i=0;
-#ifndef XTERN_LOG_STDERR
-			select(high_fd+1,&ibits,NULL,NULL,&timeout);
-#else
-			while ((select(high_fd+1,&ibits,NULL,NULL,&timeout)>0) && FD_ISSET(err_pipe[0],&ibits) && (i<(int)sizeof(buf)-1))  {
-				if((rd=read(err_pipe[0],bp,1))>0)  {
-					i+=rd;
-					bp++;
-					if(*(bp-1)=='\n')
+			if(mode&EX_NOLOG)
+				select(high_fd+1,&ibits,NULL,NULL,&timeout);
+			else {
+				while ((select(high_fd+1,&ibits,NULL,NULL,&timeout)>0) && FD_ISSET(err_pipe[0],&ibits) && (i<(int)sizeof(buf)-1))  {
+					if((rd=read(err_pipe[0],bp,1))>0)  {
+						i+=rd;
+						bp++;
+						if(*(bp-1)=='\n')
+							break;
+					}
+					else
 						break;
+					FD_ZERO(&ibits);
+					FD_SET(err_pipe[0],&ibits);
+					FD_SET(out_pipe[0],&ibits);
+					timeout.tv_sec=0;
+					timeout.tv_usec=1000;
 				}
-				else
-					break;
-				FD_ZERO(&ibits);
-				FD_SET(err_pipe[0],&ibits);
-				FD_SET(out_pipe[0],&ibits);
-				timeout.tv_sec=0;
-				timeout.tv_usec=1000;
-			}
-			if(i && !(mode&EX_NOLOG))
-				lprintf(LOG_NOTICE,"%.*s",i,buf);		/* lprintf mangles i? */
+				if(i && !(mode&EX_NOLOG))
+					lprintf(LOG_NOTICE,"%.*s",i,buf);		/* lprintf mangles i? */
 
-			/* Eat stderr if mode is EX_BIN */
-			if(mode&EX_BIN)  {
-				bp=buf;
-				i=0;
+				/* Eat stderr if mode is EX_BIN */
+				if(mode&EX_BIN)  {
+					bp=buf;
+					i=0;
+				}
 			}
-#endif
 
 			data_waiting=FD_ISSET(out_pipe[0],&ibits);
 			if(i==0 && data_waiting==0)
@@ -2013,35 +2004,34 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		setsockopt(client_socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 	}
 #endif
-#ifdef XTERN_LOG_STDERR
-	while(waitpid(pid, &i, WNOHANG)==0)  {
-		FD_ZERO(&ibits);
-		FD_SET(err_pipe[0],&ibits);
-		timeout.tv_sec=1;
-		timeout.tv_usec=0;
-		bp=buf;
-		i=0;
-		while ((select(err_pipe[0]+1,&ibits,NULL,NULL,&timeout)>0) && (i<XTRN_IO_BUF_LEN-1))  {
-			if((rd=read(err_pipe[0],bp,1))>0)  {
-				i+=rd;
-				if(*bp=='\n') {
-					lprintf(LOG_NOTICE,"%.*s",i-1,buf);
-					i=0;
-					bp=buf;
+	if(mode&EX_NOLOG)
+		waitpid(pid, &i, 0);
+	else {
+		while(waitpid(pid, &i, WNOHANG)==0)  {
+			FD_ZERO(&ibits);
+			FD_SET(err_pipe[0],&ibits);
+			timeout.tv_sec=1;
+			timeout.tv_usec=0;
+			bp=buf;
+			i=0;
+			while ((select(err_pipe[0]+1,&ibits,NULL,NULL,&timeout)>0) && (i<XTRN_IO_BUF_LEN-1))  {
+				if((rd=read(err_pipe[0],bp,1))>0)  {
+					i+=rd;
+					if(*bp=='\n') {
+						lprintf(LOG_NOTICE,"%.*s",i-1,buf);
+						i=0;
+						bp=buf;
+					}
+					else
+						bp++;
 				}
 				else
-					bp++;
+					break;
 			}
-			else
-				break;
+			if(i)
+				lprintf(LOG_NOTICE,"%.*s",i,buf);
 		}
-		if(i)
-			lprintf(LOG_NOTICE,"%.*s",i,buf);
 	}
-#else
-	waitpid(pid, &i, 0);
-#endif
-
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
 		/* Re-enable blocking (incase disabled by xtrn program) */
@@ -2061,9 +2051,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
 	}
 
-#ifdef XTERN_LOG_STDERR
-	close(err_pipe[0]);
-#endif
+	if(!(mode&EX_NOLOG))
+		close(err_pipe[0]);
 
 	if(input_thread_mutex_locked && input_thread_running) {
 		if(pthread_mutex_unlock(&input_thread_mutex)!=0)
