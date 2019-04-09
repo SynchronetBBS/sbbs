@@ -1120,7 +1120,6 @@ static JSBool
 js_get_index(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*	obj=JS_THIS_OBJECT(cx, arglist);
-	jsval*		argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 	private_t*	priv;
 	uint32_t	off;
