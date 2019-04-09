@@ -375,7 +375,7 @@ public:
 	uchar	telnet_last_rxch;
 	char	telnet_location[128];
 	char	telnet_terminal[TELNET_TERM_MAXLEN+1];
-	long 	telnet_rows;	
+	long 	telnet_rows;
 	long	telnet_cols;
 	long	telnet_speed;
 
@@ -408,7 +408,12 @@ public:
 
 	user_t	useron; 		/* User currently online */
 	node_t	thisnode;		/* Node information */
-	smb_t	smb;			/* Currently open message base */
+	smb_t	smb;			/* Currently active message base */
+	link_list_t smb_list;
+#define SMB_STACK_PUSH	true
+#define SMB_STACK_POP	false
+	int 	smb_stack(smb_t* smb, bool push);
+
 	char	rlogin_name[LEN_ALIAS+1];
 	char	rlogin_pass[LEN_PASS+1];
 	char	rlogin_term[TELNET_TERM_MAXLEN+1];	/* RLogin passed terminal type/speed (e.g. "xterm/57600") */

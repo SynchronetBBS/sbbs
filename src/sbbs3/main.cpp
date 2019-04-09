@@ -3403,6 +3403,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	telnet_ack_event=CreateEvent(NULL, /* Manual Reset: */FALSE,/* InitialState */FALSE,NULL);
 
 	listInit(&savedlines, /* flags: */0);
+	listInit(&smb_list, /* flags: */0);
 	sys_status=lncntr=tos=criterrs=0L;
 	column=0;
 	tabstop=8;
@@ -3907,6 +3908,7 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(batdn_alt);
 
 	listFree(&savedlines);
+	listFree(&smb_list);
 
 #ifdef USE_CRYPTLIB
 	while(ssh_mutex_created && pthread_mutex_destroy(&ssh_mutex)==EBUSY)
@@ -3923,6 +3925,25 @@ sbbs_t::~sbbs_t()
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "destructor end");
 #endif
+}
+
+int sbbs_t::smb_stack(smb_t* smb, bool push)
+{
+	if(push) {
+		if(smb == NULL || !SMB_IS_OPEN(smb))
+			return SMB_SUCCESS;	  /* Msg base not open, do nothing */
+		if(listPushNodeData(&smb_list, smb, sizeof(*smb)) == NULL)
+			return SMB_FAILURE;
+		return SMB_SUCCESS;
+	}
+	/* pop */
+	smb_t* data = (smb_t*)listPopNode(&smb_list);
+	if(data == NULL)	/* Nothing on the stack, so do nothing */
+		return SMB_SUCCESS;
+
+	*smb = *data;
+	free(data);
+	return SMB_SUCCESS;
 }
 
 /****************************************************************************/
@@ -5642,8 +5663,8 @@ NO_SSH:
 		SOCKADDR_IN local_addr;
 		memset(&local_addr, 0, sizeof(local_addr));
 		socklen_t addr_len=sizeof(local_addr);
-		if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) == 0 
-			&& (ntohs(local_addr.sin_port) == startup->pet40_port 
+		if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) == 0
+			&& (ntohs(local_addr.sin_port) == startup->pet40_port
 				|| ntohs(local_addr.sin_port) == startup->pet80_port)) {
 			sbbs->autoterm = PETSCII;
 			sbbs->cols = ntohs(local_addr.sin_port) == startup->pet40_port ? 40 : 80;
