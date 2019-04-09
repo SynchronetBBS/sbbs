@@ -96,8 +96,9 @@ function getPageList(dir) {
     const pages = directory(dir + '*').reduce(function (a, c) {
         if (file_isdir(c)) {
             const list = getPageList(c);
+            const cc = backslash(c);
             if (Object.keys(list).length) {
-                a[c.split(backslash(c).substr(-1, 1)).slice(-2, -1)] = list;
+                a[cc.split(cc.substr(-1, 1)).slice(-2, -1)] = list;
             }
             return a;
         }
