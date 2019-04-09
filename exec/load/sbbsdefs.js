@@ -176,7 +176,7 @@ var		KEY_PAGEDN	='\x0e';	/* ctrl-n (Page Down)						*/
 								/********************************************/
 var		KEY_ABORT	='\x03';	/* ctrl-c (cancel/abort/break)				*/
 								/********************************************/
-					    
+
 					    		/********************************************/
 						    	/* user.settings							*/
 							    /********************************************/
@@ -507,6 +507,7 @@ var   EX_CHKTIME	=(1<<16);	/* Check time left (XTRN_CHKTIME)			*/
 var   EX_NOLOG      =(1<<30);	/* Don't log intercepted stdio              */
 					    		/********************************************/
 
+var   EX_STDIO      =(EX_STDIN|EX_STDOUT);
 // For backwards compatibility:
 var   EX_OUTR = EX_STDOUT;
 var   EX_INR = EX_STDIN;
@@ -521,7 +522,7 @@ var   EVENT_POST	=5;			/* Execute after message posted				*/
 var   EVENT_UPLOAD	=6;			/* Execute after file uploaded				*/
 var   EVENT_DOWNLOAD=7;			/* Execute after file downloaded			*/
 					    		/********************************************/
-								
+
 								/********************************************/
 								/* Bits for xtrn_area.event[].settings		*/
 								/********************************************/
@@ -530,7 +531,7 @@ var EVENT_FORCE		=(1<<1);	/* Force users off-line for event			*/
 var EVENT_INIT		=(1<<2);	/* Always run event after BBS init/re-init	*/
 var EVENT_DISABLED	=(1<<3);	/* Disabled									*/
 								/********************************************/
-								
+
 					    		/********************************************/
 								/* Bits in mode of bbs.telnet_gate()		*/
 					    		/********************************************/
@@ -629,18 +630,18 @@ var FI_CLOSE 	  	=7;			/* Close any open records					*/
 					    		/********************************************/
 
 if(this.LOG_EMERG===undefined) {	/* temporary backward compatibility kludge	*/
-	                            /********************************************/   
-                                /* Log "levels" supported by log() function */   
-                                /********************************************/   
-var LOG_EMERG       =0;			/* system is unusable                       */   
-var LOG_ALERT       =1;			/* action must be taken immediately         */   
-var LOG_CRIT        =2;			/* critical conditions                      */   
-var LOG_ERR         =3;			/* error conditions                         */   
-var LOG_WARNING     =4;			/* warning conditions                       */   
-var LOG_NOTICE      =5;			/* normal but significant condition         */   
-var LOG_INFO        =6;			/* informational                            */   
-var LOG_DEBUG       =7;			/* debug-level messages                     */   
-                                /********************************************/ 
+	                            /********************************************/
+                                /* Log "levels" supported by log() function */
+                                /********************************************/
+var LOG_EMERG       =0;			/* system is unusable                       */
+var LOG_ALERT       =1;			/* action must be taken immediately         */
+var LOG_CRIT        =2;			/* critical conditions                      */
+var LOG_ERR         =3;			/* error conditions                         */
+var LOG_WARNING     =4;			/* warning conditions                       */
+var LOG_NOTICE      =5;			/* normal but significant condition         */
+var LOG_INFO        =6;			/* informational                            */
+var LOG_DEBUG       =7;			/* debug-level messages                     */
+                                /********************************************/
 }
 
 								/* "flags" bits for directory() */
@@ -706,60 +707,60 @@ var LEN_FDESC			=58;	/* File description 							*/
 var LEN_FCDT			=9;		/* 9 digits for file credit values				*/
 var LEN_TITLE			=70;	/* Message title								*/
 var LEN_MAIN_CMD		=34;	/* Storage in user.dat for custom commands		*/
-var LEN_XFER_CMD		=40;													
-var LEN_SCAN_CMD		=35;													
-var LEN_IPADDR			=45;													
+var LEN_XFER_CMD		=40;
+var LEN_SCAN_CMD		=35;
+var LEN_IPADDR			=45;
 var LEN_CID 			=45;	/* Caller ID (phone number or IP address) 		*/
 var LEN_ARSTR			=40;	/* Max length of Access Requirement string		*/
 var LEN_CHATACTCMD		=9;		/* Chat action command							*/
 var LEN_CHATACTOUT		=65;	/* Chat action output string					*/
 								/************************************************/
-						
-								
+
+
 /********************************************/
 /* field values for system.matchuserdata()  */
 /********************************************/
-var U_ALIAS 		=0;					
+var U_ALIAS 		=0;
 var U_NAME			=U_ALIAS+LEN_ALIAS;
-var U_HANDLE		=U_NAME+LEN_NAME; 
+var U_HANDLE		=U_NAME+LEN_NAME;
 var U_NOTE			=U_HANDLE+LEN_HANDLE+2;
-var U_COMP			=U_NOTE+LEN_NOTE; 
-var U_COMMENT		=U_COMP+LEN_COMP+2; 
-var U_NETMAIL		=U_COMMENT+LEN_COMMENT+2; 
-var U_ADDRESS		=U_NETMAIL+LEN_NETMAIL+2; 
-var U_LOCATION		=U_ADDRESS+LEN_ADDRESS; 
-var U_ZIPCODE		=U_LOCATION+LEN_LOCATION; 
-var U_PASS			=U_ZIPCODE+LEN_ZIPCODE+2; 
-var U_PHONE  		=U_PASS+8; 			
-var U_BIRTH  		=U_PHONE+12; 		
-var U_MODEM     	=U_BIRTH+8; 
-var U_LASTON		=U_MODEM+8; 
-var U_FIRSTON		=U_LASTON+8; 
-var U_EXPIRE    	=U_FIRSTON+8; 
-var U_PWMOD     	=U_EXPIRE+8; 
-var U_LOGONS    	=U_PWMOD+8+2; 
-var U_LTODAY    	=U_LOGONS+5; 
+var U_COMP			=U_NOTE+LEN_NOTE;
+var U_COMMENT		=U_COMP+LEN_COMP+2;
+var U_NETMAIL		=U_COMMENT+LEN_COMMENT+2;
+var U_ADDRESS		=U_NETMAIL+LEN_NETMAIL+2;
+var U_LOCATION		=U_ADDRESS+LEN_ADDRESS;
+var U_ZIPCODE		=U_LOCATION+LEN_LOCATION;
+var U_PASS			=U_ZIPCODE+LEN_ZIPCODE+2;
+var U_PHONE  		=U_PASS+8;
+var U_BIRTH  		=U_PHONE+12;
+var U_MODEM     	=U_BIRTH+8;
+var U_LASTON		=U_MODEM+8;
+var U_FIRSTON		=U_LASTON+8;
+var U_EXPIRE    	=U_FIRSTON+8;
+var U_PWMOD     	=U_EXPIRE+8;
+var U_LOGONS    	=U_PWMOD+8+2;
+var U_LTODAY    	=U_LOGONS+5;
 var U_TIMEON    	=U_LTODAY+5;
-var U_TEXTRA  		=U_TIMEON+5; 
+var U_TEXTRA  		=U_TIMEON+5;
 var U_TTODAY    	=U_TEXTRA+5;
-var U_TLAST     	=U_TTODAY+5; 
-var U_POSTS     	=U_TLAST+5; 
-var U_EMAILS    	=U_POSTS+5; 
-var U_FBACKS    	=U_EMAILS+5; 
+var U_TLAST     	=U_TTODAY+5;
+var U_POSTS     	=U_TLAST+5;
+var U_EMAILS    	=U_POSTS+5;
+var U_FBACKS    	=U_EMAILS+5;
 var U_ETODAY		=U_FBACKS+5;
-var U_PTODAY		=U_ETODAY+5; 
-var U_ULB       	=U_PTODAY+5+2; 
-var U_ULS       	=U_ULB+10; 
-var U_DLB       	=U_ULS+5; 
-var U_DLS       	=U_DLB+10; 
-var U_CDT			=U_DLS+5; 
-var U_MIN			=U_CDT+10; 
+var U_PTODAY		=U_ETODAY+5;
+var U_ULB       	=U_PTODAY+5+2;
+var U_ULS       	=U_ULB+10;
+var U_DLB       	=U_ULS+5;
+var U_DLS       	=U_DLB+10;
+var U_CDT			=U_DLS+5;
+var U_MIN			=U_CDT+10;
 var U_LEVEL 		=U_MIN+10+2; 	/* Offset to Security Level    */
 var U_FLAGS1		=U_LEVEL+2;  	/* Offset to Flags */
 var U_TL			=U_FLAGS1+8; 	/* Offset to unused field */
-var U_FLAGS2		=U_TL+2; 
-var U_EXEMPT		=U_FLAGS2+8; 
-var U_REST			=U_EXEMPT+8; 
+var U_FLAGS2		=U_TL+2;
+var U_EXEMPT		=U_FLAGS2+8;
+var U_REST			=U_EXEMPT+8;
 var U_ROWS			=U_REST+8+2; 	/* Number of Rows on user's monitor */
 var U_SEX			=U_ROWS+2; 		/* Sex, Del, ANSI, color etc.		*/
 var U_MISC			=U_SEX+1; 		/* Miscellaneous flags in 8byte hex */
@@ -771,7 +772,7 @@ var U_MAIN_CMD		=U_CURXTRN+8+2; /* unused */
 var U_XFER_CMD		=U_MAIN_CMD+LEN_MAIN_CMD; 		/* unused */
 var U_SCAN_CMD		=U_XFER_CMD+LEN_XFER_CMD+2;  	/* unused */
 var U_IPADDR		=U_SCAN_CMD+LEN_SCAN_CMD; 		/* unused */
-var U_FREECDT		=U_IPADDR+LEN_IPADDR+2; 
+var U_FREECDT		=U_IPADDR+LEN_IPADDR+2;
 var U_FLAGS3		=U_FREECDT+10; 	/* Flag set #3 */
 var U_FLAGS4		=U_FLAGS3+8; 	/* Flag set #4 */
 var U_XEDIT 		=U_FLAGS4+8; 	/* External editor (code  */
