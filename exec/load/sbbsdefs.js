@@ -495,19 +495,21 @@ var   FILE_ANON 	=(1<<1);	/* Anonymous upload							*/
 					    		/********************************************/
 var	  EX_NONE		=0;			/* No special behavior						*/
 var   EX_SH			=(1<<0);	/* Use system shell to load other process   */
-var   EX_OUTR		=(1<<1);	/* Copy DOS output to remote                */
-var   EX_OUTL 		=(1<<2);	/* Use _lputc() for local DOS output		*/
-var   EX_INR		=(1<<3);	/* Trap int 16h keyboard input requests     */
+var   EX_STDOUT		=(1<<1);	/* Copy DOS output to remote                */
+var   EX_STDIN		=(1<<3);	/* Trap int 16h keyboard input requests     */
 var   EX_WWIV 		=(1<<4);	/* Expand WWIV color codes to ANSI sequence */
-var   EX_SWAP 		=(1<<5);	/* Swap out for this external				*/
 var   EX_POPEN		=(1<<7);	/* Leave COM port open						*/
 var   EX_OFFLINE	=(1<<8);	/* Run this program offline					*/
 var   EX_BG			=(1<<10);	/* Back-ground/detached process				*/
 var   EX_BIN		=(1<<11);	/* Binary mode (no Unix LF to CR/LF)		*/
 var   EX_NATIVE		=(1<<14);	/* Native 32-bit application (XTRN_NATIVE)	*/
 var   EX_CHKTIME	=(1<<16);	/* Check time left (XTRN_CHKTIME)			*/
+var   EX_NOLOG      =(1<<30);	/* Don't log intercepted stdio              */
 					    		/********************************************/
 
+// For backwards compatibility:
+var   EX_OUTR = EX_STDOUT;
+var   EX_INR = EX_STDIN;
 					    		/********************************************/
 								/* Values for bbs.user_event()				*/
 					    		/********************************************/
