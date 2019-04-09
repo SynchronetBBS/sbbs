@@ -175,7 +175,7 @@ function str_cmds(str)
 				str=str.substr(4);
 				str=get_cmdline(str);
 				if(str)
-					bbs.exec(str,EX_OUTR|EX_INR);
+					bbs.exec(str,EX_STDIO);
 			}
 			return;
 		}
@@ -190,7 +190,7 @@ function str_cmds(str)
 				str=str.substr(5);
 				str=get_cmdline(str);
 				if(str)
-					bbs.exec(str,EX_OUTR|EX_INR|EX_NATIVE);
+					bbs.exec(str,EX_STDIO|EX_NATIVE);
 			}
 			return;
 		}
@@ -223,7 +223,7 @@ function str_cmds(str)
 			}
 			return;
 		}
-		
+
 		if(str=="HELP") {
 			writeln("EVENT [EventID]");
 			writeln("\tforces a timed-event to execute via semfile");
@@ -251,14 +251,14 @@ function str_cmds(str)
 			}
 			return;
 		}
-		
+
 
 		if(str=="HELP") {
 			writeln("NODE [parameters]");
 			writeln("\texecutes the node utility with the passed parameters.");
 		}
 		if(word=="NODE") {
-			bbs.exec(system.exec_dir+str.toLowerCase(), EX_OUTR|EX_INR|EX_NATIVE);
+			bbs.exec(system.exec_dir+str.toLowerCase(), EX_STDIO|EX_NATIVE);
 			return;
 		}
 
@@ -304,7 +304,7 @@ function str_cmds(str)
 		if(str=="HELP")
 			writeln("SLOG\tExecutes the slog utility to display system statistics.");
 		if(str=="SLOG") {
-			bbs.exec(system.exec_dir+"slog /p",EX_OUTR|EX_INR|EX_NATIVE);
+			bbs.exec(system.exec_dir+"slog /p",EX_STDIO|EX_NATIVE);
 			return;
 		}
 
@@ -314,12 +314,12 @@ function str_cmds(str)
 			writeln("\tIf # is omitted, uses the current node.");
 		}
 		if(str=="NLOG") {
-			bbs.exec(system.exec_dir+"slog "+system.node_dir+" /p",EX_OUTR|EX_INR|EX_NATIVE);
+			bbs.exec(system.exec_dir+"slog "+system.node_dir+" /p",EX_STDIO|EX_NATIVE);
 			return;
 		}
 		if(word=="NLOG") {
 			str=str.substr(5);
-			bbs.exec(system.exec_dir+"slog "+system.node_dir+"../node"+get_nodenum(str)+" /p",EX_OUTR|EX_INR|EX_NATIVE);
+			bbs.exec(system.exec_dir+"slog "+system.node_dir+"../node"+get_nodenum(str)+" /p",EX_STDIO|EX_NATIVE);
 			return;
 		}
 
@@ -362,7 +362,7 @@ function str_cmds(str)
 		}
 		if(str=="DOS") {	// DOS/Windows shell
 			if(bbs.check_syspass()) {
-				bbs.exec("command.com",EX_OUTR|EX_INR);
+				bbs.exec("command.com",EX_STDIO);
 			}
 			return;
 		}
@@ -372,9 +372,9 @@ function str_cmds(str)
 		if(str=="SHELL") {	// Unix shell (-i for interactive)
 			if(bbs.check_syspass()) {
 				if(system.platform != 'Win32')
-					bbs.exec(system.cmd_shell+" -i"	,EX_OUTR|EX_INR|EX_NATIVE);
+					bbs.exec(system.cmd_shell+" -i"	,EX_STDIO|EX_NATIVE|EX_NOLOG);
 				else
-					bbs.exec(system.cmd_shell		,EX_OUTR|EX_INR|EX_NATIVE);
+					bbs.exec(system.cmd_shell		,EX_STDIO|EX_NATIVE);
 			}
 			return;
 		}
@@ -737,7 +737,7 @@ function str_cmds(str)
 			return;
 		}
 	}
-			
+
 // Interrupt Node
 	if(user.compare_ars("exempt I")) {
 		if(str=="HELP") {
