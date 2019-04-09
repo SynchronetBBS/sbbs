@@ -409,14 +409,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define XTRN_SH			(1<<18)		/* Use command shell to execute			*/
 #define XTRN_PAUSE		(1<<19)		/* Force a screen pause on exit			*/
 #define XTRN_NOECHO		(1<<20)		/* Don't echo stdin to stdout			*/
-#define WORDWRAP80		(1<<21)		/* Word-wrap editor to 80 columns		*/
-#define WORDWRAPTERM	(1<<22)		/* Word-wrap editor to terminal width	*/
-#define WORDWRAPLONG	(WORDWRAP80|WORDWRAPTERM)	/* word-wrap to maxlen	*/
-#define WORDWRAPNONE	0			/* No word-wrapping on editor in/ouput	*/
-#define WORDWRAPMASK	WORDWRAPLONG
+#define QUOTEWRAP		(1<<21)		/* Word-wrap quoted message text		*/
 #define XTRN_CONIO		(1<<31)		/* Intercept Windows Console I/O (Drwy)	*/
-#define QUOTEWRAP		WORDWRAP80	/* for temporary backwards compat.		*/
-
 
 									/* Bits in cfg.xtrn_misc				*/
 #define XTRN_NO_MUTEX	(1<<0)		/* Do not use exec_mutex for FOSSIL VXD	*/
