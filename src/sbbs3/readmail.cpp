@@ -57,16 +57,14 @@ static char mail_listing_flag(smbmsg_t* msg)
 /****************************************************************************/
 void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 {
-	char	str[256],str2[256],str3[256],done=0,domsg=1
-			,*p,*tp,*sp,ch;
-	char	path[MAX_PATH+1];
+	char	str[256],str2[256],done=0,domsg=1
+			,*p;
 	char 	tmp[512];
 	int		i;
 	uint32_t u,v;
-	int		error;
 	int		mismatches=0,act;
 	uint	unum;
-    long    length,l,last_mode;
+    long    l,last_mode;
 	ulong	last;
 	bool	replied;
 	file_t	fd;
@@ -262,110 +260,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 			show_msg(&smb, &msg
 				,msg.from_ext && msg.idx.from==1 && !msg.from_net.type
 					? 0:P_NOATCODES);
-
-			char* txt;
-			int attachment_index = 0;
-			bool found = true;
-			while((txt=smb_getmsgtxt(&smb,&msg, 0)) != NULL && found) {
-				char filename[MAX_PATH+1] = {0};
-				uint32_t filelen = 0;
-				uint8_t* filedata;
-				if((filedata = smb_getattachment(&msg, txt, filename, &filelen, attachment_index++)) != NULL 
-					&& filename[0] != 0 && filelen > 0) {
-					char tmp[32];
-					SAFEPRINTF2(str3, text[DownloadAttachedFileQ], filename, ultoac(filelen,tmp));
-					if(!noyes(str3)) {
-						char fpath[MAX_PATH+1];
-						SAFEPRINTF2(fpath, "%s%s", cfg.temp_dir, filename);
-						FILE* fp = fopen(fpath, "wb");
-						if(fp == NULL)
-							errormsg(WHERE, ERR_OPEN, fpath, 0);
-						else {
-							int result = fwrite(filedata, filelen, 1, fp);
-							fclose(fp);
-							if(!result)
-								errormsg(WHERE, ERR_WRITE, fpath, filelen);
-							else
-								sendfile(fpath, useron.prot, "attachment");
-						}
-					}
-				} else
-					found = false;
-				smb_freemsgtxt(txt);
-			}
-
-			if(msg.hdr.auxattr&MSG_FILEATTACH) {  /* Attached file */
-				smb_getmsgidx(&smb,&msg);
-				SAFECOPY(str, msg.subj);					/* filenames (multiple?) in title */
-				tp=str;
-				while(online) {
-					p=strchr(tp,' ');
-					if(p) *p=0;
-					sp=strrchr(tp,'/');              /* sp is slash pointer */
-					if(!sp) sp=strrchr(tp,'\\');
-					if(sp) tp=sp+1;
-					padfname(tp,fd.name);
-					SAFEPRINTF3(path,"%sfile/%04u.in/%s"  /* path is path/fname */
-						,cfg.data_dir,msg.idx.to,tp);
-					if(!fexistcase(path) && msg.idx.from)
-						SAFEPRINTF3(path,"%sfile/%04u.out/%s"  /* path is path/fname */
-							,cfg.data_dir,msg.idx.from,tp);
-					length=(long)flength(path);
-					if(length<1)
-						bprintf(text[FileDoesNotExist], tp);
-					else if(!(useron.exempt&FLAG('T')) && cur_cps && !SYSOP
-						&& length/(long)cur_cps>(time_t)timeleft)
-						bputs(text[NotEnoughTimeToDl]);
-					else {
-						SAFEPRINTF2(str3,text[DownloadAttachedFileQ]
-							,tp,ultoac(length,tmp));
-						if(length>0L && text[DownloadAttachedFileQ][0] && yesno(str3)) {
-							{	/* Remote User */
-								xfer_prot_menu(XFER_DOWNLOAD);
-								mnemonics(text[ProtocolOrQuit]);
-								strcpy(str3,"Q");
-								for(i=0;i<cfg.total_prots;i++)
-									if(cfg.prot[i]->dlcmd[0]
-										&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-										sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-										strcat(str3,tmp); 
-									}
-								ch=(char)getkeys(str3,0);
-								for(i=0;i<cfg.total_prots;i++)
-									if(cfg.prot[i]->dlcmd[0] && ch==cfg.prot[i]->mnemonic
-										&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-										break;
-								if(i<cfg.total_prots) {
-									error=protocol(cfg.prot[i],XFER_DOWNLOAD,path,nulstr,false);
-									if(checkprotresult(cfg.prot[i],error,&fd)) {
-										if(which==MAIL_YOUR)
-											remove(path);
-										logon_dlb+=length;	/* Update stats */
-										logon_dls++;
-										useron.dls=(ushort)adjustuserrec(&cfg,useron.number
-											,U_DLS,5,1);
-										useron.dlb=adjustuserrec(&cfg,useron.number
-											,U_DLB,10,length);
-										bprintf(text[FileNBytesSent]
-											,fd.name,ultoac(length,tmp));
-										SAFEPRINTF(str3
-											,"downloaded attached file: %s"
-											,fd.name);
-										logline("D-",str3); 
-									}
-									autohangup(); 
-								} 
-							} 
-						} 
-					}
-					if(!p)
-						break;
-					tp=p+1;
-					while(*tp==' ') tp++; 
-				}
-				SAFEPRINTF2(str,"%sfile/%04u.in",cfg.data_dir,usernumber);
-				rmdir(str); 
-			}
+			download_msg_attachments(&smb, &msg, which == MAIL_YOUR);
 			if(which==MAIL_YOUR && !(msg.hdr.attr&MSG_READ)) {
 				mail[smb.curmsg].attr|=MSG_READ;
 				if(thisnode.status==NODE_INUSE)

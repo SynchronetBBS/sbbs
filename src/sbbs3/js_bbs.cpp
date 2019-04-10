@@ -3624,6 +3624,44 @@ js_show_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_download_msg_attachments(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	uintN		n;
+	JSObject*	hdrobj;
+	sbbs_t*		sbbs;
+	smb_t*		smb = NULL;
+	smbmsg_t*	msg = NULL;
+	bool		del = true;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	for(n=0; n<argc; n++) {
+		if(JSVAL_IS_OBJECT(argv[n])) {
+			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL)
+				return JS_FALSE;
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &smb, &msg, NULL)) {
+				return JS_FALSE;
+			}
+		} else if(JSVAL_IS_BOOLEAN(argv[n])) {
+			del = JSVAL_TO_BOOLEAN(argv[n]);
+		}
+	}
+	if(smb == NULL || msg == NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->download_msg_attachments(smb, msg, del);
+	JS_RESUMEREQUEST(cx, rc);
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_msgscan_cfg(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -4214,6 +4252,11 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},
 	{"show_msg_header",	js_show_msg_header,	1,	JSTYPE_VOID,	JSDOCSTR("[object header]")
 	,JSDOCSTR("show a message's header (only)<br>"
+		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
+	,31702
+	},
+	{"download_msg_attachments", js_download_msg_attachments, 1, JSTYPE_VOID, JSDOCSTR("[object header]")
+	,JSDOCSTR("prompt the user to download each of the message's file attachments (if there are any)<br>"
 		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
 	,31702
 	},

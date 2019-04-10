@@ -277,6 +277,119 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 	return true;
 }
 
+void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
+{
+	char str[256];
+	char fpath[MAX_PATH+1];
+	char* txt;
+	int attachment_index = 0;
+	bool found = true;
+	while((txt=smb_getmsgtxt(smb, msg, 0)) != NULL && found) {
+		char filename[MAX_PATH+1] = {0};
+		uint32_t filelen = 0;
+		uint8_t* filedata;
+		if((filedata = smb_getattachment(msg, txt, filename, &filelen, attachment_index++)) != NULL 
+			&& filename[0] != 0 && filelen > 0) {
+			char tmp[32];
+			SAFEPRINTF2(str, text[DownloadAttachedFileQ], filename, ultoac(filelen,tmp));
+			if(!noyes(str)) {
+				SAFEPRINTF2(fpath, "%s%s", cfg.temp_dir, filename);
+				FILE* fp = fopen(fpath, "wb");
+				if(fp == NULL)
+					errormsg(WHERE, ERR_OPEN, fpath, 0);
+				else {
+					int result = fwrite(filedata, filelen, 1, fp);
+					fclose(fp);
+					if(!result)
+						errormsg(WHERE, ERR_WRITE, fpath, filelen);
+					else
+						sendfile(fpath, useron.prot, "attachment");
+				}
+			}
+		} else
+			found = false;
+		smb_freemsgtxt(txt);
+	}
+
+	if(msg->hdr.auxattr&MSG_FILEATTACH) {  /* Attached file */
+		smb_getmsgidx(smb, msg);
+		SAFECOPY(str, msg->subj);					/* filenames (multiple?) in title */
+		char *p,*tp,*sp,ch;
+		tp=str;
+		while(online) {
+			p=strchr(tp,' ');
+			if(p) *p=0;
+			sp=strrchr(tp,'/');              /* sp is slash pointer */
+			if(!sp) sp=strrchr(tp,'\\');
+			if(sp) tp=sp+1;
+			file_t	fd;
+			padfname(tp,fd.name);
+			SAFEPRINTF3(fpath,"%sfile/%04u.in/%s"  /* path is path/fname */
+				,cfg.data_dir, msg->idx.to, tp);
+			if(!fexistcase(fpath) && msg->idx.from)
+				SAFEPRINTF3(fpath,"%sfile/%04u.out/%s"  /* path is path/fname */
+					,cfg.data_dir, msg->idx.from,tp);
+			long length=(long)flength(fpath);
+			if(length<1)
+				bprintf(text[FileDoesNotExist], tp);
+			else if(!(useron.exempt&FLAG('T')) && cur_cps && !SYSOP
+				&& length/(long)cur_cps>(time_t)timeleft)
+				bputs(text[NotEnoughTimeToDl]);
+			else {
+				char 	tmp[512];
+				int		i;
+				SAFEPRINTF2(str, text[DownloadAttachedFileQ]
+					,tp,ultoac(length,tmp));
+				if(length>0L && text[DownloadAttachedFileQ][0] && yesno(str)) {
+					{	/* Remote User */
+						xfer_prot_menu(XFER_DOWNLOAD);
+						mnemonics(text[ProtocolOrQuit]);
+						strcpy(str,"Q");
+						for(i=0;i<cfg.total_prots;i++)
+							if(cfg.prot[i]->dlcmd[0]
+								&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
+								sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
+								strcat(str,tmp); 
+							}
+						ch=(char)getkeys(str,0);
+						for(i=0;i<cfg.total_prots;i++)
+							if(cfg.prot[i]->dlcmd[0] && ch==cfg.prot[i]->mnemonic
+								&& chk_ar(cfg.prot[i]->ar,&useron,&client))
+								break;
+						if(i<cfg.total_prots) {
+							int error = protocol(cfg.prot[i], XFER_DOWNLOAD, fpath, nulstr, false);
+							if(checkprotresult(cfg.prot[i],error,&fd)) {
+								if(del)
+									remove(fpath);
+								logon_dlb+=length;	/* Update stats */
+								logon_dls++;
+								useron.dls=(ushort)adjustuserrec(&cfg,useron.number
+									,U_DLS,5,1);
+								useron.dlb=adjustuserrec(&cfg,useron.number
+									,U_DLB,10,length);
+								bprintf(text[FileNBytesSent]
+									,fd.name,ultoac(length,tmp));
+								SAFEPRINTF(str
+									,"downloaded attached file: %s"
+									,fd.name);
+								logline("D-",str); 
+							}
+							autohangup(); 
+						} 
+					} 
+				} 
+			}
+			if(!p)
+				break;
+			tp=p+1;
+			while(*tp==' ') tp++; 
+		}
+		// Remove the *.in directory, only if its empty
+		SAFEPRINTF2(fpath, "%sfile/%04u.in", cfg.data_dir, msg->idx.to);
+		rmdir(fpath); 
+	}
+}
+
 /****************************************************************************/
 /* Writes message header and text data to a text file						*/
 /****************************************************************************/
