@@ -4377,7 +4377,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 		}
 	}
 
-	if(stricmp(hdr.to, FIDO_AREAMGR_NAME) == 0 
+	if(stricmp(hdr.to, FIDO_AREAMGR_NAME) == 0
 		|| stricmp(hdr.to, "SBBSecho") == 0
 		|| stricmp(hdr.to, FIDO_PING_NAME) == 0) {
 		fmsgbuf=getfmsg(fp,NULL);
@@ -5170,7 +5170,7 @@ int export_netmail(void)
 			char filename[MAX_PATH+1] = {0};
 			uint32_t filelen = 0;
 			uint8_t* filedata;
-			if((filedata = smb_getattachment(&msg, txt, filename, &filelen, /* attachment_index */0)) != NULL
+			if((filedata = smb_getattachment(&msg, txt, filename, sizeof(filename), &filelen, /* attachment_index */0)) != NULL
 				&& filename[0] != 0 && filelen > 0) {
 				lprintf(LOG_DEBUG, "MIME attachment decoded: %s (%lu bytes)", filename, (ulong)filelen);
 				char outdir[MAX_PATH+1];
