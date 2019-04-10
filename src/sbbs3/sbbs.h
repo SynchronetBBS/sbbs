@@ -973,11 +973,11 @@ public:
 	bool	unpack_rep(char* repfile=NULL);
 
 	/* msgtoqwk.cpp */
-	ulong	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum, int conf, FILE* hdrs_dat, FILE* voting_dat = NULL);
+	ulong	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t*, int conf, FILE* hdrs_dat, FILE* voting_dat = NULL);
 
 	/* qwktomsg.cpp */
 	void	qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t headers, bool parse_sender_hfields);
-	bool	qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks, char fromhub, uint subnum
+	bool	qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks, char fromhub, smb_t*
 				,uint touser, smbmsg_t* msg);
 
 	/* fido.cpp */

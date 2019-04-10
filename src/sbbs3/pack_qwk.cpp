@@ -387,7 +387,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 						mv(str,tmp,/* copy: */TRUE); 
 				}
 
-				size=msgtoqwk(&msg,qwk,mode|QM_REPLYTO,INVALID_SUB,0,hdrs);
+				size=msgtoqwk(&msg, qwk, mode|QM_REPLYTO, &smb, /* confnum: */0, hdrs);
 				smb_unlockmsghdr(&smb,&msg);
 				smb_freemsgmem(&msg);
 				if(ndx && size) {
@@ -527,7 +527,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					else
 						mode&=~(QM_TAGLINE|QM_TO_QNET);
 
-					size=msgtoqwk(&msg,qwk,mode,usrsub[i][j],conf,hdrs,voting);
+					size=msgtoqwk(&msg, qwk, mode, &smb, conf, hdrs, voting);
 					smb_unlockmsghdr(&smb,&msg);
 
 					if(ndx && size) {

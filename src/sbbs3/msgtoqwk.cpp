@@ -43,7 +43,7 @@
 /* mode determines how to handle Ctrl-A codes								*/
 /* Returns the number of bytes used for the body-text (multiple of 128)		*/
 /****************************************************************************/
-ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
+ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 	, int conf, FILE* hdrs, FILE* voting)
 {
 	char	str[512],from[512],to[512],ch=0,tear=0,tearwatch=0,*buf,*p;
@@ -57,6 +57,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 	struct	tm	tm;
 	smbmsg_t	remsg;
 	time_t	tt;
+	uint	subnum = smb->subnum;
 
 	get_msgid(&cfg, subnum, msg, msgid, sizeof(msgid));
 	offset=(long)ftell(qwk_fp);
@@ -96,7 +97,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 		}
 		if(msg->subj && *msg->subj)
 			fprintf(voting, "%s: %s\n",smb_hfieldtype(SUBJECT), msg->subj);
-		if((p = get_replyid(&cfg, &smb, msg, reply_id, sizeof(reply_id))) != NULL)
+		if((p = get_replyid(&cfg, smb, msg, reply_id, sizeof(reply_id))) != NULL)
 			fprintf(voting, "%s: %s\n", smb_hfieldtype(RFC822REPLYID), p);
 		/* Time/Date/Zone info */
 		fprintf(voting,"WhenWritten:  %-20s %04hx\n"
@@ -119,7 +120,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 
 		/* Message-IDs */
 		fprintf(hdrs,"%s: %s\n", smb_hfieldtype(RFC822MSGID), msgid);
-		if((p = get_replyid(&cfg, &smb, msg, reply_id, sizeof(reply_id))) != NULL)
+		if((p = get_replyid(&cfg, smb, msg, reply_id, sizeof(reply_id))) != NULL)
 			fprintf(hdrs, "%s: %s\n", smb_hfieldtype(RFC822REPLYID), p);
 
 		/* Time/Date/Zone info */
@@ -295,8 +296,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 			} else if(msg->hdr.thread_back) {
 				memset(&remsg,0,sizeof(remsg));
 				remsg.hdr.number=msg->hdr.thread_back;
-				if(smb_getmsgidx(&smb, &remsg))
-					size+=fprintf(qwk_fp,"@REPLY: <%s>%c",smb.last_error,QWK_NEWLINE);
+				if(smb_getmsgidx(smb, &remsg))
+					size+=fprintf(qwk_fp,"@REPLY: <%s>%c",smb->last_error,QWK_NEWLINE);
 				else
 					size+=fprintf(qwk_fp,"@REPLY: %s%c"
 						,get_msgid(&cfg,subnum,&remsg,msgid,sizeof(msgid))
@@ -325,7 +326,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 		ulong getmsgtxt_mode = GETMSGTXT_ALL;
 		if(!(mode&QM_TO_QNET))	// Get just the plain-text portion of MIME-encoded messages
 			getmsgtxt_mode |= GETMSGTXT_PLAIN;
-		buf=smb_getmsgtxt(&smb, msg, getmsgtxt_mode);
+		buf=smb_getmsgtxt(smb, msg, getmsgtxt_mode);
 		if(!buf)
 			return(0);
 

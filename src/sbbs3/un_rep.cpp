@@ -344,7 +344,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			smb_unlocksmbhdr(&smb);
 
 			if(qwk_import_msg(rep, block, blocks
-				,/* fromhub: */0,/* subnum: */INVALID_SUB,/* touser: */usernum,&msg)) {
+				,/* fromhub: */0, &smb, /* touser: */usernum, &msg)) {
 
 				if(usernum==1) {
 					useron.fbacks++;
@@ -533,7 +533,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			}
 
 			if(qwk_import_msg(rep, block, blocks
-				,/* fromhub: */0,/* subnum: */n,/* touser: */0,&msg)) {
+				,/* fromhub: */0, &smb, /* touser: */0, &msg)) {
 				logon_posts++;
 				user_posted_msg(&cfg, &useron, 1);
 				if(online == ON_REMOTE)

@@ -251,7 +251,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				continue; 
 			}
 			smb_unlocksmbhdr(&smb);
-			if(qwk_import_msg(qwk,(char *)block,blocks,hubnum+1,INVALID_SUB,usernum,&msg)) {
+			if(qwk_import_msg(qwk, (char *)block, blocks, hubnum+1, &smb, usernum, &msg)) {
 				SAFEPRINTF(str,text[UserSentYouMail],msg.from);
 				putsmsg(&cfg,usernum,str);
 				tmsgs++;
@@ -325,7 +325,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			lastsub=j; 
 		}
 
-		if(qwk_import_msg(qwk,(char *)block,blocks,hubnum+1,/*subnum: */j,/*touser: */0,&msg)) {
+		if(qwk_import_msg(qwk, (char *)block, blocks, hubnum+1, &smb, /*touser: */0, &msg)) {
 			signal_sub_sem(&cfg,j);
 			msgs++;
 			tmsgs++;
