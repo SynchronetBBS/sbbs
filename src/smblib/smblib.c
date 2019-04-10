@@ -854,6 +854,23 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case FIDOFLAGS:
 			msg->ftn_flags=(char*)hfield_dat;
 			break;
+		case RFC822HEADER:
+		{
+			char* p = (char*)hfield_dat;
+			if(strnicmp(p, "MIME-Version:", 13) == 0) {
+				p += 13;
+				SKIP_WHITESPACE(p);
+				msg->mime_version = p;
+				break;
+			}
+			if(strnicmp(p, "Content-Type:", 13) == 0) {
+				p += 13;
+				SKIP_WHITESPACE(p);
+				msg->content_type = p;
+				break;
+			}
+			break;
+		}
 	}
 }
 
@@ -884,6 +901,8 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 	msg->reverse_path=NULL;
 	msg->path=NULL;
 	msg->newsgroups=NULL;
+	msg->mime_version=NULL;
+	msg->content_type=NULL;
 
 	msg->ftn_msgid=NULL;
 	msg->ftn_reply=NULL;

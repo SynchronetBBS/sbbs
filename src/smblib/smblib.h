@@ -271,7 +271,6 @@ SMBEXPORT void		SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg);
 /* smbtxt.c */
 SMBEXPORT char*		SMBCALL smb_getmsgtxt(smb_t*, smbmsg_t*, ulong mode);
 SMBEXPORT char*		SMBCALL smb_getplaintext(smbmsg_t*, char* body);
-SMBEXPORT char*		SMBCALL smb_getcontenttype(smbmsg_t*);
 SMBEXPORT uint8_t*	SMBCALL smb_getattachment(smbmsg_t*, char* body, char* filename, size_t filename_len, uint32_t* filelen, int index);
 SMBEXPORT ulong		SMBCALL	smb_countattachments(smb_t*, smbmsg_t*, const char* body);
 

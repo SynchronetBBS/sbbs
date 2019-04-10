@@ -401,34 +401,16 @@ static char* mime_getcontent(char* buf, const char* content_type, const char* co
 	return NULL;
 }
 
-/* Returns the MIME content-type or NULL if not a MIME-encoded message */
-char* SMBCALL smb_getcontenttype(smbmsg_t* msg)
-{
-	int		i;
-
-	for(i = 0; i < msg->total_hfields; i++) {
-		if(msg->hfield[i].type == RFC822HEADER) {
-			if(strnicmp((char*)msg->hfield_dat[i], "Content-Type:", 13) == 0) {
-				char* result = msg->hfield_dat[i] + 13;
-				SKIP_WHITESPACE(result);
-				return result;
-			}
-        }
-    }
-	return NULL;	/* not MIME */
-}
-
 /* Get just the plain-text portion of a MIME-encoded message body */
 /* Returns NULL if there is no MIME-encoded plain-text portion of the message */
 char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 {
 	char*	txt;
-	char*	content_type = smb_getcontenttype(msg);
 	enum content_transfer_encoding xfer_encoding = CONTENT_TRANFER_ENCODING_NONE;
 
-	if(content_type == NULL)	/* not MIME */
+	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return NULL;
-	txt = mime_getcontent(buf, content_type, "text/plain", 0, &xfer_encoding
+	txt = mime_getcontent(buf, msg->content_type, "text/plain", 0, &xfer_encoding
 		,/* attachment: */NULL, /* attachment_len: */0, /* index: */0);
 	if(txt == NULL)
 		return NULL;
@@ -455,12 +437,11 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 uint8_t* SMBCALL smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t filename_len, uint32_t* filelen, int index)
 {
 	char*	txt;
-	char*	content_type = smb_getcontenttype(msg);
 	enum content_transfer_encoding xfer_encoding = CONTENT_TRANFER_ENCODING_NONE;
 
-	if(content_type == NULL)	/* not MIME */
+	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return NULL;
-	txt = mime_getcontent(buf, content_type, /* match-type: */NULL, 0, &xfer_encoding
+	txt = mime_getcontent(buf, msg->content_type, /* match-type: */NULL, 0, &xfer_encoding
 		,/* attachment: */filename, filename_len, index);
 	if(txt != NULL && xfer_encoding == CONTENT_TRANFER_ENCODING_BASE64) {
 		memmove(buf, txt, strlen(txt)+1);
@@ -479,9 +460,7 @@ uint8_t* SMBCALL smb_getattachment(smbmsg_t* msg, char* buf, char* filename, siz
 /* 'body' may be NULL if the body text is not already read/available */
 ulong SMBCALL smb_countattachments(smb_t* smb, smbmsg_t* msg, const char* body)
 {
-	char* content_type = smb_getcontenttype(msg);
-
-	if(content_type == NULL)	/* not MIME */
+	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return 0;
 
 	ulong count = 0;
