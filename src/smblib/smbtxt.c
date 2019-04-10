@@ -346,8 +346,6 @@ static char* mime_getcontent(char* buf, const char* content_type, const char* co
 		return NULL;
 	if(content_type == NULL)	/* Not MIME-encoded */
 		return NULL;
-	content_type += 13;
-	SKIP_WHITESPACE(content_type);
 	if(strstr(content_type, "multipart/alternative;") == content_type)
 		content_type += 22;
 	else if(strstr(content_type, "multipart/mixed;") == content_type)
