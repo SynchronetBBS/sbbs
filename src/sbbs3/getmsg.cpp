@@ -323,6 +323,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 			if(!sp) sp=strrchr(tp,'\\');
 			if(sp) tp=sp+1;
 			file_t	fd;
+			fd.dir=cfg.total_dirs+1;			/* temp dir for file attachments */
 			padfname(tp,fd.name);
 			SAFEPRINTF3(fpath,"%sfile/%04u.in/%s"  /* path is path/fname */
 				,cfg.data_dir, msg->idx.to, tp);
