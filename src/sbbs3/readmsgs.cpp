@@ -555,7 +555,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
 		return(0); 
 	}
-	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
+	SAFEPRINTF2(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
 	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
@@ -999,7 +999,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 						smb_unlockmsghdr(&smb,&msg);
 						if(i==0 && msg.idx.attr&MSG_DELETE) {
-							sprintf(str,"removed post from %s %s"
+							SAFEPRINTF2(str,"removed post from %s %s"
 								,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 							logline("P-",str);
 							center(text[Deleted]);
@@ -1102,7 +1102,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					&& stricmp(msg.to,useron.name)
 					&& stricmp(msg.to,useron.alias))
 					break;
-				sprintf(str2,text[Regarding]
+				SAFEPRINTF2(str2,text[Regarding]
 					,msg.subj
 					,timestr(msg.hdr.when_written.time));
 				if(msg.from_net.addr==NULL)
@@ -1672,7 +1672,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		&& !(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND|SCAN_POLLS)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
 		&& reads && chk_ar(cfg.sub[subnum]->post_ar,&useron,&client) && text[Post][0]
 		&& !(useron.rest&FLAG('P'))) {
-		sprintf(str,text[Post],cfg.grp[cfg.sub[subnum]->grp]->sname
+		SAFEPRINTF2(str,text[Post],cfg.grp[cfg.sub[subnum]->grp]->sname
 			,cfg.sub[subnum]->lname);
 		if(!noyes(str))
 			postmsg(subnum,0,0); 
