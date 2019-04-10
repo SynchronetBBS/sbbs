@@ -60,7 +60,7 @@ void sbbs_t::downloadfile(file_t* f)
 		logon_dls++;
 	}
 	bprintf(text[FileNBytesSent],f->name,ultoac(length,tmp));
-	sprintf(str,"downloaded %s from %s %s"
+	SAFEPRINTF3(str,"downloaded %s from %s %s"
 		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	logline("D-",str);
@@ -84,34 +84,34 @@ void sbbs_t::downloadfile(file_t* f)
 		if(cfg.dir[f->dir]->misc&DIR_CDTMIN && cur_cps) { /* Give min instead of cdt */
 			mod=((ulong)(l*(cfg.dir[f->dir]->dn_pct/100.0))/cur_cps)/60;
 			adjustuserrec(&cfg,i,U_MIN,10,mod);
-			sprintf(tmp,"%lu minute",mod);
+			SAFEPRINTF(tmp,"%lu minute",mod);
 		} else {
 			mod=(ulong)(l*(cfg.dir[f->dir]->dn_pct/100.0));
 			adjustuserrec(&cfg,i,U_CDT,10,mod);
 			ultoac(mod,tmp);
 		}
 		if(!(cfg.dir[f->dir]->misc&DIR_QUIET)) {
-			sprintf(str,text[DownloadUserMsg]
+			SAFEPRINTF4(str,text[DownloadUserMsg]
 				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? temp_file : f->name
 				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? text[Partially] : nulstr
-				,useron.alias,tmp); 
-			putsmsg(&cfg,i,str); 
+				,useron.alias,tmp);
+			putsmsg(&cfg,i,str);
 		}
 	}
 	/*******************/
 	/* Update IXB File */
 	/*******************/
 	f->datedled=time32(NULL);
-	sprintf(str,"%s%s.ixb",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
+	SAFEPRINTF2(str,"%s%s.ixb",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
 	if((file=nopen(str,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-		return; 
+		return;
 	}
 	length=(long)filelength(file);
 	if(length%F_IXBSIZE) {
 		close(file);
 		errormsg(WHERE,ERR_LEN,str,length);
-		return; 
+		return;
 	}
 	strcpy(fname,f->name);
 	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
@@ -119,13 +119,13 @@ void sbbs_t::downloadfile(file_t* f)
 	for(l=0;l<(ulong)length;l+=F_IXBSIZE) {
 		read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
 		str[11]=0;
-		if(!stricmp(fname,str)) 
-			break; 
+		if(!stricmp(fname,str))
+			break;
 	}
 	if(l>=(ulong)length) {
 		close(file);
 		errormsg(WHERE,ERR_CHK,f->name,0);
-		return; 
+		return;
 	}
 	lseek(file,l+18,SEEK_SET);
 	write(file,&f->datedled,4);  /* Write the current time stamp for datedled */
@@ -142,8 +142,8 @@ void sbbs_t::downloadfile(file_t* f)
 		rmuserxfers(&cfg,0,useron.number,f->name);
 		if(!getuserxfers(0,0,f->name)) { /* check if any ixt entries left */
 			remove(getfilepath(&cfg,f,str));
-			removefiledat(&cfg,f); 
-		} 
+			removefiledat(&cfg,f);
+		}
 	}
 
 	user_event(EVENT_DOWNLOAD);
@@ -158,7 +158,7 @@ void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
     char	str[256],tmp2[256];
 	char 	tmp[512];
 
-	sprintf(str,"Estimated Time: %s  Transfer Time: %s"
+	SAFEPRINTF2(str,"Estimated Time: %s  Transfer Time: %s"
 		,sectostr(cur_cps ? size/cur_cps : 0,tmp)
 		,sectostr((uint)(end-start),tmp2));
 	logline(nulstr,str);
@@ -167,7 +167,7 @@ void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
 		&& end-start>=(double)(size/cur_cps)*(double)cfg.leech_pct/100.0) {
 		lprintf(LOG_ERR, "Node %d Possible use of leech protocol (leech=%u  downloads=%u)"
 			,cfg.node_num, useron.leech+1,useron.dls);
-		useron.leech=(uchar)adjustuserrec(&cfg,useron.number,U_LEECH,2,1); 
+		useron.leech=(uchar)adjustuserrec(&cfg,useron.number,U_LEECH,2,1);
 	}
 }
 
@@ -202,7 +202,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	long	ex_mode;
 	FILE*	stream;
 
-	sprintf(protlog,"%sPROTOCOL.LOG",cfg.node_dir);
+	SAFEPRINTF(protlog,"%sPROTOCOL.LOG",cfg.node_dir);
 	remove(protlog);                        /* Deletes the protocol log */
 	if(useron.misc&AUTOHANG)
 		autohang=true;
@@ -212,10 +212,10 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 		autohang=false;
 	if(sys_status&SS_ABORT || !online) {	/* if ctrl-c or hangup */
 		autohang=false;
-		return(-1); 
+		return(-1);
 	}
 	bputs(text[StartXferNow]);
-	if(cd) 
+	if(cd)
 		p=cfg.temp_dir;
 	else
 		p=NULL;
@@ -286,21 +286,21 @@ void sbbs_t::autohangup()
 		while((k=inkey(K_NONE,DELAY_AUTOHG))!=0 && online) {
 			if(toupper(k)=='H') {
 				c=0;
-				break; 
+				break;
 			}
 			if(toupper(k)=='A') {
 				a=1;
-				break; 
-			} 
+				break;
+			}
 		}
 		if(!a) {
 			outchar(BS);
-			outchar(BS); 
-		} 
+			outchar(BS);
+		}
 	}
 	if(c==-1) {
 		bputs(text[Disconnected]);
-		hangup(); 
+		hangup();
 	}
 	else
 		CRLF;
@@ -317,7 +317,7 @@ bool sbbs_t::checkdszlog(const char* fpath)
 	FILE*	fp;
 	bool	success=false;
 
-	sprintf(path,"%sPROTOCOL.LOG",cfg.node_dir);
+	SAFEPRINTF(path,"%sPROTOCOL.LOG",cfg.node_dir);
 	if((fp=fopen(path,"r"))==NULL)
 		return(false);
 
@@ -386,16 +386,16 @@ bool sbbs_t::checkprotresult(prot_t* prot, int error, file_t* f)
 	if(!success) {
 		bprintf(text[FileNotSent],f->name);
 		if(f->dir<cfg.total_dirs)
-			sprintf(str,"attempted to download %s (%s) from %s %s"
+			SAFEPRINTF4(str,"attempted to download %s (%s) from %s %s"
 				,f->name,ultoac(f->size,tmp)
 				,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		else if(f->dir==cfg.total_dirs)
 			SAFECOPY(str,"attempted to download QWK packet");
 		else if(f->dir==cfg.total_dirs+1)
-			sprintf(str,"attempted to download attached file: %s"
+			SAFEPRINTF(str,"attempted to download attached file: %s"
 				,f->name);
 		logline(LOG_NOTICE,"D!",str);
-		return(false); 
+		return(false);
 	}
 	return(true);
 }
@@ -425,22 +425,22 @@ void sbbs_t::seqwait(uint devnum)
 				if((node.status==NODE_INUSE || node.status==NODE_QUIET)
 					&& node.action==NODE_RFSD && node.aux==devnum) {
 					putnodedat(i,&node);
-					break; 
+					break;
 				}
-				putnodedat(i,&node); 
+				putnodedat(i,&node);
 			}
 		}
 		if(i>cfg.sys_nodes) {
 			thisnode.action=NODE_RFSD;
 			thisnode.aux=devnum;
 			putnodedat(cfg.node_num,&thisnode);	/* write devnum, unlock, and ret */
-			return; 
+			return;
 		}
 		putnodedat(cfg.node_num,&thisnode);
 		if(!loop)
 			bprintf(text[WaitingForDeviceN],devnum);
 		loop=1;
-		mswait(100); 
+		mswait(100);
 	}
 
 }
@@ -466,7 +466,7 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc)
 		ch=(char)getkeys(keys,0);
 
 		if(ch==text[YNQP][2] || sys_status&SS_ABORT)
-			return(false); 
+			return(false);
 	}
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
@@ -491,12 +491,12 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc)
 		char str[128];
 		SAFEPRINTF3(str, "downloaded %s: %s (%s bytes)"
 			,desc == NULL ? "file" : desc, fname, bytes);
-		logline("D-",str); 
-		autohangup(); 
+		logline("D-",str);
+		autohangup();
 	} else {
 		char str[128];
 		bprintf(text[FileNotSent], getfname(fname));
-		sprintf(str,"attempted to download attached file: %s", fname);
+		SAFEPRINTF2(str,"attempted to download %s: %s", desc == NULL ? "file" : desc, fname);
 		logline(LOG_NOTICE,"D!",str);
 	}
 	return result;
