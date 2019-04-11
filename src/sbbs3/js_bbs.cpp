@@ -3657,7 +3657,7 @@ js_download_msg_attachments(JSContext *cx, uintN argc, jsval *arglist)
 				return JS_FALSE;
 			}
 		} else if(JSVAL_IS_BOOLEAN(argv[n])) {
-			del = JSVAL_TO_BOOLEAN(argv[n]);
+			del = JSVAL_TO_BOOLEAN(argv[n]) ? true : false;
 		}
 	}
 	if(smb == NULL || msg == NULL)
