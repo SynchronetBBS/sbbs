@@ -308,13 +308,6 @@ enum smb_net_type {
     ,NET_POSTLINK			/* Imported with UTI driver */
     ,NET_QWK				/* QWK networked messsage */
 	,NET_INTERNET			/* Internet e-mail, netnews, etc. */
-	,NET_WWIV				/* unused */
-	,NET_MHS				/* unused */
-	,NET_FIDO_ASCII			/* FidoNet address, ASCIIZ format (e.g. 5D) - unused and deprecated */
-
-/* Add new ones here */
-
-    ,NET_TYPES
 };
 
 enum smb_agent_type {
@@ -322,27 +315,11 @@ enum smb_agent_type {
     ,AGENT_PROCESS			/* unknown process type */
 	,AGENT_SMBUTIL			/* imported via Synchronet SMBUTIL */
 	,AGENT_SMTPSYSMSG		/* Synchronet SMTP server system message */
-
-/* Add new ones here */
-
-    ,AGENT_TYPES
 };
 
 enum smb_xlat_type {
      XLAT_NONE              /* No translation/End of translation list */
-    ,XLAT_ENCRYPT           /* Encrypted data */
-    ,XLAT_ESCAPED           /* 7-bit ASCII escaping for ctrl and 8-bit data */
-    ,XLAT_HUFFMAN           /* Static and adaptive Huffman coding compression */
-    ,XLAT_LZW               /* Limpel/Ziv/Welch compression */
-    ,XLAT_MLZ78             /* Modified LZ78 compression */
-    ,XLAT_RLE               /* Run length encoding compression */
-    ,XLAT_IMPLODE           /* Implode compression (PkZIP) */
-    ,XLAT_SHRINK            /* Shrink compression (PkZIP) */
-	,XLAT_LZH				/* LHarc (LHA) Dynamic Huffman coding */
-
-/* Add new ones here */
-
-    ,XLAT_TYPES
+	,XLAT_LZH = 9			/* LHarc (LHA) Dynamic Huffman coding */
 };
 
 
