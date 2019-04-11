@@ -296,18 +296,10 @@
 #define MSG_INTRANSIT		(1<<1)		/* Msg is in-transit */
 #define MSG_SENT			(1<<2)		/* Sent to remote */
 #define MSG_KILLSENT		(1<<3)		/* Kill when sent */
-#define MSG_ARCHIVESENT 	(1<<4)		/* Archive when sent */
 #define MSG_HOLD			(1<<5)		/* Hold for pick-up */
 #define MSG_CRASH			(1<<6)		/* Crash */
 #define MSG_IMMEDIATE		(1<<7)		/* Send Msg now, ignore restrictions */
 #define MSG_DIRECT			(1<<8)		/* Send directly to destination */
-#define MSG_GATE			(1<<9)		/* Send via gateway */
-#define MSG_ORPHAN			(1<<10) 	/* Unknown destination */
-#define MSG_FPU 			(1<<11) 	/* Force pickup */
-#define MSG_TYPELOCAL		(1<<12) 	/* Msg is for local use only */
-#define MSG_TYPEECHO		(1<<13) 	/* Msg is for conference distribution */
-#define MSG_TYPENET 		(1<<14) 	/* Msg is direct network mail */
-
 
 enum smb_net_type {
      NET_NONE				/* Local message */

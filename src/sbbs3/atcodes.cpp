@@ -1102,22 +1102,15 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(str);
 	}
 	if(!strcmp(sp,"MSG_NETATTR") && current_msg!=NULL) {
-		safe_snprintf(str,maxlen,"%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
+		safe_snprintf(str,maxlen,"%s%s%s%s%s%s%s%s"
 			,current_msg->hdr.netattr&MSG_LOCAL			? "Local  "			:nulstr
 			,current_msg->hdr.netattr&MSG_INTRANSIT		? "InTransit  "     :nulstr
 			,current_msg->hdr.netattr&MSG_SENT			? "Sent  "			:nulstr
 			,current_msg->hdr.netattr&MSG_KILLSENT		? "KillSent  "      :nulstr
-			,current_msg->hdr.netattr&MSG_ARCHIVESENT	? "ArcSent  "		:nulstr
 			,current_msg->hdr.netattr&MSG_HOLD			? "Hold  "			:nulstr
 			,current_msg->hdr.netattr&MSG_CRASH			? "Crash  "			:nulstr
 			,current_msg->hdr.netattr&MSG_IMMEDIATE		? "Immediate  "		:nulstr
 			,current_msg->hdr.netattr&MSG_DIRECT		? "Direct  "		:nulstr
-			,current_msg->hdr.netattr&MSG_GATE			? "Gate  "			:nulstr
-			,current_msg->hdr.netattr&MSG_ORPHAN		? "Orphan  "		:nulstr
-			,current_msg->hdr.netattr&MSG_FPU			? "ForcePickup  "	:nulstr
-			,current_msg->hdr.netattr&MSG_TYPELOCAL		? "LocalUse  "		:nulstr
-			,current_msg->hdr.netattr&MSG_TYPEECHO		? "EchoMail  "		:nulstr
-			,current_msg->hdr.netattr&MSG_TYPENET		? "NetMail  "		:nulstr
 			);
 		return(str);
 	}
