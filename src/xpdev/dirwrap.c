@@ -1158,7 +1158,7 @@ int DLLCALL mkpath(const char* path)
 			break;
 		tp=p;
 		FIND_CHARSET(tp,sep);
-		safe_snprintf(dir,sizeof(dir),"%.*s",tp-path, path);
+		safe_snprintf(dir,sizeof(dir),"%.*s", (int)(tp-path), path);
 		if(!isdir(dir)) {
 			if((result=MKDIR(dir))!=0)
 				break;
