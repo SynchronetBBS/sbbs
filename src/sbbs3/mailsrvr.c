@@ -1815,7 +1815,7 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 	char	tmp[128];
 
 	SKIP_WHITESPACE(p);
-	char* lt = strrchr(p, '<');
+	char* lt = strchr(p, '<');
 	if(lt!= NULL)
 		p = lt+1;
 	SAFECOPY(addr,p);
@@ -2526,7 +2526,7 @@ static void parse_mail_address(char* p
 	SKIP_WHITESPACE(p);
 
 	/* Get the address */
-	if((tp=strrchr(p,'<'))!=NULL)
+	if((tp=strchr(p,'<'))!=NULL)
 		tp++;
 	else
 		tp=p;
