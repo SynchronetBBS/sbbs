@@ -3636,6 +3636,8 @@ static void smtp_thread(void* arg)
 				smb.subnum=INVALID_SUB;
 				/* creates message data, but no header or index records (since msg.to==NULL) */
 				i=savemsg(&scfg, &smb, &msg, &client, startup->host_name, msgbuf, /* remsg: */NULL);
+				if(smb_countattachments(&smb, &msg, msgbuf) > 0)
+					msg.hdr.auxattr |= MSG_MIMEATTACH;
 				free(msgbuf);
 				if(i!=SMB_SUCCESS) {
 					smb_close(&smb);
