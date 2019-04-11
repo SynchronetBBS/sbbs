@@ -92,7 +92,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 					,__FUNCTION__
 					,smb_hashsourcetype(found.source)
 					,smb_hashsource(msg,found.source)
-					,found.number);
+					,(ulong)found.number);
 				retval=SMB_DUPE_MSG;
 				break;
 			}

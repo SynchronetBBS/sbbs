@@ -315,7 +315,7 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 			,"%s duplicate %s: %s found in message #%lu", __FUNCTION__
 			,smb_hashsourcetype(found.source)
 			,smb_hashsource(msg,found.source)
-			,found.number);
+			,(ulong)found.number);
 	} else
 		if((retval=smb_addhashes(smb,hashes,/* skip_marked? */TRUE))==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;

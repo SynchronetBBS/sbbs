@@ -169,8 +169,8 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 		else
 			if(time(NULL)-start>=(time_t)smb->retry_time) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
-					,"%s timeout opening %s (retry_time=%ld)", __FUNCTION__
-					,path,smb->retry_time);
+					,"%s timeout opening %s (retry_time=%lu)", __FUNCTION__
+					,path, (ulong)smb->retry_time);
 				return(SMB_ERR_TIMEOUT); 
 			}
 		SLEEP(smb->retry_delay);

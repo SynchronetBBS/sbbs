@@ -248,7 +248,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 		}
 		i+=refs;
 		if(fseek(smb->sda_fp,-(int)sizeof(i),SEEK_CUR)) {
-			safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s rewinding %ld", __FUNCTION__, -(int)sizeof(i));
+			safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s rewinding %ld", __FUNCTION__, -(long)sizeof(i));
 			return(SMB_ERR_SEEK);
 		}
 		if(!fwrite(&i,sizeof(i),1,smb->sda_fp)) {
