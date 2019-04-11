@@ -318,7 +318,7 @@ static BOOL mime_getattachment(char* beg, char* end, char* attachment, size_t at
 		*term = 0;
 		if(attachment != NULL && attachment_len > 0) {
 			strncpy(attachment, getfname(fname), attachment_len);
-			attachment[attachment_len] = '\0';
+			attachment[attachment_len - 1] = '\0';
 		}
 		return TRUE;
 	}
