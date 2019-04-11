@@ -1350,7 +1350,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 				}
 				else  {
 					if((session->req.range_start || session->req.range_end) && atoi(status_line)==206) {
-						safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start+1);
+						safe_snprintf(header,sizeof(header),"%s: %ld",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start+1);
 						safecat(headers,header,MAX_HEADERS_SIZE);
 					}
 					else {
@@ -1374,7 +1374,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 			if(session->req.range_start || session->req.range_end) {
 				switch(atoi(status_line)) {
 					case 206:	/* Partial reply */
-						safe_snprintf(header,sizeof(header),"%s: bytes %d-%d/%d",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
+						safe_snprintf(header,sizeof(header),"%s: bytes %ld-%ld/%ld",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
 						safecat(headers,header,MAX_HEADERS_SIZE);
 						break;
 					default:

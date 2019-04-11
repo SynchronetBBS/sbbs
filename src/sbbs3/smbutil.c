@@ -196,8 +196,8 @@ char* gen_msgid(smb_t* smb, smbmsg_t* msg, char* msgid, size_t maxlen)
 	);
 	safe_snprintf(msgid, maxlen
 		,"<%08lX.%lu.%s@%s>"
-		,msg->hdr.when_imported.time
-		,smb->status.last_msg + 1
+		,(ulong)msg->hdr.when_imported.time
+		,(ulong)smb->status.last_msg + 1
 		,getfname(smb->file)
 		,host);
 	return msgid;

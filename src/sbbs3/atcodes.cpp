@@ -312,7 +312,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 
 	if(!strcmp(sp,"TCALLS") || !strcmp(sp,"NUMCALLS")) {
 		getstats(&cfg,0,&stats);
-		safe_snprintf(str,maxlen,"%lu",stats.logons);
+		safe_snprintf(str,maxlen,"%lu", (ulong)stats.logons);
 		return(str);
 	}
 
@@ -574,7 +574,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 	}
 
 	if(!strcmp(sp,"BYTELIMIT")) {
-		safe_snprintf(str,maxlen,"%lu",cfg.level_freecdtperday[useron.level]);
+		safe_snprintf(str,maxlen,"%ld", (long)cfg.level_freecdtperday[useron.level]);
 		return(str);
 	}
 
@@ -957,27 +957,27 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		getstats(&cfg,0,&stats);
 		sp+=6;
 		if(!strcmp(sp,"LOGONS"))
-			safe_snprintf(str,maxlen,"%lu",stats.logons);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.logons);
 		else if(!strcmp(sp,"LTODAY"))
-			safe_snprintf(str,maxlen,"%lu",stats.ltoday);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ltoday);
 		else if(!strcmp(sp,"TIMEON"))
-			safe_snprintf(str,maxlen,"%lu",stats.timeon);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.timeon);
 		else if(!strcmp(sp,"TTODAY"))
-			safe_snprintf(str,maxlen,"%lu",stats.ttoday);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ttoday);
 		else if(!strcmp(sp,"ULS"))
-			safe_snprintf(str,maxlen,"%lu",stats.uls);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.uls);
 		else if(!strcmp(sp,"ULB"))
-			safe_snprintf(str,maxlen,"%lu",stats.ulb);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ulb);
 		else if(!strcmp(sp,"DLS"))
-			safe_snprintf(str,maxlen,"%lu",stats.dls);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.dls);
 		else if(!strcmp(sp,"DLB"))
-			safe_snprintf(str,maxlen,"%lu",stats.dlb);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.dlb);
 		else if(!strcmp(sp,"PTODAY"))
-			safe_snprintf(str,maxlen,"%lu",stats.ptoday);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ptoday);
 		else if(!strcmp(sp,"ETODAY"))
-			safe_snprintf(str,maxlen,"%lu",stats.etoday);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.etoday);
 		else if(!strcmp(sp,"FTODAY"))
-			safe_snprintf(str,maxlen,"%lu",stats.ftoday);
+			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ftoday);
 		else if(!strcmp(sp,"NUSERS"))
 			safe_snprintf(str,maxlen,"%u",stats.nusers);
 		return(str);
@@ -1119,23 +1119,23 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 	if(!strcmp(sp,"MSG_REPLY_ID") && current_msg!=NULL)
 		return(current_msg->reply_id==NULL ? nulstr : current_msg->reply_id);
 	if(!strcmp(sp,"MSG_NUM") && current_msg!=NULL) {
-		safe_snprintf(str,maxlen,"%lu",current_msg->hdr.number);
+		safe_snprintf(str,maxlen,"%lu", (ulong)current_msg->hdr.number);
 		return(str);
 	}
 	if(!strcmp(sp,"MSG_SCORE") && current_msg!=NULL) {
-		safe_snprintf(str, maxlen, "%ld", current_msg->upvotes - current_msg->downvotes);
+		safe_snprintf(str, maxlen, "%ld", (long)(current_msg->upvotes - current_msg->downvotes));
 		return(str);
 	}
 	if(!strcmp(sp,"MSG_UPVOTES") && current_msg!=NULL) {
-		safe_snprintf(str, maxlen, "%lu", current_msg->upvotes);
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->upvotes);
 		return(str);
 	}
 	if(!strcmp(sp,"MSG_DOWNVOTES") && current_msg!=NULL) {
-		safe_snprintf(str, maxlen, "%lu", current_msg->downvotes);
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->downvotes);
 		return(str);
 	}
 	if(!strcmp(sp,"MSG_TOTAL_VOTES") && current_msg!=NULL) {
-		safe_snprintf(str, maxlen, "%lu", current_msg->total_votes);
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->total_votes);
 		return(str);
 	}
 	if(!strcmp(sp,"MSG_VOTED"))
@@ -1205,23 +1205,23 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_MSGS")) {
-		safe_snprintf(str,maxlen,"%ld",smb.msgs);
+		safe_snprintf(str,maxlen,"%lu", (ulong)smb.msgs);
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_CURMSG")) {
-		safe_snprintf(str,maxlen,"%ld",smb.curmsg+1);
+		safe_snprintf(str,maxlen,"%lu", (ulong)(smb.curmsg+1));
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_LAST_MSG")) {
-		safe_snprintf(str,maxlen,"%lu",smb.status.last_msg);
+		safe_snprintf(str,maxlen,"%lu", (ulong)smb.status.last_msg);
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_MAX_MSGS")) {
-		safe_snprintf(str,maxlen,"%lu",smb.status.max_msgs);
+		safe_snprintf(str,maxlen,"%lu", (ulong)smb.status.max_msgs);
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_MAX_CRCS")) {
-		safe_snprintf(str,maxlen,"%lu",smb.status.max_crcs);
+		safe_snprintf(str,maxlen,"%lu", (ulong)smb.status.max_crcs);
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_MAX_AGE")) {
@@ -1229,7 +1229,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_TOTAL_MSGS")) {
-		safe_snprintf(str,maxlen,"%lu",smb.status.total_msgs);
+		safe_snprintf(str,maxlen,"%lu", (ulong)smb.status.total_msgs);
 		return(str);
 	}
 
@@ -1274,11 +1274,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		if(strcmp(sp, "FILE_UPLOADER") == 0)
 			return current_file->uler;
 		if(strcmp(sp, "FILE_SIZE") == 0) {
-			safe_snprintf(str, maxlen, "%lu", current_file->size);
+			safe_snprintf(str, maxlen, "%ld", (long)current_file->size);
 			return str;
 		}
 		if(strcmp(sp, "FILE_CREDITS") == 0) {
-			safe_snprintf(str, maxlen, "%lu", current_file->cdt);
+			safe_snprintf(str, maxlen, "%lu", (ulong)current_file->cdt);
 			return str;
 		}
 		if(strcmp(sp, "FILE_TIME") == 0)
@@ -1295,7 +1295,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 			return datestr(current_file->datedled);
 
 		if(strcmp(sp, "FILE_TIMES_DLED") == 0) {
-			safe_snprintf(str, maxlen, "%lu", current_file->timesdled);
+			safe_snprintf(str, maxlen, "%d", current_file->timesdled);
 			return str;
 		}
 	}

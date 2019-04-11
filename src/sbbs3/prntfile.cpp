@@ -249,7 +249,7 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		backslash(menu_dir);
 		SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, menu_dir, code);
 	}
-	safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, cols, ext);
+	safe_snprintf(path, MAX_PATH, "%s.%lucol.%s", prefix, cols, ext);
 	if(fexistcase(path))
 		return true;
 	safe_snprintf(path, MAX_PATH, "%s.%s", prefix, ext);

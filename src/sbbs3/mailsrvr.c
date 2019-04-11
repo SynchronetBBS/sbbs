@@ -1696,11 +1696,11 @@ static ulong rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, cons
 	switch(addr->addr.sa_family) {
 		case AF_INET:
 			mail_addr=ntohl(addr->in.sin_addr.s_addr);
-			safe_snprintf(name,sizeof(name),"%ld.%ld.%ld.%ld.%.128s"
-				,mail_addr&0xff
-				,(mail_addr>>8)&0xff
-				,(mail_addr>>16)&0xff
-				,(mail_addr>>24)&0xff
+			safe_snprintf(name,sizeof(name),"%lu.%lu.%lu.%lu.%.128s"
+				,(ulong)(mail_addr&0xff)
+				,(ulong)(mail_addr>>8)&0xff
+				,(ulong)(mail_addr>>16)&0xff
+				,(ulong)(mail_addr>>24)&0xff
 				,rbl_addr
 				);
 			break;

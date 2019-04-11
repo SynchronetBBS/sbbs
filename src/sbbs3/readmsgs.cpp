@@ -518,7 +518,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		char cmdline[256];
 
 		scanposts_inside = true;
-		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.scanposts_mod, cfg.sub[subnum]->code, mode, find);
+		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %ld %s", cfg.scanposts_mod, cfg.sub[subnum]->code, mode, find);
 		i=exec_bin(cmdline, &main_csi);
 		scanposts_inside = false;
 		return i;

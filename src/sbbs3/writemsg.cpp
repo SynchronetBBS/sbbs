@@ -970,7 +970,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				if(j) j--;  /* start from line j */
 				while(str[j] != NULL && !msgabort()) {
 					if(linenums) { /* line numbers */
-						SAFEPRINTF3(tmp,"%3d: %-.*s",j+1,cols-6,str[j]);
+						SAFEPRINTF3(tmp,"%3d: %-.*s", j+1, (int)(cols-6), str[j]);
 						putmsg(tmp,P_SAVEATR|P_NOATCODES); 
 					}
 					else

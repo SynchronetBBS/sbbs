@@ -812,7 +812,7 @@ void sbbs_t::maindflts(user_t* user)
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
 		long term = (user == &useron) ? term_supports() : user->misc;
 		if(term&PETSCII)
-			safe_snprintf(str,sizeof(str),"%sPETSCII %u columns"
+			safe_snprintf(str,sizeof(str),"%sPETSCII %lu columns"
 							,user->misc&AUTOTERM ? "Auto Detect ":nulstr
 							,cols);
 		else

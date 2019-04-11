@@ -35,7 +35,7 @@
 
 #include "sbbs.h"
 
-static uint32_t msg_number(smbmsg_t* msg)
+static ulong msg_number(smbmsg_t* msg)
 {
 	if(msg->idx.number)
 		return(msg->idx.number);
@@ -56,7 +56,7 @@ uint32_t get_new_msg_number(smb_t* smb)
 	return smb->status.last_msg + 1;
 }
 
-static uint32_t msg_time(smbmsg_t* msg)
+static ulong msg_time(smbmsg_t* msg)
 {
 	if(msg->idx.time)
 		return(msg->idx.time);
