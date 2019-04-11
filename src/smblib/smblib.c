@@ -727,9 +727,6 @@ ulong SMBCALL smb_getmsgtxtlen(smbmsg_t* msg)
 static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfield_dat)
 {
 	switch(hfield_type) {	/* convenience variables */
-		case AUTHOR:
-			msg->from=(char*)hfield_dat;
-			break; 
 		case SENDER:
 			if(msg->from==NULL || *(msg->from)==0) {
 				msg->from=(char*)hfield_dat;

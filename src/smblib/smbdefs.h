@@ -181,14 +181,6 @@
 #define SENDERTIME			0x0d		/* authentication/connection time */
 #define SENDERSERVER		0x0e		/* server hostname that authenticated user */
 
-#define AUTHOR				0x10
-#define AUTHORAGENT 		0x11
-#define AUTHORNETTYPE		0x12
-#define AUTHORNETADDR		0x13
-#define AUTHOREXT			0x14
-#define AUTHORPOS			0x15
-#define AUTHORORG			0x16
-
 #define REPLYTO 			0x20
 #define REPLYTOAGENT		0x21
 #define REPLYTONETTYPE		0x22
@@ -205,29 +197,7 @@
 #define RECIPIENTPOS		0x35
 #define RECIPIENTORG		0x36
 
-#define FORWARDTO			0x40
-#define FORWARDTOAGENT		0x41
-#define FORWARDTONETTYPE	0x42
-#define FORWARDTONETADDR	0x43
-#define FORWARDTOEXT		0x44
-#define FORWARDTOPOS		0x45
-#define FORWARDTOORG		0x46
-
 #define FORWARDED			0x48
-
-#if 0	/* Deprecating the following fields: (Jan-2009) never used */
-
-#define RECEIVEDBY			0x50
-#define RECEIVEDBYAGENT 	0x51
-#define RECEIVEDBYNETTYPE	0x52
-#define RECEIVEDBYNETADDR	0x53
-#define RECEIVEDBYEXT		0x54
-#define RECEIVEDBYPOS		0x55
-#define RECEIVEDBYORG		0x56
-
-#define RECEIVED			0x58
-
-#endif
 
 #define SUBJECT 			0x60	/* or filename */
 #define SMB_SUMMARY 		0x61	/* or file description */
@@ -241,31 +211,6 @@
 #define SMB_TAGS			0x69	/* List of tags (ala hash-tags) related to this message */
 #define SMB_TAG_DELIMITER	" "
 #define SMB_COLUMNS			0x6a	/* original text editor width in fixed-width columns */
-
-#define FILEATTACH			0x70
-#define DESTFILE			0x71
-#define FILEATTACHLIST		0x72
-#define DESTFILELIST		0x73
-#define FILEREQUEST 		0x74
-#define FILEPASSWORD		0x75
-#define FILEREQUESTLIST 	0x76
-#define FILEPASSWORDLIST	0x77
-
-#define IMAGEATTACH 		0x80
-#define ANIMATTACH			0x81
-#define FONTATTACH			0x82
-#define SOUNDATTACH 		0x83
-#define PRESENTATTACH		0x84
-#define VIDEOATTACH 		0x85
-#define APPDATAATTACH		0x86
-
-#define IMAGETRIGGER		0x90
-#define ANIMTRIGGER 		0x91
-#define FONTTRIGGER 		0x92
-#define SOUNDTRIGGER		0x93
-#define PRESENTTRIGGER		0x94
-#define VIDEOTRIGGER		0x95
-#define APPDATATRIGGER		0x96
 
 #define FIDOCTRL			0xa0
 #define FIDOAREA			0xa1
@@ -302,16 +247,8 @@
 
 										/* Valid dfield_t.types */
 #define TEXT_BODY			0x00
-#define TEXT_SOUL			0x01
 #define TEXT_TAIL			0x02
-#define TEXT_WING			0x03
-#define IMAGEEMBED			0x20
-#define ANIMEMBED			0x21
-#define FONTEMBED			0x22
-#define SOUNDEMBED			0x23
-#define PRESENTEMBED		0x24
-#define VIDEOEMBED			0x25
-#define APPDATAEMBED		0x26
+
 #define UNUSED				0xff
 
 

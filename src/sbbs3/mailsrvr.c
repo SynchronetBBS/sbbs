@@ -839,11 +839,6 @@ static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smb
 		boundary = mimegetboundary();
 		file_list = strListInit();
 
-		/* Parse header fields */
-		for(i=0;i<msg->total_hfields;i++)
-	        if(msg->hfield[i].type==FILEATTACH) 
-				strListPush(&file_list,(char*)msg->hfield_dat[i]);
-
 		/* Parse subject (if necessary) */
 		if(!strListCount(file_list)) {	/* filename(s) stored in subject */
 			split=strListSplitCopy(NULL,msg->subj," ");

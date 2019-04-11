@@ -1441,14 +1441,6 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 					case SMB_POLL_ANSWER:
 					case SMB_CARBONCOPY:
 					case SMB_GROUP:
-					case FILEATTACH:
-					case DESTFILE:
-					case FILEATTACHLIST:
-					case DESTFILELIST:
-					case FILEREQUEST:
-					case FILEPASSWORD:
-					case FILEREQUESTLIST:
-					case FILEPASSWORDLIST:
 					case FIDOCTRL:
 					case FIDOSEENBY:
 					case FIDOPATH:
