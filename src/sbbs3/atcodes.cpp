@@ -1093,7 +1093,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		safe_snprintf(str,maxlen,"%s%s%s%s%s%s%s"
 			,current_msg->hdr.auxattr&MSG_FILEREQUEST	? "FileRequest  "   :nulstr
 			,current_msg->hdr.auxattr&MSG_FILEATTACH	? "FileAttach  "    :nulstr
-			,current_msg->hdr.auxattr&MSG_TRUNCFILE		? "TruncFile  "		:nulstr
+			,current_msg->hdr.auxattr&MSG_MIMEATTACH	? "MimeAttach  "	:nulstr
 			,current_msg->hdr.auxattr&MSG_KILLFILE		? "KillFile  "      :nulstr
 			,current_msg->hdr.auxattr&MSG_RECEIPTREQ	? "ReceiptReq  "	:nulstr
 			,current_msg->hdr.auxattr&MSG_CONFIRMREQ	? "ConfirmReq  "    :nulstr
