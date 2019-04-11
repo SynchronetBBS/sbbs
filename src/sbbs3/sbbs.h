@@ -467,7 +467,8 @@ public:
 	uchar	attr_stack[64];	/* Saved attributes (stack) */
 	int 	attr_sp;		/* Attribute stack pointer */
 	long 	lncntr; 		/* Line Counter - for PAUSE */
-	long 	tos;			/* Top of Screen */
+	bool 	tos;			/* Cursor is currently at the Top of Screen */
+	bool	msghdr_tos;		/* Message header was displayed at Top of Screen */
 	long 	rows;			/* Current number of Rows for User */
 	long	cols;			/* Current number of Columns for User */
 	long	column;			/* Current column counter (for line counter) */

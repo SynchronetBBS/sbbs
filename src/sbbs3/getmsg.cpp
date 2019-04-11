@@ -137,6 +137,7 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg)
 		else
 			CRLF;
 	}
+	msghdr_tos = tos;
 	if(!menu("msghdr", P_NOERROR)) {
 		bprintf(text[MsgSubj],msg->subj);
 		if(msg->tags && *msg->tags)

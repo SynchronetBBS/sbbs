@@ -234,7 +234,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case CON_PROP_TOS:
-			sbbs->tos=val;
+			sbbs->tos = val ? true : false;
 			break;
 		case CON_PROP_ROWS:
 			if(val >= TERM_ROWS_MIN && val <= TERM_ROWS_MAX)

@@ -145,6 +145,8 @@ enum {
 	,BBS_PROP_MSG_REPLY_ID
 	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
 
+	,BBS_PROP_MSGHDR_TOS
+
 	/* READ ONLY */
 	,BBS_PROP_BATCH_UPLOAD_TOTAL
 	,BBS_PROP_BATCH_DNLOAD_TOTAL
@@ -267,6 +269,8 @@ enum {
 	,"message identifier"
 	,"message replied-to identifier"
 	,"message delivery attempt counter"
+
+	,"message header displayed at top-of-screen"
 
 	,"file name"
 	,"file description"
@@ -691,6 +695,9 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			else
 				p=sbbs->current_msg->reply_id;
 			break;
+		case BBS_PROP_MSGHDR_TOS:
+			val = sbbs->msghdr_tos;
+			break;
 
 		/* Currently Displayed File (sbbs.current_file) */
 		case BBS_PROP_FILE_NAME:
@@ -1081,6 +1088,8 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"msg_reply_id"		,BBS_PROP_MSG_REPLY_ID		,PROP_READONLY	,310},
 	{	"msg_delivery_attempts"	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
 														,PROP_READONLY	,310},
+
+	{	"msghdr_top_of_screen"	,BBS_PROP_MSGHDR_TOS	,PROP_READONLY	,31702},
 
 	{	"file_name"			,BBS_PROP_FILE_NAME			,PROP_READONLY	,317},
 	{	"file_description"	,BBS_PROP_FILE_DESC			,PROP_READONLY	,317},

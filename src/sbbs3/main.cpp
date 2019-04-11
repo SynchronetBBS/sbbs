@@ -3403,8 +3403,10 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	telnet_ack_event=CreateEvent(NULL, /* Manual Reset: */FALSE,/* InitialState */FALSE,NULL);
 
 	listInit(&savedlines, /* flags: */0);
+	sys_status=lncntr=criterrs=0L;
+	tos = false;
+	msghdr_tos = false;
 	listInit(&smb_list, /* flags: */0);
-	sys_status=lncntr=tos=criterrs=0L;
 	column=0;
 	tabstop=8;
 	lastlinelen=0;
