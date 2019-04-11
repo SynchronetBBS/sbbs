@@ -313,9 +313,6 @@ static BOOL mime_getattachment(char* beg, char* end, char* attachment, size_t at
 			term = filename + sizeof(fname) - 1;
 		memcpy(fname, filename, term - filename);
 		fname[term - filename] = 0;
-		term = fname;
-		FIND_WHITESPACE(term);
-		*term = 0;
 		if(attachment != NULL && attachment_len > 0) {
 			strncpy(attachment, getfname(fname), attachment_len);
 			attachment[attachment_len - 1] = '\0';
@@ -476,7 +473,8 @@ ulong SMBCALL smb_countattachments(smb_t* smb, smbmsg_t* msg, const char* body)
 
 	char* tmp;
 	while((tmp = strdup(buf)) != NULL) {
-		uint8_t* attachment = smb_getattachment(msg, tmp, NULL, 0, NULL, count);
+		char filename[MAX_PATH + 1];
+		uint8_t* attachment = smb_getattachment(msg, tmp, filename, sizeof(filename), NULL, count);
 		free(tmp);
 		if(attachment == NULL)
 			break;
