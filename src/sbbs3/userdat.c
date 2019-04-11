@@ -2087,7 +2087,7 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, const
 		return(-3);
 	}
 
-	ssize_t wr = write(file, str2, length);
+	int wr = write(file, str2, length);
 	unlock(file,(long)((long)(usernumber-1)*U_LEN)+start,length);
 	close(file);
 	if(wr != length)
