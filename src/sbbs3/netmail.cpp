@@ -279,9 +279,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	add_msg_ids(&cfg, &smb, &msg, remsg);
 
-	if(editor!=NULL)
-		smb_hfield_str(&msg,SMB_EDITOR,editor);
-	smb_hfield_bin(&msg, SMB_COLUMNS, cols);
+	editor_info_to_msg(&msg, editor);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 
@@ -493,9 +491,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	add_msg_ids(&cfg, &smb, &msg, /* remsg: */NULL);
 
-	if(editor!=NULL)
-		smb_hfield_str(&msg,SMB_EDITOR,editor);
-	smb_hfield_bin(&msg, SMB_COLUMNS, cols);
+	editor_info_to_msg(&msg, editor);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 

@@ -657,6 +657,20 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 	return(true);
 }
 
+void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor)
+{
+	if(editor != NULL)
+		smb_hfield_str(msg, SMB_EDITOR, editor);
+
+	ushort useron_xedit = useron.xedit;
+
+	if(useron_xedit > 0 && !chk_ar(cfg.xedit[useron_xedit - 1]->ar, &useron, &client))
+		useron_xedit = 0;
+
+	if(editor == NULL || useron_xedit == 0 || (cfg.xedit[useron_xedit - 1]->misc&SAVECOLUMNS))
+		smb_hfield_bin(msg, SMB_COLUMNS, cols);
+}
+
 /****************************************************************************/
 /****************************************************************************/
 /* Modify 'str' to for quoted format. Remove ^A codes, etc.                 */

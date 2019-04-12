@@ -290,9 +290,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	add_msg_ids(&cfg, &smb, &msg, remsg);
 
-	if(editor!=NULL)
-		smb_hfield_str(&msg,SMB_EDITOR,editor);
-	smb_hfield_bin(&msg, SMB_COLUMNS, cols);
+	editor_info_to_msg(&msg, editor);
 	
 	if((cfg.sub[subnum]->misc&SUB_MSGTAGS)
 		&& (tags[0] || text[TagMessageQ][0] == 0 || !noyes(text[TagMessageQ]))) {

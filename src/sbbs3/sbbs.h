@@ -668,6 +668,7 @@ public:
 	bool	movemsg(smbmsg_t* msg, uint subnum);
 	int		process_edited_text(char* buf, FILE* stream, long mode, unsigned* lines, unsigned maxlines);
 	int		process_edited_file(const char* src, const char* dest, long mode, unsigned* lines, unsigned maxlines);
+	void	editor_info_to_msg(smbmsg_t*, const char* editor);
 
 	/* postmsg.cpp */
 	bool	postmsg(uint subnum, long wm_mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);

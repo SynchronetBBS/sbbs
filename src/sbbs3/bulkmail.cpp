@@ -111,9 +111,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 	msg.hdr.when_written.time=time32(NULL);
 	msg.hdr.when_written.zone=sys_timezone(&cfg);
 
-	if(editor!=NULL)
-		smb_hfield_str(&msg,SMB_EDITOR,editor);
-	smb_hfield_bin(&msg, SMB_COLUMNS, cols);
+	editor_info_to_msg(&msg, editor);
 
 	memset(&smb,0,sizeof(smb));
 	smb.subnum=INVALID_SUB;	/* mail database */

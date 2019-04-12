@@ -350,9 +350,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 
 	smb_hfield_str(&msg,SUBJECT, subj);
 
-	if(editor!=NULL)
-		smb_hfield_str(&msg,SMB_EDITOR,editor);
-	smb_hfield_bin(&msg, SMB_COLUMNS, cols);
+	editor_info_to_msg(&msg, editor);
 
 	if(cfg.netmail_misc&NMAIL_DIRECT)
 		msg.hdr.netattr |= MSG_DIRECT;
