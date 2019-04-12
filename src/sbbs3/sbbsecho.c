@@ -4729,7 +4729,6 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 
 			if(msg.from_net.type!=NET_NONE
 				&& msg.from_net.type!=NET_FIDO
-				&& msg.from_net.type!=NET_FIDO_ASCII
 				&& !(scfg.sub[subnum]->misc&SUB_GATE)) {
 				smb_unlockmsghdr(&smb, &msg);
 				smb_freemsgmem(&msg);
