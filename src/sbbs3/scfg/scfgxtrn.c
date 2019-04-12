@@ -1652,6 +1652,8 @@ void xedit_cfg()
 				,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s","Use Shell to Execute"
 				,cfg.xedit[i]->misc&XTRN_SH ? "Yes" : "No");
+			sprintf(opt[k++],"%-32.32s%s","Record Terminal Width"
+				,cfg.xedit[i]->misc&SAVECOLUMNS ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s","Word-wrap Quoted Text"
 				,cfg.xedit[i]->misc&QUOTEWRAP ? "Yes":"No");
 			sprintf(opt[k++],"%-32.32s%s","Automatically Quoted Text"
@@ -1824,6 +1826,35 @@ void xedit_cfg()
 					}
 					break;
 				case 7:
+					k=(cfg.xedit[i]->misc&SAVECOLUMNS) ? 0:1;
+					uifc.helpbuf=
+						"`Record Terminal Width:`\n"
+						"\n"
+						"When set to `Yes`, Synchronet will store the current terminal width\n"
+						"(in columns) in the header of messages created with this editor and use\n"
+						"the saved value to nicely re-word-wrap the message text when displaying\n"
+						"or quoting the message for other users with different terminal sizes.\n"
+						"\n"
+						"If this editor correctly detects and supports terminal widths `other`\n"
+						"`than 80 columns`, set this option to `Yes`."
+					;
+					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+						,"Record Terminal Width",uifcYesNoOpts)) {
+						case 0:
+							if(!(cfg.xedit[i]->misc&SAVECOLUMNS)) {
+								cfg.xedit[i]->misc |= SAVECOLUMNS;
+								uifc.changes = TRUE;
+							}
+							break;
+						case 1:
+							if(cfg.xedit[i]->misc&SAVECOLUMNS) {
+								cfg.xedit[i]->misc &= ~SAVECOLUMNS;
+								uifc.changes = TRUE; 
+							}
+							break;
+					}
+					break;
+				case 8:
 					k=(cfg.xedit[i]->misc&QUOTEWRAP) ? 0:1;
 					uifc.helpbuf=
 						"`Word-wrap Quoted Text:`\n"
@@ -1851,7 +1882,7 @@ void xedit_cfg()
 							break;
 					}
 					break;
-				case 8:
+				case 9:
 					switch(cfg.xedit[i]->misc&(QUOTEALL|QUOTENONE)) {
 						case 0:		/* prompt user */
 							k=2;
@@ -1897,7 +1928,7 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 9:
+				case 10:
 					k=cfg.xedit[i]->misc&QUICKBBS ? 0:1;
 					strcpy(opt[0],"QuickBBS MSGINF/MSGTMP");
 					strcpy(opt[1],"WWIV EDITOR.INF/RESULT.ED");
@@ -1919,7 +1950,7 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 10:
+				case 11:
 					k=(cfg.xedit[i]->misc&EXPANDLF) ? 0:1;
 					uifc.helpbuf=
 						"`Expand Line Feeds to Carriage Return/Line Feed Pairs:`\n"
@@ -1938,7 +1969,7 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 11:
+				case 12:
 					k=(cfg.xedit[i]->misc&STRIPKLUDGE) ? 0:1;
 					uifc.helpbuf=
 						"`Strip FidoNet Kludge Lines From Messages:`\n"
@@ -1958,7 +1989,7 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 12:
+				case 13:
 					k=0;
 					strcpy(opt[k++],"None");
 					sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");
