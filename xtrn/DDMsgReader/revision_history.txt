@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.18     2019-04-15   Made use of the new MsgBase.get_index() function (if
+                      available) for better performance.  Added 'undefined'
+                      checks for some of the messaeg attribute definitions
+                      before adding them to the attribute strings, since some
+                      of them have changed.
 1.17     2019-01-02   Added support for Synchronet's new voting feature that
                       was added in Synchronet 1.17.  Added support to allow the
                       sysop to validate messages in moderated message areas.

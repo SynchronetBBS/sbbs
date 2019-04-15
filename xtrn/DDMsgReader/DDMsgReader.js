@@ -131,6 +131,14 @@
  *                              of Synchronet 3.17b.  Also, made use of
  *                              file_cfgname() when finding the configuration file
  *                              location.
+ * 2019-04-10 Eric Oulashin     Version 1.18 Beta
+ *                              Started making use of the new MsgBase.get_index() function
+ *                              (if available) for better performance.
+ * 2019-04-15 Eric Oulashin     Version 1.18
+ *                              Added 'undefined' checks for some of the messaeg attribute
+ *                              definitions before adding them to the attribute strings,
+ *                              since some of them have changed.
+ *                              Released this version as non-beta.
  */
 
 // TODO: Support anonymous posts?  Bit values for sub[x].settings:
@@ -218,8 +226,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17";
-var READER_DATE = "2019-01-02";
+var READER_VERSION = "1.18";
+var READER_DATE = "2019-04-15";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -391,7 +399,8 @@ gMainMsgAttrStrs[MSG_NOREPLY] = "NoRepl";
 var gAuxMsgAttrStrs = new Object();
 gAuxMsgAttrStrs[MSG_FILEREQUEST] = "Freq";
 gAuxMsgAttrStrs[MSG_FILEATTACH] = "Attach";
-gAuxMsgAttrStrs[MSG_TRUNCFILE] = "TruncFile";
+if (typeof(MSG_TRUNCFILE) != "undefined")
+	gAuxMsgAttrStrs[MSG_TRUNCFILE] = "TruncFile";
 gAuxMsgAttrStrs[MSG_KILLFILE] = "KillFile";
 gAuxMsgAttrStrs[MSG_RECEIPTREQ] = "RctReq";
 gAuxMsgAttrStrs[MSG_CONFIRMREQ] = "ConfReq";
@@ -406,12 +415,20 @@ gNetMsgAttrStrs[MSG_HOLD] = "Hold";
 gNetMsgAttrStrs[MSG_CRASH] = "Crash";
 gNetMsgAttrStrs[MSG_IMMEDIATE] = "Now";
 gNetMsgAttrStrs[MSG_DIRECT] = "Direct";
-gNetMsgAttrStrs[MSG_GATE] = "Gate";
-gNetMsgAttrStrs[MSG_ORPHAN] = "Orphan";
-gNetMsgAttrStrs[MSG_FPU] = "FPU";
-gNetMsgAttrStrs[MSG_TYPELOCAL] = "ForLocal";
-gNetMsgAttrStrs[MSG_TYPEECHO] = "ForEcho";
-gNetMsgAttrStrs[MSG_TYPENET] = "ForNetmail";
+if (typeof(MSG_GATE) != "undefined")
+	gNetMsgAttrStrs[MSG_GATE] = "Gate";
+if (typeof(MSG_ORPHAN) != "undefined")
+	gNetMsgAttrStrs[MSG_ORPHAN] = "Orphan";
+if (typeof(MSG_FPU) != "undefined")
+	gNetMsgAttrStrs[MSG_FPU] = "FPU";
+if (typeof(MSG_TYPELOCAL) != "undefined")
+	gNetMsgAttrStrs[MSG_TYPELOCAL] = "ForLocal";
+if (typeof(MSG_TYPEECHO) != "undefined")
+	gNetMsgAttrStrs[MSG_TYPEECHO] = "ForEcho";
+if (typeof(MSG_TYPENET) != "undefined")
+	gNetMsgAttrStrs[MSG_TYPENET] = "ForNetmail";
+if (typeof(MSG_MIMEATTACH) != "undefined")
+	gNetMsgAttrStrs[MSG_MIMEATTACH] = "MimeAttach";
 
 // A regular expression to check whether a string is an email address
 var gEmailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -1369,44 +1386,58 @@ function DigDistMsgReader_SetSubBoardCode(pSubCode)
 // messages that are deleted, unvalidated, private, and voting messages.
 function DigDistMsgReader_PopulateHdrsForCurrentSubBoard()
 {
-	if (this.subBoardCode == "mail")
-	{
-		this.hdrsForCurrentSubBoard = [];
-		this.hdrsForCurrentSubBoardByMsgNum = new Object();
-		return;
-	}
+	this.hdrsForCurrentSubBoard = [];
+	this.hdrsForCurrentSubBoardByMsgNum = new Object();
 
-	var tmpHdrs = null;
+	if (this.subBoardCode == "mail")
+		return;
+
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
-		// First get all headers in a temporary array, then filter them into
-		// this.hdrsForCurrentSubBoard.
-		// If get_all_msg_headers exists as a function, then use it.  Otherwise,
-		// iterate through all message offsets and get the headers.
-		if (typeof(msgbase.get_all_msg_headers) === "function")
+		if (typeof(msgbase.get_index) === "function")
+		{
+			var indexes = msgbase.get_index();
+			for (var i = 0; i < indexes.length; ++i)
+			{
+				if (indexes[i] == null)
+					continue;
+				else if (isReadableMsgHdr(indexes[i], this.subBoardCode))
+				{
+					var msgHdr = msgbase.get_msg_header(false, indexes[i].number, true);
+					this.hdrsForCurrentSubBoard.push(msgHdr);
+					this.hdrsForCurrentSubBoardByMsgNum[msgHdr.number] = this.hdrsForCurrentSubBoard.length - 1;
+				}
+			}
+		}
+		else if (typeof(msgbase.get_all_msg_headers) === "function")
 		{
 			// Pass false to get_all_msg_headers() to tell it not to return vote messages
-			// (the parameter was introduced in Synchronet 3.17+)
-			tmpHdrs = msgbase.get_all_msg_headers(false);
+			var tmpHdrs = msgbase.get_all_msg_headers(false);
+			// Filter the headers into this.hdrsForCurrentSubBoard
+			if (tmpHdrs != null)
+				this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpHdrs, true);
 		}
 		else
 		{
-			tmpHdrs = [];
-			var msgHdr;
+			// Go through all the message headers one by one and add them if
+			// they're readable messages
+			var tmpHdrs = [];
 			var numMsgs = msgbase.total_msgs;
 			for (var msgIdx = 0; msgIdx < numMsgs; ++msgIdx)
 			{
-				msgHdr = msgbase.get_msg_header(true, msgIdx, expandFields);
-				tmpHdrs.push(msgHdr);
+				var msgHdr = msgbase.get_msg_header(true, msgIdx, true);
+				if (msgHdr == null)
+					continue;
+				else if (isReadableMsgHdr(msgHdr, this.subBoardCode))
+				{
+					this.hdrsForCurrentSubBoard.push(msgHdr);
+					this.hdrsForCurrentSubBoardByMsgNum[msgHdr.number] = this.hdrsForCurrentSubBoard.length - 1;
+				}
 			}
 		}
 		msgbase.close();
 	}
-
-	// Filter the headers into this.hdrsForCurrentSubBoard
-	if (tmpHdrs != null)
-		this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpHdrs, true);
 }
 
 // For the DigDistMsgReader class: Takes an array of message headers in the current
@@ -1523,6 +1554,17 @@ function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pSubBoar
 					this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr | pAttrib;
 					var msgOffsetFromHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].offset;
 					msgbase.put_msg_header(true, msgOffsetFromHdr, this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex]);
+					// New - Workaround to avoid an error I started seeing on March 31, 2019:
+					/*
+					var tmpHdr = msgbase.get_msg_header(false, msgOffsetFromHdr, false);
+					console.print("\1n\r\nMsg #: " + msgOffsetFromHdr + ", tmpHdr: " + tmpHdr + "\r\n\1p"); // Temporary
+					if (tmpHdr != null)
+					{
+						tmpHdr.attr |= pAttrib;
+						//MsgBase.put_msg_header([by_offset=false,] number, object header)
+						msgbase.put_msg_header(false, tmpHdr.number, tmpHdr);
+					}
+					*/
 				}
 			}
 			else
@@ -18741,7 +18783,7 @@ function getBogusMsgHdr(pSubject)
 //  pSubBoardCode: The internal code for the sub-board the message is in
 //
 // Return value: Boolean - Whether or not the message is readable for the user
-function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
+function isReadableMsgHdr(pMsgHdr, pSubBoardCode, pToName)
 {
 	if (pMsgHdr === null)
 		return false;
@@ -18811,7 +18853,18 @@ function numReadableMsgs(pMsgbase, pSubBoardCode)
 		return 0;
 
 	var numMsgs = 0;
-	if (typeof(pMsgbase.get_all_msg_headers) === "function")
+	if (typeof(pMsgbase.get_index) === "function")
+	{
+		var indexes = msgbase.get_index();
+		for (var i = 0; i < indexes.length; ++i)
+		{
+			if (indexes[i] == null)
+				continue;
+			else if (isReadableMsgHdr(indexes[i], pSubBoardCode))
+				++numMsgs;
+		}
+	}
+	else if (typeof(pMsgbase.get_all_msg_headers) === "function")
 	{
 		var msgHdrs = pMsgbase.get_all_msg_headers(true);
 		for (var msgHdrsProp in msgHdrs)
