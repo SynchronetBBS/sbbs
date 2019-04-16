@@ -288,6 +288,7 @@ typedef struct {							/* External Editors */
 	uchar		*ar;
 	uint32_t	misc;						/* Misc. bits */
 	uchar		type;						/* Drop file type */
+	uint16_t	quotewrap_cols;				/* When word-wrapping quoted text, use this width (if non-zero */
 
 } xedit_t;
 

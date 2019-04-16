@@ -495,7 +495,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 
 		get_int(cfg->xedit[i]->type,instream);
 		get_int(c,instream);
-		for(j=0;j<7;j++)
+		get_int(cfg->xedit[i]->quotewrap_cols, instream);
+		for(j=0;j<6;j++)
 			get_int(n,instream);
 	}
 	cfg->total_xedits=i;

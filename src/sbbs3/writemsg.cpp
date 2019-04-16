@@ -103,8 +103,12 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 	if((buf=smb_getmsgtxt(smb, msg, mode)) != NULL) {
 		strip_invalid_attr(buf);
 		truncsp(buf);
-		if(!useron_xedit || (useron_xedit && (cfg.xedit[useron_xedit-1]->misc&QUOTEWRAP)))
-			wrapped=::wordwrap(buf, cols-4, org_cols - 1, /* handle_quotes: */TRUE);
+		if(!useron_xedit || (useron_xedit && (cfg.xedit[useron_xedit-1]->misc&QUOTEWRAP))) {
+			int wrap_cols = cfg.xedit[useron_xedit-1]->quotewrap_cols;
+			if(wrap_cols == 0)
+				wrap_cols = cols - 1;
+			wrapped=::wordwrap(buf, wrap_cols, org_cols - 1, /* handle_quotes: */TRUE);
+		}
 		if(wrapped!=NULL) {
 			fputs(wrapped,fp);
 			free(wrapped);
