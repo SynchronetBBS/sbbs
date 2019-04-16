@@ -1654,8 +1654,15 @@ void xedit_cfg()
 				,cfg.xedit[i]->misc&XTRN_SH ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s","Record Terminal Width"
 				,cfg.xedit[i]->misc&SAVECOLUMNS ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s","Word-wrap Quoted Text"
-				,cfg.xedit[i]->misc&QUOTEWRAP ? "Yes":"No");
+			str[0]=0;
+			if(cfg.xedit[i]->misc&QUOTEWRAP) {
+				if(cfg.xedit[i]->quotewrap_cols == 0)
+					SAFECOPY(str, ", for terminal width");
+				else
+					SAFEPRINTF(str, ", for %u columns", (uint)cfg.xedit[i]->quotewrap_cols);
+			}
+			sprintf(opt[k++],"%-32.32s%s%s","Word-wrap Quoted Text"
+				,cfg.xedit[i]->misc&QUOTEWRAP ? "Yes":"No", str);
 			sprintf(opt[k++],"%-32.32s%s","Automatically Quoted Text"
 				,cfg.xedit[i]->misc&QUOTEALL ? "All":cfg.xedit[i]->misc&QUOTENONE
 					? "None" : "Prompt User");
@@ -1677,7 +1684,7 @@ void xedit_cfg()
 				"`GEdit`, `IceEdit`, and many others.\n"
 			;
 
-			sprintf(str,"%s Editor",cfg.xedit[i]->name);
+			SAFEPRINTF(str,"%s Editor",cfg.xedit[i]->name);
 			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,70,&dfltopt,0
 				,str,opt)) {
 				case -1:
@@ -1871,6 +1878,20 @@ void xedit_cfg()
 						case 0:
 							if(!(cfg.xedit[i]->misc&QUOTEWRAP)) {
 								cfg.xedit[i]->misc|=QUOTEWRAP;
+								uifc.changes=TRUE;
+							}
+							SAFEPRINTF(str, "%u", (uint)cfg.xedit[i]->quotewrap_cols);
+							uifc.helpbuf=
+								"`Screen width to wrap to:`\n"
+								"\n"
+								"Set to `0` to wrap the quoted text for the current user's terminal width.\n"
+								"Set to `80` to wrap the quoted text to 80 columns.\n"
+								"Set to `9999` to unwrap quoted text to long-lines.\n"
+								;
+							if(uifc.input(WIN_MID|WIN_SAV,0,0
+								,"Screen width to wrap to (0 = current terminal width)"
+								,str, 4, K_NUMBER|K_EDIT) > 0) {
+								cfg.xedit[i]->quotewrap_cols = atoi(str);
 								uifc.changes=TRUE;
 							}
 							break;
