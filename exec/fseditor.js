@@ -1180,7 +1180,9 @@ function draw_quote_window()
 	/* Draw seperater */
 	console.gotoxy(1,quote_sep_pos);
 	console.attributes=7;
-	console.write("\xc4\xc4\xb4 "+(quote_ontop?"^^^":"vvv")+" Quote "+(quote_ontop?"^^^":"vvv")+" \xc3\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
+	console.write(format("%.*s", console.screen_columns - 1, "\xc4\xc4\xb4 "+(quote_ontop?"^^^":"vvv")+" Quote "+(quote_ontop?"^^^":"vvv")
+		+" \xc3\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"
+		+"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"));
 	for(i=0; i<quote_height; i++) {
 		draw_quote_line(quote_topline+i);
 	}
@@ -1783,7 +1785,7 @@ function edit(quote_first)
 				 * this was the first word on the line, or the one before the
 				 * word otherwise.  This puts the cursor on the previous word
 				 * if there is one and the next word if there isn't.  This
-				 * allows multiple ^W to keep deleteing words in all cases.
+				 * allows multiple ^W to keep deleting words in all cases.
 				 */
 				if(xpos) {
 					/* Delete space before the deleted word */
@@ -1906,9 +1908,10 @@ console.clear();
 var f=new File(input_filename);
 if(f.open("r",false)) {
 	ypos=0;
-	if(use_quotes)
-		quote_line=make_lines(quote_msg(word_wrap(f.read(),76)),'');
-	else
+	if(use_quotes) {
+		var quote_width = console.screen_columns - 4;
+		quote_line=make_lines(quote_msg(word_wrap(f.read(), quote_width), quote_width),'');
+	} else
 		line=make_lines(word_wrap(f.read()),'');
 	f.close();
 }
