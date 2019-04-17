@@ -1909,8 +1909,8 @@ var f=new File(input_filename);
 if(f.open("r",false)) {
 	ypos=0;
 	if(use_quotes) {
-		var quote_width = console.screen_columns - 4;
-		quote_line=make_lines(quote_msg(word_wrap(f.read(), quote_width), quote_width),'');
+		var quote_width = console.screen_columns - 1;
+		quote_line=make_lines(quote_msg(word_wrap(f.read(), quote_width - 3), quote_width),'');
 	} else
 		line=make_lines(word_wrap(f.read()),'');
 	f.close();
