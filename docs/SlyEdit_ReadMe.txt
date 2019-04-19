@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.54
-                        Release date: 2017-12-26
+                              Version 1.63
+                        Release date: 2019-04-18
 
                                   by
 
@@ -109,13 +109,17 @@ ICE parameter for IceEdit emulation:
  3. For the internal code, use SLYEDICE (or whatever you want, depending on your
     personal preference)
  4. Press Enter to select and edit the new entry.  Asuming that the .js files
-    are in the sbbs/exect directory, the settings should be as follows:
+    are in the sbbs/exect directory, the settings should be as follows (the
+    wording and options shown may vary, depending on the version of Synchronet
+    you have installed):
       Command line: ?SlyEdit.js %f ICE
       Access requirement string: ANSI
       Intercept standard I/O: No
       Native (32-bit) Executable: No
       Use Shell to Execute: No
-      Quoted Text: All
+      Record Terminal Width: Yes
+      Word-wrap Quoted Text: Your decision - Wrap to specific width, 80, or no
+      Automatically Quoted Text: All
       Editor Information Files: QuickBBS MSGINF/MSGTMP
       Expand Line Feeds to CRLF: Yes
       Strip FidoNet Kludge Lines: No
@@ -132,7 +136,9 @@ ICE parameter for IceEdit emulation:
     ¦ ¦Intercept Standard I/O          No                                ¦
     ¦ ¦Native (32-bit) Executable      No                                ¦
     ¦ ¦Use Shell to Execute            No                                ¦
-    ¦ ¦Quoted Text                     All                               ¦
+    ¦ ¦Record Terminal Width           Yes                               ¦
+    ¦ ¦Word-wrap Quoted Text           Yes, for 80 columns               ¦
+    ¦ ¦Automatically Quoted Text       All                               ¦
     ¦ ¦Editor Information Files        QuickBBS MSGINF/MSGTMP            ¦
     ¦ ¦Expand Line Feeds to CRLF       Yes                               ¦
     ¦ ¦Strip FidoNet Kludge Lines      No                                ¦

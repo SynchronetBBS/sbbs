@@ -2,6 +2,15 @@ This file contains upgrade notes for sysops who are upgrading from earlier
 versions of SlyEdit.  Only versions with significant/noteworthy configuration
 changes, etc. are listed in this file, with the most recent version on top.
 
+Upgrading to version 1.63
+-------------------------
+This version allows using the full width of the terminal for message text.
+After upgrading to this version, if you are using a Synchronet build from
+April 13th, 2019 or later, ensure that the "Record Terminal Width" setting
+in SCFG is enabled for SlyEdit.  This helps ensure that Synchronet re-wraps
+message text for readers if the author used a different terminal width than
+the reader.
+
 Upgrading to version 1.34
 -------------------------
 This version includes a new configuration option in SlyEdit.cfg for Ice-style
