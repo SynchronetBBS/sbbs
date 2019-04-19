@@ -64,6 +64,13 @@
  *                              DrawQuoteWindowTopBorder_DCTStyle().  Updated the
  *                              quote window bottom border to display the new
  *                              scroll keys in DrawQuoteWindowBottomBorder_DCTStyle().
+ * 2019-04-11 Eric Oulashin     Fixed displayTextAreaTopBorder_DCTStyle() and
+ *                              DisplayTextAreaBottomBorder_DCTStyle() to display
+ *                              correctly in wide terminal modes.  Somehow they
+ *                              had become broken over the years.  Also, updated
+ *                              redrawScreen_DCTStyle() to not display the vertical
+ *                              bars for terminal widths >= 82, for wide text
+ *                              wrapping support.
  */
 
 load("sbbsdefs.js");
@@ -127,20 +134,20 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// border only once, for efficiency).
 	if (typeof(redrawScreen_DCTStyle.topBorder) == "undefined")
 	{
-      var innerWidth = console.screen_columns - 2;
-      redrawScreen_DCTStyle.topBorder = UPPER_LEFT_SINGLE;
-      for (var i = 0; i < innerWidth; ++i)
-         redrawScreen_DCTStyle.topBorder += HORIZONTAL_SINGLE;
-      redrawScreen_DCTStyle.topBorder += UPPER_RIGHT_SINGLE;
-      redrawScreen_DCTStyle.topBorder = randomTwoColorString(redrawScreen_DCTStyle.topBorder,
-                                                        gConfigSettings.DCTColors.TopBorderColor1,
-                                                        gConfigSettings.DCTColors.TopBorderColor2);
-   }
-   // Print the border line on the screen
-   console.clear();
-   console.print(redrawScreen_DCTStyle.topBorder);
+		var innerWidth = console.screen_columns - 2;
+		redrawScreen_DCTStyle.topBorder = UPPER_LEFT_SINGLE;
+		for (var i = 0; i < innerWidth; ++i)
+			redrawScreen_DCTStyle.topBorder += HORIZONTAL_SINGLE;
+		redrawScreen_DCTStyle.topBorder += UPPER_RIGHT_SINGLE;
+		redrawScreen_DCTStyle.topBorder = randomTwoColorString(redrawScreen_DCTStyle.topBorder,
+		                                                       gConfigSettings.DCTColors.TopBorderColor1,
+		                                                       gConfigSettings.DCTColors.TopBorderColor2);
+	}
+	// Print the border line on the screen
+	console.clear();
+	console.print(redrawScreen_DCTStyle.topBorder);
 
-   // Next line
+	// Next line
 	// From name
 	var lineNum = 2;
 	console.gotoxy(1, lineNum);
@@ -253,6 +260,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Line 4: Top border for message area
 	++lineNum;
 	displayTextAreaTopBorder_DCTStyle(lineNum, pEditLeft, pEditRight);
+	/*
 	// If the screen is at least 82 characters wide, display horizontal
 	// lines around the message editing area.
 	if (console.screen_columns >= 82)
@@ -269,6 +277,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 			                                   gConfigSettings.DCTColors.EditAreaBorderColor2));
 		}
 	}
+	*/
 
 	// Display the bottom message area border and help line
 	DisplayTextAreaBottomBorder_DCTStyle(pEditBottom+1, null, pEditLeft, pEditRight, pInsertMode);
@@ -290,28 +299,31 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 //  pEditRight: The rightmost edit area column on the screen
 function displayTextAreaTopBorder_DCTStyle(pLineNum, pEditLeft, pEditRight)
 {
-   // The border will use random bright/normal colors.  The colors
-   // should stay the same each time we draw it, so a "static"
-   // variable is used for the border text.  If that variable has
-   // not been defined yet, then build it.
-   if (typeof(displayTextAreaTopBorder_DCTStyle.border) == "undefined")
-   {
-      var numHorizontalChars = pEditRight - pEditLeft - 1;
-      if (console.screen_columns >= 82)
-         numHorizontalChars += 2;
+	// The border will use random bright/normal colors.  The colors
+	// should stay the same each time we draw it, so a "static"
+	// variable is used for the border text.  If that variable has
+	// not been defined yet, then build it.
+	if (typeof(displayTextAreaTopBorder_DCTStyle.border) == "undefined")
+	{
+		var numHorizontalChars = pEditRight - pEditLeft - 1;
+		/*
+		if (console.screen_columns >= 82)
+			numHorizontalChars += 2;
+		*/
 
-      displayTextAreaTopBorder_DCTStyle.border = UPPER_LEFT_SINGLE;
-      for (var i = 0; i < numHorizontalChars; ++i)
-         displayTextAreaTopBorder_DCTStyle.border += HORIZONTAL_SINGLE;
-      displayTextAreaTopBorder_DCTStyle.border += UPPER_RIGHT_SINGLE;
-      displayTextAreaTopBorder_DCTStyle.border =
-               randomTwoColorString(displayTextAreaTopBorder_DCTStyle.border,
-                                    gConfigSettings.DCTColors.EditAreaBorderColor1,
-                                    gConfigSettings.DCTColors.EditAreaBorderColor2);
-   }
+		displayTextAreaTopBorder_DCTStyle.border = UPPER_LEFT_SINGLE;
+		for (var i = 0; i < numHorizontalChars; ++i)
+			displayTextAreaTopBorder_DCTStyle.border += HORIZONTAL_SINGLE;
+		displayTextAreaTopBorder_DCTStyle.border += UPPER_RIGHT_SINGLE;
+		displayTextAreaTopBorder_DCTStyle.border =
+		randomTwoColorString(displayTextAreaTopBorder_DCTStyle.border,
+		gConfigSettings.DCTColors.EditAreaBorderColor1,
+		gConfigSettings.DCTColors.EditAreaBorderColor2);
+	}
 
 	// Draw the line on the screen
-	console.gotoxy((console.screen_columns >= 82 ? pEditLeft-1 : pEditLeft), pLineNum);
+	//console.gotoxy((console.screen_columns >= 82 ? pEditLeft-1 : pEditLeft), pLineNum);
+	console.gotoxy(pEditLeft, pLineNum);
 	console.print(displayTextAreaTopBorder_DCTStyle.border);
 }
 
@@ -328,44 +340,47 @@ function displayTextAreaTopBorder_DCTStyle(pLineNum, pEditLeft, pEditRight)
 function DisplayTextAreaBottomBorder_DCTStyle(pLineNum, pUseQuotes, pEditLeft, pEditRight,
                                                pInsertMode, pCanChgMsgColor)
 {
-   // The border will use random bright/normal colors.  The colors
-   // should stay the same each time we draw it, so a "static"
-   // variable is used for the border text.  If that variable has
-   // not been defined yet, then build it.
-   if (typeof(DisplayTextAreaBottomBorder_DCTStyle.border) == "undefined")
-   {
-      var innerWidth = pEditRight - pEditLeft - 1;
-      // If the screen is at least 82 characters wide, add 2 to innerWidth
-      // to make room for the vertical lines around the text area.
-      if (console.screen_columns >= 82)
-         innerWidth += 2;
+	// The border will use random bright/normal colors.  The colors
+	// should stay the same each time we draw it, so a "static"
+	// variable is used for the border text.  If that variable has
+	// not been defined yet, then build it.
+	if (typeof(DisplayTextAreaBottomBorder_DCTStyle.border) == "undefined")
+	{
+		var innerWidth = pEditRight - pEditLeft - 1;
+		/*
+		// If the screen is at least 82 characters wide, add 2 to innerWidth
+		// to make room for the vertical lines around the text area.
+		if (console.screen_columns >= 82)
+			innerWidth += 2;
+		*/
 
-      DisplayTextAreaBottomBorder_DCTStyle.border = LOWER_LEFT_SINGLE;
+		DisplayTextAreaBottomBorder_DCTStyle.border = LOWER_LEFT_SINGLE;
 
-      // This loop uses innerWidth-6 to make way for the insert mode
-      // text.
-      for (var i = 0; i < innerWidth-6; ++i)
-         DisplayTextAreaBottomBorder_DCTStyle.border += HORIZONTAL_SINGLE;
-      DisplayTextAreaBottomBorder_DCTStyle.border =
-               randomTwoColorString(DisplayTextAreaBottomBorder_DCTStyle.border,
-                                    gConfigSettings.DCTColors.EditAreaBorderColor1,
-                                    gConfigSettings.DCTColors.EditAreaBorderColor2);
-      // Insert mode
-      DisplayTextAreaBottomBorder_DCTStyle.border += gConfigSettings.DCTColors.EditModeBrackets
-                                                   + "[" + gConfigSettings.DCTColors.EditMode
-                                                   + pInsertMode
-                                                   + gConfigSettings.DCTColors.EditModeBrackets
-                                                   + "]";
-      // The last 2 border characters
-      DisplayTextAreaBottomBorder_DCTStyle.border +=
-                     randomTwoColorString(HORIZONTAL_SINGLE + LOWER_RIGHT_SINGLE,
-                                          gConfigSettings.DCTColors.EditAreaBorderColor1,
-                                          gConfigSettings.DCTColors.EditAreaBorderColor2);
-   }
+		// This loop uses innerWidth-6 to make way for the insert mode
+		// text.
+		for (var i = 0; i < innerWidth-6; ++i)
+			DisplayTextAreaBottomBorder_DCTStyle.border += HORIZONTAL_SINGLE;
+		DisplayTextAreaBottomBorder_DCTStyle.border =
+		randomTwoColorString(DisplayTextAreaBottomBorder_DCTStyle.border,
+		gConfigSettings.DCTColors.EditAreaBorderColor1,
+		gConfigSettings.DCTColors.EditAreaBorderColor2);
+		// Insert mode
+		DisplayTextAreaBottomBorder_DCTStyle.border += gConfigSettings.DCTColors.EditModeBrackets
+		                                            + "[" + gConfigSettings.DCTColors.EditMode
+		                                            + pInsertMode
+		                                            + gConfigSettings.DCTColors.EditModeBrackets
+		                                            + "]";
+		// The last 2 border characters
+		DisplayTextAreaBottomBorder_DCTStyle.border +=
+		randomTwoColorString(HORIZONTAL_SINGLE + LOWER_RIGHT_SINGLE,
+		gConfigSettings.DCTColors.EditAreaBorderColor1,
+		gConfigSettings.DCTColors.EditAreaBorderColor2);
+	}
 
-   // Draw the border line on the screen.
-   console.gotoxy((console.screen_columns >= 82 ? pEditLeft-1 : pEditLeft), pLineNum);
-   console.print(DisplayTextAreaBottomBorder_DCTStyle.border);
+	// Draw the border line on the screen.
+	//console.gotoxy((console.screen_columns >= 82 ? pEditLeft-1 : pEditLeft), pLineNum);
+	console.gotoxy(pEditLeft, pLineNum);
+	console.print(DisplayTextAreaBottomBorder_DCTStyle.border);
 }
 
 // Displays the help line at the bottom of the screen, in the style

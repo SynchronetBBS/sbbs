@@ -42,6 +42,12 @@
  *                              Updated to save the message if the user disconnects,
  *                              to support Synchronet's message draft feature
  *                              that was added recently.
+ * 2019-04-11 Eric Oulashin     Version 1.63 Beta
+ *                              Started working on supporting word-wrapping for
+ *                              the entire width of any terminal size, beyond
+ *                              79.
+ * 2019-04-18 Eric Oulashin     Version 1.63
+ *                              Releasing this version.
  */
 
 /* Command-line arguments:
@@ -119,26 +125,32 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.62";
-const EDITOR_VER_DATE = "2018-11-11";
+const EDITOR_VERSION = "1.63";
+const EDITOR_VER_DATE = "2019-04-18";
 
 
 // Program variables
 var gEditTop = 6;                         // The top line of the edit area
 var gEditBottom = console.screen_rows-2;  // The last line of the edit area
+/*
 // gEditLeft and gEditRight are the rightmost and leftmost columns of the edit
 // area, respectively.  They default to an edit area 80 characters wide
 // in the center of the screen, but for IceEdit mode, the edit area will
 // be on the left side of the screen to match up with the screen header.
 // gEditLeft and gEditRight are 1-based.
-var gEditLeft = (console.screen_columns/2).toFixed(0) - 40 + 1;
-var gEditRight = gEditLeft + 79; // Based on gEditLeft being 1-based
+*/
+//var gEditLeft = (console.screen_columns/2).toFixed(0) - 40 + 1;
+//var gEditRight = gEditLeft + 79; // Based on gEditLeft being 1-based
+var gEditLeft = 1;
+var gEditRight = gEditLeft + console.screen_columns - 1; // Based on gEditLeft being 1-based
+/*
 // If the screen has less than 80 columns, then use the whole screen.
 if (console.screen_columns < 80)
 {
    gEditLeft = 1;
    gEditRight = console.screen_columns;
 }
+*/
 
 // Colors
 var gQuoteWinTextColor = "\1n\1" + "7\1k";   // Normal text color for the quote window (DCT default)
@@ -454,19 +466,6 @@ var gOldSubj = gMsgSubj;
 // Now it's edit time.
 var exitCode = doEditLoop();
 
-// Remove any extra blank lines that may be at the end of
-// the message (in gEditLines).
-if ((exitCode == 0) && (gEditLines.length > 0))
-{
-	var lineIndex = gEditLines.length - 1;
-	while ((lineIndex > 0) && (lineIndex < gEditLines.length) &&
-	   (gEditLines[lineIndex].length() == 0))
-	{
-		gEditLines.splice(lineIndex, 1);
-		--lineIndex;
-	}
-}
-
 // Clear the screen and display the end-of-program information (if the setting
 // is enabled).
 console.clear("\1n");
@@ -476,11 +475,40 @@ if (gConfigSettings.displayEndInfoScreen)
    console.crlf();
 }
 
-// If the user wrote & saved a message, then output the message
+// If the user wrote & saved a message, then remove any extra blank lines that
+// may be at the end of the message (in gEditLines), and output the message
 // lines to a file with the passed-in input filename.
 var savedTheMessage = false;
 if ((exitCode == 0) && (gEditLines.length > 0))
 {
+	// Remove any extra blank lines at the end of the message
+	var lineIndex = gEditLines.length - 1;
+	while ((lineIndex > 0) && (lineIndex < gEditLines.length) && (gEditLines[lineIndex].length() == 0))
+	{
+		gEditLines.splice(lineIndex, 1);
+		--lineIndex;
+	}
+
+	// New (2019-04-14): For paragraphs of non-quote lines, make the paragraph
+	// all one line.  Copy to another array of edit lines, and then set gEditLines
+	// to that array.
+	//var gEditLines = new Array();
+	//textLine = new TextLine();
+	/*
+	function TextLine(pText, pHardNewlineEnd, pIsQuoteLine)
+	{
+		this.text = "";               // The line text
+		this.hardNewlineEnd = false; // Whether or not the line has a hard newline at the end
+		this.isQuoteLine = false;    // Whether or not this is a quote line
+		// Copy the parameters if they are valid.
+		if ((pText != null) && (typeof(pText) == "string"))
+			this.text = pText;
+		if ((pHardNewlineEnd != null) && (typeof(pHardNewlineEnd) == "boolean"))
+			this.hardNewlineEnd = pHardNewlineEnd;
+		if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) == "boolean"))
+			this.isQuoteLine = pIsQuoteLine;
+	*/
+
 	// Store whether the user is still posting the message in the original sub-board
 	// and whether that's the only sub-board they're posting in.
 	var postingInOriginalSubBoard = gCrossPostMsgSubs.subCodeExists(gMsgAreaInfo.subBoardCode);
@@ -1870,168 +1898,169 @@ function doDeleteKey(pCurpos, pCurrentWordLength)
 //               currentLength: The length of the current word
 function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 {
-   // Create the return object.
-   var retObj = new Object();
-   retObj.x = pCurpos.x;
-   retObj.y = pCurpos.y;
-   retObj.currentWordLength = pCurrentWordLength;
+	// Create the return object.
+	var retObj = {
+		x: pCurpos.x,
+		y: pCurpos.y,
+		currentWordLength: pCurrentWordLength
+	};
 
-   // Note: gTextLineIndex is where the new character will appear in the line.
-   // If gTextLineIndex is somehow past the end of the current line, then
-   // fill it with spaces up to gTextLineIndex.
-   if (gTextLineIndex > gEditLines[gEditLinesIndex].length())
-   {
-      var numSpaces = gTextLineIndex - gEditLines[gEditLinesIndex].length();
-      if (numSpaces > 0)
-         gEditLines[gEditLinesIndex].text += format("%" + numSpaces + "s", "");
-      gEditLines[gEditLinesIndex].text += pUserInput;
-   }
-   // If gTextLineIndex is at the end of the line, then just append the char.
-   else if (gTextLineIndex == gEditLines[gEditLinesIndex].length())
-      gEditLines[gEditLinesIndex].text += pUserInput;
-   else
-   {
-      // gTextLineIndex is at the beginning or in the middle of the line.
-      if (inInsertMode())
-      {
-         gEditLines[gEditLinesIndex].text = spliceIntoStr(gEditLines[gEditLinesIndex].text,
-                                                          gTextLineIndex, pUserInput);
-      }
-      else
-      {
-         gEditLines[gEditLinesIndex].text = gEditLines[gEditLinesIndex].text.substr(0, gTextLineIndex)
-                                          + pUserInput + gEditLines[gEditLinesIndex].text.substr(gTextLineIndex+1);
-      }
-   }
+	// Note: gTextLineIndex is where the new character will appear in the line.
+	// If gTextLineIndex is somehow past the end of the current line, then
+	// fill it with spaces up to gTextLineIndex.
+	if (gTextLineIndex > gEditLines[gEditLinesIndex].length())
+	{
+		var numSpaces = gTextLineIndex - gEditLines[gEditLinesIndex].length();
+		if (numSpaces > 0)
+			gEditLines[gEditLinesIndex].text += format("%" + numSpaces + "s", "");
+		gEditLines[gEditLinesIndex].text += pUserInput;
+	}
+	// If gTextLineIndex is at the end of the line, then just append the char.
+	else if (gTextLineIndex == gEditLines[gEditLinesIndex].length())
+		gEditLines[gEditLinesIndex].text += pUserInput;
+	else
+	{
+		// gTextLineIndex is at the beginning or in the middle of the line.
+		if (inInsertMode())
+		{
+			gEditLines[gEditLinesIndex].text = spliceIntoStr(gEditLines[gEditLinesIndex].text,
+			gTextLineIndex, pUserInput);
+		}
+		else
+		{
+			gEditLines[gEditLinesIndex].text = gEditLines[gEditLinesIndex].text.substr(0, gTextLineIndex)
+			+ pUserInput + gEditLines[gEditLinesIndex].text.substr(gTextLineIndex+1);
+		}
+	}
 
-   // Handle text replacement (AKA macros).  Added 2013-08-31.
-   var madeTxtReplacement = false; // For screen refresh purposes
-   if (gConfigSettings.enableTextReplacements && (pUserInput == " "))
-   {
-      var txtReplaceObj = gEditLines[gEditLinesIndex].doMacroTxtReplacement(gTxtReplacements, gTextLineIndex,
-                                                            gConfigSettings.textReplacementsUseRegex);
-      madeTxtReplacement = txtReplaceObj.madeTxtReplacement;
-      if (madeTxtReplacement)
-      {
-         retObj.x += txtReplaceObj.wordLenDiff;
-         gTextLineIndex += txtReplaceObj.wordLenDiff;
-      }
-   }
+	// Handle text replacement (AKA macros).  Added 2013-08-31.
+	var madeTxtReplacement = false; // For screen refresh purposes
+	if (gConfigSettings.enableTextReplacements && (pUserInput == " "))
+	{
+		var txtReplaceObj = gEditLines[gEditLinesIndex].doMacroTxtReplacement(gTxtReplacements, gTextLineIndex,
+		                                                                      gConfigSettings.textReplacementsUseRegex);
+		madeTxtReplacement = txtReplaceObj.madeTxtReplacement;
+		if (madeTxtReplacement)
+		{
+			retObj.x += txtReplaceObj.wordLenDiff;
+			gTextLineIndex += txtReplaceObj.wordLenDiff;
+		}
+	}
 
-   // Store a copy of the current line so that we can compare it later to see
-   // if it was modified by reAdjustTextLines().
-   var originalAfterCharApplied = gEditLines[gEditLinesIndex].text;
+	// Store a copy of the current line so that we can compare it later to see
+	// if it was modified by reAdjustTextLines().
+	var originalAfterCharApplied = gEditLines[gEditLinesIndex].text;
 
-   // If the line is now too long to fit in the edit area, then we will have
-   // to re-adjust the text lines.
-   var reAdjusted = false;
-   if (gEditLines[gEditLinesIndex].length() >= gEditWidth)
-      reAdjusted = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth);
+	// If the line is now too long to fit in the edit area, then we will have
+	// to re-adjust the text lines.
+	var reAdjusted = false;
+	if (gEditLines[gEditLinesIndex].length() >= gEditWidth)
+		reAdjusted = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth);
 
-   // placeCursorAtEnd specifies whether or not to place the cursor at its
-   // spot using console.gotoxy() at the end.  This is an optimization.
-   var placeCursorAtEnd = true;
+	// placeCursorAtEnd specifies whether or not to place the cursor at its
+	// spot using console.gotoxy() at the end.  This is an optimization.
+	var placeCursorAtEnd = true;
 
-   // If the current text line is now different (modified by reAdjustTextLines())
-   // or text replacements were made, then we'll need to refresh multiple lines
-   // on the screen.
-   if ((reAdjusted && (gEditLines[gEditLinesIndex].text != originalAfterCharApplied)) || madeTxtReplacement)
-   {
-      // If gTextLineIndex is >= gEditLines[gEditLinesIndex].length(), then
-      // we know the current word was wrapped to the next line.  Figure out what
-      // retObj.x, retObj.currentWordLength, gEditLinesIndex, and gTextLineIndex
-      // should be, and increment retObj.y.  Also figure out what lines on the
-      // screen to update, and deal with scrolling if necessary.
-      if (gTextLineIndex >= gEditLines[gEditLinesIndex].length())
-      {
-         // I changed this on 2010-02-14 to (hopefully) place the cursor where
-         // it should be
-         // Old line (prior to 2010-02-14):
-         //var numChars = gTextLineIndex - gEditLines[gEditLinesIndex].length();
-         // New (2010-02-14):
-         var numChars = 0;
-         // Special case: If the current line's length is exactly the longest
-         // edit with, then the # of chars should be 0 or 1, depending on whether the
-         // entered character was a space or not.  Otherwise, calculate numChars
-         // normally.
-         if (gEditLines[gEditLinesIndex].length() == gEditWidth-1)
-            numChars = ((pUserInput == " ") ? 0 : 1);
-         else
-            numChars = gTextLineIndex - gEditLines[gEditLinesIndex].length();
-         retObj.x = gEditLeft + numChars;
-         var originalEditLinesIndex = gEditLinesIndex++;
-         gTextLineIndex = numChars;
-         // The following line is now done at the end:
-         //retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+	// If the current text line is now different (modified by reAdjustTextLines())
+	// or text replacements were made, then we'll need to refresh multiple lines
+	// on the screen.
+	if ((reAdjusted && (gEditLines[gEditLinesIndex].text != originalAfterCharApplied)) || madeTxtReplacement)
+	{
+		// If gTextLineIndex is >= gEditLines[gEditLinesIndex].length(), then
+		// we know the current word was wrapped to the next line.  Figure out what
+		// retObj.x, retObj.currentWordLength, gEditLinesIndex, and gTextLineIndex
+		// should be, and increment retObj.y.  Also figure out what lines on the
+		// screen to update, and deal with scrolling if necessary.
+		if (gTextLineIndex >= gEditLines[gEditLinesIndex].length())
+		{
+			// I changed this on 2010-02-14 to (hopefully) place the cursor where
+			// it should be
+			// Old line (prior to 2010-02-14):
+			//var numChars = gTextLineIndex - gEditLines[gEditLinesIndex].length();
+			// New (2010-02-14):
+			var numChars = 0;
+			// Special case: If the current line's length is exactly the longest
+			// edit with, then the # of chars should be 0 or 1, depending on whether the
+			// entered character was a space or not.  Otherwise, calculate numChars
+			// normally.
+			if (gEditLines[gEditLinesIndex].length() == gEditWidth-1)
+				numChars = ((pUserInput == " ") ? 0 : 1);
+			else
+				numChars = gTextLineIndex - gEditLines[gEditLinesIndex].length();
+			retObj.x = gEditLeft + numChars;
+			var originalEditLinesIndex = gEditLinesIndex++;
+			gTextLineIndex = numChars;
+			// The following line is now done at the end:
+			//retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 
-         // Figure out which lines we need to update on the screen and whether
-         // to do scrolling and what retObj.y should be.
-         if (retObj.y < gEditBottom)
-         {
-            // We're above the last line on the screen, so we can go one
-            // line down.
-            var originalY = retObj.y++;
-            // Update the lines on the screen.
-            var bottommostRow = calcBottomUpdateRow(originalY, originalEditLinesIndex);
-            displayEditLines(originalY, originalEditLinesIndex, bottommostRow, true, true);
-         }
-         else
-         {
-            // We're on the last line in the edit area, so we need to scroll
-            // the text lines up on the screen.
-            var editLinesTopIndex = gEditLinesIndex - (pCurpos.y - gEditTop);
-            displayEditLines(gEditTop, editLinesTopIndex, gEditBottom, true, true);
-         }
-      }
-      else
-      {
-         // gTextLineIndex is < the line's length.  Update the lines on the
-         // screen from the current line down.  Increment retObj.x,
-         // retObj.currentWordLength, and gTextLineIndex.
-         var bottommostRow = calcBottomUpdateRow(retObj.y, gEditLinesIndex);
-         displayEditLines(retObj.y, gEditLinesIndex, bottommostRow, true, true);
-         if (pUserInput == " ")
-            retObj.currentWordLength = 0;
-         else
-            ++retObj.currentWordLength;
-         ++retObj.x;
-         ++gTextLineIndex;
-      }
-   }
-   else
-   {
-      // The text line wasn't changed by reAdjustTextLines.
+			// Figure out which lines we need to update on the screen and whether
+			// to do scrolling and what retObj.y should be.
+			if (retObj.y < gEditBottom)
+			{
+				// We're above the last line on the screen, so we can go one
+				// line down.
+				var originalY = retObj.y++;
+				// Update the lines on the screen.
+				var bottommostRow = calcBottomUpdateRow(originalY, originalEditLinesIndex);
+				displayEditLines(originalY, originalEditLinesIndex, bottommostRow, true, true);
+			}
+			else
+			{
+				// We're on the last line in the edit area, so we need to scroll
+				// the text lines up on the screen.
+				var editLinesTopIndex = gEditLinesIndex - (pCurpos.y - gEditTop);
+				displayEditLines(gEditTop, editLinesTopIndex, gEditBottom, true, true);
+			}
+		}
+		else
+		{
+			// gTextLineIndex is < the line's length.  Update the lines on the
+			// screen from the current line down.  Increment retObj.x,
+			// retObj.currentWordLength, and gTextLineIndex.
+			var bottommostRow = calcBottomUpdateRow(retObj.y, gEditLinesIndex);
+			displayEditLines(retObj.y, gEditLinesIndex, bottommostRow, true, true);
+			if (pUserInput == " ")
+				retObj.currentWordLength = 0;
+			else
+				++retObj.currentWordLength;
+			++retObj.x;
+			++gTextLineIndex;
+		}
+	}
+	else
+	{
+		// The text line wasn't changed by reAdjustTextLines.
 
-      // If gTextLineIndex is not the last index of the line, then refresh the
-      // entire line on the screen.  Otherwise, just output the character that
-      // the user typed.
-      if (gTextLineIndex < gEditLines[gEditLinesIndex].length()-1)
-         displayEditLines(retObj.y, gEditLinesIndex, retObj.y, false, true);
-      else
-      {
-         console.print(pUserInput);
-         placeCursorAtEnd = false; // Since we just output the character
-      }
+		// If gTextLineIndex is not the last index of the line, then refresh the
+		// entire line on the screen.  Otherwise, just output the character that
+		// the user typed.
+		if (gTextLineIndex < gEditLines[gEditLinesIndex].length()-1)
+			displayEditLines(retObj.y, gEditLinesIndex, retObj.y, false, true);
+		else
+		{
+			console.print(pUserInput);
+			placeCursorAtEnd = false; // Since we just output the character
+		}
 
-      // Keep housekeeping variables up to date.
-      ++retObj.x;
-      ++gTextLineIndex;
-      /* retObj.currentWordLength is now calculated at the end, but we could do this:
-      if (pUserInput == " ")
-         retObj.currentWordLength = 0;
-      else
-         ++retObj.currentWordLength;
-      */
-   }
+		// Keep housekeeping variables up to date.
+		++retObj.x;
+		++gTextLineIndex;
+		/* retObj.currentWordLength is now calculated at the end, but we could do this:
+		if (pUserInput == " ")
+			retObj.currentWordLength = 0;
+		else
+			++retObj.currentWordLength;
+		*/
+	}
 
-   // Make sure the current word length is correct.
-   retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+	// Make sure the current word length is correct.
+	retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 
-   // Make sure the cursor is placed where it should be.
-   if (placeCursorAtEnd)
-      console.gotoxy(retObj.x, retObj.y);
+	// Make sure the cursor is placed where it should be.
+	if (placeCursorAtEnd)
+		console.gotoxy(retObj.x, retObj.y);
 
-   return retObj;
+	return retObj;
 }
 
 // Helper function for doEditLoop(): Performs the action for when the user

@@ -56,6 +56,9 @@
  *                              CTRL key help text at the right in the bottom border are
  *                              correctly displayed with a high blue color, regardless of
  *                              what is specified in the color theme file.
+ * 2019-04-11 Eric Oulashin     Updated redrawScreen_IceStyle() to not display the vertical
+ *                              bars for terminal widths >= 82, for wide text wrapping
+ *                              support.
  */
 
 load("sbbsdefs.js");
@@ -291,6 +294,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	DisplayTextAreaBottomBorder_IceStyle(pEditBottom + 1, pUseQuotes);
 	DisplayBottomHelpLine_IceStyle(console.screen_rows, pUseQuotes);
 
+	/*
 	// If the screen is at least 82 columns wide output vertical lines
 	// to frame the edit area.
 	if (console.screen_columns >= 82)
@@ -305,6 +309,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 			                                                    gConfigSettings.iceColors.BorderColor2));
 		}
 	}
+	*/
 
 	// Go to the start of the edit area
 	console.gotoxy(pEditLeft, pEditTop);
@@ -401,7 +406,7 @@ function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
       // This line contains the copyright mesage & ESC key help
       var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "w") + "ch"
                       + EDITOR_VERSION.toString() + "   "
-                      + iceText("Copyright", "w") + " ch2018 "
+                      + iceText("Copyright", "w") + " ch2019 "
                       + iceText("Eric Oulashin", "w") + " nb" + DOT_CHAR + " "
                       + iceText("Press ESCape For Help", "w");
       // Calculate the starting position to center the help text, and front-pad
