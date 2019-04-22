@@ -252,18 +252,17 @@ int main(int argc, char **argv)
 						case 'A':
 							ciolib_mode=CIOLIB_MODE_ANSI;
 							break;
+#if defined __unix__
 						case 'C':
 							ciolib_mode=CIOLIB_MODE_CURSES;
 							break;
-						case 0:
-							printf("NOTICE: The -i option is deprecated, use -if instead\r\n");
-							SLEEP(2000);
 						case 'F':
 							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
 							break;
 						case 'X':
 							ciolib_mode=CIOLIB_MODE_X;
 							break;
+#endif
 						case 'W':
 							ciolib_mode=CIOLIB_MODE_CONIO;
 							break;
