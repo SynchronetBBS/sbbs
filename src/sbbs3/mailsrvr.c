@@ -994,12 +994,12 @@ static void pop3_thread(void* arg)
 		lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
 			,socket, client.protocol, host_ip, inet_addrport(&pop3.client_addr));
 
-	if(getnameinfo(&pop3.client_addr.addr, pop3.client_addr_len, host_name, sizeof(host_name), NULL, 0, (startup->options&MAIL_OPT_NO_HOST_LOOKUP)?NI_NUMERICHOST:0)!=0)
-		SAFECOPY(host_name, "<no name>");
-
-	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP) && (startup->options&MAIL_OPT_DEBUG_POP3))
-		lprintf(LOG_INFO,"%04d %s Hostname: %s", socket, client.protocol, host_name);
-
+	SAFECOPY(host_name, STR_NO_HOSTNAME);
+	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP)) {
+		getnameinfo(&pop3.client_addr.addr, pop3.client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
+		if(startup->options&MAIL_OPT_DEBUG_POP3)
+			lprintf(LOG_INFO,"%04d %s Hostname: %s", socket, client.protocol, host_name);
+	}
 	if (pop3.tls_port) {
 		if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 			if (estr) {
@@ -2901,12 +2901,11 @@ static void smtp_thread(void* arg)
 	lprintf(LOG_INFO,"%04d %s Connection accepted on port %u from: %s port %u"
 		,socket, client.protocol, inet_addrport(&server_addr), host_ip, inet_addrport(&smtp.client_addr));
 
-	if(getnameinfo(&smtp.client_addr.addr, smtp.client_addr_len, host_name, sizeof(host_name), NULL, 0, (startup->options&MAIL_OPT_NO_HOST_LOOKUP)?NI_NUMERICHOST:0)!=0)
-		SAFECOPY(host_name, "<no name>");
-
-	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP))
+	SAFECOPY(host_name, STR_NO_HOSTNAME);
+	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP)) {
+		getnameinfo(&smtp.client_addr.addr, smtp.client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		lprintf(LOG_INFO,"%04d %s Hostname: %s", socket, client.protocol, host_name);
-
+	}
 	protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 

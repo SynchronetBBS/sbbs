@@ -156,7 +156,7 @@ void sbbs_t::badlogin(char* user, char* passwd, const char* protocol, xp_sockadd
 	if(addr == NULL)
 		addr = &client_addr;
 
-	SAFECOPY(host_name, "<no name>");
+	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	socklen_t addr_len = sizeof(*addr);
 	SAFEPRINTF(reason,"%s LOGIN", protocol);
 	count=loginFailure(startup->login_attempt_list, addr, protocol, user, passwd);

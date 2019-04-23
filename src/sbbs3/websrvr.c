@@ -6283,19 +6283,18 @@ void http_session_thread(void* arg)
 
 	sbbs_srand();	/* Seed random number generator */
 
-	if(getnameinfo(&session.addr.addr, session.addr_len, session.host_name, sizeof(session.host_name), NULL, 0, (startup->options&BBS_OPT_NO_HOST_LOOKUP)?NI_NUMERICHOST:0)!=0)
-		SAFECOPY(session.host_name, session.host_ip);
-
+	char host_name[128] = "";
 	if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))  {
-		lprintf(LOG_INFO,"%04d Hostname: %s", session.socket, session.host_name);
+		getnameinfo(&session.addr.addr, session.addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
+		lprintf(LOG_INFO,"%04d Hostname: %s", session.socket, host_name[0] ? host_name : STR_NO_HOSTNAME);
 #if	0 /* gethostbyaddr() is apparently not (always) thread-safe
 	     and getnameinfo() doesn't return alias information */
 		for(i=0;host!=NULL && host->h_aliases!=NULL
 			&& host->h_aliases[i]!=NULL;i++)
 			lprintf(LOG_INFO,"%04d HostAlias: %s", session.socket, host->h_aliases[i]);
 #endif
-		if(trashcan(&scfg,session.host_name,"host")) {
-			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s", session.socket, session.host_name);
+		if(host_name[0] && trashcan(&scfg, host_name,"host")) {
+			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s", session.socket, host_name);
 			close_session_socket(&session);
 			sem_wait(&session.output_thread_terminated);
 			sem_destroy(&session.output_thread_terminated);
@@ -6304,9 +6303,15 @@ void http_session_thread(void* arg)
 			return;
 		}
 	}
+	if(host_name[0])
+		SAFECOPY(session.host_name, host_name);
+	else {
+		SAFECOPY(session.host_name, session.host_ip);
+		SAFECOPY(host_name, STR_NO_HOSTNAME);
+	}
 
 	login_attempt_t attempted;
-	ulong banned = loginBanned(&scfg, startup->login_attempt_list, session.socket, session.host_name, startup->login_attempt, &attempted);
+	ulong banned = loginBanned(&scfg, startup->login_attempt_list, session.socket, host_name, startup->login_attempt, &attempted);
 
 	/* host_ip wasn't defined in http_session_thread */
 	if(banned || trashcan(&scfg,session.host_ip,"ip")) {
@@ -6329,7 +6334,7 @@ void http_session_thread(void* arg)
 	SAFECOPY(session.username,unknown);
 
 	SAFECOPY(session.client.addr,session.host_ip);
-	SAFECOPY(session.client.host,session.host_name);
+	SAFECOPY(session.client.host, host_name);
 	session.client.port=inet_addrport(&session.addr);
 	session.client.time=time32(NULL);
 	session.client.protocol=session.is_tls ? "HTTPS":"HTTP";

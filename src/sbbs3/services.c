@@ -1002,19 +1002,13 @@ static void js_service_thread(void* arg)
 	protected_uint32_adjust(&threads_pending_start, -1);
 
 	/* Host name lookup and filtering */
-	if(service->options&BBS_OPT_NO_HOST_LOOKUP 
-			|| startup->options&BBS_OPT_NO_HOST_LOOKUP)
-		SAFECOPY(host_name, "<no name>");
-	else {
-		if(getnameinfo(&service_client.addr.addr, xp_sockaddr_len(&service_client), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD) != 0)
-			SAFECOPY(host_name, "<no name>");
-	}
-
+	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if(!(service->options&BBS_OPT_NO_HOST_LOOKUP)
-		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP)
-		&& service->log_level >= LOG_INFO) {
-		lprintf(LOG_INFO,"%04d %s Hostname: %s"
-			,socket, service->protocol, host_name);
+		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
+		getnameinfo(&service_client.addr.addr, xp_sockaddr_len(&service_client), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
+		if(service->log_level >= LOG_INFO)
+			lprintf(LOG_INFO,"%04d %s Hostname: %s"
+				,socket, service->protocol, host_name);
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
@@ -1390,15 +1384,10 @@ static void native_service_thread(void* arg)
 	protected_uint32_adjust(&threads_pending_start, -1);
 
 	/* Host name lookup and filtering */
-	if(service->options&BBS_OPT_NO_HOST_LOOKUP 
-			|| startup->options&BBS_OPT_NO_HOST_LOOKUP)
-		SAFECOPY(host_name, "<no name>");
-	else 
-		if(getnameinfo(&service_client.addr.addr, xp_sockaddr_len(&service_client), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD)!=0)
-			SAFECOPY(host_name, "<no name>");
-
+	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if(!(service->options&BBS_OPT_NO_HOST_LOOKUP)
 		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
+		getnameinfo(&service_client.addr.addr, xp_sockaddr_len(&service_client), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		lprintf(LOG_INFO,"%04d %s Hostname: %s"
 			,socket, service->protocol, host_name);
 #if	0 /* gethostbyaddr() is apparently not (always) thread-safe
