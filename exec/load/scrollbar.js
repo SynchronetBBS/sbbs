@@ -184,6 +184,12 @@ var ScrollBar = function (frame, opts) {
 			self.open();
 		}
 
+        if (scrollBarFrame.x != frame.x + frame.width - 1 || scrollBarFrame.y != frame.y) {
+            scrollBarFrame.moveTo(frame.x + frame.width - 1, frame.y);
+            scrollArea.moveTo(scrollBarFrame.x, scrollBarFrame.y + 1);
+            bar.moveTo(scrollBarFrame.x, bar.y);
+        }
+
 		var adj = Math.min(
 			scrollArea.height,
 			Math.round(scrollArea.height * (frame.height / frame.data_height))
