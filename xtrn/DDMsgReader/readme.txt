@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.19
-                           Release date: 2019-04-25
+                                 Version 1.20
+                           Release date: 2019-04-26
 
                                      by
 
@@ -703,6 +703,9 @@ msgListToColor                       Color for the destination name (in the
                                      message list)
 msgListSubjectColor                  Color for the message subject (in the
                                      message list)
+msgListScoreColor                    Color for the message score (in the
+                                     message list) - For terminals at least
+                                     86 characters wide
 msgListDateColor                     Color for the message date (in the message
                                      list)
 msgListTimeColor                     Color for the message time (in the message
@@ -716,6 +719,10 @@ msgListToUserToColor                 Color for the destination name, for
                                      messages to the user (in the message list)
 msgListToUserSubjectColor            Color for the message subject, for
                                      messages to the user (in the message list)
+msgListToUserScoreColor              Color for the message score, for
+                                     messages to the user (in the message list)
+                                     - For terminals at least 86 characters
+                                     wide
 msgListToUserDateColor               Color for the message date, for messages
                                      to the user (in the message list)
 msgListToUserTimeColor               Color for the message time, for messages
@@ -731,6 +738,10 @@ msgListFromUserToColor               Color for the mestination name, for
 msgListFromUserSubjectColor          Color for the message subject, for
                                      messages from the user (in the message
                                      list)
+msgListFromUserScoreColor            Color for the message score, for
+                                     messages from the user (in the message
+                                     list) - For terminals at least 86
+                                     characters wide
 msgListFromUserDateColor             Color for the message date, for messages
                                      from the user (in the message list)
 msgListFromUserTimeColor             Color for the message time, for messages
@@ -746,6 +757,9 @@ msgListToHighlightColor              Message list highlighted 'to' name color
                                      (for lightbar mode)
 msgListSubjHighlightColor            Message list highlighted subject color
                                      (for lightbar mode)
+msgListScoreHighlightColor           Message list highlighted score color
+                                     (for lightbar mode) - For terminals at
+                                     least 86 characters wide
 msgListDateHighlightColor            Message list highlighted date color (for
                                      lightbar mode)
 msgListTimeHighlightColor            Message list highlighted time color (for

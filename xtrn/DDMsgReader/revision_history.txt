@@ -5,7 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.19     2019-03-25   If the terminal size is wide enough (at least 86
+1.20     2019-04-26   Added configurable options for the message score colors
+                      for the message list: msgListScoreColor,
+                      msgListToUserScoreColor, msgListFromUserScoreColor, and
+                      msgListScoreHighlightColor
+1.19     2019-04-25   If the terminal size is wide enough (at least 86
                       characters), the overall vote scores for the messages
                       is now displayed in the message list.  Also, fixed a
                       bug introduced in the previous version where the vote
