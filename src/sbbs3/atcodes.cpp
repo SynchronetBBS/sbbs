@@ -345,6 +345,32 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(nulstr);
 	}
 
+	if(strncmp(sp, "POS:", 4) == 0) {	// PCBoard	(nn is 0 or 1 based?)
+		for(l = atoi(sp + 4) - column; l > 0; l--)
+			outchar(' ');
+		return nulstr;
+	}
+
+	if(strncmp(sp, "DELAY:", 6) == 0) {	// PCBoard
+		mswait(atoi(sp + 6) * 100);
+		return nulstr;
+	}
+
+	if(strcmp(sp, "YESCHAR") == 0) {	// PCBoard
+		safe_snprintf(str, maxlen, "%c", text[YNQP][0]);
+		return str;
+	}
+
+	if(strcmp(sp, "NOCHAR") == 0) {		// PCBoard
+		safe_snprintf(str, maxlen, "%c", text[YNQP][1]);
+		return str;
+	}
+
+	if(strcmp(sp, "QUITCHAR") == 0) {
+		safe_snprintf(str, maxlen, "%c", text[YNQP][2]);
+		return str;
+	}
+
 	/* NOSTOP */
 
 	/* STOP */
@@ -707,7 +733,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(nulstr);
 	}
 
-	if(!strcmp(sp,"CLR2EOL")) {
+	if(!strcmp(sp,"CLR2EOL") || !strcmp(sp,"CLREOL")) {
 		cleartoeol();
 		return(nulstr);
 	}
