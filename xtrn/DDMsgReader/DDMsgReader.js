@@ -139,6 +139,12 @@
  *                              definitions before adding them to the attribute strings,
  *                              since some of them have changed.
  *                              Released this version as non-beta.
+ * 2019-04-24 Eric Oulashin     Version 1.19 Beta
+ *                              Removed use of get_index(), since that method of filtering
+ *                              messages returned headers without vote information.
+ * 2019-04-25 Eric Oulashin     Version 1.19
+ *                              Updated to show message score values in the message list
+ *                              if the terminal is wide enough (>= 86 characters)
  */
 
 // TODO: Support anonymous posts?  Bit values for sub[x].settings:
@@ -226,8 +232,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.18";
-var READER_DATE = "2019-04-15";
+var READER_VERSION = "1.19";
+var READER_DATE = "2019-04-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -877,6 +883,12 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.TO_LEN = (console.screen_columns * (15/console.screen_columns)).toFixed(0);
 	var colsLeftForSubject = console.screen_columns-this.MSGNUM_LEN-this.DATE_LEN-this.TIME_LEN-this.FROM_LEN-this.TO_LEN-6; // 6 to account for the spaces
 	this.SUBJ_LEN = (console.screen_columns * (colsLeftForSubject/console.screen_columns)).toFixed(0);
+	// For showing message scores in the message list
+	this.SCORE_LEN = 4;
+	// Whether or not to show message scores in the message list: Only if the terminal
+	// is at least 86 characters wide and if vote functions exist in the running build
+	// of Synchronet
+	this.showScoresInMsgList = ((console.screen_columns >= 86) && (typeof((new MsgBase("mail")).vote_msg) === "function"));
 
 	// Whether or not the user chose to read a message
 	this.readAMessage = false;
@@ -1229,11 +1241,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.dateLen = 10; // i.e., YYYY-MM-DD
 	this.timeLen = 8;  // i.e., HH:MM:SS
 	// Sub-board name length - This should be 47 for an 80-column display.
-	this.subBoardNameLen = console.screen_columns - this.areaNumLen -
-	this.numItemsLen - this.dateLen - this.timeLen - 7;
+	this.subBoardNameLen = console.screen_columns - this.areaNumLen - this.numItemsLen - this.dateLen - this.timeLen - 7;
 	// Message group description length (67 chars on an 80-column screen)
-	this.msgGrpDescLen = console.screen_columns - this.areaNumLen -
-	this.numItemsLen - 5;
+	this.msgGrpDescLen = console.screen_columns - this.areaNumLen - this.numItemsLen - 5;
 
 	// Some methods for choosing the message area
 	this.WriteChgMsgAreaKeysHelpLine = DigDistMsgReader_WriteLightbarChgMsgAreaKeysHelpLine;
@@ -1386,58 +1396,44 @@ function DigDistMsgReader_SetSubBoardCode(pSubCode)
 // messages that are deleted, unvalidated, private, and voting messages.
 function DigDistMsgReader_PopulateHdrsForCurrentSubBoard()
 {
-	this.hdrsForCurrentSubBoard = [];
-	this.hdrsForCurrentSubBoardByMsgNum = new Object();
-
 	if (this.subBoardCode == "mail")
+	{
+		this.hdrsForCurrentSubBoard = [];
+		this.hdrsForCurrentSubBoardByMsgNum = new Object();
 		return;
+	}
 
+	var tmpHdrs = null;
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
-		if (typeof(msgbase.get_index) === "function")
-		{
-			var indexes = msgbase.get_index();
-			for (var i = 0; i < indexes.length; ++i)
-			{
-				if (indexes[i] == null)
-					continue;
-				else if (isReadableMsgHdr(indexes[i], this.subBoardCode))
-				{
-					var msgHdr = msgbase.get_msg_header(false, indexes[i].number, true);
-					this.hdrsForCurrentSubBoard.push(msgHdr);
-					this.hdrsForCurrentSubBoardByMsgNum[msgHdr.number] = this.hdrsForCurrentSubBoard.length - 1;
-				}
-			}
-		}
-		else if (typeof(msgbase.get_all_msg_headers) === "function")
+		// First get all headers in a temporary array, then filter them into
+		// this.hdrsForCurrentSubBoard.
+		// If get_all_msg_headers exists as a function, then use it.  Otherwise,
+		// iterate through all message offsets and get the headers.
+		if (typeof(msgbase.get_all_msg_headers) === "function")
 		{
 			// Pass false to get_all_msg_headers() to tell it not to return vote messages
-			var tmpHdrs = msgbase.get_all_msg_headers(false);
-			// Filter the headers into this.hdrsForCurrentSubBoard
-			if (tmpHdrs != null)
-				this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpHdrs, true);
+			// (the parameter was introduced in Synchronet 3.17+)
+			tmpHdrs = msgbase.get_all_msg_headers(false);
 		}
 		else
 		{
-			// Go through all the message headers one by one and add them if
-			// they're readable messages
-			var tmpHdrs = [];
+			tmpHdrs = [];
+			var msgHdr;
 			var numMsgs = msgbase.total_msgs;
 			for (var msgIdx = 0; msgIdx < numMsgs; ++msgIdx)
 			{
-				var msgHdr = msgbase.get_msg_header(true, msgIdx, true);
-				if (msgHdr == null)
-					continue;
-				else if (isReadableMsgHdr(msgHdr, this.subBoardCode))
-				{
-					this.hdrsForCurrentSubBoard.push(msgHdr);
-					this.hdrsForCurrentSubBoardByMsgNum[msgHdr.number] = this.hdrsForCurrentSubBoard.length - 1;
-				}
+				msgHdr = msgbase.get_msg_header(true, msgIdx, expandFields);
+				tmpHdrs.push(msgHdr);
 			}
 		}
 		msgbase.close();
 	}
+
+	// Filter the headers into this.hdrsForCurrentSubBoard
+	if (tmpHdrs != null)
+		this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpHdrs, true);
 }
 
 // For the DigDistMsgReader class: Takes an array of message headers in the current
@@ -1554,17 +1550,6 @@ function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pSubBoar
 					this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr | pAttrib;
 					var msgOffsetFromHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].offset;
 					msgbase.put_msg_header(true, msgOffsetFromHdr, this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex]);
-					// New - Workaround to avoid an error I started seeing on March 31, 2019:
-					/*
-					var tmpHdr = msgbase.get_msg_header(false, msgOffsetFromHdr, false);
-					console.print("\1n\r\nMsg #: " + msgOffsetFromHdr + ", tmpHdr: " + tmpHdr + "\r\n\1p"); // Temporary
-					if (tmpHdr != null)
-					{
-						tmpHdr.attr |= pAttrib;
-						//MsgBase.put_msg_header([by_offset=false,] number, object header)
-						msgbase.put_msg_header(false, tmpHdr.number, tmpHdr);
-					}
-					*/
 				}
 			}
 			else
@@ -3291,7 +3276,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		}
 
 		// Write the current message information with highlighting colors
-		msgHeader = this.GetMsgHdrByIdx(this.lightbarListSelectedMsgIdx);
+		msgHeader = this.GetMsgHdrByIdx(this.lightbarListSelectedMsgIdx, this.showScoresInMsgList);
 		this.PrintMessageInfo(msgHeader, true, this.lightbarListSelectedMsgIdx+1);
 		console.gotoxy(this.lightbarListCurPos); // Make sure the cursor is still in the right place
 
@@ -4128,6 +4113,14 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 	// etc.  If not, then it will just be a space.
 	var msgIndicatorChar = " ";
 
+	// Get the message score value
+	var msgVoteInfo = getMsgUpDownvotesAndScore(pMsgHeader);
+	// Ensure the score number can fit within 4 digits
+	if (msgVoteInfo.voteScore > 9999)
+		msgVoteInfo.voteScore = 9999;
+	else if (msgVoteInfo.voteScore < -999)
+		msgVoteInfo.voteScore = -999;
+
 	// Write the message header information.
 	// Note: The message header has the following fields:
 	// 'number': The message number
@@ -4143,13 +4136,22 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 			msgIndicatorChar = "\1n\1r\1h\1i" + this.colors.msgListHighlightBkgColor + "*\1n";
 		else if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
 			msgIndicatorChar = "\1n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + CHECK_CHAR + "\1n";
-		printf(this.sMsgInfoFormatHighlightStr,
-		       msgNum,
-		       msgIndicatorChar,
-		       pMsgHeader.from.substr(0, this.FROM_LEN),
-		       pMsgHeader.to.substr(0, this.TO_LEN),
-		       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
-		       sDate, sTime);
+		if (this.showScoresInMsgList)
+		{
+			printf(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
+			       pMsgHeader.from.substr(0, this.FROM_LEN),
+			       pMsgHeader.to.substr(0, this.TO_LEN),
+			       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+			       msgVoteInfo.voteScore, sDate, sTime);
+		}
+		else
+		{
+			printf(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
+			       pMsgHeader.from.substr(0, this.FROM_LEN),
+			       pMsgHeader.to.substr(0, this.TO_LEN),
+			       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+			       sDate, sTime);
+		}
 	}
 	else
 	{
@@ -4169,9 +4171,18 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 			formatStr = this.sMsgInfoFormatStr;
 		else
 			formatStr = (msgToUser ? this.sMsgInfoToUserFormatStr : (msgIsFromUser ? this.sMsgInfoFromUserFormatStr : this.sMsgInfoFormatStr));
-		printf(formatStr, msgNum, msgIndicatorChar, pMsgHeader.from.substr(0, this.FROM_LEN),
-		       pMsgHeader.to.substr(0, this.TO_LEN), pMsgHeader.subject.substr(0, this.SUBJ_LEN),
-		       sDate, sTime);
+		if (this.showScoresInMsgList)
+		{
+			printf(formatStr, msgNum, msgIndicatorChar, pMsgHeader.from.substr(0, this.FROM_LEN),
+			       pMsgHeader.to.substr(0, this.TO_LEN), pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+			       msgVoteInfo.voteScore, sDate, sTime);
+		}
+		else
+		{
+			printf(formatStr, msgNum, msgIndicatorChar, pMsgHeader.from.substr(0, this.FROM_LEN),
+			       pMsgHeader.to.substr(0, this.TO_LEN), pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+			       sDate, sTime);
+		}
 	}
 	console.cleartoeol("\1n"); // To clear away any extra text that may have been entered by the user
 }
@@ -6786,7 +6797,10 @@ function DigDistMsgReader_WriteMsgListScreenTopHeader()
 	}
 
 	// Write the message listing column headers
-	printf(this.colors["msgListColHeader"] + this.sHdrFormatStr, "Msg#", "From", "To", "Subject", "Date", "Time");
+	if (this.showScoresInMsgList)
+		printf(this.colors.msgListColHeader + this.sMsgListHdrFormatStr, "Msg#", "From", "To", "Subject", "+/-", "Date", "Time");
+	else
+		printf(this.colors.msgListColHeader + this.sMsgListHdrFormatStr, "Msg#", "From", "To", "Subject", "Date", "Time");
 
 	// Set the normal text attribute
 	console.print("\1n");
@@ -6818,7 +6832,7 @@ function DigDistMsgReader_ListScreenfulOfMessages(pTopIndex, pMaxLines)
 
 			// Get the message header (it will be a MsgHeader object) and
 			// display it.
-			msgHeader = this.GetMsgHdrByIdx(msgIndex);
+			msgHeader = this.GetMsgHdrByIdx(msgIndex, this.showScoresInMsgList);
 			if (msgHeader == null)
 				continue;
 
@@ -6848,7 +6862,7 @@ function DigDistMsgReader_ListScreenfulOfMessages(pTopIndex, pMaxLines)
 
 			// Get the message header (it will be a MsgHeader object) and
 			// display it.
-			msgHeader = this.GetMsgHdrByIdx(msgIndex);
+			msgHeader = this.GetMsgHdrByIdx(msgIndex, this.showScoresInMsgList);
 			if (msgHeader == null)
 				continue;
 
@@ -8575,15 +8589,7 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 		}
 	}
 	var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
-	var msgUpvotes = 0;
-	var msgDownvotes = 0;
-	var msgVoteScore = 0;
-	if (pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
-	{
-		msgUpvotes = pMsgHdr.upvotes;
-		msgDownvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
-		msgVoteScore = pMsgHdr.upvotes - msgDownvotes;
-	}
+	var msgVoteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
 	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
 	                         .replace(/@MSG_TO@/gi, pMsgHdr["to"])
 	                         .replace(/@MSG_TO_NAME@/gi, pMsgHdr["to"])
@@ -8615,9 +8621,9 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 							 .replace(/@ALIAS@/gi, user.alias)
 							 .replace(/@NAME@/gi, (user.name.length > 0 ? user.name : user.alias))
 							 .replace(/@USER@/gi, user.alias)
-							 .replace(/@MSG_UPVOTES@/gi, msgUpvotes)
-							 .replace(/@MSG_DOWNVOTES@/gi, msgDownvotes)
-							 .replace(/@MSG_SCORE@/gi, msgVoteScore);
+							 .replace(/@MSG_UPVOTES@/gi, msgVoteInfo.upvotes)
+							 .replace(/@MSG_DOWNVOTES@/gi,msgVoteInfo.downvotes)
+							 .replace(/@MSG_SCORE@/gi, msgVoteInfo.voteScore);
 	// If the user is not the sysop and the message was posted anonymously,
 	// then replace the from name @-codes with "Anonymous".  Otherwise,
 	// replace the from name @-codes with the actual from name.
@@ -9494,11 +9500,9 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	var enhHdrLines = this.enhMsgHeaderLines.slice(0);
 	if (this.usingInternalEnhMsgHdr && !msgIsAPoll && pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
 	{
-		var msgUpvotes = pMsgHdr.upvotes;
-		var msgDownvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
-		var msgVoteScore = pMsgHdr.upvotes - msgDownvotes;
-		//var voteStatsTxt = "\1n\1c" + RIGHT_T_SINGLE + "\1h+" + msgUpvotes + "\1n\1c, \1h-" + msgDownvotes + "\1n\1c, \1h" + msgVoteScore + "\1n\1c" + LEFT_T_SINGLE;
-		var voteStatsTxt = "\1n\1c" + RIGHT_T_SINGLE + "\1h\1gS\1n\1gcore\1h\1c: \1b" + msgVoteScore + " (+" + msgUpvotes + ", -" + msgDownvotes + ")\1n\1c" + LEFT_T_SINGLE;
+		var voteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
+		//var voteStatsTxt = "\1n\1c" + RIGHT_T_SINGLE + "\1h+" + voteInfo.upvotes + "\1n\1c, \1h-" + voteInfo.downvotes + "\1n\1c, \1h" + voteInfo.voteScore + "\1n\1c" + LEFT_T_SINGLE;
+		var voteStatsTxt = "\1n\1c" + RIGHT_T_SINGLE + "\1h\1gS\1n\1gcore\1h\1c: \1b" + voteInfo.voteScore + " (+" + voteInfo.upvotes + ", -" + voteInfo.downvotes + ")\1n\1c" + LEFT_T_SINGLE;
 		enhHdrLines[6] = enhHdrLines[6].slice(0, 10) + "\1n\1c" + voteStatsTxt + "\1n\1c" + HORIZONTAL_SINGLE + "\1h\1k" + enhHdrLines[6].slice(17 + strip_ctrl(voteStatsTxt).length);
 	}
 
@@ -14336,13 +14340,11 @@ function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
 	if (!pMsgHdr.hasOwnProperty("total_votes") || !pMsgHdr.hasOwnProperty("upvotes"))
 		return [];
 
-	var msgUpvotes = pMsgHdr.upvotes;
-	var msgDownvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
-	var msgVoteScore = pMsgHdr.upvotes - msgDownvotes;
+	var voteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
 	var voteInfo = [];
-	voteInfo.push("Upvotes: " + msgUpvotes);
-	voteInfo.push("Downvotes: " + msgDownvotes);
-	voteInfo.push("Score: " + msgVoteScore);
+	voteInfo.push("Upvotes: " + voteInfo.upvotes);
+	voteInfo.push("Downvotes: " + voteInfo.downvotes);
+	voteInfo.push("Score: " + voteInfo.voteScore);
 	if (pMsgHdr.hasOwnProperty("tally"))
 		voteInfo.push("Tally: " + pMsgHdr.tally);
 
@@ -14604,6 +14606,15 @@ function DigDistMsgReader_RefreshMsgHdrInArrays(pMsgNum)
 //              length.
 function DigDistMsgReader_RecalcMsgListWidthsAndFormatStrs(pMsgNumLen)
 {
+	// Note: Constructing these strings must be done after reading the configuration
+	// file in order for the configured colors to be used
+
+	this.sMsgListHdrFormatStr = "";
+	this.sMsgInfoFormatStr = "";
+	this.sMsgInfoToUserFormatStr = "";
+	this.sMsgInfoFromUserFormatStr = "";
+	this.sMsgInfoFormatHighlightStr = "";
+
 	this.MSGNUM_LEN = (typeof(pMsgNumLen) == "number" ? pMsgNumLen : this.NumMessages(null, true).toString().length);
 	if (this.MSGNUM_LEN < 4)
 		this.MSGNUM_LEN = 4;
@@ -14615,51 +14626,97 @@ function DigDistMsgReader_RecalcMsgListWidthsAndFormatStrs(pMsgNumLen)
 	var colsLeftForSubject = console.screen_columns-this.MSGNUM_LEN-this.DATE_LEN-this.TIME_LEN-this.FROM_LEN-this.TO_LEN-6; // 6 to account for the spaces
 	this.SUBJ_LEN = (console.screen_columns * (colsLeftForSubject/console.screen_columns)).toFixed(0);
 
-	// Construct the message list header format string
-	this.sHdrFormatStr = "%" + this.MSGNUM_LEN + "s %-" + this.FROM_LEN + "s %-"
-	                   + this.TO_LEN + "s %-" + this.SUBJ_LEN + "s %-"
-	                   + this.DATE_LEN + "s %-" + this.TIME_LEN + "s";
-	// If the user's terminal doesn't support ANSI, then append a newline to
-	// the end of the format string (we won't be able to move the cursor).
-	if (!canDoHighASCIIAndANSI())
-		this.sHdrFormatStr += "\r\n";
+	if (this.showScoresInMsgList)
+	{
+		this.SUBJ_LEN -= (this.SCORE_LEN + 1);
+		this.sMsgListHdrFormatStr = "%" + this.MSGNUM_LEN + "s %-" + this.FROM_LEN + "s %-"
+		                          + this.TO_LEN + "s %-" + this.SUBJ_LEN + "s %"
+		                          + this.SCORE_LEN + "s %-" + this.DATE_LEN + "s %-"
+		                          + this.TIME_LEN + "s";
 
-	// Construct the message information format string.  These must be done after
-	// reading the configuration file, because the configuration file specifies the
-	// colors to use.
-	this.sMsgInfoFormatStr = this.colors.msgListMsgNumColor + "%" + this.MSGNUM_LEN + "d%s"
-	                       + this.colors.msgListFromColor + "%-" + this.FROM_LEN + "s "
-	                       + this.colors.msgListToColor + "%-" + this.TO_LEN + "s "
-	                       + this.colors.msgListSubjectColor + "%-" + this.SUBJ_LEN + "s "
-	                       + this.colors.msgListDateColor + "%-" + this.DATE_LEN + "s "
-	                       + this.colors.msgListTimeColor + "%-" + this.TIME_LEN + "s";
-	// Message information format string with colors to use when the message is
-	// written to the user.
-	this.sMsgInfoToUserFormatStr = this.colors.msgListToUserMsgNumColor + "%" + this.MSGNUM_LEN + "d%s"
-	                             + this.colors.msgListToUserFromColor
-	                             + "%-" + this.FROM_LEN + "s " + this.colors.msgListToUserToColor + "%-"
-	                             + this.TO_LEN + "s " + this.colors.msgListToUserSubjectColor + "%-"
-	                             + this.SUBJ_LEN + "s " + this.colors.msgListToUserDateColor
-	                             + "%-" + this.DATE_LEN + "s " + this.colors.msgListToUserTimeColor
-	                             + "%-" + this.TIME_LEN + "s";
-	// Message information format string with colors to use when the message is
-	// from the user.
-	this.sMsgInfoFromUserFormatStr = this.colors.msgListFromUserMsgNumColor + "%" + this.MSGNUM_LEN + "d%s"
-	                               + this.colors.msgListFromUserFromColor
-	                               + "%-" + this.FROM_LEN + "s " + this.colors.msgListFromUserToColor + "%-"
-	                               + this.TO_LEN + "s " + this.colors.msgListFromUserSubjectColor + "%-"
-	                               + this.SUBJ_LEN + "s " + this.colors.msgListFromUserDateColor
-	                               + "%-" + this.DATE_LEN + "s " + this.colors.msgListFromUserTimeColor
-	                               + "%-" + this.TIME_LEN + "s";
-	// Highlighted message information line for the message list (used for the
-	// lightbar interface)
-	this.sMsgInfoFormatHighlightStr = this.colors.msgListMsgNumHighlightColor
-	                                + "%" + this.MSGNUM_LEN + "d%s"
-	                                + this.colors.msgListFromHighlightColor + "%-" + this.FROM_LEN
-	                                + "s " + this.colors.msgListToHighlightColor + "%-" + this.TO_LEN + "s "
-	                                + this.colors.msgListSubjHighlightColor + "%-" + this.SUBJ_LEN + "s "
-	                                + this.colors.msgListDateHighlightColor + "%-" + this.DATE_LEN + "s "
-	                                + this.colors.msgListTimeHighlightColor + "%-" + this.TIME_LEN + "s";
+		this.sMsgInfoFormatStr = this.colors.msgListMsgNumColor + "%" + this.MSGNUM_LEN + "d%s"
+		                       + this.colors.msgListFromColor + "%-" + this.FROM_LEN + "s "
+		                       + this.colors.msgListToColor + "%-" + this.TO_LEN + "s "
+		                       + this.colors.msgListSubjectColor + "%-" + this.SUBJ_LEN + "s "
+		                       + this.colors.msgListScoreColor + "%" + this.SCORE_LEN + "d "
+		                       + this.colors.msgListDateColor + "%-" + this.DATE_LEN + "s "
+		                       + this.colors.msgListTimeColor + "%-" + this.TIME_LEN + "s";
+		// Message information format string with colors to use when the message is
+		// written to the user.
+		this.sMsgInfoToUserFormatStr = this.colors.msgListToUserMsgNumColor + "%" + this.MSGNUM_LEN + "d%s"
+		                             + this.colors.msgListToUserFromColor
+		                             + "%-" + this.FROM_LEN + "s " + this.colors.msgListToUserToColor + "%-"
+		                             + this.TO_LEN + "s " + this.colors.msgListToUserSubjectColor + "%-"
+		                             + this.SUBJ_LEN + "s " + this.colors.msgListToUserScoreColor + "%"
+		                             + this.SCORE_LEN + "d " + this.colors.msgListToUserDateColor
+		                             + "%-" + this.DATE_LEN + "s " + this.colors.msgListToUserTimeColor
+		                             + "%-" + this.TIME_LEN + "s";
+		// Message information format string with colors to use when the message is
+		// from the user.
+		this.sMsgInfoFromUserFormatStr = this.colors.msgListFromUserMsgNumColor + "%" + this.MSGNUM_LEN + "d%s"
+		                               + this.colors.msgListFromUserFromColor
+		                               + "%-" + this.FROM_LEN + "s " + this.colors.msgListFromUserToColor + "%-"
+		                               + this.TO_LEN + "s " + this.colors.msgListFromUserSubjectColor + "%-"
+		                               + this.SUBJ_LEN + "s " + this.colors.msgListFromUserScoreColor + "%"
+		                               + this.SCORE_LEN + "d " + this.colors.msgListFromUserDateColor
+		                               + "%-" + this.DATE_LEN + "s " + this.colors.msgListFromUserTimeColor
+		                               + "%-" + this.TIME_LEN + "s";
+		// Highlighted message information line for the message list (used for the
+		// lightbar interface)
+		this.sMsgInfoFormatHighlightStr = this.colors.msgListMsgNumHighlightColor
+		                                + "%" + this.MSGNUM_LEN + "d%s"
+		                                + this.colors.msgListFromHighlightColor + "%-" + this.FROM_LEN
+		                                + "s " + this.colors.msgListToHighlightColor + "%-" + this.TO_LEN + "s "
+		                                + this.colors.msgListSubjHighlightColor + "%-" + this.SUBJ_LEN + "s "
+		                                + this.colors.msgListScoreHighlightColor + "%" + this.SCORE_LEN + "d "
+		                                + this.colors.msgListDateHighlightColor + "%-" + this.DATE_LEN + "s "
+		                                + this.colors.msgListTimeHighlightColor + "%-" + this.TIME_LEN + "s";
+	}
+	else
+	{
+		this.sMsgListHdrFormatStr = "%" + this.MSGNUM_LEN + "s %-" + this.FROM_LEN + "s %-"
+		                          + this.TO_LEN + "s %-" + this.SUBJ_LEN + "s %-"
+		                          + this.DATE_LEN + "s %-" + this.TIME_LEN + "s";
+
+		this.sMsgInfoFormatStr = this.colors.msgListMsgNumColor + "%" + this.MSGNUM_LEN + "d%s"
+		                       + this.colors.msgListFromColor + "%-" + this.FROM_LEN + "s "
+		                       + this.colors.msgListToColor + "%-" + this.TO_LEN + "s "
+		                       + this.colors.msgListSubjectColor + "%-" + this.SUBJ_LEN + "s "
+		                       + this.colors.msgListDateColor + "%-" + this.DATE_LEN + "s "
+		                       + this.colors.msgListTimeColor + "%-" + this.TIME_LEN + "s";
+		// Message information format string with colors to use when the message is
+		// written to the user.
+		this.sMsgInfoToUserFormatStr = this.colors.msgListToUserMsgNumColor + "%" + this.MSGNUM_LEN + "d%s"
+		                             + this.colors.msgListToUserFromColor
+		                             + "%-" + this.FROM_LEN + "s " + this.colors.msgListToUserToColor + "%-"
+		                             + this.TO_LEN + "s " + this.colors.msgListToUserSubjectColor + "%-"
+		                             + this.SUBJ_LEN + "s " + this.colors.msgListToUserDateColor
+		                             + "%-" + this.DATE_LEN + "s " + this.colors.msgListToUserTimeColor
+		                             + "%-" + this.TIME_LEN + "s";
+		// Message information format string with colors to use when the message is
+		// from the user.
+		this.sMsgInfoFromUserFormatStr = this.colors.msgListFromUserMsgNumColor + "%" + this.MSGNUM_LEN + "d%s"
+		                               + this.colors.msgListFromUserFromColor
+		                               + "%-" + this.FROM_LEN + "s " + this.colors.msgListFromUserToColor + "%-"
+		                               + this.TO_LEN + "s " + this.colors.msgListFromUserSubjectColor + "%-"
+		                               + this.SUBJ_LEN + "s " + this.colors.msgListFromUserDateColor
+		                               + "%-" + this.DATE_LEN + "s " + this.colors.msgListFromUserTimeColor
+		                               + "%-" + this.TIME_LEN + "s";
+		// Highlighted message information line for the message list (used for the
+		// lightbar interface)
+		this.sMsgInfoFormatHighlightStr = this.colors.msgListMsgNumHighlightColor
+		                                + "%" + this.MSGNUM_LEN + "d%s"
+		                                + this.colors.msgListFromHighlightColor + "%-" + this.FROM_LEN
+		                                + "s " + this.colors.msgListToHighlightColor + "%-" + this.TO_LEN + "s "
+		                                + this.colors.msgListSubjHighlightColor + "%-" + this.SUBJ_LEN + "s "
+		                                + this.colors.msgListDateHighlightColor + "%-" + this.DATE_LEN + "s "
+		                                + this.colors.msgListTimeHighlightColor + "%-" + this.TIME_LEN + "s";
+	}
+
+	// If the user's terminal doesn't support ANSI, then append a newline to
+	// the end of the header format string (we won't be able to move the cursor).
+	if (!canDoHighASCIIAndANSI())
+		this.sMsgListHdrFormatStr += "\r\n";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -14677,126 +14734,130 @@ function DisplayProgramInfo()
 // DigDistMessageReader class.
 function getDefaultColors()
 {
-	var colorArray = new Array();
+	var colorObj = new Object();
 
 	// Header line: "Current msg group:"
-	colorArray["msgListHeaderMsgGroupTextColor"] = "\1n\1" + "4\1c"; // Normal cyan on blue background
-	//colorArray["msgListHeaderMsgGroupTextColor"] = "\1n\1" + "4\1w"; // Normal white on blue background
+	colorObj.msgListHeaderMsgGroupTextColor = "\1n\1" + "4\1c"; // Normal cyan on blue background
+	//colorObj.msgListHeaderMsgGroupTextColor = "\1n\1" + "4\1w"; // Normal white on blue background
 
 	// Header line: Message group name
-	colorArray["msgListHeaderMsgGroupNameColor"] = "\1h\1c"; // High cyan
-	//colorArray["msgListHeaderMsgGroupNameColor"] = "\1h\1w"; // High white
+	colorObj.msgListHeaderMsgGroupNameColor = "\1h\1c"; // High cyan
+	//colorObj.msgListHeaderMsgGroupNameColor = "\1h\1w"; // High white
 
 	// Header line: "Current sub-board:"
-	colorArray["msgListHeaderSubBoardTextColor"] = "\1n\1" + "4\1c"; // Normal cyan on blue background
-	//colorArray["msgListHeaderSubBoardTextColor"] = "\1n\1" + "4\1w"; // Normal white on blue background
+	colorObj.msgListHeaderSubBoardTextColor = "\1n\1" + "4\1c"; // Normal cyan on blue background
+	//colorObj.msgListHeaderSubBoardTextColor = "\1n\1" + "4\1w"; // Normal white on blue background
 
 	// Header line: Message sub-board name
-	colorArray["msgListHeaderMsgSubBoardName"] = "\1h\1c"; // High cyan
-	//colorArray["msgListHeaderMsgSubBoardName"] = "\1h\1w"; // High white
+	colorObj.msgListHeaderMsgSubBoardName = "\1h\1c"; // High cyan
+	//colorObj.msgListHeaderMsgSubBoardName = "\1h\1w"; // High white
 	// Line with column headers
-	//colorArray["msgListColHeader"] = "\1h\1w"; // High white (keep blue background)
-	colorArray["msgListColHeader"] = "\1n\1h\1w"; // High white on black background
-	//colorArray["msgListColHeader"] = "\1h\1c"; // High cyan (keep blue background)
-	//colorArray["msgListColHeader"] = "\1" + "4\1h\1y"; // High yellow (keep blue background)
+	//colorObj.msgListColHeader = "\1h\1w"; // High white (keep blue background)
+	colorObj.msgListColHeader = "\1n\1h\1w"; // High white on black background
+	//colorObj.msgListColHeader = "\1h\1c"; // High cyan (keep blue background)
+	//colorObj.msgListColHeader = "\1" + "4\1h\1y"; // High yellow (keep blue background)
 
 	// Message list information
-	colorArray["msgListMsgNumColor"] = "\1n\1h\1y";
-	colorArray["msgListFromColor"] = "\1n\1c";
-	colorArray["msgListToColor"] = "\1n\1c";
-	colorArray["msgListSubjectColor"] = "\1n\1c";
-	colorArray["msgListDateColor"] = "\1h\1b";
-	colorArray["msgListTimeColor"] = "\1h\1b";
+	colorObj.msgListMsgNumColor = "\1n\1h\1y";
+	colorObj.msgListFromColor = "\1n\1c";
+	colorObj.msgListToColor = "\1n\1c";
+	colorObj.msgListSubjectColor = "\1n\1c";
+	colorObj.msgListScoreColor = "\1n\1c";
+	colorObj.msgListDateColor = "\1h\1b";
+	colorObj.msgListTimeColor = "\1h\1b";
 	// Message information for messages written to the user
-	colorArray["msgListToUserMsgNumColor"] = "\1n\1h\1y";
-	colorArray["msgListToUserFromColor"] = "\1h\1g";
-	colorArray["msgListToUserToColor"] = "\1h\1g";
-	colorArray["msgListToUserSubjectColor"] = "\1h\1g";
-	colorArray["msgListToUserDateColor"] = "\1h\1b";
-	colorArray["msgListToUserTimeColor"] = "\1h\1b";
+	colorObj.msgListToUserMsgNumColor = "\1n\1h\1y";
+	colorObj.msgListToUserFromColor = "\1h\1g";
+	colorObj.msgListToUserToColor = "\1h\1g";
+	colorObj.msgListToUserSubjectColor = "\1h\1g";
+	colorObj.msgListToUserScoreColor = "\1h\1g";
+	colorObj.msgListToUserDateColor = "\1h\1b";
+	colorObj.msgListToUserTimeColor = "\1h\1b";
 	// Message information for messages from the user
-	colorArray["msgListFromUserMsgNumColor"] = "\1n\1h\1y";
-	colorArray["msgListFromUserFromColor"] = "\1n\1c";
-	colorArray["msgListFromUserToColor"] = "\1n\1c";
-	colorArray["msgListFromUserSubjectColor"] = "\1n\1c";
-	colorArray["msgListFromUserDateColor"] = "\1h\1b";
-	colorArray["msgListFromUserTimeColor"] = "\1h\1b";
+	colorObj.msgListFromUserMsgNumColor = "\1n\1h\1y";
+	colorObj.msgListFromUserFromColor = "\1n\1c";
+	colorObj.msgListFromUserToColor = "\1n\1c";
+	colorObj.msgListFromUserSubjectColor = "\1n\1c";
+	colorObj.msgListFromUserScoreColor = "\1n\1c";
+	colorObj.msgListFromUserDateColor = "\1h\1b";
+	colorObj.msgListFromUserTimeColor = "\1h\1b";
 
 	// Message list highlight colors
-	colorArray["msgListHighlightBkgColor"] = "\1" + "4"; // Background
-	colorArray["msgListMsgNumHighlightColor"] = "\1h\1y";
-	colorArray["msgListFromHighlightColor"] = "\1h\1c";
-	colorArray["msgListToHighlightColor"] = "\1h\1c";
-	colorArray["msgListSubjHighlightColor"] = "\1h\1c";
-	colorArray["msgListDateHighlightColor"] = "\1h\1w";
-	colorArray["msgListTimeHighlightColor"] = "\1h\1w";
+	colorObj.msgListHighlightBkgColor = "\1" + "4"; // Background
+	colorObj.msgListMsgNumHighlightColor = "\1h\1y";
+	colorObj.msgListFromHighlightColor = "\1h\1c";
+	colorObj.msgListToHighlightColor = "\1h\1c";
+	colorObj.msgListSubjHighlightColor = "\1h\1c";
+	colorObj.msgListScoreHighlightColor = "\1h\1c";
+	colorObj.msgListDateHighlightColor = "\1h\1w";
+	colorObj.msgListTimeHighlightColor = "\1h\1w";
 
 	// Lightbar message list help line colors
-	colorArray["lightbarMsgListHelpLineBkgColor"] = "\1" + "7"; // Background
-	colorArray["lightbarMsgListHelpLineGeneralColor"] = "\1b";
-	colorArray["lightbarMsgListHelpLineHotkeyColor"] = "\1r";
-	colorArray["lightbarMsgListHelpLineParenColor"] = "\1m";
+	colorObj.lightbarMsgListHelpLineBkgColor = "\1" + "7"; // Background
+	colorObj.lightbarMsgListHelpLineGeneralColor = "\1b";
+	colorObj.lightbarMsgListHelpLineHotkeyColor = "\1r";
+	colorObj.lightbarMsgListHelpLineParenColor = "\1m";
 
 	// Continue prompt colors
-	colorArray["tradInterfaceContPromptMainColor"] = "\1n\1g"; // Main text color
-	colorArray["tradInterfaceContPromptHotkeyColor"] = "\1h\1c"; // Hotkey color
-	colorArray["tradInterfaceContPromptUserInputColor"] = "\1h\1g"; // User input color
+	colorObj.tradInterfaceContPromptMainColor = "\1n\1g"; // Main text color
+	colorObj.tradInterfaceContPromptHotkeyColor = "\1h\1c"; // Hotkey color
+	colorObj.tradInterfaceContPromptUserInputColor = "\1h\1g"; // User input color
 
 	// Message body color
-	colorArray["msgBodyColor"] = "\1n\1w";
+	colorObj.msgBodyColor = "\1n\1w";
 
 	// Read message confirmation colors
-	colorArray["readMsgConfirmColor"] = "\1n\1c";
-	colorArray["readMsgConfirmNumberColor"] = "\1h\1c";
+	colorObj.readMsgConfirmColor = "\1n\1c";
+	colorObj.readMsgConfirmNumberColor = "\1h\1c";
 	// Prompt for continuing to list messages after reading a message
-	colorArray["afterReadMsg_ListMorePromptColor"] = "\1n\1c";
+	colorObj.afterReadMsg_ListMorePromptColor = "\1n\1c";
 
 	// Help screen text color
-	colorArray["tradInterfaceHelpScreenColor"] = "\1n\1h\1w";
+	colorObj.tradInterfaceHelpScreenColor = "\1n\1h\1w";
 
 	// Colors for choosing a message group & sub-board
-	colorArray["areaChooserMsgAreaNumColor"] = "\1n\1w\1h";
-	colorArray["areaChooserMsgAreaDescColor"] = "\1n\1c";
-	colorArray["areaChooserMsgAreaNumItemsColor"] = "\1b\1h";
-	colorArray["areaChooserMsgAreaHeaderColor"] = "\1n\1y\1h";
-	colorArray["areaChooserSubBoardHeaderColor"] = "\1n\1g";
-	colorArray["areaChooserMsgAreaMarkColor"] = "\1g\1h";
-	colorArray["areaChooserMsgAreaLatestDateColor"] = "\1n\1g";
-	colorArray["areaChooserMsgAreaLatestTimeColor"] = "\1n\1m";
+	colorObj.areaChooserMsgAreaNumColor = "\1n\1w\1h";
+	colorObj.areaChooserMsgAreaDescColor = "\1n\1c";
+	colorObj.areaChooserMsgAreaNumItemsColor = "\1b\1h";
+	colorObj.areaChooserMsgAreaHeaderColor = "\1n\1y\1h";
+	colorObj.areaChooserSubBoardHeaderColor = "\1n\1g";
+	colorObj.areaChooserMsgAreaMarkColor = "\1g\1h";
+	colorObj.areaChooserMsgAreaLatestDateColor = "\1n\1g";
+	colorObj.areaChooserMsgAreaLatestTimeColor = "\1n\1m";
 	// Highlighted colors (for lightbar mode)
-	colorArray["areaChooserMsgAreaBkgHighlightColor"] = "\1" + "4"; // Blue background
-	colorArray["areaChooserMsgAreaNumHighlightColor"] = "\1w\1h";
-	colorArray["areaChooserMsgAreaDescHighlightColor"] = "\1c";
-	colorArray["areaChooserMsgAreaDateHighlightColor"] = "\1w\1h";
-	colorArray["areaChooserMsgAreaTimeHighlightColor"] = "\1w\1h";
-	colorArray["areaChooserMsgAreaNumItemsHighlightColor"] = "\1w\1h";
+	colorObj.areaChooserMsgAreaBkgHighlightColor = "\1" + "4"; // Blue background
+	colorObj.areaChooserMsgAreaNumHighlightColor = "\1w\1h";
+	colorObj.areaChooserMsgAreaDescHighlightColor = "\1c";
+	colorObj.areaChooserMsgAreaDateHighlightColor = "\1w\1h";
+	colorObj.areaChooserMsgAreaTimeHighlightColor = "\1w\1h";
+	colorObj.areaChooserMsgAreaNumItemsHighlightColor = "\1w\1h";
 	// Lightbar area chooser help line
-	colorArray["lightbarAreaChooserHelpLineBkgColor"] = "\1" + "7"; // Background
-	colorArray["lightbarAreaChooserHelpLineGeneralColor"] = "\1b";
-	colorArray["lightbarAreaChooserHelpLineHotkeyColor"] = "\1r";
-	colorArray["lightbarAreaChooserHelpLineParenColor"] = "\1m";
+	colorObj.lightbarAreaChooserHelpLineBkgColor = "\1" + "7"; // Background
+	colorObj.lightbarAreaChooserHelpLineGeneralColor = "\1b";
+	colorObj.lightbarAreaChooserHelpLineHotkeyColor = "\1r";
+	colorObj.lightbarAreaChooserHelpLineParenColor = "\1m";
 
 	// Scrollbar background and scroll block colors (for the enhanced
 	// message reader interface)
-	colorArray["scrollbarBGColor"] = "\1n\1h\1k";
-	colorArray["scrollbarScrollBlockColor"] = "\1n\1h\1w";
+	colorObj.scrollbarBGColor = "\1n\1h\1k";
+	colorObj.scrollbarScrollBlockColor = "\1n\1h\1w";
 	// Color for the line drawn in the 2nd to last line of the message
 	// area in the enhanced reader mode before a prompt
-	colorArray["enhReaderPromptSepLineColor"] = "\1n\1h\1g";
+	colorObj.enhReaderPromptSepLineColor = "\1n\1h\1g";
 	// Colors for the enhanced reader help line
-	colorArray["enhReaderHelpLineBkgColor"] = "\1" + "7";
-	colorArray["enhReaderHelpLineGeneralColor"] = "\1b";
-	colorArray["enhReaderHelpLineHotkeyColor"] = "\1r";
-	colorArray["enhReaderHelpLineParenColor"] = "\1m";
+	colorObj.enhReaderHelpLineBkgColor = "\1" + "7";
+	colorObj.enhReaderHelpLineGeneralColor = "\1b";
+	colorObj.enhReaderHelpLineHotkeyColor = "\1r";
+	colorObj.enhReaderHelpLineParenColor = "\1m";
 
 	// Message header line colors
-	colorArray["hdrLineLabelColor"] = "\1n\1c";
-	colorArray["hdrLineValueColor"] = "\1n\1b\1h";
+	colorObj.hdrLineLabelColor = "\1n\1c";
+	colorObj.hdrLineValueColor = "\1n\1b\1h";
 
 	// Selected message marker color
-	colorArray["selectedMsgMarkColor"] = "\1n\1w\1h";
+	colorObj.selectedMsgMarkColor = "\1n\1w\1h";
 
-	return colorArray;
+	return colorObj;
 }
 
 // This function returns the month number (1-based) from a capitalized
@@ -18783,7 +18844,7 @@ function getBogusMsgHdr(pSubject)
 //  pSubBoardCode: The internal code for the sub-board the message is in
 //
 // Return value: Boolean - Whether or not the message is readable for the user
-function isReadableMsgHdr(pMsgHdr, pSubBoardCode, pToName)
+function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 {
 	if (pMsgHdr === null)
 		return false;
@@ -18853,18 +18914,7 @@ function numReadableMsgs(pMsgbase, pSubBoardCode)
 		return 0;
 
 	var numMsgs = 0;
-	if (typeof(pMsgbase.get_index) === "function")
-	{
-		var indexes = msgbase.get_index();
-		for (var i = 0; i < indexes.length; ++i)
-		{
-			if (indexes[i] == null)
-				continue;
-			else if (isReadableMsgHdr(indexes[i], pSubBoardCode))
-				++numMsgs;
-		}
-	}
-	else if (typeof(pMsgbase.get_all_msg_headers) === "function")
+	if (typeof(pMsgbase.get_all_msg_headers) === "function")
 	{
 		var msgHdrs = pMsgbase.get_all_msg_headers(true);
 		for (var msgHdrsProp in msgHdrs)
@@ -19408,6 +19458,37 @@ function getAttrsBeforeStrIdx(pStr, pIdx)
 	if ((attrStartIdx > -1) && (attrEndIdx > -1))
 		attrsStr = pStr.substring(attrStartIdx, attrEndIdx+2);
 	return attrsStr;
+}
+
+// Given a message header, this function gets/calculates the message's
+// upvotes, downvotes, and vote score, if that information is present.
+//
+// Parameters:
+//  pMsgHdr: A message header object
+//
+// Return value: An object containign the following properties:
+//               foundVoteInfo: Boolean - Whether the vote information exited in the header
+//               upvotes: The number of upvotes
+//               downvotes: The number of downvotes
+//               voteScore: The overall vote score
+function getMsgUpDownvotesAndScore(pMsgHdr)
+{
+	var retObj = {
+		foundVoteInfo: false,
+		upvotes: 0,
+		downvotes: 0,
+		voteScore: 0
+	};
+
+	if (pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
+	{
+		retObj.foundVoteInfo = true;
+		retObj.upvotes = pMsgHdr.upvotes;
+		retObj.downvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
+		retObj.voteScore = pMsgHdr.upvotes - retObj.downvotes;
+	}
+
+	return retObj;
 }
 
 // Writes some text on the screen at a given location with a given pause.

@@ -5,6 +5,15 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.19     2019-03-25   If the terminal size is wide enough (at least 86
+                      characters), the overall vote scores for the messages
+                      is now displayed in the message list.  Also, fixed a
+                      bug introduced in the previous version where the vote
+                      scores were no longer being displayed when reading a
+                      message.  It's no longer using MsgBase.get_index() and
+                      uses get_all_msg_headers(), as before, since that's what
+                      is required for message tallies to be included in the
+                      message headers.
 1.18     2019-04-15   Made use of the new MsgBase.get_index() function (if
                       available) for better performance.  Added 'undefined'
                       checks for some of the messaeg attribute definitions
