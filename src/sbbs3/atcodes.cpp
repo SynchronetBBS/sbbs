@@ -345,8 +345,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(nulstr);
 	}
 
-	if(strncmp(sp, "POS:", 4) == 0) {	// PCBoard	(nn is 0 or 1 based?)
-		for(l = atoi(sp + 4) - column; l > 0; l--)
+	if(strncmp(sp, "POS:", 4) == 0) {	// PCBoard	(nn is 1 based)
+		i = atoi(sp + 4);
+		if(i >= 1)	// Convert to 0-based
+			i--;
+		for(l = i - column; l > 0; l--)
 			outchar(' ');
 		return nulstr;
 	}
