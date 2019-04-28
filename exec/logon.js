@@ -257,7 +257,7 @@ if(options.rlogin_xtrn_menu
 } else if(!(user.security.restrictions&UFLAG_G)
 	&& console.term_supports(USER_ANSI) 
 	&& options.set_avatar == true) {
-	var avatar = Avatar.read_localuser(user.number);
+	var avatar = Avatar.read(user.number);
 	if(!avatar || (!avatar.data && !avatar.disabled)) {
 		alert("You have not selected an avatar.");
 		if(console.yesno("Select avatar now"))
