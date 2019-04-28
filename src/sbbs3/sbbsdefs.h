@@ -653,8 +653,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define NOPAUSESPIN	(1L<<24)		/* No spinning cursor at pause prompt	*/
 #define CTERM_FONTS	(1L<<25)		/* Loadable fonts are supported			*/
 #define PETSCII		(1L<<26)		/* Commodore PET/CBM terminal			*/
+#define SWAP_DELETE	(1L<<27)		/* Swap Delete and Backspace keys		*/
 
-#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|CTERM_FONTS|PETSCII)
+#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|CTERM_FONTS|PETSCII|SWAP_DELETE)
 
 									/* Special terminal key mappings */
 #define TERM_KEY_HOME	CTRL_B

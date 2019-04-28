@@ -327,6 +327,9 @@ long sbbs_t::term_supports(long cmp_flags)
 {
 	long flags = ((sys_status&SS_USERON) && !(useron.misc&AUTOTERM)) ? useron.misc : autoterm;
 
+	if((sys_status&SS_USERON) && (useron.misc&AUTOTERM))
+		flags |= useron.misc & (NO_EXASCII | SWAP_DELETE);
+
 	return(cmp_flags ? ((flags&cmp_flags)==cmp_flags) : (flags&TERM_FLAGS));
 }
 
