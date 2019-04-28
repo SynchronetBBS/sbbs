@@ -113,8 +113,10 @@ while(bbs.online && !(console.aborted)) {
 			}
 			console.mnemonics(bbs.text(NodeToPrivateChat));
 			var str = console.getstr(to_list[0], LEN_ALIAS, K_LINE|K_EDIT, to_list.slice(1));
-			if(!str)
+			if(!str || console.aborted) {
+				console.aborted = false;
 				break;
+			}
 			var node_num = parseInt(str, 10);
 			var user_num;
 			if(node_num > 0) {
@@ -147,8 +149,10 @@ while(bbs.online && !(console.aborted)) {
 					break;
 				msg.push(line);
 			}
-			if(!msg.length || console.aborted)
+			if(!msg.length || console.aborted) {
+				console.aborted = false;
 				break;
+			}
 			var telegram = format(bbs.text(TelegramFmt), user.alias, system.timestr());
 			telegram += '    ' + msg.join('\r\n    ') + '\r\n';
 			if(system.put_telegram(user_num, telegram)) {
