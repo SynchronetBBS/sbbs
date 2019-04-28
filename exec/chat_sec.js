@@ -48,7 +48,7 @@ while(1) {
 	bbs.nodesync();
 	write("\r\n\x01_\x01y\x01hChat: \x01n");
 
-	var keys = "ACDJLPQRST?\r";
+	var keys = "ACDJPQRST?\r";
 	if(options.irc)
 		keys += "I";
 	if(options.finger)
@@ -85,13 +85,17 @@ while(1) {
 			if(user.security.level >= options.irc_seclevel || user.security.exemptions&UFLAG_C) {
 				write("\r\n\x01n\x01y\x01hIRC Server: ");
 				server=console.getstr(options.irc_server, 40, K_EDIT|K_LINE|K_AUTODEL);
-				if(console.aborted)
+				if(console.aborted || server.length < 4)
 					break;
 			}
+			if(server.indexOf(' ') < 0)
+				server += " 6667";
 			write("\r\n\x01n\x01y\x01hIRC Channel: ");
 			var channel=console.getstr(options.irc_channel, 40, K_EDIT|K_LINE|K_AUTODEL);
-			if(!console.aborted)
+			if(!console.aborted && channel.length) {
+				log("IRC to " + server + " " + channel);
 				bbs.exec("?irc -a " + server + " " + channel); // can't be load()ed because it calls exit()
+			}
 			break;
 		}
 		case 'J':
