@@ -976,3 +976,8 @@
 "Scanning"                                  808 Scanning
 "Done"                                      809 Done
 "\1[\1>"                                    810 Scanned
+"\1h\1yHit your \1wbackspace\1y or delete-left key: "     811 HitYourBackspaceKey
+"\1\\\1n\1cCharacter \1h%u (%02Xh) \1n\1creceived.\r\n"   812 CharacterReceivedFmt
+"\1r\1hUnsupported backspace key: \1w%02Xh "              813 InvalidBackspaceKeyFmt
+"Swap the delete (DEL, ^BS) and backspace (BS, ^H) keys"  814 SwapDeleteKeyQ
+"\1n\1hCBM/\1yPETSCII\1w terminal detected.\r\n"          815 PetTermDetected
