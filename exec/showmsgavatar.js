@@ -12,9 +12,11 @@
 
 load('smbdefs.js');
 var   USER_ANSI         =(1<<1);
+var   USER_NO_EXASCII 	=(1<<15);
 
 // Avatar support here:
-if(!(bbs.msg_attr&MSG_ANONYMOUS) && console.term_supports(USER_ANSI)) {
+if(!(bbs.msg_attr&MSG_ANONYMOUS) 
+	&& (console.term_supports()&(USER_ANSI|USER_NO_EXASCII)) == USER_ANSI) {
 	var Avatar = load({}, 'avatar_lib.js');
 	Avatar.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true
 		,bbs.msghdr_top_of_screen);
