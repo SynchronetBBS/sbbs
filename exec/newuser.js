@@ -12,14 +12,19 @@ const QWK_ID_PATTERN = /^[A-Z]\w{1,7}$/;
 
 var options;
 options=load("modopts.js","newuser");
+if(!options)
+	options = {};
 
 qnet=false;
 
-if(options && (bbs.sys_status&SS_RLOGIN))
+if(bbs.sys_status&SS_RLOGIN)
 	options.ask_qnet=false;
 
-if(options && options.qwk_settings)
+if(options.qwk_settings)
 	user.qwk_settings = eval(options.qwk_settings);
+
+if(options.send_newuser_welcome)	// backwards compatibility hack
+	options.send_welcome = true;
 
 console.clear();
 
@@ -28,7 +33,7 @@ if(!user.address.length && user.number>1) {
 	user.address=console.getstr(30,K_LINE);
 }
 
-if(options && options.ask_qnet) {
+if(options.ask_qnet) {
 	if(options.qnet_name==undefined)
 		options.qnet_name="DOVE-Net";
 	if(!console.noyes(format("\r\nIs this account to be used for QWK Networking (%s)\1b", options.qnet_name))
@@ -36,7 +41,7 @@ if(options && options.ask_qnet) {
 		qnet=true;
 }
 
-if(!qnet && options && (options.avatar || options.avatar_file)) {
+if(!qnet && (options.avatar || options.avatar_file)) {
 	var avatar_lib = load({}, 'avatar_lib.js');
 	if(options.avatar_file)
 		avatar_lib.import_file(user.number, options.avatar_file, options.avatar_offset);
@@ -84,8 +89,7 @@ if(qnet) {
 	user.security.exemptions|=UFLAG_M;
 }
 
-if(options
-	&& options.ask_sysop 
+if(options.ask_sysop 
 	&& !console.noyes("\r\n\1bAre you a sysop of a \1wSynchronet\1b BBS (unsure, hit '\1wN\1b')")) {
 	user.security.flags1|=UFLAG_S;
 	if(qnet) {
@@ -100,8 +104,7 @@ if(options
 /* Send New User Welcome E-mail */
 /********************************/
 welcome_msg = system.text_dir + "welcome.msg"; 
-if(options
-	&& options.send_newuser_welcome && file_exists(welcome_msg) && !qnet && user.number>1)
+if(options.send_welcome && file_exists(welcome_msg) && !qnet && user.number>1)
 	send_newuser_welcome_msg(welcome_msg);
 
 function send_newuser_welcome_msg(fname)
