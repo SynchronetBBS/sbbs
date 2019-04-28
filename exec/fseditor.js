@@ -1180,9 +1180,10 @@ function draw_quote_window()
 	/* Draw seperater */
 	console.gotoxy(1,quote_sep_pos);
 	console.attributes=7;
-	console.write(format("%.*s", console.screen_columns - 1, "\xc4\xc4\xb4 "+(quote_ontop?"^^^":"vvv")+" Quote "+(quote_ontop?"^^^":"vvv")
-		+" \xc3\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"
-		+"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"));
+	console.print("\xc4\xc4\xb4 "+(quote_ontop?"^^^":"vvv")+" Quote "+(quote_ontop?"^^^":"vvv")
+		+ " \xc3"
+		+ new Array(Math.max(console.screen_columns - 18, 3)).join('\xc4')
+		);
 	for(i=0; i<quote_height; i++) {
 		draw_quote_line(quote_topline+i);
 	}
@@ -1425,6 +1426,27 @@ function save_file()
 	return true;
 }
 
+function handle_backspace()
+{
+	last_xpos=-1;
+	if(xpos>0) {
+		line[ypos].text=line[ypos].text.substr(0,xpos-1)
+			+line[ypos].text.substr(xpos);
+		line[ypos].attr=line[ypos].attr.substr(0,xpos-1)
+			+line[ypos].attr.substr(xpos);
+		xpos--;
+	}
+	else {
+		if(try_prev_line()) {
+			xpos=line[ypos].text.length;
+			line[ypos].hardcr=false;
+		}
+	}
+	if(!rewrap()) {
+		draw_line(ypos,xpos);
+	}
+}
+
 function edit(quote_first)
 {
 	var key;
@@ -1592,23 +1614,7 @@ function edit(quote_first)
 				add_char(key);
 				break;
 			case '\x08':	/* CTRL-H Backspace */
-				last_xpos=-1;
-				if(xpos>0) {
-					line[ypos].text=line[ypos].text.substr(0,xpos-1)
-							+line[ypos].text.substr(xpos);
-					line[ypos].attr=line[ypos].attr.substr(0,xpos-1)
-							+line[ypos].attr.substr(xpos);
-					xpos--;
-				}
-				else {
-					if(try_prev_line()) {
-						xpos=line[ypos].text.length;
-						line[ypos].hardcr=false;
-					}
-				}
-				if(!rewrap()) {
-					draw_line(ypos,xpos);
-				}
+				handle_backspace();
 				break;
 			case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
 				add_char(' ');
@@ -1857,9 +1863,12 @@ function edit(quote_first)
 				return;
 			case '\x7f':	/* DELETE */
 				last_xpos=-1;
-				if(xpos>=line[ypos].text.length)
+				if(xpos>=line[ypos].text.length) {
 					/* delete the hardcr, */
 					line[ypos].hardcr=false;
+					handle_backspace();
+					break;
+				}
 				line[ypos].text=line[ypos].text.substr(0,xpos)
 						+line[ypos].text.substr(xpos+1);
 				line[ypos].attr=line[ypos].attr.substr(0,xpos)
