@@ -4,13 +4,13 @@
 "\r\n³ \1bTo  \1n\1b: \1h\1c%.70s"                              003 MsgTo
 " #%s"                                                  004 MsgToExt
 " (%.40s)"                                              005 MsgToNet
-"\r\n\1w³ \1bFrom\1n\1b: \1h\1c%.70s"                         006 MsgFrom
+"\r\n\1w³ \1bFrom\1n\1b: \1h\1c%.33s"                         006 MsgFrom
 " #%s"                                                  007 MsgFromExt
-" (%.40s)"                                              008 MsgFromNet
+" (%.35s)"                                              008 MsgFromNet
 "\r\n\1w³ \1bDate\1n\1b: \1h\1c%.24s %s (%s)\r\n"\      009 MsgDate
 	"\1wÀÄÄÄÄÄÄ\1cÄÄÄÄÄÄÄÄÄ\1nÄÄÄÄÄÄÄÄÄÄ\1h\1kÄÄÄÄ"\
 	"ÄÄÄÄ\1n\1cÄÄÄÄÄÄÄ\1bÄÄÄÄÄÄÄúúúúúú\1n"
-"\1_\r\n\1b\1hE-mail (User name or number): \1w"            010 Email
+"\1_\1?\1b\1hE-mail (User name or number): \1w"            010 Email
 "\r\nPost on %s\1\\ %s"                                     011 Post
 "\1r\1h\r\n\7You have sent too many E-mails today.\r\n"   012 TooManyEmailsToday
 "\1r\1h\r\n\7You have posted too many times today.\r\n"   013 TooManyPostsToday
@@ -18,8 +18,8 @@
 "\1n\r\nThe sending of mail is beyond your ability.\r\n" 015 R_Email
 "\1n\r\nYou can't post messages.\r\n"                    016 R_Post
 "\1n\r\nYou can't send E-mail to %s.\r\n"                017 R_Feedback
-"\1n\1m\r\nSending E-mail to \1h%s \1n\1m#%u\1n\r\n"          018 Emailing
-"\1n\1m\r\nPosting on \1h%s\1n\1m %s\r\n"                    019 Posting
+"\1n\1?\1mSending E-mail to \1h%s \1n\1m#%u\1n\r\n"          018 Emailing
+"\1n\1?\1mPosting on \1h%s\1n\1m %s\r\n"                    019 Posting
 "\r\nNew file.\r\n"                                     020 NewFile
 "\1_\r\n\1y\1hSubject: "                                   021 SubjectPrompt
 "\1n\1g\r\nEnter message now (\1h%d\1n\1g lines max). "\     022 EnterMsgNow
@@ -32,7 +32,7 @@
 "Invalid line number\r\n"                               027 InvalidLineNumber
 "\1nMessage cleared.\r\n"                                028 MsgCleared
 "With line numbers"                                     029 WithLineNumbersQ
-"\r\n\1r\1h\1iAborted.\1n\r\n"                              030 Aborted
+"\1?\1r\1h\1iAborted.\1n\r\n"                              030 Aborted
 "\r\nAnonymous"                                         031 AnonymousQ
 "ANONYMOUS"                                             032 Anonymous
 "\1n\1h\r\nSaving..."                                     033 Saving
@@ -45,7 +45,7 @@
 "\1n\1m\r\nForwarded by \1h%s\1n\1m on "\                    040 ForwardedFrom
 	"\1h%s\1n\r\n"
 "\1n\1m\r\nMail forwarded to \1h%s \1n\1m#%d.\1n\r\n"         041 Forwarded
-"\1b\1hAuto message by: \1c%s\1b on %s\1n\r\n\r\n"           042 AutoMsgBy
+"\1b\1hAuto message by: \1c%s\1b\1\\on %s\1n\r\n\r\n"           042 AutoMsgBy
 "\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
 "\1n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
 "\1n\r\nYou have no %s.\r\n"                           045 NoMailWaiting
@@ -71,7 +71,7 @@
 	"\r\n\r\n\1n"
 "\1n\r\n\1cþ \1h\1bReading Sent E-mail \1n\1cþ \1h\1b"\		061 ReadingSentMail
 	"(\1w?\1b=Menu) (\1w%u\1b of \1w%u\1b): \1n"
-"\1h\1m\r\nSending Internet Mail To: \1w%s\1m\r\n"\         062 InternetMailing
+"\1h\1?\1mSending Internet Mail To: \1w%s\1m\r\n"\         062 InternetMailing
 	"                    From: \1w%s\r\n"
 "\1n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
 "\1n\r\n\1cþ \1h\1bReading All E-mail \1n\1cþ \1h\1b"\		064 ReadingAllMail
@@ -143,7 +143,7 @@
 "\1r\1iaborted.\1n\r\n"                                    118 MessageScanAborted
 "\r\nLog off"                                           119 LogOffQ
 "\r\nYou can't post on this sub.\r\n"                   120 CantPostOnSub
-"\r\n\1n\1mSending message to \1h%s\r\n"                121 SendingMessageToUser
+"\1n\1?\1mSending message to \1h%s\r\n"                121 SendingMessageToUser
 "\r\n\1r\1hNo other active nodes.\1n\r\n"                 122 NoOtherActiveNodes
 "\r\n\r\nYou can't use the external programs.\r\n"      123 R_ExternalPrograms
 "\r\n\1-\1gUsage Statistics for \1h%s #%d\1n\r\n\r\n"       124 UserStats
@@ -188,7 +188,7 @@
 "\r\n\1n\1r\1hDirectory does not exist: \1c%s\1n\r\n"   159 DirectoryDoesNotExist
 "\r\nClear critical error counters on all nodes"        160 ClearErrCounter
 "\r\nInvalid node.\r\n"                                 161 InvalidNode
-"\1n\r\n\1mSending telegram to \1h%s #%u\1n\1m\r\n"\    162 SendingTelegramToUser
+"\1n\1?\1mSending telegram to \1h%s #%u\1n\1m\r\n"\    162 SendingTelegramToUser
 	"(Maximum of 5 lines, Blank line ends, Ctrl-C to abort):\r\n\1g\1h"  
 "Delete Guru file"                                      163 DeleteGuruLogQ
 "\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
@@ -753,7 +753,7 @@
 "\1n\r\nNo NetMail allowed.\r\n"                         617 NoNetMailAllowed
 "\r\nIt will cost you %u credits to send NetMail. "\   618 NetMailCostContinueQ
 	"Continue"
-"\1n\1m\r\nSending NetMail To: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"\  619 NetMailing
+"\1n\1?\1mSending NetMail To: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"\  619 NetMailing
 	"              From: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"
 "Remove this sub-board from your new-scan list"         620 RemoveFromNewScanQ
 "\r\n~Sub-board: @SUB@, ~Group: @GRP@, or ~All: "       621 SubGroupOrAll
@@ -801,7 +801,7 @@
 "\1n\1>\1q\1l\x014 \1h\1y[\1wD\1y]ownload  \1h\1y[\1wB\1y]atch  "\                   661 FileListBatchCommands
 	"[\1wV\1y]iew Content  [\1wE\1y]xtended Info  "\
 	"[\1wP\1y]revious Page  [\1wQ\1y]uit\1>\1n\r\n"
-"\r\nDownload attached file: \1w%s\1b (%s bytes)"         662 DownloadAttachedFileQ
+"\1\?Download attached file: \1w%s\1b (%s bytes)"         662 DownloadAttachedFileQ
 "\r\n\r\n\1nTime left : %13u\r\n"                        663 FreeMinLeft
 "\1b\1h\r\nTime left to deposit in minute bank "\         664 FreeMinToDeposit
 	"(\1w%u Max\1b): \1n"
