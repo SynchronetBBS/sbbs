@@ -361,6 +361,8 @@ static char* mime_getcontent(char* buf, const char* content_type, const char* co
 	txt = buf;
 	while((p = strstr(txt, boundary)) != NULL) {
 		txt = p+strlen(boundary);
+		if(strncmp(txt, "--\r\n", 4) == 0)
+			break;
 		SKIP_WHITESPACE(txt);
 		p = strstr(txt, "\r\n\r\n");	/* End of header */
 		if(p==NULL)
@@ -429,7 +431,7 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 	return buf;
 }
 
-/* Get just an attachment (just one) from MIME-encoded message body */
+/* Get just a base64-encoded attachment (just one) from MIME-encoded message body */
 /* This function is destructive (over-writes 'buf' with decoded attachment)! */
 uint8_t* SMBCALL smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t filename_len, uint32_t* filelen, int index)
 {
