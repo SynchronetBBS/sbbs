@@ -80,7 +80,7 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 			case PETSCII_INSERT:
 				return TERM_KEY_INSERT;
 			case PETSCII_DELETE:
-				return TERM_KEY_DELETE;
+				return '\b';
 			case PETSCII_LEFT:
 				return TERM_KEY_LEFT;
 			case PETSCII_RIGHT:
