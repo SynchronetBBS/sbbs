@@ -87,7 +87,7 @@
 "\1n\r\n\1cþ \1h\1bReading \1n\1cþ %4u\b\b\b\b%s\1\\"\           071 ReadingSub
 	" %4u\b\b\b\b\1h%s \1n\1c(\1h?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c): \1n"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
-"\r\nDelete message #%u '%s'"                          073 DeletePostQ
+"\1?Delete message #%u '%s'"                          073 DeletePostQ
 "\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address      "\     074 UserDefaultsAutoLogon
 	"\1n\1b: \1c%s\r\n"	 
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
