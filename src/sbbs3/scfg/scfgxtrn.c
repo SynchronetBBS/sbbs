@@ -1670,6 +1670,19 @@ void xedit_cfg()
 				,cfg.xedit[i]->misc&QUICKBBS ? "QuickBBS MSGINF/MSGTMP":"WWIV EDITOR.INF/RESULT.ED");
 			sprintf(opt[k++],"%-32.32s%s","Expand Line Feeds to CRLF"
 				,cfg.xedit[i]->misc&EXPANDLF ? "Yes":"No");
+			const char* p = "Unspecified";
+			switch(cfg.xedit[i]->soft_cr) {
+				case XEDIT_SOFT_CR_EXPAND:
+					p = "Convert to CRLF";
+					break;
+				case XEDIT_SOFT_CR_STRIP:
+					p = "Strip";
+					break;
+				case XEDIT_SOFT_CR_RETAIN:
+					p = "Retain";
+					break;
+			}
+			sprintf(opt[k++],"%-32.32s%s","Handle Soft Carriage Returns", p);
 			sprintf(opt[k++],"%-32.32s%s","Strip FidoNet Kludge Lines"
 				,cfg.xedit[i]->misc&STRIPKLUDGE ? "Yes":"No");
 			sprintf(opt[k++],"%-32.32s%s","BBS Drop File Type"
@@ -1991,6 +2004,36 @@ void xedit_cfg()
 					}
 					break;
 				case 12:
+					k = cfg.xedit[i]->soft_cr;
+					strcpy(opt[0],"Unspecified");
+					strcpy(opt[1],"Convert to CRLF");
+					strcpy(opt[2],"Strip (Remove)");
+					strcpy(opt[3],"Retain (Leave in)");
+					opt[4][0]=0;
+					uifc.helpbuf=
+						"`Handle Soft Carriage Returns:`\n"
+						"\n"
+						"This setting determines what is to be done with so-called \"Soft\" CR\n"
+						"(Carriage Return) characters that are added to the message text by\n"
+						"this message editor.\n"
+						"\n"
+						"Soft-CRs are defined in FidoNet specifications as 8Dh or ASCII 141 and\n"
+						"were used historically to indicate an automatic line-wrap performed by\n"
+						"the message editor.\n"
+						"\n"
+						"The supported settings for this option are:\n"
+						"\n"
+						"    `Convert` - to change Soft-CRs to the more universal CRLF (Hard-CR)\n"
+						"    `Strip`   - to store long line paragraphs in the message bases\n"
+						"    `Retain`  - to treat 8Dh characters like any other printable char\n"
+					;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Handle Soft Carriage Returns", opt);
+					if(k >= 0 &&  k != cfg.xedit[i]->soft_cr) {
+						cfg.xedit[i]->soft_cr = k;
+						uifc.changes=TRUE;
+					}
+					break;
+				case 13:
 					k=(cfg.xedit[i]->misc&STRIPKLUDGE) ? 0:1;
 					uifc.helpbuf=
 						"`Strip FidoNet Kludge Lines From Messages:`\n"
@@ -2010,7 +2053,7 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 13:
+				case 14:
 					k=0;
 					strcpy(opt[k++],"None");
 					sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");
