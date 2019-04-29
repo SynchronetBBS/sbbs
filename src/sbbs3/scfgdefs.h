@@ -279,6 +279,13 @@ typedef struct {							/* Download events */
 
 } dlevent_t;
 
+enum xedit_soft_cr {						// What to do with so-called "Soft CRs"
+	XEDIT_SOFT_CR_UNDEFINED,
+	XEDIT_SOFT_CR_EXPAND,
+	XEDIT_SOFT_CR_STRIP,
+	XEDIT_SOFT_CR_RETAIN
+};								
+
 typedef struct {							/* External Editors */
 	char		code[LEN_CODE+1],
 				name[41],					/* Name (description) */
@@ -289,6 +296,7 @@ typedef struct {							/* External Editors */
 	uint32_t	misc;						/* Misc. bits */
 	uchar		type;						/* Drop file type */
 	uint16_t	quotewrap_cols;				/* When word-wrapping quoted text, use this width (if non-zero */
+	enum xedit_soft_cr soft_cr;				// What to do with so-called "Soft CRs"
 
 } xedit_t;
 

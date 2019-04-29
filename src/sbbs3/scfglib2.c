@@ -495,6 +495,9 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 
 		get_int(cfg->xedit[i]->type,instream);
 		get_int(c,instream);
+		if(c == XEDIT_SOFT_CR_UNDEFINED)
+			c = (cfg->xedit[i]->misc&QUICKBBS) ? XEDIT_SOFT_CR_EXPAND : XEDIT_SOFT_CR_RETAIN;
+		cfg->xedit[i]->soft_cr = c;
 		get_int(cfg->xedit[i]->quotewrap_cols, instream);
 		for(j=0;j<6;j++)
 			get_int(n,instream);

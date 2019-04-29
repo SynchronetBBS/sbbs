@@ -1005,7 +1005,7 @@ BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 		put_int(cfg->xedit[i]->misc,stream);
 		put_str(cfg->xedit[i]->arstr,stream);
 		put_int(cfg->xedit[i]->type,stream);
-		c=0;
+		c = cfg->xedit[i]->soft_cr;
 		put_int(c,stream);
 		n=0;
 		put_int(cfg->xedit[i]->quotewrap_cols, stream);
