@@ -691,8 +691,8 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	if(!sockprintf(socket,prot,sess,"Subject: %s",msg->subj))
 		return(0);
 
-	if((p=smb_get_hfield(msg,RFC822TO,NULL))!=NULL)
-		s=sockprintf(socket,prot,sess,"To: %s",p);	/* use original RFC822 header field */
+	if(msg->to_list != NULL)
+		s=sockprintf(socket,prot,sess,"To: %s", msg->to_list);	/* use original RFC822 header field */
 	else {
 		if(strchr(msg->to,'@')!=NULL || msg->to_net.addr==NULL)
 			s=sockprintf(socket,prot,sess,"To: %s",msg->to);	/* Avoid double-@ */
@@ -710,11 +710,11 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	}
 	if(!s)
 		return(0);
-	if((p=smb_get_hfield(msg,SMB_CARBONCOPY,NULL))!=NULL)
-		if(!sockprintf(socket,prot,sess,"CC: %s",p))
+	if(msg->cc_list != NULL)
+		if(!sockprintf(socket,prot,sess,"Cc: %s", msg->cc_list))
 			return(0);
 	np=NULL;
-	if((p=smb_get_hfield(msg,RFC822REPLYTO,NULL))==NULL) {
+	if((p = msg->replyto_list) == NULL) {
 		np=msg->replyto;
 		if(msg->replyto_net.type==NET_INTERNET)
 			p=msg->replyto_net.addr;
@@ -2676,6 +2676,7 @@ static void smtp_thread(void* arg)
 	char		alias_buf[128];
 	char		name_alias_buf[128];
 	char		reverse_path[128];
+	char		forward_path[128];
 	char		date[64];
 	char		qwkid[32];
 	char		rcpt_to[128];
@@ -3662,6 +3663,7 @@ static void smtp_thread(void* arg)
 					nettype=iniReadShortInt(rcptlst,section				,smb_hfieldtype(RECIPIENTNETTYPE),NET_NONE);
 					SAFEPRINTF(str,"#%u",usernum);
 					SAFECOPY(rcpt_addr,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),str,value));
+					SAFECOPY(forward_path, iniReadString(rcptlst, section, smb_hfieldtype(SMTPFORWARDPATH), "", value));
 
 					if(nettype==NET_NONE /* Local destination */ && usernum==0) {
 						lprintf(LOG_ERR,"%04d %s !can't deliver mail to user #0"
@@ -3713,6 +3715,8 @@ static void smtp_thread(void* arg)
 						}
 					}
 					smb_hfield_str(&newmsg, RECIPIENT, rcpt_name);
+					if(forward_path[0] != 0)
+						smb_hfield_str(&newmsg, SMTPFORWARDPATH, forward_path);
 
 					if(usernum && nettype!=NET_INTERNET) {	/* Local destination or QWKnet routed */
 						/* This is required for fixsmb to be able to rebuild the index */
@@ -4386,6 +4390,7 @@ static void smtp_thread(void* arg)
 							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
 							fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_FIDO);
 							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),smb_faddrtoa(&faddr,NULL));
+							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(SMTPFORWARDPATH),rcpt_to);
 
 							sockprintf(socket,client.protocol,session,ok_rsp);
 							state=SMTP_STATE_RCPT_TO;
@@ -4446,6 +4451,7 @@ static void smtp_thread(void* arg)
 					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
 					fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_INTERNET);
 					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),p);
+					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(SMTPFORWARDPATH),rcpt_to);
 
 					sockprintf(socket,client.protocol,session,ok_rsp);
 					state=SMTP_STATE_RCPT_TO;
@@ -4513,6 +4519,8 @@ static void smtp_thread(void* arg)
 			if(mailproc_match<mailproc_count) {
 				fprintf(rcptlst,"[%u]\n",rcpt_count++);
 				fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
+				fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(SMTPFORWARDPATH),rcpt_to);
+
 #if 0	/* should we fall-through to the sysop account? */
 				fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTEXT),1);
 #endif
@@ -4542,6 +4550,7 @@ static void smtp_thread(void* arg)
 					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
 					fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_QWK);
 					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),p);
+					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(SMTPFORWARDPATH),rcpt_to);
 
 					sockprintf(socket,client.protocol,session,ok_rsp);
 					state=SMTP_STATE_RCPT_TO;
@@ -4581,10 +4590,10 @@ static void smtp_thread(void* arg)
 			if(!usernum && startup->default_user[0]) {
 				usernum=matchuser(&scfg,startup->default_user,TRUE /* sysop_alias */);
 				if(usernum)
-					lprintf(LOG_INFO,"%04d %s Forwarding mail for UNKNOWN USER to default user: '%s' #%u"
+					lprintf(LOG_INFO,"%04d %s Forwarding mail for UNKNOWN USER to default user-recipient: '%s' #%u"
 						,socket, client.protocol,startup->default_user,usernum);
 				else
-					lprintf(LOG_WARNING,"%04d %s !UNKNOWN DEFAULT USER: '%s'"
+					lprintf(LOG_WARNING,"%04d %s !UNKNOWN DEFAULT USER-RECIPIENT: '%s'"
 						,socket, client.protocol,startup->default_user);
 			}
 
@@ -4594,26 +4603,26 @@ static void smtp_thread(void* arg)
 				continue;
 			}
 			if(!usernum) {
-				lprintf(LOG_WARNING,"%04d %s !UNKNOWN USER: '%s'", socket, client.protocol, rcpt_to);
+				lprintf(LOG_WARNING,"%04d %s !UNKNOWN USER-RECIPIENT: '%s'", socket, client.protocol, rcpt_to);
 				sockprintf(socket,client.protocol,session, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
 			user.number=usernum;
 			if((i=getuserdat(&scfg, &user))!=0) {
-				lprintf(LOG_ERR,"%04d %s !ERROR %d getting data on user #%u (%s)"
+				lprintf(LOG_ERR,"%04d %s !ERROR %d getting data on user-recipient #%u (%s)"
 					,socket, client.protocol, i, usernum, p);
 				sockprintf(socket,client.protocol,session, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
 			if(user.misc&(DELETED|INACTIVE)) {
-				lprintf(LOG_WARNING,"%04d %s !DELETED or INACTIVE user #%u (%s)"
+				lprintf(LOG_WARNING,"%04d %s !DELETED or INACTIVE user-recipient #%u (%s)"
 					,socket, client.protocol, usernum, p);
 				sockprintf(socket,client.protocol,session, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
 			if(cmd==SMTP_CMD_MAIL) {
 				if((user.rest&FLAG('M')) && relay_user.number==0) {
-					lprintf(LOG_NOTICE,"%04d %s !M-restricted user #%u (%s) cannot receive unauthenticated SMTP mail"
+					lprintf(LOG_NOTICE,"%04d %s !M-restricted user-recipient #%u (%s) cannot receive unauthenticated SMTP mail"
 						,socket, client.protocol, user.number, user.alias);
 					sockprintf(socket,client.protocol,session, "550 Closed mailbox: %s", rcpt_to);
 					stats.msgs_refused++;
@@ -4621,7 +4630,7 @@ static void smtp_thread(void* arg)
 				}
 				if(startup->max_msgs_waiting && !(user.exempt&FLAG('W')) 
 					&& (waiting=getmail(&scfg, user.number, /* sent: */FALSE, /* spam: */FALSE)) > startup->max_msgs_waiting) {
-					lprintf(LOG_NOTICE,"%04d %s !User #%u (%s) mailbox (%lu msgs) exceeds the maximum (%u) msgs waiting"
+					lprintf(LOG_NOTICE,"%04d %s !User-recipient #%u (%s) mailbox (%lu msgs) exceeds the maximum (%u) msgs waiting"
 						,socket, client.protocol, user.number, user.alias, waiting, startup->max_msgs_waiting);
 					sockprintf(socket,client.protocol,session, "450 Mailbox full: %s", rcpt_to);
 					stats.msgs_refused++;
@@ -4636,7 +4645,7 @@ static void smtp_thread(void* arg)
 						break;
 				}
 				if(i>=scfg.sys_nodes) {
-					lprintf(LOG_WARNING,"%04d %s !Attempt to send telegram to unavailable user #%u (%s)"
+					lprintf(LOG_WARNING,"%04d %s !Attempt to send telegram to unavailable user-recipient #%u (%s)"
 						,socket, client.protocol, user.number, user.alias);
 					sockprintf(socket,client.protocol,session,"450 User unavailable");
 					continue;
@@ -4648,6 +4657,7 @@ static void smtp_thread(void* arg)
 			fprintf(rcptlst,"[%u]\n",rcpt_count++);
 			fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
 			fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTEXT),user.number);
+			fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(SMTPFORWARDPATH),rcpt_to);
 
 			/* Forward to Internet */
 			tp=strrchr(user.netmail,'@');
