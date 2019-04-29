@@ -1,4 +1,4 @@
-/*
+/*
 	BUBBLE BOGGLE 
 	for Synchronet v3.15+ (javascript)
 	by Matt Johnson (2009)
@@ -330,14 +330,20 @@ function boggle() {
 			middle=parseInt(lower+((upper-lower)/2),10);
 			dict.position=middle-25;
 			var checkword=dict.readln();
-			while(dict.position<=middle) checkword=dict.readln();
+			var bol = dict.position;
+			while(dict.position<=middle) {
+				checkword=dict.readln();
+				bol = dict.position;
+			}
 			var comparison=word.localeCompare(checkword);
 			if(comparison<0) {
-				return scanDictionary(word,lower,middle,dict);
+				return scanDictionary(word,lower,bol,dict);
 			}
-			if(dict.position>upper || upper-lower<2) return false;
+			if(dict.position>upper || upper-lower<2)  {
+				return false;
+			}
 			else if(comparison>0){
-				return scanDictionary(word,middle,upper,dict);
+				return scanDictionary(word,bol,upper,dict);
 			}
 			else return true;
 		}
