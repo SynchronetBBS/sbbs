@@ -836,6 +836,9 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case SMTPREVERSEPATH:
 			msg->reverse_path=(char*)hfield_dat;
 			break;
+		case SMTPFORWARDPATH:
+			msg->forward_path=(char*)hfield_dat;
+			break;
 		case USENETPATH:
 			msg->path=(char*)hfield_dat;
 			break;
@@ -908,6 +911,7 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 	msg->id=NULL;
 	msg->reply_id=NULL;
 	msg->reverse_path=NULL;
+	msg->forward_path=NULL;
 	msg->path=NULL;
 	msg->newsgroups=NULL;
 	msg->mime_version=NULL;
