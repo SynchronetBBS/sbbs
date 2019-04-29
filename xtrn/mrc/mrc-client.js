@@ -228,7 +228,7 @@ function main() {
     while (!js.terminated && !break_loop) {
         session.cycle();
         user_input = inputline.getkey();
-        if (typeof user_input != 'undefined') {
+        if (typeof user_input == 'string') {
             if (input_state == 'chat') {
                 if (user_input.substring(0, 1) == '/') { // It's a command
                     cmd = user_input.split(' ');
