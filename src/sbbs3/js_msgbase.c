@@ -183,6 +183,34 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		msg->idx.to=crc16(to,0);
 	}
 
+	if(JS_GetProperty(cx, hdr, "to_list", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp==NULL) {
+			JS_ReportError(cx, "Invalid \"to_list\" string in recipient object");
+			return(FALSE);
+		}
+		if((smb_result = smb_hfield_str(msg, RFC822TO, cp))!=SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding RFC822TO field to message header", smb_result);
+			goto err;
+		}
+	}
+
+	if(JS_GetProperty(cx, hdr, "cc_list", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp==NULL) {
+			JS_ReportError(cx, "Invalid \"cc_list\" string in recipient object");
+			return(FALSE);
+		}
+		if((smb_result = smb_hfield_str(msg, SMB_CARBONCOPY, cp))!=SMB_SUCCESS) {
+			free(cp);
+			JS_ReportError(cx, "Error %d adding SMB_CARBONCOPY field to message header", smb_result);
+			goto err;
+		}
+	}
+
 	if(JS_GetProperty(cx, hdr, "to_ext", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
 		HANDLE_PENDING(cx, cp);
@@ -586,6 +614,19 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	/* RFC822 headers */
+	if(JS_GetProperty(cx, hdr, "replyto_list", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+		HANDLE_PENDING(cx, cp);
+		if(cp==NULL) {
+			JS_ReportError(cx, "Invalid \"replyto_list\" string in header object");
+			goto err;
+		}
+		if((smb_result = smb_hfield_str(msg, RFC822REPLYTO, cp))!=SMB_SUCCESS) {
+			JS_ReportError(cx, "Error %d adding RFC822REPLYTO field to message header", smb_result);
+			goto err;
+		}
+	}
+
 	if(JS_GetProperty(cx, hdr, "id", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
 		HANDLE_PENDING(cx, cp);
@@ -1309,6 +1350,8 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_TRUNCSP("to",p->msg.to, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP("from",p->msg.from, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP("subject",p->msg.subj, JSPROP_ENUMERATE);
+	LAZY_STRING_TRUNCSP_NULL("to_list",p->msg.to_list, JSPROP_ENUMERATE);
+	LAZY_STRING_TRUNCSP_NULL("cc_list",p->msg.cc_list, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("summary", p->msg.summary, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("tags", p->msg.tags, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("to_ext", p->msg.to_ext, JSPROP_ENUMERATE);
@@ -1316,6 +1359,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_TRUNCSP_NULL("from_org", p->msg.from_org, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("replyto", p->msg.replyto, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("replyto_ext", p->msg.replyto_ext, JSPROP_ENUMERATE);
+	LAZY_STRING_TRUNCSP_NULL("replyto_list", p->msg.replyto_list, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("reverse_path", p->msg.reverse_path, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("forward_path", p->msg.forward_path, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("to_agent", p->msg.to_agent, JSPROP_ENUMERATE);
@@ -1440,12 +1484,12 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 				switch((p->msg).hfield[i].type) {
 					case SMB_COMMENT:
 					case SMB_POLL_ANSWER:
-					case SMB_CARBONCOPY:
 					case SMB_GROUP:
 					case FIDOCTRL:
 					case FIDOSEENBY:
 					case FIDOPATH:
 					case RFC822HEADER:
+					case RFC822FROM:
 					case UNKNOWNASCII:
 						/* only support these header field types */
 						break;
@@ -2973,7 +3017,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	},
 	{"get_all_msg_headers", js_get_all_msg_headers, 1, JSTYPE_OBJECT, JSDOCSTR("[include_votes=<tt>false</tt>] [,expand_fields=<tt>true</tt>]")
 	,JSDOCSTR("returns an object (associative array) of all message headers \"indexed\" by message number.<br>"
-	"Message headers returned by this function include 2 additional properties: <tt>upvotes</tt> and <tt>downvotes</tt>.<br>"
+	"Message headers returned by this function include additional properties: <tt>upvotes</tt>, <tt>downvotes</tt> and <tt>total_votes</tt>.<br>"
 	"Vote messages are excluded by default.")
 	,316
 	},
@@ -3039,6 +3083,8 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>to_net_type</tt><td>Recipient's network type (default: 0 for local)"
 	"<tr><td align=top><tt>to_net_addr</tt><td>Recipient's network address"
 	"<tr><td align=top><tt>to_agent</tt><td>Recipient's agent type"
+	"<tr><td align=top><tt>to_list</tt><td>Comma-separated listed of primary recipients, RFC822-style"
+	"<tr><td align=top><tt>cc_list</tt><td>Comma-separated listed of secondary recipients, RFC822-style"
 	"<tr><td align=top><tt>from</tt><td>Sender's name <i>(required)</i>"
 	"<tr><td align=top><tt>from_ext</tt><td>Sender's user number"
 	"<tr><td align=top><tt>from_org</tt><td>Sender's organization"
@@ -3058,6 +3104,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>replyto_net_type</tt><td>Replies should be sent to this network type"
 	"<tr><td align=top><tt>replyto_net_addr</tt><td>Replies should be sent to this network address"
 	"<tr><td align=top><tt>replyto_agent</tt><td>Replies should be sent to this agent type"
+	"<tr><td align=top><tt>replyto_list</tt><td>Comma-separated list of mailboxes to reply-to, RFC822-style"
 	"<tr><td align=top><tt>summary</tt><td>Message Summary (optional)"
 	"<tr><td align=top><tt>tags</tt><td>Message Tags (space-delimited, optional)"
 	"<tr><td align=top><tt>id</tt><td>Message's RFC-822 compliant Message-ID"
