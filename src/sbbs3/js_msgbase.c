@@ -1490,6 +1490,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 					case FIDOPATH:
 					case RFC822HEADER:
 					case RFC822FROM:
+					case SMTPRECEIVED:
 					case UNKNOWNASCII:
 						/* only support these header field types */
 						break;
@@ -2174,7 +2175,7 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
-static char* get_msg_text(private_t* p, smbmsg_t* msg, BOOL strip_ctrl_a, BOOL rfc822, ulong mode, JSBool existing)
+static char* get_msg_text(private_t* p, smbmsg_t* msg, BOOL strip_ctrl_a, BOOL dot_stuffing, ulong mode, JSBool existing)
 {
 	char*		buf;
 
@@ -2209,7 +2210,7 @@ static char* get_msg_text(private_t* p, smbmsg_t* msg, BOOL strip_ctrl_a, BOOL r
 	if(strip_ctrl_a)
 		remove_ctrl_a(buf, buf);
 
-	if(rfc822) {	/* must escape lines starting with dot ('.') */
+	if(dot_stuffing) {	/* must escape lines starting with dot ('.'), e.g. RFC821 */
 		char* newbuf;
 		if((newbuf=malloc((strlen(buf)*2)+1))!=NULL) {
 			int i,j;
@@ -2241,7 +2242,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		tails=JS_TRUE;
 	JSBool		plain=JS_FALSE;
-	JSBool		rfc822=JS_FALSE;
+	JSBool		dot_stuffing=JS_FALSE;
 	JSBool		msg_specified=JS_FALSE;
 	JSBool		existing_msg=JS_FALSE;
 	JSString*	js_str;
@@ -2317,7 +2318,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[n++]);
 
 	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
-		rfc822=JSVAL_TO_BOOLEAN(argv[n++]);
+		dot_stuffing=JSVAL_TO_BOOLEAN(argv[n++]);
 
 	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
 		tails=JSVAL_TO_BOOLEAN(argv[n++]);
@@ -2332,7 +2333,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 		getmsgtxtmode |= GETMSGTXT_PLAIN;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	buf = get_msg_text(p, msgptr, strip_ctrl_a, rfc822, getmsgtxtmode, existing_msg);
+	buf = get_msg_text(p, msgptr, strip_ctrl_a, dot_stuffing, getmsgtxtmode, existing_msg);
 	JS_RESUMEREQUEST(cx, rc);
 	if(buf==NULL)
 		return JS_TRUE;
@@ -2356,7 +2357,7 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 	smbmsg_t	*msgptr;
 	JSBool		by_offset=JS_FALSE;
 	JSBool		strip_ctrl_a=JS_FALSE;
-	JSBool		rfc822=JS_FALSE;
+	JSBool		dot_stuffing=JS_FALSE;
 	JSBool		msg_specified=JS_FALSE;
 	JSBool		existing_msg=JS_FALSE;
 	JSString*	js_str;
@@ -2431,10 +2432,10 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[n++]);
 
 	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
-		rfc822=JSVAL_TO_BOOLEAN(argv[n++]);
+		dot_stuffing=JSVAL_TO_BOOLEAN(argv[n++]);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	buf = get_msg_text(p, msgptr, strip_ctrl_a, rfc822, GETMSGTXT_TAILS|GETMSGTXT_NO_BODY, existing_msg);
+	buf = get_msg_text(p, msgptr, strip_ctrl_a, dot_stuffing, GETMSGTXT_TAILS|GETMSGTXT_NO_BODY, existing_msg);
 	JS_RESUMEREQUEST(cx, rc);
 	if(buf==NULL)
 		return JS_TRUE;
@@ -3026,9 +3027,9 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,310
 	},
 	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id_or_header [,strip_ctrl_a=<tt>false</tt>] "
-		"[,rfc822_encoded=<tt>false</tt>] [,include_tails=<tt>true</tt>] [,plain_text=<tt>false</tt>]")
+		"[,dot_stuffing=<tt>false</tt>] [,include_tails=<tt>true</tt>] [,plain_text=<tt>false</tt>]")
 	,JSDOCSTR("returns the entire body text of a specific message as a single String, <i>null</i> on failure. "
-		"The default behavior is to leave Ctrl-A codes intact, perform no RFC-822 encoding, and to include tails (if any) in the "
+	"The default behavior is to leave Ctrl-A codes intact, do not stuff dots (e.g. per RFC-821), and to include tails (if any) in the "
 		"returned body text. When <i>plain_text</i> is true, only the first plain-text portion of a multi-part MIME encoded message body is returned. "
 		"The first argument (following the optional <i>by_offset</i> boolean) must be either a number (message number or index-offset), string (message-ID), or object (message header). "
 		"The <i>by_offfset</i> (<tt>true</tt>) argument should only be passed when the argument following it is the numeric index-offset of the message to be "
