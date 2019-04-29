@@ -714,7 +714,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		if(!sockprintf(socket,prot,sess,"Cc: %s", msg->cc_list))
 			return(0);
 	np=NULL;
-	if((p = msg->replyto_list) == NULL) {
+	if((p = (uchar*)msg->replyto_list) == NULL) {
 		np=msg->replyto;
 		if(msg->replyto_net.type==NET_INTERNET)
 			p=msg->replyto_net.addr;
