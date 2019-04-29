@@ -181,7 +181,7 @@
 #define SENDERTIME			0x0d		/* authentication/connection time */
 #define SENDERSERVER		0x0e		/* server hostname that authenticated user */
 
-#define REPLYTO 			0x20
+#define REPLYTO 			0x20		/* Name only */
 #define REPLYTOAGENT		0x21
 #define REPLYTONETTYPE		0x22
 #define REPLYTONETADDR		0x23
@@ -202,7 +202,7 @@
 #define SUBJECT 			0x60	/* or filename */
 #define SMB_SUMMARY 		0x61	/* or file description */
 #define SMB_COMMENT 		0x62
-#define SMB_CARBONCOPY		0x63
+#define SMB_CARBONCOPY		0x63	/* Comma-separated list of secondary recipients, RFC822-style */
 #define SMB_GROUP			0x64
 #define SMB_EXPIRATION		0x65
 #define SMB_PRIORITY		0x66
@@ -225,9 +225,9 @@
 #define RFC822HEADER		0xb0
 #define RFC822MSGID 		0xb1
 #define RFC822REPLYID		0xb2
-#define RFC822TO			0xb3
-#define RFC822FROM			0xb4
-#define RFC822REPLYTO		0xb5
+#define RFC822TO			0xb3		// Comma-separated list of recipients, RFC822-style
+#define RFC822FROM			0xb4		// Original, unparsed/modified RFC822 header "From" value
+#define RFC822REPLYTO		0xb5		// Comma-separated list of recipients, RFC822-style
 
 #define USENETPATH			0xc0
 #define USENETNEWSGROUPS	0xc1
@@ -515,6 +515,7 @@ typedef struct {				/* Message */
 	msghdr_t	hdr;			/* Header record (fixed portion) */
 	char		*to,			/* To name */
 				*to_ext,		/* To extension */
+				*to_list,		/* Comma-separated list of recipients, RFC822-style */
 				*from,			/* From name */
 				*from_ext,		/* From extension */
 				*from_org,		/* From organization */
@@ -523,6 +524,8 @@ typedef struct {				/* Message */
 				*from_prot,		/* From protocol (e.g. "Telnet", "NNTP", "HTTP", etc.) */
 				*replyto,		/* Reply-to name */
 				*replyto_ext,	/* Reply-to extension */
+				*replyto_list,	/* Comma-separated list of mailboxes, RFC822-style */
+				*cc_list,		/* Comma-separated list of additional recipients, RFC822-style */
 				*id,			/* RFC822 Message-ID */
 				*reply_id,		/* RFC822 Reply-ID */
 				*forward_path,	/* SMTP forward-path (RCPT TO: argument) */

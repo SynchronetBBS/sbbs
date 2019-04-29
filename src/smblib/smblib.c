@@ -767,6 +767,9 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case REPLYTO:
 			msg->replyto=(char*)hfield_dat;
 			break;
+		case RFC822REPLYTO:
+			msg->replyto_list = (char*)hfield_dat;
+			break;
 		case REPLYTOEXT:
 			msg->replyto_ext=(char*)hfield_dat;
 			break;
@@ -782,6 +785,9 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case RECIPIENT:
 			msg->to=(char*)hfield_dat;
 			break;
+		case RFC822TO:
+			msg->to_list = (char*)hfield_dat;
+			break;
 		case RECIPIENTEXT:
 			msg->to_ext=(char*)hfield_dat;
 			break;
@@ -796,6 +802,9 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 			break;
 		case SUBJECT:
 			msg->subj=(char*)hfield_dat;
+			break;
+		case SMB_CARBONCOPY:
+			msg->cc_list = (char*)hfield_dat;
 			break;
 		case SMB_SUMMARY:
 			msg->summary=(char*)hfield_dat;
@@ -883,12 +892,15 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 
 	msg->replyto=NULL;
 	msg->replyto_ext=NULL;
+	msg->replyto_list=NULL;
 	memset(&msg->replyto_net,0,sizeof(net_t));
 
 	msg->to=NULL;
 	msg->to_ext=NULL;
+	msg->to_list=NULL;
 	memset(&msg->to_net,0,sizeof(net_t));
 
+	msg->cc_list=NULL;
 	msg->subj=NULL;
 	msg->summary=NULL;
 	msg->tags=NULL;
