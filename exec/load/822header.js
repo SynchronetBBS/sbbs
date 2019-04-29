@@ -11,19 +11,22 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 
 	if(this.rfc822==undefined) {
 		this.rfc822='';
-		this.rfc822 += "To: "+this.to+"\r\n";
+		this.rfc822 += "To: "+ (this.to_list || this.to) +"\r\n";
+		if(this.cc_list)
+			this.rfc822 += "Cc: " + this.cc_list + "\r\n";
 		this.rfc822 += "Subject: "+this.subject+"\r\n";
 		this.rfc822 += "Message-ID: "+this.id+"\r\n";
 		this.rfc822 += "Date: "+this.date+"\r\n";
 
+		var quoted_from = '"' + this.from + '"';
 		if(!this.from_net_type || this.from_net_addr.length==0)    /* local message */
-			this.rfc822 += "From: " + this.from + " <" + this.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">\r\n";
+			this.rfc822 += "From: " + quoted_from + " <" + this.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">\r\n";
 		else if(!this.from_net_addr.length)
-			this.rfc822 += "From: " + this.from + "\r\n";
+			this.rfc822 += "From: " + quoted_from + "\r\n";
 		else if(this.from_net_addr.indexOf('@')!=-1)
-			this.rfc822 += "From: " + this.from+" <"+this.from_net_addr+">\r\n";
+			this.rfc822 += "From: " + quoted_from +" <"+this.from_net_addr+">\r\n";
 		else
-			this.rfc822 += "From: " + this.from+" <"+this.from.replace(/ /g,".").toLowerCase()+"@"+this.from_net_addr+">\r\n";
+			this.rfc822 += "From: " + quoted_from +" <"+this.from.replace(/ /g,".").toLowerCase()+"@"+this.from_net_addr+">\r\n";
 
 		this.rfc822 += "X-Comment-To: "+this.to+"\r\n";
 		if(this.path != undefined)
@@ -32,10 +35,13 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 			this.rfc822 += "Organization: "+this.from_org+"\r\n";
 		if(this.newsgroups != undefined)
 			this.rfc822 += "Newsgroups: "+this.newsgroups+"\r\n";
-		if(this.replyto != undefined)
+		
+		if(this.replyto_list != undefined)
+			this.rfc822 += "Reply-To: "+this.replyto_list+"\r\n";
+		else if(this.replyto != undefined)
 			this.rfc822 += "Reply-To: "+this.replyto+"\r\n";
 		else {
-			if(this.subnum != -1) {
+			if(this.subnum !== undefined && this.subnum != -1) {
 				this.rfc822 += 'Reply-To: "'+this.from+'"';
                 if (this.cfg!=undefined) {
                     this.rfc822 += ' <sub:'+this.cfg.code+'@'+system.inet_addr+'>';
