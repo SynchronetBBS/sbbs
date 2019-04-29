@@ -3495,7 +3495,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 			continue;
 		}
 
-		if(ch!='\n' && ch!=0x8d) {	/* ignore LF and soft CRs */
+		if(ch!='\n' && ch != FIDO_SOFT_CR) {	/* ignore LF and soft CRs */
 			if(cr && (!strncmp((char *)fbuf+l,"--- ",4)
 				|| !strncmp((char *)fbuf+l,"---\r",4)))
 				done=1; 			/* tear line and down go into tail */
