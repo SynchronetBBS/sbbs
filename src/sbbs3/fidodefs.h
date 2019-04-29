@@ -213,6 +213,8 @@ struct _PACK fidoaddr {		/* FidoNet 5D address (zone:net/node.point@domain) */
 #define FIDO_STORED_MSG_HDR_LEN		190
 #define FIDO_STORED_MSG_TERMINATOR	'\0'	/* 8-bits */
 
+#define FIDO_SOFT_CR				0x8d
+
 #if defined(PRAGMA_PACK)
 #pragma pack(pop)		/* original packing */
 #endif

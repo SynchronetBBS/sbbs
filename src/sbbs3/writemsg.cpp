@@ -137,7 +137,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, long mode, unsigned* li
 		useron_xedit = 0;
 
 	for(l=i=0;buf[l] && i<maxlines;l++) {
-		if((uchar)buf[l]==141 && useron_xedit
+		if((uchar)buf[l] == FIDO_SOFT_CR && useron_xedit
     		&& cfg.xedit[useron_xedit-1]->misc&QUICKBBS) {
 			len+=fwrite(crlf,1,2,stream);
 			i++;
