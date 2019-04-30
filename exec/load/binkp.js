@@ -1080,7 +1080,7 @@ BinkP.prototype.recvFrame = function(timeout)
 			return undefined;
 		}
 		else if (timeout) {
-			log(LOG_ERROR, "Timed out receiving packet data from remote: " + this.remote_addrs);
+			log(LOG_WARNING, "Timed out receiving packet data from remote: " + this.remote_addrs);
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
