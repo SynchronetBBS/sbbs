@@ -276,6 +276,8 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->areafile_backups		= iniGetInteger(ini, ROOT_SECTION, "AreaFileBackups", cfg->areafile_backups);
 	cfg->cfgfile_backups		= iniGetInteger(ini, ROOT_SECTION, "CfgFileBackups", cfg->cfgfile_backups);
 	cfg->min_free_diskspace		= iniGetBytes(ini, ROOT_SECTION, "MinFreeDiskSpace", 1, cfg->min_free_diskspace);
+	cfg->strip_lf				= iniGetBool(ini, ROOT_SECTION, "StripLineFeeds", cfg->strip_lf);
+	cfg->strip_soft_cr			= iniGetBool(ini, ROOT_SECTION, "StripSoftCRs", cfg->strip_soft_cr);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -291,8 +293,6 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->max_echomail_age		= (ulong)iniGetDuration(ini, ROOT_SECTION, "MaxEchomailAge", cfg->max_echomail_age);
 	SAFECOPY(cfg->areamgr,		  iniGetString(ini, ROOT_SECTION, "AreaManager", "SYSOP", value));
 	cfg->auto_add_subs			= iniGetBool(ini, ROOT_SECTION, "AutoAddSubs", cfg->auto_add_subs);
-	cfg->strip_lf				= iniGetBool(ini, ROOT_SECTION, "StripLineFeeds", cfg->strip_lf);
-	cfg->strip_soft_cr			= iniGetBool(ini, ROOT_SECTION, "StripSoftCRs", cfg->strip_soft_cr);
 
 	/* NetMail options: */
 	SAFECOPY(cfg->default_recipient, iniGetString(ini, ROOT_SECTION, "DefaultRecipient", "", value));

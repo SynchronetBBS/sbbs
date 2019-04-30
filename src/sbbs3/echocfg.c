@@ -81,6 +81,12 @@ void global_settings(void)
 		sprintf(opt[i++], "%-25s %u", "Config File Backups", cfg.cfgfile_backups);
 		sprintf(opt[i++], "%-25s %s bytes", "Minimum Free Disk Space"
 			, byte_count_to_str(cfg.min_free_diskspace, str, sizeof(str)));
+
+		snprintf(opt[i++],MAX_OPLN-1,"%-25.25s %-3.3s","Strip Incoming Soft CRs "
+			,cfg.strip_soft_cr ? "Yes":"No");
+		snprintf(opt[i++],MAX_OPLN-1,"%-25.25s %-3.3s","Strip Outgoing Line Feeds "
+			,cfg.strip_lf ? "Yes":"No");
+
 		sprintf(opt[i++], "%-25s %s", "BSY Mutex File Timeout", duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration)));
 		if(cfg.flo_mailer) {
 			sprintf(opt[i++], "%-25s %s", "BSO Lock Attempt Delay", duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration)));
@@ -125,6 +131,14 @@ void global_settings(void)
 			"    space for SBBSecho to run.  SBBSecho will just exit with an error\n"
 			"    message (and an error level of 1) if the minimum amount of free\n"
 			"    space is not found in directories into which SBBSecho may write.\n"
+			"\n"
+			"`Strip Incoming Soft CRs` instructs SBBSecho to remove any \"Soft\"\n"
+			"    Carriage Return (ASCII 141) characters from the text of `imported`\n"
+			"    EchoMail and NetMail messages.\n"
+			"\n"
+			"`Strip Outgoing Line Feeds` instructs SBBSecho to remove any Line Feed\n"
+			"    (ASCII 10) characters from the body text of `exported` EchoMail and\n"
+			"    NetMail messages.\n"
 			"\n"
 			"`BSY Mutex File Timeout` determines the maximum age of an existing\n"
 			"    mutex file (`*.bsy`) before SBBSecho will act as though the mutex\n"
@@ -198,29 +212,49 @@ void global_settings(void)
 				break;
 
 			case 6:
+			{
+				int k = !cfg.strip_soft_cr;
+				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Strip Soft Carriage Returns from Incoming Messages",uifcYesNoOpts)) {
+					case 0:	cfg.strip_soft_cr = true;	break;
+					case 1:	cfg.strip_soft_cr = false;	break;
+				}
+				break;
+			}
+			case 7:
+			{
+				int k = !cfg.strip_lf;
+				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Strip Line Feeds from Outgoing Messages",uifcYesNoOpts)) {
+					case 0:	cfg.strip_lf = true;	break;
+					case 1:	cfg.strip_lf = false;	break;
+				}
+				break;
+			}
+			case 8:
 				duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "BSY Mutex File Timeout", duration, 10, K_EDIT) > 0)
 					cfg.bsy_timeout = (ulong)parse_duration(duration);
 				break;
 
-			case 7:
+			case 9:
 				duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Delay Between BSO Lock Attempts", duration, 10, K_EDIT) > 0)
 					cfg.bso_lock_delay = (ulong)parse_duration(duration);
 				break;
 
-			case 8:
+			case 10:
 				sprintf(str, "%lu", cfg.bso_lock_attempts);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum BSO Lock Attempts", str, 5, K_EDIT|K_NUMBER) > 0)
 					cfg.bso_lock_attempts = atoi(str);
 				break;
 
-			case 9:
+			case 11:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Capabilities (BinkIT)", cfg.binkp_caps, sizeof(cfg.binkp_caps)-1, K_EDIT);
 				break;
 
-			case 10:
+			case 12:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Sysop Name (BinkIT)", cfg.binkp_sysop, sizeof(cfg.binkp_sysop)-1, K_EDIT);
 				break;
@@ -1634,16 +1668,6 @@ int main(int argc, char **argv)
 	"    (`---`) existing in outgoing EchoMail message text to `===`.\n"
 	"    This setting defaults to `No`.\n"
 	"\n"
-	"`Strip Soft CRs from Incoming Messages` when set to `Yes` instructs\n"
-	"    SBBSecho to remove any so-called \"Soft\" Carriage Return (ASCII 141)\n"
-	"    characters from the text of imported EchoMail and NetMail messages.\n"
-	"    This setting defaults to `No`.\n"
-	"\n"
-	"`Strip Line Feeds from Outgoing Messages` when set to `Yes` instructs\n"
-	"    SBBSecho to remove any line-feed (ASCII 10) characters from the body\n"
-	"    text of exported EchoMail and NetMail messages.\n"
-	"    This setting defaults to `No`.\n"
-	"\n"
 	"`Automatically Add New Subs to Area File`, when set to `Yes`, enables\n"
 	"    SBBSecho to detect newly added Sub-boards in any Message Groups that\n"
 	"    are listed with a `Linked Node` as their hub/uplink and add those\n"
@@ -1695,10 +1719,6 @@ int main(int argc, char **argv)
 						,cfg.echomail_notify ? "Yes":"No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%-3.3s","Convert Existing Tear Lines"
 						,cfg.convert_tear ? "Yes":"No");
-					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%-3.3s","Strip Soft CRs "
-						"from Incoming Messages",cfg.strip_soft_cr ? "Yes":"No");
-					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%-3.3s","Strip Line Feeds "
-						"from Outgoing Messages",cfg.strip_lf ? "Yes":"No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%-3.3s","Automatically Add New Subs "
 						"to Area File",cfg.auto_add_subs ? "Yes":"No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%-3.3s","Allow Nodes to Add Areas "
@@ -1781,22 +1801,6 @@ int main(int argc, char **argv)
 							}
 							break;
 						case 6:
-							k = !cfg.strip_soft_cr;
-							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-								,"Strip Soft Carriage Returns",uifcYesNoOpts)) {
-								case 0:	cfg.strip_soft_cr = true;	break;
-								case 1:	cfg.strip_soft_cr = false;	break;
-							}
-							break;
-						case 7:
-							k = !cfg.strip_lf;
-							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-								,"Strip Line Feeds",uifcYesNoOpts)) {
-								case 0:	cfg.strip_lf = true;	break;
-								case 1:	cfg.strip_lf = false;	break;
-							}
-							break;
-						case 8:
 							k = !cfg.auto_add_subs;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 								,"Automatically Add New Sub-boards to Area File",uifcYesNoOpts)) {
@@ -1804,7 +1808,7 @@ int main(int argc, char **argv)
 								case 1:	cfg.auto_add_subs = false;	break;
 							}
 							break;
-						case 9:
+						case 7:
 							k = cfg.add_from_echolists_only;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 								,"Allow AreaFix-Add from Area File",uifcYesNoOpts)) {
@@ -1812,13 +1816,13 @@ int main(int argc, char **argv)
 								case 1:	cfg.add_from_echolists_only = true;		break;
 							}
 							break;
-						case 10:
+						case 8:
 							sprintf(str, "%u", cfg.areafile_backups);
 							if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Total Area File Backups to Maintain"
 								,str, 5, K_EDIT|K_NUMBER) >= 0)
 								cfg.areafile_backups = atoi(str);
 							break;
-						case 11:
+						case 9:
 							k = !cfg.check_path;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 								,"Circular Path Detection",uifcYesNoOpts)) {
@@ -1826,7 +1830,7 @@ int main(int argc, char **argv)
 								case 1:	cfg.check_path = false;	break;
 							}
 							break;
-						case 12:
+						case 10:
 							k = !cfg.check_path;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 								,"Relay Filtered EchoMail Messages",uifcYesNoOpts)) {
@@ -1834,7 +1838,7 @@ int main(int argc, char **argv)
 								case 1:	cfg.relay_filtered_msgs = false;	break;
 							}
 							break;
-						case 13:
+						case 11:
 						{
 							k = cfg.trunc_bundles;
 							char* opt[] = {"Delete after Sent", "Truncate after Sent", NULL };
@@ -1845,7 +1849,7 @@ int main(int argc, char **argv)
 							}
 							break;
 						}
-						case 14:
+						case 12:
 							k = !cfg.zone_blind;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Zone Blind",uifcYesNoOpts)) {
 								case 0:
@@ -1863,7 +1867,7 @@ int main(int argc, char **argv)
 									break;
 							}
 							break;
-						case 15:
+						case 13:
 							uifc.helpbuf=
 							"~ Maximum Age of Imported EchoMail ~\n\n"
 							"Maximum age of EchoMail that may be imported. The age is based\n"
