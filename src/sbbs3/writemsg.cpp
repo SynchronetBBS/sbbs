@@ -145,6 +145,9 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, long mode, unsigned* li
 					continue;
 				case XEDIT_SOFT_CR_STRIP:
 					continue;
+				case XEDIT_SOFT_CR_RETAIN:
+				case XEDIT_SOFT_CR_UNDEFINED:
+					break;
 			}
 		}
 		/* Expand LF to CRLF? */

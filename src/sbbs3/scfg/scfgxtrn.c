@@ -1670,7 +1670,7 @@ void xedit_cfg()
 				,cfg.xedit[i]->misc&QUICKBBS ? "QuickBBS MSGINF/MSGTMP":"WWIV EDITOR.INF/RESULT.ED");
 			sprintf(opt[k++],"%-32.32s%s","Expand Line Feeds to CRLF"
 				,cfg.xedit[i]->misc&EXPANDLF ? "Yes":"No");
-			const char* p = "Unspecified";
+			const char* p;
 			switch(cfg.xedit[i]->soft_cr) {
 				case XEDIT_SOFT_CR_EXPAND:
 					p = "Convert to CRLF";
@@ -1680,6 +1680,10 @@ void xedit_cfg()
 					break;
 				case XEDIT_SOFT_CR_RETAIN:
 					p = "Retain";
+					break;
+				default:
+				case XEDIT_SOFT_CR_UNDEFINED:
+					p = "Unspecified";
 					break;
 			}
 			sprintf(opt[k++],"%-32.32s%s","Handle Soft Carriage Returns", p);
