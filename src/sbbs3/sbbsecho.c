@@ -3495,61 +3495,62 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 			continue;
 		}
 
-		if(ch!='\n' && ch != FIDO_SOFT_CR) {	/* ignore LF and soft CRs */
-			if(cr && (!strncmp((char *)fbuf+l,"--- ",4)
-				|| !strncmp((char *)fbuf+l,"---\r",4)))
-				done=1; 			/* tear line and down go into tail */
-			if(done && cr && !strncmp((char *)fbuf+l,"SEEN-BY:",8)) {
-				l+=8;
-				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
-				m=l;
-				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
-				if(m>l)
-					smb_hfield(&msg,FIDOSEENBY,(ushort)(m-l),fbuf+l);
-				while(l<length && fbuf[l]!='\r') l++;
-				continue;
-			}
+		if(ch == '\n' ||
+			(ch == FIDO_SOFT_CR && cfg.strip_soft_cr))
+			continue;
+		if(cr && (!strncmp((char *)fbuf+l,"--- ",4)
+			|| !strncmp((char *)fbuf+l,"---\r",4)))
+			done=1; 			/* tear line and down go into tail */
+		if(done && cr && !strncmp((char *)fbuf+l,"SEEN-BY:",8)) {
+			l+=8;
+			while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
+			m=l;
+			while(m<length && fbuf[m]!='\r') m++;
+			while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
+			if(m>l)
+				smb_hfield(&msg,FIDOSEENBY,(ushort)(m-l),fbuf+l);
+			while(l<length && fbuf[l]!='\r') l++;
+			continue;
+		}
+		if(done) {
+			if(taillen<MAX_TAILLEN)
+				stail[taillen++]=ch;
+		}
+		else
+			sbody[bodylen++]=ch;
+		col++;
+		if(ch=='\r') {
+			cr=1;
+			col=0;
 			if(done) {
 				if(taillen<MAX_TAILLEN)
-					stail[taillen++]=ch;
+					stail[taillen++]='\n';
 			}
 			else
-				sbody[bodylen++]=ch;
-			col++;
-			if(ch=='\r') {
-				cr=1;
-				col=0;
-				if(done) {
-					if(taillen<MAX_TAILLEN)
-						stail[taillen++]='\n';
-				}
-				else
-					sbody[bodylen++]='\n';
+				sbody[bodylen++]='\n';
+		}
+		else {
+			cr=0;
+			if(col==1 && !strncmp((char *)fbuf+l," * Origin: ",11)) {
+				p=(char*)fbuf+l+11;
+				while(*p && *p!='\r') p++;	 /* Find CR */
+				while(p && *p!='(') p--;     /* rewind to '(' */
+				if(p)
+					origaddr=atofaddr(p+1); 	/* get orig address */
+				done=1;
 			}
-			else {
-				cr=0;
-				if(col==1 && !strncmp((char *)fbuf+l," * Origin: ",11)) {
-					p=(char*)fbuf+l+11;
-					while(*p && *p!='\r') p++;	 /* Find CR */
-					while(p && *p!='(') p--;     /* rewind to '(' */
-					if(p)
-						origaddr=atofaddr(p+1); 	/* get orig address */
-					done=1;
-				}
-				if(done)
-					continue;
+			if(done)
+				continue;
 
-				if(ch==ESC) esc=1;		/* ANSI codes */
-				if(ch==' ' && col>40 && !esc) {	/* word wrap */
-					for(m=l+1;m<length;m++) 	/* find next space */
-						if(fbuf[m]<=' ' && fbuf[m]>=0)
-							break;
-					if(m<length && m-l>80-col) {  /* if it's beyond the eol */
-						sbody[bodylen++]='\r';
-						sbody[bodylen++]='\n';
-						col=0;
-					}
+			if(ch==ESC) esc=1;		/* ANSI codes */
+			if(ch==' ' && col>40 && !esc) {	/* word wrap */
+				for(m=l+1;m<length;m++) 	/* find next space */
+					if(fbuf[m]<=' ' && fbuf[m]>=0)
+						break;
+				if(m<length && m-l>80-col) {  /* if it's beyond the eol */
+					sbody[bodylen++]='\r';
+					sbody[bodylen++]='\n';
+					col=0;
 				}
 			}
 		}

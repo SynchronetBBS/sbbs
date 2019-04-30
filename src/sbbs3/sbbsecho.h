@@ -194,6 +194,7 @@ typedef struct {
 	bool		secure_echomail;
 	bool		strict_packet_passwords;	/* Packet passwords must always match the configured linked-node */
 	bool		strip_lf;
+	bool		strip_soft_cr;
 	bool		convert_tear;
 	bool		fuzzy_zone;
 	bool		flo_mailer;				/* Binkley-Style-Outbound / FLO mailer */
