@@ -807,7 +807,7 @@ enum {
 	,Only
 	,SPAMVisibilityIsNow
 	,VoteInThisPollNow
-	,MIMEDecodedPlainText
+	,MIMEDecodedPlainTextFmt
 	,MsgHdrBodySeparator
 	,FileHdrDescSeparator
 	,RemoveFileQ
