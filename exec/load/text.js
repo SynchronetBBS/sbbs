@@ -805,7 +805,7 @@ var BallotVoteWhich=793;
 var Only=794;
 var SPAMVisibilityIsNow=795;
 var VoteInThisPollNow=796;
-var MIMEDecodedPlainText=797;
+var MIMEDecodedPlainTextFmt=797;
 var MsgHdrBodySeparator=798;
 var FileHdrDescSeparator=799;
 var RemoveFileQ=800;
@@ -819,7 +819,12 @@ var LongLineContinuationPrefix=807;
 var Scanning=808;
 var Done=809;
 var Scanned=810;
+var HitYourBackspaceKey=811;
+var CharacterReceivedFmt=812;
+var InvalidBackspaceKeyFmt=813;
+var SwapDeleteKeyQ=814;
+var PetTermDetected=815;
 
-var TOTAL_TEXT=811;
+var TOTAL_TEXT=816;
 
 this;
