@@ -45,7 +45,7 @@
 "\1n\1m\r\nForwarded by \1h%s\1n\1m on "\                    040 ForwardedFrom
 	"\1h%s\1n\r\n"
 "\1n\1m\r\nMail forwarded to \1h%s \1n\1m#%d.\1n\r\n"         041 Forwarded
-"\1b\1hAuto message by: \1c%s\1b\1\\on %s\1n\r\n\r\n"           042 AutoMsgBy
+"\1b\1hAuto message by: \1c%s\1b on %s\1n\r\n\r\n"            042 AutoMsgBy
 "\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
 "\1n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
 "\1n\r\nYou have no %s.\r\n"                           045 NoMailWaiting
@@ -392,7 +392,7 @@
 "\1w\1hYou haven't changed your password in more "\       330 TimeToChangePw
 	"than %d days.\r\n\r\n"
 "\r\nEnter a different password"                        331 NewPasswordQ
-"\1_\r\n\1y\1hNew password (4-8 chars): "                  332 NewPassword
+"\1_\1?\1y\1hNew password (4-8 chars): "                  332 NewPassword
 "\1_\1y\1hVerify (enter again): \1n"                        333 VerifyPassword
 "\7\1r\1hWrong!"                                          334 Wrong
 "\1w\1hPassword changed.\r\n"                             335 PasswordChanged
@@ -962,7 +962,7 @@
 "Only"									794 Only
 "\1n\1h\1c\r\nSPAM Visibility is now: \1w"	795 SPAMVisibilityIsNow
 "\r\nTo vote in this poll, hit ~V now.\r\n" 796 VoteInThisPollNow
-"\1n\1mMIME-decoded plain-text:\1n\r\n"     797 MIMEDecodedPlainText
+"\1n\1mMIME-decoded %s plain-text:\1n\r\n"  797 MIMEDecodedPlainTextFmt
 "\1/@EXEC:SHOWMSGAVATAR@\r\n"				798 MsgHdrBodySeparator
 "\1/\r\n@EXEC:SHOWFILEAVATAR@"				799 FileHdrDescSeparator
 "Remove file"                               800 RemoveFileQ
@@ -972,7 +972,7 @@
 "\r\n\1h\1yEnter (space-separated) Tags: "  804 TagMessagePrompt
 "\r\n³ \1bTags\1n\1b: \1h\1c%.70s"          805 MsgTags
 "Terminal type"                             806 NoAccessTerminal
-"\r\n "                                     807 LongLineContinuationPrefix
+"\r\n"                                      807 LongLineContinuationPrefix
 "Scanning"                                  808 Scanning
 "Done"                                      809 Done
 "\1[\1>"                                    810 Scanned
