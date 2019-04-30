@@ -1331,7 +1331,7 @@ void sbbs_t::automsg()
 		mnemonics(text[AutoMsg]);
 		switch(getkeys("RWQ",0)) {
 			case 'R':
-				printfile(automsg,P_NOABORT|P_NOATCODES);
+				printfile(automsg,P_NOABORT|P_NOATCODES|P_WORDWRAP);
 				break;
 			case 'W':
 				if(useron.rest&FLAG('W')) {
@@ -1340,17 +1340,16 @@ void sbbs_t::automsg()
 				}
 				action=NODE_AMSG;
 				SYNC;
-				bputs("\r\n3 lines:\r\n");
-				if(!getstr(str,68,K_WRAP|K_MSG))
+				bputs("\r\nMaximum of 3 lines:\r\n");
+				if(!getstr(str, 76, K_WRAP|K_MSG))
 					break;
-				strcpy(buf,str);
-				strcat(buf,"\r\n          ");
-				getstr(str,68,K_WRAP|K_MSG);
-				strcat(buf,str);
-				strcat(buf,"\r\n          ");
-				getstr(str,68,K_MSG);
-				strcat(str,crlf);
-				strcat(buf,str);
+				sprintf(buf, quote_fmt, 79, str);
+				if(getstr(str, 76, K_WRAP|K_MSG)) {
+					sprintf(buf + strlen(buf), quote_fmt, 79, str);
+					if(getstr(str, 76, K_MSG)) {
+						sprintf(buf + strlen(buf), quote_fmt, 79, str);
+					}
+				}
 				if(yesno(text[OK])) {
 					if(useron.exempt&FLAG('A')) {
 						if(!noyes(text[AnonymousQ]))
@@ -1365,7 +1364,6 @@ void sbbs_t::automsg()
 					else
 						SAFEPRINTF2(tmp,"%s #%d",useron.alias,useron.number);
 					SAFEPRINTF2(str,text[AutoMsgBy],tmp,timestr(now));
-					strcat(str,"          ");
 					write(file,str,strlen(str));
 					write(file,buf,strlen(buf));
 					close(file); 
