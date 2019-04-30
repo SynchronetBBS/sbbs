@@ -235,7 +235,7 @@ else {
 	// Auto-message
 	auto_msg=system.data_dir + "msgs/auto.msg"
 	if(file_size(auto_msg)>0) {
-		console.printfile(auto_msg,P_NOATCODES);
+		console.printfile(auto_msg,P_NOATCODES|P_WORDWRAP);
 	}
 	console.crlf();
 
