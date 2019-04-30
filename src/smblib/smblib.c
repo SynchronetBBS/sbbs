@@ -1099,6 +1099,7 @@ void SMBCALL smb_freemsgmem(smbmsg_t* msg)
 		msg->dfield=NULL;
 	}
 	msg->hdr.total_dfields=0;
+	FREE_AND_NULL(msg->charset);
 	smb_freemsghdrmem(msg);
 }
 
