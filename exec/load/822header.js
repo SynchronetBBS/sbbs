@@ -1,7 +1,8 @@
 const RFC822HEADER = 0xb0;  // from smbdefs.h
+const SMTPRECEIVED = 0xd3;
 require("utf8_ascii.js", 'utf8_ascii');
 
-MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
+MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold)
 {
 	var content_type;
 	var i;
@@ -28,7 +29,7 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 		else
 			this.rfc822 += "From: " + quoted_from +" <"+this.from.replace(/ /g,".").toLowerCase()+"@"+this.from_net_addr+">\r\n";
 
-		this.rfc822 += "X-Comment-To: "+this.to+"\r\n";
+//		this.rfc822 += "X-Comment-To: "+this.to+"\r\n";
 		if(this.path != undefined)
 			this.rfc822 += "Path: "+system.inetaddr+"!"+this.path+"\r\n";
 		if(this.from_org != undefined)
@@ -57,6 +58,13 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 			this.rfc822 += "References: "+this.reply_id+"\r\n";
 		if(this.reverse_path != undefined)
 			this.rfc822 += "Return-Path: "+this.reverse_path+"\r\n";
+		
+		// "Received" headers
+		if(this.field_list!=undefined) {
+			for(i in this.field_list) 
+				if(this.field_list[i].type == SMTPRECEIVED)
+					this.rfc822 += "Received: " + this.field_list[i].data + "\r\n";
+		}
 
 		// Fidonet headers
 		if(this.ftn_area != undefined)
@@ -71,7 +79,7 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 			this.rfc822 += "X-FTN-MSGID: "+this.ftn_msgid+"\r\n";
 		if(this.ftn_reply != undefined)
 			this.rfc822 += "X-FTN-REPLY: "+this.ftn_reply+"\r\n";
-
+	
 		// Other RFC822 headers
 		if(this.field_list!=undefined) {
 			for(i in this.field_list) 
@@ -87,8 +95,8 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 			this.rfc822 += "Content-Transfer-Encoding: 8bit\r\n";
 		}
 
-		// Unwrap headers
-		this.rfc822=this.rfc822.replace(/\s*\r\n\s+/g, " ");
+		if(unfold !== false)
+			this.rfc822=this.rfc822.replace(/\s*\r\n\s+/g, " ");
 		this.rfc822 += "\r\n";
 		// Illegal characters in header?
 		if (this.rfc822.search(/[^\x01-\x7f]/) != -1) {
