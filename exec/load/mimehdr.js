@@ -5,14 +5,17 @@
 //        MIME (Multipurpose Internet Mail Extensions) Part Three:
 //              Message Header Extensions for Non-ASCII Text
 
+require("utf8_cp437.js", 'utf8_cp437');
+
 // Returns an array of 'encoded-words' 
 function decode(hvalue)
 {
 	var result = [];
+	var regex = /(\=\?[a-zA-Z0-9-]+\?.\?[^ ?]+\?\=|\s*\w+\s*|\s+)/g;
+	var word;
 	
-	var list = hvalue.split(/\s+/);
-	for(var i in list) {
-		var str = list[i];
+	while(hvalue && (word = regex.exec(hvalue)) !== null) {
+		var str = word[1];
 		var retval = { charset: 'unspecified (US-ASCII)', data: str };
 
 		var match = str.match(/^\=\?([a-zA-Z0-9-]+)\?(.)\?([^ ?]+)\?\=$/);
@@ -33,6 +36,25 @@ function decode(hvalue)
 		result.push(retval);
 	}
 	return result;
+}
+
+// Translate a MIME-encoded header field value to a CP437 string
+function to_cp437(val)
+{
+	var result = [];
+	var words = mimehdr.decode(val);
+	for(i in words) {
+		var word = words[i];
+		switch(word.charset) {
+			case 'utf-8':
+				result.push(utf8_cp437(word.data));
+				break;
+			default:
+				result.push(word.data);
+				break;
+		}
+	}
+	return result.join('');
 }
 
 this;
