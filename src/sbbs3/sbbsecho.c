@@ -867,7 +867,7 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	return 0;
 }
 
-/* Writes text buffer to file, expanding sole LFs to CRLFs */
+/* Writes text buffer to file, expanding sole LFs to CRLFs or stripping LFs */
 size_t fwrite_crlf(const char* buf, size_t len, FILE* fp)
 {
 	char	ch,last_ch=0;
@@ -876,10 +876,14 @@ size_t fwrite_crlf(const char* buf, size_t len, FILE* fp)
 
 	for(i=0;i<len;i++) {
 		ch=*buf++;
-		if(ch=='\n' && last_ch!='\r') {
-			if(fputc('\r', fp) == EOF)
-				break;
-			wr++;
+		if(ch=='\n') {
+			if(last_ch!='\r') {
+				if(fputc('\r', fp) == EOF)
+					break;
+				wr++;
+			}
+			if(cfg.strip_lf)
+				continue;
 		}
 		if(fputc(ch,fp)==EOF)
 			break;

@@ -1641,7 +1641,7 @@ int main(int argc, char **argv)
 	"\n"
 	"`Strip Line Feeds from Outgoing Messages` when set to `Yes` instructs\n"
 	"    SBBSecho to remove any line-feed (ASCII 10) characters from the body\n"
-	"    text of messages being exported to FidoNet EchoMail.\n"
+	"    text of exported EchoMail and NetMail messages.\n"
 	"    This setting defaults to `No`.\n"
 	"\n"
 	"`Automatically Add New Subs to Area File`, when set to `Yes`, enables\n"
