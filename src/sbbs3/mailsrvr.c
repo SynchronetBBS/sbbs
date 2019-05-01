@@ -5571,7 +5571,10 @@ static void sendmail_thread(void* arg)
 					&& tp > p)
 					*tp=0;	/* Remove ":port" designation from envelope */
 			}
-			sockprintf(sock,prot,session,"RCPT TO: <%s>", toaddr);
+			if(*toaddr == '<')
+				sockprintf(sock,prot,session,"RCPT TO: %s", toaddr);
+			else
+				sockprintf(sock,prot,session,"RCPT TO: <%s>", toaddr);
 			if(!sockgetrsp(sock,prot,session,"25", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"25*");
