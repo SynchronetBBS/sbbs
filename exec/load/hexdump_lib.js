@@ -1,7 +1,21 @@
 // $Id$
 
+function num_digits(n)
+{
+	return ( n < 0x10         ? 1 
+	       : n < 0x100        ? 2 
+	       : n < 0x1000       ? 3 
+	       : n < 0x10000      ? 4 
+	       : n < 0x100000     ? 5 
+	       : n < 0x1000000    ? 6 
+	       : n < 0x10000000   ? 7 
+	       : n < 0x100000000  ? 8 
+           : n < 0x1000000000 ? 9 : 10 );
+}
+
+
 // Returns an array
-function generate(title, val, include_ascii)
+function generate(title, val, include_ascii, include_offset)
 {
 	var i;
 	var output = [];
@@ -12,16 +26,22 @@ function generate(title, val, include_ascii)
 	if(!val) {
 		return [format("%s: (null)\r\n", title)];
 	}
+	var length = val.length;
 	if(title)
-		output.push(format("%s: %u bytes", title, val.length));
+		output.push(format("%s: %u bytes", title, length));
 	var line = '';
 	var ascii = '';
-	for(i=0; i < val.length; i++) {
+	var digits = num_digits(length);
+	if(include_offset)
+		line = format("%0*x:  ", digits, 0);
+	for(i=0; i < length; i++) {
 		var ch = val.charCodeAt(i);
 		if(i && i%16 == 0) {
 			output.push(line + format("  %s", ascii));
 			ascii = '';
 			line = '';
+			if(include_offset)
+				line = format("%0*x:  ", digits, i);
 		}
 		else if(i && i%8 == 0)
 			line += "- ";
@@ -33,7 +53,7 @@ function generate(title, val, include_ascii)
 		var gap = 0;
 		if(i%16) {
 			gap = (16-(i%16))*3;
-			if((i%16) < 8)
+			if((i%16) < 9)
 				gap += 2;
 		}
 		output.push(line + format("%*s  %s\r\n", gap, "", ascii));
