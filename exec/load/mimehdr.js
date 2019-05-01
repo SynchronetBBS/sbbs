@@ -46,7 +46,8 @@ function to_cp437(val)
 	var result = [];
 	var words = mimehdr.decode(val);
 	for(i in words) {
-		var word = strip_ctrl(words[i]);
+		var word = words[i];
+		word.data = strip_ctrl(word.data);
 		switch(word.charset) {
 			case 'utf-8':
 				result.push(utf8_cp437(word.data));
