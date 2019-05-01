@@ -1859,7 +1859,10 @@ static void exempt_email_addr(const char* comment
 	char	tmp[128];
 	FILE*	fp;
 
-	SAFEPRINTF(to,"<%s>",toaddr);
+	if(*toaddr == '<')
+		SAFECOPY(to, toaddr);
+	else
+		SAFEPRINTF(to,"<%s>",toaddr);
 	if(!email_addr_is_exempt(to)) {
 		SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
 		if((fp=fopen(fname,"a"))==NULL)
