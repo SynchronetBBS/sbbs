@@ -25,11 +25,13 @@ function decode(hvalue)
 		}
 		
 		retval.charset = match[1].toLowerCase();
-		switch(match[2].toLowerCase()) {
-			case 'q':	// Quoted-printable
-				retval.data = match[3].replace(/=([0-9A-F][0-9A-F])/g, function(str, p1) { return(ascii(parseInt(p1,16))); });
+		switch(match[2].toUpperCase()) {
+			case 'Q':	// "similar to" Quoted-printable
+				retval.data = match[3]
+					.replace(/_/g, ' ')
+					.replace(/=([0-9A-F][0-9A-F])/g, function(str, p1) { return(ascii(parseInt(p1,16))); });
 				break;
-			case 'b':	// Base64
+			case 'B':	// Base64
 				retval.data = base64_decode(match[3]);
 				break;
 		}
@@ -44,12 +46,14 @@ function to_cp437(val)
 	var result = [];
 	var words = mimehdr.decode(val);
 	for(i in words) {
-		var word = words[i];
+		var word = strip_ctrl(words[i]);
 		switch(word.charset) {
 			case 'utf-8':
 				result.push(utf8_cp437(word.data));
 				break;
 			default:
+			case 'cp437':
+			case 'ibm437':
 				result.push(word.data);
 				break;
 		}
