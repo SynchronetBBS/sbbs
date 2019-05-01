@@ -11,7 +11,7 @@ require("utf8_cp437.js", 'utf8_cp437');
 function decode(hvalue)
 {
 	var result = [];
-	var regex = /(\=\?[a-zA-Z0-9-]+\?.\?[^ ?]+\?\=|\s*\w+\s*|\s+)/g;
+	var regex = /(\=\?[a-zA-Z0-9-]+\?.\?[^ ?]+\?\=|\S+\s*)/g;
 	var word;
 	
 	while(hvalue && (word = regex.exec(hvalue)) !== null) {
