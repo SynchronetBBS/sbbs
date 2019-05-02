@@ -33,7 +33,7 @@
 
 require('nodedefs.js', 'NODE_WFC');
 require('smbdefs.js', 'SMB_SUCCESS');
-require('userdefs.js' 'USER_DELETED');
+require('userdefs.js', 'USER_DELETED');
 require('cga_defs.js', 'BLACK');
 
 /* Would rather use const than var, but end up with redeclaration errors.	*/
