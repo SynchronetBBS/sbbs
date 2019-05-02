@@ -1,8 +1,5 @@
-const RFC822HEADER = 0xb0;  // from smbdefs.h
-const SMTPRECEIVED = 0xd3;
-const FIDOSEENBY   = 0xa2;
-const FIDOPATH     = 0xa3;
 require("utf8_ascii.js", 'utf8_ascii');
+require("smbdefs.js", 'RFC822HEADER');
 
 MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold)
 {

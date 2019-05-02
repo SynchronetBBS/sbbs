@@ -5,13 +5,8 @@
 
 // $Id$
 
-if(!js.global || js.global.mail_get_name==undefined)
-	load("mailutil.js");
-
-FIDOCTRL     = 0xa0	// from smbdefs.h
-FIDOSEENBY	 = 0xa2	// from smbdefs.h
-FIDOPATH     = 0xa3 // from smbdefs.h
-RFC822HEADER = 0xb0	// from smbdefs.h
+require("mailutil.js", 'mail_get_name');
+require("smbdefs.js", 'RFC822HEADER');
 					
 function write_news_header(hdr,writeln)
 {
