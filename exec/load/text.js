@@ -824,7 +824,8 @@ var CharacterReceivedFmt=812;
 var InvalidBackspaceKeyFmt=813;
 var SwapDeleteKeyQ=814;
 var PetTermDetected=815;
+var MsgCarbonCopyList=816;
 
-var TOTAL_TEXT=816;
+var TOTAL_TEXT=817;
 
 this;
