@@ -826,6 +826,7 @@ enum {
 	,InvalidBackspaceKeyFmt
 	,SwapDeleteKeyQ
 	,PetTermDetected
+	,MsgCarbonCopyList
 
 	,TOTAL_TEXT
 };

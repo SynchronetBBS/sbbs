@@ -153,6 +153,8 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 			if(msg->to_ext)
 				bprintf(text[MsgToExt],msg->to_ext);
 		}
+		if(msg->cc_list != NULL)
+			bprintf(text[MsgCarbonCopyList], msg->cc_list);
 		if((from != NULL || msg->from != NULL) && (!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)) {
 			bprintf(text[MsgFrom], from == NULL ? msg->from : from);
 			if(msg->from_ext)
