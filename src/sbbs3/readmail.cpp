@@ -71,6 +71,14 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 	smbmsg_t msg;
 	char search_str[128] = "";
 
+	if(which==MAIL_SENT)
+		act=NODE_RSML;
+	else if(which==MAIL_ALL)
+		act=NODE_SYSP;
+	else
+		act=NODE_RMAL;
+	action=act;
+
 	if(cfg.readmail_mod[0] && !readmail_inside) {
 		char cmdline[256];
 
@@ -119,13 +127,6 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 
 	last=smb.status.last_msg;
 
-	if(which==MAIL_SENT)
-		act=NODE_RSML;
-	else if(which==MAIL_ALL)
-		act=NODE_SYSP;
-	else
-		act=NODE_RMAL;
-	action=act;
 	const char* order = (lm_mode&LM_REVERSE) ? "newest" : "oldest";
 	if(smb.msgs>1 && which!=MAIL_ALL) {
 		if(which==MAIL_SENT)
