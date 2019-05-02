@@ -1,26 +1,34 @@
-"\1n\1h\1c\xda\xc4\xc4\xc4\xc4\xc4\xc4\1n\xc4\xc4\xc4\xc4\xc4\xc4\1h\1k\xc4\xc4\xc4\xc4\xc4\xc4\xc4\1n\1c\xc4\xc4\xc4\xc4\xc4\xfa\xfa\xfa\xfa\r\n"\	001 MsgSubj 
-	"\1h\xb3 \1bSubj\1n\1b: \1h\1c%.70s"
-"\r\n\xb3 \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s%s%s"       002 MsgAttr
-"\r\n\xb3 \1bTo  \1n\1b: \1h\1c%.70s"                              003 MsgTo
-" #%s"                                                  004 MsgToExt
-" (%.40s)"                                              005 MsgToNet
-"\r\n\1w\xb3 \1bFrom\1n\1b: \1h\1c%.33s"                         006 MsgFrom
-" #%s"                                                  007 MsgFromExt
-" (%.35s)"                                              008 MsgFromNet
-"\r\n\1w\xb3 \1bDate\1n\1b: \1h\1c%.24s %s (%s)\r\n"\      009 MsgDate
-	"\1w\xc0\xc4\xc4\xc4\xc4\xc4\xc4\1c\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\1n\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\1h\1k\xc4\xc4\xc4\xc4"\
-	"\xc4\xc4\xc4\xc4\1n\1c\xc4\xc4\xc4\xc4\xc4\xc4\xc4\1b\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xfa\xfa\xfa\xfa\xfa\xfa\1n"
-"\1_\1?\1b\1hE-mail (User name or number): \1w"            010 Email
-"\r\nPost on %s\1\\ %s"                                     011 Post
+"\1n\1h\1c\xda\xc4\xc4\xc4\xc4\xc4\xc4"\                        001 MsgSubj
+    "\1n\xc4\xc4\xc4\xc4\xc4\xc4"\ 
+    "\1h\1k\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1n\1c\xc4\xc4\xc4\xc4\xc4"\
+    "\xfa\xfa\xfa\xfa"\
+    "\r\n\1h\xb3 \1bSubj\1n\1b: \1h\1c%.70s"       
+"\r\n\xb3 \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s%s%s"    002 MsgAttr
+"\r\n\xb3 \1bTo  \1n\1b: \1h\1c%.70s"                           003 MsgTo
+" #%s"                                                          004 MsgToExt
+" (%.40s)"                                                      005 MsgToNet
+"\r\n\1w\xb3 \1bFrom\1n\1b: \1h\1c%.33s"                        006 MsgFrom
+" #%s"                                                          007 MsgFromExt
+" (%.35s)"                                                      008 MsgFromNet
+"\r\n\1w\xb3 \1bDate\1n\1b: \1h\1c%.24s %s (%s)\r\n"\           009 MsgDate
+    "\1w\xc0\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1c\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1n\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1h\1k\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1n\1c\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1b\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xfa\xfa\xfa\xfa\xfa\xfa\1n"
+"\1_\1?\1b\1hE-mail (User name or number): \1w"           010 Email
+"\r\nPost on %s\1\\ %s"                                   011 Post
 "\1r\1h\r\n\7You have sent too many E-mails today.\r\n"   012 TooManyEmailsToday
 "\1r\1h\r\n\7You have posted too many times today.\r\n"   013 TooManyPostsToday
-"\1[\7\1n\1r\1hCannot add \1w%s\1r to queue - \1n"             014 CantAddToQueue
-"\1n\r\nThe sending of mail is beyond your ability.\r\n" 015 R_Email
-"\1n\r\nYou can't post messages.\r\n"                    016 R_Post
-"\1n\r\nYou can't send E-mail to %s.\r\n"                017 R_Feedback
-"\1n\1?\1mSending E-mail to \1h%s \1n\1m#%u\1n\r\n"          018 Emailing
-"\1n\1?\1mPosting on \1h%s\1n\1m %s\r\n"                    019 Posting
-"\r\nNew file.\r\n"                                     020 NewFile
+"\1[\7\1n\1r\1hCannot add \1w%s\1r to queue - \1n"        014 CantAddToQueue
+"\1n\r\nThe sending of mail is beyond your ability.\r\n"  015 R_Email
+"\1n\r\nYou can't post messages.\r\n"                     016 R_Post
+"\1n\r\nYou can't send E-mail to %s.\r\n"                 017 R_Feedback
+"\1n\1?\1mSending E-mail to \1h%s \1n\1m#%u\1n\r\n"       018 Emailing
+"\1n\1?\1mPosting on \1h%s\1n\1m %s\r\n"                  019 Posting
+"\r\nNew file.\r\n"                                       020 NewFile
 "\1_\r\n\1y\1hSubject: "                                   021 SubjectPrompt
 "\1n\1g\r\nEnter message now (\1h%d\1n\1g lines max). "\     022 EnterMsgNow
 	"Type \1h/?\1n\1g on a new line for menu.\r\n\1n"
