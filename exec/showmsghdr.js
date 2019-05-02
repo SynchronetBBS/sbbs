@@ -4,9 +4,9 @@
 // Don't forget to include or exclude the blank line after if do
 // (or don't) want a blank line separating message headers and body text
 
-load("smbdefs.js");
-load("text.js");
-var   USER_ANSI         =(1<<1);
+require("text.js", 'MsgAttr');
+require("smbdefs.js", 'MSG_ANONYMOUS');
+require("userdefs.js", 'USER_ANSI');
 
 // ported from sbbs_t::show_msgattr():
 function show_msgattr(msg_attr, msg_auxattr)

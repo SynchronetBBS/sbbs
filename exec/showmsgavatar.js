@@ -10,9 +10,8 @@
 // If you do not want the avatar right-justified, copy this file to your
 // mods directory and change that parameter below.
 
-load('smbdefs.js');
-var   USER_ANSI         =(1<<1);
-var   USER_NO_EXASCII 	=(1<<15);
+require("smbdefs.js", 'MSG_ANONYMOUS');
+require("userdefs.js", 'USER_ANSI');
 
 // Avatar support here:
 if(!(bbs.msg_attr&MSG_ANONYMOUS) 

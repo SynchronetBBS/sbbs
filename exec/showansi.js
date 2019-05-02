@@ -7,7 +7,7 @@ if(argc < 1) {
 
 var fname = argv[0];
 graphic = new Graphic(argv[1],argv[2]);
-
+graphic.cpm_eof = false;
 if(!graphic.load(fname))
 	alert("Load failure");
 else {
