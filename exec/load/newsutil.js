@@ -107,7 +107,8 @@ function parse_news_header(hdr, line)
 		case "apparently-to":
 		case "x-comment-to":
 			hdr.to = mail_get_name(data);
-			hdr.to_net_addr = mail_get_address(data);
+			if((hdr.to_net_addr = mail_get_address(data)) != null)
+				hdr.to_net_type = NET_INTERNET;
 			break;
 		case "newsgroups":
 			hdr.newsgroups=data;
