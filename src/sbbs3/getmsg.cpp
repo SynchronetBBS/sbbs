@@ -119,7 +119,7 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 /****************************************************************************/
 /* Displays a message header to the screen                                  */
 /****************************************************************************/
-void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg)
+void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const char* from, const char* to)
 {
 	char	str[MAX_PATH+1];
 	char	age[64];
@@ -127,8 +127,10 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg)
 	int 	i;
 	smb_t	saved_smb = this->smb;
 
-	this->smb = *smb;	// Needed for @-codes and JS bbs.smb_* properties
-	current_msg = msg;	// Needed for @-codes and JS bbs.msg_* properties
+	if(smb != NULL)
+		this->smb = *smb;	// Needed for @-codes and JS bbs.smb_* properties
+	if(msg != NULL)
+		current_msg = msg;		// Needed for @-codes and JS bbs.msg_* properties
 
 	attr(LIGHTGRAY);
 	if(!tos) {
@@ -139,23 +141,23 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg)
 	}
 	msghdr_tos = tos;
 	if(!menu("msghdr", P_NOERROR)) {
-		bprintf(text[MsgSubj],msg->subj);
+		bprintf(text[MsgSubj], subject == NULL ? msg->subj : subject);
 		if(msg->tags && *msg->tags)
 			bprintf(text[MsgTags], msg->tags);
 		if(msg->hdr.attr)
 			show_msgattr(msg);
-		if(msg->to && *msg->to) {
-			bprintf(text[MsgTo],msg->to);
+		if(to != NULL ||msg->to_list != NULL || (msg->to && *msg->to)) {
+			bprintf(text[MsgTo], to == NULL ? (msg->to_list == NULL ? msg->to : msg->to_list) : to);
 			if(msg->to_net.addr!=NULL)
 				bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
 			if(msg->to_ext)
 				bprintf(text[MsgToExt],msg->to_ext);
 		}
-		if(!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP) {
-			bprintf(text[MsgFrom],msg->from);
+		if(from != NULL || msg->from != NULL && (!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)) {
+			bprintf(text[MsgFrom], from == NULL ? msg->from : from);
 			if(msg->from_ext)
 				bprintf(text[MsgFromExt],msg->from_ext);
-			if(msg->from_net.addr!=NULL && strchr(msg->from,'@')==NULL)
+			if(msg->from_net.addr!=NULL && (msg->from == NULL || (msg->from,'@')==NULL))
 				bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str));
 		}
 		if(!(msg->hdr.attr&MSG_POLL) && (msg->upvotes || msg->downvotes))

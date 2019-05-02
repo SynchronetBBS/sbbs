@@ -3606,6 +3606,9 @@ js_show_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 	sbbs_t*		sbbs;
 	smb_t*		smb = NULL;
 	smbmsg_t*	msg = NULL;
+	char*		subject = NULL;
+	char*		from = NULL;
+	char*		to = NULL;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -3620,14 +3623,26 @@ js_show_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &smb, &msg, NULL)) {
 				return JS_FALSE;
 			}
+		} else if(JSVAL_IS_STRING(argv[n])) {
+			JSString* str = JS_ValueToString(cx, argv[n]);
+			if(subject == NULL) {
+				JSSTRING_TO_MSTRING(cx, str, subject, NULL);
+			} else if(from == NULL) {
+				JSSTRING_TO_MSTRING(cx, str, from, NULL);
+			} else if(to == NULL) {
+				JSSTRING_TO_MSTRING(cx, str, to, NULL);
+			}
 		}
 	}
 	if(smb == NULL || msg == NULL)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->show_msghdr(smb, msg);
+	sbbs->show_msghdr(smb, msg, subject, from, to);
 	JS_RESUMEREQUEST(cx, rc);
+	FREE_AND_NULL(subject);
+	FREE_AND_NULL(from);
+	FREE_AND_NULL(to);
 
 	return(JS_TRUE);
 }
@@ -4259,7 +4274,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
 	,31702
 	},
-	{"show_msg_header",	js_show_msg_header,	1,	JSTYPE_VOID,	JSDOCSTR("[object header]")
+	{"show_msg_header",	js_show_msg_header,	1,	JSTYPE_VOID,	JSDOCSTR("[object header] [,subject] [,from] [,to]")
 	,JSDOCSTR("show a message's header (only)<br>"
 		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
 	,31702
