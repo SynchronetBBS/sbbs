@@ -9,11 +9,15 @@ echicken -at- bbs.electronicchicken.com
 
 1) Quick Start
 
-The following assumes that Synchronet is installed at /sbbs or c:\sbbs.  Adjust
-paths accordingly if your setup differs.
+The following assumes that Synchronet is installed at /sbbs or c:\sbbs, and
+that MRC is installed at /sbbs/xtrn/mrc.  Adjust paths accordingly if your
+setup differs.
 
-- Copy mrc-connector.example.ini to mrc-connector.ini
-- Copy mrc-client.example.ini to mrc-client.ini
+- Ensure that you have the latest version of /sbbs/exec/load/scrollbar.js:
+  http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/scrollbar.js
+- In /sbbs/xtrn/mrc:
+  - Copy mrc-connector.example.ini to mrc-connector.ini
+  - Copy mrc-client.example.ini to mrc-client.ini
 - Edit '/sbbs/ctrl/services.ini' and paste in the following section:
 
     [MRC-Connector]
@@ -79,4 +83,5 @@ mrc-client.ini:
 
 4) Support
 
-Nope. ;)
+- Post a message to 'echicken' in the Synchronet Sysops area on DOVE-Net
+- Find me on irc.synchro.net in #synchronet
