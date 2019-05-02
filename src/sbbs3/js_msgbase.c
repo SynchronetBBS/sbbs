@@ -1414,6 +1414,11 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING("date", msgdate((p->msg).hdr.when_written,date), JSPROP_ENUMERATE);
 	LAZY_UINTEGER("votes", p->msg.hdr.votes, JSPROP_ENUMERATE);
 
+	// Convenience (not technically part of header: */
+	LAZY_UINTEGER("upvotes", p->msg.upvotes, JSPROP_ENUMERATE|JSPROP_READONLY);
+	LAZY_UINTEGER("downvotes", p->msg.downvotes, JSPROP_ENUMERATE|JSPROP_READONLY);
+	LAZY_UINTEGER("total_votes", p->msg.total_votes, JSPROP_ENUMERATE|JSPROP_READONLY);
+
 	if(name==NULL || strcmp(name,"reply_id")==0) {
 		if(name) free(name);
 		/* Reply-ID (References) */
@@ -1948,14 +1953,9 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_TRUE;
 		}
 
-		JS_DefineProperty(cx, hdrobj, "total_votes", UINT_TO_JSVAL(post[off].total_votes)
-			,NULL, NULL, JSPROP_ENUMERATE);
-		if(post[off].upvotes)
-			JS_DefineProperty(cx, hdrobj, "upvotes", UINT_TO_JSVAL(post[off].upvotes)
-				,NULL, NULL, JSPROP_ENUMERATE);
-		if(post[off].downvotes)
-			JS_DefineProperty(cx, hdrobj, "downvotes", UINT_TO_JSVAL(post[off].downvotes)
-				,NULL, NULL, JSPROP_ENUMERATE);
+		p->msg.upvotes = post[off].upvotes;
+		p->msg.downvotes = post[off].downvotes;
+		p->msg.total_votes = post[off].total_votes;
 		if(post[off].total_votes) {
 			JSObject*		array;
 			if((array=JS_NewArrayObject(cx,0,NULL)) != NULL) {
