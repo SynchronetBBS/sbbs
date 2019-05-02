@@ -3421,6 +3421,9 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	nodefile_fp=NULL;
 	node_ext_fp=NULL;
 	current_msg=NULL;
+	current_msg_subj=NULL;
+	current_msg_from=NULL;
+	current_msg_to=NULL;
 	current_file=NULL;
 	mnestr=NULL;
 

@@ -542,6 +542,9 @@ public:
 	csi_t	main_csi;		/* Main Command Shell Image */
 
 	smbmsg_t*	current_msg;	/* For message header @-codes */
+	const char*	current_msg_subj;
+	const char*	current_msg_from;
+	const char*	current_msg_to;
 	file_t*		current_file;
 
 			/* Global command shell variables */

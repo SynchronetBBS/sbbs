@@ -551,10 +551,10 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 		/* Currently Displayed Message Header (sbbs.current_msg) */
 		case BBS_PROP_MSG_TO:
-			if(sbbs->current_msg==NULL || sbbs->current_msg->to==NULL)
+			if(sbbs->current_msg_to==NULL)
 				p=nulstr;
 			else
-				p=sbbs->current_msg->to;
+				p=sbbs->current_msg_to;
 			break;
 		case BBS_PROP_MSG_TO_EXT:
 			if(sbbs->current_msg==NULL || sbbs->current_msg->to_ext==NULL)
@@ -573,10 +573,10 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				val=sbbs->current_msg->to_agent;
 			break;
 		case BBS_PROP_MSG_FROM:
-			if(sbbs->current_msg==NULL || sbbs->current_msg->from==NULL)
+			if(sbbs->current_msg_from==NULL)
 				p=nulstr;
 			else
-				p=sbbs->current_msg->from;
+				p=sbbs->current_msg_from;
 			break;
 		case BBS_PROP_MSG_FROM_EXT:
 			if(sbbs->current_msg==NULL || sbbs->current_msg->from_ext==NULL)
@@ -618,10 +618,10 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 
 		case BBS_PROP_MSG_SUBJECT:
-			if(sbbs->current_msg==NULL || sbbs->current_msg->subj==NULL)
+			if(sbbs->current_msg_subj==NULL)
 				p=nulstr;
 			else
-				p=sbbs->current_msg->subj;
+				p=sbbs->current_msg_subj;
 			break;
 		case BBS_PROP_MSG_DATE:
 			if(sbbs->current_msg!=NULL)
