@@ -29,7 +29,7 @@ function decode(hvalue)
 			case 'Q':	// "similar to" Quoted-printable
 				retval.data = match[3]
 					.replace(/_/g, ' ')
-					.replace(/=([0-9A-F][0-9A-F])/g, function(str, p1) { return(ascii(parseInt(p1,16))); });
+					.replace(/=([0-9A-F][0-9A-F])/gi, function(str, p1) { return(ascii(parseInt(p1,16))); });
 				break;
 			case 'B':	// Base64
 				retval.data = base64_decode(match[3]);
