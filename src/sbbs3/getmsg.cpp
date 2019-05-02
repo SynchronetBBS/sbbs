@@ -146,18 +146,18 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 			bprintf(text[MsgTags], msg->tags);
 		if(msg->hdr.attr)
 			show_msgattr(msg);
-		if(to != NULL ||msg->to_list != NULL || (msg->to && *msg->to)) {
+		if(to != NULL || msg->to_list != NULL || (msg->to && *msg->to)) {
 			bprintf(text[MsgTo], to == NULL ? (msg->to_list == NULL ? msg->to : msg->to_list) : to);
 			if(msg->to_net.addr!=NULL)
 				bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
 			if(msg->to_ext)
 				bprintf(text[MsgToExt],msg->to_ext);
 		}
-		if(from != NULL || msg->from != NULL && (!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)) {
+		if((from != NULL || msg->from != NULL) && (!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)) {
 			bprintf(text[MsgFrom], from == NULL ? msg->from : from);
 			if(msg->from_ext)
 				bprintf(text[MsgFromExt],msg->from_ext);
-			if(msg->from_net.addr!=NULL && (msg->from == NULL || (msg->from,'@')==NULL))
+			if(msg->from_net.addr!=NULL && (msg->from == NULL || strchr(msg->from,'@')==NULL))
 				bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str));
 		}
 		if(!(msg->hdr.attr&MSG_POLL) && (msg->upvotes || msg->downvotes))
