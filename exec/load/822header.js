@@ -1,5 +1,7 @@
 const RFC822HEADER = 0xb0;  // from smbdefs.h
 const SMTPRECEIVED = 0xd3;
+const FIDOSEENBY   = 0xa2;
+const FIDOPATH     = 0xa3;
 require("utf8_ascii.js", 'utf8_ascii');
 
 MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold)
@@ -12,7 +14,7 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold)
 
 	if(this.rfc822==undefined) {
 		this.rfc822='';
-		this.rfc822 += "To: "+ (this.to_list || this.to) +"\r\n";
+		this.rfc822 += "To: "+ (this.to_list || this.to || this.forward_path) +"\r\n";
 		if(this.cc_list)
 			this.rfc822 += "Cc: " + this.cc_list + "\r\n";
 		this.rfc822 += "Subject: "+this.subject+"\r\n";
@@ -79,6 +81,16 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold)
 			this.rfc822 += "X-FTN-MSGID: "+this.ftn_msgid+"\r\n";
 		if(this.ftn_reply != undefined)
 			this.rfc822 += "X-FTN-REPLY: "+this.ftn_reply+"\r\n";
+		
+		// Other RFC822 headers
+		if(this.field_list!=undefined) {
+			for(i in this.field_list) 
+				if(this.field_list[i].type==FIDOSEENBY)
+					this.rfc822 += "X-FTN-SEEN-BY: " + this.field_list[i].data + "\r\n";
+			for(i in this.field_list) 
+				if(this.field_list[i].type==FIDOPATH)
+					this.rfc822 += "X-FTN-PATH: " + this.field_list[i].data + "\r\n";
+		}
 	
 		// Other RFC822 headers
 		if(this.field_list!=undefined) {
