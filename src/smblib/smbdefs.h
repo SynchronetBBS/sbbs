@@ -256,7 +256,7 @@
 #define MSG_PRIVATE 		(1<<0)
 #define MSG_READ			(1<<1)
 #define MSG_PERMANENT		(1<<2)
-#define MSG_LOCKED			(1<<3)
+#define MSG_LOCKED			(1<<3)		/* DEPRECATED (never used) */
 #define MSG_DELETE			(1<<4)
 #define MSG_ANONYMOUS		(1<<5)
 #define MSG_KILLREAD		(1<<6)
