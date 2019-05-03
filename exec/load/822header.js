@@ -64,6 +64,9 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold)
 				if(this.field_list[i].type == SMTPRECEIVED)
 					this.rfc822 += "Received: " + this.field_list[i].data + "\r\n";
 		}
+		
+		if(this.priority)
+			this.rfc822 += "X-Priority: " + this.priority + "\r\n";
 
 		// Fidonet headers
 		if(this.ftn_area != undefined)
