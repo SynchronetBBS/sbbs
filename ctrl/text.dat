@@ -4,7 +4,7 @@
     "\1n\1c\xc4\xc4\xc4\xc4\xc4"\
     "\xfa\xfa\xfa\xfa"\
     "\r\n\1h\xb3 \1bSubj\1n\1b: \1h\1c%.70s"       
-"\r\n\xb3 \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s%s%s"    002 MsgAttr
+"\r\n\xb3 \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s" 002 MsgAttr
 "\r\n\xb3 \1bTo  \1n\1b: \1h\1c%.70s"                           003 MsgTo
 " #%s"                                                          004 MsgToExt
 " (%.40s)"                                                      005 MsgToNet

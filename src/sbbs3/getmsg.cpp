@@ -94,6 +94,7 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 	uint16_t attr = msg->hdr.attr;
 	uint16_t poll = attr&MSG_POLL_VOTE_MASK;
 	uint32_t auxattr = msg->hdr.auxattr;
+	uint32_t netattr = msg->hdr.netattr;
 
 	bprintf(text[MsgAttr]
 		,attr&MSG_PRIVATE	? "Private  "   :nulstr
@@ -110,9 +111,9 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 		,attr&MSG_NOREPLY	? "NoReply  "	:nulstr
 		,poll == MSG_POLL	? "Poll  "		:nulstr
 		,poll == MSG_POLL && auxattr&POLL_CLOSED ? "(Closed)  "	:nulstr
-		,nulstr
-		,nulstr
-		,nulstr
+		,auxattr&(MSG_FILEATTACH|MSG_MIMEATTACH) ? "Attach  "   :nulstr
+		,netattr&MSG_SENT						 ? "Sent  "		:nulstr
+		,netattr&MSG_INTRANSIT					 ? "InTransit  ":nulstr
 		);
 }
 
@@ -154,7 +155,7 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 		bprintf(text[MsgSubj], current_msg_subj);
 		if(msg->tags && *msg->tags)
 			bprintf(text[MsgTags], msg->tags);
-		if(msg->hdr.attr)
+		if(msg->hdr.attr || msg->hdr.netattr || msg->hdr.auxattr)
 			show_msgattr(msg);
 		if(current_msg_to != NULL && *current_msg_to != 0) {
 			bprintf(text[MsgTo], current_msg_to);
