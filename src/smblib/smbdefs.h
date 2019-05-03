@@ -205,7 +205,7 @@
 #define SMB_CARBONCOPY		0x63	/* Comma-separated list of secondary recipients, RFC822-style */
 #define SMB_GROUP			0x64
 #define SMB_EXPIRATION		0x65
-#define SMB_PRIORITY		0x66
+#define SMB_PRIORITY		0x66	/* DEPRECATED */
 #define SMB_COST			0x67
 #define	SMB_EDITOR			0x68
 #define SMB_TAGS			0x69	/* List of tags (ala hash-tags) related to this message */
@@ -322,6 +322,14 @@ enum smb_xlat_type {
 	,XLAT_LZH = 9			/* LHarc (LHA) Dynamic Huffman coding */
 };
 
+enum smb_priority {			/* msghdr_t.priority */
+	SMB_PRIORITY_UNSPECIFIED	= 0,
+	SMB_PRIORITY_HIGHEST		= 1,
+	SMB_PRIORITY_HIGH			= 2,
+	SMB_PRIORITY_NORMAL			= 3,
+	SMB_PRIORITY_LOW			= 4,
+	SMB_PRIORITY_LOWEST			= 5
+};
 
 /************/
 /* Typedefs */
@@ -460,8 +468,15 @@ typedef struct _PACK {		/* Message header */
 	/* 30 */ uint16_t	delivery_attempts;	/* Delivery attempt counter */
 	/* 32 */ int16_t	votes;				/* Votes value (response to poll) or maximum votes per ballot (poll) */
 	/* 34 */ uint32_t	thread_id;			/* Number of original message in thread (or 0 if unknown) */
-	/* 38 */ uint32_t	times_downloaded;	/* Total number of times downloaded (moved Mar-6-2012) */
-	/* 3c */ uint32_t	last_downloaded;	/* Date/time of last download (moved Mar-6-2012) */
+	union {	/* 38-3f */
+		struct {		// message
+			uint8_t		priority;			/* enum smb_priority_t */
+		};
+		struct {		// file
+			uint32_t	times_downloaded;	/* Total number of times downloaded (moved Mar-6-2012) */
+			uint32_t	last_downloaded;	/* Date/time of last download (moved Mar-6-2012) */
+		};
+	};
     /* 40 */ uint32_t	offset;				/* Offset for buffer into data file (0 or mod 256) */
 	/* 44 */ uint16_t	total_dfields;		/* Total number of data fields */
 
@@ -558,7 +573,6 @@ typedef struct {				/* Message */
 	int32_t		offset; 		/* Offset (number of records) into index */
 	BOOL		forwarded;		/* Forwarded from agent to another */
 	uint32_t	expiration; 	/* Message will expire on this day (if >0) */
-	uint32_t	priority;		/* Message priority (0 is lowest) */
 	uint32_t	cost;			/* Cost to download/read */
 	uint32_t	flags;			/* Various smblib run-time flags (see MSG_FLAG_*) */
 	uint16_t	user_voted;		/* How the current user viewing this message, voted on it */

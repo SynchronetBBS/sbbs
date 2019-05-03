@@ -821,9 +821,6 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case SMB_EXPIRATION:
 			msg->expiration=*(uint32_t*)hfield_dat;
 			break;
-		case SMB_PRIORITY:
-			msg->priority=*(uint32_t*)hfield_dat;
-			break;
 		case SMB_COST:
 			msg->cost=*(uint32_t*)hfield_dat;
 			break;
