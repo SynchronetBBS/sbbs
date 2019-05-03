@@ -922,6 +922,12 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		msg->hdr.thread_first=i32;
 	}
 
+	if(JS_GetProperty(cx, hdr, "priority", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		if(!JS_ValueToInt32(cx,val,&i32))
+			goto err;
+		msg->hdr.priority=i32;
+	}
+
 	if(JS_GetProperty(cx, hdr, "field_list", &val) && JSVAL_IS_OBJECT(val)) {
 		array=JSVAL_TO_OBJECT(val);
 		len=0;
@@ -1381,7 +1387,6 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_COND("sender_time", (val=smb_get_hfield(&(p->msg),SENDERTIME,NULL))!=NULL, val, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("forwarded", p->msg.forwarded, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("expiration", p->msg.expiration, JSPROP_ENUMERATE);
-	LAZY_UINTEGER_EXPAND("priority", p->msg.priority, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("cost", p->msg.cost, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("editor", p->msg.editor, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("columns", p->msg.columns, JSPROP_ENUMERATE);
@@ -1407,12 +1412,11 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_UINTEGER("thread_next", p->msg.hdr.thread_next, JSPROP_ENUMERATE);
 	LAZY_UINTEGER("thread_first", p->msg.hdr.thread_first, JSPROP_ENUMERATE);
 	LAZY_UINTEGER("delivery_attempts", p->msg.hdr.delivery_attempts, JSPROP_ENUMERATE);
-	LAZY_UINTEGER("last_downloaded", p->msg.hdr.last_downloaded, JSPROP_ENUMERATE);
-	LAZY_UINTEGER("times_downloaded", p->msg.hdr.times_downloaded, JSPROP_ENUMERATE);
 	LAZY_UINTEGER("data_length", smb_getmsgdatlen(&(p->msg)), JSPROP_ENUMERATE|JSPROP_READONLY);
 	LAZY_UINTEGER("text_length", smb_getmsgtxtlen(&(p->msg)), JSPROP_ENUMERATE|JSPROP_READONLY);
 	LAZY_STRING("date", msgdate((p->msg).hdr.when_written,date), JSPROP_ENUMERATE);
 	LAZY_UINTEGER("votes", p->msg.hdr.votes, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_COND("priority", p->msg.hdr.priority != SMB_PRIORITY_UNSPECIFIED, p->msg.hdr.priority, JSPROP_ENUMERATE);
 
 	// Convenience (not technically part of header: */
 	LAZY_UINTEGER("upvotes", p->msg.upvotes, JSPROP_ENUMERATE|JSPROP_READONLY);

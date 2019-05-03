@@ -733,6 +733,10 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		if(!sockprintf(socket,prot,sess,"In-Reply-To: %s",msg->reply_id))
 			return(0);
 
+	if(msg->hdr.priority != SMB_PRIORITY_UNSPECIFIED)
+		if(!sockprintf(socket,prot,sess,"X-Priority: %u", (uint)msg->hdr.priority))
+			return(0);
+
 	originator_info(socket, prot, sess, msg);
 
 	/* Include all possible FidoNet header fields here */
@@ -2430,6 +2434,14 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 	if(!stricmp(field, "RETURN-PATH")) {
 		*type=UNKNOWN;
 		return SMB_SUCCESS;	/* Ignore existing "Return-Path" header fields */
+	}
+
+	if(!stricmp(field, "X-PRIORITY")) {
+		msg->hdr.priority = atoi(p);
+		if(msg->hdr.priority > SMB_PRIORITY_LOWEST)
+			msg->hdr.priority = SMB_PRIORITY_UNSPECIFIED;
+		*type=UNKNOWN;
+		return SMB_SUCCESS;
 	}
 
 	/* Fall-through */
