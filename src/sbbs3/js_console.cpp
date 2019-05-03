@@ -676,7 +676,7 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 	uint32		maxnum=~0;
 	sbbs_t*		sbbs;
     JSString*	js_str=NULL;
-	char*		cstr;
+	char*		cstr=NULL;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -692,17 +692,15 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
+			JSSTRING_TO_MSTRING(cx, js_str, cstr, NULL);
+			if(cstr==NULL)
+				return JS_FALSE;
 		}
 	}
-	if(js_str==NULL)
-		return(JS_FALSE);
 
-	JSSTRING_TO_MSTRING(cx, js_str, cstr, NULL);
-	if(cstr==NULL)
-		return JS_FALSE;
 	rc=JS_SUSPENDREQUEST(cx);
 	val=sbbs->getkeys(cstr,maxnum);
-	free(cstr);
+	FREE_AND_NULL(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
 	if(val==-1) {			// abort
@@ -1858,8 +1856,8 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("get a number between 1 and <i>maxnum</i> from the user with a default value of <i>default</i>")
 	,310
 	},
-	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("string keys [,maxnum]")
-	,JSDOCSTR("get one key from of a list of valid command <i>keys</i>, "
+	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("[keys] [,maxnum]")
+	,JSDOCSTR("get one key from of a list of valid command <i>keys</i> (any key, if not specified), "
 		"or a number between 1 and <i>maxnum</i>")
 	,310
 	},
