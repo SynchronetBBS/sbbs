@@ -2181,7 +2181,7 @@ static JSBool js_socket_enumerate(JSContext *cx, JSObject *obj)
 	return(js_socket_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_socket_class = {
+JSClass js_socket_class = {
      "Socket"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/

@@ -391,7 +391,7 @@ static JSBool js_queue_enumerate(JSContext *cx, JSObject *obj)
 	return(js_queue_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_queue_class = {
+JSClass js_queue_class = {
      "Queue"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/

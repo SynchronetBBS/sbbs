@@ -1470,7 +1470,7 @@ static JSBool js_user_enumerate(JSContext *cx, JSObject *obj)
 	return(js_user_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_user_class = {
+JSClass js_user_class = {
      "User"					/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/

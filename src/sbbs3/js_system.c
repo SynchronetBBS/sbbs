@@ -2390,7 +2390,7 @@ static JSBool js_system_enumerate(JSContext *cx, JSObject *obj)
 	return(js_system_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_system_class = {
+JSClass js_system_class = {
      "System"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/

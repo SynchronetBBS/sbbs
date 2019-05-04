@@ -3214,7 +3214,7 @@ static JSBool js_msgbase_enumerate(JSContext *cx, JSObject *obj)
 	return(js_msgbase_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_msgbase_class = {
+JSClass js_msgbase_class = {
      "MsgBase"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/

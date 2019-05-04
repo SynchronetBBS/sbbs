@@ -773,7 +773,7 @@ static JSBool js_com_enumerate(JSContext *cx, JSObject *obj)
 	return(js_com_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_com_class = {
+JSClass js_com_class = {
      "COM"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/

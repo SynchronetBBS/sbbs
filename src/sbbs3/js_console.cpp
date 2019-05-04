@@ -2092,7 +2092,7 @@ static JSBool js_console_enumerate(JSContext *cx, JSObject *obj)
 	return(js_console_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_console_class = {
+JSClass js_console_class = {
      "Console"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/

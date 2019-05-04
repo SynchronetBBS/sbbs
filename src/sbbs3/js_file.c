@@ -2890,7 +2890,7 @@ static JSBool js_file_enumerate(JSContext *cx, JSObject *obj)
 	return(js_file_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_file_class = {
+JSClass js_file_class = {
      "File"					/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/
