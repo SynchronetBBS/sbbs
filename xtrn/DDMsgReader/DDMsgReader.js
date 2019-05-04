@@ -148,6 +148,10 @@
  * 2019-04-26 Eric Oulashin     Version 1.20
  *                              Added configurable options for the message score colors
  *                              for the message list
+ * 2019-05-04 Eric Oulashin     Version 1.21
+ *                              Started updating to use require() instead of load()
+ *                              if the require() function exists (it was added in
+ *                              Synchronet 3.17).
  */
 
 // TODO: Support anonymous posts?  Bit values for sub[x].settings:
@@ -216,8 +220,18 @@
 					 added in the future.
 */
 
-load("sbbsdefs.js");
-load("text.js"); // Text string definitions (referencing text.dat)
+const requireFnExists = (typeof(require) === "function");
+
+if (requireFnExists)
+{
+	require("sbbsdefs.js", "K_UPPER");
+	require("text.js", "Email"); // Text string definitions (referencing text.dat)
+}
+else
+{
+	load("sbbsdefs.js");
+	load("text.js"); // Text string definitions (referencing text.dat)
+}
 
 // This script requires Synchronet version 3.15 or higher.
 // Exit if the Synchronet version is below the minimum.
@@ -235,8 +249,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.20";
-var READER_DATE = "2019-04-26";
+var READER_VERSION = "1.21";
+var READER_DATE = "2019-05-04";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -478,15 +492,28 @@ if (file_exists(gFileAttachDir))
 // with a scrollable user interface.
 var gFrameJSAvailable = file_exists(backslash(system.exec_dir) + "load/frame.js");
 if (gFrameJSAvailable)
-	load("frame.js");
+{
+	if (requireFnExists)
+		require("frame.js", "Frame");
+	else
+		load("frame.js");
+}
 var gScrollbarJSAvailable = file_exists(backslash(system.exec_dir) + "load/scrollbar.js");
 if (gScrollbarJSAvailable)
-	load("scrollbar.js");
+{
+	if (requireFnExists)
+		require("scrollbar.js", "ScrollBar");
+	else
+		load("scrollbar.js");
+}
 // See if the avatar support files are available, and load them if so
 var gAvatar = null;
 if (file_exists(backslash(system.exec_dir) + "load/smbdefs.js") && file_exists(backslash(system.exec_dir) + "load/avatar_lib.js"))
 {
-	load("smbdefs.js");
+	if (requireFnExists)
+		require("smbdefs.js", "SMB_POLL_ANSWER");
+	else
+		load("smbdefs.js");
 	gAvatar = load({}, "avatar_lib.js");
 }
 

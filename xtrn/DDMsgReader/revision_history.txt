@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.21     2019-05-04   New uses require() instead of load(), if the require()
+                      function exists, to load required .js library scripts.
+                      This helps avoid 'multiple definition' errors.  The
+                      require() function was added in Synchronet 3.17, so
+                      if the require() function doesn't exist, then the reader
+                      will use load().
 1.20     2019-04-26   Added configurable options for the message score colors
                       for the message list: msgListScoreColor,
                       msgListToUserScoreColor, msgListFromUserScoreColor, and
