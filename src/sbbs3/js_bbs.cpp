@@ -4489,7 +4489,7 @@ static JSBool js_bbs_enumerate(JSContext *cx, JSObject *obj)
 	return(js_bbs_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_bbs_class = {
+JSClass js_bbs_class = {
      "BBS"					/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/
