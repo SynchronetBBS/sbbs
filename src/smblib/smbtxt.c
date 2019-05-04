@@ -389,6 +389,8 @@ static const char* mime_getcontent(const char* buf, const char* content_type, co
 		content_type += 22;
 	else if(strstr(content_type, "multipart/mixed;") == content_type)
 		content_type +=16;
+	else if(strstr(content_type, "multipart/report;") == content_type)
+		content_type +=17;
 	else
 		return NULL;
 	p = strstr(content_type, "boundary=");
