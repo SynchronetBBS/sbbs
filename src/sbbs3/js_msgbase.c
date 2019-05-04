@@ -58,8 +58,6 @@ typedef struct
 
 } privatemsg_t;
 
-static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
-
 JSBool JS_ValueToUint32(JSContext *cx, jsval v, uint32 *ip)
 {
 	jsdouble d;
@@ -89,6 +87,8 @@ static void js_finalize_msgbase(JSContext *cx, JSObject *obj)
 
 /* Methods */
 
+extern JSClass js_msgbase_class;
+
 static JSBool
 js_open(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -96,8 +96,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	private_t* p;
 	jsrefcount	rc;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -129,8 +128,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 	private_t* p;
 	jsrefcount	rc;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -1105,8 +1103,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -1178,8 +1175,7 @@ js_get_index(JSContext *cx, uintN argc, jsval *arglist)
 
     JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
 
-	if((priv=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((priv=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -1683,8 +1679,7 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 
 	memset(p,0,sizeof(privatemsg_t));
 
-	if((p->p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p->p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		free(p);
 		return JS_FALSE;
 	}
@@ -1823,8 +1818,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if((priv=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((priv=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -2005,8 +1999,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -2117,8 +2110,7 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -2259,8 +2251,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -2374,8 +2365,7 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -2484,8 +2474,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc<2)
 		return JS_TRUE;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -2634,8 +2623,7 @@ js_vote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc < 1)
 		return JS_TRUE;
 
-	if((p=(private_t*)JS_GetPrivate(cx, obj)) == NULL) {
-		JS_ReportError(cx, getprivate_failure, WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class)) == NULL) {
 		return JS_FALSE;
 	}
 
@@ -2702,8 +2690,7 @@ js_add_poll(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc < 1)
 		return JS_TRUE;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj)) == NULL) {
-		JS_ReportError(cx, getprivate_failure, WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class)) == NULL) {
 		return JS_FALSE;
 	}
 
@@ -2762,8 +2749,7 @@ js_how_user_voted(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -2804,8 +2790,7 @@ js_close_poll(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 
@@ -2855,8 +2840,7 @@ static JSBool js_msgbase_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
     jsint       tiny;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
 	}
 

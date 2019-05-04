@@ -463,6 +463,16 @@ int DLLCALL sbbs_random(int n)
 
 static js_server_props_t js_server_props;
 
+void* DLLCALL js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
+{
+	void *ret = JS_GetInstancePrivate(cx, obj, cls, NULL);
+
+	if(ret == NULL)
+		JS_ReportError(cx, "'%s' instance: No Private Data or Class Mismatch"
+			, cls == NULL ? "???" : cls->name);
+	return ret;
+}
+
 JSBool
 DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, const char* str[],uintN flags)
 {

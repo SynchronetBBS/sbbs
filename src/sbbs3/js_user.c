@@ -964,6 +964,8 @@ static void js_user_finalize(JSContext *cx, JSObject *obj)
 	JS_SetPrivate(cx, obj, NULL);
 }
 
+extern JSClass js_user_class;
+
 static JSBool
 js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -979,7 +981,7 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_user_class))==NULL)
 		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx,argv[0], ars, NULL);
@@ -1016,7 +1018,7 @@ js_posted_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_user_class))==NULL)
 		return JS_FALSE;
 
 	if(argc) {
@@ -1048,7 +1050,7 @@ js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_user_class))==NULL)
 		return JS_FALSE;
 
 	if(argc) {
@@ -1082,7 +1084,7 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_user_class))==NULL)
 		return JS_FALSE;
 
 	if(argc) {
@@ -1118,7 +1120,7 @@ js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_user_class))==NULL)
 		return JS_FALSE;
 
 	if(argc) {
@@ -1153,7 +1155,7 @@ js_adjust_credits(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_user_class))==NULL)
 		return JS_FALSE;
 
 	if(argc) {
@@ -1184,7 +1186,7 @@ js_adjust_minutes(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_user_class))==NULL)
 		return JS_FALSE;
 
 	if(argc) {
@@ -1215,7 +1217,7 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_user_class))==NULL)
 		return JS_FALSE;
 
 	if(argc) {

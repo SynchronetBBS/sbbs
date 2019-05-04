@@ -52,7 +52,9 @@
 
 #ifdef JAVASCRIPT
 
-/* Global Object Properites */
+extern JSClass js_global_class;
+
+/* Global Object Properties */
 enum {
 	 GLOB_PROP_ERRNO
 	,GLOB_PROP_ERRNO_STR
@@ -268,7 +270,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist,JSVAL_VOID);
 
-	if((p=(global_private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(global_private_t*)js_GetClassPrivate(cx, obj, &js_global_class))==NULL)
 		return(JS_FALSE);
 
 	exec_obj=JS_GetScopeChain(cx);
@@ -1602,7 +1604,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc==0 || JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=(global_private_t*)JS_GetPrivate(cx,obj))==NULL)		/* Will this work?  Ask DM */
+	if((p=(global_private_t*)js_GetClassPrivate(cx, obj, &js_global_class))==NULL)
 		return(JS_FALSE);
 
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, NULL);

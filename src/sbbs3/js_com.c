@@ -55,8 +55,6 @@ typedef struct
 
 } private_t;
 
-static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
-
 static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 {
 	va_list argptr;
@@ -97,6 +95,8 @@ static void js_finalize_com(JSContext *cx, JSObject *obj)
 
 /* COM Object Methods */
 
+extern JSClass js_com_class;
+
 static JSBool
 js_close(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -106,8 +106,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -137,8 +136,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -177,8 +175,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -219,8 +216,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -285,8 +281,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -349,8 +344,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -408,8 +402,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -470,8 +463,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 

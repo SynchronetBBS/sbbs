@@ -737,6 +737,8 @@ static JSClass js_sysstats_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
+extern JSClass js_system_class;
+
 static JSBool
 js_alias(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -750,7 +752,7 @@ js_alias(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
@@ -789,7 +791,7 @@ js_username(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	val=0;
@@ -818,7 +820,7 @@ js_matchuser(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
@@ -858,7 +860,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	JS_ValueToInt32(cx,argv[0],&offset);
@@ -908,7 +910,7 @@ js_trashcan(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	if((js_can=JS_ValueToString(cx, argv[0]))==NULL) {
@@ -1012,7 +1014,7 @@ js_zonestr(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	if(argc<1)
@@ -1046,7 +1048,7 @@ js_timestr(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	if(argc<1)
@@ -1077,7 +1079,7 @@ js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	if(argc<1)
@@ -1141,7 +1143,7 @@ js_spamlog(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	for(i=0;i<argc;i++) {
@@ -1228,7 +1230,7 @@ js_hacklog(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	memset(&addr,0,sizeof(addr));
@@ -1304,7 +1306,7 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	for(i=0;i<argc;i++) {
@@ -1377,7 +1379,7 @@ js_get_node_message(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	node_num=cfg->node_num;
@@ -1415,7 +1417,7 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	JS_ValueToInt32(cx,argv[0],&node);
@@ -1452,7 +1454,7 @@ js_get_telegram(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	JS_ValueToInt32(cx,argv[0],&usernumber);
@@ -1488,7 +1490,7 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	JS_ValueToInt32(cx,argv[0],&usernumber);
@@ -1531,7 +1533,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	if(argc<1 || JSVAL_NULL_OR_VOID(argv[0])) {
@@ -1635,7 +1637,7 @@ js_del_user(JSContext *cx, uintN argc, jsval *arglist)
 	user_t		user;
 	char		str[128];
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	if(!JS_ValueToInt32(cx,argv[0],&n))
@@ -1749,7 +1751,7 @@ js_chksyspass(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	JSVALUE_TO_ASTRING(cx, argv[0], pass, LEN_PASS+2, NULL); // +2 is so overly long passwords fail.
@@ -1770,7 +1772,7 @@ js_chkname(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	JSVALUE_TO_ASTRING(cx, argv[0], str, (LEN_ALIAS > LEN_NAME)?LEN_ALIAS+2:LEN_NAME+2, NULL);
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((cfg=(scfg_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
