@@ -674,7 +674,8 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 	char		key[2];
 	uintN		i;
 	int32		val;
-	uint32		maxnum=~0;
+	uint32		maxnum = 0;
+	long		mode = K_UPPER;
 	sbbs_t*		sbbs;
     JSString*	js_str=NULL;
 	char*		cstr=NULL;
@@ -687,8 +688,12 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],(int32*)&maxnum))
+			if(!JS_ValueToInt32(cx, argv[i], &val))
 				return JS_FALSE;
+			if(maxnum == 0)
+				maxnum = val;
+			else
+				mode = val;
 			continue;
 		}
 		if(JSVAL_IS_STRING(argv[i])) {
@@ -699,8 +704,11 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
+	if(maxnum == 0)
+		maxnum = ~0;
+
 	rc=JS_SUSPENDREQUEST(cx);
-	val=sbbs->getkeys(cstr,maxnum);
+	val=sbbs->getkeys(cstr, maxnum, mode);
 	FREE_AND_NULL(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1857,7 +1865,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("get a number between 1 and <i>maxnum</i> from the user with a default value of <i>default</i>")
 	,310
 	},
-	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("[keys] [,maxnum]")
+	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("[keys] [,maxnum] [,mode=<tt>K_UPPER</tt>]")
 	,JSDOCSTR("get one key from of a list of valid command <i>keys</i> (any key, if not specified), "
 		"or a number between 1 and <i>maxnum</i>")
 	,310

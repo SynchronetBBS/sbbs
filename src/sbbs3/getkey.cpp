@@ -430,11 +430,9 @@ bool sbbs_t::noyes(const char *str)
 /* If 'keys' is NULL, *any* non-numeric key is valid input.					*/
 /* 'max' is non-zero, allow that a decimal number input up to that size		*/
 /* and return the value OR'd with 0x80000000.								*/
-/* 'str' should contain uppercase characters only. When a valid key is hit, */
-/* it is echoed (upper case) and is the return value.                       */
-/* Called from quite a few functions                                        */
+/* default mode value is K_UPPER											*/
 /****************************************************************************/
-long sbbs_t::getkeys(const char *keys, ulong max)
+long sbbs_t::getkeys(const char *keys, ulong max, long mode)
 {
 	char	str[81];
 	uchar	ch,n=0,c=0;
@@ -442,21 +440,23 @@ long sbbs_t::getkeys(const char *keys, ulong max)
 
 	if(keys != NULL) {
 		SAFECOPY(str,keys);
-		strupr(str);
 	}
 	while(online) {
-		ch=getkey(K_UPPER);
+		ch=getkey(mode);
 		if(max && ch>0x7f)  /* extended ascii chars are digits to isdigit() */
 			continue;
 		if(sys_status&SS_ABORT) {   /* return -1 if Ctrl-C hit */
-			attr(LIGHTGRAY);
-			CRLF;
+			if(!(mode&(K_NOECHO|K_NOCRLF))) {
+				attr(LIGHTGRAY);
+				CRLF;
+			}
 			lncntr=0;
 			return(-1); 
 		}
 		if(ch && !n && ((keys == NULL && !isdigit(ch)) || (strchr(str,ch)))) {  /* return character if in string */
 			if(ch > ' ') {
-				outchar(ch);
+				if(!(mode&K_NOECHO))
+					outchar(ch);
 				if(useron.misc&COLDKEYS) {
 					while(online && !(sys_status&SS_ABORT)) {
 						c=getkey(0);
@@ -464,30 +464,38 @@ long sbbs_t::getkeys(const char *keys, ulong max)
 							break; 
 					}
 					if(sys_status&SS_ABORT) {
-						CRLF;
+						if(!(mode&(K_NOECHO|K_NOCRLF))) {
+							CRLF;
+						}
 						return(-1); 
 					}
 					if(c==BS || c==DEL) {
-						backspace();
+						if(!(mode&K_NOECHO))
+							backspace();
 						continue; 
 					} 
 				}
-				attr(LIGHTGRAY);
-				CRLF;
+				if(!(mode&(K_NOECHO|K_NOCRLF))) {
+					attr(LIGHTGRAY);
+					CRLF;
+				}
 				lncntr=0;
 			}
 			return(ch); 
 		}
 		if(ch==CR && max) {             /* return 0 if no number */
-			attr(LIGHTGRAY);
-			CRLF;
+			if(!(mode&(K_NOECHO|K_NOCRLF))) {
+				attr(LIGHTGRAY);
+				CRLF;
+			}
 			lncntr=0;
 			if(n)
 				return(i|0x80000000L);		 /* return number plus high bit */
 			return(0); 
 		}
 		if((ch==BS || ch==DEL) && n) {
-			backspace();
+			if(!(mode&K_NOECHO))
+				backspace();
 			i/=10;
 			n--; 
 		}
@@ -495,10 +503,13 @@ long sbbs_t::getkeys(const char *keys, ulong max)
 			i*=10;
 			n++;
 			i+=ch&0xf;
-			outchar(ch);
+			if(!(mode&K_NOECHO))	
+				outchar(ch);
 			if(i*10>max && !(useron.misc&COLDKEYS)) {
-				attr(LIGHTGRAY);
-				CRLF;
+				if(!(mode&(K_NOECHO|K_NOCRLF))) {
+					attr(LIGHTGRAY);
+					CRLF;
+				}
 				lncntr=0;
 				return(i|0x80000000L); 
 			} 
