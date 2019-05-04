@@ -434,6 +434,8 @@ int sbbs_t::outchar(char ch)
 	else {
 		if(ch==(char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
 			outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
+		if(ch == '\r' && (console&CON_CR_CLREOL))
+			cleartoeol();
 		if(term&PETSCII) {
 			uchar pet = cp437_to_petscii(ch);
 			if(pet == PETSCII_SOLID)
