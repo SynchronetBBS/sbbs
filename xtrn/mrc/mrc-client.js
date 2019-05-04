@@ -13,6 +13,8 @@ load('scrollbar.js');
 load('inputline.js');
 load(js.startup_dir + 'mrc-session.js');
 
+var input_state = 'chat';
+
 var f = new File(js.startup_dir + 'mrc-client.ini');
 f.open('r');
 const settings = {
@@ -114,13 +116,26 @@ function init_display() {
     return f;
 }
 
+function append_message(frames, msg) {
+    const top = frames.output.offset.y;
+    if (frames.output.data_height > frames.output.height) {
+        while (frames.output.down()) {
+            yield();
+        }
+        frames.output.gotoxy(1, frames.output.height);
+    }
+    frames.output.putmsg(msg + '\r\n');
+    frames.output.scroll(0, -1);
+    if (input_state == 'scroll') frames.output.scrollTo(0, top);
+}
+
 function display_message(frames, msg, colour) {
-    const body = pipe_to_ctrl_a(msg.body || '').split(' ');
-    frames.output.putmsg(body[0] + '\1n\1w: ' + body.slice(1).join(' ') + '\1n\1w\r\n');
+    const body = pipe_to_ctrl_a(truncsp(msg.body) || '').split(' ');
+    append_message(frames, body[0] + '\1n\1w: ' + body.slice(1).join(' ') + '\1n\1w');
 }
 
 function display_server_message(frames, msg) {
-    frames.output.putmsg('\1h\1w' + pipe_to_ctrl_a(msg || '') + '\r\n');
+    append_message(frames, '\1h\1w' + pipe_to_ctrl_a(truncsp(msg) || ''));
 }
 
 function display_title(frames, room, title) {
@@ -148,7 +163,6 @@ function new_alias() {
 function main() {
 
     var msg;
-    var input_state = 'chat';
     var break_loop = false;
     const nick_colours = {};
 
@@ -228,7 +242,7 @@ function main() {
     while (!js.terminated && !break_loop) {
         session.cycle();
         user_input = inputline.getkey();
-        if (typeof user_input != 'undefined') {
+        if (typeof user_input == 'string') {
             if (input_state == 'chat') {
                 if (user_input.substring(0, 1) == '/') { // It's a command
                     cmd = user_input.split(' ');
