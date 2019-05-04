@@ -79,7 +79,7 @@ function resize_nicklist(frames, nicks) {
     frames.nicks.moveTo(frames.nicklist.x + 1, 2);
     frames.nicklist.width = maxlen + 2;
     frames.nicks.width = maxlen + 1;
-    frames.output.width = frames.top.width - frames.nicklist.width - 1;
+    frames.output.width = frames.top.width - frames.nicklist.width;
 }
 
 function redraw_nicklist(frames, nicks, colours) {
@@ -228,7 +228,7 @@ function main() {
     while (!js.terminated && !break_loop) {
         session.cycle();
         user_input = inputline.getkey();
-        if (typeof user_input == 'string') {
+        if (typeof user_input != 'undefined') {
             if (input_state == 'chat') {
                 if (user_input.substring(0, 1) == '/') { // It's a command
                     cmd = user_input.split(' ');
@@ -253,10 +253,14 @@ function main() {
                             frames.divider.putmsg('UP/DOWN to scroll nicklist, ENTER to return');
                             break;
                         case 'nick_prefix':
+                            log(LOG_DEBUG, 'nick prefix ' + JSON.stringify(cmd));
                             if (cmd.length == 2) {
-                                if (cmd[1].length == 1 || cmd[1].search(/^\|\d\d\S$/) == 0) {
-                                    var re = new RegExp('^(\\|\\d\\d)*\\S*' + user.alias, 'i');
-                                    settings.aliases[user.alias] = settings.aliases[user.alias].replace(re, cmd[1] + user.alias);
+                                if (cmd[1].length == 1) {
+                                    settings.aliases[user.alias] = settings.aliases[user.alias].replace(/^(\|\d\d)*\S/, cmd[1]);
+                                    set_alias(settings.aliases[user.alias]);
+                                    session.alias = settings.aliases[user.alias];
+                                } else if (cmd[1].search(/^\|\d\d\S$/) == 0) {
+                                    settings.aliases[user.alias] = settings.aliases[user.alias].replace(/^(\|\d\d)*\S/, cmd[1]);
                                     set_alias(settings.aliases[user.alias]);
                                     session.alias = settings.aliases[user.alias];
                                 }
@@ -266,7 +270,7 @@ function main() {
                         case 'nick_colour':
                             if (cmd.length == 2) {
                                 if (PIPE_COLOURS.indexOf(parseInt(cmd[1])) >= 0) {
-                                    var re = new RegExp('(\\|\\d\\d)*' + user.alias, 'i');
+                                    var re = new RegExp('(\|\d\d)*' + user.alias, 'i');
                                     settings.aliases[user.alias] = settings.aliases[user.alias].replace(re, format('|%02d%s', cmd[1], user.alias));
                                     set_alias(settings.aliases[user.alias]);
                                     session.alias = settings.aliases[user.alias];
@@ -275,7 +279,7 @@ function main() {
                             break;
                         case 'nick_suffix':
                             if (cmd.length == 2) {
-                                if (cmd[1].replace(/(\\|\\d\\d)/g, '').length <= 8) {
+                                if (cmd[1].replace(/(\|\d\d)/g, '').length <= 8) {
                                     var re = new RegExp(user.alias + '.*$', 'i');
                                     settings.aliases[user.alias] = settings.aliases[user.alias].replace(re, user.alias + cmd[1]);
                                     set_alias(settings.aliases[user.alias]);
