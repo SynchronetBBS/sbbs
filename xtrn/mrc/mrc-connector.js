@@ -139,6 +139,7 @@ function client_accept() {
 // Forward a message to all applicable clients
 function client_send(message, username) {
     Object.keys(clients).forEach(function (e) {
+        if (message.to_user == 'NOTME' && message.from_user == clients[e].username) return;
         if (!username || clients[e].username == username) {
             log(LOG_DEBUG, 'Forwarding message to ' + clients[e].username);
             clients[e].socket.sendline(JSON.stringify(message));
@@ -209,7 +210,7 @@ function mrc_receive(sock) {
             return;
         }
         if (['', 'ALL', FROM_SITE].indexOf(message.to_site) > -1) {
-            if (['', 'CLIENT', 'ALL'].indexOf(message.to_site) > -1) {
+            if (['', 'CLIENT', 'ALL', 'NOTME'].indexOf(message.to_user) > -1) {
                 // Forward to all clients
                 client_send(message);
             } else {

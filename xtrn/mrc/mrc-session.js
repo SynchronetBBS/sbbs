@@ -99,6 +99,7 @@ function MRC_Session(host, port, user, pass, alias) {
             } else if (msg.body.search(/just joined room/) > -1) {
                 send_command('USERLIST', 'ALL');
             }
+            emit('message', msg);
         }
     }
 
