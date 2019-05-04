@@ -970,7 +970,7 @@
 "Only"									794 Only
 "\1n\1h\1c\r\nSPAM Visibility is now: \1w"	795 SPAMVisibilityIsNow
 "\r\nTo vote in this poll, hit ~V now.\r\n" 796 VoteInThisPollNow
-"\1n\1mMIME-decoded %s plain-text:\1n\r\n"  797 MIMEDecodedPlainTextFmt
+"\1n\1mMIME-decoded %s %s-text:\1n\r\n"  797 MIMEDecodedPlainTextFmt
 "\1/@EXEC:SHOWMSGAVATAR@\r\n"				798 MsgHdrBodySeparator
 "\1/\r\n@EXEC:SHOWFILEAVATAR@"				799 FileHdrDescSeparator
 "Remove file"                               800 RemoveFileQ
