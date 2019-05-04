@@ -322,6 +322,46 @@ static BOOL mime_getattachment(char* beg, char* end, char* attachment, size_t at
 	return FALSE;
 }
 
+// Parses a MIME text/* content-type header field
+void SMBCALL smb_parse_content_type(const char* content_type, char** subtype, char** charset)
+{
+	if(subtype != NULL) {
+		FREE_AND_NULL(*subtype);
+	}
+	if(charset != NULL) {
+		FREE_AND_NULL(*charset);
+	}
+	if(content_type == NULL)
+		return;
+	char buf[512];
+	SAFECOPY(buf, content_type);
+	char* p;
+	if((p = strstr(buf, "text/")) == buf) {
+		p += 5;
+		if(subtype != NULL) {
+			*subtype = strdup(p);
+			char* tp = *subtype;
+			FIND_WHITESPACE(tp);
+			*tp = 0;
+			tp = *subtype;
+			FIND_CHAR(tp, ';');
+			*tp = 0;
+		}
+		if(charset != NULL && (p = strstr(p, "charset=")) != NULL) {
+			p += 8;
+			if(*p == '"')
+				p++;
+			char* tp = p;
+			FIND_WHITESPACE(tp);
+			*tp = 0;
+			tp = p;
+			FIND_CHAR(tp, '"');
+			*tp = 0;
+			*charset = strdup(p);
+		}
+	}
+}
+
 /* Find the specified content-type in a MIME-encoded message body, recursively */
 static char* mime_getcontent(char* buf, const char* content_type, const char* content_match
 	,int depth, enum content_transfer_encoding* encoding, char** charset, char* attachment, size_t attachment_len, int index)
@@ -367,6 +407,7 @@ static char* mime_getcontent(char* buf, const char* content_type, const char* co
 		p = strstr(txt, "\r\n\r\n");	/* End of header */
 		if(p==NULL)
 			continue;
+		*p = 0;	// terminate the header
 		char* content_type;
 		for(content_type = txt; content_type < p; content_type++) {
 			SKIP_WHITESPACE(content_type);
@@ -392,25 +433,10 @@ static char* mime_getcontent(char* buf, const char* content_type, const char* co
 		}
 		if(encoding != NULL)
 			*encoding = mime_getxferencoding(txt, p);
-		if(charset != NULL) {
-			content_type += match_len;
-			SKIP_WHITESPACE(content_type);
-			if(strnicmp(content_type, "charset=", 8) == 0) {
-				content_type += 8;
-				if(*content_type == '"')
-					content_type++;
-				char* tp = content_type;
-				FIND_WHITESPACE(tp);
-				*tp = 0;
-				tp = content_type;
-				FIND_CHAR(tp, '"');
-				*tp = 0;
-				FREE_AND_NULL(*charset);
-				*charset = strdup(content_type);
-			}
-		}
+		if(charset != NULL)
+			smb_parse_content_type(content_type, NULL, charset);
 
-		txt = p;
+		txt = p + 4;	// strlen("\r\n\r\n")
 		SKIP_WHITESPACE(txt);
 		if((p = strstr(txt, boundary)) != NULL)
 			*p = 0;
@@ -419,19 +445,26 @@ static char* mime_getcontent(char* buf, const char* content_type, const char* co
 	return NULL;
 }
 
-/* Get just the plain-text portion of a MIME-encoded message body */
-/* Returns NULL if there is no MIME-encoded plain-text portion of the message */
+/* Get just the (first) plain-text or HTML portion of a MIME-encoded multi-part message body */
+/* Returns NULL if there is no MIME-encoded plain-text/html portion of the message */
 char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 {
 	char*	txt;
 	enum content_transfer_encoding xfer_encoding = CONTENT_TRANFER_ENCODING_NONE;
 
+	FREE_AND_NULL(msg->text_subtype);
 	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return NULL;
-	txt = mime_getcontent(buf, msg->content_type, "text/plain", 0, &xfer_encoding, &msg->charset
+	txt = mime_getcontent(buf, msg->content_type, "text/plain", 0, &xfer_encoding, &msg->text_charset
 		,/* attachment: */NULL, /* attachment_len: */0, /* index: */0);
-	if(txt == NULL)
-		return NULL;
+	if(txt == NULL) {
+		txt = mime_getcontent(buf, msg->content_type, "text/html", 0, &xfer_encoding, &msg->text_charset
+			,/* attachment: */NULL, /* attachment_len: */0, /* index: */0);
+		if(txt == NULL)
+			return NULL;
+		msg->text_subtype = strdup("html");
+	} else
+		msg->text_subtype = strdup("plain");
 
 	memmove(buf, txt, strlen(txt)+1);
 	if(*buf == 0)	/* No decoding necessary */

@@ -103,7 +103,7 @@
 #define GETMSGTXT_TAILS 		(1<<0)	/* Incude message tail(s)			*/
 #define GETMSGTXT_NO_BODY		(1<<1)	/* Exclude message body				*/
 #define GETMSGTXT_NO_HFIELDS	(1<<2)	/* Exclude text header fields		*/
-#define GETMSGTXT_PLAIN			(1<<3)	/* Get plaintext portion only of MIME-encoded body (all, otherwise) */
+#define GETMSGTXT_PLAIN			(1<<3)	/* Get text-plain or text-html portion only of MIME-encoded body (all, otherwise) */
 										/* common smb_getmsgtxt() mode values */
 #define GETMSGTXT_BODY_ONLY		GETMSGTXT_NO_HFIELDS
 #define GETMSGTXT_TAIL_ONLY		(GETMSGTXT_TAILS|GETMSGTXT_NO_BODY|GETMSGTXT_NO_HFIELDS)
@@ -273,6 +273,7 @@ SMBEXPORT char*		SMBCALL smb_getmsgtxt(smb_t*, smbmsg_t*, ulong mode);
 SMBEXPORT char*		SMBCALL smb_getplaintext(smbmsg_t*, char* body);
 SMBEXPORT uint8_t*	SMBCALL smb_getattachment(smbmsg_t*, char* body, char* filename, size_t filename_len, uint32_t* filelen, int index);
 SMBEXPORT ulong		SMBCALL	smb_countattachments(smb_t*, smbmsg_t*, const char* body);
+SMBEXPORT void		SMBCALL smb_parse_content_type(const char* content_type, char** subtype, char** charset);
 
 /* smbfile.c */
 SMBEXPORT int 		SMBCALL smb_feof(FILE* fp);
