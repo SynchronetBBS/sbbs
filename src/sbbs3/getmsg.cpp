@@ -280,7 +280,9 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 		if(p == NULL)
 			p = txt;
 		else
-			bprintf(text[MIMEDecodedPlainTextFmt], msg->charset == NULL ? "US-ASCII" : msg->charset);
+			bprintf(text[MIMEDecodedPlainTextFmt]
+				, msg->text_charset == NULL ? "unspecified (US-ASCII)" : msg->text_charset
+				, msg->text_subtype);
 	}
 	truncsp(p);
 	SKIP_CRLF(p);
