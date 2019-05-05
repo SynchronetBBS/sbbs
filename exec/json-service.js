@@ -449,7 +449,6 @@ admin = new (function() {
 /* module handler */
 engine = new (function() {
 	this.modules = [];
-	this.queue = undefined;
 	this.file = new File(serviceIniFile);
 
 	/* load module list */
@@ -461,12 +460,12 @@ engine = new (function() {
 		var modules=this.file.iniGetAllObjects();
 		this.file.close();
 		for each(var m in modules) {
-      try {
-  			this.modules[m.name.toUpperCase()]=new Module(m.name,m.dir,m.read,m.write);
-  			log(LOG_DEBUG,"loaded module: " + m.name);
-      } catch (err) {
-        log(LOG_ERROR, 'Failed to load module: ' + m.name + ', ' + err);
-      }
+			try {
+				this.modules[m.name.toUpperCase()]=new Module(m.name,m.dir,m.read,m.write);
+				log(LOG_DEBUG,"loaded module: " + m.name);
+			} catch (err) {
+				log(LOG_ERROR, 'Failed to load module: ' + m.name + ', ' + err);
+			}
 		}
 	}
 
@@ -475,6 +474,7 @@ engine = new (function() {
 		for each(var m in this.modules) {
 			if(!m.online)
 				continue;
+			m.poll();
 			m.db.cycle();
 		}
 	}
@@ -600,6 +600,28 @@ engine = new (function() {
 		this.read = read;
 		this.write = write;
 		this.db;
+		
+		this.poll = function() {
+			if(this.queue != undefined) {
+				var type = this.queue.poll();
+				switch(type) {
+					case "log":
+						var data = this.queue.read(type);
+						log(data.LOG_LEVEL,data.message);
+						break;
+					case true:
+						var data = this.queue.read();
+						//log(LOG_INFO,JSON.stringify(data));
+						break;
+					case false:
+						break;
+					default:
+						var data = this.queue.read(type);
+						log(LOG_ERROR,"unknown data received from background service: " + type);
+						break;
+				}
+			}
+		}
 
 		this.init = function() {
 			this.db=new JSONdb(this.dir+this.name+".json", this.name);
