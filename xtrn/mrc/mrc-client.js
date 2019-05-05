@@ -359,7 +359,7 @@ function main() {
         if (frames.top.cycle()) {
             frames.output_scroll.cycle();
             frames.nick_scroll.cycle();
-            console.gotoxy(console.screen_columns, console.screen_rows);
+            console.gotoxy(inputline.frame.__relations__.child[0].x, inputline.frame.y);
         }
         yield();
     }
