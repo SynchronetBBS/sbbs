@@ -1,6 +1,7 @@
 var root = argv[0];
 js.branch_limit = 0;
 
+load("backgroundlog.js");
 load("json-client.js");
 load("event-timer.js");
 load("funclib.js");
@@ -100,7 +101,7 @@ function handleDisco(update) {
 
 /* delete a game */
 function deleteGame(gameNumber) {
-	log(LOG_WARNING,"removing empty game #" + gameNumber);
+	log(LOG_DEBUG,"removing empty game #" + gameNumber);
 	client.remove(game_id,"games." + gameNumber,2);
 	if(data.timers[gameNumber])
 		data.timers[gameNumber].abort = true;
@@ -109,7 +110,7 @@ function deleteGame(gameNumber) {
 
 /* delete a player */
 function deletePlayer(gameNumber,playerName) {
-	log(LOG_WARNING,"removing player from game " + gameNumber);
+	log(LOG_DEBUG,"removing player from game " + gameNumber);
 	client.remove(game_id,"games." + gameNumber + ".players." + playerName,2)
 	delete data.games[gameNumber].players[playerName];
 }
@@ -170,7 +171,7 @@ function getReady(game) {
 function startGame(game) {
 	/* verify that the game is still ready */
 	if(game.status == status.STARTING) {
-		log("starting race: " + game.gameNumber);
+		log(LOG_DEBUG,"starting race: " + game.gameNumber);
 		client.lock("mazerace","games." + game.gameNumber + ".status",2);
 		game.status = status.RACING;
 		createMaze(game);
@@ -229,7 +230,7 @@ function init() {
 
 /* main loop */
 function main() {
-	while(client.socket.is_connected && !js.terminated && !parent_queue.poll()) {
+	while(!js.terminated && !parent_queue.poll()) {
 		if(client.socket.poll(.1))
 			client.cycle();
 		timer.cycle();

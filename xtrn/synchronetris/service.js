@@ -1,5 +1,15 @@
 var root = argv[0];
+if(!file_exists(root + "server.ini")) {
+	throw("server initialization file missing");
+}
+/* load server connection information from server.ini */
+var server_file = new File(root + "server.ini");
+server_file.open('r',true);
+var serverAddr=server_file.iniGetValue(null,"host");
+var serverPort=server_file.iniGetValue(null,"port");
+server_file.close();
 
+load("backgroundlog.js");
 load("json-client.js");
 load("event-timer.js");
 load("funclib.js");
@@ -7,12 +17,12 @@ load("sbbsdefs.js");
 
 var game_id = "synchronetris";
 var timer = new Timer();
-var client = new JSONClient("localhost",10088);
+var client = new JSONClient(serverAddr,serverPort);
 var settings = loadSettings();
 
 var data = { 
-	games:client.read(game_id,"games",1),
-	players:client.read(game_id,"players",1),
+	players:{},
+	games:{},
 	timers:{}
 };
 
@@ -88,7 +98,7 @@ function handleDisco(subscription) {
 
 /* delete a game */
 function deleteGame(gameNumber) {
-	log(LOG_WARNING,"removing empty game #" + gameNumber);
+	log(LOG_DEBUG,"removing empty game #" + gameNumber);
 	client.remove(game_id,"games." + gameNumber,2);
 	if(data.timers[gameNumber])
 		data.timers[gameNumber].abort = true;
@@ -97,7 +107,7 @@ function deleteGame(gameNumber) {
 
 /* delete a player */
 function deletePlayer(gameNumber,playerName) {
-	log(LOG_WARNING,"removing player from game " + gameNumber);
+	log(LOG_DEBUG,"removing player from game " + gameNumber);
 	client.remove(game_id,"games." + gameNumber + ".players." + playerName,2)
 	delete data.games[gameNumber].players[playerName];
 }
@@ -218,14 +228,15 @@ function init() {
 	client.subscribe(game_id,"games");
 	client.subscribe(game_id,"players");
 	client.write(game_id,"settings",settings,2);
+	client.write(game_id,"games",{},2);
 	client.callback = processUpdate;
-	if(!data.games)
-		data.games = {};
+	data.players=client.read(game_id,"players",1);
 	if(!data.players)
 		data.players = {};
 	log(LOG_INFO,"Synchronetris background service initialized");
 }
 
+/* load game settings */
 function loadSettings() {
 	var file=new File(root + "synchronetris.ini");
 	file.open('r',true);
@@ -236,7 +247,7 @@ function loadSettings() {
 
 /* main loop */
 function main() {
-	while(client.socket_is_connected && !js.terminated && !parent_queue.poll()) {
+	while(!js.terminated && !parent_queue.poll()) {
 		if(client.socket.poll(.1))
 			client.cycle();
 		timer.cycle();
