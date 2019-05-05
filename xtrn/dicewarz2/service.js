@@ -9,6 +9,7 @@ var serverAddr=server_file.iniGetValue(null,"host");
 var serverPort=server_file.iniGetValue(null,"port");
 server_file.close();
 
+load("backgroundlog.js");
 load("json-client.js");
 load("event-timer.js");
 load("funclib.js");
@@ -133,7 +134,7 @@ function updateStatus(gameNumber) {
 		return false;
 	
 	if(game.status == status.PLAYING) {
-		//log(LOG_WARNING,"updating turn info for game: " + game.gameNumber);
+		log(LOG_DEBUG,"updating turn info for game: " + game.gameNumber);
 		updateTurn(game);
 	}
 	else if(game.status == status.NEW) {
@@ -165,7 +166,7 @@ function updateTurn(game) {
 	if(game.players[game.turn].AI) {
 		/* if we have already launched the background thread, abort */
 		if(aiTakingTurns[game.gameNumber]) {
-			//log(LOG_WARNING,"ai already loaded.. ignoring turn update");
+			log(LOG_DEBUG,"ai already loaded.. ignoring turn update");
 			return;
 		}
 		/* disable this function until it is a human player's turn 
@@ -183,7 +184,7 @@ function updateTurn(game) {
 
 /* delete a game */
 function deleteGame(gameNumber) {
-	log(LOG_WARNING,"removing game #" + gameNumber);
+	log(LOG_DEBUG,"removing game #" + gameNumber);
 	client.remove(game_id,"games." + gameNumber,2);
 	client.remove(game_id,"maps." + gameNumber,2);
 	client.remove(game_id,"metadata." + gameNumber,2);
@@ -198,7 +199,7 @@ function loadGame(gameNumber) {
 
 /* delete a player */
 function deletePlayer(gameNumber,playerName) {
-	log(LOG_WARNING,"removing player from game " + gameNumber);
+	log(LOG_DEBUG,"removing player from game " + gameNumber);
 	client.remove(game_id,"games." + gameNumber + ".players." + playerName,2)
 	delete data.games[gameNumber].players[playerName];
 }
@@ -208,28 +209,35 @@ function scanInactivity() {
 	var timeout = settings.inactivity_timeout * 24 * 60 * 60 * 1000;
 	for(var g in data.games) {
 		var game = data.games[g];
-		elog("game " + game.gameNumber + " last turn: " + game.last_turn + " inactive: " + (Date.now() - game.last_turn));
-		if(Date.now() - game.last_turn >= timeout) {
-			var player = game.players[game.turn];
-			if(game.single_player) {
-				scoreForfeit(player);
-				deleteGame(game.gameNumber);
-				elog("inactive game deleted");
-			}
-			else if(game.status == status.PLAYING) {
-				player.name += " AI";
-				player.AI = {
-					sort:"random",
-					check:"random",
-					qty:"single",
-					turns:0,
-					moves:0
+		try {
+			log(LOG_DEBUG,"game " + game.gameNumber + " last turn: " + game.last_turn + " inactive: " + (Date.now() - game.last_turn));
+			if(Date.now() - game.last_turn >= timeout) {
+				var player = game.players[game.turn];
+				if(game.single_player) {
+					scoreForfeit(player);
+					deleteGame(game.gameNumber);
+					log(LOG_DEBUG,"inactive game deleted");
 				}
-				client.write(game_id,"games." + game.gameNumber + ".players." + game.turn,player,2)
-				updateTurn(game);
-				elog("inactive player changed to AI");
+				else if(game.status == status.PLAYING) {
+					player.name += " AI";
+					player.AI = {
+						sort:"random",
+						check:"random",
+						qty:"single",
+						turns:0,
+						moves:0
+					}
+					client.write(game_id,"games." + game.gameNumber + ".players." + game.turn,player,2)
+					updateTurn(game);
+					log(LOG_DEBUG,"inactive player changed to AI");
+				}
 			}
 		}
+		catch(e) {
+			log(LOG_ERROR,"error scanning game for inactivity: " + g);
+			deleteGame(g);
+		}
+
 	}
 }
 
@@ -248,14 +256,6 @@ function scoreForfeit(player) {
 		
 		client.write(game_id,"scores." + player.name,score);
 		client.unlock(game_id,"scores." + player.name);
-}
-
-/* error log / debug log */
-function elog(str) {
-	var ef = new File(root + "e.log");
-	ef.open('a',true);
-	ef.writeln(str + " (" + system.timestr() + ")");
-	ef.close();
 }
 
 /* initialize service */
@@ -281,12 +281,12 @@ function open() {
 function close() {
 	client.unsubscribe(game_id,"games");
 	client.unsubscribe(game_id,"players");
-	log("terminating dicewarz2 background service");
+	log(LOG_INFO,"terminating dicewarz2 background service");
 }
 
 /* main loop */
 function main() {
-	while(client.socket.is_connected && !js.terminated && !parent_queue.poll()) {
+	while(!js.terminated && !parent_queue.poll()) {
 		if(client.socket.poll(.5))
 			client.cycle();
 		timer.cycle();
@@ -300,5 +300,5 @@ main();
 close();
 
 } catch(e) {
-	elog(e.toSource());
+	log(LOG_ERROR,e.toSource());
 }
