@@ -5,7 +5,7 @@ js.global.log = function(log_level, message) {
 		parent_queue.write({LOG_LEVEL:log_level,message:message},"log");
 	}
 	else {
-		var ef = new File(exec_path + "/e.log");
+		var ef = new File(system.node_dir + "/background.log");
 		var log_type = "";
 		switch(log_level) {
 			case LOG_EMERG:
