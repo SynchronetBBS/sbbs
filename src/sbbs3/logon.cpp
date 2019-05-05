@@ -437,8 +437,10 @@ bool sbbs_t::logon()
 		close(file); 
 	}
 
-	if(cfg.sys_logon[0])				/* execute system logon event */
+	if(cfg.sys_logon[0]) {				/* execute system logon event */
+		lprintf(LOG_DEBUG, "executing logon event: %s", cfg.sys_logon);
 		external(cmdstr(cfg.sys_logon,nulstr,nulstr,NULL),EX_STDOUT); /* EX_SH */
+	}
 
 	if(qwklogon)
 		return(true);
