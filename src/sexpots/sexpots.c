@@ -686,6 +686,8 @@ BOOL modem_command(COM_HANDLE com_handle, const char* cmd)
 	int		i;
 
 	for(i=0;i<=mdm_cmdretry;i++) {
+		if(terminated)
+			return FALSE;
 		if(i) {
 			lprintf(LOG_WARNING,"Retry #%u: sending modem command (%s) on %s", i, cmd, com_dev);
 			lprintf(LOG_DEBUG,"Dropping DTR on %s", com_dev);
