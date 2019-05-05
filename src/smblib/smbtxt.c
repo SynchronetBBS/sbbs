@@ -341,13 +341,14 @@ void SMBCALL smb_parse_content_type(const char* content_type, char** subtype, ch
 	if((p = strstr(buf, "text/")) == buf) {
 		p += 5;
 		if(subtype != NULL) {
-			*subtype = strdup(p);
-			char* tp = *subtype;
-			FIND_WHITESPACE(tp);
-			*tp = 0;
-			tp = *subtype;
-			FIND_CHAR(tp, ';');
-			*tp = 0;
+			if((*subtype = strdup(p)) != NULL) {
+				char* tp = *subtype;
+				FIND_WHITESPACE(tp);
+				*tp = 0;
+				tp = *subtype;
+				FIND_CHAR(tp, ';');
+				*tp = 0;
+			}
 		}
 		if(charset != NULL && (p = strstr(p, "charset=")) != NULL) {
 			p += 8;
