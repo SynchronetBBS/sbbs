@@ -421,6 +421,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	native = native_executable(&cfg, cmdline, mode);
 
 	if(!native && (startup->options&BBS_OPT_NO_DOS)) {
+		lprintf((mode&EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOS programs not supported: %s", cmdline);
 		bprintf("Sorry, DOS programs are not supported on this node.\r\n");
 		return -1;
 	}
@@ -1380,6 +1381,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	} else {
 		if(startup->options&BBS_OPT_NO_DOS) {
+			lprintf((mode&EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOS programs not supported: %s", cmdline);
 			bprintf("Sorry, DOS programs are not supported on this node.\r\n");
 			return -1;
 		}
@@ -1681,8 +1683,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		fclose(dosemubat);
 
 #else
-		bprintf("\r\nExternal DOS programs are not yet supported in \r\n%s\r\n"
-			,VERSION_NOTICE);
+		lprintf((mode&EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOS programs not supported: %s", cmdline);
+		bprintf("Sorry, DOS programs are not supported on this node.\r\n");
+
 		return(-1);
 #endif
 	}
