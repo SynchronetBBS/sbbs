@@ -914,6 +914,8 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 	msg->newsgroups=NULL;
 	msg->mime_version=NULL;
 	msg->content_type=NULL;
+	msg->text_subtype=NULL;
+	msg->text_charset=NULL;
 
 	msg->ftn_msgid=NULL;
 	msg->ftn_reply=NULL;
