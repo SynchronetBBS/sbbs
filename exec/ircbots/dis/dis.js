@@ -45,12 +45,15 @@ function get_posts_by(name, subs)
 					if(hdr.from.toLowerCase()==name.toLowerCase()) {
 						body=mb.get_msg_body(true, i, false, false, false).split(/\r?\n/);
 						for(j=0; j<body.length; j++) {
-							if(all[body[j]] !== undefined) {
-								body.splice(j,1);
-								j--;
-								continue;
-							}
-							all[body[j]]='';
+							try {
+								if(all[body[j]] !== undefined) {
+									body.splice(j,1);
+									j--;
+									continue;
+								}
+								all[body[j]]='';
+								js.gc(false);
+							} catch (e) { log("Out of memory "+e); }
 						}
 						body=word_wrap(body.join('\n', 65535)).split(/\n/);
 						for(j=body.length-1; j>=body.length/2; j--) {
@@ -72,8 +75,10 @@ function get_posts_by(name, subs)
 								continue;
 							if(body[j].search(/ "Real Fact" #[0-9]+:/)!=-1)
 								break;
-							if(body[j].search(/s*[\w]{0,2}[>:] /)==-1)
+							if(body[j].search(/s*[\w]{0,2}[>:] /)==-1) {
 								txt += body[j]+' ';
+								js.flatten_string(txt);
+							}
 						}
 					}
 				}
