@@ -155,10 +155,10 @@ function mrc_connect(host, port) {
     log(LOG_INFO, 'Connecting to ' + host + ':' + port);
     if (!sock.connect(host, port, settings.timeout)) return false;
     const platform = format(
-        'Synchronet %s%s/%s/%s',
-        system.version, system.revision, system.platform, PROTOCOL_VERSION
+        'SYNCHRONET/%s_%s/%s',
+        system.platform, system.architecture, PROTOCOL_VERSION
     ).replace(/\s/g, '_');
-    const line = SYSTEM_NAME + '~' + (system_info.platform || platform);
+    const line = SYSTEM_NAME + '~' + platform;
     log(LOG_DEBUG, 'To MRC: ' + line);
     sock.send(line + '\n');
     while (sock.is_connected) {
