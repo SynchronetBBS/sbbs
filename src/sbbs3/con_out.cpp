@@ -93,6 +93,13 @@ unsigned char cp437_to_petscii(unsigned char ch)
 		return ch ^ 0x20;	/* swap upper/lower case */
 	switch(ch) {
 		case '\1':		return '@';
+		case '\x10':	return '>';
+		case '\x11':	return '<';
+		case '\x18':	
+		case '\x1e':	return PETSCII_UPARROW;
+		case '\x19':
+		case '\x1f':	return 'V';
+		case '\x1a':	return '>';
 		case '|':		return PETSCII_VERTLINE;
 		case '\\':		return PETSCII_BACKSLASH;
 		case '`':		return PETSCII_BACKTICK;
