@@ -76,6 +76,8 @@ enum petscii_char {
 	/* Symbols (which don't align with ASCII) */
 	PETSCII_BRITPOUND	= 92,
 	/* Graphic chars */
+	PETSCII_UPARROW		= 0x5E,
+	PETSCII_LEFTARROW	= 0x5f,
 	PETSCII_LIGHTHASH	= 0xA6,
 	PETSCII_MEDIUMHASH	= 0xDE,
 	PETSCII_HEAVYHASH	= 0xA9,
