@@ -80,13 +80,16 @@ int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 
 #ifdef _MSC_VER
 /****************************************************************************/
-/* Case insensitive version of strstr()										*/
+/* Case insensitive version of strstr()	- currently heavy-handed			*/
 /****************************************************************************/
 char* DLLCALL strcasestr(const char* haystack, const char* needle)
 {
+	char* p = NULL;
+	/* temporary performance hack begin (warning: different behavior from traditional strcasestr): */
+	if((p = strstr(haystack, needle)) != NULL)
+		return p;
 	char* h = strdup(haystack);
 	char* n = strdup(needle);
-	char* p = NULL;
 	if(h != NULL && n != NULL)
 		p = strstr(strupr(h), strupr(n));
 	int offset = p - h;
