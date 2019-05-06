@@ -900,8 +900,7 @@ void sbbs_t::maindflts(user_t* user)
 			case 'T':
 				if(yesno(text[AutoTerminalQ])) {
 					user->misc|=AUTOTERM;
-					user->misc&=~(ANSI|RIP|WIP|HTML);
-					user->misc|=autoterm; 
+					user->misc&=~(ANSI|RIP|WIP|HTML|PETSCII);
 				}
 				else
 					user->misc&=~AUTOTERM;
