@@ -66,9 +66,6 @@ mrc-connector.ini:
   - You can uncomment and edit the fields in the [info] section to alter what
     information is shown about your BBS via the /info command.  If you do not
     uncomment these fields, defaults will be read from your system config.
-  - Spaces and colour codes are not allowed in the 'platform' value, and editing
-    this field is generally discouraged.  The trailing MRC version number may be
-    critical.
 
 mrc-client.ini:
 
