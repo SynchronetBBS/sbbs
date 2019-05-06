@@ -849,90 +849,6 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 	}
 }
 
-Bot_Commands["BANDS"] = new Bot_Command(0,false,false);
-Bot_Commands["BANDS"].usage = get_cmd_prefix() + "BANDS [band]";
-Bot_Commands["BANDS"].help = "Displays the current band conditions";
-Bot_Commands["BANDS"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	var band;
-	var b;
-	var i;
-	var req;
-	var resp;
-	var m;
-	var re;
-	var uri;
-	var cond = {};
-
-	// Remove empty cmd args
-	for (i=1; i<cmd.length; i++) {
-		if (cmd[i].search(/^\s*$/)==0) {
-			cmd.splice(i,1);
-			i--;
-		}
-	}
-
-	if (cmd.length == 2) {
-		band = cmd[1];
-		if ([160,80,40,30,20,17,15].indexOf(parseInt(band,10)) == -1)
-			return true;
-	}
-	else if (cmd.length != 1)
-		return true;
-
-	function condx(val) {
-		var v = parseInt(val, 10);
-		if (v >= 100)
-			return "QRP";
-		if (v >= 70)
-			return "Barefoot";
-		if (v >= 51)
-			return "AMP, High lobe";
-		if (v >= 36)
-			return "AMP, Low lobe";
-		if (v >= 19)
-			return "NVIS";
-		return "Groundwave ONLY";
-	}
-
-	function change(r, slash) {
-		var ch;
-
-		re = /^([0-9]{1,3})\<IMG SRC="http:\/\/www\.bandcondx\.com\/TRENDS\/(-?[0-9]{1,3})\.JPG/ym;
-		while ((m = re.exec(r)) != null) {
-			ch = parseInt(m[2], 10);
-			cond[m[1]] += format("% 3d", m[2]);
-			if (slash)
-				cond[m[1]] += '/'
-			else
-				cond[m[1]] += ')'
-		}
-	}
-
-	req = new HTTPRequest();
-	resp = req.Get("http://www.bandconditions.com/");
-	m = resp.match(/frame src="([^"]*)"/);
-	if (m != null) {
-		uri = m[1];
-		resp = req.Get(uri);
-		re = /^([0-9]{1,3})\<IMG SRC="http:\/\/www\.bandcondx\.com\/([0-9]{1,3})\.jpg/ym;
-		while ((m = re.exec(resp)) != null) {
-			cond[m[1]] = format("% 4d: %-20.20s (", m[1]+'m', condx(m[2]));
-			i = parseInt(m[2], 10);
-		}
-		resp = req.Get(uri.replace(/[^\/]*$/, '10MIN.htm'));
-		change(resp, true);
-		resp = req.Get(uri.replace(/[^\/]*$/, '1HR.htm'));
-		change(resp, true);
-		resp = req.Get(uri.replace(/[^\/]*$/, '24HRS.htm'));
-		change(resp, false);
-		srv.o(target, 'Band: Usage                (10m/hr /day change)');
-		for (b in cond) {
-			if (band === undefined || band == b)
-				srv.o(target, cond[b]);
-		}
-	}
-}
-
 //var dumb={o:function(x,y) {log(y);}};
 //Bot_Commands["GEO"].command(undefined, undefined, undefined,dumb,undefined,['GEO']);
 //Bot_Commands["HF"].command(undefined, undefined, undefined,dumb,undefined,['GEO']);
@@ -941,5 +857,3 @@ Bot_Commands["BANDS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','kj6pxy']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','va6rrx']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','g1xkz']);
-//Bot_Commands["BANDS"].command(undefined, undefined, undefined,dumb,undefined,['BANDS']);
-//Bot_Commands["BANDS"].command(undefined, undefined, undefined,dumb,undefined,['BANDS','80']);
