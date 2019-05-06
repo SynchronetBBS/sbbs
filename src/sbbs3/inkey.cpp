@@ -202,7 +202,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			return(0); 
 		case CTRL_P:	/* Ctrl-P Private node-node comm */
 			if(!(sys_status&SS_USERON))
-				return(0);			 /* keep from being recursive */
+				break;;
 			if(hotkey_inside&(1<<ch))
 				return(0);
 			hotkey_inside |= (1<<ch);
@@ -225,9 +225,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			return(0); 
 
 		case CTRL_U:	/* Ctrl-U Users online */
-			/* needs recursion checking */
 			if(!(sys_status&SS_USERON))
-				return(0);
+				break;
 			if(hotkey_inside&(1<<ch))
 				return(0);
 			hotkey_inside |= (1<<ch);
@@ -251,7 +250,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			if(sys_status&SS_SPLITP)
 				return(ch);
 			if(!(sys_status&SS_USERON))
-				return(0);
+				break;
 			if(hotkey_inside&(1<<ch))
 				return(0);
 			hotkey_inside |= (1<<ch);
@@ -277,7 +276,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			if(sys_status&SS_SPLITP)
 				return(ch);
 			if(!(sys_status&SS_USERON))
-				return(0);
+				break;
 			if(hotkey_inside&(1<<ch))
 				return(0);
 			hotkey_inside |= (1<<ch);
