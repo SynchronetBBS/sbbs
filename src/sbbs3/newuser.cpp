@@ -170,7 +170,7 @@ BOOL sbbs_t::newuser()
 
 		while(text[HitYourBackspaceKey][0] && !(useron.misc&(PETSCII|SWAP_DELETE)) && online) {
 			bputs(text[HitYourBackspaceKey]);
-			char key = getkey(K_NONE);
+			uchar key = getkey(K_NONE);
 			bprintf(text[CharacterReceivedFmt], key, key);
 			if(key == '\b')
 				break;
@@ -179,7 +179,7 @@ BOOL sbbs_t::newuser()
 					useron.misc |= SWAP_DELETE;
 			}
 			else if(key == PETSCII_DELETE)
-				useron.misc |= PETSCII;
+				useron.misc |= (AUTOTERM|PETSCII);
 			else {
 				bprintf(text[InvalidBackspaceKeyFmt], key, key);
 				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
@@ -188,9 +188,11 @@ BOOL sbbs_t::newuser()
 			}
 		}
 
-		if(useron.misc&PETSCII)
+		if(useron.misc&PETSCII) {
+			autoterm |= PETSCII;
+			outcom(PETSCII_UPPERLOWER);
 			bputs(text[PetTermDetected]);
-		else {
+		} else {
 			if(!yesno(text[ExAsciiTerminalQ]))
 				useron.misc|=NO_EXASCII;
 			else
