@@ -644,5 +644,12 @@ function xbin_cleanup(image)
 	}
 }
 
+function bright_background(enable)
+{
+	var op = enable === false ? "clear" : "set";
+	ansiterm.send("ext_mode", op, "bg_bright_intensity");
+	ansiterm.send("ext_mode", op, "no_blink");
+}
+
 // Leave as last line:
 this;
