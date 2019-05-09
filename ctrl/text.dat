@@ -439,12 +439,12 @@
 "New User Password: "                                   364 NewUserPasswordPrompt
 "Use automatic terminal type detection"                 365 AutoTerminalQ
 "Does your terminal support ANSI"                       366 AnsiTerminalQ
-"Do you have a color terminal"                          367 ColorTerminalQ
+"Does your terminal display colors"                     367 ColorTerminalQ
 "\1n\1gAre you using \1hRIPterm\1n\1g or a \1hRIPscrip "\     368 RipTerminalQ
 	"\1n\1gcompatible terminal program?\r\n"\
 	"\1h\1wIMPORTANT:\1n\1g If you are not absolutely "\
 	"sure, hit \1h\1w\1iN\1n\1b\1h"
-"Does your terminal support IBM extended ASCII"         369 ExAsciiTerminalQ
+"Does your terminal support IBM extended ASCII (CP437)"     369 ExAsciiTerminalQ
 "\1nYou can't use that name (duplicate or invalid).\r\n" 370 YouCantUseThatName
 "\1l\1-\1gYour password is \1h%s\r\n"                       371 YourPasswordIs
 "\r\n\1_\1w\1hDon't forget and keep it "\                   372 NewUserPasswordVerify
@@ -581,7 +581,7 @@
 "\1h\1bUser Settings for \1w%s #%d\1b:\r\n\r\n"                474 UserDefaultsHdr
 "\1n\1b[\1h\1wT\1n\1b] \1hTerminal Mode                \1n\1b\1\\: \1c%s\r\n"   475 UserDefaultsTerminal
 "\1n\1b[\1h\1wE\1n\1b] \1hExternal Editor              \1n\1b\1\\: \1c%s\r\n"   476 UserDefaultsXeditor
-"\1n\1b[\1h\1wL\1n\1b] \1hScreen Length                \1n\1b\1\\: \1c%s\r\n"   477 UserDefaultsRows
+"\1n\1b[\1h\1wL\1n\1b] \1hScreen Length                \1n\1b\1\\: \1c%s %s\r\n" 477 UserDefaultsRows
 "\1n\1b[\1h\1wX\1n\1b] \1hExpert Menu Mode             \1n\1b: \1c%s\r\n"   478 UserDefaultsMenuMode
 "\1n\1b[\1h\1wP\1n\1b] \1hScreen Pause                 \1n\1b: \1c%s\r\n"   479 UserDefaultsPause
 "\1n\1b[\1h\1wH\1n\1b] \1hHot Keys                     \1n\1b: \1c%s\r\n"   480 UserDefaultsHotKey
@@ -984,9 +984,19 @@
 "Scanning"                                  808 Scanning
 "Done"                                      809 Done
 "\1[\1>"                                    810 Scanned
-"\1h\1yHit your \1wbackspace\1y or delete-left key: "     811 HitYourBackspaceKey
+"\r\n\1h\1yHIT your \1wBACKSPACE\1y or DELETE-LEFT key: " 811 HitYourBackspaceKey
 "\1\\\1n\1cCharacter \1h%u (%02Xh) \1n\1creceived.\r\n"   812 CharacterReceivedFmt
 "\1r\1hUnsupported backspace key: \1w%02Xh "              813 InvalidBackspaceKeyFmt
 "Swap the delete (DEL, ^BS) and backspace (BS, ^H) keys"  814 SwapDeleteKeyQ
-"\1n\1hCBM/\1yPETSCII\1w terminal detected.\r\n"          815 PetTermDetected
-"\r\n\xb3 \1bCC  \1n\1b: \1h\1c%.70s"                        816 MsgCarbonCopyList
+"\1n\1hCBM/\1yPETSCII\1w terminal detected.\r\n"          815 PetTerminalDetected
+"Are you using a CBM/PETSCII terminal"                    816 PetTerminalQ
+"Auto Detect "                                            817 TerminalAutoDetect
+"columns"                                                 818 TerminalColumns
+"rows"                                                    819 TerminalRows
+"(mono) "                                                 820 TerminalMonochrome
+"(color) "                                                821 TerminalColor
+"(iCE color) "                                            822 TerminalIceColor
+"Does your terminal display bright background "\          823 IceColorTerminalQ
+    "(iCE) colors\r\n    \1n\1i\1k\x013"\
+    "This text\1n is black on yellow and NOT BLINKING"
+"\r\n\xb3 \1bCC  \1n\1b: \1h\1c%.70s"                     824 MsgCarbonCopyList
