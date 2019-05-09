@@ -723,6 +723,7 @@ js_require(JSContext *cx, uintN argc, jsval *arglist)
 
 	ret = js_load(cx, argc-1, arglist);
 
+	// TODO: this error is happening if the file doesn't exist!
 	if (!JS_HasProperty(cx, exec_obj, property, &found) || !found) {
 		JSVALUE_TO_MSTRING(cx, argv[fnarg], filename, NULL);
 		JS_ReportError(cx,"symbol '%s' not defined by script '%s'", property, filename);
