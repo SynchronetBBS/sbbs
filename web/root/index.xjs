@@ -37,7 +37,7 @@
 			<span class="caret"></span>
 		</a>
 		<ul class="dropdown-menu">
-			<?xjs _menu(obj, path); ?>
+			<?xjs _menu(obj.list, path); ?>
 		</ul>
 	</li>
 <?xjs } ?>
@@ -45,12 +45,16 @@
 <?xjs
 	function _menu(obj, path) {
 		Object.keys(obj).forEach(function (e) {
-			if (typeof obj[e] == 'object') {
+			if (obj[e].type == 'list') {
 				_subMenu(obj[e], e, (path || '') + e + '/');
 			} else {
 ?>
     		<li>
-        		<a href="./?page=<?xjs write((path || '') + obj[e]); ?>">
+<?xjs if (obj[e].type == 'link') { ?>
+                <a href="./?page=<?xjs write(obj[e].page); ?>" target="_blank">
+<?xjs } else { ?>
+        		<a href="./?page=<?xjs write((path || '') + obj[e].page); ?>">
+<?xjs } ?>
                     <?xjs write(e); ?>
                 </a>
     		</li>
