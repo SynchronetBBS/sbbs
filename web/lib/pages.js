@@ -93,12 +93,13 @@ function getPageList(dir) {
 
 	const webctrl = getWebCtrl(dir);
 
+	const sep = system.platform.search(/^win/i) == 0 ? '\\' : '/';
+
     const pages = directory(dir + '*').reduce(function (a, c) {
         if (file_isdir(c)) {
             const list = getPageList(c);
-            const cc = backslash(c);
             if (Object.keys(list).length) {
-                a[cc.split(cc.substr(-1, 1)).slice(-2, -1)] = list;
+            	a[c.replace(/\\*\/*$/, '').split(sep).slice(-1)] = list;
             }
             return a;
         }
