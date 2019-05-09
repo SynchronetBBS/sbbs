@@ -22,13 +22,13 @@ if_true
 	print "\1?"
 	shift_str _question 2
 	end_if
-printf "nbh[cûb] y%s? " _question
+printf "\x01n\x01b\x01h[\x01cû\x01b] \x01y%s? " _question
 :top
 compare_str "Y"
 if_equal
-	print "h4w[Yes]nbh No "
+	print "\x01h\x014\x01w\x01e[Yes]\x01n\x01b\x01h No "
 else
-	print "nbh Yes 4w[No]"
+	print "\x01n\x01b\x01h Yes \x014\x01w\x01e[No]"
 	end_if
 int aborted
 copy aborted _sys_status
@@ -36,6 +36,13 @@ and aborted SS_ABORT
 compare aborted SS_ABORT
 if_not_equal
     getkey
+    int aborted
+    copy aborted _sys_status
+    and aborted SS_ABORT
+    compare aborted SS_ABORT
+    if_equal
+        return
+        end_if
     end_if
 print "\b\b\b\b\b\b\b\b\b\1n\1h\1>"
 if_equal
