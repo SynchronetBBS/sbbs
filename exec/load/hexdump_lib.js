@@ -31,7 +31,7 @@ function generate(title, val, include_ascii, include_offset)
 		output.push(format("%s: %u bytes", title, length));
 	var line = '';
 	var ascii = '';
-	var digits = num_digits(length);
+	var digits = num_digits(length - 1);
 	if(include_offset)
 		line = format("%0*x:  ", digits, 0);
 	for(i=0; i < length; i++) {
