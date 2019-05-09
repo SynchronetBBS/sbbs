@@ -47,8 +47,9 @@ var   NODE_OFFLINE          =5;	/* Offline									*/
 var   NODE_NETTING          =6;	/* Networking (obsolete)					*/
 var   NODE_EVENT_WAITING    =7;	/* Waiting for all nodes to be inactive		*/
 var   NODE_EVENT_RUNNING    =8;	/* Running an external event				*/
-var   NODE_EVENT_LIMBO      =9;	/* Allowing another node to run an event	*/		
-var   NODE_LAST_STATUS	    =10;/* Must be last								*/
+var   NODE_EVENT_LIMBO      =9;	/* Allowing another node to run an event	*/
+var   NODE_LOGOUT			=10;/* User logging out							*/
+var   NODE_LAST_STATUS	    =11;/* Must be last (anyone using this?)		*/
 								/********************************************/
 
 								/********************************************/
@@ -63,6 +64,7 @@ var NodeStatus		=[			/* Node.status value descriptions			*/
 	,"Waiting for all nodes to become inactive"
 	,"Running external event"
 	,"Waiting for node %d to finish external event"
+	,"Logging out "
 	];			
 
 								/********************************************/
