@@ -222,6 +222,10 @@ var   P_NOCRLF		=(1<<6);	/* Don't prepend a CRLF	in printfile()		*/
 var   P_WORDWRAP	=(1<<7);	/* Word-wrap long lines for user's terminal	*/
 var   P_CPM_EOF		=(1<<8);	/* Treat Ctrl-Z as End-of-file				*/
 var   P_TRUNCATE    =(1<<9);    /* Truncate (don't display) long lines      */
+var   P_NOERROR     =(1<<10);   /* Don't report error if file doesn't exist */
+var   P_PETSCII     =(1<<11);   /* Message is native PETSCII                */
+var   P_WRAP        =(1<<12);   /* Wrap/split long-lines, ungracefully      */
+
 							    /********************************************/
 
     							/********************************************/
