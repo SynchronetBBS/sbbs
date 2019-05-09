@@ -47,6 +47,7 @@ var colors = [
 							    /* background colors */
 var   ANSI_NORMAL	=0x100;		/* special value for ansi() */
 var   BG_BLACK		=0x200;		/* special value for ansi() */
+var   BG_BRIGHT		=0x400;		/* not an ANSI.SYS compatible attribute */
 var   BG_BLUE		=(BLUE<<4);
 var   BG_GREEN		=(GREEN<<4);
 var   BG_CYAN		=(CYAN<<4);
