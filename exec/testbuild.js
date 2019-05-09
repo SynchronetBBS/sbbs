@@ -4,7 +4,7 @@
 
 /* $Id$ */
 
-load("sbbsdefs.js");
+require("smbdefs.js", 'SMB_PRIORITY_HIGHEST');
 
 var keep = false;
 
@@ -67,6 +67,8 @@ if(platform=="win32") {
 																,"> " + build_output]);
 	builds.push(["src/sbbs3/chat"		,"bpr2mak chat.bpr     & make -f chat.mak"
 																,"> " + build_output]);
+	builds.push(["src/sbbs3/useredit"	,"build.bat"
+																,"> " + build_output]);
 } else {	/* Unix */
 	builds.push(["src/sbbs3"			,"gmake RELEASE=1"		,"2> " + build_output]);
 }
@@ -80,6 +82,7 @@ var win32_dist
 		"src/sbbs3/scfg/msvc.win32.exe.release/scfghelp.*",
 		"src/sbbs3/chat/chat.exe",
 		"src/sbbs3/ctrl/sbbsctrl.exe",
+		"src/sbbs3/useredit/useredit.exe",
 		"3rdp/win32.release/mozjs/bin/*.dll",
 		"3rdp/win32.release/nspr/bin/*.dll",
 		"3rdp/win32.release/cryptlib/bin/*.dll"
@@ -153,9 +156,10 @@ for(i in builds) {
 	var retval=system.exec(cmd_line);
 	log(LOG_INFO, "Done: " + cmd_line);
 	if(retval) {
-		send_email(subject, 
+		send_email(subject,
 			log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line + "' in " + sub_dir) 
-			+ "\n\n" + file_contents(build_output));
+				+ "\n\n" + file_contents(build_output)
+			,SMB_PRIORITY_HIGHEST);
 		bail(1);
 	}
 
@@ -263,7 +267,7 @@ function file_contents(fname)
 	return(msgtxt);
 }
 
-function send_email(subject, body)
+function send_email(subject, body, priority)
 {
 	var msgbase = new MsgBase("mail");
 	if(msgbase.open()==false) {
@@ -273,7 +277,8 @@ function send_email(subject, body)
 
 	var hdr = { 
 		from: "Synchronet testbuild.js", 
-		subject: subject
+		subject: subject,
+		priority: priority
 	};
 
 	var rcpt_list = [
