@@ -76,7 +76,7 @@ subs.forEach(function (sub) {
 	}
 });
 
-const _tf = new File(system.temp_dir + 'github_notify');
+const _tf = new File(system.data_dir + '/github_notify');
 if (_tf.open('w')) {
     _tf.write(body);
     _tf.close();
