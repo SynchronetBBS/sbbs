@@ -99,7 +99,7 @@ function getPageList(dir) {
         if (file_isdir(c)) {
             const list = getPageList(c);
             if (Object.keys(list).length) {
-            	a[c.replace(/\\*\/*$/, '').split(sep).slice(-1)] = list;
+            	a[c.replace(/\\*\/*$/, '').split(sep).slice(-1)] = { type: 'list', list: list };
             }
             return a;
         }
@@ -115,10 +115,12 @@ function getPageList(dir) {
                 const l = f.readln().split(',');
                 f.close();
                 if (l.length < 2) return a;
-                a[l[1]] = l[0];
+                a[l[1]] = { page: l[0], type: 'link' };
             } else {
                 const ctrl = getCtrlLine(c);
-                if (!ctrl.options.hidden) a[ctrl.title] = file_getname(c);
+                if (!ctrl.options.hidden) {
+                    a[ctrl.title] = { page: file_getname(c), type: 'page' };
+                }
             }
         }
         return a;
