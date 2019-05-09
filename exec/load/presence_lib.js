@@ -182,6 +182,16 @@ function node_status(node, is_sysop, options)
 			output += format(NodeStatus[node_status], node.aux);
 			output += node_connection_desc(node);
 			break;
+		case NODE_LOGOUT:
+			output += NodeStatus[node_status];
+
+			if(options.username_prefix)
+				output += options.username_prefix;
+			if(js.global.bbs && (node.misc&NODE_ANON) && !is_sysop)
+				output += bbs.text(UNKNOWN_USER);
+			else
+				output += system.username(node.useron);
+			break;
 		default:
 			output += format(NodeStatus[node_status], node.aux);
 			break;
