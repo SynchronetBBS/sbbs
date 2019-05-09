@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 			while(isspace(*macro))
 				macro++;
 			if((int)lno != i) {
-				fprintf(stderr,"Mismatch! %s has %d... should be %d\n", comment, lno, i);
+				fprintf(stderr,"Mismatch! %s has %ld... should be %d\n", comment, lno, i);
 			}
 			fprintf(text_h, "\t%c%s\n", i==1?' ':',', macro);
 			fprintf(text_js, "var %s=%d;\n", macro, i);
