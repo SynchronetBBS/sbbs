@@ -742,6 +742,8 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 	int 	file;
     csi_t   bin;
 
+	if(cmdline == NULL || *cmdline == 0)
+		return -33;
 	SAFECOPY(mod,cmdline);
 	p=mod;
 	FIND_CHAR(p,' ');
