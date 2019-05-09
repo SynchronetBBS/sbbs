@@ -179,7 +179,7 @@ BOOL sbbs_t::newuser()
 					useron.misc |= SWAP_DELETE;
 			}
 			else if(key == PETSCII_DELETE)
-				useron.misc |= (AUTOTERM|PETSCII);
+				useron.misc |= (AUTOTERM|PETSCII|COLOR);
 			else {
 				bprintf(text[InvalidBackspaceKeyFmt], key, key);
 				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
@@ -191,7 +191,7 @@ BOOL sbbs_t::newuser()
 		if(useron.misc&PETSCII) {
 			autoterm |= PETSCII;
 			outcom(PETSCII_UPPERLOWER);
-			bputs(text[PetTermDetected]);
+			bputs(text[PetTerminalDetected]);
 		} else {
 			if(!yesno(text[ExAsciiTerminalQ]))
 				useron.misc|=NO_EXASCII;

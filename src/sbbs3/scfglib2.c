@@ -892,9 +892,9 @@ char *ltoaf(long l,char *str)
 /****************************************************************************/
 /* Returns the actual attribute code from a string of ATTR characters       */
 /****************************************************************************/
-uchar attrstr(char *str)
+uint attrstr(char *str)
 {
-	uchar atr;
+	int atr;
 	ulong l=0;
 
 	atr=LIGHTGRAY;
@@ -905,6 +905,9 @@ uchar attrstr(char *str)
 				break;
 			case 'I':	/* Blink */
 				atr|=BLINK;
+				break;
+			case 'E':	/* iCE color */
+				atr|=BG_BRIGHT;
 				break;
 			case 'K':	/* Black */
 				atr=(atr&0xf8)|BLACK;

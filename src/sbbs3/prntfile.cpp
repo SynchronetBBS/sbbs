@@ -43,7 +43,7 @@
 /* for pauses, aborts and ANSI. 'str' is the path of the file to print      */
 /* Called from functions menu and text_sec                                  */
 /****************************************************************************/
-bool sbbs_t::printfile(const char* fname, long mode)
+bool sbbs_t::printfile(const char* fname, long mode, long org_cols)
 {
 	char* buf;
 	char fpath[MAX_PATH+1];
@@ -105,7 +105,7 @@ bool sbbs_t::printfile(const char* fname, long mode)
 		errormsg(WHERE,ERR_READ,fpath,length);
 	else {
 		buf[l]=0;
-		putmsg(buf,mode);
+		putmsg(buf,mode,org_cols);
 	}
 	free(buf); 
 
@@ -119,7 +119,7 @@ bool sbbs_t::printfile(const char* fname, long mode)
 	return true;
 }
 
-bool sbbs_t::printtail(const char* fname, int lines, long mode)
+bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols)
 {
 	char*	buf;
 	char	fpath[MAX_PATH+1];
@@ -177,7 +177,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode)
 			}
 			p--; 
 		}
-		putmsg(p,mode);
+		putmsg(p,mode,org_cols);
 	}
 	if(mode&P_NOABORT && online==ON_REMOTE) {
 		SYNC;

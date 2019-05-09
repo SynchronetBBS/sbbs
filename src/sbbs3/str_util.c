@@ -521,6 +521,7 @@ BOOL DLLCALL valid_ctrl_a_attr(char a)
 		case 'C':   /* cyan     fg  */
 		case 'G':   /* green    fg  */
 		case 'H':   /* high     fg  */
+		case 'E':	/* high		bg	*/
 		case 'I':   /* blink        */
 		case 'K':   /* black    fg  */
 		case 'M':   /* magenta  fg  */

@@ -85,7 +85,7 @@ void	free_chat_cfg(scfg_t* cfg);
 
 long	aftol(char *str);              /* Converts flag string to long */
 char*	ltoaf(long l, char *str);     /* Converts long to flag string */
-uchar	attrstr(char *str);		/* Convert ATTR string into attribute int */
+uint	attrstr(char *str);		/* Convert ATTR string into attribute int */
 
 #ifdef __cplusplus
 }

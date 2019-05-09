@@ -1202,6 +1202,7 @@ js_printfile(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32		mode=0;
+	int32		columns=0;
     JSString*	str;
 	sbbs_t*		sbbs;
 	char*		cstr;
@@ -1218,12 +1219,16 @@ js_printfile(JSContext *cx, uintN argc, jsval *arglist)
 		if(!JS_ValueToInt32(cx,argv[1],&mode))
 			return JS_FALSE;
 	}
+	if(argc>2 && JSVAL_IS_NUMBER(argv[2])) {
+		if(!JS_ValueToInt32(cx,argv[2],&columns))
+			return JS_FALSE;
+	}
 
 	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
 	if(cstr==NULL)
 		return JS_FALSE;
 	rc=JS_SUSPENDREQUEST(cx);
-	bool result = sbbs->printfile(cstr,mode);
+	bool result = sbbs->printfile(cstr,mode,columns);
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1238,6 +1243,7 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32		lines=0;
 	int32		mode=0;
+	int32		columns=0;
 	uintN		i;
 	sbbs_t*		sbbs;
     JSString*	js_str=NULL;
@@ -1253,8 +1259,12 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 				if(!JS_ValueToInt32(cx,argv[i],&lines))
 					return JS_FALSE;
 			}
-			else {
+			else if(!mode){
 				if(!JS_ValueToInt32(cx,argv[i],&mode))
+					return JS_FALSE;
+			}
+			else {
+				if(!JS_ValueToInt32(cx,argv[i],&columns))
 					return JS_FALSE;
 			}
 		} else if(JSVAL_IS_STRING(argv[i]))
@@ -1271,7 +1281,7 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 	if(cstr==NULL)
 		return JS_FALSE;
 	rc=JS_SUSPENDREQUEST(cx);
-	bool result = sbbs->printtail(cstr,lines,mode);
+	bool result = sbbs->printtail(cstr,lines,mode,columns);
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1947,11 +1957,12 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("returns the number of characters in text, excluding Ctrl-A codes")
 	,310
 	},
-	{"printfile",		js_printfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,mode=<tt>P_NONE</tt>]")
-	,JSDOCSTR("print a message text file with optional mode")
+	{"printfile",		js_printfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,mode=<tt>P_NONE</tt>] [,orig_columns=0")
+	,JSDOCSTR("print a message text file with optional mode.<br>"
+		"When <tt>P_WORDWRAP</tt> mode flag is specified, <i>orig_columns</i> specifies the original text column width, if known")
 	,310
 	},
-	{"printtail",		js_printtail,		2, JSTYPE_BOOLEAN,		JSDOCSTR("filename, lines [,mode=<tt>P_NONE</tt>]")
+	{"printtail",		js_printtail,		2, JSTYPE_BOOLEAN,		JSDOCSTR("filename, lines [,mode=<tt>P_NONE</tt>] [,orig_columns=0]")
 	,JSDOCSTR("print last x lines of file with optional mode")
 	,310
 	},

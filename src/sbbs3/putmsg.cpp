@@ -49,7 +49,8 @@
 /****************************************************************************/
 char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 {
-	char	tmpatr,tmp2[256],tmp3[128];
+	uint 	tmpatr;
+	char 	tmp2[256],tmp3[128];
 	char	ret;
 	char*	str=(char*)buf;
 	uchar	exatr=0;
@@ -92,17 +93,28 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 	}
 
 	while(str[l] && (mode&P_NOABORT || !msgabort()) && online) {
-		if((mode&P_TRUNCATE) && column >= (cols - 1)) {
-			switch(str[l]) {
-				case '\r':
-				case '\n':
-				case FF:
-				case CTRL_A:
-					break;
-				default:
+		switch(str[l]) {
+			case '\r':
+			case '\n':
+			case FF:
+			case CTRL_A:
+				break;
+			default: // printing char
+				if((mode&P_TRUNCATE) && column >= (cols - 1)) {
 					l++;
 					continue;
-			}
+				} else if(mode&P_WRAP) {
+					if(org_cols) {
+						if(column > (org_cols - 1)) {
+							CRLF;
+						}
+					} else {
+						if(column >= (cols - 1)) {
+							CRLF;
+						}
+					}
+				}
+				break;
 		}
 		if(str[l]==CTRL_A && str[l+1]!=0) {
 			if(str[l+1]=='"' && !(sys_status&SS_NEST_PF)) {  /* Quote a file */

@@ -601,7 +601,7 @@ typedef struct
 	uint16_t		sec_warn;				/* Seconds before inactivity warning */
 	uint16_t		sec_hangup; 			/* Seconds before inactivity hang-up */
 
-	char* 			color;					/* Different colors for the BBS */
+	uint* 			color;					/* Different colors for the BBS */
 	uint32_t		total_colors;
 	uint32_t		ctrlkey_passthru;		/* Bits represent control keys NOT handled by inkey() */
 

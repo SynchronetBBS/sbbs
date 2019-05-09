@@ -524,7 +524,7 @@ long sbbs_t::getkeys(const char *keys, ulong max, long mode)
 void sbbs_t::pause()
 {
 	char	ch;
-	uchar	tempattrs=curatr; /* was lclatr(-1) */
+	uint	tempattrs=curatr; /* was lclatr(-1) */
     int		i,j;
 	long	l=K_UPPER;
 

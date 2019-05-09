@@ -812,29 +812,29 @@ void sbbs_t::maindflts(user_t* user)
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
 		long term = (user == &useron) ? term_supports() : user->misc;
 		if(term&PETSCII)
-			safe_snprintf(str,sizeof(str),"%sPETSCII %lu columns"
-							,user->misc&AUTOTERM ? "Auto Detect ":nulstr
-							,cols);
+			safe_snprintf(str,sizeof(str),"%sPETSCII %lu %s"
+							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
+							,cols, text[TerminalColumns]);
 		else
 			safe_snprintf(str,sizeof(str),"%s%s%s%s%s%s"
-							,user->misc&AUTOTERM ? "Auto Detect ":nulstr
+							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
 							,term&ANSI ? "ANSI ":"TTY "
-							,term&COLOR ? "(Color) ":"(Mono) "
+							,term&COLOR ? (term&ICE_COLOR ? text[TerminalIceColor] : text[TerminalColor]) : text[TerminalMonochrome]
 							,term&RIP ? "RIP " : nulstr
 							,term&NO_EXASCII ? "ASCII ":"CP437 "
 							,term&SWAP_DELETE ? "DEL=BS " : nulstr);
 		bprintf(text[UserDefaultsTerminal], truncsp(str));
-		if(cfg.total_xedits)
-			bprintf(text[UserDefaultsXeditor]
-				,user->xedit ? cfg.xedit[user->xedit-1]->name : "None");
 		if(user->rows)
 			ultoa(user->rows,tmp,10);
 		else
-			SAFEPRINTF(tmp,"Auto Detect (%ld)",rows);
-		bprintf(text[UserDefaultsRows],tmp);
+			SAFEPRINTF2(tmp,"%s%ld", text[TerminalAutoDetect], rows);
+		bprintf(text[UserDefaultsRows], tmp, text[TerminalRows]);
 		if(cfg.total_shells>1)
 			bprintf(text[UserDefaultsCommandSet]
 				,cfg.shell[user->shell]->name);
+		if(cfg.total_xedits)
+			bprintf(text[UserDefaultsXeditor]
+				,user->xedit ? cfg.xedit[user->xedit-1]->name : "None");
 		bprintf(text[UserDefaultsArcType]
 			,user->tmpext);
 		bprintf(text[UserDefaultsMenuMode]
@@ -899,24 +899,40 @@ void sbbs_t::maindflts(user_t* user)
 		switch(ch) {
 			case 'T':
 				if(yesno(text[AutoTerminalQ])) {
-					user->misc|=AUTOTERM;
-					user->misc&=~(ANSI|RIP|WIP|HTML|PETSCII);
+					user->misc |= AUTOTERM;
+					user->misc &= ~(ANSI|RIP|WIP|HTML|PETSCII);
 				}
 				else
-					user->misc&=~AUTOTERM;
+					user->misc &= ~AUTOTERM;
+				if(sys_status&SS_ABORT)
+					break;
 				if(!(user->misc&AUTOTERM)) {
-					if(yesno(text[AnsiTerminalQ]))
-						user->misc|=ANSI;
-					else
-						user->misc&=~(ANSI|COLOR); 
+					if(yesno(text[AnsiTerminalQ])) {
+						user->misc |= ANSI;
+						user->misc &= ~PETSCII;
+					} else {
+						user->misc &= ~(ANSI|COLOR|ICE_COLOR);
+						if(!noyes(text[PetTerminalQ]))
+							user->misc |= PETSCII|COLOR;
+						else
+							user->misc &= ~PETSCII;
+					}
 				}
-				if(user->misc&(ANSI|PETSCII)) {
-					if(yesno(text[ColorTerminalQ]))
-						user->misc|=COLOR;
-					else
-						user->misc&=~COLOR; 
+				if(sys_status&SS_ABORT)
+					break;
+				term = (user == &useron) ? term_supports() : user->misc;
+				if(term&(AUTOTERM|ANSI) && !(term&PETSCII)) {
+					user->misc |= COLOR;
+					user->misc &= ~ICE_COLOR;
+					if(yesno(text[ColorTerminalQ])) {
+						if(!noyes(text[IceColorTerminalQ]))
+							user->misc |= ICE_COLOR;
+					} else
+						user->misc &= ~COLOR;
 				}
-				if(!(user->misc&PETSCII)) {
+				if(sys_status&SS_ABORT)
+					break;
+				if(!(term&PETSCII)) {
 					if(!yesno(text[ExAsciiTerminalQ]))
 						user->misc|=NO_EXASCII;
 					else
@@ -926,12 +942,16 @@ void sbbs_t::maindflts(user_t* user)
 					else
 						user->misc&=~SWAP_DELETE;
 				}
-				if(!(user->misc&AUTOTERM) && (user->misc&(ANSI|NO_EXASCII)) == ANSI) {
+				if(sys_status&SS_ABORT)
+					break;
+				if(!(user->misc&AUTOTERM) && (term&(ANSI|NO_EXASCII)) == ANSI) {
 					if(!noyes(text[RipTerminalQ]))
 						user->misc|=RIP;
 					else
 						user->misc&=~RIP; 
 				}
+				if(sys_status&SS_ABORT)
+					break;
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 'B':
