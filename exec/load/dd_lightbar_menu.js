@@ -986,14 +986,19 @@ function DDLightbarMenu_GetVal(pDraw)
 				}
 				// Draw a character next to the item if it's selected, or nothing if it't not selected
 				var XPos = this.pos.x + this.size.width - 2;
+				var YPos = this.pos.y+(this.selectedItemIdx-this.topItemIdx);
 				if (this.borderEnabled)
-					++XPos;
+				{
+					--XPos;
+					++YPos;
+				}
 				if (this.showScrollbar)
 					--XPos;
-				var YPos = this.pos.y+(this.selectedItemIdx-this.topItemIdx);
 				console.gotoxy(XPos, YPos);
 				if (added)
+				{
 					console.print(this.colors.selectedItemColor + " " + this.multiSelectItemChar + "\1n");
+				}
 				else
 				{
 					// If any of the item text is right at the end, then display it.  Otherwise,
