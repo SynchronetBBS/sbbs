@@ -4888,6 +4888,8 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	newmsg.hfield_dat=NULL;
 	newmsg.total_hfields=0;
 	newmsg.hdr.delivery_attempts=0;
+	msg->text_subtype=NULL;
+	msg->text_charset=NULL;
 	char* reverse_path = msg->reverse_path==NULL ? msg->from : msg->reverse_path;
 
 	lprintf(LOG_WARNING,"%04d SEND !Bouncing message back to %s", sock, reverse_path);
