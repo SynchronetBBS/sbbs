@@ -15,7 +15,9 @@ This menu library requires the use of an ANSI terminal.
 By default, this menu library does not display a border around the menu.
 If you want this library to draw a border around the menu, you can set the
 borderEnabled property to true.  Without a border, the menu gains 2
-characters of width and 2 lines of height.
+characters of width and 2 lines of height.  If using a border, a title (text)
+can be displayed in the top border by setting the menuTitle property (it
+defaults to an empty string, for no title).
 
 This script provides an object, DDLightbarMenu.  Use the DDLightbarMenu
 constructor to create the object.  Some other notable methods:
@@ -135,6 +137,10 @@ lbMenu.hotkeyCaseSensitive = true;
 To add additional key characters as quit keys (in addition to ESC), call
 AddAdditionalQuitKeys() with an array of keys as strings.  For example:
 lbMenu.AddAdditionalQuitKeys(["q", "Q"]);
+
+To enable the border and set a border title:
+lbMenu.borderEnabled = true;
+lbMenu.menuTitle = "Options";
 */
 
 load("sbbsdefs.js");
@@ -242,7 +248,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
 	this.additionalQuitKeys = []; // An array of additional keys besides ESC to quit out of the menu
-
+	this.menuTitle = ""; // A title to display in the top border
+	
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
 	this.Remove = DDLightbarMenu_Remove;
@@ -485,8 +492,17 @@ function DDLightbarMenu_DrawBorder()
 	var lineLen = this.size.width - 2;
 	if (this.borderChars.hasOwnProperty("top") && (typeof(this.borderChars.top) == "string"))
 	{
+		// Display the title text (if any) in the top border.  Ensure the title text
+		// length is no longer than the maximum possible length (lineLen).
+		var titleText = shortenStrWithAttrCodes(this.menuTitle, lineLen);
+		console.print("\1n" + titleText + "\1n" + this.colors.borderColor);
+		var remainingLineLen = lineLen - strip_ctrl(titleText).length;
+		for (var i = 0; i < remainingLineLen; ++i)
+			console.print(this.borderChars.top);
+		/*
 		for (var i = 0; i < lineLen; ++i)
 			console.print(this.borderChars.top);
+		*/
 	}
 	else
 	{
@@ -1280,4 +1296,54 @@ function itemTextDisplayableLen(pText, pAmpersandHotkeysInItems)
 		}
 	}
 	return textLen;
+}
+
+// Shortens a string, accounting for control/attribute codes.  Returns a new
+// (shortened) copy of the string.
+//
+// Parameters:
+//  pStr: The string to shorten
+//  pNewLength: The new (shorter) length of the string
+//  pFromLeft: Optional boolean - Whether to start from the left (default) or
+//             from the right.  Defaults to true.
+//
+// Return value: The shortened version of the string
+function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
+{
+	if (typeof(pStr) != "string")
+		return "";
+	if (typeof(pNewLength) != "number")
+		return pStr;
+	if (pNewLength >= console.strlen(pStr))
+		return pStr;
+
+	var fromLeft = (typeof(pFromLeft) == "boolean" ? pFromLeft : true);
+	var strCopy = "";
+	var tmpStr = "";
+	var strIdx = 0;
+	var lengthGood = true;
+	if (fromLeft)
+	{
+		while (lengthGood && (strIdx < pStr.length))
+		{
+			tmpStr = strCopy + pStr.charAt(strIdx++);
+			if (console.strlen(tmpStr) <= pNewLength)
+				strCopy = tmpStr;
+			else
+				lengthGood = false;
+		}
+	}
+	else
+	{
+		strIdx = pStr.length - 1;
+		while (lengthGood && (strIdx >= 0))
+		{
+			tmpStr = pStr.charAt(strIdx--) + strCopy;
+			if (console.strlen(tmpStr) <= pNewLength)
+				strCopy = tmpStr;
+			else
+				lengthGood = false;
+		}
+	}
+	return strCopy;
 }
