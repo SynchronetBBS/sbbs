@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.22     2019-05-12   If the message score is 0, with upvotes and total_votes
+                      both 0, then don't show the score when using the default
+                      header ANSI.  This is what was intended, but the 0 score
+                      started showing up in more recent builds of Synchronet.
 1.21     2019-05-04   New uses require() instead of load(), if the require()
                       function exists, to load required .js library scripts.
                       This helps avoid 'multiple definition' errors.  The

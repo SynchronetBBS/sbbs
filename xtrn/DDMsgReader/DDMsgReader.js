@@ -152,6 +152,15 @@
  *                              Started updating to use require() instead of load()
  *                              if the require() function exists (it was added in
  *                              Synchronet 3.17).
+ * 2019-05-09 Eric Oulashin     Version 1.22
+ *                              When displaying the 'enhanced' header ANSI, now it checks
+ *                              to see if the total_votes and upvotes are both non-zero
+ *                              before adding score information to the header ANSI.  With
+ *                              one of the Synchronet updates, it started showing the score
+ *                              for all messages, rather than only messages with the
+ *                              non-zero score information.  Perhaps at some point, total_votes
+ *                              and upvotes were added to all message headers, including
+ *                              ones that had no votes?
  */
 
 // TODO: Support anonymous posts?  Bit values for sub[x].settings:
@@ -249,8 +258,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.21";
-var READER_DATE = "2019-05-04";
+var READER_VERSION = "1.22";
+var READER_DATE = "2019-05-09";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -9532,10 +9541,14 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	var enhHdrLines = this.enhMsgHeaderLines.slice(0);
 	if (this.usingInternalEnhMsgHdr && !msgIsAPoll && pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
 	{
-		var voteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
-		//var voteStatsTxt = "\1n\1c" + RIGHT_T_SINGLE + "\1h+" + voteInfo.upvotes + "\1n\1c, \1h-" + voteInfo.downvotes + "\1n\1c, \1h" + voteInfo.voteScore + "\1n\1c" + LEFT_T_SINGLE;
-		var voteStatsTxt = "\1n\1c" + RIGHT_T_SINGLE + "\1h\1gS\1n\1gcore\1h\1c: \1b" + voteInfo.voteScore + " (+" + voteInfo.upvotes + ", -" + voteInfo.downvotes + ")\1n\1c" + LEFT_T_SINGLE;
-		enhHdrLines[6] = enhHdrLines[6].slice(0, 10) + "\1n\1c" + voteStatsTxt + "\1n\1c" + HORIZONTAL_SINGLE + "\1h\1k" + enhHdrLines[6].slice(17 + strip_ctrl(voteStatsTxt).length);
+		// Only add the vote information if the total_votes and upvotes values are
+		// non-zero
+		if ((pMsgHdr.total_votes != 0) && (pMsgHdr.upvotes != 0))
+		{
+			var voteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
+			var voteStatsTxt = "\1n\1c" + RIGHT_T_SINGLE + "\1h\1gS\1n\1gcore\1h\1c: \1b" + voteInfo.voteScore + " (+" + voteInfo.upvotes + ", -" + voteInfo.downvotes + ")\1n\1c" + LEFT_T_SINGLE;
+			enhHdrLines[6] = enhHdrLines[6].slice(0, 10) + "\1n\1c" + voteStatsTxt + "\1n\1c" + HORIZONTAL_SINGLE + "\1h\1k" + enhHdrLines[6].slice(17 + strip_ctrl(voteStatsTxt).length);
+		}
 	}
 
 	// If the user's terminal supports ANSI, we can move the cursor and
@@ -19536,18 +19549,18 @@ function getMsgUpDownvotesAndScore(pMsgHdr)
 //                   the pause occurred.  This is optional.
 function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib, pClearLineAfter)
 {
-   var clearLineAttrib = "\1n";
-   if ((pClearLineAttrib != null) && (typeof(pClearLineAttrib) == "string"))
-      clearLineAttrib = pClearLineAttrib;
-   console.gotoxy(pX, pY);
-   console.cleartoeol(clearLineAttrib);
-   console.print(pText);
+	var clearLineAttrib = "\1n";
+	if ((pClearLineAttrib != null) && (typeof(pClearLineAttrib) == "string"))
+		clearLineAttrib = pClearLineAttrib;
+	console.gotoxy(pX, pY);
+	console.cleartoeol(clearLineAttrib);
+	console.print(pText);
 	if (pPauseMS > 0)
 		mswait(pPauseMS);
-   if (pClearLineAfter)
-   {
-      console.gotoxy(pX, pY);
-      console.cleartoeol(clearLineAttrib);
-   }
+	if (pClearLineAfter)
+	{
+		console.gotoxy(pX, pY);
+		console.cleartoeol(clearLineAttrib);
+	}
 }
 
