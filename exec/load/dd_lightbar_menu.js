@@ -138,9 +138,10 @@ To add additional key characters as quit keys (in addition to ESC), call
 AddAdditionalQuitKeys() with an array of keys as strings.  For example:
 lbMenu.AddAdditionalQuitKeys(["q", "Q"]);
 
-To enable the border and set a border title:
+To enable the border and set top and bottom border text:
 lbMenu.borderEnabled = true;
-lbMenu.menuTitle = "Options";
+lbMenu.topBorderText = "Options";
+lbMenu.bottomBorderText = "Enter = Select";
 */
 
 load("sbbsdefs.js");
@@ -248,7 +249,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
 	this.additionalQuitKeys = []; // An array of additional keys besides ESC to quit out of the menu
-	this.menuTitle = ""; // A title to display in the top border
+	this.topBorderText = ""; // Text to display in the top border
+	this.bottomBorderText = ""; // Text to display in the bottom border
 	
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
@@ -492,17 +494,13 @@ function DDLightbarMenu_DrawBorder()
 	var lineLen = this.size.width - 2;
 	if (this.borderChars.hasOwnProperty("top") && (typeof(this.borderChars.top) == "string"))
 	{
-		// Display the title text (if any) in the top border.  Ensure the title text
+		// Display the top border text (if any) in the top border.  Ensure the text
 		// length is no longer than the maximum possible length (lineLen).
-		var titleText = shortenStrWithAttrCodes(this.menuTitle, lineLen);
-		console.print("\1n" + titleText + "\1n" + this.colors.borderColor);
-		var remainingLineLen = lineLen - strip_ctrl(titleText).length;
+		var borderText = shortenStrWithAttrCodes(this.topBorderText, lineLen);
+		console.print("\1n" + borderText + "\1n" + this.colors.borderColor);
+		var remainingLineLen = lineLen - strip_ctrl(borderText).length;
 		for (var i = 0; i < remainingLineLen; ++i)
 			console.print(this.borderChars.top);
-		/*
-		for (var i = 0; i < lineLen; ++i)
-			console.print(this.borderChars.top);
-		*/
 	}
 	else
 	{
@@ -522,7 +520,12 @@ function DDLightbarMenu_DrawBorder()
 	var lineLen = this.size.width - 2;
 	if (this.borderChars.hasOwnProperty("bottom") && (typeof(this.borderChars.bottom) == "string"))
 	{
-		for (var i = 0; i < lineLen; ++i)
+		// Display the bottom border text (if any) in the bottom border.  Ensure the text
+		// length is no longer than the maximum possible length (lineLen).
+		var borderText = shortenStrWithAttrCodes(this.bottomBorderText, lineLen);
+		console.print("\1n" + borderText + "\1n" + this.colors.borderColor);
+		var remainingLineLen = lineLen - strip_ctrl(borderText).length;
+		for (var i = 0; i < remainingLineLen; ++i)
 			console.print(this.borderChars.bottom);
 	}
 	else
@@ -726,18 +729,21 @@ function DDLightbarMenu_RemoveAllItemHotkeys()
 // Parameters:
 //  pDraw: Optional - Whether or not to draw the menu first.  By default, the
 //         menu will be drawn first.
-function DDLightbarMenu_GetVal(pDraw)
+//  pSelectedItemIndexes: Optional - An object containing indexes of selected items
+function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 {
 	if (this.items.length == 0)
 		return null;
 
 	var draw = (typeof(pDraw) == "boolean" ? pDraw : true);
 	if (draw)
-		this.Draw();
+		this.Draw(pSelectedItemIndexes);
 
 	// User input loop
 	var userChoices = null; // For multi-select mode
 	var selectedItemIndexes = { }; // For multi-select mode
+	if (typeof(pSelectedItemIndexes) == "object")
+		selectedItemIndexes = pSelectedItemIndexes;
 	var retVal = null; // For single-choice mode
 	var continueOn = true;
 	while (continueOn)
