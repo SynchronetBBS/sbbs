@@ -1,6 +1,7 @@
 // Comment these...
 //Bot_Commands={};
 //function Bot_Command(x,y,z){}
+
 if(!js.global || js.global.MSG_DELETE==undefined)
 	js.global.load("sbbsdefs.js");
 
@@ -120,6 +121,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 		{
 			str=str.quote().replace(/^"(.*)"$/,"$1");
 			str=str.replace(/[\(\)\^\$\*\+\?\.\{\}\[\]]/g,'\\$1');
+			return str;
 		}
 
 		if(arg===undefined)
@@ -148,7 +150,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 		var re,orig=[],matched,remainder,last_matched='',iteration=0,pos=0;
 
 		last_match_point = -1;
-		while(out.length < 510 && deads < iteration_limit) {
+		while(out.length < 480 && deads < iteration_limit) {
 			iteration++;
 			do {
 				pos = random(in_txt.length);
@@ -159,7 +161,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 			} while(pos >= in_txt.length || (pos<=last_match_point && pos >=last_match_point-12));
 			if(last_matched) { // last thing we matched -- '' means take a stab
 				last_match_point = pos;
-				orig = last_matched.match(/([^\s]+)/).slice(1).map(clean_string);
+				orig = last_matched.match(/([^\s]+)/g).map(clean_string);
 				if(out=='' || out.search(/[\.\?\!]\s*$/)!=-1) {
 					if(orig.length==0)
 						orig.push('');
@@ -183,6 +185,10 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 				}
 
 				if( last_match_point == pos ||  pos == 0) {
+					if (orig.length > 1) {
+						last_matched = last_matched.replace(/^\s*?[^\s]+/,'');
+						continue;
+					}
 					log(LOG_DEBUG, "Hm, dead end at pos " + (0 + pos));
 					last_matched = '';
 					continue;
