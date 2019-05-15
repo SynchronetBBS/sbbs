@@ -11,7 +11,11 @@ load('modopts.js');
 
 function OpenWeatherMap() {
     this.settings = get_mod_options('openweathermap');
-    if (!this.settings.rate_window) this.settings.rate_window = 60; // Seconds
+	
+	if(this.settings == undefined) {
+		this.settings = {};
+	}		
+	if (!this.settings.rate_window) this.settings.rate_window = 60; // Seconds
     if (!this.settings.rate_limit) this.settings.rate_limit = 60; // Requests per window
     if (!this.settings.data_refresh) this.settings.data_refresh = 7200; // Seconds
     this.rate_file = new File(system.temp_dir + 'openweathermap_rate.json');
