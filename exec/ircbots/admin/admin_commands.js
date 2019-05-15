@@ -205,18 +205,14 @@ Bot_Commands["CHANGE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			+ "This error message Copyright 2006 Deuce. ;)");
 		return;
 	}
-	var newlvl = parseInt(cmd[2]);
-	if (newlvl >= lvl) {
+	if (parseInt(cmd[2]) >= lvl) {
 		srv.o(target,"You cannot change an access level to be higher or equal "
 			+ "to your own. (" + lvl + ")");
 		return;
 	}
-	if (newlvl < 0) {
-		srv.o(target,"Nice try, buddy.");
-		return;
-	}
-	srv.o(target,"Access level for " + usr.alias + " changed to " + newlvl);
-	usr.security.level = newlvl;
+	srv.o(target,"Access level for " + usr.alias + " changed to "
+		+ parseInt(cmd[2]));
+	usr.security.level = parseInt(cmd[2]);
 	return;
 }
 
@@ -268,15 +264,18 @@ Bot_Commands["PASS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["SEVAL"] = new Bot_Command(99,true,true);
+Bot_Commands["SEVAL"] = new Bot_Command(90,true,true);
 Bot_Commands["SEVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	var query = cmd.join(" ");
+	js.branch_limit=600; // protection
+	js.branch_counter=0; // resets
 	try {
 		srv.o(target,eval(query));
 	} catch(e) {
 		srv.o(target,"ERROR: "+e);
 	}
+	js.branch_limit=0; // protection
 	return;
 }
 
@@ -302,12 +301,14 @@ Bot_Commands["EVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 
 	cmd.shift();
 	query += cmd.join(" ");
-	js.branch_limit=1000; // protection
-	js.branch_counter=0; // reset
+	js.branch_limit=10; // protection
+	js.branch_counter=0; // resets
 	var result = js.eval(query);
-	if(result)
-		result = strip_ctrl(result.toString().slice(0,512));
-	else if (result==undefined)
+	// if(result)
+		// result = strip_ctrl(result.toString().slice(0,512));
+	// else if (result==undefined)
+		// result = system.popen("tail -1 /home/bbs/log/ircbot/stderr");
+	if (result==undefined)
 		result = system.popen("tail -1 /home/bbs/log/ircbot/stderr");
 	srv.o(target,result);
 	js.branch_limit=0; // protection off
