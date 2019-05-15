@@ -201,7 +201,7 @@ function Server_target_out(target,str,msgtype) {
 /* server functions */
 function chunk_string(str, length) {
 	var re = new RegExp('[^\r\n]{1,'+length+'}', 'g');
-	return str.match(re);
+	return typeof(str) != "string"?[]:str.match(re);
 }
 
 function save_everything() { // save user data, and call save() method for all enabled modules
@@ -323,4 +323,108 @@ function true_array_len(my_array) {
 function login_user(usr) {
 	usr.connection = "IRC";
 	usr.logontime = time();
+}
+
+function ctrl_a_to_mirc(s) {
+
+    var ctrl_a = false;
+    var bright = false;
+    var last_colour = '';
+    var fg = 15;
+    var set_fg = false;
+    var ret = '';
+
+    function add_fg(nn, nb, c) {
+        ret += ascii(3);
+        if (bright) {
+            fg = nb;
+            ret += nb;
+        } else {
+            fg = nn;
+            ret += nn;
+        }
+        last_colour = c.toUpperCase();
+        set_fg = true;
+    }
+
+    function add_bg(c) {
+        if (!set_fg) ret += ascii(3) + fg;
+        ret += ',' + c;
+    }
+
+    s = s.split('');
+    while (s.length) {
+        var c = s.shift();
+        if (c == '\1') {
+            ctrl_a = true;
+        } else if (ctrl_a) {
+            switch (c.toUpperCase()) {
+                case 'H':
+                    bright = true;
+                    break;
+                case 'N':
+                    bright = false;
+                    s.unshift(last_colour);
+                    s.unshift('\1');
+                    break;
+                case 'K':
+                    add_fg(1, 14, c);
+                    break;
+                case 'R':
+                    add_fg(4, 7, c); // Red -> light red, high red -> orange
+                    break;
+                case 'G':
+                    add_fg(3, 9, c);
+                    break;
+                case 'Y':
+                    add_fg(5, 8, c);
+                    break;
+                case 'B':
+                    add_fg(2, 12, c);
+                    break;
+                case 'M':
+                    add_fg(6, 13, c);
+                    break;
+                case 'C':
+                    add_fg(10, 11, c);
+                    break;
+                case 'W':
+                    add_fg(15, 0, c);
+                    break;
+                case '0':
+                    add_bg(1);
+                    break;
+                case '1':
+                    add_bg(4);
+                    break;
+                case '2':
+                    add_bg(3);
+                    break;
+                case '3':
+                    add_bg(5);
+                    break;
+                case '4':
+                    add_bg(2);
+                    break;
+                case '5':
+                    add_bg(6);
+                    break;
+                case '6':
+                    add_bg(10);
+                    break;
+                case '7':
+                    add_bg(14);
+                    break;
+                default:
+                    break;
+            }
+            ctrl_a = false;
+        } else {
+            set_fg = false;
+            ret += c;
+        }
+    }
+
+    return ret;
+
 }
