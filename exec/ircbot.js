@@ -38,6 +38,8 @@ var Squelch_List = [];
 /* Global Variables */
 var command_prefix = "";
 var real_name = "";
+var max_paragraph_length = 512;
+var max_paragraphs = 1;
 var config_write_delay = 300;
 var config_last_write = time(); /* Store when the config was last written. */
 var config_filename = "ircbot.ini";
@@ -65,6 +67,10 @@ function init() {
 		config.iniGetValue(null, "real_name");
 	config_write_delay=parseInt(
 		config.iniGetValue(null, "config_write_delay"));
+	max_paragraph_length = parseInt(
+		config.iniGetValue(null, "max_paragraph_length"));
+	max_paragraphs = parseInt(
+		config.iniGetValue(null, "max_paragraphs"));
 //	Squelch_List = 
 //		config.iniGetValue(null, "Squelch_List").split(",");
 
@@ -390,6 +396,7 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	this.bot_access = Server_bot_access;
 	this.bot_command = Server_bot_command;
 	this.server_command = Server_command;
+	this.get_buffer = Server_get_buffer;
 }
 
 function Bot_IRC_Channel(name,key) {
