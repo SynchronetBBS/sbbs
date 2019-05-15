@@ -2,7 +2,7 @@ if (!js.global.get_geoip) js.global.load(js.global, "geoip.js");
 if (!js.global.get_nicklocation) js.global.load(js.global, "nicklocate.js");
 if (!js.global.OpenWeatherMap) js.global.load(js.global, 'openweathermap.js');
 
-const owm = new OpenWeatherMap();
+var owm = new OpenWeatherMap();
 
 function locate_user(nick, srv) {
     const ret = { units: 'metric' };
