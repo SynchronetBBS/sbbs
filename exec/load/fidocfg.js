@@ -383,6 +383,8 @@ function BinkITCfg()
 			this.node[sec].port = f.iniGetValue(section, 'BinkpPort');
 			this.node[sec].src = f.iniGetValue(section, 'BinkpSourceAddress');
 			this.node[sec].host = f.iniGetValue(section, 'BinkpHost');
+			this.node[sec].inbox = f.iniGetValue(section, 'inbox');
+			this.node[sec].outbox = f.iniGetValue(section, 'outbox');
 		}, this);
 		f.close();
 	}
