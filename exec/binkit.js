@@ -1,5 +1,5 @@
 // $Id$
-
+// vi: tabstop=4
 /*
  * Intentionally simple "Advanced BinkleyTerm Style Outbound"
  * mailer.
@@ -294,6 +294,15 @@ function add_outbound_files(addrs, bp)
 				}
 			});
 		}
+		if(!bp.cb_data.binkitcfg.node[addr].outbox)
+			return;
+		var boxfiles = directory(backslash(bp.cb_data.binkitcfg.node[addr].outbox) + '*');
+		for(var f in boxfiles) {
+			var fname = boxfiles[f];
+			log("outbox file: " + fname);
+			if (bp.addFile(fname))
+				bp.cb_data.binkit_file_actions[fname] = 'DELETE';
+		}
 	});
 }
 
@@ -322,6 +331,15 @@ function callout_auth_cb(mode, bp)
 	add_outbound_files(addrs, bp);
 }
 
+function remove_file(fname)
+{
+	if (file_remove(fname))
+		log(LOG_INFO, "Deleted file: " + fname);
+	else
+		log(LOG_ERROR, "Unable to delete file: " + fname);
+}
+
+
 /*
  * Delete completed flo files.
  */
@@ -335,7 +353,7 @@ function tx_callback(fname, bp)
 			while ((j = bp.cb_data.binkit_flow_contents[flo].indexOf(fname)) !== -1)
 				bp.cb_data.binkit_flow_contents[flo].splice(j, 1);
 			if (bp.cb_data.binkit_flow_contents[flo].length == 0)
-				file_remove(flo);
+				remove_file(flo);
 		}
 	});
 }
@@ -436,7 +454,7 @@ function rx_callback(fname, bp)
 
 	if (fname.search(/\.req$/i) !== -1) {
 		handle_freq(fname, bp);
-		file_remove(fname);
+		remove_file(fname);
 	}
 	else {
 		if (bp.authenticated === 'secure') {
@@ -519,10 +537,8 @@ function callout_done(bp)
 						log(LOG_ERROR, "Unable to truncate '"+f.name+"'.");
 					break;
 				case 'DELETE':
-					if (file_remove(file))
-						log(LOG_INFO, "Removed '"+file+"'.");
-					else
-						log(LOG_ERROR, "Unable to remove '"+file+"'.");
+					remove_file(file);
+					break;
 			}
 		}
 	});
@@ -568,7 +584,7 @@ function callout_done(bp)
 	Object.keys(bp.cb_data.binkit_flow_contents).forEach(function(flo) {
 		if (file_exists(flo)) {
 			if (bp.cb_data.binkit_flow_contents[flo].length == 0)
-				file_remove(flo);
+				remove_file(flo);
 		}
 	});
 }
@@ -779,6 +795,23 @@ function run_one_outbound_dir(dir, scfg, ran)
 	log(LOG_DEBUG, "Done checking in "+dir+".");
 }
 
+function run_one_outbox_dir(addr, scfg, bicfg, ran)
+{
+	var dir = bicfg.node[addr].outbox;
+	if(!dir)
+		return;
+	dir = backslash(dir);
+	log(LOG_DEBUG, "Running outbox dir for (" + addr + "): " + dir);
+	var files = directory(dir + '*');
+	if(files.length) {
+		log(LOG_INFO, "Attempting callout for " + addr + ", outbox files: " + files);
+		var locks = [];
+		callout(addr, scfg, locks, bicfg);
+		ran[addr] = true;
+		locks.forEach(unlock_flow);
+	}
+}
+
 function touch_semaphores()
 {
 	semaphores.forEach(function(semname) {
@@ -789,6 +822,7 @@ function touch_semaphores()
 
 function run_outbound(ran)
 {
+	var bicfg;
 	var scfg;
 	var outbound_dirs=[];
 	var outbound_roots=[];
@@ -796,6 +830,7 @@ function run_outbound(ran)
 
 	log(LOG_DEBUG, "Running outbound");
 	scfg = new SBBSEchoCfg();
+	bicfg = new BinkITCfg();
 
 	if (!scfg.is_flo) {
 		log(LOG_ERROR, "sbbsecho not configured for FLO-style mailers.");
@@ -855,6 +890,9 @@ function run_outbound(ran)
 	outbound_dirs.forEach(function(dir) {
 		run_one_outbound_dir(dir, scfg, ran);
 	});
+	for(var addr in bicfg.node) {
+		run_one_outbox_dir(addr, scfg, bicfg, ran);
+	}
 }
 
 /*
