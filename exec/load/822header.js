@@ -1,3 +1,5 @@
+// $Id$
+
 require("utf8_ascii.js", 'utf8_ascii');
 require("smbdefs.js", 'RFC822HEADER');
 
