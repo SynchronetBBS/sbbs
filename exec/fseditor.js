@@ -39,6 +39,10 @@ var stat_attr	= 0x1f;
 var stat_fmt	= "\1h\1w\0014 FSEditor v" + REVISION + " - Type \1yCTRL-K\1w for help          %s\1>\1n";
 var subj,to,from;
 
+var options = load('modopts.js', 'fseditor');
+if(!options)
+	options = {};
+
 function Line(copyfrom)
 {
 	var i;
@@ -1420,7 +1424,7 @@ function save_file()
 		alert("Error " + f.error + " opening " + f.name);
 		return false;
 	}
-	var s=make_strings(/* soft-CRs: */true, /* embed-colors: */true);
+	var s=make_strings(/* soft-CRs: */Boolean(options.soft_cr), /* embed-colors: */true);
 	f.write(s[0]);
 	f.close();
 	return true;
