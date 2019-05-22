@@ -3586,7 +3586,7 @@ static BOOL check_request(http_session_t * session)
 					recheck_dynamic=TRUE;
 			}
 			else  {
-				/* If cannot open webctrl.ars, only allow sysop access */
+				/* If cannot open webctrl.ini, only allow sysop access */
 				SAFECOPY(session->req.ars,"LEVEL 90");
 				break;
 			}
@@ -5911,8 +5911,13 @@ FILE *open_post_file(http_session_t *session)
 	char	path[MAX_PATH+1];
 	FILE	*fp;
 
+	if(session->req.post_data == NULL) {
+		lprintf(LOG_ERR, "%04d !ERROR no post data allocated?!?", session->socket);
+		return NULL;
+	}
+
 	// Create temporary file for post data.
-	sprintf(path,"%sSBBS_POST.%u.%u.html",temp_dir,getpid(),session->socket);
+	SAFEPRINTF3(path,"%sSBBS_POST.%u.%u.html",temp_dir,getpid(),session->socket);
 	if((fp=fopen(path,"wb"))==NULL) {
 		lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
 		return fp;
