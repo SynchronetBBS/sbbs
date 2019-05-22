@@ -202,37 +202,27 @@
 <script type="text/javascript">
 
 	function register() {
-		$.post(
-		 	'./api/register.ssjs',
-			$('#form-register').serialize()
-		).done(
-		 	function (data) {
-		 		if (data.errors.length > 0) {
-		 			$('#errorbox').html('');
-		 			data.errors.forEach(
-		 				function (err) {
-		 					$('#errorbox').append('<p>' + err + '</p>');
-		 				}
-		 			);
-		 			$('#errorbox').attr('hidden', false);
-		 		} else {
-		 			$('#errorbox').attr('hidden', true);
-		 			$('#form-register-container').html(
-		 				'<?xjs write(locale.strings.page_register.message_account_created); ?>'
-		 			);
-		 		}
-		 	}
-		);
+		$.post('./api/register.ssjs', $('#form-register').serialize()).done(function (data) {
+			if (data.errors && data.errors.length > 0) {
+				$('#errorbox').html('');
+				data.errors.forEach(function (err) {
+					$('#errorbox').append('<p>' + err + '</p>');
+				});
+				$('#errorbox').attr('hidden', false);
+			} else {
+				$('#errorbox').attr('hidden', true);
+				$('#form-register-container').html(
+					'<?xjs write(locale.strings.page_register.message_account_created); ?>'
+				);
+			}
+		});
 	}
 
-	$('#form-register').validator().on(
-		'submit',
-		function (evt) {
-			if (evt.isDefaultPrevented()) return;
-			evt.preventDefault();
-			register();
-		}
-	);
+	$('#form-register').validator().on('submit', function (evt) {
+		if (evt.isDefaultPrevented()) return;
+		evt.preventDefault();
+		register();
+	});
 
 	// Traps
 	$('#send-me-free-stuff').attr('hidden', true);
