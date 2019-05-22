@@ -526,17 +526,7 @@ void msgs_cfg()
 			if (msk == MSK_DEL) {
 				for (j = 0; j < cfg.total_subs;) {
 					if (cfg.sub[j]->grp == grpnum) {	/* delete subs of this group */
-						free(cfg.sub[j]);
-						cfg.total_subs--;
-						k = j;
-						while (k < cfg.total_subs) {	/* move all subs down */
-							cfg.sub[k] = cfg.sub[k + 1];
-							for (q = 0; q < cfg.total_qhubs; q++)
-								for (s = 0; s < cfg.qhub[q]->subs; s++)
-									if (cfg.qhub[q]->sub[s] == cfg.sub[j])
-										cfg.qhub[q]->sub[s] = NULL;
-							k++;
-						}
+						remove_sub(&cfg, j);
 					}
 					else j++;
 				}
