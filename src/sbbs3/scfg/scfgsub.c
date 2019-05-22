@@ -33,7 +33,9 @@
 
 #include "scfg.h"
 
-bool new_sub(unsigned new_subnum, unsigned group_num)
+static sub_t** cut_qhub_sub;
+
+bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub)
 {
 	sub_t* new_subboard;
 	if ((new_subboard = (sub_t *)malloc(sizeof(*new_subboard))) == NULL) {
@@ -41,7 +43,6 @@ bool new_sub(unsigned new_subnum, unsigned group_num)
 		return false;
 	}
 	memset(new_subboard, 0, sizeof(*new_subboard));
-	new_subboard->grp = group_num;
 	if (cfg.total_faddrs)
 		new_subboard->faddr = cfg.faddr[0];
 	/* ToDo: Define these defaults somewhere else: */
@@ -58,6 +59,14 @@ bool new_sub(unsigned new_subnum, unsigned group_num)
 		}
 	}
 	new_subboard->misc |= SUB_HDRMOD;
+	if (pasted_sub != NULL) {
+		*new_subboard = *pasted_sub;
+		if (cut_qhub_sub != NULL && (*cut_qhub_sub) == NULL) {
+			*cut_qhub_sub = new_subboard;
+			cut_qhub_sub = NULL;
+		}
+	}
+	new_subboard->grp = group_num;
 
 	/* Allocate a new (unused) pointer index (deprecated!) */
 	for (; new_subboard->ptridx < USHRT_MAX; new_subboard->ptridx++) {
@@ -81,28 +90,27 @@ bool new_sub(unsigned new_subnum, unsigned group_num)
 	for (unsigned u = cfg.total_subs; u > new_subnum; u--)
 		cfg.sub[u] = cfg.sub[u - 1];
 
-#if 0 /* no longer necessary */
-	/* Subs are re-numbered, so adjust QWKnet hub sub lists */
-	for (unsigned q = 0; q < cfg.total_qhubs; q++)
-		for (unsigned s = 0; s < cfg.qhub[q]->subs; s++)
-			if (cfg.qhub[q]->sub[s] >= new_subnum)
-				cfg.qhub[q]->sub[s]++;
-#endif
 
 	new_subboard->subnum = new_subnum;
 	cfg.sub[new_subnum] = new_subboard;
 	cfg.total_subs++;
+
 	return true;
 }
 
-void remove_sub(scfg_t* cfg, unsigned subnum)
+void remove_sub(scfg_t* cfg, unsigned subnum, bool cut)
 {
 	sub_t* sub = cfg->sub[subnum];
+	if(cut)
+		cut_qhub_sub = NULL;
 	// Remove the sub-board from any QWKnet hub sub-boards
 	for (unsigned q = 0; q < cfg->total_qhubs; q++) {
 		for (unsigned s = 0; s < cfg->qhub[q]->subs; s++) {
-			if (cfg->qhub[q]->sub[s] == sub)
+			if (cfg->qhub[q]->sub[s] == sub) {
+				if(cut && cut_qhub_sub == NULL)
+					cut_qhub_sub = &cfg->qhub[q]->sub[s];
 				cfg->qhub[q]->sub[s] = NULL;
+			}
 		}
 	}
 	FREE_AND_NULL(cfg->sub[subnum]);
@@ -117,7 +125,7 @@ void sub_cfg(uint grpnum)
 	char str[128],str2[128],done=0,code[128];
 	char path[MAX_PATH+1];
 	char data_dir[MAX_PATH+1];
-	int j,m,n,ptridx;
+	int j,m,n;
 	uint i,subnum[MAX_OPTS+1];
 	static sub_t savsub;
 
@@ -265,7 +273,7 @@ void sub_cfg(uint grpnum)
 				continue; 
 			}
 
-			if (!new_sub(subnum[i], grpnum))
+			if (!new_sub(subnum[i], grpnum, /* pasted_sub: */NULL))
 				continue;
 
 			SAFECOPY(cfg.sub[subnum[i]]->code_suffix,code);
@@ -307,37 +315,21 @@ void sub_cfg(uint grpnum)
 			}
 			if(msk == MSK_CUT)
 				savsub = *cfg.sub[subnum[i]];
-			remove_sub(&cfg, subnum[i]);
+			remove_sub(&cfg, subnum[i], msk == MSK_CUT);
 			uifc.changes = TRUE;
 			continue; 
 		}
 		if(msk==MSK_COPY) {
 			savsub=*cfg.sub[subnum[i]];
+			cut_qhub_sub = NULL;
 			continue; 
 		}
 		if(msk == MSK_PASTE) {
-			if (!new_sub(subnum[i], grpnum))
+			if (!new_sub(subnum[i], grpnum, &savsub))
 				continue;
-			ptridx=cfg.sub[subnum[i]]->ptridx;
-			*cfg.sub[subnum[i]]=savsub;
-			cfg.sub[subnum[i]]->ptridx=ptridx;
-			cfg.sub[subnum[i]]->grp=grpnum;
 			uifc.changes = TRUE;
 			continue; 
 		}
-	#if 0
-		if(msk == MSK_SORT) {
-			sort_min = subnum[i];
-			sort_group = grpnum;
-			qsort(cfg.sub, cfg.total_subs, sizeof(sub_t*), sub_compare);
-			last_sort_field = sort_field;
-			sort_field++;
-			if(sort_field >= SORT_NONE)
-				sort_field = 0;
-			uifc.changes = TRUE;
-			continue;
-		}
-	#endif
 		i=subnum[i];
 		j=0;
 		done=0;

@@ -329,7 +329,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			return -2;
 
 		if(j==cfg.total_subs) {
-			if(!new_sub(j, grpnum))
+			if(!new_sub(j, grpnum, /* pasted_sub: */NULL))
 				return -3;
 			if(added != NULL)
 				(*added)++;
@@ -379,7 +379,7 @@ void msgs_cfg()
 	static int export_list_type;
 	char	str[256],str2[256],done=0;
     char	tmp[128];
-	int		j,k,q,s;
+	int		j,k,q;
 	int		i,file;
 	long	ported;
 	static grp_t savgrp;
@@ -526,7 +526,7 @@ void msgs_cfg()
 			if (msk == MSK_DEL) {
 				for (j = 0; j < cfg.total_subs;) {
 					if (cfg.sub[j]->grp == grpnum) {	/* delete subs of this group */
-						remove_sub(&cfg, j);
+						remove_sub(&cfg, j, /* cut: */false);
 					}
 					else j++;
 				}
