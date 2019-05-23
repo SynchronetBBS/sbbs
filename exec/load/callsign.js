@@ -6,7 +6,7 @@ var CallSign={
 			var ret={callsign:callsign.toUpperCase()};
 			var i;
 			var CookieRequest=new HTTPRequest();
-			var m=CookieRequest.Get('http://wireless2.fcc.gov/UlsApp/UlsSearch/searchLicense.jsp');
+			var m=CookieRequest.Get('https://wireless2.fcc.gov/UlsApp/UlsSearch/searchLicense.jsp');
 			var jsess='';
 			var cookies=['refineIndex=0'];
 			for(i in CookieRequest.response_headers) {
@@ -19,16 +19,16 @@ var CallSign={
 				}
 			}
 			req=new HTTPRequest();
-			req.SetupPost('http://wireless2.fcc.gov/UlsApp/UlsSearch/results.jsp;'+jsess, undefined, undefined, 'fiUlsSearchByType=uls_l_callsign++++++++++++++++&fiUlsSearchByValue='+callsign+'&fiUlsExactMatchInd=Y&hiddenForm=hiddenForm&jsValidated=true&x=0&y=0');
+			req.SetupPost('https://wireless2.fcc.gov/UlsApp/UlsSearch/results.jsp;'+jsess, undefined, undefined, 'fiUlsSearchByType=uls_l_callsign++++++++++++++++&fiUlsSearchByValue='+callsign+'&fiUlsExactMatchInd=Y&hiddenForm=hiddenForm&jsValidated=true&x=0&y=0');
 			req.request_headers.push("Cookie: "+cookies.join('; '));
-			req.request_headers.push("Referer: http://wireless2.fcc.gov/UlsApp/UlsSearch/searchLicense.jsp");
+			req.request_headers.push("Referer: https://wireless2.fcc.gov/UlsApp/UlsSearch/searchLicense.jsp");
 			req.SendRequest();
 			req.ReadResponse();
 
 			m=req.body.match(/license.jsp\?licKey=[^\s]*/g);
 
 			if(m && m.length) {
-				var response=new HTTPRequest().Get('http://wireless2.fcc.gov/UlsApp/UlsSearch/'+m[m.length-1]);
+				var response=new HTTPRequest().Get('https://wireless2.fcc.gov/UlsApp/UlsSearch/'+m[m.length-1]);
 				m=response.match(/In the case of City, state and zip[^-]*?-->([\s\S]*?)<\/td>/);
 				if(m) {
 					m[1]=m[1].replace(/[\r\n]/g,' ');
