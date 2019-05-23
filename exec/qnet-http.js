@@ -48,8 +48,10 @@ function send_rep(rep)
 		alert(http.request + " Response: " + http.status_line);
 		return false;
 	}
-	if(!file_remove(rep))
+	if(!file_remove(rep)) {
 		log(LOG_ERR, "Error removing file: " + rep);
+		return false;
+	}
 	return true;
 }
 
@@ -75,7 +77,8 @@ function receive_qwk(qwk)
 	else {
 		print("Received " + contents.length + " bytes");
 		file.write(contents);
-		success = true;
+		http.Post(url + '?received=' + file.position, '');
+		success = (http.response_code == HTTP_RESPONSE_NO_CONTENT);
 	}
 	file.close();
 	return success;
