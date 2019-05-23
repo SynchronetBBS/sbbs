@@ -1925,7 +1925,7 @@ if(f.open("r",false)) {
 		var quote_width = console.screen_columns - 1;
 		quote_line=make_lines(quote_msg(word_wrap(f.read(), quote_width - 3), quote_width),'');
 	} else
-		line=make_lines(word_wrap(f.read()),'');
+		line=make_lines(word_wrap(f.read(), console.screen_columns - 1),'');
 	f.close();
 }
 if(line.length==0)
