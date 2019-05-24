@@ -951,24 +951,6 @@ function parse_flags(inflags)
 			case 'DIRECT':
 				flags.netattr |= MSG_DIRECT;
 				break;
-			case 'GATE':
-				flags.netattr |= MSG_GATE;
-				break;
-			case 'ORPHAN':
-				flags.netattr |= MSG_ORPHAN;
-				break;
-			case 'FPU':
-				flags.netattr |= MSG_FPU;
-				break;
-			case 'TYPELOCAL':
-				flags.netattr |= MSG_TYPELOCAL;
-				break;
-			case 'TYPEECHO':
-				flags.netattr |= MSG_TYPECHO;
-				break;
-			case 'TYPENET':
-				flags.netattr |= MSG_TYPENET;
-				break;
 		}
 	}
 	return(flags);
@@ -1049,18 +1031,6 @@ function calc_msgflags(attr, netattr, num, msg, readonly)
 		flags += "IMMEDIATE ";
 	if(netattr & MSG_DIRECT)
 		flags += "DIRECT ";
-	if(netattr & MSG_GATE)
-		flags += "GATE ";
-	if(netattr & MSG_ORPHAN)
-		flags += "ORPHAN ";
-	if(netattr & MSG_FPU)
-		flags += "FPU ";
-	if(netattr & MSG_TYPELOCAL)
-		flags += "TYPELOCAL ";
-	if(netattr & MSG_TYPEECHO)
-		flags += "TYPEECHO ";
-	if(netattr & MSG_TYPENET)
-		flags += "TYPENET ";
 
 	if(attr==0xffff || orig_ptrs[num] < msg) {
 		flags += '\\Recent ';
