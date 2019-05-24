@@ -294,7 +294,8 @@ function add_outbound_files(addrs, bp)
 				}
 			});
 		}
-		if(!bp.cb_data.binkitcfg.node[addr].outbox)
+		if(bp.cb_data.binkitcfg.node[addr] === undefined
+			|| !bp.cb_data.binkitcfg.node[addr].outbox)
 			return;
 		var boxfiles = directory(backslash(bp.cb_data.binkitcfg.node[addr].outbox) + '*');
 		for(var f in boxfiles) {
