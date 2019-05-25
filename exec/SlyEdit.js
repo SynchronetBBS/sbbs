@@ -48,6 +48,12 @@
  *                              79.
  * 2019-04-18 Eric Oulashin     Version 1.63
  *                              Releasing this version.
+ * 2019-05-04 Eric Oulashin     Version 1.64 Beta
+ *                              Started working on adding a spell check feature.
+ *                              Also, updated to use require() instead of load()
+ *                              for .js scripts when possible.
+ * 2019-05-24 Eric Oualshin     Version 1.64
+ *                              Releasing this version
  */
 
 /* Command-line arguments:
@@ -81,9 +87,20 @@ if (typeof(argv[1]) != "undefined")
 		EDITOR_STYLE = (Math.floor(Math.random()*2) == 0) ? "DCT" : "ICE";
 }
 
-// Load sbbsdefs.js and SlyEdit's misc. defs first
-load("sbbsdefs.js");
-load(gStartupPath + "SlyEdit_Misc.js");
+// Load required JavaScript libraries
+var requireFnExists = (typeof(require) === "function");
+if (requireFnExists)
+{
+	require("sbbsdefs.js", "K_NOCRLF");
+	require("dd_lightbar_menu.js", "DDLightbarMenu");
+	require(gStartupPath + "SlyEdit_Misc.js", "CTRL_A");
+}
+else
+{
+	load("sbbsdefs.js");
+	load("dd_lightbar_menu.js");
+	load(gStartupPath + "SlyEdit_Misc.js");
+}
 
 // Determine whether the user settings file exists
 const userSettingsFileExistedOnStartup = file_exists(gUserSettingsFilename);
@@ -93,13 +110,15 @@ var gConfigSettings = ReadSlyEditConfigFile();
 var gUserSettings = ReadUserSettingsFile(gConfigSettings);
 // Load any specified 3rd-party startup scripts
 for (var i = 0; i < gConfigSettings.thirdPartyLoadOnStart.length; ++i)
-  load(gConfigSettings.thirdPartyLoadOnStart[i]);
+	load(gConfigSettings.thirdPartyLoadOnStart[i]);
 // Execute any provided startup JavaScript commands
 for (var i = 0; i < gConfigSettings.runJSOnStart.length; ++i)
-  eval(gConfigSettings.runJSOnStart[i]);
+	eval(gConfigSettings.runJSOnStart[i]);
 
 const EDITOR_PROGRAM_NAME = "SlyEdit";
 const ERRORMSG_PAUSE_MS = 1500;
+const TEXT_SEARCH_PAUSE_MS = 1500;
+const SPELL_CHECK_PAUSE_MS = 1000;
 
 // This script requires Synchronet version 3.14 or higher.
 // Exit if the Synchronet version is below the minimum.
@@ -116,17 +135,23 @@ if (system.version_num < 31400)
 	console.pause();
 	exit(1); // 1: Aborted
 }
-// If the user's terminal doesn't support ANSI, then exit.
+// If the user's terminal doesn't support ANSI, or if their terminal is less
+// than 80 characters wide, then exit.
 if (!console.term_supports(USER_ANSI))
 {
 	console.print("\1n\r\n\1h\1yERROR: \1w" + EDITOR_PROGRAM_NAME +
 	              " requires an ANSI terminal.\1n\r\n\1p");
 	exit(1); // 1: Aborted
 }
+if (console.screen_columns < 80)
+{
+	console.print("\1n\r\n\1h\1w" + EDITOR_PROGRAM_NAME + " requires a terminal width of at least 80 characters.\1n\r\n\1p");
+	exit(1); // 1: Aborted
+}
 
 // Constants
-const EDITOR_VERSION = "1.63";
-const EDITOR_VER_DATE = "2019-04-18";
+const EDITOR_VERSION = "1.64";
+const EDITOR_VER_DATE = "2019-05-24";
 
 
 // Program variables
@@ -189,14 +214,14 @@ gCrossPostMsgSubs.propIsFuncName = function(pPropName) {
 // Parameters:
 //  pSubCode: The sub-code to look for
 gCrossPostMsgSubs.subCodeExists = function(pSubCode) {
-  if (typeof(pSubCode) != "string")
-    return false;
+	if (typeof(pSubCode) != "string")
+		return false;
 
-  var grpIndex = msg_area.sub[pSubCode].grp_index;
-  var foundIt = false;
-  if (this.hasOwnProperty(grpIndex))
-    foundIt = this[grpIndex].hasOwnProperty(pSubCode);
-  return foundIt;
+	var grpIndex = msg_area.sub[pSubCode].grp_index;
+	var foundIt = false;
+	if (this.hasOwnProperty(grpIndex))
+		foundIt = this[grpIndex].hasOwnProperty(pSubCode);
+	return foundIt;
 };
 // This function adds a sub-board code to gCrossPostMsgSubs.
 //
@@ -265,12 +290,15 @@ var fpDrawQuoteWindowBottomBorder = null;
 var fpRedrawScreen = null;
 var fpUpdateInsertModeOnScreen = null;
 var fpDisplayBottomHelpLine = null;
-var fpHandleESCMenu = null;
 var fpDisplayTime = null;
 var fpDisplayTimeRemaining = null;
+var fpCallESCMenu = null;
 if (EDITOR_STYLE == "DCT")
 {
-	load(gStartupPath + "SlyEdit_DCTStuff.js");
+	if (requireFnExists)
+		require(gStartupPath + "SlyEdit_DCTStuff.js", "DrawQuoteWindowTopBorder_DCTStyle");
+	else
+		load(gStartupPath + "SlyEdit_DCTStuff.js");
 	gEditTop = 6;
 	gQuoteWinTextColor = gConfigSettings.DCTColors.QuoteWinText;
 	gQuoteLineHighlightColor = gConfigSettings.DCTColors.QuoteLineHighlightColor;
@@ -284,13 +312,16 @@ if (EDITOR_STYLE == "DCT")
 	fpRedrawScreen = redrawScreen_DCTStyle;
 	fpUpdateInsertModeOnScreen = updateInsertModeOnScreen_DCTStyle;
 	fpDisplayBottomHelpLine = DisplayBottomHelpLine_DCTStyle;
-	fpHandleESCMenu = handleDCTESCMenu;
 	fpDisplayTime = displayTime_DCTStyle;
 	fpDisplayTimeRemaining = displayTimeRemaining_DCTStyle;
+	fpCallESCMenu = callDCTESCMenu;
 }
 else if (EDITOR_STYLE == "ICE")
 {
-	load(gStartupPath + "SlyEdit_IceStuff.js");
+	if (requireFnExists)
+		require(gStartupPath + "SlyEdit_IceStuff.js", "DrawQuoteWindowTopBorder_IceStyle");
+	else
+		load(gStartupPath + "SlyEdit_IceStuff.js");
 	gEditTop = 5;
 	gQuoteWinTextColor = gConfigSettings.iceColors.QuoteWinText;
 	gQuoteLineHighlightColor = gConfigSettings.iceColors.QuoteLineHighlightColor;
@@ -304,9 +335,9 @@ else if (EDITOR_STYLE == "ICE")
 	fpRedrawScreen = redrawScreen_IceStyle;
 	fpUpdateInsertModeOnScreen = updateInsertModeOnScreen_IceStyle;
 	fpDisplayBottomHelpLine = DisplayBottomHelpLine_IceStyle;
-	fpHandleESCMenu = handleIceESCMenu;
 	fpDisplayTime = displayTime_IceStyle;
 	fpDisplayTimeRemaining = displayTimeRemaining_IceStyle;
+	fpCallESCMenu = callIceESCMenu;
 }
 
 // Temporary (for testing): Make the edit area small
@@ -351,7 +382,7 @@ clearEditAreaBuffer();
 var gNumTxtReplacements = 0;
 var gTxtReplacements = new Object();
 if (gConfigSettings.enableTextReplacements)
-   gNumTxtReplacements = populateTxtReplacements(gTxtReplacements, gConfigSettings.textReplacementsUseRegex);
+	gNumTxtReplacements = populateTxtReplacements(gTxtReplacements, gConfigSettings.textReplacementsUseRegex);
 
 // Set some stuff up for message editing
 var gUseQuotes = true;
@@ -867,7 +898,7 @@ function doEditLoop()
 	const CMDLIST_HELP_KEY_2        = KEY_F1;
 	const IMPORT_FILE_KEY           = CTRL_O;
 	const QUOTE_KEY                 = CTRL_Q;
-	const PROGRAM_INFO_HELP_KEY     = CTRL_R;
+	const SPELL_CHECK_KEY           = CTRL_R;
 	const SEARCH_TEXT_KEY           = CTRL_S;
 	const LIST_TXT_REPLACEMENTS_KEY = CTRL_T;
 	const USER_SETTINGS_KEY         = CTRL_U;
@@ -881,9 +912,10 @@ function doEditLoop()
 	// we want to start editigng it at the top.
 	fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes, 0, displayEditLines);
 
-	var curpos = new Object();
-	curpos.x = gEditLeft;
-	curpos.y = gEditTop;
+	var curpos = {
+		x: gEditLeft,
+		y: gEditTop
+	}
 	console.gotoxy(curpos);
 
 	// initialTimeLeft and updateTimeLeft will be used to keep track of the user's
@@ -932,7 +964,7 @@ function doEditLoop()
 		{
 			case ABORT_KEY:
 				// Before aborting, ask they user if they really want to abort.
-				if (promptYesNo("Abort message", false, "Abort", false))
+				if (promptYesNo("Abort message", false, "Abort", false, false))
 				{
 					returnCode = 1; // Aborted
 					continueOn = false;
@@ -959,13 +991,6 @@ function doEditLoop()
 				break;
 			case GENERAL_HELP_KEY:
 				displayGeneralHelp(true, true, true);
-				clearEditAreaBuffer();
-				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
-				               displayEditLines);
-				break;
-			case PROGRAM_INFO_HELP_KEY:
-				displayProgramInfo(true, true);
 				clearEditAreaBuffer();
 				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
 				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
@@ -1268,7 +1293,7 @@ function doEditLoop()
 							clearEditAreaBuffer();
 							fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
 							               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
-							displayEditLines);
+							               displayEditLines);
 							console.gotoxy(curpos);
 						}
 						else if (enterRetObj.doCrossPostSelection)
@@ -1291,7 +1316,7 @@ function doEditLoop()
 				break;
 			case KEY_ESC:
 				// Do the ESC menu
-				var escRetObj = fpHandleESCMenu(curpos, currentWordLength);
+				var escRetObj = doESCMenu(curpos, currentWordLength);
 				returnCode = escRetObj.returnCode;
 				continueOn = escRetObj.continueOn;
 				curpos.x = escRetObj.x;
@@ -1301,7 +1326,6 @@ function doEditLoop()
 				// where it should be.
 				if (continueOn)
 				{
-					//console.print("\1n" + gTextAttrs);
 					console.print(chooseEditColor());
 					console.gotoxy(curpos);
 				}
@@ -1310,6 +1334,13 @@ function doEditLoop()
 				var searchRetObj = findText(curpos);
 				curpos.x = searchRetObj.x;
 				curpos.y = searchRetObj.y;
+				console.print(chooseEditColor()); // Make sure the edit color is correct
+				break;
+			case SPELL_CHECK_KEY:
+				var spellCheckRetObj = doSpellCheck(curpos, true);
+				curpos.x = spellCheckRetObj.x;
+				curpos.y = spellCheckRetObj.y;
+				currentWordLength = spellCheckRetObj.currentWordLength;
 				console.print(chooseEditColor()); // Make sure the edit color is correct
 				break;
 			case IMPORT_FILE_KEY:
@@ -1513,32 +1544,40 @@ function doEditLoop()
 		}
 	}
 
-	// If the user has not aborted the message and taglines is enabled in their user settings
-	// and the user is not editing their signature & is not editing an existing message, then
-	// prompt the user for a tag line to be appended to the message.
-	var isEditingSignature = (gMsgSubj == format("%04d.sig", user.number));
-	var isEditingExistingMsg = !isEditingSignature && ((gMsgSubj == "MSGTMP") || (gMsgSubj == "DDMsgReader_message.txt") || (gMsgSubj == "DDMsgLister_message.txt"));
-	if ((returnCode == 0) && gUserSettings.enableTaglines && !isEditingSignature && !isEditingExistingMsg && txtFileContainsLines(gConfigSettings.tagLineFilename))
+
+	// If the user has not aborted the message, then prompt for spell check and adding
+	// a tagline if those options are enabled in the user settings
+	if (returnCode == 0)
 	{
-		if (promptYesNo("Add a tagline", true, "Add tagline", true))
+		if (gUserSettings.promptSpellCheckOnSave)
+			doSpellCheck(curpos, true);
+
+		// If taglines is enabled in the user settings and the user is not editing their signature & is not editing an existing message, then
+		// prompt the user for a tag line to be appended to the message.
+		var isEditingSignature = (gMsgSubj == format("%04d.sig", user.number));
+		var isEditingExistingMsg = !isEditingSignature && ((gMsgSubj == "MSGTMP") || (gMsgSubj == "DDMsgReader_message.txt") || (gMsgSubj == "DDMsgLister_message.txt"));
+		if (gUserSettings.enableTaglines && !isEditingSignature && !isEditingExistingMsg && txtFileContainsLines(gConfigSettings.tagLineFilename))
 		{
-			var taglineRetObj = doTaglineSelection();
-			if (taglineRetObj.taglineWasSelected && taglineRetObj.tagline.length > 0)
+			if (promptYesNo("Add a tagline", true, "Add tagline", true, true))
 			{
-				// If the tagline filename was specified in the MSGINF drop file,
-				// then write the tag line to that file (Synchronet will read that
-				// and append its contents after the user's signature).  Otherwise,
-				// append the tagline to the message directly.
-				if (gTaglineFile.length > 0)
-					writeTaglineToMsgTaglineFile(taglineRetObj.tagline, gTaglineFile);
-				else
+				var taglineRetObj = doTaglineSelection();
+				if (taglineRetObj.taglineWasSelected && taglineRetObj.tagline.length > 0)
 				{
-					// Append a blank line and then append the tagline to the message
-					gEditLines.push(new TextLine());
-					var newLine = new TextLine();
-					newLine.text = taglineRetObj.tagline;
-					gEditLines.push(newLine);
-					reAdjustTextLines(gEditLines, gEditLines.length-1, gEditLines.length, gEditWidth);
+					// If the tagline filename was specified in the MSGINF drop file,
+					// then write the tag line to that file (Synchronet will read that
+					// and append its contents after the user's signature).  Otherwise,
+					// append the tagline to the message directly.
+					if (gTaglineFile.length > 0)
+						writeTaglineToMsgTaglineFile(taglineRetObj.tagline, gTaglineFile);
+					else
+					{
+						// Append a blank line and then append the tagline to the message
+						gEditLines.push(new TextLine());
+						var newLine = new TextLine();
+						newLine.text = taglineRetObj.tagline;
+						gEditLines.push(newLine);
+						reAdjustTextLines(gEditLines, gEditLines.length-1, gEditLines.length, gEditWidth);
+					}
 				}
 			}
 		}
@@ -1565,203 +1604,204 @@ function doEditLoop()
 //               position and currentLength, the current word length.
 function doBackspace(pCurpos, pCurrentWordLength)
 {
-   // Create the return object.
-   var retObj = new Object();
-   retObj.x = pCurpos.x;
-   retObj.y = pCurpos.y;
-   retObj.currentWordLength = pCurrentWordLength;
+	// Create the return object.
+	var retObj = {
+		x: pCurpos.x,
+		y: pCurpos.y,
+		currentWordLength: pCurrentWordLength
+	};
 
-   var didBackspace = false;
-   // For later, store a backup of the current edit line index and
-   // cursor position.
-   var originalCurrentLineIndex = gEditLinesIndex;
-   var originalX = pCurpos.x;
-   var originalY = pCurpos.y;
-   var originallyOnLastLine = (gEditLinesIndex == gEditLines.length-1);
+	var didBackspace = false;
+	// For later, store a backup of the current edit line index and
+	// cursor position.
+	var originalCurrentLineIndex = gEditLinesIndex;
+	var originalX = pCurpos.x;
+	var originalY = pCurpos.y;
+	var originallyOnLastLine = (gEditLinesIndex == gEditLines.length-1);
 
-   // If the cursor is beyond the leftmost position in
-   // the edit area, then we can simply remove the last
-   // character in the current line and move the cursor
-   // over to the left.
-   if (retObj.x > gEditLeft)
-   {
-      if (gTextLineIndex > 0)
-      {
-         console.print(BACKSPACE);
-         console.print(" ");
-         --retObj.x;
-         console.gotoxy(retObj.x, retObj.y);
+	// If the cursor is beyond the leftmost position in
+	// the edit area, then we can simply remove the last
+	// character in the current line and move the cursor
+	// over to the left.
+	if (retObj.x > gEditLeft)
+	{
+		if (gTextLineIndex > 0)
+		{
+			console.print(BACKSPACE);
+			console.print(" ");
+			--retObj.x;
+			console.gotoxy(retObj.x, retObj.y);
 
-         // Remove the previous character from the text line
-         var textLineLength = gEditLines[gEditLinesIndex].length();
-         if (textLineLength > 0)
-         {
-            var textLine = gEditLines[gEditLinesIndex].text.substr(0, gTextLineIndex-1)
-                         + gEditLines[gEditLinesIndex].text.substr(gTextLineIndex);
-            gEditLines[gEditLinesIndex].text = textLine;
-            didBackspace = true;
-            --gTextLineIndex;
-         }
-      }
-   }
-   else
-   {
-      // The cursor is at the leftmost position in the edit area.
-      // If we are beyond the first text line, then move as much of
-      // the current text line as possible up to the previous line,
-      // if there's room (if not, don't do anything).
-      if (gEditLinesIndex > 0)
-      {
-         var prevLineIndex = gEditLinesIndex - 1;
-         if (gEditLines[gEditLinesIndex].length() > 0)
-         {
-            // Store the previous line's original length
-            var originalPrevLineLen = gEditLines[prevLineIndex].length();
+			// Remove the previous character from the text line
+			var textLineLength = gEditLines[gEditLinesIndex].length();
+			if (textLineLength > 0)
+			{
+				var textLine = gEditLines[gEditLinesIndex].text.substr(0, gTextLineIndex-1)
+				             + gEditLines[gEditLinesIndex].text.substr(gTextLineIndex);
+				gEditLines[gEditLinesIndex].text = textLine;
+				didBackspace = true;
+				--gTextLineIndex;
+			}
+		}
+	}
+	else
+	{
+		// The cursor is at the leftmost position in the edit area.
+		// If we are beyond the first text line, then move as much of
+		// the current text line as possible up to the previous line,
+		// if there's room (if not, don't do anything).
+		if (gEditLinesIndex > 0)
+		{
+			var prevLineIndex = gEditLinesIndex - 1;
+			if (gEditLines[gEditLinesIndex].length() > 0)
+			{
+				// Store the previous line's original length
+				var originalPrevLineLen = gEditLines[prevLineIndex].length();
 
-            // See how much space is at the end of the previous line
-            var previousLineEndSpace = gEditWidth - gEditLines[prevLineIndex].length();
-            if (previousLineEndSpace > 0)
-            {
-               var index = previousLineEndSpace - 1;
-               // If that index is valid for the current line, then find the first
-               // space in the current line so that the text would fit at the end
-               // of the previous line.  Otherwise, set index to the length of the
-               // current line so that we'll move the whole current line up to the
-               // previous line.
-               if (index < gEditLines[gEditLinesIndex].length())
-               {
-                  for (; index >= 0; --index)
-                  {
-                     if (gEditLines[gEditLinesIndex].text.charAt(index) == " ")
-                        break;
-                  }
-               }
-               else
-                  index = gEditLines[gEditLinesIndex].length();
-               // If we found a space, then move the part of the current line before
-               // the space to the end of the previous line.
-               if (index > 0)
-               {
-                  var linePart = gEditLines[gEditLinesIndex].text.substr(0, index);
-                  gEditLines[gEditLinesIndex].text = gEditLines[gEditLinesIndex].text.substr(index);
-                  gEditLines[prevLineIndex].text += linePart;
-                  gEditLines[prevLineIndex].hardNewlineEnd = gEditLines[gEditLinesIndex].hardNewlineEnd;
+				// See how much space is at the end of the previous line
+				var previousLineEndSpace = gEditWidth - gEditLines[prevLineIndex].length();
+				if (previousLineEndSpace > 0)
+				{
+					var index = previousLineEndSpace - 1;
+					// If that index is valid for the current line, then find the first
+					// space in the current line so that the text would fit at the end
+					// of the previous line.  Otherwise, set index to the length of the
+					// current line so that we'll move the whole current line up to the
+					// previous line.
+					if (index < gEditLines[gEditLinesIndex].length())
+					{
+						for (; index >= 0; --index)
+						{
+							if (gEditLines[gEditLinesIndex].text.charAt(index) == " ")
+								break;
+						}
+					}
+					else
+						index = gEditLines[gEditLinesIndex].length();
+					// If we found a space, then move the part of the current line before
+					// the space to the end of the previous line.
+					if (index > 0)
+					{
+						var linePart = gEditLines[gEditLinesIndex].text.substr(0, index);
+						gEditLines[gEditLinesIndex].text = gEditLines[gEditLinesIndex].text.substr(index);
+						gEditLines[prevLineIndex].text += linePart;
+						gEditLines[prevLineIndex].hardNewlineEnd = gEditLines[gEditLinesIndex].hardNewlineEnd;
 
-                  // If the current line is now blank, then remove it from gEditLines.
-                  if (gEditLines[gEditLinesIndex].length() == 0)
-                     gEditLines.splice(gEditLinesIndex, 1);
+						// If the current line is now blank, then remove it from gEditLines.
+						if (gEditLines[gEditLinesIndex].length() == 0)
+						gEditLines.splice(gEditLinesIndex, 1);
 
-                  // Update the global edit variables so that the cursor is placed
-                  // on the previous line.
-                  --gEditLinesIndex;
-                  // Search for linePart in the line - If found, the cursor should
-                  // be placed where it starts.  If it' snot found, place the cursor
-                  // at the end of the line.
-                  var linePartIndex = gEditLines[gEditLinesIndex].text.indexOf(linePart);
-                  if (linePartIndex > -1)
-                     gTextLineIndex = linePartIndex;
-                  else
-                     gTextLineIndex = gEditLines[gEditLinesIndex].length();
+						// Update the global edit variables so that the cursor is placed
+						// on the previous line.
+						--gEditLinesIndex;
+						// Search for linePart in the line - If found, the cursor should
+						// be placed where it starts.  If it' snot found, place the cursor
+						// at the end of the line.
+						var linePartIndex = gEditLines[gEditLinesIndex].text.indexOf(linePart);
+						if (linePartIndex > -1)
+							gTextLineIndex = linePartIndex;
+						else
+							gTextLineIndex = gEditLines[gEditLinesIndex].length();
 
-                  retObj.x = gEditLeft + gTextLineIndex;
-                  if (retObj.y > gEditTop)
-                     --retObj.y;
+						retObj.x = gEditLeft + gTextLineIndex;
+						if (retObj.y > gEditTop)
+							--retObj.y;
 
-                  didBackspace = true;
-               }
-            }
-         }
-         else
-         {
-            // The current line's length is 0.
-            // If there's enough room on the previous line, remove the
-            // current line and place the cursor at the end of the
-            // previous line.
-            if (gEditLines[prevLineIndex].length() <= gEditWidth-1)
-            {
-               // Copy the current line's "hard newline end" setting to the
-               // previous line (so that if there's a blank line below the
-               // current line, the blank line will be preserved), then remove
-               // the current edit line.
-               gEditLines[gEditLinesIndex-1].hardNewlineEnd = gEditLines[gEditLinesIndex].hardNewlineEnd;
-               gEditLines.splice(gEditLinesIndex, 1);
+						didBackspace = true;
+					}
+				}
+			}
+			else
+			{
+				// The current line's length is 0.
+				// If there's enough room on the previous line, remove the
+				// current line and place the cursor at the end of the
+				// previous line.
+				if (gEditLines[prevLineIndex].length() <= gEditWidth-1)
+				{
+					// Copy the current line's "hard newline end" setting to the
+					// previous line (so that if there's a blank line below the
+					// current line, the blank line will be preserved), then remove
+					// the current edit line.
+					gEditLines[gEditLinesIndex-1].hardNewlineEnd = gEditLines[gEditLinesIndex].hardNewlineEnd;
+					gEditLines.splice(gEditLinesIndex, 1);
 
-               --gEditLinesIndex;
-               gTextLineIndex = gEditLines[prevLineIndex].length();
-               retObj.x = gEditLeft + gEditLines[prevLineIndex].length();
-               if (retObj.y > gEditTop)
-                  --retObj.y;
+					--gEditLinesIndex;
+					gTextLineIndex = gEditLines[prevLineIndex].length();
+					retObj.x = gEditLeft + gEditLines[prevLineIndex].length();
+					if (retObj.y > gEditTop)
+						--retObj.y;
 
-               didBackspace = true;
-            }
-         }
-      }
-   }
+					didBackspace = true;
+				}
+			}
+		}
+	}
 
-   // If the backspace was performed, then re-adjust the text lines
-   // and refresh the screen.
-   if (didBackspace)
-   {
-      // Store the previous line of text now so we can compare it later
-      var prevTextline = "";
-      if (gEditLinesIndex > 0)
-         prevTextline = gEditLines[gEditLinesIndex-1].text;
+	// If the backspace was performed, then re-adjust the text lines
+	// and refresh the screen.
+	if (didBackspace)
+	{
+		// Store the previous line of text now so we can compare it later
+		var prevTextline = "";
+		if (gEditLinesIndex > 0)
+			prevTextline = gEditLines[gEditLinesIndex-1].text;
 
-      // Re-adjust the text lines
-      reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth);
+		// Re-adjust the text lines
+		reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth);
 
-      // If the previous line's length increased, that probably means that the
-      // user backspaced to the beginning of the current line and the word was
-      // moved to the end of the previous line.  If so, then move the cursor to
-      // the end of the previous line.
-      //var scrolled = false;
-      if ((gEditLinesIndex > 0) &&
-          (gEditLines[gEditLinesIndex-1].length() > prevTextline.length))
-      {
-         // Update the text index variables and cusor position variables.
-         --gEditLinesIndex;
-         gTextLineIndex = gEditLines[gEditLinesIndex].length();
-         retObj.x = gEditLeft + gTextLineIndex;
-         if (retObj.y > gEditTop)
-            --retObj.y;
-      }
+		// If the previous line's length increased, that probably means that the
+		// user backspaced to the beginning of the current line and the word was
+		// moved to the end of the previous line.  If so, then move the cursor to
+		// the end of the previous line.
+		//var scrolled = false;
+		if ((gEditLinesIndex > 0) &&
+		    (gEditLines[gEditLinesIndex-1].length() > prevTextline.length))
+		{
+			// Update the text index variables and cusor position variables.
+			--gEditLinesIndex;
+			gTextLineIndex = gEditLines[gEditLinesIndex].length();
+			retObj.x = gEditLeft + gTextLineIndex;
+			if (retObj.y > gEditTop)
+				--retObj.y;
+		}
 
-      // If the cursor was at the leftmost position in the edit area,
-      // update the edit lines from the currently-set screen line #.
-      if (originalX == gEditLeft)
-      {
-         // Since the original X position was at the left edge of the edit area,
-         // display the edit lines starting with the previous line if possible.
-         if ((gEditLinesIndex > 0) && (retObj.y > gEditTop))
-            displayEditLines(retObj.y-1, gEditLinesIndex-1, gEditBottom, true, true);
-         else
-            displayEditLines(retObj.y, gEditLinesIndex, gEditBottom, true, true);
-      }
-      // If the original horizontal cursor position was in the middle of
-      // the line, and the line is the last line on the screen, then
-      // only refresh that one line on the screen.
-      else if ((originalX > gEditLeft) && (originalX < gEditLeft + gEditWidth - 1) && originallyOnLastLine)
-         displayEditLines(originalY, originalCurrentLineIndex, originalY, false);
-      // If scrolling was to be done, then refresh the entire
-      // current message text on the screen from the top of the
-      // edit area.  Otherwise, only refresh starting from the
-      // original horizontal position and message line.
-      else
-      {
-         // Display the edit lines starting with the previous line if possible.
-         if ((gEditLinesIndex > 0) && (retObj.y > gEditTop))
-            displayEditLines(retObj.y-1, gEditLinesIndex-1, gEditBottom, true, true);
-         else
-            displayEditLines(retObj.y, gEditLinesIndex, gEditBottom, true, true);
-      }
+		// If the cursor was at the leftmost position in the edit area,
+		// update the edit lines from the currently-set screen line #.
+		if (originalX == gEditLeft)
+		{
+			// Since the original X position was at the left edge of the edit area,
+			// display the edit lines starting with the previous line if possible.
+			if ((gEditLinesIndex > 0) && (retObj.y > gEditTop))
+				displayEditLines(retObj.y-1, gEditLinesIndex-1, gEditBottom, true, true);
+			else
+				displayEditLines(retObj.y, gEditLinesIndex, gEditBottom, true, true);
+		}
+		// If the original horizontal cursor position was in the middle of
+		// the line, and the line is the last line on the screen, then
+		// only refresh that one line on the screen.
+		else if ((originalX > gEditLeft) && (originalX < gEditLeft + gEditWidth - 1) && originallyOnLastLine)
+			displayEditLines(originalY, originalCurrentLineIndex, originalY, false);
+		// If scrolling was to be done, then refresh the entire
+		// current message text on the screen from the top of the
+		// edit area.  Otherwise, only refresh starting from the
+		// original horizontal position and message line.
+		else
+		{
+			// Display the edit lines starting with the previous line if possible.
+			if ((gEditLinesIndex > 0) && (retObj.y > gEditTop))
+				displayEditLines(retObj.y-1, gEditLinesIndex-1, gEditBottom, true, true);
+			else
+				displayEditLines(retObj.y, gEditLinesIndex, gEditBottom, true, true);
+		}
 
-      // Make sure the current word length is correct.
-      retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-   }
+		// Make sure the current word length is correct.
+		retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+	}
 
-   // Make sure the cursor is placed where it should be.
-   console.gotoxy(retObj.x, retObj.y);
-   return retObj;
+	// Make sure the cursor is placed where it should be.
+	console.gotoxy(retObj.x, retObj.y);
+	return retObj;
 }
 
 // Helper function for doEditLoop(): Handles the delete key behavior.
@@ -2084,15 +2124,16 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 function doEnterKey(pCurpos, pCurrentWordLength)
 {
 	// Create the return object
-	var retObj = new Object();
-	retObj.x = pCurpos.x;
-	retObj.y = pCurpos.y;
-	retObj.currentWordLength = pCurrentWordLength;
-	retObj.returnCode = 0;
-	retObj.continueOn = true;
-	retObj.doQuoteSelection = false;
-	retObj.doCrossPostSelection = false;
-	retObj.showHelp = false;
+	var retObj = {
+		x: pCurpos.x,
+		y: pCurpos.y,
+		currentWordLength: pCurrentWordLength,
+		returnCode: 0,
+		continueOn: true,
+		doQuoteSelection: false,
+		doCrossPostSelection: false,
+		showHelp: false
+	};
 
 	// Store the current screen row position and gEditLines index.
 	var initialScreenLine = pCurpos.y;
@@ -2121,7 +2162,7 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 		else if (lineUpper == "/A")
 		{
 			// Confirm with the user
-			if (promptYesNo("Abort message", false, "Abort", false))
+			if (promptYesNo("Abort message", false, "Abort", false, false))
 			{
 				retObj.returnCode = 1; // 1: Abort
 				retObj.continueOn = false;
@@ -2141,11 +2182,10 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 				retObj.x = gEditLeft;
 				retObj.y = pCurpos.y;
 				// Blank out the /A on the screen
-				//console.print("1n" + gTextAttrs);
 				console.print(chooseEditColor());
 				console.gotoxy(retObj.x, retObj.y);
 				console.print("  ");
-				// Put the cursor where it should be and return.
+				// Put the cursor where it should be
 				console.gotoxy(retObj.x, retObj.y);
 				return(retObj);
 			}
@@ -2159,15 +2199,15 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 			gTextLineIndex = 0;
 			gEditLines[gEditLinesIndex].text = "";
 			// Blank out the /? on the screen
-			//console.print("n" + gTextAttrs);
 			console.print(chooseEditColor());
 			retObj.x = gEditLeft;
 			console.gotoxy(retObj.x, retObj.y);
 			console.print("  ");
-			// Put the cursor where it should be and return.
+			// Put the cursor where it should be
 			console.gotoxy(retObj.x, retObj.y);
 			return(retObj);
 		}
+		// /C: Cross-post
 		else if (lineUpper == "/C")
 		{
 			retObj.doCrossPostSelection = true;
@@ -2180,15 +2220,15 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 			retObj.x = gEditLeft;
 			retObj.y = pCurpos.y;
 			// Blank out the /C on the screen
-			//console.print("\1n" + gTextAttrs);
 			console.print(chooseEditColor());
 			retObj.x = gEditLeft;
 			console.gotoxy(retObj.x, retObj.y);
 			console.print("  ");
-			// Put the cursor where it should be and return.
+			// Put the cursor where it should be
 			console.gotoxy(retObj.x, retObj.y);
 			return(retObj);
 		}
+		// /T: List text replacements
 		else if (lineUpper == "/T")
 		{
 			if (gConfigSettings.enableTextReplacements)
@@ -2201,20 +2241,21 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 			retObj.x = gEditLeft;
 			retObj.y = pCurpos.y;
 			// Blank out the /T on the screen
-			//console.print("n" + gTextAttrs);
 			console.print(chooseEditColor());
 			retObj.x = gEditLeft;
 			console.gotoxy(retObj.x, retObj.y);
 			console.print("  ");
-			// Put the cursor where it should be and return.
+			// Put the cursor where it should be
 			console.gotoxy(retObj.x, retObj.y);
 			return(retObj);
 		}
+		// /U: User settings
 		else if (lineUpper == "/U")
 		{
-			var currentCursorPos = new Object();
-			currentCursorPos.x = retObj.x;
-			currentCursorPos.y = retObj.y;
+			var currentCursorPos = {
+				x: retObj.x,
+				y: retObj.y
+			};
 			doUserSettings(currentCursorPos, false);
 			// Blank out the data in the text line, set the data in
 			// retObj, and return it.
@@ -2223,13 +2264,12 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 			gTextLineIndex = 0;
 			retObj.x = gEditLeft;
 			retObj.y = pCurpos.y;
-			// Blank out the /T on the screen
-			//console.print("\1n" + gTextAttrs);
+			// Blank out the /U on the screen
 			console.print(chooseEditColor());
 			retObj.x = gEditLeft;
 			console.gotoxy(retObj.x, retObj.y);
 			console.print("  ");
-			// Put the cursor where it should be and return.
+			// Put the cursor where it should be
 			console.gotoxy(retObj.x, retObj.y);
 			return(retObj);
 		}
@@ -2498,11 +2538,12 @@ function textLineIsEditable(pLineIdx)
 function doQuoteSelection(pCurpos, pCurrentWordLength)
 {
 	// Create the return object
-	var retObj = new Object();
-	retObj.x = pCurpos.x;
-	retObj.y = pCurpos.y;
-	retObj.timedOut = false;
-	retObj.currentWordLength = pCurrentWordLength;
+	var retObj = {
+		x: pCurpos.x,
+		y: pCurpos.y,
+		timedOut: false,
+		currentWordLength: pCurrentWordLength
+	};
 
 	// Note: Quote lines are in the gQuoteLines array, where each element is
 	// a string.
@@ -2578,17 +2619,16 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 			gQuoteLinesTopIndex = 0;
 
 			// Update the quote line prefix text and wrap the quote lines
+			var maxQuoteLineLength = 79;
 			setQuotePrefix();
 			if (gConfigSettings.reWrapQuoteLines)
 			{
-				// TODO: This seemed to never be finishing for certain messages - Entering
-				// an infinite loop?  I believe this was fixed as of version 1.49.
 				wrapQuoteLines(gUserSettings.useQuoteLineInitials, gUserSettings.indentQuoteLinesWithInitials,
-				               gUserSettings.trimSpacesFromQuoteLines);
+				               gUserSettings.trimSpacesFromQuoteLines, maxQuoteLineLength);
 			}
 			else if (gUserSettings.useQuoteLineInitials)
 			{
-				var maxQuoteLineWidth = gEditWidth - gQuotePrefix.length;
+				var maxQuoteLineWidth = maxQuoteLineLength - gQuotePrefix.length;
 				for (var i = 0; i < gQuoteLines.length; ++i)
 					gQuoteLines[i] = quote_msg(gQuoteLines[i], maxQuoteLineWidth, gQuotePrefix);
 			}
@@ -3127,7 +3167,7 @@ function toggleInsertMode(pCurpos)
 //                         to always write the edit text regardless of gEditAreaBuffer.
 //                         By default, gEditAreaBuffer is always checked.
 function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRemainingScreenRows,
-                           pIgnoreEditAreaBuffer)
+                          pIgnoreEditAreaBuffer)
 {
    // Make sure the array has lines in it, the given array index is valid, and
    // that the given line # is valid.  If not, then just return.
@@ -3259,216 +3299,84 @@ function messageIsEmpty()
 //                    up to the specified width will be cleared.  Defaults to false.
 function displayMessageRectangle(pX, pY, pWidth, pHeight, pEditLinesIndex, pClearExtraWidth)
 {
-   // If any of the parameters are out of bounds, then just return without
-   // doing anything.
-   if ((pX < gEditLeft) || (pY < gEditTop) || (pWidth < 0) || (pHeight < 0) || (pEditLinesIndex < 0))
-      return;
+	// If any of the parameters are out of bounds, then just return without
+	// doing anything.
+	if ((pX < gEditLeft) || (pY < gEditTop) || (pWidth < 0) || (pHeight < 0) || (pEditLinesIndex < 0))
+		return;
 
-   // If pWidth is too long with the given pX, then fix it.
-   if (pWidth > (gEditRight - pX + 1))
-      pWidth = gEditRight - pX + 1;
-   // If pHeight is too much with the given pY, then fix it.
-   if (pHeight > (gEditBottom - pY + 1))
-      pHeight = gEditBottom - pY + 1;
+	// If pWidth is too long with the given pX, then fix it.
+	if (pWidth > (gEditRight - pX + 1))
+		pWidth = gEditRight - pX + 1;
+	// If pHeight is too much with the given pY, then fix it.
+	if (pHeight > (gEditBottom - pY + 1))
+		pHeight = gEditBottom - pY + 1;
 
-   // Calculate the index into the edit line using pX and gEditLeft.  This
-   // assumes that pX is within the edit area (and it should be).
-   const editLineIndex = pX - gEditLeft;
+	// Calculate the index into the edit line using pX and gEditLeft.  This
+	// assumes that pX is within the edit area (and it should be).
+	const editLineIndex = pX - gEditLeft;
 
-   // Go to the given position on the screen and output the message text.
-   var messageStr = ""; // Will contain a portion of the message text
-   var screenY = pY;
-   var editLinesIndex = pEditLinesIndex;
-   var formatStr = "%-" + pWidth + "s";
-   var actualLenWritten = 0; // Actual length of text written for each line
-   for (var rectangleLine = 0; rectangleLine < pHeight; ++rectangleLine)
-   {
-      // Output the correct color for the line
-      console.print("n" + (isQuoteLine(gEditLines, editLinesIndex) ? gQuoteLineColor : gTextAttrs));
-      // Go to the position on the screen
-      screenY = pY + rectangleLine;
-      console.gotoxy(pX, screenY);
-      // Display the message text.  If the current edit line is valid,
-      // then print it; otherwise, just print spaces to blank out the line.
-      if (typeof(gEditLines[editLinesIndex]) != "undefined")
-      {
-         actualLenWritten = printEditLine(editLinesIndex, false, editLineIndex, pWidth);
-         // If pClearExtraWidth is true, then if the box width is longer than
-         // the text that was written, then output spaces to clear the rest
-         // of the line to erase the rest of the box line.
-         if (pClearExtraWidth)
-         {
-            if (pWidth > actualLenWritten)
-               printf("%" + +(pWidth-actualLenWritten) + "s", "");
-         }
-      }
-      else
-         printf(formatStr, "");
+	// Go to the given position on the screen and output the message text.
+	var messageStr = ""; // Will contain a portion of the message text
+	var screenY = pY;
+	var editLinesIndex = pEditLinesIndex;
+	var formatStr = "%-" + pWidth + "s";
+	var actualLenWritten = 0; // Actual length of text written for each line
+	for (var rectangleLine = 0; rectangleLine < pHeight; ++rectangleLine)
+	{
+		// Output the correct color for the line
+		console.print("\1n" + (isQuoteLine(gEditLines, editLinesIndex) ? gQuoteLineColor : gTextAttrs));
+		// Go to the position on the screen
+		screenY = pY + rectangleLine;
+		console.gotoxy(pX, screenY);
+		// Display the message text.  If the current edit line is valid,
+		// then print it; otherwise, just print spaces to blank out the line.
+		if (typeof(gEditLines[editLinesIndex]) != "undefined")
+		{
+			actualLenWritten = printEditLine(editLinesIndex, false, editLineIndex, pWidth);
+			// If pClearExtraWidth is true, then if the box width is longer than
+			// the text that was written, then output spaces to clear the rest
+			// of the line to erase the rest of the box line.
+			if (pClearExtraWidth)
+			{
+				if (pWidth > actualLenWritten)
+					printf("%" + +(pWidth-actualLenWritten) + "s", "");
+			}
+		}
+		else
+			printf(formatStr, "");
 
-      ++editLinesIndex;
-   }
+		++editLinesIndex;
+	}
 }
 
-// Displays the DCTEdit-style ESC menu and handles user input from that menu.
-// This is used by the main input loop.
+// Functions to call the appropriate ESC menu function for the UI style
 //
 // Parameters:
 //  pCurpos: The current cursor position
-//  pEditLineDiff: The difference between the current edit line and the top of
-//                 the edit area.
-//  pCurrentWordLength: The length of the current word
 //
-// Return value: An object containing values to be used by the main input loop.
-//               The object will contain these values:
-//                 returnCode: The value to use as the editor's return code
-//                 continueOn: Whether or not the input loop should continue
-//                 x: The horizontal component of the cursor position
-//                 y: The vertical component of the cursor position
-//                 currentWordLength: The length of the current word
-function handleDCTESCMenu(pCurpos, pCurrentWordLength)
+// Return value: The ESC menu action value representing the uesr's choice
+function callIceESCMenu(pCurpos)
 {
-   var returnObj = new Object();
-   returnObj.returnCode = 0;
-   returnObj.continueOn = true;
-   returnObj.x = pCurpos.x;
-   returnObj.y = pCurpos.y;
-   returnObj.currentWordLength = pCurrentWordLength;
-
-   // Call doDCTMenu() to display the DCT Edit menu and get the
-   // user's choice.
-   var editLineDiff = pCurpos.y - gEditTop;
-   var menuChoice = doDCTMenu(gEditLeft, gEditRight, gEditTop,
-                              displayMessageRectangle, gEditLinesIndex,
-                              editLineDiff, gConfigSettings.userIsSysop, gCanCrossPost);
-   // Take action according to the user's choice.
-   // Save
-   if ((menuChoice == "S") || (menuChoice == CTRL_Z) ||
-       (menuChoice == DCTMENU_FILE_SAVE))
-   {
-      returnObj.returnCode = 0;
-      returnObj.continueOn = false;
-   }
-   // Abort
-   else if ((menuChoice == "A") || (menuChoice == CTRL_A) ||
-             (menuChoice == DCTMENU_FILE_ABORT))
-   {
-      // Before aborting, ask they user if they really want to abort.
-      if (promptYesNo("Abort message", false, "Abort", false))
-      {
-         returnObj.returnCode = 1; // Aborted
-         returnObj.continueOn = false;
-      }
-      else
-      {
-         // Make sure the edit color attribute is set back.
-         //console.print("n" + gTextAttrs);
-         console.print(chooseEditColor());
-      }
-   }
-   // Toggle insert/overwrite mode
-   else if ((menuChoice == CTRL_V) || (menuChoice == DCTMENU_EDIT_INSERT_TOGGLE))
-      toggleInsertMode(pCurpos);
-   // Import file (sysop only)
-   else if (menuChoice == DCTMENU_SYSOP_IMPORT_FILE)
-   {
-      var retval = importFile(gConfigSettings.userIsSysop, pCurpos);
-      returnObj.x = retval.x;
-      returnObj.y = retval.y;
-      returnObj.currentWordLength = retval.currentWordLength;
-   }
-   // Import file for sysop, or Insert/Overwrite toggle for non-sysop
-   else if (menuChoice == "I")
-   {
-      if (gConfigSettings.userIsSysop)
-      {
-         var retval = importFile(gConfigSettings.userIsSysop, pCurpos);
-         returnObj.x = retval.x;
-         returnObj.y = retval.y;
-         returnObj.currentWordLength = retval.currentWordLength;
-      }
-      else
-         toggleInsertMode(pCurpos);
-   }
-   // Find text
-   else if ((menuChoice == CTRL_F) || (menuChoice == "F") ||
-             (menuChoice == DCTMENU_EDIT_FIND_TEXT))
-   {
-      var retval = findText(pCurpos);
-      returnObj.x = retval.x;
-      returnObj.y = retval.y;
-   }
-   // Command List
-   else if ((menuChoice == "O") || (menuChoice == DCTMENU_HELP_COMMAND_LIST))
-   {
-      displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
-                         gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
-      clearEditAreaBuffer();
-      fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-                     gInsertMode, gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop),
-                     displayEditLines);
-   }
-   // General help
-   else if ((menuChoice == "G") || (menuChoice == DCTMENU_HELP_GENERAL))
-   {
-      displayGeneralHelp(true, true, true);
-      clearEditAreaBuffer();
-      fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-                     gInsertMode, gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop),
-                     displayEditLines);
-   }
-   // Program info
-   else if ((menuChoice == "P") || (menuChoice == DCTMENU_HELP_PROGRAM_INFO))
-   {
-      displayProgramInfo(true, true);
-      clearEditAreaBuffer();
-      fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-                     gInsertMode, gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop),
-                     displayEditLines);
-   }
-   // Export the message
-   else if ((menuChoice == "X") || (menuChoice == DCTMENU_SYSOP_EXPORT_FILE))
-   {
-      if (gConfigSettings.userIsSysop)
-      {
-         exportToFile(gConfigSettings.userIsSysop);
-         console.gotoxy(returnObj.x, returnObj.y);
-      }
-   }
-   // Edit the message
-   else if ((menuChoice == "E") || (menuChoice == KEY_ESC))
-   {
-      // We don't need to do do anything in here.
-   }
-   // Cross-post
-   else if ((menuChoice == CTRL_C) || (menuChoice == "C") || (menuChoice == DCTMENU_CROSS_POST))
-   {
-      if (gCanCrossPost)
-         doCrossPosting(pCurpos);
-   }
-   // List text replacements
-   else if ((menuChoice == CTRL_T) || (menuChoice == "T") || (menuChoice == DCTMENU_LIST_TXT_REPLACEMENTS))
-   {
-      if (gConfigSettings.enableTextReplacements)
-         listTextReplacements();
-   }
-   // User settings
-   else if ((menuChoice == CTRL_U) || (menuChoice == "N") || (menuChoice == DCTMENU_EDIT_SETTINGS))
-      doUserSettings(pCurpos, true);
-
-   // Make sure the edit color attribute is set back.
-   //console.print("n" + gTextAttrs);
-   console.print(chooseEditColor());
-
-   return returnObj;
+	var chosenAction = doIceESCMenu(console.screen_rows, gCanCrossPost);
+	// If the user didn't choose help, then we need to refresh the bottom row
+	// on the screen.
+	if (chosenAction != ESC_MENU_HELP_COMMAND_LIST)
+		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+	return chosenAction;
 }
-
-// Displays the IceEdit-style ESC menu and handles user input from that menu.
-// This is used by the main input loop.
+function callDCTESCMenu(pCurpos)
+{
+	var editLineDiff = pCurpos.y - gEditTop;
+	var chosenAction = doDCTESCMenu(gEditLeft, gEditRight, gEditTop,
+	                                displayMessageRectangle, gEditLinesIndex,
+	                                editLineDiff, gConfigSettings.userIsSysop, gCanCrossPost);
+	return chosenAction;
+}
+// Shows the ESC menu (different, depending on the UI style) and takes action
+// according to the user's choice from the menu.
 //
 // Parameters:
-//  curpos: The current cursor position
-//  pEditLineDiff: The difference between the current edit line and the top of
-//                 the edit area.
+//  pCurpos: The current cursor position
 //  pCurrentWordLength: The length of the current word
 //
 // Return value: An object containing values to be used by the main input loop.
@@ -3478,63 +3386,164 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
 //                 x: The horizontal component of the cursor position
 //                 y: The vertical component of the cursor position
 //                 currentWordLength: The length of the current word
-function handleIceESCMenu(pCurpos, pCurrentWordLength)
+function doESCMenu(pCurpos, pCurrentWordLength)
 {
-	var returnObj = new Object();
-	returnObj.returnCode = 0;
-	returnObj.continueOn = true;
-	returnObj.x = pCurpos.x;
-	returnObj.y = pCurpos.y;
-	returnObj.currentWordLength = pCurrentWordLength;
+	var returnObj = {
+		returnCode: 0,
+		continueOn: true,
+		x: pCurpos.x,
+		y: pCurpos.y,
+		currentWordLength: pCurrentWordLength
+	};
 
-	// Call doIceESCMenu() to display the choices, and then take the
-	// chosen action.
-	var userChoice = doIceESCMenu(console.screen_rows, gCanCrossPost);
-	switch (userChoice)
+	switch (fpCallESCMenu(pCurpos))
 	{
-		case ICE_ESC_MENU_SAVE:
+		case ESC_MENU_SAVE:
 			returnObj.returnCode = 0;
 			returnObj.continueOn = false;
 			break;
-		case ICE_ESC_MENU_ABORT:
+		case ESC_MENU_ABORT:
 			// Before aborting, ask they user if they really want to abort.
-			if (promptYesNo("Abort message", false, "Abort", false))
+			if (promptYesNo("Abort message", false, "Abort", false, false))
 			{
 				returnObj.returnCode = 1; // Aborted
 				returnObj.continueOn = false;
 			}
 			break;
-		case ICE_ESC_MENU_EDIT:
-			// Nothing needs to be done for this option.
+		case ESC_MENU_EDIT_MESSAGE:
+			// Nothing needs to be done for this menu option
 			break;
-		case ICE_ESC_MENU_SETTINGS:
-			doUserSettings(pCurpos, true);
+		case ESC_MENU_INS_OVR_TOGGLE: // Insert/overwrite mode toggle
+			toggleInsertMode(pCurpos);
 			break;
-		case ICE_ESC_MENU_HELP:
-			displayProgramInfo(true, false);
-			displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop,
+		case ESC_MENU_SYSOP_IMPORT_FILE:
+			if (gConfigSettings.userIsSysop)
+			{
+				var retval = importFile(gConfigSettings.userIsSysop, pCurpos);
+				returnObj.x = retval.x;
+				returnObj.y = retval.y;
+				returnObj.currentWordLength = retval.currentWordLength;
+			}
+			break;
+		case ESC_MENU_SYSOP_EXPORT_FILE:
+			if (gConfigSettings.userIsSysop)
+			{
+				exportToFile(gConfigSettings.userIsSysop);
+				console.gotoxy(returnObj.x, returnObj.y);
+			}
+			break;
+		case ESC_MENU_FIND_TEXT:
+			var retval = findText(pCurpos);
+			returnObj.x = retval.x;
+			returnObj.y = retval.y;
+			break;
+		case ESC_MENU_HELP_COMMAND_LIST:
+			displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
 			                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
 			clearEditAreaBuffer();
-			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-			               gInsertMode, gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop),
-			displayEditLines);
+			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode,
+			               gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop), displayEditLines);
 			break;
-		case ICE_ESC_MENU_CROSS_POST:
+		case ESC_MENU_HELP_GENERAL:
+			displayGeneralHelp(true, true, true);
+			clearEditAreaBuffer();
+			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode,
+			               gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop), displayEditLines);
+			break;
+		case ESC_MENU_HELP_PROGRAM_INFO:
+			displayProgramInfoBox();
+			break;
+		case ESC_MENU_CROSS_POST_MESSAGE:
 			if (gCanCrossPost)
 				doCrossPosting(pCurpos);
 			break;
+		case ESC_MENU_LIST_TEXT_REPLACEMENTS:
+			if (gConfigSettings.enableTextReplacements)
+				listTextReplacements();
+			break;
+		case ESC_MENU_USER_SETTINGS:
+			if (gConfigSettings.allowUserSettings)
+				doUserSettings(pCurpos, true);
+			break;
+		case ESC_MENU_SPELL_CHECK:
+			var spellCheckRetObj = doSpellCheck(pCurpos, false);
+			returnObj.x = spellCheckRetObj.x;
+			returnObj.y = spellCheckRetObj.y;
+			returnObj.currentWordLength = spellCheckRetObj.currentWordLength;
+			break;
 	}
 
-	// If the user didn't choose help, then we only need to refresh the bottom
-	// row on the screen.
-	if (userChoice != ICE_ESC_MENU_HELP)
-		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
-
 	// Make sure the edit color attribute is set back.
-	//console.print("n" + gTextAttrs);
 	console.print(chooseEditColor());
 
 	return returnObj;
+}
+
+// Displays SlyEdit program information in a box in the edit area.  Waits for
+// a keypress, and then erases the box.
+function displayProgramInfoBox()
+{
+	var boxWidth = 47;
+	var boxHeight = 12;
+	var boxTopLeftX = Math.floor(console.screen_columns / 2) - Math.floor(boxWidth/2);
+	var boxTopLeftY = gEditTop + Math.floor(gEditHeight / 2) - Math.floor(boxHeight/2);
+	var borderBGColor = "\1b\1h\1" + "4"; // High blue with blue background
+	// Draw the box border
+	console.gotoxy(boxTopLeftX, boxTopLeftY);
+	console.print("\1n" + borderBGColor);
+	console.print(UPPER_LEFT_SINGLE);
+	var innerWidth = boxWidth - 2;
+	for (var i = 0; i < innerWidth; ++i)
+		console.print(HORIZONTAL_SINGLE);
+	console.print(UPPER_RIGHT_SINGLE);
+	var innerHeight = boxHeight - 2;
+	for (var i = 0; i < innerHeight; ++i)
+	{
+		console.gotoxy(boxTopLeftX, boxTopLeftY+i+1);
+		console.print(VERTICAL_SINGLE);
+		console.gotoxy(boxTopLeftX+boxWidth-1, boxTopLeftY+i+1);
+		console.print(VERTICAL_SINGLE);
+	}
+	console.gotoxy(boxTopLeftX, boxTopLeftY+boxHeight-1);
+	console.print(LOWER_LEFT_SINGLE);
+	for (var i = 0; i < innerWidth; ++i)
+		console.print(HORIZONTAL_SINGLE);
+	console.print(LOWER_RIGHT_SINGLE);
+	console.gotoxy(boxTopLeftX+1, boxTopLeftY+1);
+	var boxWidthFillFormatStr = "%" + innerWidth + "s";
+	printf(boxWidthFillFormatStr, "");
+	console.print("\1w");
+	var textLine = centeredText(innerWidth, "SlyEdit " + EDITOR_VERSION + " (" + EDITOR_VER_DATE + ")");
+	console.gotoxy(boxTopLeftX+1, boxTopLeftY+2);
+	console.print(textLine);
+	console.gotoxy(boxTopLeftX+1, boxTopLeftY+3);
+	console.print(centeredText(innerWidth, "Copyright (C) 2009-" + COPYRIGHT_YEAR + " Eric Oulashin"));
+	console.gotoxy(boxTopLeftX+1, boxTopLeftY+4);
+	printf(boxWidthFillFormatStr, "");
+	console.gotoxy(boxTopLeftX+1, boxTopLeftY+5);
+	console.print("\1y");
+	console.print(centeredText(innerWidth, "BBS tools web page:"));
+	console.print("\1m");
+	console.gotoxy(boxTopLeftX+1, boxTopLeftY+6);
+	console.print(centeredText(innerWidth, "http://digdist.synchro.net/DDBBSStuff.html"));
+	console.gotoxy(boxTopLeftX+1, boxTopLeftY+7);
+	printf(boxWidthFillFormatStr, "");
+	console.gotoxy(boxTopLeftX+1, boxTopLeftY+8);
+	printf(boxWidthFillFormatStr, "");
+	console.gotoxy(boxTopLeftX+1, boxTopLeftY+9);
+	console.print("\1c");
+	console.print(centeredText(innerWidth, "Thanks for using SlyEdit!"));
+	console.gotoxy(boxTopLeftX+1, boxTopLeftY+10);
+	printf(boxWidthFillFormatStr, "");
+
+	console.print("\1n");
+	// Wait for a keypress
+	getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
+	// Erase the info box
+	var editLineIndexAtSelBoxTopRow = gEditLinesIndex-(boxTopLeftY-gEditTop);
+	if (editLineIndexAtSelBoxTopRow < 0)
+		editLineIndexAtSelBoxTopRow = 0;
+	displayMessageRectangle(boxTopLeftX, boxTopLeftY, boxWidth, boxHeight, editLineIndexAtSelBoxTopRow, true);
 }
 
 // Figures out and returns the length of a word in the message text,based on
@@ -3547,65 +3556,64 @@ function handleIceESCMenu(pCurpos, pCurrentWordLength)
 // Return value: The length of the word at the given indexes
 function getWordLength(pEditLinesIndex, pTextLineIndex)
 {
-   // pEditLinesIndex and pTextLineIndex should be >= 0 before we can do
-   // anything in this function.
-   if ((pEditLinesIndex < 0) || (pTextLineIndex < 0))
-      return 0;
-   // Also, make sure gEditLines[pEditLinesIndex] is valid.
-   if ((gEditLines[pEditLinesIndex] == null) || (typeof(gEditLines[pEditLinesIndex]) == "undefined"))
-      return 0;
+	// pEditLinesIndex and pTextLineIndex should be >= 0 before we can do
+	// anything in this function.
+	if ((pEditLinesIndex < 0) || (pTextLineIndex < 0))
+		return 0;
+	// Also, make sure gEditLines[pEditLinesIndex] is valid.
+	if ((gEditLines[pEditLinesIndex] == null) || (typeof(gEditLines[pEditLinesIndex]) == "undefined"))
+		return 0;
 
-   // This function counts and returns the number of non-whitespace characters
-   // before the current character.
-   function countBeforeCurrentChar()
-   {
-      var charCount = 0;
+	// This function counts and returns the number of non-whitespace characters
+	// before the current character.
+	function countBeforeCurrentChar()
+	{
+		var charCount = 0;
 
-      for (var i = pTextLineIndex-1; i >= 0; --i)
-      {
-         if (!/\s/.test(gEditLines[pEditLinesIndex].text.charAt(i)))
-            ++charCount;
-         else
-            break;
-      }
+		for (var i = pTextLineIndex-1; i >= 0; --i)
+		{
+			if (!/\s/.test(gEditLines[pEditLinesIndex].text.charAt(i)))
+				++charCount;
+			else
+				break;
+		}
 
-      return charCount;
-   }
+		return charCount;
+	}
 
-   var wordLen = 0;
+	var wordLen = 0;
 
-   // If there are only characters to the left, or if the current
-   // character is a space, then count before the current character.
-   if ((pTextLineIndex == gEditLines[pEditLinesIndex].length()) ||
-       (gEditLines[pEditLinesIndex].text.charAt(gTextLineIndex) == " "))
-      wordLen = countBeforeCurrentChar();
-   // If there are charactrs to the left and at the current line index,
-   // then count to the left only if the current character is not whitespace.
-   else if (pTextLineIndex == gEditLines[pEditLinesIndex].length()-1)
-   {
-      if (!/\s/.test(gEditLines[pEditLinesIndex].text.charAt(pTextLineIndex)))
-         wordLen = countBeforeCurrentChar() + 1;
-   }
-   // If there are characters to the left and right, then count to the left
-   // and right only if the current character is not whitespace.
-   else if (pTextLineIndex < gEditLines[pEditLinesIndex].length()-1)
-   {
-      if (!/\s/.test(gEditLines[pEditLinesIndex].text.charAt(pTextLineIndex)))
-      {
-         // Count non-whitespace characters to the left, and include the current one.
-         wordLen = countBeforeCurrentChar() + 1;
-         // Count characters to the right.
-         for (var i = pTextLineIndex+1; i < gEditLines[pEditLinesIndex].length(); ++i)
-         {
-            if (!/\s/.test(gEditLines[pEditLinesIndex].text.charAt(i)))
-               ++wordLen;
-            else
-               break;
-         }
-      }
-   }
+	// If there are only characters to the left, or if the current
+	// character is a space, then count before the current character.
+	if ((pTextLineIndex == gEditLines[pEditLinesIndex].length()) || (gEditLines[pEditLinesIndex].text.charAt(gTextLineIndex) == " "))
+		wordLen = countBeforeCurrentChar();
+	// If there are charactrs to the left and at the current line index,
+	// then count to the left only if the current character is not whitespace.
+	else if (pTextLineIndex == gEditLines[pEditLinesIndex].length()-1)
+	{
+		if (!/\s/.test(gEditLines[pEditLinesIndex].text.charAt(pTextLineIndex)))
+			wordLen = countBeforeCurrentChar() + 1;
+	}
+	// If there are characters to the left and right, then count to the left
+	// and right only if the current character is not whitespace.
+	else if (pTextLineIndex < gEditLines[pEditLinesIndex].length()-1)
+	{
+		if (!/\s/.test(gEditLines[pEditLinesIndex].text.charAt(pTextLineIndex)))
+		{
+			// Count non-whitespace characters to the left, and include the current one.
+			wordLen = countBeforeCurrentChar() + 1;
+			// Count characters to the right.
+			for (var i = pTextLineIndex+1; i < gEditLines[pEditLinesIndex].length(); ++i)
+			{
+				if (!/\s/.test(gEditLines[pEditLinesIndex].text.charAt(i)))
+					++wordLen;
+				else
+					break;
+			}
+		}
+	}
 
-   return wordLen;
+	return wordLen;
 }
 
 // Inserts a string into gEditLines after a given index.
@@ -3620,38 +3628,38 @@ function getWordLength(pEditLinesIndex, pTextLineIndex)
 //               (as opposed to above).
 function insertLineIntoMsg(pInsertLineIndex, pString, pHardNewline, pIsQuoteLine)
 {
-   var insertedBelow = false;
+	var insertedBelow = false;
 
-   // Create the new text line
-   var line = new TextLine();
-   line.text = pString;
-   line.hardNewlineEnd = false;
-   if ((pHardNewline != null) && (typeof(pHardNewline) != "undefined"))
-      line.hardNewlineEnd = pHardNewline;
-   if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) != "undefined"))
-      line.isQuoteLine = pIsQuoteLine;
+	// Create the new text line
+	var line = new TextLine();
+	line.text = pString;
+	line.hardNewlineEnd = false;
+	if ((pHardNewline != null) && (typeof(pHardNewline) != "undefined"))
+		line.hardNewlineEnd = pHardNewline;
+	if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) != "undefined"))
+		line.isQuoteLine = pIsQuoteLine;
 
-   // If the current message line is empty, insert the quote line above
-   // the current line.  Otherwise, insert the quote line below the
-   // current line.
-   if (typeof(gEditLines[pInsertLineIndex]) == "undefined")
-      gEditLines.splice(pInsertLineIndex, 0, line);
-   // Note: One time, I noticed an error with the following test:
-   // gEditLines[pInsertLineIndex] has no properties
-   // Thus, I added the above test to see if the edit line is valid.
-   else if (gEditLines[pInsertLineIndex].length() == 0)
-      gEditLines.splice(pInsertLineIndex, 0, line);
-   else
-   {
-      // Insert the quote line below the given line index
-      gEditLines.splice(pInsertLineIndex + 1, 0, line);
-      // The current message line should have its hardNewlineEnd set
-      // true so that the quote line won't get wrapped up.
-      gEditLines[pInsertLineIndex].hardNewlineEnd = true;
-      insertedBelow = true;
-   }
+	// If the current message line is empty, insert the quote line above
+	// the current line.  Otherwise, insert the quote line below the
+	// current line.
+	if (typeof(gEditLines[pInsertLineIndex]) == "undefined")
+		gEditLines.splice(pInsertLineIndex, 0, line);
+	// Note: One time, I noticed an error with the following test:
+	// gEditLines[pInsertLineIndex] has no properties
+	// Thus, I added the above test to see if the edit line is valid.
+	else if (gEditLines[pInsertLineIndex].length() == 0)
+		gEditLines.splice(pInsertLineIndex, 0, line);
+	else
+	{
+		// Insert the quote line below the given line index
+		gEditLines.splice(pInsertLineIndex + 1, 0, line);
+		// The current message line should have its hardNewlineEnd set
+		// true so that the quote line won't get wrapped up.
+		gEditLines[pInsertLineIndex].hardNewlineEnd = true;
+		insertedBelow = true;
+	}
 
-   return insertedBelow;
+	return insertedBelow;
 }
 
 // Prompts the user for a filename on the BBS computer and loads its contents
@@ -3667,142 +3675,142 @@ function insertLineIntoMsg(pInsertLineIndex, pString, pHardNewline, pIsQuoteLine
 //               currentWordLength: The length of the current word
 function importFile(pIsSysop, pCurpos)
 {
-   // Create the return object
-   var retObj = new Object();
-   retObj.x = pCurpos.x;
-   retObj.y = pCurpos.y;
-   retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+	// Create the return object
+	var retObj = new Object();
+	retObj.x = pCurpos.x;
+	retObj.y = pCurpos.y;
+	retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 
-   // Don't let non-sysops do this.
-   if (!pIsSysop)
-      return retObj;
+	// Don't let non-sysops do this.
+	if (!pIsSysop)
+		return retObj;
 
-   var loadedAFile = false;
-   // This loop continues to prompt the user until they enter a valid
-   // filename or a blank string.
-   var continueOn = true;
-   while (continueOn)
-   {
-      // Go to the last row on the screen and prompt the user for a filename
-      var promptText = "ncFile:h";
-      var promptTextLen = strip_ctrl(promptText).length;
-      console.gotoxy(1, console.screen_rows);
-      console.cleartoeol("n");
-      console.print(promptText);
-      var filename = console.getstr(console.screen_columns-promptTextLen-1, K_NOCRLF);
-      continueOn = (filename != "");
-      if (continueOn)
-      {
-         filename = file_getcase(filename);
-         if (filename != undefined)
-         {
-            // Open the file and insert its contents into the message.
-            var inFile = new File(filename);
-            if (inFile.exists && inFile.open("r"))
-            {
-               const maxLineLength = gEditWidth - 1; // Don't insert lines longer than this
-               var fileLine;
-               while (!inFile.eof)
-               {
-                  fileLine = inFile.readln(1024);
-                  // fileLine should always be a string, but there seem to be
-                  // situations where it isn't.  So if it's a string, we can
-                  // insert text into gEditLines as normal.  If it's not a
-                  // string, insert a blank line.
-                  if (typeof(fileLine) == "string")
-                  {
-                     // Tab characters can cause problems, so replace tabs with 3 spaces.
-                     fileLine = fileLine.replace(/\t/, "   ");
-                     // Insert the line into the message, splitting up the line,
-                     // if the line is longer than the edit area.
-                     do
-                     {
-                        insertLineIntoMsg(gEditLinesIndex, fileLine.substr(0, maxLineLength),
-                                          true, false);
-                        fileLine = fileLine.substr(maxLineLength);
-                        ++gEditLinesIndex;
-                     } while (fileLine.length > maxLineLength);
-                     // Edge case, if the line still has characters in it
-                     if (fileLine.length > 0)
-                     {
-                        insertLineIntoMsg(gEditLinesIndex, fileLine, true, false);
-                        ++gEditLinesIndex;
-                     }
-                  }
-                  else
-                  {
-                     insertLineIntoMsg(gEditLinesIndex, "", true, false);
-                     ++gEditLinesIndex;
-                  }
-               }
-               inFile.close();
+	var loadedAFile = false;
+	// This loop continues to prompt the user until they enter a valid
+	// filename or a blank string.
+	var continueOn = true;
+	while (continueOn)
+	{
+		// Go to the last row on the screen and prompt the user for a filename
+		var promptText = "\1n\1cFile:\1h";
+		var promptTextLen = strip_ctrl(promptText).length;
+		console.gotoxy(1, console.screen_rows);
+		console.cleartoeol("\1n");
+		console.print(promptText);
+		var filename = console.getstr(console.screen_columns-promptTextLen-1, K_NOCRLF);
+		continueOn = (filename != "");
+		if (continueOn)
+		{
+			filename = file_getcase(filename);
+			if (filename != undefined)
+			{
+				// Open the file and insert its contents into the message.
+				var inFile = new File(filename);
+				if (inFile.exists && inFile.open("r"))
+				{
+					const maxLineLength = gEditWidth - 1; // Don't insert lines longer than this
+					var fileLine;
+					while (!inFile.eof)
+					{
+						fileLine = inFile.readln(1024);
+						// fileLine should always be a string, but there seem to be
+						// situations where it isn't.  So if it's a string, we can
+						// insert text into gEditLines as normal.  If it's not a
+						// string, insert a blank line.
+						if (typeof(fileLine) == "string")
+						{
+							// Tab characters can cause problems, so replace tabs with 3 spaces.
+							fileLine = fileLine.replace(/\t/, "   ");
+							// Insert the line into the message, splitting up the line,
+							// if the line is longer than the edit area.
+							do
+							{
+								insertLineIntoMsg(gEditLinesIndex, fileLine.substr(0, maxLineLength),
+								                  true, false);
+								fileLine = fileLine.substr(maxLineLength);
+								++gEditLinesIndex;
+							} while (fileLine.length > maxLineLength);
+							// Edge case, if the line still has characters in it
+							if (fileLine.length > 0)
+							{
+								insertLineIntoMsg(gEditLinesIndex, fileLine, true, false);
+								++gEditLinesIndex;
+							}
+						}
+						else
+						{
+							insertLineIntoMsg(gEditLinesIndex, "", true, false);
+							++gEditLinesIndex;
+						}
+					}
+					inFile.close();
 
-               // If the last text line is blank, then remove it.
-               if (gEditLines[gEditLinesIndex].length() == 0)
-               {
-                  gEditLines.splice(gEditLinesIndex, 1);
-                  --gEditLinesIndex;
-               }
+					// If the last text line is blank, then remove it.
+					if (gEditLines[gEditLinesIndex].length() == 0)
+					{
+						gEditLines.splice(gEditLinesIndex, 1);
+						--gEditLinesIndex;
+					}
 
-               loadedAFile = true;
-               continueOn = false;
-            }
-            else // Unable to open the file
-               writeWithPause(1, console.screen_rows, "yhUnable to open the file!", ERRORMSG_PAUSE_MS);
-         }
-         else // Could not find the correct case for the file (it doesn't exist?)
-            writeWithPause(1, console.screen_rows, "yhUnable to locate the file!", ERRORMSG_PAUSE_MS);
-      }
-   }
+					loadedAFile = true;
+					continueOn = false;
+				}
+				else // Unable to open the file
+					writeWithPause(1, console.screen_rows, "\1y\1hUnable to open the file!", ERRORMSG_PAUSE_MS);
+			}
+			else // Could not find the correct case for the file (it doesn't exist?)
+				writeWithPause(1, console.screen_rows, "\1y\1hUnable to locate the file!", ERRORMSG_PAUSE_MS);
+		}
+	}
 
-   // Refresh the help line on the bottom of the screen
-   fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+	// Refresh the help line on the bottom of the screen
+	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
 
-   // If we loaded a file, then refresh the message text.
-   if (loadedAFile)
-   {
-      // Insert a blank line into gEditLines so that the user ends up on a new
-      // blank line.
-      //displayEditLines(pScreenLine, pArrayIndex, pEndScreenRow, pClearRemainingScreenRows)
-      // Figure out the index to start at in gEditLines
-      var startIndex = 0;
-      if (gEditLines.length > gEditHeight)
-         startIndex = gEditLines.length - gEditHeight;
-      // Refresh the message on the screen
-      displayEditLines(gEditTop, startIndex, gEditBottom, true, true);
+	// If we loaded a file, then refresh the message text.
+	if (loadedAFile)
+	{
+		// Insert a blank line into gEditLines so that the user ends up on a new
+		// blank line.
+		//displayEditLines(pScreenLine, pArrayIndex, pEndScreenRow, pClearRemainingScreenRows)
+		// Figure out the index to start at in gEditLines
+		var startIndex = 0;
+		if (gEditLines.length > gEditHeight)
+			startIndex = gEditLines.length - gEditHeight;
+		// Refresh the message on the screen
+		displayEditLines(gEditTop, startIndex, gEditBottom, true, true);
 
-      // Set up the edit lines & text line index for the last line, and
-      // place the cursor at the beginning of the last edit line.
-      // If the last line is short enough, place the cursor at the end
-      // of it.  Otherwise, append a new line and place the cursor there.
-      if (gEditLines[gEditLinesIndex].length() < gEditWidth-1)
-      {
-         gEditLinesIndex = gEditLines.length - 1;
-         gTextLineIndex = gEditLines[gEditLinesIndex].length();
-         retObj.x = gEditLeft + gTextLineIndex;
-         retObj.y = gEditBottom;
-         if (gEditLines.length < gEditHeight)
-            retObj.y = gEditTop + gEditLines.length - 1;
-         retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-      }
-      else
-      {
-         // Append a new line and place the cursor there
-         gEditLines.push(new TextLine());
-         gEditLinesIndex = gEditLines.length - 1;
-         gTextLineIndex = 0;
-         retObj.x = gEditLeft;
-         retObj.y = gEditBottom;
-         if (gEditLines.length < gEditHeight)
-            retObj.y = gEditTop + gEditLines.length - 1;
-         retObj.currentWordLength = 0;
-      }
-   }
+		// Set up the edit lines & text line index for the last line, and
+		// place the cursor at the beginning of the last edit line.
+		// If the last line is short enough, place the cursor at the end
+		// of it.  Otherwise, append a new line and place the cursor there.
+		if (gEditLines[gEditLinesIndex].length() < gEditWidth-1)
+		{
+			gEditLinesIndex = gEditLines.length - 1;
+			gTextLineIndex = gEditLines[gEditLinesIndex].length();
+			retObj.x = gEditLeft + gTextLineIndex;
+			retObj.y = gEditBottom;
+			if (gEditLines.length < gEditHeight)
+				retObj.y = gEditTop + gEditLines.length - 1;
+			retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+		}
+		else
+		{
+			// Append a new line and place the cursor there
+			gEditLines.push(new TextLine());
+			gEditLinesIndex = gEditLines.length - 1;
+			gTextLineIndex = 0;
+			retObj.x = gEditLeft;
+			retObj.y = gEditBottom;
+			if (gEditLines.length < gEditHeight)
+				retObj.y = gEditTop + gEditLines.length - 1;
+			retObj.currentWordLength = 0;
+		}
+	}
 
-   // Make sure the cursor is where it's supposed to be.
-   console.gotoxy(retObj.x, retObj.y);
+	// Make sure the cursor is where it's supposed to be.
+	console.gotoxy(retObj.x, retObj.y);
 
-   return retObj;
+	return retObj;
 }
 
 // This function lets sysops export (save) the current message to
@@ -3844,7 +3852,7 @@ function exportToFile(pIsSysop)
          writeWithPause(1, console.screen_rows, "yhUnable to open the file for writing!", ERRORMSG_PAUSE_MS);
    }
    else // No filename specified
-      writeWithPause(1, console.screen_rows, "mhMessage not exported.", ERRORMSG_PAUSE_MS);
+      writeWithPause(1, console.screen_rows, "\1m\1hMessage not exported.", ERRORMSG_PAUSE_MS);
 
    // Refresh the help line on the bottom of the screen
    fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
@@ -3860,129 +3868,529 @@ function exportToFile(pIsSysop)
 //               y: The vertical component of the cursor position
 function findText(pCurpos)
 {
-   // Create the return object.
-   var returnObj = new Object();
-   returnObj.x = pCurpos.x;
-   returnObj.y = pCurpos.y;
+	// Create the return object.
+	var retObj = {
+		x: pCurpos.x,
+		y: pCurpos.y
+	};
 
-   // This function makes use of the following "static" variables:
-   //  lastSearchText: The text searched for last
-   //  searchStartIndex: The starting index for gEditLines that should
-   //                    be used for the search
-   if (typeof(findText.lastSearchText) == "undefined")
-      findText.lastSearchText = "";
-   if (typeof(findText.searchStartIndex) == "undefined")
-      findText.searchStartIndex = 0;
+	// This function makes use of the following "static" variables:
+	//  lastSearchText: The text searched for last
+	//  searchStartIndex: The starting index for gEditLines that should
+	//                    be used for the search
+	if (typeof(findText.lastSearchText) == "undefined")
+		findText.lastSearchText = "";
+	if (typeof(findText.searchStartIndex) == "undefined")
+		findText.searchStartIndex = 0;
 
-   // Go to the last row on the screen and prompt the user for text to find
-   var promptText = "ncText:h";
-   var promptTextLen = strip_ctrl(promptText).length;
-   console.gotoxy(1, console.screen_rows);
-   console.cleartoeol("n");
-   console.print(promptText);
-   var searchText = console.getstr(console.screen_columns-promptTextLen-1, K_NOCRLF);
+	// Go to the last row on the screen and prompt the user for text to find
+	var promptText = "\1n\1cText:\1h";
+	var promptTextLen = strip_ctrl(promptText).length;
+	console.gotoxy(1, console.screen_rows);
+	console.cleartoeol("\1n");
+	console.print(promptText);
+	var searchText = console.getstr(console.screen_columns-promptTextLen-1, K_NOCRLF);
 
-   // If the user's search is text is different from last time, then set the
-   // starting gEditLines index to 0.  Also, update the last search text.
-   if (searchText != findText.lastSearchText)
-      findText.searchStartIndex = 0;
-   findText.lastSearchText = searchText;
+	// If the user's search is text is different from last time, then set the
+	// starting gEditLines index to 0.  Also, update the last search text.
+	if (searchText != findText.lastSearchText)
+		findText.searchStartIndex = 0;
+	findText.lastSearchText = searchText;
 
-   // Search for the text.
-   var caseSensitive = false; // Case-sensitive search?
-   var textIndex = 0; // The index of the text in the edit lines
-   if (searchText.length > 0)
-   {
-      // editLinesTopIndex is the index of the line currently displayed
-      // at the top of the edit area, and also the line to be displayed
-      // at the top of the edit area.
-      var editLinesTopIndex = gEditLinesIndex - (pCurpos.y - gEditTop);
+	// Search for the text.
+	var caseSensitive = false; // Case-sensitive search?
+	var textIndex = 0; // The index of the text in the edit lines
+	if (searchText.length > 0)
+	{
+		// editLinesTopIndex is the index of the line currently displayed
+		// at the top of the edit area, and also the line to be displayed
+		// at the top of the edit area.
+		var editLinesTopIndex = gEditLinesIndex - (pCurpos.y - gEditTop);
 
-      // Look for the text in gEditLines
-      var textFound = false;
-      for (var i = findText.searchStartIndex; i < gEditLines.length; ++i)
-      {
-         if (caseSensitive)
-            textIndex = gEditLines[i].text.indexOf(searchText);
-         else
-            textIndex = gEditLines[i].text.toUpperCase().indexOf(searchText.toUpperCase());
-         // If the text was found in this line, then highlight it and
-         // exit the search loop.
-         if (textIndex > -1)
-         {
-            gTextLineIndex = textIndex;
-            textFound = true;
+		// Look for the text in gEditLines
+		var textFound = false;
+		for (var i = findText.searchStartIndex; i < gEditLines.length; ++i)
+		{
+			if (caseSensitive)
+				textIndex = gEditLines[i].text.indexOf(searchText);
+			else
+				textIndex = gEditLines[i].text.toUpperCase().indexOf(searchText.toUpperCase());
+			// If the text was found in this line, then highlight it and
+			// exit the search loop.
+			if (textIndex > -1)
+			{
+				gTextLineIndex = textIndex;
+				textFound = true;
 
-            // If the line is above or below the edit area, then we'll need
-            // to refresh the edit lines on the screen.  We also need to set
-            // the cursor position to the proper place.
-            returnObj.x = gEditLeft + gTextLineIndex;
-            var refresh = false;
-            if (i < editLinesTopIndex)
-            {
-               // The line is above the edit area.
-               refresh = true;
-               returnObj.y = gEditTop;
-               editLinesTopIndex = i;
-            }
-            else if (i >= editLinesTopIndex + gEditHeight)
-            {
-               // The line is below the edit area.
-               refresh = true;
-               returnObj.y = gEditBottom;
-               editLinesTopIndex = i - gEditHeight + 1;
-            }
-            else
-            {
-               // The line is inside the edit area.
-               returnObj.y = pCurpos.y + (i - gEditLinesIndex);
-            }
+				// If the line is above or below the edit area, then we'll need
+				// to refresh the edit lines on the screen.  We also need to set
+				// the cursor position to the proper place.
+				retObj.x = gEditLeft + gTextLineIndex;
+				var refresh = false;
+				if (i < editLinesTopIndex)
+				{
+					// The line is above the edit area.
+					refresh = true;
+					retObj.y = gEditTop;
+					editLinesTopIndex = i;
+				}
+				else if (i >= editLinesTopIndex + gEditHeight)
+				{
+					// The line is below the edit area.
+					refresh = true;
+					retObj.y = gEditBottom;
+					editLinesTopIndex = i - gEditHeight + 1;
+				}
+				else
+				{
+					// The line is inside the edit area.
+					retObj.y = pCurpos.y + (i - gEditLinesIndex);
+				}
 
-            gEditLinesIndex = i;
+				gEditLinesIndex = i;
 
-            if (refresh)
-               displayEditLines(gEditTop, editLinesTopIndex, gEditBottom, true, true);
+				if (refresh)
+					displayEditLines(gEditTop, editLinesTopIndex, gEditBottom, true, true);
 
-            // Highlight the found text on the line by briefly displaying it in a
-            // different color.
-            var highlightText = gEditLines[i].text.substr(textIndex, searchText.length);
-            console.gotoxy(returnObj.x, returnObj.y);
-            console.print("nk4" + highlightText);
-            mswait(1500);
-            console.gotoxy(returnObj.x, returnObj.y);
-            //console.print(gTextAttrs + highlightText);
-            console.print(chooseEditColor() + highlightText);
+				// Highlight the found text on the line by briefly displaying it in a
+				// different color.
+				var highlightText = gEditLines[i].text.substr(textIndex, searchText.length);
+				console.gotoxy(retObj.x, retObj.y);
+				console.print("\1n\1k\1" + "4" + highlightText);
+				mswait(TEXT_SEARCH_PAUSE_MS);
+				console.gotoxy(retObj.x, retObj.y);
+				//console.print(gTextAttrs + highlightText);
+				console.print(chooseEditColor() + highlightText);
 
-            // The next time the user searches with the same text, we'll want
-            // to start searching at the next line.  Wrap around if necessary.
-            findText.searchStartIndex = i + 1;
-            if (findText.searchStartIndex >= gEditLines.length)
-               findText.searchStartIndex = 0;
+				// The next time the user searches with the same text, we'll want
+				// to start searching at the next line.  Wrap around if necessary.
+				findText.searchStartIndex = i + 1;
+				if (findText.searchStartIndex >= gEditLines.length)
+					findText.searchStartIndex = 0;
 
-            break;
-         }
-      }
+				break;
+			}
+		}
 
-      // If the text wasn't found, tell the user.  Also, make sure searchStartIndex
-      // is reset to 0.
-      if (!textFound)
-      {
-         console.gotoxy(1, console.screen_rows);
-         console.cleartoeol("n");
-         console.print("yhThe text wasn't found!");
-         mswait(ERRORMSG_PAUSE_MS);
+		// If the text wasn't found, tell the user.  Also, make sure searchStartIndex
+		// is reset to 0.
+		if (!textFound)
+		{
+			console.gotoxy(1, console.screen_rows);
+			console.cleartoeol("\1n");
+			console.print("\1y\1hThe text wasn't found!");
+			mswait(ERRORMSG_PAUSE_MS);
 
-         findText.searchStartIndex = 0;
-      }
-   }
+			findText.searchStartIndex = 0;
+		}
+	}
 
-   // Refresh the help line on the bottom of the screen
-   fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+	// Refresh the help line on the bottom of the screen
+	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
 
-   // Make sure the cursor is positioned where it should be.
-   console.gotoxy(returnObj.x, returnObj.y);
+	// Make sure the cursor is positioned where it should be.
+	console.gotoxy(retObj.x, retObj.y);
 
-   return returnObj;
+	return retObj;
+}
+
+// Performs spell checking.
+//
+// Parameters:
+//  pCurpos: The current cursor position (with x and y properties)
+//  pConfirmSpellcheck: Whether or not to confirm with the user that they
+//                      really want to run spellcheck.  Optional; defaults
+//                      to true.
+//
+// Return value: An object containing the following properties:
+//               x: The horizontal component of the cursor position
+//               y: The vertical component of the cursor position
+//               currentWordLength: The length of the current word
+function doSpellCheck(pCurpos, pConfirmSpellcheck)
+{
+	// Create the return object.
+	var retObj = {
+		x: pCurpos.x,
+		y: pCurpos.y,
+		currentWordLength: 0
+	};
+
+	var confirmSpellcheck = (typeof(pConfirmSpellcheck) == "boolean" ? pConfirmSpellcheck : true);
+	if (confirmSpellcheck)
+	{
+		// Confirm if the user wants to do spellcheck
+		if (!promptYesNo("Run spell check", true, "Spell check", false, true))
+		{
+			console.gotoxy(pCurpos.x, pCurpos.y);
+			return retObj;
+		}
+	}
+
+	// If there are no dictionaries specifies, then output an error message
+	// and return.  The user settings should have dictionary filenames specified,
+	// but if not, default to the SlyEdit dictionary configuration.
+	var dictFilenames = null;
+	if (gUserSettings.hasOwnProperty("dictionaryFilenames"))
+		dictFilenames = gUserSettings.dictionaryFilenames;
+	else
+		dictFilenames = gConfigSettings.dictionaryFilenames;
+	if (dictFilenames.length == 0)
+	{
+		writeWithPause(1, console.screen_rows, "\1y\1hThere are no dictionaries configured!\1n", ERRORMSG_PAUSE_MS);
+		// Refresh the help line on the bottom of the screen
+		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+		console.gotoxy(pCurpos.x, pCurpos.y);
+		return retObj;
+	}
+
+	// Load the dictionary file(s)
+	console.gotoxy(1, console.screen_rows);
+	console.cleartoeol("\1n");
+	if (dictFilenames.length > 1)
+		console.print("Reading dictionaries...");
+	else
+		console.print("Reading dictionary...");
+	var dictionaries = [];
+	for (var i = 0; i < dictFilenames.length; ++i)
+	{
+		var dictionary = readDictionaryFile(dictFilenames[i], true);
+		if (dictionary.length > 0)
+			dictionaries.push(dictionary);
+	}
+	// If we were unable to load any of the dictionary files, then output an error and
+	// return.
+	if (dictionaries.length == 0)
+	{
+		writeWithPause(1, console.screen_rows, "\1y\1hUnable to load the dictionary file(s)!\1n", ERRORMSG_PAUSE_MS);
+		// Refresh the help line on the bottom of the screen
+		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+		console.gotoxy(pCurpos.x, pCurpos.y);
+		return retObj;
+	}
+
+	// Write "Spell check in progress" in place of the "Reading dictionary..." text
+	console.gotoxy(1, console.screen_rows);
+	console.print("Spell check in progress");
+
+	// Look at all the words in the message and check to see if they're valid
+	// words.  If not, then let the user correct them.
+	var textIndex = 0; // The index of the text in the edit lines
+	// editLinesTopIndex is the index of the line currently displayed
+	// at the top of the edit area, and also the line to be displayed
+	// at the top of the edit area.
+	var editLinesTopIndex = gEditLinesIndex - (pCurpos.y - gEditTop);
+
+	var fixedAnyWords = false;
+	var continueOn = true;
+	var oldPreviousLine = ""; // To store the previous uncorrected line, for screen update purposes
+	for (var editLineIdx = 0; (editLineIdx < gEditLines.length) && continueOn; ++editLineIdx)
+	{
+		// Skip quote lines
+		if (gEditLines[editLineIdx].isQuoteLine)
+			continue;
+
+		oldPreviousLine = gEditLines[editLineIdx].text;
+
+		// The index in the line for where to start searching for the word
+		// in order to highlight it if necessary
+		var searchStartIdx = 0;
+		var searchStartIdxInOldLine = 0;
+		var lineWords = gEditLines[editLineIdx].text.split(" ");
+		for (var wordIdx = 0; (wordIdx < lineWords.length) && continueOn; ++wordIdx)
+		{
+			// Spell check the current word in the line
+			var spellChkRetObj = spellCheckWordInLine(dictionaries, editLineIdx, lineWords, wordIdx,
+			                                          searchStartIdx, oldPreviousLine, searchStartIdxInOldLine,
+			                                          editLinesTopIndex);
+			continueOn = spellChkRetObj.continueSpellCheck;
+			if (continueOn)
+			{
+				searchStartIdx = spellChkRetObj.searchStartIdx;
+				searchStartIdxInOldLine = spellChkRetObj.searchStartIdxInOldLine;
+				editLinesTopIndex = spellChkRetObj.editLinesTopIdx;
+				if (spellChkRetObj.fixedWord)
+					fixedAnyWords = true;
+			}
+		}
+	}
+
+	// If any words were fixed, then refresh the message text on the screen.
+	if (fixedAnyWords)
+	{
+		// Re-wrap the message text to ensure it fits on the screen
+		var nonQuoteBlockIdxes = findNonQuoteBlockIndexes(gEditLines);
+		for (var i = 0; i < nonQuoteBlockIdxes.length; ++i)
+		{
+			var textLines = [];
+			for (var lineIdx = nonQuoteBlockIdxes[i].start; lineIdx < nonQuoteBlockIdxes[i].end; ++lineIdx)
+				textLines.push(gEditLines[lineIdx].text);
+			var numLinesDiff = wrapTextLines(textLines, 0, textLines.length, console.screen_columns-1);
+			// If lines were added, then splice in text lines into gEditLines where
+			// appropriate.  If lines were removed, then remove lines from gEditLines.
+			if (numLinesDiff > 0)
+			{
+				for (var counter = 0; counter < numLinesDiff; ++counter)
+					gEditLines.splice(nonQuoteBlockIdxes[i].end, 0, new TextLine("", false, false));
+			}
+			else if (numLinesDiff < 0)
+				gEditLines.splice(nonQuoteBlockIdxes[i].end, -numLinesDiff); // Make numLinesDiff a positive
+			var endLineIdx = nonQuoteBlockIdxes[i].end + numLinesDiff;
+			var wrappedLineIdx = 0;
+			for (var lineIdx = nonQuoteBlockIdxes[i].start; lineIdx < endLineIdx; ++lineIdx)
+				gEditLines[lineIdx].text = textLines[wrappedLineIdx++];
+		}
+	}
+	// Scroll to the end of the message and put the cursor at the end of the last
+	// line on the screen.  Also, ensure all the message tracking variables are
+	// updated properly.
+	editLinesTopIndex = gEditLines.length - gEditHeight;
+	if (editLinesTopIndex < 0)
+		editLinesTopIndex = 0;
+	var height = gEditBottom - gEditTop + 1;
+	displayMessageRectangle(1, gEditTop, console.screen_columns, height, editLinesTopIndex, true);
+	var numMessageLinesOnScreen = gEditLines.length - editLinesTopIndex;
+	gEditLinesIndex = editLinesTopIndex + numMessageLinesOnScreen - 1;
+	retObj.x = gEditLeft + gEditLines[gEditLinesIndex].text.length;
+	retObj.y = gEditTop + numMessageLinesOnScreen - 1;
+	gTextLineIndex = gEditLines[gEditLinesIndex].text.length;
+	retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+
+	// Refresh the help line on the bottom of the screen
+	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+
+	// Make sure the cursor is positioned where it should be.
+	console.gotoxy(retObj.x, retObj.y);
+
+	return retObj;
+}
+// Helper for doSpellCheck(): Checks a word from an array of words (split from an edit line)
+// and inputs a correction from the user if needed.
+//
+// Parameters:
+//  pDictionaries: The array of dictionary arrays to use for word verification
+//  pEditLineIdx: The index into gEditLines of the current word array being passed in
+//  pWordArray: The array of words to check
+//  pWordIdx: The index into pWordArray of the word to check
+//  pSearchStartIdx: The current search start index in the current edit line
+//  pOldEditLine: The "old" (original) edit line before any fixes
+//  pSearchStartIdxInOldLine: The current search start index in the old edit line
+//  pEditLinesTopIdx: The current value of the edit lines top index
+//
+// Return value: An object with the following properties:
+//               skipped: Whether or not this word was skipped
+//               searchStartIdx: The current search start index in the current edit line
+//               searchStartIdxInOldLine: The current search start index in the old edit line
+//               fixedWord: Whether or not the word was fixed by the user
+//               continueSpellCheck: Boolean - Whether or not to continue spell check
+//               editLinesTopIdx: The current value of the edit lines top index
+function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
+                               pSearchStartIdx, pOldEditLine, pSearchStartIdxInOldLine,
+                               pEditLinesTopIdx)
+{
+	var retObj = {
+		skipped: false,
+		searchStartIdx: 0,
+		searchStartIdxInOldLine: 0,
+		fixedWord: false,
+		continueSpellCheck: true,
+		editLinesTopIdx: pEditLinesTopIdx
+	};
+	// Ensure the word to test is all lowercase for case-insensitive matching
+	var currentWord = pWordArray[pWordIdx].toLowerCase();
+	// Ensure the word we're checking only has letters and/or an apostrophe.
+	var currentWord = currentWord.replace(/^[^a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']*([a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']+)[^a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']*$/, "$1");
+	// Now, ensure the word only certain characters: Letters, apostrophe.  Skip it if not.
+	if (!/^[a-zA-ZÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑß']+$/g.test(currentWord))
+	{
+		retObj.skipped = true;
+		return retObj;
+	}
+
+	// Ensure the word doesn't have any whitespace and isn't just whitespace
+	currentWord = trimSpaces(currentWord, true, true, true);
+	if (currentWord.length > 0)
+	{
+		// If the word isn't a valid word, then highlight it and let the user
+		// correct it.
+		if (!wordExists_MultipleDictionaries(pDictionaries, currentWord))
+		{
+			// Find the word's index in the line
+			var wordIdxInLine = gEditLines[pEditLineIdx].text.toLowerCase().indexOf(currentWord, pSearchStartIdx);
+			var wordIdxInOldLine = pOldEditLine.toLowerCase().indexOf(currentWord, pSearchStartIdxInOldLine);
+			retObj.searchStartIdx = wordIdxInLine + 1;
+			retObj.searchStartIdxInOldLine = wordIdxInOldLine + 1;
+			// If the text was found in this line, then highlight it
+			// and let the user change it
+			if (wordIdxInLine > -1)
+			{
+				gTextLineIndex = wordIdxInLine;
+
+				// If the line is above or below the edit area, then we'll need
+				// to refresh the edit lines on the screen.  We also need to set
+				// the cursor position to the proper place.
+				retObj.x = gEditLeft + gTextLineIndex;
+				var oldLineX = gEditLeft + wordIdxInOldLine;
+				var refresh = false;
+				if (pEditLineIdx < pEditLinesTopIdx)
+				{
+					// The line is above the edit area.
+					refresh = true;
+					retObj.y = gEditTop;
+					retObj.editLinesTopIdx = pEditLineIdx;
+				}
+				else if (pEditLineIdx >= pEditLinesTopIdx + gEditHeight)
+				{
+					// The line is below the edit area.
+					refresh = true;
+					retObj.y = gEditBottom;
+					retObj.editLinesTopIdx = pEditLineIdx - gEditHeight + 1;
+				}
+				else
+				{
+					// The line is inside the edit area.
+					var indexDiff = pEditLineIdx - pEditLinesTopIdx;
+					retObj.y = gEditTop + indexDiff;
+				}
+
+				gEditLinesIndex = pEditLineIdx;
+
+				if (refresh)
+					displayEditLines(gEditTop, retObj.editLinesTopIdx, gEditBottom, true, true);
+
+				// Highlight the found text on the line by briefly displaying it in a
+				// different color.
+				var highlightText = gEditLines[pEditLineIdx].text.substr(wordIdxInLine, currentWord.length);
+				//console.gotoxy(retObj.x, retObj.y); // Updated line position
+				console.gotoxy(oldLineX, retObj.y);   // Old line position
+				console.print("\1n\1k\1" + "4" + highlightText);
+				mswait(SPELL_CHECK_PAUSE_MS);
+				//console.gotoxy(retObj.x, retObj.y); // Updated line position
+				console.gotoxy(oldLineX, retObj.y);   // Old line position
+				console.print(chooseEditColor() + highlightText);
+				retObj.x = wordIdxInLine + strip_ctrl(pWordArray[pWordIdx]).length + 1;
+				// Prompt the user for a corrected word.  If they enter
+				// a new word, then fix it in the text line.
+				var wordCorrectRetObj = inputWordCorrection(currentWord, { x: retObj.x, y: retObj.y }, pEditLineIdx);
+				if (wordCorrectRetObj.aborted)
+					retObj.continueSpellCheck = false;
+				else if ((wordCorrectRetObj.newWord.length > 0) && (wordCorrectRetObj.newWord != currentWord))
+				{
+					var firstLinePart = gEditLines[pEditLineIdx].text.substr(0, wordIdxInLine);
+					var endLinePart = gEditLines[pEditLineIdx].text.substr(wordIdxInLine+currentWord.length);
+					gEditLines[pEditLineIdx].text = firstLinePart + wordCorrectRetObj.newWord + endLinePart;
+					retObj.fixedWord = true;
+				}
+			}
+		}
+	}
+
+	return retObj;
+}
+// Helper for doSpellCheck(): Displays a text area on the screen with a misspelled
+// word in the title of the box and a text input to correct it
+//
+// Parameters:
+//  pMisspelledWord: The misspelled word
+//  pCurpos: The position of the cursor before calling this function
+//  pEditLineIdx: The index of the current edit line
+//
+// Return value: An object containing the following properties:
+//               newWord: The user's new word, or a blank string if they didn't
+//                        enter a corrected word
+//               aborted: Boolean - Whether or not the user wants to abort spell check
+function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
+{
+	var retObj = {
+		newWord: "",
+		aborted: false
+	};
+
+	var originalCurpos = pCurpos;
+
+	// Create and display a text area with the misspelled word as the title
+	// and get user input for the corrected word
+	// For the 'text box', ensure the width is at most 80 characters
+	var txtBoxWidth = 62; // Was 80
+	var txtBoxHeight = 3;
+	var txtBoxX = Math.floor(console.screen_columns / 2) - Math.floor(txtBoxWidth/2);
+	var txtBoxY = Math.floor(console.screen_rows / 2) - 1;
+	var maxInputLen = txtBoxWidth - 2;
+
+	// Draw the top border of the input box
+	var borderLine = "\1n\1g" + UPPER_LEFT_SINGLE + RIGHT_T_SINGLE;
+	borderLine += "\1b\1h" + pMisspelledWord.substr(0, txtBoxWidth-4);
+	borderLine += "\1n\1g" + LEFT_T_SINGLE;
+	var remainingWidth = txtBoxWidth - strip_ctrl(borderLine).length - 1;
+	for (var i = 0; i < remainingWidth; ++i)
+		borderLine += HORIZONTAL_SINGLE;
+	borderLine += UPPER_RIGHT_SINGLE + "\1n";
+	console.gotoxy(txtBoxX, txtBoxY);
+	console.print(borderLine);
+	// Draw the bottom border of the input box
+	borderLine = "\1g" + LOWER_LEFT_SINGLE + RIGHT_T_SINGLE;
+	borderLine += "\1c\1hEnter\1y=\1bNo change\1n\1g" + LEFT_T_SINGLE + RIGHT_T_SINGLE + "\1H\1cCtrl-C\1n\1c/\1hESC\1y=\1bEnd\1n\1g" + LEFT_T_SINGLE;
+	var remainingWidth = txtBoxWidth - strip_ctrl(borderLine).length - 1;
+	for (var i = 0; i < remainingWidth; ++i)
+		borderLine += HORIZONTAL_SINGLE;
+	borderLine += LOWER_RIGHT_SINGLE + "\1n";
+	console.gotoxy(txtBoxX, txtBoxY+2);
+	console.print(borderLine);
+	// Draw the side borders
+	console.print("\1n\1g");
+	console.gotoxy(txtBoxX, txtBoxY+1);
+	console.print(VERTICAL_SINGLE);
+	console.gotoxy(txtBoxX+txtBoxWidth-1, txtBoxY+1);
+	console.print(VERTICAL_SINGLE);
+	console.print("\1n");
+
+	// Go to the middle row for user input
+	var inputX = txtBoxX + 1;
+	console.gotoxy(inputX, txtBoxY+1);
+	printf("%" + maxInputLen + "s", "");
+	console.gotoxy(inputX, txtBoxY+1);
+	//retObj.newWord = console.getstr(maxInputLen, K_NOCRLF);
+	var continueOn = true;
+	while(continueOn)
+	{
+		var userInputChar = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
+		switch (userInputChar)
+		{
+			case CTRL_C:
+			case KEY_ESC:
+				retObj.newWord = "";
+				retObj.aborted = true;
+			case KEY_ENTER:
+				continueOn = false;
+				break;
+			case BACKSPACE:
+				if (retObj.newWord.length > 0)
+				{
+					retObj.newWord = retObj.newWord.substr(0, retObj.newWord.length - 1);
+					console.gotoxy(inputX+retObj.newWord.length, txtBoxY+1);
+					console.print(" ");
+					console.gotoxy(inputX+retObj.newWord.length, txtBoxY+1);
+				}
+				break;
+			default:
+				// Append the character to the new word if the word is less than
+				// the maximum input length
+				if ((strip_ctrl(retObj.newWord).length < maxInputLen) && isPrintableChar(userInputChar))
+				{
+					retObj.newWord += userInputChar;
+					console.print(userInputChar);
+				}
+				break;
+		}
+	}
+
+	// Erase the input area
+	// Calculate the difference in the edit lines index we'll need to use
+	// to erase the confirmation box.  This will be the difference between
+	// the cursor position between boxY and the current cursor row.
+	var editLinesIndexDiff = txtBoxY - originalCurpos.y;
+	displayMessageRectangle(txtBoxX, txtBoxY, txtBoxWidth, txtBoxHeight, pEditLineIdx + editLinesIndexDiff, true);
+
+	return retObj;
 }
 
 // Returns whether we're in insert mode (if not, we're in overwrite mode).
@@ -3996,7 +4404,7 @@ function inInsertMode()
 // is a normal line or a quote line.
 function chooseEditColor()
 {
-   return ("n" + (isQuoteLine(gEditLines, gEditLinesIndex) ? gQuoteLineColor : gTextAttrs));
+   return ("\1n" + (isQuoteLine(gEditLines, gEditLinesIndex) ? gQuoteLineColor : gTextAttrs));
 }
 
 // This function calculates the row on the screen to stop updating the
@@ -4067,64 +4475,66 @@ function updateTime(pCurpos, pMoveCursorBack)
 //               currentWordLength: The length of the current word
 function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 {
-   // Create the return object
-   var retObj = new Object();
-   retObj.txtAttrs = pTxtAttrs;
-   retObj.x = pCurpos.x;
-   retObj.y = pCurpos.y;
-   retObj.timedOut = false;
-   retObj.currentWordLength = pCurrentWordLength;
-   
-   const originalScreenY = pCurpos.y; // For screen refreshing
+	// Create the return object
+	var retObj = {
+		txtAttrs: pTxtAttrs,
+		x: pCurpos.x,
+		y: pCurpos.y,
+		timedOut: false,
+		currentWordLength: pCurrentWordLength
+	};
 
-   // Display the 3 rows of color/attribute options and the prompt for the
-   // user
-   var colorSelTopLine = console.screen_rows - 2;
-   var curpos = new Object();
-   curpos.x = 1;
-   curpos.y = colorSelTopLine;
-   console.gotoxy(curpos);
-   console.print("ncForeground: whK:nkBlack whR:nrRed whG:ngGreen whY:nyYellow whB:nbBlue whM:nmMagenta whC:ncCyan whW:nwWhite");
-   console.cleartoeol("n");
-   console.crlf();
-   console.print("ncBackground: wh0:n0Blackn wh1:n1Redn wh2:n2kGreenn wh3:3Yellown wh4:n4Bluen wh5:n5Magentan wh6:n6kCyann wh7:n7kWhite");
-   console.cleartoeol("n");
-   console.crlf();
-   console.clearline("n");
-   console.print("cSpecial: whH:nhHigh Intensity wI:niBlinking nwhN:nNormal hg� ncChoose colors/attributeshg: c");
-   // Get the attribute codes from the user.  Ideally, we'd use console.getkeys(),
-   // but that outputs a CR at the end, which is undesirable.  So instead, we call
-   // getUserInputWithSetOfInputStrs (defined in SlyEdit_Misc.js).
-   //var key = console.getkeys("KRGYBMCW01234567HIN").toString(); // Outputs a CR..  bad
-   var validKeys = ["KRGYBMCW", // Foreground color codes
-                    "01234567", // Background color codes
-                    "HIN"];     // Special color codes
-   var attrCodeKeys = getUserInputWithSetOfInputStrs(K_UPPER|K_NOCRLF|K_NOSPIN, validKeys, gConfigSettings);
-   // If the user entered some attributes, then set them in retObj.txtAttrs.
-   if (attrCodeKeys.length > 0)
-   {
-      retObj.txtAttrs = (attrCodeKeys.charAt(0) == "N" ? "" : "n");
-      for (var i = 0; i < attrCodeKeys.length; ++i)
-         retObj.txtAttrs += "" + attrCodeKeys.charAt(i);
-   }
+	const originalScreenY = pCurpos.y; // For screen refreshing
 
-   // Display the parts of the screen text that we covered up with the
-   // color selection: Message edit lines, bottom border, and bottom help line.
-   var screenYDiff = colorSelTopLine - originalScreenY;
-   displayEditLines(colorSelTopLine, gEditLinesIndex + screenYDiff, gEditBottom, true, true);
-   fpDisplayTextAreaBottomBorder(gEditBottom+1, gUseQuotes, gEditLeft, gEditRight,
-                                 gInsertMode, gConfigSettings.allowColorSelection);
-   fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+	// Display the 3 rows of color/attribute options and the prompt for the
+	// user
+	var colorSelTopLine = console.screen_rows - 2;
+	var curpos = {
+		x: 1,
+		y: colorSelTopLine
+	}
+	console.gotoxy(curpos);
+	console.print("\1n\1cForeground: \1w\1hK:\1n\1kBlack \1w\1hR:\1n\1rRed \1w\1hG:\1n\1gGreen \1w\1hY:\1n\1yYellow \1w\1hB:\1n\1bBlue \1w\1hM:\1n\1mMagenta \1w\1hC:\1n\1cCyan \1w\1hW:\1n\1wWhite");
+	console.cleartoeol("\1n");
+	console.crlf();
+	console.print("\1n\1cBackground: \1w\1h0:\1n\1" + "0Black\1n \1w\1h1:\1n\1" + "1Red\1n \1w\1h2:\1n\1" + "2\1kGreen\1n \1w\1h3:\1" + "3Yellow\1n \1w\1h4:\1n\1" + "4Blue\1n \1w\1h5:\1n\1" + "5Magenta\1n \1w\1h6:\1n\1" + "6\1kCyan\1n \1w\1h7:\1n\1" + "7\1kWhite");
+	console.cleartoeol("\1n");
+	console.crlf();
+	console.clearline("\1n");
+	console.print("\1cSpecial: \1w\1hH:\1n\1hHigh Intensity \1wI:\1n\1iBlinking \1n\1w\1hN:\1nNormal \1h\1g� \1n\1cChoose colors/attributes\1h\1g: \1c");
+	// Get the attribute codes from the user.  Ideally, we'd use console.getkeys(),
+	// but that outputs a CR at the end, which is undesirable.  So instead, we call
+	// getUserInputWithSetOfInputStrs (defined in SlyEdit_Misc.js).
+	//var key = console.getkeys("KRGYBMCW01234567HIN").toString(); // Outputs a CR..  bad
+	var validKeys = ["KRGYBMCW", // Foreground color codes
+	                 "01234567", // Background color codes
+	                 "HIN"];     // Special color codes
+	var attrCodeKeys = getUserInputWithSetOfInputStrs(K_UPPER|K_NOCRLF|K_NOSPIN, validKeys, gConfigSettings);
+	// If the user entered some attributes, then set them in retObj.txtAttrs.
+	if (attrCodeKeys.length > 0)
+	{
+		retObj.txtAttrs = (attrCodeKeys.charAt(0) == "N" ? "" : "\1n");
+		for (var i = 0; i < attrCodeKeys.length; ++i)
+			retObj.txtAttrs += "\1" + attrCodeKeys.charAt(i);
+	}
 
-   // Move the cursor to where it should be before returning
-   curpos.x = pCurpos.x;
-   curpos.y = pCurpos.y;
-   console.gotoxy(curpos);
+	// Display the parts of the screen text that we covered up with the
+	// color selection: Message edit lines, bottom border, and bottom help line.
+	var screenYDiff = colorSelTopLine - originalScreenY;
+	displayEditLines(colorSelTopLine, gEditLinesIndex + screenYDiff, gEditBottom, true, true);
+	fpDisplayTextAreaBottomBorder(gEditBottom+1, gUseQuotes, gEditLeft, gEditRight,
+	                              gInsertMode, gConfigSettings.allowColorSelection);
+	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
 
-   // Set the settings in the return object, and return it.
-   retObj.x = curpos.x;
-   retObj.y = curpos.y;
-   return retObj;
+	// Move the cursor to where it should be before returning
+	curpos.x = pCurpos.x;
+	curpos.y = pCurpos.y;
+	console.gotoxy(curpos);
+
+	// Set the settings in the return object, and return it.
+	retObj.x = curpos.x;
+	retObj.y = curpos.y;
+	return retObj;
 }
 
 // For the cross-posting UI: Draws the initial top border of
@@ -4205,7 +4615,7 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
    var selBoxInnerHeight = selBoxLowerRight.y - selBoxUpperLeft.y - 1;
    var lineLen = 0;
    var screenRow = selBoxUpperLeft.y+1;
-   console.print("n");
+   console.print("\1n");
    for (var i = 0; (i < displayCrossPostHelp.helpLines.length) && (screenRow < selBoxLowerRight.y); ++i)
    {
       console.gotoxy(selBoxUpperLeft.x+1, screenRow++);
@@ -4247,432 +4657,432 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
 //                   quits out of cross-post selection.
 function doCrossPosting(pOriginalCurpos)
 {
-  // If cross-posting is not allowed, then just return.
-  if (!gCanCrossPost)
-    return;
+	// If cross-posting is not allowed, then just return.
+	if (!gCanCrossPost)
+		return;
 
-  // This function returns the index of the bottommost message group that
-  // can be displayed on the screen.
-  //
-  // Parameters:
-  //  pTopGrpIndex: The index of the topmost message group displayed on screen
-  //  pNumItemsPerPage: The number of items per page
-  function getBottommostGrpIndex(pTopGrpIndex, pNumItemsPerPage)
-  {
-    var bottomGrpIndex = pTopGrpIndex + pNumItemsPerPage - 1;
-    // If bottomGrpIndex is beyond the last index, then adjust it.
-    if (bottomGrpIndex >= msg_area.grp_list.length)
-       bottomGrpIndex = msg_area.grp_list.length - 1;
-    return bottomGrpIndex;
-  }
+	// This function returns the index of the bottommost message group that
+	// can be displayed on the screen.
+	//
+	// Parameters:
+	//  pTopGrpIndex: The index of the topmost message group displayed on screen
+	//  pNumItemsPerPage: The number of items per page
+	function getBottommostGrpIndex(pTopGrpIndex, pNumItemsPerPage)
+	{
+		var bottomGrpIndex = pTopGrpIndex + pNumItemsPerPage - 1;
+		// If bottomGrpIndex is beyond the last index, then adjust it.
+		if (bottomGrpIndex >= msg_area.grp_list.length)
+			bottomGrpIndex = msg_area.grp_list.length - 1;
+		return bottomGrpIndex;
+	}
 
-  // Re-writes the "Choose group" text in the top border of the selection
-  // box.  For use when returning from the sub-board list.
-  //
-  // Parameters:
-  //  pSelBoxUpperLeft: An object containing x and y values for the upper-left
-  //                    corner of the selection box
-  //  pSelBoxInnerWidth: The inner width (inside the left & right borders) of the
-  //                     selection box
-  //  pGrpIndex: The index of message group tht was chosen
-  function reWriteInitialTopBorderText(pSelBoxUpperLeft, pSelBoxInnerWidth, pGrpIndex)
-  {
-    // Position the cursor after the "Cross-posting: " text in the border and
-    // write the "Choose group" text
-    console.gotoxy(pSelBoxUpperLeft.x+17, pSelBoxUpperLeft.y);
-    console.print("n" + gConfigSettings.genColors.listBoxBorderText + "Choose group");
-    // Re-write the border characters to overwrite the message group name
-    grpDesc = msg_area.grp_list[pGrpIndex].description.substr(0, pSelBoxInnerWidth-25);
-    // Write the updated border character(s)
-    console.print("n" + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE);
-    if (grpDesc.length > 3)
-    {
-      var numChars = grpDesc.length - 3;
-      for (var i = 0; i < numChars; ++i)
-        console.print(HORIZONTAL_SINGLE);
-    }
-  }
+	// Re-writes the "Choose group" text in the top border of the selection
+	// box.  For use when returning from the sub-board list.
+	//
+	// Parameters:
+	//  pSelBoxUpperLeft: An object containing x and y values for the upper-left
+	//                    corner of the selection box
+	//  pSelBoxInnerWidth: The inner width (inside the left & right borders) of the
+	//                     selection box
+	//  pGrpIndex: The index of message group tht was chosen
+	function reWriteInitialTopBorderText(pSelBoxUpperLeft, pSelBoxInnerWidth, pGrpIndex)
+	{
+		// Position the cursor after the "Cross-posting: " text in the border and
+		// write the "Choose group" text
+		console.gotoxy(pSelBoxUpperLeft.x+17, pSelBoxUpperLeft.y);
+		console.print("n" + gConfigSettings.genColors.listBoxBorderText + "Choose group");
+		// Re-write the border characters to overwrite the message group name
+		grpDesc = msg_area.grp_list[pGrpIndex].description.substr(0, pSelBoxInnerWidth-25);
+		// Write the updated border character(s)
+		console.print("n" + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE);
+		if (grpDesc.length > 3)
+		{
+			var numChars = grpDesc.length - 3;
+			for (var i = 0; i < numChars; ++i)
+				console.print(HORIZONTAL_SINGLE);
+		}
+	}
 
-  // Store the position of the cursor when we started so that we
-  // can return the cursor back to this position at the end
-  var origStartingCurpos = null;
-  if ((pOriginalCurpos != null) && (typeof(pOriginalCurpos) != "undefined"))
-     origStartingCurpos = pOriginalCurpos;
-  else
-     origStartingCurpos = console.getxy();
+	// Store the position of the cursor when we started so that we
+	// can return the cursor back to this position at the end
+	var origStartingCurpos = null;
+	if ((pOriginalCurpos != null) && (typeof(pOriginalCurpos) != "undefined"))
+		origStartingCurpos = pOriginalCurpos;
+	else
+		origStartingCurpos = console.getxy();
 
-  // Construct objects to represent the screen locations of the upper-left
-  // and lower-right corners of the selection box.  Initially, let the box
-  // borders be 1 character into the edit area on all sides.
-  var selBoxUpperLeft = new Object();
-  selBoxUpperLeft.x = gEditLeft + 3;
-  selBoxUpperLeft.y = gEditTop + 1;
-  var selBoxLowerRight = new Object();
-  selBoxLowerRight.x = gEditRight - 3;
-  selBoxLowerRight.y = gEditBottom - 1;
-  // Total and inner text width & height of the selection box
-  var selBoxWidth = selBoxLowerRight.x - selBoxUpperLeft.x + 1;
-  var selBoxHeight = selBoxLowerRight.y - selBoxUpperLeft.y + 1;
-  // Don't let the box's height be more than 17 characters.
-  if (selBoxHeight > 17)
-  {
-    selBoxLowerRight.y = selBoxUpperLeft.y + 16; // For a height of 17 characters
-    selBoxHeight = selBoxLowerRight.y - selBoxUpperLeft.y + 1;
-  }
-  // Inner size of the box (for text)
-  var selBoxInnerWidth = selBoxWidth - 2;
-  var selBoxInnerHeight = selBoxHeight - 2;
+	// Construct objects to represent the screen locations of the upper-left
+	// and lower-right corners of the selection box.  Initially, let the box
+	// borders be 1 character into the edit area on all sides.
+	var selBoxUpperLeft = new Object();
+	selBoxUpperLeft.x = gEditLeft + 3;
+	selBoxUpperLeft.y = gEditTop + 1;
+	var selBoxLowerRight = new Object();
+	selBoxLowerRight.x = gEditRight - 3;
+	selBoxLowerRight.y = gEditBottom - 1;
+	// Total and inner text width & height of the selection box
+	var selBoxWidth = selBoxLowerRight.x - selBoxUpperLeft.x + 1;
+	var selBoxHeight = selBoxLowerRight.y - selBoxUpperLeft.y + 1;
+	// Don't let the box's height be more than 17 characters.
+	if (selBoxHeight > 17)
+	{
+		selBoxLowerRight.y = selBoxUpperLeft.y + 16; // For a height of 17 characters
+		selBoxHeight = selBoxLowerRight.y - selBoxUpperLeft.y + 1;
+	}
+	// Inner size of the box (for text)
+	var selBoxInnerWidth = selBoxWidth - 2;
+	var selBoxInnerHeight = selBoxHeight - 2;
 
-  // Calculate the index of the message line at the top of the edit area, which
-  // which is where the message area list box will start.  We need to store
-  // this so that we can erase the selection box when the user is done
-  // selecting a message area.  We'll erase the box by re-writing the message
-  // text.
-  var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (origStartingCurpos.y-selBoxUpperLeft.y);
+	// Calculate the index of the message line at the top of the edit area, which
+	// which is where the message area list box will start.  We need to store
+	// this so that we can erase the selection box when the user is done
+	// selecting a message area.  We'll erase the box by re-writing the message
+	// text.
+	var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (origStartingCurpos.y-selBoxUpperLeft.y);
 
-  // Variables for keeping track of the message group/area list
-  var topMsgGrpIndex = 0;    // The index of the message group at the top of the list
-  // Figure out the index of the last message group to appear on the screen.
-  var bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, selBoxInnerHeight);
-  var numPages = Math.ceil(msg_area.grp_list.length / selBoxInnerHeight);
-  var numItemsPerPage = selBoxInnerHeight;
-  var topIndexForLastPage = (selBoxInnerHeight * numPages) - selBoxInnerHeight;
-  // msgGrpFieldLen will store the length to use for the message group numbers
-  // in the list.  It should be able to accommodate the highest message group
-  // number on the system.
-  var msgGrpFieldLen = msg_area.grp_list.length.toString().length;
+	// Variables for keeping track of the message group/area list
+	var topMsgGrpIndex = 0;    // The index of the message group at the top of the list
+	// Figure out the index of the last message group to appear on the screen.
+	var bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, selBoxInnerHeight);
+	var numPages = Math.ceil(msg_area.grp_list.length / selBoxInnerHeight);
+	var numItemsPerPage = selBoxInnerHeight;
+	var topIndexForLastPage = (selBoxInnerHeight * numPages) - selBoxInnerHeight;
+	// msgGrpFieldLen will store the length to use for the message group numbers
+	// in the list.  It should be able to accommodate the highest message group
+	// number on the system.
+	var msgGrpFieldLen = msg_area.grp_list.length.toString().length;
 
-  var selectedGrpIndex = 0; // The currently-selected group index
+	var selectedGrpIndex = 0; // The currently-selected group index
 
-  // Draw the selection box borders
-  // Top border
-  drawInitialCrossPostSelBoxTopBorder(selBoxUpperLeft, selBoxWidth,
-                                      gConfigSettings.genColors.listBoxBorder,
-                                      gConfigSettings.genColors.listBoxBorderText);
-  // Side borders
-  console.print(UPPER_RIGHT_SINGLE);
-  for (var row = selBoxUpperLeft.y+1; row < selBoxLowerRight.y; ++row)
-  {
-    console.gotoxy(selBoxUpperLeft.x, row);
-    console.print(VERTICAL_SINGLE);
-    console.gotoxy(selBoxLowerRight.x, row);
-    console.print(VERTICAL_SINGLE);
-  }
-  // Bottom border
-  drawInitialCrossPostSelBoxBottomBorder({ x: selBoxUpperLeft.x, y: selBoxLowerRight.y },
-                                         selBoxWidth, gConfigSettings.genColors.listBoxBorder,
-                                         false);
+	// Draw the selection box borders
+	// Top border
+	drawInitialCrossPostSelBoxTopBorder(selBoxUpperLeft, selBoxWidth,
+	gConfigSettings.genColors.listBoxBorder,
+	gConfigSettings.genColors.listBoxBorderText);
+	// Side borders
+	console.print(UPPER_RIGHT_SINGLE);
+	for (var row = selBoxUpperLeft.y+1; row < selBoxLowerRight.y; ++row)
+	{
+		console.gotoxy(selBoxUpperLeft.x, row);
+		console.print(VERTICAL_SINGLE);
+		console.gotoxy(selBoxLowerRight.x, row);
+		console.print(VERTICAL_SINGLE);
+	}
+	// Bottom border
+	drawInitialCrossPostSelBoxBottomBorder({ x: selBoxUpperLeft.x, y: selBoxLowerRight.y },
+	                                       selBoxWidth, gConfigSettings.genColors.listBoxBorder,
+	                                       false);
 
-  // Write the message groups
-  var pageNum = 1;
-  ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-                         selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-                         msgGrpFieldLen, true);
-  // Move the cursor to the inner upper-left corner of the selection box
-  var curpos = new Object(); // Current cursor position
-  curpos.x = selBoxUpperLeft.x+1;
-  curpos.y = selBoxUpperLeft.y+1;
-  console.gotoxy(curpos);
+	// Write the message groups
+	var pageNum = 1;
+	ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
+	                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
+	                       msgGrpFieldLen, true);
+	// Move the cursor to the inner upper-left corner of the selection box
+	var curpos = new Object(); // Current cursor position
+	curpos.x = selBoxUpperLeft.x+1;
+	curpos.y = selBoxUpperLeft.y+1;
+	console.gotoxy(curpos);
 
-  // User input loop
-  var userInput = null;
-  var continueChoosingMsgArea = true;
-  while (continueChoosingMsgArea)
-  {
-    pageNum = calcPageNum(topMsgGrpIndex, selBoxInnerHeight);
+	// User input loop
+	var userInput = null;
+	var continueChoosingMsgArea = true;
+	while (continueChoosingMsgArea)
+	{
+		pageNum = calcPageNum(topMsgGrpIndex, selBoxInnerHeight);
 
-    // Get a key from the user (upper-case) and take action based upon it.
-    userInput = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
-    switch (userInput)
-    {
-      case KEY_UP: // Move up one message group in the list
-         if (selectedGrpIndex > 0)
-         {
-            // If the previous group index is on the previous page, then
-            // display the previous page.
-            var previousGrpIndex = selectedGrpIndex - 1;
-            if (previousGrpIndex < topMsgGrpIndex)
-            {
-               // Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-               // refresh the list on the screen.
-               topMsgGrpIndex -= numItemsPerPage;
-               bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-               ListScreenfulOfMsgGrps(topMsgGrpIndex, previousGrpIndex, selBoxUpperLeft.y+1,
-                         selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-                         msgGrpFieldLen, true);
-               // We'll want to move the cursor to the leftmost character
-               // of the selected line.
-               curpos.x = selBoxUpperLeft.x+1;
-               curpos.y = selBoxUpperLeft.y+selBoxInnerHeight;
-            }
-            else
-            {
-               // Display the current line un-highlighted
-               console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
-               writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
-               // Display the previous line highlighted
-               curpos.x = selBoxUpperLeft.x+1;
-               --curpos.y;
-               console.gotoxy(curpos);
-               writeMsgGroupLine(previousGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
-            }
-            selectedGrpIndex = previousGrpIndex;
-            console.gotoxy(curpos); // Move the cursor into place where it should be
-         }
-         break;
-      case KEY_DOWN: // Move down one message group in the list
-         if (selectedGrpIndex < msg_area.grp_list.length - 1)
-         {
-            // If the next group index is on the next page, then display
-            // the next page.
-            var nextGrpIndex = selectedGrpIndex + 1;
-            if (nextGrpIndex > bottomMsgGrpIndex)
-            {
-               // Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-               // refresh the list on the screen.
-               topMsgGrpIndex += numItemsPerPage;
-               bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-               ListScreenfulOfMsgGrps(topMsgGrpIndex, nextGrpIndex, selBoxUpperLeft.y+1,
-                         selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-                         msgGrpFieldLen, true);
-               // We'll want to move the cursor to the leftmost character
-               // of the selected line.
-               curpos.x = selBoxUpperLeft.x+1;
-               curpos.y = selBoxUpperLeft.y+1;
-            }
-            else
-            {
-               // Display the current line un-highlighted
-               console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
-               writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
-               // Display the next line highlighted
-               curpos.x = selBoxUpperLeft.x+1;
-               ++curpos.y;
-               console.gotoxy(curpos);
-               writeMsgGroupLine(nextGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
-            }
-            selectedGrpIndex = nextGrpIndex;
-            console.gotoxy(curpos); // Move the cursor into place where it should be
-         }
-         break;
-      case KEY_HOME: // Go to the top message group on the screen
-         if (selectedGrpIndex > topMsgGrpIndex)
-         {
-            // Display the current line un-highlighted, adjust
-            // selectedGrpIndex, then display the new line
-            // highlighted.
-            console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
-            writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
-            selectedGrpIndex = topMsgGrpIndex;
-            curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
-            console.gotoxy(curpos);
-            writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
-            console.gotoxy(curpos);
-         }
-         break;
-      case KEY_END: // Go to the bottom message group on the screen
-         if (selectedGrpIndex < bottomMsgGrpIndex)
-         {
-            // Display the current line un-highlighted, adjust
-            // selectedGrpIndex, then display the new line
-            // highlighted.
-            console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
-            writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
-            selectedGrpIndex = bottomMsgGrpIndex;
-            curpos.x = selBoxUpperLeft.x + 1;
-            curpos.y = selBoxUpperLeft.y + (bottomMsgGrpIndex-topMsgGrpIndex+1);
-            console.gotoxy(curpos);
-            writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
-            console.gotoxy(curpos);
-         }
-         break;
-      case KEY_PAGE_DOWN: // Go to the next page
-         var nextPageTopIndex = topMsgGrpIndex + numItemsPerPage;
-         if (nextPageTopIndex < msg_area.grp_list.length)
-         {
-            // Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-            // refresh the list on the screen.
-            topMsgGrpIndex = nextPageTopIndex;
-            pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-            bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-            selectedGrpIndex = topMsgGrpIndex;
-            ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-                         selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-                         msgGrpFieldLen, true);
-            // Put the cursor at the beginning of the topmost row of message groups
-            curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
-            console.gotoxy(curpos);
-         }
-         break;
-      case KEY_PAGE_UP: // Go to the previous page
-         var prevPageTopIndex = topMsgGrpIndex - numItemsPerPage;
-         if (prevPageTopIndex >= 0)
-         {
-            // Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-            // refresh the list on the screen.
-            topMsgGrpIndex = prevPageTopIndex;
-            pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-            bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-            selectedGrpIndex = topMsgGrpIndex;
-            ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-                         selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-                         msgGrpFieldLen, true);
-            // Put the cursor at the beginning of the topmost row of message groups
-            curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
-            console.gotoxy(curpos);
-         }
-         break;
-      case 'F': // Go to the first page
-         if (topMsgGrpIndex > 0)
-         {
-            topMsgGrpIndex = 0;
-            pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-            bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-            selectedGrpIndex = 0;
-            ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-                         selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-                         msgGrpFieldLen, true);
-            // Put the cursor at the beginning of the topmost row of message groups
-            curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
-            console.gotoxy(curpos);
-         }
-         break;
-      case 'L': // Go to the last page
-         if (topMsgGrpIndex < topIndexForLastPage)
-         {
-            topMsgGrpIndex = topIndexForLastPage;
-            pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-            bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-            selectedGrpIndex = topIndexForLastPage;
-            ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-                         selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
-                         msgGrpFieldLen, true);
-            // Put the cursor at the beginning of the topmost row of message groups
-            curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
-            console.gotoxy(curpos);
-         }
-         break;
-      case CTRL_C:  // Quit (Ctrl-C is the cross-post hotkey)
-      case KEY_ESC: // Quit
-      case "Q":     // Quit
-         continueChoosingMsgArea = false;
-         break;
-      case KEY_ENTER: // Select the currently-highlighted message group
-         // Store the current cursor position for later, then show the
-         // sub-boards in the chosen message group and let the user
-         // toggle ones for cross-posting.
-         var selectCurrentGrp_originalCurpos = curpos;
-         var selectMsgAreaRetObj = crossPosting_selectSubBoardInGrp(selectedGrpIndex,
-                                               selBoxUpperLeft, selBoxLowerRight, selBoxWidth,
-                                               selBoxHeight, selBoxInnerWidth, selBoxInnerHeight);
-         // If the user toggled some sub-boards...
-         if (selectMsgAreaRetObj.subBoardsToggled)
-         {
-            // TODO: Does anything need to be done here?
-         }
+		// Get a key from the user (upper-case) and take action based upon it.
+		userInput = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		switch (userInput)
+		{
+			case KEY_UP: // Move up one message group in the list
+				if (selectedGrpIndex > 0)
+				{
+					// If the previous group index is on the previous page, then
+					// display the previous page.
+					var previousGrpIndex = selectedGrpIndex - 1;
+					if (previousGrpIndex < topMsgGrpIndex)
+					{
+						// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
+						// refresh the list on the screen.
+						topMsgGrpIndex -= numItemsPerPage;
+						bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+						ListScreenfulOfMsgGrps(topMsgGrpIndex, previousGrpIndex, selBoxUpperLeft.y+1,
+						                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
+						                       msgGrpFieldLen, true);
+						// We'll want to move the cursor to the leftmost character
+						// of the selected line.
+						curpos.x = selBoxUpperLeft.x+1;
+						curpos.y = selBoxUpperLeft.y+selBoxInnerHeight;
+					}
+					else
+					{
+						// Display the current line un-highlighted
+						console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
+						writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
+						// Display the previous line highlighted
+						curpos.x = selBoxUpperLeft.x+1;
+						--curpos.y;
+						console.gotoxy(curpos);
+						writeMsgGroupLine(previousGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
+					}
+					selectedGrpIndex = previousGrpIndex;
+					console.gotoxy(curpos); // Move the cursor into place where it should be
+				}
+				break;
+			case KEY_DOWN: // Move down one message group in the list
+				if (selectedGrpIndex < msg_area.grp_list.length - 1)
+				{
+					// If the next group index is on the next page, then display
+					// the next page.
+					var nextGrpIndex = selectedGrpIndex + 1;
+					if (nextGrpIndex > bottomMsgGrpIndex)
+					{
+						// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
+						// refresh the list on the screen.
+						topMsgGrpIndex += numItemsPerPage;
+						bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+						ListScreenfulOfMsgGrps(topMsgGrpIndex, nextGrpIndex, selBoxUpperLeft.y+1,
+						                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
+						                       msgGrpFieldLen, true);
+						// We'll want to move the cursor to the leftmost character
+						// of the selected line.
+						curpos.x = selBoxUpperLeft.x+1;
+						curpos.y = selBoxUpperLeft.y+1;
+					}
+					else
+					{
+						// Display the current line un-highlighted
+						console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
+						writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
+						// Display the next line highlighted
+						curpos.x = selBoxUpperLeft.x+1;
+						++curpos.y;
+						console.gotoxy(curpos);
+						writeMsgGroupLine(nextGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
+					}
+					selectedGrpIndex = nextGrpIndex;
+					console.gotoxy(curpos); // Move the cursor into place where it should be
+				}
+				break;
+			case KEY_HOME: // Go to the top message group on the screen
+				if (selectedGrpIndex > topMsgGrpIndex)
+				{
+					// Display the current line un-highlighted, adjust
+					// selectedGrpIndex, then display the new line
+					// highlighted.
+					console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
+					writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
+					selectedGrpIndex = topMsgGrpIndex;
+					curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
+					console.gotoxy(curpos);
+					writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
+					console.gotoxy(curpos);
+				}
+				break;
+			case KEY_END: // Go to the bottom message group on the screen
+				if (selectedGrpIndex < bottomMsgGrpIndex)
+				{
+					// Display the current line un-highlighted, adjust
+					// selectedGrpIndex, then display the new line
+					// highlighted.
+					console.gotoxy(selBoxUpperLeft.x+1, curpos.y);
+					writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, false);
+					selectedGrpIndex = bottomMsgGrpIndex;
+					curpos.x = selBoxUpperLeft.x + 1;
+					curpos.y = selBoxUpperLeft.y + (bottomMsgGrpIndex-topMsgGrpIndex+1);
+					console.gotoxy(curpos);
+					writeMsgGroupLine(selectedGrpIndex, selBoxInnerWidth, msgGrpFieldLen, true);
+					console.gotoxy(curpos);
+				}
+				break;
+			case KEY_PAGE_DOWN: // Go to the next page
+				var nextPageTopIndex = topMsgGrpIndex + numItemsPerPage;
+				if (nextPageTopIndex < msg_area.grp_list.length)
+				{
+					// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
+					// refresh the list on the screen.
+					topMsgGrpIndex = nextPageTopIndex;
+					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
+					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+					selectedGrpIndex = topMsgGrpIndex;
+					ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
+					                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
+					                       msgGrpFieldLen, true);
+					// Put the cursor at the beginning of the topmost row of message groups
+					curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
+					console.gotoxy(curpos);
+				}
+				break;
+			case KEY_PAGE_UP: // Go to the previous page
+				var prevPageTopIndex = topMsgGrpIndex - numItemsPerPage;
+				if (prevPageTopIndex >= 0)
+				{
+					// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
+					// refresh the list on the screen.
+					topMsgGrpIndex = prevPageTopIndex;
+					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
+					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+					selectedGrpIndex = topMsgGrpIndex;
+					ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
+					                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
+					                       msgGrpFieldLen, true);
+					// Put the cursor at the beginning of the topmost row of message groups
+					curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
+					console.gotoxy(curpos);
+				}
+				break;
+			case 'F': // Go to the first page
+				if (topMsgGrpIndex > 0)
+				{
+					topMsgGrpIndex = 0;
+					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
+					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+					selectedGrpIndex = 0;
+					ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
+					                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
+					                       msgGrpFieldLen, true);
+					// Put the cursor at the beginning of the topmost row of message groups
+					curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
+					console.gotoxy(curpos);
+				}
+				break;
+			case 'L': // Go to the last page
+				if (topMsgGrpIndex < topIndexForLastPage)
+				{
+					topMsgGrpIndex = topIndexForLastPage;
+					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
+					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+					selectedGrpIndex = topIndexForLastPage;
+					ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
+					                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1, selBoxLowerRight.x-1,
+					                       msgGrpFieldLen, true);
+					// Put the cursor at the beginning of the topmost row of message groups
+					curpos = { x: selBoxUpperLeft.x+1, y: selBoxUpperLeft.y+1 };
+					console.gotoxy(curpos);
+				}
+				break;
+			case CTRL_C:  // Quit (Ctrl-C is the cross-post hotkey)
+			case KEY_ESC: // Quit
+			case "Q":     // Quit
+				continueChoosingMsgArea = false;
+				break;
+			case KEY_ENTER: // Select the currently-highlighted message group
+				// Store the current cursor position for later, then show the
+				// sub-boards in the chosen message group and let the user
+				// toggle ones for cross-posting.
+				var selectCurrentGrp_originalCurpos = curpos;
+				var selectMsgAreaRetObj = crossPosting_selectSubBoardInGrp(selectedGrpIndex,
+				selBoxUpperLeft, selBoxLowerRight, selBoxWidth,
+				selBoxHeight, selBoxInnerWidth, selBoxInnerHeight);
+				// If the user toggled some sub-boards...
+				if (selectMsgAreaRetObj.subBoardsToggled)
+				{
+					// TODO: Does anything need to be done here?
+				}
 
-         // Update the Enter action text in the bottom border to say "Select"
-         // (instead of "Toggle").
-         console.gotoxy(selBoxUpperLeft.x+41, selBoxLowerRight.y);
-         console.print("nhbSelect");
-         // Refresh the top border of the selection box, refresh the list of
-         // message groups in the box, and move the cursor back to its original
-         // position.
-         reWriteInitialTopBorderText(selBoxUpperLeft, selBoxInnerWidth, selectedGrpIndex);
-         ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-                                selBoxUpperLeft.x+1, selBoxLowerRight.y-1,
-                                selBoxLowerRight.x-1, msgGrpFieldLen, true);
-         console.gotoxy(selectCurrentGrp_originalCurpos);
-         break;
-      case '?': // Display cross-post help
-         displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight);
-         console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y-1);
-         console.pause();
-         ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-                                selBoxUpperLeft.x+1, selBoxLowerRight.y-1,
-                                selBoxLowerRight.x-1, msgGrpFieldLen, true);
-         console.gotoxy(curpos);
-         break;
-      default:
-         // If the user entered a numeric digit, then treat it as
-         // the start of the message group number.
-         if (userInput.match(/[0-9]/))
-         {
-            var originalCurpos = curpos;
-            // Put the user's input back in the input buffer to
-            // be used for getting the rest of the message number.
-            console.ungetstr(userInput);
-            // We want to write the prompt text only if the first digit entered
-            // by the user is an ambiguous message group number (i.e., if
-            // the first digit is 2 and there's a message group # 2 and 20).
-            var writePromptText = (msg_area.grp_list.length >= +userInput * 10);
-            if (writePromptText)
-            {
-              console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y);
-              printf("ncChoose group #:%" + +(selBoxInnerWidth-15) + "s", "");
-              console.gotoxy(selBoxUpperLeft.x+17, selBoxLowerRight.y);
-              console.print("h");
-            }
-            else
-              console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y);
-            userInput = console.getnum(msg_area.grp_list.length);
+				// Update the Enter action text in the bottom border to say "Select"
+				// (instead of "Toggle").
+				console.gotoxy(selBoxUpperLeft.x+41, selBoxLowerRight.y);
+				console.print("\1n\1h\1bSelect");
+				// Refresh the top border of the selection box, refresh the list of
+				// message groups in the box, and move the cursor back to its original
+				// position.
+				reWriteInitialTopBorderText(selBoxUpperLeft, selBoxInnerWidth, selectedGrpIndex);
+				ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
+				                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1,
+				                       selBoxLowerRight.x-1, msgGrpFieldLen, true);
+				console.gotoxy(selectCurrentGrp_originalCurpos);
+				break;
+			case '?': // Display cross-post help
+				displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight);
+				console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y-1);
+				console.pause();
+				ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
+				                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1,
+				                       selBoxLowerRight.x-1, msgGrpFieldLen, true);
+				console.gotoxy(curpos);
+				break;
+			default:
+				// If the user entered a numeric digit, then treat it as
+				// the start of the message group number.
+				if (userInput.match(/[0-9]/))
+				{
+					var originalCurpos = curpos;
+					// Put the user's input back in the input buffer to
+					// be used for getting the rest of the message number.
+					console.ungetstr(userInput);
+					// We want to write the prompt text only if the first digit entered
+					// by the user is an ambiguous message group number (i.e., if
+					// the first digit is 2 and there's a message group # 2 and 20).
+					var writePromptText = (msg_area.grp_list.length >= +userInput * 10);
+					if (writePromptText)
+					{
+						console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y);
+						printf("\1n\1cChoose group #:%" + +(selBoxInnerWidth-15) + "s", "");
+						console.gotoxy(selBoxUpperLeft.x+17, selBoxLowerRight.y);
+						console.print("\1h");
+					}
+					else
+					console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y);
+					userInput = console.getnum(msg_area.grp_list.length);
 
-            // Re-draw the bottom border of the selection box
-            if (writePromptText)
-            {
-              drawInitialCrossPostSelBoxBottomBorder({ x: selBoxUpperLeft.x, y: selBoxLowerRight.y },
-                                                     selBoxWidth, gConfigSettings.genColors.listBoxBorder,
-                                                     false);
-            }
-            else
-            {
-              console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y);
-              console.print(gConfigSettings.genColors.listBoxBorder + RIGHT_T_SINGLE);
-            }
+					// Re-draw the bottom border of the selection box
+					if (writePromptText)
+					{
+						drawInitialCrossPostSelBoxBottomBorder({ x: selBoxUpperLeft.x, y: selBoxLowerRight.y },
+						                                       selBoxWidth, gConfigSettings.genColors.listBoxBorder,
+						                                       false);
+					}
+					else
+					{
+						console.gotoxy(selBoxUpperLeft.x+1, selBoxLowerRight.y);
+						console.print(gConfigSettings.genColors.listBoxBorder + RIGHT_T_SINGLE);
+					}
 
-            // If the user made a selection, then let them choose a
-            // sub-board from the group.
-            if (userInput > 0)
-            {
-               // Show the sub-boards in the chosen message group and
-               // let the user toggle ones for cross-posting.
-               // userInput-1 is the group index
-               var chosenGrpIndex = userInput - 1;
-               var selectMsgAreaRetObj = crossPosting_selectSubBoardInGrp(chosenGrpIndex,
-                                               selBoxUpperLeft, selBoxLowerRight, selBoxWidth,
-                                               selBoxHeight, selBoxInnerWidth, selBoxInnerHeight);
-               // If the user chose a sub-board, then set bbs.curgrp and
-               // bbs.cursub, and don't continue the input loop anymore.
-               if (selectMsgAreaRetObj.subBoardsToggled)
-               {
-                  // TODO: Does anything need to be done here?
-               }
-               // Update the Enter action text in the bottom border to say "Select"
-               // (instead of "Toggle").
-               console.gotoxy(selBoxUpperLeft.x+41, selBoxLowerRight.y);
-               console.print("nhbSelect");
-               // Refresh the top border of the selection box
-               reWriteInitialTopBorderText(selBoxUpperLeft, selBoxInnerWidth, chosenGrpIndex);
-            }
+					// If the user made a selection, then let them choose a
+					// sub-board from the group.
+					if (userInput > 0)
+					{
+						// Show the sub-boards in the chosen message group and
+						// let the user toggle ones for cross-posting.
+						// userInput-1 is the group index
+						var chosenGrpIndex = userInput - 1;
+						var selectMsgAreaRetObj = crossPosting_selectSubBoardInGrp(chosenGrpIndex,
+						                                                           selBoxUpperLeft, selBoxLowerRight, selBoxWidth,
+						                                                           selBoxHeight, selBoxInnerWidth, selBoxInnerHeight);
+						// If the user chose a sub-board, then set bbs.curgrp and
+						// bbs.cursub, and don't continue the input loop anymore.
+						if (selectMsgAreaRetObj.subBoardsToggled)
+						{
+							// TODO: Does anything need to be done here?
+						}
+						// Update the Enter action text in the bottom border to say "Select"
+						// (instead of "Toggle").
+						console.gotoxy(selBoxUpperLeft.x+41, selBoxLowerRight.y);
+						console.print("\1n\1h\1bSelect");
+						// Refresh the top border of the selection box
+						reWriteInitialTopBorderText(selBoxUpperLeft, selBoxInnerWidth, chosenGrpIndex);
+					}
 
-            // Refresh the list of message groups in the box and move the
-            // cursor back to its original position.
-            ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
-                                   selBoxUpperLeft.x+1, selBoxLowerRight.y-1,
-                                   selBoxLowerRight.x-1, msgGrpFieldLen, true);
-            console.gotoxy(originalCurpos);
-         }
-         break;
-    }
-  }
+					// Refresh the list of message groups in the box and move the
+					// cursor back to its original position.
+					ListScreenfulOfMsgGrps(topMsgGrpIndex, selectedGrpIndex, selBoxUpperLeft.y+1,
+					                       selBoxUpperLeft.x+1, selBoxLowerRight.y-1,
+					                       selBoxLowerRight.x-1, msgGrpFieldLen, true);
+					console.gotoxy(originalCurpos);
+				}
+				break;
+		}
+	}
 
-  // We're done selecting message areas for cross-posting.
-  // Erase the message area selection rectangle by re-drawing the message text.
-  // Then, move the cursor back to where it was when we started the message
-  // area selection.
-  displayMessageRectangle(selBoxUpperLeft.x, selBoxUpperLeft.y, selBoxWidth,
-                          selBoxHeight, editLineIndexAtSelBoxTopRow, true);
-  console.gotoxy(origStartingCurpos);
+	// We're done selecting message areas for cross-posting.
+	// Erase the message area selection rectangle by re-drawing the message text.
+	// Then, move the cursor back to where it was when we started the message
+	// area selection.
+	displayMessageRectangle(selBoxUpperLeft.x, selBoxUpperLeft.y, selBoxWidth,
+	                        selBoxHeight, editLineIndexAtSelBoxTopRow, true);
+	console.gotoxy(origStartingCurpos);
 }
 // Displays a screenful of message groups, for the cross-posting
 // interface.
@@ -5501,200 +5911,200 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 // Lists the text replacements configured in SlyEdit using a scrollable list box.
 function listTextReplacements()
 {
-   if (gNumTxtReplacements == 0)
-   {
-      var originalCurpos = console.getxy();
-      writeMsgOntBtmHelpLineWithPause("nhyThere are no text replacements.", ERRORMSG_PAUSE_MS);
-      console.print(chooseEditColor()); // Make sure the edit color is correct
-      console.gotoxy(originalCurpos);
-      return;
-   }
+	if (gNumTxtReplacements == 0)
+	{
+		var originalCurpos = console.getxy();
+		writeMsgOntBtmHelpLineWithPause("\1n\1h\1yThere are no text replacements.", ERRORMSG_PAUSE_MS);
+		console.print(chooseEditColor()); // Make sure the edit color is correct
+		console.gotoxy(originalCurpos);
+		return;
+	}
 
-   // Calculate the text width for each column, which will then be used to
-   // calculate the width of the box.  For the width of the box, we need to
-   // subtract at least 3 from the edit area with to accomodate the box's side
-   // borders and the space between the text columns.
-   var txtWidth = Math.floor((gEditWidth - 10)/2);
+	// Calculate the text width for each column, which will then be used to
+	// calculate the width of the box.  For the width of the box, we need to
+	// subtract at least 3 from the edit area with to accomodate the box's side
+	// borders and the space between the text columns.
+	var txtWidth = Math.floor((gEditWidth - 10)/2);
 
-   // In order to be able to navigate forward and backwards through the text
-   // replacements, we need to copy them into an array, since gTxtReplacements
-   // is an object and not navigable both ways.  This will also allow us to easily
-   // know how many text replacements there are (using the .length property of
-   // the array).
-   // For speed, create this only once.
-   if (typeof(listTextReplacements.txtReplacementArr) == "undefined")
-   {
-      var txtReplacementObj = null;
-      listTextReplacements.txtReplacementArr = new Array();
-      for (var prop in gTxtReplacements)
-      {
-         txtReplacementObj = new Object();
-         txtReplacementObj.originalText = prop;
-         txtReplacementObj.replacement = gTxtReplacements[prop];
-         listTextReplacements.txtReplacementArr.push(txtReplacementObj);
-      }
-   }
+	// In order to be able to navigate forward and backwards through the text
+	// replacements, we need to copy them into an array, since gTxtReplacements
+	// is an object and not navigable both ways.  This will also allow us to easily
+	// know how many text replacements there are (using the .length property of
+	// the array).
+	// For speed, create this only once.
+	if (typeof(listTextReplacements.txtReplacementArr) == "undefined")
+	{
+		var txtReplacementObj = null;
+		listTextReplacements.txtReplacementArr = new Array();
+		for (var prop in gTxtReplacements)
+		{
+			txtReplacementObj = new Object();
+			txtReplacementObj.originalText = prop;
+			txtReplacementObj.replacement = gTxtReplacements[prop];
+			listTextReplacements.txtReplacementArr.push(txtReplacementObj);
+		}
+	}
 
-   // We'll want to have an object with the box dimensions.
-   var boxInfo = new Object();
+	// We'll want to have an object with the box dimensions.
+	var boxInfo = new Object();
 
-   // Construct the top & bottom border strings if they don't exist already.
-   if (typeof(listTextReplacements.topBorder) == "undefined")
-   {
-      listTextReplacements.topBorder = "n" + gConfigSettings.genColors.listBoxBorder
-        + UPPER_LEFT_SINGLE + "n" + gConfigSettings.genColors.listBoxBorderText + "Text"
-        + "n" + gConfigSettings.genColors.listBoxBorder;
-      for (var i = 0; i < (txtWidth-3); ++i)
-         listTextReplacements.topBorder += HORIZONTAL_SINGLE;
-      listTextReplacements.topBorder += "n" + gConfigSettings.genColors.listBoxBorderText
-        + "Replacement" + "n" + gConfigSettings.genColors.listBoxBorder;
-      for (var i = 0; i < (txtWidth-11); ++i)
-         listTextReplacements.topBorder += HORIZONTAL_SINGLE;
-      listTextReplacements.topBorder += UPPER_RIGHT_SINGLE;
-   }
-   boxInfo.width = strip_ctrl(listTextReplacements.topBorder).length;
-   if (typeof(listTextReplacements.bottomBorder) == "undefined")
-   {
-      var numReplacementsStr = "Total: " + listTextReplacements.txtReplacementArr.length;
-      listTextReplacements.bottomBorder = "n" + gConfigSettings.genColors.listBoxBorder
-        + LOWER_LEFT_SINGLE + "n" + gConfigSettings.genColors.listBoxBorderText
-        + UP_ARROW + ", " + DOWN_ARROW + ", ESC/Ctrl-T/C=Close" + "n"
-        + gConfigSettings.genColors.listBoxBorder;
-      var maxNumChars = boxInfo.width - numReplacementsStr.length - 28;
-      for (var i = 0; i < maxNumChars; ++i)
-         listTextReplacements.bottomBorder += HORIZONTAL_SINGLE;
-      listTextReplacements.bottomBorder += RIGHT_T_SINGLE + "n"
-        + gConfigSettings.genColors.listBoxBorderText + numReplacementsStr + "n"
-        + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE;
-      listTextReplacements.bottomBorder += LOWER_RIGHT_SINGLE;
-   }
-   // printf format strings for the list
-   if (typeof(listTextReplacements.listFormatStr) == "undefined")
-   {
-      listTextReplacements.listFormatStr = "n" + gConfigSettings.genColors.listBoxItemText
-        + "%-" + txtWidth + "s %-" + txtWidth + "s";
-   }
-   if (typeof(listTextReplacements.listFormatStrNormalAttr) == "undefined")
-      listTextReplacements.listFormatStrNormalAttr = "n%-" + txtWidth + "s %-" + txtWidth + "s";
+	// Construct the top & bottom border strings if they don't exist already.
+	if (typeof(listTextReplacements.topBorder) == "undefined")
+	{
+		listTextReplacements.topBorder = "\1n" + gConfigSettings.genColors.listBoxBorder
+		                               + UPPER_LEFT_SINGLE + "\1n" + gConfigSettings.genColors.listBoxBorderText + "Text"
+		                               + "\1n" + gConfigSettings.genColors.listBoxBorder;
+		for (var i = 0; i < (txtWidth-3); ++i)
+			listTextReplacements.topBorder += HORIZONTAL_SINGLE;
+		listTextReplacements.topBorder += "\1n" + gConfigSettings.genColors.listBoxBorderText
+		                               + "Replacement" + "\1n" + gConfigSettings.genColors.listBoxBorder;
+		for (var i = 0; i < (txtWidth-11); ++i)
+			listTextReplacements.topBorder += HORIZONTAL_SINGLE;
+		listTextReplacements.topBorder += UPPER_RIGHT_SINGLE;
+	}
+	boxInfo.width = strip_ctrl(listTextReplacements.topBorder).length;
+	if (typeof(listTextReplacements.bottomBorder) == "undefined")
+	{
+		var numReplacementsStr = "Total: " + listTextReplacements.txtReplacementArr.length;
+		listTextReplacements.bottomBorder = "\1n" + gConfigSettings.genColors.listBoxBorder
+		                                  + LOWER_LEFT_SINGLE + "\1n" + gConfigSettings.genColors.listBoxBorderText
+		                                  + UP_ARROW + ", " + DOWN_ARROW + ", ESC/Ctrl-T/C=Close" + "\1n"
+		                                  + gConfigSettings.genColors.listBoxBorder;
+		var maxNumChars = boxInfo.width - numReplacementsStr.length - 28;
+		for (var i = 0; i < maxNumChars; ++i)
+			listTextReplacements.bottomBorder += HORIZONTAL_SINGLE;
+		listTextReplacements.bottomBorder += RIGHT_T_SINGLE + "\1n"
+		                                  + gConfigSettings.genColors.listBoxBorderText + numReplacementsStr + "\1n"
+		                                  + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE;
+		listTextReplacements.bottomBorder += LOWER_RIGHT_SINGLE;
+	}
+	// printf format strings for the list
+	if (typeof(listTextReplacements.listFormatStr) == "undefined")
+	{
+		listTextReplacements.listFormatStr = "\1n" + gConfigSettings.genColors.listBoxItemText
+		                                   + "%-" + txtWidth + "s %-" + txtWidth + "s";
+	}
+	if (typeof(listTextReplacements.listFormatStrNormalAttr) == "undefined")
+		listTextReplacements.listFormatStrNormalAttr = "\1n%-" + txtWidth + "s %-" + txtWidth + "s";
 
-   // Limit the box height to up to 12 lines.
-   boxInfo.height = gNumTxtReplacements + 2;
-   if (boxInfo.height > 12)
-      boxInfo.height = 12;
-   boxInfo.topLeftX = gEditLeft + Math.floor((gEditWidth/2) - (boxInfo.width/2));
-   boxInfo.topLeftY = gEditTop + Math.floor((gEditHeight/2) - (boxInfo.height/2));
+	// Limit the box height to up to 12 lines.
+	boxInfo.height = gNumTxtReplacements + 2;
+	if (boxInfo.height > 12)
+		boxInfo.height = 12;
+	boxInfo.topLeftX = gEditLeft + Math.floor((gEditWidth/2) - (boxInfo.width/2));
+	boxInfo.topLeftY = gEditTop + Math.floor((gEditHeight/2) - (boxInfo.height/2));
 
-   // Draw the top & bottom box borders for the list of text replacements
-   var originalCurpos = console.getxy();
-   console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY);
-   console.print(listTextReplacements.topBorder);
-   console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY+boxInfo.height-1);
-   console.print(listTextReplacements.bottomBorder);
-   // Draw the side borders
-   console.print("n" + gConfigSettings.genColors.listBoxBorder);
-   for (var i = 0; i < boxInfo.height-2; ++i)
-   {
-      console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY+i+1);
-      console.print(VERTICAL_SINGLE);
-      console.gotoxy(boxInfo.topLeftX+boxInfo.width-1, boxInfo.topLeftY+i+1);
-      console.print(VERTICAL_SINGLE);
-   }
+	// Draw the top & bottom box borders for the list of text replacements
+	var originalCurpos = console.getxy();
+	console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY);
+	console.print(listTextReplacements.topBorder);
+	console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY+boxInfo.height-1);
+	console.print(listTextReplacements.bottomBorder);
+	// Draw the side borders
+	console.print("\1n" + gConfigSettings.genColors.listBoxBorder);
+	for (var i = 0; i < boxInfo.height-2; ++i)
+	{
+		console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY+i+1);
+		console.print(VERTICAL_SINGLE);
+		console.gotoxy(boxInfo.topLeftX+boxInfo.width-1, boxInfo.topLeftY+i+1);
+		console.print(VERTICAL_SINGLE);
+	}
 
-   // Set up some variables for the user input loop
-   const numItemsPerPage = boxInfo.height - 2;
-   const numPages = Math.ceil(listTextReplacements.txtReplacementArr.length / numItemsPerPage);
-   // For the horizontal location of the page number text for the box border:
-   // Based on the fact that there can be up to 9999 text replacements and 10
-   // per page, there will be up to 1000 pages of replacements.  To write the
-   // text, we'll want to be 20 characters to the left of the end of the border
-   // of the box.
-   const pageNumTxtStartX = boxInfo.topLeftX + boxInfo.width - 20;
-   var pageNum = 0;
-   var startArrIndex = 0;
-   var endArrIndex = 0; // One past the last array item
-   var screenY = 0;
-   // User input loop (also drawing the list of items)
-   var continueOn = true;
-   var refreshList = true; // For screen redraw optimizations
-   while (continueOn)
-   {
-      if (refreshList)
-      {
-         // Write the list of items for the current page
-         startArrIndex = pageNum * numItemsPerPage;
-         endArrIndex = startArrIndex + numItemsPerPage;
-         if (endArrIndex > listTextReplacements.txtReplacementArr.length)
-            endArrIndex = listTextReplacements.txtReplacementArr.length;
-         screenY = boxInfo.topLeftY + 1;
-         for (var i = startArrIndex; i < endArrIndex; ++i)
-         {
-            console.gotoxy(boxInfo.topLeftX+1, screenY);
-            printf(listTextReplacements.listFormatStr,
-                   listTextReplacements.txtReplacementArr[i].originalText.substr(0, txtWidth),
-                   listTextReplacements.txtReplacementArr[i].replacement.substr(0, txtWidth));
-            ++screenY;
-         }
-         // If the current screen row is below the bottom row inside the box,
-         // continue and write blank lines to the bottom of the inside of the box
-         // to blank out any text that might still be there.
-         while (screenY < boxInfo.topLeftY+boxInfo.height-1)
-         {
-            console.gotoxy(boxInfo.topLeftX+1, screenY);
-            printf(listTextReplacements.listFormatStrNormalAttr, "", "");
-            ++screenY;
-         }
+	// Set up some variables for the user input loop
+	const numItemsPerPage = boxInfo.height - 2;
+	const numPages = Math.ceil(listTextReplacements.txtReplacementArr.length / numItemsPerPage);
+	// For the horizontal location of the page number text for the box border:
+	// Based on the fact that there can be up to 9999 text replacements and 10
+	// per page, there will be up to 1000 pages of replacements.  To write the
+	// text, we'll want to be 20 characters to the left of the end of the border
+	// of the box.
+	const pageNumTxtStartX = boxInfo.topLeftX + boxInfo.width - 20;
+	var pageNum = 0;
+	var startArrIndex = 0;
+	var endArrIndex = 0; // One past the last array item
+	var screenY = 0;
+	// User input loop (also drawing the list of items)
+	var continueOn = true;
+	var refreshList = true; // For screen redraw optimizations
+	while (continueOn)
+	{
+		if (refreshList)
+		{
+			// Write the list of items for the current page
+			startArrIndex = pageNum * numItemsPerPage;
+			endArrIndex = startArrIndex + numItemsPerPage;
+			if (endArrIndex > listTextReplacements.txtReplacementArr.length)
+			endArrIndex = listTextReplacements.txtReplacementArr.length;
+			screenY = boxInfo.topLeftY + 1;
+			for (var i = startArrIndex; i < endArrIndex; ++i)
+			{
+				console.gotoxy(boxInfo.topLeftX+1, screenY);
+				printf(listTextReplacements.listFormatStr,
+				listTextReplacements.txtReplacementArr[i].originalText.substr(0, txtWidth),
+				listTextReplacements.txtReplacementArr[i].replacement.substr(0, txtWidth));
+				++screenY;
+			}
+			// If the current screen row is below the bottom row inside the box,
+			// continue and write blank lines to the bottom of the inside of the box
+			// to blank out any text that might still be there.
+			while (screenY < boxInfo.topLeftY+boxInfo.height-1)
+			{
+				console.gotoxy(boxInfo.topLeftX+1, screenY);
+				printf(listTextReplacements.listFormatStrNormalAttr, "", "");
+				++screenY;
+			}
 
-         // Update the page number in the top border of the box.
-         console.gotoxy(pageNumTxtStartX, boxInfo.topLeftY);
-         console.print("n" + gConfigSettings.genColors.listBoxBorder + RIGHT_T_SINGLE);
-         printf("n" + gConfigSettings.genColors.listBoxBorderText + "Page %4d of %4d", pageNum+1, numPages);
-         console.print("n" + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE);
+			// Update the page number in the top border of the box.
+			console.gotoxy(pageNumTxtStartX, boxInfo.topLeftY);
+			console.print("\1n" + gConfigSettings.genColors.listBoxBorder + RIGHT_T_SINGLE);
+			printf("\1n" + gConfigSettings.genColors.listBoxBorderText + "Page %4d of %4d", pageNum+1, numPages);
+			console.print("\1n" + gConfigSettings.genColors.listBoxBorder + LEFT_T_SINGLE);
 
-         // Just for sane appearance: Move the cursor to the first character of
-         // the first row and make it the color for the text replacements.
-         console.gotoxy(boxInfo.topLeftX+1, boxInfo.topLeftY+1);
-         console.print(gConfigSettings.genColors.listBoxItemText);
-      }
+			// Just for sane appearance: Move the cursor to the first character of
+			// the first row and make it the color for the text replacements.
+			console.gotoxy(boxInfo.topLeftX+1, boxInfo.topLeftY+1);
+			console.print(gConfigSettings.genColors.listBoxItemText);
+		}
 
-      // Get a key from the user (upper-case) and take action based upon it.
-      userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
-      switch (userInput)
-      {
-         case KEY_UP:
-            // Go up one page
-            refreshList = (pageNum > 0);
-            if (refreshList)
-               --pageNum;
-            break;
-         case KEY_DOWN:
-            // Go down one page
-            refreshList = (pageNum < numPages-1);
-            if (refreshList)
-               ++pageNum;
-            break;
-         // Quit for ESC, Ctrl-T, Ctrl-A, and 'C' (close).
-         case KEY_ESC:
-         case CTRL_T:
-         case CTRL_A:
-         case 'C':
-            refreshList = false;
-            continueOn = false;
-            break;
-         default:
-            // Unrecognized command.  Don't refresh the list of the screen.
-            refreshList = false;
-            break;
-      }
-   }
+		// Get a key from the user (upper-case) and take action based upon it.
+		userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		switch (userInput)
+		{
+			case KEY_UP:
+				// Go up one page
+				refreshList = (pageNum > 0);
+				if (refreshList)
+				--pageNum;
+				break;
+			case KEY_DOWN:
+				// Go down one page
+				refreshList = (pageNum < numPages-1);
+				if (refreshList)
+				++pageNum;
+				break;
+				// Quit for ESC, Ctrl-T, Ctrl-A, and 'C' (close).
+			case KEY_ESC:
+			case CTRL_T:
+			case CTRL_A:
+			case 'C':
+				refreshList = false;
+				continueOn = false;
+				break;
+			default:
+				// Unrecognized command.  Don't refresh the list of the screen.
+				refreshList = false;
+				break;
+		}
+	}
 
-   // We're done listing the text replacements.
-   // Erase the list box rectangle by re-drawing the message text.  Then, move
-   // the cursor back to where it was originally.
-   var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (originalCurpos.y-boxInfo.topLeftY);
-   displayMessageRectangle(boxInfo.topLeftX, boxInfo.topLeftY, boxInfo.width,
-                           boxInfo.height, editLineIndexAtSelBoxTopRow, true);
-   console.gotoxy(originalCurpos);
-   console.print(chooseEditColor());
+	// We're done listing the text replacements.
+	// Erase the list box rectangle by re-drawing the message text.  Then, move
+	// the cursor back to where it was originally.
+	var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (originalCurpos.y-boxInfo.topLeftY);
+	displayMessageRectangle(boxInfo.topLeftX, boxInfo.topLeftY, boxInfo.width,
+	                        boxInfo.height, editLineIndexAtSelBoxTopRow, true);
+	console.gotoxy(originalCurpos);
+	console.print(chooseEditColor());
 }
 
 // Lets the user manage their preferences/settings.
@@ -5724,11 +6134,15 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 			originalSettings[prop] = gUserSettings[prop];
 	}
 
+	// Load the dictionary filenames - If there are more than 1, then we'll add
+	// an option for the user to choose a dictionary.
+	var dictionaryFilenames = getDictionaryFilenames(gStartupPath);
+
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
-	//var optBoxHeight = 6;
-	var optBoxHeight = 9;
+	//var optBoxHeight = (dictionaryFilenames.length > 1 ? 10 : 9);
+	var optBoxHeight = (dictionaryFilenames.length > 1 ? 11 : 10);
 	var optBoxStartX = gEditLeft + Math.floor((gEditWidth/2) - (optBoxWidth/2));
 	if (optBoxStartX < gEditLeft)
 		optBoxStartX = gEditLeft;
@@ -5741,22 +6155,28 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	// This one contains the page navigation keys..  Don't really need to show those,
 	// since the settings box only has one page right now:
 	/*var bottomBorderText = "\1n\1h\1c\1b, \1c\1b, \1cN\1y)\1bext, \1cP\1y)\1brev, "
-	                       + "\1cF\1y)\1birst, \1cL\1y)\1bast, \1cEnter\1y=\1bSelect\1n\1c/\1h\1btoggle, "
-	                       + "\1cCtrl-U\1y=\1bClose";*/
+	                       + "\1cF\1y)\1birst, \1cL\1y)\1bast, \1cEnter\1y=\1bSelect, "
+	                       + "\1cESC\1n\1c/\1hQ\1n\1c/\1hCtrl-U\1y=\1bClose";*/
 
 	optionBox.setBottomBorderText(bottomBorderText, true, false);
 
 	// Add the options to the option box
 	const checkIdx = 48;
 	const TAGLINE_OPT_INDEX = optionBox.addTextItem("Taglines                                       [ ]");
+	const SPELLCHECK_ON_SAVE_OPT_INDEX = optionBox.addTextItem("Prompt for spell checker on save               [ ]");
 	const QUOTE_INITIALS_OPT_INDEX = optionBox.addTextItem("Quote with author's initials                   [ ]");
 	const QUOTE_INITIALS_INDENT_OPT_INDEX = optionBox.addTextItem("Indent quote lines containing initials         [ ]");
 	const TRIM_QUOTE_SPACES_OPT_INDEX = optionBox.addTextItem("Trim spaces from quote lines                   [ ]");
 	const AUTO_SIGN_OPT_INDEX = optionBox.addTextItem("Auto-sign messages                             [ ]");
 	const SIGN_REAL_ONLY_FIRST_NAME_OPT_INDEX = optionBox.addTextItem("  When using real name, use only first name    [ ]");
 	const SIGN_EMAILS_REAL_NAME_OPT_INDEX = optionBox.addTextItem("  Sign emails with real name                   [ ]");
+	var DICTIONARY_OPT_INDEX = -1;
+	if (dictionaryFilenames.length > 1)
+		DICTIONARY_OPT_INDEX = optionBox.addTextItem("Spell-check dictionary/dictionaries");
 	if (gUserSettings.enableTaglines)
 		optionBox.chgCharInTextItem(TAGLINE_OPT_INDEX, checkIdx, CHECK_CHAR);
+	if (gUserSettings.promptSpellCheckOnSave)
+		optionBox.chgCharInTextItem(SPELLCHECK_ON_SAVE_OPT_INDEX, checkIdx, CHECK_CHAR);
 	if (gUserSettings.useQuoteLineInitials)
 		optionBox.chgCharInTextItem(QUOTE_INITIALS_OPT_INDEX, checkIdx, CHECK_CHAR);
 	if (gUserSettings.indentQuoteLinesWithInitials)
@@ -5773,6 +6193,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = new Object();
 	optionToggles[TAGLINE_OPT_INDEX] = gUserSettings.enableTaglines;
+	optionToggles[SPELLCHECK_ON_SAVE_OPT_INDEX] = gUserSettings.promptSpellCheckOnSave;
 	optionToggles[QUOTE_INITIALS_OPT_INDEX] = gUserSettings.useQuoteLineInitials;
 	optionToggles[QUOTE_INITIALS_INDENT_OPT_INDEX] = gUserSettings.indentQuoteLinesWithInitials;
 	optionToggles[TRIM_QUOTE_SPACES_OPT_INDEX] = gUserSettings.trimSpacesFromQuoteLines;
@@ -5803,6 +6224,9 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 					case TAGLINE_OPT_INDEX:
 						gUserSettings.enableTaglines = !gUserSettings.enableTaglines;
 						break;
+					case SPELLCHECK_ON_SAVE_OPT_INDEX:
+						gUserSettings.promptSpellCheckOnSave = !gUserSettings.promptSpellCheckOnSave;
+						break;
 					case QUOTE_INITIALS_OPT_INDEX:
 						gUserSettings.useQuoteLineInitials = !gUserSettings.useQuoteLineInitials;
 						break;
@@ -5820,6 +6244,29 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 						break;
 					case SIGN_EMAILS_REAL_NAME_OPT_INDEX:
 						gUserSettings.autoSignEmailsRealName = !gUserSettings.autoSignEmailsRealName;
+						break;
+					default:
+						break;
+				}
+			}
+			// For options that aren't on/off toggle options, take the appropriate action.
+			else
+			{
+				switch (itemIndex)
+				{
+					case DICTIONARY_OPT_INDEX:
+						// Let the user choose a dictionary file
+						// Find all the dictionary filenames (matching the filename
+						// mask dictionary_*.txt"), and then make a menu of the
+						// language names for the user to choose from
+						if (dictionaryFilenames.length > 0)
+						{
+							doUserDictionaryLanguageSelection(optBoxStartX, gEditTop+1, optBoxWidth, optBoxHeight, dictionaryFilenames);
+							// Refresh the user option box on the screen
+							optionBox.refreshOnScreen(optionBox.chosenTextItemIndex);
+						}
+						else
+							writeWithPause(1, console.screen_rows, "\1y\1hThere are no dictionaries!\1n", ERRORMSG_PAUSE_MS);
 						break;
 					default:
 						break;
@@ -5858,6 +6305,57 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	if (returnCursorWhenDone)
 		console.gotoxy(originalCurpos);
 }
+// Helper for doUserSettings(): Does the dictionary language selection
+//
+// Parameters:
+//  pBoxTopLeftX: The upper-left X coordinate for the option box
+//  pBoxTopLeftY: The upper-left Y coordinate for the option box
+//  pBoxWidth: The width for the option box
+//  pBoxHeight: The height for the option box\
+//  pDictionaryFilenames: An array of the dictionary filenames
+function doUserDictionaryLanguageSelection(pBoxTopLeftX, pBoxTopLeftY, pBoxWidth, pBoxHeight, pDictionaryFilenames)
+{
+	var dictMenu = new DDLightbarMenu(pBoxTopLeftX, pBoxTopLeftY, pBoxWidth, pBoxHeight);
+	var selectedItemIndexes = { };
+	for (var i = 0; i < pDictionaryFilenames.length; ++i)
+	{
+		var languageName = getLanguageNameFromDictFilename(pDictionaryFilenames[i]);
+		dictMenu.Add(languageName, pDictionaryFilenames[i]);
+		// See if this dictionary is in the user's configured
+		// dictionaries, and if so, add this dictionary to the
+		// selected items list.
+		if (languageIsSelectedInUserSettings(gUserSettings, pDictionaryFilenames[i]))
+			selectedItemIndexes[i] = true;
+	}
+	dictMenu.ampersandHotkeysInItems = false;
+	dictMenu.AddAdditionalQuitKeys(["q", "Q", KEY_ESC, CTRL_C]);
+	dictMenu.multiSelect = true;
+	dictMenu.borderEnabled = true;
+	dictMenu.SetBorderChars({
+		upperLeft: UPPER_LEFT_SINGLE,
+		upperRight: UPPER_RIGHT_SINGLE,
+		lowerLeft: LOWER_LEFT_SINGLE,
+		lowerRight: LOWER_RIGHT_SINGLE,
+		top: HORIZONTAL_SINGLE,
+		bottom: HORIZONTAL_SINGLE,
+		left: VERTICAL_SINGLE,
+		right: VERTICAL_SINGLE
+	});
+	dictMenu.colors.borderColor = "\1g";
+	dictMenu.topBorderText = "\1b\1hSelect dictionary languages (\1cEnter\1g: \1bChoose, \1cSpacebar\1g: \1bMulti-select\1b)\1n";
+	dictMenu.bottomBorderText = "\1c\1hESC\1y/\1cQ\1g: \1bQuit\1n";
+	var userChoice = dictMenu.GetVal(true, selectedItemIndexes);
+	if (userChoice != null)
+	{
+		gConfigSettings.pDictionaryFilenames = [];
+		gUserSettings.pDictionaryFilenames = [];
+		for (var i = 0; i < userChoice.length; ++i)
+		{
+			gConfigSettings.pDictionaryFilenames.push(userChoice[i]);
+			gUserSettings.pDictionaryFilenames.push(userChoice[i]);
+		}
+	}
+}
 
 // Allows the user to select a tagline.  Returns an object with the following
 // properties:
@@ -5884,9 +6382,9 @@ function doTaglineSelection()
 	var boxHeight = (taglines.length > 12 ? 14 : taglines.length+2);
 	var boxTopRow = gEditTop + Math.floor((gEditHeight/2) - (boxHeight/2));
 	var taglineBox = new ChoiceScrollbox(gEditLeft, boxTopRow, gEditWidth, boxHeight, "Taglines", gConfigSettings, true, false);
-	var bottomBorderText = "nhcb, cb, cNy)bext, cPy)brev, "
-	                     + "cFy)birst, cLy)bast, cHOMEb, cENDb, cEntery=bSelect, "
-	                     + "cRy)bandom, cESCnc/hcQy=bEnd";
+	var bottomBorderText = "\1n\1h\1c\1b, \1c\1b, \1cN\1y)\1bext, \1cP\1y)\1brev, "
+	                     + "\1cF\1y)\1birst, \1cL\1y)\1bast, \1cHOME\1b, \1cEND\1b, \1cEnter\1y=\1bSelect, "
+	                     + "\1cR\1y)\1bandom, \1cESC\1n\1c/\1h\1cQ\1y=\1bEnd";
 	taglineBox.setBottomBorderText(bottomBorderText, false, false);
 	// Add R as an input loop exit key, to choose a random tagline.
 	taglineBox.addInputLoopExitKey("R");

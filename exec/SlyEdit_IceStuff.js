@@ -11,66 +11,20 @@
  * 2009-08-09 Eric Oulashin     More development & testing
  * 2009-08-22 Eric Oulashin     Version 1.00
  *                              Initial public release
- * 2009-12-03 Eric Oulashin     Added support for color schemes.
- *                              Added displayIceYesNoText() and
- *                              readColorConfig().
- * 2010-01-02 Eric Oulashin     Removed abortConfirm_DCTStyle(),
- *                              since it's no longer used anymore.
- * 2011-02-02 Eric Oulashin     Moved the time displaying code into
- *                              a new function, displayTime_IceStyle().
- * 2012-02-18 Eric Oulashin     Changed the copyright year to 2012
- * 2012-12-21 Eric Oulashin     Removed gStartupPath from the beginning
- *                              of the theme filename, since the path is
- *                              now set in ReadSlyEditConfigFile() in
- *                              SlyEdit_Misc.js.
- * 2013-01-19 Eric Oulashin     Updated readColorConfig() to move the
- *                              general color settings to gConfigSettings.genColors.*
- * 2013-01-25 Eric Oulashin     Updated doIceESCMenu() to include an option
- *                              for cross-posting, when allowed.
- * 2013-08-23 Eric Oulashin     Updated readColorConfig() with the new general color
- *                              configuration settings.
- * 2013-08-28 Eric Oulashin     Simplified readColorConfig() by having it call
- *                              moveGenColorsToGenSettings() (defined in
- *                              SlyEdit_Misc.js) to move the general colors
- *                              into the genColors array in the configuration
- *                              object.
- * 2013-09-14 Eric Oulashin     Added a settings option to doIceESCMenu().
- * 2013-09-15 Eric Oulashin     Bug fix: Updated displayTime_IceStyle() to
- *                              properly calculate the horizontal position at
- *                              which to write the time rather than going to
- *                              absolute coordinates; this accommodates terminals
- *                              of different widths.  Also, in redrawScreen_IceStyle(),
- *                              increased the maximum message area name length to
- *                              35 characters.
- * 2013-09-16 Eric Oulashin     Added displayTimeRemaining_IceStyle(), which updates
- *                              the time remaining on the screen.
- * 2013-10-12 Eric Oulashin     Updated displayIceYesNoText() and iceStyledPromptText()
- *                              to use the new gConfigSettings.iceColors.menuOptClassicColors
- *                              configuration setting for new vs. classic Ice-style
- *                              menu option colors.
- * 2013-10-17 Eric Oulashin     Bug fix: Updated readColorConfig() to make a backup of
- *                              the menuOptClassicColors setting and set it back in the
- *                              iceColors object after reading & setting the colors.
- *                              Bug fix in DisplayTextAreaBottomBorder_IceStyle() in
- *                              SlyEdit_IceStuff.js to ensure that the parenthesis in the
- *                              CTRL key help text at the right in the bottom border are
- *                              correctly displayed with a high blue color, regardless of
- *                              what is specified in the color theme file.
- * 2019-04-11 Eric Oulashin     Updated redrawScreen_IceStyle() to not display the vertical
- *                              bars for terminal widths >= 82, for wide text wrapping
- *                              support.
+ * ... Removed comments ...
+ * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
  */
 
-load("sbbsdefs.js");
-load(gStartupPath + "SlyEdit_Misc.js");
-
-// IceEdit ESC menu item return values
-var ICE_ESC_MENU_SAVE = 0;
-var ICE_ESC_MENU_ABORT = 1;
-var ICE_ESC_MENU_EDIT = 2;
-var ICE_ESC_MENU_SETTINGS = 3;
-var ICE_ESC_MENU_HELP = 4;
-var ICE_ESC_MENU_CROSS_POST = 5;
+if (typeof(require) === "function")
+{
+	require("sbbsdefs.js", "K_NOCRLF");
+	require(getScriptDir() + "SlyEdit_Misc.js", "UPPER_LEFT_SINGLE");
+}
+else
+{
+	load("sbbsdefs.js");
+	load(getScriptDir() + "SlyEdit_Misc.js");
+}
 
 // Read the color configuration file
 readColorConfig(gConfigSettings.iceColors.ThemeFilename);
@@ -294,23 +248,6 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	DisplayTextAreaBottomBorder_IceStyle(pEditBottom + 1, pUseQuotes);
 	DisplayBottomHelpLine_IceStyle(console.screen_rows, pUseQuotes);
 
-	/*
-	// If the screen is at least 82 columns wide output vertical lines
-	// to frame the edit area.
-	if (console.screen_columns >= 82)
-	{
-		for (lineNum = pEditTop; lineNum <= pEditBottom; ++lineNum)
-		{
-			console.gotoxy(pEditLeft-1, lineNum);
-			console.print(randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.iceColors.BorderColor1,
-			                                                    gConfigSettings.iceColors.BorderColor2));
-			console.gotoxy(pEditRight+1, lineNum);
-			console.print(randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.iceColors.BorderColor1,
-			                                                    gConfigSettings.iceColors.BorderColor2));
-		}
-	}
-	*/
-
 	// Go to the start of the edit area
 	console.gotoxy(pEditLeft, pEditTop);
 
@@ -400,31 +337,31 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
 //   pUsingQuotes: Boolean - Whether or not message quoting is enabled.
 function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
 {
-   // Construct the help text only once
-   if (typeof(DisplayBottomHelpLine_IceStyle.helpText) == "undefined")
-   {
-      // This line contains the copyright mesage & ESC key help
-      var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "w") + "ch"
-                      + EDITOR_VERSION.toString() + "   "
-                      + iceText("Copyright", "w") + " ch2019 "
-                      + iceText("Eric Oulashin", "w") + " nb" + DOT_CHAR + " "
-                      + iceText("Press ESCape For Help", "w");
-      // Calculate the starting position to center the help text, and front-pad
-      // DisplayBottomHelpLine_IceStyle.helpText with that many spaces.
-      var xPos = (console.screen_columns / 2).toFixed(0)
-                - (strip_ctrl(screenText).length / 2).toFixed(0);
-      DisplayBottomHelpLine_IceStyle.helpText = "";
-      for (var i = 0; i < xPos; ++i)
-         DisplayBottomHelpLine_IceStyle.helpText += " ";
-      DisplayBottomHelpLine_IceStyle.helpText += screenText;
-   }
+	// Construct the help text only once
+	if (typeof(DisplayBottomHelpLine_IceStyle.helpText) == "undefined")
+	{
+		// This line contains the copyright mesage & ESC key help
+		var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "\1w") + "\1c\1h"
+		               + EDITOR_VERSION.toString() + "   "
+		               + iceText("Copyright", "\1w") + " \1c\1h" + COPYRIGHT_YEAR + " "
+		               + iceText("Eric Oulashin", "\1w") + " \1n\1b" + DOT_CHAR + " "
+		               + iceText("Press ESCape For Help", "\1w");
+		// Calculate the starting position to center the help text, and front-pad
+		// DisplayBottomHelpLine_IceStyle.helpText with that many spaces.
+		var xPos = (console.screen_columns / 2).toFixed(0)
+		         - (strip_ctrl(screenText).length / 2).toFixed(0);
+		DisplayBottomHelpLine_IceStyle.helpText = "";
+		for (var i = 0; i < xPos; ++i)
+			DisplayBottomHelpLine_IceStyle.helpText += " ";
+		DisplayBottomHelpLine_IceStyle.helpText += screenText;
+	}
 
-   // If pLineNum is not specified, then default to the last line
+	// If pLineNum is not specified, then default to the last line
 	// on the screen.
 	var lineNum = console.screen_rows;
 	if ((typeof(pLineNum) != "undefined") && (pLineNum != null))
 		lineNum = pLineNum;
-   // Display the help text on the screen
+	// Display the help text on the screen
 	console.gotoxy(1, lineNum);
 	console.print(DisplayBottomHelpLine_IceStyle.helpText);
 }
@@ -700,134 +637,193 @@ function iceText(pString, pColor, pBkgColor)
 //  pY: The line number on the screen for the menu
 //  pCanCrossPost: Whether or not cross-posting is allowed
 //
-// Return value: One of the ICE_ESC_MENU values, based on the
+// Return value: One of the ESC_MENU values, based on the
 //               user's response.
 function doIceESCMenu(pY, pCanCrossPost)
 {
-   var promptText = " Select An Option:  ";
+	// The chosen action will be returned from this function
+	var chosenAction = ESC_MENU_EDIT_MESSAGE;
 
-   console.gotoxy(1, pY);
-   console.print(iceText(promptText, "w"));
-   console.cleartoeol("n");
-   // Input loop
-   var lastMenuItem = (pCanCrossPost ? ICE_ESC_MENU_CROSS_POST : ICE_ESC_MENU_HELP);
-   var userChoice = ICE_ESC_MENU_SAVE;
-   var userInput;
-   var continueOn = true;
-   while (continueOn)
-   {
-      console.gotoxy(promptText.length, pY);
+	// IceEdit ESC menu item return values
+	var ICE_ESC_MENU_SAVE = 0;
+	var ICE_ESC_MENU_ABORT = 1;
+	var ICE_ESC_MENU_EDIT = 2;
+	var ICE_ESC_MENU_SETTINGS = 3;
+	var ICE_ESC_MENU_HELP = 4;
+	var ICE_ESC_MENU_SPELL_CHECK = 5;
+	var ICE_ESC_MENU_CROSS_POST = 6;
 
-      // Display the options, with the correct one highlighted.
-      switch (userChoice)
-      {
-         case ICE_ESC_MENU_SAVE:
-            console.print(iceStyledPromptText("Save", true) + "n ");
-            console.print(iceStyledPromptText("Abort", false) + "n ");
-            console.print(iceStyledPromptText("Edit", false) + "n ");
-            console.print(iceStyledPromptText("Settings", false) + "n ");
-            console.print(iceStyledPromptText("Help", false));
-            if (pCanCrossPost)
-               console.print("n " + iceStyledPromptText("Cross-post", false));
-            break;
-         case ICE_ESC_MENU_ABORT:
-            console.print(iceStyledPromptText("Save", false) + "n ");
-            console.print(iceStyledPromptText("Abort", true) + "n ");
-            console.print(iceStyledPromptText("Edit", false) + "n ");
-            console.print(iceStyledPromptText("Settings", false) + "n ");
-            console.print(iceStyledPromptText("Help", false));
-            if (pCanCrossPost)
-               console.print("n " + iceStyledPromptText("Cross-post", false));
-            break;
-         case ICE_ESC_MENU_EDIT:
-            console.print(iceStyledPromptText("Save", false) + "n ");
-            console.print(iceStyledPromptText("Abort", false) + "n ");
-            console.print(iceStyledPromptText("Edit", true) + "n ");
-            console.print(iceStyledPromptText("Settings", false) + "n ");
-            console.print(iceStyledPromptText("Help", false));
-            if (pCanCrossPost)
-               console.print("n " + iceStyledPromptText("Cross-post", false));
-            break;
-         case ICE_ESC_MENU_SETTINGS:
-            console.print(iceStyledPromptText("Save", false) + "n ");
-            console.print(iceStyledPromptText("Abort", false) + "n ");
-            console.print(iceStyledPromptText("Edit", false) + "n ");
-            console.print(iceStyledPromptText("Settings", true) + "n ");
-            console.print(iceStyledPromptText("Help", false));
-            if (pCanCrossPost)
-               console.print("n " + iceStyledPromptText("Cross-post", false));
-            break;
-         case ICE_ESC_MENU_HELP:
-            console.print(iceStyledPromptText("Save", false) + "n ");
-            console.print(iceStyledPromptText("Abort", false) + "n ");
-            console.print(iceStyledPromptText("Edit", false) + "n ");
-            console.print(iceStyledPromptText("Settings", false) + "n ");
-            console.print(iceStyledPromptText("Help", true));
-            if (pCanCrossPost)
-               console.print("n " + iceStyledPromptText("Cross-post", false));
-            break;
-         case ICE_ESC_MENU_CROSS_POST:
-            console.print(iceStyledPromptText("Save", false) + "n ");
-            console.print(iceStyledPromptText("Abort", false) + "n ");
-            console.print(iceStyledPromptText("Edit", false) + "n ");
-            console.print(iceStyledPromptText("Settings", false) + "n ");
-            console.print(iceStyledPromptText("Help", false) + "n ");
-            console.print(iceStyledPromptText("Cross-post", true));
-            break;
-      }
+	var promptText = "Select An Option:  ";
 
-      // Get the user's choice
-      userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
-      switch (userInput)
-      {
-         case KEY_UP:
-         case KEY_LEFT:
-            --userChoice;
-            if (userChoice < ICE_ESC_MENU_SAVE)
-               userChoice = lastMenuItem;
-            break;
-         case KEY_DOWN:
-         case KEY_RIGHT:
-            ++userChoice;
-            if (userChoice > lastMenuItem)
-               userChoice = ICE_ESC_MENU_SAVE;
-            break;
-         case "S": // Save
-            userChoice = ICE_ESC_MENU_SAVE;
-            continueOn = false;
-            break;
-         case "A": // Abort
-            userChoice = ICE_ESC_MENU_ABORT;
-            continueOn = false;
-            break;
-         case KEY_ESC: // Go back to editing the message
-         case "E":     // Go back to editing the message
-            userChoice = ICE_ESC_MENU_EDIT;
-            continueOn = false;
-            break;
-         case "H": // Help
-            userChoice = ICE_ESC_MENU_HELP;
-            continueOn = false;
-            break;
-         case "C": // Cross-post
-            if (pCanCrossPost)
-            {
-               userChoice = ICE_ESC_MENU_CROSS_POST;
-               continueOn = false;
-            }
-            break;
-         case KEY_ENTER: // Accept the current choice
-            continueOn = false;
-            break;
-         default:
-            break;
-      }
-   }
+	console.gotoxy(1, pY);
+	console.print(iceText(promptText, "\1w"));
+	console.cleartoeol("\1n");
+	// Input loop
+	var lastMenuItem = (pCanCrossPost ? ICE_ESC_MENU_CROSS_POST : ICE_ESC_MENU_SPELL_CHECK);
+	var userChoice = ICE_ESC_MENU_SAVE;
+	var userInput;
+	var continueOn = true;
+	while (continueOn)
+	{
+		console.gotoxy(promptText.length, pY);
 
-   // Make sure special text attributes are cleared.
-   console.print("n");
+		// Display the options, with the correct one highlighted.
+		switch (userChoice)
+		{
+			case ICE_ESC_MENU_SAVE:
+				console.print(iceStyledPromptText("Save", true) + "\1n ");
+				console.print(iceStyledPromptText("Abort", false) + "\1n ");
+				console.print(iceStyledPromptText("Edit", false) + "\1n ");
+				console.print(iceStyledPromptText("Settings", false) + "\1n ");
+				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("sPlchk", false));
+				if (pCanCrossPost)
+				console.print("\1n " + iceStyledPromptText("Cross-post", false));
+				break;
+			case ICE_ESC_MENU_ABORT:
+				console.print(iceStyledPromptText("Save", false) + "\1n ");
+				console.print(iceStyledPromptText("Abort", true) + "\1n ");
+				console.print(iceStyledPromptText("Edit", false) + "\1n ");
+				console.print(iceStyledPromptText("Settings", false) + "\1n ");
+				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("sPlchk", false));
+				if (pCanCrossPost)
+					console.print("\1n " + iceStyledPromptText("Cross-post", false));
+				break;
+			case ICE_ESC_MENU_EDIT:
+				console.print(iceStyledPromptText("Save", false) + "\1n ");
+				console.print(iceStyledPromptText("Abort", false) + "\1n ");
+				console.print(iceStyledPromptText("Edit", true) + "\1n ");
+				console.print(iceStyledPromptText("Settings", false) + "\1n ");
+				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("sPlchk", false));
+				if (pCanCrossPost)
+					console.print("\1n " + iceStyledPromptText("Cross-post", false));
+				break;
+			case ICE_ESC_MENU_SETTINGS:
+				console.print(iceStyledPromptText("Save", false) + "\1n ");
+				console.print(iceStyledPromptText("Abort", false) + "\1n ");
+				console.print(iceStyledPromptText("Edit", false) + "\1n ");
+				console.print(iceStyledPromptText("Settings", true) + "\1n ");
+				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("sPlchk", false));
+				if (pCanCrossPost)
+					console.print("\1n " + iceStyledPromptText("Cross-post", false));
+				break;
+			case ICE_ESC_MENU_HELP:
+				console.print(iceStyledPromptText("Save", false) + "\1n ");
+				console.print(iceStyledPromptText("Abort", false) + "\1n ");
+				console.print(iceStyledPromptText("Edit", false) + "\1n ");
+				console.print(iceStyledPromptText("Settings", false) + "\1n ");
+				console.print(iceStyledPromptText("Help", true) + "\1n ");
+				console.print(iceStyledPromptText("sPlchk", false));
+				if (pCanCrossPost)
+					console.print("\1n " + iceStyledPromptText("Cross-post", false));
+				break;
+			case ICE_ESC_MENU_SPELL_CHECK:
+				console.print(iceStyledPromptText("Save", false) + "\1n ");
+				console.print(iceStyledPromptText("Abort", false) + "\1n ");
+				console.print(iceStyledPromptText("Edit", false) + "\1n ");
+				console.print(iceStyledPromptText("Settings", false) + "\1n ");
+				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("sPlchk", true));
+				if (pCanCrossPost)
+					console.print("\1n " + iceStyledPromptText("Cross-post", false));
+				break;
+				break;
+			case ICE_ESC_MENU_CROSS_POST:
+				console.print(iceStyledPromptText("Save", false) + "\1n ");
+				console.print(iceStyledPromptText("Abort", false) + "\1n ");
+				console.print(iceStyledPromptText("Edit", false) + "\1n ");
+				console.print(iceStyledPromptText("Settings", false) + "\1n ");
+				console.print(iceStyledPromptText("Help", false) + "\1n ");
+				console.print(iceStyledPromptText("sPlchk", false) + "\1n ");
+				console.print(iceStyledPromptText("Cross-post", true));
+				break;
+		}
 
-   return userChoice;
+		// Get the user's choice
+		userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		switch (userInput)
+		{
+			case KEY_UP:
+			case KEY_LEFT:
+				--userChoice;
+				if (userChoice < ICE_ESC_MENU_SAVE)
+					userChoice = lastMenuItem;
+				break;
+			case KEY_DOWN:
+			case KEY_RIGHT:
+				++userChoice;
+				if (userChoice > lastMenuItem)
+					userChoice = ICE_ESC_MENU_SAVE;
+				break;
+			case "S": // Save
+				userChoice = ICE_ESC_MENU_SAVE;
+				continueOn = false;
+				break;
+			case "A": // Abort
+				userChoice = ICE_ESC_MENU_ABORT;
+				continueOn = false;
+				break;
+			case KEY_ESC: // Go back to editing the message
+			case "E":     // Go back to editing the message
+				userChoice = ICE_ESC_MENU_EDIT;
+				continueOn = false;
+				break;
+			case "H": // Help
+				userChoice = ICE_ESC_MENU_HELP;
+				continueOn = false;
+				break;
+			case "C": // Cross-post
+				if (pCanCrossPost)
+				{
+					userChoice = ICE_ESC_MENU_CROSS_POST;
+					continueOn = false;
+				}
+				break;
+			case "P": // Spell check
+				userChoice = ICE_ESC_MENU_SPELL_CHECK;
+				continueOn = false;
+				break;
+			case KEY_ENTER: // Accept the current choice
+				continueOn = false;
+				break;
+			default:
+				break;
+		}
+	}
+
+	// Make sure special text attributes are cleared.
+	console.print("\1n");
+
+	// Now that the user has made a choice, set userAction
+	switch (userChoice)
+	{
+		case ICE_ESC_MENU_SAVE:
+			chosenAction = ESC_MENU_SAVE;
+			break;
+		case ICE_ESC_MENU_ABORT:
+			chosenAction = ESC_MENU_ABORT;
+			break;
+		case ICE_ESC_MENU_EDIT:
+			chosenAction = ESC_MENU_EDIT_MESSAGE;
+			break;
+		case ICE_ESC_MENU_SETTINGS:
+			chosenAction = ESC_MENU_USER_SETTINGS;
+			break;
+		case ICE_ESC_MENU_HELP:
+			chosenAction = ESC_MENU_HELP_COMMAND_LIST;
+			break;
+		case ICE_ESC_MENU_SPELL_CHECK:
+			chosenAction = ESC_MENU_SPELL_CHECK;
+			break;
+		case ICE_ESC_MENU_CROSS_POST:
+			chosenAction = ESC_MENU_CROSS_POST_MESSAGE;
+			break;
+	}
+
+	return chosenAction;
 }
 
 // Returns text to be used in prompts, such as the ESC menu, etc.

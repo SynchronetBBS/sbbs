@@ -34,9 +34,13 @@
  *                              handle situations when it wraps text into the
  *                              next line when that next line is blank - Ensuring
  *                              it adds a blank line below that.
+ * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
  */
  
- load("text.js");
+if (typeof(require) === "function")
+	require("text.js", "Pause");
+else
+	load("text.js");
  
 // Note: These variables are declared with "var" instead of "const" to avoid
 // multiple declaration errors when this file is loaded more than once.
@@ -150,6 +154,25 @@ if (typeof(KEY_PAGEUP) === "string")
 if (typeof(KEY_PAGEDN) === "string")
 	KEY_PAGE_DOWN = KEY_PAGEDN;
 
+// ESC menu action codes to be returned
+var ESC_MENU_SAVE = 0;
+var ESC_MENU_ABORT = 1;
+var ESC_MENU_INS_OVR_TOGGLE = 2;
+var ESC_MENU_SYSOP_IMPORT_FILE = 3;
+var ESC_MENU_SYSOP_EXPORT_FILE = 4;
+var ESC_MENU_FIND_TEXT = 5;
+var ESC_MENU_HELP_COMMAND_LIST = 6;
+var ESC_MENU_HELP_GENERAL = 7;
+var ESC_MENU_HELP_PROGRAM_INFO = 8;
+var ESC_MENU_EDIT_MESSAGE = 9;
+var ESC_MENU_CROSS_POST_MESSAGE = 10;
+var ESC_MENU_LIST_TEXT_REPLACEMENTS = 11;
+var ESC_MENU_USER_SETTINGS = 12;
+var ESC_MENU_SPELL_CHECK = 13;
+
+
+var COPYRIGHT_YEAR = 2019;
+
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.
 var gDDML_DROP_FILE_NAME = system.node_dir + "DDML_SyncSMBInfo.txt";
@@ -236,13 +259,14 @@ function TextLine_Print(pClearToEOL)
 //                                   (boolean)
 function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
 {
-	var retObj = new Object();
-	retObj.textLineIndex = pCharIndex;
-	retObj.wordLenDiff = 0;
-	retObj.wordStartIdx = 0;
-	retObj.newTextEndIdx = 0;
-	retObj.newTextLen = 0;
-	retObj.madeTxtReplacement = false;
+	var retObj = {
+		textLineIndex: pCharIndex,
+		wordLenDiff: 0,
+		wordStartIdx: 0,
+		newTextEndIdx: 0,
+		newTextLen: 0,
+		madeTxtReplacement: false
+	};
 
 	var wordObj = this.getWord(retObj.textLineIndex);
 	if (wordObj.foundWord)
@@ -304,7 +328,7 @@ function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
 		if (retObj.madeTxtReplacement)
 		{
 			if (firstCharUpper)
-			txtReplacement = txtReplacement.charAt(0).toUpperCase() + txtReplacement.substr(1);
+				txtReplacement = txtReplacement.charAt(0).toUpperCase() + txtReplacement.substr(1);
 			this.text = this.text.substr(0, wordObj.startIdx) + txtReplacement + this.text.substr(wordObj.endIndex+1);
 			// Based on the difference in word length, update the data that
 			// matters (retObj.textLineIndex, which keeps track of the index of the current line).
@@ -415,145 +439,154 @@ function ChoiceScrollbox_MinWidth()
 function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdCfgObj,
                          pAddTCharsAroundTopText, pReplaceTopTextSpacesWithBorderChars)
 {
-   // The default is to add left & right T characters around the top border
-   // text.  But also use pAddTCharsAroundTopText if it's a boolean.
-   var addTopTCharsAroundText = true;
-   if (typeof(pAddTCharsAroundTopText) == "boolean")
-      addTopTCharsAroundText = pAddTCharsAroundTopText;
-   // If pReplaceTopTextSpacesWithBorderChars is true, then replace the spaces
-   // in pTopBorderText with border characters.
-   if (pReplaceTopTextSpacesWithBorderChars)
-   {
-      var startIdx = 0;
-      var firstSpcIdx = pTopBorderText.indexOf(" ", 0);
-      // Look for the first non-space after firstSpaceIdx
-      var nonSpcIdx = -1;
-      for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
-      {
-         if (pTopBorderText.charAt(i) != " ")
-            nonSpcIdx = i;
-      }
-      var firstStrPart = "";
-      var lastStrPart = "";
-      numSpaces = 0;
-      while ((firstSpcIdx > -1) && (nonSpcIdx > -1))
-      {
-         firstStrPart = pTopBorderText.substr(startIdx, (firstSpcIdx-startIdx));
-         lastStrPart = pTopBorderText.substr(nonSpcIdx);
-         numSpaces = nonSpcIdx - firstSpcIdx;
-         if (numSpaces > 0)
-         {
-            pTopBorderText = firstStrPart + "n" + pSlyEdCfgObj.genColors.listBoxBorder;
-            for (var i = 0; i < numSpaces; ++i)
-               pTopBorderText += HORIZONTAL_SINGLE;
-            pTopBorderText += "n" + pSlyEdCfgObj.genColors.listBoxBorderText + lastStrPart;
-         }
+	// The default is to add left & right T characters around the top border
+	// text.  But also use pAddTCharsAroundTopText if it's a boolean.
+	var addTopTCharsAroundText = true;
+	if (typeof(pAddTCharsAroundTopText) == "boolean")
+		addTopTCharsAroundText = pAddTCharsAroundTopText;
+	// If pReplaceTopTextSpacesWithBorderChars is true, then replace the spaces
+	// in pTopBorderText with border characters.
+	if (pReplaceTopTextSpacesWithBorderChars)
+	{
+		var startIdx = 0;
+		var firstSpcIdx = pTopBorderText.indexOf(" ", 0);
+		// Look for the first non-space after firstSpaceIdx
+		var nonSpcIdx = -1;
+		for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
+		{
+			if (pTopBorderText.charAt(i) != " ")
+				nonSpcIdx = i;
+		}
+		var firstStrPart = "";
+		var lastStrPart = "";
+		var numSpaces = 0;
+		while ((firstSpcIdx > -1) && (nonSpcIdx > -1))
+		{
+			firstStrPart = pTopBorderText.substr(startIdx, (firstSpcIdx-startIdx));
+			lastStrPart = pTopBorderText.substr(nonSpcIdx);
+			numSpaces = nonSpcIdx - firstSpcIdx;
+			if (numSpaces > 0)
+			{
+				pTopBorderText = firstStrPart + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder;
+				for (var i = 0; i < numSpaces; ++i)
+					pTopBorderText += HORIZONTAL_SINGLE;
+				pTopBorderText += "\1n" + pSlyEdCfgObj.genColors.listBoxBorderText + lastStrPart;
+			}
 
-         // Look for the next space and non-space character after that.
-         firstSpcIdx = pTopBorderText.indexOf(" ", nonSpcIdx);
-         // Look for the first non-space after firstSpaceIdx
-         nonSpcIdx = -1;
-         for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
-         {
-            if (pTopBorderText.charAt(i) != " ")
-               nonSpcIdx = i;
-         }
-      }
-   }
+			// Look for the next space and non-space character after that.
+			firstSpcIdx = pTopBorderText.indexOf(" ", nonSpcIdx);
+			// Look for the first non-space after firstSpaceIdx
+			nonSpcIdx = -1;
+			for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
+			{
+				if (pTopBorderText.charAt(i) != " ")
+					nonSpcIdx = i;
+			}
+		}
+	}
 
-   this.SlyEdCfgObj = pSlyEdCfgObj;
+	this.SlyEdCfgObj = pSlyEdCfgObj;
 
-   var minWidth = ChoiceScrollbox_MinWidth();
+	var minWidth = ChoiceScrollbox_MinWidth();
 
-   this.dimensions = new Object();
-   this.dimensions.topLeftX = pLeftX;
-   this.dimensions.topLeftY = pTopY;
-   // Make sure the width is the minimum width
-   if ((pWidth < 0) || (pWidth < minWidth))
-      this.dimensions.width = minWidth;
-   else
-      this.dimensions.width = pWidth;
-   this.dimensions.height = pHeight;
-   this.dimensions.bottomRightX = this.dimensions.topLeftX + this.dimensions.width - 1;
-   this.dimensions.bottomRightY = this.dimensions.topLeftY + this.dimensions.height - 1;
+	this.dimensions = new Object();
+	this.dimensions.topLeftX = pLeftX;
+	this.dimensions.topLeftY = pTopY;
+	// Make sure the width is the minimum width
+	if ((pWidth < 0) || (pWidth < minWidth))
+		this.dimensions.width = minWidth;
+	else
+		this.dimensions.width = pWidth;
+	this.dimensions.height = pHeight;
+	this.dimensions.bottomRightX = this.dimensions.topLeftX + this.dimensions.width - 1;
+	this.dimensions.bottomRightY = this.dimensions.topLeftY + this.dimensions.height - 1;
 
-   // The text item array and member variables relating to it and the items
-   // displayed on the screen during the input loop
-   this.txtItemList = new Array();
-   this.chosenTextItemIndex = -1;
-   this.topItemIndex = 0;
-   this.bottomItemIndex = 0;
+	// The text item array and member variables relating to it and the items
+	// displayed on the screen during the input loop
+	this.txtItemList = new Array();
+	this.chosenTextItemIndex = -1;
+	this.topItemIndex = 0;
+	this.bottomItemIndex = 0;
 
-   // Top border string
-   var innerBorderWidth = this.dimensions.width - 2;
-   // Calculate the maximum top border text length to account for the left/right
-   // T chars and "Page #### of ####" text
-   var maxTopBorderTextLen = innerBorderWidth - (pAddTCharsAroundTopText ? 21 : 19);
-   if (strip_ctrl(pTopBorderText).length > maxTopBorderTextLen)
-      pTopBorderText = pTopBorderText.substr(0, maxTopBorderTextLen);
-   this.topBorder = "n" + pSlyEdCfgObj.genColors.listBoxBorder + UPPER_LEFT_SINGLE;
-   if (addTopTCharsAroundText)
-      this.topBorder += RIGHT_T_SINGLE;
-   this.topBorder += "n" + pSlyEdCfgObj.genColors.listBoxBorderText
-     + pTopBorderText + "n" + pSlyEdCfgObj.genColors.listBoxBorder;
-   if (addTopTCharsAroundText)
-      this.topBorder += LEFT_T_SINGLE;
-   const topBorderTextLen = strip_ctrl(pTopBorderText).length;
-   var numHorizBorderChars = innerBorderWidth - topBorderTextLen - 20;
-   if (addTopTCharsAroundText)
-      numHorizBorderChars -= 2;
-   for (var i = 0; i <= numHorizBorderChars; ++i)
-      this.topBorder += HORIZONTAL_SINGLE;
-   this.topBorder += RIGHT_T_SINGLE + "n" + pSlyEdCfgObj.genColors.listBoxBorderText
-     + "Page    1 of    1" + "n" + pSlyEdCfgObj.genColors.listBoxBorder + LEFT_T_SINGLE
-     + UPPER_RIGHT_SINGLE;
+	// Top border string
+	var innerBorderWidth = this.dimensions.width - 2;
+	// Calculate the maximum top border text length to account for the left/right
+	// T chars and "Page #### of ####" text
+	var maxTopBorderTextLen = innerBorderWidth - (pAddTCharsAroundTopText ? 21 : 19);
+	if (strip_ctrl(pTopBorderText).length > maxTopBorderTextLen)
+		pTopBorderText = pTopBorderText.substr(0, maxTopBorderTextLen);
+	this.topBorder = "\1n" + pSlyEdCfgObj.genColors.listBoxBorder + UPPER_LEFT_SINGLE;
+	if (addTopTCharsAroundText)
+		this.topBorder += RIGHT_T_SINGLE;
+	this.topBorder += "\1n" + pSlyEdCfgObj.genColors.listBoxBorderText
+	               + pTopBorderText + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder;
+	if (addTopTCharsAroundText)
+		this.topBorder += LEFT_T_SINGLE;
+	const topBorderTextLen = strip_ctrl(pTopBorderText).length;
+	var numHorizBorderChars = innerBorderWidth - topBorderTextLen - 20;
+	if (addTopTCharsAroundText)
+		numHorizBorderChars -= 2;
+	for (var i = 0; i <= numHorizBorderChars; ++i)
+		this.topBorder += HORIZONTAL_SINGLE;
+	this.topBorder += RIGHT_T_SINGLE + "\1n" + pSlyEdCfgObj.genColors.listBoxBorderText
+	               + "Page    1 of    1" + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder + LEFT_T_SINGLE
+	               + UPPER_RIGHT_SINGLE;
 
-   // Bottom border string
-   this.btmBorderNavText = "nhcb, cb, cNy)bext, cPy)brev, "
-     + "cFy)birst, cLy)bast, cHOMEb, cENDb, cEntery=bSelect, "
-     + "cESCnc/hcQy=bEnd";
-   this.bottomBorder = "n" + pSlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE
-     + RIGHT_T_SINGLE + this.btmBorderNavText + "n" + pSlyEdCfgObj.genColors.listBoxBorder
-     + LEFT_T_SINGLE;
-   var numCharsRemaining = this.dimensions.width - strip_ctrl(this.btmBorderNavText).length - 6;
-   for (var i = 0; i < numCharsRemaining; ++i)
-      this.bottomBorder += HORIZONTAL_SINGLE;
-   this.bottomBorder += LOWER_RIGHT_SINGLE;
+	// Bottom border string
+	this.btmBorderNavText = "\1n\1h\1c\1b, \1c\1b, \1cN\1y)\1bext, \1cP\1y)\1brev, "
+	                      + "\1cF\1y)\1birst, \1cL\1y)\1bast, \1cHOME\1b, \1cEND\1b, \1cEnter\1y=\1bSelect, "
+	                      + "\1cESC\1n\1c/\1h\1cQ\1y=\1bEnd";
+	this.bottomBorder = "\1n" + pSlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE
+	                  + RIGHT_T_SINGLE + this.btmBorderNavText + "\1n" + pSlyEdCfgObj.genColors.listBoxBorder
+	                  + LEFT_T_SINGLE;
+	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.btmBorderNavText).length - 6;
+	for (var i = 0; i < numCharsRemaining; ++i)
+		this.bottomBorder += HORIZONTAL_SINGLE;
+	this.bottomBorder += LOWER_RIGHT_SINGLE;
 
-   // Item format strings
-   this.listIemFormatStr = "n" + pSlyEdCfgObj.genColors.listBoxItemText + "%-"
-                          + +(this.dimensions.width-2) + "s";
-   this.listIemHighlightFormatStr = "n" + pSlyEdCfgObj.genColors.listBoxItemHighlight + "%-"
-                          + +(this.dimensions.width-2) + "s";
+	// Item format strings
+	this.listIemFormatStr = "\1n" + pSlyEdCfgObj.genColors.listBoxItemText + "%-"
+	                      + +(this.dimensions.width-2) + "s";
+	this.listIemHighlightFormatStr = "\1n" + pSlyEdCfgObj.genColors.listBoxItemHighlight + "%-"
+	                               + +(this.dimensions.width-2) + "s";
 
-   // Key functionality override function pointers
-   this.enterKeyOverrideFn = null;
+	// Key functionality override function pointers
+	this.enterKeyOverrideFn = null;
 
-   // inputLoopeExitKeys is an object containing additional keypresses that will
-   // exit the input loop.
-   this.inputLoopExitKeys = new Object();
+	// inputLoopeExitKeys is an object containing additional keypresses that will
+	// exit the input loop.
+	this.inputLoopExitKeys = new Object();
 
-   // "Class" functions
-   this.addTextItem = ChoiceScrollbox_AddTextItem; // Returns the index of the item
-   this.getTextItem = ChoiceScrollbox_GetTextIem;
-   this.replaceTextItem = ChoiceScrollbox_ReplaceTextItem;
-   this.delTextItem = ChoiceScrollbox_DelTextItem;
-   this.chgCharInTextItem = ChoiceScrollbox_ChgCharInTextItem;
-   this.getChosenTextItemIndex = ChoiceScrollbox_GetChosenTextItemIndex;
-   this.setItemArray = ChoiceScrollbox_SetItemArray; // Sets the item array; returns whether or not it was set.
-   this.clearItems = ChoiceScrollbox_ClearItems; // Empties the array of items
-   this.setEnterKeyOverrideFn = ChoiceScrollbox_SetEnterKeyOverrideFn;
-   this.clearEnterKeyOverrideFn = ChoiceScrollbox_ClearEnterKeyOverrideFn;
-   this.addInputLoopExitKey = ChoiceScrollbox_AddInputLoopExitKey;
-   this.setBottomBorderText = ChoiceScrollbox_SetBottomBorderText;
-   this.drawBorder = ChoiceScrollbox_DrawBorder;
-   this.refreshItemCharOnScreen = ChoiceScrollbox_RefreshItemCharOnScreen;
-   // Does the input loop.  Returns an object with the following properties:
-   //  itemWasSelected: Boolean - Whether or not an item was selected
-   //  selectedIndex: The index of the selected item
-   //  selectedItem: The text of the selected item
-   //  lastKeypress: The last key pressed by the user
-   this.doInputLoop = ChoiceScrollbox_DoInputLoop;
+	// For drawing the menu
+	this.pageNum = 0;
+	this.numPages = 0;
+	this.numItemsPerPage = 0;
+	this.maxItemWidth = 0;
+	this.pageNumTxtStartX = 0;
+
+	// Object functions
+	this.addTextItem = ChoiceScrollbox_AddTextItem; // Returns the index of the item
+	this.getTextItem = ChoiceScrollbox_GetTextIem;
+	this.replaceTextItem = ChoiceScrollbox_ReplaceTextItem;
+	this.delTextItem = ChoiceScrollbox_DelTextItem;
+	this.chgCharInTextItem = ChoiceScrollbox_ChgCharInTextItem;
+	this.getChosenTextItemIndex = ChoiceScrollbox_GetChosenTextItemIndex;
+	this.setItemArray = ChoiceScrollbox_SetItemArray; // Sets the item array; returns whether or not it was set.
+	this.clearItems = ChoiceScrollbox_ClearItems; // Empties the array of items
+	this.setEnterKeyOverrideFn = ChoiceScrollbox_SetEnterKeyOverrideFn;
+	this.clearEnterKeyOverrideFn = ChoiceScrollbox_ClearEnterKeyOverrideFn;
+	this.addInputLoopExitKey = ChoiceScrollbox_AddInputLoopExitKey;
+	this.setBottomBorderText = ChoiceScrollbox_SetBottomBorderText;
+	this.drawBorder = ChoiceScrollbox_DrawBorder;
+	this.drawInnerMenu = ChoiceScrollbox_DrawInnerMenu;
+	this.refreshOnScreen = ChoiceScrollbox_RefreshOnScreen;
+	this.refreshItemCharOnScreen = ChoiceScrollbox_RefreshItemCharOnScreen;
+	// Does the input loop.  Returns an object with the following properties:
+	//  itemWasSelected: Boolean - Whether or not an item was selected
+	//  selectedIndex: The index of the selected item
+	//  selectedItem: The text of the selected item
+	//  lastKeypress: The last key pressed by the user
+	this.doInputLoop = ChoiceScrollbox_DoInputLoop;
 }
 function ChoiceScrollbox_AddTextItem(pTextLine, pStripCtrl)
 {
@@ -682,32 +715,32 @@ function ChoiceScrollbox_GetChosenTextItemIndex()
 }
 function ChoiceScrollbox_SetItemArray(pArray, pStripCtrl)
 {
-   var safeToSet = false;
-   if (Object.prototype.toString.call(pArray) === "[object Array]")
-   {
-      if (pArray.length > 0)
-         safeToSet = (typeof(pArray[0]) == "string");
-      else
-         safeToSet = true; // It's safe to set an empty array
-   }
+	var safeToSet = false;
+	if (Object.prototype.toString.call(pArray) === "[object Array]")
+	{
+		if (pArray.length > 0)
+			safeToSet = (typeof(pArray[0]) == "string");
+		else
+			safeToSet = true; // It's safe to set an empty array
+	}
 
-   if (safeToSet)
-   {
-      delete this.txtItemList;
-      this.txtItemList = pArray;
+	if (safeToSet)
+	{
+		delete this.txtItemList;
+		this.txtItemList = pArray;
 
-      var stripCtrl = true;
-      if (typeof(pStripCtrl) == "boolean")
-         stripCtrl = pStripCtrl;
-      if (stripCtrl)
-      {
-         // Remove attribute/color characters from the text lines in the array
-         for (var i = 0; i < this.txtItemList.length; ++i)
-            this.txtItemList[i] = strip_ctrl(this.txtItemList[i]);
-      }
-   }
+		var stripCtrl = true;
+		if (typeof(pStripCtrl) == "boolean")
+			stripCtrl = pStripCtrl;
+		if (stripCtrl)
+		{
+			// Remove attribute/color characters from the text lines in the array
+			for (var i = 0; i < this.txtItemList.length; ++i)
+				this.txtItemList[i] = strip_ctrl(this.txtItemList[i]);
+		}
+	}
 
-   return safeToSet;
+	return safeToSet;
 }
 function ChoiceScrollbox_ClearItems()
 {
@@ -728,75 +761,116 @@ function ChoiceScrollbox_AddInputLoopExitKey(pKeypress)
 }
 function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooLong)
 {
-   if (typeof(pText) != "string")
-      return;
+	if (typeof(pText) != "string")
+		return;
 
-   const innerWidth = (pAddTChars ? this.dimensions.width-4 : this.dimensions.width-2);
+	const innerWidth = (pAddTChars ? this.dimensions.width-4 : this.dimensions.width-2);
 
-   if (pAutoStripIfTooLong)
-   {
-      if (strip_ctrl(pText).length > innerWidth)
-         pText = pText.substr(0, innerWidth);
-   }
+	if (pAutoStripIfTooLong)
+	{
+		if (strip_ctrl(pText).length > innerWidth)
+			pText = pText.substr(0, innerWidth);
+	}
 
-   // Re-build the bottom border string based on the new text
-   this.bottomBorder = "n" + this.SlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE;
-   if (pAddTChars)
-      this.bottomBorder += RIGHT_T_SINGLE;
-   if (pText.indexOf("n") != 0)
-      this.bottomBorder += "n";
-   this.bottomBorder += pText + "n" + this.SlyEdCfgObj.genColors.listBoxBorder;
-   if (pAddTChars)
-      this.bottomBorder += LEFT_T_SINGLE;
-   var numCharsRemaining = this.dimensions.width - strip_ctrl(this.bottomBorder).length - 3;
-   for (var i = 0; i < numCharsRemaining; ++i)
-      this.bottomBorder += HORIZONTAL_SINGLE;
-   this.bottomBorder += LOWER_RIGHT_SINGLE;
+	// Re-build the bottom border string based on the new text
+	this.bottomBorder = "n" + this.SlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE;
+	if (pAddTChars)
+		this.bottomBorder += RIGHT_T_SINGLE;
+	if (pText.indexOf("n") != 0)
+		this.bottomBorder += "n";
+	this.bottomBorder += pText + "n" + this.SlyEdCfgObj.genColors.listBoxBorder;
+	if (pAddTChars)
+		this.bottomBorder += LEFT_T_SINGLE;
+	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.bottomBorder).length - 3;
+	for (var i = 0; i < numCharsRemaining; ++i)
+		this.bottomBorder += HORIZONTAL_SINGLE;
+	this.bottomBorder += LOWER_RIGHT_SINGLE;
 }
 function ChoiceScrollbox_DrawBorder()
 {
-   console.gotoxy(this.dimensions.topLeftX, this.dimensions.topLeftY);
-   console.print(this.topBorder);
-   // Draw the side border characters
-   var screenRow = this.dimensions.topLeftY + 1;
-   for (var screenRow = this.dimensions.topLeftY+1; screenRow <= this.dimensions.bottomRightY-1; ++screenRow)
-   {
-      console.gotoxy(this.dimensions.topLeftX, screenRow);
-      console.print(VERTICAL_SINGLE);
-      console.gotoxy(this.dimensions.bottomRightX, screenRow);
-      console.print(VERTICAL_SINGLE);
-   }
-   // Draw the bottom border
-   console.gotoxy(this.dimensions.topLeftX, this.dimensions.bottomRightY);
-   console.print(this.bottomBorder);
+	console.gotoxy(this.dimensions.topLeftX, this.dimensions.topLeftY);
+	console.print(this.topBorder);
+	// Draw the side border characters
+	var screenRow = this.dimensions.topLeftY + 1;
+	for (var screenRow = this.dimensions.topLeftY+1; screenRow <= this.dimensions.bottomRightY-1; ++screenRow)
+	{
+		console.gotoxy(this.dimensions.topLeftX, screenRow);
+		console.print(VERTICAL_SINGLE);
+		console.gotoxy(this.dimensions.bottomRightX, screenRow);
+		console.print(VERTICAL_SINGLE);
+	}
+	// Draw the bottom border
+	console.gotoxy(this.dimensions.topLeftX, this.dimensions.bottomRightY);
+	console.print(this.bottomBorder);
+}
+function ChoiceScrollbox_DrawInnerMenu(pSelectedIndex)
+{
+	var selectedIndex = (typeof(pSelectedIndex) == "number" ? pSelectedIndex : -1);
+	var startArrIndex = this.pageNum * this.numItemsPerPage;
+	var endArrIndex = startArrIndex + this.numItemsPerPage;
+	if (endArrIndex > this.txtItemList.length)
+		endArrIndex = this.txtItemList.length;
+	var selectedItemRow = this.dimensions.topLeftY+1;
+	var screenY = this.dimensions.topLeftY + 1;
+	for (var i = startArrIndex; i < endArrIndex; ++i)
+	{
+		console.gotoxy(this.dimensions.topLeftX+1, screenY);
+		if (i == selectedIndex)
+		{
+			printf(this.listIemHighlightFormatStr, this.txtItemList[i].substr(0, this.maxItemWidth));
+			selectedItemRow = screenY;
+		}
+		else
+			printf(this.listIemFormatStr, this.txtItemList[i].substr(0, this.maxItemWidth));
+		++screenY;
+	}
+	// If the current screen row is below the bottom row inside the box,
+	// continue and write blank lines to the bottom of the inside of the box
+	// to blank out any text that might still be there.
+	while (screenY < this.dimensions.topLeftY+this.dimensions.height-1)
+	{
+		console.gotoxy(this.dimensions.topLeftX+1, screenY);
+		printf(this.listIemFormatStr, "");
+		++screenY;
+	}
+
+	// Update the page number in the top border of the box.
+	console.gotoxy(this.pageNumTxtStartX, this.dimensions.topLeftY);
+	printf("\1n" + this.SlyEdCfgObj.genColors.listBoxBorderText + "Page %4d of %4d", this.pageNum+1, this.numPages);
+	return selectedItemRow;
+}
+function ChoiceScrollbox_RefreshOnScreen(pSelectedIndex)
+{
+	this.drawBorder();
+	this.drawInnerMenu(pSelectedIndex);
 }
 function ChoiceScrollbox_RefreshItemCharOnScreen(pItemIndex, pCharIndex)
 {
-   if ((typeof(pItemIndex) != "number") || (typeof(pCharIndex) != "number"))
-      return;
-   if ((pItemIndex < 0) || (pItemIndex >= this.txtItemList.length) ||
-       (pItemIndex < this.topItemIndex) || (pItemIndex > this.bottomItemIndex))
-   {
-      return;
-   }
-   if ((pCharIndex < 0) || (pCharIndex >= this.txtItemList[pItemIndex].length))
-      return;
+	if ((typeof(pItemIndex) != "number") || (typeof(pCharIndex) != "number"))
+		return;
+	if ((pItemIndex < 0) || (pItemIndex >= this.txtItemList.length) ||
+	    (pItemIndex < this.topItemIndex) || (pItemIndex > this.bottomItemIndex))
+	{
+		return;
+	}
+	if ((pCharIndex < 0) || (pCharIndex >= this.txtItemList[pItemIndex].length))
+		return;
 
-   // Save the current cursor position so that we can restore it later
-   const originalCurpos = console.getxy();
-   // Go to the character's position on the screen and set the highlight or
-   // normal color, depending on whether the item is the currently selected item,
-   // then print the character on the screen.
-   const charScreenX = this.dimensions.topLeftX + 1 + pCharIndex;
-   const itemScreenY = this.dimensions.topLeftY + 1 + (pItemIndex - this.topItemIndex);
-   console.gotoxy(charScreenX, itemScreenY);
-   if (pItemIndex == this.chosenTextItemIndex)
-      console.print(this.SlyEdCfgObj.genColors.listBoxItemHighlight);
-   else
-      console.print(this.SlyEdCfgObj.genColors.listBoxItemText);
-   console.print(this.txtItemList[pItemIndex].charAt(pCharIndex));
-   // Move the cursor back to where it was originally
-   console.gotoxy(originalCurpos);
+	// Save the current cursor position so that we can restore it later
+	const originalCurpos = console.getxy();
+	// Go to the character's position on the screen and set the highlight or
+	// normal color, depending on whether the item is the currently selected item,
+	// then print the character on the screen.
+	const charScreenX = this.dimensions.topLeftX + 1 + pCharIndex;
+	const itemScreenY = this.dimensions.topLeftY + 1 + (pItemIndex - this.topItemIndex);
+	console.gotoxy(charScreenX, itemScreenY);
+	if (pItemIndex == this.chosenTextItemIndex)
+		console.print(this.SlyEdCfgObj.genColors.listBoxItemHighlight);
+	else
+		console.print(this.SlyEdCfgObj.genColors.listBoxItemText);
+	console.print(this.txtItemList[pItemIndex].charAt(pCharIndex));
+	// Move the cursor back to where it was originally
+	console.gotoxy(originalCurpos);
 }
 function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 {
@@ -836,12 +910,12 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 	// Code
 
 	// Variables for keeping track of the item list
-	const numItemsPerPage = this.dimensions.height - 2;
+	this.numItemsPerPage = this.dimensions.height - 2;
 	this.topItemIndex = 0;    // The index of the message group at the top of the list
 	// Figure out the index of the last message group to appear on the screen.
-	this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, numItemsPerPage);
-	const numPages = Math.ceil(this.txtItemList.length / numItemsPerPage);
-	const topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
+	this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, this.numItemsPerPage);
+	this.numPages = Math.ceil(this.txtItemList.length / this.numItemsPerPage);
+	const topIndexForLastPage = (this.numItemsPerPage * this.numPages) - this.numItemsPerPage;
 
 	if (pDrawBorder)
 		this.drawBorder();
@@ -852,56 +926,27 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 	// per page, there will be up to 1000 pages of replacements.  To write the
 	// text, we'll want to be 20 characters to the left of the end of the border
 	// of the box.
-	const pageNumTxtStartX = this.dimensions.topLeftX + this.dimensions.width - 19;
-	const maxItemWidth = this.dimensions.width - 2;
-	var pageNum = 0;
+	this.pageNumTxtStartX = this.dimensions.topLeftX + this.dimensions.width - 19;
+	this.maxItemWidth = this.dimensions.width - 2;
+	this.pageNum = 0;
 	var startArrIndex = 0;
 	this.chosenTextItemIndex = retObj.selectedIndex = 0;
 	var endArrIndex = 0; // One past the last array item
-	var screenY = 0;
-	var curpos = new Object(); // For keeping track of the current cursor position
-	curpos.x = 0;
-	curpos.y = 0;
+	var curpos = { // For keeping track of the current cursor position
+		x: 0,
+		y: 0
+	};
 	var refreshList = true; // For screen redraw optimizations
 	var continueOn = true;
 	while (continueOn)
 	{
 		if (refreshList)
 		{
-			this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, numItemsPerPage);
+			this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, this.numItemsPerPage);
 
-			// Write the list of items for the current page
-			startArrIndex = pageNum * numItemsPerPage;
-			endArrIndex = startArrIndex + numItemsPerPage;
-			if (endArrIndex > this.txtItemList.length)
-				endArrIndex = this.txtItemList.length;
-			var selectedItemRow = this.dimensions.topLeftY+1;
-			screenY = this.dimensions.topLeftY + 1;
-			for (var i = startArrIndex; i < endArrIndex; ++i)
-			{
-				console.gotoxy(this.dimensions.topLeftX+1, screenY);
-				if (i == retObj.selectedIndex)
-				{
-					printf(this.listIemHighlightFormatStr, this.txtItemList[i].substr(0, maxItemWidth));
-					selectedItemRow = screenY;
-				}
-				else
-					printf(this.listIemFormatStr, this.txtItemList[i].substr(0, maxItemWidth));
-				++screenY;
-			}
-			// If the current screen row is below the bottom row inside the box,
-			// continue and write blank lines to the bottom of the inside of the box
-			// to blank out any text that might still be there.
-			while (screenY < this.dimensions.topLeftY+this.dimensions.height-1)
-			{
-				console.gotoxy(this.dimensions.topLeftX+1, screenY);
-				printf(this.listIemFormatStr, "");
-				++screenY;
-			}
-
-			// Update the page number in the top border of the box.
-			console.gotoxy(pageNumTxtStartX, this.dimensions.topLeftY);
-			printf("\1n" + this.SlyEdCfgObj.genColors.listBoxBorderText + "Page %4d of %4d", pageNum+1, numPages);
+			// Write the list of items for the current page.  Also, drawInnerMenu()
+			// will return the selected item row.
+			var selectedItemRow = this.drawInnerMenu(retObj.selectedIndex);
 
 			// Just for sane appearance: Move the cursor to the first character of
 			// the currently-selected row and set the appropriate color.
@@ -919,41 +964,41 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 		{
 			case 'N': // Next page
 			case KEY_PAGE_DOWN:
-				refreshList = (pageNum < numPages-1);
+				refreshList = (this.pageNum < this.numPages-1);
 				if (refreshList)
 				{
-					++pageNum;
-					this.topItemIndex += numItemsPerPage;
+					++this.pageNum;
+					this.topItemIndex += this.numItemsPerPage;
 					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
 					// Note: this.bottomItemIndex is refreshed at the top of the loop
 				}
 				break;
 			case 'P': // Previous page
 			case KEY_PAGE_UP:
-				refreshList = (pageNum > 0);
+				refreshList = (this.pageNum > 0);
 				if (refreshList)
 				{
-					--pageNum;
-					this.topItemIndex -= numItemsPerPage;
+					--this.pageNum;
+					this.topItemIndex -= this.numItemsPerPage;
 					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
 					// Note: this.bottomItemIndex is refreshed at the top of the loop
 				}
 				break;
 			case 'F': // First page
-				refreshList = (pageNum > 0);
+				refreshList = (this.pageNum > 0);
 				if (refreshList)
 				{
-					pageNum = 0;
+					this.pageNum = 0;
 					this.topItemIndex = 0;
 					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
 					// Note: this.bottomItemIndex is refreshed at the top of the loop
 				}
 				break;
 			case 'L': // Last page
-				refreshList = (pageNum < numPages-1);
+				refreshList = (this.pageNum < this.numPages-1);
 				if (refreshList)
 				{
-					pageNum = numPages-1;
+					this.pageNum = this.numPages-1;
 					this.topItemIndex = topIndexForLastPage;
 					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
 					// Note: this.bottomItemIndex is refreshed at the top of the loop
@@ -968,8 +1013,8 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 					var previousItemIndex = retObj.selectedIndex - 1;
 					if (previousItemIndex < this.topItemIndex)
 					{
-						--pageNum;
-						this.topItemIndex -= numItemsPerPage;
+						--this.pageNum;
+						this.topItemIndex -= this.numItemsPerPage;
 						// Note: this.bottomItemIndex is refreshed at the top of the loop
 						refreshList = true;
 					}
@@ -977,12 +1022,12 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 					{
 						// Display the current line un-highlighted
 						console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
-						printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+						printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
 						// Display the previous line highlighted
 						curpos.x = this.dimensions.topLeftX+1;
 						--curpos.y;
 						console.gotoxy(curpos);
-						printf(this.listIemHighlightFormatStr, this.txtItemList[previousItemIndex].substr(0, maxItemWidth));
+						printf(this.listIemHighlightFormatStr, this.txtItemList[previousItemIndex].substr(0, this.maxItemWidth));
 						console.gotoxy(curpos); // Move the cursor into place where it should be
 						refreshList = false;
 					}
@@ -998,8 +1043,8 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 					var nextItemIndex = retObj.selectedIndex + 1;
 					if (nextItemIndex > this.bottomItemIndex)
 					{
-						++pageNum;
-						this.topItemIndex += numItemsPerPage;
+						++this.pageNum;
+						this.topItemIndex += this.numItemsPerPage;
 						// Note: this.bottomItemIndex is refreshed at the top of the loop
 						refreshList = true;
 					}
@@ -1007,12 +1052,12 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 					{
 						// Display the current line un-highlighted
 						console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
-						printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+						printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
 						// Display the previous line highlighted
 						curpos.x = this.dimensions.topLeftX+1;
 						++curpos.y;
 						console.gotoxy(curpos);
-						printf(this.listIemHighlightFormatStr, this.txtItemList[nextItemIndex].substr(0, maxItemWidth));
+						printf(this.listIemHighlightFormatStr, this.txtItemList[nextItemIndex].substr(0, this.maxItemWidth));
 						console.gotoxy(curpos); // Move the cursor into place where it should be
 						refreshList = false;
 					}
@@ -1024,13 +1069,13 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 				{
 					// Display the current line un-highlighted
 					console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
-					printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+					printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
 					// Select the top item, and display it highlighted.
 					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
 					curpos.x = this.dimensions.topLeftX+1;
 					curpos.y = this.dimensions.topLeftY+1;
 					console.gotoxy(curpos);
-					printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+					printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
 					console.gotoxy(curpos); // Move the cursor into place where it should be
 					refreshList = false;
 				}
@@ -1040,13 +1085,13 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 				{
 					// Display the current line un-highlighted
 					console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
-					printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+					printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
 					// Select the bottommost item, and display it highlighted.
 					this.chosenTextItemIndex = retObj.selectedIndex = this.bottomItemIndex;
 					curpos.x = this.dimensions.topLeftX+1;
 					curpos.y = this.dimensions.bottomRightY-1;
 					console.gotoxy(curpos);
-					printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+					printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
 					console.gotoxy(curpos); // Move the cursor into place where it should be
 					refreshList = false;
 				}
@@ -1325,11 +1370,11 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	printf("\1k\1h%-44s  %-33s\r\n", "컴컴컴컴�", "컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴");
 	displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
-	displayCmdKeyFormattedDouble("Ctrl-R", "Program information", "/Q", "Quote message", true);
+	displayCmdKeyFormattedDouble("", "", "/Q", "Quote message", true);
 	if (pTxtReplacments)
 		displayCmdKeyFormattedDouble("Ctrl-T", "List text replacements", "/T", "List text replacements", true);
 	if (pUserSettings)
-		displayCmdKeyFormattedDouble("", "", "/U", "Your settings", true);
+		displayCmdKeyFormattedDouble("", "", "/U", "Your user settings", true);
 	if (pCanCrossPost)
 		displayCmdKeyFormattedDouble("", "", "/C", "Cross-post selection", true);
 	printf(" \1c\1h%-7s\1g  \1n\1c%s", "", "", "/?", "Show help");
@@ -1341,24 +1386,18 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-S", "Search for text", true);
 	displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
 	                             "Ctrl-D", "Delete line", true);
-	if (pCanCrossPost)
-		displayCmdKeyFormattedDouble("ESC", "Command menu", "Ctrl-C", "Cross-post selection", true);
-	else
-		displayCmdKeyFormatted("ESC", "Command menu", true);
+	displayCmdKeyFormattedDouble("Ctrl-R", "Spell checker", "ESC", "Command menu", true);
 	if (isSysop)
 		displayCmdKeyFormattedDouble("Ctrl-O", "Import a file", "Ctrl-X", "Export to file", true);
-
-	if (pUserSettings)
-		displayCmdKeyFormatted("Ctrl-U", "Your settings", true);
+	if (pUserSettings && pCanCrossPost)
+		displayCmdKeyFormattedDouble("Ctrl-U", "Your user settings", "Ctrl-C", "Cross-post selection", true);
+	else if (!pUserSettings && pCanCrossPost)
+		displayCmdKeyFormatted("Ctrl-C", "Cross-post selection", true);
+	else if (pUserSettings && !pCanCrossPost)
+		displayCmdKeyFormatted("Ctrl-U", "Your user settings", true);
 
 	if (pPause)
-	{
-		// TODO: I doubt this needs consolePauseWithESCChars() anymore..
-		// Should be able to use console.pause(), which easily supports
-		// custom pause scripts being loaded.
-		//consolePauseWithESCChars();
 		console.pause();
-	}
 }
 
 // Displays the general help screen.
@@ -1393,19 +1432,19 @@ function displayGeneralHelp(pDisplayHeader, pClear, pPause)
 //  pPause: Whether or not to pause at the end
 function displayProgramInfo(pClear, pPause)
 {
-   if (pClear)
-      console.clear("n");
+	if (pClear)
+		console.clear("\1n");
 
-   // Print the program information
-   console.center("nhc" + EDITOR_PROGRAM_NAME + "n cVersion g" +
-                  EDITOR_VERSION + " wh(b" + EDITOR_VER_DATE + "w)");
-   console.center("ncby Eric Oulashin");
-   console.crlf();
-   console.print("ncSlyEdit is a full-screen message editor for Synchronet that mimics the look &\r\n");
-   console.print("feel of IceEdit or DCT Edit.");
-   console.crlf();
-   if (pPause)
-      console.pause();
+	// Print the program information
+	console.center("\1n\1h\1c" + EDITOR_PROGRAM_NAME + "\1n \1cVersion \1g" +
+	               EDITOR_VERSION + " \1w\1h(\1b" + EDITOR_VER_DATE + "\1w)");
+	console.center("\1n\1cby Eric Oulashin");
+	console.crlf();
+	console.print("\1n\1cSlyEdit is a full-screen message editor for Synchronet that mimics the look &\r\n");
+	console.print("feel of IceEdit or DCT Edit.");
+	console.crlf();
+	if (pPause)
+		console.pause();
 }
 
 // Displays the informational screen for the program exit.
@@ -1475,9 +1514,10 @@ function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib)
 //                            line on the screen for a "yes" as well as "no"
 //                            answer.  This is optional.  By default, only
 //                            refreshes for a "no" answer.
+// pAlwaysEraseBox: In DCT mode - Boolean: Whether to erase the box regardless of a Yes or No answer.
 //
 // Return value: Boolean - true for a "Yes" answer, false for "No"
-function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswers)
+function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswers, pAlwaysEraseBox)
 {
    var userResponse = pDefaultYes;
 
@@ -1488,9 +1528,9 @@ function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswer
       var paramObj = new AbortConfirmFuncParams();
       paramObj.editLinesIndex = gEditLinesIndex;
       if (typeof(pBoxTitle) == "string")
-         userResponse = promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, paramObj);
+         userResponse = promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, paramObj, pAlwaysEraseBox);
       else
-         userResponse = promptYesNo_DCTStyle(pQuestion, "Prompt", pDefaultYes, paramObj);
+         userResponse = promptYesNo_DCTStyle(pQuestion, "Prompt", pDefaultYes, paramObj, pAlwaysEraseBox);
    }
    else if (EDITOR_STYLE == "ICE")
    {
@@ -1522,10 +1562,10 @@ function ReadSlyEditConfigFile()
 
 	cfgObj.userIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
 	// Default settings
-	cfgObj.thirdPartyLoadOnStart = new Array();
-	cfgObj.runJSOnStart = new Array();
-	cfgObj.thirdPartyLoadOnExit = new Array();
-	cfgObj.runJSOnExit = new Array();
+	cfgObj.thirdPartyLoadOnStart = [];
+	cfgObj.runJSOnStart = [];
+	cfgObj.thirdPartyLoadOnExit = [];
+	cfgObj.runJSOnExit = [];
 	cfgObj.displayEndInfoScreen = true;
 	cfgObj.userInputTimeout = true;
 	cfgObj.inputTimeoutMS = 300000;
@@ -1543,6 +1583,7 @@ function ReadSlyEditConfigFile()
 	cfgObj.shuffleTaglines = false;
 	cfgObj.allowUserSettings = true;
 	cfgObj.allowEditQuoteLines = true;
+	cfgObj.dictionaryFilenames = [];
 
 	// General SlyEdit color settings
 	cfgObj.genColors = new Object();
@@ -1781,6 +1822,8 @@ function ReadSlyEditConfigFile()
 						cfgObj.allowUserSettings = (valueUpper == "TRUE");
 					else if (settingUpper == "ALLOWEDITQUOTELINES")
 						cfgObj.allowEditQuoteLines = (valueUpper == "TRUE");
+					else if (settingUpper == "DICTIONARYFILENAMES")
+						cfgObj.dictionaryFilenames = parseDictionaryConfig(value, gStartupPath);
 				}
 				else if (settingsMode == "ICEColors")
 				{
@@ -1802,6 +1845,15 @@ function ReadSlyEditConfigFile()
 		// Validate the settings
 		if (cfgObj.inputTimeoutMS < 1000)
 			cfgObj.inputTimeoutMS = 300000;
+
+		// If no dictionaries were specified in the configuration file, then
+		// set all available dictionary files in the configuration.
+		if (cfgObj.dictionaryFilenames.length == 0)
+		{
+			var dictFilenames = getDictionaryFilenames(gStartupPath);
+			for (var i = 0; i < dictFilenames.length; ++i)
+				cfgObj.dictionaryFilenames.push(dictFilenames[i]);
+		}
 	}
 
 	return cfgObj;
@@ -2255,73 +2307,73 @@ function isQuoteLine(pLineArray, pLineIndex)
 //            control character)
 function toggleAttr(pAttrType, pAttrs, pNewAttr)
 {
-   // Removes an attribute from an attribute string, if it
-   // exists.  Returns the new attribute string.
-   function removeAttrIfExists(pAttrs, pNewAttr)
-   {
-      var index = pAttrs.search(pNewAttr);
-      if (index > -1)
-         pAttrs = pAttrs.replace(pNewAttr, "");
-      return pAttrs;
-   }
+	// Removes an attribute from an attribute string, if it
+	// exists.  Returns the new attribute string.
+	function removeAttrIfExists(pAttrs, pNewAttr)
+	{
+		var index = pAttrs.search(pNewAttr);
+		if (index > -1)
+			pAttrs = pAttrs.replace(pNewAttr, "");
+		return pAttrs;
+	}
 
-   // Convert pAttrs and pNewAttr to all uppercase for ease of searching
-   pAttrs = pAttrs.toUpperCase();
-   pNewAttr = pNewAttr.toUpperCase();
+	// Convert pAttrs and pNewAttr to all uppercase for ease of searching
+	pAttrs = pAttrs.toUpperCase();
+	pNewAttr = pNewAttr.toUpperCase();
 
-   // If pAttrs starts with the normal attribute, then
-   // remove it (we'll put it back on later).
-   var normalAtStart = false;
-   if (pAttrs.search(/^N/) == 0)
-   {
-      normalAtStart = true;
-      pAttrs = pAttrs.substr(2);
-   }
+	// If pAttrs starts with the normal attribute, then
+	// remove it (we'll put it back on later).
+	var normalAtStart = false;
+	if (pAttrs.search(/^N/) == 0)
+	{
+		normalAtStart = true;
+		pAttrs = pAttrs.substr(2);
+	}
 
-   // Prepend the attribute control character to the new attribute
-   var newAttr = "" + pNewAttr;
+	// Prepend the attribute control character to the new attribute
+	var newAttr = "" + pNewAttr;
 
-   // Set a regex for searching & replacing
-   var regex = "";
-   switch (pAttrType)
-   {
-      case FORE_ATTR: // Foreground attribute
-         regex = /K|R|G|Y|B|M|C|W/g;
-         break;
-      case BKG_ATTR: // Background attribute
-         regex = /0|1|2|3|4|5|6|7/g;
-         break;
-      case SPECIAL_ATTR: // Special attribute
-         //regex = /H|I|N/g;
-         index = pAttrs.search(newAttr);
-         if (index > -1)
-            pAttrs = pAttrs.replace(newAttr, "");
-         else
-            pAttrs += newAttr;
-         break;
-      default:
-         break;
-   }
+	// Set a regex for searching & replacing
+	var regex = "";
+	switch (pAttrType)
+	{
+		case FORE_ATTR: // Foreground attribute
+			regex = /K|R|G|Y|B|M|C|W/g;
+			break;
+		case BKG_ATTR: // Background attribute
+			regex = /0|1|2|3|4|5|6|7/g;
+			break;
+		case SPECIAL_ATTR: // Special attribute
+			//regex = /H|I|N/g;
+			index = pAttrs.search(newAttr);
+			if (index > -1)
+			pAttrs = pAttrs.replace(newAttr, "");
+			else
+			pAttrs += newAttr;
+			break;
+		default:
+			break;
+	}
 
-   // If regex is not blank, then search & replace on it in
-   // pAttrs.
-   if (regex != "")
-   {
-      pAttrs = removeAttrIfExists(pAttrs, newAttr);
-      // If the regex is found, then replace it.  Otherwise,
-      // add pNewAttr to the attribute string.
-      if (pAttrs.search(regex) > -1)
-         pAttrs = pAttrs.replace(regex, "" + pNewAttr);
-      else
-         pAttrs += "" + pNewAttr;
-   }
+	// If regex is not blank, then search & replace on it in
+	// pAttrs.
+	if (regex != "")
+	{
+		pAttrs = removeAttrIfExists(pAttrs, newAttr);
+		// If the regex is found, then replace it.  Otherwise,
+		// add pNewAttr to the attribute string.
+		if (pAttrs.search(regex) > -1)
+			pAttrs = pAttrs.replace(regex, "" + pNewAttr);
+		else
+			pAttrs += "" + pNewAttr;
+	}
 
-   // If pAttrs started with the normal attribute, then
-   // put it back on.
-   if (normalAtStart)
-      pAttrs = "N" + pAttrs;
+	// If pAttrs started with the normal attribute, then
+	// put it back on.
+	if (normalAtStart)
+		pAttrs = "N" + pAttrs;
 
-   return pAttrs;
+	return pAttrs;
 }
 
 // This function wraps an array of strings based on a line width.
@@ -2340,7 +2392,7 @@ function toggleAttr(pAttrType, pAttrs, pNewAttr)
 //                       for the unwrapped lines - This will be updated if lines are
 //                       wrapped.
 //
-// Return value: The number of new lines added
+// Return value: The number of new lines added/removed
 function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesRequiringNL, pLineInfos)
 {
 	// Validate parameters
@@ -2756,13 +2808,14 @@ function firstNonQuoteTxtIndex(pStr, pUseAuthorInitials, pIndentQuoteLinesWithIn
 // Parameters:
 //  pUseAuthorInitials: Whether or not to prefix quote lines with the last author's
 //                      initials
-// pIndentQuoteLinesWithInitials: If prefixing the quote lines with the
-//                                last author's initials, this parameter specifies
-//                                whether or not to also prefix the quote lines with
-//                                a space.
+//  pIndentQuoteLinesWithInitials: If prefixing the quote lines with the
+//                                 last author's initials, this parameter specifies
+//                                 whether or not to also prefix the quote lines with
+//                                 a space.
 //  pTrimSpacesFromQuoteLines: Whether or not to trim spaces from quote lines (for when people
 //                             indent the first line of their reply, etc.).  Defaults to true.
-function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials, pTrimSpacesFromQuoteLines)
+//  pMaxWidth: The maximum width of the lines
+function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials, pTrimSpacesFromQuoteLines, pMaxWidth)
 {
 	var useAuthorInitials = true;
 	var indentQuoteLinesWithInitials = false;
@@ -2773,9 +2826,9 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials, pTrim
 
 	var trimSpacesFromQuoteLines = (typeof(pTrimSpacesFromQuoteLines) == "boolean" ? pTrimSpacesFromQuoteLines : true);
 	if (useAuthorInitials)
-		wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLinesWithInitials, trimSpacesFromQuoteLines);
+		wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLinesWithInitials, trimSpacesFromQuoteLines, pMaxWidth);
 	else
-		wrapQuoteLines_NoAuthorInitials(trimSpacesFromQuoteLines);
+		wrapQuoteLines_NoAuthorInitials(trimSpacesFromQuoteLines, pMaxWidth);
 }
 
 // For wrapping quote lines: This function checks if a string has only > characters
@@ -2802,7 +2855,8 @@ function normalizeGTChars(pStr)
 //  pIndentQuoteLines: Whether or not to indent the quote lines
 //  pTrimSpacesFromQuoteLines: Whether or not to trim spaces from quote lines (for when people
 //                             indent the first line of their reply, etc.).  Defaults to true.
-function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuoteLines)
+//  pMaxWidth: The maximum width of the lines
+function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuoteLines, pMaxWidth)
 {
 	if (gQuoteLines.length == 0)
 		return;
@@ -2960,7 +3014,7 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuo
 		maxBegOfLineLen += gQuotePrefix.length;
 
 		// Wrap the current section of quote lines
-		var maxLineWidth = 79 - maxBegOfLineLen;
+		var maxLineWidth = pMaxWidth - maxBegOfLineLen;
 		if (maxLineWidth < 0)
 			maxLineWidth = 0;
 		var idxesAddedNL = new Array();
@@ -3061,7 +3115,8 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines, pTrimSpacesFromQuo
 // Parameters:
 //  pTrimSpacesFromQuoteLines: Whether or not to trim spaces from quote lines (for when people
 //                             indent the first line of their reply, etc.).  Defaults to true.
-function wrapQuoteLines_NoAuthorInitials(pTrimSpacesFromQuoteLines)
+//  pMaxWidth: The maximum width of the lines
+function wrapQuoteLines_NoAuthorInitials(pTrimSpacesFromQuoteLines, pMaxWidth)
 {
 	if (gQuoteLines.length == 0)
 		return;
@@ -3102,14 +3157,12 @@ function wrapQuoteLines_NoAuthorInitials(pTrimSpacesFromQuoteLines)
 				}
 			}
 			// Wrap the text lines in the range we've seen.
-			// Note: 79 is assumed as the maximum line length because
-			// that seems to be a commonly-accepted message width for
-			// BBSes.  Also, the following length is subtracted from it:
+			// The following length is subtracted from it the max line width:
 			// (2*(lastQuoteLevel+1) + gQuotePrefix.length)
 			// That is because we'll be prepending "> " to the quote lines,
 			// and then SlyEdit will prepend gQuotePrefix to them during quoting.
 			var numLinesAdded =  wrapTextLines(gQuoteLines, startArrIndex, endArrIndex,
-			                                   79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
+			                                   pMaxWidth - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
 			// If quote lines were added as a result of wrapping, then
 			// determine the number of lines added, and update endArrIndex
 			// and quoteLineIndex accordingly.
@@ -3209,156 +3262,156 @@ function wrapQuoteLines_NoAuthorInitials(pTrimSpacesFromQuoteLines)
 //  pMsgAreaName: The name of the message area being posted to
 function getCurMsgInfo(pMsgAreaName)
 {
-  var retObj = new Object();
-  retObj.msgNumIsOffset = false;
-  if (bbs.smb_sub_code.length > 0)
-  {
-    retObj.lastMsg = bbs.smb_last_msg;
-    retObj.totalNumMsgs = bbs.smb_total_msgs;
-    // If bbs.msg_number is valid (greater than 0), then use it.  Otherwise,
-    // use the older behavior of using bbs.smb_curmsg (the offset) instead.
-    // bbs.msg_number was correct in Synchronet 3.16 builds starting on
-    // May 12, 2013.
-    //retObj.curMsgNum = (bbs.msg_number > 0 ? bbs.msg_number : bbs.smb_curmsg);
-    if (bbs.msg_number > 0)
-      retObj.curMsgNum = bbs.msg_number;
-    else
-    {
-      retObj.curMsgNum = bbs.smb_curmsg;
-      retObj.msgNumIsOffset = true;
-    }
-    retObj.subBoardCode = bbs.smb_sub_code;
-    retObj.grpIndex = msg_area.sub[bbs.smb_sub_code].grp_index;
-  }
-  else
-  {
-    retObj.lastMsg = -1;
-    retObj.curMsgNum = -1;
-    // If the user has a valid current sub-board code, then use it;
-    // otherwise, find the first sub-board the user is able to post
-    // in and use that.
-    if (typeof(msg_area.sub[bbs.cursub_code]) != "undefined")
-    {
-      retObj.subBoardCode = bbs.cursub_code;
-      retObj.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
-    }
-    else
-    {
-      var firstPostableSubInfo = getFirstPostableSubInfo();
-      retObj.subBoardCode = firstPostableSubInfo.subCode;
-      retObj.grpIndex = firstPostableSubInfo.grpIndex;
-    }
+	var retObj = new Object();
+	retObj.msgNumIsOffset = false;
+	if (bbs.smb_sub_code.length > 0)
+	{
+		retObj.lastMsg = bbs.smb_last_msg;
+		retObj.totalNumMsgs = bbs.smb_total_msgs;
+		// If bbs.msg_number is valid (greater than 0), then use it.  Otherwise,
+		// use the older behavior of using bbs.smb_curmsg (the offset) instead.
+		// bbs.msg_number was correct in Synchronet 3.16 builds starting on
+		// May 12, 2013.
+		//retObj.curMsgNum = (bbs.msg_number > 0 ? bbs.msg_number : bbs.smb_curmsg);
+		if (bbs.msg_number > 0)
+			retObj.curMsgNum = bbs.msg_number;
+		else
+		{
+			retObj.curMsgNum = bbs.smb_curmsg;
+			retObj.msgNumIsOffset = true;
+		}
+		retObj.subBoardCode = bbs.smb_sub_code;
+		retObj.grpIndex = msg_area.sub[bbs.smb_sub_code].grp_index;
+	}
+	else
+	{
+		retObj.lastMsg = -1;
+		retObj.curMsgNum = -1;
+		// If the user has a valid current sub-board code, then use it;
+		// otherwise, find the first sub-board the user is able to post
+		// in and use that.
+		if (typeof(msg_area.sub[bbs.cursub_code]) != "undefined")
+		{
+			retObj.subBoardCode = bbs.cursub_code;
+			retObj.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
+		}
+		else
+		{
+			var firstPostableSubInfo = getFirstPostableSubInfo();
+			retObj.subBoardCode = firstPostableSubInfo.subCode;
+			retObj.grpIndex = firstPostableSubInfo.grpIndex;
+		}
 
-    // If we got a valid sub-board code, then open that sub-board
-    // and get the total number of messages from it.
-    if (retObj.subBoardCode.length > 0)
-    {
-      var tmpMsgBaseObj = new MsgBase(retObj.subBoardCode);
-      if (tmpMsgBaseObj.open())
-      {
-        retObj.totalNumMsgs = tmpMsgBaseObj.total_msgs;
-        tmpMsgBaseObj.close();
-      }
-      else
-        retObj.totalNumMsgs = 0;
-    }
-    else
-       retObj.totalNumMsgs = 0;
-  }
-  // If pMsgAreaName is valid, then if it specifies a message area name that is
-  // different from what's in retObj, then we probably want to use bbs.cursub_code
-  // instead of bbs.smb_sub_code, etc.
-  // Note: As of the May 8, 2013 build of Synchronet (3.16), the bbs.smb_sub*
-  // properties reflect the current sub-board being posted to, always.
-  // Digital Man committed a change in CVS for this on May 7, 2013.
-  if ((typeof(pMsgAreaName) == "string") && (pMsgAreaName.length > 0))
-  {
-    if (msg_area.sub[retObj.subBoardCode].name.indexOf(pMsgAreaName) == -1)
-    {
-      retObj.lastMsg = -1;
-      retObj.curMsgNum = -1;
-      // If the user has a valid current sub-board code, then use it;
-      // otherwise, find the first sub-board the user is able to post
-      // in and use that.
-      if (typeof(msg_area.sub[bbs.cursub_code]) != "undefined")
-      {
-        retObj.subBoardCode = bbs.cursub_code;
-        retObj.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
-      }
-      else
-      {
-        var firstPostableSubInfo = getFirstPostableSubInfo();
-        retObj.subBoardCode = firstPostableSubInfo.subCode;
-        retObj.grpIndex = firstPostableSubInfo.grpIndex;
-      }
+		// If we got a valid sub-board code, then open that sub-board
+		// and get the total number of messages from it.
+		if (retObj.subBoardCode.length > 0)
+		{
+			var tmpMsgBaseObj = new MsgBase(retObj.subBoardCode);
+			if (tmpMsgBaseObj.open())
+			{
+				retObj.totalNumMsgs = tmpMsgBaseObj.total_msgs;
+				tmpMsgBaseObj.close();
+			}
+			else
+				retObj.totalNumMsgs = 0;
+		}
+		else
+			retObj.totalNumMsgs = 0;
+	}
+	// If pMsgAreaName is valid, then if it specifies a message area name that is
+	// different from what's in retObj, then we probably want to use bbs.cursub_code
+	// instead of bbs.smb_sub_code, etc.
+	// Note: As of the May 8, 2013 build of Synchronet (3.16), the bbs.smb_sub*
+	// properties reflect the current sub-board being posted to, always.
+	// Digital Man committed a change in CVS for this on May 7, 2013.
+	if ((typeof(pMsgAreaName) == "string") && (pMsgAreaName.length > 0))
+	{
+		if (msg_area.sub[retObj.subBoardCode].name.indexOf(pMsgAreaName) == -1)
+		{
+			retObj.lastMsg = -1;
+			retObj.curMsgNum = -1;
+			// If the user has a valid current sub-board code, then use it;
+			// otherwise, find the first sub-board the user is able to post
+			// in and use that.
+			if (typeof(msg_area.sub[bbs.cursub_code]) != "undefined")
+			{
+				retObj.subBoardCode = bbs.cursub_code;
+				retObj.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
+			}
+			else
+			{
+				var firstPostableSubInfo = getFirstPostableSubInfo();
+				retObj.subBoardCode = firstPostableSubInfo.subCode;
+				retObj.grpIndex = firstPostableSubInfo.grpIndex;
+			}
 
-      // If we got a valid sub-board code, then open that sub-board
-      // and get the total number of messages from it.
-      if (retObj.subBoardCode.length > 0)
-      {
-        var tmpMsgBaseObj = new MsgBase(retObj.subBoardCode);
-        if (tmpMsgBaseObj.open())
-        {
-          retObj.totalNumMsgs = tmpMsgBaseObj.total_msgs;
-          tmpMsgBaseObj.close();
-        }
-        else
-          retObj.totalNumMsgs = 0;
-      }
-      else
-       retObj.totalNumMsgs = 0;
-    }
-  }
+			// If we got a valid sub-board code, then open that sub-board
+			// and get the total number of messages from it.
+			if (retObj.subBoardCode.length > 0)
+			{
+				var tmpMsgBaseObj = new MsgBase(retObj.subBoardCode);
+				if (tmpMsgBaseObj.open())
+				{
+					retObj.totalNumMsgs = tmpMsgBaseObj.total_msgs;
+					tmpMsgBaseObj.close();
+				}
+				else
+					retObj.totalNumMsgs = 0;
+			}
+			else
+				retObj.totalNumMsgs = 0;
+		}
+	}
 
-  // If the Digital Distortion Message Lister drop file exists,
-  // then use the message information from that file instead.
-  if (file_exists(gDDML_DROP_FILE_NAME))
-  {
-    var SMBInfoFile = new File(gDDML_DROP_FILE_NAME);
-    if (SMBInfoFile.open("r"))
-    {
-      var fileLine = null; // A line read from the file
-      var lineNum = 0; // Will be incremented at the start of the while loop, to start at 1.
-      while (!SMBInfoFile.eof)
-      {
-         ++lineNum;
+	// If the Digital Distortion Message Lister drop file exists,
+	// then use the message information from that file instead.
+	if (file_exists(gDDML_DROP_FILE_NAME))
+	{
+		var SMBInfoFile = new File(gDDML_DROP_FILE_NAME);
+		if (SMBInfoFile.open("r"))
+		{
+			var fileLine = null; // A line read from the file
+			var lineNum = 0; // Will be incremented at the start of the while loop, to start at 1.
+			while (!SMBInfoFile.eof)
+			{
+				++lineNum;
 
-         // Read the next line from the config file.
-         fileLine = SMBInfoFile.readln(2048);
+				// Read the next line from the config file.
+				fileLine = SMBInfoFile.readln(2048);
 
-         // fileLine should be a string, but I've seen some cases
-         // where for some reason it isn't.  If it's not a string,
-         // then continue onto the next line.
-         if (typeof(fileLine) != "string")
-            continue;
+				// fileLine should be a string, but I've seen some cases
+				// where for some reason it isn't.  If it's not a string,
+				// then continue onto the next line.
+				if (typeof(fileLine) != "string")
+					continue;
 
-          // Depending on the line number, set the appropriate value
-          // in retObj.
-          switch (lineNum)
-          {
-            case 1:
-              retObj.lastMsg = +fileLine;
-              break;
-            case 2:
-              retObj.totalNumMsgs = +fileLine;
-              break;
-            case 3:
-              retObj.curMsgNum = +fileLine;
-              retObj.msgNumIsOffset = false; // For Message Lister 1.36 and newer
-              break;
-            case 4:
-              retObj.subBoardCode = fileLine;
-              retObj.grpIndex = msg_area.sub[retObj.subBoardCode].grp_index;
-              break;
-            default:
-              break;
-          }
-       }
-       SMBInfoFile.close();
-    }
-  }
+				// Depending on the line number, set the appropriate value
+				// in retObj.
+				switch (lineNum)
+				{
+					case 1:
+						retObj.lastMsg = +fileLine;
+						break;
+					case 2:
+						retObj.totalNumMsgs = +fileLine;
+						break;
+					case 3:
+						retObj.curMsgNum = +fileLine;
+						retObj.msgNumIsOffset = false; // For Message Lister 1.36 and newer
+						break;
+					case 4:
+						retObj.subBoardCode = fileLine;
+						retObj.grpIndex = msg_area.sub[retObj.subBoardCode].grp_index;
+						break;
+					default:
+						break;
+				}
+			}
+			SMBInfoFile.close();
+		}
+	}
 
-  return retObj;
+	return retObj;
 }
 
 // Gets the "From" name of the current message being replied to.
@@ -3376,32 +3429,32 @@ function getCurMsgInfo(pMsgAreaName)
 //               to (a string).
 function getFromNameForCurMsg(pMsgInfo)
 {
-  var fromName = "";
+	var fromName = "";
 
-  // Get the information about the current message from
-  // DDML_SyncSMBInfo.txt in the node dir if it exists or from
-  // the bbs object's properties.  Then open the message header
-  // and get the 'from' name from it.
-  var msgInfo = null;
-  if ((pMsgInfo != null) && (typeof(pMsgInfo) != "undefined"))
-    msgInfo = pMsgInfo;
-  else
-    msgInfo = getCurMsgInfo();
+	// Get the information about the current message from
+	// DDML_SyncSMBInfo.txt in the node dir if it exists or from
+	// the bbs object's properties.  Then open the message header
+	// and get the 'from' name from it.
+	var msgInfo = null;
+	if ((pMsgInfo != null) && (typeof(pMsgInfo) != "undefined"))
+		msgInfo = pMsgInfo;
+	else
+		msgInfo = getCurMsgInfo();
 
-  if (msgInfo.subBoardCode.length > 0)
-  {
-    var msgBase = new MsgBase(msgInfo.subBoardCode);
-    if (msgBase != null)
-    {
-      msgBase.open();
-      var hdr = msgBase.get_msg_header(msgInfo.msgNumIsOffset, msgInfo.curMsgNum, true);
-      if (hdr != null)
-        fromName = hdr.from;
-      msgBase.close();
-    }
-  }
+	if (msgInfo.subBoardCode.length > 0)
+	{
+		var msgBase = new MsgBase(msgInfo.subBoardCode);
+		if (msgBase != null)
+		{
+			msgBase.open();
+			var hdr = msgBase.get_msg_header(msgInfo.msgNumIsOffset, msgInfo.curMsgNum, true);
+			if (hdr != null)
+				fromName = hdr.from;
+			msgBase.close();
+		}
+	}
 
-  return fromName;
+	return fromName;
 }
 
 // Calculates & returns a page number.
@@ -3536,37 +3589,38 @@ function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
 //               sigContents: String - The user's message signature
 function readUserSigFile()
 {
-  var retObj = new Object();
-  retObj.sigFileExists = false;
-  retObj.sigContents = "";
+	var retObj = {
+		sigFileExists: false,
+		sigContents: ""
+	};
 
-  // The user signature files are located in sbbs/data/user, and the filename
-  // is the user number (zero-padded up to 4 digits) + .sig
-  var userSigFilename = backslash(system.data_dir + "user") + format("%04d.sig", user.number);
-  retObj.sigFileExists = file_exists(userSigFilename);
-  if (retObj.sigFileExists)
-  {
-    var msgSigFile = new File(userSigFilename);
-    if (msgSigFile.open("r"))
-    {
-      var fileLine = ""; // A line read from the file
-      while (!msgSigFile.eof)
-      {
-        fileLine = msgSigFile.readln(2048);
-        // fileLine should be a string, but I've seen some cases
-        // where for some reason it isn't.  If it's not a string,
-        // then continue onto the next line.
-        if (typeof(fileLine) != "string")
-          continue;
+	// The user signature files are located in sbbs/data/user, and the filename
+	// is the user number (zero-padded up to 4 digits) + .sig
+	var userSigFilename = backslash(system.data_dir + "user") + format("%04d.sig", user.number);
+	retObj.sigFileExists = file_exists(userSigFilename);
+	if (retObj.sigFileExists)
+	{
+		var msgSigFile = new File(userSigFilename);
+		if (msgSigFile.open("r"))
+		{
+			var fileLine = ""; // A line read from the file
+			while (!msgSigFile.eof)
+			{
+				fileLine = msgSigFile.readln(2048);
+				// fileLine should be a string, but I've seen some cases
+				// where for some reason it isn't.  If it's not a string,
+				// then continue onto the next line.
+				if (typeof(fileLine) != "string")
+					continue;
 
-        retObj.sigContents += fileLine + "\r\n";
-      }
+				retObj.sigContents += fileLine + "\r\n";
+			}
 
-      msgSigFile.close();
-    }
-  }
+			msgSigFile.close();
+		}
+	}
 
-  return retObj;
+	return retObj;
 }
 
 // Returns the sub-board code and group index for the first sub-board
@@ -3759,21 +3813,21 @@ function charIsLetter(pChar)
 //  pDefaultPath: The default directory (must have a trailing separator character)
 function genFullPathCfgFilename(pFilename, pDefaultPath)
 {
-   var fullyPathedFilename = system.mods_dir + pFilename;
-   if (!file_exists(fullyPathedFilename))
-      fullyPathedFilename = system.ctrl_dir + pFilename;
-   if (!file_exists(fullyPathedFilename))
-   {
-      if (typeof(pDefaultPath) == "string")
-      {
-         // Make sure the default path has a trailing path separator
-         var defaultPath = backslash(pDefaultPath);
-         fullyPathedFilename = defaultPath + pFilename;
-      }
-      else
-         fullyPathedFilename = pFilename;
-   }
-   return fullyPathedFilename;
+	var fullyPathedFilename = system.mods_dir + pFilename;
+	if (!file_exists(fullyPathedFilename))
+		fullyPathedFilename = system.ctrl_dir + pFilename;
+	if (!file_exists(fullyPathedFilename))
+	{
+		if (typeof(pDefaultPath) == "string")
+		{
+			// Make sure the default path has a trailing path separator
+			var defaultPath = backslash(pDefaultPath);
+			fullyPathedFilename = defaultPath + pFilename;
+		}
+		else
+			fullyPathedFilename = pFilename;
+	}
+	return fullyPathedFilename;
 }
 
 // Returns the first letter found in a string and its index.  If a letter is
@@ -4012,7 +4066,7 @@ function getUserInputWithSetOfInputStrs(pMode, pValidKeyStrs, pCfgObj, pCurPos)
 // Return value: An array of strings read from the file
 function readTxtFileIntoArray(pFilename, pStripCtrl, pIgnoreBlankLines, pMaxNumLines)
 {
-   var fileStrs = new Array();
+   var fileStrs = [];
 
    var maxNumLines = -1;
    if (typeof(pMaxNumLines) == "number")
@@ -4107,6 +4161,7 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 	// Initialize the settings object with the default settings
 	var userSettingsObj = {
 		enableTaglines: pSlyEdCfgObj.enableTaglines,
+		promptSpellCheckOnSave: false,
 		useQuoteLineInitials: pSlyEdCfgObj.useQuoteLineInitials,
 		// The next setting specifies whether or not quote lines should be
 		// prefixed with a space when using author initials.
@@ -4115,7 +4170,8 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 		trimSpacesFromQuoteLines: true,
 		autoSignMessages: false,
 		autoSignRealNameOnlyFirst: true,
-		autoSignEmailsRealName: true
+		autoSignEmailsRealName: true,
+		dictionaryFilenames: pSlyEdCfgObj.dictionaryFilenames
 	};
 
 	// Open the user settings file
@@ -4175,6 +4231,8 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 				{
 					if (settingUpper == "ENABLETAGLINES")
 						userSettingsObj.enableTaglines = (valueUpper == "TRUE");
+					else if (settingUpper == "PROMPTSPELLCHECKONSAVE")
+						userSettingsObj.promptSpellCheckOnSave = (valueUpper == "TRUE");
 					else if (settingUpper == "USEQUOTELINEINITIALS")
 						userSettingsObj.useQuoteLineInitials = (valueUpper == "TRUE");
 					else if (settingUpper == "INDENTQUOTELINESWITHINITIALS")
@@ -4187,6 +4245,8 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 						userSettingsObj.autoSignRealNameOnlyFirst = (valueUpper == "TRUE");
 					else if (settingUpper == "AUTOSIGNEMAILSREALNAME")
 						userSettingsObj.autoSignEmailsRealName = (valueUpper == "TRUE");
+					else if (settingUpper == "DICTIONARYFILENAMES")
+						userSettingsObj.dictionaryFilenames = parseDictionaryConfig(value, gStartupPath);
 				}
 			}
 		}
@@ -4218,6 +4278,7 @@ function WriteUserSettingsFile(pUserSettingsObj)
 	if (userSettingsFile.open("w"))
 	{
 		const behaviorBoolSettingNames = ["enableTaglines",
+		                                  "promptSpellCheckOnSave",
 		                                  "useQuoteLineInitials",
 		                                  "indentQuoteLinesWithInitials",
 		                                  "trimSpacesFromQuoteLines",
@@ -4230,6 +4291,25 @@ function WriteUserSettingsFile(pUserSettingsObj)
 			if (pUserSettingsObj.hasOwnProperty(behaviorBoolSettingNames[i]))
 				userSettingsFile.writeln(behaviorBoolSettingNames[i] + "=" + (pUserSettingsObj[behaviorBoolSettingNames[i]] ? "true" : "false"));
 		}
+
+		// Write the spell-check dictionary selection
+		var dictionaryList = "";
+		for (var i = 0; i < pUserSettingsObj.dictionaryFilenames.length; ++i)
+		{
+			// Strip the full path to get just the filename, remove the .txt filename
+			// extension, and remove the "dictionary_" prefix.
+			var dictName = file_getname(pUserSettingsObj.dictionaryFilenames[i]);
+			if (/\.txt$/.test(dictName))
+				dictName = dictName.substr(0, dictName.length-4);
+			if (/^dictionary_/.test(dictName))
+				dictName = dictName.substr(11);
+			dictionaryList += dictName + ",";
+		}
+		// Remove any trailing comma
+		if (/,$/.test(dictionaryList))
+			dictionaryList = dictionaryList.substr(0, dictionaryList.length-1);
+		// Write the dictionary list to the user settings file
+		userSettingsFile.writeln("dictionaryFilenames=" + dictionaryList);
 
 		userSettingsFile.close();
 		writeSucceeded = true;
@@ -4364,6 +4444,317 @@ function getKeyWithESCChars(pGetKeyMode, pCfgObj)
 	return userInput;
 }
 
+// Returns an array of dictionary filenames, with the filename pattern
+// dictionary_*.txt, in either the sbbs/mods dir, sbbs/ctrl, or the
+// given default directory.
+//
+// Parameters:
+//  pDefaultPath: The path to look in besides sbbs/mods and sbbs/ctrl
+//
+// Return value: An array with the full paths & filenames of dictionary
+//               files in either of sbbs/mods, sbbs/ctrl, or pDefaultPath
+function getDictionaryFilenames(pDefaultPath)
+{
+	var filenameWildcard = "dictionary_*.txt";
+	var dictionaryFilenames = [];
+	var dirEntries = directory(backslash(system.mods_dir) + filenameWildcard);
+	for (var i = 0; i < dirEntries.length; ++i)
+		dictionaryFilenames.push(dirEntries[i]);
+	dirEntries = directory(backslash(system.ctrl_dir) + filenameWildcard);
+	for (var i = 0; i < dirEntries.length; ++i)
+		dictionaryFilenames.push(dirEntries[i]);
+	if (typeof(pDefaultPath) == "string")
+	{
+		dirEntries = directory(backslash(pDefaultPath) + filenameWildcard);
+		for (var i = 0; i < dirEntries.length; ++i)
+			dictionaryFilenames.push(dirEntries[i]);
+	}
+	return dictionaryFilenames;
+}
+
+// Reads a dictionary file.  Returns an array containing the lines from
+// the dictionary file.  The lines will all be lower-case for case-insensitive
+// matching.
+//
+// Parameters:
+//  pFilename: The filename of a dictionary file to read
+//  pFullyPathed: Boolean - Whether or not the filename is fully pathed
+//
+// Return value: An array containing the lines read from the file, all lower-case
+function readDictionaryFile(pFilename, pFullyPathed)
+{
+	var dictFilename = "";
+	if (pFullyPathed)
+		dictFilename = pFilename;
+	else
+		dictFilename = genFullPathCfgFilename(pFilename, gStartupPath);
+	var dictionary = readTxtFileIntoArray(dictFilename, false, true);
+	// Ensure all the words are lower-case for case-insensitive matching
+	for (var i = 0; i < dictionary.length; ++i)
+		dictionary[i] = dictionary[i].toLowerCase();
+	return dictionary;
+}
+
+// Finds a word's index in a dictionary array.  If the word is not
+// found, returns -1.
+//
+// Parameters:
+//  pDict: An array of words.  This should be sorted with all words the same
+//         letter case as the word being searched for.
+//  pWord: The word to look for in the dictionary.  This should be the same
+//         letter case as the words in the dictionary.
+//
+// Return value: The index of the word in the dictionary array, or -1 if not found.
+function findWordIdxInDictionary(pDict, pWord)
+{
+	if ((typeof(pDict) != "object") || (typeof(pWord) != "string"))
+		return -1;
+
+	var wordIdx = -1;
+
+	// Assuming pDict is sorted, do a binary search to see if the word is
+	// in the dictionary.
+	var startIdx = 0;
+	var endIdx = pDict.length;
+	var midIdx = 0;
+	var lastStartIdx = 0;
+	var lastEndIdx = 0;
+	var continueOn = true;
+	while ((wordIdx == -1) && continueOn)
+	{
+		lastStartIdx = startIdx;
+		lastEndIdx = endIdx;
+
+		midIdx = startIdx + Math.floor((endIdx - startIdx) / 2);
+		if (pWord == pDict[midIdx])
+			wordIdx = midIdx;
+		else if (pWord < pDict[midIdx])
+			endIdx = midIdx;
+		else if (pWord > pDict[midIdx])
+			startIdx = midIdx;
+
+		// Keep searching if either the start index or end index are different
+		// from the last iteration.
+		continueOn = ((lastStartIdx != startIdx) || (lastEndIdx != endIdx));
+	}
+
+	return wordIdx;
+}
+
+// Returns whether a word exists in a dictionary.
+//
+// Parameters:
+//  pDict: An array of words.  This should be sorted with all words the same
+//         letter case as the word being searched for.
+//  pWord: The word to look for in the dictionary.  This should be the same
+//         letter case as the words in the dictionary.
+//
+// Return value: Boolean: Whether or not the word exists in the dictionary.
+function wordExists(pDict, pWord)
+{
+	return (findWordIdxInDictionary(pDict, pWord) > -1);
+}
+
+// Returns whether a word exists.  Checks multiple dictionary arrays.
+//
+// Parameters:
+//  pDicts: An array of arrays of words.  The arrays should be sorted with all words the same
+//          letter case as the word being searched for.
+//  pWord: The word to look for in the dictionary.  This should be the same
+//         letter case as the words in the dictionary.
+//
+// Return value: Boolean: Whether or not the word exists in the dictionary.
+function wordExists_MultipleDictionaries(pDicts, pWord)
+{
+	var foundWord = false;
+	for (var i = 0; (i < pDicts.length) && !foundWord; ++i)
+		foundWord = wordExists(pDicts[i], pWord);
+	return foundWord;
+}
+
+// Parses the dictionary configuration line (from the SlyEdit configuration
+// file or user settings file).
+//
+// Parameters:
+//  pDictionarySpec: A comma-separated list of dictionary filenames
+//  pDefaultPath: The default directory (must have a trailing separator character)
+//
+// Return value: An array of fully-pathed dictionary filenames
+function parseDictionaryConfig(pDictionarySpec, pDefaultPath)
+{
+	var dictionaryFilenames = [];
+	var dictionaryNames = pDictionarySpec.split(",");
+	for (var i = 0; i < dictionaryNames.length; ++i)
+	{
+		// Allow dictionary filenames as either dictionary_<language>
+		// or just <language> (where <language> is a language name.
+		// If it doesn't start with "dictionary_", then prepend that.
+		// If it doesn't end in a .txt, then append ".txt".
+		var filename = dictionaryNames[i];
+		if (!/^dictionary_/.test(filename))
+			filename = "dictionary_" + filename;
+		if (!/\.txt$/.test(filename))
+			filename += ".txt";
+		filename = genFullPathCfgFilename(filename, pDefaultPath);
+		// If the file exists, add the filename to the configuration.
+		if (file_exists(filename))
+			dictionaryFilenames.push(filename);
+	}
+	return dictionaryFilenames;
+}
+
+// Gets the name of a language from a dictionary filename
+//
+// Parameters:
+//  pFilenameFullPath: The full path & filename to a dictionary file
+//
+// Return value: The language name from the dictionary file
+function getLanguageNameFromDictFilename(pFilenameFullPath)
+{
+	var justFilename = file_getname(pFilenameFullPath);
+	var languageName = "";
+	var dotIdx = justFilename.indexOf(".");
+	if (dotIdx > -1)
+		languageName = justFilename.substr(11, dotIdx-11);
+	else
+		languageName = justFilename.substr(11);
+	languageName = languageName.substr(0, 1).toUpperCase() + languageName.substr(1).toLowerCase();
+	return languageName;
+}
+
+// Returns whether a language is selected in the user's settings
+//
+// Parameters:
+//  pUserSettings: The user's settings object
+//  pFilenameFullPath: The full path & filename of a dictionary file
+//
+// Return value: Boolean - Whether or not the language is enabled in the user's settings
+function languageIsSelectedInUserSettings(pUserSettings, pFilenameFullPath)
+{
+	var dictionarySelected = false;
+	for (var i = 0; (i < pUserSettings.dictionaryFilenames.length) && !dictionarySelected; ++i)
+		dictionarySelected = (pFilenameFullPath == pUserSettings.dictionaryFilenames[i]);
+	return dictionarySelected;
+}
+
+// Shortens a string, accounting for control/attribute codes.  Returns a new
+// (shortened) copy of the string.
+//
+// Parameters:
+//  pStr: The string to shorten
+//  pNewLength: The new (shorter) length of the string
+//  pFromLeft: Optional boolean - Whether to start from the left (default) or
+//             from the right.  Defaults to true.
+//
+// Return value: The shortened version of the string
+function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
+{
+	if (typeof(pStr) != "string")
+		return "";
+	if (typeof(pNewLength) != "number")
+		return pStr;
+	if (pNewLength >= console.strlen(pStr))
+		return pStr;
+
+	var fromLeft = (typeof(pFromLeft) == "boolean" ? pFromLeft : true);
+	var strCopy = "";
+	var tmpStr = "";
+	var strIdx = 0;
+	var lengthGood = true;
+	if (fromLeft)
+	{
+		while (lengthGood && (strIdx < pStr.length))
+		{
+			tmpStr = strCopy + pStr.charAt(strIdx++);
+			if (console.strlen(tmpStr) <= pNewLength)
+				strCopy = tmpStr;
+			else
+				lengthGood = false;
+		}
+	}
+	else
+	{
+		strIdx = pStr.length - 1;
+		while (lengthGood && (strIdx >= 0))
+		{
+			tmpStr = pStr.charAt(strIdx--) + strCopy;
+			if (console.strlen(tmpStr) <= pNewLength)
+				strCopy = tmpStr;
+			else
+				lengthGood = false;
+		}
+	}
+	return strCopy;
+}
+
+// Returns a string with text centered in a certain width.
+//
+// Paramters:
+//  pWidth: The width to center the text in
+//  pText: The text to center in the width
+//
+// Return value: A string pWidth wide with the text centered in the width
+function centeredText(pWidth, pText)
+{
+	var givenText = pText;
+	var textLen = strip_ctrl(givenText).length;
+	if (textLen > pWidth)
+	{
+		givenText = shortenStrWithAttrCodes(givenText, pWidth);
+		textLen = strip_ctrl(givenText).length;
+	}
+	var textX = Math.floor(pWidth / 2) - Math.floor(textLen/2);
+	var textStr = format("%" + textX + "s", "") + givenText;
+	var numSpacesRemaining = pWidth - strip_ctrl(textStr).length;
+	textStr += format("%" + numSpacesRemaining + "s", "");
+	return textStr;
+}
+
+// Finds start & end indexes of non-quote blocks in the message lines.
+//
+// Parameters:
+//  pTextLines: The array of message lines
+//
+// Return value: An array of objects containing the following properties:
+//               start: The start index of a non-quote block
+//               end: One past the end index of the non-quote block
+function findNonQuoteBlockIndexes(pTextLines)
+{
+	if (typeof(pTextLines) != "object")
+		return [];
+	if (pTextLines.length == 0)
+		return [];
+	// Edge case: If there's only one line and if it's a non-quote block, then
+	// return an array with an element about it.
+	else if (pTextLines.length == 1)
+		return (pTextLines[0].isQuoteLine ? [] : [{ start: 0, end: 1}]);
+
+	var nonQuoteBlockIdxes = [];
+	var startIdx = 0;
+	var lastEndIdx = 0;
+	var inQuoteBlock = pTextLines[0];
+	for (var i = 1; i < pTextLines.length; ++i)
+	{
+		if (pTextLines[i].isQuoteLine != inQuoteBlock)
+		{
+			if (pTextLines[i])
+			{
+				nonQuoteBlockIdxes.push({ start: startIdx, end: i });
+				lastEndIdx = i;
+			}
+			else
+				startIdx = i;
+			inQuoteBlock = pTextLines[i];
+		}
+	}
+	// Edge case: If the last line in the array is a non-quote block, then ensure
+	// the last non-quote block is added to nonQuoteBlockIdxes
+	if (!pTextLines[pTextLines.length-1].isQuoteLine)
+		nonQuoteBlockIdxes.push({ start: lastEndIdx+1, end: pTextLines.length });
+
+	return nonQuoteBlockIdxes;
+}
+
 // This function displays debug text at a given location on the screen, then
 // moves the cursor back to a given location.
 //
@@ -4378,11 +4769,11 @@ function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLine
 {
 	console.gotoxy(pDebugX, pDebugY);
 	if (pClearDebugLineFirst)
-		console.clearline();
+	console.clearline();
 	// Output the text
 	console.print(pText);
 	if (pPauseAfter)
-      console.pause();
+		console.pause();
 	if ((typeof(pOriginalPos) != "undefined") && (pOriginalPos != null))
 		console.gotoxy(pOriginalPos);
 }

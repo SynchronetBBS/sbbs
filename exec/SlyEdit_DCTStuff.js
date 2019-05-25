@@ -11,70 +11,20 @@
  * 2009-08-09 Eric Oulashin     More development & testing
  * 2009-08-22 Eric Oulashin     Version 1.00
  *                              Initial public release
- * 2009-12-03 Eric Oulashin     Added support for color schemes.
- *                              Added readColorConfig().
- * 2009-12-31 Eric Oulashin     Updated promptYesNo_DCTStyle()
- *                              so that the return variable,
- *                              userResponse, defaults to the
- *                              value of pDefaultYes.
- * 2010-01-02 Eric Oulashin     Removed abortConfirm_DCTStyle(),
- *                              since it's no longer used anymore.
- * 2010-11-19 Eric Oulashin     Updated doDCTMenu() so that when the
- *                              pDisplayMessageRectangle() function is
- *                              called, it passes true at the end to
- *                              tell it to clear extra spaces between
- *                              the end of the text lines up to the
- *                              width given.
- * 2010-11-21 Eric Oulashin     Updated promptYesNo_DCTStyle() so that when the
- *                              pDisplayMessageRectangle() function is
- *                              called, it passes true at the end to
- *                              tell it to clear extra spaces between
- *                              the end of the text lines up to the
- *                              width given.
- * 2011-02-02 Eric Oulashin     Moved the time displaying code into
- *                              a new function, displayTime_DCTStyle().
- * 2012-12-21 Eric Oulashin     Removed gStartupPath from the beginning
- *                              of the theme filename, since the path is
- *                              now set in ReadSlyEditConfigFile() in
- *                              SlyEdit_Misc.js.
- * 2013-01-19 Eric Oulashin     Updated readColorConfig() to move the
- *                              general color settings to gConfigSettings.genColors.*
- * 2013-01-24 Eric Oulashin     Updated doDCTMenu() to include an option
- *                              for cross-posting on the File menu.
- * 2013-08-23 Eric Oulashin     Updated readColorConfig() with the new general color
- *                              configuration settings.
- * 2013-08-28 Eric Oulashin     Simplified readColorConfig() by having it call
- *                              moveGenColorsToGenSettings() (defined in
- *                              SlyEdit_Misc.js) to move the general colors
- *                              into the genColors array in the configuration
- *                              object.
- * 2013-09-14 Eric Oulashin     Updated doDCTMenu() and related functions with
- *                              an option for user settings.  Also fixed the bug
- *                              related to the CTRL key for listing text replacements
- *                              not working.  Simplified the code in the function
- *                              valMatchesMenuCode().
- * 2013-09-15 Eric Oulashin     Bug fix: Updated displayTime_DCTStyle() to
- *                              properly calculate the horizontal position at
- *                              which to write the time rather than going to
- *                              absolute coordinates; this accommodates terminals
- *                              of different widths.
- * 2013-09-16 Eric Oulashin     Fixed off-by-one bug for the horizontal position in
- *                              Updated updateInsertModeOnScreen_DCTStyle().
- * 2014-11-04 Eric Oulashin     Fixed the quote window top border length in
- *                              DrawQuoteWindowTopBorder_DCTStyle().  Updated the
- *                              quote window bottom border to display the new
- *                              scroll keys in DrawQuoteWindowBottomBorder_DCTStyle().
- * 2019-04-11 Eric Oulashin     Fixed displayTextAreaTopBorder_DCTStyle() and
- *                              DisplayTextAreaBottomBorder_DCTStyle() to display
- *                              correctly in wide terminal modes.  Somehow they
- *                              had become broken over the years.  Also, updated
- *                              redrawScreen_DCTStyle() to not display the vertical
- *                              bars for terminal widths >= 82, for wide text
- *                              wrapping support.
+ * ... Removed comments ...
+ * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
  */
 
-load("sbbsdefs.js");
-load(getScriptDir() + "SlyEdit_Misc.js");
+if (typeof(require) === "function")
+{
+	require("sbbsdefs.js", "K_NOCRLF");
+	require(getScriptDir() + "SlyEdit_Misc.js", "CTRL_A");
+}
+else
+{
+	load("sbbsdefs.js");
+	load(getScriptDir() + "SlyEdit_Misc.js");
+}
 
 // DCTEdit menu item return values
 var DCTMENU_FILE_SAVE = 0;
@@ -82,7 +32,7 @@ var DCTMENU_FILE_ABORT = 1;
 var DCTMENU_FILE_EDIT = 2;
 var DCTMENU_EDIT_INSERT_TOGGLE = 3;
 var DCTMENU_EDIT_FIND_TEXT = 4;
-//var DCTMENU_EDIT_SPELL_CHECKER = 5;
+var DCTMENU_EDIT_SPELL_CHECKER = 5;
 var DCTMENU_EDIT_SETTINGS = 6;
 var DCTMENU_SYSOP_IMPORT_FILE = 7;
 var DCTMENU_SYSOP_EXPORT_FILE = 11;
@@ -260,24 +210,6 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Line 4: Top border for message area
 	++lineNum;
 	displayTextAreaTopBorder_DCTStyle(lineNum, pEditLeft, pEditRight);
-	/*
-	// If the screen is at least 82 characters wide, display horizontal
-	// lines around the message editing area.
-	if (console.screen_columns >= 82)
-	{
-		for (lineNum = pEditTop; lineNum <= pEditBottom; ++lineNum)
-		{
-			console.gotoxy(pEditLeft-1, lineNum);
-			console.print(randomTwoColorString(VERTICAL_SINGLE,
-			                                   gConfigSettings.DCTColors.EditAreaBorderColor1,
-			                                   gConfigSettings.DCTColors.EditAreaBorderColor2));
-			console.gotoxy(pEditRight+1, lineNum);
-			console.print(randomTwoColorString(VERTICAL_SINGLE,
-			                                   gConfigSettings.DCTColors.EditAreaBorderColor1,
-			                                   gConfigSettings.DCTColors.EditAreaBorderColor2));
-		}
-	}
-	*/
 
 	// Display the bottom message area border and help line
 	DisplayTextAreaBottomBorder_DCTStyle(pEditBottom+1, null, pEditLeft, pEditRight, pInsertMode);
@@ -306,10 +238,6 @@ function displayTextAreaTopBorder_DCTStyle(pLineNum, pEditLeft, pEditRight)
 	if (typeof(displayTextAreaTopBorder_DCTStyle.border) == "undefined")
 	{
 		var numHorizontalChars = pEditRight - pEditLeft - 1;
-		/*
-		if (console.screen_columns >= 82)
-			numHorizontalChars += 2;
-		*/
 
 		displayTextAreaTopBorder_DCTStyle.border = UPPER_LEFT_SINGLE;
 		for (var i = 0; i < numHorizontalChars; ++i)
@@ -347,12 +275,6 @@ function DisplayTextAreaBottomBorder_DCTStyle(pLineNum, pUseQuotes, pEditLeft, p
 	if (typeof(DisplayTextAreaBottomBorder_DCTStyle.border) == "undefined")
 	{
 		var innerWidth = pEditRight - pEditLeft - 1;
-		/*
-		// If the screen is at least 82 characters wide, add 2 to innerWidth
-		// to make room for the vertical lines around the text area.
-		if (console.screen_columns >= 82)
-			innerWidth += 2;
-		*/
 
 		DisplayTextAreaBottomBorder_DCTStyle.border = LOWER_LEFT_SINGLE;
 
@@ -548,128 +470,128 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
 //   editWidth: The edit area width
 //   editHeight: The edit area height
 //   editLinesIndex: The current index into the edit lines array
-function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj)
+// pAlwaysEraseBox: Boolean: erase the box regardless of a Yes or No answer.
+function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj, pAlwaysEraseBox)
 {
-   var userResponse = pDefaultYes;
+	var userResponse = pDefaultYes;
 
-   // Get the current cursor position, so that we can place the cursor
-   // back there later.
-   const originalCurpos = console.getxy();
+	// Get the current cursor position, so that we can place the cursor
+	// back there later.
+	const originalCurpos = console.getxy();
 
-   // Set up the abort confirmation box dimensions, and calculate
-   // where on the screen to display it.
-   //const boxWidth = 27;
-   const boxWidth = pQuestion.length + 14;
-   const boxHeight = 6;
-   const boxX = (console.screen_columns/2).toFixed(0) - (boxWidth/2).toFixed(0);
-   const boxY = +pParamObj.editTop + +(pParamObj.editHeight/2).toFixed(0) - +(boxHeight/2).toFixed(0);
-   const innerBoxWidth = boxWidth - 2;
+	// Set up the abort confirmation box dimensions, and calculate
+	// where on the screen to display it.
+	//const boxWidth = 27;
+	const boxWidth = pQuestion.length + 14;
+	const boxHeight = 6;
+	const boxX = (console.screen_columns/2).toFixed(0) - (boxWidth/2).toFixed(0);
+	const boxY = +pParamObj.editTop + +(pParamObj.editHeight/2).toFixed(0) - +(boxHeight/2).toFixed(0);
+	const innerBoxWidth = boxWidth - 2;
 
-   // Display the question box
-   // Upper-left corner, 1 horizontal line, and "Abort" text
-   console.gotoxy(boxX, boxY);
-   console.print(gConfigSettings.DCTColors.TextBoxBorder + UPPER_LEFT_SINGLE +
-                 HORIZONTAL_SINGLE + " " + gConfigSettings.DCTColors.TextBoxBorderText +
-                 pBoxTitle + gConfigSettings.DCTColors.TextBoxBorder + " ");
-   // Remaining top box border
-   for (var i = pBoxTitle.length + 5; i < boxWidth; ++i)
-      console.print(HORIZONTAL_SINGLE);
-   console.print(UPPER_RIGHT_SINGLE);
-   // Inner box: Blank
-   var endScreenLine = boxY + boxHeight - 2;
-   for (var screenLine = boxY+1; screenLine < endScreenLine; ++screenLine)
-   {
-      console.gotoxy(boxX, screenLine);
-      console.print(VERTICAL_SINGLE);
-      for (var i = 0; i < innerBoxWidth; ++i)
-         console.print(" ");
-      console.print(VERTICAL_SINGLE);
-   }
-   // Bottom box border
-   console.gotoxy(boxX, screenLine);
-   console.print(LOWER_LEFT_SINGLE);
-   for (var i = 0; i < innerBoxWidth; ++i)
-      console.print(HORIZONTAL_SINGLE);
-   console.print(LOWER_RIGHT_SINGLE);
+	// Display the question box
+	// Upper-left corner, 1 horizontal line, and "Abort" text
+	console.gotoxy(boxX, boxY);
+	console.print(gConfigSettings.DCTColors.TextBoxBorder + UPPER_LEFT_SINGLE +
+	              HORIZONTAL_SINGLE + " " + gConfigSettings.DCTColors.TextBoxBorderText +
+	              pBoxTitle + gConfigSettings.DCTColors.TextBoxBorder + " ");
+	// Remaining top box border
+	for (var i = pBoxTitle.length + 5; i < boxWidth; ++i)
+		console.print(HORIZONTAL_SINGLE);
+	console.print(UPPER_RIGHT_SINGLE);
+	// Inner box: Blank
+	var endScreenLine = boxY + boxHeight - 2;
+	for (var screenLine = boxY+1; screenLine < endScreenLine; ++screenLine)
+	{
+		console.gotoxy(boxX, screenLine);
+		console.print(VERTICAL_SINGLE);
+		printf("%" + innerBoxWidth + "s", "");
+		console.print(VERTICAL_SINGLE);
+	}
+	// Bottom box border
+	console.gotoxy(boxX, screenLine);
+	console.print(LOWER_LEFT_SINGLE);
+	for (var i = 0; i < innerBoxWidth; ++i)
+		console.print(HORIZONTAL_SINGLE);
+	console.print(LOWER_RIGHT_SINGLE);
 
-   // Prompt the user whether or not to abort: Move the cursor to
-   // the proper location on the screen, output the propmt text,
-   // and get user input.
-   console.gotoxy(boxX+3, boxY+2);
-   console.print(gConfigSettings.DCTColors.TextBoxInnerText + pQuestion + "?  " +
-                 gConfigSettings.DCTColors.YesNoBoxBrackets + "[" +
-                 gConfigSettings.DCTColors.YesNoBoxYesNoText);
-   // Default to yes/no, depending on the value of pDefaultYes.
-   if (pDefaultYes)
-   {
-      console.print("Yes");
-      userResponse = true;
-   }
-   else
-   {
-      console.print("No ");
-      userResponse = false;
-   }
-   console.print(gConfigSettings.DCTColors.YesNoBoxBrackets + "]");
+	// Prompt the user whether or not to abort: Move the cursor to
+	// the proper location on the screen, output the propmt text,
+	// and get user input.
+	console.gotoxy(boxX+3, boxY+2);
+	console.print(gConfigSettings.DCTColors.TextBoxInnerText + pQuestion + "?  " +
+	gConfigSettings.DCTColors.YesNoBoxBrackets + "[" +
+	gConfigSettings.DCTColors.YesNoBoxYesNoText);
+	// Default to yes/no, depending on the value of pDefaultYes.
+	if (pDefaultYes)
+	{
+		console.print("Yes");
+		userResponse = true;
+	}
+	else
+	{
+		console.print("No ");
+		userResponse = false;
+	}
+	console.print(gConfigSettings.DCTColors.YesNoBoxBrackets + "]");
 
-   // Input loop
-   var userInput = "";
-   var continueOn = true;
-   while (continueOn)
-   {
-      // Move the cursor where it needs to be to write the "Yes"
-      // or "No"
-      console.gotoxy(boxX+20, boxY+2);
-      // Get a key and take appropriate action.
+	// Input loop
+	var userInput = "";
+	var continueOn = true;
+	while (continueOn)
+	{
+		// Move the cursor where it needs to be to write the "Yes"
+		// or "No"
+		console.gotoxy(boxX+20, boxY+2);
+		// Get a key and take appropriate action.
 		userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
-      if (userInput == KEY_ENTER)
-         continueOn = false;
-      else if (userInput == "Y")
-      {
-         userResponse = true;
-         continueOn = false;
-      }
-      else if ((userInput == "N") || (userInput == KEY_ESC))
-      {
-         userResponse = false;
-         continueOn = false;
-      }
-      // Arrow keys: Toggle back and forth
-      else if ((userInput == KEY_UP) || (userInput == KEY_DOWN) ||
-                (userInput == KEY_LEFT) || (userInput == KEY_RIGHT))
-      {
-         // Toggle the userResponse variable
-         userResponse = !userResponse;
-         // Write "Yes" or "No", depending on the userResponse variable
-         if (userResponse)
-         {
-            console.print(gConfigSettings.DCTColors.YesNoBoxYesNoText + "Yes" +
-                          gConfigSettings.DCTColors.YesNoBoxBrackets + "]");
-         }
-         else
-         {
-            console.print(gConfigSettings.DCTColors.YesNoBoxYesNoText + "No " +
-                          gConfigSettings.DCTColors.YesNoBoxBrackets + "]");
-         }
-      }
-   }
+		if (userInput == KEY_ENTER)
+			continueOn = false;
+		else if (userInput == "Y")
+		{
+			userResponse = true;
+			continueOn = false;
+		}
+		else if ((userInput == "N") || (userInput == KEY_ESC))
+		{
+			userResponse = false;
+			continueOn = false;
+		}
+		// Arrow keys: Toggle back and forth
+		else if ((userInput == KEY_UP) || (userInput == KEY_DOWN) ||
+		         (userInput == KEY_LEFT) || (userInput == KEY_RIGHT))
+		{
+			// Toggle the userResponse variable
+			userResponse = !userResponse;
+			// Write "Yes" or "No", depending on the userResponse variable
+			if (userResponse)
+			{
+				console.print(gConfigSettings.DCTColors.YesNoBoxYesNoText + "Yes" +
+				gConfigSettings.DCTColors.YesNoBoxBrackets + "]");
+			}
+			else
+			{
+				console.print(gConfigSettings.DCTColors.YesNoBoxYesNoText + "No " +
+				gConfigSettings.DCTColors.YesNoBoxBrackets + "]");
+			}
+		}
+	}
 
-   // If the user chose not to abort, then erase the confirmation box and
-   // put the cursor back where it originally was.
-   if (!userResponse)
-   {
-      // Calculate the difference in the edit lines index we'll need to use
-      // to erase the confirmation box.  This will be the difference between
-      // the cursor position between boxY and the current cursor row.
-      const editLinesIndexDiff = boxY - originalCurpos.y;
-      pParamObj.displayMessageRectangle(boxX, boxY, boxWidth, boxHeight,
-                                        pParamObj.editLinesIndex + editLinesIndexDiff,
-                                        true);
-      // Put the cursor back where it was
-      console.gotoxy(originalCurpos);
-   }
+	// If the user chose no, then erase the confirmation box and put the
+	// cursor back where it originally was.
+	if (!userResponse || pAlwaysEraseBox)
+	{
+		// Calculate the difference in the edit lines index we'll need to use
+		// to erase the confirmation box.  This will be the difference between
+		// the cursor position between boxY and the current cursor row.
+		const editLinesIndexDiff = boxY - originalCurpos.y;
+		pParamObj.displayMessageRectangle(boxX, boxY, boxWidth, boxHeight,
+		                                  pParamObj.editLinesIndex + editLinesIndexDiff,
+		                                  true);
+		// Put the cursor back where it was
+		console.gotoxy(originalCurpos);
+	}
 
-   return userResponse;
+	return userResponse;
 }
 
 // Displays the time on the screen.
@@ -696,7 +618,7 @@ function displayTime_DCTStyle(pTimeStr)
 // Displays the number of minutes remaining on the screen.
 function displayTimeRemaining_DCTStyle()
 {
-   var fieldWidth = (console.screen_columns * (7/80)).toFixed(0);
+	var fieldWidth = (console.screen_columns * (7/80)).toFixed(0);
 	var startX = console.screen_columns - fieldWidth - 1;
 	console.gotoxy(startX, 3);
 	var timeStr = Math.floor(bbs.time_left / 60).toString().substr(0, fieldWidth);
@@ -707,7 +629,7 @@ function displayTimeRemaining_DCTStyle()
 		console.print(DOT_CHAR);
 }
 
-// Displays & handles the input loop for the DCT Edit menu.
+// Displays & handles the input loop for the DCT style ESC menu.
 //
 // Parameters:
 //  pEditLeft: The leftmost column of the edit area
@@ -725,295 +647,351 @@ function displayTimeRemaining_DCTStyle()
 //  pIsSysop: Whether or not the user is a sysop.
 //  pCanCrossPost: Whether or not cross-posting is allowed.
 //
-// Return value: An object containing the following properties:
-//               userInput: The user's input from the menu loop.
-//               returnVal: The return code from the menu.
-function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
-                    pEditLinesIndex, pEditLineDiff, pIsSysop, pCanCrossPost)
+// Return value: The action code, based on the user's selection
+function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
+                      pEditLinesIndex, pEditLineDiff, pIsSysop, pCanCrossPost)
 {
-   // This function displays the top menu options, with a given one highlighted.
-   //
-   // Parameters:
-   //  pItemPositions: An object containing the menu item positions.
-   //  pHighlightedItemNum: The index (0-based) of the menu item to be highlighted.
-   //  pMenus: An array containing the menus
-   //  pIsSysop: Whether or not the user is the sysop.
-   //
-   // Return value: The user's last keypress during the menu's input loop.
-   function displayTopMenuItems(pItemPositions, pHighlightedItemNum, pMenus, pIsSysop)
-   {
-      // File
-      console.gotoxy(pItemPositions.fileX, pItemPositions.mainMenuY);
-      if (pHighlightedItemNum == 0)
-      {
-         console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
-                       gConfigSettings.DCTColors.SelectedMenuLabelText + "File" +
-                       gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
-      }
-      else
-      {
-         console.print("n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "File" +
-                       "n ");
-      }
-      // Edit
-      console.gotoxy(pItemPositions.editX, pItemPositions.mainMenuY);
-      if (pHighlightedItemNum == 1)
-      {
-         console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
-                       gConfigSettings.DCTColors.SelectedMenuLabelText + "Edit" +
-                       gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
-      }
-      else
-      {
-         console.print("n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Edit" +
-                       "n ");
-      }
-      // SysOp
-      if (pIsSysop)
-      {
-         console.gotoxy(pItemPositions.sysopX, pItemPositions.mainMenuY);
-         if (pHighlightedItemNum == 2)
-         {
-            console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
-                          gConfigSettings.DCTColors.SelectedMenuLabelText + "SysOp" +
-                          gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
-         }
-         else
-         {
-            console.print("n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "SysOp" +
-                          "n ");
-         }
-      }
-      // Help
-      console.gotoxy(pItemPositions.helpX, pItemPositions.mainMenuY);
-      if (pHighlightedItemNum == 3)
-      {
-         console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
-                       gConfigSettings.DCTColors.SelectedMenuLabelText + "Help" +
-                       gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
-      }
-      else
-      {
-         console.print("n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Help" +
-                       "n ");
-      }
+	// This function displays the top menu options, with a given one highlighted.
+	//
+	// Parameters:
+	//  pItemPositions: An object containing the menu item positions.
+	//  pHighlightedItemNum: The index (0-based) of the menu item to be highlighted.
+	//  pMenus: An array containing the menus
+	//  pIsSysop: Whether or not the user is the sysop.
+	//
+	// Return value: The user's last keypress during the menu's input loop.
+	function displayTopMenuItems(pItemPositions, pHighlightedItemNum, pMenus, pIsSysop)
+	{
+		// File
+		console.gotoxy(pItemPositions.fileX, pItemPositions.mainMenuY);
+		if (pHighlightedItemNum == 0)
+		{
+			console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
+			              gConfigSettings.DCTColors.SelectedMenuLabelText + "File" +
+			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
+		}
+		else
+			console.print("\1n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "File\1n ");
+		// Edit
+		console.gotoxy(pItemPositions.editX, pItemPositions.mainMenuY);
+		if (pHighlightedItemNum == 1)
+		{
+			console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
+			              gConfigSettings.DCTColors.SelectedMenuLabelText + "Edit" +
+			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
+		}
+		else
+			console.print("\1n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Edit\1n ");
+		// SysOp
+		if (pIsSysop)
+		{
+			console.gotoxy(pItemPositions.sysopX, pItemPositions.mainMenuY);
+			if (pHighlightedItemNum == 2)
+			{
+				console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
+				              gConfigSettings.DCTColors.SelectedMenuLabelText + "SysOp" +
+				              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
+			}
+			else
+				console.print("\1n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "SysOp\1n ");
+		}
+		// Help
+		console.gotoxy(pItemPositions.helpX, pItemPositions.mainMenuY);
+		if (pHighlightedItemNum == 3)
+		{
+			console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
+			              gConfigSettings.DCTColors.SelectedMenuLabelText + "Help" +
+			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
+		}
+		else
+			console.print("\1n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Help\1n ");
 
-      // Display the menu (and capture the return object so that we can
-      // also return it here).
-      var returnObj = pMenus[pHighlightedItemNum].doInputLoop();
+		// Display the menu (and capture the return object so that we can
+		// also return it here).
+		var returnObj = pMenus[pHighlightedItemNum].doInputLoop();
 
-      // Refresh the part of the edit text on the screen where the menu was.
-      pDisplayMessageRectangle(pMenus[pHighlightedItemNum].topLeftX,
-                               pMenus[pHighlightedItemNum].topLeftY,
-                               pMenus[pHighlightedItemNum].width,
-                               pMenus[pHighlightedItemNum].height,
-                               pEditLinesIndex-pEditLineDiff, true);
+		// Refresh the part of the edit text on the screen where the menu was.
+		pDisplayMessageRectangle(pMenus[pHighlightedItemNum].topLeftX,
+		                         pMenus[pHighlightedItemNum].topLeftY,
+		                         pMenus[pHighlightedItemNum].width,
+		                         pMenus[pHighlightedItemNum].height,
+		                         pEditLinesIndex-pEditLineDiff, true);
 
-      return returnObj;
-   }
+		return returnObj;
+	}
 
-   // Set up an object containing the menu item positions.
-   // Only create this object once.
-   if (typeof(doDCTMenu.mainMenuItemPositions) == "undefined")
-   {
-      doDCTMenu.mainMenuItemPositions = new Object();
-      // Vertical position on the screen for the main menu items
-      doDCTMenu.mainMenuItemPositions.mainMenuY = pEditTop - 1;
-      // Horizontal position of the "File" text
-      doDCTMenu.mainMenuItemPositions.fileX = gEditLeft + 5;
-      // Horizontal position of the "Edit" text
-      doDCTMenu.mainMenuItemPositions.editX = doDCTMenu.mainMenuItemPositions.fileX + 11;
-      // Horizontal position of the "SysOp" text
-      doDCTMenu.mainMenuItemPositions.sysopX = doDCTMenu.mainMenuItemPositions.editX + 11;
-      // Horizontal position of of the "Help" text
-      if (pIsSysop)
-         doDCTMenu.mainMenuItemPositions.helpX = doDCTMenu.mainMenuItemPositions.sysopX + 12;
-      else
-         doDCTMenu.mainMenuItemPositions.helpX = doDCTMenu.mainMenuItemPositions.sysopX;
-   }
+	// Set up an object containing the menu item positions.
+	// Only create this object once.
+	if (typeof(doDCTESCMenu.mainMenuItemPositions) == "undefined")
+	{
+		doDCTESCMenu.mainMenuItemPositions = new Object();
+		// Vertical position on the screen for the main menu items
+		doDCTESCMenu.mainMenuItemPositions.mainMenuY = pEditTop - 1;
+		// Horizontal position of the "File" text
+		doDCTESCMenu.mainMenuItemPositions.fileX = gEditLeft + 5;
+		// Horizontal position of the "Edit" text
+		doDCTESCMenu.mainMenuItemPositions.editX = doDCTESCMenu.mainMenuItemPositions.fileX + 11;
+		// Horizontal position of the "SysOp" text
+		doDCTESCMenu.mainMenuItemPositions.sysopX = doDCTESCMenu.mainMenuItemPositions.editX + 11;
+		// Horizontal position of of the "Help" text
+		if (pIsSysop)
+			doDCTESCMenu.mainMenuItemPositions.helpX = doDCTESCMenu.mainMenuItemPositions.sysopX + 12;
+		else
+			doDCTESCMenu.mainMenuItemPositions.helpX = doDCTESCMenu.mainMenuItemPositions.sysopX;
+	}
 
-   // Variables for the menu numbers
-   const fileMenuNum = 0;
-   const editMenuNum = 1;
-   const sysopMenuNum = 2;
-   const helpMenuNum = 3;
+	// Variables for the menu numbers
+	const fileMenuNum = 0;
+	const editMenuNum = 1;
+	const sysopMenuNum = 2;
+	const helpMenuNum = 3;
 
-   // Set up the menu objects.  Only create these objects once.
-   if (typeof(doDCTMenu.allMenus) == "undefined")
-   {
-      doDCTMenu.allMenus = new Array();
-      // File menu
-      doDCTMenu.allMenus[fileMenuNum] = new DCTMenu(doDCTMenu.mainMenuItemPositions.fileX, doDCTMenu.mainMenuItemPositions.mainMenuY+1);
-      doDCTMenu.allMenus[fileMenuNum].addItem("&Save    Ctrl-Z", DCTMENU_FILE_SAVE);
-      doDCTMenu.allMenus[fileMenuNum].addItem("&Abort   Ctrl-A", DCTMENU_FILE_ABORT);
-      if (pCanCrossPost)
-         doDCTMenu.allMenus[fileMenuNum].addItem( "X-Post  Ctrl-&C", DCTMENU_CROSS_POST);
-      doDCTMenu.allMenus[fileMenuNum].addItem("&Edit       ESC", DCTMENU_FILE_EDIT);
-      doDCTMenu.allMenus[fileMenuNum].addExitLoopKey(CTRL_Z, DCTMENU_FILE_SAVE);
-      doDCTMenu.allMenus[fileMenuNum].addExitLoopKey(CTRL_A, DCTMENU_FILE_ABORT);
-      if (pCanCrossPost)
-         doDCTMenu.allMenus[fileMenuNum].addExitLoopKey(CTRL_C, DCTMENU_CROSS_POST);
-      doDCTMenu.allMenus[fileMenuNum].addExitLoopKey(KEY_ESC, DCTMENU_FILE_EDIT);
+	// Set up the menu objects.  Only create these objects once.
+	if (typeof(doDCTESCMenu.allMenus) == "undefined")
+	{
+		doDCTESCMenu.allMenus = new Array();
+		// File menu
+		doDCTESCMenu.allMenus[fileMenuNum] = new DCTMenu(doDCTESCMenu.mainMenuItemPositions.fileX, doDCTESCMenu.mainMenuItemPositions.mainMenuY+1);
+		doDCTESCMenu.allMenus[fileMenuNum].addItem("&Save    Ctrl-Z", DCTMENU_FILE_SAVE);
+		doDCTESCMenu.allMenus[fileMenuNum].addItem("&Abort   Ctrl-A", DCTMENU_FILE_ABORT);
+		if (pCanCrossPost)
+			doDCTESCMenu.allMenus[fileMenuNum].addItem( "X-Post  Ctrl-&C", DCTMENU_CROSS_POST);
+		doDCTESCMenu.allMenus[fileMenuNum].addItem("&Edit       ESC", DCTMENU_FILE_EDIT);
+		doDCTESCMenu.allMenus[fileMenuNum].addExitLoopKey(CTRL_Z, DCTMENU_FILE_SAVE);
+		doDCTESCMenu.allMenus[fileMenuNum].addExitLoopKey(CTRL_A, DCTMENU_FILE_ABORT);
+		if (pCanCrossPost)
+			doDCTESCMenu.allMenus[fileMenuNum].addExitLoopKey(CTRL_C, DCTMENU_CROSS_POST);
+		doDCTESCMenu.allMenus[fileMenuNum].addExitLoopKey(KEY_ESC, DCTMENU_FILE_EDIT);
 
-      // Edit menu
-      doDCTMenu.allMenus[editMenuNum] = new DCTMenu(doDCTMenu.mainMenuItemPositions.editX, doDCTMenu.mainMenuItemPositions.mainMenuY+1);
-      doDCTMenu.allMenus[editMenuNum].addItem("&Insert Mode    Ctrl-I", DCTMENU_EDIT_INSERT_TOGGLE);
-      doDCTMenu.allMenus[editMenuNum].addItem("&Find Text      Ctrl-N", DCTMENU_EDIT_FIND_TEXT);
-      //doDCTMenu.allMenus[editMenuNum].addItem("Spell &Checker  Ctrl-W", DCTMENU_EDIT_SPELL_CHECKER);
-      doDCTMenu.allMenus[editMenuNum].addItem("Setti&ngs       Ctrl-U", DCTMENU_EDIT_SETTINGS);
-      doDCTMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_I, DCTMENU_EDIT_INSERT_TOGGLE);
-      doDCTMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_N, DCTMENU_EDIT_FIND_TEXT);
-      doDCTMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_U, DCTMENU_EDIT_SETTINGS);
+		// Edit menu
+		doDCTESCMenu.allMenus[editMenuNum] = new DCTMenu(doDCTESCMenu.mainMenuItemPositions.editX, doDCTESCMenu.mainMenuItemPositions.mainMenuY+1);
+		doDCTESCMenu.allMenus[editMenuNum].addItem("&Insert Mode    Ctrl-I", DCTMENU_EDIT_INSERT_TOGGLE);
+		doDCTESCMenu.allMenus[editMenuNum].addItem("&Find Text      Ctrl-N", DCTMENU_EDIT_FIND_TEXT);
+		doDCTESCMenu.allMenus[editMenuNum].addItem("Spe&ll Checker  Ctrl-W", DCTMENU_EDIT_SPELL_CHECKER);
+		doDCTESCMenu.allMenus[editMenuNum].addItem("Setti&ngs       Ctrl-U", DCTMENU_EDIT_SETTINGS);
+		doDCTESCMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_I, DCTMENU_EDIT_INSERT_TOGGLE);
+		doDCTESCMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_N, DCTMENU_EDIT_FIND_TEXT);
+		doDCTESCMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_U, DCTMENU_EDIT_SETTINGS);
 
-      // SysOp menu
-      doDCTMenu.allMenus[sysopMenuNum] = new DCTMenu(doDCTMenu.mainMenuItemPositions.sysopX, doDCTMenu.mainMenuItemPositions.mainMenuY+1);
-      doDCTMenu.allMenus[sysopMenuNum].addItem("&Import file      Ctrl-O", DCTMENU_SYSOP_IMPORT_FILE);
-      doDCTMenu.allMenus[sysopMenuNum].addItem("E&xport to file   Ctrl-X", DCTMENU_SYSOP_EXPORT_FILE);
-      doDCTMenu.allMenus[sysopMenuNum].addExitLoopKey(CTRL_O, DCTMENU_SYSOP_IMPORT_FILE);
-      doDCTMenu.allMenus[sysopMenuNum].addExitLoopKey(CTRL_X, DCTMENU_SYSOP_EXPORT_FILE);
+		// SysOp menu
+		doDCTESCMenu.allMenus[sysopMenuNum] = new DCTMenu(doDCTESCMenu.mainMenuItemPositions.sysopX, doDCTESCMenu.mainMenuItemPositions.mainMenuY+1);
+		doDCTESCMenu.allMenus[sysopMenuNum].addItem("&Import file      Ctrl-O", DCTMENU_SYSOP_IMPORT_FILE);
+		doDCTESCMenu.allMenus[sysopMenuNum].addItem("E&xport to file   Ctrl-X", DCTMENU_SYSOP_EXPORT_FILE);
+		doDCTESCMenu.allMenus[sysopMenuNum].addExitLoopKey(CTRL_O, DCTMENU_SYSOP_IMPORT_FILE);
+		doDCTESCMenu.allMenus[sysopMenuNum].addExitLoopKey(CTRL_X, DCTMENU_SYSOP_EXPORT_FILE);
 
-      // Help menu
-      doDCTMenu.allMenus[helpMenuNum] = new DCTMenu(doDCTMenu.mainMenuItemPositions.helpX, doDCTMenu.mainMenuItemPositions.mainMenuY+1);
-      doDCTMenu.allMenus[helpMenuNum].addItem("C&ommand List   Ctrl-P", DCTMENU_HELP_COMMAND_LIST);
-      doDCTMenu.allMenus[helpMenuNum].addItem("&General Help   Ctrl-G", DCTMENU_HELP_GENERAL);
-      doDCTMenu.allMenus[helpMenuNum].addItem("&Program Info   Ctrl-R", DCTMENU_HELP_PROGRAM_INFO);
-      if (gConfigSettings.enableTextReplacements)
-      {
-         doDCTMenu.allMenus[helpMenuNum].addItem("&Text replcmts  Ctrl-T", DCTMENU_LIST_TXT_REPLACEMENTS);
-         doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_T, DCTMENU_LIST_TXT_REPLACEMENTS);
-      }
-      doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_P, DCTMENU_HELP_COMMAND_LIST);
-      doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_G, DCTMENU_HELP_GENERAL);
-      doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_R, DCTMENU_HELP_PROGRAM_INFO);
+		// Help menu
+		doDCTESCMenu.allMenus[helpMenuNum] = new DCTMenu(doDCTESCMenu.mainMenuItemPositions.helpX, doDCTESCMenu.mainMenuItemPositions.mainMenuY+1);
+		doDCTESCMenu.allMenus[helpMenuNum].addItem("C&ommand List   Ctrl-P", DCTMENU_HELP_COMMAND_LIST);
+		doDCTESCMenu.allMenus[helpMenuNum].addItem("&General Help   Ctrl-G", DCTMENU_HELP_GENERAL);
+		doDCTESCMenu.allMenus[helpMenuNum].addItem("&Program Info   Ctrl-R", DCTMENU_HELP_PROGRAM_INFO);
+		if (gConfigSettings.enableTextReplacements)
+		{
+			doDCTESCMenu.allMenus[helpMenuNum].addItem("&Text replcmts  Ctrl-T", DCTMENU_LIST_TXT_REPLACEMENTS);
+			doDCTESCMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_T, DCTMENU_LIST_TXT_REPLACEMENTS);
+		}
+		doDCTESCMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_P, DCTMENU_HELP_COMMAND_LIST);
+		doDCTESCMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_G, DCTMENU_HELP_GENERAL);
+		doDCTESCMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_R, DCTMENU_HELP_PROGRAM_INFO);
 
-      // For each menu, add KEY_LEFT, KEY_RIGHT, and ESC as loop-exit keys;
-      // also, set the menu colors.
-      for (var i = 0; i < doDCTMenu.allMenus.length; ++i)
-      {
-         doDCTMenu.allMenus[i].addExitLoopKey(KEY_LEFT);
-         doDCTMenu.allMenus[i].addExitLoopKey(KEY_RIGHT);
-         doDCTMenu.allMenus[i].addExitLoopKey(KEY_ESC);
+		// For each menu, add KEY_LEFT, KEY_RIGHT, and ESC as loop-exit keys;
+		// also, set the menu colors.
+		for (var i = 0; i < doDCTESCMenu.allMenus.length; ++i)
+		{
+			doDCTESCMenu.allMenus[i].addExitLoopKey(KEY_LEFT);
+			doDCTESCMenu.allMenus[i].addExitLoopKey(KEY_RIGHT);
+			doDCTESCMenu.allMenus[i].addExitLoopKey(KEY_ESC);
 
-         doDCTMenu.allMenus[i].colors.border = gConfigSettings.DCTColors.MenuBorders;
-         doDCTMenu.allMenus[i].colors.selected = gConfigSettings.DCTColors.MenuSelectedItems;
-         doDCTMenu.allMenus[i].colors.unselected = gConfigSettings.DCTColors.MenuUnselectedItems;
-         doDCTMenu.allMenus[i].colors.hotkey = gConfigSettings.DCTColors.MenuHotkeys;
-      }
-   }
+			doDCTESCMenu.allMenus[i].colors.border = gConfigSettings.DCTColors.MenuBorders;
+			doDCTESCMenu.allMenus[i].colors.selected = gConfigSettings.DCTColors.MenuSelectedItems;
+			doDCTESCMenu.allMenus[i].colors.unselected = gConfigSettings.DCTColors.MenuUnselectedItems;
+			doDCTESCMenu.allMenus[i].colors.hotkey = gConfigSettings.DCTColors.MenuHotkeys;
+		}
+	}
 
-   // Boolean variables to keep track of which menus were displayed
-   // (for refresh purposes later)
-   var fileMenuDisplayed = false;
-   var editMenuDisplayed = false;
-   var sysopMenuDisplayed = false;
-   var helpMenuDisplayed = false;
+	// The chosen action will be returned from this function
+	var chosenAction = ESC_MENU_EDIT_MESSAGE;
 
-   // Display the top menu options with "File" highlighted.
-   var menuNum = fileMenuNum; // 0: File, ..., 3: Help
-   var subMenuItemNum = 0;
-   var menuRetObj = displayTopMenuItems(doDCTMenu.mainMenuItemPositions, menuNum,
-                                        doDCTMenu.allMenus, pIsSysop);
-   // Input loop
-   var userInput = "";
-   var matchedMenuRetval = false; // Whether one of the menu return values was matched
-   var continueOn = true;
-   while (continueOn)
-   {
-      matchedMenuRetval = valMatchesMenuCode(menuRetObj.returnVal, pIsSysop);
-      // If a menu return value was matched, then set userInput to it.
-      if (matchedMenuRetval)
-         userInput = menuRetObj.returnVal;
-      // If the user's input from the last menu was ESC, left, right, or one of the
-      // characters from the menus, then set userInput to the last menu keypress.
-      else if (inputMatchesMenuSelection(menuRetObj.userInput, pIsSysop))
-         userInput = menuRetObj.userInput;
-      // If nothing from the menu was matched, then get a key from the user.
-      else
-         userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
-      menuRetObj.userInput = "";
+	// Boolean variables to keep track of which menus were displayed
+	// (for refresh purposes later)
+	var fileMenuDisplayed = false;
+	var editMenuDisplayed = false;
+	var sysopMenuDisplayed = false;
+	var helpMenuDisplayed = false;
+
+	// Display the top menu options with "File" highlighted.
+	var menuNum = fileMenuNum; // 0: File, ..., 3: Help
+	var subMenuItemNum = 0;
+	var menuRetObj = displayTopMenuItems(doDCTESCMenu.mainMenuItemPositions, menuNum,
+	                                     doDCTESCMenu.allMenus, pIsSysop);
+	// Input loop
+	var userInput = "";
+	var matchedMenuRetval = false; // Whether one of the menu return values was matched
+	var continueOn = true;
+	while (continueOn)
+	{
+		matchedMenuRetval = valMatchesMenuCode(menuRetObj.returnVal, pIsSysop);
+		// If a menu return value was matched, then set userInput to it.
+		if (matchedMenuRetval)
+			userInput = menuRetObj.returnVal;
+		// If the user's input from the last menu was ESC, left, right, or one of the
+		// characters from the menus, then set userInput to the last menu keypress.
+		else if (inputMatchesMenuSelection(menuRetObj.userInput, pIsSysop))
+			userInput = menuRetObj.userInput;
+		// If nothing from the menu was matched, then get a key from the user.
+		else
+			userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		menuRetObj.userInput = "";
 
 		// If a menu return code was matched or userInput is blank (the
 		// timeout was hit), then exit out of the loop.
 		if (matchedMenuRetval || (userInput == ""))
-         break;
+			break;
 
 		// Take appropriate action based on the user's input.
 		switch (userInput)
 		{
-         case KEY_LEFT:
-            if (menuNum == 0)
-               menuNum = 3;
-            else
-               --menuNum;
-            // Don't allow the sysop menu for non-sysops.
-            if ((menuNum == sysopMenuNum) && !pIsSysop)
-               --menuNum;
-            subMenuItemNum = 0;
-            menuRetObj = displayTopMenuItems(doDCTMenu.mainMenuItemPositions, menuNum, doDCTMenu.allMenus, pIsSysop);
-            break;
-         case KEY_RIGHT:
-            if (menuNum == 3)
-               menuNum = 0;
-            else
-               ++menuNum;
-            // Don't allow the sysop menu for non-sysops.
-            if ((menuNum == sysopMenuNum) && !pIsSysop)
-               ++menuNum;
-            subMenuItemNum = 0;
-            menuRetObj = displayTopMenuItems(doDCTMenu.mainMenuItemPositions, menuNum, doDCTMenu.allMenus, pIsSysop);
-            break;
-         case KEY_UP:
-         case KEY_DOWN:
-            break;
-         case KEY_ENTER: // Selected an item from the menu
-            // Set userInput to the return code from the menu so that it will
-            // be returned from this function.
-            userInput = menuRetObj.returnVal;
-         case "S":       // Save
-         case CTRL_Z:    // Save
-         case "A":       // Abort
-         case CTRL_A:    // Abort
-         case "I":       // Import file for sysop, or Insert/Overwrite toggle for non-sysop
-         case CTRL_O:    // Import file (for sysop)
-         case "X":       // Export file (for sysop)
-         case CTRL_X:    // Export file (for sysop)
-         case CTRL_V:    // Insert/overwrite toggle
-         case "F":       // Find text
-         case CTRL_F:    // Find text
-         case "N":       // User settings
-         case CTRL_U:    // User settings
-         case "O":       // Command List
-         case "G":       // General help
-         case "P":       // Program info
-         case "E":       // Edit the message
-         case KEY_ESC:   // Edit the message
-            continueOn = false;
-            break;
-         case "C":       // Cross-post
-         case CTRL_C:    // Cross-post
-            if (pCanCrossPost)
-               continueOn = false;
-            break;
-         case "T": // List text replacements
-         case CTRL_T: // List text replacements
-            if (gConfigSettings.enableTextReplacements)
-               continueOn = false;
-            break;
-         default:
-            break;
-      }
-   }
+			case KEY_LEFT:
+				if (menuNum == 0)
+					menuNum = 3;
+				else
+					--menuNum;
+				// Don't allow the sysop menu for non-sysops.
+				if ((menuNum == sysopMenuNum) && !pIsSysop)
+					--menuNum;
+				subMenuItemNum = 0;
+				menuRetObj = displayTopMenuItems(doDCTESCMenu.mainMenuItemPositions, menuNum, doDCTESCMenu.allMenus, pIsSysop);
+				break;
+			case KEY_RIGHT:
+				if (menuNum == 3)
+					menuNum = 0;
+				else
+					++menuNum;
+				// Don't allow the sysop menu for non-sysops.
+				if ((menuNum == sysopMenuNum) && !pIsSysop)
+					++menuNum;
+				subMenuItemNum = 0;
+				menuRetObj = displayTopMenuItems(doDCTESCMenu.mainMenuItemPositions, menuNum, doDCTESCMenu.allMenus, pIsSysop);
+				break;
+			case KEY_UP:
+			case KEY_DOWN:
+				break;
+			case KEY_ENTER: // Selected an item from the menu
+				// Set userInput to the return code from the menu so that it will
+				// be returned from this function.
+				userInput = menuRetObj.returnVal;
+			case "S":       // Save
+			case CTRL_Z:    // Save
+			case "A":       // Abort
+			case CTRL_A:    // Abort
+			case "I":       // Import file for sysop, or Insert/Overwrite toggle for non-sysop
+			case CTRL_O:    // Import file (for sysop)
+			case "X":       // Export file (for sysop)
+			case CTRL_X:    // Export file (for sysop)
+			case CTRL_V:    // Insert/overwrite toggle
+			case "F":       // Find text
+			case CTRL_F:    // Find text
+			case "N":       // User settings
+			case CTRL_U:    // User settings
+			case "O":       // Command List
+			case "G":       // General help
+			case "P":       // Program info
+			case "E":       // Edit the message
+			case KEY_ESC:   // Edit the message
+				continueOn = false;
+				break;
+			case "C":       // Cross-post
+			case CTRL_C:    // Cross-post
+				if (pCanCrossPost)
+					continueOn = false;
+				break;
+			case "T": // List text replacements
+			case CTRL_T: // List text replacements
+				if (gConfigSettings.enableTextReplacements)
+					continueOn = false;
+				break;
+			case "L": // Spell checker
+			case CTRL_W: // Spell checker
+				continueOn = false;
+				break;
+			default:
+				break;
+		}
+	}
 
-   // We've exited the menu, so refresh the top menu border and the message text
-   // on the screen.
-   displayTextAreaTopBorder_DCTStyle(doDCTMenu.mainMenuItemPositions.mainMenuY, pEditLeft, pEditRight);
+	// We've exited the menu, so refresh the top menu border and the message text
+	// on the screen.
+	displayTextAreaTopBorder_DCTStyle(doDCTESCMenu.mainMenuItemPositions.mainMenuY, pEditLeft, pEditRight);
 
-   // Return the user's input from the menu loop.
-   return userInput;
+	// Set chosenAction based on the user's input
+	// Save the message
+	if ((userInput == "S") || (userInput == CTRL_Z) || (userInput == DCTMENU_FILE_SAVE))
+		chosenAction = ESC_MENU_SAVE;
+	// Abort
+	else if ((userInput == "A") || (userInput == CTRL_A) || (userInput == DCTMENU_FILE_ABORT))
+		chosenAction = ESC_MENU_ABORT;
+	// Toggle insert/overwrite mode
+	else if ((userInput == CTRL_V) || (userInput == DCTMENU_EDIT_INSERT_TOGGLE))
+		chosenAction = ESC_MENU_INS_OVR_TOGGLE;
+	// Import file (sysop only)
+	else if (userInput == DCTMENU_SYSOP_IMPORT_FILE)
+	{
+		if (pIsSysop)
+			chosenAction = ESC_MENU_SYSOP_IMPORT_FILE;
+	}
+	// Import file for sysop, or Insert/Overwrite toggle for non-sysop
+	else if (userInput == "I")
+	{
+		if (pIsSysop)
+			chosenAction = ESC_MENU_SYSOP_IMPORT_FILE;
+		else
+			chosenAction = ESC_MENU_INS_OVR_TOGGLE;
+	}
+	// Find text
+	else if ((userInput == CTRL_F) || (userInput == "F") || (userInput == DCTMENU_EDIT_FIND_TEXT))
+		chosenAction = ESC_MENU_FIND_TEXT;
+	// Command List
+	else if ((userInput == "O") || (userInput == DCTMENU_HELP_COMMAND_LIST))
+		chosenAction = ESC_MENU_HELP_COMMAND_LIST;
+	// General help
+	else if ((userInput == "G") || (userInput == DCTMENU_HELP_GENERAL))
+		chosenAction = ESC_MENU_HELP_GENERAL;
+	// Program info
+	else if ((userInput == "P") || (userInput == DCTMENU_HELP_PROGRAM_INFO))
+		chosenAction = ESC_MENU_HELP_PROGRAM_INFO;
+	// Export the message
+	else if ((userInput == "X") || (userInput == DCTMENU_SYSOP_EXPORT_FILE))
+	{
+		if (pIsSysop)
+			chosenAction = ESC_MENU_SYSOP_EXPORT_FILE;
+	}
+	// Edit the message
+	else if ((userInput == "E") || (userInput == KEY_ESC))
+		chosenAction = ESC_MENU_EDIT_MESSAGE;
+	// Cross-post
+	else if ((userInput == CTRL_C) || (userInput == "C") || (userInput == DCTMENU_CROSS_POST))
+	{
+		if (pCanCrossPost)
+			chosenAction = ESC_MENU_CROSS_POST_MESSAGE;
+	}
+	// List text replacements
+	else if ((userInput == CTRL_T) || (userInput == "T") || (userInput == DCTMENU_LIST_TXT_REPLACEMENTS))
+	{
+		if (gConfigSettings.enableTextReplacements)
+			chosenAction = ESC_MENU_LIST_TEXT_REPLACEMENTS;
+	}
+	// User settings
+	else if ((userInput == CTRL_U) || (userInput == "N") || (userInput == DCTMENU_EDIT_SETTINGS))
+		chosenAction = ESC_MENU_USER_SETTINGS;
+	// Spell checker
+	else if ((userInput == CTRL_W) || (userInput == "L") || (userInput == DCTMENU_EDIT_SPELL_CHECKER))
+		chosenAction = ESC_MENU_SPELL_CHECK;
+
+	return chosenAction;
 }
 
 // This function returns whether a value matches any of the DCT Edit menu return
-// values.  This is used in doDCTMenu()'s input loop;
+// values.  This is used in doDCTESCMenu()'s input loop;
 //
 // Parameters:
 //  pVal: The value to test
@@ -1022,21 +1000,21 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 // Return: Boolean - Whether or not the value matches a DCT Edit menu return value.
 function valMatchesMenuCode(pVal, pIsSysop)
 {
-   var valMatches = false;
-   valMatches = ((pVal == DCTMENU_FILE_SAVE) || (pVal == DCTMENU_FILE_ABORT) ||
-                 (pVal == DCTMENU_FILE_EDIT) || (pVal == DCTMENU_EDIT_INSERT_TOGGLE) ||
-                 (pVal == DCTMENU_EDIT_FIND_TEXT) || (pVal == DCTMENU_HELP_COMMAND_LIST) ||
-                 (pVal == DCTMENU_HELP_GENERAL) || (pVal == DCTMENU_HELP_PROGRAM_INFO) ||
-                 (pVal == DCTMENU_EDIT_SETTINGS));
-   if (gConfigSettings.enableTextReplacements)
-      valMatches = (valMatches || (pVal == DCTMENU_LIST_TXT_REPLACEMENTS));
-   if (pIsSysop)
-      valMatches = (valMatches || (pVal == DCTMENU_SYSOP_IMPORT_FILE) || (pVal == DCTMENU_SYSOP_EXPORT_FILE));
-   return valMatches;
+	var valMatches = false;
+	valMatches = ((pVal == DCTMENU_FILE_SAVE) || (pVal == DCTMENU_FILE_ABORT) ||
+	              (pVal == DCTMENU_FILE_EDIT) || (pVal == DCTMENU_EDIT_INSERT_TOGGLE) ||
+	              (pVal == DCTMENU_EDIT_FIND_TEXT) || (pVal == DCTMENU_HELP_COMMAND_LIST) ||
+	              (pVal == DCTMENU_HELP_GENERAL) || (pVal == DCTMENU_HELP_PROGRAM_INFO) ||
+	              (pVal == DCTMENU_EDIT_SETTINGS) || (pVal == DCTMENU_EDIT_SPELL_CHECKER));
+	if (gConfigSettings.enableTextReplacements)
+		valMatches = (valMatches || (pVal == DCTMENU_LIST_TXT_REPLACEMENTS));
+	if (pIsSysop)
+		valMatches = (valMatches || (pVal == DCTMENU_SYSOP_IMPORT_FILE) || (pVal == DCTMENU_SYSOP_EXPORT_FILE));
+	return valMatches;
 }
 
 // This function returns whether a user input matches a selection from one of the
-// menus.  This is used in doDCTMenu()'s input loop;
+// menus.  This is used in doDCTESCMenu()'s input loop;
 //
 // Parameters:
 //  pInput: The user input to test
