@@ -846,7 +846,7 @@ version of the word.  The sysop can configure one or multiple dictionaries in
 SlyEdit.cfg with the dictionaryFilenames option.  Dictionary files need to be
 in the format dictionary_<languageName>.txt, where <languageName> is the name
 of the language.  Also, ideally, the language names should follow standard
-language tags, as in "en-us" for English (US), etc.  See these web page for
+language tags, as in "en-us" for English (US), etc.  See these web pages for
 more information:
 https://en.wikipedia.org/wiki/Language_localisation
 http://www.lingoes.net/en/translator/langcode.htm
