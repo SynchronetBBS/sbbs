@@ -1016,7 +1016,7 @@ function inbound_auth_cb(pwd, bp)
 				// TODO: Deal with arrays of passwords?
 				if (!bp.cb_data.binkitcfg.node[addr].nomd5) {	// BinkpAllowPlainAuth=false
 					log(LOG_WARNING, "CRAM-MD5 required (and not provided) by " + addr);
-					invalid = true;
+					invalid = "CRAM-MD5 authentication required";
 				}
 				else if (bp.cb_data.binkitcfg.node[addr].pass === pwd[0]) {
 					log(LOG_INFO, "Plain-text password match for " + addr);
@@ -1035,7 +1035,7 @@ function inbound_auth_cb(pwd, bp)
 	});
 	if (addrs.length === 0) {
 		if (invalid) {
-			bp.sendCmd(bp.command.M_ERR, "Password mismatch");
+			bp.sendCmd(bp.command.M_ERR, typeof invalid == "string" ? invalid : "Password mismatch");
 		}
 		else {
 			// If we have NONE of their nodes configured, we can send them files for ALL of them.
