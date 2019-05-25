@@ -4492,44 +4492,39 @@ function readDictionaryFile(pFilename, pFullyPathed)
 	// Read the lines from the dictionary; skip Aspell copyright header lines
 	// if they exist, and lower-case all words for case-insensitive matching.
 	var dictionary = [];
-	var txtFile = new File(pFilename);
+	var txtFile = new File(dictFilename);
 	if (txtFile.open("r"))
 	{
-		var fileLine = null;  // A line read from the file
+		dictionary = txtFile.readAll(2048);
+		txtFile.close();
+		// See if there's an Aspell copyright header, and if so, remove it.  Also,
+		// ensure all the lines are lower-case.
 		var inCopyrightHeader = false;
-		while (!txtFile.eof)
+		var copyrightStartIdx = -1; // Will be >= 0 if we find the first line of the copyright header
+		var copyrightEndIdx = -1; // Will be >= 0 if we find the copyright end index.  The index of the last line
+		for (var i = 0; i < dictionary.length; ++i)
 		{
-			// Read the next line from the config file.
-			fileLine = txtFile.readln(2048);
-
-			// Skip lines that aren't strings (sometimes this seems to happen)
-			// and 0-length strings
-			if (typeof(fileLine) != "string")
-				continue;
-			if (fileLine.length == 0)
-				continue;
-			// If the line starts with the first line of text in a dictionary
-			// from aspell.net, then we should skip the header lines until we
-			// reach the line "---".
-			if (fileLine == "Custom wordlist generated from http://app.aspell.net/create using SCOWL")
+			if (dictionary[i] == "Custom wordlist generated from http://app.aspell.net/create using SCOWL")
 			{
 				inCopyrightHeader = true;
-				continue;
+				copyrightStartIdx = i;
+			}
+			else if (inCopyrightHeader)
+			{
+				if (dictionary[i] == "---")
+				{
+					inCopyrightHeader = false;
+					copyrightEndIdx = i;
+				}
 			}
 			else
-			{
-				// Skip copyright header lines until we reach the line "---"
-				if (inCopyrightHeader)
-				{
-					if (fileLine == "---")
-						inCopyrightHeader = false;
-					continue;
-				}
-				else // Append the line as lower-case to the dictionary array
-					dictionary.push(fileLine.toLowerCase());
-			}
+				dictionary[i] = dictionary[i].toLowerCase();
 		}
-		txtFile.close();
+		// If we found valid indexes for the Aspell copyright header, then remove it.
+		if ((copyrightStartIdx >= 0) && (copyrightEndIdx >= 0))
+			dictionary.splice(copyrightStartIdx, copyrightEndIdx-copyrightStartIdx+1);
+		// Remove any empty strings from the array
+		dictionary = dictionary.filter(function(str) { return str.length > 0; });
 	}
 
 	return dictionary;
