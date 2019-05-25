@@ -961,7 +961,7 @@ function inbound_auth_cb(pwd, bp)
 	var invalid=false;
 
 	function check_nocrypt(node) {
-		if (node) {
+		if (node.nocrypt) {
 			if (nocrypt === undefined)
 				nocrypt = true;
 		}
