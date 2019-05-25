@@ -1,5 +1,5 @@
                          SlyEdit message editor
-                              Version 1.64
+                              Version 1.65
                         Release date: 2019-05-24
 
                                   by
@@ -845,10 +845,15 @@ dictionary/dictionaries, and if not, it will prompt the user for a corrected
 version of the word.  The sysop can configure one or multiple dictionaries in
 SlyEdit.cfg with the dictionaryFilenames option.  Dictionary files need to be
 in the format dictionary_<languageName>.txt, where <languageName> is the name
-of the language - For instance, dictionary_english.txt for English.  Also, the
-dictionary filenames will be parsed and the language name will be used in the
-menu of dictionaries in the user options - The user is able to enable/disable
-the configured dictionaries for their own use for the spell checker.
+of the language.  Also, ideally, the language names should follow standard
+language tags, as in "en-us" for English (US), etc.  See these web page for
+more information:
+https://en.wikipedia.org/wiki/Language_localisation
+http://www.lingoes.net/en/translator/langcode.htm
+Also, the dictionary filenames will be parsed and the language name will be
+used in the menu of dictionaries in the user options - The user is able to
+enable/disable the configured dictionaries for their own use for the spell
+checker.
 
 For the dictionaryFilenames option in SlyEdit.cfg, you can specify a comma-
 separated list of dictionary filenames.  The dictionary filenames are in the
