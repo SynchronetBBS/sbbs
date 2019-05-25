@@ -52,6 +52,7 @@ function sortFile(pInputFilename, pOutputFilename, pToLowercase)
 	var fileLines = [];
 	if (inFile.open("r"))
 	{
+		var dupeCheckObj = {};
 		var fileLine;
 		while (!inFile.eof)
 		{
@@ -61,7 +62,15 @@ function sortFile(pInputFilename, pOutputFilename, pToLowercase)
 			// where for some reason it isn't.  If it's not a string,
 			// then continue onto the next line.
 			if (typeof(fileLine) == "string")
-				fileLines.push(pToLowercase ? fileLine.toLowerCase() : fileLine);
+			{
+				if (pToLowercase)
+					fileLine = fileLine.toLowerCase();
+				if (!dupeCheckObj.hasOwnProperty(fileLine))
+				{
+					fileLines.push(fileLine);
+					dupeCheckObj[fileLine] = true;
+				}
+			}
 		}
 		inFile.close();
 	}
