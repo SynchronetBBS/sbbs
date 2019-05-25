@@ -1014,8 +1014,10 @@ function inbound_auth_cb(pwd, bp)
 			}
 			else {
 				// TODO: Deal with arrays of passwords?
-				if (!bp.cb_data.binkitcfg.node[addr].nomd5)	// BinkpAllowPlainAuth=false
+				if (!bp.cb_data.binkitcfg.node[addr].nomd5) {	// BinkpAllowPlainAuth=false
 					log(LOG_WARNING, "CRAM-MD5 required (and not provided) by " + addr);
+					invalid = true;
+				}
 				else if (bp.cb_data.binkitcfg.node[addr].pass === pwd[0]) {
 					log(LOG_INFO, "Plain-text password match for " + addr);
 					addrs.push(addr);
