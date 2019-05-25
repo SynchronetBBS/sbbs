@@ -377,7 +377,7 @@ function BinkITCfg()
 			this.node[sec] = {};
 			this.node[sec].pass = f.iniGetValue(section, 'SessionPwd', '');
 			this.node[sec].nomd5 = f.iniGetValue(section, 'BinkpAllowPlainAuth', false);
-			this.node[sec].nocrypt = f.iniGetValue(section, 'BinkpAllowPlainText', false);
+			this.node[sec].nocrypt = f.iniGetValue(section, 'BinkpAllowPlainText', true);
 			this.node[sec].plain_auth_only = f.iniGetValue(section, 'BinkpPlainAuthOnly', false);
 			this.node[sec].poll = f.iniGetValue(section, 'BinkpPoll', false);
 			this.node[sec].port = f.iniGetValue(section, 'BinkpPort');
