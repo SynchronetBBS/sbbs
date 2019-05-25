@@ -52,8 +52,11 @@
  *                              Started working on adding a spell check feature.
  *                              Also, updated to use require() instead of load()
  *                              for .js scripts when possible.
- * 2019-05-24 Eric Oualshin     Version 1.64
+ * 2019-05-24 Eric Oulashin     Version 1.64
  *                              Releasing this version
+ * 2019-05-24 Eric Oulashin     Version 1.65
+ *                              Added support for parsing many standard language
+ *                              tags for the dictionary filenames
  */
 
 /* Command-line arguments:
@@ -150,7 +153,7 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.64";
+const EDITOR_VERSION = "1.65";
 const EDITOR_VER_DATE = "2019-05-24";
 
 
@@ -6141,7 +6144,6 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
-	//var optBoxHeight = (dictionaryFilenames.length > 1 ? 10 : 9);
 	var optBoxHeight = (dictionaryFilenames.length > 1 ? 11 : 10);
 	var optBoxStartX = gEditLeft + Math.floor((gEditWidth/2) - (optBoxWidth/2));
 	if (optBoxStartX < gEditLeft)

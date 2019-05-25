@@ -4488,10 +4488,50 @@ function readDictionaryFile(pFilename, pFullyPathed)
 		dictFilename = pFilename;
 	else
 		dictFilename = genFullPathCfgFilename(pFilename, gStartupPath);
-	var dictionary = readTxtFileIntoArray(dictFilename, false, true);
-	// Ensure all the words are lower-case for case-insensitive matching
-	for (var i = 0; i < dictionary.length; ++i)
-		dictionary[i] = dictionary[i].toLowerCase();
+
+	// Read the lines from the dictionary; skip Aspell copyright header lines
+	// if they exist, and lower-case all words for case-insensitive matching.
+	var dictionary = [];
+	var txtFile = new File(pFilename);
+	if (txtFile.open("r"))
+	{
+		var fileLine = null;  // A line read from the file
+		var inCopyrightHeader = false;
+		while (!txtFile.eof)
+		{
+			// Read the next line from the config file.
+			fileLine = txtFile.readln(2048);
+
+			// Skip lines that aren't strings (sometimes this seems to happen)
+			// and 0-length strings
+			if (typeof(fileLine) != "string")
+				continue;
+			if (fileLine.length == 0)
+				continue;
+			// If the line starts with the first line of text in a dictionary
+			// from aspell.net, then we should skip the header lines until we
+			// reach the line "---".
+			if (fileLine == "Custom wordlist generated from http://app.aspell.net/create using SCOWL")
+			{
+				inCopyrightHeader = true;
+				continue;
+			}
+			else
+			{
+				// Skip copyright header lines until we reach the line "---"
+				if (inCopyrightHeader)
+				{
+					if (fileLine == "---")
+						inCopyrightHeader = false;
+					continue;
+				}
+				else // Append the line as lower-case to the dictionary array
+					dictionary.push(fileLine.toLowerCase());
+			}
+		}
+		txtFile.close();
+	}
+
 	return dictionary;
 }
 
@@ -4618,7 +4658,80 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 		languageName = justFilename.substr(11, dotIdx-11);
 	else
 		languageName = justFilename.substr(11);
-	languageName = languageName.substr(0, 1).toUpperCase() + languageName.substr(1).toLowerCase();
+	// Figure out the language name from common standard localization tags
+	languageNameLower = languageName.toLowerCase();
+	if (languageNameLower == "bn-BD")
+		languageName = "Bangla (Bangladesh)";
+	else if (languageNameLower == "bn-in")
+		languageName = "Bangla (India)";
+	else if (languageNameLower == "nl-be")
+		languageName = "Dutch (Belgium)";
+	else if (languageNameLower == "nl-nl")
+		languageName = "Dutch (Netherlands)";
+	else if (languageNameLower == "en-gb")
+		languageName = "English (UK)";
+	else if (languageNameLower == "en-us")
+		languageName = "English (US)";
+	else if (languageNameLower == "en-ca")
+		languageName = "English (CA)";
+	else if (languageNameLower == "en-in")
+		languageName = "English (India)";
+	else if (languageNameLower == "en-au")
+		languageName = "English (AU)";
+	else if (languageNameLower == "en-nz")
+		languageName = "English (NZ)";
+	else if (languageNameLower == "fr-be")
+		languageName = "French (Belgium)";
+	else if (languageNameLower == "fr-ch")
+		languageName = "French (Switzerland)";
+	else if (languageNameLower == "fr-fr")
+		languageName = "French (France)";
+	else if (languageNameLower == "fr-ca")
+		languageName = "French (CA)";
+	else if (languageNameLower == "de-at")
+		languageName = "Deutsch (Austria)";
+	else if (languageNameLower == "de-de")
+		languageName = "Deutsch (Deutschland)";
+	else if (languageNameLower == "de-ch")
+		languageName = "Deutsch (Schweiz)";
+	else if (languageNameLower == "it-ch")
+		languageName = "Italian (Switzerland)";
+	else if (languageNameLower == "it-it")
+		languageName = "Italian (Italy)";
+	else if (languageNameLower == "pt-pt")
+		languageName = "Portuguese (Portugal)";
+	else if (languageNameLower == "pt-br")
+		languageName = "Portuguese (BR)";
+	else if (languageNameLower == "es-es")
+		languageName = "Español (España)";
+	else if (languageNameLower == "es-co")
+		languageName = "Español (CO)";
+	else if (languageNameLower == "es-cl")
+		languageName = "Español (CL)";
+	else if (languageNameLower == "es-us")
+		languageName = "Español (US)";
+	else if (languageNameLower == "es-005")
+		languageName = "Español (South America)";
+	else if (languageNameLower == "zh-cn")
+		languageName = "Chinese (China)";
+	else if (languageNameLower == "zh-tw")
+		languageName = "Chinese (Taiwan)";
+	else if (languageNameLower == "zh-hk")
+		languageName = "Chinese (Hong Kong)";
+	else if (languageNameLower == "zh-Hans")
+		languageName = "Chinese (Simplified)";
+	else if (languageNameLower == "zh-Hans-cn")
+		languageName = "Chinese (Simplified) (China)";
+	else if (languageNameLower == "ta-in")
+		languageName = "Tamil (India)";
+	else if (languageNameLower == "ta-lk")
+		languageName = "Tamil (Sri Lanka)";
+	else if (languageNameLower == "af-za")
+		languageName = "Afrikaans (ZA)";
+	// TODO: Add more language tags
+	// http://www.lingoes.net/en/translator/langcode.htm
+	else // Default to capitalized first letter & lowercase remainder
+		languageName = languageName.substr(0, 1).toUpperCase() + languageName.substr(1).toLowerCase();
 	return languageName;
 }
 
