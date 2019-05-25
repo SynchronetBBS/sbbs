@@ -425,7 +425,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	if (this.sock === undefined)
 		this.sock = new Socket(SOCK_STREAM, "binkp");
 
-	log(LOG_INFO, "Connecting to "+inet_host+":"+port);
+	log(LOG_INFO, format("Connecting to %s at %s:%u", addr, inet_host, port));
 	this.connect_host = inet_host;
 	this.connect_port = port;
 	if(!this.sock.connect(inet_host, port)) {
@@ -437,7 +437,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	log(LOG_DEBUG, "Connection to "+inet_host+":"+port+" successful");
 
 	this.authenticated = undefined;
-	if (password !== '-')
+	if (!this.plain_auth_only && password !== '-')
 		this.sendCmd(this.command.M_NUL, "OPT CRYPT");
 	else {
 		/*
@@ -466,7 +466,10 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	}
 
 	if (this.authenticated === undefined) {
-		if (this.plain_auth_only || this.cram === undefined || this.cram.algo !== 'MD5') {
+		if (this.plain_auth_only) {
+			this.sendCmd(this.command.M_PWD, password);
+		}
+		else if (this.cram === undefined || this.cram.algo !== 'MD5') {
 			if (this.require_md5)
 				this.sendCmd(this.command.M_ERR, "MD5 Required");
 			else {
