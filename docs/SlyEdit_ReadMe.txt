@@ -862,3 +862,9 @@ this order:
 1. sbbs/mods
 2. sbbs/ctrl
 3. SlyEdit's own directory
+
+Dictionary files must be sorted in order for word matching to work properly
+(SlyEdit uses a binary search for quick word matching, which requires the words
+to be sorted).  Also, all of the words in the dictionary files must be lower-
+case, since SlyEdit does case-insensitive matching by converting words in the
+message to lower-case and comparing them with the words in the dictionary.
