@@ -6,6 +6,9 @@
 //
 //                  ?qnet-http %s dove.synchro.net YOURPASS
 
+const REVISION = "$Revision$".split(' ')[1];
+log(LOG_INFO, "QNET-HTTP " + REVISION + " invoked with options: " + argv.join(' '));
+
 load("http.js");
 
 const HTTP_RESPONSE_SUCCESS = 200;
