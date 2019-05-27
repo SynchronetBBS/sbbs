@@ -572,7 +572,9 @@ BinkP.prototype.accept = function(sock, auth_cb)
 
 	this.cram = {algo:'MD5', challenge:challenge.replace(/[0-9a-fA-F]{2}/g, hex2ascii)};
 	this.authenticated = undefined;
-	if(!this.plain_auth_only)
+	if(this.plain_auth_only)
+		this.wont_crypt = true;
+	else
 		this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge+(this.wont_crypt?"":" CRYPT"));
 	pkt = this.recvFrame(this.timeout);
 	if (pkt === undefined || pkt === null)
