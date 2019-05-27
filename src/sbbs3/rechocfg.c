@@ -311,6 +311,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/* BinkP options: */
 	SAFECOPY(cfg->binkp_caps, iniGetString(ini, "BinkP", "Capabilities", "", value));
 	SAFECOPY(cfg->binkp_sysop, iniGetString(ini, "BinkP", "Sysop", "", value));
+	cfg->binkp_plainAuthOnly = iniGetBool(ini, "BinkP", "PlainAuthOnly", FALSE);
 
 	/******************/
 	/* Archive Types: */
@@ -546,6 +547,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	/******************/
 	iniSetString(&ini,		"BinkP"	,	"Capabilities"				,cfg->binkp_caps				,&style);
 	iniSetString(&ini,		"BinkP"	,	"Sysop"						,cfg->binkp_sysop				,&style);
+	iniSetBool(&ini,		"BinkP"	,	"PlainAuthOnly"				,cfg->binkp_plainAuthOnly		,&style);
 
 	/******************/
 	/* Archive Types: */
