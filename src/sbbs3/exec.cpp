@@ -562,13 +562,6 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
-static const char* js_ext(const char* fname)
-{
-	if(getfext(fname)==NULL)
-		return(".js");
-	return("");
-}
-
 long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope)
 {
 	char*		p;
@@ -600,12 +593,15 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 
 	path[0]=0;
 	if(strcspn(fname,"/\\")==strlen(fname)) {
+		const char* js_ext = "";
+		if(getfext(fname) == NULL)
+			js_ext = ".js";
 		if(startup_dir!=NULL && *startup_dir)
-			SAFEPRINTF3(path,"%s%s%s",startup_dir,fname,js_ext(fname));
+			SAFEPRINTF3(path,"%s%s%s",startup_dir,fname,js_ext);
 		if(path[0]==0 || !fexistcase(path)) {
-			SAFEPRINTF3(path,"%s%s%s",cfg.mods_dir,fname,js_ext(fname));
+			SAFEPRINTF3(path,"%s%s%s",cfg.mods_dir,fname,js_ext);
 			if(cfg.mods_dir[0]==0 || !fexistcase(path))
-				SAFEPRINTF3(path,"%s%s%s",cfg.exec_dir,fname,js_ext(fname));
+				SAFEPRINTF3(path,"%s%s%s",cfg.exec_dir,fname,js_ext);
 		}
 	} else
 		SAFECOPY(path,fname);
