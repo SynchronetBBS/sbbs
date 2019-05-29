@@ -1058,7 +1058,7 @@ function inbound_auth_cb(pwd, bp)
 		if (nocrypt === undefined)
 			nocrypt = false;
 	}
-	bp.require_crypt = !nocrypt;
+	bp.require_crypt = !bp.plain_auth_only && !nocrypt;
 
 	add_outbound_files(addrs, bp);
 	return ret;
