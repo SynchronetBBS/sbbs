@@ -2535,7 +2535,7 @@ char *utimestr(time_t *intime)
 			strcpy(mon,"Dec");
 			break;
 	}
-	if(gm->tm_hour>12) {
+	if(gm->tm_hour>=12) {
 		strcpy(mer,"pm");
 		hour=gm->tm_hour-12;
 	}
