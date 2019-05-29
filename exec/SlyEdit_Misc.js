@@ -4655,7 +4655,27 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 		languageName = justFilename.substr(11);
 	// Figure out the language name from common standard localization tags
 	languageNameLower = languageName.toLowerCase();
-	if (languageNameLower == "bn-BD")
+	var isSupplimental = false;
+	if (/[a-z]{2}-[a-z]{2}-supplimental/.test(languageNameLower))
+	{
+		isSupplimental = true;
+		languageNameLower = languageNameLower.substr(0, 5);
+	}
+	if (languageNameLower == "en")
+		languageName = "English (General)";
+	else if (languageNameLower == "fr")
+		languageName = "French (General)";
+	else if (languageNameLower == "es")
+		languageName = "Espa" + ascii(164) + "ol (General)";
+	else if (languageNameLower == "pt")
+		languageName = "Portug" + ascii(130) + "s (General)";
+	else if (languageNameLower == "de")
+		languageName = "Deutsch (General)";
+	else if (languageNameLower == "nl")
+		languageName = "Dutch (General)";
+	else if (languageNameLower == "it")
+		languageName = "Italian (General)";
+	else if (languageNameLower == "bn-BD")
 		languageName = "Bangla (Bangladesh)";
 	else if (languageNameLower == "bn-in")
 		languageName = "Bangla (India)";
@@ -4694,19 +4714,19 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 	else if (languageNameLower == "it-it")
 		languageName = "Italian (Italy)";
 	else if (languageNameLower == "pt-pt")
-		languageName = "Portuguese (Portugal)";
+		languageName = "Portug" + ascii(130) + "s (Portugal)";
 	else if (languageNameLower == "pt-br")
-		languageName = "Portuguese (BR)";
+		languageName = "Portug" + ascii(130) + "s (BR)";
 	else if (languageNameLower == "es-es")
-		languageName = "Español (España)";
+		languageName = "Espa" + ascii(164) + "ol (España)";
 	else if (languageNameLower == "es-co")
-		languageName = "Español (CO)";
+		languageName = "Espa" + ascii(164) + "ol (CO)";
 	else if (languageNameLower == "es-cl")
-		languageName = "Español (CL)";
+		languageName = "Espa" + ascii(164) + "ol (CL)";
 	else if (languageNameLower == "es-us")
-		languageName = "Español (US)";
+		languageName = "Espa" + ascii(164) + "ol (US)";
 	else if (languageNameLower == "es-005")
-		languageName = "Español (South America)";
+		languageName = "Espa" + ascii(164) + "ol (South America)";
 	else if (languageNameLower == "zh-cn")
 		languageName = "Chinese (China)";
 	else if (languageNameLower == "zh-tw")
@@ -4727,7 +4747,44 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 	// http://www.lingoes.net/en/translator/langcode.htm
 	else // Default to capitalized first letter & lowercase remainder
 		languageName = languageName.substr(0, 1).toUpperCase() + languageName.substr(1).toLowerCase();
+
+	if (isSupplimental)
+		languageName += " (Supplimental)";
+
 	return languageName;
+}
+// Function for sorting an array of objects containing a language name and dictionary filename
+function languageNameDictFilenameSort(a, b)
+{
+	var retVal = 0;
+	var generalWithSameLanguageNames = false;
+	var genRegex = /^(.*) \(General\)$/;
+	var matches1 = a.name.match(genRegex);
+	var matches2 = b.name.match(genRegex);
+	if ((matches1 != null) || (matches2 != null))
+	{
+		// Get the language names without the part in paranthesis
+		var language1Name = (matches1 != null ? matches1[1] : a.name.substr(0, a.name.indexOf("(")-1));
+		var language2Name = (matches2 != null ? matches2[1] : b.name.substr(0, b.name.indexOf("(")-1));
+		// If the language names are the same, sort the (General) one before the others.
+		if (language1Name == language2Name)
+		{
+			generalWithSameLanguageNames = true;
+			if (matches1 != null)
+				retVal = -1;
+			else
+				retVal = 1;
+		}
+	}
+	if (!generalWithSameLanguageNames)
+	{
+		if (a.name < b.name)
+			retVal = -1;
+		else if (a.name > b.name)
+			retVal = 1;
+		// retVal will remain 0 if the names are equal
+	}
+	return retVal;
 }
 
 // Returns whether a language is selected in the user's settings
