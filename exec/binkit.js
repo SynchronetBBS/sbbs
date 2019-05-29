@@ -617,10 +617,14 @@ function callout(addr, scfg, locks, bicfg)
 		bp.cb_data.binkitpw = bp.cb_data.binkitcfg.node[addr].pass;
 		port = bp.cb_data.binkitcfg.node[addr].port;
 		host = bp.cb_data.binkitcfg.node[addr].host;
-		bp.require_md5 = !(bp.cb_data.binkitcfg.node[addr].nomd5);
-		bp.require_crypt = !(bp.cb_data.binkitcfg.node[addr].nocrypt);
-		if(!bp.plain_auth_only)
+		if (bp.plain_auth_only) {
+			bp.require_md5 = false;
+			bp.require_crypt = false;
+		} else {
+			bp.require_md5 = !(bp.cb_data.binkitcfg.node[addr].nomd5);
+			bp.require_crypt = !(bp.cb_data.binkitcfg.node[addr].nocrypt);
 			bp.plain_auth_only = bp.cb_data.binkitcfg.node[addr].plain_auth_only;
+		}
 	}
 	// TODO: Force debug mode for now...
 	bp.debug = true;
@@ -1016,7 +1020,8 @@ function inbound_auth_cb(pwd, bp)
 			}
 			else {
 				// TODO: Deal with arrays of passwords?
-				if (!bp.cb_data.binkitcfg.node[addr].nomd5) {	// BinkpAllowPlainAuth=false
+				if (!bp.plain_auth_only								// [BinkP] PlainAuthOnly=false
+					&& !bp.cb_data.binkitcfg.node[addr].nomd5) {	// [node:] BinkpAllowPlainAuth=false
 					log(LOG_WARNING, "CRAM-MD5 required (and not provided) by " + addr);
 					invalid = "CRAM-MD5 authentication required";
 				}
