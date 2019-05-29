@@ -471,7 +471,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 		}
 		else if (this.cram === undefined || this.cram.algo !== 'MD5') {
 			if (this.require_md5)
-				this.sendCmd(this.command.M_ERR, "MD5 Required");
+				this.sendCmd(this.command.M_ERR, "CRAM-MD5 authentication required");
 			else {
 				if (this.will_crypt)
 					this.sendCmd(this.command.M_ERR, "Encryption requires CRAM-MD5 auth");
