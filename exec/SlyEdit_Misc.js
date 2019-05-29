@@ -4655,10 +4655,10 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 		languageName = justFilename.substr(11);
 	// Figure out the language name from common standard localization tags
 	languageNameLower = languageName.toLowerCase();
-	var isSupplimental = false;
-	if (/[a-z]{2}-[a-z]{2}-supplimental/.test(languageNameLower))
+	var isSupplemental = false;
+	if (/[a-z]{2}-[a-z]{2}-supplemental/.test(languageNameLower))
 	{
-		isSupplimental = true;
+		isSupplemental = true;
 		languageNameLower = languageNameLower.substr(0, 5);
 	}
 	if (languageNameLower == "en")
@@ -4748,8 +4748,8 @@ function getLanguageNameFromDictFilename(pFilenameFullPath)
 	else // Default to capitalized first letter & lowercase remainder
 		languageName = languageName.substr(0, 1).toUpperCase() + languageName.substr(1).toLowerCase();
 
-	if (isSupplimental)
-		languageName += " (Supplimental)";
+	if (isSupplemental)
+		languageName += " (Supplemental)";
 
 	return languageName;
 }
