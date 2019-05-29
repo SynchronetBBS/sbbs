@@ -305,6 +305,11 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 			free(line);
 			return DEBUG_CONTINUE;
 		}
+		if(strncmp(line, "quit\n", 5)==0 || 
+				strncmp(line, "q\n", 2)==0
+				) {
+			return (DEBUG_EXIT);
+		}
 		if(strncmp(line, "eval ", 5)==0 || 
 				strncmp(line, "e ", 2)==0
 				) {
@@ -433,6 +438,8 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 			  "backtrace         - Alias for bt\n"
 			  "up                - Move to the previous stack frame\n"
 			  "down              - Move to the next stack frame\n"
+			  "quit              - Terminate script and exit\n"
+			  "q                 - Terminate script and exit\n"
 			  "\n");
 	}
 	FREE_AND_NULL(line);
