@@ -1518,7 +1518,7 @@ void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaul
  */
 struct bbslist *show_bbslist(char *current, int connected)
 {
-#define BBSLIST_SIZE ((MAX_OPTS+1)*sizeof(struct bbslist))
+#define BBSLIST_SIZE ((MAX_OPTS+1)*sizeof(struct bbslist *))
 	struct	bbslist	**list;
 	int		i,j;
 	static int		opt=0,bar=0;
