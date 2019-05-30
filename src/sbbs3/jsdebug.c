@@ -33,10 +33,13 @@ struct debugger {
 static link_list_t	breakpoints;
 static link_list_t	scripts;
 static link_list_t	debuggers;
+static JSStackFrame	*finish;
 
 static JSTrapStatus trap_handler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval, jsval closure);
 static JSTrapStatus throw_handler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval, void *closure);
+static JSTrapStatus single_step_handler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval, void *closure);
 static enum debug_action script_debug_prompt(struct debugger *cx, JSScript *script);
+static JSTrapStatus finish_handler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval, void *closure);
 
 static struct debugger *get_debugger(JSContext *cx)
 {
@@ -68,6 +71,7 @@ static void newscript_handler(JSContext  *cx,
 
 	if(dbg==NULL)
 		return;
+	JS_SetSingleStepMode(dbg->cx, script, JS_TRUE);
 	cs=(struct cur_script *)malloc(sizeof(struct cur_script));
 	if(!cs) {
 		dbg->puts("Error allocating script struct\n");
@@ -301,8 +305,20 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 			listPushNode(&breakpoints, bp);
 			continue;
 		}
-		if(strncmp(line, "r", 1)==0) {
+		if(strncmp(line, "run\n", 4) == 0 || strncmp(line, "r\n", 2)==0) {
 			free(line);
+			JS_ClearInterrupt(JS_GetRuntime(dbg->cx), NULL, NULL);
+			return DEBUG_CONTINUE;
+		}
+		if (strncmp(line, "step\n", 5) == 0 || strncmp(line, "s\n", 2) == 0) {
+			free(line);
+			JS_SetInterrupt(JS_GetRuntime(dbg->cx), single_step_handler, NULL);
+			return DEBUG_CONTINUE;
+		}
+		if (strncmp(line, "finish\n", 7) == 0 || strncmp(line, "f\n", 2) == 0) {
+			free(line);
+			finish = JS_GetScriptedCaller(dbg->cx, NULL);
+			JS_SetInterrupt(JS_GetRuntime(dbg->cx), finish_handler, NULL);
 			return DEBUG_CONTINUE;
 		}
 		if(strncmp(line, "quit\n", 5)==0 || 
@@ -430,7 +446,12 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 		dbg->puts("Unrecognized command:\n"
 			  "break [file:]#### - Sets a breakpoint at line #### in file\n"
 			  "                    If no file is specified, uses the current one\n"
+			  "run               - Runs the script\n"
 			  "r                 - Runs the script\n"
+			  "step              - Runs to the next line\n"
+			  "s                 - Runs to the next line\n"
+			  "finish            - Runs until current stack frame is gone\n"
+			  "f                 - Runs until current stack frame is gone\n"
 			  "eval <statement>  - eval() <statement> in the current frame\n"
 			  "e <statement>     - eval() <statement> in the current frame\n"
 			  "clear             - Clears pending exceptions (doesn't seem to help)\n"
@@ -485,6 +506,56 @@ static JSTrapStatus throw_handler(JSContext *cx, JSScript *script, jsbytecode *p
 	dbg->puts("Exception thrown\n");
 
     switch(script_debug_prompt(dbg, script)) {
+		case DEBUG_CONTINUE:
+			return JSTRAP_CONTINUE;
+		case DEBUG_EXIT:
+			return JSTRAP_ERROR;
+	}
+	return JSTRAP_CONTINUE;
+}
+
+static JSTrapStatus
+single_step_handler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval, void *closure)
+{
+	struct debugger		*dbg=get_debugger(cx);
+
+	if(dbg==NULL)
+		return JSTRAP_CONTINUE;
+	// Return if not beginning of line...
+	if (JS_LineNumberToPC(cx, script, JS_PCToLineNumber(cx, script, pc)) != pc)
+		return JSTRAP_CONTINUE;
+	JS_GC(cx);
+
+	dbg->puts("Single Stepping\n");
+
+	switch(script_debug_prompt(dbg, script)) {
+		case DEBUG_CONTINUE:
+			return JSTRAP_CONTINUE;
+		case DEBUG_EXIT:
+			return JSTRAP_ERROR;
+	}
+	return JSTRAP_CONTINUE;
+}
+
+static JSTrapStatus
+finish_handler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval, void *closure)
+{
+	JSStackFrame *fpi=NULL;
+	struct debugger		*dbg=get_debugger(cx);
+
+	if(dbg==NULL)
+		return JSTRAP_CONTINUE;
+
+	JS_GC(cx);
+
+	while(JS_FrameIterator(dbg->cx, &fpi)) {
+		if (fpi == finish)
+			return JSTRAP_CONTINUE;
+	}
+	
+	dbg->puts("Finished\n");
+
+	switch(script_debug_prompt(dbg, script)) {
 		case DEBUG_CONTINUE:
 			return JSTRAP_CONTINUE;
 		case DEBUG_EXIT:
