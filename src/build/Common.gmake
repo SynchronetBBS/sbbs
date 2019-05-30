@@ -318,7 +318,10 @@ ifeq ($(os),haiku)
  CFLAGS	+=	-D__unix__ -DNEEDS_FORKPTY
 endif
 ifeq ($(os),darwin)
+ MIN_MAC_OSX_VERSION = 10.5
  CFLAGS +=  -D__unix__ -fno-common -D__DARWIN__
+ CFLAGS +=  -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
+ LDFLAGS += -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
 endif
 
 # PThread-specific flags
