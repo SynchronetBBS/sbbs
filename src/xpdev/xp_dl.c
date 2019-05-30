@@ -43,7 +43,7 @@ DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **names, int mode, int major)
 			return(ret);
 
 		/* Try for name match */
-		sprintf(fname, "lib%s.dylib", name, major);
+		sprintf(fname, "lib%s.dylib", name);
 		if((ret=dlopen(fname, mode))!=NULL)
 			return(ret);
 
