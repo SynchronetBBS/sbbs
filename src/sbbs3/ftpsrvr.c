@@ -3152,7 +3152,7 @@ static void ctrl_thread(void* arg)
 	}
 
 	sockprintf(sock,sess,"220-%s (%s)",scfg.sys_name, startup->host_name);
-	sockprintf(sock,sess," Synchronet FTP Server %s-%s Ready"
+	sockprintf(sock,sess,"220-Synchronet FTP Server %s-%s Ready"
 		,revision,PLATFORM_DESC);
 	sprintf(str,"%sftplogin.txt",scfg.text_dir);
 	if((fp=fopen(str,"rb"))!=NULL) {
