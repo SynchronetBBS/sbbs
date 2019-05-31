@@ -26,7 +26,7 @@ endif
 ifeq ($(os),darwin)
 $(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(MT_CFLAGS) $(CCFLAGS) -o $@ -c $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) $(CCFLAGS) -o $@ -c $<
 
 $(OBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
 	@echo $(COMPILE_MSG) $<
@@ -36,7 +36,7 @@ endif
 # Executable Build Rule
 $(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $^ $(XPDEV-MT_LIB_BUILD)
+	$(QUIET)$(CC) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $^ $(XPDEV-MT_LIB_BUILD) -lm
 
 $(XPTIME): $(OBJODIR)/xptime.o $(XPDEV_LIB_BUILD)
 	@echo Linking $@
