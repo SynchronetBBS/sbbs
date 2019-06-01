@@ -1214,10 +1214,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			}
 			/* For compatibility with terminals lacking special keys */
 			switch(gotkey) {
+				case '\b':
+					gotkey=ESC;
+					break;
 				case '+':
 					gotkey=CIO_KEY_IC;	/* insert */
 					break;
-				case '\b':
 				case '-':
 				case DEL:
 					gotkey=CIO_KEY_DC;	/* delete */
@@ -2446,10 +2448,16 @@ void bottomline(int mode)
 		i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Paste  ");
 	}
 	if(mode&WIN_INS) {
+#ifdef __DARWIN__
+		i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"+/");
+#endif
 		i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"INS");
 		i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"ert Item  ");
 	}
 	if(mode&WIN_DEL) {
+#ifdef __DARWIN__
+		i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"fn-");
+#endif
 		i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"DEL");
 		i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"ete Item  ");
 	}
@@ -2459,7 +2467,6 @@ void bottomline(int mode)
 	textattr(BLACK|(api->cclr<<4));
 	clreol();
 }
-
 
 /*****************************************************************************/
 /* Generates a 24 character ASCII string that represents the time_t pointer  */
