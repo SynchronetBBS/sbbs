@@ -1254,7 +1254,7 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, uns
 	int i;
 
 #ifdef __DARWIN__
-	if(unicode==0x7f) {
+	if(unicode==0x7f && !(mod & KMOD_CTRL)) {
 		unicode=0x08;
 		keysym=SDLK_BACKSPACE;
 	}
