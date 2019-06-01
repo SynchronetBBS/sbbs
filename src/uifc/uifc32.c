@@ -1214,12 +1214,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			}
 			/* For compatibility with terminals lacking special keys */
 			switch(gotkey) {
-				case '\b':
-					gotkey=ESC;
-					break;
 				case '+':
 					gotkey=CIO_KEY_IC;	/* insert */
 					break;
+				case '\b':
 				case '-':
 				case DEL:
 					gotkey=CIO_KEY_DC;	/* delete */
