@@ -1,8 +1,27 @@
 // $Id$
 // vi: tabstop=4
 
-// Support QWK packet transfers (uploads of REP packets and downloads of QWK packets)
+// Handle QWK packet transfers (uploads of REP packets and downloads of QWK packets)
 // in the Synchronet Web Server (e.g. using exec/qnet-http.js)
+
+// Although this script is really intended to be used with qnet-http.js, it
+// can be used with other http-clients (e.g. for use with other BBS software).
+// For example, using GNU Wget (place https:// before <hostname> for HTTPS):
+
+// Upload a REP packet:
+// $ wget --auth-no-challenge --post-file=<hub-ID>.qwk --http-user=<username>
+//        --http-password=<password> <hub-hostname>/qwk.ssjs
+       
+// Generate/download a QWK packet:
+// $ wget --auth-no-challenge --http-user=<username> --http-password=<password>
+//        --content-disposition <hub-hostname>/qwk.ssjs
+       
+// Confirm successful download of a QWK packet:
+// $ wget --auth-no-challenge --http-user=<username> --http-password=<password>
+//        --post-data= <hub-hostname>/qwk.ssjs?received=<QWK-file-length>
+
+const REVISION = "$Revision$".split(' ')[1];
+log(LOG_INFO, "QWK Packet Handler (qwk.ssjs) " + REVISION);
 
 const pack_timeout = 60;	// seconds
 var qwkfile = system.data_dir + format("file/%04u.qwk", user.number);
@@ -12,6 +31,7 @@ function get(query)
 	var semfile = system.data_dir + format("pack%04u.now", user.number);
 
 	if(!file_exists(qwkfile)) {
+        log("Requesting creation of QWK packet: " + qwkfile);
 		file_touch(semfile);
 		var start = time();
 		while(file_exists(semfile)) {
