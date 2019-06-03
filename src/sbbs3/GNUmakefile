@@ -84,6 +84,7 @@ else
  endif
 endif
 export LD_RUN_PATH
+LDFLAGS += -rpath $(LD_RUN_PATH)
 
 CON_LIBS	+= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
 SHLIBOPTS	:=	-shared
