@@ -1,8 +1,8 @@
-diff -ur ../cl.patched/cryptlib.h ./cryptlib.h
---- ../cl.patched/cryptlib.h	2014-06-20 12:40:45.000000000 -0700
-+++ ./cryptlib.h	2014-06-20 12:47:00.000000000 -0700
-@@ -1237,6 +1237,11 @@
- 	CRYPT_SESSINFO_SSL_OPTIONS,		/* SSL/TLS protocol options */
+diff -ur ../tmp2/cryptlib.h ./cryptlib.h
+--- ../tmp2/cryptlib.h	2019-02-22 03:16:30.000000000 -0500
++++ ./cryptlib.h	2019-06-03 15:26:26.741166000 -0400
+@@ -1222,6 +1222,11 @@
+ 	CRYPT_SESSINFO_SSL_EAPKEY,		/* SSL/TLS EAP key */
  	CRYPT_SESSINFO_TSP_MSGIMPRINT,	/* TSP message imprint */
  
 +	/* Terminal attributes */
@@ -13,10 +13,10 @@ diff -ur ../cl.patched/cryptlib.h ./cryptlib.h
  	/* Used internally */
  	CRYPT_SESSINFO_LAST, CRYPT_USERINFO_FIRST = 7000,
  
-diff -ur ../cl.patched/kernel/attr_acl.c ./kernel/attr_acl.c
---- ../cl.patched/kernel/attr_acl.c	2014-06-20 12:40:39.000000000 -0700
-+++ ./kernel/attr_acl.c	2014-06-20 20:32:54.000000000 -0700
-@@ -3742,6 +3742,25 @@
+diff -ur ../tmp2/kernel/attr_acl.c ./kernel/attr_acl.c
+--- ../tmp2/kernel/attr_acl.c	2019-02-05 18:16:32.000000000 -0500
++++ ./kernel/attr_acl.c	2019-06-03 15:26:26.745123000 -0400
+@@ -3768,6 +3768,25 @@
  		MKPERM_TSP( xWD_xWD ),
  		ROUTE( OBJECT_TYPE_SESSION ), &objectCtxHash ),
  
@@ -41,28 +41,19 @@ diff -ur ../cl.patched/kernel/attr_acl.c ./kernel/attr_acl.c
 +
  	MKACL_END(), MKACL_END()
  	};
- 
-diff -ur ../cl.patched/session/sess_attr.c ./session/sess_attr.c
---- ../cl.patched/session/sess_attr.c	2014-06-20 12:40:41.000000000 -0700
-+++ ./session/sess_attr.c	2014-06-20 20:33:27.000000000 -0700
-@@ -323,6 +323,8 @@
- 						TRUE : FALSE;
- 			return( CRYPT_OK );
- 
-+		case CRYPT_SESSINFO_SSH_WIDTH:
-+		case CRYPT_SESSINFO_SSH_HEIGHT:
- 		case CRYPT_SESSINFO_SERVER_PORT:
- 		case CRYPT_SESSINFO_CLIENT_PORT:
- 			{
-@@ -392,6 +394,7 @@
+ #endif /* USE_SESSIONS */
+diff -ur ../tmp2/session/sess_attr.c ./session/sess_attr.c
+--- ../tmp2/session/sess_attr.c	2019-02-05 18:18:28.000000000 -0500
++++ ./session/sess_attr.c	2019-06-03 15:26:26.746525000 -0400
+@@ -639,6 +639,7 @@
  			return( CRYPT_ERROR_NOTFOUND );
  			}
  
 +		case CRYPT_SESSINFO_SSH_TERMINAL:
  		case CRYPT_SESSINFO_USERNAME:
  		case CRYPT_SESSINFO_PASSWORD:
- 		case CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1:
-@@ -532,6 +535,13 @@
+ 			/* If the session was resumed from cached information then the
+@@ -797,6 +798,13 @@
  			return( status );
  			}
  
@@ -74,30 +65,30 @@ diff -ur ../cl.patched/session/sess_attr.c ./session/sess_attr.c
 +									CRYPT_SESSINFO_SSH_HEIGHT, value ) );
 +
  		case CRYPT_SESSINFO_SERVER_PORT:
- 			/* If there's already a transport session or network socket 
- 			   specified then we can't set a port as well */
-@@ -883,6 +893,7 @@
- 									  attribute, data, dataLength, flags ) );
- 			}
- 
-+		case CRYPT_SESSINFO_SSH_TERMINAL:
- 		case CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1:
- 			/* Remember the value */
- 			return( addSessionInfoS( sessionInfoPtr,
-@@ -938,6 +949,9 @@
- 			sessionInfoPtr->writeTimeout = CRYPT_ERROR;
- 			return( CRYPT_OK );
+ 			/* If there's already a network socket specified then we can't 
+ 			   set a port as well */
+@@ -954,6 +964,9 @@
+ 			return( addCredential( sessionInfoPtr, data, dataLength, 
+ 								   attribute ) );
  
 +		case CRYPT_SESSINFO_SSH_TERMINAL:
 +		case CRYPT_SESSINFO_SSH_WIDTH:
 +		case CRYPT_SESSINFO_SSH_HEIGHT:
+ 		case CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1:
+ 			/* Remember the value */
+ 			return( addSessionInfoS( sessionInfoPtr, attribute, data, 
+@@ -1016,6 +1027,7 @@
+ 			sessionInfoPtr->writeTimeout = CRYPT_ERROR;
+ 			return( CRYPT_OK );
+ 
++		case CRYPT_SESSINFO_SSH_TERMINAL:
  		case CRYPT_SESSINFO_USERNAME:
  		case CRYPT_SESSINFO_PASSWORD:
  		case CRYPT_SESSINFO_SERVER_NAME:
-diff -ur ../cl.patched/session/ssh2_msgc.c ./session/ssh2_msgc.c
---- ../cl.patched/session/ssh2_msgc.c	2014-06-20 12:40:41.000000000 -0700
-+++ ./session/ssh2_msgc.c	2014-06-20 20:36:36.000000000 -0700
-@@ -447,6 +447,12 @@
+diff -ur ../tmp2/session/ssh2_msgc.c ./session/ssh2_msgc.c
+--- ../tmp2/session/ssh2_msgc.c	2018-12-21 03:52:10.000000000 -0500
++++ ./session/ssh2_msgc.c	2019-06-03 15:26:26.747402000 -0400
+@@ -448,6 +448,12 @@
  												CHANNEL_WRITE );
  	int packetOffset, status;
  
@@ -110,7 +101,7 @@ diff -ur ../cl.patched/session/ssh2_msgc.c ./session/ssh2_msgc.c
  	assert( isWritePtr( sessionInfoPtr, sizeof( SESSION_INFO ) ) );
  	assert( isWritePtr( stream, sizeof( STREAM ) ) );
  
-@@ -545,9 +551,18 @@
+@@ -547,9 +553,18 @@
  	writeUint32( stream, channelNo );
  	writeString32( stream, "pty-req", 7 );
  	sputc( stream, 0 );					/* No reply */
