@@ -1,3 +1,4 @@
+require("maidenhead.js", "Maidenhead");
 if(!js.global || js.global.HTTPRequest==undefined)
 	js.global.load("http.js");
 if(!js.global || js.global.USCallsign==undefined)
@@ -19,6 +20,7 @@ var ctydat={};
 var last_contest_update=0;
 var rig_index={};
 var last_rig_index=0;
+var pskreporter_cache={};
 
 function main(srv,target)
 {
@@ -864,6 +866,9 @@ Bot_Commands["SPOTS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var months = {'Jan':0, 'Feb':1, 'Mar':2, 'Apr':3, 'May':4, 'Jun':5, 'Jul':6, 'Aug':7, 'Sep':8, 'Oct':9, 'Nov':10, 'Dec':11};
 	var modes = {1:'CW', 2:'Phone', 10:'PSK31', 11:'RTTY', 12:'BPSK', 13:'GMSK', 14:'FSK', 15:'SSTV', 16:'MFSK', 17:'QPSK', 21:'JT65', 22:'Hell', 23:'DominoEX', 24:'MT63', 25:'RTTYM', 26:'THOR', 27:'THROB', 28:'Olivia', 29:'Contestia', 30:'PSK63', 31:'PSK125', 32:'JT9', 33:'Opera', 34:'FT8'};
 	var mname = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	var psspots;
+	var from;
+	var to;
 
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -879,31 +884,57 @@ Bot_Commands["SPOTS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return true;
 	}
 
-if (false) {	// Disabled because it's too many spots...
 	try {
-		url = 'https://pskreporter.info/cgi-bin/pskquery5.pl?encap=0&callback=doNothing&statistics=0&noactive=1&rronly=1&nolocator=1&senderCallsign='+callsign;
-
-		var psk = req.Get(url);
-		if (psk.search(/The storm clouds are gathering/) >= 0) {
-			srv.o(target,'warning: pskreporter error');
-		}
-		else if (psk.search(/Your IP has made too many requests for the same data too often/) >= 0) {
-			srv.o(target,'warning: pskreporter throttled');
-		}
-		else {
-			psk = psk.replace(/^doNothing\(/,'');
-			psk = psk.replace(/^\);$/m, '');
-			json = JSON.parse(psk);
-			for (i in json.receptionReport) {
-				var rpt = json.receptionReport[i]
-				spots.push({rx:rpt.receiverCallsign, tx:rpt.senderCallsign, freq:rpt.frequency, mode:rpt.mode, time:new Date(rpt.flowStartSeconds*1000)});
+		tmp = false;
+		if (pskreporter_cache[callsign.toUpperCase()] !== undefined) {
+			if (new Date() - pskreporter_cache[callsign.toUpperCase()].time > 300000) {
+				delete pskreporter_cache[callsign.toUpperCase()];
 			}
+			else {
+				tmp = true;
+			}
+		}
+
+		if (!tmp) {
+			url = 'https://pskreporter.info/cgi-bin/pskquery5.pl?encap=0&callback=doNothing&statistics=0&noactive=1&rronly=1&nolocator=1&senderCallsign='+callsign;
+
+			var psk = req.Get(url);
+			if (psk.search(/The storm clouds are gathering/) >= 0) {
+				srv.o(target,'warning: pskreporter error');
+			}
+			else if (psk.search(/Your IP has made too many requests for the same data too often/) >= 0) {
+				srv.o(target,'warning: pskreporter throttled');
+			}
+			else {
+				psk = psk.replace(/^doNothing\(/,'');
+				psk = psk.replace(/^\);$/m, '');
+				json = JSON.parse(psk);
+				psspots = [];
+				for (i in json.receptionReport) {
+					var rpt = json.receptionReport[i]
+					var from = new Maidenhead(rpt.senderLocator);
+					var to = new Maidenhead(rpt.receiverLocator);
+					var dist = parseInt((from.distance(to)/1000),10);
+					psspots.push({rx:rpt.receiverCallsign, tx:rpt.senderCallsign, freq:rpt.frequency, mode:rpt.mode + " dist: " + dist + "km", time:new Date(rpt.flowStartSeconds*1000), dist:dist});
+				}
+				pskreporter_cache[callsign.toUpperCase()] = {spots:[], time:new Date()};
+				tmp = pskreporter_cache[callsign.toUpperCase()];
+				if (psspots.length > 0) {
+					psspots.sort(function(a,b) {if (a.time.valueOf() == b.time.valueOf()) { return a.dist-b.dist; } return a.time.valueOf()-b.time.valueOf()});
+					tmp.spots.push(psspots[psspots.length - 1]);
+					psspots.sort(function(a,b) {return a.dist-b.dist;});
+					if (psspots[psspots.length - 1].dist > tmp.spots[tmp.spots.length - 1].dist)
+						tmp.spots.push(psspots[psspots.length - 1]);
+				}
+			}
+		}
+		if (pskreporter_cache[callsign.toUpperCase()] !== undefined) {
+			spots.push.apply(spots, pskreporter_cache[callsign.toUpperCase()].spots);
 		}
 	}
 	catch(e) {
 		srv.o(target,"PSK reporter threw: "+e);
 	}
-}
 
 	try {
 		url = 'https://www.dxwatch.com/dxsd1/s.php?s=0&r=50&cdx='+callsign;
@@ -933,6 +964,7 @@ if (false) {	// Disabled because it's too many spots...
 		srv.o(target,"dxwatch threw: "+e);
 	}
 
+if (false) {
 	try {
 		url = 'http://www.reversebeacon.net/dxsd1/sk.php?s=0&r=15&cdx='+callsign;
 		json = JSON.parse(req.Get(url));
@@ -962,8 +994,9 @@ if (false) {	// Disabled because it's too many spots...
 	catch(e) {
 		srv.o(target,"reversebeacon threw: "+e);
 	}
+}
 
-	spots.sort(function (a, b) { return a.time - b.time });
+	spots.sort(function (a, b) { return a.time.valueOf() - b.time.valueOf() });
 	spots = spots.slice(-5);
 	for (i in spots) {
 		srv.o(target, format("%-8.8s %-8.8s % 7.3f %-30.30s %02d%02dz %02d %s", spots[i].rx, spots[i].tx, parseInt(spots[i].freq/1000, 10)/1000, spots[i].mode, spots[i].time.getUTCHours(), spots[i].time.getUTCMinutes(), spots[i].time.getUTCDate(), mname[spots[i].time.getUTCMonth()]));
