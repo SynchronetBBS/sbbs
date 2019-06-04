@@ -290,9 +290,3 @@ Maidenhead.prototype.vinverse = function(to)
 
 	return ret;
 };
-
-var here = new Maidenhead('EN72gw');
-print(here.distance(new Maidenhead('DM13dp')));
-print(here.vdistance(new Maidenhead('DM13dp')));
-print(here.bearing(new Maidenhead('DM13dp')));
-print(here.bearing(new Maidenhead('DM13dp')));
