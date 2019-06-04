@@ -13,11 +13,32 @@
 require("smbdefs.js", 'MSG_ANONYMOUS');
 require("userdefs.js", 'USER_ANSI');
 
+function draw_default_avatar(sub)
+{
+	var options = bbs.mods.avatars_options;
+	if(!options) {
+		options = load({}, "modopts.js", "avatars");
+		if(!options)
+			options = { cached: true };
+		bbs.mods.avatars_options = options;	// cache the options
+	}
+	var avatar = options[sub + "_default"];
+	if(!avatar)
+		avatar = options[msg_area.sub[sub].grp_name.toLowerCase() + "_default"];
+	if(!avatar)
+		avatar = options.sub_default;
+	if(avatar)
+		Avatar.draw_bin(avatar, /* above: */true, /* right-justified: */true, bbs.msghdr_top_of_screen);
+}
+
 // Avatar support here:
 if(!(bbs.msg_attr&MSG_ANONYMOUS) 
 	&& (console.term_supports()&(USER_ANSI|USER_NO_EXASCII)) == USER_ANSI) {
 	var Avatar = load({}, 'avatar_lib.js');
-	Avatar.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true
+	var success = Avatar.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true
 		,bbs.msghdr_top_of_screen);
+	if(!success) {
+		draw_default_avatar(bbs.smb_sub_code);
+	}
 	console.attributes = 7;	// Clear the background attribute as the next line might scroll, filling with BG attribute
 }
