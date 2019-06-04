@@ -26,7 +26,7 @@ function draw_default_avatar(sub)
 	if(!avatar)
 		avatar = options[msg_area.sub[sub].grp_name.toLowerCase() + "_default"];
 	if(!avatar)
-		avatar = options.sub_default;
+		avatar = options.msg_default;
 	if(avatar)
 		Avatar.draw_bin(avatar, /* above: */true, /* right-justified: */true, bbs.msghdr_top_of_screen);
 }

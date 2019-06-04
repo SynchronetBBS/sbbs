@@ -598,7 +598,8 @@ function main()
 			case "normalize":
 			case "count":
 			case "colls":
-			case "sub_default":
+			case "msg-default":
+			case "msg_default":
 				cmds.push(arg);
 				break;
 			default:
@@ -773,7 +774,8 @@ function main()
 				printf("%s\r\n", success ? "Successful" : "FAILED!");
 				ini.close();
 				break;
-			case "sub_default":
+			case "msg-default":
+			case "msg_default":
 				if(!files.length)
 					files.push(optval[cmd]);
 				if(!files.length) {
@@ -795,7 +797,7 @@ function main()
 					alert(ini.name + " open error " + ini.error);
 					break;
 				}
-				var success = ini.iniSetValue("avatars", "sub_default", data);
+				var success = ini.iniSetValue("avatars", "msg_default", data);
 				printf("%s\r\n", success ? "Successful" : "FAILED!");
 				ini.close();
 				break;
