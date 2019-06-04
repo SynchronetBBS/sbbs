@@ -966,7 +966,7 @@ if (false) {	// Disabled because it's too many spots...
 	spots.sort(function (a, b) { return a.time - b.time });
 	spots = spots.slice(-5);
 	for (i in spots) {
-		srv.o(target, format("%-8.8s %-8.8s % 10.3f %-10.10s %02d%02dz %02d %s", spots[i].rx, spots[i].tx, parseInt(spots[i].freq/1000, 10)/1000, spots[i].mode, spots[i].time.getUTCHours(), spots[i].time.getUTCMinutes(), spots[i].time.getUTCDate(), mname[spots[i].time.getUTCMonth()]));
+		srv.o(target, format("%-8.8s %-8.8s % 7.3f %-30.30s %02d%02dz %02d %s", spots[i].rx, spots[i].tx, parseInt(spots[i].freq/1000, 10)/1000, spots[i].mode, spots[i].time.getUTCHours(), spots[i].time.getUTCMinutes(), spots[i].time.getUTCDate(), mname[spots[i].time.getUTCMonth()]));
 	}
 	if (spots.length <= 0) {
 		srv.o(target,callsign + ' never spotted');
