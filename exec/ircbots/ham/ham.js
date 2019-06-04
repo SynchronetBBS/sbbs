@@ -849,6 +849,132 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 	}
 }
 
+Bot_Commands["SPOTS"] = new Bot_Command(0,false,false);
+Bot_Commands["SPOTS"].usage = get_cmd_prefix() + "SPOTS <call>";
+Bot_Commands["SPOTS"].help = "Displays spots the specified call if available";
+Bot_Commands["SPOTS"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	var callsign;
+	var i;
+	var spots = [];
+	var req = new HTTPRequest();
+	var url;
+	var m;
+	var json;
+	var tmp;
+	var months = {'Jan':0, 'Feb':1, 'Mar':2, 'Apr':3, 'May':4, 'Jun':5, 'Jul':6, 'Aug':7, 'Sep':8, 'Oct':9, 'Nov':10, 'Dec':11};
+	var modes = {1:'CW', 2:'Phone', 10:'PSK31', 11:'RTTY', 12:'BPSK', 13:'GMSK', 14:'FSK', 15:'SSTV', 16:'MFSK', 17:'QPSK', 21:'JT65', 22:'Hell', 23:'DominoEX', 24:'MT63', 25:'RTTYM', 26:'THOR', 27:'THROB', 28:'Olivia', 29:'Contestia', 30:'PSK63', 31:'PSK125', 32:'JT9', 33:'Opera', 34:'FT8'};
+	var mname = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+	// Remove empty cmd args
+	for(i=1; i<cmd.length; i++) {
+		if(cmd[i].search(/^\s*$/)==0) {
+			cmd.splice(i,1);
+			i--;
+		}
+	}
+
+	if(cmd.length==2)
+		callsign=cmd[1].toUpperCase();
+	else {
+		return true;
+	}
+
+if (false) {	// Disabled because it's too many spots...
+	try {
+		url = 'https://pskreporter.info/cgi-bin/pskquery5.pl?encap=0&callback=doNothing&statistics=0&noactive=1&rronly=1&nolocator=1&senderCallsign='+callsign;
+
+		var psk = req.Get(url);
+		if (psk.search(/The storm clouds are gathering/) >= 0) {
+			srv.o(target,'warning: pskreporter error');
+		}
+		else if (psk.search(/Your IP has made too many requests for the same data too often/) >= 0) {
+			srv.o(target,'warning: pskreporter throttled');
+		}
+		else {
+			psk = psk.replace(/^doNothing\(/,'');
+			psk = psk.replace(/^\);$/m, '');
+			json = JSON.parse(psk);
+			for (i in json.receptionReport) {
+				var rpt = json.receptionReport[i]
+				spots.push({rx:rpt.receiverCallsign, tx:rpt.senderCallsign, freq:rpt.frequency, mode:rpt.mode, time:new Date(rpt.flowStartSeconds*1000)});
+			}
+		}
+	}
+	catch(e) {
+		srv.o(target,"PSK reporter threw: "+e);
+	}
+}
+
+	try {
+		url = 'https://www.dxwatch.com/dxsd1/s.php?s=0&r=50&cdx='+callsign;
+		json = JSON.parse(req.Get(url));
+		if (json.s !== undefined) {
+			for (i in json.s) {
+				rpt = json.s[i];
+				tmp = new Date();
+				m = rpt[4].match(/^([0-9]{2,2})([0-9]{2,2})z ([0-9]{0,2}) ([^\s]*)$/);
+				if (m == null) {
+					srv.o(target,"bad dxwatch date: "+rpt[4]);
+				}
+				else {
+					if (months[m[4]] === undefined) {
+						srv.o(target,"bad dxwatch month: "+m[4]);
+					}
+					tmp.setUTCMonth(months[m[4]], parseInt(m[3], 10));
+					tmp.setUTCHours(parseInt(m[1], 10), parseInt(m[2], 10));
+					if (tmp > new Date())
+						tmp.setUTCFullYear(tmp.getUTCFullYear()-1);
+				}
+				spots.push({rx:rpt[0], tx:rpt[2], freq:parseFloat(rpt[1])*1000, mode:rpt[3], time:tmp});
+			}
+		}
+	}
+	catch(e) {
+		srv.o(target,"dxwatch threw: "+e);
+	}
+
+	try {
+		url = 'http://www.reversebeacon.net/dxsd1/sk.php?s=0&r=15&cdx='+callsign;
+		json = JSON.parse(req.Get(url));
+		if (json.s !== undefined) {
+			for (i in json.s) {
+				rpt = json.s[i];
+				tmp = new Date();
+				m = rpt[5].match(/^([0-9]{2,2})([0-9]{2,2})z ([0-9]{0,2}) ([^\s]*)$/);
+				if (m == null) {
+					srv.o(target,"bad reversebeacon date: "+rpt[5]);
+				}
+				else {
+					if (months[m[4]] === undefined) {
+						srv.o(target,"bad reversebeacon month: "+m[4]);
+					}
+					tmp.setUTCMonth(months[m[4]], parseInt(m[3], 10));
+					tmp.setUTCHours(parseInt(m[1], 10), parseInt(m[2], 10));
+					if (tmp > new Date())
+						tmp.setUTCFullYear(tmp.getUTCFullYear()-1);
+				}
+				if (modes[parseInt(rpt[3], 10)] !== undefined)
+					rpt[3] = modes[parseInt(rpt[3], 10)];
+				spots.push({rx:rpt[0], tx:rpt[2], freq:parseFloat(rpt[1])*1000, mode:rpt[3], time:tmp});
+			}
+		}
+	}
+	catch(e) {
+		srv.o(target,"reversebeacon threw: "+e);
+	}
+
+	spots.sort(function (a, b) { return a.time - b.time });
+	spots = spots.slice(-5);
+	for (i in spots) {
+		srv.o(target, format("%-8.8s %-8.8s % 10.3f %-10.10s %02d%02dz %02d %s", spots[i].rx, spots[i].tx, parseInt(spots[i].freq/1000, 10)/1000, spots[i].mode, spots[i].time.getUTCHours(), spots[i].time.getUTCMinutes(), spots[i].time.getUTCDate(), mname[spots[i].time.getUTCMonth()]));
+	}
+	if (spots.length <= 0) {
+		srv.o(target,callsign + ' never spotted');
+	}
+
+	return true;
+}
+
 //var dumb={o:function(x,y) {log(y);}};
 //Bot_Commands["GEO"].command(undefined, undefined, undefined,dumb,undefined,['GEO']);
 //Bot_Commands["HF"].command(undefined, undefined, undefined,dumb,undefined,['GEO']);
@@ -857,3 +983,4 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','kj6pxy']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','va6rrx']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','g1xkz']);
+//Bot_Commands["SPOTS"].command(undefined, undefined, undefined,dumb,undefined,['asdf','w8bsd']);
