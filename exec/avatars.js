@@ -598,6 +598,7 @@ function main()
 			case "normalize":
 			case "count":
 			case "colls":
+			case "sub_default":
 				cmds.push(arg);
 				break;
 			default:
@@ -769,6 +770,32 @@ function main()
 				var success = ini.iniSetValue("newuser", "avatar", data);
 				if(success)
 					ini.iniRemoveKey("newuser", "avatar_file");
+				printf("%s\r\n", success ? "Successful" : "FAILED!");
+				ini.close();
+				break;
+			case "sub_default":
+				if(!files.length)
+					files.push(optval[cmd]);
+				if(!files.length) {
+					alert("No file specified");
+					break;
+				}
+				if(!file_exists(files[0])) {
+					printf("File does not exist: %s\r\n", files[0]);
+					break;
+				}
+				printf("Importing %s sub-board default avatar\r\n", files[0]);
+				var data = lib.import_file(null, files[0], offset);
+				if(!data) {
+					alert("Failed");
+					break;
+				}
+				var ini = new File(file_cfgname(system.ctrl_dir, "modopts.ini"));
+				if(!ini.open(file_exists(ini.name) ? 'r+':'w+')) {
+					alert(ini.name + " open error " + ini.error);
+					break;
+				}
+				var success = ini.iniSetValue("avatars", "sub_default", data);
 				printf("%s\r\n", success ? "Successful" : "FAILED!");
 				ini.close();
 				break;
