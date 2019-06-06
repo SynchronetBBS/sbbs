@@ -84,6 +84,9 @@ else
  endif
 endif
 export LD_RUN_PATH
+ifeq ($(CCPRE),clang)
+ LDFLAGS += -rpath $(LD_RUN_PATH)
+endif
 
 CON_LIBS	+= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
 SHLIBOPTS	:=	-shared
