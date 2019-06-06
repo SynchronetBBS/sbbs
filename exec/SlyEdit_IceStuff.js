@@ -364,6 +364,8 @@ function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
 	// Display the help text on the screen
 	console.gotoxy(1, lineNum);
 	console.print(DisplayBottomHelpLine_IceStyle.helpText);
+	console.print("\1n");
+	console.cleartoeol();
 }
 
 // Updates the insert mode displayd on the screen, for Ice Edit style.

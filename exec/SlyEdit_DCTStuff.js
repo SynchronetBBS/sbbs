@@ -313,51 +313,54 @@ function DisplayTextAreaBottomBorder_DCTStyle(pLineNum, pUseQuotes, pEditLeft, p
 //  pUsingQuotes: Boolean - Whether or not message quoting is enabled.
 function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes)
 {
-   // For efficiency, define the help line variable only once.
-   if (typeof(DisplayBottomHelpLine_DCTStyle.helpText) == "undefined")
-   {
-      DisplayBottomHelpLine_DCTStyle.helpText = gConfigSettings.DCTColors.BottomHelpBrackets +
-                     "[" + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL" +
-                     gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR +
-                     gConfigSettings.DCTColors.BottomHelpKeys + "Z" +
-                     gConfigSettings.DCTColors.BottomHelpBrackets + "]n " +
-                     gConfigSettings.DCTColors.BottomHelpKeyDesc + "Saven      " +
-                     gConfigSettings.DCTColors.BottomHelpBrackets + "[" +
-                     gConfigSettings.DCTColors.BottomHelpKeys + "CTRL" +
-                     gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR +
-                     gConfigSettings.DCTColors.BottomHelpKeys + "A" +
-                     gConfigSettings.DCTColors.BottomHelpBrackets + "]n " +
-                     gConfigSettings.DCTColors.BottomHelpKeyDesc + "Abort";
-      // If we can allow message quoting, then add a text to show Ctrl-Q for
-      // quoting.
-      if (pUsingQuotes)
-         DisplayBottomHelpLine_DCTStyle.helpText += "n      " +
-                          gConfigSettings.DCTColors.BottomHelpBrackets + "[" +
-                          gConfigSettings.DCTColors.BottomHelpKeys + "CTRL" +
-                          gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR +
-                          gConfigSettings.DCTColors.BottomHelpKeys + "Q" +
-                          gConfigSettings.DCTColors.BottomHelpBrackets + "]n " +
-                          gConfigSettings.DCTColors.BottomHelpKeyDesc + "Quote";
-      DisplayBottomHelpLine_DCTStyle.helpText += "n      " +
-                     gConfigSettings.DCTColors.BottomHelpBrackets + "[" +
-                     gConfigSettings.DCTColors.BottomHelpKeys + "ESC" +
-                     gConfigSettings.DCTColors.BottomHelpBrackets + "]n " +
-                     gConfigSettings.DCTColors.BottomHelpKeyDesc + "Menu";
-      // Center the text by padding it in the front with spaces.  This is done instead
-      // of using console.center() because console.center() will output a newline,
-      // which would not be good on the last line of the screen.
-      var numSpaces = (console.screen_columns/2).toFixed(0)
-                     - (strip_ctrl(DisplayBottomHelpLine_DCTStyle.helpText).length/2).toFixed(0);
-      for (var i = 0; i < numSpaces; ++i)
-         DisplayBottomHelpLine_DCTStyle.helpText = " " + DisplayBottomHelpLine_DCTStyle.helpText;
-   }
+	// For efficiency, define the help line variable only once.
+	if (typeof(DisplayBottomHelpLine_DCTStyle.helpText) == "undefined")
+	{
+		DisplayBottomHelpLine_DCTStyle.helpText = gConfigSettings.DCTColors.BottomHelpBrackets
+		                                        + "[" + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
+		                                        + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
+		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "Z"
+		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\1n "
+		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Save\1n      "
+		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "["
+		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
+		                                        + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
+		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "A"
+		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\1n "
+		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Abort";
+		// If we can allow message quoting, then add a text to show Ctrl-Q for
+		// quoting.
+		if (pUsingQuotes)
+		{
+			DisplayBottomHelpLine_DCTStyle.helpText += "\1n      "
+			                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "["
+			                                        + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
+			                                        + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
+			                                        + gConfigSettings.DCTColors.BottomHelpKeys + "Q"
+			                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\1n "
+			                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Quote";
+		}
+		DisplayBottomHelpLine_DCTStyle.helpText += "\1n      "
+		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "["
+		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "ESC"
+		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\1n "
+		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Menu";
+		// Center the text by padding it in the front with spaces.  This is done instead
+		// of using console.center() because console.center() will output a newline,
+		// which would not be good on the last line of the screen.
+		var numSpaces = (console.screen_columns/2).toFixed(0) - (strip_ctrl(DisplayBottomHelpLine_DCTStyle.helpText).length/2).toFixed(0);
+		for (var i = 0; i < numSpaces; ++i)
+			DisplayBottomHelpLine_DCTStyle.helpText = " " + DisplayBottomHelpLine_DCTStyle.helpText;
+	}
 
-   // Display the help line on the screen
-   var lineNum = console.screen_rows;
+	// Display the help line on the screen
+	var lineNum = console.screen_rows;
 	if ((typeof(pLineNum) != "undefined") && (pLineNum != null))
 		lineNum = pLineNum;
-   console.gotoxy(1, lineNum);
+	console.gotoxy(1, lineNum);
 	console.print(DisplayBottomHelpLine_DCTStyle.helpText);
+	console.print("\1n");
+	console.cleartoeol();
 }
 
 // Updates the insert mode displayd on the screen, for DCT Edit style.

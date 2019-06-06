@@ -158,8 +158,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.66";
-const EDITOR_VER_DATE = "2019-05-29";
+const EDITOR_VERSION = "1.66.1";
+const EDITOR_VER_DATE = "2019-06-05";
 
 
 // Program variables
