@@ -41,7 +41,7 @@
 	</div>
 </div>
 
-<script>document.write('<script src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"><\/script>');</script>
+<?xjs write('<script id="fTelnetScript" src="//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime() + '"></script>'); ?>
 <script type="text/javascript">
     var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
     var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
