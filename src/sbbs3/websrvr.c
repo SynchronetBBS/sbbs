@@ -2549,7 +2549,7 @@ static BOOL parse_headers(http_session_t * session)
 								session->req.auth.algorithm=ALGORITHM_MD5;
 								session->req.auth.type=AUTHENTICATION_DIGEST;
 								/* Parse out values one at a time and store */
-								while(*p) {
+								while(p != NULL && *p) {
 									while(isspace(*p))
 										p++;
 									if(strnicmp(p,"username=",9)==0) {
