@@ -37,7 +37,7 @@ if(!(bbs.msg_attr&MSG_ANONYMOUS)
 	var Avatar = load({}, 'avatar_lib.js');
 	var success = Avatar.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true
 		,bbs.msghdr_top_of_screen);
-	if(!success) {
+	if(!success && bbs.smb_sub_code) {
 		draw_default_avatar(bbs.smb_sub_code);
 	}
 	console.attributes = 7;	// Clear the background attribute as the next line might scroll, filling with BG attribute
