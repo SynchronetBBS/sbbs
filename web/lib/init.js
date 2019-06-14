@@ -68,3 +68,9 @@ Object.keys(defaults).forEach(function (e) {
 });
 
 load(settings.web_lib + 'locale.js');
+
+if (typeof alert === 'undefined') {
+    function alert(msg) {
+        log(LOG_ERR, msg);
+    }
+}
