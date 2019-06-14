@@ -413,7 +413,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 		throw("No address specified!");
 	addr = FIDO.parse_addr(addr, this.default_zone, this.default_domain);
 
-	if (password === undefined)
+	if (!password)
 		password = '-';
 	if (password === '-')
 		this.require_md5 = false;

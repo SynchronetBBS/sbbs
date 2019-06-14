@@ -316,7 +316,7 @@ function callout_auth_cb(mode, bp)
 	 */
 	var addrs = [];
 
-	if (bp.cb_data.binkitpw === undefined || bp.cb_data.binkitpw === '-')
+	if (!bp.cb_data.binkitpw || bp.cb_data.binkitpw === '-')
 		addrs.push(bp.cb_data.binkit_to_addr);
 	else {
 		bp.remote_addrs.forEach(function(addr) {
@@ -982,7 +982,7 @@ function inbound_auth_cb(pwd, bp)
 		if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
 			log(LOG_INFO, "Inbound session for: " + addr);
 			cpw = bp.cb_data.binkitcfg.node[addr].pass;
-			if (cpw === undefined)
+			if (!cpw)
 				cpw = '-';
 			if (pwd[0].substr(0, 9) === 'CRAM-MD5-') {
 				if (mystic_broken_cram(bp))
