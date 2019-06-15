@@ -73,7 +73,8 @@ show_msghdr();
 
 // Avatar support here:
 if(!(bbs.msg_attr&MSG_ANONYMOUS) && console.term_supports(USER_ANSI)) {
-	var Avatar = load({}, 'avatar_lib.js');
-	Avatar.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true);
+	if(!bbs.mods.avatar_lib)
+		bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
+	bbs.mods.avatar_lib.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true);
 	console.attributes = 7;	// Clear the background attribute as the next line might scroll, filling with BG attribute
 }
