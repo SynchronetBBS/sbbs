@@ -8,8 +8,10 @@ require("sbbsdefs.js", 'USER_EXPERT');
 require("nodedefs.js", 'NODE_CHAT');
 require("text.js", 'R_Chat');
 
-// Over-ride these default values by creating/modifying the [chat_sec] section in your ctrl/modopts.ini file
-var options = load("modopts.js", "chat_sec");
+// Over-ride these default values by creating/modifying the [chat] section in your ctrl/modopts.ini file
+var options = load("modopts.js", "chat");
+if (!options)
+	options = load("modopts.js", "chat_sec");
 if (!options)
 	options = {};
 if (options.irc === undefined)
