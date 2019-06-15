@@ -14,11 +14,6 @@ const FTN_4D_PATTERN = /^(\d+):(\d+)\/(\d+)\.(\d+)$/;
 const size = defs.width * defs.height * 2;	// 2 bytes per cell for char and attributes
 
 var cache = {};
-if(js.global.bbs) {
-	if(!bbs.mods.avatar_cache)
-		bbs.mods.avatar_cache = {};
-	cache = bbs.mods.avatar_cache;
-}
 
 function cache_key(username, netaddr)
 {
