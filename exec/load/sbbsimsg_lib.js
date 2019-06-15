@@ -85,16 +85,19 @@ function parse_active_users(message, logon_callback, logoff_callback)
 	if(!message)
 		return false;
 	var sys = sys_list[message.ip_address];
-	if(!sys) {
-		alert("Unknown system: " + message.ip_address);
-		return false;
-	}
+	if(!sys)
+		return "Unknown system: " + message.ip_address;
 	
 	sys.last_response = time();
 	var old_users = sys.users.slice();
 	
-	if(message.data[0] == '[')
-		sys.users = JSON.parse(message.data);
+	if(message.data[0] == '[') {
+		try {
+			sys.users = JSON.parse(message.data);
+		} catch(e) {
+			return e;
+		}
+	}
 	else {
 		var response = message.data.split("\r\n");
 		
@@ -167,8 +170,8 @@ function poll_systems(sent, interval, timeout, callback)
 		replies++;
 
 		var result = parse_active_users(message);
-		if(!result)
-			alert("Failed to parse: " + JSON.stringify(message));
+		if(result !== true)
+			return format("%s: %s", result, JSON.stringify(message));
 	}
 	return replies;
 }
