@@ -42,27 +42,29 @@ var last_user=0;
 lib.read_sys_list();
 
 // Parse arguments
-for(i=0; i<argc; i++) {
-	if(argv[i].toLowerCase()=="-l") {
-		console.clear();
-		writeln("Inter-BBS Active Users:");
-		var timeout = 2500;
-		var sent = lib.request_active_users();
-		if(parseInt(argv[i+1]))
-			timeout = parseInt(argv[i+1]);
-		function poll_callback(loop)
-		{
-			printf("%c\1[", "/-\\|"[loop%4]);
-			if(console.inkey(0))
-				return true;
+if(this.argc) {
+	for(i=0; i<argc; i++) {
+		if(argv[i].toLowerCase()=="-l") {
+			console.clear();
+			writeln("Inter-BBS Active Users:");
+			var timeout = 2500;
+			var sent = lib.request_active_users();
+			if(parseInt(argv[i+1]))
+				timeout = parseInt(argv[i+1]);
+			function poll_callback(loop)
+			{
+				printf("%c\1[", "/-\\|"[loop%4]);
+				if(console.inkey(0))
+					return true;
+			}
+			lib.poll_systems(sent, 0.25, timeout, poll_callback);
+			list_users();
+			exit();
 		}
-		lib.poll_systems(sent, 0.25, timeout, poll_callback);
-		list_users();
-		exit();
-	}
-	if(argv[i].toLowerCase()=="-d") {
-		print(lfexpand(JSON.stringify(lib.sys_list, null, 4)));
-		exit();
+		if(argv[i].toLowerCase()=="-d") {
+			print(lfexpand(JSON.stringify(lib.sys_list, null, 4)));
+			exit();
+		}
 	}
 }
 
@@ -194,6 +196,7 @@ while(bbs.online) {
 	var key;
 	var last_request = 0;
 	var request_interval = 60;	// seconds
+	var valid_keys = "QLTM\rD";
 	while(bbs.online && !console.aborted) {
 		if(time() - last_request >= request_interval) {
 			lib.request_active_users();
@@ -204,8 +207,8 @@ while(bbs.online) {
 			var message = lib.receive_active_users();
 			if(message) {
 				var result = lib.parse_active_users(message, logon_callback, logoff_callback);
-				if(!result)
-					log(LOG_WARNING, "Failure to parse: "+ JSON.stringify(message));
+				if(result !== true)
+					log(LOG_WARNING, format("%s: %s", result, JSON.stringify(message)));
 			}
 		}
 		bbs.nodesync(true);
@@ -213,10 +216,14 @@ while(bbs.online) {
 			continue prompt;
 		}
 		key=console.inkey(K_UPPER, 500);
-		if(key=='Q' || key=='L' || key=='T' || key=='M' || key=='\r')
+		if(key && valid_keys.indexOf(key) >= 0)
 			break;
 	}
 	switch(key) {
+		case 'D':
+			for(var i in lib.sys_list)
+				print(i + ' = ' + JSON.stringify(lib.sys_list[i]));
+			break;
 		case 'L':
 			print("\1h\1cList\r\n");
 			list_users();
