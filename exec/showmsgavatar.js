@@ -28,14 +28,15 @@ function draw_default_avatar(sub)
 	if(!avatar)
 		avatar = options.msg_default;
 	if(avatar)
-		Avatar.draw_bin(avatar, /* above: */true, /* right-justified: */true, bbs.msghdr_top_of_screen);
+		bbs.mods.avatar_lib.draw_bin(avatar, /* above: */true, /* right-justified: */true, bbs.msghdr_top_of_screen);
 }
 
 // Avatar support here:
 if(!(bbs.msg_attr&MSG_ANONYMOUS) 
 	&& (console.term_supports()&(USER_ANSI|USER_NO_EXASCII)) == USER_ANSI) {
-	var Avatar = load({}, 'avatar_lib.js');
-	var success = Avatar.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true
+	if(!bbs.mods.avatar_lib)
+		bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
+	var success = bbs.mods.avatar_lib.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true
 		,bbs.msghdr_top_of_screen);
 	if(!success && bbs.smb_sub_code) {
 		draw_default_avatar(bbs.smb_sub_code);
