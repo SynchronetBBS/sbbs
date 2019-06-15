@@ -22,6 +22,8 @@ if (options.irc_seclevel === undefined)
 	options.irc_seclevel = 90;
 if (options.finger === undefined)
 	options.finger = true;
+if (options.imsg === undefined)
+	options.imsg = true;
 
 if(user.security.restrictions & UFLAG_C) {
     write(bbs.text(R_Chat));
@@ -48,9 +50,11 @@ while(1) {
 	bbs.nodesync();
 	write("\r\n\x01_\x01y\x01hChat: \x01n");
 
-	var keys = "ACDJPQRST?\r";
-	if(options.irc)
+	var keys = "ACDJPQST?\r";
+	if(options.imsg)
 		keys += "I";
+	if(options.irc)
+		keys += "R";
 	if(options.finger)
 		keys += "F";
 	switch(console.getkeys(keys, K_UPPER)) {
@@ -77,7 +81,7 @@ while(1) {
 			break;
 		case 'I':
 			writeln("");
-			load("sbbsimsg.js");
+			load({}, "sbbsimsg.js");
 			break;
 		case 'R':
 		{
