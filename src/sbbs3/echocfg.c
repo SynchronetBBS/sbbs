@@ -94,7 +94,7 @@ void global_settings(void)
 			sprintf(opt[i++], "%-25s %s", "BinkP Capabilities", cfg.binkp_caps);
 			sprintf(opt[i++], "%-25s %s", "BinkP Sysop Name", cfg.binkp_sysop);
 			sprintf(opt[i++], "%-25s %s", "BinkP Authentication", cfg.binkp_plainAuthOnly ? "Plain Only" : "Plain or CRAM-MD5");
-			sprintf(opt[i++], "%-25s %s", "BinkP Encryption", cfg.binkp_cryptSupport && !cfg.binkp_plainAuthOnly ? "Supported" : "Unsupported");
+			sprintf(opt[i++], "%-25s %s", "BinkP Encryption", !cfg.binkp_plainTextOnly && !cfg.binkp_plainAuthOnly ? "Supported" : "Unsupported");
 		}
 		opt[i][0] = 0;
 		uifc.helpbuf=
@@ -294,14 +294,14 @@ void global_settings(void)
 					uifc.msg("CRAM-MD5 authentication/encryption has been disabled globally");
 					break;
 				}
-				int k = !cfg.binkp_cryptSupport;
+				int k = cfg.binkp_plainTextOnly;
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"BinkP Encryption Supported",uifcYesNoOpts)) {
 					case 0:
-						cfg.binkp_cryptSupport = true;
+						cfg.binkp_plainTextOnly = false;
 						break;
 					case 1:
-						cfg.binkp_cryptSupport = false;
+						cfg.binkp_plainTextOnly = true;
 						break;
 				}
 				break;
@@ -399,7 +399,7 @@ void binkp_settings(nodecfg_t* node)
 		char* auth = "Plain Only";
 		char* crypt = "Unsupported";
 		if(!cfg.binkp_plainAuthOnly && !node->binkp_plainAuthOnly) {
-			if(cfg.binkp_cryptSupport)
+			if(!cfg.binkp_plainTextOnly)
 				crypt = node->binkp_allowPlainText ? "Supported" : "Required";
 			if(node->binkp_allowPlainAuth) 
 				auth = "Plain or CRAM-MD5";
@@ -499,7 +499,7 @@ void binkp_settings(nodecfg_t* node)
 				}
 				break;
 			case 4:
-				if(!cfg.binkp_cryptSupport) {
+				if(cfg.binkp_plainTextOnly) {
 					uifc.msg("BinkP encryption has been disabled globally");
 					break;
 				}

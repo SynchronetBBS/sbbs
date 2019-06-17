@@ -367,7 +367,7 @@ function BinkITCfg()
 		this.caps = f.iniGetValue('BinkP', 'Capabilities');
 		this.sysop = f.iniGetValue('BinkP', 'Sysop', system.operator);
 		this.plain_auth_only = f.iniGetValue('BinkP', 'PlainAuthOnly', false);
-		this.crypt_support = f.iniGetValue('BinkP', 'CryptSupport', true);
+		this.crypt_support = !f.iniGetValue('BinkP', 'PlainTextOnly', false);
 		sects = f.iniGetSections('node:');
 		sects.forEach(function(section) {
 			var addr = section.substr(5);
