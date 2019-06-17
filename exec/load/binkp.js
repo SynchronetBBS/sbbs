@@ -15,6 +15,7 @@ require('fido.js', 'FIDO');
  * debug		   - If set, logs all sent/received frames via log(LOG_DEBUG)
  * require_md5	   - Require that the remote support CRAM-MD5 authentication
  * plain_auth_only - Use plain-text authentication always (no CRAM-MD5 auth, no encryption)
+ * crypt_support   - Encryption supported
  * timeout		   - Max timeout
  * addr_list       - list of addresses handled by this system.  Defaults to system.fido_addr_list
  * system_name	   - BBS name to send to remote defaults to system.name
@@ -79,6 +80,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.ver1_1 = false;
 	this.require_md5 = true;
 	this.plain_auth_only = false;
+	this.crypt_support = true;
 	// IREX VER Internet Rex 2.29 Win32 (binkp/1.1) doesn't work with longer challenges
 	// TODO: Remove this knob
 	this.cram_challenge_length = 16;
@@ -437,7 +439,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	log(LOG_DEBUG, "Connection to "+inet_host+":"+port+" successful");
 
 	this.authenticated = undefined;
-	if (!this.plain_auth_only && password !== '-')
+	if (this.crypt_support && !this.plain_auth_only && password !== '-')
 		this.sendCmd(this.command.M_NUL, "OPT CRYPT");
 	else {
 		/*
@@ -572,9 +574,9 @@ BinkP.prototype.accept = function(sock, auth_cb)
 
 	this.cram = {algo:'MD5', challenge:challenge.replace(/[0-9a-fA-F]{2}/g, hex2ascii)};
 	this.authenticated = undefined;
-	if(this.plain_auth_only)
+	if(!this.crypt_support || this.plain_auth_only)
 		this.wont_crypt = true;
-	else
+	if(!this.plain_auth_only)
 		this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge+(this.wont_crypt?"":" CRYPT"));
 	pkt = this.recvFrame(this.timeout);
 	if (pkt === undefined || pkt === null)

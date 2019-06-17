@@ -222,6 +222,7 @@ typedef struct {
 	char		binkp_caps[64];
 	char		binkp_sysop[64];
 	bool		binkp_plainAuthOnly;
+	bool		binkp_cryptSupport;
 } sbbsecho_cfg_t;
 
 char* pktTypeStringList[PKT_TYPES_SUPPORTED+1];

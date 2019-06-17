@@ -605,6 +605,7 @@ function callout(addr, scfg, locks, bicfg)
 		bicfg = new BinkITCfg();
 	bp.system_operator = bicfg.sysop;
 	bp.plain_auth_only = bicfg.plain_auth_only;
+	bp.crypt_support = bicfg.crypt_support;
 	bp.cb_data = {
 		binkitcfg:bicfg,
 		binkit_to_addr:addr,
@@ -622,7 +623,7 @@ function callout(addr, scfg, locks, bicfg)
 			bp.require_crypt = false;
 		} else {
 			bp.require_md5 = !(bp.cb_data.binkitcfg.node[addr].nomd5);
-			bp.require_crypt = !(bp.cb_data.binkitcfg.node[addr].nocrypt);
+			bp.require_crypt = bp.crypt_support && !(bp.cb_data.binkitcfg.node[addr].nocrypt);
 			bp.plain_auth_only = bp.cb_data.binkitcfg.node[addr].plain_auth_only;
 		}
 	}
@@ -1058,7 +1059,7 @@ function inbound_auth_cb(pwd, bp)
 		if (nocrypt === undefined)
 			nocrypt = false;
 	}
-	bp.require_crypt = !bp.plain_auth_only && !nocrypt;
+	bp.require_crypt = bp.crypt_support && !bp.plain_auth_only && !nocrypt;
 
 	add_outbound_files(addrs, bp);
 	return ret;
@@ -1083,6 +1084,7 @@ function run_inbound(sock)
 	};
 	bp.system_operator = bp.cb_data.binkitcfg.sysop;
 	bp.plain_auth_only = bp.cb_data.binkitcfg.plain_auth_only;
+	bp.crypt_support = bp.cb_data.binkitcfg.crypt_support;
 
 	// TODO: Force debug mode for now...
 	bp.debug = true;
