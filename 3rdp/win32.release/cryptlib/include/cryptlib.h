@@ -1,7 +1,7 @@
 /****************************************************************************
 *																			*
-*								cryptlib Header File						*
-*						Copyright Peter Gutmann 1992-2017					*
+*							  cryptlib Header File							*
+*						Copyright Peter Gutmann 1992-2019					*
 *																			*
 ****************************************************************************/
 
@@ -9,9 +9,9 @@
 
 #define _CRYPTLIB_DEFINED
 
-/* The current cryptlib version: 3.4.4 */
+/* The current cryptlib version: 3.4.5 */
 
-#define CRYPTLIB_VERSION	3440
+#define CRYPTLIB_VERSION	345
 
 /* Fixup for Windows support.  We need to include windows.h for various types
    and prototypes needed for DLLs.  In addition wincrypt.h defines some
@@ -1216,7 +1216,16 @@ typedef enum {
 	CRYPT_SESSINFO_SSH_CHANNEL_ARG2,/* SSH channel argument 2 */
 	CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE,/* SSH channel active */
 	CRYPT_SESSINFO_SSL_OPTIONS,		/* SSL/TLS protocol options */
+	CRYPT_SESSINFO_SSL_SUBPROTOCOL,	/* SSL/TLS additional sub-protocol */
+	CRYPT_SESSINFO_SSL_WSPROTOCOL,	/* SSL/TLS WebSockets sub-protocol */
+	CRYPT_SESSINFO_SSL_EAPCHALLENGE,/* SSL/TLS EAP challenge */
+	CRYPT_SESSINFO_SSL_EAPKEY,		/* SSL/TLS EAP key */
 	CRYPT_SESSINFO_TSP_MSGIMPRINT,	/* TSP message imprint */
+
+	/* Terminal attributes */
+	CRYPT_SESSINFO_SSH_TERMINAL,	/* TERM string sent to remote */
+	CRYPT_SESSINFO_SSH_WIDTH,	/* Terminal width */
+	CRYPT_SESSINFO_SSH_HEIGHT,	/* Terminal height */
 
 	/* Used internally */
 	CRYPT_SESSINFO_LAST, CRYPT_USERINFO_FIRST = 7000,
@@ -1645,9 +1654,18 @@ typedef enum {
 #endif /* _CRYPT_DEFINED */
 	} CRYPT_CERTACTION_TYPE;
 
+/* Session sub-protocol types */
+
+typedef enum {
+	CRYPT_SUBPROTOCOL_NONE,			/* No sub-protocol type */
+	CRYPT_SUBPROTOCOL_WEBSOCKETS,	/* Websockets */
+	CRYPT_SUBPROTOCOL_EAPTTLS,		/* EAP-TTLS */
+	CRYPT_SUBPROTOCOL_LAST			/* Last possible sub-protocol type */
+	} CRYPT_SUBPROTOCOL_TYPE;
+
 /* SSL/TLS protocol options.  CRYPT_SSLOPTION_MINVER_SSLV3 is the same as 
-   CRYPT_SSLOPTION_NONE since this is the baseline, although it's generally
-   never encountered since SSLv3 is disabled */
+   CRYPT_SSLOPTION_NONE since this is the baseline, although it'll never be
+   encountered since SSLv3 is disabled */
 
 #define CRYPT_SSLOPTION_NONE				0x000
 #define CRYPT_SSLOPTION_MINVER_SSLV3		0x000	/* Min.protocol version */
@@ -2319,25 +2337,23 @@ C_RET cryptLogout( C_IN CRYPT_USER user );
 
 /****************************************************************************
 *																			*
-*							User Interface Functions						*
+*								Direct API Functions						*
 *																			*
 ****************************************************************************/
 
-#if ( defined( WIN32 ) || defined( _WIN32 ) || defined( __WIN32__ ) ) && \
-	!( defined( _SCCTK ) || defined( _CVI_ ) )
+#ifdef CONFIG_DIRECT_API
 
-/* User interface functions, only available under Win32 */
+typedef C_CHECK_RETVAL C_NONNULL_ARG( ( 2, 3 ) ) \
+		int ( *CRYPT_DIRECT_FUNCTION )( void *contextPtr, void *buffer, 
+										const int length );
 
-C_CHECK_RETVAL C_NONNULL_ARG( ( 2, 4, 5 ) ) \
-C_RET cryptUIGenerateKey( C_IN CRYPT_DEVICE cryptDevice,
-						  C_OUT CRYPT_CONTEXT C_PTR cryptContext,
-						  C_IN CRYPT_CERTIFICATE cryptCert,
-						  C_OUT char C_PTR password, C_IN HWND hWnd );
-C_NONNULL_ARG( ( 2 ) ) \
-C_RET cryptUIDisplayCert( C_IN CRYPT_CERTIFICATE cryptCert,
-						  C_IN HWND hWnd );
+C_CHECK_RETVAL C_NONNULL_ARG( ( 2, 3 ) ) \
+C_RET cryptGetDirectAPI( C_IN CRYPT_CONTEXT cryptContext, 
+						 C_OUT void C_PTR C_PTR contextPtr,
+						 C_OUT CRYPT_DIRECT_FUNCTION C_PTR encryptFunction,
+						 C_OUT CRYPT_DIRECT_FUNCTION C_PTR decryptFunction );
 
-#endif /* Win32 */
+#endif /* CONFIG_DIRECT_API */
 
 #ifdef __cplusplus
 }
