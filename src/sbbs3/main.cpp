@@ -5694,7 +5694,7 @@ NO_SSH:
 			sbbs->bprintf("Resolving hostname...");
 			getnameinfo(&client_addr.addr, client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 			sbbs->putcom(crlf);
-			lprintf(LOG_INFO,"%04d %s Hostname: %s", client_socket, client.protocol, host_name);
+			lprintf(LOG_INFO,"%04d %s Hostname: %s [%s]", client_socket, client.protocol, host_name, host_ip);
 		}
 
 		if(sbbs->trashcan(host_name,"host")) {

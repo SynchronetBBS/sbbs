@@ -3096,7 +3096,7 @@ static void ctrl_thread(void* arg)
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if(!(startup->options&FTP_OPT_NO_HOST_LOOKUP)) {
 		getnameinfo(&ftp.client_addr.addr, sizeof(ftp.client_addr), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-		lprintf(LOG_INFO,"%04d Hostname: %s", sock, host_name);
+		lprintf(LOG_INFO,"%04d Hostname: %s [%s]", sock, host_name, host_ip);
 	}
 
 	ulong banned = loginBanned(&scfg, startup->login_attempt_list, sock, host_name, startup->login_attempt, &attempted);

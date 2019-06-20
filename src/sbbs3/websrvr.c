@@ -6296,7 +6296,7 @@ void http_session_thread(void* arg)
 	char host_name[128] = "";
 	if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))  {
 		getnameinfo(&session.addr.addr, session.addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-		lprintf(LOG_INFO,"%04d Hostname: %s", session.socket, host_name[0] ? host_name : STR_NO_HOSTNAME);
+		lprintf(LOG_INFO,"%04d Hostname: %s [%s]", session.socket, host_name[0] ? host_name : STR_NO_HOSTNAME, session.host_ip);
 #if	0 /* gethostbyaddr() is apparently not (always) thread-safe
 	     and getnameinfo() doesn't return alias information */
 		for(i=0;host!=NULL && host->h_aliases!=NULL
