@@ -255,7 +255,7 @@ typedef struct  {
 	http_request_t	req;
 	char			host_ip[INET6_ADDRSTRLEN];
 	char			host_name[128];	/* Resolved remote host */
-	int				http_ver;       /* HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
+	int				http_ver;       /* Request HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
 	BOOL			finished;		/* Do not accept any more imput from client */
 	user_t			user;
 	int				last_user_num;
@@ -303,6 +303,12 @@ enum {
 static char* http_vers[] = {
 	 ""
 	,"HTTP/1.0"
+	,"HTTP/1.1"
+	,NULL	/* terminator */
+};
+static char* response_http_vers[] = {
+	 ""
+	,"HTTP/1.1"
 	,"HTTP/1.1"
 	,NULL	/* terminator */
 };
@@ -1279,13 +1285,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		}
 
 		/* Status-Line */
-		/* TODO: This Status-Line appears to violate RFC 2145:
-			"An HTTP server SHOULD send a response version equal to the highest
-   			 version for which the server is at least conditionally compliant, and
-			 whose major version is less than or equal to the one received in the
-   			 request."
-		*/
-		safe_snprintf(header,sizeof(header),"%s %s",http_vers[session->http_ver],status_line);
+		safe_snprintf(header,sizeof(header),"%s %s",response_http_vers[session->http_ver > HTTP_0_9 ? HTTP_1_1 : HTTP_0_9],status_line);
 
 		lprintf(LOG_DEBUG,"%04d Result: %s",session->socket,header);
 
@@ -1337,13 +1337,12 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 			safecat(headers,header,MAX_HEADERS_SIZE);
 		}
 
-		/* DO NOT send a content-length for chunked */
-		/* TODO: Why aren't we sending a Content-Length header for GET responses?
-		 * Per RFC 2068 (HTTP/1.1):
-		 * "it SHOULD be sent whenever the message's length can be determined prior to being transferred"
+		/* DO NOT send a content-length for chunked *
+		 * Per RFC 7230 (HTTP/1.1):
+		 * "A sender MUST NOT send a Content-Length header field in any message that contains a Transfer-Encoding header field.
 		 */
 		if(send_entity) {
-			if((session->req.keep_alive || session->req.method == HTTP_HEAD) && session->req.dynamic!=IS_CGI&& session->req.dynamic!=IS_FASTCGI && (!chunked)) {
+			if(session->req.dynamic!=IS_CGI && session->req.dynamic!=IS_FASTCGI && (!chunked)) {
 				if(ret)  {
 					safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
 					safecat(headers,header,MAX_HEADERS_SIZE);
