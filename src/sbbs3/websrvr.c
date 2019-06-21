@@ -206,6 +206,7 @@ typedef struct  {
 	char		host[128];				/* The requested host. (as used for self-referencing URLs) */
 	char		vhost[128];				/* The requested host. (virtual host) */
 	int			send_location;
+	BOOL			send_content;
 	const char*	mime_type;
 	str_list_t	headers;
 	char		status[MAX_REQUEST_LINE+1];
@@ -560,6 +561,8 @@ static int writebuf(http_session_t	*session, const char *buf, size_t len)
 	size_t	sent=0;
 	size_t	avail;
 
+	if (session->req.sent_headers && session->req.send_content == FALSE)
+		return (0);
 	while(sent < len) {
 		ResetEvent(session->outbuf.empty_event);
 		avail=RingBufFree(&session->outbuf);
@@ -1219,7 +1222,6 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 {
 	int		ret;
 	int		stat_code;
-	BOOL	send_file=TRUE;
 	time_t	ti;
 	size_t	idx;
 	const char	*status_line;
@@ -1227,7 +1229,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	struct tm	tm;
 	char	*headers;
 	char	header[MAX_REQUEST_LINE+1];
-	BOOL	send_entity=TRUE;
+	BOOL	send_entity = TRUE;
 
 	if(session->socket==INVALID_SOCKET) {
 		session->req.sent_headers=TRUE;
@@ -1235,6 +1237,8 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	}
 	lprintf(LOG_DEBUG,"%04d Request resolved to: %s"
 		,session->socket,session->req.physical_path);
+	if (session->req.sent_headers)
+		return (TRUE);
 	if(session->http_ver <= HTTP_0_9) {
 		session->req.sent_headers=TRUE;
 		if(session->req.ld != NULL)
@@ -1244,143 +1248,145 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	headers=malloc(MAX_HEADERS_SIZE);
 	if(headers==NULL)  {
 		lprintf(LOG_CRIT,"Could not allocate memory for response headers.");
+		session->req.sent_headers=TRUE;
 		return(FALSE);
 	}
 	*headers=0;
-	if(!session->req.sent_headers) {
-		session->req.sent_headers=TRUE;
-		status_line=status;
-		ret=stat(session->req.physical_path,&stats);
-		if(session->req.method==HTTP_OPTIONS)
-			ret=-1;
-		if(!ret && session->req.if_modified_since && (stats.st_mtime <= session->req.if_modified_since) && !session->req.dynamic) {
-			status_line="304 Not Modified";
-			ret=-1;
-			send_file=FALSE;
-			send_entity=FALSE;
-		}
-		if(!ret && session->req.if_range && (stats.st_mtime > session->req.if_range || session->req.dynamic)) {
-			status_line="200 OK";
-			session->req.range_start=0;
-			session->req.range_end=0;
-		}
-		if(session->req.send_location==MOVED_PERM)  {
-			status_line=error_301;
-			ret=-1;
-			send_file=FALSE;
-		}
-		if(session->req.send_location==MOVED_TEMP)  {
-			status_line=error_302;
-			ret=-1;
-			send_file=FALSE;
-		}
+	session->req.send_content = TRUE;
+	status_line=status;
+	ret=stat(session->req.physical_path,&stats);
+	if(session->req.method==HTTP_HEAD)
+		session->req.send_content = FALSE;
+	if(session->req.method==HTTP_OPTIONS) {
+		ret=-1;
+		session->req.send_content = FALSE;
+	}
+	if(!ret && session->req.if_modified_since && (stats.st_mtime <= session->req.if_modified_since) && !session->req.dynamic) {
+		status_line="304 Not Modified";
+		ret=-1;	// Avoid forcing 200 OK next
+		/* 304 is further handled in stat_code == below */
+	}
+	if(!ret && session->req.if_range && (stats.st_mtime > session->req.if_range || session->req.dynamic)) {
+		status_line="200 OK";
+		session->req.range_start=0;
+		session->req.range_end=0;
+	}
+	if(session->req.send_location==MOVED_PERM)  {
+		status_line=error_301;
+		ret=-1;
+		session->req.send_content = FALSE;
+		send_entity = FALSE;
+	}
+	if(session->req.send_location==MOVED_TEMP)  {
+		status_line=error_302;
+		ret=-1;
+		session->req.send_content = FALSE;
+		send_entity = FALSE;
+	}
 
-		stat_code=atoi(status_line);
-		if(session->req.ld!=NULL)
-			session->req.ld->status=stat_code;
+	stat_code=atoi(status_line);
+	if(session->req.ld!=NULL)
+		session->req.ld->status=stat_code;
 
-		if(stat_code==304 || stat_code==204 || (stat_code >= 100 && stat_code<=199)) {
-			send_file=FALSE;
-			chunked=FALSE;
-		}
+	if(stat_code==304 || stat_code==204 || (stat_code >= 100 && stat_code<=199)) {
+		session->req.send_content = FALSE;
+		chunked=FALSE;
+		send_entity = FALSE;
+	}
 
-		/* Status-Line */
-		safe_snprintf(header,sizeof(header),"%s %s",response_http_vers[session->http_ver > HTTP_0_9 ? HTTP_1_1 : HTTP_0_9],status_line);
+	/* Status-Line */
+	safe_snprintf(header,sizeof(header),"%s %s",response_http_vers[session->http_ver > HTTP_0_9 ? HTTP_1_1 : HTTP_0_9],status_line);
 
-		lprintf(LOG_DEBUG,"%04d Result: %s",session->socket,header);
+	lprintf(LOG_DEBUG,"%04d Result: %s",session->socket,header);
 
+	safecat(headers,header,MAX_HEADERS_SIZE);
+
+	/* General Headers */
+	ti=time(NULL);
+	if(gmtime_r(&ti,&tm)==NULL)
+		memset(&tm,0,sizeof(tm));
+	safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+		,get_header(HEAD_DATE)
+		,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
+		,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
+	safecat(headers,header,MAX_HEADERS_SIZE);
+	if(session->req.keep_alive) {
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
 		safecat(headers,header,MAX_HEADERS_SIZE);
-
-		/* General Headers */
-		ti=time(NULL);
-		if(gmtime_r(&ti,&tm)==NULL)
-			memset(&tm,0,sizeof(tm));
-		safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
-			,get_header(HEAD_DATE)
-			,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
-			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
+	}
+	else {
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Close");
 		safecat(headers,header,MAX_HEADERS_SIZE);
-		if(session->req.keep_alive) {
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
-			safecat(headers,header,MAX_HEADERS_SIZE);
-		}
-		else {
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Close");
-			safecat(headers,header,MAX_HEADERS_SIZE);
-		}
+	}
 
-		/* Response Headers */
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
+	/* Response Headers */
+	safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
+	safecat(headers,header,MAX_HEADERS_SIZE);
+
+	/* Entity Headers */
+	if(session->req.dynamic) {
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST, OPTIONS");
 		safecat(headers,header,MAX_HEADERS_SIZE);
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ACCEPT_RANGES),"none");
+		safecat(headers,header,MAX_HEADERS_SIZE);
+	}
+	else {
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, OPTIONS");
+		safecat(headers,header,MAX_HEADERS_SIZE);
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ACCEPT_RANGES),"bytes");
+		safecat(headers,header,MAX_HEADERS_SIZE);
+	}
 
-		/* Entity Headers */
-		if(session->req.dynamic) {
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST, OPTIONS");
-			safecat(headers,header,MAX_HEADERS_SIZE);
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ACCEPT_RANGES),"none");
-			safecat(headers,header,MAX_HEADERS_SIZE);
-		}
-		else {
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, OPTIONS");
-			safecat(headers,header,MAX_HEADERS_SIZE);
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ACCEPT_RANGES),"bytes");
-			safecat(headers,header,MAX_HEADERS_SIZE);
-		}
+	if(session->req.send_location) {
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
+		safecat(headers,header,MAX_HEADERS_SIZE);
+	}
 
-		if(session->req.send_location) {
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
-			safecat(headers,header,MAX_HEADERS_SIZE);
-		}
+	if(chunked) {
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TRANSFER_ENCODING),"Chunked");
+		safecat(headers,header,MAX_HEADERS_SIZE);
+	}
 
-		if(chunked) {
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TRANSFER_ENCODING),"Chunked");
-			safecat(headers,header,MAX_HEADERS_SIZE);
-		}
-
-		/* DO NOT send a content-length for chunked *
-		 * Per RFC 7230 (HTTP/1.1):
-		 * "A sender MUST NOT send a Content-Length header field in any message that contains a Transfer-Encoding header field.
-		 */
-		if(send_entity) {
-			if(session->req.dynamic!=IS_CGI && session->req.dynamic!=IS_FASTCGI && (!chunked)) {
-				if(ret)  {
-					safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
+	/* DO NOT send a content-length for chunked */
+	if(send_entity) {
+		if(session->req.dynamic!=IS_CGI && session->req.dynamic!=IS_FASTCGI && (!chunked)) {
+			if(ret)  {
+				safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
+				safecat(headers,header,MAX_HEADERS_SIZE);
+			}
+			else  {
+				if((session->req.range_start || session->req.range_end) && stat_code == 206) {
+					safe_snprintf(header,sizeof(header),"%s: %ld",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start+1);
 					safecat(headers,header,MAX_HEADERS_SIZE);
 				}
-				else  {
-					if((session->req.range_start || session->req.range_end) && atoi(status_line)==206) {
-						safe_snprintf(header,sizeof(header),"%s: %ld",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start+1);
-						safecat(headers,header,MAX_HEADERS_SIZE);
-					}
-					else {
-						safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
-						safecat(headers,header,MAX_HEADERS_SIZE);
-					}
+				else {
+					safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
+					safecat(headers,header,MAX_HEADERS_SIZE);
 				}
 			}
+		}
 
-			if(!ret && !session->req.dynamic)  {
-				safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
-				safecat(headers,header,MAX_HEADERS_SIZE);
-				gmtime_r(&stats.st_mtime,&tm);
-				safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
-					,get_header(HEAD_LASTMODIFIED)
-					,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
-					,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
-				safecat(headers,header,MAX_HEADERS_SIZE);
-			}
+		if(!ret && !session->req.dynamic)  {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
+			safecat(headers,header,MAX_HEADERS_SIZE);
+			gmtime_r(&stats.st_mtime,&tm);
+			safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+				,get_header(HEAD_LASTMODIFIED)
+				,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
+				,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
 
-			if(session->req.range_start || session->req.range_end) {
-				switch(atoi(status_line)) {
-					case 206:	/* Partial reply */
-						safe_snprintf(header,sizeof(header),"%s: bytes %ld-%ld/%ld",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
-						safecat(headers,header,MAX_HEADERS_SIZE);
-						break;
-					default:
-						safe_snprintf(header,sizeof(header),"%s: *",get_header(HEAD_CONTENT_RANGE));
-						safecat(headers,header,MAX_HEADERS_SIZE);
-						break;
-				}
+		if(session->req.range_start || session->req.range_end) {
+			switch(stat_code) {
+				case 206:	/* Partial reply */
+					safe_snprintf(header,sizeof(header),"%s: bytes %ld-%ld/%ld",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
+					safecat(headers,header,MAX_HEADERS_SIZE);
+					break;
+				default:
+					safe_snprintf(header,sizeof(header),"%s: *",get_header(HEAD_CONTENT_RANGE));
+					safecat(headers,header,MAX_HEADERS_SIZE);
+					break;
 			}
 		}
 	}
@@ -1395,11 +1401,12 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	}
 
 	safecat(headers,"",MAX_HEADERS_SIZE);
-	send_file = (bufprint(session,headers) && send_file);
+	ret = bufprint(session,headers);
+	session->req.sent_headers=TRUE;
 	drain_outbuf(session);
 	session->req.write_chunked=chunked;
 	free(headers);
-	return(send_file);
+	return (ret);
 }
 
 static int sock_sendfile(http_session_t *session,char *path,unsigned long start, unsigned long end)
@@ -4335,12 +4342,9 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, BOOL orig_
 					if(i!=-1 && i!=0)  {
 						int snt=0;
 						start=time(NULL);
-						if(session->req.method!=HTTP_HEAD) {
-							snt=writebuf(session,buf,i);
-							if(session->req.ld!=NULL) {
-								session->req.ld->size+=snt;
-							}
-						}
+						snt=writebuf(session,buf,i);
+						if(session->req.ld!=NULL)
+							session->req.ld->size+=snt;
 					}
 					else
 						done_reading=TRUE;
@@ -4748,12 +4752,9 @@ static BOOL exec_cgi(http_session_t *session)
 			if(i!=-1 && i!=0)  {
 				int snt=0;
 				start=time(NULL);
-				if(session->req.method!=HTTP_HEAD) {
-					snt=writebuf(session,buf,i);
-					if(session->req.ld!=NULL) {
-						session->req.ld->size+=snt;
-					}
-				}
+				snt=writebuf(session,buf,i);
+				if(session->req.ld!=NULL)
+					session->req.ld->size+=snt;
 			}
 		}
 
@@ -5067,7 +5068,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 static void js_writebuf(http_session_t *session, const char *buf, size_t buflen)
 {
 	if(session->req.sent_headers) {
-		if(session->req.method!=HTTP_HEAD && session->req.method!=HTTP_OPTIONS)
+		if(session->req.send_content)
 			writebuf(session,buf,buflen);
 	}
 	else
@@ -5816,9 +5817,8 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 
 
 	/* Read http_reply object */
-	if(!session->req.sent_headers) {
+	if(!session->req.sent_headers)
 		retval=ssjs_send_headers(session,FALSE);
-	}
 
 	/* Free up temporary resources here */
 
@@ -5830,11 +5830,8 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 
 static void respond(http_session_t * session)
 {
-	BOOL		send_file=TRUE;
-
-	if(session->req.method==HTTP_OPTIONS) {
+	if(session->req.method==HTTP_OPTIONS)
 		send_headers(session,session->req.status,FALSE);
-	}
 	else {
 		if(session->req.dynamic==IS_FASTCGI)  {
 			if(!exec_fastcgi(session)) {
@@ -5864,12 +5861,10 @@ static void respond(http_session_t * session)
 		}
 		else {
 			session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
-			send_file=send_headers(session,session->req.status,FALSE);
+			send_headers(session,session->req.status,FALSE);
 		}
 	}
-	if(session->req.method==HTTP_HEAD || session->req.method==HTTP_OPTIONS)
-		send_file=FALSE;
-	if(send_file)  {
+	if(session->req.send_content)  {
 		int snt=0;
 		lprintf(LOG_INFO,"%04d Sending file: %s (%"PRIuOFF" bytes)"
 			,session->socket, session->req.physical_path, flength(session->req.physical_path));
