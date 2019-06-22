@@ -2498,14 +2498,14 @@ bool normalize_hfield_value(char* str)
 				if(encoding == 'Q') {
 					mimehdr_q_decode(tmp);
 					if(charset == MIMEHDR_CHARSET_UTF8)
-						normalize_utf8(tmp);
+						normalize_utf8((uchar*)tmp);
 					if(charset == MIMEHDR_CHARSET_CP437 || strIsPlainAscii(tmp))
 						p = tmp;
 				}
 				else if(encoding == 'B' 
 					&& b64_decode(tmp, sizeof(tmp), tmp, strlen(tmp)) > 0) { // base64
 					if(charset == MIMEHDR_CHARSET_UTF8)
-						normalize_utf8(tmp);
+						normalize_utf8((uchar*)tmp);
 					if(charset == MIMEHDR_CHARSET_CP437 || strIsPlainAscii(tmp))
 						p = tmp;
 				}
