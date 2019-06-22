@@ -1903,7 +1903,7 @@ bool add_sub_to_areafile(sub_t* sub, fidoaddr_t uplink)
 /******************************************************************************
  Used by AREAFIX to add/remove/change link info in the configuration file
 ******************************************************************************/
-bool alter_config(fidoaddr_t addr, const char* key, const char* value)
+bool alter_config(nodecfg_t* nodecfg, const char* key, const char* value)
 {
 	FILE* fp;
 
@@ -1913,18 +1913,20 @@ bool alter_config(fidoaddr_t addr, const char* key, const char* value)
 
 	if((fp=iniOpenFile(cfg.cfgfile, false)) == NULL) {
 		lprintf(LOG_ERR, "ERROR %d (%s) opening %s for altering configuration of node %s"
-			,errno, strerror(errno), cfg.cfgfile, smb_faddrtoa(&addr, NULL));
+			,errno, strerror(errno), cfg.cfgfile, smb_faddrtoa(&nodecfg->addr, NULL));
 		return false;
 	}
 	str_list_t ini = iniReadFile(fp);
 	if(ini == NULL) {
 		lprintf(LOG_ERR, "ERROR reading %s for altering configuration of node %s"
-			,cfg.cfgfile, smb_faddrtoa(&addr,NULL));
+			,cfg.cfgfile, smb_faddrtoa(&nodecfg->addr,NULL));
 		iniCloseFile(fp);
 		return false;
 	}
 	char section[128];
-	SAFEPRINTF(section, "node:%s", smb_faddrtoa(&addr,NULL));
+	SAFEPRINTF2(section, "node:%s@%s", smb_faddrtoa(&nodecfg->addr,NULL), nodecfg->domain);
+	if(!iniSectionExists(ini, section))
+		SAFEPRINTF(section, "node:%s", smb_faddrtoa(&nodecfg->addr,NULL));
 	ini_style_t style = {  .key_prefix = "\t", .value_separator = " = " };
 	iniSetString(&ini, section, key, value, &style);
 	iniWriteFile(fp, ini);
@@ -1980,7 +1982,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 
 	if(stricmp(nodecfg->name, to) != 0) {
 		lprintf(LOG_INFO, "AreaFix (for %s) Changing name to: %s", faddrtoa(&addr), to);
-		alter_config(addr, "Name", to);
+		alter_config(nodecfg, "Name", to);
 	}
 
 	if(strnicmp(instr, "COMPRESSION ", 12) == 0 || strnicmp(instr, "COMPRESS ", 9) == 0) {
@@ -2011,7 +2013,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 			}
 			nodecfg->archive = &cfg.arcdef[u];
 		}
-		alter_config(addr,"archive",p);
+		alter_config(nodecfg,"archive",p);
 		SAFEPRINTF(str, "Compression type changed to: %s", p);
 		lprintf(LOG_INFO, "AreaFix (for %s) %s", faddrtoa(&addr), str);
 		create_netmail(to, /* msg: */NULL, "Compression Type Change", str, addr);
@@ -2031,7 +2033,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 			create_netmail(to, /* msg: */NULL, "AreaMgr Password Change Request", str, addr);
 			return true;
 		}
-		if(alter_config(addr,"AreaFixPwd", password)) {
+		if(alter_config(nodecfg,"AreaFixPwd", password)) {
 			SAFEPRINTF2(str,"Your AreaMgr password has been changed from '%s' to '%s'."
 				,nodecfg->password,password);
 			SAFECOPY(nodecfg->password, password);
@@ -2056,7 +2058,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 			create_netmail(to, /* msg: */NULL, "Packet Password Change Request", str, addr);
 			return true;
 		}
-		if(alter_config(addr,"PacketPwd", pktpwd)) {
+		if(alter_config(nodecfg,"PacketPwd", pktpwd)) {
 			SAFEPRINTF2(str,"Your packet password has been changed from '%s' to '%s'."
 				,nodecfg->pktpwd, pktpwd);
 			SAFECOPY(nodecfg->pktpwd, pktpwd);
@@ -2081,7 +2083,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 			create_netmail(to, /* msg: */NULL, "TIC File Password Change Request", str, addr);
 			return true;
 		}
-		if(alter_config(addr,"TicFilePwd", ticpwd)) {
+		if(alter_config(nodecfg,"TicFilePwd", ticpwd)) {
 			SAFEPRINTF2(str,"Your TIC File password has been changed from '%s' to '%s'."
 				,nodecfg->ticpwd, ticpwd);
 			SAFECOPY(nodecfg->ticpwd, ticpwd);
@@ -2097,7 +2099,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 		char* p = instr;
 		FIND_WHITESPACE(p);
 		SKIP_WHITESPACE(p);
-		if(alter_config(addr,"Notify", p)) {
+		if(alter_config(nodecfg,"Notify", p)) {
 			SAFEPRINTF2(str,"Your Notification Messages have been changed from '%s' to '%s'."
 				,nodecfg->send_notify ? "ON" : "OFF", p);
 		} else {
@@ -2164,7 +2166,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 			return true;
 		}
 		nodecfg->passive = false;
-		alter_config(addr,"passive","false");
+		alter_config(nodecfg,"passive","false");
 		create_netmail(to,/* msg: */NULL,"Reconnect Disconnected (paused) Areas"
 			,"Temporarily disconnected areas have been reconnected.",addr);
 		return true;
@@ -2177,7 +2179,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 			return true;
 		}
 		nodecfg->passive = true;
-		alter_config(addr,"passive","true");
+		alter_config(nodecfg,"passive","true");
 		create_netmail(to,/* msg: */NULL,"Temporarily Disconnect (pause) Areas"
 			,"Your areas have been temporarily disconnected.",addr);
 		return true;
