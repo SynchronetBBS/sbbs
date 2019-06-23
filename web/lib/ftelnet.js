@@ -13,13 +13,18 @@ function get_splash() {
     }
 }
 
+function get_variant() {
+    if (!settings) return 'norip.noxfer';
+    return (settings.ftelnet_rip ? 'rip' : 'norip') + '.' + (settings.ftelnet_xfer ? 'xfer' : 'noxfer');
+}
+
 function get_cached_url(f) {
     if (f.open('r')) {
         const ret = f.read();
         f.close();
         return ret;
     }
-    return 'http://embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=2018-09-14';
+    return 'http://embed-v2.ftelnet.ca/js/ftelnet-loader.' + get_variant() + '.js?v=2018-09-14';
 }
 
 function get_url() {
@@ -27,7 +32,7 @@ function get_url() {
     const f = new File(system.temp_dir + 'ftelnet.url');
     if (!f.exists || time() - f.date > 86400) {
         try {
-            var str = (new HTTPRequest()).Get('http://embed-v2.ftelnet.ca/js/ftelnet-loader.norip.noxfer.js?v=' + (new Date()).getTime());
+            var str = (new HTTPRequest()).Get('http://embed-v2.ftelnet.ca/js/ftelnet-loader.' + get_variant() + '.js?v=' + (new Date()).getTime());
         } catch (err) {
             log(LOG_ERR, 'Failed to fetch fTelnet URL');
             str = '';
