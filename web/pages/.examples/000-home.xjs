@@ -6,7 +6,10 @@
         const ftelnet_lib = load({}, settings.web_lib + 'ftelnet.js');
         load('ftelnethelper.js');
 ?>
+    <?xjs if (!settings.ftelnet_menubar) { ?>
         <style>.fTelnetStatusBar { display : none; }</style>
+    <?xjs } ?>
+
     	<div id="fTelnetContainer" class="fTelnetContainer"></div>
         <div class="row">
             <div class="center-block" style="width:200px;margin-bottom:1em;margin-top:1em;">
