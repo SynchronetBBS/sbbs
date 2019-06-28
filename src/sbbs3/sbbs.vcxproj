@@ -40,6 +40,7 @@
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\build\target_ia32.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
+    <Import Project="..\encode\encode.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -52,6 +53,7 @@
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\build\target_ia32.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
+    <Import Project="..\encode\encode.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -164,6 +166,7 @@
   <ItemGroup>
     <ClCompile Include="..\comio\comio.c" />
     <ClCompile Include="..\comio\comio_win32.c" />
+    <ClCompile Include="..\encode\cp437_utf8_tbl.c" />
     <ClCompile Include="ansiterm.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
