@@ -26,7 +26,7 @@
 # spread out over the entire source repository.
 lib-win32           	-a 3rdp/win32.release
 lib	           	-a 3rdp/dist 3rdp/build
-src-sbbs3           	-a src/.editorconfig src/.nexrc src/CMakeLists.txt src/Makefile src/cleanall.sh src/build src/sbbs3 src/xpdev src/smblib src/uifc src/conio src/sexpots src/comio
+src-sbbs3           	-a src/.editorconfig src/.nexrc src/CMakeLists.txt src/Makefile src/cleanall.sh src/build src/sbbs3 src/xpdev src/smblib src/uifc src/conio src/sexpots src/comio src/encode
 run-sbbs3           	-a ctrl text exec xtrn node1 node2 node3 node4 docs web
 syncterm		-a src/syncterm src/build src/conio src/uifc src/xpdev src/comio src/sbbs3/telnet.c src/sbbs3/telnet.h src/sbbs3/xmodem.c src/sbbs3/xmodem.h src/sbbs3/zmodem.c src/sbbs3/zmodem.h src/sbbs3/sexyz.h src/smblib/Common.make src/smblib/crc16.c src/smblib/crc16.h src/smblib/crc32.c src/smblib/crc32.h src/smblib/base64.c src/smblib/base64.h src/smblib/md5.c src/smblib/md5.h 3rdp/build 3rdp/dist/cryptlib.zip src/sbbs3/saucedefs.h
 install install
