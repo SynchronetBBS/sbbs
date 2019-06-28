@@ -282,13 +282,16 @@ bool sbbs_t::answer()
 				"\x1b[0c"	/* Request CTerm version */
     			"\x1b[255B"	/* locate cursor as far down as possible */
 				"\x1b[255C"	/* locate cursor as far right as possible */
-				"\b_"		/* need a printable at this location to actually move cursor */
+				"\b_"		/* need a printable char at this location to actually move cursor */
 				"\x1b[6n"	/* Get cursor position */
 				"\x1b[u"	/* restore cursor position */
 				"\x1b[!_"	/* RIP? */
 	#ifdef SUPPORT_ZUULTERM
 				"\x1b[30;40m\xc2\x9f""Zuul.connection.write('\\x1b""Are you the gatekeeper?')\xc2\x9c"	/* ZuulTerm? */
 	#endif
+				"\r"		/* Move cursor left */
+				"\xef\xbb\xbf"	// UTF-8 Zero-width non-breaking space
+				"\x1b[6n"	/* Get cursor position (again) */
 				"\x1b[0m_"	/* "Normal" colors */
 				"\x1b[2J"	/* clear screen */
 				"\x1b[H"	/* home cursor */
@@ -340,6 +343,7 @@ bool sbbs_t::answer()
 
 			char* tokenizer = NULL;
 			char* p = strtok_r(str, "\x1b", &tokenizer);
+			unsigned cursor_pos_report = 0;
 			while(p != NULL) {
 				int	x,y;
 
@@ -347,10 +351,17 @@ bool sbbs_t::answer()
 					SAFECOPY(terminal,"ANSI");
 				autoterm|=(ANSI|COLOR);
 				if(sscanf(p, "[%u;%uR", &y, &x) == 2) {
-					lprintf(LOG_DEBUG,"received ANSI cursor position report: %ux%u", x, y);
-					/* Sanity check the coordinates in the response: */
-					if(x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x; 
-					if(y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
+					cursor_pos_report++;
+					lprintf(LOG_DEBUG,"received ANSI cursor position report [%u]: %ux%u"
+						,cursor_pos_report, x, y);
+					if(cursor_pos_report == 1) {
+						/* Sanity check the coordinates in the response: */
+						if(x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x; 
+						if(y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
+					} else {	// second report
+						if(x == 1)	// ZWNBSP didn't move cursor
+							autoterm |= UTF8;
+					}
 				} else if(sscanf(p, "[=67;84;101;114;109;%u;%u", &x, &y) == 2 && *lastchar(p) == 'c') {
 					lprintf(LOG_INFO,"received CTerm version report: %u.%u", x, y);
 					cterm_version = (x*1000) + y;
