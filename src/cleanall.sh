@@ -7,3 +7,4 @@ make -C sbbs3/umonitor clean $@
 make -C smblib clean $@
 make -C uifc clean $@
 make -C xpdev clean $@
+make -C encode clean $@
