@@ -2414,6 +2414,13 @@ static uchar* normalize_utf8(uchar* str)
 			continue;
 		}
 		if(*src == 0xe2) {
+			// UNICODE HORIZONTAL ELLIPSIS -> ASCII periods (3)
+			if(*(src + 1) == 0x80 && *(src + 2) == 0xa6) {
+				src += 2;
+				for(int i = 0; i < 3; i++)
+					*dest++ =  '.';
+				continue;
+			}
 			// UNICODE EN SPACE -> ASCII space
 			// UNICODE EM SPACE -> ASCII space
 			if(*(src + 1) == 0x80 && (*(src + 2) == 0x82 || *(src + 2) == 0x83)) {
