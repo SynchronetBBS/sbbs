@@ -36,13 +36,13 @@
 #ifndef CP437_UTF8_TBL_H_
 #define CP437_UTF8_TBL_H_
 
-#ifdef _cpluslus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 extern const char* cp437_utf8_tbl[];
 
-#ifdef _cpluslus
+#ifdef __cplusplus
 }
 #endif
 
