@@ -1,0 +1,5 @@
+# encode/targets.mk
+
+ENCODE_BUILD	=	$(LIBODIR)$(DIRSEP)$(LIBPREFIX)encode$(LIBFILE)
+
+lib: $(OBJODIR) $(LIBODIR) $(ENCODE_BUILD)
