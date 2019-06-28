@@ -821,7 +821,7 @@ void sbbs_t::maindflts(user_t* user)
 							,term&ANSI ? "ANSI ":"TTY "
 							,term&COLOR ? (term&ICE_COLOR ? text[TerminalIceColor] : text[TerminalColor]) : text[TerminalMonochrome]
 							,term&RIP ? "RIP " : nulstr
-							,term&NO_EXASCII ? "ASCII ":"CP437 "
+							,term&UTF8 ? "UTF-8" : (term&NO_EXASCII ? "ASCII ":"CP437 ")
 							,term&SWAP_DELETE ? "DEL=BS " : nulstr);
 		bprintf(text[UserDefaultsTerminal], truncsp(str));
 		if(user->rows)
