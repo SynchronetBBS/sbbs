@@ -108,13 +108,11 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)upload$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)useredit$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)uucode$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)viewfile$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)wordwrap$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)writemsg$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)xtrn$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)xtrn_sec$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)yenc$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ver$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ssl$(OFILE)
 
