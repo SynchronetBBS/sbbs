@@ -17,7 +17,7 @@ SRC_ROOT = ..
 # Cross platform/compiler definitions
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
-CFLAGS += -I$(XPDEV_SRC) $(ENCODE_CFLAGS)
+CFLAGS += -I$(XPDEV_SRC) $(ENCODE_CFLAGS) $(HASH_CFLAGS)
 
 
 # SMBLIB Library Link Rule
