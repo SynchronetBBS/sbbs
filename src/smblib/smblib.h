@@ -37,8 +37,6 @@
 #ifndef _SMBLIB_H
 #define _SMBLIB_H
 
-#include "lzh.h"
-
 #ifdef SMBEXPORT
 	#undef SMBEXPORT
 #endif

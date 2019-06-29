@@ -40,6 +40,7 @@
 /* SMB-specific */
 #include "smblib.h"
 #include "base64.h"
+#include "lzh.h"
 
 char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 {
