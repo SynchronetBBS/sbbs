@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "addfiles", "addfiles.vcxproj", "{1E6135A4-035D-4B39-B233-569A15ADE3A2}"
 EndProject
@@ -68,8 +68,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uifc", "..\uifc\uifc.vcxproj", "{7BFB9820-0E57-4BE4-9BE9-E0A687874E19}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unbaja", "unbaja.vcxproj", "{C9E94535-877A-4A25-A10F-5AB750B0FB31}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "v4upgrade", "v4upgrade.vcxproj", "{A7269B64-FDFB-43FB-93ED-D86C448D3EDD}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "websrvr", "websrvr.vcxproj", "{7C6F645F-BB54-4018-8AE9-6C38626325F6}"
 EndProject
@@ -215,10 +213,6 @@ Global
 		{C9E94535-877A-4A25-A10F-5AB750B0FB31}.Debug|Win32.Build.0 = Debug|Win32
 		{C9E94535-877A-4A25-A10F-5AB750B0FB31}.Release|Win32.ActiveCfg = Release|Win32
 		{C9E94535-877A-4A25-A10F-5AB750B0FB31}.Release|Win32.Build.0 = Release|Win32
-		{A7269B64-FDFB-43FB-93ED-D86C448D3EDD}.Debug|Win32.ActiveCfg = Debug|Win32
-		{A7269B64-FDFB-43FB-93ED-D86C448D3EDD}.Debug|Win32.Build.0 = Debug|Win32
-		{A7269B64-FDFB-43FB-93ED-D86C448D3EDD}.Release|Win32.ActiveCfg = Release|Win32
-		{A7269B64-FDFB-43FB-93ED-D86C448D3EDD}.Release|Win32.Build.0 = Release|Win32
 		{7C6F645F-BB54-4018-8AE9-6C38626325F6}.Debug|Win32.ActiveCfg = Debug|Win32
 		{7C6F645F-BB54-4018-8AE9-6C38626325F6}.Debug|Win32.Build.0 = Debug|Win32
 		{7C6F645F-BB54-4018-8AE9-6C38626325F6}.Release|Win32.ActiveCfg = Release|Win32
