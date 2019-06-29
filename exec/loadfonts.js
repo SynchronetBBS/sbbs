@@ -1,1 +1,0 @@
-load("fonts.js", "preload", "default");

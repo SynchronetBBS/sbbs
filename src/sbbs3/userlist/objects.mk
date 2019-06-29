@@ -1,3 +1,0 @@
-OBJS	:=	\
-			$(MTOBJODIR)$(DIRSEP)SBBS_User_ListApp$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)SBBS_User_ListMain$(OFILE)

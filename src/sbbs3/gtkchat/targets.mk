@@ -1,5 +1,0 @@
-GTKCHAT	=	$(EXEODIR)$(DIRSEP)gtkchat$(EXEFILE)
-
-all: xpdev-mt smblib $(MTOBJODIR) $(EXEODIR) $(GTKCHAT)
-
-$(GTKCHAT):	$(XPDEV-MT_LIB) $(SMBLIB)
