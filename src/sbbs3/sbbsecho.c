@@ -54,7 +54,6 @@
 #include "sbbsdefs.h"
 #include "smblib.h"
 #include "scfglib.h"
-#include "lzh.h"
 #include "sbbsecho.h"
 #include "genwrap.h"		/* PLATFORM_DESC */
 #include "xpendian.h"
