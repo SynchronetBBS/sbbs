@@ -7,7 +7,7 @@ SRC_ROOT = ..
 # Cross platform/compiler definitions
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
-CFLAGS += -I$(ENCODE_SRC)
+CFLAGS += -I$(ENCODE_SRC) $(XPDEV_CFLAGS)
 
 # ENCODE Library Link Rule
 $(ENCODE_BUILD): $(OBJODIR) $(OBJS)

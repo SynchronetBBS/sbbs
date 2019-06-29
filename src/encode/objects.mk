@@ -8,6 +8,8 @@
 
 OBJS	=	$(OBJODIR)$(DIRSEP)cp437_utf8_tbl$(OFILE) \
 		$(OBJODIR)$(DIRSEP)uucode$(OFILE) \
-		$(OBJODIR)$(DIRSEP)yenc$(OFILE)
+		$(OBJODIR)$(DIRSEP)yenc$(OFILE) \
+		$(OBJODIR)$(DIRSEP)lzh$(OFILE) \
+		$(OBJODIR)$(DIRSEP)base64$(OFILE)
 
 
