@@ -27,7 +27,7 @@
     <USERDEFINES value=""/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="chat.cpp"/>
-    <INCLUDEPATH value="$(BCB)\include;..\..\xpdev;..\..\smblib;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="$(BCB)\include;..\..\xpdev;..\..\smblib;..\..\hash;$(BCB)\include\vcl"/>
     <LIBPATH value="$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-par"/>
     <OTHERFILES value=""/>
