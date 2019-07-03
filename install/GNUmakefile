@@ -145,7 +145,7 @@ all: binaries baja externals
 
 binaries:	sbbs3 gtkuseredit gtkchat gtkmonitor gtkuserlist syncview sexpots
 
-externals:	sbj sbl dpoker tbd
+externals:	sbj dpoker tbd
 
 sbbs3:	src $(SBBSDIR)/3rdp/dist
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
@@ -158,9 +158,6 @@ baja:	run sbbs3
 
 sbj:	run
 	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)
-
-sbl:	run
-	$(MAKE) -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
 
 dpoker:	run
 	$(MAKE) -C $(SBBSDIR)/xtrn/dpoker $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
