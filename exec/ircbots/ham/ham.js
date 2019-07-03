@@ -1008,6 +1008,38 @@ if (false) {
 	return true;
 }
 
+Bot_Commands["DXPED"] = new Bot_Command(0,false,false);
+Bot_Commands["DXPED"].usage = get_cmd_prefix() + "SPOTS <call>";
+Bot_Commands["DXPED"].help = "Lists currently active DXpeditions";
+Bot_Commands["DXPED"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	// Remove empty cmd args
+	for(i=1; i<cmd.length; i++) {
+		if(cmd[i].search(/^\s*$/)==0) {
+			cmd.splice(i,1);
+			i--;
+		}
+	}
+
+	if(cmd.length == 1) {
+		var req = new HTTPRequest();
+		var dx = req.Get('https://www.ng3k.com/misc/adxo.html');
+		var peds = [];
+		var row;
+		var re = /<tr class="adxoitem" bgcolor="#FFDAB9">([\u0000-\uffff]*?)<\/tr/g;
+		var re2 = /<td[^>]*>([\u0000-\uffff]*?)<\/\s*td/g;
+		var m, m2;
+
+		while ((m = re.exec(dx)) !== null) {
+			row = [];
+			while ((m2 = re2.exec(m[1])) !== null) {
+				row.push(m2[1].replace(/<[^>]*>/g,'').replace(/\[spots\]/g,'').replace(/[0-9]{4} ([A-Za-z]{3})([0-9]{2})/g, "$1 $2").replace(/^\s*(.*?)\s*$/,"$1"));
+			}
+			srv.o(target, format("%10.10s %s until %s", html_decode(row[3]), html_decode(row[2]), html_decode(row[1])));
+			peds.push(row);
+		}
+	}
+}
+
 //var dumb={o:function(x,y) {log(y);}};
 //Bot_Commands["GEO"].command(undefined, undefined, undefined,dumb,undefined,['GEO']);
 //Bot_Commands["HF"].command(undefined, undefined, undefined,dumb,undefined,['GEO']);
