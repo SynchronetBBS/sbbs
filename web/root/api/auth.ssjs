@@ -9,6 +9,6 @@ var response = JSON.stringify(
 );
 
 http_reply.header['Content-Type'] = 'application/json';
-http_reply.header['Content-Length'] = response.length;
+//http_reply.header['Content-Length'] = response.length;
 
 write(response);
