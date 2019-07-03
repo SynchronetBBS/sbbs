@@ -1237,8 +1237,6 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	}
 	lprintf(LOG_DEBUG,"%04d Request resolved to: %s"
 		,session->socket,session->req.physical_path);
-	if (session->req.sent_headers)
-		return (TRUE);
 	if(session->http_ver <= HTTP_0_9) {
 		session->req.sent_headers=TRUE;
 		if(session->req.ld != NULL)
@@ -1252,141 +1250,147 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		return(FALSE);
 	}
 	*headers=0;
-	session->req.send_content = TRUE;
-	status_line=status;
-	ret=stat(session->req.physical_path,&stats);
-	if(session->req.method==HTTP_HEAD)
-		session->req.send_content = FALSE;
-	if(session->req.method==HTTP_OPTIONS) {
-		ret=-1;
-		session->req.send_content = FALSE;
-	}
-	if(!ret && session->req.if_modified_since && (stats.st_mtime <= session->req.if_modified_since) && !session->req.dynamic) {
-		status_line="304 Not Modified";
-		ret=-1;	// Avoid forcing 200 OK next
-		/* 304 is further handled in stat_code == below */
-	}
-	if(!ret && session->req.if_range && (stats.st_mtime > session->req.if_range || session->req.dynamic)) {
-		status_line="200 OK";
-		session->req.range_start=0;
-		session->req.range_end=0;
-	}
-	if(session->req.send_location==MOVED_PERM)  {
-		status_line=error_301;
-		ret=-1;
-		session->req.send_content = FALSE;
-		send_entity = FALSE;
-	}
-	if(session->req.send_location==MOVED_TEMP)  {
-		status_line=error_302;
-		ret=-1;
-		session->req.send_content = FALSE;
-		send_entity = FALSE;
-	}
+	/* send_headers() is called a second time when using chunked
+	 * transfer encoding.  This allows setting headers while sending
+	 * the response, and the CRLF at the end is required to terminate
+	 * the response. */
+	if (!session->req.sent_headers) {
+		session->req.send_content = TRUE;
+		status_line=status;
+		ret=stat(session->req.physical_path,&stats);
+		if(session->req.method==HTTP_HEAD)
+			session->req.send_content = FALSE;
+		if(session->req.method==HTTP_OPTIONS) {
+			ret=-1;
+			session->req.send_content = FALSE;
+		}
+		if(!ret && session->req.if_modified_since && (stats.st_mtime <= session->req.if_modified_since) && !session->req.dynamic) {
+			status_line="304 Not Modified";
+			ret=-1;	// Avoid forcing 200 OK next
+			/* 304 is further handled in stat_code == below */
+		}
+		if(!ret && session->req.if_range && (stats.st_mtime > session->req.if_range || session->req.dynamic)) {
+			status_line="200 OK";
+			session->req.range_start=0;
+			session->req.range_end=0;
+		}
+		if(session->req.send_location==MOVED_PERM)  {
+			status_line=error_301;
+			ret=-1;
+			session->req.send_content = FALSE;
+			send_entity = FALSE;
+		}
+		if(session->req.send_location==MOVED_TEMP)  {
+			status_line=error_302;
+			ret=-1;
+			session->req.send_content = FALSE;
+			send_entity = FALSE;
+		}
 
-	stat_code=atoi(status_line);
-	if(session->req.ld!=NULL)
-		session->req.ld->status=stat_code;
+		stat_code=atoi(status_line);
+		if(session->req.ld!=NULL)
+			session->req.ld->status=stat_code;
 
-	if(stat_code==304 || stat_code==204 || (stat_code >= 100 && stat_code<=199)) {
-		session->req.send_content = FALSE;
-		chunked=FALSE;
-		send_entity = FALSE;
-	}
+		if(stat_code==304 || stat_code==204 || (stat_code >= 100 && stat_code<=199)) {
+			session->req.send_content = FALSE;
+			chunked=FALSE;
+			send_entity = FALSE;
+		}
 
-	/* Status-Line */
-	safe_snprintf(header,sizeof(header),"%s %s",response_http_vers[session->http_ver > HTTP_0_9 ? HTTP_1_1 : HTTP_0_9],status_line);
+		/* Status-Line */
+		safe_snprintf(header,sizeof(header),"%s %s",response_http_vers[session->http_ver > HTTP_0_9 ? HTTP_1_1 : HTTP_0_9],status_line);
 
-	lprintf(LOG_DEBUG,"%04d Result: %s",session->socket,header);
+		lprintf(LOG_DEBUG,"%04d Result: %s",session->socket,header);
 
-	safecat(headers,header,MAX_HEADERS_SIZE);
-
-	/* General Headers */
-	ti=time(NULL);
-	if(gmtime_r(&ti,&tm)==NULL)
-		memset(&tm,0,sizeof(tm));
-	safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
-		,get_header(HEAD_DATE)
-		,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
-		,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
-	safecat(headers,header,MAX_HEADERS_SIZE);
-	if(session->req.keep_alive) {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
 		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
-	else {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Close");
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
 
-	/* Response Headers */
-	safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
-	safecat(headers,header,MAX_HEADERS_SIZE);
+		/* General Headers */
+		ti=time(NULL);
+		if(gmtime_r(&ti,&tm)==NULL)
+			memset(&tm,0,sizeof(tm));
+		safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+			,get_header(HEAD_DATE)
+			,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
+			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
+		safecat(headers,header,MAX_HEADERS_SIZE);
+		if(session->req.keep_alive) {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+		else {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Close");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
 
-	/* Entity Headers */
-	if(session->req.dynamic) {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST, OPTIONS");
+		/* Response Headers */
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
 		safecat(headers,header,MAX_HEADERS_SIZE);
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ACCEPT_RANGES),"none");
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
-	else {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, OPTIONS");
-		safecat(headers,header,MAX_HEADERS_SIZE);
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ACCEPT_RANGES),"bytes");
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
 
-	if(session->req.send_location) {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
+		/* Entity Headers */
+		if(session->req.dynamic) {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST, OPTIONS");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ACCEPT_RANGES),"none");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+		else {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, OPTIONS");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ACCEPT_RANGES),"bytes");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
 
-	if(chunked) {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TRANSFER_ENCODING),"Chunked");
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
+		if(session->req.send_location) {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
 
-	/* DO NOT send a content-length for chunked */
-	if(send_entity) {
-		if(session->req.dynamic!=IS_CGI && session->req.dynamic!=IS_FASTCGI && (!chunked)) {
-			if(ret)  {
-				safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
+		if(chunked) {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TRANSFER_ENCODING),"Chunked");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+
+		/* DO NOT send a content-length for chunked */
+		if(send_entity) {
+			if(session->req.dynamic!=IS_CGI && session->req.dynamic!=IS_FASTCGI && (!chunked)) {
+				if(ret)  {
+					safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
+					safecat(headers,header,MAX_HEADERS_SIZE);
+				}
+				else  {
+					if((session->req.range_start || session->req.range_end) && stat_code == 206) {
+						safe_snprintf(header,sizeof(header),"%s: %ld",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start+1);
+						safecat(headers,header,MAX_HEADERS_SIZE);
+					}
+					else {
+						safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
+						safecat(headers,header,MAX_HEADERS_SIZE);
+					}
+				}
+			}
+
+			if(!ret && !session->req.dynamic)  {
+				safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
+				safecat(headers,header,MAX_HEADERS_SIZE);
+				gmtime_r(&stats.st_mtime,&tm);
+				safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+					,get_header(HEAD_LASTMODIFIED)
+					,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
+					,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 				safecat(headers,header,MAX_HEADERS_SIZE);
 			}
-			else  {
-				if((session->req.range_start || session->req.range_end) && stat_code == 206) {
-					safe_snprintf(header,sizeof(header),"%s: %ld",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start+1);
-					safecat(headers,header,MAX_HEADERS_SIZE);
-				}
-				else {
-					safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
-					safecat(headers,header,MAX_HEADERS_SIZE);
-				}
-			}
-		}
 
-		if(!ret && !session->req.dynamic)  {
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
-			safecat(headers,header,MAX_HEADERS_SIZE);
-			gmtime_r(&stats.st_mtime,&tm);
-			safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
-				,get_header(HEAD_LASTMODIFIED)
-				,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
-				,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
-			safecat(headers,header,MAX_HEADERS_SIZE);
-		}
-
-		if(session->req.range_start || session->req.range_end) {
-			switch(stat_code) {
-				case 206:	/* Partial reply */
-					safe_snprintf(header,sizeof(header),"%s: bytes %ld-%ld/%ld",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
-					safecat(headers,header,MAX_HEADERS_SIZE);
-					break;
-				default:
-					safe_snprintf(header,sizeof(header),"%s: *",get_header(HEAD_CONTENT_RANGE));
-					safecat(headers,header,MAX_HEADERS_SIZE);
-					break;
+			if(session->req.range_start || session->req.range_end) {
+				switch(stat_code) {
+					case 206:	/* Partial reply */
+						safe_snprintf(header,sizeof(header),"%s: bytes %ld-%ld/%ld",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
+						safecat(headers,header,MAX_HEADERS_SIZE);
+						break;
+					default:
+						safe_snprintf(header,sizeof(header),"%s: *",get_header(HEAD_CONTENT_RANGE));
+						safecat(headers,header,MAX_HEADERS_SIZE);
+						break;
+				}
 			}
 		}
 	}
