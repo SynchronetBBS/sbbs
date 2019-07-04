@@ -5729,28 +5729,34 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 					free(p2);
 				return FALSE;
 			}
-			h = get_header_type(p);
-			switch(h) {
-			case HEAD_LOCATION:
-				if (*p2 == '/') {
-					unescape(p2);
-					SAFECOPY(session->req.virtual_path,p2);
-					session->req.send_location=MOVED_STAT;
+			if (!session->req.sent_headers) {
+				h = get_header_type(p);
+				switch(h) {
+				case HEAD_LOCATION:
+					if (*p2 == '/') {
+						unescape(p2);
+						SAFECOPY(session->req.virtual_path,p2);
+						session->req.send_location=MOVED_STAT;
+					}
+					else {
+						SAFECOPY(session->req.virtual_path,p2);
+						session->req.send_location=MOVED_TEMP;
+					}
+					if (atoi(session->req.status) == 200)
+						SAFECOPY(session->req.status, error_302);
+					break;
+				case HEAD_LENGTH:
+				case HEAD_TRANSFER_ENCODING:
+					/* If either of these are manually set, point
+					 * the gun at the script writers foot for them */
+					chunked = false;
+					session->req.manual_length = TRUE;
+				default:
+					safe_snprintf(str,sizeof(str),"%s: %s",p,p2);
+					strListPush(&session->req.dynamic_heads,str);
 				}
-				else {
-					SAFECOPY(session->req.virtual_path,p2);
-					session->req.send_location=MOVED_TEMP;
-				}
-				if (atoi(session->req.status) == 200)
-					SAFECOPY(session->req.status, error_302);
-				break;
-			case HEAD_LENGTH:
-			case HEAD_TRANSFER_ENCODING:
-				/* If either of these are manually set, point
-				 * the gun at the script writers foot for them */
-				chunked = false;
-				session->req.manual_length = TRUE;
-			default:
+			}
+			else {
 				safe_snprintf(str,sizeof(str),"%s: %s",p,p2);
 				strListPush(&session->req.dynamic_heads,str);
 			}
