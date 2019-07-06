@@ -256,8 +256,8 @@ size_t sbbs_t::utf8_to_cp437(const char* str, size_t len)
 	}
 	uint32_t codepoint = 0;
 	len = utf8_getc(str, len, &codepoint);
-	if(len < 2) {
-		bprintf("Invalid UTF-8 sequence: %02X (error = %d)", (uchar)*str, (int)len);
+	if((int)len < 2) {
+		lprintf(LOG_NOTICE, "Invalid UTF-8 sequence: %02X (error = %d)", (uchar)*str, (int)len);
 		return 1;
 	}
 	for(int i = 1; i < 0x100; i++) {
