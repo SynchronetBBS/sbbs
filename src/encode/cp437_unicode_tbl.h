@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-uint32_t cp437_unicode_tbl[];
+extern uint32_t cp437_unicode_tbl[];
 
 #ifdef __cplusplus
 }
