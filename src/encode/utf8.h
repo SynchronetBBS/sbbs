@@ -37,6 +37,7 @@
 #define UTF8_H_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #define UTF8_MAX_LEN 6	// Longest possible UTF-8 sequence
 
