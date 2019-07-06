@@ -166,7 +166,7 @@ int utf8_getc(const char *str, size_t len, uint32_t* val)
     int ret;
     if (len <= 0)
         return 0;
-    p = str;
+    p = (const unsigned char*)str;
 
     /* Check syntax and work out the encoded value (if correct) */
     if ((*p & 0x80) == 0) {
