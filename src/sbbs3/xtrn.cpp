@@ -937,9 +937,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 						lprintf(LOG_ERR,"output buffer overflow");
 						rd=RingBufFree(&outbuf);
 					}
-					if(!(mode&EX_BIN) && term_supports(PETSCII))
-						petscii_convert(bp, rd);
-					RingBufWrite(&outbuf, bp, rd);
+					if(mode&EX_BIN)
+						RingBufWrite(&outbuf, bp, rd);
+					else
+						rputs((char*)bp, rd);
 				}
 			} else {	// Windows 9x
 
