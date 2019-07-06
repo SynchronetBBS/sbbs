@@ -720,7 +720,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		if(msg->replyto_net.type==NET_INTERNET)
 			p=msg->replyto_net.addr;
 	}
-	if(p!=NULL && strchr(p, '@') != NULL) {
+	if(p!=NULL && strchr((char*)p, '@') != NULL) {
 		if(np!=NULL)
 			s=sockprintf(socket,prot,sess,"Reply-To: \"%s\" <%s>",np,p);
 		else 
