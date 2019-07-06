@@ -8,7 +8,8 @@
 
 require("sbbsdefs.js", 'SS_RLOGIN');
 require("text.js", 'SiSysName');
-var Avatar = load({}, "avatar_lib.js");
+if(!bbs.mods.avatar_lib)
+	bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
 load("fonts.js", "preload", "default");
 var options = load("modopts.js", "logon");
 if(!options)
@@ -18,7 +19,7 @@ if(options.show_avatar === undefined)
 if(options.draw_avatar_right === undefined)
 	options.draw_avatar_right = true;
 
-if(user.settings & ICE_COLOR) {
+if(user.settings & USER_ICE_COLOR) {
 	var cterm = load({}, "cterm_lib.js");
 	cterm.bright_background(true);
 }
@@ -246,9 +247,9 @@ else {
 
 	if(options.show_avatar && console.term_supports(USER_ANSI)) {
 		if(options.draw_avatar_above || options.draw_avatar_right)
-			Avatar.draw(user.number, /* name: */null, /* netaddr: */null, options.draw_avatar_above, options.draw_avatar_right);
+			bbs.mods.avatar_lib.draw(user.number, /* name: */null, /* netaddr: */null, options.draw_avatar_above, options.draw_avatar_right);
 		else
-			Avatar.show(user.number);
+			bbs.mods.avatar_lib.show(user.number);
 		console.attributes = 7;	// Clear the background attribute
 	}
 }
@@ -262,7 +263,7 @@ if(options.rlogin_xtrn_menu
 } else if(!(user.security.restrictions&UFLAG_G)
 	&& console.term_supports(USER_ANSI) 
 	&& options.set_avatar == true) {
-	var avatar = Avatar.read(user.number);
+	var avatar = bbs.mods.avatar_lib.read(user.number);
 	if(!avatar || (!avatar.data && !avatar.disabled)) {
 		alert("You have not selected an avatar.");
 		if(console.yesno("Select avatar now"))
