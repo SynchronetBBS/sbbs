@@ -2653,7 +2653,7 @@ static void parse_mail_address(char* p
 							   ,char* addr, size_t addr_len)
 {
 	char*	tp;
-	char	tmp[128];
+	char	tmp[256];
 
 	SKIP_WHITESPACE(p);
 
