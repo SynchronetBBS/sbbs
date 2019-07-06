@@ -48,6 +48,7 @@
 #undef SBBS	/* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
 #include "sbbs.h"
 #include "mailsrvr.h"
+#include "utf8.h"
 #include "mime.h"
 #include "md5.h"
 #include "crc32.h"
@@ -719,7 +720,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		if(msg->replyto_net.type==NET_INTERNET)
 			p=msg->replyto_net.addr;
 	}
-	if(p!=NULL) {
+	if(p!=NULL && strchr(p, '@') != NULL) {
 		if(np!=NULL)
 			s=sockprintf(socket,prot,sess,"Reply-To: \"%s\" <%s>",np,p);
 		else 
@@ -2402,78 +2403,6 @@ static enum mimehdr_charset mimehdr_charset_decode(const char* str)
 	return MIMEHDR_CHARSET_OTHER;
 }
 
-static uchar* normalize_utf8(uchar* str)
-{
-	uchar* dest = str;
-
-	for(uchar* src = str; *src != 0; src++) {
-		// UNICODE NO-BREAK SPACE -> ASCII space
-		if(*src == 0xc2 && *src == 0xa0) {
-			src++;
-			*dest++ = ' ';
-			continue;
-		}
-		if(*src == 0xe2) {
-			// UNICODE HORIZONTAL ELLIPSIS -> ASCII periods (3)
-			if(*(src + 1) == 0x80 && *(src + 2) == 0xa6) {
-				src += 2;
-				for(int i = 0; i < 3; i++)
-					*dest++ =  '.';
-				continue;
-			}
-			// UNICODE EN SPACE -> ASCII space
-			// UNICODE EM SPACE -> ASCII space
-			if(*(src + 1) == 0x80 && (*(src + 2) == 0x82 || *(src + 2) == 0x83)) {
-				src += 2;
-				*dest++ = ' ';
-				continue;
-			}
-			// UNICODE HYPEN -> ASCII hyphen
-			// UNICODE HYPEN BULLET -> ASCII hyphen
-			// UNICODE NON-BREAKING HYPEN -> ASCII hyphen
-			// UNICODE MINUS SIGN -> ASCII hyphen
-			if((*(src + 1) == 0x80 && *(src + 2) == 0x90)
-				|| (*(src + 1) == 0x80 && *(src + 2) == 0x91)
-				|| (*(src + 1) == 0x81 && *(src + 2) == 0x83)
-				|| (*(src + 1) == 0x88 && *(src + 2) == 0x92)) {
-				src += 2;
-				*dest++ = '-';
-				continue;
-			}
-			// UNICODE EN DASH -> ASCII hyphen
-			// UNICODE EM DASH -> ASCII hyphen
-			if(*(src + 1) == 0x80 && (*(src + 2) == 0x93 || *(src + 2) == 0x94)) {
-				src += 2;
-				*dest++ = '-';
-				continue;
-			}
-			// UNICODE LEFT SINGLE QUOTATION MARK -> ASCII backtick
-			if(*(src + 1) == 0x80 && *(src + 2) == 0x98) {
-				src += 2;
-				*dest++ = '`';
-				continue;
-			}
-			// UNICODE PRIME -> ASCII apostrophe
-			// UNICODE RIGHT SINGLE QUOTATION MARK -> ASCII apostrophe
-			if(*(src + 1) == 0x80 && (*(src + 2) == 0xB2 || *(src + 2) == 0x99)) {
-				src += 2;
-				*dest++ = '\'';
-				continue;
-			}
-			// UNICODE LEFT DOUBLE QUOTATION MARK -> ASCII double-quote
-			// UNICODE RIGHT DOUBLE QUOTATION MARK -> ASCII double-quote
-			if(*(src + 1) == 0x80 && (*(src + 2) == 0x9c || *(src + 2) == 0x9d)) {
-				src += 2;
-				*dest++ = '"';
-				continue;
-			}
-		}
-		*dest++ = *src;
-	}
-	*dest = 0;
-	return str;
-}
-
 // Replace unnecessary MIME (RFC 2047) "encoded-words" with their decoded-values
 // Returns true if the last 'atom' in 'str' was an 'encoded-word' that was normalized
 bool normalize_hfield_value(char* str)
@@ -2505,14 +2434,14 @@ bool normalize_hfield_value(char* str)
 				if(encoding == 'Q') {
 					mimehdr_q_decode(tmp);
 					if(charset == MIMEHDR_CHARSET_UTF8)
-						normalize_utf8((uchar*)tmp);
+						utf8_normalize_str(tmp);
 					if(charset == MIMEHDR_CHARSET_CP437 || strIsPlainAscii(tmp))
 						p = tmp;
 				}
 				else if(encoding == 'B' 
 					&& b64_decode(tmp, sizeof(tmp), tmp, strlen(tmp)) > 0) { // base64
 					if(charset == MIMEHDR_CHARSET_UTF8)
-						normalize_utf8((uchar*)tmp);
+						utf8_normalize_str(tmp);
 					if(charset == MIMEHDR_CHARSET_CP437 || strIsPlainAscii(tmp))
 						p = tmp;
 				}
