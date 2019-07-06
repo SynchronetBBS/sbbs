@@ -41,7 +41,8 @@
 /**********************************************************************/
 
 #include "sbbs.h"
-#include "cp437_utf8_tbl.h"
+#include "utf8.h"
+#include "cp437_unicode_tbl.h"
 
 /****************************************************************************/
 /* Outputs a NULL terminated string locally and remotely (if applicable)    */
@@ -246,6 +247,250 @@ int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 	return 0;
 }
 
+// Return length of sequence
+size_t sbbs_t::utf8_to_cp437(const char* str, size_t len)
+{
+	if(((*str)&0x80) == 0) {
+		outchar(*str);
+		return sizeof(char);
+	}
+	uint32_t codepoint = 0;
+	len = utf8_getc(str, len, &codepoint);
+	if(len < 2) {
+		bprintf("Invalid UTF-8 sequence: %02X (error = %d)", (uchar)*str, (int)len);
+		return 1;
+	}
+	for(int i = 1; i < 0x100; i++) {
+		if(cp437_unicode_tbl[i]
+			&& cp437_unicode_tbl[i] == codepoint) {
+			outchar(i);
+			return len;
+		}
+	}
+	char ch = 0;
+	switch(codepoint) {
+		case 0x00A9: // COPYRIGHT SIGN
+			outchar('(');
+			outchar('C');
+			ch = ')';
+			break;
+		case 0x00AE: // REGISTERED SIGN
+			outchar('(');
+			outchar('R');
+			ch = ')';
+			break;
+		case 0x00B4: // ACUTE ACCENT
+			ch = '\'';
+			break;
+		case 0x00CD: // LATIN CAPITAL LETTER I WITH ACUTE
+			ch = '\xA1'; // Lower-case Letter i with Acute
+			break;
+		case 0x2014: // EM DASH
+			ch = '\xC4';
+			break;
+		case 0x2022: // BULLET
+			ch = '\xF9';
+			break;
+		case 0x203E: // OVERLINE
+		case 0x2500: // Box Drawings Light Horizontal
+		case 0x2501: // Box Drawings Heavy Horizontal
+		case 0x2504: // Box Drawings Light Triple Dash Horizontal
+		case 0x2505: // Box Drawings Heavy Triple Dash Horizontal
+		case 0x2508: // Box Drawings Light Quadruple Dash Horizontal
+		case 0x2509: // Box Drawings Heavy Quadruple Dash Horizontal
+		case 0x254C: // Box Drawings Light Double Dash Horizontal
+		case 0x254D: // Box Drawings Heavy Double Dash Horizontal
+		case 0x2574: // Box Drawings Light Left
+		case 0x2576: // Box Drawings Light Right
+		case 0x2578: // Box Drawings Heavy Left
+		case 0x257A: // Box Drawings Heavy Right
+		case 0x257C: // Box Drawings Light Left and Heavy Right
+		case 0x257E: // Box Drawings Heavy Left and Light Right
+			ch = '\xC4';
+			break;
+		case 0x2502: // Box Drawings Light Vertical
+		case 0x2503: // Box Drawings Heavy Vertical
+		case 0x2506: // Box Drawings Light Triple Dash Vertical
+		case 0x2507: // Box Drawings Heavy Triple Dash Vertical
+		case 0x250A: // Box Drawings Light Quadruple Dash Vertical
+		case 0x250B: // Box Drawings Heavy Quadruple Dash Vertical
+			ch = '\xB3';
+			break;
+		case 0x250C: // BOX DRAWINGS LIGHT DOWN AND RIGHT
+		case 0x250D:
+		case 0x250E:
+		case 0x250F: // BOX DRAWINGS HEAVY DOWN AND RIGHT
+			ch = '\xDA';
+			break;
+		case 0x2510: // BOX DRAWINGS LIGHT DOWN AND LEFT
+		case 0x2511:
+		case 0x2512:
+		case 0x2513: // BOX DRAWINGS HEAVY DOWN AND LEFT
+			ch = '\xBF';
+			break;
+		case 0x2514: // BOX DRAWINGS LIGHT UP AND RIGHT
+		case 0x2515:
+		case 0x2516:
+		case 0x2517: // BOX DRAWINGS HEAVY UP AND RIGHT
+			ch = '\xC0';
+			break;
+		case 0x2518: // BOX DRAWINGS LIGHT UP AND LEFT
+		case 0x2519:
+		case 0x251A:
+		case 0x251B: // BOX DRAWINGS HEAVY UP AND LEFT
+			ch = '\xD9';
+			break;
+		case 0x251C: // BOX DRAWINGS LIGHT VERTICAL AND RIGHT
+		case 0x251D:
+		case 0x251E:
+		case 0x251F:
+		case 0x2520:
+		case 0x2521:
+		case 0x2522:
+		case 0x2523: // BOX DRAWINGS HEAVY VERTICAL AND RIGHT
+			ch = '\xC3';
+			break;
+		case 0x2524: // BOX DRAWINGS LIGHT VERTICAL AND LEFT
+		case 0x2525:
+		case 0x2526:
+		case 0x2527:
+		case 0x2528:
+		case 0x2529:
+		case 0x252A:
+		case 0x252B:
+			ch = '\xB4';
+			break;
+		case 0x252C: // BOX DRAWINGS LIGHT DOWN AND HORIZONTAL
+		case 0x252D:
+		case 0x252E:
+		case 0x252F:
+		case 0x2530:
+		case 0x2531:
+		case 0x2532: // BOX DRAWINGS LEFT LIGHT AND RIGHT DOWN HEAVY
+		case 0x2533: // BOX DRAWINGS HEAVY DOWN AND HORIZONTAL
+			ch = '\xC2';
+			break;
+		case 0x2534: // BOX DRAWINGS LIGHT UP AND HORIZONTAL
+		case 0x2535: // BOX DRAWINGS LEFT HEAVY AND RIGHT UP LIGHT
+		case 0x2536: // BOX DRAWINGS RIGHT HEAVY AND LEFT UP LIGHT
+		case 0x2537: // BOX DRAWINGS UP LIGHT AND HORIZONTAL HEAVY
+		case 0x2538: // BOX DRAWINGS UP HEAVY AND HORIZONTAL LIGHT
+		case 0x2539: // BOX DRAWINGS RIGHT LIGHT AND LEFT UP HEAVY
+		case 0x253A: // BOX DRAWINGS LEFT LIGHT AND RIGHT UP HEAVY
+		case 0x253B: // BOX DRAWINGS HEAVY UP AND HORIZONTAL
+			ch = '\xC1';
+			break;
+		case 0x253C: // BOX DRAWINGS LIGHT VERTICAL AND HORIZONTAL
+		case 0x253D: // BOX DRAWINGS LEFT HEAVY AND RIGHT VERTICAL LIGHT
+		case 0x253E: // BOX DRAWINGS RIGHT HEAVY AND LEFT VERTICAL LIGHT
+		case 0x253F: // BOX DRAWINGS VERTICAL LIGHT AND HORIZONTAL HEAVY
+		case 0x2540: // BOX DRAWINGS UP HEAVY AND DOWN HORIZONTAL LIGHT
+		case 0x2541: // BOX DRAWINGS DOWN HEAVY AND UP HORIZONTAL LIGHT
+		case 0x2542: // BOX DRAWINGS VERTICAL HEAVY AND HORIZONTAL LIGHT
+		case 0x2543: // BOX DRAWINGS LEFT UP HEAVY AND RIGHT DOWN LIGHT
+		case 0x2544: // BOX DRAWINGS RIGHT UP HEAVY AND LEFT DOWN LIGHT
+		case 0x2545: // BOX DRAWINGS LEFT DOWN HEAVY AND RIGHT UP LIGHT
+		case 0x2546: // BOX DRAWINGS RIGHT DOWN HEAVY AND LEFT UP LIGHT
+		case 0x2547: // BOX DRAWINGS DOWN LIGHT AND UP HORIZONTAL HEAVY
+		case 0x2548: // BOX DRAWINGS UP LIGHT AND DOWN HORIZONTAL HEAVY
+		case 0x2549: // BOX DRAWINGS RIGHT LIGHT AND LEFT VERTICAL HEAVY
+		case 0x254A: // BOX DRAWINGS LEFT LIGHT AND RIGHT VERTICAL HEAVY
+		case 0x254B: // BOX DRAWINGS HEAVY VERTICAL AND HORIZONTAL
+			ch = '\xC5';
+			break;
+		case 0x254E: // BOX DRAWINGS LIGHT DOUBLE DASH VERTICAL
+		case 0x254F: // BOX DRAWINGS HEAVY DOUBLE DASH VERTICAL
+			ch = '|';
+			break;
+		case 0x256D: // BOX DRAWINGS LIGHT ARC DOWN AND RIGHT
+			ch = '\xDA';
+			break;
+		case 0x256E: // BOX DRAWINGS LIGHT ARC DOWN AND LEFT
+			ch = '\xBF';
+			break;
+		case 0x256F: // BOX DRAWINGS LIGHT ARC UP AND LEFT
+			ch = '\xD9';
+			break;
+		case 0x2570: // BOX DRAWINGS LIGHT ARC UP AND RIGHT
+			ch = '\xC0';
+			break;
+		case 0x2571: // BOX DRAWINGS LIGHT DIAGONAL UPPER RIGHT TO LOWER LEFT
+			ch = '/';
+			break;
+		case 0x2572: // BOX DRAWINGS LIGHT DIAGONAL UPPER LEFT TO LOWER RIGHT
+			ch = '\\';
+			break;
+		case 0x2573: // BOX DRAWINGS LIGHT DIAGONAL CROSS
+			ch = 'X';
+			break;
+		case 0x2575: // Box Drawings Light Up
+		case 0x2577: // Box Drawings Light Down
+		case 0x2579: // Box Drawings Heavy Up
+		case 0x257B: // Box Drawings Heavy Down
+		case 0x257D: // Box Drawings Light Up and Heavy Down
+		case 0x257F: // Box Drawings Heavy Up and Light Down
+			ch = '\xB3';
+			break;
+		case 0x2581: // Lower One Eighth Block
+			ch = '_';
+			break;
+		case 0x2582: // Lower One Quarter Block
+		case 0x2583: // Lower Three Eighths Block
+			ch = '\x16';
+			break;
+		case 0x2585: // Lower Five Eighths Block
+		case 0x2586: // Lower Three Quarters Block
+		case 0x2587: // Lower Seven Eighths Block
+			ch = '\xDC';
+			break;
+		case 0x2588: // Full Block
+		case 0x2589: // Left Seven Eighths Block
+			ch = '\xDB';
+			break;
+		case 0x258A: // Left Three Quarters Block
+		case 0x258B: // Left Five Eighths Block
+		case 0x258C: // Left Half Block
+		case 0x258D: // Left Three Eighths Block
+		case 0x258E: // Left One Quarter Block
+		case 0x258F: // Left One Eighth Block
+			ch = '\xDD';
+			break;
+		case 0x2590: // Right Half Block
+		case 0x2595: // Right One Eighth Block
+			ch = '\xDE';
+			break;
+		case 0x2594: // Upper One Eighth Block
+			ch = '\xDF';
+			break;
+		case 0xFE00: // VARIATION SELECTOR-1
+		case 0xFE01: // VARIATION SELECTOR-2
+		case 0xFE02: // VARIATION SELECTOR-3
+		case 0xFE03: // VARIATION SELECTOR-4
+		case 0xFE04: // VARIATION SELECTOR-5
+		case 0xFE05: // VARIATION SELECTOR-6
+		case 0xFE06: // VARIATION SELECTOR-7
+		case 0xFE07: // VARIATION SELECTOR-8
+		case 0xFE08: // VARIATION SELECTOR-9
+		case 0xFE09: // VARIATION SELECTOR-10
+		case 0xFE0A: // VARIATION SELECTOR-11
+		case 0xFE0B: // VARIATION SELECTOR-12
+		case 0xFE0C: // VARIATION SELECTOR-13
+		case 0xFE0D: // VARIATION SELECTOR-14
+		case 0xFE0E: // VARIATION SELECTOR-15
+		case 0xFE0F: // VARIATION SELECTOR-16
+			return len;
+	}
+	if(ch)
+		outchar(ch);
+	else {
+		outchar('\xA8');	// Inverted question mark
+		char seq[32] = "";
+		for(size_t i = 0; i < len; i++)
+			sprintf(seq + strlen(seq), "%02X ", (uchar)*(str + i));
+		lprintf(LOG_DEBUG, "Unsupported UTF-8 sequence: %s (U+%X)", seq, codepoint);
+	}
+	return len;
+}
 
 /****************************************************************************/
 /* Raw put string (remotely)												*/
@@ -403,12 +648,15 @@ int sbbs_t::outchar(char ch)
 	else
 		outchar_esc=0;
 	long term = term_supports();
-	const char* utf8 = NULL;
+	char utf8[UTF8_MAX_LEN + 1] = "";
 	if(!(term&PETSCII)) {
 		if((term&NO_EXASCII) && (ch&0x80))
 			ch = exascii_to_ascii_char(ch);  /* seven bit table */
-		else if(term&UTF8)
-			utf8 = cp437_utf8_tbl[(uchar)ch];
+		else if(term&UTF8) {
+			uint32_t codepoint = cp437_unicode_tbl[(uchar)ch];
+			if(codepoint != 0)
+				utf8_putc(utf8, sizeof(utf8) - 1, codepoint);
+		}
 	}
 
 	if(ch==FF && lncntr > 0 && !tos) {
@@ -459,7 +707,7 @@ int sbbs_t::outchar(char ch)
 			if(ch == '\r' && (curatr&0xf0) != 0) // reverse video is disabled upon CR
 				curatr >>= 4;
 		} else {
-			if(utf8 != NULL)
+			if(utf8[0] != 0)
 				putcom(utf8);
 			else
 				outcom(ch);

@@ -39,6 +39,7 @@
 /***********************************************************************/
 
 #include "sbbs.h"
+#include "utf8.h"
 
 /****************************************************************************/
 /* Loads an SMB message from the open msg base the fastest way possible 	*/
@@ -286,6 +287,11 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 	}
 	truncsp(p);
 	SKIP_CRLF(p);
+	if(smb_msg_is_utf8(msg)) {
+		if(!term_supports(UTF8))
+			utf8_normalize_str(txt);
+		p_mode |= P_UTF8;
+	}
 	putmsg(p, p_mode, msg->columns);
 	smb_freemsgtxt(txt);
 	if(column)
