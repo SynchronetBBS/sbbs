@@ -168,7 +168,8 @@
   <ItemGroup>
     <ClCompile Include="..\comio\comio.c" />
     <ClCompile Include="..\comio\comio_win32.c" />
-    <ClCompile Include="..\encode\cp437_utf8_tbl.c" />
+    <ClCompile Include="..\encode\cp437_unicode_tbl.c" />
+    <ClCompile Include="..\encode\utf8.c" />
     <ClCompile Include="..\encode\uucode.c" />
     <ClCompile Include="..\encode\yenc.c" />
     <ClCompile Include="ansiterm.cpp">
