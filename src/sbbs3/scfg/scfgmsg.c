@@ -340,16 +340,12 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			cfg.sub[j]->ptridx=sav_ptridx;	/* restore original ptridx */
 		} else {
 			cfg.sub[j]->grp=grpnum;
-			if(cfg.total_faddrs)
-				cfg.sub[j]->faddr=cfg.faddr[0];
 			SAFECOPY(cfg.sub[j]->code_suffix,tmpsub.code_suffix);
 			SAFECOPY(cfg.sub[j]->sname,tmpsub.sname);
 			SAFECOPY(cfg.sub[j]->lname,tmpsub.lname);
 			SAFECOPY(cfg.sub[j]->newsgroup,tmpsub.newsgroup);
 			SAFECOPY(cfg.sub[j]->qwkname,tmpsub.qwkname);
 			SAFECOPY(cfg.sub[j]->data_dir,tmpsub.data_dir);
-//			if(j==cfg.total_subs)
-//				cfg.sub[j]->maxmsgs=1000;
 		}
 		if(qhub != NULL)
 			new_qhub_sub(qhub, qhub->subs, cfg.sub[j], qwk_confnum);
