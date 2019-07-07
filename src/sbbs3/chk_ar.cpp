@@ -147,7 +147,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_ANSI:
-				if(!(user->misc&ANSI))
+				if(!term_supports(ANSI))
 					result=_not;
 				else result=!_not;
 				if(!result) {
@@ -156,7 +156,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_PETSCII:
-				if(!(user->misc&PETSCII))
+				if(!term_supports(PETSCII))
 					result=_not;
 				else result=!_not;
 				if(!result) {
@@ -165,7 +165,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_RIP:
-				if(!(user->misc&RIP))
+				if(!term_supports(RIP))
 					result=_not;
 				else result=!_not;
 				if(!result) {
@@ -174,7 +174,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_WIP:
-				if(!(user->misc&WIP))
+				if(!term_supports(WIP))
 					result=_not;
 				else result=!_not;
 				if(!result) {
