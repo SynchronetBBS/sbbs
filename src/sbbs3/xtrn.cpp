@@ -406,6 +406,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	sbbsexec_start_t start;
 	OPENVXDHANDLE OpenVxDHandle;
 
+	xtrn_mode = mode;
 	lprintf(LOG_DEBUG,"Executing external: %s",cmdline);
 
 	if(startup_dir!=NULL && startup_dir[0] && !isdir(startup_dir)) {
@@ -1340,6 +1341,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
  	char* p;
 #endif
 
+	xtrn_mode = mode;
 	lprintf(LOG_DEBUG, "Executing external: %s", cmdline);
 
 	if(startup_dir!=NULL && startup_dir[0] && !isdir(startup_dir)) {

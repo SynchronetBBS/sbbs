@@ -925,6 +925,7 @@ public:
 
 	/* xtrn.cpp */
 	int		external(const char* cmdline, long mode, const char* startup_dir=NULL);
+	long	xtrn_mode;
 
 	/* xtrn_sec.cpp */
 	int		xtrn_sec(void);					/* The external program section  */

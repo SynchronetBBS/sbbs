@@ -2285,9 +2285,13 @@ void passthru_input_thread(void* arg)
 			break;
 		}
 
-    	if(!RingBufWrite(&sbbs->outbuf, &ch, 1)) {
-			lprintf(LOG_ERR,"Cannot pass from passthru socket to outbuf");
-			break;
+		if(sbbs->xtrn_mode & EX_BIN) {
+    		if(!RingBufWrite(&sbbs->outbuf, &ch, 1)) {
+				lprintf(LOG_ERR,"Cannot pass from passthru socket to outbuf");
+				break;
+			}
+		} else {
+			sbbs->rputs((char*)&ch, sizeof(ch));
 		}
 	}
 	if(sbbs->passthru_socket!=INVALID_SOCKET) {
