@@ -999,4 +999,5 @@
 "Does your terminal display bright background "\          823 IceColorTerminalQ
     "(iCE) colors\r\n    \1n\1i\1k\x013"\
     "This text\1n is black on yellow and NOT BLINKING"
-"\r\n\xb3 \1bCC  \1n\1b: \1h\1c%.70s"                     824 MsgCarbonCopyList
+"Does your terminal support UTF-8"                        824 Utf8TerminalQ
+"\r\n\xb3 \1bCC  \1n\1b: \1h\1c%.70s"                     825 MsgCarbonCopyList
