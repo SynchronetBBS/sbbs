@@ -907,10 +907,14 @@ void sbbs_t::maindflts(user_t* user)
 				if(sys_status&SS_ABORT)
 					break;
 				if(!(user->misc&AUTOTERM)) {
+					if(!noyes(text[Utf8TerminalQ]))
+						user->misc |= UTF8;
+					else
+						user->misc &= ~UTF8;
 					if(yesno(text[AnsiTerminalQ])) {
 						user->misc |= ANSI;
 						user->misc &= ~PETSCII;
-					} else {
+					} else if(!(user->misc&UTF8)) {
 						user->misc &= ~(ANSI|COLOR|ICE_COLOR);
 						if(!noyes(text[PetTerminalQ]))
 							user->misc |= PETSCII|COLOR;
