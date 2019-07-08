@@ -34,6 +34,8 @@
  ****************************************************************************/
 
 #include "utf8.h"
+#include <stdbool.h>
+#include <string.h>
 
 char* utf8_normalize_str(char* str)
 {
@@ -134,6 +136,86 @@ char* utf8_normalize_str(char* str)
 	}
 	*dest = 0;
 	return str;
+}
+
+static bool unicode_is_zerowidth(uint32_t u)
+{
+	switch(u) {
+		case 0x200B: // ZERO WIDTH SPACE
+		case 0x200C: // ZERO WIDTH NON-JOINER
+		case 0x200D: // ZERO WIDTH JOINER
+		case 0xFE00: // VARIATION SELECTOR-1
+		case 0xFE01: // VARIATION SELECTOR-2
+		case 0xFE02: // VARIATION SELECTOR-3
+		case 0xFE03: // VARIATION SELECTOR-4
+		case 0xFE04: // VARIATION SELECTOR-5
+		case 0xFE05: // VARIATION SELECTOR-6
+		case 0xFE06: // VARIATION SELECTOR-7
+		case 0xFE07: // VARIATION SELECTOR-8
+		case 0xFE08: // VARIATION SELECTOR-9
+		case 0xFE09: // VARIATION SELECTOR-10
+		case 0xFE0A: // VARIATION SELECTOR-11
+		case 0xFE0B: // VARIATION SELECTOR-12
+		case 0xFE0C: // VARIATION SELECTOR-13
+		case 0xFE0D: // VARIATION SELECTOR-14
+		case 0xFE0E: // VARIATION SELECTOR-15
+		case 0xFE0F: // VARIATION SELECTOR-16
+		case 0xFEFF: // ZERO WIDTH NO-BREAK SPACE
+			return true;
+	}
+	return false;
+}
+
+/* Replace all multi-byte UTF-8 sequences with 'ch' or 'zwch' (when non-zero) */
+/* When ch and zwch are 0, effectively strips all UTF-8 chars from str */
+char* utf8_replace_chars(char* str, char (*lookup)(uint32_t), char unsupported_ch, char unsupported_zwch, char error_ch)
+{
+	char* end = str + strlen(str);
+	char* dest = str;
+
+	int len ;
+	for(char* src= str; src < end; src += len) {
+		if(!(*src & 0x80)) {
+			*dest++ = *src;
+			len = 1;
+			continue;
+		}
+		uint32_t codepoint = 0;
+		len = utf8_getc(src, end - src, &codepoint);
+		if(len < 2) {
+			if(error_ch)
+				*dest++ = error_ch;
+			len = 1;
+			continue;
+		}
+		if(lookup != NULL) {
+			char ch = lookup(codepoint);
+			if(ch) {
+				*dest++ = ch;
+				continue;
+			}
+		}
+		if(unicode_is_zerowidth(codepoint)) {
+			if(unsupported_zwch)
+				*dest++ = unsupported_zwch;
+		} 
+		else if(unsupported_ch)
+			*dest++ = unsupported_ch;
+	}
+	*dest = 0;
+	return str;
+}
+
+bool utf8_str_is_valid(const char* str)
+{
+	const char* end = str + strlen(str);
+	while (str < end) {
+		int len = utf8_getc(str, end - str, NULL);
+		if (len < 1)
+			return false;
+		str += len;
+	}
+	return true;
 }
 
 // From openssl/crypto/asn1/a_utf8.c:
@@ -244,7 +326,8 @@ int utf8_getc(const char *str, size_t len, uint32_t* val)
         ret = 6;
     } else
         return -2;
-    *val = value;
+	if(val != NULL)
+		*val = value;
     return ret;
 }
 

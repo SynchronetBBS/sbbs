@@ -6,7 +6,7 @@
 
 # OBJODIR, DIRSEP, and OFILE must be pre-defined
 
-OBJS	=	$(OBJODIR)$(DIRSEP)cp437_unicode_tbl$(OFILE) \
+OBJS	=	$(OBJODIR)$(DIRSEP)unicode$(OFILE) \
         $(OBJODIR)$(DIRSEP)utf8$(OFILE) \
 		$(OBJODIR)$(DIRSEP)uucode$(OFILE) \
 		$(OBJODIR)$(DIRSEP)yenc$(OFILE) \
