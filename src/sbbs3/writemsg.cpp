@@ -515,7 +515,6 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 			bputs(text[OutOfBytes]); 
 	}
 
-
 	else if(useron_xedit) {
 
 		if(editor!=NULL)
@@ -640,8 +639,9 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		return(false); 
 	}
 	l=process_edited_text(buf,stream,mode,&lines,cfg.level_linespermsg[useron_level]);
+	bool utf8 = !str_is_ascii(buf) && utf8_str_is_valid(buf);
 	if(charset != NULL) {
-		if(!str_is_ascii(buf) && utf8_str_is_valid(buf))
+		if(utf8)
 			*charset = FIDO_CHARSET_UTF8;
 	}
 
@@ -656,7 +656,12 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 					if(!fgets(str,sizeof(str),sig))
 						break;
 					truncsp(str);
-					l+=fprintf(stream,"%s\r\n",str);
+					if(utf8) {
+						char buf[sizeof(str)*4];
+						cp437_to_utf8_str(str, buf, sizeof(buf) - 1, /* minval: */'\x02');
+						l+=fprintf(stream,"%s\r\n", buf);
+					} else
+						l+=fprintf(stream,"%s\r\n",str);
 					lines++;		/* line counter */
 				}
 				fclose(sig);
@@ -670,7 +675,12 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 					if(!fgets(str,sizeof(str),tag))
 						break;
 					truncsp(str);
-					l+=fprintf(stream,"%s\r\n",str);
+					if(utf8) {
+						char buf[sizeof(str)*4];
+						cp437_to_utf8_str(str, buf, sizeof(buf) - 1, /* minval: */'\x02');
+						l+=fprintf(stream,"%s\r\n", buf);
+					} else
+						l+=fprintf(stream,"%s\r\n",str);
 					lines++;		/* line counter */
 				}
 				fclose(tag);
