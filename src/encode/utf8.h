@@ -48,13 +48,24 @@ extern "C" {
 
 // Returns true if the string is valid UTF-8
 bool utf8_str_is_valid(const char*);
+
 // Normalizes (to ASCII) chars in UTF-8 string 'str', in-place, resulting in string <= original in length
 char* utf8_normalize_str(char* str);
-// Replace or strip UTF-8 sequences in str
-// If table ('tbl') of unicode codepoints if non-NULL is an array of 256 codepoints to map to 8-bit chars
+
+// Replace or strip UTF-8 sequences in str (in-place)
+// 'lookup' is a Unicode codepoint look-up function (optional)
+// 'unsupported_ch' is the character used to replace unsupported Unicode codepoints (optional)
+// 'unsupported_zwch' is the character used to replace unsupported zero-width Unicode codepoints (optional)
+// 'error_ch' is the character used to replace invalid UTF-8 sequence bytes (optional)
 char* utf8_replace_chars(char* str, char (*lookup)(uint32_t), char unsupported_ch, char unsupported_zwch, char error_ch);
+
+// Convert a CP437 char string (src) to UTF-8 string (dest) up to 'maxlen' chars long (sans NUL-terminator)
+// 'minval' can be used to limit the range of converted chars
+int cp437_to_utf8_str(const char* src, char* dest, size_t maxlen, unsigned char minval);
+
 // Decode a UTF-8 sequence to a UNICODE code point
 int utf8_getc(const char* str, size_t len, uint32_t* codepoint);
+
 // Encode a UNICODE code point into a UTF-8 sequence (str)
 int utf8_putc(char* str, size_t len, uint32_t codepoint);
 
