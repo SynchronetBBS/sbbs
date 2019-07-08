@@ -324,7 +324,7 @@ int utf8_getc(const char *str, size_t len, uint32_t* val)
         if (value < 0x4000000)
             return -4;
         ret = 6;
-    } else
+	} else
         return -2;
 	if(val != NULL)
 		*val = value;
