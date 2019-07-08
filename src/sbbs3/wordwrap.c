@@ -37,9 +37,6 @@
 #include "wordwrap.h"
 #include "utf8.h"
 
-/* sbbs.h: */
-extern BOOL str_is_ascii(const char*);
-
 struct prefix {
 	size_t cols;
 	char *bytes;
@@ -567,14 +564,12 @@ static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, BOOL ha
 	return outbuf;
 }
 
-char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
+char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes, BOOL is_utf8)
 {
 	char*		outbuf;
 	struct paragraph *paragraphs;
 	BOOL		has_crs;
-	BOOL		is_utf8;
 
-	is_utf8 = (!str_is_ascii(inbuf) && utf8_str_is_valid(inbuf));
 	paragraphs = word_unwrap(inbuf, oldlen, handle_quotes, &has_crs, is_utf8);
 	if (paragraphs == NULL)
 		return NULL;

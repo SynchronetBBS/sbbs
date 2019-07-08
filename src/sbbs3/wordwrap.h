@@ -38,7 +38,7 @@
 extern "C" {
 #endif
 
-char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes);
+char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes, BOOL is_utf8);
 
 #ifdef __cplusplus
 }
