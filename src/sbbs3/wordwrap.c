@@ -243,7 +243,7 @@ static struct section_len get_word_len(char *buf, int maxlen)
 			break;
 		else if (isspace((unsigned char)buf[ret.bytes]))
 			break;
-		else if (buf[ret.bytes]=='\x1f')
+		else if (buf[ret.bytes]==DEL)
 			continue;
 		else if (buf[ret.bytes]=='\x01') {
 			ret.bytes++;
@@ -369,7 +369,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 						*has_crs = TRUE;
 					// Fall-through to strip
 				case '\b':		// Strip backspaces.
-				case '\x1f':	// Strip delete chars.
+				case DEL:	// Strip delete chars.
 					break;
 				case '\x01':	// CTRL-A code.
 					if (!paragraph_append(&ret[paragraph], inbuf+inpos, 2))
