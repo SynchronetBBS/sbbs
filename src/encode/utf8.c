@@ -139,7 +139,7 @@ char* utf8_normalize_str(char* str)
 	return str;
 }
 
-static bool unicode_is_zerowidth(uint32_t u)
+bool unicode_is_zerowidth(uint32_t u)
 {
 	switch(u) {
 		case 0x200B: // ZERO WIDTH SPACE
@@ -223,7 +223,7 @@ int cp437_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char 
 {
 	int retval = 0;
 	size_t outlen = 0;
-	for(const unsigned char* p = str; *p != 0; p++) {
+	for(const unsigned char* p = (const unsigned char*)str; *p != 0; p++) {
 		if(outlen >= maxlen) {
 			retval = -1;
 			break;
