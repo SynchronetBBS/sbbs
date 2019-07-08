@@ -616,6 +616,15 @@ char DLLCALL exascii_to_ascii_char(uchar ch)
 	return ch;
 }
 
+BOOL DLLCALL str_is_ascii(const char* str)
+{
+	for(const char* p = str; *p != 0; p++) {
+		if(*p < 0)
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /****************************************************************************/
 /* Convert string from IBM extended ASCII to just ASCII						*/
 /****************************************************************************/

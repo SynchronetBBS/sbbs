@@ -88,6 +88,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	FILE*	fp;
 	smbmsg_t msg;
 	uint	reason;
+	bool	utf8 = false;
 
 	if(remsg) {
 		SAFECOPY(title, remsg->subj);
@@ -215,7 +216,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	if(!writemsg(str,top,title,wm_mode,subnum,touser
 		,/* from: */cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias
-		,&editor)
+		,&editor, &utf8)
 		|| (length=(long)flength(str))<1) {	/* Bugfix Aug-20-2003: Reject negative length */
 		bputs(text[Aborted]);
 		smb_close(&smb);
@@ -291,6 +292,9 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	add_msg_ids(&cfg, &smb, &msg, remsg);
 
 	editor_info_to_msg(&msg, editor);
+
+	if(utf8)
+		smb_hfield_str(&msg, FIDOCTRL, FIDO_CHARSET_UTF8);
 	
 	if((cfg.sub[subnum]->misc&SUB_MSGTAGS)
 		&& (tags[0] || text[TagMessageQ][0] == 0 || !noyes(text[TagMessageQ]))) {

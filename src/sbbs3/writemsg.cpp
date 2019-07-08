@@ -36,6 +36,8 @@
 
 #include "sbbs.h"
 #include "wordwrap.h"
+#include "utf8.h"
+#include "unicode.h"
 
 #define MAX_LINES		10000
 #define MAX_LINE_LEN	(cols - 1)
@@ -103,6 +105,13 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 	if((buf=smb_getmsgtxt(smb, msg, mode)) != NULL) {
 		strip_invalid_attr(buf);
 		truncsp(buf);
+		if(smb_msg_is_utf8(msg) && !term_supports(UTF8)) {
+			utf8_normalize_str(buf);
+			utf8_replace_chars(buf, unicode_to_cp437
+				,/* unsupported char: */'\xA8' /* Inverted question mark */
+				,/* unsupported zero-width ch: */0
+				,/* decode error char: */ '\xAD' /* inverted exclamation mark */);
+		}
 		if(!useron_xedit || (useron_xedit && (cfg.xedit[useron_xedit-1]->misc&QUOTEWRAP))) {
 			int wrap_cols = 0;
 			if(useron_xedit > 0)
@@ -177,8 +186,10 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, long mode, unsigned* li
 		len++;
 	}
 
-	if(buf[l])
+	if(buf[l]) {
 		bprintf(text[NoMoreLines], i);
+		buf[l] = 0;
+	}
 
 	if(lines!=NULL)
 		*lines=i;
@@ -224,7 +235,7 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, long mode, un
 /* 'dest' contains a text description of where the message is going.        */
 /****************************************************************************/
 bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode, uint subnum
-	,const char *to, const char* from, char** editor)
+	,const char *to, const char* from, char** editor, bool* utf8)
 {
 	char	str[256],quote[128],c,*buf,*p,*tp
 				,useron_level;
@@ -629,6 +640,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		return(false); 
 	}
 	l=process_edited_text(buf,stream,mode,&lines,cfg.level_linespermsg[useron_level]);
+	if(utf8 != NULL)
+		*utf8 = (!str_is_ascii(buf) && utf8_str_is_valid(buf));
 
 	if(!(mode&(WM_EXTDESC|WM_ANON))) {
 		/* Signature file */
