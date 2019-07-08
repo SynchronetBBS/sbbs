@@ -35,6 +35,10 @@
 #include <genwrap.h>
 #include <stdlib.h>		/* realloc */
 #include "wordwrap.h"
+#include "utf8.h"
+
+/* sbbs.h: */
+extern BOOL str_is_ascii(const char*);
 
 struct prefix {
 	size_t cols;
@@ -234,11 +238,13 @@ static struct section_len get_ws_len(char *buf, int col)
  * maxlen cols (used to find the number of bytes to fill a specific
  * number of columns).
  */
-static struct section_len get_word_len(char *buf, int maxlen)
+static struct section_len get_word_len(char *buf, int maxlen, BOOL is_utf8)
 {
 	struct section_len ret = {0,0};
 
-	for(ret.bytes=0; ;ret.bytes++) {
+	int len;
+	for(ret.bytes=0; ;ret.bytes += len) {
+		len = 1;
 		if (!buf[ret.bytes])
 			break;
 		else if (isspace((unsigned char)buf[ret.bytes]))
@@ -257,6 +263,11 @@ static struct section_len get_word_len(char *buf, int maxlen)
 		}
 		if (maxlen > 0 && ret.len >= (size_t)maxlen)
 			break;
+		if(is_utf8 && (buf[ret.bytes]&0x80)) {
+			len = utf8_getc(buf + ret.bytes, strlen(buf + ret.bytes), NULL);
+			if(len < 1)
+				len = 1;
+		}
 		ret.len++;
 	}
 
@@ -319,7 +330,7 @@ static BOOL paragraph_append(struct paragraph *paragraph, const char *bytes, siz
  * The returned malloc()ed array will have the text member of the last
  * paragraph set to NULL.
  */
-static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes, BOOL *has_crs)
+static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes, BOOL *has_crs, BOOL is_utf8)
 {
 	unsigned inpos=0;
 	struct prefix new_prefix;
@@ -423,7 +434,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 					}
 
 					// If the first word on the next line would have fit here, it's hard
-					next_word_len = get_word_len(inbuf+inpos+1+new_prefix_len, -1).len;
+					next_word_len = get_word_len(inbuf+inpos+1+new_prefix_len, -1, is_utf8).len;
 					if ((incol + next_word_len + 1 - 1) < oldlen) {
 						FREE_AND_NULL(new_prefix.bytes);
 						paragraph_done = TRUE;
@@ -477,7 +488,7 @@ fail_return:
  * 
  * Returns a malloc()ed string.
  */
-static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, BOOL handle_quotes, BOOL has_crs)
+static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, BOOL handle_quotes, BOOL has_crs, BOOL is_utf8)
 {
 	int outcol;
 	char *outbuf = NULL;
@@ -499,7 +510,7 @@ static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, BOOL ha
 				prefix_copy = paragraph->prefix.bytes + strlen(paragraph->prefix.bytes) - (outlen/2);
 				while (*prefix_copy != ' ')
 					prefix_copy--;
-				word_len = get_word_len(prefix_copy, -1);
+				word_len = get_word_len(prefix_copy, -1, is_utf8);
 				prefix_cols = word_len.len;
 				prefix_bytes = word_len.bytes;
 			}
@@ -530,10 +541,10 @@ static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, BOOL ha
 				if (*inp == 0)
 					break;
 				ws_len = get_ws_len(inp, outcol);
-				word_len = get_word_len(inp+ws_len.bytes, -1);
+				word_len = get_word_len(inp+ws_len.bytes, -1, is_utf8);
 				// Do we need to chop a long word?
 				if (word_len.len > (outlen - prefix_cols))
-					word_len = get_word_len(inp + ws_len.bytes, outlen - ws_len.bytes - outcol);
+					word_len = get_word_len(inp + ws_len.bytes, outlen - ws_len.bytes - outcol, is_utf8);
 				if (outcol + ws_len.len + word_len.len > outlen) {
 					inp += ws_len.bytes;
 					break;
@@ -561,17 +572,18 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 	char*		outbuf;
 	struct paragraph *paragraphs;
 	BOOL		has_crs;
+	BOOL		is_utf8;
 
-	paragraphs = word_unwrap(inbuf, oldlen, handle_quotes, &has_crs);
+	is_utf8 = (!str_is_ascii(inbuf) && utf8_str_is_valid(inbuf));
+	paragraphs = word_unwrap(inbuf, oldlen, handle_quotes, &has_crs, is_utf8);
 	if (paragraphs == NULL)
 		return NULL;
-
 #if 0
 	for(int i=0;paragraphs[i].text;i++)
 		fprintf(stderr, "PREFIX: '%s'\nTEXT: '%s'\n\n", paragraphs[i].prefix.bytes, paragraphs[i].text);
 #endif
 
-	outbuf = wrap_paragraphs(paragraphs, len, handle_quotes, has_crs);
+	outbuf = wrap_paragraphs(paragraphs, len, handle_quotes, has_crs, is_utf8);
 	free_paragraphs(paragraphs, -1);
 	free(paragraphs);
 	return outbuf;
