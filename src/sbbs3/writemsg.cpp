@@ -235,7 +235,7 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, long mode, un
 /* 'dest' contains a text description of where the message is going.        */
 /****************************************************************************/
 bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode, uint subnum
-	,const char *to, const char* from, char** editor, bool* utf8)
+	,const char *to, const char* from, char** editor, char** charset)
 {
 	char	str[256],quote[128],c,*buf,*p,*tp
 				,useron_level;
@@ -640,8 +640,10 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		return(false); 
 	}
 	l=process_edited_text(buf,stream,mode,&lines,cfg.level_linespermsg[useron_level]);
-	if(utf8 != NULL)
-		*utf8 = (!str_is_ascii(buf) && utf8_str_is_valid(buf));
+	if(charset != NULL) {
+		if(!str_is_ascii(buf) && utf8_str_is_valid(buf))
+			*charset = FIDO_CHARSET_UTF8;
+	}
 
 	if(!(mode&(WM_EXTDESC|WM_ANON))) {
 		/* Signature file */
@@ -683,10 +685,13 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 	return(true);
 }
 
-void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor)
+void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor, const char* charset)
 {
 	if(editor != NULL)
 		smb_hfield_str(msg, SMB_EDITOR, editor);
+
+	if(charset != NULL)
+		smb_hfield_str(msg, FIDOCTRL, charset);
 
 	ushort useron_xedit = useron.xedit;
 

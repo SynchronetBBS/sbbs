@@ -109,6 +109,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	char	msgpath[MAX_PATH+1];
 	char 	tmp[512];
 	char*	editor=NULL;
+	char*	charset=NULL;
 	int		file,x;
 	uint	i;
 	long	length,l;
@@ -240,7 +241,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	}
 
 	msg_tmp_fname(useron.xedit, msgpath, sizeof(msgpath));
-	if(!writemsg(msgpath,nulstr,subj,WM_NETMAIL|mode,INVALID_SUB, to, from, &editor)) {
+	if(!writemsg(msgpath,nulstr,subj,WM_NETMAIL|mode,INVALID_SUB, to, from, &editor, &charset)) {
 		bputs(text[Aborted]);
 		return(false); 
 	}
@@ -350,7 +351,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 
 	smb_hfield_str(&msg,SUBJECT, subj);
 
-	editor_info_to_msg(&msg, editor);
+	editor_info_to_msg(&msg, editor, charset);
 
 	if(cfg.netmail_misc&NMAIL_DIRECT)
 		msg.hdr.netattr |= MSG_DIRECT;

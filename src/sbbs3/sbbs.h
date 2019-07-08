@@ -651,7 +651,7 @@ public:
 	/* writemsg.cpp */
 	void	automsg(void);
 	bool	writemsg(const char *str, const char *top, char *subj, long mode, uint subnum
-				,const char *to, const char* from, char** editor=NULL, bool* utf8=NULL);
+				,const char *to, const char* from, char** editor=NULL, char** charset=NULL);
 	char*	quotes_fname(int xedit, char* buf, size_t len);
 	char*	msg_tmp_fname(int xedit, char* fname, size_t len);
 	char	putmsg(const char *str, long mode, long org_cols = 0);
@@ -671,7 +671,7 @@ public:
 	bool	movemsg(smbmsg_t* msg, uint subnum);
 	int		process_edited_text(char* buf, FILE* stream, long mode, unsigned* lines, unsigned maxlines);
 	int		process_edited_file(const char* src, const char* dest, long mode, unsigned* lines, unsigned maxlines);
-	void	editor_info_to_msg(smbmsg_t*, const char* editor);
+	void	editor_info_to_msg(smbmsg_t*, const char* editor, const char* charset);
 
 	/* postmsg.cpp */
 	bool	postmsg(uint subnum, long wm_mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);

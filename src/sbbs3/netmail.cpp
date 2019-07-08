@@ -49,6 +49,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	char	name[256] = "";
 	char	addr[256] = "";
 	char*	editor=NULL;
+	char*	charset=NULL;
 	char	your_addr[128];
 	ushort	xlat=XLAT_NONE,net=NET_INTERNET;
 	int 	i,j,x,file;
@@ -115,7 +116,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	}
 
 	SAFEPRINTF(msgpath,"%snetmail.msg",cfg.node_dir);
-	if(!writemsg(msgpath,nulstr,title,WM_NETMAIL|mode,INVALID_SUB,into,/* from: */your_addr,&editor)) {
+	if(!writemsg(msgpath,nulstr,title,WM_NETMAIL|mode,INVALID_SUB,into,/* from: */your_addr, &editor, &charset)) {
 		bputs(text[Aborted]);
 		return(false); 
 	}
@@ -279,7 +280,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	add_msg_ids(&cfg, &smb, &msg, remsg);
 
-	editor_info_to_msg(&msg, editor);
+	editor_info_to_msg(&msg, editor, charset);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 
@@ -322,6 +323,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	char	title[128] = "";
 	char	to[128] = "";
 	char*	editor=NULL;
+	char*	charset=NULL;
 	ushort	xlat=XLAT_NONE,net=NET_QWK,touser;
 	int 	i,j,x,file;
 	ulong	length,offset;
@@ -374,7 +376,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	}
 
 	SAFEPRINTF(msgpath,"%snetmail.msg",cfg.node_dir);
-	if(!writemsg(msgpath,nulstr,title, (mode|WM_QWKNET|WM_NETMAIL) ,INVALID_SUB,to,/* from: */useron.alias,&editor)) {
+	if(!writemsg(msgpath,nulstr,title, (mode|WM_QWKNET|WM_NETMAIL) ,INVALID_SUB,to,/* from: */useron.alias, &editor, &charset)) {
 		bputs(text[Aborted]);
 		return(false); 
 	}
@@ -491,7 +493,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	add_msg_ids(&cfg, &smb, &msg, /* remsg: */NULL);
 
-	editor_info_to_msg(&msg, editor);
+	editor_info_to_msg(&msg, editor, charset);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 

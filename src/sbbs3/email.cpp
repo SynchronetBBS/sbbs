@@ -50,6 +50,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 	char 		tmp[512];
 	char		title[LEN_TITLE+1] = "";
 	char*		editor=NULL;
+	char*		charset=NULL;
 	uint16_t	msgattr=0;
 	uint16_t	xlat=XLAT_NONE;
 	int 		i,j,x,file;
@@ -127,7 +128,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 
 	msg_tmp_fname(useron.xedit, msgpath, sizeof(msgpath));
 	username(&cfg,usernumber,str2);
-	if(!writemsg(msgpath,top, /* subj: */title,WM_EMAIL|mode,INVALID_SUB,/* to: */str2,/* from: */useron.alias, &editor)) {
+	if(!writemsg(msgpath,top, /* subj: */title,WM_EMAIL|mode,INVALID_SUB,/* to: */str2,/* from: */useron.alias, &editor, &charset)) {
 		bputs(text[Aborted]);
 		return(false); 
 	}
@@ -317,7 +318,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 
 	add_msg_ids(&cfg, &smb, &msg, remsg);
 
-	editor_info_to_msg(&msg, editor);
+	editor_info_to_msg(&msg, editor, charset);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 
