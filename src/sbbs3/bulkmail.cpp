@@ -43,8 +43,8 @@ bool sbbs_t::bulkmail(uchar *ar)
 	char		str[256],title[LEN_TITLE+1];
 	char		msgpath[MAX_PATH+1];
 	char*		msgbuf;
-	char*		editor=NULL;
-	char*		charset=NULL;
+	const char*	editor=NULL;
+	const char*	charset=NULL;
 	char 		tmp[512];
 	int 		i,j,x;
 	long		msgs=0;

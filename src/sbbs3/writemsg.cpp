@@ -235,7 +235,7 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, long mode, un
 /* 'dest' contains a text description of where the message is going.        */
 /****************************************************************************/
 bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode, uint subnum
-	,const char *to, const char* from, char** editor, char** charset)
+	,const char *to, const char* from, const char** editor, const char** charset)
 {
 	char	str[256],quote[128],c,*buf,*p,*tp
 				,useron_level;

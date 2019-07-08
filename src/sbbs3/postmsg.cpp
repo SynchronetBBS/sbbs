@@ -78,8 +78,8 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	char	touser[64] = "";
 	char	from[64];
 	char	tags[64] = "";
-	char*	editor=NULL;
-	char*	charset=NULL;
+	const char*	editor=NULL;
+	const char*	charset=NULL;
 	char*	msgbuf=NULL;
 	uint16_t xlat;
 	ushort	msgattr = 0;

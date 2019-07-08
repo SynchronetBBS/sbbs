@@ -49,8 +49,8 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 				,buf[SDT_BLOCK_LEN];
 	char 		tmp[512];
 	char		title[LEN_TITLE+1] = "";
-	char*		editor=NULL;
-	char*		charset=NULL;
+	const char*	editor=NULL;
+	const char*	charset=NULL;
 	uint16_t	msgattr=0;
 	uint16_t	xlat=XLAT_NONE;
 	int 		i,j,x,file;
