@@ -247,6 +247,8 @@ static struct section_len get_word_len(char *buf, int maxlen)
 			continue;
 		else if (buf[ret.bytes]=='\x01') {
 			ret.bytes++;
+			if (buf[ret.bytes] == '\\')
+				break;
 			if(buf[ret.bytes]!='\x01')
 				continue;
 		}
