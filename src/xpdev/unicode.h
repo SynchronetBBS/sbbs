@@ -43,7 +43,7 @@
 extern "C" {
 #endif
 
-uint32_t cp437_unicode_tbl[];
+extern uint32_t cp437_unicode_tbl[];
 bool unicode_is_zerowidth(uint32_t);
 char unicode_to_cp437(uint32_t);
 
