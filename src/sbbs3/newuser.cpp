@@ -184,7 +184,6 @@ BOOL sbbs_t::newuser()
 				bprintf(text[InvalidBackspaceKeyFmt], key, key);
 				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
 					return FALSE;
-				newline();
 			}
 		}
 

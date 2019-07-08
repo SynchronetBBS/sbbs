@@ -941,10 +941,20 @@ void sbbs_t::maindflts(user_t* user)
 						user->misc|=NO_EXASCII;
 					else
 						user->misc&=~NO_EXASCII;
-					if(!noyes(text[SwapDeleteKeyQ]))
-						user->misc|=SWAP_DELETE;
-					else
-						user->misc&=~SWAP_DELETE;
+					user->misc &= ~SWAP_DELETE;
+					while(text[HitYourBackspaceKey][0] && !(user->misc&SWAP_DELETE) && online) {
+						bputs(text[HitYourBackspaceKey]);
+						uchar key = getkey(K_NONE);
+						bprintf(text[CharacterReceivedFmt], key, key);
+						if(key == '\b')
+							break;
+						if(key == DEL) {
+							if(text[SwapDeleteKeyQ][0] == 0 || yesno(text[SwapDeleteKeyQ]))
+								user->misc |= SWAP_DELETE;
+						}
+						else
+							bprintf(text[InvalidBackspaceKeyFmt], key, key);
+					}
 				}
 				if(sys_status&SS_ABORT)
 					break;
