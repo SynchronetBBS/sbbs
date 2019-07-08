@@ -44,6 +44,7 @@
 #define FIDO_PING_NAME		"PING"		/* 'To' username for PING netmail (FTS-5001) */
 #define FIDO_AREAMGR_NAME	"AreaFix"	/* De-facto pseudo-standard */
 #define FIDO_CONFMGR_NAME	"ConfMgr"	/* FSC-0057 */
+#define FIDO_CHARSET_UTF8	"CHRS: UTF-8 4"	/* FTS-5003 */
 
 #define FIDO_NAME_LEN			36	/* Includes '\0' terminator				*/
 #define FIDO_SUBJ_LEN			72	/* Includes '\0' terminator				*/
