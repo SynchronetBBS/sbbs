@@ -79,7 +79,7 @@ uint32_t cp437_unicode_tbl[] =
 	/* 0x1D */ 0x2194,
 	/* 0x1E */ 0x25B2,
 	/* 0x1F */ 0x25BC,
-	/* 0x20-0x7F	(1:1 with US-ASCII and CP437) */
+	/* 0x20-0x7E	(1:1 with US-ASCII and CP437) */
 	0,
 	0,
 	0,
@@ -175,7 +175,7 @@ uint32_t cp437_unicode_tbl[] =
 	0,
 	0,
 	0,
-	0,
+	/* 0x7F (DEL) */ UNICODE_TERM_CTRL_CHAR_CODE(0x2302),
 	/* 0x80 */ 0x00C7,
 	/* 0x81 */ 0x00FC,
 	/* 0x82 */ 0x00E9,
