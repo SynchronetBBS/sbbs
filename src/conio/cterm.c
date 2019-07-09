@@ -999,7 +999,7 @@ static bool parse_sub_parameters(struct sub_params *sub, struct esc_seq *seq, un
 	int i;
 	char *p;
 
-	sub->param_count = 0;
+	sub->param_count = 1;
 	sub->param_int = NULL;
 
 	if (param >= seq->param_count)
@@ -1013,7 +1013,8 @@ static bool parse_sub_parameters(struct sub_params *sub, struct esc_seq *seq, un
 	if (sub->param_int == NULL)
 		return false;
 	p = seq->param[param];
-	for (i=0; i<seq->param_count; i++) {
+	for (i=0; i<sub->param_count; i++) {
+		p++;
 		sub->param_int[i] = strtoull(p, &p, 10);
 		if (*p != ':' && *p != 0) {
 			free(seq->param_int);
@@ -2946,10 +2947,14 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 														break;
 												}
 											}
-											if (cterm->fg_tc_str)
+											if (cterm->fg_tc_str) {
+												strcat(tmp, ";");
 												strcat(tmp, cterm->fg_tc_str);
-											if (cterm->bg_tc_str)
+											}
+											if (cterm->bg_tc_str) {
+												strcat(tmp, ";");
 												strcat(tmp, cterm->bg_tc_str);
+											}
 											strcat(tmp, "m");
 											if(strlen(retbuf)+strlen(tmp) < retsize)
 												strcat(retbuf, tmp);
