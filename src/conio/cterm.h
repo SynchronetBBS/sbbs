@@ -35,12 +35,6 @@
 #define _CTERM_H_
 
 #include <stdio.h>	/* FILE* */
-#if !(defined __BORLANDC__ || defined _MSC_VER)
-#include <stdbool.h>
-#else
-#define bool int
-enum { false, true };
-#endif
 #include <link_list.h>
 #include <semwrap.h>
 #include "ciolib.h"
@@ -91,8 +85,6 @@ struct cterminal {
 	struct vmem_cell	*scrollback;
 	int					backlines;		// Number of lines in scrollback
 	char				DA[1024];		// Device Attributes
-	bool				autowrap;
-	bool				origin_mode;
 #define	CTERM_SAVEMODE_AUTOWRAP			0x001
 #define CTERM_SAVEMODE_CURSOR			0x002
 #define	CTERM_SAVEMODE_ALTCHARS			0x004
@@ -111,6 +103,10 @@ struct cterminal {
 	unsigned char		attr;			// Current attribute
 	uint32_t			fg_color;
 	uint32_t			bg_color;
+	unsigned int		extattr;		// Extended attributes
+#define CTERM_EXTATTR_AUTOWRAP		0x0001
+#define CTERM_EXTATTR_ORIGINMODE	0x0002
+#define CTERM_EXTATTR_SXSCROLL		0x0004
 	int					save_xpos;		// Saved position (for later restore)
 	int					save_ypos;
 	int					sequence;		// An escape sequence is being parsed
@@ -148,6 +144,8 @@ struct cterminal {
 	int					doorway_mode;
 	int					doorway_char;	// Indicates next char is a "doorway" mode char
 	int					cursor;			// Current cursor mode (Normal or None)
+	char				*fg_tc_str;
+	char				*bg_tc_str;
 
 	/* Sixel state */
 	int					sixel;			// Sixel status
@@ -165,7 +163,6 @@ struct cterminal {
 										   Raster Attributes are ignore if this is true. */
 	int					sx_first_pass;	// First pass through a line
 	int					sx_hold_update;	// hold_update value to restore on completion
-	bool				sx_scroll_mode;	// Sixel scrolling mode
 	int					sx_start_x;		// Starting X position
 	int					sx_start_y;		// Starting Y position
 	int					sx_row_max_x;	// Max right size of this sixel line
