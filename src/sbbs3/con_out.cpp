@@ -37,6 +37,7 @@
 #include "sbbs.h"
 #include "utf8.h"
 #include "unicode.h"
+#include "cp437defs.h"
 
 /****************************************************************************/
 /* Outputs a NULL terminated string locally and remotely (if applicable)    */
@@ -265,7 +266,7 @@ size_t sbbs_t::utf8_to_cp437(const char* str, size_t len)
 	if(ch)
 		outchar(ch);
 	else if(!unicode_is_zerowidth(codepoint)) {
-		outchar('\xA8');	// Inverted question mark
+		outchar(CP437_CHAR_INVERTED_QUESTION_MARK);
 		char seq[32] = "";
 		for(size_t i = 0; i < len; i++)
 			sprintf(seq + strlen(seq), "%02X ", (uchar)*(str + i));
