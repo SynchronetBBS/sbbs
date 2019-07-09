@@ -160,6 +160,10 @@ ESC P	Device Control String
 		pt is the characters in the control function except the CSI
 		characters.
 
+		Currently supported values of p1:
+
+		m	Request SGR parameters
+
 ESC ^	Privacy Message
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
