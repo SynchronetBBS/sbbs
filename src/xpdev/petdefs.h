@@ -35,8 +35,6 @@
 #ifndef _PETDEFS_H_
 #define _PETDEFS_H_
 
-#include "gen_defs.h"
-
 enum petscii_char {
 	/* Colors */
 	PETSCII_BLACK		= 144,
