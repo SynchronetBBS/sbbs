@@ -38,6 +38,12 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 #include <filewrap.h>	// STDOUT_FILENO
 
 #include <cterm.h>
+#if !(defined __BORLANDC__ || defined _MSC_VER)
+ #include <stdbool.h>
+#else
+ #define bool int
+ enum { false, true };
+#endif
 
 #include "st_crypt.h"
 #include "fonts.h"
