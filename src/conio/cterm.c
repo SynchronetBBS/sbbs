@@ -2950,6 +2950,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												strcat(tmp, cterm->fg_tc_str);
 											if (cterm->bg_tc_str)
 												strcat(tmp, cterm->bg_tc_str);
+											strcat(tmp, "m");
 											if(strlen(retbuf)+strlen(tmp) < retsize)
 												strcat(retbuf, tmp);
 										}
