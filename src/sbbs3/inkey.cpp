@@ -34,6 +34,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "petdefs.h"
 
 int kbincom(sbbs_t* sbbs, unsigned long timeout)
 {

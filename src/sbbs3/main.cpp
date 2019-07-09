@@ -38,6 +38,7 @@
 #include "ident.h"
 #include "telnet.h"
 #include "netwrap.h"
+#include "petdefs.h"
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "ssl.h"

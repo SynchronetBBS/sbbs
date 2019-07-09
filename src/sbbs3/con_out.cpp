@@ -37,6 +37,7 @@
 #include "sbbs.h"
 #include "utf8.h"
 #include "unicode.h"
+#include "petdefs.h"
 #include "cp437defs.h"
 
 /****************************************************************************/
