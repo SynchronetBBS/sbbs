@@ -148,7 +148,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 			outchar(codepoint, unicode_to_cp437(codepoint));
 		else {
 			char fallback = (char)strtoul(tp + 1, NULL, 16);
-			if(*tp == '|')
+			if(*tp == '/')
 				outchar(codepoint, fallback);
 			else if(*tp == '!') {
 				char ch = unicode_to_cp437(codepoint);
