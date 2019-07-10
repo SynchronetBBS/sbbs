@@ -1560,13 +1560,13 @@ static void parse_extended_colour(struct esc_seq *seq, int *i, struct cterminal 
 	uint32_t nc;
 	uint32_t *co;
 
+	if (seq == NULL || cterm == NULL || i == NULL)
+		return;
 	if (fg)
 		FREE_AND_NULL(cterm->fg_tc_str);
 	else
 		FREE_AND_NULL(cterm->bg_tc_str);
 	co = fg ? (&cterm->fg_color) : (&cterm->bg_color);
-	if (seq == NULL || cterm == NULL || i == NULL)
-		return;
 	if (*i>=seq->param_count)
 		return;
 
@@ -3992,6 +3992,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							/* Movement */
 							case 13:	/* "\r\n" and disabled reverse. */
 								cterm->c64reversemode = 0;
+								/* Fall-through */
 							case 141:
 								GOTOXY(1, WHEREY());
 								/* Fall-through */
