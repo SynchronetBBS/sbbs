@@ -69,6 +69,8 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 		mode |= P_UTF8;
 		str += 3;
 	}
+	size_t len = strlen(str);
+
 	long term = term_supports();
 	if(!(mode&P_NOATCODES) && memcmp(str, "@WRAPOFF@", 9) == 0) {
 		mode &= ~P_WORDWRAP;
@@ -97,7 +99,6 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 		}
 	}
 
-	size_t len = strlen(str);
 	while(l < len && (mode&P_NOABORT || !msgabort()) && online) {
 		switch(str[l]) {
 			case '\r':
