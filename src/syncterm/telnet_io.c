@@ -268,7 +268,7 @@ BYTE* telnet_expand(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *newlen)
 		outbuf[outlen++]=inbuf[i];
 		if(telnet_local_option[TELNET_BINARY_TX]!=TELNET_DO) {
 			if(inbuf[i]=='\r')
-				outbuf[outlen++]=0;	// Some Telnet servers when receiving CRLF as an "Enter" character
+				outbuf[outlen++]='\n'; // See RFC5198
 		}
 	}
     *newlen=outlen;
