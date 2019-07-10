@@ -75,7 +75,9 @@ int sbbs_t::show_atcode(const char *instr)
 	sp=(str+1);
 
 	disp_len=len;
-	if((p=strstr(sp,"-L"))!=NULL)
+	if(strchr(sp, ':') != NULL)
+		p = NULL;
+	else if((p=strstr(sp,"-L"))!=NULL)
 		padded_left=true;
 	else if((p=strstr(sp,"-R"))!=NULL)
 		padded_right=true;
