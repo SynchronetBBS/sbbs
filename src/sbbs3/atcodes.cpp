@@ -336,6 +336,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		safe_snprintf(str, maxlen, "%s %s", timestr(time(NULL)), smb_zonestr(sys_timezone(&cfg),zone));
 		return str;
 	}
+	
+	if(strcmp(sp, "DATEFMT") == 0) {
+		return cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY";
+	}
 
 	if(!strcmp(sp,"TMSG")) {
 		l=0;
