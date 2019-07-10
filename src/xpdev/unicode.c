@@ -311,6 +311,7 @@ enum unicode_codepoint cp437_unicode_tbl[] =
 size_t unicode_width(enum unicode_codepoint u)
 {
 	switch(u) {
+		case UNICODE_UNDEFINED:
 		case UNICODE_ZERO_WIDTH_SPACE:
 		case UNICODE_ZERO_WIDTH_NON_JOINER:
 		case UNICODE_ZERO_WIDTH_JOINER:
@@ -333,8 +334,9 @@ size_t unicode_width(enum unicode_codepoint u)
 		case UNICODE_ZERO_WIDTH_NO_BREAK_SPACE:
 			return 0;
 		/* TODO: return 2 for "fullwdith" chars */
+		default:
+			return 1;
 	}
-	return 1;
 }
 
 char unicode_to_cp437(enum unicode_codepoint codepoint)
