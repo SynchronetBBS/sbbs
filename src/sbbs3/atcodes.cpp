@@ -60,6 +60,7 @@ int sbbs_t::show_atcode(const char *instr)
 	bool	centered=false;
 	bool	zero_padded=false;
 	bool	truncated = true;
+	bool	doubled = false;
 	const char *cp;
 
 	SAFECOPY(str,instr);
@@ -80,6 +81,8 @@ int sbbs_t::show_atcode(const char *instr)
 		padded_right=true;
 	else if((p=strstr(sp,"-C"))!=NULL)
 		centered=true;
+	else if((p=strstr(sp,"-D"))!=NULL)
+		doubled=true;
 	else if((p=strstr(sp,"-Z"))!=NULL)
 		zero_padded=true;
 	else if((p=strstr(sp,"-W"))!=NULL)	/* wrap */
@@ -117,6 +120,8 @@ int sbbs_t::show_atcode(const char *instr)
 			bprintf("%*s%-*s", left, "", disp_len - left, cp);
 		} else
 			bprintf("%.*s", disp_len, cp);
+	} else if(doubled) {
+		wide(cp);
 	} else if(zero_padded) {
 		int vlen = strlen(cp);
 		if(vlen < disp_len)
