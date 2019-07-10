@@ -22,6 +22,7 @@ Added support for cached font assets
 Support for XTerm and TundraDraw/PabloDraw 24-bit color modes
 Some PETSCII keyboard changes
 Add support for DECRQSS
+Terminal type is now sent as "syncterm", "PETSCII", or "ATASCII"
 
 Version 1.0
 -----------

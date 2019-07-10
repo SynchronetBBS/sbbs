@@ -147,6 +147,7 @@ int ssh_connect(struct bbslist *bbs)
 	char username[MAX_USER_LEN+1];
 	int	rows,cols;
 	struct text_info ti;
+	const char *term;
 
 	init_uifc(TRUE, TRUE);
 	pthread_mutex_init(&ssh_mutex, NULL);
@@ -236,7 +237,8 @@ int ssh_connect(struct bbslist *bbs)
 
 	uifc.pop(NULL);
 	uifc.pop("Setting Terminal Type");
-	status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_TERMINAL, "syncterm", 8);
+	term = get_emulation_str(get_emulation(bbs));
+	status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_TERMINAL, term, strlen(term));
 
 	/* Horrible way to determine the screen size */
 	textmode(screen_to_ciolib(bbs->screen_mode));

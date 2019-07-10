@@ -1982,3 +1982,17 @@ get_emulation(struct bbslist *bbs)
 			return CTERM_EMULATION_ANSI_BBS;
 	}
 }
+
+const char *
+get_emulation_str(cterm_emulation_t emu)
+{
+	switch (emu) {
+		case CTERM_EMULATION_ANSI_BBS:
+			return "syncterm";
+		case CTERM_EMULATION_PETASCII:
+			return "PETSCII";
+		case CTERM_EMULATION_ATASCII:
+			return "ATASCII";
+	}
+}
+

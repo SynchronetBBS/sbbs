@@ -156,12 +156,16 @@ int rlogin_connect(struct bbslist *bbs)
 		conn_send(ruser,strlen(ruser)+1,1000);
 		if(bbs->bpsrate) {
 			char	sbuf[30];
-			sprintf(sbuf, "ansi-bbs/%d", bbs->bpsrate);
+			sprintf(sbuf, "%s/%d", get_emulation_str(get_emulation(bbs)), bbs->bpsrate);
 
 			conn_send(sbuf, strlen(sbuf)+1,1000);
 		}
-		else
-			conn_send("ansi-bbs/115200",16,1000);
+		else {
+			char	sbuf[30];
+			sprintf(sbuf, "%s/115200", get_emulation_str(get_emulation(bbs)));
+
+			conn_send(sbuf, strlen(sbuf)+1,1000);
+		}
 	}
 
 	_beginthread(rlogin_output_thread, 0, NULL);

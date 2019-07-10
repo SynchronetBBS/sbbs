@@ -158,24 +158,12 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen, cterm_
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE && telnet_cmd[3]==TELNET_TERM_SEND) {
 						char buf[32];
-						const char *termtype;
-						switch(emu) {
-							case CTERM_EMULATION_PETASCII:
-								termtype = "PETSCII";
-								break;
-							case CTERM_EMULATION_ATASCII:
-								termtype = "ATASCII";
-								break;
-							default:
-								termtype = "ANSI";
-								break;
-						}
 						int len=sprintf(buf,"%c%c%c%c%s%c%c"
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_TYPE,TELNET_TERM_IS
-							,termtype
+							,get_emulation_str(emu)
 							,TELNET_IAC,TELNET_SE);
-						lprintf(LOG_INFO,"TX: Terminal Type is %s", termtype);
+						lprintf(LOG_INFO,"TX: Terminal Type is %s", get_emulation_str(emu));
 						putcom(buf,len);
 						request_telnet_opt(TELNET_WILL, TELNET_NEGOTIATE_WINDOW_SIZE);
 					}
