@@ -2892,7 +2892,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								switch (cterm->strbuf[2]) {
 									case 'm':
 										if (cterm->strbuf[3] == 0) {
-											strcpy(tmp, "\x1b" "1$r0");
+											strcpy(tmp, "\x1bP1$r0");
 											if (cterm->attr & 8)
 												strcat(tmp, ";1");
 											if (cterm->attr & 128)
@@ -2955,7 +2955,35 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												strcat(tmp, ";");
 												strcat(tmp, cterm->bg_tc_str);
 											}
-											strcat(tmp, "m");
+											strcat(tmp, "m\x1b\\");
+											if(strlen(retbuf)+strlen(tmp) < retsize)
+												strcat(retbuf, tmp);
+										}
+										break;
+									case 'r':
+										if (cterm->strbuf[3] == 0) {
+											sprintf(tmp, "\x1bP1$r%d;%dr\x1b\\", cterm->top_margin, cterm->bottom_margin);
+											if(strlen(retbuf)+strlen(tmp) < retsize)
+												strcat(retbuf, tmp);
+										}
+										break;
+									case 't':
+										if (cterm->strbuf[3] == 0) {
+											sprintf(tmp, "\x1bP1$r%dt\x1b\\", cterm->height);
+											if(strlen(retbuf)+strlen(tmp) < retsize)
+												strcat(retbuf, tmp);
+										}
+										break;
+									case '$':
+										if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
+											sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->width);
+											if(strlen(retbuf)+strlen(tmp) < retsize)
+												strcat(retbuf, tmp);
+										}
+										break;
+									case '*':
+										if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
+											sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->height);
 											if(strlen(retbuf)+strlen(tmp) < retsize)
 												strcat(retbuf, tmp);
 										}

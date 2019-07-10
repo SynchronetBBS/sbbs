@@ -163,6 +163,10 @@ ESC P	Device Control String
 		Currently supported values of p1:
 
 		m	Request SGR parameters
+		r	Request top and bottom margins
+		t	Request height in lines
+		$|	Request width in columns
+		*|	Request height in lines
 
 ESC ^	Privacy Message
 	Begins a string consisting of the characters 0x08 - 0x0d and
