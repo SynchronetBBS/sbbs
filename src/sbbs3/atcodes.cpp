@@ -38,6 +38,7 @@
 #include "cmdshell.h"
 #include "utf8.h"
 #include "unicode.h"
+#include "cp437defs.h"
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
@@ -157,6 +158,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 			}
 			else return NULL; // Invalid @-code
 		}
+		return nulstr;
+	}
+
+	if(strcmp(sp, "CHECKMARK") == 0) {
+		outchar(UNICODE_CHECK_MARK, CP437_CHECK_MARK);
 		return nulstr;
 	}
 
