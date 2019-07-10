@@ -278,6 +278,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "link_list.h"
 #include "msg_queue.h"
 #include "xpdatetime.h"
+#include "unicode_defs.h"
 
 /***********************/
 /* Synchronet-specific */
