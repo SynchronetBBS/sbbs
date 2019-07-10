@@ -348,6 +348,18 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 
 		case UNICODE_BROKEN_BAR:								return '|';
 
+		case UNICODE_CENT_SIGN:									return CP437_CHAR_CENT_SIGN;
+		case UNICODE_POUND_SIGN:								return CP437_CHAR_POUND_SIGN;
+		case UNICODE_YEN_SIGN:									return CP437_CHAR_YEN_SIGN;
+		case UNICODE_SECTION_SIGN:								return CP437_CHAR_SECTION_SIGN;
+		case UNICODE_DEGREE_SIGN:								return CP437_CHAR_DEGREE_SIGN;
+		case UNICODE_PLUS_MINUS_SIGN:							return CP437_CHAR_PLUS_MINUS_SIGN;
+		case UNICODE_SUPERSCRIPT_TWO:							return CP437_CHAR_SUPERSCRIPT_TWO;
+		case UNICODE_PILCROW_SIGN:								return CP437_CHAR_PILCROW_SIGN;
+		case UNICODE_INVERTED_QUESTION_MARK:					return CP437_CHAR_INVERTED_QUESTION_MARK;
+		case UNICODE_INVERTED_EXCLAMATION_MARK:					return CP437_CHAR_INVERTED_EXCLAMATION_MARK;
+		case UNICODE_DOUBLE_EXCLAMATION_MARK:					return CP437_CHAR_DOUBLE_EXCLAMATION_MARK;
+
 		// Perform Upper -> Lower case mapping where an upper case equivalent doesn't exist in CP437:
 		case UNICODE_LATIN_CAPITAL_LETTER_A_WITH_GRAVE:			return CP437_CHAR_LATIN_SMALL_LETTER_A_WITH_GRAVE;
 		case UNICODE_LATIN_CAPITAL_LETTER_A_WITH_ACUTE:			return CP437_CHAR_LATIN_SMALL_LETTER_A_WITH_ACUTE;
@@ -626,12 +638,13 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 
 		case 0x2594: // Upper One Eighth Block
 			return '\xDF';
-	}
 
-	// Look for a 1:1 match in the CP437 -> Unicode table
-	for(int i = 1; i < 0x100; i++) {
-		if(cp437_unicode_tbl[i] == codepoint)
-			return i;
+		default:	// Look for a 1:1 match in the CP437 -> Unicode table
+			for(int i = 1; i < 0x100; i++) {
+				if(cp437_unicode_tbl[i] == codepoint)
+					return i;
+			}
+			break;
 	}
 
 	return '\0'; // Not-mapped
