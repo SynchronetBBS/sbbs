@@ -268,8 +268,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		safe_snprintf(str,maxlen,"%lu",rows);
 		return(str);
 	}
-	if(!strcmp(sp,"TERM"))
-		return(terminal);
+	if(strcmp(sp,"TERM") == 0)
+		return term_type();
+
+	if(strcmp(sp,"CHARSET") == 0)
+		return term_charset();
 
 	if(!strcmp(sp,"CONN"))
 		return(connection);

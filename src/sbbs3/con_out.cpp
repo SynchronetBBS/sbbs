@@ -385,6 +385,38 @@ long sbbs_t::term_supports(long cmp_flags)
 }
 
 /****************************************************************************/
+/* Returns description of the terminal type									*/
+/****************************************************************************/
+const char* sbbs_t::term_type(long term)
+{
+	if(term == -1)
+		term = term_supports();
+	if(term&PETSCII)
+		return "PETSCII";
+	if(term&RIP)
+		return "RIP";
+	if(term&ANSI)
+		return "ANSI";
+	return "DUMB";
+}
+
+/****************************************************************************/
+/* Returns description of the terminal supported character set (charset)	*/
+/****************************************************************************/
+const char* sbbs_t::term_charset(long term)
+{
+	if(term == -1)
+		term = term_supports();
+	if(term&PETSCII)
+		return "CBM-ASCII";
+	if(term&UTF8)
+		return "UTF-8";
+	if(term&NO_EXASCII)
+		return "US-ASCII";
+	return "CP437";
+}
+
+/****************************************************************************/
 /* Outputs character														*/
 /* Performs terminal translations (e.g. EXASCII-to-ASCII, FF->ESC[2J)		*/
 /* Performs Telnet IAC escaping												*/

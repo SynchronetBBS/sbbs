@@ -816,13 +816,12 @@ void sbbs_t::maindflts(user_t* user)
 							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
 							,cols, text[TerminalColumns]);
 		else
-			safe_snprintf(str,sizeof(str),"%s%s%s%s%s%s"
+			safe_snprintf(str,sizeof(str),"%s%s / %s %s%s"
 							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
-							,term&ANSI ? "ANSI ":"TTY "
+							,term_charset(term)
+							,term_type(term)
 							,term&COLOR ? (term&ICE_COLOR ? text[TerminalIceColor] : text[TerminalColor]) : text[TerminalMonochrome]
-							,term&RIP ? "RIP " : nulstr
-							,term&UTF8 ? "UTF-8 " : (term&NO_EXASCII ? "ASCII ":"CP437 ")
-							,term&SWAP_DELETE ? "DEL=BS " : nulstr);
+							,term&SWAP_DELETE ? "DEL=BS" : nulstr);
 		bprintf(text[UserDefaultsTerminal], truncsp(str));
 		if(user->rows)
 			ultoa(user->rows,tmp,10);
