@@ -406,16 +406,16 @@
 "\1w\1hPassword changed.\r\n"                             335 PasswordChanged
 "Sorry, you have no more logons allowed today.\r\n"     336 NoMoreLogons
 "You can only logon once a day.\r\n"                    337 R_Logons
-"\1_\1b\1h[\1cû\1b] \1yEnter your full name or alias\1\\: \1w"     338 EnterYourAlias
-"\1_\1b\1h[\1cû\1b] \1yEnter your full real name\1\\: \1w"         339 EnterYourRealName
-"\1_\1b\1h[\1cû\1b] \1yEnter your company name\1\\: \1w"           340 EnterYourCompany
-"\1_\1b\1h[\1cû\1b] \1yEnter your handle or call-sign\1\\: \1w"    341 EnterYourHandle
-"\1_\1b\1h[\1cû\1b] \1yEnter your sex (M/F)\1\\: \1w"              342 EnterYourSex
-"\1_\1b\1h[\1cû\1b] \1yEnter your street address\1\\: \1w"         343 EnterYourAddress
-"\1_\1b\1h[\1cû\1b] \1yEnter your voice phone number\1\\: \1w"     344 EnterYourPhoneNumber
-"\1_\1b\1h[\1cû\1b] \1yEnter your birthday (%s)\1\\: \1w"          345 EnterYourBirthday
-"\1_\1b\1h[\1cû\1b] \1yEnter your location\1\\ (e.g. city, state)\1\\: \1w" 346 EnterYourCityState
-"\1_\1b\1h[\1cû\1b] \1yEnter your zip (or postal) code\1\\: \1w"   347 EnterYourZipCode
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your full name or alias\1\\: \1w"     338 EnterYourAlias
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your full real name\1\\: \1w"         339 EnterYourRealName
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your company name\1\\: \1w"           340 EnterYourCompany
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your handle or call-sign\1\\: \1w"    341 EnterYourHandle
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your sex (M/F)\1\\: \1w"              342 EnterYourSex
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your street address\1\\: \1w"         343 EnterYourAddress
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your voice phone number\1\\: \1w"     344 EnterYourPhoneNumber
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your birthday (%s)\1\\: \1w"          345 EnterYourBirthday
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your location\1\\ (e.g. city, state)\1\\: \1w" 346 EnterYourCityState
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your zip (or postal) code\1\\: \1w"   347 EnterYourZipCode
 "\1_\1y\1hClient (Name or Address)\1\\: \1w"                348 EnterYourComputer
 "Are you connecting from North America"                 349 CallingFromNorthAmericaQ
 "Is the above information correct"                      350 UserInfoCorrectQ
@@ -602,11 +602,11 @@
 "\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   494 UserDefaultsWhich
 "On"                                                    495 On
 "Off"                                                   496 Off
-"\r\n\1_\1b\1h[\1cû\1b] \1yHow many rows on your monitor "\   497 HowManyRows
+"\r\n\1_\1b\1h[\1c@CHECKMARK@\1b] \1yHow many rows on your monitor "\   497 HowManyRows
 	"[\1wAuto Detect\1y]: "
 "\r\n\1_\1y\1hCurrent Password: \1w"                        498 CurrentPassword
 "Forward personal e-mail to network mail address"       499 ForwardMailQ
-"\1_\1b\1h[\1cû\1b] \1yNetwork mail address\1\\ "\      500 EnterNetMailAddress
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yNetwork mail address\1\\ "\      500 EnterNetMailAddress
 	"(Example: user@domain)\r\n : "
 "\1n\1l\1gSelect \1h%s\1n\1g:\r\n\r\n"                        501 SelectItemHdr
 "\1g\1h%3d: \1n\1g%s\r\n"                                   502 SelectItemFmt
@@ -984,7 +984,7 @@
 "Scanning"                                  808 Scanning
 "Done"                                      809 Done
 "\1[\1>"                                    810 Scanned
-"\1n\1b\1h[\1c\xFB\1b] \1h\1yHIT your \1wBACKSPACE\1y or DELETE-LEFT key: " 811 HitYourBackspaceKey
+"\1n\1b\1h[\1c@CHECKMARK@\1b] \1h\1yHIT your \1wBACKSPACE\1y or DELETE-LEFT key: " 811 HitYourBackspaceKey
 "\1\\\1n\1cCharacter \1h%u (%02Xh) \1n\1creceived.\r\n"   812 CharacterReceivedFmt
 "\1r\1h!Unsupported backspace key: \1w%02Xh\r\n"          813 InvalidBackspaceKeyFmt
 ""                                                        814 SwapDeleteKeyQ

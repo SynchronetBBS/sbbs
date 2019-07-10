@@ -22,7 +22,7 @@ if_true
 	print "\1?"
 	shift_str _question 2
 	end_if
-printf "\x01n\x01b\x01h[\x01cû\x01b] \x01y%s? " _question
+print "\x01n\x01b\x01h[\x01c@CHECKMARK@\x01b] \x01y@QUESTION@? "
 :top
 compare_str "Y"
 if_equal
