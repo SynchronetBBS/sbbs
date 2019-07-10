@@ -252,6 +252,7 @@ static struct section_len get_word_len(char *buf, int maxlen, BOOL is_utf8)
 			ret.bytes++;
 			if (buf[ret.bytes] == '\\')
 				break;
+			continue;
 		}
 		else if (buf[ret.bytes]=='\b') {
 			// This doesn't handle BS the same way... bit it's kinda BS anyway.
