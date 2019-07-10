@@ -812,7 +812,7 @@ char* DLLCALL iniSetBitField(str_list_t* list, const char* section, const char* 
 
 	if(style==NULL)
 		style=&default_style;
-	if(style->bit_separator==NULL)
+	if(style->bit_separator!=NULL)
 		bit_separator = style->bit_separator;
 	str[0]=0;
 	for(i=0;bitdesc[i].name;i++) {
