@@ -250,7 +250,7 @@ size_t sbbs_t::utf8_to_cp437(const char* str, size_t len)
 		outchar(*str);
 		return sizeof(char);
 	}
-	uint32_t codepoint = 0;
+	enum unicode_codepoint codepoint = UNICODE_UNDEFINED;
 	len = utf8_getc(str, len, &codepoint);
 	if((int)len < 2) {
 		lprintf(LOG_NOTICE, "Invalid UTF-8 sequence: %02X (error = %d)", (uchar)*str, (int)len);
@@ -266,7 +266,7 @@ size_t sbbs_t::utf8_to_cp437(const char* str, size_t len)
 	char ch = unicode_to_cp437(codepoint);
 	if(ch)
 		outchar(ch);
-	else if(!unicode_is_zerowidth(codepoint)) {
+	else if(unicode_width(codepoint) > 0) {
 		outchar(CP437_CHAR_INVERTED_QUESTION_MARK);
 		char seq[32] = "";
 		for(size_t i = 0; i < len; i++)
@@ -301,7 +301,7 @@ int sbbs_t::rputs(const char *str, size_t len)
 		else if((term&NO_EXASCII) && (ch&0x80))
 			ch = exascii_to_ascii_char(ch);  /* seven bit table */
 		else if(term&UTF8) {
-			uint32_t codepoint = cp437_unicode_tbl[(uchar)ch];
+			enum unicode_codepoint codepoint = cp437_unicode_tbl[(uchar)ch];
 			if(codepoint != 0)
 				utf8_putc(utf8, sizeof(utf8) - 1, codepoint);
 		}
@@ -451,7 +451,7 @@ int sbbs_t::outchar(char ch)
 		if((term&NO_EXASCII) && (ch&0x80))
 			ch = exascii_to_ascii_char(ch);  /* seven bit table */
 		else if(term&UTF8) {
-			uint32_t codepoint = cp437_unicode_tbl[(uchar)ch];
+			enum unicode_codepoint codepoint = cp437_unicode_tbl[(uchar)ch];
 			if(codepoint != 0)
 				utf8_putc(utf8, sizeof(utf8) - 1, codepoint);
 		}
@@ -541,14 +541,7 @@ int sbbs_t::outchar(char ch)
 				column=0;
 				break;
 			default:
-				column++;
-				if(column >= cols) {	// assume terminal has/will auto-line-wrap
-					lncntr++;
-					lbuflen = 0;
-					tos = 0;
-					lastlinelen = column;
-					column = 0;
-				}
+				inc_column(1);
 				if(!lbuflen)
 					latr=curatr;
 				if(lbuflen<LINE_BUFSIZE)
@@ -565,6 +558,34 @@ int sbbs_t::outchar(char ch)
 		pause();
 	}
 	return 0;
+}
+
+int sbbs_t::outchar(enum unicode_codepoint codepoint, char cp437_fallback)
+{
+	if(term_supports(UTF8)) {
+		char str[UTF8_MAX_LEN];
+		int len = utf8_putc(str, sizeof(str), codepoint);
+		if(len < 1)
+			return len;
+		putcom(str, len);
+		inc_column(unicode_width(codepoint));
+		return 0;
+	}
+	if(cp437_fallback == 0)
+		return 0;
+	return outchar(cp437_fallback);
+}
+
+void sbbs_t::inc_column(int count)
+{
+	column += count;
+	if(column >= cols) {	// assume terminal has/will auto-line-wrap
+		lncntr++;
+		lbuflen = 0;
+		tos = 0;
+		lastlinelen = column;
+		column = 0;
+	}
 }
 
 void sbbs_t::center(char *instr)

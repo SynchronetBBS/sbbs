@@ -715,6 +715,8 @@ public:
 	;
 	void	backspace(void);				/* Output a destructive backspace via outchar */
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
+	int		outchar(enum unicode_codepoint, char cp437_fallback = 0);
+	void	inc_column(int count);
 	void	center(char *str);
 	void	clearline(void);
 	void	cleartoeol(void);
