@@ -9,10 +9,8 @@ src/sbbs3/zmodem.c
 src/sbbs3/zmodem.h
 src/sbbs3/xmodem.h
 src/sbbs3/sexyz.h
-src/smblib/crc16.c
-src/smblic/crc16.h
-src/smblib/crc32.c
-src/smblic/crc32.h
+src/hash/*
+src/encode/*
 src/syncterm/*
 src/uifc/*
 src/xpdev/*
@@ -22,6 +20,7 @@ src/comio/*
 3rdp/build/GNUmakefile
 3rdp/build/targets.mk
 3rdp/dist/cryptlib.zip
+3rdp/dist/*.patch
 
 The directory structure under src *must* be kept intact.  Once you have all
 this in place, a simple "make" should build everything you need.  If you're
