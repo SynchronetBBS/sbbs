@@ -1963,3 +1963,22 @@ struct bbslist *show_bbslist(char *current, int connected)
 		}
 	}
 }
+
+cterm_emulation_t
+get_emulation(struct bbslist *bbs)
+{
+	if (bbs == NULL)
+		return CTERM_EMULATION_ANSI_BBS;
+
+	switch(bbs->screen_mode) {
+		case SCREEN_MODE_C64:
+		case SCREEN_MODE_C128_40:
+		case SCREEN_MODE_C128_80:
+			return CTERM_EMULATION_PETASCII;
+		case SCREEN_MODE_ATARI:
+		case SCREEN_MODE_ATARI_XEP80:
+			return CTERM_EMULATION_ATASCII;
+		default:
+			return CTERM_EMULATION_ANSI_BBS;
+	}
+}

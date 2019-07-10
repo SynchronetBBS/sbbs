@@ -30,11 +30,11 @@ void telnet_input_thread(void *args)
 	size_t	buffer;
 	char	rbuf[BUFFER_SIZE];
 	char	*buf;
+	cterm_emulation_t emu = *(cterm_emulation_t *)args;
 
 	SetThreadName("Telnet Input");
 	conn_api.input_thread_running=1;
-	while(cterm == NULL)	// telnet_interpret needs to dereference cterm (to get emulation type)
-		SLEEP(1);
+	free(args);
 	while(telnet_sock != INVALID_SOCKET && !conn_api.terminate) {
 		FD_ZERO(&rds);
 		FD_SET(telnet_sock, &rds);
@@ -59,7 +59,7 @@ void telnet_input_thread(void *args)
 				break;
 		}
 		if(rd>0)
-			buf=(char *)telnet_interpret(conn_api.rd_buf, rd, (BYTE *)rbuf, &rd);
+			buf=(char *)telnet_interpret(conn_api.rd_buf, rd, (BYTE *)rbuf, &rd, emu);
 		buffered=0;
 		while(buffered < rd) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -130,6 +130,8 @@ void telnet_output_thread(void *args)
 
 int telnet_connect(struct bbslist *bbs)
 {
+	cterm_emulation_t *emu;
+
 	init_uifc(TRUE, TRUE);
 
 	telnet_log_level = bbs->telnet_loglevel;
@@ -163,8 +165,10 @@ int telnet_connect(struct bbslist *bbs)
 	memset(telnet_local_option,0,sizeof(telnet_local_option));
 	memset(telnet_remote_option,0,sizeof(telnet_remote_option));
 
+	emu = malloc(sizeof(cterm_emulation_t));
+	*emu = get_emulation(bbs);
 	_beginthread(telnet_output_thread, 0, NULL);
-	_beginthread(telnet_input_thread, 0, NULL);
+	_beginthread(telnet_input_thread, 0, emu);
 
 	uifc.pop(NULL);
 

@@ -2235,7 +2235,6 @@ BOOL doterm(struct bbslist *bbs)
 	int	oldmc;
 	int	updated=FALSE;
 	BOOL	sleep;
-	int 	emulation=CTERM_EMULATION_ANSI_BBS;
 	size_t	remain;
 	struct text_info txtinfo;
 #ifndef WITHOUT_OOII
@@ -2263,18 +2262,7 @@ BOOL doterm(struct bbslist *bbs)
 		FREE_AND_NULL(scrollback_buf);
 	scrollback_lines=0;
 	scrollback_mode=txtinfo.currmode;
-	switch(bbs->screen_mode) {
-		case SCREEN_MODE_C64:
-		case SCREEN_MODE_C128_40:
-		case SCREEN_MODE_C128_80:
-			emulation = CTERM_EMULATION_PETASCII;
-			break;
-		case SCREEN_MODE_ATARI:
-		case SCREEN_MODE_ATARI_XEP80:
-			emulation = CTERM_EMULATION_ATASCII;
-			break;
-	}
-	cterm=cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf, emulation);
+	cterm=cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf, get_emulation(bbs));
 	if(!cterm) {
 		return FALSE;
 	}

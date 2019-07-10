@@ -15,6 +15,8 @@
 	#include <malloc.h>	/* alloca() on Win32 */
 #endif
 
+#include <cterm.h>
+
 #define LIST_NAME_MAX	30
 #define LIST_ADDR_MAX	64
 #define MAX_USER_LEN	30
@@ -103,5 +105,6 @@ void free_list(struct bbslist **list, int listcount);
 void add_bbs(char *listpath, struct bbslist *bbs);
 int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isdefault);
 int  get_rate_num(int rate);
+cterm_emulation_t get_emulation(struct bbslist *bbs);
 
 #endif
