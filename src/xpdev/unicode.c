@@ -47,7 +47,7 @@
 // CP437 character to/from UNICODE code point conversion
 // The CP437 character value is the index into the table.
 // If the value at that index is 0, no translation is needed (1:1 mapping).
-uint32_t cp437_unicode_tbl[] =
+enum unicode_codepoint cp437_unicode_tbl[] =
 {
 	/* 0x00 */ 0,
 	/* 0x01 */ 0x263A,
@@ -308,7 +308,7 @@ uint32_t cp437_unicode_tbl[] =
 	/* 0xFF */ 0x00A0
 };
 
-bool unicode_is_zerowidth(uint32_t u)
+size_t unicode_width(enum unicode_codepoint u)
 {
 	switch(u) {
 		case UNICODE_ZERO_WIDTH_SPACE:
@@ -331,12 +331,13 @@ bool unicode_is_zerowidth(uint32_t u)
 		case UNICODE_VARIATION_SELECTOR_15:
 		case UNICODE_VARIATION_SELECTOR_16:
 		case UNICODE_ZERO_WIDTH_NO_BREAK_SPACE:
-			return true;
+			return 0;
+		/* TODO: return 2 for "fullwdith" chars */
 	}
-	return false;
+	return 1;
 }
 
-char unicode_to_cp437(uint32_t codepoint)
+char unicode_to_cp437(enum unicode_codepoint codepoint)
 {
 	switch(codepoint) {
 		case 0:													return '\0';
@@ -443,6 +444,15 @@ char unicode_to_cp437(uint32_t codepoint)
 		case UNICODE_EN_SPACE:
 		case UNICODE_EM_SPACE:
 			return ' ';
+
+		case UNICODE_SQUARE_ROOT:								return CP437_CHAR_SQUARE_ROOT;
+		case UNICODE_CHECK_MARK:
+		case UNICODE_HEAVY_CHECK_MARK:							return CP437_CHAR_CHECK_MARK;
+
+		case UNICODE_MULTIPLICATION_X:
+		case UNICODE_HEAVY_MULTIPLICATION_X:
+		case UNICODE_BALLOT_X:
+		case UNICODE_HEAVY_BALLOT_X:							return 'x';
 
 		case UNICODE_OVERLINE:
 		case 0x2500: // Box Drawings Light Horizontal

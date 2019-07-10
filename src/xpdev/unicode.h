@@ -36,16 +36,16 @@
 #ifndef UNICODE_H_
 #define UNICODE_H_
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <stdlib.h>
+#include "unicode_defs.h"
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-extern uint32_t cp437_unicode_tbl[];
-bool unicode_is_zerowidth(uint32_t);
-char unicode_to_cp437(uint32_t);
+extern enum unicode_codepoint cp437_unicode_tbl[];
+size_t unicode_width(enum unicode_codepoint);
+char unicode_to_cp437(enum unicode_codepoint);
 
 #if defined(__cplusplus)
 }

@@ -141,7 +141,7 @@ char* utf8_normalize_str(char* str)
 
 /* Replace all multi-byte UTF-8 sequences with 'ch' or 'zwch' (when non-zero) */
 /* When ch and zwch are 0, effectively strips all UTF-8 chars from str */
-char* utf8_replace_chars(char* str, char (*lookup)(uint32_t), char unsupported_ch, char unsupported_zwch, char error_ch)
+char* utf8_replace_chars(char* str, char (*lookup)(enum unicode_codepoint), char unsupported_ch, char unsupported_zwch, char error_ch)
 {
 	char* end = str + strlen(str);
 	char* dest = str;
@@ -153,7 +153,7 @@ char* utf8_replace_chars(char* str, char (*lookup)(uint32_t), char unsupported_c
 			len = 1;
 			continue;
 		}
-		uint32_t codepoint = 0;
+		enum unicode_codepoint codepoint = 0;
 		len = utf8_getc(src, end - src, &codepoint);
 		if(len < 2) {
 			if(error_ch)
@@ -168,7 +168,7 @@ char* utf8_replace_chars(char* str, char (*lookup)(uint32_t), char unsupported_c
 				continue;
 			}
 		}
-		if(unicode_is_zerowidth(codepoint)) {
+		if(unicode_width(codepoint) == 0) {
 			if(unsupported_zwch)
 				*dest++ = unsupported_zwch;
 		} 
@@ -200,7 +200,7 @@ int cp437_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char 
 			retval = -1;
 			break;
 		}
-		uint32_t codepoint = 0;
+		enum unicode_codepoint codepoint = 0;
 		if(*p >= minval)
 			codepoint = cp437_unicode_tbl[*p];
 		if(codepoint) {
@@ -241,7 +241,7 @@ int cp437_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char 
  * -4 = character encoded incorrectly (not minimal length).
  */
 
-int utf8_getc(const char *str, size_t len, uint32_t* val)
+int utf8_getc(const char *str, size_t len, enum unicode_codepoint* val)
 {
     const unsigned char *p;
     unsigned long value;
@@ -339,7 +339,7 @@ int utf8_getc(const char *str, size_t len, uint32_t* val)
  * most 6 characters.
  */
 
-int utf8_putc(char *str, size_t len, uint32_t value)
+int utf8_putc(char *str, size_t len, enum unicode_codepoint value)
 {
     if (!str)
         len = 6;                /* Maximum we will need */
