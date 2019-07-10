@@ -168,7 +168,6 @@
   <ItemGroup>
     <ClCompile Include="..\comio\comio.c" />
     <ClCompile Include="..\comio\comio_win32.c" />
-    <ClCompile Include="..\encode\unicode.c" />
     <ClCompile Include="..\encode\utf8.c" />
     <ClCompile Include="..\encode\uucode.c" />
     <ClCompile Include="..\encode\yenc.c" />
