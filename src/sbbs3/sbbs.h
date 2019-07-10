@@ -718,6 +718,7 @@ public:
 	int		outchar(enum unicode_codepoint, char cp437_fallback = 0);
 	void	inc_column(int count);
 	void	center(char *str);
+	void	wide(const char*);
 	void	clearline(void);
 	void	cleartoeol(void);
 	void	cleartoeos(void);

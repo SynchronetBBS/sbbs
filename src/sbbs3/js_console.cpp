@@ -1421,6 +1421,34 @@ js_center(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_wide(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+    JSString*	str;
+	sbbs_t*		sbbs;
+	char*		cstr;
+	jsrefcount	rc;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	str = JS_ValueToString(cx, argv[0]);
+	if (str == NULL)
+		return(JS_FALSE);
+
+	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
+	if(cstr==NULL)
+		return JS_FALSE;
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->wide(cstr);
+	free(cstr);
+	JS_RESUMEREQUEST(cx, rc);
+    return(JS_TRUE);
+}
+
+static JSBool
 js_saveline(JSContext *cx, uintN argc, jsval *arglist)
 {
 	sbbs_t*		sbbs;
@@ -1952,6 +1980,10 @@ static jsSyncMethodSpec js_console_functions[] = {
 	{"center",			js_center,			1, JSTYPE_VOID,		JSDOCSTR("text")
 	,JSDOCSTR("display a string centered on the screen")
 	,310
+	},
+	{"wide",			js_wide,			1, JSTYPE_VOID,		JSDOCSTR("text")
+	,JSDOCSTR("display a string double-wide on the screen (sending \"fullwidth\" Unicode characters when possible)")
+	,0x317c
 	},
 	{"strlen",			js_strlen,			1, JSTYPE_NUMBER,	JSDOCSTR("text")
 	,JSDOCSTR("returns the number of characters in text, excluding Ctrl-A codes")

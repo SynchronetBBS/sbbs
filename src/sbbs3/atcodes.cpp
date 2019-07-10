@@ -166,6 +166,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return nulstr;
 	}
 
+	if(strncmp(sp, "WIDE:", 5) == 0) {
+		wide(sp + 5);
+		return(nulstr);
+	}
+
 	if(!strcmp(sp,"VER"))
 		return(VERSION);
 

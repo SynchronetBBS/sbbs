@@ -603,6 +603,21 @@ void sbbs_t::center(char *instr)
 	newline();
 }
 
+void sbbs_t::wide(const char* str)
+{
+	long term = term_supports();
+	while(*str != '\0') {
+		if((term&UTF8) && *str >= '!' && *str <= '~')
+			outchar((enum unicode_codepoint)(UNICODE_FULLWIDTH_EXCLAMATION_MARK + (*str - '!')));
+		else {
+			outchar(*str);
+			outchar(' ');
+		}
+		str++;
+	}
+}
+
+
 // Send a bare carriage return, hopefully moving the cursor to the far left, current row
 void sbbs_t::carriage_return(void)
 {
