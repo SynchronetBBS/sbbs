@@ -592,7 +592,7 @@ int sbbs_t::outchar(char ch)
 	return 0;
 }
 
-int sbbs_t::outchar(enum unicode_codepoint codepoint, char cp437_fallback)
+int sbbs_t::outchar(enum unicode_codepoint codepoint, char* cp437_fallback)
 {
 	if(term_supports(UTF8)) {
 		char str[UTF8_MAX_LEN];
@@ -603,9 +603,15 @@ int sbbs_t::outchar(enum unicode_codepoint codepoint, char cp437_fallback)
 		inc_column(unicode_width(codepoint));
 		return 0;
 	}
-	if(cp437_fallback == 0)
+	if(cp437_fallback == NULL)
 		return 0;
-	return outchar(cp437_fallback);
+	return bputs(cp437_fallback);
+}
+
+int sbbs_t::outchar(enum unicode_codepoint codepoint, char cp437_fallback)
+{
+	char str[2] = { cp437_fallback, '\0' };
+	return outchar(codepoint, str);
 }
 
 void sbbs_t::inc_column(int count)
