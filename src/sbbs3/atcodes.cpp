@@ -151,11 +151,13 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 
 	if(strncmp(sp, "U+", 2) == 0) {	// UNICODE
 		enum unicode_codepoint codepoint = (enum unicode_codepoint)strtoul(sp + 2, &tp, 16);
-		if(tp == NULL || *tp ==0)
+		if(tp == NULL || *tp == 0)
 			outchar(codepoint, unicode_to_cp437(codepoint));
+		else if(*tp == ':')
+			outchar(codepoint, tp + 1);
 		else {
 			char fallback = (char)strtoul(tp + 1, NULL, 16);
-			if(*tp == '/')
+			if(*tp == ',')
 				outchar(codepoint, fallback);
 			else if(*tp == '!') {
 				char ch = unicode_to_cp437(codepoint);
@@ -170,6 +172,31 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 
 	if(strcmp(sp, "CHECKMARK") == 0) {
 		outchar(UNICODE_CHECK_MARK, CP437_CHECK_MARK);
+		return nulstr;
+	}
+
+	if(strcmp(sp, "ELLIPSIS") == 0) {
+		outchar(UNICODE_HORIZONTAL_ELLIPSIS, "...");
+		return nulstr;
+	}
+	if(strcmp(sp, "COPYRIGHT") == 0) {
+		outchar(UNICODE_COPYRIGHT_SIGN, "(C)");
+		return nulstr;
+	}
+	if(strcmp(sp, "SOUNDCOPY") == 0) {
+		outchar(UNICODE_SOUND_RECORDING_COPYRIGHT, "(P)");
+		return nulstr;
+	}
+	if(strcmp(sp, "TRADEMARK") == 0) {
+		outchar(UNICODE_TRADE_MARK_SIGN, "(TM)");
+		return nulstr;
+	}
+	if(strcmp(sp, "DEGREE_C") == 0) {
+		outchar(UNICODE_DEGREE_CELSIUS, "\xF8C");
+		return nulstr;
+	}
+	if(strcmp(sp, "DEGREE_F") == 0) {
+		outchar(UNICODE_DEGREE_FAHRENHEIT, "\xF8F");
 		return nulstr;
 	}
 
