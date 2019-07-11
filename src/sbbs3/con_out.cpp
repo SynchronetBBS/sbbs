@@ -592,7 +592,7 @@ int sbbs_t::outchar(char ch)
 	return 0;
 }
 
-int sbbs_t::outchar(enum unicode_codepoint codepoint, char* cp437_fallback)
+int sbbs_t::outchar(enum unicode_codepoint codepoint, const char* cp437_fallback)
 {
 	if(term_supports(UTF8)) {
 		char str[UTF8_MAX_LEN];
