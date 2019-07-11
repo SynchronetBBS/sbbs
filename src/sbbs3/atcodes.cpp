@@ -187,6 +187,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		outchar(UNICODE_SOUND_RECORDING_COPYRIGHT, "(P)");
 		return nulstr;
 	}
+	if(strcmp(sp, "REGISTERED") == 0) {
+		outchar(UNICODE_REGISTERED_SIGN, "(R)");
+		return nulstr;
+	}
 	if(strcmp(sp, "TRADEMARK") == 0) {
 		outchar(UNICODE_TRADE_MARK_SIGN, "(TM)");
 		return nulstr;
