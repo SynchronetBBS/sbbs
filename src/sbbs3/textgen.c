@@ -19,6 +19,17 @@ ulong ahtoul(char *str)
 	return(val);
 }
 
+void truncsp(char* str)
+{
+	char* cp=strchr(str, 0);
+	if(cp && cp > str) {
+		cp--;
+		while(cp > str && isspace(*cp)) {
+			*(cp--)=0;
+		}
+	}
+}
+
 /****************************************************************************/
 /* Reads special TEXT.DAT printf style text lines, splicing multiple lines, */
 /* replacing escaped characters, and allocating the memory					*/
@@ -41,6 +52,7 @@ char *readtext(FILE *stream, char **comment_ret)
 	comment[0]=0;
 	if(*(p+1)=='\\') {	/* merge multiple lines */
 		for(cp=p+2; *cp && isspace(*cp); cp++);
+		truncsp(cp);
 		strcat(comment, cp);
 		while(strlen(buf)<2000) {
 			if(!fgets(str,255,stream))
@@ -52,22 +64,18 @@ char *readtext(FILE *stream, char **comment_ret)
 			p=strrchr(p,'"');
 			if(p && *(p+1)=='\\') {
 				for(cp=p+2; *cp && isspace(*cp); cp++);
+				truncsp(cp);
 				strcat(comment, cp);
 				continue;
 			}
 			break; 
 		}
 	}
-	for(cp=p+2; *cp && isspace(*cp); cp++);
-	strcat(comment, cp);
-	cp=strchr(comment, 0);
-	if(cp && cp > comment) {
-		cp--;
-		while(cp > comment && isspace(*cp)) {
-			*(cp--)=0;
-		}
+	else {
+		for(cp=p+2; *cp && isspace(*cp); cp++);
+		strcat(comment, cp);
+		truncsp(comment);
 	}
-
 	*(p)=0;
 	k=strlen(buf);
 	for(i=1,j=0;i<k;j++) {
