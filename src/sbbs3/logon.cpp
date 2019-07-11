@@ -207,7 +207,7 @@ bool sbbs_t::logon()
 		rioctl(IOCS|ABORT); 
 	}
 
-	CLS;
+	bputs(text[LoggingOn]);
 	if(useron.rows)
 		rows=useron.rows;
 	unixtodstr(&cfg,(time32_t)logontime,str);
