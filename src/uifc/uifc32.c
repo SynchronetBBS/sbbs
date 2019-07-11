@@ -563,7 +563,7 @@ static void truncspctrl(char *str)
 }
 
 static void
-inactive_win(struct vmem_cell *buf, int left, int top, int right, int bottom, int y, int hbrdrsize, uchar cclr, uchar lclr, uchar hclr)
+inactive_win(struct vmem_cell *buf, int left, int top, int right, int bottom, int y, int hbrdrsize, uchar cclr, uchar lclr, uchar hclr, int btop)
 {
 	int width = right - left + 1;
 	int height = bottom - top + 1;
@@ -572,8 +572,8 @@ inactive_win(struct vmem_cell *buf, int left, int top, int right, int bottom, in
 	vmem_gettext(left, top, right, bottom, buf);
 	for (i=0; i < (width * height); i++)
 		set_vmem_attr(&buf[i], lclr | (cclr<<4));
-	j=(((y-top)*width))+3+((width-hbrdrsize-2));
-	for(i=(((y-top)*width))+3;i<j;i++)
+	j=(((y-btop)*width))+3+((width-hbrdrsize-2));
+	for(i=(((y-btop)*width))+3;i<j;i++)
 		set_vmem_attr(&buf[i], hclr|(cclr<<4));
 
 	vmem_puttext(left, top, right, bottom, buf);
@@ -1082,7 +1082,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 									,__LINE__,(width+3)*(height+2)*2);
 								return(-1);
 							}
-							inactive_win(win, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr);
+							inactive_win(win, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr, top);
 							if(!(api->mode&UIFC_NHM))
 								uifc_mouse_enable();
 						}
@@ -1463,7 +1463,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								+left+width-1,s_top+top+height-1,save);
 							struct vmem_cell *copy = malloc(width*height*sizeof(*copy));
 							if(copy != NULL) {
-								inactive_win(copy, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr);
+								inactive_win(copy, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr, top);
 								free(copy);
 							}
 						}
@@ -1482,7 +1482,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(mode&WIN_SAV)
 								api->savnum++;
 							if(mode&WIN_ACT)
-								inactive_win(tmp_buffer, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr);
+								inactive_win(tmp_buffer, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr, top);
 							else if(mode&WIN_SAV) {
 								api->savnum--;
 								if(sav[api->savnum].buf != NULL)
@@ -1513,7 +1513,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(mode&WIN_SAV)
 								api->savnum++;
 							if(mode&WIN_INSACT)
-								inactive_win(tmp_buffer, s_left+left,s_top+top,s_left+left+width-1,s_top+top+height-1,y, hbrdrsize, cclr, lclr, hclr);
+								inactive_win(tmp_buffer, s_left+left,s_top+top,s_left+left+width-1,s_top+top+height-1,y, hbrdrsize, cclr, lclr, hclr, top);
 							else if(mode&WIN_SAV) {
 								api->savnum--;
 								if(sav[api->savnum].buf != NULL)
@@ -1535,7 +1535,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(mode&WIN_SAV)
 								api->savnum++;
 							if(mode&WIN_DELACT)
-								inactive_win(tmp_buffer, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr);
+								inactive_win(tmp_buffer, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr, top);
 							else if(mode&WIN_SAV) {
 								api->savnum--;
 								if (sav[api->savnum].buf != NULL)
@@ -1656,7 +1656,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(mode&WIN_SAV)
 								api->savnum++;
 							if(mode&WIN_ACT)
-								inactive_win(tmp_buffer, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr);
+								inactive_win(tmp_buffer, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr, top);
 							else if(mode&WIN_SAV) {
 								api->savnum--;
 								if (sav[api->savnum].buf != NULL)
