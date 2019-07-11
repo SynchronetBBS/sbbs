@@ -34,7 +34,6 @@ void telnet_input_thread(void *args)
 
 	SetThreadName("Telnet Input");
 	conn_api.input_thread_running=1;
-	free(args);
 	while(telnet_sock != INVALID_SOCKET && !conn_api.terminate) {
 		FD_ZERO(&rds);
 		FD_SET(telnet_sock, &rds);
