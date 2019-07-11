@@ -274,6 +274,7 @@ struct ciolib_screen {
 	struct ciolib_pixels	*pixels;
 	struct vmem_cell	*vmem;
 	struct text_info	text_info;
+	uint32_t		palette[16];
 };
 
 #define CONIO_FIRST_FREE_FONT	43

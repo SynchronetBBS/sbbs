@@ -1854,6 +1854,7 @@ CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void)
 	for (i=0; i<5; i++)
 		ret->fonts[i] = ciolib_getfont(i);
 	ret->flags = ciolib_getvideoflags();
+	ciolib_get_modepalette(ret->palette);
 
 	return ret;
 }
@@ -1881,6 +1882,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_restorescreen(struct ciolib_screen *scrn)
 
 	if (ti.currmode != scrn->text_info.currmode)
 		ciolib_textmode(scrn->text_info.currmode);
+	ciolib_set_modepalette(ret->palette);
 	ciolib_vmem_puttext(1, 1, scrn->text_info.screenwidth, scrn->text_info.screenheight, scrn->vmem);
 	ciolib_textcolor(scrn->text_info.attribute);
 	ciolib_window(scrn->text_info.winleft, scrn->text_info.wintop, scrn->text_info.winright, scrn->text_info.winbottom);
