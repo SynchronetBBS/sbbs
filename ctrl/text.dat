@@ -43,9 +43,9 @@
 "\1?\1r\1h\1iAborted.\1n\r\n"                              030 Aborted
 "\r\nAnonymous"                                         031 AnonymousQ
 "ANONYMOUS"                                             032 Anonymous
-"\1n\1h\r\nSaving..."                                     033 Saving
+"\1n\1h\r\nSaving @ELLIPSIS@"                           033 Saving
 "\1[\1bSaved \1w%u\1b characters (\1w%u\1b lines).\1n\r\n"    034 SavedNBytes
-"\1n\r\nWriting Index..."                                035 WritingIndx
+"\1n\r\nWriting Index @ELLIPSIS@"                              035 WritingIndx
 "\1[\1n\1mE-mail sent to \1h%s \1n\1m#%d.\1n\r\n"              036 Emailed
 "\1[\1n\1mPosted on \1h%s\1n\1m %s.\r\n"                      037 Posted
 "\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you E-mail.\r\n"       038 EmailNodeMsg
@@ -201,8 +201,8 @@
 "Delete Guru file"                                      163 DeleteGuruLogQ
 "\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
 "\r\n\r\nYou can't download.\r\n"                       165 R_Download
-"\r\n\1w\1hSearching all directories...\r\n"              166 SearchingAllDirs
-"\1w\1hSearching all libraries...\r\n"                    167 SearchingAllLibs
+"\r\n\1w\1hSearching all directories @ELLIPSIS@\r\n"      166 SearchingAllDirs
+"\1w\1hSearching all libraries @ELLIPSIS@\r\n"            167 SearchingAllLibs
 "\r\n\1w\1h%u Files Listed.\r\n"                          168 NFilesListed
 "\r\n\1w\1hEmpty directory.\r\n"                          169 EmptyDir
 "\r\n\1n\1cSearching for files "\                         170 NScanHdr
@@ -342,10 +342,10 @@
 "\r\nUpload queue is empty\r\n"                         281 UploadQueueIsEmpty
 "\r\nHang up after transfer"                            282 HangUpAfterXferQ
 "\r\n\1w\1hStart transfer now (Ctrl-X to abort):\r\n\1n"   283 StartXferNow
-"\1_\r\n\1b\1hDisconnecting... \1wH\1bang up or \1wA\1bbort "  284 Disconnecting
+"\1_\r\n\1b\1hDisconnecting @ELLIPSIS@ \1wH\1bang up or \1wA\1bbort "  284 Disconnecting
 "\1[\1w\1hGood-bye!  (Time Used: @TUSED@)\1>"               285 Disconnected
 "\1r\1h\1i%s NOT SENT!\1n\r\n"                              286 FileNotSent
-"Deleting files in temp directory...\r\n"               287 RemovingTempFiles
+"Deleting files in temp directory @ELLIPSIS@\r\n"           287 RemovingTempFiles
 "\1_\1y\1hExtract from: \1n"                                288 ExtractFrom
 "\r\nUnextractable file type.\r\n"                      289 UnextractableFile
 "\r\nFile not found.\r\n"                               290 FileNotFound
@@ -360,7 +360,7 @@
 	"during resort/compression.\1n\r\n"
 "\1-\1c%-15.15s \1y\1h%-25.25s "                            298 ResortLineFmt
 "\1bEmpty\1n\r\n"                                         299 ResortEmptyDir
-"\1wSorting..."                                          300 Sorting
+"\1wSorting @ELLIPSIS@"                                   300 Sorting
 "\b\b\b\b\b\b\b\b\b\b\1bSorted    \1n\r\n"                301 Sorted
 "\b\b\b\b\b\b\b\b\b\b\1bCompressed %u slots "\           302 Compressed
 	"(%s bytes)\1n\r\n"
@@ -478,7 +478,7 @@
 	"E:%3u   F:%3u   U:%6uk %3u  D:%6uk %3u\r\n"
 "Locally"                                               393 Locally
 "\r\nSort alphabetically"                               394 SortAlphaQ
-"\r\n\1m\1hChecking Slots..."                             395 CheckingSlots
+"\r\n\1m\1hChecking Slots @ELLIPSIS@"                          395 CheckingSlots
 "\1n\1h%-32.32s\1n\1m%-30.30s\1h%-8.8s \1n\1m%-8.8s\r\n"       396 UserListFmt
 "\1[\1h\1w%d\1b total users.        \r\n"                397 NTotalUsers
 "\1w%d \1busers with access to current sub-board.\r\n"  398 NUsersOnCurSub
@@ -711,7 +711,7 @@
 "\1[\1bPacked:\1w%4u \1bof\1w %u\1>"                        573 QWKPackedSubboard
 "\r\n\1_\1h\1wPacking E-mail...            "               574 QWKPackingEmail
 "\1[\1bPacked \1w%u\1b E-mail messages.\1>"                  575 QWKPackedEmail
-"\r\n\1_\1h\1wUnpacking..."                                576 QWKUnpacking
+"\r\n\1_\1h\1wUnpacking @ELLIPSIS@"                          576 QWKUnpacking
 "\1[\1_\1h\1bUnpacked.\1>"                                   577 QWKUnpacked
 "\1_\1w\1hNo new messages.\r\n"                            578 QWKNoNewMessages
 "\r\n\1r\1h\1iPacket Compression Failed!\1n\r\n"            579 QWKCompressionFailed
@@ -740,9 +740,9 @@
 "\r\n\1_\1y\1hPost to: "                                   597 PostTo
 "\r\nPrivate posts require a destination user "\        598 NoToUser
 	"name.\r\n"
-"\r\n\1_\1w\1hUsing your real name...\r\n"                 599 UsingRealName
-"\r\n\1_\1w\1hPosting Privately...\r\n"                    600 PostingPrivately
-"\r\n\1_\1w\1hPosting anonymously...\r\n"                  601 PostingAnonymously
+"\r\n\1_\1w\1hUsing your real name @ELLIPSIS@\r\n"         599 UsingRealName
+"\r\n\1_\1w\1hPosting Privately @ELLIPSIS@\r\n"            600 PostingPrivately
+"\r\n\1_\1w\1hPosting anonymously @ELLIPSIS@\r\n"          601 PostingAnonymously
 "\r\nCan't delete posts on this sub-board.\r\n"         602 CantDeletePosts
 "\r\n\1h\1gSub-board Information:\r\n\r\n\1n"              603 SubInfoHdr
 "\1n\1h\1bDescription             : \1c%s\r\n"             604 SubInfoLongName
@@ -916,7 +916,7 @@
 "\r\n\1y\1hOperator: \1w"				761 OperatorPrompt
 "Add this sub-board to your new-scan list"         762 AddSubToNewScanQ
 "\1n\1r\1iWARNING: You are reading messages past the last unvalidated message (%u)" 763 UnvalidatedWarning
-"\1n\1hStarting new user registration...\r\n"           764 StartingNewUserRegistration
+"\1n\1hStarting new user registration @ELLIPSIS@\r\n"   764 StartingNewUserRegistration
 "\r\n\r\n\1nCtrl-Key Commands (during line input)\r\n"\ 765 GetStrMenu
     "\r\n\1h^K  \1nThis Menu"\
 	"\r\n\1h^C  \1nAbort Current Line Input"\
@@ -1001,3 +1001,5 @@
     "This text\1n is black on yellow and NOT BLINKING"
 "Does your terminal support UTF-8"                        824 Utf8TerminalQ
 "\r\n\xb3 \1bCC  \1n\1b: \1h\1c%.70s"                     825 MsgCarbonCopyList
+"\1n\1hLogging on to @BBS@ as @ALIAS@ @ELLIPSIS@\1n\r\n"\ 826 LoggingOn
+    "@RESETPAUSE@"
