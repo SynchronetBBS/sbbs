@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include <ciolib.h>
+#include <vidmodes.h>
 #include <uifc.h>
 
 #include "uifcinit.h"
@@ -23,6 +24,7 @@ int orig_ciolib_xlat;
 int orig_vidflags;
 int orig_x;
 int orig_y;
+uint32_t orig_palette[16];
 
 int	init_uifc(BOOL scrn, BOOL bottom) {
 	int	i;
@@ -46,6 +48,8 @@ int	init_uifc(BOOL scrn, BOOL bottom) {
 		}
 		bottomfunc=uifc.bottomline;
 		uifc_initialized=UIFC_INIT;
+		get_modepalette(orig_palette);
+		set_modepalette(palettes[COLOUR_PALETTE]);
 	}
 
 	if(scrn) {
@@ -82,6 +86,7 @@ void uifcbail(void)
 	if(uifc_initialized) {
 		uifc.bail();
 		ciolib_xlat = orig_ciolib_xlat;
+		set_modepalette(orig_palette);
 		setvideoflags(orig_vidflags);
 		loadfont(NULL);
 		gotoxy(orig_x, orig_y);
@@ -95,13 +100,8 @@ void uifcmsg(char *msg, char *helpbuf)
 	struct ciolib_screen *savscrn;
 
 	i=uifc_initialized;
-	if(!i) {
+	if(!i)
 		savscrn = savescreen();
-		setfont(0, FALSE, 1);
-		setfont(0, FALSE, 2);
-		setfont(0, FALSE, 3);
-		setfont(0, FALSE, 4);
-	}
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
@@ -123,13 +123,8 @@ void uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 	struct ciolib_screen *savscrn;
 
 	i=uifc_initialized;
-	if(!i) {
+	if(!i)
 		savscrn = savescreen();
-		setfont(0, FALSE, 1);
-		setfont(0, FALSE, 2);
-		setfont(0, FALSE, 3);
-		setfont(0, FALSE, 4);
-	}
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
@@ -157,13 +152,8 @@ int confirm(char *msg, char *helpbuf)
 	int		copt=0;
 
 	i=uifc_initialized;
-	if(!i) {
+	if(!i)
 		savscrn = savescreen();
-		setfont(0, FALSE, 1);
-		setfont(0, FALSE, 2);
-		setfont(0, FALSE, 3);
-		setfont(0, FALSE, 4);
-	}
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
