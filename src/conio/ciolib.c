@@ -1882,7 +1882,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_restorescreen(struct ciolib_screen *scrn)
 
 	if (ti.currmode != scrn->text_info.currmode)
 		ciolib_textmode(scrn->text_info.currmode);
-	ciolib_set_modepalette(ret->palette);
+	ciolib_set_modepalette(scrn->palette);
 	ciolib_vmem_puttext(1, 1, scrn->text_info.screenwidth, scrn->text_info.screenheight, scrn->vmem);
 	ciolib_textcolor(scrn->text_info.attribute);
 	ciolib_window(scrn->text_info.winleft, scrn->text_info.wintop, scrn->text_info.winright, scrn->text_info.winbottom);
