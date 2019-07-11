@@ -241,12 +241,30 @@ CSI Pn @
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
+CSI Pn SP @
+	Shift Left
+	Defaults: Pn = 1
+	Shifts the contents of the screen left Pn columns(s) with
+	leftmost columns going off-screen and the resulting hole being
+	filled with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
 CSI Pn A
 	Cursor Up
 	Defaults: Pn = 1
 	Moves the cursor position up Pn lines from the current position.
 	Attempting to move past the screen boundaries stops the cursor
 	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn SP A
+	Shift Right
+	Defaults: Pn = 1
+	Shifts the contents of the screen right Pn columns(s) with
+	rightmost columns going off-screen and the resulting hole being
+	filled with the current attribute.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
