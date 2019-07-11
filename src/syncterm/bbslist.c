@@ -18,6 +18,7 @@
 #include "window.h"
 #include "term.h"
 #include "menu.h"
+#include "vidmodes.h"
 
 struct sort_order_info {
 	char		*name;
@@ -1996,3 +1997,30 @@ get_emulation_str(cterm_emulation_t emu)
 	}
 }
 
+void
+get_term_size(struct bbslist *bbs, int *cols, int *rows)
+{
+	int cmode = find_vmode(screen_to_ciolib(bbs->screen_mode));
+
+	if(vparams[cmode].cols < 80) {
+		if (cols)
+			*cols=40;
+	}
+	else {
+		if(vparams[cmode].cols < 132) {
+			if (cols)
+				*cols=80;
+		}
+		else {
+			if (cols)
+				*cols=132;
+		}
+	}
+	if (rows) {
+		*rows=vparams[cmode].rows;
+		if(!bbs->nostatus)
+			(*rows)--;
+		if(*rows<24)
+			*rows=24;
+	}
+}

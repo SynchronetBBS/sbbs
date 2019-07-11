@@ -1569,7 +1569,11 @@ int main(int argc, char **argv)
 	while((!quitting) && (bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL)) {
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		FREE_AND_NULL(last_bbs);
-		if(!conn_connect(bbs)) {
+		if(conn_connect(bbs)) {
+			load_font_files();
+			textmode(txtinfo.currmode);
+			settitle("SyncTERM");
+		} else {
 			/* ToDo: Update the entry with new lastconnected */
 			/* ToDo: Disallow duplicate entries */
 			bbs->connected=time(NULL);

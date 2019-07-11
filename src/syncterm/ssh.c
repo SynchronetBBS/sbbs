@@ -146,7 +146,6 @@ int ssh_connect(struct bbslist *bbs)
 	char password[MAX_PASSWD_LEN+1];
 	char username[MAX_USER_LEN+1];
 	int	rows,cols;
-	struct text_info ti;
 	const char *term;
 
 	init_uifc(TRUE, TRUE);
@@ -240,23 +239,7 @@ int ssh_connect(struct bbslist *bbs)
 	term = get_emulation_str(get_emulation(bbs));
 	status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_TERMINAL, term, strlen(term));
 
-	/* Horrible way to determine the screen size */
-	textmode(screen_to_ciolib(bbs->screen_mode));
-
-	gettextinfo(&ti);
-	if(ti.screenwidth < 80)
-		cols=40;
-	else {
-		if(ti.screenwidth < 132)
-			cols=80;
-		else
-			cols=132;
-	}
-	rows=ti.screenheight;
-	if(!bbs->nostatus)
-		rows--;
-	if(rows<24)
-		rows=24;
+	get_term_size(bbs, &cols, &rows);
 
 	uifc.pop(NULL);
 	uifc.pop("Setting Terminal Width");

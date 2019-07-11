@@ -107,5 +107,6 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 int  get_rate_num(int rate);
 cterm_emulation_t get_emulation(struct bbslist *bbs);
 const char *get_emulation_str(cterm_emulation_t emu);
+void get_term_size(struct bbslist *bbs, int *cols, int *rows);
 
 #endif
