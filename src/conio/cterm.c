@@ -1600,15 +1600,15 @@ static void parse_extended_colour(struct esc_seq *seq, int *i, struct cterminal 
 		if (parse_sub_parameters(&sub, seq, (*i)+1)) {
 			if (sub.param_count == 2)
 				*co = sub.param_int[1];
-			(*i)++;
 			save_extended_colour_seq(cterm, fg, seq, *i, 2);
+			(*i)++;
 		}
 	}
 	else if ((*i)+2 < seq->param_count && seq->param_int[(*i)+1] == 5) {
 		// CSI 38 ; 5 ; X m variant
 		*co = seq->param_int[(*i)+2] + 16;
-		*i+=2;
 		save_extended_colour_seq(cterm, fg, seq, *i, 3);
+		*i+=2;
 	}
 	else if ((*i)+1 < seq->param_count && seq->param_int[(*i)+1] == 2 && seq->param[(*i)+1][1] == ':') {
 		// CSI 38 ; 2 : Z? : R : G : B m variant
@@ -1621,6 +1621,7 @@ static void parse_extended_colour(struct esc_seq *seq, int *i, struct cterminal 
 			if (nc != UINT32_MAX)
 				*co = nc;
 			save_extended_colour_seq(cterm, fg, seq, *i, 2);
+			*i += 1;
 		}
 	}
 	else if ((*i)+4 < seq->param_count && seq->param_int[(*i)+1] == 2) {
@@ -1628,8 +1629,8 @@ static void parse_extended_colour(struct esc_seq *seq, int *i, struct cterminal 
 		nc = map_rgb(seq->param_int[(*i)+2]<<8, seq->param_int[(*i)+3]<<8, seq->param_int[(*i)+4]<<8);
 		if (nc != UINT32_MAX)
 			*co = nc;
-		*i += 4;
 		save_extended_colour_seq(cterm, fg, seq, *i, 5);
+		*i += 4;
 	}
 	free_sub_parameters(&sub);
 }
