@@ -134,6 +134,8 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_restorescreen(struct ciolib_screen *scrn);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setcolour(uint32_t fg, uint32_t bg);
 CIOLIBEXPORT int CIOLIBCALL ciolib_get_modepalette(uint32_t p[16]);
 CIOLIBEXPORT int CIOLIBCALL ciolib_set_modepalette(uint32_t p[16]);
+CIOLIBEXPORT void CIOLIBCALL ciolib_set_vmem(struct vmem_cell *cell, uint8_t ch, uint8_t attr, uint8_t font);
+CIOLIBEXPORT void CIOLIBCALL ciolib_set_vmem_attr(struct vmem_cell *cell, uint8_t attr);
 
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 int sdl_video_initialized = 0;
@@ -1998,4 +2000,27 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_checkfont(int fontnum)
 	}
 	return 0;
 
+}
+
+CIOLIBEXPORT void CIOLIBCALL
+ciolib_set_vmem(struct vmem_cell *cell, uint8_t ch, uint8_t attr, uint8_t font)
+{
+	CIOLIB_INIT();
+
+	if (cell == NULL)
+		return;
+	cell->ch = ch;
+	cell->font = font;
+	ciolib_set_vmem_attr(cell, attr);
+}
+
+CIOLIBEXPORT void CIOLIBCALL
+ciolib_set_vmem_attr(struct vmem_cell *cell, uint8_t attr)
+{
+	CIOLIB_INIT();
+
+	if (cell == NULL)
+		return;
+	cell->legacy_attr = attr;
+	ciolib_attr2palette(attr, &cell->fg, &cell->bg);
 }

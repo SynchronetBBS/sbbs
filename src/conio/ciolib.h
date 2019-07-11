@@ -452,6 +452,8 @@ CIOLIBEXPORT uint32_t CIOLIBCALL ciolib_map_rgb(uint16_t r, uint16_t g, uint16_t
 CIOLIBEXPORT void CIOLIBCALL ciolib_replace_font(uint8_t id, char *name, void *data, size_t size);
 CIOLIBEXPORT int CIOLIBCALL ciolib_attrfont(uint8_t attr);
 CIOLIBEXPORT int CIOLIBCALL ciolib_checkfont(int font_num);
+CIOLIBEXPORT void CIOLIBCALL ciolib_set_vmem(struct vmem_cell *cell, uint8_t ch, uint8_t attr, uint8_t font);
+CIOLIBEXPORT void CIOLIBCALL ciolib_set_vmem_attr(struct vmem_cell *cell, uint8_t attr);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -531,6 +533,8 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define replace_font(a,b,c,d)	ciolib_replace_font(a,b,c,d)
 	#define attrfont(a)				ciolib_attrfont(a)
 	#define checkfont(a)			ciolib_checkfont(a)
+	#define set_vmem(a, b, c, d)		ciolib_set_vmem(a, b, c, d)
+	#define set_vmem_attr(a, b)		ciolib_set_vmem_attr(a, b)
 #endif
 
 #ifdef WITH_SDL
