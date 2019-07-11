@@ -530,7 +530,7 @@ static void scroll_text(int x1, int y1, int x2, int y2, int down)
 	if(down)
 		vmem_puttext(x1,y1+1,x2,y2,tmp_buffer2);
 	else
-		vmem_puttext(x1,y1,x2,y2-1,tmp_buffer2+(((x2-x1)+1)*2));
+		vmem_puttext(x1,y1,x2,y2-1,tmp_buffer2+(((x2-x1)+1)));
 }
 
 /****************************************************************************/
