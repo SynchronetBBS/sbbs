@@ -595,7 +595,7 @@ void sdl_flush(void)
 
 static int sdl_init_mode(int mode)
 {
-    int oldcols;
+	int oldcols;
 
 	oldcols = cvstat.cols;
 
@@ -605,27 +605,26 @@ static int sdl_init_mode(int mode)
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
 	if(yuv.enabled)
 		vstat.scaling = 2;
+	/* Deal with 40 col doubling */
+	else {
+		if(oldcols != vstat.cols) {
+			if(oldcols == 40)
+				vstat.scaling /= 2;
+			if(vstat.cols == 40)
+				vstat.scaling *= 2;
+		}
+	}
+	if(vstat.scaling < 1)
+		vstat.scaling = 1;
+	if(vstat.vmultiplier < 1)
+		vstat.vmultiplier = 1;
+
 	cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
 
-	/* Deal with 40 col doubling */
-	if(!yuv.enabled) {
-		if(oldcols != cvstat.cols) {
-			if(oldcols == 40)
-				cvstat.scaling /= 2;
-			if(cvstat.cols == 40)
-				cvstat.scaling *= 2;
-		}
-	}
-
-	if(cvstat.scaling < 1)
-		cvstat.scaling = 1;
-	if(cvstat.vmultiplier < 1)
-		cvstat.vmultiplier = 1;
-
 	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE);
 
-    return(0);
+	return(0);
 }
 
 /* Called from main thread only (Passes Event) */
