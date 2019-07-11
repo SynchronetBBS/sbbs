@@ -857,8 +857,25 @@ static void setup_surfaces(void)
 		else
 			win=sdl.SetVideoMode(yuv.win_width,yuv.win_height,0,flags);
 	}
-	else
+	else {
+		if (win != NULL) {
+			if (!yuv.enabled) {
+				if (new_rect->w != char_width || new_rect->h != char_height) {
+					SDL_Rect	upd_rect;
+					upd_rect.x = 0;
+					upd_rect.y = 0;
+					sdl.mutexP(newrect_mutex);
+					upd_rect.w=new_rect->w;
+					upd_rect.h=new_rect->h;
+					sdl.FillRect(new_rect, &upd_rect, sdl.MapRGB(win->format, 0, 0, 0));
+					sdl.BlitSurface(new_rect, &upd_rect, win, &upd_rect);
+					sdl.mutexV(newrect_mutex);
+					sdl.Flip(win);
+				}
+			}
+		}
 		win=sdl.SetVideoMode(char_width,char_height,0,flags);
+	}
 
 #if !defined(NO_X) && defined(__unix__)
 	if(sdl_x11available && sdl_using_x11) {
