@@ -310,7 +310,7 @@ int sbbs_t::rputs(const char *str, size_t len)
 		else {
 			if(outcom(ch)!=0)
 				break;
-			if(ch == (char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
+			if((char)ch == (char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
 				outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
 		}
 		if(lbuflen<LINE_BUFSIZE)
