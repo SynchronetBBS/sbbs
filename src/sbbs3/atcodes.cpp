@@ -179,7 +179,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		outchar(UNICODE_HORIZONTAL_ELLIPSIS, "...");
 		return nulstr;
 	}
-	if(strcmp(sp, "COPYRIGHT") == 0) {
+	if(strcmp(sp, "COPY") == 0) {
 		outchar(UNICODE_COPYRIGHT_SIGN, "(C)");
 		return nulstr;
 	}
