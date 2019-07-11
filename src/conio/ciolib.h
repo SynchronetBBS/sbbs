@@ -258,24 +258,22 @@ struct ciolib_pixels {
 	uint32_t	height;
 };
 
-struct ciolib_screen {
-	uint32_t		fg_colour;
-	uint32_t		bg_colour;
-	int			flags;
-	int			fonts[5];
-	struct ciolib_pixels	*pixels;
-	void			*vmem;
-	uint32_t		*foreground;
-	uint32_t		*background;
-	struct text_info	text_info;
-};
-
 struct vmem_cell {
 	uint8_t legacy_attr;
 	uint8_t ch;
 	uint8_t font;
 	uint32_t fg;	// RGB 00RRGGBB High bit indicates palette colour
 	uint32_t bg;	// RGB 00RRGGBB High bit indicates palette colour
+};
+
+struct ciolib_screen {
+	uint32_t		fg_colour;
+	uint32_t		bg_colour;
+	int			flags;
+	int			fonts[5];
+	struct ciolib_pixels	*pixels;
+	struct vmem_cell	*vmem;
+	struct text_info	text_info;
 };
 
 #define CONIO_FIRST_FREE_FONT	43

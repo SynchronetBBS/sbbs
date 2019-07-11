@@ -1842,19 +1842,6 @@ CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void)
 		free(ret);
 		return NULL;
 	}
-	ret->foreground = malloc(ret->text_info.screenwidth * ret->text_info.screenheight * sizeof(ret->foreground[0]));
-	if (ret->foreground == NULL) {
-		free(ret->vmem);
-		free(ret);
-		return NULL;
-	}
-	ret->background = malloc(ret->text_info.screenwidth * ret->text_info.screenheight * sizeof(ret->background[0]));
-	if (ret->background == NULL) {
-		free(ret->foreground);
-		free(ret->vmem);
-		free(ret);
-		return NULL;
-	}
 
 	if (vmode != -1) {
 		ret->pixels = ciolib_getpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1);
@@ -1875,8 +1862,6 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_freescreen(struct ciolib_screen *scrn)
 		return;
 
 	ciolib_freepixels(scrn->pixels);
-	FREE_AND_NULL(scrn->background);
-	FREE_AND_NULL(scrn->foreground);
 	FREE_AND_NULL(scrn->vmem);
 	free(scrn);
 }
