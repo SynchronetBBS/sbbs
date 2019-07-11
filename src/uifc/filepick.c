@@ -16,13 +16,13 @@ enum {
 
 void drawfpwindow(uifcapi_t *api)
 {
-	char lbuf[1024];
+	struct vmem_cell lbuf[512];
 	int i;
 	int j;
 	int listheight=0;
 	int height;
 	int width;
-	char  shade[1024];
+	struct vmem_cell shade[512];
 
 	width=SCRN_RIGHT-SCRN_LEFT+1;
 
@@ -34,78 +34,67 @@ void drawfpwindow(uifcapi_t *api)
 	listheight=height-7;
 
         i=0;
-	lbuf[i++]='\xc9';
-	lbuf[i++]=api->hclr|(api->bclr<<4);
-	for(j=1;j<width-1;j++) {
-		lbuf[i++]='\xcd';
-		lbuf[i++]=api->hclr|(api->bclr<<4);
-	}
+	set_vmem(&lbuf[i++], '\xc9', api->hclr|(api->bclr<<4), 0);
+	for(j=1;j<width-1;j++)
+		set_vmem(&lbuf[i++], '\xcd', api->hclr|(api->bclr<<4), 0);
 	if(api->mode&UIFC_MOUSE && width>6) {
-		lbuf[2]='[';
-		lbuf[3]=api->hclr|(api->bclr<<4);
-		lbuf[4]='\xfe';
-		lbuf[5]=api->lclr|(api->bclr<<4);
-		lbuf[6]=']';
-		lbuf[7]=api->hclr|(api->bclr<<4);
-		lbuf[8]='[';
-		lbuf[9]=api->hclr|(api->bclr<<4);
-		lbuf[10]='?';
-		lbuf[11]=api->lclr|(api->bclr<<4);
-		lbuf[12]=']';
-		lbuf[13]=api->hclr|(api->bclr<<4);
+		set_vmem(&lbuf[1], '[', api->hclr|(api->bclr<<4), 0);
+		set_vmem(&lbuf[2], '\xfe', api->lclr|(api->bclr<<4), 0);
+		set_vmem(&lbuf[3], ']', api->hclr|(api->bclr<<4), 0);
+		set_vmem(&lbuf[4], '[', api->hclr|(api->bclr<<4), 0);
+		set_vmem(&lbuf[5], '?', api->lclr|(api->bclr<<4), 0);
+		set_vmem(&lbuf[6], ']', api->hclr|(api->bclr<<4), 0);
 		api->buttony=SCRN_TOP;
 		api->exitstart=SCRN_LEFT+1;
 		api->exitend=SCRN_LEFT+3;
 		api->helpstart=SCRN_LEFT+4;
 		api->helpend=SCRN_LEFT+6;
 	}
-	lbuf[i++]='\xbb';
-	lbuf[i]=api->hclr|(api->bclr<<4);
-	puttext(SCRN_LEFT,SCRN_TOP,SCRN_LEFT+width-1,SCRN_TOP,lbuf);
-	lbuf[5]=api->hclr|(api->bclr<<4);
-	lbuf[11]=api->hclr|(api->bclr<<4);
-	for(j=2;j<14;j+=2)
-		lbuf[j]='\xcd';
-	lbuf[0]='\xc8';
-	lbuf[(width-1)*2]='\xbc';
-	puttext(SCRN_LEFT,SCRN_TOP+height-1
+	set_vmem(&lbuf[i++], '\xbb', api->hclr|(api->bclr<<4), 0);
+	vmem_puttext(SCRN_LEFT,SCRN_TOP,SCRN_LEFT+width-1,SCRN_TOP,lbuf);
+	set_vmem_attr(&lbuf[2], api->hclr|(api->bclr<<4));
+	set_vmem_attr(&lbuf[5], api->hclr|(api->bclr<<4));
+	for(j=1;j<7;j++)
+		lbuf[j].ch='\xcd';
+	lbuf[0].ch='\xc8';
+	lbuf[(width-1)].ch='\xbc';
+	vmem_puttext(SCRN_LEFT,SCRN_TOP+height-1
 		,SCRN_LEFT+width-1,SCRN_TOP+height-1,lbuf);
-	lbuf[0]='\xcc';
-	lbuf[(width-1)*2]='\xb9';
-	lbuf[width-1]='\xcb';
-	puttext(SCRN_LEFT,SCRN_TOP+2,SCRN_LEFT+width-1,SCRN_TOP+2,lbuf);
-	lbuf[width-1]='\xca';
-	puttext(SCRN_LEFT,SCRN_TOP+3+listheight
+	lbuf[0].ch='\xcc';
+	lbuf[(width-1)].ch='\xb9';
+	lbuf[(width-1)/2].ch='\xcb';
+	vmem_puttext(SCRN_LEFT,SCRN_TOP+2,SCRN_LEFT+width-1,SCRN_TOP+2,lbuf);
+	lbuf[(width-1)/2].ch='\xca';
+	vmem_puttext(SCRN_LEFT,SCRN_TOP+3+listheight
 		,SCRN_LEFT+width-1,SCRN_TOP+3+listheight,lbuf);
-	lbuf[0]='\xba';
-	lbuf[(width-1)*2]='\xba';
-	for(j=2;j<(width-1)*2;j+=2)
-		lbuf[j]=' ';
-	puttext(SCRN_LEFT,SCRN_TOP+1,
+	lbuf[0].ch='\xba';
+	lbuf[(width-1)].ch='\xba';
+	for(j=1;j<(width-1);j++)
+		lbuf[j].ch=' ';
+	vmem_puttext(SCRN_LEFT,SCRN_TOP+1,
 		SCRN_LEFT+width-1,SCRN_TOP+1,lbuf);
-	puttext(SCRN_LEFT,SCRN_TOP+height-2,
+	vmem_puttext(SCRN_LEFT,SCRN_TOP+height-2,
 		SCRN_LEFT+width-1,SCRN_TOP+height-2,lbuf);
-	puttext(SCRN_LEFT,SCRN_TOP+height-3,
+	vmem_puttext(SCRN_LEFT,SCRN_TOP+height-3,
 		SCRN_LEFT+width-1,SCRN_TOP+height-3,lbuf);
-	lbuf[width-1]='\xba';
+	lbuf[(width-1)/2].ch='\xba';
 	for(j=0;j<listheight;j++)
-		puttext(SCRN_LEFT,SCRN_TOP+3+j
+		vmem_puttext(SCRN_LEFT,SCRN_TOP+3+j
 			,SCRN_LEFT+width-1,SCRN_TOP+3+j,lbuf);
-	
 
 	/* Shadow */
 	if(api->bclr==BLUE) {
-		gettext(SCRN_LEFT+width,SCRN_TOP+1,SCRN_LEFT+width+1
+		vmem_gettext(SCRN_LEFT+width,SCRN_TOP+1,SCRN_LEFT+width+1
 			,SCRN_TOP+(height-1),shade);
-		for(j=1;j<1024;j+=2)
-			shade[j]=DARKGRAY;
-		puttext(SCRN_LEFT+width,SCRN_TOP+1,SCRN_LEFT+width+1
+		for(j=0;j<512;j++)
+			set_vmem_attr(&shade[j], DARKGRAY);
+		vmem_puttext(SCRN_LEFT+width,SCRN_TOP+1,SCRN_LEFT+width+1
 			,SCRN_TOP+(height-1),shade);
-		gettext(SCRN_LEFT+2,SCRN_TOP+height,SCRN_LEFT+width+1
+		vmem_gettext(SCRN_LEFT+2,SCRN_TOP+height,SCRN_LEFT+width+1
 			,SCRN_TOP+height,shade);
-		for(j=1;j<width*2;j+=2)
-			shade[j]=DARKGRAY;
-		puttext(SCRN_LEFT+2,SCRN_TOP+height,SCRN_LEFT+width+1
+		for(j=0;j<width;j++)
+			set_vmem_attr(&shade[j], DARKGRAY);
+		vmem_puttext(SCRN_LEFT+2,SCRN_TOP+height,SCRN_LEFT+width+1
 			,SCRN_TOP+height,shade);
 	}
 }
