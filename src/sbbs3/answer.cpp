@@ -450,8 +450,6 @@ bool sbbs_t::answer()
 		input_thread_mutex_locked = false;
 	}
 	lprintf(LOG_INFO, "terminal type: %lux%lu %s", cols, rows, terminal);
-	useron.misc&=~TERM_FLAGS;
-	useron.misc|=autoterm;
 	SAFECOPY(client_ipaddr, cid);	/* Over-ride IP address with Caller-ID info */
 	SAFECOPY(useron.comp,client_name);
 
