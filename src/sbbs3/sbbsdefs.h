@@ -652,13 +652,12 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define AUTOLOGON	(1L<<22)		/* AutoLogon via IP						*/
 #define HTML		(1L<<23)		/* Using Zuul/HTML terminal				*/
 #define NOPAUSESPIN	(1L<<24)		/* No spinning cursor at pause prompt	*/
-#define CTERM_FONTS	(1L<<25)		/* Loadable fonts are supported			*/
 #define PETSCII		(1L<<26)		/* Commodore PET/CBM terminal			*/
 #define SWAP_DELETE	(1L<<27)		/* Swap Delete and Backspace keys		*/
 #define ICE_COLOR	(1L<<28)		/* Bright background color support		*/
 #define UTF8		(1L<<29)		/* UTF-8 terminal						*/
 
-#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|CTERM_FONTS|PETSCII|SWAP_DELETE|ICE_COLOR|UTF8)
+#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|PETSCII|SWAP_DELETE|ICE_COLOR|UTF8)
 
 									/* Special terminal key mappings */
 #define TERM_KEY_HOME	CTRL_B

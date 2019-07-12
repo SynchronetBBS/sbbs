@@ -365,8 +365,6 @@ bool sbbs_t::answer()
 				} else if(sscanf(p, "[=67;84;101;114;109;%u;%u", &x, &y) == 2 && *lastchar(p) == 'c') {
 					lprintf(LOG_INFO,"received CTerm version report: %u.%u", x, y);
 					cterm_version = (x*1000) + y;
-					if(cterm_version >= 1061)
-						autoterm |= CTERM_FONTS;
 				}
 				p = strtok_r(NULL, "\x1b", &tokenizer);
 			}
