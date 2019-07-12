@@ -1556,6 +1556,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 	struct mouse_event mevent;
 	struct bbslist defaults;
 	char	shared_list[MAX_PATH+1];
+	char list_title[30];
 
 	if(init_uifc(connected?FALSE:TRUE, TRUE))
 		return(NULL);
@@ -1570,6 +1571,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 	uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_ACT|WIN_INACT
 		,0,0,0,&sopt,&sbar,"SyncTERM Settings",connected?connected_settings_menu:settings_menu);
 	for(;;) {
+		sprintf(list_title, "Directory (%d items)", listcount);
 		if (quitting) {
 			free(list);
 			return NULL;
@@ -1608,7 +1610,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 				val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 					|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
 					|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
-					,0,0,0,&opt,&bar,"Directory",(char **)list);
+					,0,0,0,&opt,&bar,list_title,(char **)list);
 				if(val==listcount)
 					val=listcount|MSK_INS;
 				if(val==-7)	{ /* CTRL-E */
@@ -1616,7 +1618,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 						|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 						|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
 						|WIN_SEL
-						,0,0,0,&opt,&bar,"Directory",(char **)list);
+						,0,0,0,&opt,&bar,list_title,(char **)list);
 					val=opt|MSK_EDIT;
 				}
 				if(val<0) {
@@ -1626,7 +1628,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
 								|WIN_SEL
-								,0,0,0,&opt,&bar,"Directory",(char **)list);
+								,0,0,0,&opt,&bar,list_title,(char **)list);
 							edit_sorting(list,&listcount, &opt, &bar, list[opt]?list[opt]->name:NULL);
 							break;
 						case -2-0x3000:	/* ALT-B - Scrollback */
@@ -1647,7 +1649,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
 								|WIN_SEL
-								,0,0,0,&opt,&bar,"Directory",(char **)list);
+								,0,0,0,&opt,&bar,list_title,(char **)list);
 							at_settings=!at_settings;
 							break;
 						case -6:		/* CTRL-D */
@@ -1667,7 +1669,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 									|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
 									|WIN_SEL
-									,0,0,0,&opt,&bar,"Directory",(char **)list);
+									,0,0,0,&opt,&bar,list_title,(char **)list);
 								uifc.input(WIN_MID|WIN_SAV,0,0,"Address",addy,LIST_ADDR_MAX,0);
 								memcpy(&retlist, &defaults, sizeof(defaults));
 								if(uifc.changes) {
@@ -1887,7 +1889,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
 								|WIN_SEL|WIN_INACT
-								,0,0,0,&opt,&bar,"Directory",(char **)list);
+								,0,0,0,&opt,&bar,list_title,(char **)list);
 						}
 						break;
 					case -2-CIO_KEY_MOUSE:
@@ -1939,7 +1941,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 									|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
 									|WIN_SEL|WIN_INACT
-									,0,0,0,&opt,&bar,"Directory",(char **)list);
+									,0,0,0,&opt,&bar,list_title,(char **)list);
 							}
 							else if (check_exit(FALSE)) {
 								free_list(&list[0],listcount);
