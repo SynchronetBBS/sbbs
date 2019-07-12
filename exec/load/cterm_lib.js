@@ -11,6 +11,7 @@ const cterm_version_supports_fonts = 1061;
 const cterm_version_supports_fontstate_query = 1161;	// Yes, just a coincidence
 const cterm_version_supports_mode_query = 1160;
 const cterm_version_supports_palettes = 1167;
+const cterm_version_supports_sixel = 1189;
 const cterm_version_supports_fontdim_query = 1198;
 var font_slot_first = 43;
 const font_slot_last = 255;
@@ -258,6 +259,13 @@ function supports_palettes()
 	return true;
 }
 
+function supports_sixel()
+{
+	if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_sixel)
+		return false;
+	return true;
+}
+
 // Returns:
 //	true:		font activation successful
 //	undefined:	unsure if font activation was successful (e.g. SyncTERM 1.0)
@@ -397,7 +405,10 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 	console.clear(LIGHTGRAY|BG_BLACK);
 
 	if(this.supports_fonts() != false && image.font && image.charheight == this.charheight()) {
-		this.saved_fonts = console.cterm_fonts_active.slice();
+		if(console.cterm_fonts_active)
+			this.saved_fonts = console.cterm_fonts_active.slice();
+		else
+			this.saved_fonts = undefined;
 		log(LOG_DEBUG, "CTerm saving active fonts slots: " + this.saved_fonts);
 		for(var i = 0; i < image.font.length; i++)	{
 	//		print("Loading font " + image.font[i].length + " bytes");
