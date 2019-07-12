@@ -3297,7 +3297,7 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->bg_color = UINT32_MAX;
 	cterm->tabs = malloc(sizeof(cterm_tabs));
 	if (cterm->tabs == NULL) {
-		free(cterm->tabs);
+		free(cterm);
 		return NULL;
 	}
 	memcpy(cterm->tabs, cterm_tabs, sizeof(cterm_tabs));
