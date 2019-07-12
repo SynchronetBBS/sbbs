@@ -405,6 +405,7 @@ CSI Ps J
 	    this behaviour.
 	Erased characters are set to the current attribute.
 
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 	SOURCE BANSI.TXT
 
 CSI Ps K
@@ -510,6 +511,14 @@ CSI Pn X
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
+CSI Pn Y
+	Cursor Line Tabulation
+	Defaults: Pn = 1
+	Move the cursor to the Pn-th next tab stop.
+	Basically the same as sending TAB Pn times.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
 CSI Pn Z
 	Cursor Backward Tabulation
 	Defaults: Pn = 1
@@ -554,6 +563,13 @@ CSI Ps c
 	is available.  If you are adding features to a forked version of cterm,
 	please do so by	adding an extra parameter to the end, not by
 	incrementing any existing one!
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn SP c
+	Tab Stop Remove
+	Defaults: None
+	Removes a tab stop at postion Pn.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
@@ -653,6 +669,15 @@ CSI ? Ps... h
 	     position is the one in which the bottom sixel is in.
 	     Defaults to set.
 	     SOURCE: VT330/VT340 Programmer Reference Manual
+
+CSI Pn k
+	Line Position Backward
+	Defaults: Pn = 1
+	Moves the cursor position up Pn lines from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
 CSI = 255 l
 	NON-STANDARD EXTENSION
