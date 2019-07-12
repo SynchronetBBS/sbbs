@@ -53,15 +53,15 @@ ESC {SPACE to '/'}{'0' (ZERO) to '~'}
 
 	Legal combinations which are not handled are silently dropped.
 
-ESC D	(Disabled in current code)
-	Scrolls window up one line filling the bottom line with the
-	current attribute.
-	SOURCE: BANSI.TXT
+ESC H	Set Tab
+	Sets a tab stop at the current column
 
-ESC M	(Disabled in current code)
-	Scrolls window down one line filling the top line with the
-	current attribute
-	SOURCE: BANSI.TXT
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+ESC M	Reverse Line Feed
+	Move up one line
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
 ESC _	Application Program String
 	Begins a string consisting of the characters 0x08 - 0x0d and
@@ -388,7 +388,6 @@ CSI Pn G
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
 CSI Pn1 ; Pn2 H
-CSI Pn1 ; Pn2 f
 	Cursor Position
 	Defaults: Pn1 = 1  Pn2 = 1
 	Moves the cursor to the Pn2th column of the Pn1th line.
@@ -519,6 +518,31 @@ CSI Pn Z
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
+CSI Pn `
+	Character Position Absolute
+	Defaults: Pn = 1
+	Move the cursor to the specified position on the current row.
+	Will not go past the end of the line.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn a
+	Cursor Position Forward
+	Defaults: Pn = 1
+	Moves the cursor position forward Pn columns from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn b
+	Repeat
+	Defaults: Pn = 1
+	Repeats the previous graphic character Pn times.  Will not repeat
+	escape sequences.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
 CSI Ps c
 	Device Attributes
 	Defaults: Ps = 0
@@ -548,6 +572,37 @@ CSI < Ps c
 	4 - The current font may be selected via CSI Ps1 ; Ps2 sp D
 	5 - More than the standard 16 colours may by configured via
 	    Operating System Command strings
+
+CSI Ps d
+	Line Position Absolute
+	Defaults: Ps = 1
+	Moves to row specified by Ps.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Ps e
+	Line Position Relative
+	Defaults: Ps = 1
+	Moves forward Ps rows.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn1 ; Pn2 f
+	Cursor Position
+	Defaults: Pn1 = 1  Pn2 = 1
+	Moves the cursor to the Pn2th column of the Pn1th line.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn g
+	Clear Tab(s)
+	Defaults: Pn = 0
+	Deletes tab stpos according to the values of P1:
+	0 - Deletes tab stop at current position.
+	3 - Deletes all tab stops.
+	5 - Deletes all tab stops.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
 CSI = 255 h
 	NON-STANDARD EXTENSION
@@ -858,6 +913,17 @@ CSI u
 	has been saved, the cursor is not moved.
 
 	SOURCE: ANSI.SYS
+
+CSI 2 $ w
+	Request Tab Stop Report
+	Requests a list of tab stops.
+	The list is in the form:
+	
+	DCS 2 $ u Pt ST
+	
+	The string Pt is a list of tab stops separated by /s.
+	
+	SOURCE: VT320
 
 CSI = Ps1 ; Ps2 {
 	NON-STANDARD EXTENSION (Deprecated)

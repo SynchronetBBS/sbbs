@@ -146,6 +146,8 @@ struct cterminal {
 	int					cursor;			// Current cursor mode (Normal or None)
 	char				*fg_tc_str;
 	char				*bg_tc_str;
+	int					*tabs;
+	int					tab_count;
 
 	/* Sixel state */
 	int					sixel;			// Sixel status
