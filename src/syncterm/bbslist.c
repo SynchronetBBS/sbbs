@@ -2008,7 +2008,7 @@ get_term_size(struct bbslist *bbs, int *cols, int *rows)
 		// This shouldn't happen, but if it does, make something up.
 		*cols = 80;
 		*rows = 24;
-		return
+		return;
 	}
 	if(vparams[cmode].cols < 80) {
 		if (cols)
