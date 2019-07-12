@@ -2004,6 +2004,12 @@ get_term_size(struct bbslist *bbs, int *cols, int *rows)
 {
 	int cmode = find_vmode(screen_to_ciolib(bbs->screen_mode));
 
+	if (cmode < 0) {
+		// This shouldn't happen, but if it does, make something up.
+		*cols = 80;
+		*rows = 24;
+		return
+	}
 	if(vparams[cmode].cols < 80) {
 		if (cols)
 			*cols=40;
