@@ -24,6 +24,20 @@ Some PETSCII keyboard changes
 Add support for DECRQSS
 Terminal type is now sent as "syncterm", "PETSCII", or "ATASCII"
 Menus are now always in cp437, and there is no shadow corruption
+Added CSI Pn SP @ to shift the screen left
+Added CSI Pn SP A to shift the screen right
+Added CSI Pn b to repeat a character multiple times
+Added CSI Pn d to change rows
+Added CSI Pn a as an alias to CSI Pn C
+Added CSI Pn ` as an alias to CSI Pn G
+Added ESC H to set a tabstop
+Added CSI Pn g to clear tabs
+Added CSI 2 $ w to request a tab report
+Added ESC M as a reverse linefeed
+Added CSI Pn e as an alias to CSI Pn B
+Added CSI Pn Y to move a specified numer of tab stops
+Added CSI Pn SP c to remove a specific tab stop
+Added CSI Pn k as an alias to CSI Pn A
 
 Version 1.0
 -----------
