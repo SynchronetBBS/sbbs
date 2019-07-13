@@ -1674,7 +1674,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(mode&WIN_ESC || (mode&WIN_CHE && api->changes)) {
 								vmem_gettext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
-								for(i=1;i<(width*height*2);i+=2)
+								for(i=0; i < (width * height);i++)
 									set_vmem_attr(&tmp_buffer[i], lclr|(cclr<<4));
 								vmem_puttext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
