@@ -46,7 +46,7 @@
 scfg_t	cfg;    /* Synchronet Configuration */
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 
-BOOL no_dirchk=FALSE,forcesave=FALSE;
+BOOL forcesave=FALSE;
 BOOL new_install=FALSE;
 static BOOL auto_save=FALSE;
 extern BOOL all_msghdr;
@@ -223,9 +223,6 @@ int main(int argc, char **argv)
 				case 'U':
 					umask(strtoul(argv[i]+2,NULL,8));
 					break;
-                case 'S':
-        			no_dirchk=!no_dirchk;
-                    break;
 				case 'G':
 					if(isalpha(argv[i][2]))
 						grpname = argv[i]+2;
@@ -286,7 +283,6 @@ int main(int argc, char **argv)
 					USAGE:
                     printf("\nusage: scfg [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
-                        "-s  =  don't check directories\r\n"
                         "-f  =  force save of configuration files\r\n"
                         "-a  =  update all message base status headers\r\n"
                         "-h  =  don't update message base status headers\r\n"
