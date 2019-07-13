@@ -168,16 +168,97 @@ If there is an entry matching the URI, hostname, or entry name, the settings wil
 be loaded from the BBS list, then modified per the command-line arguments.
 
 
-                         The Dialing Directory
+                          The User InterFaCe
 
-This is the default startup screen if no BBS is specified on the command-line.
-This screen may be controlled via the mouse in all modes except ANSI.  Mouse
-controls are as follows:
+Menus in SyncTERM use a commin user interface library named UIFC.  This
+library was originally developed for Synchronet.
 
-Right-click: Same as pressing ESC (ie: exit program).
+The following is the general behaviour of UIFC menus.
 
-Left-click: Select an item.
+Mouse controls:
+
+Right-click: Same as pressing ESC (ie: exit menu).
+
+Left-click: Select an item in a menu.
+
+	If there is a blank line at the end of the menu, you can select
+	it to insert a new item.
+
+	Menus have a standard set of mouse controls
+
+	If you click outside of a menu, that menu is usually closed, but
+	in some cases, it may simply become inactive.
+
+	At the top of each menu is a block which is used to close the menu.
+
+	If there is help for the menu, there is also a ? button to bring
+	up the help.
+
+	If there are more options than fit in the window, is a scrollbar
+	on the left side.
+
+	In help windows, the top half of the window is a "scroll up"
+	button, and the bottom half is a "scroll down" button.  There
+	are also small up/down buttons in the bottom-right.
 
 Left-Drag: Select and copy a region (the copy is made when the button is released).
 
-Middle-click: Paste from clipboard.
+Middle-click: Paste from PRIMARY selection or clipboard.
+
+Keyboard Controls:
+
+Return: Select the currently highlighted option.  If there is a blank
+	line at the end of the menu, you can select it to insert a new
+	item.
+
+Escape: Exit the current menu.
+Backspace: An alias for Escape.
+CTRL-C: An alias for Escape.
+
+Delete: Delete item at current location
+
+Home: Jump to the beginning of the menu
+CTRL-B: An alias for Home
+
+Up Arrow: Move to the previous item in the list
+
+Page Up: Jump up in the menu by one screen.
+CTRL-U: An alias for Page Up
+
+Page Down: Jump down in the menu by one screen.
+CTRL-D: An alias for Page Down
+
+End: Jump to the end of the menu
+CTRL-E: An alias for End
+
+Down Arrow: Move to the next item in the list.
+
+F1: Help
+CTRL-Z: An alias for F1
+
+F2: Edit
+
+F5: Copy
+CTRL-Insert: An alias for F5
+CTRL-C: An alias for F5
+
+Shift-Delete: Cut
+CTRL-X: An alias for Shift-Delete
+
+F6: Paste
+Shift-Insert: An alias for F6
+CTRL-V: An alias for F6
+
+Insert: Inserts a new item.
++: An alias for Insert
+
+Delete: Deletes an item.
+-: An alias for Delete
+
+Any letter or number: Jumps to the next item that has that character
+earliest in it's name.
+
+
+                         The Dialing Directory
+
+This is the default startup screen if no BBS is specified on the command-line.
