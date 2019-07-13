@@ -585,8 +585,7 @@ inactive_win(struct vmem_cell *buf, int left, int top, int right, int bottom, in
 int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	, char *initial_title, char **option)
 {
-	uchar line[MAX_COLS*2],shade[MAX_LINES*4];
-	struct vmem_cell *ptr, *win;
+	struct vmem_cell *ptr, *win, shade[MAX_LINES*2], line[MAX_COLS];
     char search[MAX_OPLN];
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
@@ -748,8 +747,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					/* Yes, it is... */
 					for(j=api->savnum-1; j>i; j--) {
 						/* Restore old screens */
-						puttext(sav[j].left,sav[j].top,sav[j].right,sav[j].bot
-							,sav[j].buf);	/* put original window back */
+						vmem_puttext(sav[j].left,sav[j].top,sav[j].right,sav[j].bot
+							,(void *)sav[j].buf);	/* put original window back */
 						FREE_AND_NULL(sav[j].buf);
 					}
 					api->savnum=i;
@@ -765,10 +764,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					|| sav[api->savnum].top!=s_top+top
 					|| sav[api->savnum].right!=s_left+left+width+1
 					|| sav[api->savnum].bot!=s_top+top+height)) { /* dimensions have changed */
-					puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
-						,sav[api->savnum].buf);	/* put original window back */
+					vmem_puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
+						,(void *)sav[api->savnum].buf);	/* put original window back */
 					FREE_AND_NULL(sav[api->savnum].buf);
-					if((sav[api->savnum].buf=malloc((width+3)*(height+2)*2))==NULL) {
+					if ((sav[api->savnum].buf = malloc((width + 3) * (height + 2) * sizeof(struct vmem_cell)))==NULL) {
 						cprintf("UIFC line %d: error allocating %u bytes."
 							,__LINE__,(width+3)*(height+2)*2);
 						free(title);
@@ -776,8 +775,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							uifc_mouse_enable();
 						return(-1);
 					}
-					gettext(s_left+left,s_top+top,s_left+left+width+1
-						,s_top+top+height,sav[api->savnum].buf);	  /* save again */
+					vmem_gettext(s_left+left,s_top+top,s_left+left+width+1
+						,s_top+top+height,(void *)sav[api->savnum].buf);	  /* save again */
 					sav[api->savnum].left=s_left+left;
 					sav[api->savnum].top=s_top+top;
 					sav[api->savnum].right=s_left+left+width+1;
@@ -793,7 +792,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			}
 		}
 		else {
-			if((sav[api->savnum].buf=malloc((width+3)*(height+2)*2))==NULL) {
+			if((sav[api->savnum].buf=malloc((width+3)*(height+2)*sizeof(struct vmem_cell)))==NULL) {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
 				free(title);
@@ -801,8 +800,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					uifc_mouse_enable();
 				return(-1);
 			}
-			gettext(s_left+left,s_top+top,s_left+left+width+1
-				,s_top+top+height,sav[api->savnum].buf);
+			vmem_gettext(s_left+left,s_top+top,s_left+left+width+1
+				,s_top+top+height,(void *)sav[api->savnum].buf);
 			sav[api->savnum].left=s_left+left;
 			sav[api->savnum].top=s_top+top;
 			sav[api->savnum].right=s_left+left+width+1;
@@ -966,17 +965,17 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		if(!(mode&WIN_NOBRDR)) {
 			/* Shadow */
 			if(bclr==BLUE) {
-				gettext(s_left+left+width,s_top+top+1,s_left+left+width+1
+				vmem_gettext(s_left+left+width,s_top+top+1,s_left+left+width+1
 					,s_top+top+height-1,shade);
-				for(i=1;i<height*4;i+=2)
-					shade[i]=DARKGRAY;
-				puttext(s_left+left+width,s_top+top+1,s_left+left+width+1
+				for(i=0;i<height*2;i++)
+					set_vmem_attr(&shade[i], DARKGRAY);
+				vmem_puttext(s_left+left+width,s_top+top+1,s_left+left+width+1
 					,s_top+top+height-1,shade);
-				gettext(s_left+left+2,s_top+top+height,s_left+left+width+1
+				vmem_gettext(s_left+left+2,s_top+top+height,s_left+left+width+1
 					,s_top+top+height,shade);
-				for(i=1;i<width*2;i+=2)
-					shade[i]=DARKGRAY;
-				puttext(s_left+left+2,s_top+top+height,s_left+left+width+1
+				for(i=0;i<width;i++)
+					set_vmem_attr(&shade[i], DARKGRAY);
+				vmem_puttext(s_left+left+2,s_top+top+height,s_left+left+width+1
 					,s_top+top+height,shade);
 			}
 		}
@@ -1091,9 +1090,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(!(api->mode&UIFC_NHM))
 								uifc_mouse_disable();
 							if(sav[api->savnum].buf != NULL)
-								puttext(sav[api->savnum].left,sav[api->savnum].top
+								vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 									,sav[api->savnum].right,sav[api->savnum].bot
-									,sav[api->savnum].buf);
+									,(void *)sav[api->savnum].buf);
 							if(!(api->mode&UIFC_NHM))
 								uifc_mouse_enable();
 							FREE_AND_NULL(sav[api->savnum].buf);
@@ -1209,21 +1208,21 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							y=top+tbrdrwidth;
 							break;
 						}
-						gettext(s_left+left+lbrdrwidth+2,s_top+y
+						vmem_gettext(s_left+left+lbrdrwidth+2,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
-						for(i=1;i<width*2;i+=2)
-							line[i]=lclr|(bclr<<4);
-						puttext(s_left+left+lbrdrwidth+2,s_top+y
+						for(i=0;i<width;i++)
+							set_vmem_attr(&line[i], lclr|(bclr<<4));
+						vmem_puttext(s_left+left+lbrdrwidth+2,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						(*cur)=0;
 						if(bar)
 							(*bar)=0;
 						y=top+tbrdrwidth;
-						gettext(s_left+lbrdrwidth+2+left,s_top+y
+						vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
-						for(i=1;i<width*2;i+=2)
-							line[i]=lbclr;
-						puttext(s_left+lbrdrwidth+2+left,s_top+y
+						for(i=0;i<width;i++)
+							set_vmem_attr(&line[i], lbclr);
+						vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						break;
 					case CIO_KEY_UP:	/* up arrow */
@@ -1246,11 +1245,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							y=top+optheight-bbrdrwidth-1;
 							break;
 						}
-						gettext(s_left+lbrdrwidth+2+left,s_top+y
+						vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
-						for(i=1;i<width*2;i+=2)
-							line[i]=lclr|(bclr<<4);
-						puttext(s_left+lbrdrwidth+2+left,s_top+y
+						for(i=0;i<width;i++)
+							set_vmem_attr(&line[i], lclr|(bclr<<4));
+						vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						if(!(*cur)) {
 							y=top+optheight-bbrdrwidth-1;
@@ -1283,11 +1282,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[*cur]);
 						}
 						else {
-							gettext(s_left+lbrdrwidth+2+left,s_top+y
+							vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
-							for(i=1;i<width*2;i+=2)
-								line[i]=lbclr;
-							puttext(s_left+lbrdrwidth+2+left,s_top+y
+							for(i=0;i<width;i++)
+								set_vmem_attr(&line[i], lbclr);
+							vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						}
 						break;
@@ -1363,21 +1362,21 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								(*bar)=optheight-vbrdrsize-1;
 							break;
 						}
-						gettext(s_left+lbrdrwidth+2+left,s_top+y
+						vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
-						for(i=1;i<width*2;i+=2)
-							line[i]=lclr|(bclr<<4);
-						puttext(s_left+lbrdrwidth+2+left,s_top+y
+						for(i=0;i<width;i++)
+							set_vmem_attr(&line[i], lclr|(bclr<<4));
+						vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						(*cur)=opts-1;
 						y=top+optheight-bbrdrwidth-1;
 						if(bar)
 							(*bar)=optheight-vbrdrsize-1;
-						gettext(s_left+lbrdrwidth+2+left,s_top+y
+						vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
-						for(i=1;i<148;i+=2)
-							line[i]=lbclr;
-						puttext(s_left+lbrdrwidth+2+left,s_top+y
+						for(i=0;i<74;i++)
+							set_vmem_attr(&line[i], lbclr);
+						vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						break;
 					case CIO_KEY_DOWN:	/* dn arrow */
@@ -1402,11 +1401,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								(*bar)=0;
 							break;
 						}
-						gettext(s_left+lbrdrwidth+2+left,s_top+y
+						vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
-						for(i=1;i<width*2;i+=2)
-							line[i]=lclr|(bclr<<4);
-						puttext(s_left+lbrdrwidth+2+left,s_top+y
+						for(i=0; i < width; i++)
+							set_vmem_attr(&line[i], lclr|(bclr<<4));
+						vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						if((*cur)==opts-1) {
 							(*cur)=0;
@@ -1445,12 +1444,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[*cur]);
 						}
 						else {
-							gettext(s_left+lbrdrwidth+2+left,s_top+y
+							vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y
 								,line);
-							for(i=1;i<width*2;i+=2)
-								line[i]=lbclr;
-							puttext(s_left+lbrdrwidth+2+left,s_top+y
+							for(i=0; i < width; i++)
+								set_vmem_attr(&line[i], lbclr);
+							vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y
 								,line);
 						}
@@ -1486,9 +1485,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							else if(mode&WIN_SAV) {
 								api->savnum--;
 								if(sav[api->savnum].buf != NULL)
-									puttext(sav[api->savnum].left,sav[api->savnum].top
+									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 										,sav[api->savnum].right,sav[api->savnum].bot
-										,sav[api->savnum].buf);
+										,(void *)sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							return((*cur)|MSK_EDIT);
@@ -1517,9 +1516,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							else if(mode&WIN_SAV) {
 								api->savnum--;
 								if(sav[api->savnum].buf != NULL)
-									puttext(sav[api->savnum].left,sav[api->savnum].top
+									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 										,sav[api->savnum].right,sav[api->savnum].bot
-										,sav[api->savnum].buf);
+										,(void *)sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							if(!opts) {
@@ -1539,9 +1538,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							else if(mode&WIN_SAV) {
 								api->savnum--;
 								if (sav[api->savnum].buf != NULL)
-									puttext(sav[api->savnum].left,sav[api->savnum].top
+									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 										,sav[api->savnum].right,sav[api->savnum].bot
-										,sav[api->savnum].buf);
+										,(void *)sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							return((*cur)|MSK_DEL);
@@ -1619,11 +1618,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 									(*bar)=0;
 								break;
 							}
-							gettext(s_left+lbrdrwidth+2+left,s_top+y
+							vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
-							for(i=1;i<width*2;i+=2)
-								line[i]=lclr|(bclr<<4);
-							puttext(s_left+lbrdrwidth+2+left,s_top+y
+							for(i=0; i<width; i++)
+								set_vmem_attr(&line[i], lclr|(bclr<<4));
+							vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 							if((*cur)>j)
 								y-=(*cur)-j;
@@ -1636,11 +1635,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 									(*bar)+=j-(*cur);
 							}
 							(*cur)=j;
-							gettext(s_left+lbrdrwidth+2+left,s_top+y
+							vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
-							for(i=1;i<width*2;i+=2)
-								line[i]=lbclr;
-							puttext(s_left+lbrdrwidth+2+left,s_top+y
+							for(i=0; i < width; i++)
+								set_vmem_attr(&line[i], lbclr);
+							vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 							break;
 						}
@@ -1660,9 +1659,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							else if(mode&WIN_SAV) {
 								api->savnum--;
 								if (sav[api->savnum].buf != NULL)
-									puttext(sav[api->savnum].left,sav[api->savnum].top
+									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 										,sav[api->savnum].right,sav[api->savnum].bot
-										,sav[api->savnum].buf);
+										,(void *)sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							if(mode&WIN_XTR && (*cur)==opts-1)
@@ -1683,9 +1682,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							else if(mode&WIN_SAV) {
 								api->savnum--;
 								if (sav[api->savnum].buf != NULL)
-									puttext(sav[api->savnum].left,sav[api->savnum].top
+									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 										,sav[api->savnum].right,sav[api->savnum].bot
-										,sav[api->savnum].buf);
+										,(void *)sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							return(-1);
@@ -1720,8 +1719,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 int uinput(int mode, int left, int top, char *inprompt, char *str,
 	int max, int kmode)
 {
-	unsigned char save_buf[MAX_COLS*8],in_win[MAX_COLS*6]
-		,shade[MAX_COLS*2];
+	struct vmem_cell shade[MAX_COLS], save_buf[MAX_COLS*4], in_win[MAX_COLS*3];
 	int	width;
 	int height=3;
 	int i,plen,slen,j;
@@ -1766,7 +1764,7 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 	if(top<0)
 		top=0;
 	if(mode&WIN_SAV)
-		gettext(s_left+left,s_top+top,s_left+left+width+1
+		vmem_gettext(s_left+left,s_top+top,s_left+left+width+1
 			,s_top+top+height,save_buf);
 	iwidth=width-plen-slen;
 	while(iwidth<1 && plen>4) {
@@ -1781,29 +1779,20 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 
 	i=0;
 	if(!(mode&WIN_NOBRDR)) {
-		in_win[i++]=api->chars->input_top_left;
-		in_win[i++]=api->hclr|(api->bclr<<4);
-		for(j=1;j<width-1;j++) {
-			in_win[i++]=api->chars->input_top;
-			in_win[i++]=api->hclr|(api->bclr<<4);
-		}
+		set_vmem(&in_win[i++], api->chars->input_top_left, api->hclr|(api->bclr<<4), 0);
+		for(j=1;j<width-1;j++)
+			set_vmem(&in_win[i++], api->chars->input_top, api->hclr|(api->bclr<<4), 0);
 		if(api->mode&UIFC_MOUSE && width>6) {
-			j=2;
-			in_win[j++]=api->chars->button_left;
-			in_win[j++]=api->hclr|(api->bclr<<4);
+			j=1;
+			set_vmem(&in_win[j++], api->chars->button_left, api->hclr|(api->bclr<<4), 0);
 			/* in_win[4]='þ'; */
-			in_win[j++]=api->chars->close_char;
-			in_win[j++]=api->lclr|(api->bclr<<4);
-			in_win[j++]=api->chars->button_right;
-			in_win[j++]=api->hclr|(api->bclr<<4);
+			set_vmem(&in_win[j++], api->chars->close_char, api->lclr|(api->bclr<<4), 0);
+			set_vmem(&in_win[j++], api->chars->button_right, api->hclr|(api->bclr<<4), 0);
 			l=3;
 			if(api->helpbuf!=NULL || api->helpixbfile[0]!=0) {
-				in_win[j++]=api->chars->button_left;
-				in_win[j++]=api->hclr|(api->bclr<<4);
-				in_win[j++]=api->chars->help_char;
-				in_win[j++]=api->lclr|(api->bclr<<4);
-				in_win[j++]=api->chars->button_right;
-				in_win[j++]=api->hclr|(api->bclr<<4);
+				set_vmem(&in_win[j++], api->chars->button_left, api->hclr|(api->bclr<<4), 0);
+				set_vmem(&in_win[j++], api->chars->help_char, api->lclr|(api->bclr<<4), 0);
+				set_vmem(&in_win[j++], api->chars->button_right, api->hclr|(api->bclr<<4), 0);
 				l+=3;
 			}
 			api->buttony=s_top+top;
@@ -1813,61 +1802,47 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 			api->helpend=s_left+left+l;
 		}
 
-		in_win[i++]=api->chars->input_top_right;
-		in_win[i++]=api->hclr|(api->bclr<<4);
-		in_win[i++]=api->chars->input_right;
-		in_win[i++]=api->hclr|(api->bclr<<4);
+		set_vmem(&in_win[i++], api->chars->input_top_right, api->hclr|(api->bclr<<4), 0);
+		set_vmem(&in_win[i++], api->chars->input_right, api->hclr|(api->bclr<<4), 0);
 	}
 
-	if(plen) {
-		in_win[i++]=' ';
-		in_win[i++]=api->lclr|(api->bclr<<4);
-	}
+	if(plen)
+		set_vmem(&in_win[i++], ' ', api->lclr|(api->bclr<<4), 0);
 
-	for(j=0;prompt[j];j++) {
-		in_win[i++]=prompt[j];
-		in_win[i++]=api->lclr|(api->bclr<<4);
-	}
+	for(j=0;prompt[j];j++)
+		set_vmem(&in_win[i++], prompt[j], api->lclr|(api->bclr<<4), 0);
 
-	if(plen) {
-		in_win[i++]=':';
-		in_win[i++]=api->lclr|(api->bclr<<4);
-	}
+	if(plen)
+		set_vmem(&in_win[i++], ':', api->lclr|(api->bclr<<4), 0);
 
 	for(j=0;j<iwidth+2;j++) {
-		in_win[i++]=' ';
-		in_win[i++]=api->lclr|(api->bclr<<4);
+		set_vmem(&in_win[i++], ' ', api->lclr|(api->bclr<<4), 0);
 	}
 
 	if(!(mode&WIN_NOBRDR)) {
-		in_win[i++]=api->chars->input_right;
-		in_win[i++]=api->hclr|(api->bclr<<4);
-		in_win[i++]=api->chars->input_bottom_left;
-		in_win[i++]=api->hclr|(api->bclr<<4);
-		for(j=1;j<width-1;j++) {
-			in_win[i++]=api->chars->input_bottom;
-			in_win[i++]=api->hclr|(api->bclr<<4);
-		}
-		in_win[i++]=api->chars->input_bottom_right;
-		in_win[i]=api->hclr|(api->bclr<<4);	/* I is not incremented to shut up BCC */
+		set_vmem(&in_win[i++], api->chars->input_right, api->hclr|(api->bclr<<4), 0);
+		set_vmem(&in_win[i++], api->chars->input_bottom_left, api->hclr|(api->bclr<<4), 0);
+		for(j=1;j<width-1;j++)
+			set_vmem(&in_win[i++], api->chars->input_bottom, api->hclr|(api->bclr<<4), 0);
+		set_vmem(&in_win[i], api->chars->input_bottom_right, api->hclr|(api->bclr<<4), 0);	/* I is not incremented to shut up BCC */
 	}
-	puttext(s_left+left,s_top+top,s_left+left+width-1
+	vmem_puttext(s_left+left,s_top+top,s_left+left+width-1
 		,s_top+top+height-1,in_win);
 
 	if(!(mode&WIN_NOBRDR)) {
 		/* Shadow */
 		if(api->bclr==BLUE) {
-			gettext(s_left+left+width,s_top+top+1,s_left+left+width+1
+			vmem_gettext(s_left+left+width,s_top+top+1,s_left+left+width+1
 				,s_top+top+(height-1),shade);
-			for(j=1;j<12;j+=2)
-				shade[j]=DARKGRAY;
-			puttext(s_left+left+width,s_top+top+1,s_left+left+width+1
+			for(j=0;j<6;j++)
+				set_vmem_attr(&shade[j], DARKGRAY);
+			vmem_puttext(s_left+left+width,s_top+top+1,s_left+left+width+1
 				,s_top+top+(height-1),shade);
-			gettext(s_left+left+2,s_top+top+3,s_left+left+width+1
+			vmem_gettext(s_left+left+2,s_top+top+3,s_left+left+width+1
 				,s_top+top+height,shade);
-			for(j=1;j<width*2;j+=2)
-				shade[j]=DARKGRAY;
-			puttext(s_left+left+2,s_top+top+3,s_left+left+width+1
+			for(j=0;j<width;j++)
+				set_vmem_attr(&shade[j], DARKGRAY);
+			vmem_puttext(s_left+left+2,s_top+top+3,s_left+left+width+1
 				,s_top+top+height,shade);
 		}
 	}
@@ -1880,7 +1855,7 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 	else
 		i=ugetstr(s_left+left+plen+4,s_top+top+tbrdrwidth,iwidth,str,max,kmode,NULL);
 	if(mode&WIN_SAV)
-		puttext(s_left+left,s_top+top,s_left+left+width+1
+		vmem_puttext(s_left+left,s_top+top,s_left+left+width+1
 			,s_top+top+height,save_buf);
 	free(prompt);
 	return(i);
@@ -2265,17 +2240,16 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 {
 	va_list argptr;
-	char str[MAX_COLS+1],buf[MAX_COLS*2];
-	int i,j;
+	char str[MAX_COLS+1];
+	struct vmem_cell buf[MAX_COLS];
+	int i;
 
     va_start(argptr,fmat);
     vsprintf(str,fmat,argptr);
     va_end(argptr);
-    for(i=j=0;str[i];i++) {
-        buf[j++]=str[i];
-        buf[j++]=attr;
-	}
-    puttext(x,y,x+(i-1),y,buf);
+    for(i = 0; str[i]; i++)
+	set_vmem(&buf[i], str[i], attr, 0);
+    vmem_puttext(x,y,x+(i-1),y,buf);
     return(i);
 }
 
@@ -2433,13 +2407,12 @@ char *utimestr(time_t *intime)
 /****************************************************************************/
 void upop(char *str)
 {
-	static char sav[80*3*2];
-	char buf[80*3*2];
+	static struct vmem_cell sav[80*3], buf[80*3];
 	int i,j,k;
 	static int width;
 
 	if(str == NULL) {
-		puttext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
+		vmem_puttext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
 			,(api->scrn_width+width-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
 		return;
 	}
@@ -2448,31 +2421,27 @@ void upop(char *str)
 	if(!width)
 		return;
 	width += 7;
-	gettext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
+	vmem_gettext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
 			,(api->scrn_width+width-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
-	memset(buf,' ',(width-1)*3*2);
-	for(i=1;i<width*3*2;i+=2)
-		buf[i]=(api->hclr|(api->bclr<<4));
-	buf[0]=api->chars->popup_top_left;
-	for(i=2;i<(width-1)*2;i+=2)
-		buf[i]=api->chars->popup_top;
-	buf[i]=api->chars->popup_top_right; i+=2;
-	buf[i]=api->chars->popup_left; i+=2;
-	i+=2;
+	for(i=0; i < width*3; i++)
+		set_vmem(&buf[i], ' ', api->hclr|(api->bclr<<4), 0);
+	set_vmem(&buf[0], api->chars->popup_top_left, api->hclr|(api->bclr<<4), 0);
+	for(i=1;i<(width-1);i++)
+		set_vmem(&buf[i], api->chars->popup_top, api->hclr|(api->bclr<<4), 0);
+	set_vmem(&buf[i++], api->chars->popup_top_right, api->hclr|(api->bclr<<4), 0);
+	set_vmem(&buf[i++], api->chars->popup_left, api->hclr|(api->bclr<<4), 0);
 	k=strlen(str);
-	i+=((((width-3)-k)/2)*2);
-	for(j=0;j<k;j++,i+=2) {
-		buf[i]=str[j];
-		buf[i+1]|=BLINK;
-	}
-	i=(((width-1)*2)+1)*2;
-	buf[i]=api->chars->popup_right; i+=2;
-	buf[i]=api->chars->popup_bottom_left; i+=2;
-	for(;i<((width*3)-1)*2;i+=2)
-		buf[i]=api->chars->popup_bottom;
-	buf[i]=api->chars->popup_bottom_right;
+	i+=((((width-3)-k)/2));
+	for(j=0;j<k;j++,i++)
+		set_vmem(&buf[i], str[j], api->hclr|(api->bclr<<4)|BLINK, 0);
+	i=(((width-1)*2)+1);
+	set_vmem(&buf[i++], api->chars->popup_right, api->hclr|(api->bclr<<4), 0);
+	set_vmem(&buf[i++], api->chars->popup_bottom_left, api->hclr|(api->bclr<<4), 0);
+	for(;i<((width*3)-1);i++)
+		set_vmem(&buf[i], api->chars->popup_bottom, api->hclr|(api->bclr<<4), 0);
+	set_vmem(&buf[i], api->chars->popup_bottom_right, api->hclr|(api->bclr<<4), 0);
 
-	puttext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
+	vmem_puttext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
 			,(api->scrn_width+width-1)/2+1,(api->scrn_len+3-1)/2+1,buf);
 }
 
@@ -2491,9 +2460,10 @@ void sethelp(int line, char* file)
 void showbuf(int mode, int left, int top, int width, int height, char *title, char *hbuf, int *curp, int *barp)
 {
 	char inverse=0,high=0;
-	char *textbuf;
-    char *p;
-	char *oldp=NULL;
+	struct vmem_cell *textbuf;
+	struct vmem_cell *p;
+	char *pc;
+	struct vmem_cell *oldp=NULL;
 	int i,j,k,len;
 	int	 lines;
 	int pad=1;
@@ -2532,12 +2502,12 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 
 	/* Dynamic Menus */
 	if(mode&WIN_DYN
-			&& curp != NULL
-			&& barp != NULL
-			&& last_menu_cur==curp
-			&& last_menu_bar==barp
-			&& save_menu_cur==*curp
-			&& save_menu_bar==*barp)
+	    && curp != NULL
+	    && barp != NULL
+	    && last_menu_cur==curp
+	    && last_menu_bar==barp
+	    && save_menu_cur==*curp
+	    && save_menu_bar==*barp)
 		is_redraw=1;
 	if(mode&WIN_DYN && mode&WIN_REDRAW)
 		is_redraw=1;
@@ -2549,7 +2519,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(!is_redraw) {
 		for(i=0; i<width*height; i++)
 			set_vmem(&tmp_buffer2[i], ' ', api->hclr|(api->bclr<<4), 0);
-	    tmp_buffer2[0].ch=api->chars->help_top_left;
+		tmp_buffer2[0].ch=api->chars->help_top_left;
 		j=title_len;
 		if(j>width-6) {
 			*(title+width-6)=0;
@@ -2564,10 +2534,10 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			set_vmem(&tmp_buffer2[3], api->chars->button_right, api->hclr|(api->bclr<<4), 0);
 			/* Buttons are ignored - leave it this way to not confuse stuff from help() */
 		}
-	    tmp_buffer2[i].ch = api->chars->help_titlebreak_left;
-	    i+=2;
-		for(p=title;*p;p++) {
-			tmp_buffer2[i].ch=*p;
+		tmp_buffer2[i].ch = api->chars->help_titlebreak_left;
+		i+=2;
+		for(pc=title;*pc;pc++) {
+			tmp_buffer2[i].ch=*pc;
 			i++;
 		}
 		i++;
@@ -2575,8 +2545,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
    		i++;
 		for(;i<((width-1));i++)
    		    tmp_buffer2[i].ch=api->chars->help_top;
-    	tmp_buffer2[i].ch=api->chars->help_top_right;
-    	i++;
+		tmp_buffer2[i].ch=api->chars->help_top_right;
+		i++;
 		j=i;	/* leave i alone */
 		for(k=0;k<(height-2);k++) { 		/* the sides of the box */
 	        tmp_buffer2[j].ch=api->chars->help_left;
@@ -2585,8 +2555,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
         	tmp_buffer2[j].ch=api->chars->help_right;
         	j++;
 		}
-	    tmp_buffer2[j].ch = api->chars->help_bottom_left;
-	    j++;
+		tmp_buffer2[j].ch = api->chars->help_bottom_left;
+		j++;
 		if(!(mode&WIN_DYN) && (width>31)) {
 			for(k=j;k<j+(((width-4)/2-13));k++)
 				tmp_buffer2[k].ch=api->chars->help_bottom;
@@ -2610,16 +2580,16 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			tmp_buffer2[k].ch='n'; k++;
 			tmp_buffer2[k].ch='u'; k++;
 			tmp_buffer2[k].ch='e'; k+=2;
-	    	tmp_buffer2[k].ch=api->chars->help_hitanykey_right; k++;
+			tmp_buffer2[k].ch=api->chars->help_hitanykey_right; k++;
 			for(j=k;j<k+(((width-4)/2-12));j++)
-		        tmp_buffer2[j].ch=api->chars->help_bottom;
+				tmp_buffer2[j].ch=api->chars->help_bottom;
 		}
 		else {
 			for(k=j;k<j+((width-2));k++)
 				tmp_buffer2[k].ch=api->chars->help_bottom;
 			j=k;
 		}
-	    tmp_buffer2[j].ch=api->chars->help_bottom_right;
+		tmp_buffer2[j].ch=api->chars->help_bottom_right;
 		if(!(mode&WIN_DYN)) {
 			tmp_buffer2[j-1].ch=api->chars->button_right;
 			tmp_buffer2[j-2].ch=' ';
@@ -2652,48 +2622,42 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(lines < height-2-pad-pad)
 		lines=height-2-pad-pad;
 
-	if((textbuf=(char *)malloc((width-2-pad-pad)*lines*2))==NULL) {
+	if((textbuf=(struct vmem_cell *)malloc((width-2-pad-pad)*lines*sizeof(*textbuf)))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,(width-2-pad-pad)*lines*2);
 		_setcursortype(cursor);
 		return;
 	}
-	memset(textbuf,' ',(width-2-pad-pad)*lines*2);
-	for(i=1;i<(width-2-pad-pad)*lines*2;i+=2)
-		textbuf[i]=(api->hclr|(api->bclr<<4));
-
-	i=0;
-
-	for(j=i;j<len;j++,i+=2) {
+	for(i=0; i < (width - 2 - pad - pad) * lines;i++)
+		set_vmem(&textbuf[i], ' ', (api->hclr|(api->bclr<<4)), 0);
+	for(j=i=0; j < len; j++, i++) {
 		if(hbuf[j]==LF) {
-			i+=2;
-			while(i%((width-2-pad-pad)*2))
+			i++;
+			while(i%((width-2-pad-pad)))
 				i++;
-			i-=2;
+			i--;
 		}
 		else if(mode&WIN_HLP && (hbuf[j]==2 || hbuf[j]=='~')) {		 /* Ctrl-b toggles inverse */
 			inverse=!inverse;
-			i-=2;
+			i--;
 		}
 		else if(mode&WIN_HLP && (hbuf[j]==1 || hbuf[j]=='`')) {		 /* Ctrl-a toggles high intensity */
 			high=!high;
-			i-=2;
+			i--;
 		}
 		else if(hbuf[j]!=CR) {
-			textbuf[i]=hbuf[j];
-			textbuf[i+1]=inverse ? (api->bclr|(api->cclr<<4))
-				: high ? (api->hclr|(api->bclr<<4)) : (api->lclr|(api->bclr<<4));
-			if(((i+2)%((width-2-pad-pad)*2)==0 && (hbuf[j+1]==LF)) || (hbuf[j+1]==CR && hbuf[j+2]==LF))
-				i-=2;
+			set_vmem(&textbuf[i], hbuf[j], inverse ? (api->bclr|(api->cclr<<4)) : high ? (api->hclr|(api->bclr<<4)) : (api->lclr|(api->bclr<<4)), 0);
+			if((i%((width-2-pad-pad))==0 && (hbuf[j+1]==LF)) || (hbuf[j+1]==CR && hbuf[j+2]==LF))
+				i--;
 		}
 		else
-			i-=2;
+			i--;
 	}
 	i=0;
 	p=textbuf;
-	char* textend = textbuf + (lines-(height-2-pad-pad))*(width-2-pad-pad)*2;
+	struct vmem_cell * textend = textbuf + (lines-(height-2-pad-pad))*(width-2-pad-pad);
 	if(mode&WIN_DYN) {
-		puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
+		vmem_puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
 	}
 	else {
 		while(i==0) {
@@ -2703,7 +2667,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 				if(p<textbuf)
 					p=textbuf;
 				if(p!=oldp) {
-					puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
+					vmem_puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
 					oldp=p;
 				}
 				gotoxy(SCROLL_UP_BUTTON_X, SCROLL_UP_BUTTON_Y);
@@ -2786,7 +2750,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			mswait(1);
 		}
 
-		puttext(1,1,api->scrn_width,api->scrn_len,tmp_buffer);
+		vmem_puttext(1,1,api->scrn_width,api->scrn_len,tmp_buffer);
 	}
 	free(textbuf);
 	if(is_redraw)			/* Force redraw of menu also. */
