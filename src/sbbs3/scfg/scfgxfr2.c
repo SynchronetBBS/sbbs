@@ -448,7 +448,7 @@ void xfer_cfg()
 						"\n"
 						"This an optional path to be used as the physical \"parent\" directory for \n"
 						"all logical directories in this library. This parent directory will be\n"
-						"used in combination with each directory's storage path to create the\n"
+						"used in combination with each directory's `Transfer File Path` to create the\n"
 						"full physical storage path for files in this directory.\n"
 						"\n"
 						"This option is convenient for adding libraries with many directories\n"
@@ -964,6 +964,19 @@ void dir_cfg(uint libnum)
 		"`Note:` The internal code is constructed from the file library's code prefix\n"
 		"(if present) and the directory's code suffix.\n"
 		;
+	char* dir_transfer_path_help =
+		"`Transfer File Path:`\n"
+		"\n"
+		"This is the default storage path for files uploaded-to and available for"
+		"download-from this directory.\n"
+		"\n"
+		"If this path is blank, files are stored in a directory off of the\n"
+		"`data/dirs` directory using the internal code of this directory as the\n"
+		"name of the sub-directory (i.e. `data/dirs/<CODE>`).\n"
+		"\n"
+		"This path can be overridden on a per-file basis using `Alternate File\n"
+		"Paths`.\n"
+		;
 
 	while(1) {
 		if(uifc.changes && cfg.lib[libnum]->sort)
@@ -1048,13 +1061,8 @@ void dir_cfg(uint libnum)
 				SAFECOPY(path,code);
 			else
 				sprintf(path,"%sdirs/%s",cfg.data_dir,code);
-			uifc.helpbuf=
-				"`Directory File Path:`\n"
-				"\n"
-				"This is the drive and directory where your uploads to and downloads from\n"
-				"this directory will be stored. Example: `C:\\XFER\\GAMES`\n"
-			;
-			uifc.input(WIN_MID|WIN_SAV,0,0,"Directory File Path", path, LEN_DIR,K_EDIT);
+			uifc.helpbuf = dir_transfer_path_help;
+			uifc.input(WIN_MID|WIN_SAV,0,0,"File Transfer Path", path, LEN_DIR,K_EDIT);
 
 			if (!new_dir(dirnum[i], libnum))
 				continue;
@@ -1229,18 +1237,8 @@ void dir_cfg(uint libnum)
 					getar(str,cfg.dir[i]->ex_arstr);
 					break;
 				case 8:
-					uifc.helpbuf=
-						"`File Path:`\n"
-						"\n"
-						"This is the default storage path for files uploaded to this directory.\n"
-						"If this path is blank, files are stored in a directory off of the\n"
-						"`data/dirs` directory using the internal code of this directory as the\n"
-						"name of the sub-directory (i.e. `data/dirs/<CODE>`).\n"
-						"\n"
-						"This path can be overridden on a per file basis using `Alternate File\n"
-						"Paths`.\n"
-					;
-					uifc.input(WIN_L2R|WIN_SAV,0,17,"File Path"
+					uifc.helpbuf = dir_transfer_path_help;
+					uifc.input(WIN_L2R|WIN_SAV,0,17,"Transfer File Path"
 						,cfg.dir[i]->path,sizeof(cfg.dir[i]->path)-1,K_EDIT);
 					break;
 				case 9:
