@@ -215,8 +215,6 @@ Escape: Exit the current menu.
 Backspace: An alias for Escape.
 CTRL-C: An alias for Escape.
 
-Delete: Delete item at current location
-
 Home: Jump to the beginning of the menu
 CTRL-B: An alias for Home
 
@@ -252,7 +250,7 @@ CTRL-V: An alias for F6
 Insert: Inserts a new item.
 +: An alias for Insert
 
-Delete: Deletes an item.
+Delete: Delete item at current location
 -: An alias for Delete
 
 Any letter or number: Jumps to the next item that has that character
