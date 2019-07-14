@@ -3171,6 +3171,37 @@ js_fattr(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_chmod(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		fname = NULL;
+	jsrefcount	rc;
+	int32		mode;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(argc < 2 || JSVAL_IS_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL)
+	HANDLE_PENDING(cx, fname);
+	if(fname == NULL) 
+		return JS_TRUE;
+
+	if(!JS_ValueToInt32(cx, argv[1], &mode)) {
+		free(fname);
+		return JS_FALSE;
+	}
+
+	rc=JS_SUSPENDREQUEST(cx);
+	int result = chmod(fname, mode);
+	free(fname);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result == 0));
+	return JS_TRUE;
+}
+
+static JSBool
 js_fdate(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -4195,6 +4226,11 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"file_attrib",		js_fattr,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
 	,JSDOCSTR("get a file's permissions/attributes. Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,310
+	},		
+	{"file_chmod",		js_chmod,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename, number mode")
+	,JSDOCSTR("set a file's mode (read/write/execute permissions). The supported <i>mode</i> bit values are system-dependent "
+		"(e.g. Windows only supports setting or clearing the user-write/0x80 mode flag).")
+	,31702
 	},		
 	{"file_date",		js_fdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
 	,JSDOCSTR("get a file's last modified date/time (in time_t format). Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
