@@ -1151,10 +1151,10 @@ void dir_cfg(uint libnum)
 				else 
 					prep_dir(cfg.ctrl_dir, str, sizeof(str));
 			} else {
-				if (!cfg.dir[dirnum[i]]->data_dir[0])
+				if (!cfg.dir[i]->data_dir[0])
 					SAFEPRINTF(data_dir, "%sdirs/", cfg.data_dir);
 				else
-					SAFECOPY(data_dir, cfg.dir[dirnum[i]]->data_dir);
+					SAFECOPY(data_dir, cfg.dir[i]->data_dir);
 				backslash(data_dir);
 				SAFEPRINTF3(str, "[%s%s%s/]"
 					,data_dir 
