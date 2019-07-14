@@ -832,7 +832,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 						else
 							SAFECOPY(path, cfg->data_dir);
 						backslash(path);
-						SAFEPRINTF2(str, "%s%s"
+						SAFEPRINTF2(str, "dirs/%s%s"
 							, cfg->lib[cfg->dir[i]->lib]->code_prefix
 							, cfg->dir[i]->code_suffix);
 						strlwr(str);
