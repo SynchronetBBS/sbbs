@@ -39,7 +39,7 @@ make it less likely I'll work on it in the future.
 
                              History
 
-I started writing SyncTERM in June of 2004.  There wern't any good BBS
+I started writing SyncTERM in June of 2004.  There weren't any good BBS
 clients available for FreeBSD at the time, so I started writing one.
 Initially, it was RLogin only and no file transfer support existed or
 was planned. since RLogin supports auto-login with user ID and password
@@ -170,7 +170,7 @@ be loaded from the BBS list, then modified per the command-line arguments.
 
                           The User InterFaCe
 
-Menus in SyncTERM use a commin user interface library named UIFC.  This
+Menus in SyncTERM use a common user interface library named UIFC.  This
 library was originally developed for Synchronet.
 
 The following is the general behaviour of UIFC menus.
@@ -196,10 +196,6 @@ Left-click: Select an item in a menu.
 
 	If there are more options than fit in the window, is a scrollbar
 	on the left side.
-
-	In help windows, the top half of the window is a "scroll up"
-	button, and the bottom half is a "scroll down" button.  There
-	are also small up/down buttons in the bottom-right.
 
 Left-Drag: Select and copy a region (the copy is made when the button is released).
 

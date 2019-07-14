@@ -982,23 +982,31 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 							item->nostatus = 1;
 							iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
 						}
-						if(item->screen_mode == SCREEN_MODE_C128_40
+						else if(item->screen_mode == SCREEN_MODE_C128_40
 								|| item->screen_mode == SCREEN_MODE_C128_80) {
 							SAFECOPY(item->font,font_names[35]);
 							iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
 							item->nostatus = 1;
 							iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
 						}
-						if(item->screen_mode == SCREEN_MODE_ATARI) {
+						else if(item->screen_mode == SCREEN_MODE_ATARI) {
 							SAFECOPY(item->font,font_names[36]);
 							iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
 							item->nostatus = 1;
 							iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
 						}
-						if(item->screen_mode == SCREEN_MODE_ATARI_XEP80) {
+						else if(item->screen_mode == SCREEN_MODE_ATARI_XEP80) {
 							SAFECOPY(item->font,font_names[36]);
 							iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
 							item->nostatus = 1;
+							iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
+						}
+						else if (i == SCREEN_MODE_C64 || i == SCREEN_MODE_C128_40 ||
+						    i == SCREEN_MODE_C128_80 || i == SCREEN_MODE_ATARI ||
+						    i == SCREEN_MODE_ATARI_XEP80) {
+							SAFECOPY(item->font,font_names[0]);
+							iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+							item->nostatus = 0;
 							iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
 						}
 						changed=1;
