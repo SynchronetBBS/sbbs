@@ -823,31 +823,29 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				put_str(cfg->dir[i]->op_arstr, stream);
 				backslash(cfg->dir[i]->path);
 				put_str(cfg->dir[i]->path, stream);
-#if 1
+
 				if (cfg->dir[i]->misc&DIR_FCHK) {
 					SAFECOPY(path, cfg->dir[i]->path);
 					if (!path[0]) {		/* no file storage path specified */
+						if(cfg->dir[i]->data_dir[0])
+							SAFECOPY(path, cfg->dir[i]->data_dir);
+						else
+							SAFECOPY(path, cfg->data_dir);
+						backslash(path);
 						SAFEPRINTF2(str, "%s%s"
 							, cfg->lib[cfg->dir[i]->lib]->code_prefix
 							, cfg->dir[i]->code_suffix);
 						strlwr(str);
-						safe_snprintf(path, sizeof(path), "%s%s/"
-							, cfg->dir[i]->data_dir
-							, str);
-						prep_dir(cfg->ctrl_dir, path, sizeof(path));
+						SAFECOPY(path,str);
 					}
 					else if (cfg->lib[cfg->dir[i]->lib]->parent_path[0]) {
 						SAFECOPY(path, cfg->lib[cfg->dir[i]->lib]->parent_path);
-						prep_dir(cfg->ctrl_dir, path, sizeof(path));
-						md(path);
 						backslash(path);
-						strcat(path, cfg->dir[i]->path);
+						SAFECAT(path, cfg->dir[i]->path);
 					}
-					else
-						prep_dir(cfg->ctrl_dir, path, sizeof(path));
-					md(path);
+					prep_dir(cfg->ctrl_dir, path, sizeof(path));
+					mkpath(path);
 				}
-#endif
 
 				put_str(cfg->dir[i]->upload_sem, stream);
 				put_int(cfg->dir[i]->maxfiles, stream);
