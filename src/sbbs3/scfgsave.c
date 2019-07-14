@@ -836,7 +836,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 							, cfg->lib[cfg->dir[i]->lib]->code_prefix
 							, cfg->dir[i]->code_suffix);
 						strlwr(str);
-						SAFECOPY(path,str);
+						SAFECAT(path,str);
 					}
 					else if (cfg->lib[cfg->dir[i]->lib]->parent_path[0]) {
 						SAFECOPY(path, cfg->lib[cfg->dir[i]->lib]->parent_path);
