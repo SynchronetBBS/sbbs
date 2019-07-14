@@ -586,7 +586,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	, char *initial_title, char **option)
 {
 	struct vmem_cell *ptr, *win, shade[MAX_LINES*2], line[MAX_COLS];
-    char search[MAX_OPLN];
+	char search[MAX_OPLN];
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
 	int	is_redraw=0;
@@ -2310,8 +2310,10 @@ void bottomline(int mode)
 	i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"ESC ");	/* Backspace is no good no way to abort editing */
 	i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Exit");
 	gotoxy(i,api->scrn_len+1);
-	textattr(BLACK|(api->cclr<<4));
-	clreol();
+	if (wherex() == i && wherey() == api->scrn_len+1) {
+		textattr(BLACK|(api->cclr<<4));
+		clreol();
+	}
 }
 
 /*****************************************************************************/
