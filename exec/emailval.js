@@ -17,9 +17,25 @@ Email validation system.. one setting for new users (unvalidated) and another
 that is intended for validated users.
 
 STEP 2:
-Edit emailval.js in notepad and edit the following values to match your
-pre-validation and post-validation security levels.
-        LEVEL_BEFORE_VALIDATION and LEVEL_AFTER_VALIDATION
+Edit ctrl/modopts.ini in a text editor and edit the following values in the
+[emailval] section (create if it necessary) to match your pre-validation and
+post-validation security levels.
+        level_before_validation (default: 50)
+		level_after_validation (default: 60)
+		flags1_after_validation (default: no change)
+		flags2_after_validation (default: no change)
+		flags3_after_validation (default: no change)
+		flags4_after_validation (default: no change)
+		exemptions_after_validation (default: no change)
+		restrictions_after_validation (default: no change)
+		expiration_days_after_validation (default: no change)
+
+Note: the flags, exemptions, and restrictions .ini values support 'A' through
+      'Z' with the optional '+' (add) and '-' (remove) modifiers.
+	      e.g. "+A-B" to add the A flag and remove the B flag
+	      e.g. "AB" to change the flag set to just "AB"
+	  Numeric values are supported for assignment (not modification).
+	      e.g. 0 = no flags, 1 = A, 2 = B, 4 = C, 8 = D, etc.
 
 STEP 3:
 add the following to the top of logon.js
@@ -31,11 +47,20 @@ or, if using logon.bin/src
 That's it!
 *******************************************************************************/
 
-//should match USER LEVEL settings for you bbs
-//	modify the next two lines to match your bbs settings
-var	LEVEL_BEFORE_VALIDATION = 50;
-var	LEVEL_AFTER_VALIDATION = 60;
+// TODO: use a user property (see userprops.js) rather than the user's comment
+// to store the secret
 
+// Use the [emailval] section of ctlr/modopts.ini
+// should match USER LEVEL settings for your BBS
+//  modify the next two modopts.ini options to match your BBS settings
+
+var options = load("modopts.js", "emailval");
+if(!options)
+	options = {};
+if(options.level_before_validation === undefined)
+	options.level_before_validation = 50;
+if(options.level_after_validation === undefined)
+	options.level_after_validation = 60;
 
 //other constants, shouldn't need changing.
 var cValChars='ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*';
@@ -120,7 +145,22 @@ function EnterValidationCode() {
 	var valu = console.getstr("", cValCodeLen, K_EDIT | K_UPPER | K_LINE);
 	if (val.toUpperCase() == valu.toUpperCase()) {
 		console.print("\r\n\1n \r\n\1hValidated!\1n \r\n\r\n");
-		user.security.level = LEVEL_AFTER_VALIDATION;
+		user.security.level = options.level_after_validation;
+		if(options.flags1_after_validation !== undefined)
+			user.security.flags1 = options.flags1_after_validation;
+		if(options.flags2_after_validation !== undefined)
+			user.security.flags2 = options.flags2_after_validation;
+		if(options.flags3_after_validation !== undefined)
+			user.security.flags3 = options.flags3_after_validation;
+		if(options.flags4_after_validation !== undefined)
+			user.security.flags4 = options.flags4_after_validation;
+		if(options.exemptions_after_validation !== undefined)
+			user.security.exemptions = options.exemptions_after_validation;
+		if(options.restrictions_after_validation !== undefined)
+			user.security.restrictions = options.restrictions_after_validation;
+		if(options.expiration_days_after_validation && user.security.expiration_date != 0)
+			user.security.expiration_date = time() + options.expiration_days_after_validation * 24 * 60 * 60;
+		
 		user.comment = cPrevalText + ":" + val + " validated on " + (new Date());
 	} else {
 		console.print("\r\n\1n \r\n\1h\1rCode doesn't match!\1n \r\n");
@@ -134,7 +174,7 @@ function HangupNow() {
 }
 
 function CheckValidation() {
-	while (bbs.online && user.security.level == LEVEL_BEFORE_VALIDATION) {
+	while (bbs.online && user.security.level == options.level_before_validation) {
 		console.clear();
 		
 		//NOTE: could use bbs.menu("FILENAME") to display an ansi here.
