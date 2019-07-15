@@ -3171,6 +3171,34 @@ js_fattr(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_fmode(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		fname = NULL;
+	jsrefcount	rc;
+	int			mode = -1;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL)
+	HANDLE_PENDING(cx, fname);
+	if(fname == NULL) 
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	struct stat st = {0};
+	if(stat(fname, &st) == 0)
+		mode = st.st_mode;
+	free(fname);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(mode));
+	return JS_TRUE;
+}
+
+static JSBool
 js_chmod(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -3194,7 +3222,7 @@ js_chmod(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	int result = chmod(fname, mode);
+	int result = CHMOD(fname, mode);
 	free(fname);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result == 0));
@@ -4224,12 +4252,23 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"file_attrib",		js_fattr,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
-	,JSDOCSTR("get a file's permissions/attributes. Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
+	,JSDOCSTR("get a file's attributes (same as </i>file_mode()</i> on *nix). "
+		"On Windows, the return value corresponds with <tt>_finddata_t.attrib</tt> "
+		"(includes DOS/Windows file system-specific attributes, like <i>hidden</i>, and <i>archive</i>). "
+		"Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,310
 	},		
+	{"file_mode",		js_fmode,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
+	,JSDOCSTR("get a file's type and mode flags (e.g. read/write/execute permissions). "
+		"The return value corresponds with <tt>struct stat.st_mode</tt>. "
+		"Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
+	,31702
+	},		
 	{"file_chmod",		js_chmod,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename, number mode")
-	,JSDOCSTR("set a file's mode (read/write/execute permissions). The supported <i>mode</i> bit values are system-dependent "
-		"(e.g. Windows only supports setting or clearing the user-write/0x80 mode flag).")
+	,JSDOCSTR("set a file's permissions flags. "
+		"The supported <i>mode</i> bit values are system-dependent "
+		"(e.g. Windows only supports setting or clearing the user-write/0x80 mode flag). "
+		"Returns <tt>true</tt> if the requested change was successful.")
 	,31702
 	},		
 	{"file_date",		js_fdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
