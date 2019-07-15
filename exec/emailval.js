@@ -29,6 +29,7 @@ post-validation security levels.
 		flags4_after_validation (default: no change)
 		exemptions_after_validation (default: no change)
 		restrictions_after_validation (default: no change)
+		expiration_after_validation (default: false)
 		expiration_days_after_validation (default: no change)
 
 Note: the flags, exemptions, and restrictions .ini values support 'A' through
@@ -39,8 +40,8 @@ Note: the flags, exemptions, and restrictions .ini values support 'A' through
 	      e.g. 0 = no flags, 1 = A, 2 = B, 4 = C, 8 = D, etc.
 
 STEP 3:
-add the following to the top of logon.js
-    load("emailval.js");
+add the following to the [logon] section of your ctrl/modopts.ini file:
+    email_validation = true
 
 or, if using logon.bin/src
     EXEC "?emailval.js"
@@ -159,8 +160,11 @@ function EnterValidationCode() {
 			user.security.exemptions = options.exemptions_after_validation;
 		if(options.restrictions_after_validation !== undefined)
 			user.security.restrictions = options.restrictions_after_validation;
-		if(options.expiration_days_after_validation && user.security.expiration_date != 0)
-			user.security.expiration_date = time() + options.expiration_days_after_validation * 24 * 60 * 60;
+		if(options.expiration_after_validation == true) {
+			if(options.expiration_days_after_validation)
+				user.security.expiration_date = time() + options.expiration_days_after_validation * 24 * 60 * 60;
+		} else
+			user.security.expiration_date = 0;
 		
 		user.comment = cPrevalText + ":" + val + " validated on " + (new Date());
 	} else {
