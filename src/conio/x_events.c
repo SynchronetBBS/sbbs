@@ -363,23 +363,25 @@ static int init_mode(int mode)
 
 	pthread_mutex_lock(&vstatlock);
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
+
+	/* Deal with 40 col doubling */
+	if(oldcols != vstat.cols) {
+		if(oldcols == 40)
+			vstat.scaling /= 2;
+		if(vstat.cols == 40)
+			vstat.scaling *= 2;
+	}
+	if(vstat.scaling < 1)
+		vstat.scaling = 1;
+	if(vstat.vmultiplier < 1)
+		vstat.vmultiplier = 1;
+
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
 
-	/* Deal with 40 col doubling */
-	if(oldcols != x_cvstat.cols) {
-		if(oldcols == 40)
-			x_cvstat.scaling /= 2;
-		if(x_cvstat.cols == 40)
-			x_cvstat.scaling *= 2;
-	}
-
-	if(x_cvstat.scaling < 1)
-		x_setscaling(1);
-
     map_window();
     /* Resize window if necessary. */
-	if((!(bitmap_width == 0 && bitmap_height == 0)) && (oldwidth != bitmap_width || oldheight != bitmap_height))
+	if((old_scaling != x_cvstat.scaling) || ((!(bitmap_width == 0 && bitmap_height == 0)) && (oldwidth != bitmap_width || oldheight != bitmap_height)))
 		resize_window();
 	bitmap_drv_request_pixels();
 
@@ -516,9 +518,10 @@ static void handle_resize_event(int width, int height)
 	 * Otherwise, we can simply resend everything
 	 */
 	if((width % (x_cvstat.charwidth * x_cvstat.cols) != 0)
-			|| (height % (x_cvstat.charheight * x_cvstat.rows) != 0)) {
+			|| (height % (x_cvstat.charheight * x_cvstat.rows) != 0))
 		resize_window();
-	}
+	else
+		resize_xim();
 	bitmap_drv_request_pixels();
 }
 
