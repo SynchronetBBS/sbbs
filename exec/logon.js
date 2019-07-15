@@ -28,7 +28,7 @@ if(user.settings & USER_ICE_COLOR) {
 
 if(options.email_validation == true) {
 	load({}, "emailval.js");
-	if(!online)
+	if(!bbs.online)
 		exit();
 }
 
