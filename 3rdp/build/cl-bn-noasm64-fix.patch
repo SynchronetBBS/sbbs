@@ -1,0 +1,11 @@
+--- bn/bn_asm.c.orig	2019-07-15 17:03:25.346831000 -0400
++++ bn/bn_asm.c	2019-07-15 17:03:40.227005000 -0400
+@@ -81,7 +81,7 @@
+ 
+ #ifndef BN_ASM				/* pcg */
+ 
+-#if defined(BN_LLONG) || defined(BN_UMULT_HIGH)
++#if defined(BN_LLONG) || defined(BN_UMULT_HIGH) || defined(BN_UMULT_LOHI)
+ 
+ BN_ULONG bn_mul_add_words(BN_ULONG *rp, const BN_ULONG *ap, int num,
+                           BN_ULONG w)
