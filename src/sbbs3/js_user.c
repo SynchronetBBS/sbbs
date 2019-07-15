@@ -611,7 +611,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_FLAGS1:
 			JS_RESUMEREQUEST(cx, rc);
 			if(JSVAL_IS_STRING(*vp)) {
-				val=str_to_bits(p->user->flags1, str);
+				val=str_to_bits(p->user->flags1 << 1, str) >> 1;
 			}
 			else {
 				if(!JS_ValueToInt32(cx,*vp,&val)) {
@@ -625,7 +625,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_FLAGS2:
 			JS_RESUMEREQUEST(cx, rc);
 			if(JSVAL_IS_STRING(*vp)) {
-				val=str_to_bits(p->user->flags1, str);
+				val=str_to_bits(p->user->flags2 << 1, str) >> 1;
 			}
 			else {
 				if(!JS_ValueToInt32(cx,*vp,&val)) {
@@ -639,7 +639,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_FLAGS3:
 			JS_RESUMEREQUEST(cx, rc);
 			if(JSVAL_IS_STRING(*vp)) {
-				val=str_to_bits(p->user->flags1, str);
+				val=str_to_bits(p->user->flags3 << 1, str) >> 1;
 			}
 			else {
 				if(!JS_ValueToInt32(cx,*vp,&val)) {
@@ -653,7 +653,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_FLAGS4:
 			JS_RESUMEREQUEST(cx, rc);
 			if(JSVAL_IS_STRING(*vp)) {
-				val=str_to_bits(p->user->flags1, str);
+				val=str_to_bits(p->user->flags4 << 1, str) >> 1;
 			}
 			else {
 				if(!JS_ValueToInt32(cx,*vp,&val)) {
@@ -667,7 +667,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_EXEMPT:
 			JS_RESUMEREQUEST(cx, rc);
 			if(JSVAL_IS_STRING(*vp)) {
-				val=str_to_bits(p->user->flags1, str);
+				val=str_to_bits(p->user->exempt << 1, str) >> 1;
 			}
 			else {
 				if(!JS_ValueToInt32(cx,*vp,&val)) {
@@ -681,7 +681,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_REST:	
 			JS_RESUMEREQUEST(cx, rc);
 			if(JSVAL_IS_STRING(*vp)) {
-				val=str_to_bits(p->user->flags1, str);
+				val=str_to_bits(p->user->rest << 1, str) >> 1;
 			}
 			else {
 				if(!JS_ValueToInt32(cx,*vp,&val)) {
