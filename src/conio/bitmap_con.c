@@ -1534,8 +1534,12 @@ int bitmap_drv_init_mode(int mode, int *width, int *height)
 	if(!bitmap_initialized)
 		return(-1);
 
-	if(load_vmode(&vstat, mode))
+	pthread_mutex_lock(&blinker_lock);
+	if(load_vmode(&vstat, mode)) {
+		pthread_mutex_unlock(&blinker_lock);
 		return(-1);
+	}
+	pthread_mutex_unlock(&blinker_lock);
 
 	/* Initialize video memory with black background, white foreground */
 	for (i = 0; i < vstat.cols*vstat.rows; ++i) {
