@@ -113,36 +113,39 @@ if(user.security.exemptions&UFLAG_H)
 * Replaces the 2.1 Logon stuff
 ******************************/
 
-// Logon screens
+if(bbs.fast_logon !== true) {
 
-// Print successively numbered logon screens (logon, logon1, logon2, etc.)
-var highest_printed_logon_screen=-1;
-for(var i=0;;i++) {
-	var fname="logon";
-	if(i)
-		fname+=i;
-	if(!bbs.menu_exists(fname)) {
-		if(i>1)
-			break;
-		continue;
+	// Logon screens
+
+	// Print successively numbered logon screens (logon, logon1, logon2, etc.)
+	var highest_printed_logon_screen=-1;
+	for(var i=0;;i++) {
+		var fname="logon";
+		if(i)
+			fname+=i;
+		if(!bbs.menu_exists(fname)) {
+			if(i>1)
+				break;
+			continue;
+		}
+		bbs.menu(fname);
+		highest_printed_logon_screen = i;
 	}
-	bbs.menu(fname);
-    highest_printed_logon_screen = i;
+
+	// Print logon screens based on security level
+	if(user.security.level > highest_printed_logon_screen
+		&& bbs.menu_exists("logon" + user.security.level))
+		bbs.menu("logon" + user.security.level);
+
+	// Print one of text/menu/random*.*, picked at random
+	// e.g. random1.asc, random2.asc, random3.asc, etc.
+	var random_list = directory(system.text_dir + "menu/random*.*");
+	if(random_list.length)
+		bbs.menu(file_getname(random_list[random(random_list.length)]).slice(0,-4));
+
+	console.clear(LIGHTGRAY);
+	bbs.user_event(EVENT_LOGON);
 }
-
-// Print logon screens based on security level
-if(user.security.level > highest_printed_logon_screen
-    && bbs.menu_exists("logon" + user.security.level))
-	bbs.menu("logon" + user.security.level);
-
-// Print one of text/menu/random*.*, picked at random
-// e.g. random1.asc, random2.asc, random3.asc, etc.
-var random_list = directory(system.text_dir + "menu/random*.*");
-if(random_list.length)
-	bbs.menu(file_getname(random_list[random(random_list.length)]).slice(0,-4));
-
-console.clear(LIGHTGRAY);
-bbs.user_event(EVENT_LOGON);
 
 if(user.security.level==99				/* Sysop logging on */
 	&& !system.matchuser("guest")		/* Guest account does not yet exist */

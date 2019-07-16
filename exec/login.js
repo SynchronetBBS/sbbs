@@ -61,6 +61,10 @@ for(var c=0; c < options.login_prompts; c++) {
 	   }
 	   continue;
 	}
+	if(options.fast_logon == true && str.charAt(0) === (options.fast_logon_char || '!')) {
+		str = str.substr(1);
+		bbs.fast_logon = true;
+	}
 	// Continue normal login (prompting for password)
 	if(bbs.login(str, "\1n\1c\1hPW:\b\b\bPassword: \1w")) {
 		bbs.logon();
