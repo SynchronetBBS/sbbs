@@ -156,9 +156,8 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 .dropdown-submenu {
     position: relative;
 }
-
-.dropdown-submenu .dropdown-menu {
+.dropdown-submenu > .dropdown-menu {
     top: 0;
     left: 100%;
-    margin-top: -1px;
-}
+    margin-top: -6px;
+} 

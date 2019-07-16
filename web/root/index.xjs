@@ -51,9 +51,9 @@
 ?>
     		<li>
 <?xjs if (obj[e].type == 'link') { ?>
-                <a href="./?page=<?xjs write(obj[e].page); ?>" target="_blank">
+                <a class="dropdown-item" href="./?page=<?xjs write(obj[e].page); ?>" target="_blank">
 <?xjs } else { ?>
-        		<a href="./?page=<?xjs write((path || '') + obj[e].page); ?>">
+        		<a class="dropdown-item" href="./?page=<?xjs write((path || '') + obj[e].page); ?>">
 <?xjs } ?>
                     <?xjs write(e); ?>
                 </a>
@@ -143,8 +143,8 @@
 									</a>
 								</li>
 							<?xjs } ?>
-							<li class="dropdown">
-								<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+							<li class="nav-item dropdown">
+								<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
 									<?xjs write(locale.strings.main.menu_item_login); ?>
 									<span class="caret"></span>
 								</a>
@@ -209,17 +209,19 @@
 		</div>
 
 		<script src="./js/offcanvas.js"></script>
-
     	<script>
-    		$(document).ready(function () {
-				$('a.dropdown-toggle').on('click', function (e) {
-					$(this).next('ul').toggle();
-					$(this).next('div').toggle();
-					e.stopPropagation();
-					e.preventDefault();
-				});
+			$('.dropdown-menu a.dropdown-toggle').on('click', function (e) {
+				if (!$(this).next().hasClass('show')) {
+					$(this).parents('.dropdown-menu').first().find('.show').removeClass("show");
+				}
+			    var $subMenu = $(this).next(".dropdown-menu");
+    			$subMenu.toggleClass('show');
+    			$(this).parents('li.nav-item.dropdown.show').on('hidden.bs.dropdown', function (e) {
+        			$('.dropdown-submenu .show').removeClass("show");
+    			});
+    			return false;
 			});
-    	</script>
+		</script>
 
 	</body>
 
