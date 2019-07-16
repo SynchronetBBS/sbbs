@@ -744,9 +744,9 @@ char* DLLCALL iniSetEnumList(str_list_t* list, const char* section, const char* 
 		name_count = strListCount(names);
 		for(i=0; i < count; i++) {
 			if(value[0])
-				strcat(value,sep);
+				SAFECAT(value,sep);
 			if(val_list[i] < name_count)
-				strcat(value, names[val_list[i]]);
+				SAFECAT(value, names[val_list[i]]);
 			else
 				sprintf(value + strlen(value), "%u", val_list[i]);
 		}
