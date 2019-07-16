@@ -393,7 +393,11 @@ typedef struct {
 #define SAFECOPY(dst,src)                   (strncpy(dst,src,sizeof(dst)), TERMINATE(dst))
 #endif
 
-#define SAFECAT(dst, src)					if(strlen(dst) + strlen(src) < sizeof(dst)) { strcat(dst, src); }
+#define SAFECAT(dst, src) do { \
+	if(strlen(dst) + strlen(src) < sizeof(dst)) { \
+		strcat(dst, src); \
+	} \
+} while(0)
 
 /* Bound-safe version of sprintf() - only works with fixed-length arrays */
 #if (defined __FreeBSD__) || (defined __NetBSD__) || (defined __OpenBSD__) || (defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__))
