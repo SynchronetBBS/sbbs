@@ -793,7 +793,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 {
 	jsval idval;
 	char*		p=NULL;
-	int32		val=0;
+	uint32		val=0;
     jsint       tiny;
 	JSString*	js_str;
 	sbbs_t*		sbbs;
@@ -805,7 +805,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
     tiny = JSVAL_TO_INT(idval);
 
 	if(JSVAL_IS_NUMBER(*vp) || JSVAL_IS_BOOLEAN(*vp)) {
-		if(!JS_ValueToInt32(cx, *vp, &val))
+		if(!JS_ValueToECMAUint32(cx, *vp, &val))
 			return(JS_FALSE);
 	}
 	else if(JSVAL_IS_STRING(*vp)) {
@@ -1120,8 +1120,8 @@ static uint get_subnum(JSContext* cx, sbbs_t* sbbs, jsval *argv, int argc, int p
 			if(!stricmp(sbbs->cfg.sub[subnum]->code,p))
 				break;
 	} else if(argc>pos && JSVAL_IS_NUMBER(argv[pos])) {
-		int32 i;
-		if(!JS_ValueToInt32(cx,argv[pos],&i))
+		uint32 i;
+		if(!JS_ValueToECMAUint32(cx,argv[pos],&i))
 			return JS_FALSE;
 		subnum = i;
 	}
@@ -1146,8 +1146,8 @@ static uint get_dirnum(JSContext* cx, sbbs_t* sbbs, jsval val, bool dflt)
 				if(!stricmp(sbbs->cfg.dir[dirnum]->code,p))
 					break;
 		} else if(JSVAL_IS_NUMBER(val)) {
-			int32 i;
-			if(!JS_ValueToInt32(cx,val,&i))
+			uint32 i;
+			if(!JS_ValueToECMAUint32(cx,val,&i))
 				return JS_FALSE;
 			dirnum = i;
 		}
@@ -1275,7 +1275,7 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	uintN		i;
 	sbbs_t*		sbbs;
-	int32		mode=0;
+	uint32		mode=0;
     JSString*	cmd;
 	JSString*	startup_dir=NULL;
 	char*		p_startup_dir=NULL;
@@ -1295,7 +1295,7 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(i=1;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&mode))
+			if(!JS_ValueToECMAUint32(cx,argv[i],&mode))
 				return JS_FALSE;
 		}
 		else if(JSVAL_IS_STRING(argv[i]))
@@ -1327,7 +1327,7 @@ static JSBool
 js_exec_xtrn(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		i=0;
+	uint32		i=0;
 	char*		code;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -1347,7 +1347,7 @@ js_exec_xtrn(JSContext *cx, uintN argc, jsval *arglist)
 				if(!stricmp(sbbs->cfg.xtrn[i]->code,code))
 					break;
 		} else if(JSVAL_IS_NUMBER(argv[0])) {
-			if(!JS_ValueToInt32(cx,argv[0],&i))
+			if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 				return JS_FALSE;
 		}
 	}
@@ -1367,7 +1367,7 @@ static JSBool
 js_user_event(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		i=0;
+	uint32		i=0;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -1377,7 +1377,7 @@ js_user_event(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&i))
+		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 			return JS_FALSE;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1440,7 +1440,7 @@ static JSBool
 js_text(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		i=0;
+	uint32		i=0;
 	sbbs_t*		sbbs;
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
@@ -1449,7 +1449,7 @@ js_text(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&i))
+		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 			return JS_FALSE;
 	}
 	i--;
@@ -1471,7 +1471,7 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p;
-	int32		i=0;
+	uint32		i=0;
 	int			len;
 	sbbs_t*		sbbs;
 
@@ -1484,7 +1484,7 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&i))
+		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 			return JS_FALSE;
 	}
 	i--;
@@ -1516,7 +1516,7 @@ static JSBool
 js_revert_text(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		i=0;
+	uint32		i=0;
 	sbbs_t*		sbbs;
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
@@ -1525,7 +1525,7 @@ js_revert_text(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&i))
+		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 			return JS_FALSE;
 	}
 	i--;
@@ -2389,7 +2389,7 @@ static JSBool
 js_node_stats(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		node_num=0;
+	uint32		node_num=0;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -2399,7 +2399,7 @@ js_node_stats(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc>0 && JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&node_num))
+		if(!JS_ValueToECMAUint32(cx,argv[0],&node_num))
 			return JS_FALSE;
 	}
 
@@ -2414,7 +2414,7 @@ static JSBool
 js_userlist(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		mode=UL_ALL;
+	uint32		mode=UL_ALL;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -2424,7 +2424,7 @@ js_userlist(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc>0 && JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&mode))
+		if(!JS_ValueToECMAUint32(cx,argv[0],&mode))
 			return JS_FALSE;
 	}
 
@@ -2563,9 +2563,9 @@ static JSBool
 js_readmail(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		readwhich=MAIL_YOUR;
-	int32		usernumber;
-	int32		lm_mode = 0;
+	uint32		readwhich=MAIL_YOUR;
+	uint32		usernumber;
+	uint32		lm_mode = 0;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -2576,15 +2576,15 @@ js_readmail(JSContext *cx, uintN argc, jsval *arglist)
 
 	usernumber=sbbs->useron.number;
 	if(argc>0 && JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&readwhich))
+		if(!JS_ValueToECMAUint32(cx,argv[0],&readwhich))
 			return JS_FALSE;
 	}
 	if(argc>1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx,argv[1],&usernumber))
+		if(!JS_ValueToECMAUint32(cx,argv[1],&usernumber))
 			return JS_FALSE;
 	}
 	if(argc>2 && JSVAL_IS_NUMBER(argv[2])) {
-		if(!JS_ValueToInt32(cx, argv[2], &lm_mode))
+		if(!JS_ValueToECMAUint32(cx, argv[2], &lm_mode))
 			return JS_FALSE;
 	}
 
@@ -2599,8 +2599,8 @@ static JSBool
 js_email(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		usernumber=1;
-	int32		mode=WM_EMAIL;
+	uint32		usernumber=1;
+	uint32		mode=WM_EMAIL;
 	const char	*def="";
 	char*		top=(char *)def;
 	char*		subj=(char *)def;
@@ -2623,12 +2623,12 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&usernumber))
+		if(!JS_ValueToECMAUint32(cx,argv[0],&usernumber))
 			return JS_FALSE;
 	}
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&mode))
+			if(!JS_ValueToECMAUint32(cx,argv[i],&mode))
 				return JS_FALSE;
 		}
 		else if(JSVAL_IS_STRING(argv[i]) && js_top==NULL)
@@ -2673,7 +2673,7 @@ static JSBool
 js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		mode=0;
+	uint32		mode=0;
 	char*		to = NULL;
 	char*		subj = NULL;
 	JSString*	js_str;
@@ -2695,7 +2695,7 @@ js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(uintN i=0; i<argc; i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&mode))
+			if(!JS_ValueToECMAUint32(cx,argv[i],&mode))
 				return JS_FALSE;
 		}
 		else if(JSVAL_IS_STRING(argv[i])) {
@@ -2842,7 +2842,7 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		addr;
-	int32		mode=0;
+	uint32		mode=0;
 	JSString*	js_addr;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -2863,7 +2863,7 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc>1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx,argv[1],&mode)) {
+		if(!JS_ValueToECMAUint32(cx,argv[1],&mode)) {
 			free(addr);
 			return JS_FALSE;
 		}
@@ -2887,7 +2887,7 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 	char*		server_user_name=NULL;
 	char*		term_type=NULL;
 	bool		fail = false;
-	int32		mode = 0;
+	uint32		mode = 0;
 	JSString*	js_str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -2922,7 +2922,7 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 				JSSTRING_TO_MSTRING(cx, js_str, term_type, NULL);
 			}
 		} else if(JSVAL_IS_NUMBER(argv[argn])) {
-			if(!JS_ValueToInt32(cx,argv[argn],&mode)) {
+			if(!JS_ValueToECMAUint32(cx,argv[argn],&mode)) {
 				fail = true;
 				break;
 			}
@@ -3402,7 +3402,7 @@ static JSBool
 js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		mode=0;
+	uint32		mode=0;
 	const char	*def=ALLFILES;
 	char*		afspec=NULL;
 	char*		fspec=(char *)def;
@@ -3426,7 +3426,7 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&mode)) {
+			if(!JS_ValueToECMAUint32(cx,argv[i],&mode)) {
 				if(fspec != def)
 					FREE_AND_NULL(fspec);
 				return JS_FALSE;
@@ -3459,7 +3459,7 @@ static JSBool
 js_listfileinfo(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		mode=FI_INFO;
+	uint32		mode=FI_INFO;
 	const char	*def=ALLFILES;
 	char*		fspec=(char *)def;
 	char		buf[MAX_PATH+1];
@@ -3482,7 +3482,7 @@ js_listfileinfo(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&mode))
+			if(!JS_ValueToECMAUint32(cx,argv[i],&mode))
 				return JS_FALSE;
 		}
 		else if(JSVAL_IS_STRING(argv[i])) {
@@ -3507,7 +3507,7 @@ static JSBool
 js_post_msg(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		mode=0;
+	uint32		mode=0;
 	uint		subnum;
 	uintN		n;
 	JSObject*	hdrobj;
@@ -3531,7 +3531,7 @@ js_post_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(n=1; n<argc; n++) {
 		if(JSVAL_IS_NUMBER(argv[n])) {
-			if(!JS_ValueToInt32(cx,argv[n],&mode))
+			if(!JS_ValueToECMAUint32(cx,argv[n],&mode))
 				return JS_FALSE;
 		}
 		else if(JSVAL_IS_OBJECT(argv[n])) {
@@ -3557,7 +3557,7 @@ static JSBool
 js_show_msg(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		p_mode = 0;
+	uint32		p_mode = 0;
 	uintN		n;
 	JSObject*	hdrobj;
 	sbbs_t*		sbbs;
@@ -3573,7 +3573,7 @@ js_show_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(n=0; n<argc; n++) {
 		if(JSVAL_IS_NUMBER(argv[n])) {
-			if(!JS_ValueToInt32(cx, argv[n], &p_mode))
+			if(!JS_ValueToECMAUint32(cx, argv[n], &p_mode))
 				return JS_FALSE;
 		}
 		else if(JSVAL_IS_OBJECT(argv[n])) {
@@ -3686,7 +3686,7 @@ static JSBool
 js_msgscan_cfg(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		mode=SUB_CFG_NSCAN;
+	uint32		mode=SUB_CFG_NSCAN;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -3696,7 +3696,7 @@ js_msgscan_cfg(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],&mode))
+		if(!JS_ValueToECMAUint32(cx,argv[0],&mode))
 			return JS_FALSE;
 	}
 
@@ -3752,7 +3752,7 @@ static JSBool
 js_scansubs(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		mode=SCAN_NEW;
+	uint32		mode=SCAN_NEW;
 	BOOL		all=FALSE;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -3764,7 +3764,7 @@ js_scansubs(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(uintN i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&mode))
+			if(!JS_ValueToECMAUint32(cx,argv[i],&mode))
 				return JS_FALSE;
 		}
 		else if(JSVAL_IS_BOOLEAN(argv[i]))
@@ -3785,7 +3785,7 @@ static JSBool
 js_scandirs(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int32		mode=0;
+	uint32		mode=0;
 	BOOL		all=FALSE;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -3797,7 +3797,7 @@ js_scandirs(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(uintN i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&mode))
+			if(!JS_ValueToECMAUint32(cx,argv[i],&mode))
 				return JS_FALSE;
 		}
 		else if(JSVAL_IS_BOOLEAN(argv[i]))
@@ -3820,7 +3820,7 @@ js_scanposts(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	const char	*def="";
 	char*		find=(char *)def;
-	int32		mode=0;
+	uint32		mode=0;
 	uint		subnum;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -3839,7 +3839,7 @@ js_scanposts(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx,argv[i],&mode)) {
+			if(!JS_ValueToECMAUint32(cx,argv[i],&mode)) {
 				if(find != def)
 					free(find);
 				return JS_FALSE;
@@ -3869,8 +3869,8 @@ js_listmsgs(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	const char	*def="";
 	char*		find=(char *)def;
-	int32		mode=0;
-	int32		start=0;
+	uint32		mode=0;
+	uint32		start=0;
 	uint		subnum;
 	sbbs_t*		sbbs;
 	uintN		argn=0;
@@ -3889,11 +3889,11 @@ js_listmsgs(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
-		if(!JS_ValueToInt32(cx,argv[argn++],&mode))
+		if(!JS_ValueToECMAUint32(cx,argv[argn++],&mode))
 			return JS_FALSE;
 	}
 	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
-		if(!JS_ValueToInt32(cx,argv[argn++],&start))
+		if(!JS_ValueToECMAUint32(cx,argv[argn++],&start))
 			return JS_FALSE;
 	}
 	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
@@ -3925,8 +3925,8 @@ js_getnstime(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
-		int32 i;
-		if(!JS_ValueToInt32(cx,argv[0],&i))
+		uint32 i;
+		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 			return JS_FALSE;
 		t = i;
 	}
