@@ -2373,11 +2373,15 @@ str_list_t DLLCALL iniReadFile(FILE* fp)
 BOOL DLLCALL iniWriteFile(FILE* fp, const str_list_t list)
 {
 	size_t		count;
+	long pos;
 
 	rewind(fp);
 	count = strListWriteFile(fp,list,"\n");
 	fflush(fp);
-	if(chsize(fileno(fp), ftell(fp))!=0)	/* truncate */
+	pos = ftell(fp);
+	if (pos == -1)
+		return (FALSE);
+	if(chsize(fileno(fp), pos)!=0)	/* truncate */
 		return(FALSE);
 
 	return(count == strListCount(list));
