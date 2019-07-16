@@ -84,20 +84,14 @@ int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 /****************************************************************************/
 char* DLLCALL strcasestr(const char* haystack, const char* needle)
 {
-	char* p = NULL;
-	/* temporary performance hack begin (warning: different behavior from traditional strcasestr): */
-	if((p = strstr(haystack, needle)) != NULL)
-		return p;
-	char* h = strdup(haystack);
-	char* n = strdup(needle);
-	if(h != NULL && n != NULL)
-		p = strstr(strupr(h), strupr(n));
-	int offset = p - h;
-	FREE_AND_NULL(h);
-	FREE_AND_NULL(n);
-	if(p == NULL)
-		return NULL;
-	return (char*)haystack + offset;
+	const char* p;
+	size_t len = strlen(needle);
+
+	for(p = haystack; *p != '\0'; p++) {
+		if(strnicmp(p, needle, len) == 0)
+			return (char*)p;
+	}
+	return NULL;
 }
 #endif
 
