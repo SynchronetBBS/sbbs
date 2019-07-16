@@ -70,7 +70,7 @@ bool sbbs_t::logon()
 #endif
 
 	if(useron.rest&FLAG('Q'))
-		qwklogon=1;
+		sys_status |= SS_QWKLOGON;
 	if(SYSOP && !(cfg.sys_misc&SM_R_SYSOP)) {
 		hangup();
 		return(false);
@@ -202,7 +202,7 @@ bool sbbs_t::logon()
 	sprintf(str,"%smsgs/n%3.3u.ixb",cfg.data_dir,cfg.node_num);
 	remove(str);			/* remove any pending node message indices */
 
-	if(!SYSOP && online==ON_REMOTE && !qwklogon) {
+	if(!SYSOP && online==ON_REMOTE && !(sys_status&SS_QWKLOGON)) {
 		rioctl(IOCM|ABORT);	/* users can't abort anything */
 		rioctl(IOCS|ABORT); 
 	}
@@ -224,7 +224,7 @@ bool sbbs_t::logon()
 	gettimeleft();
 	sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
 	batch_add_list(str);
-	if(!qwklogon) { 	 /* QWK Nodes don't go through this */
+	if(!(sys_status&SS_QWKLOGON)) { 	 /* QWK Nodes don't go through this */
 
 		if(cfg.sys_pwdays
 			&& (ulong)logontime>(useron.pwmod+((ulong)cfg.sys_pwdays*24UL*60UL*60UL))) {
@@ -417,7 +417,7 @@ bool sbbs_t::logon()
 		,useron.number,useron.alias,totallogons,useron.ltoday);
 	logline("++",str);
 
-	if(!qwklogon && cfg.logon_mod[0])
+	if(!(sys_status&SS_QWKLOGON) && cfg.logon_mod[0])
 		exec_bin(cfg.logon_mod,&main_csi);
 
 	if(thisnode.status!=NODE_QUIET && (!REALSYSOP || cfg.sys_misc&SM_SYSSTAT)) {
@@ -442,7 +442,7 @@ bool sbbs_t::logon()
 		external(cmdstr(cfg.sys_logon,nulstr,nulstr,NULL),EX_STDOUT); /* EX_SH */
 	}
 
-	if(qwklogon)
+	if(sys_status&SS_QWKLOGON)
 		return(true);
 
 	sys_status|=SS_PAUSEON;	/* always force pause on during this section */

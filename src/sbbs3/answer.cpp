@@ -99,7 +99,7 @@ bool sbbs_t::answer()
 				,LEN_ALIAS*2,str2
 				,terminal);
 			SAFECOPY(rlogin_term, terminal);
-			SAFECOPY(rlogin_name, str2);
+			SAFECOPY(rlogin_name, parse_login(str2));
 			SAFECOPY(rlogin_pass, str);
 			/* Truncate terminal speed (e.g. "/57600") from terminal-type string 
 			   (but keep full terminal type/speed string in rlogin_term): */
@@ -192,7 +192,7 @@ bool sbbs_t::answer()
 		pthread_mutex_lock(&ssh_mutex);
 		ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_USERNAME);
 		if (ctmp) {
-			SAFECOPY(rlogin_name, ctmp);
+			SAFECOPY(rlogin_name, parse_login(ctmp));
 			free_crypt_attrstr(ctmp);
 			ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_PASSWORD);
 			if (ctmp) {

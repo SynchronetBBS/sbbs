@@ -36,6 +36,22 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
+char* sbbs_t::parse_login(char* str)
+{
+	sys_status &= ~(SS_QWKLOGON|SS_FASTLOGON);
+
+	if(*str == '*') {
+		sys_status |= SS_QWKLOGON;
+		return str + 1;
+	}
+
+	if(*str == '!') {
+		sys_status |= SS_FASTLOGON;
+		return str + 1;
+	}
+	return str;
+}
+
 int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const char* sys_pw)
 {
 	char	str[128];
@@ -43,32 +59,20 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 	long	useron_misc=useron.misc;
 
 	useron.number=0;
-#if 0
-	if(cfg.node_dollars_per_call && noyes(text[AreYouSureQ]))
-		return(LOGIC_FALSE);
-#endif
+	username = parse_login(username);
 
-	SAFECOPY(str,username);
-
-	if(str[0]=='*') {
-		memmove(str,str+1,strlen(str));
-		qwklogon=1; 
-	}
-	else
-		qwklogon=0;
-
-	if(!(cfg.node_misc&NM_NO_NUM) && isdigit((uchar)str[0])) {
-		useron.number=atoi(str);
+	if(!(cfg.node_misc&NM_NO_NUM) && isdigit((uchar)username[0])) {
+		useron.number=atoi(username);
 		getuserdat(&cfg,&useron);
 		if(useron.number && useron.misc&(DELETED|INACTIVE))
 			useron.number=0; 
 	}
 
 	if(!useron.number) {
-		useron.number=matchuser(&cfg,str,FALSE);
-		if(!useron.number && (uchar)str[0]<0x7f && str[1]
-			&& isalpha(str[0]) && strchr(str,' ') && cfg.node_misc&NM_LOGON_R)
-			useron.number=userdatdupe(0,U_NAME,LEN_NAME,str);
+		useron.number=matchuser(&cfg,username,FALSE);
+		if(!useron.number && (uchar)username[0]<0x7f && str[1]
+			&& isalpha(username[0]) && strchr(username,' ') && cfg.node_misc&NM_LOGON_R)
+			useron.number=userdatdupe(0,U_NAME,LEN_NAME,username);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
 			if(useron.number && useron.misc&(DELETED|INACTIVE))
@@ -77,7 +81,7 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 
 	if(!useron.number) {
 		if((cfg.node_misc&NM_LOGON_P) && pw_prompt != NULL) {
-			SAFECOPY(useron.alias,str);
+			SAFECOPY(useron.alias,username);
 			bputs(pw_prompt);
 			console|=CON_R_ECHOX;
 			getstr(str,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
@@ -92,9 +96,9 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 					,0,useron.alias);
 			logline(LOG_NOTICE,"+!",tmp); 
 		} else {
-			badlogin(str, NULL);
+			badlogin(username, NULL);
 			bputs(text[UnknownUser]);
-			sprintf(tmp,"Unknown User '%s'",str);
+			sprintf(tmp,"Unknown User '%s'",username);
 			logline(LOG_NOTICE,"+!",tmp); 
 		}
 		useron.misc=useron_misc;

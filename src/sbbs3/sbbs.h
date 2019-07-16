@@ -800,6 +800,7 @@ public:
 	/* login.ccp */
 	int		login(char *user_name, char *pw_prompt, const char* user_pw = NULL, const char* sys_pw = NULL);
 	void	badlogin(char* user, char* passwd, const char* protocol=NULL, xp_sockaddr* addr=NULL, bool delay=true);
+	char*	parse_login(char*);
 
 	/* answer.cpp */
 	bool	answer();
@@ -955,7 +956,6 @@ public:
 	BOOL	hacklog(char* prot, char* text);
 
 	/* qwk.cpp */
-	bool	qwklogon;
 	ulong	qwkmail_last;
 	void	qwk_sec(void);
 	uint	total_qwknodes;
