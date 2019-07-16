@@ -819,13 +819,13 @@ char* DLLCALL iniSetBitField(str_list_t* list, const char* section, const char* 
 		if((value&bitdesc[i].bit)==0)
 			continue;
 		if(str[0])
-			strcat(str, bit_separator);
-		strcat(str,bitdesc[i].name);
+			SAFECAT(str, bit_separator);
+		SAFECAT(str,bitdesc[i].name);
 		value&=~bitdesc[i].bit;
 	}
 	if(value) {	/* left over bits? */
 		if(str[0])
-			strcat(str, bit_separator);
+			SAFECAT(str, bit_separator);
 		sprintf(str+strlen(str), "0x%lX", value);
 	}
 	return iniSetString(list, section, key, str, style);
