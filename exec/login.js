@@ -61,15 +61,8 @@ for(var c=0; c < options.login_prompts; c++) {
 	   }
 	   continue;
 	}
-	var fast_logon = false;
-	if(str.charAt(0) === (options.fast_logon_char || '!')) {
-		str = str.substr(1);
-		fast_logon = true;
-	}
 	// Continue normal login (prompting for password)
 	if(bbs.login(str, "\1n\1c\1hPW:\b\b\bPassword: \1w")) {
-		if(fast_logon && options.fast_logon == true && user.compare_ars(options.fast_logon_requirements))
-			bbs.fast_logon = true; // logon.js checks this variable to perform a fast-logon
 		bbs.logon();
 		exit();
 	}
