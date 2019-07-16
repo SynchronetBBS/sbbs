@@ -19,6 +19,7 @@ struct rectlist {
 
 extern struct video_stats vstat;
 extern pthread_mutex_t vstatlock;
+extern pthread_mutex_t blinker_lock;
 
 #ifndef BITMAP_CIOLIB_DRIVER
 /* Called from ciolib */

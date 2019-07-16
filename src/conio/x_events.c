@@ -361,6 +361,7 @@ static int init_mode(int mode)
 
 	oldcols=x_cvstat.cols;
 
+	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
 
@@ -377,6 +378,7 @@ static int init_mode(int mode)
 		vstat.vmultiplier = 1;
 
 	x_cvstat = vstat;
+	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&vstatlock);
 
     map_window();

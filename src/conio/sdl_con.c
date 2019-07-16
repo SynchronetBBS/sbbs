@@ -601,6 +601,7 @@ static int sdl_init_mode(int mode)
 
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
+	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
 	if(yuv.enabled)
@@ -621,6 +622,7 @@ static int sdl_init_mode(int mode)
 
 	cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
+	pthread_mutex_unlock(&blinker_lock);
 
 	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE);
 
