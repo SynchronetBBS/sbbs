@@ -83,11 +83,16 @@ Contents
 			messages in this area should be listed. (Use 0 for no limit.)
 		-	If you don't want to load bulletins from a message base, simply
 			delete the 'messageBase' setting from 'bullshit.ini'.
-
+		-	If the optional 'newOnly' setting is present and 'true', only
+			unread messages and recently updated files will be shown to
+			users.  Per-user read/unread and last-viewed file timestamps
+			are stored in data/user/####.bullshit JSON files.  If nothing
+			is available to be displayed to the user. Bullshit will exit
+			silently.
 
 	In the 'colors' section:
 
-		- 	'title' and 'text' are the colors used when viewing an item
+		-	'title' and 'text' are the colors used when viewing an item
 		-	'heading' controls color or the 'Title' and 'Date' column headings
 		-	'lightbarForeground' and 'lightbarBackground' control the color of
 			a highlighted item in the list

@@ -7,9 +7,9 @@ load('funclib.js');
 js.branch_limit = 0;
 js.time_limit = 0;
 
-var settings, frame, tree, treeScroll, viewer;
+var settings, frame, tree, treeScroll, viewer, list;
 
-Frame.prototype.drawBorder = function(color, title) {
+Frame.prototype.drawBorder = function (color, title) {
 	this.pushxy();
 	var theColor = color;
 	if (Array.isArray(color)) {
@@ -53,12 +53,12 @@ Frame.prototype.drawBorder = function(color, title) {
 	this.popxy();
 }
 
-var Viewer = function (item) {
+function Viewer(item) {
 
-	var frames = {
-		top : null,
-		title : null,
-		content : null
+	const frames = {
+		top: null,
+		title: null,
+		content: null
 	};
 
 	frames.top = new Frame(
@@ -91,32 +91,26 @@ var Viewer = function (item) {
 
 	if (typeof item === 'number') {
 
-		var msgBase = new MsgBase(settings.messageBase);
+		const msgBase = new MsgBase(settings.messageBase);
 		msgBase.open();
-		var header = msgBase.get_msg_header(item);
-		var body = msgBase.get_msg_body(item);
+		const header = msgBase.get_msg_header(item);
+		const body = msgBase.get_msg_body(item);
 		msgBase.close();
 
-		frames.title.putmsg(
-			format(
-				'%-' + (frame.width - 29) + 's%s',
-				header.subject.substr(0, frame.width - 30),
-				system.timestr(header.when_written_time)
-			),
-			settings.colors.title
-		);
-		frames.content.putmsg(word_wrap(body, frames.content.width));
+		frames.title.putmsg(format(
+			'%-' + (frame.width - 29) + 's%s',
+			header.subject.substr(0, frame.width - 30),
+			system.timestr(header.when_written_time)
+		), settings.colors.title);
+		frames.content.putmsg(word_wrap(body, frames.content.width - 1));
 
 	} else {
 
-		frames.title.putmsg(
-			format(
-				'%-' + (frame.width - 29) + 's%s',
-				item.substr(0, frame.width - 30),
-				system.timestr(file_date(settings.files[item]))
-			),
-			settings.colors.title
-		);
+		frames.title.putmsg(format(
+			'%-' + (frame.width - 29) + 's%s',
+			item.substr(0, frame.width - 30),
+			system.timestr(file_date(settings.files[item]))
+		), settings.colors.title);
 
 		frames.content.x = frames.top.x;
 		frames.content.width = frames.top.width;
@@ -135,7 +129,7 @@ var Viewer = function (item) {
 	frames.content.scrollTo(0, 0);
 	frames.content.h_scroll = true;
 
-	var scrollbar = new ScrollBar(frames.content);
+	const scrollbar = new ScrollBar(frames.content, { autohide: true });
 	frames.top.open();
 
 	this.getcmd = function (cmd) {
@@ -200,68 +194,103 @@ function loadSettings() {
 	settings.files = f.iniGetObject('files');
 	f.close();
 
-	Object.keys(settings.colors).forEach(
-		function (k) {
-			settings.colors[k] = settings.colors[k].toUpperCase().split(',');
-			if (settings.colors[k].length > 1) {
-				settings.colors[k].forEach(
-					function (e, i, a) { a[i] = getColor(e); }
-				);
-			} else {
-				settings.colors[k] = getColor(settings.colors[k][0]);
-			}
+	Object.keys(settings.colors).forEach(function (k) {
+		settings.colors[k] = settings.colors[k].toUpperCase().split(',');
+		if (settings.colors[k].length > 1) {
+			settings.colors[k].forEach(function (e, i, a) {
+                a[i] = getColor(e);
+            });
+		} else {
+			settings.colors[k] = getColor(settings.colors[k][0]);
 		}
-	);
+	});
 
 	return settings;
 
 }
 
+function readUserHistory() {
+    const dummy = { files: {}, messages: [] };
+    const fn = format('%suser/%04d.bullshit', system.data_dir, user.number);
+    if (!file_exists(fn)) return dummy;
+    const f = new File(fn);
+    if (f.open('r')) {
+        const obj = JSON.parse(f.read());
+        f.close();
+        return obj;
+    }
+    return dummy;
+}
+
+function writeUserHistory(obj) {
+    const fn = format('%suser/%04d.bullshit', system.data_dir, user.number);
+    log('Writing ' + fn);
+    const f = new File(fn);
+    if (f.open('w')) {
+        f.write(JSON.stringify(obj));
+        f.close();
+    }
+}
+
+function setBulletinRead(key) {
+    const history = readUserHistory();
+    if (typeof key == 'string') {
+        history.files[key] = time();
+    } else if (typeof key == 'number') {
+        if (history.messages.indexOf(key) < 0) history.messages.push(key);
+    }
+    writeUserHistory(history);
+}
+
 function loadList() {
 
-	Object.keys(settings.files).forEach(
-		function (key) {
-			if (!file_exists(settings.files[key])) return;
-			tree.addItem(
-				format (
-					'%-' + (frame.width - 29) + 's%s',
-					key, system.timestr(file_date(settings.files[key]))
-				),
-				key
-			);
-		}
-	);
+    const history = readUserHistory();
 
+    const list = [];
+	Object.keys(settings.files).forEach(function (key) {
+		if (!file_exists(settings.files[key])) return;
+        if (settings.newOnly && typeof history.files[key] == 'number' && file_date(settings.files[key]) <= history.files[key]) return;
+		list.push({
+            str: format(
+    			'%-' + (console.screen_columns - 29) + 's%s',
+    			key, system.timestr(file_date(settings.files[key]))
+            ),
+            key: key
+        });
+	});
 
-	if (typeof settings.messageBase === 'string') {
-		var msgBase = new MsgBase(settings.messageBase);
-		msgBase.open();
-		var shown = 0;
-		for (var m = msgBase.last_msg; m >= msgBase.first_msg; m = m - 1) {
-			try {
-				var h = msgBase.get_msg_header(m);
-			} catch (err) {
-				continue;
-			}
-			if (h === null) continue;
-			tree.addItem(
-				format(
-					'%-' + (frame.width - 29) + 's%s',
-					h.subject.substr(0, frame.width - 30),
-					system.timestr(h.when_written_time)
-				),
-				m
-			);
-			shown++;
-			if (settings.maxMessages > 0 && shown >= settings.maxMessages) {
-				break;
-			}
+	const msgBase = new MsgBase(settings.messageBase);
+	msgBase.open();
+	var shown = 0;
+	for (var m = msgBase.last_msg; m >= msgBase.first_msg; m = m - 1) {
+		try {
+			var h = msgBase.get_msg_header(m);
+		} catch (err) {
+			continue;
 		}
-		msgBase.close();
+		if (h === null) continue;
+        if (settings.newOnly && history.messages.indexOf(m) >= 0) continue;
+		list.push({
+            str: format(
+    			'%-' + (console.screen_columns - 29) + 's%s',
+    			h.subject.substr(0, console.screen_columns - 30),
+    			system.timestr(h.when_written_time)
+            ),
+            key: m
+        });
+		shown++;
+		if (settings.maxMessages > 0 && shown >= settings.maxMessages) break;
 	}
+	msgBase.close();
 
-	tree.open();
+    return list;
+}
 
+function displayList() {
+    list.forEach(function (e) {
+        tree.addItem(e.str, e.key);
+    });
+    tree.open();
 }
 
 function initDisplay() {
@@ -334,7 +363,7 @@ function initDisplay() {
 	tree.colors.lbg = settings.colors.lightbarBackground;
 	tree.colors.fg = settings.colors.listForeground;
 
-	treeScroll = new ScrollBar(tree);
+	treeScroll = new ScrollBar(tree, { autohide: true });
 
 	frame.open();
 
@@ -342,42 +371,35 @@ function initDisplay() {
 
 function init() {
 	settings = loadSettings();
-	initDisplay();
-	loadList();
+    list = loadList();
 }
 
 function main() {
-
+    if (!list.length && settings.newOnly) return;
+    initDisplay();
+    displayList();
 	while (!js.terminated) {
-
 		var userInput = console.inkey(K_NONE, 5);
-
 		if (typeof viewer !== 'undefined') {
-
 			var ret = viewer.getcmd(userInput);
 			viewer.cycle();
 			if (!ret) viewer = undefined;
-
 		} else {
-
 			if (userInput.toUpperCase() === 'Q' || userInput == '\x1B') {
 				break;
 			} else {
 				var ret = tree.getcmd(userInput);
 				treeScroll.cycle();
-				if (typeof ret === 'number' || typeof ret === 'string') {
+				if (typeof ret == 'number' || typeof ret == 'string') {
+                    setBulletinRead(ret);
 					viewer = new Viewer(ret);
 				}
-			}
-
+		    }
 		}
-
 		if (frame.cycle()) {
 			console.gotoxy(console.screen_columns, console.screen_rows);
 		}
-
 	}
-
 }
 
 function cleanUp() {
