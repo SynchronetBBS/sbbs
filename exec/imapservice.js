@@ -938,7 +938,7 @@ var unauthenticated_command_handlers = {
 			var pass=args[2];
 
 			if (!client.socket.ssl_session) {
-				taggeed(tag, "NO", "Basic RFC stuff here! A client implementation MUST NOT send a LOGIN command if the LOGINDISABLED capability is advertised.");
+				tagged(tag, "NO", "Basic RFC stuff here! A client implementation MUST NOT send a LOGIN command if the LOGINDISABLED capability is advertised.");
 				return;
 			}
 			if(!login(usr, pass)) {
