@@ -694,7 +694,8 @@ bool sbbs_t::inputnstime(time_t *dt)
 /*****************************************************************************/
 bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 {
-	char c,d,first[128],last[128],sysop[41],sysname[41],*p;
+	char first[128],last[128],sysop[41],sysname[41],*p;
+	int  c, d;
 	char alias[LEN_ALIAS+1], name[LEN_NAME+1], handle[LEN_HANDLE+1];
 	char pass[LEN_PASS+1];
 

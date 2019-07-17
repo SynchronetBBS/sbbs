@@ -50,10 +50,11 @@ int extdesclines(char *str);
 /*****************************************************************************/
 int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 {
-	char	str[256],hdr[256],c,d,letter='A',*p,*datbuf,ext[513];
+	char	str[256],hdr[256],letter='A',*p,*datbuf,ext[513];
 	char 	tmp[512];
 	uchar*	ixbbuf;
 	uchar	flagprompt=0;
+	int		c, d;
 	uint	i,j;
 	int		file,found=0,lastbat=0,disp;
 	long	m=0,n,anchor=0,next,datbuflen;
@@ -669,7 +670,8 @@ bool sbbs_t::movefile(file_t* f, int newdir)
 int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 							,long totalfiles)
 {
-	char	ch,c,d,str[256],fname[128],*p,remcdt=0,remfile=0;
+	char	ch,str[256],fname[128],*p,remcdt=0,remfile=0;
+	int		c, d;
 	char 	tmp[512];
 	uint	i,j,ml=0,md=0,udir,ulib;
 	file_t	f;

@@ -55,9 +55,9 @@
 char *ultoac(ulong l, char *string)
 {
 	char str[256];
-	signed char i,j,k;
+	size_t i,j,k;
 
-	sprintf(str,"%lu",l);
+	SAFEPRINTF(str,"%lu",l);
 	i=strlen(str)-1;
 	j=i/3+1+i;
 	string[j--]=0;

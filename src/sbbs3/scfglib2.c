@@ -877,7 +877,7 @@ long aftol(char *str)
 /*****************************************************************************/
 char *ltoaf(long l,char *str)
 {
-	size_t	c=0;
+	int	c=0;
 
 	while(c<26) {
 		if(l&(long)(1L<<c))

@@ -340,7 +340,7 @@ bool sbbs_t::upload(uint dirnum)
 		p=strchr(str+i,',');
 		if(p!=NULL)
 			*p=0;
-		ch=strlen(str+i);
+		ch=(char)strlen(str+i);
 		if(!stricmp(tmp+9,str+i))
 			break; 
 	}

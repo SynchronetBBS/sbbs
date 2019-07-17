@@ -3853,7 +3853,7 @@ static BOOL fastcgi_add_param(struct fastcgi_message **msg, size_t *end, size_t 
 		*end += 4;
 	}
 	else {
-		(*msg)->body[(*end)++] = namelen;
+		(*msg)->body[(*end)++] = (char)namelen;
 	}
 	if (vallen > 127) {
 		l = htonl(vallen | 0x80000000);
@@ -3861,7 +3861,7 @@ static BOOL fastcgi_add_param(struct fastcgi_message **msg, size_t *end, size_t 
 		*end += 4;
 	}
 	else {
-		(*msg)->body[(*end)++] = vallen;
+		(*msg)->body[(*end)++] = (char)vallen;
 	}
 	memcpy((*msg)->body + *end, env, namelen);
 	*end += namelen;
@@ -3889,7 +3889,7 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 			return FALSE;
 		}
 		if (end > 32000) {
-			msg->head.len = htons(end);
+			msg->head.len = htons((uint16_t)end);
 			if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
 				lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
 				free(msg);
@@ -3901,7 +3901,7 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 	}
 	strListFree(&env);
 	if (end) {
-		msg->head.len = htons(end);
+		msg->head.len = htons((uint16_t)end);
 		if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
 			lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
 			free(msg);
@@ -3909,7 +3909,7 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 		}
 		end = 0;
 	}
-	msg->head.len = htons(end);
+	msg->head.len = htons((uint16_t)end);
 	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
 		lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
 		free(msg);
@@ -4111,7 +4111,7 @@ static int fastcgi_write_in(void *arg, char *buf, size_t bufsz)
 		chunk_size = bufsz - pos;
 		if (chunk_size > UINT16_MAX)
 			chunk_size = UINT16_MAX;
-		head.len = htons(chunk_size);
+		head.len = htons((uint16_t)chunk_size);
 		if (sendsocket(cd->sock, (void *)&head, sizeof(head)) != sizeof(head))
 			return -1;
 		if (sendsocket(cd->sock, buf+pos, chunk_size) != chunk_size)

@@ -787,7 +787,7 @@ void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const ch
 void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 {
 	char*	buf;
-    char    slen;
+    size_t  slen;
     int     i,file;
 	long	l=0,flen;
     FILE    *stream;
