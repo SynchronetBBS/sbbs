@@ -768,9 +768,11 @@ var any_state_command_handlers = {
 		arguments:0,
 		handler:function (args) {
 			var tag=args[0];
-
-			untagged("CAPABILITY IMAP4rev1 AUTH=PLAIN LOGINDISABLED CHILDREN IDLE UNSELECT");
-			tagged(tag, "OK", "Capability completed, no TLS support... deal with it.");
+			if (client.socket.ssl_session)
+				untagged("CAPABILITY IMAP4rev1 AUTH=CRAM-MD5 AUTH=PLAIN CHILDREN IDLE UNSELECT");
+			else
+				untagged("CAPABILITY IMAP4rev1 AUTH=CRAM-MD5 LOGINDISABLED CHILDREN IDLE UNSELECT");
+			tagged(tag, "OK", "Capability completed, no STARTTLS support... deal with it.");
 		},
 	},
 	NOOP:{
@@ -828,7 +830,7 @@ var unauthenticated_command_handlers = {
 		handler:function(args) {
 			var tag=args[0];
 
-			tagged(tag, "BAD", "I told you to deal with the lack of TLS damnit!");
+			tagged(tag, "BAD", "I told you to deal with the lack of STARTTLS damnit!");
 		},
 	},
 	AUTHENTICATE:{
@@ -838,8 +840,39 @@ var unauthenticated_command_handlers = {
 			var mechanism=args[1];
 			var line;
 			var args;
+			var challenge;
+			var un;
+			var u;
+
+			function hmac(k, text) {
+				var ik='', ok='', i;
+				var m;
+
+				if (k.length > 64)
+					k = base64_decode(md5_calc(k));
+				while (k.length < 64)
+					k = k + '\x00';
+				for (i=0; i<64; i++) {
+					ik += ascii(ascii(k[i]) ^ 0x36);
+					ok += ascii(ascii(k[i]) ^ 0x5C);
+				}
+				return md5_calc(ok + base64_decode(md5_calc(ik+text)), true);
+			}
+
+			function setcfg()
+			{
+				cfgfile=new File(format(system.data_dir+"user/%04d.imap", user.number));
+				if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
+					tagged(tag, "NO", "Can't open imap state file");
+					return;
+				}
+			}
 
 			if(mechanism.toUpperCase()=="PLAIN") {
+				if (!client.socket.ssl_session) {
+					tagged(tag, "NO", "No AUTH for you.");
+					return;
+				}
 				client.socket.send("+\r\n");
 				line=client.socket.recvline(10240, 1800);
 				args=base64_decode(line).split(/\x00/);
@@ -847,13 +880,51 @@ var unauthenticated_command_handlers = {
 					tagged(tag, "NO", "No AUTH for you.");
 					return;
 				}
-				cfgfile=new File(format(system.data_dir+"user/%04d.imap", user.number));
-				if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
-					tagged(tag, "NO", "Can't open imap state file");
-					return;
-				}
+				setcfg();
 				tagged(tag, "OK", "Howdy.");
 				state=Authenticated;
+			}
+			else if(mechanism.toUpperCase() == "CRAM-MD5") {
+				challenge = '<'+random(2147483647)+"."+time()+"@"+system.host_name+'>';
+				client.socket.send("+ "+base64_encode(challenge)+"\r\n");
+				line=client.socket.recvline(10240, 1800);
+				args=base64_decode(line).split(/ /);
+				un = system.matchuser(args[0], false);
+				if (un == 0) {
+					tagged(tag, "NO", "No AUTH for you.");
+					return;
+				}
+				u = new User(un);
+				if (u.number < 1) {
+					tagged(tag, "NO", "No AUTH for you.");
+					return;
+				}
+				// First, try as-stored...
+				if (args[1] === hmac(u.security.password, challenge)) {
+					setcfg();
+					login(u.alias, u.security.password);
+					tagged(tag, "OK", "Howdy.");
+					state=Authenticated;
+					return;
+				}
+				// Lower-case
+				if (args[1] === hmac(u.security.password.toLowerCase(), challenge)) {
+					setcfg();
+					login(u.alias, u.security.password);
+					tagged(tag, "OK", "Howdy.");
+					state=Authenticated;
+					return;
+				}
+				// Upper-case
+				if (args[1] === hmac(u.security.password.toUpperCase(), challenge)) {
+					setcfg();
+					login(u.alias, u.security.password);
+					tagged(tag, "OK", "Howdy.");
+					state=Authenticated;
+					return;
+				}
+				tagged(tag, "NO", "No AUTH for you.");
+				return;
 			}
 			else
 				tagged(tag, "NO", "No "+mechanism+" authenticate supported yet... give me a reason to do it and I'll think about it.");
@@ -866,8 +937,17 @@ var unauthenticated_command_handlers = {
 			var usr=args[1];
 			var pass=args[2];
 
+			if (!client.socket.ssl_session) {
+				taggeed(tag, "NO", "Basic RFC stuff here! A client implementation MUST NOT send a LOGIN command if the LOGINDISABLED capability is advertised.");
+				return;
+			}
 			if(!login(usr, pass)) {
 				tagged(tag, "NO", "No login for you.");
+				return;
+			}
+			cfgfile=new File(format(system.data_dir+"user/%04d.imap", user.number));
+			if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
+				tagged(tag, "NO", "Can't open imap state file");
 				return;
 			}
 			tagged(tag, "OK", "Sure, come on in.");
