@@ -62,15 +62,15 @@ function init() {
 	}
 	
 	command_prefix = 
-		config.iniGetValue(null, "command_prefix");
+		config.iniGetValue(null, "command_prefix", "");
 	real_name = 
-		config.iniGetValue(null, "real_name");
+		config.iniGetValue(null, "real_name", "");
 	config_write_delay=parseInt(
-		config.iniGetValue(null, "config_write_delay"));
+		config.iniGetValue(null, "config_write_delay", 300));
 	max_paragraph_length = parseInt(
-		config.iniGetValue(null, "max_paragraph_length"));
+		config.iniGetValue(null, "max_paragraph_length", 512));
 	max_paragraphs = parseInt(
-		config.iniGetValue(null, "max_paragraphs"));
+		config.iniGetValue(null, "max_paragraphs", 1));
 //	Squelch_List = 
 //		config.iniGetValue(null, "Squelch_List").split(",");
 
