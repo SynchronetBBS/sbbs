@@ -1,0 +1,10 @@
+# Ignore processed XJS files
+*.xjs.ssjs
+
+# Ignore non-example pages
+/web/pages/*
+!/web/pages/.examples
+
+# Ignore non-example sidebar modules
+/web/sidebar/*
+!/web/sidebar/.examples
