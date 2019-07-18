@@ -26,7 +26,7 @@
 	</ol>
 
 	<?xjs function writeFileDetails(file) { ?>
-		<a href="./api/files.ssjs?call=download-file&amp;dir=<?xjs write(http_request.query.dir[0]); ?>&amp;file=<?xjs write(file.name); ?>" target="_blank" class="list-group-item striped">
+		<a href="./api/files.ssjs?call=download-file&amp;dir=<?xjs write(http_request.query.dir[0]); ?>&amp;file=<?xjs write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<?xjs write(file._size); ?>" data-uploaded="<?xjs write(file.uldate); ?>" data-name="<?xjs write(file.name); ?>">
 			<strong><?xjs write(file.name); ?></strong> (<?xjs write(file.size); ?>)
 			<p><em>Uploaded <?xjs write(system.timestr(file.uldate)); ?></em></p>
 			<?xjs if (typeof file.extdesc === 'undefined') { ?>
@@ -39,10 +39,24 @@
 		</a>
 	<?xjs } ?>
 
-	<div id="file-list-container" class="list-group">
-		<?xjs listFiles(http_request.query.dir[0]).forEach(writeFileDetails); ?>
+	<div class="clearfix" style="margin-bottom:1em;">
+		<div class="dropdown pull-right">
+			<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				Sort by <span class="caret"></span>
+			</button>
+			<ul class="dropdown-menu dropdown-menu-right">
+				<li class="text-right"><a href="#" onclick="file_sort('data-uploaded', true)">Date Uploaded <span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span></a></li>
+				<li class="text-right"><a href="#" onclick="file_sort('data-uploaded', false)">Date Uploaded <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span></a></li>
+				<li class="text-right"><a href="#" onclick="file_sort('data-name', true)">Name <span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span></a></li>
+				<li class="text-right"><a href="#" onclick="file_sort('data-name', false)">Name <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span></a></li>
+				<li class="text-right"><a href="#" onclick="file_sort('data-size', true)">Size <span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span></a></li>
+				<li class="text-right"><a href="#" onclick="file_sort('data-size', false)">Size <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span></a></li>
+			</ul>
+		</div>
 	</div>
-
+	<div id="file-list-container" class="list-group">
+	<?xjs listFiles(http_request.query.dir[0]).forEach(writeFileDetails); ?>
+	</div>
 
 <?xjs
 	} else if(
@@ -106,3 +120,19 @@
 	</div>
 
 <?xjs } ?>
+
+<script type="text/javascript">
+	function file_sort(field, ascending) {
+		const list = Array.from(document.querySelectorAll('a[data-file-list-element]')).sort((a, b) => {
+			if (a.getAttribute(field) == b.getAttribute(field)) return 0;
+			if (a.getAttribute(field) > b.getAttribute(field)) {
+				return ascending ? 1 : -1
+			} else {
+				return ascending ? -1 : 1
+			}
+		});
+		const flc = document.getElementById('file-list-container');
+		flc.innerHTML = '';
+		list.forEach(e => flc.appendChild(e));
+	}
+</script>
