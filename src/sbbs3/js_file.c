@@ -2826,7 +2826,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"if a <i>prefix</i> is specified, it is removed from each section's name" )
 	,311
 	},
-	{"iniSetAllObjects",js_iniSetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("object array [,name_property=<tt>\"name\"</tt>]")
+	{"iniSetAllObjects",js_iniSetAllObjects,1,	JSTYPE_BOOLEAN,	JSDOCSTR("object array [,name_property=<tt>\"name\"</tt>]")
 	,JSDOCSTR("write an array of objects to a .ini file, each object in its own section named "
 	"after the object's <i>name_property</i> (default: <tt>name</tt>)")
 	,312
