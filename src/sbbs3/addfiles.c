@@ -203,11 +203,11 @@ void updatestats(ulong size)
 	close(file);
 }
 
-bool get_file_diz(file_t* f, const char* filepath)
+bool get_file_diz(file_t* f, const char* filepath, char* ext)
 {
 	int i,file;
 	char tmp[MAX_PATH+1];
-	char ext[1024],tmpext[513];
+	char tmpext[513];
 
 	for(i=0;i<scfg.total_fextrs;i++)
 		if(!stricmp(scfg.fextr[i]->ext,f->name+9)
@@ -293,6 +293,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 #endif
 			f.misc=0;
 			f.desc[0]=0;
+			memset(ext, 0, sizeof(ext));
 			f.cdt=flength(filepath);
 			time_t file_timestamp = fdate(filepath);
 			padfname(getfname(filepath),f.name);
@@ -313,6 +314,8 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 					update_uldate(&scfg, &f);
 					continue;
 				}
+				if(f.misc & FM_EXTDESC)
+					getextdesc(&scfg, f.dir, f.datoffset, ext);
 			}
 
 			if(mode&FILE_DATE) {		/* get the file date and put into desc */
@@ -326,7 +329,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			}
 
 			if(mode&FILE_ID)
-				get_file_diz(&f, filepath);
+				get_file_diz(&f, filepath, ext);
 
 			f.dateuled=time32(NULL);
 			f.altpath=cur_altpath;
@@ -376,6 +379,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 	do {
 		f.misc=0;
 		f.desc[0]=0;
+		memset(ext, 0, sizeof(ext));
 		SAFECOPY(curline,nextline);
 		nextline[0]=0;
 		fgets(nextline,255,stream);
@@ -435,6 +439,8 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 				update_uldate(&scfg, &f);
 				continue;
 			}
+			if (f.misc & FM_EXTDESC)
+				getextdesc(&scfg, f.dir, f.datoffset, ext);
 		}
 
 		if(mode&FILE_DATE) {		/* get the file date and put into desc */
@@ -460,7 +466,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 
 		if(nextline[0]==' ' || strlen(p)>LEN_FDESC) {	/* ext desc */
 			if(!(mode&NO_EXTEND)) {
-				memset(ext,0,513);
+				memset(ext, 0, sizeof(ext));
 				f.misc|=FM_EXTDESC;
 				sprintf(ext,"%s\r\n",p);
 			}
@@ -510,7 +516,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		if(sskip) l=atol(fname+sskip);
 
 		if(mode&FILE_ID)
-			get_file_diz(&f, filepath);
+			get_file_diz(&f, filepath, ext);
 
 		f.cdt=l;
 		f.dateuled=time32(NULL);
@@ -863,6 +869,7 @@ int main(int argc, char **argv)
 			namegiven=1;
 			padfname(argv[j],f.name);
 			f.desc[0]=0;
+			memset(ext, 0, sizeof(ext));
 #if 0
 			strupr(f.name);
 #endif
@@ -898,6 +905,8 @@ int main(int argc, char **argv)
 					update_uldate(&scfg, &f);
 					continue;
 				}
+				if (f.misc & FM_EXTDESC)
+					getextdesc(&scfg, f.dir, f.datoffset, ext);
 			}
 			f.cdt=l;
 			f.dateuled=time32(NULL);
@@ -907,7 +916,7 @@ int main(int argc, char **argv)
 				strip_exascii(f.desc, f.desc);
 			printf("%s %7"PRIu32" %s\n",f.name,f.cdt,f.desc);
 			if(mode&FILE_ID)
-				get_file_diz(&f, str);
+				get_file_diz(&f, str, ext);
 
 			if(exist) {
 				putfiledat(&scfg,&f);
