@@ -27,6 +27,7 @@ function listDirectories(library) {
 function listFiles(dir) {
 	return (new FileBase(file_area.dir[dir].code)).map(function (df) {
         df.size = df.path ? file_size_str(file_size(df.path)) : 'Unknown';
+        df._size = df.path ? file_size(df.path) : 0;
 		return df;
 	});
 }
