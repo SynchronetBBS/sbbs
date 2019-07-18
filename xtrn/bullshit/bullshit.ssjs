@@ -27,18 +27,16 @@ function bullshit(sub, max) {
 	if (!mb.open()) return;
 	var shown = 0;
 	writeln('<div><ul class="list-group">');
-	for (var m = mb.last_msg; (m > mb.first_msg && shown < max); m = m - 1) {
+	for (var m = mb.last_msg; (m >= mb.first_msg && shown < max); m = m - 1) {
 		var header = mb.get_msg_header(m);
 		if (header !== null && !(header.attr&MSG_DELETE)) {
-			writeln(
-				format(
-					'<li class="list-group-item striped">' +
-					'<strong>%s</strong><br><em>%s</em>' +
-					'<div class="message">%s</div></li>',
-					header.subject, system.timestr(header.when_written_time),
-					linkify(mb.get_msg_body(m)).replace(/\r?\n/g, '<br>')
-				)
-			);
+			writeln(format(
+				'<li class="list-group-item striped">' +
+				'<strong>%s</strong><br><em>%s</em>' +
+				'<div class="message">%s</div></li>',
+				header.subject, system.timestr(header.when_written_time),
+				linkify(mb.get_msg_body(m)).replace(/\r?\n/g, '<br>')
+			));
 			shown++;
 		}
 	}
