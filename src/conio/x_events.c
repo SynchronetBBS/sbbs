@@ -379,7 +379,7 @@ static int init_mode(int mode)
 
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&vstatlock);
+	pthread_mutex_unlock(&blinker_lock);
 
     map_window();
     /* Resize window if necessary. */
