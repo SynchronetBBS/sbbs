@@ -934,7 +934,7 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 {
 	void	*vp,**vpp;
-	uint16_t	i;
+	size_t	i;
 	long	l,offset;
 	idxrec_t idx;
 
@@ -1206,7 +1206,7 @@ int SMBCALL smb_hfield_add(smbmsg_t* msg, uint16_t type, size_t length, void* da
 	}
 	msg->total_hfields++;
 	msg->hfield[i].type=type;
-	msg->hfield[i].length=length;
+	msg->hfield[i].length=(uint16_t)length;
 	if(length) {
 		if((msg->hfield_dat[i]=(void* )malloc(length+1))==NULL) 
 			return(SMB_ERR_MEM);	/* Allocate 1 extra for ASCIIZ terminator */
@@ -1323,7 +1323,7 @@ int SMBCALL smb_hfield_append(smbmsg_t* msg, uint16_t type, size_t length, void*
 	p+=msg->hfield[i].length;	/* skip existing data */
 	memset(p,0,length+1);
 	memcpy(p,data,length);		/* append */
-	msg->hfield[i].length+=length;
+	msg->hfield[i].length+=(uint16_t)length;
 	set_convenience_ptr(msg,type,msg->hfield_dat[i]);
 
 	return(SMB_SUCCESS);
@@ -1361,7 +1361,7 @@ int SMBCALL smb_hfield_replace(smbmsg_t* msg, uint16_t type, size_t length, void
 	msg->hfield_dat[i]=p;
 	memset(p,0,length+1);
 	memcpy(p,data,length);
-	msg->hfield[i].length=length;
+	msg->hfield[i].length=(uint16_t)length;
 	set_convenience_ptr(msg,type,msg->hfield_dat[i]);
 
 	return SMB_SUCCESS;

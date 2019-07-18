@@ -112,7 +112,7 @@ int uuencode(char *target, size_t tlen, const char *source, size_t slen)
 		if(rd+len>slen)
 			len=slen-rd;
 		BIAS(len);
-		target[wr++]=len;
+		target[wr++]=(char)len;
 
 		block=0;
 		while(block<len && wr<tlen && rd<slen) {
