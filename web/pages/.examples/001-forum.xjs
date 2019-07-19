@@ -7,11 +7,57 @@
     locale.section = 'page_forum';
 ?>
 
-<?xjs if (Req.has_param('sub', 'string') && Req.has_param('thread', 'number')) { ?>
+<?xjs if (Req.has_param('sub') && Req.has_param('thread')) { ?>
 
-<?xjs } else if (Req.has_param('sub', 'string')) { ?>
+<?xjs } else if (Req.has_param('sub')) { ?>
 
-<?xjs } else if (Req.has_param('group', 'number')) { ?>
+    <ol class="breadcrumb">
+        <li>
+            <a href="./?page=<? Req.write_param('page'); ?>"><? locale.write('title'); ?></a>
+        </li>
+        <li>
+            <a href="./?page=<? Req.write_param('page'); ?>&group=<? Req.write_param('group'); ?>"><? write(msg_area.grp_list[Req.get_param('group')].name); ?></a>
+        </li>
+        <li>
+            <a href="./?page=<? Req.write_param('page'); ?>&group=<? Req.write_param('group'); ?>&sub=<? Req.write_param('sub'); ?>"><? write(msg_area.sub[Req.get_param('sub')].name); ?></a>
+        </li>
+    </ol>
+
+    <div id="forum-list-container" class="list-group">
+
+    </div>
+
+<?xjs } else if (Req.has_param('group')) { ?>
+
+    <ol class="breadcrumb">
+        <li>
+            <a href="./?page=<? Req.write_param('page'); ?>"><? locale.write('title'); ?></a>
+        </li>
+        <li>
+            <a href="./?page=<? Req.write_param('page'); ?>&group=<? Req.write_param('group'); ?>"><? write(msg_area.grp_list[Req.get_param('group')].name); ?></a>
+        </li>
+    </ol>
+
+    <div id="forum-list-container" class="list-group">
+        <?xjs const subs = forum_lib.listSubs(Req.get_param('group')); ?>
+        <?xjs subs.forEach(function (e) { ?>
+            <a href="./?page=<? Req.write_param('page'); ?>&group=<? write(e.index); ?>&sub=<? write(e.code); ?>" class="list-group-item striped">
+                <h4><strong><? write(e.name); ?></strong></h4>
+                <span title="<? locale.write('badge_unread_messages'); ?>" class="badge <? write(e.scan_cfg&SCAN_CFG_NEW || e.scan_cfg&SCAN_CFG_YONLY ? 'scanned' : 'total'); ?>" id="badge-<? write(e.code); ?>"></span>
+                <p><? write(e.description); ?></p>
+            </a>
+        <?xjs }); ?>
+    </div>
+
+    <?xjs if (auth_lib.is_user()) { ?>
+        <script type="text/javascript">
+            registerEventListener('forum', function (e) {
+                const data = JSON.parse(e.data);
+                if (data.type != 'subs_unread') return;
+                onSubUnreadCount(data.data);
+             }, { subs_unread: '<? Req.write_param('group'); ?>' });
+        </script>
+    <?xjs } ?>
 
 <?xjs } else { ?>
 
@@ -26,8 +72,8 @@
         <?xjs groups.forEach(function (e) { ?>
             <a href="./?page=<? Req.write_param('page'); ?>&group=<? write(e.index); ?>" class="list-group-item striped">
                 <h3><strong><? write(e.name); ?></strong></h3>
-                <span title="Unread messages (other)" class="badge ignored" id="badge-ignored-<? write(e.index); ?>"></span>
-                <span title="Unread messages (scanned subs)" class="badge scanned" id="badge-scanned-<? write(e.index); ?>"></span>
+                <span title="<? locale.write('badge_unread_messages'); ?>" class="badge ignored" id="badge-ignored-<? write(e.index); ?>"></span>
+                <span title="<? locale.write('badge_unread_messages'); ?>" class="badge scanned" id="badge-scanned-<? write(e.index); ?>"></span>
                 <p><? write(e.description); ?>: <? write(e.sub_count); ?> <? locale.write('sub_boards'); ?></p>
             </a>
         <?xjs }); ?>
@@ -35,13 +81,11 @@
 
     <?xjs if (auth_lib.is_user()) { ?>
         <script type="text/javascript">
-            (function () {
-                const qs = '<? write(groups.map(function (e) { return e.index; }).join("&group=")); ?>';
-                setInterval(function () {
-                    getGroupUnreadCount(qs);
-                }, <? write(settings.refresh_interval || 60000); ?>);
-                getGroupUnreadCount(qs);
-            })();
+            registerEventListener('forum', function (e) {
+                const data = JSON.parse(e.data);
+                if (data.type != 'groups_unread') return;
+                onGroupUnreadCount(data.data);
+            }, { groups_unread: null });
         </script>
     <?xjs } ?>
 
