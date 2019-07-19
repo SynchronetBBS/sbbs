@@ -143,45 +143,52 @@ function authenticate(alias, password) {
 	return usr;
 }
 
-// If someone is trying to log in
-if (typeof http_request.query.username !== 'undefined' &&
-	http_request.query.username[0].length <= LEN_ALIAS &&
-	typeof http_request.query.password != 'undefined' &&
-	http_request.query.password[0].length <= LEN_PASS
-) {
-	var usr = authenticate(
-		http_request.query.username[0],
-		http_request.query.password[0]
-	);
-	if (usr instanceof User) setCookie(usr, randomString(512));
-// If they have a cookie
-} else if(
-	typeof http_request.cookie.synchronet !== 'undefined' &&
-	http_request.cookie.synchronet.some(
-		function (e) {
-		 	return(e.search(/^\d+,\w+$/) != -1);
-		}
-	)
-) {
-	// Verify & update their session, or log them out if requested
-	if (typeof http_request.query.logout === 'undefined') {
-		validateSession(http_request.cookie.synchronet);
-	} else {
-		destroySession(http_request.cookie.synchronet);
-	}
+function is_user() {
+    return user.number > 0 && user.alias != settings.guest;
 }
 
-// If they haven't authenticated as an actual user yet
-if (user.number === 0) {
+(function () {
+    // If someone is trying to log in
+    if (typeof http_request.query.username !== 'undefined' &&
+    	http_request.query.username[0].length <= LEN_ALIAS &&
+    	typeof http_request.query.password != 'undefined' &&
+    	http_request.query.password[0].length <= LEN_PASS
+    ) {
+    	var usr = authenticate(
+    		http_request.query.username[0],
+    		http_request.query.password[0]
+    	);
+    	if (usr instanceof User) setCookie(usr, randomString(512));
+    // If they have a cookie
+    } else if(
+    	typeof http_request.cookie.synchronet !== 'undefined' &&
+    	http_request.cookie.synchronet.some(
+    		function (e) {
+    		 	return(e.search(/^\d+,\w+$/) != -1);
+    		}
+    	)
+    ) {
+    	// Verify & update their session, or log them out if requested
+    	if (typeof http_request.query.logout === 'undefined') {
+    		validateSession(http_request.cookie.synchronet);
+    	} else {
+    		destroySession(http_request.cookie.synchronet);
+    	}
+    }
 
-	// Try to log them in as the guest user
-	var gn = system.matchuser(settings.guest);
-	if (gn > 0) {
-		var gu = new User(gn);
-		login(gu.alias, gu.security.password);
-    gu = undefined;
-	} else {
-		// Otherwise just kill the script, for security's sake
-		exit();
-	}
-}
+    // If they haven't authenticated as an actual user yet
+    if (user.number === 0) {
+    	// Try to log them in as the guest user
+    	var gn = system.matchuser(settings.guest);
+    	if (gn > 0) {
+    		var gu = new User(gn);
+    		login(gu.alias, gu.security.password);
+        gu = undefined;
+    	} else {
+    		// Otherwise just kill the script, for security's sake
+    		exit();
+    	}
+    }
+})();
+
+this;
