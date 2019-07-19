@@ -34,7 +34,8 @@ var info;
 var tab_width=8;
 
 // Message header display format
-var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.60s\1>\r\n";
+var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.*s\1>\r\n";
+var hdr_field_width = console.screen_columns - 7;
 var stat_attr	= 0x1f;
 var stat_fmt	= "\1h\1w\0014 FSEditor v" + REVISION + " - Type \1yCTRL-K\1w for help          %s\1>\1n";
 var subj,to,from;
@@ -731,15 +732,15 @@ function redraw_screen()
 	status_line();
 	if(edit_top == 5) {
 		console.gotoxy(1,1);
-		printf(hdr_fmt, "Subj", subj);
+		printf(hdr_fmt, "Subj", hdr_field_width, subj);
 		console.gotoxy(1,2);
-		printf(hdr_fmt, "To",	to);
+		printf(hdr_fmt, "To",	hdr_field_width, to);
 		console.gotoxy(1,3);
-		printf(hdr_fmt, "From", from);
+		printf(hdr_fmt, "From", hdr_field_width, from);
 	}
 	else {
 		console.gotoxy(1,1);
-		printf(hdr_fmt, "File", subj);
+		printf(hdr_fmt, "File", hdr_field_width, subj);
 	}
 	/* Display tab line */
 	for(i=0;i<(console.screen_columns-1);i++) {
@@ -1963,11 +1964,12 @@ while(result!=undefined) {
 		break;
 	result=file_getcase(result);
 }
-if(edit_top==5 && info[0]!=subj) {
+if(edit_top==5)
 	drop_file = new File(system.node_dir + "result.ed");
 	if(drop_file.open("w")) {
 		drop_file.writeln("0");	// anonymous
 		drop_file.writeln(subj);
+		drop_file.writeln("FSEditor.js v" + REVISION);
 		drop_file.close();
 	}
 }
