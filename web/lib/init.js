@@ -67,6 +67,8 @@ Object.keys(defaults).forEach(function (e) {
   }
 });
 
+defaults = undefined;
+
 load(settings.web_lib + 'locale.js');
 
 if (typeof alert === 'undefined') {
@@ -74,3 +76,18 @@ if (typeof alert === 'undefined') {
         log(LOG_ERR, msg);
     }
 }
+
+// Helpers for http_request
+const Req = {
+    // Query parameter p exists and first instance is of optional type t
+    has_param: function (p, t) {
+        if (!t) return typeof http_request.query[p] != 'undefined';
+        return typeof http_request.query[p] != 'undefined' && typeof http_request.query[p] == t;
+    },
+    // First instance of query parameter p, or undefined
+    get_param: function (p) {
+        if (Array.isArray(http_request.query[p])) {
+            return http_request.query[p][0];
+        }
+    }
+};
