@@ -21,13 +21,6 @@
     }
 	var page_ctrl = getCtrlLine(settings.web_pages + page);
 
-	function writePage() {
-		var ini = getWebCtrl(settings.web_pages +  '/' + page.replace(file_getname(page), ''));
-		if ((typeof ini === "boolean" && !ini) || webCtrlTest(ini, page)) {
-			write(getPage(page));
-		}
-	}
-
 ?>
 
 <?xjs function _subMenu(obj, title, path) { ?>
@@ -198,7 +191,7 @@
 						<button title="Toggle sidebar" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas"><span class="glyphicon glyphicon-tasks"></span><?xjs write(locale.strings.main.label_sidebar); ?></button>
 					</p>
 					</div>
-					<?xjs writePage(); ?>
+					<?xjs writePage(page); ?>
 				</div>
 				<?xjs if (!settings.layout_sidebar_left || settings.layout_sidebar_right) _sidebar(); ?>
 			</div>

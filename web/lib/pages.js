@@ -178,3 +178,10 @@ function getPage(page) {
 	return ret;
 
 }
+
+function writePage(page) {
+	var ini = getWebCtrl(settings.web_pages +  '/' + page.replace(file_getname(page), ''));
+	if ((typeof ini === "boolean" && !ini) || webCtrlTest(ini, page)) {
+		write(getPage(page));
+	}
+}
