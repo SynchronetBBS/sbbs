@@ -1,8 +1,8 @@
 load('sbbsdefs.js');
 load('modopts.js');
-var settings = get_mod_options('web');
+const settings = get_mod_options('web');
 load(settings.web_directory + '/lib/init.js');
-load(settings.web_lib + 'auth.js');
+const auth_lib = load({}, settings.web_lib + 'auth.js');
 
 http_reply.header['Cache-Control'] = 'no-cache';
 http_reply.header['Content-type'] = 'text/event-stream';
@@ -35,7 +35,7 @@ if (file_isdir(settings.web_lib + 'events')) {
             try {
                 if (file_exists(script)) callbacks[e] = load({}, script);
             } catch (err) {
-                log(LOG_ERR, 'Failed to load event module ' + e + ': ' + err);
+               log(LOG_ERR, 'Failed to load event module ' + e + ': ' + err);
             }
         });
     }

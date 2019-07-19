@@ -59,6 +59,17 @@ function sendTelegram(alias) {
 	$('#popUpModal').modal('show');
 }
 
+function registerEventListener(scope, callback, params) {
+	params = Object.keys(params || {}).reduce(function (a, c) {
+		a += '&' + c + '=' + params[c];
+		return a;
+	}, '');
+	_sbbs_events[scope] = {
+		qs: 'subscribe=' + scope + params,
+		callback: callback
+	};
+}
+
 window.onload =	function () {
 
 	$('#button-logout').click(logout);
@@ -79,14 +90,14 @@ window.onload =	function () {
 
 	if ($('#button-logout').length > 0) {
 
-        _sbbs_events.mail = function (e) {
+		registerEventListener('mail', function (e) {
             const data = JSON.parse(e.data);
             if (typeof data.count != 'number') return;
             $('#badge-unread-mail').text(data.count < 1 ? '' : data.count);
             $('#badge-unread-mail-inner').text(data.count < 1 ? '' : data.count);
-        }
-
-        _sbbs_events.telegram = function (e) {
+		});
+		
+		registerEventListener('telegram', function (e) {
             const tg = JSON.parse(e.data).replace(/\1./g, '').replace(
                 /\r?\n/g, '<br>'
             );
@@ -94,16 +105,17 @@ window.onload =	function () {
             $('#popUpModalBody').append(tg);
             $('#popUpModalActionButton').hide();
             $('#popUpModal').modal('show');
-        }
+		});
 
 	}
 
-    const _evtqs = Object.keys(_sbbs_events).reduce(function (a, c, i) {
-        return a + (i == 0 ? '?' : '&') + 'subscribe=' + c; }, ''
-    );
-    const _es = new EventSource('/api/events.ssjs' + _evtqs);
+	const qs = Object.keys(_sbbs_events).reduce(function (a, c, i) {
+		return a + (i == 0 ? '?' : '&') + _sbbs_events[c].qs;
+	}, '');
+
+    const es = new EventSource('/api/events.ssjs' + qs);
     Object.keys(_sbbs_events).forEach(function (e) {
-        _es.addEventListener(e, _sbbs_events[e]);
+        es.addEventListener(e, _sbbs_events[e].callback);
     });
 
 }

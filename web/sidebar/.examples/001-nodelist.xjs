@@ -80,7 +80,7 @@
         $('#sidebar').find('.sb-nodes-available').text(nll - niu);
     }
 
-    _sbbs_events.nodelist = _sb_nodelist;
+    registerEventListener('nodelist', _sb_nodelist);
 
     <?xjs if (settings.nodelist_ibbs) { ?>
         function _send_ibbs_telegram(sys, host, user) {
@@ -109,7 +109,7 @@
         	$('#popUpModal').modal('show');
         }
 
-        _sbbs_events.sbbsimsg = function (e) {
+        registerEventListener('sbbsimsg', function (e) {
             const data = JSON.parse(e.data);
             var users = 0;
             $('#sbbsimsg-nodelist').addClass('hidden');
@@ -145,7 +145,7 @@
                 $('#sbbsimsg-nodelist').removeClass('hidden');
                 $('#sbbs-nodelist').parent().removeClass('hidden');
             }
-        }
+        });
     <?xjs } ?>
 
 </script>
