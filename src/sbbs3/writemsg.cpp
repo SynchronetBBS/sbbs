@@ -579,10 +579,20 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 			&& !(cfg.xedit[useron_xedit-1]->misc&QUICKBBS) 
 			&& fexistcase(str)) {
 			if((fp=fopen(str,"r")) != NULL) {
-				fgets(str,sizeof(str),fp);
-				fgets(str,sizeof(str),fp);
-				truncsp(str);
-				safe_snprintf(subj,LEN_TITLE,"%s",str);
+				if (fgets(str, sizeof(str), fp) != NULL) {
+					str[0] = 0;
+					if (fgets(str, sizeof(str), fp) != NULL) {
+						truncsp(str);
+						if(str[0])
+							safe_snprintf(subj, LEN_TITLE, "%s", str);
+						editor_details[0] = 0;
+                        if (fgets(editor_details, sizeof(editor_details), fp) != NULL) {
+                            truncsp(editor_details);
+                            if (editor_details[0] && editor != NULL)
+                                *editor = editor_details;
+                        }
+					}
+				}
 				fclose(fp);
 			}
 		}
