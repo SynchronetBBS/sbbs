@@ -1964,7 +1964,7 @@ while(result!=undefined) {
 		break;
 	result=file_getcase(result);
 }
-if(edit_top==5)
+if(edit_top==5) {
 	drop_file = new File(system.node_dir + "result.ed");
 	if(drop_file.open("w")) {
 		drop_file.writeln("0");	// anonymous
