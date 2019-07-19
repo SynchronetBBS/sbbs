@@ -2,39 +2,37 @@
 
 <?xjs
 	load(settings.web_lib + 'files.js');
-
-	if (typeof http_request.query.dir !== 'undefined' &&
-		typeof file_area.dir[http_request.query.dir[0]] !== 'undefined'
-	) {
+    locale.section = 'page_files';
+	if (Req.has_param('dir')) {
 ?>
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>">
-				<?xjs write(locale.strings.page_files.title); ?>
+			<a href="./?page=<? write(http_request.query.page[0]); ?>">
+				<? locale.write('title'); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;library=<?xjs write(file_area.dir[http_request.query.dir[0]].lib_index); ?>">
-				<?xjs write(file_area.dir[http_request.query.dir[0]].lib_name); ?>
+			<a href="./?page=<? write(http_request.query.page[0]); ?>&amp;library=<? write(file_area.dir[http_request.query.dir[0]].lib_index); ?>">
+				<? write(file_area.dir[Req.get_param('dir')].lib_name); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;dir=<?xjs write(http_request.query.dir[0]); ?>">
-				<?xjs write(http_request.query.dir[0]); ?>
+			<a href="./?page=<? write(http_request.query.page[0]); ?>&amp;dir=<? write(http_request.query.dir[0]); ?>">
+				<? write(Req.get_param('dir')); ?>
 			</a>
 		</li>
 	</ol>
 
 	<?xjs function writeFileDetails(file) { ?>
-		<a href="./api/files.ssjs?call=download-file&amp;dir=<?xjs write(http_request.query.dir[0]); ?>&amp;file=<?xjs write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<?xjs write(file._size); ?>" data-uploaded="<?xjs write(file.uldate); ?>" data-name="<?xjs write(file.name); ?>">
-			<strong><?xjs write(file.name); ?></strong> (<?xjs write(file.size); ?>)
-			<p><em>Uploaded <?xjs write(system.timestr(file.uldate)); ?></em></p>
+		<a href="./api/files.ssjs?call=download-file&amp;dir=<? write(Req.get_param('dir')); ?>&amp;file=<? write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
+			<strong><? write(file.name); ?></strong> (<? write(file.size); ?>)
+			<p><em>Uploaded <? write(system.timestr(file.uldate)); ?></em></p>
 			<?xjs if (typeof file.extdesc === 'undefined') { ?>
-				<p><?xjs write(file.desc); ?></p>
+				<p><? write(file.desc); ?></p>
 			<?xjs } else if (file.extdesc.search(/(\x1B\[|[\xA8-\xFE])/) > -1) { ?>
-				<pre class="ansi"><?xjs write(html_encode(file.extdesc, true, false, true, true)); ?></pre>
+				<pre class="ansi"><? write(html_encode(file.extdesc, true, false, true, true)); ?></pre>
 			<?xjs } else { ?>
-				<pre class="list"><?xjs write(file.extdesc.replace(/[^\r,\n\x20-\x7E]/g, '')); ?></pre>
+				<pre class="list"><? write(file.extdesc.replace(/[^\r,\n\x20-\x7E]/g, '')); ?></pre>
 			<?xjs } ?>
 		</a>
 	<?xjs } ?>
@@ -58,34 +56,29 @@
 	<?xjs listFiles(http_request.query.dir[0]).forEach(writeFileDetails); ?>
 	</div>
 
-<?xjs
-	} else if(
-		typeof http_request.query.library !== 'undefined' &&
-		typeof file_area.lib_list[http_request.query.library[0]] !== 'undefined'
-	) {
-?>
+<?xjs } else if (Req.has_param('library')) { ?>
 
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>">
-				<?xjs write(locale.strings.page_files.title); ?>
+			<a href="./?page=<? write(http_request.query.page[0]); ?>">
+				<? locale.write('title'); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;library=<?xjs write(http_request.query.library[0]); ?>">
-				<?xjs write(file_area.lib_list[http_request.query.library[0]].name); ?>
+			<a href="./?page=<? write(http_request.query.page[0]); ?>&amp;library=<? write(http_request.query.library[0]); ?>">
+				<? write(file_area.lib_list[http_request.query.library[0]].name); ?>
 			</a>
 		</li>
 	</ol>
 
 
 	<?xjs function writeDirectory(dir) { ?>
-		<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;dir=<?xjs write(dir.dir.code); ?>" class="list-group-item striped">
-			<h4><strong><?xjs write(dir.dir.name); ?></strong></h4>
+		<a href="./?page=<? write(http_request.query.page[0]); ?>&amp;dir=<? write(dir.dir.code); ?>" class="list-group-item striped">
+			<h4><strong><? write(dir.dir.name); ?></strong></h4>
 			<p>
-				<?xjs write(dir.dir.description); ?>:
-				<?xjs write(dir.fileCount); ?>
-				<?xjs write(dir.fileCount === 1 ? locale.strings.page_files.stat_suffix_file : locale.strings.page_files.stat_suffix_files); ?>
+				<? write(dir.dir.description); ?>:
+				<? write(dir.fileCount); ?>
+				<? locale.write(dir.fileCount === 1 ? 'stat_suffix_file' : 'stat_suffix_files'); ?>
 			</p>
 		</a>
 	<?xjs } ?>
@@ -98,19 +91,17 @@
 
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>">
-				<?xjs write(locale.strings.page_files.title); ?>
-			</a>
+			<a href="./?page=<? write(http_request.query.page[0]); ?>"><? locale.write('title'); ?></a>
 		</li>
 	</ol>
 
 	<?xjs function writeLibrary(library) { ?>
-		<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;library=<?xjs write(library.index); ?>" class="list-group-item striped">
-			<h3><strong><?xjs write(library.name); ?></strong></h3>
+		<a href="./?page=<? write(http_request.query.page[0]); ?>&amp;library=<? write(library.index); ?>" class="list-group-item striped">
+			<h3><strong><? write(library.name); ?></strong></h3>
 			<p>
-				<?xjs write(library.description); ?>:
-				<?xjs write(library.dir_list.length); ?>
-				<?xjs write(library.dir_list.length === 1 ? locale.strings.page_files.stat_suffix_directory : locale.strings.page_files.stat_suffix_directories); ?>
+				<? write(library.description); ?>:
+				<? write(library.dir_list.length); ?>
+				<? locale.write(library.dir_list.length === 1 ? 'stat_suffix_directory' : 'stat_suffix_directories'); ?>
 			</p>
 		</a>
 	<?xjs } ?>
