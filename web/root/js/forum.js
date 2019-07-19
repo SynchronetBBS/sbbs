@@ -279,37 +279,41 @@ function addReply(sub, id) {
 	});
 }
 
+function onSubUnreadCount(data) {
+	for (sub in data) {
+		if (data[sub].scanned > 0) {
+			$('#badge-' + sub).text(data[sub].total);
+		} else if (data[sub].total > 0) {
+			$('#badge-' + sub).text(data[sub].total);
+		} else {
+			$('#badge-' + sub).text('');
+		}
+	}
+}
+
 // 'sub' can be a single sub code, or a string of <sub1>&sub=<sub2>&sub=<sub3>...
 function getSubUnreadCount(sub) {
-	$.getJSON('./api/forum.ssjs?call=get-sub-unread-count&sub=' + sub, function (data) {
-		for (sub in data) {
-			if (data[sub].scanned > 0) {
-				$('#badge-' + sub).text(data[sub].total);
-			} else if (data[sub].total > 0) {
-				$('#badge-' + sub).text(data[sub].total);
-			} else {
-				$('#badge-' + sub).text('');
-			}
-		}
-	});
+	$.getJSON('./api/forum.ssjs?call=get-sub-unread-count&sub=' + sub, onSubUnreadCount);
+}
+
+function onGroupUnreadCount(data) {
+	for (group in data) {
+		$('#badge-scanned-' + group).text(
+			(data[group].scanned == 0 ? "" : data[group].scanned)
+		);
+		$('#badge-ignored-' + group).text(
+			(	data[group].total == 0 ||
+				data[group].total == data[group].scanned
+				? ''
+				: (data[group].total - data[group].scanned)
+			)
+		);
+	}
 }
 
 // 'group' can be a single group index, or a string of 0&group=1&group=2...
 function getGroupUnreadCount(group) {
-	$.getJSON('./api/forum.ssjs?call=get-group-unread-count&group=' + group, function (data) {
-		for (group in data) {
-			$('#badge-scanned-' + group).text(
-				(data[group].scanned == 0 ? "" : data[group].scanned)
-			);
-			$('#badge-ignored-' + group).text(
-				(	data[group].total == 0 ||
-					data[group].total == data[group].scanned
-					? ''
-					: (data[group].total - data[group].scanned)
-				)
-			);
-		}
-	});
+	$.getJSON('./api/forum.ssjs?call=get-group-unread-count&group=' + group, onGroupUnreadCount);
 }
 
 /*  Fetch a private mail message's body (with links to attachments) where 'id'
