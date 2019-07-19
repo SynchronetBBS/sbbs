@@ -103,20 +103,32 @@ function getSubUnreadCount(sub) {
     return ret;
 }
 
+function getSubUnreadCounts() {
+    return msg_area.grp_list[group].sub_list.reduce(function (a, c) {
+        a[c.code] = getSubUnreadCount(c.code);
+        return a;
+    }, {});
+}
+
 function getGroupUnreadCount(group) {
     var ret = {
         scanned : 0,
         total : 0
     };
-    if (typeof msg_area.grp_list[group] === 'undefined') return count;
-    msg_area.grp_list[group].sub_list.forEach(
-        function (sub) {
-            var count = getSubUnreadCount(sub.code);
-            ret.scanned += count.scanned;
-            ret.total += count.total;
-        }
-    );
+    if (typeof msg_area.grp_list[group] === 'undefined') return ret;
+    msg_area.grp_list[group].sub_list.forEach(function (sub) {
+        var count = getSubUnreadCount(sub.code);
+        ret.scanned += count.scanned;
+        ret.total += count.total;
+    });
     return ret;
+}
+
+function getGroupUnreadCounts() {
+    return msg_area.grp_list.reduce(function (a, c) {
+        a[c.index] = getGroupUnreadCount(c.index);
+        return a;
+    }, {});
 }
 
 function getUnreadInThread(sub, thread) {
@@ -126,11 +138,9 @@ function getUnreadInThread(sub, thread) {
         thread = threads.thread[thread];
     }
     var count = 0;
-    Object.keys(thread.messages).forEach(
-        function (m) {
-            if (thread.messages[m].number > msg_area.sub[sub].scan_ptr) count++;
-        }
-    );
+    Object.keys(thread.messages).forEach(function (m) {
+        if (thread.messages[m].number > msg_area.sub[sub].scan_ptr) count++;
+    });
     return count;
 }
 
