@@ -7,17 +7,17 @@
 ?>
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? write(http_request.query.page[0]); ?>">
+			<a href="./?page=<? write(Req.get_param('page')); ?>">
 				<? locale.write('title'); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? write(http_request.query.page[0]); ?>&amp;library=<? write(file_area.dir[http_request.query.dir[0]].lib_index); ?>">
+			<a href="./?page=<? write(Req.get_param('page')); ?>&amp;library=<? write(file_area.dir[Req.get_param('dir')].lib_index); ?>">
 				<? write(file_area.dir[Req.get_param('dir')].lib_name); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? write(http_request.query.page[0]); ?>&amp;dir=<? write(http_request.query.dir[0]); ?>">
+			<a href="./?page=<? write(Req.get_param('page')); ?>&amp;dir=<? write(Req.get_param('dir')); ?>">
 				<? write(Req.get_param('dir')); ?>
 			</a>
 		</li>
@@ -53,27 +53,27 @@
 		</div>
 	</div>
 	<div id="file-list-container" class="list-group">
-	<?xjs listFiles(http_request.query.dir[0]).forEach(writeFileDetails); ?>
+	<?xjs listFiles(Req.get_param('dir')).forEach(writeFileDetails); ?>
 	</div>
 
 <?xjs } else if (Req.has_param('library')) { ?>
 
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? write(http_request.query.page[0]); ?>">
+			<a href="./?page=<? write(Req.get_param('page')); ?>">
 				<? locale.write('title'); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? write(http_request.query.page[0]); ?>&amp;library=<? write(http_request.query.library[0]); ?>">
-				<? write(file_area.lib_list[http_request.query.library[0]].name); ?>
+			<a href="./?page=<? write(Req.get_param('page')); ?>&amp;library=<? write(Req.get_param('library')); ?>">
+				<? write(file_area.lib_list[Req.get_param('library')].name); ?>
 			</a>
 		</li>
 	</ol>
 
 
 	<?xjs function writeDirectory(dir) { ?>
-		<a href="./?page=<? write(http_request.query.page[0]); ?>&amp;dir=<? write(dir.dir.code); ?>" class="list-group-item striped">
+		<a href="./?page=<? write(Req.get_param('page')); ?>&amp;dir=<? write(dir.dir.code); ?>" class="list-group-item striped">
 			<h4><strong><? write(dir.dir.name); ?></strong></h4>
 			<p>
 				<? write(dir.dir.description); ?>:
@@ -84,19 +84,19 @@
 	<?xjs } ?>
 
 	<div id="file-list-container" class="list-group">
-		<?xjs listDirectories(http_request.query.library[0]).forEach(writeDirectory); ?>
+		<?xjs listDirectories(Req.get_param('library')).forEach(writeDirectory); ?>
 	</div>
 
 <?xjs } else { ?>
 
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? write(http_request.query.page[0]); ?>"><? locale.write('title'); ?></a>
+			<a href="./?page=<? write(Req.get_param('page')); ?>"><? locale.write('title'); ?></a>
 		</li>
 	</ol>
 
 	<?xjs function writeLibrary(library) { ?>
-		<a href="./?page=<? write(http_request.query.page[0]); ?>&amp;library=<? write(library.index); ?>" class="list-group-item striped">
+		<a href="./?page=<? write(Req.get_param('page')); ?>&amp;library=<? write(library.index); ?>" class="list-group-item striped">
 			<h3><strong><? write(library.name); ?></strong></h3>
 			<p>
 				<? write(library.description); ?>:
