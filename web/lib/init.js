@@ -79,20 +79,19 @@ if (typeof alert === 'undefined') {
 
 // Helpers for http_request
 const Req = {
-    // Query parameter p exists and first instance is of optional type t
-    has_param: function (p, t) {
-        if (!t) return typeof http_request.query[p] != 'undefined';
-        return typeof http_request.query[p] != 'undefined' && typeof http_request.query[p] == t;
-    },
-    // First instance of query parameter p, or undefined
-    get_param: function (p) {
-        if (Array.isArray(http_request.query[p]) && http_request.query[p].length) {
-            return http_request.query[p][0];
-        }
-    },
-    write_param: function (p) {
-        if (Array.isArray(http_request.query[p]) && http_request.query[p].length) {
-            write(http_request.query[p][0]);
-        }
+  // Query parameter p exists and first instance is of optional type t
+  has_param: function (p) {
+    return (Array.isArray(http_request.query[p]) && http_request.query[p].length);
+  },
+  // First instance of query parameter p, or undefined
+  get_param: function (p) {
+    if (Array.isArray(http_request.query[p]) && http_request.query[p].length) {
+        return http_request.query[p][0];
     }
+  },
+  write_param: function (p) {
+    if (Array.isArray(http_request.query[p]) && http_request.query[p].length) {
+        write(http_request.query[p][0]);
+    }
+  }
 };
