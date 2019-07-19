@@ -143,7 +143,7 @@ function getPage(page) {
 	if (user.alias != settings.guest) {
 		var ctrl = getCtrlLine(page);
 		if (typeof ctrl !== 'undefined' && !ctrl.options.hidden) {
-			setSessionValue(user.number, 'action', ctrl.title);
+			auth_lib.setSessionValue(user.number, 'action', ctrl.title);
 		}
 	}
 

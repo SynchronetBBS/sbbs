@@ -35,7 +35,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				if (usr.alias === settings.guest) continue;
 				if (usr.settings&USER_QUIET) continue;
 				if (usr.logontime < time() - settings.inactivity) continue;
-				var webAction = getSessionValue(usr.number, 'action');
+				var webAction = auth_lib.getSessionValue(usr.number, 'action');
 				if (webAction === null) continue;
 				reply.push({
                     status: '',
@@ -82,7 +82,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 			if (typeof xtrn_area.prog[http_request.query.code[0]] === 'undefined') {
 				break;
 			}
-			setSessionValue(user.number, 'xtrn', http_request.query.code[0]);
+			auth_lib.setSessionValue(user.number, 'xtrn', http_request.query.code[0]);
 			break;
 
 		default:
