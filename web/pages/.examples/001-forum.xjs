@@ -1,0 +1,48 @@
+<!--HIDDEN:New Forum-->
+
+<script type="text/javascript" src="./js/forum.js"></script>
+
+<?xjs
+    const forum_lib = load({}, settings.web_lib + 'forum.js');
+    locale.section = 'page_forum';
+?>
+
+<?xjs if (Req.has_param('sub', 'string') && Req.has_param('thread', 'number')) { ?>
+
+<?xjs } else if (Req.has_param('sub', 'string')) { ?>
+
+<?xjs } else if (Req.has_param('group', 'number')) { ?>
+
+<?xjs } else { ?>
+
+    <ol class="breadcrumb">
+        <li>
+            <a href="./?page=<? Req.write_param('page'); ?>"><? locale.write('title'); ?></a>
+        </li>
+    </ol>
+
+    <div id="forum-list-container" class="list-group">
+        <?xjs const groups = forum_lib.listGroups(); ?>
+        <?xjs groups.forEach(function (e) { ?>
+            <a href="./?page=<? Req.write_param('page'); ?>&group=<? write(e.index); ?>" class="list-group-item striped">
+                <h3><strong><? write(e.name); ?></strong></h3>
+                <span title="Unread messages (other)" class="badge ignored" id="badge-ignored-<? write(e.index); ?>"></span>
+                <span title="Unread messages (scanned subs)" class="badge scanned" id="badge-scanned-<? write(e.index); ?>"></span>
+                <p><? write(e.description); ?>: <? write(e.sub_count); ?> <? locale.write('sub_boards'); ?></p>
+            </a>
+        <?xjs }); ?>
+    </div>
+
+    <?xjs if (auth_lib.is_user()) { ?>
+        <script type="text/javascript">
+            (function () {
+                const qs = '<? write(groups.map(function (e) { return e.index; }).join("&group=")); ?>';
+                setInterval(function () {
+                    getGroupUnreadCount(qs);
+                }, <? write(settings.refresh_interval || 60000); ?>);
+                getGroupUnreadCount(qs);
+            })();
+        </script>
+    <?xjs } ?>
+
+<?xjs } ?>
