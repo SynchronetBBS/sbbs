@@ -5,7 +5,7 @@
 
 	load('xjs.js');
 	load(settings.web_directory + '/lib/init.js');
-	load(settings.web_lib + 'auth.js');
+	const auth_lib = load({}, settings.web_lib + 'auth.js');
 	load(settings.web_lib + 'pages.js');
 	load(settings.web_lib + 'sidebar.js');
 
