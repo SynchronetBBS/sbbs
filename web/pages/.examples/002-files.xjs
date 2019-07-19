@@ -7,24 +7,24 @@
 ?>
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? write(Req.get_param('page')); ?>">
+			<a href="./?page=<? Req.write_param('page'); ?>">
 				<? locale.write('title'); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? write(Req.get_param('page')); ?>&amp;library=<? write(file_area.dir[Req.get_param('dir')].lib_index); ?>">
+			<a href="./?page=<? Req.write_param('page'); ?>&amp;library=<? write(file_area.dir[Req.get_param('dir')].lib_index); ?>">
 				<? write(file_area.dir[Req.get_param('dir')].lib_name); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? write(Req.get_param('page')); ?>&amp;dir=<? write(Req.get_param('dir')); ?>">
-				<? write(Req.get_param('dir')); ?>
+			<a href="./?page=<? Req.write_param('page'); ?>&amp;dir=<? Req.write_param('dir'); ?>">
+				<? Req.write_param('dir'); ?>
 			</a>
 		</li>
 	</ol>
 
 	<?xjs function writeFileDetails(file) { ?>
-		<a href="./api/files.ssjs?call=download-file&amp;dir=<? write(Req.get_param('dir')); ?>&amp;file=<? write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
+		<a href="./api/files.ssjs?call=download-file&amp;dir=<? Req.write_param('dir'); ?>&amp;file=<? write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
 			<strong><? write(file.name); ?></strong> (<? write(file.size); ?>)
 			<p><em>Uploaded <? write(system.timestr(file.uldate)); ?></em></p>
 			<?xjs if (typeof file.extdesc === 'undefined') { ?>
@@ -60,12 +60,12 @@
 
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? write(Req.get_param('page')); ?>">
+			<a href="./?page=<? Req.write_param('page'); ?>">
 				<? locale.write('title'); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? write(Req.get_param('page')); ?>&amp;library=<? write(Req.get_param('library')); ?>">
+			<a href="./?page=<? Req.write_param('page'); ?>&amp;library=<? Req.write_param('library'); ?>">
 				<? write(file_area.lib_list[Req.get_param('library')].name); ?>
 			</a>
 		</li>
@@ -73,7 +73,7 @@
 
 
 	<?xjs function writeDirectory(dir) { ?>
-		<a href="./?page=<? write(Req.get_param('page')); ?>&amp;dir=<? write(dir.dir.code); ?>" class="list-group-item striped">
+		<a href="./?page=<? Req.write_param('page'); ?>&amp;dir=<? write(dir.dir.code); ?>" class="list-group-item striped">
 			<h4><strong><? write(dir.dir.name); ?></strong></h4>
 			<p>
 				<? write(dir.dir.description); ?>:
@@ -91,12 +91,12 @@
 
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? write(Req.get_param('page')); ?>"><? locale.write('title'); ?></a>
+			<a href="./?page=<? Req.write_param('page'); ?>"><? locale.write('title'); ?></a>
 		</li>
 	</ol>
 
 	<?xjs function writeLibrary(library) { ?>
-		<a href="./?page=<? write(Req.get_param('page')); ?>&amp;library=<? write(library.index); ?>" class="list-group-item striped">
+		<a href="./?page=<? Req.write_param('page'); ?>&amp;library=<? write(library.index); ?>" class="list-group-item striped">
 			<h3><strong><? write(library.name); ?></strong></h3>
 			<p>
 				<? write(library.description); ?>:
