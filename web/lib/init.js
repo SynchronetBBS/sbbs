@@ -89,5 +89,10 @@ const Req = {
         if (Array.isArray(http_request.query[p])) {
             return http_request.query[p][0];
         }
+    },
+    write_param: function (p) {
+        if (Array.isArray(http_request.query[p])) {
+            write(http_request.query[p][0]);
+        }
     }
 };
