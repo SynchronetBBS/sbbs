@@ -103,7 +103,7 @@ function getSubUnreadCount(sub) {
     return ret;
 }
 
-function getSubUnreadCounts() {
+function getSubUnreadCounts(group) {
     return msg_area.grp_list[group].sub_list.reduce(function (a, c) {
         a[c.code] = getSubUnreadCount(c.code);
         return a;
