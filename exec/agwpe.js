@@ -492,8 +492,6 @@ AGWPE._connProto.close = function()
 	if (!this.connected)
 		return;
 	this.parent.parent.sock.send(f.bin);
-	while (this.connected)
-		this.parent.parent.cycle(0.01);
 };
 
 AGWPE._connProto.send = function(data)
