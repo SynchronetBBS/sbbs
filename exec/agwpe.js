@@ -5,6 +5,7 @@
  * Basic API:
  * var tnc = new AGWPE.TNC('127.0.0.1', 8000); // SYNC
  *    - Connects to the listening sever at the specified host and port, and creates port objects.
+ *      Additionally, username and password can be included after this to log in (direwolf doesn't use this)
  * tnc.ports[0].registerCall('W8BSD-1'); // SYNC
  *    - Registers a callsign on a port.  Calls must be registered before they are the source of data.
  * tnc.ports[0].unRegisterCall('W8BSD-1'); // ASYNC
@@ -15,6 +16,12 @@
  *    - Sends an UNPROTO frame.
  * tnc.ports[0].sendUNPROTO('W8BSD-1', 'W8BSD-2', ['W8BSD-3', 'W8BSD-4'], 'Hello Deuce!'); // ASYNC
  *    - Sends an UNPROTO frame using a via path
+ * tnc.ports[0].sendRaw(data); // ASYNC
+ *    - Sends an UNPROTO frame using a via path
+ * tnc.ports[0].toggleMonitor(); // ASYNC
+ *    - Toggle if monitor frames are received
+ * tnc.ports[0].toggleRaw(); // ASYNC
+ *    - Toggle if raw frames are received
  * var conn = new tnc.ports[0].connection('W8BSD-1', 'W8BSD-2'); // ASYNC
  *    - Connects FROM the first callsign TO the second callsign
  * var conn2 = new tnc.ports[0].connection('W8BSD-1', 'W8BSD-2', ['W8BSD-3', 'W8BSD-4']); // ASYNC
@@ -32,7 +39,7 @@
 require('sockdefs.js', 'SOCK_STREAM');
 
 var AGWPE = {
-	TNC:function(host, port) {
+	TNC:function(host, port, user, pass) {
 		var self = this;
 
 		if (host === undefined)
@@ -78,14 +85,37 @@ var AGWPE = {
 
 			this.port = port;
 			this.calls = [];
+
 			this.callbacks = {
 				'g':[],	// Garbage from DireWolf
-				'K':[],
-				'U':[],
 				'y':[],
-				'X':[]
+				'X':[],
+				'H':[],
+				'M':[
+					this._packetCallback
+				],
+				'K':[
+					this._packetCallback
+				],
+				'S':[
+					this._packetCallback
+				],
+				'U':[
+					this._packetCallback
+				],
+				'T':[
+					this._packetCallback
+				],
+				'I':[
+					this._packetCallback
+				],
+				'pkt':[
+				]
 			};
 			this.connections = {};
+			this.monitor = false;
+			this.rawRx = false;
+			this.frames = [];
 
 			this.frame = function(kind)
 			{
@@ -184,6 +214,16 @@ var AGWPE = {
 		}
 
 		var port0 = new this.port(0);
+		if (user !== undefined && pass !== undefined) {
+			var authf = new port0.frame('P');
+			authf.data = user;
+			while (authf.data.length < 255)
+				authf.data += '\x00';
+			authf.data += pass;
+			while (authf.data.length < 510)
+				authf.data += '\x00';
+			self.sock.send(authf.bin);
+		}
 		var pinfo = port0.askPorts();
 		var parr = pinfo.split(/;/);
 		var i;
@@ -265,10 +305,15 @@ AGWPE.TNC.prototype.cycle = function(timeout)
 
 			// "Port" messages (from/to don't matter)
 			case 'g':	// Reply to capabilities
-			case 'K':	// Raw AX.25 frame
-			case 'U':	// AX.25 Monitor frame
 			case 'y':	// Outstanding frames on a port
 			case 'X':	// Callsign register response
+			case 'H':	// Callsignes Heard response (not in direwolf)
+			case 'M':	// Monitored Connected Packet
+			case 'K':	// Raw AX.25 frame
+			case 'S':	// Monitored Supervisory Packet
+			case 'U':	// Monitored Unproto Packet
+			case 'T':	// Monitored Own Packet
+			case 'I':	// Monitored Connected Information (not in direwolf)
 				if (this.ports[f.port] === undefined)
 					throw("Got message on invalid port "+f.port+"!");
 				handle_callbacks(this.ports[f.port], f);
@@ -329,6 +374,28 @@ Object.defineProperty(AGWPE._frameProto, "bin", {
 	}
 });
 
+
+AGWPE._portProto._packetCallback = {
+	func:function(frame) {
+		var i;
+
+print("Port "+frame.port+" Got '"+frame.kind+"' frame PID: "+frame.pid+"\nFrom: \""+frame.from+"\"\nTo: \""+frame.to+"\"\nData: \""+frame.data+"\"");
+		this.frames.push(frame);
+		if (this.callbacks['pkt'] !== undefined) {
+			for (i = 0; i < this.callbacks['pkt'].length; i++) {
+				if (this.callbacks['pkt'][i].func.call(ctx, frame)) {
+					if (ctx.callbacks['pkt'][i].oneshot !== undefined) {
+						if (ctx.callbacks['pkt'][i].oneshot === true) {
+							ctx.callbacks['pkt'].splice(i, 1);
+							i--;
+						}
+					}
+				}
+			}
+		}
+	}
+};
+
 AGWPE._portProto.askVersion = function()
 {
 	var f = new this.frame('R');
@@ -378,8 +445,6 @@ AGWPE._portProto.askPorts = function()
 // TODO: 'm' command (RX Monitor AX25 frames)
 
 // 'H' command (recently heard - not implemented on direwolf)
-
-// TODO: 'K' command (TX raw AX.25 frame ala KISS)
 
 AGWPE._portProto.registerCall = function(call)
 {
@@ -447,6 +512,26 @@ AGWPE._portProto.askOutstanding = function()
 	while (ret === undefined)
 		this.parent.cycle(0.01);
 	return ret;
+};
+
+AGWPE._portProto.toggleMonitor = function()
+{
+	var f = new this.frame('m');
+	var resp;
+	var ret;
+
+	this.parent.sock.send(f.bin);
+	this.monitor = !this.monitor
+};
+
+AGWPE._portProto.toggleRaw = function()
+{
+	var f = new this.frame('k');
+	var resp;
+	var ret;
+
+	this.parent.sock.send(f.bin);
+	this.rawRx = !this.rawRx;
 };
 
 AGWPE._connProto.askOutstanding = function()
@@ -546,6 +631,15 @@ AGWPE._portProto.sendUNPROTO = function(from, to, arg3, arg4)
 	this.parent.sock.send(f.bin);
 };
 
+AGWPE._portProto.sendRaw = function(data)
+{
+	var f = new this.frame('K');
+
+	if (data === undefined)
+		data = '';
+	this.parent.sock.send(f.bin);
+};
+
 AGWPE._portProto._connect = function(from, to, pid)
 {
 	var f;
@@ -596,3 +690,10 @@ AGWPE.TNC.prototype.getFrame = function()
 	ret.data = this.sock.recv(len);
 	return ret;
 };
+
+var tnc = new AGWPE.TNC('127.0.0.1', 8000);
+tnc.ports[0].registerCall('W8BSD-1');
+tnc.ports[0].toggleMonitor();
+
+while(1)
+	tnc.cycle(1);
