@@ -309,6 +309,7 @@ AGWPE._portProto.askVersion = function()
 		oneshot:true,
 		func:function(frame) {
 			done = true;
+			return true;
 		}
 	});
 	this.parent.sock.send(f.bin);
@@ -330,6 +331,7 @@ AGWPE._portProto.askPorts = function()
 		oneshot:true,
 		func:function(frame) {
 			data = frame.data;
+			return true;
 		}
 	});
 	this.parent.sock.send(f.bin);
@@ -365,6 +367,7 @@ AGWPE._portProto.registerCall = function(call)
 			if (frame.data.length !== 1)
 				throw("Incorrect 'X' frame data length: "+frame.data.length);
 			r = ascii(frame.data[0]);
+			return true;
 		}
 	});
 	this.parent.sock.send(f.bin);
@@ -408,6 +411,7 @@ AGWPE._portProto.askOutstanding = function()
 			ret |= ascii(frame.data[1]) << 8;
 			ret |= ascii(frame.data[2]) << 16;
 			ret |= ascii(frame.data[3]) << 24;
+			return true;
 		}
 	});
 	this.sock.send(f.bin);
@@ -431,6 +435,7 @@ AGWPE._connProto.askOutstanding = function()
 			ret |= ascii(frame.data[1]) << 8;
 			ret |= ascii(frame.data[2]) << 16;
 			ret |= ascii(frame.data[3]) << 24;
+			return true;
 		}
 	});
 	this.sock.send(f.bin);
