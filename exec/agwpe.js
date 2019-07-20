@@ -379,7 +379,6 @@ AGWPE._portProto._packetCallback = {
 	func:function(frame) {
 		var i;
 
-print("Port "+frame.port+" Got '"+frame.kind+"' frame PID: "+frame.pid+"\nFrom: \""+frame.from+"\"\nTo: \""+frame.to+"\"\nData: \""+frame.data+"\"");
 		this.frames.push(frame);
 		if (this.callbacks.pkt !== undefined) {
 			for (i = 0; i < this.callbacks.pkt.length; i++) {
@@ -694,8 +693,14 @@ AGWPE.TNC.prototype.getFrame = function()
 };
 
 var tnc = new AGWPE.TNC('127.0.0.1', 8000);
-tnc.ports[0].registerCall('W8BSD-1');
 tnc.ports[0].toggleMonitor();
+
+tnc.ports[0].callbacks.pkt.push({
+	func:function(frame) {
+		print("Port "+frame.port+" Got '"+frame.kind+"' frame PID: "+frame.pid+"\nFrom: \""+frame.from+"\"\nTo: \""+frame.to+"\"\nData: \""+frame.data+"\"");
+		this.frames.shift();
+	}
+});
 
 while(1)
 	tnc.cycle(1);
