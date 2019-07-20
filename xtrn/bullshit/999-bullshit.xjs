@@ -1,13 +1,65 @@
 <!--Bulletins-->
 
-<?xjs
-	load('../xtrn/bullshit/bullshit.ssjs');
-?>
+<script type="text/javascript" src="./js/graphics-converter.js"></script>
+<script type="text/javascript">
+	const _gc = new GraphicsConverter();
+</script>
 
 <div class="well well-sm">
 	<h4>Bulletins</h4>
 </div>
 
 <?xjs 
-	bullshit('bullshit', 5);
+	load("sbbsdefs.js");
+	const bullshit = load({}, '../xtrn/bullshit/bullshit-lib.js');
+	const settings = bullshit.loadSettings('../xtrn/bullshit/');
+
+	// Deuce's URL-ifier
+	function linkify(body) {
+		urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
+		body = body.replace(urlRE, function (str) {
+			var ret = '';
+			var p = 0;
+			var link = str.replace(/\.*$/, '');
+			var linktext = link;
+			if (link.indexOf('://') == -1) link = 'mailto:' + link;
+			return format(
+				'<a class="ulLink" href="%s">%s</a>%s',
+				link, linktext, str.substr(linktext.length)
+			);
+		});
+		return body;
+	}
+
+	const list = bullshit.loadList(settings);
 ?>
+
+<div>
+	<ul class="list-group">
+	<?xjs list.forEach(function (e, i) { ?>
+		<li class="list-group-item striped">
+			<strong><? write(e.title); ?></strong><br>
+			<em><? write(e.date); ?></em>
+			<div id="bfdiv<? write(i); ?>" class="message">
+				<?xjs if (e.type == 'file') { ?>
+					<?xjs
+						const f = new File(e.path);
+						f.open('r');
+						const body = f.read();
+						f.close();
+					?>
+					<script type="text/javascript">
+						_gc.from_ans(atob('<? write(base64_encode(body)); ?>'), '#bfdiv' + <? write(i); ?>);
+					</script>
+				<?xjs } else {
+					const mb = new MsgBase(settings.messageBase);
+					mb.open();
+					const mbody = mb.get_msg_body(e.num);
+					mb.close();
+					write(linkify(mbody).replace(/\r?\n/g, '<br>'));
+				} ?>
+			</div>
+		</li>
+	<?xjs }); ?>
+	</ul>
+</div>
