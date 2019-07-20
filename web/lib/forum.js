@@ -892,6 +892,9 @@ function getMessageThreads(sub, max) {
         if (header.when_written_time > threads.thread[thread_id].newest) {
             threads.thread[thread_id].newest = header.when_written_time;
         }
+        if (auth_lib.is_user() && header.number > msg_area.sub[sub].scan_ptr) {
+            threads.thread[thread_id].unread++;
+        }
         threads.thread[thread_id].messages[header.number] = {
             attr : header.attr,
             auxattr : header.auxattr,
@@ -998,14 +1001,15 @@ function getMessageThreads(sub, max) {
                     addToThread(headers[h].thread_id, headers[h], subject);
                 } else {
                     threads.thread[headers[h].thread_id] = {
-                        id : headers[h].thread_id,
+                        id: headers[h].thread_id,
                         newest : 0,
-                        subject : headers[h].subject,
-                        messages : {},
-                        votes : {
-                            up : 0,
-                            down : 0
-                        }
+                        subject: headers[h].subject,
+                        messages: {},
+                        votes: {
+                            up: 0,
+                            down: 0
+                        },
+                        unread: 0
                     };
                     addToThread(headers[h].thread_id, headers[h], subject);
                 }
@@ -1030,14 +1034,15 @@ function getMessageThreads(sub, max) {
                     }
                     if (!threaded) {
                         threads.thread[headers[h].thread_back] = {
-                            id : headers[h].thread_back,
-                            newest : 0,
-                            subject : headers[h].subject,
-                            messages : {},
-                            votes : {
-                                up : 0,
-                                down : 0
-                            }
+                            id: headers[h].thread_back,
+                            newest: 0,
+                            subject: headers[h].subject,
+                            messages: {},
+                            votes: {
+                                up: 0,
+                                down: 0
+                            },
+                            unread: 0
                         };
                         addToThread(
                             headers[h].thread_back,
@@ -1050,14 +1055,15 @@ function getMessageThreads(sub, max) {
             } else {
 
                 threads.thread[headers[h].number] = {
-                    id : headers[h].number,
-                    newest : 0,
-                    subject : headers[h].subject,
-                    messages : {},
-                    votes : {
-                        up : 0,
-                        down : 0
-                    }
+                    id: headers[h].number,
+                    newest: 0,
+                    subject: headers[h].subject,
+                    messages: {},
+                    votes: {
+                        up: 0,
+                        down: 0
+                    },
+                    unread: 0
                 };
                 addToThread(headers[h].number, headers[h], subject);
 
