@@ -1,3 +1,34 @@
+/*
+ * The AGWPE object implements the AGWPE protocol as supported by direwolf.
+ * It allows TNC operations, including connected packet.
+ *
+ * Basic API:
+ * var tnc = new AGWPE.TNC('127.0.0.1', 8000); // SYNC
+ *    - Connects to the listening sever at the specified host and port, and creates port objects.
+ * tnc.ports[0].registerCall('W8BSD-1'); // SYNC
+ *    - Registers a callsign on a port.  Calls must be registered before they are the source of data.
+ * tnc.ports[0].unRegisterCall('W8BSD-1'); // ASYNC
+ *    - Unregisters a callsign on a port.
+ * var os = tnc.ports[0].askOutstanding(); // SYNC
+ *    - Requests the number of outstanding frames on the port
+ * tnc.ports[0].sendUNPROTO('W8BSD-1', 'W8BSD-2', 'Hello Deuce!'); // ASYNC
+ *    - Sends an UNPROTO frame.
+ * tnc.ports[0].sendUNPROTO('W8BSD-1', 'W8BSD-2', ['W8BSD-3', 'W8BSD-4'], 'Hello Deuce!'); // ASYNC
+ *    - Sends an UNPROTO frame using a via path
+ * var conn = new tnc.ports[0].connection('W8BSD-1', 'W8BSD-2'); // ASYNC
+ *    - Connects FROM the first callsign TO the second callsign
+ * var conn2 = new tnc.ports[0].connection('W8BSD-1', 'W8BSD-2', ['W8BSD-3', 'W8BSD-4']); // ASYNC
+ *    - As above but connects via the array of digipeaters
+ * var conn3 = new tnc.ports[0].connection('W8BSD-1', 'W8BSD-2', 0xCC); // ASYNC
+ *    - As above but connects using a different PID (0xCC in this example)
+ * var cos = conn.askOutstanding(); // SYNC
+ *    - Requests the number of outstanding frames on the connection
+ * conn.close(); // ASYNC
+ *    - Closes a connection
+ * conn.send(data); // ASYNC
+ *    - Sends data on a connection
+ */
+
 require('sockdefs.js', 'SOCK_STREAM');
 
 var AGWPE = {
@@ -346,8 +377,6 @@ AGWPE._portProto.askPorts = function()
 
 // TODO: 'm' command (RX Monitor AX25 frames)
 
-// TODO: 'V' command (Transmit UI data)
-
 // 'H' command (recently heard - not implemented on direwolf)
 
 // TODO: 'K' command (TX raw AX.25 frame ala KISS)
@@ -481,11 +510,15 @@ AGWPE._connProto.send = function(data)
 	this.parent.parent.sock.send(f.bin);
 };
 
-AGWPE._portProto.sendUNPROTO = function(from, to, data)
+AGWPE._portProto.sendUNPROTO = function(from, to, arg3, arg4)
 {
 	var f = new this.frame('M');
 	var resp;
 	var ret;
+	var via = [];
+	var data = '';
+	var head = '';
+	var i;
 
 	if (from === undefined)
 		throw("sendUNPROTO without from");
@@ -495,8 +528,22 @@ AGWPE._portProto.sendUNPROTO = function(from, to, data)
 	if (to === undefined)
 		throw("sendUNPROTO without to");
 	f.to = to;
+	if (Array.isArray(arg3)) {
+		via = arg3;
+		data = arg4;
+	}
 	if (data === undefined)
 		data = '';
+	if (via.length > 0) {
+		f.kind = 'V';
+		head += ascii(via.length);
+		for (i in via) {
+			head += via[i];
+			while ((head.length - 1) % 10)
+				head += "0x00";
+		}
+		data = head + data;
+	}
 	f.data = data;
 	this.parent.sock.send(f.bin);
 };
