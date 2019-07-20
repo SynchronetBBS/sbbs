@@ -130,7 +130,7 @@ var AGWPE = {
 				this.from = '';
 				this.to = '';
 				this.data = '';
-			}
+			};
 
 			this.connection = function(from, to, via_pid)
 			{
@@ -210,8 +210,8 @@ var AGWPE = {
 					this.to = cself.to;
 					this.data = '';
 				};
-			}
-		}
+			};
+		};
 
 		var port0 = new this.port(0);
 		if (user !== undefined && pass !== undefined) {
@@ -256,7 +256,7 @@ AGWPE.TNC.prototype.frame = function(kind)
 	this.from = '';
 	this.to = '';
 	this.data = '';
-}
+};
 
 AGWPE.TNC.prototype.cycle = function(timeout)
 {
@@ -287,9 +287,9 @@ AGWPE.TNC.prototype.cycle = function(timeout)
 		for (i in this.ports[f.port].connections) {
 			// TODO: Sort out the reversal of calls...
 			if (f.from == this.ports[f.port].connections[i].from && f.to == this.ports[f.port].connections[i].to)
-				return this.ports[f.port].connections[i]
+				return this.ports[f.port].connections[i];
 			if (f.from == this.ports[f.port].connections[i].to && f.to == this.ports[f.port].connections[i].from)
-				return this.ports[f.port].connections[i]
+				return this.ports[f.port].connections[i];
 		}
 		throw("Message on unknown connection (from='"+f.from+"' to='"+f.to+"' kind='"+f.kind+"')");
 	}
@@ -332,7 +332,7 @@ AGWPE.TNC.prototype.cycle = function(timeout)
 				throw("Unhandled kind: '"+f.kind+"'");
 		}
 	}
-}
+};
 
 Object.defineProperty(AGWPE._frameProto, "bin", {
 	get: function bin() {
@@ -381,12 +381,12 @@ AGWPE._portProto._packetCallback = {
 
 print("Port "+frame.port+" Got '"+frame.kind+"' frame PID: "+frame.pid+"\nFrom: \""+frame.from+"\"\nTo: \""+frame.to+"\"\nData: \""+frame.data+"\"");
 		this.frames.push(frame);
-		if (this.callbacks['pkt'] !== undefined) {
-			for (i = 0; i < this.callbacks['pkt'].length; i++) {
-				if (this.callbacks['pkt'][i].func.call(ctx, frame)) {
-					if (ctx.callbacks['pkt'][i].oneshot !== undefined) {
-						if (ctx.callbacks['pkt'][i].oneshot === true) {
-							ctx.callbacks['pkt'].splice(i, 1);
+		if (this.callbacks.pkt !== undefined) {
+			for (i = 0; i < this.callbacks.pkt.length; i++) {
+				if (this.callbacks.pkt[i].func.call(this, frame)) {
+					if (this.callbacks.pkt[i].oneshot !== undefined) {
+						if (this.callbacks.pkt[i].oneshot === true) {
+							this.callbacks.pkt.splice(i, 1);
 							i--;
 						}
 					}
@@ -403,7 +403,7 @@ AGWPE._portProto.askVersion = function()
 	var ret = {};
 	var done = false;
 
-	this.parent.callbacks['R'].push({
+	this.parent.callbacks.R.push({
 		oneshot:true,
 		func:function(frame) {
 			done = true;
@@ -425,7 +425,7 @@ AGWPE._portProto.askPorts = function()
 	var resp;
 	var data;
 
-	this.parent.callbacks['G'].push({
+	this.parent.callbacks.G.push({
 		oneshot:true,
 		func:function(frame) {
 			data = frame.data;
@@ -455,7 +455,7 @@ AGWPE._portProto.registerCall = function(call)
 	if (this.calls.indexOf(call) !== -1)
 		return false;
 	f.from = call;
-	this.callbacks['X'].push({
+	this.callbacks.X.push({
 		oneshot:true,
 		func:function(frame) {
 			if (frame.data.length !== 1)
@@ -496,7 +496,7 @@ AGWPE._portProto.askOutstanding = function()
 	var resp;
 	var ret;
 
-	this.callbacks['y'].push({
+	this.callbacks.y.push({
 		oneshot:true,
 		func:function(frame) {
 			if (frame.data.length !== 4)
@@ -521,7 +521,7 @@ AGWPE._portProto.toggleMonitor = function()
 	var ret;
 
 	this.parent.sock.send(f.bin);
-	this.monitor = !this.monitor
+	this.monitor = !this.monitor;
 };
 
 AGWPE._portProto.toggleRaw = function()
@@ -540,7 +540,7 @@ AGWPE._connProto.askOutstanding = function()
 	var resp;
 	var ret;
 
-	this.callbacks['Y'].push({
+	this.callbacks.Y.push({
 		oneshot:true,
 		func:function(frame) {
 			if (frame.data.length !== 4)
@@ -560,12 +560,14 @@ AGWPE._connProto.askOutstanding = function()
 
 AGWPE._connProto.doClose = function()
 {
+	var i;
+
 	this.connected = false;
 	for (i in this.parent.connections) {
 		if (this.parent.connections[i].connected == false)
 			delete this.parent.connections[i];
 	}
-}
+};
 
 AGWPE._connProto.close = function()
 {
