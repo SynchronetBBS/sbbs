@@ -997,7 +997,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		smb_freemsgmem(msg);
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s insufficient data fields read (%d instead of %d)", __FUNCTION__
-			,i,msg->hdr.total_dfields);
+			,(int)i,msg->hdr.total_dfields);
 		return(SMB_ERR_READ); 
 	}
 	l += msg->hdr.total_dfields * sizeof(*msg->dfield);
@@ -1007,7 +1007,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			smb_freemsgmem(msg);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s realloc failure of %d bytes for header field data", __FUNCTION__
-				,(int)sizeof(void*)*(i+1));
+				,(int)(sizeof(void*)*(i+1)));
 			return(SMB_ERR_MEM); 
 		}
 		msg->hfield_dat=vpp;
@@ -1015,7 +1015,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			smb_freemsgmem(msg);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s realloc failure of %d bytes for header fields", __FUNCTION__
-				,(int)sizeof(hfield_t)*(i+1));
+				,(int)(sizeof(hfield_t)*(i+1)));
 			return(SMB_ERR_MEM); 
 		}
 		msg->hfield=vp;
@@ -1030,7 +1030,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			==NULL) {			/* Allocate 1 extra for ASCIIZ terminator */
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s malloc failure of %d bytes for header field %d", __FUNCTION__
-				,msg->hfield[i].length+1, i);
+				,msg->hfield[i].length+1, (int)i);
 			smb_freemsgmem(msg);  /* or 0 length field */
 			return(SMB_ERR_MEM); 
 		}
