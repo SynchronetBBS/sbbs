@@ -14,6 +14,27 @@ var AGWPE = {
 		if (!this.sock.connect(this.host, this.port, 10))
 			throw("Unable to connect to AGWPE server");
 		this.ports = {};
+		this.callbacks = {
+			'R':[
+				{
+					func: function(frame) {
+						if (frame.data.length == 8) {
+							this.major = ascii(frame.data[0]);
+							this.major |= ascii(frame.data[1]) << 8;
+							this.major |= ascii(frame.data[2]) << 16;
+							this.major |= ascii(frame.data[3]) << 24;
+							this.minor = ascii(frame.data[4]);
+							this.minor |= ascii(frame.data[5]) << 8;
+							this.minor |= ascii(frame.data[6]) << 16;
+							this.minor |= ascii(frame.data[7]) << 24;
+						}
+						else
+							throw("Invalid Version Response Data Length!");
+					}
+				}
+			],
+			'G':[]
+		};
 
 		this.port = function(port)
 		{
@@ -26,6 +47,14 @@ var AGWPE = {
 
 			this.port = port;
 			this.calls = [];
+			this.callbacks = {
+				'g':[],	// Garbage from DireWolf
+				'K':[],
+				'U':[],
+				'y':[],
+				'X':[]
+			};
+			this.connections = {};
 
 			this.frame = function(kind)
 			{
@@ -49,6 +78,7 @@ var AGWPE = {
 				var cself = this;
 				var via;
 				var pid;
+				var r;
 
 				if (from === undefined)
 					throw("Connection from undefined callsign");
@@ -71,9 +101,35 @@ var AGWPE = {
 				this.to = to;
 				this.via = via;
 				this.pid = pid;
-				this.connected = false;
+				this.data = '';
+				this.callbacks = {
+					'Y':[],
+					'C':[
+						{
+							func:function(frame) {
+								this.connected = true;
+							}
+						}
+					],
+					'D':[
+						{
+							func:function(frame) {
+								this.data += frame.data;
+							}
+						}
+					],
+					'd':[
+						{
+							func:function(frame) {
+								this.doClose();
+							}
+						}
+					]
+				};
 				if (via.length > 7)
 					throw("Connect via path too long: "+via.length);
+				this.connected = false;
+				pself.connections[from+"\x00"+to] = this;
 				if (via.length === 0)
 					pself._connect(from, to, pid);
 				else
@@ -117,6 +173,91 @@ var AGWPE = {
 	_portProto:{}
 };
 
+AGWPE.TNC.prototype.frame = function(kind)
+{
+	this.__proto__ = AGWPE._frameProto;
+	if (kind === undefined)
+		throw("Frame being created with no kind");
+
+	this.port = 0;
+	this.kind = kind;
+	this.pid = 0xf0;
+	this.from = '';
+	this.to = '';
+	this.data = '';
+}
+
+AGWPE.TNC.prototype.cycle = function(timeout)
+{
+	var f;
+	var c;
+
+	if (timeout === undefined)
+		timeout = 0;
+	function handle_callbacks(ctx, frame) {
+		var i;
+		if (ctx.callbacks[frame.kind] !== undefined) {
+			for (i = 0; i < ctx.callbacks[frame.kind].length; i++) {
+				if (ctx.callbacks[frame.kind][i].func.call(ctx, frame)) {
+					if (ctx.callbacks[frame.kind][i].oneshot !== undefined) {
+						if (ctx.callbacks[frame.kind][i].oneshot === true) {
+							ctx.callbacks[frame.kind].splice(i, 1);
+							i--;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	function find_conn(f) {
+		var i;
+
+		for (i in this.ports[f.port].connections) {
+			// TODO: Sort out the reversal of calls...
+			if (f.from == this.ports[f.port].connections[i].from && f.to == this.ports[f.port].connections[i].to)
+				return this.ports[f.port].connections[i]
+			if (f.from == this.ports[f.port].connections[i].to && f.to == this.ports[f.port].connections[i].from)
+				return this.ports[f.port].connections[i]
+		}
+		throw("Message on unknown connection (from='"+f.from+"' to='"+f.to+"' kind='"+f.kind+"')");
+	}
+
+	if (this.sock.poll(timeout, false)) {
+		f = this.getFrame();
+		switch (f.kind) {
+			// "Global" messages (port doesn't matter)
+			case 'R':	// Reply to Request for Version
+			case 'G':	// Reply to ports request
+				handle_callbacks(this, f);
+				break;
+
+			// "Port" messages (from/to don't matter)
+			case 'g':	// Reply to capabilities
+			case 'K':	// Raw AX.25 frame
+			case 'U':	// AX.25 Monitor frame
+			case 'y':	// Outstanding frames on a port
+			case 'X':	// Callsign register response
+				if (this.ports[f.port] === undefined)
+					throw("Got message on invalid port "+f.port+"!");
+				handle_callbacks(this.ports[f.port], f);
+				break;
+
+			// "Connection" messages
+			case 'Y':	// Outstanding frames on a connection
+			case 'C':	// AX.25 connection established
+			case 'D':	// AX.25 Connected Data
+			case 'd':	// Disconnection notice
+				// Find or create the connection...
+				c = find_conn.call(this, f);
+				handle_callbacks(c, f);
+				break;
+			default:
+				throw("Unhandled kind: '"+f.kind+"'");
+		}
+	}
+}
+
 Object.defineProperty(AGWPE._frameProto, "bin", {
 	get: function bin() {
 		var ret = '';
@@ -157,27 +298,25 @@ Object.defineProperty(AGWPE._frameProto, "bin", {
 	}
 });
 
-
 AGWPE._portProto.askVersion = function()
 {
 	var f = new this.frame('R');
 	var resp;
 	var ret = {};
+	var done = false;
 
+	this.parent.callbacks['R'].push({
+		oneshot:true,
+		func:function(frame) {
+			done = true;
+		}
+	});
 	this.parent.sock.send(f.bin);
-	resp = this.getFrame();
-	if (resp.kind !== 'R')
-		throw("Unexpected reply to askVersion '"+resp.kind+"'!");
-	if (resp.data.length == 8) {
-		ret.major = ascii(resp.data[0]);
-		ret.major |= ascii(resp.data[1]) << 8;
-		ret.major |= ascii(resp.data[2]) << 16;
-		ret.major |= ascii(resp.data[3]) << 24;
-		ret.minor = ascii(resp.data[4]);
-		ret.minor |= ascii(resp.data[5]) << 8;
-		ret.minor |= ascii(resp.data[6]) << 16;
-		ret.minor |= ascii(resp.data[7]) << 24;
-	}
+	while (!done)
+		this.parent.cycle(0.01);
+
+	ret.major = this.parent.major;
+	ret.minor = this.parent.minor;
 	return ret;
 };
 
@@ -185,12 +324,18 @@ AGWPE._portProto.askPorts = function()
 {
 	var f = new this.frame('G');
 	var resp;
+	var data;
 
+	this.parent.callbacks['G'].push({
+		oneshot:true,
+		func:function(frame) {
+			data = frame.data;
+		}
+	});
 	this.parent.sock.send(f.bin);
-	resp = this.getFrame();
-	if (resp.kind !== 'G')
-		throw("Unexpected reply to askPorts '"+resp.kind+"'!");
-	return resp.data;
+	while (data === undefined)
+		this.parent.cycle(0.01);
+	return data;
 };
 
 // 'g' command (port capabilities - just garbage on direwolf)
@@ -209,26 +354,30 @@ AGWPE._portProto.registerCall = function(call)
 {
 	var f = new this.frame('X');
 	var resp;
+	var r;
 
 	if (this.calls.indexOf(call) !== -1)
 		return false;
 	f.from = call;
-	this.parent.sock.send(f.bin);
-	resp = this.getFrame();
-	if (resp.kind !== 'X')
-		throw("Unexpected reply to registerCall '"+resp.kind+"'!");
-	if (resp.from !== call)
-		throw("Unexpected reply to registerCall from: '"+resp.from+"' to '"+resp.to+"'!");
-	if (resp.data.length === 1) {
-		switch(ascii(resp.data[0])) {
-			case 0:
-				return false;
-			case 1:
-				this.calls.push(call);
-				return true;
-			default:
-				throw("Unexpected registerCall status: "+ascii(resp.data[0]));
+	this.callbacks['X'].push({
+		oneshot:true,
+		func:function(frame) {
+			if (frame.data.length !== 1)
+				throw("Incorrect 'X' frame data length: "+frame.data.length);
+			r = ascii(frame.data[0]);
 		}
+	});
+	this.parent.sock.send(f.bin);
+	while (r === undefined)
+		this.parent.cycle(0.01);
+	switch(r) {
+		case 0:
+			return false;
+		case 1:
+			this.calls.push(call);
+			return true;
+		default:
+			throw("Unexpected registerCall status: "+ascii(resp.data[0]));
 	}
 };
 
@@ -244,64 +393,73 @@ AGWPE._portProto.unRegisterCall = function(call)
 	this.calls.splice(this.calls.indexOf(call));
 };
 
-AGWPE._portProto.askOutstanding = function(port)
+AGWPE._portProto.askOutstanding = function()
 {
 	var f = new this.frame('y');
 	var resp;
 	var ret;
 
-	if (port === undefined)
-		port = 0;
-	f.port = port;
+	this.callbacks['y'].push({
+		oneshot:true,
+		func:function(frame) {
+			if (frame.data.length !== 4)
+				throw("Invalid length in askOutstanding reply: "+frame.data.length);
+			ret = ascii(frame.data[0]);
+			ret |= ascii(frame.data[1]) << 8;
+			ret |= ascii(frame.data[2]) << 16;
+			ret |= ascii(frame.data[3]) << 24;
+		}
+	});
 	this.sock.send(f.bin);
-	resp = this.getFrame();
-	if (resp.kind !== 'y')
-		throw("Unexpected reply to askOutstanding '"+resp.kind+"'!");
-	if (resp.data.length === 4) {
-		ret = ascii(resp.data[0]);
-		ret |= ascii(resp.data[1]) << 8;
-		ret |= ascii(resp.data[2]) << 16;
-		ret |= ascii(resp.data[3]) << 24;
-		return ret;
-	}
-	throw("Invalid response length to askOutstanding: "+resp.data.length);
+	while (ret === undefined)
+		this.parent.cycle(0.01);
+	return ret;
 };
 
 AGWPE._connProto.askOutstanding = function()
 {
-	var f = new this.frame('y');
+	var f = new this.frame('Y');
 	var resp;
 	var ret;
 
-	if (!this.connected)
-		throw("askOutstanding on unconnected connection");
+	this.callbacks['Y'].push({
+		oneshot:true,
+		func:function(frame) {
+			if (frame.data.length !== 4)
+				throw("Invalid length in connection askOutstanding reply: "+frame.data.length);
+			ret = ascii(frame.data[0]);
+			ret |= ascii(frame.data[1]) << 8;
+			ret |= ascii(frame.data[2]) << 16;
+			ret |= ascii(frame.data[3]) << 24;
+		}
+	});
 	this.sock.send(f.bin);
-	resp = this.getFrame();
-	if (resp.kind !== 'y')
-		throw("Unexpected reply to askOutstandingConn '"+resp.kind+"'!");
-	if (resp.data.length === 4) {
-		ret = ascii(resp.data[0]);
-		ret |= ascii(resp.data[1]) << 8;
-		ret |= ascii(resp.data[2]) << 16;
-		ret |= ascii(resp.data[3]) << 24;
-		return ret;
-	}
-	throw("Invalid response length to askOutstandingConn: "+resp.data.length);
+	while (ret === undefined)
+		this.parent.cycle(0.01);
+	return ret;
 };
+
+AGWPE._connProto.doClose = function()
+{
+	this.connected = false;
+	for (i in this.parent.connections) {
+		if (this.parent.connections[i].connected == false)
+			delete this.parent.connections[i];
+	}
+}
 
 AGWPE._connProto.close = function()
 {
 	var f = new this.frame('d');
 	var resp;
 	var ret;
+	var i;
 
 	if (!this.connected)
 		return;
 	this.parent.parent.sock.send(f.bin);
-	resp = this.parent.getFrame();
-	if (resp.kind !== 'd')
-		throw("Unexpected reply to close '"+resp.kind+"'!");
-	this.connected = false;
+	while (this.connected)
+		this.parent.parent.cycle(0.01);
 };
 
 AGWPE._connProto.send = function(data)
@@ -316,10 +474,6 @@ AGWPE._connProto.send = function(data)
 		throw("send with undefined data");
 	f.data = data;
 	this.parent.parent.sock.send(f.bin);
-	resp = this.parent.getFrame();
-	if (resp.kind !== 'd')
-		throw("Unexpected reply to close '"+resp.kind+"'!");
-	this.connected = false;
 };
 
 AGWPE._portProto.sendUNPROTO = function(from, to, data)
@@ -356,17 +510,6 @@ AGWPE._portProto._connect = function(from, to, pid)
 	f.to = to;
 	f.pid = pid;
 	this.parent.sock.send(f.bin);
-	resp = this.getFrame();
-	switch(resp.kind) {
-		case f.kind:
-			this.connected = true;
-			return;
-		case 'd':
-			this.connected = false;
-			return;
-		default:
-			throw("Unexpected reply to connect '"+resp.kind+"'!");
-	}
 };
 
 AGWPE._portProto._viaConnect = function(from, to, via)
@@ -384,22 +527,11 @@ AGWPE._portProto._viaConnect = function(from, to, via)
 	}
 	f.data = path;
 	this.parent.sock.send(f.bin);
-	resp = this.getFrame();
-	switch(resp.kind) {
-		case f.kind:
-			this.connected = true;
-			return;
-		case 'd':
-			this.connected = false;
-			return;
-		default:
-			throw("Unexpected reply to viaConnect '"+resp.kind+"'!");
-	}
 };
 
-AGWPE._portProto.getFrame = function()
+AGWPE.TNC.prototype.getFrame = function()
 {
-	var resp = this.parent.sock.recv(36);
+	var resp = this.sock.recv(36);
 	var len = ascii(resp[28]);
 	var ret = new this.frame('\x00');
 
@@ -411,6 +543,6 @@ AGWPE._portProto.getFrame = function()
 	len |= ascii(resp[29] << 8);
 	len |= ascii(resp[30] << 16);
 	len |= ascii(resp[31] << 24);
-	ret.data = this.parent.sock.recv(len);
+	ret.data = this.sock.recv(len);
 	return ret;
 };
