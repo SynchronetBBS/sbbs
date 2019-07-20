@@ -65,7 +65,7 @@ function listThreads(sub, offset, count) {
         var msgs = Object.keys(thread.messages);
         thread.first = thread.messages[msgs[0]];
         thread.last = thread.messages[msgs[msgs.length - 1]];
-        delete thread.messages;
+        thread.messages = msgs.length;
         ret.push(thread);
     }
 
