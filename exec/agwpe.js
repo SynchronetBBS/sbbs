@@ -393,7 +393,7 @@ AGWPE._portProto.unRegisterCall = function(call)
 		return;
 	f.from = call;
 	this.parent.sock.send(f.bin);
-	this.calls.splice(this.calls.indexOf(call));
+	this.calls.splice(this.calls.indexOf(call), 1);
 };
 
 AGWPE._portProto.askOutstanding = function()
