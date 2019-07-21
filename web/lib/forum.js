@@ -957,14 +957,13 @@ function getMessageThreads(sub, max) {
 
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return threads;
-    if ((typeof max === 'number' && max > 0) ||
-        typeof msgBase.get_all_msg_headers !== 'function'
-    ) {
+    if ((typeof max == 'number' && max > 0) || typeof msgBase.get_all_msg_headers != 'function') {
         var headers = getSomeMessageHeaders(msgBase, max);
     } else {
         var headers = msgBase.get_all_msg_headers();
     }
     msgBase.close();
+    if (!headers) return threads;
 
     Object.keys(headers).forEach(
 
@@ -1075,11 +1074,9 @@ function getMessageThreads(sub, max) {
 
     );
 
-    threads.order = Object.keys(threads.thread).sort(
-        function (a, b) {
-            return threads.thread[b].newest - threads.thread[a].newest;
-        }
-    );
+    threads.order = Object.keys(threads.thread).sort(function (a, b) {
+        return threads.thread[b].newest - threads.thread[a].newest;
+    });
 
     return threads;
 
