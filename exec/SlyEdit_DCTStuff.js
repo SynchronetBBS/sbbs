@@ -64,6 +64,12 @@ function readColorConfig(pFilename)
    }
 }
 
+// Sets up any global screen-related variables needed for DCT style
+function globalScreenVarsSetup_DCTStyle()
+{
+	gSubjScreenLen = console.screen_columns - 15;
+}
+
 // Re-draws the screen, in the style of DCTEdit.
 //
 // Parameters:
@@ -77,7 +83,7 @@ function readColorConfig(pFilename)
 //  pEditLinesIndex: The index of the message line at the top of the edit area
 //  pDisplayEditLines: The function that displays the edit lines
 function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEditColor,
-                                pInsertMode, pUseQuotes, pEditLinesIndex, pDisplayEditLines)
+                               pInsertMode, pUseQuotes, pEditLinesIndex, pDisplayEditLines)
 {
 	// Top header
 	// Generate & display the top border line (Note: Generate this
@@ -193,12 +199,12 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	screenText = gMsgSubj.substr(0, fieldWidth);
 	console.print(randomTwoColorString(LOWER_LEFT_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor1) +
-                 " " + gConfigSettings.DCTColors.TopLabelColor + "Subj " +
-                 gConfigSettings.DCTColors.TopLabelColonColor + ": " +
-				     gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
-				     gConfigSettings.DCTColors.TopSubjFillColor + DOT_CHAR +
-				     gConfigSettings.DCTColors.TopSubjColor + screenText +
-				     gConfigSettings.DCTColors.TopSubjFillColor);
+	                                   " " + gConfigSettings.DCTColors.TopLabelColor + "Subj " +
+	                                   gConfigSettings.DCTColors.TopLabelColonColor + ": " +
+	                                   gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
+	                                   gConfigSettings.DCTColors.TopSubjFillColor + DOT_CHAR +
+	                                   gConfigSettings.DCTColors.TopSubjColor + screenText +
+	                                   gConfigSettings.DCTColors.TopSubjFillColor);
 	fieldWidth -= (screenText.length+1);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(DOT_CHAR);
@@ -221,6 +227,20 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Write the message text that has been entered thus far.
 	pDisplayEditLines(pEditTop, pEditLinesIndex);
 	console.print(pEditColor);
+}
+
+function refreshSubjectOnScreen_DCTStyle(pX, pY, pLength, pText)
+{
+	console.print("\1n" + gConfigSettings.DCTColors.TopSubjColor);
+	console.gotoxy(pX, pY);
+	//printf("%-" + pLength + "s", pText.substr(0, pLength));
+	// Ensure the text is no longer than the field width
+	var subj = pText.substr(0, pLength);
+	console.print(subj);
+	console.print("\1n" + gConfigSettings.DCTColors.TopSubjFillColor);
+	var fieldWidth = pLength - subj.length;
+	for (var i = 0; i < fieldWidth; ++i)
+		console.print(DOT_CHAR);
 }
 
 // Displays the top border of the message area, in the style of DCTEdit.

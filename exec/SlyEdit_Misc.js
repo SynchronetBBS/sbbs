@@ -1383,7 +1383,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	console.print("\1n\1gCommand/edit keys\r\n\1k\1h컴컴컴컴컴컴컴컴�\r\n");
 	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
 	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
-	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-S", "Search for text", true);
+	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-W", "Word/text search", true);
 	displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
 	                             "Ctrl-D", "Delete line", true);
 	displayCmdKeyFormattedDouble("Ctrl-R", "Spell checker", "ESC", "Command menu", true);
@@ -1395,6 +1395,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 		displayCmdKeyFormatted("Ctrl-C", "Cross-post selection", true);
 	else if (pUserSettings && !pCanCrossPost)
 		displayCmdKeyFormatted("Ctrl-U", "Your user settings", true);
+	displayCmdKeyFormatted("Ctrl-S", "Change subject", true);
 
 	if (pPause)
 		console.pause();

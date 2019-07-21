@@ -53,6 +53,12 @@ function readColorConfig(pFilename)
    }
 }
 
+// Sets up any global screen-related variables needed for Ice style
+function globalScreenVarsSetup_IceStyle()
+{
+	gSubjScreenLen = +(console.screen_columns * (54/80)).toFixed(0);
+}
+
 // Re-draws the screen, in the style of IceEdit.
 //
 // Parameters:
@@ -66,7 +72,7 @@ function readColorConfig(pFilename)
 //  pEditLinesIndex: The index of the message line at the top of the edit area
 //  pDisplayEditLines: The function that displays the edit lines
 function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEditColor,
-                                pInsertMode, pUseQuotes, pEditLinesIndex, pDisplayEditLines)
+                               pInsertMode, pUseQuotes, pEditLinesIndex, pDisplayEditLines)
 {
 	// Top header
 	// Generate & display the top border line (Note: Generate this
@@ -94,7 +100,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// on an 80-column screen width.
 	var fieldWidth = (console.screen_columns * (29/80)).toFixed(0);
 	var screenText = gToName.substr(0, fieldWidth);
-	console.print("n" + randomTwoColorString(VERTICAL_SINGLE,
+	console.print("\1n" + randomTwoColorString(VERTICAL_SINGLE,
 	                                            gConfigSettings.iceColors.BorderColor1,
 	                                            gConfigSettings.iceColors.BorderColor2) +
 				  gConfigSettings.iceColors.TopInfoBkgColor + " " +
@@ -135,13 +141,13 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Subject
 	fieldWidth = (console.screen_columns * (54/80)).toFixed(0);
 	screenText = gMsgSubj.substr(0, fieldWidth);
-	console.print("n" + randomTwoColorString(VERTICAL_SINGLE,
-	                                            gConfigSettings.iceColors.BorderColor1,
-	                                            gConfigSettings.iceColors.BorderColor2) +
-				  gConfigSettings.iceColors.TopInfoBkgColor + " " +
-				  gConfigSettings.iceColors.TopLabelColor + "SUBJECT" +
-				  gConfigSettings.iceColors.TopLabelColonColor + ": " +
-				  gConfigSettings.iceColors.TopSubjectColor + screenText);
+	console.print("\1n" + randomTwoColorString(VERTICAL_SINGLE,
+	                                           gConfigSettings.iceColors.BorderColor1,
+	                                           gConfigSettings.iceColors.BorderColor2) +
+	                                           gConfigSettings.iceColors.TopInfoBkgColor + " " +
+	                                           gConfigSettings.iceColors.TopLabelColor + "SUBJECT" +
+	                                           gConfigSettings.iceColors.TopLabelColonColor + ": " +
+	                                           gConfigSettings.iceColors.TopSubjectColor + screenText);
 	fieldWidth -= screenText.length;
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(" ");
@@ -254,6 +260,13 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Write the message text that has been entered thus far.
 	pDisplayEditLines(pEditTop, pEditLinesIndex);
 	console.print(pEditColor);
+}
+
+function refreshSubjectOnScreen_IceStyle(pX, pY, pLength, pText)
+{
+	console.print("\1n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopSubjectColor);
+	console.gotoxy(pX, pY);
+	printf("%-" + pLength + "s", pText.substr(0, pLength));
 }
 
 // Displays the first help line for the bottom of the screen, in the style

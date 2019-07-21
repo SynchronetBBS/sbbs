@@ -62,6 +62,13 @@
  *                              for 'general' dictionaries and 'supplimental' ones
  * 2019-05-29 Eric Oulashin     Version 1.66
  *                              Releasing this version
+ * 2019-07-19 Eric Oulashin     Version 1.67 Beta
+ *                              Started working on supporting the RESULT.ED drop
+ *                              file, with the ability to change the subject
+ * 2019-07-21 Eric Oulashin     Version 1.67
+ *                              Releasing this version.  Synchronet 3.17c development
+ *                              builds from July 21, 2019 onward support result.ed
+ *                              even for editors configured for QuickBBS MSGINF/MSGTMP.
  */
 
 /* Command-line arguments:
@@ -158,8 +165,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.66.1";
-const EDITOR_VER_DATE = "2019-06-05";
+const EDITOR_VERSION = "1.67";
+const EDITOR_VER_DATE = "2019-07-21";
 
 
 // Program variables
@@ -301,6 +308,16 @@ var fpDisplayBottomHelpLine = null;
 var fpDisplayTime = null;
 var fpDisplayTimeRemaining = null;
 var fpCallESCMenu = null;
+var fpRefreshSubjectonScreen = null;
+var fpGlobalScreenVarsSetup = null;
+// Subject screen position & length (for changing the subject).  Note: These
+// will be set in the IceStuff or DCTStuff scripts, depending on which theme
+// is being used.
+var gSubjPos = {
+	x: 0,
+	y: 0
+};
+var gSubjScreenLen = 0;
 if (EDITOR_STYLE == "DCT")
 {
 	if (requireFnExists)
@@ -323,6 +340,12 @@ if (EDITOR_STYLE == "DCT")
 	fpDisplayTime = displayTime_DCTStyle;
 	fpDisplayTimeRemaining = displayTimeRemaining_DCTStyle;
 	fpCallESCMenu = callDCTESCMenu;
+	fpGlobalScreenVarsSetup = globalScreenVarsSetup_DCTStyle;
+
+	gSubjPos.x = 12;
+	gSubjPos.y = 4;
+	// Note: gSubjScreenLen is set in redrawScreen_DCTStyle()
+	fpRefreshSubjectOnScreen = refreshSubjectOnScreen_DCTStyle;
 }
 else if (EDITOR_STYLE == "ICE")
 {
@@ -346,6 +369,12 @@ else if (EDITOR_STYLE == "ICE")
 	fpDisplayTime = displayTime_IceStyle;
 	fpDisplayTimeRemaining = displayTimeRemaining_IceStyle;
 	fpCallESCMenu = callIceESCMenu;
+	fpGlobalScreenVarsSetup = globalScreenVarsSetup_IceStyle;
+
+	gSubjPos.x = 12;
+	gSubjPos.y = 3;
+	// Note: gSubjScreenLen is set in redrawScreen_IceStyle()
+	fpRefreshSubjectOnScreen = refreshSubjectOnScreen_IceStyle;
 }
 
 // Temporary (for testing): Make the edit area small
@@ -357,6 +386,9 @@ else if (EDITOR_STYLE == "ICE")
 // Calculate the edit area width & height
 const gEditWidth = gEditRight - gEditLeft + 1;
 const gEditHeight = gEditBottom - gEditTop + 1;
+
+// Set up any required global screen variables
+fpGlobalScreenVarsSetup();
 
 // Message display & edit variables
 var gInsertMode = "INS";       // Insert (INS) or overwrite (OVR) mode
@@ -434,8 +466,6 @@ js.on_exit("console.ctrlkey_passthru = gOldPassthru; bbs.sys_status = gOldStatus
 console.write("\033[=1M");
 console.clear();
 
-// Read the message from name, to name, and subject from the drop file
-// (msginf in the node directory).
 var gMsgAreaInfo = null; // Will store the value returned by getCurMsgInfo().
 var setMsgAreaInfoObj = false;
 var gMsgSubj = "";
@@ -478,6 +508,39 @@ if (dropFileName != undefined)
 	}
 	file_remove(dropFileName);
 }
+else
+{
+	// There is no msginf - Try editor.inf
+	dropFileName = file_getcase(system.node_dir + "editor.inf");
+	if (dropFileName != undefined)
+	{
+		if (file_date(dropFileName) >= dropFileTime)
+		{
+			var dropFile = new File(dropFileName);
+			if (dropFile.exists && dropFile.open("r"))
+			{
+				dropFileTime = dropFile.date;
+				info = dropFile.readAll();
+				dropFile.close();
+
+				gFromName = info[3];
+				gToName = info[1];
+				gMsgSubj = info[0];
+				gMsgArea = "";
+
+				// TODO: If we can know the name of the message
+				// area name, we can call getCurMsgInfo().  But
+				// editor.inf doesn't have the message area name.
+				// Now that we know the name of the message area
+				// that the message is being posted in, call
+				// getCurMsgInfo() to set gMsgAreaInfo.
+				//gMsgAreaInfo = getCurMsgInfo(gMsgArea);
+				//setMsgAreaInfoObj = true;
+			}
+		}
+		file_remove(dropFileName);
+	}
+}
 // If gMsgAreaInfo hasn't been set yet, then set it.
 if (!setMsgAreaInfoObj)
 {
@@ -514,12 +577,38 @@ if (gConfigSettings.displayEndInfoScreen)
    console.crlf();
 }
 
-// If the user wrote & saved a message, then remove any extra blank lines that
-// may be at the end of the message (in gEditLines), and output the message
-// lines to a file with the passed-in input filename.
+// If the user wrote & saved a message, do post work:
+// - If the user changed the subject, then write a RESULT.ED file with
+//   the new subject.
+// - Remove any extra blank lines that may be at the end of the message (in
+// gEditLines), and output the message lines to a file with the passed-in
+// input filename.
+// - Do cross-posting.
 var savedTheMessage = false;
 if ((exitCode == 0) && (gEditLines.length > 0))
 {
+	// If the user changed the subject, write a RESULT.ED with the new subject.
+	// TODO: Is this only for WWIV editors supporting result.inf/result.ed?
+	// Note: Normally, this is only supported for WWIV editors supporting
+	// result.inf/result.ed.  However, with Synchronet 3.17c development
+	// builds from July 21, 2019 onward, result.ed is supported even for
+	// editors configured for QuickBBS MSGINF/MSGTMP.
+	// RESULT.ED specs:
+	// Line 1: Anonymous (1 for true, 0 for false) - Unused by Synchronet
+	// Line 2: Message subject
+	// Line 3: Editor details (e.g. full name, version/revision, date of build or release)
+	// Note: When cross-posting, gMsgSubj will be used, which has the correct current
+	// subject.
+	// gMsgSubj is the current subject, and gOldSubj is the original subject
+	var dropFile = new File(system.node_dir + "RESULT.ED");
+	if (dropFile.open("w"))
+	{
+		dropFile.writeln("0");
+		dropFile.writeln(gMsgSubj);
+		dropFile.writeln(EDITOR_PROGRAM_NAME + " " + EDITOR_VERSION + " (" + EDITOR_VER_DATE + ")");
+		dropFile.close();
+	}
+
 	// Remove any extra blank lines at the end of the message
 	var lineIndex = gEditLines.length - 1;
 	while ((lineIndex > 0) && (lineIndex < gEditLines.length) && (gEditLines[lineIndex].length() == 0))
@@ -555,6 +644,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 
 	// If some message areas have been selected for cross-posting, then otuput
 	// which areas will be cross-posted into, and do the cross-posting.
+	// TODO: If the user changed the subject, make sure the subject is correct when cross-posting.
 	var crossPosted = false;
 	if (gCrossPostMsgSubs.numMsgGrps() > 0)
 	{
@@ -610,9 +700,9 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 		// cross-post logging).
 		if (postingInOriginalSubBoard && !postingOnlyInOriginalSubBoard)
 		{
-			log(LOG_INFO, "SlyEdit: " + user.alias + " is posting a message in " + msg_area.sub[gMsgAreaInfo.subBoardCode].grp_name +
+			log(LOG_INFO, EDITOR_PROGRAM_NAME + ": " + user.alias + " is posting a message in " + msg_area.sub[gMsgAreaInfo.subBoardCode].grp_name +
 			    " " + msg_area.sub[gMsgAreaInfo.subBoardCode].description + " (" + gMsgSubj + ")");
-			bbs.log_str("SlyEdit: " + user.alias + " is posting a message in " + msg_area.sub[gMsgAreaInfo.subBoardCode].grp_name +
+			bbs.log_str(EDITOR_PROGRAM_NAME + ": " + user.alias + " is posting a message in " + msg_area.sub[gMsgAreaInfo.subBoardCode].grp_name +
 			            " " + msg_area.sub[gMsgAreaInfo.subBoardCode].description + " (" + gMsgSubj + ")");
 		}
 		var postMsgErrStr = ""; // For storing errors related to saving the message
@@ -637,9 +727,9 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 				{
 					// Write a log in the BBS log about which message area the user is
 					// cross-posting into.
-					log(LOG_INFO, "SlyEdit: " + user.alias + " is cross-posting a message in " + msg_area.sub[subCode].grp_name +
+					log(LOG_INFO, EDITOR_PROGRAM_NAME + ": " + user.alias + " is cross-posting a message in " + msg_area.sub[subCode].grp_name +
 					    " " + msg_area.sub[subCode].description + " (" + gMsgSubj + ")");
-					bbs.log_str("SlyEdit: " + user.alias + " is cross-posting a message in " + msg_area.sub[subCode].grp_name +
+					bbs.log_str(EDITOR_PROGRAM_NAME + ": " + user.alias + " is cross-posting a message in " + msg_area.sub[subCode].grp_name +
 					            " " + msg_area.sub[subCode].description + " (" + gMsgSubj + ")");
 
 					// Write the cross-posting message area on the user's screen.
@@ -749,25 +839,6 @@ function saveMessageToFile()
 		console.print("\1n\1r\1h* Unable to save the message!\1n\r\n");
 }
 
-/*
-// Note: If we were using WWIV editor.inf/result.ed drop files, we
-// could allow the user to change the subject and write the new
-// subject in result.ed..
-if (savedTheMessage)
-{
-  gMsgSubj = "New subject";
-  if (gMsgSubj != gOldSubj)
-  {
-    var dropFile = new File(system.node_dir + "result.ed");
-    if (dropFile.open("w"))
-    {
-      dropFile.writeln("0");
-      dropFile.writeln(gMsgSubj);
-      dropFile.close();
-    }
-  }
-}
-*/
 
 // Set the original ctrlkey_passthru and sys_status settins back.
 console.ctrlkey_passthru = gOldPassthru;
@@ -907,9 +978,10 @@ function doEditLoop()
 	const IMPORT_FILE_KEY           = CTRL_O;
 	const QUOTE_KEY                 = CTRL_Q;
 	const SPELL_CHECK_KEY           = CTRL_R;
-	const SEARCH_TEXT_KEY           = CTRL_S;
+	const CHANGE_SUBJECT_KEY        = CTRL_S;
 	const LIST_TXT_REPLACEMENTS_KEY = CTRL_T;
 	const USER_SETTINGS_KEY         = CTRL_U;
+	const SEARCH_TEXT_KEY           = CTRL_W;
 	const EXPORT_TO_FILE_KEY        = CTRL_X;
 	const SAVE_KEY                  = CTRL_Z;
 
@@ -941,7 +1013,7 @@ function doEditLoop()
 		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
 		if (!bbs.online)
 		{
-			var logStr = "SlyEdit: User is no longer online (" + user.alias + " on node " + bbs.node_num + ")";
+			var logStr = EDITOR_PROGRAM_NAME + ": User is no longer online (" + user.alias + " on node " + bbs.node_num + ")";
 			bbs.log_str(logStr);
 			log(LOG_INFO, logStr);
 			continueOn = false;
@@ -1495,6 +1567,22 @@ function doEditLoop()
 				break;
 			case USER_SETTINGS_KEY:
 				doUserSettings(curpos, true);
+				break;
+			case CHANGE_SUBJECT_KEY:
+				// Temporary
+				//displayDebugText(1, 1, "Subj loc & length: (" + gSubjPos.x + ", " + gSubjPos.y + "), " + gSubjScreenLen, curpos, true, false);
+				// End Temporary
+				console.print("\1n");
+				console.gotoxy(gSubjPos.x, gSubjPos.y);
+				var subj = console.getstr(gSubjScreenLen, K_LINE|K_NOCRLF|K_NOSPIN|K_TRIM);
+				if (subj.length > 0)
+					gMsgSubj = subj;
+				// Refresh the subject line on the screen with the proper colors etc.
+				fpRefreshSubjectOnScreen(gSubjPos.x, gSubjPos.y, gSubjScreenLen, gMsgSubj);
+
+				// Restore the edit color and cursor position
+				console.print(chooseEditColor());
+				console.gotoxy(curpos);
 				break;
 			default:
 				// For the tab character, insert 3 spaces.  Otherwise,
@@ -3521,7 +3609,7 @@ function displayProgramInfoBox()
 	var boxWidthFillFormatStr = "%" + innerWidth + "s";
 	printf(boxWidthFillFormatStr, "");
 	console.print("\1w");
-	var textLine = centeredText(innerWidth, "SlyEdit " + EDITOR_VERSION + " (" + EDITOR_VER_DATE + ")");
+	var textLine = centeredText(innerWidth, EDITOR_PROGRAM_NAME + " " + EDITOR_VERSION + " (" + EDITOR_VER_DATE + ")");
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+2);
 	console.print(textLine);
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+3);
@@ -3540,7 +3628,7 @@ function displayProgramInfoBox()
 	printf(boxWidthFillFormatStr, "");
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+9);
 	console.print("\1c");
-	console.print(centeredText(innerWidth, "Thanks for using SlyEdit!"));
+	console.print(centeredText(innerWidth, "Thanks for using " + EDITOR_PROGRAM_NAME + "!"));
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+10);
 	printf(boxWidthFillFormatStr, "");
 
