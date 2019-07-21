@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.65
-                        Release date: 2019-05-24
+                              Version 1.67
+                        Release date: 2019-07-21
 
                                   by
 
@@ -159,10 +159,6 @@ ICE parameter for IceEdit emulation:
 ===========
 As mentioned earlier, SlyEdit is can mimic the look & feel of IceEdit or
 DCT Edit.  It also has the following features:
-- Text search: Allows the user to search for text in the message.  If
-  the text is found, the message area will scroll to it, and it will be
-  highlighted.  Repeated searches for the same text will look for the
-  next occurrance of that text.
 - Message quoting: When replying to a message, users can select lines from the
   message to quote.  By default, SlyEdit puts the initials of the original
   author in front of the quote lines to indicate who originally wrote those
@@ -186,6 +182,13 @@ DCT Edit.  It also has the following features:
   current message sub-board, SlyEdit will also output a note explaining that
   the BBS will say the message was aborted, even though it was posted into
   other sub-boards and that is normal.
+- Text search: Allows the user to search for text in the message.  If
+  the text is found, the message area will scroll to it, and it will be
+  highlighted.  Repeated searches for the same text will look for the
+  next occurrance of that text.
+- Allows changing the message subject
+  Note: If using a Synchronet 3.17c development build (pre official release),
+  you will need a build from July 21, 2019 or newer.
 - Navigation: Page up/down, home/end of line, and arrow keys
 - Slash commands (at the start of the line):
   /A: Abort
@@ -210,17 +213,17 @@ Ctrl-L       : Command key list (this list) ¦ /S      : Save
                                             ¦ /Q      : Quote message
 Ctrl-T       : List text replacements       ¦ /T      : List text replacements
                                             ¦ /U      : Your user settings
-                                            ¦ /C      : Cross-post selection
 
 Command/edit keys
 -----------------
 Ctrl-A       : Abort message                ¦ PageUp  : Page up
 Ctrl-Z       : Save message                 ¦ PageDown: Page down
-Ctrl-Q       : Quote message                ¦ Ctrl-S  : Search for text
+Ctrl-Q       : Quote message                ¦ Ctrl-W  : Word/text search
 Insert/Ctrl-I: Toggle insert/overwrite mode ¦ Ctrl-D  : Delete line
 Ctrl-R       : Spell checker                ¦ ESC     : Command menu
 Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
-Ctrl-U       : Your user settings           ¦ Ctrl-C  : Cross-post selection
+Ctrl-U       : Your user settings
+Ctrl-S       : Change subject
 
 
 5. Digital Distortion Message Lister note
