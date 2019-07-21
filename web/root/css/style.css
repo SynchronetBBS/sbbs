@@ -161,3 +161,13 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
     left: 100%;
     margin-top: -6px;
 } 
+
+.breadcrumb {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.breadcrumb li {
+	display: inline;
+}
