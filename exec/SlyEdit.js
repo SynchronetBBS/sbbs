@@ -342,8 +342,6 @@ if (EDITOR_STYLE == "DCT")
 	fpCallESCMenu = callDCTESCMenu;
 	fpGlobalScreenVarsSetup = globalScreenVarsSetup_DCTStyle;
 
-	gSubjPos.x = 12;
-	gSubjPos.y = 4;
 	// Note: gSubjScreenLen is set in redrawScreen_DCTStyle()
 	fpRefreshSubjectOnScreen = refreshSubjectOnScreen_DCTStyle;
 }
@@ -371,8 +369,6 @@ else if (EDITOR_STYLE == "ICE")
 	fpCallESCMenu = callIceESCMenu;
 	fpGlobalScreenVarsSetup = globalScreenVarsSetup_IceStyle;
 
-	gSubjPos.x = 12;
-	gSubjPos.y = 3;
 	// Note: gSubjScreenLen is set in redrawScreen_IceStyle()
 	fpRefreshSubjectOnScreen = refreshSubjectOnScreen_IceStyle;
 }

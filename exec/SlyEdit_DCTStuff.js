@@ -67,6 +67,8 @@ function readColorConfig(pFilename)
 // Sets up any global screen-related variables needed for DCT style
 function globalScreenVarsSetup_DCTStyle()
 {
+	gSubjPos.x = 12;
+	gSubjPos.y = 4;
 	gSubjScreenLen = console.screen_columns - 15;
 }
 

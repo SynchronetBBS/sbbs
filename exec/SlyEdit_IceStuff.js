@@ -56,6 +56,8 @@ function readColorConfig(pFilename)
 // Sets up any global screen-related variables needed for Ice style
 function globalScreenVarsSetup_IceStyle()
 {
+	gSubjPos.x = 12;
+	gSubjPos.y = 3;
 	gSubjScreenLen = +(console.screen_columns * (54/80)).toFixed(0);
 }
 
