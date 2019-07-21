@@ -67,4 +67,9 @@ EN_US.prototype.write = function (str, sec) {
     write(this.strings[sec || this.section][str]);
 }
 
+EN_US.prototype.writef = function (str) {
+    const args = Array.concat(this.strings[this.section][str], Array.apply(null, arguments).slice(1));
+    write(format.apply(null, args));
+}
+
 var Locale = EN_US;
