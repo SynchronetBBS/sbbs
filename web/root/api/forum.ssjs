@@ -218,7 +218,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                         http_request.query.sub[0],
                         http_request.query.offset[0],
                         count || settings.page_size
-                    );
+                    ).threads;
                 }
                 break;
 

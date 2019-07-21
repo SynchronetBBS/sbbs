@@ -59,14 +59,14 @@ function listThreads(sub, offset, count) {
     if (offset >= threads.order.length) return false;
 
     var stop = Math.min(threads.order.length, offset + count);
-    var ret = [];
+    var ret = { total: threads.order.length, threads : [] };
     for (var n = offset; n < stop; n++) {
         var thread = threads.thread[threads.order[n]];
         var msgs = Object.keys(thread.messages);
         thread.first = thread.messages[msgs[0]];
         thread.last = thread.messages[msgs[msgs.length - 1]];
         thread.messages = msgs.length;
-        ret.push(thread);
+        ret.threads.push(thread);
     }
 
     return ret;
@@ -1083,6 +1083,19 @@ function getMessageThreads(sub, max) {
 
     return threads;
 
+}
+
+function isValidRequest() {
+    if (Req.has_param('group')) {
+        const grp = Req.get_param('group');
+        if (typeof msg_area.grp_list[grp] == 'undefined') return false;
+        if (!user.compare_ars(msg_area.grp_list[grp].ars)) return false;
+    }
+    if (Req.has_param('sub')) {
+        const sub = Req.get_param('sub');
+        if (typeof msg_area.sub[sub] == 'undefined') return false;
+    }
+    return true;
 }
 
 this;
