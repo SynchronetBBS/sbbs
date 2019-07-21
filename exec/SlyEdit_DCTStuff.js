@@ -197,7 +197,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	++lineNum;
 	console.gotoxy(1, lineNum);
 	//fieldWidth = (console.screen_columns * (66/80)).toFixed(0);
-	fieldWidth = console.screen_columns - 13;
+	fieldWidth = +(console.screen_columns - 15);
 	screenText = gMsgSubj.substr(0, fieldWidth);
 	console.print(randomTwoColorString(LOWER_LEFT_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor1) +
@@ -207,9 +207,10 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	                                   gConfigSettings.DCTColors.TopSubjFillColor + DOT_CHAR +
 	                                   gConfigSettings.DCTColors.TopSubjColor + screenText +
 	                                   gConfigSettings.DCTColors.TopSubjFillColor);
-	fieldWidth -= (screenText.length+1);
+	fieldWidth -= (screenText.length);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(DOT_CHAR);
+	console.print(DOT_CHAR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "] " +
 	              randomTwoColorString(LOWER_RIGHT_SINGLE,
 	              gConfigSettings.DCTColors.TopBorderColor1,
