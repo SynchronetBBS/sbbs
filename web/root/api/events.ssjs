@@ -4,6 +4,8 @@ const settings = get_mod_options('web');
 load(settings.web_directory + '/lib/init.js');
 const auth_lib = load({}, settings.web_lib + 'auth.js');
 
+JSON.time_limit = 0;
+
 http_reply.header['Cache-Control'] = 'no-cache';
 http_reply.header['Content-type'] = 'text/event-stream';
 http_reply.header['X-Accel-Buffering'] = 'no'; // probably not needed by everyone (nginx)
