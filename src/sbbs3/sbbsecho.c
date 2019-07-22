@@ -2070,7 +2070,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 	}
 
 	if(strnicmp(instr, "TICPWD ", 7) == 0) {
-		char ticpwd[FIDO_PASS_LEN + 1];	/* TIC File password for this node */
+		char ticpwd[SBBSECHO_MAX_TICPWD_LEN + 1]; /* TIC File password for this node */
 		char* p = instr;
 		FIND_WHITESPACE(p);
 		SKIP_WHITESPACE(p);
