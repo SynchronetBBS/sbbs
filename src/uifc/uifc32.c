@@ -2649,7 +2649,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		}
 		else if(hbuf[j]!=CR) {
 			set_vmem(&textbuf[i], hbuf[j], inverse ? (api->bclr|(api->cclr<<4)) : high ? (api->hclr|(api->bclr<<4)) : (api->lclr|(api->bclr<<4)), 0);
-			if((i%((width-2-pad-pad))==0 && (hbuf[j+1]==LF)) || (hbuf[j+1]==CR && hbuf[j+2]==LF))
+			if(((i+1)%((width-2-pad-pad))==0 && (hbuf[j+1]==LF)) || (hbuf[j+1]==CR && hbuf[j+2]==LF))
 				i--;
 		}
 		else
