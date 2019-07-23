@@ -2413,7 +2413,7 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 	if(cfg.flo_mailer) {
 		switch(mode) {
 			case ATTACHMENT_ADD:
-				return write_flofile(bundlename,dest,/* bundle: */true,/* use_outbox: */true,/* attr: */0);
+				return write_flofile(bundlename,dest,/* bundle: */true, cfg.use_outboxes,/* attr: */0);
 			case ATTACHMENT_NETMAIL:
 				return 0; /* Do nothing */
 		}
@@ -2571,7 +2571,7 @@ bool pack_bundle(const char *tmp_pkt, fidoaddr_t orig, fidoaddr_t dest)
 			lprintf(LOG_NOTICE,"Routing packet (%s) to %s",tmp_pkt, smb_faddrtoa(&dest,NULL));
 		}
 	}
-	outbound = get_current_outbound(dest, /* fileboxes: */true);
+	outbound = get_current_outbound(dest, cfg.use_outboxes);
 	if(outbound == NULL)
 		return false;
 
@@ -2593,7 +2593,7 @@ bool pack_bundle(const char *tmp_pkt, fidoaddr_t orig, fidoaddr_t dest)
 	if(nodecfg != NULL)
 		if(nodecfg->archive==SBBSECHO_ARCHIVE_NONE) {    /* Uncompressed! */
 			if(cfg.flo_mailer)
-				i=write_flofile(packet,dest,/* bundle: */true,/* use_outbox: */true,/* attr: */0);
+				i=write_flofile(packet,dest,/* bundle: */true, cfg.use_outboxes, /* attr: */0);
 			else
 				i=create_netmail(/* To: */NULL,/* msg: */NULL,packet
 					,(cfg.trunc_bundles) ? "\1FLAGS TFS\r" : "\1FLAGS KFS\r"
@@ -5357,7 +5357,7 @@ void pack_netmail(void)
 				,hdr.from, fmsghdr_srcaddr_str(&hdr), hdr.to, smb_faddrtoa(&addr, NULL), hdr.subj);
 			if(!bso_lock_node(addr))
 				continue;
-			outbound = get_current_outbound(addr, /* fileboxes: */true);
+			outbound = get_current_outbound(addr, cfg.use_outboxes);
 			if(outbound == NULL)
 				continue;
 			if(addr.point)
@@ -5369,7 +5369,7 @@ void pack_netmail(void)
 			else {
 				fprintf(fp,"%s\n",getfname(hdr.subj));
 				fclose(fp);
-				if(write_flofile(req, addr,/* bundle: */false,/* use_outbox: */true, hdr.attr))
+				if(write_flofile(req, addr,/* bundle: */false, cfg.use_outboxes, hdr.attr))
 					bail(1);
 				netmail_sent(path);
 			}
@@ -5402,10 +5402,10 @@ void pack_netmail(void)
 			continue;
 
 		if(cfg.flo_mailer) {
-			outbound = get_current_outbound(addr, /* fileboxes: */true);
+			outbound = get_current_outbound(addr, cfg.use_outboxes);
 			if(outbound == NULL)
 				continue;
-			if(nodecfg!=NULL && nodecfg->outbox[0])
+			if(cfg.use_outboxes && nodecfg!=NULL && nodecfg->outbox[0])
 				SAFECOPY(packet, pktname(outbound));
 			else {
 				ch='o';
@@ -6219,7 +6219,7 @@ int main(int argc, char **argv)
 	for(uint u=0; u<cfg.nodecfgs; u++) {
 		if(cfg.nodecfg[u].inbox[0])
 			backslash(cfg.nodecfg[u].inbox);
-		if(cfg.nodecfg[u].outbox[0])
+		if(cfg.use_outboxes && cfg.nodecfg[u].outbox[0])
 			check_free_diskspace(cfg.nodecfg[u].outbox);
 	}
 

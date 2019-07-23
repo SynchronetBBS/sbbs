@@ -212,6 +212,7 @@ typedef struct {
 	bool		ignore_netmail_local_attr;
 	bool		relay_filtered_msgs;
 	bool		auto_add_subs;
+	bool		use_outboxes;
 	ulong		bsy_timeout;
 	ulong		bso_lock_attempts;
 	ulong		bso_lock_delay;			/* in seconds */

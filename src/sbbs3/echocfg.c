@@ -73,28 +73,30 @@ void global_settings(void)
 		int i = 0;
 		char str[128];
 		char duration[64];
-		sprintf(opt[i++], "%-25s %s", "Mailer Type"
+		sprintf(opt[i++], "%-30s %s", "Mailer Type"
 			,cfg.flo_mailer ? "Binkley/FLO":"ArcMail/Attach");
-		sprintf(opt[i++], "%-25s %s", "Log Level", logLevelStringList[cfg.log_level]);
-		sprintf(opt[i++], "%-25s %s", "Log Timestamp Format", cfg.logtime);
-		sprintf(opt[i++], "%-25s %s", "Strict Packet Passwords", cfg.strict_packet_passwords ? "Enabled" : "Disabled");
-		sprintf(opt[i++], "%-25s %u", "Config File Backups", cfg.cfgfile_backups);
-		sprintf(opt[i++], "%-25s %s bytes", "Minimum Free Disk Space"
+		sprintf(opt[i++], "%-30s %s", "Log Level", logLevelStringList[cfg.log_level]);
+		sprintf(opt[i++], "%-30s %s", "Log Timestamp Format", cfg.logtime);
+		sprintf(opt[i++], "%-30s %s", "Strict Packet Passwords", cfg.strict_packet_passwords ? "Enabled" : "Disabled");
+		sprintf(opt[i++], "%-30s %u", "Config File Backups", cfg.cfgfile_backups);
+		sprintf(opt[i++], "%-30s %s bytes", "Minimum Free Disk Space"
 			, byte_count_to_str(cfg.min_free_diskspace, str, sizeof(str)));
 
-		snprintf(opt[i++],MAX_OPLN-1,"%-25.25s %-3.3s","Strip Incoming Soft CRs "
+		snprintf(opt[i++],MAX_OPLN-1,"%-30s %-3.3s","Strip Incoming Soft CRs "
 			,cfg.strip_soft_cr ? "Yes":"No");
-		snprintf(opt[i++],MAX_OPLN-1,"%-25.25s %-3.3s","Strip Outgoing Line Feeds "
+		snprintf(opt[i++],MAX_OPLN-1,"%-30s %-3.3s","Strip Outgoing Line Feeds "
 			,cfg.strip_lf ? "Yes":"No");
+		snprintf(opt[i++],MAX_OPLN-1,"%-30s %-3.3s","Use Outboxes for Mail Files "
+			,cfg.use_outboxes ? "Yes":"No");
 
-		sprintf(opt[i++], "%-25s %s", "BSY Mutex File Timeout", duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration)));
+		sprintf(opt[i++], "%-30s %s", "BSY Mutex File Timeout", duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration)));
 		if(cfg.flo_mailer) {
-			sprintf(opt[i++], "%-25s %s", "BSO Lock Attempt Delay", duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration)));
-			sprintf(opt[i++], "%-25s %lu", "BSO Lock Attempt Limit", cfg.bso_lock_attempts);
-			sprintf(opt[i++], "%-25s %s", "BinkP Capabilities", cfg.binkp_caps);
-			sprintf(opt[i++], "%-25s %s", "BinkP Sysop Name", cfg.binkp_sysop);
-			sprintf(opt[i++], "%-25s %s", "BinkP Authentication", cfg.binkp_plainAuthOnly ? "Plain Only" : "Plain or CRAM-MD5");
-			sprintf(opt[i++], "%-25s %s", "BinkP Encryption", !cfg.binkp_plainTextOnly && !cfg.binkp_plainAuthOnly ? "Supported" : "Unsupported");
+			sprintf(opt[i++], "%-30s %s", "BSO Lock Attempt Delay", duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration)));
+			sprintf(opt[i++], "%-30s %lu", "BSO Lock Attempt Limit", cfg.bso_lock_attempts);
+			sprintf(opt[i++], "%-30s %s", "BinkP Capabilities", cfg.binkp_caps);
+			sprintf(opt[i++], "%-30s %s", "BinkP Sysop Name", cfg.binkp_sysop);
+			sprintf(opt[i++], "%-30s %s", "BinkP Authentication", cfg.binkp_plainAuthOnly ? "Plain Only" : "Plain or CRAM-MD5");
+			sprintf(opt[i++], "%-30s %s", "BinkP Encryption", !cfg.binkp_plainTextOnly && !cfg.binkp_plainAuthOnly ? "Supported" : "Unsupported");
 		}
 		opt[i][0] = 0;
 		uifc.helpbuf=
@@ -119,8 +121,8 @@ void global_settings(void)
 			"    For SBBSecho v2 timestamp format, use `%m/%d/%y %H:%M:%S`\n"
 			"\n"
 			"`Strict Packet Passwords`, when enabled, requires that Packet Passwords\n"
-			"    must match the password for the linked-node from which the packet\n"
-			"    was received, even if that linked-node has no password configured.\n"
+			"    must match the password for the linked node from which the packet\n"
+			"    was received, even if that linked node has no password configured.\n"
 			"    If you wish to revert to the SBBSecho v2 behavior with less strict\n"
 			"    enforcement of matching packet passwords, disable this option.\n"
 			"    Default: Enabled\n"
@@ -141,6 +143,14 @@ void global_settings(void)
 			"`Strip Outgoing Line Feeds` instructs SBBSecho to remove any Line Feed\n"
 			"    (ASCII 10) characters from the body text of `exported` EchoMail and\n"
 			"    NetMail messages.\n"
+			"\n"
+			"`Use Outboxes for Mail Files` instructs SBBSecho to place outbound\n"
+			"    NetMail and EchoMail files into the configured `Outbox Directory`\n"
+			"    of the relevant linked node. If the linked node has no configured\n"
+			"    outbox, then outbound mail files for that node are placed in the\n"
+			"    normal outbound directory hierarchy.  The BinkIT mailer will\n"
+			"    send files from configured outboxes in addition to the normal\n"
+			"    outbound directories, even when this option is set to `No`.\n"
 			"\n"
 			"`BSY Mutex File Timeout` determines the maximum age of an existing\n"
 			"    mutex file (`*.bsy`) before SBBSecho will act as though the mutex\n"
@@ -243,34 +253,44 @@ void global_settings(void)
 				break;
 			}
 			case 8:
+			{
+				int k = !cfg.use_outboxes;
+				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Use Outboxes for Outbound NetMail and EchoMail",uifcYesNoOpts)) {
+					case 0:	cfg.use_outboxes = true;	break;
+					case 1:	cfg.use_outboxes = false;	break;
+				}
+				break;
+			}
+			case 9:
 				duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "BSY Mutex File Timeout", duration, 10, K_EDIT) > 0)
 					cfg.bsy_timeout = (ulong)parse_duration(duration);
 				break;
 
-			case 9:
+			case 10:
 				duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Delay Between BSO Lock Attempts", duration, 10, K_EDIT) > 0)
 					cfg.bso_lock_delay = (ulong)parse_duration(duration);
 				break;
 
-			case 10:
+			case 11:
 				sprintf(str, "%lu", cfg.bso_lock_attempts);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum BSO Lock Attempts", str, 5, K_EDIT|K_NUMBER) > 0)
 					cfg.bso_lock_attempts = atoi(str);
 				break;
 
-			case 11:
+			case 12:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Capabilities (BinkIT)", cfg.binkp_caps, sizeof(cfg.binkp_caps)-1, K_EDIT);
 				break;
 
-			case 12:
+			case 13:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Sysop Name (BinkIT)", cfg.binkp_sysop, sizeof(cfg.binkp_sysop)-1, K_EDIT);
 				break;
 
-			case 13:
+			case 14:
 			{
 				int k = !cfg.binkp_plainAuthOnly;
 				strcpy(opt[0], "Plain-Password Only");
@@ -288,7 +308,7 @@ void global_settings(void)
 				break;
 			}
 
-			case 14:
+			case 15:
 			{
 				if(cfg.binkp_plainAuthOnly) {
 					uifc.msg("CRAM-MD5 authentication/encryption has been disabled globally");
@@ -1226,7 +1246,7 @@ int main(int argc, char **argv)
 	uifc.helpbuf=
 	"~ Uplink for Message Groups ~\n\n"
 	"These are Message Group short names (as configured in SCFG) for which\n"
-	"this linked-node is your system's uplink (hub).\n"
+	"this linked node is your system's uplink (hub).\n"
 	"\n"
 	"Use of this setting allows your hub to be automatically linked with new\n"
 	"areas when new Sub-boards (within a listed group) are auto-added to the\n"

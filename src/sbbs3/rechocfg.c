@@ -223,6 +223,7 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->kill_empty_netmail			= true;
 	cfg->strict_packet_passwords	= true;
 	cfg->relay_filtered_msgs		= false;
+	cfg->use_outboxes				= true;
 	cfg->umask						= 077;
 	cfg->areafile_backups			= 100;
 	cfg->cfgfile_backups			= 100;
@@ -278,6 +279,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->min_free_diskspace		= iniGetBytes(ini, ROOT_SECTION, "MinFreeDiskSpace", 1, cfg->min_free_diskspace);
 	cfg->strip_lf				= iniGetBool(ini, ROOT_SECTION, "StripLineFeeds", cfg->strip_lf);
 	cfg->strip_soft_cr			= iniGetBool(ini, ROOT_SECTION, "StripSoftCRs", cfg->strip_soft_cr);
+	cfg->use_outboxes			= iniGetBool(ini, ROOT_SECTION, "UseOutboxes", cfg->use_outboxes);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -517,7 +519,8 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetBool(&ini,		ROOT_SECTION, "SecureEchomail"			,cfg->secure_echomail			,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "EchomailNotify"			,cfg->echomail_notify			,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "StripLineFeeds"			,cfg->strip_lf					,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "StripLineSoftCRs"		,cfg->strip_soft_cr				,NULL);
+	iniSetBool(&ini,		ROOT_SECTION, "StripSoftCRs"			,cfg->strip_soft_cr				,NULL);
+	iniSetBool(&ini,		ROOT_SECTION, "UseOutboxes"				,cfg->use_outboxes				,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "ConvertTearLines"		,cfg->convert_tear				,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "FuzzyNetmailZones"		,cfg->fuzzy_zone				,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "BinkleyStyleOutbound"	,cfg->flo_mailer				,NULL);
