@@ -199,7 +199,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 					safe_snprintf(smb->last_error,sizeof(smb->last_error)
 						,"%s writing body (%ld bytes)"
 						,__FUNCTION__
-						,bodylen);
+						,(long)bodylen);
 					retval=SMB_ERR_WRITE;
 					break;
 				}
@@ -222,7 +222,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 					safe_snprintf(smb->last_error,sizeof(smb->last_error)
 						,"%s writing tail (%ld bytes)"
 						,__FUNCTION__
-						,taillen-sizeof(xlat));
+						,(long)(taillen-sizeof(xlat)));
 					retval=SMB_ERR_WRITE;
 					break;
 				}

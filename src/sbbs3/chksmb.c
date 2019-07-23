@@ -279,7 +279,7 @@ int main(int argc, char **argv)
 
 	off_t sid_length = filelength(fileno(smb.sid_fp));
 	if(sid_length != smb.status.total_msgs * sizeof(idxrec_t)) {
-		printf("!Size of index file (%ld) is incorrect (expected: %ld)\n", sid_length, smb.status.total_msgs * sizeof(idxrec_t));
+		printf("!Size of index file (%ld) is incorrect (expected: %ld)\n", sid_length, (long)(smb.status.total_msgs * sizeof(idxrec_t)));
 		smb_close(&smb);
 		errors++;
 		continue;
