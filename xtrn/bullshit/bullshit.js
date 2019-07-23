@@ -265,6 +265,7 @@ function initDisplay() {
 
 	treeScroll = new ScrollBar(tree, { autohide: true });
 
+	console.clear(LIGHTGRAY);
 	frame.open();
 
 }
@@ -275,7 +276,7 @@ function init() {
 }
 
 function main() {
-    if (!list.length && settings.newOnly) return;
+	if (!list.length && settings.newOnly) return;
     initDisplay();
     displayList();
 	while (!js.terminated) {
