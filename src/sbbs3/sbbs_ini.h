@@ -36,12 +36,12 @@
 #ifndef _SBBS_INI_H
 #define _SBBS_INI_H
 
+#include "ini_file.h"
 #include "startup.h"	/* bbs_startup_t */
 #include "ftpsrvr.h"	/* ftp_startup_t */
 #include "mailsrvr.h"	/* mail_startup_t */
 #include "services.h"	/* services_startup_t */
 #include "websrvr.h"	/* services_startup_t */
-#include "ini_file.h"
 #include "scfgdefs.h"   /* scfg_t */
 
 #if defined(__cplusplus)

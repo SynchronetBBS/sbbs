@@ -36,10 +36,11 @@
 
 #define STARTUP_INI_BITDESC_TABLES
 
+#include "sockwrap.h"
 #include <string.h>	/* strchr, memset */
 
-#include "dirwrap.h"	/* backslash */
 #include "sbbs_ini.h"
+#include "dirwrap.h"	/* backslash */
 #include "sbbsdefs.h"	/* JAVASCRIPT_* macros */
 
 static const char*	nulstr="";
