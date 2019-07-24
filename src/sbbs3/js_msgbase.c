@@ -1218,6 +1218,13 @@ js_get_index(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+#define LAZY_BOOLEAN(PropName, PropValue, flags) \
+	if(name==NULL || strcmp(name, (PropName))==0) { \
+		if(name) free(name); \
+		v=INT_TO_BOOL((PropValue)); \
+		JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,flags); \
+		if(name) return JS_TRUE; \
+	}
 
 #define LAZY_INTEGER(PropName, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
@@ -1409,6 +1416,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_UINTEGER("upvotes", p->msg.upvotes, JSPROP_ENUMERATE|JSPROP_READONLY);
 	LAZY_UINTEGER("downvotes", p->msg.downvotes, JSPROP_ENUMERATE|JSPROP_READONLY);
 	LAZY_UINTEGER("total_votes", p->msg.total_votes, JSPROP_ENUMERATE|JSPROP_READONLY);
+	LAZY_BOOLEAN("is_utf8", smb_msg_is_utf8(&p->msg), JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(name==NULL || strcmp(name,"reply_id")==0) {
 		if(name) free(name);
@@ -2995,7 +3003,10 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	{"get_msg_header",	js_get_msg_header,	4, JSTYPE_OBJECT,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id [,expand_fields=<tt>true</tt>] [,include_votes=<tt>false</tt>]")
 	,JSDOCSTR("returns a specific message header, <i>null</i> on failure. "
 	"<br><i>New in v3.12:</i> Pass <i>false</i> for the <i>expand_fields</i> argument (default: <i>true</i>) "
-	"if you will be re-writing the header later with <i>put_msg_header()</i>")
+	"if you will be re-writing the header later with <i>put_msg_header()</i>"
+	"<br>"
+	"Additional read-only header properties: <i>mime_version</i>, <i>content_type</i>, and <i>is_utf8</i>"
+	)
 	,312
 	},
 	{"get_all_msg_headers", js_get_all_msg_headers, 1, JSTYPE_OBJECT, JSDOCSTR("[include_votes=<tt>false</tt>] [,expand_fields=<tt>true</tt>]")
