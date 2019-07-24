@@ -3,7 +3,7 @@
     <!-- $Id$ -->
 <head>
 <title>%%title%%</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
 @@JS:if(http_request.virtual_path=="/nodelist.ssjs")'<meta http-equiv="refresh" content="30" />';@@
 <link rel="stylesheet" href="@@Theme_CSS_File@@" type="text/css" />
