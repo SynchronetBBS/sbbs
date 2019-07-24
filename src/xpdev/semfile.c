@@ -96,6 +96,7 @@ str_list_t DLLCALL semfile_list_init(const char* parent,
 	strListPush(&list,path);
 	SAFEPRINTF3(path,"%s%s.%s",parent,action,service);
 	strListPush(&list,path);
+#if !defined(NO_SOCKET_SUPPORT)
 	if(gethostname(hostname,sizeof(hostname))==0) {
 		SAFEPRINTF3(path,"%s%s.%s",parent,action,hostname);
 		strListPush(&list,path);
@@ -109,7 +110,7 @@ str_list_t DLLCALL semfile_list_init(const char* parent,
 			strListPush(&list,path);
 		}
 	}
-
+#endif
 	return(list);
 }
 
