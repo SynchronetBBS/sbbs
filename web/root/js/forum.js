@@ -316,6 +316,61 @@ function getGroupUnreadCount(group) {
 	$.getJSON('./api/forum.ssjs?call=get-group-unread-count&group=' + group, onGroupUnreadCount);
 }
 
+function onThreadStats(data) {
+	Object.keys(data).forEach(e => {
+		
+		let div1;
+		if (!$('#replies-' + e).length) {
+			div1 = $('#forum-thread-replies-template').clone();
+			div1.attr('id', 'replies-' + e);
+			$('#left-' + e).append(div1);
+		} else {
+			div1 = $('#replies-' + e);
+		}
+		if (data[e].total > 1) {
+			div1.find('strong[data-message-count]').first().html(data[e].total - 1);
+			if (data[e].total == 2) {
+				div1.find('span[data-suffix-reply]').first().attr('hidden', false);
+			} else {
+				div1.find('span[data-suffix-replies]').first().attr('hidden', false);
+			}
+			div1.find('strong[data-last-from]').first().html(data[e].newest.from);
+			div1.find('span[data-last-time]').first().html(data[e].newest.date);
+			div1.attr('hidden', false);
+		}
+
+		let div2;
+		if (!$('#stats-' + e).length) {
+			div2 = $('#forum-thread-stats-template').clone();
+			div2.attr('id', 'stats-' + e);
+			$('#right-' + e).append(div2);
+		} else {
+			div2 = $('#stats-' + e);
+		}
+		if (data[e].unread) {
+			const urm = div2.find('span[data-unread-messages]');
+			if (urm.length) {
+				urm.first().html(data[e].unread);
+				urm.first().attr('hidden', false);
+				div2.attr('hidden', false);
+			}
+		}
+		
+		if (data[e].votes.total) {
+			if (data[e].votes.up.t) {
+				div2.find('span[data-upvotes]').first().html(data[e].votes.up.p + '/' + data[e].votes.up.t);
+				div2.find('span[data-upvotes-badge]').first().css('display', '');
+			}
+			if (data[e].votes.down.t) {
+				div2.find('span[data-downvotes]').first().html(data[e].votes.down.p + '/' + data[e].votes.down.t);
+				div2.find('span[data-downvotes-badge]').first().css('display', '');
+			}
+			div2.attr('hidden', false);
+		}
+		
+	});
+}
+
 /*  Fetch a private mail message's body (with links to attachments) where 'id'
 	is the message number.	Output it to an element with id 'message-<id>'. */
 function getMailBody(id) {
