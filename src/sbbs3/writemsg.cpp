@@ -389,7 +389,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 						if(!fgets(str,sizeof(str),stream))
 							break;
 						quotestr(str);
-						bprintf(P_AUTO_UTF8, "%4d: %.*s\r\n", i, cols-7, str);
+						bprintf(P_AUTO_UTF8, "%4d: %.*s\r\n", i, (int)cols-7, str);
 						i++; 
 					}
 					continue; 
