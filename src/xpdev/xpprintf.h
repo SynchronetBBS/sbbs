@@ -79,7 +79,7 @@ DLLEXPORT char* DLLCALL xp_asprintf_end(char *format, size_t *endlen);
 DLLEXPORT char* DLLCALL xp_asprintf(const char *format, ...);
 DLLEXPORT char* DLLCALL xp_vasprintf(const char *format, va_list va);
 DLLEXPORT int DLLCALL xp_printf_get_type(const char *format);
-#if defined(_MSC_VER) || defined(__MSVCRT__)
+#if defined(_MSC_VER) || defined(__MSVCRT__) || defined(__BORLANDC__)
 DLLEXPORT int DLLCALL vasprintf(char **strptr, const char *format, va_list va);
 DLLEXPORT int DLLCALL asprintf(char **strptr, const char *format, ...);
 #endif
