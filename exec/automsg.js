@@ -14,9 +14,9 @@ function automsg()
 	while(bbs.online && !js.termiated) {
 		bbs.nodesync();
 		console.mnemonics(bbs.text(AutoMsg));
-		switch(console.getkeys("RWQ",0)) {
+		switch(console.getkeys("RWQD",0)) {
 			case 'R':
-				console.printfile(automsg,P_NOABORT|P_NOATCODES|P_WORDWRAP);
+				console.printfile(automsg,P_NOABORT|P_NOATCODES|P_WORDWRAP|P_NOERROR);
 				break;
 			case 'W':
 				if(user.security.restrictions&UFLAG_W) {
@@ -57,6 +57,10 @@ function automsg()
 					file.write(buf);
 					file.close();
 				}
+				break;
+			case 'D':
+				if(user.is_sysop)
+					file_remove(automsg);
 				break;
 			case 'Q':
 				return;
