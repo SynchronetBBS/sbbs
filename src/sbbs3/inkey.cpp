@@ -67,7 +67,7 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 	}
 
 	if(cfg.node_misc&NM_7BITONLY
-		&& (!(sys_status&SS_USERON) || useron.misc&NO_EXASCII))
+		&& (!(sys_status&SS_USERON) || term_supports(NO_EXASCII)))
 		ch&=0x7f; 
 
 	this->timeout=time(NULL);
