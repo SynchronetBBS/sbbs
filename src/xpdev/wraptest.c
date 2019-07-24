@@ -58,7 +58,7 @@ int main()
 	printf("%-15s: %s\n","Platform",PLATFORM_DESC);
 	printf("%-15s: %s\n","Version",os_version(str));
 	printf("%-15s: %s\n","Compiler"	,compiler);
-	printf("%-15s: %d\n","Random Number",xp_random(1000));
+	printf("%-15s: %ld\n","Random Number",xp_random(1000));
 
 	for(i=0;i<3;i++) {
 		if(_beginthread(
