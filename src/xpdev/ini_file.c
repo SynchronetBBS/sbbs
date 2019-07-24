@@ -34,6 +34,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "ini_file.h"
 #include <stdlib.h>		/* strtol */
 #include <string.h>		/* strlen */
 #include <ctype.h>		/* isdigit */
@@ -42,10 +43,6 @@
 #include "datewrap.h"	/* ctime_r */
 #include "dirwrap.h"	/* fexist */
 #include "filewrap.h"	/* chsize */
-#include "ini_file.h"
-#if !defined(NO_SOCKET_SUPPORT)
-#include "sockwrap.h"
-#endif
 
 /* Maximum length of entire line, includes '\0' */
 #define INI_MAX_LINE_LEN		(INI_MAX_VALUE_LEN*2)

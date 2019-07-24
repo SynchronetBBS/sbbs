@@ -37,11 +37,11 @@
 #ifndef _INI_FILE_H
 #define _INI_FILE_H
 
-#include "genwrap.h"
-#include "str_list.h"	/* strList_t */
 #if !defined(NO_SOCKET_SUPPORT)
 	#include "sockwrap.h"	/* inet_addr, SOCKET */
 #endif
+#include "genwrap.h"
+#include "str_list.h"	/* strList_t */
 
 #define INI_MAX_VALUE_LEN	1024		/* Maximum value length, includes '\0' */
 #define ROOT_SECTION		NULL
