@@ -834,7 +834,8 @@ var TerminalIceColor=822;
 var IceColorTerminalQ=823;
 var Utf8TerminalQ=824;
 var MsgCarbonCopyList=825;
+var LoggingOn=826;
 
-var TOTAL_TEXT=826;
+var TOTAL_TEXT=827;
 
 this;
