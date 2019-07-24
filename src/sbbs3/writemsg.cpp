@@ -389,7 +389,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 						if(!fgets(str,sizeof(str),stream))
 							break;
 						quotestr(str);
-						bprintf("%3d: %.74s\r\n",i,str);
+						bprintf(P_AUTO_UTF8, "%4d: %.*s\r\n", i, cols-7, str);
 						i++; 
 					}
 					continue; 
@@ -858,6 +858,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 	char	strin[TERM_COLS_MAX + 1];
 	char 	tmp[512];
 	str_list_t str;
+	long	pmode = P_SAVEATR | P_NOATCODES | P_AUTO_UTF8;
 
 	if(cols < 2) {
 		errormsg(WHERE, ERR_CHK, "columns", cols);
@@ -890,9 +891,9 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 		}
 		CRLF;
 	}
-	putmsg(top,P_SAVEATR|P_NOATCODES);
+	putmsg(top, pmode);
 	for(line=0;line<lines && !msgabort();line++) { /* display lines in buf */
-		putmsg(str[line],P_SAVEATR|P_NOATCODES);
+		putmsg(str[line], pmode);
 		cleartoeol();  /* delete to end of line */
 		CRLF; 
 	}
@@ -924,7 +925,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 			if(console&CON_BACKSPACE && strin[0] == 0) {
 				strListRemove(&str, line);
 				for(i = line; str[i]; i++) {
-					putmsg(str[i], P_SAVEATR|P_NOATCODES);
+					putmsg(str[i], pmode);
 					cleartoeol();
 					newline();
 				}
@@ -1023,7 +1024,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				strListFreeStrings(str);
 				line=0;
 				lines=0;
-				putmsg(top,P_SAVEATR|P_NOATCODES);
+				putmsg(top, pmode);
 				continue; 
 			}
 			else if(toupper(strin[1])=='L') {   /* list message */
@@ -1032,7 +1033,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 					linenums = !noyes(text[WithLineNumbersQ]);
 				CRLF;
 				attr(LIGHTGRAY);
-				putmsg(top,P_SAVEATR|P_NOATCODES);
+				putmsg(top, pmode);
 				if(str[0] == NULL) {
 					continue; 
 				}
@@ -1041,10 +1042,10 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				while(str[j] != NULL && !msgabort()) {
 					if(linenums) { /* line numbers */
 						SAFEPRINTF3(tmp,"%3d: %-.*s", j+1, (int)(cols-6), str[j]);
-						putmsg(tmp,P_SAVEATR|P_NOATCODES); 
+						putmsg(tmp, pmode); 
 					}
 					else
-						putmsg(str[j],P_SAVEATR|P_NOATCODES);
+						putmsg(str[j], pmode);
 					cleartoeol();  /* delete to end of line */
 					CRLF;
 					j++; 
@@ -1081,7 +1082,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 			line++;
 			strListInsert(&str, "", line);
 			for(i = line; str[i]; i++) {
-				putmsg(str[i], P_SAVEATR|P_NOATCODES);
+				putmsg(str[i], pmode);
 				cleartoeol();
 				newline();
 			}

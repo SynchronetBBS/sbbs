@@ -162,9 +162,6 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			blocks=1;
 			continue; 
 		}
-		/*********************************/
-		/* public message on a sub-board */
-		/*********************************/
 		n=(uint)block[123]|(((uint)block[124])<<8);  /* conference number */
 
 		qwk_new_msg(n, &msg,(char*)block,/* offset: */l,headers,/* parse_sender_hfields: */true);
@@ -271,6 +268,9 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			smb_stack(&smb,SMB_STACK_POP);
 			continue;
 		}
+		/*********************************/
+		/* public message on a sub-board */
+		/*********************************/
 
 		if((j = resolve_qwkconf(n, hubnum)) == INVALID_SUB) {	/* ignore messages for subs not in config */
 			eprintf(LOG_NOTICE,"!Message from %s on UNKNOWN QWK CONFERENCE NUMBER: %u"

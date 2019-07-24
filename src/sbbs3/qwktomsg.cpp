@@ -305,6 +305,10 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 
 	kludges=strListInit();
 
+	char qwk_newline = QWK_NEWLINE;
+	if(smb_msg_is_utf8(msg))
+		qwk_newline = '\n';
+
 	for(k=0;k<(blocks-1)*QWK_BLOCK_LEN;k++) {
 		if(qwkbuf[k]==0)
 			continue;
@@ -314,7 +318,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 					&& (strnicmp(qwkbuf+k,"To:",3)==0 
 					||  strnicmp(qwkbuf+k,"From:",5)==0 
 					||  strnicmp(qwkbuf+k,"Subject:",8)==0)))) {
-			if((p=strchr(qwkbuf+k, QWK_NEWLINE))==NULL) {
+			if((p=strchr(qwkbuf+k, qwk_newline))==NULL) {
 				body[bodylen++]=qwkbuf[k];
 				continue;
 			}
@@ -332,7 +336,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 			col++;
 			continue; 
 		}
-		if(qwkbuf[k]==QWK_NEWLINE) {		/* expand QWK_NEWLINE to crlf */
+		if(qwkbuf[k]==qwk_newline) {		/* expand QWK_NEWLINE to crlf */
 			if(!bodylen && !taillen)		/* Ignore blank lines at top of message */
 				continue;
 			if(!taillen && col==3 && bodylen>=3 && body[bodylen-3]=='-'
@@ -365,7 +369,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 			if(taillen) taillen--;
 			else		bodylen--;
 			lastch=0;
-			continue; 
+			continue;
 		}
 		lastch=qwkbuf[k];
 		if(taillen)

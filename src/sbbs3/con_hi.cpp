@@ -43,8 +43,8 @@
 void sbbs_t::redrwstr(char *strin, int i, int l, long mode)
 {
 	cursor_left(i);
-	if(mode&K_MSG)
-		bprintf("%-*.*s",l,l,strin);
+	if(mode)
+		bprintf(mode, "%-*.*s",l,l,strin);
 	else
 		column+=rprintf("%-*.*s",l,l,strin);
 	cleartoeol();

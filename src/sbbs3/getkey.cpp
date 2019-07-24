@@ -46,6 +46,7 @@ char sbbs_t::getkey(long mode)
 {
 	uchar	ch,coldkey,c=0,spin=sbbs_random(5);
 	time_t	last_telnet_cmd=0;
+	long	term = term_supports();
 
 	if(online==ON_REMOTE && !input_thread_running)
 		online=FALSE;
@@ -69,7 +70,7 @@ char sbbs_t::getkey(long mode)
 		}
 
 		if(mode&K_SPIN) {
-			if(useron.misc&NO_EXASCII) {
+			if(term&NO_EXASCII) {
 				switch(c++) {
 					case 0:
 						outchar(BS);

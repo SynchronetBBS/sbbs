@@ -36,6 +36,7 @@
 
 #include "sbbs.h"
 #include "wordwrap.h"
+#include "utf8.h"
 
 /****************************************************************************/
 /* Outputs a NULL terminated string with @-code parsing,                    */
@@ -65,10 +66,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 		attr(LIGHTGRAY);
 	if(mode&P_NOPAUSE)
 		sys_status|=SS_PAUSEOFF;
-	if(strncmp(str, "\xEF\xBB\xBF", 3) == 0) {
-		mode |= P_UTF8;
-		str += 3;
-	}
+	str = auto_utf8(str, &mode);
 	size_t len = strlen(str);
 
 	long term = term_supports();
