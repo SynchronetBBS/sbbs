@@ -1,3 +1,5 @@
+// $Id$
+
 require("unicode_cp437.js", 'unicode_cp437');
 
 function utf8_ascii(uni)
