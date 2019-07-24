@@ -30,6 +30,8 @@ function SBBSEchoCfg ()
 	this.pktpass = {};
 	this.ticpass = {};
 	this.packer = {};
+	this.inbox = {};
+	this.outbox = {};
 	this.is_flo = false;
 	this.outbound = undefined;
 	var packer = undefined;
@@ -51,6 +53,12 @@ function SBBSEchoCfg ()
 	}, this);
 	ecfg.iniGetSections('node:').forEach(function(section) {
 		this.ticpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'TicFilePwd', '');
+	}, this);
+	ecfg.iniGetSections('node:').forEach(function(section) {
+		this.inbox[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'inbox');
+	}, this);
+	ecfg.iniGetSections('node:').forEach(function(section) {
+		this.outbox[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'outbox');
 	}, this);
 	ecfg.iniGetSections('archive:').forEach(function(packer) {
 		this.packer[packer] = {};
