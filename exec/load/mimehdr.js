@@ -11,14 +11,14 @@ require("utf8_cp437.js", 'utf8_cp437');
 function decode(hvalue)
 {
 	var result = [];
-	var regex = /(\=\?[a-zA-Z0-9-]+\?.\?[^ ?]+\?\=|\S+\s*)/g;
+	var regex = /(\=\?[a-zA-Z0-9-]+\?.\?[^ ?]*\?\=|\S+\s*)/g;
 	var word;
 	
 	while(hvalue && (word = regex.exec(hvalue)) !== null) {
 		var str = word[1];
 		var retval = { charset: 'unspecified (US-ASCII)', data: str };
 
-		var match = str.match(/^\=\?([a-zA-Z0-9-]+)\?(.)\?([^ ?]+)\?\=$/);
+		var match = str.match(/^\=\?([a-zA-Z0-9-]+)\?(.)\?([^ ?]*)\?\=$/);
 		if(!match) {
 			result.push(retval);
 			continue;
@@ -50,11 +50,15 @@ function to_cp437(val)
 		word.data = strip_ctrl(word.data);
 		switch(word.charset) {
 			case 'utf-8':
-				result.push(utf8_cp437(word.data));
+				if(word.data)
+					result.push(utf8_cp437(word.data));
+				else
+					result.push(word.data);
 				break;
 			default:
 			case 'cp437':
 			case 'ibm437':
+			case 'us-ascii':
 				result.push(word.data);
 				break;
 		}
