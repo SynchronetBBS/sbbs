@@ -165,6 +165,7 @@ var renew = false;
 var revoke = false;
 var rsa;
 var sks;
+var sks_group_readable = false;
 var sbbsini = new File(sbbsini_fname);
 var settings = new File(setting_fname);
 var syspass;
@@ -202,6 +203,7 @@ if (settings.open("r")) {
 	new_host = settings.iniGetValue(null, "Host", new_host);
 	dir_path = settings.iniGetValue(null, "Directory", dir_path);
 	TOSAgreed = settings.iniGetValue(null, "TOSAgreed", TOSAgreed);
+	sks_group_readable = settings.iniGetValue(null, "GroupReadableKeyFile", sks_group_readable);
 
 	settings.close();
 }
@@ -417,6 +419,8 @@ if (renew) {
 	sks.add_private_key(rsa, syspass);
 	sks.add_public_key(cert);
 	sks.close();
+	if(sks_group_readable)
+		file_chmod(sks_fname, 0x1a0); //0640
 
 	/*
 	 * Recycle webserver
