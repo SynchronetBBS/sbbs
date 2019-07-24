@@ -120,7 +120,6 @@ static struct xpms_set	*ws_set=NULL;
 static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
-static char		temp_dir[MAX_PATH+1];
 static char		cgi_dir[MAX_PATH+1];
 static char		cgi_env_ini[MAX_PATH+1];
 static char		default_auth_list[MAX_PATH+1];
@@ -5782,7 +5781,7 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 	if(script == session->req.physical_path && session->req.xjs_handler[0])
 		script = session->req.xjs_handler;
 
-	sprintf(path,"%sSBBS_SSJS.%u.%u.html",temp_dir,getpid(),session->socket);
+	sprintf(path,"%sSBBS_SSJS.%u.%u.html",scfg.temp_dir,getpid(),session->socket);
 	if((session->req.fp=fopen(path,"wb"))==NULL) {
 		lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
 		return(FALSE);
@@ -5891,7 +5890,7 @@ static void respond(http_session_t * session)
 				return;
 			}
 			sprintf(session->req.physical_path
-				,"%sSBBS_SSJS.%u.%u.html",temp_dir,getpid(),session->socket);
+				,"%sSBBS_SSJS.%u.%u.html",scfg.temp_dir,getpid(),session->socket);
 		}
 		else {
 			session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
@@ -5945,7 +5944,7 @@ FILE *open_post_file(http_session_t *session)
 	FILE	*fp;
 
 	// Create temporary file for post data.
-	SAFEPRINTF3(path,"%sSBBS_POST.%u.%u.data",temp_dir,getpid(),session->socket);
+	SAFEPRINTF3(path,"%sSBBS_POST.%u.%u.data",scfg.temp_dir,getpid(),session->socket);
 	if((fp=fopen(path,"wb"))==NULL) {
 		lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
 		return fp;
@@ -6786,14 +6785,9 @@ void DLLCALL web_server(void* arg)
 		SAFECOPY(error_dir,startup->error_dir);
 		SAFECOPY(default_auth_list,startup->default_auth_list);
 		SAFECOPY(cgi_dir,startup->cgi_dir);
-		if(startup->temp_dir[0])
-			SAFECOPY(temp_dir,startup->temp_dir);
-		else
-			SAFECOPY(temp_dir,"../temp");
 
 		/* Change to absolute path */
 		prep_dir(startup->ctrl_dir, root_dir, sizeof(root_dir));
-		prep_dir(startup->ctrl_dir, temp_dir, sizeof(temp_dir));
 		prep_dir(root_dir, error_dir, sizeof(error_dir));
 		prep_dir(root_dir, cgi_dir, sizeof(cgi_dir));
 
@@ -6840,10 +6834,15 @@ void DLLCALL web_server(void* arg)
 			return;
 		}
 
-		lprintf(LOG_DEBUG,"Temporary file directory: %s", temp_dir);
-		MKDIR(temp_dir);
-		if(!isdir(temp_dir)) {
-			lprintf(LOG_CRIT,"!Invalid temp directory: %s", temp_dir);
+		if(startup->temp_dir[0])
+			SAFECOPY(scfg.temp_dir,startup->temp_dir);
+		else
+			SAFECOPY(scfg.temp_dir,"../temp");
+		prep_dir(startup->ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
+		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
+		MKDIR(scfg.temp_dir);
+		if(!isdir(scfg.temp_dir)) {
+			lprintf(LOG_CRIT,"!Invalid temp directory: %s", scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
