@@ -208,7 +208,7 @@ var tests = {
 		var lib = load({}, "sbbsimsg_lib.js");
 		var list = lib.read_sys_list(/* include_self: */true);
 		if(!lib.find_name(list, system.name))
-			return format("'%s' not listed in %s", system.name, lib.filename);
+			return system.name + " is not listed in " + lib.filename;
 	},
 	
 	check_dove_net: function(options)
@@ -267,7 +267,7 @@ var tests = {
 	}
 };
 
-var options = { verbose: argv.indexOf('-v') >= 0 };
+var options = { verbose: argv.indexOf('-v') >= 0 || argv.indexOf('-V') >= 0};
 
 var issues = 0;
 for(var i in tests) {
