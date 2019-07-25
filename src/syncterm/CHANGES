@@ -38,6 +38,7 @@ Added CSI Pn e as an alias to CSI Pn B
 Added CSI Pn Y to move a specified numer of tab stops
 Added CSI Pn SP c to remove a specific tab stop
 Added CSI Pn k as an alias to CSI Pn A
+Support for a "Custom" video mode added.
 
 Version 1.0
 -----------
