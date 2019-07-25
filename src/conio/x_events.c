@@ -426,12 +426,14 @@ static void local_draw_rect(struct rectlist *rect)
 	int cbottom = -1;
 	int idx;
 
+	if (bitmap_width != cleft || bitmap_height != ctop)
+		return;
 	/* TODO: Translate into local colour depth */
 	for(y=0;y<rect->rect.height;y++) {
 		idx = y*rect->rect.width;
 		// TODO: Understand why this is needed... last should be NULL when it's a different size!
 		for(x=0; x<rect->rect.width; x++) {
-			if (last && last->rect.width == rect->rect.width && last->rect.height == rect->rect.height) {
+			if (last) {
 				if (last->data[idx] != rect->data[idx]) {
 					if (x < cleft)
 						cleft = x;
