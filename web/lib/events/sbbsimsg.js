@@ -1,5 +1,3 @@
-load("sbbsdefs.js");
-load("nodedefs.js");
 const sbbsimsg = load({}, "sbbsimsg_lib.js");
 
 var last_run = 0;
