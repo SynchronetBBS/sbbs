@@ -716,7 +716,7 @@ void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor, const char* c
 		smb_hfield_str(msg, SMB_EDITOR, editor);
 
 	if(charset != NULL)
-		smb_hfield_str(msg, FIDOCTRL, charset);
+		smb_hfield_str(msg, FIDOCHARSET, charset);
 
 	ushort useron_xedit = useron.xedit;
 
