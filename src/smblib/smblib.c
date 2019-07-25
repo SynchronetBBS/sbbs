@@ -860,6 +860,9 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case FIDOFLAGS:
 			msg->ftn_flags=(char*)hfield_dat;
 			break;
+		case FIDOCHARSET:
+			msg->ftn_charset=(char*)hfield_dat;
+			break;
 		case RFC822HEADER:
 		{
 			char* p = (char*)hfield_dat;
@@ -923,6 +926,7 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 	msg->ftn_pid=NULL;
 	msg->ftn_tid=NULL;
 	msg->ftn_flags=NULL;
+	msg->ftn_charset=NULL;
 }
 
 /****************************************************************************/
@@ -1693,7 +1697,7 @@ BOOL SMBCALL smb_msg_is_from(smbmsg_t* msg, const char* name, enum smb_net_type 
 	}
 }
 
-BOOL SMBCALL smb_msg_is_utf8(smbmsg_t* msg)
+BOOL SMBCALL smb_msg_is_utf8(const smbmsg_t* msg)
 {
 	for(int i=0; i < msg->total_hfields; i++) {
 		switch(msg->hfield[i].type) {
@@ -1702,6 +1706,8 @@ BOOL SMBCALL smb_msg_is_utf8(smbmsg_t* msg)
 				return TRUE;
 		}
 	}
+	if(msg->ftn_charset != NULL && strncmp(msg->ftn_charset, "UTF-8", 5) == 0)
+		return TRUE;
 	return msg->text_charset != NULL && stricmp(msg->text_charset, "utf-8") == 0;
 }
 

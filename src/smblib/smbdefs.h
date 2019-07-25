@@ -207,7 +207,7 @@
 #define SMB_EXPIRATION		0x65
 #define SMB_PRIORITY		0x66	/* DEPRECATED */
 #define SMB_COST			0x67
-#define	SMB_EDITOR			0x68
+#define	SMB_EDITOR			0x68	/* Associated with FTN ^aNOTE: control line */
 #define SMB_TAGS			0x69	/* List of tags (ala hash-tags) related to this message */
 #define SMB_TAG_DELIMITER	" "
 #define SMB_COLUMNS			0x6a	/* original text editor width in fixed-width columns */
@@ -221,6 +221,7 @@
 #define FIDOPID 			0xa6
 #define FIDOFLAGS			0xa7
 #define FIDOTID 			0xa8
+#define FIDOCHARSET			0xa9	// CHRS or CHARSET control line
 
 #define RFC822HEADER		0xb0
 #define RFC822MSGID 		0xb1
@@ -551,6 +552,7 @@ typedef struct {				/* Message */
 				*ftn_tid,		/* FTN TID */
 				*ftn_area,		/* FTN AREA */
 				*ftn_flags,		/* FTN FLAGS */
+				*ftn_charset,	/* FTN CHRS */
 				*ftn_msgid,		/* FTN MSGID */
 				*ftn_reply;		/* FTN REPLY */
 	char*		summary;		/* Summary  */
