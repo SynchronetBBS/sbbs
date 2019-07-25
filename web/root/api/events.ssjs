@@ -1,7 +1,6 @@
-load('sbbsdefs.js');
-load('modopts.js');
-const settings = get_mod_options('web');
-load(settings.web_directory + '/lib/init.js');
+require('sbbsdefs.js', 'SYS_CLOSED');
+var settings = load('modopts.js', 'web');
+require(settings.web_directory + '/lib/init.js', 'WEBV4_INIT');
 const auth_lib = load({}, settings.web_lib + 'auth.js');
 
 js.time_limit = 0;
