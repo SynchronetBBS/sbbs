@@ -1,3 +1,4 @@
+require('sbbsdefs.js', 'MSG_DELETE');
 load(settings.web_lib + 'mime-decode.js');
 
 function listGroups() {

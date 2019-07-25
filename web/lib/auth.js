@@ -1,4 +1,4 @@
-load('sbbsdefs.js');
+require('sbbsdefs.js', 'SYS_CLOSED');
 
 function randomString(length) {
 	var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split("");
@@ -190,5 +190,7 @@ function is_user() {
     	}
     }
 })();
+
+const WEBV4_AUTH = true;
 
 this;
