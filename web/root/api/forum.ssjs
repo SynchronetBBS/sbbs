@@ -3,12 +3,11 @@
     is done here; otherwise all permission checking is done at the function
     level. */
 
-load('modopts.js');
-var settings = get_mod_options('web');
+var settings = load('modopts.js', 'web');
 
-load(settings.web_directory + '/lib/init.js');
+require(settings.web_directory + '/lib/init.js', 'WEBV4_INIT');
 const auth_lib = load({}, settings.web_lib + 'auth.js');
-load(settings.web_lib + 'forum.js');
+const forum_lib = load({}, settings.web_lib + 'forum.js');
 
 var reply = {};
 
@@ -32,12 +31,12 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 
             case 'get-mail-body':
                 if (typeof http_request.query.number !== 'undefined') {
-                    reply = getMailBody(http_request.query.number[0]);
+                    reply = forum_lib.getMailBody(http_request.query.number[0]);
                 }
                 break;
 
             case 'get-signature':
-                reply.signature = getSignature();
+                reply.signature = forum_lib.getSignature();
                 break;
 
             case 'post-reply':
@@ -45,7 +44,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     typeof http_request.query.body !== 'undefined' &&
                     typeof http_request.query.pid !== 'undefined'
                 ) {
-                    reply.success = postReply(
+                    reply.success = forum_lib.postReply(
                         http_request.query.sub[0],
                         http_request.query.body[0],
                         Number(http_request.query.pid[0])
@@ -61,7 +60,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     typeof http_request.query.subject !== 'undefined' &&
                     typeof http_request.query.body !== 'undefined'
                 ) {
-                    reply.success = postNew(
+                    reply.success = forum_lib.postNew(
                         http_request.query.sub[0],
                         http_request.query.to[0],
                         http_request.query.subject[0],
@@ -76,7 +75,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 if (typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.number !== 'undefined'
                 ) {
-                    reply.success = deleteMessage(
+                    reply.success = forum_lib.deleteMessage(
                         http_request.query.sub[0],
                         http_request.query.number[0]
                     );
@@ -87,7 +86,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 
             case 'delete-mail':
                 if (typeof http_request.query.number !== 'undefined') {
-                    reply.success = deleteMail(http_request.query.number);
+                    reply.success = forum_lib.deleteMail(http_request.query.number);
                 } else {
                     reply.success = false;
                 }
@@ -97,7 +96,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 if (typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.cfg !== 'undefined'
                 ) {
-                    reply.success = setScanCfg(
+                    reply.success = forum_lib.setScanCfg(
                         http_request.query.sub[0],
                         http_request.query.cfg[0]
                     );
@@ -112,7 +111,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     typeof http_request.query.up !== 'undefined' &&
                     !(user.security.restrictions&UFLAG_V)
                 ) {
-                    reply.success = voteMessage(
+                    reply.success = forum_lib.voteMessage(
                         http_request.query.sub[0],
                         http_request.query.id[0],
                         http_request.query.up[0]
@@ -127,7 +126,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     typeof http_request.query.id !== 'undefined' &&
                     typeof http_request.query.answer !== 'undefined'
                 ) {
-                    reply.success = submitPollAnswers(
+                    reply.success = forum_lib.submitPollAnswers(
                         http_request.query.sub[0],
                         http_request.query.id[0],
                         http_request.query.answer
@@ -142,7 +141,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     typeof http_request.query.results !== 'undefined' &&
                     typeof http_request.query.answer !== 'undefined'
                 ) {
-                    reply.success = postPoll(
+                    reply.success = forum_lib.postPoll(
                         http_request.query.sub[0],
                         http_request.query.subject[0],
                         http_request.query.votes[0],
@@ -172,7 +171,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 ) {
                     var id = parseInt(http_request.query.id[0]);
                     if (!isNaN(id)) {
-                        reply = getVotesInThread(
+                        reply = forum_lib.getVotesInThread(
                             http_request.query.sub[0],
                             id
                         );
@@ -182,7 +181,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 
             case 'get-sub-votes':
                 if (typeof http_request.query.sub !== 'undefined') {
-                    reply = getVotesInThreads(http_request.query.sub[0]);
+                    reply = forum_lib.getVotesInThreads(http_request.query.sub[0]);
                 }
                 break;
 
@@ -190,7 +189,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 if (typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.id !== 'undefined'
                 ) {
-                    reply = getUserPollData(
+                    reply = forum_lib.getUserPollData(
                         http_request.query.sub[0],
                         http_request.query.id[0]
                     );
@@ -198,12 +197,12 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 break;
 
             case 'list-groups':
-                reply = listGroups();
+                reply = forum_lib.listGroups();
                 break;
 
             case 'list-subs':
                 if (typeof http_request.query.group !== 'undefined') {
-                    reply = listSubs(http_request.query.group[0]);
+                    reply = forum_lib.listSubs(http_request.query.group[0]);
                 }
                 break;
 
@@ -214,7 +213,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     if (typeof http_request.query.count !== 'undefined') {
                         var count = http_request.query.count[0];
                     }
-                    reply = listThreads(
+                    reply = forum_lib.listThreads(
                         http_request.query.sub[0],
                         http_request.query.offset[0],
                         count || settings.page_size
@@ -226,7 +225,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 if (typeof http_request.query.group !== 'undefined') {
                     http_request.query.group.forEach(
                         function(group) {
-                            reply[group] = getGroupUnreadCount(group);
+                            reply[group] = forum_lib.getGroupUnreadCount(group);
                         }
                     );
                 }
@@ -236,7 +235,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 if (typeof http_request.query.sub !== 'undefined') {
                     http_request.query.sub.forEach(
                         function(sub) {
-                            reply[sub] = getSubUnreadCount(sub);
+                            reply[sub] = forum_lib.getSubUnreadCount(sub);
                         }
                     );
                 }
