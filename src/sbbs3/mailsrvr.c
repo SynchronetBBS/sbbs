@@ -766,9 +766,10 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
         }
     }
 	/* Default MIME Content-Type for non-Internet messages */
-	if(msg->from_net.type!=NET_INTERNET && content_type==NULL && startup->default_charset[0]) {
-		/* No content-type specified, so assume IBM code-page 437 (full ex-ASCII) */
-		sockprintf(socket,prot,sess,"Content-Type: text/plain; charset=%s", startup->default_charset);
+	if(msg->from_net.type!=NET_INTERNET && content_type==NULL) {
+		const char* charset =  smb_msg_is_utf8(msg) ? "UTF-8" : startup->default_charset;
+		if(*charset)
+			sockprintf(socket,prot,sess,"Content-Type: text/plain; charset=%s", charset);
 		sockprintf(socket,prot,sess,"Content-Transfer-Encoding: 8bit");
 	}
 
