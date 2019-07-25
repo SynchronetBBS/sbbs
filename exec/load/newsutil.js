@@ -65,8 +65,12 @@ function write_news_header(hdr,writeln)
 		}
 	}
 	if(content_type==undefined) {
-		/* No content-type specified, so assume IBM code-page 437 (full ex-ASCII) */
-		writeln("Content-Type: text/plain; charset=IBM437");
+		var charset = hdr.text_charset;
+		if(!charset)
+			charset = "IBM437";
+		if(hdr.is_utf8)
+			charset = "UTF-8";
+		writeln("Content-Type: text/plain; charset=" + charset);
 		writeln("Content-Transfer-Encoding: 8bit");
 	}
 
