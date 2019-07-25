@@ -485,6 +485,6 @@ function unicode_cp437(uc)
 		case 0xFFEC: return String.fromCharCode(0x0056);
 		case 0xFFED: return String.fromCharCode(0x00FE);
 		default:
-			return tring.fromCharCode(0x00A8); // Inverted question mark
+			return String.fromCharCode(0x00A8); // Inverted question mark
 	}
 }
