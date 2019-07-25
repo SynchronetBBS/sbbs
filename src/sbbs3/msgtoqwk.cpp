@@ -201,6 +201,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
 		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOTID,NULL))!=NULL)	
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
+		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOCHARSET,NULL))!=NULL)
+			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
 		/* Misc. FTN-Kludge header fields: */
 		for(i = 0; i < msg->total_hfields; i++)
 			if(msg->hfield[i].type == FIDOCTRL)
