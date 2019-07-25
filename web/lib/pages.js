@@ -1,3 +1,5 @@
+require('xjs.js', 'xjs_compile');
+
 function getWebCtrl(dir) {
 	if (!file_exists(dir + 'webctrl.ini')) return false;
 	var f = new File(dir + 'webctrl.ini');
@@ -150,10 +152,14 @@ function getPage(page) {
 	switch(ext) {
 		case '.SSJS':
 			if (ext === '.SSJS' && page.search(/\.xjs\.ssjs$/i) >= 0) break;
-			load({}, page, true);
+			(function () {
+				load({}, page, true);
+			})();
 			break;
 		case '.XJS':
-			load({}, xjs_compile(page), true);
+			(function () {
+				load({}, xjs_compile(page), true);
+			})();
 			break;
 		case '.HTML':
 			var f = new File(page);
@@ -185,3 +191,5 @@ function writePage(page) {
 		write(getPage(page));
 	}
 }
+
+this;
