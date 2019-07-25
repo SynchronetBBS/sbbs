@@ -1,5 +1,3 @@
-load(settings.web_lib + 'forum.js');
-
 var last_run = 0;
 var frequency = 30;
 var last_count = 0;
