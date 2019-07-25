@@ -430,7 +430,7 @@ static void local_draw_rect(struct rectlist *rect)
 	for(y=0;y<rect->rect.height;y++) {
 		idx = y*rect->rect.width;
 		for(x=0; x<rect->rect.width; x++) {
-			if (last) {
+			if (last && last->width == rect->width && last->height == rect->height) {
 				if (last->data[idx] != rect->data[idx]) {
 					if (x < cleft)
 						cleft = x;
