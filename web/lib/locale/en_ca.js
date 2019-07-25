@@ -1,4 +1,4 @@
-load(backslash(settings.web_lib + 'locale/') + 'en_us.js');
+require(backslash(settings.web_lib + 'locale/') + 'en_us.js', 'EN_US');
 
 function EN_CA() {
     EN_US.call(this, 'en_ca');

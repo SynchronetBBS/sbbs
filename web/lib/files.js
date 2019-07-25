@@ -1,5 +1,5 @@
-load('filebase.js');
-load('file_size.js');
+require('filebase.js', 'FileBase');
+require('file_size.js', 'file_size_str');
 
 function count_files(dir) {
     var n = 0;
@@ -31,3 +31,5 @@ function listFiles(dir) {
 		return df;
 	});
 }
+
+this;

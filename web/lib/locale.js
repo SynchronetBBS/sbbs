@@ -1,7 +1,7 @@
 if (!settings.locale) {
-    load(backslash(settings.web_lib + 'locale/') + 'en_us.js');
+    require(backslash(settings.web_lib + 'locale/') + 'en_us.js', 'Locale');
 } else {
-    load(backslash(settings.web_lib + 'locale/') + settings.locale + '.js');
+    require(backslash(settings.web_lib + 'locale/') + settings.locale + '.js', 'Locale');
 }
 
 var locale = new Locale();

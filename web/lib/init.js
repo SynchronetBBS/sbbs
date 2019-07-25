@@ -1,7 +1,6 @@
-load('sbbsdefs.js');
-load('modopts.js');
+require('sbbsdefs.js', 'SYS_CLOSED');
 
-if (!settings) var settings = get_mod_options('web');
+if (!settings) var settings = load('modopts.js', 'web');
 
 // Paths
 settings.web_directory = fullpath(
@@ -69,7 +68,7 @@ Object.keys(defaults).forEach(function (e) {
 
 defaults = undefined;
 
-load(settings.web_lib + 'locale.js');
+require(settings.web_lib + 'locale.js', 'locale');
 
 if (typeof alert === 'undefined') {
     function alert(msg) {
@@ -95,3 +94,5 @@ const Req = {
     }
   }
 };
+
+const WEBV4_INIT = true;
