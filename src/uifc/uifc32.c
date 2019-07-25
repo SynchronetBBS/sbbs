@@ -427,7 +427,7 @@ void docopy(void)
 						break;
 					case CIOLIB_BUTTON_1_DRAG_END:
 						lines=abs(mevent.endy-mevent.starty)+1;
-						copybuf=alloca((endy-starty+1)*(endx-startx+1)+1+lines*2);
+						copybuf=malloc((endy-starty+1)*(endx-startx+1)+1+lines*2);
 						outpos=0;
 						for(y=starty-1;y<endy;y++) {
 							for(x=startx-1;x<endx;x++) {
@@ -440,6 +440,7 @@ void docopy(void)
 						}
 						copybuf[outpos]=0;
 						copytext(copybuf, strlen(copybuf));
+						free(copybuf);
 						restorescreen(screen);
 						freescreen(screen);
 						freescreen(sbuffer);
@@ -1076,12 +1077,13 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						if(mode&WIN_ACT) {
 							if(!(api->mode&UIFC_NHM))
 								uifc_mouse_disable();
-							if((win=alloca((width+3)*(height+2)*sizeof(*win)))==NULL) {
+							if((win=malloc((width+3)*(height+2)*sizeof(*win)))==NULL) {
 								cprintf("UIFC line %d: error allocating %u bytes."
 									,__LINE__,(width+3)*(height+2)*sizeof(*win));
 								return(-1);
 							}
 							inactive_win(win, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr, top);
+							free(win);
 							if(!(api->mode&UIFC_NHM))
 								uifc_mouse_enable();
 						}
