@@ -1,10 +1,8 @@
-load('modopts.js');
-var settings = get_mod_options('web');
+var settings = load('modopts.js', 'web');
 
-load(settings.web_directory + '/lib/init.js');
-load(settings.web_lib + 'auth.js');
-load(settings.web_lib + 'files.js');
-load('filebase.js');
+require(settings.web_directory + '/lib/init.js', 'WEBV4_INIT');
+require(settings.web_lib + 'auth.js', 'WEBV4_AUTH');
+require('filebase.js', 'FileBase');
 
 var CHUNK_SIZE = 1024;
 
@@ -22,16 +20,14 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 			) {
 				var fileBase = new FileBase(file_area.dir[http_request.query.dir[0]].code);
 				var file = null;
-				fileBase.some(
-					function (e) {
-						if (e.base.toLowerCase() + '.' + e.ext.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
-							return false;
-						} else if (typeof e.path !== 'undefined') {
-							file = e;
-							return true;
-						}
+				fileBase.some(function (e) {
+					if (e.base.toLowerCase() + '.' + e.ext.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
+						return false;
+					} else if (typeof e.path !== 'undefined') {
+						file = e;
+						return true;
 					}
-				);
+				});
 				if (file === null) break;
 				http_reply.header['Content-Type'] = 'application/octet-stream';
 				http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
