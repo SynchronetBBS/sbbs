@@ -333,7 +333,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 		// This is a normal message
 		} else {
-			writeln(formatMessage(body, false, settings.forum_extended_ascii));
+			writeln(formatMessage(body, false, settings.forum_extended_ascii && !header.is_utf8));
 			writeln(strings.message.body.close);
 		}
 
