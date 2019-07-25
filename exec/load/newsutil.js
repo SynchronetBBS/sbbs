@@ -65,15 +65,10 @@ function write_news_header(hdr,writeln)
 		}
 	}
 	if(content_type==undefined) {
-		var charset = hdr.text_charset;
-		if(!charset)
-			charset = "IBM437";
-		if(hdr.is_utf8)
-			charset = "UTF-8";
+		var charset = hdr.text_charset || (hdr.is_utf8 ? "UTF-8" : "IBM437");
 		writeln("Content-Type: text/plain; charset=" + charset);
 		writeln("Content-Transfer-Encoding: 8bit");
 	}
-
 }
 
 function parse_news_header(hdr, line)
