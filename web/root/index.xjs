@@ -1,13 +1,11 @@
 <?xjs
 
-    load('modopts.js');
-    var settings = get_mod_options('web');
+    const settings = load('modopts.js', 'web');
 
-	load('xjs.js');
-	load(settings.web_directory + '/lib/init.js');
+	require(settings.web_directory + '/lib/init.js', 'WEBV4_INIT');
 	const auth_lib = load({}, settings.web_lib + 'auth.js');
-	load(settings.web_lib + 'pages.js');
-	load(settings.web_lib + 'sidebar.js');
+	const page_lib = load({}, settings.web_lib + 'pages.js');
+	const sidebar_lib = load({}, settings.web_lib + 'sidebar.js');
 
 	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
     if (page.search(/(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/i) > -1) {
@@ -19,7 +17,7 @@
     if (!file_exists(fullpath(settings.web_pages + page)) || fullpath(settings.web_pages + page).indexOf(fullpath(settings.web_pages)) !== 0) {
         page = '000-home.xjs';
     }
-	var page_ctrl = getCtrlLine(settings.web_pages + page);
+	const page_ctrl = page_lib.getCtrlLine(settings.web_pages + page);
 
 ?>
 
@@ -57,7 +55,7 @@
 		if (settings.layout_sidebar_off || page_ctrl.options.no_sidebar) return;
 ?>
 	<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">
-		<?xjs writeSidebarModules(); ?>
+		<?xjs sidebar_lib.writeSidebarModules(); ?>
 	</div>
 <?xjs } ?>
 
@@ -125,7 +123,7 @@
 				</div>
 				<div id="navbar" class="collapse navbar-collapse">
 					<ul class="nav navbar-nav">
-						<?xjs _menu(getPageList(settings.web_pages)); ?>
+						<?xjs _menu(page_lib.getPageList(settings.web_pages)); ?>
 					</ul>
 					<ul class="nav navbar-nav navbar-right">
 						<?xjs if (user.alias === settings.guest || user.number < 1) { ?>
@@ -191,7 +189,7 @@
 						<button title="Toggle sidebar" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas"><span class="glyphicon glyphicon-tasks"></span><?xjs write(locale.strings.main.label_sidebar); ?></button>
 					</p>
 					</div>
-					<?xjs writePage(page); ?>
+					<?xjs page_lib.writePage(page); ?>
 				</div>
 				<?xjs if (!settings.layout_sidebar_left || settings.layout_sidebar_right) _sidebar(); ?>
 			</div>
