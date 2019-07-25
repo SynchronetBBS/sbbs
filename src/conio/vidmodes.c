@@ -112,6 +112,8 @@ struct video_params vparams[] = {
 	/* Awesome modes */
 	{ST132X37_16_9, COLOUR_PALETTE, 132, 37, 14, 15, 16, 8, 1},
 	{ST132X52_5_4, COLOUR_PALETTE, 132, 52, 14, 15, 16, 8, 1},
+	/* Custom mode */
+	{CIOLIB_MODE_CUSTOM, COLOUR_PALETTE, 80, 25, 14, 15, 16, 8, 1},
 };
 
 uint32_t palettes[5][16] = {

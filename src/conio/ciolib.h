@@ -34,6 +34,7 @@
 #ifndef _CIOLIB_H_
 #define _CIOLIB_H_
 
+#include <limits.h>	/* INT_MAX */
 #include <string.h>	/* size_t */
 #include "gen_defs.h"
 
@@ -202,6 +203,9 @@ enum text_modes
 	VESA_132X43	= 213,
 	VESA_132X50	= 206,
 	VESA_132X60	= 196,
+
+	/* Custom Mode */
+	CIOLIB_MODE_CUSTOM = INT_MAX,
 };
 
 #define COLOR_MODE	C80
