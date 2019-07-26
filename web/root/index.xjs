@@ -1,11 +1,11 @@
 <?xjs
 
-    var settings = load('modopts.js', 'web');
+	var settings = load('modopts.js', 'web');
 
-	require(settings.web_directory + '/lib/init.js', 'WEBV4_INIT');
-	const auth_lib = load({}, settings.web_lib + 'auth.js');
-	const page_lib = load({}, settings.web_lib + 'pages.js');
-	const sidebar_lib = load({}, settings.web_lib + 'sidebar.js');
+	load(settings.web_directory + '/lib/init.js');
+	var auth_lib = load({}, settings.web_lib + 'auth.js');
+	var page_lib = load({}, settings.web_lib + 'pages.js');
+	var sidebar_lib = load({}, settings.web_lib + 'sidebar.js');
 
 	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
     if (page.search(/(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/i) > -1) {
@@ -17,7 +17,7 @@
     if (!file_exists(fullpath(settings.web_pages + page)) || fullpath(settings.web_pages + page).indexOf(fullpath(settings.web_pages)) !== 0) {
         page = '000-home.xjs';
     }
-	const page_ctrl = page_lib.getCtrlLine(settings.web_pages + page);
+	var page_ctrl = page_lib.getCtrlLine(settings.web_pages + page);
 
 ?>
 
