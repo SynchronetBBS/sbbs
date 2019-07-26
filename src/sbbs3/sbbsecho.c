@@ -3399,7 +3399,10 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		}
 
 		ch=fbuf[l];
-		if(ch==CTRL_A && cr) {	/* kludge line */
+		if(ch==CTRL_A && !cr)
+			ch = '@';
+
+		if(ch==CTRL_A) {	/* kludge line */
 
 			if(!strncmp((char *)fbuf+l+1,"TOPT ",5))
 				destaddr.point=atoi((char *)fbuf+l+6);
