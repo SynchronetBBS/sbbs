@@ -1,3 +1,6 @@
+load('sbbsdefs.js');
+load('funclib.js');
+
 function loadSettings(path) {
 
 	var f = new File((path || js.exec_dir) + 'bullshit.ini');
