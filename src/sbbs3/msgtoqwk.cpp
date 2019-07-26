@@ -466,7 +466,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 						size+=fwrite(str,sizeof(char),strlen(str),qwk_fp);
 					continue; 
 				} 						/* End Expand */
-				if(mode&QM_RETCTLA && valid_ctrl_a_code(ch)) {
+				if(mode&QM_RETCTLA && valid_ctrl_a_attr(ch)) {
 					fputc(CTRL_A,qwk_fp);
 					fputc(ch,qwk_fp);
 					size+=2L; 
