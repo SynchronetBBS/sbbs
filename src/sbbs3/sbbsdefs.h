@@ -761,6 +761,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define P_WRAP		(1<<12)		/* Wrap/split long-lines, ungracefully		*/
 #define P_UTF8		(1<<13)		/* Message is UTF-8							*/
 #define P_AUTO_UTF8	(1<<14)		/* Message may be UTF-8, auto-detect		*/
+#define P_NOXATTRS	(1<<15)		/* No "Extra Attribute Codes" supported		*/
 
 								/* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1<<0)		/* List files by upload time                */

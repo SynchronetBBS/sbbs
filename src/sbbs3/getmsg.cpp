@@ -292,6 +292,8 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 			utf8_normalize_str(txt);
 		p_mode |= P_UTF8;
 	}
+	if(smb->subnum < cfg.total_subs)
+		p_mode |= cfg.sub[smb->subnum]->pmode;
 	putmsg(p, p_mode, msg->columns);
 	smb_freemsgtxt(txt);
 	if(column)

@@ -557,6 +557,8 @@ void sub_cfg(uint grpnum)
 	#endif
 						sprintf(opt[n++],"%-27.27s%s","Compress Messages (LZH)"
 							,cfg.sub[i]->misc&SUB_LZH ? "Yes" : "No");
+						sprintf(opt[n++],"%-27.27s%s","Extra Attribute Codes"
+							,cfg.sub[i]->pmode&P_NOXATTRS ? "No" : "Yes");
 						sprintf(opt[n++],"%-27.27s%s","Template for New Subs"
 							,cfg.sub[i]->misc&SUB_TEMPLATE ? "Yes" : "No");
 
@@ -1029,6 +1031,28 @@ void sub_cfg(uint grpnum)
 								}
 								break;
 							case 15:
+								n=(cfg.sub[i]->pmode&P_NOXATTRS) ? 1:0;
+								uifc.helpbuf=
+									"`Extra Attribute Codes:`\n"
+									"\n"
+									"Set this option to `No` to disable the interpretation of so-called\n"
+									"Extra Attribute Codes (printable color codes for other BBS software\n"
+									"e.g. pipe codes).\n"
+								;
+								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
+									,"Interpret/Display Extra Attribute Codes in Messages",uifcYesNoOpts);
+								if(n==-1)
+									break;
+								if(n == 0 && (cfg.sub[i]->pmode&P_NOXATTRS)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->pmode ^= P_NOXATTRS;
+								}
+								else if(n == 1 && !(cfg.sub[i]->pmode&P_NOXATTRS)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->pmode ^= P_NOXATTRS;
+								}
+								break;
+							case 16:
 								n=(cfg.sub[i]->misc&SUB_TEMPLATE) ? 0:1;
 								uifc.helpbuf=
 									"`Use this Sub-board as a Template for New Subs:`\n"

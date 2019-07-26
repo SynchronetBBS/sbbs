@@ -68,6 +68,7 @@ typedef struct {							/* Message sub board info */
 	uint32_t	misc,						/* Miscellaneous flags */
 				maxmsgs,					/* Max number of messages allowed */
 				maxcrcs;					/* Max number of CRCs to keep */
+	int32_t		pmode;						/* printfile()/putmsg() mode flags */
 	faddr_t		faddr;						/* FidoNet address */
 
 } sub_t;
