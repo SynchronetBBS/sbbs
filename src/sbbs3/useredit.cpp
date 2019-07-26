@@ -928,7 +928,8 @@ void sbbs_t::maindflts(user_t* user)
 					user->misc |= COLOR;
 					user->misc &= ~ICE_COLOR;
 					if(yesno(text[ColorTerminalQ])) {
-						if(!noyes(text[IceColorTerminalQ]))
+						if(!(console&(CON_BLINK_FONT|CON_HBLINK_FONT))
+							&& !noyes(text[IceColorTerminalQ]))
 							user->misc |= ICE_COLOR;
 					} else
 						user->misc &= ~COLOR;
