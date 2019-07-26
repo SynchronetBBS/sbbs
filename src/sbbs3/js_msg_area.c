@@ -77,19 +77,20 @@ static char* msg_sub_prop_desc[] = {
 	,"sub-board data storage location"
 	,"FidoNet origin line"
 	,"QWK Network tagline"
-	,"toggle options (bitfield)"
+	,"toggle options (bitfield) - see <tt>SUB_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"index into message scan configuration/pointer file"
 	,"QWK conference number"
 	,"configured maximum number of message CRCs to store (for dupe checking)"
 	,"configured maximum number of messages before purging"
 	,"configured maximum age (in days) of messages before expiration"
+	,"additional print mode flags to use when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	/* Insert here */
 	,"user has sufficient access to read messages"
 	,"user has sufficient access to post messages"
 	,"user has operator access to this message area"
 	,"user's posts are moderated"
 	,"user's current new message scan pointer (highest-read message number)"
-	,"user's message scan configuration (bitfield) see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for valid bits"
+	,"user's message scan configuration (bitfield) - see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"user's last-read message number"
 	,NULL
 };
@@ -257,6 +258,10 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 		return(FALSE);
 
 	if(!JS_DefineProperty(cx, subobj, "max_age", INT_TO_JSVAL(sub->maxage)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
+
+	if(!JS_DefineProperty(cx, subobj, "print_mode", INT_TO_JSVAL(sub->pmode)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
 
