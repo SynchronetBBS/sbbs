@@ -4916,8 +4916,6 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 					l++;
 					if(buf[l]==0 || buf[l]=='Z')	/* EOF */
 						break;
-					if((ch=ctrl_a_to_ascii_char(buf[l])) != 0)
-						fmsgbuf[f++]=ch;
 					continue;
 				}
 

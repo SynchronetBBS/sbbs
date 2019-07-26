@@ -399,11 +399,6 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 				ch=buf[++l];
 				if(ch==0 || ch=='Z')	/* EOF */
 					break;
-				if((asc=ctrl_a_to_ascii_char(ch)) != 0) {
-					fputc(asc,qwk_fp);
-					size++;
-					continue;
-				}
 				if(mode&QM_EXPCTLA) {
 					str[0]=0;
 					switch(toupper(ch)) {

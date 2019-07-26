@@ -917,8 +917,6 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			l++;
 			if(l>=length)
 				break;
-			if((ch=ctrl_a_to_ascii_char(qwkbuf[l])) != 0)
-				write(fido,&ch,1);
 		}
 		else if(qwkbuf[l]!=LF) {
 			if(qwkbuf[l]==QWK_NEWLINE) /* QWK cr/lf char converted to hard CR */
