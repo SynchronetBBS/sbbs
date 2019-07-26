@@ -52,7 +52,7 @@ function write_list(sec, list)
 
 var usrsec = [];
 for(var i in file_cnf.txtsec) {
-	if(user.compare_ars(file_cnf.txtsec[i].ars))
+	if(bbs.compare_ars(file_cnf.txtsec[i].ars))
 		usrsec.push(file_cnf.txtsec[i]);
 }
 if(!usrsec.length) {

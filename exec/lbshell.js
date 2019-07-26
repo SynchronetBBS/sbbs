@@ -95,7 +95,7 @@ function get_message()
 	}
 
 	/* Check if user data has changed */
-	if((system.node_list[bbs.node_num-1].misc & NODE_UDAT) && user.compare_ars("REST NOT G")) {
+	if((system.node_list[bbs.node_num-1].misc & NODE_UDAT) && bbs.compare_ars("REST NOT G")) {
 		user.cached=false;
 		system.node_list[bbs.node_num-1].misc &= ~NODE_UDAT;
 	}
@@ -117,7 +117,7 @@ function get_message()
 	}
 
 	/* Time left warning? */
-	if((bbs.time_left/60)<(5-console.timeleft_warning) && !user.compare_ars("SYSOP") && !(bbs.sys_status&SS_TMPSYSOP)) {
+	if((bbs.time_left/60)<(5-console.timeleft_warning) && !bbs.compare_ars("SYSOP")) {
 		console.timeleft_warning=5-(bbs.time_left/60);
 		rows+=MessageWindow.putmsg(1,MessageWindow.height,format(bbs.text(OnlyXminutesLeft),bbs.time_left/60+1,(bbs.time_left/60)?"s":""),MessageWindow_Attr,true);
 	}
@@ -241,12 +241,12 @@ function Mainbar()
 	this.xpos=2;
 	this.ypos=1;
 	this.hotkeys=KEY_DOWN+";"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-	this.add("|File","F",undefined,undefined,undefined,user.compare_ars("REST T"));
+	this.add("|File","F",undefined,undefined,undefined,bbs.compare_ars("REST T"));
 	this.add("|Messages","M");
-	this.add("|Email","E",undefined,undefined,undefined,user.compare_ars("REST SE"));
-	this.add("|Chat","C",undefined,undefined,undefined,user.compare_ars("REST C"));
+	this.add("|Email","E",undefined,undefined,undefined,bbs.compare_ars("REST SE"));
+	this.add("|Chat","C",undefined,undefined,undefined,bbs.compare_ars("REST C"));
 	this.add("|Settings","S");
-	this.add("E|xternals","x",undefined,undefined,undefined,user.compare_ars("REST X"));
+	this.add("E|xternals","x",undefined,undefined,undefined,bbs.compare_ars("REST X"));
 	this.add("|View","V");
 	this.add("|Goodbye","G");
 	this.add("Commands",";");
@@ -315,13 +315,13 @@ function Filemenu()
 	this.add(
 		 format_opt("|Download file(s)",width,true)
 		,"D",width,undefined,undefined
-		,user.compare_ars("REST D")
+		,bbs.compare_ars("REST D")
 			|| (!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_download)
 	);
 	this.add(
 		 format_opt("|Upload file(s)",width,true)
 		,"U",width,undefined,undefined
-		,user.compare_ars("REST U")
+		,bbs.compare_ars("REST U")
 			|| ((!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload)
 			&& file_area.upload_dir==undefined)
 	);
@@ -334,7 +334,7 @@ function Filemenu()
 		,"B",width,undefined,undefined
 		// Disabled if you can't upload or download.
 		// Disabled if no upload dir and no batch queue
-		,(user.compare_ars("REST U AND REST D"))
+		,(bbs.compare_ars("REST U AND REST D"))
 			|| (bbs.batch_upload_total <= 0  
 				&& bbs.batch_dnload_total <= 0 
 				&& file_area.upload_dir==undefined
@@ -411,7 +411,7 @@ function Emailmenu()
 	this.add(top_bar(width),undefined,undefined,"","");
 	this.add(format_opt("|Send Mail",width,true),"S",width);
 	this.add("|Read Inbox","R",width);
-	this.add("Read Sent |Messages","M",width,undefined,undefined,user.compare_ars("REST K"));
+	this.add("Read Sent |Messages","M",width,undefined,undefined,bbs.compare_ars("REST K"));
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
 Emailmenu.prototype=ShellLB.prototype;
@@ -440,8 +440,8 @@ function Messagemenu()
 		 format_opt("Search For |Text in Messages",width,true)
 		,"T",width
 	);
-	this.add("|Post In "+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name,"P",width,undefined,undefined,user.compare_ars("REST P"));
-	if(user.compare_ars("REST N") && (msg_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
+	this.add("|Post In "+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name,"P",width,undefined,undefined,bbs.compare_ars("REST P"));
+	if(bbs.compare_ars("REST N") && (msg_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
 		this.items[6].disabed=true;
 	this.add("Read/Post |Auto-Message","A",width);
 	this.add("|QWK Packet Transfer Menu","Q",width);
@@ -588,7 +588,7 @@ while(bbs.online) {
 				var str=console.getstr("",40,K_EDIT);
 				clear_screen();
 				if(str=='?') {
-					if(!user.compare_ars("SYSOP") && !(bbs.sys_status&SS_TMPSYSOP))
+					if(!bbs.compare_ars("SYSOP"))
 						str='HELP';
 				}
 				if(str=='?') {
@@ -1991,11 +1991,11 @@ function show_emailmenu()
 				typemenu.xpos=emailmenu.xpos+emailmenu.items[0].text.length;
 				typemenu.ypos=emailmenu.current+1;
 				typemenu.add(top_bar(width),undefined,undefined,"","");
-				typemenu.add('To |Sysop','S',width,undefined,undefined,user.compare_ars("REST S"));
-				typemenu.add('To |Local User','L',width,undefined,undefined,user.compare_ars("REST E"));
-				typemenu.add('To Local User with |Attachment','A',width,undefined,undefined,user.compare_ars("REST E"));
-				typemenu.add('To |Remote User','R',width,undefined,undefined,user.compare_ars("REST E OR REST M"));
-				typemenu.add('To Remote User with A|ttachment','T',width,undefined,undefined,user.compare_ars("REST E OR REST M"));
+				typemenu.add('To |Sysop','S',width,undefined,undefined,bbs.compare_ars("REST S"));
+				typemenu.add('To |Local User','L',width,undefined,undefined,bbs.compare_ars("REST E"));
+				typemenu.add('To Local User with |Attachment','A',width,undefined,undefined,bbs.compare_ars("REST E"));
+				typemenu.add('To |Remote User','R',width,undefined,undefined,bbs.compare_ars("REST E OR REST M"));
+				typemenu.add('To Remote User with A|ttachment','T',width,undefined,undefined,bbs.compare_ars("REST E OR REST M"));
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
 				menus_displayed.push(typemenu);
 				while(bbs.online) {
