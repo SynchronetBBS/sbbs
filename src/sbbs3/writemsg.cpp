@@ -172,15 +172,21 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, long mode, unsigned* li
 			i++;
 			continue; 
 		}
-		/* Strip FidoNet Kludge Lines? */
-		if(buf[l]==CTRL_A && useron_xedit
-			&& cfg.xedit[useron_xedit-1]->misc&STRIPKLUDGE) {
-			while(buf[l] && buf[l]!=LF) 
-				l++;
-			if(buf[l]==0)
-				break;
-			continue;
+		if(buf[l] == CTRL_A) {
+			/* Strip FidoNet Kludge Lines? */
+			if(useron_xedit
+				&& cfg.xedit[useron_xedit-1]->misc&STRIPKLUDGE) {
+				while(buf[l] && buf[l]!=LF) 
+					l++;
+				if(buf[l]==0)
+					break;
+				continue;
+			}
+			/* Convert invalid or dangerous Ctrl-A codes */
+			if(!valid_ctrl_a_attr(buf[l + 1]))
+				buf[l] = '@';
 		}
+
 		if(!(mode&(WM_EMAIL|WM_NETMAIL|WM_EDIT))
 			&& (!l || buf[l-1]==LF)
 			&& buf[l]=='-' && buf[l+1]=='-' && buf[l+2]=='-'
