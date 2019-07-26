@@ -171,11 +171,13 @@ void sbbs_t::useredit(int usernumber)
 			SAFECOPY(str,"QG[]?/{},");
 		else
 			SAFECOPY(str,"ABCDEFGHIJKLMNOPQRSTUVWXYZ+[]?/{}~*$#");
-		l=getkeys(str,l);
+		l=getkeys(str, l, K_UPPER|K_NOCRLF);
 		if(l&0x80000000L) {
 			user.number=(ushort)(l&~0x80000000L);
 			continue; 
 		}
+		if(l != '[' && l != ']' && l != '{' && l != '}')
+			newline();
 		switch(l) {
 			case 'A':
 				bputs(text[EnterYourAlias]);
