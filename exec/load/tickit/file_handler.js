@@ -12,6 +12,19 @@
  * Where "files" is an array of { source, destination } objects, copy any
  * "source" file from the archive to "destination".
  * 
+ * The HandlerArg object can have a "cmd" property, which is a command-line
+ * to be executed after everything in the "files" array has been processed.
+ * 
+ * Each object in the "files" array may also have a "cmd" property, which
+ * is a command-line to be executed after that file has been processed.
+ * 
+ * Command line specifiers are supported in the "cmd" strings.
+ * http://wiki.synchro.net/config:cmdline#specifiers
+ * In the case of the global "cmd", %f is the full TIC file path, and %s
+ * is the directory it was extracted to.
+ * In the case of a per-file "cmd", %f is the destination file, and %s is
+ * the source file.
+ * 
  * Wildcards are allowed in "match" and "source".
  * (Wildcards in "source" untested on Windows.)
  */
@@ -35,6 +48,17 @@ function mycmdstr(instr, fpath, fspec)
 	instr = instr.replace(/%\?/, system.platform);
 	instr = instr.replace(/\x00/i, "%");
 	return instr;
+}
+
+function run_and_log(cmd, fpath, fspec) {
+	var cs = mycmdstr(cmd, fpath, fspec);
+	log(LOG_DEBUG, 'Executing: ' + cs);
+	var rc;
+	if ((rc = system.exec(cs)) != 0) {
+		log(LOG_ERROR, 'Command failed. Return value: ' + rc);
+		return false;
+	}
+	return true;
 }
 
 function Handle_TIC(tic, ctx, arg) {
@@ -105,11 +129,7 @@ function Handle_TIC(tic, ctx, arg) {
 		}
 	}
 
-	unpack = mycmdstr(unpack, tic.full_path, dir);
-	if ((rc = system.exec(unpack)) != 0) {
-		log(LOG_ERROR, 'Unable to extract "' + tic.file + '". Return value: ' + rc);
-		return false;
-	}
+	if (!run_and_log(unpack, tic.full_path, dir)) return false;
 
     cfg.files.forEach(function (e) {
         var sf = backslash(dir) + e.source;
@@ -119,11 +139,13 @@ function Handle_TIC(tic, ctx, arg) {
 			return;
         }
         if (!file_copy(sf, df)) {
-            log(LOG_ERROR, 'Failed to copy ' + sf + ' to ' + df);
-        } else {
-            log(LOG_DEBUG, 'Copied ' + sf + ' to ' + df);
+			log(LOG_ERROR, 'Failed to copy ' + sf + ' to ' + df);
+			return;
         }
-    });
+		log(LOG_DEBUG, 'Copied ' + sf + ' to ' + df);
+		if (e.cmd) run_and_log(e.cmd, df, sf);
+	});
+	if (cfg.cmd) run_and_log(cfg.cmd, tic.full_path, dir);
 
 	// Return false so it is still moved into the appropriate dir
 	return false;
