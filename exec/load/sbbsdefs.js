@@ -228,6 +228,7 @@ var   P_NOERROR     =(1<<10);   /* Don't report error if file doesn't exist */
 var   P_PETSCII     =(1<<11);   /* Message is native PETSCII                */
 var   P_WRAP        =(1<<12);   /* Wrap/split long-lines, ungracefully      */
 var   P_UTF8        =(1<<13);	/* Message is UTF-8 encoded                 */
+var   P_AUTO_UTF8	=(1<<14);	/* Message may be UTF-8, auto-detect		*/
 							    /********************************************/
 
     							/********************************************/
