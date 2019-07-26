@@ -560,7 +560,7 @@ void binkp_settings(nodecfg_t* node)
 int main(int argc, char **argv)
 {
 	char str[256],*p;
-	int i,j,k,x,dflt,nodeop=0,packop=0,listop=0;
+	int i,j,k,x,dflt,nodeop=0,nodeopbar=0,packop=0,listop=0;
 	echolist_t savlistcfg;
 	nodecfg_t savnodecfg;
 	arcdef_t savarcdef;
@@ -727,8 +727,11 @@ int main(int argc, char **argv)
 	int node_opt = 0;
 	int node_bar = 0;
 	int archive_opt = 0;
+	int archive_bar = 0;
 	int echolist_opt = 0;
+	int echolist_bar = 0;
 	int domain_opt = 0;
+	int domain_bar = 0;
 	dflt=0;
 	while(1) {
 		if(memcmp(&cfg, &orig_cfg, sizeof(cfg)) != 0)
@@ -826,7 +829,7 @@ int main(int argc, char **argv)
 						mode |= WIN_COPY | WIN_CUT;
 					if (savnodecfg.addr.zone)
 						mode |= WIN_PASTE | WIN_PASTEXTR;
-					i=uifc.list(mode,0,0,0,&node_opt,NULL,"Linked Nodes",opt);
+					i=uifc.list(mode,0,0,0,&node_opt,&node_bar,"Linked Nodes",opt);
 					if(i==-1)
 						break;
 					int msk = i&MSK_ON;
@@ -1022,7 +1025,7 @@ int main(int argc, char **argv)
 						opt[j][0]=0;
 						SAFEPRINTF(str, "Linked Node - %s"
 							,cfg.nodecfg[i].name[0] ? cfg.nodecfg[i].name : faddrtoa(&cfg.nodecfg[i].addr));
-						k=uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&nodeop,&node_bar,str,opt);
+						k=uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&nodeop,&nodeopbar,str,opt);
 						if(k==-1)
 							break;
 						switch(k) {
@@ -1991,7 +1994,7 @@ int main(int argc, char **argv)
 						mode |= WIN_COPY | WIN_CUT;
 					if(savarcdef.name[0])
 						mode |= WIN_PASTE | WIN_PASTEXTR;
-					i=uifc.list(mode,0,0,0,&archive_opt,0,"Archive Types",opt);
+					i=uifc.list(mode,0,0,0,&archive_opt,&archive_bar,"Archive Types",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -2168,7 +2171,7 @@ int main(int argc, char **argv)
 						mode |= WIN_COPY | WIN_CUT;
 					if(savedomain.name[0])
 						mode |= WIN_PASTE | WIN_PASTEXTR;
-					i=uifc.list(mode,0,0,0,&domain_opt,0,"Domains",opt);
+					i=uifc.list(mode,0,0,0,&domain_opt,&domain_bar,"Domains",opt);
 					if(i==-1)
 						break;
 					int msk = i&MSK_ON;
@@ -2284,7 +2287,7 @@ int main(int argc, char **argv)
 						mode |= WIN_COPY | WIN_CUT;
 					if(savlistcfg.listpath[0])
 						mode |= WIN_PASTE | WIN_PASTEXTR;
-					i=uifc.list(mode,0,0,0,&echolist_opt,0,"EchoLists",opt);
+					i=uifc.list(mode,0,0,0,&echolist_opt,&echolist_bar,"EchoLists",opt);
 					if(i==-1)
 						break;
 					int msk = i&MSK_ON;
