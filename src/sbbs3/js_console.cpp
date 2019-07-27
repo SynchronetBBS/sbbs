@@ -1084,13 +1084,24 @@ js_print(JSContext *cx, uintN argc, jsval *arglist)
 	char*		cstr=NULL;
 	size_t		cstr_sz=0;
 	jsrefcount	rc;
+	int32		pmode = 0;
 
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-    for (i = 0; i < argc; i++) {
+	if(argc == 2 && JSVAL_IS_STRING(argv[0]) && JSVAL_IS_NUMBER(argv[1])) {
+		JSVALUE_TO_RASTRING(cx, argv[0], cstr, &cstr_sz, NULL);
+		if(cstr==NULL)
+		    return(JS_FALSE);
+		if(!JS_ValueToInt32(cx, argv[1], &pmode))
+			return JS_FALSE;
+		rc=JS_SUSPENDREQUEST(cx);
+		sbbs->bputs(cstr, pmode);
+		JS_RESUMEREQUEST(cx, rc);
+	}
+    else for (i=0; i < argc; i++) {
 		JSVALUE_TO_RASTRING(cx, argv[i], cstr, &cstr_sz, NULL);
 		if(cstr==NULL)
 		    return(JS_FALSE);
@@ -1975,8 +1986,10 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("beep for <i>count</i> number of times (default count is 1)")
 	,311
 	},
-	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("value [,value]")
-	,JSDOCSTR("display one or more values as strings (supports Ctrl-A codes, Telnet-escaping, auto-screen pausing, etc.)")
+	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("<value [,value][...]> or <string [,mode=<tt>P_NONE</tt>]>")
+	,JSDOCSTR("display one or more values as strings (supports Ctrl-A codes, Telnet-escaping, auto-screen pausing, etc.).<br>"
+		"Supports a limited set of <tt>P_*</tt> flags, e.g. <tt>P_PETSCII</tt> and <tt>P_UTF8</tt>."
+	)
 	,310
 	},
 	{"write",			js_write,			1, JSTYPE_VOID,		JSDOCSTR("value [,value]")
