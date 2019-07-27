@@ -96,6 +96,7 @@ function loadList(settings) {
 		}
 		if (h === null) continue;
         if (settings.newOnly && history.messages.indexOf(m) >= 0) continue;
+        if (h.attr&MSG_DELETE) continue;
         if (js.global.console) {
             list.push({
                 str: format(
