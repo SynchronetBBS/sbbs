@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.23     2019-07-27   If a message is in UTF-8 format and the user's terminal
+                      doesn't support UTF-8, the message text will be converted
+                      to CP437.  Also, if there is a color/attribute code in
+                      the message before the message text and there are no
+                      other color/attribute codes, the color/attribute codes
+                      will be removed so  that the entire message isn't colored
 1.22     2019-05-12   If the message score is 0, with upvotes and total_votes
                       both 0, then don't show the score when using the default
                       header ANSI.  This is what was intended, but the 0 score

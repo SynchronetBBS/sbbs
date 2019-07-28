@@ -21,151 +21,14 @@
  * Date       Author            Description
  * 2014-09-13 Eric Oulashin     Started (based on my message lister script)
  * ... Comments trimmed ...
- * 2016-11-19 Eric Oulashin     Version 1.17 Beta 1
- *                              Looked into handling null message headers, which is
- *                              more likely now with the introduction of vote messages
- *                              in Synchronet 3.17.  Headers for vote messages will
- *                              be null.  I updated the GetMsgHdrBy* methods to
- *                              return a bogus message header if he message header
- *                              is null.  It will have the property 'isBogus'
- *                              with the value of true.  That way, the message
- *                              list won't have any weirdness on the screen, and
- *                              the user won't be able to read the message.  I'd
- *                              like to have the reader not display vote messages
- *                              at all.  I may need to use the get_all_msg_headers()
- *                              method for that.
- * 2016-11-20 Eric Oulashin     Continued working on updates for Synchronet's
- *                              voting support - Mainly filtering out voting
- *                              messages etc.
- * 2016-12-03 Eric Oulashin     Version 1.17 beta 15
- *                              Added a check in DigDistMsgReader_GetMsgIdx() to
- *                              just return -1 if msgNum is not a number.  Also,
- *                              have been continuing to work on voting & message
- *                              filtering updates.
- * 2017-08-05 Eric Oulashin     Version 1.17 beta 42
- *                              When showing tally information for messages with
- *                              upvotes & downvotes, it now shows who voted on
- *                              the message (for sysops only).
- * 2017-08-17 Eric Oulashin     Version 1.17 beta 43
- *                              Updated to support multi-answer poll voting.  Works
- *                              with Synchronet 3.17 builds from August 14, 2017 onward.
- * 2017-08-19 Eric Oulashin     Version 1.17 beta 45
- *                              Used the new Msgbase.close_poll() method in the August
- *                              19, 2017 build of Synchronet 3.17
- * 2017-09-27 Eric Oulashin     Version 1.17 beta 47
- *                              Removed this.msgbase in the DigDistMsgReader class and
- *                              updated any functions requiring it to open the
- *                              sub-board using a new MsgBase class with this.subBoardCode.
- *                              This was done to (hopefully) avoid the occasional
- *                              random crashing of Synchronet when doing things like
- *                              replying to a message, etc.
- *                              Updated to set the message number length field length dynamically,
- *                              more than 4 digits if necessary.
- * 2017-11-28 Eric Oulashin     Version 1.17 beta 48
- *                              Bug fix: When listing messages in reverse order in
- *                              lightbar mode and all messages are selected/de-selected,
- *                              the checkmarks on the screen now update properly.
- *                              Also, updated so that when listing personal email, it
- *                              will use the regular formatting colors rather than the
- *                              colors for messages to the user, since all personal
- *                              emails are to the user (the 'to user' colors for each
- *                              email might be obnoxious).
- * 2017-12-04 Eric Oulashin     Version 1.17 beta 49
- *                              Bug fixed (revealed with the 12/1/2017 Synchronet build):
- *                              When adding the 'read' message attribute to a message
- *                              to a user read in a new-message scan, it now uses a
- *                              message header without expanded fields so that it can
- *                              save properly.
- * 2017-12-09 Eric Oulashin     Version 1.17 beta 50
- *                              Fixed a bug introduced in the previous version: It
- *                              was no longer showing voting stats for messages.
- * 2017-12-18 Eric Oulashin     Version 1.17 beta 51
- *                              Updated the definitions of the KEY_PAGE_UP and KEY_PAGE_DOWN
- *                              veriables to match what they are in sbbsdefs.js (if defined)
- *                              from December 18, 2017 so that the PageUp and PageDown keys
- *                              continue to work properly.  This script should still also
- *                              work with older builds of Synchronet.
- * 2017-12-29 Eric Oulashin     Version 1.17 beta 52
- *                              Bug fix: When using the scrolling interface to read a
- *                              message, any message color codes that might appear in
- *                              the message lines are preserved across lines.
- * 2018-01-12 Eric Oulashin     Version 1.17 beta 53
- *                              Added support for displaying user avatars, recently
- *                              added to Synchronet.  Added the configuration option
- *                              displayAvatars to toggle this feature.
- * 2018-01-20 Eric Oulashin     Version 1.17 beta 54
- *                              Added a configuration file option, rightJustifyAvatars.
- * 2018-01-27 Eric Oulashin     Version 1.17 beta 55
- *                              Added the new @-code MSG_FROM_AND_FROM_NET and
- *                              MSG_FROM_AND_FROM_NET-L (for left-justification with
- *                              field length), which shows the 'from' name with
- *                              the from network in parenthesis.  Updated the
- *                              default message header to show that information.
- * 2018-02-01 Eric Oulashin     Version 1.17 beta 56
- *                              When replying to a message, the reader will
- *                              strip any control characters that might be in the
- *                              subject line.
- * 2018-02-09 Eric Oulashin     Version 1.17 beta 57
- *                              Started working on a 'bypass' (B) command while reading when
- *                              doing a message scan/newscan.
- * 2018-03-19 Eric Oulashin     Made a fix for voting input - It wasn't accepting
- *                              Q to quit out of voting (a blank input worked though).
- *                              Releasing this, even though the 'bypass' command
- *                              isn't finished yet.
- * 2018-03-25 Eric Oulashin     Version 1.17 beta 58
- *                              For voting, updated to use BallotHdr (791)
- *                              instead of SelectHdr (501).
- * 2018-04-23 Eric Oulashin     Version 1.17 beta 59
- *                              When submitting a vote, the thread_id field is now
- *                              set to the message/poll's message ID, not message number.
- * 2018-05-08 Eric Oulashin     Version 1.17 beta 60
- *                              When a non-sysop is reading anonymous posts, the
- *                              "from" name is now shown as "Anonymous".
- * 2018-07-17 Eric Oulashin     Version 1.17 beta 63
- *                              Just before showing the message list or changing
- *                              to another message area from the reader interface,
- *                              it now writes "Loading..." in case there are a
- *                              very large number of messages or sub-boards.
- * 2019-01-02 Eric Oulashin     Version 1.17 (non-beta)
- *                              Removed the "beta" status after the official release
- *                              of Synchronet 3.17b.  Also, made use of
- *                              file_cfgname() when finding the configuration file
- *                              location.
- * 2019-04-10 Eric Oulashin     Version 1.18 Beta
- *                              Started making use of the new MsgBase.get_index() function
- *                              (if available) for better performance.
- * 2019-04-15 Eric Oulashin     Version 1.18
- *                              Added 'undefined' checks for some of the messaeg attribute
- *                              definitions before adding them to the attribute strings,
- *                              since some of them have changed.
- *                              Released this version as non-beta.
- * 2019-04-24 Eric Oulashin     Version 1.19 Beta
- *                              Removed use of get_index(), since that method of filtering
- *                              messages returned headers without vote information.
- * 2019-04-25 Eric Oulashin     Version 1.19
- *                              Updated to show message score values in the message list
- *                              if the terminal is wide enough (>= 86 characters)
- * 2019-04-26 Eric Oulashin     Version 1.20
- *                              Added configurable options for the message score colors
- *                              for the message list
- * 2019-05-04 Eric Oulashin     Version 1.21
- *                              Started updating to use require() instead of load()
- *                              if the require() function exists (it was added in
- *                              Synchronet 3.17).
- * 2019-05-09 Eric Oulashin     Version 1.22
- *                              When displaying the 'enhanced' header ANSI, now it checks
- *                              to see if the total_votes and upvotes are both non-zero
- *                              before adding score information to the header ANSI.  With
- *                              one of the Synchronet updates, it started showing the score
- *                              for all messages, rather than only messages with the
- *                              non-zero score information.  Perhaps at some point, total_votes
- *                              and upvotes were added to all message headers, including
- *                              ones that had no votes?
+ * 2019-07-06 Eric Oulashin     Version 1.23 Beta 1
+ *                              Updated DigDistMsgReader_GetMsgBody() to remove any initial
+ *                              color code(s) from the start of the message, which can
+ *                              color the whole message unnecessarily.
+ * 2019-07-26 Eric Oulashin     Started working on supporting utf-8 text conversion to cp437.
+ * 2019-07-27 Eric Oulashin     Version 1.23
+ *                              Releasing this version
  */
-
-// TODO: Support anonymous posts?  Bit values for sub[x].settings:
-//SUB_ANON		=(1<<8);	// Allow anonymous posts on sub
-//SUB_AONLY		=(1<<9);	// Anonymous only
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
    option):
@@ -235,11 +98,15 @@ if (requireFnExists)
 {
 	require("sbbsdefs.js", "K_UPPER");
 	require("text.js", "Email"); // Text string definitions (referencing text.dat)
+	require("utf8_cp437.js", "utf8_cp437");
+	require("userdefs.js", "USER_UTF8");
 }
 else
 {
 	load("sbbsdefs.js");
 	load("text.js"); // Text string definitions (referencing text.dat)
+	load("utf8_cp437.js");
+	load("userdefs.js");
 }
 
 // This script requires Synchronet version 3.15 or higher.
@@ -258,8 +125,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.22";
-var READER_DATE = "2019-05-09";
+var READER_VERSION = "1.23";
+var READER_DATE = "2019-07-27";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4408,14 +4275,15 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pAllowChgSubBoar
 //                                            non-scrolling interface to read the message)
 function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 {
-	var retObj = new Object();
-	retObj.offsetValid = true;
-	retObj.msgNotReadable = false;
-	retObj.userReplied = false;
-	retObj.lastKeypress = "";
-	retObj.newMsgOffset = -1;
-	retObj.nextAction = ACTION_NONE;
-	retObj.refreshEnhancedRdrHelpLine = false;
+	var retObj = {
+		offsetValid: true,
+		msgNotReadable: false,
+		userReplied: false,
+		lastKeypress: "",
+		newMsgOffset: -1,
+		nextAction: ACTION_NONE,
+		refreshEnhancedRdrHelpLine: false
+	};
 
 	// Get the message header.  Don't expand fields since we may need to save
 	// the header later with the MSG_READ attribute.
@@ -14578,7 +14446,21 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 		}
 	}
 	else
+	{
+		// If the message is UTF8 and the terminal is not UTF8-capable, then convert
+		// the text to cp437.
 		msgBody = msgbase.get_msg_body(false, pMsgHdr.number);
+		if (pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8)
+		{
+			var userConsoleSupportsUTF8 = false;
+			if (typeof(USER_UTF8) != "undefined")
+				userConsoleSupportsUTF8 = console.term_supports(USER_UTF8);
+			if (!userConsoleSupportsUTF8)
+				msgBody = utf8_cp437(msgBody);
+		}
+		// Remove any initial coloring from the message body, which can color the whole message
+		msgBody = removeInitialColorFromMsgBody(msgBody);
+	}
 	msgbase.close();
 
 	// Remove any Synchronet pause codes that might exist in the message
@@ -19536,7 +19418,54 @@ function getMsgUpDownvotesAndScore(pMsgHdr)
 	return retObj;
 }
 
-// Writes some text on the screen at a given location with a given pause.
+// Removes any initial Synchronet attribute(s) from a message body,
+// which can sometimes color the whole message.
+//
+// Parameters:
+//  pMsgBody: The original message body
+//
+// Return value: The message body, with any initial color removed
+function removeInitialColorFromMsgBody(pMsgBody)
+{
+	var msgBody = pMsgBody;
+
+	msgBodyLines = pMsgBody.split("\r\n", 3);
+	if (msgBodyLines.length == 3)
+	{
+		var onlySyncAttrsRegexWholeWord = /^([krgybmcw01234567hinpq,;\.dtl<>\[\]asz])+$/i;
+		var line1Match = /^  Re: .*/.test(strip_ctrl(msgBodyLines[0]));
+		var line2Match = /^  By: .* on .*/.test(strip_ctrl(msgBodyLines[1]));
+		var line3OnlySyncAttrs = onlySyncAttrsRegexWholeWord.test(msgBodyLines[2]);
+		if (line1Match && line2Match)
+		{
+			msgBodyLines = pMsgBody.split("\r\n");
+			msgBodyLines[0] = strip_ctrl(msgBodyLines[0]);
+			msgBodyLines[1] = strip_ctrl(msgBodyLines[1]);
+			if (line3OnlySyncAttrs)
+			{
+				var originalLine3SyncAttrs = msgBodyLines[2];
+				msgBodyLines[2] = strip_ctrl(msgBodyLines[2]);
+				// If the first word of the 4th line is only Synchronet attribute codes,
+				// and they're the same as the codes on the 3rd line, then remove them.
+				if (msgBodyLines.length >= 4)
+				{
+					var line4Words = msgBodyLines[3].split(" ");
+					if ((line4Words.length > 0) && onlySyncAttrsRegexWholeWord.test(line4Words[0]) && (line4Words[0] == originalLine3SyncAttrs))
+						msgBodyLines[3] = msgBodyLines[3].substr(line4Words[0].length);
+				}
+			}
+			msgBody = "";
+			for (var i = 0; i < msgBodyLines.length; ++i)
+				msgBody += msgBodyLines[i] + "\r\n";
+			// Remove the trailing \r\n characters from msgBody
+			msgBody = msgBody.substr(0, msgBody.length-2);
+		}
+	}
+
+	return msgBody;
+}
+
+// For debugging: Writes some text on the screen at a given location with a given pause.
 //
 // Parameters:
 //  pX: The column number on the screen at which to write the message
