@@ -1,7 +1,5 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
 
-if (!settings) var settings = load('modopts.js', 'web');
-
 // Paths
 settings.web_directory = fullpath(
 	backslash(
@@ -69,30 +67,3 @@ Object.keys(defaults).forEach(function (e) {
 defaults = undefined;
 
 require(settings.web_lib + 'locale.js', 'locale');
-
-if (typeof alert === 'undefined') {
-    function alert(msg) {
-        log(LOG_ERR, msg);
-    }
-}
-
-// Helpers for http_request
-const Req = {
-  // Query parameter p exists and first instance is of optional type t
-  has_param: function (p) {
-    return (Array.isArray(http_request.query[p]) && http_request.query[p].length);
-  },
-  // First instance of query parameter p, or undefined
-  get_param: function (p) {
-    if (Array.isArray(http_request.query[p]) && http_request.query[p].length) {
-        return http_request.query[p][0];
-    }
-  },
-  write_param: function (p) {
-    if (Array.isArray(http_request.query[p]) && http_request.query[p].length) {
-        write(http_request.query[p][0]);
-    }
-  }
-};
-
-const WEBV4_INIT = true;

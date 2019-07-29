@@ -145,7 +145,7 @@ function getPage(page) {
 	if (user.alias != settings.guest) {
 		var ctrl = getCtrlLine(page);
 		if (typeof ctrl !== 'undefined' && !ctrl.options.hidden) {
-			auth_lib.setSessionValue(user.number, 'action', ctrl.title);
+			setSessionValue(user.number, 'action', ctrl.title);
 		}
 	}
 
@@ -153,12 +153,12 @@ function getPage(page) {
 		case '.SSJS':
 			if (ext === '.SSJS' && page.search(/\.xjs\.ssjs$/i) >= 0) break;
 			(function () {
-				load({}, page, true);
+				load(page, true);
 			})();
 			break;
 		case '.XJS':
 			(function () {
-				load({}, xjs_compile(page), true);
+				load(xjs_compile(page), true);
 			})();
 			break;
 		case '.HTML':
@@ -191,5 +191,3 @@ function writePage(page) {
 		write(getPage(page));
 	}
 }
-
-this;

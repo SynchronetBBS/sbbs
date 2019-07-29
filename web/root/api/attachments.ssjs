@@ -1,9 +1,9 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
 
-var settings = load('modopts.js', 'web');
+const settings = load('modopts.js', 'web');
 
-require(settings.web_directory + '/lib/init.js', 'WEBV4_INIT');
-require(settings.web_lib + 'auth.js', 'WEBV4_AUTH');
+load(settings.web_directory + '/lib/init.js');
+load(settings.web_lib + 'auth.js');
 load(settings.web_lib + 'mime-decode.js');
 
 function barfOut(err) {

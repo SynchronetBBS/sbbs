@@ -50,7 +50,7 @@ function scan_web() {
                 change = true;
             }
         } else {
-            const action = auth_lib.getSessionValue(un, 'action');
+            const action = getSessionValue(un, 'action');
             if (web_state[base] != action) {
                 web_state[base] = action;
                 change = true;

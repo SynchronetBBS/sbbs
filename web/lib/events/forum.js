@@ -1,4 +1,4 @@
-const forum_lib = load({}, settings.web_lib + 'forum.js');
+load(settings.web_lib + 'forum.js');
 
 var last_subs;
 var last_groups;
@@ -24,7 +24,7 @@ function forum_emit(evt, data) {
 }
 
 function scan_groups() {
-    const scan = forum_lib.getGroupUnreadCounts();
+    const scan = getGroupUnreadCounts();
     if (!last_groups) {
         forum_emit('groups_unread', scan);
     } else {
@@ -35,7 +35,7 @@ function scan_groups() {
 }
 
 function scan_subs(group) {
-    const scan = forum_lib.getSubUnreadCounts(group);
+    const scan = getSubUnreadCounts(group);
     if (!last_subs) {
         forum_emit('subs_unread', scan);
     } else {
@@ -46,7 +46,7 @@ function scan_subs(group) {
 }
 
 function scan_threads(sub, offset, page_size) {
-    const scan = forum_lib.getThreadStats(sub, offset, page_size);
+    const scan = getThreadStats(sub, offset, page_size);
     if (!last_threads) {
         forum_emit('threads', scan);
     } else {
@@ -66,12 +66,12 @@ function scan_threads(sub, offset, page_size) {
 }
 
 function cycle() {
-    if (!auth_lib.is_user()) return;
+    if (!is_user()) return;
     if (time() - last_run <= frequency) return;
     last_run = time();
-    if (Req.has_param('groups_unread')) scan_groups();
-    if (Req.has_param('subs_unread')) scan_subs(Req.get_param('subs_unread'));
-    if (Req.has_param('threads')) scan_threads(Req.get_param('threads'), Req.get_param('offset'), Req.get_param('page_size'));
+    if (Request.has_param('groups_unread')) scan_groups();
+    if (Request.has_param('subs_unread')) scan_subs(Request.get_param('subs_unread'));
+    if (Request.has_param('threads')) scan_threads(Request.get_param('threads'), Request.get_param('offset'), Request.get_param('page_size'));
 }
 
 this;

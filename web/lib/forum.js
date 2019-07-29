@@ -930,7 +930,7 @@ function getMessageThreads(sub, max) {
         if (header.when_written_time > threads.thread[thread_id].newest) {
             threads.thread[thread_id].newest = header.when_written_time;
         }
-        if (auth_lib.is_user() && header.number > msg_area.sub[sub].scan_ptr) {
+        if (is_user() && header.number > msg_area.sub[sub].scan_ptr) {
             threads.thread[thread_id].unread++;
         }
         threads.thread[thread_id].messages[header.number] = {
@@ -1122,16 +1122,14 @@ function getMessageThreads(sub, max) {
 }
 
 function isValidRequest() {
-    if (Req.has_param('group')) {
-        const grp = Req.get_param('group');
+    if (Request.has_param('group')) {
+        const grp = Request.get_param('group');
         if (typeof msg_area.grp_list[grp] == 'undefined') return false;
         if (!user.compare_ars(msg_area.grp_list[grp].ars)) return false;
     }
-    if (Req.has_param('sub')) {
-        const sub = Req.get_param('sub');
+    if (Request.has_param('sub')) {
+        const sub = Request.get_param('sub');
         if (typeof msg_area.sub[sub] == 'undefined') return false;
     }
     return true;
 }
-
-this;
