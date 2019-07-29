@@ -3,7 +3,7 @@
 <!-- fTelnet -->
 <?xjs
     if (settings.ftelnet) {
-        const ftelnet_lib = load({}, settings.web_lib + 'ftelnet.js');
+        load(settings.web_lib + 'ftelnet.js');
         load('ftelnethelper.js');
 ?>
     	<div id="fTelnetContainer" class="fTelnetContainer"></div>
@@ -18,13 +18,14 @@
             </div>
         <?xjs } ?>
 
-    	<script id="fTelnetScript" src="<?xjs write(ftelnet_lib.get_url()); ?>"></script>
+    	<script id="fTelnetScript" src="<?xjs write(get_url()); ?>"></script>
     	<script>
             var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
             var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
     		var Options = new fTelnetOptions();
     		Options.BareLFtoCRLF = false;
-    		Options.BitsPerSecond = 57600;
+            Options.BitsPerSecond = 57600;
+            Options.ButtonBarVisible = true;
     		Options.ConnectionType = 'telnet';
     		Options.Emulation = 'ansi-bbs';
     		Options.Enter = '\r';
@@ -35,8 +36,9 @@
     		Options.Port = location.protocol == 'https:' ? wssp : wsp;
     		Options.ScreenColumns = 80;
     		Options.ScreenRows = 25;
-            Options.SplashScreen = '<?xjs write(ftelnet_lib.get_splash()); ?>';
-    		var fTelnet = new fTelnetClient('fTelnetContainer', Options);
+            Options.SplashScreen = '<?xjs write(get_splash()); ?>';
+            var fTelnet = new fTelnetClient('fTelnetContainer', Options);
+            fTelnet.ButtonBarVisible = true;
             if ($('#ftelnet-connect').length) {
                 $('#ftelnet-connect').click(function() {
                     fTelnet.Connect();

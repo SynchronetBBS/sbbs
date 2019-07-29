@@ -1,30 +1,31 @@
 <!--Files-->
 
 <?xjs
+	load(settings.web_lib + 'request.js');
 	load(settings.web_lib + 'files.js');
     locale.section = 'page_files';
-	if (Req.has_param('dir')) {
+	if (Request.has_param('dir')) {
 ?>
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? Req.write_param('page'); ?>">
+			<a href="./?page=<? Request.write_param('page'); ?>">
 				<? locale.write('title'); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? Req.write_param('page'); ?>&amp;library=<? write(file_area.dir[Req.get_param('dir')].lib_index); ?>">
-				<? write(file_area.dir[Req.get_param('dir')].lib_name); ?>
+			<a href="./?page=<? Request.write_param('page'); ?>&amp;library=<? write(file_area.dir[Request.get_param('dir')].lib_index); ?>">
+				<? write(file_area.dir[Request.get_param('dir')].lib_name); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? Req.write_param('page'); ?>&amp;dir=<? Req.write_param('dir'); ?>">
-				<? Req.write_param('dir'); ?>
+			<a href="./?page=<? Request.write_param('page'); ?>&amp;dir=<? Request.write_param('dir'); ?>">
+				<? Request.write_param('dir'); ?>
 			</a>
 		</li>
 	</ol>
 
 	<?xjs function writeFileDetails(file) { ?>
-		<a href="./api/files.ssjs?call=download-file&amp;dir=<? Req.write_param('dir'); ?>&amp;file=<? write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
+		<a href="./api/files.ssjs?call=download-file&amp;dir=<? Request.write_param('dir'); ?>&amp;file=<? write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
 			<strong><? write(file.name); ?></strong> (<? write(file.size); ?>)
 			<p><em>Uploaded <? write(system.timestr(file.uldate)); ?></em></p>
 			<?xjs if (typeof file.extdesc === 'undefined') { ?>
@@ -53,27 +54,27 @@
 		</div>
 	</div>
 	<div id="file-list-container" class="list-group">
-	<?xjs listFiles(Req.get_param('dir')).forEach(writeFileDetails); ?>
+	<?xjs listFiles(Request.get_param('dir')).forEach(writeFileDetails); ?>
 	</div>
 
-<?xjs } else if (Req.has_param('library')) { ?>
+<?xjs } else if (Request.has_param('library')) { ?>
 
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? Req.write_param('page'); ?>">
+			<a href="./?page=<? Request.write_param('page'); ?>">
 				<? locale.write('title'); ?>
 			</a>
 		</li>
 		<li>
-			<a href="./?page=<? Req.write_param('page'); ?>&amp;library=<? Req.write_param('library'); ?>">
-				<? write(file_area.lib_list[Req.get_param('library')].name); ?>
+			<a href="./?page=<? Request.write_param('page'); ?>&amp;library=<? Request.write_param('library'); ?>">
+				<? write(file_area.lib_list[Request.get_param('library')].name); ?>
 			</a>
 		</li>
 	</ol>
 
 
 	<?xjs function writeDirectory(dir) { ?>
-		<a href="./?page=<? Req.write_param('page'); ?>&amp;dir=<? write(dir.dir.code); ?>" class="list-group-item striped">
+		<a href="./?page=<? Request.write_param('page'); ?>&amp;dir=<? write(dir.dir.code); ?>" class="list-group-item striped">
 			<h4><strong><? write(dir.dir.name); ?></strong></h4>
 			<p>
 				<? write(dir.dir.description); ?>:
@@ -84,19 +85,19 @@
 	<?xjs } ?>
 
 	<div id="file-list-container" class="list-group">
-		<?xjs listDirectories(Req.get_param('library')).forEach(writeDirectory); ?>
+		<?xjs listDirectories(Request.get_param('library')).forEach(writeDirectory); ?>
 	</div>
 
 <?xjs } else { ?>
 
 	<ol class="breadcrumb">
 		<li>
-			<a href="./?page=<? Req.write_param('page'); ?>"><? locale.write('title'); ?></a>
+			<a href="./?page=<? Request.write_param('page'); ?>"><? locale.write('title'); ?></a>
 		</li>
 	</ol>
 
 	<?xjs function writeLibrary(library) { ?>
-		<a href="./?page=<? Req.write_param('page'); ?>&amp;library=<? write(library.index); ?>" class="list-group-item striped">
+		<a href="./?page=<? Request.write_param('page'); ?>&amp;library=<? write(library.index); ?>" class="list-group-item striped">
 			<h3><strong><? write(library.name); ?></strong></h3>
 			<p>
 				<? write(library.description); ?>:

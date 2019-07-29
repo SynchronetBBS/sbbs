@@ -24,12 +24,12 @@ function getSidebarModule(module) {
 		case '.SSJS':
 			if (ext === '.SSJS' && module.search(/\.xjs\.ssjs$/i) >= 0) break;
 			(function () {
-				load({}, module, true);
+				load(module, true);
 			})();
 			break;
 		case '.XJS':
 			(function () {
-				load({}, xjs_compile(module), true);
+				load(xjs_compile(module), true);
 			})();
 			break;
 		case '.HTML':
@@ -60,5 +60,3 @@ function writeSidebarModules() {
 	);
 	write('</ul>');
 }
-
-this;

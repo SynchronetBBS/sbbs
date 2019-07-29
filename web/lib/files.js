@@ -31,5 +31,3 @@ function listFiles(dir) {
 		return df;
 	});
 }
-
-this;

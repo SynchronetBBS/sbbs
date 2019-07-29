@@ -190,7 +190,3 @@ function is_user() {
     	}
     }
 })();
-
-const WEBV4_AUTH = true;
-
-this;

@@ -48,5 +48,3 @@ function get_url() {
     }
     return get_cached_url(f);
 }
-
-this;
