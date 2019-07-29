@@ -37,6 +37,7 @@
 #include "sbbs.h"
 #include "wordwrap.h"
 #include "utf8.h"
+#include "zmodem.h"
 
 /****************************************************************************/
 /* Outputs a NULL terminated string with @-code parsing,                    */
@@ -104,6 +105,12 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 			case FF:
 			case CTRL_A:
 				break;
+			case ZHEX:
+				if(l && str[l - 1] == ZDLE) {
+					l++;
+					continue;
+				}
+				// fallthrough
 			default: // printing char
 				if((mode&P_TRUNCATE) && column >= (cols - 1)) {
 					l++;
