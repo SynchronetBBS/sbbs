@@ -4912,7 +4912,6 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 
 			for(l=0,cr=1;buf[l] && f<fmsgbuflen;l++) {
 				if(buf[l]==CTRL_A) { /* Ctrl-A, so skip it and the next char */
-					char ch;
 					l++;
 					if(buf[l]==0 || buf[l]=='Z')	/* EOF */
 						break;
