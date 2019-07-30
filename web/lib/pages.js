@@ -136,14 +136,14 @@ function getPage(page) {
 
 	var ret = '';
 
-	page = settings.web_pages + page;
+	var p = settings.web_pages + page;
 
-	if (!file_exists(page)) return ret;
+	if (!file_exists(p)) return ret;
 
-	var ext = file_getext(page).toUpperCase();
+	var ext = file_getext(p).toUpperCase();
 
 	if (user.alias != settings.guest) {
-		var ctrl = getCtrlLine(page);
+		var ctrl = getCtrlLine(p);
 		if (typeof ctrl !== 'undefined' && !ctrl.options.hidden) {
 			setSessionValue(user.number, 'action', ctrl.title);
 		}
@@ -151,18 +151,18 @@ function getPage(page) {
 
 	switch(ext) {
 		case '.SSJS':
-			if (ext === '.SSJS' && page.search(/\.xjs\.ssjs$/i) >= 0) break;
+			if (ext === '.SSJS' && p.search(/\.xjs\.ssjs$/i) >= 0) break;
 			(function () {
-				load(page, true);
+				load(p, true);
 			})();
 			break;
 		case '.XJS':
 			(function () {
-				load(xjs_compile(page), true);
+				load(xjs_compile(p), true);
 			})();
 			break;
 		case '.HTML':
-			var f = new File(page);
+			var f = new File(p);
 			f.open('r');
 			if (f.is_open) {
 				ret = f.read();
@@ -170,7 +170,7 @@ function getPage(page) {
 			}
 			break;
 		case '.TXT':
-			var f = new File(page);
+			var f = new File(p);
 			f.open('r');
 			if (f.is_open) {
 				ret = '<pre>' + f.read() + '</pre>';
