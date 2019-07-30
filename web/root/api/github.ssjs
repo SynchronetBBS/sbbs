@@ -18,9 +18,9 @@
 	- Multiple subs can be specified, separated by commas
 */
 
-load('sbbsdefs.js');
-load('hmac.js');
-const options = load({}, 'modopts.js', 'github_notify');
+require('sbbsdefs.js', 'SYS_CLOSED');
+require('hmac.js', 'hmac_sha1');
+var options = load({}, 'modopts.js', 'github_notify');
 load(system.exec_dir + '../web/lib/init.js');
 
 function b2h(str) {
@@ -35,13 +35,13 @@ function verify_signature(key, payload, hash) {
 }
 
 try {
-	const hash = http_request.header['x-hub-signature'].split('=')[1];
-	const payload = JSON.parse(http_request.post_data);
+	var hash = http_request.header['x-hub-signature'].split('=')[1];
+	var payload = JSON.parse(http_request.post_data);
 	if (typeof options[payload.repository.name] === 'undefined') {
 		throw 'Unknown repository ' + payload.repository.name;
 	}
-	const subs = options[payload.repository.name].split(',');
-	const secret = subs.shift();
+	var subs = options[payload.repository.name].split(',');
+	var secret = subs.shift();
 	if (!verify_signature(secret, http_request.post_data, hash)) {
 		throw 'GitHub signature mismatch';
 	}
@@ -50,13 +50,13 @@ try {
 	exit();
 }
 
-const header = {
+var header = {
 	from: payload.head_commit.author.username,
 	to: 'All',
 	subject: 'Changes to ' + payload.repository.full_name
 };
 
-const body = payload.commits.map(function (e) {
+var body = payload.commits.map(function (e) {
 	const ret = [ 'Commit ID: ' + e.id, 'Author: ' + e.author.username ];
 	if (e.added.length) ret.push('Added: ' + e.added.join(', '));
 	if (e.removed.length) ret.push('Removed: ' + e.removed.join(', '));
@@ -76,7 +76,7 @@ subs.forEach(function (sub) {
 	}
 });
 
-const _tf = new File(system.data_dir + '/github_notify');
+var _tf = new File(system.data_dir + '/github_notify');
 if (_tf.open('w')) {
 	_tf.write(body);
 	_tf.close();

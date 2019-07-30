@@ -1,4 +1,4 @@
-load('sbbsdefs.js');
+require('sbbsdefs.js', 'SYS_CLOSED');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + '/auth.js');
 

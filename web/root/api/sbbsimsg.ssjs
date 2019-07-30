@@ -1,10 +1,10 @@
 
-load("sbbsdefs.js");
-load("nodedefs.js");
-const settings = load('modopts.js', 'web');
+require('sbbsdefs.js', 'SYS_CLOSED'); // Is this actually used?
+require('nodedefs.js', 'NODE_WFC'); // Is this actually used?
+var settings = load('modopts.js', 'web');
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
-const sbbsimsg = load({}, "sbbsimsg_lib.js");
+var sbbsimsg = load({}, "sbbsimsg_lib.js");
 
 var reply = {};
 
