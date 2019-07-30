@@ -140,8 +140,8 @@
 
 	function loadUsers(offset, pageSize) {
 		var users = [];
-    var usr = new User(1);
-		for (var u = 1; u < system.lastuser; u++) {
+	    var usr = new User(1);
+		for (var u = 1; u <= system.lastuser; u++) {
 			usr.number = u;
 			if (usr.settings&USER_DELETED ||
 				usr.compare_ars('REST Q') ||
@@ -152,7 +152,7 @@
 			}
 			users.push(copyProperties(usr, {}));
 		}
-    usr = undefined;
+    	usr = undefined;
 		users.sort(sortUsers);
 		return users.slice(offset, offset + pageSize);
 	}
