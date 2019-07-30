@@ -276,7 +276,8 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 		return false;
 	char* p = txt;
 	if(!(console&CON_RAW_IN)) {
-		p_mode|=P_WORDWRAP;
+		if(strstr(txt, "\x1b[") == NULL)	// Don't word-wrap raw ANSI text
+			p_mode|=P_WORDWRAP;
 		p = smb_getplaintext(msg, txt);
 		if(p == NULL)
 			p = txt;
