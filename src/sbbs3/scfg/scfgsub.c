@@ -1060,10 +1060,10 @@ void sub_cfg(uint grpnum)
 									"`Automatically Detect UTF-8 Message Text:`\n"
 									"\n"
 									"Set this option to `Yes` to enable automatic detection of UTF-8 message\n"
-									"text - no \"`charset=utf-8`\" need be specified by the sender.\n"
+									"text during display; no \"`charset=utf-8`\" need be specified by the sender.\n"
 									"\n"
-									"Note: Setting this option to `Yes` does not enable automatic detection\n"
-									"of UTF-8 header field values (e.g. to, from, subject)."
+									"Note: Setting this option to `Yes` does *not* enable automatic detection\n"
+									"of UTF-8 header field values (e.g. To, From, Subject)."
 								;
 								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 									,"Automatically Detect UTF-8 Message Text",uifcYesNoOpts);
