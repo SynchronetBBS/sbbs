@@ -852,7 +852,15 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 		lprintf(LOG_ERR, "ERROR line %u, attachment file not found: %s", __LINE__, attachment);
 		return -1;
 	}
-	SAFEPRINTF2(searchstr,"%c%s",bundle && (cfg.trunc_bundles) ? '#':'^', attachment);
+	char* prefix = "";
+	if(bundle) {
+		prefix = (cfg.trunc_bundles) ? "#" : "^";
+	} else {
+		// TODO: should this be checking for the KFS ("Kill File" from FSC-0053) Flag instead?
+		if(attr&FIDO_KILLSENT)
+			prefix = "^";
+	}
+	SAFEPRINTF2(searchstr, "%s%s", prefix, attachment);
 	if(findstr(searchstr,flo_filename))	/* file already in FLO file */
 		return 0;
 	if((fp=fopen(flo_filename,"a"))==NULL) {
