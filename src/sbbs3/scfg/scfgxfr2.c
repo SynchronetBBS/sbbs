@@ -1159,8 +1159,8 @@ void dir_cfg(uint libnum)
 				SAFEPRINTF3(str, "[%s%s%s/]"
 					,data_dir 
 					,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
+				strlwr(str);
 			}
-			strlwr(str);
 			sprintf(opt[n++],"%-27.27s%.40s","Transfer File Path"
 				,str);
 			sprintf(opt[n++],"%-27.27s%u","Maximum Number of Files"
