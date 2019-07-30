@@ -10,7 +10,7 @@
 <?xjs
 	if (user.number > 0 && user.alias !== settings.guest) exit();
 
-	load('sbbsdefs.js');
+	requre('sbbsdefs.js', 'SYS_CLOSED');
 
 	function required(mask) {
 		return ((system.new_user_questions&mask) ? (' ' + locale.strings.page_register.stat_suffix_field_required) : '');
