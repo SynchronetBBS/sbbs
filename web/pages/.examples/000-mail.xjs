@@ -4,8 +4,8 @@
     if (user.number == 0 || user.alias == settings.guest) exit();
     load('sbbsdefs.js');
     load(settings.web_lib + 'forum.js');
-    const _mail_tab = http_request.query.tab ? http_request.query.tab[0] : 'inbox';
-    const _mail = get_mail_headers(_mail_tab, true);
+    var _mail_tab = http_request.query.tab ? http_request.query.tab[0] : 'inbox';
+    var _mail = get_mail_headers(_mail_tab, true);
     function _active_tab(tab) {
         return tab == _mail_tab ? 'active' : '';
     }

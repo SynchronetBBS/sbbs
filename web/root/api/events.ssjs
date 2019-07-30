@@ -1,5 +1,5 @@
-load('sbbsdefs.js');
-const settings = load('modopts.js', 'web');
+require('sbbsdefs.js', 'SYS_CLOSED');
+var settings = load('modopts.js', 'web');
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
 load(settings.web_lib + 'request.js');
