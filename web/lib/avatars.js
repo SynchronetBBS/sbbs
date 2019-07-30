@@ -1,4 +1,4 @@
-const avatar_lib = load({}, 'avatar_lib.js');
+var avatar_lib = load({}, 'avatar_lib.js');
 
 function Avatars() {
 

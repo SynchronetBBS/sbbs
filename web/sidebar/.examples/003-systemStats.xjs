@@ -1,5 +1,5 @@
 <?xjs
-  const _sb_niu = system.node_list.reduce(function (a, c) {
+  var _sb_niu = system.node_list.reduce(function (a, c) {
     return (c.status == 3 ? a + 1 : a);
   }, 0);
   require('file_size.js', 'file_size_str');

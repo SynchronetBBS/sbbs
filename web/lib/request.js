@@ -1,5 +1,5 @@
 // Helpers for http_request
-const Request = {
+var Request = {
     // Query parameter p exists and first instance is of optional type t
     has_param: function (p) {
       return (Array.isArray(http_request.query[p]) && http_request.query[p].length);
