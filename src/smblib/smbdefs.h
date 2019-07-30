@@ -188,6 +188,7 @@
 #define REPLYTOEXT			0x24
 #define REPLYTOPOS			0x25
 #define REPLYTOORG			0x26
+#define REPLYTOLIST			0x27
 
 #define RECIPIENT			0x30
 #define RECIPIENTAGENT		0x31
@@ -196,6 +197,7 @@
 #define RECIPIENTEXT		0x34
 #define RECIPIENTPOS		0x35
 #define RECIPIENTORG		0x36
+#define RECIPIENTLIST		0x37
 
 #define FORWARDED			0x48
 
@@ -223,12 +225,17 @@
 #define FIDOTID 			0xa8
 #define FIDOCHARSET			0xa9	// CHRS or CHARSET control line
 
+// RFC822* header field values are strings of US-ASCII chars, but potentially MIME-encoded (RFC2047)
+// (i.e. base64 or Q-encoded UTF-8, ISO-8859-1, etc.)
 #define RFC822HEADER		0xb0
 #define RFC822MSGID 		0xb1
 #define RFC822REPLYID		0xb2
 #define RFC822TO			0xb3		// Comma-separated list of recipients, RFC822-style
 #define RFC822FROM			0xb4		// Original, unparsed/modified RFC822 header "From" value
 #define RFC822REPLYTO		0xb5		// Comma-separated list of recipients, RFC822-style
+#define RFC822CC			0xb6
+#define RFC822ORG			0xb7
+#define RFC822SUBJECT		0xb8
 
 #define USENETPATH			0xc0
 #define USENETNEWSGROUPS	0xc1
@@ -284,6 +291,7 @@
 #define MSG_RECEIPTREQ		(1<<4)		/* Return receipt requested */
 #define MSG_CONFIRMREQ		(1<<5)		/* Confirmation receipt requested */
 #define MSG_NODISP			(1<<6)		/* Msg may not be displayed to user */
+#define MSG_HFIELDS_UTF8	(1<<13)		/* Message header fields are UTF-8 encoded */
 #define POLL_CLOSED			(1<<24)		/* Closed to voting */
 #define POLL_RESULTS_MASK	(3U<<30)	/* 4 possible values: */
 #define POLL_RESULTS_SECRET	(3U<<30)	/* No one but pollster can see results */

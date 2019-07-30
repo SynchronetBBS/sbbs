@@ -767,7 +767,7 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case REPLYTO:
 			msg->replyto=(char*)hfield_dat;
 			break;
-		case RFC822REPLYTO:
+		case REPLYTOLIST:
 			msg->replyto_list = (char*)hfield_dat;
 			break;
 		case REPLYTOEXT:
@@ -785,7 +785,7 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case RECIPIENT:
 			msg->to=(char*)hfield_dat;
 			break;
-		case RFC822TO:
+		case RECIPIENTLIST:
 			msg->to_list = (char*)hfield_dat;
 			break;
 		case RECIPIENTEXT:
@@ -1382,14 +1382,14 @@ int SMBCALL smb_hfield_replace_str(smbmsg_t* msg, uint16_t type, const char* str
 /****************************************************************************/
 /* Searches for a specific header field (by type) and returns it			*/
 /****************************************************************************/
-void* SMBCALL smb_get_hfield(smbmsg_t* msg, uint16_t type, hfield_t* hfield)
+void* SMBCALL smb_get_hfield(smbmsg_t* msg, uint16_t type, hfield_t** hfield)
 {
 	int i;
 
 	for(i=0;i<msg->total_hfields;i++)
 		if(msg->hfield[i].type == type) {
 			if(hfield != NULL)
-				*hfield = msg->hfield[i];
+				*hfield = &msg->hfield[i];
 			return(msg->hfield_dat[i]);
 		}
 
