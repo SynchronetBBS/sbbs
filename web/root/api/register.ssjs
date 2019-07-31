@@ -1,6 +1,7 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
-load(system.exec_dir + '../web/lib/init.js');
-load(settings.web_lib + '/auth.js');
+var settings = load('modopts.js', 'web');
+load(settings.web_directory + '/lib/init.js');
+load(settings.web_lib + 'auth.js');
 
 if (user.alias !== settings.guest) exit();
 if (!settings.user_registration) exit();
