@@ -83,7 +83,10 @@
             var li = $('#xtrn-item-template').clone();
             var a = $(li).find('a')[0];
             $(a).text(xx.n);
-            $(a).click(function () { launchXtrn(xx.c); });
+            $(a).click(function (evt) {
+                evt.preventDefault();
+                launchXtrn(xx.c);
+            });
             $(ul).append(li);
             $(li).show();
         });
