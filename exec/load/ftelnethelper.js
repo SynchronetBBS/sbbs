@@ -143,10 +143,10 @@ function GetGlobalInterface() {
 
 function GetTelnetInterface() {
 	GetSBBSIniValues();
-	return FTelnetInterface == '' ? 'localhost' : FTelnetInterface;
+	return FTelnetInterface == '' ? GetGlobalInterface() : FTelnetInterface;
 }
 
 function GetRLoginInterface() {
 	GetSBBSIniValues();
-	return FRLoginInterface == '' ? 'localhost' : FRLoginInterface;
+	return FRLoginInterface == '' ? GetGlobalInterface() : FRLoginInterface;
 }
