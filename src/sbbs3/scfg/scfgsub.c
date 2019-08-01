@@ -559,6 +559,8 @@ void sub_cfg(uint grpnum)
 							,cfg.sub[i]->misc&SUB_LZH ? "Yes" : "No");
 						sprintf(opt[n++],"%-27.27s%s","Extra Attribute Codes"
 							,cfg.sub[i]->pmode&P_NOXATTRS ? "No" : "Yes");
+						sprintf(opt[n++],"%-27.27s%s","Word-wrap Messages"
+							,cfg.sub[i]->n_pmode&P_WORDWRAP ? "No" : "Yes");
 						sprintf(opt[n++],"%-27.27s%s","Auto-detect UTF-8 Msgs"
 							,cfg.sub[i]->pmode&P_AUTO_UTF8 ? "Yes" : "No");
 						sprintf(opt[n++],"%-27.27s%s","Template for New Subs"
@@ -1055,6 +1057,28 @@ void sub_cfg(uint grpnum)
 								}
 								break;
 							case 16:
+								n=(cfg.sub[i]->n_pmode&P_WORDWRAP) ? 1:0;
+								uifc.helpbuf=
+									"`Word-wrap Message Text:`\n"
+									"\n"
+									"Set this option to `No` to disable the automatic reflowing (word-wrapping)\n"
+									"of the lines of text of messages in this sub-board when viewed from the\n"
+									"Terminal Server."
+								;
+								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
+									,"Word-wrap Message Text",uifcYesNoOpts);
+								if(n==-1)
+									break;
+								if(n == 0 && (cfg.sub[i]->n_pmode&P_WORDWRAP)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->n_pmode ^= P_WORDWRAP;
+								}
+								else if(n == 1 && !(cfg.sub[i]->n_pmode&P_WORDWRAP)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->n_pmode ^= P_WORDWRAP;
+								}
+								break;
+							case 17:
 								n=(cfg.sub[i]->pmode&P_AUTO_UTF8) ? 0:1;
 								uifc.helpbuf=
 									"`Automatically Detect UTF-8 Message Text:`\n"
@@ -1078,7 +1102,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->pmode ^= P_AUTO_UTF8;
 								}
 								break;
-							case 17:
+							case 18:
 								n=(cfg.sub[i]->misc&SUB_TEMPLATE) ? 0:1;
 								uifc.helpbuf=
 									"`Use this Sub-board as a Template for New Subs:`\n"
