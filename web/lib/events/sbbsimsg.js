@@ -21,7 +21,7 @@ function list() {
 function cycle() {
     if (time() - last_run <= frequency) return;
     last_run = time();
-    list();
+    // list();
 }
 
 this;
