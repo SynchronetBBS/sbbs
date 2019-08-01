@@ -565,7 +565,8 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 		get_int(cfg->sub[i]->qwkconf,instream);
 		get_int(c,instream); // unused
 		get_int(cfg->sub[i]->pmode,instream);
-		for(j=0;j<24;j++)
+		get_int(cfg->sub[i]->n_pmode,instream);
+		for(j=0;j<22;j++)
 			get_int(n,instream);
 		}
 	cfg->total_subs=i;
