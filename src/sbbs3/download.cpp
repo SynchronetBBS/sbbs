@@ -193,7 +193,7 @@ const char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
 /* Handles start and stop routines for transfer protocols                   */
 /****************************************************************************/
 int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
-					 ,char *fpath, char *fspec, bool cd)
+					 ,char *fpath, char *fspec, bool cd, bool autohangup)
 {
 	char	protlog[256],*p;
 	char*	cmdline;
@@ -204,14 +204,14 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 
 	SAFEPRINTF(protlog,"%sPROTOCOL.LOG",cfg.node_dir);
 	remove(protlog);                        /* Deletes the protocol log */
-	if(useron.misc&AUTOHANG)
-		autohang=true;
-	else if(text[HangUpAfterXferQ][0])
-		autohang=yesno(text[HangUpAfterXferQ]);
-	else
-		autohang=false;
+	autohang=false;
+	if(autohangup) {
+		if(useron.misc&AUTOHANG)
+			autohang=true;
+		else if(text[HangUpAfterXferQ][0])
+			autohang=yesno(text[HangUpAfterXferQ]);
+	}
 	if(sys_status&SS_ABORT || !online) {	/* if ctrl-c or hangup */
-		autohang=false;
 		return(-1);
 	}
 	bputs(text[StartXferNow]);
@@ -445,7 +445,7 @@ void sbbs_t::seqwait(uint devnum)
 
 }
 
-bool sbbs_t::sendfile(char* fname, char prot, const char* desc)
+bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 {
 	char	keys[128];
 	char	ch;
@@ -473,7 +473,7 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc)
 			break;
 	if(i >= cfg.total_prots)
 		return false;
-	error = protocol(cfg.prot[i],XFER_DOWNLOAD,fname,fname,false);
+	error = protocol(cfg.prot[i], XFER_DOWNLOAD, fname, fname, false, autohang);
 	if(cfg.prot[i]->misc&PROT_DSZLOG)
 		result = checkdszlog(fname);
 	else

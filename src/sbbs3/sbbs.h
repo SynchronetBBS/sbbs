@@ -884,14 +884,14 @@ public:
 	/* download.cpp */
 	void	downloadfile(file_t* f);
 	void	notdownloaded(ulong size, time_t start, time_t end);
-	int		protocol(prot_t* prot, enum XFER_TYPE, char *fpath, char *fspec, bool cd);
+	int		protocol(prot_t* prot, enum XFER_TYPE, char *fpath, char *fspec, bool cd, bool autohangup=true);
 	const char*	protcmdline(prot_t* prot, enum XFER_TYPE type);
 	void	seqwait(uint devnum);
 	void	autohangup(void);
 	bool	checkdszlog(const char*);
 	bool	checkprotresult(prot_t*, int error, file_t*);
-	bool	sendfile(char* fname, char prot=0, const char* description = NULL);
-	bool	recvfile(char* fname, char prot=0);
+	bool	sendfile(char* fname, char prot=0, const char* description = NULL, bool autohang=true);
+	bool	recvfile(char* fname, char prot=0, bool autohang=true);
 
 	/* file.cpp */
 	void	fileinfo(file_t* f);

@@ -605,7 +605,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 	return(false);
 }
 
-bool sbbs_t::recvfile(char *fname, char prot)
+bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 {
 	char	keys[32];
 	char	ch;
@@ -631,7 +631,7 @@ bool sbbs_t::recvfile(char *fname, char prot)
 		if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
 			break;
 	if(i<cfg.total_prots) {
-		if(protocol(cfg.prot[i],XFER_UPLOAD,fname,fname,true)==0)
+		if(protocol(cfg.prot[i], XFER_UPLOAD, fname, fname, true, autohang)==0)
 			result=true;
 		autohangup(); 
 	}
