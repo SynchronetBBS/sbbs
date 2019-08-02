@@ -3506,8 +3506,11 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
 				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
-				if(m>l)
+				if(m>l) {
 					smb_hfield(&msg, FIDOCHARSET, (ushort)(m-l), fbuf+l);
+					if(smb_msg_is_utf8(&msg))
+						msg.hdr.auxattr |= MSG_HFIELDS_UTF8;
+				}
 			}
 
 			else if(!strncmp((char *)fbuf+l+1, "CHARSET:", 8)) {
