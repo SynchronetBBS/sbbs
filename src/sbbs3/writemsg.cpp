@@ -932,6 +932,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 			else
 				bprintf(text[OnlyNLinesLeft],maxlines-line); 
 		}
+		char prot = 0;
 		do {
 			if(str[line] != NULL)
 				SAFECOPY(strin, str[line]);
@@ -943,27 +944,8 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 			getstr(strin, cols-1, K_WRAP|K_MSG|K_EDIT|K_LEFTEXIT|K_NOCRLF);
 			if((prev_con&CON_DELETELINE) /* Ctrl-X/ZDLE */ && strncmp(strin, "B00", 3) == 0) {
 				strin[0] = 0;
-				char fname[MAX_PATH + 1];
-				SAFEPRINTF(fname, "%sUPLOAD.MSG", cfg.temp_dir);
-				removecase(fname);
-				if(!recvfile(fname, 'Z', /* autohang: */false)) {
-					bprintf(text[FileNotReceived], "File");
-					continue;
-				}
-				FILE* fp = fopen(fname, "r");
-				if(fp == NULL) {
-					errormsg(WHERE, ERR_OPEN, fname, 0);
-					continue;
-				}
-				strListFreeStrings(str);
-				strListReadFile(fp, &str, /* max line len */cols - 1);
-				strListTruncateTrailingLineEndings(str);
-				char rx_lines[128];
-				SAFEPRINTF(rx_lines, "%u lines", lines = strListCount(str));
-				bprintf(text[FileNBytesReceived], rx_lines, ultoac(ftell(fp), tmp));
-				line = lines;
-				fclose(fp);
-				continue;
+				prot = 'Z';
+				goto upload;
 			}
 		} while(console&CON_UPARROW && !line && online);
 
@@ -1124,7 +1106,34 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				menu("attr");   /* User ANSI Commands */
 				SYNC;
 				continue; 
-			} 
+			}
+			else if(!stricmp(strin, "/UPLOAD")) {
+				upload:
+				char	fname[MAX_PATH + 1];
+				SAFEPRINTF(fname, "%sUPLOAD.MSG", cfg.temp_dir);
+				removecase(fname);
+				if(!recvfile(fname, prot, /* autohang: */false)) {
+					bprintf(text[FileNotReceived], "File");
+					continue;
+				}
+				FILE* fp = fopen(fname, "r");
+				if(fp == NULL) {
+					errormsg(WHERE, ERR_OPEN, fname, 0);
+					continue;
+				}
+				strListFreeStrings(str);
+				strListReadFile(fp, &str, /* max line len */0);
+				strListTruncateTrailingLineEndings(str);
+				char rx_lines[128];
+				SAFEPRINTF(rx_lines, "%u lines", lines = strListCount(str));
+				bprintf(text[FileNBytesReceived], rx_lines, ultoac(ftell(fp), tmp));
+				while(lines > maxlines)
+					free(str[--lines]);
+				line = lines;
+				str[line] = NULL;
+				fclose(fp);
+				continue;
+			}
 		}
 		if(str[line] != NULL) {
 			strListReplace(str, line, strin);
