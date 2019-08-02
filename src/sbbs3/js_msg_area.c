@@ -84,6 +84,7 @@ static char* msg_sub_prop_desc[] = {
 	,"configured maximum number of messages before purging"
 	,"configured maximum age (in days) of messages before expiration"
 	,"additional print mode flags to use when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	,"print mode flags to <i>negate</i> when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	/* Insert here */
 	,"user has sufficient access to read messages"
 	,"user has sufficient access to post messages"
@@ -264,6 +265,11 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 	if(!JS_DefineProperty(cx, subobj, "print_mode", INT_TO_JSVAL(sub->pmode)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
+
+	if(!JS_DefineProperty(cx, subobj, "print_mode_neg", INT_TO_JSVAL(sub->n_pmode)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
+
 
 #ifdef BUILD_JSDOCS
 	js_CreateArrayOfStrings(cx, subobj, "_property_desc_list", msg_sub_prop_desc, JSPROP_READONLY);
