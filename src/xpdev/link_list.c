@@ -853,6 +853,84 @@ BOOL DLLCALL listSwapNodes(list_node_t* node1, list_node_t* node2)
 	return(TRUE);
 }
 
+static void list_update_prev(link_list_t* list)
+{
+	if(list == NULL)
+		return;
+
+	list_node_t* node = list->first;
+	list_node_t* prev = NULL;
+	while(node != NULL) {
+		node->prev = prev;
+		prev = node;
+		node = node->next;
+	}
+}
+
+void DLLCALL listReverse(link_list_t* list)
+{
+	if(list == NULL)
+		return;
+
+	list_node_t* node = list->first;
+
+	if(node == NULL)
+		return;
+
+	listLock(list);
+
+	list->last = list->first;
+
+	list_node_t* prev = NULL;
+	while(node != NULL) {
+		list_node_t* next = node->next;
+		node->next = prev;
+		prev = node;
+		node = next;
+	}
+
+	list->first = prev;
+
+	list_update_prev(list);
+
+	listUnlock(list);
+}
+
+long DLLCALL listVerify(link_list_t* list)
+{
+	long result = __COUNTER__;
+
+	if(list == NULL)
+		return -__COUNTER__;
+
+	listLock(list);
+
+	list_node_t* node = list->first;
+	list_node_t* prev = NULL;
+	while(node != NULL) {
+		if(node->list != list) {
+			result = -__COUNTER__;
+			break;
+		}
+		if(node->prev != prev) {
+			result = -__COUNTER__;
+			break;
+		}
+		prev = node;
+		node = node->next;
+		result++;
+	}
+	if(result >= 0 && list->last != prev)
+		result = -__COUNTER__;
+
+	if(result >= 0 && result != list->count)
+		result = -__COUNTER__;
+
+	listUnlock(list);
+
+	return result;
+}
+
 #if 0
 
 #include <stdio.h>	/* printf, sprintf */
@@ -860,22 +938,40 @@ BOOL DLLCALL listSwapNodes(list_node_t* node1, list_node_t* node2)
 int main(int arg, char** argv)
 {
 	int		i;
+	long	result;
 	char*	p;
 	char	str[32];
 	link_list_t list;
 
 	listInit(&list,0);
+	if((result = listVerify(&list)) < 0) {
+		fprintf(stderr, "line %d: listVerify() returned %ld\n", __LINE__, result);
+		return EXIT_FAILURE;
+	}
+
 	for(i=0; i<100; i++) {
 		sprintf(str,"%u",i);
 		listPushNodeString(&list,str);
 	}
+	if((result = listVerify(&list)) < 0) {
+		fprintf(stderr, "line %d: listVerify() returned %ld\n", __LINE__, result);
+		return EXIT_FAILURE;
+	}
+
+	listReverse(&list);
+	if((result = listVerify(&list)) < 0) {
+		fprintf(stderr, "line %d: listVerify() returned %ld\n", __LINE__, result);
+		return EXIT_FAILURE;
+	}
 
 	while((p=listShiftNode(&list))!=NULL)
 		printf("%d %s\n",listCountNodes(&list),p), free(p);
+	if((result = listVerify(&list)) < 0) {
+		fprintf(stderr, "line %d: listVerify() returned %ld\n", __LINE__, result);
+		return EXIT_FAILURE;
+	}
 
-	/* Yes, this test code leaks heap memory. :-) */
-	gets(str);
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 #endif
