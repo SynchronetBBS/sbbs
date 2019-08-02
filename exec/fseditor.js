@@ -4,6 +4,7 @@
 load("sbbsdefs.js");
 
 const REVISION = "$Revision$".split(' ')[1];
+require("text.js", 'FileNotReceived');
 var line=new Array();
 var quote_line=new Array();
 var xpos=0;									/* Current xpos of insert point */
@@ -1418,9 +1419,14 @@ function add_char(key)
 		draw_line(ypos,xpos-1,false);
 }
 
+function output_filename()
+{
+	return (argc==0?system.temp_dir+"INPUT.MSG":argv[0]);
+}
+
 function save_file()
 {
-	var f=new File((argc==0?system.temp_dir+"INPUT.MSG":argv[0]));
+	var f=new File(output_filename());
 	if(!f.open("wb")) {
 		alert("Error " + f.error + " opening " + f.name);
 		return false;
@@ -1454,6 +1460,7 @@ function handle_backspace()
 
 function edit(quote_first)
 {
+	var prev_key;
 	var key;
 
 	function edit_subject()
@@ -1881,9 +1888,27 @@ function edit(quote_first)
 				if(!rewrap())
 					draw_line(ypos,xpos);
 				break;
+			case 'B':
+				if(prev_key == '\x18') {	/* CTRL-X, ZDLE */
+					// ZMODEM-receive
+					console.clear(LIGHTGRAY);
+					console.print("ZMODEM upload detected");
+					if(bbs.receive_file(output_filename(), 'Z', /* autohang: */false) == true) {
+						console.line_counter=0;
+						return;
+					}
+					while(console.inkey(/* mode: */0, /* timeout: */500) == '\x18')
+						;
+					console.print(format(bbs.text(FileNotReceived), "File"));
+					console.pause();
+					redraw_screen();
+					break;
+				}
+				// Fall-through
 			default:		/* Insert the char */
 				add_char(key);
 		}
+		prev_key = key;
 	}
 }
 
