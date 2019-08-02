@@ -603,9 +603,8 @@ static BOOL session_check(http_session_t *session, BOOL *rd, BOOL *wr, unsigned 
 	if (session->is_tls) {
 		if(wr)
 			*wr=1;
-		if(rd) {
-			// This MSG_PEEK is a terrible hack. :(
-			if(session->tls_pending || sess_recv(session, &buf, 1, MSG_PEEK) == 1) {
+		if(rd || wr == NULL) {
+			if(session->tls_pending) {
 				*rd = TRUE;
 				return TRUE;
 			}
