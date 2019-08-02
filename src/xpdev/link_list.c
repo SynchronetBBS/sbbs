@@ -855,11 +855,13 @@ BOOL DLLCALL listSwapNodes(list_node_t* node1, list_node_t* node2)
 
 static void list_update_prev(link_list_t* list)
 {
+	list_node_t* node;
+	list_node_t* prev = NULL;
+
 	if(list == NULL)
 		return;
 
-	list_node_t* node = list->first;
-	list_node_t* prev = NULL;
+	node = list->first;
 	while(node != NULL) {
 		node->prev = prev;
 		prev = node;
@@ -869,10 +871,13 @@ static void list_update_prev(link_list_t* list)
 
 void DLLCALL listReverse(link_list_t* list)
 {
+	list_node_t* node;
+	list_node_t* prev;
+
 	if(list == NULL)
 		return;
 
-	list_node_t* node = list->first;
+	node = list->first;
 
 	if(node == NULL)
 		return;
@@ -881,7 +886,7 @@ void DLLCALL listReverse(link_list_t* list)
 
 	list->last = list->first;
 
-	list_node_t* prev = NULL;
+	prev = NULL;
 	while(node != NULL) {
 		list_node_t* next = node->next;
 		node->next = prev;
@@ -898,10 +903,10 @@ void DLLCALL listReverse(link_list_t* list)
 
 long DLLCALL listVerify(link_list_t* list)
 {
-	long result = __COUNTER__;
+	long result = 0;
 
 	if(list == NULL)
-		return -__COUNTER__;
+		return -1;
 
 	listLock(list);
 
@@ -909,11 +914,11 @@ long DLLCALL listVerify(link_list_t* list)
 	list_node_t* prev = NULL;
 	while(node != NULL) {
 		if(node->list != list) {
-			result = -__COUNTER__;
+			result = -2;
 			break;
 		}
 		if(node->prev != prev) {
-			result = -__COUNTER__;
+			result = -3;
 			break;
 		}
 		prev = node;
@@ -921,10 +926,10 @@ long DLLCALL listVerify(link_list_t* list)
 		result++;
 	}
 	if(result >= 0 && list->last != prev)
-		result = -__COUNTER__;
+		result = -4;
 
 	if(result >= 0 && result != list->count)
-		result = -__COUNTER__;
+		result = -5;
 
 	listUnlock(list);
 
