@@ -818,7 +818,8 @@ const char* bso_flo_filename(fidoaddr_t dest, uint16_t attr)
  attach file.
  Returns 0 on success.
 ******************************************************************************/
-int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_outbox, uint16_t attr)
+int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_outbox
+									, bool del_file, uint16_t attr)
 {
 	const char* flo_filename;
 	char attachment[MAX_PATH+1];
@@ -856,8 +857,7 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	if(bundle) {
 		prefix = (cfg.trunc_bundles) ? "#" : "^";
 	} else {
-		// TODO: should this be checking for the KFS ("Kill File" from FSC-0053) Flag instead?
-		if(attr&FIDO_KILLSENT)
+		if(del_file)
 			prefix = "^";
 	}
 	SAFEPRINTF2(searchstr, "%s%s", prefix, attachment);
@@ -1205,18 +1205,25 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		}
 		fprintf(fp,"\1TZUTC: %s%02d%02u\r", minus, tzone/60, tzone%60);
 	}
-	if(!cfg.flo_mailer) {
-		/* Add FSC-53 FLAGS kludge */
-		fprintf(fp,"\1FLAGS");
-		if(direct)
-			fprintf(fp," DIR");
-		if(hdr.attr&FIDO_FILE) {
-			if(cfg.trunc_bundles)
-				fprintf(fp," TFS");
-			else
-				fprintf(fp," KFS");
+	if(msg == NULL) {
+		if(!cfg.flo_mailer) {
+			/* Add FSC-53 FLAGS kludge */
+			fprintf(fp,"\1FLAGS");
+			if(direct)
+				fprintf(fp," DIR");
+			if(hdr.attr&FIDO_FILE) {
+				if(cfg.trunc_bundles)
+					fprintf(fp," TFS");
+				else
+					fprintf(fp," KFS");
+			}
+			fprintf(fp,"\r");
 		}
-		fprintf(fp,"\r");
+	} else {
+		if(msg->ftn_flags != NULL)
+			fprintf(fp, "\1FLAGS %s\r", msg->ftn_flags);
+		else if(msg->hdr.auxattr&MSG_KILLFILE)
+			fprintf(fp, "\1FLAGS %s\r", "KFS");
 	}
 
 	if(hdr.destpoint)
@@ -2433,7 +2440,8 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 	if(cfg.flo_mailer) {
 		switch(mode) {
 			case ATTACHMENT_ADD:
-				return write_flofile(bundlename,dest,/* bundle: */true, cfg.use_outboxes,/* attr: */0);
+				return write_flofile(bundlename,dest,/* bundle: */true, cfg.use_outboxes
+					,/* del_file: */true, /* attr: */0);
 			case ATTACHMENT_NETMAIL:
 				return 0; /* Do nothing */
 		}
@@ -2613,7 +2621,7 @@ bool pack_bundle(const char *tmp_pkt, fidoaddr_t orig, fidoaddr_t dest)
 	if(nodecfg != NULL)
 		if(nodecfg->archive==SBBSECHO_ARCHIVE_NONE) {    /* Uncompressed! */
 			if(cfg.flo_mailer)
-				i=write_flofile(packet,dest,/* bundle: */true, cfg.use_outboxes, /* attr: */0);
+				i=write_flofile(packet,dest,/* bundle: */true, cfg.use_outboxes, /* del_file: */true, /* attr: */0);
 			else
 				i=create_netmail(/* To: */NULL,/* msg: */NULL,packet
 					,(cfg.trunc_bundles) ? "\1FLAGS TFS\r" : "\1FLAGS KFS\r"
@@ -5261,7 +5269,7 @@ int export_netmail(void)
 						lprintf(LOG_ERR, "!ERROR %d (%s) writing %u bytes to %s", errno, strerror(errno), filelen, fpath);
 					else {
 						lprintf(LOG_DEBUG, "Decoded MIME attachment stored as: %s", fpath);
-						msg.hdr.auxattr |= MSG_FILEATTACH;
+						msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE);
 						msg_subj = fpath;
 					}
 				}
@@ -5437,7 +5445,7 @@ void pack_netmail(void)
 			else {
 				fprintf(fp,"%s\n",getfname(hdr.subj));
 				fclose(fp);
-				if(write_flofile(req, addr,/* bundle: */false, cfg.use_outboxes, hdr.attr))
+				if(write_flofile(req, addr,/* bundle: */false, cfg.use_outboxes, /* del_file: */true, hdr.attr))
 					bail(1);
 				netmail_sent(path);
 			}
@@ -5497,7 +5505,18 @@ void pack_netmail(void)
 					SAFEPRINTF4(packet,"%s%04x%04x.%cut",outbound,addr.net,addr.node,ch);
 			}
 			if(hdr.attr&FIDO_FILE) {
-				if(write_flofile(hdr.subj,addr,/* bundle: */false,/* use_outbox: */false, hdr.attr))
+				// Parse Kill-File-Sent (KFS) from FLAGS from control paragraph (kludge line) within msg body
+				const char* flags = strstr(fmsgbuf, "\1FLAGS ");
+				if(flags != fmsgbuf && *(flags-1) != '\r' && *(flags-1) != '\n') flags = NULL;
+				const char* kfs = NULL;
+				if(flags != NULL) {
+					flags += 7;
+					char* cr = strchr(flags, '\r');
+					kfs = strstr(flags, "KFS");
+					if(kfs > cr)
+						kfs = NULL;
+				}
+				if(write_flofile(hdr.subj,addr,/* bundle: */false,/* use_outbox: */false, /* del_file: */kfs != NULL, hdr.attr))
 					bail(1);
 				SAFECOPY(hdr.subj, getfname(hdr.subj));	/* Don't include the file path in the subject */
 			}
