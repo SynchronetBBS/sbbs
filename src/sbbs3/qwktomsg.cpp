@@ -226,6 +226,7 @@ bool sbbs_t::qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset
 	}
 
 	iniFreeStringList(msg_headers);
+	return true;
 }
 
 /****************************************************************************/
