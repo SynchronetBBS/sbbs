@@ -2212,8 +2212,9 @@ static int recvbufsocket(http_session_t *session, char *buf, long count)
 		i=sess_recv(session,buf+rd,count-rd,0);
 		switch(i) {
 			case -1:
-				if(session->is_tls || ERROR_VALUE!=EAGAIN)
-					close_session_socket(session);
+				if (ERROR_VALUE == EAGAIN && !session->is_tls)
+					break;
+				// Fall-through...
 			case 0:
 				close_session_socket(session);
 				*buf=0;
