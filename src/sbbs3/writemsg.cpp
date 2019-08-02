@@ -939,7 +939,32 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				strin[0]=0;
 			if(line < 1)
 				carriage_return();
+			ulong prev_con = console;
 			getstr(strin, cols-1, K_WRAP|K_MSG|K_EDIT|K_LEFTEXIT|K_NOCRLF);
+			if((prev_con&CON_DELETELINE) /* Ctrl-X/ZDLE */ && strncmp(strin, "B00", 3) == 0) {
+				strin[0] = 0;
+				char fname[MAX_PATH + 1];
+				SAFEPRINTF(fname, "%sUPLOAD.MSG", cfg.temp_dir);
+				removecase(fname);
+				if(!recvfile(fname, 'Z', /* autohang: */false)) {
+					bprintf(text[FileNotReceived], "File");
+					continue;
+				}
+				FILE* fp = fopen(fname, "r");
+				if(fp == NULL) {
+					errormsg(WHERE, ERR_OPEN, fname, 0);
+					continue;
+				}
+				strListFreeStrings(str);
+				strListReadFile(fp, &str, /* max line len */cols - 1);
+				strListTruncateTrailingLineEndings(str);
+				char rx_lines[128];
+				SAFEPRINTF(rx_lines, "%u lines", lines = strListCount(str));
+				bprintf(text[FileNBytesReceived], rx_lines, ultoac(ftell(fp), tmp));
+				line = lines;
+				fclose(fp);
+				continue;
+			}
 		} while(console&CON_UPARROW && !line && online);
 
 		if(sys_status&SS_ABORT)
