@@ -630,7 +630,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	char		fromhost[256];
 	char		msgid[256];
 	char		date[64];
-	uchar*		p;
+	char*		p;
 	char*		np;
 	char*		content_type=NULL;
 	int			i;
