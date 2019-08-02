@@ -251,7 +251,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	memset(&msg,0,sizeof(smbmsg_t));
 	msg.hdr.version=smb_ver();
 	if(mode&WM_FILE)
-		msg.hdr.auxattr|=MSG_FILEATTACH;
+		msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE);
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
@@ -467,7 +467,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	memset(&msg,0,sizeof(smbmsg_t));
 	msg.hdr.version=smb_ver();
 	if(mode&WM_FILE)
-		msg.hdr.auxattr|=MSG_FILEATTACH;
+		msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE);
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 

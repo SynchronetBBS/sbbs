@@ -233,7 +233,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	if(cfg.netmail_misc&NMAIL_CRASH) msg.hdr.netattr |= MSG_CRASH;
 	if(cfg.netmail_misc&NMAIL_HOLD)  msg.hdr.netattr |= MSG_HOLD;
 	if(cfg.netmail_misc&NMAIL_KILL)  msg.hdr.netattr |= MSG_KILLSENT;
-	if(mode&WM_FILE) msg.hdr.auxattr |= MSG_FILEATTACH; 
+	if(mode&WM_FILE) msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE); 
 
 	if(remsg != NULL && resmb != NULL && !(mode&WM_QUOTE)) {
 		if(quotemsg(resmb, remsg, /* include tails: */true))

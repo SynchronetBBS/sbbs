@@ -273,7 +273,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 	msg.hdr.version=smb_ver();
 	msg.hdr.attr=msgattr;
 	if(mode&WM_FILE)
-		msg.hdr.auxattr|=MSG_FILEATTACH;
+		msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE);
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
