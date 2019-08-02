@@ -605,7 +605,8 @@ static BOOL session_check(http_session_t *session, BOOL *rd, BOOL *wr, unsigned 
 			*wr=1;
 		if(rd || wr == NULL) {
 			if(session->tls_pending) {
-				*rd = TRUE;
+				if (rd)
+					*rd = TRUE;
 				return TRUE;
 			}
 		}
