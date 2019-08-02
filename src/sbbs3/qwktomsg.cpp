@@ -39,7 +39,7 @@
 #include "qwk.h"
 #include "utf8.h"
 
-static void qwk_parse_header_list(ulong confnum, smbmsg_t* msg, str_list_t* headers, bool parse_sender_hfields, bool parse_recipient_hfields)
+static bool qwk_parse_header_list(sbbs_t* sbbs, ulong confnum, smbmsg_t* msg, str_list_t* headers, bool parse_sender_hfields, bool parse_recipient_hfields)
 {
 	char*		p;
 	char		zone[32];
@@ -47,6 +47,13 @@ static void qwk_parse_header_list(ulong confnum, smbmsg_t* msg, str_list_t* head
 	int			i;
 	uint16_t	net_type;
 	uint16_t	hfield_type;
+
+	if((p = iniPopKey(headers,ROOT_SECTION,"Conference",value)) != NULL) {
+		if(confnum > 0 && confnum != strtoul(value, NULL, 0)) {
+			sbbs->errormsg(WHERE, ERR_CHK, "Conference number", confnum, value);
+			return false;
+		}
+	}
 
 	if((p=iniPopKey(headers,ROOT_SECTION,"WhenWritten",value))!=NULL) {
 		xpDateTime_t dt=isoDateTimeStr_parse(p);
@@ -158,9 +165,11 @@ static void qwk_parse_header_list(ulong confnum, smbmsg_t* msg, str_list_t* head
 	for(i=0;(*headers)[i]!=NULL;i++)
 		if((*headers)[i][0])
 			smb_hfield_str(msg,RFC822HEADER,(*headers)[i]);
+
+	return true;
 }
 
-void sbbs_t::qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t all_headers, bool parse_sender_hfields)
+bool sbbs_t::qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t all_headers, bool parse_sender_hfields)
 {
 	char str[128];
 	char to[128];
@@ -170,6 +179,10 @@ void sbbs_t::qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset
 
 	sprintf(str,"%lx",offset);
 	msg_headers=iniGetSection(all_headers,str);
+	if(msg_headers == NULL && all_headers != NULL) {
+		errormsg(WHERE, ERR_CHK, "missing header section", offset);
+		return false;
+	}
 
 	memset(msg,0,sizeof(smbmsg_t));		/* Initialize message header */
 	msg->hdr.version=smb_ver();
@@ -177,8 +190,10 @@ void sbbs_t::qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset
 	sprintf(to,"%25.25s",(char *)hdrblk+21);     /* To user */
 	truncsp(to);
 
-	if(msg_headers!=NULL)
-		qwk_parse_header_list(confnum, msg, &msg_headers, parse_sender_hfields, stricmp(to,"NETMAIL")!=0);
+	if(msg_headers!=NULL) {
+		if(!qwk_parse_header_list(this, confnum, msg, &msg_headers, parse_sender_hfields, stricmp(to,"NETMAIL") != 0))
+			return false;
+	}
 
 	/* Parse the QWK message header: */
 	if(msg->hdr.when_written.time==0) {

@@ -63,6 +63,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	ulong	t;
 	ulong	msgs=0;
 	ulong	tmsgs=0;
+	ulong	errors=0;
 	time_t	start;
 	time_t	startsub;
 	DIR*	dir;
@@ -148,23 +149,29 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			eprintf(LOG_NOTICE,"!Invalid QWK message status (%02X) at offset %lu in %s"
 				,block[0], l, packet);
 			blocks=1;
+			errors++;
 			continue;
 		}
 		sprintf(tmp,"%.6s",block+116);
 		blocks=atoi(tmp);  /* i = number of blocks */
+		n=(uint)block[123]|(((uint)block[124])<<8);  /* conference number */
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
-				qwk_voting(&voting, l, NET_QWK, cfg.qhub[hubnum]->id, hubnum);
+				if(!qwk_voting(&voting, l, NET_QWK, cfg.qhub[hubnum]->id, n, hubnum))
+					errors++;
 				continue;
 			}
 			eprintf(LOG_NOTICE,"!Invalid number of QWK blocks (%d) at offset %lu in %s"
 				,blocks, l+116, packet);
+			errors++;
 			blocks=1;
 			continue; 
 		}
-		n=(uint)block[123]|(((uint)block[124])<<8);  /* conference number */
 
-		qwk_new_msg(n, &msg,(char*)block,/* offset: */l,headers,/* parse_sender_hfields: */true);
+		if(!qwk_new_msg(n, &msg,(char*)block,/* offset: */l,headers,/* parse_sender_hfields: */true)) {
+			errors++;
+			continue;
+		}
 
 		if(cfg.max_qwkmsgage && msg.hdr.when_written.time < (uint32_t)now
 			&& (now-msg.hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
@@ -231,6 +238,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
 				smb_stack(&smb,SMB_STACK_POP);
+				errors++;
 				continue; 
 			}
 			if(!filelength(fileno(smb.shd_fp))) {
@@ -242,6 +250,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 					smb_close(&smb);
 					errormsg(WHERE,ERR_CREATE,smb.file,k,smb.last_error);
 					smb_stack(&smb,SMB_STACK_POP);
+					errors++;
 					continue; 
 				} 
 			}
@@ -249,12 +258,14 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				smb_close(&smb);
 				errormsg(WHERE,ERR_LOCK,smb.file,k,smb.last_error);
 				smb_stack(&smb,SMB_STACK_POP);
+				errors++;
 				continue; 
 			}
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_READ,smb.file,k,smb.last_error);
 				smb_stack(&smb,SMB_STACK_POP);
+				errors++;
 				continue; 
 			}
 			smb_unlocksmbhdr(&smb);
@@ -263,7 +274,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				SAFEPRINTF(str,text[UserSentYouMail],msg.from);
 				putsmsg(&cfg,usernum,str);
 				tmsgs++;
-			}
+			} else
+				errors++;
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
 			continue;
@@ -275,6 +287,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		if((j = resolve_qwkconf(n, hubnum)) == INVALID_SUB) {	/* ignore messages for subs not in config */
 			eprintf(LOG_NOTICE,"!Message from %s on UNKNOWN QWK CONFERENCE NUMBER: %u"
 				,cfg.qhub[hubnum]->id, n);
+			errors++;
 			continue;
 		}
 
@@ -305,6 +318,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			smb.subnum=j;
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
+				errors++;
 				continue; 
 			}
 			if(!filelength(fileno(smb.shd_fp))) {
@@ -315,17 +329,20 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				if((k=smb_create(&smb))!=0) {
 					smb_close(&smb);
 					errormsg(WHERE,ERR_CREATE,smb.file,k,smb.last_error);
+					errors++;
 					continue; 
 				} 
 			}
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_LOCK,smb.file,k,smb.last_error);
+				errors++;
 				continue; 
 			}
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_READ,smb.file,k,smb.last_error);
+				errors++;
 				continue; 
 			}
 			smb_unlocksmbhdr(&smb);
@@ -336,7 +353,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			signal_sub_sem(&cfg,j);
 			msgs++;
 			tmsgs++;
-		}
+		} else
+			errors++;
 	}
 	if(lastsub != INVALID_SUB) {
 		log_qwk_import_stats(msgs, startsub);
@@ -400,12 +418,12 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		if(t<1)
 			t=1;
 		eprintf(LOG_INFO,"Finished Importing QWK Network Packet from %s: "
-			"(%lu msgs) in %lu seconds (%lu msgs/sec)"
-			,cfg.qhub[hubnum]->id, tmsgs, t, tmsgs/t);
+			"(%lu msgs) in %lu seconds (%lu msgs/sec), %lu errors"
+			,cfg.qhub[hubnum]->id, tmsgs, t, tmsgs/t, errors);
 		/* trigger timed event with internal code of 'qnet-qwk' to run */
 		sprintf(str,"%sqnet-qwk.now",cfg.data_dir);
 		ftouch(str);
 	}
 	delfiles(cfg.temp_dir,ALLFILES);
-	return(true);
+	return errors == 0;
 }

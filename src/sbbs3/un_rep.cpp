@@ -55,6 +55,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	long	l,size,misc;
 	ulong	n;
 	ulong	ex;
+	ulong	tmsgs = 0;
 	ulong	errors = 0;
 	node_t	node;
 	FILE*	rep;
@@ -191,9 +192,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 		}
 		sprintf(tmp,"%.6s",block+116);
 		blocks=atoi(tmp);  /* i = number of blocks */
+		long confnum = atol((char *)block+1);
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
-				if(!qwk_voting(&voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias))
+				if(!qwk_voting(&voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias, confnum))
 					errors++;
 				continue;
 			}
@@ -206,9 +208,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 			continue;
 		}
 
-		long confnum = atol((char *)block+1);
-
-		qwk_new_msg(confnum, &msg, block, /* offset: */l, headers, /* parse_sender_hfields: */useron.rest&FLAG('Q') ? true:false);
+		if(!qwk_new_msg(confnum, &msg, block, /* offset: */l, headers, /* parse_sender_hfields: */useron.rest&FLAG('Q') ? true:false)) {
+			errors++;
+			continue;
+		}
 
 		if(cfg.max_qwkmsgage && msg.hdr.when_written.time < (uint32_t)now
 			&& (now-msg.hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
@@ -345,7 +348,6 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			if(qwk_import_msg(rep, block, blocks
 				,/* fromhub: */0, &smb, /* touser: */usernum, &msg)) {
-
 				if(usernum==1) {
 					useron.fbacks++;
 					logon_fbacks++;
@@ -383,7 +385,9 @@ bool sbbs_t::unpack_rep(char* repfile)
 					SAFEPRINTF(str,text[UserSentYouMail],msg.from);
 					putsmsg(&cfg,usernum,str); 
 				} 
-			}
+				tmsgs++;
+			} else
+				errors++;
 			smb_close(&smb);
 		}    /* end of email */
 
@@ -545,7 +549,9 @@ bool sbbs_t::unpack_rep(char* repfile)
 				logline("P+",str); 
 				if(!(useron.rest&FLAG('Q')))
 					user_event(EVENT_POST);
-			}
+				tmsgs++;
+			} else
+				errors++;
 		}   /* end of public message */
 	}
 
@@ -660,7 +666,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		/**********************************************/
 		autohangup();
 	} else
-		lprintf(LOG_INFO, "Unpacking completed: %s", rep_fname);
+		lprintf(LOG_INFO, "Unpacking completed: %s (%lu msgs, %lu errors)", rep_fname, tmsgs, errors);
 
 	return errors == 0;
 }

@@ -976,9 +976,9 @@ public:
 	void	qwksetptr(uint subnum, char *buf, int reset);
 	void	qwkcfgline(char *buf,uint subnum);
 	int		set_qwk_flag(ulong flag);
-	uint	resolve_qwkconf(uint n, int hubnum=-1);
-	bool	qwk_vote(str_list_t ini, const char* section, smb_net_type_t, const char* qnet_id, int hubnum);
-	bool	qwk_voting(str_list_t* ini, long offset, smb_net_type_t, const char* qnet_id, int hubnum = -1);
+	uint	resolve_qwkconf(uint confnum, int hubnum=-1);
+	bool	qwk_vote(str_list_t ini, const char* section, smb_net_type_t, const char* qnet_id, uint confnum, int hubnum);
+	bool	qwk_voting(str_list_t* ini, long offset, smb_net_type_t, const char* qnet_id, uint confnum, int hubnum = -1);
 	void	qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t, const char* qnet_id, int hubnum = -1);
 
 	/* pack_qwk.cpp */
@@ -997,7 +997,7 @@ public:
 	ulong	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t*, int conf, FILE* hdrs_dat, FILE* voting_dat = NULL);
 
 	/* qwktomsg.cpp */
-	void	qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t headers, bool parse_sender_hfields);
+	bool	qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t headers, bool parse_sender_hfields);
 	bool	qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks, char fromhub, smb_t*
 				,uint touser, smbmsg_t* msg);
 

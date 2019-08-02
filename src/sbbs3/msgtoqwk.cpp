@@ -228,6 +228,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 			if(msg->hfield[i].type==RFC822HEADER)
 				fprintf(hdrs,"%s\n",truncsp_lines((char*)msg->hfield_dat[i]));
 
+		fprintf(hdrs, "Conference: %u\n", conf);
+
 		/* Blank line: */
 		fprintf(hdrs,"\n");
 	}
