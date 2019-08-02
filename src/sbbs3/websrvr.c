@@ -598,7 +598,6 @@ static BOOL session_check(http_session_t *session, BOOL *rd, BOOL *wr, unsigned 
 	BOOL	ret = FALSE;
 	BOOL	lcl_rd;
 	BOOL	*rd_ptr = rd?rd:&lcl_rd;
-	char	buf;
 
 	if (session->is_tls) {
 		if(wr)
