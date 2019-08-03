@@ -171,7 +171,7 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 		bprintf(pmode, msghdr_text(msg, MsgSubj), current_msg_subj);
 		if(msg->tags && *msg->tags)
 			bprintf(text[MsgTags], msg->tags);
-		if(msg->hdr.attr || msg->hdr.netattr || msg->hdr.auxattr)
+		if(msg->hdr.attr || msg->hdr.netattr || (msg->hdr.auxattr & ~MSG_HFIELDS_UTF8))
 			show_msgattr(msg);
 		if(current_msg_to != NULL && *current_msg_to != 0) {
 			bprintf(pmode, msghdr_text(msg, MsgTo), current_msg_to);
