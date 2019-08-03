@@ -34,7 +34,7 @@
 	"Type \1h/?\1n\1g on a new line for menu.\r\n\1n"
 "\1n\1g\r\nRaw message input (\1h%u\1n\1g bytes max). "\    023 EnterMsgNowRaw
 	"\1hCtrl-Z\1n\1g to save, \1hCtrl-C\1n\1g to abort.\1n\r\n\r\n"
-"Line limit (%u) reached.\r\n"                  	024 NoMoreLines
+"\1n\1h\1rLine limit (\1w%u\1r) reached.\1n\r\n"       	024 NoMoreLines
 "Only %u lines left.\r\n"                               025 OnlyNLinesLeft
 "\r\n\r\n\1n\1r\1h\1iOut of bytes.\1n\r\n"              026 OutOfBytes
 "Invalid line number\r\n"                               027 InvalidLineNumber
@@ -58,7 +58,7 @@
 "\1n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
 "\1n\r\nYou have no %s.\r\n"                           045 NoMailWaiting
 "\1_\r\n\1q\1g\1hMail Waiting (%s first):\r\n\r\n"     046 MailWaitingLstHdr
-"\1g\1h%4d \1n\1g%-25.25s \1h%c\1n\1g %.46s\r\n"              047 MailWaitingLstFmt
+"\1g\1h%4d \1n\1g%-25.25s \1h%c\1n\1g %s\r\n"              047 MailWaitingLstFmt
 "\1_\r\n\1y\1hStart with number [\1w%u\1y]: \1w"             048 StartWithN
 "\r\n\1n\1cþ \1b\1hReading E-mail \1n\1cþ \1b\1h(\1w?\1b=Menu)"\  049 ReadingMail
 	" (\1w%u\1b of \1w%u\1b): \1n"
@@ -86,7 +86,7 @@
 	"(\1w%u \1bof \1w%u\1b): \1n" 
 "\1_\r\n\1q\1g\1h      From                   "\              065 MailOnSystemLstHdr
 	"To                     A Subject\r\n\1n"
-"\1g\1h%5d\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %.25s\r\n"     066 MailOnSystemLstFmt
+"\1g\1h%5d\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"     066 MailOnSystemLstFmt
 "\1-\r\n\1c%-15.15s \1y\1h%-44.44s "\                 067 NScanStatusFmt
 	"\1n\1cNew:\1h%5u \1n\1cof\1h %-u"
 "\1-\r\n\1c%-20s \1y\1h%-50s \1w%6u"             068 SearchSubFmt
@@ -104,7 +104,7 @@
 	"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "\
 	"Time Left: \1g%-8s\1w"\
 	" Ã\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
-"\1g\1h%5u\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %.25s\r\n"    078 SubMsgLstFmt
+"\1g\1h%5u\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"    078 SubMsgLstFmt
 "\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4´ "\                    079 SysopChatSeparator
 	"\1rSplit-Screen \1cSysop\1r Chat          \1y"\
 	"Time Left: \1g%-8s\1w"\
