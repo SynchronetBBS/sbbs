@@ -191,6 +191,40 @@ bool utf8_str_is_valid(const char* str)
 	return true;
 }
 
+// Return the total printed-width of UTF-8 string (str) accounting for zero/half/full-width codepoints
+size_t utf8_str_total_width(const char* str)
+{
+	size_t count = 0;
+	const char* end = str + strlen(str);
+	while (str < end) {
+		enum unicode_codepoint codepoint = 0;
+		int len = utf8_getc(str, end - str, &codepoint);
+		if (len < 1)
+			break;
+		count += unicode_width(codepoint);
+		str += len;
+	}
+	return count;
+}
+
+// Return the count of chars within the specified width range in UTF-8 string (str)
+size_t utf8_str_count_width(const char* str, size_t min_width, size_t max_width)
+{
+	size_t count = 0;
+	const char* end = str + strlen(str);
+	while (str < end) {
+		enum unicode_codepoint codepoint = 0;
+		int len = utf8_getc(str, end - str, &codepoint);
+		if (len < 1)
+			break;
+		size_t width = unicode_width(codepoint);
+		if(width >= min_width && width <= max_width)
+			count++;
+		str += len;
+	}
+	return count;
+}
+
 int cp437_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char minval)
 {
 	int retval = 0;
