@@ -1240,7 +1240,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 				fprintf(fp,"\1%.512s\r",(char*)msg->hfield_dat[i]);
 		const char* charset = msg->ftn_charset;
 		if(charset == NULL) {
-			if(smb_msg_is_utf8(msg))
+			if(smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8))
 				charset = FIDO_CHARSET_UTF8;
 			else if(str_is_ascii(body))
 				charset = FIDO_CHARSET_ASCII;
