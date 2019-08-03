@@ -2406,6 +2406,7 @@ static enum mimehdr_charset mimehdr_charset_decode(const char* str)
 bool mimehdr_value_decode(char* str, smbmsg_t* msg)
 {
 	bool encoded = false;
+	bool encoded_word = false;
 	if (str == NULL)
 		return false;
 	char* buf = strdup(str);
@@ -2415,11 +2416,12 @@ bool mimehdr_value_decode(char* str, smbmsg_t* msg)
 	*str = 0;
 	char tmp[256]; // "An 'encoded-word' may not be more than 75 characters long"
 	for(char* p = strtok_r(buf, " \t", &state); p != NULL; p = strtok_r(NULL, " \t", &state)) {
-		if(*str)
-			strcat(str, " ");
 		char* end = lastchar(p);
 		if(*p == '=' && *(p+1) == '?' && *(end - 1) == '?' && *end == '=' && end - p < sizeof(tmp)) {
+			if(*str && !encoded_word)
+				strcat(str, " ");
 			encoded = true;
+			encoded_word = true;
 			char* cp = p + 2;
 			enum mimehdr_charset charset = mimehdr_charset_decode(cp);
 			FIND_CHAR(cp, '?');
@@ -2444,6 +2446,10 @@ bool mimehdr_value_decode(char* str, smbmsg_t* msg)
 					p = tmp;
 				}
 			}
+		} else {
+			if(*str)
+				strcat(str, " ");
+			encoded_word = false;
 		}
 		strcat(str, p);
 	}
