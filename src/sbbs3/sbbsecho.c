@@ -4918,7 +4918,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			if(scfg.sub[subnum]->misc&SUB_ASCII)
 				charset = FIDO_CHARSET_ASCII;
 			if(charset == NULL) {
-				if(smb_msg_is_utf8(&msg))
+				if(smb_msg_is_utf8(&msg) || (msg.hdr.auxattr & MSG_HFIELDS_UTF8))
 					charset = FIDO_CHARSET_UTF8;
 				else if(str_is_ascii(buf))
 					charset = FIDO_CHARSET_ASCII;
