@@ -4069,7 +4069,7 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,client.protocol,session,"250-SOML");
 			sockprintf(socket,client.protocol,session,"250-SAML");
 			sockprintf(socket,client.protocol,session,"250-8BITMIME");
-			if (session != -1)
+			if (session == -1)
 				sockprintf(socket,client.protocol,session,"250-STARTTLS");
 			if (startup->max_msg_size)
 				sockprintf(socket,client.protocol,session,"250-SIZE %u", startup->max_msg_size);
