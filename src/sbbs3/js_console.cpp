@@ -1986,7 +1986,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("beep for <i>count</i> number of times (default count is 1)")
 	,311
 	},
-	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("<value [,value][...]> or <string [,mode=<tt>P_NONE</tt>]>")
+	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("[value [,value][...]] or [string [,mode=<tt>P_NONE</tt>]]")
 	,JSDOCSTR("display one or more values as strings (supports Ctrl-A codes, Telnet-escaping, auto-screen pausing, etc.).<br>"
 		"Supports a limited set of <tt>P_*</tt> flags, e.g. <tt>P_PETSCII</tt> and <tt>P_UTF8</tt>."
 	)
