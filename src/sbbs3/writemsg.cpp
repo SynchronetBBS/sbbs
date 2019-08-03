@@ -749,7 +749,10 @@ void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor, const char* c
 
 	if(editor == NULL || useron_xedit == 0 || (cfg.xedit[useron_xedit - 1]->misc&SAVECOLUMNS))
 		smb_hfield_bin(msg, SMB_COLUMNS, cols);
-}
+
+	if(!str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj))
+		msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
+}  
 
 /****************************************************************************/
 /****************************************************************************/

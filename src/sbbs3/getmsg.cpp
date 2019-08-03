@@ -118,6 +118,18 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 		);
 }
 
+/* Returns a CP437 text.dat string converted to UTF-8, when appropriate */
+const char* sbbs_t::msghdr_text(const smbmsg_t* msg, uint index)
+{
+	if(msg == NULL || !(msg->hdr.auxattr & MSG_HFIELDS_UTF8))
+		return text[index];
+
+	if(cp437_to_utf8_str(text[index], msghdr_utf8_text, sizeof(msghdr_utf8_text), /* min-char-val: */'\x80') < 1)
+		return text[index];
+
+	return msghdr_utf8_text;
+}
+
 /****************************************************************************/
 /* Displays a message header to the screen                                  */
 /****************************************************************************/
@@ -128,6 +140,7 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 	char	*sender=NULL;
 	int 	i;
 	smb_t	saved_smb = this->smb;
+	long	pmode = 0;
 
 	if(smb != NULL)
 		this->smb = *smb;	// Needed for @-codes and JS bbs.smb_* properties
@@ -136,6 +149,8 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 		current_msg_subj = msg->subj;
 		current_msg_from = msg->from;
 		current_msg_to = msg->to;
+		if(msg->hdr.auxattr & MSG_HFIELDS_UTF8)
+			pmode |= P_UTF8;
 	}
 	if(subject != NULL)
 		current_msg_subj = subject;
@@ -153,13 +168,13 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 	}
 	msghdr_tos = tos;
 	if(!menu("msghdr", P_NOERROR)) {
-		bprintf(text[MsgSubj], current_msg_subj);
+		bprintf(pmode, msghdr_text(msg, MsgSubj), current_msg_subj);
 		if(msg->tags && *msg->tags)
 			bprintf(text[MsgTags], msg->tags);
 		if(msg->hdr.attr || msg->hdr.netattr || msg->hdr.auxattr)
 			show_msgattr(msg);
 		if(current_msg_to != NULL && *current_msg_to != 0) {
-			bprintf(text[MsgTo], current_msg_to);
+			bprintf(pmode, msghdr_text(msg, MsgTo), current_msg_to);
 			if(msg->to_net.addr!=NULL)
 				bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
 			if(msg->to_ext)
@@ -168,7 +183,7 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 		if(msg->cc_list != NULL)
 			bprintf(text[MsgCarbonCopyList], msg->cc_list);
 		if(current_msg_from != NULL && (!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)) {
-			bprintf(text[MsgFrom], current_msg_from);
+			bprintf(pmode, msghdr_text(msg, MsgFrom), current_msg_from);
 			if(msg->from_ext)
 				bprintf(text[MsgFromExt],msg->from_ext);
 			if(msg->from_net.addr!=NULL && (current_msg_from == NULL || strchr(current_msg_from,'@')==NULL))
