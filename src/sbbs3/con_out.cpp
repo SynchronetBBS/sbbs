@@ -61,6 +61,7 @@ char* sbbs_t::auto_utf8(const char* str, long* mode)
    P_UTF8
    P_AUTO_UTF8
    P_NOATCODES
+   P_TRUNCATE
  ****************************************************************************/
 int sbbs_t::bputs(const char *str, long mode)
 {
@@ -74,6 +75,19 @@ int sbbs_t::bputs(const char *str, long mode)
 	str = auto_utf8(str, &mode);
 	size_t len = strlen(str);
 	while(l < len && online) {
+		switch(str[l]) {
+			case '\b':
+			case '\r':
+			case '\n':
+			case FF:
+			case CTRL_A:
+				break;
+			default: // printing char
+				if((mode&P_TRUNCATE) && column >= (cols - 1)) {
+					l++;
+					continue;
+				}
+		}
 		if(str[l]==CTRL_A && str[l+1]!=0) {
 			l++;
 			if(str[l] == 'Z')	/* EOF (uppercase 'Z' only) */
