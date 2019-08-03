@@ -74,7 +74,8 @@ long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts, 
 		smb_unlockmsghdr(&smb,&msg);
 		if(listed==0)
 			bputs(text[MailOnSystemLstHdr]);
-		bprintf(text[SubMsgLstFmt], reading ? (i+1) : post[i].num
+		bprintf(P_TRUNCATE|(msg.hdr.auxattr&MSG_HFIELDS_UTF8)
+			,msghdr_text(&msg, SubMsgLstFmt), reading ? (i+1) : post[i].num
 			,msg.hdr.attr&MSG_ANONYMOUS && !sub_op(subnum)
 			? text[Anonymous] : msg.from
 			,msg.to
@@ -1764,7 +1765,8 @@ long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 			|| (msg.tags != NULL && strcasestr(msg.tags, search) != NULL)) {
 			if(!found)
 				bputs(text[MailOnSystemLstHdr]);
-			bprintf(text[SubMsgLstFmt],l+1
+			bprintf(P_TRUNCATE|(msg.hdr.auxattr&MSG_HFIELDS_UTF8)
+				,msghdr_text(&msg, SubMsgLstFmt),l+1
 				,(msg.hdr.attr&MSG_ANONYMOUS) && !sub_op(subnum) ? text[Anonymous]
 				: msg.from
 				,msg.to
@@ -1819,7 +1821,8 @@ long sbbs_t::showposts_toyou(uint subnum, post_t *post, ulong start, long posts,
 			if(!found)
 				bputs(text[MailOnSystemLstHdr]);
 			found++;
-			bprintf(text[SubMsgLstFmt],l+1
+			bprintf(P_TRUNCATE|(msg.hdr.auxattr&MSG_HFIELDS_UTF8)
+				,msghdr_text(&msg, SubMsgLstFmt),l+1
 				,(msg.hdr.attr&MSG_ANONYMOUS) && !SYSOP
 				? text[Anonymous] : msg.from
 				,msg.to
