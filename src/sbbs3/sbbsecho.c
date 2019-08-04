@@ -2743,26 +2743,29 @@ bool unpack_bundle(const char* inbound)
 		if(gi<g.gl_pathc) {
 			SAFECOPY(fname,g.gl_pathv[gi]);
 			gi++;
-			lprintf(LOG_INFO,"Unpacking bundle: %s (%1.1fKB)", fname, flength(fname)/1024.0);
-			if(unpack(fname, inbound)) {	/* failure */
-				lprintf(LOG_ERR, "!Unpack failure: %s", fname);
-				if(fdate(fname)+(48L*60L*60L)<time(NULL)) {
-					/* If bundle file older than 48 hours, give up */
-					if(flength(fname) < 1) {
-						delfile(fname, __LINE__);	/* Delete it if it's a 0-byte file */
-						continue;
-					}
-					/* rename to "*.?_?" or (if it exists) "*.?-?" */
-					SAFECOPY(str,fname);
-					str[strlen(str)-2]='_';
-					if(fexistcase(str))
-						str[strlen(str)-2]='-';
-					if(fexistcase(str))
-						delfile(str, __LINE__);
-					if(rename(fname,str))
-						lprintf(LOG_ERR,"ERROR line %d renaming %s to %s"
-							,__LINE__,fname,str);
+			off_t length = flength(fname);
+			if(length < 1) {
+				if(fdate(fname) < time(NULL) + (24*60*60))
+					lprintf(LOG_DEBUG, "Ignoring %ld-byte file (less than 24-hours old): ", (long)length, fname);
+				else {
+					lprintf(LOG_INFO, "Deleting %ld-byte file (more than 24-hours old): ", (long)length, fname);
+					delfile(fname, __LINE__);	/* Delete it if it's a 0-byte file */
 				}
+				continue;
+			}
+			lprintf(LOG_INFO,"Unpacking bundle: %s (%1.1fKB)", fname, length/1024.0);
+			if(unpack(fname, inbound) != 0) {	/* failure */
+				lprintf(LOG_ERR, "!Unpack failure: %s", fname);
+				/* rename to "*.?_?" or (if it exists) "*.?-?" */
+				SAFECOPY(str,fname);
+				str[strlen(str)-2]='_';
+				if(fexistcase(str))
+					str[strlen(str)-2]='-';
+				if(fexistcase(str))
+					delfile(str, __LINE__);
+				if(rename(fname,str))
+					lprintf(LOG_ERR,"ERROR line %d renaming %s to %s"
+						,__LINE__,fname,str);
 				continue;
 			}
 			delfile(fname, __LINE__);	/* successful, so delete bundle */
