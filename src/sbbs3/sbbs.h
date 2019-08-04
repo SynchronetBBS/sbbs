@@ -690,6 +690,8 @@ public:
 	bool	msgtotxt(smb_t*, smbmsg_t*, const char *fname, bool header = true, ulong gettxt_mode = GETMSGTXT_ALL);
 	const char* msghdr_text(const smbmsg_t*, uint index);
 	char	msghdr_utf8_text[128];
+	const char* msghdr_field(const smbmsg_t*, const char* str, char* buf = NULL, bool can_utf8 = false);
+	char	msgghdr_field_cp437_str[128];
 	ulong	getlastmsg(uint subnum, uint32_t *ptr, time_t *t);
 	time_t	getmsgtime(uint subnum, ulong ptr);
 	ulong	getmsgnum(uint subnum, time_t t);
@@ -705,6 +707,7 @@ public:
 	int		bulkmailhdr(smb_t*, smbmsg_t*, uint usernum);
 
 	/* con_out.cpp */
+	size_t	bstrlen(const char *str, long mode = 0);
 	int		bputs(const char *str, long mode = 0);	/* BBS puts function */
 	int		rputs(const char *str, size_t len=0);	/* BBS raw puts function */
 	int		bprintf(const char *fmt, ...)			/* BBS printf function */
@@ -748,7 +751,7 @@ public:
 	bool	saveline(void);
 	bool	restoreline(void);
 	int		petscii_to_ansibbs(unsigned char);
-	size_t	utf8_to_cp437(const char*, size_t);
+	size_t	print_utf8_as_cp437(const char*, size_t);
 	int		attr(int);				/* Change text color/attributes */
 	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
 	char*	auto_utf8(const char*, long* mode);
@@ -1406,7 +1409,6 @@ extern "C" {
 #endif
 
 /* str_util.c */
-size_t	bstrlen(const char *str);
 char*	backslashcolon(char *str);
 ulong	ahtoul(const char *str);	/* Converts ASCII hex to ulong */
 char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */

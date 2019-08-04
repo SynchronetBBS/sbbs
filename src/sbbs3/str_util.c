@@ -353,30 +353,6 @@ str_list_t DLLCALL trashcan_list(scfg_t* cfg, const char* name)
 }
 
 /****************************************************************************/
-/* Returns the printed columns from 'str' accounting for Ctrl-A codes		*/
-/****************************************************************************/
-size_t bstrlen(const char *str)
-{
-	size_t i=0;
-
-	while(*str) {
-		if(*str==CTRL_A) {
-			str++;
-			if(*str==0 || *str=='Z')	/* EOF */
-				break;
-			if(*str=='[')
-				i=0;
-			else if(*str=='<' && i)
-				i--;
-		} else
-			i++;
-		if(!(*str)) break;
-		str++; 
-	}
-	return(i);
-}
-
-/****************************************************************************/
 /* Returns in 'string' a character representation of the number in l with   */
 /* commas.																	*/
 /****************************************************************************/

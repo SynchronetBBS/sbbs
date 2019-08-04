@@ -1119,20 +1119,28 @@ static JSBool
 js_strlen(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
     JSString*	str;
 	char*		cstr;
 	jsrefcount	rc;
+	int32		pmode = 0;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return(JS_FALSE);
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((str=JS_ValueToString(cx, argv[0]))==NULL)
 		return(JS_FALSE);
 
+	if(argc > 1)
+		JS_ValueToInt32(cx, argv[1], &pmode);
+
 	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
 	if(cstr==NULL)
 		return JS_FALSE;
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(bstrlen(cstr)));
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->bstrlen(cstr, pmode)));
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
@@ -2014,8 +2022,8 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("display a string double-wide on the screen (sending \"fullwidth\" Unicode characters when possible)")
 	,31702
 	},
-	{"strlen",			js_strlen,			1, JSTYPE_NUMBER,	JSDOCSTR("text")
-	,JSDOCSTR("returns the number of characters in text, excluding Ctrl-A codes")
+	{"strlen",			js_strlen,			1, JSTYPE_NUMBER,	JSDOCSTR("text [,mode=<tt>P_NONE</tt>]")
+	,JSDOCSTR("returns the printed-length (number of columns) of the specified <i>text</i>, accounting for Ctrl-A codes")
 	,310
 	},
 	{"printfile",		js_printfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,mode=<tt>P_NONE</tt>] [,orig_columns=0")

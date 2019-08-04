@@ -40,6 +40,8 @@
 
 #include "sbbs.h"
 #include "utf8.h"
+#include "unicode.h"
+#include "cp437defs.h"
 
 /****************************************************************************/
 /* Loads an SMB message from the open msg base the fastest way possible 	*/
@@ -128,6 +130,29 @@ const char* sbbs_t::msghdr_text(const smbmsg_t* msg, uint index)
 		return text[index];
 
 	return msghdr_utf8_text;
+}
+
+// Returns a CP437 version of a message header field or UTF-8 if can_utf8 is true
+// Doesn't do CP437->UTF-8 conversion
+const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf, bool can_utf8)
+{
+	if(msg == NULL || !(msg->hdr.auxattr & MSG_HFIELDS_UTF8))
+		return str;
+
+	if(can_utf8 && term_supports(UTF8))
+		return str;
+
+	if(buf == NULL)
+		buf = msgghdr_field_cp437_str;
+
+	strncpy(buf, str, sizeof(msgghdr_field_cp437_str));
+	utf8_normalize_str(buf);
+	utf8_replace_chars(buf, unicode_to_cp437
+		,/* unsupported char: */CP437_INVERTED_QUESTION_MARK
+		,/* unsupported zero-width ch: */0
+		,/* decode error char: */CP437_INVERTED_EXCLAMATION_MARK);
+
+	return buf;
 }
 
 /****************************************************************************/

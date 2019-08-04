@@ -382,7 +382,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 				if(term&UTF8)
 					outcom(str[l]);
 				else
-					skip = utf8_to_cp437(str + l, len - l);
+					skip = print_utf8_as_cp437(str + l, len - l);
 			} else
 				outchar(str[l]);
 			l += skip;
