@@ -903,6 +903,8 @@ void DLLCALL listReverse(link_list_t* list)
 
 long DLLCALL listVerify(link_list_t* list)
 {
+	list_node_t* node;
+	list_node_t* prev = NULL;
 	long result = 0;
 
 	if(list == NULL)
@@ -910,8 +912,7 @@ long DLLCALL listVerify(link_list_t* list)
 
 	listLock(list);
 
-	list_node_t* node = list->first;
-	list_node_t* prev = NULL;
+	node = list->first;
 	while(node != NULL) {
 		if(node->list != list) {
 			result = -2;
