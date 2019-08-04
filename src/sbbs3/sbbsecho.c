@@ -2746,9 +2746,9 @@ bool unpack_bundle(const char* inbound)
 			off_t length = flength(fname);
 			if(length < 1) {
 				if(fdate(fname) < time(NULL) + (24*60*60))
-					lprintf(LOG_DEBUG, "Ignoring %ld-byte file (less than 24-hours old): ", (long)length, fname);
+					lprintf(LOG_DEBUG, "Ignoring %ld-byte file (less than 24-hours old): %s", (long)length, fname);
 				else {
-					lprintf(LOG_INFO, "Deleting %ld-byte file (more than 24-hours old): ", (long)length, fname);
+					lprintf(LOG_INFO, "Deleting %ld-byte file (more than 24-hours old): %s", (long)length, fname);
 					delfile(fname, __LINE__);	/* Delete it if it's a 0-byte file */
 				}
 				continue;
