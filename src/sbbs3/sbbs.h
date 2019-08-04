@@ -1433,7 +1433,7 @@ char*	prep_code(char *str, const char* prefix);
 #endif
 	;
 	void	call_socket_open_callback(BOOL open);
-	SOCKET	open_socket(int type, const char* protocol);
+	SOCKET	open_socket(int domain, int type, const char* protocol);
 	SOCKET	accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen);
 	int		close_socket(SOCKET);
 	u_long	resolve_ip(char *addr);

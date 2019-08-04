@@ -53,12 +53,12 @@
 
 scfg_t		scfg;
 
-SOCKET open_socket(int type, const char* protocol)
+SOCKET open_socket(int domain, int type, const char* protocol)
 {
 	SOCKET	sock;
 	char	error[256];
 
-	sock=socket(AF_INET, type, IPPROTO_IP);
+	sock=socket(domain, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && set_socket_options(&scfg, sock, protocol, error, sizeof(error)))
 		lprintf(LOG_ERR,"%04d !ERROR %s",sock,error);
 

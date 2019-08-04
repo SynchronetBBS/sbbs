@@ -346,12 +346,12 @@ void call_socket_open_callback(BOOL open)
 		startup->socket_open(startup->cbdata, open);
 }
 
-SOCKET open_socket(int type, const char* protocol)
+SOCKET open_socket(int domain, int type, const char* protocol)
 {
 	SOCKET	sock;
 	char	error[256];
 
-	sock=socket(AF_INET, type, IPPROTO_IP);
+	sock=socket(domain, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET)
 		call_socket_open_callback(TRUE);
 	if(sock!=INVALID_SOCKET && set_socket_options(&scfg, sock, protocol, error, sizeof(error)))
@@ -5835,7 +5835,7 @@ NO_SSH:
 
     		/* open a socket and connect to yourself */
 
-    		tmp_sock = open_socket(SOCK_STREAM, "passthru");
+    		tmp_sock = open_socket(PF_INET, SOCK_STREAM, "passthru");
 
 			if(tmp_sock == INVALID_SOCKET) {
 				lprintf(LOG_ERR,"Node %d SSH !ERROR %d creating passthru listen socket"
@@ -5873,7 +5873,7 @@ NO_SSH:
 			lprintf(LOG_INFO,"Node %d SSH passthru socket listening on port %u"
 				,new_node->cfg.node_num, htons(tmp_addr.sin_port));
 
-    		new_node->passthru_socket = open_socket(SOCK_STREAM, "passthru");
+    		new_node->passthru_socket = open_socket(PF_INET, SOCK_STREAM, "passthru");
 
 			if(new_node->passthru_socket == INVALID_SOCKET) {
 				lprintf(LOG_ERR,"Node %d SSH !ERROR %d creating passthru connecting socket"

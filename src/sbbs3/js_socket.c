@@ -2319,7 +2319,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	memset(p,0,sizeof(js_socket_private_t));
 
-	if((p->sock=open_socket(type,protocol))==INVALID_SOCKET) {
+	if((p->sock=open_socket(PF_INET,type,protocol))==INVALID_SOCKET) {
 		JS_ReportError(cx,"open_socket failed with error %d",ERROR_VALUE);
 		if(protocol)
 			free(protocol);

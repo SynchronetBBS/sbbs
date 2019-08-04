@@ -62,7 +62,7 @@ int sbbs_t::exec_net(csi_t* csi)
 				return(0);
 			if(lp!=NULL) {
 
-				SOCKET sock=open_socket(SOCK_STREAM, NULL);
+				SOCKET sock=open_socket(PF_INET, SOCK_STREAM, NULL);
 				if(sock!=INVALID_SOCKET) {
 
 					SOCKADDR_IN	addr;
@@ -546,7 +546,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 		return(INVALID_SOCKET);
 	}
 
-	if((data_sock=open_socket(SOCK_STREAM, "ftp"))==INVALID_SOCKET) {
+	if((data_sock=open_socket(PF_INET, SOCK_STREAM, "ftp"))==INVALID_SOCKET) {
 		csi->socket_error=ERROR_VALUE;
 		return(INVALID_SOCKET);
 	}
