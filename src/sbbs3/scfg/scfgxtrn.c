@@ -1689,6 +1689,8 @@ void xedit_cfg()
 			sprintf(opt[k++],"%-32.32s%s","Handle Soft Carriage Returns", p);
 			sprintf(opt[k++],"%-32.32s%s","Strip FidoNet Kludge Lines"
 				,cfg.xedit[i]->misc&STRIPKLUDGE ? "Yes":"No");
+			sprintf(opt[k++],"%-32.32s%s","Support UTF-8 Encoding"
+				,cfg.xedit[i]->misc&XTRN_UTF8 ? "Yes":"No");
 			sprintf(opt[k++],"%-32.32s%s","BBS Drop File Type"
 				,dropfile(cfg.xedit[i]->type,cfg.xedit[i]->misc));
 			opt[k][0]=0;
@@ -2058,6 +2060,26 @@ void xedit_cfg()
 					}
 					break;
 				case 14:
+					k=(cfg.xedit[i]->misc&XTRN_UTF8) ? 0:1;
+					uifc.helpbuf=
+						"`Support UTF-8 Encoding:`\n"
+						"\n"
+						"If this editor can detect and support UTF-8 terminals, set this option\n"
+						"to `Yes`."
+					;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+                		,"Support UTF-8 Encoding"
+						,uifcYesNoOpts);
+					if(!k && !(cfg.xedit[i]->misc&XTRN_UTF8)) {
+						cfg.xedit[i]->misc ^= XTRN_UTF8;
+						uifc.changes=TRUE; 
+					}
+					else if(k==1 && (cfg.xedit[i]->misc&XTRN_UTF8)) {
+						cfg.xedit[i]->misc ^= XTRN_UTF8;
+						uifc.changes=TRUE; 
+					}
+					break;
+				case 15:
 					k=0;
 					strcpy(opt[k++],"None");
 					sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");
