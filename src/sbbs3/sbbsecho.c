@@ -5449,7 +5449,7 @@ void pack_netmail(void)
 				fprintf(fp,"%s\n",getfname(hdr.subj));
 				fclose(fp);
 				if(write_flofile(req, addr,/* bundle: */false, cfg.use_outboxes, /* del_file: */true, hdr.attr))
-					bail(1);
+					continue;
 				netmail_sent(path);
 			}
 			continue;
