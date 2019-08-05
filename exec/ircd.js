@@ -174,7 +174,7 @@ if(this.server==undefined) {		// Running from JSexec?
 		default_port = mline_port;
 
 	server = { socket: false, terminated: false,
-		version_detail: jsexec_revision_detail };
+		version_detail: jsexec_revision_detail, interface_ip_addr_list: [0,"::"] };
 	server.socket = create_new_socket(default_port)
 	if (!server.socket)
 		exit();
