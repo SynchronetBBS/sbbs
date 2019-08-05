@@ -44,6 +44,12 @@ var subj,to,from;
 var options = load('modopts.js', 'fseditor');
 if(!options)
 	options = {};
+if(options.utf8_support === undefined)
+	options.utf8_support = argv.indexOf('-utf8') >= 0;
+
+var pmode = 0;
+if(options.utf8_support && console.term_supports(USER_UTF8))
+	pmode |= P_UTF8;
 
 function Line(copyfrom)
 {
@@ -107,7 +113,7 @@ function draw_line(l,x,clear)
 		console.gotoxy(x+1,yp);
 		for(; x<line[l].text.length && x<(console.screen_columns-1); x++) {
 			console.attributes=ascii(line[l].attr.substr(x,1));
-			console.write(line[l].text.substr(x,1));
+			console.print(line[l].text.substr(x,1), pmode);
 		}
 		if(clear && x<(console.screen_columns-1)) {
 			console.attributes=7;
@@ -160,8 +166,9 @@ function next_line()
 		scroll(scroll_lines);		/* Scroll up */
 	if(last_xpos>=0)
 		xpos=last_xpos;
-	if(xpos>line[ypos].text.length)
-		xpos=line[ypos].text.length;
+	var text_length = console.strlen(line[ypos].text, pmode);
+	if(xpos>text_length)
+		xpos=text_length;
 }
 
 /*
@@ -177,8 +184,9 @@ function try_prev_line()
 			scroll(0-scroll_lines);		/* Scroll down */
 		if(last_xpos>=0)
 			xpos=last_xpos;
-		if(xpos>line[ypos].text.length)
-			xpos=line[ypos].text.length;
+		var text_length = console.strlen(line[ypos].text, pmode);
+		if(xpos>text_length)
+			xpos=text_length;
 		return(true);
 	}
 	console.beep();
@@ -198,8 +206,9 @@ function try_next_line()
 			scroll(scroll_lines);		/* Scroll up */
 		if(last_xpos>=0)
 			xpos=last_xpos;
-		if(xpos>line[ypos].text.length)
-			xpos=line[ypos].text.length;
+		var text_length = console.strlen(line[ypos].text, pmode);
+		if(xpos>text_length)
+			xpos=text_length;
 		return(true);
 	}
 	console.beep();
@@ -733,11 +742,11 @@ function redraw_screen()
 	status_line();
 	if(edit_top == 5) {
 		console.gotoxy(1,1);
-		printf(hdr_fmt, "Subj", hdr_field_width, subj);
+		console.print(format(hdr_fmt, "Subj", hdr_field_width, subj), pmode);
 		console.gotoxy(1,2);
-		printf(hdr_fmt, "To",	hdr_field_width, to);
+		console.print(format(hdr_fmt, "To",	hdr_field_width, to), pmode);
 		console.gotoxy(1,3);
-		printf(hdr_fmt, "From", hdr_field_width, from);
+		console.print(format(hdr_fmt, "From", hdr_field_width, from), pmode);
 	}
 	else {
 		console.gotoxy(1,1);
@@ -1109,7 +1118,7 @@ function draw_quote_selection(l)
 			}
 			else {
 				console.attributes=ascii(quote_line[l].attr.substr(0,1));
-				console.write(quote_line[l].text.substr(0,1));
+				console.print(quote_line[l].text.substr(0,1), pmode);
 			}
 		}
 	}
@@ -1158,7 +1167,7 @@ function draw_quote_line(l)
 		}
 		for(; x<quote_line[l].text.length && x<(console.screen_columns-1); x++) {
 			console.attributes=ascii(quote_line[l].attr.substr(x,1));
-			console.write(quote_line[l].text.substr(x,1));
+			console.print(quote_line[l].text.substr(x,1), pmode);
 		}
 		if(x<(console.screen_columns-1)) {
 			console.attributes=7;
@@ -1571,7 +1580,7 @@ function edit(quote_first)
 				status_line();
 				erase_colour_box();
 				break;
-			case '\x02':	/* CTRL-B KEY_HOME */
+			case KEY_HOME:	/* CTRL-B */
 				last_xpos=-1;
 				xpos=0;
 				break;
@@ -1598,11 +1607,11 @@ function edit(quote_first)
 				break;
 			case '\x04':	/* CTRL-D (Quick Find in SyncEdit)*/
 				break;
-			case '\x05':	/* CTRL-E KEY_END */
+			case KEY_END:	/* CTRL-E  */
 				last_xpos=-1;
-				xpos=line[ypos].text.length;
+				xpos=console.strlen(line[ypos].text, pmode);
 				break;
-			case '\x06':	/* CTRL-F KEY_RIGHT */
+			case KEY_RIGHT:	/* CTRL-F  */
 				last_xpos=-1;
 				xpos++;
 				if(xpos>line[ypos].text.length) {
@@ -1857,7 +1866,7 @@ function edit(quote_first)
 				/* Same as CTRL-S (Edit Subject) */
 				edit_subject();
 				break;
-			case '\x1d':	/* CTRL-] KEY_LEFT */
+			case KEY_LEFT:	/* CTRL-] */
 				last_xpos=-1;
 				xpos--;
 				if(xpos<0) {
@@ -1865,7 +1874,7 @@ function edit(quote_first)
 					xpos=0;
 				}
 				break;
-			case '\x1e':	/* CTRL-^ KEY_UP */
+			case KEY_UP:	/* CTRL-^ */
 				if(last_xpos==-1)
 					last_xpos=xpos;
 				try_prev_line();
@@ -1873,7 +1882,7 @@ function edit(quote_first)
 			case '\x1f':	/* CTRL-_ Safe quick-abort*/
 				console.line_counter=0;
 				return;
-			case '\x7f':	/* DELETE */
+			case KEY_DEL:	/* DELETE */
 				last_xpos=-1;
 				if(xpos>=line[ypos].text.length) {
 					/* delete the hardcr, */
