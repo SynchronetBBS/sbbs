@@ -60,6 +60,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 	ulong	l=0,sys_status_sav=sys_status;
 	int		defered_pause=FALSE;
 	uint	lines_printed = 0;
+	enum output_rate output_rate = cur_output_rate;
 
 	attr_sp=0;	/* clear any saved attributes */
 	tmpatr=curatr;	/* was lclatr(-1) */
@@ -392,8 +393,8 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 		console=orgcon;
 		attr(tmpatr);
 	}
-	if(cur_output_rate != output_rate_unlimited && !(mode&P_NOATCODES))
-		set_output_rate(output_rate_unlimited);
+	if(!(mode&P_NOATCODES) && cur_output_rate != output_rate)
+		set_output_rate(output_rate);
 
 	attr_sp=0;	/* clear any saved attributes */
 
