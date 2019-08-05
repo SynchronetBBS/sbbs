@@ -852,19 +852,27 @@ function read_conf_config(fname) {
 }
 
 function create_new_socket(port) {
+	var newsock;
+
 	log(LOG_DEBUG,"Creating new socket object on port " + port);
-	var newsock = new Socket();
-	if(!newsock.bind(port,server.interface_ip_address)) {
-		log(LOG_ERR,"!Error " + newsock.error + " binding socket to TCP port "
-			+ port);
-		return 0;
+	if (js.global.ConnectedSocket != undefined) {
+		newsock = new ListeningSocket(server.interface_ip_address, port, "IRCd");
+		log(format("IRC server socket bound to TCP port " + port);
 	}
-	log(format("%04u ",newsock.descriptor)
-		+ "IRC server socket bound to TCP port " + port);
-	if(!newsock.listen(5 /* backlog */)) {
-		log(LOG_ERR,"!Error " + newsock.error
-			+ " setting up socket for listening");
-		return 0;
+	else {
+		newsock = new Socket();
+		if(!newsock.bind(port,server.interface_ip_address)) {
+			log(LOG_ERR,"!Error " + newsock.error + " binding socket to TCP port "
+				+ port);
+			return 0;
+		}
+		log(format("%04u ",newsock.descriptor)
+			+ "IRC server socket bound to TCP port " + port);
+		if(!newsock.listen(5 /* backlog */)) {
+			log(LOG_ERR,"!Error " + newsock.error
+				+ " setting up socket for listening");
+			return 0;
+		}
 	}
 	return newsock;
 }
