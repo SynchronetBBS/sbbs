@@ -392,6 +392,8 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 		console=orgcon;
 		attr(tmpatr);
 	}
+	if(cur_output_rate != output_rate_unlimited && !(mode&P_NOATCODES))
+		set_output_rate(output_rate_unlimited);
 
 	attr_sp=0;	/* clear any saved attributes */
 

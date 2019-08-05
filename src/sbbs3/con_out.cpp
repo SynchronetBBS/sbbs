@@ -915,6 +915,20 @@ void sbbs_t::cleartoeos(void)
 		rputs("\x1b[J");
 }
 
+void sbbs_t::set_output_rate(enum output_rate speed)
+{
+	if(term_supports(ANSI)) {
+		unsigned int num = 0;
+		unsigned int val = speed;
+		while(val >= 300) {
+			num++;
+			val >>= 1;
+		}
+		rprintf("\x1b[;%u*r", num);
+		cur_output_rate = speed;
+	}
+}
+
 /****************************************************************************/
 /* performs the correct attribute modifications for the Ctrl-A code			*/
 /****************************************************************************/

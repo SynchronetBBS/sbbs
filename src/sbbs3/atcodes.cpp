@@ -479,6 +479,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return str;
 	}
 
+	if(strncmp(sp, "BPS:", 4) == 0) {
+		set_output_rate((enum output_rate)atoi(sp + 4));
+		return nulstr;
+	}
+
 	/* NOSTOP */
 
 	/* STOP */

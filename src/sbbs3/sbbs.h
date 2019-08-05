@@ -755,6 +755,21 @@ public:
 	int		attr(int);				/* Change text color/attributes */
 	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
 	char*	auto_utf8(const char*, long* mode);
+	enum output_rate {
+		output_rate_unlimited,
+		output_rate_300 = 300,
+		output_rate_600 = 600,
+		output_rate_1200 = 1200,
+		output_rate_2400 = 2400,
+		output_rate_4800 = 4800,
+		output_rate_9600 = 9600,
+		output_rate_19200 = 19200,
+		output_rate_38400 = 38400,
+		output_rate_57600 = 57600,
+		output_rate_76800 = 76800,
+		output_rate_115200 = 115200,
+	} cur_output_rate;
+	void	set_output_rate(enum output_rate);
 
 	/* getstr.cpp */
 	size_t	getstr_offset;
