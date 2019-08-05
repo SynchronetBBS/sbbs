@@ -174,7 +174,7 @@ if(this.server==undefined) {		// Running from JSexec?
 		default_port = mline_port;
 
 	server = { socket: false, terminated: false,
-		version_detail: jsexec_revision_detail };
+		version_detail: jsexec_revision_detail, interface_ip_addr_list: [0,"::"] };
 	server.socket = create_new_socket(default_port)
 	if (!server.socket)
 		exit();
@@ -855,8 +855,8 @@ function create_new_socket(port) {
 	var newsock;
 
 	log(LOG_DEBUG,"Creating new socket object on port " + port);
-	if (js.global.ConnectedSocket != undefined) {
-		newsock = new ListeningSocket(server.interface_ip_address, port, "IRCd");
+	if (js.global.ListeningSocket != undefined) {
+		newsock = new ListeningSocket(server.interface_ip_addr_list, port, "IRCd");
 		log(format("IRC server socket bound to TCP port " + port));
 	}
 	else {
