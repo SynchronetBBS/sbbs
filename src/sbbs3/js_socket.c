@@ -2319,6 +2319,8 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	fd_set			efd;
 	scfg_t *scfg;
 	char error[256];
+	uint16_t bindport = 0;
+	union xp_sockaddr addr;
 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 	if (scfg == NULL) {
@@ -2358,6 +2360,9 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 			JSVALUE_TO_MSTRING(cx, v, protocol, NULL);
 			HANDLE_PENDING(cx, protocol);
 		}
+		if (JS_GetProperty(cx, obj, "bindport", &v) && !JSVAL_IS_VOID(v)) {
+			bindport = js_port(cx, v, type);
+		}
 	}
 	JSVALUE_TO_MSTRING(cx, argv[0], host, NULL);
 	HANDLE_PENDING(cx, host);
@@ -2395,9 +2400,32 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 			if(p->sock==INVALID_SOCKET)
 				continue;
 			if (set_socket_options(scfg, p->sock, protocol, error, sizeof(error))) {
+				freeaddrinfo(res);
 				JS_RESUMEREQUEST(cx, rc);
 				JS_ReportError(cx, error);
 				goto fail;
+			}
+			if (bindport) {
+				memset(&addr, 0, sizeof(addr));
+				addr.addr.sa_family = cur->ai_family;
+				switch(cur->ai_family) {
+					case PF_INET:
+						addr.in.sin_len = sizeof(addr.in);
+						addr.in.sin_addr.s_addr = INADDR_ANY;
+						addr.in.sin_port = htons(bindport);
+						break;
+					case PF_INET6:
+						addr.in6.sin6_len = sizeof(addr.in6);
+						addr.in6.sin6_addr = in6addr_any;
+						addr.in6.sin6_port = htons(bindport);
+						break;
+				}
+				if (bind(p->sock, (struct sockaddr *)&addr, addr.addr.sa_len) != 0) {
+					lprintf(LOG_WARNING, "Unable to bind to local address");
+					closesocket(p->sock);
+					p->sock = INVALID_SOCKET;
+					continue;
+				}
 			}
 			/* Set to non-blocking for the connect */
 			nonblock=-1;
@@ -2487,11 +2515,12 @@ connected:
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for outgoing TCP/IP socket communications",317);
 	js_DescribeSyncConstructor(cx,obj,"To create a new ConnectedSocket object: "
-		"<tt>load('sockdefs.js'); var s = new ConnectedSocket(<i>hostname</i>, <i>port</i>, {domain:<i>domain</i>, proto:<i>proto</i> ,type:<i>type</i>, protocol:<i>protocol</i>)</tt><br>"
+		"<tt>load('sockdefs.js'); var s = new ConnectedSocket(<i>hostname</i>, <i>port</i>, {domain:<i>domain</i>, proto:<i>proto</i> ,type:<i>type</i>, protocol:<i>protocol</i>, bindport:<i>port</i>})</tt><br>"
 		"where <i>domain</i> (optional) = <tt>PF_UNSPEC</tt> (default) for IPv4 or IPv6, <tt>PF_INET</tt> for IPv4, or <tt>PF_INET6</tt> for IPv6<br>"
 		"<i>proto</i> (optional) = <tt>IPPROTO_IP</tt> (default)<br>"
 		"<i>type</i> (optional) = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP<br>"
-		"and <i>protocol</i> (optional) = the name of the protocol or service the socket is to be used for<br>"
+		"<i>protocol</i> (optional) = the name of the protocol or service the socket is to be used for<br>"
+		"<i>bindport</i> (optional) = the name or number of the source port to bind to<br>"
 		);
 	JS_DefineProperty(cx,obj,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
