@@ -51,10 +51,11 @@ static void print_usage(const char* prog)
 	sscanf("$Revision$", "%*s %s", revision);
 
 	fprintf(stderr,"\nSynchronet ANSI-Terminal-Sequence to Ctrl-A-Code Conversion Utility v%s\n",revision);
-	fprintf(stderr,"\nusage: %s infile.ans [outfile.asc] [[option] [...]]\n",prog);
+	fprintf(stderr,"\nusage: %s infile.ans [outfile.asc | outfile.msg] [[option] [...]]\n",prog);
 	fprintf(stderr,"\noptions:\n\n");
 	fprintf(stderr,"-clear            insert a clear screen code at beginning of output file\n");
 	fprintf(stderr,"-pause            append a pause (hit a key) code to end of output file\n");
+	fprintf(stderr,"-space            use space characters for cursor-right movement/alignment\n");
 	fprintf(stderr,"-delay <interval> insert a 1/10th second delay code at output byte interval\n");
 	fprintf(stderr,"                  (lower interval values result in more delays, slower display)\n");
 }
@@ -68,6 +69,7 @@ int main(int argc, char **argv)
 	int delay=0;
 	int clear=0;
 	int pause=0;
+	int space=0;
 
 	if(argc<2) {
 		print_usage(argv[0]);
@@ -90,6 +92,8 @@ int main(int argc, char **argv)
 				clear = 1;
 			else if(strcmp(argv[i], "-pause") == 0)
 				pause = 1;
+			else if(strcmp(argv[i], "-space") == 0)
+				space = 1;
 			else {
 				print_usage(argv[0]);
 				return 0;
@@ -240,7 +244,10 @@ int main(int argc, char **argv)
 						}
 						break;
 					case 'C':	/* cursor right */
-						fprintf(out,"\1%c",0x7f+n[0]);
+						if(space)
+							fprintf(out, "%*s", n[0], " ");
+						else
+							fprintf(out,"\1%c",0x7f+n[0]);
 						break;
 					case 'D':	/* cursor left */
 						if(n[0]>=80)
