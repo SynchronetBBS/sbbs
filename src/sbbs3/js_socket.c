@@ -2294,10 +2294,85 @@ JSObject* DLLCALL js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock,
 	return(obj);
 }
 
+static BOOL
+handle_addrs(char *host, struct sockaddr_in *addr4, struct sockaddr_in6 *addr6)
+{
+	in_addr_t ia;
+	union xp_sockaddr ia6;
+	char *p, *p2;
+	struct addrinfo	hints;
+	struct addrinfo	*res=NULL;
+	struct addrinfo	*cur;
+	int i;
+
+	// First, clean up for host:port style...
+	p = strrchr(host, ':');
+	/*
+	 * If there isn't a [, and the first and last colons aren't the same
+	 * it's assumed to be an IPv6 address
+	 */
+	if(host[0] != '[' && p != NULL && strchr(host, ':') != p)
+		p=NULL;
+	if(host[0]=='[') {
+		host++;
+		p2=strrchr(host,']');
+		if(p2)
+			*p2=0;
+		if(p2 > p)
+			p=NULL;
+	}
+	if(p!=NULL)
+		*p=0;
+
+	ia = inet_addr(host);
+	if (ia != INADDR_NONE) {
+		if (addr4->sin_len == 0) {
+			addr4->sin_addr.s_addr = ia;
+			addr4->sin_len = sizeof(struct sockaddr_in);
+		}
+		return TRUE;
+	}
+
+	if (inet_ptoaddr(host, &ia6, sizeof(ia6)) != NULL) {
+		if (addr6->sin6_len == 0) {
+			addr6->sin6_addr = ia6.in6.sin6_addr;
+			addr6->sin6_len = sizeof(struct sockaddr_in6);
+		}
+		return TRUE;
+	}
+
+	// So it's a hostname... resolve it into addr4 and addr6 if possible.
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_flags = AI_ADDRCONFIG | AI_PASSIVE;
+	if((i = getaddrinfo(host, NULL, &hints, &res)) != 0)
+		return FALSE;
+	for(cur=res; cur && (addr4->sin_len == 0 || addr6->sin6_len == 0); cur=cur->ai_next) {
+		switch (cur->ai_family) {
+			case AF_INET:
+				if (addr4->sin_len == 0) {
+					addr4->sin_addr = ((struct sockaddr_in *)cur->ai_addr)->sin_addr;
+					addr4->sin_len = sizeof(struct sockaddr_in);
+				}
+				break;
+			case AF_INET6:
+				if (addr6->sin6_len == 0) {
+					addr6->sin6_addr = ((struct sockaddr_in6 *)cur->ai_addr)->sin6_addr;
+					addr6->sin6_len = sizeof(struct sockaddr_in6);
+				}
+				break;
+		}
+	}
+	freeaddrinfo(res);
+
+	return TRUE;
+}
+
 static JSBool
 js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj;
+	JSObject *ao;
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32	type=SOCK_STREAM;	/* default = TCP */
 	int32		domain = PF_UNSPEC; /* default = IPvAny */
@@ -2320,7 +2395,11 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t *scfg;
 	char error[256];
 	uint16_t bindport = 0;
-	union xp_sockaddr addr;
+	struct sockaddr_in addr4;
+	struct sockaddr_in6 addr6;
+	struct sockaddr *addr;
+	BOOL sockbind = FALSE;
+	jsuint count;
 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 	if (scfg == NULL) {
@@ -2362,6 +2441,71 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		if (JS_GetProperty(cx, obj, "bindport", &v) && !JSVAL_IS_VOID(v)) {
 			bindport = js_port(cx, v, type);
+			memset(&addr4, 0, sizeof(addr4));
+			addr4.sin_family = AF_INET;
+			addr4.sin_addr.s_addr = INADDR_ANY;
+			addr4.sin_len = sizeof(addr4);
+			addr4.sin_port = htons(bindport);
+			memset(&addr6, 0, sizeof(addr6));
+			addr6.sin6_family = AF_INET6;
+			addr6.sin6_addr = in6addr_any;
+			addr6.sin6_len = sizeof(addr6);
+			addr6.sin6_port = htons(bindport);
+			sockbind = TRUE;
+		}
+		if (JS_GetProperty(cx, obj, "bindaddrs", &v) && !JSVAL_IS_VOID(v)) {
+			if (!sockbind) {
+				memset(&addr4, 0, sizeof(addr4));
+				addr4.sin_family = AF_INET;
+				addr4.sin_addr.s_addr = INADDR_ANY;
+				addr4.sin_port = htons(bindport);
+				memset(&addr6, 0, sizeof(addr6));
+				addr6.sin6_family = AF_INET6;
+				addr6.sin6_addr = in6addr_any;
+				addr6.sin6_port = htons(bindport);
+				sockbind = TRUE;
+			}
+			addr4.sin_len = 0;
+			addr6.sin6_len = 0;
+			if (JSVAL_IS_OBJECT(v)) {
+				ao = JSVAL_TO_OBJECT(v);
+				if (ao == NULL || !JS_IsArrayObject(cx, ao)) {
+					JS_ReportError(cx, "Invalid bindaddrs list");
+					goto fail;
+				}
+				if (!JS_GetArrayLength(cx, ao, &count)) {
+					JS_ReportError(cx, "Unable to get bindaddrs length");
+					goto fail;
+				}
+				for (i = 0; i < count; i++) {
+					if (!JS_GetElement(cx, ao, i, &v)) {
+						JS_ReportError(cx, "Invalid bindaddrs entry");
+						goto fail;
+					}
+					JSVALUE_TO_MSTRING(cx, v, host, NULL);
+					HANDLE_PENDING(cx, host);
+					rc = JS_SUSPENDREQUEST(cx);
+					if (!handle_addrs(host, &addr4, &addr6)) {
+						JS_RESUMEREQUEST(cx, rc);
+						JS_ReportError(cx, "Unparsable bindaddrs entry");
+						goto fail;
+					}
+					FREE_AND_NULL(host);
+					JS_RESUMEREQUEST(cx, rc);
+				}
+			}
+			else {
+				JSVALUE_TO_MSTRING(cx, v, host, NULL);
+				HANDLE_PENDING(cx, host);
+				rc = JS_SUSPENDREQUEST(cx);
+				if (!handle_addrs(host, &addr4, &addr6)) {
+					JS_RESUMEREQUEST(cx, rc);
+					JS_ReportError(cx, "Unparsable bindaddrs entry");
+					goto fail;
+				}
+				FREE_AND_NULL(host);
+				JS_RESUMEREQUEST(cx, rc);
+			}
 		}
 	}
 	JSVALUE_TO_MSTRING(cx, argv[0], host, NULL);
@@ -2405,22 +2549,21 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 				JS_ReportError(cx, error);
 				goto fail;
 			}
-			if (bindport) {
-				memset(&addr, 0, sizeof(addr));
-				addr.addr.sa_family = cur->ai_family;
+			if (sockbind) {
+				addr = NULL;
 				switch(cur->ai_family) {
 					case PF_INET:
-						addr.in.sin_len = sizeof(addr.in);
-						addr.in.sin_addr.s_addr = INADDR_ANY;
-						addr.in.sin_port = htons(bindport);
+						addr = (struct sockaddr *)&addr4;
 						break;
 					case PF_INET6:
-						addr.in6.sin6_len = sizeof(addr.in6);
-						addr.in6.sin6_addr = in6addr_any;
-						addr.in6.sin6_port = htons(bindport);
+						addr = (struct sockaddr *)&addr6;
 						break;
 				}
-				if (bind(p->sock, (struct sockaddr *)&addr, addr.addr.sa_len) != 0) {
+				if (addr == NULL)
+					continue;
+				if (addr->sa_len == 0)
+					continue;
+				if (bind(p->sock, addr, addr->sa_len) != 0) {
 					lprintf(LOG_WARNING, "Unable to bind to local address");
 					closesocket(p->sock);
 					p->sock = INVALID_SOCKET;
@@ -2515,12 +2658,13 @@ connected:
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for outgoing TCP/IP socket communications",317);
 	js_DescribeSyncConstructor(cx,obj,"To create a new ConnectedSocket object: "
-		"<tt>load('sockdefs.js'); var s = new ConnectedSocket(<i>hostname</i>, <i>port</i>, {domain:<i>domain</i>, proto:<i>proto</i> ,type:<i>type</i>, protocol:<i>protocol</i>, bindport:<i>port</i>})</tt><br>"
+		"<tt>load('sockdefs.js'); var s = new ConnectedSocket(<i>hostname</i>, <i>port</i>, {domain:<i>domain</i>, proto:<i>proto</i> ,type:<i>type</i>, protocol:<i>protocol</i>, bindport:<i>port</i>, bindaddrs:<i>bindaddrs</i>})</tt><br>"
 		"where <i>domain</i> (optional) = <tt>PF_UNSPEC</tt> (default) for IPv4 or IPv6, <tt>PF_INET</tt> for IPv4, or <tt>PF_INET6</tt> for IPv6<br>"
 		"<i>proto</i> (optional) = <tt>IPPROTO_IP</tt> (default)<br>"
 		"<i>type</i> (optional) = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP<br>"
 		"<i>protocol</i> (optional) = the name of the protocol or service the socket is to be used for<br>"
 		"<i>bindport</i> (optional) = the name or number of the source port to bind to<br>"
+		"<i>bindaddrs</i> (optional) = the name or number of the source addresses to bind to.  The first of each IPv4 or IPv6 type is used for that family.<br>"
 		);
 	JS_DefineProperty(cx,obj,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
