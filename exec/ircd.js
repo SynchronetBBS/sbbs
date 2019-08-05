@@ -857,7 +857,7 @@ function create_new_socket(port) {
 	log(LOG_DEBUG,"Creating new socket object on port " + port);
 	if (js.global.ConnectedSocket != undefined) {
 		newsock = new ListeningSocket(server.interface_ip_address, port, "IRCd");
-		log(format("IRC server socket bound to TCP port " + port);
+		log(format("IRC server socket bound to TCP port " + port));
 	}
 	else {
 		newsock = new Socket();
