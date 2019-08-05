@@ -918,13 +918,26 @@ void sbbs_t::cleartoeos(void)
 void sbbs_t::set_output_rate(enum output_rate speed)
 {
 	if(term_supports(ANSI)) {
-		unsigned int num = 0;
 		unsigned int val = speed;
-		while(val >= 300) {
-			num++;
-			val >>= 1;
+		switch(val) {
+			case 0:		val = 0; break;
+			case 600:	val = 2; break;
+			case 1200:	val = 3; break;
+			case 2400:	val = 4; break;
+			case 4800:	val = 5; break;
+			case 9600:	val = 6; break;
+			case 19200:	val = 7; break;
+			case 38400: val = 8; break;
+			case 57600: val = 9; break;
+			case 76800: val = 10; break;
+			default:
+				if(val <= 300)
+					val = 1;
+				else if(val > 76800)
+					val = 11;
+				break;
 		}
-		rprintf("\x1b[;%u*r", num);
+		rprintf("\x1b[;%u*r", val);
 		cur_output_rate = speed;
 	}
 }
