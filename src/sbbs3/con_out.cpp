@@ -449,18 +449,22 @@ int sbbs_t::rprintf(const char *fmt, ...)
 /****************************************************************************/
 /* Outputs destructive backspace 											*/
 /****************************************************************************/
-void sbbs_t::backspace(void)
+void sbbs_t::backspace(int count)
 {
+	if(count < 1)
+		return;
 	if(!(console&CON_ECHO_OFF)) {
-		if(term_supports(PETSCII))
-			outcom(PETSCII_DELETE);
-		else {
-			outcom('\b');
-			outcom(' ');
-			outcom('\b');
+		for(int i = 0; i < count; i++) {
+			if(term_supports(PETSCII))
+				outcom(PETSCII_DELETE);
+			else {
+				outcom('\b');
+				outcom(' ');
+				outcom('\b');
+			}
+			if(column)
+				column--;
 		}
-		if(column)
-			column--;
 	}
 }
 
@@ -752,28 +756,40 @@ void sbbs_t::wide(const char* str)
 
 
 // Send a bare carriage return, hopefully moving the cursor to the far left, current row
-void sbbs_t::carriage_return(void)
+void sbbs_t::carriage_return(int count)
 {
-	if(term_supports(PETSCII))
-		cursor_left(column);
-	else
-		outcom('\r');
-	column = 0;
+	if(count < 1)
+		return;
+	for(int i = 0; i < count; i++) {
+		if(term_supports(PETSCII))
+			cursor_left(column);
+		else
+			outcom('\r');
+		column = 0;
+	}
 }
 
 // Send a bare line_feed, hopefully moving the cursor down one row, current column
-void sbbs_t::line_feed(void)
+void sbbs_t::line_feed(int count)
 {
-	if(term_supports(PETSCII))
-		outcom(PETSCII_DOWN);
-	else 
-		outcom('\n');
+	if(count < 1)
+		return;
+	for(int i = 0; i < count; i++) {
+		if(term_supports(PETSCII))
+			outcom(PETSCII_DOWN);
+		else 
+			outcom('\n');
+	}
 }
 
-void sbbs_t::newline(void)
+void sbbs_t::newline(int count)
 {
-	outchar('\r');
-	outchar('\n');
+	if(count < 1)
+		return;
+	for(int i = 0; i < count; i++) { 
+		outchar('\r');
+		outchar('\n');
+	}
 }
 
 void sbbs_t::clearline(void)
