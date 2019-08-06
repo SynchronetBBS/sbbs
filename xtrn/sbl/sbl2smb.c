@@ -48,6 +48,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include "md5.h"
 #include "genwrap.h"
 #include "filewrap.h"
 #include "dirwrap.h"
