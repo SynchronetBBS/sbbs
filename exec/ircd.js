@@ -526,7 +526,7 @@ function create_ban_mask(str,kline) {
 	tmp_banstr[2] = "";
 	var bchar_counter = 0;
 	var part_counter = 0; // BAN: 0!1@2 KLINE: 0@1
-	var regexp="[A-Za-z\{\}\`\^\_\|\\]\\[\\\\0-9\-.*?\~]";
+	var regexp="[A-Za-z\{\}\`\^\_\|\\]\\[\\\\0-9\-.*?\~:]";
 	var finalstr;
 	for (bchar in str) {
 		if (str[bchar].match(regexp)) {
