@@ -2334,7 +2334,7 @@ handle_addrs(char *host, struct sockaddr_in *addr4, socklen_t *addr4len, struct 
 	}
 
 	if (inet_ptoaddr(host, &ia6, sizeof(ia6)) != NULL) {
-		if (addr6len == 0) {
+		if (*addr6len == 0) {
 			addr6->sin6_addr = ia6.in6.sin6_addr;
 			*addr6len = sizeof(struct sockaddr_in6);
 		}
