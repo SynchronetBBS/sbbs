@@ -223,17 +223,19 @@ void prep_cfg(scfg_t* cfg)
 			char* tp = lastchar(p);
 			if(*tp != '/')
 				continue;
+			*tp = 0; // Remove trailing slash
 			char* dirname = getfname(p);
 			int j;
 			for(j = 0; j < cfg->total_dirs; j++) {
 				if(cfg->dir[j]->lib != i)
 					continue;
+				if(stricmp(cfg->dir[j]->code, dirname) == 0)
+					break;
 				if(stricmp(cfg->dir[j]->code_suffix, dirname) == 0)
 					break;
 			}
 			if(j < cfg->total_dirs)	// duplicate
 				continue;
-			*tp = 0;
 			dir_t dir;
 			memset(&dir, 0, sizeof(dir));
 			dir.lib = i;
