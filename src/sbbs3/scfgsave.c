@@ -829,22 +829,20 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				if (cfg->dir[i]->misc&DIR_FCHK) {
 					SAFECOPY(path, cfg->dir[i]->path);
 					if (!path[0]) {		/* no file storage path specified */
-						if(cfg->dir[i]->data_dir[0])
-							SAFECOPY(path, cfg->dir[i]->data_dir);
-						else
-							SAFEPRINTF(path, "%sdirs", cfg->data_dir);
-						SAFEPRINTF2(str, "%s%s"
+						SAFEPRINTF2(path, "%s%s"
 							, cfg->lib[cfg->dir[i]->lib]->code_prefix
 							, cfg->dir[i]->code_suffix);
-						strlwr(str);
-						SAFECAT(path,str);
+						strlwr(path);
 					}
-					else if (cfg->lib[cfg->dir[i]->lib]->parent_path[0]) {
-						SAFECOPY(path, cfg->lib[cfg->dir[i]->lib]->parent_path);
-						backslash(path);
-						SAFECAT(path, cfg->dir[i]->path);
+					if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
+						prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, path, sizeof(path));
+					else {
+						if(cfg->dir[i]->data_dir[0])
+							SAFECOPY(str, cfg->dir[i]->data_dir);
+						else
+							SAFEPRINTF(str, "%sdirs", cfg->data_dir);
+						prep_dir(str, path, sizeof(path));
 					}
-					prep_dir(cfg->ctrl_dir, path, sizeof(path));
 					mkpath(path);
 				}
 
