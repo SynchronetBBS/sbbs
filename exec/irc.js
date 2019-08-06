@@ -356,6 +356,7 @@ function handle_command(prefix,command,message)  {
 		// <word1> <word2> <word3> <word4> :Message
 		case "311":		// WHOIS reply
 		case "314":		// WHOWAS reply
+		case "367":		// Ban List
 		case "200":		// Trace Link
 		case "243":		// Stats OLINE
 		case "244":		// Stats HLINE
@@ -400,7 +401,6 @@ function handle_command(prefix,command,message)  {
 		case "341":		// Invite being sent
 		case "351":		// (server) VERSION reply
 		case "364":		// Links
-		case "367":		// Ban List
 		case "212":		// Stats Command
 			while(message.length < 4) {
 				message.push("");
