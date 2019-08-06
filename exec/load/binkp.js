@@ -424,18 +424,35 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	if (inet_host === undefined)
 		inet_host = addr.inet_host;
 
-	if (this.sock === undefined)
-		this.sock = new Socket(SOCK_STREAM, "binkp");
-
 	log(LOG_INFO, format("Connecting to %s at %s:%u", addr, inet_host, port));
 	this.connect_host = inet_host;
 	this.connect_port = port;
-	if(!this.sock.connect(inet_host, port)) {
-		this.connect_error = this.sock.error;
-		this.sock = undefined;
-		log(LOG_WARNING, "Connection to "+inet_host+":"+port+" failed.");
-		return false;
+
+	if (js.global.ConnectedSocket != undefined) {
+		if (this.sock !== undefined)
+			this.sock.close();
+		try {
+			this.sock = new ConnectedSocket(inet_host, port, {protocol:'binkp'});
+		}
+		catch(e) {
+			log(LOG_WARNING, "Connection to "+inet_host+":"+port+" failed ("+e+").");
+			this.connect_error = e;
+			this.sock = undefined;
+			return false;
+		}
 	}
+	else {
+		if (this.sock === undefined)
+			this.sock = new Socket(SOCK_STREAM, "binkp");
+
+		if(!this.sock.connect(inet_host, port)) {
+			this.connect_error = this.sock.error;
+			this.sock = undefined;
+			log(LOG_WARNING, "Connection to "+inet_host+":"+port+" failed.");
+			return false;
+		}
+	}
+
 	log(LOG_DEBUG, "Connection to "+inet_host+":"+port+" successful");
 
 	this.authenticated = undefined;
