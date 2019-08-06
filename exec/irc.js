@@ -136,7 +136,7 @@ while(!quit)  {
 	}
 
 	if(sock.poll(.01)) {
-		recieve_command();
+		receive_command();
 		screen.update(0);
 	}
 	else
@@ -617,12 +617,15 @@ function handle_command(prefix,command,message)  {
 	}
 }
 
-function recieve_command()  {
+function receive_command()  {
 	var prefix="";
 	var command=null;
 	var message;
 	if(sock.poll(0))  {
-		message=sock.recvline().split(" ");
+		message=sock.recvline();
+		if(!message)
+			return;
+		message=message.split(" ");
 
 		if(message[0].substr(0,1)==":")  {
 			prefix=message.shift();
