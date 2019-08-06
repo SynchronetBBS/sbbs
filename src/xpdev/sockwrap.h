@@ -179,6 +179,7 @@ union xp_sockaddr {
 
 #define s_addr			S_un.S_addr
 #define sa_family_t		ushort
+typedef uint32_t                in_addr_t;
 
 static  int wsa_error;
 #define ERROR_VALUE		((wsa_error=WSAGetLastError())>0 ? wsa_error-WSABASEERR : wsa_error)
