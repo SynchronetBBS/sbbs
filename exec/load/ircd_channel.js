@@ -429,7 +429,7 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 		} else if (set_ban && !chan.isbanned(set_ban)) {
 			cmode.addmodes += "b";
 			cmode.addmodeargs += " " + set_ban;
-			var banid = chan.modelist[CHANMODE_BAN].push(set_ban);
+			var banid = chan.modelist[CHANMODE_BAN].push(set_ban) - 1;
 			chan.bantime[banid] = time();
 			chan.bancreator[banid] = this.nuh;
 		}
