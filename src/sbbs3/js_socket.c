@@ -2295,7 +2295,7 @@ JSObject* DLLCALL js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock,
 }
 
 static BOOL
-handle_addrs(char *host, struct sockaddr_in *addr4, struct sockaddr_in6 *addr6)
+handle_addrs(char *host, struct sockaddr_in *addr4, socklen_t *addr4len, struct sockaddr_in6 *addr6, socklen_t *addr6len)
 {
 	in_addr_t ia;
 	union xp_sockaddr ia6;
@@ -2326,17 +2326,17 @@ handle_addrs(char *host, struct sockaddr_in *addr4, struct sockaddr_in6 *addr6)
 
 	ia = inet_addr(host);
 	if (ia != INADDR_NONE) {
-		if (addr4->sin_len == 0) {
+		if (*addr4len == 0) {
 			addr4->sin_addr.s_addr = ia;
-			addr4->sin_len = sizeof(struct sockaddr_in);
+			*addr4len = sizeof(struct sockaddr_in);
 		}
 		return TRUE;
 	}
 
 	if (inet_ptoaddr(host, &ia6, sizeof(ia6)) != NULL) {
-		if (addr6->sin6_len == 0) {
+		if (addr6len == 0) {
 			addr6->sin6_addr = ia6.in6.sin6_addr;
-			addr6->sin6_len = sizeof(struct sockaddr_in6);
+			*addr6len = sizeof(struct sockaddr_in6);
 		}
 		return TRUE;
 	}
@@ -2347,18 +2347,18 @@ handle_addrs(char *host, struct sockaddr_in *addr4, struct sockaddr_in6 *addr6)
 	hints.ai_flags = AI_ADDRCONFIG | AI_PASSIVE;
 	if((i = getaddrinfo(host, NULL, &hints, &res)) != 0)
 		return FALSE;
-	for(cur=res; cur && (addr4->sin_len == 0 || addr6->sin6_len == 0); cur=cur->ai_next) {
+	for(cur=res; cur && (*addr4len == 0 || *addr6len == 0); cur=cur->ai_next) {
 		switch (cur->ai_family) {
 			case AF_INET:
-				if (addr4->sin_len == 0) {
+				if (*addr4len == 0) {
 					addr4->sin_addr = ((struct sockaddr_in *)cur->ai_addr)->sin_addr;
-					addr4->sin_len = sizeof(struct sockaddr_in);
+					*addr4len = sizeof(struct sockaddr_in);
 				}
 				break;
 			case AF_INET6:
-				if (addr6->sin6_len == 0) {
+				if (*addr6len == 0) {
 					addr6->sin6_addr = ((struct sockaddr_in6 *)cur->ai_addr)->sin6_addr;
-					addr6->sin6_len = sizeof(struct sockaddr_in6);
+					*addr6len = sizeof(struct sockaddr_in6);
 				}
 				break;
 		}
@@ -2397,7 +2397,10 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	uint16_t bindport = 0;
 	struct sockaddr_in addr4;
 	struct sockaddr_in6 addr6;
+	socklen_t addr4len;
+	socklen_t addr6len;
 	struct sockaddr *addr;
+	socklen_t *addrlen;
 	BOOL sockbind = FALSE;
 	jsuint count;
 	int32 timeout = 10;
@@ -2451,12 +2454,12 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 			memset(&addr4, 0, sizeof(addr4));
 			addr4.sin_family = AF_INET;
 			addr4.sin_addr.s_addr = INADDR_ANY;
-			addr4.sin_len = sizeof(addr4);
+			addr4len = sizeof(addr4);
 			addr4.sin_port = htons(bindport);
 			memset(&addr6, 0, sizeof(addr6));
 			addr6.sin6_family = AF_INET6;
 			addr6.sin6_addr = in6addr_any;
-			addr6.sin6_len = sizeof(addr6);
+			addr6len = sizeof(addr6);
 			addr6.sin6_port = htons(bindport);
 			sockbind = TRUE;
 		}
@@ -2472,8 +2475,8 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 				addr6.sin6_port = htons(bindport);
 				sockbind = TRUE;
 			}
-			addr4.sin_len = 0;
-			addr6.sin6_len = 0;
+			addr4len = 0;
+			addr6len = 0;
 			if (JSVAL_IS_OBJECT(v)) {
 				ao = JSVAL_TO_OBJECT(v);
 				if (ao == NULL || !JS_IsArrayObject(cx, ao)) {
@@ -2492,7 +2495,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 					JSVALUE_TO_MSTRING(cx, v, host, NULL);
 					HANDLE_PENDING(cx, host);
 					rc = JS_SUSPENDREQUEST(cx);
-					if (!handle_addrs(host, &addr4, &addr6)) {
+					if (!handle_addrs(host, &addr4, &addr4len, &addr6, &addr6len)) {
 						JS_RESUMEREQUEST(cx, rc);
 						JS_ReportError(cx, "Unparsable bindaddrs entry");
 						goto fail;
@@ -2505,7 +2508,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 				JSVALUE_TO_MSTRING(cx, v, host, NULL);
 				HANDLE_PENDING(cx, host);
 				rc = JS_SUSPENDREQUEST(cx);
-				if (!handle_addrs(host, &addr4, &addr6)) {
+				if (!handle_addrs(host, &addr4, &addr4len, &addr6, &addr6len)) {
 					JS_RESUMEREQUEST(cx, rc);
 					JS_ReportError(cx, "Unparsable bindaddrs entry");
 					goto fail;
@@ -2561,16 +2564,18 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 				switch(cur->ai_family) {
 					case PF_INET:
 						addr = (struct sockaddr *)&addr4;
+						addrlen = &addr4len;
 						break;
 					case PF_INET6:
 						addr = (struct sockaddr *)&addr6;
+						addrlen = &addr6len;
 						break;
 				}
 				if (addr == NULL)
 					continue;
-				if (addr->sa_len == 0)
+				if (*addrlen == 0)
 					continue;
-				if (bind(p->sock, addr, addr->sa_len) != 0) {
+				if (bind(p->sock, addr, *addrlen) != 0) {
 					lprintf(LOG_WARNING, "Unable to bind to local address");
 					closesocket(p->sock);
 					p->sock = INVALID_SOCKET;
