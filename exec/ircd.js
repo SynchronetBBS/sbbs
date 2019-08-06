@@ -766,7 +766,7 @@ function read_conf_config(fname) {
 				ret.push(str);
 				s = i + 1;
 			}
-			else if (line[i] == '[' && s == i) {
+			else if (!inb && line[i] == '[' && s == i) {
 				inb = true;
 				s = i + 1;
 			}
