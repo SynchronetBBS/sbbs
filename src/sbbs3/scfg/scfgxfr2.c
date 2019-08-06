@@ -448,13 +448,16 @@ void xfer_cfg()
 						"\n"
 						"This an optional path to be used as the physical \"parent\" directory for \n"
 						"all logical directories in this library. This parent directory will be\n"
-						"used in combination with each directory's `Transfer File Path` to create the\n"
-						"full physical storage path for files in this directory.\n"
+						"used in combination with each directory's `Transfer File Path` to create\n"
+						"the full physical storage path for files in each directory.\n"
 						"\n"
 						"This option is convenient for adding libraries with many directories\n"
 						"that share a common parent directory (e.g. CD-ROMs) and gives you the\n"
 						"option of easily changing the common parent directory location later, if\n"
 						"desired.\n"
+						"\n"
+						"The parent directory is not used for directories with a full/absolute\n"
+						"`Transfer File Path` configured."
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Parent Directory"
 						,cfg.lib[i]->parent_path,sizeof(cfg.lib[i]->parent_path)-1,K_EDIT);
@@ -967,12 +970,15 @@ void dir_cfg(uint libnum)
 	char* dir_transfer_path_help =
 		"`Transfer File Path:`\n"
 		"\n"
-		"This is the default storage path for files uploaded-to and available for"
+		"This is the default storage path for files uploaded-to and available for\n"
 		"download-from this directory.\n"
 		"\n"
-		"If this path is blank, files are stored in a directory off of the\n"
-		"`data/dirs` directory using the internal code of this directory as the\n"
-		"name of the sub-directory (i.e. `data/dirs/<CODE>`).\n"
+		"If this setting is blank, the internal-code (lower-cased) is used as the\n"
+		"default directory name.\n"
+		"\n"
+		"If this value is not a full/absolute path, the parent directory will be\n"
+		"either the library's `Parent Directory` (if set) or the data directory\n"
+		"(e.g. ../data/dirs)\n"
 		"\n"
 		"This path can be overridden on a per-file basis using `Alternate File\n"
 		"Paths`.\n"
@@ -1057,10 +1063,8 @@ void dir_cfg(uint libnum)
 				uifc.helpbuf=0;
 				continue;
 			}
-			if(cfg.lib[libnum]->parent_path[0])
-				SAFECOPY(path,code);
-			else
-				sprintf(path,"%sdirs/%s",cfg.data_dir,code);
+			SAFECOPY(path,code);
+			strlwr(path);
 			uifc.helpbuf = dir_transfer_path_help;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"File Transfer Path", path, LEN_DIR,K_EDIT);
 
@@ -1144,23 +1148,24 @@ void dir_cfg(uint libnum)
 				,cfg.dir[i]->op_arstr);
 			sprintf(opt[n++],"%-27.27s%.40s","Exemption Requirements"
 				,cfg.dir[i]->ex_arstr);
-			if(cfg.dir[i]->path[0]) {
-				SAFECOPY(str, cfg.dir[i]->path);
-				if(cfg.lib[cfg.dir[i]->lib]->parent_path[0])
-					prep_dir(cfg.lib[cfg.dir[i]->lib]->parent_path, str, sizeof(str));
-				else 
-					prep_dir(cfg.ctrl_dir, str, sizeof(str));
-			} else {
+			SAFECOPY(path, cfg.dir[i]->path);
+			if(!path[0]) {
+				SAFEPRINTF2(path, "%s%s", cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
+				strlwr(path);
+			}
+			if(cfg.lib[cfg.dir[i]->lib]->parent_path[0])
+				prep_dir(cfg.lib[cfg.dir[i]->lib]->parent_path, path, sizeof(path));
+			else {
 				if (!cfg.dir[i]->data_dir[0])
-					SAFEPRINTF(data_dir, "%sdirs/", cfg.data_dir);
+					SAFEPRINTF(data_dir, "%sdirs", cfg.data_dir);
 				else
 					SAFECOPY(data_dir, cfg.dir[i]->data_dir);
-				backslash(data_dir);
-				SAFEPRINTF3(str, "[%s%s%s/]"
-					,data_dir 
-					,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
-				strlwr(str);
+				prep_dir(data_dir, path, sizeof(path));
 			}
+			if(strcmp(path, cfg.dir[i]->path) == 0)
+				SAFECOPY(str, path);
+			else
+				SAFEPRINTF(str, "[%s]", path);
 			sprintf(opt[n++],"%-27.27s%.40s","Transfer File Path"
 				,str);
 			sprintf(opt[n++],"%-27.27s%u","Maximum Number of Files"
