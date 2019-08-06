@@ -43,8 +43,18 @@ function IRC_client_connect(hostname,nick,username,realname,port,password) {
 	if (!realname)
 		realname = IRCLIB_VERSION;
 
-	sock = new Socket();
-	sock.connect(hostname,port);
+	if (js.global.ConnectedSocket != undefined) {
+		try {
+			sock = new ConnectedSocket(hostname, port);
+		}
+		catch(e) {
+			return 0;
+		}
+	}
+	else {
+		sock = new Socket();
+		sock.connect(hostname,port);
+	}
 	if (sock.is_connected) {
 		if (password)
 			sock.send("PASS " + password + "\r\n");
