@@ -199,7 +199,7 @@ void prep_cfg(scfg_t* cfg)
 		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
 
 		if(!cfg->dir[i]->path[0])
-			SAFEOCPY(cfg->dir[i]->path, cfg->dir[i]->code);
+			SAFECOPY(cfg->dir[i]->path, cfg->dir[i]->code);
 		if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
 			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 		else
