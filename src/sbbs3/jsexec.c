@@ -1351,6 +1351,8 @@ int main(int argc, char **argv, char** env)
 #endif
 	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 
+	make_data_dirs(&scfg);
+
 	if(host_name==NULL)
 		host_name=scfg.sys_inetaddr;
 
