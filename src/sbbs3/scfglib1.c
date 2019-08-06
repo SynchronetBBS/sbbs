@@ -804,29 +804,35 @@ void make_data_dirs(scfg_t* cfg)
 	char	str[MAX_PATH+1];
 
 	md(cfg->data_dir);
-	sprintf(str,"%ssubs",cfg->data_dir);
+	SAFEPRINTF(str,"%ssubs",cfg->data_dir);
 	md(str);
-	sprintf(str,"%sdirs",cfg->data_dir);
+	SAFEPRINTF(str,"%sdirs",cfg->data_dir);
 	md(str);
-	sprintf(str,"%stext",cfg->data_dir);
+	SAFEPRINTF(str,"%stext",cfg->data_dir);
 	md(str);
-	sprintf(str,"%smsgs",cfg->data_dir);
+	SAFEPRINTF(str,"%smsgs",cfg->data_dir);
 	md(str);
-	sprintf(str,"%suser",cfg->data_dir);
+	SAFEPRINTF(str,"%suser",cfg->data_dir);
 	md(str);
-	sprintf(str,"%suser/ptrs",cfg->data_dir);
+	SAFEPRINTF(str,"%suser/ptrs",cfg->data_dir);
 	md(str);
-	sprintf(str,"%sqnet",cfg->data_dir);
+	SAFEPRINTF(str,"%sqnet",cfg->data_dir);
 	md(str);
-	sprintf(str,"%sfile",cfg->data_dir);
+	SAFEPRINTF(str,"%sfile",cfg->data_dir);
 	md(str);
 
 	md(cfg->logs_dir);
-	sprintf(str,"%slogs",cfg->logs_dir);
+	SAFEPRINTF(str,"%slogs",cfg->logs_dir);
 	md(str);
 
 	if(cfg->mods_dir[0])
 		md(cfg->mods_dir);
+
+	for(int i = 0; i < cfg->total_dirs; i++) {
+		md(cfg->dir[i]->data_dir);
+		if(cfg->dir[i]->misc & DIR_FCHK) 
+			md(cfg->dir[i]->path);
+	}
 
 #if 0
 	int		i;
