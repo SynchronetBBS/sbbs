@@ -198,12 +198,12 @@ void prep_cfg(scfg_t* cfg)
 
 		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
 
-		if(!cfg->dir[i]->path[0])		/* no file storage path specified */
-            sprintf(cfg->dir[i]->path,"%s%s/",cfg->dir[i]->data_dir,cfg->dir[i]->code);
-		else if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
+		if(!cfg->dir[i]->path[0])
+			SAFEOCPY(cfg->dir[i]->path, cfg->dir[i]->code);
+		if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
 			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 		else
-			prep_dir(cfg->ctrl_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
+			prep_dir(cfg->dir[i]->data_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 
 		prep_path(cfg->dir[i]->upload_sem);
 	}
