@@ -2400,6 +2400,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	struct sockaddr *addr;
 	BOOL sockbind = FALSE;
 	jsuint count;
+	int32 timeout = 10;
 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 	if (scfg == NULL) {
@@ -2432,6 +2433,12 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		if (JS_GetProperty(cx, obj, "proto", &v) && !JSVAL_IS_VOID(v)) {
 			if (!JS_ValueToInt32(cx, v, &proto)) {
 				JS_ReportError(cx, "Invalid proto property");
+				return JS_FALSE;
+			}
+		}
+		if (JS_GetProperty(cx, obj, "timeout", &v) && !JSVAL_IS_VOID(v)) {
+			if (!JS_ValueToInt32(cx, v, &timeout)) {
+				JS_ReportError(cx, "Invalid timeout property");
 				return JS_FALSE;
 			}
 		}
@@ -2585,7 +2592,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 					for(;p->sock!=INVALID_SOCKET;) {
 						// TODO: Do clever timeout stuff here.
-						tv.tv_sec=1;
+						tv.tv_sec=timeout;
 						tv.tv_usec=0;
 
 						FD_ZERO(&wfd);
@@ -2594,8 +2601,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 						FD_SET(p->sock, &efd);
 						switch(select(p->sock+1, NULL, &wfd, &efd, &tv)) {
 							case 0:
-								// TODO: Check timeout here...
-								break;
+								// fall-through
 							case -1:
 								closesocket(p->sock);
 								p->sock=INVALID_SOCKET;
@@ -2658,11 +2664,12 @@ connected:
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for outgoing TCP/IP socket communications",317);
 	js_DescribeSyncConstructor(cx,obj,"To create a new ConnectedSocket object: "
-		"<tt>load('sockdefs.js'); var s = new ConnectedSocket(<i>hostname</i>, <i>port</i>, {domain:<i>domain</i>, proto:<i>proto</i> ,type:<i>type</i>, protocol:<i>protocol</i>, bindport:<i>port</i>, bindaddrs:<i>bindaddrs</i>})</tt><br>"
+		"<tt>load('sockdefs.js'); var s = new ConnectedSocket(<i>hostname</i>, <i>port</i>, {domain:<i>domain</i>, proto:<i>proto</i> ,type:<i>type</i>, protocol:<i>protocol</i>, timeout:<i>timeout</i>, bindport:<i>port</i>, bindaddrs:<i>bindaddrs</i>})</tt><br>"
 		"where <i>domain</i> (optional) = <tt>PF_UNSPEC</tt> (default) for IPv4 or IPv6, <tt>PF_INET</tt> for IPv4, or <tt>PF_INET6</tt> for IPv6<br>"
 		"<i>proto</i> (optional) = <tt>IPPROTO_IP</tt> (default)<br>"
 		"<i>type</i> (optional) = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP<br>"
 		"<i>protocol</i> (optional) = the name of the protocol or service the socket is to be used for<br>"
+		"<i>timeout</i> (optional) = 10 (default) the number of seconds to wait for each connect() call to complete.<br>"
 		"<i>bindport</i> (optional) = the name or number of the source port to bind to<br>"
 		"<i>bindaddrs</i> (optional) = the name or number of the source addresses to bind to.  The first of each IPv4 or IPv6 type is used for that family.<br>"
 		);
