@@ -195,7 +195,6 @@ function send_cmd(command, params)
 	var pcnt = 0;
 	var cmd;
 
-log("cmd: '"+command+"', params: '"+params+"'");
 	if (params === undefined)
 		plist = [];
 	else {
@@ -208,10 +207,7 @@ log("cmd: '"+command+"', params: '"+params+"'");
 	cmd = client_cmds[command];
 
 	if (cmd === undefined) {
-		if (plist.length == 0)
-			sock.send(command+"\r\n");
-		else
-			sock.send(command+' '+plist.join(' ')+'\r\n');
+		screen.print_line("\x01H\x01R!! \x01N\x01R"+command+" not supported.\x01N\x01W");
 		return;
 	}
 	snd = command;
@@ -226,7 +222,6 @@ log("cmd: '"+command+"', params: '"+params+"'");
 		screen.print_line("\x01H\x01R!! \x01N\x01R"+command+" requires at least "+cmd.minparam+" parameters\x01N\x01W");
 		return;
 	}
-log("Sending: "+snd);
 	sock.send(snd+"\r\n");
 }
 
@@ -734,6 +729,10 @@ function send_command(command,param)  {
 			else  {
 				send_cmd(command, channels.current.name+" "+param);
 			}
+			break;
+		case "QUOTE":
+			if (param.length)
+				sock.send(param);
 			break;
 		default:
 			if(command[0]=="#" || command[0]=="&")  {
