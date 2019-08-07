@@ -732,7 +732,7 @@ function send_command(command,param)  {
 			break;
 		case "QUOTE":
 			if (param.length)
-				sock.send(param);
+				sock.send(param+"\r\n");
 			break;
 		default:
 			if(command[0]=="#" || command[0]=="&")  {
