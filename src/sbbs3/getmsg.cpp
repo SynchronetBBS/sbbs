@@ -391,9 +391,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 		while(online) {
 			p=strchr(tp,' ');
 			if(p) *p=0;
-			sp=strrchr(tp,'/');              /* sp is slash pointer */
-			if(!sp) sp=strrchr(tp,'\\');
-			if(sp) tp=sp+1;
+			tp=getfname(tp);
 			file_t	fd;
 			fd.dir=cfg.total_dirs+1;			/* temp dir for file attachments */
 			padfname(tp,fd.name);
@@ -412,7 +410,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 				char 	tmp[512];
 				int		i;
 				SAFEPRINTF2(str, text[DownloadAttachedFileQ]
-					,tp,ultoac(length,tmp));
+					,getfname(fpath),ultoac(length,tmp));
 				if(length>0L && text[DownloadAttachedFileQ][0] && yesno(str)) {
 					{	/* Remote User */
 						xfer_prot_menu(XFER_DOWNLOAD);
