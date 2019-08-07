@@ -234,7 +234,7 @@ function handle_command(tag, prefix, command, message)  {
 
 	switch(command) {
 		case "PING":
-			send_cmd("PONG",message);
+			send_cmd("PONG",message.join(' '));
 			break;
 		case "NOTICE":
 			message.shift();	// Target
