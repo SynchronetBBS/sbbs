@@ -63,6 +63,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	ulong	t;
 	ulong	msgs=0;
 	ulong	tmsgs=0;
+	ulong	dupes=0;
 	ulong	errors=0;
 	time_t	start;
 	time_t	startsub;
@@ -269,13 +270,18 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				continue; 
 			}
 			smb_unlocksmbhdr(&smb);
-			if(qwk_import_msg(qwk, (char *)block, blocks, hubnum+1, &smb, usernum, &msg)) {
+			bool dupe=false;
+			if(qwk_import_msg(qwk, (char *)block, blocks, hubnum+1, &smb, usernum, &msg, &dupe)) {
 				eprintf(LOG_INFO,"Imported QWK mail message from %s to %s #%u", msg.from, msg.to, usernum);
 				SAFEPRINTF(str,text[UserSentYouMail],msg.from);
 				putsmsg(&cfg,usernum,str);
 				tmsgs++;
-			} else
-				errors++;
+			} else {
+				if(dupe)
+					dupes++;
+				else
+					errors++;
+			}
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
 			continue;
@@ -349,12 +355,17 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			lastsub=j; 
 		}
 
-		if(qwk_import_msg(qwk, (char *)block, blocks, hubnum+1, &smb, /*touser: */0, &msg)) {
+		bool dupe = false;
+		if(qwk_import_msg(qwk, (char *)block, blocks, hubnum+1, &smb, /*touser: */0, &msg, &dupe)) {
 			signal_sub_sem(&cfg,j);
 			msgs++;
 			tmsgs++;
-		} else
-			errors++;
+		} else {
+			if(dupe)
+				dupes++;
+			else
+				errors++;
+		}
 	}
 	if(lastsub != INVALID_SUB) {
 		log_qwk_import_stats(msgs, startsub);
@@ -414,12 +425,12 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		closedir(dir);
 
 	t=(ulong)(time(NULL)-start);
-	if(tmsgs) {
+	if(tmsgs || errors || dupes) {
 		if(t<1)
 			t=1;
 		eprintf(LOG_INFO,"Finished Importing QWK Network Packet from %s: "
-			"(%lu msgs) in %lu seconds (%lu msgs/sec), %lu errors"
-			,cfg.qhub[hubnum]->id, tmsgs, t, tmsgs/t, errors);
+			"(%lu msgs) in %lu seconds (%lu msgs/sec), %lu errors, %lu dupes"
+			,cfg.qhub[hubnum]->id, tmsgs, t, tmsgs/t, errors, dupes);
 		/* trigger timed event with internal code of 'qnet-qwk' to run */
 		sprintf(str,"%sqnet-qwk.now",cfg.data_dir);
 		ftouch(str);

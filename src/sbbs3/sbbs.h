@@ -1019,7 +1019,7 @@ public:
 	/* qwktomsg.cpp */
 	bool	qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t headers, bool parse_sender_hfields);
 	bool	qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks, char fromhub, smb_t*
-				,uint touser, smbmsg_t* msg);
+				,uint touser, smbmsg_t* msg, bool* dupe);
 
 	/* fido.cpp */
 	bool	netmail(const char *into, const char *subj = NULL, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
