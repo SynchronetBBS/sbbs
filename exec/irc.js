@@ -214,7 +214,7 @@ function send_cmd(command, params)
 	while (plist.length) {
 		snd += ' ';
 		pcnt++;
-		if (pcnt == cmd.maxparam)
+		if (pcnt == cmd.maxparam && plist.length > 1)
 			snd += ':';
 		snd += plist.shift();
 	}
