@@ -34,6 +34,53 @@ var real_names=true;
 js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 console.ctrlkey_passthru=~(134217728);
 
+// Commands to send...
+var client_cmds = {
+	'PASS':{minparam:1,maxparam:1},		// Must be sent before NICK/USER
+	'NICK':{minparam:1,maxparam:1},
+	'USER':{minparam:4,maxparam:4},
+	'OPER':{minparam:2,maxparam:2},
+	'QUIT':{minparam:0,maxparam:1},
+	'JOIN':{minparam:1,maxparam:2},
+	'PART':{minparam:1,maxparam:2},
+	'TOPIC':{minparam:1,maxparam:2},
+	'NAMES':{minparam:1,maxparam:1},
+	'LIST':{minparam:1,maxparam:2},
+	'MOTD':{minparam:0,maxparam:1},
+	'VERSION':{minparam:0,maxparam:1},
+	'ADMIN':{minparam:0,maxparam:1},
+	'CONNECT':{minparam:1,maxparam:3},
+	'TIME':{minparam:0,maxparam:1},
+	'STATS':{minparam:0,maxparam:2},
+	'INFO':{minparam:0,maxparam:1},
+	'MODE':{minparam:1,maxparam:Infinity},
+	'PRIVMSG':{minparam:2,maxparam:2},
+	'NOTICE':{minparam:2,maxparam:2},
+	'USERHOST':{minparam:1,maxparam:Infinity},
+	'KILL':{minparam:1,maxparam:2},
+	'SQUIT':{minparam:2,maxparam:2},
+	'INVITE':{minparam:2,maxparam:2},
+	'KICK':{minparam:2,maxparam:3},
+	'LINKS':{minparam:0,maxparam:2},
+	'TRACE':{minparam:0,maxparam:1},
+	'WHO':{minparam:0,maxparam:2},
+	'WHOIS':{minparam:1,maxparam:2},
+	'WHOWAS':{minparam:1,maxparam:3},
+	'PING':{minparam:1,maxparam:2},
+	'PONG':{minparam:1,maxparam:2},
+	'AWAY':{minparam:0,maxparam:1},
+	'REHASH':{minparam:0,maxparam:0},
+	'RESTART':{minparam:0,maxparam:0},
+	'SUMMON':{minparam:1,maxparam:3},
+	'USERS':{minparam:0,maxparam:1},
+	'WALLOPS':{minparam:1,maxparam:1},
+	'ISON':{minparam:1,maxparam:Infinity},
+	'LUSERS':{minparam:0,maxparam:2},
+	'SERVLIST':{minparam:0,maxparam:2},
+	'SQUERY':{minparam:2,maxparam:2},
+	'DIE':{minparam:0,maxparam:0},
+};
+
 /* Command-line options go BEFORE command-line args */
 var irc_theme = "irc-default.js";
 ARGPARSE: for (cmdarg=0;cmdarg<argc;cmdarg++) {
@@ -76,15 +123,14 @@ if(!sock.connect(irc_server,irc_port)) {
 	clean_exit();
 }
 
-sock.send("PASS "+user.security.password+"\r\n");	// for use with JS IRC server
+send_cmd("PASS", user.security.password);	// for use with JS IRC server
 if (nick=="")
 	nick=user.alias;
 nick=nick.replace(/\s+/g,"_");
-sock.send("NICK "+nick+"\r\n");
+send_cmd("NICK", nick);
 username=user.alias;
 username=username.replace(/\s+/g,"_");
-sock.send("USER "+username+" 0 * :"+(real_names?user.name:user.alias)
-	+" ("+client.ip_address+")\r\n");
+send_cmd("USER", username+" 0 * :"+(real_names?user.name:user.alias)+" ("+client.ip_address+")");
 
 channels=new Channels();
 
@@ -110,7 +156,7 @@ while(!quit)  {
 	}
 	
 	if(!client.socket.is_connected)  {
-		sock.send("QUIT :Dropped Carrier.\r\n");
+		send_cmd("QUIT",":Dropped Carrier");
 		quit=1;
 		sock.close();
 		bbs.hangup();
@@ -118,7 +164,7 @@ while(!quit)  {
 	}
 
 	if(js.terminated) {
-		sock.send("QUIT :Client terminated.\r\n");
+		send_cmd("QUIT",":Client terminated.");
 		quit=1;
 		sock.close();
 		bbs.hangup();
@@ -126,7 +172,7 @@ while(!quit)  {
 	}
 
 	if(bbs.get_time_left && !bbs.get_time_left()) {
-		sock.send("QUIT :Out of time.\r\n");
+		send_cmd("QUIT",":Out of time.");
 		quit=1;
 		sock.close();
 		clean_exit();
@@ -142,6 +188,48 @@ while(!quit)  {
 sock.close();
 clean_exit();
 
+function send_cmd(command, params)
+{
+	var snd;
+	var plist;
+	var pcnt = 0;
+	var cmd;
+
+log("cmd: '"+command+"', params: '"+params+"'");
+	if (params === undefined)
+		plist = [];
+	else {
+		if (params[0] == ':')
+			params = params.substr(1);
+		plist = params.split(/ \:?/);
+	}
+
+	command = command.toUpperCase();
+	cmd = client_cmds[command];
+
+	if (cmd === undefined) {
+		if (plist.length == 0)
+			sock.send(command+"\r\n");
+		else
+			sock.send(command+' '+plist.join(' ')+'\r\n');
+		return;
+	}
+	snd = command;
+	while (plist.length) {
+		snd += ' ';
+		pcnt++;
+		if (pcnt == cmd.maxparam)
+			snd += ':';
+		snd += plist.shift();
+	}
+	if (pcnt < cmd.minparam) {
+		screen.print_line("\x01H\x01R!! \x01N\x01R"+command+" requires at least "+cmd.minparam+" parameters\x01N\x01W");
+		return;
+	}
+log("Sending: "+snd);
+	sock.send(snd+"\r\n");
+}
+
 function handle_command(tag, prefix, command, message)  {
 	var from_nick=null;
 	var full_message=null;
@@ -151,7 +239,7 @@ function handle_command(tag, prefix, command, message)  {
 
 	switch(command) {
 		case "PING":
-			sock.send("PONG "+message[0]+"\r\n");
+			send_cmd("PONG",message);
 			break;
 		case "NOTICE":
 			message.shift();	// Target
@@ -408,7 +496,7 @@ function handle_command(tag, prefix, command, message)  {
 		case "433":		// Nickname already in use
 			message.shift();	// Client
 			nick=message.shift()+"_";
-			sock.send("NICK " + nick + "\r\n");
+			send_cmd("NICK", nick);
 			break;
 		// <word1> <word2> :Message errors
 		case "441":		// Nick not on channel
@@ -544,7 +632,7 @@ function wait_for(commands)  {
 		}
 
 		if(!client.socket.is_connected)  {
-			sock.send("QUIT :Dropped Carrier.\r\n");
+			send_cmd("QUIT", ":Dropped Carrier.");
 			quit=1;
 			sock.close();
 			bbs.hangup();
@@ -578,13 +666,13 @@ function send_command(command,param)  {
 		case "MSG":
 			params=param.split(" ");
 			send_to=params.shift();
-			sock.send("PRIVMSG "+send_to+" :"+params.join(" ")+"\r\n");
+			send_cmd("PRIVMSG", send_to+" :"+params.join(" "));
 			screen.print_line(send_to+"\x01H\x01C<\x01N\x01C-\x01N\x01W "+params.join(" "));
 			break;
 		case "X":
 		case "Q":
 		case "QUIT":
-			sock.send("QUIT :"+param+"\r\n");
+			send_cmd("QUIT", param);
 			quit=1;
 			sock.close();
 			clean_exit();
@@ -607,7 +695,7 @@ function send_command(command,param)  {
 			send_to=params.shift();
 			full_params=params.join(" ");
 			full_params=full_params.toUpperCase();
-			sock.send("PRIVMSG "+send_to+" :\x01"+full_params+"\x01\r\n");
+			send_cmd("PRIVMSG", send_to+" :\x01"+full_params+"\x01");
 			break;
 		case "PART":
 			// If the user specifies a channel, this SHOULD part that channel,
@@ -632,18 +720,23 @@ function send_command(command,param)  {
 			screen.update_statline();
 			break;
 		case "TOPIC":
-			sock.send("TOPIC "+channels.current.name+" :"+param+"\r\n");
+			if (param.substr(0,1) == '#' || param.substr(0,1) == '&')  {
+				send_cmd(command, param);
+			}
+			else  {
+				send_cmd(command, channels.current.name+" "+param);
+			}
 			break;
 		case "KICK":
 			if (param.substr(0,1) == '#' || param.substr(0,1) == '&')  {
-				sock.send(command+" "+param+"\r\n");
+				send_cmd(command, param);
 			}
 			else  {
-				sock.send("KICK "+channels.current.name+" "+param+"\r\n");
+				send_cmd(command, channels.current.name+" "+param);
 			}
 			break;
 		default:
-			if(command.slice(0,1)=="#" || command.slice(0,1)=="&")  {
+			if(command[0]=="#" || command[0]=="&")  {
 				for(i=0;i<channels.length;i++)  {
 					if(command.toUpperCase()==channels.channel[i].name)  {
 						channels.index=i;
@@ -652,7 +745,7 @@ function send_command(command,param)  {
 				}
 			}
 			else  {
-				sock.send(command+" "+param+"\r\n");
+				send_cmd(command, param);
 			}
 	}
 }
@@ -676,13 +769,13 @@ function handle_ctcp(prefix,message)  {
 		case "FINGER":
 			from_nick=get_highlighted_nick(prefix,message);
 			to_nick=get_nick(prefix);
-			sock.send("NOTICE "+to_nick+" :\x01FINGER :"+user.name+" ("+user.alias+") Idle: "+user.timeout+"\x01\r\n");
+			send_cmd("NOTICE", to_nick+" :\x01FINGER :"+user.name+" ("+user.alias+") Idle: "+user.timeout+"\x01");
 			screen.print_line(">"+from_nick+"<"+" CTCP FINGER Reply: "+user.name+" ("+user.alias+") Idle: "+user.timeout);
 			break;
 		case "VERSION":
 			from_nick=get_highlighted_nick(prefix,message);
 			to_nick=get_nick(prefix);
-			sock.send("NOTICE "+to_nick+" :\x01VERSION Synchronet IRC Module:"+REVISION+":Synchronet"+"\x01\r\n");
+			send_cmd("NOTICE", to_nick+" :\x01VERSION Synchronet IRC Module:"+REVISION+":Synchronet"+"\x01");
 			screen.print_line(">"+from_nick+"<"+" CTCP VERSION Reply: VERSION Synchronet IRC Module:"+REVISION+":Synchronet");
 			break;
 		case "PING":
@@ -690,13 +783,13 @@ function handle_ctcp(prefix,message)  {
 			message.shift();
 			from_nick=get_highlighted_nick(prefix,message);
 			to_nick=get_nick(prefix);
-			sock.send("NOTICE "+to_nick+" :\x01PING "+message.join(" ")+"\x01\r\n");
+			send_cmd("NOTICE", to_nick+" :\x01PING "+message.join(" ")+"\x01");
 			screen.print_line(">"+from_nick+"<"+" CTCP PING Reply.");
 			break;
 		case "TIME":
 			from_nick=get_highlighted_nick(prefix,message);
 			to_nick=get_nick(prefix);
-			sock.send("NOTICE "+to_nick+" :\x01TIME "+strftime("%A, %B %d, %I:%M:%S%p, %Y %Z",time())+"\x01\r\n");
+			send_cmd("NOTICE", to_nick+" :\x01TIME "+strftime("%A, %B %d, %I:%M:%S%p, %Y %Z",time())+"\x01");
 			screen.print_line(">"+from_nick+"<"+" CTCP TIME Reply: "+strftime("%A, %B %d, %I:%M:%S%p, %Y %Z",time() ));
 			break;
 	}
@@ -749,8 +842,8 @@ function Channel(cname)  {
 }
 
 function Channel_part(message)  {
-	sock.send("PART "+this.name+" :"+message+"\r\n");
-	screen.print_line("PART "+this.name+" "+message+"\r\n");
+	send_cmd("PART", this.name+" :"+message);
+	screen.print_line("PART "+this.name+" "+message);
 	this.name=null;
 	this.display=null;
 	this.topic=null;
@@ -758,7 +851,7 @@ function Channel_part(message)  {
 }
 
 function Channel_send(message)  {
-	sock.send("PRIVMSG "+this.name+" :"+message+"\r\n");
+	send_cmd("PRIVMSG", this.name+" :"+message);
 }
 
 function Channel_matchnick(nickpart)  {
@@ -872,7 +965,7 @@ function Channels_nick_add(nick,cname)  {
 }
 
 function Channels_join(cname)  {
-	sock.send("JOIN "+cname+"\r\n");
+	send_cmd("JOIN", cname);
 }
 
 function Channels_joined(cname)  {
