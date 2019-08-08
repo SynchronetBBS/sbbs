@@ -386,7 +386,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 	if(msg->hdr.auxattr&MSG_FILEATTACH) {  /* Attached file */
 		smb_getmsgidx(smb, msg);
 		SAFECOPY(str, msg->subj);					/* filenames (multiple?) in title */
-		char *p,*tp,*sp,ch;
+		char *p,*tp,ch;
 		tp=str;
 		while(online) {
 			p=strchr(tp,' ');
