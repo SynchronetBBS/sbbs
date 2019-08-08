@@ -139,7 +139,11 @@ function str_cmds(str)
 		if(word=="EVAL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				console.print(eval(get_arg(str)));
+				try {
+					console.print(eval(get_arg(str)));
+				} catch(e) {
+					alert(e);
+				}
 				return;
 			}
 		}
