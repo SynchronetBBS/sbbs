@@ -128,6 +128,7 @@ function str_cmds(str)
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
 				console.putmsg(get_arg(str));
+				console.crlf();
 				return;
 			}
 		}
