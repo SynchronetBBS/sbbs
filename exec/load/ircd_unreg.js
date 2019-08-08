@@ -118,6 +118,7 @@ function IRC_Unregistered_Commands(cmdline) {
 		// since some *broken* IRC clients use this in the unreg stage.
 		command = cmd[1].toUpperCase();
 		cmdline = cmdline.slice(cmdline.indexOf(" ")+1);
+		cmd = cmdline.split(" ");
 	} else {
 		command = cmd[0].toUpperCase();
 	}
