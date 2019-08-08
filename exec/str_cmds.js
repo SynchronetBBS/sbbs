@@ -141,6 +141,7 @@ function str_cmds(str)
 				str=str.substr(4);
 				try {
 					console.print(eval(get_arg(str)));
+					console.crlf();
 				} catch(e) {
 					alert(e);
 				}
