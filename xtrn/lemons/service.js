@@ -186,9 +186,9 @@ function init() {
 // Keep things rolling until we're told to stop
 function main() {
 	while (!js.terminated) {
-		mswait(5);
 		timer.cycle();
 		jsonClient.cycle();
+		mswait(50);
 	}
 }
 

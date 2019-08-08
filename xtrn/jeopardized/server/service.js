@@ -327,7 +327,7 @@ function initJSON() {
 function main() {
 	while (!js.terminated) {
 		jsonClient.cycle();
-		mswait(5);
+		mswait(50);
 	}
 }
 
