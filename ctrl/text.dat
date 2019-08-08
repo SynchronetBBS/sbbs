@@ -84,7 +84,7 @@
 "\1n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
 "\1n\r\n\1cþ \1h\1bReading All E-mail \1n\1cþ \1h\1b"\		064 ReadingAllMail
 	"(\1w%u \1bof \1w%u\1b): \1n" 
-"\1_\r\n\1q\1g\1h      From                   "\              065 MailOnSystemLstHdr
+"\1_\r\n\1g\1h      From                   "\              065 MailOnSystemLstHdr
 	"To                     A Subject\r\n\1n"
 "\1g\1h%5d\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"     066 MailOnSystemLstFmt
 "\1-\r\n\1c%-15.15s \1y\1h%-44.44s "\                 067 NScanStatusFmt
