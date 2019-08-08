@@ -185,7 +185,6 @@ function document_properties(name, obj)
 
 		prop_name=name + "." + prop;
 
-log(LOG_ERR, "Prop: "+prop);
 		if(typeof(obj[prop])=="object" 
 			&& prop!="socket" 
 			&& prop!="global"
