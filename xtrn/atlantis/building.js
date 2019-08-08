@@ -11,16 +11,16 @@ function Building()
 	this.size=0;
 	this.sizeleft=0;
 	this.region=null;	// TODO: Added
-	this.id getter=function() { return(this.name+' ('+this.no+')'); };
-	this.owner getter=function() {
-		var u;
+	this.__defineGetter__("id", function() { return(this.name+' ('+this.no+')'); });
+	this.__defineGetter__("owner", function() {
+		 var u;
 
 		for(u in this.region.units)
 			if(this.region.units[u].building.no==this.no)
 				return(this.region.units[u]);
 
 		return(null);
-	};
+	});
 
 	this.mayenter=function(u) {
 		var u2=this.owner;

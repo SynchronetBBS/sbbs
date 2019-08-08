@@ -35,8 +35,8 @@ function Faction()
 	this.nunits=0;
 	this.number=0;
 	this.money=0;
-	this.id getter=function() { return(this.name+' ('+this.no+')'); };
-	this.magicians getter=function() {
+	this.__defineGetter__("id", function() { return(this.name+' ('+this.no+')'); });
+	this.__defineGetter__("magicians", function() {
 		var n,r,u;
 
 		n = 0;
@@ -47,7 +47,7 @@ function Faction()
 					n += regions[r].units[u].number;
 
 		return n;
-	};
+	});
 
 	this.ispresent=function(region) {
 		var unit;

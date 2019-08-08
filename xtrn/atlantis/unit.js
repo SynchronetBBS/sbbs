@@ -49,8 +49,8 @@ function Unit(region)
 	this.litems=new Array();
 	this.side=0;
 	this.isnew=false;
-	this.id getter=function() { return(this.name+' ('+this.no+')'); };
-	this.itemweight getter=function() {
+	this.__defineGetter__("id", function() { return(this.name+' ('+this.no+')'); });
+	this.__defineGetter__("itemweight", function() {
 		var i,n;
 
 		n = 0;
@@ -70,8 +70,8 @@ function Unit(region)
 		}
 
 		return n;
-	};
-	this.horseweight getter=function () {
+	});
+	this.__defineGetter__("horseweight", function () {
 		var i,n;
 
 		n = 0;
@@ -85,14 +85,14 @@ function Unit(region)
 			}
 
 		return n;
-	};
-	this.canmove getter=function() {
+	});
+	this.__defineGetter__("canmove", function() {
 		return this.itemweight - this.horseweight - (this.number * 5) <= 0;
-	};
-	this.canride getter=function() {
+	});
+	this.__defineGetter__("canride", function() {
 		return this.itemweight - this.horseweight + (this.number * 10) <= 0;
-	};
-	this.armedmen getter=function() {
+	});
+	this.__defineGetter__("armedmen", function() {
 		var n=0;
 
 		if (this.effskill (SK_SWORD))
@@ -102,7 +102,7 @@ function Unit(region)
 		if (this.effskill (SK_LONGBOW))
 			n += this.items[I_LONGBOW];
 		return Math.min(n,this.number);
-	};
+	});
 
 	this.effskill=function(skill) {
 		var n,j,result;
