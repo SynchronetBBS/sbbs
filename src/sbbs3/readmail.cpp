@@ -256,9 +256,10 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 
 		if(domsg && !(sys_status&SS_ABORT)) {
 
-			show_msg(&smb, &msg
+			if(!show_msg(&smb, &msg
 				,msg.from_ext && msg.idx.from==1 && !msg.from_net.type
-					? 0:P_NOATCODES);
+					? 0:P_NOATCODES))
+				errormsg(WHERE,"showing", "mail message", msg.hdr.number, smb.last_error);
 			download_msg_attachments(&smb, &msg, which == MAIL_YOUR);
 			if(which==MAIL_YOUR && !(msg.hdr.attr&MSG_READ)) {
 				mail[smb.curmsg].attr|=MSG_READ;
