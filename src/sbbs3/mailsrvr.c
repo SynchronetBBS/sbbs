@@ -4834,7 +4834,6 @@ static void smtp_thread(void* arg)
 			fprintf(rcptlst,"[%u]\n",rcpt_count++);
 			fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
 			fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTEXT),user.number);
-			fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(SMTPFORWARDPATH),rcpt_to);
 
 			/* Forward to Internet */
 			tp=strrchr(user.netmail,'@');
@@ -4855,6 +4854,7 @@ static void smtp_thread(void* arg)
 					fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_QWK);
 					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),user.alias);
 				}						
+				fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(SMTPFORWARDPATH),rcpt_to);
 				sockprintf(socket,client.protocol,session,ok_rsp);
 			}
 			state=SMTP_STATE_RCPT_TO;
