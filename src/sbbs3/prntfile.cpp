@@ -128,9 +128,8 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols)
 			return false; 
 		}
 		while(!feof(stream) && !msgabort()) {
-			if(fgets(buf, length-1, stream) == NULL)
+			if(fgets(buf, length + 1, stream) == NULL)
 				break;
-			buf[length] = 0;
 			if((mode&P_UTF8) && !term_supports(UTF8))
 				utf8_normalize_str(buf);
 			putmsg(buf, mode, org_cols);
