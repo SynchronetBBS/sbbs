@@ -451,6 +451,7 @@ void sbbs_t::useredit(int usernumber)
 				putuserrec(&cfg,user.number,U_PHONE,LEN_PHONE,user.phone);
 				break;
 			case 'Q':
+				lncntr = 0;
 				CLS;
 				sys_status&=~SS_INUEDIT;
 				FREE_AR(ar);	/* assertion here */
