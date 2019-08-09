@@ -348,7 +348,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		user;
-	char*		pass;
+	char*		pass = NULL;
 	JSBool		inc_logons=JS_FALSE;
 	jsval		val;
 	service_client_t* client;
@@ -365,10 +365,11 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	/* Password */
-	JSVALUE_TO_ASTRING(cx, argv[1], pass, LEN_PASS+2, NULL);
-	if(pass==NULL) 
-		return(JS_FALSE);
-
+	if(argc > 1) {
+		JSVALUE_TO_ASTRING(cx, argv[1], pass, LEN_PASS+2, NULL);
+		if(pass==NULL) 
+			return(JS_FALSE);
+	}
 	rc=JS_SUSPENDREQUEST(cx);
 	memset(&client->user,0,sizeof(user_t));
 
@@ -399,7 +400,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	/* Password */
-	if(client->user.pass[0] && stricmp(client->user.pass,pass)) { /* Wrong password */
+	if(client->user.pass[0] && (pass == NULL || stricmp(client->user.pass,pass))) { /* Wrong password */
 		lprintf(LOG_WARNING,"%04d %s !INVALID PASSWORD ATTEMPT FOR USER: %s"
 			,client->socket,client->service->protocol,client->user.alias);
 		badlogin(client->socket, client->service->protocol, user, pass, client->client->host, &client->addr);
