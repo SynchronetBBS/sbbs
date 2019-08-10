@@ -69,6 +69,17 @@
  *                              Releasing this version.  Synchronet 3.17c development
  *                              builds from July 21, 2019 onward support result.ed
  *                              even for editors configured for QuickBBS MSGINF/MSGTMP.
+ * 2019-07-21 Eric Oulashin     Version 1.68 Beta
+ *                              Updated to honor the SUB_ANON and SUB_AONLY flags
+ *                              for the sub-boards when cross-posting so that the
+ *                              "from" name is "Anonymous" if either of those flags
+ *                              enabled.
+ *                              Updated to allow message uploading.
+ *                              Started working on updates to save new text lines
+ *                              as one long line, to help with word wrapping in
+ *                              offline readers etc.
+ * 2019-08-09 Eric Oulashin     Version 1.68
+ *                              Releasing this version
  */
 
 /* Command-line arguments:
@@ -165,8 +176,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.67";
-const EDITOR_VER_DATE = "2019-07-21";
+const EDITOR_VERSION = "1.68";
+const EDITOR_VER_DATE = "2019-08-09";
 
 
 // Program variables
@@ -388,25 +399,29 @@ fpGlobalScreenVarsSetup();
 
 // Message display & edit variables
 var gInsertMode = "INS";       // Insert (INS) or overwrite (OVR) mode
-var gQuoteLines = new Array(); // Array of quote lines loaded from file, if in quote mode
+var gQuoteLines = [];          // Array of quote lines loaded from file, if in quote mode
 var gUserHasOpenedQuoteWindow = false; // Whether or not the user has opened the quote line selection window
 var gQuoteLinesTopIndex = 0;   // Index of the first displayed quote line
 var gQuoteLinesIndex = 0;      // Index of the current quote line
 // The gEditLines array will contain TextLine objects storing the line
 // information.
-var gEditLines = new Array();
+var gEditLines = [];
 var gEditLinesIndex = 0;      // Index into gEditLines for the line being edited
 var gTextLineIndex = 0;       // Index into the current text line being edited
 // Format strings used for printf() to display text in the edit area
 const gFormatStr = "%-" + gEditWidth + "s";
 const gFormatStrWithAttr = "%s%-" + gEditWidth + "s";
 
+// Whether or not a message file was uploaded (if so, then SlyEdit won't
+// do the line re-wrapping at the end before saving the message).
+var gUploadedMessageFile = false;
+
 // gEditAreaBuffer will be an array of strings for the edit area, which
 // will be checked by displayEditLines() before outputting text lines
 // to optimize the update of message text on the screen. displayEditLines()
 // will also update this array after writing a line of text to the screen.
 // The indexes in this array are the absolute screen lines.
-var gEditAreaBuffer = new Array();
+var gEditAreaBuffer = [];
 function clearEditAreaBuffer()
 {
 	for (var lineNum = gEditTop; lineNum <= gEditBottom; ++lineNum)
@@ -583,8 +598,7 @@ if (gConfigSettings.displayEndInfoScreen)
 var savedTheMessage = false;
 if ((exitCode == 0) && (gEditLines.length > 0))
 {
-	// If the user changed the subject, write a RESULT.ED with the new subject.
-	// TODO: Is this only for WWIV editors supporting result.inf/result.ed?
+	// Write a RESULT.ED containing the subject and editor name.
 	// Note: Normally, this is only supported for WWIV editors supporting
 	// result.inf/result.ed.  However, with Synchronet 3.17c development
 	// builds from July 21, 2019 onward, result.ed is supported even for
@@ -613,25 +627,46 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 		--lineIndex;
 	}
 
-	// New (2019-04-14): For paragraphs of non-quote lines, make the paragraph
-	// all one line.  Copy to another array of edit lines, and then set gEditLines
-	// to that array.
-	//var gEditLines = new Array();
-	//textLine = new TextLine();
-	/*
-	function TextLine(pText, pHardNewlineEnd, pIsQuoteLine)
+	// If the user didn't upload a message from a file, then for paragraphs of
+	// non-quote lines, make the paragraph all one line.  Copy to another array
+	// of edit lines, and then set gEditLines to that array.
+	if (!gUploadedMessageFile)
 	{
-		this.text = "";               // The line text
-		this.hardNewlineEnd = false; // Whether or not the line has a hard newline at the end
-		this.isQuoteLine = false;    // Whether or not this is a quote line
-		// Copy the parameters if they are valid.
-		if ((pText != null) && (typeof(pText) == "string"))
-			this.text = pText;
-		if ((pHardNewlineEnd != null) && (typeof(pHardNewlineEnd) == "boolean"))
-			this.hardNewlineEnd = pHardNewlineEnd;
-		if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) == "boolean"))
-			this.isQuoteLine = pIsQuoteLine;
-	*/
+		var newEditLines = [];
+		var blockIdxes = findQuoteAndNonQuoteBlockIndexes(gEditLines);
+		for (var blockIdx = 0; blockIdx < blockIdxes.allBlocks.length; ++blockIdx)
+		{
+			if (blockIdxes.allBlocks[blockIdx].isQuoteBlock)
+			{
+				for (var i = blockIdxes.allBlocks[blockIdx].start; i < blockIdxes.allBlocks[blockIdx].end; ++i)
+				{
+					newEditLines.push(new TextLine(gEditLines[i].text, gEditLines[i].hardNewlineEnd, gEditLines[i].isQuoteLine));
+					delete gEditLines[i]; // Save some memory
+				}
+			}
+			else
+			{
+				var textLine = "";
+				var i = blockIdxes.allBlocks[blockIdx].start;
+				while ((i < blockIdxes.allBlocks[blockIdx].end) && (i < gEditLines.length))
+				{
+					var continueOn = true;
+					while (continueOn)
+					{
+						if (textLine.length > 0)
+							textLine += " ";
+						textLine += gEditLines[i].text;
+						continueOn = (!gEditLines[i].hardNewlineEnd) && (i+1 < gEditLines.length);
+						delete gEditLines[i]; // Save some memory
+						++i;
+					}
+					newEditLines.push(new TextLine(textLine, true, false));
+					textLine = "";
+				}
+			}
+		}
+		gEditLines = newEditLines;
+	}
 
 	// Store whether the user is still posting the message in the original sub-board
 	// and whether that's the only sub-board they're posting in.
@@ -843,22 +878,22 @@ bbs.sys_status = gOldStatus;
 // Set the end-of-program status message.
 var endStatusMessage = "";
 if (exitCode == 1)
-   endStatusMessage = gConfigSettings.genColors.msgAbortedText + "Message aborted.";
+	endStatusMessage = gConfigSettings.genColors.msgAbortedText + "Message aborted.";
 else if (exitCode == 0)
 {
-   if (gEditLines.length > 0)
-   {
-      if (savedTheMessage)
-         endStatusMessage = gConfigSettings.genColors.msgHasBeenSavedText + "The message has been saved.";
-      else
-         endStatusMessage = gConfigSettings.genColors.msgAbortedText + "Message aborted.";
-   }
-   else
-      endStatusMessage = gConfigSettings.genColors.emptyMsgNotSentText + "Empty message not sent.";
+	if (gEditLines.length > 0)
+	{
+		if (savedTheMessage)
+			endStatusMessage = gConfigSettings.genColors.msgHasBeenSavedText + "The message has been saved.";
+		else
+			endStatusMessage = gConfigSettings.genColors.msgAbortedText + "Message aborted.";
+	}
+	else
+		endStatusMessage = gConfigSettings.genColors.emptyMsgNotSentText + "Empty message not sent.";
 }
 // We shouldn't hit this else case, but it's here just to be safe.
 else
-   endStatusMessage = gConfigSettings.genColors.genMsgErrorText + "Possible message error.";
+	endStatusMessage = gConfigSettings.genColors.genMsgErrorText + "Possible message error.";
 console.print(endStatusMessage);
 console.crlf();
 
@@ -1565,9 +1600,6 @@ function doEditLoop()
 				doUserSettings(curpos, true);
 				break;
 			case CHANGE_SUBJECT_KEY:
-				// Temporary
-				//displayDebugText(1, 1, "Subj loc & length: (" + gSubjPos.x + ", " + gSubjPos.y + "), " + gSubjScreenLen, curpos, true, false);
-				// End Temporary
 				console.print("\1n");
 				console.gotoxy(gSubjPos.x, gSubjPos.y);
 				var subj = console.getstr(gSubjScreenLen, K_LINE|K_NOCRLF|K_NOSPIN|K_TRIM);
@@ -2361,6 +2393,30 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 			retObj.x = gEditLeft;
 			console.gotoxy(retObj.x, retObj.y);
 			console.print("  ");
+			// Put the cursor where it should be
+			console.gotoxy(retObj.x, retObj.y);
+			return(retObj);
+		}
+	}
+	// /UL or /UPLOAD: Upload a file containing a message to post
+	// instead of any text entered in the editor
+	else if (((gEditLines[gEditLinesIndex].length() == 3) && (gEditLines[gEditLinesIndex].text.toUpperCase() == "/UL")) || ((gEditLines[gEditLinesIndex].length() == 7) && (gEditLines[gEditLinesIndex].text.toUpperCase() == "/UPLOAD")))
+	{
+		if (letUserUploadMessageFile())
+		{
+			retObj.continueOn = false;
+			return(retObj);
+		}
+		else
+		{
+			// Blank out the /ul or /upload on the screen
+			console.print(chooseEditColor());
+			retObj.x = gEditLeft;
+			console.gotoxy(retObj.x, retObj.y);
+			printf("%" + gEditLines[gEditLinesIndex].length() + "s", "");
+			gEditLines[gEditLinesIndex].text = "";
+			retObj.currentWordLength = 0;
+			gTextLineIndex = 0;
 			// Put the cursor where it should be
 			console.gotoxy(retObj.x, retObj.y);
 			return(retObj);
@@ -4543,7 +4599,7 @@ function updateTime(pCurpos, pMoveCursorBack)
       // Display the current time on the screen
       fpDisplayTime(currentTime);
       // Make sure the edit color attribute is set.
-      console.print("n" + gTextAttrs);
+      console.print("\1n" + gTextAttrs);
       // Move the cursor back to where it was
       if (pMoveCursorBack)
          console.gotoxy(curpos);
@@ -6666,4 +6722,81 @@ function getSignName(pSubCode, pRealNameOnlyFirst, pRealNameForEmail)
 	else
 		signName = trimSpaces(user.alias, true, false, true);
 	return signName;
+}
+
+// Lets the user upload a message in a text file, replacing any message
+// that might be written in the editor.
+//
+// Parameters:
+//  pCurpos: The console's current position (with x and y members)
+//
+// Return value: Boolean - True if successfully uploaded, false if not
+function letUserUploadMessageFile(pCurpos)
+{
+	gUploadedMessageFile = false;
+
+	var originalCurpos;
+	if ((typeof(pCurpos) == "object") && pCurpos.hasOwnProperty("x") && pCurpos.hasOwnProperty("y"))
+		originalCurpos = pCurpos;
+	else
+		originalCurpos = console.getxy();
+
+	var uploadedMessage = false;
+	if (promptYesNo("Upload a mesage", true, "Upload message", true, true))
+	{
+		console.print("\1n");
+		console.gotoxy(1, console.screen_rows);
+		console.crlf();
+		var msgFilename = system.node_dir + "uploadedMsg.txt";
+		if (bbs.receive_file(msgFilename))
+		{
+			console.print("Upload succeeded.\r\n");
+			// Read the file and populate gEditLines
+			var msgFile = new File(msgFilename);
+			if (msgFile.open("r"))
+			{
+				uploadedMessage = true;
+				gUploadedMessageFile = true;
+
+				// Free up memory already in gEditLiens, and then
+				// re-populate gEditLines with the new message from the file
+				for (var i = 0; i < gEditLines.length; ++i)
+					delete gEditLines[i];
+				gEditLines = [];
+
+				var fileLine;
+				while (!msgFile.eof)
+				{
+					// Read the next line from the file
+					fileLine = msgFile.readln(2048);
+
+					// fileLine should be a string, but I've seen some cases
+					// where for some reason it isn't.  If it's not a string,
+					// then continue onto the next line.
+					if (typeof(fileLine) != "string")
+						continue;
+					// Add the line to gEditLines
+					// TODO: It seems this isn't populating gEditLines and
+					// it's sending an empty message.
+					gEditLines.push(new TextLine(fileLine, true, false));
+				}
+				
+				msgFile.close();
+				file_remove(msgFilename);
+			}
+			else
+			{
+				console.print("\1y\1hFailed to read the message file!\1n\r\n\1p");
+				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes, 0, displayEditLines);
+			}
+		}
+		else
+		{
+			console.print("\1y\1hUpload failed!\1n\r\n\1p");
+			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes, 0, displayEditLines);
+		}
+	}
+
+	console.gotoxy(originalCurpos);
+	return uploadedMessage;
 }

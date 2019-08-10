@@ -1377,6 +1377,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 		displayCmdKeyFormattedDouble("", "", "/U", "Your user settings", true);
 	if (pCanCrossPost)
 		displayCmdKeyFormattedDouble("", "", "/C", "Cross-post selection", true);
+	displayCmdKeyFormattedDouble("", "", "/UPLOAD", "Upload a message", true);
 	printf(" \1c\1h%-7s\1g  \1n\1c%s", "", "", "/?", "Show help");
 	console.crlf();
 	// Command/edit keys
@@ -3537,7 +3538,7 @@ function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
 	if ((pFromUserNum <= 0) || (pFromUserNum > system.lastuser))
 		return ("Invalid user number");
 
-	// LOad the user record specified by pFromUserNum.  If it's a deleted user,
+	// Load the user record specified by pFromUserNum.  If it's a deleted user,
 	// then return an error.
 	var fromUser = new User(pFromUserNum);
 	if (fromUser.settings & USER_DELETED)
@@ -3557,9 +3558,12 @@ function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
 	header.to = pTo;
 	header.from_net_type = NET_NONE;
 	header.to_net_type = NET_NONE;
-	// For the 'From' name, use the user's real name if the sub-board is set
-	// up to post using real names; otherwise, use the user's alias.
-	if ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME)
+	// For the 'From' name, if the SUB_ANON or SUB_AONLY flag is set, use
+	// "Anonymous".  Otherwise, use the user's real name if the sub-board
+	// is set up to post using real names; otherwise, use the user's alias.
+	if (((msgbase.cfg.settings & SUB_ANON) == SUB_ANON) || ((msgbase.cfg.settings & SUB_AONLY) == SUB_AONLY))
+		header.from = "Anonymous";
+	else if ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME)
 		header.from = fromUser.name;
 	else
 		header.from = fromUser.alias;
@@ -4886,6 +4890,8 @@ function centeredText(pWidth, pText)
 //               end: One past the end index of the non-quote block
 function findNonQuoteBlockIndexes(pTextLines)
 {
+	// TODO: findQuoteAndNonQuoteBlockIndexes() isn't identifying non-quote
+	// blocks when there is a single line in a non-quote block.
 	if (typeof(pTextLines) != "object")
 		return [];
 	if (pTextLines.length == 0)
@@ -4898,27 +4904,103 @@ function findNonQuoteBlockIndexes(pTextLines)
 	var nonQuoteBlockIdxes = [];
 	var startIdx = 0;
 	var lastEndIdx = 0;
-	var inQuoteBlock = pTextLines[0];
+	var inQuoteBlock = pTextLines[0].isQuoteLine;
 	for (var i = 1; i < pTextLines.length; ++i)
 	{
 		if (pTextLines[i].isQuoteLine != inQuoteBlock)
 		{
-			if (pTextLines[i])
+			if (pTextLines[i].isQuoteLine)
 			{
 				nonQuoteBlockIdxes.push({ start: startIdx, end: i });
 				lastEndIdx = i;
 			}
 			else
 				startIdx = i;
-			inQuoteBlock = pTextLines[i];
+			inQuoteBlock = pTextLines[i].isQuoteLine;
 		}
 	}
 	// Edge case: If the last line in the array is a non-quote block, then ensure
 	// the last non-quote block is added to nonQuoteBlockIdxes
 	if (!pTextLines[pTextLines.length-1].isQuoteLine)
-		nonQuoteBlockIdxes.push({ start: lastEndIdx+1, end: pTextLines.length });
+		nonQuoteBlockIdxes.push({ start: startIdx, end: pTextLines.length });
 
 	return nonQuoteBlockIdxes;
+}
+
+// Finds start & end indexes of quote blocks and non-quote blocks in the message lines.
+//
+// Parameters:
+//  pTextLines: The array of message lines
+//
+// Return value: An object with the following properties:
+//               quoteBlocks: An array of objects containing the following properties:
+//                            start: The start index of a quote block
+//                            end: One past the end index of the quote block
+//               nonQuoteBlocks: An array of objects containing the following properties:
+//                               start: The start index of a non-quote block
+//                               end: One past the end index of the non-quote block
+//               allBlocks: An array of objects containing information about all text
+//                          blocks in order, with these properties:
+//                          isQuoteBlock: Boolean - Whether or not the block is a quote block
+//                          start: The start index of the block
+//                          end: One past the end index of the block
+function findQuoteAndNonQuoteBlockIndexes(pTextLines)
+{
+	var retObj = {
+		quoteBlocks: [],
+		nonQuoteBlocks: findNonQuoteBlockIndexes(pTextLines),
+		allBlocks: []
+	};
+
+	// Edge case: If there's only one line and if it's a quote block, then
+	// return an array with an element about it.
+	if (pTextLines.length == 1)
+	{
+		if (pTextLines[0].isQuoteLine)
+		{
+			retObj.quoteBlocks.push({ start: 0, end: 1});
+			retObj.allBlocks.push({ isQuoteBlock: true, start: 0, end: 1});
+		}
+		else
+			retObj.allBlocks.push({ isQuoteBlock: false, start: retObj.nonQuoteBlocks[0].start, end: retObj.nonQuoteBlocks[0].end});
+		return retObj;
+	}
+
+	for (var nonQuoteBlockI = 0; nonQuoteBlockI < retObj.nonQuoteBlocks.length; ++nonQuoteBlockI)
+	{
+		if ((nonQuoteBlockI == 0) && (retObj.nonQuoteBlocks[nonQuoteBlockI].start > 0))
+			retObj.quoteBlocks.push({start: 0, end: retObj.nonQuoteBlocks[nonQuoteBlockI].start});
+		else if (nonQuoteBlockI < retObj.nonQuoteBlocks.length - 1)
+		{
+			var nextI = nonQuoteBlockI + 1;
+			//retObj.quoteBlocks.push({start: retObj.nonQuoteBlocks[nonQuoteBlockI].end+1, end: retObj.nonQuoteBlocks[nextI].start});
+			retObj.quoteBlocks.push({start: retObj.nonQuoteBlocks[nonQuoteBlockI].end, end: retObj.nonQuoteBlocks[nextI].start});
+		}
+		else if (nonQuoteBlockI == retObj.nonQuoteBlocks.length - 1)
+		{
+			if (retObj.nonQuoteBlocks[nonQuoteBlockI].end < pTextLines.length)
+				retObj.quoteBlocks.push({start: retObj.nonQuoteBlocks[nonQuoteBlockI].end+1, end: pTextLines.length});
+		}
+	}
+
+	// Go through both the quote and non-quote blocks and populate allBlocks.
+	// Then sort allBlocks (by start index, which should be goood enough to sort with).
+	for (var i = 0; i < retObj.quoteBlocks.length; ++i)
+		retObj.allBlocks.push({ isQuoteBlock: true, start: retObj.quoteBlocks[i].start, end: retObj.quoteBlocks[i].end });
+	for (var i = 0; i < retObj.nonQuoteBlocks.length; ++i)
+		retObj.allBlocks.push({ isQuoteBlock: false, start: retObj.nonQuoteBlocks[i].start, end: retObj.nonQuoteBlocks[i].end });
+	retObj.allBlocks.sort(function(obj1, obj2) {
+		var retVal = 0;
+		if (obj1.start < obj2.start)
+			retVal = -1;
+		else if (obj1.start == obj2.start)
+			retVal = 0;
+		else if (obj1.start > obj2.start)
+			retVal = 1;
+		return retVal;
+	});
+
+	return retObj;
 }
 
 // This function displays debug text at a given location on the screen, then
