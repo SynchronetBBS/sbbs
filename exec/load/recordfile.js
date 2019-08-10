@@ -76,6 +76,7 @@ RecordFile.prototype.Lock = function(rec, timeout)
 
 	do {
 		ret = this.file.lock(rec*this.RecordLength, this.RecordLength);
+		mswait(1);
 	} while (ret === false && new Date() < end);
 
 	if (ret)
