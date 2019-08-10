@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.67
-                        Release date: 2019-07-21
+                              Version 1.68
+                        Release date: 2019-08-09
 
                                   by
 
@@ -213,6 +213,8 @@ Ctrl-L       : Command key list (this list) ¦ /S      : Save
                                             ¦ /Q      : Quote message
 Ctrl-T       : List text replacements       ¦ /T      : List text replacements
                                             ¦ /U      : Your user settings
+                                            ¦ /C      : Cross-post selection
+                                            ¦ /UPLOAD : Upload a message
 
 Command/edit keys
 -----------------
@@ -222,7 +224,7 @@ Ctrl-Q       : Quote message                ¦ Ctrl-W  : Word/text search
 Insert/Ctrl-I: Toggle insert/overwrite mode ¦ Ctrl-D  : Delete line
 Ctrl-R       : Spell checker                ¦ ESC     : Command menu
 Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
-Ctrl-U       : Your user settings
+Ctrl-U       : Your user settings           ¦ Ctrl-C  : Cross-post selection
 Ctrl-S       : Change subject
 
 
