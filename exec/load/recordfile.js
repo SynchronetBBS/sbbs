@@ -72,7 +72,7 @@ RecordFile.prototype.Lock = function(rec, timeout)
 
 	if (timeout === undefined)
 		timeout = 1;
-	end += timeout*1000;
+	end.setTime(end.getTime() + timeout*1000);
 
 	do {
 		ret = this.file.lock(rec*this.RecordLength, this.RecordLength);
