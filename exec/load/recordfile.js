@@ -40,6 +40,7 @@ function RecordFile(filename, definition)
 	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength))
 		return(null);
 	this.__defineGetter__("length", function() {return parseInt(this.file.length/this.RecordLength);});
+	this.locks = [];
 }
 
 function RecordFileRecord(parent, num)
@@ -48,13 +49,67 @@ function RecordFileRecord(parent, num)
 	this.Record=num;
 }
 
-RecordFileRecord.prototype.ReLoad = function(num)
+RecordFileRecord.prototype.ReLoad = function()
 {
 	var i;
 
 	this.parent.file.position=(this.Record)*this.parent.RecordLength;
 	for(i=0; i<this.parent.fields.length; i++)
 		this[this.parent.fields[i].prop]=this.parent.ReadField(this.parent.fields[i].type);
+}
+
+RecordFile.prototype.Lock = function(rec, timeout)
+{
+	var i;
+	var end = new Date();
+	var now;
+	var ret = false;
+
+	if (rec === undefined)
+		return false;
+	if (this.locks.indexOf(rec) != -1)
+		return false;
+
+	if (timeout === undefined)
+		timeout = 1;
+	end += timeout*1000;
+
+	do {
+		ret = this.file.lock(rec*this.RecordLength, this.RecordLength);
+	} while (ret === false && new Date() < end);
+
+	if (ret)
+		this.locks.push(rec);
+
+	return ret;
+}
+
+RecordFile.prototype.UnLock = function(rec)
+{
+	var ret;
+	var lck;
+
+	if (rec === undefined)
+		return false;
+
+	if ((lck = this.locks.indexOf(rec)) == -1)
+		return false;
+
+	ret = this.file.unlock(rec * this.RecordLength, this.RecordLength);
+
+	this.locks.splice(lck, 1);
+
+	return ret;
+}
+
+RecordFileRecord.prototype.UnLock = function()
+{
+	return this.parent.UnLock(this.Record);
+}
+
+RecordFileRecord.prototype.Lock = function(timeout)
+{
+	return this.parent.Lock(this.Record, timeout);
 }
 
 RecordFileRecord.prototype.Put = function()
@@ -95,16 +150,22 @@ RecordFile.prototype.Get = function(num)
 	return(ret);
 }
 
-RecordFile.prototype.New = function()
+RecordFile.prototype.New = function(timeout)
 {
 	var i;
+	var ret;
 
-	var ret = new RecordFileRecord(this, this.length);
+	if (!this.Lock(this.length, timeout))
+		return undefined;
+
+	ret = new RecordFileRecord(this, this.length);
 
 	for(i=0; i<this.fields.length; i++)
 		ret[this.fields[i].prop]=eval(this.fields[i].def.toSource());
 
 	ret.Put();
+	ret.UnLock();
+
 	return(ret);
 }
 
