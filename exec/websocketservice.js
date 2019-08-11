@@ -69,11 +69,12 @@ try {
         } else {
             // If SysOp gave an alternate hostname/port when installing the service, use that instead
 			for(var i in argv) {
-				var port = parseInt(argv[i], 10);
-				if(port > 0)
-					TargetPort = port;
-				else
-					TargetHostname = argv[i];
+                var port = parseInt(argv[i], 10);
+                if (argv[i].search(/\D/) > -1 || port < 0 || port > 65535) {
+                    TargetHostname = argv[i];
+                } else if (!isNaN(port)) {
+                    TargetPort = port;
+                }
             }
         }
         
