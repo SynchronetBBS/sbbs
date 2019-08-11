@@ -62,9 +62,9 @@ function GetSBBSIniValues() {
 				FBBSOptions = f.iniGetValue("BBS", "Options", "");
 				FRLoginPort = f.iniGetValue("BBS", "RLoginPort", -1);
 				FTelnetPort = f.iniGetValue("BBS", "TelnetPort", -1);
-				FGlobalInterface = f.iniGetValue("Global", "Interface", "");
-				FRLoginInterface = f.iniGetValue("BBS", "RLoginInterface", "");
-				FTelnetInterface = f.iniGetValue("BBS", "TelnetInterface", "");
+				FGlobalInterface = f.iniGetValue("Global", "Interface", "").split(',')[0];
+				FRLoginInterface = f.iniGetValue("BBS", "RLoginInterface", "").split(',')[0];
+				FTelnetInterface = f.iniGetValue("BBS", "TelnetInterface", "").split(',')[0];
 				f.close();
 			}
 		} catch (err) {
