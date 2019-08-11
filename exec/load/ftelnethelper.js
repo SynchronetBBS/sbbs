@@ -136,17 +136,22 @@ function UsingSecondRLoginName() {
 	return (FBBSOptions.indexOf("USE_2ND_RLOGIN") !== -1);
 }
 
+function GetInterface(i) {
+	if (['', '0.0.0.0', '::'].indexOf(i) > -1) return 'localhost';
+	return i;
+}
+
 function GetGlobalInterface() {
 	GetSBBSIniValues();
-	return FGlobalInterface == '' ? 'localhost' : FGlobalInterface;
+	return GetInterface(FGlobalInterface);
 }
 
 function GetTelnetInterface() {
 	GetSBBSIniValues();
-	return FTelnetInterface == '' ? GetGlobalInterface() : FTelnetInterface;
+	return GetInterface(FTelnetInterface);
 }
 
 function GetRLoginInterface() {
 	GetSBBSIniValues();
-	return FRLoginInterface == '' ? GetGlobalInterface() : FRLoginInterface;
+	return GetInterface(FRLoginInterface);
 }
