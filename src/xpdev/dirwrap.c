@@ -741,7 +741,7 @@ int removecase(const char *path)
 	}
 	*p=0;
 
-	return(delfiles(inpath,fname) >=1 ? 0 : -1);
+	return(delfiles(inpath,fname,0) >=1 ? 0 : -1);
 }
 #endif
 
