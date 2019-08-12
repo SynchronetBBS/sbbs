@@ -510,7 +510,7 @@ void msgs_cfg()
 								SAFEPRINTF(tmp, "%ssubs/", cfg.data_dir);
 							else
 								SAFECOPY(tmp, cfg.sub[j]->data_dir);
-							delfiles(tmp, str);
+							delfiles(tmp, str, /* keep: */0);
 						}
 					}
 				}

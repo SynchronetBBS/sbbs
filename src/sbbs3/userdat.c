@@ -2489,15 +2489,15 @@ int DLLCALL newuserdat(scfg_t* cfg, user_t* user)
 		return(err);
 
 	SAFEPRINTF2(str,"%sfile/%04u.in",cfg->data_dir,user->number);  /* delete any files */
-	delfiles(str,ALLFILES);                                    /* waiting for user */
+	delfiles(str, ALLFILES, /* keep: */0);                         /* waiting for user */
 	rmdir(str);
 	SAFEPRINTF(tmp,"%04u.*",user->number);
 	SAFEPRINTF(str,"%sfile",cfg->data_dir);
-	delfiles(str,tmp);
+	delfiles(str,tmp, /* keep: */0);
 	SAFEPRINTF(str,"%suser",cfg->data_dir);
-	delfiles(str,tmp);
+	delfiles(str,tmp, /* keep: */0);
 	SAFEPRINTF2(str,"%suser/%04u",cfg->data_dir,user->number);
-	delfiles(str,ALLFILES);
+	delfiles(str,ALLFILES, /* keep: */0);
 	rmdir(str);
 
 	SAFEPRINTF2(str,"%suser/ptrs/%04u.ixb",cfg->data_dir,user->number); /* msg ptrs */

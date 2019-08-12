@@ -310,7 +310,7 @@ void sub_cfg(uint grpnum)
 					if(j==-1)
 						continue;
 					if(j==0)
-						delfiles(data_dir,str);
+						delfiles(data_dir,str, /* keep: */0);
 				}
 			}
 			if(msk == MSK_CUT)
@@ -1458,7 +1458,7 @@ void sub_cfg(uint grpnum)
 										,cfg.grp[cfg.sub[i]->grp]->code_prefix
 										,cfg.sub[i]->code_suffix);
 									strlwr(str2);
-									delfiles(str,str2); 
+									delfiles(str,str2, /* keep: */0); 
 								}
 
 								if(cfg.sub[i]->misc&SUB_HYPER)

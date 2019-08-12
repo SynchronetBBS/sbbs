@@ -327,7 +327,7 @@ void xfer_cfg()
 								sprintf(tmp, "%sdirs/", cfg.data_dir);
 							else
 								strcpy(tmp, cfg.dir[j]->data_dir);
-							delfiles(tmp, str);
+							delfiles(tmp, str, /* keep: */0);
 						}
 					}
 				}
@@ -1105,7 +1105,7 @@ void dir_cfg(uint libnum)
 					if (j == -1)
 						continue;
 					if (j == 0)
-						delfiles(data_dir, str);
+						delfiles(data_dir, str, /* keep: */0);
 				}
 			}
 			if(msk == MSK_CUT)
