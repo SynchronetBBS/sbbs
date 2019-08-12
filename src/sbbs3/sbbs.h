@@ -923,6 +923,7 @@ public:
 	char *	getfilespec(char *str);
 	bool	checkfname(char *fname);
 	bool	addtobatdl(file_t* f);
+	long	delfiles(const char *inpath, const char *spec, size_t keep = 0);
 
 	/* listfile.cpp */
 	bool	listfile(const char *fname, const char *buf, uint dirnum

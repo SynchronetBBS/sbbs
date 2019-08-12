@@ -301,3 +301,11 @@ bool sbbs_t::checkfname(char *fname)
 	}
 	return(true);
 }
+
+long sbbs_t::delfiles(const char *inpath, const char *spec, size_t keep)
+{
+	long result = ::delfiles(inpath, spec, keep);
+	if(result < 0)
+		errormsg(WHERE, ERR_REMOVE, inpath, result, spec);
+	return result;
+}

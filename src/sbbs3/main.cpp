@@ -2689,7 +2689,7 @@ void event_thread(void* arg)
 					sbbs->console|=CON_L_ECHO;
 					sbbs->getusrsubs();
 					bool success = sbbs->unpack_rep(g.gl_pathv[i]);
-					delfiles(sbbs->cfg.temp_dir,ALLFILES);		/* clean-up temp_dir after unpacking */
+					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);		/* clean-up temp_dir after unpacking */
 					sbbs->batch_create_list();	/* FREQs? */
 					sbbs->batdn_total=0;
 					sbbs->online=FALSE;
@@ -2701,7 +2701,6 @@ void event_thread(void* arg)
 							sbbs->errormsg(WHERE, ERR_REMOVE, g.gl_pathv[i], 0);
 					} else {
 						char badpkt[MAX_PATH+1];
-						SAFECOPY(badpkt, g.gl_pathv[i]);
 						SAFEPRINTF2(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
 						remove(badpkt);
 						if(rename(g.gl_pathv[i], badpkt) == 0)
@@ -2758,7 +2757,7 @@ void event_thread(void* arg)
 						remove(bat_list);
 					} else
 						sbbs->lputs(LOG_INFO, "No packet created (no new messages)");
-					delfiles(sbbs->cfg.temp_dir,ALLFILES);
+					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=FALSE;
 				}
@@ -2809,7 +2808,7 @@ void event_thread(void* arg)
 							sbbs->qwk_success(l,0,1);
 							sbbs->putmsgptrs();
 						}
-						delfiles(sbbs->cfg.temp_dir,ALLFILES);
+						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
 						sbbs->online=FALSE;
 					}
@@ -2935,7 +2934,7 @@ void event_thread(void* arg)
 								sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
 									,errno, strerror(errno), str, newname);
 						}
-						delfiles(sbbs->cfg.temp_dir,ALLFILES);
+						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
 						sbbs->online=FALSE;
 						if(remove(str))
@@ -2994,7 +2993,7 @@ void event_thread(void* arg)
 						close(file);
 					}
 				}
-				delfiles(sbbs->cfg.temp_dir,ALLFILES);
+				sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 
 				sbbs->cfg.qhub[i]->last=time32(NULL);
 				SAFEPRINTF(str,"%sqnet.dab",sbbs->cfg.ctrl_dir);
