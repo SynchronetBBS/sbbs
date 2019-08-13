@@ -431,6 +431,7 @@ bool sbbs_t::answer()
 		} else {
 			if(telnet_location[0]) {			/* Telnet Location info provided */
 				lprintf(LOG_INFO, "Telnet Location: %s", telnet_location);
+				SAFECOPY(cid, telnet_location);
 			}
 		}
 		if(telnet_speed) {
