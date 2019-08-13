@@ -227,10 +227,10 @@ int main(int argc, char **argv)
             lastrun=time(NULL);
 			lastrun-=lastrun%86400;
             write(file,&lastrun,sizeof(lastrun)); close(file);
-            delfiles(".","player.*");
-            delfiles(".","gamestat.*");
-            delfiles(".","deck.*");
-            delfiles(".","message.*");
+            delfiles(".","player.*", /* keep: */0);
+            delfiles(".","gamestat.*", /* keep: */0);
+            delfiles(".","deck.*", /* keep: */0);
+            delfiles(".","message.*", /* keep: */0);
             unlink("dpoker.plr");
 			close(file);
 		}
@@ -247,10 +247,10 @@ int main(int argc, char **argv)
             lastrun=time(NULL); lseek(file,0L,SEEK_SET);
 			lastrun-=lastrun%86400;
             write(file,&lastrun,sizeof(lastrun));
-            delfiles(".","player.*");
-            delfiles(".","gamestat.*");
-            delfiles(".","deck.*");
-            delfiles(".","message.*");
+            delfiles(".","player.*", /* keep: */0);
+            delfiles(".","gamestat.*", /* keep: */0);
+            delfiles(".","deck.*", /* keep: */0);
+            delfiles(".","message.*", /* keep: */0);
             unlink("dpoker.plr");
 		}
         close(file);
