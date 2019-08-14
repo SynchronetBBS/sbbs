@@ -140,12 +140,20 @@
  *                              Synchronet, hopefully it should finish faster going
  *                              in reverse.  Also, updated CountPollsInSubBoard() to
  *                              use get_msg_index() if available so that it runs faster.
+ * 2019-08-14 Eric Oulashin     Version 1.03
+ *                              Made use of require() (if available) to load the .js
+ *                              scripts.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
 // sub-boards, which can potentially take a long time
 
-load("sbbsdefs.js");
+const requireFnExists = (typeof(require) === "function");
+
+if (requireFnExists)
+	require("sbbsdefs.js", "K_UPPER");
+else
+	load("sbbsdefs.js");
 
 // This script requires Synchronet version 3.17 or higher.
 // Exit if the Synchronet version is below the minimum.
@@ -186,16 +194,26 @@ if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
 	console.pause();
 }
 
-load("frame.js");
-load("scrollbar.js");
-load("dd_lightbar_menu.js");
-// These next 2 are for avatar support
-load("smbdefs.js");
+if (requireFnExists)
+{
+	require("frame.js", "Frame");
+	require("scrollbar.js", "ScrollBar");
+	require("dd_lightbar_menu.js", "DDLightbarMenu");
+	require("smbdefs.js", "SMB_POLL_ANSWER");
+}
+else
+{
+	load("frame.js");
+	load("scrollbar.js");
+	load("dd_lightbar_menu.js");
+	load("smbdefs.js");
+}
+// For avatar support
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.02";
-var SLYVOTE_DATE = "2019-04-08";
+var SLYVOTE_VERSION = "1.03";
+var SLYVOTE_DATE = "2019-08-14";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
