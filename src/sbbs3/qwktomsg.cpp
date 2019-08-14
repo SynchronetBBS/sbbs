@@ -339,7 +339,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 					||  strnicmp(qwkbuf+k,"From:",5)==0 
 					||  strnicmp(qwkbuf+k,"Subject:",8)==0)))) {
 			if((p=strchr(qwkbuf+k, '\r'))==NULL
-				|| (p=strchr(qwkbuf+k, qwk_newline))==NULL) {
+				&& (p=strchr(qwkbuf+k, qwk_newline))==NULL) {
 				body[bodylen++]=qwkbuf[k];
 				continue;
 			}
