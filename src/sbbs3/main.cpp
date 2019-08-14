@@ -1545,10 +1545,11 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 					&& sbbs->telnet_cmd[sbbs->telnet_cmdlen-2]==TELNET_IAC) {
 
 					if(startup->options&BBS_OPT_DEBUG_TELNET)
-						lprintf(LOG_DEBUG,"Node %d %s telnet sub-negotiation command: %s"
+						lprintf(LOG_DEBUG,"Node %d %s telnet sub-negotiation command: %s (%u bytes)"
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
-							,telnet_opt_desc(option));
+							,telnet_opt_desc(option)
+							,sbbs->telnet_cmdlen);
 
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE
@@ -2716,6 +2717,8 @@ void event_thread(void* arg)
 						else
 							sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
 								,errno, strerror(errno), g.gl_pathv[i], badpkt);
+						SAFEPRINTF(badpkt, "%u.rep.*.bad", sbbs->useron.number);
+						sbbs->delfiles(str, badpkt, /* keep: */10);
 					}
 					if(remove(semfile))
 						sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
@@ -2941,6 +2944,8 @@ void event_thread(void* arg)
 							else
 								sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
 									,errno, strerror(errno), str, newname);
+							SAFEPRINTF(newname, "%s.q??.*.bad", sbbs->cfg.qhub[i]->id);
+							sbbs->delfiles(str, newname, /* keep: */10);
 						}
 						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
