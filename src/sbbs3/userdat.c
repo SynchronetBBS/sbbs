@@ -321,12 +321,12 @@ int DLLCALL parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	getrec(userdat,U_FBACKS,5,str); user->fbacks=atoi(str);
 	getrec(userdat,U_ETODAY,5,str); user->etoday=atoi(str);
 	getrec(userdat,U_PTODAY,5,str); user->ptoday=atoi(str);
-	getrec(userdat,U_ULB,10,str); user->ulb=atol(str);
+	getrec(userdat,U_ULB,10,str); user->ulb=strtoul(str, NULL, 10);
 	getrec(userdat,U_ULS,5,str); user->uls=atoi(str);
-	getrec(userdat,U_DLB,10,str); user->dlb=atol(str);
+	getrec(userdat,U_DLB,10,str); user->dlb=strtoul(str, NULL, 10);
 	getrec(userdat,U_DLS,5,str); user->dls=atoi(str);
-	getrec(userdat,U_CDT,10,str); user->cdt=atol(str);
-	getrec(userdat,U_MIN,10,str); user->min=atol(str);
+	getrec(userdat,U_CDT,10,str); user->cdt=strtoul(str, NULL, 10);
+	getrec(userdat,U_MIN,10,str); user->min=strtoul(str, NULL, 10);
 	getrec(userdat,U_LEVEL,2,str); user->level=atoi(str);
 	getrec(userdat,U_FLAGS1,8,str); user->flags1=ahtoul(str);
 	getrec(userdat,U_FLAGS2,8,str); user->flags2=ahtoul(str);
@@ -354,7 +354,7 @@ int DLLCALL parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	getrec(userdat,U_CURXTRN,8,user->curxtrn);
 
 	getrec(userdat,U_FREECDT,10,str);
-	user->freecdt=atol(str);
+	user->freecdt=strtoul(str, NULL, 10);
 
 	getrec(userdat,U_XEDIT,8,str);
 	for(i=0;i<cfg->total_xedits;i++)
@@ -2105,7 +2105,7 @@ ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, 
 	char str[256],path[256];
 	char tmp[32];
 	int i,c,file;
-	long val;
+	ulong val;
 
 	if(!VALID_CFG(cfg) || usernumber<1)
 		return(0);
@@ -2145,10 +2145,13 @@ ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, 
 	for(c=0;c<length;c++)
 		if(str[c]==ETX || str[c]==CR) break;
 	str[c]=0;
-	val=atol(str);
-	if(adj<0L && val<-adj)		/* don't go negative */
+	val = strtoul(str, NULL, 10);
+	if(adj<0L && val<(ulong)-adj)		/* don't go negative */
 		val=0;
-	else val+=adj;
+	else if(adj > 0 && val + adj < val)
+		val = ULONG_MAX;
+	else
+		val += (ulong)adj;
 	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
 	putrec(str,0,length,ultoa(val,tmp,10));
 	if(write(file,str,length)!=length) {
