@@ -7,10 +7,11 @@
 // @format.tab-size 4, @format.use-tabs true
 
 require("sbbsdefs.js", 'SS_RLOGIN');
-require("text.js", 'SiSysName');
 if(!bbs.mods.avatar_lib)
 	bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
 load("fonts.js", "preload", "default");
+if(!bbs.mods.userprops)
+	bbs.mods.userprops = load({}, "userprops.js");
 var options = load("modopts.js", "logon");
 if(!options)
 	options = {};
@@ -94,15 +95,10 @@ if(user.security.restrictions&UFLAG_G) {
 		bbs.log_str(ref + "\r\n");
 		break;
 	}
-
-//	print("name: " + user.name);
-//	print("email: " + user.netmail);
-//	print("location: " + user.location);
 }
 
-
 // Force split-screen chat on ANSI users
-if(user.settings&USER_ANSI)
+if(console.term_supports(USER_ANSI))
 	user.chat_settings|=CHAT_SPLITP;
 
 // Inactivity exemption
@@ -150,12 +146,12 @@ if(options.fast_logon !== true || !(bbs.sys_status&SS_FASTLOGON)
 
 if(user.security.level==99				/* Sysop logging on */
 	&& !system.matchuser("guest")		/* Guest account does not yet exist */
-	&& user.security.flags4&UFLAG_G		/* Sysop has not asked to stop this question */
+	&& bbs.mods.userprops.get("logon", "makeguest", true) /* Sysop has not asked to stop this question */
 	) {
 	if(console.yesno("Create Guest/Anonymous user account (highly recommended)"))
 		load("makeguest.js");
 	else if(!console.yesno("Ask again later"))
-		user.security.flags4&=~UFLAG_G;	/* Turn off flag 4G to not ask again */
+		bbs.mods.userprops.set("logon", "makeguest", false);
 	console.crlf();
 }
 
