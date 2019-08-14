@@ -148,8 +148,7 @@ if (!paramExists('netmail') && !required(UQ_NONETMAIL)) {
 if (required(UQ_REALNAME) &&
 	(	!paramExists('realname') ||
 		paramLength('realname') < MIN_REALNAME ||
-		paramLength('realname') > LEN_NAME ||
-		!system.check_name(http_request.query.alias[0])
+		paramLength('realname') > LEN_NAME
 	)
 ) {
 	reply.errors.push(locale.strings.api_register.error_invalid_name);
