@@ -533,11 +533,11 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 			return(JS_FALSE);
 	}
 
-	if((buf=malloc(len))==NULL)
+	if((buf=malloc(len + 1))==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(fgets(buf,len,p->fp)!=NULL) {
+	if(fgets(buf,len + 1,p->fp)!=NULL) {
 		len=strlen(buf);
 		while(len>0 && (buf[len-1]=='\r' || buf[len-1]=='\n'))
 			len--;
