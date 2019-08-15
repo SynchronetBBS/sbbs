@@ -321,14 +321,21 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 	if(!strcmp(sp,"LOCATION"))
 		return(cfg.sys_location);
 
-	if(!strcmp(sp,"NODE")) {
+	if(strcmp(sp,"NODE") == 0 || strcmp(sp,"NN") == 0) {
 		safe_snprintf(str,maxlen,"%u",cfg.node_num);
 		return(str);
 	}
-
-	if(!strcmp(sp,"TNODE")) {
+	if(strcmp(sp, "TNODES") == 0 || strcmp(sp, "TNODE") == 0 || strcmp(sp, "TN") == 0) {
 		safe_snprintf(str,maxlen,"%u",cfg.sys_nodes);
 		return(str);
+	}
+	if(strcmp(sp, "ANODES") == 0 || strcmp(sp, "ANODE") == 0 || strcmp(sp, "AN") == 0) {
+		safe_snprintf(str, maxlen, "%u", count_nodes(/* self: */true));
+		return str;
+	}
+	if(strcmp(sp, "ONODES") == 0 || strcmp(sp, "ONODE") == 0 || strcmp(sp, "ON") == 0) {
+		safe_snprintf(str, maxlen, "%u", count_nodes(/* self: */false));
+		return str;
 	}
 
 	if(strcmp(sp, "PAGER") == 0)

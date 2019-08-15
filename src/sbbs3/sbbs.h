@@ -819,6 +819,7 @@ public:
 	void	nodesync(bool clearline = false);
 	user_t	nodesync_user;
 	bool	nodesync_inside;
+	uint	count_nodes(bool self = true);
 
 	/* putnode.cpp */
 	int		putnodedat(uint number, node_t * node);
