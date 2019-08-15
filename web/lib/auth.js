@@ -48,7 +48,7 @@ function setCookie(usr, sessionKey) {
 
 function validateSession(cookies) {
 
-  var usr = new User(0);
+	var usr = new User(0);
 	for (var c in cookies) {
 
 		if (cookies[c].search(/^\d+,\w+$/) < 0) continue;
@@ -72,13 +72,16 @@ function validateSession(cookies) {
 		}
 
 		var _usr = authenticate(usr.alias, usr.security.password);
-    _usr = undefined;
+		_usr = undefined;
 		setCookie(usr, session.key);
 		setSessionValue(usr.number, 'ip_address', client.ip_address);
+		if (session.session_start === undefined || time() - parseInt(session.session_start, 10) > settings.timeout) {
+			setSessionValue(usr.number, 'session_start', time());
+		}
 		break;
 
 	}
-  usr = undefined;
+	usr = undefined;
 
 }
 
@@ -161,12 +164,10 @@ function is_user() {
     	if (usr instanceof User) setCookie(usr, randomString(512));
     // If they have a cookie
     } else if(
-    	typeof http_request.cookie.synchronet !== 'undefined' &&
-    	http_request.cookie.synchronet.some(
-    		function (e) {
-    		 	return(e.search(/^\d+,\w+$/) != -1);
-    		}
-    	)
+		typeof http_request.cookie.synchronet !== 'undefined' &&
+		http_request.cookie.synchronet.some(function (e) {
+			return(e.search(/^\d+,\w+$/) != -1);
+		})
     ) {
     	// Verify & update their session, or log them out if requested
     	if (typeof http_request.query.logout === 'undefined') {
