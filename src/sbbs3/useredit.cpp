@@ -176,7 +176,7 @@ void sbbs_t::useredit(int usernumber)
 			user.number=(ushort)(l&~0x80000000L);
 			continue; 
 		}
-		if(l != '[' && l != ']' && l != '{' && l != '}')
+		if(l != '[' && l != ']' && l != '{' && l != '}' && l != '?')
 			newline();
 		switch(l) {
 			case 'A':
@@ -590,11 +590,7 @@ void sbbs_t::useredit(int usernumber)
 					l*=1024;
 				else if(strstr(str,"$"))
 					l*=cfg.cdt_per_dollar;
-				if(l<0L && l*-1 > (long)user.cdt)
-					user.cdt=0L;
-				else
-					user.cdt+=l;
-				putuserrec(&cfg,user.number,U_CDT,10,ultoa(user.cdt,tmp,10));
+				adjustuserrec(&cfg, user.number, U_CDT, 10, l);
 				break;
 			case '*':
 				bputs(text[ModifyMinutes]);
