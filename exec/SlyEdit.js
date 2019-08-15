@@ -80,6 +80,19 @@
  *                              offline readers etc.
  * 2019-08-09 Eric Oulashin     Version 1.68
  *                              Releasing this version
+ * 2019-08-14 Eric Oulashin     Version 1.69
+ *                              Updated to only use console.inkey() for user input
+ *                              and not use console.getkey() anymore.
+ *                              The change was made in the getUserKey() function
+ *                              in SlyEdit_Misc.js.
+ *                              Also, SlyEdit will now write the editor style
+ *                              (ICE or DCT) to result.ed at the end when a message
+ *                              is saved.  Also, when editing a message, if the cursor
+ *                              is at the end of the last line and the user presses
+ *                              the DEL key, then treat it as a backspace.  Some
+ *                              terminals send a delete for backspace, particularly
+ *                              with keyboards that have a delete key but no backspace
+ *                              key.
  */
 
 /* Command-line arguments:
@@ -176,8 +189,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.68";
-const EDITOR_VER_DATE = "2019-08-09";
+const EDITOR_VERSION = "1.69";
+const EDITOR_VER_DATE = "2019-08-14";
 
 
 // Program variables
@@ -615,7 +628,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 	{
 		dropFile.writeln("0");
 		dropFile.writeln(gMsgSubj);
-		dropFile.writeln(EDITOR_PROGRAM_NAME + " " + EDITOR_VERSION + " (" + EDITOR_VER_DATE + ")");
+		dropFile.writeln(EDITOR_PROGRAM_NAME + " " + EDITOR_VERSION + " (" + EDITOR_VER_DATE + ") (" + EDITOR_STYLE + " style)");
 		dropFile.close();
 	}
 
@@ -1042,6 +1055,15 @@ function doEditLoop()
 	while (continueOn)
 	{
 		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
+
+		// If the cursor is at the end of the last line and the user
+		// pressed the DEL key, then treat it as a backspace.  Some
+		// terminals send a delete for backspace, particularly with
+		// keyboards that have a delete key but no backspace key.
+		var atEndOfLastLine = ((gEditLinesIndex == gEditLines.length - 1) && (gTextLineIndex == gEditLines[gEditLinesIndex].text.length));
+		if (atEndOfLastLine && (userInput == KEY_DEL))
+			userInput = BACKSPACE;
+
 		if (!bbs.online)
 		{
 			var logStr = EDITOR_PROGRAM_NAME + ": User is no longer online (" + user.alias + " on node " + bbs.node_num + ")";
@@ -1068,7 +1090,7 @@ function doEditLoop()
 		// If gEditLines currently has 1 less line than we need,
 		// then add a new line to gEditLines.
 		if (gEditLines.length == gEditLinesIndex)
-		gEditLines.push(new TextLine());
+			gEditLines.push(new TextLine());
 
 		// Take the appropriate action for the key pressed.
 		switch (userInput)

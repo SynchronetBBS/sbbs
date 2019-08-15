@@ -3895,33 +3895,27 @@ function firstLetterIsUppercase(pString)
 //               or console.inkey()).
 function getUserKey(pMode, pCfgObj)
 {
-   var defaultTimeoutMS = 300000;
-   var userKey = "";
+	var userKey = "";
+	var inputTimeoutMS = 300000;
 
-   if (typeof(pCfgObj) == "object")
-   {
-      // If the user is a sysop, don't use an input timeout.
-      if ((typeof(pCfgObj.userIsSysop) == "boolean") && pCfgObj.userIsSysop)
-         userKey = console.getkey(pMode);
-      else if (typeof(pCfgObj.userInputTimeout) == "number")
-         userKey = console.inkey(pMode, pCfgObj.inputTimeoutMS);
-      else
-         userKey = console.inkey(pMode, defaultTimeoutMS);
-   }
-   else if (typeof(pCfgObj) == "boolean")
-   {
-      // pCfgObj is a boolean that specifies whether or not the user is a sysop.
-      // If so, then use console.getkey().  If the user isn't a sysop, use a
-      // timeout of 5 minutes.
-      if (pCfgObj)
-         userKey = console.getkey(pMode);
-      else
-         userKey = console.inkey(pMode, defaultTimeoutMS);
-   }
-   else // pCfgObj is not a known type, so use the default input timeout.
-      userKey = console.inkey(pMode, defaultTimeoutMS);
+	// If the user is a sysop, then use a much higher timeout.
+	if (typeof(pCfgObj) == "object")
+	{
+		if ((typeof(pCfgObj.userIsSysop) == "boolean") && pCfgObj.userIsSysop)
+			inputTimeoutMS = 999999;
+		else if (typeof(pCfgObj.userInputTimeout) == "number")
+			inputTimeoutMS = pCfgObj.inputTimeoutMS;
+	}
+	else if (typeof(pCfgObj) == "boolean")
+	{
+		if (pCfgObj)
+			inputTimeoutMS = 999999;
+	}
 
-   return userKey;
+	// Input a key from the user
+	userKey = console.inkey(pMode, inputTimeoutMS);
+
+	return userKey;
 }
 
 // Gets a string of user input such that each character is validated against a
@@ -5017,7 +5011,7 @@ function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLine
 {
 	console.gotoxy(pDebugX, pDebugY);
 	if (pClearDebugLineFirst)
-	console.clearline();
+		console.clearline();
 	// Output the text
 	console.print(pText);
 	if (pPauseAfter)
