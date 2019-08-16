@@ -120,6 +120,9 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols)
 		}
 		free(buf);
 	} else {	// Line-at-a-time mode
+		uint tmpatr = curatr;
+		if(!(mode&P_SAVEATR))
+			attr(LIGHTGRAY);
 		if(length > PRINTFILE_MAX_LINE_LEN)
 			length = PRINTFILE_MAX_LINE_LEN;
 		if((buf=(char*)malloc(length+1L))==NULL) {
@@ -136,6 +139,8 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols)
 		}
 		free(buf);
 		fclose(stream);
+		if(!(mode&P_SAVEATR))
+			attr(tmpatr);
 	}
 
 	if((mode&P_NOABORT || rip) && online==ON_REMOTE) {
