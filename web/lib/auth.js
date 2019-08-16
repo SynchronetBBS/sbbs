@@ -78,7 +78,7 @@ function validateSession(cookies) {
 		if (session.session_start === undefined || time() - parseInt(session.session_start, 10) > settings.timeout) {
 			setSessionValue(usr.number, 'session_start', time());
 			const logonlist_lib = load({}, 'logonlist_lib.js');
-			logonlist_lib.add({ node: 'W' });
+			logonlist_lib.add({ node: 'Web' });
 		}
 		break;
 
