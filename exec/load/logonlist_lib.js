@@ -22,11 +22,12 @@ function add(obj)
 		obj.user.limits = undefined;
 		obj.user.security = undefined;
 	}
-	if(obj.node === undefined && js.global.bbs !== undefined)
-		obj.node = bbs.node_num;
-	if(obj.total === undefined)
-		obj.total = system.stats.total_logons;
-
+	if(js.global.bbs !== undefined) {
+		if(obj.node === undefined)
+			obj.node = bbs.node_num;
+		if(obj.total === undefined)
+			obj.total = system.stats.total_logons;
+	}
 	if(obj.terminal === undefined
 		&& js.global.console !== undefined) {
 		obj.terminal =  { 
