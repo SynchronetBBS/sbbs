@@ -72,6 +72,7 @@ OpenWeatherMap.prototype.call_api = function (endpoint, params, raw) {
     if (!this.rate_limit()) return { error: 'Rate limit exceeded' };
 
     var url = 'http://api.openweathermap.org/data/2.5/' + endpoint;
+    if (params.mode === undefined) params.mode = 'json';
     url += Object.keys(params).reduce(function (a, c, i) {
         return a + (i == 0 ? '?' : '&') + c + '=' + params[c];
     }, '');
