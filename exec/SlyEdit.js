@@ -93,6 +93,11 @@
  *                              terminals send a delete for backspace, particularly
  *                              with keyboards that have a delete key but no backspace
  *                              key.
+ * 2019-08-15 Eric Oulashin     Version 1.70
+ *                              Fix for a bug introduced in the flowing-line update in 1.68
+ *                              where some quote blocks were sometimes not being included when
+ *                              saving a message.  Also, quote lines are now wrapped
+ *                              to the user's terminal width rather than 80 columns.
  */
 
 /* Command-line arguments:
@@ -189,8 +194,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.69";
-const EDITOR_VER_DATE = "2019-08-14";
+const EDITOR_VERSION = "1.70";
+const EDITOR_VER_DATE = "2019-08-15";
 
 
 // Program variables
@@ -2789,7 +2794,8 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 			gQuoteLinesTopIndex = 0;
 
 			// Update the quote line prefix text and wrap the quote lines
-			var maxQuoteLineLength = 79;
+			//var maxQuoteLineLength = 79;
+			var maxQuoteLineLength = console.screen_columns - 1;
 			setQuotePrefix();
 			if (gConfigSettings.reWrapQuoteLines)
 			{

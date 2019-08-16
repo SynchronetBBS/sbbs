@@ -4884,8 +4884,6 @@ function centeredText(pWidth, pText)
 //               end: One past the end index of the non-quote block
 function findNonQuoteBlockIndexes(pTextLines)
 {
-	// TODO: findQuoteAndNonQuoteBlockIndexes() isn't identifying non-quote
-	// blocks when there is a single line in a non-quote block.
 	if (typeof(pTextLines) != "object")
 		return [];
 	if (pTextLines.length == 0)
@@ -4921,6 +4919,59 @@ function findNonQuoteBlockIndexes(pTextLines)
 	return nonQuoteBlockIdxes;
 }
 
+// Finds start & end indexes of quote blocks in the message lines.
+//
+// Parameters:
+//  pTextLines: The array of message lines
+//
+// Return value: An array of objects containing the following properties:
+//               start: The start index of a non-quote block
+//               end: One past the end index of the non-quote block
+//               prefix: The string prefix for the quote block
+function findQuoteBlockIndexes(pTextLines)
+{
+	if (typeof(pTextLines) != "object")
+		return [];
+	if (pTextLines.length == 0)
+		return [];
+	// Edge case: If there's only one line and if it's a quote block, then
+	// return an array with an element about it.
+	else if (pTextLines.length == 1)
+		return (pTextLines[0].isQuoteLine ? [{ start: 0, end: 1}] : []);
+
+	var quoteBlockIdxes = [];
+	var startIdx = 0;
+	var lastEndIdx = 0;
+	var inQuoteBlock = pTextLines[0].isQuoteLine;
+	for (var i = 1; i < pTextLines.length; ++i)
+	{
+		if (pTextLines[i].isQuoteLine != inQuoteBlock)
+		{
+			if (!pTextLines[i].isQuoteLine)
+			{
+				quoteBlockIdxes.push({ start: startIdx, end: i });
+				lastEndIdx = i;
+			}
+			else
+				startIdx = i;
+			inQuoteBlock = pTextLines[i].isQuoteLine;
+		}
+	}
+	// Edge case: If the last line in the array is a quote block, then ensure
+	// the last non-quote block is added to quoteBlockIdxes
+	if (pTextLines[pTextLines.length-1].isQuoteLine)
+		quoteBlockIdxes.push({ start: startIdx, end: pTextLines.length });
+
+	// Find the common prefixes in each quote block
+	for (var quoteBlockI = 0; quoteBlockI < quoteBlockIdxes.length; ++quoteBlockI)
+	{
+		var linePrefix = commonEditLinesPrefix(pTextLines, quoteBlockIdxes[quoteBlockI].start, quoteBlockIdxes[quoteBlockI].end, ">", true);
+		quoteBlockIdxes[quoteBlockI].prefix = linePrefix;
+	}
+
+	return quoteBlockIdxes;
+}
+
 // Finds start & end indexes of quote blocks and non-quote blocks in the message lines.
 //
 // Parameters:
@@ -4930,6 +4981,7 @@ function findNonQuoteBlockIndexes(pTextLines)
 //               quoteBlocks: An array of objects containing the following properties:
 //                            start: The start index of a quote block
 //                            end: One past the end index of the quote block
+//                            prefix: The string prefix for the quote block
 //               nonQuoteBlocks: An array of objects containing the following properties:
 //                               start: The start index of a non-quote block
 //                               end: One past the end index of the non-quote block
@@ -4941,46 +4993,15 @@ function findNonQuoteBlockIndexes(pTextLines)
 function findQuoteAndNonQuoteBlockIndexes(pTextLines)
 {
 	var retObj = {
-		quoteBlocks: [],
+		quoteBlocks: findQuoteBlockIndexes(pTextLines),
 		nonQuoteBlocks: findNonQuoteBlockIndexes(pTextLines),
 		allBlocks: []
 	};
 
-	// Edge case: If there's only one line and if it's a quote block, then
-	// return an array with an element about it.
-	if (pTextLines.length == 1)
-	{
-		if (pTextLines[0].isQuoteLine)
-		{
-			retObj.quoteBlocks.push({ start: 0, end: 1});
-			retObj.allBlocks.push({ isQuoteBlock: true, start: 0, end: 1});
-		}
-		else
-			retObj.allBlocks.push({ isQuoteBlock: false, start: retObj.nonQuoteBlocks[0].start, end: retObj.nonQuoteBlocks[0].end});
-		return retObj;
-	}
-
-	for (var nonQuoteBlockI = 0; nonQuoteBlockI < retObj.nonQuoteBlocks.length; ++nonQuoteBlockI)
-	{
-		if ((nonQuoteBlockI == 0) && (retObj.nonQuoteBlocks[nonQuoteBlockI].start > 0))
-			retObj.quoteBlocks.push({start: 0, end: retObj.nonQuoteBlocks[nonQuoteBlockI].start});
-		else if (nonQuoteBlockI < retObj.nonQuoteBlocks.length - 1)
-		{
-			var nextI = nonQuoteBlockI + 1;
-			//retObj.quoteBlocks.push({start: retObj.nonQuoteBlocks[nonQuoteBlockI].end+1, end: retObj.nonQuoteBlocks[nextI].start});
-			retObj.quoteBlocks.push({start: retObj.nonQuoteBlocks[nonQuoteBlockI].end, end: retObj.nonQuoteBlocks[nextI].start});
-		}
-		else if (nonQuoteBlockI == retObj.nonQuoteBlocks.length - 1)
-		{
-			if (retObj.nonQuoteBlocks[nonQuoteBlockI].end < pTextLines.length)
-				retObj.quoteBlocks.push({start: retObj.nonQuoteBlocks[nonQuoteBlockI].end+1, end: pTextLines.length});
-		}
-	}
-
 	// Go through both the quote and non-quote blocks and populate allBlocks.
 	// Then sort allBlocks (by start index, which should be goood enough to sort with).
 	for (var i = 0; i < retObj.quoteBlocks.length; ++i)
-		retObj.allBlocks.push({ isQuoteBlock: true, start: retObj.quoteBlocks[i].start, end: retObj.quoteBlocks[i].end });
+		retObj.allBlocks.push({ isQuoteBlock: true, start: retObj.quoteBlocks[i].start, end: retObj.quoteBlocks[i].end, prefix: retObj.quoteBlocks[i].prefix });
 	for (var i = 0; i < retObj.nonQuoteBlocks.length; ++i)
 		retObj.allBlocks.push({ isQuoteBlock: false, start: retObj.nonQuoteBlocks[i].start, end: retObj.nonQuoteBlocks[i].end });
 	retObj.allBlocks.sort(function(obj1, obj2) {
@@ -4995,6 +5016,86 @@ function findQuoteAndNonQuoteBlockIndexes(pTextLines)
 	});
 
 	return retObj;
+}
+
+function commonPrefixUtil(pStr1, pStr2)
+{
+	var result = "";
+
+	var n1 = pStr1.length;
+	var n2 = pStr2.length;
+
+	for (var i = 0, j = 0; (i <= n1 - 1) && (j <= n2 - 1); ++i, ++j)
+	{
+		if (pStr1.charAt(i) != pStr2.charAt(j))
+			break;
+		else
+			result += pStr1.charAt(i);
+	}
+
+	return result;
+}
+
+function commonPrefix(pStringArr, pLastPrefixChar, lastCharShouldBeSpace)
+{
+	if (pStringArr.length == 0)
+		return "";
+
+	var prefix = pStringArr[0];
+	for (var i = 1; i < pStringArr.length; ++i)
+		prefix = commonPrefixUtil(prefix, pStringArr[i]);
+
+	if (typeof(pLastPrefixChar) == "string")
+	{
+		var idx = prefix.lastIndexOf(pLastPrefixChar);
+		if (idx > -1)
+			prefix = prefix.substr(0, idx+1);
+	}
+
+	if ((prefix.length > 0) && lastCharShouldBeSpace)
+	{
+		if (prefix.charAt(prefix.length-1) != " ")
+			prefix += " ";
+	}
+
+	return prefix;
+}
+
+function commonEditLinesPrefix(pEditLines, pStartIdx, pEndIdx, pLastPrefixChar, lastCharShouldBeSpace)
+{
+	if (pEditLines.length == 0)
+		return "";
+
+	if ((pStartIdx < 0) || (pStartIdx >= pEditLines.length) || (pEndIdx < 0) || (pEndIdx >= pEditLines.length))
+		return "";
+
+	// Look for the first non-blank line and set that as the prefix
+	var prefix = "";
+	for (var i = pStartIdx; (i < pEndIdx) && (prefix.length == 0); ++i)
+	{
+		if (pEditLines[i].text.length > 0)
+			prefix = pEditLines[i].text;
+	}
+	for (var i = pStartIdx+1; i < pEndIdx; ++i)
+	{
+		if (pEditLines[i].text.length > 0)
+			prefix = commonPrefixUtil(prefix, pEditLines[i].text);
+	}
+
+	if (typeof(pLastPrefixChar) == "string")
+	{
+		var idx = prefix.lastIndexOf(pLastPrefixChar);
+		if (idx > -1)
+			prefix = prefix.substr(0, idx+1);
+	}
+
+	if ((prefix.length > 0) && lastCharShouldBeSpace)
+	{
+		if (prefix.charAt(prefix.length-1) != " ")
+			prefix += " ";
+	}
+
+	return prefix;
 }
 
 // This function displays debug text at a given location on the screen, then
