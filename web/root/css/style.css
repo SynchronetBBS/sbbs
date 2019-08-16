@@ -77,8 +77,12 @@ pre.list {
 }
 
 .list-group-item.sidebar {
-	overflow : hidden;
-	word-wrap : break-word;
+	overflow: hidden;
+	word-wrap: break-word;
+}
+
+.list-group-item.sidebar:empty {
+	display: none;
 }
 
 .icon {
