@@ -77,6 +77,8 @@ function validateSession(cookies) {
 		setSessionValue(usr.number, 'ip_address', client.ip_address);
 		if (session.session_start === undefined || time() - parseInt(session.session_start, 10) > settings.timeout) {
 			setSessionValue(usr.number, 'session_start', time());
+			const logonlist_lib = load({}, 'logonlist_lib.js');
+			logonlist_lib.add({ node: 'W' });
 		}
 		break;
 
@@ -152,19 +154,23 @@ function is_user() {
 
 (function () {
     // If someone is trying to log in
-    if (typeof http_request.query.username !== 'undefined' &&
+    if (http_request.query.username !== undefined &&
     	http_request.query.username[0].length <= LEN_ALIAS &&
-    	typeof http_request.query.password != 'undefined' &&
+    	http_request.query.password !== undefined &&
     	http_request.query.password[0].length <= LEN_PASS
     ) {
     	var usr = authenticate(
     		http_request.query.username[0],
     		http_request.query.password[0]
     	);
-    	if (usr instanceof User) setCookie(usr, randomString(512));
+		if (usr instanceof User) {
+			destroySession(http_request.cookie.synchronet || {});
+			setCookie(usr, randomString(512));
+		}
+		usr = undefined;
     // If they have a cookie
-    } else if(
-		typeof http_request.cookie.synchronet !== 'undefined' &&
+    } else if (
+		http_request.cookie.synchronet !== undefined &&
 		http_request.cookie.synchronet.some(function (e) {
 			return(e.search(/^\d+,\w+$/) != -1);
 		})
