@@ -457,6 +457,13 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return(nulstr);
 	}
 
+	if(strncmp(sp, "FILL:", 5) == 0) {
+		sp += 5;
+		while(*sp && online && column < cols - 1)
+			bputs(sp, P_TRUNCATE);
+		return nulstr;
+	}
+
 	if(strncmp(sp, "POS:", 4) == 0) {	// PCBoard	(nn is 1 based)
 		i = atoi(sp + 4);
 		if(i >= 1)	// Convert to 0-based
