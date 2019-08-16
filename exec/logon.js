@@ -7,8 +7,11 @@
 // @format.tab-size 4, @format.use-tabs true
 
 require("sbbsdefs.js", 'SS_RLOGIN');
+require("nodedefs.js", 'NODE_QUIET');
 if(!bbs.mods.avatar_lib)
 	bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
+if(!bbs.mods.logonlist_lib)
+	bbs.mods.logonlist_lib = load({}, 'logonlist_lib.js');
 load("fonts.js", "preload", "default");
 if(!bbs.mods.userprops)
 	bbs.mods.userprops = load({}, "userprops.js");
@@ -158,14 +161,9 @@ if(user.security.level==99				/* Sysop logging on */
 // Last few callers
 console.aborted=false;
 console.clear(LIGHTGRAY);
-logonlst=system.data_dir + "logon.lst"
-if(file_size(logonlst)<1)
-	printf("\1n\1g\1hYou are the first caller of the day!\r\n");
-else {
-	printf("\1n\1g\1hLast few callers:\1n\r\n");
-	console.printtail(logonlst, options.last_few_callers, P_NOATCODES|P_TRUNCATE|P_NOABORT);
-}
-console.crlf();
+bbs.exec("?logonlist -l");
+if(bbs.node_status != NODE_QUIET && ((system.settings&SYS_SYSSTAT) || !user.is_sysop))
+	bbs.mods.logonlist_lib.add();
 
 // Auto-message
 auto_msg=system.data_dir + "msgs/auto.msg"
