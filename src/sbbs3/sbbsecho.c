@@ -3251,21 +3251,7 @@ static short fmsgzone(const char* p)
 	val+=atoi(min);
 
 	if(west)
-		switch(val|US_ZONE) {
-			case AST:
-			case EST:
-			case CST:
-			case MST:
-			case PST:
-			case YST:
-			case HST:
-			case BST:
-				/* standard US timezone */
-				return(val|US_ZONE);
-			default:
-				/* non-standard timezone */
-				return(-val);
-		}
+		return(-val);
 	return(val);
 }
 
