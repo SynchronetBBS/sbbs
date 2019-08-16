@@ -185,6 +185,9 @@ var CNF = new (function() {
 	this.read = function(fileName,struct) {
 		if(!struct) {
 			switch(file_getname(fileName).toLowerCase()) {
+				case "main.cnf":
+					struct = js.global.struct.main;
+					break;
 				case "xtrn.cnf":
 					struct = js.global.struct.xtrn;
 					break;
@@ -212,6 +215,9 @@ var CNF = new (function() {
 	this.write = function(fileName,struct,data) {
 		if(!struct) {
 			switch(file_getname(fileName).toLowerCase()) {
+				case "main.cnf":
+					struct = js.global.struct.main;
+					break;
 				case "xtrn.cnf":
 					struct = js.global.struct.xtrn;
 					break;
