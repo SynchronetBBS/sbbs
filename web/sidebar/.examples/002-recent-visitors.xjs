@@ -1,0 +1,17 @@
+<?xjs const logonlist_lib = load({}, 'logonlist_lib.js'); ?>
+
+<h4>Recent Visitors</h4>
+<ul class="list-group">
+    <?xjs logonlist_lib.get(0).forEach(function (e) { ?>
+        <li class="list-group-item striped">
+            <strong><? write(e.user.alias); ?></strong>
+            <br>
+            <em><? write(new Date(e.time * 1000).toLocaleString()); ?></em>
+            <br>
+            <?xjs if (e.user.location != '') { ?>
+                from <strong><? write(e.user.location); ?></strong>
+            <?xjs } ?>
+            via <strong><? write(e.user.connection); ?></strong>
+        </li>
+    <?xjs }); ?>
+</ul>
