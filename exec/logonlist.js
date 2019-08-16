@@ -1,7 +1,14 @@
 // $Id$
 
 // Logon List module (replaces old hard-coded logon.lst)
+
 // Install with 'jsexec logonlist install'
+// ... also, for all command shells (exec/*.src files), replace:
+//     userlist_logons
+// with:
+//     exec_bin logonlist
+//
+// ... and then run 'jsexec update'
 
 "use strict";
 
@@ -50,7 +57,6 @@ if(argv.indexOf('-m') >= 0) { // maintenance (daily)
 	exit();
 }
 
-require("text.js", 'LastFewCallersFmt');
 var days_ago = 0;
 var day = options.today || "Today";
 if(argv.indexOf('-y') >= 0)
@@ -66,7 +72,9 @@ function print(hdr, num, days_ago)
 	for(var i in list) {
 		var record = list[i];
 		var date = new Date(record.time * 1000);
-		console.print(format(bbs.text(LastFewCallersFmt)
+		console.print(format(options.last_few_callers_fmt || 
+			"\r\n\x01n\x01h\x01m%-2s \x01n\x01m%-6u \x01w\x01h%-25.25s \x01m%-25.25s" +
+			"\x01n\x01m%02u:%02u \x01h%-8.8s \x01n\x01m%3d"
 			,record.node
 			,record.total
 			,record.user.alias
