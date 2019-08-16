@@ -1,8 +1,13 @@
-<?xjs const logonlist_lib = load({}, 'logonlist_lib.js'); ?>
+<?xjs
+    const logonlist_lib = load({}, 'logonlist_lib.js');
+    var options = load("modopts.js", "logonlist");
+    if  (!options) options = {};
+    if (options.last_few_callers === undefined) options.last_few_callers = 4;
+?>
 
 <h4><? locale.write('label_title', 'sidebar_recent_visitors'); ?></h4>
 <ul class="list-group">
-    <?xjs logonlist_lib.get(0).forEach(function (e) { ?>
+    <?xjs logonlist_lib.get(options.last_few_callers).reverse().forEach(function (e) { ?>
         <li class="list-group-item striped">
             <strong><? write(e.user.alias); ?></strong>
             <br>
