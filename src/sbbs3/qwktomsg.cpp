@@ -54,6 +54,10 @@ static bool qwk_parse_header_list(sbbs_t* sbbs, ulong confnum, smbmsg_t* msg, st
 			return false;
 		}
 	}
+	if((p=iniPopKey(headers,ROOT_SECTION,"utf8",value))!=NULL) {
+		if(stricmp(value,"true") == 0)
+			msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
+	}
 
 	if((p=iniPopKey(headers,ROOT_SECTION,"WhenWritten",value))!=NULL) {
 		xpDateTime_t dt=isoDateTimeStr_parse(p);
