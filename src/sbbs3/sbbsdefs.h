@@ -436,6 +436,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QWK_MSGID	(1L<<14)		/* Include "@MSGID" in msgs				*/
 #define QWK_HEADERS	(1L<<16)		/* Include HEADERS.DAT file				*/
 #define QWK_VOTING	(1L<<17)		/* Include VOTING.DAT					*/
+#define QWK_UTF8	(1L<<18)		/* Include UTF-8 characters				*/
 
 #define QWK_DEFAULT	(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL)
 
@@ -447,6 +448,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QHUB_NOKLUDGES	(1<<14)		/* Don't include @-kludges */
 #define QHUB_NOHEADERS	(1<<16)		/* Don't include HEADERS.DAT */
 #define QHUB_NOVOTING	(1<<17)		/* Don't include VOTING.DAT */
+#define QHUB_UTF8		(1<<18)		/* Include UTF-8 characters */
 
 							/* Bits in user.chat							*/
 #define CHAT_ECHO	(1<<0)	/* Multinode chat echo							*/

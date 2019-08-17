@@ -139,7 +139,7 @@ const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf
 	if(msg == NULL || !(msg->hdr.auxattr & MSG_HFIELDS_UTF8))
 		return str;
 
-	if(can_utf8 && term_supports(UTF8))
+	if(can_utf8)
 		return str;
 
 	if(buf == NULL)

@@ -91,23 +91,23 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	uint	reason;
 
 	if(remsg) {
-		SAFECOPY(title, msghdr_field(remsg, remsg->subj, NULL, /* UTF8: */true));
+		SAFECOPY(title, msghdr_field(remsg, remsg->subj, NULL, term_supports(UTF8)));
 		if(remsg->hdr.attr&MSG_ANONYMOUS)
 			SAFECOPY(from,text[Anonymous]);
 		else
-			SAFECOPY(from, msghdr_field(remsg, remsg->from, NULL, /* UTF8: */true));
+			SAFECOPY(from, msghdr_field(remsg, remsg->from, NULL, term_supports(UTF8)));
 		// If user posted this message, reply to the original recipient again
 		if(remsg->to != NULL
 			&& ((remsg->from_ext != NULL && atoi(remsg->from_ext)==useron.number)
 				|| stricmp(useron.alias,remsg->from) == 0 || stricmp(useron.name,remsg->from) == 0))
-			SAFECOPY(touser, msghdr_field(remsg, remsg->to, NULL, /* UTF8: */true));
+			SAFECOPY(touser, msghdr_field(remsg, remsg->to, NULL, term_supports(UTF8)));
 		else
 			SAFECOPY(touser,from);
 		msgattr=(ushort)(remsg->hdr.attr&MSG_PRIVATE);
 		sprintf(top,text[RegardingByToOn]
 			,title
 			,from
-			,msghdr_field(remsg, remsg->to, NULL, /* UTF8: */true)
+			,msghdr_field(remsg, remsg->to, NULL, term_supports(UTF8))
 			,timestr(remsg->hdr.when_written.time)
 			,smb_zonestr(remsg->hdr.when_written.zone,NULL));
 		if(remsg->tags != NULL)

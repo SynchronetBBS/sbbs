@@ -483,10 +483,12 @@ void sbbs_t::qwk_sec()
 					,useron.qwk&QWK_VIA ? text[Yes]:text[No]);
 				bprintf(text[QWKSettingsMsgID]
 					,useron.qwk&QWK_MSGID ? text[Yes]:text[No]);
+				bprintf(text[QWKSettingsUtf8]
+					,useron.qwk&QWK_UTF8 ? text[Yes]:text[No]);
 				bprintf(text[QWKSettingsExtended]
 					,useron.qwk&QWK_EXT ? text[Yes]:text[No]);
 				bputs(text[QWKSettingsWhich]);
-				ch=(char)getkeys("AEDFHIOPQTYMNCXZV",0);
+				ch=(char)getkeys("AEDFHIOPQTUYMNCXZV",0);
 				if(sys_status&SS_ABORT || !ch || ch=='Q' || !online)
 					break;
 				switch(ch) {
@@ -554,6 +556,9 @@ void sbbs_t::qwk_sec()
 						break;
 					case 'X':	/* QWKE */
 						useron.qwk^=QWK_EXT;
+						break;
+					case 'U':
+						useron.qwk^=QWK_UTF8;
 						break;
 				}
 				putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
