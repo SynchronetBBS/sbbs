@@ -25,7 +25,11 @@ function v4_get(url) {
 function v4_post(url, data) {
 	const fd = new URLSearchParams();
 	for (let e in data) {
-		fd.append(e, data[e]);
+		if (Array.isArray(data[e])) {
+			data[e].forEach(ee => fd.append(e, ee));
+		} else {
+			fd.append(e, data[e]);
+		}
 	}
 	return v4_fetch(url, 'POST', fd);
 }
