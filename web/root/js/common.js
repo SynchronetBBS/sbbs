@@ -47,7 +47,7 @@ async function login(evt) {
 }
 
 async function logout() {
-	const res = await v4_get('./api/auth.ssjs?logout=true');
+	const res = await v4_post('./api/auth.ssjs', { logout: true });
 	if (!res.authenticated) window.location.href = '/';
 }
 
