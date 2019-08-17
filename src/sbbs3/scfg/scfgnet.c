@@ -823,6 +823,7 @@ void qhub_edit(int num)
 		sprintf(opt[i++],"%-27.27s%s","Include Kludge Lines", cfg.qhub[num]->misc&QHUB_NOKLUDGES ? "No":"Yes");
 		sprintf(opt[i++],"%-27.27s%s","Include VOTING.DAT File", cfg.qhub[num]->misc&QHUB_NOVOTING ? "No":"Yes");
 		sprintf(opt[i++],"%-27.27s%s","Include HEADERS.DAT File", cfg.qhub[num]->misc&QHUB_NOHEADERS ? "No":"Yes");
+		sprintf(opt[i++],"%-27.27s%s","Include UTF-8 Characters", cfg.qhub[num]->misc&QHUB_UTF8 ? "Yes":"No");
 		sprintf(opt[i++],"%-27.27s%s","Extended (QWKE) Packets", cfg.qhub[num]->misc&QHUB_EXT ? "Yes":"No");
 		sprintf(opt[i++],"%-27.27s%s","Exported Ctrl-A Codes"
 			,cfg.qhub[num]->misc&QHUB_EXPCTLA ? "Expand" : cfg.qhub[num]->misc&QHUB_RETCTLA ? "Leave in" : "Strip");
@@ -1026,10 +1027,14 @@ void qhub_edit(int num)
 				uifc.changes=1;
 				break;
 			case 10:
-				cfg.qhub[num]->misc^=QHUB_EXT;
+				cfg.qhub[num]->misc^=QHUB_UTF8;
 				uifc.changes=1;
 				break;
 			case 11:
+				cfg.qhub[num]->misc^=QHUB_EXT;
+				uifc.changes=1;
+				break;
+			case 12:
 				i = cfg.qhub[num]->misc&QHUB_CTRL_A;
 				i++;
 				if(i == QHUB_CTRL_A) i = 0;
@@ -1037,10 +1042,10 @@ void qhub_edit(int num)
 				cfg.qhub[num]->misc |= i;
 				uifc.changes=1;
 				break;
-			case 12:
+			case 13:
 				import_qwk_conferences(num);
 				break;
-			case 13:
+			case 14:
 				qhub_sub_edit(num);
 				break; 
 		} 
