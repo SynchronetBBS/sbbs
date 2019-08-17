@@ -67,11 +67,10 @@
         window.location.reload();
     };
 
-    function launchXtrn(code) {
-        $.getJSON('./api/system.ssjs?call=set-xtrn-intent&code=' + code, function(data) {
-            fTelnet._Options.RLoginTerminalType = 'xtrn=' + code;
-            fTelnet.Connect();
-        });
+    async function launchXtrn(code) {
+        await v4_get('./api/system.ssjs?call=set-xtrn-intent&code=' + code);
+        fTelnet._Options.RLoginTerminalType = 'xtrn=' + code;
+        fTelnet.Connect();
     }
 
     var xtrn = <?xjs write(JSON.stringify(xtrn)); ?>;

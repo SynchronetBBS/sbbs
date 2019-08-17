@@ -62,17 +62,14 @@
         });
     }
 
-    function deleteSelectedMail() {
-        var numbers = [];
+    async function deleteSelectedMail() {
+        const numbers = [];
         $('input.mail-select:checked').each(function () {
             numbers.push($(this).attr('id').split('-')[1]);
         });
-        $.getJSON('./api/forum.ssjs?call=delete-mail&number=' + numbers.join('&number='), function (data) {
-            if (!data.success) return;
-            numbers.forEach(function (e) {
-                $('#li-' + e).remove();
-            });
-        });
+        const data = await v4_get('./api/forum.ssjs?call=delete-mail&number=' + numbers.join('&number='));
+        if (!data.success) return;
+        numbers.forEach(e => $('#li-' + e).remove());
     }
 
 </script>
