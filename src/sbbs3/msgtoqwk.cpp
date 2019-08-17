@@ -130,7 +130,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 	else if(hdrs!=NULL) {
 		fprintf(hdrs,"[%lx]\n",offset);
 
-		fprintf(voting , "Utf8 = %s\n"
+		fprintf(hdrs,"Utf8 = %s\n"
 			,((smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8)) && (mode&QM_UTF8))
 				? "true" : "false");
 
