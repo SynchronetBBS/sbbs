@@ -84,16 +84,14 @@
 
     <?xjs if (settings.nodelist_ibbs) { ?>
         function _send_ibbs_telegram(sys, host, user) {
-            function send_ibbs_tg(evt) {
+            async function send_ibbs_tg(evt) {
                 if (typeof evt !== 'undefined') evt.preventDefault();
-                $.getJSON(
-                    './api/sbbsimsg.ssjs?call=send_telegram'
-                    + '&username=' + user
-                    + '&host=' + host
-                    + '&message=' + $('#telegram').val(),
-                    function (data) {
-                    }
-        		);
+                await v4_post('./api/sbbsimsg.ssjs', {
+                    call: 'send_telegram',
+                    username: user,
+                    host: host,
+                    message: $('#telegram').val()
+                });
                 $('#popUpModal').modal('hide');
         	};
             $('#popUpModalTitle').html('Send a telegram to ' + user + '@' + sys);
