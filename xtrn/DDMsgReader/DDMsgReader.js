@@ -28,6 +28,17 @@
  * 2019-07-26 Eric Oulashin     Started working on supporting utf-8 text conversion to cp437.
  * 2019-07-27 Eric Oulashin     Version 1.23
  *                              Releasing this version
+ * 2019-08-15 Eric Oulashin     Version 1.24 Beta
+ *                              When making a private reply on local email,
+ *                              an error is now outputted if the recipient's
+ *                              user number is not found.
+ *                              Also, fixed an 'undefined' bug that happened when searching
+ *                              for messages sometimes.  searchMsgbase() referenced
+ *                              this.subBoardCode, but that function isn't
+ *                              part of an object, so this.subBoardCode isn't available
+ *                              there.
+ * 2019-08-17 Eric Oulashin     Verison 1.24
+ *                              Releasing this version
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -125,8 +136,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.23";
-var READER_DATE = "2019-07-27";
+var READER_VERSION = "1.24";
+var READER_DATE = "2019-08-17";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1413,18 +1424,31 @@ function DigDistMsgReader_GetMsgIdx(pHdrOrMsgNum)
 			msgIdx = -1;
 	}
 	else
+		msgIdx = msgNumToIdxFromMsgbase(this.subBoardCode, msgNum);
+	return msgIdx;
+}
+
+// Given a sub-board code and message number, this function gets the index
+// of that message from the Synchronet messagebase.  Returns -1 if not found.
+//
+// Parameters:
+//  pSubCode: The sub-board code
+//  pMsgNum: The message number
+//
+// Return value: The index of the message, or -1 if not found.
+function msgNumToIdxFromMsgbase(pSubCode, pMsgNum)
+{
+	var msgIdx = -1;
+
+	var msgbase = new MsgBase(pSubCode);
+	if (msgbase.open())
 	{
-		var msgbase = new MsgBase(this.subBoardCode);
-		if (msgbase.open())
-		{
-			var msgHdr =  msgbase.get_msg_header(false, msgNum, false);
-			if (msgHdr != null)
-				msgIdx = msgHdr.offset;
-			msgbase.close();
-		}
-		else
-			msgIdx = -1;
+		var msgHdr =  msgbase.get_msg_header(false, pMsgNum, false);
+		if (msgHdr != null)
+			msgIdx = msgHdr.offset;
+		msgbase.close();
 	}
+
 	return msgIdx;
 }
 
@@ -1575,8 +1599,8 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode)
 		}
 		else
 		{
-			// List/read messages
-			this.ReadOrListSubBoard(pSubBoardCode);
+			//this.ReadOrListSubBoard(pSubBoardCode);
+			this.ReadOrListSubBoard(subCode);
 			// Clear the search data so that subsequent listing or reading sessions
 			// don't repeat the same search
 			this.ClearSearchData();
@@ -9124,9 +9148,10 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 //                              the user replied to it
 function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 {
-	var retObj = new Object();
-	retObj.sendSucceeded = true;
-	retObj.msgWasDeleted = false;
+	var retObj = {
+		sendSucceeded: true,
+		msgWasDeleted: false
+	};
 	
 	if (pMsgHdr == null)
 	{
@@ -9176,8 +9201,9 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		{
 			retObj.sendSucceeded = false;
 			console.crlf();
-			console.print("\1n\1h\1yThere is no network address for this message");
+			console.print("\1n\1h\1yThere is no network address for this message\1n");
 			console.crlf();
+			console.pause();
 		}
 	}
 	else
@@ -9185,7 +9211,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		// Replying to a local user
 		replyMode |= WM_EMAIL;
 		// Look up the user number of the "from" user name in the message header
-		var userNumber = system.matchuser(pMsgHdr.from);
+		var userNumber = findUserNumWithName(pMsgHdr.from); // Used to use system.matchuser(pMsgHdr.from)
 		if (userNumber != 0)
 		{
 			// Output a newline to avoid ugly overwriting of text on the screen in
@@ -9194,6 +9220,14 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			// user aborted the message.
 			console.crlf();
 			retObj.sendSucceeded = bbs.email(userNumber, replyMode, "", pMsgHdr.subject);
+			console.pause();
+		}
+		else
+		{
+			retObj.sendSucceeded = false;
+			console.crlf();
+			console.print("\1n\1h\1yThe recipient (\1w" + pMsgHdr.from + "\1y) was not found\1n");
+			console.crlf();
 			console.pause();
 		}
 	}
@@ -15906,8 +15940,9 @@ function canDoHighASCIIAndANSI()
 //               indexed: A 0-based indexed array of message headers
 function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEmailFromUser, pStartIndex, pEndIndex)
 {
-	var msgHeaders = new Object();
-	msgHeaders.indexed = new Array();
+	var msgHeaders = {
+		indexed: []
+	};
 	if ((pSubCode != "mail") && ((typeof(pSearchString) != "string") || !searchTypePopulatesSearchResults(pSearchType)))
 		return msgHeaders;
 
@@ -16051,12 +16086,12 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 				// Get the offset of the last read message and compare it with the
 				// offset of the given message header
 				var lastReadMsgHdr = pMsgBase.get_msg_header(false, msg_area.sub[pSubBoardCode].last_read, false);
-				//var lastReadMsgOffset = (lastReadMsgHdr != null ? lastReadMsgHdr.offset : 0);
-				var lastReadMsgOffset = (lastReadMsgHdr != null ? this.GetMsgIdx(lastReadMsgHdr.number) : 0);
+				var lastReadMsgOffset = 0;
+				if (lastReadMsgHdr != null)
+					lastReadMsgOffset = msgNumToIdxFromMsgbase(pSubBoardCode, lastReadMsgHdr.number);
 				if (lastReadMsgOffset < 0)
 					lastReadMsgOffset = 0;
-				//return (pMsgHdr.offset > lastReadMsgOffset);
-				return (this.GetMsgIdx(pMsgHdr.number) > lastReadMsgOffset);
+				return (msgNumToIdxFromMsgbase(pSubBoardCode, pMsgHdr.number) > lastReadMsgOffset);
 			}
 			break;
 	}
@@ -16092,7 +16127,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 			{
 				// Only add the message header if the message is readable to the user
 				// and msgIdx is within bounds
-				if ((msgIdx >= startMsgIndex) && (msgIdx < endMsgIndex) && isReadableMsgHdr(tmpHdrs[prop], this.subBoardCode))
+				if ((msgIdx >= startMsgIndex) && (msgIdx < endMsgIndex) && isReadableMsgHdr(tmpHdrs[prop], pSubCode))
 				{
 					if (tmpHdrs[prop] != null)
 					{
@@ -19465,6 +19500,22 @@ function removeInitialColorFromMsgBody(pMsgBody)
 	return msgBody;
 }
 
+// Finds a user with a name, alias, or handle matching a given string.
+// If system.matchuser() can't find it, this will iterate through all users
+// to find the first user with a name, alias, or handle matching the given
+// name.
+function findUserNumWithName(pName)
+{
+	var userNum = system.matchuser(pName);
+	if (userNum == 0)
+		userNum = system.matchuserdata(U_NAME, pName);
+	if (userNum == 0)
+		userNum = system.matchuserdata(U_ALIAS, pName);
+	if (userNum == 0)
+		userNum = system.matchuserdata(U_HANDLE, pName);
+	return userNum;
+}
+
 // For debugging: Writes some text on the screen at a given location with a given pause.
 //
 // Parameters:
@@ -19492,4 +19543,3 @@ function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib, pClearLineAft
 		console.cleartoeol(clearLineAttrib);
 	}
 }
-

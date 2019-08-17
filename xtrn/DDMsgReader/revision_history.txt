@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.24     2019-08-17   When making a private reply on local email, an error is
+                      now outputted if the recipient's user number is not
+                      found.  Also, fixed an 'undefined' bug that happened when
+                      searching for messages sometimes.
 1.23     2019-07-27   If a message is in UTF-8 format and the user's terminal
                       doesn't support UTF-8, the message text will be converted
                       to CP437.  Also, if there is a color/attribute code in
