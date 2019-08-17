@@ -30,63 +30,51 @@ function quotify(id) {
 }
 
 // (Try to) post a new message to 'sub' via the web API
-function postNew(sub) {
+async function postNew(sub) {
 	$('#newmessage-button').attr('disabled', true);
 	var to = $('#newmessage-to').val();
 	var subject = $('#newmessage-subject').val();
 	var body = $('#newmessage-body').val();
-	$.ajax({
-        url: './api/forum.ssjs',
-		method: 'POST',
-		data: {
-			call: 'post',
-			sub: sub,
-			to: to,
-			subject: subject,
-			body: body
-		}
-	}).done(function (data) {
-		if (data.success) {
-			$('#newmessage').remove();
-			insertParam('notice', 'Your message has been posted.');
-		}
-		$('#newmessage-button').attr('disabled', false);
+	const data = await v4_post('./api/forum.ssjs', {
+		call: 'post',
+		sub,
+		to,
+		subject,
+		body
 	});
+	if (data.success) {
+		$('#newmessage').remove();
+		insertParam('notice', 'Your message has been posted.');
+	}
+	$('#newmessage-button').attr('disabled', false);
 }
 
 // (Try to) post a reply to message number 'id' of 'sub' via the web API
-function postReply(sub, id) {
+async function postReply(sub, id) {
 	$('#reply-button-' + id).attr('disabled', true);
 	var body = $('#replytext-' + id).val();
-	$.ajax({
-        url: './api/forum.ssjs',
-		method: 'POST',
-		data: {
-			call: 'post-reply',
-			sub: sub,
-			body: $('#replytext-' + id).val(),
-			pid: id
-		}
-	}).done(function (data) {
-		if (data.success) {
-			$('#quote-' + id).attr('disabled', false);
-			$('#replybox-' + id).remove();
-			insertParam('notice', 'Your message has been posted.');
-		} else {
-			$('#reply-button-' + id).attr('disabled', false);
-		}
+	const data = await v4_post('./api/forum.ssjs', {
+		call: 'post-reply',
+		sub,
+		body,
+		pid: id
 	});
+	if (data.success) {
+		$('#quote-' + id).attr('disabled', false);
+		$('#replybox-' + id).remove();
+		insertParam('notice', 'Your message has been posted.');
+	} else {
+		$('#reply-button-' + id).attr('disabled', false);
+	}
 }
 
 // (Try to) delete a message via the web API
-function deleteMessage(sub, id) {
-	$.getJSON('./api/forum.ssjs?call=delete-message&sub=' + sub + '&number=' + id, function (data) {
-		console.log(data);
-		if (data.success) {
-			$('#li-' + id).remove();
-			insertParam('notice', 'Message deleted.');
-		}
-	});
+async function deleteMessage(sub, id) {
+	const res = await v4_post('./api/forum.ssjs', { call: 'delete-message', sub: sub, number: id });
+	if (res.success) {
+		$('#li-' + id).remove();
+		insertParam('notice', 'Message deleted.');
+	}
 }
 
 // Add a new message input form to the element with id 'forum-list-container' for sub 'sub'
@@ -100,19 +88,15 @@ function addNew(sub) {
 		'<input id="newmessage-button" class="btn btn-primary" type="submit" value="Submit" onclick="postNew(\'' + sub + '\')">' +
 		'</li>'
 	);
-	$.getJSON('./api/forum.ssjs?call=get-signature', function (data) {
-		$('#newmessage-body').val(
-            $('#newmessage-body').val() + '\r\n' + data.signature
-		);
+	v4_get('./api/forum.ssjs?call=get-signature').then(data => {
+		$('#newmessage-body').val($('#newmessage-body').val() + '\r\n' + data.signature);
         $("#newmessage-body")[0].setSelectionRange(0,0);
 	});
 	window.location.hash = '#newmessage';
-	$('#newmessage-body').keydown(function (evt) {
-        evt.stopImmediatePropagation();
-    });
+	$('#newmessage-body').keydown(evt => evt.stopImmediatePropagation());
 }
 
-function submitPoll(sub) {
+async function submitPoll(sub) {
 
 	$('#newpoll-submit').attr('disabled', true);
 
@@ -141,23 +125,20 @@ function submitPoll(sub) {
 		if (val !== '') comments.push(val);
 	});
 
-	var url =
-		'./api/forum.ssjs?call=submit-poll' +
-		'&sub=' + sub +
-		'&subject=' + subject +
-		'&votes=' + answerCount +
-		'&results=' + results +
-		'&answer=' + answers.join('&answer=');
-
-	if (comments.length > 0) url += '&comment=' + comments.join('&comment=');
-
-	$.getJSON(url, function (data) {
-		$('#newpoll-submit').attr('disabled', false);
-		if (data.success) {
-			$('#newpoll').remove();
-			insertParam('notice', 'Your poll has been posted.');
-		}
-	});
+	const post_data = {
+		sub,
+		subject,
+		votes: answerCount,
+		results,
+		answer: answers
+	};
+	if (comments.length) post_data.comment = comments;
+	const res = await v4_post('./api/forum.ssjs?call=submit-poll', post_data);
+	$('#newpoll-submit').attr('disabled', false);
+	if (res.success) {
+		$('#newpoll').remove();
+		insertParam('notice', 'Your poll has been posted.');
+	}
 
 }
 
@@ -269,14 +250,11 @@ function addReply(sub, id) {
 		'<input id="reply-button-' + id + '" class="btn btn-primary" type="submit" value="Submit" onclick="postReply(\'' + sub + '\', ' + id + ')">' +
 		'</div>'
 	);
-	$.getJSON('./api/forum.ssjs?call=get-signature', function (data) {
+	v4_get('./api/forum.ssjs?call=get-signature').then(data => {
 		$('#replytext-' + id).val($('#replytext-' + id).val() + '\r\n' + data.signature);
         $('#replytext-' + id)[0].setSelectionRange(0,0);
-
 	});
-	$('#replytext-' + id).keydown(function (evt) {
-		evt.stopImmediatePropagation();
-	});
+	$('#replytext-' + id).keydown(evt => evt.stopImmediatePropagation());
 }
 
 function onSubUnreadCount(data) {
@@ -292,8 +270,9 @@ function onSubUnreadCount(data) {
 }
 
 // 'sub' can be a single sub code, or a string of <sub1>&sub=<sub2>&sub=<sub3>...
-function getSubUnreadCount(sub) {
-	$.getJSON('./api/forum.ssjs?call=get-sub-unread-count&sub=' + sub, onSubUnreadCount);
+async function getSubUnreadCount(sub) {
+	const res = await v4_get('./api/forum.ssjs?call=get-sub-unread-count&sub=' + sub);
+	onSubUnreadCount(res);
 }
 
 function onGroupUnreadCount(data) {
@@ -302,18 +281,17 @@ function onGroupUnreadCount(data) {
 			(data[group].scanned == 0 ? "" : data[group].scanned)
 		);
 		$('#badge-ignored-' + group).text(
-			(	data[group].total == 0 ||
-				data[group].total == data[group].scanned
-				? ''
-				: (data[group].total - data[group].scanned)
-			)
+			data[group].total == 0 || data[group].total == data[group].scanned
+			? ''
+			: (data[group].total - data[group].scanned)
 		);
 	}
 }
 
 // 'group' can be a single group index, or a string of 0&group=1&group=2...
-function getGroupUnreadCount(group) {
-	$.getJSON('./api/forum.ssjs?call=get-group-unread-count&group=' + group, onGroupUnreadCount);
+async function getGroupUnreadCount(group) {
+	const res = await v4_get('./api/forum.ssjs?call=get-group-unread-count&group=' + group);
+	onGroupUnreadCount(res);
 }
 
 function onThreadStats(data) {
@@ -373,46 +351,44 @@ function onThreadStats(data) {
 
 /*  Fetch a private mail message's body (with links to attachments) where 'id'
 	is the message number.	Output it to an element with id 'message-<id>'. */
-function getMailBody(id) {
+async function getMailBody(id) {
 	if (!$('#message-' + id).attr('hidden')) {
 		$('#message-' + id).attr('hidden', true);
 	} else if ($('#message-' + id).html() != '') {
 		$('#message-' + id).attr('hidden', false);
 	} else {
-		$.getJSON('./api/forum.ssjs?call=get-mail-body&number=' + id, function (data) {
-			var str = data.body;
-			if (data.inlines && data.inlines.length > 0) {
-				str += '<br>Inline attachments: ' + data.inlines.join('<br>') + '<br>';
-			}
-			if (data.attachments && data.attachments.length > 0) {
-				str += '<br>Attachments: ' + data.attachments.join('<br>') + '<br>';
-			}
-			str +=
-				'<button class="btn btn-default icon" ' +
-				'aria-label="Reply to this message" ' +
-				'title="Reply to this message" ' +
-				'name="reply-' + id + '" ' +
-				'onclick="addReply(\'mail\',' + id + ')">' +
-				'<span class="glyphicon glyphicon-comment"></span>' +
-				'</button>' +
-				'<button class="btn btn-default icon" aria-label="Delete this message" ' +
-				'title="Delete this message" onclick="deleteMessage(\'mail\',' + id + ')">' +
-				'<span class="glyphicon glyphicon-trash"></span>' +
-				'</button>';
-			$('#message-' + id).html(str);
-			$('#message-' + id).attr('hidden', false);
-		});
+		const data = await v4_get('./api/forum.ssjs?call=get-mail-body&number=' + id);
+		var str = data.body;
+		if (data.inlines && data.inlines.length > 0) {
+			str += '<br>Inline attachments: ' + data.inlines.join('<br>') + '<br>';
+		}
+		if (data.attachments && data.attachments.length > 0) {
+			str += '<br>Attachments: ' + data.attachments.join('<br>') + '<br>';
+		}
+		str +=
+			'<button class="btn btn-default icon" ' +
+			'aria-label="Reply to this message" ' +
+			'title="Reply to this message" ' +
+			'name="reply-' + id + '" ' +
+			'onclick="addReply(\'mail\',' + id + ')">' +
+			'<span class="glyphicon glyphicon-comment"></span>' +
+			'</button>' +
+			'<button class="btn btn-default icon" aria-label="Delete this message" ' +
+			'title="Delete this message" onclick="deleteMessage(\'mail\',' + id + ')">' +
+			'<span class="glyphicon glyphicon-trash"></span>' +
+			'</button>';
+		$('#message-' + id).html(str);
+		$('#message-' + id).attr('hidden', false);
 	}
 }
 
-function setScanCfg(sub, cfg) {
+async function setScanCfg(sub, cfg) {
 	var opts = [ 'scan-cfg-off', 'scan-cfg-new', 'scan-cfg-youonly' ];
-	$.getJSON('./api/forum.ssjs?call=set-scan-cfg&sub=' + sub + '&cfg=' + cfg, function (data) {
-		if (!data.success) return;
-		opts.forEach(function (opt, index) {
-			$('#' + opt).toggleClass('btn-primary', (cfg == index));
-			$('#' + opt).toggleClass('btn-default', (cfg != index));
-		});
+	const data = await v4_get('./api/forum.ssjs?call=set-scan-cfg&sub=' + sub + '&cfg=' + cfg);
+	if (!data.success) return;
+	opts.forEach((e, i) => {
+		$('#' + e).toggleClass('btn-primary', (cfg == i));
+		$('#' + e).toggleClass('btn-default', (cfg != i));
 	});
 }
 
@@ -449,19 +425,18 @@ function threadNav() {
 
 }
 
-function vote(sub, id) {
+async function vote(sub, id) {
 	id = id.split('-');
 	if (id.length != 2 || (id[0] != 'uv' && id[0] != 'dv') || isNaN(parseInt(id[1]))) {
 		return;
 	}
-	$.getJSON('./api/forum.ssjs?call=vote&sub=' + sub + '&id=' + id[1] + '&up=' + (id[0] === 'uv' ? 1 : 0), function (data) {
-		if (!data.success) return;
-		$('#' + id[0] + '-' + id[1]).addClass(id[0] === 'uv' ? 'upvote-fg' : 'downvote-fg');
-		$('#' + id[0] + '-' + id[1]).attr('disabled', true);
-		$('#' + id[0] + '-' + id[1]).blur();
-		var count = parseInt($('#' + id[0] + '-count-' + id[1]).text()) + 1;
-		$('#' + id[0] + '-count-' + id[1]).text(count);
-	});
+	const data = await v4_get('./api/forum.ssjs?call=vote&sub=' + sub + '&id=' + id[1] + '&up=' + (id[0] === 'uv' ? 1 : 0));
+	if (!data.success) return;
+	$('#' + id[0] + '-' + id[1]).addClass(id[0] === 'uv' ? 'upvote-fg' : 'downvote-fg');
+	$('#' + id[0] + '-' + id[1]).attr('disabled', true);
+	$('#' + id[0] + '-' + id[1]).blur();
+	const count = parseInt($('#' + id[0] + '-count-' + id[1]).text()) + 1;
+	$('#' + id[0] + '-count-' + id[1]).text(count);
 }
 
 function enableVoteButtonHandlers(sub) {
@@ -473,64 +448,68 @@ function enableVoteButtonHandlers(sub) {
     });
 }
 
-function getVotesInThread(sub, id) {
-	$.getJSON('./api/forum.ssjs?call=get-thread-votes&sub=' + sub + '&id=' + id, function (data) {
-		Object.keys(data.m).forEach(function (m) {
-			var uv = parseInt($('#uv-count-' + m).text());
-			var dv = parseInt($('#dv-count-' + m).text());
-			if (uv !== data.m[m].u) {
-				$('#uv-count-' + m).text(data.m[m].u);
-				$('#uv-' + m).addClass('indicator');
-			}
-			if (dv !== data.m[m].d) {
-				$('#dv-count-' + m).text(data.m[m].d);
-				$('#dv-' + m).addClass('indicator');
-			}
-			switch (data.m[m].v) {
-				case 1:
-					$('#uv-' + m).addClass('upvote-fg');
-					$('#uv-' + m).attr('disabled', true);
-					$('#dv-' + m).attr('disabled', true);
-					break;
-				case 2:
-					$('#dv-' + m).addClass('downvote-fg');
-					$('#uv-' + m).attr('disabled', true);
-					$('#dv-' + m).attr('disabled', true);
-					break;
-				default:
-					break;
-			}
-		});
+async function getVotesInThread(sub, id) {
+	const data = await v4_get('./api/forum.ssjs?call=get-thread-votes&sub=' + sub + '&id=' + id);
+	Object.keys(data.m).forEach(m => {
+		var uv = parseInt($('#uv-count-' + m).text());
+		var dv = parseInt($('#dv-count-' + m).text());
+		if (uv !== data.m[m].u) {
+			$('#uv-count-' + m).text(data.m[m].u);
+			$('#uv-' + m).addClass('indicator');
+		}
+		if (dv !== data.m[m].d) {
+			$('#dv-count-' + m).text(data.m[m].d);
+			$('#dv-' + m).addClass('indicator');
+		}
+		switch (data.m[m].v) {
+			case 1:
+				$('#uv-' + m).addClass('upvote-fg');
+				$('#uv-' + m).attr('disabled', true);
+				$('#dv-' + m).attr('disabled', true);
+				break;
+			case 2:
+				$('#dv-' + m).addClass('downvote-fg');
+				$('#uv-' + m).attr('disabled', true);
+				$('#dv-' + m).attr('disabled', true);
+				break;
+			default:
+				break;
+		}
 	});
 }
 
-function getVotesInThreads(sub) {
-	$.getJSON('./api/forum.ssjs?call=get-sub-votes&sub=' + sub, function (data) {
-		Object.keys(data).forEach(function (t) {
-			var uv = data[t].p.u + ' / ' + data[t].t.u;
-			var dv = data[t].p.d + ' / ' + data[t].t.d;
-			if (uv !== $('#uv-count-' + t).text()) $('#uv-count-' + t).text(uv);
-			if (dv !== $('#dv-count-' + t).text()) $('#dv-count-' + t).text(dv);
-		});
+async function getVotesInThreads(sub) {
+	const data = await v4_get('./api/forum.ssjs?call=get-sub-votes&sub=' + sub);
+	Object.keys(data).forEach(t => {
+		var uv = data[t].p.u + ' / ' + data[t].t.u;
+		var dv = data[t].p.d + ' / ' + data[t].t.d;
+		if (uv !== $('#uv-count-' + t).text()) $('#uv-count-' + t).text(uv);
+		if (dv !== $('#dv-count-' + t).text()) $('#dv-count-' + t).text(dv);
 	});
 }
 
-function submitPollAnswers(sub, id) {
+async function submitPollAnswers(sub, id) {
 	if ($('input[name="poll-' + id + '"]:checked').length < 1) return;
 	var answers = [];
 	$('input[name="poll-' + id + '"]:checked').each(function () {
         answers.push($(this).val());
     });
 	answers = answers.join('&answer=');
-	$.getJSON('./api/forum.ssjs?call=submit-poll-answers&sub=' + sub + '&id=' + id + '&answer=' + answers, function (data) {
-		$('input[name="poll-' + id + '"]').each(function () {
-			$(this).attr('disabled', true);
-			if ($(this).prop('checked')) {
-                $(this).parent().parent().addClass('upvote-bg');
-			}
-		});
-		$('submit-poll-' + id).attr('disabled', true);
+
+	const post_data = {
+		call: 'submit-poll-answers',
+		sub,
+		id,
+		answer: answers
+	};
+	const data = await v4_post('./api/forum.ssjs', post_data);
+	$('input[name="poll-' + id + '"]').each(function () {
+		$(this).attr('disabled', true);
+		if ($(this).prop('checked')) {
+			$(this).parent().parent().addClass('upvote-bg');
+		}
 	});
+	$('submit-poll-' + id).attr('disabled', true);
 }
 
 function pollControl(id, count) {
@@ -549,16 +528,15 @@ function pollControl(id, count) {
 	});
 }
 
-function getPollData(sub, id) {
-	$.getJSON('./api/forum.ssjs?call=get-poll-results&sub=' + sub + '&id=' + id, function (data) {
-		data.tally.forEach(function (e, i) {
-			if (e > 0) $('#poll-count-' + id + '-' + i).text(e);
-		});
-		if (data.answers > 0) {
-			$('input[name="poll-' + id + '"]').each(function () {
-                $(this).attr('disabled', true);
-            });
-			$('#submit-poll-' + id).attr('disabled', true);
-		}
+async function getPollData(sub, id) {
+	const data = await v4_get('./api/forum.ssjs?call=get-poll-results&sub=' + sub + '&id=' + id);
+	data.tally.forEach((e, i) => {
+		if (e > 0) $('#poll-count-' + id + '-' + i).text(e);
 	});
+	if (data.answers > 0) {
+		$('input[name="poll-' + id + '"]').each(function () {
+			$(this).attr('disabled', true);
+		});
+		$('#submit-poll-' + id).attr('disabled', true);
+	}
 }
