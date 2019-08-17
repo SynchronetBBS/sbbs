@@ -2,35 +2,53 @@
 var updateInterval = 60000;
 const _sbbs_events = {};
 
-function login(evt) {
+async function v4_fetch(url, method, body) {
+	const init = { method, headers: {} };
+	if (method == 'POST' && body) {
+		init.body = body;
+		if (body instanceof URLSearchParams) {
+			init.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+		}
+	}
+	try {
+		return await fetch(url, init).then(res => res.json());
+	} catch (err) {
+		console.log('Error on fetch', url, init);
+	}
+}
+
+function v4_get(url) {
+	return v4_fetch(url);
+}
+
+// May need adjustment for multipart/form-data at some point
+function v4_post(url, data) {
+	const fd = new URLSearchParams();
+	for (let e in data) {
+		fd.append(e, data[e]);
+	}
+	return v4_fetch(url, 'POST', fd);
+}
+
+async function login(evt) {
 	if ($('#input-username').val() == '' || $('#input-password').val() == '') {
 		return;
 	}
 	if (typeof evt !== 'undefined') evt.preventDefault();
-	$.ajax({
-        url: './api/auth.ssjs',
-		method: 'POST',
-		data: {
-			username : $('#input-username').val(),
-			password : $('#input-password').val()
-		}
-	}).done(function (data) {
-		if (data.authenticated) {
-			window.location.reload(true);
-		} else {
-			$('#login-form').append('<p class="text-danger">Login failed</p>');
-		}
+	const res = await v4_post('./api/auth.ssjs', {
+		username: $('#input-username').val(),
+		password: $('#input-password').val()
 	});
+	if (res.authenticated) {
+		window.location.reload(true);
+	} else {
+		$('#login-form').append('<p class="text-danger">Login failed</p>');
+	}
 }
 
-function logout() {
-	$.ajax({
-        url: './api/auth.ssjs',
-		method: 'GET',
-		data: { logout: true }
-	}).done(function (data) {
-        if (!data.authenticated) window.location.href = '/';
-    });
+async function logout() {
+	const res = await v4_get('./api/auth.ssjs?logout=true');
+	if (!res.authenticated) window.location.href = '/';
 }
 
 function scrollUp() {
@@ -42,8 +60,7 @@ function scrollUp() {
 function sendTelegram(alias) {
     function send_tg(evt) {
         if (typeof evt !== 'undefined') evt.preventDefault();
-        $.getJSON('./api/system.ssjs?call=send-telegram&user=' + alias + '&telegram=' + $('#telegram').val(), function(data) {
-        });
+		v4_post('./api/system.ssjs', { call: 'send-telegram', user: alias, telegram: $('#telegram').val() });
         $('#popUpModal').modal('hide');
     }
 	$('#popUpModalTitle').html('Send a telegram to ' + alias);
