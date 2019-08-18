@@ -65,7 +65,17 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	if(into != NULL) {
 		SAFECOPY(name,into);
-		SAFECOPY(addr,into);
+		if((p = strrchr((char*)into, '<')) != NULL) {
+			SAFECOPY(addr, p + 1);
+			p = strrchr(addr, '>');
+			if(p == NULL) {
+				bputs(text[InvalidNetMailAddr]);
+				return false;
+			}
+			*p = 0;
+		} else {
+			SAFECOPY(addr, into);
+		}
 	}
 	if(subj != NULL)
 		SAFECOPY(title,subj);
@@ -83,6 +93,11 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		return(false); 
 	}
 
+	if(strchr(addr, ' ') != NULL || strchr(addr, '@') <= addr) {
+		bputs(text[InvalidNetMailAddr]);
+		return false;
+	}
+
 	if(cfg.inetmail_cost && !(useron.exempt&FLAG('S'))) {
 		if(useron.cdt+useron.freecdt<cfg.inetmail_cost) {
 			bputs(text[NotEnoughCredits]);
@@ -94,12 +109,16 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	}
 
 	/* Get destination user name */
-	p=strrchr(name,'@');
+	p=strrchr(name,'<');
+	if(!p)
+		p=strrchr(name,'@');
 	if(!p)
 		p=strrchr(name,'!');
 	if(p) {
 		*p=0;
-		truncsp(name); 
+		truncsp(name);
+		if(name[0] == 0)
+			SAFECOPY(name, addr);
 	}
 
 	/* Get this user's internet mailing address */
