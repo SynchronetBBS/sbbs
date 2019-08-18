@@ -173,7 +173,8 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	}
 	p=strrchr(to,'@');      /* Find '@' in name@addr */
 	if(p==NULL || net_type != NET_FIDO) {
-		bputs(text[InvalidNetMailAddr]);
+		if(!(sys_status&SS_ABORT))
+			bputs(text[InvalidNetMailAddr]);
 		return false; 
 	}
 	if(!cfg.total_faddrs || (!SYSOP && !(cfg.netmail_misc&NMAIL_ALLOW))) {
