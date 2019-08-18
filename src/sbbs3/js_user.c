@@ -1212,6 +1212,7 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 	int32	start_time=0;
 	jsrefcount	rc;
 	scfg_t*		scfg;
+	ulong		tl;
 
 	scfg=JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
@@ -1228,7 +1229,8 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(scfg,p);
 
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL((int32_t)gettimeleft(scfg, p->user, start_time)));
+	tl = gettimeleft(scfg, p->user, start_time);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(tl > INT32_MAX ? INT32_MAX : (int32) tl));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
