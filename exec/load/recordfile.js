@@ -79,29 +79,50 @@ RecordFileRecord.prototype.FlushRead = function(keeplocked)
 	}
 
 	// Try to force a read cache flush by reading a different record...
-	// First, try a record we already have locked...
+	// First, try to read one we have a lock on already...
 	if (!flushed) {
 		for (i = 0; i < this.parent.locks.length; i++) {
 			if (i == this.Record)
 				continue;
-			this.parent.Get(i, true);
+			this.parent.file.position = i * this.parent.RecordLength;
+			this.parent.file.read(this.parent.RecordLength);
 			flushed = true;
 			break;
 		}
 	}
 
-	// If that failed, try the first one we can get an immediate lock on. :(
+	// Otherwise, use the first one we can get an immediate lock on...
 	if (!flushed) {
+		if (locked)
+			this.UnLock();
 		for (i = 0; i < this.parent.length; i++) {
 			if (i == this.Record)
 				continue;
-			if (this.parent.locks.indexOf(i) > -1)
-				continue;
 			if (this.parent.Lock(i, 0)) {
-				this.parent.Get(i, false);
+				this.parent.file.position = i * this.parent.RecordLength;
+				this.parent.file.read(this.parent.RecordLength);
+				this.parent.UnLock(i);
+				flushed = true;
 				break;
 			}
 		}
+		if (locked)
+			this.Lock();
+	}
+	// Finally, just wait until we can read some random record...
+	if (!flushed) {
+		i = random(this.parent.length - 1);
+		if (i >= this.Record)
+			i++;
+		if (locked)
+			this.UnLock();
+		while(!this.parent.Lock(i));
+		this.parent.file.position = i * this.parent.RecordLength;
+		this.parent.file.read(this.parent.RecordLength);
+		this.parent.UnLock(i);
+		flushed = true;
+		if (locked)
+			this.Lock();
 	}
 
 	if (keeplocked) {
@@ -128,7 +149,7 @@ RecordFileRecord.prototype.ReLoad = function(keeplocked)
 			keeplocked = true;
 	}
 
-	this.FlushRead(lock);
+	this.FlushRead(!lock);
 
 	// Locks don't work because threads hate them. :(
 	this.parent.file.position=(this.Record)*this.parent.RecordLength;
@@ -159,8 +180,10 @@ RecordFile.prototype.Lock = function(rec, timeout)
 	end.setTime(end.getTime() + timeout*1000);
 
 	do {
-		if ((ret = this.file.lock(rec*this.RecordLength, this.RecordLength) != true && timeout > 0))
+		ret = this.file.lock(rec*this.RecordLength, this.RecordLength);
+		if (ret === false && timeout > 0) {
 			mswait(1);
+		}
 	} while (ret === false && new Date() < end);
 
 	if (ret)
@@ -237,6 +260,7 @@ RecordFile.prototype.Get = function(num, keeplocked)
 	var rec=0;
 	var lock;
 	var i;
+	var ret;
 
 	if(num==undefined || num < 0 || parseInt(num)!=num)
 		return(null);
@@ -253,9 +277,9 @@ RecordFile.prototype.Get = function(num, keeplocked)
 			keeplocked = true;
 	}
 
-	this.FlushRead(lock);
+	ret = new RecordFileRecord(this, num);
 
-	var ret = new RecordFileRecord(this, num);
+	ret.FlushRead(!lock);
 
 	this.file.position=ret.Record * this.RecordLength;
 
