@@ -37,6 +37,8 @@ function RecordFile(filename, definition)
 	this.file=new File(filename);
 	this.fields=definition;
 	this.RecordLength=GetRecordLength(this.fields);
+	// Hopefully a vbuf of record length prevents stale data?
+	// It likely doesn't though.
 	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength))
 		return(null);
 	this.__defineGetter__("length", function() {return parseInt(this.file.length/this.RecordLength);});
@@ -49,14 +51,30 @@ function RecordFileRecord(parent, num)
 	this.Record=num;
 }
 
-RecordFileRecord.prototype.ReLoad = function()
+RecordFileRecord.prototype.ReLoad = function(keeplocked)
 {
 	var i;
+	var lock;
 
+	lock = (this.parent.locks.indexOf(this.Record) == -1);
+	if (keeplocked === undefined) {
+		if (lock)
+			keeplocked = false;
+		else
+			keeplocked = true;
+	}
+
+// Locks don't work because threads hate them. :(
 	this.parent.file.position=(this.Record)*this.parent.RecordLength;
+	if (lock)
+		while(!this.Lock());	// Forever
+
 	for(i=0; i<this.parent.fields.length; i++)
 		this[this.parent.fields[i].prop]=this.parent.ReadField(this.parent.fields[i].type);
-}
+
+	if (!keeplocked)
+		this.UnLock();
+};
 
 RecordFile.prototype.Lock = function(rec, timeout)
 {
@@ -83,7 +101,7 @@ RecordFile.prototype.Lock = function(rec, timeout)
 		this.locks.push(rec);
 
 	return ret;
-}
+};
 
 RecordFile.prototype.UnLock = function(rec)
 {
@@ -101,38 +119,56 @@ RecordFile.prototype.UnLock = function(rec)
 	this.locks.splice(lck, 1);
 
 	return ret;
-}
+};
 
 RecordFileRecord.prototype.UnLock = function()
 {
 	return this.parent.UnLock(this.Record);
-}
+};
 
 RecordFileRecord.prototype.Lock = function(timeout)
 {
 	return this.parent.Lock(this.Record, timeout);
-}
+};
 
-RecordFileRecord.prototype.Put = function()
+RecordFileRecord.prototype.Put = function(keeplocked)
 {
 	var i;
+	var lock;
+
+	lock = (this.parent.locks.indexOf(this.Record) == -1);
+	if (keeplocked === undefined) {
+		if (lock)
+			keeplocked = false;
+		else
+			keeplocked = true;
+	}
 
 	this.parent.file.position=this.Record * this.parent.RecordLength;
+
+	if (lock)
+		while(!this.Lock());	// Forever
+
 	for(i=0; i<this.parent.fields.length; i++)
-		this.parent.WriteField(this[this.parent.fields[i].prop], this.parent.fields[i].type, this.parent.fields[i].def);
-}
+		this.parent.WriteField(this[this.parent.fields[i].prop], this.parent.fields[i].type, eval(this.parent.fields[i].def.toSource()).valueOf());
+
+	if (!keeplocked)
+		this.UnLock();
+};
 
 RecordFileRecord.prototype.ReInit = function()
 {
 	var i;
 
-	for(i=0; i<this.parent.fields.length; i++)
-		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource());
-}
+	for(i=0; i<this.parent.fields.length; i++) {
+		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource()).valueOf();
+	}
+};
 
-RecordFile.prototype.Get = function(num)
+RecordFile.prototype.Get = function(num, keeplocked)
 {
 	var rec=0;
+	var lock;
 	var i;
 
 	if(num==undefined || num < 0 || parseInt(num)!=num)
@@ -142,33 +178,61 @@ RecordFile.prototype.Get = function(num)
 	if(num>=this.length)
 		return(null);
 
+	lock = (this.locks.indexOf(num) == -1);
+	if (keeplocked === undefined) {
+		if (lock)
+			keeplocked = false;
+		else
+			keeplocked = true;
+	}
+
 	var ret = new RecordFileRecord(this, num);
 
 	this.file.position=ret.Record * this.RecordLength;
+
+	if (lock)
+		while(!ret.Lock());	// Forever
+
 	for(i=0; i<this.fields.length; i++)
 		ret[this.fields[i].prop]=this.ReadField(this.fields[i].type);
 
-	return(ret);
-}
+	if (!keeplocked)
+		ret.UnLock();
 
-RecordFile.prototype.New = function(timeout)
+	return(ret);
+};
+
+RecordFile.prototype.New = function(timeout, keeplocked)
 {
 	var i;
 	var ret;
+	var lock;
 
-	if (!this.Lock(this.length, timeout))
-		return undefined;
+	lock = (this.locks.indexOf(this.Record) == -1);
+	if (keeplocked === undefined) {
+		if (lock)
+			keeplocked = false;
+		else
+			keeplocked = true;
+	}
+
 
 	ret = new RecordFileRecord(this, this.length);
 
+	if (lock) {
+		if (!ret.Lock(timeout))
+			return undefined;
+	}
+
 	for(i=0; i<this.fields.length; i++)
-		ret[this.fields[i].prop]=eval(this.fields[i].def.toSource());
+		ret[this.fields[i].prop]=eval(this.fields[i].def.toSource()).valueOf();
 
 	ret.Put();
-	ret.UnLock();
+	if (!keeplocked)
+		ret.UnLock();
 
 	return(ret);
-}
+};
 
 RecordFile.prototype.ReadField = function(fieldtype)
 {
@@ -211,7 +275,7 @@ RecordFile.prototype.ReadField = function(fieldtype)
 				return(null);
 		}
 	}
-}
+};
 
 RecordFile.prototype.WriteField = function(val, fieldtype, def)
 {
@@ -276,5 +340,5 @@ RecordFile.prototype.WriteField = function(val, fieldtype, def)
 				break;
 		}
 	}
-}
+};
 
