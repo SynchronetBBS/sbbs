@@ -37,8 +37,7 @@ function RecordFile(filename, definition)
 	this.file=new File(filename);
 	this.fields=definition;
 	this.RecordLength=GetRecordLength(this.fields);
-	// Hopefully a vbuf of record length prevents stale data?
-	// It likely doesn't though.
+	// A vbuf of a record length prevents more than one record from being in the buffer.
 	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength))
 		return(null);
 	this.__defineGetter__("length", function() {return parseInt(this.file.length/this.RecordLength);});
@@ -50,6 +49,71 @@ function RecordFileRecord(parent, num)
 	this.parent=parent;
 	this.Record=num;
 }
+
+RecordFileRecord.prototype.FlushRead = function(keeplocked)
+{
+	var i;
+	var locked;
+	var flushed = false;
+
+	locked = (this.parent.locks.indexOf(this.Record) != -1);
+	if (keeplocked === undefined) {
+		if (locked)
+			keeplocked = true;
+		else
+			keeplocked = false;
+	}
+
+	// If there's only one record, the only way to flush the buffer is
+	// to close and re-open...
+	if (this.parent.length == 1) {
+		// Which means we need to give up the lock...
+		if (locked)
+			this.UnLock();
+		this.parent.file.close();
+		if (!this.parent.file.open('rb+', true, this.parent.RecordLength))
+			throw('Unable to re-open '+this.parent.file.name);
+		if (locked)
+			this.Lock();
+		flushed = true;
+	}
+
+	// Try to force a read cache flush by reading a different record...
+	// First, try a record we already have locked...
+	if (!flushed) {
+		for (i = 0; i < this.parent.locks.length; i++) {
+			if (i == this.Record)
+				continue;
+			this.parent.Get(i, true);
+			flushed = true;
+			break;
+		}
+	}
+
+	// If that failed, try the first one we can get an immediate lock on. :(
+	if (!flushed) {
+		for (i = 0; i < this.parent.length; i++) {
+			if (i == this.Record)
+				continue;
+			if (this.parent.locks.indexOf(i) > -1)
+				continue;
+			if (this.parent.Lock(i, 0)) {
+				this.parent.Get(i, false);
+				break;
+			}
+		}
+	}
+
+	if (keeplocked) {
+		if (locked)
+			return;
+		this.Lock();
+	}
+	else {
+		if (locked)
+			this.UnLock();
+	}
+};
 
 RecordFileRecord.prototype.ReLoad = function(keeplocked)
 {
@@ -64,7 +128,9 @@ RecordFileRecord.prototype.ReLoad = function(keeplocked)
 			keeplocked = true;
 	}
 
-// Locks don't work because threads hate them. :(
+	this.FlushRead(lock);
+
+	// Locks don't work because threads hate them. :(
 	this.parent.file.position=(this.Record)*this.parent.RecordLength;
 	if (lock)
 		while(!this.Lock());	// Forever
@@ -93,8 +159,8 @@ RecordFile.prototype.Lock = function(rec, timeout)
 	end.setTime(end.getTime() + timeout*1000);
 
 	do {
-		ret = this.file.lock(rec*this.RecordLength, this.RecordLength);
-		mswait(1);
+		if ((ret = this.file.lock(rec*this.RecordLength, this.RecordLength) != true && timeout > 0))
+			mswait(1);
 	} while (ret === false && new Date() < end);
 
 	if (ret)
@@ -151,6 +217,7 @@ RecordFileRecord.prototype.Put = function(keeplocked)
 
 	for(i=0; i<this.parent.fields.length; i++)
 		this.parent.WriteField(this[this.parent.fields[i].prop], this.parent.fields[i].type, eval(this.parent.fields[i].def.toSource()).valueOf());
+	this.parent.file.flush();
 
 	if (!keeplocked)
 		this.UnLock();
@@ -185,6 +252,8 @@ RecordFile.prototype.Get = function(num, keeplocked)
 		else
 			keeplocked = true;
 	}
+
+	this.FlushRead(lock);
 
 	var ret = new RecordFileRecord(this, num);
 
