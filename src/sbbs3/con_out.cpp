@@ -391,8 +391,13 @@ int sbbs_t::rputs(const char *str, size_t len)
 			if((char)ch == (char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
 				outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
 		}
-		if(lbuflen<LINE_BUFSIZE)
+		if(ch == '\n')
+			lbuflen=0;
+		else if(lbuflen<LINE_BUFSIZE) {
+			if(lbuflen == 0)
+				latr = curatr;
 			lbuf[lbuflen++] = ch;
+		}
 	}
 	return(l);
 }
