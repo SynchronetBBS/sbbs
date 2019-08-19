@@ -195,7 +195,9 @@ function import_shared_file(hdr, body)
 
 	// If the filename (in the subject) already contains the sender's QWK-ID, skip-it
 	var filename = file_getname(hdr.subject);
-	var prefix = file_getname(hdr.from_net_addr) + '.';
+	var prefix = '';
+	if(!fidoaddr.is_valid(hdr.from_net_addr))
+		prefix = file_getname(hdr.from_net_addr) + '.';
 	var suffix = '.bin';
 	if(filename.length > prefix.length + suffix.length
 		&& filename.substr(0, prefix.length).toLowerCase() == prefix.toLowerCase())
