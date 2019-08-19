@@ -413,7 +413,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		if(!isalnum(*fname)) {	// filename doesn't begin with an alpha-numeric char?
 			continue;
 		}
-		sprintf(filepath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
+		SAFEPRINTF2(filepath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 			: scfg.dir[f.dir]->path,fname);
 
 #ifdef _WIN32
@@ -422,6 +422,9 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			GetShortPathName(filepath, shortpath, sizeof(shortpath));
 			SAFECOPY(fname, getfname(shortpath));
 		}
+#else
+		fexistcase(filepath);
+		SAFECOPY(fname, getfname(filepath));
 #endif
 
 		padfname(fname,f.name);
