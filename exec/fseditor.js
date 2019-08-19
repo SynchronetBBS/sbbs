@@ -1342,6 +1342,9 @@ function quote_mode()
 							topline++;
 					}
 				}
+				// Clear attributes at the end of quoted text block
+				if(ypos > 0)
+					line[ypos - 1].text += "\x01n";
 				quote_window_displayed=0;
 				redraw_screen();
 				return(false);
