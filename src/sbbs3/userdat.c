@@ -3355,3 +3355,37 @@ BOOL DLLCALL user_set_time_property(scfg_t* scfg, unsigned user_number, const ch
 }
 
 #endif /* !NO_SOCKET_SUPPORT */
+
+/****************************************************************************/
+/* Returns user number or 0 on failure or "user not found".					*/
+/****************************************************************************/
+int lookup_user(scfg_t* cfg, link_list_t* list, const char *inname)
+{
+	if(inname == NULL || *inname == 0)
+		return 0;
+
+	if(list->first == NULL) {
+		user_t user;
+		int userdat = openuserdat(cfg, /* modify */FALSE);
+		if(userdat < 0)
+			return 0;
+
+		for(user.number = 1; ;user.number++) {
+			if(fgetuserdat(cfg, &user, userdat) != 0)
+				break;
+			if(user.misc&DELETED)
+				continue;
+			listPushNodeData(list, &user, sizeof(user));
+		}
+		close(userdat);
+	}
+	for(list_node_t* node = listFirstNode(list); node != NULL; node = node->next) {
+		if(stricmp(((user_t*)node->data)->alias, inname) == 0)
+			return ((user_t*)node->data)->number;
+	}
+	for(list_node_t* node = listFirstNode(list); node != NULL; node = node->next) {
+		if(stricmp(((user_t*)node->data)->name, inname) == 0)
+			return ((user_t*)node->data)->number;
+	}
+	return 0;
+}

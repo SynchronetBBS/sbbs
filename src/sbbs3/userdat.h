@@ -152,6 +152,8 @@ DLLEXPORT BOOL	DLLCALL check_name(scfg_t*, const char* name);
 DLLEXPORT BOOL	DLLCALL sysop_available(scfg_t*);
 DLLEXPORT BOOL	DLLCALL set_sysop_availability(scfg_t*, BOOL available);
 
+DLLEXPORT int	DLLCALL lookup_user(scfg_t*, link_list_t*, const char* name);
+
 /* Login attempt/hack tracking */
 typedef struct {
 	union xp_sockaddr addr;	/* host with consecutive failed login attempts */
