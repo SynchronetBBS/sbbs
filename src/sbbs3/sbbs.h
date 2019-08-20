@@ -725,6 +725,11 @@ public:
     __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
 #endif
 	;
+	int		comprintf(const char *fmt, ...)			/* BBS direct-comm printf function */
+#if defined(__GNUC__)   // Catch printf-format errors
+    __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
+#endif
+	;
 	void	backspace(int count=1);			/* Output destructive backspace(s) via outchar */
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
 	int		outchar(enum unicode_codepoint, char cp437_fallback);

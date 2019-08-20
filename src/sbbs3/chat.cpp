@@ -1042,7 +1042,7 @@ void sbbs_t::privchat(bool local)
 							,thisnode.misc&NODE_NMSG ? 'M':' ');
 						attr(cfg.color[clr_chatlocal]);
 						for(x=13,y=0;x<rows;x++,y++) {
-							rprintf("\x1b[%d;1H\x1b[K",x+1);
+							comprintf("\x1b[%d;1H\x1b[K",x+1);
 							if(y<=localline)
 								bprintf("%s\r\n",localbuf[y]); 
 						}
