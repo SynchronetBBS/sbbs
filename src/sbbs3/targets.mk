@@ -105,7 +105,7 @@ endif
 sexyz:	$(SEXYZ)
 
 .PHONY: jsdoor
-jsdoor: $(JSDOOR)
+jsdoor: $(JS_DEPS) $(CRYPT_DEPS) $(XPDEV-MT_LIB) $(SMBLIB) $(UIFCLIB-MT) $(CIOLIB-MT) $(JSDOOR)
 
 # Library dependencies
 $(SBBS): 
