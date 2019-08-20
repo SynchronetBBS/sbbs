@@ -365,8 +365,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if(destuser > 0) {
 				SAFEPRINTF4(str, text[MsgPostedToYouVia]
 					,msg.from
-					,cfg.grp[cfg.sub[n]->grp]->sname, cfg.sub[n]->lname
-					,cfg.qhub[hubnum]->id);
+					,cfg.qhub[hubnum]->id
+					,cfg.grp[cfg.sub[n]->grp]->sname, cfg.sub[n]->lname);
 				putsmsg(&cfg, destuser, str);
 			}
 		} else {

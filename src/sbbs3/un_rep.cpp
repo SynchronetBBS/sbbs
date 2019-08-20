@@ -559,8 +559,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 				if(destuser > 0) {
 					SAFEPRINTF4(str, text[MsgPostedToYouVia]
 						,msg.from
-						,cfg.grp[cfg.sub[n]->grp]->sname, cfg.sub[n]->lname
-						,(useron.rest&FLAG('Q')) ? useron.alias : "QWK");
+						,(useron.rest&FLAG('Q')) ? useron.alias : "QWK"
+						,cfg.grp[cfg.sub[n]->grp]->sname, cfg.sub[n]->lname);
 					putsmsg(&cfg, destuser, str);
 				}
 				if(!(useron.rest&FLAG('Q')))
