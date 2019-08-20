@@ -3064,88 +3064,7 @@ BOOL WINAPI ControlHandler(unsigned long CtrlType)
 }
 #endif
 
-
-typedef struct {
-	char		alias[LEN_ALIAS+1];
-	char		real[LEN_NAME+1];
-} username_t;
-
-/****************************************************************************/
-/* Note: Wrote another version of this function that read all userdata into */
-/****************************************************************************/
-/* Looks for a perfect match amoung all usernames (not deleted users)		*/
-/* Returns the number of the perfect matched username or 0 if no match		*/
-/* Called from functions waitforcall and newuser							*/
-/* memory then scanned it from memory... took longer - always.              */
-/****************************************************************************/
-ushort matchname(const char *inname)
-{
-	static ulong total_users;
-	static username_t *username;
-	ulong last_user;
-	int userdat,i;
-	char str[256],name[LEN_NAME+1],alias[LEN_ALIAS+1],misc[9];
-	ulong l;
-
-	if(!total_users) {		/* Load CRCs */
-		fprintf(stdout,"\n%-25s","Loading user names...");
-		sprintf(str,"%suser/user.dat",scfg.data_dir);
-		if((userdat=nopen(str,O_RDONLY|O_DENYNONE))==-1)
-			return(0);
-		last_user=filelength(userdat)/U_LEN;
-		for(total_users=0;total_users<last_user;total_users++) {
-			printf("%5ld\b\b\b\b\b",total_users);
-			if((username=(username_t *)realloc(username
-				,(total_users+1L)*sizeof(username_t)))==NULL)
-				break;
-			memset(&username[total_users], 0, sizeof(username[total_users]));
-			i=0;
-			while(i<LOOP_NODEDAB
-				&& lock(userdat,(long)((long)(total_users)*U_LEN)+U_ALIAS
-					,LEN_ALIAS+LEN_NAME)==-1)
-				i++;
-			if(i>=LOOP_NODEDAB) {	   /* Couldn't lock USER.DAT record */
-				lprintf(LOG_ERR,"ERROR locking USER.DAT record #%ld",total_users);
-				continue;
-			}
-			(void)lseek(userdat,(long)((long)(total_users)*U_LEN)+U_ALIAS,SEEK_SET);
-			(void)read(userdat,alias,LEN_ALIAS);
-			(void)read(userdat,name,LEN_NAME);
-			(void)lseek(userdat,(long)(((long)total_users)*U_LEN)+U_MISC,SEEK_SET);
-			(void)read(userdat,misc,8);
-			for(i=0;i<8;i++)
-				if(misc[i]==ETX || misc[i]=='\r') break;
-			misc[i]=0;
-			unlock(userdat,(long)((long)(total_users)*U_LEN)+U_ALIAS
-				,LEN_ALIAS+LEN_NAME);
-			if(ahtoul(misc)&DELETED)
-				continue;
-			for(i=0;i<LEN_ALIAS;i++)
-				if(alias[i]==ETX || alias[i]=='\r') break;
-			alias[i]=0;
-			for(i=0;i<LEN_NAME;i++)
-				if(name[i]==ETX || name[i]=='\r') break;
-			name[i]=0;
-			SAFECOPY(username[total_users].alias, alias);
-			SAFECOPY(username[total_users].real, name);
-		}
-		close(userdat);
-		fprintf(stdout,"     \b\b\b\b\b");  /* Clear counter */
-		fprintf(stdout,
-			"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
-			"%25s"
-			"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
-			,"");
-	}
-
-	for(l=0;l<total_users;l++)
-		if(stricmp(username[l].alias, inname) == 0)
-			return((ushort)l+1);
-	for(l=0;l<total_users;l++)
-		if(stricmp(username[l].real, inname) == 0)
-			return((ushort)l+1);
-	return(0);
-}
+link_list_t user_list;
 
 /****************************************************************************/
 /* Converts goofy FidoNet time format into Unix format						*/
@@ -4525,7 +4444,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 	if(!usernumber && strListFind(cfg.sysop_alias_list, hdr.to, /* case sensitive: */false) >= 0)
 		usernumber = 1;
 	if(!usernumber)
-		usernumber = matchname(hdr.to);
+		usernumber = lookup_user(&scfg, &user_list, hdr.to);
 	if(!usernumber && cfg.default_recipient[0])
 		usernumber = matchuser(&scfg, cfg.default_recipient, TRUE);
 	if(!usernumber) {
@@ -5979,7 +5898,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 			if(result==SMB_SUCCESS) {		/* Successful import */
 				user_t user;
-				if(i!=cfg.badecho && cfg.echomail_notify && (user.number=matchname(hdr.to))!=0
+				if(i!=cfg.badecho && cfg.echomail_notify && (user.number=lookup_user(&scfg, &user_list, hdr.to))!=0
 					&& getuserdat(&scfg, &user)==0
 					&& can_user_read_sub(&scfg, cfg.area[i].sub, &user, NULL)) {
 					sprintf(str
