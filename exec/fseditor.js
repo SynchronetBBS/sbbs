@@ -38,7 +38,7 @@ var tab_width=8;
 var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.*s\1>\r\n";
 var hdr_field_width = console.screen_columns - 7;
 var stat_attr	= 0x1f;
-var stat_fmt	= "\1h\1w\0014 FSEditor v" + REVISION + " - Type \1yCTRL-K\1w for help          %s\1>\1n";
+var stat_fmt	= "\1h\1w\0014 FSEditor v" + REVISION + " - Type \1yCTRL-K\1w for help         %s\1>\1n";
 var subj,to,from;
 
 var options = load('modopts.js', 'fseditor');
