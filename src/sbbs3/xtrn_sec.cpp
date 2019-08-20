@@ -343,6 +343,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -456,6 +457,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -516,6 +518,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -655,6 +658,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -701,6 +705,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -837,6 +842,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -948,6 +954,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -1048,6 +1055,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -1154,6 +1162,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -1228,6 +1237,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -1252,6 +1262,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -1276,6 +1287,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -1317,6 +1329,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",dropdir,tmp);
+		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
