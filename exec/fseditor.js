@@ -1025,8 +1025,8 @@ function make_strings(soft,embed_colour)
 							case CYAN:
 								str+='\x01C';
 								break;
-							case WHITE:
-								str+='\x01W';
+							case LIGHTGRAY:
+								str+='\x01N';
 								break;
 						}
 					}
@@ -1053,7 +1053,7 @@ function make_strings(soft,embed_colour)
 							case CYAN:
 								str+='\x016';
 								break;
-							case WHITE:
+							case LIGHTGRAY:
 								str+='\x017';
 								break;
 						}
@@ -1342,9 +1342,6 @@ function quote_mode()
 							topline++;
 					}
 				}
-				// Clear attributes at the end of quoted text block
-				if(ypos > 0)
-					line[ypos - 1].text += "\x01n";
 				quote_window_displayed=0;
 				redraw_screen();
 				return(false);
