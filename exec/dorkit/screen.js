@@ -7,10 +7,8 @@
  * all data should be provided using the print() method.
  */
 
-if (typeof(Graphic) === 'undefined')
-	load("graphic.js");
-if (typeof(Attribute) === 'undefined')
-	load("attribute.js");
+require('graphic.js', 'Graphic');
+require('attribute.js', 'Attribute');
 
 function Screen(w, h, attr, fill)
 {

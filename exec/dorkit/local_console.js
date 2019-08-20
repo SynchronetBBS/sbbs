@@ -2,8 +2,7 @@
  * Implements the local console using conio
  */
 
-if (typeof(Graphic) === 'undefined')
-	load("graphic.js");
+require('graphic.js', 'Graphic');
 
 dk.console.local_io = {
 	graphic:new Graphic(dk.cols, dk.height, 7, ' '),

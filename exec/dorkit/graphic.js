@@ -15,9 +15,7 @@
  * Instance variable data contains an array of array of Graphics.Cell objects
  *
  */
-
-if (typeof(Attribute) === 'undefined')
-	load("attribute.js");
+require('attribute.js', 'Attribute');
 
 function Graphic(w,h,attr,ch)
 {
