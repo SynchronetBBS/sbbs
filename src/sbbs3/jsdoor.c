@@ -53,6 +53,20 @@
 
 scfg_t		scfg;
 
+void* DLLCALL js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
+{
+	void *ret = JS_GetInstancePrivate(cx, obj, cls, NULL);
+
+	if(ret == NULL)
+		JS_ReportError(cx, "'%s' instance: No Private Data or Class Mismatch"
+			, cls == NULL ? "???" : cls->name);
+	return ret;
+}
+
+void call_socket_open_callback(BOOL open)
+{
+}
+
 SOCKET open_socket(int domain, int type, const char* protocol)
 {
 	SOCKET	sock;

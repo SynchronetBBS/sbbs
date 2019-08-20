@@ -552,6 +552,8 @@ enum {
 	,SYSSTAT_PROP_FEEDBACK
 };
 
+extern JSClass js_system_class;
+
 #ifndef JSDOOR
 static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
@@ -736,8 +738,6 @@ static JSClass js_sysstats_class = {
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub		/* finalize		*/
 };
-
-extern JSClass js_system_class;
 
 static JSBool
 js_alias(JSContext *cx, uintN argc, jsval *arglist)

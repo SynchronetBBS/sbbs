@@ -255,6 +255,8 @@ JSDOOR_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)js_client$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_com$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_cryptcon$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_cryptcert$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_cryptkeyset$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_global$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_rtpool$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_sprintf$(OFILE) \
@@ -274,8 +276,7 @@ JSDOOR_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)wordwrap$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)uucode$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)yenc$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)msgdate$(OFILE)\
 
 SEXYZ_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)sexyz$(OFILE) \
