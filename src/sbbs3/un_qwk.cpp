@@ -78,6 +78,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	str_list_t	host_can=NULL;
 	str_list_t	subject_can=NULL;
 	str_list_t	twit_list=NULL;
+	link_list_t user_list={0};
 	const char* hostname;
 
 	memset(&msg,0,sizeof(msg));
@@ -360,6 +361,14 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			signal_sub_sem(&cfg,j);
 			msgs++;
 			tmsgs++;
+			int destuser = lookup_user(&cfg, &user_list, msg.to);
+			if(destuser > 0) {
+				SAFEPRINTF4(str, text[MsgPostedToYouVia]
+					,msg.from
+					,cfg.grp[cfg.sub[n]->grp]->sname, cfg.sub[n]->lname
+					,cfg.qhub[hubnum]->id);
+				putsmsg(&cfg, destuser, str);
+			}
 		} else {
 			if(dupe)
 				dupes++;
@@ -386,6 +395,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	strListFree(&host_can);
 	strListFree(&subject_can);
 	strListFree(&twit_list);
+	listFree(&user_list);
 
 	delfiles(cfg.temp_dir,"*.NDX");
 	SAFEPRINTF(str,"%sMESSAGES.DAT",cfg.temp_dir);
