@@ -590,6 +590,10 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		/* lastly, search exec dir */
 		if(path[0]==0)
 			SAFEPRINTF2(path,"%s%s",p->cfg->exec_dir,filename);
+
+		if(!fexistcase(path)) {
+			SAFECOPY(path, filename);
+		}
 	}
 	free(filename);
 
