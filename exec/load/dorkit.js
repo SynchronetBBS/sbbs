@@ -49,7 +49,7 @@ if (!String.prototype.repeat) {
       str += str;
     }
     return rpt;
-  }
+  };
 }
 
 var dk = {
@@ -857,6 +857,7 @@ var dk = {
 		this.user.times_on = parseInt(df[15], 10);
 		// TODO: Parse a date out of this.
 		this.user.last_called = df[16];
+		this.user.seconds_remaining_from = file_date(path);
 		this.user.seconds_remaining = parseInt(df[17], 10);
 		this.user.minutes_remaining = parseInt(df[18], 10);
 		switch(df[19].toUpperCase()) {
@@ -971,6 +972,7 @@ dk.parse_cmdline(argc, argv);
 if (dk.connection.socket !== undefined)
 	dk.system.mode = 'socket';
 
+log("Mode: "+dk.system.mode);
 switch(dk.system.mode) {
 	case 'sbbs':
 		load("sbbs_console.js");
