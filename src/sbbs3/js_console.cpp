@@ -1113,6 +1113,7 @@ js_print(JSContext *cx, uintN argc, jsval *arglist)
 	}
     else for (i=0; i < argc; i++) {
 		JSVALUE_TO_RASTRING(cx, argv[i], cstr, &cstr_sz, NULL);
+
 		if(cstr==NULL)
 		    return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
@@ -1857,10 +1858,8 @@ js_lock_input(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	if(lock) {
 		pthread_mutex_lock(&sbbs->input_thread_mutex);
-		sbbs->input_thread_mutex_locked=true;
-	} else if(sbbs->input_thread_mutex_locked) {
+	} else {
 		pthread_mutex_unlock(&sbbs->input_thread_mutex);
-		sbbs->input_thread_mutex_locked=false;
 	}
 	JS_RESUMEREQUEST(cx, rc);
 

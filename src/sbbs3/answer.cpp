@@ -404,7 +404,6 @@ bool sbbs_t::answer()
 	if(!(telnet_mode&TELNET_MODE_OFF)) {
 		/* Stop the input thread from writing to the telnet_* vars */
 		pthread_mutex_lock(&input_thread_mutex);
-		input_thread_mutex_locked = true;
 
 		if(stricmp(telnet_terminal,"sexpots")==0) {	/* dial-up connection (via SexPOTS) */
 			SAFEPRINTF2(str,"%s connection detected at %lu bps", terminal, cur_rate);
@@ -446,7 +445,6 @@ bool sbbs_t::answer()
 		if(telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
 			rows = telnet_rows;
 		pthread_mutex_unlock(&input_thread_mutex);
-		input_thread_mutex_locked = false;
 	}
 	lprintf(LOG_INFO, "terminal type: %lux%lu %s", cols, rows, terminal);
 	SAFECOPY(client_ipaddr, cid);	/* Over-ride IP address with Caller-ID info */

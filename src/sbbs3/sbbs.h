@@ -327,14 +327,12 @@ public:
 	char	client_ident[128];
 	char	client_ipaddr[INET6_ADDRSTRLEN];
 	char	local_addr[INET6_ADDRSTRLEN];
-#ifdef USE_CRYPTLIB
 	CRYPT_SESSION	ssh_session;
 	int		session_channel;
 	bool	ssh_mode;
 	SOCKET	passthru_socket;
-    bool	passthru_output_thread_running;
-    bool	passthru_input_thread_running;
-#endif
+	bool	passthru_socket_active;
+    bool	passthru_thread_running;
 
 	scfg_t	cfg;
 
@@ -347,7 +345,6 @@ public:
     RingBuf	outbuf;
 	HANDLE	input_thread;
 	pthread_mutex_t	input_thread_mutex;
-	bool	input_thread_mutex_locked;	// by someone other than the input_thread
 	bool	input_thread_mutex_created;
 	pthread_mutex_t	ssh_mutex;
 	bool	ssh_mutex_created;
