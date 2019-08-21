@@ -1295,7 +1295,7 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 {
 	BOOL		success;
 	xmodem_t	xm;
-	ulong		fsize;
+	int64_t		fsize;
 
 	conn_binary_mode_on();
 
