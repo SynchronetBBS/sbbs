@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 		return(-1);
 	}
 
-	cterm=cterm_init(ti.screenheight, ti.screenwidth, 1, 1, SCROLL_LINES, scrollbuf, CTERM_EMULATION_ANSI_BBS);
+	cterm=cterm_init(ansi ? 512 : ti.screenheight, ti.screenwidth, 1, 1, SCROLL_LINES, scrollbuf, CTERM_EMULATION_ANSI_BBS);
 	if(!cterm) {
 		fputs("ERROR Initializing CTerm!\n", stderr);
 		return 1;
