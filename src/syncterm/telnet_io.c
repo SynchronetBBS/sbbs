@@ -46,15 +46,24 @@ static int lprintf(int level, const char *fmt, ...)
 
 void putcom(char* buf, size_t len)
 {
-	char	str[128];
-	char*	p=str;
-	size_t i;
 
-	for(i=0;i<len;i++)
-		p+=sprintf(p,"%u ", ((BYTE)buf[i]));
+	fd_set	wds;
+	FD_ZERO(&wds);
+	FD_SET(telnet_sock, &wds);
+	struct timeval tv;
+	tv.tv_sec=0;
+	tv.tv_usec=1000;
+	if(select(telnet_sock+1, NULL, &wds, NULL, &tv) == 1) {
+		char	str[128];
+		char*	p=str;
+		size_t i;
+		for(i=0;i<len;i++)
+			p+=sprintf(p,"%u ", ((BYTE)buf[i]));
 
-	lprintf(LOG_DEBUG,"TX: %s", str);
-	send(telnet_sock, buf, len, 0);
+		lprintf(LOG_DEBUG,"TX: %s", str);
+		sendsocket(telnet_sock, buf, len);
+	} else
+		lprintf(LOG_WARNING, "TX: putcom(%d) timeout", len);
 }
 
 static void send_telnet_cmd(uchar cmd, uchar opt)
