@@ -2739,7 +2739,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	cb.scfg = scfg;
 	if (argc < 3) {
-		JS_ReportError(cx, "At least two arguments required (interfaces, port, and protocol)");
+		JS_ReportError(cx, "At least three arguments required (interfaces, port, and protocol)");
 		goto fail;
 	}
 	if (argc > 3) {
