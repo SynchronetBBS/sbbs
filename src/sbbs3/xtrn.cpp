@@ -704,7 +704,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(native && !(mode&EX_OFFLINE)) {
 
 		if(!(mode&EX_STDIN)) {
-			passthru_socket_active = true;
+			if(passthru_thread_running)
+				passthru_socket_active = true;
+			else
+				pthread_mutex_lock(&input_thread_mutex);
 		}
 	}
 
@@ -725,7 +728,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	if(!success) {
 		XTRN_CLEANUP;
-		passthru_socket_active = false;
+		if(!(mode&EX_STDIN)) {
+			if(passthru_thread_running)
+				passthru_socket_active = false;
+			else
+				pthread_mutex_unlock(&input_thread_mutex);
+		}
 		SetLastError(last_error);	/* Restore LastError */
         errormsg(WHERE, ERR_EXEC, realcmdline, mode);
 		SetLastError(last_error);	/* Restore LastError */
@@ -1095,7 +1103,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
 		if(native) {
-			passthru_socket_active = false;
+			if(!(mode&EX_STDIN)) {
+				if(passthru_thread_running)
+					passthru_socket_active = false;
+				else
+					pthread_mutex_unlock(&input_thread_mutex);
+			}
 		}
 
 		curatr=~0;			// Can't guarantee current attributes
@@ -1672,7 +1685,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	}
 
 	if(!(mode&EX_STDIN)) {
-		passthru_socket_active = true;
+		if(!(mode&EX_STDIN)) {
+			if(passthru_thread_running)
+				passthru_socket_active = true;
+			else
+				pthread_mutex_lock(&input_thread_mutex);
+		}
 	}
 
 	if(!(mode&EX_NOLOG) && pipe(err_pipe)!=0) {
@@ -1698,7 +1716,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		winsize.ws_row=rows;
 		winsize.ws_col=cols;
 		if((pid=forkpty(&in_pipe[1],NULL,&term,&winsize))==-1) {
-			passthru_socket_active = false;
+			if(!(mode&EX_STDIN)) {
+				if(passthru_thread_running)
+					passthru_socket_active = false;
+				else
+					pthread_mutex_unlock(&input_thread_mutex);
+			}
 			errormsg(WHERE,ERR_EXEC,fullcmdline,0);
 			return(-1);
 		}
@@ -1718,7 +1741,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 
 		if((pid=FORK())==-1) {
-			passthru_socket_active = false;
+			if(!(mode&EX_STDIN)) {
+				if(passthru_thread_running)
+					passthru_socket_active = false;
+				else
+					pthread_mutex_unlock(&input_thread_mutex);
+			}
 			errormsg(WHERE,ERR_EXEC,fullcmdline,0);
 			return(-1);
 		}
@@ -2012,7 +2040,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(!(mode&EX_NOLOG))
 		close(err_pipe[0]);
 
-	passthru_socket_active = false;
+	if(!(mode&EX_STDIN)) {
+		if(passthru_thread_running)
+			passthru_socket_active = false;
+		else
+			pthread_mutex_unlock(&input_thread_mutex);
+	}
 
 	return(errorlevel = WEXITSTATUS(i));
 }
@@ -2099,7 +2132,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,QUOTED_STRING(instr[i],cfg.sys_op,str,sizeof(str)), avail);
                     break;
                 case 'P':   /* Client protocol */
-                    strncat(cmd,client.protocol, avail);
+                    strncat(cmd, passthru_thread_running ? "raw" : client.protocol, avail);
                     break;
                 case 'Q':   /* QWK ID */
                     strncat(cmd,cfg.sys_id, avail);
