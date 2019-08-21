@@ -1212,7 +1212,7 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 	int32	start_time=0;
 	jsrefcount	rc;
 	scfg_t*		scfg;
-	ulong		tl;
+	time_t		tl;
 
 	scfg=JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
