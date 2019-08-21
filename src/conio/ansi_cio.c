@@ -467,7 +467,7 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 					if(out[(cx-x)*2] != ' ' && out[(cx-x)*2] != 0)
 						break;
 					/* Next, make sure that the attribute is the same */
-					if(out[(cx-x)*2+1] != out[cx*2+1])
+					if(out[(cx-x)*2+1] != out[1])
 						break;
 					/* Finally, if this isn't what's on screen, increment i */
 					if((ansivmem[y*cio_textinfo.screenwidth+cx] & 0xff) != 0 && (ansivmem[y*cio_textinfo.screenwidth+cx] & 0xff) != ' ')
