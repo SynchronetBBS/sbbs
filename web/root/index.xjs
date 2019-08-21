@@ -104,6 +104,12 @@
 			</div>
 		</div>
 
+		<?xjs if (file_exists(settings.web_lib + '../components/header.xjs')) {
+			(function () {
+				load(xjs_compile(settings.web_lib + '../components/header.xjs'));
+			})();
+		} ?>
+
 		<nav class="navbar navbar-default navbar-fixed-top">
 			<div class="container<?xjs if (settings.layout_full_width) write('-fluid'); ?>">
 				<div class="navbar-header">
@@ -193,7 +199,11 @@
 			</div>
 		  	<hr>
 			<footer>
-			<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
+				<?xjs if (file_exists(settings.web_lib + '../components/footer.xjs')) {
+					load(xjs_compile(settings.web_lib + '../components/footer.xjs'));
+				} else { ?>
+					<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
+				<?xjs } ?>
 			</footer>
 		</div>
 
