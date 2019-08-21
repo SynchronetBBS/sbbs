@@ -18,20 +18,19 @@ void viewscroll(void)
 	int i;
 	struct	text_info txtinfo;
 
-    gettextinfo(&txtinfo);
-	cterm->backpos+=cterm->height;
+	gettextinfo(&txtinfo);
 	if(cterm->backpos>cterm->backlines) {
-		memmove(cterm->scrollback,cterm->scrollback+cterm->width*2*(cterm->backpos-cterm->backlines),cterm->width*2*(cterm->backlines-(cterm->backpos-cterm->backlines)));
+		memmove(cterm->scrollback,cterm->scrollback+cterm->width,cterm->width*sizeof(*cterm->scrollback)*(cterm->backlines-1));
 		cterm->backpos=cterm->backlines;
 	}
-	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width*2);
+	vmem_gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
 	top=cterm->backpos;
 	for(i=0;!i;) {
 		if(top<1)
 			top=1;
 		if(top>cterm->backpos)
 			top=cterm->backpos;
-		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm->scrollback+(txtinfo.screenwidth*2*top));
+		vmem_puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm->scrollback+(txtinfo.screenwidth*top));
 		key=getch();
 		switch(key) {
 			case 0xe0:
@@ -164,11 +163,18 @@ int main(int argc, char **argv)
 	if(ansi) {
 		puts("");
 		puts("END OF ANSI");
-		vmem_gettext(1,1,ti.screenwidth,ti.screenheight,scrollbuf);
+		if(cterm->backpos>cterm->backlines) {
+			memmove(cterm->scrollback,cterm->scrollback+cterm->width,cterm->width*sizeof(*cterm->scrollback)*(cterm->backlines-1));
+			cterm->backpos=cterm->backlines;
+		}
+		vmem_gettext(1,1,ti.screenwidth,ti.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
+		cterm->backpos += ti.screenheight;
 		puttext_can_move=1;
 		puts("START OF SCREEN DUMP...");
-		clrscr();
-		vmem_puttext(1,1,ti.screenwidth,ti.screenheight,scrollbuf);
+		for (i = 0; i < cterm->backpos; i += ti.screenheight) {
+			clrscr();
+			vmem_puttext(1,1,ti.screenwidth,cterm->backpos - i > ti.screenheight ? ti.screenheight : cterm->backpos - i,cterm->scrollback+(ti.screenwidth*i));
+		}
 	}
 	else
 		viewscroll();
