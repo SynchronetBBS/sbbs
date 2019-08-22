@@ -8,6 +8,8 @@ var k;
 while(!js.terminated) {
 	if (parent_queue.poll(0))
 		break;
+	if (parent_queue.orphan)
+		break;
 	k = console.inkey(0, 100);
 	ai.add(k);
 }
