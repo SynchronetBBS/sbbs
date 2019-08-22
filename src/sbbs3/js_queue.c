@@ -272,6 +272,7 @@ enum {
 	,QUEUE_PROP_READ_LEVEL
 	,QUEUE_PROP_WRITE_LEVEL
 	,QUEUE_PROP_OWNER
+	,QUEUE_PROP_ORPHAN
 };
 
 #ifdef BUILD_JSDOCS
@@ -279,8 +280,9 @@ static char* queue_prop_desc[] = {
 	 "name of the queue (if it has one)"
 	,"<i>true</i> if data is waiting to be read from queue"
 	,"number of values in the read queue"
-	,"number of values in the write qeueue"
+	,"number of values in the write queue"
 	,"<i>true</i> if current thread is the owner/creator of the queue"
+	,"<i>true</i> if the owner of the queue has detached from the queue"
 	,NULL
 };
 #endif
@@ -323,6 +325,11 @@ static JSBool js_queue_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = BOOLEAN_TO_JSVAL(INT_TO_BOOL(msgQueueOwner(q)));
 			JS_RESUMEREQUEST(cx, rc);
 			break;
+		case QUEUE_PROP_ORPHAN:
+			rc=JS_SUSPENDREQUEST(cx);
+			*vp = BOOLEAN_TO_JSVAL(INT_TO_BOOL(q->flags & MSG_QUEUE_ORPHAN));
+			JS_RESUMEREQUEST(cx, rc);
+			break;
 	}
 	return(JS_TRUE);
 }
@@ -337,6 +344,7 @@ static jsSyncPropertySpec js_queue_properties[] = {
 	{	"read_level"		,QUEUE_PROP_READ_LEVEL	,QUEUE_PROP_FLAGS,	312 },
 	{	"write_level"		,QUEUE_PROP_WRITE_LEVEL	,QUEUE_PROP_FLAGS,	312 },
 	{	"owner"				,QUEUE_PROP_OWNER		,QUEUE_PROP_FLAGS,	316 },
+	{	"orphan"			,QUEUE_PROP_ORPHAN		,QUEUE_PROP_FLAGS,	31702 },
 	{0}
 };
 
