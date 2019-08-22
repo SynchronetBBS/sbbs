@@ -1897,8 +1897,8 @@ bool add_sub_to_arealist(sub_t* sub, fidoaddr_t uplink)
 	}
 	strupr(echotag);
 
-	lprintf(LOG_INFO, "Adding sub-board (%s) to Area %s with tag %s, uplink: %s"
-		,sub->code, cfg.auto_add_to_areafile ? "File" : "List", echotag, smb_faddrtoa(&uplink, NULL));
+	lprintf(LOG_INFO, "Adding sub-board (%-*s) to Area %s with uplink %s, tag: %s"
+		,LEN_EXTCODE, sub->code, cfg.auto_add_to_areafile ? "File" : "List", smb_faddrtoa(&uplink, NULL), echotag);
 
 	if(cfg.auto_add_to_areafile) {
 		/* Back-up Area File (at most, once per invocation) */
