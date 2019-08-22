@@ -119,7 +119,22 @@ Screen.prototype.print=function(str) {
 	str = this.escbuf + str;
 	this.escbuf = '';
 
-	while((m=str.match(Screen.ANSIRe)) !== null) {
+	while(str.length > 0) {
+		m = str.indexOf('\x1b[');
+		if (m == -1) {
+			for (i=0; i<str.length; i++)
+				writech(this, str[i]);
+			str = '';
+		}
+		if (m > 0) {
+			for (i=0; i<m; i++)
+				writech(this, str[i]);
+			str = str.substr(m);
+		}
+
+		m = str.match(Screen.ANSIRe);
+		if (m == null)
+			break;
 		chars = m[1];
 		ext = m[2];
 		pb = m[3];
@@ -215,7 +230,7 @@ Screen.prototype.print=function(str) {
 				}
 				break;
 			case 'K':	// Erase in line
-				scr.touched=true;
+				this.touched=true;
 				param_defaults(p, [0]);
 				switch(p[0]) {
 					case 0:	// Erase to eol
@@ -235,7 +250,7 @@ Screen.prototype.print=function(str) {
 				}
 				break;
 			case 'P':	// Delete character
-				scr.touched=true;
+				this.touched=true;
 				param_defaults(p, [1]);
 				if (p[1] > this.graphic.width - this.pos.x)
 					p[1] = this.graphic.width - this.pos.x;
@@ -245,7 +260,7 @@ Screen.prototype.print=function(str) {
 					this.graphic.SetCell(this.graphic.ch, this.attr.value, (this.width - 1) - x, this.pos.y);
 				break;
 			case 'X':	// Erase character
-				scr.touched=true;
+				this.touched=true;
 				param_defaults(p, [1]);
 				if (p[1] > this.graphic.width - this.pos.x)
 					p[1] = this.graphic.width - this.pos.x;
