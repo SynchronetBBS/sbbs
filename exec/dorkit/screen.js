@@ -10,9 +10,9 @@
 require('graphic.js', 'Graphic');
 require('attribute.js', 'Attribute');
 
-function Screen(w, h, attr, fill)
+function Screen(w, h, attr, fill, puttext)
 {
-	this.graphic = new Graphic(w, h, attr, fill);
+	this.graphic = new Graphic(w, h, attr, fill, puttext);
 	this.escbuf = '';
 	this.pos = {x:0, y:0};
 	this.saved_pos = {x:0, y:0};
@@ -47,11 +47,9 @@ Screen.prototype.print=function(str) {
 
 			while (scr.pos.y >= scr.graphic.height) {
 				// Scroll up...
-				scr.graphic.copy(0,1,scr.graphic.width-1, scr.graphic.height-2, 0, 0);
-				for (i=0; i<scr.graphic.width; i++) {
-					scr.graphic.data[i][scr.graphic.height-1].ch = scr.graphic.ch;
-					scr.graphic.data[i][scr.graphic.height-1].attr = scr.attr.value;
-				}
+				scr.graphic.copy(0,1,scr.graphic.width-1, scr.graphic.height-1, 0, 0);
+				for (i=0; i<scr.graphic.width; i++)
+					scr.graphic.SetCell(scr.graphic.ch, scr.attr.value, i, scr.graphic.height-1);
 				scr.pos.y--;
 			}
 		}
@@ -90,8 +88,7 @@ Screen.prototype.print=function(str) {
 				break;
 			default:
 				scr.touched=true;
-				scr.graphic.data[scr.pos.x][scr.pos.y].ch = ch;
-				scr.graphic.data[scr.pos.x][scr.pos.y].attr.value = scr.attr.value;
+				scr.graphic.SetCell(ch, scr.attr.value, scr.pos.x, scr.pos.y);
 				scr.pos.x++;
 				if (scr.pos.x >= scr.graphic.width) {
 					scr.pos.x = 0;
@@ -148,10 +145,8 @@ Screen.prototype.print=function(str) {
 					p[1] = this.graphic.width - this.pos.x;
 				if (this.pos.x < this.graphic.width-1)
 					this.graphic.copy(this.pos.x, this.pos.y, this.graphic.width-1 - p[1], this.pos.y, this.pos.x + p[1], this.pos.y);
-				for (x = 0; x<p[1]; x++) {
-					this.graphic.data[this.pos.x + x][this.pos.y].ch = this.graphic.ch;
-					this.graphic.data[this.pos.x + x][this.pos.y].attr = this.attr.value;
-				}
+				for (x = 0; x<p[1]; x++)
+					this.graphic.SetCell(this.graphic.ch, this.attr.value, this.pos.x + x, this.pos.y);
 				break;
 			case 'A':	// Cursor Up
 				param_defaults(p, [1]);
@@ -195,29 +190,21 @@ Screen.prototype.print=function(str) {
 				param_defaults(p, [0]);
 				switch(p[0]) {
 					case 0:	// Erase to end of screen...
-						for (x = this.pos.x; x<this.pos.width; x++) {
-							this.graphic.data[x][this.pos.y].ch = this.graphic.ch;
-							this.graphic.data[x][this.pos.y].attr = this.attr.value;
-						}
+						for (x = this.pos.x; x<this.pos.width; x++)
+							this.graphic.SetCell(this.graphic.ch, this.attr.value, x, this.pos.y);
 						for (y = this.pos.y+1; y<this.pos.height; y++) {
-							for (x = 0; x<this.graphic.width; x++) {
-								this.graphic.data[x][y].ch = this.graphic.ch;
-								this.graphic.data[x][y].attr = this.attr.value;
-							}
+							for (x = 0; x<this.graphic.width; x++)
+								this.graphic.SetCell(this.graphic.ch, this.attr.value, x, y);
 						}
 						this.touched = true;
 						break;
 					case 1:	// Erase to beginning of screen...
 						for (y = 0; y < this.pos.y; y++) {
-							for (x = 0; x<this.graphic.width; x++) {
-								this.graphic.data[x][y].ch = this.graphic.ch;
-								this.graphic.data[x][y].attr = this.attr.value;
-							}
+							for (x = 0; x<this.graphic.width; x++)
+								this.graphic.SetCell(this.graphic.ch, this.attr.value, x, y);
 						}
-						for (x = 0; x<=this.pos.x; x++) {
-							this.graphic.data[x][this.pos.y].ch = this.graphic.ch;
-							this.graphic.data[x][this.pos.y].attr = this.attr.value;
-						}
+						for (x = 0; x<=this.pos.x; x++)
+							this.graphic.SetCell(this.graphic.ch, this.attr.value, x, this.pos.y);
 						this.touched = true;
 						break;
 					case 2:	// Erase entire screen (Most BBS terminals also move to 1/1)
@@ -232,22 +219,16 @@ Screen.prototype.print=function(str) {
 				param_defaults(p, [0]);
 				switch(p[0]) {
 					case 0:	// Erase to eol
-						for (x = this.pos.x; x<this.pos.width; x++) {
-							this.graphic.data[x][this.pos.y].ch = this.graphic.ch;
-							this.graphic.data[x][this.pos.y].attr = this.attr.value;
-						}
+						for (x = this.pos.x; x<this.pos.width; x++)
+							this.graphic.SetCell(this.graphic.ch, this.attr.value, x, this.pos.y);
 						break;
 					case 1:	// Erase to start of line
-						for (x = 0; x<=this.pos.x; x++) {
-							this.graphic.data[x][this.pos.y].ch = this.graphic.ch;
-							this.graphic.data[x][this.pos.y].attr = this.attr.value;
-						}
+						for (x = 0; x<=this.pos.x; x++)
+							this.graphic.SetCell(this.graphic.ch, this.attr.value, x, this.pos.y);
 						break;
 					case 2:	// Erase entire line
-						for (x = 0; x<this.graphic.width; x++) {
-							this.graphic.data[x][this.pos.y].ch = this.graphic.ch;
-							this.graphic.data[x][this.pos.y].attr = this.attr.value;
-						}
+						for (x = 0; x<this.graphic.width; x++)
+							this.graphic.SetCell(this.graphic.ch, this.attr.value, x, this.pos.y);
 						break;
 					default:
 						break;
@@ -260,20 +241,16 @@ Screen.prototype.print=function(str) {
 					p[1] = this.graphic.width - this.pos.x;
 				if (this.pos.x < this.graphic.width-1)
 					this.graphic.copy(this.pos.x + p[1], this.pos.y, this.graphic.width - 1, this.pos.y, this.pos.x, this.pos.y);
-				for (x = 0; x<p[1]; x++) {
-					this.graphic.data[(this.width - 1) - x][this.pos.y].ch = this.graphic.ch;
-					this.graphic.data[(this.width - 1) - x][this.pos.y].attr = this.attr.value;
-				}
+				for (x = 0; x<p[1]; x++)
+					this.graphic.SetCell(this.graphic.ch, this.attr.value, (this.width - 1) - x, this.pos.y);
 				break;
 			case 'X':	// Erase character
 				scr.touched=true;
 				param_defaults(p, [1]);
 				if (p[1] > this.graphic.width - this.pos.x)
 					p[1] = this.graphic.width - this.pos.x;
-				for (x = 0; x<p[1]; x++) {
-					this.graphic.data[this.pos.x + x][this.pos.y].ch = this.graphic.ch;
-					this.graphic.data[this.pos.x + x][this.pos.y].attr = this.attr.value;
-				}
+				for (x = 0; x<p[1]; x++)
+					this.graphic.SetCell(this.graphic.ch, this.attr.value, this.pos.x + x, this.pos.y);
 				break;
 			case 'm':
 				param_defaults(p, [0]);

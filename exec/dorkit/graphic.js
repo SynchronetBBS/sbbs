@@ -17,8 +17,12 @@
  */
 require('attribute.js', 'Attribute');
 
-function Graphic(w,h,attr,ch)
+function Graphic(w,h,attr,ch, puttext)
 {
+	if (puttext === undefined)
+		puttext = false;
+	if (puttext)
+		this.keep_puttext = true;
 	if(ch==undefined)
 		this.ch=' ';
 	else
@@ -36,12 +40,18 @@ function Graphic(w,h,attr,ch)
 		this.width=w;
 
 	this.data=new Array(this.width);
+	if (this.keep_puttext)
+		this.puttext = new Array(this.width * this.height * 2);
 	for(var y=0; y<this.height; y++) {
 		for(var x=0; x<this.width; x++) {
 			if(y==0) {
 				this.data[x]=new Array(this.height);
 			}
 			this.data[x][y]=new this.Cell(this.ch,this.attribute);
+			if (this.keep_puttext) {
+				this.puttext[(y*this.width+x)*2] = ascii(this.ch);
+				this.puttext[(y*this.width+x)*2+1] = this.attribute.value;
+			}
 		}
 	}
 }
@@ -55,6 +65,16 @@ Graphic.prototype.Cell = function(ch,attr)
 	this.ch=ch;
 	this.attr=new Attribute(attr);
 };
+
+Graphic.prototype.SetCell = function(ch, attr, x, y)
+{
+	var nc = new this.Cell(ch, attr);
+	this.data[x][y] = nc;
+	if (this.keep_puttext) {
+		this.puttext[(y*this.width+x)*2+1] = attr;
+		this.puttext[(y*this.width+x)*2] = ascii(ch);
+	}
+}
 
 /*
  * BIN property is the string representation of the graphic in a series of
@@ -83,7 +103,7 @@ Object.defineProperty(Graphic.prototype, "BIN", {
 		for (y=0; y<this.height; y++) {
 			for (x=0; x<this.width; x++) {
 				if (blen >= pos+2)
-					this.data[x][y] = new this.Cell(bin.charAt(pos), bin.charCodeAt(pos+1));
+					this.SetCell(bin.charAt(pos), bin.charCodeAt(pos+1));
 				else
 					return;
 				pos += 2;
@@ -307,7 +327,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 						x--;
             		break;
                 default:
-			        this.data[x][y]=new this.Cell(ch,attr);
+					this.SetCell(ch, attr, x, y);
 			        x++;
                     break;
             }
@@ -376,6 +396,8 @@ Graphic.prototype.copy = function(sx, sy, ex, ey, tx, ty)
 	var ydir;
 	var xstart;
 	var ystart;
+	var xend;
+	var yend;
 	var txstart;
 	var tystart;
 	var width;
@@ -394,31 +416,31 @@ Graphic.prototype.copy = function(sx, sy, ex, ey, tx, ty)
 	if (sx <= tx) {
 		xdir = -1;
 		xstart = ex;
-		txstart = tx+width-1;
+		xend = sx - 1;
+		txstart = tx+(ex - sx);
 	}
 	else {
 		xdir = 1;
 		xstart = sx;
+		xend = ex + 1;
 		txstart = tx;
 	}
 	if (sy <= ty) {
 		ydir = -1;
 		ystart = ey;
-		tystart = ty+height-1;
+		yend = sy - 1;
+		tystart = ty+(ey - sy);
 	}
 	else {
 		ydir = 1;
 		ystart = sy;
+		yend = ey + 1;
 		tystart = ty;
 	}
 
-	for (y=0; y < height; y += ydir) {
-		for (x=0; x < width; x++) {
-			this.data[txstart + (x*xdir)][tystart + (y*ydir)].ch
-					= this.data[xstart + (x*xdir)][ystart + (y*ydir)].ch;
-			this.data[txstart + (x*xdir)][tystart + (y*ydir)].attr.value
-					= this.data[xstart + (x*xdir)][ystart + (y*ydir)].ch;
-		}
+	for (y=ystart; y != yend; y += ydir) {
+		for (x=xstart; x != xend; x += xdir)
+			this.SetCell(this.data[x][y].ch, this.data[x][y].attr.value, txstart + (x-xstart), tystart + (y-ystart));
 	}
 	return ret;
 }
@@ -436,8 +458,7 @@ Graphic.prototype.put = function(gr, x, y)
 
 	for (gx = 0; gx < gr.width; gx++) {
 		for (gy = 0; gy < gr.height; gy++) {
-			this.data[x+gx][y+gy].ch = gr.data[gx][gy].ch;
-			this.data[x+gx][y+gy].attr.value = gr.data[gx][gy].attr.value;
+			this.SetCell(gr.data[gx][gy].ch, gr.data[gx][gy].attr.value, x, y);
 		}
 	}
 }
@@ -454,7 +475,11 @@ Graphic.prototype.clear = function()
 				this.data[x]=new Array(this.height);
 			}
 			this.data[x][y].ch = this.ch;
-			this.data[x][u].attr.value = this.attribute.value;
+			this.data[x][y].attr.value = this.attribute.value;
+			if (this.keep_puttext) {
+				this.puttext[(y*this.width+x)*2] = ascii(this.ch);
+				this.puttext[(y*this.width+x)*2+1] = this.attribute.value;
+			}
 		}
 	}
 };
