@@ -366,7 +366,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				SAFEPRINTF4(str, text[MsgPostedToYouVia]
 					,msg.from
 					,cfg.qhub[hubnum]->id
-					,cfg.grp[cfg.sub[n]->grp]->sname, cfg.sub[n]->lname);
+					,cfg.grp[cfg.sub[j]->grp]->sname, cfg.sub[j]->lname);
 				putsmsg(&cfg, destuser, str);
 			}
 		} else {
