@@ -420,16 +420,37 @@ var dk = {
 		},
 
 		/*
+		 * An array of callbacks to fill the input queue with.
+		 */
+		input_queue_callback:[],
+
+		/*
 		 * Waits up to timeout millisections and returns true if a key
 		 * is pressed before the timeout.  For ANSI sequences, returns
 		 * true when the entire ANSI sequence is available.
 		 */
 		waitkey:function(timeout) {
+			var i;
+			var d;
+			var end = (new Date()).valueOf() + timeout;
+
 			if (this.keybuf.length > 0)
 				return true;
-			if (this.input_queue.poll(timeout) === false)
-				return false;
-			return true;
+			do {
+				if (this.input_queue_callback.length > 0) {
+					timeout = 10;
+					for (i = 0; i < this.input_queue_callback.length; i++) {
+						if ((d = this.input_queue_callback[i]()) !== undefined)
+							this.keybuf += d;
+					}
+					if (this.keybuf.length)
+						return true;
+				}
+
+				if (this.input_queue.poll(timeout) !== false)
+					return true;
+			} while ((new Date()).valueOf() < end);
+			return false;
 		},
 
 		/*

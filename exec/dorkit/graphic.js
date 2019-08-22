@@ -69,7 +69,7 @@ Object.defineProperty(Graphic.prototype, "BIN", {
 		for (y=0; y<this.height; y++) {
 			for (x=0; x<this.width; x++) {
 				bin += this.data[x][y].ch;
-				bin += ascii(this.data[x][y].attr);
+				bin += ascii(this.data[x][y].attr.value);
 			}
 		}
 		return bin;
