@@ -39,7 +39,7 @@
 #include "gen_defs.h"
 #include "telnet.h"
 
-const char* DLLCALL telnet_cmd_desc(uchar cmd)
+const char* telnet_cmd_desc(uchar cmd)
 {
 	static char unknown[32];
 
@@ -112,7 +112,7 @@ char* telnet_option_descriptions[]={
 	,"TN3270E"								/* 40 */
 };
 
-const char* DLLCALL telnet_opt_desc(uchar opt)
+const char* telnet_opt_desc(uchar opt)
 {
 	static char unknown[32];
 
@@ -126,7 +126,7 @@ const char* DLLCALL telnet_opt_desc(uchar opt)
     return(unknown);
 }
 
-uchar DLLCALL telnet_opt_ack(uchar cmd)
+uchar telnet_opt_ack(uchar cmd)
 {
 	switch(cmd) {
 		case TELNET_DO:		return TELNET_WILL;
@@ -137,7 +137,7 @@ uchar DLLCALL telnet_opt_ack(uchar cmd)
 	return 0;
 }
 
-uchar DLLCALL telnet_opt_nak(uchar cmd)
+uchar telnet_opt_nak(uchar cmd)
 {
 	switch(cmd) {
 		case TELNET_DO:		return TELNET_WONT;
@@ -146,4 +146,34 @@ uchar DLLCALL telnet_opt_nak(uchar cmd)
 		case TELNET_WONT:	return TELNET_DO;
 	}
 	return 0;
+}
+
+/*****************************************************************************/
+// Escapes Telnet IACs in 'inbuf' by doubling the IAC char
+// 'result' may point to either inbuf (if there were no IACs) or outbuf
+// Returns the final byte count of the result
+/*****************************************************************************/
+size_t telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen, uchar** result)
+{
+    BYTE* first_iac = (BYTE*)memchr(inbuf, TELNET_IAC, inlen);
+
+	if(first_iac == NULL) {	/* Nothing to expand */
+		if(result != NULL)
+			*result = (uchar*)inbuf;
+		return inlen;
+	}
+
+	size_t o = first_iac - inbuf;
+	memcpy(outbuf, inbuf, o);
+
+	for(size_t i = o; i < inlen && o < outlen; i++) {
+		if(inbuf[i] == TELNET_IAC)
+			outbuf[o++] = TELNET_IAC;
+		if(o >= outlen)
+			break;
+		outbuf[o++] = inbuf[i];
+	}
+	if(result != NULL)
+		*result = outbuf;
+	return o;
 }
