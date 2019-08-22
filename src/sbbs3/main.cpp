@@ -2179,7 +2179,13 @@ void passthru_thread(void* arg)
 		}
 
 		if(sbbs->xtrn_mode & EX_BIN) {
-    		if(!RingBufWrite(&sbbs->outbuf, (BYTE*)inbuf, rd)) {
+			BYTE	telnet_buf[sizeof(inbuf) * 2];
+			BYTE*	bp = (BYTE*)inbuf;
+
+			if(!(sbbs->telnet_mode&TELNET_MODE_OFF))
+				rd = telnet_expand((BYTE*)inbuf, rd, telnet_buf, sizeof(telnet_buf), &bp);
+
+    		if(!RingBufWrite(&sbbs->outbuf, bp, rd)) {
 				lprintf(LOG_ERR,"Cannot pass from passthru socket to outbuf");
 				break;
 			}
@@ -5717,7 +5723,7 @@ NO_SSH:
 			new_node->telnet_mode|=TELNET_MODE_OFF; // RLogin does not use Telnet commands
 		}
 
-		{
+		if(true) {
 			/* TODO: IPv6? */
 			SOCKET	tmp_sock;
 			SOCKADDR_IN		tmp_addr={0};
