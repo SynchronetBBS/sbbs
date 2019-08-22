@@ -529,13 +529,23 @@ var dk = {
 			if (in_opts===undefined)
 				in_opts={};
 
-			function do_select_erase(opt, obj) {
+			function do_select_keep(obj) {
+				if (opt.select) {
+					opt.select = false;
+					obj.movex(-pos);
+					obj.print(dispstr);
+					pos = str.length;
+				}
+			}
+
+			function do_select_erase(obj) {
 				if (opt.select) {
 					opt.select = false;
 					obj.movex(-pos);
 					obj.print(' '.repeat(str.length));
 					obj.movex(-str.length);
-					str = '';
+					dispstr = str = '';
+					pos = 0;
 				}
 			}
 
@@ -572,12 +582,9 @@ var dk = {
 			if (opt.select)
 				this.attr.value = opt.sel_attr.value;
 			this.print(dispstr);
-			if (opt.select) {
-				this.movex(-(str.length));
+			if (opt.select)
 				this.attr.value = opt.attr.value;
-			}
-			else
-				pos = str.length;
+			pos = str.length;
 
 			if (this.auto_pause && this.remote_screen !== undefined)
 				this.remote_screen.new_lines = 0;
@@ -603,45 +610,24 @@ var dk = {
 				}
 				switch(key) {
 					case 'KEY_HOME':
-						if (opt.select) {
-							opt.select = false;
-							this.movex(-pos);
-							this.print(dispstr);
-							this.movex(-str.length);
-							pos = 0;
-						}
+						do_select_keep(this);
 						this.movex(-pos);
 						pos=0;
 						break;
 					case 'KEY_END':
-						if (opt.select) {
-							opt.select = false;
-							this.movex(-pos);
-							this.print(dispstr);
-							this.pos = str.length;
-						}
+						do_select_keep(this);
 						this.movex(str.length - pos);
 						pos = str.length;
 						break;
 					case 'KEY_LEFT':
-						if (opt.select) {
-							opt.select = false;
-							this.movex(-pos);
-							this.print(dispstr);
-							this.movex(pos - str.length);
-						}
+						do_select_keep(this);
 						if (pos == 0)				// Already at start... ignoe TODO: Beep?
 							break;
 						pos--;
 						this.movex(-1);
 						break;
 					case 'KEY_RIGHT':
-						if (opt.select) {
-							opt.select = false;
-							this.movex(-pos);
-							this.print(dispstr);
-							this.movex(pos - str.length);
-						}
+						do_select_keep(this);
 						if (pos >= str.length)		// Already at end... ignore TODO: Beep?
 							break;
 						pos++;
@@ -649,8 +635,7 @@ var dk = {
 						break;
 					case '\x7f':
 					case '\b':
-						if (opt.select)
-							do_select_erase(opt, this);
+						do_select_erase(this);
 						if (pos == 0)				// Already at start... ignoe TODO: Beep?
 							break;
 						str = str.substr(0, pos - 1) + str.substr(pos);
@@ -664,8 +649,7 @@ var dk = {
 						this.movex(-1-(str.length - pos));
 						break;
 					case 'KEY_DEL':
-						if (opt.select)
-							do_select_erase(opt, this);
+						do_select_erase(this);
 						if (pos >= str.length)		// Already at end... ignore TODO: Beep?
 							break;
 						str = str.substr(0, pos) + str.substr(pos+1);
@@ -678,13 +662,7 @@ var dk = {
 						this.movex(-1-(str.length - pos));
 						break;
 					case 'KEY_INS':
-						if (opt.select) {
-							opt.select = false;
-							this.movex(-pos);
-							this.print(dispstr);
-							this.movex(-str.length);
-							this.movex(pos);
-						}
+						do_select_keep(this);	// This is a bit weird...
 						insmode = !insmode;
 						break;
 					case '\r':
@@ -707,16 +685,15 @@ var dk = {
 						// TODO: Better handling of numbers... leading zeros, negative values, etc.
 						if (key.length > 1)			// Unhandled extended key... ignore TODO: Beep?
 							break;
-						if (str.length >= opt.len)	// String already too long... ignore TODO: Beep?
-							break;
 						if (opt.integer && (key < '0' || key > '9'))	// Invalid integer... ignore TODO: Beep?
 							break;
 						if ((!opt.exascii) && key.charCodeAt(0) > 127)	// Invalid EXASCII... ignore TODO: Beep?
 							break;
 						if (key.charCodeAt(0) < 32)	// Control char... ignore TODO: Beep?
 							break;
-						if (opt.select)
-							do_select_erase(opt, this);
+						do_select_erase(this);
+						if (str.length >= opt.len)	// String already too long... ignore TODO: Beep?
+							break;
 						newstr = str.substr(0, pos) + key + str.substr(insmode ? pos : pos+1);
 						if (opt.decimal && newstr.search(decimal_re) === -1)
 							break;
