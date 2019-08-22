@@ -42,7 +42,7 @@
 #include "fidodefs.h"
 
 #define SBBSECHO_VERSION_MAJOR		3
-#define SBBSECHO_VERSION_MINOR		8
+#define SBBSECHO_VERSION_MINOR		9
 
 #define SBBSECHO_PRODUCT_CODE		0x12FF	/* from http://ftsc.org/docs/ftscprod.013 */
 
@@ -212,6 +212,7 @@ typedef struct {
 	bool		ignore_netmail_local_attr;
 	bool		relay_filtered_msgs;
 	bool		auto_add_subs;
+	bool		auto_add_to_areafile;
 	bool		use_outboxes;
 	ulong		bsy_timeout;
 	ulong		bso_lock_attempts;

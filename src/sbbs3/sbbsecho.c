@@ -1882,32 +1882,9 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 	free(outname);
 }
 
-bool add_sub_to_areafile(sub_t* sub, fidoaddr_t uplink)
+bool add_sub_to_arealist(sub_t* sub, fidoaddr_t uplink)
 {
-	FILE* fp;
-
-	lprintf(LOG_INFO, "Adding sub-board to Area File with uplink (%s): %s"
-		,smb_faddrtoa(&uplink, NULL), sub->code);
-
-	/* Back-up Area File (at most, once per invocation) */
-	static ulong added;
-	if(added++ == 0)
-		backup(cfg.areafile, cfg.areafile_backups, /* ren: */FALSE);
-
-	fp = fopen(cfg.areafile, fexist(cfg.areafile) ? "r+" : "w+");
-	if(fp == NULL) {
-		lprintf(LOG_ERR, "Error %d opening %s", errno, cfg.areafile);
-		return false;
-	}
-	/* Make sure the line we add is on a line of its own: */
-	int ch = EOF;
-	int last_ch = '\n';
-	while(!feof(fp)) {
-		if((ch = fgetc(fp)) != EOF)
-			last_ch = ch;
-	}
-	if(last_ch != '\n')
-		fputc('\n', fp);
+	FILE* fp = NULL;
 
 	/* Replace spaces in the sub short-name with underscores (for use as the echotag) */
 	char echotag[FIDO_AREATAG_LEN+1];
@@ -1919,9 +1896,35 @@ bool add_sub_to_areafile(sub_t* sub, fidoaddr_t uplink)
 		REPLACE_CHARS(echotag, ' ', '_', p);
 	}
 	strupr(echotag);
-	fprintf(fp, "%-*s %-*s %s\n"
-		,LEN_EXTCODE, sub->code, FIDO_AREATAG_LEN, echotag, smb_faddrtoa(&uplink, NULL));
-	fclose(fp);
+
+	lprintf(LOG_INFO, "Adding sub-board (%s) to Area %s with tag %s, uplink: %s"
+		,sub->code, cfg.auto_add_to_areafile ? "File" : "List", echotag, smb_faddrtoa(&uplink, NULL));
+
+	if(cfg.auto_add_to_areafile) {
+		/* Back-up Area File (at most, once per invocation) */
+		static ulong added;
+		if(added++ == 0)
+			backup(cfg.areafile, cfg.areafile_backups, /* ren: */FALSE);
+
+		fp = fopen(cfg.areafile, fexist(cfg.areafile) ? "r+" : "w+");
+		if(fp == NULL) {
+			lprintf(LOG_ERR, "Error %d opening %s", errno, cfg.areafile);
+			return false;
+		}
+		/* Make sure the line we add is on a line of its own: */
+		int ch = EOF;
+		int last_ch = '\n';
+		while(!feof(fp)) {
+			if((ch = fgetc(fp)) != EOF)
+				last_ch = ch;
+		}
+		if(last_ch != '\n')
+			fputc('\n', fp);
+
+		fprintf(fp, "%-*s %-*s %s\n"
+			,LEN_EXTCODE, sub->code, FIDO_AREATAG_LEN, echotag, smb_faddrtoa(&uplink, NULL));
+		fclose(fp);
+	}
 
 	return new_area(echotag, sub->subnum, &uplink);
 }
@@ -6238,104 +6241,101 @@ int main(int argc, char **argv)
 	atexit(cleanup);
 
 	/******* READ IN AREAS.BBS FILE *********/
-
-	fexistcase(cfg.areafile);
-	printf("Reading %s",cfg.areafile);
-	if((stream=fopen(cfg.areafile,"r"))==NULL) {
-		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,cfg.areafile);
-		bail(1);
-		return -1;
-	}
 	cfg.areas=0;		/* Total number of areas in AREAS.BBS */
 	cfg.area=NULL;
-	while(!terminated) {
-		if(!fgets(str,sizeof(str),stream))
-			break;
-		truncsp(str);
-		p=str;
-		SKIP_WHITESPACE(p);	/* Find first printable char */
-		if(*p==';' || !*p)          /* Ignore blank lines or start with ; */
-			continue;
-		int areanum = cfg.areas;
-		if(!new_area(/* tag: */NULL, /* Pass-through by default: */INVALID_SUB, /* link: */NULL)) {
-			lprintf(LOG_ERR,"ERROR allocating memory for area #%u.",cfg.areas + 1);
-			bail(1);
-			return -1;
-		}
-		sprintf(tmp_code,"%-.*s",LEN_EXTCODE,p);
-		tp=tmp_code;
-		FIND_WHITESPACE(tp);
-		*tp=0;
-		for(i=0;i<scfg.total_subs;i++)
-			if(!stricmp(tmp_code,scfg.sub[i]->code))
+
+	fexistcase(cfg.areafile);
+	if((stream = fopen(cfg.areafile,"r")) != NULL) {
+		printf("Reading %s",cfg.areafile);
+		while(!terminated) {
+			if(!fgets(str,sizeof(str),stream))
 				break;
-		if(i<scfg.total_subs)
-			cfg.area[areanum].sub = i;
-		else if(stricmp(tmp_code,"P")) {
-			printf("\n");
-			lprintf(LOG_WARNING,"%s: Unrecognized internal code, assumed passthru",tmp_code);
-		}
-
-		FIND_WHITESPACE(p);				/* Skip code */
-		SKIP_WHITESPACE(p);				/* Skip white space */
-		SAFECOPY(area_tag,p);		       /* Area tag */
-		truncstr(area_tag,"\t ");
-		strupr(area_tag);
-		if(area_tag[0]=='*')         /* UNKNOWN-ECHO area */
-			cfg.badecho=areanum;
-		if(areanum > 0 && area_is_valid(find_area(area_tag))) {
-			printf("\n");
-			lprintf(LOG_WARNING, "DUPLICATE AREA (%s) in area file (%s), IGNORED!", area_tag, cfg.areafile);
-			cfg.areas--;
-			continue;
-		}
-		if((cfg.area[areanum].tag=strdup(area_tag))==NULL) {
-			printf("\n");
-			lprintf(LOG_ERR,"ERROR allocating memory for area #%u tag."
-				,areanum+1);
-			bail(1);
-			return -1;
-		}
-
-		FIND_WHITESPACE(p);		/* Skip tag */
-		SKIP_WHITESPACE(p);		/* Skip white space */
-
-		while(*p && *p!=';') {
-			if(!isdigit(*p)) {
-				printf("\n");
-				lprintf(LOG_WARNING, "Invalid Area File line, expected link address(es) after echo-tag: '%s'", str);
-				break;
+			truncsp(str);
+			p=str;
+			SKIP_WHITESPACE(p);	/* Find first printable char */
+			if(*p==';' || !*p)          /* Ignore blank lines or start with ; */
+				continue;
+			int areanum = cfg.areas;
+			if(!new_area(/* tag: */NULL, /* Pass-through by default: */INVALID_SUB, /* link: */NULL)) {
+				lprintf(LOG_ERR,"ERROR allocating memory for area #%u.",cfg.areas + 1);
+				bail(1);
+				return -1;
 			}
-			if((cfg.area[areanum].link=(fidoaddr_t *)
-				realloc(cfg.area[areanum].link
-				,sizeof(fidoaddr_t)*(cfg.area[areanum].links+1)))==NULL) {
+			sprintf(tmp_code,"%-.*s",LEN_EXTCODE,p);
+			tp=tmp_code;
+			FIND_WHITESPACE(tp);
+			*tp=0;
+			for(i=0;i<scfg.total_subs;i++)
+				if(!stricmp(tmp_code,scfg.sub[i]->code))
+					break;
+			if(i<scfg.total_subs)
+				cfg.area[areanum].sub = i;
+			else if(stricmp(tmp_code,"P")) {
 				printf("\n");
-				lprintf(LOG_ERR,"ERROR allocating memory for area #%u links."
+				lprintf(LOG_WARNING,"%s: Unrecognized internal code, assumed passthru",tmp_code);
+			}
+
+			FIND_WHITESPACE(p);				/* Skip code */
+			SKIP_WHITESPACE(p);				/* Skip white space */
+			SAFECOPY(area_tag,p);		       /* Area tag */
+			truncstr(area_tag,"\t ");
+			strupr(area_tag);
+			if(area_tag[0]=='*')         /* UNKNOWN-ECHO area */
+				cfg.badecho=areanum;
+			if(areanum > 0 && area_is_valid(find_area(area_tag))) {
+				printf("\n");
+				lprintf(LOG_WARNING, "DUPLICATE AREA (%s) in area file (%s), IGNORED!", area_tag, cfg.areafile);
+				cfg.areas--;
+				continue;
+			}
+			if((cfg.area[areanum].tag=strdup(area_tag))==NULL) {
+				printf("\n");
+				lprintf(LOG_ERR,"ERROR allocating memory for area #%u tag."
 					,areanum+1);
 				bail(1);
 				return -1;
 			}
-			fidoaddr_t link = atofaddr(p);
-			cfg.area[areanum].link[cfg.area[areanum].links] = link;
-			if(findnodecfg(&cfg, link, /* exact: */false) == NULL) {
-				printf("\n");
-				lprintf(LOG_WARNING, "Configuration for %s-linked-node (%s) not found in %s"
-					,cfg.area[areanum].tag, faddrtoa(&link), cfg.cfgfile);
-			} else
-				cfg.area[areanum].links++;
-			FIND_WHITESPACE(p);	/* Skip address */
-			SKIP_WHITESPACE(p);	/* Skip white space */
+
+			FIND_WHITESPACE(p);		/* Skip tag */
+			SKIP_WHITESPACE(p);		/* Skip white space */
+
+			while(*p && *p!=';') {
+				if(!isdigit(*p)) {
+					printf("\n");
+					lprintf(LOG_WARNING, "Invalid Area File line, expected link address(es) after echo-tag: '%s'", str);
+					break;
+				}
+				if((cfg.area[areanum].link=(fidoaddr_t *)
+					realloc(cfg.area[areanum].link
+					,sizeof(fidoaddr_t)*(cfg.area[areanum].links+1)))==NULL) {
+					printf("\n");
+					lprintf(LOG_ERR,"ERROR allocating memory for area #%u links."
+						,areanum+1);
+					bail(1);
+					return -1;
+				}
+				fidoaddr_t link = atofaddr(p);
+				cfg.area[areanum].link[cfg.area[areanum].links] = link;
+				if(findnodecfg(&cfg, link, /* exact: */false) == NULL) {
+					printf("\n");
+					lprintf(LOG_WARNING, "Configuration for %s-linked-node (%s) not found in %s"
+						,cfg.area[areanum].tag, faddrtoa(&link), cfg.cfgfile);
+				} else
+					cfg.area[areanum].links++;
+				FIND_WHITESPACE(p);	/* Skip address */
+				SKIP_WHITESPACE(p);	/* Skip white space */
+			}
+
+	#if 0
+			if(cfg.area[areanum].sub!=INVALID_SUB || cfg.area[areanum].links)
+				cfg.areas++;		/* Don't allocate if no tossing */
+	#endif
 		}
-
-#if 0
-		if(cfg.area[areanum].sub!=INVALID_SUB || cfg.area[areanum].links)
-			cfg.areas++;		/* Don't allocate if no tossing */
-#endif
+		fclose(stream);
+		printf("\n");
+		lprintf(LOG_DEBUG, "Read %u areas from %s", cfg.areas, cfg.areafile);
 	}
-	fclose(stream);
 
-	printf("\n");
-	lprintf(LOG_DEBUG, "Read %u areas from %s", cfg.areas, cfg.areafile);
 	if(cfg.badecho >= 0)
 		lprintf(LOG_DEBUG, "Bad-echo area: %s", scfg.sub[cfg.area[cfg.badecho].sub]->code);
 
@@ -6357,7 +6357,7 @@ int main(int argc, char **argv)
 					,/* Case-sensitive: */false) >= 0)
 					break;
 			if(hub < cfg.nodecfgs)
-				add_sub_to_areafile(scfg.sub[subnum], cfg.nodecfg[hub].addr);
+				add_sub_to_arealist(scfg.sub[subnum], cfg.nodecfg[hub].addr);
 		}
 	}
 

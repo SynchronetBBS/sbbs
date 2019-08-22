@@ -1754,10 +1754,10 @@ int main(int argc, char **argv)
 	"    (`---`) existing in outgoing EchoMail message text to `===`.\n"
 	"    This setting defaults to `No`.\n"
 	"\n"
-	"`Automatically Add New Subs to Area File`, when set to `Yes`, enables\n"
+	"`Automatically Add New Subs to Area List`, when enabled, instructs\n"
 	"    SBBSecho to detect newly added Sub-boards in any Message Groups that\n"
-	"    are listed with a `Linked Node` as their hub/uplink and add those\n"
-	"    Sub-boards as new areas in your Area File.\n"
+	"    are listed with a `Linked Node` as their hub/uplink and add those new\n"
+	"    Sub-boards as new areas to your Area List and optionally, Area File.\n"
 	"\n"
 	"`Allow Nodes to Add Areas from Area File` when set to `Yes` allows linked\n"
 	"    nodes to add areas listed in your Area File (e.g. `areas.bbs`).\n"
@@ -1805,8 +1805,8 @@ int main(int argc, char **argv)
 						,cfg.echomail_notify ? "Yes":"No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%-3.3s","Convert Existing Tear Lines"
 						,cfg.convert_tear ? "Yes":"No");
-					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%-3.3s","Automatically Add New Subs "
-						"to Area File",cfg.auto_add_subs ? "Yes":"No");
+					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%s","Automatically Add New Subs "
+						"to Area List", cfg.auto_add_subs ? (cfg.auto_add_to_areafile ? "List/File":"List Only"):"No");
 					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%-3.3s","Allow Nodes to Add Areas "
 						"from Area File",cfg.add_from_echolists_only ? "No":"Yes");
 					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%u","Maximum Backups to Maintain of Area File"
@@ -1887,11 +1887,22 @@ int main(int argc, char **argv)
 							}
 							break;
 						case 6:
-							k = !cfg.auto_add_subs;
+							i=0;
+							strncpy(opt[i++], "Area List (memory) Only", MAX_OPLN-1);
+							strncpy(opt[i++], "Area List and Area File", MAX_OPLN-1);
+							strncpy(opt[i++], "No", MAX_OPLN-1);
+							opt[i][0] = 0;
+							if(!cfg.auto_add_subs)
+								k = 2;
+							else if(cfg.auto_add_to_areafile)
+								k = 1;
+							else
+								k = 0;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-								,"Automatically Add New Sub-boards to Area File",uifcYesNoOpts)) {
-								case 0:	cfg.auto_add_subs = true;	break;
-								case 1:	cfg.auto_add_subs = false;	break;
+								,"Automatically Add New Sub-boards to Area List",opt)) {
+								case 0:	cfg.auto_add_subs = true;	cfg.auto_add_to_areafile = false; break;
+								case 1:	cfg.auto_add_subs = true;	cfg.auto_add_to_areafile = true; break;
+								case 2:	cfg.auto_add_subs = false;	break;
 							}
 							break;
 						case 7:
