@@ -3,7 +3,9 @@ if (!dk.console.remote_io.sock.is_connected)
 	throw("Unable to create socket object");
 
 dk.console.remote_io.print = function(string) {
-	this.sock.write(string.replace(/\xff/g, "\xff\xff"));
+	if (dk.connection.telnet)
+		string = string.replace(/\xff/g, "\xff\xff");
+	this.sock.write(string);
 };
 
 load("ansi_console.js");
