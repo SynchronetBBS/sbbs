@@ -11,6 +11,19 @@ function convert(f, f2)
 	var x;
 	var origattr = -1;
 	var j;
+
+	function apply_attr() {
+		if ((attr & 0x70) != (origattr & 0x70))
+			f2.write('`r' + ['0','1','2','3','4','5','6','7'][(attr & 0x70)>>4]);
+		if ((attr & 0x8f) != (origattr & 0x8f)) {
+			if ((attr & 0x80) == 0)
+				f2.write('`' + ['^', '1', '2','3','4','5','6','7','8','9','0','!','@','#','$','%'][attr & 0x0f]);
+			else
+				f2.write('`B' + ['^', '1', '2','3','4','5','6','7','8','9','0','!','@','#','$','%'][attr & 0x0f]);
+		}
+		origattr = attr;
+	}
+
 	while ((l = f.readln(65535)) != null) {
 		if (l[0] == '@' && l[1] == '#') {
 			attr = 2;
@@ -27,15 +40,7 @@ function convert(f, f2)
 						throw('Newline!');
 						break;
 					default:
-						if ((attr & 0x70) != (origattr & 0x70))
-							f2.write('`r' + ['0','1','2','3','4','5','6','7'][(attr & 0x70)>>4]);
-						if ((attr & 0x8f) != (origattr & 0x8f)) {
-							if ((attr & 0x80) == 0)
-								f2.write('`' + ['^', '1', '2','3','4','5','6','7','8','9','0','!','@','#','$','%'][attr & 0x0f]);
-							else
-								f2.write('`B' + ['^', '1', '2','3','4','5','6','7','8','9','0','!','@','#','$','%'][attr & 0x0f]);
-						}
-						origattr = attr;
+						apply_attr();
 						f2.write(l[i]);
 						col++;
 						if (col == 81) {
@@ -51,6 +56,7 @@ function convert(f, f2)
 				case 'K':
 					if (m[1].length > 0)
 						throw('K ARG!');
+					apply_attr();
 					while (col < 80) {
 						f2.write(' ');
 						col++;
