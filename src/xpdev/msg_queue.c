@@ -102,6 +102,9 @@ long DLLCALL msgQueueDetach(msg_queue_t* q)
 	if(q==NULL || q->refs<1)
 		return(-1);
 
+	if(msgQueueOwner(q))
+		q->flags |= MSG_QUEUE_ORPHAN;
+
 	if((refs=--q->refs)==0)
 		msgQueueFree(q);
 

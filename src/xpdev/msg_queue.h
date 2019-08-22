@@ -58,6 +58,7 @@ typedef struct {
 
 #define MSG_QUEUE_MALLOC		(1<<0)	/* Queue allocated with malloc() */
 #define MSG_QUEUE_BIDIR			(1<<1)	/* Bi-directional message queue */
+#define MSG_QUEUE_ORPHAN		(1<<2)	/* Owner has detached */
 
 DLLEXPORT msg_queue_t*	DLLCALL msgQueueInit(msg_queue_t*, long flags);
 DLLEXPORT BOOL			DLLCALL msgQueueFree(msg_queue_t*);
