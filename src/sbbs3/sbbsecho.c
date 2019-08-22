@@ -6245,7 +6245,9 @@ int main(int argc, char **argv)
 	cfg.area=NULL;
 
 	fexistcase(cfg.areafile);
-	if((stream = fopen(cfg.areafile,"r")) != NULL) {
+	if((stream = fopen(cfg.areafile,"r")) == NULL) {
+		lprintf(LOG_NOTICE, "Could not open Area File (%s): %s", cfg.areafile, strerror(errno));
+	} else {
 		printf("Reading %s",cfg.areafile);
 		while(!terminated) {
 			if(!fgets(str,sizeof(str),stream))
