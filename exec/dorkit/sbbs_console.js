@@ -7,6 +7,11 @@ console.ctrlkey_passthru=0x7fffffff;	// Disable all parsing.
 /*
  * Clears the current screen to black and moves to location 1,1
  */
+dk.console.input_queue_callback.push(function() {
+	var key = console.inkey();
+	if (key != '')
+		return key;
+});
 
 dk.console.remote_io = {
 	clear:function() {
@@ -63,9 +68,6 @@ dk.console.remote_io = {
 		console.line_counter = 0;
 	},
 };
-
-var input_queue = load(true, "sbbs_input.js");
-js.on_exit("input_queue.write(''); input_queue.poll(0x7fffffff);");
 
 // Get stuff that would come from the dropfile if there was one.
 // From the bbs object.
