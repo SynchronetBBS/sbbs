@@ -5,6 +5,12 @@ js.on_exit("console.ctrlkey_passthru=dk_old_ctrlkey_passthru;bbs.sys_status=(bbs
 console.ctrlkey_passthru=0x7fffffff;	// Disable all parsing.
 
 /*
+ * SBBS Console doesn't support local conio screens.
+ */
+dk.console.local = false;
+delete dk.console.local_screen;
+
+/*
  * Clears the current screen to black and moves to location 1,1
  */
 dk.console.input_queue_callback.push(function() {
@@ -88,7 +94,6 @@ if (console.screen_rows != dk.console.rows || console.screen_columns != dk.conso
 	dk.console.rows = console.screen_rows;
 	dk.console.cols = console.screen_columns;
 	dk.console.remote_screen = new Screen(dk.console.cols, dk.console.rows, 7, ' ');
-	dk.console.local_screen = new Screen(dk.console.cols, dk.console.rows, 7, ' ');
 }
 
 // From the user object...
