@@ -320,6 +320,7 @@ var dk = {
 		/*
 		 * Clears to end of line.
 		 * Not available without ANSI (???)
+		 * TODO: Should be able to do spaces and backspaces... except that last char...
 		 */
 		cleareol:function() {
 			if (this.local)
@@ -332,6 +333,7 @@ var dk = {
 		 * Moves the cursor to the specified position.
 		 * returns false on error.
 		 * Not available without ANSI
+		 * TODO: Should be able to move down (lf) and left (backspace)
 		 */
 		gotoxy:function(x,y) {
 			if (this.local)
@@ -438,7 +440,8 @@ var dk = {
 				return true;
 			do {
 				if (this.input_queue_callback.length > 0) {
-					timeout = 10;
+					if (timeout > 10)
+						timeout = 10;
 					for (i = 0; i < this.input_queue_callback.length; i++) {
 						if ((d = this.input_queue_callback[i]()) !== undefined)
 							this.keybuf += d;
@@ -752,7 +755,7 @@ var dk = {
 		level:undefined,
 		times_on:undefined,
 		last_called:undefined,
-		// These need getter/setters
+		// TODO: These need getter/setters
 		seconds_remaining:undefined,
 		minutes_remaining:undefined,
 		conference:[],
@@ -811,8 +814,10 @@ var dk = {
 				if (this.console.getkey() == this.console.key.POSITION_REPORT) {
 					// TODO: Should we trust the drop file on number of rows?
 					if (this.console.cols != this.console.last_pos.x || this.console.rows != this.console.last_pos.y) {
-						this.console.remote_screen = new Screen(this.console.last_pos.x, this.console.last_pos.y, 7, ' ');
-						this.console.local_screen = new Screen(this.console.last_pos.x, this.console.last_pos.y, 7, ' ');
+						if (this.console.remote_screen !== undefined)
+							this.console.remote_screen = new Screen(this.console.last_pos.x, this.console.last_pos.y, 7, ' ');
+						if (this.console.local_screen !== undefined)
+							this.console.local_screen = new Screen(this.console.last_pos.x, this.console.last_pos.y, 7, ' ');
 					}
 					this.console.cols = this.console.last_pos.x;
 					this.console.rows = this.console.last_pos.y;
@@ -874,8 +879,10 @@ var dk = {
 		}
 		rows = parseInt(df[20], 10);
 		if (rows != this.console.rows) {
-			this.console.remote_screen = new Screen(this.console.cols, rows, 7, ' ');
-			this.console.local_screen = new Screen(this.console.cols, rows, 7, ' ');
+			if (this.console.remote_screen !== undefined)
+				this.console.remote_screen = new Screen(this.console.cols, rows, 7, ' ');
+			if (this.console.local_screen !== undefined)
+				this.console.local_screen = new Screen(this.console.cols, rows, 7, ' ');
 		}
 		this.rows = rows;
 		this.user.expert_mode = (df[21].toUpperCase === 'Y') ? true : false;
@@ -944,6 +951,8 @@ var dk = {
 				case '-local':
 					this.console.local = true;
 					this.console.remote = false;
+					dk.system.mode = 'local';
+					delete this.console.remote_screen;
 					argv.splice(i, 1);
 					argc--;
 					i--;
@@ -963,13 +972,12 @@ var dk = {
 			this.connection.telnet = false;
 	}
 };
-dk.console.center = dk.console.centre;
 
-load("local_console.js");
 dk.parse_cmdline(argc, argv);
 if (dk.connection.socket !== undefined)
 	dk.system.mode = 'socket';
 
+// TODO: Local mode should be detectable from the dropfile...
 log("Mode: "+dk.system.mode);
 switch(dk.system.mode) {
 	case 'sbbs':
@@ -984,7 +992,12 @@ switch(dk.system.mode) {
 	case 'socket':
 		load("socket_console.js", dk.connection.socket, dk.connection.telnet);
 		break;
+	case 'local':
+		load("local_console.js");
+		break;
 }
+if (dk.system.mode != 'local' && dk.console.local == true)
+	load("local_console.js");
 
 // Fun stuff from sbbsdef.js...
 log.EMERG       =0;			/* system is unusable                       */   
@@ -1005,5 +1018,3 @@ directory.APPEND	=(1<<5);	/* Append to results of a previous call.  */
 directory.NOESCAPE  =(1<<6);	/* Backslashes don't quote metacharacters.  */
 directory.PERIOD    =(1<<7); 	/* Leading `.' can be matched by metachars.  */
 directory.ONLYDIR   =(1<<13);	/* Match only directories.  */
-
-
