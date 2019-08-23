@@ -8,3 +8,7 @@
 # Ignore non-example sidebar modules
 /web/sidebar/*
 !/web/sidebar/.examples
+
+# Ignore non-example components
+/web/components/*
+!/web/components/.examples
