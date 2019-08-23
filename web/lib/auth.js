@@ -71,7 +71,7 @@ function validateSession(cookies) {
 			continue;
 		}
 
-		var _usr = authenticate(usr.alias, usr.security.password);
+		var _usr = authenticate(usr.alias, usr.security.password, false);
 		_usr = undefined;
 		setCookie(usr, session.key);
 		setSessionValue(usr.number, 'ip_address', client.ip_address);
@@ -136,12 +136,12 @@ function destroySession(cookies) {
 
 }
 
-function authenticate(alias, password) {
+function authenticate(alias, password, inc_logons) {
 	var un = system.matchuser(alias);
 	if (un < 1) return false;
 	var usr = new User(un);
 	if (usr.settings&USER_DELETED) return false;
-	if (!login(usr.alias, password, /* inc_logons: */ true)) return false;
+	if (!login(usr.alias, password, inc_logons)) return false;
 	return usr;
 }
 
@@ -158,7 +158,8 @@ function is_user() {
     ) {
     	var usr = authenticate(
     		http_request.query.username[0],
-    		http_request.query.password[0]
+			http_request.query.password[0],
+			true
     	);
 		if (usr instanceof User) {
 			destroySession(http_request.cookie.synchronet || {});
