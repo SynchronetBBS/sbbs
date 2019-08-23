@@ -24,7 +24,9 @@
 		if (settings.layout_sidebar_off || page_ctrl.options.no_sidebar) return;
 ?>
 		<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar"><? writeSidebarModules(); ?></div>
-<?xjs } ?>
+<?xjs
+	}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -33,11 +35,7 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="icon" href="./images/favicon.ico">
-		<title>
-			<?xjs write(page_ctrl.title); ?>
-			:
-			<?xjs write(system.name); ?>
-		</title>
+		<title><? write(page_ctrl.title + ': ' + system.name); ?></title>
 		<link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
 		<link href="./css/offcanvas.css" rel="stylesheet">
 		<link href="./css/style.css" rel="stylesheet">
@@ -52,8 +50,7 @@
 		<script src="./bootstrap/js/bootstrap.min.js"></script>
 		<script src="./js/common.js"></script>
 
-		<?xjs 
-
+		<?xjs
 			(function () {
 				load(xjs_compile(settings.web_components + 'modal.xjs'));
 			})();
@@ -67,7 +64,6 @@
 			(function () {
 				load(xjs_compile(settings.web_components + 'navbar.xjs'));
 			})();
-
 		?>
 
 		<div class="container<?xjs if (settings.layout_full_width) write('-fluid'); ?>">
@@ -85,11 +81,17 @@
 			</div>
 		  	<hr>
 			<footer>
-				<?xjs if (file_exists(settings.web_components + 'footer.xjs')) {
-					load(xjs_compile(settings.web_components + 'footer.xjs'));
-				} else { ?>
-					<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
-				<?xjs } ?>
+				<?xjs
+					if (file_exists(settings.web_components + 'footer.xjs')) {
+						(function () {
+							load(xjs_compile(settings.web_components + 'footer.xjs'));
+						})();
+					} else {
+				?>
+						<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
+				<?xjs
+					}
+				?>
 			</footer>
 		</div>
 
