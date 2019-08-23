@@ -5,6 +5,7 @@
 require('graphic.js', 'Graphic');
 if (js.global.conio !== undefined) {
 	conio.init();
+	conio.clrscr();
 	conio.setcursortype(2);
 	dk.console.input_queue_callback.push(function() {
 		if (conio.kbhit)
@@ -16,14 +17,18 @@ dk.console.local_io = {
 	screen:new Screen(dk.cols, dk.height, 7, ' ', true),
 
 	update:function() {
-		if (this.screen.touched) {
-			var b = [];
+		if (this.screen.touched.length > 0 || this.screen.full) {
+			var i;
 
-			conio.puttext(1, 1, this.screen.graphic.width, this.screen.graphic.height, this.screen.graphic.puttext);
-			conio.gotoxy(this.screen.pos.x+1, this.screen.pos.y+1);
-			conio.textattr = this.screen.attr.value;
-			this.screen.touched = false;
+			if (this.screen.full)
+				conio.puttext(1, 1, this.screen.graphic.width, this.screen.graphic.height, this.screen.graphic.puttext);
+			this.screen.full = false;
+			for (i = 0; i < this.screen.touched.length; i++)
+				conio.puttext(this.screen.touched[i].sx+1, this.screen.touched[i].sy+1, this.screen.touched[i].ex+1, this.screen.touched[i].ey+1, this.screen.touched[i].b);
+			this.screen.touched = [];
 		}
+		conio.gotoxy(this.screen.pos.x+1, this.screen.pos.y+1);
+		conio.textattr = this.screen.attr.value;
 	},
 	clear:function() {
 		if (js.global.conio !== undefined) {
@@ -76,7 +81,7 @@ dk.console.local_io = {
 		}
 	},
 };
-
+dk.console.local_io.screen.touched = [];
 
 // TODO
 if (false && js.global.conio !== undefined) {

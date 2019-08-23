@@ -44,9 +44,8 @@ function Graphic(w,h,attr,ch, puttext)
 		this.puttext = new Array(this.width * this.height * 2);
 	for(var y=0; y<this.height; y++) {
 		for(var x=0; x<this.width; x++) {
-			if(y==0) {
+			if(y==0)
 				this.data[x]=new Array(this.height);
-			}
 			this.data[x][y]=new this.Cell(this.ch,this.attribute);
 			if (this.keep_puttext) {
 				this.puttext[(y*this.width+x)*2] = ascii(this.ch);
@@ -68,8 +67,11 @@ Graphic.prototype.Cell = function(ch,attr)
 
 Graphic.prototype.SetCell = function(ch, attr, x, y)
 {
-	var nc = new this.Cell(ch, attr);
-	this.data[x][y] = nc;
+	if (this.data[x][y] == undefined)
+		throw(x+'/'+y+' is undefined!  Size: '+this.width+'/'+this.height);
+
+	this.data[x][y].ch = ch;
+	this.data[x][y].attr.value = attr;
 	if (this.keep_puttext) {
 		this.puttext[(y*this.width+x)*2+1] = attr;
 		this.puttext[(y*this.width+x)*2] = ascii(ch);
@@ -468,12 +470,8 @@ Graphic.prototype.put = function(gr, x, y)
  */
 Graphic.prototype.clear = function()
 {
-	this.data=new Array(this.width);
 	for(var y=0; y<this.height; y++) {
 		for(var x=0; x<this.width; x++) {
-			if(y==0) {
-				this.data[x]=new Array(this.height);
-			}
 			this.SetCell(this.ch, this.attribute.value, x, y);
 		}
 	}
@@ -577,6 +575,23 @@ Graphic.prototype.save = function(filename)
 	f.close();
 	return(true);
 };
+
+Graphic.prototype.scrollup = function()
+{
+	var x;
+
+	for (x = 0; x < this.width; x++) {
+		this.data[x].shift();
+		this.data[x].push(new this.Cell(this.ch,this.attribute));
+	}
+	if (this.keep_puttext) {
+		this.puttext.splice(0, this.width * 2);
+		while (this.puttext.length < this.width * this.height * 2) {
+			this.puttext.push(ascii(this.ch));
+			this.puttext.push(this.attribute.value);
+		}
+	}
+}
 
 /* Leave as last line for convenient load() usage: */
 Graphic;

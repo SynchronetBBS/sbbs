@@ -18,10 +18,11 @@ function Screen(w, h, attr, fill, puttext)
 	this.saved_pos = {x:0, y:0};
 	this.attr = new Attribute(7);
 	this.new_lines = 0;
-	this.touched = false;
+	//this.touched = [];
+	this.full = false;
 }
-Screen.ANSIRe = /^(.*?)\x1b\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])([\x00-\xff]*)$/;
-Screen.ANSIFragRe = /^(.*?)(\x1b(\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])?)?)$/;
+Screen.ANSIRe = /^\x1b\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])/;
+Screen.ANSIFragRe = /^\x1b(\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])?)?$/;
 Screen.StripColonRe = /:[^;:]*/g;
 
 Screen.prototype.print=function(str) {
@@ -38,6 +39,7 @@ Screen.prototype.print=function(str) {
 	var seq;
 	var x;
 	var y;
+	var tb;
 
 	function writech(scr, ch) {
 		var i;
@@ -46,11 +48,11 @@ Screen.prototype.print=function(str) {
 			var i;
 
 			while (scr.pos.y >= scr.graphic.height) {
-				// Scroll up...
-				scr.graphic.copy(0,1,scr.graphic.width-1, scr.graphic.height-1, 0, 0);
-				for (i=0; i<scr.graphic.width; i++)
-					scr.graphic.SetCell(scr.graphic.ch, scr.attr.value, i, scr.graphic.height-1);
+				scr.graphic.scrollup();
 				scr.pos.y--;
+				scr.full = true;
+				if (scr.touched !== undefined)
+					scr.touched = [];
 			}
 		}
 
@@ -82,13 +84,17 @@ Screen.prototype.print=function(str) {
 				scr.pos.x=0;
 				scr.pos.y=0;
 				scr.new_lines=0;
+				scr.full = true;
+				if (scr.touched !== undefined)
+					scr.touched = [];
 				break;
 			case '\x0d':	// Carriage return
 				scr.pos.x = 0;
 				break;
 			default:
-				scr.touched=true;
 				scr.graphic.SetCell(ch, scr.attr.value, scr.pos.x, scr.pos.y);
+				if (scr.touched !== undefined)
+					scr.touched.push({sx:scr.pos.x, sy:scr.pos.y, ex:scr.pos.x, ey:scr.pos.y, b:[ascii(ch), scr.attr.value]});
 				scr.pos.x++;
 				if (scr.pos.x >= scr.graphic.width) {
 					scr.pos.x = 0;
@@ -120,34 +126,30 @@ Screen.prototype.print=function(str) {
 	this.escbuf = '';
 
 	while(str.length > 0) {
-		m = str.indexOf('\x1b[');
-		if (m == -1) {
-			for (i=0; i<str.length; i++)
-				writech(this, str[i]);
-			str = '';
-		}
-		if (m > 0) {
-			for (i=0; i<m; i++)
-				writech(this, str[i]);
-			str = str.substr(m);
+		if (str[0] != '\x1b') {
+			writech(this, str[0]);
+			str = str.substr(1);
+			continue;
 		}
 
-		m = str.match(Screen.ANSIRe);
-		if (m == null)
-			break;
-		chars = m[1];
-		ext = m[2];
-		pb = m[3];
-		ib = m[4];
-		fb = m[5];
-		remain = m[6];
+		if ((m = str.match(Screen.ANSIRe)) == null) {
+			if ((m=str.match(Screen.ANSIFragRe)) !== null) {
+				this.escbuf = m[0];
+				str = '';
+				break;
+			}
+			writech(this, str[0]);
+			str = str.substr(1);
+			continue;
+		}
+		ext = m[1];
+		pb = m[2];
+		ib = m[3];
+		fb = m[4];
+
 		seq = ext + ib + fb;
 
-		str = remain;
-
-		// Send regular chars before the sequence...
-		for (i=0; i<chars.length; i++)
-			writech(this, chars[i]);
+		str = str.substr(m[0].length);
 
 		// We don't support any : paramters... strip and ignore.
 		p = pb.replace(Screen.StripColonRe, '');
@@ -162,22 +164,28 @@ Screen.prototype.print=function(str) {
 					this.graphic.copy(this.pos.x, this.pos.y, this.graphic.width-1 - p[1], this.pos.y, this.pos.x + p[1], this.pos.y);
 				for (x = 0; x<p[1]; x++)
 					this.graphic.SetCell(this.graphic.ch, this.attr.value, this.pos.x + x, this.pos.y);
+				if (this.touched !== undefined) {
+					tb = {sx:this.pos.x, sy:this.pos.y, ex:this.graphic.width-1, ey:this.pos.y, b:this.graphic.puttext.slice((this.pos.y * this.graphic.width + this.pos.x) * 2, (this.pos.y + 1) * this.graphic.width * 2)};
+					this.touched.push(tb);
+				}
 				break;
 			case 'A':	// Cursor Up
 				param_defaults(p, [1]);
 				this.pos.y -= p[0];
 				if (this.pos.y < 0)
 					this.pos.y = 0;
-				if (this.touched)
-					this.new_lines = this.pos.y+1;
+				// TODO
+				//if (this.touched.length > 0 || this.full)
+				this.new_lines = this.pos.y+1;
 				break;
 			case 'B':	// Cursor Down
 				param_defaults(p, [1]);
 				this.pos.y += p[0];
 				if (this.pos.y >= this.graphic.height)
 					this.pos.y = this.graphic.height-1;
-				if (this.touched)
-					this.new_lines = this.pos.y+1;
+				// TODO
+				//if (this.touched.length > 0 || this.full)
+				this.new_lines = this.pos.y+1;
 				break;
 			case 'C':	// Cursor Right
 				param_defaults(p, [1]);
@@ -197,8 +205,9 @@ Screen.prototype.print=function(str) {
 				if (p[0] >= 1 && p[0] < this.graphic.height && p[1] >= 1 && p[1] <= this.graphic.width) {
 					this.pos.x = p[1]-1;
 					this.pos.y = p[0]-1;
-					if (this.touched)
-						this.new_lines = p[0];
+					// TODO
+					//if (this.touched.length > 0 || this.full)
+					this.new_lines = p[0];
 				}
 				break;
 			case 'J':	// Erase in screen
@@ -211,7 +220,9 @@ Screen.prototype.print=function(str) {
 							for (x = 0; x<this.graphic.width; x++)
 								this.graphic.SetCell(this.graphic.ch, this.attr.value, x, y);
 						}
-						this.touched = true;
+						this.full = true;
+						if (this.touched !== undefined)
+							this.touched = [];
 						break;
 					case 1:	// Erase to beginning of screen...
 						for (y = 0; y < this.pos.y; y++) {
@@ -220,37 +231,51 @@ Screen.prototype.print=function(str) {
 						}
 						for (x = 0; x<=this.pos.x; x++)
 							this.graphic.SetCell(this.graphic.ch, this.attr.value, x, this.pos.y);
-						this.touched = true;
+						this.full = true;
+						if (this.touched !== undefined)
+							this.touched = [];
 						break;
 					case 2:	// Erase entire screen (Most BBS terminals also move to 1/1)
 						this.graphic.clear();
 						this.new_lines = 0;
-						this.touched = false;
+						this.full = true;
+						if (this.touched !== undefined)
+							this.touched = [];
 						break;
 				}
 				break;
 			case 'K':	// Erase in line
-				this.touched=true;
 				param_defaults(p, [0]);
 				switch(p[0]) {
 					case 0:	// Erase to eol
 						for (x = this.pos.x; x<this.pos.width; x++)
 							this.graphic.SetCell(this.graphic.ch, this.attr.value, x, this.pos.y);
+						if (this.touched !== undefined) {
+							tb = {sx:this.pos.x, sy:this.pos.y, ex:this.graphic.width-1, ey:this.pos.y, b:this.graphic.puttext.slice((this.pos.y * this.graphic.width + this.pos.x) * 2, (this.pos.y + 1) * this.graphic.width * 2)};
+							this.touched.push(tb);
+						}
 						break;
 					case 1:	// Erase to start of line
 						for (x = 0; x<=this.pos.x; x++)
 							this.graphic.SetCell(this.graphic.ch, this.attr.value, x, this.pos.y);
+						if (this.touched !== undefined) {
+							tb = {sx:0, sy:this.pos.y, ex:this.pos.x, ey:this.pos.y, b:this.graphic.puttext.slice(this.pos.y * this.graphic.width, (this.pos.y * this.graphic.width + this.pos.x) * 2)};
+							this.touched.push(tb);
+						}
 						break;
 					case 2:	// Erase entire line
 						for (x = 0; x<this.graphic.width; x++)
 							this.graphic.SetCell(this.graphic.ch, this.attr.value, x, this.pos.y);
+						if (this.touched !== undefined) {
+							tb = {sx:this.pos.x, sy:this.pos.y, ex:this.graphic.width-1, ey:this.pos.y, b:this.graphic.puttext.slice(this.pos.y * this.graphic.width * 2, (this.pos.y + 1) * this.graphic.width * 2)};
+							this.touched.push(tb);
+						}
 						break;
 					default:
 						break;
 				}
 				break;
 			case 'P':	// Delete character
-				this.touched=true;
 				param_defaults(p, [1]);
 				if (p[1] > this.graphic.width - this.pos.x)
 					p[1] = this.graphic.width - this.pos.x;
@@ -258,14 +283,21 @@ Screen.prototype.print=function(str) {
 					this.graphic.copy(this.pos.x + p[1], this.pos.y, this.graphic.width - 1, this.pos.y, this.pos.x, this.pos.y);
 				for (x = 0; x<p[1]; x++)
 					this.graphic.SetCell(this.graphic.ch, this.attr.value, (this.width - 1) - x, this.pos.y);
+				if (this.touched !== undefined) {
+					tb = {sx:this.pos.x, sy:this.pos.y, ex:this.graphic.width-1, ey:this.pos.y, b:this.graphic.puttext.slice((this.pos.y * this.graphic.width + this.pos.x) * 2, (this.pos.y + 1) * this.graphic.width * 2)};
+					touched.push(tb);
+				}
 				break;
 			case 'X':	// Erase character
-				this.touched=true;
 				param_defaults(p, [1]);
 				if (p[1] > this.graphic.width - this.pos.x)
 					p[1] = this.graphic.width - this.pos.x;
 				for (x = 0; x<p[1]; x++)
 					this.graphic.SetCell(this.graphic.ch, this.attr.value, this.pos.x + x, this.pos.y);
+				if (this.touched !== undefined) {
+					tb = {sx:this.pos.x, sy:this.pos.y, ex:this.pos.x + p[1], ey:this.pos.y, b:this.graphic.puttext.slice((this.pos.y * this.graphic.width + this.pos.x) * 2, (this.pos.y * this.graphic.width + this.pos.x + p[1]) * 2)};
+					touched.push(tb);
+				}
 				break;
 			case 'm':
 				param_defaults(p, [0]);
@@ -354,8 +386,9 @@ Screen.prototype.print=function(str) {
 			case 'u':
 				this.pos.x = this.saved_pos.x;
 				this.pos.y = this.saved_pos.y;
-				if (this.touched)
-					this.new_lines = this.pos.y;
+				// TODO
+				//if (this.touched.length > 0 || this.full)
+				this.new_lines = this.pos.y;
 				break;
 			// Still TODO...
 			case 'n':	// Device status report... no action from this object.
@@ -368,12 +401,4 @@ Screen.prototype.print=function(str) {
 				log("Sent unsupported ANSI sequence '"+ext+pb+ib+fb+"' please let shurd@sasktel.net net know about this so it can be fixed.");
 		}
 	}
-	if ((m=str.match(Screen.ANSIFragRe)) !== null) {
-		str = m[1];
-		this.escbuf = m[2];
-	}
-	// Send regular chars before the sequence...
-	for (i=0; i<str.length; i++)
-		writech(this, str[i]);
-
 };

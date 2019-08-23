@@ -493,7 +493,7 @@ var dk = {
 			this.print("\b".repeat(11)+" ".repeat(11)+"\b".repeat(11));
 			if (this.remote_screen !== undefined) {
 				this.remote_screen.new_lines = 0;
-				this.remote_screen.touched = false;
+				this.remote_screen.touched = [];
 			}
 		},
 
