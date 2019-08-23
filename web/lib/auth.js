@@ -141,10 +141,7 @@ function authenticate(alias, password) {
 	if (un < 1) return false;
 	var usr = new User(un);
 	if (usr.settings&USER_DELETED) return false;
-	if (usr.security.password.toUpperCase() !== password.toUpperCase()) {
-		return false;
-	}
-	login(usr.alias, usr.security.password);
+	if (!login(usr.alias, password, /* inc_logons: */ true)) return false;
 	return usr;
 }
 
