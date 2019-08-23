@@ -214,11 +214,11 @@ copy_dir_contents(temp_dir + '/mods', system.mods_dir, true);
 copy_dir_contents(temp_dir + '/text', system.text_dir, true);
 copy_dir_contents(temp_dir + '/web', install_dir, true);
 copy_dir_contents(temp_dir + '/web/pages/.examples', install_dir + '/pages', false);
-copy_dir_contents(temp_dir + '/web/pages/.examples', install_dir + '/pages/.examples', true);
+copy_dir_contents(temp_dir + '/web/pages/.examples', install_dir + '/pages/.examples', true); // These ... probably aren't necessary
 copy_dir_contents(temp_dir + '/web/sidebar/.examples', install_dir + '/sidebar', false);
-copy_dir_contents(temp_dir + '/web/sidebar/.examples', install_dir + '/sidebar/.examples', true);
+copy_dir_contents(temp_dir + '/web/sidebar/.examples', install_dir + '/sidebar/.examples', true); // These ... probably aren't necessary
 copy_dir_contents(temp_dir + '/web/components/.examples', install_dir + '/components', false);
-copy_dir_contents(temp_dir + '/web/components/.examples', install_dir + '/components/.examples', true);
+copy_dir_contents(temp_dir + '/web/components/.examples', install_dir + '/components/.examples', true); // These ... probably aren't necessary
 
 writeln('Cleaning up ...');
 remove_dir(temp_dir + '/web/pages/.examples');
