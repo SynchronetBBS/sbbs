@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.18     2019-08-22   Added the ability to search for message/file areas, using
+                      either the / key or CTRL_F.  And in lightbar mode, the N
+                      key can be used to look for the next match.
 1.17     2018-06-25   For the message area chooser, added a new configuration
                       file option, showDatesInSubBoardList, that specifies
                       whether or not to show the date & time of the latest

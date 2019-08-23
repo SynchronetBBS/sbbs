@@ -73,6 +73,10 @@
  * 2018-06-25 Eric Oulashin 1.17    Added a new configuration file option, showDatesInSubBoardList,
  *                                  that specifies whether or not to show the date & time of
  *                                  the latest message in the sub-boards.
+ * 2019-08-08 Eric Oulashin 1.18 Beta Started working on message area searching.
+ *                                  Also, improved the time to display sub-boards
+ *                                  with the latest message date & time.
+ * 2019-08-22 Eric Oulashin 1.18    Releasing this version
  *                                  
 */
 
@@ -84,7 +88,11 @@
                 then this file will just provide the DDMsgAreaChooser class).
 */
 
-load("sbbsdefs.js");
+var requireFnExists = (typeof(require) === "function");
+if (requireFnExists)
+	require("sbbsdefs.js", "K_NOCRLF");
+else
+	load("sbbsdefs.js");
 
 // This script requires Synchronet version 3.14 or higher.
 // Exit if the Synchronet version is below the minimum.
@@ -102,12 +110,15 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.17";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2018-06-25";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.18";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2019-08-22";
 
 // Keyboard input key codes
+var CTRL_H = "\x08";
 var CTRL_M = "\x0d";
 var KEY_ENTER = CTRL_M;
+var BACKSPACE = CTRL_H;
+var CTRL_F = "\x06";
 var KEY_ESC = ascii(27);
 // PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
 // use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
@@ -126,6 +137,10 @@ if (typeof(KEY_PAGEDN) === "string")
 // Key codes for display
 var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
+
+// Misc. defines
+var ERROR_WAIT_MS = 1500;
+var SEARCH_TIMEOUT_MS = 10000;
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -213,6 +228,10 @@ function DDMsgAreaChooser()
 	// sub-board list
 	this.showDatesInSubBoardList = true;
 
+	// For searching
+	this.lastSearchText = "";
+	this.lastSearchFoundIdx = -1;
+
 	// Set the function pointers for the object
 	this.ReadConfigFile = DDMsgAreaChooser_ReadConfigFile;
 	this.WriteKeyHelpLine = DDMsgAreaChooser_writeKeyHelpLine;
@@ -237,6 +256,7 @@ function DDMsgAreaChooser()
 	// group
 	this.BuildSubBoardPrintfInfoForGrp = DDMsgAreaChooser_buildSubBoardPrintfInfoForGrp;
 	this.DisplayAreaChgHdr = DDMsgAreaChooser_DisplayAreaChgHdr;
+	this.WriteLightbarKeyHelpErrorMsg = DDMsgAreaChooser_WriteLightbarKeyHelpErrorMsg;
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
@@ -318,7 +338,19 @@ function DDMsgAreaChooser()
 				  + this.colors.lightbarHelpLineBkg + ")"
 				  + "\1n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + "ast pg, "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "CTRL-F"
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "/"
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + this.colors.lightbarHelpLineBkg + "N"
+	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + this.colors.lightbarHelpLineBkg + ", "
+	              + "\1n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "Q"
 				  + "\1n" + this.colors.lightbarHelpLineParen
 				  + this.colors.lightbarHelpLineBkg + ")"
@@ -452,6 +484,42 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 			return bottomGrpIndex;
 		}
 
+		// For doing the "next" search result
+		function nextGrpSearchFoundItem(searchObj, numPages, listStartRow, listEndRow, selectedGrpIndex, topMsgGrpIndex, chooserObj)
+		{
+			var retObj = {
+				differentPage: false,
+				topMsgGrpIndex: srchObj.pageTopIdx,
+				selectedGrpIndex: srchObj.itemIdx
+			};
+
+			chooserObj.lastSearchFoundIdx = srchObj.itemIdx;
+
+			// For screen refresh optimization, don't redraw the whole
+			// list if the result is on the same page
+			if (srchObj.pageTopIdx != topMsgGrpIndex)
+			{
+				retObj.differentPage = true;
+				chooserObj.updatePageNumInHeader(srchObj.pageNum, numPages, true, false);
+				chooserObj.ListScreenfulOfMsgGrps(retObj.topMsgGrpIndex, listStartRow, listEndRow, false, true, srchObj.itemIdx);
+			}
+			else
+			{
+				if (srchObj.itemIdx != selectedGrpIndex)
+				{
+					var screenY = listStartRow + (selectedGrpIndex - topMsgGrpIndex);
+					console.gotoxy(1, screenY);
+					chooserObj.WriteMsgGroupLine(selectedGrpIndex, false);
+					retObj.selectedGrpIndex = srchObj.itemIdx;
+					screenY = listStartRow + (retObj.selectedGrpIndex - topMsgGrpIndex);
+					console.gotoxy(1, screenY);
+					chooserObj.WriteMsgGroupLine(retObj.selectedGrpIndex, true);
+				}
+			}
+
+			return retObj;
+		}
+
 
 		// Figure out the index of the user's currently-selected message group
 		var selectedGrpIndex = 0;
@@ -507,9 +575,10 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 		this.DisplayAreaChgHdr(1);
 		this.WriteKeyHelpLine();
 
-		var curpos = new Object();
-		curpos.x = 1;
-		curpos.y = 1 + this.areaChangeHdrLines.length;
+		var curpos = {
+			x: 1,
+			y: 1 + this.areaChangeHdrLines.length
+		};
 		console.gotoxy(curpos);
 		var pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
 		this.WriteGrpListHdrLine(numPages, pageNum);
@@ -577,6 +646,9 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 						else
 						{
 							// Display the current line un-highlighted.
+							// TODO: Something is wrong with curpos.y here if
+							// you do a search and press next, especially after
+							// going to the next page
 							console.gotoxy(1, curpos.y);
 							this.WriteMsgGroupLine(selectedGrpIndex, false);
 						}
@@ -687,6 +759,94 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 					this.WriteGrpListHdrLine(numPages, pageNum);
 					this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow, false, true);
 					break;
+				case '/': // Start of find (search)
+				case CTRL_F: // Start of find
+					console.gotoxy(1, console.screen_rows);
+					console.cleartoeol("\1n");
+					console.gotoxy(1, console.screen_rows);
+					var promptText = "Search: ";
+					console.print(promptText);
+					var searchText = getStrWithTimeout(K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE, console.screen_columns - promptText.length - 1, SEARCH_TIMEOUT_MS);
+					// If the user entered text, then do the search, and if found,
+					// found, go to the page and select the item indicated by the
+					// search.
+					if (searchText.length > 0)
+					{
+						var srchObj = getPageNumFromSearch(searchText, numItemsPerPage, false, 0);
+						if (srchObj.pageNum > 0)
+						{
+							this.lastSearchText = searchText;
+							this.lastSearchFoundIdx = srchObj.itemIdx;
+
+							// For screen refresh optimization, don't redraw the whole
+							// list if the result is on the same page
+							if (srchObj.pageTopIdx != topMsgGrpIndex)
+							{
+								topMsgGrpIndex = srchObj.pageTopIdx;
+								selectedGrpIndex = srchObj.itemIdx;
+								bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+								pageNum = srchObj.pageNum;
+								this.updatePageNumInHeader(pageNum, numPages, true, false);
+								this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow, false, true);
+							}
+							else
+							{
+								if (srchObj.itemIdx != selectedGrpIndex)
+								{
+									var screenY = listStartRow + (selectedGrpIndex - topMsgGrpIndex);
+									console.gotoxy(1, screenY);
+									this.WriteMsgGroupLine(selectedGrpIndex, false);
+									selectedGrpIndex = srchObj.itemIdx;
+									screenY = listStartRow + (selectedGrpIndex - topMsgGrpIndex);
+									console.gotoxy(1, screenY);
+									this.WriteMsgGroupLine(selectedGrpIndex, true);
+								}
+							}
+						}
+						else
+							this.WriteLightbarKeyHelpErrorMsg("Not found", false);
+					}
+					this.WriteKeyHelpLine();
+					break;
+				case 'N': // Next search result (requires an existing search term)
+					if ((this.lastSearchText.length > 0) && (this.lastSearchFoundIdx > -1))
+					{
+						// Do the search, and if found, go to the page and select the item
+						// indicated by the search.
+						var srchObj = getPageNumFromSearch(this.lastSearchText, numItemsPerPage, false, this.lastSearchFoundIdx+1);
+						if (srchObj.pageNum > 0)
+						{
+							var foundItemRetObj = nextGrpSearchFoundItem(srchObj, numPages, listStartRow, listEndRow, selectedGrpIndex, topMsgGrpIndex, this);
+							if (foundItemRetObj.differentPage)
+							{
+								pageNum = srchObj.pageNum;
+								topMsgGrpIndex = foundItemRetObj.topMsgGrpIndex;
+								bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+							}
+							selectedGrpIndex = foundItemRetObj.selectedGrpIndex;
+						}
+						else
+						{
+							// Not found - Wrap around and start at 0 again
+							var srchObj = getPageNumFromSearch(this.lastSearchText, numItemsPerPage, false, 0);
+							var foundItemRetObj = nextGrpSearchFoundItem(srchObj, numPages, listStartRow, listEndRow, selectedGrpIndex, topMsgGrpIndex, this);
+							if (foundItemRetObj.selectedGrpIndex != selectedGrpIndex)
+							{
+								if (foundItemRetObj.differentPage)
+								{
+									pageNum = srchObj.pageNum;
+									topMsgGrpIndex = foundItemRetObj.topMsgGrpIndex;
+									bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+								}
+								selectedGrpIndex = foundItemRetObj.selectedGrpIndex;
+							}
+							else
+								this.WriteLightbarKeyHelpErrorMsg("No others found", true);
+						}
+					}
+					else
+						this.WriteLightbarKeyHelpErrorMsg("There is no previous search", true);
+					break;
 				default:
 					// If the user entered a numeric digit, then treat it as
 					// the start of the message group number.
@@ -720,7 +880,8 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 							{
 								// A sub-board was not chosen, so we'll have to re-draw
 								// the header and list of message groups.
-								console.gotoxy(1, 1);
+								//this.DisplayAreaChgHdr(1);
+								console.gotoxy(1, 1+this.areaChangeHdrLines.length);
 								this.WriteGrpListHdrLine(numPages, pageNum);
 								this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow, false, true);
 							}
@@ -730,7 +891,8 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 							// The user didn't make a selection.  So, we need to refresh
 							// the screen due to everything being moved up one line.
 							this.WriteKeyHelpLine();
-							console.gotoxy(1, 1);
+							//this.DisplayAreaChgHdr(1);
+							console.gotoxy(1, 1+this.areaChangeHdrLines.length);
 							this.WriteGrpListHdrLine(numPages, pageNum);
 							this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow, false, true);
 						}
@@ -830,6 +992,43 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 		return bottomGrpIndex;
 	}
 
+	// For doing the "next" search result
+	function nextSubSearchFoundItem(grpIndex, searchObj, numPages, listStartRow, listEndRow, selectedSubIndex, topSubIndex, chooserObj)
+	{
+		var retObj = {
+			differentPage: false,
+			topSubIndex: srchObj.pageTopIdx,
+			selectedSubIndex: srchObj.itemIdx
+		};
+
+		chooserObj.lastSearchFoundIdx = srchObj.itemIdx;
+
+		// For screen refresh optimization, don't redraw the whole
+		// list if the result is on the same page
+		if (srchObj.pageTopIdx != topSubIndex)
+		{
+			retObj.differentPage = true;
+			chooserObj.updatePageNumInHeader(srchObj.pageNum, numPages, false, false);
+			chooserObj.ListScreenfulOfSubBrds(grpIndex, srchObj.pageTopIdx, listStartRow, listEndRow, false, true, srchObj.itemIdx);
+			retObj.selectedSubIndex = srchObj.itemIdx;
+		}
+		else
+		{
+			if (srchObj.itemIdx != selectedSubIndex)
+			{
+				var screenY = listStartRow + (selectedSubIndex - topSubIndex);
+				console.gotoxy(1, screenY);
+				chooserObj.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, false);
+				retObj.selectedSubIndex = srchObj.itemIdx;
+				screenY = listStartRow + (retObj.selectedSubIndex - topSubIndex);
+				console.gotoxy(1, screenY);
+				chooserObj.WriteMsgSubBoardLine(grpIndex, retObj.selectedSubIndex, true);
+			}
+		}
+
+		return retObj;
+	}
+
 
 	// Figure out the index of the user's currently-selected sub-board.
 	var selectedSubIndex = 0;
@@ -888,9 +1087,10 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 	this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
 	this.WriteKeyHelpLine();
 
-	var curpos = new Object();
-	curpos.x = 1;
-	curpos.y = 2+this.areaChangeHdrLines.length;
+	var curpos = {
+		x: 1,
+		y: 2+this.areaChangeHdrLines.length
+	};
 	console.gotoxy(curpos);
 	if (this.showDatesInSubBoardList)
 		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
@@ -1063,6 +1263,94 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 					printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts");
 				this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
 				break;
+			case '/': // Start of find (search)
+			case CTRL_F: // Start of find
+				console.gotoxy(1, console.screen_rows);
+				console.cleartoeol("\1n");
+				console.gotoxy(1, console.screen_rows);
+				var promptText = "Search: ";
+				console.print(promptText);
+				var searchText = getStrWithTimeout(K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE, console.screen_columns - promptText.length - 1, SEARCH_TIMEOUT_MS);
+				// If the user entered text, then do the search, and if found,
+				// found, go to the page and select the item indicated by the
+				// search.
+				if (searchText.length > 0)
+				{
+					var srchObj = getPageNumFromSearch(searchText, numItemsPerPage, true, 0, grpIndex);
+					if (srchObj.pageNum > 0)
+					{
+						this.lastSearchText = searchText;
+						this.lastSearchFoundIdx = srchObj.itemIdx;
+
+						// For screen refresh optimization, don't redraw the whole
+						// list if the result is on the same page
+						if (srchObj.pageTopIdx != topSubIndex)
+						{
+							pageNum = srchObj.pageNum;
+							topSubIndex = srchObj.pageTopIdx;
+							bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+							this.updatePageNumInHeader(pageNum, numPages, false, false);
+							this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
+							selectedSubIndex = srchObj.itemIdx;
+						}
+						else
+						{
+							if (srchObj.itemIdx != selectedSubIndex)
+							{
+								var screenY = listStartRow + (selectedSubIndex - topSubIndex);
+								console.gotoxy(1, screenY);
+								this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, false);
+								selectedSubIndex = srchObj.itemIdx;
+								screenY = listStartRow + (selectedSubIndex - topSubIndex);
+								console.gotoxy(1, screenY);
+								this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, true);
+							}
+						}
+					}
+					else
+						this.WriteLightbarKeyHelpErrorMsg("Not found", false);
+				}
+				this.WriteKeyHelpLine();
+				break;
+			case 'N': // Next search result (requires an existing search term)
+				if ((this.lastSearchText.length > 0) && (this.lastSearchFoundIdx > -1))
+				{
+					// Do the search, and if found, go to the page and select the item
+					// indicated by the search.
+					var srchObj = getPageNumFromSearch(this.lastSearchText, numItemsPerPage, true, this.lastSearchFoundIdx+1, grpIndex);
+					if (srchObj.pageNum > 0)
+					{
+						var foundItemRetObj = nextSubSearchFoundItem(pGrpIndex, srchObj, numPages, listStartRow, listEndRow, selectedSubIndex, topSubIndex, this);
+						if (foundItemRetObj.differentPage)
+						{
+							pageNum = srchObj.pageNum;
+							topSubIndex = foundItemRetObj.pageTopIdx;
+							bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+						}
+						selectedSubIndex = foundItemRetObj.selectedSubIndex;
+					}
+					else
+					{
+						// Not found - Wrap around and start at 0 again
+						var srchObj = getPageNumFromSearch(this.lastSearchText, numItemsPerPage, true, 0, grpIndex);
+						var foundItemRetObj = nextSubSearchFoundItem(pGrpIndex, srchObj, numPages, listStartRow, listEndRow, selectedSubIndex, topSubIndex, this);
+						if (foundItemRetObj.selectedSubIndex != selectedSubIndex)
+						{
+							if (foundItemRetObj.differentPage)
+							{
+								pageNum = srchObj.pageNum;
+								topSubIndex = foundItemRetObj.pageTopIdx;
+								bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+							}
+							selectedSubIndex = foundItemRetObj.selectedSubIndex;
+						}
+						else
+							this.WriteLightbarKeyHelpErrorMsg("No others found", true);
+					}
+				}
+				else
+					this.WriteLightbarKeyHelpErrorMsg("There is no previous search", true);
+				break;
 			default:
 				// If the user entered a numeric digit, then treat it as
 				// the start of the message group number.
@@ -1137,6 +1425,7 @@ function DDMsgAreaChooser_selectMsgArea_Traditional(pChooseGroup)
 		var selectedGrp = 0;      // The user's selected message group
 		var selectedSubBoard = 0; // The user's selected sub-board
 		var usersCurrentIdxVals = getGrpAndSubIdxesFromCode(bbs.cursub_code, true);
+		var grpSearchText = "";
 		var continueChoosingMsgArea = true;
 		while (continueChoosingMsgArea)
 		{
@@ -1148,11 +1437,11 @@ function DDMsgAreaChooser_selectMsgArea_Traditional(pChooseGroup)
 			this.DisplayAreaChgHdr(1);
 			if (this.areaChangeHdrLines.length > 0)
 				console.crlf();
-			this.ListMsgGrps();
+			this.ListMsgGrps(grpSearchText);
 			console.crlf();
-			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + +(usersCurrentIdxVals.grpIdx+1) + "\1n\1c]: \1h");
-			// Accept Q (quit) or a file library number
-			selectedGrp = console.getkeys("Q", msg_area.grp_list.length);
+			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c, or [\1h" + +(usersCurrentIdxVals.grpIdx+1) + "\1n\1c]: \1h");
+			// Accept Q (quit), / or CTRL_F (Search) or a file library number
+			selectedGrp = console.getkeys("Q/" + CTRL_F, msg_area.grp_list.length);
 
 			// If the user just pressed enter (selectedGrp would be blank),
 			// default to the current group.
@@ -1161,8 +1450,19 @@ function DDMsgAreaChooser_selectMsgArea_Traditional(pChooseGroup)
 
 			if (selectedGrp.toString() == "Q")
 				continueChoosingMsgArea = false;
+			else if ((selectedGrp.toString() == "/") || (selectedGrp.toString() == CTRL_F))
+			{
+				console.crlf();
+				var searchPromptText = "\1n\1c\1hSearch\1g: \1n";
+				console.print(searchPromptText);
+				var searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
+				if (searchText.length > 0)
+					grpSearchText = searchText;
+			}
 			else
 			{
+				grpSearchText = "";
+
 				// If the user specified a message group number, then
 				// set it and let the user choose a sub-board within
 				// the group.
@@ -1219,42 +1519,92 @@ function DDMsgAreaChooser_selectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardId
 		subBoardCode: ""
 	}
 
-	this.DisplayAreaChgHdr(1);
-	if (this.areaChangeHdrLines.length > 0)
-		console.crlf();
-	this.ListSubBoardsInMsgGroup(pGrpIdx, pDefaultSubBoardIdx);
-	console.crlf();
-	console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + +(pDefaultSubBoardIdx+1) + "\1n\1c]: \1h");
-	// Accept Q (quit) or a sub-board number
-	var selectedSubBoard = console.getkeys("Q", msg_area.grp_list[pGrpIdx].sub_list.length);
-
-	// If the user just pressed enter (selectedSubBoard would be blank),
-	// default the selected directory.
-	var selectedSubBoardStr = selectedSubBoard.toString();
-	if (selectedSubBoardStr == "")
-		selectedSubBoard = pDefaultSubBoardIdx + 1; // Make this 1-based
-
-	if (selectedSubBoard > 0)
+	var searchText = "";
+	var defaultSubBoardIdx = pDefaultSubBoardIdx;
+	var continueOn = false;
+	do
 	{
-		retObj.subBoardChosen = true;
-		retObj.subBoardIndex = selectedSubBoard - 1;
-		retObj.subBoardCode = msg_area.grp_list[pGrpIdx].sub_list[retObj.subBoardIndex].code;
-	}
+		this.DisplayAreaChgHdr(1);
+		if (this.areaChangeHdrLines.length > 0)
+			console.crlf();
+		this.ListSubBoardsInMsgGroup(pGrpIdx, defaultSubBoardIdx, searchText);
+		console.crlf();
+		if (defaultSubBoardIdx >= 0)
+			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c, or [\1h" + +(defaultSubBoardIdx+1) + "\1n\1c]: \1h");
+		else
+			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c: \1h");
+		// Accept Q (quit) or a sub-board number
+		var selectedSubBoard = console.getkeys("Q/" + CTRL_F, msg_area.grp_list[pGrpIdx].sub_list.length);
+
+		// If the user just pressed enter (selectedSubBoard would be blank),
+		// default the selected directory.
+		var selectedSubBoardStr = selectedSubBoard.toString();
+		if (selectedSubBoardStr == "")
+		{
+			if (defaultSubBoardIdx >= 0)
+			{
+				selectedSubBoard = defaultSubBoardIdx + 1; // Make this 1-based
+				continueOn = false;
+			}
+		}
+		else if ((selectedSubBoardStr == "/") || (selectedSubBoardStr == CTRL_F))
+		{
+			// Search
+			console.crlf();
+			var searchPromptText = "\1n\1c\1hSearch\1g: \1n";
+			console.print(searchPromptText);
+			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
+			console.print("\1n");
+			console.crlf();
+			if (searchText.length > 0)
+				defaultSubBoardIdx = -1;
+			else
+				defaultSubBoardIdx = pDefaultSubBoardIdx;
+			continueOn = true;
+		}
+		else if (selectedSubBoardStr == "Q")
+			continueOn = false;
+
+		// If a sub-board was chosen, then select it.
+		if (selectedSubBoard > 0)
+		{
+			retObj.subBoardChosen = true;
+			retObj.subBoardIndex = selectedSubBoard - 1;
+			retObj.subBoardCode = msg_area.grp_list[pGrpIdx].sub_list[retObj.subBoardIndex].code;
+			continueOn = false;
+		}
+	} while (continueOn);
+
 	return retObj;
 }
 
 // For the DDMsgAreaChooser class: Lists all message groups (for the traditional
 // user interface).
-function DDMsgAreaChooser_listMsgGrps_Traditional()
+//
+// Parameters:
+//  pSearchText: Optional - Search text for the message groups
+function DDMsgAreaChooser_listMsgGrps_Traditional(pSearchText)
 {
 	// Print the header
 	this.WriteGrpListHdrLine();
 	console.print("\1n");
+
+	var searchText = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
+
 	// List the message groups
+	var printIt = true;
 	for (var i = 0; i < msg_area.grp_list.length; ++i)
 	{
-		console.crlf();
-		this.WriteMsgGroupLine(i, false);
+		if (searchText.length > 0)
+			printIt = ((msg_area.grp_list[i].name.toUpperCase().indexOf(searchText) >= 0) || (msg_area.grp_list[i].description.toUpperCase().indexOf(searchText) >= 0));
+		else
+			printIt = true;
+
+		if (printIt)
+		{
+			console.crlf();
+			this.WriteMsgGroupLine(i, false);
+		}
 	}
 }
 
@@ -1266,12 +1616,13 @@ function DDMsgAreaChooser_listMsgGrps_Traditional()
 //  pMarkIndex: An index of a message group to highlight.  This
 //                   is optional; if left off, this will default to
 //                   the current sub-board.
+//  pSearchText: Optional - Search text for the sub-boards
 //  pSortType: Optional - A string describing how to sort the list (if desired):
 //             "none": Default behavior - Sort by sub-board #
 //             "dateAsc": Sort by date, ascending
 //             "dateDesc": Sort by date, descending
 //             "description": Sort by description
-function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIndex, pSortType)
+function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIndex, pSearchText, pSortType)
 {
 	// Default to the current message group & sub-board if pGrpIndex
 	// and pMarkIndex aren't specified.
@@ -1306,6 +1657,9 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts");
 	console.print("\1n");
 
+	// Make the search text uppercase for case-insensitive matching
+	var searchTextUpper = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
+
 	// List each sub-board in the message group.
 	var subBoardArray = null;       // For sorting, if desired
 	var newestDate = new Object(); // For storing the date of the newest post in a sub-board
@@ -1316,50 +1670,55 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 	// subBoardArray so that it can be sorted.
 	if ((typeof(pSortType) == "string") && (pSortType != "") && (pSortType != "none"))
 	{
+		var addSubBoard = true;
 		subBoardArray = new Array();
 		var subBoardInfo = null;
 		for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
 		{
 			// Open the current sub-board with the msgBase object.
-			msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-			if (msgBase.open())
+			// If the search text is set, then use it to filter the sub-boards.
+			addSubBoard = true;
+			if (searchTextUpper.length > 0)
 			{
-				subBoardInfo = new MsgSubBoardInfo();
-				subBoardInfo.subBoardNum = +(arrSubBoardNum);
-				subBoardInfo.subBoardIdx = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].index;
-				subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
-				subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-
-				// Get the date & time when the last message was imported.
-				if (this.showDatesInSubBoardList && (subBoardInfo.numPosts > 0))
+				addSubBoard = ((msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].name.indexOf(searchTextUpper) >= 0) ||
+				               (msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.indexOf(searchTextUpper) >= 0));
+			}
+			if (addSubBoard)
+			{
+				msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+				if (msgBase.open())
 				{
-					//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-					var msgHeader = null;
-					var msgIdx = msgBase.total_msgs-1;
-					while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code))
+					subBoardInfo = new MsgSubBoardInfo();
+					subBoardInfo.subBoardNum = +(arrSubBoardNum);
+					subBoardInfo.subBoardIdx = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].index;
+					subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
+					//subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+					subBoardInfo.numPosts = msgBase.total_msgs;
+
+					// Get the date & time when the last message was imported.
+					if (this.showDatesInSubBoardList && (subBoardInfo.numPosts > 0))
 					{
-						msgHeader = msgBase.get_msg_header(true, msgIdx, true);
-						--msgIdx;
-					}
-					if (msgHeader === null)
-						msgHeader = getBogusMsgHdr();
-					if (this.showImportDates)
-						subBoardInfo.newestPostDate = msgHeader.when_imported_time
-					else
-					{
-						var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-						if (msgWrittenLocalBBSTime != -1)
-							subBoardInfo.newestPostDate = msgWrittenLocalBBSTime;
+						//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+						var msgHeader = getLatestMsgHdr(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+						if (msgHeader === null)
+							msgHeader = getBogusMsgHdr();
+						if (this.showImportDates)
+							subBoardInfo.newestPostDate = msgHeader.when_imported_time
 						else
-							subBoardInfo.newestPostDate = msgHeader.when_written_time;
+						{
+							var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+							if (msgWrittenLocalBBSTime != -1)
+								subBoardInfo.newestPostDate = msgWrittenLocalBBSTime;
+							else
+								subBoardInfo.newestPostDate = msgHeader.when_written_time;
+						}
 					}
 				}
+				msgBase.close();
+				subBoardArray.push(subBoardInfo);
+				delete msgBase; // Free some memory?
 			}
-			msgBase.close();
-			subBoardArray.push(subBoardInfo);
 		}
-		// Free some memory?
-		delete msgBase;
 
 		// Sort sub-board list.
 		if (pSortType == "dateAsc")
@@ -1441,72 +1800,78 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 	// order of sub-board number.
 	else
 	{
+		var includeSubBoard = true;
 		for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
 		{
-			// Open the current sub-board with the msgBase object.
-			msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-			if (msgBase.open())
+			// If the search text is set, then use it to filter the sub-board list.
+			includeSubBoard = true;
+			if (searchTextUpper.length > 0)
 			{
-				// Get the date & time when the last message was imported.
-				var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-				if (numMsgs > 0)
+				includeSubBoard = ((msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].name.toUpperCase().indexOf(searchTextUpper) >= 0) ||
+				                   (msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.toUpperCase().indexOf(searchTextUpper) >= 0));
+			}
+			if (includeSubBoard)
+			{
+				// Open the current sub-board with the msgBase object.
+				msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+				if (msgBase.open())
 				{
-					//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-					var msgHeader = null;
-					var msgIdx = msgBase.total_msgs-1;
-					while (msgHeader === null)
+					// Get the date & time when the last message was imported.
+					//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+					var numMsgs = msgBase.total_msgs;
+					if (numMsgs > 0)
 					{
-						msgHeader = msgBase.get_msg_header(true, msgIdx, true);
-						--msgIdx;
-					}
-					if (msgHeader === null)
-						msgHeader = getBogusMsgHdr();
-					// Construct the date & time strings of the latest post
-					if (this.showImportDates)
-					{
-						newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
-						newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
-					}
-					else
-					{
-						var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-						if (msgWrittenLocalBBSTime != -1)
+						//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+						var msgHeader = getLatestMsgHdr(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+						if (msgHeader === null)
+							msgHeader = getBogusMsgHdr();
+						// Construct the date & time strings of the latest post
+						if (this.showImportDates)
 						{
-							newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalBBSTime);
-							newestDate.time = strftime("%H:%M:%S", msgWrittenLocalBBSTime);
+							newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
+							newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
 						}
 						else
 						{
-							newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-							newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+							var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+							if (msgWrittenLocalBBSTime != -1)
+							{
+								newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalBBSTime);
+								newestDate.time = strftime("%H:%M:%S", msgWrittenLocalBBSTime);
+							}
+							else
+							{
+								newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+								newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+							}
 						}
 					}
-				}
-				else
-				newestDate.date = newestDate.time = "";
+					else
+						newestDate.date = newestDate.time = "";
 
-				// Print the sub-board information
-				subBoardNum = +(arrSubBoardNum);
-				console.crlf();
-				console.print((subBoardNum == highlightIndex) ? "\1n" + this.colors.areaMark + "*" : " ");
-				if (this.showDatesInSubBoardList)
-				{
-					printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-					       msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-					       numMsgs, newestDate.date, newestDate.time);
-				}
-				else
-				{
-					printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-					       msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-					       numMsgs);
+					// Print the sub-board information
+					subBoardNum = +(arrSubBoardNum);
+					console.crlf();
+					console.print((subBoardNum == highlightIndex) ? "\1n" + this.colors.areaMark + "*" : " ");
+					if (this.showDatesInSubBoardList)
+					{
+						printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
+							   msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
+							   numMsgs, newestDate.date, newestDate.time);
+					}
+					else
+					{
+						printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
+							   msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
+							   numMsgs);
+					}
+
+					msgBase.close();
 				}
 
-				msgBase.close();
+				// Free some memory?
+				delete msgBase;
 			}
-
-			// Free some memory?
-			delete msgBase;
 		}
 	}
 }
@@ -1525,9 +1890,10 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 //  pBlankToEndRow: Boolean - Whether or not to write blank lines to the end
 //                  screen row if there aren't enough message groups to fill
 //                  the screen.
+//  pHighlightIndex: Optional - The index of an item to highlight
 function DDMsgAreaChooser_listScreenfulOfMsgGrps(pStartIndex, pStartScreenRow,
                                                  pEndScreenRow, pClearScreenFirst,
-                                                 pBlankToEndRow)
+                                                 pBlankToEndRow, pHighlightIndex)
 {
 	// Check the parameters; If they're bad, then just return.
 	if ((typeof(pStartIndex) != "number") ||
@@ -1559,13 +1925,16 @@ function DDMsgAreaChooser_listScreenfulOfMsgGrps(pStartIndex, pStartScreenRow,
 
 	// Clear the screen, go to the specified screen row, and display the message
 	// group information.
+	var highlightIdx = (typeof(pHighlightIndex) == "number" ? pHighlightIndex : -1);
 	if (pClearScreenFirst)
 		console.clear("\1n");
 	console.gotoxy(1, pStartScreenRow);
+	var highlight = false;
 	var grpIndex = pStartIndex;
 	for (; grpIndex < onePastEndIndex; ++grpIndex)
 	{
-		this.WriteMsgGroupLine(grpIndex, false);
+		highlight = (grpIndex == highlightIdx);
+		this.WriteMsgGroupLine(grpIndex, highlight);
 		if (grpIndex < endIndex)
 			console.crlf();
 	}
@@ -1658,9 +2027,11 @@ function DDMsgAreaChooser_updatePageNumInHeader(pPageNum, pNumPages, pGroup, pRe
 //  pBlankToEndRow: Boolean - Whether or not to write blank lines to the end
 //                  screen row if there aren't enough message groups to fill
 //                  the screen.
+//  pHighlightIndex: Optional - An index of a sub-board to highlight
 function DDMsgAreaChooser_listScreenfulOfSubBrds(pGrpIndex, pStartSubIndex,
-                                                  pStartScreenRow, pEndScreenRow,
-                                                  pClearScreenFirst, pBlankToEndRow)
+                                                 pStartScreenRow, pEndScreenRow,
+                                                 pClearScreenFirst, pBlankToEndRow,
+                                                 pHighlightIndex)
 {
 	// Check the parameters; If they're bad, then just return.
 	if ((typeof(pGrpIndex) != "number") ||
@@ -1689,6 +2060,8 @@ function DDMsgAreaChooser_listScreenfulOfSubBrds(pGrpIndex, pStartSubIndex,
 		pEndScreenRow = temp;
 	}
 
+	var highlightIdx = (typeof(pHighlightIndex) == "number" ? pHighlightIndex : -1);
+
 	// Calculate the ending index to use for the sub-board array.
 	var endIndex = pStartSubIndex + (pEndScreenRow-pStartScreenRow);
 	if (endIndex >= msg_area.grp_list[pGrpIndex].sub_list.length)
@@ -1701,13 +2074,14 @@ function DDMsgAreaChooser_listScreenfulOfSubBrds(pGrpIndex, pStartSubIndex,
 	console.gotoxy(1, pStartScreenRow);
 
 	// Start listing the sub-boards.
-
+	var highlightIt = false;
 	var subIndex = pStartSubIndex;
 	for (; subIndex < onePastEndIndex; ++subIndex)
 	{
-		this.WriteMsgSubBoardLine(pGrpIndex, subIndex, false);
+		highlightIt = (subIndex == highlightIdx);
+		this.WriteMsgSubBoardLine(pGrpIndex, subIndex, highlightIt);
 		if (subIndex < endIndex)
-		console.crlf();
+			console.crlf();
 	}
 
 	// If pBlankToEndRow is true and we're not at the end row yet, then
@@ -1746,25 +2120,17 @@ function DDMsgAreaChooser_writeMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 		currentSub = ((pGrpIndex == msg_area.sub[bbs.cursub_code].grp_index) && (pSubIndex == msg_area.sub[bbs.cursub_code].index));
 
 	// Open the current sub-board with the msgBase object (so that we can get
-	// the date & time of the last imporeted message).
+	// the date & time of the last imported message).
 	var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
 	if (msgBase.open())
 	{
+		//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
+		var numMsgs = msgBase.total_msgs;
 		var newestDate = new Object(); // For storing the date of the newest post
 		// Get the date & time when the last message was imported.
-		var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-		if (this.showDatesInSubBoardList && (numMsgs > 0))
+		var msgHeader = getLatestMsgHdr(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
+		if (msgHeader != null)
 		{
-			//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-			var msgHeader = null;
-			var msgIdx = msgBase.total_msgs-1;
-			while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code))
-			{
-				msgHeader = msgBase.get_msg_header(true, msgIdx, true);
-				--msgIdx;
-			}
-			if (msgHeader === null)
-				msgHeader = getBogusMsgHdr();
 			// Construct the date & time strings of the latest post
 			if (this.showImportDates)
 			{
@@ -1954,6 +2320,10 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 		console.crlf();
 		console.print("\1hF\1n\1c/\1hL\1n\1c: Go to the first/last page");
 		console.crlf();
+		console.print("\1h/\1n\1c or \1hCtrl-F\1n\1c: Find by name/description");
+		console.crlf();
+		console.print("\1hN\1n\1c: Next search result (after a find)");
+		console.crlf();
 	}
 
 	console.crlf();
@@ -2083,6 +2453,23 @@ function DDMsgAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 	}
 }
 
+// For the DDMsgAreaChooser class: Writes a temporary error message at the key help line
+// for lightbar mode.
+//
+// Parameters:
+//  pErrorMsg: The error message to write
+//  pRefreshHelpLine: Whether or not to re-draw the help line on the screen
+function DDMsgAreaChooser_WriteLightbarKeyHelpErrorMsg(pErrorMsg, pRefreshHelpLine)
+{
+	console.gotoxy(1, console.screen_rows);
+	console.cleartoeol("\1n");
+	console.gotoxy(1, console.screen_rows);
+	console.print("\1y\1h" + pErrorMsg + "\1n");
+	mswait(ERROR_WAIT_MS);
+	if (pRefreshHelpLine)
+		this.WriteKeyHelpLine();
+}
+
 // Removes multiple, leading, and/or trailing spaces.
 // The search & replace regular expressions used in this
 // function came from the following URL:
@@ -2127,7 +2514,7 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 // Return value: The page number
 function calcPageNum(pTopIndex, pNumPerPage)
 {
-  return ((pTopIndex / pNumPerPage) + 1);
+	return ((pTopIndex / pNumPerPage) + 1);
 }
 
 // Returns the greatest number of messages of all sub-boards within
@@ -2543,4 +2930,245 @@ function getGrpAndSubIdxesFromCode(pSubBoardCode, pDefaultToZero)
 		retVal.subIdx = msg_area.sub[pSubBoardCode].index;
 	}
 	return retVal;
+}
+
+// Inputs a string from the user, with a timeout
+//
+// Parameters:
+//  pMode: The mode bits to use for the input (i.e., defined in sbbsdefs.js)
+//  pMaxLength: The maximum length of the string (0 or less for no limit)
+//  pTimeout: The timeout (in milliseconds).  When the timeout is reached,
+//            input stops and the user's input is returned.
+//
+// Return value: The user's input (string)
+function getStrWithTimeout(pMode, pMaxLength, pTimeout)
+{
+	var inputStr = "";
+
+	var mode = K_NONE;
+	if (typeof(pMode) == "number")
+		mode = pMode;
+	var maxWidth = 0;
+	if (typeof(pMaxLength) == "number")
+			maxWidth = pMaxLength;
+	var timeout = 0;
+	if (typeof(pTimeout) == "number")
+		timeout = pTimeout;
+
+	var setNormalAttrAtEnd = false;
+	if (((mode & K_LINE) == K_LINE) && (maxWidth > 0) && console.term_supports(USER_ANSI))
+	{
+		var curPos = console.getxy();
+		printf("\1n\1w\1h\1" + "4%" + maxWidth + "s", "");
+		console.gotoxy(curPos);
+		setNormalAttrAtEnd = true;
+	}
+
+	var curPos = console.getxy();
+	var userKey = "";
+	do
+	{
+		userKey = console.inkey(mode, timeout);
+		if ((userKey.length > 0) && isPrintableChar(userKey))
+		{
+			var allowAppendChar = true;
+			if ((maxWidth > 0) && (inputStr.length >= maxWidth))
+				allowAppendChar = false;
+			if (allowAppendChar)
+			{
+				inputStr += userKey;
+				console.print(userKey);
+				++curPos.x;
+			}
+		}
+		else if (userKey == BACKSPACE)
+		{
+			if (inputStr.length > 0)
+			{
+				inputStr = inputStr.substr(0, inputStr.length-1);
+				console.gotoxy(curPos.x-1, curPos.y);
+				console.print(" ");
+				console.gotoxy(curPos.x-1, curPos.y);
+				--curPos.x;
+			}
+		}
+		else if (userKey == KEY_ENTER)
+			userKey = "";
+	} while(userKey.length > 0);
+
+	if (setNormalAttrAtEnd)
+		console.print("\1n");
+
+	return inputStr;
+}
+
+// Returns whether or not a character is printable.
+function isPrintableChar(pText)
+{
+   // Make sure pText is valid and is a string.
+   if (typeof(pText) != "string")
+      return false;
+   if (pText.length == 0)
+      return false;
+
+   // Make sure the character is a printable ASCII character in the range of 32 to 254,
+   // except for 127 (delete).
+   var charCode = pText.charCodeAt(0);
+   return ((charCode > 31) && (charCode < 255) && (charCode != 127));
+}
+
+// Finds the page number of an item, given some text to search for in the item.
+//
+// Parameters:
+//  pText: The text to search for in the items
+//  pNumItemsPerPage: The number of items per page
+//  pSubBoard: Boolean - If true, search the sub-board list for the given group index.
+//             If false, search the group list.
+//  pStartItemIdx: The item index to start at
+//  pGrpIdx: The index of the group to search in (only for doing a sub-board search)
+//
+// Return value: An object containing the following properties:
+//               pageNum: The page number of the item (1-based; will be 0 if not found)
+//               pageTopIdx: The index of the top item on the page (or -1 if not found)
+//               itemIdx: The index of the item (or -1 if not found)
+function getPageNumFromSearch(pText, pNumItemsPerPage, pSubBoard, pStartItemIdx, pGrpIdx)
+{
+	var retObj = {
+		pageNum: 0,
+		pageTopIdx: -1,
+		itemIdx: -1
+	};
+
+	// Sanity checking
+	if ((typeof(pText) != "string") || (typeof(pNumItemsPerPage) != "number") || (typeof(pSubBoard) != "boolean"))
+		return retObj;
+
+	// Convert the text to uppercase for case-insensitive searching
+	var srchText = pText.toUpperCase();
+	if (pSubBoard)
+	{
+		if ((typeof(pGrpIdx) == "number") && (pGrpIdx >= 0) && (pGrpIdx < msg_area.grp_list.length))
+		{
+			// Go through the sub-board list of the given group and
+			// search for text in the descriptions
+			for (var i = pStartItemIdx; i < msg_area.grp_list[pGrpIdx].sub_list.length; ++i)
+			{
+				if ((msg_area.grp_list[pGrpIdx].sub_list[i].description.toUpperCase().indexOf(srchText) > -1) ||
+				    (msg_area.grp_list[pGrpIdx].sub_list[i].name.toUpperCase().indexOf(srchText) > -1))
+				{
+					retObj.itemIdx = i;
+					// Figure out the page number and top index for the page
+					var pageObj = calcPageNumAndTopPageIdx(i, pNumItemsPerPage);
+					if ((pageObj.pageNum > 0) && (pageObj.pageTopIdx > -1))
+					{
+						retObj.pageNum = pageObj.pageNum;
+						retObj.pageTopIdx = pageObj.pageTopIdx;
+					}
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		// Go through the message group list and look for a match
+		for (var i = pStartItemIdx; i < msg_area.grp_list.length; ++i)
+		{
+			if ((msg_area.grp_list[i].name.toUpperCase().indexOf(srchText) > -1) ||
+			    (msg_area.grp_list[i].description.toUpperCase().indexOf(srchText) > -1))
+			{
+				retObj.itemIdx = i;
+				// Figure out the page number and top index for the page
+				var pageObj = calcPageNumAndTopPageIdx(i, pNumItemsPerPage);
+				if ((pageObj.pageNum > 0) && (pageObj.pageTopIdx > -1))
+				{
+					retObj.pageNum = pageObj.pageNum;
+					retObj.pageTopIdx = pageObj.pageTopIdx;
+				}
+				break;
+			}
+		}
+	}
+
+	return retObj;
+}
+
+// Calculates the page number (1-based) and top index for the page (0-based),
+// given an item index.
+//
+// Parameters:
+//  pItemIdx: The index of the item
+//  pNumItemsPerPage: The number of items per page
+//
+// Return value: An object containing the following properties:
+//               pageNum: The page number of the item (1-based; will be 0 if not found)
+//               pageTopIdx: The index of the top item on the page (or -1 if not found)
+function calcPageNumAndTopPageIdx(pItemIdx, pNumItemsPerPage)
+{
+	var retObj = {
+		pageNum: 0,
+		pageTopIdx: -1
+	};
+
+	var pageNum = 1;
+	var topIdx = 0;
+	var continueOn = true;
+	do
+	{
+		var endIdx = topIdx + pNumItemsPerPage;
+		if ((pItemIdx >= topIdx) && (pItemIdx < endIdx))
+		{
+			continueOn = false;
+			retObj.pageNum = pageNum;
+			retObj.pageTopIdx = topIdx;
+		}
+		else
+		{
+			++pageNum;
+			topIdx = endIdx;
+		}
+	} while (continueOn);
+
+	return retObj;
+}
+
+// Gets the header of the latest readable message in a sub-board,
+// given a number of messages to look at.
+//
+// Paramters:
+//  pSubCode: The internal code of the message sub-board
+//  pNumMsgsToCheck: The number of messages to check at the end of the sub-board.
+//                   This is optional and if omitted, all messages will be
+//                   checked (from the last message) for the latest readable
+//                   message header.
+//
+// Return value: The message header of the latest readable message.  If
+//               none is found, this will be null.
+function getLatestMsgHdr(pSubCode, pNumMsgsToCheck)
+{
+	var msgHdr = null;
+	var numMsgsToCheck = (typeof(pNumMsgsToCheck) == "number" ? pNumMsgsToCheck : 0);
+	var msgBase = new MsgBase(pSubCode);
+	if (msgBase.open())
+	{
+		// Look through the last pNumMsgsToCheck headers to find the latest
+		// readable message header
+		var numMsgs = msgBase.total_msgs;
+		var firstMsgIdx = 0;
+		if (numMsgsToCheck >= 1)
+			firstMsgIdx = numMsgs - numMsgsToCheck;
+		else
+			firstMsgIdx = 0;
+		if (firstMsgIdx < 0)
+			firstMsgIdx = 0;
+		for (var i = numMsgs - 1; (i >= firstMsgIdx) && (msgHdr == null); --i)
+		{
+			var msgHeader = msgBase.get_msg_header(true, i, true);
+			if (isReadableMsgHdr(msgHeader, pSubCode))
+				msgHdr = msgHeader;
+		}
+
+		msgBase.close();
+	}
+	return msgHdr;
 }

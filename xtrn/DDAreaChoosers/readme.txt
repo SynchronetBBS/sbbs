@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
                               Version 1.17
-                        Release date: 2018-06-25
+                        Release date: 2019-08-22
 
                                   by
 
@@ -27,7 +27,8 @@ Contents
 =============
 The only guarantee that I can make about these scripts is that they will take
 up space on your computer.  I have tested these with the Windows verison of
-Synchronet 3.15 and 3.16 in Windows 2000 and Windows XP.
+Synchronet 3.15 and 3.16 in Windows 2000 and Windows XP, and Synchronet 3.17 in
+Windows 7.
 I created these scripts to customize the message & file area selection on my
 BBS and am providing them to the Synchronet BBS community in case other
 Synchronet sysops might find them useful.
