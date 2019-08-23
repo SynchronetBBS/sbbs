@@ -543,7 +543,7 @@ var jslint = (function JSLint() {
     var tokens;             // The array of tokens.
     var tenure;             // The predefined property registry.
     var tree;               // The abstract parse tree.
-    var var_mode;           // "var" if using var; "let" if using let.
+    var var_mode = 'let';           // "var" if using var; "let" if using let.
     var warnings;           // The array collecting all generated warnings.
 
 // Error reportage functions:
