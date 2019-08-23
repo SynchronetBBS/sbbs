@@ -16,7 +16,7 @@ settings.web_root = fullpath(
 	)
 );
 settings.web_lib = backslash(settings.web_directory + 'lib/');
-
+settings.web_components = backslash(settings.web_directory + 'components/');
 settings.web_pages = backslash(fullpath(settings.web_root + '../pages'));
 settings.web_sidebar = backslash(fullpath(settings.web_root + '../sidebar'));
 
