@@ -1,0 +1,1 @@
+<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
