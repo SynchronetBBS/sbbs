@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include <stdio.h>		/* sprintf */
+#include <string.h>		/* memchr */
 #include "gen_defs.h"
 #include "telnet.h"
 
