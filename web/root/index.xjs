@@ -19,42 +19,11 @@
 	var page_ctrl = getCtrlLine(settings.web_pages + page);
 ?>
 
-<?xjs function _subMenu(obj, title, path) { ?>
-	<li class="dropdown<?xjs if (path.match(/\//g).length > 1) write('-submenu'); ?>">
-		<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-			<?xjs write(title.replace(/^.*\-/, '')); ?>
-			<span class="caret"></span>
-		</a>
-		<ul class="dropdown-menu">
-			<?xjs _menu(obj.list, path); ?>
-		</ul>
-	</li>
-<?xjs } ?>
-
 <?xjs
-	function _menu(obj, path) {
-		Object.keys(obj).forEach(function (e) {
-			if (obj[e].type == 'list') {
-				_subMenu(obj[e], e, (path || '') + e + '/');
-			} else {
-?>
-    		<li>
-<?xjs if (obj[e].type == 'link') { ?>
-                <a class="dropdown-item" href="./?page=<?xjs write(obj[e].page); ?>" target="_blank">
-<?xjs } else { ?>
-        		<a class="dropdown-item" href="./?page=<?xjs write((path || '') + obj[e].page); ?>">
-<?xjs } ?>
-                    <?xjs write(e); ?>
-                </a>
-    		</li>
-<?xjs }});} ?>
-
-<?xjs function _sidebar() {
+	function _sidebar() {
 		if (settings.layout_sidebar_off || page_ctrl.options.no_sidebar) return;
 ?>
-	<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">
-		<?xjs writeSidebarModules(); ?>
-	</div>
+		<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar"><? writeSidebarModules(); ?></div>
 <?xjs } ?>
 
 <!DOCTYPE html>
