@@ -5107,7 +5107,8 @@ function SYNCJSLINT(argc, argv)
 		multiload:false,
 		white:true,		// Allow both spaces and tabs for indent
 		single:true,		// Allow both single and double quotes
-		devel:true		// Allow TODO comments
+		devel:true,		// Allow TODO comments
+		'this':true		// Allow using this in constructor functions?
 	};
 	var myResult;
 	var tmpVar1;
