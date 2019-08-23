@@ -142,7 +142,7 @@ int export_mdm(char *fname);
 int code_ok(char *str);
 int  bits(long l);
 void getar(char *desc, char *ar);
-bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub);
+bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub, long misc);
 bool new_qhub_sub(qhub_t*, unsigned qsubnum, sub_t*, unsigned confnum);
 void remove_sub(scfg_t*, unsigned subnum, bool cut);
 void sort_subs(int grpnum);
