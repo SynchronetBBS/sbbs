@@ -185,7 +185,7 @@ var jslint = (function JSLint() {
 // variables.
 
         bitwise: true,
-        /*browser: [
+        browser: [
             "Audio",
             "clearInterval",
             "clearTimeout",
@@ -216,7 +216,7 @@ var jslint = (function JSLint() {
             "console", "exports", "module", "process", "querystring",
             "require", "setImmediate", "setInterval", "setTimeout",
             "__dirname", "__filename"
-        ],*/
+        ],
         devel: [
             "alert", "confirm", "console", "prompt"
         ],
@@ -254,7 +254,9 @@ var jslint = (function JSLint() {
 		"File", "Queue", "Socket", "User", "COM",
 		"CryptContext", "CryptKeyset", "CryptCert", "LOG_EMERG",
 		"LOG_ALERT", "LOG_CRIT", "LOG_ERR", "LOG_ERROR",
-		"LOG_WARNING", "LOG_NOTICE", "LOG_INFO", "LOG_DEBUG"
+		"LOG_WARNING", "LOG_NOTICE", "LOG_INFO", "LOG_DEBUG",
+		"conio", "stdin", "stdout", "stderr", "jsexec_revision",
+		"jsdoor_revision"
         ],
         single: true,
         this: true,
@@ -1007,7 +1009,7 @@ var jslint = (function JSLint() {
             var result = snippet.match(rx_directive);
             if (result) {
                 if (!directive_mode) {
-                    warn_at("misplaced_directive_a", line, from, result[1]);
+                    //warn_at("misplaced_directive_a", line, from, result[1]);
                 } else {
                     the_comment.directive = result[1];
                     parse_directive(the_comment, result[2]);
@@ -5107,8 +5109,7 @@ function SYNCJSLINT(argc, argv)
 		multiload:false,
 		white:true,		// Allow both spaces and tabs for indent
 		single:true,		// Allow both single and double quotes
-		devel:true,		// Allow TODO comments
-		'this':true		// Allow using this in constructor functions?
+		Synchronet:true
 	};
 	var myResult;
 	var tmpVar1;
@@ -5245,9 +5246,16 @@ function SYNCJSLINT(argc, argv)
 				for(i in myResult.warnings) {
 					tmpVar2 = myResult.warnings[i];
 					writeln("-----");
+					tmpVar2.message = tmpVar2.message.replace(/\bline ([0-9]+)/g, function(m, l) {
+						return index[tmpVar2.line];
+					});
 					writeln(index[tmpVar2.line]+"@"+tmpVar2.column+": "+tmpVar2.message);
 					writeln(all_lines[tmpVar2.line]);
 					writeln(format("%.*s",tmpVar2.column,all_lines[tmpVar2.line]).replace(/[^\s]/g,' ')+'^');
+				}
+				if (myResult.stop) {
+					writeln("-----");
+					writeln('Processing STOPPED');
 				}
 			}
 
