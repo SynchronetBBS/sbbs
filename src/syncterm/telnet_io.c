@@ -252,36 +252,3 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen, struct
     return(outbuf);
 }
 
-BYTE* telnet_expand(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *newlen)
-{
-	BYTE*   first_iac;
-	BYTE*   first_cr=NULL;
-	ulong	i,outlen;
-
-    first_iac=(BYTE*)memchr(inbuf, TELNET_IAC, inlen);
-	if(telnet_local_option[TELNET_BINARY_TX]!=TELNET_DO)
-	    first_cr=(BYTE*)memchr(inbuf, '\r', inlen);
-
-	if(first_iac==NULL && first_cr==NULL) {	/* Nothing to expand */
-		*newlen=inlen;
-		return(inbuf);
-	}
-
-	if(first_iac!=NULL && (first_cr==NULL || first_iac < first_cr))
-		outlen=first_iac-inbuf;
-	else
-		outlen=first_cr-inbuf;
-	memcpy(outbuf, inbuf, outlen);
-
-    for(i=outlen;i<inlen;i++) {
-		if(inbuf[i]==TELNET_IAC)
-			outbuf[outlen++]=TELNET_IAC;
-		outbuf[outlen++]=inbuf[i];
-		if(telnet_local_option[TELNET_BINARY_TX]!=TELNET_DO) {
-			if(inbuf[i]=='\r')
-				outbuf[outlen++]='\n'; // See RFC5198
-		}
-	}
-    *newlen=outlen;
-    return(outbuf);
-}

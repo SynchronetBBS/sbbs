@@ -91,7 +91,8 @@ void telnet_output_thread(void *args)
 		if(wr) {
 			wr=conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
-			buf=(char *)telnet_expand(conn_api.wr_buf, wr, (BYTE *)ebuf, &wr);
+			wr = telnet_expand(conn_api.wr_buf, wr, (BYTE *)ebuf, sizeof(ebuf)
+				,telnet_local_option[TELNET_BINARY_TX]!=TELNET_DO, &buf);
 			sent=0;
 			while(sent < wr) {
 				FD_ZERO(&wds);
