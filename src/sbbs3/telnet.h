@@ -38,6 +38,7 @@
 #ifndef _TELNET_H
 #define _TELNET_H
 
+#include <stdbool.h>
 #include "gen_defs.h"	/* uchar */
 
 /* commands */
@@ -165,7 +166,8 @@ DLLEXPORT const char* telnet_cmd_desc(uchar cmd);
 DLLEXPORT const char* telnet_opt_desc(uchar opt);
 DLLEXPORT		uchar telnet_opt_ack(uchar cmd);
 DLLEXPORT		uchar telnet_opt_nak(uchar cmd);
-DLLEXPORT size_t telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen, uchar** result);
+DLLEXPORT size_t telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen
+								,bool expand_cr, uchar** result);
 
 #ifdef __cplusplus
 }

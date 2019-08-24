@@ -901,7 +901,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					} else if(telnet_mode&TELNET_MODE_OFF) {
 						bp=buf;
 					} else {
-                		rd = telnet_expand(buf, rd, telnet_buf, sizeof(telnet_buf), &bp);
+                		rd = telnet_expand(buf, rd, telnet_buf, sizeof(telnet_buf), /* expand_cr: */false, &bp);
 					}
 					if(rd>RingBufFree(&outbuf)) {
 						lprintf(LOG_ERR,"output buffer overflow");
@@ -969,7 +969,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					} else if(telnet_mode&TELNET_MODE_OFF) {
 						bp=buf;
 					} else {
-                		rd = telnet_expand(buf, rd, telnet_buf, sizeof(telnet_buf), &bp);
+                		rd = telnet_expand(buf, rd, telnet_buf, sizeof(telnet_buf), /* expand_cr: */false, &bp);
 					}
 					if(rd>RingBufFree(&outbuf)) {
 						lprintf(LOG_ERR,"output buffer overflow");
@@ -1919,7 +1919,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					output_len=rd;
 				}
 				else
-   	       			output_len = telnet_expand(buf, rd, output_buf, sizeof(output_buf), &bp);
+   	       			output_len = telnet_expand(buf, rd, output_buf, sizeof(output_buf), /* expand_cr: */false, &bp);
 			} else {
 				if ((mode & EX_STDIO) != EX_STDIO) {
 					/* LF to CRLF expansion */
