@@ -410,7 +410,7 @@ function getSignature() {
     if (!file_exists(fn)) return '';
     var f = new File(fn);
     f.open('r');
-    var signature = f.read();
+    var signature = ascii_str(f.read());
     f.close();
     return signature;
 }
@@ -438,9 +438,11 @@ function postMessage(sub, header, body) {
         }
         body = lfexpand(body);
         var msgBase = new MsgBase(sub);
-        msgBase.open();
-        ret = msgBase.save_msg(header, word_wrap(body));
-        msgBase.close();
+        if(msgBase.open()) {
+			header.ftn_charset = "UTF-8 4";
+			ret = msgBase.save_msg(header, word_wrap(body));
+			msgBase.close();
+		}
     } catch (err) {
         log(err);
     }
@@ -473,6 +475,7 @@ function postMail(header, body) {
     }
     var msgBase = new MsgBase('mail');
     if (msgBase.open()) {
+		header.ftn_charset = "UTF-8 4";
         ret = msgBase.save_msg(header, lfexpand(body));
         msgBase.close();
     }
