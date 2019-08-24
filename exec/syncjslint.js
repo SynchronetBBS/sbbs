@@ -5247,7 +5247,7 @@ function SYNCJSLINT(argc, argv)
 					tmpVar2 = myResult.warnings[i];
 					writeln("-----");
 					tmpVar2.message = tmpVar2.message.replace(/\bline ([0-9]+)/g, function(m, l) {
-						return index[tmpVar2.line];
+						return index[parseInt(l, 10)];
 					});
 					writeln(index[tmpVar2.line]+"@"+tmpVar2.column+": "+tmpVar2.message);
 					writeln(all_lines[tmpVar2.line]);
