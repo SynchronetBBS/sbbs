@@ -1142,30 +1142,31 @@ extern "C" {
 	DLLEXPORT int		DLLCALL update_uldate(scfg_t* cfg, file_t* f);
 
 	/* str_util.c */
-	DLLEXPORT char *	DLLCALL remove_ctrl_a(const char* instr, char* outstr);
-	DLLEXPORT char 		DLLCALL ctrl_a_to_ascii_char(char code);
-	DLLEXPORT char *	DLLCALL truncstr(char* str, const char* set);
-	DLLEXPORT char *	DLLCALL ascii_str(uchar* str);
-	DLLEXPORT char		DLLCALL exascii_to_ascii_char(uchar ch);
-	DLLEXPORT BOOL		DLLCALL findstr(const char *insearch, const char *fname);
-	DLLEXPORT BOOL		DLLCALL findstr_in_string(const char* insearchof, char* string);
-	DLLEXPORT BOOL		DLLCALL findstr_in_list(const char* insearchof, str_list_t list);
-	DLLEXPORT str_list_t DLLCALL findstr_list(const char* fname);
-	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, const char *insearch, const char *name);
-	DLLEXPORT char *	DLLCALL trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
-	DLLEXPORT str_list_t DLLCALL trashcan_list(scfg_t* cfg, const char* name);
-	DLLEXPORT char *	DLLCALL strip_exascii(const char *str, char* dest);
-	DLLEXPORT char *	DLLCALL strip_space(const char *str, char* dest);
-	DLLEXPORT char *	DLLCALL prep_file_desc(const char *str, char* dest);
-	DLLEXPORT char *	DLLCALL strip_ctrl(const char *str, char* dest);
-	DLLEXPORT char *	DLLCALL net_addr(net_t* net);
-	DLLEXPORT BOOL		DLLCALL valid_ctrl_a_attr(char a);
-	DLLEXPORT BOOL		DLLCALL valid_ctrl_a_code(char a);
-	DLLEXPORT size_t	DLLCALL strip_invalid_attr(char *str);
-	DLLEXPORT char *	DLLCALL ultoac(ulong l,char *str);
-	DLLEXPORT char *	DLLCALL rot13(char* str);
-	DLLEXPORT uint32_t	DLLCALL str_to_bits(uint32_t currval, const char *str);
-	DLLEXPORT BOOL		DLLCALL str_is_ascii(const char*);
+	DLLEXPORT char *	remove_ctrl_a(const char* instr, char* outstr);
+	DLLEXPORT char 		ctrl_a_to_ascii_char(char code);
+	DLLEXPORT char *	truncstr(char* str, const char* set);
+	DLLEXPORT char *	ascii_str(uchar* str);
+	DLLEXPORT char		exascii_to_ascii_char(uchar ch);
+	DLLEXPORT BOOL		findstr(const char *insearch, const char *fname);
+	DLLEXPORT BOOL		findstr_in_string(const char* insearchof, char* string);
+	DLLEXPORT BOOL		findstr_in_list(const char* insearchof, str_list_t list);
+	DLLEXPORT str_list_t findstr_list(const char* fname);
+	DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
+	DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
+	DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
+	DLLEXPORT char *	strip_exascii(const char *str, char* dest);
+	DLLEXPORT char *	strip_space(const char *str, char* dest);
+	DLLEXPORT char *	prep_file_desc(const char *str, char* dest);
+	DLLEXPORT char *	strip_ctrl(const char *str, char* dest);
+	DLLEXPORT char *	net_addr(net_t* net);
+	DLLEXPORT BOOL		valid_ctrl_a_attr(char a);
+	DLLEXPORT BOOL		valid_ctrl_a_code(char a);
+	DLLEXPORT size_t	strip_invalid_attr(char *str);
+	DLLEXPORT char *	ultoac(ulong l,char *str);
+	DLLEXPORT char *	rot13(char* str);
+	DLLEXPORT uint32_t	str_to_bits(uint32_t currval, const char *str);
+	DLLEXPORT BOOL		str_is_ascii(const char*);
+	DLLEXPORT char *	utf8_to_cp437_str(char* str);
 
 	/* msg_id.c */
 	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t*, smbmsg_t*, char* msgid, size_t);

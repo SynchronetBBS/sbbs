@@ -263,7 +263,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 		if(mode&QM_UTF8)
 			qwk_newline = '\n';
 		else
-			utf8_normalize_str(buf);
+			utf8_to_cp437_str(buf);
 	}
 
 	fprintf(qwk_fp,"%*s",QWK_BLOCK_LEN,"");		/* Init header to space */
