@@ -477,6 +477,7 @@ var dk = {
 			if (this.keybuf.length > 0) {
 				return true;
 			}
+			// TODO: Apparently this can return true when there's nothing in the pipe right now.
 			do {
 				if (this.input_queue_callback.length > 0) {
 					if (timeout > 10) {
@@ -488,7 +489,7 @@ var dk = {
 							this.keybuf += d;
 						}
 					}
-					if (this.keybuf.length) {
+					if (this.keybuf.length > 0) {
 						return true;
 					}
 				}
@@ -518,17 +519,20 @@ var dk = {
 				return undefined;
 			}
 			ret = this.input_queue.read();
-			if (ret.length > 1) {
-				if (ret.substr(0, 9) === 'POSITION_') {
-					m = ret.match(/^POSITION_([0-9]+)_([0-9]+)/);
-					if (m === null) {
-						return undefined;
+			// TODO: We shouldn't need to check this...
+			if (ret != undefined) {
+				if (ret.length > 1) {
+					if (ret.substr(0, 9) === 'POSITION_') {
+						m = ret.match(/^POSITION_([0-9]+)_([0-9]+)/);
+						if (m === null) {
+							return undefined;
+						}
+						this.last_pos.x = parseInt(m[2], 10);
+						this.last_pos.y = parseInt(m[1], 10);
+						ret = 'POSITION_REPORT';
 					}
-					this.last_pos.x = parseInt(m[2], 10);
-					this.last_pos.y = parseInt(m[1], 10);
-					ret = 'POSITION_REPORT';
+					ret=ret.replace(/\x00.*$/,'');
 				}
-				ret=ret.replace(/\x00.*$/,'');
 			}
 			return ret;
 		},
