@@ -330,7 +330,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 	kludges=strListInit();
 
 	char qwk_newline = QWK_NEWLINE;
-	if(msg->hdr.auxattr & MSG_HFIELDS_UTF)
+	if(msg->hdr.auxattr & MSG_HFIELDS_UTF8)
 		qwk_newline = '\n';
 
 	for(k=0;k<(blocks-1)*QWK_BLOCK_LEN;k++) {
