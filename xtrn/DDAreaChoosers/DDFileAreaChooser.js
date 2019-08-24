@@ -73,6 +73,8 @@
  * 2018-06-25 Eric Oulashin 1.17    Updated the version number to match my message area chooser.
  * 2019-08-18 Eric Oulashin 1.18 Beta Started working on file area searching.
  * 2019-08-22 Eric Oulashin 1.18    Releasing this version
+ * 2019-08-24 Eric Oulashin 1.19    Fixed a bug with 'Next' search when
+ *                                  returning from sub-board choosing
  */
 
 /* Command-line arguments:
@@ -105,8 +107,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.18";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2018-08-22";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.19";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2018-08-24";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -207,10 +209,6 @@ function DDFileAreaChooser()
 	// Filename base of a header to display above the area list
 	this.areaChooserHdrFilenameBase = "fileAreaChgHeader";
 	this.areaChooserHdrMaxLines = 5;
-
-	// For searching
-	this.lastSearchText = "";
-	this.lastSearchFoundIdx = -1;
 
 	// Set the function pointers for the object
 	this.ReadConfigFile = DDFileAreaChooser_ReadConfigFile;
@@ -741,8 +739,6 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 				selectedLibIndex: srchObj.itemIdx
 			};
 
-			chooserObj.lastSearchFoundIdx = srchObj.itemIdx;
-
 			// For screen refresh optimization, don't redraw the whole
 			// list if the result is on the same page
 			if (srchObj.pageTopIdx != topFileLibIndex)
@@ -836,6 +832,8 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 		var highlightScrenRow = 0; // The row on the screen for the highlighted library
 		var userInput = "";        // Will store a keypress from the user
 		var retObj = null;        // To store the return value of choosing a file area
+		var lastSearchText = "";
+		var lastSearchFoundIdx = -1;
 		var continueChoosingFileArea = true;
 		while (continueChoosingFileArea)
 		{
@@ -1022,8 +1020,8 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 						var srchObj = getPageNumFromSearch(searchText, numItemsPerPage, false, 0);
 						if (srchObj.pageNum > 0)
 						{
-							this.lastSearchText = searchText;
-							this.lastSearchFoundIdx = srchObj.itemIdx;
+							lastSearchText = searchText;
+							lastSearchFoundIdx = srchObj.itemIdx;
 
 							// For screen refresh optimization, don't redraw the whole
 							// list if the result is on the same page
@@ -1055,11 +1053,12 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 					this.WriteKeyHelpLine();
 					break;
 				case 'N': // Next search result (requires an existing search term)
-					if ((this.lastSearchText.length > 0) && (this.lastSearchFoundIdx > -1))
+					if ((lastSearchText.length > 0) && (lastSearchFoundIdx > -1))
 					{
 						// Do the search, and if found, go to the page and select the item
 						// indicated by the search.
-						var srchObj = getPageNumFromSearch(this.lastSearchText, numItemsPerPage, false, this.lastSearchFoundIdx+1);
+						var srchObj = getPageNumFromSearch(lastSearchText, numItemsPerPage, false, lastSearchFoundIdx+1);
+						lastSearchFoundIdx = srchObj.itemIdx;
 						if (srchObj.pageNum > 0)
 						{
 							var foundItemRetObj = nextLibSearchFoundItem(srchObj, listStartRow, listEndRow, selectedLibIndex, topFileLibIndex, this);
@@ -1074,7 +1073,8 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 						else
 						{
 							// Not found - Wrap around and start at 0 again
-							var srchObj = getPageNumFromSearch(this.lastSearchText, numItemsPerPage, false, 0);
+							var srchObj = getPageNumFromSearch(lastSearchText, numItemsPerPage, false, 0);
+							lastSearchFoundIdx = srchObj.itemIdx;
 							var foundItemRetObj = nextLibSearchFoundItem(srchObj, listStartRow, listEndRow, selectedLibIndex, topFileLibIndex, this);
 							if (foundItemRetObj.selectedLibIndex != selectedLibIndex)
 							{
@@ -1244,8 +1244,6 @@ function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlight
 			selectedDirIndex: srchObj.itemIdx
 		};
 
-		chooserObj.lastSearchFoundIdx = srchObj.itemIdx;
-
 		// For screen refresh optimization, don't redraw the whole
 		// list if the result is on the same page
 		if (srchObj.pageTopIdx != topFileDirIndex)
@@ -1349,6 +1347,8 @@ function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlight
 	// Start of the input loop.
 	var highlightScrenRow = 0; // The row on the screen for the highlighted directory
 	var userInput = "";        // Will store a keypress from the user
+	var lastSearchText = "";
+	var lastSearchFoundIdx = -1;
 	var continueChoosingFileDir = true;
 	while (continueChoosingFileDir)
 	{
@@ -1519,8 +1519,8 @@ function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlight
 					var srchObj = getPageNumFromSearch(searchText, numItemsPerPage, true, 0, pLibIndex);
 					if (srchObj.pageNum > 0)
 					{
-						this.lastSearchText = searchText;
-						this.lastSearchFoundIdx = srchObj.itemIdx;
+						lastSearchText = searchText;
+						lastSearchFoundIdx = srchObj.itemIdx;
 
 						// For screen refresh optimization, don't redraw the whole
 						// list if the result is on the same page
@@ -1552,11 +1552,12 @@ function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlight
 				this.WriteKeyHelpLine();
 				break;
 			case 'N': // Next search result (requires an existing search term)
-				if ((this.lastSearchText.length > 0) && (this.lastSearchFoundIdx > -1))
+				if ((lastSearchText.length > 0) && (lastSearchFoundIdx > -1))
 				{
 					// Do the search, and if found, go to the page and select the item
 					// indicated by the search.
-					var srchObj = getPageNumFromSearch(searchText, numItemsPerPage, true, this.lastSearchFoundIdx+1, pLibIndex);
+					var srchObj = getPageNumFromSearch(searchText, numItemsPerPage, true, lastSearchFoundIdx+1, pLibIndex);
+					lastSearchFoundIdx = srchObj.itemIdx;
 					if (srchObj.pageNum > 0)
 					{
 						var foundItemRetObj = nextDirSearchFoundItem(srchObj, numPages, pLibIndex, listStartRow, listEndRow, selectedDirIndex, topDirIndex, this);
@@ -1572,6 +1573,7 @@ function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlight
 					{
 						// Not found - Wrap around and start at 0 again
 						var srchObj = getPageNumFromSearch(searchText, numItemsPerPage, true, 0, pLibIndex);
+						lastSearchFoundIdx = srchObj.itemIdx;
 						var foundItemRetObj = nextDirSearchFoundItem(srchObj, numPages, pLibIndex, listStartRow, listEndRow, selectedDirIndex, topDirIndex, this);
 						if (foundItemRetObj.selectedDirIndex != selectedDirIndex)
 						{

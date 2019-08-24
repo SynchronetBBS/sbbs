@@ -77,6 +77,8 @@
  *                                  Also, improved the time to display sub-boards
  *                                  with the latest message date & time.
  * 2019-08-22 Eric Oulashin 1.18    Releasing this version
+ * 2019-08-24 Eric Oulashin 1.19    Fixed a bug with 'Next' search when
+ *                                  returning from sub-board choosing
  *                                  
 */
 
@@ -110,8 +112,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.18";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2019-08-22";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.19";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2019-08-24";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -227,10 +229,6 @@ function DDMsgAreaChooser()
 	// Whether or not to show the latest message date/time in the
 	// sub-board list
 	this.showDatesInSubBoardList = true;
-
-	// For searching
-	this.lastSearchText = "";
-	this.lastSearchFoundIdx = -1;
 
 	// Set the function pointers for the object
 	this.ReadConfigFile = DDMsgAreaChooser_ReadConfigFile;
@@ -493,8 +491,6 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 				selectedGrpIndex: srchObj.itemIdx
 			};
 
-			chooserObj.lastSearchFoundIdx = srchObj.itemIdx;
-
 			// For screen refresh optimization, don't redraw the whole
 			// list if the result is on the same page
 			if (srchObj.pageTopIdx != topMsgGrpIndex)
@@ -587,6 +583,8 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 		var highlightScrenRow = 0; // The row on the screen for the highlighted group
 		var userInput = "";        // Will store a keypress from the user
 		var retObj = null;        // To store the return value of choosing a sub-board
+		var lastSearchText = "";
+		var lastSearchFoundIdx = -1;
 		var continueChoosingMsgArea = true;
 		while (continueChoosingMsgArea)
 		{
@@ -775,8 +773,8 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 						var srchObj = getPageNumFromSearch(searchText, numItemsPerPage, false, 0);
 						if (srchObj.pageNum > 0)
 						{
-							this.lastSearchText = searchText;
-							this.lastSearchFoundIdx = srchObj.itemIdx;
+							lastSearchText = searchText;
+							lastSearchFoundIdx = srchObj.itemIdx;
 
 							// For screen refresh optimization, don't redraw the whole
 							// list if the result is on the same page
@@ -809,11 +807,12 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 					this.WriteKeyHelpLine();
 					break;
 				case 'N': // Next search result (requires an existing search term)
-					if ((this.lastSearchText.length > 0) && (this.lastSearchFoundIdx > -1))
+					if ((lastSearchText.length > 0) && (lastSearchFoundIdx > -1))
 					{
 						// Do the search, and if found, go to the page and select the item
 						// indicated by the search.
-						var srchObj = getPageNumFromSearch(this.lastSearchText, numItemsPerPage, false, this.lastSearchFoundIdx+1);
+						var srchObj = getPageNumFromSearch(lastSearchText, numItemsPerPage, false, lastSearchFoundIdx+1);
+						lastSearchFoundIdx = srchObj.itemIdx;
 						if (srchObj.pageNum > 0)
 						{
 							var foundItemRetObj = nextGrpSearchFoundItem(srchObj, numPages, listStartRow, listEndRow, selectedGrpIndex, topMsgGrpIndex, this);
@@ -828,7 +827,8 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 						else
 						{
 							// Not found - Wrap around and start at 0 again
-							var srchObj = getPageNumFromSearch(this.lastSearchText, numItemsPerPage, false, 0);
+							var srchObj = getPageNumFromSearch(lastSearchText, numItemsPerPage, false, 0);
+							lastSearchFoundIdx = srchObj.itemIdx;
 							var foundItemRetObj = nextGrpSearchFoundItem(srchObj, numPages, listStartRow, listEndRow, selectedGrpIndex, topMsgGrpIndex, this);
 							if (foundItemRetObj.selectedGrpIndex != selectedGrpIndex)
 							{
@@ -1001,8 +1001,6 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 			selectedSubIndex: srchObj.itemIdx
 		};
 
-		chooserObj.lastSearchFoundIdx = srchObj.itemIdx;
-
 		// For screen refresh optimization, don't redraw the whole
 		// list if the result is on the same page
 		if (srchObj.pageTopIdx != topSubIndex)
@@ -1100,6 +1098,8 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 	// Start of the input loop.
 	var highlightScrenRow = 0; // The row on the screen for the highlighted group
 	var userInput = "";        // Will store a keypress from the user
+	var lastSearchText = "";
+	var lastSearchFoundIdx = -1;
 	var continueChoosingSubBrd = true;
 	while (continueChoosingSubBrd)
 	{
@@ -1279,8 +1279,8 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 					var srchObj = getPageNumFromSearch(searchText, numItemsPerPage, true, 0, grpIndex);
 					if (srchObj.pageNum > 0)
 					{
-						this.lastSearchText = searchText;
-						this.lastSearchFoundIdx = srchObj.itemIdx;
+						lastSearchText = searchText;
+						lastSearchFoundIdx = srchObj.itemIdx;
 
 						// For screen refresh optimization, don't redraw the whole
 						// list if the result is on the same page
@@ -1313,11 +1313,12 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 				this.WriteKeyHelpLine();
 				break;
 			case 'N': // Next search result (requires an existing search term)
-				if ((this.lastSearchText.length > 0) && (this.lastSearchFoundIdx > -1))
+				if ((lastSearchText.length > 0) && (lastSearchFoundIdx > -1))
 				{
 					// Do the search, and if found, go to the page and select the item
 					// indicated by the search.
-					var srchObj = getPageNumFromSearch(this.lastSearchText, numItemsPerPage, true, this.lastSearchFoundIdx+1, grpIndex);
+					var srchObj = getPageNumFromSearch(lastSearchText, numItemsPerPage, true, lastSearchFoundIdx+1, grpIndex);
+					lastSearchFoundIdx = srchObj.itemIdx;
 					if (srchObj.pageNum > 0)
 					{
 						var foundItemRetObj = nextSubSearchFoundItem(pGrpIndex, srchObj, numPages, listStartRow, listEndRow, selectedSubIndex, topSubIndex, this);
@@ -1332,7 +1333,8 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 					else
 					{
 						// Not found - Wrap around and start at 0 again
-						var srchObj = getPageNumFromSearch(this.lastSearchText, numItemsPerPage, true, 0, grpIndex);
+						var srchObj = getPageNumFromSearch(lastSearchText, numItemsPerPage, true, 0, grpIndex);
+						lastSearchFoundIdx = srchObj.itemIdx;
 						var foundItemRetObj = nextSubSearchFoundItem(pGrpIndex, srchObj, numPages, listStartRow, listEndRow, selectedSubIndex, topSubIndex, this);
 						if (foundItemRetObj.selectedSubIndex != selectedSubIndex)
 						{
