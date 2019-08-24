@@ -635,7 +635,7 @@ var dk = {
 				else {
 					opt[i] = this.getstr_defaults[i];
 				}
-			});
+			}, this);
 			if (opt.decimal) {
 				decimal_re = /^([0-9]+(\.[0-9]*)?)?$/;
 			}
