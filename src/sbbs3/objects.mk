@@ -194,8 +194,7 @@ ECHOCFG_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)echocfg$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)rechocfg$(OFILE) \
 			$(UIFC_OBJS) \
-			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE)
+			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE)
 			
 ADDFILES_OBJS = \
 			$(OBJODIR)$(DIRSEP)addfiles$(OFILE) \
