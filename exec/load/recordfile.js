@@ -131,7 +131,6 @@ RecordFileRecord.prototype.FlushRead = function(keeplocked)
 	}
 	// Finally, just wait until we can read some random record...
 	if (!flushed) {
-log(LOG_ERROR, 'file: '+this.parent.file.name+' len: '+this.parent.length);
 		i = random(this.parent.length - 1);
 		if (i >= this.Record) {
 			i += 1;

@@ -510,17 +510,14 @@ var dk = {
 			var m;
 
 			if (this.keybuf.length > 0) {
-log(LOG_ERROR, 'keybuf');
 				ret = this.keybuf[0];
 				this.keybuf = this.keybuf.substr(1);
 				return ret;
 			}
 			if (!this.waitkey(0)) {
-log(LOG_ERROR, 'undefined');
 				return undefined;
 			}
 			ret = this.input_queue.read();
-log(LOG_ERROR, 'ret="'+ret.replace(/[\x00-\x1f]/g, '.')+'"');
 			if (ret.length > 1) {
 				if (ret.substr(0, 9) === 'POSITION_') {
 					m = ret.match(/^POSITION_([0-9]+)_([0-9]+)/);
@@ -903,7 +900,6 @@ log(LOG_ERROR, 'ret="'+ret.replace(/[\x00-\x1f]/g, '.')+'"');
 						"\x1b[6n" +		// Get cursor position
 						"\x1b[u"		// Restore cursor position
 		);
-log(LOG_ERROR, 'Waiting for ANSI response');
 		while(Date.now() - start < 500) {
 			if(this.console.waitkey(500)) {
 				if (this.console.getkey() === this.console.key.POSITION_REPORT) {
@@ -964,7 +960,6 @@ log(LOG_ERROR, 'Waiting for ANSI response');
 		this.user.seconds_remaining_from = file_date(path);
 		this.user.seconds_remaining = parseInt(df[17], 10);
 		this.user.minutes_remaining = parseInt(df[18], 10);
-log(LOG_ERROR, 'Graphics line: '+df[19]);
 		switch(df[19].toUpperCase()) {
 			case 'GR':
 				this.ansi = true;
@@ -978,7 +973,6 @@ log(LOG_ERROR, 'Graphics line: '+df[19]);
 				this.ansi = false;
 				this.codepage = '7-bit';
 		}
-log(LOG_ERROR, 'ansi: '+this.ansi);
 		rows = parseInt(df[20], 10);
 		if (rows !== this.console.rows) {
 			if (this.console.remote_screen !== undefined) {
@@ -1093,20 +1087,18 @@ Object.defineProperty(dk.console.Private_attr, 'value', {
 		'use strict';
 		if (val !== this.Private_new_attr.value) {
 			this.Private_new_attr.value = val;
-			js.global.dk.console.print(this.Private_new_attr.ansi(this));
+			dk.console.print(this.Private_new_attr.ansi(this));
 			this.Private_value = val;
 		}
 	}
 });
 
-log(LOG_ERROR, argc+' args '+argv.toSource());
 dk.parse_cmdline(argc, argv);
 if (dk.connection.socket !== undefined) {
 	dk.system.mode = 'socket';
 }
 
 // TODO: Local mode should be detectable from the dropfile...
-log(LOG_ERROR, "Mode: "+dk.system.mode);
 if (dk.system.mode === 'sbbs') {
 	load("sbbs_console.js");
 }
