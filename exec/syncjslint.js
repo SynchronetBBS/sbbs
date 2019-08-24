@@ -5257,6 +5257,10 @@ function SYNCJSLINT(argc, argv)
 					writeln("-----");
 					writeln('Processing STOPPED');
 				}
+				else {
+					writeln('');
+					writeln(myResult.warnings.length + ' Warnings');
+				}
 			}
 
 			if(options.report) {
