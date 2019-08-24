@@ -1595,9 +1595,10 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 
 		while(fexistcase(str) && !(mode&OVERWRITE)) {
 			lprintf(LOG_WARNING,"%s already exists",str);
-			xmodem_duplicate(&xm, bbs, str, sizeof(str), getfname(fname));
-			xmodem_cancel(&xm);
-			goto end; 
+			if(!xmodem_duplicate(&xm, bbs, str, sizeof(str), getfname(fname))) {
+				xmodem_cancel(&xm);
+				goto end;
+			}
 		}
 		if((fp=fopen(str,"wb"))==NULL) {
 			lprintf(LOG_ERR,"Error %d creating %s",errno,str);
