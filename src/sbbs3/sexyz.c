@@ -1123,7 +1123,8 @@ static int receive_files(char** fname_list, int fnames)
 				for(errors=0;errors<=xm.max_errors && !xm.cancelled;errors++) {
 					xmodem_put_nak(&xm, /* expected_block: */ 0);
 					if(xmodem_get_block(&xm, block, /* expected_block: */ 0) == SUCCESS) {
-						send_byte(NULL,ACK,10);
+						if(!(mode&GMODE))
+							send_byte(NULL,ACK,10);
 						break; 
 					} 
 					if(errors+1>xm.max_errors/3 && mode&CRC && !(mode&GMODE)) {

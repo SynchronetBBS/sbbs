@@ -1510,8 +1510,10 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				xmodem_put_nak(&xm, /* expected_block: */ 0);
 				i=xmodem_get_block(&xm, block, /* expected_block: */ 0);
 				if(i==SUCCESS) {
-					send_byte(&xm,ACK,10);
-					flush_send(&xm);
+					if(!(mode&GMODE)) {
+						send_byte(&xm,ACK,10);
+						flush_send(&xm);
+					}
 					break;
 				}
 				if(i==NOINP && (mode&GMODE)) {			/* Timeout */
