@@ -59,18 +59,6 @@
 #define IO_THREAD_BUF_SIZE	   	20000		// Bytes
 #define TIMEOUT_MUTEX_FILE		12*60*60
 
-// Globals
-#ifdef _WIN32
-	HANDLE		exec_mutex=NULL;
-	HINSTANCE	hK32=NULL;
-
-	#if defined(_DEBUG) && defined(_MSC_VER)
-			HANDLE	debug_log=INVALID_HANDLE_VALUE;
-		   _CrtMemState mem_chkpoint;
-	#endif // _DEBUG && _MSC_VER
-
-#endif // _WIN32
-
 #ifdef USE_CRYPTLIB
 
 	static	protected_uint32_t	ssh_sessions;
@@ -4860,27 +4848,6 @@ static void cleanup(int code)
 	protected_uint32_destroy(node_threads_running);
 	protected_uint32_destroy(ssh_sessions);
 
-#ifdef _WIN32
-	if(exec_mutex!=NULL) {
-		CloseHandle(exec_mutex);
-		exec_mutex=NULL;
-	}
-
-	if(hK32!=NULL) {
-		FreeLibrary(hK32);
-		hK32=NULL;
-	}
-
-#if 0 && defined(_DEBUG) && defined(_MSC_VER)
-	_CrtMemDumpAllObjectsSince(&mem_chkpoint);
-
-	if(debug_log!=INVALID_HANDLE_VALUE) {
-		CloseHandle(debug_log);
-		debug_log=INVALID_HANDLE_VALUE;
-	}
-#endif // _DEBUG && _MSC_VER
-#endif // _WIN32
-
 	status("Down");
 	thread_down();
 	if(terminate_server || code)
@@ -5024,15 +4991,6 @@ void DLLCALL bbs_thread(void* arg)
 		cleanup(1);
 		return;
 	}
-
-#ifdef _WIN32
-    if((exec_mutex=CreateMutex(NULL,false,NULL))==NULL) {
-    	lprintf(LOG_CRIT,"!ERROR %d creating exec_mutex", GetLastError());
-		cleanup(1);
-        return;
-    }
-	hK32 = LoadLibrary("KERNEL32");
-#endif // _WIN32
 
 	if(!winsock_startup()) {
 		cleanup(1);
@@ -5225,38 +5183,6 @@ NO_SSH:
 	}
 
 	status(STATUS_WFC);
-
-#if defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
-
-	SAFEPRINTF(str,"%sDEBUG.LOG",scfg.logs_dir);
-	if((debug_log=CreateFile(
-		str,				// pointer to name of the file
-		GENERIC_READ|GENERIC_WRITE,
-		FILE_SHARE_READ|FILE_SHARE_WRITE,
-		NULL,               // pointer to security attributes
-		OPEN_ALWAYS,		// how to create
-		FILE_ATTRIBUTE_NORMAL, // file attributes
-		NULL				// handle to file with attributes to
-		))==INVALID_HANDLE_VALUE) {
-		lprintf(LOG_CRIT,"!ERROR %ld creating %s",GetLastError(),str);
-		cleanup(1);
-		return;
-	}
-
-	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
-	_CrtSetReportFile(_CRT_WARN, debug_log);
-	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE|_CRTDBG_MODE_WNDW);
-	_CrtSetReportFile(_CRT_ERROR, debug_log);
-	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE|_CRTDBG_MODE_WNDW);
-	_CrtSetReportFile(_CRT_ASSERT, debug_log);
-
-	/* Turns on memory leak checking during program termination */
-//	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
-
-	/* Save this allocation point for comparison */
-	_CrtMemCheckpoint(&mem_chkpoint);
-
-#endif // _WIN32 && _DEBUG && _MSC_VER
 
 	/* Setup recycle/shutdown semaphore file lists */
 	shutdown_semfiles = semfile_list_init(scfg.ctrl_dir,"shutdown", "term");

@@ -272,24 +272,9 @@ static bool native_executable(scfg_t* cfg, const char* cmdline, long mode)
 
 #ifdef _WIN32
 
-#include "execvxd.h"	/* Win9X FOSSIL VxD API */
+#include "execvxd.h"	/* DOSXTRN.EXE API */
 
 extern SOCKET node_socket[];
-
-// -------------------------------------------------------------------------
-// GetAddressOfOpenVxDHandle
-//
-// This function returns the address of OpenVxDHandle. OpenVxDHandle is a
-// KERNEL32 function that returns a ring 0 event handle that corresponds to a
-// given ring 3 event handle. The ring 0 handle can be used by VxDs to
-// synchronize with the Win32 app.
-//
-typedef HANDLE (WINAPI *OPENVXDHANDLE)(HANDLE);
-
-OPENVXDHANDLE GetAddressOfOpenVxDHandle(void)
-{
-	return((OPENVXDHANDLE)GetProcAddress(hK32, "OpenVxDHandle"));
-}
 
 /*****************************************************************************/
 // Expands Single CR to CRLF
@@ -324,7 +309,6 @@ static void add_env_var(str_list_t* list, const char* var, const char* val)
 	if(start_event!=NULL)				CloseHandle(start_event);	\
 	if(hungup_event!=NULL)				CloseHandle(hungup_event);	\
 	if(hangup_event!=NULL)				CloseHandle(hangup_event);	\
-	ReleaseMutex(exec_mutex);										\
 	SetLastError(last_error)
 
 /****************************************************************************/
@@ -347,7 +331,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     BYTE 	wwiv_buf[XTRN_IO_BUF_LEN*2];
     bool	wwiv_flag=false;
     bool	native=false;			// DOS program by default
-	bool	nt=false;				// WinNT/2K?
     bool	was_online=true;
 	bool	rio_abortable_save=rio_abortable;
 	bool	use_pipes=false;	// NT-compatible console redirection
@@ -364,20 +347,16 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	HANDLE	rdoutpipe;
 	HANDLE	wrinpipe;
     PROCESS_INFORMATION process_info;
-	DWORD	hVM;
 	unsigned long	rd;
     unsigned long	wr;
     unsigned long	len;
     DWORD	avail;
-	unsigned long	dummy;
 	unsigned long	msglen;
 	unsigned long	retval;
 	DWORD	last_error;
 	DWORD	loop_since_io=0;
 	struct	tm tm;
 	str_list_t	env_list;
-	sbbsexec_start_t start;
-	OPENVXDHANDLE OpenVxDHandle;
 
 	xtrn_mode = mode;
 	lprintf(LOG_DEBUG,"Executing external: %s",cmdline);
@@ -416,17 +395,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	now=time(NULL);
 	if(localtime_r(&now,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
-
-	OpenVxDHandle=GetAddressOfOpenVxDHandle();
-
-	if(OpenVxDHandle==NULL)
-		nt=true;	// Windows NT/2000
-
-	if(!nt && !native && !(cfg.xtrn_misc&XTRN_NO_MUTEX)
-		&& (retval=WaitForSingleObject(exec_mutex,5000))!=WAIT_OBJECT_0) {
-		errormsg(WHERE, ERR_TIMEOUT, "exec_mutex", retval);
-		return(GetLastError());
-	}
 
 	if(native && mode&EX_STDOUT && !(mode&EX_OFFLINE))
 		use_pipes=true;
@@ -518,7 +486,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
         SAFEPRINTF2(fullcmdline, "%sDOSXTRN.EXE %s", cfg.exec_dir, path);
 
-		if(!(mode&EX_OFFLINE) && nt) {	// Windows NT/2000
+		if(!(mode&EX_OFFLINE)) {
 			i=SBBSEXEC_MODE_FOSSIL;
 			if(mode&EX_STDIN)
            		i|=SBBSEXEC_MODE_DOS_IN;
@@ -561,60 +529,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			if(rdslot==INVALID_HANDLE_VALUE) {
 				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_CREATE, str, 0);
-				return(GetLastError());
-			}
-		}
-		else if(!(mode&EX_OFFLINE)) {
-
-   			// Load vxd to intercept interrupts
-
-			sprintf(str,"\\\\.\\%s%s",cfg.exec_dir, SBBSEXEC_VXD);
-			if((vxd=CreateFile(str,0,0,0
-				,CREATE_NEW, FILE_FLAG_DELETE_ON_CLOSE,0))
-				 ==INVALID_HANDLE_VALUE) {
-				XTRN_CLEANUP;
-				errormsg(WHERE, ERR_OPEN, str, 0);
-				return(GetLastError());
-			}
-
-			if((start_event=CreateEvent(
-				 NULL	// pointer to security attributes
-				,TRUE	// flag for manual-reset event
-				,FALSE  // flag for initial state
-				,NULL	// pointer to event-object name
-				))==NULL) {
-				XTRN_CLEANUP;
-				errormsg(WHERE, ERR_CREATE, "exec start event", 0);
-				return(GetLastError());
-			}
-
-			if(OpenVxDHandle!=NULL)
-				start.event=OpenVxDHandle(start_event);
-			else
-				start.event=start_event;
-
-			start.mode=SBBSEXEC_MODE_FOSSIL;
-			if(mode&EX_STDIN)
-           		start.mode|=SBBSEXEC_MODE_DOS_IN;
-			if(mode&EX_STDOUT)
-        		start.mode|=SBBSEXEC_MODE_DOS_OUT;
-
-			sprintf(str," 95 %u %u"
-				,cfg.node_num,start.mode);
-			strcat(fullcmdline,str);
-
-			if(!DeviceIoControl(
-				vxd,					// handle to device of interest
-				SBBSEXEC_IOCTL_START,	// control code of operation to perform
-				&start,					// pointer to buffer to supply input data
-				sizeof(start),			// size of input buffer
-				NULL,					// pointer to buffer to receive output data
-				0,						// size of output buffer
-				&rd,					// pointer to variable to receive output byte count
-				NULL 					// Overlapped I/O
-				)) {
-				XTRN_CLEANUP;
-				errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_START);
 				return(GetLastError());
 			}
 		}
@@ -726,41 +640,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	CloseHandle(process_info.hThread);
 
-	if(!native) {
-
-		if(!(mode&EX_OFFLINE) && !nt) {
-    		// Wait for notification from VXD that new VM has started
-			if((retval=WaitForSingleObject(start_event, 5000))!=WAIT_OBJECT_0) {
-				XTRN_CLEANUP;
-                TerminateProcess(process_info.hProcess, __LINE__);
-				CloseHandle(process_info.hProcess);
-				errormsg(WHERE, ERR_TIMEOUT, "start_event", retval);
-				return(GetLastError());
-			}
-
-			CloseHandle(start_event);
-			start_event=NULL;	/* Mark as closed */
-
-			if(!DeviceIoControl(
-				vxd,					// handle to device of interest
-				SBBSEXEC_IOCTL_COMPLETE,	// control code of operation to perform
-				NULL,					// pointer to buffer to supply input data
-				0,						// size of input buffer
-				&hVM,					// pointer to buffer to receive output data
-				sizeof(hVM),			// size of output buffer
-				&rd,					// pointer to variable to receive output byte count
-				NULL					// Overlapped I/O
-				)) {
-				XTRN_CLEANUP;
-                TerminateProcess(process_info.hProcess, __LINE__);
-				CloseHandle(process_info.hProcess);
-				errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_COMPLETE);
-				return(GetLastError());
-			}
-		}
-	}
-    ReleaseMutex(exec_mutex);
-
 	/* Disable Ctrl-C checking */
 	if(!(mode&EX_OFFLINE))
 		rio_abortable=false;
@@ -775,21 +654,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				logline(LOG_NOTICE,"X!","hung-up in external program");
             	hungup=time(NULL);
 				if(!native) {
-					if(nt)
-						SetEvent(hungup_event);
-					else if(!DeviceIoControl(
-						vxd,		// handle to device of interest
-						SBBSEXEC_IOCTL_DISCONNECT,	// operation to perform
-						&hVM,		// pointer to buffer to supply input data
-						sizeof(hVM),// size of input buffer
-						NULL,		// pointer to buffer to receive output data
-						0,			// size of output buffer
-						&rd,		// pointer to variable to receive output byte count
-						NULL		// Overlapped I/O
-						)) {
-						errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_DISCONNECT);
-						break;
-					}
+					SetEvent(hungup_event);
 				}
 	            was_online=false;
             }
@@ -804,181 +669,111 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				break;
 		} else {
 
-			if(nt || use_pipes) {	// Windows NT/2000
+			/* Write to VDD */
 
-				/* Write to VDD */
-
-				wr=RingBufPeek(&inbuf,buf,sizeof(buf));
-				if(wr) {
-					if(!use_pipes && wrslot==INVALID_HANDLE_VALUE) {
-						sprintf(str,"\\\\.\\mailslot\\sbbsexec\\wr%d"
-							,cfg.node_num);
-						wrslot=CreateFile(str
-							,GENERIC_WRITE
-							,FILE_SHARE_READ
-							,NULL
-							,OPEN_EXISTING
-							,FILE_ATTRIBUTE_NORMAL
-							,(HANDLE) NULL);
-						if(wrslot==INVALID_HANDLE_VALUE)
-							lprintf(LOG_DEBUG,"!ERROR %u (%s) opening %s", GetLastError(), strerror(errno), str);
-						else
-							lprintf(LOG_DEBUG,"CreateFile(%s)=0x%x", str, wrslot);
-					}
-
-					/* CR expansion */
-					if(use_pipes)
-						bp=cr_expand(buf,wr,output_buf,wr);
-					else
-						bp=buf;
-
-					len=0;
+			wr=RingBufPeek(&inbuf,buf,sizeof(buf));
+			if(wr) {
+				if(!use_pipes && wrslot==INVALID_HANDLE_VALUE) {
+					sprintf(str,"\\\\.\\mailslot\\sbbsexec\\wr%d"
+						,cfg.node_num);
+					wrslot=CreateFile(str
+						,GENERIC_WRITE
+						,FILE_SHARE_READ
+						,NULL
+						,OPEN_EXISTING
+						,FILE_ATTRIBUTE_NORMAL
+						,(HANDLE) NULL);
 					if(wrslot==INVALID_HANDLE_VALUE)
-						lprintf(LOG_WARNING,"VDD Open failed (not loaded yet?)");
-					else if(!WriteFile(wrslot,bp,wr,&len,NULL)) {
-						lprintf(LOG_ERR,"!VDD WriteFile(0x%x, %u) FAILURE (Error=%u)", wrslot, wr, GetLastError());
-						if(GetMailslotInfo(wrslot,&wr,NULL,NULL,NULL))
-							lprintf(LOG_DEBUG,"!VDD MailSlot max_msg_size=%u", wr);
-						else
-							lprintf(LOG_DEBUG,"!GetMailslotInfo(0x%x)=%u", wrslot, GetLastError());
-					} else {
-						if(len!=wr)
-							lprintf(LOG_WARNING,"VDD short write (%u instead of %u)", len,wr);
-						RingBufRead(&inbuf, NULL, len);
-						if(use_pipes && !(mode&EX_NOECHO)) {
-							/* echo */
-							RingBufWrite(&outbuf, bp, len);
-						}
-					}
-					wr=len;
-				}
-
-				/* Read from VDD */
-
-				rd=0;
-				len=sizeof(buf);
-				avail=RingBufFree(&outbuf)/2;	// leave room for wwiv/telnet expansion
-#if 0
-				if(avail==0)
-					lprintf("Node %d !output buffer full (%u bytes)"
-						,cfg.node_num,RingBufFull(&outbuf));
-#endif
-				if(len>avail)
-            		len=avail;
-
-				while(rd<len) {
-					unsigned long waiting=0;
-
-					if(use_pipes)
-						PeekNamedPipe(
-							rdslot,             // handle to pipe to copy from
-							NULL,               // pointer to data buffer
-							0,					// size, in bytes, of data buffer
-							NULL,				// pointer to number of bytes read
-							&waiting,			// pointer to total number of bytes available
-							NULL				// pointer to unread bytes in this message
-							);
+						lprintf(LOG_DEBUG,"!ERROR %u (%s) opening %s", GetLastError(), strerror(errno), str);
 					else
-						GetMailslotInfo(
-							rdslot,				// mailslot handle
- 							NULL,				// address of maximum message size
-							NULL,				// address of size of next message
-							&waiting,			// address of number of messages
- 							NULL				// address of read time-out
-							);
-					if(!waiting)
-						break;
-					if(ReadFile(rdslot,buf+rd,len-rd,&msglen,NULL)==FALSE || msglen<1)
-						break;
-					rd+=msglen;
+						lprintf(LOG_DEBUG,"CreateFile(%s)=0x%x", str, wrslot);
 				}
 
-				if(rd) {
-					if(mode&EX_WWIV) {
-                		bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
-						if(rd>sizeof(wwiv_buf))
-							lprintf(LOG_ERR,"WWIV_BUF OVERRUN");
-					} else if(telnet_mode&TELNET_MODE_OFF) {
-						bp=buf;
-					} else {
-                		rd = telnet_expand(buf, rd, telnet_buf, sizeof(telnet_buf), /* expand_cr: */false, &bp);
-					}
-					if(rd>RingBufFree(&outbuf)) {
-						lprintf(LOG_ERR,"output buffer overflow");
-						rd=RingBufFree(&outbuf);
-					}
-					if(mode&EX_BIN)
-						RingBufWrite(&outbuf, bp, rd);
+				/* CR expansion */
+				if(use_pipes)
+					bp=cr_expand(buf,wr,output_buf,wr);
+				else
+					bp=buf;
+
+				len=0;
+				if(wrslot==INVALID_HANDLE_VALUE)
+					lprintf(LOG_WARNING,"VDD Open failed (not loaded yet?)");
+				else if(!WriteFile(wrslot,bp,wr,&len,NULL)) {
+					lprintf(LOG_ERR,"!VDD WriteFile(0x%x, %u) FAILURE (Error=%u)", wrslot, wr, GetLastError());
+					if(GetMailslotInfo(wrslot,&wr,NULL,NULL,NULL))
+						lprintf(LOG_DEBUG,"!VDD MailSlot max_msg_size=%u", wr);
 					else
-						rputs((char*)bp, rd);
-				}
-			} else {	// Windows 9x
-
-				/* Write to VXD */
-
-				wr=RingBufPeek(&inbuf, buf+sizeof(hVM),sizeof(buf)-sizeof(hVM));
-				if(wr) {
-					*(DWORD*)buf=hVM;
-					wr+=sizeof(hVM);
-					if(!DeviceIoControl(
-						vxd,					// handle to device of interest
-						SBBSEXEC_IOCTL_WRITE,	// control code of operation to perform
-						buf,					// pointer to buffer to supply input data
-						wr,						// size of input buffer
-						&rd,					// pointer to buffer to receive output data
-						sizeof(rd),				// size of output buffer
-						&dummy,	 				// pointer to variable to receive output byte count
-						NULL					// Overlapped I/O
-						)) {
-						errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_READ);
-						break;
+						lprintf(LOG_DEBUG,"!GetMailslotInfo(0x%x)=%u", wrslot, GetLastError());
+				} else {
+					if(len!=wr)
+						lprintf(LOG_WARNING,"VDD short write (%u instead of %u)", len,wr);
+					RingBufRead(&inbuf, NULL, len);
+					if(use_pipes && !(mode&EX_NOECHO)) {
+						/* echo */
+						RingBufWrite(&outbuf, bp, len);
 					}
-					RingBufRead(&inbuf, NULL, rd);
-					wr=rd;
 				}
-        		/* Read from VXD */
-				rd=0;
-				len=sizeof(buf);
-				avail=RingBufFree(&outbuf)/2;	// leave room for wwiv/telnet expansion
+				wr=len;
+			}
+
+			/* Read from VDD */
+
+			rd=0;
+			len=sizeof(buf);
+			avail=RingBufFree(&outbuf)/2;	// leave room for wwiv/telnet expansion
 #if 0
-				if(avail==0)
-					lprintf("Node %d !output buffer full (%u bytes)"
-						,cfg.node_num,RingBufFull(&outbuf));
+			if(avail==0)
+				lprintf("Node %d !output buffer full (%u bytes)"
+					,cfg.node_num,RingBufFull(&outbuf));
 #endif
+			if(len>avail)
+            	len=avail;
 
-				if(len>avail)
-            		len=avail;
-				if(len) {
-					if(!DeviceIoControl(
-						vxd,					// handle to device of interest
-						SBBSEXEC_IOCTL_READ,	// control code of operation to perform
-						&hVM,					// pointer to buffer to supply input data
-						sizeof(hVM),			// size of input buffer
-						buf,					// pointer to buffer to receive output data
-						len,					// size of output buffer
-						&rd,					// pointer to variable to receive output byte count
-						NULL					// Overlapped I/O
-						)) {
-						errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_READ);
-						break;
-					}
-					if(mode&EX_WWIV) {
-                		bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
-						if(rd>sizeof(wwiv_buf))
-							lprintf(LOG_ERR,"WWIV_BUF OVERRUN");
-					} else if(telnet_mode&TELNET_MODE_OFF) {
-						bp=buf;
-					} else {
-                		rd = telnet_expand(buf, rd, telnet_buf, sizeof(telnet_buf), /* expand_cr: */false, &bp);
-					}
-					if(rd>RingBufFree(&outbuf)) {
-						lprintf(LOG_ERR,"output buffer overflow");
-						rd=RingBufFree(&outbuf);
-					}
-					if(!(mode&EX_BIN) && term_supports(PETSCII))
-						petscii_convert(bp, rd);
+			while(rd<len) {
+				unsigned long waiting=0;
+
+				if(use_pipes)
+					PeekNamedPipe(
+						rdslot,             // handle to pipe to copy from
+						NULL,               // pointer to data buffer
+						0,					// size, in bytes, of data buffer
+						NULL,				// pointer to number of bytes read
+						&waiting,			// pointer to total number of bytes available
+						NULL				// pointer to unread bytes in this message
+						);
+				else
+					GetMailslotInfo(
+						rdslot,				// mailslot handle
+ 						NULL,				// address of maximum message size
+						NULL,				// address of size of next message
+						&waiting,			// address of number of messages
+ 						NULL				// address of read time-out
+						);
+				if(!waiting)
+					break;
+				if(ReadFile(rdslot,buf+rd,len-rd,&msglen,NULL)==FALSE || msglen<1)
+					break;
+				rd+=msglen;
+			}
+
+			if(rd) {
+				if(mode&EX_WWIV) {
+                	bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
+					if(rd>sizeof(wwiv_buf))
+						lprintf(LOG_ERR,"WWIV_BUF OVERRUN");
+				} else if(telnet_mode&TELNET_MODE_OFF) {
+					bp=buf;
+				} else {
+                	rd = telnet_expand(buf, rd, telnet_buf, sizeof(telnet_buf), /* expand_cr: */false, &bp);
+				}
+				if(rd>RingBufFree(&outbuf)) {
+					lprintf(LOG_ERR,"output buffer overflow");
+					rd=RingBufFree(&outbuf);
+				}
+				if(mode&EX_BIN)
 					RingBufWrite(&outbuf, bp, rd);
-				}
+				else
+					rputs((char*)bp, rd);
 			}
 #if defined(_DEBUG) && 0
 			if(rd>1) {
@@ -1028,21 +823,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
             } else
 				loop_since_io=0;
         }
-	}
-
-	if(!native && !(mode&EX_OFFLINE) && !nt) {
-		if(!DeviceIoControl(
-			vxd,					// handle to device of interest
-			SBBSEXEC_IOCTL_STOP,	// control code of operation to perform
-			&hVM,					// pointer to buffer to supply input data
-			sizeof(hVM),			// size of input buffer
-			NULL,					// pointer to buffer to receive output data
-			0,						// size of output buffer
-			&rd,					// pointer to variable to receive output byte count
-			NULL					// Overlapped I/O
-			)) {
-			errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_STOP);
-		}
 	}
 
     if(!(mode&EX_BG)) {			/* !background execution */
