@@ -445,7 +445,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	JS_ReportPendingException(cx);
 	JS_DestroyScript(cx, js_script);
 
-	if(js_scope == scope)
+	if(js_scope == scope) {
 		if (old_js_argv == JSVAL_VOID) {
 			JS_DeleteProperty(cx, js_scope, "argv");
 			JS_DeleteProperty(cx, js_scope, "argc");
