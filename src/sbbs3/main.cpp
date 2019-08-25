@@ -2061,7 +2061,12 @@ void input_thread(void *arg)
 			lprintf(LOG_ERR,"!TELBUF OVERFLOW (%d>%d)",wr,(int)sizeof(telbuf));
 
 		if(sbbs->passthru_socket_active == true) {
-			sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr);
+			BOOL writable = FALSE;
+			if(socket_check(sbbs->passthru_socket, NULL, &writable, 1000) && writable)
+				sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr);
+			else
+				lprintf(LOG_WARNING, "Node %d could not write to passthru socket"
+					, sbbs->cfg.node_num);
 			continue;
 		}
 
@@ -2117,6 +2122,10 @@ void sbbs_t::passthru_socket_activate(bool activate)
 			if(recv(client_socket_dup, &ch, sizeof(ch), /* flags: */0) != sizeof(ch))
 				break;
 		}
+	} else {
+		do { // Allow time for the passthru_thread to move any pending socket data to the outbuf
+			SLEEP(100); // Before the node_thread starts sending its own data to the outbuf
+		} while(RingBufFull(&sbbs->outbuf));
 	}
 	passthru_socket_active = activate;
 }
@@ -2132,7 +2141,7 @@ void passthru_thread(void* arg)
 	struct	timeval	tv;
 	int		i;
 	int		rd;
-	char	inbuf[4000];
+	char	inbuf[IO_THREAD_BUF_SIZE / 2];
 
 	SetThreadName("sbbs/passthru");
 	thread_up(FALSE /* setuid */);
@@ -2166,7 +2175,7 @@ void passthru_thread(void* arg)
                		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->passthru_socket);
 			break;
 		}
-		if(!RingBufFree(&sbbs->outbuf))
+		if(RingBufFree(&sbbs->outbuf) < sizeof(inbuf) * 2)
 			continue;
 
     	rd = recv(sbbs->passthru_socket, inbuf, sizeof(inbuf), 0);
