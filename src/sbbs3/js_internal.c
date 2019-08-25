@@ -279,6 +279,190 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
     return(JS_TRUE);
 }
 
+// This is kind of halfway between js_execfile() in exec.cpp and js_load
+static int
+js_execfile(JSContext *cx, uintN argc, jsval *arglist)
+{
+	char*		cmd = NULL;
+	size_t		cmdlen;
+	size_t		pathlen;
+	char*		startup_dir = NULL;
+	int		arg=0;
+	char		path[MAX_PATH+1];
+	JSObject*	scope = JS_GetScopeChain(cx);
+	JSObject*	js_scope = scope;
+	JSObject*	js_script=NULL;
+	JSObject*	nargv;
+	jsval		old_js_argv = JSVAL_VOID;
+	jsval		old_js_argc = JSVAL_VOID;
+	jsval		rval;
+	jsrefcount	rc;
+	int		i;
+	jsval		val;
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	js_callback_t *	js_callback = (js_callback_t*)JS_GetPrivate(cx,obj);
+
+	if(argc<1) {
+		JS_ReportError(cx, "No filename passed");
+		return(JS_FALSE);
+	}
+
+	jsval *argv=JS_ARGV(cx, arglist);
+
+	if (!JSVAL_IS_STRING(argv[arg])) {
+		JS_ReportError(cx, "Invalid script name");
+		return(JS_FALSE);
+	}
+	JSVALUE_TO_MSTRING(cx, argv[arg++], cmd, NULL);
+	HANDLE_PENDING(cx, cmd);
+	if (cmd == NULL) {
+		JS_ReportError(cx, "Invalid NULL string");
+		return(JS_FALSE);
+	}
+
+	if (argc > arg) {
+		if (JSVAL_IS_STRING(argv[arg])) {
+			JSVALUE_TO_MSTRING(cx, argv[arg++], startup_dir, &cmdlen);
+			HANDLE_PENDING(cx, cmd);
+			if(startup_dir == NULL) {
+				free(cmd);
+				JS_ReportError(cx, "Invalid NULL string");
+				return(JS_FALSE);
+			}
+		}
+	}
+
+	if (argc > arg && JSVAL_IS_OBJECT(argv[arg]))
+		js_scope = JSVAL_TO_OBJECT(argv[arg++]);
+	else {
+		JS_ReportError(cx, "Invalid Scope");
+		return(JS_FALSE);
+	}
+
+	if(isfullpath(cmd))
+		SAFECOPY(path,cmd);
+	else {
+		// If startup dir specified, check there first.
+		if (startup_dir) {
+			SAFECOPY(path, startup_dir);
+			backslash(path);
+			strncat(path, cmd, sizeof(path) - strlen(path) - 1);
+			rc=JS_SUSPENDREQUEST(cx);
+			if (!fexist(path))
+				*path = 0;
+			JS_RESUMEREQUEST(cx, rc);
+		}
+		// Then check js.exec_dir
+		if (path[0] == 0) {
+			if(JS_GetProperty(cx, scope, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
+				JSObject* js_obj = JSVAL_TO_OBJECT(val);
+
+				/* if js.exec_dir is defined (location of executed script), search there first */
+				if(JS_GetProperty(cx, js_obj, "exec_dir", &val) && val!=JSVAL_VOID && JSVAL_IS_STRING(val)) {
+					JSVALUE_TO_STRBUF(cx, val, path, sizeof(path), &pathlen);
+					strncat(path, cmd, sizeof(path)-pathlen-1);
+					rc=JS_SUSPENDREQUEST(cx);
+					if(!fexistcase(path))
+						path[0]=0;
+					JS_RESUMEREQUEST(cx, rc);
+				}
+			}
+		}
+	}
+	free(cmd);
+
+	if(!fexistcase(path)) {
+		JS_ReportError(cx, "Can't find script");
+		free(startup_dir);
+		return JS_FALSE;
+	}
+
+	if (scope == js_scope) {
+		JS_GetProperty(cx, scope, "argv", &old_js_argv);
+		JS_AddValueRoot(cx, &old_js_argv);
+		JS_GetProperty(cx, scope, "argc", &old_js_argc);
+		JS_AddValueRoot(cx, &old_js_argc);
+	}
+
+	nargv=JS_NewArrayObject(cx, 0, NULL);
+
+	JS_DefineProperty(cx, js_scope, "argv", OBJECT_TO_JSVAL(nargv)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+	for(i=arg; i<argc; i++)
+		JS_SetElement(cx, nargv, i-arg, &argv[i]);
+
+	JS_DefineProperty(cx, js_scope, "argc", INT_TO_JSVAL(argc-arg)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	JS_ClearPendingException(cx);
+
+	js_script=JS_CompileFile(cx, js_scope, path);
+
+	if(js_script == NULL) {
+		JS_ReportPendingException(cx);
+		if (scope == js_scope) {
+			if (old_js_argv == JSVAL_VOID) {
+				JS_DeleteProperty(cx, js_scope, "argv");
+				JS_DeleteProperty(cx, js_scope, "argc");
+			}
+			else {
+				JS_DefineProperty(cx, js_scope, "argv", old_js_argv
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+				JS_DefineProperty(cx, js_scope, "argc", old_js_argc
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			}
+		}
+		JS_RemoveValueRoot(cx, &old_js_argv);
+		JS_RemoveValueRoot(cx, &old_js_argc);
+		return(JS_FALSE);
+	}
+
+	if(js_scope != scope) {
+		// Make the JS an object with the "real" one as the prototype.
+		if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
+			JSObject* proto = JSVAL_TO_OBJECT(val);
+			obj=JS_NewObject(cx, NULL, proto, js_scope);
+			JS_DefineProperty(cx, js_scope, "js", OBJECT_TO_JSVAL(obj)
+				,NULL,NULL,JSPROP_ENUMERATE);
+			js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
+		}
+		else {
+			// This likely won't work... they're all read-only.
+			js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
+		}
+	}
+	free(startup_dir);
+	JS_ExecuteScript(cx, js_scope, js_script, &rval);
+	JS_SET_RVAL(cx, arglist, rval);
+	JS_ClearPendingException(cx);
+
+	if(js_scope != scope) {
+		JS_GetProperty(cx, js_scope, "exit_code", &rval);
+		JS_SET_RVAL(cx, arglist, rval);
+		js_EvalOnExit(cx, js_scope, js_callback);
+	}
+	JS_ReportPendingException(cx);
+	JS_DestroyScript(cx, js_script);
+
+	if(js_scope == scope)
+		if (old_js_argv == JSVAL_VOID) {
+			JS_DeleteProperty(cx, js_scope, "argv");
+			JS_DeleteProperty(cx, js_scope, "argc");
+		}
+		else {
+			JS_DefineProperty(cx, js_scope, "argv", old_js_argv
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, js_scope, "argc", old_js_argc
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		}
+		JS_RemoveValueRoot(cx, &old_js_argv);
+		JS_RemoveValueRoot(cx, &old_js_argc);
+	}
+
+	return JS_TRUE;
+}
+
 static JSClass eval_class = {
     "Global",  /* name */
     JSCLASS_GLOBAL_FLAGS,  /* flags */
@@ -515,6 +699,12 @@ static jsSyncMethodSpec js_functions[] = {
 	},
 	{"flatten_string",	js_flatten,			1,	JSTYPE_VOID,	JSDOCSTR("[string]")
 	,JSDOCSTR("flattens a string, optimizing allocated memory used for concatenated strings")
+	,316
+	},
+	{"exec",	js_execfile,			1,	JSTYPE_NUMBER,	JSDOCSTR("filename [, startup_dir], obj [,...]")
+	,JSDOCSTR("Executes a script optionally with a custom global scope.  The main difference between this "
+	"and load() is that scripts called this way can call exit() without terminating the caller.  If it does, any "
+	"on_exit() handlers will be evaluated in scripts scope when the script exists.")
 	,316
 	},
 	{0}
