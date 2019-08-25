@@ -473,7 +473,6 @@ static int recv_buffer(int timeout /* seconds */)
 #endif
 							FD_SET(sock,&socket_set);
 						tv.tv_sec=timeout;
-						timeout=0;
 						tv.tv_usec=0;
 						if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
 							if(i==SOCKET_ERROR) {
@@ -483,8 +482,10 @@ static int recv_buffer(int timeout /* seconds */)
 							else
 								lprintf(LOG_WARNING,"Receive timeout (%u seconds)", timeout);
 						}
-						else
+						else {
+							timeout=0;
 							continue;
+						}
 					}
 					return 0;
 				default:
