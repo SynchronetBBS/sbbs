@@ -2106,6 +2106,21 @@ void input_thread(void *arg)
 		,sbbs->cfg.node_num, total_recv, total_pkts);
 }
 
+// Flush the duplicate client_socket when activating the passthru socket
+// to eliminate any stale data from the previous passthru session
+void sbbs_t::passthru_socket_activate(bool activate)
+{
+	if(activate) {
+		BOOL rd = FALSE;
+		while(socket_check(client_socket_dup, &rd, /* wr_p */NULL, /* timeout */0) && rd) {
+			char ch;
+			if(recv(client_socket_dup, &ch, sizeof(ch), /* flags: */0) != sizeof(ch))
+				break;
+		}
+	}
+	passthru_socket_active = activate;
+}
+
 /*
  * This thread simply copies anything it manages to read from the
  * passthru_socket into the output ringbuffer.

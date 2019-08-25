@@ -678,7 +678,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		if(!(mode&EX_STDIN)) {
 			if(passthru_thread_running)
-				passthru_socket_active = true;
+				passthru_socket_activate(true);
 			else
 				pthread_mutex_lock(&input_thread_mutex);
 		}
@@ -703,7 +703,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		XTRN_CLEANUP;
 		if(!(mode&EX_STDIN)) {
 			if(passthru_thread_running)
-				passthru_socket_active = false;
+				passthru_socket_activate(false);
 			else
 				pthread_mutex_unlock(&input_thread_mutex);
 		}
@@ -1074,7 +1074,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		if(native) {
 			if(!(mode&EX_STDIN)) {
 				if(passthru_thread_running)
-					passthru_socket_active = false;
+					passthru_socket_activate(false);
 				else
 					pthread_mutex_unlock(&input_thread_mutex);
 			}
@@ -1656,7 +1656,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(!(mode&EX_STDIN)) {
 		if(!(mode&EX_STDIN)) {
 			if(passthru_thread_running)
-				passthru_socket_active = true;
+				passthru_socket_activate(true);
 			else
 				pthread_mutex_lock(&input_thread_mutex);
 		}
@@ -1687,7 +1687,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		if((pid=forkpty(&in_pipe[1],NULL,&term,&winsize))==-1) {
 			if(!(mode&EX_STDIN)) {
 				if(passthru_thread_running)
-					passthru_socket_active = false;
+					passthru_socket_activate(false);
 				else
 					pthread_mutex_unlock(&input_thread_mutex);
 			}
@@ -1712,7 +1712,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		if((pid=FORK())==-1) {
 			if(!(mode&EX_STDIN)) {
 				if(passthru_thread_running)
-					passthru_socket_active = false;
+					passthru_socket_activate(false);
 				else
 					pthread_mutex_unlock(&input_thread_mutex);
 			}
@@ -2011,7 +2011,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	if(!(mode&EX_STDIN)) {
 		if(passthru_thread_running)
-			passthru_socket_active = false;
+			passthru_socket_activate(false);
 		else
 			pthread_mutex_unlock(&input_thread_mutex);
 	}

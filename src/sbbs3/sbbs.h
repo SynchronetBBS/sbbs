@@ -332,6 +332,7 @@ public:
 	bool	ssh_mode;
 	SOCKET	passthru_socket;
 	bool	passthru_socket_active;
+	void	passthru_socket_activate(bool);
     bool	passthru_thread_running;
 
 	scfg_t	cfg;
