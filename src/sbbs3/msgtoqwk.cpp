@@ -259,7 +259,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 		return(0);
 
 	char qwk_newline = QWK_NEWLINE;
-	if(smb_msg_is_utf8(msg)) {
+	if(smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8)) {
 		if(mode&QM_UTF8)
 			qwk_newline = '\n';
 		else
