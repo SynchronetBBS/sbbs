@@ -1633,7 +1633,7 @@ int main(int argc, char **argv)
 	else if(outbuf_size > MAX_OUTBUF_SIZE)
 		outbuf_size = MAX_OUTBUF_SIZE;
 	
-	fprintf(statfp,"Output buffer size: %lu\n", outbuf_size);
+	lprintf(LOG_DEBUG, "Output buffer size: %lu", outbuf_size);
 	RingBufInit(&outbuf, outbuf_size);
 
 #if !defined(RINGBUF_EVENT)
@@ -1912,6 +1912,7 @@ int main(int argc, char **argv)
 	}
 
 	if((dszlog=getenv("DSZLOG"))!=NULL) {
+		lprintf(LOG_DEBUG, "Logging to %s", dszlog);
 		if((logfp=fopen(dszlog,"w"))==NULL) {
 			lprintf(LOG_WARNING,"Error %d opening DSZLOG file: %s",errno,dszlog);
 			bail(-1); 
@@ -1958,9 +1959,8 @@ int main(int argc, char **argv)
 /*	sem_post(outbuf.sem);
 	sem_post(outbuf.highwater_sem); */
 
-	fprintf(statfp,"Exiting - Error level: %d, flows: %u, select_errors=%u"
+	lprintf(LOG_INFO, "Exiting - Error level: %d, flows: %u, select_errors=%u"
 		,retval, flows, select_errors);
-	fprintf(statfp,"\n");
 
 	bail(retval);
 	return retval;
