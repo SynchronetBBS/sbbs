@@ -410,7 +410,10 @@ function getSignature() {
     if (!file_exists(fn)) return '';
     var f = new File(fn);
     f.open('r');
-    var signature = ascii_str(f.read());
+    if(js.global.utf8_encode)
+	var signature = utf8_encode(f.read());
+    else
+        var signature = ascii_str(f.read());
     f.close();
     return signature;
 }
@@ -440,6 +443,7 @@ function postMessage(sub, header, body) {
         var msgBase = new MsgBase(sub);
         if(msgBase.open()) {
 			header.ftn_charset = "UTF-8 4";
+			header.auxattr = MSG_HFIELDS_UTF8;
 			ret = msgBase.save_msg(header, word_wrap(body));
 			msgBase.close();
 		}
@@ -476,6 +480,7 @@ function postMail(header, body) {
     var msgBase = new MsgBase('mail');
     if (msgBase.open()) {
 		header.ftn_charset = "UTF-8 4";
+		header.auxattr = MSG_HFIELDS_UTF8;
         ret = msgBase.save_msg(header, lfexpand(body));
         msgBase.close();
     }
