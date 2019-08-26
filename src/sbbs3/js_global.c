@@ -4159,6 +4159,32 @@ js_utf8_decode(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static JSBool
+js_utf8_width(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		str = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+	HANDLE_PENDING(cx, str);
+	if(str==NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	size_t width = utf8_str_total_width(str);
+	JS_RESUMEREQUEST(cx, rc);
+
+	free(str);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(width));
+	return JS_TRUE;
+}
+
 
 #if 0
 static JSBool
@@ -4549,6 +4575,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"utf8_decode",		js_utf8_decode,		1,	JSTYPE_STRING,	JSDOCSTR("text")
 	,JSDOCSTR("returns CP437 representation of UTF-8 encoded text string or <i>null</i> on error (invalid UTF-8)")
+	,31702
+	},
+	{"utf8_width",		js_utf8_width,		1,	JSTYPE_NUMBER,	JSDOCSTR("text")
+	,JSDOCSTR("returns the fixed printed-width of the specified UTF-8 string")
 	,31702
 	},
 
