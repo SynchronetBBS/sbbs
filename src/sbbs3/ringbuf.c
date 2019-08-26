@@ -165,7 +165,7 @@ DWORD RINGBUFCALL RingBufFree( RingBuf* rb )
 
 DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
 {
-	DWORD max, first, remain;
+	DWORD max, first, remain, fill_level;
 
 	if(cnt==0)
 		return(cnt);
@@ -180,10 +180,9 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
     /* allowed to write at pEnd */
 	max = rb->pEnd - rb->pHead + 1;
 
-	/*
-	 * we assume the caller has checked that there is enough room. For this reason
-	 * we do not have to worry about head wrapping past the tail
-	 */
+	fill_level = RINGBUF_FILL_LEVEL(rb);
+	if(fill_level + cnt > rb->size)
+		cnt = rb->size - fill_level;
 
 	if( max >= cnt ) {
 		first = cnt;
