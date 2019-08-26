@@ -293,8 +293,6 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	js_scope = scope;
 	JSObject*	js_script=NULL;
 	JSObject*	nargv;
-	jsval		old_js_argv = JSVAL_VOID;
-	jsval		old_js_argc = JSVAL_VOID;
 	jsval		rval;
 	jsrefcount	rc;
 	int		i;
@@ -332,9 +330,18 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	if (argc > arg && JSVAL_IS_OBJECT(argv[arg]))
+	if (argc > arg && JSVAL_IS_OBJECT(argv[arg])) {
 		js_scope = JSVAL_TO_OBJECT(argv[arg++]);
+		if (js_scope == scope) {
+			free(cmd);
+			free(startup_dir);
+			JS_ReportError(cx, "Invalid Scope");
+			return(JS_FALSE);
+		}
+	}
 	else {
+		free(cmd);
+		free(startup_dir);
 		JS_ReportError(cx, "Invalid Scope");
 		return(JS_FALSE);
 	}
@@ -377,13 +384,6 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if (scope == js_scope) {
-		JS_GetProperty(cx, scope, "argv", &old_js_argv);
-		JS_AddValueRoot(cx, &old_js_argv);
-		JS_GetProperty(cx, scope, "argc", &old_js_argc);
-		JS_AddValueRoot(cx, &old_js_argc);
-	}
-
 	nargv=JS_NewArrayObject(cx, 0, NULL);
 
 	JS_DefineProperty(cx, js_scope, "argv", OBJECT_TO_JSVAL(nargv)
@@ -395,70 +395,47 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	JS_DefineProperty(cx, js_scope, "argc", INT_TO_JSVAL(argc-arg)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_ClearPendingException(cx);
-
 	js_script=JS_CompileFile(cx, js_scope, path);
 
 	if(js_script == NULL) {
-		JS_ReportPendingException(cx);
-		if (scope == js_scope) {
-			if (old_js_argv == JSVAL_VOID) {
-				JS_DeleteProperty(cx, js_scope, "argv");
-				JS_DeleteProperty(cx, js_scope, "argc");
-			}
-			else {
-				JS_DefineProperty(cx, js_scope, "argv", old_js_argv
-					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-				JS_DefineProperty(cx, js_scope, "argc", old_js_argc
-					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-			}
+		/* If the script fails to compile, it's not a fatal error
+		 * for the caller. */
+		free(startup_dir);
+		if (JS_IsExceptionPending(cx)) {
+			JS_GetPendingException(cx, &rval);
+			JS_SET_RVAL(cx, arglist, rval);
 		}
-		JS_RemoveValueRoot(cx, &old_js_argv);
-		JS_RemoveValueRoot(cx, &old_js_argc);
-		return(JS_FALSE);
+		JS_ClearPendingException(cx);
+		return(JS_TRUE);
 	}
 
-	if(js_scope != scope) {
-		// Make the JS an object with the "real" one as the prototype.
-		if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
-			JSObject* proto = JSVAL_TO_OBJECT(val);
-			obj=JS_NewObject(cx, NULL, proto, js_scope);
-			JS_DefineProperty(cx, js_scope, "js", OBJECT_TO_JSVAL(obj)
-				,NULL,NULL,JSPROP_ENUMERATE);
-			js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
-		}
-		else {
-			// This likely won't work... they're all read-only.
-			js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
-		}
+	// Make the JS an object with the "real" one as the prototype.
+	if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
+		JSObject* proto = JSVAL_TO_OBJECT(val);
+		obj=JS_NewObject(cx, NULL, proto, js_scope);
+		JS_DefineProperty(cx, js_scope, "js", OBJECT_TO_JSVAL(obj)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
+	}
+	else {
+		// This likely won't work... they're all read-only.
+		js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
 	}
 	free(startup_dir);
 	JS_ExecuteScript(cx, js_scope, js_script, &rval);
 	JS_SET_RVAL(cx, arglist, rval);
+	if (JS_IsExceptionPending(cx)) {
+		JS_GetPendingException(cx, &rval);
+	}
+	else {
+		JS_GetProperty(cx, js_scope, "exit_code", &rval);
+	}
+	JS_SET_RVAL(cx, arglist, rval);
 	JS_ClearPendingException(cx);
 
-	if(js_scope != scope) {
-		JS_GetProperty(cx, js_scope, "exit_code", &rval);
-		JS_SET_RVAL(cx, arglist, rval);
-		js_EvalOnExit(cx, js_scope, js_callback);
-	}
+	js_EvalOnExit(cx, js_scope, js_callback);
 	JS_ReportPendingException(cx);
 	JS_DestroyScript(cx, js_script);
-
-	if(js_scope == scope) {
-		if (old_js_argv == JSVAL_VOID) {
-			JS_DeleteProperty(cx, js_scope, "argv");
-			JS_DeleteProperty(cx, js_scope, "argc");
-		}
-		else {
-			JS_DefineProperty(cx, js_scope, "argv", old_js_argv
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, js_scope, "argc", old_js_argc
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-		}
-		JS_RemoveValueRoot(cx, &old_js_argv);
-		JS_RemoveValueRoot(cx, &old_js_argc);
-	}
 
 	return JS_TRUE;
 }
