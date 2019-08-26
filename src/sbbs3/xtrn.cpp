@@ -1587,8 +1587,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		_exit(-1);	/* should never get here */
 	}
 
-	if(online==ON_REMOTE)
-		lprintf(LOG_INFO,"executing external: %s", fullcmdline);
+	if(strcmp(cmdline, fullcmdline) != 0)
+		lprintf(LOG_DEBUG,"Executing cmd-line: %s", fullcmdline);
 
 	/* Disable Ctrl-C checking */
 	if(!(mode&EX_OFFLINE))
