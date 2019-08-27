@@ -9,6 +9,7 @@ function catchup()
 
 function read_direction()
 {
+	// TODO: time remaining check
 	var ch = dk.console.getkey();
 
 	switch(ch) {
@@ -1296,7 +1297,6 @@ function main()
 	b.can_play[player.Record] = false;
 	b.put();
 
-	// TODO: Not range checked or anything...
 	player.forest_fights--;
 	lln('  `2Feeling a might lonely, you decide to pay a visit to a');
 	sln('  dear friend.  It\'s no short journey and you are quite');
