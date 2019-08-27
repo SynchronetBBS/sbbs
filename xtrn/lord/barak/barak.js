@@ -1,4 +1,4 @@
-'use safe';
+'use strict';
 
 function catchup()
 {
@@ -71,6 +71,7 @@ function run()
 	var stole = 0;
 	var num;
 	var cur_time;
+	var ch;
 
 	function important(x, y) {
 		var i;
@@ -384,13 +385,14 @@ function fly()
 	var old_time;
 	var old_time1;
 	var cur_time;
-	var wx;
+	var wz;
 	var wy;
 	// DIFF: forward1 was uninitialized...
 	var forward1 = !(random(2) === 0);
 	var wep_char;
 	var times_hit;
 	var speed;
+	var ch;
 
 	wep_char = 'I';
 	lln('`c                     `%A HAIRY PREDICAMENT');
@@ -789,6 +791,7 @@ function chest()
 	var n1;
 	var j;
 	var chests_opened = 0;
+	var ch;
 
 	lln('`c                           `0** `%THE BASEMENT `0**');
 	sln('');
@@ -812,7 +815,7 @@ function chest()
 	do {
 		ch = read_direction();
 		if (ch === 'R') {
-			if (x < 50) {
+			if (x < 51) {
 				x += 1;
 				draw_man(x, y);
 			}
@@ -955,6 +958,8 @@ function chest()
 					return;
 				}
 				dk.console.gotoxy(0, 20);
+				dk.console.cleareol();
+				dk.console.gotoxy(0, 19);
 				dk.console.cleareol();
 				switch (random(6)) {
 					case 0:
@@ -1243,6 +1248,7 @@ function run_maint(b)
 	for (i = 0; i < b.can_play.length; i++) {
 		b.can_play[i] = true;
 	}
+	b.day = state.days;
 	b.put();
 }
 
@@ -1277,7 +1283,7 @@ function main()
 	else {
 		b = bs.get(0);
 	}
-	if (bs.day != state.days) {
+	if (b.day != state.days) {
 		run_maint(b);
 	}
 	if(!b.can_play[player.Record] || player.forest_fights < 1) {
@@ -1288,6 +1294,7 @@ function main()
 		exit(0);
 	}
 	b.can_play[player.Record] = false;
+	b.put();
 
 	// TODO: Not range checked or anything...
 	player.forest_fights--;
