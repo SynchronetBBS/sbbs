@@ -9,6 +9,9 @@ function getRecordLength(RecordDef)
 		switch(fieldtype) {
 			case "Float":
 				return(22);
+			case "SignedInteger16":
+			case "Integer16":
+				return(2);
 			case "SignedInteger":
 			case "Integer":
 				return(4);
@@ -478,6 +481,14 @@ RecordFile.prototype.readField = function(fieldtype)
 				return(ret);
 			case "Integer":
 				return(this.file.readBin(4));
+			case "SignedInteger16":
+				ret=this.file.readBin(2);
+				if(ret>=32768) {
+					ret-=65536;
+				}
+				return(ret);
+			case "Integer16":
+				return(this.file.readBin(2));
 			case "Date":
 				tmp=this.file.read(8);
 				return(tmp.replace(/\x00/g,""));
@@ -546,6 +557,24 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 				val=4294967295;
 			}
 			this.file.writeBin(val,4);
+			break;
+		case "SignedInteger16":
+			if(val < -32768) {
+				val = -32768;
+			}
+			if(val > 32767) {
+				val = 32767;
+			}
+			this.file.writeBin(val,2);
+			break;
+		case "Integer16":
+			if(val<0) {
+				val=0;
+			}
+			if(val>65535) {
+				val=65535;
+			}
+			this.file.writeBin(val,2);
 			break;
 		case "Date":
 			wr=val.substr(0,8);
