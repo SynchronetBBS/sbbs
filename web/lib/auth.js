@@ -77,8 +77,10 @@ function validateSession(cookies) {
 		setSessionValue(usr.number, 'ip_address', client.ip_address);
 		if (session.session_start === undefined || time() - parseInt(session.session_start, 10) > settings.timeout) {
 			setSessionValue(usr.number, 'session_start', time());
-			const logonlist_lib = load({}, 'logonlist_lib.js');
-			logonlist_lib.add({ node: 'Web' });
+			if(!usr.is_sysop || (system.settings&SYS_SYSSTAT)) {
+				const logonlist_lib = load({}, 'logonlist_lib.js');
+				logonlist_lib.add({ node: 'Web' });
+			}
 		}
 		break;
 
