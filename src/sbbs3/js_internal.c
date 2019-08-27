@@ -298,6 +298,8 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	int		i;
 	jsval		val;
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	JSObject *js_obj;
+	JSObject *pjs_obj;
 	js_callback_t *	js_callback = (js_callback_t*)JS_GetPrivate(cx,obj);
 
 	if(argc<1) {
@@ -409,27 +411,46 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
-	// Make the JS an object with the "real" one as the prototype.
-	if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
-		JSObject* proto = JSVAL_TO_OBJECT(val);
-		obj=JS_NewObject(cx, NULL, proto, js_scope);
-		JS_DefineProperty(cx, js_scope, "js", OBJECT_TO_JSVAL(obj)
-			,NULL,NULL,JSPROP_ENUMERATE);
-		js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
-	}
-	else {
-		// This likely won't work... they're all read-only.
-		js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
-	}
+	js_obj = js_CreateInternalJsObject(cx, js_scope, js_callback, NULL);
+	js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
 	free(startup_dir);
+	if (JS_GetProperty(cx, scope, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
+		pjs_obj = JSVAL_TO_OBJECT(val);
+		// Copy in the load_path_list...
+		if(pjs_obj != NULL) {
+			JSObject*	pload_path_list;
+			JSObject*	load_path_list;
+			uint32_t	plen;
+			uint32_t	pcnt;
+
+			if (JS_GetProperty(cx, pjs_obj, JAVASCRIPT_LOAD_PATH_LIST, &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
+				pload_path_list = JSVAL_TO_OBJECT(val);
+				if (!JS_IsArrayObject(cx, pload_path_list)) {
+					JS_ReportError(cx, "Weird js."JAVASCRIPT_LOAD_PATH_LIST" value");
+					return JS_FALSE;
+				}
+				if((load_path_list=JS_NewArrayObject(cx, 0, NULL))==NULL) {
+					JS_ReportError(cx, "Unable to create js."JAVASCRIPT_LOAD_PATH_LIST);
+					return JS_FALSE;
+				}
+				val = OBJECT_TO_JSVAL(load_path_list);
+				JS_SetProperty(cx, js_obj, JAVASCRIPT_LOAD_PATH_LIST, &val);
+				JS_GetArrayLength(cx, pload_path_list, &plen);
+				for (pcnt = 0; pcnt < plen; pcnt++) {
+					JS_GetElement(cx, pload_path_list, pcnt, &val);
+					JS_SetElement(cx, load_path_list, pcnt, &val);
+				}
+			}
+		}
+	}
 	JS_ExecuteScript(cx, js_scope, js_script, &rval);
-	JS_SET_RVAL(cx, arglist, rval);
 	if (JS_IsExceptionPending(cx)) {
 		JS_GetPendingException(cx, &rval);
 	}
 	else {
 		JS_GetProperty(cx, js_scope, "exit_code", &rval);
 	}
+	JS_GC(cx);
 	JS_SET_RVAL(cx, arglist, rval);
 	JS_ClearPendingException(cx);
 
