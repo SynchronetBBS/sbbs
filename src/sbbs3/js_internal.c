@@ -290,17 +290,17 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	int		arg=0;
 	char		path[MAX_PATH+1];
 	JSObject*	scope = JS_GetScopeChain(cx);
-	JSObject*	js_scope = scope;
+	JSObject*	js_scope = NULL;
+	JSObject*	pscope;
 	JSObject*	js_script=NULL;
 	JSObject*	nargv;
 	jsval		rval;
 	jsrefcount	rc;
 	int		i;
 	jsval		val;
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	JSObject *js_obj;
 	JSObject *pjs_obj;
-	js_callback_t *	js_callback = (js_callback_t*)JS_GetPrivate(cx,obj);
+	js_callback_t *	js_callback;
 
 	if(argc<1) {
 		JS_ReportError(cx, "No filename passed");
@@ -348,6 +348,19 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
+	pscope = scope;
+	while ((!JS_GetProperty(cx, pscope, "js", &val) || val==JSVAL_VOID || !JSVAL_IS_OBJECT(val)) && pscope != NULL) {
+		pscope = JS_GetParent(cx, pscope);
+		if (pscope == NULL) {
+			free(cmd);
+			free(startup_dir);
+			JS_ReportError(cx, "Walked to global, no js object!");
+			return JS_FALSE;
+		}
+	}
+	pjs_obj = JSVAL_TO_OBJECT(val);
+	js_callback = JS_GetPrivate(cx, pjs_obj);
+
 	if(isfullpath(cmd))
 		SAFECOPY(path,cmd);
 	else {
@@ -362,19 +375,15 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 			JS_RESUMEREQUEST(cx, rc);
 		}
 		// Then check js.exec_dir
-		if (path[0] == 0) {
-			if(JS_GetProperty(cx, scope, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
-				JSObject* js_obj = JSVAL_TO_OBJECT(val);
-
-				/* if js.exec_dir is defined (location of executed script), search there first */
-				if(JS_GetProperty(cx, js_obj, "exec_dir", &val) && val!=JSVAL_VOID && JSVAL_IS_STRING(val)) {
-					JSVALUE_TO_STRBUF(cx, val, path, sizeof(path), &pathlen);
-					strncat(path, cmd, sizeof(path)-pathlen-1);
-					rc=JS_SUSPENDREQUEST(cx);
-					if(!fexistcase(path))
-						path[0]=0;
-					JS_RESUMEREQUEST(cx, rc);
-				}
+		/* if js.exec_dir is defined (location of executed script), search there first */
+		if (*path == 0) {
+			if(JS_GetProperty(cx, pjs_obj, "exec_dir", &val) && val!=JSVAL_VOID && JSVAL_IS_STRING(val)) {
+				JSVALUE_TO_STRBUF(cx, val, path, sizeof(path), &pathlen);
+				strncat(path, cmd, sizeof(path)-pathlen-1);
+				rc=JS_SUSPENDREQUEST(cx);
+				if(!fexistcase(path))
+					path[0]=0;
+				JS_RESUMEREQUEST(cx, rc);
 			}
 		}
 	}
@@ -397,6 +406,44 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	JS_DefineProperty(cx, js_scope, "argc", INT_TO_JSVAL(argc-arg)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
+	js_obj = js_CreateInternalJsObject(cx, js_scope, js_callback, NULL);
+	js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
+	free(startup_dir);
+	// Copy in the load_path_list...
+	if(pjs_obj != NULL) {
+		JSObject*	pload_path_list;
+		JSObject*	load_path_list;
+		uint32_t	plen;
+		uint32_t	pcnt;
+
+		if (JS_GetProperty(cx, pjs_obj, JAVASCRIPT_LOAD_PATH_LIST, &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
+			pload_path_list = JSVAL_TO_OBJECT(val);
+			if (!JS_IsArrayObject(cx, pload_path_list)) {
+				JS_ReportError(cx, "Weird js."JAVASCRIPT_LOAD_PATH_LIST" value");
+				return JS_FALSE;
+			}
+			if((load_path_list=JS_NewArrayObject(cx, 0, NULL))==NULL) {
+				JS_ReportError(cx, "Unable to create js."JAVASCRIPT_LOAD_PATH_LIST);
+				return JS_FALSE;
+			}
+			val = OBJECT_TO_JSVAL(load_path_list);
+			JS_SetProperty(cx, js_obj, JAVASCRIPT_LOAD_PATH_LIST, &val);
+			JS_GetArrayLength(cx, pload_path_list, &plen);
+			for (pcnt = 0; pcnt < plen; pcnt++) {
+				JS_GetElement(cx, pload_path_list, pcnt, &val);
+				JS_SetElement(cx, load_path_list, pcnt, &val);
+			}
+		}
+		else {
+			JS_ReportError(cx, "Unable to get parent js."JAVASCRIPT_LOAD_PATH_LIST" array.");
+			return JS_FALSE;
+		}
+	}
+	else {
+		JS_ReportError(cx, "Unable to get parent js object");
+		return JS_FALSE;
+	}
+
 	js_script=JS_CompileFile(cx, js_scope, path);
 
 	if(js_script == NULL) {
@@ -411,38 +458,6 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
-	js_obj = js_CreateInternalJsObject(cx, js_scope, js_callback, NULL);
-	js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
-	free(startup_dir);
-	if (JS_GetProperty(cx, scope, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
-		pjs_obj = JSVAL_TO_OBJECT(val);
-		// Copy in the load_path_list...
-		if(pjs_obj != NULL) {
-			JSObject*	pload_path_list;
-			JSObject*	load_path_list;
-			uint32_t	plen;
-			uint32_t	pcnt;
-
-			if (JS_GetProperty(cx, pjs_obj, JAVASCRIPT_LOAD_PATH_LIST, &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
-				pload_path_list = JSVAL_TO_OBJECT(val);
-				if (!JS_IsArrayObject(cx, pload_path_list)) {
-					JS_ReportError(cx, "Weird js."JAVASCRIPT_LOAD_PATH_LIST" value");
-					return JS_FALSE;
-				}
-				if((load_path_list=JS_NewArrayObject(cx, 0, NULL))==NULL) {
-					JS_ReportError(cx, "Unable to create js."JAVASCRIPT_LOAD_PATH_LIST);
-					return JS_FALSE;
-				}
-				val = OBJECT_TO_JSVAL(load_path_list);
-				JS_SetProperty(cx, js_obj, JAVASCRIPT_LOAD_PATH_LIST, &val);
-				JS_GetArrayLength(cx, pload_path_list, &plen);
-				for (pcnt = 0; pcnt < plen; pcnt++) {
-					JS_GetElement(cx, pload_path_list, pcnt, &val);
-					JS_SetElement(cx, load_path_list, pcnt, &val);
-				}
-			}
-		}
-	}
 	JS_ExecuteScript(cx, js_scope, js_script, &rval);
 	if (JS_IsExceptionPending(cx)) {
 		JS_GetPendingException(cx, &rval);
@@ -450,13 +465,13 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	else {
 		JS_GetProperty(cx, js_scope, "exit_code", &rval);
 	}
-	JS_GC(cx);
 	JS_SET_RVAL(cx, arglist, rval);
 	JS_ClearPendingException(cx);
 
 	js_EvalOnExit(cx, js_scope, js_callback);
 	JS_ReportPendingException(cx);
 	JS_DestroyScript(cx, js_script);
+	JS_GC(cx);
 
 	return JS_TRUE;
 }
@@ -618,7 +633,6 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 		else
 			JS_SetPrivate(cx,scope,list);
 	}
-
 	return(JS_TRUE);
 }
 
@@ -700,9 +714,11 @@ static jsSyncMethodSpec js_functions[] = {
 	,316
 	},
 	{"exec",	js_execfile,			1,	JSTYPE_NUMBER,	JSDOCSTR("filename [, startup_dir], obj [,...]")
-	,JSDOCSTR("Executes a script optionally with a custom global scope.  The main difference between this "
+	,JSDOCSTR("Executes a script optionally with a custom scope.  The main difference between this "
 	"and load() is that scripts called this way can call exit() without terminating the caller.  If it does, any "
-	"on_exit() handlers will be evaluated in scripts scope when the script exists.")
+	"on_exit() handlers will be evaluated in scripts scope when the script exists. "
+	"NOTE: To get a child of the current scope, you need to create an object in the current scope "
+	"an anonymous object can be created using 'new function(){}'.")
 	,316
 	},
 	{0}
