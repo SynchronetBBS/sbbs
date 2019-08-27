@@ -268,13 +268,14 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 	jsrefcount	brc;
 	size_t		len;
+	JSObject*	scope = JS_GetScopeChain(cx);
 
 	JS_SET_RVAL(cx, arglist,JSVAL_VOID);
 
 	if((p=(global_private_t*)js_GetClassPrivate(cx, obj, &js_global_class))==NULL)
 		return(JS_FALSE);
 
-	exec_obj=JS_GetScopeChain(cx);
+	exec_obj=scope;
 
 	if(JSVAL_IS_BOOLEAN(argv[argn]))
 		background=JSVAL_TO_BOOLEAN(argv[argn++]);
@@ -300,7 +301,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		bg->cb.bg = TRUE;
 
 		// Get the js.internal private data since it's the parents js_callback_t...
-		if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "js", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		if(JS_GetProperty(cx, scope, "js", &val) && !JSVAL_NULL_OR_VOID(val)) {
 			js_internal = JSVAL_TO_OBJECT(val);
 			bg->cb.parent_cb = (js_callback_t*)JS_GetPrivate(cx,js_internal);
 			if (bg->cb.parent_cb == NULL) {
@@ -379,7 +380,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		/* Save parent's 'log' function (for later use by our log function) */
 		brc=JS_SUSPENDREQUEST(bg->cx);
 		JS_RESUMEREQUEST(cx, rc);
-		if(JS_GetProperty(cx, obj, "log", &val)) {
+		if(JS_GetProperty(cx, scope, "log", &val)) {
 			JSFunction* func;
 			if((func=JS_ValueToFunction(cx, val))!=NULL) {
 				JSObject *obj;
@@ -510,7 +511,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		path[0]=0;	/* Empty path, indicates load file not found (yet) */
 
 		JS_RESUMEREQUEST(cx, rc);
-		if(JS_GetProperty(cx, obj, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
+		if(JS_GetProperty(cx, scope, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
 			JSObject* js_obj = JSVAL_TO_OBJECT(val);
 			
 			/* if js.exec_dir is defined (location of executed script), search there first */
