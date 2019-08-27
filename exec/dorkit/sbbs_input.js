@@ -1,8 +1,7 @@
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
 if (typeof(system) !== 'undefined')
 	js.load_path_list.unshift(system.exec_dir+"dorkit/");
-load('ansi_input.js');
-var q = new Queue("dorkit_input");
+load('ansi_input.js', argv[0]);
 var k;
 
 while(!js.terminated) {

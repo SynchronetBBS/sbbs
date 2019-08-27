@@ -260,7 +260,7 @@ var dk = {
 		keybuf:'',
 		local_screen:new Screen(80, 24, 7, ' '),
 		remote_screen:new Screen(80, 24, 7, ' '),
-		input_queue:new Queue("dorkit_input"),
+		input_queue:new Queue("dorkit_input" + (js.global.bbs === undefined ? '' : bbs.node_num)),
 
 		/*
 		 * Returns a string with ^A codes converted to ANSI or stripped
@@ -1078,6 +1078,7 @@ var dk = {
 		}
 	}
 };
+log('dkQueue Name: '+dk.console.input_queue.name);
 // To avoid using __proto__ since jslint hates it.
 dk.console.Private_attr.Private_value = 7;
 dk.console.Private_attr.Private_new_attr = new Attribute(7);

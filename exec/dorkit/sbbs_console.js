@@ -1,4 +1,5 @@
 require("sbbsdefs.js", 'SS_PAUSEOFF');
+load("ansi_input.js");
 var dk_old_ctrlkey_passthru = console.ctrlkey_passthru;
 var dk_old_pauseoff = bbs.sys_status & SS_PAUSEOFF;
 js.on_exit("console.ctrlkey_passthru=dk_old_ctrlkey_passthru;bbs.sys_status=(bbs.sys_status &~ SS_PAUSEOFF)|dk_old_pauseoff");
@@ -13,13 +14,6 @@ delete dk.console.local_screen;
 /*
  * Clears the current screen to black and moves to location 1,1
  */
-dk.console.input_queue_callback.push(function() {
-	'use strict';
-	var key = console.inkey();
-	if (key !== '') {
-		return key;
-	}
-});
 
 dk.console.remote_io = {
 	clear:function() {
@@ -86,6 +80,9 @@ dk.console.remote_io = {
 		console.line_counter = 0;
 	}
 };
+
+var input_queue = load(true, "sbbs_input.js", bbs.node_num);
+js.on_exit("input_queue.write(''); input_queue.poll(0x7fffffff);");
 
 // Get stuff that would come from the dropfile if there was one.
 // From the bbs object.
