@@ -859,12 +859,14 @@ js_beep(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_exit(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *scope = JS_GetScopeChain(cx);
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	jsval val;
 
 	if(argc) {
-		if(JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val)) {
+		if((JS_GetProperty(cx, scope, "js", &val) && JSVAL_IS_OBJECT(val)) || 
+		    (JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val))) {
 			obj = JSVAL_TO_OBJECT(val);
 			if(JS_GetProperty(cx, obj, "scope", &val) && JSVAL_IS_OBJECT(val))
 				obj = JSVAL_TO_OBJECT(val);
