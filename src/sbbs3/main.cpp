@@ -2173,7 +2173,7 @@ void passthru_thread(void* arg)
 			break;
 		}
 		rd = RingBufFree(&sbbs->outbuf);
-		if(rd > sizeof(inbuf))
+		if(rd > (int)sizeof(inbuf))
 			rd = sizeof(inbuf);
 
     	rd = recv(sbbs->passthru_socket, inbuf, rd, 0);
@@ -2212,7 +2212,7 @@ void passthru_thread(void* arg)
 			if(!(sbbs->telnet_mode&TELNET_MODE_OFF))
 				rd = telnet_expand((BYTE*)inbuf, rd, telnet_buf, sizeof(telnet_buf), /* expand_cr */false, &bp);
 
-			DWORD wr = RingBufWrite(&sbbs->outbuf, bp, rd);
+			int wr = RingBufWrite(&sbbs->outbuf, bp, rd);
     		if(wr != rd) {
 				lprintf(LOG_ERR,"Short-write (%ld of %ld bytes) from passthru socket to outbuf"
 					,(long)wr, (long)rd);
