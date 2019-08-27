@@ -191,5 +191,3 @@ var ai={
 		return;
 	}
 };
-
-log('aiQueue Name: '+ai.input_queue.name);

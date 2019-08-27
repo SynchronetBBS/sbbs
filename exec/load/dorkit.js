@@ -1078,7 +1078,6 @@ var dk = {
 		}
 	}
 };
-log('dkQueue Name: '+dk.console.input_queue.name);
 // To avoid using __proto__ since jslint hates it.
 dk.console.Private_attr.Private_value = 7;
 dk.console.Private_attr.Private_new_attr = new Attribute(7);

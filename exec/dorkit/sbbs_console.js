@@ -1,5 +1,4 @@
 require("sbbsdefs.js", 'SS_PAUSEOFF');
-load("ansi_input.js");
 var dk_old_ctrlkey_passthru = console.ctrlkey_passthru;
 var dk_old_pauseoff = bbs.sys_status & SS_PAUSEOFF;
 js.on_exit("console.ctrlkey_passthru=dk_old_ctrlkey_passthru;bbs.sys_status=(bbs.sys_status &~ SS_PAUSEOFF)|dk_old_pauseoff");
