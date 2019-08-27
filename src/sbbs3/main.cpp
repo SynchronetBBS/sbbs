@@ -2172,10 +2172,11 @@ void passthru_thread(void* arg)
                		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->passthru_socket);
 			break;
 		}
-		if(RingBufFree(&sbbs->outbuf) < sizeof(inbuf) * 2)
-			continue;
+		rd = RingBufFree(&sbbs->outbuf);
+		if(rd > sizeof(inbuf))
+			rd = sizeof(inbuf);
 
-    	rd = recv(sbbs->passthru_socket, inbuf, sizeof(inbuf), 0);
+    	rd = recv(sbbs->passthru_socket, inbuf, rd, 0);
 
 		if(rd == SOCKET_ERROR)
 		{
@@ -2195,8 +2196,13 @@ void passthru_thread(void* arg)
 
 		if(rd == 0)
 		{
-			lprintf(LOG_DEBUG,"Node %d passthru disconnected", sbbs->cfg.node_num);
-			break;
+			char ch;
+			if(recv(sbbs->passthru_socket, &ch, sizeof(ch), MSG_PEEK) == 0) {
+				lprintf(LOG_DEBUG,"Node %d passthru disconnected", sbbs->cfg.node_num);
+				break;
+			}
+			YIELD();
+			continue;
 		}
 
 		if(sbbs->xtrn_mode & EX_BIN) {
@@ -2206,8 +2212,10 @@ void passthru_thread(void* arg)
 			if(!(sbbs->telnet_mode&TELNET_MODE_OFF))
 				rd = telnet_expand((BYTE*)inbuf, rd, telnet_buf, sizeof(telnet_buf), /* expand_cr */false, &bp);
 
-    		if(!RingBufWrite(&sbbs->outbuf, bp, rd)) {
-				lprintf(LOG_ERR,"Cannot pass from passthru socket to outbuf");
+			DWORD wr = RingBufWrite(&sbbs->outbuf, bp, rd);
+    		if(wr != rd) {
+				lprintf(LOG_ERR,"Short-write (%ld of %ld bytes) from passthru socket to outbuf"
+					,(long)wr, (long)rd);
 				break;
 			}
 		} else {
