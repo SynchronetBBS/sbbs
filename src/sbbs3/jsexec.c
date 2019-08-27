@@ -334,6 +334,7 @@ static int do_bail(int code)
 		lprintf(LOG_ERR,"!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
+	cooked_tty();
 	if(pause_on_exit || (code && pause_on_error)) {
 		fprintf(statfp,"\nHit enter to continue...");
 		getchar();
@@ -341,7 +342,6 @@ static int do_bail(int code)
 
 	if(code)
 		fprintf(statfp,"\nReturning error code: %d\n",code);
-	cooked_tty();
 	return(code);
 }
 
