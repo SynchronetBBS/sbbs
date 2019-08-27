@@ -2143,7 +2143,7 @@ void passthru_thread(void* arg)
 	SetThreadName("sbbs/passthru");
 	thread_up(FALSE /* setuid */);
 
-	while(sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
+	while(sbbs->online && sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
 		tv.tv_sec=1;
 		tv.tv_usec=0;
 
@@ -2198,7 +2198,8 @@ void passthru_thread(void* arg)
 		{
 			char ch;
 			if(recv(sbbs->passthru_socket, &ch, sizeof(ch), MSG_PEEK) == 0) {
-				lprintf(LOG_DEBUG,"Node %d passthru disconnected", sbbs->cfg.node_num);
+				lprintf(sbbs->online ? LOG_WARNING : LOG_DEBUG
+					,"Node %d passthru socket disconnected", sbbs->cfg.node_num);
 				break;
 			}
 			YIELD();
@@ -2229,6 +2230,7 @@ void passthru_thread(void* arg)
 	thread_down();
 
 	sbbs->passthru_thread_running = false;
+	sbbs->passthru_socket_active = false;
 }
 
 void output_thread(void* arg)
@@ -5690,6 +5692,7 @@ NO_SSH:
 			new_node->telnet_mode|=TELNET_MODE_OFF; // RLogin does not use Telnet commands
 		}
 
+		// Passthru socket creation/connection
 		if(true) {
 			/* TODO: IPv6? */
 			SOCKET	tmp_sock;
@@ -5701,12 +5704,12 @@ NO_SSH:
     		tmp_sock = open_socket(PF_INET, SOCK_STREAM, "passthru");
 
 			if(tmp_sock == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"Node %d SSH !ERROR %d creating passthru listen socket"
+				lprintf(LOG_ERR,"Node %d !ERROR %d creating passthru listen socket"
 					,new_node->cfg.node_num, ERROR_VALUE);
 				goto NO_PASSTHRU;
 			}
 
-    		lprintf(LOG_DEBUG,"Node %d SSH passthru listen socket %d opened"
+    		lprintf(LOG_DEBUG,"Node %d passthru listen socket %d opened"
 				,new_node->cfg.node_num, tmp_sock);
 
 			/*****************************/
@@ -5728,29 +5731,29 @@ NO_SSH:
 		    result = listen(tmp_sock, 1);
 
 			if(result != 0) {
-				lprintf(LOG_ERR,"Node %d SSH !ERROR %d (%d) listening on passthru socket"
+				lprintf(LOG_ERR,"Node %d !ERROR %d (%d) listening on passthru socket"
 					,new_node->cfg.node_num, result, ERROR_VALUE);
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;
 			}
-			lprintf(LOG_INFO,"Node %d SSH passthru socket listening on port %u"
+			lprintf(LOG_INFO,"Node %d passthru socket listening on port %u"
 				,new_node->cfg.node_num, htons(tmp_addr.sin_port));
 
     		new_node->passthru_socket = open_socket(PF_INET, SOCK_STREAM, "passthru");
 
 			if(new_node->passthru_socket == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"Node %d SSH !ERROR %d creating passthru connecting socket"
+				lprintf(LOG_ERR,"Node %d !ERROR %d creating passthru connecting socket"
 					,new_node->cfg.node_num, ERROR_VALUE);
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;
 			}
 
-			lprintf(LOG_DEBUG,"Node %d SSH passthru connect socket %d opened"
+			lprintf(LOG_DEBUG,"Node %d passthru connect socket %d opened"
 				,new_node->cfg.node_num, new_node->passthru_socket);
 
 			tmp_addr_len=sizeof(tmp_addr);
 			if(getsockname(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len)) {
-				lprintf(LOG_ERR,"Node %d SSH !ERROR %d getting passthru listener address"
+				lprintf(LOG_ERR,"Node %d !ERROR %d getting passthru listener address"
 					,new_node->cfg.node_num, ERROR_VALUE);
 				close_socket(tmp_sock);
 				close_socket(new_node->passthru_socket);
@@ -5761,7 +5764,7 @@ NO_SSH:
 			result = connect(new_node->passthru_socket, (struct sockaddr *)&tmp_addr, tmp_addr_len);
 
 			if(result != 0) {
-				lprintf(LOG_ERR,"Node %d SSH !ERROR %d (%d) connecting to passthru socket"
+				lprintf(LOG_ERR,"Node %d !ERROR %d (%d) connecting to passthru socket"
 					,new_node->cfg.node_num, result, ERROR_VALUE);
 				close_socket(new_node->passthru_socket);
 				new_node->passthru_socket=INVALID_SOCKET;
@@ -5772,9 +5775,9 @@ NO_SSH:
 			new_node->client_socket_dup=accept(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len);
 
 			if(new_node->client_socket_dup == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"Node %d SSH !ERROR (%d) connecting accept()ing on passthru socket"
+				lprintf(LOG_ERR,"Node %d !ERROR (%d) connecting accept()ing on passthru socket"
 					,new_node->cfg.node_num, ERROR_VALUE);
-				lprintf(LOG_WARNING,"Node %d SSH !WARNING native doors which use sockets will not function"
+				lprintf(LOG_WARNING,"Node %d !WARNING native doors which use sockets will not function"
 					,new_node->cfg.node_num);
 				close_socket(new_node->passthru_socket);
 				new_node->passthru_socket=INVALID_SOCKET;
