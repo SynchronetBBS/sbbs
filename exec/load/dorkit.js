@@ -520,7 +520,7 @@ var dk = {
 			}
 			ret = this.input_queue.read();
 			// TODO: We shouldn't need to check this...
-			if (ret != undefined) {
+			if (ret !== undefined) {
 				if (ret.length > 1) {
 					if (ret.substr(0, 9) === 'POSITION_') {
 						m = ret.match(/^POSITION_([0-9]+)_([0-9]+)/);
@@ -1118,8 +1118,12 @@ else if (dk.system.mode === 'socket') {
 else if (dk.system.mode === 'local') {
 	load("local_console.js");
 }
+// TODO: This is a work-around for Synchronet always requesting local screen
+if (dk.console.remote) {
+	dk.console.local = false;
+}
 if (dk.system.mode !== 'jsdoor' && dk.console.local === true) {
-	require("local_console.js", "dk.local_console_loaded");
+	require("local_console.js", "dk_local_console_loaded");
 }
 if (dk.console.local_io === undefined) {
 	dk.console.local = false;

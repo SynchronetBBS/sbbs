@@ -14,6 +14,7 @@ if (js.global.conio !== undefined) {
 		}
 	});
 }
+var dk_local_console_loaded = true;
 
 dk.console.local_io = {
 	screen:new Screen(dk.cols, dk.height, 7, ' ', true),
