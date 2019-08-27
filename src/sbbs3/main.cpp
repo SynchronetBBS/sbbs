@@ -2172,7 +2172,7 @@ void passthru_thread(void* arg)
                		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->passthru_socket);
 			break;
 		}
-		rd = RingBufFree(&sbbs->outbuf);
+		rd = RingBufFree(&sbbs->outbuf) / 2;
 		if(rd > (int)sizeof(inbuf))
 			rd = sizeof(inbuf);
 
