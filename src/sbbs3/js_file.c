@@ -35,6 +35,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "xpendian.h"
 #include "md5.h"
 #include "base64.h"
 #include "uucode.h"
@@ -621,9 +622,17 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 					JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(*b));
 					break;
 				case sizeof(WORD):
+					if (p->network_byte_order)
+						*w = BE_SHORT(*w);
+					else
+						*w = LE_SHORT(*w);
 					JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(*w));
 					break;
 				case sizeof(DWORD):
+					if (p->network_byte_order)
+						*l = BE_LONG(*l);
+					else
+						*l = LE_LONG(*l);
 					JS_SET_RVAL(cx, arglist, UINT_TO_JSVAL(*l));
 					break;
 			}
@@ -639,9 +648,17 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 					v = INT_TO_JSVAL(*(b++));
 					break;
 				case sizeof(WORD):
+					if (p->network_byte_order)
+						*w = BE_SHORT(*w);
+					else
+						*w = LE_SHORT(*w);
 					v = INT_TO_JSVAL(*(w++));
 					break;
 				case sizeof(DWORD):
+					if (p->network_byte_order)
+						*l = BE_LONG(*l);
+					else
+						*l = LE_LONG(*l);
 					v=UINT_TO_JSVAL(*(l++));
 					break;
 			}
@@ -1831,9 +1848,17 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 				break;
 			case sizeof(WORD):
 				*w=(WORD)val;
+				if (p->network_byte_order)
+					*w = BE_SHORT(*w);
+				else
+					*w = LE_SHORT(*w);
 				break;
 			case sizeof(DWORD):
 				*l=(DWORD)val;
+				if (p->network_byte_order)
+					*l = BE_LONG(*l);
+				else
+					*l = LE_LONG(*l);
 				break;
 		}
 	}
@@ -1848,10 +1873,20 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 					*(b++)=(BYTE)val;
 					break;
 				case sizeof(WORD):
-					*(w++)=(WORD)val;
+					*(w)=(WORD)val;
+					if (p->network_byte_order)
+						*w = BE_SHORT(*w);
+					else
+						*w = LE_SHORT(*w);
+					w++;
 					break;
 				case sizeof(DWORD):
-					*(l++)=(DWORD)val;
+					*(l)=(DWORD)val;
+					if (p->network_byte_order)
+						*l = BE_LONG(*l);
+					else
+						*l = LE_LONG(*l);
+					l++;
 					break;
 			}
 		}
