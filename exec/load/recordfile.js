@@ -9,6 +9,9 @@ function getRecordLength(RecordDef)
 		switch(fieldtype) {
 			case "Float":
 				return(22);
+			case "SignedInteger8":
+			case "Integer8":
+				return(1);
 			case "SignedInteger16":
 			case "Integer16":
 				return(2);
@@ -23,6 +26,10 @@ function getRecordLength(RecordDef)
 				m=fieldtype.match(/^String:([0-9]+)$/);
 				if(m !== null) {
 					return(parseInt(m[1]));
+				}
+				m=fieldtype.match(/^PString:([0-9]+)$/);
+				if(m !== null) {
+					return(parseInt(m[1]+1));
 				}
 				return(0);
 		}
@@ -460,6 +467,7 @@ RecordFile.prototype.readField = function(fieldtype)
 	var m=fieldtype.match(/^Array:([0-9]+):(.*)$/);
 	var ret;
 	var tmp;
+	var tmp2;
 
 	if(m !== null) {
 		ret = [];
@@ -489,6 +497,14 @@ RecordFile.prototype.readField = function(fieldtype)
 				return(ret);
 			case "Integer16":
 				return(this.file.readBin(2));
+			case "SignedInteger8":
+				ret=this.file.readBin(1);
+				if(ret>=127) {
+					ret-=256;
+				}
+				return(ret);
+			case "Integer8":
+				return(this.file.readBin(1));
 			case "Date":
 				tmp=this.file.read(8);
 				return(tmp.replace(/\x00/g,""));
@@ -502,6 +518,12 @@ RecordFile.prototype.readField = function(fieldtype)
 				if(m !== null) {
 					tmp=this.file.read(parseInt(m[1]));
 					return(tmp.replace(/\x00/g,""));
+				}
+				m=fieldtype.match(/^PString:([0-9]+)$/);
+				if(m !== null) {
+					tmp=this.file.readBin(1);
+					tmp2=this.file.read(parseInt(m[1]));
+					return(tmp.substr(0, tmp));
 				}
 				return(null);
 		}
@@ -576,6 +598,24 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			}
 			this.file.writeBin(val,2);
 			break;
+		case "SignedInteger8":
+			if(val < -128) {
+				val = -128;
+			}
+			if(val > 127) {
+				val = 127;
+			}
+			this.file.writeBin(val,1);
+			break;
+		case "Integer16":
+			if(val<0) {
+				val=0;
+			}
+			if(val>255) {
+				val=255;
+			}
+			this.file.writeBin(val,2);
+			break;
 		case "Date":
 			wr=val.substr(0,8);
 			while(wr.length < 8) {
@@ -594,6 +634,16 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 		default:
 			m=fieldtype.match(/^String:([0-9]+)$/);
 			if(m !== null) {
+				len=parseInt(m[1]);
+				wr=val.substr(0,len);
+				while(wr.length < len) {
+					wr=wr+"\x00";
+				}
+				this.file.write(wr,len);
+			}
+			m=fieldtype.match(/^PString:([0-9]+)$/);
+			if(m !== null) {
+				this.file.writeBin(wr.length, 1);
 				len=parseInt(m[1]);
 				wr=val.substr(0,len);
 				while(wr.length < len) {
