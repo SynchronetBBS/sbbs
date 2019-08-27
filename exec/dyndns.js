@@ -99,6 +99,12 @@ for(h in host_list) {
 				else
 					writeln("");
 				break;
+			case "txt?":
+				if(options.txt)
+					writeln(options.txt);
+				else
+					writeln("");
+				break;
 			case "ok":
 				exit(0);
 				break;
