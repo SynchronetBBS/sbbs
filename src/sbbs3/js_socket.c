@@ -403,7 +403,8 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 	if((p=(js_socket_private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return;
 
-	do_js_close(p);
+	if (!p->external)
+		do_js_close(p);
 
 	if(p->hostname)
 		free(p->hostname);
