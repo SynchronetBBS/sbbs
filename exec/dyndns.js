@@ -103,7 +103,7 @@ for(h in host_list) {
 				if(options.txt)
 					writeln(options.txt);
 				else
-					writeln("");
+					writeln(system.name);
 				break;
 			case "ok":
 				exit(0);
