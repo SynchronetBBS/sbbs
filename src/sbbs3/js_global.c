@@ -4075,7 +4075,7 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	if(JSVAL_IS_STRING(argv[0])) {
@@ -4143,7 +4143,7 @@ js_utf8_decode(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL);
@@ -4165,7 +4165,7 @@ js_utf8_decode(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_utf8_width(JSContext *cx, uintN argc, jsval *arglist)
+js_utf8_get_width(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		str = NULL;
@@ -4173,7 +4173,7 @@ js_utf8_width(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
@@ -4187,6 +4187,84 @@ js_utf8_width(JSContext *cx, uintN argc, jsval *arglist)
 
 	free(str);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(width));
+	return JS_TRUE;
+}
+
+static JSBool
+js_str_is_utf8(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		str = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+	HANDLE_PENDING(cx, str);
+	if(str==NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	bool result = utf8_str_is_valid(str);
+	JS_RESUMEREQUEST(cx, rc);
+
+	free(str);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_str_is_ascii(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		str = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+	HANDLE_PENDING(cx, str);
+	if(str==NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	bool result = str_is_ascii(str);
+	JS_RESUMEREQUEST(cx, rc);
+
+	free(str);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_str_has_ctrl(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		str = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+	HANDLE_PENDING(cx, str);
+	if(str==NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	bool result = str_has_ctrl(str);
+	JS_RESUMEREQUEST(cx, rc);
+
+	free(str);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 	return JS_TRUE;
 }
 
@@ -4303,7 +4381,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"ascii_str",		js_ascii_str,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("convert extended-ASCII in text string to plain ASCII, returns modified string")
+	,JSDOCSTR("convert extended-ASCII (CP437) characters in text string to plain US-ASCII equivalent, returns modified string")
 	,310
 	},		
 	{"strip_ctrl",		js_strip_ctrl,		1,	JSTYPE_STRING,	JSDOCSTR("text")
@@ -4311,7 +4389,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"strip_exascii",	js_strip_exascii,	1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("strip extended-ASCII characters from string, returns modified string")
+	,JSDOCSTR("strip all extended-ASCII characters from string, returns modified string")
 	,310
 	},		
 	{"skipsp",			js_skipsp,			1,	JSTYPE_STRING,	JSDOCSTR("text")
@@ -4502,7 +4580,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"html_encode",		js_html_encode,		1,	JSTYPE_STRING,	JSDOCSTR("text [,ex_ascii=<tt>true</tt>] [,white_space=<tt>true</tt>] [,ansi=<tt>true</tt>] [,ctrl_a=<tt>true</tt>] [, state (object)]")
 	,JSDOCSTR("return an HTML-encoded text string (using standard HTML character entities), "
-		"escaping IBM extended-ASCII, white-space characters, ANSI codes, and CTRL-A codes by default."
+		"escaping IBM extended-ASCII (CP437), white-space characters, ANSI codes, and CTRL-A codes by default."
 		"Optionally storing the current ANSI state in <i>state</i> object")
 	,311
 	},
@@ -4579,14 +4657,25 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,31702
 	},
 	{"utf8_decode",		js_utf8_decode,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("returns CP437 representation of UTF-8 encoded text string or <i>null</i> on error (invalid UTF-8)")
-	,31702
+		,JSDOCSTR("returns CP437 representation of UTF-8 encoded text string or <i>null</i> on error (invalid UTF-8)")
+		,31702
 	},
-	{"utf8_width",		js_utf8_width,		1,	JSTYPE_NUMBER,	JSDOCSTR("text")
-	,JSDOCSTR("returns the fixed printed-width of the specified UTF-8 string")
-	,31702
+	{"utf8_get_width",		js_utf8_get_width,	1,	JSTYPE_NUMBER,	JSDOCSTR("text")
+		,JSDOCSTR("returns the fixed printed-width of the specified string of UTF-8 encoded characters")
+		,31702
 	},
-
+	{"str_is_utf8",			js_str_is_utf8,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
+		,JSDOCSTR("returns <tt>true</tt> if the specified string contains only valid UTF-8 encoded and US-ASCII characters")
+		,31702
+	},
+	{"str_is_ascii",		js_str_is_ascii,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
+		,JSDOCSTR("returns <tt>true</tt> if the specified string contains only US-ASCII (no CP437 or UTF-8) characters")
+		,31702
+	},
+	{"str_has_ctrl",		js_str_has_ctrl,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
+		,JSDOCSTR("returns <tt>true</tt> if the specified string contains any control characters (ASCII 0x01 - 0x1F)")
+		,31702
+	},
 	{0}
 };
 
