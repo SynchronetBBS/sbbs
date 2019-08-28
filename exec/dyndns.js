@@ -105,6 +105,12 @@ for(h in host_list) {
 				else
 					writeln(system.name);
 				break;
+			case "loc?":
+				if(options.loc)
+					writeln(options.loc);
+				else
+					writeln("");
+				break;
 			case "ok":
 				exit(0);
 				break;
