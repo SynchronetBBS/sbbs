@@ -111,6 +111,12 @@ for(h in host_list) {
 				else
 					writeln("");
 				break;
+			case "wc?":
+				if(options.wildcard)
+					writeln(options.wildcard);
+				else
+					writeln("");
+				break;
 			case "ok":
 				exit(0);
 				break;
