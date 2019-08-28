@@ -16,7 +16,7 @@ var Player_Def = [
 	{
 		prop:'hp',
 		name:'Hit Points',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:20
 	},
 	{
@@ -34,19 +34,19 @@ var Player_Def = [
 	{
 		prop:'gone',
 		name:'Days player has been gone',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:0
 	},
 	{
 		prop:'hp_max',
 		name:'Max Hit Points',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:20
 	},
 	{
 		prop:'weapon_num',
 		name:'Weapon Number',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:1
 	},
 	{
@@ -64,13 +64,13 @@ var Player_Def = [
 	{
 		prop:'forest_fights',
 		name:'Forest Fights Today',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:15
 	},
 	{
 		prop:'pvp_fights',
 		name:'Player Fights',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:0
 	},
 	{
@@ -88,19 +88,19 @@ var Player_Def = [
 	{
 		prop:'def',
 		name:'Defence Points',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:1
 	},
 	{
 		prop:'str',
 		name:'Strength Points',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:10
 	},
 	{
 		prop:'cha',
 		name:'Charm Points',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:1
 	},
 	{
@@ -118,14 +118,14 @@ var Player_Def = [
 	{
 		prop:'level',
 		name:'Level',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:1
 	},
 	{
 		prop:'time',
 		name:'Day # Last On',
-		type:'SignedInteger',
-		def:10000
+		type:'Integer',
+		def:2147483648
 	},
 	{
 		prop:'arm',
@@ -136,7 +136,7 @@ var Player_Def = [
 	{
 		prop:'arm_num',
 		name:'Armor Number',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:1
 	},
 	{
@@ -154,7 +154,7 @@ var Player_Def = [
 	{
 		prop:'gem',
 		name:'Number of Gems',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:0
 	},
 	{
@@ -178,13 +178,13 @@ var Player_Def = [
 	{
 		prop:'last_reincarnated',
 		name:'Day Number Last Reincarnated',
-		type:'SignedInteger',
+		type:'Integer',
 		def:0
 	},
 	{
 		prop:'laid',
 		name:'Number of times Laid',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:0
 	},
 	{
@@ -208,7 +208,7 @@ var Player_Def = [
 	{
 		prop:'clss',
 		name:'Class',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:0
 	},
 	{
@@ -220,55 +220,55 @@ var Player_Def = [
 	{
 		prop:'kids',
 		name:'Number of Kids',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:0
 	},
 	{
 		prop:'drag_kills',
 		name:'Number of Dragon Kills (times won)',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:0
 	},
 	{
 		prop:'skillw',
 		name:'Death Knight Skill Points',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:0
 	},
 	{
 		prop:'skillm',
 		name:'Mystical Skill Points',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:0
 	},
 	{
 		prop:'skillt',
 		name:'Thieving Skill Points',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:0
 	},
 	{
 		prop:'levelw',
 		name:'Death Knight Skill Uses Today',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:0
 	},
 	{
 		prop:'levelm',
 		name:'Mystical Skill Uses Today',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:0
 	},
 	{
 		prop:'levelt',
 		name:'Thieving Skill Uses Today',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:0
 	},
 	{
 		prop:'married_to',
 		name:'Currently Married To',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:-1
 	},
 	{
@@ -280,7 +280,7 @@ var Player_Def = [
 	{
 		prop:'pvp',
 		name:'Total Player Kills',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:0
 	},
 	{
@@ -316,7 +316,7 @@ var Player_Def = [
 	{
 		prop:'olivia_count',
 		name:'Number of Times Seen Olivia',
-		type:'SignedInteger',
+		type:'SignedInteger8',
 		def:0
 	},
 	{
@@ -406,31 +406,31 @@ var Trainer_Def = [
 	{
 		prop:'str',
 		name:'Strength',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:5
 	},
 	{
 		prop:'hp',
 		name:'Hit Points',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:1
 	},
 	{
 		prop:'hp_gained',
 		name:'HP Gained',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:1
 	},
 	{
 		prop:'str_gained',
 		name:'Strength Gained',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:1
 	},
 	{
 		prop:'def',
 		name:'Defence Gained',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:1
 	},
 	{
@@ -496,37 +496,37 @@ var State_Def = [
 	{
 		prop:'married_to_seth',
 		name:'Player who is married to Seth Able',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:-1
 	},
 	{
 		prop:'married_to_violet',
 		name:'Player who is married to Violet',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:-1
 	},
 	{
 		prop:'days',
 		name:'Days the game has been running',
-		type:'SignedInteger',
+		type:'Integer',
 		def:0
 	},
 	{
 		prop:'won_by',
 		name:'Player who won the game when game is ended',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:-1
 	},
 	{
 		prop:'log_date',
 		name:'Day on month of latest log',
-		type:'SignedInteger',
+		type:'Integer',
 		def:0
 	},
 	{
 		prop:'last_bar',
 		name:'Laster Person to Converse at Bar',
-		type:'SignedInteger',
+		type:'SignedInteger16',
 		def:0
 	}
 ];
