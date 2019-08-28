@@ -287,7 +287,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	size_t		cmdlen;
 	size_t		pathlen;
 	char*		startup_dir = NULL;
-	int		arg=0;
+	uintN		arg=0;
 	char		path[MAX_PATH+1];
 	JSObject*	scope = JS_GetScopeChain(cx);
 	JSObject*	js_scope = NULL;
@@ -296,7 +296,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	nargv;
 	jsval		rval;
 	jsrefcount	rc;
-	int		i;
+	uintN		i;
 	jsval		val;
 	JSObject *js_obj;
 	JSObject *pjs_obj;
