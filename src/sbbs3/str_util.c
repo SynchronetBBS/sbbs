@@ -604,6 +604,15 @@ BOOL str_is_ascii(const char* str)
 	return TRUE;
 }
 
+BOOL str_has_ctrl(const char* str)
+{
+	for(const char* p = str; *p != 0; p++) {
+		if((uchar)*p < ' ')
+			return TRUE;
+	}
+	return FALSE;
+}
+
 /****************************************************************************/
 /* Convert string from IBM extended ASCII to just ASCII						*/
 /****************************************************************************/
