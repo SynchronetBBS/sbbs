@@ -523,7 +523,7 @@ RecordFile.prototype.readField = function(fieldtype)
 				if(m !== null) {
 					tmp=this.file.readBin(1);
 					tmp2=this.file.read(parseInt(m[1]));
-					return(tmp.substr(0, tmp));
+					return(tmp2.substr(0, tmp));
 				}
 				return(null);
 		}
@@ -607,7 +607,7 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			}
 			this.file.writeBin(val,1);
 			break;
-		case "Integer16":
+		case "Integer8":
 			if(val<0) {
 				val=0;
 			}
