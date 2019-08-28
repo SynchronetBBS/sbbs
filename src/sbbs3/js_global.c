@@ -4064,6 +4064,29 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+static bool
+str_is_utf16(JSContext *cx, jsval val)
+{
+	if(JSVAL_NULL_OR_VOID(val))
+		return false;
+
+	JSString* js_str = JS_ValueToString(cx, val);
+	if(js_str == NULL)
+		return false;
+
+	size_t len;
+	const jschar * str = JS_GetStringCharsAndLength(cx, js_str, &len);
+	if(str == NULL)
+		return false;
+
+	bool result = false;
+	for(size_t i = 0; i < len; i++) {
+		if(str[i] > 0xff)
+			result = true;
+	}
+	return result;
+}
+
 static JSBool
 js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -4079,27 +4102,57 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	if(JSVAL_IS_STRING(argv[0])) {
-		size_t		inbuf_len;
-		char*		inbuf = NULL;
+		if(str_is_utf16(cx, argv[0])) {
+			js_str = JS_ValueToString(cx, argv[0]);
+			if(js_str == NULL)
+				return JS_TRUE;
 
-		JSVALUE_TO_MSTRING(cx, argv[0], inbuf, &inbuf_len);
-		HANDLE_PENDING(cx, inbuf);
-		if(inbuf == NULL)
-			return JS_TRUE;
+			size_t inbuf_len;
+			const jschar * inbuf = JS_GetStringCharsAndLength(cx, js_str, &inbuf_len);
+			if(inbuf == NULL)
+				return JS_TRUE;
 
-		len = (inbuf_len * UTF8_MAX_LEN) + 1;
+			len = (inbuf_len * UTF8_MAX_LEN) + 1;
 
-		if((outbuf = malloc(len)) == NULL) {
+			if((outbuf = malloc(len)) == NULL) {
+				JS_ReportError(cx, "Error allocating %lu bytes at %s:%d"
+					, len, getfname(__FILE__), __LINE__);
+				return JS_FALSE;
+			}
+
+			rc=JS_SUSPENDREQUEST(cx);
+			size_t outlen = 0;
+			for(size_t i = 0; i < inbuf_len; i++) {
+				int retval = utf8_putc(outbuf + outlen, len - outlen, inbuf[i]);
+				if(retval < 1)
+					break;
+				outlen += retval;
+			}
+			outbuf[outlen] = 0;
+			JS_RESUMEREQUEST(cx, rc);
+		} else {
+			size_t		inbuf_len;
+			char*		inbuf = NULL;
+
+			JSVALUE_TO_MSTRING(cx, argv[0], inbuf, &inbuf_len);
+			HANDLE_PENDING(cx, inbuf);
+			if(inbuf == NULL)
+				return JS_TRUE;
+
+			len = (inbuf_len * UTF8_MAX_LEN) + 1;
+
+			if((outbuf = malloc(len)) == NULL) {
+				free(inbuf);
+				JS_ReportError(cx, "Error allocating %lu bytes at %s:%d"
+					, len, getfname(__FILE__), __LINE__);
+				return JS_FALSE;
+			}
+
+			rc=JS_SUSPENDREQUEST(cx);
+			cp437_to_utf8_str(inbuf, outbuf, len, /* minval: */0x80);
 			free(inbuf);
-			JS_ReportError(cx, "Error allocating %lu bytes at %s:%d"
-				, len, getfname(__FILE__), __LINE__);
-			return JS_FALSE;
+			JS_RESUMEREQUEST(cx, rc);
 		}
-
-		rc=JS_SUSPENDREQUEST(cx);
-		cp437_to_utf8_str(inbuf, outbuf, len, /* minval: */0x80);
-		free(inbuf);
-		JS_RESUMEREQUEST(cx, rc);
 	}
 	else if(JSVAL_IS_NUMBER(argv[0])) {
 		len = UTF8_MAX_LEN + 1;
@@ -4212,6 +4265,21 @@ js_str_is_utf8(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 
 	free(str);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_str_is_utf16(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	bool result = str_is_utf16(cx, argv[0]);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 	return JS_TRUE;
 }
@@ -4652,8 +4720,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	"(returns number OR string) - (added in v3.13)")
 	,313
 	},
-	{"utf8_encode",		js_utf8_encode,		1,	JSTYPE_STRING,	JSDOCSTR("[string CP437] or [Number codepoint]")
-	,JSDOCSTR("returns utf8-encoded version of the specified CP437 text string or a single Unicode <i>codepoint</i>")
+	{"utf8_encode",		js_utf8_encode,		1,	JSTYPE_STRING,	JSDOCSTR("[string CP437] or [string UTF16] or [number codepoint]")
+	,JSDOCSTR("returns UTF-8 encoded version of the specified CP437 text string, UTF-16 encoded text string, or a single Unicode <i>codepoint</i>")
 	,31702
 	},
 	{"utf8_decode",		js_utf8_decode,		1,	JSTYPE_STRING,	JSDOCSTR("text")
@@ -4666,6 +4734,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"str_is_utf8",			js_str_is_utf8,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
 		,JSDOCSTR("returns <tt>true</tt> if the specified string contains only valid UTF-8 encoded and US-ASCII characters")
+		,31702
+	},
+	{"str_is_utf16",		js_str_is_utf16,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
+		,JSDOCSTR("returns <tt>true</tt> if the specified string contains one or more UTF-16 encoded characters")
 		,31702
 	},
 	{"str_is_ascii",		js_str_is_ascii,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
