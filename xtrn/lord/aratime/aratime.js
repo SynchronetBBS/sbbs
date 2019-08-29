@@ -192,5 +192,13 @@ function chkmaint()
 }
 
 // TODO CONFIG
-chkmaint();
-menu();
+if (argc == 1 && argv[0] == 'INSTALL') {
+	var install = {
+		desc:'`%Aragorn`2\'s Timer'
+	}
+	exit(0);
+}
+else {
+	chkmaint();
+	menu();
+}
