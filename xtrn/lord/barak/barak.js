@@ -1328,5 +1328,13 @@ function main()
 	}
 }
 
-main();
-exit(0);
+if (argc == 1 && argv[0] == 'INSTALL') {
+	var install = {
+		desc:'`0T`2ravel `0T`2o `0B`2arak\'s `0H`2ouse`2',
+	}
+	exit(0);
+}
+else {
+	main();
+	exit(0);
+}
