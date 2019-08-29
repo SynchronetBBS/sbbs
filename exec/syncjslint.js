@@ -356,7 +356,7 @@ var jslint = (function JSLint() {
         /*"Promise", */"Proxy", "RangeError", "ReferenceError", /*"Reflect", */"RegExp",
         /*"Set", */"String", /*"Symbol", */"SyntaxError", /*"System", */"TypeError",
         "Uint8Array", "Uint8ClampedArray", "Uint16Array", "Uint32Array",
-        "URIError"/*, "WeakMap"*//*, "WeakSet"*/
+        "URIError"/*, "WeakMap"*//*, "WeakSet"*/, "isNaN"
     ];
 
     var bundle = {
@@ -404,7 +404,7 @@ var jslint = (function JSLint() {
         naked_block: "Naked block.",
         nested_comment: "Nested comment.",
         not_label_a: "'{a}' is not a label.",
-        number_isNaN: "Use Number.isNaN function to compare with NaN.",
+        //number_isNaN: "Use Number.isNaN function to compare with NaN.",
         out_of_scope_a: "'{a}' is out of scope.",
         redefinition_a_b: "Redefinition of '{a}' from line {b}.",
         required_a_optional_b: "Required parameter '{a}' after optional parameter '{b}'.",
@@ -2521,10 +2521,10 @@ var jslint = (function JSLint() {
         warn("expected_a_b", token, "Number.isFinite", "isFinite");
         return token;
     });
-    constant("isNaN", "function", function () {
+    /*constant("isNaN", "function", function () {
         warn("number_isNaN", token);
         return token;
-    });
+    }); */
     constant("NaN", "number", NaN);
     constant("null", "null", null);
     constant("this", "object", function () {
@@ -4039,9 +4039,9 @@ var jslint = (function JSLint() {
         if (relationop[thing.id] === true) {
             var left = thing.expression[0];
             var right = thing.expression[1];
-            if (left.id === "NaN" || right.id === "NaN") {
+            /*if (left.id === "NaN" || right.id === "NaN") {
                 warn("number_isNaN", thing);
-            } else if (left.id === "typeof") {
+            } else */if (left.id === "typeof") {
                 if (right.id !== "(string)") {
                     if (right.id !== "typeof") {
                         warn("expected_string_a", right);
