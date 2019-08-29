@@ -288,7 +288,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	size_t		pathlen;
 	char*		startup_dir = NULL;
 	uintN		arg=0;
-	char		path[MAX_PATH+1];
+	char		path[MAX_PATH+1] = "";
 	JSObject*	scope = JS_GetScopeChain(cx);
 	JSObject*	js_scope = NULL;
 	JSObject*	pscope;
