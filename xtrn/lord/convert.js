@@ -1,5 +1,7 @@
+js.load_path_list.unshift(js.exec_dir+"load/");
 require('recordfile.js', 'RecordFile');
 require('recorddefs.js', 'Monster_Def');
+require('screen.js', 'Screen');
 
 LEnemy_Def = [
 	{prop:'name', type:'PString:60'},
@@ -312,3 +314,236 @@ function convert_player(from, ext, p2, to)
 		tr.put();
 	}
 }
+
+function convert_menus(ltf, lef, lgf, ttf, from, to)
+{
+	var f = new File(from);
+	var t = new File(to);
+	var lt = new File(ltf);
+	var le = new File(lef);
+	var lg = new File(lgf);
+	var tt = new File(ttf);
+	var s = new Screen(80, 1000, 7, ' ', true);
+	var fmap = {
+		BJTABLE:lg,
+		CREEPY:le,
+		OLIVIA:le,
+		TOWER:le,
+		OLDMAN:lt,
+		OLDMAN:lt,
+		CLOAK:lt,
+		TURGON:lt,
+		BT:lt,
+		ABDUL:lt,
+		ARTHUR:lt,
+		BANK:lt,
+		BARD:lt,
+		BARDF:lt,
+		BT1:lt,
+		BUYARM:lt,
+		BUYWEP:lt,
+		FOREST:lt,
+		SETH:lt,
+		HEAL:lt,
+		HINTS:lt,
+		RDI:lt,
+		RDIF:lt,
+		VIOLET:lt,
+		WAR:lt,
+		LAIR:lt,
+		LONGINTRO:lt,
+		INTRO:lt,
+		INTRO1:lt,
+		INTRO2:lt,
+		DRAG:lt,
+		MAIN:lt,
+		CHANCE:lt,
+		BT1F:lt,
+		LAIRANS:lt,
+		BTF:lt,
+		STORY:lt,
+		FAIRY:lt,
+		DRAGON3:lt,
+		'SM-LORD':lt,
+		LORD:lt,
+		WIN:lt,
+		FOOT:lt,
+		DEMON:lt,
+		LONGINTRO:lt,
+		ACCESSD:lt,
+		LEVEL1MALE:tt,
+		LEVEL1FEMALE:tt,
+		LEVEL2MALE:tt,
+		LEVEL2FEMALE:tt,
+		LEVEL3MALE:tt,
+		LEVEL3FEMALE:tt,
+		LEVEL4MALE:tt,
+		LEVEL4FEMALE:tt,
+		LEVEL5MALE:tt,
+		LEVEL5FEMALE:tt,
+		LEVEL6MALE:tt,
+		LEVEL6FEMALE:tt,
+		LEVEL7MALE:tt,
+		LEVEL7FEMALE:tt,
+		LEVEL8MALE:tt,
+		LEVEL8FEMALE:tt,
+		LEVEL9MALE:tt,
+		LEVEL9FEMALE:tt,
+		LEVEL10MALE:tt,
+		LEVEL10FEMALE:tt,
+		LEVEL11MALE:tt,
+		LEVEL11FEMALE:tt
+	};
+
+	function get_menu(name) {
+		var mf;
+		var ret = [];
+		var l;
+		var found = false;
+
+		if (fmap[name] === undefined || fmap[name] === null)
+			mf = f;
+		else
+			mf = fmap[name];
+
+		mf.position = 0;
+		do {
+			l = mf.readln();
+			if (l === null) {
+				if (ret.length > 0)
+					return ret;
+				if (mf === f)
+					return ret;
+				else {
+					found = false;
+					mf = f;
+					mf.position = 0;
+				}
+			}
+			else if (found) {
+				if (l.indexOf('@#') === 0)
+					return ret;
+				ret.push(l);
+			}
+			else if (l.indexOf('@#'+name) === 0)
+				found = true;
+		} while(true);
+		return ret;
+	}
+
+	function restspaces(buf, pos, len, la) {
+		var i;
+
+		for (i = 0; i < len*2; i += 2) {
+			if (buf[pos + i] !== 32 && buf[pos + i] !== 0) {
+				return false;
+			}
+			if (la === -1 || (buf[pos + i + 1] & 0x70) !== (la & 0x70)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	if (!f.open('r')) {
+		throw('Unable to open '+f.name);
+	}
+	if (!t.open('w')) {
+		throw('Unable to open '+w.name);
+	}
+	if (!lt.open('r'))
+		lt = null;
+	if (!le.open('r'))
+		le = null;
+	if (!lg.open('r'))
+		lg = null;
+	if (!tt.open('r'))
+		tt = null;
+	Object.keys(fmap).sort().forEach(function(name) {
+		var mnu = get_menu(name);
+		var i;
+		var ansi = false;
+		var clear = false;
+		var nnmu;
+		var ll;
+		var la;
+		var x;
+		var y;
+		var nl;
+		var ch;
+		var attr;
+
+		if (name !== name.toUpperCase())
+			return;
+		if (mnu.length < 1)
+			throw('Unable to read '+name);
+		for (i = 0; i < mnu.length; i++) {
+			if (mnu[i].indexOf('\x1b[2J') != -1)
+				clear = true;
+			if (mnu[i].indexOf('\x1b') != -1) {
+				ansi = true;
+				break;
+			}
+		}
+		if (ansi) {
+			s.print('\x1b[2J\x1b[1;1H');
+			la = -1;
+			print(name+' is ANSI');
+			for (i = 0; i < mnu.length; i++) {
+				s.print(mnu[i]+'\r\n');
+			}
+			ll = s.pos.y;
+			nmnu = [];
+			nl = '';
+			for (y = 0; y < ll; y++) {
+				for (x = 0; x < 80; x++) {
+					if (clear) {
+						nl += '`c';
+						clear = false;
+					}
+					ch = ascii(s.graphic.puttext[(y*80+x)*2]);
+					attr = s.graphic.puttext[(y*80+x)*2+1]
+					if (la !== attr && ((la & 0x70) !== (attr & 0x70) || ch !== ' ')) {
+						if (la === -1 || (la & 0x70) != (attr & 0x70)) {
+							nl += '`r'+['0','1','2','3','4','5','6','7'][(attr & 0x70)>>4];
+						}
+						la = (la & 0x8f) | (attr & 0x70);
+						if (la === -1 || ((la & 0x8f) != (attr & 0x8f) && ch !== ' ')) {
+							nl += '`';
+							if (attr & 0x80)
+								nl += 'B';
+							nl += ['^', '1', '2','3','4','5','6','7','8','9','0','!','@','#','$','%'][attr & 0x0f];
+							la = (la & 0x70) | (attr & 0x8f);
+						}
+					}
+					if (restspaces(s.graphic.puttext, (y*80+x)*2, 80-x, la))
+						break;
+					nl += ch;
+				}
+				if (x === 80)
+					nl += '`n';
+				else {
+					nmnu.push(nl);
+					nl = '';
+				}
+			}
+			if (nl != '')
+				nmnu.push(nl);
+			// Leave up to one blank line at the end?
+			while (nmnu[nmnu.length-1] === '') {
+				nmnu.pop();
+				print("Removing blank line from "+name);
+			}
+			mnu = nmnu;
+		}
+		else
+			print(name+' is already LORD format');
+		t.writeln('@#'+name);
+		mnu.forEach(function(l) {
+			t.writeln(l);
+		});
+	});
+}
+
+//convert_menus(js.exec_dir + 'LORDTXT.DAT', js.exec_dir + 'LORDEXT.DAT', js.exec_dir + 'LGAMETXT.DAT', js.exec_dir + 'TRAINTXT.DAT', js.exec_dir + 'lordtxt.lrd', js.exec_dir + 'lordtxt.new');
+
