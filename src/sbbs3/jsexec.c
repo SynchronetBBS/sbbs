@@ -824,7 +824,7 @@ static BOOL js_init(char** env)
     if((js_cx = JS_NewContext(js_runtime, js_cx_stack))==NULL)
 		return(FALSE);
 #ifdef JSDOOR
-	JS_SetOptions(js_cx, JSOPTION_VAROBJFIX | JSOPTION_JIT | JSOPTION_METHODJIT | JSOPTION_COMPILE_N_GO | JSOPTION_PROFILING);
+	JS_SetOptions(js_cx, JSOPTION_JIT | JSOPTION_METHODJIT | JSOPTION_COMPILE_N_GO | JSOPTION_PROFILING);
 #endif
 	JS_BEGINREQUEST(js_cx);
 
