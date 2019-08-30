@@ -530,3 +530,36 @@ var State_Def = [
 		def:0
 	}
 ];
+
+var Server_State_Def = [
+	{
+		prop:'latesthero',
+		name:'Latest Hero',
+		type:'String:20',
+		def:'Master Turgon'
+	},
+	{
+		prop:'married_to_seth',
+		name:'Player who is married to Seth Able',
+		type:'SignedInteger16',
+		def:-1
+	},
+	{
+		prop:'married_to_violet',
+		name:'Player who is married to Violet',
+		type:'SignedInteger16',
+		def:-1
+	},
+	{
+		prop:'won_by',
+		name:'Player who won the game when game is ended',
+		type:'SignedInteger16',
+		def:-1
+	},
+	{
+		prop:'last_bar',
+		name:'Laster Person to Converse at Bar',
+		type:'SignedInteger16',
+		def:0
+	}
+];

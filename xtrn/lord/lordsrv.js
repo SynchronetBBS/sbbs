@@ -1,3 +1,5 @@
+'use strict';
+
 // LORD data server... whee!
 js.load_path_list.unshift(js.exec_dir+"load/");
 require('recorddefs.js', 'Player_Def');
@@ -9,14 +11,25 @@ var settings = {
 	port:0xdece,
 	retry_count:30,
 	retry_delay:15,
-	player_file:js.exec_dir + 'splayer.dat'
+	player_file:js.exec_dir + 'splayer.dat',
+	log_file:js.exec_dir + 'slogall.lrd',
+	state_file:js.exec_dir + 'sstate.dat',
+	mail_prefix:js.exec_dir + 's'
 };
 var pfile = new RecordFile(settings.player_file, SPlayer_Def);
+var sfile = new RecordFile(settings.state_file, Server_State_Def);
+var lfile = new File(settings.log_file);
+var tmpplayer;
+var lline;
+var lmatch;
 var sock;
 var socks;
 var pdata = [];
+var sdata;
 var idx;
 var whitelist = ['Record', 'Yours'];
+var swhitelist = [];
+var logdata = [];
 
 // TODO: This is obviously silly.
 function validate_user(user, pass)
@@ -33,7 +46,14 @@ function handle_request() {
 	var req;
 
 	function close_sock(sock) {
+		// TODO: Clear player.on...
 		log("Closed connection "+sock.descriptor+" from "+sock.remote_ip_address+'.'+sock.remote_port);
+		if (sock.LORD !== undefined) {
+			if (sock.LORD.player_on !== undefined) {
+				pdata[sock.LORD.player_on].on_now = false;
+				pdata[sock.LORD.player_on].put();
+			}
+		}
 		socks.splice(socks.indexOf(sock), 1);
 		delete sock.LORD;
 		sock.close();
@@ -124,6 +144,21 @@ function handle_request() {
 			});
 		}
 
+		function logit(data) {
+			var lines = data.split(/\r?\n/);
+			var line;
+			var now = new Date();
+			var nv = now.valueOf();
+
+			while(lines.length) {
+				line = lines.shift;
+				lfile.writeln(nv+':'+line);
+				logdata.push({date:now, line:line});
+			}
+			lfile.writeln(nv+':'+'`.                                `2-`0=`2-`0=`2-`0=`2-');
+			logdata.push({date:now, line:'`.                                `2-`0=`2-`0=`2-`0=`2-'});
+		}
+
 		log(LOG_DEBUG, sock.descriptor+': '+sock.LORD.cmd+' got '+(data.length - 2)+' bytes of data');
 		if (data.substr(-2) !== '\r\n') {
 			return false;
@@ -146,13 +181,17 @@ function handle_request() {
 				sock.writeln('OK');
 				break;
 			case 'WriteMail':
-				mf = new File(js.exec_dir + 'smail'+sock.LORD.record+'.lrd');
+				mf = new File(settings.mail_prefix +'mail'+sock.LORD.record+'.lrd');
 				if (!mf.open('a')) {
 					sock.writeln('Unable to send mail');
 					break;
 				}
 				mf.writeln(data);
 				mf.close();
+				sock.writeln('OK');
+				break;
+			case 'LogEntry':
+				logit(data);
 				sock.writeln('OK');
 				break;
 			default:
@@ -163,6 +202,7 @@ function handle_request() {
 
 	function handle_command(sock, request) {
 		var tmph;
+		var tmph2;
 		var cmd;
 		var mf;
 
@@ -203,6 +243,60 @@ function handle_request() {
 			return tmpp;
 		}
 
+		function parse_date(sock, prequest, field) {
+			var tmpp = prequest.split(' ');
+
+			tmpp = parseInt(tmpp[field-1], 10);
+			if (isNaN(tmpp)) {
+				return undefined;
+			}
+			// TODO: sanity checking...
+			if (tmpp < 0) {
+				return undefined;
+			}
+			return new Date(tmpp);
+		}
+
+		function send_log(sock, start, end) {
+			var log = '';
+			var md;
+			var i;
+			var ent;
+			var happenings = ['`4  A Child was found today!  But scared deaf and dumb.',
+			    '`4  More children are missing today.',
+			    '`4  A small girl was missing today.',
+			    '`4  The town is in grief.  Several children didn\'t come home today.',
+			    '`4  Dragon sighting reported today by a drunken old man.',
+			    '`4  Despair covers the land - more bloody remains have been found today.',
+			    '`4  A group of children did not return from a nature walk today.',
+			    '`4  The land is in chaos today.  Will the abductions ever stop?',
+			    '`4  Dragon scales have been found in the forest today..Old or new?',
+			    '`4  Several farmers report missing cattle today.'];
+
+			log += '`2  The Daily Happenings....\n';
+			log += '`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n';
+
+			// Choose a first entry based on start time.
+			md = md5_calc(start.toString());
+			for (i = 0; i < md.length; i++) {
+				ent = parseInt(md[i], 16);
+				if (ent < happenings.length)
+					break;
+			}
+			// Small bias...
+			if (ent >= happenings.length)
+				ent = 0;
+			log += happenings[ent]+'\n'+'`.                                `2-`0=`2-`0=`2-`0=`2-\n';
+
+			// TODO: Log trimming in memory...
+			logdata.forEach(function(l) {
+				if (l.date >= start && (end === undefined || l.date < end)) {
+					log += l.line+'\n';
+				}
+			});
+			sock.write('LogData '+log.length+'\r\n'+log+'\r\n');
+		}
+
 		log(LOG_DEBUG, sock.descriptor+': '+request);
 		tmph = request.indexOf(' ');
 		if (tmph === -1)
@@ -241,11 +335,22 @@ function handle_request() {
 					tmph = JSON.stringify(pdata[tmph], whitelist);
 					sock.write('PlayerRecord '+tmph.length+'\r\n'+tmph+'\r\n');
 					break;
+				case 'GetState':
+					tmph = JSON.stringify(sdata, swhitelist);
+					sock.write('StateData '+tmph.length+'\r\n'+tmph+'\r\n');
+					break;
+				case 'SetPlayer':
+					tmph = validate_record(sock, request, 2, true);
+					if (tmph === undefined)
+						return false;
+					sock.LORD.player_on = tmph;
+					sock.writeln('OK');
+					break;
 				case 'CheckMail':
 					tmph = validate_record(sock, request, 2, true);
 					if (tmph === undefined)
 						return false;
-					if (file_exists(js.exec_dir + 'smail'+tmph+'.lrd'))
+					if (file_exists(settings.mail_prefix +'mail'+tmph+'.lrd'))
 						sock.writeln('Yes');
 					else
 						sock.writeln('No');
@@ -254,7 +359,7 @@ function handle_request() {
 					tmph = validate_record(sock, request, 2, true);
 					if (tmph === undefined)
 						return false;
-					mf = js.exec_dir + 'smail'+tmph+'.lrd';
+					mf = settings.mail_prefix +'mail'+tmph+'.lrd';
 					tmph = file_size(mf);
 					if (tmph === -1)
 						sock.write('Mail 0\r\n\r\n');
@@ -271,28 +376,6 @@ function handle_request() {
 						return false;
 					file_remove('smail'+tmph+'.lrd');
 					sock.writeln('OK');
-					break;
-				case 'WriteMail':
-					tmph = validate_record(sock, request, 3, false);
-					if (tmph === undefined)
-						return false;
-					sock.LORD.record = tmph;
-					tmph = parse_pending(sock, request, 3);
-					if (tmph === undefined)
-						return false;
-					sock.LORD.cmd = cmd;
-					sock.LORD.pending = tmph + 2;
-					break;
-				case 'PutPlayer':
-					tmph = validate_record(sock, request, 3, true);
-					if (tmph === undefined)
-						return false;
-					sock.LORD.record = tmph;
-					tmph = parse_pending(sock, request, 3);
-					if (tmph === undefined)
-						return false;
-					sock.LORD.cmd = cmd;
-					sock.LORD.pending = tmph + 2;
 					break;
 				case 'NewPlayer':
 					if (request.indexOf(' ') !== -1) {
@@ -321,6 +404,51 @@ function handle_request() {
 					}
 					sock.writeln(pdata.length);
 					break;
+				case 'GetLogFrom':
+					tmph = parse_date(sock, request, 2);
+					if (tmph === undefined)
+						return false;
+					send_log(sock, tmph);
+					break;
+				case 'GetLogRange':
+					tmph = parse_date(sock, request, 2);
+					if (tmph === undefined)
+						return false;
+					tmph2 = parse_date(sock, request, 3);
+					if (tmph2 === undefined)
+						return false;
+					send_log(sock, tmph, tmph2);
+					break;
+				case 'WriteMail':
+					tmph = validate_record(sock, request, 3, false);
+					if (tmph === undefined)
+						return false;
+					sock.LORD.record = tmph;
+					tmph = parse_pending(sock, request, 3);
+					if (tmph === undefined)
+						return false;
+					sock.LORD.cmd = cmd;
+					sock.LORD.pending = tmph + 2;
+					break;
+				case 'PutPlayer':
+					tmph = validate_record(sock, request, 3, true);
+					if (tmph === undefined)
+						return false;
+					sock.LORD.record = tmph;
+					tmph = parse_pending(sock, request, 3);
+					if (tmph === undefined)
+						return false;
+					sock.LORD.cmd = cmd;
+					sock.LORD.pending = tmph + 2;
+					break;
+				case 'LogEntry':
+					tmph = parse_pending(sock, request, 2);
+					if (tmph === undefined)
+						return false;
+					sock.LORD.cmd = cmd;
+					sock.LORD.pending = tmph + 2;
+					break;
+				// TODO: All the various places to converse... bar, darkhorse, flowers, dirt, etc...
 				default:
 					return false;
 			}
@@ -409,10 +537,36 @@ sock.sock = sock;
 
 socks = [sock];
 
-for (idx = 0; idx < pfile.length; idx++)
-	pdata.push(pfile.get(idx));
+for (idx = 0; idx < pfile.length; idx++) {
+	tmpplayer = pfile.get(idx);
+	if (tmpplayer.on_now) {
+		tmpplayer.on_now = false;
+		tmpplayer.put();
+	}
+	pdata.push(tmpplayer);
+}
 for (idx = 0; idx < Player_Def.length; idx++)
 	whitelist.push(Player_Def[idx].prop);
+file_touch(lfile.name);
+if (!lfile.open('a+'))
+	throw('Unable to open logfile '+lfile.name);
+lfile.position = 0;
+while ((lline = lfile.readln()) !== null) {
+	lmatch = lline.match(/^([0-9]+):(.*)$/);
+	if (lmatch === null) {
+		throw('Invalid line in log: '+lline);
+	}
+	logdata.push({date:new Date(parseInt(lmatch[1], 10)), line:lmatch[2]});
+}
+if (sfile.length < 1)
+	sdata = sfile.new();
+else
+	sdata = sfile.get(0);
+if (sdata === undefined) {
+	throw('Unable to access '+sfile.file.name+' len: '+sfile.length);
+}
+for (idx = 0; idx < Server_State_Def.length; idx++)
+	whitelist.push(Server_State_Def[idx].prop);
 
 while(true) {
 	var ready;
