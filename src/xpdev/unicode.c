@@ -270,10 +270,10 @@ enum unicode_codepoint cp437_unicode_tbl[] =
 	/* 0xD9 */ 0x2518,
 	/* 0xDA */ 0x250C,
 	/* 0xDB */ 0x2588,
-	/* 0xDC */ 0x2584,
+	/* 0xDC */ UNICODE_LOWER_HALF_BLOCK,
 	/* 0xDD */ 0x258C,
 	/* 0xDE */ 0x2590,
-	/* 0xDF */ 0x2580,
+	/* 0xDF */ UNICODE_UPPER_HALF_BLOCK,
 	/* 0xE0 */ UNICODE_GREEK_SMALL_LETTER_ALPHA,
 	/* 0xE1 */ UNICODE_GREEK_SMALL_LETTER_BETA, // or UNICODE_LATIN_SMALL_LETTER_SHARP_S
 	/* 0xE2 */ UNICODE_GREEK_SMALL_LETTER_GAMMA,
@@ -498,6 +498,13 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 		case UNICODE_DAGGER:									return CP437_BOX_DRAWINGS_VERTICAL_AND_HORIZONTAL;
 		
 		case UNICODE_BLACK_SQUARE:
+		case UNICODE_BLACK_SQUARE_CENTERED:
+		case UNICODE_BLACK_SQUARE_FOR_STOP:
+		case UNICODE_BLACK_SMALL_SQUARE:
+		case UNICODE_BLACK_MEDIUM_SQUARE:
+		case UNICODE_BLACK_LARGE_SQUARE:
+		case UNICODE_BLACK_MEDIUM_SMALL_SQUARE:
+		case UNICODE_BLACK_VERY_SMALL_SQUARE:	
 		case UNICODE_HALFWIDTH_BLACK_SQUARE:					return CP437_HALFWIDTH_BLACK_SQUARE;
 
 		case UNICODE_HORIZONTAL_BAR:
@@ -640,6 +647,17 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 		case 0x257D: // Box Drawings Light Up and Heavy Down
 		case 0x257F: // Box Drawings Heavy Up and Light Down
 			return '\xB3';
+
+		case UNICODE_FULL_BLOCK:
+			return CP437_FULL_BLOCK;
+		case UNICODE_LOWER_HALF_BLOCK:
+			return CP437_LOWER_HALF_BLOCK;
+		case UNICODE_LEFT_HALF_BLOCK:
+			return CP437_LEFT_HALF_BLOCK;
+		case UNICODE_RIGHT_HALF_BLOCK:
+			return CP437_RIGHT_HALF_BLOCK;
+		case UNICODE_UPPER_HALF_BLOCK:
+			return CP437_UPPER_HALF_BLOCK;
 
 		case 0x2581: // Lower One Eighth Block
 			return '_';
