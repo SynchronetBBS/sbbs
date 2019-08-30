@@ -19,14 +19,9 @@ var settings = {
 var pfile = new RecordFile(settings.player_file, SPlayer_Def);
 var sfile = new RecordFile(settings.state_file, Server_State_Def);
 var lfile = new File(settings.log_file);
-var tmpplayer;
-var lline;
-var lmatch;
-var sock;
 var socks;
 var pdata = [];
 var sdata;
-var idx;
 var whitelist = ['Record', 'Yours'];
 var swhitelist = [];
 var logdata = [];
@@ -37,7 +32,7 @@ function validate_user(user, pass)
 	return true;
 }
 
-// TODO: Blocking Locks
+// TODO: Blocking Locks (?)
 // TODO: socket_select with a read array and a write array
 function handle_request() {
 	var buf = '';
@@ -333,6 +328,8 @@ function handle_request() {
 					if (tmph === undefined)
 						return false;
 					tmph = JSON.stringify(pdata[tmph], whitelist);
+					if (tmph.SourceSystem === sock.LORD.bbs)
+						tmph.Yours = true;
 					sock.write('PlayerRecord '+tmph.length+'\r\n'+tmph+'\r\n');
 					break;
 				case 'GetState':
@@ -506,73 +503,83 @@ function handle_request() {
 	} while(true);
 }
 
-SPlayer_Def.push({
-	prop:'SourceSystem',
-	name:'Source Account',
-	type:'String:20',	// TODO: This is the max BBS ID length
-	def:''
-});
+function main() {
+	var tmpplayer;
+	var lline;
+	var lmatch;
+	var sock;
+	var idx;
 
-if (this.server !== undefined)
-	sock = this.server.socket;
-else
-	sock = new ListeningSocket(settings.hostnames, settings.port, 'LORD', {retry_count:settings.retry_count, retry_delay:settings.retry_delay});
-if (sock === null)
-	throw('Unable to bind listening socket');
-sock.LORD_callback = function() {
-	var nsock;
-
-	nsock = this.accept();
-	nsock.ssl_server = true;
-	nsock.nonblocking = true;
-	nsock.LORD = {};
-	nsock.LORD_callback = handle_request;
-	nsock.LORD.auth = false;
-	nsock.LORD.pending = 0;
-	nsock.LORD.buf = '';
-	socks.push(nsock);
-	log('Connection '+nsock.descriptor+' accepted from: '+nsock.remote_ip_address+'.'+nsock.remote_port);
-};
-sock.sock = sock;
-
-socks = [sock];
-
-for (idx = 0; idx < pfile.length; idx++) {
-	tmpplayer = pfile.get(idx);
-	if (tmpplayer.on_now) {
-		tmpplayer.on_now = false;
-		tmpplayer.put();
-	}
-	pdata.push(tmpplayer);
-}
-for (idx = 0; idx < Player_Def.length; idx++)
-	whitelist.push(Player_Def[idx].prop);
-file_touch(lfile.name);
-if (!lfile.open('a+'))
-	throw('Unable to open logfile '+lfile.name);
-lfile.position = 0;
-while ((lline = lfile.readln()) !== null) {
-	lmatch = lline.match(/^([0-9]+):(.*)$/);
-	if (lmatch === null) {
-		throw('Invalid line in log: '+lline);
-	}
-	logdata.push({date:new Date(parseInt(lmatch[1], 10)), line:lmatch[2]});
-}
-if (sfile.length < 1)
-	sdata = sfile.new();
-else
-	sdata = sfile.get(0);
-if (sdata === undefined) {
-	throw('Unable to access '+sfile.file.name+' len: '+sfile.length);
-}
-for (idx = 0; idx < Server_State_Def.length; idx++)
-	whitelist.push(Server_State_Def[idx].prop);
-
-while(true) {
-	var ready;
-
-	ready = socket_select(socks, 60);
-	ready.forEach(function(s) {
-		socks[s].LORD_callback();
+	SPlayer_Def.push({
+		prop:'SourceSystem',
+		name:'Source Account',
+		type:'String:20',	// TODO: This is the max BBS ID length
+		def:''
 	});
+
+	if (this.server !== undefined)
+		sock = this.server.socket;
+	else
+		sock = new ListeningSocket(settings.hostnames, settings.port, 'LORD', {retry_count:settings.retry_count, retry_delay:settings.retry_delay});
+	if (sock === null)
+		throw('Unable to bind listening socket');
+	sock.LORD_callback = function() {
+		var nsock;
+
+		nsock = this.accept();
+		nsock.ssl_server = true;
+		nsock.nonblocking = true;
+		nsock.LORD = {};
+		nsock.LORD_callback = handle_request;
+		nsock.LORD.auth = false;
+		nsock.LORD.pending = 0;
+		nsock.LORD.buf = '';
+		socks.push(nsock);
+		log('Connection '+nsock.descriptor+' accepted from: '+nsock.remote_ip_address+'.'+nsock.remote_port);
+	};
+	sock.sock = sock;
+
+	socks = [sock];
+
+	for (idx = 0; idx < pfile.length; idx++) {
+		tmpplayer = pfile.get(idx);
+		if (tmpplayer.on_now) {
+			tmpplayer.on_now = false;
+			tmpplayer.put();
+		}
+		pdata.push(tmpplayer);
+	}
+	for (idx = 0; idx < Player_Def.length; idx++)
+		whitelist.push(Player_Def[idx].prop);
+	file_touch(lfile.name);
+	if (!lfile.open('a+'))
+		throw('Unable to open logfile '+lfile.name);
+	lfile.position = 0;
+	while ((lline = lfile.readln()) !== null) {
+		lmatch = lline.match(/^([0-9]+):(.*)$/);
+		if (lmatch === null) {
+			throw('Invalid line in log: '+lline);
+		}
+		logdata.push({date:new Date(parseInt(lmatch[1], 10)), line:lmatch[2]});
+	}
+	if (sfile.length < 1)
+		sdata = sfile.new();
+	else
+		sdata = sfile.get(0);
+	if (sdata === undefined) {
+		throw('Unable to access '+sfile.file.name+' len: '+sfile.length);
+	}
+	for (idx = 0; idx < Server_State_Def.length; idx++)
+		whitelist.push(Server_State_Def[idx].prop);
+
+	while(true) {
+		var ready;
+
+		ready = socket_select(socks, 60);
+		ready.forEach(function(s) {
+			socks[s].LORD_callback();
+		});
+	}
 }
+
+main();
