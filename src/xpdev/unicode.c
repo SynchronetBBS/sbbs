@@ -671,19 +671,16 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 		case 0x2587: // Lower Seven Eighths Block
 			return '\xDC';
 
-		case 0x2588: // Full Block
 		case 0x2589: // Left Seven Eighths Block
 			return '\xDB';
 
 		case 0x258A: // Left Three Quarters Block
 		case 0x258B: // Left Five Eighths Block
-		case 0x258C: // Left Half Block
 		case 0x258D: // Left Three Eighths Block
 		case 0x258E: // Left One Quarter Block
 		case 0x258F: // Left One Eighth Block
 			return '\xDD';
 
-		case 0x2590: // Right Half Block
 		case 0x2595: // Right One Eighth Block
 			return '\xDE';
 
