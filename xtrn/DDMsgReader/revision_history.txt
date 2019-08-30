@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.25     2019-08-29   Added the ability to search for message groups and
+                      sub-boards when changing to another sub-board. Search
+                      can be started with the / key or CTRL-F (Find). Also, in
+                      lightbar mode, the N key can be used to highlight the
+                      next match in the list.
 1.24     2019-08-17   When making a private reply on local email, an error is
                       now outputted if the recipient's user number is not
                       found.  Also, fixed an 'undefined' bug that happened when
