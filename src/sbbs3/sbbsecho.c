@@ -5694,7 +5694,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 			if(pkdmsg.type == 2 /* Recognized type */
 				&& pkdmsg.time[0] != 0
-//				&& pkdmsg.time[sizeof(pkdmsg.time)-1] == 0
+				&& pkdmsg.time[sizeof(pkdmsg.time)-1] == 0
 				&& freadstr(fidomsg, hdr.to, sizeof(hdr.to)) != NULL
 				&& freadstr(fidomsg, hdr.from, sizeof(hdr.from)) != NULL
 				&& freadstr(fidomsg, hdr.subj, sizeof(hdr.subj)) != NULL
