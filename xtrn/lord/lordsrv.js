@@ -33,7 +33,7 @@ function handle_request() {
 	var req;
 
 	function close_sock(sock) {
-		log("Closed connection from "+sock.remote_ip_address+'.'+sock.remote_port);
+		log("Closed connection "+sock.descriptor+" from "+sock.remote_ip_address+'.'+sock.remote_port);
 		socks.splice(socks.indexOf(sock), 1);
 		delete sock.LORD;
 		sock.close();
@@ -42,6 +42,7 @@ function handle_request() {
 
 	function handle_command_data(sock, data) {
 		var tmph;
+		var mf;
 
 		// TODO: This should be in a require()d file
 		function update_player(from, to) {
@@ -123,6 +124,7 @@ function handle_request() {
 			});
 		}
 
+		log(LOG_DEBUG, sock.descriptor+': '+sock.LORD.cmd+' got '+(data.length - 2)+' bytes of data');
 		if (data.substr(-2) !== '\r\n') {
 			return false;
 		}
@@ -141,6 +143,17 @@ function handle_request() {
 				}
 				update_player(tmph, pdata[sock.LORD.record]);
 				pdata[sock.LORD.record].put();
+				sock.writeln('OK');
+				break;
+			case 'WriteMail':
+				mf = new File(js.exec_dir + 'smail'+sock.LORD.record+'.lrd');
+				if (!mf.open('a')) {
+					sock.writeln('Unable to send mail');
+					break;
+				}
+				mf.writeln(data);
+				mf.close();
+				sock.writeln('OK');
 				break;
 			default:
 				return false;
@@ -151,6 +164,7 @@ function handle_request() {
 	function handle_command(sock, request) {
 		var tmph;
 		var cmd;
+		var mf;
 
 		function validate_record(sock, vrequest, fields, bbs_check) {
 			var tmpv = vrequest.split(' ');
@@ -189,6 +203,7 @@ function handle_request() {
 			return tmpp;
 		}
 
+		log(LOG_DEBUG, sock.descriptor+': '+request);
 		tmph = request.indexOf(' ');
 		if (tmph === -1)
 			cmd = request;
@@ -203,7 +218,7 @@ function handle_request() {
 						return false;
 					}
 					else if (validate_user(sock, tmph[1], tmph[2])) {
-						log('Auth from: '+sock.remote_ip_address+'.'+sock.remote_port+' as '+tmph[1]);
+						log('Auth '+sock.descriptor+' from: '+sock.remote_ip_address+'.'+sock.remote_port+' as '+tmph[1]);
 						sock.LORD.auth = true;
 						sock.LORD.bbs = tmph[1];
 						sock.writeln('OK');
@@ -225,6 +240,48 @@ function handle_request() {
 						return false;
 					tmph = JSON.stringify(pdata[tmph], whitelist);
 					sock.write('PlayerRecord '+tmph.length+'\r\n'+tmph+'\r\n');
+					break;
+				case 'CheckMail':
+					tmph = validate_record(sock, request, 2, true);
+					if (tmph === undefined)
+						return false;
+					if (file_exists(js.exec_dir + 'smail'+tmph+'.lrd'))
+						sock.writeln('Yes');
+					else
+						sock.writeln('No');
+					break;
+				case 'GetMail':
+					tmph = validate_record(sock, request, 2, true);
+					if (tmph === undefined)
+						return false;
+					mf = js.exec_dir + 'smail'+tmph+'.lrd';
+					tmph = file_size(mf);
+					if (tmph === -1)
+						sock.write('Mail 0\r\n\r\n');
+					else {
+						sock.writeln('Mail '+tmph);
+						sock.sendfile(mf);
+						sock.write('\r\n');
+						file_remove(mf);
+					}
+					break;
+				case 'KillMail':
+					tmph = validate_record(sock, request, 2, true);
+					if (tmph === undefined)
+						return false;
+					file_remove('smail'+tmph+'.lrd');
+					sock.writeln('OK');
+					break;
+				case 'WriteMail':
+					tmph = validate_record(sock, request, 3, false);
+					if (tmph === undefined)
+						return false;
+					sock.LORD.record = tmph;
+					tmph = parse_pending(sock, request, 3);
+					if (tmph === undefined)
+						return false;
+					sock.LORD.cmd = cmd;
+					sock.LORD.pending = tmph + 2;
 					break;
 				case 'PutPlayer':
 					tmph = validate_record(sock, request, 3, true);
@@ -346,7 +403,7 @@ sock.LORD_callback = function() {
 	nsock.LORD.pending = 0;
 	nsock.LORD.buf = '';
 	socks.push(nsock);
-	log('Connection accepted from: '+nsock.remote_ip_address+'.'+nsock.remote_port);
+	log('Connection '+nsock.descriptor+' accepted from: '+nsock.remote_ip_address+'.'+nsock.remote_port);
 };
 sock.sock = sock;
 
