@@ -52,6 +52,7 @@ enum {
 	,SYS_PROP_TIMEZONE
 	,SYS_PROP_PWDAYS
 	,SYS_PROP_DELDAYS
+	,SYS_PROP_AUTODEL
 
 	,SYS_PROP_LASTUSER
 	,SYS_PROP_LASTUSERON
@@ -169,6 +170,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SYS_PROP_DELDAYS:
 			*vp = INT_TO_JSVAL(cfg->sys_deldays);
+			break;
+		case SYS_PROP_AUTODEL:
+			*vp = INT_TO_JSVAL(cfg->sys_autodel);
 			break;
 		case SYS_PROP_LASTUSER:
 			*vp = INT_TO_JSVAL(lastuser(cfg));
@@ -371,6 +375,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{	"timezone",					SYS_PROP_TIMEZONE,	SYSOBJ_FLAGS,		310  },
 	{	"pwdays",					SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		310  },
 	{	"deldays",					SYS_PROP_DELDAYS,	SYSOBJ_FLAGS,		310  },
+	{	"autodel",					SYS_PROP_AUTODEL,	SYSOBJ_FLAGS,		31702  },
 
 	{	"lastuser",					SYS_PROP_LASTUSER		,SYSOBJ_FLAGS,	311  },
 	{	"lastuseron",				SYS_PROP_LASTUSERON		,SYSOBJ_FLAGS,	310  },
@@ -445,8 +450,9 @@ static char* sys_prop_desc[] = {
 	,"Internet address (host or domain name)"
 	,"location (city, state)"
 	,"timezone (use <i>system.zonestr()</i> to get string representation)"
-	,"days between forced password changes"
-	,"days to preserve deleted user records"
+	,"days between forced user password changes"
+	,"days to preserve deleted user records, record will not be reused/overwritten during this period"
+	,"days of user inactivity before auto-deletion (<tt>0</tt>=<i>disabled</i>), N/A to P-exempt users"
 
 	,"last user record number in user database (includes deleted and inactive user records)"
 	,"name of last user to logoff"
