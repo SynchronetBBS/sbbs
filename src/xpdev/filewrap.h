@@ -153,6 +153,8 @@
 #define O_DENYNONE		SH_DENYNO
 #endif
 
+#define CLOSE_OPEN_FILE(x)	while((x) >= 0) { close(x); (x)=-1; break; }
+
 /**************/
 /* Prototypes */
 /**************/
