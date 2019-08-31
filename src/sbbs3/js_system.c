@@ -2014,7 +2014,7 @@ static JSBool js_node_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	memset(&node,0,sizeof(node));
-	if(getnodedat(cfg, node_num, &node, NULL)) {
+	if(getnodedat(cfg, node_num, &node, /* lockit: */FALSE, &cfg->nodefile)) {
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
@@ -2058,7 +2058,6 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 {
 	jsval idval;
 	uint		node_num;
-	int			file;
 	jsint		val=0;
     jsint       tiny;
 	node_t		node;
@@ -2080,7 +2079,7 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 
 	rc=JS_SUSPENDREQUEST(cx);
 	memset(&node,0,sizeof(node));
-	if(getnodedat(cfg, node_num, &node, &file)) {
+	if(getnodedat(cfg, node_num, &node, /* lockit: */TRUE, &cfg->nodefile)) {
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
@@ -2119,7 +2118,7 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			node.extaux=val;
 			break;
 	}
-	putnodedat(cfg,node_num,&node,file);
+	putnodedat(cfg,node_num,&node, /* closeit: */FALSE, cfg->nodefile);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -2396,6 +2395,16 @@ static JSBool js_system_enumerate(JSContext *cx, JSObject *obj)
 	return(js_system_resolve(cx, obj, JSID_VOID));
 }
 
+static void js_system_finalize(JSContext *cx, JSObject *obj)
+{
+	scfg_t* cfg;
+
+	if((cfg = (scfg_t*)JS_GetPrivate(cx, obj)) == NULL)
+		return;
+
+	CLOSE_OPEN_FILE(cfg->nodefile);
+}
+
 JSClass js_system_class = {
      "System"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -2406,7 +2415,7 @@ JSClass js_system_class = {
 	,js_system_enumerate	/* enumerate	*/
 	,js_system_resolve		/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
+	,js_system_finalize		/* finalize		*/
 };
 
 JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
@@ -2422,6 +2431,9 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 
 	if(sysobj==NULL)
 		return(NULL);
+
+	if(cfg->nodefile < 1)	// An initialized scfg_t is usually all 0's
+		cfg->nodefile = -1;
 
 	if(!JS_SetPrivate(cx, sysobj, cfg))	/* Store a pointer to scfg_t */
 		return(NULL);

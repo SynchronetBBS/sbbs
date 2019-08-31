@@ -613,7 +613,9 @@ typedef struct
 	uint16_t		user_backup_level;
 	uint16_t		mail_backup_level;
 
+	// Run-time state information (not configuration)
 	int				tls_certificate;
+	int				nodefile;
 
 } scfg_t;
 

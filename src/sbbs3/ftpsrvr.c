@@ -3558,7 +3558,7 @@ static void ctrl_thread(void* arg)
 		if(!stricmp(cmd, "SITE WHO")) {
 			sockprintf(sock,sess,"211-Active Telnet Nodes:");
 			for(i=0;i<scfg.sys_nodes && i<scfg.sys_lastnode;i++) {
-				if((result=getnodedat(&scfg, i+1, &node, 0))!=0) {
+				if((result=getnodedat(&scfg, i+1, &node, FALSE, NULL))!=0) {
 					sockprintf(sock,sess," Error %d getting data for Telnet Node %d",result,i+1);
 					continue;
 				}

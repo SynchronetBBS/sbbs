@@ -3933,7 +3933,7 @@ static void smtp_thread(void* arg)
 					if(!(startup->options&MAIL_OPT_NO_NOTIFY) && usernum) {
 						if(newmsg.idx.to)
 							for(i=1;i<=scfg.sys_nodes;i++) {
-								getnodedat(&scfg, i, &node, 0);
+								getnodedat(&scfg, i, &node, FALSE, NULL);
 								if(node.useron==usernum
 									&& (node.status==NODE_INUSE || node.status==NODE_QUIET))
 									break;
@@ -4816,7 +4816,7 @@ static void smtp_thread(void* arg)
 			}
 			else if(cmd==SMTP_CMD_SEND) { /* Check if user online */
 				for(i=0;i<scfg.sys_nodes;i++) {
-					getnodedat(&scfg, i+1, &node, 0);
+					getnodedat(&scfg, i+1, &node, FALSE, NULL);
 					if(node.status==NODE_INUSE && node.useron==user.number
 						&& !(node.misc&NODE_POFF))
 						break;

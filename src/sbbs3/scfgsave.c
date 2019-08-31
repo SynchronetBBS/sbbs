@@ -1096,16 +1096,17 @@ void DLLCALL refresh_cfg(scfg_t* cfg)
 {
 	char	str[MAX_PATH+1];
     int		i;
-	int		file;
+	int		file = -1;
     node_t	node;
     
     for(i=0;i<cfg->sys_nodes;i++) {
-       	if(getnodedat(cfg,i+1,&node,&file)!=0)
+       	if(getnodedat(cfg,i+1,&node, /* lockit: */TRUE, &file)!=0)
 			continue;
         node.misc|=NODE_RRUN;
-        if(putnodedat(cfg,i+1,&node,file))
+        if(putnodedat(cfg,i+1,&node, /* closeit: */FALSE, file))
             break;
     }
+	CLOSE_OPEN_FILE(file);
 
 	SAFEPRINTF(str,"%srecycle",cfg->ctrl_dir);		ftouch(str);
 }

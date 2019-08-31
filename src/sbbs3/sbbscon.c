@@ -2190,7 +2190,7 @@ int main(int argc, char** argv)
 					printf("\n");
 					count=0;
 					for(i=1;i<=scfg.sys_nodes;i++) {
-						getnodedat(&scfg,i,&node,NULL /* file */);
+						getnodedat(&scfg,i,&node, /* lockit: */FALSE, NULL /* file */);
 						if(ch=='w' && node.status!=NODE_INUSE && node.status!=NODE_QUIET)
 							continue;
 						printnodedat(&scfg, i,&node);
@@ -2210,7 +2210,8 @@ int main(int argc, char** argv)
 						break;
 					fflush(stdin);
 					printf("\n");
-					if((i=getnodedat(&scfg,n,&node,&file))!=0) {
+					CLOSE_OPEN_FILE(file);
+					if((i=getnodedat(&scfg,n,&node, /* lockit: */TRUE, &file))!=0) {
 						printf("!Error %d getting node %d data\n",i,n);
 						break;
 					}
@@ -2225,7 +2226,7 @@ int main(int argc, char** argv)
 							node.misc^=NODE_INTR;
 							break;
 					}
-					putnodedat(&scfg,n,&node,file);
+					putnodedat(&scfg,n,&node,/* closeit: */TRUE, file);
 					printnodedat(&scfg,n,&node);
 #ifdef __unix__
 	                _echo_off(); /* turn off echoing - failsafe */
