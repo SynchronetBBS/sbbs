@@ -534,14 +534,7 @@ function handle_request() {
 
 	do {
 		if (this.LORD.pending > 0) {
-			if (this.LORD.buf.length < this.LORD.pending) {
-				if (this.buf.length === 0) {
-					close_sock(this);
-					return
-				}
-				break;
-			}
-			else {
+			if (this.LORD.buf.length >= this.LORD.pending) {
 				tmp = this.LORD.buf.substr(0, this.LORD.pending);
 				this.LORD.buf = this.LORD.buf.substr(this.LORD.pending);
 				this.LORD.pending = 0;
@@ -550,6 +543,8 @@ function handle_request() {
 					return;
 				}
 			}
+			else
+				break;
 		}
 		else {
 			// TODO: Better sanity checking...
@@ -571,6 +566,10 @@ function handle_request() {
 			}
 		}
 	} while(true);
+
+	if (buf.length === 0) {
+		close_sock(this);
+	}
 }
 
 function main() {
