@@ -492,7 +492,7 @@ G_MODULE_EXPORT void on_reload_configuration1_activate(GtkWidget *wiggy, gpointe
 G_MODULE_EXPORT void toggle_node_bits(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
 {
 	int	*bit=data;
-	int	fd;
+	int	fd = -1;
 	char	*node_str;
 	int		n,i;
 	node_t	node;
@@ -501,13 +501,13 @@ G_MODULE_EXPORT void toggle_node_bits(GtkTreeModel *model, GtkTreePath *path, Gt
 	gtk_tree_model_get(model, iter, 0, &node_str, -1);
 	n=atoi(node_str);
 
-	if((i=getnodedat(&cfg,n,&node,&fd))) {
+	if((i=getnodedat(&cfg,n,&node,TRUE,&fd))) {
 		sprintf(str,"Error reading node %d data (%d)!",n,i);
 		display_message("Read Error", str, "gtk-dialog-error");
 	}
 	else {
 		node.misc ^= *bit;
-		putnodedat(&cfg, n, &node, fd);
+		putnodedat(&cfg, n, &node, TRUE, fd);
 	}
 }
 
@@ -553,7 +553,7 @@ G_MODULE_EXPORT void rerun_nodes(GtkWidget *wiggy, gpointer data)
 
 G_MODULE_EXPORT void do_clear_errors(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
 {
-	int	fd;
+	int	fd = -1;
 	char	*node_str;
 	int		n,i;
 	node_t	node;
@@ -562,13 +562,13 @@ G_MODULE_EXPORT void do_clear_errors(GtkTreeModel *model, GtkTreePath *path, Gtk
 	gtk_tree_model_get(model, iter, 0, &node_str, -1);
 	n=atoi(node_str);
 
-	if((i=getnodedat(&cfg,n,&node,&fd))) {
+	if((i=getnodedat(&cfg,n,&node,TRUE,&fd))) {
 		sprintf(str,"Error reading node %d data (%d)!",n,i);
 		display_message("Read Error",str,"gtk-dialog-error");
 	}
 	else {
 		node.errors = 0;
-		putnodedat(&cfg, n, &node, fd);
+		putnodedat(&cfg, n, &node, TRUE, fd);
 	}
 }
 
@@ -616,7 +616,7 @@ G_MODULE_EXPORT void edituseron_node(GtkWidget *wiggy, gpointer data)
 			,get_lastselected_node
 			,&i);
 
-	if((i=getnodedat(&cfg,i,&node,NULL))) {
+	if((i=getnodedat(&cfg,i,&node,FALSE,NULL))) {
 		sprintf(str,"Error reading node data (%d)!",i);
 		display_message("Read Error",str,"gtk-dialog-error");
 	}
@@ -681,7 +681,7 @@ G_MODULE_EXPORT void quickvalidate_useron_node(GtkWidget *wiggy, gpointer data)
 				,get_lastselected_node
 				,&i);
 
-		if((i=getnodedat(&cfg,i,&node,NULL))) {
+		if((i=getnodedat(&cfg,i,&node,FALSE,NULL))) {
 			sprintf(str,"Error reading node data (%d)!",i);
 			display_message("Read Error",str,"gtk-dialog-error");
 		}
@@ -851,7 +851,7 @@ G_MODULE_EXPORT void sendmessageto_node(GtkWidget *wiggy, gpointer data)
 			,get_lastselected_node
 			,&i);
 
-	if((i=getnodedat(&cfg,i,&node,NULL))) {
+	if((i=getnodedat(&cfg,i,&node,FALSE,NULL))) {
 		sprintf(str,"Error reading node data (%d)!",i);
 		display_message("Read Error",str,"gtk-dialog-error");
 	}

@@ -218,7 +218,7 @@ int refresh_data(gpointer data)
 			nodes++;
 		}
 
-		if((j=getnodedat(&cfg,i,&node,NULL)))
+		if((j=getnodedat(&cfg,i,&node,FALSE,NULL)))
 			sprintf(str,"Error reading node data (%d)!",j);
 		else
 			nodestatus(&cfg,&node,str,1023);
@@ -258,7 +258,7 @@ int refresh_data(gpointer data)
 		gtk_tree_selection_selected_foreach(sel
 				,get_lastselected_node
 				,&i);
-		if((j=getnodedat(&cfg,i,&node,NULL))) {
+		if((j=getnodedat(&cfg,i,&node,FALSE,NULL))) {
 			sprintf(str,"Error reading node data (%d)!",j);
 			node.status=NODE_WFC;
 		}
