@@ -229,7 +229,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	ex_mode = EX_BIN;
 	if(prot->misc&PROT_NATIVE)
 		ex_mode|=EX_NATIVE;
-#ifdef __unix__		/* file xfer progs must use stdio on Unix */
+#ifdef __unix__		/* file xfer progs may use stdio on Unix */
 	if(!(prot->misc&PROT_SOCKET))
 		ex_mode|=EX_STDIO;
 #endif
