@@ -11,20 +11,23 @@ var settings = {
 	port:0xdece,
 	retry_count:30,
 	retry_delay:15,
-	player_file:js.exec_dir + 'splayer.dat',
-	log_file:js.exec_dir + 'slogall.lrd',
-	state_file:js.exec_dir + 'sstate.dat',
-	mail_prefix:js.exec_dir + 's'
+	file_prefix:js.exec_dir + 's'
 };
-var pfile = new RecordFile(settings.player_file, SPlayer_Def);
-var sfile = new RecordFile(settings.state_file, Server_State_Def);
-var lfile = new File(settings.log_file);
+var pfile = new RecordFile(settings.file_prefix+'player.dat', SPlayer_Def);
+var sfile = new RecordFile(settings.file_prefix+'state.dat', Server_State_Def);
+var lfile = new File(settings.file_prefix+'logall.lrd');
 var socks;
 var pdata = [];
 var sdata;
 var whitelist = ['Record', 'Yours'];
 var swhitelist = [];
 var logdata = [];
+var conversations = {
+	bar:{file:new File(settings.file_prefix+'bar.lrd'), lines:[], default_files:[js.exec_dir + 'start1.lrd', js.exec_dir + 'start2.lrd', js.exec_dir + 'start3.lrd', js.exec_dir + 'start4.lrd', js.exec_dir + 'start5.lrd']},
+	darkbar:{file:new File(settings.file_prefix+'darkbar.lrd'), lines:[], default_files:[js.exec_dir + 'dstart.lrd']},
+	garden:{file:new File(settings.file_prefix+'garden.lrd'), lines:[], default_files:[js.exec_dir + 'gstart.lrd']},
+	dirt:{file:new File(settings.file_prefix+'dirt.lrd'), lines:[]}
+};
 
 // TODO: This is obviously silly.
 function validate_user(user, pass)
@@ -176,7 +179,7 @@ function handle_request() {
 				sock.writeln('OK');
 				break;
 			case 'WriteMail':
-				mf = new File(settings.mail_prefix +'mail'+sock.LORD.record+'.lrd');
+				mf = new File(settings.file_prefix +'mail'+sock.LORD.record+'.lrd');
 				if (!mf.open('a')) {
 					sock.writeln('Unable to send mail');
 					break;
@@ -187,6 +190,30 @@ function handle_request() {
 				break;
 			case 'LogEntry':
 				logit(data);
+				sock.writeln('OK');
+				break;
+			case 'AddToConversation':
+				tmph = data.split(/[\r?\n]/);
+
+				if (sock.LORD.conv === 'dirt')
+					conversations.dirt.lines = [];
+				tmph.forEach(function(l) {
+					conversations[sock.LORD.conv].lines.push(l);
+				});
+				switch(sock.LORD.conv) {
+					case 'bar':
+					case 'darkbar':
+						while (conversations[sock.LORD.conv].lines.length > 18)
+							conversations[sock.LORD.conv].lines.shift();
+						break;
+					case 'garden':
+						while (conversations[sock.LORD.conv].lines.length > 20)
+							conversations[sock.LORD.conv].lines.shift();
+						break;
+				}
+				conversations[sock.LORD.conv].file.position = 0;
+				conversations[sock.LORD.conv].file.truncate(0);
+				conversations[sock.LORD.conv].file.writeAll(conversations[sock.LORD.conv].lines);
 				sock.writeln('OK');
 				break;
 			default:
@@ -250,6 +277,34 @@ function handle_request() {
 				return undefined;
 			}
 			return new Date(tmpp);
+		}
+
+		function get_conversation(sock, prequest) {
+			var tmpp = prequest.split(' ');
+
+			if (tmpp.length !== 2)
+				return false;
+			if (Object.keys(conversations).indexOf(tmpp[1]) === -1)
+				return false;
+			tmpp = conversations[tmpp[1]].lines.join('\n');
+			sock.write('Conversation '+tmpp.length+'\r\n'+tmpp+'\r\n');
+			return true;
+		}
+
+		function add_conversation(sock, prequest) {
+			var tmpp = prequest.split(' ');
+
+			if (tmpp.length !== 3)
+				return false;
+			if (Object.keys(conversations).indexOf(tmpp[1]) === -1)
+				return false;
+			sock.LORD.conv = tmpp[1];
+			tmpp = parse_pending(sock, prequest, 3);
+			if (tmpp === undefined)
+				return false;
+			sock.LORD.cmd = cmd;
+			sock.LORD.pending = tmpp + 2;
+			return true;
 		}
 
 		function send_log(sock, start, end) {
@@ -340,6 +395,13 @@ function handle_request() {
 					tmph = validate_record(sock, request, 2, true);
 					if (tmph === undefined)
 						return false;
+					// Check if on another connection...
+					socks.forEach(function(s) {
+						if (s.LORD !== undefined && s.LORD.player_on === tmph)
+							tmph = undefined;
+					});
+					if (tmph === undefined)
+						return false;
 					sock.LORD.player_on = tmph;
 					sock.writeln('OK');
 					break;
@@ -347,7 +409,7 @@ function handle_request() {
 					tmph = validate_record(sock, request, 2, true);
 					if (tmph === undefined)
 						return false;
-					if (file_exists(settings.mail_prefix +'mail'+tmph+'.lrd'))
+					if (file_exists(settings.file_prefix +'mail'+tmph+'.lrd'))
 						sock.writeln('Yes');
 					else
 						sock.writeln('No');
@@ -356,7 +418,7 @@ function handle_request() {
 					tmph = validate_record(sock, request, 2, true);
 					if (tmph === undefined)
 						return false;
-					mf = settings.mail_prefix +'mail'+tmph+'.lrd';
+					mf = settings.file_prefix +'mail'+tmph+'.lrd';
 					tmph = file_size(mf);
 					if (tmph === -1)
 						sock.write('Mail 0\r\n\r\n');
@@ -416,6 +478,15 @@ function handle_request() {
 						return false;
 					send_log(sock, tmph, tmph2);
 					break;
+				// TODO: All the various places to converse... bar, darkhorse, flowers, dirt, etc...
+				case 'GetConversation':
+					if (!get_conversation(sock, request))
+						return false;
+					break;
+				case 'AddToConversation':
+					if (!add_conversation(sock, request))
+						return false;
+					break;
 				case 'WriteMail':
 					tmph = validate_record(sock, request, 3, false);
 					if (tmph === undefined)
@@ -445,7 +516,6 @@ function handle_request() {
 					sock.LORD.cmd = cmd;
 					sock.LORD.pending = tmph + 2;
 					break;
-				// TODO: All the various places to converse... bar, darkhorse, flowers, dirt, etc...
 				default:
 					return false;
 			}
@@ -517,8 +587,8 @@ function main() {
 		def:''
 	});
 
-	if (this.server !== undefined)
-		sock = this.server.socket;
+	if (js.global.server !== undefined)
+		sock = js.global.server.socket;
 	else
 		sock = new ListeningSocket(settings.hostnames, settings.port, 'LORD', {retry_count:settings.retry_count, retry_delay:settings.retry_delay});
 	if (sock === null)
@@ -571,6 +641,15 @@ function main() {
 	}
 	for (idx = 0; idx < Server_State_Def.length; idx++)
 		swhitelist.push(Server_State_Def[idx].prop);
+	Object.keys(conversations).forEach(function(c) {
+		if ((!file_exists(conversations[c].file.name)) && conversations[c].default_files !== undefined) {
+			file_copy(conversations[c].default_files[random(conversations[c].default_files.length)], conversations[c].file.name);
+		}
+		if (!conversations[c].file.open('a+'))
+			throw('Unable to open '+conversations[c].file.name);
+		conversations[c].file.position = 0;
+		conversations[c].lines = conversations[c].file.readAll();
+	});
 
 	while(true) {
 		var ready;
