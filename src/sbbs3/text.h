@@ -839,6 +839,7 @@ enum {
 	,LoggingOn
 	,QWKSettingsUtf8
 	,MsgPostedToYouVia
+	,Unlimited
 
 	,TOTAL_TEXT
 };
