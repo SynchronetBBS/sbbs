@@ -1211,11 +1211,11 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 		}
 		result = votemsg(&cfg, &smb, &msg, notice, text[VoteNoticeFmt]);
 		if(result == SMB_DUPE_MSG)
-			lprintf(LOG_DEBUG, "Duplicate vote-msg from %s", qnet_id);
+			lprintf(LOG_DEBUG, "Duplicate vote-msg (%s) from %s", msg.id, qnet_id);
 		else if(result != SMB_SUCCESS) {
 			if(hubnum >= 0)
-				lprintf(LOG_DEBUG, "Error %s (%d) writing %s vote-msg to %s"
-					,smb.last_error, result, qnet_id, smb.file);
+				lprintf(LOG_DEBUG, "Error %s (%d) writing %s vote-msg (%s) to %s"
+					,smb.last_error, result, qnet_id, msg.id, smb.file);
 			else
 				errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
 		}
@@ -1224,7 +1224,8 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 		smb_hfield_str(&msg, RFC822MSGID, section + 6);
 		if((result = smb_addpollclosure(&smb, &msg, smb_storage_mode(&cfg, &smb))) != SMB_SUCCESS) {
 			if(hubnum >= 0)
-				lprintf(LOG_DEBUG, "Error %s (%d) writing poll-close-msg to %s", smb.last_error, result, smb.file);
+				lprintf(LOG_DEBUG, "Error %s (%d) writing poll-close-msg (%s) to %s"
+					,smb.last_error, result, msg.id, smb.file);
 			else
 				errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
 		}
