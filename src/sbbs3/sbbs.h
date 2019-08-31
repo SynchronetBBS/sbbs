@@ -327,7 +327,9 @@ public:
 	char	client_ident[128];
 	char	client_ipaddr[INET6_ADDRSTRLEN];
 	char	local_addr[INET6_ADDRSTRLEN];
+#ifdef USE_CRYPTLIB
 	CRYPT_SESSION	ssh_session;
+#endif
 	int		session_channel;
 	bool	ssh_mode;
 	SOCKET	passthru_socket;
@@ -425,7 +427,6 @@ public:
 	int 	nodefile;		/* File handle for node.dab */
 	pthread_mutex_t	nodefile_mutex;
 	int		node_ext;		/* File handle for node.exb */
-	int 	inputfile;		/* File handle to use for input */
 
 							/* Batch download queue */
 	char 	**batdn_name;	/* Filenames */
