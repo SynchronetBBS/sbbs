@@ -59,7 +59,7 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 
 	if(node!=&thisnode)
 		memset(node,0,sizeof(node_t));
-	sprintf(str,"%snode.dab",cfg.ctrl_dir);
+	SAFEPRINTF(str,"%snode.dab",cfg.ctrl_dir);
 	pthread_mutex_lock(&nodefile_mutex);
 	if(nodefile==-1) {
 		if((nodefile=nopen(str,O_RDWR|O_DENYNONE))==-1) {
@@ -101,7 +101,7 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	}
 	pthread_mutex_unlock(&nodefile_mutex);
 	if(count>(LOOP_NODEDAB/2)) {
-		sprintf(str,"NODE.DAB (node %d) COLLISION - Count: %d"
+		SAFEPRINTF2(str,"NODE.DAB (node %d) COLLISION - Count: %d"
 			,number+1, count);
 		logline(LOG_WARNING,"!!",str); 
 	}
@@ -219,7 +219,7 @@ int sbbs_t::getnmsg(bool clearline)
 		putnodedat(cfg.node_num,&thisnode);
 	}
 
-	sprintf(str,"%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
+	SAFEPRINTF2(str,"%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
 	if(flength(str)<1L)
 		return(0);
 	if((file=nopen(str,O_RDWR))==-1) {
@@ -271,7 +271,7 @@ int sbbs_t::getnodeext(uint number, char *ext)
 		return(-1); 
 	}
 
-	sprintf(str,"%snode.exb",cfg.ctrl_dir);
+	SAFEPRINTF(str,"%snode.exb",cfg.ctrl_dir);
 	if((node_ext=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
 		memset(ext,0,128);
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_DENYNONE);
@@ -299,7 +299,7 @@ int sbbs_t::getnodeext(uint number, char *ext)
 		return(-2);
 	}
 	if(count>(LOOP_NODEDAB/2)) {
-		sprintf(str,"NODE.EXB (node %d) COLLISION - Count: %d"
+		SAFEPRINTF2(str,"NODE.EXB (node %d) COLLISION - Count: %d"
 			,number+1, count);
 		logline("!!",str); 
 	}
@@ -332,7 +332,7 @@ int sbbs_t::getsmsg(int usernumber, bool clearline)
 		} 
 	}
 
-	sprintf(str,"%smsgs/%4.4u.msg",cfg.data_dir,usernumber);
+	SAFEPRINTF2(str,"%smsgs/%4.4u.msg",cfg.data_dir,usernumber);
 	if(flength(str)<1L)
 		return(0);
 	if((file=nopen(str,O_RDWR))==-1) {
