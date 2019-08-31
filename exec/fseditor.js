@@ -5,6 +5,10 @@ load("sbbsdefs.js");
 
 const REVISION = "$Revision$".split(' ')[1];
 require("text.js", 'FileNotReceived');
+
+if(!bbs.mods.userprops)
+	bbs.mods.userprops = load({}, "userprops.js");
+
 var line=new Array();
 var quote_line=new Array();
 var xpos=0;									/* Current xpos of insert point */
@@ -32,7 +36,6 @@ var quote_top;								/* Line number of the first quote line */
 var quote_bottom;							/* Line number of the last quote line */
 var drop_file;
 var info;
-var tab_width=8;
 
 // Message header display format
 var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.*s\1>\r\n";
@@ -46,10 +49,14 @@ if(!options)
 	options = {};
 if(options.utf8_support === undefined)
 	options.utf8_support = argv.indexOf('-utf8') >= 0;
+if(!options.default_tabstop)
+	options.default_tabstop = 8;
 
 var pmode = 0;
 if(options.utf8_support && console.term_supports(USER_UTF8))
 	pmode |= P_UTF8;
+
+var tab_width = bbs.mods.userprops.get("fseditor", "tabstop", options.default_tabstop);
 
 function Line(copyfrom)
 {
@@ -2007,5 +2014,7 @@ if(edit_top==5) {
 		drop_file.close();
 	}
 }
+if(tab_width != options.default_tabstop)
+	bbs.mods.userprops.set("fseditor", "tabstop", tab_width);
 console.clear();
 exit(exit_code);
