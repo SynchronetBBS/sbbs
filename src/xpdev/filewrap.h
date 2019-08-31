@@ -38,7 +38,7 @@
 #ifndef _FILEWRAP_H
 #define _FILEWRAP_H
 
-#include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
+#include "wrapdll.h"	/* DLLEXPORT */
 #include "gen_defs.h"	/* int32_t, int64_t */
 
 #include <sys/stat.h>	/* S_IREAD and S_IWRITE (for use with sopen) */
@@ -162,29 +162,29 @@ extern "C" {
 #endif
 
 #if !defined(__BORLANDC__) && !defined(__WATCOMC__)
-	DLLEXPORT int	DLLCALL	lock(int fd, off_t pos, off_t len);
-	DLLEXPORT int	DLLCALL unlock(int fd, off_t pos, off_t len);
+	DLLEXPORT int	lock(int fd, off_t pos, off_t len);
+	DLLEXPORT int	unlock(int fd, off_t pos, off_t len);
 #endif
 
 #if defined(_WIN32 )
-	DLLEXPORT long	DLLCALL getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream);
+	DLLEXPORT long	getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream);
 #endif
 
 #if !defined(__BORLANDC__) && defined(__unix__)
-	DLLEXPORT int		DLLCALL sopen(const char* fn, int sh_access, int share, ...);
-	DLLEXPORT off_t		DLLCALL filelength(int fd);
+	DLLEXPORT int		sopen(const char* fn, int sh_access, int share, ...);
+	DLLEXPORT off_t		filelength(int fd);
 #endif
 
 #if defined(__unix__)
-	DLLEXPORT FILE * DLLCALL _fsopen(const char *pszFilename, const char *pszMode, int shmode);
+	DLLEXPORT FILE * _fsopen(const char *pszFilename, const char *pszMode, int shmode);
 #endif
 
 #if defined(_MSC_VER) && (_MSC_VER < 1300)	/* missing prototypes */
-	DLLEXPORT int		DLLCALL	_fseeki64(FILE*, int64_t, int origin);
-	DLLEXPORT int64_t	DLLCALL _ftelli64(FILE*);
+	DLLEXPORT int		_fseeki64(FILE*, int64_t, int origin);
+	DLLEXPORT int64_t	_ftelli64(FILE*);
 #endif
 
-DLLEXPORT time_t	DLLCALL filetime(int fd);
+DLLEXPORT time_t	filetime(int fd);
 
 #if defined(__cplusplus)
 }
