@@ -62,8 +62,8 @@ int togglechat(scfg_t *cfg, int node_num, node_t *node, int on)
 {
     static int  org_act;
 
-	int nodefile;
-	if(getnodedat(cfg,node_num,node,&nodefile)) {
+	int nodefile = -1;
+	if(getnodedat(cfg,node_num,node,TRUE,&nodefile)) {
 		return(FALSE);
 	}
     if(on) {
@@ -75,7 +75,7 @@ int togglechat(scfg_t *cfg, int node_num, node_t *node, int on)
         node->action=org_act;
         node->misc&=~NODE_LCHAT;
     }
-	putnodedat(cfg,node_num,node,nodefile);
+	putnodedat(cfg,node_num,node,TRUE,nodefile);
     return(TRUE);
 }
 
@@ -142,7 +142,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 		return(-1);
 	}
 
-	if(getnodedat(cfg,nodenum,node,NULL))
+	if(getnodedat(cfg,nodenum,node,FALSE,NULL))
 		return(-1);
 
 	username(cfg,node->useron,usrname);
@@ -183,7 +183,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 			if(timecallback != NULL)
 				timecallback();
 
-			if(getnodedat(cfg,nodenum,node,NULL)!=0)
+			if(getnodedat(cfg,nodenum,node,FALSE,NULL)!=0)
 				break;
 			last_nodechk=now;
 		}

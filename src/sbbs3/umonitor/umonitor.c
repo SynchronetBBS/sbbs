@@ -99,7 +99,7 @@ void allocfail(uint size)
 }
 
 void node_toggles(scfg_t *cfg,int nodenum)  {
-	int nodefile;
+	int nodefile = -1;
 	char**	opt;
 	int		i,j;
 	node_t	node;
@@ -126,7 +126,7 @@ void node_toggles(scfg_t *cfg,int nodenum)  {
 	                "                         off.\n\n"
 	                "`[Note] `These toggles take effect immediately.";
 	while(save==0) {
-		if(getnodedat(cfg,nodenum,&node,&nodefile)) {
+		if(getnodedat(cfg,nodenum,&node,FALSE,&nodefile)) {
 			uifc.msg("Error reading node data!");
 			break;
 		}
@@ -170,7 +170,7 @@ void node_toggles(scfg_t *cfg,int nodenum)  {
 				uifc.msg("Option not implemented");
 				continue;
 		}
-		putnodedat(cfg,nodenum,&node,nodefile);
+		putnodedat(cfg,nodenum,&node,FALSE,nodefile);
 	}
 }
 
@@ -221,7 +221,7 @@ int sendmessage(scfg_t *cfg, int nodenum,node_t *node)  {
 
 	uifc.input(WIN_MID|WIN_SAV,0,0,"Telegram",str2,58,K_WRAP|K_MSG);
 	sprintf(str,"\1n\1y\1hMessage From Sysop:\1w %s\r\n",str2);
-	if(getnodedat(cfg,nodenum,node,NULL))
+	if(getnodedat(cfg,nodenum,node,FALSE,NULL))
 		return(-1);
 	if(node->useron==0)
 		return(-1);
@@ -230,13 +230,13 @@ int sendmessage(scfg_t *cfg, int nodenum,node_t *node)  {
 }
 
 int clearerrors(scfg_t *cfg, int nodenum, node_t *node) {
-	int nodefile;
-	if(getnodedat(cfg,nodenum,node,&nodefile)) {
+	int nodefile = -1;
+	if(getnodedat(cfg,nodenum,node,TRUE,&nodefile)) {
 		uifc.msg("getnodedat() failed! (Nothing done)");
 		return(-1);
 	}
 	node->errors=0;
-	putnodedat(cfg,nodenum,node,nodefile);
+	putnodedat(cfg,nodenum,node,TRUE,nodefile);
 	uifc.msg("Error count cleared for this node.");
 	return(0);
 }
@@ -327,7 +327,7 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 	time_t	t;
 	int		shownode=1;
 
-	if(getnodedat(cfg,nodenum,node,NULL)) {
+	if(getnodedat(cfg,nodenum,node,FALSE,NULL)) {
 		shownode=0;
 	}
 	else {
@@ -790,7 +790,7 @@ int main(int argc, char** argv)  {
 	char	title[256];
 	int		i,j;
 	node_t	node;
-	int		nodefile;
+	int		nodefile = -1;
 	box_t	boxch;
 	scfg_t	cfg;
 	int		done;
@@ -975,7 +975,7 @@ USAGE:
 	while(1) {
 		strcpy(mopt[0],"System Options");
 		for(i=1;i<=cfg.sys_nodes;i++) {
-			if((j=getnodedat(&cfg,i,&node,NULL)))
+			if((j=getnodedat(&cfg,i,&node,FALSE,NULL)))
 				sprintf(mopt[i],"Error reading node data (%d)!",j);
 			else {
 				nodestatus(&cfg, &node, str, 71);
@@ -1156,7 +1156,7 @@ USAGE:
 		}
 
 		if(j==-2-CIO_KEY_F(10)) {	/* Chat */
-			if(getnodedat(&cfg,main_dflt,&node,NULL)) {
+			if(getnodedat(&cfg,main_dflt,&node,FALSE,NULL)) {
 				uifc.msg("Error reading node data!");
 				continue;
 			}
@@ -1176,27 +1176,27 @@ USAGE:
 		}
 
 		if(j==-2-CTRL('l')) {	/* Lock node */
-			if(getnodedat(&cfg,main_dflt,&node,&nodefile)) {
+			if(getnodedat(&cfg,main_dflt,&node,TRUE,&nodefile)) {
 				uifc.msg("Error reading node data!");
 				continue;
 			}
 			node.misc^=NODE_LOCK;
-			putnodedat(&cfg,main_dflt,&node,nodefile);
+			putnodedat(&cfg,main_dflt,&node,FALSE,nodefile);
 			continue;
 		}
 
 		if(j==-2-CTRL('r')) {	/* Rerun node */
-			if(getnodedat(&cfg,main_dflt,&node,&nodefile)) {
+			if(getnodedat(&cfg,main_dflt,&node,TRUE,&nodefile)) {
 				uifc.msg("Error reading node data!");
 				continue;
 			}
 			node.misc^=NODE_RRUN;
-			putnodedat(&cfg,main_dflt,&node,nodefile);
+			putnodedat(&cfg,main_dflt,&node,FALSE,nodefile);
 			continue;
 		}
 
 		if(j==-2-CTRL('d')) {	/* Down node */
-			if(getnodedat(&cfg,main_dflt,&node,&nodefile)) {
+			if(getnodedat(&cfg,main_dflt,&node,TRUE,&nodefile)) {
 				uifc.msg("Error reading node data!");
 				continue;
 			}
@@ -1208,17 +1208,17 @@ USAGE:
 				else
 					node.status=NODE_WFC;
 			}
-			putnodedat(&cfg,main_dflt,&node,nodefile);
+			putnodedat(&cfg,main_dflt,&node,FALSE,nodefile);
 			continue;
 		}
 
 		if(j==-2-CTRL('i')) {	/* Interrupt node */
-			if(getnodedat(&cfg,main_dflt,&node,&nodefile)) {
+			if(getnodedat(&cfg,main_dflt,&node,TRUE,&nodefile)) {
 				uifc.msg("Error reading node data!");
 				continue;
 			}
 			node.misc^=NODE_INTR;
-			putnodedat(&cfg,main_dflt,&node,nodefile);
+			putnodedat(&cfg,main_dflt,&node,FALSE,nodefile);
 			continue;
 		}
 
