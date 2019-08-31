@@ -86,6 +86,11 @@ off_t DLLCALL filelength(int fd)
 	return(st.st_size);
 }
 
+// See https://patchwork.kernel.org/patch/9289177/
+#if defined(F_OFD_SETLK) && defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS != 64
+	#undef F_OFD_SETLK
+#endif
+
 /* Sets a lock on a portion of a file */
 int DLLCALL lock(int fd, off_t pos, off_t len)
 {
