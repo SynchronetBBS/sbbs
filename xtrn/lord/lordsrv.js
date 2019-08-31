@@ -34,6 +34,7 @@ function validate_user(user, pass)
 
 // TODO: Blocking Locks (?)
 // TODO: socket_select with a read array and a write array
+// TOD Online battles!  Rawr!
 function handle_request() {
 	var buf = '';
 	var tmp;
@@ -41,7 +42,6 @@ function handle_request() {
 	var req;
 
 	function close_sock(sock) {
-		// TODO: Clear player.on...
 		log("Closed connection "+sock.descriptor+" from "+sock.remote_ip_address+'.'+sock.remote_port);
 		if (sock.LORD !== undefined) {
 			if (sock.LORD.player_on !== undefined) {
@@ -570,7 +570,7 @@ function main() {
 		throw('Unable to access '+sfile.file.name+' len: '+sfile.length);
 	}
 	for (idx = 0; idx < Server_State_Def.length; idx++)
-		whitelist.push(Server_State_Def[idx].prop);
+		swhitelist.push(Server_State_Def[idx].prop);
 
 	while(true) {
 		var ready;
