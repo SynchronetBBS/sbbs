@@ -4996,6 +4996,11 @@ void DLLCALL bbs_thread(void* arg)
 	lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
 	lprintf(LOG_DEBUG,"SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
 
+#ifdef _DEBUG
+	lprintf(LOG_DEBUG, "sizeof: int=%d, long=%d, off_t=%d, time_t=%d"
+		,(int)sizeof(int), (int)sizeof(long), (int)sizeof(off_t), (int)sizeof(time_t));
+#endif
+
     if(startup->first_node<1 || startup->first_node>startup->last_node) {
     	lprintf(LOG_CRIT,"!ILLEGAL node configuration (first: %d, last: %d)"
         	,startup->first_node, startup->last_node);
