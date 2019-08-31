@@ -528,6 +528,12 @@ var State_Def = [
 		name:'Laster Person to Converse at Bar',
 		type:'SignedInteger16',
 		def:0
+	},
+	{
+		prop:'forest_gold',
+		name:'Gold Lost in Forest',
+		type:'SignedInteger',
+		def:100
 	}
 ];
 
