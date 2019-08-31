@@ -338,6 +338,22 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return str;
 	}
 
+	if(strcmp(sp, "PWDAYS") == 0) {
+		if(cfg.sys_pwdays) {
+			safe_snprintf(str, maxlen, "%u", cfg.sys_pwdays);
+			return str;
+		}
+		return text[Unlimited];
+	}
+
+	if(strcmp(sp, "AUTODEL") == 0) {
+		if(cfg.sys_autodel) {
+			safe_snprintf(str, maxlen, "%u", cfg.sys_autodel);
+			return str;
+		}
+		return text[Unlimited];
+	}
+
 	if(strcmp(sp, "PAGER") == 0)
 		return (thisnode.misc&NODE_POFF) ? text[Off] : text[On];
 
@@ -594,7 +610,13 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return(str);
 	}
 
-	if(!strcmp(sp,"MEMO"))
+	if(strcmp(sp, "PWAGE") == 0) {
+		time_t age = time(NULL) - useron.pwmod;
+		safe_snprintf(str, maxlen, "%ld", (long)(age/(24*60*60)));
+		return str;
+	}
+
+	if(strcmp(sp, "PWDATE") == 0 || strcmp(sp, "MEMO") == 0)
 		return(unixtodstr(&cfg,useron.pwmod,str));
 
 	if(!strcmp(sp,"SEC") || !strcmp(sp,"SECURITY")) {
