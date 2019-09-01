@@ -3568,7 +3568,7 @@ static void smtp_thread(void* arg)
 					char* np = strdup(p);
 					if(np != NULL) {
 						mimehdr_value_decode(np, &msg);
-						parse_mail_address(p 
+						parse_mail_address(np 
 							,sender		,sizeof(sender)-1
 							,sender_addr,sizeof(sender_addr)-1);
 						free(np);
