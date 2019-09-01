@@ -136,6 +136,14 @@ function handle_request() {
 			if (from.kids > 32000) {
 				from.kids = 32000;
 			}
+			if (from.name !== undefined && to.name !== undefined) {
+				if (from.name !== to.name) {
+					if (from.name === sdata.latesthero) {
+						sdata.latesthero = to.name;
+						sdata.put();
+					}
+				}
+			}
 			Player_Def.forEach(function(o) {
 				if (to[o.prop] !== undefined)
 					to[o.prop] = from[o.prop];
@@ -202,6 +210,10 @@ function handle_request() {
 				});
 				switch(sock.LORD.conv) {
 					case 'bar':
+						if (sock.LORD.player_on !== undefined) {
+							sdata.last_bar = sock.LORD.player_on;
+							sdata.put();
+						}
 					case 'darkbar':
 						while (conversations[sock.LORD.conv].lines.length > 18)
 							conversations[sock.LORD.conv].lines.shift();
@@ -228,8 +240,11 @@ function handle_request() {
 		var cmd;
 		var mf;
 
-		function validate_record(sock, vrequest, fields, bbs_check) {
+		function validate_record(sock, vrequest, fields, bbs_check, allow_negone) {
 			var tmpv = vrequest.split(' ');
+
+			if (allow_negone === undefined)
+				allow_negone = false;
 			if (tmpv.length !== fields) {
 				return undefined;
 			}
@@ -237,7 +252,15 @@ function handle_request() {
 			if (isNaN(tmpv)) {
 				return undefined;
 			}
-			if (pdata.length === 0 || tmpv < 0 || tmpv >= pdata.length) {
+			if (allow_negone) {
+				if (tmpv < -1)
+					return undefined;
+			}
+			else {
+				if (tmpv < 0)
+					return undefined;
+			}
+			if (pdata.length === 0 || tmpv >= pdata.length) {
 				return undefined;
 			}
 			if (bbs_check) {
@@ -391,15 +414,27 @@ function handle_request() {
 					tmph = JSON.stringify(sdata, swhitelist);
 					sock.write('StateData '+tmph.length+'\r\n'+tmph+'\r\n');
 					break;
+				case 'ClearPlayer':
+					if (request.indexOf(' ') > -1)
+						return false;
+					delete sock.LORD.player_on;
+					sock.LORD.cleared = true;
+					sock.writeln('OK');
+					break;
 				case 'SetPlayer':
 					tmph = validate_record(sock, request, 2, true);
 					if (tmph === undefined)
 						return false;
 					// Check if on another connection...
-					socks.forEach(function(s) {
-						if (s.LORD !== undefined && s.LORD.player_on === tmph)
-							tmph = undefined;
-					});
+					if (sock.LORD.cleared === undefined) {
+						socks.forEach(function(s) {
+							if (s.LORD !== undefined && s.LORD.player_on === tmph)
+								tmph = undefined;
+						});
+					}
+					else {
+						delete sock.LORD.cleared;
+					}
 					if (tmph === undefined)
 						return false;
 					sock.LORD.player_on = tmph;
@@ -462,6 +497,72 @@ function handle_request() {
 						return false;
 					}
 					sock.writeln(pdata.length);
+					break;
+				case 'NewHero':
+					tmph = request.split(' ', 2);
+					if (tmph.length !== 2)
+						return false;
+					if (tmph[1].length < 3)
+						return false;
+					sdata.latesthero = tmph[1];
+					sdata.put;
+					sock.writeln('OK');
+					break;
+				case 'SethMarried':
+					tmph = validate_record(sock, request, 2, true, true);
+					if (tmph === undefined)
+						return false;
+					if (tmph === -1 && sdata.married_to_seth >= 0) {
+						if (pdata[sdata.married_to_seth].SourceSystem !== sock.LORD.bbs)
+							return false;
+					}
+					if (tmph >= 0) {
+						if (sdata.married_to_seth !== -1) {
+							sock.writeln('No');
+							break;
+						}
+						if (pdata[tmph].SourceSystem !== sock.LORD.bbs)
+							return false;
+					}
+					sdata.married_to_seth = tmph;
+					sock.writeln('Yes');
+					break;
+				case 'AddForestGold':
+					tmph = request.match(/^AddForestGold ([0-9]+)$/);
+					if (tmph === null)
+						return false;
+					sdata.forest_gold += parseInt(tmph[1], 10);
+					sdata.put();
+					break;
+				case 'GetForestGold':
+					tmph = request.match(/^GetForestGold ([0-9]+)$/);
+					if (tmph === null)
+						return false;
+					psock.writeln('ForestGold '+sdata.forest_gold);
+					tmph = parseInt(tmph[1], 10);
+					if (tmph < 100)
+						tmph = 100;
+					sdata.forest_gold = tmph;
+					sdata.put();
+					break;
+				case 'VioletMarried':
+					tmph = validate_record(sock, request, 2, true, true);
+					if (tmph === undefined)
+						return false;
+					if (tmph === -1 && sdata.married_to_violet >= 0) {
+						if (pdata[sdata.married_to_violet].SourceSystem !== sock.LORD.bbs)
+							return false;
+					}
+					if (tmph >= 0) {
+						if (sdata.married_to_violet !== -1) {
+							sock.writeln('No');
+							break;
+						}
+						if (pdata[tmph].SourceSystem !== sock.LORD.bbs)
+							return false;
+					}
+					sdata.married_to_violet = tmph;
+					sock.writeln('Yes');
 					break;
 				case 'GetLogFrom':
 					tmph = parse_date(sock, request, 2);
