@@ -12,6 +12,7 @@ var Arag_Defs = [
 ];
 
 var astate;
+var as;
 
 function menu()
 {
@@ -160,7 +161,6 @@ function menu()
 
 function chkmaint()
 {
-	var as;
 	var i;
 
 	as = new RecordFile(js.exec_dir+'aragtime.dat', Arag_Defs);
