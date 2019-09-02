@@ -1341,6 +1341,11 @@ int main(int argc, char **argv, char** env)
 
 #ifdef JSDOOR
 	SAFECOPY(scfg.temp_dir,"./temp");
+	scfg.tls_certificate = -1;
+	strcpy(scfg.sys_pass, "ThisIsNotHowToDoSecurity");
+	strcpy(scfg.sys_name, "JSDoor");
+	strcpy(scfg.sys_inetaddr, "example.com");
+	scfg.prepped = TRUE;
 #else
 	if(change_cwd && chdir(scfg.ctrl_dir)!=0)
 		fprintf(errfp,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
