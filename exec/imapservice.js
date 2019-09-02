@@ -1658,7 +1658,7 @@ var authenticated_command_handlers = {
 			if(typeof(items)!="object")
 				items=[items];
 			base=new MsgBase(sub);
-			if(base == undefined || (!base.open())) {
+			if(base == undefined || sub=="NONE!!!" || (!base.open())) {
 				tagged(tag, "NO", "Can't find your mailbox");
 				return;
 			}
