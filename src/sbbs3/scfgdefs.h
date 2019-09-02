@@ -615,7 +615,6 @@ typedef struct
 
 	// Run-time state information (not configuration)
 	int				tls_certificate;
-	int				nodefile;
 
 } scfg_t;
 
