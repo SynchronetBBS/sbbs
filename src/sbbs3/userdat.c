@@ -489,8 +489,7 @@ int is_user_online(scfg_t* cfg, uint usernumber)
 			|| node.status==NODE_LOGON) && node.useron==usernumber)
 			return i;
 	}
-	if(file >= 0)
-		close(file);
+	CLOSE_OPEN_FILE(file);
 	return 0;
 }
 
@@ -846,7 +845,8 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, BOOL closeit, int file)
 		return -1;
 	if(!VALID_CFG(cfg)
 		|| node==NULL || number<1 || number>cfg->sys_nodes) {
-		close(file);
+		if(closeit)
+			close(file);
 		return(-1);
 	}
 
