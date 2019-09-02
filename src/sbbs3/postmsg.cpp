@@ -35,6 +35,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "utf8.h"
 
 int msgbase_open(scfg_t* cfg, smb_t* smb, unsigned int subnum, int* storage, long* dupechk_hashes, uint16_t* xlat)
 {
@@ -455,6 +456,11 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 		smb_hfield_str(msg,SENDERSERVER,server);
  
 	add_msg_ids(cfg, smb, msg, remsg);
+
+	if((msg->to != NULL && !str_is_ascii(msg->to) && utf8_str_is_valid(msg->to))
+		|| (msg->from != NULL && !str_is_ascii(msg->from) && utf8_str_is_valid(msg->from))
+		|| (msg->subj != NULL && !str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj)))
+		msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
 
 	if((i=smb_addmsg(smb,msg,smb_storage_mode(cfg, smb),dupechk_hashes,xlat,(uchar*)msgbuf, /* tail: */NULL))==SMB_SUCCESS
 		&& msg->to!=NULL	/* no recipient means no header created at this stage */) {
