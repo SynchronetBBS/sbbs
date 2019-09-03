@@ -19,7 +19,6 @@
 /*jslint for*/
 
 require('attribute.js', 'Attribute');
-require('dorkit.js', 'dk');
 
 function Graphic(w,h,attr,ch, puttext)
 {

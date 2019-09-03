@@ -108,7 +108,7 @@ Screen.prototype.print=function(str) {
 	function param_defaults(params, defaults) {
 		var pdi;
 
-		for (pdi=0; i<defaults.length; pdi += 1) {
+		for (pdi=0; pdi<defaults.length; pdi += 1) {
 			if (params[pdi] === undefined || params[pdi].length === 0) {
 				params[pdi]=defaults[pdi];
 			}
