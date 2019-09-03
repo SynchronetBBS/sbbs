@@ -189,7 +189,13 @@ function handle_request() {
 			var line;
 			var now = new Date();
 			var nv = now.valueOf();
+			var oldest = new Date();
+			oldest.setHours(0, 0, 0, 0);
+			oldest.setDate(start.getDate() - 2);
 
+			while(logdata.length > 0 && logdata[0].date < oldest) {
+				logdata.shift();
+			}
 			while(lines.length) {
 				line = lines.shift();
 				lfile.writeln(nv+':'+line);
@@ -406,7 +412,6 @@ function handle_request() {
 				ent = 0;
 			log += happenings[ent]+'\n'+'`.                                `2-`0=`2-`0=`2-`0=`2-\n';
 
-			// TODO: Log trimming in memory...
 			logdata.forEach(function(l) {
 				if (l.date >= start && (end === undefined || l.date < end)) {
 					log += l.line+'\n';
@@ -959,6 +964,8 @@ function main() {
 	var lmatch;
 	var sock;
 	var idx;
+	var ldate;
+	var oldest;
 
 	SPlayer_Def.push({
 		prop:'SourceSystem',
@@ -1019,12 +1026,19 @@ function main() {
 	if (!lfile.open('a+'))
 		throw('Unable to open logfile '+lfile.name);
 	lfile.position = 0;
+	// Calculate the oldest log entry we'll keep in memory.
+	oldest = new Date();
+	oldest.setHours(0, 0, 0, 0);
+	oldest.setDate(start.getDate() - 2);
 	while ((lline = lfile.readln()) !== null) {
 		lmatch = lline.match(/^([0-9]+):(.*)$/);
 		if (lmatch === null) {
 			throw('Invalid line in log: '+lline);
 		}
-		logdata.push({date:new Date(parseInt(lmatch[1], 10)), line:lmatch[2]});
+
+		ldate = new Date(parseInt(lmatch[1], 10));
+		if (ldate >= oldest)
+			logdata.push({date:ldate, line:lmatch[2]});
 	}
 	if (sfile.length < 1)
 		sdata = sfile.new();
