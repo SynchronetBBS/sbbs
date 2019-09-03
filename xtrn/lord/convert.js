@@ -506,15 +506,19 @@ function convert_menus(ltf, lef, lgf, ttf, from, to)
 					if (la !== attr && ((la & 0x70) !== (attr & 0x70) || ch !== ' ')) {
 						if (la === -1 || (la & 0x70) != (attr & 0x70)) {
 							nl += '`r'+['0','1','2','3','4','5','6','7'][(attr & 0x70)>>4];
+							if (la !== -1)
+								la = (la & 0x8f) | (attr & 0x70);
 						}
-						la = (la & 0x8f) | (attr & 0x70);
 						if (la === -1 || ((la & 0x8f) != (attr & 0x8f) && ch !== ' ')) {
 							nl += '`';
 							if (attr & 0x80)
 								nl += 'B';
 							nl += ['^', '1', '2','3','4','5','6','7','8','9','0','!','@','#','$','%'][attr & 0x0f];
-							la = (la & 0x70) | (attr & 0x8f);
+							if (la !== -1)
+								la = (la & 0x70) | (attr & 0x8f);
 						}
+						if (la === -1)
+							la = attr;
 					}
 					if (restspaces(s.graphic.puttext, (y*80+x)*2, 80-x, la))
 						break;
@@ -545,5 +549,5 @@ function convert_menus(ltf, lef, lgf, ttf, from, to)
 	});
 }
 
-//convert_menus(js.exec_dir + 'LORDTXT.DAT', js.exec_dir + 'LORDEXT.DAT', js.exec_dir + 'LGAMETXT.DAT', js.exec_dir + 'TRAINTXT.DAT', js.exec_dir + 'lordtxt.lrd', js.exec_dir + 'lordtxt.new');
+convert_menus(js.exec_dir + 'LORDTXT.DAT', js.exec_dir + 'LORDEXT.DAT', js.exec_dir + 'LGAMETXT.DAT', js.exec_dir + 'TRAINTXT.DAT', js.exec_dir + 'lordtxt.lrd', js.exec_dir + 'lordtxt.new');
 
