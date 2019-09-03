@@ -5,7 +5,6 @@ js.load_path_list.unshift(js.exec_dir+"load/");
 require('recorddefs.js', 'Player_Def');
 require('recordfile.js', 'RecordFile');
 
-var SPlayer_Def = Player_Def.slice();
 var settings = {
 	hostnames:['0.0.0.0', '::'],
 	port:0xdece,
@@ -13,7 +12,7 @@ var settings = {
 	retry_delay:15,
 	file_prefix:js.exec_dir + 's'
 };
-var pfile;
+var pfile = new RecordFile(settings.file_prefix+'player.dat', SPlayer_Def);;
 var sfile = new RecordFile(settings.file_prefix+'state.dat', Server_State_Def);
 var lfile = new File(settings.file_prefix+'logall.lrd');
 var socks;
@@ -191,7 +190,7 @@ function handle_request() {
 			var nv = now.valueOf();
 			var oldest = new Date();
 			oldest.setHours(0, 0, 0, 0);
-			oldest.setDate(start.getDate() - 2);
+			oldest.setDate(oldest.getDate() - 2);
 
 			while(logdata.length > 0 && logdata[0].date < oldest) {
 				logdata.shift();
@@ -967,26 +966,6 @@ function main() {
 	var ldate;
 	var oldest;
 
-	SPlayer_Def.push({
-		prop:'SourceSystem',
-		name:'Source Account',
-		type:'String:20',	// TODO: This is the max BBS ID length
-		def:''
-	});
-	SPlayer_Def.push({
-		prop:'InIGM',
-		name:'IGM name player is in',
-		type:'String:255',	// TODO: This can likely be shorter...
-		def:''
-	});
-	SPlayer_Def.push({
-		prop:'IGMCommand',
-		name:'Command-line for IGM player is in',
-		type:'String:255',	// TODO: This may need to be longer...
-		def:''
-	});
-	pfile = new RecordFile(settings.file_prefix+'player.dat', SPlayer_Def);
-
 	if (js.global.server !== undefined)
 		sock = js.global.server.socket;
 	else
@@ -1029,7 +1008,7 @@ function main() {
 	// Calculate the oldest log entry we'll keep in memory.
 	oldest = new Date();
 	oldest.setHours(0, 0, 0, 0);
-	oldest.setDate(start.getDate() - 2);
+	oldest.setDate(oldest.getDate() - 2);
 	while ((lline = lfile.readln()) !== null) {
 		lmatch = lline.match(/^([0-9]+):(.*)$/);
 		if (lmatch === null) {

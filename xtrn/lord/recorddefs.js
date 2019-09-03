@@ -351,6 +351,26 @@ var Player_Def = [
 	}
 ];
 
+var SPlayer_Def = Player_Def.slice();
+SPlayer_Def.push({
+	prop:'SourceSystem',
+	name:'Source Account',
+	type:'String:20',	// TODO: This is the max BBS ID length
+	def:''
+});
+SPlayer_Def.push({
+	prop:'InIGM',
+	name:'IGM name player is in',
+	type:'String:255',	// TODO: This can likely be shorter...
+	def:''
+});
+SPlayer_Def.push({
+	prop:'IGMCommand',
+	name:'Command-line for IGM player is in',
+	type:'String:255',	// TODO: This may need to be longer...
+	def:''
+});
+
 var Weapon_Armor_Def = [
 	{
 		prop:'name',
