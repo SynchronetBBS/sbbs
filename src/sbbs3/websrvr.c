@@ -6533,6 +6533,7 @@ static void cleanup(int code)
 		lprintf(LOG_INFO,"0000 Waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
 		while(protected_uint32_value(thread_count) > 1) {
 			mswait(100);
+			listSemPost(&log_list);
 		}
 		lprintf(LOG_INFO,"0000 Done waiting");
 	}
@@ -6620,7 +6621,7 @@ void http_logging_thread(void* arg)
 
 	lprintf(LOG_INFO,"HTTP logging thread started");
 
-	for(;;) {
+	while(!terminate_http_logging_thread) {
 		struct log_data *ld;
 		char	timestr[128];
 		char	sizestr[100];
@@ -7086,6 +7087,7 @@ void DLLCALL web_server(void* arg)
             			"terminate");
 					break;
 				}
+				listSemPost(&log_list);
 				mswait(100);
 			}
 			lprintf(LOG_INFO, "Done waiting for HTTP logging thread to terminate");
