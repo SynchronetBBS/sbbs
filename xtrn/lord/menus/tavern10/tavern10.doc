@@ -1,0 +1,53 @@
+TAVERN v1.0 Menus are copyright '95 Neo-Gen        
+    
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Well, Someone had to do it,heh? As many LORDTXT.DAT's are going around I'd
+Figure a LNETTXT.DAT would be nice.. and different. 
+
+<I>nstallion
+
+1- Backup or Rename your old LNETTXT.DAT.
+
+2-Copy Tavern10.dat to you LORDNET Directory as Lnettxt.dat
+
+3-Thank J.Master's for writing this.
+
+4-Do the wild chicken dance.
+
+.....Ok...So maybe you shouldn't do number foUR... +} (CyClops)
+
+<S>upport
+
+If for some reason this messes up then you can call my BBS- 
+
+Dantes Inferno
+(919) 633-1257
+SySop: HiTleR -Thats Me. =]
+
+Later,
+
+OH YEAH, One more thing if for some reason you have alot of menus for 
+LORDNET, then you can randomize them by using RANDLOOK.EXE. I know
+this is for LORDTXT.DAT's but just rename the file to LNETTXT.DAT!
+Yes,it thats simple. You'll need to make a batch file to run this..
+but take my advice if you only have 2 don't do this because it rarely
+picks the second one. 
+
+<E>xample
+
+LORDTXT.1 ---> Regular Menus. (put these in your lordnet dir.)
+LORDTXT.2 ---> My Menus. =]
+
+-Here's my Batch file.-
+
+@ECHO OFF
+CD\DOORS\LORDNET
+RANDLOOK 2
+COPY LORDTXT.DAT LNETTXT.DAT
+CD\DOORS\LORD
+C:\DOORS\LORDNET\LORDNET.EXE DOOR C:\DOORS\LORDNET *
+
+oH-Well... Thats it! Hope you have fun.
+
+
+-Brent Chesson.. A/k/A- HiTleR

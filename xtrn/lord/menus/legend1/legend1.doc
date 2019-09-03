@@ -1,0 +1,65 @@
+                -= LEGEND1.ZIP - FROM LEGENDARY SOFTWARE =-
+
+        First, let me tell you up front thanks for using this program on 
+your game!  LEGEND1.ZIP will change the text and menu's your of Legend of 
+Red Dragon game into a new and exciting world.  Installing simply replaces 
+your LORDTXT.DAT file into the one that you have just received. 
+
+             Files you should have received in this .zip file:
+
+                            LEGEND1.DOC
+                            LORDTXT!.DAT
+                            INSTALL.BAT
+                            UNDO.BAT
+
+****** DISCLAIMER ******
+
+We, Chris Gustafson and Ryan Chmiel, the writers of this program, will NOT
+be responsible for any damage that this program does to your LORD game or
+your system in any which way.  This is provided "AS IS", and if you read
+this document and learn how to install and uninstall LEGEND1.ZIP, you should
+not have ANY problems at all.
+
+****** INSTALLATION *******
+
+Installation of this is very easy (Too easy in fact!  :-) )
+
+All you have to do is unzip this file in the your LORD directory, and then, 
+From the dos prompt, just type the following while you are in LORD's DIR:
+
+INSTALL.BAT
+
+That's it!  Nothing else.  After this, log on to LORD to experience your 
+new LORD game.  But if you are experiencing more anger than intended, you 
+can go back to your normal one by typing:
+
+UNDO.BAT
+
+at the dos prompt.  This will take all files included in this .zip and 
+delete them, and return your old LORDTXT.DAT file to what it was.
+
+****** THANKS! *******
+
+Thanks goes out to all who use this product, but none of this would happen
+if it weren't for the brilliant mind of Seth Able Robinson.  Thanks Seth!
+
+****** ONE LAST THING ******
+
+If you like what you see, and would like to receive the newest version,
+as well as a file that will create and change the look of your enemies, plus
+all new menu's, send 5 bucks to:
+
+                The Suburban File Fountain
+                9911 S. Mansfield,
+                Oak Lawn, IL 60453
+
+In doing this, you will receive new updates to this file, and you will also
+receive the LENEMY.DAT file that will also change the enemies to make your
+LORD game even better!
+
+                        By Legendary Software
+                Located at the Suburban File Fountain
+                            (708)229-0665
+
+                        Chris Gustafson, SysOp
+                        Ryan Chmiel, SysOp

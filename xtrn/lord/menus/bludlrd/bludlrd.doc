@@ -1,0 +1,71 @@
+                     :::Another Eyeball, Inc. Production:::
+
+WARNING: THIS PROGRAM IS NOT FOR THE [EXTREMELY] WEAK AT HEART...[although if
+you've seen a good horror movie without puking then you pretty much stand a 
+chance at living through it]
+
+Just a little warning to make sure I'm not totally responsible for anything
+that happens if a player decides to upchuck at any point..
+
+
+BLOOD LORD v1.0 : LORDTXT.DAT replacement file for Legend Of The Red Dragon 
+v3.26 (c)
+
+What is Blood LORD??
+~~~~~~~~~~~~~~~~~~~~
+It is merely a different way to play Lord...all it basically is is changes
+to the text on the lordtxt.dat file, such as making the hot-key color red,
+etc.  Nothing more, really.
+
+Archive includes:
+~~~~~~~~~~~~~~~~~
+BLUDLRD.DOC : The textfile you're reading right now.
+LORDTXT.DAT : The file you move to your main LORD directory to put the
+              program in effect.
+FILE_ID.DIZ : File Description.  (For all you lazy Sysops..:))
+
+Installation: (IOW, lordtxt.dat replacement prog installation made easy)
+~~~~~~~~~~~~~
+First of all, it's up to you, if you feel for some strange reason that Blood
+LORD won't work, you can rename your original LORDTXT.DAT to LORDTXT.BAK or 
+something to back it up just in case something goes wrong (which is RARE when
+it comes to replacement lordtxt.dat progs)
+Ok, unarchive BLUDLRD.ZIP/ARJ/whatever into a directory of your choice. (If 
+you don't want to back up your original Lordtxt.dat, then put it all in your
+LORD dir for easy installation.) Move the LORDTXT.DAT file to your main LORD
+directory (ex. C:\BBS\LORD). If you haven't backed it up chances are it'll
+ask you to overwrite the existing file..just say yes.  That's it! 
+ENJOY!!!
+
+Registration:
+~~~~~~~~~~~~~
+Because I feel that NO program that replaces Lordtxt/lenemy.dats requires 
+registration, I won't bug you all the way to hell and back just to register.
+After all, all it is is a FILE!!!! (If only all the others would think about
+that!) Ok, so this program's freeware...FREE FREE FREE!! (Love that word 
+while it still exists!)
+
+Acknowledgments:
+~~~~~~~~~~~~~~~~
+Eyeball 
+and the list goes on and on...(yeah right)
+
+Extra Credits:
+~~~~~~~~~~~~~~
+Mickey (who got me started with collecting Lord progs)
+Bruce The Goose (for putting up with my constant leeching of LORD files)
+Blazemore (who doesn't really deserve recognition, but what the heck?)
+Seth Able Robinson (for rockin the BBS world with all his awsum dore gaymz)
+My keyboard (for taking the extra late night torture of writing this prog)
+
+
+And Remember:
+~~~~~~~~~~~~~
+For all the latest LORD utils, call Eye's Place at 713-446-2496 all the way
+down here in sunny Houston, Texas. (and SUNNY is right!)
+
+Don't run RAMPAGE.EXE!!!!!!!!!!!!!!!
+
+                      :::Another Eyeball, Inc. Production:::
+
+END

@@ -1,0 +1,77 @@
+Supercolored Monsters v12.0
+                     
+This is the second/(final?) public release of a custom monster set created
+by Bluedoor at the request of myself, the sysop of Bobo's BBS
+
+http://www.bobobbs.net
+
+                     -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Installation is simple
+
+1.  Unzip this archive somewhere.
+2.  Rename your lenemy.dat file to lenemy.bak (this should be located in
+    your main LORD directory
+3.  Copy the lenemy.dat contained in this archive to your main LORD
+    directory!
+
+Uninstallation is also simple
+
+1.  delete lenemy.dat and rename lenemy.bak, created during installation
+    to lenemy.dat.
+
+**Important!
+Do not modify these monsters with the built in Monster Editor 
+for LORD v4.xx (lordcfg.exe) It can not handle the length of
+monster names etc with our color modifications!  See the FAQ below
+on a program that can edit our monsters!
+
+                     -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Legal stuff:
+
+This is free open source software, there are no guarantee that it will do
+anything more than take up space on your hard drive.  You may modify the
+monsters to suite your needs but you may not modify this document or any
+other associated documents contained in this distribution.  
+
+                     -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+FAQ:
+
+How is this monster set different from Seth's Default set or any other
+monster set?
+
+There are new monsters with wonderful colors and changed levels of strength,
+defense, experience, and gold awarded.  Their death phrazes have also been
+colorized and changed.  Basically it is nothing like Seth's default monster
+set!
+
+How did you create these monsters?
+
+Level's 9-12 were first created using TC Software's LORD Monster Expansion.
+These levels were then modified further and the rest of the levels in the 
+monster set completed using Doug Blatherwick's Monster Editor version 2.51 (lordmon.exe)
+This is a great monster editor and is the only thing I know 100% will edit
+this monster set!  It is available at www.bobobbs.net/scmon/
+
+How can I get support!?
+
+Simply visit www.bobobbs.net to logon to the first BBS to feature this
+monster set! or email sysop@bobobbs.net and discribe to me the problem!
+
+                     -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Thanks:
+
+First of all thanks go out to Seth Able Robinson for first creating LORD.
+
+Michael Preslar - Who is currently working on LORD!
+
+Dan Stovall (Bluedoor) - For creating this monster set and being the best
+		     	       cousin in law a guy could have!
+Donald Tidmore - For keeping up a great LORD newsletter and helping promote
+		     this monster set!
+The Users of Bobos BBS - All you people makes this stuff worthwhile! TTYL
+		  
+
+
+

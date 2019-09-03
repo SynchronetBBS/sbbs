@@ -1,0 +1,175 @@
+Story:
+
+=============================================================================
+ 
+The day began without a sun. The mysts had come in durring the night. An 
+unusual feel pervades the realm, a feel of otherworld actions. The mists 
+seem to hide things. Yet when looked at closely, are empty. The sound of 
+war drums echo in the distance. The march of armed men seems to come from 
+outside the walls. The horns bugle in the distance, and the charge of horses 
+seems to be always around the next bend.
+Evil battles with good this day, shrouded in the mist. No doubt, if you look
+hard enough, long enough, and in the proper way - you could find the battle,
+and join it....if you want to.
+
+=============================================================================
+           
+
+                                DISCLAIMER
+                            
+    The author of Mystlord has taken every precaution to insure that no
+    harm or damage will occur on computer systems operating the Mystlord
+    add-on package. Actually, its practically impossible for this program
+    to do any harm since its just plain TEXT files! But, since this is
+    a free copy, there will probably be some bugs in it! If you encounter
+    any bugs or problems, please call my BBS and leave me a message
+    which explains the problem. If in any way, for any reason, or even without
+    reason this causes any damages to any hardware/software, I take no 
+    responsibity. But dont worry! Its improbable that anything will go wrong!
+
+                             LICENSE AGREEMENT
+                            
+    The Mornlord add-on program, installation and uninstallation
+    programs, and documentation are copyrighted products of Blackfist1 Software
+    and Jonathan Holman. Jon Holman reserves all rights to these products.
+    This is protected by the United States of America (USA) and
+    International Copyright Laws. In no way shall Mornlord be reproduced
+    or modified in any form or method without prior written permission
+    from Jon Holman. No fee may be charged by any agency other than
+    J. Holman, or Blackfist Software beyond the cost of a disk, CD-ROM, or BBS
+    membership plan without written permission from Blackfist Software.
+
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+1. About Mystlord        
+
+2. Installation Instructions
+
+3. Updates
+
+4. Questions
+
+5. How to contact the Author
+
+6. Registering Mystlord
+
+7. Technical info 
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+
+
+
+
+                          *** 1. About Mystlord ***
+
+   After reading of magic and elves (ever read the Hobit? you should) 
+   I decided to add a little of the mistical feel to my own games.
+   Since this is not all that hard to do, (how about the serrated edge
+   series by Mercedes lacky? Should read that too!) I have decided to 
+   pass it along to others, so they can enjoy them as well.
+   I hope to instill a little humor into these and future add ons.
+   
+                      *** 2. Installation Instructions ***
+
+   Installing Mystlord should be a simple process since all it does is
+   it renames your current lordtxt.dat file to lordtxt.old.
+
+
+-=-=Batch Installation=-=-
+
+To use the batch files for installation simply extract the
+contents of the zip file to any directory (you probably already
+did that!) Run the file INSTALL.BAT with a parameter of where
+your LORD is installed.
+
+*Example*
+INSTALL.BAT C:\LORD
+
+Its that easy! To Uninstall simply move to your LORD directory
+at the DOS prompt and type UNINSTAL.BAT (or UNINSTAL).
+But please note, if you haven't already installed Mystlord before
+running this file, you will lose a few files LORD needs to run!
+
+
+** If for some reason you did run the Uninstall program first, here
+** is how you fix it...
+
+** You must have your original Lord zip file to fix this problem!
+** Inside of the lord.zip file you will find the file that you
+** are missing. Look for lordtxt.dat. Ok, extract or
+** move it to your lord directory and its all fixed up!
+** Of course, who is dumb enough to run the uninstall program first? =)
+
+
+-=-=Manual Installation=-=-
+
+If for some reason you need to do a manual installation here is how...
+Go to your LORD directory and rename the following files...
+
+lordtxt.dat  to  lordtxt.old
+
+Now,   rename lordtext.mst  to  lordtxt.dat
+
+Ok, now move both of them files to your LORD directory and its all
+set up!
+
+
+                             *** 3. Updates ***
+
+If you would like to recieve updates of this program, see 6. Registering 
+MystLord later in this file...
+
+                            *** 4. Questions ***
+
+--= I thought this program was FREEWARE, why would I register it? =--
+
+** Yes, this program is FREEWARE, you dont have to send me a cent **
+** to use it! But I took a lot of my time to write this program   **
+** so you and your callers could enjoy it! If everyone would send **
+** me some spare change, it would make me want to add more and    **
+** more to my program, and possibly write more programs.          **
+** Like I said earlier, I WILL add more if a few people register! **
+** At least send me a note telling me what you like, don't like,  **
+** Would like to see in the future, etc..                         **
+
+
+--= What do I get if I register? =--
+
+** Well, the main thing you get is knowing that you helped another **
+** person out by making his hard spent time worth something!       **
+** But, thats probably not enough, so you also get all newer       **
+** versions, by E-Mail, and you will get added to my mailing list  **
+** for all new programs I write in the future. (Shareware, or      **
+** FREEWARE only! I cant give you ALL my registered programs!)     **
+
+
+--= Where do I send my registration money? =--
+
+** See chapter 6 for more information on registering **
+
+
+                    *** 5. How to contact the author ***
+
+
+You can contact me, Jon Holman in the following ways...
+
+I call a lot of BBS's in Las Vegas, 702 area, or 
+Aol as Blackfist1, or internet at Blackfist1@AOL.Com
+
+Or you can contact me via snail mail at...
+
+Blackfist Software
+7637 Desert Breeze
+Las Vegas, Nevada
+            89129
+
+                         ** 7. Technical Junk **
+
+
+Techno - Schmecno.....who needs more junk in there lives, Forget it, take
+the rest of your life OFF! Tell 'em Blackfist said you Could!
+

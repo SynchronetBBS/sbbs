@@ -1,0 +1,61 @@
+>>                        LEGEND OF THE SUPER-SPY
+
+                              by Michael Yount
+                      Copyright 1995 by Michael Yount
+
+
+[1.0]  What is it?
+
+[ANS]  A LORD text replacement.  It was written for Spies-R-Us BBS.  Not on
+request though, just because I got bored one night.
+
+[1.1]  How do I install it?
+
+[ANS]  Type "SPY INSTALL" without the quotation marks.  Actually, though,
+the only command-line checking it does is to see if there's UN anywhere in
+the command-line, and in that case it just uninstalls it.  The install
+program is in no way perfect, because I coded it late at night. (I compiled
+it at approximately 12:30am.)  If you do installs and uninstalls
+repeatedly, it will eventually choke, giving File Not Found errors.
+If you get kicks out of installing and uninstalling repeatedly, I'll make
+you a special copy that won't choke, OK? ;^>
+
+[1.2] How do I UNinstall it?
+
+[ANS]  You can't!  I made the files read-only!  ;^>  Just kidding.  Just
+type "SPY UN" (or "SPY UNINSTALL" if you prefer) and boom, it's gone.
+
+[2.0] How do I register it?
+
+[ANS]  Send me $1.25.  Here's my address:
+
+        Michael Yount
+        2922 Congaree Avenue, NW
+        Aiken, South Carolina  29801-3102
+
+Please note, there aren't any whiny "Your sysop is scum because he/she
+didn't register this" messages.  But I'm trying to make a little money ...
+I would like to get a phone line for a BBS.  Besides, for just $1.25 you'll
+get all my other nifty stuff that I write, and you'll get REGISTERED
+versions of my LORD stuff, be it an IGM or a text replacement like this.
+
+Please include this information when registering:
+
+REAL name
+Alias
+Mailing address
+Age  [for demographic info only]
+Race [for demographic info only -- I am AGAINST racism!!]
+voice phone number [if I decide to contact you]
+BBS phone number
+internet email address
+Fidonet address [if any]
+WWW home page URL [if any, and this is totally optional]
+
+[3.0]  Who CAN'T use this?
+
+[ANS]  1.  People who don't have LORD.
+       2.  Racists.
+
+
+< EOF >
