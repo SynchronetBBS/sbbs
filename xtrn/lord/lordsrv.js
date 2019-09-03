@@ -13,7 +13,7 @@ var settings = {
 	retry_delay:15,
 	file_prefix:js.exec_dir + 's'
 };
-var pfile = new RecordFile(settings.file_prefix+'player.dat', SPlayer_Def);
+var pfile;
 var sfile = new RecordFile(settings.file_prefix+'state.dat', Server_State_Def);
 var lfile = new File(settings.file_prefix+'logall.lrd');
 var socks;
@@ -37,7 +37,6 @@ function validate_user(user, pass)
 
 // TODO: Blocking Locks (?)
 // TODO: socket_select with a read array and a write array
-// TOD Online battles!  Rawr!
 function handle_request() {
 	var buf = '';
 	var tmp;
@@ -192,7 +191,7 @@ function handle_request() {
 			var nv = now.valueOf();
 
 			while(lines.length) {
-				line = lines.shift;
+				line = lines.shift();
 				lfile.writeln(nv+':'+line);
 				logdata.push({date:now, line:line});
 			}
@@ -546,9 +545,10 @@ function handle_request() {
 					sock.writeln(pdata.length);
 					break;
 				case 'NewHero':
-					tmph = request.split(' ', 2);
-					if (tmph.length !== 2)
+					tmph = request.split(' ');
+					if (tmph.length < 2)
 						return false;
+					tmph[1] = tmph.slice(1).join(' ');
 					if (tmph[1].length < 3)
 						return false;
 					sdata.latesthero = tmph[1];
@@ -699,6 +699,70 @@ function handle_request() {
 					pdata[sock.LORD.player_on].put();
 					sock.writeln('OK');
 					break;
+				case 'AbortBattleWait':
+					if (sock.LORD.player_on === undefined)
+						return false;
+					if (pdata[sock.LORD.player_on].in_battle === -1)
+						return false;
+					if (sock.LORD.online_battle_response !== undefined)
+						delete sock.LORD.online_battle_response;
+					if (pdata[pdata[sock.LORD.player_on].in_battle].on_now === false) {
+						sock.writeln('OK');
+						break;
+					}
+					if (pdata[pdata[sock.LORD.player_on].in_battle].in_battle !== sock.LORD.player_on) {
+						sock.writeln('OK');
+						break;
+					}
+					if (sock.LORD.online_battle_sock === undefined)
+						pdata[pdata[sock.LORD.player_on].in_battle].online_battle_response = 'R';
+					else {
+						pdata[sock.LORD.player_on].online_battle_sock.writeln('R');
+						delete sock.LORD.online_battle_sock;
+					}
+					sock.writeln('OK');
+					break;
+				case 'WaitBattleResponse':
+					if (sock.LORD.player_on === undefined)
+						return false;
+					if (pdata[sock.LORD.player_on].in_battle === -1)
+						return false;
+					if (pdata[pdata[sock.LORD.player_on].in_battle].on_now === false)
+						sock.LORD.online_battle_response = 'R';
+					if (pdata[pdata[sock.LORD.player_on].in_battle].in_battle !== sock.LORD.player_on)
+						sock.LORD.online_battle_response = 'R';
+					if (sock.LORD.online_battle_response === undefined)
+						pdata[pdata[sock.LORD.player_on].in_battle].online_battle_sock = sock;
+					else {
+						sock.writeln(sock.LORD.online_battle_response);
+						delete sock.LORD.online_battle_response;
+					}
+					break;
+				case 'SendBattleResponse':
+					tmph = request.split(' ');
+					if (tmph.length < 2)
+						return false;
+					tmph[1] = tmph.slice(1).join(' ');
+					if (sock.LORD.player_on === undefined)
+						return false;
+					if (pdata[sock.LORD.player_on].in_battle === -1)
+						return false;
+					if (pdata[pdata[sock.LORD.player_on].in_battle].on_now === false) {
+						sock.writeln('OK')
+						break;
+					}
+					if (pdata[pdata[sock.LORD.player_on].in_battle].in_battle !== sock.LORD.player_on) {
+						sock.writeln('OK');
+						break;
+					}
+					if (pdata[sock.LORD.player_on].online_battle_sock === undefined)
+						pdata[pdata[sock.LORD.player_on].in_battle].online_battle_response = tmph[1];
+					else {
+						pdata[sock.LORD.player_on].online_battle_sock.writeln(tmph[1]);
+						delete sock.LORD.online_battle_sock;
+					}
+					sock.writeln('OK');
+					break;
 				case 'LostBattle':
 					tmph = validate_record(sock, request, 2, 2, false);
 					if (tmph === undefined)
@@ -719,6 +783,35 @@ function handle_request() {
 					pdata[tmph].dead = true;
 					pdata[tmph].inn = false;
 					pdata[tmph].hp = 0;
+					pdata[tmph].in_battle = -1;
+					pdata[tmph].put();
+					pdata[sock.LORD.player_on].in_battle = -1;
+					pdata[sock.LORD.player_on].put();
+					sock.writeln('OK');
+					break;
+				case 'DoneOnlineBattle':
+					if (sock.LORD.player_on === undefined)
+						return false;
+					if (pdata[sock.LORD.player_on].in_battle === -1)
+						return false;
+					pdata[sock.LORD.player_on].in_battle = -1;
+					pdata[sock.LORD.player_on].put();
+					sock.writeln('OK');
+					break;
+				case 'RanFromBattle':
+					tmph = validate_record(sock, request, 2, 2, false);
+					if (tmph === undefined)
+						return false;
+					if (pdata[tmph].on_now === true)
+						return false;
+					if (pdata[tmph].dead === true)
+						return false;
+					if (sock.LORD.player_on === undefined)
+						return false;
+					if (pdata[tmph].in_battle !== sock.LORD.player_on)
+						return false;
+					if (pdata[sock.LORD.player_on] !== tmph)
+						return false;
 					pdata[tmph].in_battle = -1;
 					pdata[tmph].put();
 					pdata[sock.LORD.player_on].in_battle = -1;
@@ -885,6 +978,7 @@ function main() {
 		type:'String:255',	// TODO: This may need to be longer...
 		def:''
 	});
+	pfile = new RecordFile(settings.file_prefix+'player.dat', SPlayer_Def);
 
 	if (js.global.server !== undefined)
 		sock = js.global.server.socket;
