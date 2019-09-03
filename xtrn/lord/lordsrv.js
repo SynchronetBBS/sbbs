@@ -19,26 +19,39 @@ var settingsmap = {
 	retry_delay:'RetryDelay',
 	file_prefix:'GamePrefix'
 };
-var pfile = new RecordFile(settings.file_prefix+'player.bin', SPlayer_Def);;
-var sfile = new RecordFile(settings.file_prefix+'state.bin', Server_State_Def);
-var lfile = new File(settings.file_prefix+'logall.lrd');
+var pfile;
+var sfile;
+var lfile;
 var socks;
 var pdata = [];
 var sdata;
 var whitelist = ['Record', 'Yours'];
 var swhitelist = [];
 var logdata = [];
-var conversations = {
-	bar:{file:new File(settings.file_prefix+'bar.lrd'), lines:[], default_files:[js.exec_dir + 'start1.lrd', js.exec_dir + 'start2.lrd', js.exec_dir + 'start3.lrd', js.exec_dir + 'start4.lrd', js.exec_dir + 'start5.lrd']},
-	darkbar:{file:new File(settings.file_prefix+'darkbar.lrd'), lines:[], default_files:[js.exec_dir + 'dstart.lrd']},
-	garden:{file:new File(settings.file_prefix+'garden.lrd'), lines:[], default_files:[js.exec_dir + 'gstart.lrd']},
-	dirt:{file:new File(settings.file_prefix+'dirt.lrd'), lines:[]}
-};
+var conversations;
 
-// TODO: This is obviously silly.
-function validate_user(user, pass)
+function validate_user(sock, usr, pass)
 {
-	return true;
+	var f = new File(settings.file_prefix+'bbs.cred');
+	var l;
+	var m;
+	var sha = new CryptContext(CryptContext.ALGO.SHA2);
+
+	sha.blocksize = 64;
+	sha.encrypt(usr+pass);
+	sha = base64_encode(sha.hashvalue);
+	if (!f.open('r')) {
+		throw('Unable to open '+f.name);
+	}
+	while ((l = f.readln()) !== null) {
+		m = l.match(/^(.*):(.*?)$/);
+		if (m !== null) {
+			if (m[1] === usr && m[2] === sha)
+				return true;
+		}
+	}
+	
+	return false;
 }
 
 // TODO: Blocking Locks (?)
@@ -1103,7 +1116,17 @@ function parse_settings()
 			settings[key] = ini.iniGetValue(null, settingsmap[key], settings[key]);
 		});
 		fixup_prefix();
+		f.close();
 	}
+	conversations = {
+	    bar:{file:new File(settings.file_prefix+'bar.lrd'), lines:[], default_files:[js.exec_dir + 'start1.lrd', js.exec_dir + 'start2.lrd', js.exec_dir + 'start3.lrd', js.exec_dir + 'start4.lrd', js.exec_dir + 'start5.lrd']},
+	    darkbar:{file:new File(settings.file_prefix+'darkbar.lrd'), lines:[], default_files:[js.exec_dir + 'dstart.lrd']},
+	    garden:{file:new File(settings.file_prefix+'garden.lrd'), lines:[], default_files:[js.exec_dir + 'gstart.lrd']},
+	    dirt:{file:new File(settings.file_prefix+'dirt.lrd'), lines:[]}
+	};
+	pfile = new RecordFile(settings.file_prefix+'player.bin', SPlayer_Def);
+	sfile = new RecordFile(settings.file_prefix+'state.bin', Server_State_Def)
+	lfile = new File(settings.file_prefix+'logall.lrd');
 	return true;
 }
 
