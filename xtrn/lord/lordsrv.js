@@ -12,8 +12,8 @@ var settings = {
 	retry_delay:15,
 	file_prefix:js.exec_dir + 's'
 };
-var pfile = new RecordFile(settings.file_prefix+'player.dat', SPlayer_Def);;
-var sfile = new RecordFile(settings.file_prefix+'state.dat', Server_State_Def);
+var pfile = new RecordFile(settings.file_prefix+'player.bin', SPlayer_Def);;
+var sfile = new RecordFile(settings.file_prefix+'state.bin', Server_State_Def);
 var lfile = new File(settings.file_prefix+'logall.lrd');
 var socks;
 var pdata = [];
