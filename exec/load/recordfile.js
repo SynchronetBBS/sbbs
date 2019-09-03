@@ -25,11 +25,11 @@ function getRecordLength(RecordDef)
 			default:
 				m=fieldtype.match(/^String:([0-9]+)$/);
 				if(m !== null) {
-					return(parseInt(m[1]));
+					return(parseInt(m[1], 10));
 				}
 				m=fieldtype.match(/^PString:([0-9]+)$/);
 				if(m !== null) {
-					return(parseInt(m[1]+1));
+					return(parseInt(m[1], 10)+1);
 				}
 				return(0);
 		}
@@ -38,7 +38,7 @@ function getRecordLength(RecordDef)
 	for(i=0; i<RecordDef.length; i += 1) {
 		m=RecordDef[i].type.match(/^Array:([0-9]+):(.*)$/);
 		if(m !== null) {
-			len += getTypeLength(m[2])*parseInt(m[1]);
+			len += getTypeLength(m[2])*parseInt(m[1], 10);
 		}
 		else {
 			len += getTypeLength(RecordDef[i].type);
@@ -68,7 +68,6 @@ function RecordFile(filename, definition)
 			return parseInt(this.file.length/this.RecordLength, 10);
 		}
 	});
-	//this.__defineGetter__("length", function() {return parseInt(this.file.length/this.RecordLength);});
 	this.locks = [];
 }
 
@@ -371,10 +370,10 @@ RecordFile.prototype.get = function(num, keeplocked)
 	var i;
 	var ret;
 
-	if(num === undefined || num < 0 || parseInt(num) !== num) {
+	if(num === undefined || num < 0 || parseInt(num, 10) !== num) {
 		return(null);
 	}
-	num = parseInt(num);
+	num = parseInt(num, 10);
 
 	if(num>=this.length) {
 		return(null);
@@ -471,7 +470,7 @@ RecordFile.prototype.readField = function(fieldtype)
 
 	if(m !== null) {
 		ret = [];
-		for(i=0; i<parseInt(m[1]); i += 1) {
+		for(i=0; i<parseInt(m[1], 10); i += 1) {
 			ret.push(this.readField(m[2]));
 		}
 		return(ret);
@@ -516,13 +515,13 @@ RecordFile.prototype.readField = function(fieldtype)
 			default:
 				m=fieldtype.match(/^String:([0-9]+)$/);
 				if(m !== null) {
-					tmp=this.file.read(parseInt(m[1]));
+					tmp=this.file.read(parseInt(m[1], 10));
 					return(tmp.replace(/\x00/g,""));
 				}
 				m=fieldtype.match(/^PString:([0-9]+)$/);
 				if(m !== null) {
 					tmp=this.file.readBin(1);
-					tmp2=this.file.read(parseInt(m[1]));
+					tmp2=this.file.read(parseInt(m[1], 10));
 					return(tmp2.substr(0, tmp));
 				}
 				return(null);
@@ -546,7 +545,7 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 
 	if(m !== null) {
 		ret = [];
-		for(i=0; i<parseInt(m[1]); i += 1) {
+		for(i=0; i<parseInt(m[1], 10); i += 1) {
 			this.writeField(val[i], m[2], def[i]);
 		}
 		return(ret);
@@ -634,22 +633,24 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 		default:
 			m=fieldtype.match(/^String:([0-9]+)$/);
 			if(m !== null) {
-				len=parseInt(m[1]);
+				len=parseInt(m[1], 10);
 				wr=val.substr(0,len);
 				while(wr.length < len) {
 					wr=wr+"\x00";
 				}
 				this.file.write(wr,len);
 			}
-			m=fieldtype.match(/^PString:([0-9]+)$/);
-			if(m !== null) {
-				this.file.writeBin(wr.length, 1);
-				len=parseInt(m[1]);
-				wr=val.substr(0,len);
-				while(wr.length < len) {
-					wr=wr+"\x00";
+			else {
+				m=fieldtype.match(/^PString:([0-9]+)$/);
+				if(m !== null) {
+					this.file.writeBin(wr.length, 1);
+					len=parseInt(m[1], 10);
+					wr=val.substr(0,len);
+					while(wr.length < len) {
+						wr=wr+"\x00";
+					}
+					this.file.write(wr,len);
 				}
-				this.file.write(wr,len);
 			}
 	}
 };
