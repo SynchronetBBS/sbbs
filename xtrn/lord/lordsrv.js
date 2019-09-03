@@ -12,6 +12,13 @@ var settings = {
 	retry_delay:15,
 	file_prefix:js.exec_dir + 's'
 };
+var settingsmap = {
+	hostnames:'Hostnames',
+	port:'Port',
+	retry_count:'RetryCount',
+	retry_delay:'RetryDelay',
+	file_prefix:'GamePrefix'
+};
 var pfile = new RecordFile(settings.file_prefix+'player.bin', SPlayer_Def);;
 var sfile = new RecordFile(settings.file_prefix+'state.bin', Server_State_Def);
 var lfile = new File(settings.file_prefix+'logall.lrd');
@@ -524,21 +531,30 @@ function handle_request() {
 					if (request.indexOf(' ') !== -1) {
 						return false;
 					}
-					if (pdata.length > 150) {
-						// TODO: Check for deleted players.
-						sock.writeln('Game Is Full');
-						break;
+					tmph = pdata.forEach(function(o) {
+						if (tmph === undefined) {
+							if (o.name === 'X')
+								tmph = o;
+						}
+					});
+					if (tmph === undefined) {
+						if (pdata.length >= 150) {
+							sock.writeln('Game Is Full');
+							break;
+						}
+						tmph = pfile.new();
+						if (tmph === null) {
+							sock.writeln('Server Error');
+							break;
+						}
+						pdata.push(tmph);
 					}
-					tmph = pfile.new();
-					if (tmph === null) {
-						sock.writeln('Server Error');
-						break;
-					}
+					else
+						tmph.reInit();
 					tmph.SourceSystem = sock.LORD.bbs;
 					tmph.Yours = true;
 					tmph.in_battle = -1;
 					tmph.put();
-					pdata.push(tmph);
 					tmph = JSON.stringify(tmph, whitelist);
 					sock.write('PlayerRecord '+tmph.length+'\r\n'+tmph+'\r\n');
 					break;
@@ -1048,4 +1064,49 @@ function main() {
 	}
 }
 
-main();
+function parse_settings()
+{
+	var i;
+	var f;
+
+	function fixup_prefix() {
+		if (settings.file_prefix.length > 0) {
+			if (settings.file_prefix[0] === '/' || settings.file_prefix[0] === '\\'
+			    || (settings.file_prefix[1] === ':' && (settings.file_prefix[2] === '\\' || settings.file_prefix[2] === '/'))) {
+				// Nothing...
+			}
+			else {
+				settings.file_prefix = js.exec_dir + settings.game_prefix;
+			}
+		}
+		if (file_isdir(settings.file_prefix)) {
+			settings.file_prefix = backslash(settings.file_prefix);
+		}
+	}
+
+	for (i = 0; i < argc; i++) {
+		if (argv[i] === '-p' && argc > (i + 1)) {
+			settings.file_prefix = argv[++i];
+			fixup_prefix();
+		}
+	}
+
+	f = new File(settings.file_prefix + 'lordsrv.ini');
+	if (file_exists(f.name)) {
+		if (!f.open('r')) {
+			throw('Unable to open '+f.name);
+		}
+		Object.keys(settings).forEach(function(key) {
+			if (settingsmap[key] === undefined) {
+				throw('Unmapped setting "'+key+'"');
+			}
+			settings[key] = ini.iniGetValue(null, settingsmap[key], settings[key]);
+		});
+		fixup_prefix();
+	}
+	return true;
+}
+
+if (parse_settings()) {
+	main();
+}
