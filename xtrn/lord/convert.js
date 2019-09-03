@@ -498,7 +498,7 @@ function convert_menus(ltf, lef, lgf, ttf, from, to)
 			for (y = 0; y < ll; y++) {
 				for (x = 0; x < 80; x++) {
 					if (clear) {
-						nl += '`c';
+						nl += '`C';
 						clear = false;
 					}
 					ch = ascii(s.graphic.puttext[(y*80+x)*2]);
@@ -549,5 +549,5 @@ function convert_menus(ltf, lef, lgf, ttf, from, to)
 	});
 }
 
-convert_menus(js.exec_dir + 'LORDTXT.DAT', js.exec_dir + 'LORDEXT.DAT', js.exec_dir + 'LGAMETXT.DAT', js.exec_dir + 'TRAINTXT.DAT', js.exec_dir + 'lordtxt.lrd', js.exec_dir + 'lordtxt.new');
+//convert_menus(js.exec_dir + 'LORDTXT.DAT', js.exec_dir + 'LORDEXT.DAT', js.exec_dir + 'LGAMETXT.DAT', js.exec_dir + 'TRAINTXT.DAT', js.exec_dir + 'lordtxt.lrd', js.exec_dir + 'lordtxt.new');
 
