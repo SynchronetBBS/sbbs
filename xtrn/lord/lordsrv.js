@@ -22,7 +22,8 @@ var settingsmap = {
 var pfile;
 var sfile;
 var lfile;
-var socks;
+var rdsocks;
+var wrsocks = [];
 var pdata = [];
 var sdata;
 var whitelist = ['Record', 'Yours'];
@@ -105,7 +106,7 @@ function handle_request() {
 					pdata[sock.LORD.player_on].put();
 			}
 		}
-		socks.splice(socks.indexOf(sock), 1);
+		rdsocks.splice(rdsocks.indexOf(sock), 1);
 		delete sock.LORD;
 		sock.close();
 		return;
@@ -243,21 +244,21 @@ function handle_request() {
 				}
 				update_player(tmph, pdata[sock.LORD.record]);
 				pdata[sock.LORD.record].put();
-				sock.writeln('OK');
+				sock.LORD_writeln('OK');
 				break;
 			case 'WriteMail':
 				mf = new File(settings.file_prefix +'mail'+sock.LORD.record+'.lrd');
 				if (!mf.open('a')) {
-					sock.writeln('Unable to send mail');
+					sock.LORD_writeln('Unable to send mail');
 					break;
 				}
 				mf.writeln(data);
 				mf.close();
-				sock.writeln('OK');
+				sock.LORD_writeln('OK');
 				break;
 			case 'LogEntry':
 				logit(data);
-				sock.writeln('OK');
+				sock.LORD_writeln('OK');
 				break;
 			case 'AddToConversation':
 				tmph = data.split(/\r?\n/);
@@ -285,7 +286,7 @@ function handle_request() {
 				conversations[sock.LORD.conv].file.position = 0;
 				conversations[sock.LORD.conv].file.truncate(0);
 				conversations[sock.LORD.conv].file.writeAll(conversations[sock.LORD.conv].lines);
-				sock.writeln('OK');
+				sock.LORD_writeln('OK');
 				break;
 			case 'IGMData':
 				tmph = data.split(/\r?\n/);
@@ -293,7 +294,7 @@ function handle_request() {
 					return false;
 				pdata[sock.LORD.player_on].InIGM = tmph[0];
 				pdata[sock.LORD.player_on].IGMCommand = tmph[1];
-				sock.writeln('OK');
+				sock.LORD_writeln('OK');
 				pdata[sock.LORD.player_on].put();
 				break;
 			default:
@@ -380,7 +381,7 @@ function handle_request() {
 			if (Object.keys(conversations).indexOf(tmpp[1]) === -1)
 				return false;
 			tmpp = conversations[tmpp[1]].lines.join('\n');
-			sock.write('Conversation '+tmpp.length+'\r\n'+tmpp+'\r\n');
+			sock.LORD_write('Conversation '+tmpp.length+'\r\n'+tmpp+'\r\n');
 			return true;
 		}
 
@@ -436,7 +437,7 @@ function handle_request() {
 					log += l.line+'\n';
 				}
 			});
-			sock.write('LogData '+log.length+'\r\n'+log+'\r\n');
+			sock.LORD_write('LogData '+log.length+'\r\n'+log+'\r\n');
 		}
 
 		log(LOG_DEBUG, sock.descriptor+': '+request);
@@ -457,7 +458,7 @@ function handle_request() {
 						log('Auth '+sock.descriptor+' from: '+sock.remote_ip_address+'.'+sock.remote_port+' as '+tmph[1]);
 						sock.LORD.auth = true;
 						sock.LORD.bbs = tmph[1];
-						sock.writeln('OK');
+						sock.LORD_writeln('OK');
 					}
 					else {
 						return false;
@@ -477,18 +478,18 @@ function handle_request() {
 					tmph = JSON.stringify(pdata[tmph], whitelist);
 					if (tmph.SourceSystem === sock.LORD.bbs)
 						tmph.Yours = true;
-					sock.write('PlayerRecord '+tmph.length+'\r\n'+tmph+'\r\n');
+					sock.LORD_write('PlayerRecord '+tmph.length+'\r\n'+tmph+'\r\n');
 					break;
 				case 'GetState':
 					tmph = JSON.stringify(sdata, swhitelist);
-					sock.write('StateData '+tmph.length+'\r\n'+tmph+'\r\n');
+					sock.LORD_write('StateData '+tmph.length+'\r\n'+tmph+'\r\n');
 					break;
 				case 'ClearPlayer':
 					if (request.indexOf(' ') > -1)
 						return false;
 					delete sock.LORD.player_on;
 					sock.LORD.cleared = true;
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'SetPlayer':
 					tmph = validate_record(sock, request, 2, 2, true);
@@ -496,7 +497,7 @@ function handle_request() {
 						return false;
 					// Check if on another connection...
 					if (sock.LORD.cleared === undefined) {
-						socks.forEach(function(s) {
+						rdsocks.forEach(function(s) {
 							if (s.LORD !== undefined && s.LORD.player_on === tmph)
 								tmph = undefined;
 						});
@@ -507,16 +508,16 @@ function handle_request() {
 					if (tmph === undefined)
 						return false;
 					sock.LORD.player_on = tmph;
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'CheckMail':
 					tmph = validate_record(sock, request, 2, 2, true);
 					if (tmph === undefined)
 						return false;
 					if (file_exists(settings.file_prefix +'mail'+tmph+'.lrd'))
-						sock.writeln('Yes');
+						sock.LORD_writeln('Yes');
 					else
-						sock.writeln('No');
+						sock.LORD_writeln('No');
 					break;
 				case 'GetMail':
 					tmph = validate_record(sock, request, 2, 2, true);
@@ -525,11 +526,11 @@ function handle_request() {
 					mf = settings.file_prefix +'mail'+tmph+'.lrd';
 					tmph = file_size(mf);
 					if (tmph === -1)
-						sock.write('Mail 0\r\n\r\n');
+						sock.LORD_write('Mail 0\r\n\r\n');
 					else {
-						sock.writeln('Mail '+tmph);
-						sock.sendfile(mf);
-						sock.write('\r\n');
+						sock.LORD_writeln('Mail '+tmph);
+						sock.LORD_sendfile(mf);
+						sock.LORD_write('\r\n');
 						file_remove(mf);
 					}
 					break;
@@ -538,7 +539,7 @@ function handle_request() {
 					if (tmph === undefined)
 						return false;
 					file_remove('smail'+tmph+'.lrd');
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'NewPlayer':
 					if (request.indexOf(' ') !== -1) {
@@ -552,12 +553,12 @@ function handle_request() {
 					});
 					if (tmph === undefined) {
 						if (pdata.length >= 150) {
-							sock.writeln('Game Is Full');
+							sock.LORD_writeln('Game Is Full');
 							break;
 						}
 						tmph = pfile.new();
 						if (tmph === null) {
-							sock.writeln('Server Error');
+							sock.LORD_writeln('Server Error');
 							break;
 						}
 						pdata.push(tmph);
@@ -569,13 +570,13 @@ function handle_request() {
 					tmph.in_battle = -1;
 					tmph.put();
 					tmph = JSON.stringify(tmph, whitelist);
-					sock.write('PlayerRecord '+tmph.length+'\r\n'+tmph+'\r\n');
+					sock.LORD_write('PlayerRecord '+tmph.length+'\r\n'+tmph+'\r\n');
 					break;
 				case 'RecordCount':
 					if (request.indexOf(' ') !== -1) {
 						return false;
 					}
-					sock.writeln(pdata.length);
+					sock.LORD_writeln(pdata.length);
 					break;
 				case 'NewHero':
 					tmph = request.split(' ');
@@ -586,7 +587,7 @@ function handle_request() {
 						return false;
 					sdata.latesthero = tmph[1];
 					sdata.put;
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'SethMarried':
 					tmph = validate_record(sock, request, 2, 2, true, true);
@@ -598,14 +599,14 @@ function handle_request() {
 					}
 					if (tmph >= 0) {
 						if (sdata.married_to_seth !== -1) {
-							sock.writeln('No');
+							sock.LORD_writeln('No');
 							break;
 						}
 						if (pdata[tmph].SourceSystem !== sock.LORD.bbs)
 							return false;
 					}
 					sdata.married_to_seth = tmph;
-					sock.writeln('Yes');
+					sock.LORD_writeln('Yes');
 					break;
 				case 'VioletMarried':
 					tmph = validate_record(sock, request, 2, 2, true, true);
@@ -617,14 +618,14 @@ function handle_request() {
 					}
 					if (tmph >= 0) {
 						if (sdata.married_to_violet !== -1) {
-							sock.writeln('No');
+							sock.LORD_writeln('No');
 							break;
 						}
 						if (pdata[tmph].SourceSystem !== sock.LORD.bbs)
 							return false;
 					}
 					sdata.married_to_violet = tmph;
-					sock.writeln('Yes');
+					sock.LORD_writeln('Yes');
 					break;
 				case 'Marry':
 					tmph = validate_record(sock, request, 3, 2, true);
@@ -634,14 +635,14 @@ function handle_request() {
 					if (tmph2 === undefined)
 						return false;
 					if (pdata[tmph].married_to !== -1 || pdata[tmph2].married_to !== -1) {
-						sock.writeln('No');
+						sock.LORD_writeln('No');
 						break;
 					}
 					pdata[tmph].married_to = tmph2;
 					pdata[tmph2].married_to = tmph;
 					pdata[tmph].put();
 					pdata[tmph2].put();
-					sock.writeln('Yes');
+					sock.LORD_writeln('Yes');
 					break;
 				case 'Divorce':
 					tmph = validate_record(sock, request, 3, 2, true);
@@ -651,14 +652,14 @@ function handle_request() {
 					if (tmph2 === undefined)
 						return false;
 					if (pdata[tmph].married_to !== tmph2 || pdata[tmph2].married_to !== tmph) {
-						sock.writeln('No');
+						sock.LORD_writeln('No');
 						break;
 					}
 					pdata[tmph].married_to = -1;
 					pdata[tmph2].married_to = -1;
 					pdata[tmph].put();
 					pdata[tmph2].put();
-					sock.writeln('Yes');
+					sock.LORD_writeln('Yes');
 					break;
 				case 'AddForestGold':
 					tmph = request.match(/^AddForestGold ([0-9]+)$/);
@@ -671,7 +672,7 @@ function handle_request() {
 					tmph = request.match(/^GetForestGold ([0-9]+)$/);
 					if (tmph === null)
 						return false;
-					psock.writeln('ForestGold '+sdata.forest_gold);
+					psock.LORD_writeln('ForestGold '+sdata.forest_gold);
 					tmph = parseInt(tmph[1], 10);
 					if (tmph < 100)
 						tmph = 100;
@@ -685,24 +686,24 @@ function handle_request() {
 					if (sock.LORD.player_on === undefined)
 						return false;
 					if (pdata[tmph].dead === true) {
-						sock.writeln('Dead');
+						sock.LORD_writeln('Dead');
 						break;
 					}
 					if (pdata[tmph].in_battle !== -1) {
-						sock.writeln('InBattle '+pdata[tmph].in_battle);
+						sock.LORD_writeln('InBattle '+pdata[tmph].in_battle);
 						break;
 					}
 					if (pdata[tmph].InIGM.length > 0) {
-						sock.writeln('Out: '+pdata[tmph].InIGM);
+						sock.LORD_writeln('Out: '+pdata[tmph].InIGM);
 						break;
 					}
 					pdata[tmph].in_battle = sock.LORD.player_on;
 					pdata[sock.LORD.player_on].in_battle = tmph;
 					if (pdata[tmph].on_now === true) {
-						sock.writeln('Online');
+						sock.LORD_writeln('Online');
 						break;
 					}
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'WonBattle':
 					tmph = validate_record(sock, request, 2, 2, false);
@@ -730,7 +731,7 @@ function handle_request() {
 					pdata[tmph].put();
 					pdata[sock.LORD.player_on].in_battle = -1;
 					pdata[sock.LORD.player_on].put();
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'AbortBattleWait':
 					if (sock.LORD.player_on === undefined)
@@ -740,20 +741,20 @@ function handle_request() {
 					if (sock.LORD.online_battle_response !== undefined)
 						delete sock.LORD.online_battle_response;
 					if (pdata[pdata[sock.LORD.player_on].in_battle].on_now === false) {
-						sock.writeln('OK');
+						sock.LORD_writeln('OK');
 						break;
 					}
 					if (pdata[pdata[sock.LORD.player_on].in_battle].in_battle !== sock.LORD.player_on) {
-						sock.writeln('OK');
+						sock.LORD_writeln('OK');
 						break;
 					}
 					if (sock.LORD.online_battle_sock === undefined)
 						pdata[pdata[sock.LORD.player_on].in_battle].online_battle_response = 'R';
 					else {
-						pdata[sock.LORD.player_on].online_battle_sock.writeln('R');
+						pdata[sock.LORD.player_on].online_battle_sock.LORD_writeln('R');
 						delete sock.LORD.online_battle_sock;
 					}
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'WaitBattleResponse':
 					if (sock.LORD.player_on === undefined)
@@ -767,7 +768,7 @@ function handle_request() {
 					if (sock.LORD.online_battle_response === undefined)
 						pdata[pdata[sock.LORD.player_on].in_battle].online_battle_sock = sock;
 					else {
-						sock.writeln(sock.LORD.online_battle_response);
+						sock.LORD_writeln(sock.LORD.online_battle_response);
 						delete sock.LORD.online_battle_response;
 					}
 					break;
@@ -781,20 +782,20 @@ function handle_request() {
 					if (pdata[sock.LORD.player_on].in_battle === -1)
 						return false;
 					if (pdata[pdata[sock.LORD.player_on].in_battle].on_now === false) {
-						sock.writeln('OK')
+						sock.LORD_writeln('OK')
 						break;
 					}
 					if (pdata[pdata[sock.LORD.player_on].in_battle].in_battle !== sock.LORD.player_on) {
-						sock.writeln('OK');
+						sock.LORD_writeln('OK');
 						break;
 					}
 					if (pdata[sock.LORD.player_on].online_battle_sock === undefined)
 						pdata[pdata[sock.LORD.player_on].in_battle].online_battle_response = tmph[1];
 					else {
-						pdata[sock.LORD.player_on].online_battle_sock.writeln(tmph[1]);
+						pdata[sock.LORD.player_on].online_battle_sock.LORD_writeln(tmph[1]);
 						delete sock.LORD.online_battle_sock;
 					}
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'LostBattle':
 					tmph = validate_record(sock, request, 2, 2, false);
@@ -820,7 +821,7 @@ function handle_request() {
 					pdata[tmph].put();
 					pdata[sock.LORD.player_on].in_battle = -1;
 					pdata[sock.LORD.player_on].put();
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'DoneOnlineBattle':
 					if (sock.LORD.player_on === undefined)
@@ -829,7 +830,7 @@ function handle_request() {
 						return false;
 					pdata[sock.LORD.player_on].in_battle = -1;
 					pdata[sock.LORD.player_on].put();
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'RanFromBattle':
 					tmph = validate_record(sock, request, 2, 2, false);
@@ -849,17 +850,17 @@ function handle_request() {
 					pdata[tmph].put();
 					pdata[sock.LORD.player_on].in_battle = -1;
 					pdata[sock.LORD.player_on].put();
-					sock.writeln('OK');
+					sock.LORD_writeln('OK');
 					break;
 				case 'CheckBattle':
 					tmph = validate_record(sock, request, 2, 2, false);
 					if (tmph === undefined)
 						return false;
 					if (pdata[tmph].in_battle === -1) {
-						sock.writeln('No');
+						sock.LORD_writeln('No');
 						break;
 					}
-					sock.writeln(pdata[tmph].in_battle);
+					sock.LORD_writeln(pdata[tmph].in_battle);
 					break;
 				case 'GetLogFrom':
 					tmph = parse_date(sock, request, 2);
@@ -884,7 +885,7 @@ function handle_request() {
 					tmph = validate_record(sock, request, 2, 2, false);
 					if (tmph === undefined)
 						return false;
-					sock.write('IGMData '+(pdata[tmph].InIGM.length + pdata[tmph].IGMCommand.length + 2)+'\r\n'+pdata[tmph].InIGM + '\r\n' + pdata[tmph].IGMCommand + '\r\n');
+					sock.LORD_write('IGMData '+(pdata[tmph].InIGM.length + pdata[tmph].IGMCommand.length + 2)+'\r\n'+pdata[tmph].InIGM + '\r\n' + pdata[tmph].IGMCommand + '\r\n');
 					break;
 				case 'AddToConversation':
 					if (!add_conversation(sock, request))
@@ -944,13 +945,13 @@ function handle_request() {
 		buf += block;
 	} while(block.length > 0);
 
-	this.LORD.buf += buf;
+	this.LORD.rxbuf += buf;
 
 	do {
 		if (this.LORD.pending > 0) {
-			if (this.LORD.buf.length >= this.LORD.pending) {
-				tmp = this.LORD.buf.substr(0, this.LORD.pending);
-				this.LORD.buf = this.LORD.buf.substr(this.LORD.pending);
+			if (this.LORD.rxbuf.length >= this.LORD.pending) {
+				tmp = this.LORD.rxbuf.substr(0, this.LORD.pending);
+				this.LORD.rxbuf = this.LORD.rxbuf.substr(this.LORD.pending);
 				this.LORD.pending = 0;
 				if (!handle_command_data(this, tmp)) {
 					close_sock(this);
@@ -962,16 +963,16 @@ function handle_request() {
 		}
 		else {
 			// TODO: Better sanity checking...
-			if (this.LORD.buf.length > 10240) {
+			if (this.LORD.rxbuf.length > 10240) {
 				close_sock(this);
 				return;
 			}
-			tmp = this.LORD.buf.indexOf('\n');
+			tmp = this.LORD.rxbuf.indexOf('\n');
 			if (tmp === -1)
 				break;
 			if (tmp !== -1) {
-				req = this.LORD.buf.substr(0, tmp + 1);
-				this.LORD.buf = this.LORD.buf.substr(tmp + 1);
+				req = this.LORD.rxbuf.substr(0, tmp + 1);
+				this.LORD.rxbuf = this.LORD.rxbuf.substr(tmp + 1);
 				req = req.replace(/[\r\n]/g,'');
 				if (!handle_command(this, req)) {
 					close_sock(this);
@@ -986,6 +987,43 @@ function handle_request() {
 	}
 }
 
+function handle_tx() {
+	var sent = 0;
+
+	if (this.LORD.txbuf.length > 0)
+		sent = this.send(this.LORD.txbuf);
+	this.LORD.txbuf = this.LORD.txbuf.substr(sent);
+	if (this.LORD.txbuf.length === 0) {
+		wrsocks.splice(wrsocks.indexOf(this), 1);
+	}
+}
+
+function tx_str(str)
+{
+	if (str.length === 0)
+		return;
+	if (this.LORD.txbuf.length === 0)
+		wrsocks.push(this);
+	this.LORD.txbuf += str;
+}
+
+function tx_strln(str)
+{
+	this.LORD_write(str+'\r\n');
+}
+
+function tx_sendfile(fname)
+{
+	var f = new File(fname);
+
+	if (file_exists(f.name)) {
+		if (f.open('r')) {
+			this.LORD_write(f.readAll().join('\r\n'));
+			f.close();
+		}
+	}
+}
+
 function main() {
 	var tmpplayer;
 	var lline;
@@ -994,6 +1032,7 @@ function main() {
 	var idx;
 	var ldate;
 	var oldest;
+	var ready;
 
 	if (js.global.server !== undefined)
 		sock = js.global.server.socket;
@@ -1001,23 +1040,28 @@ function main() {
 		sock = new ListeningSocket(settings.hostnames, settings.port, 'LORD', {retry_count:settings.retry_count, retry_delay:settings.retry_delay});
 	if (sock === null)
 		throw('Unable to bind listening socket');
-	sock.LORD_callback = function() {
+	sock.LORD_rx_callback = function() {
 		var nsock;
 
 		nsock = this.accept();
 		nsock.ssl_server = true;
 		nsock.nonblocking = true;
 		nsock.LORD = {};
-		nsock.LORD_callback = handle_request;
+		nsock.LORD_rx_callback = handle_request;
+		nsock.LORD_tx_callback = handle_tx;
+		nsock.LORD_write = tx_str;
+		nsock.LORD_writeln = tx_strln;
+		nsock.LORD_sendfile = tx_sendfile;
 		nsock.LORD.auth = false;
 		nsock.LORD.pending = 0;
-		nsock.LORD.buf = '';
-		socks.push(nsock);
+		nsock.LORD.rxbuf = '';
+		nsock.LORD.txbuf = '';
+		rdsocks.push(nsock);
 		log('Connection '+nsock.descriptor+' accepted from: '+nsock.remote_ip_address+'.'+nsock.remote_port);
 	};
 	sock.sock = sock;
 
-	socks = [sock];
+	rdsocks = [sock];
 
 	for (idx = 0; idx < pfile.length; idx++) {
 		tmpplayer = pfile.get(idx);
@@ -1067,13 +1111,20 @@ function main() {
 		conversations[c].lines = conversations[c].file.readAll();
 	});
 
-	while(true) {
-		var ready;
-
-		ready = socket_select(socks, 60);
-		ready.forEach(function(s) {
-			socks[s].LORD_callback();
-		});
+	while(!js.terminated) {
+		ready = socket_select(rdsocks, wrsocks, 60);
+		if (ready !== null) {
+			if (ready.read !== undefined) {
+				ready.read.forEach(function(s) {
+					rdsocks[s].LORD_rx_callback();
+				});
+			}
+			if (ready.write !== undefined) {
+				ready.write.forEach(function(s) {
+					wrsocks[s].LORD_tx_callback();
+				});
+			}
+		}
 	}
 }
 
