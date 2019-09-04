@@ -475,9 +475,11 @@ function handle_request() {
 					tmph = validate_record(sock, request, 2, 2, false);
 					if (tmph === undefined)
 						return false;
+					if (pdata[tmph].SourceSystem === sock.LORD.bbs)
+						pdata[tmph].Yours = true;
+					else
+						pdata[tmph].Yours = false;
 					tmph = JSON.stringify(pdata[tmph], whitelist);
-					if (tmph.SourceSystem === sock.LORD.bbs)
-						tmph.Yours = true;
 					sock.LORD_write('PlayerRecord '+tmph.length+'\r\n'+tmph+'\r\n');
 					break;
 				case 'GetState':
