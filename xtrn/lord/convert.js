@@ -418,6 +418,7 @@ function convert_menus(ltf, lef, lgf, ttf, from, to)
 					found = false;
 					mf = f;
 					mf.position = 0;
+					f.position = 0;
 				}
 			}
 			else if (found) {
@@ -475,8 +476,9 @@ function convert_menus(ltf, lef, lgf, ttf, from, to)
 
 		if (name !== name.toUpperCase())
 			return;
-		if (mnu.length < 1)
-			throw('Unable to read '+name);
+		// Some menus purposefully have zero-length *sigh*
+		//if (mnu.length < 1)
+		//	throw('Unable to read '+name);
 		for (i = 0; i < mnu.length; i++) {
 			if (mnu[i].indexOf('\x1b[2J') != -1)
 				clear = true;
