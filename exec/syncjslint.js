@@ -251,7 +251,7 @@ var jslint = (function JSLint() {
 		"errnostr", "socket_errno", "global", "js", "system",
 		"server", "client", "user", "bbs", "console",
 		"msg_area", "file_area", "xtrn_area", "MsgBase",
-		"File", "Queue", "Socket", "User", "COM",
+		"File", "Queue", "Socket", "ConnectedSocket", "ListeningSocket", "User", "COM",
 		"CryptContext", "CryptKeyset", "CryptCert", "LOG_EMERG",
 		"LOG_ALERT", "LOG_CRIT", "LOG_ERR", "LOG_ERROR",
 		"LOG_WARNING", "LOG_NOTICE", "LOG_INFO", "LOG_DEBUG",
