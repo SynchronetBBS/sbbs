@@ -3077,9 +3077,6 @@ function log_line(text)
 		rfmutex(f.name);
 	}
 	else {
-		if (!havelock) {
-			create_log(false);
-		}
 		psock.write('LogEntry '+text.length+'\r\n'+text+'\r\n');
 		if (psock.readln() !== 'OK') {
 			throw('Out of sync with server after LogEntry');
@@ -7790,7 +7787,7 @@ function attack_player(op, inn)
 	else if (psock !== undefined) {
 		psock.writeln('RanFromBattle '+op.Record);
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after LostBattle');
+			throw('Out of sync with server after RanFromBattle');
 		}
 	}
 
