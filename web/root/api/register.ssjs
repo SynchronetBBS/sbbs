@@ -76,6 +76,15 @@ function newUser() {
 		if (property === 'alias' || property === 'password') continue;
 		usr[property] = prepUser[property];
 	}
+	if (typeof settings.newuser_level == 'number' && settings.newuser_level >= 0 && settings.newuser_level <= 99) {
+		usr.security.level = settings.newuser_level;
+	}
+	['flags1', 'flags2', 'flags3', 'flags4', 'exemptions', 'restrictions'].forEach(function (e) {
+		const k = 'newuser_' + e;
+		if (settings[k] && settings[k].search(/[^a-zA-Z]/) < 0) {
+			usr.security[e] = '+' + settings[k];
+		}
+	});
 	reply.userNumber = usr.number;
 }
 
