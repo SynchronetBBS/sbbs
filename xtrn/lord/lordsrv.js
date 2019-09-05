@@ -811,7 +811,7 @@ function handle_request() {
 						return false;
 					if (pdata[tmph].in_battle !== sock.LORD.player_on)
 						return false;
-					if (pdata[sock.LORD.player_on] !== tmph)
+					if (pdata[sock.LORD.player_on].in_battle !== tmph)
 						return false;
 					pdata[tmph].gem -= parseInt(pdata[tmph].gem / 2, 10);
 					pdata[tmph].exp = pdata[tmph].exp - parseInt(pdata[tmph].exp / 10, 10);
