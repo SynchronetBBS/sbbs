@@ -32,6 +32,8 @@ function menu()
 
 		lw('  `2Guess?`% ');
 		guess = parseInt(getstr(0, 0, 10, 0, 7, '', {integer:true}), 10);
+		if (isNaN(guess))
+			guess = 0;
 		sln('');
 		now = (new Date()).valueOf();
 		if (endtime != 0 && now > endtime)
