@@ -450,6 +450,7 @@ function postMessage(sub, header, body) {
     } catch (err) {
         log(err);
     }
+    if (ret) user.posted_message();
     return ret;
 }
 
@@ -484,6 +485,7 @@ function postMail(header, body) {
         ret = msgBase.save_msg(header, lfexpand(body));
         msgBase.close();
     }
+    if (ret) user.sent_email();
     return ret;
 }
 
@@ -612,6 +614,7 @@ function postPoll(sub, subject, votes, results, answers, comments) {
     var ret = msgBase.add_poll(header);
     msgBase.close();
 
+    if (ret) user.posted_message();
     return ret;
 
 }
