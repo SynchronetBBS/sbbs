@@ -2032,8 +2032,10 @@ function getkeyw()
 			sln('  you have obviously fallen asleep.  Please come back sometime when');
 			sln('  you feel like actually playing.');
 			sln('');
-			player.on_now = false;
-			player.put();
+			if (player !== undefined) {
+				player.on_now = false;
+				player.put();
+			}
 			exit(0);
 		}
 	} while(!dk.console.waitkey(1000));
