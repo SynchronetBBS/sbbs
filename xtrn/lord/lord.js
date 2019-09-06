@@ -1920,7 +1920,7 @@ var settingsmap = {
 	old_steal:'OldStealAmounts',
 	dk_boost:'DeathKnightBoost',
 	sleep_dragon:'WakeUpDragon',
-	new_player_stick:'NewUglyStick'
+	new_ugly_stick:'NewUglyStick'
 };
 
 var tournament_settings = {
