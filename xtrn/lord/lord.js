@@ -1884,7 +1884,8 @@ var settings = {
 	beef_up:false,		// Beef up monsters after you kill the dragon
 	old_steal:true,
 	sleep_dragon:false,	// Anti-camping dragon attacks.
-	dk_boost:false		// Make death knight attack multiple 3.3 instead of 3.
+	dk_boost:false,		// Make death knight attack multiple 3.3 instead of 3.
+	new_ugly_stick:false	// Fair ugly stick means the new one, old one was always 5 pretty/1 ugly
 };
 
 // Maps settings keys to ini file keys
@@ -1918,7 +1919,8 @@ var settingsmap = {
 	beef_up:'BeefUpForHeroes',
 	old_steal:'OldStealAmounts',
 	dk_boost:'DeathKnightBoost',
-	sleep_dragon:'WakeUpDragon'
+	sleep_dragon:'WakeUpDragon',
+	new_player_stick:'NewUglyStick'
 };
 
 var tournament_settings = {
@@ -14020,6 +14022,9 @@ function forest()
 					 * of getting ugly. Randomizing it helps that a bit. */
 					tmp = random(2) + 1;
 					if (random(3) === 1) {
+						if (!settings.new_ugly_stick) {
+							tmp = 5;
+						}
 						sln('');
 						sln('');
 						lln('  `%MEGA EVENT IN THE FOREST');
@@ -14034,6 +14039,9 @@ function forest()
 						player.cha += tmp;
 					}
 					else {
+						if (!settings.new_ugly_stick) {
+							tmp = 1;
+						}
 						sln('');
 						sln('');
 						lln('  `%MEGA EVENT IN THE FOREST');
