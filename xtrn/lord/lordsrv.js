@@ -532,7 +532,7 @@ function handle_request() {
 					if (tmph === -1)
 						sock.LORD_write('Mail 0\r\n\r\n');
 					else {
-						sock.LORD_writeln('Mail '+tmph);
+						sock.LORD_write('Mail ');
 						sock.LORD_sendfile(mf);
 						sock.LORD_write('\r\n');
 						file_remove(mf);
@@ -1019,11 +1019,14 @@ function tx_strln(str)
 function tx_sendfile(fname)
 {
 	var f = new File(fname);
+	var c;
 
 	if (file_exists(f.name)) {
 		if (f.open('r')) {
-			this.LORD_write(f.readAll().join('\r\n'));
+			c = f.readAll().join('\r\n');
 			f.close();
+			this.LORD_writeln(c.length);
+			this.LORD_write(c);
 		}
 	}
 }
