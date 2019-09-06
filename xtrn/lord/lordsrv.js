@@ -530,7 +530,7 @@ function handle_request() {
 					if (tmph === -1)
 						sock.LORD_write('Mail 0\r\n\r\n');
 					else {
-						sock.LORD_writeln('Mail '+tmph);
+						sock.LORD_writeln('Mail '+tmph+'\r\n');
 						sock.LORD_sendfile(mf);
 						sock.LORD_write('\r\n');
 						file_remove(mf);
