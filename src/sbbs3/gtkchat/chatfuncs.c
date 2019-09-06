@@ -25,9 +25,9 @@ static scfg_t	cfg;
 static int togglechat(int on)
 {
     static int  org_act;
-	int nodefile;
+	int nodefile = -1;
 
-	if(getnodedat(&cfg,nodenum,&node,&nodefile))
+	if(getnodedat(&cfg,nodenum,&node,TRUE,&nodefile))
 		return(-1);
     if(on) {
         org_act=node.action;
@@ -39,7 +39,7 @@ static int togglechat(int on)
         node.action=org_act;
         node.misc&=~NODE_LCHAT;
     }
-	if(putnodedat(&cfg,nodenum,&node,nodefile))
+	if(putnodedat(&cfg,nodenum,&node,TRUE,nodefile))
 		return(-1);
     return(0);
 }
@@ -58,7 +58,7 @@ int chat_open(int node_num, char *ctrl_dir)
 
 	nodenum=node_num;
 
-	if(getnodedat(&cfg,nodenum,&node,NULL))
+	if(getnodedat(&cfg,nodenum,&node,FALSE,NULL))
 		return(-1);
 
 	username(&cfg,node.useron,usrname);
@@ -100,7 +100,7 @@ int chat_check_remote(void)
 
 	now=time(NULL);
 	if(now!=last_nodechk) {
-		if(getnodedat(&cfg,nodenum,&node,NULL)!=0)
+		if(getnodedat(&cfg,nodenum,&node,FALSE,NULL)!=0)
 			return(-1);			/* Failed to read nodedat! */
 		last_nodechk=now;
 	}
