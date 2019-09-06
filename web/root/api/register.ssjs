@@ -2,6 +2,7 @@ require('sbbsdefs.js', 'SYS_CLOSED');
 var settings = load('modopts.js', 'web');
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
+load(settings.web_lib + 'request.js');
 
 if (user.alias !== settings.guest) exit();
 if (!settings.user_registration) exit();
@@ -36,32 +37,23 @@ function required(mask) {
 	return (system.new_user_questions&mask);
 }
 
-function cleanParam(param) {
-	if (paramExists(param)) {
-		return http_request.query[param][0].replace(/[\x00-\x19\x7F]/g, '');
-	}
+function clean_param(param) {
+	if (Request.has_param(param)) return Request.get_param(param).replace(/[\x00-\x19\x7F]/g, '');
 	return "";
 }
 
-function paramExists(param) {
-	if (typeof http_request.query[param] !== 'undefined' &&
-		http_request.query[param][0] !== ''
-	) {
-		return true;
-	}
-	return false;
+function in_range(n, min, max) {
+	return n >= min && n <= max;
 }
 
-function paramLength(param) {
-	if (typeof http_request.query[param] === 'undefined') {
-		return 0;
-	} else if (http_request.query[param][0].replace(' ', '').length < 1) {
-		return 0;
-	} else if (cleanParam(param).length < 1) {
-		return 0;
-	} else {
-		return http_request.query[param][0].length;
-	}
+function valid_param(p, min, max) {
+	if (!Request.has_param(p)) return false;
+	if (!in_range(clean_param(p).length, min, max)) return false;
+	return true;
+}
+
+function is_dupe(field, str) {
+	return system.matchuserdata(field, str) !== 0;
 }
 
 function newUser() {
@@ -89,136 +81,74 @@ function newUser() {
 }
 
 // See if the hidden form fields were filled
-if ((	paramExists('send-me-free-stuff') &&
-		http_request.query['send-me-free-stuff'][0] !== ''
-	) ||
-	(	paramExists('subscribe-to-newsletter') &&
-		http_request.query['subscribe-to-newsletter'][0] !== ''
-	)
-) {
+if (Request.get_param('send-me-free-stuff') != '' || Request.get_param('subscribe-to-newsletter') !== undefined) {
 	log(LOG_WARNING, locale.strings.api_register.log_bot_attempt);
 	exit();
 }
 
-if (system.newuser_password !== '' &&
-	(	typeof http_request.query['newuser-password'] === 'undefined' ||
-		http_request.query['newuser-password'][0] != system.newuser_password
-	)
-) {
+if (system.newuser_password !== '' && (!Request.has_param('newuser-password') || Request.get_param('newuser-password') != system.newuser_password)) {
 	reply.errors.push(locale.strings.api_register.error_bad_syspass);
 }
 
-// More could be done to respect certain newuser question toggles
-// (UQ_DUPREAL, UQ_NOUPPRLWR, UQ_NOCOMMAS), but I don't care right now.
-
-if (!paramExists('alias') ||
-	paramLength('alias') < MIN_ALIAS ||
-	paramLength('alias') > LEN_ALIAS ||
-	!system.check_name(http_request.query.alias[0])
-) {
+if (!valid_param('alias', MIN_ALIAS, LEN_ALIAS) || !system.check_name(clean_param('alias'))) {
 	reply.errors.push(locale.strings.api_register.error_invalid_alias);
-} else if (system.matchuser(http_request.query.alias[0]) > 0) {
+} else if (system.matchuser(clean_param('alias')) > 0) {
 	reply.errors.push(locale.strings.api_register.error_alias_taken);
 } else {
-	prepUser.alias = cleanParam('alias');
-	prepUser.handle = cleanParam('alias');
+	prepUser.alias = clean_param('alias');
+	prepUser.handle = clean_param('alias');
 }
 
-if ((!paramExists('password1') || !paramExists('password2')) ||
-	http_request.query.password1[0] !== http_request.query.password2[0]
-) {
+if (!Request.has_param('password1') || !Request.has_param('password2') || clean_param('password1') != clean_param('password2')) {
 	reply.errors.push(locale.strings.api_register.error_password_mismatch);
-} else if (
-	paramLength('password1') < settings.minimum_password_length ||
-	paramLength('password1') > LEN_PASS
-) {
-	reply.errors.push(
-		format(
-			locale.strings.api_register.error_password_length,
-			settings.minimum_password_length, LEN_PASS
-		)
-	);
+} else if (!in_range(clean_param('password1').length, settings.minimum_password_length, LEN_PASS)) {
+	reply.errors.push(format(locale.strings.api_register.error_password_length, settings.minimum_password_length, LEN_PASS));
 } else {
-	prepUser.password = cleanParam('password1');
+	prepUser.password = clean_param('password1');
 }
 
-if (!paramExists('netmail') && !required(UQ_NONETMAIL)) {
+if (valid_param('netmail', MIN_NETMAIL, LEN_NETMAIL)) {
+	prepUser.netmail = clean_param('netmail');
+} else if (!required(UQ_NONETMAIL)) {
 	reply.errors.push(locale.strings.api_register.error_email_required);
-} else if (
-	(	paramLength('netmail') < MIN_NETMAIL ||
-		paramLength('netmail') > LEN_NETMAIL
-	) && !required(UQ_NONETMAIL)
-) {
-	reply.errors.push(locale.strings.api_register.error_invalid_email);
-} else {
-	prepUser.netmail = cleanParam('netmail');
 }
 
-if (required(UQ_REALNAME) &&
-	(	!paramExists('realname') ||
-		paramLength('realname') < MIN_REALNAME ||
-		paramLength('realname') > LEN_NAME ||
-		!system.check_name(http_request.query.alias[0])
-	)
-) {
+if (valid_param('realname', MIN_REALNAME, LEN_NAME) && (!required(UQ_DUPREAL) || !is_dupe(U_NAME, clean_param('realname')))) {
+	prepUser.name = clean_param('realname');
+} else if (required(UQ_REALNAME)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_name);
-} else {
-	prepUser.name = cleanParam('realname');
 }
 
-if (required(UQ_LOCATION) &&
-	(	!paramExists('location') ||
-		paramLength('location') < MIN_LOCATION ||
-		paramLength('location') > LEN_LOCATION
-	)
-) {
+// UQ_NOCOMMAS should be checked and acted on
+if (valid_param('location', MIN_LOCATION, LEN_LOCATION)) {
+	prepUser.location = clean_param('location');
+} else if (required(UQ_LOCATION)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_location);
-} else {
-	prepUser.location = cleanParam('location');
 }
 
-if (required(UQ_ADDRESS) &&
-	(	!paramExists('address') ||
-		paramLength('address') < MIN_ADDRESS ||
-		paramLength('address') > LEN_ADDRESS ||
-		!paramExists('zipcode') ||
-		paramLength('zipcode') < 3 ||
-		paramLength('zipcode') > LEN_ADDRESS
-	)
-) {
+if (valid_param('address', MIN_ADDRESS, LEN_ADDRESS) && valid_param('zipcode', 3, LEN_ADDRESS)) {
+	prepUser.address = clean_param('address');
+	prepUser.zipcode = clean_param('zipcode');
+} else if (required(UQ_ADDRESS)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_street_address);
-} else {
-	prepUser.address = cleanParam('address');
-	prepUser.zipcode = cleanParam('zipcode');
 }
 
-if (required(UQ_PHONE) &&
-	(	!paramExists('phone') ||
-		paramLength('phone') < MIN_PHONE ||
-		paramLength('phone') > LEN_PHONE
-	)
-) {
+// Validate?  Who cares?
+if (valid_param('phone', MIN_PHONE, LEN_PHONE)) {
+	prepUser.phone = clean_param('phone');
+} else if (required(UQ_PHONE)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_phone);
-} else {
-	prepUser.phone = cleanParam('phone');
 }
 
-if (required(UQ_SEX) &&
-	(	!paramExists('gender') ||
-		paramLength('gender') != 1 ||
-		['X','M','F','O'].indexOf(http_request.query.gender[0]) < 0
-	)
-) {
+if (valid_param('gender', 1, 1) && ['X', 'M', 'F', 'O'].indexOf(Request.get_param('gender')) > -1) {
+	prepUser.birthdate = clean_param('gender');
+} else if (required(UQ_SEX)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_gender);
-} else {
-	prepUser.gender = http_request.query.gender[0];
 }
 
-if (paramExists('birth') &&
-	http_request.query.birth[0].match(/^\d\d\/\d\d\/\d\d$/) !== null
-) {
+if (Request.has_param('birth') && clean_param('birth').match(/^\d\d\/\d\d\/\d\d$/) !== null) {
 	// Should really test for valid date (and date format per system config)
-	prepUser.birthdate = cleanParam('birth');
+	prepUser.birthdate = clean_param('birth');
 } else if (required(UQ_BIRTH)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_birthdate);
 }
