@@ -197,10 +197,12 @@ if (typeof named_parameters.defaults == 'undefined' && deny('Proceed with instal
 }
 write('\r\n\r\n---\r\n\r\n');
 
-writeln('Downloading ' + zip_url);
-if (!download(zip_url, download_target)) {
-    writeln('Download of ' + zip_url + ' failed. Exiting.');
-    exit();
+if (!file_exists(download_target) || confirm(download_target + ' present.  Overwrite')) {
+    writeln('Downloading ' + zip_url);
+    if (!download(zip_url, download_target)) {
+        writeln('Download of ' + zip_url + ' failed. Exiting.');
+        exit();
+    }
 }
 
 writeln('Extracting ' + download_target);
