@@ -676,7 +676,7 @@ function handle_request() {
 					tmph = request.match(/^GetForestGold ([0-9]+)$/);
 					if (tmph === null)
 						return false;
-					psock.LORD_writeln('ForestGold '+sdata.forest_gold);
+					sock.LORD_writeln('ForestGold '+sdata.forest_gold);
 					tmph = parseInt(tmph[1], 10);
 					if (tmph < 100)
 						tmph = 100;
@@ -942,12 +942,9 @@ function handle_request() {
 		}
 	}
 
-	do {
-		block = this.recv(4096);
-		if (block === null)
-			break;
+	block = this.recv(4096);
+	if (block !== null)
 		buf += block;
-	} while(block.length > 0);
 
 	this.LORD.rxbuf += buf;
 
