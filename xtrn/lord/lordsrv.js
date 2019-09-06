@@ -500,6 +500,8 @@ function handle_request() {
 					// Check if on another connection...
 					if (sock.LORD.cleared === undefined) {
 						rdsocks.forEach(function(s) {
+							if (s === sock)
+								return;
 							if (s.LORD !== undefined && s.LORD.player_on === tmph)
 								tmph = undefined;
 						});
