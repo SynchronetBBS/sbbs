@@ -1885,7 +1885,9 @@ var settings = {
 	old_steal:true,
 	sleep_dragon:false,	// Anti-camping dragon attacks.
 	dk_boost:false,		// Make death knight attack multiple 3.3 instead of 3.
-	new_ugly_stick:false	// Fair ugly stick means the new one, old one was always 5 pretty/1 ugly
+	new_ugly_stick:false,	// Fair ugly stick means the new one, old one was always 5 pretty/1 ugly
+	no_lenemy_bin:false,	// Never use the lenemy file
+	no_igms_allowed:false	// Never allow any IGMs
 };
 
 // Maps settings keys to ini file keys
@@ -1920,7 +1922,10 @@ var settingsmap = {
 	old_steal:'OldStealAmounts',
 	dk_boost:'DeathKnightBoost',
 	sleep_dragon:'WakeUpDragon',
-	new_ugly_stick:'NewUglyStick'
+	new_ugly_stick:'NewUglyStick',
+	no_lenemy_bin:'NoLEnemy',
+	no_igms_allowed:'NoIGMs'
+	
 };
 
 var tournament_settings = {
@@ -2322,7 +2327,7 @@ function check_mail()
 			resp = psock.readln();
 			m = resp.match(/^Mail ([0-9]+)$/);
 			if (m !== null) {
-				len = parseInt(m[1]);
+				len = parseInt(m[1], 10);
 				resp = psock.read(len);
 				if (psock.read(2) !== '\r\n') {
 					throw('Out of sync with server after GetMail');
@@ -11644,7 +11649,7 @@ function fight_dragon(cant_run) {
 	}
 
 	// TODO: This could be rolled into lenemy.bin easily enough...
-	if (file_exists(game_or_exec('dragon.bin'))) {
+	if (file_exists(game_or_exec('dragon.bin')) && !settings.no_lenemy_bin) {
 		var dragonfile = new RecordFile(game_or_exec('dragon.bin'), Monster_Def);
 		dragon = dragonfile.get(0);
 		dragonfile.file.close();
@@ -13343,7 +13348,7 @@ function forest()
 		var f;
 		var ret;
 
-		if (file_exists(fname)) {
+		if (file_exists(fname) && !settings.no_lenemy_bin) {
 			f = new RecordFile(fname, Monster_Def);
 			ret = f.get(num);
 			f.file.close();
@@ -15944,6 +15949,8 @@ function create_other_places() {
 	var ret = [];
 	var tmp;
 
+	if (settings.no_igms_allowed)
+		return ret;
 	if (!file_exists(f.name)) {
 		if (f.open('w')) {
 			f.writeln(';-=-=-=-= LORD\'S INTERNAL 3RD PARTY SOFTWARE OPTION =-=-=-');
