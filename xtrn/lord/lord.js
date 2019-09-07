@@ -1925,7 +1925,6 @@ var settingsmap = {
 	new_ugly_stick:'NewUglyStick',
 	no_lenemy_bin:'NoLEnemy',
 	no_igms_allowed:'NoIGMs'
-	
 };
 
 var tournament_settings = {
@@ -3975,8 +3974,8 @@ function lw(str, ext)
 			lln('  good.  '+op.name+'`2 holds you close, as if '+ohe+' never wanted');
 			sln('  this moment to end.');
 			sln('');
-			more_nomail();
 			if (random(2) === 0) {
+				more_nomail();
 				if (player.sex === 'M') {
 					lln('  `%Seth Able hi-fives you on the way out!');
 				}
@@ -8017,6 +8016,9 @@ function talk_with_bartender()
 					ch = '0';
 				}
 				i = parseInt(ch, 10);
+				if (isNaN(i)) {
+					i = 0;
+				}
 				if (i === 0) {
 					foreground(5);
 					sln('');
@@ -9836,6 +9838,9 @@ function king_arthurs()
 		lln('  `2(`0Gold: `%'+pretty_int(player.gold)+'`2)  (`00 to exit`2)');
 		lw('  `0Number Of Weapon `2: `%');
 		n = parseInt(dk.console.getstr({len:2, integer:true}), 10);
+		if (isNaN(n)) {
+			n = 0;
+		}
 		if (n > 0 && n < 16) {
 			oldw = get_weapon(player.weapon_num);
 			neww = get_weapon(n);
@@ -10023,6 +10028,9 @@ function abduls_armour()
 		lln('`2  (`0Gold: `%'+pretty_int(player.gold)+'`2)  (`00 to Exit`2) ');
 		lw('  `0Number Of Armour `2: `%');
 		n = parseInt(dk.console.getstr({len:2, integer:true}), 10);
+		if (isNaN(n)) {
+			n = 0;
+		}
 		if (n > 0 && n < 16) {
 			newa = get_armour(n);
 			olda = get_armour(player.arm_num);
@@ -10468,6 +10476,9 @@ function healers()
 		sln('  "How many hit points would you like healed?"');
 		lw('  `0AMOUNT : `%');
 		amt = parseInt(dk.console.getstr({len:5, integer:true}), 10);
+		if (isNaN(amt)) {
+			amt = 0;
+		}
 		sln('');
 		if (amt === 0) {
 			sln('  "Maybe some other time.."');
@@ -11818,6 +11829,9 @@ function forest()
 					lln('  `2How much gold of your `%'+pretty_int(player.gold)+'`2 will you hazard? (`00`2 to chicken out)');
 					lw('  `2WAGER : `0');
 					ret = parseInt(dk.console.getstr({len:11, integer:true}), 10);
+					if (isNaN(ret)) {
+						ret = 0;
+					}
 					sln('');
 					if (ret > player.gold) {
 						lln('  `2Betting what you don\'t have is `4NOT`2 a good idea.');
@@ -13580,6 +13594,9 @@ function forest()
 			guesses += 1;
 			lw('  `2Guess `0'+guesses+' `2: `%');
 			guess = parseInt(dk.console.getstr({len:3, integer:true}), 10);
+			if (isNaN(guess)) {
+				guess = 0;
+			}
 			if (guess > thenum) {
 				lln('  `0"The number is lower than that!"');
 			}
@@ -15164,6 +15181,9 @@ function ye_old_bank()
 				sln('');
 				lw('  `0AMOUNT : ');
 				amt = parseInt(dk.console.getstr({len:11, integer:true}), 10);
+				if (isNaN(amt)) {
+					amt = 0;
+				}
 				if (amt === 1) {
 					amt = player.bank;
 				}
@@ -15199,6 +15219,9 @@ function ye_old_bank()
 				sln('');
 				lw('  `0AMOUNT: ');
 				amt = parseInt(dk.console.getstr({len:11, integer:true}), 10);
+				if (isNaN(amt)) {
+					amt = 0;
+				}
 				if (amt === 1) {
 					amt = player.gold;
 				}
@@ -15245,6 +15268,9 @@ function ye_old_bank()
 					sln('  "How much gold would you like to transfer?"');
 					lw('  `0AMOUNT : ');
 					amt = parseInt(dk.console.getstr({len:11, integer:true}), 10);
+					if (isNaN(amt)) {
+						amt = 0;
+					}
 					if (amt === 0) {
 						sln('');
 						sln('  "Okay. Maybe some other time."');
