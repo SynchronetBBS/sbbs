@@ -555,6 +555,9 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 	}
 	switch(fieldtype) {
 		case "Float":
+			if (isNaN(val)) {
+				val = 0;
+			}
 			wr=val.toExponential(15);
 			while(wr.length < 22) {
 				wr=wr+"\x00";
@@ -562,6 +565,9 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			this.file.write(wr,22);
 			break;
 		case "SignedInteger":
+			if (isNaN(val)) {
+				val = 0;
+			}
 			if(val < -2147483648) {
 				val = -2147483648;
 			}
@@ -571,6 +577,9 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			this.file.writeBin(val,4);
 			break;
 		case "Integer":
+			if (isNaN(val)) {
+				val = 0;
+			}
 			if(val<0) {
 				val=0;
 			}
@@ -580,6 +589,9 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			this.file.writeBin(val,4);
 			break;
 		case "SignedInteger16":
+			if (isNaN(val)) {
+				val = 0;
+			}
 			if(val < -32768) {
 				val = -32768;
 			}
@@ -589,6 +601,9 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			this.file.writeBin(val,2);
 			break;
 		case "Integer16":
+			if (isNaN(val)) {
+				val = 0;
+			}
 			if(val<0) {
 				val=0;
 			}
@@ -598,6 +613,9 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			this.file.writeBin(val,2);
 			break;
 		case "SignedInteger8":
+			if (isNaN(val)) {
+				val = 0;
+			}
 			if(val < -128) {
 				val = -128;
 			}
@@ -607,6 +625,9 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			this.file.writeBin(val,1);
 			break;
 		case "Integer8":
+			if (isNaN(val)) {
+				val = 0;
+			}
 			if(val<0) {
 				val=0;
 			}
