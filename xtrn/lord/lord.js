@@ -14919,7 +14919,7 @@ function turgons()
 			lln('  `0'+trainer.name+' `2looks at your carefully and says: ');
 			sln('');
 			if (trainer.needstr1 !== '') {
-				lln('  `2"`0'+trainer.needstr1+'`2"');
+				lln('  `2"`0'+trainer.needstr1.replace(/\&PWE/i, player.weapon)+'`2"');
 			}
 			if (trainer.needstr2 !== '') {
 				lln('  `2"`0'+trainer.needstr2+'`2"');
