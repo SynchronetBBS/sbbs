@@ -63,7 +63,7 @@ var trainer_stats = [
 		name:'Barak',
 		weapon:'Battle Axe',
 		swear:'Children of Mara!!! You have bested me??!',
-		needstr1:'You know, you are actually getting pretty good wit',
+		needstr1:'You know, you are actually getting pretty good with',
 		needstr2:'that thing..."',
 		death:'  You blew your master away!',
 		str:17,
@@ -168,7 +168,7 @@ var trainer_stats = [
 		name:'Prince Caspian',
 		weapon:'Flashing Rapier',
 		swear:'Good show, chap!  Jolly good show!',
-		needstr1:'Something tells me that you are as good as I am no',
+		needstr1:'Something tells me that you are as good as I am now.',
 		needstr2:'',
 		death:'  You blew your master away!',
 		str:500,
@@ -713,7 +713,7 @@ var monster_stats = [
 		weapon:'3 Iron',
 		exp:364,
 		hp:253,
-		death:'You have bent the Iron warriors Iron!'
+		death:'You have bent the Iron warrior\'s Iron!'
 	},
 	{
 		name:'Black Soul',
@@ -740,7 +740,7 @@ var monster_stats = [
 		weapon:'Gaping Mouth Full Of Teeth',
 		exp:354,
 		hp:286,
-		death:'The battle has rendered the zombie even more unatractive then he was.'
+		death:'The battle has rendered the zombie even more unattractive then he was.'
 	},
 	{
 		name:'Satans Helper',
@@ -749,7 +749,7 @@ var monster_stats = [
 		weapon:'Pack Of Lies',
 		exp:453,
 		hp:165,
-		death:'Apparently you have seen through the Devils evil tricks'
+		death:'Apparently you have seen through the Devil\'s evil tricks'
 	},
 	{
 		name:'Wild Stallion',
@@ -758,7 +758,7 @@ var monster_stats = [
 		weapon:'Hoofs',
 		exp:532,
 		hp:245,
-		death:'You only wish you could have spared the animals life.'
+		death:'You only wish you could have spared the animal\'s life.'
 	},
 	{
 		name:'Belar',
@@ -785,7 +785,7 @@ var monster_stats = [
 		weapon:'Teeth And Claws',
 		exp:365,
 		hp:274,
-		death:'You rip the jaw bone off the magnificient animal!'
+		death:'You rip the jaw bone off the magnificent animal!'
 	},
 	{
 		name:'Huge Stone Warrior',
@@ -803,7 +803,7 @@ var monster_stats = [
 		weapon:'Spell Of Fire',
 		exp:321,
 		hp:234,
-		death:'The Gnomes small body is covered in a deep red blood.'
+		death:'The Gnome\'s small body is covered in a deep, red blood.'
 	},
 	{
 		name:'Emporer Len',
@@ -830,7 +830,7 @@ var monster_stats = [
 		weapon:'Rather Large Horn',
 		exp:654,
 		hp:454,
-		death:'You finally fell the huge beast, not without a few scratches.'
+		death:'You finally felled the huge beast, but not without a few scratches.'
 	},
 	{
 		name:'Goblin Pygmy',
@@ -920,7 +920,7 @@ var monster_stats = [
 		weapon:'Poison Claws',
 		exp:2748,
 		hp:675,
-		death:'Rundorig, once your friend, now lays dead before you.'
+		death:'Rundorig, once your friend, now lies dead before you.'
 	},
 	{
 		name:'Wheeler',
@@ -956,7 +956,7 @@ var monster_stats = [
 		weapon:'FireBall',
 		exp:3942,
 		hp:674,
-		death:'You have put out this Fire Orks flame!'
+		death:'You have put out this Fire Ork\'s flame!'
 	},
 	{
 		name:'Wans Beast',
@@ -983,7 +983,7 @@ var monster_stats = [
 		weapon:'Long Sword Of Death',
 		exp:6764,
 		hp:1243,
-		death:'You feel lucky to have lived, things could have gone sour..'
+		death:'You feel lucky to have lived. Things could have gone sour..'
 	},
 	{
 		name:'Baby Dragon',
@@ -1046,7 +1046,7 @@ var monster_stats = [
 		weapon:'Knee',
 		exp:9754,
 		hp:2488,
-		death:'Ernest has finally learned his lesson it seems.'
+		death:'Ernest has finally learned his lesson, it seems.'
 	},
 	{
 		name:'Scallian Rap',
@@ -1055,7 +1055,7 @@ var monster_stats = [
 		weapon:'Way Of Hurting People',
 		exp:6784,
 		hp:788,
-		death:'Scallians dead...Looks like you took out the trash...'
+		death:'Scallian\'s dead...Looks like you took out the trash...'
 	},
 	{
 		name:'Apeman',
@@ -1100,7 +1100,7 @@ var monster_stats = [
 		weapon:'Ring Of Invisibilty',
 		exp:13544,
 		hp:2344,
-		death:'Gollums ring apparently wasn\'t powerfull enough.'
+		death:'Gollum\'s ring apparently wasn\'t powerful enough.'
 	},
 	{
 		name:'Toraks Son, Korak',
@@ -1136,7 +1136,7 @@ var monster_stats = [
 		weapon:'Stare Of Paralization',
 		exp:13877,
 		hp:1764,
-		death:'The Death Dealer has been has been delt his last hand.'
+		death:'The Death Dealer has been has been dealt his last hand.'
 	},
 	{
 		name:'Tiger Of The Deep Jungle',
@@ -1154,7 +1154,7 @@ var monster_stats = [
 		weapon:'Demon Strike',
 		exp:14534,
 		hp:1232,
-		death:'If it wasn\'t for her manners, you might have got along with her.'
+		death:'If it wasn\'t for her manners, you might have gotten along with her.'
 	},
 	{
 		name:'Floating Evil Eye',
@@ -1190,7 +1190,7 @@ var monster_stats = [
 		weapon:'Spell Of Lightning',
 		exp:187,
 		hp:25,
-		death:'Thats the last spell this Sorcerer will ever cast!'
+		death:'That\'s the last spell this Sorcerer will ever cast!'
 	},
 	{
 		name:'Kill Joy',
@@ -1208,7 +1208,7 @@ var monster_stats = [
 		weapon:'Contagous Desease',
 		exp:26333,
 		hp:2766,
-		death:'It looks like the lepers fighting stratagy has fallen apart..'
+		death:'It looks like the lepers fighting strategy has fallen apart..'
 	},
 	{
 		name:'Shogun Warrior',
@@ -1226,7 +1226,7 @@ var monster_stats = [
 		weapon:'*GODS HAMMER*',
 		exp:37762,
 		hp:1878,
-		death:'You pull back the old womans hood, to reveal an eyeless skull.'
+		death:'You pull back the old woman\'s hood, to reveal an eyeless skull.'
 	},
 	{
 		name:'Ables Creature',
