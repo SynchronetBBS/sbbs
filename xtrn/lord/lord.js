@@ -7657,7 +7657,7 @@ function attack_player(op, inn)
 		sln('');
 		player.gold = 0;
 		player.exp -= parseInt(player.exp / 10, 10);
-		mail += '\n`.  `2You have killed `0'+player.name+' `2in self defense!\n`.  `2You receive `%'+(player.exp / 2)+'`2 experience!';
+		mail += '\n`.  `2You have killed `0'+player.name+' `2in self defense!\n`.  `2You receive `%'+pretty_int(player.exp / 2)+'`2 experience!';
 		if (psock !== undefined) {
 			psock.writeln('WonBattle '+op.Record);
 			if (psock.readln() !== 'OK') {
