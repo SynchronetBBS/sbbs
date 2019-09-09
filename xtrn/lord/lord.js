@@ -13308,7 +13308,7 @@ function forest()
 			case 'G':
 				lln('`c                        `%A FREUDIAN SLIP');
 				lln('`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
-				sln('  "');
+				sw('  "');
 				foreground(15);
 				switch(random(5)) {
 					case 0:
