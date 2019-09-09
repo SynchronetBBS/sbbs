@@ -3191,6 +3191,7 @@ function write_mail(to, quote)
 		foreground(2);
 		sw(' >');
 		foreground(15);
+		sw(l);
 		do {
 			ch = getkey();
 			sw(ch);
