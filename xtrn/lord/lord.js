@@ -12283,7 +12283,7 @@ function forest()
 							sln('');
 						}
 						else if (pl === player.Record) {
-							lln('  `0"Why, Id hope you know what youve said about yourself.."`2,');
+							lln('  `0"Why, Id hope you know what you\'ve said about yourself.."`2,');
 							sln('  the old man cackles.');
 							lln('');
 						}
