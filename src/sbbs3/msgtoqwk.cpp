@@ -36,6 +36,7 @@
 #include "sbbs.h"
 #include "qwk.h"
 #include "utf8.h"
+#include "cp437defs.h"
 
 #define MAX_MSGNUM	0x7FFFFFUL	// only 7 (decimal) digits allowed for msg num 
 
@@ -508,10 +509,15 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 			else
 				SAFECOPY(str,"\1n");
 			if(cfg.sub[subnum]->misc&SUB_ASCII) ch='*';
-			else ch='þ';
+			else ch = CP437_BLACK_SQUARE;
 			safe_snprintf(tmp,sizeof(tmp)," %c \1g%.10s\1n %c %.127s%c"
 				,ch,VERSION_NOTICE,ch,cfg.sub[subnum]->tagline,qwk_newline);
-			strcat(str,tmp);
+			char* tail = tmp;
+			if((smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8)) && (mode&QM_UTF8)) {
+				if(cp437_to_utf8_str(tmp, msghdr_utf8_text, sizeof(msghdr_utf8_text), /* min-char-val: */'\x80') > 1)
+					tail = msghdr_utf8_text;
+			}
+			strcat(str, tail);
 			if(!(mode&QM_RETCTLA))
 				remove_ctrl_a(str,str);
 			size+=fwrite(str,sizeof(char),strlen(str),qwk_fp);
