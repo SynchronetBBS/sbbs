@@ -54,6 +54,11 @@
 #ifndef jstypes_h___
 #define jstypes_h___
 
+#ifndef _MSC_VER
+#define _MSC_VER 1399
+#define DEFINED_MSC_VER
+#endif
+
 #include <stddef.h>
 #include "js-config.h"
 
@@ -202,10 +207,10 @@
 #ifndef JS_ALWAYS_INLINE
 # if defined DEBUG
 #  define JS_ALWAYS_INLINE   JS_INLINE
-# elif defined _MSC_VER
-#  define JS_ALWAYS_INLINE   __forceinline
 # elif defined __GNUC__
 #  define JS_ALWAYS_INLINE   __attribute__((always_inline)) JS_INLINE
+# elif defined _MSC_VER
+#  define JS_ALWAYS_INLINE   __forceinline
 # else
 #  define JS_ALWAYS_INLINE   JS_INLINE
 # endif
@@ -503,5 +508,9 @@ typedef JSUintPtr JSUword;
 #endif
 
 JS_END_EXTERN_C
+
+#ifdef DEFINED_MSC_VER
+#undef _MSC_VER
+#endif
 
 #endif /* jstypes_h___ */
