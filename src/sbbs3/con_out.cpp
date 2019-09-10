@@ -331,7 +331,8 @@ size_t sbbs_t::print_utf8_as_cp437(const char* str, size_t len)
 	enum unicode_codepoint codepoint = UNICODE_UNDEFINED;
 	len = utf8_getc(str, len, &codepoint);
 	if((int)len < 2) {
-		lprintf(LOG_NOTICE, "Invalid UTF-8 sequence: %02X (error = %d)", (uchar)*str, (int)len);
+		outchar(*str);	// Assume it's a CP437 character
+		lprintf(LOG_DEBUG, "Invalid UTF-8 sequence: %02X (error = %d)", (uchar)*str, (int)len);
 		return 1;
 	}
 	for(int i = 1; i < 0x100; i++) {
