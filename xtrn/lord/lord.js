@@ -1875,7 +1875,6 @@ var settings = {
 	old_skill_points:false,	// Require 5 skill points for use points for Death Knight and Thief
 	def_for_pk:false,	// Get bonus defence for killing a player.
 	str_for_pk:false,	// Get bonus strength for killing player. (You can still get the message that you did though)
-	broken_inn_weapon:false,// Swap weapon number and name, but not str when swapping weapon at inn... BUG!
 	remote_game:'',		// address.port of remote server
 	game_prefix:'',		// Directory/file prefix for game data files.
 	game_user:(js.global.system !== undefined ? system.qwk_id : ''),
@@ -1912,7 +1911,6 @@ var settingsmap = {
 	old_skill_points:'FiveSkillPoints',
 	def_for_pk:'BonusDefForPlayerKill',
 	str_for_pk:'BonusStrForPlayerKill',
-	broken_inn_weapon:'BrokenInnWeaponSwap',
 	remote_game:'GameServer',
 	game_prefix:'GamePrefix',
 	game_user:'GameUser',
@@ -7759,14 +7757,12 @@ function attack_player(op, inn)
 						}
 						sln(ch);
 						if (ch === 'Y') {
-							if (!settings.broken_inn_weapon) {
-								wep = get_weapon(op.weapon);
-								op.str -= wep.num;
-								player.str += wep.num;
-								wep = get_weapon(player.weapon_num);
-								op.str += wep.num;
-								player.str -= wep.num;
-							}
+							wep = get_weapon(op.weapon);
+							op.str -= wep.num;
+							player.str += wep.num;
+							wep = get_weapon(player.weapon_num);
+							op.str += wep.num;
+							player.str -= wep.num;
 							tmp = op.weapon;
 							op.weapon = player.weapon;
 							player.weapon = tmp;
@@ -15542,9 +15538,6 @@ function show_game_stats()
 	}
 	if (settings.str_for_pk) {
 		lw('SP ');			// Str for pk
-	}
-	if (settings.broken_inn_weapon) {
-		lw('BIW ');			// Broken Inn Weapon
 	}
 	if (settings.beef_up) {
 		lw('BEEF ');			// Beef up monsters
