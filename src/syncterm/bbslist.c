@@ -1505,6 +1505,10 @@ void change_settings(void)
 								"        Chooses the font size used by the custom screen mode\n";
 				j = 0;
 				for (k=0; k==0;) {
+					/* TODO: 
+					 * Show current values.
+					 * Apply on change
+					 */
 					subopts[0] = "Rows";
 					subopts[1] = "Columns";
 					subopts[2] = "Font Size";

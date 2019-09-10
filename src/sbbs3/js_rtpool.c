@@ -1,6 +1,7 @@
 /* $Id$ */
 // vi: tabstop=4
 
+#include <gen_defs.h>		/* SLEEP() */
 #include "js_rtpool.h"
 #include <threadwrap.h>		/* Must be included after jsapi.h */
 #include <genwrap.h>		/* SLEEP() */

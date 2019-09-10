@@ -575,7 +575,7 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	jsval		old_js_argv = JSVAL_VOID;
 	jsval		old_js_argc = JSVAL_VOID;
 	jsval		rval;
-	int32_t		result=0;
+	int32		result=0;
 
 	if(js_cx==NULL) {
 		errormsg(WHERE,ERR_CHK,"JavaScript support",0);

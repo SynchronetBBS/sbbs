@@ -78,7 +78,7 @@ int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 	return(numchars);
 }
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 /****************************************************************************/
 /* Case insensitive version of strstr()	- currently heavy-handed			*/
 /****************************************************************************/

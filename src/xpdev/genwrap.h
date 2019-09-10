@@ -244,7 +244,7 @@ extern "C" {
 	#endif
 #endif
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 	DLLEXPORT char* DLLCALL strcasestr(const char* haystack, const char* needle);
 #endif
 

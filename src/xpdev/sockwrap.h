@@ -61,6 +61,9 @@
 	/* Let's agree on a standard WinSock symbol here, people */
 	#define _WINSOCKAPI_
 #endif
+#ifndef MSG_WAITALL
+#define MSG_WAITALL 0x08
+#endif
 
 #elif defined __unix__		/* Unix-variant */
 							

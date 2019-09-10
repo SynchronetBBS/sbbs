@@ -669,7 +669,7 @@ js_getnum(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	uint32_t	maxnum=~0;
-	int32_t		dflt=0;
+	int32		dflt=0;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
