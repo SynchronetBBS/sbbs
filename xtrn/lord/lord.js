@@ -6748,7 +6748,7 @@ function handle_hit(atk, op, pfight)
 		sln('');
 		// DIFF: This was unconditional in original...
 		if (!pfight) {
-			lln(op.death);
+			lln('  '+op.death);
 		}
 		// DIFF: In 4.07, this was random(2) so more gold never happened.
 		// rand(1,3) is what's used in the PHP version, and what we use here.
@@ -6815,7 +6815,7 @@ function do_attack(op, pfight)
 	if (atk > player.str && op.hp < 1) {
 		sln('');
 		if (!pfight) {
-			lln(op.death);
+			lln('  '+op.death);
 		}
 		// DIFF: In 4.07, this was random(2) so more gold never happened.
 		// rand(1,3) is what's used in the PHP version, and what we use here.
