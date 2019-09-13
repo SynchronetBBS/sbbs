@@ -11695,7 +11695,7 @@ function fight_dragon(cant_run) {
 		sln('');
 		sln('');
 		sln('  The Dragon pauses to look at you, then snorts in a Dragon laugh, and');
-		sln('  delicately rips your head off, with the finess only a Dragon well practiced');
+		sln('  delicately rips your head off, with the finesse only a Dragon well practiced');
 		sln('  in the art could do.  ');
 		sln('');
 		log_line('  `2The `4Red Dragon `2has killed `5'+player.name+'`2!');
@@ -11772,7 +11772,7 @@ function fight_dragon(cant_run) {
 			lln('  kept the `4dragon `2alive is now truly no more.');
 			sln('');
 			more_nomail();
-			lln('  `0Now begone, blessed among warrior - Your fight is over.');
+			lln('  `0Now begone, blessed among warriors - Your fight is over.');
 			player.on_now = false;
 			player.put();
 			exit(0);
