@@ -44,6 +44,9 @@
  *                              to another message area.
  * 2019-08-29 Eric Oulashin     Version 1.25
  *                              Releasing this version
+ * 2019-09-12 Eric Oulashin     Version 1.26
+ *                              Fixed a bug that caused some tally information to be
+ *                              displayed as "undefined".
  */
 
 
@@ -146,8 +149,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.25";
-var READER_DATE = "2019-08-29";
+var READER_VERSION = "1.26";
+var READER_DATE = "2019-09-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -14640,14 +14643,16 @@ function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
 	if (!pMsgHdr.hasOwnProperty("total_votes") || !pMsgHdr.hasOwnProperty("upvotes"))
 		return [];
 
-	var voteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
+	var msgVoteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
 	var voteInfo = [];
-	voteInfo.push("Upvotes: " + voteInfo.upvotes);
-	voteInfo.push("Downvotes: " + voteInfo.downvotes);
-	voteInfo.push("Score: " + voteInfo.voteScore);
+	voteInfo.push("Upvotes: " + msgVoteInfo.upvotes);
+	voteInfo.push("Downvotes: " + msgVoteInfo.downvotes);
+	voteInfo.push("Score: " + msgVoteInfo.voteScore);
 	if (pMsgHdr.hasOwnProperty("tally"))
 		voteInfo.push("Tally: " + pMsgHdr.tally);
 
+	// If the user is the sysop, then also add the names of people who
+	// voted on the message.
 	if (gIsSysop)
 	{
 		// Check all the messages in the messagebase after the current one
@@ -19814,11 +19819,14 @@ function getMsgUpDownvotesAndScore(pMsgHdr)
 		voteScore: 0
 	};
 
-	if (pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
+ 	if ((pMsgHdr.hasOwnProperty("total_votes") || pMsgHdr.hasOwnProperty("downvotes")) && pMsgHdr.hasOwnProperty("upvotes"))
 	{
 		retObj.foundVoteInfo = true;
 		retObj.upvotes = pMsgHdr.upvotes;
-		retObj.downvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
+		if (pMsgHdr.hasOwnProperty("downvotes"))
+			retObj.downvotes = pMsgHdr.downvotes;
+		else
+			retObj.downvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
 		retObj.voteScore = pMsgHdr.upvotes - retObj.downvotes;
 	}
 

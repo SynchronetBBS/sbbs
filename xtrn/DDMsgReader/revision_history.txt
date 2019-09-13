@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.26     2019-09-12   Fixed a bug that was causing some of the message vote
+                      tally information to be displayed as "undefined"
 1.25     2019-08-29   Added the ability to search for message groups and
                       sub-boards when changing to another sub-board. Search
                       can be started with the / key or CTRL-F (Find). Also, in
