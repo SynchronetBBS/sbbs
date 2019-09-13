@@ -8713,7 +8713,7 @@ function single_seth()
 				more_nomail();
 				sln('  At the appropriate time, the bard kisses you deeply and long.');
 				sln('');
-				lln('  `%THE ENTIRE CHURCH ROARS IT\'S APPROVAL!');
+				lln('  `%THE ENTIRE CHURCH ROARS ITS APPROVAL!');
 				sln('');
 				more_nomail();
 				tournament_check();
@@ -11516,7 +11516,7 @@ function fight_dragon(cant_run) {
 			lln('`c                   `%EPILOGUE `2- `0The Warrior\'s Ending');
 			lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-');
 			lln('  `2After your bloody duel with the huge Dragon, your first inpulse is to rip');
-			lln('  it\'s head off and bring it town.  Carefull thought reveals it is much to');
+			lln('  its head off and bring it town.  Carefull thought reveals it is much to');
 			lln('  big for your horse, so that plan is moot.  Your second notion is bring back');
 			lln('  the childrens bones.  Bags and bags of them for proper burial, but you');
 			lln('  realize this would only cause the town\'s inhabitants `0MORE`2 pain.  You');
@@ -12477,7 +12477,7 @@ function forest()
 			sln('');
 			more();
 			foreground(10);
-			sln('  The object in question is a large dead bird.  It\'s stink is great.');
+			sln('  The object in question is a large dead bird.  Its stink is great.');
 			sln('');
 			foreground(2);
 			sln('  This would normally not be noted either, since the forest is full of');
@@ -12828,7 +12828,7 @@ function forest()
 						sln('');
 						more();
 						lln('  `0"PUT ME DOWN!" `2the head screams as you cut off a few strands of');
-						sln('  it\'s long hair and mend the tear.');
+						sln('  its long hair and mend the tear.');
 						sln('');
 						cannot = false;
 						if (player.clss === 3) {
@@ -15386,7 +15386,7 @@ function ye_old_bank()
 			lln('  `2While leaving the bank, a stranger approaches you..');
 			sln('');
 			lln('  `2"`0Hello there '+to+'. My name is Aidan. I have something that might');
-			sln('  interest you. Its just a little necklace I found in the forest, but');
+			sln('  interest you. It\'s just a little necklace I found in the forest, but');
 			lln('  the old man in the Dark Cloak Tavern called it an \'`%Amulet of Accuracy`2\'');
 			lln('  I have no use for it. I\'ll sell it to you - only '+amt+' gold`2"');
 			sln('');
