@@ -11513,7 +11513,7 @@ function fight_dragon(cant_run) {
 
 	function story() {
 		if (player.clss === 1) {
-			lln('`c                   `%EPILOGUE `2- `0The Warriors Ending');
+			lln('`c                   `%EPILOGUE `2- `0The Warrior\'s Ending');
 			lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-');
 			lln('  `2After your bloody duel with the huge Dragon, your first inpulse is to rip');
 			lln('  it\'s head off and bring it town.  Carefull thought reveals it is much to');
@@ -11596,9 +11596,9 @@ function fight_dragon(cant_run) {
 			more();
 		}
 		if (player.clss === 3) {
-			lln('`c                      `%EPILOGUE `2- `9The Thiefs Ending');
+			lln('`c                      `%EPILOGUE `2- `9The Thief\'s Ending');
 			lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-');
-			lln('`2  You breath a sigh of relief, retrieve your daggers and carefully clean');
+			lln('`2  You breathe a sigh of relief, retrieve your daggers and carefully clean');
 			lln('  them.  Although you realized some may think it cold hearted if they ever');
 			lln('  found out, you pick through the childrens bones, picking up a gold piece');
 			lln('  here, a silver there.  Afterall, these children didn\'t need it to buy a');
@@ -11640,13 +11640,13 @@ function fight_dragon(cant_run) {
 				lln('  take a cold shower.  (But you do something else instead) ;> ');
 			}
 			sln('');
-			lln('`2  When you finally meet up at Turgons, you share your story.  You can\'t help');
+			lln('`2  When you finally meet up at Turgon\'s, you share your story.  You can\'t help');
 			lln('  but be pleased at seeing so many faces in awe over your doings, so you');
 			lln('  \'spice\' up the story in a few places... As you are finishing, a woman in the');
 			lln('  back cries out.');
 			sln('');
 			lln('  `0"That Thief is wearing the ring I gave my Ellie the last birthday before');
-			lln('  disappeared!"`2');
+			lln('  she disappeared!"`2');
 			sln('');
 			lln('  You decide now would be the perfect time to make your departure.');
 			sln('');
