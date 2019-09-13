@@ -11518,11 +11518,11 @@ function fight_dragon(cant_run) {
 			lln('  `2After your bloody duel with the huge Dragon, your first inpulse is to rip');
 			lln('  it\'s head off and bring it town.  Carefull thought reveals it is much to');
 			lln('  big for your horse, so that plan is moot.  Your second notion is bring back');
-			lln('  the childrens bones.  Bags and bags of them for proper barial, but you');
-			lln('  realize this would only cause the towns inhabitants `0MORE`2 pain.  You');
-			lln('  finally decide on the Dragons heart.  After adding ten years to your');
-			lln('  swords life, you finally chip off enough scales to wallow in the huge');
-			lln('  beasts insides.');
+			lln('  the childrens bones.  Bags and bags of them for proper burial, but you');
+			lln('  realize this would only cause the town\'s inhabitants `0MORE`2 pain.  You');
+			lln('  finally decide on the Dragon\'s heart.  After adding ten years to your');
+			lln('  sword\'s life, you finally chip off enough scales to wallow in the huge');
+			lln('  beast\'s insides.');
 			sln('');
 			lln('  When you are finished, and fit the still heart in a gunny sack you brought,');
 			lln('  (who would have thought this would be its use?) you make your way back to');
@@ -11535,7 +11535,7 @@ function fight_dragon(cant_run) {
 			sln('');
 			more();
 			lln('  `0"PEOPLE!" `2your voice booms.  `0"It is true I have ridden this town of');
-			lln('  it\'s curse, the `4Red Dragon`0.  And this is his heart."');
+			lln('  its curse, the `4Red Dragon`0.  And this is his heart."');
 			sln('');
 			lln('  `2You dump the bloody object onto the ground.  From the back, Barak\'s');
 			lln('  voice is heard.  `5"How do we know where you got that thing?  It looks');
