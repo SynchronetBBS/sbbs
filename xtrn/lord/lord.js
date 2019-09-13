@@ -13115,7 +13115,7 @@ function forest()
 					lln('  `%"But.. that\'s what you are here too!  Keep your chin up, honey." `2you');
 					sln('  clumsly encourage.');
 					sln('');
-					lln('  `2She smiles wanely.');
+					lln('  `2She smiles wanly.');
 					sln('');
 					tmp = player.level * player.level * 25;
 					lln('  `%YOU RECIEVE '+pretty_int(tmp)+' EXPERIENCE.');
