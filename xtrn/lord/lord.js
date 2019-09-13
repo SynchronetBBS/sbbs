@@ -12590,7 +12590,7 @@ function forest()
 			lln('  `0"You\'ve come for me!" `2shouts an overjoyed (and darn good looking)');
 			lln('  '+lad+'.');
 			sln('');
-			lln('  `2You breath a sigh of relief.  This was the right place.');
+			lln('  `2You breathe a sigh of relief.  This was the right place.');
 			sln('');
 			if (player.sex === 'M') {
 				if (!settings.clean_mode) {
