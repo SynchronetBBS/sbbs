@@ -46,6 +46,7 @@ load("newsutil.js");	// write_news_header() and parse_news_header()
 
 var debug = false;
 var slave = false;
+var reader_mode = false;
 var reset_import_ptrs = false;		// Reset import pointers, import all messages
 var update_import_ptrs = false;		// Update import pointers, don't import anything
 var reset_export_ptrs = false;		// Reset export pointers, export all messages
@@ -228,6 +229,9 @@ while(!cfg_file.eof) {
 		case "slave":
 			slave=true;
 			break;
+		case "reader_mode":
+			reader_mode = true;
+			break;
 		case "tagline":
 			str.shift();				// Remove first element (keyword)
 			tagline=str.join(' ');		// Combine remaining elements (tagline)
@@ -278,6 +282,11 @@ if(tls) {
 	socket.ssl_session=true;
 }
 readln();
+
+if(reader_mode) {
+	writeln("MODE READER");
+	readln();
+}
 
 if(username!=undefined && username.length) {
 	print("Authenticating...");
