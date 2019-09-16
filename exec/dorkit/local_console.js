@@ -103,30 +103,40 @@ dk.console.local_io = {
 };
 dk.console.local_io.screen.touched = [];
 
-// TODO
-if (false /*js.global.conio !== undefined*/) {
-	// Get stuff that would come from the dropfile if there was one.
-	// From the bbs object.
+// Get stuff that would come from the dropfile if there was one.
+// From the bbs object.
+if (dk.connection.node === undefined)
 	dk.connection.node = 0;
+if (dk.connection.time === undefined)
 	dk.connection.time = strftime("%H:%M", time());
+if (dk.user.seconds_remaining_from === undefined)
 	dk.user.seconds_remaining_from = time();
+if (dk.user.seconds_remaining === undefined)
 	dk.user.seconds_remaining = 43200;	// 12 hours should be enough for anyone!
+if (dk.user.minutes_remaining === undefined)
 	dk.user.minutes_remaining = 720;
 
 	// From the client object...
+if (dk.connection.type === undefined)
 	dk.connection.type = 'LOCAL';
 
 	// From the console object
+if (dk.user.ansi_supported === undefined)
 	dk.user.ansi_supported = true;
+if (dk.console.rows === undefined)
 	dk.console.rows = conio.screenheight;
+if (dk.console.cols === undefined)
 	dk.console.cols = conio.screenwidth;
-	delete dk.console.local_screen;
+delete dk.console.local_screen;
 
 	// From the user object...
+if (dk.user.alias === undefined)
 	dk.user.alias = 'Local User';
+if (dk.user.full_name === undefined)
 	dk.user.full_name = 'Local User';
+if (dk.user.location === undefined)
 	dk.user.location = 'Local';
+if (dk.user.number === undefined)
 	dk.user.number = 0;
-
+if (dk.user.alias === undefined)
 	dk.user.alias = 'Sysop';
-}
