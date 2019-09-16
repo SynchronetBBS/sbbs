@@ -65,7 +65,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				un, format(
 					locale.strings.api_system.telegram_header_format,
 					user.alias, (new Date()).toLocaleString()
-				) + '\r\n' + http_request.query.telegram[0] + '\r\n'
+				) + '\r\n' + utf8_decode(http_request.query.telegram[0]) + '\r\n'
 			);
 			break;
 
