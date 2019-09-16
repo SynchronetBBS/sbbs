@@ -47,6 +47,9 @@
  * 2019-09-12 Eric Oulashin     Version 1.26
  *                              Fixed a bug that caused some tally information to be
  *                              displayed as "undefined".
+ * 2019-09-16 Eric Oulashin     Version 1.27
+ *                              Bug fix: Now displays the message score in the header
+ *                              even if the message only has downvotes
  */
 
 
@@ -149,8 +152,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.26";
-var READER_DATE = "2019-09-12";
+var READER_VERSION = "1.27";
+var READER_DATE = "2019-09-16";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4435,14 +4438,15 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 // Helper method for ReadMessageEnhanced() - Does the scrollable reader interface
 function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, messageText, msgHasANSICodes, pOffset)
 {
-	var retObj = new Object();
-	retObj.offsetValid = true;
-	retObj.msgNotReadable = false;
-	retObj.userReplied = false;
-	retObj.lastKeypress = "";
-	retObj.newMsgOffset = -1;
-	retObj.nextAction = ACTION_NONE;
-	retObj.refreshEnhancedRdrHelpLine = false;
+	var retObj = {
+		offsetValid: true,
+		msgNotReadable: false,
+		userReplied: false,
+		lastKeypress: "",
+		newMsgOffset: -1,
+		nextAction: ACTION_NONE,
+		refreshEnhancedRdrHelpLine: false
+	};
 
 	// Show the message header
 	this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
@@ -9479,9 +9483,8 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	var enhHdrLines = this.enhMsgHeaderLines.slice(0);
 	if (this.usingInternalEnhMsgHdr && !msgIsAPoll && pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
 	{
-		// Only add the vote information if the total_votes and upvotes values are
-		// non-zero
-		if ((pMsgHdr.total_votes != 0) && (pMsgHdr.upvotes != 0))
+		// Only add the vote information if the total_votes value is non-zero
+		if (pMsgHdr.total_votes != 0)
 		{
 			var voteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
 			var voteStatsTxt = "\1n\1c" + RIGHT_T_SINGLE + "\1h\1gS\1n\1gcore\1h\1c: \1b" + voteInfo.voteScore + " (+" + voteInfo.upvotes + ", -" + voteInfo.downvotes + ")\1n\1c" + LEFT_T_SINGLE;
