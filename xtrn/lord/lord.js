@@ -4798,6 +4798,8 @@ function find_player()
 	plen = player_length();
 	for (i = 0; i < plen; i += 1) {
 		op = player_get(i);
+		if (op.name === 'X')
+			continue;
 		tname = disp_str(op.name).toUpperCase();
 		if (tname.indexOf(ucname) !== -1) {
 			sln('');
