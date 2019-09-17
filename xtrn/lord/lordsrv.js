@@ -942,6 +942,11 @@ function handle_request() {
 		}
 	}
 
+	if (!this.is_connected) {
+		close_sock(this);
+		return;
+	}
+
 	block = this.recv(4096);
 	if (block !== null)
 		buf += block;
@@ -991,11 +996,13 @@ function handle_request() {
 function handle_tx() {
 	var sent = 0;
 
-	if (this.LORD.txbuf.length > 0)
-		sent = this.send(this.LORD.txbuf);
-	this.LORD.txbuf = this.LORD.txbuf.substr(sent);
-	if (this.LORD.txbuf.length === 0) {
-		wrsocks.splice(wrsocks.indexOf(this), 1);
+	if (this.is_connected) {
+		if (this.LORD.txbuf.length > 0)
+			sent = this.send(this.LORD.txbuf);
+		this.LORD.txbuf = this.LORD.txbuf.substr(sent);
+		if (this.LORD.txbuf.length === 0) {
+			wrsocks.splice(wrsocks.indexOf(this), 1);
+		}
 	}
 }
 
