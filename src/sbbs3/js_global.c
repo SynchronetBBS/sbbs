@@ -3779,15 +3779,15 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 			for (j = 0; j < inarray_cnt; j++) {
 				if (limit[j] > 0) {
 					len = 0;
+					JS_RESUMEREQUEST(cx, rc);
+					if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
+						return(JS_FALSE);
+					val = OBJECT_TO_JSVAL(rarray);
+					if (!JS_SetProperty(cx, robj, props[j], &val))
+						return JS_FALSE;
+					rc=JS_SUSPENDREQUEST(cx);
 					for(i=0;i<limit[j];i++) {
 						JS_RESUMEREQUEST(cx, rc);
-						if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
-							return(JS_FALSE);
-						val = OBJECT_TO_JSVAL(rarray);
-						if (!JS_SetProperty(cx, robj, props[j], &val)) {
-							rc=JS_SUSPENDREQUEST(cx);
-							return JS_FALSE;
-						}
 						if(!JS_GetElement(cx, inarray[j], i, &val)) {
 							rc=JS_SUSPENDREQUEST(cx);
 							break;
