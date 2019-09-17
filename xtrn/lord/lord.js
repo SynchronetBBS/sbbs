@@ -12547,7 +12547,7 @@ function forest()
 		}
 		sln(ich);
 		sln('');
-		if (ich === 'i') {
+		if (ich === 'I') {
 			sln('  You look at the note a moment - then blithely toss it in a');
 			sln('  nearby creek.  You skip away merrily! (evil can be fun!)');
 			sln('');
