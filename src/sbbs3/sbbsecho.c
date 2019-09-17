@@ -57,6 +57,7 @@
 #include "sbbsecho.h"
 #include "genwrap.h"		/* PLATFORM_DESC */
 #include "xpendian.h"
+#include "utf8.h"
 
 #define MAX_OPEN_SMBS	10
 
@@ -3428,8 +3429,6 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l) {
 					smb_hfield(&msg, FIDOCHARSET, (ushort)(m-l), fbuf+l);
-					if(smb_msg_is_utf8(&msg))
-						msg.hdr.auxattr |= MSG_HFIELDS_UTF8;
 				}
 			}
 
@@ -3544,6 +3543,12 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 	while(taillen && stail[taillen-1]<=' ')	/* trim all garbage off the tail */
 		taillen--;
 	stail[taillen]=0;
+
+	if(cfg.auto_utf8 && msg.ftn_charset == NULL && !str_is_ascii(fbuf) && utf8_str_is_valid(fbuf))
+		smb_hfield_str(&msg, FIDOCHARSET, FIDO_CHARSET_UTF8);
+
+	if(smb_msg_is_utf8(&msg))
+		msg.hdr.auxattr |= MSG_HFIELDS_UTF8;
 
 	if(subnum==INVALID_SUB && !bodylen && !taillen && cfg.kill_empty_netmail) {
 		lprintf(LOG_INFO,"Empty NetMail - Ignored ");
