@@ -56,7 +56,6 @@ typedef struct
 	char	name[MAX_PATH+1];
 	char	mode[4];
 	uchar	etx;
-	BOOL	external;	/* externally created, don't close */
 	BOOL	debug;
 	BOOL	rot13;
 	BOOL	yencoded;
@@ -2887,7 +2886,7 @@ static void js_finalize_file(JSContext *cx, JSObject *obj)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return;
 
-	if(p->external==JS_FALSE && p->fp!=NULL)
+	if(p->fp!=NULL)
 		fclose(p->fp);
 
 	dbprintf(FALSE, p, "finalized: %s",p->name);
@@ -3024,7 +3023,7 @@ JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *nam
 {
 	JSObject* obj;
 	private_t*	p;
-	FILE* fp = fdopen(fd, mode);
+	FILE* fp = fdopen(dup(fd), mode);
 
 	if(fp == NULL)
 		return NULL;
@@ -3032,17 +3031,19 @@ JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *nam
 	obj = JS_DefineObject(cx, parent, name, &js_file_class, NULL
 		,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	if(obj==NULL)
+	if(obj==NULL) {
+		fclose(fp);
 		return(NULL);
+	}
 
 	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL)
 		return(NULL);
 
 	p->fp=fp;
 	p->debug=JS_FALSE;
-	p->external=JS_TRUE;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
+		fclose(fp);
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
 		return(NULL);
 	}
