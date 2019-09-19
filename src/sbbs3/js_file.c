@@ -81,7 +81,7 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
 
-	lprintf(LOG_DEBUG,"%04u File %s%s",p->fp ? fileno(p->fp) : 0,error ? "ERROR: ":"",sbuf);
+	lprintf(LOG_DEBUG,"%04d File %s%s",p->fp ? fileno(p->fp) : 0,error ? "ERROR: ":"",sbuf);
 }
 
 /* Converts fopen() style 'mode' string into open() style 'flags' integer */
@@ -286,9 +286,9 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 		fclose(p->fp);
 
-	dbprintf(FALSE, p, "closed");
-
 	p->fp=NULL;
+	dbprintf(FALSE, p, "closed: %s", p->name);
+
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -2890,7 +2890,7 @@ static void js_finalize_file(JSContext *cx, JSObject *obj)
 	if(p->external==JS_FALSE && p->fp!=NULL)
 		fclose(p->fp);
 
-	dbprintf(FALSE, p, "closed: %s",p->name);
+	dbprintf(FALSE, p, "finalized: %s",p->name);
 
 	FREE_AND_NULL(p->ini_style.key_prefix);
 	FREE_AND_NULL(p->ini_style.section_separator);
