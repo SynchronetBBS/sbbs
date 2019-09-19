@@ -39,4 +39,196 @@ jsexec lord.js +IGM path/to/igm.js
 This will add the IGM to your other places automatically.  To remove the IGM,
 use -IGM.
 
-LORD is configured via the lord.ini file.
+The game can be reset by passing the "reset" parameter:
+
+jsexec lord.js RESET
+
+LORD is configured via the lord.ini file.  The global section has the following
+keys available.
+
+InactivityDays=		15
+The number of days after which to delete an inactive player.  A "day" is only
+counted if at least one player enters the game.
+
+Delete1XP=		true
+If true, players with 1xp are deleted the next day.  Generally, players with
+one XP simply entered the game then left, though it is possible to enter the
+game, lose your first battle, and end with 1xp.
+
+CleanMode=		false
+When enabled, some adult themes are left out of the game.  Mostly this just
+means sex.
+
+DeedsToWin=		3
+How many times the dragon must be slain for a player to be declared the winner.
+After a winner is declared, the game must be reset (TODO: Auto-reset after
+some period of time).
+
+BankTransfersAllowed=	true
+If this is true, players are allowed to send gold to each other.  This can
+result in team play, which you may want to discourage.
+
+BankTransfersPerDay=	2
+The number of times a player can transfer funds in a day.  This value tends to
+set the maximum team size.  If you want to allow team play, but only allow
+small teams, a value of two is good.
+
+MaxTransferAmount=	2000000
+The maximum amount per bank transfer.  This allows another control over team
+play.  The smaller this number is, the less impactful team play gets.
+
+PlayerFightsPerDay=	3
+Number of player fights per day.  Player fights are a huge source of experience
+in the game, so if there's a large enough number of players, this helps keep
+the time required to slay the dragon relatively long.
+
+ForestFightsPerDay=	15
+Number of forest fights a player gets per day by default.  This effictivly sets
+how long it takes to slay the dragon as well as how long a days session takes
+to play.
+
+RessurectionDays=	3
+Number of days a player will be ressurected from the dead after the last day he
+plays.  This only impacts players who miss player days... this is most easily
+explained using ann example.
+Day 1: Player plays and is killed.
+Day 2: Player is *not* ressurected, but stays dead.
+Day 3: Player is ressurected and moved to the fields so anyone can kill him.
+Day 4: Player is ressurected.
+Day 5: Player is ressurected.
+Day 6: Player is left as dead until deleted due to InactivityDays.
+
+Since player fights are an important XP source, this basically keeps the XP
+available in the game when someone misses a few days.  Since the player loses
+10% of their XP every time they are killed, this also acts to limit the
+punishment for missing more than X days.
+
+OutOfTimeFile=
+The path to a file that is displayed when the user runs out of BBS time during
+the session.
+
+SafeNode=		true
+This helps to prevent players from being listed as on when they have
+disconnected.  Whenever a player is on, a file is created using the node
+number.  If that file exists for the current node when a player enters the
+game, the player who was previously on that node is marked as offline.  This
+should only have an impact when the game is crashing.
+
+UseFancyMore=		true
+If true, more prompts are erased after the player presses a key.  I can't think
+of any reason you would turn this off, but it's been an option in LORD since
+the fancy more prompt was added, so it's left for historical purposes.
+
+NoNPCChatter=		false
+If this is true, NPCs will not comment in the conversation in the inn.
+
+Olivia=			true
+This enables the Olivia events.
+
+FunkyFlowers=		true
+If true, players can use background, blinking, and clear screen codes in the
+flowers.  This can mess up game screens, so was disabled in v4.00 of LORD.
+Some people really like this ability though, so setting this to true allows
+the codes, but ensures the colours are restore correctly afterward.
+
+ShopLimit=		true
+If this is true, weapons in the shop require a minimum strength, and armour
+requires a minimum defence.  This help prevent "camping" where a player sits
+at level one or two and collects experience and items rather than trying to
+slay the dragon.
+
+FiveSkillPoints=	false
+Before version 4, Death Knight and Thief skill uses required five skill points
+per use.  This was later changed to four skill points.  The change to four
+makes Thief and Death Knight generally better than magic.
+
+BonusDefForPlayerKill=	false
+In later 4.x versions of LORD, players started getting extra defence points
+every time they killed another player.  This counteracted ShopLimit as a
+camping protection, and made a player who used all their player attacks each
+day effectively unkillable in the forest.
+
+BonusStrForPlayerKill=	false
+As above, 4.x versions of LORD said that you got extra strength for each player
+kill.  Players didn't *actually* get this bonus though.
+
+GamePrefix=
+A file/path prefix for game data files.  This allows multiple LORD games to
+keep their data in the same directory without interferring with each other.
+Generally you would use the -p option and a separate lord.ini for each game, so
+this option is not really needed.
+
+GameServer=		nix.synchro.net.57038
+Connect to a shared player database.  This helps for systems which have a small
+number of players.  Be aware however that the game server is *not fair*.
+Each game that connects to the server is allowed to use any game settings and
+set if IGMs, so some of the players may have thousands of forest fights per day
+while others have the default of 15.  Further, the game is not winnable.
+
+GameUser=		QWKID
+User ID for the shared player database.
+
+GamePassword=		QWKPASS
+Password for the shared player database.
+
+MenuDir=		
+Directory to read "menu files" from.  These allow customizing LORDs look and
+feel to a great degree.  You can find a number of these in the menus/
+directory.
+
+BeefUpForHeroes=        false
+If this is true, all battles become more difficult the more times you have
+slain the dragon.  This helps keep the game challenging, but can irritate some
+players who prefer a fixed strategy.
+
+OldStealAmounts=        true
+In older versions of LORD, when thieves robbed the bank, they got large amounts
+of gold.  In new versions, the amount of gold is not very significant and
+likely not worth using a fairy for.  This restores the old amounts.
+
+WakeUpDragon=		true
+This setting, like ShopLimit helps prevent camping.  If this is true, a player
+with more than 15 million XP, or any player of level 12 who is *alive* when
+they enter the game for the first time in a day will be attacked by the dragon.
+
+DeathKnightBoost=	false
+When set, a Death Knight attack does 3.3 times the damage instead of 3 times.
+This helps make the Death Knight skills worth getting because without this,
+thief skills do the same amount of damage, are easier to train in, and thieves
+can rob the bank and are immune to troll attacks in the forest.  Having the
+Death Knight skills do more damage makes up for this weakness.
+
+NewUglyStick=		false
+The old versions of the pretty/ugly stick event had a one in three chance of
+giving five charm and a 2 in three chance of taking one charm.  This was
+changed in 4.x to a one in three chance of gaining one or two charm and a two
+in three chance of losing one or two charm, resulting in a net loss over time
+from the ugly stick rather than a net gain.
+
+Tournament Settings:
+
+LORD can also be ran in "tournament mode" which changes the winning conditions.
+Instead of requiring a fixed number of dragon kills, the winning stat can be
+something else, and the winner can be as soon as someone reaches a target
+number, or the the highest number after a specific numer of days.  These
+are set in the [Tournament] section of lord.ini.
+
+Enabled=		false
+Must be true to enable tournament mode.
+
+Days=			0
+Number of days to run the tournament for.  If set to zero, a winstat must be
+set.
+
+WinStat=		XP
+The player who has the highest value in this stat at the end of the tournament
+wins.  Supported values are: XP, DragonKills, PlayerKills, Level, and Lays.
+
+The following set a required target value when Days=0.  *ALL* of these numbers
+must be met for a winner to be declared.
+
+Experience=		0
+DragonKills=		0
+PlayerKills=		0
+Level=			0
+Lays=			0
