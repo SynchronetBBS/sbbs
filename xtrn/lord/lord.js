@@ -5329,6 +5329,7 @@ function wake_up()
 	player.seen_dragon = false;
 	player.seen_violet = false;
 	player.dead = false;
+	player.leftbank = false;
 	if (settings.forest_fights > 32000) {
 		settings.forest_fights = 32000;
 	}
@@ -15377,42 +15378,45 @@ function ye_old_bank()
 				break;
 		}
 	} while ('RQ\r'.indexOf(ch) === -1);
-	if (random(30) === 25) {
-		if (!player.amulet) {
-			to = class_list[player.clss];
-			amt = player.level * 1000;
-			sclrscr();
-			lln('  `%A random event!');
-			lln('`#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
-			sln('');
-			lln('  `2While leaving the bank, a stranger approaches you..');
-			sln('');
-			lln('  `2"`0Hello there '+to+'. My name is Aidan. I have something that might');
-			sln('  interest you. It\'s just a little necklace I found in the forest, but');
-			lln('  the old man in the Dark Cloak Tavern called it an \'`%Amulet of Accuracy`2\'');
-			lln('  I have no use for it. I\'ll sell it to you - only '+amt+' gold`2"');
-			sln('');
-			sln('');
-			lw('  `2Buy the Amulet? `2[`0N`2] : ');
-			ch = getkey().toUpperCase();
-			if (ch !== 'Y') {
-				ch = 'N';
-			}
-			sln(ch);
-			if (ch === 'Y') {
-				if (player.gold < amt) {
-					lln('  `2"`0I\'m sorry, but it seems you dont have enough gold to make');
-					lln('  the trade. Maybe some other time.`2"');
+	if (player.leftbank === false) {
+		player.leftbank = true;
+		if (random(30) === 25) {
+			if (!player.amulet) {
+				to = class_list[player.clss];
+				amt = player.level * 1000;
+				sclrscr();
+				lln('  `%A random event!');
+				lln('`#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+				sln('');
+				lln('  `2While leaving the bank, a stranger approaches you..');
+				sln('');
+				lln('  `2"`0Hello there '+to+'. My name is Aidan. I have something that might');
+				sln('  interest you. It\'s just a little necklace I found in the forest, but');
+				lln('  the old man in the Dark Cloak Tavern called it an \'`%Amulet of Accuracy`2\'');
+				lln('  I have no use for it. I\'ll sell it to you - only '+amt+' gold`2"');
+				sln('');
+				sln('');
+				lw('  `2Buy the Amulet? `2[`0N`2] : ');
+				ch = getkey().toUpperCase();
+				if (ch !== 'Y') {
+					ch = 'N';
 				}
-				else if (player.amulet) {
-					lln('  `2"`0I\'m sorry, but you already have an amulet. I cannot sell');
-					lln('  you another.`2"');
-				}
-				else {
-					lln('  `2"`0Thank you. I believe you\'ll enjoy that little amulet.');
-					lln('  It may come in handy in battle.`2"');
-					player.gold -= amt;
-					player.amulet = true;
+				sln(ch);
+				if (ch === 'Y') {
+					if (player.gold < amt) {
+						lln('  `2"`0I\'m sorry, but it seems you dont have enough gold to make');
+						lln('  the trade. Maybe some other time.`2"');
+					}
+					else if (player.amulet) {
+						lln('  `2"`0I\'m sorry, but you already have an amulet. I cannot sell');
+						lln('  you another.`2"');
+					}
+					else {
+						lln('  `2"`0Thank you. I believe you\'ll enjoy that little amulet.');
+						lln('  It may come in handy in battle.`2"');
+						player.gold -= amt;
+						player.amulet = true;
+					}
 				}
 			}
 		}
