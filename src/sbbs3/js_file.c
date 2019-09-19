@@ -3023,10 +3023,17 @@ JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *nam
 {
 	JSObject* obj;
 	private_t*	p;
-	FILE* fp = fdopen(dup(fd), mode);
+	int newfd = dup(fd);
+	FILE* fp;
 
-	if(fp == NULL)
+	if (newfd == -1)
 		return NULL;
+
+	fp = fdopen(newfd, mode);
+	if(fp == NULL) {
+		close(newfd);
+		return NULL;
+	}
 
 	obj = JS_DefineObject(cx, parent, name, &js_file_class, NULL
 		,JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -3036,8 +3043,10 @@ JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *nam
 		return(NULL);
 	}
 
-	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL)
+	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL) {
+		fclose(fp);
 		return(NULL);
+	}
 
 	p->fp=fp;
 	p->debug=JS_FALSE;
