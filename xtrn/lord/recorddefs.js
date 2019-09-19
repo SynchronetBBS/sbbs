@@ -344,9 +344,15 @@ var Player_Def = [
 		def:''
 	},
 	{
+		prop:'leftbank',
+		name:'Left bank today',
+		type:'Boolean',
+		def:false
+	},
+	{
 		prop:'padding',
 		name:'Padding for Compatibility',
-		type:'String:100',
+		type:'String:99',
 		def:''
 	}
 ];
