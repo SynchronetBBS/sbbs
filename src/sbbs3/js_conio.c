@@ -1220,7 +1220,7 @@ static char* conio_prop_desc[] = {
 	"Allows windows to scroll",
 	"Enables direct video writes (does nothing)",
 	"Do not update the screen when characters are printed",
-	"Calling puttext() (and some other things implemended using it) can move the cursor position",
+	"Calling puttext() (and some other things implemented using it) can move the cursor position",
 	"The current video mode",
 	"",
 	"Delay in MS after getting an escape character before assuming it is not part of a sequence.  For curses and ANSI modes",
@@ -1254,7 +1254,7 @@ JSObject* js_CreateConioObject(JSContext* cx, JSObject* parent)
 		return(NULL);
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"CONIO Library Object",315);
+	js_DescribeSyncObject(cx,obj,"Console Input/Output Object (DOS conio library functionality for jsexec)",315);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", conio_prop_desc, JSPROP_READONLY);
 #endif
 
