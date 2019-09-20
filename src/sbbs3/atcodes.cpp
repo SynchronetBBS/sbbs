@@ -449,7 +449,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 
 	if(strncmp(sp, "FILES:", 6) == 0) {	// Number of files in specified directory
 		const char* path = getpath(&cfg, sp + 6);
-		safe_snprintf(str, maxlen, "%lu", getfilecount(path, ALLFILES));
+		safe_snprintf(str, maxlen, "%lu", getfilecount(path));
 		return str;
 	}
 

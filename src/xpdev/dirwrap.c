@@ -792,10 +792,10 @@ long DLLCALL delfiles(const char *inpath, const char *spec, size_t keep)
 }
 
 /****************************************************************************/
-/* Returns number of files in a directory (inpath) matching 'pattern'		*/
+/* Returns number of files matching 'inpath'								*/
 /* Similar, but not identical, to getdirsize(), e.g. subdirs never counted	*/
 /****************************************************************************/
-ulong DLLCALL getfilecount(const char *inpath, const char* pattern)
+ulong DLLCALL getfilecount(const char *inpath)
 {
 	char path[MAX_PATH+1];
 	glob_t	g;
@@ -803,8 +803,10 @@ ulong DLLCALL getfilecount(const char *inpath, const char* pattern)
 	ulong	count = 0;
 
 	SAFECOPY(path, inpath);
-	backslash(path);
-	SAFECAT(path, pattern);
+	if(isdir(path))
+		backslash(path);
+	if(IS_PATH_DELIM(*lastchar(path)))
+		SAFECAT(path, ALLFILES);
 	if(glob(path, GLOB_MARK, NULL, &g))
 		return 0;
 	for(gi = 0; gi < g.gl_pathc; ++gi) {
