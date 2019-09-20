@@ -143,6 +143,15 @@ int sbbs_t::show_atcode(const char *instr)
 	return(len);
 }
 
+static const char* getpath(scfg_t* cfg, const char* path)
+{
+	for(int i = 0; i < cfg->total_dirs; i++) {
+		if(stricmp(cfg->dir[i]->code, path) == 0)
+			return cfg->dir[i]->path;
+	}
+	return path;
+}
+
 const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 {
 	char*	tp = NULL;
@@ -439,17 +448,73 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 	}
 
 	if(strncmp(sp, "FILES:", 6) == 0) {	// Number of files in specified directory
-		for(i = 0; i < cfg.total_dirs; i++) {
-			if(stricmp(cfg.dir[i]->code, sp + 6) == 0) {
-				safe_snprintf(str, maxlen, "%lu", (ulong)getfiles(&cfg, i));
-				return str;
-			}
-		}
-		return nulstr;
+		const char* path = getpath(&cfg, sp + 6);
+		safe_snprintf(str, maxlen, "%lu", getfilecount(path, ALLFILES));
+		return str;
 	}
 
 	if(strcmp(sp, "FILES") == 0) {	// Number of files in current directory
 		safe_snprintf(str, maxlen, "%lu", (ulong)getfiles(&cfg, usrdir[curlib][curdir[curlib]]));
+		return str;
+	}
+
+	if(strncmp(sp, "FILESIZE:", 9) == 0) {
+		const char* path = getpath(&cfg, sp + 9);
+		byte_estimate_to_str(getfilesizetotal(path), str, maxlen, /* unit: */1, /* precision: */1);
+		return str;
+	}
+
+	if(strcmp(sp, "FILESIZE") == 0) {
+		byte_estimate_to_str(getfilesizetotal(cfg.dir[usrdir[curlib][curdir[curlib]]]->path)
+			,str, maxlen, /* unit: */1, /* precision: */1);
+		return str;
+	}
+
+	if(strncmp(sp, "FILEBYTES:", 10) == 0) {	// Number of bytes in current file directory
+		const char* path = getpath(&cfg, sp + 10);
+		safe_snprintf(str, maxlen, "%" PRIu64, getfilesizetotal(path));
+		return str;
+	}
+
+	if(strcmp(sp, "FILEBYTES") == 0) {	// Number of bytes in current file directory
+		safe_snprintf(str, maxlen, "%" PRIu64
+			,getfilesizetotal(cfg.dir[usrdir[curlib][curdir[curlib]]]->path));
+		return str;
+	}
+
+	if(strncmp(sp, "FILEKB:", 7) == 0) {	// Number of kibibytes in current file directory
+		const char* path = getpath(&cfg, sp + 7);
+		safe_snprintf(str, maxlen, "%1.1f", getfilesizetotal(path) / 1024.0);
+		return str;
+	}
+
+	if(strcmp(sp, "FILEKB") == 0) {	// Number of kibibytes in current file directory
+		safe_snprintf(str, maxlen, "%1.1f"
+			,getfilesizetotal(cfg.dir[usrdir[curlib][curdir[curlib]]]->path) / 1024.0);
+		return str;
+	}
+
+	if(strncmp(sp, "FILEMB:", 7) == 0) {	// Number of mebibytes in current file directory
+		const char* path = getpath(&cfg, sp + 7);
+		safe_snprintf(str, maxlen, "%1.1f", getfilesizetotal(path) / (1024.0 * 1024.0));
+		return str;
+	}
+
+	if(strcmp(sp, "FILEMB") == 0) {	// Number of mebibytes in current file directory
+		safe_snprintf(str, maxlen, "%1.1f"
+			,getfilesizetotal(cfg.dir[usrdir[curlib][curdir[curlib]]]->path) / (1024.0 * 1024.0));
+		return str;
+	}
+
+	if(strncmp(sp, "FILEGB:", 7) == 0) {	// Number of gibibytes in current file directory
+		const char* path = getpath(&cfg, sp + 7);
+		safe_snprintf(str, maxlen, "%1.1f", getfilesizetotal(path) / (1024.0 * 1024.0 * 1024.0));
+		return str;
+	}
+
+	if(strcmp(sp, "FILEGB") == 0) {	// Number of gibibytes in current file directory
+		safe_snprintf(str, maxlen, "%1.1f"
+			,getfilesizetotal(cfg.dir[usrdir[curlib][curdir[curlib]]]->path) / (1024.0 * 1024.0 * 1024.0));
 		return str;
 	}
 
