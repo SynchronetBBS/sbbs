@@ -438,6 +438,21 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return(str);
 	}
 
+	if(strncmp(sp, "FILES:", 6) == 0) {	// Number of files in specified directory
+		for(i = 0; i < cfg.total_dirs; i++) {
+			if(stricmp(cfg.dir[i]->code, sp + 6) == 0) {
+				safe_snprintf(str, maxlen, "%lu", (ulong)getfiles(&cfg, i));
+				return str;
+			}
+		}
+		return nulstr;
+	}
+
+	if(strcmp(sp, "FILES") == 0) {	// Number of files in current directory
+		safe_snprintf(str, maxlen, "%lu", (ulong)getfiles(&cfg, usrdir[curlib][curdir[curlib]]));
+		return str;
+	}
+
 	if(!strcmp(sp,"TCALLS") || !strcmp(sp,"NUMCALLS")) {
 		getstats(&cfg,0,&stats);
 		safe_snprintf(str,maxlen,"%lu", (ulong)stats.logons);
