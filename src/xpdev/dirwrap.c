@@ -817,6 +817,34 @@ ulong DLLCALL getfilecount(const char *inpath, const char* pattern)
 }
 
 /****************************************************************************/
+/* Returns number of bytes used by file(s) matching 'inpath'				*/
+/****************************************************************************/
+uint64_t DLLCALL getfilesizetotal(const char *inpath)
+{
+	char path[MAX_PATH+1];
+	glob_t	g;
+	uint	gi;
+	uint64_t total = 0;
+
+	SAFECOPY(path, inpath);
+	if(isdir(path))
+		backslash(path);
+	if(IS_PATH_DELIM(*lastchar(path)))
+		SAFECAT(path, ALLFILES);
+	if(glob(path, GLOB_MARK, NULL, &g))
+		return 0;
+	for(gi = 0; gi < g.gl_pathc; ++gi) {
+		if(*lastchar(g.gl_pathv[gi]) == '/')
+			continue;
+		off_t size = flength(g.gl_pathv[gi]);
+		if(size >= 1)
+			total += size;
+	}
+	globfree(&g);
+	return total;
+}
+
+/****************************************************************************/
 /* Return free disk space in bytes (up to a maximum of 4GB)					*/
 /****************************************************************************/
 #if defined(_WIN32)
