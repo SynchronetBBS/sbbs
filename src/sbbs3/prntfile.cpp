@@ -96,10 +96,13 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols)
 	}
 
 	length=(long)filelength(file);
-	if(length<0) {
+	if(length < 1) {
 		fclose(stream);
-		errormsg(WHERE,ERR_CHK,fpath,length);
-		return false;
+		if(length < 0) {
+			errormsg(WHERE,ERR_CHK,fpath,length);
+			return false;
+		}
+		return true;
 	}
 
 	if(mode&P_OPENCLOSE) {
