@@ -320,7 +320,7 @@ function get_level()
 	}
 	console.attributes = WHITE;
 	console.right((console.screen_columns - 24) / 2);
-	console.print(format("Difficulty Level (1-%u): ", "", max_level));
+	console.print(format("Difficulty Level (1-%u): ", max_level));
 	var result = console.getnum(max_level);
 	if(result < 1)
 		return false;
