@@ -1455,6 +1455,7 @@ function run_ref(sec, fname)
 						break;
 					case '\r':
 						setvar('responce', cmap[cur] + 1);
+						setvar('`v01', cmap[cur] + 1);
 						dk.console.gotoxy(x, y+choices.length-1);
 						dk.console.attr.value = attr;
 						return;
@@ -1499,6 +1500,9 @@ function run_ref(sec, fname)
 				dk.console.gotoxy(0, start);
 				dk.console.cleareol();
 			}
+		},
+		'loadmap':function(args) {
+			load_map(parseInt(getvar(args[0]), 10));
 		}
 	};
 
