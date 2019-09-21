@@ -167,7 +167,7 @@ function show_winners()
 					continue;
 				if(!hdr.from_net_type || hdr.to != title || hdr.subject != winner_subject)
 					continue;
-				var body = msgbase.get_msg_body(hdr);
+				var body = msgbase.get_msg_body(hdr, false, false, false);
 				if(!body)
 					continue;
 				var obj;
@@ -189,7 +189,7 @@ function show_winners()
 		return;
 	}
 	console.attributes = WHITE;
-	console.print(format("Date     %-25s         Lvl Time  WxHxMines\r\n", "User"));
+	console.print(format("Date     %-25s%-15sLvl Time  WxHxMines\r\n", "User", ""));
 	
 	list.sort(compare_game);
 	
@@ -199,7 +199,7 @@ function show_winners()
 			console.attributes = LIGHTCYAN;
 		else
 			console.attributes = BG_CYAN;
-		console.print(format("%s %-25s%-9s %u  %s %ux%ux%u\x01>\r\n"
+		console.print(format("%s %-25s%-15s %u  %s %ux%ux%u\x01>\r\n"
 			,system.datestr(game.end)
 			,game.name
 			,game.net_addr ? ('@'+game.net_addr) : ''
@@ -276,7 +276,15 @@ function draw_border()
 	console.creturn();
 	console.attributes = LIGHTGRAY;
 }
-	
+
+// A non-destructive console.center() replacement
+function console_center(text)
+{
+	console.right((console.screen_columns - console.strlen(text)) / 2);
+	console.print(text);
+	console.crlf();
+}
+
 function draw_board(full)
 {
 	if(gameover)
@@ -296,7 +304,7 @@ function draw_board(full)
 		console.center("Game Over!");
 	} else {
 		console.attributes = WHITE;
-		console.center(format("Mines: %-3u Flags: %-3u %s"
+		console_center(format("Mines: %-3u Flags: %-3u %s"
 			, game.mines, countflags(), system.secondstr(time() - game.start).slice(-5))
 			);
 	}
@@ -307,9 +315,9 @@ function draw_board(full)
 		if(!gameover)
 			cmds += "\x01n\x01hR\x01neveal  \x01hF\x01nlag  ";
 		cmds += "\x01hN\x01new  \x01hQ\x01nuit";
-		console.center(cmds);
+		console_center(cmds);
 		draw_border();
-		console.center("\x01n\x01hW\x01ninners  \x01hH\x01nelp");
+		console_center("\x01n\x01hW\x01ninners  \x01hH\x01nelp");
 	} else if(!console.term_supports(USER_ANSI)) {
 		console.creturn();
 		console.down(2);
