@@ -160,8 +160,8 @@ var Player_Def = [
 	},
 	{
 		prop:'extra',
-		type:'Array:353:Integer8',
-		def:eval('var aret = []; while(aret.length < 353) aret.push(0); aret;')
+		type:'String:353',
+		def:''
 	}
 ];
 
@@ -473,13 +473,33 @@ var vars = {
 	narm:{type:'fn', get:function() { return player.armournumber }, set:function(narm) { player.armournumber = clamp_integer(narm, 's8') } },
 	nwep:{type:'fn', get:function() { return player.weaponnumber }, set:function(nwep) { player.weaponnumber = clamp_integer(nwep, 's8') } },
 	money:{type:'fn', get:function() { return player.money }, set:function(money) { player.money = clamp_integer(money, 's32') } },
+	gold:{type:'fn', get:function() { return player.money }, set:function(money) { player.money = clamp_integer(money, 's32') } },
 	bank:{type:'fn', get:function() { return player.bank }, set:function(bank) { player.bank = clamp_integer(bank, 's32') } },
 	enemy:{type:'str', val:''},
 	'&realname':{type:'const', val:dk.user.full_name},
 	'&date':{type:'fn', get:function() { var d = new Date(); return format('%02d/%02d/%02d', d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw('Attempt to set date at '+fname+':'+line); } },
 	'&nicedate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw('Attempt to set nicedate at '+fname+':'+line); } },
-	// TODO ...
+	's&armour':{type:'fn', get:function() { if (player.armournumber === 0) return ''; return items[player.armournumber].name; } },
+	's&arm_num':{type:'fn', get:function() { if (player.armournumber === 0) return 0; return items[player.armournumber].defence; } },
+	's&weapon':{type:'fn', get:function() { if (player.weaponnumber === 0) return ''; return items[player.weaponnumber].name; } },
+	's&wep_num':{type:'fn', get:function() { if (player.weaponnumber === 0) return 0; return items[player.weaponnumber].strength; } },
+	's&son':{type:'fn', get:function() { return player.sexmale === 1 ? 'son' : 'daughter' }},
+	's&boy':{type:'fn', get:function() { return player.sexmale === 1 ? 'boy' : 'girl' }},
+	's&man':{type:'fn', get:function() { return player.sexmale === 1 ? 'man' : 'lady' }},
+	's&sir':{type:'fn', get:function() { return player.sexmale === 1 ? 'sir' : 'ma\'am' }},
+	's&him':{type:'fn', get:function() { return player.sexmale === 1 ? 'him' : 'her' }},
+	's&his':{type:'fn', get:function() { return player.sexmale === 1 ? 'his' : 'her' }},
+	'&money':{type:'fn', get:function() { return player.money }, set:function(money) { player.money = clamp_integer(money, 's32') } },
+	'&gold':{type:'fn', get:function() { return player.money }, set:function(money) { player.money = clamp_integer(money, 's32') } },
+	'&bank':{type:'fn', get:function() { return player.bank }, set:function(bank) { player.bank = clamp_integer(bank, 's32') } },
+	'&lastx':{type:'fn', get:function() { return player.lastx }, set:function(bank) { player.lastx = clamp_integer(bank, 's8') } },
+	'&lasty':{type:'fn', get:function() { return player.lasty }, set:function(bank) { player.lasty = clamp_integer(bank, 's8') } },
+	'&map':{type:'fn', get:function() { return player.map } },
 	'&time':{type:'fn', get:function() { return state.time }, set:function(x) { throw('attempt to set &time'); } },
+	'&timeleft':{type:'fn', get:function() { return parseInt((dk.user.seconds_remaining + dk.user.seconds_remaining_from - time()) / 60, 10) } },
+	'&sex':{type:'fn', get:function() { return player.sexmale }, set:function(sexmale) { player.sexmale = clamp_integer(sexmale, 's16') } },
+	'&playernum':{type:'fn', get:function() { return player.Record } },
+	'&totalaccounts':{type:'fn', get:function() { return pfile.length } },
 	responce:{type:'int', val:0},
 	response:{type:'fn', get:function() { return vars.responce.val; }, set:function(val) { vars.responce.val = clamp_integer(val, 's32')  } },
 };
@@ -584,26 +604,41 @@ function setvar(name, val) {
 }
 
 function getvar(name) {
+	var uc = false;
+	var lc = false;
+	var ret;
+
 	if (vars[name.toLowerCase()] === undefined)
 		return name;
 	if (name.substr(0, 2) === 'S&')
-		name = 'S&'+name.substr(2).toLowerCase();
-	else
-		name = name.toLowerCase();
+		uc = true;
+	if (name.substr(0, 2) === 's&')
+		lc = true;
+	name = name.toLowerCase();
 	switch(vars[name].type) {
 		case 'int':
 		case 'str':
 		case 'const':
-			return vars[name].val;
+			ret = vars[name].val;
+			break;
 		case 'bool':
 			if (vars[name].val)
-				return 1;
-			return 0;
+				ret = 1;
+			ret = 0;
+			break;
 		case 'fn':
-			return vars[name].get();
+			ret = vars[name].get();
+			break;
 		default:
 			throw('Unhandled var type '+vars[name].type);
 	}
+	if (uc || lc)
+		ret = ret.toString();
+	if (uc)
+		ret = ret.substr(0, 1).toUpperCase() + ret.substr(1);
+	if (lc)
+		ret = ret.substr(0, 1).toLowerCase() + ret.substr(1);
+	return ret;
 }
 
 function expand_ticks(str)
@@ -1068,6 +1103,14 @@ function run_ref(sec, fname)
 				throw('Trailing quebar at '+fname+':'+line);
 			bar_queue.push(files[fname].lines[line]);
 			timeout_bar();
+		},
+		'pad':function(args) {
+			var str = getvar(args[0]).toString();
+			var dl = displen(str);
+			var l = parseInt(getvar(args[1]), 10);
+
+			str += spaces(l - dl);
+			setvar(args[0], str);
 		}
 	};
 	var handlers = {
@@ -1103,7 +1146,7 @@ function run_ref(sec, fname)
 				setvar(args[0], getvar(args[0]) - getvar(args[2]));
 				return;
 			}
-			if (args.length > 2 && args[1] == '+') {
+			if (args.length > 2 && (args[1] === '+' || args[1].toLowerCase() === 'add')) {
 				setvar(args[0], getvar(args[0]) + getvar(args[2]));
 				return;
 			}
@@ -1337,7 +1380,7 @@ function run_ref(sec, fname)
 				choices.forEach(function(c, i) {
 					dk.console.gotoxy(x, y+i);
 					if (i === cur)
-						c = '`r1`%'+remove_colour(c)+'`r0`7';
+						c = '`r1`%'+remove_colour(c)+'`r0`%';
 					lln(c);
 				});
 				dk.console.gotoxy(x, y+cur);
@@ -1387,7 +1430,7 @@ function run_ref(sec, fname)
 			}
 
 			filter_choices();
-			dk.console.attr.value = 7;
+			dk.console.attr.value = 15;
 			while(1) {
 				draw_menu();
 				ch = getkey();
@@ -1431,6 +1474,7 @@ function run_ref(sec, fname)
 			var tmp = pfile.new();
 			player.Record = tmp.Record;
 			player.put();
+			player.reLoad();
 		},
 		'offmap':function(args) {
 			// TODO: Disappear to other players.
@@ -1684,6 +1728,96 @@ function move_player(xoff, yoff) {
 	}
 }
 
+function view_inventory()
+{
+	var inv = [];
+	var lb = [];
+	var choices = [];
+	var i;
+	var ch;
+	var cur = 0;
+	var str;
+	var attr = dk.console.attr.value;
+
+	function draw_menu() {
+		choices.forEach(function(c, i) {
+			dk.console.gotoxy(0, 12+i);
+			if (i === cur)
+				c = '`r1`%'+remove_colour(c)+'`r0`7';
+			lln(c);
+		});
+		dk.console.gotoxy(0, 12+cur);
+	}
+
+	function draw_inv() {
+		lb.forEach(function(c, i) {
+			dk.console.gotoxy(0, 12+i);
+			lln(c);
+		});
+		dk.console.gotoxy(0, 12+cur);
+	}
+
+	for (i = 0; i < 99; i++) {
+		if (player.i[i] > 0)
+			inv.push(i);
+	}
+	if (inv.length === 0) {
+		dk.console.gotoxy(0, 12);
+		lw('`2  You are carrying nothing!  (press `%Q`2 to continue)');
+		do {
+			ch = getkey().toUpperCase();
+		} while (ch != 'Q');
+	}
+	else {
+		inv.forEach(function(i) {
+			str = '`2  '+items[i].name;
+			choices.push(str);
+			if (items[i].armour)
+				str += ' `0A`2';
+			if (items[i].weapon)
+				str += ' `4W`2';
+			if (items[i].useonce)
+				str += ' `51`2';
+			str += spaces(37 - displen(str));
+			str += '`2 (`0'+player.i[i]+'`2)';
+			str += spaces(47 - displen(str));
+			str += '`2 ' + items[i].description;
+			str += spaces(79 - displen(str));
+			lb.push(str);
+		});
+
+		draw_inv();
+		while(1) {
+			draw_menu();
+			dk.console.gotoxy(0, 23);
+			ch = getkey();
+			switch(ch) {
+				case '8':
+				case 'KEY_UP':
+				case '4':
+				case 'KEY_LEFT':
+					cur--;
+					if (cur < 0)
+						cur = lb.length - 1;
+					break;
+				case '2':
+				case 'KEY_DOWN':
+				case '6':
+				case 'KEY_RIGHT':
+					cur++;
+					if (cur >= lb.length)
+						cur = 0;
+					break;
+				case '\r':
+					setvar('responce', cur + 1);
+					dk.console.gotoxy(0, 12+lb.length-1);
+					dk.console.attr.value = attr;
+					return;
+			}
+		}
+	}
+}
+
 function do_map()
 {
 	var ch;
@@ -1722,6 +1856,45 @@ function do_map()
 			case 'R':
 				draw_map();
 				update();
+				break;
+			case 'D':
+				run_ref('readlog', 'logstuff.ref');
+				draw_map();
+				update();
+				break;
+			case 'L':
+				run_ref('listplayers', 'help.ref');
+				break;
+			case 'M':
+				run_ref('map', 'help.ref');
+				break;
+			case 'Q':
+				dk.console.gotoxy(0, 22);
+				lw('`r0`2  Are you sure you want to quit back to the BBS? [`%Y`2] : ');
+				do {
+					ch = getkey().toUpperCase();
+				} while('YN\r'.indexOf(ch) === -1);
+				if (ch === 'N') {
+					dk.console.gotoxy(0, 22);
+					dk.console.cleareol();
+					dh.console.gotoxy(player.x - 1, player.y - 1);
+				}
+				else
+					ch = 'Q';
+				break;
+			case 'T':
+				run_ref('talk', 'help.ref');
+				break;
+			case 'V':
+				run_ref('stats', 'gametxt.ref');
+				view_inventory();
+				run_ref('closestats', 'gametxt.ref');
+				break;
+			case 'Y':
+				run_ref('yell', 'help.ref');
+				break;
+			case 'Z':
+				run_ref('z', 'help.ref');
 				break;
 		}
 	}
