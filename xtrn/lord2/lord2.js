@@ -8,16 +8,20 @@ if (js.global.console !== undefined) {
 }
 
 var scr;
-scr = dk.console.local_io.screen;
-if (scr === undefined)
+if (dk.console.local_io !== undefined)
+	scr = dk.console.local_io.screen;
+if (scr === undefined && dk.console.local_screen !== undefined)
 	scr = dk.console.local_screen;
+if (scr === undefined && dk.console.remote_screen !== undefined)
+	scr = dk.console.remote_screen;
 if (scr === undefined)
-scr = dk.console.remote_screen;
+	throw('No usable screen!');
 require("recordfile.js", "RecordFile");
 
 var player;
 var map;
 var world;
+var items = [];
 var Player_Def = [
 	{
 		prop:'name',
@@ -401,7 +405,7 @@ var Item_Def = [
 	},
 	{
 		prop:'extra',
-		type:'String:30',
+		type:'String:37',
 		def:false
 	},
 ];
@@ -487,9 +491,10 @@ for (i = 1; i < 11; i++) {
 	vars[format('`s%02d', i)] = {type:'str', val:''};
 }
 for (i = 0; i < 99; i++) {
-	vars[format('`p%02d', i+1)] = {type:'fn', get:eval('function() { return player.p['+i+'] }'), set:eval('function(val) { player.p['+i+'] = clamp_integer(val, "s32") }')};
-	vars[format('`t%02d', i+1)] = {type:'fn', get:eval('function() { return player.t['+i+'] }'), set:eval('function(val) { player.t['+i+'] = clamp_integer(val, "8") }')};
-	vars[format('`i%02d', i+1)] = {type:'fn', get:eval('function() { return player.i['+i+'] }'), set:eval('function(val) { player.i['+i+'] = clamp_integer(val, "s8") }')};
+	vars[format('`p%02d', i+1)] = {type:'fn', get:eval('function() { return player.p['+i+'] }'), set:eval('function(val) { player.p['+i+'] = clamp_integer(val, "s32"); }')};
+	vars[format('`t%02d', i+1)] = {type:'fn', get:eval('function() { return player.t['+i+'] }'), set:eval('function(val) { player.t['+i+'] = clamp_integer(val, "8"); }')};
+	vars[format('`i%02d', i+1)] = {type:'fn', get:eval('function() { return player.i['+i+'] }'), set:eval('function(val) { player.i['+i+'] = clamp_integer(val, "s8"); }')};
+	vars[format('`+%02d', i+1)] = {type:'fn', get:eval('function() { return items['+i+'].name }'), set:eval('function(val) { throw("Attempt to set item '+i+' name"); }')};
 }
 
 function getkeyw()
@@ -624,6 +629,7 @@ function replace_vars(str)
 	str = str.replace(/(`[Tt][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
+	str = str.replace(/(`\+[0-9][0-9])/g, function(m, r1) { return getvar(r1); });
 	return str;
 }
 
@@ -1331,7 +1337,7 @@ function run_ref(sec, fname)
 				choices.forEach(function(c, i) {
 					dk.console.gotoxy(x, y+i);
 					if (i === cur)
-						c = '`r1`%'+remove_colour(c)+'`r0`2';
+						c = '`r1`%'+remove_colour(c)+'`r0`7';
 					lln(c);
 				});
 				dk.console.gotoxy(x, y+cur);
@@ -1706,11 +1712,21 @@ function do_map()
 	mswait(2500);
 }
 
+function load_items()
+{
+	var i;
+
+	for (i = 0; i < ifile.length; i++)
+		items.push(ifile.get(i));
+}
+
 var pfile = new RecordFile(js.exec_dir + 'player.dat', Player_Def);
 var mfile = new RecordFile(js.exec_dir + 'map.dat', Map_Def);
 var wfile = new RecordFile(js.exec_dir + 'world.dat', World_Def);
+var ifile = new RecordFile(js.exec_dir + 'items.dat', Item_Def);
 world = wfile.get(0);
 load_player();
+load_items();
 
 if (player.Record === undefined)
 	run_ref('newplayer', 'gametxt.ref');
