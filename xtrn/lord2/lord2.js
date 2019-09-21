@@ -1370,6 +1370,7 @@ function run_ref(sec, fname)
 		'choice':function(args) {
 			var allchoices = getlines();
 			var choices = [];
+			var cmap = [];
 			var x = scr.pos.x;
 			var y = scr.pos.y;
 			var cur = getvar('`v01') - 1;
@@ -1388,11 +1389,11 @@ function run_ref(sec, fname)
 
 			function filter_choices() {
 				choices = [];
-				allchoices.forEach(function(l) {
+				allchoices.forEach(function(l, i) {
 					var m;
 
 					do {
-						m = l.match(/^([-\+=\!><])([`$0-9a-zA-Z]+) ([^ ]+) /)
+						m = l.match(/^([-\+=\!><])([`&0-9a-zA-Z]+) ([^ ]+) /)
 						if (m !== null) {
 							l = l.substr(m[0].length);
 							switch(m[1]) {
@@ -1426,6 +1427,7 @@ function run_ref(sec, fname)
 						}
 					} while (m != null);
 					choices.push(l);
+					cmap.push(i);
 				});
 			}
 
@@ -1452,7 +1454,7 @@ function run_ref(sec, fname)
 							cur = 0;
 						break;
 					case '\r':
-						setvar('responce', cur + 1);
+						setvar('responce', cmap[cur] + 1);
 						dk.console.gotoxy(x, y+choices.length-1);
 						dk.console.attr.value = attr;
 						return;
@@ -1708,13 +1710,20 @@ function move_player(xoff, yoff) {
 		if (s.hotspotx === x && s.hotspoty === y) {
 			special = true;
 			if (s.warptomap > 0 && s.warptox > 0 && s.warptoy > 0) {
+				if (player.map !== s.warptomap)
+					newmap = true;
 				player.map = s.warptomap;
-				player.x = s.warptox;
-				player.y = s.warptoy;
 				if (world.hideonmap[player.map] === 0)
 					player.lastmap = player.map;
-				load_map(player.map);
-				draw_map();
+				if (newmap) {
+					load_map(player.map);
+					draw_map();
+				}
+				else {
+					erase(player.x - 1, player.y - 1);
+				}
+				player.x = s.warptox;
+				player.y = s.warptoy;
 				update();
 			}
 			else if (s.reffile !== '' && s.refsection !== '') {
