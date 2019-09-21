@@ -1443,6 +1443,16 @@ function run_ref(sec, fname)
 		},
 		'update':function(args) {
 			update();
+		},
+		'clearblock':function(args) {
+			var start = parseInt(getvar(args[0]), 10) - 1;
+			var end = parseInt(getvar(args[1]), 10);
+			var i;
+
+			for (i = start; i < end; i++) {
+				dk.console.gotoxy(0, start);
+				dk.console.cleareol();
+			}
 		}
 	};
 
@@ -1705,6 +1715,13 @@ function do_map()
 			case '2':
 			case 'KEY_DOWN':
 				move_player(0, 1);
+				break;
+			case '?':
+				run_ref('help', 'help.ref');
+				break;
+			case 'R':
+				draw_map();
+				update();
 				break;
 		}
 	}
