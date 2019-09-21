@@ -1,0 +1,264 @@
+;the random quest stuff is handled in this .ref.. it is fairly complicated
+;so be carefull if you try to change it.. I'm going to be adding more
+;later.
+
+@#GETNAME
+@do `s01 is `bNo`xname?
+@if `p20 is 1 then `s01 is The`xBartender
+@if `p20 is 2 then `s01 is Smithy
+@if `p20 is 3 then `s01 is Nickabrick
+@if `p20 is 4 then `s01 is Selena
+@if `p20 is 5 then `s01 is Basil
+@if `p20 is 6 then `s01 is Corin
+
+@#GETPLACE
+@do `s03 is `bNo`xplace?
+@if `p20 is 1 then `s03 is Greentree
+@if `p20 is 2 then `s03 is PortTown
+@if `p20 is 3 then `s03 is FlagCity
+@if `p20 is 4 then `s03 is BoneTown
+@if `p20 is 5 then `s03 is Sosen`xVillage
+@if `p20 is 6 then `s03 is Arrisville
+
+@#GETITEM
+@if `p21 is 1 then `s02 is sack
+@if `p21 is 2 then `s02 is satchel
+@if `p21 is 3 then `s02 is small`xbag
+@if `p21 is 4 then `s02 is letter
+@if `p21 is 5 then `s02 is small`xpurse
+
+
+@#complete
+;completes quest
+@routine getname
+@do `s05 is `s01
+;current guys name is in `s05
+
+@routine getplace
+;place put in `s03
+
+@do `p21 is `p17
+@routine getitem
+;item put in `s02
+
+
+@show
+`r0`c  `r1 `%Speedy delivery! `r0
+`\`2  `0"Yes? Can I help you, friend?" `2asks `s05.   
+
+`2  `$"Yeah.  Take this `s02 and pay me!"
+
+`k  `0"I've been waiting for this!  Thank you, `%`n`0!"
+
+  `2You are paid `$$`p16`2! 
+
+@
+;reset quest stuff
+;give money
+@do money + `p16
+;add one to quests completed var
+@do `p18 + 1
+@do `p14 is 0
+@do `p15 is 0
+@do `p16 is 0
+@do `p17 is 0
+@do `i44 is 0
+@do `i45 is 0
+@do `i46 is 0
+@do `i47 is 0
+@do `i48 is 0
+
+@if `p32 is 0 then do
+  @begin
+ ;woah, they delivered the item same day
+@do `p20 random 1 1
+@if `p20 is 1 then do
+  @begin
+  @do `p20 random 5 1
+
+  @if `p20 is 1 then do
+    @begin
+    @do `p08 + 1
+    @show
+  `0QUEST BONUS:  `%One extra charm point!
+
+    @end
+  @if `p20 is 2 then do
+    @begin
+    @do `p03 + 3
+    @show
+  `0QUEST BONUS:  `%Three extra hitpoints!
+
+    @end
+
+  @if `p20 is 3 then do
+    @begin
+    @do `p04 + 1
+    @show
+  `0QUEST BONUS:  `%An extra Muscle Point!
+
+    @end
+
+  @if `p20 is 4 then do
+    @begin
+    @do `p05 + 1
+    @show
+  `0QUEST BONUS:  `%An extra Dodge Point!
+
+    @end
+
+  @if `p20 is 5 then do
+    @begin
+    @do `p19 + 1
+    @show
+  `0QUEST BONUS:  `%A free gem for your troubles!
+
+    @end
+
+  @end
+ @end
+@do addlog
+  `r2  `r0 `0`n`2 has made a successful delivery in `0`s03`2. `r2  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@show
+  `%QUEST COMPLETED.
+`\`k
+@drawmap
+@update
+
+@#GETQUEST
+;gets a random quest or completes it.
+@do `p26 is `p20
+
+@if `p26 is `p15 then do
+  @begin
+  @run complete
+  @end
+
+@label tryagain
+;get destination and dest name
+@do `p20 random 6 1
+
+
+@do `p22 is `p20
+@routine GETPLACE
+@routine GETNAME
+@do `s04 is `s01
+
+;get name of sender
+@do `p20 is `p26
+@routine GETNAME
+
+;get item
+@do `p21 random 5 1
+@routine GETITEM
+
+;generate price for doing it
+
+@do `p25 random 800 300
+@do `p24 is `p18
+@do `p24 * 3
+@do `p25 + `p24
+
+@if `p14 = `p20 then do
+  @begin
+  @do `p21 is `p17
+  @routine GETITEM
+  @show
+`r0`c  `r1 `%Asking for a job `r0
+`\`2  `s01 `2looks suprised.  `0"What are you doing around here? Go
+  deliver my `s02!"
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+
+@if `p15 > 0 then do
+  @begin
+  @show
+`r0`c  `r1 `%Asking for a job `r0
+`\`2  You sort of already have a quest - you will need to complete that
+  delivery before you attempt another!
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+
+
+@if `p31 < 1 then do
+  @begin
+  @do `p31 is 0
+  @show
+`r0`c  `r1 `%Asking for a job `r0
+`\`2  `0"Sorry, `%`n`0.  I have nothing for you today, maybe
+  tomorrow, ok?" `2`s01 tells you.
+
+`2  (only `0`v07`2 quest opportunities per day are allowed)
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+;make sure they don't get a quest to go to where they are
+@if `p20 is `p22 then goto tryagain
+
+
+@do `p31 - 1
+
+
+@show
+`r0`c  `r1 `%Asking for a job `r0
+
+  `0"Actually, `%`n`0.. there is something you could do."
+
+  `2`s01 points to a `0`s02`2 sitting on the table.
+
+  `0Would you deliver this to `#`s04`0 in `#`s03`0 for `$$`p25`0?"
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, I accept this quest
+Forget it
+@if response is 1 then do
+  @begin
+  @do `p14 is `p20
+  @do `p15 is `p22
+  @do `p16 is `p25
+  @do `p17 is `p21
+  @if `p17 is 1 then `i44 + 1
+  @if `p17 is 2 then `i45 + 1
+  @if `p17 is 3 then `i46 + 1
+  @if `p17 is 4 then `i47 + 1
+  @if `p17 is 5 then `i48 + 1
+  @do `p32 is 0
+  @show
+`\`\  `2You agree to make the delivery.
+
+  `0`s01`2 hands you the `0`s02`2!
+
+  `%QUEST STARTED.
+
+`k
+  @drawmap
+  @update
+  @end
+
+@if response is 2 then do
+  @begin
+  @show
+`\`\  `0"My, but you're a picky one.  Perhaps I'll have something else for
+  you to do later."
+`\`k
+  @drawmap
+  @update
+  @end
+
+

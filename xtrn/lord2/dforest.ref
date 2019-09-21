@@ -1,0 +1,405 @@
+;File for the mystery forests and Dark Forest (tm)
+
+@#bird
+@if bitcheck `t14 3 1 then do
+  @begin
+  @do moveback
+  @do saybar
+Tash's dead body lies still.
+  @closescript
+  @end
+
+@do `v01 is 1
+@pauseoff
+@do moveback
+@show
+`r0`c
+[44C[1;30m∞∞ﬂﬂ[0m [1;30m∞‹[0;32m‹‹‹€[1;30;42m∞∞[32m∞∞±≤ﬂﬂ[0;32m€€
+[A[65C[1;30;42m∞∞[0;32m€€€‹‹‹[1m‹‹‹‹‹‹
+[A[79C‹[26C[33m  [12C[30m∞∞[0m  [1;30mﬂ[0m [1;30m‹‹[42m≤≤±±∞∞[40m
+[A[54C[42m[0;32m€ﬂﬂﬂﬂﬂ[3C‹‹‹‹€[1;42m∞∞[33m∞[32m±≤≤≤[40m€€€[42m≤[40m
+[A[79C[42m≤[3C[0;33m‹[37m [33mnighthawk[21C∞‹[6C[1;30m∞[0m 
+[A[45C[1;30mﬁ[42m€≤≤±[40mﬂﬂ∞[0m  [32m∞∞‹‹‹[1;30;42m ∞   [32m∞∞∞∞[40m
+[A[69C[42m±±≤≤[40m€€€€€[42m€[40m
+[A[79C[42m≤[0m [1;33mﬂ[0;33mﬂ‹≤ﬂﬂﬂ∞[1mﬂﬂ[0;33mﬂ[37m [33m∞
+[A[14C[1;30m∞ﬂ[6C[0;33mﬂ[37m [33m∞∞[1;30m∞[4Cﬂ[0m  [1;33mﬂ
+[A[35C[43m∞[40m‹[0;33mﬂﬂ[1;30mﬂ[3C›[0m [1;30m€ﬂﬂ[4C[0;32m‹‹
+[A[54C[1;42m≤≤±±∞∞∞[30m [32m∞ ∞∞∞∞∞∞[33m∞[32m±±≤≤≤≤≤±[40m
+[A[79C[42m±[0m [33m∞∞[1;43m≤[31C[0;33m∞[1;43m∞[0;33m∞[5C
+[A[43C[1;30m›[0m  [1;30m∞∞[0;32m‹‹[1;42m±±≤≤≤±±±±∞∞[33m∞[0;32m€€
+[A[64C€€€€[1;42m∞∞∞∞∞±±±±±±[40m
+[A[79C[42m∞[0m  [33m∞[1;43m∞[32C[0;33m∞[6C[1;30mﬂ[0m [32m‹
+[A[46C[1;42m∞±≤≤≤≤[40m€€€[42m≤±∞∞[33m∞∞[0;32m€€[1;30;42m∞∞[0;32m
+[A[65Cﬂﬂ[1;30;42m∞[0;32m€€ﬂﬂﬂ[5Cﬂ
+[A[79C[1;33;42m∞[3C[0;33m‹[4C[1;30mStanding before you is a[4C
+[A[36C[0;33m∞[6C[1;30m∞[0m [1;32;42m±±≤≤[40m€[42m€≤≤≤≤±±±∞∞[40m
+[A[60C[42m[0;32mﬂﬂ[4C[1m∞[0;32mﬁ
+[37m [33m∞∞[1;43m∞[40C[0;32mﬁ[1;42m∞±±≤≤≤±±±±[0;32mﬂﬂ[10Cﬁ
+[3C[33mﬂ[4C[1;30mNighthawk.  With the body  [9C[0;32mﬁ[1;42m∞∞∞±±±[40m
+[A[51C[42m[0;32mﬂ≤›[3C[1;30m∞[8C[0;31m∞[37m [1m ‹[0;31m‹[6C
+[A[77C[1;30m∞[0m∞
+[A[79C [3C[1;33m‹[32C[0;33m∞[8C[1;42m∞∞[32m∞∞[3C[0;32m∞[1m›
+[A[54C[10C[0;31m‹[1;33;41m∞[0m [32m∞[37m [1m ∞[0;35;41m∞[40m
+[A[72C[41m[31;40m∞[37m  [1;30m∞[0m∞
+  [33m∞[1;43m∞[0;33m∞[3C[1;30mof a man and head of a     [C[0;33m±
+[A[37C[1;30m∞[5C∞[0;32m ﬂ[7C[1mﬂ[6C[30m∞[0m∞± [1;31;41m∞[40m
+[A[65C[41m[0;31m≤∞[4Cﬁ∞
+[3C[33m≤[32C∞[6C[32m≤∞ [10C[1;30m∞∞[0m∞[4C[1;30m∞[0m [31mﬂ
+[A[66C[37m∞  [1m∞[0;31m∞
+[3C[33m∞[4C[1;30mchicken, this abomination[9C∞[32;42m≤∞[0;32m∞
+[A[46C[37m [1;30m‹‹[0m  [32m∞[15C[31mﬂ
+[43C[1;32m€[42m≤[33m∞[0m  [1;30mﬂ≤≤[42m≤≤±±[40m‹‹[0;32m‹‹‹‹[6Cﬂ
+[A[68C[10C‹
+[A[79C€[3C[33m∞[4C[1;30mof nature must be slain.[11C[0;32m [1mﬂﬂ
+[A[46C[0;32mﬂ‹[37m  [32m  [37m [1;30mﬂﬂﬂﬂﬂﬂﬂ≤[42m∞∞[0;32m€€€€€
+[A[68C[1;42m∞∞∞[33m∞[0;32m‹‹‹‹€€[1;33;42m∞[40m
+[A[79C[42m∞[3C[0;33m±[32C∞[6C[1;32;42m≤≤[40m‹‹[0;32m  [37m 
+[A[50C[1;30mﬂﬂ‹‹[0;32m‹‹‹‹‹‹[7Cﬂ[1;33;42m∞[0;32mﬂﬂﬂﬂﬂﬂ€[1;33;42m∞[40m
+[A[77C[42m∞±[40m
+[A[79C[42m±[3C[43m∞[0;33m∞[30C∞[1;43m∞[0;33m∞[4C[1;30m∞
+[A[43C[32;42m∞∞±≤[40m≤€‹[7C[30mﬂﬂ[42m≤‹‹‹‹∞[0;32m‹‹‹‹‹[37m 
+[A[71C[1;30m∞∞[5C[0;32mﬂ
+[A[79Cﬂ[37m  [1;33mﬂ‹ﬂ[0;33mﬂﬂ[37m [1;33mﬂ[0;33mﬂ[37m [33m∞∞
+[A[13C[7C[1;30m∞∞[8C[33mﬂﬂ[0;33mﬂ [1mﬂ[0;33mﬂ‹[1;30mﬂ∞[2C     
+[A[46C                                 
+
+`k
+@fight
+;name
+Tash
+;string said when you see him
+`0"HOW DID YOU FIND ME?!  NO MATTER, I WILL DINE ON YOUR CARCASS."
+;power move kill string
+You split the thing wide open!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+pecks you|46
+stares at you|56
+screams at you|31
+NONE|NONE
+NONE|NONE
+;defense
+19
+;gold reward
+1500
+;experience
+800
+;hit points
+80
+;if win: ref file|name or NONE
+DFOREST.REF|WIN
+;if lose: ref file|name or NONE
+gametxt.ref|die
+;if runs: ref file|name or NONE
+dforest.ref|run
+
+@#warp
+@do map is 1271
+@do x is 10
+@do y is 8
+@loadmap &map
+@drawmap
+@update
+@do quebar
+Gawd!! Where in hell are you now?
+
+@#run
+@do map is 1512
+@do x is 1
+@do y is 1
+@loadmap &map
+@show
+`r0`c  `r1  RUNNING FOR YOUR LIFE  `r0
+
+  `0"RUN FROM TASH, WILL YOU?!  I WILL SEND YOU TO WHERE YOU BELONG!"
+
+`k  `$"Oh yeah?  Where do I belong?" `2you ask as you feel your body
+  floating away...
+
+`k
+@drawmap
+@update
+@do quebar
+Your mind is buzzing.. you need to find your way out quick.
+@do quebar
+Damn tash and his childish games!
+
+@#win
+@show
+`r0`c  `r1  YOU HAVE SLAIN THIS BEAST!  `r0
+
+  `2Tash's dead body lays on the cold stone floor before you.
+
+`k  `2You search the body and find a `%Moonstone`2!
+
+  `2Now, if you can just figure out how to get out...
+
+`k
+@drawmap
+@update
+@do `i57 + 1
+@bitset `t14 3 1
+
+@#TREE
+;Dead tree in the Mystery Forest
+@DO SAYBAR
+`2You hear the tree whisper "Join me..."
+@do moveback
+
+@#SIGN
+;Sign outside the mystery forest entrance
+@DO SAYBAR
+`bWarning:`2 Dark Forest area condemned by GreenTree Council.
+@do moveback
+
+@#DARKSIGN
+;When enter the Dark Forest
+@DO SAYBAR
+`2You ... feel this is a dark & evil place
+
+@#ENTER
+;When enter the Mystery Forest
+
+@IF &lasty is 11 then do
+@BEGIN
+@DO SAYBAR
+`2You're glad to get out of that place.
+@CLOSESCRIPT
+@END
+
+@BUSY
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1 You feel darkness is just beyond this path... `r0
+
+  `2After reading the sign you realize only a complete fool would risk
+  s&his life by going in there.  You can't help but remember your mother's
+  stories, and the time your uncle came back bleeding, buck naked and
+  speaking in unknown tongues.
+
+@DO WRITE
+`x`x
+@CHOICE
+Ignore the warnings; your mind is too strong for these tricks
+Heed the warnings and run back to mommy
+@IF RESPONSE IS 1 THEN DO
+@Begin
+@Show
+`\`\  `2Illusions are for the weak, you will not falter.
+`\`k
+@DRAWMAP
+@UPDATE        
+@DO SAYBAR
+`2You feel a chill as you pass the gate.
+@CLOSESCRIPT
+@End
+@IF RESPONSE IS 2 THEN DO
+@Begin
+@Show
+`\`\  `2You are wise, and may live to fight another day.
+`\`k
+@DO MOVEBACK
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@End
+
+@#monster1
+@fight
+;name
+Dark Tree
+;string said when you see him
+You walk too close to the woods ... A branch lashes out!
+;power move kill string
+Better replant something for that one!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+branches out & hits|12
+gives you its wood|26
+slashes you with its broken branches|17
+NONE|NONE
+NONE|NONE
+;defense
+17
+;gold reward
+89
+;experience
+45
+;hit points
+70
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Dark Elf
+;string said when you see him
+A bow pokes out from the woods ...
+;power move kill string
+`$"Dark, dead, I'm the one with the gun" `2you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+makes contact with an arrow|14
+stabs you with his wooden dagger|8
+punctures your leg, ouch|16
+NONE|NONE
+NONE|NONE
+;defense
+0
+;gold reward
+66
+;experience
+76
+;hit points
+80
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Dark Wolf
+;string said when you see him
+A howling sound approaches
+;power move kill string
+`$"Put em on the endangered species list."
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+takes a bite of your leg|8
+slashes with its claws|7
+introduces your ankle to his teeth|14
+NONE|NONE
+NONE|NONE
+;defense
+5
+;gold reward
+76
+;experience
+48
+;hit points
+55
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Ghost
+;string said when you see him
+You hope that thing approaching is just a trick of light!
+;power move kill string
+You have killed the undead.  Not bad.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+laughs at you|0
+takes you to the other side|15
+grabs at your soul|30
+NONE|NONE
+NONE|NONE
+;defense
+29
+;gold reward
+276
+;experience
+167
+;hit points
+90
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Evil Elf
+;string said when you see him
+You trip over an outstreched foot, whoever did that is evil
+;power move kill string
+now he's evil and crippled, nobody trips you
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+uses his quarterstaff on your head|8
+contacts you with his foot|10
+stabs with a wooden dagger|6
+NONE|NONE
+NONE|NONE
+;defense
+4
+;gold reward
+29
+;experience
+17
+;hit points
+40
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Bear
+;string said when you see him
+You hear the roar of something big ... not good
+;power move kill string
+hey, smokey take that!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites your good hand|9
+claws your chest|10
+lunges at you, claws out|7
+NONE|NONE
+NONE|NONE
+;defense
+6
+;gold reward
+25
+;experience
+19
+;hit points
+45
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#FIGHT1
+@busy
+@do `p20 random 4 1
+@do goto monster`p20
+
+@#FIGHT2
+@busy
+@do `p20 random 2 5
+@do goto monster`p20
+
+@#done

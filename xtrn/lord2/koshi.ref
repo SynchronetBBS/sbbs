@@ -1,0 +1,384 @@
+
+@#m1
+@do moveback
+@do saybar
+`0Dahma is a mighty ruler.
+
+@#m2
+@do moveback
+@do saybar
+`0Your eyes...
+
+@#m3
+@do moveback
+@do saybar
+`0Have you ever flown?
+
+@#m4
+@do moveback
+@do saybar
+`0Dahma has been our leader for many years.
+
+@#m5
+@do moveback
+@do saybar
+`0Hi, what's your name?
+
+@#m6
+@do moveback
+@do saybar
+`0Please, I need some breathing space here!
+
+@#m7
+@do moveback
+@do saybar
+`0I've been to Flagcity before.. ever been there?
+
+@#m8
+@do moveback
+@do saybar
+`0We are family.  You are family.
+
+
+@#dahma
+@do moveback
+@if bitcheck `t17 7 1 then do
+  @begin
+  @if `p07 > 50 then do
+    @begin
+   @do saybar
+`0Dahma: `%You will always be a hero here!
+  @closescript
+
+   @end
+  @end
+
+@if bitcheck `t17 6 1 then do
+  @begin
+  @do `s01 is s&armour
+  @if `s01 is Disguise then do
+    @begin
+   @do saybar
+`0Dahma: `%Help!!  A Dragon Tooth got into the building! 
+  @closescript
+  @end
+  @end
+
+@if bitcheck `t18 2 1 then do
+ @begin
+@if `p07 < -50 then do
+  @begin
+  @if `i73 > 0 then do
+    @begin
+    @do saybar
+`0Dahma: `%I hate you not for doing this wicked thing.  Remember this.
+   @closescript
+    @end
+
+  @show
+`r0`c                             `%`r1  The Throne Of Dahma  `r0
+
+  `3You see the Smackrod being clutched tightly in Dahma's hand...
+
+`k  `%YOU LEAP UP INTO THE AIR AND GRAB IT!
+
+`k  `3YOU'D BETTER GET OUT OF HERE, AND FAST!
+
+`k
+  @do `i73 is 1
+  @drawmap
+  @update
+  @closescript
+  @end
+ @if `p07 > 50 then goto pure
+
+ @do saybar
+`0Dahma: `%You should not be here!  Your heart is not pure yet.
+@closescript
+ @end
+
+ @label pure
+
+ @if bitcheck `t17 6 1 then do
+  @begin
+  @show
+`r0`c                             `%`r1  The Throne Of Dahma  `r0
+
+  `$"I HAVE RETURNED TRIUMPHANT!" `3you echo throughout the halls.
+
+`k  `%"Do.. do you have it?" `3Dahma asks of you.
+
+  `$"What... THIS?" `3you ask as you wave the `%Gryphon Moon`3 under Dahma's
+  nose.
+
+`k  `%THE CROWD ROARS ITS APPROVAL!  YOU HAVE BECOME A HERO!
+
+`k  `%YOU RECIEVE 500 QUEST POINTS AND 10,000 EXPERIENCE!
+
+`k`r0`c                          `%`r1  Winning?  `r0
+
+  `3After much celebration you finally get a chance to sit down and talk.
+
+`k  `$"So who do you want me to give the stone to?" `3you ask a slightly
+  buzzed Dhama.
+
+`k  `%"No one.  It is not safe here, you must carry it with you always.  Can
+  you do this?"
+
+  `3You nod your head.  Even though you've won this small victory, it doesn't
+  mean the fight is over... there is so much to be done, so many to help.
+
+  `3You donate your 'disguise' to a Koshi museum for all to gawk at.. so
+  that they may never forget the past.
+
+`k
+  @bitset `t17 7 1
+  @do `i67 is 0
+  @do `p18 + 500
+  @do `p01 + 10000
+@do addlog
+  `r1  `r0 `0`n`% has saved the Koshi people and become a hero! `r1  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if bitcheck `t17 4 1 then do
+  @begin
+  @do saybar
+`0Dahma: `%Return with the Gryphon Moon!
+  @closescript
+  @end
+
+@show
+`r0`c                   `%`r1  The Throne Of Dahma  `r0
+
+  `3You approach a regal looking Koshi man.
+
+  `%"Welcome here, `n`%.  How may we serve you?"
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+-`t17 1 Why am I here?  I feel you led me here.
+-`t17 2 Tell me the truth - is the Dragon still alive?
++`t17 3 -`t17 4 I now know I am half Koshi.  What now, butterbean?
+Leave
+@if responce is 3 then do
+  @begin
+  @show
+`\`\  `3To your surprise the crowd gasps in amazement.
+
+`k  Dahma explains.  `%"Butterbean - in our language this means 'I am the
+  sacred child of prophecy'!  Truly, you are the chosen one!"
+
+`k  `$"Chosen?  What must I do?" `3you are starting to get confused.
+
+  `%"You must stop the Dragon Tooth clan from exterminating our..your
+  species.  They have stolen something from us..something that could crack
+  the world in two."
+
+  `$"What thing might that be?"
+
+`k  `%"The Gryphon Moon.  You must retrieve it from the Dragon Tooth Castle."
+
+  `$"And just how to I get there?  I don't even know where that is!"
+
+  `%"It is on a small island.  Getting there is your problem.  Bye."
+
+`k
+  @bitset `t17 4 1
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 2 then do
+  @begin
+  @bitset `t17 2 1
+  @show
+`\`\  `%"That is not important.  What is true is that the Dragon Tooth clan is
+  using the peoples fear to control them.  You must put a stop to this."
+
+`k
+  @do goto dahma
+  @end
+
+
+@if responce is 1 then do
+  @begin                                            
+  @bitset `t17 1 1
+  @show
+`\`\  `%"You don't know?  We are surprised to hear this.  Your mother should
+  have told you long ago."
+
+  `$"Told me what?!"
+
+`k  `%"It is not our place.  You must ask her."
+
+`k
+  @do goto dahma
+  @end
+
+@drawmap
+@update
+
+
+@#store
+@do moveback
+@if `p07 < 90 then do
+  @begin
+  @do saybar
+It looks like some kind of store.. too dangerous to go in.
+  @closescript
+  @end
+
+@show
+`r0`c`\`\                             `r1  `%The Koshi Marketplace  `r0
+
+@buymanager
+66
+50
+62
+64
+63
+65
+@drawmap
+@update
+                      
+
+@#man1
+;koshi man
+@do moveback
+@if `p07 < -50 then do
+  @begin
+  @if bitcheck `t17 7 1 then do
+    @begin
+    @do saybar
+`%Old Koshi Man: `0Why `n`0, it is you!  What has happened to you?!
+    @do quebar
+You shove the old man to the ground..that was the OLD you he knew!
+  @closescript
+    @end
+  @do saybar
+Hey...I've never see you around here before...?
+  @closescript
+  @end
+
+@do `p20 random 6 1
+@if `p20 is 1 then saybar
+`%Old Koshi Man: `0Welcome to our mountain village, human!
+@if `p20 is 2 then saybar
+`%Old Koshi Man: `0The air is so clear up here, don't you think?
+@if `p20 is 3 then saybar
+`%Old Koshi Man: `0Please, tell me of the outside world.
+@if `p20 is 4 then saybar
+`%Old Koshi Man: `0You must find the truth and take it to the others.
+@if `p20 is 5 then saybar
+`%Old Koshi Man: `0We have gift.. you may have it also.
+@if `p20 is 6 then saybar
+`%Old Koshi Man: `0To come this far you must have great courage.
+
+
+
+@#chest1
+;secret
+@do moveback
+@if bitcheck `t17 0 1 then do
+  @begin
+  @do saybar
+There is nothing on the table.
+  @closescript
+  @end
+@bitset `t17 0 1
+@do saybar
+`%You find a Moonstone on the table!
+@do `i57 + 1
+
+@#sign1
+@do moveback
+@do saybar
+Take it, questor - you have earned it.
+
+
+
+@#angel
+;koshi entrance
+@do moveback
+@busy
+@show
+`r0`c  `r1  `%Judgement Day  `r0
+
+  `3You kneel in front of a huge statue of a Koshi.
+
+`k `3 Suddenly the statue's eyes open.
+
+@if `p07 < -50 then do
+  @begin
+  @show
+  `%"GET OUT...GET OUT...GET OUT.." `3the things voice echoes in your head.
+
+`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@show
+  `%"Greetings, `n`%.  Do you have the key?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+>`i34 0 Show him your CloudSword
+Attack the statue
+Leave
+@if responce is 2 then do
+ @begin
+ @show
+`\`\  `3You strike the statue with your s&weapon`3!
+
+`k  Nothing happens.
+`\`k
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if responce is 1 then do
+  @begin
+
+@if `p07 < 100 then do
+  @begin
+  @show
+`\`\  `%"Very good - but your heart is hard.  You will not be permitted to
+  enter until your alignment is 100+" `3decrees the stone guardian.
+
+`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@show
+`\`\  `%"YOU MAY ENTER." `3the voice booms.
+
+`k
+  @do map is 195
+  @do x is 79
+  @do y is 9
+  @loadmap &map
+  @drawmap
+  @update
+  @closescript
+  @end
+
+
+@drawmap
+@update
+
+@#done
+

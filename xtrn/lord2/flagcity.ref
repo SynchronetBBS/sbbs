@@ -1,0 +1,593 @@
+;File for the Western city on the first continent  Flagcity
+
+@#CITYSIGN
+;Sign helping find the way to flagcity
+@DO SAYBAR
+`2 <---------   To Flagcity
+@do moveback
+
+@#CAVERN
+;Looking into the deep cavern on snowy ridge
+@if &lasty is 6 then do
+  @begin
+@DO SAYBAR
+`2You narrowly escape death!  That was a crappy place to warp to!
+@closescript
+  @end
+@DO SAYBAR
+`2That's DEEP, don't fall in there.
+
+@#DSIGN
+;Sign by the desert 
+@DO SAYBAR
+`2 <---------   Flagcity     Desert   --------->
+@do moveback
+
+@#heal
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1  FlagCity Healing  `r0
+
+`2  Arik looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+
+ @do write
+`x`x
+ @choice
+Well Christ!  How am I supposed to make money when I can barely walk?
+Jesus, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a man who doesn't work," `2Arik informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 he snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later!" `2Arik laughs.
+
+`k
+@drawmap
+@update
+
+@#bank
+@do `v01 is 1
+@offmap
+@do moveback
+@label bankstart
+@show
+`r0`c  `r1  `%3rd Bank Of FlagCity  `r0
+
+`2  A young clerk eyes you nervously.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The nervous boy asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last questions?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+
+   @end
+
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+
+
+
+@drawmap
+@update
+
+
+@#APOTH
+;The apothecary
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                      `r1  The Apothecary  `r0
+
+
+
+
+@buymanager
+5
+40
+55
+@drawmap
+@update
+
+@#INN
+;FlagCity Inn
+@offmap
+@do moveback
+@DO `v01 is 1
+@show
+`r0`c  `r1  FlagCity Inn  `r0
+
+  `2You step into the wooden building.  An old man sits behind a wooden
+  counter staring at the sun.  He notices you and speaks.
+  `0"Hello, need a room sonny?  They're `$$90`0 here."`2
+
+@DO WRITE
+`x`x
+@CHOICE
+>&money 89 Get a room
+Take off
+@if response is 1 then do
+@begin
+@do money - 90
+@show
+`\`\  `0"Enjoy your stay here."
+`\`k
+ @do map is 73
+ @loadmap 73
+ @do x is 8
+ @do y is 10
+@drawmap
+@update
+@closescript
+@end
+@drawmap
+@update
+@end
+
+@#TMAN
+;Traveling man by the desert
+@DO MOVEBACK
+@BUSY
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1  Rocky Alcove  `r0
+
+  `2You round the bend of these small sandy mountains to find a man peacefully
+  sitting in the sun.  He notices you and nods.
+  `0"Hello my fellow traveler"`2
+
+@DO WRITE
+`x`x
+@CHOICE
+Say hi
+Leave, quick!!
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `0"It is a wonderful day today.  Never forget the healing power of simply
+  being outdoors."
+
+`k
+  @end
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `2You take off in a hurry.
+
+`k
+  @end
+
+@drawmap
+@update
+@end
+
+@#CAVE
+;Cave entrance to FlagCity
+@SHOW
+`r0`c  `r1 Dark mysterious ocean cave `r0
+
+  `2You round the next part of the rocky coastline to find a cave you didn't
+  notice before.  Hestantly you brave you way up the cold dark passage until
+  finally you hear ... voices!!  It sounds like a town up there.
+
+`/`k
+ @do map is 151
+ @loadmap 151
+ @do x is 15
+ @do y is 10
+@drawmap    
+@update
+
+@#CITYHALL
+;FlagCity city hall
+@OFFMAP
+@DO MOVEBACK
+@label town
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1  City Hall  `r0
+
+  `2You step into the luxurious building finding a nervous looking noble
+  standing behind a counter.  He sees you and nods.
+  `0"Good day s&sir, how may the Crown help you?"`2
+
+@DO WRITE
+`x`x
+@CHOICE
+Pay your taxes
+Complain about the Bounty offices
+Leave, quick!!
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @IF &MONEY > 49 THEN DO
+  @BEGIN
+  @DO MONEY - 50
+  @SHOW
+`\`\  `$"I'd like to be a good subject and pay my taxes,"`2 you say.
+
+  `0"Very well, that'll be 50 gold s&sir"`2 he states.  A chill
+  runs down your back as you pay.
+`\`k
+  @do goto town
+  @END
+  @SHOW
+`\`\  `$"I'd like to pay my taxes!"`2 you merrily say.
+
+`k  `0"I'm sorry sir, you don't have enough money." says the noble.
+`\`k
+@do goto town
+@END
+@IF RESPONSE IS 2 THEN DO
+  @BEGIN
+  @SHOW
+`\`\  `$"What's with those damn bounty hunters next door?"`2 you demand.
+
+  `0"You go yell at them, I'm not gonna die!"`2 he yells.
+`\`k
+@do goto town
+@END
+@drawmap
+@update
+@end
+
+
+
+@#TICKET
+;The travel offices
+@DO MOVEBACK
+@BUSY
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1`%   FlagCity Travel  `r0
+
+  `0"Welcome to Flagcity travel, what can I do for you?" `2Asks a receptionist.            
+@DO WRITE
+`x`x
+@CHOICE
+Pick up a world map
+Buy a ticket for somewhere
+Leave
+@IF RESPONSE IS 1 THEN DO
+@Begin
+@Show
+`\`\  `$"I'd need to grab a map from ya,"`2 you reply.
+`\`k  `0"Okay that'll be 20 gold,"`2 she states.
+
+@if money < 19 then do
+        @BEGIN
+        @show
+  `2You don't have that much, so again you take it out on her.
+
+`k  `$"Look you stupid lady, why ever do maps cost that much?!?! You just
+  lost a big time client, woman!" `2you scream.
+
+`k  `2You see tears from her eyes as you stomp off.
+`\`k
+        @DRAWMAP
+        @UPDATE
+        @CLOSESCRIPT
+        @End
+@show
+`2  You plop down the money.`\`\`k
+@do money - 20
+@do `i20 + 1
+@DRAWMAP
+@UPDATE        
+@CLOSESCRIPT
+@End
+
+@IF RESPONSE IS 2 THEN DO
+@Begin
+@Show
+`\`\  `$"I need to go somewhere," `2you say.  She nods, `0"Okay where
+   would you like to go today?" `2You eye her & review your choices.
+
+`k
+@show
+`r0`c                         `r1 `%Flagcity Travel Center
+
+
+@buymanager
+26
+27
+32
+@do goto TICKET
+@End
+@IF RESPONSE IS 3 THEN DO
+@Begin
+@Show
+`\`\  `$"Sorry I uh ... gotta go,"`2 you say heading out the door.
+`\`k
+@DRAWMAP
+@UPDATE        
+@CLOSESCRIPT
+@End
+
+
+@#done

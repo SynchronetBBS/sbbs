@@ -1,0 +1,289 @@
+@#monster1
+@fight
+;name
+DoppelGanger
+;string said when you see him
+You come upon a small grey creature that suddenly takes your shape!
+;power move kill string
+You find a new respect for yourself...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+hits with its s&weapon|87
+pounces you|72
+lays down the smack|92
+NONE|NONE
+NONE|NONE
+;defense
+38
+;gold reward
+300
+;experience
+110
+;hit points
+`p02
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Giant Bird
+;string said when you see him
+That bird up there looks pretty big.
+;power move kill string
+Yea, go ahead and fly now buddy.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+pecks at your eyes|80
+claws you|67
+tries to pick you up|90
+NONE|NONE
+NONE|NONE
+;defense
+25
+;gold reward
+475
+;experience
+180
+;hit points
+180
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Bounty Hunter
+;string said when you see him
+`0"Hey I bet there's a price on your head." `2 you hear.
+;power move kill string
+He should do better research.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+smacks you with his crossbow|87
+hits with his longsword|76
+stabs hard with a dagger|90
+NONE|NONE
+NONE|NONE
+;defense
+32
+;gold reward
+600
+;experience
+154
+;hit points
+240
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Roaming Mob
+;string said when you see him
+`0"Hey there s&he is!" `2 you hear.
+;power move kill string
+Just go away you losers!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+chase you down|80
+use their pitchforks and shovels on you|95
+let loose the dogs|78
+NONE|NONE
+NONE|NONE
+;defense
+30
+;gold reward
+480
+;experience
+170
+;hit points
+350
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Angry Mage
+;string said when you see him
+`2You see a light up ahead, of a fireball headed towards you.
+;power move kill string
+Magic is how long it took me to kick your ass!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+throws a fireball|85
+throws a iceball|100
+calls upon the dead|79
+throws lightning at you|105
+smacks you with his staff|81
+;defense
+27
+;gold reward
+401
+;experience
+156
+;hit points
+480
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Lost Gladiator
+;string said when you see him
+`0"Hey, have you seen Hawk or Ice?"  `2you hear.
+;power move kill string
+`$"I am the greatest!" 
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+nails you with a tennis ball|87
+wrestles you down|102
+smashes you with a stick|76
+talks smack to you|88
+NONE|NONE
+;defense
+32
+;gold reward
+550
+;experience
+160
+;hit points
+400
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Shawn
+;string said when you see him
+`0"My 90 is just as fast as your 133!" `2 you hear.
+;power move kill string
+`$"Over Clock this!"`2
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+smacks you with his keyboard|80
+give you a virus|78
+blows up your chopper|97
+NONE|NONE
+NONE|NONE
+;defense
+33
+;gold reward
+430
+;experience
+160
+;hit points
+210
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster8
+@fight
+;name
+Rogue Officer
+;string said when you see him
+`0"I could help you, but ..." `2 you hear.
+;power move kill string
+So that's the way the man's gonna be?
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits with him mace|85
+boots you in the head|99
+nails you with a poison dart|105
+NONE|NONE
+NONE|NONE
+;defense
+25
+;gold reward
+410
+;experience
+156
+;hit points
+130
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster9
+@fight
+;name
+Mercenary
+;string said when you see him
+`0"I'm looking for a war ..." 
+;power move kill string
+`$"Looks like he was pressed for time."
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+jabs you with his spear|97
+connects with his morning star|105
+rams his spear through your arm|115
+NONE|NONE
+NONE|NONE
+;defense
+27
+;gold reward
+760
+;experience
+166
+;hit points
+250
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#FIGHT
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do `p20 random 9 1
+@do goto monster`p20

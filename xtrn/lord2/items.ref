@@ -1,0 +1,980 @@
+;Items file
+
+@#DIARY
+;Barak's diary
+@show
+`r0`c  `r1`%  Reading Barak's Diary  `r0
+
+  `r1`%  2-24  `r0
+
+  `2Turgon embarressed me in front of the students again.  He has no right
+  to do this.
+
+`k  `r1`%  2-29  `r0
+
+  `2I was beat by a student with 24 experience today!  Turgon told Aragorn
+  and Santiger about it immediately... gawd I hate him!
+
+`k  `r1`%  3-03  `r0
+
+  `2Mother made some pointed comments about how nice it would be if I got
+  my own place.. that old hag, I'll show her I make plenty of money!
+
+`k  `r1`%  3-23  `r0
+
+  `2I took 20 gems from the student gem deposit today.  No one saw me.
+
+  I now am afraid to try to sell them...  I will wait until people forget.
+
+`k  `r1`%  4-03  `r0
+
+  `2Turgon saught me out today in an attempt to 'teach me the proper way
+  to handle twin swords'.  I can't believe his ego!  It was all I could do
+  to tell him I was busy.
+
+`k  `r1`%  4-12  `r0
+
+  `2I have only just become sober.  Last night I did something terrible..
+  In a drunken rage while others were at a party celebrating the death of
+  `4The Red Dragon`2 (it was one of Turgon's students that did it.. I will
+  never hear the end of this) I went to Turgon's house and hid the gems
+  behind his bookshelf.
+
+  My heart is heavy now, I hope the gems are never found.
+
+`k  `r1`%  4-18  `r0
+
+  `2TURGON SUCKS!  I decided to play some dice for a few minutes during
+  training with some students and was reprimanded by Turgon himself in
+  front of everyone.  Even Halder was laughing!
+
+  Later I left an anonymous note at the councils door.  I told them Turgon
+  had taken the gems, and I told them exactly where to find them.  I hope
+  that old coot has not found them and moved them...
+
+`k  `r1`%  4-22  `r0
+
+  `2Turgon has been banashed from Greentree!  Things could not have worked
+  more beautifully!!!  I told the council today that Turgon had been stealing
+  things all along.. it explained many disappearances..<snicker> I told them
+  all the other trainers but I took part - and it was I wrote the note.
+
+`k  `r1`%  4-23  `r0
+
+  `2The council has made me the master trainer for my 'service to the 
+  community'.  I will finally be able to start the Barak Training center
+  like I have always dreamed!
+
+  `0That was the last entry.
+
+`k
+  @run stats in gametxt.ref
+  @closescript
+
+@#SMACK
+@clearblock 13 23
+@do move 1 13
+@show
+  `2To use this item press Z from the map screen.
+
+`k
+@
+
+@#MOON
+;Gryphon Moon
+@clearblock 13 23
+@do move 1 13
+@show
+  `2The `%Gryphon Moon`2 comes alive in your hands.
+
+  Did the sun move backwards a bit?
+
+@if `p11 < `v05 then `p11 + 500
+@clearblock 5 11
+@routine drawstats in gametxt.ref
+@do move 1 17
+@key
+@#WAND
+@if castle3.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `0WAVING YOUR WAND ALL ABOUT `r0
+
+`2  This wand is dead and lifeless.  This means nobody currently owns the
+  `%Wizard Tower`2.
+
+`k
+  @run stats in gametxt.ref
+  @closescript
+  @end
+
+@readfile castle3.dat
+`p20
+`s01
+@
+;load owner and current password
+
+
+
+
+@if `p20 not &playernum then do
+  @begin
+  @do upcase `s01
+  @if `s01 is NONE then do
+  @begin
+  @do `s04 is getname `p20
+  @show
+`r0`c  `r1 `0WAVING YOUR WAND ALL ABOUT `r0
+
+  `%A light appears over the wand!  `2Something leans out...
+
+`k`2  The face of mighty wizard `0`s04`2 scowls at you.
+
+  `0"I am not allowing anyone to enter my castle by any means!"
+
+  `2As quick as that the light is gone.
+
+`k
+  @run stats in gametxt.ref
+  @closescript
+  @end
+
+  @show
+`r0`c  `r1 `0WAVING YOUR WAND ALL ABOUT `r0
+
+`2  Say what incantation while you wave?
+   @do write
+`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @itemexit
+    @do x is 44
+    @do y is 15
+    @do map is 1176
+    @loadmap &map
+    @drawmap
+    @update
+    @do quebar
+`%AWESOME!
+    @closescript
+    @end
+@do `p02 / 2
+@show
+`\`\  `2The wand grows hot and burns you!  `bOUCH!
+
+  `2If only you knew the right thing to say...
+
+`k
+  @run stats in gametxt.ref
+  @closescript
+  @end
+
+    @itemexit
+    @do x is 44
+    @do y is 15
+    @do map is 1176
+    @loadmap &map
+    @drawmap
+    @update
+    @do quebar
+`%WHAT A RIDE!
+    @closescript
+
+
+
+@#QUEST
+;help them remember where they need to deliver something
+
+;get location and name
+@do `p20 is `p15
+@routine getname in quest.ref
+@routine getplace in quest.ref
+
+@clearblock 13 23
+@do move 1 13
+@do `s02 is `2You`xstarted`xthis`xquest`x`0`p32`2`xdays`xago.
+@if `p32 is 0 then `s02 is You`xstarted`xthis`xquest`xtoday.
+@if `p32 is 1 then `s02 is `2You`xstarted`xthis`xquest`xyesterday.
+@show
+  `2You need to take this to `0`s01`2 in `0`s03`2.
+
+  `s02
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Continue your journey
+Throw the thing away like a bad little s&boy
+@if responce is 1 then do
+  @begin
+  @closescript
+  @end
+
+//setting quest stuff to 0, they chose throw sack away
+@do `p14 is 0
+@do `p15 is 0
+@do `p16 is 0
+@do `p17 is 0
+
+//take away quest items
+
+@do `i44 is 0
+@do `i45 is 0
+@do `i46 is 0
+@do `i47 is 0
+@do `i48 is 0
+@show
+`r0
+
+  You chuck it behind some bushes.  Haw!
+
+`k
+@closescript
+@#item1
+;Wildberrys
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You chug 'em down.  Boy do they taste good.
+
+@if `p02 less `p03 then do
+ @begin
+ @show
+  `%You feel a little better.
+
+ @do `p02 + 1
+ @savecursor
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+ @loadcursor
+@end
+
+@key
+
+@#item2
+;poisonberrys
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You slurp it up.  It tastes ok at first but then... `bACK!`2
+
+  You hook all over the place!
+
+  `4HITPOINTS GO DOWN BY ONE.
+@if `p02 more 0 then `p02 - 1
+@clearblock 5 11
+@routine drawstats in gametxt.ref
+@do move 1 19
+@key
+
+
+@#item3
+;Milk          
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You down the cow juice.
+
+  `2It's a little warm, but thats how ya like it!
+
+`k
+@
+
+
+@#item5
+;Green potion
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You drink the green liquid.
+
+@if `p02 less `p03 then do
+ @begin
+ @show
+  `%You feel better!
+
+ @do `p02 + 10
+ @if `p02 more `p03 then `p02 is `p03
+ @savecursor
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+ @loadcursor
+@end
+
+@key
+
+
+@#item7
+;Flute
+@if bitcheck `t14 1 1 then do
+  @begin
+  @if bitcheck `t14 2 0 then do
+  @begin
+  @clearblock 13 23
+  @do move 1 13
+  @show
+  `2You don't know any songs.  Damn!
+
+`k
+  @closescript
+  @end
+  @do `v01 is 1
+  @show
+`r0`c  `r1  Playing your flute  `r0
+
+  `2Play what?
+
+@do write
+`x`x
+@choice
+Remembering the past
+Remembering the present
+Play nothing
+@if responce is 3 then do
+  @begin
+  @run stats in gametxt.ref
+  @closescript
+  @end
+
+  @if responce is 2 then do
+  @begin
+  @show
+`\`\  `2You play the song.  You will never forget this place.
+
+`k
+  @do `t15 is x
+  @do `t16 is y
+  @do `p36 is &map
+  @run stats in gametxt.ref
+  @closescript
+  @end
+
+  @if responce is 1 then do
+  @begin
+  @if `t15 is 0 then do
+    @begin
+  @show
+`\`\  `2Nothing happpens.  Maybe you should try the other song...
+
+`k
+
+    @do goto item7
+    @end
+
+  @show
+`\`\  `2You play the song.  You are moved by your performance!
+
+`k
+  @do x is `t15
+  @do y is `t16
+  @do map is `p36
+  @loadmap &map
+  @itemexit
+  @drawmap
+  @update
+  @closescript
+  @end
+
+
+
+  @end
+
+@clearblock 13 23
+@do move 1 13
+@show
+  `2No sound comes out, must be broke.
+
+`k
+@
+
+
+@#item8
+;momma's pie
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You messily chow down the berry pie.
+
+  After a satisfying belch, the pie is gone.
+
+@if `p02 less `p03 then do
+ @begin
+ @do `p02 + 50
+ @if `p02 > `p03 then `p02 is `p03
+ @savecursor
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+ @loadcursor
+@end
+
+
+@key
+
+@#item11
+;talking to little girl
+@do `v01 is 1
+@label item11s
+@show
+`r0`c  `r1 `0TALKING TO YOUR CHARGE `r0
+
+`2  You motion the girl to sit down so that you may speak with her.
+
+@do write
+`x`x
+@choice
+`%Where is your mother waiting for you again?
+What were you doing so far from town?
+`4Kill her.
+`%Nevermind
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"My mommy is waiting for me at the `4Red Dragon Inn`0.  Please, lets hurry,
+  before she leaves!"
+
+`k
+ @do goto item11s
+ @end
+
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `0"I was picking flowers and.. I wanna go home!" `2the girl cries.
+
+`k
+ @do goto item11s
+ @end
+
+@if response is 3 then do
+ @begin
+ @show
+`\`\  `$"Come here, small one.  I won't hurt you." `2you beckon.
+
+`2  The child slowly advances towards you.  `0"Yes sir?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+End her life.
+Have mercy on her.
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `$"I just wanted to... Straighten your dress.  There, all better."
+
+`2  She thanks you.  If only she knew how close you had come to...
+
+`k
+  @do `v01 is 3
+  @do goto item11s
+  @end
+
+ @show
+`\`\  `2You quickly crush the life out of her.  In a few moments, it is over.
+
+`k  `2Looking down at her lifeless body you are saddened.  What ever posessed
+  you to do this awful thing?
+
+  `4ALIGNMENT GOES DOWN BY ONE.
+
+`k
+ @do `i11 is 0
+ @do `p07 - 1
+ @end
+
+
+
+@run stats in gametxt.ref
+
+
+@#ITEM17
+;Gloworm
+@clearblock 13 23
+@do move 1 13
+
+@if map is 1289 then do
+  @begin
+   @show
+  `2You bite into the little guy.
+
+  `$Your mouth is glowing!
+
+`k  `%The area is much brighter now.  Good thinking!
+
+`k
+
+@do map is 1285
+@loadmap 1285
+ @closescript
+  @end
+
+
+
+@show
+  `2You bite into the little guy.
+
+  `$Your mouth is glowing!
+
+`k  `2Gee, it would be more fun in the dark, you can't really see it glow here.
+
+`k
+@
+
+@#item18
+;talking to hector
+@do `v01 is 1
+@label item18s
+@show
+`r0`c  `r1 `0TALKING TO HECTOR `r0
+
+`2  You let the bird poke his head out to speak with you.
+
+@do write
+`x`x
+@choice
+How do you know the old woman wants to eat you?
+Taunt the bird
+Set Hector free
+Want a cracker?
+`%Nevermind
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"That witch has told me so, dozens of times!  Awk! She kept me locked
+  up for months trying to fatten me up!"
+
+`k  `$"Why did she 'enchant' you into a bird?  Why does she hate you so much?"
+
+  `0"I threw stones at her shack with some friends.  Now I'm paying for it!"
+
+`k
+ @do goto item18s
+ @end
+
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `$"Say... Hector.  You are gonna taste MIGHTY fine in the old woman's stew!"
+
+  `0"Awk!  No!  Please let me go!"
+
+`k  `$"Haha... and lose my main course?  I don't think so." `2you laugh.
+
+`k
+ @do goto item18s
+ @end
+
+@if response is 4 then do
+ @begin
+ @show
+`\`\  `$"Little birdy wordy wanna cracker?" you ask.
+
+`0  "I most certainly do not!" `2Hector sqawks indignantly.
+
+`k
+ @do goto item18s
+ @end
+
+
+@if response is 3 then do
+ @begin
+ @show
+`\`\  `$"Hector.  If I let you go...  Will you be a good bird?" `2you ask.
+
+`2  Hector violently nods his beak.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Throw Hector into the sky
+Put him back in your pouch
+@if response is 1 then do
+  @begin
+  @show
+`\`\  `$Fly, Hector!  Fly!" `2you exclaim as you toss Hector up.
+
+`k  The bird sqawks with joy - and soon is gone.
+
+  `%ALIGNMENT GOES UP BY 20.  2 QUEST POINTS GAINED.
+
+`k
+  @do `i18 is 0
+  @do `t08 is 3
+  @do `p07 + 20
+  @do `p18 + 2
+  @run stats in gametxt.ref
+  @end
+
+ @show
+`\`\  `$"Well... I was just kidding, so get back into that bag!"
+
+`k
+ @do `v01 is 3
+ @do goto item18s
+ @end
+
+@run stats in gametxt.ref
+
+@#item19
+;Eating the apple
+@clearblock 13 23
+@do move 1 13
+@show
+  `2It tastes delicious.
+
+`k
+@
+
+@#item20
+;Using the map.
+@clearblock 13 23
+@do move 1 13
+@show
+  `2To use this item, press `0M`2 from the 'map' menu.
+
+`k
+@
+
+@#item22
+;Using the map.
+@clearblock 13 23
+@do move 1 13
+
+@if `i22 < 1 then goto fail22
+@if `i23 < 1 then goto fail22
+@if `i24 < 1 then goto fail22
+@if `i25 < 1 then goto fail22
+
+@show
+  `2You carefully fit all four pieces of this strange wand together...
+
+`k  `%THE WAND COMES TO LIFE, BURNING IN YOUR HANDS. (YOU GET A QUEST POINT!)
+
+`k  `0YOU ARE TELEPORTED TO A STRANGE AND WONDEROUS PLACE!
+
+  `2You discard the now burned out wand.
+`\`k  `2Somehow you feel safe here - as though you were back in your mother's
+  womb and she was laying in a bed stomach down. `k
+ @do map is 154
+ @do x is 14
+ @do y is 12
+ @do `i22 - 1
+ @do `i23 - 1
+ @do `i24 - 1
+ @do `i25 - 1
+ @do `p18 + 1
+ @loadmap 154
+
+ @itemexit
+ @drawmap
+ @update
+ @closescript
+
+
+@label fail22
+@show
+  `2You can't seem to make it work.  Pieces are missing it looks like.
+
+`k
+@
+
+@#ITEM28
+;Casting the fishing rod
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You practice casting.  Can't wait for a fishing dock to try this out
+  on!
+
+`k
+@
+
+@#item40
+;Blue potion, heals 50
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You drink the blue liquid.
+
+@if `p02 less `p03 then do
+ @begin
+ @show
+  `%You feel better!
+
+ @do `p02 + 50
+ @if `p02 more `p03 then `p02 is `p03
+ @savecursor
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+ @loadcursor
+@end
+
+@key
+
+
+@#ITEM41
+;Reading ma's letter
+@clearblock 13 23
+@do move 1 13
+@show
+  `2The letter reads:
+
+  `%Dear brother, Elle is with child.  The tramp must be taught a lesson
+  only you can teach.  Please bring what you need, and hurry.
+
+@if bitcheck `t12 6 0 then do
+  @begin
+  @bitset `t12 6 1
+  @do `p07 - 5
+ @savecursor
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+ @loadcursor
+  @show
+  `4Your alignment goes down by 5.
+
+  @end
+@show
+`k
+@
+
+@#ITEM42
+;Talking to Laura and Edward
+@show
+`r0`c  `r1  Talking with Laura and Uncle Edward  `r0
+
+  `2Laura's pretty face is dirty but determined.  Edward is panting
+  heavily.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Talk to Laura
+Talk to Uncle Edward
+Talk to nobody
+@if response is 1 then do
+  @begin
+  @show
+`\`\  `$"Hey uh.. Laura.  You got a boyfriend?" `2you casually
+  ask.
+
+`k  `0"Not yet.  Maybe after all this is over you can come over and talk
+  to me about it?"
+
+`k  `$"You bet!  What are friends for?" `2you grin.
+`\`k
+  @do goto item42
+  @closescript
+  @end
+
+@if response is 2 then do
+  @begin
+  @show
+`\`\  `2You feel this might be a bad idea.  You sure?
+
+  @do `v01 is 1
+  @do write
+`x`x
+  @choice
+Yes, talk to 'em
+Good call
+  @if response is 2 then do
+    @begin
+    @do goto item42
+    @closescript
+    @end
+   @show
+`\`\  `$"Friend Edward!  Why do you live with your niece?, anyway?" `2you ask,
+  carefully shielding your mouth with one hand.
+
+`k  `0"Well - Laura's parents were killed by `4Dragon Tooth `0riders.  They
+  burned down her whole village a few months ago.  She survived... but
+  not without scars.  Luckily I was there to help."
+
+`k
+  @do goto item42
+  @closescript
+  @end
+
+
+
+  @run stats in gametxt.ref
+
+ @#ITEM50
+ ;travel potion
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You empty the vial's contents down your throat.
+
+`k  `2Your mind begins to spin...  Streaks of light dance in your head
+  at your command.  You are the ruler of this universe of brilliance -
+  and then... it all stops.
+
+`k
+@itemexit ;this will cause it to exit to the map screen directly after
+          ;finishing this .ref
+
+@do `p20 random 9 1
+
+@if `p20 is 1 then do
+  @begin
+  @do map is 1498
+  @do x is 49
+  @do y is 6
+  @end
+
+@if `p20 is 2 then do
+  @begin
+  @do map is 1271
+  @do x is 28
+  @do y is 11
+  @end
+
+@if `p20 is 3 then do
+  @begin
+  @do map is 379
+  @do x is 55
+  @do y is 4
+  @end
+
+@if `p20 is 4 then do
+  @begin
+  @do map is 1255
+  @do x is 58
+  @do y is 6
+  @end
+
+@if `p20 is 5 then do
+  @begin
+  @do map is 1576
+  @do x is 24
+  @do y is 4
+  @end
+
+@if `p20 is 6 then do
+  @begin
+  @do map is 1029
+  @do x is 27
+  @do y is 10
+  @end
+
+@if `p20 is 7 then do
+  @begin
+  @do map is 1358
+  @do x is 66
+  @do y is 3
+  @end
+
+@if `p20 is 8 then do
+  @begin
+  @do map is 1093
+  @do x is 44
+  @do y is 10
+  @end
+
+@if `p20 is 9 then do
+  @begin
+  @do map is 1035
+  @do x is 46
+  @do y is 11
+  @end
+
+
+@loadmap &map
+@drawmap
+@update
+
+@#item52
+;Red potion
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You slurp down the strange concoction.
+
+`k  `%MAX HITPOINTS INCREASED BY FIVE.
+
+`k
+@do `p03 + 5
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+
+@#item53
+;Gold potion
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You slurp down the strange concoction.
+
+`k  `%MUSCLE INCREASED BY TWO.
+
+`k
+@do `p04 + 2
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+
+@#item54
+;Silver potion
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You slurp down the strange concoction.
+
+`k  `%DODGE INCREASED BY ONE.
+
+`k
+@do `p05 + 1
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+
+@#item55
+;White potion
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You drink the white liquid.
+
+@if `p02 less `p03 then do
+ @begin
+ @show
+  `%You feel better!
+
+ @do `p02 + 200
+ @if `p02 more `p03 then `p02 is `p03
+ @savecursor
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+ @loadcursor
+@end
+
+@key
+
+@#item66
+;Koshi Snack
+@clearblock 13 23
+@do move 1 13
+@show
+  `2You chomp down the strange cookie.
+
+  `%YOU ARE FULLY HEALED.
+
+ @do `p02 is `p03
+ @savecursor
+ @clearblock 5 11
+ @routine drawstats in gametxt.ref
+ @loadcursor
+@end
+
+@key
+
+
+@#NOMOREITEMS
+

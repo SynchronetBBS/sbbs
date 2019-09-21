@@ -1,0 +1,477 @@
+;Ref for the town of Greentree.
+
+@#h2man
+;house 1
+@DO SAYBAR
+`0Man: `2I heard there was a Moonstone hidden on a waterfall.
+@do moveback
+
+
+@#h2toy
+;house 1
+@DO SAYBAR
+`0Nice and clean.
+@do moveback
+
+@#drag
+;stone dragon
+@do saybar
+A magnificent stone dragon.  To honor a warrior who killed it years ago.
+@do moveback
+
+@#STATUE
+;The Pt thing in the water
+@do saybar
+It's supposed to be a statue people.
+
+@#H1talk
+;house 1
+@DO SAYBAR
+`0Some woman: `2Please do not use my restroom.
+@do moveback
+
+@#bum
+;the bum who is in front of Ma's boarding house
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Bum: `0Hey you! `2::hic::`0 Yeah!! Whachu lookin' at???
+@if `p20 is 2 then saybar
+`%Bum: `0Ma's a big woman.. `2::hic::`0 but the biggin's are the bestest!!
+@if `p20 is 3 then saybar
+`%Bum: `0I'll drink to that!
+@if `p20 is 4 then saybar
+`%Bum: `0Wassup peasant s&boy! Go back to your farm! `2::hic::
+@if `p20 is 5 then saybar
+`%Bum: `0A little drinkie in the `2::hic:: `0morning keeps the doctor away!
+@if `p20 is 6 then saybar
+`%Bum: `0Ma's boarding house is the safest place in `2::hic:: `0town!
+@if `p20 is 7 then saybar
+`%Bum: `0Watch out for little Elle.. if she ain't the darndest thing!
+@if `p20 is 8 then saybar
+`%Bum: `0I hate Greentree!  I wanna move to `2::hic:: `0Bonetown!!!
+@if `p20 is 9 then saybar
+`%Bum: `0Stay the `bHELL AWAY`0 from the dark forest, s&boy!
+
+
+@do moveback
+
+@#FOUNTAIN
+;Fountain on the east side of town.
+@DO SAYBAR
+`2The pond is beautiful in the sunlight.
+
+@#H1TABLE
+;Gate for the rich folk.
+@DO SAYBAR
+`2There is nothing on the table.
+@do moveback
+
+@#H1TOILET
+@If `i21 > 0 then do
+@BEGIN
+@DO SAYBAR
+`2Looks just like a toilet.
+@do moveback
+@CLOSESCRIPT
+@END
+@DO `i21 + 1
+@DO SAYBAR
+`2You find a travel pass, someone must've dropped it while dropping it.
+@do moveback
+@end
+
+@#BIGTREE
+;Big tree in the middle area.
+@DO SAYBAR
+`2Giant tree from the Northern lands.
+@do moveback
+
+@#GUARDLOOK
+;Going by the guard's wall
+@DO SAYBAR
+`2The Royal Guard eyes you as you pass by...
+
+@#PICNIC
+;Sign for the picnic area
+@DO SAYBAR
+`2Picnic area, all enjoy!!
+@do moveback
+
+
+@#RICHGATE
+;Gate for the rich folk.
+@DO SAYBAR
+`2The guards do not let you pass and are quite rude.
+@do moveback
+
+@#PORTTOWN
+;Sign pointing to PortTown.
+@DO SAYBAR
+`2North to PortTown, gateway to the sea and land 'o pirates.
+@do moveback
+
+@#DOCK
+;Sign at the dock.
+@DO SAYBAR
+`2Fishing dock --->.
+@do moveback
+
+@#GUARD1
+;at 'special' enterance
+@DO SAYBAR
+`0"Move along you!  This gate is for nobles only!"`2 the guard commands.
+@do moveback
+
+@#GUARD2
+;other guard at 'special' enterance
+@do SAYBAR
+`0"Get out of here, you peasant!" `2barks the guard.
+@do moveback
+
+@#SHEEPMAN
+;herder, need to talk to him to get access to the 'love machines'
+@do SAYBAR
+`0"Why you wanna go back there to see the royal sheep?" `2asks the herder.
+@do moveback
+
+
+@#SHEEP
+;the sheep, oh yes.
+@do SAYBAR
+`0"Bahhhh!!  Bahh!!!"`2 it screams as you gently caress it.
+@do moveback
+
+@#healers
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Healers
+
+`2  Nathan looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+
+ @do write
+`x`x
+ @choice
+Well Christ!  How am I supposed to make money when I can barely walk?
+Jesus, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a man who doesn't work," `2Nathan informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 he snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later," `2Nathan laughs.
+
+`k
+@drawmap
+@update
+
+@#bank
+@do `v01 is 1
+@offmap
+@do moveback
+@label bankstart
+@show
+`r0`c  `r1 `%1st Bank Of Greentree `r0
+
+`2  A young clerk eyes you nervously.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The nervous boy asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+
+   @end
+
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+
+
+
+@drawmap
+@update
+
+@#CLOSESCRIPT

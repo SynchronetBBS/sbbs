@@ -1,0 +1,837 @@
+@#h13
+@do moveback
+@do saybar
+`0Uncle Lenny`2: The Dragon Tooth clan is evil.  Don't ever believe them!
+@do quebar
+`0Uncle Lenny`2: Don't be afraid.. they don't bother ya here in Stonebrook.
+
+
+@#h4man
+@do moveback
+@do saybar
+`0Yowli`2: When you are up in that tree fort, you cannot be attacked.
+
+@#garbage
+@do moveback
+@do saybar
+Geez, there is garbage everywhere.  What a mess.
+
+@#tie
+@do moveback
+@do saybar
+Better jump into your A-wing and take these out!
+
+
+@#jeb
+@do moveback
+
+@if `v06 is 1 then do
+  @begin
+  @do saybar
+`0Jeb: `2You killed my dog!!!  My boy is gonna kick yer butt!
+
+  @closescript
+  @end
+
+@do saybar
+`0Jeb: `2You killed my dog!!!  My boy is gonna kick yer ass!
+
+@#jebbed
+@do moveback
+@do saybar
+The bed is dirty and unkept.
+
+@#nebbed
+@do moveback
+@do saybar
+This bed smells bad.
+
+
+
+@#h4tub
+@do moveback
+@do saybar
+`0Old Sal`2: Stay outta my hot tub, youngin'!
+
+
+@#h3mom
+@do moveback
+@do saybar
+`#Mother`2: My son Georgie is so odd.  He always has to be different!
+
+@#h3kid4
+@do moveback
+@do saybar
+`0Nicki`2: My mother loves me the most!
+
+@#h3kid3
+@do moveback
+@do saybar
+`0Georgie`2: Someday I will find a horse with wings.
+
+@#h3kid2
+@do moveback
+@do saybar
+`#Nina`2: I think Wendle likes me!!  I'm gonna have a boyfriend!
+
+@#h3kid1
+@do moveback
+@do saybar
+`0Hattie`2: Who invited you in?  Please leave my room.
+
+
+@#KID
+@do moveback
+@do saybar
+`#Little Girl`2: Mommeeeee!  `0`n`2 is in my room again!
+
+@#h1man
+@do moveback
+@do saybar
+`0Wryn: `2Why hello `0`n`2.  How is your mother?
+
+@#h1woman
+@do moveback
+@do saybar
+`0Kess: `2Did you see that treehouse the boys built?
+
+
+
+@#CHIP
+@do `p20 is 0
+@do moveback
+@busy
+@do `v01 is 1
+@show
+`r0`c  `r1  Treehouse `r0
+
+  `2A streewise looking kid squints at you.
+
+@if l2chip.tmp exist true then do
+  @begin
+  @readfile l2chip.tmp
+`p20
+`p21
+  @do `s01 is getname `p20
+  @do `s02 is getname `p21
+  @show
+  `0"We are not letting in `%`s01`0 at `%`s02`0's request.. ok?"
+
+  @end
+
+@if l2chip.tmp exist false then do
+  @begin
+  @show
+  `0"Greetings, fellow member!  What can I do for you today?"
+
+  @end
+
+@do write
+`x`x
+@choice
+Tip Chip off about somebody
+>`p20 0 Tell Chip to let `0`s01 `%back in
+Leave
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `0"Sure.. who should we watch out for?"
+  @chooseplayer `p22
+  @if `p22 is 0 then do
+    @begin
+    @show
+`k
+    @do goto chip
+    @end
+  @if `p22 is &playernum then do
+    @begin
+    @show
+  `0"But we like you around here!" `2Chip laughs.`\`\`k
+    @do goto chip
+    @end
+
+   @if l2chip.tmp exist true then delete l2chip.tmp
+   @writefile l2chip.tmp
+`p22
+&playernum
+  @show
+  `0"Understood...Thanks for the tip," `2Chip thanks as he slaps you on
+  the back.
+`\`k
+  @do goto chip
+  @end
+
+
+
+@if responce is 2 then do
+  @begin
+  @if l2chip.tmp exist true then delete l2chip.tmp
+  @show
+`\`\  `2You explain to Chip the situation.  He finally agrees to allow
+  `0`s01`2 to come to the Treehouse.
+`\`k
+  @do goto chip
+  @end
+
+@drawmap
+@update
+
+@#WALL
+@do moveback
+@busy
+@show
+`r0`c  `r1  Tree House Banter  `r0
+
+@if tree.txt exist false then do
+ @begin
+ @writefile tree.txt
+  `%Chip `2: `0We'll use birds to communicate!  Yeah!
+ @end
+
+@if tree.txt exist true then do
+ @begin
+ @displayfile tree.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter your secret message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile tree.txt
+  `%`n`2 : `0`s03
+ @do trim tree.txt 17
+ @drawmap
+ @update
+ 
+
+
+
+@#sign
+@do moveback
+@do saybar
+<--- Stonebrook
+
+@#mybed
+@do moveback
+@do saybar
+Your bed.  Hasn't been wet in years.
+
+@#hometoy
+@do moveback
+@do saybar
+Indoor plumbing, yeah!
+
+
+@#dadsbed
+@do moveback
+@do saybar
+Your mother and father's bed.  Well, just mother's now.
+
+
+
+@#village
+@do moveback
+@do saybar
+East Stonebrook Village
+
+@#LAKE
+;Lake in the North village
+@DO SAYBAR
+`2The people of your town get water from here.
+
+@#NOTHOME
+;House that's not yours
+@DO SAYBAR
+`2This isn't your home.
+@do moveback
+
+@#EMPTY
+;House up north with no kid
+@DO SAYBAR
+`2There's crying from inside, the mother here recently lost her child
+@do moveback
+
+@#OLDMAN
+;Old man's home
+@DO SAYBAR
+`2That's the old man's home, you don't wanna go in there!
+@do moveback
+
+@#TABLE
+;Table at your house. has some money on it
+@do moveback
+@if `t11 > 0 then do
+  @begin
+  @do saybar
+`2There is nothing on the table.
+  @closescript
+  @end
+
+@DO SAYBAR
+`2Wow, there are 5 gold pieces on the table!  You take 'em.
+@do money + 5
+@do `t11 is 1
+
+@#DOG
+;Dog guarding the bigger house
+
+@if bitcheck `t12 1 1 then do
+  @begin
+  @do map is 230
+  @loadmap 230
+  @do x is 40
+  @do y is 13
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@busy
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A chihuahua guards the entrance.  Kill it? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is N then do
+  @begin
+  @if `07 < 5 then do
+    @begin
+    ;person is evil
+    @do saybar
+You brutally kick the dog as you leave.
+    @closescript
+    @end
+  @do saybar
+To hurt such a nice pup would be wrong!
+  @closescript
+  @end
+
+
+@fight
+;name
+Chihuahua
+;string said when you see him
+The dogs starts barking in an annoying high pitch.
+;power move kill string
+You kick the dead carcas off the porch.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+nips you in the leg|2
+bites you|3
+wrestles with your boots|1
+NONE|NONE
+NONE|NONE
+;defense
+0
+;gold reward
+3
+;experience
+2
+;hit points
+5
+;if win: ref file|name or NONE
+HOME.REF|DOGWIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#DOGWIN
+@do saybar
+The porch is now wide open!
+;change a var here
+@bitset `t12 1 1
+
+@#JENKINS
+;Mrs. Jenkins home
+@DO SAYBAR
+`2That's miss Jenkin's home, but you didn't hear that from me.
+@do moveback
+
+
+@#random
+;this is the stuff that happens randomly while on the home screen
+@do saybar
+You hear a bird chirp merrily.  It's so very nice around here.
+@#berry
+; stuff for berry patch near house
+@do moveback ;this means go back one space.. You can't move through a
+;berry patch!
+@if `i01 more 0 then do
+ @begin
+@do saybar
+Nah, you already have some with you.
+ @closescript
+ @end
+@do saybar
+You carefully pick some berries.
+@do `i01 + 1
+
+
+@#SHOME
+@offmap
+@do moveback
+@do `v01 is 1
+@label Sarky
+@show
+`r0`c  `r1`%  Good old Wendle Hightree's house  `r0
+`\  `2This is your good friend Wendle's house.  His parents are really nice and
+  let you stay over all the time.  He greets you at the door.
+
+  `0"Hey man, how's it going?"
+
+@DO WRITE
+`x`x
+@CHOICE
+Talk with Wendle for a while
+Take off
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Pretty good, was just getting some berries for Mom.  How's it been with
+  You?"
+
+`k  `0"Great man, just enjoying the weather lately.  I can't wait to get a chance
+  to travel and have adventure though.  I hear cities like PortTown and
+  Flagcity are just great!  I don't know though my Mom just doesn't want me to
+  leave..."
+
+`k  `$"Don't worry man someday we'll get a chance to go have adventures like we
+  always said we would.  It'll be great!"`%
+`\`k
+  @do goto sarky
+  @END
+
+@drawmap
+@update
+@end
+
+@#TREEHOUSE
+@offmap
+@do moveback
+@do `v01 is 1
+@do `s01 is SECRET
+@if l2chip.tmp exists true then do
+  @begin
+  @readfile l2chip.tmp
+`p20
+`p21
+  @if `p20 is &playernum then do
+    @begin
+    @do `s01 is getname `p21
+    @show
+`r0`c  `r1`%  The TreeHouse  `r0
+`\  `2This is the big treehouse one of the nice townfolk made. Many a kid
+  come to hang out & play here, sometime people even camp out here and
+  party late night.  It's a really great place... if you can get in.
+
+  `$"Throw down the ladder kids, I wanna come up!" `2you yell.  But instead
+  of asking for a password or something they start throwing rotten fruit at
+  you.
+
+`k  `0"Get the hell out of here, `%`n`0!  We heard about
+  the awful things you've done from our friend `%`s01`0!" `2one
+  kid yells.
+
+  Guess you'd better find someplace else to sleep.
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @end
+
+@if l2tree.dat exists true then do
+  @begin
+  @readfile l2tree.dat
+`s01
+  @end
+@show
+`r0`c  `r1`%  The TreeHouse  `r0
+`\  `2This is the big treehouse one of the nice townfolk made. Many a kid
+  came to hang out & play here, sometime people even camp out here and
+  party late night.  It's a really great place... if you can get in.
+
+  A voice shouts down from above.  `0"What's today's password, kid?!"
+
+@do write
+  `2Your reply:`x
+@do readstring 50 NIL `s02
+@do upcase `s01
+@do upcase `s02
+
+@if `s02 is `s01 then do
+  @begin
+  @show
+`\`\  `0"Come on in!" `2a high pitched voice yells.  A rope ladder is thrown
+  over the side.
+
+`k
+@loadmap 232
+@do map is 232
+@do x is 30
+@do y is 10
+@drawmap
+@update
+@closescript
+@end
+
+@show
+`\`\  `0"Nice try, loser!" `2a frenzied voice screams.  The kids start
+  throwing rotten apples at you!
+
+`k
+@drawmap
+@update
+
+@#HOME
+@offmap
+@do moveback
+@do `v01 is 1
+@label HOME2
+@show
+`r0`c  `r1`% MOTHERS HOUSE `r0
+
+@if `p06 more 2 then do
+ @begin
+ @do write
+`x`x
+ @choice
+Whatup ma.
+Make me another pie!  Now!
++`t17 1 -`t17 3 Ma, no more games.  Why do the Koshi know me?
+Leave
+@do move 1 9
+
+  @if responce is 1 then do
+   @begin
+    @if bitcheck `t17 3 1 then do
+      @begin
+      @show
+`0  "Not much.  You finally know the truth about your father!"
+
+`k
+   @do goto home
+      @end
+
+    @show
+`0  "No news! Your father is still dead, you're still a delinquent."
+
+`k
+@do goto home2
+   @end
+
+ @if responce is 3 then do
+   @begin
+  @show
+  `0"You've seen the Ko-koshi?" `2you mother stammers.
+
+`k  `$"Yes!  Now tell me all woman!"
+
+`k
+`c  `r1  `%The truth about your past  `r0
+
+  `0"Your father's name was Ransom.  He traveled the world posing as a human
+  to understand it.  We fell in love - secretly.  Back then people would kill
+  Koshi on sight.  He always hid his wings carefully and visited me at night
+  for my protection."
+
+  `k  `$"So, basically I'm a bastard then is what you're saying.  Is he
+  really dead?  How much have you lied to me about?"
+
+`k  `0"I did it for you.  Yes, he is dead.  One day while at the market place
+  someone saw him for what he was.  He was burned at the stake."
+
+  `$"Did they know about you?"
+
+`k  `0"I..I was there but I was too afraid to proclaim myself his lover.."
+
+`2  Your mother bursts into tears.
+
+  `$"It's ok mom.. there was nothing you could have done.  They would have
+  burned you with him and then you wouldn't have been able to raise the
+  strapping young s&man you did."
+
+`k  `0"We were so relieved when you were not born with wings like other
+  Koshi.. but you still had Koshi eyes.  It is still in you."
+
+  `$"Very well.  I must return and ask Dahma what must be done."
+
+`k
+  @bitset `t17 3 1
+   @do goto home
+   @end
+
+
+  @if responce is 2 then do
+   @begin
+   @if `i08 more 0 then do
+    @begin
+    @show
+`2  You politely ask that she cook another pie for you.
+
+  `0"Another pie?  But hun, you already have one!" `2she giggles.
+
+`k
+    @do goto home2
+    @end
+
+   @if `i01 is 0 then do
+    @begin
+    @show
+`2  You demand that she cook for you.
+
+  `0"Ok, but you better grab some berries first." `2
+
+`k
+    @do goto home2
+    @end
+   @if `i03 is 0 then do
+    @begin
+    @show
+  `0"You have berries but... I need some more milk first!" `2
+
+`2  You sigh.  `$"Ok ma.  But any more stunts like this and you're going
+  STRAIGHT to a home for the aged!"
+
+`k
+    @do goto home2
+    @end
+    @do `i01 - 1 (take away berries and milk and give pie)
+    @do `i03 - 1
+    @do `i08 + 1
+    @show
+  `0"You got it, baby!" `2she laughs.
+
+`k  `2A half hour later, you have a big juicy pie in your pocket.
+
+`k
+   @do goto home2
+   @end
+
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @end
+@if `p06 is 2 then do
+ @begin
+
+ @if `i03 is 0 then do
+  @begin
+  @do `s01 is breasts
+  @if `v06 is 1 then `s01 is cows
+ @show
+  `0"Where is my milk?  You know my `s01 are simply too old to produce!"
+
+  `2Completely disgusted, you figure you better go find some milk.
+
+`k
+  @end
+ ;has given the berries to mom already
+ @if `i03 more 0 then do
+  @begin
+ @do `i03 - 1 (take one away)
+ @do `i08 + 1 (give them a pie)
+ @do `p06 + 1 (advance this, so we know completed the 1st quest?)
+ @do `p18 + 1
+ @show
+  `0"Great!  You brought my milk!  Having kids is finally paying off!"
+
+`%  YOU GET MOMMA'S PIE.
+
+`k  `%You get a quest point!
+
+`k
+  @end
+
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if `p06 is 0 then do
+ @begin
+ @show
+  `2Your mother greets you warmly.  `0"Hello, child!  I was hoping you could
+  go pick me some wildberries so I can make you some pie!"
+
+  `2Your mother looks on hopefully.
+
+@do write
+`x`x
+@do `v01 is 1
+  @choice
+Sure, whatever.  I want that pie!
+Naw, git 'em yourself, old bag.  I'm going to town!
+>`i01 0 Why, funny you should ask for berries, cuz guess what, I've got some!
+@
+@if responce is 1 then do
+ @begin
+ @show
+
+
+  `0"You are such a good s&son!  Go find me some berries!"
+
+ @do `p06 is 1
+ @key
+ @end
+
+@if responce is 2 then do 
+ @begin
+  @if `v06 is 0 then do
+  @begin
+  @show
+
+
+  `0"Dickhead!  I'll just forget this ever happened, now scram!"
+
+  @end
+
+  @if `v06 is 1 then do
+  @begin
+  @show
+
+
+  `0"Jerk!  I'll just forget this ever happened, now get out!"
+
+  @end
+
+
+ @key
+
+
+ @end
+
+
+@if responce is 3 then do
+ @begin
+ @show
+
+
+ @do goto get_milk
+ @end
+@drawmap
+@update
+@closescript
+ @end
+`2You strut into your cottage and quietly close the door behind you.
+
+`0"Back so soon?"`2 your mother laughs.
+           
+@do `v01 is 1
+
+@do write
+`x`x
+@choice
+>`i01 0 Yes! I have the berries!  Make my pie!
+=`i01 0 Sorry mother, I have no berries, I'm basically a failure.
+Shrug and leave.
+=`p99 0 Attempt to strangle her.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@label get_milk
+@show
+  `2You give your mother the berries.  She is very pleased!
+
+  `0"Lovely! Lovely!  Now... Could you go to town and buy us some milk?"
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Sure mom.  That pie better be ready when I come back!
+Whatever!  Why do you always have to treat me like a slave?
+This sucks, why can't we afford our own cow?
+@
+@do `i01 - 1
+@do `p06 is 2
+@show
+
+
+  `0"Thanks hun!  Now hurry along!"
+
+  `2You sigh.  There is only so much daylight, so you better get
+  going.
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if responce is 2 then do begin
+ @begin
+@show
+  `0"Silly!  We need those berries to make you your pie, now don't we?"`2 she
+  giggles strangely.  You wonder what other plants Ma has been getting into...
+
+ @end
+
+@if responce is 3 then do begin
+ @begin
+@show
+  `$"Look ma, I got things to do, ok?"`2
+
+  She looks on, bewildered at the prospect.
+
+ @end
+
+@if responce is 4 then do begin
+ @begin
+@show
+  `$"Ma.  Come here."
+
+  `2You gently caress her neck.  Her contented sigh turns to a look of
+  confusion as you begin to apply pressure.
+
+`k  `0"What are you.. awk!" `2she gasps.  Her eyes begin to bug out a bit,
+  her tongue flaps around crazily.
+
+`k  As her body becomes limp begin to feel sorry for her and decide to
+  let her live.  She did birth you, you know.
+
+  `%Note from Seth: `0My God!!  You are a jerk!!
+ @do `p99 is 1
+ @do `p07 - 1
+ @end
+
+
+@show
+`k
+@drawmap
+@update
+@#nothing
+
+

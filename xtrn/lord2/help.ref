@@ -1,0 +1,496 @@
+;help inside of help.ref (yeah, this file) is run if a user hits ? from
+;the main screen in the game.  This way, if you want to add a complicated
+;help system, (ie, they can get help on certain things, whatever) you can.
+
+@#NOTIME
+`r0  `2Um, hello?  Anybody home?  You can't sit here all day, there are
+  adventures to be had!  Come back when you are ready - be not afraid, child.
+@#talk
+@do move 3 21
+@do write
+`r1`% ENTER SCREEN MESSAGE :`x
+@do readstring 51 NIL `s01
+@do stripbad `s01
+@do `p21 is length `s01
+@if `p21 more 1 then do
+ @begin
+ @do `s02 is `r1`%`x`n`%:`x
+ @do `s02 add `s01
+ @do talk `s02
+ @end
+@do statbar
+
+@#yell
+@do move 3 21
+@do write
+`r1`% ENTER GLOBAL MESSAGE :`x
+@do readstring 51 NIL `s01
+@do stripbad `s01
+@do `p21 is length `s01
+@if `p21 more 1 then do
+ @begin
+ @do `s02 is `r1`%`x`n`%:`x
+ @do `s02 add `s01
+ @do talk `s02 all
+ @end
+@do statbar
+
+@#Z
+;z key activates this
+;the Smackrod/aka legendary xy cord warping device
+@if `i73 < 1 then do
+  @begin
+  @do saybar
+`2Nice job on pressing the `0Z`2 key.  It is a great key, really.
+  @closescript
+  @end
+@do move 3 23
+@do write
+`0`r0New X? `2:`x
+@do `p20 is x
+@do `p21 is y
+@do readnum 2 `p20
+
+@if `v40 is 0 then `v40 is `p20
+@if `v40 > 80 then `v40 is 80
+@if `v40 < 1 then `v40 is 1
+@do x is `v40
+
+@do move 15 23
+@do write
+`0`r0New Y? `2:`x 
+@do readnum 2 `p21
+@if `v40 is 0 then `v40 is `p21
+@if `v40 > 20 then `v40 is 20
+@if `v40 < 1 then `v40 is 1
+
+@do y is `v40
+@clearblock 23 24
+
+@if blockpassable not 0 then do
+ @begin
+  @clearblock 23 24
+  @drawpart `p20 `p21
+  @update
+ @end
+@if blockpassable is 0 then do
+ @begin
+ @do x is &lastx
+ @do y is &lasty
+ @drawpart `p20 `p21
+ @update
+ @do saybar
+Sorry, you can't go there.
+@end
+
+@#whoison
+;our whos on list
+@show
+`r0`c  `r1                        `%PEOPLE ON NOW                             `r0  
+
+  `0Name                       Level           Location
+
+@whoison
+@show
+
+@key
+@drawmap
+@update
+
+
+@#map
+;if player hits M from the map menu
+@if `i20 > 0 then do
+  @begin
+  @do write
+`r0
+  @overheadmap
+  ;now we do any additions to our map,  like text or marks on the map
+  ;we had npc players do so they know where to go
+
+  @do move 76 12 ;porttown
+  @do write
+`r2`%Ü
+
+  @do move 76 17 ;greentree
+  @do write
+`r2`%Ü
+
+  @do move 79 17 ;stonebrook
+  @do write
+`r2`%þ
+
+  @do move 80 10 ;stonepass lodge
+  @do write
+`r2Ü
+
+  @do move 52 14 ;flag city
+  @do write
+`r2`%Ü
+
+  @do move 43 7 ;ArrisVille
+  @do write
+`r2`%Ü
+
+  @do move 56 6 ;Sosen Village
+  @do write
+`r2`%Ü
+
+  @do move 52 20 ;BoneTown
+  @do write
+`r2`%Ü
+
+  @if bitcheck `t12 3 1 then do
+    @begin
+    @do move 75 20 ;edward
+    @do write
+`r2`0ø
+    @end
+
+
+  ;this math converts your 'block #' to x y cords to show the
+  ;"you are here" blip.  We use lmap instead of map, lmap is the
+  ;the last 'visible' map the player was on.
+
+  @do `p20 is &lmap
+  @do `p20 / 80
+  @do `p21 is &lmap
+  @do `p22 is `p20
+  @do `p22 * 80
+  @do `p21 - `p22
+  @do `p20 + 1
+  @if `p21 is 0 then do
+   @begin
+   @do `p21 is 80
+   @do `p20 - 1
+   @end
+  @do move `p21 `p20
+  @do write
+`r2`b`r0
+
+;draw the help
+@do move 3 3
+@show
+`r1`%Reading your map.
+`2ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+  `%Ü `0City/town with lodging
+  `%þ `0City/town `4without`0 lodging
+  `%ø `0House or shack
+  `4 `0Your current location
+
+  `0Note:  `2Some buildings/etc must be
+  discovered before they show up here.
+  @do move 1 22
+  @do write
+`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@do saybar
+`4You don't have a map.
+
+@#rank1
+;this is the format for experience ranking
+@do `s01 is `n
+@do pad `s01 21
+@if sexmale is 1 then `s02 is `0M
+@if sexmale is 0 then `s02 is `#F
+@do `s03 is `p01
+@do frontpad `s03 14
+@do `s04 is `p09
+@do frontpad `s04 2
+@if dead is 1 then `s05 is `4Dead
+@if dead is 0 then `s05 is `%Alive
+
+@writefile temp`*.dat
+`s02 `2`s01`%`s03   `s04     `s05
+@#listplayers
+@do write
+`r0`c  `0Ranking players...
+
+@do delete temp`*.dat         ;`* is node number
+@writefile temp`*.dat
+`r0`c`r1                             `%  LORD II RANKINGS                            `r0
+                
+  `0Name                     Experience  Level   Status Alignment Quests
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@
+
+;rank lets us specify WHAT `p to rank, and what the name of the procedure
+;that formats the rank.
+;its been comented out - it works, but @lordrank is the same thing built
+;into the .EXE, so it is a bit faster
+;@rank crap`*.dat 1 rank1
+@lordrank temp`*.dat 1
+@convert_file_to_ansi temp`*.dat score.ans
+@convert_file_to_ascii temp`*.dat score.txt
+@displayfile temp`*.dat
+@key bottom
+@drawmap
+@update
+
+
+
+@#help
+@do `v01 is 1
+@label helpstart
+@show
+`r0`c  `r1  `%LORD II: New World V1.01 `r0
+
+  `2Use your `0ARROW-KEYS`2 or numpad (with numlock turned on) to select an
+  option then press `0ENTER`2.
+
+@do write
+`x`x
+@choice
+`2List hotkeys that do things on the map mode
+`2What symbols mean on the `0'your stats'`2 screen
+`2How to move
+`2About us and how to report bugs and suggestions
+`2Beginners help and strategy
+`4Quit back to the BBS
+`2View `0Game Settings`2
+`%Play the game!
+@if responce is 7 then do
+  @begin
+   @if `v06 is 1 then `s01 is On
+   @if `v06 is 0 then `s01 is Off
+   @do `s02 is `v05
+   @if `v05 < 1 then `s02 is `%unlimited
+   @show
+`r0`c  `r1  Settings for this game  `r0
+
+   @if `v03 is 0 then write
+  `2You get only `0one`2 life per day.`\
+   @if `v03 not 0 then write
+  `2You may die `0unlimited`2 times per day.`\
+   @show
+  `2You get `0`s02`2 turns per day.
+  `2Clean mode is `0`s01`2.
+  `2Quest opportunities per day is `0`v07`2.
+  `2This game has been running for `0&time`2 days. 
+@if `v09 < 1 then do
+  @begin
+  @show
+  `2Players are safe in Inns the entire game.
+  @end
+@if `v09 > 0 then do
+  @begin
+  @show
+  `2Players can be attacked in Inns at level `0`v09`2+.
+  @end
+
+ @show
+
+  @if 3rdparty.dat exist false then do
+  @begin
+  @show
+  `2No `0IGM's`2 are installed.
+
+  @end
+  @if 3rdparty.dat exist true then do
+  @begin
+  @show
+  `2`%IGM'S INSTALLED ON THIS SYSTEM:
+
+  @displayfile 3rdparty.dat
+    @show
+
+  @end
+  @show
+`k
+  @do goto helpstart
+  @end
+
+@if responce is 1 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+
+
+  `%Commands that work from the main map screens:
+
+  `0? `2- `0This help screen
+  `0R `2- `0Redraw the screen
+  `0V `2- `0View your stats/inventory
+  `0T `2- `0Talk - Everyone in the game can hear you
+  `0D `2- `0Daily Happenings
+  `0H `2- `0Hail - Trade with/talk to/kill a person. (must be on their square)
+  `0L `2- `0List warriors, lets you know who's on top
+  `0W `2- `0Write mail to someone
+  `0P `2- `0People online right now
+  `0S `2- `0Show names of everyone on the current screen
+  `0B `2- `0BackBuffer, log of recent messages.
+  `0F `2- `0Fast BackBuffer, shows last 3 messages only, for speed.
+  `0Q `2- `0Quit back to the BBS
+@do goto helpstart
+ @end
+
+@if responce is 2 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+
+
+  `%ABOUT ITEM SYMBOLS:
+
+  `r4`*W`r0`2 `8- `2It can be used as a weapon.
+  `r2`*A`r0`2 `8- `2It can be used as armour.
+  `r5`*1`r0`2 `8- `2It can only be used once.
+
+  `2Remember - press `0V `2to view your stats, this is also where you
+  equip weapons and armour.
+@do goto helpstart
+
+ @end
+
+@if responce is 3 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+
+
+  `%ABOUT MOVEMENT:
+
+  `2Use the `0arrow-keys`2 or the `0numpad`2 to move around/select options
+  in most areas.  To use the numpad, make `4SURE`2 that the num lock
+  key is `4ON`2. `2(`0it will work either way if your terminal supports arrow
+  keys`2)
+
+  If using arrow keys causes the daily log to pop up randomly, you should
+  switch to the numpad.
+@do goto helpstart
+ @end
+
+
+@if responce is 4 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+
+
+  `%ABOUT US:
+
+  `0LORD II`2:`0 New World `2- (c) Copyright 2001 Metropolis, Inc.
+   Developed by Michael Preslar
+   
+  `2This is V1.02.
+
+  `0WWW  `8:`2  www.gameport.com
+  `0Email`8:`2  info@gameport.com
+@do goto helpstart
+ @end
+
+@if responce is 5 then do
+ @begin
+ @pauseoff
+ @SHOW SCROLL
+
+
+  `%Help and strategy for the new adventurer.
+
+  `0LORD II`2:`0 New World `2is a very different kind of game.  There is a
+  huge world to explore (`0over 300 screens`2) many people and animals to meet (not
+  all of them nice) and other REAL players to befriend and kill `0-`2 even while
+  they are online playing at the same time!
+
+ `$ You can be good or you can be evil.  You can save the world or you can
+  destroy it.
+
+  `%Find some cash!
+
+  `2Do this by 'pushing' against the table in 'your' house.  (the one you
+  started in)  With this money you can buy cheap things at the store.
+
+  `%Get berries for your mom.
+
+  `2Just west of your cottage there is a small patch that looks different
+  than the rest `0-`2 try pushing against it.  You'll find some berries.  If you
+  see a certain block of grass or stone that looks different, try pushing
+  against it `0-`2 you never know what you'll find. (most likely something
+  good)
+
+  `%Fight monsters, heal yourself.
+
+  `2This isn't such an unfamiliar idea!  But it is more tricky now `0-`2 First,
+  find an area that looks like it might contain monsters.  (usually away from
+  towns and villages)
+
+  Next `0-`2 Walk around.  You will randomly encounter various beasts/people and
+  be able to kill and sometimes talk with them.  Some areas contain a `0HIGHER`2
+  chance of running into things.  
+
+  When you are low on hitpoints, you will need to heal yourself.  Inside
+  Stonebrook there is such a place.  Later, when you have more gold you may
+  wish to purchase items that have the same effect `0-`2 different color potions
+  are the easiest way to heal on the road.
+
+  `%Raising Levels
+
+  `2No matter how long you have been playing the game, it is `0ALWAYS`2 possible
+  to improve your skills by gaining a level providing you have the experience.
+
+  `2In all the land there is only ONE place you can do this `0-`2 Barak's Training
+  center in Greentree.  Beware of Barak though, he is kind of a jerk.
+
+  `%What is alignment?
+
+  `2This is what determines what kind of a person you are - naughty or
+  nice.  `00`2 is average, `010`2 is very nice and `4-10`2 is very
+  nasty.
+
+  Someone who is nasty might see different options then someone who is nice -
+  depending on their level of evil they might have an option to kick a beggar
+  in the head where a nice person would have had 'give him some gold' as an
+  option.  Get it?
+
+  `%Arming weapons and armour 101.
+
+  `2Before you can use them you need to arm them.  From the map menu, hitting
+  `0V`2 will bring up your `0stat screen`2.  This where you can see things
+  like what you are holding and how strong you are.
+
+  You equip and use items the same way - by highlighting them with the
+  light bar and pressing enter.  You will then be given a list of options
+  that can be done with that item.  Some items have more than one use.
+
+  After equiping a weapon or armour, pay close attention to your overall
+  Attack and Defense.  The level these increment is how you know how good
+  a particular piece of equipment is!
+
+  `%Getting jobs and quests.
+
+  `2Certain people you talk to will let you 'conduct business' - this usually
+  means they have a job for your to do.
+
+  If it involves going somewhere you have never heard of - do not accept it
+  and see if they have any others.  You only get 4 job offers per day max by
+  default so be smart! 
+
+  `$Quick Tip: `2Finish the quest on the same day and you will get a bonus!
+
+@do goto helpstart
+ @end
+
+@if response is 6 then do
+  @begin
+  @show
+`\`\  Goodbye.
+  @halt 0
+  @end
+
+
+ ;default
+ @pauseon
+ @if `p09 > 0 then do
+   @begin
+   @drawmap
+   @update
+   @end
+ @closescript
+
+
+
+
+@#done

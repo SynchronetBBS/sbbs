@@ -1,0 +1,417 @@
+;some monsters for above Greentree and abouts, they are just a bit
+;tougher then the Stonebrook ones.
+
+@#fight
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do `p20 random 11 1
+@do goto monster`p20
+
+@#sossign
+@do moveback
+@do saybar
+`0Sign: `2<--- Sosen Village, 10 miles.
+
+@#chest4
+;secret
+@do moveback
+@if bitcheck `t13 5 1 then do
+  @begin
+  @closescript
+  @end
+@bitset `t13 5 1
+@do saybar
+`%You find a Red Potion in the tree!  How odd.
+@do `i52 + 1
+
+@#chest5
+;secret
+@do moveback
+@if bitcheck `t13 6 1 then do
+  @begin
+  @do saybar
+You soil your hands looking for more treasures, but find nothing..of value.
+  @closescript
+  @end
+@bitset `t13 6 1
+@do saybar
+`%You find a Red Potion in the toilet!
+@do `i52 + 1
+
+@#chest6
+;secret
+@do moveback
+@if bitcheck `t13 7 1 then do
+  @begin
+  @do saybar
+There is nothing on the table.
+  @closescript
+  @end
+@bitset `t13 7 1
+@do saybar
+`%You find a Moonstone on the table!
+@do `i57 + 1
+
+@#chest8
+;secret
+@do moveback
+@if bitcheck `t13 0 1 then do
+  @begin
+  @do saybar
+The waterfall is beautiful!
+  @closescript
+  @end
+@bitset `t13 0 1
+@do saybar
+`%You find a Moonstone in the waterfall!
+@do `i57 + 1
+
+
+
+@#monster1
+@fight
+;name
+Highway Rogue
+;string said when you see him
+`0"Put down your arms!" `2you hear from behind.
+;power move kill string
+`2You carefully rifle through the Rogue's purse.. hehe!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+punches you|6
+backstabs you|9
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+26
+;experience
+23
+;hit points
+20
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Striped Tiger
+;string said when you see him
+You hear a deep throated growl in the bushes ahead.
+;power move kill string
+To the victor go the spoils!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+rips into your arm|13
+bats you with a paw|9
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+4
+;gold reward
+47
+;experience
+36
+;hit points
+27
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Angry Dwarf
+;string said when you see him
+You see an irritable looking dwarf approaching.
+;power move kill string
+`$"Next time you'll pick on somebody your own size, peck," `2you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+headbutts you|6
+swings his axe at you|10
+shouts obcenities|7
+NONE|NONE
+NONE|NONE
+;defense
+2
+;gold reward
+17
+;experience
+14
+;hit points
+12
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Rock Monster
+;string said when you see him
+A large stone sprouts legs and lunges at you!
+;power move kill string
+With a mighty swing of your s&weapon you split it in two.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+jumps on your foot|8
+throws itself at your head|12
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+8
+;gold reward
+63
+;experience
+67
+;hit points
+38
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Rude Boy
+;string said when you see him
+`0"Hey!  Don't I know you, punk?!" `2a voice yells.
+;power move kill string
+`$"You kids will never learn your lesson," `2you sigh.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+socks you in the jaw|10
+kicks you in the nads|15
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+5
+;gold reward
+44
+;experience
+35
+;hit points
+25
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Mary
+;string said when you see him
+An extremely muscular woman looks down at you fiercly.
+;power move kill string
+That wasn't even close! Too easy you think to yourself.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+pulls your hair|14
+slaps you|9
+calls you a bitch|7
+pouts|10
+NONE|NONE
+;defense
+0
+;gold reward
+22
+;experience
+19
+;hit points
+15
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Lost Monkey
+;string said when you see him
+`0"Oo oo oo," `2you hear from behind.
+;power move kill string
+`2Bad monkey, boy did you spank him!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+twists your arm|8
+sweeps your feet|11
+bites at your finger|7
+whips you with his tail|8
+NONE|NONE
+;defense
+5
+;gold reward
+23
+;experience
+15
+;hit points
+20
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster8
+@fight
+;name
+Lost Knight
+;string said when you see him
+`0"Halt you must be an enemy of this land," `2says a confused voice.
+;power move kill string
+`$"And you think I'm lost?" `2you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+smacks your face with his gauntlet|14
+hits with his longsword|9
+brawls with you|6
+stabs with a shortsword|7
+NONE|NONE
+;defense
+10
+;gold reward
+52
+;experience
+42
+;hit points
+34
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster9
+@fight
+;name
+Wild Dog
+;string said when you see him
+You hear a sharp growl from the bushes ahead.
+;power move kill string
+Stay boy, stay.  Good Dog..why is there gold in his ass?!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+takes a bite out of your arm|10
+shows you his sharp paw|7
+barks up your tree|8
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+10
+;experience
+14
+;hit points
+15
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster10
+@fight
+;name
+Caribou
+;string said when you see him
+You see what you think is a huge deer!!
+;power move kill string
+`$"Now we have food for tonight," `2you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+headbutts you|12
+kicks with his hind legs|10
+smashes you into a tree|7
+NONE|NONE
+NONE|NONE
+;defense
+4
+;gold reward
+16
+;experience
+18
+;hit points
+18
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster11
+@fight
+;name
+Thug
+;string said when you see him
+You see an masked person with a club.
+;power move kill string
+`$"Go away," `2you scream in fear.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+shows you a club|7
+sucker punches you|5
+kicks you down|6
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+8
+;experience
+6
+;hit points
+10
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#done

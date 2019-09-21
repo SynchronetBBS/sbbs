@@ -1,0 +1,1204 @@
+;stoneb.ref, for the town of Stonebrook and nearby.
+
+
+@#JACK
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c`%  `r1 Jack's Restaurant `r0
+
+`2  You grab a seat and wait for some service.
+
+`k  A stocky man with curly hair appears to take your order.
+
+`k
+
+@label jackstart
+@show
+`r0`c`%  `r1 Time to tempt your tummy `r0
+
+`2  Jack fiddles with his pencil while waiting for you.
+
+@do write
+`x`x
+@choice
+Look at the menu.
+Order something
+Stand up
+@
+
+@if response is 1 then do
+ @begin
+ @show
+`r0`c  `%Welcome to Jack's!
+
+  `5For your dining pleasure we offer several specialties not found
+  anywhere else.  You will want to try 'em all!
+
+`k  `#Spider Soup (`$$20`#)
+
+  `5The delicate Black Widow spider not only makes a great pet `#-`5 but also
+  makes a delicious lunch.  Grown especially for Jack's, they are always
+  the biggest, plumpest and juiciest you'll find anywhere!
+
+  `#Earwig Soufflä (`$$30`#)
+
+  `5You'll die of satisfaction when you taste this fabulous dessert!  Created
+  with NightHawk egg whites and topped with crunchy earwig body parts, this
+  scrumptious delight will leave you breathless!
+  
+  `#Whole Gloworm (`$$50`#)
+
+  `5Extremely rare and famous for the light they give off after biting into
+  one, these magical crawlers will squiggle in your mouth providing fun
+  incandescent entertainment for the whole family!  Yummy!
+
+`k
+@do goto jackstart  
+ @end
+
+@if response is 2 then do
+   @begin
+   @do write
+`\`\  `2Order what?  (`0You have `$&money`2)`\`\`x`x
+   @do `v01 is 1
+   @choice
+`#Spider Soup (`$$20`#)
+`#Earwig Soufflä (`$$30`5)
+`#Whole Gloworm (`$$50`5)
+`#Nuthin'
+   @
+
+   @if response is 1 then do
+    @begin
+    @if money < 20 then do
+      @begin
+      @show
+`\`\  `4You can't afford that, poor s&boy.`\`\`k
+      @do `v01 is 2
+      @do goto jackstart
+      @end
+    @do money - 20
+    @show
+`r0`c  `r1  Chow Time  `r0`\`\  `2Jack brings out the bowl of soup.  You pick at it
+  carefully with your spoon `0-`2 looks ok.  You slurp some up.
+`\`k  `4A spider tries to crawl out of your mouth!
+`\`k  `%But you kind of like it!!!  Yum.
+`\`k
+    @end
+
+   @if response is 2 then do
+    @begin
+    @if money < 30 then do
+      @begin
+      @show
+`\`\  `4You can't afford that, poor s&boy.`\`\`k
+      @do `v01 is 2
+      @do goto jackstart
+      @end
+    @do money - 30
+    @show
+`r0`c  `r1  Chow Time  `r0`\`\  `2Jack brings out the Soufflä.
+`\  You see tiny earwigs crawling in and out of it!  
+`\`k  `4The earwigs crunch noisily!
+`\`k  `%You enjoy the sensation!!!!  What fun!
+`\`k
+    @end
+
+   @if response is 3 then do
+    @begin
+    @if money < 50 then do
+      @begin
+      @show
+`\`\  `4You can't afford the gloworm.`\`\`k
+      @do `v01 is 2
+      @do goto jackstart
+      @end
+    @do money - 50
+    @show
+`r0`c  `r1  Chow Time  `r0`\`\  `2Jack brings out the Gloworm.
+`\  You take a close look at the little guy.
+`\`k
+    @routine showworm
+    @show
+`k`r0`c  `r1  GOOD GOD!  `r0
+`\  `4The worm is ugly as sin!
+`\`k  `2Are you sure you wanna eat this thing?`\
+    @do write
+`x`x
+    @do `v01 is 1
+    @choice
+Chomp on him
+Put him in your pocket for later
+    @if response is 1 then do
+     @begin
+     @show
+`\`\  `2You carefully put the squirming worm between your lips, being careful
+  `2not to let it bite you.
+`\`k  `2You play with the morsel with your tongue, oooh, it tickles!
+`\`k  `0You finally decide the fun is over and bite the worm in half.  Juices
+  pour into your mouth, hey look, your mouth is glowing!  Yay!
+`\`k
+      @do `v01 is 2
+      @do goto jackstart
+     @end
+     @show
+`\`\  `2You carefully put the worm in your pocket.  You never know when you
+  might need it.
+`\`k
+      @do `i17 + 1
+      @do `v01 is 2
+      @do goto jackstart
+    @end
+
+
+
+   @do `v01 is 2
+   @do goto jackstart
+   @end
+
+@drawmap
+@update
+
+@#SHOWWORM
+@pauseoff
+@show
+`c[255D[0;35m∞∞±≤[1;37;45m˛˙    [0;35m≤±∞[1;30mƒƒ[0mƒ[35m∞±≤≤[45m  [40m
+[A[22C[45m[1;37m∞∞   [0;35;42m≤±[1;32m≤≤≤≤≤≤≤≤≤[40m≤≤≤≤≤±±±±±
+[A[48C[0;32m±∞∞[1m∞∞[0;35m±±±±[45m          [1;37m∞∞∞∞∞∞[0;35m≤∞≤≤
+[A[77C≤≤
+[A[79C[1;30mƒ[0;35m±∞±≤[45m       [1;37m∞[0;35m≤±∞[1;30mƒ[0mƒ
+[A[17C[35m∞±≤≤[45m [1;37m∞[0;35;42m≤±[1;32m≤≤≤≤≤[40m≤≤≤≤≤≤≤≤≤≤≤±±±
+[A[44C±±±±±±[0;32m±∞∞∞∞[1m∞∞[0;35m±±±[45m   [40m≤≤≤≤[45m  [1;37m∞[40m
+[A[70C[45m∞ [0;35m≤±≤[1;37;45m˛˙  [40m
+[A[79C[0;35m≤≤≤≤≤≤≤[45m    [1;37m∞∞∞∞ [0;35m≤±∞[42m≤±[1;32m≤≤≤≤≤≤[40m
+[A[26C[42m[40m≤≤≤≤≤≤≤≤≤≤≤≤±±±±±±±[0;32m±±±±±±∞∞∞∞∞∞∞∞∞[1m∞∞[0;35m±±
+[A[64C∞∞±≤≤≤≤≤∞∞≤[45m    [40m
+[A[79C[45m [1;37m˛˙  [0;35m≤±[1;30mƒ[0mƒ[35m±≤[45m [1;37m∞∞    [40m
+[A[17C[45m[0;35;42m≤±[1;32m≤≤±±[40m≤≤≤≤≤≤≤≤≤±±±±±±±±±±±[0;32m±±±±±±
+[A[49C±±±∞∞∞∞∞∞∞∞∞∞[1m∞[0;35m±±∞∞∞∞±≤≤[45m  [1;37m∞    [40m
+[A[79C[0;35m≤[45m     [40m≤≤≤≤≤≤[45m [42m≤[1;37m˛[32m≤≤±±[40m≤±±
+[A[21C± [37m˛˛˙˙[6C[0;32m∞∞±±[1m±±±±±[0;32m±±±∞∞  [1;37m˛˛˙˙[5C
+[A[58C[0;32m∞∞∞∞∞∞∞∞[1m∞∞[0;35m±±[45m  [1;37m∞∞∞∞∞ [0;35m≤
+[A[79C±[45m           [42m≤[1;37m˛[32m≤≤≤[40m±±±±[37m˛˙   [0;31m∞
+[A[26C∞±±± [1;37m˛˛˙[0;32m∞∞∞∞±[1m±±[0;32m±∞∞∞∞ [1;37m˛˛˙ [0;31m∞∞
+[A[53C±±±±±∞∞[32m∞∞∞∞∞∞∞[1m∞∞[0;35m±±[45m   [1;37m∞ [0;35m≤±∞
+[A[79C[1;30mƒ[45m [37m∞∞      [0;35;42m≤±[1;32m≤≤≤[40m±±[37m›  
+[A[19C[0;31m±±±±±≤≤≤≤≤±±±∞∞ [1;37m˛˙[0;32m∞∞±±∞∞[1;37m˛˙ [0;31m∞∞±±
+[A[50C±±±≤≤≤≤±≤±≤±€∞[32m±±∞∞∞[1m∞∞[0;35m±±±±±∞∞[1;30mƒ
+[A[79C[0mƒ[1;45m∞∞∞∞∞    [0;35;42m≤±[1;32m≤≤[40m±[37m›  [0;31m±±±
+[A[20C±±≤≤≤≤≤≤≤≤≤±≤±∞∞ [1;37m.[0;32m∞∞∞∞[1;37m› [0;31m±±±±±±≤≤≤≤≤≤
+[A[56C[1;41m∞[0;31m€±€±€[1;41m∞[0;31m€[1;41m∞[0;31m∞[32m±∞∞[1m∞∞
+[A[71C[0;35m±∞∞∞∞∞∞∞
+[A[79C∞[45m [1;37m∞∞   [0;35m≤≤≤≤≤[45m  [30;41m≤[2C[31;40m±±±≤≤≤≤
+[A[23C≤≤≤≤≤≤≤±≤±≤±≤∞∞ [32m∞∞[1;37m›[0;31m±≤≤≤≤≤≤≤≤≤≤≤€[1;41m∞[0;31m
+[A[56C€[1;41m∞ ∞∞∞±±[37m∞∞[0;31m±∞[35m±±±±∞∞±∞±±±
+[A[79C±[45m   [40m≤≤±±[1;30mƒ[0;35m∞±≤≤[45m [30;41m≤≤[C[1;31m∞∞[40m
+[A[18C[41m[0;31m€[1;41m∞[0;31m€[1;41m∞[0;31m€[1;41m∞[0;31m€
+[A[25C[1;41m∞[37m∞[0;31m€[1;41m∞ ∞ ∞ ∞[37m∞∞[0;31m∞ [32m∞∞[1;37m
+[A[41C›[0;31m±[1;41m∞∞[0;31m€[1;41m∞[0;31m€[1;41m∞[0;31m€[1;41m∞[40m
+[A[51C[41m[0;31m€[1;41m∞[0;31m€[1;41m∞[0;31m€[1;41m∞[37m∞[31m∞[40m
+[A[59C[41m[0;31m€[1;41m∞±±[37m∞∞∞[0;31m±∞[35m±±[45m [1;37m˛˙  [40m
+[A[75C[45m[0;35m≤≤≤≤
+[A[79C≤≤≤≤±±[1;30mƒ[0;35m∞±≤≤[45m    [30;41m≤≤[C[1;31m∞∞∞∞[0;31m€
+[A[22C[1;41m∞[0;31m€[1;41m∞∞[37m±∞ [31m∞ ∞[37m∞∞[0;30;41m≤≤[40m
+[A[36C[41m[32;40m∞∞[1;37;42m˛[32m∞[40m∞[0;32m∞∞∞[31m∞±[1;41m∞∞∞∞[40m
+[A[50C[41m[0;31m€[1;41m∞ ∞ ∞ [37m±[31m∞∞±±[37m∞∞∞[0;31m±∞[35m±±±
+[A[70C[45m        [1;37m∞[40m
+[A[79C[0;31;45m∞[35;40m≤[1;37;45m˛˙              [0;30;41m≤≤[1;31m∞[40m
+[A[20C[41m∞[37m∞∞±±≤€≤±±∞[0;30;41m≤[32;40m∞∞∞∞[1;42m∞∞[40m±∞
+[A[40C[0;32m±±±±∞∞∞∞[31m∞±[1;41m±∞[37m∞∞±±≤€≤±±∞[0;31m±±∞[35m±±±∞∞
+[A[70C∞∞∞∞∞±±[45m [1;37m∞[40m
+[A[79C[45m        ∞∞    [0;35m≤±≤[45m  [42m≤[30;41m≤[1;31m∞∞∞[37m[40m
+[A[23C[41m∞∞±≤±∞[0;30;41m≤[32;40m∞∞∞∞∞[1;37;42m˛[32m∞[2C[40m±
+[A[40C[0;32m±  [1m±∞[0;32m±∞∞∞∞[31m∞≤[1;41m±∞∞[37m∞±≤±∞[0;31m±∞∞
+[A[63C[1;32m∞[0;35m±±±±[45m   [40m≤±∞[1;30mƒ[0;35m∞±≤≤
+[A[79C≤≤[45m    [1;37m∞∞∞∞∞∞ [0;35m≤±∞∞±≤[45m [42m≤±[32;40m∞∞∞∞∞
+[A[26C[1;37;41m±[0;32m∞∞∞∞∞[1;42m∞[40m±±∞∞[0;32m∞∞∞∞∞∞±±±±±∞∞∞∞∞∞∞∞
+[A[56C∞[1;37;41m±[0;32m∞∞[1m∞∞[0;35m±±±±[45m    [40m≤±∞[1;30mƒƒ
+[A[75C[0mƒ[35m∞±±
+[A[79C±±≤[45m     [1;37m∞∞  [0;35m≤±∞[1;30mƒ[0;35m∞±≤[45m  [42m≤±[40m
+[A[22C[42m[1;32;40m≤≤≤±[37;42m∞[32;40m∞∞∞[37;42m˛[32;40m±±∞∞∞
+[A[36C[0;32m±±±±±±±±±±±±±±∞∞∞∞∞∞∞±[1m∞∞[0;35m±±±±[45m     [40m≤±∞
+[A[72C[1;30mƒƒƒ[0mƒƒ[35m∞∞
+[A[79C∞±±≤≤≤≤≤≤≤≤≤±∞[1;30mƒ[0;35m∞±≤[45m     [42m≤±[1;32;40m≤≤±
+[A[27C[42m∞[40m≤≤[37;42m˛[32;40m±±[0;30;47m≤[1;37m› [0;30;47m≤[40m
+[A[37C[47m[1;37m› [0;30;47m≤[1;37m› [0;30;47m≤[1;37m› [0;30;47m≤[40m
+[A[46C[47m[C[32;40m±±±±±±∞∞∞[1m∞∞[0;35m±±±±[45m        [40m≤±∞
+[A[73C[1;30mƒƒƒ[0mƒƒƒ
+[A[79Cƒƒ[35m∞±±±±±±±±±∞[1;30mƒ[0;35m∞±≤[45m     [40m≤≤[45m  [42m≤[40m
+[A[26C[42m±[1;32;40m±≤±±[42m∞[C[0;30;47m≤[1;37m›˛[0;30;47m≤[5C≤[40m
+[A[43C[47m[1;37m›˛[0;30;47m≤[2C[32;40m∞∞∞∞∞[1m∞∞[30mƒƒ[0mƒ[35m∞
+[A[59C±≤[45m [1;37m˛˙       [0;35m≤±∞[1;30mƒƒ[0mƒƒƒ
+[A[79Cƒƒƒ[35m∞∞∞∞∞∞∞∞∞[1;30mƒ[0;35m∞±≤[1;37;45m˛˙   [0;35m≤±±±[45m[40m
+[A[24C[45m    [42m≤±[1;32;40m±[37;42m˛[4C[0;30;47m≤[1;37m› [40m
+[A[39C[47m[0;30;47m≤[1;37m› [0;30;47m≤[5C[32;40m∞∞[1m∞∞[0;35m±±±
+[A[55C±[1;30mƒƒ[0mƒƒ[35m∞±≤[45m         [40m≤±∞[1;30mƒƒƒ[0mƒ
+[A[79Cƒƒƒƒƒƒ[1;30mƒƒƒƒ[0;35m∞±≤[1;37;45m˛˙    ∞ [0;35m≤±∞±≤[45m  [40m
+[A[27C[45m[1;37m∞  [0;35;42m≤±[1;32m∞[40m±±±±±±∞∞∞∞∞[0;32m∞∞∞∞[1m
+[A[48C∞∞[0;35m±±±±[45m [40m≤±∞[1;30mƒƒ[0mƒƒƒ[35m∞±≤[45m     [40m
+[A[71C[45m[1;37m∞  [0;35m≤±∞[1;30mƒƒ
+[A[79C[0mƒƒƒƒƒƒƒƒƒƒ[1;30mƒ[0;35m∞±≤[45m    [1;37m∞∞∞ [0;35m≤±±≤
+[A[25C[45m [1;37m∞∞∞[0;35m≤±±[45m [42m≤±[1;32m∞∞[40m±±±±∞∞∞∞
+[A[45C[0;32m∞∞[35m±±±±±[45m [1;37m˙   [0;35m≤±∞[1;30mƒƒ[0mƒƒƒ
+[A[65C[35m∞±≤[45m [1;37m∞∞∞∞∞   [0;35m≤±
+[A[79C∞`%
+@pauseon
+
+@#JACKSIGN
+@do moveback
+@do saybar
+`6<--- This way to Jack's Restaurant.
+
+@#JACKSEAT
+@do moveback
+@do saybar
+`6Please seat yourself.
+
+
+@#COATRACK
+@do moveback
+@do saybar
+Nice coat rack.
+
+
+@#CAVESIGN
+@do moveback
+@do saybar
+`6Cave condemned, stay out.  - City council of Stonebrook
+
+@#BIRD
+@do moveback
+@if `t08 not 0 then do
+  @begin
+  ;already got the bird
+  @do saybar
+The nest is empty, save some bird crap.
+  @closescript
+  @end
+
+@if `t05 < 4 then do
+  @begin
+  ;doesn't know about Hector yet
+  @do saybar
+You see a nest... Hmm, whatever lives here must be out.
+  @closescript
+  @end
+
+
+
+@show
+`r0`c  `r1 `0POLLY WANTS A CRACKER `r0
+
+`2  You find a nest!  There is a parrot in it!  It looks at you fearfully
+  in an almost human way.
+
+  `0"Awk!  Leave me alone! Awk!"
+
+`k  You squint at the parrot. `$"What is your name, bird?"
+
+  `0"I'm Hector - an old witch cast an enchantment on me! Awk!"
+
+  `2You look at the bird skeptically.
+
+  `0"She wants to eat me!  Awk! I have been hiding from her for years!"
+
+`k  `$"Why didn't you just fly away, silly?" `2you ask.
+
+`0  "She clipped my wings every week - maybe I could now...Awk."
+
+`k  `$"Tough luck.  You're coming with me!"  `2you laugh as you scoop
+  the bewildered parrot up.
+
+  `%YOU HAVE THE PARROT! (AND 3 MORE QUEST POINTS!)
+
+`k
+@do `i18 is 1
+@do `t08 is 1
+@do `p18 + 3
+@drawmap
+@update
+
+@#CHEST1
+ @do moveback
+ @if `t06 is 0 then do
+  @begin
+  @do `t06 is 1
+  @do money + 35
+  @do saybar
+`0You find `$35 `0gold pieces!
+  @closescript
+  @end
+
+  @do saybar
+`0The chest is empty.
+
+
+
+@#CHEST2
+ @do moveback
+ @if `i07 is 0 then do
+  @begin
+  @do `i07 is 1
+  @do saybar
+`0You find an Ancient flute!
+  @closescript
+  @end
+
+  @do saybar
+`0The chest is empty.
+
+
+
+@#FALL
+
+  @do X is 20
+  @do Y is 9
+  @do map is 1518
+  @loadmap 1518
+
+@show
+`r0`c  `4OH NO.
+
+`2  You have tripped and banged your head a good one `0-`2 just when you were
+  doing so good!  Maybe if you had some light, you would have avoided that
+  hole.. Haw!
+
+`k  `2You wake up a few hours later outside.  Strange, who could have helped
+  you?
+
+`k
+@drawmap
+@update
+
+@#SNAKE
+  @do saybar
+`2Ouch!  A snake bit you for `b5`2 damage!
+  @do `p02 - 5
+  @if `p02 < 1 then do
+    @begin
+    @do enemy is a`xsnake
+    @run die in gametxt.ref
+    @end
+
+
+@#CAVE
+  @do X is 39
+  @do Y is 19
+  @do map is 1289
+  @loadmap 1289
+  @drawmap
+  @update
+  @do saybar
+Arg!  You can't see a thing, it's pitch black in here!
+
+@#OLDWOMAN
+@offmap
+@do moveback
+@do `v01 is 1
+@label oldstart
+@show
+`r0`c  `%`r1  THE OLD WOMAN'S HOUSE  `r0 
+
+`2  You are greeted by the smell of decay and rot.
+@if `t05 is 0 then do
+ @begin
+ @show
+`\  `2You hear a voice from the back.  `0"Come in, dearie!!!"
+ @end
+
+@if `t05 is 1 then do
+ @begin
+ @show
+`\  `2The old woman is looking at you expectantly.
+ @end
+
+@if `t05 is 2 then do
+ @begin
+ @show
+`\  `2The old woman is tidying up the shack.
+ @end
+
+
+@do write
+`\`x`x
+@choice
+=`t05 0 Whatup, ugly hag?
+=`t05 0 Hi.  Damn you're ugly!
+=`t05 0 Good lord, woman!! What happened to your face?
+=`t05 1 Ask to taste her brew.
+=`t05 1 >`i11 0 <`p07 -5 `4Offer your little friend as an ingredient.
+=`t05 1 >`i01 0 Offer some wildberries as an ingredient.
+=`t05 1 >`i08 0 Offer momma's pie as an ingredient.
+=`t05 1 >`i03 0 Offer milk as an ingredient.
+=`t05 2 Ask to taste her stew.
+=`t05 3 Hector?  Who the hell is Hector?
+=`t05 4 Talk to the woman.
+=`t08 3 =`t05 4 Um yeah.. I sort of let Hector fly away.  Ya mad?
+=`i18 1 Hey.  I brought your damn bird.
+=`t05 5 =`t08 0 Anything new, old woman?
+=`t05 5 =`t08 3 Anything new, old woman?
+=`t05 1 >`i43 0 Offer an Egg as an ingredient.
+Leave
+@
+
+
+@if `v01 is 1 then do
+  @begin
+  @show
+`\`\  `0"Not much, young man! I'm merely cooking my stew!" `2she cackles.
+
+`k
+  @do `t05 is 1
+  @do goto oldwoman
+  @end
+
+@if `v01 is 2 then do
+  @begin
+  @show
+`\`\  `0"Thankyou for noticing that.  Wanna test my stew?" `2she asks.
+
+`k
+  @do `t05 is 1
+  @do goto oldwoman
+  @end
+
+@if `v01 is 3 then do
+  @begin
+  @show
+`\`\  `0"My face?  How do you mean?  No mind!  I'm making stew!" `2she exclaims.
+
+`k
+  @do `t05 is 1
+  @do goto oldwoman
+  @end
+
+@if `v01 is 5 then do
+  @begin
+  @do `i11 is 0
+  @do `p07 - 2
+  @do `t06 + 2
+  @show
+`\`\  `0"Ahh!  Fresh meat!" `2the woman screams.  She takes the struggling
+  small child from you and prepares her for the stew.
+
+  You wonder why your heart has grown so cold.
+
+  `4ALIGNMENT GOES DOWN BY TWO.
+
+`k
+  @do goto oldwoman
+  @end
+
+@if `v01 is 6 then do
+  @begin
+  @do `i01 - 1
+  @do `t06 + 1
+  @show
+`\`\  `0"Wildberries?  Ok!" `2the woman takes your berries and throws them
+  into the evil looking brew.
+
+`k
+  @do goto oldwoman
+  @end
+
+@if `v01 is 16 then do
+  @begin
+  @do `i43 - 1
+  @do `t06 + 1
+  @show
+`\`\  `0"An egg?  Ok!" `2the woman takes the egg and throws it
+  into the evil looking brew.
+
+`k
+  @do goto oldwoman
+  @end
+
+
+@if `v01 is 7 then do
+  @begin
+  @do `i08 - 1
+  @do `t06 + 1
+  @show
+`\`\  `0"A pie?  Ok!" `2the woman takes your pie and smashes it up - then
+  sprinkles the goo into the iron cauldron.
+
+`k         
+  @do goto oldwoman
+  @end
+
+@if `v01 is 8 then do
+  @begin
+  @do `i03 - 1
+  @do `t06 + 1
+  @show
+`\`\  `0"Milk?  Ok!" `2the ever-so-wrinkled woman carefully empties your
+  bottle of milk into the bubbling liquid.
+
+`k
+  @do goto oldwoman
+  @end
+
+
+
+@if `v01 is 4 then do
+  @begin
+@show
+`\`\  `0"Sure!  How is it?" `2the elderly one dips a stained ladle into the
+  boiling broth and offers it to you.
+
+  `0After carefully blowing on it, you slurp it up.
+
+@
+
+
+
+  @if `t06 is 0 then do
+   @begin
+
+  @do `p02 - 2
+  @if `p02 < 1 then `p02 is 1
+  @show
+`k  `4It tastes horrible.  `$"GAWD WOMAN!" `2you scream, `$"LEARN HOW TO
+  COOK!!!"
+
+`2  The old woman's face falls.  `0"I must still be missing a few
+  ingredients... Just you wait, this will eventually be the best stew
+  you've ever tasted!"
+
+  `2Amused at her antics you forgive her for the pain in your stomach.   
+
+`k
+  @end
+
+  @if `t06 is 1 then do
+   @begin
+   @show
+`k  `2It tastes like crap basically.. but not quite as bad as before...
+`\`k
+  @end
+
+
+  @if `t06 > 1 then do
+   @begin
+   @do `p03 + 5
+   @do `p02 is `p03
+   @do `t06 is 0
+   @do `t05 is 2
+   @show
+`k  `%IT TASTES GREAT.  `$"Old woman! I love this!" `2you tell her.
+
+`k`0  "Thank you so much, dearie!  Would you like some more?" `2she smiles.
+
+  `2You finish off the pot.
+
+  `%HEALTH RAISED BY 5.
+
+`\`k
+  @end
+
+
+  @do goto oldwoman
+  @end
+
+@if response is 9 then do
+  @begin
+  @show
+`\`\  `0"Sorry s&boy,  you have already drank the last of it." `2the old woman
+  tells you sadly.
+
+  `$"Well, make more!  Now!" `2you demand.
+
+  `0"I can't!"`2 cries the woman, `0"Not without my Hector!"
+`\`k
+  @do `t05 is 3
+  @do goto oldwoman
+  @end
+
+@if response is 10 then do
+ @begin
+ @show
+`\`\  `0"Hector is my friend.  He disappeared a few months ago - I need him!"
+
+  `$"Geez...  Someone like you really needs friends, I'll do everything in
+  my power to find 'em for ya, ma'am," `2you console her.
+
+`k
+ @do `t05 is 4
+ @do goto oldwoman
+ @end
+
+@if response is 11 then do
+ @begin
+ @show
+`\`\  `0"Where is Hector?!?! Where is he?!"
+
+  `$"Um, I'll be right back...With Hector!" `2you lie glibly.
+
+`k
+ @do goto oldwoman
+ @end
+
+@if response is 12 then do
+ @begin
+ @show
+`\`\  `0"YOU LET HIM FLY AWAY!!?!?  I HATE YOU!!  GET OUT!"
+
+`2  It looks like she means it.  You decide to take off.
+
+`k
+@do `t05 is 5
+ @end
+
+@if response is 13 then do
+ @begin
+ @show
+`\`\  `0"Ahhh!  You found my little friend!"
+
+`2  She puts him in a cage and starts a cookin' away.
+
+  `$"Cool, are you gonna put him in your brew for some special sauce or
+  something?" `2you ask.
+
+`k  `0"Of course not!!  That would be inhumane.  He just inspires me!!  Here,
+  try this.."
+
+  `%THE FOOD GIVES YOU 2 EXTRA MUSCLE!
+
+`k
+@do `t05 is 5
+@do `p04 + 2
+@do `i18 is 0
+ @do goto oldwoman
+ @end
+
+@if response is 14 then do
+ @begin
+ @show
+`\`\  `0"No, not really.  Same old crap." `2she sighs.
+
+`k
+ @do goto oldwoman
+ @end
+@if response is 15 then do
+ @begin
+ @show
+`\`\  `0"Get out, homewrecker!" `2she screams, throwing pots and pans at you!
+
+`k
+ @end
+
+
+@drawmap
+@update
+
+
+
+@#grocery
+@offmap
+@do moveback
+@do `v01 is 1
+@label grab
+@show
+`r0`c  `%The Stonebrook Grocery
+
+`2  The store is nice and cool inside.
+
+@do write
+`x`x
+@choice
+Buy some groceries.
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  3
+  1
+  @end
+
+@if responce not 2 then goto grab
+@drawmap
+@update
+
+
+@#healers
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Healers
+
+`2  You see a sign on the wall that says healing cost 1/2 gold per hitpoint
+  needed.
+
+`2  Gretchen looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry, I'm not gonna perform those services for free!"
+
+@if sexmale is 1 then do
+ @begin
+ @do write
+`x`x
+ @choice
+For `$$`p20`%, you better perform some other services too, whore!
+How about I pay with my good looks, honey?
+How 'bout you and me go in the back and I show you my sword?
+Meekly accept, and compliment her on her dress
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 she laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"How dare you say that to me!  Get out!!!!" `2 she screams.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I'd rather kiss a troll." `2 she informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"How 'bout I show you my fists?" `2 she yells as she sticks a needle in you!
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+
+
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You are a perfect picture of health, dear `$`n`$!" `2Gretchen exclaims.
+
+`k
+@drawmap
+@update
+
+
+@#winthrog
+@offmap
+@do moveback
+@do `v01 is 1
+@label rog1
+@show
+`r0`c  `%Winthrog's Weapons
+
+`2  An elderly man sits, absently playing with knife.
+
+@do write
+`x`x
+@choice
+Examine his wares.
+Ask him to buy some of your stuff.
+Gossip with Winthrog
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+ @buymanager
+  4
+  9
+  @end
+
+@if responce is 2 then do begin
+ @begin
+@show
+  `!"I don't think so - Go sell it to the Pawn Shop - I do all my business
+  with them!" `2the codger relates.
+
+`k
+@do goto rog1
+  @end
+
+@if responce is 3 then do begin
+ @begin
+@show
+  `!"Gossip, eh?  Well, I heard a crazy old man lives in a shack south of
+  here... "
+
+  `$"Really?  What else?" `2you ask.
+
+  `!"That old shack has a fake wall section somewhere inside..."
+
+`k
+@do goto rog1
+  @end
+
+
+@if responce not 4 then goto winthrog
+@drawmap
+@update
+
+@#pawn
+@offmap
+@do moveback
+@do `v01 is 1
+@label pawn1
+@show
+`r0`c  `%The Pawn Shop
+
+`2  Hagar motions you to approach.  He reeks of wine.
+
+@do write
+`x`x
+@choice
+Examine his wares.
+Ask him to buy some of your stuff.
+Gossip with Hagar
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+ @buymanager
+  5
+  6
+  20
+  @end
+
+@if responce is 2 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+ @sellmanager
+  @end
+
+@if responce is 3 then do begin
+ @begin
+@show
+  `0"Wanna know something really strange?  I heard there is a tree on
+  Neb's Road that has magical powers..."
+
+  `2You stare at him in disbelief.  `$"Yeah right, quit telling me stories,
+  Hagar!  You ain't exactly the most trustworthy man in town, ya know."
+
+`k
+  @end
+
+
+
+@if responce not 4 then goto pawn1
+@drawmap
+@update
+
+@#tree
+@offmap
+@do moveback
+@show
+`r0`c  `%The Tree Hollow
+
+`2  You find a hollow in a tree.
+
+@if `p98 is 0 then do begin
+ @begin
+ @show
+  There is a chest here.  What could it be?
+
+ @end
+
+@if `p98 more 0 then do begin
+ @begin
+ @show
+  There is an open chest here.  It is empty.
+
+ @end
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+=`p98 0 Open the chest - something good must be inside, baby!
+=`p98 1 Kick the crappy chest.
+=`p98 0 Carefully open the thing.  Could be a trap?
+Leave.
+@show
+
+
+@if response is 1 then do begin
+ @begin
+ @do `p98 is 1
+ @do money + 25
+
+ @show
+  `2You find the chest opens easily.
+
+  `%YOU FIND 25 GOLD PIECES!
+
+  `2You exit the hollow to find yourself in the sunlight once again.
+
+`k
+ @end
+
+@if response is 3 then do begin
+ @begin
+ @do `p98 is 1
+ @do money + 25
+
+ @show
+  `2You spend half an hour opening a harmless chest.  Isn't a damn trap!
+
+  `%YOU FIND 25 GOLD PIECES!
+
+  `2You exit the hollow to find yourself in the sunlight once again.
+
+`k
+ @end
+
+
+
+@if response is 2 then do begin
+ @begin
+ @show
+  `2You defiantly strike the chest with your foot.  Satisfaction is
+  gained.
+
+  Actually, you feel kind of stupid and decide to take off.
+
+`k
+ @end
+
+
+@drawmap
+@update
+@#nothing
+@#sign1
+
+@do saybar
+`2Sign reads: `0`4Danger! `0This area is not safe.  Run.  Run!
+@do moveback
+
+@#sign2
+@do saybar
+`2Sign reads: `0Welcome to `%Stonebrook`0 - the quaintly small town!
+@do moveback
+
+@#greensign
+@do saybar
+`2Sign reads: `0 <-- Greentree         StoneBrook -->
+@do moveback
+
+
+@#fightned
+@fight
+;name
+Neb Stringly
+;string said when you see him
+You lunge at Neb, your `0s&weapon `2ready!
+;power move kill string
+You cleanly cut off one of Neb's hands!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+punches you in the face|10
+low blows you|15
+socks you in the jaw|7
+NONE|NONE
+NONE|NONE
+;defense
+5
+;gold reward
+50
+;experience
+20
+;hit points
+25
+;if win: ref file|name or NONE
+STONEB.REF|BEATNEB
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;If runs: ref file|name or NONE
+STONEB.REF|NEBRUN
+
+@#NEBRUN
+@show
+`c  `r1 YOU WEENIED OUT `r0
+
+  `2Neb kicks you in the seat of your pants as you scurry away.
+
+`k
+@DRAWMAP
+@UPDATE
+@#BEATNEB
+@do `s01 is BITCH
+@if `v06 is 1 then `s01 is punk
+;clean mode fix
+@show
+`c  `r1 YOU CRUSHED THE NEBSTER `r0
+
+  `$"Whatup, `s01?" `2you ask Neb as he struggles to get up.  You finally
+  take your foot off his neck.
+
+  `2Neb scrambles to his feet.  `0"Geez s&man, what's wrong with you?  I waz
+  jes' joking with ya's anyway!"
+
+  `2You can't help but laugh, what a fool. `%(YOU GET 5 QUEST POINTS!)
+
+`k
+@do `p18 + 5
+@do `t03 is 2
+@drawmap
+@update
+@#NEB
+@if `t03 more 1 then do
+  @begin
+  @do saybar
+`2Neb meekly lets you pass.
+  @closescript
+  @end
+
+@if &lastx is 9 then do
+ @begin
+ @do x is 11
+  @do saybar
+`2Neb trips you as you walk by!
+  @closescript
+ @end
+
+@do moveback
+@busy
+@show
+`r0`c  `r1 NEB STRINGLY `r0
+
+@if `t03 is 0 then do
+ @begin
+ @do `t03 is 1
+ @show
+  `0"STOP RIGHT THERE, KID!" `2a tall and gangly youth with some serious
+   acne problems shouts.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Who me?  Am I in the way?
+May I please pass?  I have important business.
+Shutup crater face before I knock your head off.
+@show
+
+
+  `0"I'm Neb Stringly and you will do what I say!" `2he commands.
+
+`k  `2You roll your eyes.  Who IS this freak?
+
+`k`c  `r1`% MEETING NEB `r0
+
+@end
+@show
+  `0"Alright you!  This is MY road and no one crosses without my permission."
+
+  `$"And just how would I get that?" `2you ask sarcastically.
+
+  `0"Pay me `$50 `0gold pieces, you bumwisket!"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+>&money 49 Pay the man.
+<&money 50 Offer Neb the `$$&money `%you are holding.
+Beat the @#$% out of 'em.
+Find something else to do.
+@if response is 3 then do
+  @begin
+  @do goto fightned
+  @end
+
+@if response is 2 then do
+  @begin
+  @do money is 0
+  @show
+
+
+  `0"Thanks kid," `2Neb laughs - `2as he `bsteals`2 all your gold!
+
+  `$"You'll pay for this Neb!  I don't know how and I don't know where, but
+  someday... you might." `2you finish rather impotently.
+
+`k
+  @end
+
+@if response is 1 then do
+  @begin
+  @do money - 50
+  @show
+
+
+  `0"Thanks kid," `2Neb laughs as you quickly move past him.
+
+`k
+  @do x is 9
+  @end
+
+
+@drawmap
+@update
+@#nothing

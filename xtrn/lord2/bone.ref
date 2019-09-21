@@ -1,0 +1,1455 @@
+;Ref for the Big Bad BoneTown (tm)  (Go Jester!)
+
+@#MAN1
+;A stock message outline
+@DO SAYBAR
+`0Dad:  `2I finally did it.  I brought my boy to the Bonetown Arena!
+@DO MOVEBACK
+
+@#HOT
+;A stock message outline
+@DO SAYBAR
+`0Rich Woman:  `2I'm hot, I can feel it!
+@DO MOVEBACK
+
+
+@#haha
+;A stock message outline
+@DO SAYBAR
+`0Jesse:  Haha!  There is nothing here, sucka!
+@DO MOVEBACK
+
+@#MAN2
+;A stock message outline
+@DO SAYBAR
+`0Boy:  `2Are you one of the Arena Warriors?  Wow!
+@DO MOVEBACK
+
+@#GUM
+;On a chair in the bar
+@DO SAYBAR
+`2Yuck, seems to be gum stuck to this chair.
+
+@#STRUT
+;Your moves in the funhouse
+@DO SAYBAR
+`2You strut your stuff on the dance floor!
+
+@#MOVES
+;People in the funhouse
+@DO SAYBAR
+`0"Those are some killer moves you got there."
+@DO MOVEBACK
+
+@#PEE
+;Area in the bar
+@DO SAYBAR
+`2Uhhh, something over here smells like urine.
+
+@#BSIGN
+;A stock message outline
+@DO SAYBAR
+`2You're on a boat!!!
+@DO MOVEBACK
+
+@#RUBBLE
+;Message for the crumbled house in BoneTown
+@DO SAYBAR
+`2A rock slide totally demolished this house.
+@DO MOVEBACK
+
+@#DOG
+;Message for a house in bonetown
+@DO SAYBAR
+`2A really BIG Chihuahua guards the entrance.
+@DO MOVEBACK
+
+@#NOENTER
+;Message for another house in BoneTown
+@DO SAYBAR
+`2This place looks boarded up real tight.
+@DO MOVEBACK
+
+@#SACK
+;Message for inside the abandoned house
+@DO SAYBAR
+`2Looks like this place has been ransacked by the locals...
+
+@#USED
+;Message for the toilet in the house
+@DO SAYBAR
+`2Woah!
+@DO MOVEBACK
+
+@#JOHN
+;Happy guy in the house
+@if `v06 is 1 then do
+  @begin
+  @DO MOVEBACK
+  @DO SAYBAR
+`0"That was a great experience ... "
+  @closescript
+  @end
+@DO SAYBAR
+`0"That was the best sex I've ever had."
+@DO MOVEBACK
+
+@#BED
+;Bed in the house
+@if `v06 is 1 then do
+  @begin
+  @DO MOVEBACK
+  @DO SAYBAR
+`2Looks like a nice bed.
+  @closescript
+  @end
+@DO SAYBAR
+`2You gotta pay to hop on that bed.
+@DO MOVEBACK
+
+@#MA
+;The in charge lady at that one house.
+  @IF &lasty is 10 then do
+   @BEGIN
+   @DO SAYBAR
+`2The Hefty old lady winks as you pass by.
+   @CLOSESCRIPT
+   @END
+@IF `v06 is 1 then do
+  @begin
+  @DO MOVEBACK
+  @DO SAYBAR
+`2She looks like she doesn't want you to go upstairs.
+  @closescript
+  @end
+@IF &sex is 1 then do
+@BEGIN
+  @DO MOVEBACK
+  @label baby
+  @do `v01 is 1
+  @SHOW
+`r0`c  `r1`%  Good 'ol Ma  `r0
+
+`2  The woman at the stairs smiles at you.  She seems to be in charge of the
+  establishment here.  She's pretty old and kinda hefty.
+  `0"Hey there sir, interested in a good time.  Our girl doesn't say no ... if
+  you have the money that is.  What do ya say sonny ?"`2
+
+@do write
+`x`x
+@CHOICE
+Ask about the girl
+>&money 99 Take a ride (`$$100`%)
+Leave
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"Kelley's a good girl ... or a bad one, depending on what you want.
+  Sure just about everyone's had a ride on her, but hey can you blame em?
+  After all we don't force you to use protection like that pesky place across
+  the way.  Who says sex is dangerous?  Ha."
+`\`k
+ @do goto baby
+ @end
+@if response is 2 then do
+ @begin
+ @do money - 100
+ @show
+`\`\  `0"You wont be sorry my boy, and get ready for one nice ride.  Oh and
+  if you're interested later ..." `2she winks as you walk up the stairs.
+`\`k
+ @do y - 2
+ @drawmap
+ @update
+ @end
+  @drawmap
+  @update
+  @CLOSESCRIPT
+@END
+@DO SAYBAR
+`0"Hey Deary, interested in a job?"
+@DO MOVEBACK
+
+@#WHORE
+;Kelley upstair in the house
+@DO MOVEBACK
+@do `p20 random 5 1
+ @if `p20 is 5 then do
+ @begin
+@SHOW
+`r0`c  `r1`%  Hot Baby  `r0
+
+`2  That's quite a nice rack on that girl.  And just enough meat for a man to
+  sink his own into.  Her nice long black hair shimmers in the light.
+  `0"Hello," `2she says.  Her teeth could use a little work but, payers can't
+  be choosers.
+  `0"What would you like to try today?"
+`\`k`2  The drool from your open mouth shows that you are in no condition to
+  dictate much.  She gladly dictates for you. `l. `l. `l. `l.
+`\`k  You get very worked up during the process, she even seems to be enjoying
+  it.  She might not be faking!  Suddenly your foot slips and your grasp on
+  the bedpost fails!  That window's open ... oh no!
+`\`k  
+ @do x is 38
+ @do y is 6
+ @do `p34 + 1
+  @do `p20 random 5 1
+  @if `p20 is 1 then do
+    @begin
+    ;ha ha, user caught vd
+    @do `p12 is 1
+    @end
+ @drawmap
+ @update
+ @do saybar
+`bThere's an 20 percent chance you just caught something.
+ @closescript
+ @end
+@SHOW
+`r0`c  `r1`%  Hot Baby  `r0
+
+`2  That's quite a nice rack on that girl.  And just enough meat for a man to
+  sink his own into.  Her nice long black hair shimmers in the light.
+  `0"Hello," `2she says.  Her teeth could use a little work but, payers can't
+  be choosers.
+  `0"What would you like to try today?"
+`\`k`2  The drool from your open mouth shows that you are in no condition to
+  dictate much.  She gladly dictates for you.
+`\`k  Five minutes later `0(need to exercise huh?)`2 you get up very satisfied.
+`\`k  `bTHERE'S AN 20 PERCENT CHANCE YOU JUST GOT SOMETHING!!`2
+`\`k
+@do y + 3
+@do `p34 + 1
+  @do `p20 is random 5 1
+  @if `p20 is 1 then do
+    @begin
+    ;ha ha, user caught vd
+    @do `p12 is 1
+    @end
+@drawmap
+@update
+
+@#DEFEAT
+;Losing at the Arena
+@do `p02 is 5
+@bitset `t12 7 1
+@show
+`r0`c  `r1`%  You lost  `r0
+
+`2  The hulking Gladiator stands over you.  You can hear the crowd booing your
+  defeat in the background.  Better luck tommorow...
+`\`k
+@drawmap
+@update
+
+@#RUN
+;Running at the Arena
+@bitset `t12 7 1
+@show
+`r0`c  `r1`%  Only one thing to do!  `r0
+
+`2  You turn your back to your enemy and bolt.  You scramble over the Arena
+  wall!
+
+  `0"Coward, Coward!" `2the audience chants in unison.
+
+  Crap.. Looks like you better not show your face around here again today...
+`\`k
+@drawmap
+@update
+
+@#WIN
+;Winning at the Arena
+@show
+`r0`c  `r1`%  VICTORY IS YOURS THIS DAY  `r0
+
+`2  The entire arena roars in approval as you behead poor `0`e`2.
+
+  `2You have done well - dare you attempt another battle?
+`\`k
+@drawmap
+@update
+
+
+@#ARENA
+;The battling arena in BoneTown.
+@DO MOVEBACK
+@busy
+@label beat
+@do `v01 is 1
+@show
+`r0`c  `r1`%  The Gladiator Arena  `r0
+
+`2  The area is surrounded by plebeian onlookers who cheer as a fight proceeds
+  in the middle.  You could've guessed the people of BoneTown would choose
+  this kind of entertainment.  A man in dark robes who seems to be the
+  organizer of it approaches you.
+
+`0  "You look like a prosperous warrior, would you care to take a chance?"
+
+@do write
+`x`x
+@CHOICE
+Ask about the rules
+Do Battle
+Leave
+@if response is 3 then do
+  @begin
+         @if bitcheck `t12 7 1 then do
+           @begin
+  @show
+`\`\  `0"Haha! Go practice with your father, kid!"
+`\  `$"But my dad is dead!" `2you cry, as a salty tear rolls down your cheek.
+
+  You flee the laughing Arena.
+`\`k
+  @drawmap
+  @update
+  @closescript
+
+           @end
+  @show
+`\`\  `0"We knew you were a coward the moment you arrived!"
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if response is 1 then do
+        @begin
+        @show
+`\`\  `0"It's simple.  For 200 gold, you fight one of my random gladiators
+  for the crowd.  If you win, you double the 200.  If not, you lose it.  You
+  can battle as many times you want a day until you lose.  So what do you
+  say? 
+`\`k
+        @do goto beat
+        @end
+
+
+@if response is 2 then do
+        @begin
+        @if money < 200 then do
+          @begin
+        @show
+`\`\  `0"You don't even have 200 gold?!  How on earth could you be a great
+  arena warrior?!  Hahah!"
+
+  `2Your face turns beet red.
+`\`k
+         @do goto beat
+         @end
+
+         @if bitcheck `t12 7 1 then do
+           @begin
+           @show
+`\`\  `0"You have already been bested in the Arena once today!  The crowd
+  would much rather see a winner, not someone like you!"
+
+`k
+           @do goto beat
+           @end
+
+        @do money - 200
+        @do `p20 random 6 1
+               @if `p20 is 1 then `s01 is Gladiator
+               @if `p20 is 2 then `s01 is Big`xGladiator
+               @if `p20 is 3 then `s01 is Fat`xGladiator
+               @if `p20 is 4 then `s01 is Armored`xGladiator
+               @if `p20 is 5 then `s01 is Death`xGladiator
+               @if `p20 is 6 then `s01 is Nitro
+        @show
+`\`\  `2They agree to let you fight.
+
+  You grip your `0s&weapon`2 tightly as you wait for your opponent.
+`\`k  `0The robed man screams the name .`l .`l .`l .`l .`% `s01`0!
+
+`k
+@
+;Glad Strength
+        @do `p20 random 5 1
+               @if `p20 is 1 then do
+                @begin
+                 @do `p21 is S&wep_num
+                 @do `p21 + `p04
+                 @do `p21 - 30
+                @end
+
+               @if `p20 is 2 then do
+                @begin
+                 @do `p21 is S&wep_num
+                 @do `p21 + `p04
+                 @do `p21 - 12
+                @end
+
+               @if `p20 is 3 then do
+                @begin
+                 @do `p21 is S&wep_num
+                 @do `p21 + `p04
+                @end
+
+                @if `p20 is 4 then do
+                @begin
+                 @do `p21 is S&wep_num
+                 @do `p21 + `p04
+                 @do `p21 + 12
+                @end
+
+               @if `p20 is 5 then do
+                @begin
+                 @do `p21 is S&wep_num
+                 @do `p21 + `p04
+                 @do `p21 + 30
+                @end
+;Glad Defense
+        @do `p20 random 3 1
+               @if `p20 is 1 then do
+                 @begin
+                  @do `p22 is S&arm_num
+                  @do `p22 + `p05
+                  @do `p22 - 20
+                 @end
+
+               @if `p20 is 2 then do
+                @begin
+                 @do `p22 is S&arm_num
+                 @do `p22 + `p05
+                @end
+
+               @if `p20 is 3 then do
+                @begin
+                 @do `p22 is S&arm_num
+                 @do `p22 + `p05
+                 @do `p22 + 20
+                @end
+;Glad H.p.
+
+        @do `p20 random 3 1
+               @if `p20 is 1 then do
+                @begin
+                 @do `p23 is `p03
+                 @do `p23 - 10
+                 @end
+
+               @if `p20 is 2 then do
+                @begin
+                 @do `p23 is `p03
+                @end
+
+                @if `p20 is 3 then do
+                 @begin
+                  @do `p23 is `p03
+                  @do `p23 + 10
+                 @end
+
+        @do goto monster1
+
+;Here's the gladiator
+@#monster1
+@fight
+;name
+`s01
+;string said when you see him
+`0"You get one chance, don't blow it!" `2taunts the Gladiator.
+;power move kill string
+You carefully step over the lifeless Gladiator's body.. hehe!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits with his club|`p21
+slams you with his shield|`p21
+hits you with a big rock|`p21
+brawls with you|`p21
+NONE|NONE
+;defense
+`p22
+;gold reward
+400
+;experience
+20
+;hit points
+`p23
+;if win: ref file|name or NONE
+BONE.REF|WIN
+;if lose: ref file|name or NONE
+BONE.REF|DEFEAT
+;if runs: ref file|name or NONE
+BONE.REF|RUN
+;End of Gladiator stuff
+        @end
+;@drawmap
+;@update
+
+@#PAWN
+;The Pawnshop
+@do `v01 is 1
+@do moveback
+@busy
+@show
+`r0`c  `r1`%  Selena's Pawn Shop `r0
+
+`2  A beautifully curved specimen stands before you - which makes what comes
+  out of her mouth next all the more cute.
+
+  `2`0"And what can I do for today, you scagfaced Belar sucking thief?"
+
+@do write
+`x`x
+@CHOICE
+Have some things to sell
+Conduct business with Selena
+Leave
+@if response is 1 then do
+  @begin
+  @run junkman2 in porttown.ref
+  @end
+@if response is 2 then do
+  @begin
+  @do `p20 is 4
+  @run getquest in quest.ref
+  @end
+
+@drawmap
+@update
+
+@#DRUNKER
+;Drunk man in BoneTown bar
+@do moveback
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Guy: `0Careful, this bar isn't all that clean in places.
+@if `p20 is 2 then saybar
+`%Guy: `0I hear there's a secret entrance to FlagCity!
+@if `p20 is 3 then saybar
+`%Guy: `0Watch out for Kelley here she'll give you more than a ride.
+@if `p20 is 4 then saybar
+`%Guy: `0If you get a bounty on your head, watch out.
+@if `p20 is 5 then saybar
+`%Guy: `0Some places wont let you in if you have a bounty on you.
+@if `p20 is 6 then saybar
+`%Guy: `0Don't cheat in the Casino here.
+@if `p20 is 7 then saybar
+`%Guy: `0Did you know Mr T. is Great!?
+@if `p20 is 8 then saybar
+`%Guy: `0On the other two continents I hear life is really exciting.
+@if `p20 is 9 then saybar
+`%Guy: `0Watch for the oracle!
+
+@#BARTEND
+;Bartender in the BoneTown Bar
+@BUSY
+@DO MOVEBACK
+@label scotch
+@do `v01 is 1
+@show
+`r0`c  `r1  BoneTown Bartender  `r0
+
+  `0"Hey there, what brings you to our little watering hole?  Wait .. don't
+  answer, just being friendly.  What can I do for you buddy?" `2You eye the
+  bar.  A drink, a snack, or maybe some information.
+
+@do write
+`x`x
+@choice
+>&money 4 Get a drink (`$$5`%)
+Ask about the town
+Inquire about bounties
+Leave
+@if response is 1 then do
+  @begin
+  @do money - 5
+  @if `p02 < `p03 then do
+   @begin
+   @do `p02 + 2
+    @if `p02 > `p03 then `p02 is `p03
+   @end
+  @show
+`\`\  `$"Gimme a shot of your finest sir." `2you say as you pay him.  Pretty
+  good for a place like this, you feel a bit better.
+`\`k
+  @do goto scotch
+  @end
+@if response is 2 then do
+  @begin
+   @do `p20 random 4 1
+  @if `p20 is 1 then do
+   @begin
+    @show
+`\`\  `0"This town is a haven of well... evil.  It was originally founded way
+  back when there was a mining rush on the coast.  There are rumors of caves
+  still open someplaces, where the miners couldn't quite make it out with the
+  gold ... or whatever it is they found..."`2
+`\`k
+   @do goto scotch
+   @end
+
+  @if `p20 is 2 then do
+   @begin
+    @show
+`\`\  `0"Watch out for some of the women here.  They're real friendly, I mean
+  if you just move They'll sleep with you.  Talk about no ethics whatsoever.
+  Oh well it's a good way to increase your self esteem, I suppose, but it's
+  also a good way to get a little itch in someplaces if you get my meaning."
+`\`k
+   @do goto scotch
+   @end
+
+  @if `p20 is 3 then do
+   @begin
+    @show
+`\`\  `0"Watch out for some of the people here in the Arena.  The Gladiators
+  they send at you are fairly random.  But sometimes you get the one that's
+  been watching you, who knows your every move.  And may just pummel you
+  completely.  And don't think just cause you're more experienced you can
+  take em, they're seasoned too.  You just be careful and remember the
+  healers is right nearby."
+`\`k
+   @do goto scotch
+   @end
+
+  @if `p20 is 4 then do
+   @begin
+    @show
+`\`\  `0"This is a pretty rough town sometimes.  You can get into fights in
+  the streets, find someone waking you unplesantly at the inn, or wander off
+  to someplace you never should've gone.  This place aint for the faint of
+  heart."
+`\`k
+   @do goto scotch
+   @end
+
+  @end
+;End of storytime
+@if response is 3 then do
+  @begin
+   @show
+`\`\  `0"You wanna know about the heat ... I can tell you"
+`\`k
+  @routine BOUNTYLIST in BOUNTY.REF
+  @do goto scotch
+  @end
+@drawmap
+@update
+
+@#heal
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1  BoneTown Healing  `r0
+
+`2  B.A. looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, fool!  What'd ya get yourself into anyway?
+  Aww, never mind crazy fool.  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry fool, we don't do no free work here."
+
+ @do write
+`x`x
+ @choice
+Hey Fool!  How am I supposed to make money when I can barely walk?
+Man, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"You Crazy, now get going with you!" `2 he laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Hey Fool, be a big s&man for once in your life!"`2 he yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a fool that don't work," `2He informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 he snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later fool!  I got other crazys to heal.
+  Nothing but fighting in this town I tell ya," `2he laughs.
+
+`k
+@drawmap
+@update
+
+@#GAMBLE
+;Gambling with the man in the funhouse
+@do `v01 is 1
+@busy
+@do moveback
+@show
+`r0`c  `%`r1  A Little Game ?  `r0
+
+  `2You sit down at the table and nod to the man across from you.  He looks
+  up, holding a pair of dice in his hand.
+  `0"Interested in a little game?"
+
+@do write
+`x`x
+@CHOICE
+Yes
+No
+@if response is 1 then do
+  @begin
+   @routine CRAPSTART in GAMBLE.REF
+  @end
+@drawmap
+@update
+
+@#BOAT
+;For the bootleg boat guy in the funhouse.
+@do `v01 is 1
+@busy
+@do moveback
+@show
+`r0`c  `%`r1  The Silent Boater  `r0
+
+  `2The man sitting eyes you for a second then speaks.
+  `0"You look like someone who may be interested in a trip somewhere.  I ...
+  may be able to help you in that department.  But you should know the
+  minimum ticket is"
+
+@do write
+`x`x
+@CHOICE
+>&money 6999 Go to ArrisVille  (`$$7000`%)
+>&money 1499 Head to PortTown  (`$$1500`%)
+>&money 899 Take off to FlagCity  (`$$900`%)
+Leave
+@if response is 1 then do
+;Go to ArrisVille
+  @begin
+   @do money - 7000
+   @show
+`\`\  `0"Good choice, let's go across the sea."
+`\`k
+   @loadmap 444
+   @do map is 444
+   @do x is 66
+   @do y is 18
+   @DRAWMAP
+   @DO SAYBAR
+  `2Welcome to the ellusive ArrisVille.
+   @UPDATE
+   @CLOSESCRIPT
+  @end
+
+@if response is 2 then do
+;Go to PortTown
+  @begin
+   @do money - 1500
+   @show
+`\`\  `0"That's a good choice, let's go!"
+`\`k
+   @loadmap 152
+   @do map is 152
+   @do x is 38
+   @do y is 2
+   @DRAWMAP
+   @DO SAYBAR
+  `2Welcome to PortTown.
+   @UPDATE
+   @CLOSESCRIPT
+  @end
+
+@if response is 3 then do
+;Go to FlagCity
+  @begin
+   @do money - 900
+   @show
+`\`\  `0"Sure, why not?"
+`\`k
+   @loadmap 71
+   @do map is 71
+   @do x is 38
+   @do y is 14
+   @DRAWMAP
+   @DO SAYBAR
+  `2Welcome to FlagCity.
+   @UPDATE
+   @CLOSESCRIPT
+  @end
+@drawmap
+@update
+
+@#inn
+;For the wood lodge in BoneTown
+@do `v01 is 1
+@offmap
+@do moveback
+@show
+`r0`c  `%`r1  THE WOODLOG INN  `r0
+
+  `2This place looks a little campy - slack jaws & harlots wander around
+  the rooms aimlessly.
+
+  A old man with only a few teeth smiles at you.
+
+  You are holding `$$&money`2.
+
+@do write
+`x`x
+@choice
+Get a room (`$$50`%)
+Leave
+@if response is 1 then do
+  @begin
+  @if money < 50 then do
+    @begin
+    @show
+`\`\`2  You are short on cash.  Pretty sad when you can't even afford to stay
+  in BoneTown!
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\  `2You give the dirty old man the cash.  He leads you inside...
+`\`k
+  ;has enough money
+   @do money - 50
+   @do x is 21
+   @do y is 13
+   @do map is 1206
+   @loadmap 1206
+   @drawmap
+   @update
+   @closescript
+  @end
+
+@drawmap
+@update
+
+@#TOILET
+;Toilet inside the Inn
+@DO SAYBAR
+`2Great, the only toilet here and it doesn't work!  You'll have to hold it.
+@DO MOVEBACK
+
+@#MESSAGE
+;For the other chatwall in BoneTown
+@do moveback
+@busy
+@show
+`r0`c  `r1  CARVING ON THE BOARD  `r0
+
+@if bar2.txt exist false then do
+ @begin
+  @if `v06 is 1 then do
+  @begin
+   @writefile bar2.txt
+   `%Local `2: `0We need to clean up this town.
+  @end
+  @if `v06 is 0 then do
+  @begin
+ @writefile bar2.txt
+  `%Pimp `2: `0Sheris, you better bring me my money girl!
+  `%Sheris `2: `0Boy, I do NOT work for you any more!
+  @end
+ @end
+
+@if bar.txt exist true then do
+ @begin
+ @displayfile bar2.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile bar2.txt
+  `%`n`2 : `0`s03
+ @do trim bar2.txt 17
+ @drawmap
+ @update
+
+@#NOTDONE
+;A stock notdone message for the unfinished stuff
+@DO SAYBAR
+`2Not done yet, check out next version!
+@DO MOVEBACK
+
+@#FUN
+;The BoneTown fun house :)
+@do `v01 is 1
+@offmap
+@do moveback
+@show
+`r0`c  `%`r1  The FunHouse  `r0
+
+  `2This place looks ... well great!!  You see gambling games, and lot's of
+  attractive individuals back there.  A man with plush purple hat with a
+  feather in it smiles at you.
+  `0"Hey s&man how ya doing?  Listen, if ya wanna get in here, it's gonna
+  be 100 tip, that cool with you?"
+
+  `2You are holding `$$&money`2.
+
+@do write
+`x`x
+@choice
+>&money 99 Pay the "admission" (`$$100`%)
+Leave
+@if response is 1 then do
+  @begin
+  @do money - 100
+  @show
+`\`\  `0"Good choice my s&man, you wont be disappointed."
+`\`k
+   @do x is 40
+   @do y is 15
+   @do map is 1282
+   @loadmap 1282
+   @drawmap
+   @update
+   @closescript
+  @end
+@drawmap
+@update
+
+@#DEALER
+;Dealer in the funhouse
+@do `v01 is 1
+@busy
+@do moveback
+@show
+`r0`c  `%`r1  The Back Room Guy  `r0
+
+  `2Tucked away in a nice little corner, you see an unshaven man with a
+  satchel at his side and a supiciously large purse.  A man who probably
+  makes his living illegally.  Surprise surprise in this town.
+  `0"Hey buddy interested in a little ... companionship?  If ya wanna
+  get a nice little friend it'll cost ya 1000.  But you look like a s&man
+  who could afford something like that."
+
+@do write
+`x`x
+@choice
+>&money 999 Buy some companionship (`$$1000`%)
+Just Say No
+@if response is 1 then do
+  @begin
+   @if `i51 > 0 then do
+    @begin
+    @show
+`\`\  `0"Sorry man, only one little friend per customer..."
+`\`k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @do money - 1000
+  @do `i51 + 1
+   @show
+`\`\  `2The man reaches into his satchel and pulls out `l. `l. `l.`l a small
+  animal!!
+  `0"Here you go, I hope it treats you right" `2he smiles.
+`\`k
+  @end
+@drawmap
+@update
+
+@#BOUNCER
+;The guy outside the casino
+@DO SAYBAR
+`2You gotta be 21 to go in there buddy!
+@DO MOVEBACK
+
+@#BOUNCER2
+;The guy outside the casino
+@DO SAYBAR
+`0"Sorry buddy, only important people are allowed in there."
+@DO MOVEBACK
+
+@#INFO
+;Guy who tells you junk in the funhouse
+@do moveback
+@do `p20 random 7 1
+@if `p20 is 1 then saybar
+`%DJ: `0Don't listen to them about the mining caves, they're all gone.
+@if `p20 is 2 then saybar
+`%DJ: `0You do need to be careful of the prostitution here.
+@if `p20 is 3 then saybar
+`%DJ: `0Show us some more of those block rockin beats.
+@if `p20 is 4 then saybar
+`%DJ: `0I hear the Inn at Sosen Village is a virtual gold mine!
+@if `p20 is 5 then saybar
+`%DJ: `0There's a boat outta BoneTown, but not one too it.
+@if `p20 is 6 then saybar
+`%DJ: `0Careful, I hear the Inn here isn't the safest.
+@if `p20 is 7 then saybar
+`%DJ: `0Watch out for bounty hunters.
+
+@#EVENTS
+;Start for random events in BoneTown (tm)
+@busy
+@do `p20 random 3 1
+@do goto event`p20
+
+@#EVENT1
+;Mugged
+@busy
+@do `v01 is 1
+@show
+`r0`c  `%`r1  EVENT - Mugged  `r0
+
+  `2You proceed around the next corner when suddenly a hooded man jumps
+  you.  He wields two daggers and seems to be wearing leather armor.
+  `0"My dear friend I'm afraid I'll have to ask you for a donation to my
+  cause, 1000 gold!  You may give it kindly or I may take it from you.
+  Your choice."
+
+  `2What do you do:
+
+@do write
+`x`x
+@choice
+>&money 999 Give him the money
+Fight
+Run
+@if response is 1 then do
+  @begin
+  @do money - 1000
+  @show
+`\`\  `0"You've made a wise decision.  Now, have a good day."  `2he says
+  as he turns and runs, dissapearing into the shadows.
+`\`k
+  @end
+@if response is 2 then do
+  @begin
+  @show
+`\`\  `$"Come on buddy, give me your best shot."  `2you say as you whip out
+  your s&weapon.
+`\`k
+  @do goto tbattle
+  @end
+@if response is 3 then do
+  @begin
+  @show
+`\`\  `$"What's that over there?"  `2you yell as you dash for the nearest
+  alley trying to escape.`k
+  @do `p20 random 2 1
+   @if `p20 is 1 then do
+     @begin
+       @show
+`\  `2You look behind your back just in time to see that `l.`l.`l.
+`\`k
+     @drawmap
+     @update
+     @do saybar
+`2You lost him.
+     @closescript
+     @end
+   @if `p20 is 2 then do
+     @begin
+       @show
+`\  `2You look behind your back just in time to see `l.`l.`l.
+`\`k
+     @do goto tbattle
+     @end
+  @end
+@drawmap
+@update
+
+@#EVENT2
+;Seeing a mugging
+@busy
+@do `v01 is 1
+@show
+`r0`c  `%`r1  EVENT - Someone's being mugged  `r0
+
+  `2You step around the corner when you notice a hooded man robbing a
+  defenseless drunken man.  He wields two daggers and seems to be getting
+  ready to depart.
+
+  `2What do you do:
+
+@do write
+`x`x
+@choice
+Defend the poor man
+Help out the thief
+Leave
+@if response is 1 then do
+  @begin
+  @do `p07 + 1
+  @show
+`\`\  `2You run at the thief yelling and getting your s&weapon ready.  He
+  sees you and quickly sheaths his daggers running to the shadows.
+  `0"You best hope I don't come across you first next time,"  `2he yells.
+  `2The drunken man he was robbing seems a daze from the whole thing.  He
+  looks up at you, burps thanks and proceeds on his way.  Some reward...
+`\`k  `%YOUR ALIGNMENT GOES UP BY ONE!`0
+`\`k
+  @end
+@if response is 2 then do
+  @begin
+  @do `p20 random 290 310
+  @do money + `p20
+  @do `p07 - 2
+  @show
+`\`\  `2You head over and get your s&weapon ready.  You kneel next to them
+  `$"Mind if I help buddy?" `2 you ask.  He glares at you and seems surprised
+  but them nods, better you help him than the victim.  You hold the poor man
+  down as the thief blows a fine powder in his eyes, then grabs his purse.
+  `0"Here you go buddy, thanks,"  `2he says and tosses you some of the loot.
+`\`k  You get `$`p20 `2gold.
+`\`k  `bYOUR ALIGNMENT GOES DOWN BY TWO!`b
+`\`k
+  @end
+@drawmap
+@update
+
+@#EVENT3
+;Turf Battle
+@busy
+@do `v01 is 1
+@show
+`r0`c  `%`r1  EVENT - Turf War  `r0
+
+  `2A small crowd seems to have formed.  It looks like two groups disputing
+  over who owns this part of the town.  One group looks a little bigger than
+  the other, but the others have better weapons it looks.  The tension is
+  quickly mounting.
+
+  `2What do you do:
+
+@do write
+`x`x
+@choice
+Talk down the feud
+Help fight the big group
+Help fight the small group
+Kick both group's ass
+Leave
+@if response is 1 then do
+  @begin
+  @pauseoff
+  @show
+`\`\  `2You head over to the big mass, determined to make a difference.  You
+  spout off some wisdom to the group, but it falls on deaf ears.  The crowd
+  become rowdy after a club is thrown from one side.  You find yourself in
+  the middle of a pretty bad feud.  You try to get out of the battle but
+  end up fighting with both sides, only getting pretty hurt in the end.
+`\`k
+  @if `p02 > 10 then `p02 is 10
+  @do `p20 random 4 1
+   @if `p20 is 1 then do
+    @begin
+    @do `p07 + 1
+    @show
+  `bYOUR ALIGNMENT GOES UP BY ONE!`b
+`\`k
+    @end
+  @end
+@if response is 2 then do
+  @begin
+  @show
+`\`\  `$"Don't worry guys, I'll help ya,"  `2you scream as you enter the
+  fray.
+`\`k
+  @do goto BMOB
+  @end
+@if response is 3 then do
+  @begin
+  @show
+`\`\  `$"Yea, let's beat the hell into em guys"  `2you say as you enter the
+  fray.
+`\`k
+  @do goto SMOB
+  @end
+@if response is 4 then do
+  @begin
+  @pauseoff
+  @show
+`\`\  `2You take out your s&weapon and head over to the group.  You promptly
+  march to the center where the leaders seem to be.  The crowd quiets and
+  angry eyes fall upon you."
+  `0"Who the hell are you?"  `2you hear.
+  `$"I'm `n, Who wants some?" 
+`\`k
+  @do goto BIGMOB
+  @end
+@drawmap
+@update
+
+@#TBATTLE
+@fight
+;name
+Thief
+;string said when you see him
+A man in a cloak approches you, with a dagger in each hand.
+;power move kill string
+He should know, you've got insurance.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+jabs with his daggers|57
+gets a good gash in your leg|80
+cuts your arm|60
+blows a strange powder into your eyes|59
+NONE|NONE
+;defense
+21
+;gold reward
+500
+;experience
+150
+;hit points
+100
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+BONE.REF|TLOSE
+;if runs: ref file|name or NONE
+NONE|NONE
+@drawmap
+@update
+
+@#BMOB
+@fight
+;name
+The Big Mob
+;string said when you see him
+You prepare to take on the big group with s&weapon in hand.
+;power move kill string
+`$"And stay away losers!!"  `2you shout.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+dogpiles ontop of you very unsafely|70
+lines up and lashes into you|75
+practice with their clubs on you|67
+attempt to lynch you|87
+NONE|NONE
+;defense
+19
+;gold reward
+350
+;experience
+100
+;hit points
+130
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@drawmap
+@update
+
+@#SMOB
+@fight
+;name
+Small Mob
+;string said when you see him
+You prepare to take on the big group with s&weapon in hand.
+;power move kill string
+`$"And stay away losers!!"  `2you shout.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+dogpiles ontop of you very unsafely|70
+lines up and lashes into you|75
+practice with their clubs on you|67
+attempt to lynch you|87
+NONE|NONE
+;defense
+18
+;gold reward
+315
+;experience
+80
+;hit points
+100
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@drawmap
+@update
+
+@#TLOSE
+@if &money > 999 then do
+  @begin
+   @do money - 1000
+  @end
+@if &money < 1000 then do
+  @begin
+   @do money is 0
+  @end
+@SHOW
+`r0`c  `r1`%  Defeat by the Thief  `r0
+
+  `2The Thief raises his daggers to deliver the last blow ...
+
+`k  `0"Don't worry, I'm not going to kill you, just your purse so to speak.
+  So I'm sure you'll understand." `2He proceeds to raid your gold bag.
+  But again you have your life.
+
+`k
+@do `p02 is 5
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+
+@#BIGMOB
+@fight
+;name
+Big Mob
+;string said when you see him
+You prepare to take on both groups... with s&weapon in hand.
+;power move kill string
+`$"And stay out losers!!"  `2you shout.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+dogpiles ontop of you very unsafely|70
+lines up and lashes into you|75
+practice with their clubs on you|67
+attempt to lynch you|87
+NONE|NONE
+;defense
+25
+;gold reward
+400
+;experience
+170
+;hit points
+220
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+BONE.REF|BMOBLOSE
+;if runs: ref file|name or NONE
+NONE|NONE
+@drawmap
+@update
+
+@#BMOBLOSE
+;Losing after fighting both mobs
+@SHOW
+`r0`c  `r1`%  Both mobs beat you  `r0
+
+  `2Both mobs let out their agression on you.  You seem to have stopped
+  their potential rampage, but at the cost of your severe beating.
+
+`k  `0"Ready to go for a little trip justice s&boy?"  `2laughs one of the
+  leaders.  You're put into a sack and thrown into a wagon.  Struggling and
+  in pain you manage to find a small hole to look out of.  You see the city
+  walls of BoneTown pass by, seems like you're being lead out into the woods
+  a bit.
+  A minuet later you find yourself gasping for air hanging from a tree by a
+  rope.  You hang on tough as you can, through the images you still get you
+  see the gang slowly start to head away, back to the city.  Suddenly, the
+  rope gives!!  And with a snap you fall to the ground, just barely alive.
+`\`k
+@do `p02 is 5
+ @loadmap 1413
+ @do map is 1413
+ @do x is 14
+ @do y is 9
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+
+@#RUIN
+;Message for seeing the arena
+@DO SAYBAR
+`2Looks like the ruins of something,  but the sign says "Arena".  
+
+@#nomore

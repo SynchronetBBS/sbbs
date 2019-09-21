@@ -1,0 +1,352 @@
+;The grave yard and cave area
+
+@#moon1
+;hidden moonstone 1
+@do moveback
+@if bitcheck `t13 3 1 then do
+  @begin
+  @closescript
+  @end
+
+@bitset `t13 3 1
+@do saybar
+`%You find a Moonstone lying beneath the water.
+@do `i57 + 1
+
+
+@#chest1
+;secret
+@do moveback
+@if bitcheck `t13 1 1 then do
+  @begin
+  @do saybar
+There is nothing on the table.
+  @closescript
+  @end
+
+@bitset `t13 1 1
+@do saybar
+`%You find a Red Potion!
+@do `i52 + 1
+
+@#monster1
+@fight
+;name
+Skeleton
+;string said when you see him
+A boney arm reaches up through the dirt in the ground ...
+;power move kill string
+The bones clatter to the ground in horrid defeat.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+gives you a bone|10
+slashes with its skinless hand|7
+tears its arm off and hits you with it|8
+NONE|NONE
+NONE|NONE
+;defense
+5
+;gold reward
+18
+;experience
+25
+;hit points
+40
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Zombie
+;string said when you see him
+A horrible figure groans limping its leg towards you ..
+;power move kill string
+You send him back to the ground he came up from.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+uses its amputated arm to bash you|10
+moans "brains" & bites you|15
+gnaws on your leg|8
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+14
+;experience
+26
+;hit points
+60
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Raven
+;string said when you see him
+A breeze brushes your neck, something flew pretty close
+;power move kill string
+The bird crashes to the yard.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+claws you|8
+pecks your neck|7
+stabs your eyes with its beak|10
+NONE|NONE
+NONE|NONE
+;defense
+2
+;gold reward
+5
+;experience
+8
+;hit points
+45
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Dog Skeleton
+;string said when you see him
+A horrible half dead dog jumps from behind the gravestone!
+;power move kill string
+Stay boy stay, good dead boy.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+gashes your leg with its claws|10
+bites you|12
+pounces on you|15
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+17
+;experience
+24
+;hit points
+65
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#GRAVE1
+;Grave 1 in the yard
+@DO SAYBAR
+`2There once was a man from Knantucket ...
+@do moveback
+
+@#GRAVE2
+;Grave 2 in the yard
+@DO SAYBAR
+`2"Hey get off me!!"
+@do moveback
+
+@#GRAVE3
+;Grave 3 in the yard
+@DO SAYBAR
+`2"Dig me up & take me with you!"
+@do moveback
+
+@#GRAVE4
+;Grave 4 in the yard
+@DO SAYBAR
+`2"Join us ..."
+@do moveback
+
+@#GRAVE5
+;Grave 5 in the yard
+@DO SAYBAR
+`2"If you die, don't die on me."
+@do moveback
+
+@#GRAVE6
+;Grave 6 in the yard
+@DO SAYBAR
+`2Here lies Beavis, he never scored.
+@do moveback
+
+@#CAVE
+;Cave to the right of the Grave yard
+@DO SAYBAR
+`2Looks like a dark cave, best not go in now.
+
+@#SIGN
+;Sign outside the yard
+@DO SAYBAR
+`2GraveYard, weak beware !!
+@do moveback
+
+@#ICESIGN
+;Sign on the west entrance of the snowy Pass
+@DO SAYBAR
+`2  <----------   Flag City        Snowy Pass    ---------->
+@do moveback
+
+@#DARKF
+ @do moveback
+ @busy
+@do `v01 is 1
+@show
+`r0`c  `%`r1 THE SHEPHERD `r0
+
+`2  You come across a Shepherd - his eyes look content and wise.  He
+  nods to you.  `0"How may I help you my friend?" `2he asks.
+
+@do write
+`x`x
+@choice
+Ask about the strange surrounding forest.
+Comment on his sheep.
+@if response is 2 then do
+  @begin
+  @show
+`\`\  `$"No, but your sheep might be able to." `2you tell him.
+`\`k
+  @end
+
+@if response is 1 then do
+  @begin
+  @show
+`\`\  `7"The darker trees are dying and becoming part of Dark Forest.  They try
+  to grow further towards the living and take it over.  My flock and I keep
+  it back."
+`\`k
+  @end
+@drawmap
+@update
+
+@#NUDE
+ @do moveback
+ @busy
+ @do `v01 is 1
+@show
+`r0`c  `%`r1 THE NAKED MAN `r0
+
+`2  You come across a nude old man in a field - ahh, he must be at least 70!
+  He nods to you.  `0"Come, join me my friend," `2he says.
+
+@do write
+`x`x
+@choice
+Join him on the grass
+Comment on his ... clothes
+@if response is 2 then do
+  @begin
+  @show
+`\`\  `$"Must be cold out huh," `2you tell him.
+`\`k
+  @end
+@if response is 1 then do
+  @begin
+  @show
+`\`\  `$"Hey all right, I've been looking for a place like this.  Sometimes you
+  just gotta let it all hang out," `2you say as you get undressed.  After
+  relieving yourself of your clothes you look at the old man and then back
+  at yourself.  You feel small.
+`\`k
+  @end
+@drawmap
+@update
+
+@#ICECAVE
+ @offmap
+@label icy
+@DO `v01 is 1
+@show
+`r0`c  `%`r1  The Ice Wizard's Cave  `r0
+
+`2  You step into the cold cave, the only light you see is up ahead.  You
+  see the silhouette of an old man by the fire.  You step closer and notice
+  the fire's flames are blue!  The old man stands sensing your presence.
+  `3"How may I help you my child?" `2he asks.
+
+@do write
+`x`x
+@CHOICE
+Inquire about him
+Ask for passage through the cave
+Leave the cave
+@if response is 1 then do
+  @begin
+  @show
+`\`\  `$"Who are you, what do you do in this cave?" `2you ask.
+
+`k  `3"I am a caretaker of these mountains.  I watch them, and the people
+  come here, making sure that all is right here."`% 
+`\`k
+  @do goto icy
+  @end
+
+@if response is 2 then do
+  @begin
+  @if `i31 > 0 then do
+  @begin
+  @show
+`\`\  `3"I see you have the amulet.  Come this way my child, it shall take you
+  safely closer towards that which you seek."
+`\`k
+  @if map is 1499 then do
+    @begin
+    @loadmap 1590
+    @do map is 1590
+    @do x is 38
+    @do y is 7
+    @drawmap
+    @update
+    @closescript
+    @end
+  @loadmap 1499
+  @do map is 1499
+  @do x is 71
+  @do y is 17
+  @drawmap
+  @update
+  @closescript      
+@end
+@show
+`\`\  `3"I'm sorry my child, but you must have the pass of my giant masters
+  before you may pass through this way."`%
+`\`k
+@do goto icy
+@end
+@do moveback
+@drawmap
+@update
+
+
+@#DEATH
+@busy
+@do `p20 random 4 1
+@do goto monster`p20
+
+@#PASS
+;View east of the Snowy Pass.
+@DO SAYBAR
+`2The pass ahead to the west looks snowy & dangerous.
+
+
+@#nomore

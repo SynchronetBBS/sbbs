@@ -1,0 +1,280 @@
+;maint is in here, called from L2 when needed or /maint is applied
+
+@#seperate
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@closescript
+
+
+
+@#MAINT
+@if lognow.txt exist true then do
+ @begin
+ @if logold.txt exist true then delete logold.txt
+ @do rename lognow.txt logold.txt
+ @end
+
+@do `p20 random 5 1
+
+@if `p20 is 1 then addlog
+  `2It is a beautiful day today.
+
+@if `p20 is 2 then addlog
+  It is foggy today.
+
+@if `p20 is 3 then addlog
+  It is raining today.
+
+@if `p20 is 4 then addlog
+  It is overcast today.
+
+@if `p20 is 5 then addlog
+  It is incredibly hot today.
+
+@do `v02 is `p20 ;record weather
+
+@routine seperate
+
+;now lets see what the 'shrine' is doing today, if anything
+@do `v04 random 20 1
+
+@if `v04 is 1 then do
+  @begin
+  @do addlog
+  `0The Shrine Of Babos observes the `%Gryphon Moon`0.
+   @routine seperate
+  @end
+
+@if `v04 is 2 then do
+  @begin
+  @do addlog
+  `0The Shrine Of Babos celebrates the `%Vitalis`0 holiday.
+   @routine seperate
+  @end
+
+@if `v04 is 3 then do
+  @begin
+  @do addlog
+  `0The Shrine Of Babos performs the rite of `%Belar`0.
+   @routine seperate
+  @end
+
+@if `v04 is 4 then do
+  @begin
+  @do addlog
+  `0The Shrine Of Babos sings the psalms of `%the rock`0.
+   @routine seperate
+  @end
+
+@saveglobals
+
+;Welcome to the daily log adds
+;Have a look ....
+
+@do `p20 random 20 1
+
+@if `p20 is 1 then do
+  @begin
+  @do addlog
+  `%A Dragon Tooth Cult Proclamation:
+  @do addlog
+`\  `2Hear ye, hear ye!  The Dragon Tooth Cult is looking for new recruits,
+  @do addlog
+  `2if interested, contact a local garrison.
+  @routine seperate
+  @end
+
+@if `p20 is 2 then do
+  @begin
+  @do addlog
+  `2Dragon Tooth troops protect `%Sosen Village `2from attack.
+  @routine seperate
+  @end
+
+@if `p20 is 3 then do
+  @begin
+  @do addlog
+  `2Dragon Tooth troops protect `%PortTown `2from attack.
+  @routine seperate
+  @end
+
+@if `p20 is 4 then do
+  @begin
+  @do addlog
+  `2Dragon Tooth troops protect `%FlagCity `2from attack.
+  @routine seperate
+  @end
+
+@if `p20 is 5 then do
+  @begin
+  @do addlog
+  `2Dragon Tooth troops raid the unholy `%BoneTown`2.
+  @routine seperate
+  @end
+
+@if `p20 is 6 then do
+  @begin
+  @do addlog
+  `2A child was reported lost today in the `%Northlands`2.
+  @routine seperate
+  @end
+
+@if `p20 is 7 then do
+  @begin
+  @do addlog
+  `2Theft has been on the rise in the area surrounding `%BoneTown`2.
+  @routine seperate
+  @end
+
+@if `p20 is 8 then do
+  @begin
+  @do addlog
+  `2Dragon Tooth men report `4Red Dragon`2 sightings in the `%ArrisVille`2 area.
+  @routine seperate
+  @end
+
+@if `p20 is 9 then do
+  @begin
+  @do addlog
+  `3Koshi men `2report no `4Red Dragon`2 sightings whatsoever.
+  @routine seperate
+  @end
+
+@if `p20 is 10 then do
+  @begin
+  @do addlog
+  `%A Dragon Tooth Cult Announcement:
+  @do addlog
+`\  `2Hear ye!  The Dragon Tooth Cult is calling for the monthly protection
+  @do addlog
+  `2fees.  Contact your local garrison about payment.
+  @routine seperate
+  @end
+
+@if `p20 is 11 then do
+  @begin
+  @do addlog
+  `%A Dragon Tooth Cult Announcement:
+  @do addlog
+`\  `2Hear ye!  The Dragon Tooth Cult will be using the Shrine Of Babos 
+  @do addlog
+  `2today.  Please refrain from attending the area.
+  @routine seperate
+  @end
+
+@if `p20 is 12 then do
+  @begin
+  @do addlog
+  `2Dragon Tooth men report the `4Red Dragon`2 may be in the `%Greentree`2 area.
+  @routine seperate
+  @end
+
+@if `p20 is 13 then do
+  @begin
+  @do addlog
+  `2Dragon Tooth men declare martial law upon `%BoneTown`2 for not paying
+  @do addlog
+  `2protection fees.
+  @routine seperate
+  @end
+
+@if `p20 is 14 then do
+  @begin
+  @do addlog
+  `2Dragon Tooth men investigate the `%ArrisVille`2 area.
+  @routine seperate
+  @end
+
+@if `p20 is 15 then do
+  @begin
+  @do addlog
+  `2Another child is lost to the dark forest today.
+  @routine seperate
+  @end
+
+@if `p20 is 16 then do
+  @begin
+  @do addlog
+  `2Prince Corin proclaims the `%ArrisVille`2 area void of the Red Dragon.
+  @routine seperate
+  @end
+
+@if `p20 is 17 then do
+  @begin
+  @do addlog
+  `3Koshi men `2report no `4Red Dragon`2 sightings on the sea.
+  @routine seperate
+  @end
+
+@if `p20 is 18 then do
+  @begin
+  @do addlog
+  `2Dragon Tooth men report thievery rising on the high seas.
+  @routine seperate
+  @end
+
+@if `p20 is 19 then do
+  @begin
+  @do addlog
+  `2The `3Koshi `2are offering a reward for return of their `%Gryphon Moon`2.
+  @routine seperate
+  @end
+
+@if `p20 is 20 then do
+  @begin
+  @do addlog
+  `2Dragon Tooth men put a stop to a anti-cult rally near Stonepass.
+  @routine seperate
+  @end
+
+
+
+ @do `s01 is NIL
+
+ @do `p20 random 9 1
+ @if `p20 is 1 then `s01 add Grizelda
+ @if `p20 is 2 then `s01 add `n
+ @if `p20 is 3 then `s01 add Turgon
+ @if `p20 is 4 then `s01 add Grimgroth
+ @if `p20 is 5 then `s01 add Abdul
+ @if `p20 is 6 then `s01 add Pap
+ @if `p20 is 7 then `s01 add Barak
+ @if `p20 is 8 then `s01 add Sandtiger
+ @if `p20 is 9 then `s01 add Goatboy
+
+  @do `s01 add `x
+
+ @do `p20 random 10 1
+ @if `p20 is 1 then `s01 add sucks
+ @if `p20 is 2 then `s01 add bites
+ @if `p20 is 3 then `s01 add worships
+ @if `p20 is 4 then `s01 add kills
+ @if `p20 is 5 then `s01 add loves
+ @if `p20 is 6 then `s01 add throws
+ @if `p20 is 7 then `s01 add eats
+ @if `p20 is 8 then `s01 add licks
+ @if `p20 is 9 then `s01 add rides
+ @if `p20 is 10 then `s01 add drinks
+
+  @do `s01 add `x
+
+ @do `p20 random 9 1
+ @if `p20 is 1 then `s01 add apples
+ @if `p20 is 2 then `s01 add snakes
+ @if `p20 is 3 then `s01 add Belar
+ @if `p20 is 4 then `s01 add salt
+ @if `p20 is 5 then `s01 add monsters
+ @if `p20 is 6 then `s01 add dragons
+ @if `p20 is 7 then `s01 add water
+ @if `p20 is 8 then `s01 add horses
+ @if `p20 is 9 then `s01 add children
+
+@if l2tree.dat exist true then delete l2tree.dat
+@writefile l2tree.dat
+`s01
+@
+
+
+@#NOTHING
+
+

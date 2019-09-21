@@ -1,0 +1,597 @@
+;note to .ref masters:
+;replace castle3 with something else to use this .ref for other dwellings
+;this .ref uses no long term vars, instead it makes its own data file - this
+;means upgrading the game will not make people 'lose ownership' of their
+;stuff.
+
+
+@#MYBANK
+;team treasury
+@do moveback
+@do `p20 is 0
+@if tres3.dat exist true then do
+  @begin
+  @readfile tres3.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tres3.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete tres3.dat
+  @writefile tres3.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile castle3.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Wizard Tower Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tres3.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete tres3.dat
+  @writefile tres3.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile castle3.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Wizard Tower Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+
+@#signhelp
+@do moveback
+@do saybar
+`0Sign: `2Be careful what you touch.
+
+@#sign1
+@do moveback
+@do saybar
+`0Sign: `4Bonetown
+
+@#sign2
+@do moveback
+@do saybar
+`0Sign: `9Porttown
+@#sign3
+@do moveback
+@do saybar
+`0Sign: `2Greentree
+
+@#warpme
+@loadmap &map
+@drawmap
+@update
+@do quebar
+`%Wow, what a ride!
+
+@#stone1
+;Greentree
+@do x is 51
+@do y is 16
+@do map is 1356
+@do goto warpme
+
+@#stone2
+;Bonetown
+@do x is 68
+@do y is 5
+@do map is 1572
+@do goto warpme
+
+@#stone3
+;Porttown
+@do x is 62
+@do y is 13
+@do map is 956
+@do goto warpme
+
+
+@#TABLE
+;get magic wand
+@do moveback
+@if castle3.dat exist false then do
+  @begin
+  @do saybar
+`0"Geeeet ouuut hoooman.." `2the table creaks.
+  @closescript
+  @end
+
+;load info on owner
+@readfile castle3.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`2What?  Touch something that isn't yours?  Um, no.
+  @closescript
+  @end
+
+@if `i56 > 0 then do
+  @begin
+  @do saybar
+`2There is nothing on the table.
+  @closescript
+  @end
+
+@do saybar
+A wand magically appears when you touch the table!  Yeah!
+@do `i56 is 1
+
+@#FOUNTAIN
+;free heal
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Fountain  `r0
+
+  `2The strange water makes you tingle.
+
+  `%YOU ARE COMPLETEY HEALED.
+
+`k
+@do `p02 is `p03
+@drawmap
+@update
+
+
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+@if castle3.dat exist false then do
+  @begin
+  @do saybar
+`0"You must leave now, human," `2the troll commands.
+ @closescript
+  @end
+
+@readfile castle3.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the troll, nice of it to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The tiny troll snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$20000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your tower to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle3.dat
+  @writefile castle3.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of Wizard Tower to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%Wizard Tower`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your tower back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle3.dat
+  @do money + 20000
+  @show
+`\`\  `%TOWER SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Wizard Tower`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete castle3.dat
+  @writefile castle3.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the troll promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if castle3.dat exist false then do
+ @begin
+ @do saybar
+Wizard Tower - For sale cheap, enquire inside.
+ @end 
+
+@if castle3.dat exist true then do
+ @begin
+@readfile castle3.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+@if castle3.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2Wizard Tower may be old and dalapidated but it still houses that old 
+  world charm of an enchanters hostel.  Perhaps if you buy it, people would
+  call you 'that crazy old wizard who lives in that tower!'.  You just
+  can't put a price on that. (ok, it's `$$40,000`2)
+
+  Buy now and recieve the following bonuses:
+
+  `0* `2An indoor fountain.
+
+  `0* `2A magic <maybe> wand the previous owner left.
+
+  `0* `2Some strange rocks upstairs.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 39999 Purchase it.
+<&money 40000 Sigh wistfully and leave since you don't have enough.
+>&money 39999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if castle3.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile castle3.dat
+&playernum
+NONE
+0
+0
+0
+0
+    @do money - 40000
+    @do addlog
+  `0`n `2buys `%Wizard Tower`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this tower!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile castle3.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete castle3.dat
+    @do addlog
+  `%Wizard Tower`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  trollish voice calls from behind the wall.
+
+  `4Ouch!
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2a hunched over troll asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%Wizard Tower`0,"`2 the troll smiles as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0Wizard Tower Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the troll by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The troll doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@do x is 44
+@do y is 17
+@do map is 1175
+@loadmap 1175
+@do goto done
+@#done

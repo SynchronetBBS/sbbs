@@ -1,0 +1,125 @@
+;Ref for the RockHolm Northern Continent
+
+@#NSIGN
+;North sign at the edge of StonePath
+@DO SAYBAR
+`2Dangerous path South, Beware!
+@do moveback
+
+@#GUARD1
+;Guard outside RockHolm Castle
+@DO SAYBAR
+`0"Welcome to RockHolm Castle."
+@do moveback
+
+@#GUARD2
+;The other Guard outside RockHolm Castle
+@DO SAYBAR
+`0"Enter if you are a warrior."
+@do moveback
+
+@#ROCKCAVE
+;For dock to cave in RockHolm Mountains
+@if bitcheck `t14 4 0 then do
+  @begin
+@if `i61 > 0 then do
+  @begin
+  @show
+`r0`c  `%`r1  Ghostly Passage  `r0
+
+  `%You step out onto the dock, looking around at the calm waters.  You
+  notice fog begining to build up.  You look in your pouch quickly to find
+  the ring you have glowing.  The patch of fog slowly moves towards you
+  within it you can make out a tranparent boat!  With caution, you test it
+  then climb aboard - it takes you to the other side.
+`\`k
+  @do x is 41
+  @do y is 10
+  @drawmap
+  @update
+  @closescript
+  @end
+@end
+@DO SAYBAR
+`2That cave across the lake looks very mysterious.
+
+@#GOBACK
+;Getting back from the above cave
+@show
+`r0`c  `%`r1  Ghostly passage back `r0
+
+  `%You step out into the water, again looking.  You notice fog again
+  comes to greet you.  You ride the ghostly vessle back.
+`\`k
+@do x is 41
+@do y is 16
+@drawmap
+@update
+
+@#GHOST
+;The ghost's body in the old cave
+@if bitcheck `t14 4 0 then do
+  @begin
+@if `i61 > 0 then do
+  @begin
+  @bitset `t14 4 1
+  @do `i61 - 1
+  @do `p18 + 5
+  @do `p04 + 5
+  @show
+`r0`c  `%`r1  Ghost Body  `r0
+
+  `%You kneel before the body in the corner of the cave.  This must be the
+  body of the man who haunts the ArrisVille Inn.  The glow of the ring seems
+  to be pulsating.  Kindly, you put the ring on the body's finger.  The blue
+  glow engulfs the body, and for a second you see the ghost from before, then
+  it all fades...
+  `3"Thank you, I now pass my `%STRENGTH `3to you ..."
+
+  `%YOU'VE COMPLETED A MAJOR QUEST (+ 5 Quest Points)
+
+  `%YOU FEEL STRONGER (+ 5)
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@end
+@DO SAYBAR
+`3Some poor guy's body.
+
+@#LEG
+;Leg inside the cave
+@DO SAYBAR
+`2Some poor bastard's rotten leg
+
+@#HEAD
+;Head inside the cave
+@DO SAYBAR
+`2Someone got eaten pretty bad here.  This head is old.
+
+@#Teller
+;The Man up in the dangerous RockHolm Mountains who tells important info.
+@do moveback
+
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Man: `0Careful, the monsters around here are REALLY dangerous...
+@if `p20 is 2 then saybar
+`%Man: `0If the owner of the nearby castle lets you in, you can get stuff..
+@if `p20 is 3 then saybar
+`%Man: `0I'm lost.  I've been lost for years.
+@if `p20 is 4 then saybar
+`%Man: `0Pirates suck.  Because of them there will never be a LORD 3...
+@if `p20 is 5 then saybar
+`%Man: `0.doG a si theS
+@if `p20 is 6 then saybar
+`%Man: `0There's a ghost who haunts the sleeping in ArrisVille
+@if `p20 is 7 then saybar
+`%Man: `0The Koshi can do things you never imagined.
+@if `p20 is 8 then saybar
+`%Man: `0You need the cloud sword to enter the Koshi Mountains.
+@if `p20 is 9 then saybar
+`%Man: `0If you win this thing, you WILL get special powers.
+
+@#done

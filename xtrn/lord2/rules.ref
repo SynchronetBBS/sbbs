@@ -1,0 +1,34 @@
+@#rules
+
+;Rules for LORD II: New World.  You can change #'s here to affect the
+;rules of the game.
+
+;change the 0 below to a 1 to show an optional opening message.
+
+@if 0 is 1 then do
+  @begin
+  @show
+`r0`c  `r1  `%WELCOME TO THE REVOLUTION  `r0
+
+  `2The`0 (put BBS name here) `2is proud to be an official beta site of `0LORD2`2.
+
+  Please report any problems to the sysop here or email `0sethable@rtsoft.com`2
+  directly.
+
+  Have fun!
+
+`k
+  @end
+
+;*** example of showing users a message ****
+
+@do `v03 is 0 ;Can players die unlimited times per day?  0 is no, 1 is yes
+@do `v05 is 3000 ;turns per day given to a player, 0 for unlimited
+@do `v06 is 0 ; Make this 1 to activate CLEAN mode, this means 'dirty' things
+              ; will not happen, like there won't be whores at the Sea Hag
+              ; hotel
+@do `v07 is 4 ; Max random quests possible per day
+@do `v08 is 20 ; Max uses of the slot machines/craps per day
+@do `v09 is 15 ; Level at which players can be attacked in Inns. 0 for never
+
+@#NOMORE

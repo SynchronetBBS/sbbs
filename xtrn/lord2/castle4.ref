@@ -1,0 +1,730 @@
+;note to .ref masters:
+;replace castle4 with something else to use this .ref for other dwellings
+;this .ref uses no long term vars, instead it makes its own data file - this
+;means upgrading the game will not make people 'lose ownership' of their
+;stuff.
+@#TOY
+@do moveback
+@do saybar
+Ahh... your private restroom.  Could life get any better?
+
+@#MYBANK
+;team treasury
+@do moveback
+@do `p20 is 0
+@if tres4.dat exist true then do
+  @begin
+  @readfile tres4.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tres4.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete tres4.dat
+  @writefile tres4.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile castle4.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Sosen Inn Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tres4.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete tres4.dat
+  @writefile tres4.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile castle4.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Sosen Inn Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+
+@#priv
+@do moveback
+@do saybar
+Ahhh!  The private bedroom!  Nothing can hurt you here.
+
+@#innkeeper
+
+
+@do moveback
+
+@if castle4.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@readfile castle4.dat
+`p20
+`s01
+@
+
+@if `p20 is &playernum then do
+  @begin
+  @do moveback
+  @do saybar
+`0Innkeeper: `2Greetings, s&sir!
+  @closescript
+  @end
+
+
+
+@if castle4a.dat exist false then do
+  @begin
+  @writefile castle4a.dat
+200
+0
+  @
+  @end
+
+  @readfile castle4a.dat
+`p26
+`p27
+  @
+
+
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Getting a room  `r0
+
+`2  The Innkeeper looks at you.  `0"Kin I getcha a room?  Today it costs
+  only `$$`p26!`2"
+
+@do write
+`x`x
+@choice
+Yeah, what a great deal.
+Shyeah, right.
+@if responce is 1 then do
+  @begin
+  @if money < `p26 then do
+    @begin
+    @show
+`\`\  `2You sort of lack the funds right now.  Looks like you're sleeping
+  outside...
+
+`k
+   @do goto innkeeper
+   @end
+
+  @do money - `p26
+  @do `p27 + `p26
+  @do delete castle4a.dat
+  @writefile castle4a.dat
+`p26
+`p27
+  @
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has stayed at your Inn!  Cha-CHING!
+
+  @do y - 3
+  @drawmap
+  @update
+  @do saybar
+`0Bartender:  `2"Great!  Go upstairs and pick out a bed!"
+  @closescript
+  @end
+
+@drawmap
+@update
+
+@#pass1
+@readfile castle4.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@if &lasty is 11 then do
+  @begin
+  @do moveback
+  @do saybar
+`0Innkeeper:  `2You need to pay me before you can go back there.
+  @end
+
+@#pass2
+@if castle4.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@if &lastx is 58 then do
+  @begin
+  @closescript
+  @end
+
+@readfile castle4.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0Innkeeper:  `2No one is allowed over there.. it's private.
+
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the private area `r0
+
+`2  `2The Innkeeper looks over at you.  `0"Hey!  What business do you have
+  going in there?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok, go on in then!"`\`\`k
+    @do x + 1
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Inkeeper Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get to the private bedroom by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Innkeeper isn't impressed.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+
+ @#done
+ @drawmap
+ @update
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+
+@if castle4a.dat exist false then do
+  @begin
+  @writefile castle4a.dat
+200
+0
+  @end
+
+
+@if castle4.dat exist false then do
+  @begin
+  @do saybar
+`0"Get out please!  The Inn has been sold!" `2the Innkeeper commands.
+ @closescript
+  @end
+
+@readfile castle4.dat
+`p20
+`s01
+@
+
+  @readfile castle4a.dat
+`p26
+`p27
+  @
+
+
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the Innkeeper.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The Innkeeper stops working for a moment.
+
+@do write
+`x`x
+@choice
+Set password to private bedroom. (currently is `0`s01`%)
+Ownership options
+Set inn fee (currently is at `$$`p26`%)
+Take money from register
+Leave
+@
+
+@if responce is 4 then do
+  @begin
+  @if `p27 < 1 then do
+   @begin  
+@show
+`\`\  `0"Before you look in that register.. lemmie tell you business has
+  been a little slow." `2the Innkeeper tells you.
+
+`k  `$"How slow?" `2you ask.
+
+`k  `0"Ok, we have not had a single customer since you last checked, ARE
+  YOU HAPPY NOW!?" `2the Innkeeper cries as he bursts into tears.
+
+`k
+   @do goto doorguard
+   @end
+
+
+  @readfile castle4a.dat
+`p26
+`p27
+  @
+  @do money + `p27
+  @do delete castle4a.dat
+  @writefile castle4a.dat
+`p26
+0
+  @
+
+  @show
+`\`\  `2Sure, we've made `$$`p27`2, here ya go!
+
+`k
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto doorguard
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto doorguard
+
+  @end
+
+    @do goto doorguard
+    @end
+  @readfile castle4a.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete castle4a.dat
+  @writefile castle4a.dat
+`p26
+`p27
+  @
+  @do goto doorguard
+  @end
+
+
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$10000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your Inn to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle4.dat
+  @writefile castle4.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of Sosen Inn to you. 
+  Password to enter bedroom will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%Sosen Inn`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Inn back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete castle4.dat
+  @do delete castle4a.dat
+  @do money + 10000
+  @show
+`\`\  `%INN SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Sosen Inn`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete castle4.dat
+  @writefile castle4.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the Innkeeper promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if castle4.dat exist false then do
+ @begin
+ @do saybar
+Sosen Inn - For sale cheap, enquire inside.
+ @end 
+
+@if castle4.dat exist true then do
+ @begin
+@readfile castle4.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enter
+@do moveback
+@offmap
+
+
+@if castle4.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2Sosen Inn - money making opportunity.  Buy it now, only asking
+  `$$20,000`2.
+  
+  Buy now and recieve the following bonuses:
+
+  `0* `2Private area for you
+
+  `0* `2Upstairs for your guests - you can set any price you want
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 19999 Purchase it.
+<&money 20000 Sigh wistfully and leave since you don't have enough.
+>&money 19999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if castle4.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile castle4.dat
+&playernum
+NONE
+0
+0
+0
+0
+    @do money - 20000
+    @do addlog
+  `0`n `2buys `%Sosen Inn`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this Inn!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile castle4.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete castle4.dat
+    @do addlog
+  `%Sosen Inn`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+;let him in
+@label letmein
+@do x is 51
+@do y is 12
+@do map is 616
+@loadmap &map
+@do goto done
+@#done

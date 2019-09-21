@@ -1,0 +1,1083 @@
+;Gambling Casino for Lord II: New World
+;Lord II: New World written by Seth A. Robinson
+;Gambling Casino written by Davey Case
+;You can e-mail your questions and comments to toadhall@chatlink.com
+;Currently has: Craps, Slots
+
+;5-16-97 touched up by Seth A. Robinson, added colors, 'per day' limits
+;and fixed it so Oranges worked in slots.
+;5-30-97 Townent added by Pap & Seth
+;townent
+
+@#TOWNENT
+;For entering bonetown..
+@do `v01 is 1
+@if bounty.&playernum exist true then do
+  @begin
+  @do x is 77
+  @do y is 15
+  @do map is 1287
+  @loadmap 1287
+  @drawmap
+  @update
+  @do saybar
+  `0"Go right in Bounty s&boy .. hehe"
+  @closescript
+  @end
+;Positive Alignment
+@if `p07 > 0 then do
+ @begin
+  @do moveback
+  @do `v01 is 1
+  @show
+`r0`c  `r1  `%BoneTown Gates  `r0
+
+  `0"Hey there goody s&boy, nice people like you need to pay a fee to
+  get into our little playground.  500 gold like now!"  `2demands the
+  big guard.
+
+  `%You have `$$&money `%gold.`2
+
+@do write
+`x`x
+@choice
+>&money 499 Pay the fee
+Forget it!
+@if response is 1 then do
+  @begin
+   @do money - 500
+   @show
+`\`\  `0"Thanks very much, go right in ..."
+`\`k
+   @do x is 77
+   @do y is 15
+   @do map is 1287
+   @loadmap 1287
+   @drawmap
+   @update
+   @closescript
+  @end
+@drawmap
+@update
+@closescript
+@end
+;OtherWise negative
+  @do moveback
+  @do `v01 is 1
+  @show
+`r0`c  `r1  `%BoneTown Gates  `r0
+
+  `0"Hey there my fine criminal, for you I'll make it a small fee to get
+  into our little playground.  Like only 10 gold for you."  `2states the
+  big guard.
+
+  `%You have `$$&money `%gold.`2
+
+@do write
+`x`x
+@choice
+>&money 9 Pay the fee
+Forget it!
+@if response is 1 then do
+  @begin
+   @do money - 10
+   @show
+`\`\  `0"Thanks very much, go right in ..."
+`\`k
+   @do x is 77
+   @do y is 15
+   @do map is 1287
+   @loadmap 1287
+   @drawmap
+   @update
+   @closescript
+  @end
+@drawmap
+@update
+
+@#enter
+;Going into the casino, made to bother those with bounties.
+@if bounty.&playernum exist true then do
+  @begin
+  ;if they HAVE a bounty on them
+  @do moveback
+  @DO SAYBAR
+  `0"No one with a price on s&his head comes in here."
+  @closescript
+  @end
+;If they don't have a bounty on them
+@do x is 34
+@do y is 17
+@do map is 1288
+@loadmap 1288
+@drawmap
+@update
+
+@#help
+ @show
+`r0`c  `r1 Craps Help `r0
+
+  `2If you roll a `02`2, `03`2, or a `012`2 on your first roll, you lose.
+  If you roll a `07`2 or an `011`2 on your first roll, you win.
+
+ `2 Otherwise, the dice are rolled until the total of the
+  first roll is rolled again, in which case the player
+  wins. But if a `07`2 or an `011`2 is rolled after the first
+  roll, you lose.
+
+  Good luck!
+
+`k
+ @do goto craps
+ @end
+
+@#crapstart
+
+@do `v01 is 1
+@do goto craps
+
+@#craps
+@do moveback
+@busy
+@do `p24 is 0
+@do `p21 is money
+@show
+`r0`c  `r1 Playing some Craps `r0
+
+  `2You have `$$`p21`2.  How much do you want to wager? `2(`0`p33 `2gambles left`2)
+
+@do write
+`x`x
+@choice
+$5
+$10
+$20
+$50
+$100
+Help on craps
+Leave
+@if response is 6 then do
+  @begin
+  @do goto help
+  @end
+
+
+@if responce = 1 then do
+ @begin
+ @if `p21 < 5 then do
+  @begin
+  @do goto nomoney
+  @end
+ @do `p20 is 5
+ @do goto begin1
+ @end
+@if responce = 2 then do
+ @begin
+ @if `p21 < 10 then do
+  @begin
+  @do goto nomoney
+  @end
+ @do `p20 is 10
+ @do goto begin1
+ @end
+@if responce = 3 then do
+ @begin
+ @if `p21 < 20 then do
+  @begin
+  @do goto nomoney
+  @end
+ @do `p20 is 20
+ @do goto begin1
+ @end
+@if responce = 4 then do
+ @begin
+ @if `p21 < 50 then do
+  @begin
+  @do goto nomoney
+  @end
+ @do `p20 is 50
+ @do goto begin1
+ @end
+@if responce = 5 then do
+ @begin
+ @if `p21 < 100 then do
+  @begin
+  @do goto nomoney
+  @end
+ @do `p20 is 100
+ @do goto begin1
+ @end
+@if response = 7 then do
+ @begin
+ @do goto ending
+ @end
+@label begin1
+@if `p33 < 1 then do
+  @begin
+  @show
+`r0`c  `r1 `%You carefully spit on the dice for good luck. `r0
+
+`2  `4A hand catches yours before you can roll.
+`\`k  `0"You've gambled enough for today we think, kid.  Come back
+  tomorrow," `2 a greasy looking fellow explains.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do `p33 - 1
+@show
+`r0`c  `r1 `%You carefully spit on the dice for good luck. `r0
+
+@do `p22 random 5 1
+@do `p23 random 5 1
+@do `p24 + `p22
+@do `p24 + `p23
+@show
+  `0First Roll....
+
+@show
+  `2Die #1`0: `p22
+  `2Die #2:`0 `p23
+
+  `2Total: `0`p24
+
+@if `p24 = 2 then do
+ @begin
+ @show
+
+  `4Snake Eyes!
+ @do goto lose
+ @end
+@if `p24 = 3 then do
+ @begin
+ @show
+  `4Cock Eyes!
+ @do goto lose
+ @end
+@if `p24 = 12 then do
+ @begin
+ @show
+  `4Boxcars!
+ @do goto lose
+ @end
+@if `p24 = 7 then do
+ @begin
+ @show
+  `%A Natural!
+ @do goto win
+ @end
+@if `p24 = 11 then do
+ @begin
+ @show
+  `%A Natural!
+ @do goto win
+ @end
+@show
+  `0`p24`2 is your point.
+@label nextroll
+@do `p25 is 0
+@show
+
+  Press a key to roll again.
+@do `p22 random 5 1
+@do `p23 random 5 1
+@do `p25 + `p22
+@do `p25 + `p23
+@show
+`\`k  `2Die #1: `0`p22
+  `2Die #2: `0`p23
+
+  `2Total: `0`p25
+@if `p25 = `p24 then do
+ @begin
+ @do goto hit
+ @end
+@if `p25 = 7 then do
+ @begin
+ @do goto crapout
+ @end
+@if `p25 = 11 then do
+ @begin
+ @do goto crapout
+ @end
+@show
+
+  `2Not your point, keep rolling the bones!
+@do goto nextroll
+@label hit
+@show
+
+  `0Yes! You hit your point.
+@label win
+@show
+
+  `2You win your bet of: `$$`p20`2!
+@if `p20 = 5 then do
+ @begin
+ @do money + 5
+ @end
+@if `p20 = 10 then do
+ @begin
+ @do money + 10
+ @end
+@if `p20 = 20 then do
+ @begin
+ @do money + 20
+ @end
+@if `p20 = 50 then do
+ @begin
+ @do money + 50
+ @end
+@if `p20 = 100 then do
+ @begin
+ @do money + 100
+ @end
+@do goto bottom
+@label crapout
+@show
+
+  `4You crapped out!
+@label lose
+@show
+
+  `2You lose your bet of: `$$`p20`2.
+@if `p20 = 5 then do
+ @begin
+ @do money - 5
+ @end
+@if `p20 = 10 then do
+ @begin
+ @do money - 10
+ @end
+@if `p20 = 20 then do
+ @begin
+ @do money - 20
+ @end
+@if `p20 = 50 then do
+ @begin
+ @do money - 50
+ @end
+@if `p20 = 100 then do
+ @begin
+ @do money - 100
+ @end
+@label bottom
+@show
+`\`k
+@do goto craps
+@label nomoney
+@show
+`\`\  `4I'm sorry, but you don't have enough money for that bet.
+
+`k
+@do goto craps
+
+@#slotstart
+@show
+`r0`c  `r1 Welcome to the slot machines! `r0
+
+  `0Payoffs are:`2
+
+  `03 Bars`2....................................................`0100 `2to `01
+  3 Bells`2....................................................`080`2 to `01
+  3 Lemons`2...................................................`050 `2to `01
+  3 Plums`2....................................................`030 `2to `01
+  3 Peaches`2..................................................`025 `2to `01
+  3 Oranges`2..................................................`010 `2to `01
+  2 Bars & 1 Bell`2............................................`010 `2to `01
+  2 Bells & 1 Lemon`2...........................................`09 `2to `01
+  2 Lemons & 1 Plum`2...........................................`08 `2to `01
+  2 Plums & 1 Peach`2...........................................`07 `2to `01
+  2 Peaches & 1 Orange`2........................................`05 `2to `01
+  2 Oranges & Anything`2........................................`02 `2to `01
+
+`k
+@do `v01 is 1
+@do goto slots
+
+@#slots
+@busy
+@do moveback
+@do `p20 is 0
+@do `p21 is 0
+@do `p22 is 0
+@do `p23 is 0
+@do `p24 is 0
+@do `p25 is 0
+@show
+`r0`c `% `r1 Pulling your lever `r0
+
+`2  You now have: `$$&money`2.  Put how much in the machine? `2(`0`p33`2 gambles left)
+
+@do write
+`x`x
+@choice
+$1
+$2
+$5
+$10
+$20
+Show payoffs
+Leave
+@if response is 6 then goto slotstart
+
+@if responce = 1 then do
+ @begin
+ @do `p21 is 1
+ @end
+@if responce = 2 then do
+ @begin
+ @do `p21 is 2
+ @end
+@if responce = 3 then do
+ @begin
+ @do `p21 is 5
+ @end
+@if responce = 4 then do
+ @begin
+ @do `p21 is 10
+ @end
+@if responce = 5 then do
+ @begin
+ @do `p21 is 20
+ @end
+@if responce = 7 then do
+ @begin
+ @do goto ending
+ @end
+@if money < `p21 then do
+ @begin
+ @show
+
+  `4You don't have that much money!
+ @key
+ @do goto slots
+ @end
+
+@if `p33 < 1 then do
+  @begin
+  @show
+`r0`c  `r1 `%You grab the level firmly `r0
+
+`2  `4A hand catches yours before you can pull.
+`\`k  `0"You've gambled enough for today we think, kid.  Come back
+  tomorrow," `2 a greasy looking fellow explains.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@do `p33 - 1
+
+@show
+`\`\  `2You pull the lever as hard as you can.`\
+@do `p22 random 6 1
+@if `p22 = 1 then do
+ @begin
+ @show
+  `%Bar
+ @do `p23 + 300000
+ @end
+@if `p22 = 2 then do
+ @begin
+ @show
+  `7Bell
+ @do `p23 + 20000
+ @end
+@if `p22 = 3 then do
+ @begin
+ @show
+  `$Lemon
+ @do `p23 + 3000
+ @end
+@if `p22 = 4 then do
+ @begin
+ @show
+  `5Plum
+ @do `p23 + 100
+ @end
+@if `p22 = 5 then do
+ @begin
+ @show
+  `6Peach
+ @do `p23 + 20
+ @end
+@if `p22 = 6 then do
+ @begin
+ @show
+  `6Orange
+ @do `p23 + 3
+ @end
+@do `p22 random 6 1
+@if `p22 = 1 then do
+ @begin
+ @show
+  `%Bar
+ @do `p23 + 300000
+ @end
+@if `p22 = 2 then do
+ @begin
+ @show
+  `7Bell
+ @do `p23 + 20000
+ @end
+@if `p22 = 3 then do
+ @begin
+ @show
+  `$Lemon
+ @do `p23 + 3000
+ @end
+@if `p22 = 4 then do
+ @begin
+ @show
+  `5Plum
+ @do `p23 + 100
+ @end
+@if `p22 = 5 then do
+ @begin
+ @show
+  `6Peach
+ @do `p23 + 20
+ @end
+@if `p22 = 6 then do
+ @begin
+ @show
+  `6Orange
+ @do `p23 + 3
+ @end
+@do `p22 random 6 1
+@if `p22 = 1 then do
+ @begin
+ @show
+  `%Bar
+ @do `p23 + 300000
+ @end
+@if `p22 = 2 then do
+ @begin
+ @show
+  `7Bell
+   @do `p23 + 20000
+ @end
+@if `p22 = 3 then do
+ @begin
+ @show
+  `$Lemon
+ @do `p23 + 3000
+ @end
+@if `p22 = 4 then do
+ @begin
+ @show
+  `5Plum
+ @do `p23 + 100
+ @end
+@if `p22 = 5 then do
+ @begin
+ @show
+  `6Peach
+ @do `p23 + 20
+ @end
+@if `p22 = 6 then do
+ @begin
+ @show
+  `6Orange
+ @do `p23 + 3
+ @end
+@do `p24 is `p21
+@if `p23 = 900000 then do
+ @begin
+ @show
+
+  `%Jackpot!!! `0100 `2to `01`2 payoffs!!
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 100
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 200
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 500
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 1000
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 2000
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 60000 then do
+ @begin
+ @show
+
+  `2You win at `080`2 to `01`2 payoffs!
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 80
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 160
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 400
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 800
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 1600
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 9000 then do
+ @begin
+ @show
+
+  `2You win at `050`2 to `01`2 payoffs!
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 50
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 100
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 250
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 500
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 1000
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 300 then do
+ @begin
+ @show
+
+  `2You win at `030`2 to `01`2 payoffs!
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 30
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 60
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 150
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 300
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 600
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 60 then do
+ @begin
+ @show
+
+  `2You win at `025`2 to `01`2 payoffs!
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 25
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 50
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 125
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 250
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 500
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 9 then do
+ @begin
+ @show
+
+  `2You win at `010`2 to`0 1`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 50
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 100
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 200
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 620000 then do
+ @begin
+ @show
+
+  `2You win at `010`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 50
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 100
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 200
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 43000 then do
+ @begin
+ @show
+
+  `2You win at `09`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 9
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 18
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 45
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 90
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 180
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 6100 then do
+ @begin
+ @show
+
+  `2You win at `08`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 8
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 16
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 40
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 80
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 160
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 220 then do
+ @begin
+ @show
+
+  `2You win at `07`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 7
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 14
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 35
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 70
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 140
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 43 then do
+ @begin
+ @show
+
+  `2You win at `05`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 5
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 25
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 50
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 100
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 300006 then do
+ @begin
+ @show
+
+  `2You win at `02`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 2
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 4
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 40
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 20006 then do
+ @begin
+ @show
+
+  `2You win at `02`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 2
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 4
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 40
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 3006 then do
+ @begin
+ @show
+
+  `2You win at `02`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 2
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 4
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 40
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 106 then do
+ @begin
+ @show
+
+  `2You win at `02`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 2
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 4
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 40
+  @end
+ @key
+ @do goto slots
+ @end
+@if `p23 = 26 then do
+ @begin
+ @show
+
+  `2You win at `02`2 to `01`2 payoffs.
+
+ @if `p21 = 1 then do
+  @begin
+  @do money + 2
+  @end
+ @if `p21 = 2 then do
+  @begin
+  @do money + 4
+  @end
+ @if `p21 = 5 then do
+  @begin
+  @do money + 10
+  @end
+ @if `p21 = 10 then do
+  @begin
+  @do money + 20
+  @end
+ @if `p21 = 20 then do
+  @begin
+  @do money + 40
+  @end
+ @key
+ @do goto slots
+ @end
+@show
+
+  `2I'm sorry, but you `4lose`2 your bet of: `$$`p21
+
+@if `p21 = 1 then do
+ @begin
+ @do money - 1
+ @end
+@if `p21 = 2 then do
+ @begin
+ @do money - 2
+ @end
+@if `p21 = 5 then do
+ @begin
+ @do money - 5
+ @end
+@if `p21 = 10 then do
+ @begin
+ @do money - 10
+ @end
+@if `p21 = 20 then do
+ @begin
+ @do money - 20
+ @end
+@key
+@do goto slots
+
+@#ending
+@drawmap
+@update
+@closescript
+

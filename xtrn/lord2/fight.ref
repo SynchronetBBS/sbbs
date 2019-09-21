@@ -1,0 +1,534 @@
+;This files contains enemy people/creatures for the 1st part of the game.
+
+
+@#monster20
+@fight
+;name
+Tiny Scorpion
+;string said when you see him
+Something crawls up your leg...
+;power move kill string
+You laugh as the tiny thing burns in the sand.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+stings you|44
+pinches you|25
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+15
+;gold reward
+89
+;experience
+54
+;hit points
+64
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster21
+@fight
+;name
+Giant Scorpion
+;string said when you see him
+Something pinches a toe?!
+;power move kill string
+You carefully bury the mammoth beast in the sand.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+stings you for|74
+pinches you|34
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+42
+;gold reward
+332
+;experience
+196
+;hit points
+89
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster22
+@fight
+;name
+Sand Worm
+;string said when you see him
+The sand in front of you begins to move
+;power move kill string
+`$"Go in the ground and stay there," `2 you command.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+draws blood with its teeth|43
+wraps around & squeezes you legs|14
+gets ahold with his sucker|27
+NONE|NONE
+NONE|NONE
+;defense
+12
+;gold reward
+0
+;experience
+189
+;hit points
+102
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#monster1
+@fight
+;name
+Wild Boar
+;string said when you see him
+You notice a shaking in the bushes... A wild boar charges!
+;power move kill string
+The wild squeals of the small animal finally stop.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+jabs you with its tusks|4
+bites you|2
+painfully prods you|2
+NONE|NONE
+NONE|NONE
+;defense
+0
+;gold reward
+2
+;experience
+3
+;hit points
+7
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Rabid Dog
+;string said when you see him
+A large yellow dog appears - snarling viciously at you.
+;power move kill string
+You've cured this dog of its disease.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+bites you|3
+bites a leg|4
+chomps your hand|4
+gnaws your ankle|4
+snacks on you|3
+;defense
+0
+;gold reward
+3
+;experience
+3
+;hit points
+8
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Grizzly Bear
+;string said when you see him
+A bear on its hind legs roars at you.
+;power move kill string
+Time to grin and bear it.. Haw!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+bites you|4
+bites a leg|4
+chomps your hand|2
+gnaws your ankle|3
+`bbear hugs`2 you|6
+;defense
+0
+;gold reward
+7
+;experience
+6
+;hit points
+13
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#monster4
+@fight
+;name
+Armored Hedge Hog
+;string said when you see him
+A tiny brown thing shoots between your legs!
+;power move kill string
+Sonic he ain't.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites your toes|2
+prickles you|5
+rolls over your feet|2
+NONE|NONE
+NONE|NONE
+;defense
+7
+;gold reward
+6
+;experience
+5
+;hit points
+9
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Farmer Joe
+;string said when you see him
+`0"Hey you!  Kid!  Were you the one stealing my apples?!
+;power move kill string
+Looks like Joe got the whuppin' he had coming...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+throws a pitchfork|5
+yells with a redneck accent|2
+opens a can 'o whup-ass|7
+uses a southern drawl|5
+NONE|NONE
+;defense
+4
+;gold reward
+8
+;experience
+6
+;hit points
+13
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#monster6
+@fight
+;name
+Tabby Cat
+;string said when you see him
+What's that?  A child crying?  Nope, a cat in heat.
+;power move kill string
+9 lives he'll need now... Haw!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+scratches your face|6
+sharpens his claws|3
+sprays your legs for|2
+NONE|NONE
+NONE|NONE
+;defense
+2
+;gold reward
+2
+;experience
+5
+;hit points
+6
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Angry Hen
+;string said when you see her
+Something starts pecking on your foot?
+;power move kill string
+This fowl shall never cluck again.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+pecks you|5
+lays an egg on your leg|3
+flaps at you crazily|2
+NONE|NONE
+NONE|NONE
+;defense
+0
+;gold reward
+1
+;experience
+2
+;hit points
+2
+;if win: ref file|name or NONE
+FIGHT.REF|GETEGG
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+
+@#monster11
+@fight
+;name
+Small Tree Elf
+;string said when you see him
+A tiny bow pokes out from between some leaves!
+;power move kill string
+You pick up the tiny body and throw it back into the woods. Haw!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits you with an arrow|8
+throws a small dagger at you|7
+throws a rock at you|4
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+14
+;experience
+12
+;hit points
+15
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster15
+@fight
+;name
+Bat
+;string said when you see him
+Something flaps in your face!
+;power move kill string
+You fling the bat against a wall.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites you|3
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+0
+;gold reward
+6
+;experience
+3
+;hit points
+8
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#GETEGG
+@do QUEBAR
+You find an egg from within the chicken entrails!
+@do `i43 + 1
+
+@#findmoney
+@do `p20 random 20 1
+@do money + `p20
+@do saybar
+`2You find a pouch with `$$`p20`2 in it!
+
+
+@#findkid
+@do `v01 is 1
+@if `i11 > 0 then do
+ @begin
+ @closescript
+ @end
+@busy
+@show
+`r0`c  `%`r1 TRAVELING EVENT `r0
+
+`2  You come across a small girl - she couldn't be older than twelve.  She
+  is crying.  `0"S&sir, will you take me home?" `2she asks, pitifully.
+
+@do write
+`x`x
+@choice
+Agree to take her home, wherever that might be.
+Leave her here to rot.
+@if response is 2 then do
+  @begin
+  @show
+
+
+  `$"Sorry little girl, find your own way home.  Haw!" `2you tell her.
+
+`k
+  @end
+
+@if response is 1 then do
+  @begin
+  @do `i11 is 1
+  @show
+
+
+  `2You agree to take her home.   She says her mother is waiting for her
+  at the Red Dragon Inn.
+
+`k
+  @end
+@drawmap
+@update
+
+@#findbird
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A bird flies near you.  Hit it with a stone? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is N then do
+  @begin
+  @do saybar
+The bird flies west.
+  @closescript
+  @end
+
+@if `p09 is 1 then do
+  @begin
+  @do `p20 random 2 1
+  @if `p20 is 1 then do
+    @begin
+    @do saybar
+`2The stone misses.  The bird gets away.
+    @closescript
+    @end
+  @end
+
+@if l2tree.dat exists true then do
+  @begin
+  @readfile l2tree.dat
+`s01
+  @end
+
+@if l2tree.dat exists false then do
+  @begin
+  @do `s01 is SECRET
+  @end
+
+@show
+`r0`c  `r1  Your aim was true  `r0
+
+`2  The bird falls to the earth.
+
+`k  `2There is a note with the following written on it:
+
+  `0"The treehouse password is `%`s01`0"
+
+`k
+   @drawmap
+   @update
+   @closescript
+
+@#event
+@do `p20 random 3 1
+@if `p20 is 1 then goto findkid
+@if `p20 is 2 then goto findmoney
+@if `p20 is 3 then goto findbird
+
+@show
+Whatup!
+
+@#sbrook
+@do `p20 random 4 1
+@if `p20 is 1 then goto event
+
+@busy
+@do write
+`'
+@do `p20 random 7 1
+@do goto monster`p20
+
+@#elf
+
+@do `p20 random 4 1
+@if `p20 is 1 then goto event
+
+@busy
+@do `p20 random 1 11
+@do goto monster`p20
+
+@#cave
+@busy
+@do `p20 random 1 15
+@do goto monster`p20
+
+@#desert
+@do `p20 random 4 1
+@if `p20 is 1 then do
+   @begin
+   @run GENRAN in GENRAN.REF
+   @end
+
+
+@busy
+@do `p20 random 3 20
+@do goto monster`p20
+
+
+@#NOMORE

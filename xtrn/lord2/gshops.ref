@@ -1,0 +1,629 @@
+;gshops.ref ... mostly stuff for Greentree
+
+@#bartoy
+;barak's tiolet, need to say something I guess..
+@do saybar
+Not the cleanest thing in town.
+@do moveback
+
+@#house6
+;nobody home
+@do moveback
+@do saybar
+Hmm, no answer.
+
+@#BARCHEST
+@do moveback
+
+@if bitcheck `t19 0 1 then do
+  @begin
+  @do saybar
+The chest is empty.
+  @closescript
+  @end
+
+@do `p20 random 4 1
+@if `p20 is 1 then do
+  @begin
+  @bitset `t19 0 1
+  @do `i74 is 1
+  @show
+`r0`c  `r1  `%You find something in the chest!  `r0
+
+  `2You find `0Barak's Diary`2.  `%AWESOME!`2
+
+`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do goto ma
+
+@#ma
+@do moveback
+@do `s01 is ass
+@if `v06 is 1 then `s01 is self
+@do x is 52
+@do y is 18
+@do map is 69
+@loadmap &map
+@show
+`r0`c  `r1  `%Barak's Mother  `r0
+
+`2  An old woman is rocking in her chair.. until she sees you.
+
+`k  `0"How did you get in here?!?!  Do you know who my son is?!?  He will
+  hunt you down and rip you apart!!"
+
+`k  `2She promptly kicks your sorry `s01 out.
+
+`k
+@drawmap
+@update
+
+@#picklock
+@do moveback
+
+@datanewday barmom.idf
+@dataload barmom.idf &playernum `p20
+@if `p20 is 1 then do
+  @begin
+  @do saybar
+You better not try again today.. she's watching you through a window.
+  @closescript
+  @end
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2The door is locked.  Attempt to pick it? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is Y then do
+ @begin
+@if `p18 < 15 then do
+  @begin
+
+  @do saybar
+`2You lack the skills.  You need more quest points.
+  @closescript
+  @end
+  ;he did it
+  @do x is 40
+  @do y is 13
+  @do map is 75
+  @loadmap &map
+  @drawmap
+  @update
+  @do saybar
+`2You pick the lock successfully!
+  @datasave barmom.idf &playernum 1
+  @closescript
+@end
+@do saybar
+Maybe later.
+
+
+@#MIN
+;minister at church, place to cure vd
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1 `%Saying your prayers `r0
+
+  `2You kneel in front of the pulpit.   A balding priest looks at you
+  intently.
+
+@do write
+`x`x
+@choice
+I wish to make a donation
+I wish to donate my negative opinion of organized religion
+Leave
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `0"How much, my son?" `2the priests asks, eyes lighting up at the
+  prospect.
+  @do write
+`\`x`x
+  @do readnum 10 0
+  @if `v40 is 0 then do
+   @begin
+   @show
+`\`\  `$"I'll donate let's see... how about nothing?"
+
+`k
+  @do goto min
+  @end
+
+  @if `v40 < 0 then do
+   @begin
+   @show
+`\`\  `2Donate a negative amount?  Oh, you mean steal from the plate?
+
+`k  `4Too bad there is nothing in it.
+
+`k
+  @do goto min
+  @end
+
+
+  @if `v40 > money then do
+   @begin
+   @show
+`\`\  `2Ok, now try an amount that you have with you.
+
+`k
+  @do goto min
+  @end
+
+  @do money - `v40
+  @do `p20 is `p09
+  @do `p20 * 100
+  @if `v40 < `p20 then do
+    @begin
+    @show
+`\`\  `2You close your eyes, hoping for a miracle...
+
+`k  `4Nothing happens.. course you didn't donate much either.
+`\`k
+
+    @do goto min
+    @end
+
+    @if `p12 is 0 then do
+      @begin
+    @show
+`\`\  `2You close your eyes, hoping for a miracle...
+
+`k  `4Nothing happens.. and you donated plenty.  I guess you just don't need
+  divine help right now, maybe later. 
+`\`k
+  @do goto min
+  @end
+
+   @do `p12 is 0
+   ;cure vd
+    @show
+`\`\  `2You close your eyes, hoping for a miracle...
+
+`k  `%YOU FEEL CLEAN AGAIN.  Your body is not sick anymore.
+`\`k
+  @do goto min
+  @end
+
+
+      @end
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `$"What you do is ridiculous.  You tell us we'll go to a better place
+  after we die if we give you money.  Who bought this church, God?  No, we
+  did.
+
+  Religion is for people that need something to believe in - so they don't go
+  mad." `2you finish softly.
+
+`k  `0"Exactly.. so are you gonna donate or what?" `2laughs the priest.
+
+`k
+  @do goto min
+  @end
+
+@drawmap
+@update
+
+@#WHORE
+;(currently unused)
+@offmap
+@do moveback
+@do `v01 is 1
+@label whorestart
+@show
+`r0`c  `r1 `%The Whore House `r0
+
+`2  You run your hands together, it's time you finally had some fun.  And
+  hey, while you're in Greentree, why not pay a visit to the infamous
+  Greentree brothel.
+@do write
+`\`x`x
+@choice
+Visit Kelley.
+Leave
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2You rub your hands together lewdly.  `$"I want a little 'visit' with
+  Kelley if you know what I mean..." `2you drawl.
+
+  `0"Kelley is busy.. How about Mary?"
+
+  `2You decide to wait. (this area will be added to later..)
+`\`k
+  @end
+
+@drawmap
+@update
+
+@#SCRIBE
+;a place where they can add to the daily happenings
+@offmap
+@do moveback
+@do `v01 is 1
+@label scribestart
+@show
+`r0`c  `r1 `%The Scribe Hut `r0
+
+`2  Wow!  This is where the daily happenings are made!  More than just a
+  paper, it brings the community together.
+
+  `2A little man with glasses is working.
+
+@do write
+`x`x
+@choice
+`%Place an ad for `$$10`%.
+Leave
+@
+@if response is 1 then do
+ @begin
+ @if money < 10 then do
+  @begin
+  @show
+`\`\  `2You are a little short.  Bummer.`\`\`k
+  @do goto scribestart
+  @end
+  @do money - 10
+  @writefile lognow.txt
+  `2A special announcement from `0`n`2:`\`%
+  @show
+`\`\  `0"Ok sir!  Enter your message.  A blank line will quit."
+@label keepwriting
+@do write
+`\`x`x
+  @do readstring 75 NIL `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+   @show
+`\  `0"Alright!  We have added you to today's edition!"
+
+`2  You trot out feeling important.
+`\`k
+@drawmap
+@update
+@closescript
+   @end
+  @do stripbad `s01
+  @writefile lognow.txt
+  `s01
+  @
+  @do goto keepwriting
+
+ @end
+
+@drawmap
+@update
+
+@#raise
+;can they raise their level?
+
+@do `p20 is `p09
+@do `p20 * 100
+@do `p20 * `p09
+
+@if `p20 > `p01 then do
+ @begin
+ @do `p21 is `p20
+ @do `p21 - `p01
+ @show
+
+
+  `2Next level raise at `%`p20`2.
+
+  `0"You need about `%`p21`0 more experience before your next level raise!"
+
+  `2Your face falls - what a bummer!
+
+`k
+@run barak
+@closescript
+@end
+
+ @if `t04 > 0 then do
+ @begin
+ @show
+
+
+  `0"You already failed once today, come back tomorrow, loser!"
+
+  `2Your face falls - what a bummer!
+
+`k
+@run barak
+@closescript
+@end
+
+
+ @show
+
+
+  `0"You have been sitting at level `p09 long enough."
+
+@if `p09 IS 1 then do
+ @begin
+ @show
+  `$"Cool!  So where is the master I fight?" `2you beam with pride.
+
+`k  `0"Master?  Haw!  Now that *I* run this place we do it my way!" `2Barak
+  laughs as he crumbles a strange black root into a mortar...
+
+  `2You anxiously await your fate...
+
+@end
+@show
+`k
+`c  `r1`4 DRINKING YOUR OWN INIQUITY `r0
+
+`2  Barak hands you a cup and asks you to drink.
+
+  `2You nearly retch as you feel the vessel's oily contents slide down
+  your throat.
+
+`k  `2Barak leads you to a small room with a cot.  `2"I'll be back in a few
+  hours,  then we'll see if you're still this cocky!" 
+
+`2  You lay down and begin dreaming immediately.
+
+`k
+@run startfight in training.ref
+@closescript
+
+
+
+@#BARAK
+@offmap
+@if bitcheck `t19 1 1 then goto turg
+@do moveback
+@do `v01 is 1
+@label barstart
+@show
+`r0`c  `%Barak's Training Center
+
+`2  Hundreds of warriors are randomly jumping and shrieking in their
+  efforts to better themselves.
+
+  Although the building itself is old and scarred, the sign is new.
+
+@do write
+`x`x
+@choice
+Ask for a level raise.
+Talk to Master Barak.
+Leave
+@if responce is 1 then do
+ @begin
+ @run raise
+ @do goto barstart
+ @end
+
+
+@if responce is 2 then do
+ @begin
+ @if `t01 is 4 then do
+  @begin
+  @show
+`r0`c  `%Talking to Master Barak
+
+  `0"Make it fast kid, I'm busy!"
+
+  `$"Um, Barak?  Where are the other trainers, as is the tradition?" `2you
+  innocently ask.
+  
+`k  `0"Other trainers?!  Now that *I'M* the new MASTER TRAINER, I fired the
+  rest!  I am the master for EVERY LEVEL NOW!" `2Barak cackles evilly.
+
+  `$"Wow, nice.  You must have worked long and hard to achieve this position,
+  Master Barak."
+
+`k  `0"Of course I did!  That last Master, this geezer known as Turgon turned
+  out to be a thief - you never know about some people, eh?  Haw!" `2 Barak
+  laughs crudely.
+
+`k
+ @do `t01 is 5
+ @do goto barstart
+ @end
+
+  @show
+`r0`c  `%Talking to Master Barak
+
+  `0"Sorry kid, I'm a little busy TEACHING, because after all, I am sort of
+  the MASTER of this whole place - you can grasp that concept, can't you?"
+
+  `2Wow, what an ass.  Maybe he'll talk later.
+
+`k
+ @do goto barstart
+ @end
+
+@drawmap
+@update
+
+@#turgraise
+;can they raise their level?
+
+@do `p20 is `p09
+@do `p20 * 100
+@do `p20 * `p09
+
+@if `p20 > `p01 then do
+ @begin
+ @do `p21 is `p20
+ @do `p21 - `p01
+ @show
+
+
+  `2Next level raise at `%`p20`2.
+
+  `0"You need about `%`p21`0 more experience before your next level raise!"
+
+  `2Your face falls - what a bummer!
+
+`k
+@run turgstart
+@closescript
+@end
+
+ @if `t04 > 0 then do
+ @begin
+ @show
+
+
+  `0"You already failed once today, `n.  I cannot let you try again
+  tomorrow," `2Turgon tells you.
+
+  `2Your face falls - what a bummer!
+
+`k
+@run turg
+@closescript
+@end
+
+
+ @show
+
+
+  `0"You have been sitting at level `p09 long enough."
+
+@show
+`k
+`c  `r1`4 DRINKING YOUR OWN INIQUITY `r0
+
+`2  Turgon hands you a small black cup.
+
+  `2It doesn't taste bad actually...
+
+`2  You lay down and begin dreaming immediately.
+
+`k
+@run startfight in training.ref
+@closescript
+
+
+@#TURG
+@offmap
+@do moveback
+@do `v01 is 1
+@label turgstart
+@show
+`r0`c  `%Turgon's Training Center
+
+`2  Hundreds of warriors are randomly jumping and shrieking in their
+  efforts to better themselves.
+
+  Turgon waves to you warmly as you come in.
+
+@do write
+`x`x
+@choice
+Ask for a level raise.
+Talk to Master Turgon.
+Leave
+@if responce is 1 then do
+ @begin
+ @run turgraise
+ @do goto turgstart
+ @end
+
+
+@if responce is 2 then do
+ @begin
+  @show
+`r0`c  `%Talking to Master Turgon
+
+  `0"How are you, `n`0?"
+
+  `$"Doing pretty good.  Are you back to the master-per-level system?" `2you
+  ask.
+  
+`k  `0"Nah..  the other trainers have left.  I think we're gonna stick to
+  the nightmare drink thing." `2he smiles.
+
+  `$"Hmm... I'm not real excited about that part, but ok."
+
+`k
+ @do goto turgstart
+ @end
+
+@drawmap
+@update
+
+
+
+@#ABDUL
+@offmap
+@do moveback
+@do `v01 is 1
+@label abstart
+@show
+`r0`c  `%Abdul's Armour
+
+`2  You see chainmail, leather, studded vests and other crap everywhere.
+
+@do write
+`x`x
+@choice
+Examine her wares
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  10
+  12
+  13
+  14
+  @end
+
+@if responce not 2 then goto abstart
+@drawmap
+@update
+
+@#ARTHUR
+@offmap
+@do moveback
+@do `v01 is 1
+@label arstart
+@show
+`r0`c  `%King Arthur's Weapons
+
+`2  Items of destruction are hung all around you - you feel like a kid in
+  a candy store.
+
+@do write
+`x`x
+@choice
+Examine his weaponry
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  4
+  9
+  15
+  16
+  @end
+
+@if responce not 2 then goto arstart
+@drawmap
+@update
+
+

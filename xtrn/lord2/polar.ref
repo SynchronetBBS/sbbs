@@ -1,0 +1,233 @@
+;some monsters for the West Coast of the 1st continent, they are a bit
+;tougher than most ones.  Around BoneTown & FlagCity up to the Desert
+;and Snowy Pass.
+
+@#fight
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do `p20 random 7 1
+@do goto monster`p20
+
+@#monster1
+@fight
+;name
+Ice Golem
+;string said when you see him
+Out of the frozen wastelands appears a Golem.
+;power move kill string
+The Golem shatters into a thousand pieces!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+smacks you with a frozen fist|58
+throws a giant snowball at you|83
+jumps causing you to fall into a crevasse|120
+hits you with a flying ice bolo|67
+NONE|NONE
+;defense
+37
+;gold reward
+632
+;experience
+278
+;hit points
+536
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Mother Frost Bear
+;string said when you see him
+From a hidden snowcave charges a Mother Frost Bear!
+;power move kill string
+You severe her head as trophy.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+slashes with razor sharp claws|63
+bites with bloodstained teeth|85
+charges you|87
+pummels|62
+gives you a `bBEAR HUG|102
+;defense
+34
+;gold reward
+325
+;experience
+189
+;hit points
+210
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Frozen Weeds
+;string said when you see him
+Your boots are pierced by ancient frozen weeds!
+;power move kill string
+Good thing you brought your weedwacker, eh?
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+cuts your feet|45
+trips you causing you to fall into it's frozen thorns|55
+shoots a frostdart at you|68
+gives you frostbite|73
+squirts poison from a beautiful flower into your eyes|87
+;defense
+0
+;gold reward
+189
+;experience
+276
+;hit points
+421
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Glacial Worm
+;string said when you see him
+The snow begins to collapse beneath your feet!
+;power move kill string
+You dice the worm into a bloody goo...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+swallows your foot|67
+bites|56
+constricts you|84
+freezes you|53
+spits ice spikes|34
+;defense
+23
+;gold reward
+150
+;experience
+98
+;hit points
+88
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Arctic Mage
+;string said when you see him
+In an ice reflection you see a magical glimmer of light...
+;power move kill string
+You melt the mage into the frozen wasteland!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits you with an icicle staff|99
+casts an enchanted blizzard|76
+summons an ice mosquito to suck your blood|50
+casts a frozen rune|70
+blinds you with an arctic glare|54
+;defense
+53
+;gold reward
+735
+;experience
+324
+;hit points
+375
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+White Serpent
+;string said when you see him
+You are suprised by an icy hiss!
+;power move kill string
+You skewer your opponent from head to tail!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+bitess|58
+injects poisonous venom|132
+whips it's tail|63
+stings|66
+chews on your shin|62
+;defense
+30
+;gold reward
+246
+;experience
+187
+;hit points
+90
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Urick Orb
+;string said when you see him
+Floating in the artic tundra a yellow sphere closes in you quickly...
+;power move kill string
+What a mess o' yellow snow!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+squirts you in the eye|76
+makes you fall into yellow snow|45
+casts an acid storm|55
+shows you a picture of your naked grandma|46
+NONE|NONE
+;defense
+45
+;gold reward
+280
+;experience
+180
+;hit points
+188
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#done

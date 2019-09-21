@@ -1,0 +1,319 @@
+@#monster1
+@fight
+;name
+Nibbet
+;string said when you see him
+A little hairy ball attaches itself to your leg.
+;power move kill string
+Let's just hope it didn't breed nearby...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+gives you a rash|18
+squeezes your crotch|25
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+34
+;gold reward
+289
+;experience
+122
+;hit points
+50
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Himmel Clan Member
+;string said when you see him
+`0"Die, pagan!" `2a man in a robe screams.
+;power move kill string
+He eerily smiles as you take his life.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+burns you with his cross|76
+curses you|56
+cuts your arm|45
+NONE|NONE
+NONE|NONE
+;defense
+9
+;gold reward
+386
+;experience
+98
+;hit points
+312
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+STONEP.REF|THIEF
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Morphing Rabbit
+;string said when you see him
+The bush in front of you begins to move.
+;power move kill string
+The thing has just had its last transformation.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+springs at your neck|98
+morphs into a lion and bites|87
+morphs into a mosquito|27
+NONE|NONE
+NONE|NONE
+;defense
+23
+;gold reward
+332
+;experience
+189
+;hit points
+203
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Triceratops
+;string said when you see him
+Some kind of large lizard with horns is charging you.
+;power move kill string
+It's actually still breathing, but who has time to kill everything?
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+charges you|87
+bores you|76
+tramples you|92
+NONE|NONE
+NONE|NONE
+;defense
+43
+;gold reward
+287
+;experience
+190
+;hit points
+100
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Hairy Yak
+;string said when you see him
+Something standing in a field nearby is making noises at you.
+;power move kill string
+Poor thing, they are gonna be extinct soon at this rate.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+sits on on|70
+falls on you|80
+attempts to sleep on you|60
+rams you|55
+NONE|NONE
+;defense
+32
+;gold reward
+245
+;experience
+146
+;hit points
+130
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Evil Pixie
+;string said when you see him
+A tiny little body floats down in front of you, scowling.
+;power move kill string
+Squish.  Need you do more?
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+tickles your nose|76
+buzzes your ear|87
+kicks you in the shin|120
+NONE|NONE
+NONE|NONE
+;defense
+80
+;gold reward
+525
+;experience
+245
+;hit points
+2
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Dark Spirit
+;string said when you see him
+A shadow moves towards you with lightning speed.
+;power move kill string
+You showed it the light.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+grabs your heart|79
+engulfs you in darkness|90
+attacks your soul|112
+NONE|NONE
+NONE|NONE
+;defense
+35
+;gold reward
+405
+;experience
+135
+;hit points
+120
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster8
+@fight
+;name
+Kung-Fu Warrior
+;string said when you see him
+`0"Grasshopper, I must fight you."  `2you hear.
+;power move kill string
+`$"Better go back to the Dojo Wang."
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+judo chops at you neck|85
+throws a fireball|97
+uses his ninja throwing stars|105
+NONE|NONE
+NONE|NONE
+;defense
+38
+;gold reward
+450
+;experience
+110
+;hit points
+115
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster9
+@fight
+;name
+Crazed Beaver
+;string said when you see him
+`2You hear a rustling in the bushes that's coming closer.
+;power move kill string
+`$"Never thought I'd meet a beaver I didn't like."
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+gnaws at your legs|76
+makes big claw marks in your back|90
+calls upon his nature friends to help|105
+eats part of you|97
+NONE|NONE
+;defense
+40
+;gold reward
+500
+;experience
+130
+;hit points
+100
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster10
+@fight
+;name
+Crystaline Entity
+;string said when you see him
+`2Something floating like that can't be from this world.
+;power move kill string
+`2I should've come here either.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+uses some form of energy attack|82
+hits with some kind of beam|94
+inverses its polarity at you|107
+NONE|NONE
+NONE|NONE
+;defense
+38
+;gold reward
+350
+;experience
+165
+;hit points
+130
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#FIGHT
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do `p20 random 10 1
+@do goto monster`p20
