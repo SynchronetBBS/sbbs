@@ -990,7 +990,7 @@ function timeout_bar()
 		return;
 	if (bar_timeout === undefined || new Date().valueOf() > bar_timeout) {
 		if (bar_queue.length)
-			update_bar(bar_queue.shift(), 1.5);
+			update_bar(bar_queue.shift(), 4);
 		else
 			status_bar();
 	}
@@ -1287,6 +1287,10 @@ function run_ref(sec, fname)
 		'show':function(args) {
 			var l = getlines();
 			var ch;
+			var i;
+			var p;
+			var pages;
+			var sattr = 2;
 
 			if (args.length === 0) {
 				l.forEach(function(l) {
@@ -1294,25 +1298,25 @@ function run_ref(sec, fname)
 				});
 			}
 			else if (args[0].toLowerCase() === 'scroll') {
-				var i;
-				var p = 0;
-				var pages = l.length / 22;
+				p = 0;
+				pages = l.length / 22;
 				if (pages > parseInt(pages, 10))
 					pages = parseInt(pages, 10) + 1;
 
 				while(1) {
-					lw('`r0`2');
 					dk.console.clear();
+					dk.console.attr.value = sattr;
 					for (i = 0; i < 22; i++) {
 						if (p*22+i >= l.length)
 							continue;
 						lln(l[p*22+i]);
 					}
+					sattr = dk.console.attr.value;
 					dk.console.gotoxy(0, 22);
-					lw('`r1`%  ('+(p+1)+'/'+pages+')');
+					lw('`r1`%  (`$'+(p+1)+'`%/`$'+pages+'`%)`$');
 					dk.console.cleareol();
 					dk.console.gotoxy(12, 22);
-					lw('[N]ext Page, [P]revious Page, [Q]uit, [S]tart, [E]nd');
+					lw('`%[`$N`%]`$ext Page, `%[`$P`%]`$revious Page, `%[`$Q`%]`$uit, `%[`$S`%]`$tart, `%[`$E`%]`$nd');
 					ch = getkey().toUpperCase();
 					switch (ch) {
 						case 'E':
@@ -1332,6 +1336,7 @@ function run_ref(sec, fname)
 							p = 0;
 							break;
 						case 'Q':
+							dk.console.attr.value = sattr;
 							return;
 					}
 				}
@@ -1374,6 +1379,7 @@ function run_ref(sec, fname)
 			var x = scr.pos.x;
 			var y = scr.pos.y;
 			var cur = getvar('`v01') - 1;
+			var cx = scr.pos.x;
 			var ch;
 			var attr = dk.console.attr.value;
 
@@ -1381,10 +1387,12 @@ function run_ref(sec, fname)
 				choices.forEach(function(c, i) {
 					dk.console.gotoxy(x, y+i);
 					if (i === cur)
-						c = '`r1`%'+remove_colour(c)+'`r0`%';
-					lln(c);
+						c = '`r1'+c+'`r0';
+					lw(c);
+					if (i === cur)
+						cx = scr.pos.x;
 				});
-				dk.console.gotoxy(x, y+cur);
+				dk.console.gotoxy(cx, y + cur);
 			}
 
 			function filter_choices() {
@@ -1751,15 +1759,18 @@ function view_inventory()
 	var cur = 0;
 	var str;
 	var attr = dk.console.attr.value;
+	var cx;
 
 	function draw_menu() {
 		choices.forEach(function(c, i) {
 			dk.console.gotoxy(0, 12+i);
 			if (i === cur)
-				c = '`r1`%'+remove_colour(c)+'`r0`7';
-			lln(c);
+				c = '`r1'+c+'`r0';
+			lw(c);
+			if (i === cur)
+				cx = scr.pos.x;
 		});
-		dk.console.gotoxy(0, 12+cur);
+		dk.console.gotoxy(cx, 12+i);
 	}
 
 	function draw_inv() {
