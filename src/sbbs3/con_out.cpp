@@ -746,18 +746,22 @@ void sbbs_t::inc_column(int count)
 	}
 }
 
-void sbbs_t::center(char *instr)
+void sbbs_t::center(char *instr, unsigned int columns)
 {
 	char str[256];
 	int i,j;
 
+	if(columns < 1)
+		columns = cols;
+
 	SAFECOPY(str,instr);
 	truncsp(str);
 	j=bstrlen(str);
-	if(j < cols)
-		for(i=0;i<(cols-j)/2;i++)
+	if(j < columns)
+		for(i=0;i<(columns-j)/2;i++)
 			outchar(' ');
 	bputs(str);
+	cleartoeol();
 	newline();
 }
 
