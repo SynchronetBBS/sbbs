@@ -6,6 +6,15 @@ function getRecordLength(RecordDef)
 	var m;
 
 	function getTypeLength(fieldtype) {
+		var fl;
+		var m;
+
+		if (typeof fieldtype === 'object') {
+			fl = getRecordLength(fieldtype.recordDef);
+			if (fieldtype.array !== undefined)
+				fl *= fieldtype.array;
+			return fl;
+		}
 		switch(fieldtype) {
 			case "Float":
 				return(22);
@@ -36,7 +45,9 @@ function getRecordLength(RecordDef)
 	}
 
 	for(i=0; i<RecordDef.length; i += 1) {
-		m=RecordDef[i].type.match(/^Array:([0-9]+):(.*)$/);
+		m = null;
+		if (typeof RecordDef[i].type === 'string')
+			m=RecordDef[i].type.match(/^Array:([0-9]+):(.*)$/);
 		if(m !== null) {
 			len += getTypeLength(m[2])*parseInt(m[1], 10);
 		}
@@ -351,11 +362,32 @@ RecordFileRecord.prototype.Put = function(keeplocked)
 RecordFileRecord.prototype.reInit = function()
 {
 	'use strict';
-	var i;
 
-	for(i=0; i<this.parent.fields.length; i += 1) {
-		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource()).valueOf();
+	function doinit(obj, def) {
+		var i;
+		var j;
+
+		for(i=0; i<def.length; i += 1) {
+			if (typeof def[i].type === 'object') {
+				if (def[i].type.array !== undefined) {
+					this[def[i].prop] = [];
+					for (j = 0; i < def[i].type.array; j++) {
+						obj[def[i].prop][j] = {};
+						doinit(obj[def[i].prop][j], def[i].type.recordDef);
+					}
+				}
+				else {
+					obj[def[i].prop] = {};
+					doinit(obj[def[i].prop], def[i].type.recordDef);
+				}
+			}
+			else {
+				obj[def[i].prop]=eval(def[i].def.toSource()).valueOf();
+			}
+		}
 	}
+
+	doinit(this, this.parent.fields);
 };
 RecordFileRecord.prototype.ReInit = function()
 {
@@ -442,9 +474,7 @@ RecordFile.prototype.new = function(timeout, keeplocked)
 		}
 	}
 
-	for(i=0; i<this.fields.length; i += 1) {
-		ret[this.fields[i].prop]=eval(this.fields[i].def.toSource()).valueOf();
-	}
+	ret.reInit();
 
 	ret.put();
 	if (!keeplocked) {
@@ -463,11 +493,15 @@ RecordFile.prototype.readField = function(fieldtype)
 {
 	'use strict';
 	var i;
-	var m=fieldtype.match(/^Array:([0-9]+):(.*)$/);
+	var j;
+	var m=null;
 	var ret;
 	var tmp;
 	var tmp2;
+	var obj;
 
+	if (typeof fieldtype === 'string')
+		m = fieldtype.match(/^Array:([0-9]+):(.*)$/);
 	if(m !== null) {
 		ret = [];
 		for(i=0; i<parseInt(m[1], 10); i += 1) {
@@ -476,6 +510,24 @@ RecordFile.prototype.readField = function(fieldtype)
 		return(ret);
 	}
 	else {
+		if (typeof fieldtype === 'object') {
+			if (fieldtype.array !== undefined) {
+				ret = [];
+				for (i = 0; i < fieldtype.array; i++) {
+					obj = {};
+					for (j = 0; j < fieldtype.recordDef.length; j++) {
+						obj[fieldtype.recordDef[j].prop] = this.readField(fieldtype.recordDef[j].type);
+					}
+					ret.push(obj);
+				}
+				return ret;
+			}
+			obj = {};
+			for (j = 0; j < fieldtype.recordDef.length; j++) {
+				obj[fieldtype.recordDef[j].prop] = this.readField(fieldtype.recordDef[j].type);
+			}
+			return obj;
+		}
 		switch(fieldtype) {
 			case "Float":
 				tmp=this.file.read(22);
@@ -538,11 +590,13 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 {
 	'use strict';
 	var i;
-	var m=fieldtype.match(/^Array:([0-9]+):(.*)$/);
+	var m=null;
 	var wr;
 	var len;
 	var ret;
 
+	if (typeof fieldtype === 'string')
+		m = fieldtype.match(/^Array:([0-9]+):(.*)$/);
 	if(m !== null) {
 		ret = [];
 		for(i=0; i<parseInt(m[1], 10); i += 1) {
@@ -552,6 +606,21 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 	}
 	if(val === undefined) {
 		val=def;
+	}
+	if (typeof fieldtype === 'object') {
+		if (fieldtype.array !== undefined) {
+			for (i = 0; i < fieldtype.array; i++) {
+				for (j = 0; j < fieldtype.recordDef.length; j++) {
+					this.writeField(val[fieldtype.recordDef[j].prop], fieldtype.recordDef[j].type, fieldtype.recordDef[j].def);
+				}
+				ret.push(obj);
+			}
+			return;
+		}
+		for (j = 0; j < fieldtype.recordDef.length; j++) {
+			this.writeField(val[fieldtype.recordDef[j].prop], fieldtype.recordDef[j].type, fieldtype.recordDef[j].def);
+		}
+		return;
 	}
 	switch(fieldtype) {
 		case "Float":
@@ -634,7 +703,7 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			if(val>255) {
 				val=255;
 			}
-			this.file.writeBin(val,2);
+			this.file.writeBin(val,1);
 			break;
 		case "Date":
 			wr=val.substr(0,8);
@@ -664,9 +733,9 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			else {
 				m=fieldtype.match(/^PString:([0-9]+)$/);
 				if(m !== null) {
-					this.file.writeBin(wr.length, 1);
 					len=parseInt(m[1], 10);
 					wr=val.substr(0,len);
+					this.file.writeBin(wr.length, 1);
 					while(wr.length < len) {
 						wr=wr+"\x00";
 					}
@@ -675,7 +744,6 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			}
 	}
 };
-
 RecordFile.prototype.WriteField = function(val, fieldtype, def)
 {
 	'use strict';
