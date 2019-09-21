@@ -258,8 +258,6 @@ var dk = {
 		cols:80,				// Columns in users terminal
 
 		keybuf:'',
-		local_screen:new Screen(80, 24, 7, ' '),
-		remote_screen:new Screen(80, 24, 7, ' '),
 		input_queue:new Queue("dorkit_input" + (js.global.bbs === undefined ? '' : bbs.node_num)),
 
 		/*
@@ -329,7 +327,7 @@ var dk = {
 				this.auto_pause = true;
 			}
 			this.attr=7;
-			if (this.local) {
+			if (this.local_io !== undefined) {
 				this.local_io.clear();
 			}
 			if (this.remote) {
@@ -344,7 +342,7 @@ var dk = {
 		 */
 		cleareol:function() {
 			'use strict';
-			if (this.local) {
+			if (this.local_io !== undefined) {
 				this.local_io.cleareol();
 			}
 			if (this.remote) {
@@ -360,7 +358,7 @@ var dk = {
 		 */
 		gotoxy:function(x,y) {
 			'use strict';
-			if (this.local) {
+			if (this.local_io !== undefined) {
 				this.local_io.gotoxy(x,y);
 			}
 			if (this.remote) {
@@ -370,7 +368,7 @@ var dk = {
 
 		movex:function(pos) {
 			'use strict';
-			if (this.local) {
+			if (this.local_io !== undefined) {
 				this.local_io.movex(pos);
 			}
 			if (this.remote) {
@@ -380,7 +378,7 @@ var dk = {
 
 		movey:function(pos) {
 			'use strict';
-			if (this.local) {
+			if (this.local_io !== undefined) {
 				this.local_io.movey(pos);
 			}
 			if (this.remote) {
@@ -402,11 +400,7 @@ var dk = {
 		 */
 		print:function(string) {
 			'use strict';
-			if (this.local) {
-				if (this.local_screen !== undefined) {
-					this.local_screen.print(string);
-					this.Private_attr.value = this.local_screen.attr.value;
-				}
+			if (this.local_io !== undefined) {
 				this.local_io.print(string);
 			}
 			if (this.remote) {
@@ -912,9 +906,6 @@ var dk = {
 						if (this.console.remote_screen !== undefined) {
 							this.console.remote_screen = new Screen(this.console.last_pos.x, this.console.last_pos.y, 7, ' ');
 						}
-						if (this.console.local_screen !== undefined) {
-							this.console.local_screen = new Screen(this.console.last_pos.x, this.console.last_pos.y, 7, ' ');
-						}
 					}
 					this.console.cols = this.console.last_pos.x;
 					this.console.rows = this.console.last_pos.y;
@@ -981,9 +972,6 @@ var dk = {
 		if (rows !== this.console.rows) {
 			if (this.console.remote_screen !== undefined) {
 				this.console.remote_screen = new Screen(this.console.cols, rows, 7, ' ');
-			}
-			if (this.console.local_screen !== undefined) {
-				this.console.local_screen = new Screen(this.console.cols, rows, 7, ' ');
 			}
 		}
 		this.rows = rows;
@@ -1122,15 +1110,13 @@ else if (dk.system.mode === 'local') {
 if (dk.console.remote) {
 	dk.console.local = false;
 }
-if (dk.system.mode !== 'jsdoor' && dk.console.local === true) {
-	require("local_console.js", "dk_local_console_loaded");
-}
 if (dk.console.local_io === undefined) {
 	dk.console.local = false;
 }
 if (dk.console.remote_io === undefined) {
 	dk.console.remote = false;
 }
+require("local_console.js", "dk_local_console_loaded");
 
 // Fun stuff from sbbsdef.js...
 log.EMERG       =0;			/* system is unusable                       */   

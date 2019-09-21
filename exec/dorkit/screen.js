@@ -210,7 +210,7 @@ Screen.prototype.print=function(str) {
 					case 'H':	// Cursor position
 					case 'f':
 						param_defaults(p, [1,1]);
-						if (p[0] >= 1 && p[0] < this.graphic.height && p[1] >= 1 && p[1] <= this.graphic.width) {
+						if (p[0] >= 1 && p[0] <= this.graphic.height && p[1] >= 1 && p[1] <= this.graphic.width) {
 							this.pos.x = p[1]-1;
 							this.pos.y = p[0]-1;
 							// TODO
