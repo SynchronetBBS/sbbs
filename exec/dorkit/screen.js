@@ -263,7 +263,7 @@ Screen.prototype.print=function(str) {
 						param_defaults(p, [0]);
 						switch(p[0]) {
 							case 0:	// Erase to eol
-								for (x = this.pos.x; x<this.pos.width; x += 1) {
+								for (x = this.pos.x; x<this.graphic.width; x += 1) {
 									this.graphic.setCell(this.graphic.ch, this.attr.value, x, this.pos.y);
 								}
 								if (this.touched !== undefined) {
