@@ -10,14 +10,22 @@ const header_height = 4;
 const cell_width = 3;
 const winners_list = system.data_dir + "minesweeper.jsonl";
 const help_file = system.text_dir + "minesweeper.hlp";
-const max_level = 5;
+const max_difficulty = 5;
+const base_difficulty = 11;
 const char_flag = '\x01r\x01hF';
 const char_badflag = '\x01r\x01h!';
-const char_empty = ' '; 
-const char_covered = '\xFA';
+const char_empty = '\xFA'; 
+const char_covered = '\xFE';
 const char_mine = '\x01r\x01h\xEB';
+const winner_subject = "Winner";
 
 require("sbbsdefs.js", "K_NONE");
+
+var options=load({}, "modopts.js", "minesweeper");
+if(!options)
+	options = {};
+if(!options.sub)
+    options.sub = load({}, "syncdata.js").find();
 
 var json_lines = load({}, "json_lines.js");
 var game = {};
@@ -91,7 +99,19 @@ function isgamewon()
 	}
 	if(covered === 0) { 
 		game.end = time();
-		game.user = { alias: user.alias, number: user.number };
+		if(options.sub) {
+			var msgbase = new MsgBase(options.sub);
+			var hdr = { 
+				to: title,
+				from: user.alias,
+				subject: winner_subject
+			};
+			var body = lfexpand(JSON.stringify(game, null, 1));
+			if(!msgbase.save_msg(hdr, body))
+				alert("Error saving message to: " + optiona.sub);
+			msgbase.close();
+		}
+		game.name = user.alias;
 		var result = json_lines.add(winners_list, game);
 		if(result !== true) {
 			alert(result);
@@ -102,6 +122,24 @@ function isgamewon()
 	return false;
 }
 
+function calc_difficulty(game)
+{
+	return Math.min(max_difficulty, base_difficulty - Math.floor((game.height * game.width) / game.mines));
+}
+
+function calc_time(game)
+{
+	return game.end - game.start;
+}
+
+function compare_game(g1, g2)
+{
+	var diff = calc_difficulty(g2) - calc_difficulty(g1);
+	if(diff)
+		return diff;
+	return calc_time(g1) - calc_time(g2);
+}
+
 function show_winners()
 {
 	console.attributes = YELLOW|BG_BLUE;
@@ -110,21 +148,62 @@ function show_winners()
 	console.crlf();
 	
 	var list = json_lines.get(winners_list);
-	if(typeof list != 'object' || !list.length)	{
+	if(typeof list != 'object')
+		list = [];
+	
+	if(options.sub) {
+		var msgbase = new MsgBase(options.sub);
+		if(msgbase.get_index !== undefined && msgbase.open()) {
+			var to_crc = crc16_calc(title.toLowerCase());
+			var subj_crc = crc16_calc(winner_subject.toLowerCase());
+			var index = msgbase.get_index();
+			for(var i = 0; i < index.length; i++) {
+				var idx = index[i];
+				if((idx.attr&MSG_DELETE)
+					|| idx.to != to_crc || idx.subject != subj_crc)
+					continue;
+				var hdr = msgbase.get_msg_header(true, idx.offset);
+				if(!hdr)
+					continue;
+				if(!hdr.from_net_type || hdr.to != title || hdr.subject != winner_subject)
+					continue;
+				var body = msgbase.get_msg_body(hdr);
+				if(!body)
+					continue;
+				var obj;
+				try {
+					obj = JSON.parse(body);
+				} catch(e) {
+					continue;
+				}
+				obj.name = hdr.from;
+				obj.net_addr = hdr.from_net_addr;
+				list.push(obj);
+			}
+			msgbase.close();
+		}
+	}
+	
+	if(!list.length) {
 		alert("No winners yet!");
 		return;
 	}
 	console.attributes = WHITE;
-	console.print(format("Date     %-25s Time  WxHxMines\r\n", "Name"));
+	console.print(format("Date     %-25s         Lvl Time  WxHxMines\r\n", "User"));
+	
+	list.sort(compare_game);
+	
 	for(var i = 0; i < list.length; i++) {
 		var game = list[i];
 		if(i&1)
-			console.attributes = LIGHTGRAY;
+			console.attributes = LIGHTCYAN;
 		else
 			console.attributes = BG_CYAN;
-		console.print(format("%s %-25s %s %ux%ux%u\r\n"
+		console.print(format("%s %-25s%-9s %u  %s %ux%ux%u\x01>\r\n"
 			,system.datestr(game.end)
-			,game.user.alias
+			,game.name
+			,game.net_addr ? ('@'+game.net_addr) : ''
+			,calc_difficulty(game)
 			,system.secondstr(game.end - game.start).slice(-5)
 			,game.width
 			,game.height
@@ -193,6 +272,7 @@ function draw_border()
 	console.print(' ');
 	console.right(console.screen_columns - 1);
 	console.cleartoeol();
+//	console.print(' ');
 	console.creturn();
 	console.attributes = LIGHTGRAY;
 }
@@ -311,35 +391,31 @@ function uncover(x, y)
 	}
 }
 
-function get_level()
+function get_difficulty()
 {
 	console.creturn();
-	if(game.level) {
+	if(options.difficulty) {
 		console.cleartoeol();
 		draw_border();
 	}
 	console.attributes = WHITE;
 	console.right((console.screen_columns - 24) / 2);
-	console.print(format("Difficulty Level (1-%u): ", max_level));
-	var result = console.getnum(max_level);
-	if(result < 1)
-		return false;
-	game.level = Math.max(1, result);
-	return true;
+	console.print(format("Difficulty Level (1-%u): ", max_difficulty));
+	return console.getnum(max_difficulty);
 }
 
-function init_game()
+function init_game(difficulty)
 {
 	console.line_counter = 0;
-	console.clear();
+	console.clear(LIGHTGRAY);
 	selected = {x:0, y:0};
 	gamewon = false;
 	gameover = false;
-	game.height = 5 + (game.level * 5);
+	game.height = 5 + (difficulty * 5);
 	game.width = game.height;
 	game.width = Math.min(game.width, Math.floor((console.screen_columns - 1) / cell_width));
 	game.height = Math.min(game.height, console.screen_rows - header_height);
-	game.mines = Math.floor((game.height * game.width) / (11 - game.level))
+	game.mines = Math.floor((game.height * game.width) / (base_difficulty - difficulty))
 	game.start = time();
 	init_board();
 }
@@ -433,12 +509,16 @@ function play() {
 				}
 				break;
 			case 'N':
+			{
 				console.home();
 				console.down();
-				if(get_level())
-					init_game();
-				full_redraw = true;
+				var difficulty = get_difficulty();
+				if(difficulty > 0) {
+					init_game(difficulty);
+					full_redraw = true;
+				}
 				break;
+			}
 			case 'W':
 				console.line_counter = 0;
 				console.clear();
@@ -475,14 +555,16 @@ console.ctrlkey_passthru = "TPU";
 
 // Parse cmd-line options here:
 var val = parseInt(argv[0]);
-if(!isNaN(val) && val > 0 && val < max_level)
-	game.level = val;
-else {
+if(!isNaN(val) && val > 0 && val < max_difficulty)
+	options.difficulty = val;
+
+if(!options.difficulty) {
 	show_title();
-	if(!get_level())
+	options.difficulty = get_difficulty();
+	if(options.difficulty < 1)
 		exit();
 }
-init_game();
+init_game(options.difficulty);
 play();
 console.attributes = LIGHTGRAY;
 console.clear();
