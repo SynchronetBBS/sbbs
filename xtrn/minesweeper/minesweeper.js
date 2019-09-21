@@ -92,7 +92,11 @@ function isgamewon()
 	if(covered === 0) { 
 		game.end = time();
 		game.user = { alias: user.alias, number: user.number };
-		json_lines.add(winners_list, game);
+		var result = json_lines.add(winners_list, game);
+		if(result !== true) {
+			alert(result);
+			console.pause();
+		}
 		return true;
 	}
 	return false;
@@ -111,7 +115,7 @@ function show_winners()
 		return;
 	}
 	console.attributes = WHITE;
-	console.print(format("Date     %-25s Time  WxHxM\r\n", "Name"));
+	console.print(format("Date     %-25s Time  WxHxMines\r\n", "Name"));
 	for(var i = 0; i < list.length; i++) {
 		var game = list[i];
 		if(i&1)
@@ -172,60 +176,91 @@ function countflags()
 	}
 	return flags;
 }
+
+function show_title()
+{
+	console.attributes = YELLOW|BG_BLUE;
+	console.cleartoeol();
+	console.center(title + " " + REVISION);
+}
+
+function draw_border()
+{
+	console.creturn();
+	console.attributes = LIGHTGRAY;
+	console.cleartoeol();
+	console.attributes = YELLOW|BG_BLUE;
+	console.print(' ');
+	console.right(console.screen_columns - 1);
+	console.cleartoeol();
+	console.creturn();
+	console.attributes = LIGHTGRAY;
+}
 	
 function draw_board(full)
 {
+	if(gameover)
+		full = true;
 	console.line_counter = 0;
 	console.home();
 	if(full) {
-		console.attributes = YELLOW|BG_BLUE;
-		console.print(" " + title + " " + REVISION + " ");
-		console.attributes = LIGHTGRAY;
-		console.crlf();
+		show_title();
+		draw_border();
 	} else
 		console.down();
 	if(gamewon) {
 		console.attributes = YELLOW|BLINK;
-		console.center("Game Won!", game.width * 3);
+		console.center("Game Won!");
 	} else if(gameover) {
 		console.attributes = RED|HIGH|BLINK;
-		console.center("Game Over!", game.width *3);
+		console.center("Game Over!");
 	} else {
 		console.attributes = WHITE;
-		console.print(format(" Mines: %-3u", game.mines));
-		console.print(format(" Flags: %-3u", countflags()));
-		console.print(" " + system.secondstr(time() - game.start).slice(-5));
-		if(full)
-			console.crlf();
+		console.center(format("Mines: %-3u Flags: %-3u %s"
+			, game.mines, countflags(), system.secondstr(time() - game.start).slice(-5))
+			);
 	}
-	if(full || gameover) {
+	if(full) {
+		draw_border();
 		console.attributes = LIGHTGRAY;		
 		var cmds = "";
 		if(!gameover)
 			cmds += "\x01n\x01hR\x01neveal  \x01hF\x01nlag  ";
 		cmds += "\x01hN\x01new  \x01hQ\x01nuit";
-		console.center(cmds, game.width * 3);
-		console.center("\x01hW\x01ninners  \x01hH\x01nelp", game.width * 3);
+		console.center(cmds);
+		draw_border();
+		console.center("\x01n\x01hW\x01ninners  \x01hH\x01nelp");
 	} else if(!console.term_supports(USER_ANSI)) {
 		console.creturn();
-		console.down(3);
+		console.down(2);
 	}
+	const margin = (console.screen_columns - (game.width * cell_width)) / 2;
 	for(var y = 0; y < game.height; y++) {
+		if(full)
+			draw_border();
 		for(var x = 0; x < game.width; x++) {
-			if(gameover || full || board[y][x].changed !== false) {
+			if(full || board[y][x].changed !== false) {
 				if(console.term_supports(USER_ANSI))
-					console.gotoxy((x * cell_width) + 1, header_height + y + 1);
+					console.gotoxy((x * cell_width) + margin + 1, header_height + y + 1);
 				else {
 					console.creturn();
-					console.right(x * cell_width);
+					console.right((x * cell_width) +  margin);
 				}
 				draw_cell(x, y);
 			}
 			board[y][x].changed = false;
 		}
-		if(!console.term_supports(USER_ANSI))
+		if(full || !console.term_supports(USER_ANSI))
 			console.down();
 		console.line_counter = 0;
+	}
+	if(full) {
+		if(game.height + header_height < console.screen_rows - 1) {
+			console.creturn();
+			console.attributes = YELLOW|BG_BLUE;
+			console.cleartoeol();
+		}
+		console.attributes = LIGHTGRAY;
 	}
 }
 
@@ -279,10 +314,18 @@ function uncover(x, y)
 function get_level()
 {
 	console.creturn();
+	if(game.level) {
+		console.cleartoeol();
+		draw_border();
+	}
 	console.attributes = WHITE;
-	console.print(format("Difficulty Level (1-%u): ", max_level));
-	console.cleartoeol();
-	game.level = Math.max(1, console.getnum(max_level));
+	console.right((console.screen_columns - 24) / 2);
+	console.print(format("Difficulty Level (1-%u): ", "", max_level));
+	var result = console.getnum(max_level);
+	if(result < 1)
+		return false;
+	game.level = Math.max(1, result);
+	return true;
 }
 
 function init_game()
@@ -392,8 +435,8 @@ function play() {
 			case 'N':
 				console.home();
 				console.down();
-				get_level();
-				init_game();
+				if(get_level())
+					init_game();
 				full_redraw = true;
 				break;
 			case 'W':
@@ -415,6 +458,9 @@ function play() {
 				console.aborted = false;
 				full_redraw = true;
 				break;
+			case '\x12': // Ctrl-R
+				full_redraw = true;
+				break;
 			case 'Q':
 				return;
 		}
@@ -424,12 +470,18 @@ function play() {
 	}
 }
 
+js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+console.ctrlkey_passthru = "TPU";
+
 // Parse cmd-line options here:
 var val = parseInt(argv[0]);
 if(!isNaN(val) && val > 0 && val < max_level)
 	game.level = val;
-else
-	get_level();
+else {
+	show_title();
+	if(!get_level())
+		exit();
+}
 init_game();
 play();
 console.attributes = LIGHTGRAY;
