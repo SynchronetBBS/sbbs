@@ -826,6 +826,7 @@ uint64_t DLLCALL getfilesizetotal(const char *inpath)
 	char path[MAX_PATH+1];
 	glob_t	g;
 	uint	gi;
+	off_t	size;
 	uint64_t total = 0;
 
 	SAFECOPY(path, inpath);
@@ -838,7 +839,7 @@ uint64_t DLLCALL getfilesizetotal(const char *inpath)
 	for(gi = 0; gi < g.gl_pathc; ++gi) {
 		if(*lastchar(g.gl_pathv[gi]) == '/')
 			continue;
-		off_t size = flength(g.gl_pathv[gi]);
+		size = flength(g.gl_pathv[gi]);
 		if(size >= 1)
 			total += size;
 	}
