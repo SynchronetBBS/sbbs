@@ -479,10 +479,10 @@ var vars = {
 	'&realname':{type:'const', val:dk.user.full_name},
 	'&date':{type:'fn', get:function() { var d = new Date(); return format('%02d/%02d/%02d', d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw('Attempt to set date at '+fname+':'+line); } },
 	'&nicedate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw('Attempt to set nicedate at '+fname+':'+line); } },
-	's&armour':{type:'fn', get:function() { if (player.armournumber === 0) return ''; return items[player.armournumber].name; } },
-	's&arm_num':{type:'fn', get:function() { if (player.armournumber === 0) return 0; return items[player.armournumber].defence; } },
-	's&weapon':{type:'fn', get:function() { if (player.weaponnumber === 0) return ''; return items[player.weaponnumber].name; } },
-	's&wep_num':{type:'fn', get:function() { if (player.weaponnumber === 0) return 0; return items[player.weaponnumber].strength; } },
+	's&armour':{type:'fn', get:function() { if (player.armournumber === 0) return ''; return items[player.armournumber - 1].name; } },
+	's&arm_num':{type:'fn', get:function() { if (player.armournumber === 0) return 0; return items[player.armournumber - 1].defence; } },
+	's&weapon':{type:'fn', get:function() { if (player.weaponnumber === 0) return ''; return items[player.weaponnumber - 1].name; } },
+	's&wep_num':{type:'fn', get:function() { if (player.weaponnumber === 0) return 0; return items[player.weaponnumber - 1].strength; } },
 	's&son':{type:'fn', get:function() { return player.sexmale === 1 ? 'son' : 'daughter' }},
 	's&boy':{type:'fn', get:function() { return player.sexmale === 1 ? 'boy' : 'girl' }},
 	's&man':{type:'fn', get:function() { return player.sexmale === 1 ? 'man' : 'lady' }},
@@ -940,14 +940,19 @@ function lln(str)
 	sln('');
 }
 
-function spaces(len)
+function repeat_chars(ch, len)
 {
 	var r = '';
 	var i;
 
 	for (i = 0; i < len; i++)
-		r += ' ';
+		r += ch;
 	return r;
+}
+
+function spaces(len)
+{
+	return repeat_chars(' ', len);
 }
 
 var bar_timeout;
@@ -1443,7 +1448,7 @@ function run_ref(sec, fname)
 			dk.console.attr.value = 15;
 			while(1) {
 				draw_menu();
-				ch = getkey();
+				ch = getkey().toUpperCase();
 				switch(ch) {
 					case '8':
 					case 'KEY_UP':
@@ -1749,17 +1754,85 @@ function move_player(xoff, yoff) {
 	}
 }
 
+// Assume width of 36
+// Assume position centered in inventory window thing
+function popup_menu(title, opts)
+{
+	var str;
+	var x = 21;
+	var y = 12 + ((9 - opts.length)/2);
+	var cur = 0;
+	var ch;
+	var sattr = dk.console.attr.value;
+
+	function show_opts() {
+		opts.forEach(function(o, i) {
+			str = '`r1`0'+ascii(179)+'  ';
+			if (i === cur)
+				str += '`r5`0';
+			str += o.txt;
+			if (i === cur)
+				str += '`r1`0';
+			str += spaces(37 - displen(str));
+			str += ascii(179);
+			dk.console.gotoxy(x, y+1+i);
+			lw(str);
+		});
+		dk.console.gotoxy(x+3, y+1+cur);
+	}
+
+	function cleanup() {
+		dk.console.attr.value = sattr;
+	}
+
+	str = '`r1`0'+ascii(218) + repeat_chars(ascii(196), parseInt((36 - displen(title)) / 2, 10)) + title + '`r1`0';
+	str += repeat_chars(ascii(196), 37 - displen(str));
+	str += ascii(191);
+	dk.console.gotoxy(x, y);
+	lw(str);
+	show_opts();
+	str = '`r1`0'+ascii(192)+repeat_chars(ascii(196), 36)+ascii(217);
+	dk.console.gotoxy(x, y+opts.length+1);
+	lw(str);
+	dk.console.gotoxy(x+3, y+1+cur);
+	while(1) {
+		ch = getkey().toUpperCase();
+		switch(ch) {
+			case '8':
+			case 'KEY_UP':
+			case '4':
+			case 'KEY_LEFT':
+				cur--;
+				if (cur < 0)
+					cur = opts.length - 1;
+				break;
+			case '2':
+			case 'KEY_DOWN':
+			case '6':
+			case 'KEY_RIGHT':
+				cur++;
+				if (cur >= opts.length)
+					cur = 0;
+				break;
+			case '\r':
+				return opts[cur].ret;
+		}
+		show_opts();
+	}
+}
+
 function view_inventory()
 {
-	var inv = [];
-	var lb = [];
-	var choices = [];
+	var inv;
+	var lb;
+	var choices;
 	var i;
 	var ch;
 	var cur = 0;
 	var str;
 	var attr = dk.console.attr.value;
-	var cx;
+	var use_opts;
+	var desc;
 
 	function draw_menu() {
 		choices.forEach(function(c, i) {
@@ -1767,10 +1840,8 @@ function view_inventory()
 			if (i === cur)
 				c = '`r1'+c+'`r0';
 			lw(c);
-			if (i === cur)
-				cx = scr.pos.x;
 		});
-		dk.console.gotoxy(cx, 12+i);
+		dk.console.gotoxy(0, 12+i);
 	}
 
 	function draw_inv() {
@@ -1781,62 +1852,133 @@ function view_inventory()
 		dk.console.gotoxy(0, 12+cur);
 	}
 
-	for (i = 0; i < 99; i++) {
-		if (player.i[i] > 0)
-			inv.push(i);
-	}
-	if (inv.length === 0) {
-		dk.console.gotoxy(0, 12);
-		lw('`2  You are carrying nothing!  (press `%Q`2 to continue)');
-		do {
-			ch = getkey().toUpperCase();
-		} while (ch != 'Q');
-	}
-	else {
-		inv.forEach(function(i) {
-			str = '`2  '+items[i].name;
-			choices.push(str);
-			if (items[i].armour)
-				str += ' `0A`2';
-			if (items[i].weapon)
-				str += ' `4W`2';
-			if (items[i].useonce)
-				str += ' `51`2';
-			str += spaces(37 - displen(str));
-			str += '`2 (`0'+player.i[i]+'`2)';
-			str += spaces(47 - displen(str));
-			str += '`2 ' + items[i].description;
-			str += spaces(79 - displen(str));
-			lb.push(str);
-		});
+	function clear_block() {
+		var i;
 
-		draw_inv();
-		while(1) {
-			draw_menu();
-			dk.console.gotoxy(0, 23);
-			ch = getkey();
-			switch(ch) {
-				case '8':
-				case 'KEY_UP':
-				case '4':
-				case 'KEY_LEFT':
-					cur--;
-					if (cur < 0)
-						cur = lb.length - 1;
-					break;
-				case '2':
-				case 'KEY_DOWN':
-				case '6':
-				case 'KEY_RIGHT':
-					cur++;
-					if (cur >= lb.length)
-						cur = 0;
-					break;
-				case '\r':
-					setvar('responce', cur + 1);
-					dk.console.gotoxy(0, 12+lb.length-1);
-					dk.console.attr.value = attr;
-					return;
+		dk.console.attr.value = 2;
+		for (i = 0; i < 11; i++) {
+			dk.console.gotoxy(0, 12+i);
+			dk.console.cleareol();
+		}
+		dk.console.gotoxy(0, 12);
+	}
+
+rescan:
+	while(1) {
+		inv = [];
+		lb = [];
+		choices = [];
+		for (i = 0; i < 99; i++) {
+			if (player.i[i] > 0)
+				inv.push(i);
+		}
+		if (inv.length === 0) {
+			dk.console.gotoxy(0, 12);
+			lw('`2  You are carrying nothing!  (press `%Q`2 to continue)');
+			do {
+				ch = getkey().toUpperCase();
+			} while (ch != 'Q');
+			return;
+		}
+		else {
+			inv.forEach(function(i) {
+				desc = items[i].description;
+				str = '`2  '+items[i].name;
+				choices.push(str);
+				if (items[i].armour) {
+					str += ' `0A`2';
+					if (player.armournumber === i + 1)
+						desc = 'Currently wearing as armour.';
+				}
+				if (items[i].weapon) {
+					str += ' `4W`2';
+					if (player.weaponnumber === i + 1)
+						desc = 'Currently armed as weapon.';
+				}
+				if (items[i].useonce)
+					str += ' `51`2';
+				str += spaces(37 - displen(str));
+				str += '`2 (`0'+player.i[i]+'`2)';
+				str += spaces(47 - displen(str));
+				str += '`2 ' + desc;
+				str += spaces(79 - displen(str));
+				lb.push(str);
+			});
+
+			draw_inv();
+			while(1) {
+				draw_menu();
+				dk.console.gotoxy(0, 23);
+				ch = getkey().toUpperCase();
+				switch(ch) {
+					case '8':
+					case 'KEY_UP':
+					case '4':
+					case 'KEY_LEFT':
+						cur--;
+						if (cur < 0)
+							cur = lb.length - 1;
+						break;
+					case '2':
+					case 'KEY_DOWN':
+					case '6':
+					case 'KEY_RIGHT':
+						cur++;
+						if (cur >= lb.length)
+							cur = 0;
+						break;
+					case '\r':
+						use_opts = [];
+						if (items[inv[cur]].weapon) {
+							if (player.weaponnumber - 1 !== inv[cur])
+								use_opts.push({txt:'Arm as weapon', ret:'A'});
+							else
+								use_opts.push({txt:'Unarm as weapon', ret:'U'});
+						}
+						if (items[inv[cur]].armour) {
+							if (player.armournumber - 1 !== inv[cur])
+								use_opts.push({txt:'Wear as armour', ret:'W'});
+							else
+								use_opts.push({txt:'Take it off', ret:'T'});
+						}
+						if (items[inv[cur]].refsection.length > 0 && items[inv[cur]].useaction.length > 0) {
+							use_opts.push({txt:items[inv[cur]].useaction, ret:'S'});
+						}
+						use_opts.push({txt:'Nevermind', ret:'N'});
+						ch = popup_menu(items[inv[cur]].name, use_opts);
+						clear_block();
+						switch(ch) {
+							case 'A':
+								player.weaponnumber = inv[cur] + 1;
+								break;
+							case 'U':
+								player.weaponnumber = 0;
+								break;
+							case 'W':
+								player.armournumber = inv[cur] + 1;
+								break;
+							case 'T':
+								player.armournumber = 0;
+								break;
+							case 'S':
+								run_ref(items[inv[cur]].refsection, 'items.ref');
+								if (items[inv[cur]].useonce) {
+									player.i[inv[cur]]--;
+									if (player.i[inv[cur]] === 0) {
+										if (player.weaponnumber === inv[cur] + 1)
+											player.weaponnumber = 0;
+										if (player.armournumber - 1 === inv[cur])
+											player.armournumber = 0;
+									}
+								}
+								break;
+						}
+						continue rescan;
+					case 'Q':
+						dk.console.gotoxy(0, 12+lb.length-1);
+						dk.console.attr.value = attr;
+						return;
+				}
 			}
 		}
 	}
@@ -1924,6 +2066,16 @@ function do_map()
 	}
 	run_ref('endgame', 'gametxt.ref');
 	mswait(2500);
+}
+
+function dump_items()
+{
+	items.forEach(function(i) {
+		Item_Def.forEach(function(d) {
+			log(d.prop+': '+i[d.prop]);
+		});
+		log('=============');
+	});
 }
 
 function load_items()
