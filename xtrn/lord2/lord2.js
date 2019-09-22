@@ -957,7 +957,7 @@ function spaces(len)
 
 var bar_timeout;
 var bar_queue = [];
-function update_bar(str, timeout)
+function update_bar(str, centre, timeout)
 {
 	str = replace_vars(str);
 	var dl = displen(str);
@@ -966,12 +966,13 @@ function update_bar(str, timeout)
 
 	dk.console.gotoxy(2, 20);
 	dk.console.attr.value = 31;
-	if (dl < 76) {
+	if (centre && dl < 76) {
 		l = parseInt((76 - dl) / 2, 10);
 		str = spaces(l) + str;
-		l = 76 - (dl + l);
-		str = str + spaces(l);
+		dl += l;
 	}
+	l = 76 - dl;
+	str = str + spaces(l);
 	lw(str);
 	dk.console.gotoxy(player.x-1, player.y-1);
 	dk.console.attr.value = attr;
@@ -986,7 +987,18 @@ function status_bar()
 	var b;
 
 	b = '`r1`2Location is `0'+map.name+'`2. HP: (`%'+player.p[1]+'`2 of `%'+player.p[2]+'`2).  Press `%?`2 for help.';
-	update_bar(b);
+	update_bar(b, false);
+}
+
+function pretty_int(int)
+{
+	var ret = parseInt(int, 10).toString();
+	var i;
+
+	for (i = ret.length - 3; i > 0; i-= 3) {
+		ret = ret.substr(0, i)+','+ret.substr(i);
+	}
+	return ret;
 }
 
 function timeout_bar()
@@ -995,7 +1007,7 @@ function timeout_bar()
 		return;
 	if (bar_timeout === undefined || new Date().valueOf() > bar_timeout) {
 		if (bar_queue.length)
-			update_bar(bar_queue.shift(), 4);
+			update_bar(bar_queue.shift(), true, 4);
 		else
 			status_bar();
 	}
@@ -1100,7 +1112,7 @@ function run_ref(sec, fname)
 			line++;
 			if (line >= files[fname].lines.length)
 				throw('Trailing saybar at '+fname+':'+line);
-			update_bar(files[fname].lines[line], 5);
+			update_bar(files[fname].lines[line], true, 5);
 		},
 		'quebar':function(args) {
 			line++;
@@ -1148,19 +1160,23 @@ function run_ref(sec, fname)
 				return;
 			}
 			if (args.length > 2 && args[1] == '-') {
-				setvar(args[0], getvar(args[0]) - getvar(args[2]));
+				setvar(args[0], getvar(args[0]) - parseInt(getvar(args[2]), 10));
 				return;
 			}
-			if (args.length > 2 && (args[1] === '+' || args[1].toLowerCase() === 'add')) {
-				setvar(args[0], getvar(args[0]) + getvar(args[2]));
+			if (args.length > 2 && args[1] === '+') {
+				setvar(args[0], getvar(args[0]) + parseInt(getvar(args[2]), 10));
+				return;
+			}
+			if (args.length > 2 && args[1].toLowerCase() === 'add') {
+				setvar(args[0], getvar(args[0]) + getvar(args[2]).toString());
 				return;
 			}
 			if (args.length > 2 && args[1] == '/') {
-				setvar(args[0], getvar(args[0]) / getvar(args[2]));
+				setvar(args[0], getvar(args[0]) / parseInt(getvar(args[2]), 10));
 				return;
 			}
 			if (args.length > 2 && args[1] == '*') {
-				setvar(args[0], getvar(args[0]) * getvar(args[2]));
+				setvar(args[0], getvar(args[0]) * parseInt(getvar(args[2]), 10));
 				return;
 			}
 			if (args.length > 3 && args[1].toLowerCase() === 'random') {
@@ -1508,18 +1524,121 @@ function run_ref(sec, fname)
 			var start = parseInt(getvar(args[0]), 10) - 1;
 			var end = parseInt(getvar(args[1]), 10);
 			var i;
+			var sattr = dk.console.attr.value;
 
+			dk.console.attr.value = 2;
 			for (i = start; i < end; i++) {
 				dk.console.gotoxy(0, start);
 				dk.console.cleareol();
 			}
+			dk.console.attr.value = sattr;
 		},
 		'loadmap':function(args) {
 			load_map(parseInt(getvar(args[0]), 10));
+		},
+		'buymanager':function(args) {
+			var itms = getlines();
+			var itm;
+			var i;
+			var cur = 0;
+			var ch;
+
+			for (i = 0; i < itms.length; i++)
+				itms[i] = parseInt(itms[i], 10);
+			// Don't clear the screen first?  Interesting...
+			dk.console.gotoxy(0, 9);
+			lw('`r5`%  Item To Buy                         Price                                     ');
+			dk.console.gotoxy(0, 23);
+			lw('`r5                                                                               ');
+			dk.console.gotoxy(2, 23);
+			lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
+
+			itms.forEach(function(it, i) {
+				var str;
+
+				itm = items[it - 1];
+				dk.console.gotoxy(0, 10 + i);
+				str = '';
+				if (i === cur)
+					str += '`r1';
+				str += '`2  ';
+				str += itm.name;
+				if (i === cur)
+					str += '`r0';
+				str += decorate_item(itm);
+				str += spaces(32 - displen(str));
+				str += '`2$`$'+itm.value;
+				str += spaces(48 - displen(str));
+				str += itm.description;
+				lw(str);
+			});
+
+			function draw_menu() {
+				itms.forEach(function(it, i) {
+					var str;
+					var itm = items[it - 1];
+
+					dk.console.gotoxy(0, 10 + i);
+					str = '';
+					if (i === cur)
+						str += '`r1';
+					else
+						str += '`r0';
+					str += '`2  ';
+					str += itm.name;
+					lw(str);
+				});
+				dk.console.gotoxy(0, 10 + cur);
+			}
+
+			while(1) {
+				ch = getkey().toUpperCase();
+				switch(ch) {
+					case '8':
+					case 'KEY_UP':
+					case '4':
+					case 'KEY_LEFT':
+						cur--;
+						if (cur < 0)
+							cur = itms.length - 1;
+						break;
+					case '2':
+					case 'KEY_DOWN':
+					case '6':
+					case 'KEY_RIGHT':
+						cur++;
+						if (cur >= itms.length)
+							cur = 0;
+						break;
+					case 'Q':
+						return;
+					case '\r':
+						itm = items[itms[cur] - 1];
+						dk.console.gotoxy(0, 23);
+						lw('`r4                                                                               ');
+						if (player.money >= itm.value) {
+							player.i[itm.Record]++;
+							player.money -= itm.value;
+							dk.console.gotoxy(1, 23);
+							lw('`* ITEM BOUGHT! `%You now have ' + player.i[itm.Record] + ' of \'em.  `2(`0press a key to continue`2)`r0');
+						}
+						else {
+							dk.console.gotoxy(1, 23);
+							lw('`* ITEM NOT BOUGHT! `%You don\'t have enough gold.  `2(`0press a key to continue`2)`r0');
+						}
+						getkey();
+						dk.console.gotoxy(0, 23);
+						lw('`r5                                                                               ');
+						dk.console.gotoxy(2, 23);
+						lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
+						break;
+				}
+				draw_menu();
+			}
 		}
 	};
 
-	function handle(args)
+  	function handle(args)
 	{
 		if (handlers[args[0].toLowerCase()] === undefined)
 			throw('No handler for '+args[0]+' command at '+fname+':'+line);
@@ -1568,6 +1687,7 @@ function run_ref(sec, fname)
 
 	while (1) {
 		line++;
+log(fname+':'+line);
 		if (line > files[fname].lines.length)
 			return;
 		cl = files[fname].lines[line].replace(/^\s*/,'');
@@ -1577,11 +1697,15 @@ function run_ref(sec, fname)
 			return;
 		if (cl.search(/^;/) !== -1)
 			continue;
-		if (cl.search(/^$/) === 0)
+		if (cl.search(/^@/) === -1) {
+			// It appears from home.ref:747 that non-comment lines
+			// are printed.
+			//lln(cl);
+			// Nope, that's just Chuck Testa with another
+			// realistic bug in the REF file.
 			continue;
-		if (cl.search(/^@/) === -1)
-			continue;	// Sigh... if...write etc.
-			//throw('Invalid line '+line+' in '+fname+' "'+cl+'"');
+		}
+		// A bare @ is used to terminate things sometimes...
 		args = cl.substr(1).split(/\s+/);
 		handle(args);
 	}
@@ -1795,6 +1919,7 @@ function popup_menu(title, opts)
 	dk.console.gotoxy(x, y+opts.length+1);
 	lw(str);
 	dk.console.gotoxy(x+3, y+1+cur);
+
 	while(1) {
 		ch = getkey().toUpperCase();
 		switch(ch) {
@@ -1819,6 +1944,18 @@ function popup_menu(title, opts)
 		}
 		show_opts();
 	}
+}
+
+function decorate_item(it)
+{
+	var str = '';
+	if (it.armour)
+		str += ' `0A`2';
+	if (it.weapon)
+		str += ' `4W`2';
+	if (it.useonce)
+		str += ' `51`2';
+	return str;
 }
 
 function view_inventory()
@@ -1885,18 +2022,15 @@ rescan:
 				desc = items[i].description;
 				str = '`2  '+items[i].name;
 				choices.push(str);
+				str += decorate_item(items[i]);
 				if (items[i].armour) {
-					str += ' `0A`2';
 					if (player.armournumber === i + 1)
 						desc = 'Currently wearing as armour.';
 				}
 				if (items[i].weapon) {
-					str += ' `4W`2';
 					if (player.weaponnumber === i + 1)
 						desc = 'Currently armed as weapon.';
 				}
-				if (items[i].useonce)
-					str += ' `51`2';
 				str += spaces(37 - displen(str));
 				str += '`2 (`0'+player.i[i]+'`2)';
 				str += spaces(47 - displen(str));
@@ -1944,7 +2078,11 @@ rescan:
 						if (items[inv[cur]].refsection.length > 0 && items[inv[cur]].useaction.length > 0) {
 							use_opts.push({txt:items[inv[cur]].useaction, ret:'S'});
 						}
-						use_opts.push({txt:'Nevermind', ret:'N'});
+						if (use_opts.length === 0)
+							// TODO: Test this... it's almost certainly broken.
+							use_opts.push({txt:'You can\'t think of any way to use this item', ret:'N'});
+						else
+							use_opts.push({txt:'Nevermind', ret:'N'});
 						ch = popup_menu(items[inv[cur]].name, use_opts);
 						clear_block();
 						switch(ch) {
@@ -2093,6 +2231,7 @@ var ifile = new RecordFile(js.exec_dir + 'items.dat', Item_Def);
 world = wfile.get(0);
 load_player();
 load_items();
+dump_items();
 
 if (player.Record === undefined)
 	run_ref('newplayer', 'gametxt.ref');
