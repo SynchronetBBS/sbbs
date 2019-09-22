@@ -160,7 +160,7 @@ var Player_Def = [
 	},
 	{
 		prop:'extra',
-		type:'String:353',
+		type:'String:354',
 		def:''
 	}
 ];
@@ -1567,7 +1567,7 @@ function run_ref(sec, fname)
 					str += '`r0';
 				str += decorate_item(itm);
 				str += spaces(32 - displen(str));
-				str += '`2$`$'+itm.value;
+				str += '`2$`$'+itm.value+'`2';
 				str += spaces(48 - displen(str));
 				str += itm.description;
 				lw(str);
@@ -1878,6 +1878,33 @@ function move_player(xoff, yoff) {
 	}
 }
 
+function box_top(width, title)
+{
+	var str;
+
+	str = '`r1`0'+ascii(218) + repeat_chars(ascii(196), parseInt(((width - 2) - displen(title)) / 2, 10)) + title + '`r1`0';
+	str += repeat_chars(ascii(196), (width - 1) - displen(str));
+	str += ascii(191);
+	return str;
+}
+
+function box_bottom(width)
+{
+	return '`r1`0'+ascii(192)+repeat_chars(ascii(196), (width - 2))+ascii(217);
+}
+
+function box_middle(width, text, highlight)
+{
+	var str = '`r1`0'+ascii(179)+'  ';
+	if (highlight)
+		str += '`r5';
+	str += text;
+	str += '`r1`0';
+	str += spaces((width - 1) - displen(str));
+	str += ascii(179);
+	return str;
+}
+
 // Assume width of 36
 // Assume position centered in inventory window thing
 function popup_menu(title, opts)
@@ -1891,14 +1918,7 @@ function popup_menu(title, opts)
 
 	function show_opts() {
 		opts.forEach(function(o, i) {
-			str = '`r1`0'+ascii(179)+'  ';
-			if (i === cur)
-				str += '`r5`0';
-			str += o.txt;
-			if (i === cur)
-				str += '`r1`0';
-			str += spaces(37 - displen(str));
-			str += ascii(179);
+			str = box_middle(38, o.txt, i === cur);
 			dk.console.gotoxy(x, y+1+i);
 			lw(str);
 		});
@@ -1909,13 +1929,11 @@ function popup_menu(title, opts)
 		dk.console.attr.value = sattr;
 	}
 
-	str = '`r1`0'+ascii(218) + repeat_chars(ascii(196), parseInt((36 - displen(title)) / 2, 10)) + title + '`r1`0';
-	str += repeat_chars(ascii(196), 37 - displen(str));
-	str += ascii(191);
+	str = box_top(38, title);
 	dk.console.gotoxy(x, y);
 	lw(str);
 	show_opts();
-	str = '`r1`0'+ascii(192)+repeat_chars(ascii(196), 36)+ascii(217);
+	str = box_bottom(38);
 	dk.console.gotoxy(x, y+opts.length+1);
 	lw(str);
 	dk.console.gotoxy(x+3, y+1+cur);
@@ -2061,6 +2079,39 @@ rescan:
 						if (cur >= lb.length)
 							cur = 0;
 						break;
+					case 'D':
+						dk.console.gotoxy(17, 12);
+						lw(box_top(42, items[inv[cur]].name));
+						dk.console.gotoxy(17, 13);
+						lw(box_middle(42, ''));
+						dk.console.gotoxy(17, 14);
+						lw(box_middle(42, '   `$Drop how many? '));
+						dk.console.gotoxy(17, 15);
+						lw(box_middle(42, ''));
+						dk.console.gotoxy(17, 16);
+						lw(box_bottom(42, ''));
+						dk.console.gotoxy(38, 14);
+						// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
+						ch = dk.console.getstr({edit:player.i[inv[cur]].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
+						lw('`r1`0');
+						ch = parseInt(ch, 10);
+						if (!isNaN(ch) && ch <= player.i[inv[cur]]) {
+							player.i[inv[cur]] -= ch;
+							if (player.i[inv[cur]] === 0) {
+								if (player.weaponnumber === inv[cur] + 1)
+									player.weaponnumber = 0;
+								if (player.armournumber - 1 === inv[cur])
+									player.armournumber = 0;
+							}
+							dk.console.gotoxy(21, 14);
+							if (ch === 1)
+								lw('`$You go ahead and throw it away.`0');
+							else
+								lw('`$You drop the offending items!`0');
+							getkey();
+						}
+						clear_block();
+						continue rescan;
 					case '\r':
 						use_opts = [];
 						if (items[inv[cur]].weapon) {
@@ -2233,6 +2284,7 @@ load_player();
 load_items();
 dump_items();
 
+run_ref('rules', 'rules.ref');
 if (player.Record === undefined)
 	run_ref('newplayer', 'gametxt.ref');
 
