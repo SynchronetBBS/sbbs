@@ -4,7 +4,7 @@ The classic game, revisited for this Synchronet BBS!
 https://en.wikipedia.org/wiki/Minesweeper_(video_game)
 
 The object of the game is to uncover all safe cells without uncovering
-(detonating) any mines (rhën)!
+(detonating) any mines (rhën), within the allowed time!
 
 hControlsn:
 
@@ -16,13 +16,12 @@ The object of the game is to uncover all safe cells without uncovering
   If you reveal an empty cell, then all adjacent empty cells will also be
   uncovered (a depth-first search algorithm popular in coding interviews)!
   Uncovered cells with a mine in any surrounding/adjacent cells will have the
-  total number of adjacent mines (a digit, from 1 to 8) displayed.
+  total number of adjacent mines displayed (a digit, from 1 to 8).
   These digits are your clue where the next mine or empty cell may be located.
   When all empty cells are uncovered, the game is won!
 
 * Flag a covered cell as having a suspected mine with the 'F' key. When the
-  game is over, incorrectly-flagged cells are marked with '!', but don't count
-  against you. 
+  game is over, incorrectly-flagged cells are marked with '!'. 
 
 * Display a list of previous game-winners with the 'W' key.
 
