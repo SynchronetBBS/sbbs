@@ -2224,7 +2224,7 @@ function load_items()
 		items.push(ifile.get(i));
 }
 
-var pfile = new RecordFile(js.exec_dir + 'player.dat', Player_Def);
+var pfile = new RecordFile(js.exec_dir + 'trader.dat', Player_Def);
 var mfile = new RecordFile(js.exec_dir + 'map.dat', Map_Def);
 var wfile = new RecordFile(js.exec_dir + 'world.dat', World_Def);
 var ifile = new RecordFile(js.exec_dir + 'items.dat', Item_Def);
