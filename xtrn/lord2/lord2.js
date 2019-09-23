@@ -19,9 +19,12 @@ if (scr === undefined)
 require("recordfile.js", "RecordFile");
 
 var player;
+var update_rec;
 var map;
 var world;
+
 var items = [];
+var other_players = {};
 var Player_Def = [
 	{
 		prop:'name',
@@ -410,6 +413,39 @@ var Item_Def = [
 	},
 ];
 
+var Update_Def = [
+	{
+		prop:'x',
+		type:'SignedInteger8',
+		def:0
+	},
+	{
+		prop:'y',
+		type:'SignedInteger8',
+		def:0
+	},
+	{
+		prop:'map',
+		type:'SignedInteger16',
+		def:155
+	},
+	{
+		prop:'onnow',
+		type:'Integer8',
+		def:0
+	},
+	{
+		prop:'busy',
+		type:'Integer8',
+		def:0
+	},
+	{
+		prop:'battle',
+		type:'Integer8',
+		def:0
+	},
+];
+
 function clamp_integer(v, s)
 {
 	var i = parseInt(v, 10);
@@ -504,11 +540,11 @@ var vars = {
 	response:{type:'fn', get:function() { return vars.responce.val; }, set:function(val) { vars.responce.val = clamp_integer(val, 's32')  } },
 };
 var i;
-for (i = 1; i < 41; i++) {
-	vars[format('`v%02d', i)] = {type:'int', val:0};
+for (i = 0; i < 40; i++) {
+	vars[format('`v%02d', i+1)] = {type:'fn', get:eval('function() { return world.v['+i+'] }'), set:eval('function(val) { world.v['+i+'] = clamp_integer(val, "s32"); }')};
 }
-for (i = 1; i < 11; i++) {
-	vars[format('`s%02d', i)] = {type:'str', val:''};
+for (i = 0; i < 10; i++) {
+	vars[format('`s%02d', i+1)] = {type:'fn', get:eval('function() { return world.s['+i+'] }'), set:eval('function(val) { world.s['+i+'] = val; }')};
 }
 for (i = 0; i < 99; i++) {
 	vars[format('`p%02d', i+1)] = {type:'fn', get:eval('function() { return player.p['+i+'] }'), set:eval('function(val) { player.p['+i+'] = clamp_integer(val, "s32"); }')};
@@ -738,7 +774,7 @@ function sln(str)
 	curlinenum += 1;
 	if (morechk) {
 		if (curlinenum > dk.console.rows - 1) {
-			more_nomail();
+			more();
 			curlinenum = 1;
 		}
 	}
@@ -1128,6 +1164,23 @@ function run_ref(sec, fname)
 
 			str += spaces(l - dl);
 			setvar(args[0], str);
+		},
+		'rename':function(args) {
+			file_rename(js.exec_dir + getvar(args[0]), js.exec_dir + getvar(args[1]));
+		},
+		'addlog':function(args) {
+			var f = new File(js.exec_dir + 'lognow.txt');
+			line++;
+			if (line > files[fname].lines.length)
+				return;
+			if (f.open('a')) {
+				cl = files[fname].lines[line];
+				f.writeln(replace_vars(cl));
+				f.close();
+			}
+		},
+		'delete':function(args) {
+			file_remove(js.exec_dir + getvar(args[0]));
 		}
 	};
 	var handlers = {
@@ -1268,9 +1321,9 @@ function run_ref(sec, fname)
 					break;
 				case 'exist':
 					if (file_exists(js.exec_dir + args[0]) === (args[2].toLowerCase() === 'true'))
-						handlers.do(args.slice(5));
+						handlers.do(args.slice(4));
 					else if (args[4].toLowerCase() === 'begin')
-						handlers.begin(args.slice(6));
+						handlers.begin(args.slice(5));
 					break;
 				default:
 					throw('Unhandled condition '+args[1]+' at '+fname+':'+line);
@@ -1372,7 +1425,7 @@ function run_ref(sec, fname)
 			if (!f.open('a'))
 				throw('Unable to open '+f.name+' at '+fname+':'+line);
 			getlines().forEach(function(l) {
-				f.writeln(l);
+				f.writeln(replace_vars(l));
 			});
 			f.close();
 		},
@@ -1505,8 +1558,10 @@ function run_ref(sec, fname)
 		'addchar':function(args) {
 			var tmp = pfile.new();
 			player.Record = tmp.Record;
+			ufile.new();
 			player.put();
 			player.reLoad();
+			update_rec = ufile.get(player.Record);
 		},
 		'offmap':function(args) {
 			// TODO: Disappear to other players.
@@ -1635,6 +1690,23 @@ function run_ref(sec, fname)
 				}
 				draw_menu();
 			}
+		},
+		'saveglobals':function(args) {
+			world.put();
+		},
+		'loadglobals':function(args) {
+			world.reLoad();
+		},
+		'bitset':function(args) {
+			var bit = clamp_integer(getvar(args[1]), '32');
+			var s = clamp_integer(getvar(args[2]), '8');
+			var v = clamp_integer(getvar(args[0]), '32');
+
+			if (s !== 0 && s !== 1)
+				throw('Setting bit to value other than zero or one');
+			if ((!!(v & (1 << bit))) !== (!!s))
+				v ^= (1<<bit);
+			setvar(args[0], v);
 		}
 	};
 
@@ -1720,6 +1792,7 @@ function load_player()
 		p = pfile.get(i);
 		if (p.realname === dk.user.full_name) {
 			player = p;
+			update_rec = ufile.get(p.Record);
 			return;
 		}
 	}
@@ -1766,13 +1839,56 @@ function erase(x, y) {
 }
 
 function update() {
-	// TODO: Draw other players
+	var i;
+	var u;
+	var nop = {};
+	var op;
+
+	// First, erase any moved players and update other_players
+	for (i = 0; i < ufile.length; i++) {
+		if (i === player.Record)
+			continue;
+		u = ufile.get(i);
+		if (u.map === player.map) {
+			nop[i] = u;
+			// Erase old player pos...
+			if (other_players[i] !== undefined) {
+				op = other_players[i];
+				if (op.x !== u.x || op.y !== u.y)
+					erase(op.x - 1, op.y - 1);
+			}
+		}
+	}
+
+	// Now, draw all players on the map
+	Object.keys(nop).forEach(function(k) {
+		u = nop[k];
+		dk.console.gotoxy(u.x - 1, u.y - 1);
+		if (u.onnow === 0)
+			foreground(7);
+		else if (u.busy)	// TODO: Bright or dark red?
+			foreground(4);
+		else if (u.battle)	// TODO: What colour?
+			foreground(12);
+		else
+			foreground(15);
+		background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
+		dk.console.print('\x02');
+	});
+	other_players = nop;
+
 	timeout_bar();
 	dk.console.gotoxy(player.x - 1, player.y - 1);
 	foreground(15);
 	background(map.mapinfo[getpoffset()].backcolour);
 	dk.console.print('\x02');
 	dk.console.gotoxy(player.x - 1, player.y - 1);
+	update_rec.x = player.x;
+	update_rec.y = player.y;
+	update_rec.map = player.map;
+	update_rec.busy = false;
+	update_rec.onnow = true;
+	update_rec.put();
 }
 
 function draw_map() {
@@ -1795,6 +1911,7 @@ function draw_map() {
 		}
 	}
 	status_bar();
+	other_players = {};
 }
 
 function load_map(mapnum)
@@ -1809,6 +1926,12 @@ function move_player(xoff, yoff) {
 	var special = false;
 	var newmap = false;
 
+	if (getvar('`v05') > 0) {
+		if (player.p[10] <= 0) {
+			update_bar('`5You are exhaused - maybe tomorrow, after you get some sleep...', true, 5);
+			return;
+		}
+	}
 	if (x === 0) {
 		player.map -= 1;
 		player.x = 80;
@@ -1872,6 +1995,10 @@ function move_player(xoff, yoff) {
 			}
 		}
 	});
+	if (moved && getvar('`v05') > 0) {
+		player.p[10]--;
+		// It seems there's checks at 750 "It is getting dark", 300 "You are getting very sleepy", and 150 "You are about to faint"
+	}
 	if (moved && !special && map.battleodds > 0 && map.reffile !== '' && map.refsection !== '') {
 		if (random(map.battleodds === 0))
 			run_ref(map.refsection, map.reffile);
@@ -2185,8 +2312,8 @@ function do_map()
 	ch = ''
 	while (ch != 'Q') {
 		do {
-			timeout_bar();
-		} while (!dk.console.waitkey(500));
+			update();
+		} while (!dk.console.waitkey(150));
 		ch = getkey().toUpperCase();
 		switch(ch) {
 			case '8':
@@ -2200,7 +2327,7 @@ function do_map()
 			case '6':
 			case 'KEY_RIGHT':
 				move_player(1, 0);
-				break
+				break;
 			case '2':
 			case 'KEY_DOWN':
 				move_player(0, 1);
@@ -2275,14 +2402,62 @@ function load_items()
 		items.push(ifile.get(i));
 }
 
+function load_time()
+{
+	var newday = false;
+	var sday;
+	var f = new File(js.exec_dir + 'stime.dat');
+	var d = new Date();
+	var tday = d.getFullYear()+(d.getMonth()+1)+d.getDate(); // Yes, really.
+
+	if (!file_exists(f.name)) {
+		newday = true;
+		state.time = 0;
+	}
+	else {
+		if (!f.open('r'))
+			throw('Unable to open '+f.name);
+		sday = parseInt(f.readln(), 10);
+		if (sday !== tday)
+			newday = true;
+		f.close();
+	}
+	f = new File(js.exec_dir + 'time.dat');
+	if (!file_exists(f.name)) {
+		state.time = 0;
+		newday = true;
+	}
+	else {
+		if (!f.open('r'))
+			throw('Unable to open '+f.name);
+		state.time = parseInt(f.readln(), 10);
+	}
+
+	if (newday) {
+		f = new File(js.exec_dir + 'stime.dat');
+		if (!f.open('w'))
+			throw('Unable to open '+f.name);
+		f.writeln(tday);
+		f.close;
+		state.time++;
+		f = new File(js.exec_dir + 'time.dat');
+		if (!f.open('w'))
+			throw('Unable to open '+f.name);
+		f.writeln(state.time);
+		f.close;
+		run_ref('maint', 'maint.ref');
+	}
+}
+
 var pfile = new RecordFile(js.exec_dir + 'trader.dat', Player_Def);
 var mfile = new RecordFile(js.exec_dir + 'map.dat', Map_Def);
 var wfile = new RecordFile(js.exec_dir + 'world.dat', World_Def);
 var ifile = new RecordFile(js.exec_dir + 'items.dat', Item_Def);
+var ufile = new RecordFile(js.exec_dir + 'update.tmp', Update_Def);
 world = wfile.get(0);
 load_player();
 load_items();
-dump_items();
+load_time();
 
 run_ref('rules', 'rules.ref');
 if (player.Record === undefined)
