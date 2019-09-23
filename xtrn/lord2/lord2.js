@@ -2181,58 +2181,63 @@ function erase(x, y) {
 	dk.console.print(mi.ch === '' ? ' ' : mi.ch);
 }
 
-function update() {
+var next_update = -1;
+function update(skip) {
 	var i;
 	var u;
 	var nop = {};
 	var op;
+	var now = (new Date().valueOf());
 
-	// First, update player data
-	for (i = 0; i < ufile.length; i++) {
-		if (i === player.Record)
-			continue;
-		if (i > players.length) {
-			op = pfile.get(i);
-			players.push({x:op.x, y:op.y, map:op.map, onnow:op.onnow, busy:op.busy, battle:op.battle});
-		}
-		u = ufile.get(i);
-		if (u.map !== 0 && u.x !== 0 && u.y !== 0)
-			players[i] = u;
-	}
-
-	// First, erase any moved players and update other_players
-	players.forEach(function(u, i) {
-		if (i === player.Record)
-			return;
-		if (u.map === player.map) {
-			nop[i] = {x:u.x, y:u.y, map:u.map, onnow:u.onnow, busy:u.busy, battle:u.battle}
-			// Erase old player pos...
-			if (other_players[i] !== undefined) {
-				op = other_players[i];
-				if (op.x !== u.x || op.y !== u.y)
-					erase(op.x - 1, op.y - 1);
+	if ((!skip) || now > next_update) {
+		next_update = now + game.delay;
+		// First, update player data
+		for (i = 0; i < ufile.length; i++) {
+			if (i === player.Record)
+				continue;
+			if (i > players.length) {
+				op = pfile.get(i);
+				players.push({x:op.x, y:op.y, map:op.map, onnow:op.onnow, busy:op.busy, battle:op.battle});
 			}
+			u = ufile.get(i);
+			if (u.map !== 0 && u.x !== 0 && u.y !== 0)
+				players[i] = u;
 		}
-	});
 
-	// Now, draw all players on the map
-	Object.keys(nop).forEach(function(k) {
-		u = nop[k];
-		// Note that 'busy' is what 'offmap' toggles, not what 'busy' does. *sigh*
-		if (u.busy === 0) {
-			dk.console.gotoxy(u.x - 1, u.y - 1);
-				foreground(4);
-			if (u.battle)
-				foreground(4);
-			else
-				foreground(7);
-			background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
-			dk.console.print('\x02');
-		}
-	});
-	other_players = nop;
+		// First, erase any moved players and update other_players
+		players.forEach(function(u, i) {
+			if (i === player.Record)
+				return;
+			if (u.map === player.map) {
+				nop[i] = {x:u.x, y:u.y, map:u.map, onnow:u.onnow, busy:u.busy, battle:u.battle}
+				// Erase old player pos...
+				if (other_players[i] !== undefined) {
+					op = other_players[i];
+					if (op.x !== u.x || op.y !== u.y)
+						erase(op.x - 1, op.y - 1);
+				}
+			}
+		});
 
-	timeout_bar();
+		// Now, draw all players on the map
+		Object.keys(nop).forEach(function(k) {
+			u = nop[k];
+			// Note that 'busy' is what 'offmap' toggles, not what 'busy' does. *sigh*
+			if (u.busy === 0) {
+				dk.console.gotoxy(u.x - 1, u.y - 1);
+					foreground(4);
+				if (u.battle)
+					foreground(4);
+				else
+					foreground(7);
+				background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
+				dk.console.print('\x02');
+			}
+		});
+		other_players = nop;
+
+		timeout_bar();
+	}
 	dk.console.gotoxy(player.x - 1, player.y - 1);
 	foreground(15);
 	background(map.mapinfo[getpoffset()].backcolour);
@@ -2321,7 +2326,7 @@ function move_player(xoff, yoff) {
 			erase(player.x-1, player.y-1);
 			player.x = x;
 			player.y = y;
-			update();
+			update(true);
 			moved = true;
 		}
 	}
@@ -2687,9 +2692,9 @@ function do_map()
 
 	ch = ''
 	while (ch != 'Q') {
-		do {
+		while (!dk.console.waitkey(game.delay)) {
 			update();
-		} while (!dk.console.waitkey(game.delay));
+		};
 		ch = getkey().toUpperCase();
 		switch(ch) {
 			case '8':
