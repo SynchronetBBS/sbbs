@@ -506,6 +506,10 @@ var state = {
 var files = {};
 var vars = {
 	version:{type:'const', val:99},
+	'`d':{type:'const', val:'\b'},
+	'`x':{type:'const', val:' '},
+	'`\\':{type:'const', val:'`n'},
+	'nil':{type:'const', val:''},
 	x:{type:'fn', get:function() { return player.x }, set:function(x) { player.x = clamp_integer(x, 's8') } },
 	y:{type:'fn', get:function() { return player.y }, set:function(y) { player.y = clamp_integer(y, 's8') } },
 	map:{type:'fn', get:function() { return player.map }, set:function(map) { player.map = clamp_integer(map, 's16') } },
@@ -649,8 +653,11 @@ function getvar(name) {
 	var lc = false;
 	var ret;
 
-	if (vars[name.toLowerCase()] === undefined)
+	if (vars[name.toLowerCase()] === undefined) {
+		if (name.toLowerCase() === 'nil')
+			return '';
 		return replace_vars(name);
+	}
 	if (name.substr(0, 2) === 'S&')
 		uc = true;
 	if (name.substr(0, 2) === 's&')
@@ -686,12 +693,9 @@ function expand_ticks(str)
 {
 	str = str.replace(/`n/ig, player.name);
 	str = str.replace(/`e/ig, getvar('enemy'));
-	str = str.replace(/`x/ig, ' ');
 	str = str.replace(/`w/ig, '');
 	str = str.replace(/`l/ig, '');
-	str = str.replace(/`\\/ig, '\n');
 	str = str.replace(/`c/ig, '');
-	str = str.replace(/.`d/ig, '');
 	// TODO: Not sure how to handle `c and `d is icky.
 	return str;
 }
@@ -859,14 +863,6 @@ function lw(str) {
 				case 'K':
 					more();
 					break;
-				case 'x':
-				case 'X':
-					sw(' ');
-					break;
-				case 'd':
-				case 'D':
-					sw('\b');
-					break;
 				case 'w':
 				case 'W':
 					mswait(100);
@@ -874,9 +870,6 @@ function lw(str) {
 				case 'l':
 				case 'L':
 					mswait(500);
-					break;
-				case '\\':
-					sln('');
 					break;
 				case '1':		// BLUE
 					foreground(1);
