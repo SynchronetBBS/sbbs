@@ -3222,7 +3222,8 @@ void event_thread(void* arg)
 					write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
 					close(file);
 
-					if(sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
+					if(sbbs->cfg.event[i]->node != NODE_ANY
+						&& sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
 						// Check/change the status of the nodes that we're in control of
 						for(j=first_node;j<=last_node;j++) {
 							node.status=NODE_INVALID_STATUS;
