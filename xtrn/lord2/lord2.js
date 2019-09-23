@@ -3,6 +3,7 @@
 // TODO: More optimal lightbars
 // TODO: Multiplayer interactions
 // TODO: Save player after changes in case process crashes
+// TODO: Optimize lightbars a lot
 
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
 load("dorkit.js");
@@ -24,6 +25,7 @@ if (scr === undefined)
 require("recordfile.js", "RecordFile");
 
 var player;
+var players = [];
 var update_rec;
 var map;
 var world;
@@ -508,7 +510,7 @@ var vars = {
 	version:{type:'const', val:99},
 	'`d':{type:'const', val:'\b'},
 	'`x':{type:'const', val:' '},
-	'`\\':{type:'const', val:'`n'},
+	'`\\':{type:'const', val:'\n'},
 	'nil':{type:'const', val:''},
 	x:{type:'fn', get:function() { return player.x }, set:function(x) { player.x = clamp_integer(x, 's8') } },
 	y:{type:'fn', get:function() { return player.y }, set:function(y) { player.y = clamp_integer(y, 's8') } },
@@ -558,7 +560,7 @@ for (i = 0; i < 10; i++) {
 for (i = 0; i < 99; i++) {
 	vars[format('`p%02d', i+1)] = {type:'fn', get:eval('function() { return player.p['+i+'] }'), set:eval('function(val) { player.p['+i+'] = clamp_integer(val, "s32"); }')};
 	vars[format('`t%02d', i+1)] = {type:'fn', get:eval('function() { return player.t['+i+'] }'), set:eval('function(val) { player.t['+i+'] = clamp_integer(val, "8"); }')};
-	vars[format('`i%02d', i+1)] = {type:'fn', get:eval('function() { return player.i['+i+'] }'), set:eval('function(val) { player.i['+i+'] = clamp_integer(val, "s8"); }')};
+	vars[format('`i%02d', i+1)] = {type:'fn', get:eval('function() { return player.i['+i+'] }'), set:eval('function(val) { player.i['+i+'] = clamp_integer(val, "s16"); }')};
 	vars[format('`+%02d', i+1)] = {type:'fn', get:eval('function() { return items['+i+'].name }'), set:eval('function(val) { throw("Attempt to set item '+i+' name"); }')};
 }
 
@@ -710,6 +712,7 @@ function replace_vars(str)
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
 	str = str.replace(/(`\+[0-9][0-9])/g, function(m, r1) { return getvar(r1); });
+	str = str.replace(/(`[xd\\])/g, function(m, r1) { return getvar(r1); });
 	return str;
 }
 
@@ -1073,7 +1076,7 @@ function run_ref(sec, fname)
 			if (line > files[fname].lines.length)
 				return;
 			cl = files[fname].lines[line];
-			lw(cl);
+			lw(replace_vars(cl));
 		},
 		'talk':function(args) {
 			// TODO: Send message to other players (mail stuff?)
@@ -1140,7 +1143,6 @@ function run_ref(sec, fname)
 			erase(player.x - 1, player.y - 1);
 			player.x = player.lastx;
 			player.y = player.lasty;
-			update();
 		},
 		'saybar':function(args) {
 			line++;
@@ -1366,7 +1368,7 @@ function run_ref(sec, fname)
 
 			if (args.length === 0) {
 				l.forEach(function(l) {
-					lln(l);
+					lln(replace_vars(l));
 				});
 			}
 			else if (args[0].toLowerCase() === 'scroll') {
@@ -1561,10 +1563,16 @@ function run_ref(sec, fname)
 			update_rec = ufile.get(player.Record);
 		},
 		'offmap':function(args) {
-			// TODO: Disappear to other players.
+			// TODO: Disappear to other players... this toggles busy because
+			// it looks like that's what it does...
+			update_rec.busy = 1;
+			update_rec.put();
 		},
 		'busy':function(args) {
 			// TODO: Turn red for other players, and run @#busy if other player interacts
+			// this toggles battle...
+			update_rec.battle = 1;
+			update_rec.put();
 		},
 		'drawmap':function(args) {
 			draw_map();
@@ -2052,13 +2060,25 @@ function update() {
 	var nop = {};
 	var op;
 
-	// First, erase any moved players and update other_players
+	// First, update player data
 	for (i = 0; i < ufile.length; i++) {
 		if (i === player.Record)
 			continue;
+		if (i > players.length) {
+			op = pfile.get(i);
+			players.push({x:op.x, y:op.y, map:op.map, onnow:op.onnow, busy:op.busy, battle:op.battle});
+		}
 		u = ufile.get(i);
+		if (u.map !== 0 && u.x !== 0 && u.y !== 0)
+			players[i] = u;
+	}
+
+	// First, erase any moved players and update other_players
+	players.forEach(function(u, i) {
+		if (i === player.Record)
+			return;
 		if (u.map === player.map) {
-			nop[i] = u;
+			nop[i] = {x:u.x, y:u.y, map:u.map, onnow:u.onnow, busy:u.busy, battle:u.battle}
 			// Erase old player pos...
 			if (other_players[i] !== undefined) {
 				op = other_players[i];
@@ -2066,22 +2086,22 @@ function update() {
 					erase(op.x - 1, op.y - 1);
 			}
 		}
-	}
+	});
 
 	// Now, draw all players on the map
 	Object.keys(nop).forEach(function(k) {
 		u = nop[k];
-		dk.console.gotoxy(u.x - 1, u.y - 1);
-		if (u.onnow === 0)
-			foreground(7);
-		else if (u.busy)	// TODO: Bright or dark red?
-			foreground(4);
-		else if (u.battle)	// TODO: What colour?
-			foreground(12);
-		else
-			foreground(15);
-		background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
-		dk.console.print('\x02');
+		// Note that 'busy' is what 'offmap' toggles, not what 'busy' does. *sigh*
+		if (u.busy === 0) {
+			dk.console.gotoxy(u.x - 1, u.y - 1);
+				foreground(4);
+			if (u.battle)
+				foreground(4);
+			else
+				foreground(7);
+			background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
+			dk.console.print('\x02');
+		}
 	});
 	other_players = nop;
 
@@ -2617,6 +2637,19 @@ function load_items()
 		items.push(ifile.get(i));
 }
 
+function load_players()
+{
+	var i;
+	var p;
+
+	players = [];
+	for (i = 0; i < pfile.length; i++) {
+		p = pfile.get(i);
+		players.push({x:p.x, y:p.y, map:p.map, onnow:p.onnow, busy:p.busy, battle:p.battle});
+		items.push(ifile.get(i));
+	}
+}
+
 function load_time()
 {
 	var newday = false;
@@ -2675,6 +2708,7 @@ var ifile = new RecordFile(js.exec_dir + 'items.dat', Item_Def);
 var ufile = new RecordFile(js.exec_dir + 'update.tmp', Update_Def);
 world = wfile.get(0);
 load_player();
+load_players();
 load_items();
 load_time();
 
