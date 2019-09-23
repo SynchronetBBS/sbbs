@@ -1188,7 +1188,8 @@ function run_ref(sec, fname)
 		var ret = [];
 
 		while (line < files[fname].lines.length && files[fname].lines[line+1].search(/^\s*@/) === -1) {
-			ret.push(files[fname].lines[line+1]);
+			if (files[fname].lines[line+1].search(/^\s*;/) === -1)
+				ret.push(files[fname].lines[line+1]);
 			line++;
 		}
 		return ret;
