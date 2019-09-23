@@ -29,6 +29,7 @@ var players = [];
 var update_rec;
 var map;
 var world;
+var game;
 
 var items = [];
 var other_players = {};
@@ -453,6 +454,48 @@ var Update_Def = [
 	},
 ];
 
+var Game_Def = [
+	{
+		prop:'pad0',
+		type:'String:8',
+		def:''
+	},
+	// Offset 8 is days to deletion
+	{
+		prop:'deldays',
+		type:'Integer',
+		def:15
+	},
+	{
+		prop:'pad1',
+		type:'String:211',
+		def:''
+	},
+	// Offset 223 is 32-bit delay
+	{
+		prop:'delay',
+		type:'Integer',
+		def:100
+	},
+	// Offset 223 and 227 seem to be the version maybe?
+	{
+		prop:'pad2',
+		type:'String:4',
+		def:''
+	},
+	// Offset 231 is buffer strokes
+	{
+		prop:'buffer',
+		type:'Integer8',
+		def:1
+	},
+	{
+		prop:'pad3',
+		type:'String:1990',
+		def:''
+	}
+];
+
 function clamp_integer(v, s)
 {
 	var i = parseInt(v, 10);
@@ -510,7 +553,7 @@ var vars = {
 	version:{type:'const', val:99},
 	'`d':{type:'const', val:'\b'},
 	'`x':{type:'const', val:' '},
-	'`\\':{type:'const', val:'\n'},
+	'`\\':{type:'const', val:'\r\n'},
 	'nil':{type:'const', val:''},
 	x:{type:'fn', get:function() { return player.x }, set:function(x) { player.x = clamp_integer(x, 's8') } },
 	y:{type:'fn', get:function() { return player.y }, set:function(y) { player.y = clamp_integer(y, 's8') } },
@@ -523,6 +566,7 @@ var vars = {
 	gold:{type:'fn', get:function() { return player.money }, set:function(money) { player.money = clamp_integer(money, 's32') } },
 	bank:{type:'fn', get:function() { return player.bank }, set:function(bank) { player.bank = clamp_integer(bank, 's32') } },
 	enemy:{type:'str', val:''},
+	local:{type:'fn', get:function() { return (dk.system.mode === 'local' ? 5 : 0) } },
 	'&realname':{type:'const', val:dk.user.full_name},
 	'&date':{type:'fn', get:function() { var d = new Date(); return format('%02d/%02d/%02d', d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw('Attempt to set date at '+fname+':'+line); } },
 	'&nicedate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw('Attempt to set nicedate at '+fname+':'+line); } },
@@ -994,6 +1038,61 @@ function spaces(len)
 
 var bar_timeout;
 var bar_queue = [];
+// TODO: How this works in the original...
+/*
+ * The buffer is in mail/talkX.tmp (where X is the 1-based player number)
+ * The game pulls the top line out of there and displays it.
+ * As soon as a line is displayed, it is appended to mail/logX.tmp
+ * which is what is used when displaying the backlog/fastbacklog
+ * 
+ * Only the last 19 are displayed, but the file keeps growing.
+ * 
+ * Various notifications also go into mail/talkX.tmp (enter/exit messages etc)
+ * This is where 'T' global messages go too.
+ * 
+ * mail/conX.tmp is where
+ * ADDITEM|4|1 (itemnum, count) goes.
+ * ADDGOLD|1
+ * CONNECT|1
+ * 
+ * mail/mailX.tmp is actual messages..
+ * @MESSAGE Mee
+ * <txt>
+ * <txt>
+ * @DONE
+ * @REPLY 1
+ * 
+ * Only @DONE is required.
+ * 
+ * Other interesting MAIL things...
+ * MAIL\BAT
+ * MAIL\CHAT
+ * MAIL\GIV
+ * MAIL\INF
+ * MAIL\LOG
+ * MAIL\MAB
+ * MAIL\MAT
+ * MAIL\TALK
+ * MAIL\TCON
+ * MAIL\TEM
+ * MAIL\TEMP
+ * MAIL\TX
+ * 
+ * Requires \r\n
+ * 
+ * HAIL... Appends CONNECT|<them> to conX, creates tx<me>.tmp, and sets battle bit
+ * Delete the tx<me>.tmp and the connection is established.
+ * 
+ * Chat...
+ * Puts "CHAT" into INF<them>.TMP
+ * Chat lines go into CHAT<them>.TMP '  `0Mee : `2Chat line.'
+ * Single line 'EXIT' indicates that was terminated.
+ * 
+ * Battle...
+ * Appends `r0`0Mee `2hits you with his `0Dagger`2 for `b7`2 damage!|7
+ * To BAT<them>.dat
+ * 
+ */
 function update_bar(str, centre, timeout)
 {
 	str = replace_vars(str);
@@ -2542,7 +2641,7 @@ function do_map()
 	while (ch != 'Q') {
 		do {
 			update();
-		} while (!dk.console.waitkey(150));
+		} while (!dk.console.waitkey(game.delay));
 		ch = getkey().toUpperCase();
 		switch(ch) {
 			case '8':
@@ -2701,26 +2800,32 @@ function load_time()
 	}
 }
 
+function load_game()
+{
+	game = gfile.get(0);
+}
+
 var pfile = new RecordFile(js.exec_dir + 'trader.dat', Player_Def);
 var mfile = new RecordFile(js.exec_dir + 'map.dat', Map_Def);
 var wfile = new RecordFile(js.exec_dir + 'world.dat', World_Def);
 var ifile = new RecordFile(js.exec_dir + 'items.dat', Item_Def);
 var ufile = new RecordFile(js.exec_dir + 'update.tmp', Update_Def);
+var gfile = new RecordFile(js.exec_dir + 'game.dat', Game_Def);
 world = wfile.get(0);
 load_player();
 load_players();
 load_items();
 load_time();
+load_game();
 
 run_ref('rules', 'rules.ref');
 if (player.Record === undefined)
 	run_ref('newplayer', 'gametxt.ref');
 
-player.onnow = 1;
-player.busy = 0;
-player.battle = 0;
-
 run_ref('startgame', 'gametxt.ref');
 js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); player.onnow = 0; player.busy = 0; player.battle = 0; player.put(); }');
 player.onnow = 1;
+player.busy = 0;
+player.battle = 0;
+player.put();
 do_map();
