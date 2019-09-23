@@ -607,6 +607,10 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<4;j++)
 			get_int(n,instream);
+
+		// You can't require exclusion *and* not specify which node/instance will execute the event
+		if(cfg->event[i]->node == NODE_ANY)
+			cfg->event[i]->misc &= ~EVENT_EXCL;
 	}
 	cfg->total_events=i;
 
