@@ -2,6 +2,7 @@
 
 // TODO: More optimal lightbars
 // TODO: Multiplayer interactions
+// TODO: Save player after changes in case process crashes
 
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
 load("dorkit.js");
@@ -1563,7 +1564,7 @@ function run_ref(sec, fname)
 			var tmp = pfile.new();
 			player.Record = tmp.Record;
 			ufile.new();
-			player.reLoad();
+			player.put();
 			update_rec = ufile.get(player.Record);
 		},
 		'offmap':function(args) {
@@ -2016,9 +2017,6 @@ function load_player()
 	player = new RecordFileRecord(pfile);
 	player.reInit();
 	player.realname = dk.user.full_name;
-	player.onnow = 1;
-	player.busy = 0;
-	player.battle = 0;
 }
 
 function foreground(col)
@@ -2103,8 +2101,8 @@ function update() {
 	update_rec.x = player.x;
 	update_rec.y = player.y;
 	update_rec.map = player.map;
-	update_rec.busy = false;
-	update_rec.onnow = true;
+	update_rec.busy = 0;
+	update_rec.onnow = 1;
 	update_rec.put();
 }
 
@@ -2611,6 +2609,13 @@ function dump_items()
 	});
 }
 
+function dump_player()
+{
+	Player_Def.forEach(function(d) {
+		log(d.prop+': '+player[d.prop]);
+	});
+}
+
 function load_items()
 {
 	var i;
@@ -2628,6 +2633,7 @@ function load_time()
 	var tday = d.getFullYear()+(d.getMonth()+1)+d.getDate(); // Yes, really.
 
 	if (!file_exists(f.name)) {
+		file_mutex(f.name, tday+'\n');
 		newday = true;
 		state.time = 0;
 	}
@@ -2642,6 +2648,7 @@ function load_time()
 	f = new File(js.exec_dir + 'time.dat');
 	if (!file_exists(f.name)) {
 		state.time = 0;
+		file_mutex(f.name, state.time+'\n');
 		newday = true;
 	}
 	else {
@@ -2652,14 +2659,16 @@ function load_time()
 
 	if (newday) {
 		f = new File(js.exec_dir + 'stime.dat');
-		if (!f.open('w'))
+		if (!f.open('r+'))
 			throw('Unable to open '+f.name);
+		f.truncate(0);
 		f.writeln(tday);
 		f.close;
 		state.time++;
 		f = new File(js.exec_dir + 'time.dat');
-		if (!f.open('w'))
+		if (!f.open('r+'))
 			throw('Unable to open '+f.name);
+		f.truncate(0);
 		f.writeln(state.time);
 		f.close;
 		run_ref('maint', 'maint.ref');
@@ -2680,6 +2689,11 @@ run_ref('rules', 'rules.ref');
 if (player.Record === undefined)
 	run_ref('newplayer', 'gametxt.ref');
 
+player.onnow = 1;
+player.busy = 0;
+player.battle = 0;
+
 run_ref('startgame', 'gametxt.ref');
-js.on_exit('if (player !== undefined) player.put()');
+js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); player.onnow = 0; player.busy = 0; player.battle = 0; player.put(); }');
+player.onnow = 1;
 do_map();
