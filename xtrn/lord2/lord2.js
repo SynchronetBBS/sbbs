@@ -2656,6 +2656,24 @@ rescan:
 	}
 }
 
+function show_player_names()
+{
+	var pl;
+	var sattr = dk.console.attr.value;
+
+	players.forEach(function(p, i) {
+		if (p.map === player.map) {
+			pl = pfile.get(i);
+			dk.console.gotoxy(p.x, p.y-1);
+			lw('`r1`2'+pl.name);
+		}
+	});
+	dk.console.attr.value = sattr;
+	dk.console.gotoxy(2, 20);
+	lw('`r1`%                          Press a key to continue                           `r0');
+	getkey();
+}
+
 function do_map()
 {
 	var ch;
@@ -2812,6 +2830,11 @@ function do_map()
 					status_bar();
 				}
 				break;
+			case 'S':
+				show_player_names();
+				draw_map();
+				update();
+				break;
 		}
 	}
 	run_ref('endgame', 'gametxt.ref');
@@ -2948,7 +2971,8 @@ killfiles.push(lfile);
 lfile.close();
 
 run_ref('startgame', 'gametxt.ref');
-js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); ufile.close(); player.onnow = 0; player.busy = 0; player.battle = 0; player.put(); pfile.close() }');
+js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); ufile.file.close(); player.onnow = 0; player.busy = 0; player.battle = 0; player.put(); pfile.file.close() }');
+players[player.Record] = update_rec;
 player.onnow = 1;
 player.busy = 0;
 player.battle = 0;
