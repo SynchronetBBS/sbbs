@@ -30,6 +30,7 @@ var update_rec;
 var map;
 var world;
 var game;
+var killfiles = [];
 
 var items = [];
 var other_players = {};
@@ -802,9 +803,14 @@ function clean_str(str)
 	return ret;
 }
 
+function superclean(str)
+{
+	return remove_colour(expand_ticks(replace_vars(str)));
+}
+
 function displen(str)
 {
-	return remove_colour(expand_ticks(replace_vars(str))).length;
+	return superclean(str).length;
 }
 
 function sw(str) {
@@ -829,7 +835,7 @@ function sln(str)
 	sw('\r\n');
 	curlinenum += 1;
 	if (morechk) {
-		if (curlinenum > dk.console.rows - 1) {
+		if (curlinenum > 24) {
 			more();
 			curlinenum = 1;
 		}
@@ -1037,7 +1043,6 @@ function spaces(len)
 }
 
 var bar_timeout;
-var bar_queue = [];
 // TODO: How this works in the original...
 /*
  * The buffer is in mail/talkX.tmp (where X is the 1-based player number)
@@ -1093,16 +1098,22 @@ var bar_queue = [];
  * To BAT<them>.dat
  * 
  */
-function update_bar(str, centre, timeout)
+function update_bar(str, msg, timeout)
 {
 	str = replace_vars(str);
 	var dl = displen(str);
 	var l;
 	var attr = dk.console.attr.value;
 
+	if (msg) {
+		if (!lfile.open('ab'))
+			throw('Unable to open '+lfile.name);
+		lfile.write(str+'\r\n');
+		lfile.close();
+	}
 	dk.console.gotoxy(2, 20);
 	dk.console.attr.value = 31;
-	if (centre && dl < 76) {
+	if (msg && dl < 76) {
 		l = parseInt((76 - dl) / 2, 10);
 		str = spaces(l) + str;
 		dl += l;
@@ -1139,11 +1150,25 @@ function pretty_int(int)
 
 function timeout_bar()
 {
-	if (bar_timeout === undefined && bar_queue.length === 0)
+	var al;
+	var tl;
+
+	if (bar_timeout === undefined && file_size(tfile.name) === 0)
 		return;
 	if (bar_timeout === undefined || new Date().valueOf() > bar_timeout) {
-		if (bar_queue.length)
-			update_bar(bar_queue.shift(), true, 4);
+		if (file_size(tfile.name) > 0) {
+			if (!tfile.open('r+b'))
+				throw('Unable to open '+tfile.name);
+			al = tfile.readAll();
+			tl = al.shift();
+			tfile.position = 0;
+			al.forEach(function(l) {
+				tfile.write(l+'\r\n');
+			});
+			tfile.truncate(tfile.position);
+			tfile.close();
+			update_bar(tl, true, 4);
+		}
 		else
 			status_bar();
 	}
@@ -1253,7 +1278,10 @@ function run_ref(sec, fname)
 			line++;
 			if (line >= files[fname].lines.length)
 				throw('Trailing quebar at '+fname+':'+line);
-			bar_queue.push(files[fname].lines[line]);
+			if (!tfile.open('ab'))
+				throw('Unable to open '+tfile.name);
+			tfile.write(files[fname].lines[line]+'\r\n');
+			tfile.close();
 			timeout_bar();
 		},
 		'pad':function(args) {
@@ -1272,9 +1300,9 @@ function run_ref(sec, fname)
 			line++;
 			if (line > files[fname].lines.length)
 				return;
-			if (f.open('a')) {
+			if (f.open('ab')) {
 				cl = files[fname].lines[line];
-				f.writeln(replace_vars(cl));
+				f.write(replace_vars(cl)+'\r\n');
 				f.close();
 			}
 		},
@@ -1521,10 +1549,10 @@ function run_ref(sec, fname)
 			if (args.length < 1)
 				throw('No filename for writefile at '+fname+':'+line);
 			var f = new File(js.exec_dir + args[0].toLowerCase());
-			if (!f.open('a'))
+			if (!f.open('ab'))
 				throw('Unable to open '+f.name+' at '+fname+':'+line);
 			getlines().forEach(function(l) {
-				f.writeln(replace_vars(l));
+				f.write(replace_vars(l)+'\r\n');
 			});
 			f.close();
 		},
@@ -2631,6 +2659,8 @@ rescan:
 function do_map()
 {
 	var ch;
+	var al;
+	var oldmore;
 
 	if (map === undefined || map.Record !== world.mapdatindex[player.map - 1] - 1)
 		load_map(player.map);
@@ -2704,6 +2734,83 @@ function do_map()
 				break;
 			case 'Z':
 				run_ref('z', 'help.ref');
+				break;
+			case 'B':
+				if (!lfile.open('r'))
+					throw('Unable to open '+lfile.name);
+				al = lfile.readAll();
+				lfile.close();
+				while (al.length > 20)
+					al.shift();
+				if (al.length === 0) {
+					dk.console.gotoxy(2, 20);
+					lw('`r1`%               Backbuffer is EMPTY - Press a key to continue.               `r0');
+					getkey();
+					status_bar();
+					break;
+				}
+				oldmore = morechk;
+				morechk = false;
+				lln('`c`r1                                 BACK BUFFER                                   `r0`7');
+				al.forEach(function(l) {
+					sln('  '+superclean(l));
+				});
+				dk.console.gotoxy(2, 23);
+				lw('`r1`%                     Press a key to return to the game.                     `r0');
+				getkey();
+				morechk = oldmore;
+				draw_map();
+				update();
+				break;
+			case 'F':
+				if (!lfile.open('r'))
+					throw('Unable to open '+lfile.name);
+				al = lfile.readAll();
+				lfile.close();
+				while (al.length > 5)
+					al.shift();
+				if (al.length === 0) {
+					dk.console.gotoxy(2, 20);
+					lw('`r1`%               Backbuffer is EMPTY - Press a key to continue.               `r0');
+					getkey();
+					status_bar();
+				}
+				else {
+					lw('`r0`7');
+					dk.console.gotoxy(0, 21);
+					// First two, more, last three, prompt
+					if (al.length < 4) {
+						sln('  '+superclean(al[0]));
+						if (al.length > 1)
+							sln('  '+superclean(al[1]));
+						if (al.length > 2)
+							sw('  '+superclean(al[2]));
+					}
+					else {
+						sln('  '+superclean(al[0]));
+						sln('  '+superclean(al[1]));
+						more();
+						dk.console.gotoxy(0, 21);
+						dk.console.cleareol();
+						sln('  '+superclean(al[2]));
+						dk.console.gotoxy(0, 22);
+						dk.console.cleareol();
+						if (al.length > 3)
+							sln('  '+superclean(al[3]));
+						dk.console.gotoxy(0, 23);
+						dk.console.cleareol();
+						if (al.length > 4)
+							sw('  '+superclean(al[4]));
+					}
+					dk.console.gotoxy(2, 20);
+					lw('`r1`%Fast Backbuffer - Press a key to continue                                   `r0`2');
+					getkey();
+					for (al = 21; al < 24; al++) {
+						dk.console.gotoxy(0, al);
+						dk.console.cleareol();
+					}
+					status_bar();
+				}
 				break;
 		}
 	}
@@ -2784,17 +2891,17 @@ function load_time()
 
 	if (newday) {
 		f = new File(js.exec_dir + 'stime.dat');
-		if (!f.open('r+'))
+		if (!f.open('r+b'))
 			throw('Unable to open '+f.name);
 		f.truncate(0);
-		f.writeln(tday);
+		f.write(tday+'\r\n');
 		f.close;
 		state.time++;
 		f = new File(js.exec_dir + 'time.dat');
-		if (!f.open('r+'))
+		if (!f.open('r+b'))
 			throw('Unable to open '+f.name);
 		f.truncate(0);
-		f.writeln(state.time);
+		f.write(state.time+'\r\n');
 		f.close;
 		run_ref('maint', 'maint.ref');
 	}
@@ -2811,6 +2918,11 @@ var wfile = new RecordFile(js.exec_dir + 'world.dat', World_Def);
 var ifile = new RecordFile(js.exec_dir + 'items.dat', Item_Def);
 var ufile = new RecordFile(js.exec_dir + 'update.tmp', Update_Def);
 var gfile = new RecordFile(js.exec_dir + 'game.dat', Game_Def);
+if (!file_isdir(js.exec_dir + 'mail')) {
+	mkdir(js.exec_dir + 'mail');
+	if (!file_isdir(js.exec_dir + 'mail'))
+		throw('Unable to create mail directory');
+}
 world = wfile.get(0);
 load_player();
 load_players();
@@ -2822,8 +2934,21 @@ run_ref('rules', 'rules.ref');
 if (player.Record === undefined)
 	run_ref('newplayer', 'gametxt.ref');
 
+js.on_exit('killfiles.forEach(function(f) { if (f.is_open) { f.close(); } file_remove(f.name); });');
+
+var tfile = new File(js.exec_dir + 'mail/talk'+player.Record+'.tmp');
+if (!tfile.open('w+b'))
+	throw('Unable to open '+tfile.name);
+killfiles.push(tfile);
+tfile.close();
+var lfile = new File(js.exec_dir + 'mail/log'+player.Record+'.tmp');
+if (!lfile.open('w+b'))
+	throw('Unable to open '+lfile.name);
+killfiles.push(lfile);
+lfile.close();
+
 run_ref('startgame', 'gametxt.ref');
-js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); player.onnow = 0; player.busy = 0; player.battle = 0; player.put(); }');
+js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); ufile.close(); player.onnow = 0; player.busy = 0; player.battle = 0; player.put(); pfile.close() }');
 player.onnow = 1;
 player.busy = 0;
 player.battle = 0;
