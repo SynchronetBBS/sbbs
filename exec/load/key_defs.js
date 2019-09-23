@@ -1,50 +1,50 @@
 // $Id$
-// Terminal keyboard definitions (string constants)
+// Terminal keyboard definitions (string varants)
 
-								/********************************************/
-								/* Special inkey()/getkey() return values	*/
-								/********************************************/
-const KEY_ESC		= '\x1b';	/* Ctrl-[ (escape)							*/
-const KEY_UP		= '\x1e';	/* ctrl-^ (up arrow)						*/
-const KEY_DOWN		= '\x0a';	/* ctrl-j (dn arrow)						*/
-const KEY_RIGHT		= '\x06';	/* ctrl-f (rt arrow)						*/
-const KEY_LEFT		= '\x1d';	/* ctrl-] (lf arrow)						*/
-const KEY_HOME		= '\x02';	/* ctrl-b (home)							*/
-const KEY_END		= '\x05';	/* ctrl-e (end)								*/
-const KEY_INSERT	= '\x16';	/* ctrl-v (insert)							*/
-const KEY_DEL		= '\x7f';   /* ctrl-BkSpc (DEL)							*/
-const KEY_PAGEUP	= '\x10';	/* ctrl-p (Page Up)							*/
-const KEY_PAGEDN	= '\x0e';	/* ctrl-n (Page Down)						*/
-								/********************************************/
-const KEY_ABORT		= '\x03';	/* ctrl-c (cancel/abort/break)				*/
-								/********************************************/
+							/********************************************/
+							/* Special inkey()/getkey() return values	*/
+							/********************************************/
+var KEY_ESC		= '\x1b';	/* Ctrl-[ (escape)							*/
+var KEY_UP		= '\x1e';	/* ctrl-^ (up arrow)						*/
+var KEY_DOWN	= '\x0a';	/* ctrl-j (dn arrow)						*/
+var KEY_RIGHT	= '\x06';	/* ctrl-f (rt arrow)						*/
+var KEY_LEFT	= '\x1d';	/* ctrl-] (lf arrow)						*/
+var KEY_HOME	= '\x02';	/* ctrl-b (home)							*/
+var KEY_END		= '\x05';	/* ctrl-e (end)								*/
+var KEY_INSERT	= '\x16';	/* ctrl-v (insert)							*/
+var KEY_DEL		= '\x7f';   /* ctrl-BkSpc (DEL)							*/
+var KEY_PAGEUP	= '\x10';	/* ctrl-p (Page Up)							*/
+var KEY_PAGEDN	= '\x0e';	/* ctrl-n (Page Down)						*/
+							/********************************************/
+var KEY_ABORT	= '\x03';	/* ctrl-c (cancel/abort/break)				*/
+							/********************************************/
 
-const CTRL_A		= '\x01';
-const CTRL_B		= '\x02';
-const CTRL_C		= '\x03';
-const CTRL_D		= '\x04';
-const CTRL_E		= '\x05';
-const CTRL_F		= '\x06';
-const CTRL_G		= '\x07';
-const CTRL_H		= '\x08';
-const CTRL_I		= '\x09';
-const CTRL_J		= '\x0a';
-const CTRL_K		= '\x0b';
-const CTRL_L		= '\x0c';
-const CTRL_M		= '\x0d';
-const CTRL_N		= '\x0e';
-const CTRL_O		= '\x0f';
-const CTRL_P		= '\x10';
-const CTRL_Q		= '\x11';
-const CTRL_R		= '\x12';
-const CTRL_S		= '\x13';
-const CTRL_T		= '\x14';
-const CTRL_U		= '\x15';
-const CTRL_V		= '\x16';
-const CTRL_W		= '\x17';
-const CTRL_X		= '\x18';
-const CTRL_Y		= '\x19';
-const CTRL_Z		= '\x1a';
+var CTRL_A		= '\x01';
+var CTRL_B		= '\x02';
+var CTRL_C		= '\x03';
+var CTRL_D		= '\x04';
+var CTRL_E		= '\x05';
+var CTRL_F		= '\x06';
+var CTRL_G		= '\x07';
+var CTRL_H		= '\x08';
+var CTRL_I		= '\x09';
+var CTRL_J		= '\x0a';
+var CTRL_K		= '\x0b';
+var CTRL_L		= '\x0c';
+var CTRL_M		= '\x0d';
+var CTRL_N		= '\x0e';
+var CTRL_O		= '\x0f';
+var CTRL_P		= '\x10';
+var CTRL_Q		= '\x11';
+var CTRL_R		= '\x12';
+var CTRL_S		= '\x13';
+var CTRL_T		= '\x14';
+var CTRL_U		= '\x15';
+var CTRL_V		= '\x16';
+var CTRL_W		= '\x17';
+var CTRL_X		= '\x18';
+var CTRL_Y		= '\x19';
+var CTRL_Z		= '\x1a';
 
 // Leave as last line:
 this;
