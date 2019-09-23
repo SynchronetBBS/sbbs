@@ -1,4 +1,8 @@
 'use strict';
+
+// TODO: More optimal lightbars
+// TODO: Multiplayer interactions
+
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
 load("dorkit.js");
 dk.console.auto_pause = false;
@@ -645,7 +649,7 @@ function getvar(name) {
 	var ret;
 
 	if (vars[name.toLowerCase()] === undefined)
-		return name;
+		return replace_vars(name);
 	if (name.substr(0, 2) === 'S&')
 		uc = true;
 	if (name.substr(0, 2) === 's&')
@@ -1091,7 +1095,7 @@ function run_ref(sec, fname)
 			setvar(args[0], ch);
 		},
 		'goto':function(args) {
-			args[0] = args[0].toLowerCase();
+			args[0] = getvar(args[0]);
 			if (files[fname].section[args[0]] === undefined)
 				throw('Goto undefined label '+args[0]+' at '+fname+':'+line);
 			line = files[fname].section[args[0]].line;
@@ -1559,7 +1563,6 @@ function run_ref(sec, fname)
 			var tmp = pfile.new();
 			player.Record = tmp.Record;
 			ufile.new();
-			player.put();
 			player.reLoad();
 			update_rec = ufile.get(player.Record);
 		},
@@ -1707,6 +1710,220 @@ function run_ref(sec, fname)
 			if ((!!(v & (1 << bit))) !== (!!s))
 				v ^= (1<<bit);
 			setvar(args[0], v);
+		},
+		'fight':function(args) {
+			// TODO
+		},
+		'sellmanager':function(args) {
+			var i;
+			var inv;
+			var lb;
+			var choices;
+			var cur = 0;
+			var amt;
+			var price;
+			var yn;
+			var itm;
+			var ch;
+
+			function draw_menu() {
+				inv.forEach(function(it, i) {
+					var str;
+					var itm = items[it - 1];
+
+					dk.console.gotoxy(0, 7 + i);
+					str = '';
+					if (i === cur)
+						str += '`r1';
+					else
+						str += '`r0';
+					str += '`2  ';
+					if (!itm.sell)
+						str += '`8';
+					str += itm.name;
+					lw(str);
+				});
+				dk.console.gotoxy(0, 7 + cur);
+			}
+
+			dk.console.gotoxy(0, 6);
+			lw('`r5`%  Item To Sell                        Amount Owned                              `r0');
+			dk.console.gotoxy(0, 23);
+			lw('`r5  `$Q `2to quit, `$ENTER `2to sell item.                                               `r0');
+
+rescan:
+			while (1) {
+				dk.console.gotoxy(39, 23);
+				lw('`2`r5You have `$&money `2gold.`r0');
+				for (i = 7; i < 23; i++) {
+					dk.console.gotoxy(0, i);
+					dk.console.cleareol();
+				}
+				inv = [];
+				for (i = 0; i < 99; i++) {
+					if (player.i[i] > 0)
+						inv.push(i+1);
+				}
+				if (inv.length === 0) {
+					dk.console.gotoxy(0, 6);
+					lw('`r0  `2You have nothing to sell.  (press `%Q `2to continue)');
+					do {
+						ch = getkey().toUpperCase();
+					} while (ch != 'Q');
+					return;
+				}
+
+				inv.forEach(function(it, i) {
+					var str;
+
+					itm = items[it - 1];
+					dk.console.gotoxy(0, 7 + i);
+					str = '';
+					if (i === cur)
+						str += '`r1';
+					str += '`2  ';
+					if (!itm.sell)
+						str += '`8';
+					str += itm.name;
+					if (i === cur)
+						str += '`r0';
+					str += decorate_item(itm);
+					str += spaces(37 - displen(str));
+					str += '`2(';
+					if (itm.sell)
+						str += '`0';
+					else
+						str += '`8';
+					str += player.i[itm.Record];
+					str += '`2)';
+					str += spaces(48 - displen(str));
+					if (itm.sell)
+						str += '`2';
+					else
+						str += '`8';
+					str += itm.description;
+					lw(str);
+				});
+				dk.console.gotoxy(0, 7);
+
+				while(1) {
+					ch = getkey().toUpperCase();
+					switch(ch) {
+						case '8':
+						case 'KEY_UP':
+						case '4':
+						case 'KEY_LEFT':
+							cur--;
+							if (cur < 0)
+								cur = inv.length - 1;
+							break;
+						case '2':
+						case 'KEY_DOWN':
+						case '6':
+						case 'KEY_RIGHT':
+							cur++;
+							if (cur >= inv.length)
+								cur = 0;
+							break;
+						case 'Q':
+							return;
+						case '\r':
+							itm = items[inv[cur] - 1];
+							amt = 1;
+							if (!itm.sell) {
+								
+							}
+							price = parseInt(itm.value / 2, 10);
+							if (!itm.sell) {
+								dk.console.gotoxy(21, 14);
+								lw(box_top(41, itm.name));
+								dk.console.gotoxy(21, 15);
+								lw(box_middle(41, ''));
+								dk.console.gotoxy(21, 16);
+								lw(box_middle(41, '`$They don\'t seem interested in that.'));
+								dk.console.gotoxy(21, 17);
+								lw(box_middle(41, ''));
+								dk.console.gotoxy(21, 18);
+								lw(box_bottom(41));
+								dk.console.gotoxy(59, 16);
+								getkey();
+								continue rescan;
+							}
+							if (player.i[itm.Record] > 1) {
+								dk.console.gotoxy(17, 14);
+								lw(box_top(42, items[itm.Record].name));
+								dk.console.gotoxy(17, 15);
+								lw(box_middle(42, ''));
+								dk.console.gotoxy(17, 16);
+								lw(box_middle(42, '   `$Sell how many? '));
+								dk.console.gotoxy(17, 17);
+								lw(box_middle(42, ''));
+								dk.console.gotoxy(17, 18);
+								lw(box_bottom(42, ''));
+								dk.console.gotoxy(38, 16);
+								// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
+								ch = dk.console.getstr({edit:player.i[itm.Record].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
+								lw('`r1`0');
+								amt = parseInt(ch, 10);
+								if (isNaN(amt) || amt <= 0 || amt > player.i[itm.Record]) {
+									continue rescan;
+								}
+							}
+							dk.console.gotoxy(20, 16);
+							lw(box_top(36, itm.name));
+							dk.console.gotoxy(20, 17);
+							lw(box_middle(36, ''));
+							dk.console.gotoxy(20, 18);
+							lw(box_middle(36, '`$Sell '+amt+' of \'em for '+(amt * price)+' gold?'));
+							dk.console.gotoxy(20, 19);
+							lw(box_middle(36, ''));
+							dk.console.gotoxy(20, 20);
+							lw(box_middle(36, '`r5`$Yes'));
+							dk.console.gotoxy(20, 21);
+							lw(box_middle(36, '`$No'));
+							dk.console.gotoxy(20, 22);
+							lw(box_bottom(36));
+							dk.console.gotoxy(25,21);
+							yn = true;
+							do {
+								ch = getkey().toUpperCase();
+								switch (ch) {
+									case '8':
+									case 'KEY_UP':
+									case '4':
+									case 'KEY_LEFT':
+									case '2':
+									case 'KEY_DOWN':
+									case '6':
+									case 'KEY_RIGHT':
+										yn = !yn;
+										dk.console.gotoxy(23,20);
+										if (yn)
+											lw('`r5');
+										lw('`$Yes`r1');
+										dk.console.gotoxy(23,21);
+										if (!yn)
+											lw('`r5');
+										lw('`$No`r1');
+										break;
+								}
+							} while (ch !== '\r');
+							if (yn) {
+								player.i[itm.Record] -= amt;
+								if (player.i[itm.Record] <= 0) {
+									if (player.weaponnumber === inv[cur])
+										player.weaponnumber = 0;
+									if (player.armournumber === inv[cur])
+										player.armournumber = 0;
+								}
+								setvar('money', getvar('money') + amt * price);
+							}
+							lw('`r0');
+							continue rescan;
+					}
+					draw_menu();
+				}
+			}
 		}
 	};
 
@@ -1759,7 +1976,7 @@ function run_ref(sec, fname)
 
 	while (1) {
 		line++;
-log(fname+':'+line);
+//log(fname+':'+line);
 		if (line > files[fname].lines.length)
 			return;
 		cl = files[fname].lines[line].replace(/^\s*/,'');
@@ -2000,7 +2217,7 @@ function move_player(xoff, yoff) {
 		// It seems there's checks at 750 "It is getting dark", 300 "You are getting very sleepy", and 150 "You are about to faint"
 	}
 	if (moved && !special && map.battleodds > 0 && map.reffile !== '' && map.refsection !== '') {
-		if (random(map.battleodds === 0))
+		if (random(map.battleodds) === 0)
 			run_ref(map.refsection, map.reffile);
 	}
 }
@@ -2095,11 +2312,11 @@ function decorate_item(it)
 {
 	var str = '';
 	if (it.armour)
-		str += ' `0A`2';
+		str += ' `r2`^A`2`r0';
 	if (it.weapon)
-		str += ' `4W`2';
+		str += ' `r4`^W`2`r0';
 	if (it.useonce)
-		str += ' `51`2';
+		str += ' `r5`^1`2`r0';
 	return str;
 }
 
@@ -2147,6 +2364,7 @@ function view_inventory()
 
 rescan:
 	while(1) {
+		run_ref('stats', 'gametxt.ref');
 		inv = [];
 		lb = [];
 		choices = [];
@@ -2225,7 +2443,7 @@ rescan:
 						if (!isNaN(ch) && ch <= player.i[inv[cur]]) {
 							player.i[inv[cur]] -= ch;
 							if (player.i[inv[cur]] === 0) {
-								if (player.weaponnumber === inv[cur] + 1)
+								if (player.weaponnumber - 1 === inv[cur])
 									player.weaponnumber = 0;
 								if (player.armournumber - 1 === inv[cur])
 									player.armournumber = 0;
@@ -2281,7 +2499,7 @@ rescan:
 								if (items[inv[cur]].useonce) {
 									player.i[inv[cur]]--;
 									if (player.i[inv[cur]] === 0) {
-										if (player.weaponnumber === inv[cur] + 1)
+										if (player.weaponnumber - 1 === inv[cur])
 											player.weaponnumber = 0;
 										if (player.armournumber - 1 === inv[cur])
 											player.armournumber = 0;
@@ -2359,7 +2577,7 @@ function do_map()
 				if (ch === 'N') {
 					dk.console.gotoxy(0, 22);
 					dk.console.cleareol();
-					dh.console.gotoxy(player.x - 1, player.y - 1);
+					dk.console.gotoxy(player.x - 1, player.y - 1);
 				}
 				else
 					ch = 'Q';
@@ -2368,7 +2586,6 @@ function do_map()
 				run_ref('talk', 'help.ref');
 				break;
 			case 'V':
-				run_ref('stats', 'gametxt.ref');
 				view_inventory();
 				run_ref('closestats', 'gametxt.ref');
 				break;
@@ -2464,4 +2681,5 @@ if (player.Record === undefined)
 	run_ref('newplayer', 'gametxt.ref');
 
 run_ref('startgame', 'gametxt.ref');
+js.on_exit('if (player !== undefined) player.put()');
 do_map();
