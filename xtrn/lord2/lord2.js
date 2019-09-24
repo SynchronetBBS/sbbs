@@ -502,6 +502,7 @@ var UCASE = true;
 var matchcase = true;
 function getfname(str)
 {
+	str = str.replace(/\\/g,'/');
 	var ec = file_getcase(js.exec_dir + str);
 
 	if (ec !== undefined) {
@@ -766,6 +767,8 @@ function expand_ticks(str)
 
 function replace_vars(str)
 {
+	if (typeof str !== 'string')
+		return str;
 	str = str.replace(/([Ss]?&[A-Za-z]+)/g, function(m, r1) { return getvar(r1); });
 	str = str.replace(/(`[Vv][0-4][0-9])/g, function(m, r1) { return getvar(r1); });
 	str = str.replace(/(`[Ss][0-1][0-9])/g, function(m, r1) { return getvar(r1); });
@@ -1285,7 +1288,7 @@ function run_ref(sec, fname)
 		},
 		'goto':function(args) {
 			// NOTE: This doesn't use getvar() because GREEN.REF has 'do goto bank'
-			args[0] = replace_vars(args[0]);
+			args[0] = replace_vars(args[0]).toLowerCase();
 			if (files[fname].section[args[0]] === undefined)
 				throw('Goto undefined label '+args[0]+' at '+fname+':'+line);
 			line = files[fname].section[args[0]].line;
@@ -1464,6 +1467,14 @@ function run_ref(sec, fname)
 				else if (args[2].toLowerCase() === 'reallength') {
 					setvar(args[0], getvar(args[3]).length);
 				}
+				else if (args[2].toLowerCase() === 'getname') {
+					tmp = pfile.get(clamp_integer(getvar(args[3]), '8'));
+					setvar(args[0], tmp.name);
+				}
+				else if (args[2].toLowerCase() === 'deleted') {
+					tmp = pfile.get(clamp_integer(getvar(args[3]), '8'));
+					setvar(args[0], tmp.deleted);
+				}
 				else
 					setvar(args[0], getvar(args[2]));
 				return;
@@ -1592,8 +1603,9 @@ function run_ref(sec, fname)
 		},
 		'begin':function(args) {
 			var depth = 1;
-			if (args.length > 0)
-				throw('Unexpected arguments to begin');
+			// Don't do this, trailing whitespace...
+			//if (args.length > 0)
+			//	throw('Unexpected arguments to begin at '+fname+':'+line);
 			while (depth > 0) {
 				line++;
 				if (files[fname].lines[line].search(/^\s*@begin/i) !== -1)
@@ -2336,6 +2348,19 @@ rescan:
 			}
 			f.close();
 		},
+		'progname':function(args) {
+			// TODO: Sets the name in the status bar...
+		},
+		'moremap':function(args) {
+			// TODO: Changes the MORE prompt
+		},
+		'clear':function(args) {
+			if (args[0].toLowerCase() === 'screen') {
+				sclrscr();
+				return;
+			}
+			throw('Unknown clear type at '+fname+':'+line);
+		}
 	};
 
   	function handle(args)
@@ -3492,6 +3517,7 @@ if (!lfile.open('w+b'))
 killfiles.push(lfile);
 lfile.close();
 
+dump_player();
 run_ref('startgame', 'gametxt.ref');
 js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); ufile.file.close(); player.onnow = 0; player.busy = 0; player.battle = 0; player.put(); pfile.file.close() }');
 players[player.Record] = update_rec;
