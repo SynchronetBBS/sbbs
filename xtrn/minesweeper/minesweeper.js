@@ -7,6 +7,7 @@
 //
 // Name                       Synchronet Minesweeper
 // Internal Code              MSWEEPER
+// Start-up Directory         ../xtrn/minesweeper
 // Command Line               ?minesweeper
 // Multiple Concurrent Users  Yes
 
@@ -17,20 +18,22 @@
 //
 // Name                       Synchronet Minesweeper Winners
 // Internal Code              MSWINNER
+// Start-up Directory         ../xtrn/minesweeper
 // Command Line               ?minesweeper winners
 // Multiple Concurrent Users  Yes
 // Execute on Event           Logon, Only
 
 // Command-line arguments supported:
 //
-// "winners" - display list of top-X winners and exit
-// "nocls"   - don't clear the screen upon exit
-// <level>   - set the initial game difficulty level (1-5, don't prompt)
+// "winners [num]" 	- display list of top-[num] winners and exit
+// "nocls"   		- don't clear the screen upon exit
+// <level>   		- set the initial game difficulty level (1-5, don't prompt)
 
 // ctrl/modopts.ini [minesweeper] options (with default values):
 // sub = syncdata
 // timelimit = 60
 // winners = 20
+// difficulty = 0 ; 0 = prompt user, 1-5 to set default difficulty (no prompt)
 
 "use strict";
 
@@ -38,8 +41,8 @@ const title = "Synchronet Minesweeper";
 const REVISION = "$Revision$".split(' ')[1];
 const author = "Digital Man";
 const header_height = 4;
-const winners_list = system.data_dir + "minesweeper.jsonl";
-const help_file = system.text_dir + "minesweeper.hlp";
+const winners_list = js.exec_dir + "winners.jsonl";
+const help_file = js.exec_dir + "minesweeper.hlp";
 const max_difficulty = 5;
 const min_mine_density = 0.10;
 const mine_density_multiplier = 0.025;
