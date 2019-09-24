@@ -671,6 +671,7 @@ function handle_request() {
 						return false;
 					sdata.forest_gold += parseInt(tmph[1], 10);
 					sdata.put();
+					sock.LORD_writeln('OK');
 					break;
 				case 'GetForestGold':
 					tmph = request.match(/^GetForestGold ([0-9]+)$/);
