@@ -680,6 +680,8 @@ function getkey()
 
 function remove_colour(str)
 {
+	if (typeof str !== 'string')
+		return str;
 	str = str.replace(/`[0-9\!-^]/g, '');
 	str = str.replace(/`r[0-7]/g, '');
 	return str;
@@ -764,6 +766,8 @@ function getvar(name) {
 
 function expand_ticks(str)
 {
+	if (typeof str !== 'string')
+		return str;
 	str = str.replace(/`w/ig, '');
 	str = str.replace(/`l/ig, '');
 	str = str.replace(/`c/ig, '');
@@ -1313,6 +1317,58 @@ function timeout_bar()
 	}
 }
 
+function ranked_players(prop)
+{
+	var i;
+	var ret = [];
+	var pl;
+
+	for (i = 0; i < pfile.length; i++) {
+		pl = pfile.get(i);
+		if (pl.deleted === 1)
+			continue;
+		ret.push(pfile.get(i));
+	}
+
+	function sortfunc(a, b) {
+		function getprop(pl) {
+			var ret;
+			var op = player;
+
+			player = pl;
+			ret = getvar(prop);
+			player = op;
+		}
+
+		var ap, bp;
+
+		if (prop !== undefined) {
+			ap = getprop(a);
+			bp = getprop(b);
+			if (ap !== bp)
+				return bp - ap;
+		}
+		if (a.p[0] !== b.p[0])
+			return b.p[0] - a.p[0];
+		if (a.p[8] !== b.p[8])
+			return b.p[8] - a.p[8];
+		if (a.p[17] !== b.p[17])
+			return b.p[17] - a.p[17];
+		if ((a.money + a.bank) !== (b.money + b.bank))
+			return (b.money + b.bank) - (a.money + a.bank);
+		if (a.p[18] !== b.p[18])
+			return b.p[18] - a.p[18];
+		if (a.p[2] !== b.p[2])
+			return b.p[2] - a.p[2];
+		if (a.p[33] !== b.p[33])
+			return b.p[33] - a.p[33];
+		if (a.p[35] !== b.p[35])
+			return b.p[35] - a.p[35];
+	}
+
+	return ret.sort(sortfunc);
+}
+
 function run_ref(sec, fname)
 {
 	var line;
@@ -1709,6 +1765,7 @@ function run_ref(sec, fname)
 						handlers.begin(args.slice(5));
 					break;
 				case '=':
+				case 'equals':
 				case 'is':
 					if (args[2].toLowerCase() === 'length') {
 						tmp = remove_colour(expand_ticks(replace_vars(getvar(args[3])))).length;
@@ -1849,9 +1906,6 @@ function run_ref(sec, fname)
 			if (args.length < 1)
 				throw('No filename for writefile at '+fname+':'+line);
 			var f = new File(getfname(getvar(args[0]).toLowerCase()));
-log('FNAME: '+f.name);
-log('args0: "'+args[0]+'"');
-log('gva: "'+getvar(args[0])+'"');
 			if (!f.open('ab'))
 				throw('Unable to open '+f.name+' at '+fname+':'+line);
 			getlines().forEach(function(l) {
@@ -2517,9 +2571,36 @@ rescan:
 			}
 			throw('Unknown clear type at '+fname+':'+line);
 		},
-		//'chooseplayer':function(args) {
-			// TODO: Choose player.
-		//},
+		'chooseplayer':function(args) {
+			var i;
+			var pl;
+			var pn;
+			var ch;
+
+			lln('`r0`2  Who would you like to send a message to?');
+			sln('');
+			lln('  `2(`0full or `%PARTIAL`0 name`2).')
+			lw('`2NAME `8: `%');
+			pn = superclean(dk.console.getstr({len:26}));
+			sln('');
+
+			for (i = 0; i < pfile.length; i++) {
+				pl = pfile.get(i);
+				if (pl.name.indexOf(pn) !== 0) {
+					lw('  `2You mean `0.`2?  [`0Y`2] `8: ');
+					ch = getkey().toUpperCase();
+					if (ch !== 'N')
+						ch = 'Y';
+					if (ch === 'Y') {
+						setvar(args[0], i + 1);
+						return;
+					}
+					lw('\r');
+					dk.console.cleareol();
+				}
+			}
+			lw('`\\;  `2Sorry - no one by that name lives \'round these parts.`\\');
+		},
 		'drawpart':function(args) {
 			var x = getvar(args[0]);
 			var y = getvar(args[1]);
@@ -2533,9 +2614,24 @@ rescan:
 		'savecursor':function(args) {
 			saved_cursor = {x:scr.pos.x, y:scr.pos.y};
 		},
-		//'overheadmap':function(args) {
-			// TODO: Display overhead map...
-		//},
+		'overheadmap':function(args) {
+			var off;
+			var x, y;
+
+			dk.console.clear();
+			dk.console.gotoxy(0, 0);
+			for (y = 0; y < 20; y++) {
+				dk.console.gotoxy(0, y);
+				for (x = 0; x < 80; x++) {
+					off = y * 80 + x;
+					if (world.hideonmap[off] || world.mapdatindex[off] < 1)
+						background(1);
+					else
+						background(2);
+					lw(' ');
+				}
+			}
+		},
 		'copyfile':function(args) {
 			file_copy(getfname(getvar(args[0]).toLowerCase()), getfname(getvar(args[1]).toLowerCase()));
 		},
@@ -2578,15 +2674,43 @@ rescan:
 			}
 			throw('Unsupported display at '+fname+':'+line);
 		},
-		//'lordrank':function(args) {
-			// TODO lordrank
-		//},
-		//'rank':function(args) {
-			// TODO rank
-		//},
-		//'whoison':function(args) {
-			// TODO: whoison
-		//},
+		'rank':function(args) {
+			// TODO: No real clue what the filename is for...
+			var rp = ranked_players(args[1]);
+			var op = player;
+
+			rp.forEach(function(pl, i) {
+				player = pl;
+				run_ref(format('`p%02d', getvar(args[2])), fname);
+			});
+			player = op;
+		},
+		'lordrank':function(args) {
+			var f = new File(getfname(getvar(args[0])));
+			var rp = ranked_players(args[1]);
+
+			if (!f.open('ab'))
+				return;
+			rp.forEach(function(pl, i) {
+				f.write((pl.sexmale === 1 ? '`0M' : '`#F')+' `2'+space_pad(pl.name, 21)+'`2'+format('%14d', pl.p[0])+'`%'+format('%5d', pl.p[8])+'     '+space_pad((pl.dead === 1 ? '`4Dead' : '`%Alive'), 6)+(pl.p[6] >= 0 ? '`0' : '`4') + format('%7d',pl.p[6])+'`%     '+pl.p[18]+'\r\n');
+			});
+			f.close();
+		},
+		'whoison':function(args) {
+			var pl;
+			var mp;
+
+			players.forEach(function(p, i) {
+				if (p.onnow === 1) {
+					if (i === player.Record)
+						pl = player;
+					else
+						pl = pfile.get(i);
+					mp = load_map(pl.lastmap);
+					lw('  `2'+space_pad(pl.name, 29)+'`%'+space_pad(pl.p[8].toString(), 14)+'`0'+mp.name);
+				}
+			});
+		}
 	};
 
   	function handle(args)
@@ -2636,6 +2760,8 @@ rescan:
 		});
 		files[fname] = obj;
 	}
+	if (fname.indexOf('.') === -1)
+		fname += '.ref';
 	if (files[fname] === undefined)
 		load_ref(fname);
 	if (files[fname].section[sec] === undefined)
@@ -2860,7 +2986,7 @@ function draw_map() {
 
 function load_map(mapnum)
 {
-	map = mfile.get(world.mapdatindex[mapnum - 1] - 1);
+	return mfile.get(world.mapdatindex[mapnum - 1] - 1);
 }
 
 function move_player(xoff, yoff) {
@@ -2899,7 +3025,7 @@ function move_player(xoff, yoff) {
 	if (newmap) {
 		if (world.hideonmap[player.map] === 0)
 			player.lastmap = player.map;
-		load_map(player.map);
+		map = load_map(player.map);
 		draw_map();
 		update();
 	}
@@ -2924,7 +3050,7 @@ function move_player(xoff, yoff) {
 				if (world.hideonmap[player.map] === 0)
 					player.lastmap = player.map;
 				if (newmap) {
-					load_map(player.map);
+					map = load_map(player.map);
 					draw_map();
 				}
 				else {
@@ -3492,7 +3618,7 @@ function do_map()
 	var oldmore;
 
 	if (map === undefined || map.Record !== world.mapdatindex[player.map - 1] - 1)
-		load_map(player.map);
+		map = load_map(player.map);
 	draw_map();
 	update();
 
