@@ -31,6 +31,7 @@ var map;
 var world;
 var game;
 var killfiles = [];
+var enemy;
 
 var items = [];
 var other_players = {};
@@ -972,6 +973,10 @@ function lw(str) {
 				case '^':
 					foreground(0);
 					break;
+				case 'b':
+				case 'B':
+					foreground(20);	// Blinking red
+					break;
 				case 'c':
 				case 'C':
 					sclrscr();
@@ -1042,6 +1047,18 @@ function spaces(len)
 	return repeat_chars(' ', len);
 }
 
+function space_pad(str, len)
+{
+	var dl = displen(str);
+
+	while (dl < len) {
+		str += ' ';
+		dl++;
+	}
+
+	return str;
+}
+
 var bar_timeout;
 // TODO: How this works in the original...
 /*
@@ -1105,7 +1122,7 @@ function update_bar(str, msg, timeout)
 	var l;
 	var attr = dk.console.attr.value;
 
-	if (msg) {
+	if (msg && str.indexOf(':') > -1) {
 		if (!lfile.open('ab'))
 			throw('Unable to open '+lfile.name);
 		lfile.write(str+'\r\n');
@@ -1588,6 +1605,7 @@ function run_ref(sec, fname)
 			function draw_menu() {
 				choices.forEach(function(c, i) {
 					dk.console.gotoxy(x, y+i);
+					c = '`%' + c;
 					if (i === cur)
 						c = '`r1'+c+'`r0';
 					lw(c);
@@ -1707,6 +1725,9 @@ function run_ref(sec, fname)
 		},
 		'update':function(args) {
 			update();
+		},
+		'update_update':function(args) {
+			update_update();
 		},
 		'clearblock':function(args) {
 			var start = parseInt(getvar(args[0]), 10) - 1;
@@ -1842,7 +1863,47 @@ function run_ref(sec, fname)
 			setvar(args[0], v);
 		},
 		'fight':function(args) {
-			// TODO
+			var l = getlines();
+
+			function split_ref(str, prefix) {
+				var l = str.split('|');
+
+				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
+					l = ['',''];
+
+				enemy[prefix+'_reffile'] = l[0];
+				enemy[prefix+'_refname'] = l[1];
+			}
+
+			function add_attack(str) {
+				var l = str.split('|');
+
+				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
+					return;
+
+				enemy.attacks.push({strength:parseInt(l[1], 10), hitaction:l[0]});
+			}
+
+			enemy = {
+				name:l[0], 
+				see:l[1], 
+				killstr:l[2], 
+				sex:parseInt(l[3], 10), 
+				defence:parseInt(l[9], 10),
+				gold:parseInt(l[10], 10),
+				experience:parseInt(l[11], 10),
+				hp:parseInt(l[12], 10),
+				maxhp:parseInt(l[12], 10),
+				attacks:[]
+			};
+			add_attack(l[4]);
+			add_attack(l[5]);
+			add_attack(l[6]);
+			add_attack(l[7]);
+			add_attack(l[8]);
+			split_ref(l[13], 'win');
+			split_ref(l[14], 'lose');
+			split_ref(l[15], 'run');
 		},
 		'sellmanager':function(args) {
 			var i;
@@ -2182,6 +2243,16 @@ function erase(x, y) {
 	dk.console.print(mi.ch === '' ? ' ' : mi.ch);
 }
 
+function update_update()
+{
+	update_rec.x = player.x;
+	update_rec.y = player.y;
+	update_rec.map = player.map;
+	update_rec.busy = 0;
+	update_rec.onnow = 1;
+	update_rec.put();
+}
+
 var next_update = -1;
 function update(skip) {
 	var i;
@@ -2244,12 +2315,7 @@ function update(skip) {
 	background(map.mapinfo[getpoffset()].backcolour);
 	dk.console.print('\x02');
 	dk.console.gotoxy(player.x - 1, player.y - 1);
-	update_rec.x = player.x;
-	update_rec.y = player.y;
-	update_rec.map = player.map;
-	update_rec.busy = 0;
-	update_rec.onnow = 1;
-	update_rec.put();
+	update_update();
 }
 
 function draw_map() {
@@ -2358,6 +2424,8 @@ function move_player(xoff, yoff) {
 	});
 	if (moved && getvar('`v05') > 0) {
 		player.p[10]--;
+		// It seems there's checks at 2250 "It is noon"
+		// 1500 "It is late afternoon"
 		// It seems there's checks at 750 "It is getting dark", 300 "You are getting very sleepy", and 150 "You are about to faint"
 	}
 	if (moved && !special && map.battleodds > 0 && map.reffile !== '' && map.refsection !== '') {
@@ -2680,6 +2748,217 @@ function show_player_names()
 	getkey();
 }
 
+function hbar(x, y, opts)
+{
+	var cur = 0;
+	var ch;
+
+	while (1) {
+		dk.console.gotoxy(x, y);
+		opts.forEach(function(o, i) {
+			dk.console.movex(2);
+			if (i === cur)
+				lw('`r1');
+			lw('`%');
+			lw(o);
+			if (i === cur)
+				lw('`r0');
+		});
+
+		ch = getkey();
+		switch(ch) {
+			case '8':
+			case 'KEY_UP':
+			case '4':
+			case 'KEY_LEFT':
+				cur--;
+				if (cur < 0)
+					cur = opts.length - 1;
+				break;
+			case '2':
+			case 'KEY_DOWN':
+			case '6':
+			case 'KEY_RIGHT':
+				cur++;
+				if (cur >= opts.length)
+					cur = 0;
+				break;
+			case '\r':
+				return cur;
+		}
+	}
+}
+
+function disp_hp(cur, max)
+{
+	if (cur < 1)
+		return '`bDead';
+	return '(`0'+cur+'`2/`0'+max+'`2)';
+}
+
+function your_hp()
+{
+	dk.console.gotoxy(2, 20);
+	lw(space_pad('`r1`2Your hitpoints: '+disp_hp(player.p[1], player.p[2]), 32));
+}
+
+function enemy_hp(enm)
+{
+	dk.console.gotoxy(34, 20);
+	lw(space_pad('`r1`0`e\'s `2hitpoints: '+disp_hp(enm.hp, enm.maxhp), 32));
+}
+
+function offline_battle()
+{
+	var ch;
+	var dmg;
+	var str;
+	var hstr;
+	var ehstr;
+	var def;
+	var wep;
+	var astr;
+	var him;
+	var atk;
+	var enm = enemy;
+	var supr;
+
+	enemy = undefined;
+	switch(enm.sex) {
+		case 1:
+			him = 'him';
+			break;
+		case 2:
+			him = 'her';
+			break;
+		default:
+			him = 'it';
+			break;
+	}
+	if (player.weaponnumber !== 0)
+		wep = items[player.weaponnumber - 1];
+	str = (player.weaponnumber === 0 ? 0 : items[player.weaponnumber - 1].strength) + player.p[3];
+	hstr = str >> 1;
+	def = (player.armournumber === 0 ? 0 : items[player.armournumber - 1].defence) + player.p[4]
+	setvar('enemy', enm.name);
+	your_hp();
+	enemy_hp(enm);
+	dk.console.gotoxy(2,21);
+	lw('`r0`2'+enm.see);
+	while(1) {
+		ch = hbar(2, 23, ['Attack', 'Run For it']);
+		dk.console.gotoxy(2,21);
+		dk.console.cleareol();
+		if (ch === 1) {
+			if (random(10) === 0) {
+				dk.console.gotoxy(21, 2);
+				dk.console.cleareol();
+				lw('`r0`2`e  `4blocks your path!');
+			}
+			else {
+				if (enm.run_reffile !== '' && enm.run_refname !== '')
+					run_ref(enm.run_refname, enm.run_reffile);
+				break;
+			}
+		}
+		else {
+			supr = (random(10) === 0);
+			dmg = hstr + random(hstr) + 1 - enm.defence;
+			if (supr)
+				dmg *= 2;
+			if (dmg < 1) {
+				if (supr)
+					lw('`4Your `%SUPER STRIKE misses!');
+				else
+					lw('`4You completely miss!');
+			}
+			else {
+				if (supr)
+					astr = '`2You `%SUPER STRIKE`2';
+				else if (wep === undefined) {
+					switch(random(5)) {
+						case 0:
+							astr = '`2You punch `0`e`2 in the jimmy';//Him,it
+							break;
+						case 1:
+							astr = 'You kick `0`e`2 hard as you can';// Wild Boar
+							break;
+						case 2:
+							astr = '`2You slap `0`e`2 a good one';//Rabid dog
+							break;
+						case 3:
+							astr = '`2You headbutt `0`e';//Rabid dog
+							break;
+						case 4:
+							astr = '`2You trip `0`e';//Rabid dog
+							break;
+					}
+				}
+				else
+					astr = wep.hitaction
+				lw('`2' + astr + '`2 for `0'+dmg+'`2 damage!');
+				enm.hp -= dmg;
+				enemy_hp(enm);
+			}
+		}
+		lw('`r0`2');
+		dk.console.gotoxy(2, 22);
+		dk.console.cleareol();
+		if (enm.hp < 1) {
+			lw('`r0`0You killed '+him+'!')
+			dk.console.gotoxy(2, 23);
+			dk.console.cleareol();
+			lw('`2You find `$$'+enm.gold+'`2 and gain `%'+enm.experience+' `2experience in this battle.  `2<`0MORE`2>')
+			if (supr)
+				update_bar(enm.killstr, true, 0);
+			getkey();
+			if (enm.win_reffile !== '' && enm.win_refname !== '')
+				run_ref(enm.win_refname, enm.win_reffile);
+			break;
+		}
+		else {
+			atk = enm.attacks[random(enm.attacks.length)];
+			ehstr = atk.strength >> 1;
+			dmg = ehstr + random(ehstr) + 1 - def;
+			if (dmg < 1) {
+				switch(random(5)) {
+					case 0:
+						lw('`0`e `2misses as you jump to one side!');//Farmer Joe
+						break;
+					case 1:
+						lw('`2You dodge `0`e\'s`2 attack easily.');//Farmer Joe
+						break;
+					case 2:
+						lw('`2You laugh as `0`e `2misses and strikes the ground.');//Farmer Joe
+						break;
+					case 3:
+						lw('`2Your armour absorbs `0`e\'s`2 blow!');//Armored Hedge Hog
+						break;
+					case 4:
+						lw('`2You are forced to grin as `e\'s puny strike bounces off you.');//Armored Hedge Hog
+						break;
+				}
+			}
+			else {
+				lw('`r0`0'+enm.name+' `2'+atk.hitaction+'`2 for `4'+dmg+'`2 damage!');
+				player.p[1] -= dmg;
+				your_hp();
+				if (player.p[1] < 1) {
+					if (enm.lose_reffile !== '' && enm.lose_refname !== '')
+						run_ref(enm.lose_refname, enm.lose_reffile);
+				}
+			}
+		}
+	}
+	dk.console.gotoxy(0, 21);
+	lw('`r0`2');
+	dk.console.cleareol();
+	dk.console.gotoxy(0, 22);
+	dk.console.cleareol();
+	dk.console.gotoxy(0, 23);
+	dk.console.cleareol();
+}
+
 function do_map()
 {
 	var ch;
@@ -2693,6 +2972,9 @@ function do_map()
 
 	ch = ''
 	while (ch != 'Q') {
+		if (enemy !== undefined) {
+			offline_battle();
+		}
 		while (!dk.console.waitkey(game.delay)) {
 			update();
 		};
