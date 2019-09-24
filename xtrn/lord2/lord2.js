@@ -498,6 +498,21 @@ var Game_Def = [
 	}
 ];
 
+var UCASE = true;
+var matchcase = true;
+function getfname(str)
+{
+	var ec = file_getcase(js.exec_dir + str);
+
+	if (ec !== undefined) {
+		return ec;
+	}
+	if (UCASE) {
+		return js.exec_dir + str.toUpperCase();
+	}
+	return str.toLowerCase();
+}
+
 function clamp_integer(v, s)
 {
 	var i = parseInt(v, 10);
@@ -557,6 +572,9 @@ var vars = {
 	'`x':{type:'const', val:' '},
 	'`\\':{type:'const', val:'\r\n'},
 	'nil':{type:'const', val:''},
+	'`n':{type:'fn', get:function() { return player.name } },
+	'`e':{type:'fn', get:function() { return getvar('enemy'); } },
+	'`g':{type:'int', val:3}, // TODO: >= 3 is ANSI or something...
 	x:{type:'fn', get:function() { return player.x }, set:function(x) { player.x = clamp_integer(x, 's8') } },
 	y:{type:'fn', get:function() { return player.y }, set:function(y) { player.y = clamp_integer(y, 's8') } },
 	map:{type:'fn', get:function() { return player.map }, set:function(map) { player.map = clamp_integer(map, 's16') } },
@@ -591,7 +609,7 @@ var vars = {
 	'&time':{type:'fn', get:function() { return state.time }, set:function(x) { throw('attempt to set &time'); } },
 	'&timeleft':{type:'fn', get:function() { return parseInt((dk.user.seconds_remaining + dk.user.seconds_remaining_from - time()) / 60, 10) } },
 	'&sex':{type:'fn', get:function() { return player.sexmale }, set:function(sexmale) { player.sexmale = clamp_integer(sexmale, 's16') } },
-	'&playernum':{type:'fn', get:function() { return player.Record } },
+	'&playernum':{type:'fn', get:function() { return player.Record + 1 } },
 	'&totalaccounts':{type:'fn', get:function() { return pfile.length } },
 	responce:{type:'int', val:0},
 	response:{type:'fn', get:function() { return vars.responce.val; }, set:function(val) { vars.responce.val = clamp_integer(val, 's32')  } },
@@ -739,8 +757,6 @@ function getvar(name) {
 
 function expand_ticks(str)
 {
-	str = str.replace(/`n/ig, player.name);
-	str = str.replace(/`e/ig, getvar('enemy'));
 	str = str.replace(/`w/ig, '');
 	str = str.replace(/`l/ig, '');
 	str = str.replace(/`c/ig, '');
@@ -758,7 +774,7 @@ function replace_vars(str)
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
 	str = str.replace(/(`\+[0-9][0-9])/g, function(m, r1) { return getvar(r1); });
-	str = str.replace(/(`[xd\\])/g, function(m, r1) { return getvar(r1); });
+	str = str.replace(/(`[nexd\\])/g, function(m, r1) { return getvar(r1); });
 	return str;
 }
 
@@ -901,18 +917,6 @@ function lw(str) {
 				break;
 			}
 			switch(str[i]) {
-				case 'n':
-				case 'N':
-					lw(player.name);
-					break;
-				case 'e':
-				case 'E':
-					lw(getvar('enemy'));
-					break;
-				case 'g':
-				case 'G':
-					throw('TODO: Graphics level');
-					break;
 				case 'k':
 				case 'K':
 					more();
@@ -1076,6 +1080,7 @@ var bar_timeout;
  * ADDITEM|4|1 (itemnum, count) goes.
  * ADDGOLD|1
  * CONNECT|1
+ * UPDATE
  * 
  * mail/mailX.tmp is actual messages..
  * @MESSAGE Mee
@@ -1086,18 +1091,23 @@ var bar_timeout;
  * 
  * Only @DONE is required.
  * 
+ * MAIL\TEMP1.QWT is where the message to quote goes.
+ * MAIL\TEM1.TMP is where the message is composed to.
+ * MAIL\MAB1.DAT seems to be all mail displayed this session.
+ * MAIL\MAT1.DAT is the currently RXed file (MAIL1.DAT is renamed to this I betcha)
+ * 
  * Other interesting MAIL things...
  * MAIL\BAT
  * MAIL\CHAT
  * MAIL\GIV
  * MAIL\INF
  * MAIL\LOG
- * MAIL\MAB
- * MAIL\MAT
+ * MAIL\MAB *
+ * MAIL\MAT *
  * MAIL\TALK
  * MAIL\TCON
- * MAIL\TEM
- * MAIL\TEMP
+ * MAIL\TEM *
+ * MAIL\TEMP *
  * MAIL\TX
  * 
  * Requires \r\n
@@ -1113,6 +1123,11 @@ var bar_timeout;
  * Battle...
  * Appends `r0`0Mee `2hits you with his `0Dagger`2 for `b7`2 damage!|7
  * To BAT<them>.dat
+ * 
+ * Rankings are stored in three files...
+ * TEMP0.DAT (LORDANSI)
+ * SCORE.ANS
+ * SCORE.TXT
  * 
  */
 function update_bar(str, msg, timeout)
@@ -1221,7 +1236,42 @@ function run_ref(sec, fname)
 			lw(replace_vars(cl));
 		},
 		'talk':function(args) {
-			// TODO: Send message to other players (mail stuff?)
+			var to;
+			var l = replace_vars(getvar(args[0]));
+
+			if (args.length > 1)
+				to = getvar(args[1]).toLowerCase();
+			if (to === undefined || to === 'all') {
+				players.forEach(function(p, i) {
+					var f;
+
+					if (p.deleted === 1)
+						return;
+					if (p.onnow) {
+						f = new File(getfname(maildir+'talk'+(i+1)+'.tmp'));
+						if (f.open('ab')) {
+							f.write(l+'\r\n');
+							f.close();
+						}
+					}
+				});
+			}
+			else {
+				// TODO: Test alla this.
+				to = parseInt(to, 10);
+				if (isNaN(to))
+					throw('Invalid talk to at '+fname+':'+line);
+				if (player.deleted === 1)
+					// TODO: Do we tell the player or something?
+					return;
+				if (players[to-1].onnow) {
+					f = new File(getfname(maildir+'talk'+to+'.tmp'));
+					if (f.open('ab')) {
+						f.write(l+'\r\n');
+						f.close();
+					}
+				}
+			}
 		},
 		'readspecial':function(args) {
 			var ch;
@@ -1234,7 +1284,8 @@ function run_ref(sec, fname)
 			setvar(args[0], ch);
 		},
 		'goto':function(args) {
-			args[0] = getvar(args[0]);
+			// NOTE: This doesn't use getvar() because GREEN.REF has 'do goto bank'
+			args[0] = replace_vars(args[0]);
 			if (files[fname].section[args[0]] === undefined)
 				throw('Goto undefined label '+args[0]+' at '+fname+':'+line);
 			line = files[fname].section[args[0]].line;
@@ -1255,8 +1306,36 @@ function run_ref(sec, fname)
 
 			if (args.length === 2)
 				args.push('`s10');
-			s = dk.console.getstr({len:len, edit:(args[1].toLowerCase() === 'nil' ? '' : getvar(args[1])), input_box:true, attr:new Attribute(31)});
+			s = dk.console.getstr({crlf:false, len:len, edit:(args[1].toLowerCase() === 'nil' ? '' : getvar(args[1])), input_box:true, attr:new Attribute(31)});
 			setvar(args[2], s);
+			dk.console.gotoxy(x, y);
+			while (remove_colour(s).length < len)
+				s += ' ';
+			dk.console.attr = 15;
+			lw(s);
+			dk.console.attr = attr;
+		},
+		'readnum':function(args) {
+			var x = scr.pos.x;
+			var y = scr.pos.y;
+			var attr = scr.attr.value;
+			var len = getvar(args.shift());
+			var s;
+			var fg = 15;
+			var bg = 1;
+			var val = '';
+
+			if (args.length > 1)
+				fg = getvar(args.shift());
+			if (args.length > 1)
+				fg = getvar(args.shift());
+			if (args.length > 0) {
+				val = parseInt(getvar(args[0]), 10);
+				if (isNaN(val))
+					throw('Invalid default "'+args[0]+'" for readnum at '+fname+':'+line);
+			}
+			s = dk.console.getstr({crlf:false, len:len, edit:val.toString(), input_box:true, attr:new Attribute((bg<<4) | fg), integer:true});
+			setvar('`v40', s);
 			dk.console.gotoxy(x, y);
 			while (remove_colour(s).length < len)
 				s += ' ';
@@ -1266,6 +1345,16 @@ function run_ref(sec, fname)
 		},
 		'stripbad':function(args) {
 			setvar(args[0], clean_str(getvar(args[0])));
+		},
+		'strip':function(args) {
+			setvar(args[0], getvar(args[0]).trim());
+		},
+		'stripall':function(args) {
+			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
+		},
+		'stripcode':function(args) {
+			// TODO: How is this different than STRIPALL?
+			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
 		},
 		'replaceall':function(args) {
 			var hs;
@@ -1311,10 +1400,10 @@ function run_ref(sec, fname)
 			setvar(args[0], str);
 		},
 		'rename':function(args) {
-			file_rename(js.exec_dir + getvar(args[0]), js.exec_dir + getvar(args[1]));
+			file_rename(getfname(getvar(args[0]).toLowerCase()), getfname(getvar(args[1]).toLowerCase()));
 		},
 		'addlog':function(args) {
-			var f = new File(js.exec_dir + 'lognow.txt');
+			var f = new File(getfname('lognow.txt'));
 			line++;
 			if (line > files[fname].lines.length)
 				return;
@@ -1325,7 +1414,29 @@ function run_ref(sec, fname)
 			}
 		},
 		'delete':function(args) {
-			file_remove(js.exec_dir + getvar(args[0]));
+			file_remove(getfname(getvar(args[0]).toLowerCase()));
+		},
+		'statbar':function(args) {
+			status_bar();
+		},
+		'trim':function(args) {
+			var f = new File(getfname(getvar(args[0])));
+			var len = getvar(args[1]);
+			var al;
+
+			if (!file_exists(f.name))
+				return;
+			if (!f.open('r+b'))
+				throw('Unable to open '+f.name+' at '+fname+':'+line);
+			al = f.readAll();
+			while (al.length > len);
+				al.shift();
+			f.position = 0;
+			al.forEach(function(l) {
+				f.write(l+'\r\n');
+			});
+			f.truncate(f.position);
+			f.close();
 		}
 	};
 	var handlers = {
@@ -1379,6 +1490,10 @@ function run_ref(sec, fname)
 			}
 			if (args.length > 3 && args[1].toLowerCase() === 'random') {
 				setvar(args[0], random(clamp_integer(getvar(args[2]), 's32')) + clamp_integer(args[3], 's32'));
+				return;
+			}
+			if (args.length === 3 && args[1].toLowerCase() === 'random') {
+				setvar(args[0], random(clamp_integer(getvar(args[2]), 's32')));
 				return;
 			}
 			throw('Unhandled do at '+fname+':'+line);
@@ -1465,7 +1580,8 @@ function run_ref(sec, fname)
 						handlers.begin(args.slice(5));
 					break;
 				case 'exist':
-					if (file_exists(js.exec_dir + args[0]) === (args[2].toLowerCase() === 'true'))
+				case 'exists':
+					if (file_exists(getfname(args[0].toLowerCase())) === (args[2].toLowerCase() === 'true'))
 						handlers.do(args.slice(4));
 					else if (args[4].toLowerCase() === 'begin')
 						handlers.begin(args.slice(5));
@@ -1487,15 +1603,30 @@ function run_ref(sec, fname)
 			}
 		},
 		'routine':function(args) {
+			var s = replace_vars(args[0]);
 			if (args.length === 1) {
-				run_ref(args[0], fname);
+				run_ref(s, fname);
 				return;
 			}
 			if (args[1].toLowerCase() === 'in') {
-				run_ref(args[0], args[2]);
+				run_ref(s, args[2]);
 				return;
 			}
 			throw('Unable to parse routine at '+fname+':'+line);
+		},
+		'run':function(args) {
+			var f = fname;
+			var s = replace_vars(args[0]);
+
+			if (args.length > 2 && args[1].toLowerCase() === 'in') {
+				f = getvar(args[2]);
+			}
+			if (files[f] === undefined)
+				load_ref(f);
+			if (files[f].section[s] === undefined)
+				throw('Unable to find run section '+sec+' in '+f+' at '+fname+':'+line);
+			fname = f;
+			line = files[f].section[s].line;
 		},
 		'pauseon':function(args) {
 			morechk = true;
@@ -1566,13 +1697,28 @@ function run_ref(sec, fname)
 		'writefile':function(args) {
 			if (args.length < 1)
 				throw('No filename for writefile at '+fname+':'+line);
-			var f = new File(js.exec_dir + args[0].toLowerCase());
+			var f = new File(getfname(args[0].toLowerCase()));
 			if (!f.open('ab'))
 				throw('Unable to open '+f.name+' at '+fname+':'+line);
 			getlines().forEach(function(l) {
 				f.write(replace_vars(l)+'\r\n');
 			});
 			f.close();
+		},
+		'readfile':function(args) {
+			var vs = getlines();
+			var f = new File(getfname(args[0]));
+			var l;
+
+			if (f.open('r')) {
+				while(vs.length > 0) {
+					l = f.readln();
+					if (l === null)
+						break;
+					setvar(vs.shift(), l);
+				}
+				f.close();
+			}
 		},
 		'end':function(args) {},
 		'label':function(args) {},
@@ -1582,7 +1728,7 @@ function run_ref(sec, fname)
 			var lines;
 			if (args.length < 1)
 				throw('No filename for displayfile at '+fname+':'+line);
-			var f = new File(js.exec_dir + args[0].toLowerCase());
+			var f = new File(getfname(args[0].toLowerCase()));
 			if (!f.open('r'))
 				throw('Unable to open '+f.name+' at '+fname+':'+line);
 			lines = f.readAll();
@@ -1715,10 +1861,12 @@ function run_ref(sec, fname)
 			update_rec.put();
 		},
 		'busy':function(args) {
+			// Actually, it doesn't seem this touches UPDATE.TMP *or* TRADER.DAT
+			
 			// TODO: Turn red for other players, and run @#busy if other player interacts
 			// this toggles battle...
-			update_rec.battle = 1;
-			update_rec.put();
+			//update_rec.battle = 1;
+			//update_rec.put();
 		},
 		'drawmap':function(args) {
 			draw_map();
@@ -1871,8 +2019,8 @@ function run_ref(sec, fname)
 				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
 					l = ['',''];
 
-				enemy[prefix+'_reffile'] = l[0];
-				enemy[prefix+'_refname'] = l[1];
+				enemy[prefix+'_reffile'] = getvar(l[0]);
+				enemy[prefix+'_refname'] = getvar(l[1]);
 			}
 
 			function add_attack(str) {
@@ -1881,19 +2029,19 @@ function run_ref(sec, fname)
 				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
 					return;
 
-				enemy.attacks.push({strength:parseInt(l[1], 10), hitaction:l[0]});
+				enemy.attacks.push({strength:parseInt(getvar(l[1]), 10), hitaction:getvar(l[0])});
 			}
 
 			enemy = {
-				name:l[0], 
-				see:l[1], 
-				killstr:l[2], 
-				sex:parseInt(l[3], 10), 
-				defence:parseInt(l[9], 10),
-				gold:parseInt(l[10], 10),
-				experience:parseInt(l[11], 10),
-				hp:parseInt(l[12], 10),
-				maxhp:parseInt(l[12], 10),
+				name:getvar(l[0]),
+				see:getvar(l[1]),
+				killstr:getvar(l[2]),
+				sex:parseInt(getvar(l[3]), 10),
+				defence:parseInt(getvar(l[9]), 10),
+				gold:parseInt(getvar(l[10]), 10),
+				experience:parseInt(getvar(l[11]), 10),
+				hp:parseInt(getvar(l[12]), 10),
+				maxhp:parseInt(getvar(l[12]), 10),
 				attacks:[]
 			};
 			add_attack(l[4]);
@@ -1996,6 +2144,8 @@ rescan:
 					lw(str);
 				});
 				dk.console.gotoxy(0, 7);
+				if (cur >= inv.length)
+					cur = 0;
 
 				while(1) {
 					ch = getkey().toUpperCase();
@@ -2115,7 +2265,77 @@ rescan:
 					draw_menu();
 				}
 			}
-		}
+		},
+		'dataload':function(args) {
+			var f = new File(getfname(getvar(args[0].toLowerCase())));
+			var rec = getvar(args[1]);
+			var val;
+
+			if (!file_exists(f.name)) {
+				f.open('wb');
+				f.writeBin(state.time, 4);
+				for (i = 0; i < 250; i++) {
+					if ((i + 1) === rec)
+						f.writeBin(val, 4);
+					else
+						f.writeBin(0, 4);
+				}
+				f.close();
+				setvar(args[2], 0);
+				return;
+			}
+			if (!f.open('rb'))
+				throw('Unable to open '+f.name+' at '+fname+':'+line);
+			f.position = rec * 4;
+			val = f.readBin(4);
+			f.close();
+			setvar(args[2], val);
+		},
+		'datasave':function(args) {
+			var f = new File(getfname(getvar(args[0].toLowerCase())));
+			var rec = getvar(args[1]);
+			var val = replace_vars(getvar(args[2]));
+
+			if (!file_exists(f.name)) {
+				f.open('wb');
+				f.writeBin(state.time, 4);
+				for (i = 0; i < 250; i++) {
+					if ((i + 1) === rec)
+						f.writeBin(val, 4);
+					else
+						f.writeBin(0, 4);
+				}
+				f.close();
+				return;
+			}
+			if (!f.open('r+b'))
+				throw('Unable to open '+f.name+' at '+fname+':'+line);
+			f.position = rec * 4;
+			f.writeBin(val, 4);
+			f.close();
+		},
+		'datanewday':function(args) {
+			var f = new File(getfname(getvar(args[0].toLowerCase())));
+			var i;
+			var d;
+
+			if (!file_exists(f.name)) {
+				f.open('wb');
+				f.writeBin(state.time, 4);
+				for (i = 0; i < 250; i++)
+					f.writeBin(0, 4);
+				f.close();
+				return;
+			}
+			if (!f.open('r+b'))
+				throw('Unable to open '+f.name+' at '+fname+':'+line);
+			d = f.readBin(4);
+			if (d != state.time) {
+				for (i = 0; i < 250; i++)
+					f.writeBin(0, 4);
+			}
+			f.close();
+		},
 	};
 
   	function handle(args)
@@ -2128,7 +2348,7 @@ rescan:
 	function load_ref(fname) {
 		var obj = {section:{}};
 		fname = fname.toLowerCase();
-		var f = new File(js.exec_dir + fname);
+		var f = new File(getfname(fname));
 		var cs;
 
 		if (!f.open('r'))
@@ -2168,7 +2388,7 @@ rescan:
 	while (1) {
 		line++;
 //log(fname+':'+line);
-		if (line > files[fname].lines.length)
+		if (line >= files[fname].lines.length)
 			return;
 		cl = files[fname].lines[line].replace(/^\s*/,'');
 		if (cl.search(/^@#/) !== -1)
@@ -2198,6 +2418,8 @@ function load_player()
 
 	for (i = 0; i < pfile.length; i++) {
 		p = pfile.get(i);
+		if (p.deleted === 1)
+			continue;
 		if (p.realname === dk.user.full_name) {
 			player = p;
 			update_rec = ufile.get(p.Record);
@@ -2249,6 +2471,7 @@ function update_update()
 	update_rec.y = player.y;
 	update_rec.map = player.map;
 	update_rec.busy = 0;
+	update_rec.battle = 0;
 	update_rec.onnow = 1;
 	update_rec.put();
 }
@@ -2269,8 +2492,10 @@ function update(skip) {
 				continue;
 			if (i > players.length) {
 				op = pfile.get(i);
-				players.push({x:op.x, y:op.y, map:op.map, onnow:op.onnow, busy:op.busy, battle:op.battle});
+				players.push({x:op.x, y:op.y, map:op.map, onnow:op.onnow, busy:op.busy, battle:op.battle, deleted:op.deleted});
 			}
+			if (players[i].deleted)
+				continue;
 			u = ufile.get(i);
 			if (u.map !== 0 && u.x !== 0 && u.y !== 0)
 				players[i] = u;
@@ -2279,6 +2504,8 @@ function update(skip) {
 		// First, erase any moved players and update other_players
 		players.forEach(function(u, i) {
 			if (i === player.Record)
+				return;
+			if (u.deleted)
 				return;
 			if (u.map === player.map) {
 				nop[i] = {x:u.x, y:u.y, map:u.map, onnow:u.onnow, busy:u.busy, battle:u.battle}
@@ -2736,6 +2963,8 @@ function show_player_names()
 	var sattr = dk.console.attr.value;
 
 	players.forEach(function(p, i) {
+		if (p.deleted === 1)
+			return;
 		if (p.map === player.map) {
 			pl = pfile.get(i);
 			dk.console.gotoxy(p.x, p.y-1);
@@ -2805,7 +3034,7 @@ function your_hp()
 function enemy_hp(enm)
 {
 	dk.console.gotoxy(34, 20);
-	lw(space_pad('`r1`0`e\'s `2hitpoints: '+disp_hp(enm.hp, enm.maxhp), 32));
+	lw(space_pad('`r1`0`e\'s `2hitpoints: '+disp_hp(enm.hp, enm.maxhp), 44));
 }
 
 function offline_battle()
@@ -2851,7 +3080,7 @@ function offline_battle()
 		dk.console.cleareol();
 		if (ch === 1) {
 			if (random(10) === 0) {
-				dk.console.gotoxy(21, 2);
+				dk.console.gotoxy(2, 21);
 				dk.console.cleareol();
 				lw('`r0`2`e  `4blocks your path!');
 			}
@@ -2909,6 +3138,8 @@ function offline_battle()
 			dk.console.gotoxy(2, 23);
 			dk.console.cleareol();
 			lw('`2You find `$$'+enm.gold+'`2 and gain `%'+enm.experience+' `2experience in this battle.  `2<`0MORE`2>')
+			player.money += enm.gold;
+			player.p[0] += enm.experience;
 			if (supr)
 				update_bar(enm.killstr, true, 0);
 			getkey();
@@ -2957,6 +3188,7 @@ function offline_battle()
 	dk.console.cleareol();
 	dk.console.gotoxy(0, 23);
 	dk.console.cleareol();
+	status_bar();
 }
 
 function do_map()
@@ -3046,7 +3278,7 @@ function do_map()
 					throw('Unable to open '+lfile.name);
 				al = lfile.readAll();
 				lfile.close();
-				while (al.length > 20)
+				while (al.length > 19)
 					al.shift();
 				if (al.length === 0) {
 					dk.console.gotoxy(2, 20);
@@ -3061,7 +3293,7 @@ function do_map()
 				al.forEach(function(l) {
 					sln('  '+superclean(l));
 				});
-				dk.console.gotoxy(2, 23);
+				dk.console.gotoxy(3, 23);
 				lw('`r1`%                     Press a key to return to the game.                     `r0');
 				getkey();
 				morechk = oldmore;
@@ -3162,8 +3394,7 @@ function load_players()
 	players = [];
 	for (i = 0; i < pfile.length; i++) {
 		p = pfile.get(i);
-		players.push({x:p.x, y:p.y, map:p.map, onnow:p.onnow, busy:p.busy, battle:p.battle});
-		items.push(ifile.get(i));
+		players.push({x:p.x, y:p.y, map:p.map, onnow:p.onnow, busy:p.busy, battle:p.battle, deleted:p.deleted});
 	}
 }
 
@@ -3171,7 +3402,7 @@ function load_time()
 {
 	var newday = false;
 	var sday;
-	var f = new File(js.exec_dir + 'stime.dat');
+	var f = new File(getfname('stime.dat'));
 	var d = new Date();
 	var tday = d.getFullYear()+(d.getMonth()+1)+d.getDate(); // Yes, really.
 
@@ -3188,7 +3419,7 @@ function load_time()
 			newday = true;
 		f.close();
 	}
-	f = new File(js.exec_dir + 'time.dat');
+	f = new File(getfname('time.dat'));
 	if (!file_exists(f.name)) {
 		state.time = 0;
 		file_mutex(f.name, state.time+'\n');
@@ -3201,14 +3432,14 @@ function load_time()
 	}
 
 	if (newday) {
-		f = new File(js.exec_dir + 'stime.dat');
+		f = new File(getfname('stime.dat'));
 		if (!f.open('r+b'))
 			throw('Unable to open '+f.name);
 		f.truncate(0);
 		f.write(tday+'\r\n');
 		f.close;
 		state.time++;
-		f = new File(js.exec_dir + 'time.dat');
+		f = new File(getfname('time.dat'));
 		if (!f.open('r+b'))
 			throw('Unable to open '+f.name);
 		f.truncate(0);
@@ -3223,17 +3454,20 @@ function load_game()
 	game = gfile.get(0);
 }
 
-var pfile = new RecordFile(js.exec_dir + 'trader.dat', Player_Def);
-var mfile = new RecordFile(js.exec_dir + 'map.dat', Map_Def);
-var wfile = new RecordFile(js.exec_dir + 'world.dat', World_Def);
-var ifile = new RecordFile(js.exec_dir + 'items.dat', Item_Def);
-var ufile = new RecordFile(js.exec_dir + 'update.tmp', Update_Def);
-var gfile = new RecordFile(js.exec_dir + 'game.dat', Game_Def);
-if (!file_isdir(js.exec_dir + 'mail')) {
-	mkdir(js.exec_dir + 'mail');
-	if (!file_isdir(js.exec_dir + 'mail'))
+var pfile = new RecordFile(getfname('trader.dat'), Player_Def);
+var mfile = new RecordFile(getfname('map.dat'), Map_Def);
+var wfile = new RecordFile(getfname('world.dat'), World_Def);
+var ifile = new RecordFile(getfname('items.dat'), Item_Def);
+var ufile = new RecordFile(getfname('update.tmp'), Update_Def);
+var gfile = new RecordFile(getfname('game.dat'), Game_Def);
+var maildir = getfname('mail');
+
+if (!file_isdir(maildir)) {
+	mkdir(maildir);
+	if (!file_isdir(maildir))
 		throw('Unable to create mail directory');
 }
+maildir = backslash(maildir).replace(js.exec_dir, '');
 world = wfile.get(0);
 load_player();
 load_players();
@@ -3247,12 +3481,12 @@ if (player.Record === undefined)
 
 js.on_exit('killfiles.forEach(function(f) { if (f.is_open) { f.close(); } file_remove(f.name); });');
 
-var tfile = new File(js.exec_dir + 'mail/talk'+player.Record+'.tmp');
+var tfile = new File(getfname(maildir + 'talk'+(player.Record + 1)+'.tmp'));
 if (!tfile.open('w+b'))
 	throw('Unable to open '+tfile.name);
 killfiles.push(tfile);
 tfile.close();
-var lfile = new File(js.exec_dir + 'mail/log'+player.Record+'.tmp');
+var lfile = new File(getfname(maildir + 'log'+(player.Record + 1)+'.tmp'));
 if (!lfile.open('w+b'))
 	throw('Unable to open '+lfile.name);
 killfiles.push(lfile);
@@ -3264,5 +3498,7 @@ players[player.Record] = update_rec;
 player.onnow = 1;
 player.busy = 0;
 player.battle = 0;
+player.lastdayon = state.time;
+player.lastdayplayed = state.time;
 player.put();
 do_map();
