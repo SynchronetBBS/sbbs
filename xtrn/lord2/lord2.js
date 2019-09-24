@@ -38,144 +38,149 @@ var progname = '';
 var items = [];
 var other_players = {};
 var Player_Def = [
-	{
+	{	// 0
 		prop:'name',
 		type:'PString:25',
 		def:''
 	},
-	{
+	{	// 26 (1a)
 		prop:'realname',
 		type:'PString:40',
 		def:''
 	},
-	{
+	{	// 67 (43)
 		prop:'money',
 		type:'SignedInteger',
 		def:0
 	},
-	{
+	{	// 71 (47)
 		prop:'bank',
 		type:'SignedInteger',
 		def:0
 	},
-	{
+	{	// 75 (4b)
 		prop:'experience',
 		type:'SignedInteger',
 		def:0
 	},
-	{
+	{	// 79 (4f)
 		prop:'lastdayon',
 		type:'SignedInteger16',
 		def:-1
 	},
-	{
-		prop:'love',
+	{	// 81 (51)
+		prop:'love',		
 		type:'SignedInteger16',
 		def:0
 	},
-	{
+	{	// 83 (53)
 		prop:'weaponnumber',
 		type:'SignedInteger8',
 		def:0
 	},
-	{
+	{	// 84 (54)
 		prop:'armournumber',
 		type:'SignedInteger8',
 		def:0
 	},
-	{
+	{	// 85 (55)
 		prop:'race',
 		type:'PString:30',
 		def:''
 	},
-	{
+	{	// 106 (74)
 		prop:'sexmale',
 		type:'SignedInteger16',
 		def:0
 	},
-	{
+	{	// 108 (76)
 		prop:'onnow',
 		type:'Integer8',
 		def:0
 	},
-	{
+	{	// 109 (77)
 		prop:'battle',
 		type:'Integer8',
 		def:0
 	},
-	{
+	{	// 110 (78)
 		prop:'dead',
 		type:'SignedInteger16',
 		def:0
 	},
-	{
+	{	// 112 (7a)
 		prop:'busy',
 		type:'SignedInteger16',
 		def:0
 	},
-	{
+	{	// 114 (7c)
 		prop:'deleted',
 		type:'SignedInteger16',
 		def:0
 	},
-	{
+	{	// 116 (7e)
 		prop:'nice',
 		type:'SignedInteger16',
 		def:0
 	},
-	{
+	{	// 118 (80)
 		prop:'map',
 		type:'SignedInteger16',
 		def:0
 	},
-	{
+	{	// 120 (82)
 		prop:'e6',
 		type:'SignedInteger16',
 		def:0
 	},
-	{
+	{	// 122 (84)
 		prop:'x',
 		type:'SignedInteger16',
 		def:0
 	},
-	{
+	{	// 124 (86)
 		prop:'y',
 		type:'SignedInteger16',
 		def:0
 	},
-	{
+	{	// 126 (88)
 		prop:'i',
 		type:'Array:99:SignedInteger16',
 		def:eval('var aret = []; while(aret.length < 99) aret.push(0); aret;')
 	},
-	{
+	{	// 324 (144)
+		prop:'mystery1',	// This is a mystery...
+		type:'String:10',
+		def:''
+	},
+	{	// 334 (14e)
 		prop:'p',
 		type:'Array:99:SignedInteger',
 		def:eval('var aret = []; while(aret.length < 99) aret.push(0); aret;')
 	},
-	{
+	{	// 730 (2da)
 		prop:'t',
 		type:'Array:99:Integer8',
 		def:eval('var aret = []; while(aret.length < 99) aret.push(0); aret;')
 	},
-	{
+	{	// 829 (33d)
 		prop:'lastsaved',
 		type:'SignedInteger',
 		def:-1
 	},
-	{
+	{	// 833 (341)
 		prop:'lastdayplayed',
 		type:'SignedInteger',
 		def:-1
 	},
-	{
+	{	// 837 (345)
 		prop:'lastmap',
 		type:'SignedInteger16',
 		def:-1
 	},
-	{
+	{	// 839 (347)
 		prop:'extra',
-		type:'String:354',
+		type:'String:344',
 		def:''
 	}
 ];
@@ -516,6 +521,13 @@ function getfname(str)
 	return str.toLowerCase();
 }
 
+function savetime()
+{
+	var n = new Date();
+
+	return n.getHours()*60 + n.getMinutes();
+}
+
 function clamp_integer(v, s)
 {
 	var i = parseInt(v, 10);
@@ -771,7 +783,6 @@ function expand_ticks(str)
 	str = str.replace(/`w/ig, '');
 	str = str.replace(/`l/ig, '');
 	str = str.replace(/`c/ig, '');
-	// TODO: Not sure how to handle `c and `d is icky.
 	return str;
 }
 
@@ -2059,6 +2070,7 @@ function run_ref(sec, fname)
 			var tmp = pfile.new();
 			player.Record = tmp.Record;
 			ufile.new();
+			player.lastsaved = savetime();
 			player.put();
 			update_rec = ufile.get(player.Record);
 		},
@@ -3733,6 +3745,9 @@ function do_map()
 					status_bar();
 				}
 				break;
+			case 'H':
+				// TODO: Hail (internode)
+				break;
 			case 'L':
 				run_ref('listplayers', 'help.ref');
 				break;
@@ -3771,6 +3786,9 @@ function do_map()
 			case 'V':
 				view_inventory();
 				run_ref('closestats', 'gametxt.ref');
+				break;
+			case 'W':
+				// TODO: Write mail (multiplayer)
 				break;
 			case 'Y':
 				run_ref('yell', 'help.ref');
@@ -3916,12 +3934,13 @@ killfiles.push(lfile);
 lfile.close();
 
 run_ref('startgame', 'gametxt.ref');
-js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); ufile.file.close(); player.onnow = 0; player.busy = 0; player.battle = 0; player.put(); pfile.file.close() }');
+js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); ufile.file.close(); player.onnow = 0; player.busy = 0; player.battle = 0; player.lastsaved = savetime(); player.put(); pfile.file.close() }');
 players[player.Record] = update_rec;
 player.onnow = 1;
 player.busy = 0;
 player.battle = 0;
 player.lastdayon = state.time;
 player.lastdayplayed = state.time;
+player.lastsaved = savetime();
 player.put();
 do_map();
