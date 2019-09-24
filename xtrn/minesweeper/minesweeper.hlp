@@ -1,44 +1,70 @@
-n4hy Synchronet Minesweeper Help n
+nyhe4 Synchronet Minesweeper Help n
 
 The classic game, revisited for this Synchronet BBS!
 https://en.wikipedia.org/wiki/Minesweeper_(video_game)
 
-The object of the game is to uncover all safe cells without uncovering
-(detonating) any mines (rhën), within the allowed time!
+The object of the game is to uncover all the safe areas (cells) on the game
+board without uncovering (detonating) any mines (rhën), within the allowed time!
 
 hControlsn:
 
-* Move the cell selector h< >n around the game board using the arrow keys,
+ù cMoven the cell selector h<i_nh>n around the game board using the arrow keys,
   home/end/page-up/down or the numeric keypad (i.e. for diagonal movement).
   
-* Uncover a cell (reveal its contents) using the 'R' key or the space-bar. 
-  If you reveal a mine (rhën), sorry: you lose, game over, try again!
+ù cUncovern a cell (reveal its contents) using the 'hRn' key or the hspace-barn.
+  If you reveal/detonate a mine (rhi*n), sorry, game over: you lose, try again!
+  The first cell you uncover is guaranteed to be empty (safe).
   If you reveal an empty cell, then all adjacent empty cells will also be
   uncovered (a depth-first search algorithm popular in coding interviews)!
-  Uncovered cells with a mine in any surrounding/adjacent cells will have the
-  total number of adjacent mines displayed (a digit, from 1 to 8).
+  Uncovered safe cells with a mine in any surrounding/adjacent cells will have
+  the total number of adjacent mines displayed (a digit, from 1 to 8).
   These digits are your clue where the next mine or empty cell may be located.
   When all empty cells are uncovered, the game is won!
 
-* Flag a covered cell as having a suspected mine with the 'F' key. When the
-  game is over, incorrectly-flagged cells are marked with '!'. 
+ù cFlagn a covered cell as having a suspected mine with the 'hFn' key.
+  You can also remove a flag with the 'F' key (it's a toggle).
+  If the game is lost, incorrectly-flagged safe cells are indicated with a 'rh!n'.
 
-* Display a list of previous game-winners with the 'W' key.
+ù cDisplayn a list of previous game-winners with the 'hWn' key.
 
-* Start a new game with the the 'N' key. A new difficulty level may be chosen.
+ù cStartn a new game with the the 'hNn' key. A new difficulty level may be chosen.
   Larger user terminals can support larger game boards for greater challenges!
 
-* Quit the game with the 'Q' key.
+ù cQuitn the game with the 'hQn' key.
+
+ù cRedrawn the game board with the hCtrl-Rn key combination.
 
 If some of the navigation keys (e.g. arrow keys, home, end) do not work for
 your terminal, you can try using these alternatives:
-  * Up Arrow: Ctrl-^
-  * Down Arrow: Ctrl-J
-  * Left Arrow: Ctrl-]
-  * Right Arrow: Ctrl-F
-  * Home: Ctrl-B
-  * End: Ctrl-E
-  * Page-Up: Ctrl-P
-  * Page-Down: Ctrl-N
+  ù Up Arrow: Ctrl-^
+  ù Down Arrow: Ctrl-J
+  ù Left Arrow: Ctrl-]
+  ù Right Arrow: Ctrl-F
+  ù Home: Ctrl-B
+  ù End: Ctrl-E
+  ù Page-Up: Ctrl-P
+  ù Page-Down: Ctrl-N
   
 ... or use the numeric keypad.
+
+hDifficulty Leveln:
+
+The difficulty level may be chosen when a new game is started (level 1 being
+the lowest / easiest). The density of mines is increased with each level and
+the game board is increased in dimensions, if possible (depending on terminal
+size, in columns and rows).
+          
+cLevel  Target Grid  Mines  Densityn
+  h1      10 x 10      10     10%  n
+  h2      15 x 15      28     12%  n
+  h3      20 x 20      60     15%  n
+  h4      25 x 25     109     17%  n
+  h5      30 x 30     180     20%  n
+
+If the target grid height cannot be achieved, a wider game board will be
+generated / used.  If the total target grid size (in cells) cannot be
+generated, fewer mines will be deployed to maintain the indicated mine density
+(percentage) and the calculated difficulty level will be discounted
+accordingly.
+
+$Id$
