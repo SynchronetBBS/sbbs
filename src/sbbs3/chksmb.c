@@ -55,7 +55,7 @@
 char *ultoac(ulong l, char *string)
 {
 	char str[256];
-	size_t i,j,k;
+	int i,j,k;
 
 	SAFEPRINTF(str,"%lu",l);
 	i=strlen(str)-1;
