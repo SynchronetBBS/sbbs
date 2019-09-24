@@ -32,6 +32,8 @@ var world;
 var game;
 var killfiles = [];
 var enemy;
+var saved_cursor = {x:0, y:0};
+var progname = '';
 
 var items = [];
 var other_players = {};
@@ -568,14 +570,15 @@ var state = {
 };
 var files = {};
 var vars = {
-	version:{type:'const', val:99},
-	'`d':{type:'const', val:'\b'},
-	'`x':{type:'const', val:' '},
-	'`\\':{type:'const', val:'\r\n'},
+	version:{type:'const', val:103},
 	'nil':{type:'const', val:''},
 	'`n':{type:'fn', get:function() { return player.name } },
 	'`e':{type:'fn', get:function() { return getvar('enemy'); } },
 	'`g':{type:'int', val:3}, // TODO: >= 3 is ANSI or something...
+	'`x':{type:'const', val:' '},
+	'`d':{type:'const', val:'\b'},
+	'`\\':{type:'const', val:'\r\n'},
+	'`*':{type:'const', val:dk.connection.node},
 	x:{type:'fn', get:function() { return player.x }, set:function(x) { player.x = clamp_integer(x, 's8') } },
 	y:{type:'fn', get:function() { return player.y }, set:function(y) { player.y = clamp_integer(y, 's8') } },
 	map:{type:'fn', get:function() { return player.map }, set:function(map) { player.map = clamp_integer(map, 's16') } },
@@ -588,6 +591,7 @@ var vars = {
 	bank:{type:'fn', get:function() { return player.bank }, set:function(bank) { player.bank = clamp_integer(bank, 's32') } },
 	enemy:{type:'str', val:''},
 	local:{type:'fn', get:function() { return (dk.system.mode === 'local' ? 5 : 0) } },
+	blockpassable:{type:'fn', get:function() { return (map.mapinfo[getpoffset()].terrain === 1 ? 1 : 0); } },
 	'&realname':{type:'const', val:dk.user.full_name},
 	'&date':{type:'fn', get:function() { var d = new Date(); return format('%02d/%02d/%02d', d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw('Attempt to set date at '+fname+':'+line); } },
 	'&nicedate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw('Attempt to set nicedate at '+fname+':'+line); } },
@@ -607,6 +611,7 @@ var vars = {
 	'&lastx':{type:'fn', get:function() { return player.lastx }, set:function(bank) { player.lastx = clamp_integer(bank, 's8') } },
 	'&lasty':{type:'fn', get:function() { return player.lasty }, set:function(bank) { player.lasty = clamp_integer(bank, 's8') } },
 	'&map':{type:'fn', get:function() { return player.map } },
+	'&lmap':{type:'fn', get:function() { return player.lastmap } },
 	'&time':{type:'fn', get:function() { return state.time }, set:function(x) { throw('attempt to set &time'); } },
 	'&timeleft':{type:'fn', get:function() { return parseInt((dk.user.seconds_remaining + dk.user.seconds_remaining_from - time()) / 60, 10) } },
 	'&sex':{type:'fn', get:function() { return player.sexmale }, set:function(sexmale) { player.sexmale = clamp_integer(sexmale, 's16') } },
@@ -654,6 +659,7 @@ function getkeyw()
 var curlinenum = 1;
 var curcolnum = 1;
 var morechk = true;
+var morestr = '`2<`0MORE`2>';
 // Reads a key
 function getkey()
 {
@@ -777,7 +783,7 @@ function replace_vars(str)
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
 	str = str.replace(/(`\+[0-9][0-9])/g, function(m, r1) { return getvar(r1); });
-	str = str.replace(/(`[nexd\\])/g, function(m, r1) { return getvar(r1); });
+	str = str.replace(/(`[nexd\\\*])/g, function(m, r1) { return getvar(r1); });
 	return str;
 }
 
@@ -826,6 +832,104 @@ function clean_str(str)
 function superclean(str)
 {
 	return remove_colour(expand_ticks(replace_vars(str)));
+}
+
+function lord_to_ansi(str)
+{
+	var ret = '';
+	var i;
+
+	for (i=0; i<str.length; i += 1) {
+		if (str[i] === '`') {
+			i += 1;
+			switch(str[i]) {
+				case 'c':
+					ret += '\x1b[2J\x1b[H\r\n\r\n';
+					break;
+				case '1':
+					ret += '\x1b[0;34m';
+					break;
+				case '*':
+					ret += '\x1b[0;30;41m';
+					break;
+				case '2':
+					ret += '\x1b[0;32m';
+					break;
+				case '3':
+					ret += '\x1b[0;36m';
+					break;
+				case '4':
+					ret += '\x1b[0;31m';
+					break;
+				case '5':
+					ret += '\x1b[0;35m';
+					break;
+				case '6':
+					ret += '\x1b[0;33m';
+					break;
+				case '7':
+					ret += '\x1b[0;37m';
+					break;
+				case '8':
+					ret += '\x1b[1;30m';
+					break;
+				case '9':
+					ret += '\x1b[1;34m';
+					break;
+				case '0':
+					ret += '\x1b[1;32m';
+					break;
+				case '!':
+					ret += '\x1b[1;36m';
+					break;
+				case '@':
+					ret += '\x1b[1;31m';
+					break;
+				case '#':
+					ret += '\x1b[1;35m';
+					break;
+				case '$':
+					ret += '\x1b[1;33m';
+					break;
+				case '%':
+					ret += '\x1b[1;37m';
+					break;
+				case 'r':
+					i += 1;
+					switch(str[i]) {
+						case 0:
+							ret += '\x1b[40m';
+							break;
+						case 1:
+							ret += '\x1b[44m';
+							break;
+						case 2:
+							ret += '\x1b[42m';
+							break;
+						case 3:
+							ret += '\x1b[43m';
+							break;
+						case 4:
+							ret += '\x1b[41m';
+							break;
+						case 5:
+							ret += '\x1b[45m';
+							break;
+						case 6:
+							ret += '\x1b[47m';
+							break;
+						case 7:
+							ret += '\x1b[46m';
+							break;
+					}
+					break;
+			}
+		}
+		else {
+				ret += str[i];
+		}
+	}
+	return ret;
 }
 
 function displen(str)
@@ -894,9 +998,9 @@ function more()
 {
 	var oa = dk.console.attr.value;
 
-	// TODO: Should be *centered*
 	curlinenum = 1;
-	lw('  `2<`0MORE`2>');
+	// TODO: Are those spaces supposed to be in morestr?
+	lw('`r0`2  '+morestr);
 	getkey();
 	dk.console.print('\r');
 	dk.console.cleareol();
@@ -1215,6 +1319,7 @@ function run_ref(sec, fname)
 	var m;
 	var cl;
 	var args;
+	var ret;
 
 	fname = fname.toLowerCase();
 	sec = sec.toLowerCase();
@@ -1352,12 +1457,24 @@ function run_ref(sec, fname)
 		'strip':function(args) {
 			setvar(args[0], getvar(args[0]).trim());
 		},
+		'upcase':function(args) {
+			setvar(args[0], getvar(args[0]).toUpperCase());
+		},
 		'stripall':function(args) {
 			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
 		},
 		'stripcode':function(args) {
 			// TODO: How is this different than STRIPALL?
 			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
+		},
+		'replace':function(args) {
+			var hs;
+			var f = getvar(args[0]);
+			var r = getvar(args[1]);
+
+			hs = getvar(args[2]);
+			hs = hs.replace(f, r);
+			setvar(args[2], hs);
 		},
 		'replaceall':function(args) {
 			var hs;
@@ -1402,6 +1519,14 @@ function run_ref(sec, fname)
 			str += spaces(l - dl);
 			setvar(args[0], str);
 		},
+		'frontpad':function(args) {
+			var str = getvar(args[0]).toString();
+			var dl = displen(str);
+			var l = parseInt(getvar(args[1]), 10);
+
+			str = spaces(l - dl) + str;
+			setvar(args[0], str);
+		},
 		'rename':function(args) {
 			file_rename(getfname(getvar(args[0]).toLowerCase()), getfname(getvar(args[1]).toLowerCase()));
 		},
@@ -1440,6 +1565,14 @@ function run_ref(sec, fname)
 			});
 			f.truncate(f.position);
 			f.close();
+		},
+		'getkey':function(args) {
+			if (!dk.console.waitkey(0))
+				return '_';
+			return dk.console.getkey();
+		},
+		'readchar':function(args) {
+			setvar(args[0], getkey());
 		}
 	};
 	var handlers = {
@@ -1597,6 +1730,12 @@ function run_ref(sec, fname)
 					else if (args[4].toLowerCase() === 'begin')
 						handlers.begin(args.slice(5));
 					break;
+				case 'inside':
+					if (getvar(args[2]).toLowerCase().indexOf(getvar(args[0]).toLowerCase()) !== -1)
+						handlers.do(args.slice(4));
+					else if (args[4].toLowerCase() === 'begin')
+						handlers.begin(args.slice(5));
+					break;
 				default:
 					throw('Unhandled condition '+args[1]+' at '+fname+':'+line);
 			}
@@ -1709,7 +1848,10 @@ function run_ref(sec, fname)
 		'writefile':function(args) {
 			if (args.length < 1)
 				throw('No filename for writefile at '+fname+':'+line);
-			var f = new File(getfname(args[0].toLowerCase()));
+			var f = new File(getfname(getvar(args[0]).toLowerCase()));
+log('FNAME: '+f.name);
+log('args0: "'+args[0]+'"');
+log('gva: "'+getvar(args[0])+'"');
 			if (!f.open('ab'))
 				throw('Unable to open '+f.name+' at '+fname+':'+line);
 			getlines().forEach(function(l) {
@@ -1719,7 +1861,7 @@ function run_ref(sec, fname)
 		},
 		'readfile':function(args) {
 			var vs = getlines();
-			var f = new File(getfname(args[0]));
+			var f = new File(getfname(getvar(args[0])));
 			var l;
 
 			if (f.open('r')) {
@@ -1740,7 +1882,7 @@ function run_ref(sec, fname)
 			var lines;
 			if (args.length < 1)
 				throw('No filename for displayfile at '+fname+':'+line);
-			var f = new File(getfname(args[0].toLowerCase()));
+			var f = new File(getfname(getvar(args[0]).toLowerCase()));
 			if (!f.open('r'))
 				throw('Unable to open '+f.name+' at '+fname+':'+line);
 			lines = f.readAll();
@@ -1904,6 +2046,12 @@ function run_ref(sec, fname)
 		},
 		'loadmap':function(args) {
 			load_map(parseInt(getvar(args[0]), 10));
+		},
+		'loadworld':function(args) {
+			world = wfile.get(0);
+		},
+		'saveworld':function(args) {
+			world.put();
 		},
 		'buymanager':function(args) {
 			var itms = getlines();
@@ -2279,7 +2427,7 @@ rescan:
 			}
 		},
 		'dataload':function(args) {
-			var f = new File(getfname(getvar(args[0].toLowerCase())));
+			var f = new File(getfname(getvar(args[0]).toLowerCase()));
 			var rec = getvar(args[1]);
 			var val;
 
@@ -2304,7 +2452,7 @@ rescan:
 			setvar(args[2], val);
 		},
 		'datasave':function(args) {
-			var f = new File(getfname(getvar(args[0].toLowerCase())));
+			var f = new File(getfname(getvar(args[0]).toLowerCase()));
 			var rec = getvar(args[1]);
 			var val = replace_vars(getvar(args[2]));
 
@@ -2327,7 +2475,7 @@ rescan:
 			f.close();
 		},
 		'datanewday':function(args) {
-			var f = new File(getfname(getvar(args[0].toLowerCase())));
+			var f = new File(getfname(getvar(args[0]).toLowerCase()));
 			var i;
 			var d;
 
@@ -2349,10 +2497,18 @@ rescan:
 			f.close();
 		},
 		'progname':function(args) {
-			// TODO: Sets the name in the status bar...
+			line++;
+			if (line > files[fname].lines.length)
+				return;
+			cl = files[fname].lines[line];
+			progname = replace_vars(cl);
 		},
 		'moremap':function(args) {
-			// TODO: Changes the MORE prompt
+			line++;
+			if (line > files[fname].lines.length)
+				return;
+			cl = files[fname].lines[line];
+			morestr = replace_vars(cl);
 		},
 		'clear':function(args) {
 			if (args[0].toLowerCase() === 'screen') {
@@ -2360,14 +2516,84 @@ rescan:
 				return;
 			}
 			throw('Unknown clear type at '+fname+':'+line);
-		}
+		},
+		//'chooseplayer':function(args) {
+			// TODO: Choose player.
+		//},
+		'drawpart':function(args) {
+			var x = getvar(args[0]);
+			var y = getvar(args[1]);
+
+			erase(x - 1, y - 1);
+			update_space(x - 1, y - 1);
+		},
+		'loadcursor':function(args) {
+			dk.console.gotoxy(saved_cursor.x, saved_cursor.y);
+		},
+		'savecursor':function(args) {
+			saved_cursor = {x:scr.pos.x, y:scr.pos.y};
+		},
+		//'overheadmap':function(args) {
+			// TODO: Display overhead map...
+		//},
+		'copyfile':function(args) {
+			file_copy(getfname(getvar(args[0]).toLowerCase()), getfname(getvar(args[1]).toLowerCase()));
+		},
+		'convert_file_to_ansi':function(args) {
+			var inf = new File(getfname(getvar(args[0])));
+			var out = new File(getfname(getvar(args[1])));
+			var l;
+
+			if (!inf.open('r'))
+				return;
+			if (!out.open('wb')) {
+				inf.close();
+				return;
+			}
+			while ((l = inf.readln()) !== null) {
+				out.write(lord_to_ansi(l)+'\r\n');
+			}
+			inf.close();
+			out.close();
+		},
+		'convert_file_to_ascii':function(args) {
+			var inf = new File(getfname(getvar(args[0])));
+			var out = new File(getfname(getvar(args[1])));
+			var l;
+
+			if (!inf.open('r'))
+				return;
+			if (!out.open('wb')) {
+				inf.close();
+				return;
+			}
+			while ((l = inf.readln()) !== null) {
+				out.write(remove_colour(l).replace(/`c/g,'')+'\r\n');
+			}
+			inf.close();
+			out.close();
+		},
+		'display':function(args) {
+			if (args.length > 2 && args[1].toLowerCase() === 'in') {
+			}
+			throw('Unsupported display at '+fname+':'+line);
+		},
+		//'lordrank':function(args) {
+			// TODO lordrank
+		//},
+		//'rank':function(args) {
+			// TODO rank
+		//},
+		//'whoison':function(args) {
+			// TODO: whoison
+		//},
 	};
 
   	function handle(args)
 	{
 		if (handlers[args[0].toLowerCase()] === undefined)
 			throw('No handler for '+args[0]+' command at '+fname+':'+line);
-		handlers[args[0].toLowerCase()](args.slice(1));
+		return handlers[args[0].toLowerCase()](args.slice(1));
 	}
 
 	function load_ref(fname) {
@@ -2383,6 +2609,12 @@ rescan:
 		f.close();
 		obj.lines.forEach(function(l, n) {
 			var m;
+			var sc;
+
+			l = l.trim();
+			sc = l.indexOf(';');
+			if (sc !== -1)
+				l = l.substr(0, sc);
 			m = l.match(/^\s*@#([^\s;]+)/);
 			if (m !== null) {
 				cs = m[1].toLowerCase();
@@ -2420,6 +2652,8 @@ rescan:
 			return;
 		if (cl.search(/^\s*@closescript/) !== -1)
 			return;
+		if (cl.search(/^\s*@itemexit/) !== -1)
+			return 'ITEMEXIT';
 		if (cl.search(/^;/) !== -1)
 			continue;
 		if (cl.search(/^@/) === -1) {
@@ -2432,7 +2666,7 @@ rescan:
 		}
 		// A bare @ is used to terminate things sometimes...
 		args = cl.substr(1).split(/\s+/);
-		handle(args);
+		ret = handle(args);
 	}
 }
 
@@ -2499,6 +2733,37 @@ function update_update()
 	update_rec.battle = 0;
 	update_rec.onnow = 1;
 	update_rec.put();
+}
+
+function update_space(x, y)
+{
+	x += 1;
+	y += 1;
+
+	players.forEach(function(u, i) {
+		if (u.map !== player.map)
+			return;
+		if (u.x !== x || u.y !== y)
+			return;
+		// Note that 'busy' is what 'offmap' toggles, not what 'busy' does. *sigh*
+		if (i === player.Record) {
+			foreground(15);
+			background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
+			dk.console.print('\x02');
+		}
+		else {
+			if (u.busy === 0) {
+				dk.console.gotoxy(u.x - 1, u.y - 1);
+					foreground(4);
+				if (u.battle)
+					foreground(4);
+				else
+					foreground(7);
+				background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
+				dk.console.print('\x02');
+			}
+		}
+	});
 }
 
 var next_update = -1;
@@ -2796,6 +3061,7 @@ function view_inventory()
 	var attr = dk.console.attr.value;
 	var use_opts;
 	var desc;
+	var ret;
 
 	function draw_menu() {
 		choices.forEach(function(c, i) {
@@ -2945,6 +3211,7 @@ rescan:
 							use_opts.push({txt:'Nevermind', ret:'N'});
 						ch = popup_menu(items[inv[cur]].name, use_opts);
 						clear_block();
+						ret = undefined;
 						switch(ch) {
 							case 'A':
 								player.weaponnumber = inv[cur] + 1;
@@ -2959,7 +3226,7 @@ rescan:
 								player.armournumber = 0;
 								break;
 							case 'S':
-								run_ref(items[inv[cur]].refsection, 'items.ref');
+								ret = run_ref(items[inv[cur]].refsection, 'items.ref');
 								if (items[inv[cur]].useonce) {
 									player.i[inv[cur]]--;
 									if (player.i[inv[cur]] === 0) {
@@ -2971,7 +3238,9 @@ rescan:
 								}
 								break;
 						}
-						continue rescan;
+						if (ret === undefined || ret !== 'ITEMEXIT')
+							continue rescan;
+						// Fallthrough
 					case 'Q':
 						dk.console.gotoxy(0, 12+lb.length-1);
 						dk.console.attr.value = attr;
@@ -3256,48 +3525,6 @@ function do_map()
 			case '?':
 				run_ref('help', 'help.ref');
 				break;
-			case 'R':
-				draw_map();
-				update();
-				break;
-			case 'D':
-				run_ref('readlog', 'logstuff.ref');
-				draw_map();
-				update();
-				break;
-			case 'L':
-				run_ref('listplayers', 'help.ref');
-				break;
-			case 'M':
-				run_ref('map', 'help.ref');
-				break;
-			case 'Q':
-				dk.console.gotoxy(0, 22);
-				lw('`r0`2  Are you sure you want to quit back to the BBS? [`%Y`2] : ');
-				do {
-					ch = getkey().toUpperCase();
-				} while('YN\r'.indexOf(ch) === -1);
-				if (ch === 'N') {
-					dk.console.gotoxy(0, 22);
-					dk.console.cleareol();
-					dk.console.gotoxy(player.x - 1, player.y - 1);
-				}
-				else
-					ch = 'Q';
-				break;
-			case 'T':
-				run_ref('talk', 'help.ref');
-				break;
-			case 'V':
-				view_inventory();
-				run_ref('closestats', 'gametxt.ref');
-				break;
-			case 'Y':
-				run_ref('yell', 'help.ref');
-				break;
-			case 'Z':
-				run_ref('z', 'help.ref');
-				break;
 			case 'B':
 				if (!lfile.open('r'))
 					throw('Unable to open '+lfile.name);
@@ -3322,6 +3549,11 @@ function do_map()
 				lw('`r1`%                     Press a key to return to the game.                     `r0');
 				getkey();
 				morechk = oldmore;
+				draw_map();
+				update();
+				break;
+			case 'D':
+				run_ref('readlog', 'logstuff.ref');
 				draw_map();
 				update();
 				break;
@@ -3375,10 +3607,50 @@ function do_map()
 					status_bar();
 				}
 				break;
+			case 'L':
+				run_ref('listplayers', 'help.ref');
+				break;
+			case 'M':
+				run_ref('map', 'help.ref');
+				break;
+			case 'P':
+				run_ref('whoison', 'help.ref');
+				break;
+			case 'Q':
+				dk.console.gotoxy(0, 22);
+				lw('`r0`2  Are you sure you want to quit back to the BBS? [`%Y`2] : ');
+				do {
+					ch = getkey().toUpperCase();
+				} while('YN\r'.indexOf(ch) === -1);
+				if (ch === 'N') {
+					dk.console.gotoxy(0, 22);
+					dk.console.cleareol();
+					dk.console.gotoxy(player.x - 1, player.y - 1);
+				}
+				else
+					ch = 'Q';
+				break;
+			case 'R':
+				draw_map();
+				update();
+				break;
 			case 'S':
 				show_player_names();
 				draw_map();
 				update();
+				break;
+			case 'T':
+				run_ref('talk', 'help.ref');
+				break;
+			case 'V':
+				view_inventory();
+				run_ref('closestats', 'gametxt.ref');
+				break;
+			case 'Y':
+				run_ref('yell', 'help.ref');
+				break;
+			case 'Z':
+				run_ref('z', 'help.ref');
 				break;
 		}
 	}
@@ -3517,7 +3789,6 @@ if (!lfile.open('w+b'))
 killfiles.push(lfile);
 lfile.close();
 
-dump_player();
 run_ref('startgame', 'gametxt.ref');
 js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); ufile.file.close(); player.onnow = 0; player.busy = 0; player.battle = 0; player.put(); pfile.file.close() }');
 players[player.Record] = update_rec;
