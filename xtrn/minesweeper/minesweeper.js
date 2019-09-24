@@ -2,7 +2,32 @@
 
 // Minesweeper, the game
 
-// ctrl/modopts.ini [minesweeper] options (with defaults):
+// Configure in SCFG->External Programs->Online Programs->Games->
+// Available Online Programs...
+//
+// Name                       Synchronet Minesweeper
+// Internal Code              MSWEEPER
+// Command Line               ?minesweeper
+// Multiple Concurrent Users  Yes
+
+// Optionally, if you want the top-X winners displayed after exiting game, set:
+// Clean-up Command Line      ?minesweeper winners
+
+// If you want the top-x winners displayed during logon:
+//
+// Name                       Synchronet Minesweeper Winners
+// Internal Code              MSWINNER
+// Command Line               ?minesweeper winners
+// Multiple Concurrent Users  Yes
+// Execute on Event           Logon, Only
+
+// Command-line arguments supported:
+//
+// "winners" - display list of top-X winners and exit
+// "nocls"   - don't clear the screen upon exit
+// <level>   - set the initial game difficulty level (1-5, don't prompt)
+
+// ctrl/modopts.ini [minesweeper] options (with default values):
 // sub = syncdata
 // timelimit = 60
 // winners = 20
@@ -11,15 +36,16 @@
 
 const title = "Synchronet Minesweeper";
 const REVISION = "$Revision$".split(' ')[1];
+const author = "Digital Man";
 const header_height = 4;
 const winners_list = system.data_dir + "minesweeper.jsonl";
 const help_file = system.text_dir + "minesweeper.hlp";
 const max_difficulty = 5;
 const min_mine_density = 0.10;
 const mine_density_multiplier = 0.025;
-const char_flag = '\x01r\x01hF';
+const char_flag = '\x01rF';
 const char_badflag = '\x01r\x01h!';
-const attr_empty = '\x01b\x01h';
+const attr_empty = '\x01b'; //\x01h';
 const char_empty = attr_empty + '\xFA'; 
 const char_covered = attr_empty +'\xFE';
 const char_mine = '\x01r\x01h\xEB';
@@ -40,7 +66,7 @@ if(!options.sub)
     options.sub = load({}, "syncdata.js").find();
 
 var json_lines = load({}, "json_lines.js");
-var game = { revision: REVISION };
+var game = { rev: REVISION };
 var board = [];
 var selected = {x:0, y:0};
 var gamewon = false;
@@ -73,7 +99,7 @@ function reach(x, y)
 	return count;
 }
 
-function init_board()
+function place_mines()
 {
 	var mined = new Array(game.height * game.width);
 	for(var i = 0; i < game.mines; i++)
@@ -81,15 +107,15 @@ function init_board()
 
 	for(var i = 0; i < game.mines; i++) {
 		var r = random(game.height * game.width);
+		if(r == (selected.y * game.width) + selected.x)
+			continue;
 		var tmp = mined[i];
 		mined[i] = mined[r];
 		mined[r] = tmp;
 	}
 	
 	for(var y = 0; y < game.height; y++) {
-		board[y] = new Array(game.width);
 		for(var x = 0; x < game.width; x++) {
-			board[y][x] = { covered: true };
 			if(mined[(y * game.width) + x])
 				board[y][x].mine = true;
 		}
@@ -119,10 +145,15 @@ function isgamewon()
 				from: user.alias,
 				subject: winner_subject
 			};
+			game.name = user.alias;
+			game.md5 = md5_calc(JSON.stringify(game));
+			game.name = undefined;
 			var body = lfexpand(JSON.stringify(game, null, 1));
+			body += "\r\n--- " + js.exec_file + " " + REVISION + "\r\n";
 			if(!msgbase.save_msg(hdr, body))
-				alert("Error saving message to: " + optiona.sub);
+				alert("Error saving message to: " + options.sub);
 			msgbase.close();
+			game.md5 = undefined;
 		}
 		game.name = user.alias;
 		var result = json_lines.add(winners_list, game);
@@ -196,14 +227,26 @@ function show_winners()
 					continue;
 				var obj;
 				try {
-					obj = JSON.parse(body);
+					obj = JSON.parse(strip_ctrl(body));
 				} catch(e) {
 					log(LOG_INFO, title + " " + e + ": "  + options.sub + " msg " + hdr.number);
 					continue;
 				}
+				if(!obj.md5)	// Ignore old test messages
+					continue;
 				obj.name = hdr.from;
-				obj.net_addr = hdr.from_net_addr;
-				list.push(obj);
+				var md5 = obj.md5;
+				obj.md5 = undefined;
+				var calced = md5_calc(JSON.stringify(obj));
+				if(calced == md5) {
+					obj.net_addr = hdr.from_net_addr;	// Not included in MD5 sum
+					list.push(obj);
+				} else {
+					log(LOG_INFO, title + 
+						" MD5 not " + calced + 
+						" in: "  + options.sub + 
+						" msg " + hdr.number);
+				}
 			}
 			msgbase.close();
 		}
@@ -234,7 +277,7 @@ function show_winners()
 			,game.height
 			,game.mines
 			,system.datestr(game.end)
-			,game.revision ? game.revision : ''
+			,game.rev ? game.rev : ''
 			));
 	}
 	console.attributes = LIGHTGRAY;
@@ -265,13 +308,21 @@ function draw_cell(x, y)
 	var val = cell_val(x, y);
 	var left = " ";
 	var right = " ";
+	if(game.start && !gameover
+		&& !board[selected.y][selected.x].covered
+		&& board[selected.y][selected.x].count
+		&& (selected.x == x - 1 || selected.x == x || selected.x == x + 1)
+		&& (selected.y == y -1 || selected.y == y || selected.y == y + 1))
+		console.attributes |= HIGH;
 	if(selected.x == x && selected.y == y)
-		left = "\x01n\x01h<", right = "\x01n\x01h>";
+		left = "<", right = "\x01n\x01h>"; //left = "\x01n\x01h<"
 	console.print(left + val + right);
 }
 
 function countflags()
 {
+	if(!game.start)
+		return 0;
 	var flags = 0;
 	for(var y = 0; y < game.height; y++) {
 		for(var x = 0; x < game.width; x++) {
@@ -338,7 +389,7 @@ function draw_board(full)
 		console.down();
 	if(gamewon) {
 		console.attributes = YELLOW|BLINK;
-		console_center("Winner! Completed in " + secondstr(game.end - game.start));
+		console_center("Winner! Completed in " + secondstr(game.end - game.start).trim());
 	} else if(gameover) {
 		console.attributes = RED|HIGH|BLINK;
 		console_center("Game Over!");
@@ -422,10 +473,17 @@ function mined(x, y)
 	return board[y][x].mine;
 }
 
+function start_game()
+{
+	place_mines();
+	game.start = time();
+}
+
 function uncover(x, y)
 {
 	if(!game.start)
-		game.start = time();
+		start_game();
+	
 	if(board[y][x].flagged || !board[y][x].covered)
 		return;
 	board[y][x].covered = false;
@@ -484,11 +542,17 @@ function target_height(difficulty)
 	return 5 + (difficulty * 5);
 }
 
+function select_middle()
+{
+	selected.x = Math.floor(game.width / 2) - !(game.width&1);
+	selected.y = Math.floor(game.height / 2) - !(game.height&1);
+}
+
 function init_game(difficulty)
 {
 	console.line_counter = 0;
 	console.clear(LIGHTGRAY);
-	selected = {x:0, y:0};
+
 	gamewon = false;
 	gameover = false;
 	game.height = target_height(difficulty);
@@ -502,17 +566,48 @@ function init_game(difficulty)
 	game.width = Math.min(game.width, Math.floor((console.screen_columns - 5) / cell_width));
 	game.mines = Math.floor((game.height * game.width) 
 		* (min_mine_density + ((difficulty - 1) * mine_density_multiplier)));
-	log("Difficulty level " + difficulty + " game board WxHxM: " 
+	log(LOG_INFO, title + " new level " + difficulty + " board WxHxM: " 
 		+ format("%u x %u x %u", game.width, game.height, game.mines));
 	game.start = 0;
-	init_board();
+	// init board:
+	for(var y = 0; y < game.height; y++) {
+		board[y] = new Array(game.width);
+		for(var x = 0; x < game.width; x++) {
+			board[y][x] = { covered: true };
+		}
+	}
+	select_middle();
+}
+
+function change(x, y)
+{
+	if(y) {
+		if(x)
+			board[y - 1][x - 1].changed = true;
+		board[y - 1][x].changed = true;
+		if(board[y - 1][x + 1])
+			board[y - 1][x + 1].changed = true;
+	}
+	if(x)
+		board[y][x - 1].changed = true;
+	board[y][x].changed = true;
+	if(board[y][x + 1])
+		board[y][x + 1].changed = true;
+	if(board[y + 1]) {
+		if(x)
+			board[y + 1][x - 1].changed = true;
+		board[y + 1][x].changed = true;
+		if(board[y + 1][x + 1])
+			board[y + 1][x + 1].changed = true;
+	}
 }
 
 function play() {
 	
+	init_game(options.difficulty);
 	draw_board(true);
 	var full_redraw = false;
-	while(bbs.online && !console.aborted) {
+	while(bbs.online) {
 		if(!gameover && game.start
 			&& time() - game.start >= options.timelimit * 60) {
 			gameover = true;
@@ -524,7 +619,7 @@ function play() {
 				draw_board(false);	// update the time display
 			continue;
 		}
-		board[selected.y][selected.x].changed = true;
+		change(selected.x, selected.y);
 		switch(key.toUpperCase()) {
 			case KEY_HOME:
 				if(!gameover)
@@ -581,6 +676,10 @@ function play() {
 				if(!gameover && selected.x)
 					selected.x--;
 				break;
+			case '5':
+				if(!gameover)
+					select_middle();
+				break;
 			case '6':
 			case KEY_RIGHT:
 				if(!gameover && selected.x < game.width - 1)
@@ -605,17 +704,27 @@ function play() {
 			case 'F':
 				if(!gameover && board[selected.y][selected.x].covered) {
 					board[selected.y][selected.x].flagged = !board[selected.y][selected.x].flagged;
+					if(!game.start)
+						start_game();
 				}
 				break;
 			case 'N':
 			{
 				console.home();
 				console.down();
-				var difficulty = get_difficulty();
-				if(difficulty > 0) {
-					init_game(difficulty);
-					full_redraw = true;
+				if(game.start && !gameover) {
+					console.cleartoeol();
+					draw_border();
+					console.attributes = LIGHTRED;
+					console.right((console.screen_columns - 15) / 2);
+					console.print("New Game (Y/N) ?");
+					if(console.getkey(K_UPPER) != 'Y')
+						break;
 				}
+				var difficulty = get_difficulty();
+				if(difficulty > 0)
+					init_game(difficulty);
+				full_redraw = true;
 				break;
 			}
 			case 'W':
@@ -639,34 +748,79 @@ function play() {
 				full_redraw = true;
 				break;
 			case 'Q':
+				if(game.start && !gameover) {
+					console.home();
+					console.down();
+					console.cleartoeol();
+					draw_border();
+					console.attributes = LIGHTRED;
+					console.right((console.screen_columns - 16) / 2);
+					console.print("Quit Game (Y/N) ?");
+					if(console.getkey(K_UPPER) != 'Y')
+						break;
+				}
 				return;
 		}
-		board[selected.y][selected.x].changed = true;
+		change(selected.x, selected.y);
 		draw_board(full_redraw);
 		full_redraw = false;
 	}
 }
 
-if(argv.indexOf("winners") >= 0) {
-	show_winners();
-	exit();
-}
+try {
 
-js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
-console.ctrlkey_passthru = "TPU";
+	// Parse cmd-line options here:
+	var numval;
+	for(var i = 0; i < argv.length; i++) {
+		numval = parseInt(argv[i]);
+		if(!isNaN(numval))
+			break;
+	}
+	
+	if(argv.indexOf("nocls") < 0)
+		js.on_exit("console.clear()");
+	
+	js.on_exit("console.attributes = LIGHTGRAY");
 
-// Parse cmd-line options here:
-var val = parseInt(argv[0]);
-if(!isNaN(val) && val > 0 && val < max_difficulty)
-	options.difficulty = val;
-
-if(!options.difficulty) {
-	show_title();
-	options.difficulty = get_difficulty();
-	if(options.difficulty < 1)
+	if(argv.indexOf("winners") >= 0) {
+		if(!isNaN(numval) && numval > 0)
+			options.winners = numval;
+		show_winners();
 		exit();
+	}
+
+	js.on_exit("console.line_counter = 0");
+	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+	console.ctrlkey_passthru = "TPU";
+
+	if(!isNaN(numval) && numval > 0 && numval < max_difficulty)
+		options.difficulty = numval;
+
+	if(!options.difficulty) {
+		show_title();
+		options.difficulty = get_difficulty();
+		if(options.difficulty < 1)
+			exit();
+	}
+	play();
+	
+} catch(e) {
+	
+	var msg = file_getname(e.fileName) + 
+		" line " + e.lineNumber + 
+		": " + e.message;
+	console.crlf();
+	alert(msg);
+	if(options.sub) {
+		var msgbase = new MsgBase(options.sub);
+		var hdr = { 
+			to: author,
+			from: user.alias,
+			subject: title
+		};
+		msg += "\r\n--- " + js.exec_file + " " + REVISION + "\r\n";		
+		if(!msgbase.save_msg(hdr, msg))
+			alert("Error saving exception-message to: " + options.sub);
+		msgbase.close();
+	}
 }
-init_game(options.difficulty);
-play();
-console.attributes = LIGHTGRAY;
-console.clear();
