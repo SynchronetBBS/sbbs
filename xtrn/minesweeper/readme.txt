@@ -13,7 +13,7 @@ maximize the number of cells usable in terminals, while keeping the game
 playable and easy on the eyes (my daughter, Emma, helped with the color scheme,
 as she is *not* colorblind). There's no mouse support; use the keyboard.
 
-Multiple users can be play the game simultaneously, but there is no inter-user
+Multiple users can play the game simultaneously, but there is no inter-user
 interaction of any kind. The normal Synchronet inter-node paging/listing
 controls (Ctrl-P/U) are disabled while running the game.
 
@@ -26,21 +26,21 @@ while running the game).
 Winners
 -------
 The game winners are stored in an ever-growing line-delimited JSON file
-(winners.jsonl). If you ever want to reset the list of winners, you can just
-delete that file. The winners are ranked (sorted) first based on difficulty
-level (higher levels are harder) and then by elapsed game time (lower times are
-better). There are fractional difficulty levels (e.g. "3.3") to compensate for
-terminal size limitations (e.g. not all terminals can support a level 5 30x30
-game grid). The mine density (percentage of cells occupied by mines, based on
-selected difficulty level) is retained however, regardless of calculated/used
-game grid size.
+(winners.jsonl). If you ever want to reset the list of local winners, you can
+just delete that file. The winners are ranked (sorted) first based on
+difficulty level (higher levels are harder) and then by elapsed game time
+(lower times are better). There may be fractional difficulty levels (e.g. 3.3)
+to compensate for terminal size limitations (e.g. not all terminals can support
+a level 5 30x30 game grid). The mine density (percentage of cells occupied by
+mines, based on selected difficulty level) is retained however, regardless of
+calculated/used game grid size.
 
-If you have a "syncdata" message area setup, your game winners will be
-automatically shared to that message base for visibility on other BBSes and
-when viewing your game winners, those from other Synchronet BBSes will also
-appear in the rankings.
+If you have a "syncdata" message area setup (networked via DOVE-Net or FidoNet)
+your game winners will be automatically shared to that message base for
+visibility on other BBSes and when viewing your game winners, those from other
+BBSes will also appear in the rankings.
 
-The "top X" value (number of winners) displayed is configurable, but defaults
+The "top X" value (number of winners) displayed is configurable and defaults
 to 20. It's quite possible to "win" the game but not appear in the winners
 list depending on what other players have accomplished and the configured
 display threshold.
@@ -81,7 +81,7 @@ be left default/disabled/No/None.
 Optionally, if you want the top-X winners displayed after exiting game, set:
     Clean-up Command Line      ?minesweeper winners
 
-If you want the top-x winners displayed during logon, create an additional
+If you want the top-x winners displayed during logons, create an additional
 program entry:
 
     Name                       Synchronet Minesweeper Winners
@@ -118,7 +118,7 @@ you probably noticed the following important changes introduced in rev 1.8:
     
     * exec/minesweeper.js was moved to xtrn/minesweeper/minesweeper.js
     * text/minesweeper.hlp was moved to xtrn/minesweeper/minesweeper.hlp
-    * data/minesweeper.json was moved to xtrn/minesweeper/winners.jsonl
+    * data/minesweeper.jsonl was moved to xtrn/minesweeper/winners.jsonl
     
 If you already had game winners and want to retain them in the list, copy or
 rename the data/minesweeper.jsonl to xtrn/minesweeper/winners.jsonl. If you
