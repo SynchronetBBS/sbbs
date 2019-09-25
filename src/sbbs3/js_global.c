@@ -151,7 +151,6 @@ static void background_thread(void* arg)
 
 	jsrt_Release(bg->runtime);
 	sem_post(bg->sem);
-	msgQueueDetach(bg->msg_queue);
 	free(bg);
 }
 
