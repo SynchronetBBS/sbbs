@@ -2576,6 +2576,8 @@ rescan:
 				throw('Unable to open '+f.name+' at '+fname+':'+line);
 			d = f.readBin(4);
 			if (d != state.time) {
+				f.position = 0;
+				f.writeBin(state.time, 4);
 				for (i = 0; i < 250; i++)
 					f.writeBin(0, 4);
 			}
