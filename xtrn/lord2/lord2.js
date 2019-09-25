@@ -637,7 +637,7 @@ for (i = 0; i < 40; i++) {
 	vars[format('`v%02d', i+1)] = {type:'fn', get:eval('function() { return world.v['+i+'] }'), set:eval('function(val) { world.v['+i+'] = clamp_integer(val, "s32"); }')};
 }
 for (i = 0; i < 10; i++) {
-	vars[format('`s%02d', i+1)] = {type:'fn', get:eval('function() { return world.s['+i+'] }'), set:eval('function(val) { world.s['+i+'] = val; }')};
+	vars[format('`s%02d', i+1)] = {type:'fn', get:eval('function() { return world.s['+i+'] }'), set:eval('function(val) { world.s['+i+'] = val.substr(0, 80); }')};
 }
 for (i = 0; i < 99; i++) {
 	vars[format('`p%02d', i+1)] = {type:'fn', get:eval('function() { return player.p['+i+'] }'), set:eval('function(val) { player.p['+i+'] = clamp_integer(val, "s32"); }')};
@@ -958,6 +958,16 @@ function lord_to_ansi(str)
 function displen(str)
 {
 	return superclean(str).length;
+}
+
+// FRONTPAD is broken on colour codes.
+// It doesn't ignore colour codes.
+function broken_displen(str)
+{
+	var i;
+
+	str = expand_ticks(replace_vars(str));
+	return str.length;
 }
 
 function sw(str) {
@@ -1465,7 +1475,7 @@ function run_ref(sec, fname)
 					ch = args[1].substr(0, 1);
 			} while (args[1].indexOf(ch) === -1);
 			setvar(args[0], ch);
-			sln('');
+			sln(ch);
 		},
 		'goto':function(args) {
 			// NOTE: This doesn't use getvar() because GREEN.REF has 'do goto bank'
@@ -1597,7 +1607,7 @@ function run_ref(sec, fname)
 		},
 		'frontpad':function(args) {
 			var str = getvar(args[0]).toString();
-			var dl = displen(str);
+			var dl = broken_displen(str);
 			var l = parseInt(getvar(args[1]), 10);
 
 			str = spaces(l - dl) + str;
