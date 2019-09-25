@@ -741,8 +741,6 @@ function getvar(name) {
 	var ret;
 
 	if (vars[name.toLowerCase()] === undefined) {
-		if (name.toLowerCase() === 'nil')
-			return '';
 		return replace_vars(name);
 	}
 	if (name.substr(0, 2) === 'S&')
@@ -774,6 +772,16 @@ function getvar(name) {
 	if (lc)
 		ret = ret.substr(0, 1).toLowerCase() + ret.substr(1);
 	return ret;
+}
+
+function getsvar(name, vname)
+{
+	var v = getvar(name);
+	var fv = getvar(vname);
+
+	if (typeof fv === 'string' && typeof v !== 'string')
+		return name;
+	return v;
 }
 
 function expand_ticks(str)
@@ -1676,7 +1684,7 @@ function run_ref(sec, fname)
 					setvar(args[0], tmp.deleted);
 				}
 				else
-					setvar(args[0], getvar(args[2]));
+					setvar(args[0], getsvar(args[2], args[0]));
 				return;
 			}
 			if (args.length > 2 && args[1] == '-') {
@@ -1688,7 +1696,7 @@ function run_ref(sec, fname)
 				return;
 			}
 			if (args.length > 2 && args[1].toLowerCase() === 'add') {
-				setvar(args[0], getvar(args[0]) + getvar(args[2]).toString());
+				setvar(args[0], getvar(args[0]) + getsvar(args[2], args[0]).toString());
 				return;
 			}
 			if (args.length > 2 && args[1] == '/') {
@@ -1785,7 +1793,7 @@ function run_ref(sec, fname)
 						tmp = getvar(args[3]).length;
 					}
 					else
-						tmp = getvar(args[2]);
+						tmp = getsvar(args[2], args[0]);
 					if (getvar(args[0]).toString() === tmp.toString())
 						handlers.do(args.slice(4));
 					else if (args[4].toLowerCase() === 'begin')
@@ -3881,9 +3889,10 @@ function load_time()
 		if (!f.open('r'))
 			throw('Unable to open '+f.name);
 		state.time = parseInt(f.readln(), 10);
+		f.close();
 	}
 
-	if (newday) {
+	if (newday || argv.indexOf('/MAINT') !== -1) {
 		f = new File(getfname('stime.dat'));
 		if (!f.open('r+b'))
 			throw('Unable to open '+f.name);
