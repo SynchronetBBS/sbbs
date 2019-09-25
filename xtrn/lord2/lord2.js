@@ -1700,7 +1700,7 @@ function run_ref(sec, fname)
 				return;
 			}
 			if (args.length > 3 && args[1].toLowerCase() === 'random') {
-				setvar(args[0], random(clamp_integer(getvar(args[2]), 's32')) + clamp_integer(args[3], 's32'));
+				setvar(args[0], random(clamp_integer(getvar(args[2]), 's32')) + clamp_integer(getvar(args[3]), 's32'));
 				return;
 			}
 			if (args.length === 3 && args[1].toLowerCase() === 'random') {
@@ -2213,11 +2213,12 @@ function run_ref(sec, fname)
 							player.i[itm.Record]++;
 							player.money -= itm.value;
 							dk.console.gotoxy(1, 23);
-							lw('`* ITEM BOUGHT! `%You now have ' + player.i[itm.Record] + ' of \'em.  `2(`0press a key to continue`2)`r0');
+							// TODO: `* is node number... sometimes!
+							lw('`r4`^* ITEM BOUGHT! `%You now have ' + player.i[itm.Record] + ' of \'em.  `2(`0press a key to continue`2)`r0');
 						}
 						else {
 							dk.console.gotoxy(1, 23);
-							lw('`* ITEM NOT BOUGHT! `%You don\'t have enough gold.  `2(`0press a key to continue`2)`r0');
+							lw('`r4`^ ITEM NOT BOUGHT! `%You don\'t have enough gold.  `2(`0press a key to continue`2)`r0');
 						}
 						getkey();
 						dk.console.gotoxy(0, 23);
@@ -3902,7 +3903,12 @@ function load_time()
 
 function load_game()
 {
-	game = gfile.get(0);
+	if (gfile.length > 0)
+		game = gfile.get(0);
+	else {
+		game = gfile.new();
+		game.put();
+	}
 }
 
 function pick_deleted()
@@ -3939,6 +3945,12 @@ var ifile = new RecordFile(getfname('items.dat'), Item_Def);
 var ufile = new RecordFile(getfname('update.tmp'), Update_Def);
 var gfile = new RecordFile(getfname('game.dat'), Game_Def);
 var maildir = getfname('mail');
+
+// TODO: Actually send this font to SyncTERM too.
+if (file_exists(getfname('FONTS/LORD2.FNT'))) {
+	if (dk.system.mode === 'local')
+		conio.loadfont(getfname('FONTS/LORD2.FNT'));
+}
 
 if (!file_isdir(maildir)) {
 	mkdir(maildir);
