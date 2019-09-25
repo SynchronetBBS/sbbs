@@ -1033,7 +1033,6 @@ function more()
 	var oa = dk.console.attr.value;
 
 	curlinenum = 1;
-	// TODO: Are those spaces supposed to be in morestr?
 	lw('`r0`2  '+morestr);
 	getkey();
 	dk.console.print('\r');
@@ -1980,6 +1979,10 @@ function run_ref(sec, fname)
 			if (args.length < 1)
 				throw('No filename for displayfile at '+fname+':'+line);
 			var f = new File(getfname(getvar(args[0]).toLowerCase()));
+			if (!file_exists(f.name)) {
+				lln('`0File '+getvar(args[0])+' missing - please inform sysop');
+				return;
+			}
 			if (!f.open('r'))
 				throw('Unable to open '+f.name+' at '+fname+':'+line);
 			lines = f.readAll();
@@ -2093,10 +2096,28 @@ function run_ref(sec, fname)
 			exit(0);
 		},
 		'key':function(args) {
-			if (args.length > 0 && args[0].toLowerCase() === 'nodisplay')
-				getkey();
+			if (args.length > 0) {
+				switch(args[0].toLowerCase()) {
+					case 'nodisplay':
+						getkey();
+						return;
+					case 'top':
+						dk.console.gotoxy(0,0);
+						break;
+					case 'bottom':
+						dk.console.gotoxy(0,23);
+						break;
+					default:
+						throw('Unhandled key arg "'+args[0]+'" at '+fname+':'+line);
+				}
+			}
 			else
-				more();
+				lw('\r');
+			dk.console.cleareol();
+			lw(spaces(40-(displen(morestr)/2))+morestr);
+			getkey();
+			lw('\r');
+			dk.console.cleareol();
 		},
 		'addchar':function(args) {
 			var tmp;
