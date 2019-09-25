@@ -14,7 +14,7 @@ if (js.global.conio !== undefined && dk.console.local) {
 		if (conio.kbhit) {
 			ch = conio.getch();
 			if (ch === 0) {
-				if (conio.kbhit()) {
+				if (conio.kbhit) {
 					ch = conio.getch();
 					switch(ch) {
 						case 0x47:
