@@ -1556,7 +1556,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 			case 12:
 				/* IP Address */
 				GETUSERDAT(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"IP Address",user->modem,LEN_IPADDR,K_EDIT);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"IP Address",user->ipaddr,LEN_IPADDR,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_IPADDR,LEN_IPADDR,user->ipaddr);
 				break;
