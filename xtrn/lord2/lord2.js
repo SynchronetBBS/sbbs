@@ -5,6 +5,7 @@
 // TODO: Save player after changes in case process crashes
 // TODO: Optimize lightbars a lot
 
+js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
 load("dorkit.js");
 dk.console.auto_pause = false;
@@ -780,7 +781,7 @@ function getsvar(name, vname)
 	var fv = getvar(vname);
 
 	if (typeof fv === 'string' && typeof v !== 'string')
-		return name;
+		return replace_vars(name);
 	return v;
 }
 
@@ -1668,8 +1669,9 @@ function run_ref(sec, fname)
 			if (args.length < 1 || args.length > 0 && args[0].toLowerCase() === 'do') {
 				if (line + 1 >= files[fname].lines.length)
 					throw('do at end of file');
-				if (files[fname].lines[line + 1].search(/^\s*@begin/i) === -1)
-					throw('trailing do');
+				// Trailing do is not fatal... see jump.ref:21 in cnw
+				//if (files[fname].lines[line + 1].search(/^\s*@begin/i) === -1)
+				//	throw('trailing do at '+fname+':'+line);
 				line++;
 				return;
 			}
@@ -1829,11 +1831,15 @@ function run_ref(sec, fname)
 		},
 		'begin':function(args) {
 			var depth = 1;
-			// Don't do this, trailing whitespace...
-			//if (args.length > 0)
-			//	throw('Unexpected arguments to begin at '+fname+':'+line);
+			// Don't do this, trailing whitespace... we now delete trailing WS so do it again.
+			if (args.length > 0)
+				throw('Unexpected arguments to begin at '+fname+':'+line);
 			while (depth > 0) {
 				line++;
+				if (files[fname].lines[line] === undefined)
+					throw('Ran off end of script at '+fname+':'+line);
+				if (files[fname].lines[line].search(/^\s*@#/i) !== -1)
+					depth = 0;
 				if (files[fname].lines[line].search(/^\s*@begin/i) !== -1)
 					depth++;
 				if (files[fname].lines[line].search(/^\s*@end/i) !== -1)
@@ -1957,6 +1963,11 @@ function run_ref(sec, fname)
 				}
 				f.close();
 			}
+			// TODO: Documentation says it won't change variables if file too short...
+			// By felicity.ref ends up displaying junk...
+			//while (vs.length) {
+			//	setvar(vs.shift(), '');
+			//}
 		},
 		'end':function(args) {},
 		'label':function(args) {},
@@ -2140,7 +2151,7 @@ function run_ref(sec, fname)
 			dk.console.attr.value = sattr;
 		},
 		'loadmap':function(args) {
-			load_map(parseInt(getvar(args[0]), 10));
+			map = load_map(parseInt(getvar(args[0]), 10));
 		},
 		'loadworld':function(args) {
 			world = wfile.get(0);
@@ -2233,7 +2244,7 @@ function run_ref(sec, fname)
 							player.money -= itm.value;
 							dk.console.gotoxy(1, 23);
 							// TODO: `* is node number... sometimes!
-							lw('`r4`^* ITEM BOUGHT! `%You now have ' + player.i[itm.Record] + ' of \'em.  `2(`0press a key to continue`2)`r0');
+							lw('`r4`^ ITEM BOUGHT! `%You now have ' + player.i[itm.Record] + ' of \'em.  `2(`0press a key to continue`2)`r0');
 						}
 						else {
 							dk.console.gotoxy(1, 23);
@@ -2769,6 +2780,7 @@ rescan:
 		fname = fname.toLowerCase();
 		var f = new File(getfname(fname));
 		var cs;
+		var i;
 
 		if (!f.open('r'))
 			throw('Unable to open '+f.name);
@@ -2779,10 +2791,13 @@ rescan:
 			var m;
 			var sc;
 
-			l = l.trim();
-			sc = l.indexOf(';');
-			if (sc !== -1)
+			if (l.search(/^\s*@/) !== -1) {
+				sc = l.indexOf(';');
 				l = l.substr(0, sc);
+				l = l.replace(/\s*$/,'');
+				l = l.trim();
+			}
+			obj.lines[n] = l;
 			m = l.match(/^\s*@#([^\s;]+)/);
 			if (m !== null) {
 				cs = m[1].toLowerCase();
@@ -2820,9 +2835,9 @@ rescan:
 		cl = files[fname].lines[line].replace(/^\s*/,'');
 		if (cl.search(/^@#/) !== -1)
 			return;
-		if (cl.search(/^\s*@closescript/) !== -1)
+		if (cl.search(/^\s*@closescript/i) !== -1)
 			return;
-		if (cl.search(/^\s*@itemexit/) !== -1)
+		if (cl.search(/^\s*@itemexit/i) !== -1)
 			return 'ITEMEXIT';
 		if (cl.search(/^;/) !== -1)
 			continue;
