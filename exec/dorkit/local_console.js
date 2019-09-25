@@ -13,40 +13,43 @@ if (js.global.conio !== undefined && dk.console.local) {
 		var ch;
 		if (conio.kbhit) {
 			ch = conio.getch();
-
 			if (ch === 0) {
-				ch = conio.getch();
-				switch(ch) {
-					case 0x47:
-						return dk.console.key.KEY_HOME;
-					case 72:
-						return dk.console.key.KEY_UP;
-					case 0x4f:
-						return dk.console.key.KEY_END;
-					case 80:
-						return dk.console.key.KEY_DOWN;
-					case 0x52:
-						return dk.console.key.KEY_INS;
-					case 0x53:
-						return dk.console.key.KEY_DEL;
-					case 0x4b:
-						return dk.console.key.KEY_LEFT;
-					case 0x4d:
-						return dk.console.key.KEY_RIGHT;
-					case 0x49:
-						return dk.console.key.KEY_PGUP;
-					case 0x51:
-						return dk.console.key.KEY_PGDOWN;
-					default:
-						if (ch >= 0x3a && ch <= 0x44)
-							return dk.console.key['KEY_F'+(ch - 0x39)];
-						if (ch >= 0x7a && ch <= 0x7b)
-							return dk.console.key['KEY_F'+(ch - 0x6f)];
+				if (conio.kbhit()) {
+					ch = conio.getch();
+					switch(ch) {
+						case 0x47:
+							return dk.console.key.KEY_HOME;
+						case 72:
+							return dk.console.key.KEY_UP;
+						case 0x4f:
+							return dk.console.key.KEY_END;
+						case 80:
+							return dk.console.key.KEY_DOWN;
+						case 0x52:
+							return dk.console.key.KEY_INS;
+						case 0x53:
+							return dk.console.key.KEY_DEL;
+						case 0x4b:
+							return dk.console.key.KEY_LEFT;
+						case 0x4d:
+							return dk.console.key.KEY_RIGHT;
+						case 0x49:
+							return dk.console.key.KEY_PGUP;
+						case 0x51:
+							return dk.console.key.KEY_PGDOWN;
+						default:
+							if (ch >= 0x3a && ch <= 0x44)
+								return dk.console.key['KEY_F'+(ch - 0x39)];
+							if (ch >= 0x7a && ch <= 0x7b)
+								return dk.console.key['KEY_F'+(ch - 0x6f)];
+					}
 				}
-				return;
+				return undefined;
 			}
-			return ascii(conio.getch());
+
+			return ascii(ch);
 		}
+		return undefined;
 	});
 }
 var dk_local_console_loaded = true;
