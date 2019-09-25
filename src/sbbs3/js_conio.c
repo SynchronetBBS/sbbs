@@ -483,7 +483,6 @@ js_conio_getfont(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc==1 && JSVAL_IS_NUMBER(argv[0]) && JS_ValueToInt32(cx,argv[0],&fnum)) {
 		rc=JS_SUSPENDREQUEST(cx);
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(getfont(fnum)));
-		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
