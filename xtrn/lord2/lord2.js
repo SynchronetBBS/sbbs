@@ -1899,7 +1899,7 @@ function run_ref(sec, fname)
 					pages = parseInt(pages, 10) + 1;
 
 				while(1) {
-					dk.console.clear();
+					sclrscr();
 					dk.console.attr.value = sattr;
 					for (i = 0; i < 22; i++) {
 						if (p*22+i >= l.length)
@@ -2696,7 +2696,7 @@ rescan:
 			var off;
 			var x, y;
 
-			dk.console.clear();
+			sclrscr();
 			dk.console.gotoxy(0, 0);
 			for (y = 0; y < 20; y++) {
 				dk.console.gotoxy(0, y);
@@ -3053,7 +3053,7 @@ function draw_map() {
 	var s;
 
 	dk.console.attr.value = 7;
-	dk.console.clear();
+	sclrscr();
 	for (y = 0; y < 20; y++) {
 		for (x = 0; x < 80; x++) {
 			off = getoffset(x,y);
