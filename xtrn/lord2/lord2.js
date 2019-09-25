@@ -1410,6 +1410,7 @@ function run_ref(sec, fname)
 	fname = fname.toLowerCase();
 	sec = sec.toLowerCase();
 
+	// TODO: Some things ignore comments and trailing whitespace, but ANSI certainly works for some things...
 	function getlines() {
 		var ret = [];
 
@@ -1832,8 +1833,9 @@ function run_ref(sec, fname)
 		'begin':function(args) {
 			var depth = 1;
 			// Don't do this, trailing whitespace... we now delete trailing WS so do it again.
-			if (args.length > 0)
-				throw('Unexpected arguments to begin at '+fname+':'+line);
+			// We *can't* delete trailing whitespace because of felicity.ref:779 (sigh)
+			//if (args.length > 0)
+			//	throw('Unexpected arguments to begin at '+fname+':'+line);
 			while (depth > 0) {
 				line++;
 				if (files[fname].lines[line] === undefined)
@@ -2793,9 +2795,11 @@ rescan:
 
 			if (l.search(/^\s*@/) !== -1) {
 				sc = l.indexOf(';');
-				l = l.substr(0, sc);
-				l = l.replace(/\s*$/,'');
-				l = l.trim();
+				if (sc > -1)
+					l = l.substr(0, sc);
+				// We can't delete trailing whitespace because of felicity.ref:779
+				//l = l.trim();
+				l = l.replace(/^\s+/,'');
 			}
 			obj.lines[n] = l;
 			m = l.match(/^\s*@#([^\s;]+)/);
