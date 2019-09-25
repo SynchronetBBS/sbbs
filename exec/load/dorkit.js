@@ -257,7 +257,7 @@ var dk = {
 		rows:24,				// Rows in users terminal
 		cols:80,				// Columns in users terminal
 
-		keybuf:'',
+		keybuf:[],
 		input_queue:new Queue("dorkit_input" + (js.global.bbs === undefined ? '' : bbs.node_num)),
 
 		/*
@@ -392,7 +392,7 @@ var dk = {
 		 */
 		getblock:function(sx,sy,ex,ey) {
 			'use strict';
-			return this.remote_screen.graphic.get(sx,sy,ex,ey);
+			return this.local_io.screen.graphic.get(sx,sy,ex,ey);
 		},
 
 		/*
@@ -480,7 +480,7 @@ var dk = {
 					for (i = 0; i < this.input_queue_callback.length; i += 1) {
 						d = this.input_queue_callback[i]();
 						if (d !== undefined) {
-							this.keybuf += d;
+							this.keybuf.push(d);
 						}
 					}
 					if (this.keybuf.length > 0) {
@@ -505,8 +505,7 @@ var dk = {
 			var m;
 
 			if (this.keybuf.length > 0) {
-				ret = this.keybuf[0];
-				this.keybuf = this.keybuf.substr(1);
+				ret = this.keybuf.shift();
 				return ret;
 			}
 			if (!this.waitkey(0)) {
@@ -553,21 +552,28 @@ var dk = {
 			'use strict';
 			var ret;
 
-			if (this.keybuf.length > 0) {
-				ret = this.keybuf[0];
-				this.keybuf = this.keybuf.substr(1);
-				return ret;
+			while (1) {
+				if (this.keybuf.length > 0) {
+					do {
+						ret = this.keybuf.shift();
+					} while(ret.length > 1 && ret.indexOf('\x00') === -1);
+					return ret;
+				}
+				if (!this.waitkey(0)) {
+					return undefined;
+				}
+				ret = this.input_queue.read();
+				if (ret.length > 1) {
+					if (ret.indexOf('\x00') > -1) {
+						ret=ret.replace(/^.*\x00/,'');
+						ret.split('').forEach(function(ch) {
+							this.keybuf.push(ch);
+						}, this);
+					}
+				}
+				else
+					return ret;
 			}
-			if (!this.waitkey(0)) {
-				return undefined;
-			}
-			ret = this.input_queue.read();
-			if (ret.length > 1) {
-				ret=ret.replace(/^.*\x00/,'');
-				this.keybuf = ret.substr(1);
-				ret = ret[0];
-			}
-			return ret;
 		},
 		getstr_defaults:{
 			timeout:undefined,	// Timeout, undefined for "wait forever"
