@@ -1465,6 +1465,7 @@ function run_ref(sec, fname)
 					ch = args[1].substr(0, 1);
 			} while (args[1].indexOf(ch) === -1);
 			setvar(args[0], ch);
+			sln('');
 		},
 		'goto':function(args) {
 			// NOTE: This doesn't use getvar() because GREEN.REF has 'do goto bank'
