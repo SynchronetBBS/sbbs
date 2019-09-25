@@ -535,19 +535,23 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	fg = vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].fg;
 	bg = vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].bg;
 
-	switch (vstat.charheight) {
-		case 8:
-			this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].font].eight_by_eight;
-			break;
-		case 14:
-			this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].font].eight_by_fourteen;
-			break;
-		case 16:
-			this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].font].eight_by_sixteen;
-			break;
-		default:
-			pthread_mutex_unlock(&screen.screenlock);
-			return(-1);
+	if (current_font[0] == -1)
+		this_font = font[0];
+	else {
+		switch (vstat.charheight) {
+			case 8:
+				this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].font].eight_by_eight;
+				break;
+			case 14:
+				this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].font].eight_by_fourteen;
+				break;
+			case 16:
+				this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].font].eight_by_sixteen;
+				break;
+			default:
+				pthread_mutex_unlock(&screen.screenlock);
+				return(-1);
+		}
 	}
 	if (this_font == NULL)
 		this_font = font[0];
