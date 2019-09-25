@@ -2067,9 +2067,19 @@ function run_ref(sec, fname)
 				more();
 		},
 		'addchar':function(args) {
-			var tmp = pfile.new();
-			player.Record = tmp.Record;
-			ufile.new();
+			var tmp;
+
+			if (player.Record === undefined) {
+				tmp = pfile.new();
+				if (tmp.Record >= 200) {
+					pfile.file.position = pfile.RecordLength * 200;
+					pfile.truncate(pfile.RecordLength * 200);
+					run_ref('full','gametxt.ref');
+					exit(0);
+				}
+				player.Record = tmp.Record;
+				ufile.new();
+			}
 			player.lastsaved = savetime();
 			player.put();
 			update_rec = ufile.get(player.Record);
@@ -3895,6 +3905,33 @@ function load_game()
 	game = gfile.get(0);
 }
 
+function pick_deleted()
+{
+	var i;
+	var del = [];
+	var pl;
+
+	for (i = 0; i < pfile.length; i++) {
+		pl = pfile.get(i);
+		if (pl.deleted === 1)
+			del.push(pl);
+	}
+
+	del.sort(function(a,b) { return b.lastdayon - a.lastdayon });
+	for (i = 0; i < del.length; i++) {
+		del[i].reLoad(true);
+		if (del[i].deleted !== 1) {
+			del.unlock();
+			continue;
+		}
+		del[i].deleted = 0;
+		del[i].lastdayon = -32768;
+		del[i].put(false);
+		player.Record = del[i].Record;
+		break;
+	}
+}
+
 var pfile = new RecordFile(getfname('trader.dat'), Player_Def);
 var mfile = new RecordFile(getfname('map.dat'), Map_Def);
 var wfile = new RecordFile(getfname('world.dat'), World_Def);
@@ -3917,8 +3954,17 @@ load_time();
 load_game();
 
 run_ref('rules', 'rules.ref');
-if (player.Record === undefined)
+
+if (player.Record === undefined) {
+	if (pfile.length >= 200) {
+		pick_deleted();
+		if (player.Record === undefined) {
+			run_ref('full', 'gametxt.ref');
+			exit(0);
+		}
+	}
 	run_ref('newplayer', 'gametxt.ref');
+}
 
 js.on_exit('killfiles.forEach(function(f) { if (f.is_open) { f.close(); } file_remove(f.name); });');
 
