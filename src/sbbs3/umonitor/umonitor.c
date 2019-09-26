@@ -978,7 +978,7 @@ USAGE:
 			if((j=getnodedat(&cfg,i,&node,FALSE,NULL)))
 				sprintf(mopt[i],"Error reading node data (%d)!",j);
 			else {
-				nodestatus(&cfg, &node, str, 71);
+				nodestatus(&cfg, &node, str, 71, i);
 				if(i == paging_node) {
 					strupr(str);
 					strcat(str,  " <PAGING>");
