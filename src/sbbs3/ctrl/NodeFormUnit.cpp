@@ -174,7 +174,7 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 		sprintf(str,"%*d %s"
 			,digits
 			,n+1
-			,nodestatus(&MainForm->cfg,&node,status,sizeof(status)));
+			,nodestatus(&MainForm->cfg,&node,status,sizeof(status),n+1));
         AnsiString Str=AnsiString(str);
         if(ListBox->Items->Count<n+1)
         	ListBox->Items->Add(Str);
