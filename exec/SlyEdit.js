@@ -137,7 +137,7 @@ if (requireFnExists)
 {
 	require("sbbsdefs.js", "K_NOCRLF");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
-	require(gStartupPath + "SlyEdit_Misc.js", "CTRL_A");
+	require(gStartupPath + "SlyEdit_Misc.js", "gUserSettingsFilename");
 }
 else
 {
