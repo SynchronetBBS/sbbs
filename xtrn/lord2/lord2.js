@@ -3275,6 +3275,7 @@ function view_inventory()
 	var lb;
 	var choices;
 	var i;
+	var it;
 	var ch;
 	var cur = 0;
 	var str;
@@ -3284,12 +3285,17 @@ function view_inventory()
 	var ret;
 
 	function draw_menu() {
-		choices.forEach(function(c, i) {
+		var i;
+		var iv;
+		var c;
+
+		for (i = 0; i < choices.length; i++) {
+			c = choices[i];
 			dk.console.gotoxy(0, 12+i);
-			if (i === cur)
+			if (i === (cur % 11))
 				c = '`r1'+c+'`r0';
 			lw(c);
-		});
+		}
 		dk.console.gotoxy(0, 12+i);
 	}
 
@@ -3316,8 +3322,6 @@ rescan:
 	while(1) {
 		run_ref('stats', 'gametxt.ref');
 		inv = [];
-		lb = [];
-		choices = [];
 		for (i = 0; i < 99; i++) {
 			if (player.i[i] > 0)
 				inv.push(i);
@@ -3331,140 +3335,169 @@ rescan:
 			return;
 		}
 		else {
-			inv.forEach(function(i) {
-				desc = items[i].description;
-				str = '`2  '+items[i].name;
-				choices.push(str);
-				str += decorate_item(items[i]);
-				if (items[i].armour) {
-					if (player.armournumber === i + 1)
-						desc = 'Currently wearing as armour.';
+newpage:
+			while (1) {
+				lb = [];
+				choices = [];
+				for (i = Math.floor(cur / 11) * 11; i < inv.length && (i <= cur || i % 11); i++) {
+					it = inv[i];
+					desc = items[it].description;
+					str = '`2  '+items[it].name;
+					choices.push(str);
+					str += decorate_item(items[it]);
+					if (items[it].armour) {
+						if (player.armournumber === it + 1)
+							desc = 'Currently wearing as armour.';
+					}
+					if (items[it].weapon) {
+						if (player.weaponnumber === it + 1)
+							desc = 'Currently armed as weapon.';
+					}
+					str += spaces(37 - displen(str));
+					str += '`2 (`0'+player.i[it]+'`2)';
+					str += spaces(47 - displen(str));
+					str += '`2 ' + desc;
+					str += spaces(79 - displen(str));
+					lb.push(str);
 				}
-				if (items[i].weapon) {
-					if (player.weaponnumber === i + 1)
-						desc = 'Currently armed as weapon.';
-				}
-				str += spaces(37 - displen(str));
-				str += '`2 (`0'+player.i[i]+'`2)';
-				str += spaces(47 - displen(str));
-				str += '`2 ' + desc;
-				str += spaces(79 - displen(str));
-				lb.push(str);
-			});
 
-			draw_inv();
-			while(1) {
-				draw_menu();
-				dk.console.gotoxy(0, 23);
-				ch = getkey().toUpperCase();
-				switch(ch) {
-					case '8':
-					case 'KEY_UP':
-					case '4':
-					case 'KEY_LEFT':
-						cur--;
-						if (cur < 0)
-							cur = lb.length - 1;
-						break;
-					case '2':
-					case 'KEY_DOWN':
-					case '6':
-					case 'KEY_RIGHT':
-						cur++;
-						if (cur >= lb.length)
-							cur = 0;
-						break;
-					case 'D':
-						dk.console.gotoxy(17, 12);
-						lw(box_top(42, items[inv[cur]].name));
-						dk.console.gotoxy(17, 13);
-						lw(box_middle(42, ''));
-						dk.console.gotoxy(17, 14);
-						lw(box_middle(42, '   `$Drop how many? '));
-						dk.console.gotoxy(17, 15);
-						lw(box_middle(42, ''));
-						dk.console.gotoxy(17, 16);
-						lw(box_bottom(42, ''));
-						dk.console.gotoxy(38, 14);
-						// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
-						ch = dk.console.getstr({edit:player.i[inv[cur]].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
-						lw('`r1`0');
-						ch = parseInt(ch, 10);
-						if (!isNaN(ch) && ch <= player.i[inv[cur]]) {
-							player.i[inv[cur]] -= ch;
-							if (player.i[inv[cur]] === 0) {
-								if (player.weaponnumber - 1 === inv[cur])
-									player.weaponnumber = 0;
-								if (player.armournumber - 1 === inv[cur])
-									player.armournumber = 0;
+				draw_inv();
+				while(1) {
+					draw_menu();
+					dk.console.gotoxy(0, 23);
+					ch = getkey().toUpperCase();
+					switch(ch) {
+						case '8':
+						case 'KEY_UP':
+						case '4':
+						case 'KEY_LEFT':
+							cur--;
+							if (cur < 0) {
+								cur = inv.length - 1;
+								if (inv.length > 11)
+									continue newpage;
 							}
-							dk.console.gotoxy(21, 14);
-							if (ch === 1)
-								lw('`$You go ahead and throw it away.`0');
-							else
-								lw('`$You drop the offending items!`0');
-							getkey();
-						}
-						clear_block();
-						continue rescan;
-					case '\r':
-						use_opts = [];
-						if (items[inv[cur]].weapon) {
-							if (player.weaponnumber - 1 !== inv[cur])
-								use_opts.push({txt:'Arm as weapon', ret:'A'});
-							else
-								use_opts.push({txt:'Unarm as weapon', ret:'U'});
-						}
-						if (items[inv[cur]].armour) {
-							if (player.armournumber - 1 !== inv[cur])
-								use_opts.push({txt:'Wear as armour', ret:'W'});
-							else
-								use_opts.push({txt:'Take it off', ret:'T'});
-						}
-						if (items[inv[cur]].refsection.length > 0 && items[inv[cur]].useaction.length > 0) {
-							use_opts.push({txt:items[inv[cur]].useaction, ret:'S'});
-						}
-						if (use_opts.length === 0)
-							// TODO: Test this... it's almost certainly broken.
-							use_opts.push({txt:'You can\'t think of any way to use this item', ret:'N'});
-						else
-							use_opts.push({txt:'Nevermind', ret:'N'});
-						ch = popup_menu(items[inv[cur]].name, use_opts);
-						clear_block();
-						ret = undefined;
-						switch(ch) {
-							case 'A':
-								player.weaponnumber = inv[cur] + 1;
-								break;
-							case 'U':
-								player.weaponnumber = 0;
-								break;
-							case 'W':
-								player.armournumber = inv[cur] + 1;
-								break;
-							case 'T':
-								player.armournumber = 0;
-								break;
-							case 'S':
-								ret = run_ref(items[inv[cur]].refsection, 'items.ref');
-								if (items[inv[cur]].useonce) {
-									player.i[inv[cur]]--;
-									if (player.i[inv[cur]] === 0) {
-										if (player.weaponnumber - 1 === inv[cur])
-											player.weaponnumber = 0;
-										if (player.armournumber - 1 === inv[cur])
-											player.armournumber = 0;
-									}
+							if (cur % 11 === 10)
+								continue newpage;
+							break;
+						case '2':
+						case 'KEY_DOWN':
+						case '6':
+						case 'KEY_RIGHT':
+							cur++;
+							if (cur >= inv.length) {
+								cur = 0;
+								if (inv.length > 11)
+									continue newpage;
+							}
+							if (cur % 11 === 0)
+								continue newpage;
+							break;
+						case 'D':
+							dk.console.gotoxy(17, 12);
+							lw(box_top(42, items[inv[cur]].name));
+							dk.console.gotoxy(17, 13);
+							lw(box_middle(42, ''));
+							dk.console.gotoxy(17, 14);
+							lw(box_middle(42, '   `$Drop how many? '));
+							dk.console.gotoxy(17, 15);
+							lw(box_middle(42, ''));
+							dk.console.gotoxy(17, 16);
+							lw(box_bottom(42, ''));
+							dk.console.gotoxy(38, 14);
+							// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
+							ch = dk.console.getstr({edit:player.i[inv[cur]].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
+							lw('`r1`0');
+							ch = parseInt(ch, 10);
+							if (!isNaN(ch) && ch <= player.i[inv[cur]]) {
+								player.i[inv[cur]] -= ch;
+								if (player.i[inv[cur]] === 0) {
+									if (player.weaponnumber - 1 === inv[cur])
+										player.weaponnumber = 0;
+									if (player.armournumber - 1 === inv[cur])
+										player.armournumber = 0;
 								}
-								break;
-						}
-						if (ret === undefined || ret !== 'ITEMEXIT')
+								dk.console.gotoxy(21, 14);
+								if (ch === 1)
+									lw('`$You go ahead and throw it away.`0');
+								else
+									lw('`$You drop the offending items!`0');
+								getkey();
+							}
+							clear_block();
 							continue rescan;
-						// Fallthrough
-					case 'Q':
-						dk.console.gotoxy(0, 12+lb.length-1);
-						dk.console.attr.value = attr;
-						return;
+						case 'N':
+							i = cur + 11;
+							if (i >= inv.length)
+								i = inv.length - 1;
+							if (i < ((Math.floor((cur)/11)+1)*11))
+								break;
+							cur = i;
+							continue newpage;
+						case 'P':
+							if (cur < 11)
+								break;
+							cur -= 11;
+							continue newpage;
+						case '\r':
+							use_opts = [];
+							if (items[inv[cur]].weapon) {
+								if (player.weaponnumber - 1 !== inv[cur])
+									use_opts.push({txt:'Arm as weapon', ret:'A'});
+								else
+									use_opts.push({txt:'Unarm as weapon', ret:'U'});
+							}
+							if (items[inv[cur]].armour) {
+								if (player.armournumber - 1 !== inv[cur])
+									use_opts.push({txt:'Wear as armour', ret:'W'});
+								else
+									use_opts.push({txt:'Take it off', ret:'T'});
+							}
+							if (items[inv[cur]].refsection.length > 0 && items[inv[cur]].useaction.length > 0) {
+								use_opts.push({txt:items[inv[cur]].useaction, ret:'S'});
+							}
+							if (use_opts.length === 0)
+								// TODO: Test this... it's almost certainly broken.
+								use_opts.push({txt:'You can\'t think of any way to use this item', ret:'N'});
+							else
+								use_opts.push({txt:'Nevermind', ret:'N'});
+							ch = popup_menu(items[inv[cur]].name, use_opts);
+							clear_block();
+							ret = undefined;
+							switch(ch) {
+								case 'A':
+									player.weaponnumber = inv[cur] + 1;
+									break;
+								case 'U':
+									player.weaponnumber = 0;
+									break;
+								case 'W':
+									player.armournumber = inv[cur] + 1;
+									break;
+								case 'T':
+									player.armournumber = 0;
+									break;
+								case 'S':
+									ret = run_ref(items[inv[cur]].refsection, 'items.ref');
+									if (items[inv[cur]].useonce) {
+										player.i[inv[cur]]--;
+										if (player.i[inv[cur]] === 0) {
+											if (player.weaponnumber - 1 === inv[cur])
+												player.weaponnumber = 0;
+											if (player.armournumber - 1 === inv[cur])
+												player.armournumber = 0;
+										}
+									}
+									break;
+							}
+							if (ret === undefined || ret !== 'ITEMEXIT')
+								continue rescan;
+							// Fallthrough
+						case 'Q':
+							dk.console.gotoxy(0, 12+lb.length-1);
+							dk.console.attr.value = attr;
+							return;
+					}
 				}
 			}
 		}
