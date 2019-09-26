@@ -3003,8 +3003,10 @@ function update(skip) {
 		for (i = 0; i < ufile.length; i++) {
 			if (i === player.Record)
 				continue;
-			if (i > players.length) {
+			if (i >= players.length) {
 				op = pfile.get(i);
+				if (op === null)
+					break;
 				players.push({x:op.x, y:op.y, map:op.map, onnow:op.onnow, busy:op.busy, battle:op.battle, deleted:op.deleted});
 			}
 			if (players[i].deleted)
