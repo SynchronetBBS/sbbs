@@ -2840,7 +2840,6 @@ rescan:
 						ch -= odd;
 					ret += ascii(ch);
 				}
-log('ret: '+ret);
 				o[i] = ret;
 			});
 		}
