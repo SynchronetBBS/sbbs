@@ -91,7 +91,7 @@ while(bbs.online && !(console.aborted)) {
 					write(bbs.text(NodeLstHdr));
 				}
 				writeln(format(nodelist_options.format, n + 1
-					,presence.node_status(node, user.is_sysop, nodelist_options)));
+					,presence.node_status(node, user.is_sysop, nodelist_options, n)));
 				users[n] = node.useron;
 				shown++;
 			}

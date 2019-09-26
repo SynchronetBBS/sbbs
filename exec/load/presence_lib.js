@@ -119,7 +119,20 @@ function user_age_and_gender(user, options)
 	return output;
 }
 
+function extended_status(num)
+{
+	var f = new File(system.ctrl_dir + "node.exb");
+	if(!f.open("rb"))
+		return "!error " + f.error + " opening " + f.name;
+	f.position = num * 128;
+	var str = f.read(128);
+	f.close();
+	return str;
+}
+
 // Returns a string describing the node status, suitable for printing on a single line
+//
+// num is zero-based
 //
 // options values supported/used:
 // .include_age
@@ -131,9 +144,10 @@ function user_age_and_gender(user, options)
 // .gender_separator
 // .connection_prefix
 // .errors_prefix
-function node_status(node, is_sysop, options)
+function node_status(node, is_sysop, options, num)
 {
 	var node_status = node.status;
+	var misc = node.misc;
 	var output = '';
 
 	switch(node_status) {
@@ -143,11 +157,15 @@ function node_status(node, is_sysop, options)
 			/* Fall-through */
 		case NODE_INUSE:
 		{
+			if(misc&NODE_EXT) {
+				output += extended_status(num);
+				break;
+			}
 			var user = new User(node.useron);
 
 			if(options.username_prefix)
 				output += options.username_prefix;
-			if(js.global.bbs && (node.misc&NODE_ANON) && !is_sysop)
+			if(js.global.bbs && (misc&NODE_ANON) && !is_sysop)
 				output += bbs.text(UNKNOWN_USER);
 			else
 				output += user.alias;
@@ -187,7 +205,7 @@ function node_status(node, is_sysop, options)
 
 			if(options.username_prefix)
 				output += options.username_prefix;
-			if(js.global.bbs && (node.misc&NODE_ANON) && !is_sysop)
+			if(js.global.bbs && (misc&NODE_ANON) && !is_sysop)
 				output += bbs.text(UNKNOWN_USER);
 			else
 				output += system.username(node.useron);
@@ -308,7 +326,7 @@ function nodelist(print, active, listself, is_sysop, options)
 		} else
 			others++;
 
-		var line = format(options.format, n + 1, node_status(node, is_sysop, options));
+		var line = format(options.format, n + 1, node_status(node, is_sysop, options, n));
 		if(print)
 			writeln(line);
 		else
