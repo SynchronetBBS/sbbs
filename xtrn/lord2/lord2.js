@@ -35,6 +35,7 @@ var killfiles = [];
 var enemy;
 var saved_cursor = {x:0, y:0};
 var progname = '';
+var time_warnings = [];
 
 var items = [];
 var other_players = {};
@@ -1236,10 +1237,10 @@ var bar_timeout = 0;
  * MAIL\CHAT
  * MAIL\GIV
  * MAIL\INF
- * MAIL\LOG
+ * MAIL\LOG *
  * MAIL\MAB *
  * MAIL\MAT *
- * MAIL\TALK
+ * MAIL\TALK *
  * MAIL\TCON
  * MAIL\TEM *
  * MAIL\TEMP *
@@ -1326,6 +1327,14 @@ function pretty_int(int)
 		ret = ret.substr(0, i)+','+ret.substr(i);
 	}
 	return ret;
+}
+
+function tfile_append(str) {
+	if (!tfile.open('ab'))
+		throw('Unable to open '+tfile.name);
+	tfile.write(str+'\r\n');
+	tfile.close();
+	timeout_bar();
 }
 
 function timeout_bar()
@@ -1600,11 +1609,7 @@ function run_ref(sec, fname)
 			line++;
 			if (line >= files[fname].lines.length)
 				throw('Trailing quebar at '+fname+':'+line);
-			if (!tfile.open('ab'))
-				throw('Unable to open '+tfile.name);
-			tfile.write(files[fname].lines[line]+'\r\n');
-			tfile.close();
-			timeout_bar();
+			tfile_append(files[fname].lines[line]);
 		},
 		'pad':function(args) {
 			var str = getvar(args[0]).toString();
@@ -2230,6 +2235,14 @@ function run_ref(sec, fname)
 				str += itm.description;
 				lw(str);
 			});
+
+			if (items.length === 0) {
+				dk.console.gotoxy(0, 10);
+				lw('  `2They have nothing to sell.  (press `%Q `2to continue)');
+				do {
+					ch = getkey.toUpperCase();
+				} while(ch !== 'Q');
+			}
 
 			function draw_menu() {
 				itms.forEach(function(it, i) {
@@ -3137,12 +3150,43 @@ function load_map(mapnum)
 	return mfile.get(world.mapdatindex[mapnum - 1] - 1);
 }
 
+function get_timestr()
+{
+	var desc;
+	var secleft = dk.user.seconds_remaining - (time() - dk.user.seconds_remaining_from);
+	var minleft = Math.floor(secleft / 60);
+
+	if (time_warnings.length < 1)
+		return '';
+
+	if (minleft < 0)
+		minleft = 0;
+
+	if (player.p[10] > time_warnings[0])
+		desc = 'It is morning.';
+	else if (player.p[10] > time_warnings[1])
+		desc = 'It is noon.';
+	else if (player.p[10] > time_warnings[2])
+		desc = 'It is late afternoon.';
+	else if (player.p[10] > time_warnings[3])
+		desc = 'It is getting dark.';
+	else if (player.p[10] > time_warnings[4])
+		desc = 'You are getting very sleepy.';
+	else if (player.p[10] > time_warnings[5])
+		desc = 'You are about to faint.';
+	else
+		return '`2You have fainted.  You will not be able to move until tommorow.';
+
+	return '`%Time: `2'+desc+'  You have `0'+pretty_int(player.p[10])+'`2 turns and `0'+pretty_int(minleft)+'`2 minutes left.';
+}
+
 function move_player(xoff, yoff) {
 	var x = player.x + xoff;
 	var y = player.y + yoff;
 	var moved = false;
 	var special = false;
 	var newmap = false;
+	var perday;
 
 	if (getvar('`v05') > 0) {
 		if (player.p[10] <= 0) {
@@ -3215,9 +3259,11 @@ function move_player(xoff, yoff) {
 	});
 	if (moved && getvar('`v05') > 0) {
 		player.p[10]--;
-		// It seems there's checks at 2250 "It is noon"
-		// 1500 "It is late afternoon"
-		// It seems there's checks at 750 "It is getting dark", 300 "You are getting very sleepy", and 150 "You are about to faint"
+		perday = getvar('`v05');
+		if (perday > 0) {
+			if (time_warnings.indexOf(player.p[10]) !== -1)
+				tfile_append(get_timestr());
+		}
 	}
 	if (moved && !special && map.battleodds > 0 && map.reffile !== '' && map.refsection !== '') {
 		if (random(map.battleodds) === 0)
@@ -3464,18 +3510,24 @@ newpage:
 							lw('`r1`0');
 							ch = parseInt(ch, 10);
 							if (!isNaN(ch) && ch <= player.i[inv[cur]]) {
-								player.i[inv[cur]] -= ch;
-								if (player.i[inv[cur]] === 0) {
-									if (player.weaponnumber - 1 === inv[cur])
-										player.weaponnumber = 0;
-									if (player.armournumber - 1 === inv[cur])
-										player.armournumber = 0;
+								if (items[inv[cur]].questitem) {
+									dk.console.gotoxy(21, 14);
+									lw('`$Naw, it might be useful later...');
 								}
-								dk.console.gotoxy(21, 14);
-								if (ch === 1)
-									lw('`$You go ahead and throw it away.`0');
-								else
-									lw('`$You drop the offending items!`0');
+								else {
+									player.i[inv[cur]] -= ch;
+									if (player.i[inv[cur]] === 0) {
+										if (player.weaponnumber - 1 === inv[cur])
+											player.weaponnumber = 0;
+										if (player.armournumber - 1 === inv[cur])
+											player.armournumber = 0;
+									}
+									dk.console.gotoxy(21, 14);
+									if (ch === 1)
+										lw('`$You go ahead and throw it away.`0');
+									else
+										lw('`$You drop the offending items!`0');
+								}
 								getkey();
 							}
 							clear_block();
@@ -4097,6 +4149,21 @@ function pick_deleted()
 	}
 }
 
+function setup_time_warnings()
+{
+	var perday = getvar('`v05');
+
+	time_warnings = [];
+	if (perday === 0)
+		return;
+	time_warnings.push(Math.floor(perday * 0.75));
+	time_warnings.push(Math.floor(perday * 0.5));
+	time_warnings.push(Math.floor(perday * 0.25));
+	time_warnings.push(Math.floor(perday * 0.1));
+	time_warnings.push(Math.floor(perday * 0.05));
+	time_warnings.push(0);
+}
+
 var pfile = new RecordFile(getfname('trader.dat'), Player_Def);
 var mfile = new RecordFile(getfname('map.dat'), Map_Def);
 var wfile = new RecordFile(getfname('world.dat'), World_Def);
@@ -4125,6 +4192,8 @@ load_time();
 load_game();
 
 run_ref('rules', 'rules.ref');
+
+setup_time_warnings();
 
 if (player.Record === undefined) {
 	if (pfile.length >= 200) {
