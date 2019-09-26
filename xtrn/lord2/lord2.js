@@ -2144,6 +2144,10 @@ function run_ref(sec, fname)
 			player.lastsaved = savetime();
 			player.put();
 			update_rec = ufile.get(player.Record);
+			while(update_rec === null) {
+				ufile.new();
+				update_rec = ufile.get(player.Record);
+			}
 		},
 		'offmap':function(args) {
 			// TODO: Disappear to other players... this toggles busy because
@@ -2809,15 +2813,62 @@ rescan:
 	function load_ref(fname) {
 		var obj = {section:{}};
 		fname = fname.toLowerCase();
-		var f = new File(getfname(fname));
+		var f;
 		var cs;
 		var i;
+		var enc = false;
 
+		function decrypt(o) {
+			o.forEach(function(l, i) {
+				var off;
+				var odd;
+				var con;
+				var ret = '';
+				var ch;
+				var ct = 1;
+
+				con = ascii(l.substr(4, 1));
+				odd = ascii(l.substr(2, 1));
+				for (off = 5; off < l.length; off++) {
+					ch = ascii(l.substr(off, 1));
+					ch -= ct;
+					ct++;
+					if (ct == 10)
+						ct = 0;
+					ch -= con;
+					if (ct & 1)
+						ch -= odd;
+					ret += ascii(ch);
+				}
+log('ret: '+ret);
+				o[i] = ret;
+			});
+		}
+
+		f = new File(getfname(fname));
+		if (!file_exists(f.name)) {
+			f = new File(getfname(fname.replace(/\.ref$/, '.rec')));
+			if (file_exists(f.name))
+				enc = true;
+		}
 		if (!f.open('r'))
 			throw('Unable to open '+f.name);
-		obj.lines = f.readAll(4096);
-		obj.lines.unshift(';secret line zero... shhhhh');
+		if (enc) {
+			obj.lines = [];
+			while(1) {
+				i = f.read(2);
+				if (i === '')
+					break;
+				i += f.read(ascii(i.substr(1,1))-3);
+				f.readln();
+				obj.lines.push(i);
+			}
+			decrypt(obj.lines);
+		}
+		else
+			obj.lines = f.readAll(4096);
 		f.close();
+		obj.lines.unshift(';secret line zero... shhhhh');
 		obj.lines.forEach(function(l, n) {
 			var m;
 			var sc;
@@ -2900,6 +2951,10 @@ function load_player()
 		if (p.realname === dk.user.full_name) {
 			player = p;
 			update_rec = ufile.get(p.Record);
+			while(update_rec === null) {
+				ufile.new();
+				update_rec = ufile.get(player.Record);
+			}
 			return;
 		}
 	}
