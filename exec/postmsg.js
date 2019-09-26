@@ -124,7 +124,10 @@ if(!hdrs.from)
 	hdrs.from = prompt("From User name");
 if(!hdrs.subject)
 	hdrs.subject = prompt("Subject");
-
+if(!hdrs.to_ext && sub_code == 'mail')
+	hdrs.to_ext = system.matchuser(hdrs.to);
+if(!hdrs.from_ext)
+	hdrs.from_ext = system.matchuser(hdrs.from);
 if(!msgbase.save_msg(hdrs, body)) {
 	alert("Error saving message: " + msgbase.last_error);
 	exit();
