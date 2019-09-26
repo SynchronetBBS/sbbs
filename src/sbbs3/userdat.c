@@ -783,6 +783,19 @@ int opennodedat(scfg_t* cfg)
 }
 
 /****************************************************************************/
+/****************************************************************************/
+int opennodeext(scfg_t* cfg)
+{
+	char	fname[MAX_PATH+1];
+
+	if(!VALID_CFG(cfg))
+		return -1;
+
+	SAFEPRINTF(fname, "%snode.exb", cfg->ctrl_dir);
+	return nopen(fname, O_RDWR|O_DENYNONE);
+}
+
+/****************************************************************************/
 /* Reads the data for node number 'number' into the structure 'node'        */
 /* from node.dab															*/
 /****************************************************************************/
@@ -944,7 +957,22 @@ static char* node_connection_desc(ushort conn, char* str)
 	return str;
 }
 
-char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen)
+char* getnodeext(scfg_t* cfg, int num, char* buf)
+{
+	int f;
+
+	if(!VALID_CFG(cfg) || num < 1)
+		return "";
+	if((f = opennodeext(cfg)) < 1)
+		return "";
+	lseek(f, (num-1) * 128, SEEK_SET);
+	read(f, buf, 128);
+	close(f);
+	buf[127] = 0;
+	return buf;
+}
+
+char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
 {
 	char	str[256];
 	char	tmp[128];
@@ -990,6 +1018,10 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen)
             break;
         case NODE_QUIET:
         case NODE_INUSE:
+			if(node->misc & NODE_EXT) {
+				getnodeext(cfg, num, str);
+				break;
+			}
             username(cfg,node->useron,str);
             strcat(str," ");
             switch(node->action) {
@@ -1165,7 +1197,7 @@ void printnodedat(scfg_t* cfg, uint number, node_t* node)
 {
 	char	status[128];
 
-	printf("Node %2d: %s\n",number,nodestatus(cfg,node,status,sizeof(status)));
+	printf("Node %2d: %s\n",number,nodestatus(cfg,node,status,sizeof(status),number));
 }
 
 /****************************************************************************/
