@@ -89,99 +89,94 @@ var Player_Def = [
 		type:'PString:30',
 		def:''
 	},
-	{	// 106 (74)
+	{	// 116 (74)
 		prop:'sexmale',
 		type:'SignedInteger16',
 		def:0
 	},
-	{	// 108 (76)
+	{	// 118 (76)
 		prop:'onnow',
 		type:'Integer8',
 		def:0
 	},
-	{	// 109 (77)
+	{	// 119 (77)
 		prop:'battle',
 		type:'Integer8',
 		def:0
 	},
-	{	// 110 (78)
+	{	// 120 (78)
 		prop:'dead',
 		type:'SignedInteger16',
 		def:0
 	},
-	{	// 112 (7a)
+	{	// 122 (7a)
 		prop:'busy',
 		type:'SignedInteger16',
 		def:0
 	},
-	{	// 114 (7c)
+	{	// 124 (7c)
 		prop:'deleted',
 		type:'SignedInteger16',
 		def:0
 	},
-	{	// 116 (7e)
+	{	// 126 (7e)
 		prop:'nice',
 		type:'SignedInteger16',
 		def:0
 	},
-	{	// 118 (80)
+	{	// 128 (80)
 		prop:'map',
 		type:'SignedInteger16',
 		def:0
 	},
-	{	// 120 (82)
+	{	// 130 (82)
 		prop:'e6',
 		type:'SignedInteger16',
 		def:0
 	},
-	{	// 122 (84)
+	{	// 132 (84)
 		prop:'x',
 		type:'SignedInteger16',
 		def:0
 	},
-	{	// 124 (86)
+	{	// 134 (86)
 		prop:'y',
 		type:'SignedInteger16',
 		def:0
 	},
-	{	// 126 (88)
+	{	// 136 (88)
 		prop:'i',
 		type:'Array:99:SignedInteger16',
 		def:eval('var aret = []; while(aret.length < 99) aret.push(0); aret;')
-	},
-	{	// 324 (144)
-		prop:'mystery1',	// This is a mystery...
-		type:'String:10',
-		def:''
 	},
 	{	// 334 (14e)
 		prop:'p',
 		type:'Array:99:SignedInteger',
 		def:eval('var aret = []; while(aret.length < 99) aret.push(0); aret;')
 	},
-	{	// 730 (2da)
+	{	// 720 (2d0)
 		prop:'t',
 		type:'Array:99:Integer8',
 		def:eval('var aret = []; while(aret.length < 99) aret.push(0); aret;')
 	},
-	{	// 829 (33d)
+	{	// 819 (333)
 		prop:'lastsaved',
 		type:'SignedInteger',
 		def:-1
 	},
-	{	// 833 (341)
+	{	// 823 (337)
 		prop:'lastdayplayed',
 		type:'SignedInteger',
 		def:-1
 	},
-	{	// 837 (345)
+	{	// 827 (33b)
 		prop:'lastmap',
 		type:'SignedInteger16',
 		def:-1
 	},
-	{	// 839 (347)
+	{	// 829 (33d)
 		prop:'extra',
-		type:'String:344',
+		type:'String:354',
 		def:''
 	}
 ];
