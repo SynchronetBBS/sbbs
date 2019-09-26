@@ -1203,7 +1203,7 @@ function space_pad(str, len)
 	return str;
 }
 
-var bar_timeout;
+var bar_timeout = 0;
 // TODO: How this works in the original...
 /*
  * The buffer is in mail/talkX.tmp (where X is the 1-based player number)
@@ -1270,12 +1270,28 @@ var bar_timeout;
  * SCORE.TXT
  * 
  */
+
+var current_saybar = spaces(76);
+function redraw_bar(updstatus)
+{
+	var attr = dk.console.attr.value;
+	var x = scr.pos.x;
+	var y = scr.pos.y;
+
+	if (updstatus && bar_timeout === undefined)
+		status_bar();
+	dk.console.gotoxy(2, 20);
+	dk.console.attr.value = 31;
+	lw(current_saybar);
+	dk.console.gotoxy(x, y);
+	dk.console.attr.value = attr;
+}
+
 function update_bar(str, msg, timeout)
 {
 	str = replace_vars(str);
 	var dl = displen(str);
 	var l;
-	var attr = dk.console.attr.value;
 
 	if (msg && str.indexOf(':') > -1) {
 		if (!lfile.open('ab'))
@@ -1283,8 +1299,6 @@ function update_bar(str, msg, timeout)
 		lfile.write(str+'\r\n');
 		lfile.close();
 	}
-	dk.console.gotoxy(2, 20);
-	dk.console.attr.value = 31;
 	if (msg && dl < 76) {
 		l = parseInt((76 - dl) / 2, 10);
 		str = spaces(l) + str;
@@ -1292,13 +1306,12 @@ function update_bar(str, msg, timeout)
 	}
 	l = 76 - dl;
 	str = str + spaces(l);
-	lw(str);
-	dk.console.gotoxy(player.x-1, player.y-1);
-	dk.console.attr.value = attr;
 	if (timeout !== undefined)
 		bar_timeout = new Date().valueOf() + parseInt(timeout * 1000, 10);
 	else
 		bar_timeout = undefined;
+	current_saybar = str;
+	redraw_bar(false);
 }
 
 function status_bar()
@@ -3064,7 +3077,7 @@ function draw_map() {
 			dk.console.print(mi.ch === '' ? ' ' : mi.ch);
 		}
 	}
-	status_bar();
+	redraw_bar(true);
 	other_players = {};
 }
 
@@ -3692,7 +3705,7 @@ function offline_battle()
 	dk.console.cleareol();
 	dk.console.gotoxy(0, 23);
 	dk.console.cleareol();
-	status_bar();
+	redraw_bar(true);
 }
 
 function do_map()
@@ -3746,7 +3759,7 @@ function do_map()
 					dk.console.gotoxy(2, 20);
 					lw('`r1`%               Backbuffer is EMPTY - Press a key to continue.               `r0');
 					getkey();
-					status_bar();
+					redraw_bar(false);
 					break;
 				}
 				oldmore = morechk;
@@ -3778,7 +3791,7 @@ function do_map()
 					dk.console.gotoxy(2, 20);
 					lw('`r1`%               Backbuffer is EMPTY - Press a key to continue.               `r0');
 					getkey();
-					status_bar();
+					redraw_bar(false);
 				}
 				else {
 					lw('`r0`7');
@@ -3814,7 +3827,7 @@ function do_map()
 						dk.console.gotoxy(0, al);
 						dk.console.cleareol();
 					}
-					status_bar();
+					redraw_bar(false);
 				}
 				break;
 			case 'H':
