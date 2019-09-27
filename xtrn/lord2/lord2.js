@@ -586,7 +586,7 @@ var vars = {
 	'`g':{type:'int', val:3}, // TODO: >= 3 is ANSI or something...
 	'`x':{type:'const', val:' '},
 	'`d':{type:'const', val:'\b'},
-	'`\\':{type:'const', val:'\r\n'},
+	'`\\':{type:'const', val:'\r'},
 	'`*':{type:'const', val:dk.connection.node},
 	x:{type:'fn', get:function() { return player.x }, set:function(x) { player.x = clamp_integer(x, 's8') } },
 	y:{type:'fn', get:function() { return player.y }, set:function(y) { player.y = clamp_integer(y, 's8') } },
@@ -1302,8 +1302,10 @@ function update_bar(str, msg, timeout)
 	}
 	l = 76 - dl;
 	str = str + spaces(l);
-	if (timeout !== undefined)
+	if (timeout !== undefined) {
+		// TODO: Apparently, the time is supposed to be relative to the message len...
 		bar_timeout = new Date().valueOf() + parseInt(timeout * 1000, 10);
+	}
 	else
 		bar_timeout = undefined;
 	current_saybar = str;
@@ -1413,6 +1415,37 @@ function ranked_players(prop)
 	}
 
 	return ret.sort(sortfunc);
+}
+
+function chooseplayer()
+{
+	var i;
+	var pl;
+	var pn;
+	var ch;
+
+	lln('`r0`2  Who would you like to send a message to?');
+	sln('');
+	lln('  `2(`0full or `%PARTIAL`0 name`2).')
+	lw('  `2NAME `8: `%');
+	pn = superclean(dk.console.getstr({len:26}));
+	sln('');
+
+	for (i = 0; i < pfile.length; i++) {
+		pl = pfile.get(i);
+		if (pl.name.indexOf(pn) !== 0) {
+			lw('\r');
+			dk.console.cleareol();
+			lw('  `2You mean `0'+pl.name+'`2?  [`0Y`2] `8: ');
+			ch = getkey().toUpperCase();
+			if (ch !== 'N')
+				ch = 'Y';
+			if (ch === 'Y')
+				return i;
+		}
+	}
+	lw('`\\  `2Sorry - no one by that name lives \'round these parts.`\\');
+	return undefined;
 }
 
 function run_ref(sec, fname)
@@ -2675,34 +2708,12 @@ rescan:
 			throw('Unknown clear type at '+fname+':'+line);
 		},
 		'chooseplayer':function(args) {
-			var i;
-			var pl;
-			var pn;
-			var ch;
+			var pl = chooseplayer();
 
-			lln('`r0`2  Who would you like to send a message to?');
-			sln('');
-			lln('  `2(`0full or `%PARTIAL`0 name`2).')
-			lw('`2NAME `8: `%');
-			pn = superclean(dk.console.getstr({len:26}));
-			sln('');
-
-			for (i = 0; i < pfile.length; i++) {
-				pl = pfile.get(i);
-				if (pl.name.indexOf(pn) !== 0) {
-					lw('  `2You mean `0.`2?  [`0Y`2] `8: ');
-					ch = getkey().toUpperCase();
-					if (ch !== 'N')
-						ch = 'Y';
-					if (ch === 'Y') {
-						setvar(args[0], i + 1);
-						return;
-					}
-					lw('\r');
-					dk.console.cleareol();
-				}
-			}
-			lw('`\\;  `2Sorry - no one by that name lives \'round these parts.`\\');
+			if (pl === undefined)
+				setvar(args[0], 0);
+			else
+				setvar(args[0], pl + 1);
 		},
 		'drawpart':function(args) {
 			var x = getvar(args[0]);
@@ -2813,6 +2824,9 @@ rescan:
 					lw('  `2'+space_pad(pl.name, 29)+'`%'+space_pad(pl.p[8].toString(), 14)+'`0'+mp.name);
 				}
 			});
+		},
+		'checkmail':function(args) {
+			mail_check(false);
 		}
 	};
 
@@ -3051,6 +3065,91 @@ function update_space(x, y)
 	});
 }
 
+function mail_check(messenger)
+{
+	var fn = getfname(maildir+'mail'+(player.Record + 1)+'.dat');
+	var f = new File(getfname(maildir+'mat'+(player.Record + 1)+'.dat'));
+	var l;
+	var m;
+	var op;
+	var ch;
+	var reply = [];
+
+	if (!file_exists(fn))
+		return;
+
+	if (messenger) {
+		update_bar('`2A messenger stops you with the following news. (press `0R`2 to read it)', true);
+		do {
+			ch = getkey().toUpperCase();
+		} while (ch !== 'R');
+		lw('`r0`c');
+	}
+
+	// TODO: Not sure what happens on windows of someone else has the file open...
+	// We likely need a file mutex here.
+	file_rename(fn, f.name);
+	if (!f.open('r'))
+		throw('Unable to open '+f.name);
+	while(1) {
+		l = f.readln();
+		if (l === null)
+			break;
+		m = l.match(/^@([A-Z]+)(?: (.*))?$/);
+		if (m !== null) {
+			switch (m[1]) {
+				case 'KEY':
+					more();
+					break;
+				case 'MESSAGE':
+					lln('  `2"Message from `0'+m[2]+'`2,".');
+					sln('');
+					lln('`0  '+repeat_chars(ascii(0xc4), 77));
+					reply = [];
+					break;
+				case 'REPLY':
+					op = parseInt(m[2], 10);
+					if (isNaN(op))
+						throw('Invalid REPLY ID');
+					op = pfile.get(op - 1);
+					if (op === null)
+						throw('Invalid record number '+op+' in REPLY');
+					lw('  `2Reply to `0'+op.name+'`2? [`0Y`2] : `%');
+					do {
+						ch = getkey().toUpperCase();
+						if (ch === '\r')
+							ch = 'Y';
+					} while('YN'.indexOf(ch) === -1);
+					if (ch === 'Y') {
+						if (op.deleted) {
+							lln('`\\  `2You decide answering someone who is dead would be useless.`\\');
+						}
+						else {
+							mail_to(op.Record, reply);
+						}
+					}
+					break;
+				case 'DONE':
+					lln('`0  '+repeat_chars(ascii(0xc4), 77));
+					sln('');
+					break;
+			}
+		}
+		else {
+			if (l.substr(0, 4) === '  `2')
+				reply.push(' `0>`3'+l.substr(4));
+			if (l !== '')
+				lln(l);
+		}
+	}
+	if (messenger) {
+		sln('');
+		more();
+		draw_map();
+		update();
+	}
+}
+
 var next_update = -1;
 function update(skip) {
 	var i;
@@ -3113,6 +3212,7 @@ function update(skip) {
 		other_players = nop;
 
 		timeout_bar();
+		mail_check(true);
 	}
 	dk.console.gotoxy(player.x - 1, player.y - 1);
 	foreground(15);
@@ -3844,6 +3944,110 @@ function offline_battle()
 	redraw_bar(true);
 }
 
+function mail_to(pl, quotes)
+{
+	var wrap = '';
+	var l;
+	var ch;
+	var bt = 0;
+	var msg = [];
+	var f;
+	var op = pfile.get(pl);
+
+	if (op === null || op.deleted)
+		throw('mail_to() illegal user');
+
+	lln(space_pad('`\\`r1                           `%COMPOSING YOUR MASTERPIECE', 78)+'`r0');
+	sln('');
+	if (quotes !== undefined) {
+		quotes.forEach(function(l) {
+			lln(l);
+			msg.push(l);
+		});
+		sln('');
+	}
+
+	do {
+		l = wrap;
+		wrap = '';
+		foreground(10);
+		sw(' >');
+		foreground(2);
+		sw(l);
+		do {
+			ch = getkey();
+			if (bt === 1) {
+				bt = 0;
+				if ('0123456789!@#$%'.indexOf(ch) > -1) {
+					l += ch;
+					lw('\r`0 >`2'+l+' \b');
+					continue;
+				}
+				else {
+					lw('\b \b');
+					l = l.slice(0, -1);
+					continue;
+				}
+			}
+			else {
+				if (ch === '`')
+					bt = 1;
+			}
+			if (ch === '\x08') {
+				if (l.length > 0) {
+					l = l.slice(0, -1);
+					if (l.substr(l.length-1) === '`') {
+						bt = 1;
+						lw('\r`0 >`2'+l);
+						sw('` \b');
+					}
+					else {
+						sw(ch);
+						sw(' \x08');
+					}
+				}
+			}
+			else if (ch !== '\x1b') {
+				sw(ch);
+				if (ch !== '\r') {
+					l += ch;
+				}
+				if (displen(clean_str(l)) > 77) {
+					t = l.lastIndexOf(' ');
+					if (t !== -1) {
+						wrap = l.slice(t+1);
+						l = l.slice(0, t);
+						sw(bs.substr(0, wrap.length));
+						sw(ws.substr(0, wrap.length));
+					}
+					ch = '\r';
+				}
+			}
+		} while (ch !== '\r');
+		if (l.length === 0 && msg.length === 0) {
+			sln('');
+			lln('  `2Mail aborted');
+			return;
+		}
+		l = clean_str('  `2' + l);
+		if (l.length >= 5)
+			msg.push(l);
+		sln('');
+	} while (l.length >= 5);
+	msg.unshift('@MESSAGE '+player.name);
+	msg.push('@DONE');
+	msg.push('@REPLY '+(player.Record + 1));
+	f = new File(getfname(maildir + 'mail' + (pl + 1) + '.dat'));
+	if (!f.open('ab'))
+		throw('Unable to open file '+f.name);
+	msg.forEach(function(l) {
+		f.write(l+'\r\n');
+	});
+	f.close();
+	sln('');
+	lln('  `2Mail sent to `0'+op.name+'`2');
+}
+
 function do_map()
 {
 	var ch;
@@ -4009,7 +4213,15 @@ function do_map()
 				run_ref('closestats', 'gametxt.ref');
 				break;
 			case 'W':
-				// TODO: Write mail (multiplayer)
+				sclrscr();
+				ch = chooseplayer();
+				if (ch !== undefined) {
+					sln('');
+					sln('');
+					mail_to(ch);
+				}
+				draw_map();
+				update();
 				break;
 			case 'Y':
 				run_ref('yell', 'help.ref');
