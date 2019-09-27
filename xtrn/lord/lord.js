@@ -9813,8 +9813,8 @@ function king_arthurs()
 			return 0;
 
 		}
-		for (i = 1; i < weap - 1; i += 1) {
-			t = get_trainer(weap - 2);
+		for (i = 1; i < weap - 1 && i <trainer_stats.length; i += 1) {
+			t = get_trainer(i);
 			ret += t.str_gained;
 		}
 		return ret;
@@ -10003,8 +10003,8 @@ function abduls_armour()
 		if (arm < 3) {
 			return 0;
 		}
-		for (i = 1; i < arm - 1; i += 1) {
-			t = get_trainer(arm - 2);
+		for (i = 1; i < arm - 1 && i < trainer_stats.length; i += 1) {
+			t = get_trainer(i);
 			ret += t.def;
 		}
 		return ret;
