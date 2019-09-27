@@ -221,7 +221,7 @@ int refresh_data(gpointer data)
 		if((j=getnodedat(&cfg,i,&node,FALSE,NULL)))
 			sprintf(str,"Error reading node data (%d)!",j);
 		else
-			nodestatus(&cfg,&node,str,1023);
+			nodestatus(&cfg,&node,str,1023, i);
 		gtk_list_store_set(store, &curr, 1, str, -1);
 		gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &curr);
 	}
