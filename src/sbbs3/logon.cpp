@@ -70,7 +70,7 @@ bool sbbs_t::logon()
 #endif
 
 	if(useron.rest&FLAG('Q'))
-		sys_status |= SS_QWKLOGON;
+		sys_status ^= SS_QWKLOGON;
 	if(SYSOP && !(cfg.sys_misc&SM_R_SYSOP)) {
 		hangup();
 		return(false);
