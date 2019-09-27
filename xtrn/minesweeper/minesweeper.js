@@ -2,52 +2,24 @@
 
 // Minesweeper, the game
 
-// Configure in SCFG->External Programs->Online Programs->Games->
-// Available Online Programs...
-//
-// Name                       Synchronet Minesweeper
-// Internal Code              MSWEEPER
-// Start-up Directory         ../xtrn/minesweeper
-// Command Line               ?minesweeper
-// Multiple Concurrent Users  Yes
-
-// Optionally, if you want the top-X winners displayed after exiting game, set:
-// Clean-up Command Line      ?minesweeper winners
-
-// If you want the top-x winners displayed during logon:
-//
-// Name                       Synchronet Minesweeper Winners
-// Internal Code              MSWINNER
-// Start-up Directory         ../xtrn/minesweeper
-// Command Line               ?minesweeper winners
-// Multiple Concurrent Users  Yes
-// Execute on Event           Logon, Only
-
-// Command-line arguments supported:
-//
-// "winners [num]" 	- display list of top-[num] winners and exit
-// "nocls"   		- don't clear the screen upon exit
-// <level>   		- set the initial game difficulty level (1-5, don't prompt)
-
-// ctrl/modopts.ini [minesweeper] options (with default values):
-// sub = syncdata
-// timelimit = 60
-// winners = 20
-// difficulty = 0 ; 0 = prompt user, 1-5 to set default difficulty (no prompt)
+// See readme.txt for instructions on installation, configuration, and use
 
 "use strict";
 
 const title = "Synchronet Minesweeper";
+const ini_section = "minesweeper";
 const REVISION = "$Revision$".split(' ')[1];
 const author = "Digital Man";
 const header_height = 4;
 const winners_list = js.exec_dir + "winners.jsonl";
+const losers_list = js.exec_dir + "losers.jsonl";
 const help_file = js.exec_dir + "minesweeper.hlp";
 const max_difficulty = 5;
 const min_mine_density = 0.10;
 const mine_density_multiplier = 0.025;
-const char_flag = '\x01rF';
+const char_flag = '\x01r\x9f';
 const char_badflag = '\x01r\x01h!';
+const char_unsure = '\x01r?';
 const attr_empty = '\x01b'; //\x01h';
 const char_empty = attr_empty + '\xFA'; 
 const char_covered = attr_empty +'\xFE';
@@ -55,50 +27,52 @@ const char_mine = '\x01r\x01h\xEB';
 const char_detonated_mine = '\x01r\x01h\x01i\*';
 const attr_count = "\x01c";
 const winner_subject = "Winner";
+const selectors = ["()", "[]", "<>", "{}", "--", "  "];
 
 require("sbbsdefs.js", "K_NONE");
 
-var options=load({}, "modopts.js", "minesweeper");
+var options=load({}, "modopts.js", ini_section);
 if(!options)
 	options = {};
 if(!options.timelimit)
 	options.timelimit = 60;	// minutes
+if(!options.timewarn)
+	options.timewarn = 5;
 if(!options.winners)
 	options.winners = 20;
+if(!options.selector)
+	options.selector = 0;
+if(!options.highlight)
+	options.highlight = true;
 if(!options.sub)
     options.sub = load({}, "syncdata.js").find();
 
-var json_lines = load({}, "json_lines.js");
-var game = { rev: REVISION };
+var userprops = bbs.mods.userprops;
+if(!userprops)
+	userprops = load(bbs.mods.userprops = {}, "userprops.js");
+var json_lines = bbs.mods.json_lines;
+if(!json_lines)
+	json_lines = load(bbs.mods.json_lines = {}, "json_lines.js");
+var game = {};
 var board = [];
 var selected = {x:0, y:0};
 var gamewon = false;
 var gameover = false;
 var cell_width;	// either 3 or 2
+var selector = userprops.get(ini_section, "selector", options.selector);
+var highlight = userprops.get(ini_section, "highlight", options.highlight);
+var difficulty = userprops.get(ini_section, "difficulty", options.difficulty);
 
-function reach(x, y)
+log(LOG_DEBUG, title + " options: " + JSON.stringify(options));
+
+function countmines(x, y)
 {
 	var count = 0;
-	if(y) {
-		if(x && board[y-1][x-1].mine)
-			count++;
-		if(board[y-1][x].mine)
-			count++;
-		if(x + 1 < game.width && board[y-1][x+1].mine)
-			count++;
-	}
-	if(x && board[y][x-1].mine)
-		count++;
-	if(x + 1 < game.width && board[y][x+1].mine)
-		count++;
-	if(y + 1 < game.height) {
-		if(x && board[y+1][x-1].mine)
-			count++;
-		if(board[y+1][x].mine)
-			count++;
-		if(x + 1 < game.width && board[y + 1][x + 1].mine)
-			count++;
-	}
+	
+	for(var yi = y - 1; yi <= y + 1; yi++)
+		for(var xi = x - 1; xi <= x + 1; xi++)
+			if((yi != y || xi != x) && mined(xi, yi))
+				count++;
 	return count;
 }
 
@@ -125,7 +99,7 @@ function place_mines()
 	}
 	for(var y = 0; y < game.height; y++) {
 		for(var x = 0; x < game.width; x++) {
-			board[y][x].count = reach(x, y);
+			board[y][x].count = countmines(x, y);
 		}
 	}
 }
@@ -164,11 +138,22 @@ function isgamewon()
 			alert(result);
 			console.pause();
 		}
+		gamewon = true;
+		gameover = true;
 		return true;
 	}
 	return false;
 }
 
+function lostgame(cause)
+{
+	gameover = true;
+	game.end = time();
+	game.name = user.alias;
+	game.cause = cause;
+	json_lines.add(losers_list, game);
+}
+	
 function calc_difficulty(game)
 {
 	const game_cells = game.height * game.width;
@@ -185,7 +170,7 @@ function calc_time(game)
 	return game.end - game.start;
 }
 
-function compare_game(g1, g2)
+function compare_won_game(g1, g2)
 {
 	var diff = calc_difficulty(g2) - calc_difficulty(g1);
 	if(diff)
@@ -262,7 +247,7 @@ function show_winners()
 	console.attributes = WHITE;
 	console.print(format("Rank %-25s%-15s Lvl  Time  WxHxMines   Date   Rev\r\n", "User", ""));
 	
-	list.sort(compare_game);
+	list.sort(compare_won_game);
 	
 	for(var i = 0; i < list.length && i < options.winners && !console.aborted; i++) {
 		var game = list[i];
@@ -286,6 +271,58 @@ function show_winners()
 	console.attributes = LIGHTGRAY;
 }
 
+function compare_game(g1, g2)
+{
+	return g2.start - g1.start;
+}
+
+function show_log()
+{
+	console.clear();
+	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
+	console_center(" " + title + " Log ");
+	console.attributes = LIGHTGRAY;
+	
+	var winners = json_lines.get(winners_list);
+	if(typeof winners != 'object')
+		winners = [];
+	
+	var losers = json_lines.get(losers_list);
+	if(typeof losers != 'object')
+		losers = [];
+	
+	var list = losers.concat(winners);
+	
+	if(!list.length) {
+		alert("No winners or losers yet!");
+		return;
+	}
+	console.attributes = WHITE;
+	console.print(format("Date      %-25s Lvl  Time  WxHxMines Rev  Result\r\n", "User", ""));
+	
+	list.sort(compare_game);
+	
+	for(var i = 0; i < list.length && !console.aborted; i++) {
+		var game = list[i];
+		if(i&1)
+			console.attributes = LIGHTCYAN;
+		else
+			console.attributes = BG_CYAN;
+		console.print(format("%s  %-25s %1.1f %s %3ux%2ux%-3u %3s  %s\x01>\x01n\r\n"
+			,system.datestr(game.end)
+			,game.name
+			,calc_difficulty(game)
+			,secondstr(game.end - game.start)
+			,game.width
+			,game.height
+			,game.mines
+			,game.rev ? game.rev : ''
+			,game.cause ? ("Lost: " + game.cause) : "Won"
+			));
+	}
+	console.attributes = LIGHTGRAY;
+}
+
 function cell_val(x, y)
 {
 	if(gameover && board[y][x].mine) {
@@ -293,6 +330,8 @@ function cell_val(x, y)
 			return char_detonated_mine;
 		return char_mine;
 	}
+	if(board[y][x].unsure)
+		return char_unsure;
 	if(board[y][x].flagged) {
 		if(gameover && !board[y][x].mine)
 			return char_badflag;
@@ -305,6 +344,16 @@ function cell_val(x, y)
 	return char_empty;
 }
 
+function highlighted(x, y)
+{
+	if(selected.x == x && selected.y == y)
+		return true;
+	if(!highlight)
+		return false;
+	return (selected.x == x - 1 || selected.x == x || selected.x == x + 1)
+		&& (selected.y == y -1 || selected.y == y || selected.y == y + 1);
+}
+
 function draw_cell(x, y)
 {
 	console.attributes = LIGHTGRAY;
@@ -314,15 +363,43 @@ function draw_cell(x, y)
 	if(game.start && !gameover
 		&& !board[selected.y][selected.x].covered
 		&& board[selected.y][selected.x].count
-		&& (selected.x == x - 1 || selected.x == x || selected.x == x + 1)
-		&& (selected.y == y -1 || selected.y == y || selected.y == y + 1))
+		&& highlighted(x, y))
 		console.attributes |= HIGH;
-	if(selected.x == x && selected.y == y)
-		left = "<", right = "\x01n\x01h>"; //left = "\x01n\x01h<"
+	if(selected.x == x && selected.y == y) {
+		left = "\x01n\x01h" + selectors[selector%selectors.length][0];
+		right = "\x01n\x01h" + selectors[selector%selectors.length][1];
+	}
 	console.print(left + val + right);
 }
 
-function countflags()
+// Return total number of surrounding flags
+function countflagged(x, y)
+{
+	var count = 0;
+	
+	for(var yi = y - 1; yi <= y + 1; yi++)
+		for(var xi = x - 1; xi <= x + 1; xi++)
+			if((yi != y || xi != x) && flagged(xi, yi))
+				count++;
+			
+	return count;
+}
+
+// Return total number of surrounding unflagged-covered cells
+function countunflagged(x, y)
+{
+	var count = 0;
+	
+	for(var yi = y - 1; yi <= y + 1; yi++)
+		for(var xi = x - 1; xi <= x + 1; xi++)
+			if((yi != y || xi != x) && unflagged(xi, yi))
+				count++;
+	
+	return count;
+}
+
+
+function totalflags()
 {
 	if(!game.start)
 		return 0;
@@ -371,12 +448,18 @@ function console_center(text)
 	console.crlf();
 }
 
+// global state variable used by draw_board()
+var cmds_shown;
+var top;
+
 function draw_board(full)
 {
 	const margin = Math.floor((console.screen_columns - (game.width * cell_width)) / 2);
+	top = Math.floor(Math.max(0, (console.screen_rows - (header_height + game.height)) - 1) / 2);
 	console.line_counter = 0;
 	console.home();
 	if(full) {
+		console.down(top);
 		console.right(margin - 1);
 		console.attributes = BG_BLUE|BG_HIGH;
 		console.print('\xDF');
@@ -385,37 +468,48 @@ function draw_board(full)
 			console.print(' ');
 		console.print('\xDF');
 		console.creturn();
-		console.home();
 		show_title();
 		draw_border();
 	} else
-		console.down();
+		console.down(top + 1);
 	if(gamewon) {
 		console.attributes = YELLOW|BLINK;
 		console_center("Winner! Completed in " + secondstr(game.end - game.start).trim());
 	} else if(gameover) {
 		console.attributes = RED|HIGH|BLINK;
-		console_center("Game Over!");
+		console_center(((game.end - game.start) < options.timelimit * 60
+			? "Boom! " : "Time-out: ") + "Game Over");
 	} else {
 		var elapsed = 0;
 		if(game.start)
 			elapsed = time() - game.start;
+		var timeleft = (options.timelimit * 60) - elapsed;
 		console.attributes = LIGHTCYAN;
-		console_center(format("Mines: %-3d Lvl: %1.1f  %s"
-			, game.mines - countflags(), calc_difficulty(game)
-			, secondstr((options.timelimit * 60) - elapsed))
-			);
+		console_center(format("Mines: %-3d Lvl: %1.1f  %s%s"
+			, game.mines - totalflags(), calc_difficulty(game)
+			, game.start && !gameover && (timeleft / 60) <= options.timewarn ? "\x01r\x01h\x01i" : ""
+			, secondstr(timeleft)
+			));
 	}
-	if(full) {
+	var cmds = "";
+	if(!gameover) {
+		if(!board[selected.y][selected.x].covered) {
+			if(can_chord(selected.x, selected.y))
+				cmds += "\x01h\x01kDig  \x01n\x01hC\x01nhord  ";
+			else
+				cmds += "\x01h\x01kDig  Flag  ";
+		}
+		else 
+			cmds += "\x01hD\x01nig  \x01hF\x01nlag  ";
+	}
+	cmds += "\x01n\x01hN\x01new  \x01hQ\x01nuit";
+	if(full || cmds !== cmds_shown) {
 		draw_border();
 		console.attributes = LIGHTGRAY;		
-		var cmds = "";
-		if(!gameover)
-			cmds += "\x01hR\x01neveal  \x01hF\x01nlag  ";
-		cmds += "\x01hN\x01new  \x01hQ\x01nuit";
 		console_center(cmds);
 		draw_border();
-		console_center("\x01hW\x01ninners  \x01hH\x01nelp");
+		console_center("\x01hW\x01ninners  \x01hL\x01nog  \x01hH\x01nelp");
+		cmds_shown = cmds;
 	} else if(!console.term_supports(USER_ANSI)) {
 		console.creturn();
 		console.down(2);
@@ -427,7 +521,7 @@ function draw_board(full)
 		for(var x = 0; x < game.width; x++) {
 			if(full || board[y][x].changed !== false) {
 				if(console.term_supports(USER_ANSI))
-					console.gotoxy((x * cell_width) + margin + 1, header_height + y + 1);
+					console.gotoxy((x * cell_width) + margin + 1, header_height + y + top + 1);
 				else {
 					console.creturn();
 					console.right((x * cell_width) +  margin);
@@ -459,7 +553,7 @@ function draw_board(full)
 	}
 	if(redraw_selection) { // We need to draw/redraw the selected cell last in this case
 		if(console.term_supports(USER_ANSI))
-			console.gotoxy(margin + (selected.x * cell_width) + 1, header_height + selected.y + 1);
+			console.gotoxy(margin + (selected.x * cell_width) + 1, header_height + selected.y + top + 1);
 		else {
 			console.up(height - (selected.y + 1));
 			console.creturn();
@@ -468,12 +562,12 @@ function draw_board(full)
 		draw_cell(selected.x, selected.y);
 		console.left(2);
 	}
-	console.gotoxy(margin + (selected.x * cell_width) + 2, header_height + selected.y + 1);
+	console.gotoxy(margin + (selected.x * cell_width) + 2, header_height + selected.y + top + 1);
 }
 
 function mined(x, y)
 {
-	return board[y][x].mine;
+	return board[y] && board[y][x] && board[y][x].mine;
 }
 
 function start_game()
@@ -482,58 +576,72 @@ function start_game()
 	game.start = time();
 }
 
+function uncover_cell(x, y)
+{
+	if(!board[y] || !board[y][x])
+		return false;
+	if(board[y][x].flagged)
+		return false;
+
+	board[y][x].covered = false;
+	board[y][x].unsure = false;
+	board[y][x].changed = true;
+	
+	return mined(x, y);
+}
+
+function flagged(x, y)
+{
+	return board[y] && board[y][x] && board[y][x].flagged;
+}
+
+function unflagged(x, y)
+{
+	return board[y] && board[y][x] && board[y][x].covered && !board[y][x].flagged;
+}
+
+// Returns true if mined (game over)
 function uncover(x, y)
 {
 	if(!game.start)
 		start_game();
 	
-	if(board[y][x].flagged || !board[y][x].covered)
+	if(!board[y] || !board[y][x] || board[y][x].flagged || !board[y][x].covered)
 		return;
-	board[y][x].covered = false;
-	board[y][x].changed = true;
+	if(uncover_cell(x, y))
+		return true;
 	if(board[y][x].count)
-		return;
-	if(y) {
-		if(x) {
-			if(!mined(x - 1, y - 1))
-				uncover(x - 1, y - 1);
-		}
-		if(!mined(x, y - 1))
-			uncover(x, y - 1);
-		if(x + 1 < game.width) {
-			if(!mined(x + 1, y - 1))
-				uncover(x + 1, y - 1);
-		}
-	}
-	if(x) {
-		if(!mined(x - 1, y))
-			uncover(x - 1, y);
-	}
-	if(x + 1 < game.width) {
-		if(!mined(x + 1, y))
-			uncover(x + 1, y);
-	}
-	if(y + 1 < game.height) {
-		if(x) {
-			if(!mined(x - 1, y + 1))
-				uncover(x - 1, y + 1);
-		}
-		if(!mined(x, y + 1))
-			uncover(x, y + 1);
-		if(x + 1 < game.width) {
-			if(!mined(x + 1, y + 1))
-				uncover(x + 1, y + 1);
-		}
-	}
+		return false;
+	for(var yi = y - 1; yi <= y + 1; yi++)
+		for(var xi = x - 1; xi <= x + 1; xi++)
+			if((yi != y || xi != x) && !mined(xi, yi))
+				uncover(xi, yi);
+	return false;
+}
+
+function can_chord(x, y)
+{
+	return !board[y][x].covered 
+		&& board[y][x].count
+		&& board[y][x].count == countflagged(x, y)
+		&& countunflagged(x, y)
+}
+
+// Return true if mine denotated
+function chord(x, y)
+{
+	for(var yi = y - 1; yi <= y + 1; yi++)
+		for(var xi = x - 1; xi <= x + 1; xi++)
+			if((yi != y || xi != x) && uncover(xi, yi))
+				return true;
+	return false;
 }
 
 function get_difficulty()
 {
 	console.creturn();
-	if(options.difficulty) {
-		console.cleartoeol();
-		draw_border();
-	}
+	console.cleartoeol();
+	draw_border();
 	console.attributes = WHITE;
 	console.right((console.screen_columns - 24) / 2);
 	console.print(format("Difficulty Level (1-%u): ", max_difficulty));
@@ -558,6 +666,7 @@ function init_game(difficulty)
 
 	gamewon = false;
 	gameover = false;
+	game = { rev: REVISION };
 	game.height = target_height(difficulty);
 	game.width = game.height;
 	game.height = Math.min(game.height, console.screen_rows - header_height);
@@ -573,6 +682,7 @@ function init_game(difficulty)
 		+ format("%u x %u x %u", game.width, game.height, game.mines));
 	game.start = 0;
 	// init board:
+	board = [];
 	for(var y = 0; y < game.height; y++) {
 		board[y] = new Array(game.width);
 		for(var x = 0; x < game.width; x++) {
@@ -580,6 +690,7 @@ function init_game(difficulty)
 		}
 	}
 	select_middle();
+	return difficulty;
 }
 
 function change(x, y)
@@ -605,15 +716,15 @@ function change(x, y)
 	}
 }
 
-function play() {
-	
-	init_game(options.difficulty);
+function play()
+{
+	init_game(difficulty);
 	draw_board(true);
 	var full_redraw = false;
 	while(bbs.online) {
 		if(!gameover && game.start
 			&& time() - game.start >= options.timelimit * 60) {
-			gameover = true;
+			lostgame("timeout");
 			draw_board(true);
 		}
 		var key = console.inkey(K_NONE, 1000);
@@ -688,33 +799,46 @@ function play() {
 				if(!gameover && selected.x < game.width - 1)
 					selected.x++;
 				break;
-			case 'R':
+			case 'D':	// Dig
 			case ' ':
 				if(!gameover
 					&& board[selected.y][selected.x].covered
 					&& !board[selected.y][selected.x].flagged) {
-					if(board[selected.y][selected.x].mine)
-						gameover = true;
+					if(uncover(selected.x, selected.y))
+						lostgame("mine");
 					else
-						uncover(selected.x, selected.y);
-					if(isgamewon()) {
-						gamewon = true;
-						gameover = true;
-					}
+						isgamewon();
 					full_redraw = gameover;
 				}
 				break;
-			case 'F':
+			case 'C':	// Chord
+				if(!gameover && can_chord(selected.x, selected.y)) {
+					if(chord(selected.x, selected.y))
+						lostgame("mine");
+					else 
+						isgamewon();
+					full_redraw = gameover;
+				}
+				break;
+			case 'F':	// Flag
 				if(!gameover && board[selected.y][selected.x].covered) {
-					board[selected.y][selected.x].flagged = !board[selected.y][selected.x].flagged;
+					if(board[selected.y][selected.x].flagged) {
+						board[selected.y][selected.x].unsure = true;
+						board[selected.y][selected.x].flagged = false;
+					} else if(board[selected.y][selected.x].unsure) {
+						board[selected.y][selected.x].unsure = false;
+					} else {
+						board[selected.y][selected.x].flagged = true;
+					}
 					if(!game.start)
 						start_game();
+					full_redraw = gameover;
 				}
 				break;
 			case 'N':
 			{
 				console.home();
-				console.down();
+				console.down(top + 1);
 				if(game.start && !gameover) {
 					console.cleartoeol();
 					draw_border();
@@ -724,15 +848,23 @@ function play() {
 					if(console.getkey(K_UPPER) != 'Y')
 						break;
 				}
-				var difficulty = get_difficulty();
-				if(difficulty > 0)
-					init_game(difficulty);
+				var new_difficulty = get_difficulty();
+				if(new_difficulty > 0)
+					difficulty = init_game(new_difficulty);
 				full_redraw = true;
 				break;
 			}
 			case 'W':
 				console.line_counter = 0;
 				show_winners();
+				console.pause();
+				console.clear();
+				console.aborted = false;
+				full_redraw = true;
+				break
+			case 'L':
+				console.line_counter = 0;
+				show_log();
 				console.pause();
 				console.clear();
 				console.aborted = false;
@@ -747,13 +879,20 @@ function play() {
 				console.aborted = false;
 				full_redraw = true;
 				break;
+			case '\t':
+				highlight = !highlight;
+				break;
 			case CTRL_R:
+				console.clear();
 				full_redraw = true;
+				break;
+			case CTRL_S:
+				selector++;
 				break;
 			case 'Q':
 				if(game.start && !gameover) {
 					console.home();
-					console.down();
+					console.down(top + 1);
 					console.cleartoeol();
 					draw_border();
 					console.attributes = LIGHTRED;
@@ -794,18 +933,18 @@ try {
 
 	js.on_exit("console.line_counter = 0");
 	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
-	console.ctrlkey_passthru = "TPU";
+	console.ctrlkey_passthru = "KOPTUZ";
 
 	if(!isNaN(numval) && numval > 0 && numval < max_difficulty)
-		options.difficulty = numval;
+		difficulty = numval;
 
-	if(!options.difficulty) {
-		show_title();
-		options.difficulty = get_difficulty();
-		if(options.difficulty < 1)
-			exit();
-	}
+	if(!difficulty)
+		difficulty = 1;
+	
 	play();
+	userprops.set(ini_section, "selector", selector%selectors.length);	
+	userprops.set(ini_section, "highlight", highlight);	
+	userprops.set(ini_section, "difficulty", difficulty);	
 	
 } catch(e) {
 	
@@ -814,7 +953,7 @@ try {
 		": " + e.message;
 	console.crlf();
 	alert(msg);
-	if(options.sub) {
+	if(options.sub && user.alias != author) {
 		var msgbase = new MsgBase(options.sub);
 		var hdr = { 
 			to: author,
