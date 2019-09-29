@@ -12443,6 +12443,7 @@ function forest()
 		lln('`l');
 		sln('');
 		lln('  `2Fortune smiles, and you find `%'+pretty_int(found)+' `2gold!');
+		player.gold += found;
 		sln('');
 		more();
 		sclrscr();
