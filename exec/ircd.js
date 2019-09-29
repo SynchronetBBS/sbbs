@@ -205,9 +205,9 @@ while (!js.terminated) {
 	// Setup a new socket if a connection is accepted.
 	for (pl in open_plines) {
 		if (open_plines[pl].poll()) {
-			log(LOG_DEBUG,"Accepting new connection on port "
-				+ open_plines[pl].local_port);
 			var client_sock=open_plines[pl].accept();
+			log(LOG_DEBUG,"Accepting new connection on port "
+				+ client_sock.local_port);
 			if(client_sock) {
 				client_sock.nonblocking = true;
 				switch(client_sock.local_port) {
