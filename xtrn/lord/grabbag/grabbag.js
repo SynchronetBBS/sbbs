@@ -4,7 +4,7 @@
 
 var x1 = 0;
 var y1 = 0;
-
+var gbv = "v1.1";
 var nymphs = [
 	{
 		name:'Meliai',
@@ -1649,7 +1649,7 @@ function nymph_story() {
 
 function wood_nymph() {
 	var ch = '';
-		
+	var amt = undefined;	
 	get_head('Getting Seduced by a Naked Wood Nymph');
 	
 	lln('  `%"Hello?"`2, you cautiously reply.');	
@@ -1685,7 +1685,8 @@ function wood_nymph() {
 			lln('  `2You become so overwhelmed with sexual desire you throw');
 			lln('  your `$'+player.weapon+' `2to the ground, rip off your');
 			lln('  `$'+player.arm+' `2and fall into her embrace.');
-			sln('');			
+			sln('');
+			player.cha += 10;			
 		}
 		else
 		{
@@ -1710,7 +1711,10 @@ function wood_nymph() {
 		lln('  I will never forget you. May my name, `$'+nymph.name+' `%never leave');
 		lln('  you heart!"');
 		sln('');
-		more_nomail();				
+		more_nomail();
+		amt = player.exp / nymph.exp;
+		lln('  `$You Gained `%10 Charm `$and `%'+pretty_int(amt)+' Experience');
+		player.exp += amt;				
 		log_line('  `5'+player.name+' `0got seduced by the wood nymph, `%'+nymph.name+'!');	
 		good_bye('exhilarating');
 	}
@@ -2681,6 +2685,7 @@ function jennie_cabin() {
 				lln('  `2You turn away from the door and head back to');
 				lln('  with a glum feeling.');
 				lln('');
+				lln('  `%3SOME WHERE MAGIC HAS HAPPENED');
 				more_nomail();
 				player.forest_fights += 2;
 				player.exp += 100;
@@ -3557,14 +3562,6 @@ function good_bye(what) {
 	exit(0);
 }
 
-/* should add wood nymph, seth, jennie, violet data here
-var AssGrabDefs = [
-	{
-	name:
-	 .... ???
-	}
-];
-*/
 var grabbagDefs = [
 	{
 		prop:'day',
@@ -3622,8 +3619,8 @@ function main()
 
 	foreground(2);
 	background(0);
-	
-	get_head('The Grab Bag ');
+
+	get_head('`$The Grab Bag `%'+gbv);
 	
 	if (!dk.console.ansi) {
 		sln('  NOTE:  The \'arcade\' sequences in this IGM *REQUIRE* ANSI terminal');
@@ -3689,12 +3686,11 @@ function main()
 			player.forest_fights += 2;
 			good_bye();
 		}		
-	}
-	mswait(1500);
+	}	
 
 var done = false;
 while(!done) {	// let's player view instructions without kicking them out as though they played
-	get_head('The Grab Bag');
+	get_head('The Grab Bag '+gbv);
 	lln('  `2Feeling lucky, you decide to take a chance to score');
 	sln('  some free stuff.  It\'s a long journey and you are rather');
 	lln('  tired when you finally arrive at `$The Grab Bag.');
@@ -3735,7 +3731,7 @@ while(!done) {	// let's player view instructions without kicking them out as tho
 }
 
 sln('');
-get_head('`$The Grab Bag v1.2 by mortifis\r\n  `8An IGM for `4L`%egend `4O`%f the `4R`%ed `4D`%ragon `$V5.00 JS');
+get_head('`$The Grab Bag '+gbv+' by mortifis\r\n  `2An IGM for `4L`%egend `4O`%f the `4R`%ed `4D`%ragon `$V'+ver);
 sln('');
 lln('    `0Credits to: `$Seth Able Robinson for creating LORD!');
 lln('    `0Stephen Hurd (Deuce)');
@@ -3753,11 +3749,10 @@ say_slow2('  "Credit me in your IGM or I will, uh ... send someone');
 sln('');
 say_slow2('   to break your thumbs!"');
 sln2('');
-
 more_nomail();
 
-if(argv == 'w') wake_up();  // sleeping at either seth's or jennie's
-if(argv == 'v') wake_up_at_veldores();
+if(argv[0] == 'w') wake_up();  // sleeping at either seth's or jennie's
+if(argv[0] == 'v') wake_up_at_veldores();
 
 if (argc == 1 && argv[0] == 'INSTALL') {
 	var install = {
