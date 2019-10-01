@@ -5,12 +5,126 @@
 var x1 = 0;
 var y1 = 0;
 
-function crandom(min, max) { 
+var nymphs = [
+	{
+		name:'Meliai',
+		place:'Ash Trees',
+		years:2177,		
+		story1:'I was a very young girl when all of the men',
+		story2:'turned into monsters.',
+		story3:'',
+		saw:true,
+		sex:false,
+		fertile:1,
+		charm:10,
+		exp:90
+	},
+	{
+		name:'Oreiades',
+		place:'Mountain Trees',
+		years:2317,		
+		story1:'I was a very young girl when all of the men',
+		story2:'turned into monsters.',
+		story3:'',
+		saw:true,
+		sex:false,
+		fertile:0,
+		charm:10,
+		exp:90
+	},
+	{
+		name:'Hamadryads',
+		place:'Oak Trees',
+		years:2286,		
+		story1:'I was a very young girl when all of the men',
+		story2:'turned into monsters.',
+		story3:'',
+		saw:true,
+		sex:false,
+		fertile:0,
+		charm:5,
+		exp:90
+	},
+	{
+		name:'Malaides',
+		place:'Fruit Trees',
+		years:2981,		
+		story1:'I was a very young girl when all of the men',
+		story2:'turned into monsters.',
+		story3:'',
+		saw:true,
+		sex:false,
+		fertile:3,
+		charm:50,
+		exp:75
+	},
+	{
+		name:'Daphnaei',
+		place:'Laurel Trees',
+		years:2462,		
+		story1:'I was a very young girl when all of the men',
+		story2:'turned into monsters.',
+		story3:'',
+		saw:true,
+		sex:false,
+		fertile:1,
+		charm:5,
+		exp:80
+	},
+	{
+		name:'Alseides',
+		place:'Sacred Groves',
+		years:2931,		
+		story1:'I was a very young girl when all of the men',
+		story2:'turned into monsters.',
+		story3:'',
+		saw:true,
+		sex:false,
+		fertile:1,
+		charm:55,
+		exp:90
+	},
+{
+		name:'Aulonides',
+		place:'Dragons Glen',
+		years:3142,		
+		story1:'I was a very young girl when all of the men',
+		story2:'turned into monsters.',
+		story3:'',
+		saw:true,
+		sex:false,
+		fertile:2,
+		charm:35,
+		exp:80
+	},
+{
+		name:'Napaiai',
+		place:'Ables Vale',
+		years:2286,		
+		story1:'I was a very young girl when all of the men',
+		story2:'turned into monsters.',
+		story3:'',
+		saw:true,
+		sex:false,
+		fertile:1,
+		charm:15,
+		exp:80
+	}
+];
+
+var nymph = nymphs[random(8)];
+
+function crandom(min, max) { // defunct but retained for future needs
 	return random(max-min+1) + min; 
 }
 
+function pick_at_random(arr) 
+{ 
+	return arr[random(arr.length)] 
+}; // thanks DM
+
 function bjack(who) // ripped from LORD 5.00 JS in order to change dialogue
-{
+{		    // will be replaced in future versions
 	var startgold = player.gold;
 	var ch;
 	var suits = ['\x06', '\x03', '\x05', '\x04'];
@@ -1064,6 +1178,8 @@ function sleep_here(w) {
 	}	
 	out.writeln('grabbag/grabbag.js '+w);
 	out.close();
+	lln('  `0You feel very tired and drift off into a deep sleep!');
+	sln('');
 	mswait(1500);
 	lw('  `%Returning you to `$');
 	say_slow2(system.name);
@@ -1113,12 +1229,13 @@ function wake_up() {
 	
 	more_nomail();
 	get_head('Waking up in '+lover+'\'s `%Bed');
-	lln('  `2You slowly open you eyes, and see '+lover+' smiling');
-	lln('  at you.  '+l_noun+' kisses your lips, then your neck, then');
+	lln('  `2You slowly open your eyes, and see '+lover+' `2smiling');
+	lln('  at you.  '+l_noun+' `2kisses your lips, then your neck, then');
 	lln('  works '+p_noun+' way down your belly . ');
-	wait(); wait(); wait();
+	sln('');
+	more_nomail();
 	display_file(gamedir('/grabbag/menus.lrd'));
-	mswait(2000);
+	more_nomail();
 	get_head('Waking up in '+lover+'\'s `%Bed');
 	lln('  `2After a pleasant morning roll in the hay,');
 	lln('  you get up, don your `$'+player.arm);
@@ -1278,36 +1395,64 @@ function veldore_invite() { // finish_this
 	good_bye();
 }
 
-function nymph_tales(nymph) {
+function nymph_tales() {
 	var tale = '';
 	
 	return tale;	
 }
 
-function more_nymph_story(nymph) { // finish_this ... v1.1 will have all wood nymphs as object nymphDefs
+function more_nymph_story() { // finish_this ... v1.2 will have all wood nymphs as object nymphDefs
+/*
+Dryads are the “ladies of the trees” — female nymphs who inhabit the forests, groves, woods, 
+and all other types of trees. The dry- part of dryad comes from the Greek word “oak” and used 
+to refer to only oak tree nymphs, but now it has become the overeaching term for all wood nymphs. 
+Dryads are known for being rather shy. They have long lives that can often be closely tied to 
+where their home (aka: tree) is. Hamadryads are dryads who are so tied to their tree that if their 
+tree dies, they die. If their tree grows or blossoms, so does the dryad.
+
+Not all dryads are tied to a particular tree. Some are tied to a location or section of trees like 
+a sacred grove, a glen, a vale, etc. Depending on which type of tree they inhabit or the location 
+of those trees, dryads can go by different names just like the naiads:
+*/	
+	
 	var who = undefined;
 	if(player.sex === 'M') who = 'Violet'; else who = 'Seth Able';
-	lln('  `0All LORD Nymphs are Meliae Nymphs, nymphs of the Trees');
-	lln('  `0Hyleoroi (watchers of woods) are the Fairies that offer blessings');
+	get_head('The Story of The Realm');
+	lln('  `0All of the Nymphs in The Realm are Meliae Nymphs, nymphs');
+	lln('  of the Trees, Vales, Glens and Sacred Groves.');
+	sln('');
+	lln('  `0Many, many centruries ago, we were all human like you.');
+	sln('');		
+	lln('  Our husbands and some of our children were all poisoned');
+	lln('  by `8Magic Mushrooms.');
+	lln('  `0They went crazy and ran off into the Forest, and became`%');
+	mswait(750);
+	say_slow2('  MONSTERS!');
+	sln2('');
+	lln('  `0Some of our daughters became `6Hyleoroi, `0or `6Fairies`0,');
+	lln('  who live to offer blessings.');
+	lln('  `0Some of the Monsters walk amoung you as HUMANS.');
+	lln('  Watch them, they are not as nice as they appear!');
+
 	sln('');
 	lln('  What more do you need to know?');
 	sln('');
+	more_nomail();
 	lln('  `2Just as you are about to ask more questions,');
-	lln('  `$'+who+'  `2appears from behind a tree, grabs');
-	lln('  hand and leads you away ...');
+	lln('  `$'+who+'  `2appears from behind a tree ... ');
 	sln('');
 	more_nomail();
 	if(player.sex === 'M') jennie_invite(); else seth_invite();
 	sln('');
 }
 
-function nymph_sex(nymph) {
+function nymph_sex() {
 	var nrand = random(5);
 	
 	switch( nrand ) {
 		case 0:
 			lln('  `0You decide that preforming a little `$"mouth action"');
-			lln('  `0on `6'+nymph+' `0would be interesting.  Moments');
+			lln('  `0on `6'+nymph.name+' `0would be interesting.  Moments');
 			lln('  after you begin, you find that you have a mouth');
 			lln('  full of wet wood chips.');
 			sln('');
@@ -1316,7 +1461,7 @@ function nymph_sex(nymph) {
 		break;
 		
 		case 1:
-			lln('  `6'+nymph+' `0throws you on the ground and mounts you');
+			lln('  `6'+nymph.name+' `0throws you on the ground and mounts you');
 			lln('  like a stallion!  Moments later, you scream in agony, you');
 			lln('  seem to have gotten a splinter in your balls!');
 			sln('');
@@ -1325,7 +1470,7 @@ function nymph_sex(nymph) {
 		
 		case 2:
 			lln('  `0Being the type of warrior that takes charge, you');
-			lln('  push `6'+nymph+' `0against a tree, bend her over and');
+			lln('  push `6'+nymph.name+' `0against a tree, bend her over and');
 			lln('  start to give her what she begged you for.');
 			sln('');
 			lln('  Moments later, you notice that you are not alone, you');
@@ -1335,7 +1480,7 @@ function nymph_sex(nymph) {
 		break;
 		
 		case 3:
-			lln('  `6'+nymph+' `0drops to her knees and takes you in a way');
+			lln('  `6'+nymph.name+' `0drops to her knees and takes you in a way');
 			lln('  that only a Horny Wood Nymph is capable of.');
 			sln('');
 			lln('  Moments later, you scream in agony, `%her tongue is made');
@@ -1343,7 +1488,7 @@ function nymph_sex(nymph) {
 		break;
 		
 		case 4:
-			lln('  `0You and `6'+nymph+' `0seem to be a perfect sexual match!');
+			lln('  `0You and `6'+nymph.name+' `0seem to be a perfect sexual match!');
 			sln('');
 			lln('  As you explore each other\'s bodies, you suddenly');
 			lw('  feel something brush up against your bare ass `%');
@@ -1384,23 +1529,17 @@ function nymph_sex(nymph) {
 	sln('');		
 }
 
-function nymph_story(nymph) {
+function nymph_story() {
 	var ch = '';
-	var years = undefined;
-	years = Math.round((player.hp_max * 17));
 	var amt = undefined;
 	var dryads = '';
 	var dryads1 = '';
 	var dryads2 = '';
 	dryads = '  Dryads are also known as `%\'Ladies of the Trees\'\r\n';
-	dryads += '  `0and We are ALL `$VERY, VERY HORNY!!\r\n\r\n';
-	dryads += '  `0Many, many centruries ago, we were all human like you.\r\n';
-	dryads += '\r\n';
+	dryads += '  `0and We are ALL `$VERY, VERY HORNY!!';
 	
-	dryads += '  Our husbands were all poisoned by `8Magic Mushrooms`0.\r\n';
-	dryads += '  They ran off into the Forest, and became `%MONSTERS!\r\n\r\n';
 	
-	get_head('Getting to know '+nymph);
+	get_head('Getting to know '+nymph.name);
 	
 	lln('  `0I am happy you want to get to know me, but, what I');
 	lln('  really need more is to feel your warm body against mine.');
@@ -1409,26 +1548,16 @@ function nymph_story(nymph) {
 	sln('');
 	more_nomail();	
 	lln('  `0But, I see that you are reluctant, so I will tell you');
-	lln('  about me.  My name is `6'+nymph+'. `0I am a `%Dryad, `0a');
+	lln('  about me.  My name is `6'+nymph.name+'. `0I am a `%Dryad, `0a');
 	lln('  `$Wood Nymph`0, and I have been living here in these `$');
-		
-	if(nymph === 'Meliai') {
-		lln('  Ash Trees `2for `%'+pretty_int(years)+' `0years.');
-		sln('');
-		lln(dryads);	
-		more_nomail();						 	
-	}
-	if(nymph === 'Oreiades') {
-		lln('  Mountain Trees `0for `%'+pretty_int(years)+' `0years.');
-		sln('');
-		lln(dryads);				
-		more_nomail();						 		
-	}
-	if(nymph === 'Hamadryads') {
-		lln('  Oak Trees `0for `%'+pretty_int(years)+' `0years.');
-		sln(''); 
-		lln(dryads);
-		more_nomail();
+	lln('  '+nymph.place+' `2for `%'+pretty_int(nymph.years)+' `0years.');
+	sln('');
+	more_nomail();
+	lln(dryads);
+	sln('');
+	more_nomail();
+
+	if(nymph.name === 'Hamadryads') {
 		lln('  `0There are `%8 `0types of `$Wood Nymphs.  `0My kind');
 		lln('  are the saddest of all because we are tied to one');
 		lw('  tree, and if our tree dies, we die, ');
@@ -1436,44 +1565,15 @@ function nymph_story(nymph) {
 		sln('');
 		more_nomail();
 	}
-	if(nymph === 'Maliades') {
-		lln('  Fruit Trees `0for `%'+pretty_int(years)+' `0years.');
-		sln('');
-		lln(dryads);				
-		more_nomail();
+	if(nymph.name === 'Maliades') {		
 		lln('  `0My kind are very `5fertile`0,');
 	}
-	if(nymph === 'Daphnaei') {
-		lln('  Laurel Trees `0for `%'+pretty_int(years)+' `0years.');
-		sln('');
-		lln(dryads);		
-		more_nomail();						 		
-	}
-	if(nymph === 'Alseides') {
-		lln('  Sacred Groves `0for `%'+pretty_int(years)+' `0years.');
-		sln('');
-		lln(dryads);				
-		more_nomail();						 		
-	}
-	if(nymph === 'Aulonides') {
-		lln('  Glens `0for `%'+pretty_int(years)+' `0years.');
-		sln('');
-		lln(dryads);				
-		more_nomail();						 		
-	}
-	if(nymph === 'Napaiai') {
-		lln('  Vales `0for `%'+pretty_int(years)+' `0years.');
-		sln('');
-		lln(dryads);			
-		more_nomail();						 		
-	}								
-	sln('');
-	more_nomail();
-	
+						
+	sln('');	
 	lln('  `%"Now that you know about me, will you PLEASE help me?"`2,');
-	lln('  `6'+nymph+' `2begs shyly.');
+	lln('  `6'+nymph.name+' `2begs shyly.');
 	sln('');
-	lln('  `2(`0B`2)e kind and pleasure `6'+nymph);
+	lln('  `2(`0B`2)e kind and pleasure `6'+nymph.name);
 	lln('  `2(`0P`2)olitely Decline');
 	lln('  `2(`0A`2)sk her to tell you more');
 	lln('  `2(`0L`2)eave and head back to town');
@@ -1488,7 +1588,7 @@ function nymph_story(nymph) {
 	sln('');		
 	switch ( ch ) {
 		case 'L':
-			lln('  `%"This is too boring, `$'+nymph+'`%"`2, you tell');
+			lln('  `%"This is too boring, `$'+nymph.name+'`%"`2, you tell');
 			lln('  her as you turn and walk back to town.');
 			sln('');
 			more_nomail();
@@ -1500,7 +1600,7 @@ function nymph_story(nymph) {
 		break;
 		
 		case 'P':
-			lln('  `%"Look, '+nymph+' you\'re very beautiful and all,');
+			lln('  `%"Look, '+nymph.name+' you\'re very beautiful and all,');
 			lln('  and I am happy we met, hopefully we can see');
 			lln('  see each other again, but I gotta go, bye!"');
 			log_line('  `5'+player.name+' `0consoled the Wood Nymph `$'+nymph);
@@ -1521,8 +1621,8 @@ function nymph_story(nymph) {
 			lln('  and get down to business!');
 			sln('');
 			more_nomail();
-			nymph_sex(nymph);
-			log_line('  `5'+player.name+' `2got laid by `6'+nymph);
+			nymph_sex();
+			log_line('  `5'+player.name+' `2got laid by `6'+nymph.name);
 			player.laid += 1;
 			player.cha += 10;
 			player.exp += player.level * 100;
@@ -1531,12 +1631,9 @@ function nymph_story(nymph) {
 			
 		break;
 		
-		case 'A':
-			lln('  `2She tells you more, etc ...');
-			sln('');
-			more_nomail();
-			more_nymph_story(nymph);
-			log_line('  `5'+player.name+' `2became friends with `6'+nymph);
+		case 'A':			
+			more_nymph_story();
+			log_line('  `5'+player.name+' `2became friends with `6'+nymph.name);
 			sln('');
 			more_nomail();
 			lln('  `$SOMEWHERE MAGIC HAS HAPPENED!');
@@ -1550,60 +1647,9 @@ function nymph_story(nymph) {
 	}
 }
 
-function get_nymph() {
-var nymph = '';
-
-/*
-	Meliai (ash trees), 
-	Oreiades (mountain trees), 
-	Hamadryads (usually oak or poplar trees),
-	Maliades (fruit trees), 
-	Daphnaei (laurel trees), 
-	Alseides (located in sacred groves) 
-	Aulonides (located in glens), 
-	Napaiai (located in vales.)
-*/
-	var wood_nymph = random(8);
-	switch( wood_nymph ) {
-		case 0:
-			nymph = 'Meliai';
-		break;
-		
-		case 1:
-			nymph = 'Oreiades';
-		break;
-		
-		case 2:
-			nymph = 'Hamadryads';
-		break;
-		
-		case 3:
-			nymph = 'Maliades';
-		break;
-		
-		case 4:
-			nymph = 'Daphnaei';
-		break;
-		
-		case 5:
-			nymph = 'Alseides';
-		break;
-		
-		case 6:
-			nymph = 'Aulonides';
-		break;
-		
-		case 7:
-			nymph = 'Napaiai';
-		break;
-	}
-	return nymph;
-}
-
 function wood_nymph() {
 	var ch = '';
-	var nymph = get_nymph();
-	
+		
 	get_head('Getting Seduced by a Naked Wood Nymph');
 	
 	lln('  `%"Hello?"`2, you cautiously reply.');	
@@ -1612,7 +1658,7 @@ function wood_nymph() {
 	sln('');
 	more_nomail();
 	lln('  `2Never before have you seen such a beautiful creature!');
-	lln('  As you stare in awe, she approacehs you closer and asks,');
+	lln('  As you stare in awe, she approaches you closer and asks,');
 	sln('');
 	lln('  `%"Could you please help me?  I have been lonely for so long"`2,');
 	lln('  `2as she reaches down and gently caresses herself.');	
@@ -1633,7 +1679,7 @@ function wood_nymph() {
 		player.laid += 1;
 		player.cha += 10;	
 		player.exp += player.level * 10;
-		get_head('Having Sex with '+nymph);
+		get_head('Having Sex with '+nymph.name);
 		if(player.sex === 'M')
 		{
 			lln('  `2You become so overwhelmed with sexual desire you throw');
@@ -1661,16 +1707,16 @@ function wood_nymph() {
 		sln('');
 		more_nomail();
 		lln('  `2As you are leaving you hear `%"Thank you, '+player.name+',');
-		lln('  I will never forget you. May my name, `$'+nymph+' `%never leave');
+		lln('  I will never forget you. May my name, `$'+nymph.name+' `%never leave');
 		lln('  you heart!"');
 		sln('');
 		more_nomail();				
-		log_line('  `5'+player.name+' `0got seduced by the wood nymph, `%'+nymph+'!');	
+		log_line('  `5'+player.name+' `0got seduced by the wood nymph, `%'+nymph.name+'!');	
 		good_bye('exhilarating');
 	}
 	if(ch === 'G')
 	{
-		nymph_story(nymph);		
+		nymph_story();		
 		sln('');
 		good_bye('pleasant');
 	}
@@ -1690,23 +1736,6 @@ function wood_nymph() {
 		more_nomail();
 		good_bye('disappointing');
 	}
-	
-/*
-Dryads
-
-Dryads are the “ladies of the trees” — female nymphs who inhabit the forests, groves, woods, 
-and all other types of trees. The dry- part of dryad comes from the Greek word “oak” and used 
-to refer to only oak tree nymphs, but now it has become the overeaching term for all wood nymphs. 
-Dryads are known for being rather shy. They have long lives that can often be closely tied to 
-where their home (aka: tree) is. Hamadryads are dryads who are so tied to their tree that if their 
-tree dies, they die. If their tree grows or blossoms, so does the dryad.
-
-Not all dryads are tied to a particular tree. Some are tied to a location or section of trees like 
-a sacred grove, a glen, a vale, etc. Depending on which type of tree they inhabit or the location 
-of those trees, 
-dryads can go by different names just like the naiads:
-*/	
-	
 }
 
 function cabin_shit(who) {
@@ -1818,7 +1847,7 @@ function cabin_shit(who) {
 			sln('  made it all the way back to the edge of town!');
 			sln('');
 			var trand = random(5);
-			
+trand = 3;			
 			switch ( trand ) {
 				case 0:
 					amt = player.level * 1000;
@@ -2933,7 +2962,7 @@ function veldore_cabin(trainer) {
 							sln('');
 							more_nomail();
 							log_line('  `5'+player.name+' `0broke into `6'+trainer.name+'\'s `0cabin and attacked him');
-							good_bye('great');battle(trainer, false, false);
+							good_bye('great');
 						break;
 						
 						case 'S':
@@ -3260,7 +3289,7 @@ function search() {
 	wait(); wait(); wait();
 	
 	var sum_shit = random(11);
-	
+sum_shit = 3;	
 	switch ( sum_shit ) {	
 		case 0:
 			reward = Math.round(player.hp / 2);
@@ -3591,7 +3620,7 @@ function main()
 	foreground(2);
 	background(0);
 	
-	get_head('The Grab Bag');
+	get_head('The Grab Bag ');
 	
 	if (!dk.console.ansi) {
 		sln('  NOTE:  The \'arcade\' sequences in this IGM *REQUIRE* ANSI terminal');
@@ -3668,7 +3697,7 @@ while(!done) {	// let's player view instructions without kicking them out as tho
 	sln('  some free stuff.  It\'s a long journey and you are rather');
 	lln('  tired when you finally arrive at `$The Grab Bag.');
 	sln('');
-	lln('  `2(`0C`2)limb the ladder');
+	lln('  `2(`0C`2)limb the stairs');
 	lln('  `2(`0S`2)earch the forest instead');
 	//lln('  `2(`0T`2)odo - Feature Plans');
 	lln('  `2(`0H`2)ead back to town');
@@ -3704,11 +3733,15 @@ while(!done) {	// let's player view instructions without kicking them out as tho
 }
 
 sln('');
-get_head('`$The Grab Bag - `8An IGM for `4L`%egend `4O`%f the `4R`%ed `4D`%ragon\r\n  `$Version 5.00 JS `0by mortifis');
-sln2('');
+get_head('`$The Grab Bag v1.2 by mortifis\r\n  `8An IGM for `4L`%egend `4O`%f the `4R`%ed `4D`%ragon `$V5.00 JS');
+sln('');
 lln('    `0Credits to: `$Seth Able Robinson for creating LORD!');
-lln('    `0Stephen Hurd - Deuce - `$For porting LORD to JS');
-lln('    `0Rob Swindell - Digital Man - `$For Authoring SBBS');
+lln('    `0Stephen Hurd (Deuce)');
+lln('        `$For porting LORD to JS');
+lln('    `0Rob Swindell (Digital Man)');
+lln('        `$For Authoring SBBS');
+lln('        `$    Helping me with all things SBBS')
+lln('        `$    Kindly putting up with me for 25+ years');
 lln('    `0echicken `$For helping me learn JS');
 sln('');
 lln('`6');
