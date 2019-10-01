@@ -114,7 +114,7 @@ var nymphs = [
 
 var nymph = nymphs[random(8)];
 
-function crandom(min, max) { // defunct but retained for future needs
+function crandom(min, max) { 
 	return random(max-min+1) + min; 
 }
 
@@ -2313,8 +2313,9 @@ function seth_cabin() {
 		lln('  `2You decide that knocking is above you so you');
 		sln('  just open the door and walk in.');
 		sln('');
-		react = random(4);
-		if(settings.clean_mode) react = 0; 
+		
+		if(settings.clean_mode) react = random(2); 
+			else react = random(4);
 			
 		switch ( react ) {
 			case 0: // seth makes tea					
@@ -2694,8 +2695,10 @@ function jennie_cabin() {
 		lln('  `2You decide that knocking is above you so you');
 		sln('  just open the door and walk in.');
 		sln('');
-		react = random(4);
-		if(settings.clean_mode) react = 0;
+	
+		if(settings.clean_mode) react = random(2);
+			else react = random(4);
+			
 		switch ( react ) {
 			case 0: // jennie makes tea				
 				lln('  `2She is happy to see  you in and pours you a');
@@ -3685,8 +3688,7 @@ function main()
 			sln('');
 			player.forest_fights += 2;
 			good_bye();
-		}
-		
+		}		
 	}
 	mswait(1500);
 
