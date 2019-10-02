@@ -55,7 +55,7 @@ if (js.global.conio !== undefined && dk.console.local) {
 var dk_local_console_loaded = true;
 
 dk.console.local_io = {
-	screen:new Screen(dk.cols, dk.height, 7, ' ', true),
+	screen:new Screen(dk.console.cols, dk.console.rows, 7, ' ', true),
 
 	update:function() {
 		'use strict';
