@@ -133,7 +133,7 @@ var guess = [
 		clue5:'You might have one',
 		rewardstr1:'Wow, you sure are smart kid',
 		rewardstr2:'Wow, it took you long enough!',
-		give:15 // player.level * guess.give	
+		give:15
 	},
 	{
 		item:'WEAPON',
@@ -144,7 +144,7 @@ var guess = [
 		clue5:'It is used to win the game',
 		rewardstr1:'You know, you\'re pretty smart kid',
 		rewardstr2:'Wow, it took you long enough!',
-		give:10 // player.level * guess.give	
+		give:10
 	},
 	{
 		item:'CONDOM',
@@ -155,7 +155,7 @@ var guess = [
 		clue5:'It is used to not have kids',
 		rewardstr1:'You know, you\'re pretty smart kid',
 		rewardstr2:'Wow, it took you long enough!',
-		give:25 // player.level * guess.give		
+		give:25
 	},
 	{
 		item:'GEM',
@@ -1134,7 +1134,7 @@ function cabin_shit(who) {
 			sln('  made it all the way back to the edge of town!');
 			sln('');
 			var trand = random(5);
-trand = 3;			
+			
 			switch ( trand ) {
 				case 0:
 					amt = player.level * 1000;
@@ -2459,7 +2459,7 @@ function veldore_cabin(trainer) {
 					
 				break;
 				
-				case 3: // trainer is cool ... drinks offers sleep
+				case 3: // trainer is cool ... drinks, offers sleep
 					say_slow2('  happy to see you');
 					sln('');
 					sln('');
@@ -2541,7 +2541,6 @@ function veldore_cabin(trainer) {
 			good_bye();
 		}
 }
-
 
 function get_head(str)
 {
@@ -2927,7 +2926,7 @@ function main()
 	
 	if(user.is_sysop) // allows for sysop to always be able to play for testing IGM
 	{ 
-		player.sex = 'M'; // remove this, it is only for testing M/F 
+		//player.sex = 'M'; // remove this, it is only for testing M/F 
 		player.forest_fights = player.forest_fights + 1; 
 		player.hp = player.hp_max + 1;
 		b.can_play[player.Record] = true; 
@@ -2947,7 +2946,6 @@ function main()
 	b.can_play[player.Record] = false;
 	b.put();
 
-	player.forest_fights--; // I dislike this :-(
 	if(settings.clean_mode) { lln('  `0Clean Mode is `$ON `0'); sln(''); }
 	else 
 	{ 
@@ -3033,6 +3031,7 @@ say_slow2('   to break your thumbs!"');
 sln2('');
 more_nomail();
 */
+
 if(argv[0] == 'w') wake_up();  // sleeping at either seth's or jennie's
 if(argv[0] == 'v') wake_up_at_veldores();
 
