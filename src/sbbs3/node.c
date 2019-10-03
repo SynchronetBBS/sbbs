@@ -292,7 +292,7 @@ void printnodedat(int number, node_t node)
 		case NODE_QUIET:
 		case NODE_INUSE:
 			if(node.misc&NODE_EXT) {
-				printf("%s", extended_status(number,tmp));
+				printf("%s", extended_status(number - 1, tmp));
 				break;
 			}
 			printf("User #%d",node.useron);
