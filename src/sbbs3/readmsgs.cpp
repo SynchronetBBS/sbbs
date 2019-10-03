@@ -977,7 +977,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					SAFEPRINTF(str, text[DeleteTextFileQ], "Poll");
 				else
 					SAFEPRINTF2(str,text[DeletePostQ], smb.curmsg+1, msghdr_field(&msg, msg.subj));
-				if(!(msg.hdr.attr&MSG_DELETE) && noyes(str)) {
+				if(!(msg.hdr.attr&MSG_DELETE) && str[0] && noyes(str)) {
 					domsg = false;
 					break;
 				}
