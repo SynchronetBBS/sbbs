@@ -1,6 +1,6 @@
 'use strict';
 
-// The Grab Bag v1.0 - a LORD 5.00 JS IGM by Mortifis 
+// The Grab Bag v1.1 - a LORD 5.00 JS IGM by Mortifis 
 
 var x1 = 0;
 var y1 = 0;
@@ -16,14 +16,14 @@ var nymphs = [
 		saw:true,
 		sex:false,
 		fertile:1,
-		charm:10,
-		exp:90
+		charm:10, // charm needed to have random(5); player.kids += nymph.fertile;
+		exp:90 // player.exp += player.exp / nymph.exp;
 	},
 	{
 		name:'Oreiades',
 		place:'Mountain Trees',
 		years:2317,		
-		story1:'I was a very young girl when all of the men',
+		story1:'I was a young wife when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
 		saw:true,
@@ -36,7 +36,7 @@ var nymphs = [
 		name:'Hamadryads',
 		place:'Oak Trees',
 		years:2286,		
-		story1:'I was a very young girl when all of the men',
+		story1:'I was a shy school girl when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
 		saw:true,
@@ -49,7 +49,7 @@ var nymphs = [
 		name:'Malaides',
 		place:'Fruit Trees',
 		years:2981,		
-		story1:'I was a very young girl when all of the men',
+		story1:'I was a mother of thirten children when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
 		saw:true,
@@ -62,7 +62,7 @@ var nymphs = [
 		name:'Daphnaei',
 		place:'Laurel Trees',
 		years:2462,		
-		story1:'I was a very young girl when all of the men',
+		story1:'I was a mother of 4 sons when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
 		saw:true,
@@ -75,7 +75,7 @@ var nymphs = [
 		name:'Alseides',
 		place:'Sacred Groves',
 		years:2931,		
-		story1:'I was a very young girl when all of the men',
+		story1:'I was the village prostitute when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
 		saw:true,
@@ -84,7 +84,7 @@ var nymphs = [
 		charm:55,
 		exp:90
 	},
-{
+	{
 		name:'Aulonides',
 		place:'Dragons Glen',
 		years:3142,		
@@ -97,7 +97,7 @@ var nymphs = [
 		charm:35,
 		exp:80
 	},
-{
+	{
 		name:'Napaiai',
 		place:'Ables Vale',
 		years:2286,		
@@ -112,6 +112,228 @@ var nymphs = [
 	}
 ];
 
+var guess = [
+	{		
+		item:'HORSE',
+		clue1:'It\'s an animal',
+		clue2:'It\'s tall',
+		clue3:'It is usually friendly',
+		clue4:'It eats hay',
+		clue5:'You might have one',
+		rewardstr1:'You know, you\'re pretty smart kid',
+		rewardstr2:'Wow, it took you long enough!',
+		give:10 // player.level * guess.give
+	},
+	{
+		item:'FAIRY',
+		clue1:'It\'s a living thing',
+		clue2:'It\'s very small',
+		clue3:'It is usually friendly',
+		clue4:'It has wings',
+		clue5:'You might have one',
+		rewardstr1:'Wow, you sure are smart kid',
+		rewardstr2:'Wow, it took you long enough!',
+		give:15 // player.level * guess.give	
+	},
+	{
+		item:'WEAPON',
+		clue1:'It\'s an object',
+		clue2:'It\'s very heavy',
+		clue3:'It is a tool',
+		clue4:'It has blood on it',
+		clue5:'It is used to win the game',
+		rewardstr1:'You know, you\'re pretty smart kid',
+		rewardstr2:'Wow, it took you long enough!',
+		give:10 // player.level * guess.give	
+	},
+	{
+		item:'CONDOM',
+		clue1:'It\'s helps protect you',
+		clue2:'It\'s very thin',
+		clue3:'It is made from goat skin',
+		clue4:'It reassures Violet',
+		clue5:'It is used to not have kids',
+		rewardstr1:'You know, you\'re pretty smart kid',
+		rewardstr2:'Wow, it took you long enough!',
+		give:25 // player.level * guess.give		
+	},
+	{
+		item:'GEM',
+		clue1:'It\'s an object',
+		clue2:'It is shiny',
+		clue3:'It is found in the Forest',		
+		clue4:'It has value',
+		clue5:'It is often given as a reward',
+		rewardstr1:'You know, you\'re pretty smart kid',
+		rewardstr2:'Wow, it took you long enough!',
+		give:5
+	}		
+];
+
+function RemoveGuess(arr, value) { // defunct
+   return arr.filter(function(ele)
+   {
+       return ele != value;
+   });
+}
+
+function guessing_game(who) {  // Yes, I know this is novice level scripting but it works :-)
+	var questions = undefined;
+	var old_questions = guess;
+	var question = undefined;	
+	var start_questions = guess.length;
+	var questions_left = guess.length;		
+	var done = false;
+	var wrong = 0;
+	var did = 0;
+	var correct = undefined;
+	var answer = undefined;
+	var x = 0;
+	var amt = 0;
+	
+	lln('  `2Since you are here, would you like to play');
+	lln('  a little game?');
+	sln('');
+	lln('  `2(`0Y`2)es');
+	lln('  `2(`0N`2)no');
+	sln('');
+	lw('  `2Well? `%');
+	var ch = getkey().toUpperCase();
+	if ('YN'.indexOf(ch) == -1) {
+			ch = 'Y';
+	}
+	
+	sln(ch);
+	sln('');
+	
+	if(ch === 'N')
+	{
+		return false;
+	}
+	
+	get_head('Playing a game with '+who);
+	lln('  `2Excellent.  This is a Guessing Game.');
+	lln('  `2I will give you clues and you try to');
+	lln('  `2guess what I am thinking of.');
+	sln('');
+	more_nomail();
+	lln('  There are `0'+pretty_int(start_questions)+' `2questions total.');
+	sln('');
+	
+	while(!done) {
+		did += 1;
+		correct = false;
+		questions = [];
+		questions = old_questions;
+		question = questions[random(questions.length)];	
+		
+		for(var i = 0; i < questions.length; i++) {
+			if(questions[i].item === question.item) x = i;
+		}
+		
+		var i = 1;
+		while(!correct  && i <= 5) {
+			switch ( i ) {
+				case 1:
+					lw('  `$'+question.clue1+'. `2Your Guess? `%');
+				break;
+				
+				case 2:
+					lw('  `$'+question.clue2+'. `2Your Guess? `%');
+				break;
+
+				case 3:
+					lw('  `$'+question.clue3+'. `2Your Guess? `%');
+				break;
+				
+				case 4:
+					lw('  `$'+question.clue4+'. `2Your Guess? `%');
+				break;
+				
+				case 5:
+					lw('  `$'+question.clue5+'. `2Your Guess? `%');
+				break;								
+			}
+			
+			answer = console.getstr({input_box:true}).trim().toUpperCase();
+			
+			if(answer.match(question.item)) {
+				lln('  `0CORRECT!');
+				sln('');
+				if(i<4) lln('  `6'+question.rewardstr1); else lln('  `7'+question.rewardstr2);				
+				correct = true;
+				amt += player.level * question.give;			
+			}
+			else {
+				lln('  `4WRONG!');
+				wrong += 1;
+				i += 1;
+			}
+			
+		}
+		if(!correct) { 
+			lln('  `0The answer is `%'+question.item);
+			sln('');
+		}
+		sln('');
+		questions.splice(x, 1);
+		old_questions = [];
+		old_questions = questions;
+		questions_left -= 1;
+		
+		sln('');
+			if(questions_left < 1)
+			{
+				lln('  `%"I am very tired "`, `0'+who+' says, `%"I think you');
+				lln('  should leave now! Come visit me at Turgons Arena."')
+				sln('');
+				more_nomail();
+				done = true;
+				break;
+			}
+		
+		lln('  `2There are '+pretty_int(questions.length)+' remaining.');
+		sln('');
+		lln('  `2Would you like to play Again?');
+			sln('');
+			lln('  `2(`0Y`2)es');
+			lln('  `2(`0N`2)no');
+			sln('');
+			lw('  `2Well? `%');
+			var ch = getkey().toUpperCase();
+			if ('YN'.indexOf(ch) == -1) {
+				ch = 'Y';
+			}
+			sln(ch);
+			sln('');
+			
+			if(ch === 'N')
+			{
+				done = true;
+			}		
+	}
+	
+	amt += amt * 5;
+	player.exp += amt;
+	sln('');
+	lln('  `0You Gained `%'+pretty_int(amt)+' `0Experince!');
+	sln('');
+	more_nomail();
+	
+	if(did == start_questions) {
+		amt = player.level * 1000;
+		lln('  `2You answered all of the questions, very good');
+		sln('');
+		lln('  `0You gain an Extra `%'+pretty_int(amt)+' Gold Coins');		
+		sln('');
+		more_nomail();
+		sln('');
+		player.gold += amt;
+	}
+
+	return true;
+}
+
 var nymph = nymphs[random(8)];
 
 function crandom(min, max) { 
@@ -122,945 +344,6 @@ function pick_at_random(arr)
 { 
 	return arr[random(arr.length)] 
 }; // thanks DM
-
-function bjack(who) // ripped from LORD 5.00 JS in order to change dialogue
-{		    // will be replaced in future versions
-	var startgold = player.gold;
-	var ch;
-	var suits = ['\x06', '\x03', '\x05', '\x04'];
-	var scol = ['`r2', '`r2`4', '`r2', '`r2`4'];
-	var faces = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-	var values = [11, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
-
-	function play_hand() {	//sam2
-		var cards;
-		var hands = {};
-		var i;
-		var bet;
-		var res;
-		var tmp;
-		var mc = morechk;
-		var shuffle_strs = ['/\\', '==', '\xcd\xcd'];
-
-		function hand_total(hand, min) {
-			var hti;
-			var aces11 = 0;
-			var ret = 0;
-
-			if (min === undefined) {
-				min = false;
-
-			}
-			for (hti = 0; hti < hand.length; hti += 1) {
-				if (hand[hti].val === 0) {
-					aces11 += 1;
-				}
-				ret += values[hand[hti].val];
-				if (ret > 21) {
-					if (aces11 > 0) {
-						ret -= 10;
-						aces11 -= 1;
-					}
-				}
-			}
-			if (min) {
-				while (aces11 > 0) {
-					ret -= 10;
-					aces11 -= 1;
-				}
-			}
-			return ret;
-		}
-
-		function shuffle() {
-			var si;
-			var j;
-			var stmp;
-
-			cards = [];
-			for (j = 0; j < 4; j += 1) {
-				for (si = 0; si < 13; si += 1) {
-					cards.push({suit:j, val:si});
-				}
-			}
-			for (si = cards.length; si > 1; si -= 1) {
-				j = random(si);
-				stmp = cards[si - 1];
-				cards[si - 1] = cards[j];
-				cards[j] = stmp;
-			}
-		}
-
-		function show_total(play, total, split) {
-			if (split === 0 && hands.player.length > 1) {
-				split = 1;
-			}
-			if (play) {
-				if (split === 1) {
-					dk.console.gotoxy(0, 22);
-					lw('`r0`2Hand1: `0'+total);
-				}
-				else if (split === 2) {
-					dk.console.gotoxy(13, 22);
-					lw('`r0`2Hand2: `0'+total);
-				}
-				else {
-					dk.console.gotoxy(0, 22);
-					lw('`r0`2You: `0'+total);
-				}
-			}
-			else {
-				dk.console.gotoxy(68, 22);
-				lw('`r0`2Dealer: `0'+total);
-			}
-		}
-
-		function wizclr_scr(num) {
-			var y;
-
-			switch(num) {
-				case 1:
-					background(0);
-					for (y = 11; y <= 19; y += 1) {
-						dk.console.gotoxy(1,y);
-						sw('            ');
-					}
-					break;
-				case 2:
-					background(0);
-					for (y = 11; y <= 19; y += 1) {
-						dk.console.gotoxy(67,y);
-						sw('            ');
-					}
-					break;
-				case 3:
-					background(2);
-					for (y = 1; y <= 7; y += 1) {
-						dk.console.gotoxy(24, y);
-						sw('                              ');
-					}
-					break;
-				case 4:
-					background(2);
-					for (y = 10; y <= 16; y += 1) {
-						dk.console.gotoxy(16, y);
-						sw('                       ');
-					}
-					break;
-				case 5:
-					background(2);
-					for (y = 10; y <= 16; y += 1) {
-						dk.console.gotoxy(40, y);
-						sw('                       ');
-					}
-					break;
-				case 6:
-					background(1);
-					dk.console.gotoxy(37, 18);
-					sw('        ');
-					break;
-			}
-		}
-
-		function wizmore() {
-			var wi;
-
-			dk.console.gotoxy(4, 19);
-			lw('`2<`0MORE`2>');
-			getkey();
-			for (wi = 0; wi < 6; wi += 1) {
-				sw('\b');
-			}
-			for (wi = 0; wi < 6; wi += 1) {
-				sw(' ');
-			}
-		}
-
-		function get_cpic(card) {
-			return scol[card.suit]+faces[card.val]+suits[card.suit];
-		}
-
-		function deal(who, count, show, split) {
-			if (split === undefined) {
-				split = false;
-			}
-			var cpic;
-			var card;
-			var di;
-			var x;
-			var y;
-			var hand = hands[who === '1' ? 'dealer' : 'player'][split ? 1 : 0];
-			var full;
-			var first = false;
-			var dtmp;
-
-			for (di = 0; di < count; di += 1) {
-				card = cards.shift();
-				cpic = get_cpic(card);
-				mswait(500);
-				hand.push(card);
-				if (who === 1 && hand.length === 2) {
-					first = true;
-				}
-				full = !!((hand.length % 2) === 1);
-				dtmp = hand.length;
-				if (split) {
-					dtmp = 14 - hand.length;
-					if (hand.length % 2 === 1) {
-						dtmp -= 2;
-					}
-				}
-				x = 17 + parseInt((dtmp - 1) / 2, 10) * 8;
-				if (who === 1) {
-					x += 8;
-				}
-				y = (who === 1 ? 1 : 10) + ((dtmp % 2) * 2);
-				background(2);
-				foreground(0);
-				dk.console.gotoxy(x-1, y);
-				sw('\xd5\xcd\xcd\xcd\xcd\xcd\xb8');
-				dk.console.gotoxy(x-1, y+1);
-				if (first) {
-					sw('\xb3\xb1\xb1\xb1\xb1\xb1');
-					foreground(0);
-					dk.console.gotoxy(x + 5, y+1);
-					sw('\xb3');
-				}
-				else {
-					lw('\xb3'+cpic);
-					foreground(0);
-					dk.console.gotoxy(x + 5, y+1);
-					sw('\xb3');
-				}
-				if (full) {
-					dk.console.gotoxy(x-1, y+2);
-					sw('\xb3     \xb3');
-					dk.console.gotoxy(x-1, y+3);
-					sw('\xb3     \xb3');
-					dk.console.gotoxy(x-1, y+4);
-					sw('\xc0\xc4\xc4\xc4\xc4\xc4\xd9');
-				}
-			}
-			if (show) {
-				show_total(who === 2, hand_total(hand, false), split ? 2 : 0);
-			}
-			else {
-				show_total(who === 2, '?', 0);
-			}
-			hands[who === '1' ? 'dealer' : 'player'][split ? 1 : 0] = hand;
-		}
-
-		function card_check() {
-			var cch;
-			var candouble = true;
-			var cctmp;
-			var ptotal;
-			var dtotal;
-			var dealcards = true;
-			var hand = 0;
-
-			if (hands.player[0][0].val === hands.player[0][1].val) {
-				wizclr_scr(1);
-				foreground(10);
-				dk.console.gotoxy(1,11);
-				sw('Would you');
-				dk.console.gotoxy(1,12);
-				sw('like to');
-				dk.console.gotoxy(1,13);
-				sw('split?');
-				dk.console.gotoxy(67,11);
-				lw('`2(`0Y`2)es (`0N`2)o. ');
-				cch = getkey().toUpperCase();
-				if (cch !== 'Y') {
-					cch = 'N';
-				}
-				if (cch === 'Y') {
-					if (player.gold < bet) {
-						wizclr_scr(1);
-						foreground(10);
-						dk.console.gotoxy(1,11);
-						sw('Hey! you');
-						dk.console.gotoxy(1,12);
-						sw('don\'t have');
-						dk.console.gotoxy(1,13);
-						sw('enough gold!');
-						wizmore();
-						candouble = false;
-					}
-					else {
-						hands.player[1] = [hands.player[0].pop()];
-						candouble = false;
-						player.gold -= bet;
-						dk.console.gotoxy(0,21);
-						lw('`r0`2Gold on hand: `$'+pretty_int(player.gold));
-						dk.console.gotoxy(37, 18);
-						lw('`r2`4'+(bet * 2));
-						dk.console.gotoxy(16, 10);
-						lw('`r2`2       ');
-						dk.console.gotoxy(16,11);
-						sw('       ');
-						foreground(0);
-						dk.console.gotoxy(56, 12);
-						sw('\xd5\xcd\xcd\xcd\xcd\xcd\xb8');
-						dk.console.gotoxy(56, 13);
-						lw('\xb3'+get_cpic(hands.player[1][0]));
-						foreground(0);
-						dk.console.gotoxy(62, 14);
-						sw('\xb3');
-						dk.console.gotoxy(56, 14);
-						sw('\xb3     \xb3');
-						dk.console.gotoxy(56, 15);
-						sw('\xb3     \xb3');
-						dk.console.gotoxy(56, 16);
-						sw('\xc0\xc4\xc4\xc4\xc4\xc4\xd9');
-						dk.console.gotoxy(0, 22);
-						lw('`r0`2Hand1:       Hand2:  ');
-						deal(2, 1, true);
-						deal(2, 1, true, true);
-					}
-				}
-			}
-			if (hand_total(hands.player[0]) === 21 && hands.player[0].length === 2) {
-				candouble = false;
-			}
-			if (candouble) {
-				cctmp = hand_total(hands.player[0], true);
-				if (cctmp > 8 && cctmp < 12) {
-					while(true) {
-						wizclr_scr(1);
-						foreground(10);
-						dk.console.gotoxy(1,11);
-						sw('Would you');
-						dk.console.gotoxy(1,12);
-						sw('like to');
-						dk.console.gotoxy(1,13);
-						sw('double down?');
-						dk.console.gotoxy(67,11);
-						lw('`2(`0Y`2)es (`0N`2)o. ');
-						cch = getkey().toUpperCase();
-						if (cch === 'N') {
-							break;
-						}
-						if (cch === 'Y') {
-							if (player.gold < bet) {
-								wizclr_scr(1);
-								foreground(10);
-								dk.console.gotoxy(1,11);
-								sw('Hey! you');
-								dk.console.gotoxy(1,12);
-								sw('don\'t have');
-								dk.console.gotoxy(1,13);
-								sw('enough gold!');
-								wizmore();
-								break;
-							}
-							player.gold -= bet;
-							bet *= 2;
-							dk.console.gotoxy(0,21);
-							lw('`r0`2Gold on hand:                  ');
-							dk.console.gotoxy(0,21);
-							lw('`r0`2Gold on hand: `$'+pretty_int(player.gold));
-							dk.console.gotoxy(37, 19);
-							lw('`r2`4'+bet);
-							deal(2, 1, true);
-							ptotal = hand_total(hands.player[0]);
-							if (ptotal > 21) {
-								return 'BUST';
-							}
-							dealcards = false;
-							break;
-						}
-					}
-				}
-			}
-			while(dealcards) {
-				ptotal = hand_total(hands.player[hand]);
-				if (hands.player.length > 1) {
-					if (ptotal > 21) {
-						wizclr_scr(1);
-						dk.console.gotoxy(1, 11);
-						lw('`0Sorry!');
-						dk.console.gotoxy(1, 12);
-						sw('That hand');
-						dk.console.gotoxy(1, 13);
-						sw('busted.');
-						wizmore();
-						if (hand === 1) {
-							break;
-						}
-						hand += 1;
-						ptotal = hand_total(hands.player[hand]);
-					}
-				}
-				else {
-					if (ptotal > 21) {
-						return 'BUST';
-					}
-					if (hands.player[0].length === 2 && ptotal === 21) {
-						return 'BLACKJACK';
-					}
-				}
-				// start3
-				wizclr_scr(1);
-				wizclr_scr(2);
-				foreground(10);
-				dk.console.gotoxy(1,11);
-				sw('Would you');
-				dk.console.gotoxy(1,12);
-				sw('like to hit');
-				dk.console.gotoxy(1,13);
-				sw('or stay?');
-				if (hands.player.length > 1) {
-					dk.console.gotoxy(1, 15);
-					sw('Hand'+(hand+1));
-				}
-				dk.console.gotoxy(67, 11);
-				lw('`2(`0H`2)it');
-				dk.console.gotoxy(67, 12);
-				lw('`2(`0S`2)tay');
-				cch = getkey().toUpperCase();
-				if (cch === 'S') {
-					if (hands.player.length === 1) {
-						break;
-					}
-					if (hand === 1) {
-						break;
-					}
-					hand += 1;
-				}
-				else if (cch === 'H') {
-					deal(2, 1, true, !(hand === 0));
-				}
-			}
-			lw('`r2');
-			foreground(0);
-			dk.console.gotoxy(24, 1);
-			sw('\xd5\xcd\xcd\xcd\xcd\xcd\xb8');
-			dk.console.gotoxy(24, 2);
-			sw('\xb3\xb1\xb1\xb1\xb1 \xb3');
-			mswait(500);
-			dk.console.gotoxy(24, 2);
-			sw('\xb3\xb1\xb1\xb1  \xb3');
-			mswait(500);
-			dk.console.gotoxy(24, 2);
-			sw('\xb3\xb1\xb1   \xb3');
-			mswait(500);
-			dk.console.gotoxy(24, 2);
-			sw('\xb3     ');
-			dk.console.gotoxy(24, 2);
-			lw('\xb3'+get_cpic(hands.dealer[0][1]));
-			foreground(0);
-			dk.console.gotoxy(30, 2);
-			sw('\xb3');
-			show_total(false, hand_total(hands.dealer[0]), 0);
-			while(true) {
-				dtotal = hand_total(hands.dealer[0]);
-				if (dtotal > 21) {
-					if (hands.player.length > 1) {
-						return 'WW';
-					}
-					return 'DBUST';
-				}
-				if (dtotal === 21 && hands.dealer[0].length === 2) {
-					return 'DBLACKJACK';
-				}
-				if (dtotal < 17) {
-					deal(1, 1, true);
-				}
-				else {
-					break;
-				}
-			}
-			if (hands.player.length === 1) {
-				if (dtotal === ptotal) {
-					return 'PUSH';
-				}
-				if (dtotal > ptotal) {
-					return 'DWIN';
-				}
-				return 'WIN';
-			}
-			cctmp = '';
-			ptotal = hand_total(hands.player[0]);
-			if (dtotal === ptotal) {
-				cctmp += 'P';
-			}
-			else if (dtotal > ptotal || ptotal > 21) {
-				cctmp += 'D'; }
-			else {
-				cctmp += 'W';
-			}
-			ptotal = hand_total(hands.player[1]);
-			if (dtotal === ptotal) {
-				cctmp += 'P';
-			}
-			else if (dtotal > ptotal) {
-				cctmp += 'D'; }
-			else {
-				cctmp += 'W';
-			}
-			return cctmp;
-		}
-
-		morechk = false;
-hand:
-		while(true) {
-			shuffle();
-			dk.console.gotoxy(1, 11);
-			lw('`r0`%Shuffling.');
-			for (i=0; i<9; i += 1) {
-				mswait(100);
-				dk.console.gotoxy(1, 12);
-				sw(shuffle_strs[i%shuffle_strs.length]);
-			}
-			hands.dealer = [[]];
-			hands.player = [[]];
-			// DIFF: startgold was reset to player.gold here.
-			// startgold = player.gold;
-			dk.console.gotoxy(0, 21);
-			lw('`r0`2Gold on hand: `$'+pretty_int(player.gold));
-			dk.console.gotoxy(0, 22);
-			lw('`r0                                                                              ');
-			show_total(true, 0, 0);
-			show_total(false, 0, 0);
-			while(true) {
-				wizclr_scr(1);
-				foreground(10);
-				dk.console.gotoxy(1, 11);
-				sw('How much');
-				dk.console.gotoxy(1, 12);
-				sw('ya gonna');
-				dk.console.gotoxy(1, 13);
-				sw('wager?');
-				foreground(4);
-				background(2);
-				dk.console.gotoxy(37, 19);
-				bet = parseInt(getstr(38, 19, 8, 1, 15, '200', {integer:true, input_box:true, select:true}).trim(), 10);
-				if (isNaN(bet) || bet === 0) {
-					wizclr_scr(1);
-					foreground(10);
-					dk.console.gotoxy(1, 11);
-					sw('Fine, maybe');
-					dk.console.gotoxy(1, 12);
-					sw('later.');
-					wizmore();
-					break hand;
-				}
-				if (bet < 200) {
-					dk.console.gotoxy(1, 14);
-					lw('`0`r0Too little!');
-					wizmore();
-					wizclr_scr(1);
-				}
-				else if (bet > player.level * 1000) {
-					dk.console.gotoxy(1, 14);
-					lw('`0`r0Too much!');
-					wizmore();
-					wizclr_scr(1);
-				}
-				else if (player.gold < bet) {
-					wizclr_scr(1);
-					foreground(10);
-					dk.console.gotoxy(1, 11);
-					sw('Hey! you');
-					dk.console.gotoxy(1, 12);
-					sw('don\'t have');
-					dk.console.gotoxy(1, 13);
-					sw('enough gold!');
-					wizmore();
-					break hand;
-				}
-				else {
-					break;
-				}
-			}
-			player.gold -= bet;
-			dk.console.gotoxy(0, 21);
-			lw('`r0`2Gold on hand: `$'+pretty_int(player.gold)+'            ');
-			deal(1, 1, false);
-			deal(2, 1, true);
-			deal(1, 1, false);
-			deal(2, 1, true);
-			res = card_check();
-			switch (res) {
-				case 'BUST':
-					foreground(10);
-					wizclr_scr(1);
-					dk.console.gotoxy(1,11);
-					switch (random(3)) {
-						case 0:
-							sw('You busted!');
-							dk.console.gotoxy(1,12);
-							sw('Better luck');
-							dk.console.gotoxy(1,13);
-							sw('next time.');
-							break;
-						case 1:
-							sw('Oh too bad!');
-							dk.console.gotoxy(1,12);
-							sw('Maybe next');
-							dk.console.gotoxy(1,13);
-							sw('hand? (haw!)');
-							break;
-						case 2:
-							sw('You busted!');
-							dk.console.gotoxy(1,12);
-							sw('Have you');
-							dk.console.gotoxy(1,13);
-							sw('played this');
-							dk.console.gotoxy(1,14);
-							sw('game before?');
-							break;
-					}
-					wizmore();
-					break;
-				case 'BLACKJACK':
-					foreground(10);
-					bet *= 3;
-					player.gold += bet;
-					if (player.gold > 2000000000) {
-						player.gold = 2000000000;
-					}
-					wizclr_scr(1);
-					dk.console.gotoxy(1,11);
-					sw('You got a');
-					dk.console.gotoxy(1,12);
-					sw('Blackjack!?');
-					dk.console.gotoxy(1,13);
-					sw('Are you');
-					dk.console.gotoxy(1,14);
-					sw('cheating?!');
-					dk.console.gotoxy(1,16);
-					sw('You win');
-					dk.console.gotoxy(1,17);
-					lw('`$'+pretty_int(bet)+'`0');
-					dk.console.gotoxy(1,18);
-					sw('Gold.');
-					wizmore();
-					break;
-				case 'DBUST':
-					foreground(10);
-					bet *= 2;
-					player.gold += bet;
-					if (player.gold > 2000000000) {
-						player.gold = 2000000000;
-					}
-					wizclr_scr(1);
-					dk.console.gotoxy(1,11);
-					switch(random(3)) {
-						case 0:
-							sw('I busted!');
-							dk.console.gotoxy(1,12);
-							sw('See? You');
-							dk.console.gotoxy(1,13);
-							sw('win ');
-							dk.console.gotoxy(1,15);
-							lw('`$'+pretty_int(bet)+'`0');
-							dk.console.gotoxy(1,16);
-							sw('Gold.');
-							break;
-						case 1:
-							sw('Looks like');
-							dk.console.gotoxy(1,12);
-							sw('I busted.');
-							dk.console.gotoxy(1,14);
-							sw('You win');
-							dk.console.gotoxy(1,15);
-							lw('`$'+pretty_int(bet)+'`0');
-							dk.console.gotoxy(1,16);
-							sw('Gold... Arg.');
-							break;
-						case 2:
-							sw('I busted!');
-							dk.console.gotoxy(1,12);
-							sw('Damnit!');
-							dk.console.gotoxy(1,14);
-							sw('You win');
-							dk.console.gotoxy(1,15);
-							lw('`$'+pretty_int(bet)+'`0');
-							dk.console.gotoxy(1,16);
-							sw('Gold.');
-							break;
-					}
-					wizmore();
-					break;
-				case 'DBLACKJACK':
-					foreground(10);
-					wizclr_scr(1);
-					dk.console.gotoxy(1, 11);
-					switch(random(3)) {
-						case 0:
-							sw('Dealer gets');
-							dk.console.gotoxy(1,12);
-							sw('Blackjack!');
-							dk.console.gotoxy(1,13);
-							sw('Aw, too bad');
-							dk.console.gotoxy(1,14);
-							sw('for the big');
-							dk.console.gotoxy(1,15);
-							sw('human.');
-							break;
-						case 1:
-							sw('Blackjack!');
-							dk.console.gotoxy(1,12);
-							sw('I\'m hot');
-							dk.console.gotoxy(1,13);
-							sw('today!');
-							break;
-						case 2:
-							sw('Dealer gets');
-							dk.console.gotoxy(1,12);
-							sw('Blackjack!');
-							dk.console.gotoxy(1,13); 
-							sw('Not your');
-							dk.console.gotoxy(1,14);
-							sw('day is it?');
-							break;
-					}
-					wizmore();
-					break;
-				case 'PUSH':
-					foreground(10);
-					wizclr_scr(1);
-					dk.console.gotoxy(1,11);
-					sw('It\'s a push!');
-					dk.console.gotoxy(1,12);
-					sw('I guess it\'s');
-					dk.console.gotoxy(1,13);
-					sw('better than');
-					dk.console.gotoxy(1,14);
-					sw('losing.');
-					player.gold += bet;
-					if (player.gold > 2000000000) {
-						player.gold = 2000000000;
-					}
-					wizmore();
-					break;
-				case 'DWIN':
-					foreground(10);
-					wizclr_scr(1);
-					dk.console.gotoxy(1,11);
-					sw('Looks like');
-					dk.console.gotoxy(1,12);
-					sw('you lose.');
-					dk.console.gotoxy(1,13);
-					sw('Oh well!');
-					dk.console.gotoxy(1,14);
-					sw('better luck');
-					dk.console.gotoxy(1,15);
-					sw('next time.');
-					wizmore();
-					break;
-				case 'WIN':
-					foreground(10);
-					wizclr_scr(1);
-					dk.console.gotoxy(1,11);
-					bet *= 2;
-					player.gold += bet;
-					if (player.gold > 2000000000) {
-						player.gold = 2000000000;
-					}
-					switch(random(3)) {
-						case 0:
-							sw('That beats');
-							dk.console.gotoxy(1,12);
-							sw('my hand!');
-							dk.console.gotoxy(1,14);
-							sw('You win');
-							dk.console.gotoxy(1,15);
-							lw('`$'+pretty_int(bet)+'`0');
-							dk.console.gotoxy(1,16);
-							sw('Gold, Loser.');
-							break;
-						case 1:
-							sw('You win!');
-							dk.console.gotoxy(1,12);
-							sw('Are you');
-							dk.console.gotoxy(1,13);
-							sw('counting?');
-							dk.console.gotoxy(1,15);
-							sw('You win');
-							dk.console.gotoxy(1,16);
-							lw('`$'+pretty_int(bet)+'`0');
-							dk.console.gotoxy(1,17);
-							sw('Gold.');
-							break;
-						case 2:
-							sw('You win!');
-							dk.console.gotoxy(1,12);
-							sw('Not too bad');
-							dk.console.gotoxy(1,14);
-							sw('for a kid...');
-							dk.console.gotoxy(1,15);
-							sw('You win');
-							dk.console.gotoxy(1,16);
-							lw('`$'+pretty_int(bet)+'`0');
-							dk.console.gotoxy(1,17);
-							sw('Gold.');
-							break;
-					}
-					wizmore();
-					break;
-				case 'PP':
-				case 'PD':
-				case 'PW':
-				case 'DP':
-				case 'DD':
-				case 'DW':
-				case 'WP':
-				case 'WD':
-				case 'WW':
-					tmp = 0;
-					wizclr_scr(1);
-					dk.console.gotoxy(1, 11);
-					lln('`0I have '+hand_total(hands.dealer[0])+'.');
-					mswait(1500);
-					dk.console.gotoxy(1, 12);
-					switch (res[0]) {
-						case 'W':
-							sw('Hand1 Wins!');
-							tmp += bet * 2;
-							break;
-						case 'P':
-							sw('Hand1 Push!');
-							tmp += bet;
-							break;
-						case 'D':
-							sw('Hand1 Loses!');
-							break;
-					}
-					dk.console.gotoxy(1, 14);
-					switch (res[1]) {
-						case 'W':
-							sw('Hand2 Wins!');
-							tmp += bet * 2;
-							break;
-						case 'P':
-							sw('Hand2 Push!');
-							tmp += bet;
-							break;
-						case 'D':
-							sw('Hand2 Loses!');
-							break;
-					}
-					dk.console.gotoxy(1, 15);
-					sw('You win');
-					dk.console.gotoxy(1, 16);
-					lw('`$'+tmp+'`0');
-					dk.console.gotoxy(1, 17);
-					sw('Gold.');
-					player.gold += tmp;
-					if (player.gold > 2000000000) {
-						player.gold = 2000000000;
-					}
-					wizmore();
-					break;
-			}
-			wizclr_scr(1);
-			wizclr_scr(2);
-			dk.console.gotoxy(1, 11);
-			foreground(10);
-			sw('Play again?');
-			dk.console.gotoxy(67, 11);
-			lw('`2(`0Y`2)es (`0N`2)o. ');
-			ch = getkey().toUpperCase();
-			if (ch !== 'Y') {
-				ch = 'N';
-			}
-			if (ch === 'N') {
-				break;
-			}
-			wizclr_scr(1);
-			wizclr_scr(2);
-			wizclr_scr(3);
-			wizclr_scr(4);
-			wizclr_scr(5);
-			wizclr_scr(6);
-		}
-		foreground(10);
-		if (player.gold > startgold) {
-			wizclr_scr(1);
-			dk.console.gotoxy(1,11);
-			sw('Quitting');
-			dk.console.gotoxy(1,12);
-			sw('while your');
-			dk.console.gotoxy(1,13);
-			sw('ahead?');
-			dk.console.gotoxy(1,14);
-			sw('Smart move.');
-		}
-		else if (player.gold < startgold) {
-			wizclr_scr(1);
-			dk.console.gotoxy(1,11);
-			sw('Come back');
-			dk.console.gotoxy(1,12);
-			sw('soon. We');
-			dk.console.gotoxy(1,13);
-			sw('enjoyed');
-			dk.console.gotoxy(1,14);
-			sw('your money!');
-			dk.console.gotoxy(1,15);
-			sw('::snicker::');
-		}
-		else {
-			wizclr_scr(1);
-			dk.console.gotoxy(1,11);
-			sw('It\'s been');
-			dk.console.gotoxy(1,12);
-			sw('nice doing');
-			dk.console.gotoxy(1,13);
-			sw('business');
-			dk.console.gotoxy(1,14);
-			sw('with you...');
-		}
-		wizmore();
-		dk.console.gotoxy(0,23);
-		morechk = mc;
-		curlinenum = 1;
-	}
-
-	while(true) {
-		get_head('Playing Black Jack with '+who);
-		sln('');
-		lln('  `%'+who+' `0looks at you and asks `%"How about a Game of Black Jack, kid?"');
-		sln('');
-		sln('');
-		lln('  `2(`0G`2)ive the game a chance');
-		lln('  (`0T`2)ell '+who+' to screw off');
-		do {
-			command_prompt();
-			ch = getkey().toUpperCase();
-		} while('GT?'.indexOf(ch) === -1);
-		sln('');
-		foreground(0);
-		switch(ch) {
-			case '?':
-				break;
-			case 'T':
-				sln('');
-				lln('  `2"`0Your loss, kid.  Forget you ever saw me!`2"');
-				sln('');
-				more();
-				return;
-			case 'G':
-				sln('');
-				lln('  `0"Excellent!" `2'+who+' exclaims as he sits down at the table!');
-			
-				sln('');
-				lln('  `2"`0As for the rules... I have to stay on a 17.  You can double down on a');
-				lln('  9, 10 or 11, and I do allow splitting pairs multiple times.`2"');
-				sln('');
-				sln('  You rub your chin - with any luck you\'ll double your money...');
-				sln('');
-				more();
-				sclrscr();
-				lrdfile('BJTABLE');
-				play_hand();
-				return;
-		}
-	}
-}
-
 
 function load_monster(num) {
 		var fname = game_or_exec('lenemy.bin');
@@ -2888,13 +2171,13 @@ function veldore_cabin(trainer) {
 			sln('');
 			mswait(2000);
 			lln('  `2After some time, the large wooden door slowly opens');
-			lw('  and you can tell immdiately that '+trainer.name+' is');
-			lw('  `% '); wait(); wait();wait();
+			lw('  and you can tell immdiately that '+trainer.name+' is ');
+			lw('`%'); wait(); wait();wait();
 			vrand = random(5);
 			
 			switch ( vrand ) {
 				case 0:
-					say_slow2('drunk!');
+					say_slow2(' drunk!');
 					sln('');
 					sln('');				
 					lln('  `%"WHAT '+curse+' DO YOU WANT, KID?"`0,'+trainer.name+' Yells.');
@@ -2920,7 +2203,7 @@ function veldore_cabin(trainer) {
 				break;
 				
 				case 1:
-					say_slow2('annoyed!');
+					say_slow2(' annoyed!');
 					sln('');
 					sln('');
 					lln('  `0'+trainer.name+' looks at you with a perturbed look on his face,');
@@ -2940,21 +2223,20 @@ function veldore_cabin(trainer) {
 					
 					switch ( ch ) {
 						case 'J':
-							lln('  `2Just saying hello!');
+							lln('  `2Hey, '+trainer.name+ ', just saying hello!');
 							sln('');
 							more_nomail();
-							lln('  `6'+trainer.name+' `0looks at you oddly then he pulls out a deck of cards');
-							lln('  and points at the table in the corner of the room.');
+							lln('  `6'+trainer.name+' `0looks at you oddly then and points');
+							lln('  at the table in the corner of the room.');
+							sln('');
 							lln('  You sit down and look at him expectantly!');
 							sln('');
 							more_nomail();
-							bjack(trainer.name);
+							guessing_game(trainer.name);
 							sln('');
 							lln('  `%"Well, that was fun, '+trainer.name+'.  We should do it');
 							lln('  again sometime!"`0, you say as you get up and leave.');
-							sln('');
-							player.forest_fights+=3;
-							lln('  `$YOU GAIN 3 FOREST FIGHTS');							
+							sln('');							
 						break;
 						
 						case 'T':
@@ -2989,7 +2271,7 @@ function veldore_cabin(trainer) {
 				break;
 				
 				case 2:
-					say_slow2('happy to see you');
+					say_slow2(' happy to see you');
 					sln('');
 					sln('');
 					lln('  `0'+trainer.name+' looks at you with a happy look on his face,');
@@ -3046,7 +2328,7 @@ function veldore_cabin(trainer) {
 				break;
 				
 				case 3:
-					say_slow2('angry');
+					say_slow2(' angry');
 					sln('');
 					lln('  `%"WHAT '+curse+' DO YOU WANT, KID?"`0, '+trainer.name+' Yells.');
 					sln('');
@@ -3072,7 +2354,7 @@ function veldore_cabin(trainer) {
 				break;
 				
 				case 4:
-					say_slow2('busy');
+					say_slow2(' busy');
 					sln('');
 					sln('');					
 					more_nomail();
@@ -3297,7 +2579,7 @@ function search() {
 	wait(); wait(); wait();
 	
 	var sum_shit = random(11);
-sum_shit = 3;	
+
 	switch ( sum_shit ) {	
 		case 0:
 			reward = Math.round(player.hp / 2);
@@ -3616,7 +2898,7 @@ function main()
 	var ch;
 	var b;
 	var i;
-
+	var what = 'exp';
 	foreground(2);
 	background(0);
 
@@ -3729,7 +3011,7 @@ while(!done) {	// let's player view instructions without kicking them out as tho
 	}
 }	
 }
-
+/*
 sln('');
 get_head('`$The Grab Bag '+gbv+' by mortifis\r\n  `2An IGM for `4L`%egend `4O`%f the `4R`%ed `4D`%ragon `$V'+ver);
 sln('');
@@ -3750,7 +3032,7 @@ sln('');
 say_slow2('   to break your thumbs!"');
 sln2('');
 more_nomail();
-
+*/
 if(argv[0] == 'w') wake_up();  // sleeping at either seth's or jennie's
 if(argv[0] == 'v') wake_up_at_veldores();
 
