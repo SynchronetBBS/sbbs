@@ -266,17 +266,10 @@ var guess = [
 		rewardstr1:'Wow, check you out, you\'re pretty smart',
 		rewardstr2:'Wow, I thought that was obvious!',
 		give:25
-	},	
+	}	
 				
 												
 ];
-
-function RemoveGuess(arr, value) { // defunct
-   return arr.filter(function(ele)
-   {
-       return ele != value;
-   });
-}
 
 function guessing_game(who) {  // Yes, I know this is novice level scripting but it works :-)
 	var questions = undefined;
