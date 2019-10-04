@@ -145,18 +145,7 @@ var guess = [
 		rewardstr1:'You know, you\'re pretty smart kid',
 		rewardstr2:'Wow, it took you long enough!',
 		give:10
-	},
-	{
-		item:'CONDOM',
-		clue1:'It\'s helps protect you',
-		clue2:'It\'s very thin',
-		clue3:'It is made from goat skin',
-		clue4:'It reassures Violet',
-		clue5:'It is used to not have kids',
-		rewardstr1:'You know, you\'re pretty smart kid',
-		rewardstr2:'Wow, it took you long enough!',
-		give:25
-	},
+	},	
 	{
 		item:'GEM',
 		clue1:'It\'s an object',
@@ -167,7 +156,119 @@ var guess = [
 		rewardstr1:'You know, you\'re pretty smart kid',
 		rewardstr2:'Wow, it took you long enough!',
 		give:5
-	}		
+	},
+	{
+		item:'GOLD',
+		clue1:'It\'s an object',
+		clue2:'It is shiny',
+		clue3:'It is found in the Forest',		
+		clue4:'It has coin value',
+		clue5:'It is often given as a reward',
+		rewardstr1:'You know, you\'re not as dumb as they say you are',
+		rewardstr2:'Wow, it took you long enough!',
+		give:5
+	},
+	{
+		item:'SETH',
+		clue1:'It\'s an person',
+		clue2:'This person has always been in The Realm',
+		clue3:'This person can be found in the Inn',		
+		clue4:'This person sings like a Mo Fo',
+		clue5:'This person is called The Bard',
+		rewardstr1:'You know, kid, you\'re alright',
+		rewardstr2:'Wow, it took you long enough!',
+		give:25
+	},
+	{
+		item:'SEXY',
+		clue1:'It\'s an word',
+		clue2:'It is a description',
+		clue3:'It is how you would describe Jennie',		
+		clue4:'It another way you would describe Jennie',
+		clue5:'It is the best way to describe Jennie',
+		rewardstr1:'Hell ya, Jennie is sexy!',
+		rewardstr2:'Wow, it took you long enough!',
+		give:25
+	},
+	{
+		item:'HOTT',
+		clue1:'It\'s an word',
+		clue2:'It is a description',
+		clue3:'It is how you would describe Jennie',		
+		clue4:'It another way you would describe Jennie',
+		clue5:'It is the best way to describe Jennie',
+		rewardstr1:'You spelled Hot wrong, but, Yeah! Jeannie is Hot',
+		rewardstr2:'Wow, it took you long enough!',
+		give:25
+	},
+	{
+		item:'WOOD NYMPH',
+		clue1:'It\'s a person',
+		clue2:'It is a mystical creature',
+		clue3:'It is very sexual',		
+		clue4:'It seduces warriors',
+		clue5:'It is made of wood',
+		rewardstr1:'Wow, check you out, you\'re pretty smart',
+		rewardstr2:'Wow, it took you long enough!',
+		give:25
+	},
+	{
+		item:'JENNIE',
+		clue1:'It\'s a person',
+		clue2:'It is a seldom mentioned person',
+		clue3:'It is very sexual',		
+		clue4:'It seduces warriors',
+		clue5:'Seth Able is in love with it',
+		rewardstr1:'Wow, check you out, you\'re pretty smart',
+		rewardstr2:'Wow, do you even play LORD?',
+		give:25
+	},
+	{
+		item:'VIOLET',
+		clue1:'It\'s a person',
+		clue2:'It is a sexy person',
+		clue3:'It is very sexual',		
+		clue4:'It works at the Inn',
+		clue5:'It is in love with The Barb',
+		rewardstr1:'Wow, check you out, you\'re pretty smart',
+		rewardstr2:'Wow, have you ever played LORD before?',
+		give:25
+	},
+	{
+		item:'ARMOUR',
+		clue1:'It\'s an object',
+		clue2:'It helps protect you',
+		clue3:'It is very heavy',		
+		clue4:'It is very expensive',
+		clue5:'It helps stop warriors weapons',
+		rewardstr1:'Wow, check you out, you\'re pretty smart',
+		rewardstr2:'Wow, I thought that was obvious!',
+		give:25
+	},
+{
+		item:'TAVERN',
+		clue1:'It\'s an place in the Forest',
+		clue2:'It is not a castle',
+		clue3:'It is very smokey',		
+		clue4:'Chance works there',
+		clue5:'You can drink and gamle there',
+		rewardstr1:'Wow, check you out, you\'re pretty smart',
+		rewardstr2:'Wow, I thought that was obvious!',
+		give:25
+	},
+	{
+		item:'DEUCE STEPHEN HURD',
+		clue1:'It\'s a person',
+		clue2:'This person is a real human',
+		clue3:'This person is a programmer',		
+		clue4:'This person is never on Dove-Net',
+		clue5:'This person ported LORD to Java Script',
+		rewardstr1:'Wow, check you out, you\'re pretty smart',
+		rewardstr2:'Wow, I thought that was obvious!',
+		give:25
+	},	
+				
+												
 ];
 
 function RemoveGuess(arr, value) { // defunct
@@ -181,14 +282,14 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 	var questions = undefined;
 	var old_questions = guess;
 	var question = undefined;	
-	var start_questions = guess.length;
-	var questions_left = guess.length;		
+	var start_questions = 5;
+	var questions_left = start_questions;		
 	var done = false;
 	var wrong = 0;
 	var did = 0;
 	var correct = undefined;
 	var answer = undefined;
-	var x = 0;
+	var x = 0;	
 	var amt = 0;
 	
 	lln('  `2Since you are here, would you like to play');
@@ -220,7 +321,7 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 	lln('  There are `0'+pretty_int(start_questions)+' `2questions total.');
 	sln('');
 	
-	while(!done) {
+	while(!done && did <= start_questions ) {
 		did += 1;
 		correct = false;
 		questions = [];
@@ -258,6 +359,7 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 			answer = console.getstr({input_box:true}).trim().toUpperCase();
 			
 			if(answer.match(question.item)) {
+				sln('');
 				lln('  `0CORRECT!');
 				sln('');
 				if(i<4) lln('  `6'+question.rewardstr1); else lln('  `7'+question.rewardstr2);				
@@ -265,7 +367,9 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 				amt += player.level * question.give;			
 			}
 			else {
-				lln('  `4WRONG!');
+				sln('');
+				lln('  `4NOPE! `0Try again');
+				sln('');
 				wrong += 1;
 				i += 1;
 			}
@@ -292,7 +396,7 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 				break;
 			}
 		
-		lln('  `2There are '+pretty_int(questions.length)+' remaining.');
+		lln('  `2There are '+pretty_int(questions_left)+' remaining.');
 		sln('');
 		lln('  `2Would you like to play Again?');
 			sln('');
@@ -309,6 +413,8 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 			
 			if(ch === 'N')
 			{
+				lln('  `%"No, I have had enough of this game.`"');
+				sln('');
 				done = true;
 			}		
 	}
@@ -483,10 +589,10 @@ function wake_up_at_veldores() { // changed from Veldore to current Trainer
 	get_head('Waking up at '+trainer.name+'\'s');
 	lln('  `2You slowly open you eyes, and see '+trainer.name+' making coffee.');
 	lln('  `2After a pleasant chat, you get up, don your `$'+player.arm);
-	lln('  `2pick up your `$'+player.weapon+' `2and');
-	lln('  head back to `8The `$Grab Bag');
+	lln('  `2pick up your `$'+player.weapon+' `2and head back to');
+	lln('  `8The `$Grab Bag');
+	sln('');
 	player.forest_fights += 2;
-	player.laid +=1;
 	log_line('  `5'+player.name+' `0slept at'+trainer.name+'\'s Cabin');
 	more_nomail();
 	main();
@@ -524,6 +630,7 @@ function wake_up() {
 	lln('  you get up, don your `$'+player.arm);
 	lln('  `2pick up your `$'+player.weapon+' `2and');
 	lln('  head back to `8The `$Grab Bag');
+	sln('');
 	player.forest_fights += 2;
 	player.laid +=1;
 	log_line('  `5'+player.name+' `0slept at '+lover+'\'s Cabin');
@@ -658,17 +765,20 @@ function seth_invite() {
 	}	
 }
 
-function veldore_invite() { // finish_this
+function veldore_invite() {
 	get_head('Veldore invited you to His Cabin');
 	amt = Math.round(player.exp/10);
 	sln('');
 	lln('  `2Veldore invites you in and pours you a cup of tea.');
 	sln('');
+	lln('  `2Veldore looks at you oddly, then says');
+	sln('');
+	guessing_game('Veldore');
+	sln('');	
 	lln('  `2After a pleasant visit you decide to head back');
 	lln('  to town.');
 	sln('');					
 	more_nomail();
-	lln('  `2For being polite you recieve `%'+pretty_int(amt)+' Experience.');
 	sln('');
 	lln('  `2Your Charm increases by `$2');
 	sln('');
@@ -812,15 +922,14 @@ function nymph_sex() {
 	sln('');		
 }
 
-function nymph_story() {
+function nymph_story() { // TODO: add random kids based on charm
 	var ch = '';
 	var amt = undefined;
 	var dryads = '';
 	var dryads1 = '';
 	var dryads2 = '';
 	dryads = '  Dryads are also known as `%\'Ladies of the Trees\'\r\n';
-	dryads += '  `0and We are ALL `$VERY, VERY HORNY!!';
-	
+	dryads += '  `0and We are ALL `$VERY, VERY HORNY!!';	
 	
 	get_head('Getting to know '+nymph.name);
 	
@@ -1298,7 +1407,7 @@ function cabin_shit(who) {
 					lw('  the bushes, you turn around and see `%');					
 					
 					var srand = random(3);
-					//srand = 2; // kill this
+					
 					switch (srand) {
 						
 						case 0:							
@@ -1968,7 +2077,7 @@ function jennie_cabin() {
 				lln('  `2You turn away from the door and head back to');
 				lln('  with a glum feeling.');
 				lln('');
-				lln('  `%3SOME WHERE MAGIC HAS HAPPENED');
+				lln('  `%SOME WHERE MAGIC HAS HAPPENED');
 				more_nomail();
 				player.forest_fights += 2;
 				player.exp += 100;
@@ -2168,7 +2277,7 @@ function veldore_cabin(trainer) {
 			get_head('Knocking on '+trainer.name+'\'s Door');
 			lln('  `2As a courteous Warrior, you politely knock');
 			sln('  on '+trainer.name+'\'s door.');
-			sln('');
+			sln(' ');
 			mswait(2000);
 			lln('  `2After some time, the large wooden door slowly opens');
 			lw('  and you can tell immdiately that '+trainer.name+' is ');
@@ -2291,27 +2400,39 @@ function veldore_cabin(trainer) {
 					switch ( ch ) {
 						case 'A':
 							get_head('Having a Drink with '+trainer.name);
-							lln('  `2After a few drinks and some laughs '+trainer.name+' offers');
-							lln('  you a place to crash for the night');
+							lln('  `2"After a few drinks and some laughs '+trainer.name+' says,');
+							lln('  `%"Hey, kid, what do you want to do now?"');
 							sln('');
-							lln('  `2(`0A`2)ccept');
+							lln('  `2(`0A`2)sk for a place to sleep it off');
+							lln('  `2(`0P`2)lay a game');
 							lln('  `2(`0S`2)ay thank you and leave');
 							sln('');
 							lw('  `2You decide to ... (`$S`2) `%');
 							ch = getkey().toUpperCase();
-							if('AS'.indexOf(ch) == -1) {
+							if('ASP'.indexOf(ch) == -1) {
 								ch = 'S';
 							}
 							sln(ch);
 							sln('');							
 							switch ( ch) {
 								case 'A':
-								lln('  `2You accept his offer and find comfortable place to sleep.');
+								lln('  `2You if he has a comfortable place to lay down.');
+								sln('');
+								lln('  `%"Ya, sure, out in the barn if you want"`2, he says');
 								sln('');
 								more_nomail();
 								sleep_here('v');
 								break;
 							}
+						break;
+						
+						case 'P':
+							lln('  `2I didn\'t hear what you mumbled, but');
+							guessing_game(trainer.name);
+							sln('');
+							lln('  `%"Well, that was fun, '+trainer.name+'.  We should do it');
+							lln('  again sometime!"`0, you say as you get up and leave.');
+							sln('');
 						break;
 						
 						case 'S':
@@ -2446,8 +2567,8 @@ function veldore_cabin(trainer) {
 					sln('');
 					more_nomail();
 					lln('  `%"HEY!"`0, '+trainer.name+' yells, `%"Thanks for dropping by,');
-					lln('  sorry, I am little busy, I have a Big Training Session tomorrow,');
-					lln('  here, take something for your troubles!');
+					lln('  sorry, I am little busy, I have a Big Training Session,');
+					lln('  tomorrow, here, take something for your troubles!');
 					sln('');
 					more_nomail();
 					amt = player.level * 10;
@@ -2482,52 +2603,67 @@ function veldore_cabin(trainer) {
 					switch ( ch ) {
 						case 'A':
 							get_head('Having a Drink with '+trainer.name);
-							lln('  `2After a few drinks and some laughs '+trainer.name+' offers');
-							lln('  you a place to crash for the night');
+							lln('  `2"After a few drinks and some laughs '+trainer.name+' says,');
+							lln('  `%"Hey, kid, what do you want to do now?"');
 							sln('');
-							lln('  `2(`0A`2)ccept');
+							lln('  `2(`0A`2)sk for a place to sleep it off');
+							lln('  `2(`0P`2)lay a game');
 							lln('  `2(`0S`2)ay thank you and leave');
 							sln('');
 							lw('  `2You decide to ... (`$S`2) `%');
 							ch = getkey().toUpperCase();
-							if('AS'.indexOf(ch) == -1) {
+							if('ASP'.indexOf(ch) == -1) {
 								ch = 'S';
 							}
 							sln(ch);
 							sln('');							
 							switch ( ch) {
-								case 'A':
-								lln('  `2You accept his offer and find comfortable place to sleep.');
+							
+							case 'A':
+								lln('  `2You if he has a comfortable place to lay down.');
+								sln('');
+								lln('  `%"Ya, sure, out in the barn if you want"`2, he says');
 								sln('');
 								more_nomail();
 								sleep_here('v');
-								break;
-							}
-						break;
+							break;
+														
+					
+						
+							case 'P':
+								lln('  `2I didn\'t hear what you mumbled, but');
+								guessing_game(trainer.name);
+								sln('');
+								lln('  `%"Well, that was fun, '+trainer.name+'.  We should do it');
+								lln('  again sometime!"`0, you say as you get up and leave.');
+								sln('');
+								break;						
 										
-						case 'S':
-							lln('  `%Um, no, sorry, but I really have to go, but thank you!"');
-							lln('  `0you say as you turn around and leave.');
-							sln('');
-							lln('  `$You Gain '+pretty_int(player.level * 10)+' Experience!');							
-							player.exp += player.level * 10;							
-							sln('');
-							more_nomail();
-							good_bye();
-						break;
-				}				
+							case 'S':
+								lln('  `%Um, no, sorry, but I really have to go, but thank you!"');
+								lln('  `0you say as you turn around and leave.');
+								sln('');
+								lln('  `$You Gain '+pretty_int(player.level * 10)+' Experience!');							
+								player.exp += player.level * 10;							
+								sln('');
+								more_nomail();
+								good_bye();
+							break;
+							}
+							}				
 				break;
 				
 				case 4: // trainer is happy ... plays cards
 					lln('  pleasantly surprised');
 					sln('');
 					
-					lln('  `6'+trainer.name+' `0looks at you oddly then he pulls out a deck of cards');
-					lln('  and points at the table in the corner of the room.');
+					lln('  `6'+trainer.name+' `0looks at you oddly then points at');
+					lln('  a table in the corner of the room.');
+					sln('');
 					lln('  You sit down and look at him expectantly!');
 					sln('');
 					more_nomail();
-					bjack(trainer.name);
+					guessing_game(trainer.name);
 					sln('');
 					lln('  `%"Well, that was fun, '+trainer.name+'.  We should do it');
 					lln('  again sometime!"`0, you say as you get up and leave.');
@@ -2578,7 +2714,7 @@ function search() {
 	wait(); wait(); wait();
 	
 	var sum_shit = random(11);
-
+	
 	switch ( sum_shit ) {	
 		case 0:
 			reward = Math.round(player.hp / 2);
@@ -2843,6 +2979,22 @@ function good_bye(what) {
 	exit(0);
 }
 
+function whats_this() {
+	get_head('What is The Grab Bag');
+	lln('  `0The Grab Bag is a simple IGM that presents');
+	lln('  random events.  It could be a very fast played');
+	lln('  game where all you get is a quick reward or get');
+	lln('  hit with a penalty and lose something.');
+	sln('');
+	lln('  If you are lucky, you will find a map, which, then');
+	lln('  offers more rewards or a penalty, more dialogue,');
+	lln('  a chance to get laid, have a baby, find a place');
+	lln('  for the night, battle a Monster, or even battle');
+	lw('  `4T`%he `4R`%ed `4D`%ragon`0!');
+	sln('');
+	more_nomail();	
+}
+
 var grabbagDefs = [
 	{
 		prop:'day',
@@ -2977,12 +3129,12 @@ while(!done) {	// let's player view instructions without kicking them out as tho
 	sln('');
 	lln('  `2(`0C`2)limb the stairs');
 	lln('  `2(`0S`2)earch the forest instead');
-	//lln('  `2(`0T`2)odo - Feature Plans');
+	lln('  `2(`0W`2)hat is This');
 	lln('  `2(`0H`2)ead back to town');
 	sln('');
 	lw('  `2You decide to... [`0C`2] :`%');
 	ch = getkey().toUpperCase();
-	if ('HCS'.indexOf(ch) == -1) {
+	if ('HCSW'.indexOf(ch) == -1) {
 		ch = 'C';
 	}
 	sln(ch);
@@ -3004,7 +3156,7 @@ while(!done) {	// let's player view instructions without kicking them out as tho
 		good_bye();
 	}
 	
-	if (ch == "T") {
+	if (ch == "W") {
 		whats_this();
 	}
 }	
