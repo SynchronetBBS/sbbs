@@ -533,7 +533,7 @@ function postReply(sub, body, pid) {
         msgBase.close();
         if (pHeader === null) return ret;
         var header = {
-            'to' : pHeader.from,
+            'to' : pHeader.from == user.alias ? pHeader.to : pHeader.from,
             'from' : user.alias,
             'subject' : pHeader.subject,
             'thread_id' : (
