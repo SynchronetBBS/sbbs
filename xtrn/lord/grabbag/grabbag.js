@@ -1,6 +1,6 @@
 'use strict';
 
-// The Grab Bag v1.1 - a LORD 5.00 JS IGM by Mortifis 
+// The Grab Bag v1.1 - a LORD 5.00 JS IGM by Mortifis
 
 var x1 = 0;
 var y1 = 0;
@@ -9,20 +9,20 @@ var nymphs = [
 	{
 		name:'Meliai',
 		place:'Ash Trees',
-		years:2177,		
+		years:2177,	
 		story1:'I was a very young girl when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
 		saw:true,
 		sex:false,
 		fertile:1,
-		charm:10, // charm needed to have random(5); player.kids += nymph.fertile;
-		exp:90 // player.exp += player.exp / nymph.exp;
+		charm:10,
+		exp:90
 	},
 	{
 		name:'Oreiades',
 		place:'Mountain Trees',
-		years:2317,		
+		years:2317,	
 		story1:'I was a young wife when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
@@ -35,7 +35,7 @@ var nymphs = [
 	{
 		name:'Hamadryads',
 		place:'Oak Trees',
-		years:2286,		
+		years:2286,	
 		story1:'I was a shy school girl when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
@@ -48,7 +48,7 @@ var nymphs = [
 	{
 		name:'Malaides',
 		place:'Fruit Trees',
-		years:2981,		
+		years:2981,	
 		story1:'I was a mother of thirten children when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
@@ -61,7 +61,7 @@ var nymphs = [
 	{
 		name:'Daphnaei',
 		place:'Laurel Trees',
-		years:2462,		
+		years:2462,
 		story1:'I was a mother of 4 sons when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
@@ -74,7 +74,7 @@ var nymphs = [
 	{
 		name:'Alseides',
 		place:'Sacred Groves',
-		years:2931,		
+		years:2931,
 		story1:'I was the village prostitute when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
@@ -87,7 +87,7 @@ var nymphs = [
 	{
 		name:'Aulonides',
 		place:'Dragons Glen',
-		years:3142,		
+		years:3142,
 		story1:'I was a very young girl when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
@@ -100,7 +100,7 @@ var nymphs = [
 	{
 		name:'Napaiai',
 		place:'Ables Vale',
-		years:2286,		
+		years:2286,
 		story1:'I was a very young girl when all of the men',
 		story2:'turned into monsters.',
 		story3:'',
@@ -113,7 +113,7 @@ var nymphs = [
 ];
 
 var guess = [
-	{		
+	{
 		item:'HORSE',
 		clue1:'It\'s an animal',
 		clue2:'It\'s tall',
@@ -122,7 +122,7 @@ var guess = [
 		clue5:'You might have one',
 		rewardstr1:'You know, you\'re pretty smart kid',
 		rewardstr2:'Wow, it took you long enough!',
-		give:10 // player.level * guess.give
+		give:10
 	},
 	{
 		item:'FAIRY',
@@ -145,12 +145,12 @@ var guess = [
 		rewardstr1:'You know, you\'re pretty smart kid',
 		rewardstr2:'Wow, it took you long enough!',
 		give:10
-	},	
+	},
 	{
 		item:'GEM',
 		clue1:'It\'s an object',
 		clue2:'It is shiny',
-		clue3:'It is found in the Forest',		
+		clue3:'It is found in the Forest',
 		clue4:'It has value',
 		clue5:'It is often given as a reward',
 		rewardstr1:'You know, you\'re pretty smart kid',
@@ -161,7 +161,7 @@ var guess = [
 		item:'GOLD',
 		clue1:'It\'s an object',
 		clue2:'It is shiny',
-		clue3:'It is found in the Forest',		
+		clue3:'It is found in the Forest',
 		clue4:'It has coin value',
 		clue5:'It is often given as a reward',
 		rewardstr1:'You know, you\'re not as dumb as they say you are',
@@ -172,7 +172,7 @@ var guess = [
 		item:'SETH',
 		clue1:'It\'s an person',
 		clue2:'This person has always been in The Realm',
-		clue3:'This person can be found in the Inn',		
+		clue3:'This person can be found in the Inn',	
 		clue4:'This person sings like a Mo Fo',
 		clue5:'This person is called The Bard',
 		rewardstr1:'You know, kid, you\'re alright',
@@ -183,7 +183,7 @@ var guess = [
 		item:'SEXY',
 		clue1:'It\'s an word',
 		clue2:'It is a description',
-		clue3:'It is how you would describe Jennie',		
+		clue3:'It is how you would describe Jennie',
 		clue4:'It another way you would describe Jennie',
 		clue5:'It is the best way to describe Jennie',
 		rewardstr1:'Hell ya, Jennie is sexy!',
@@ -194,7 +194,7 @@ var guess = [
 		item:'HOTT',
 		clue1:'It\'s an word',
 		clue2:'It is a description',
-		clue3:'It is how you would describe Jennie',		
+		clue3:'It is how you would describe Jennie',
 		clue4:'It another way you would describe Jennie',
 		clue5:'It is the best way to describe Jennie',
 		rewardstr1:'You spelled Hot wrong, but, Yeah! Jeannie is Hot',
@@ -205,7 +205,7 @@ var guess = [
 		item:'WOOD NYMPH',
 		clue1:'It\'s a person',
 		clue2:'It is a mystical creature',
-		clue3:'It is very sexual',		
+		clue3:'It is very sexual',	
 		clue4:'It seduces warriors',
 		clue5:'It is made of wood',
 		rewardstr1:'Wow, check you out, you\'re pretty smart',
@@ -216,7 +216,7 @@ var guess = [
 		item:'JENNIE',
 		clue1:'It\'s a person',
 		clue2:'It is a seldom mentioned person',
-		clue3:'It is very sexual',		
+		clue3:'It is very sexual',
 		clue4:'It seduces warriors',
 		clue5:'Seth Able is in love with it',
 		rewardstr1:'Wow, check you out, you\'re pretty smart',
@@ -227,7 +227,7 @@ var guess = [
 		item:'VIOLET',
 		clue1:'It\'s a person',
 		clue2:'It is a sexy person',
-		clue3:'It is very sexual',		
+		clue3:'It is very sexual',
 		clue4:'It works at the Inn',
 		clue5:'It is in love with The Barb',
 		rewardstr1:'Wow, check you out, you\'re pretty smart',
@@ -238,7 +238,7 @@ var guess = [
 		item:'ARMOUR',
 		clue1:'It\'s an object',
 		clue2:'It helps protect you',
-		clue3:'It is very heavy',		
+		clue3:'It is very heavy',
 		clue4:'It is very expensive',
 		clue5:'It helps stop warriors weapons',
 		rewardstr1:'Wow, check you out, you\'re pretty smart',
@@ -249,7 +249,7 @@ var guess = [
 		item:'TAVERN',
 		clue1:'It\'s an place in the Forest',
 		clue2:'It is not a castle',
-		clue3:'It is very smokey',		
+		clue3:'It is very smokey',
 		clue4:'Chance works there',
 		clue5:'You can drink and gamle there',
 		rewardstr1:'Wow, check you out, you\'re pretty smart',
@@ -260,31 +260,53 @@ var guess = [
 		item:'DEUCE STEPHEN HURD',
 		clue1:'It\'s a person',
 		clue2:'This person is a real human',
-		clue3:'This person is a programmer',		
+		clue3:'This person is a programmer',
 		clue4:'This person is never on Dove-Net',
 		clue5:'This person ported LORD to Java Script',
 		rewardstr1:'Wow, check you out, you\'re pretty smart',
 		rewardstr2:'Wow, I thought that was obvious!',
+		give:50
+	},
+	{
+		item:'HOLL',
+		clue1:'It\'s a person',
+		clue2:'This person is found in the Forest',
+		clue3:'This person is a mutant',	
+		clue4:'This person is half human',
+		clue5:'This person is related to a troll',
+		rewardstr1:'Wow, check you out, you\'re pretty smart',
+		rewardstr2:'Wow, I thought that was obvious!',
 		give:25
-	}	
-				
-												
+	},	
+	{
+		item:'TROLL',
+		clue1:'It\'s a person',
+		clue2:'This person is not human',
+		clue3:'This person lives in the Forest',
+		clue4:'This person is a theif',
+		clue5:'This person has half human offspring',
+		rewardstr1:'Wow, check you out, you\'re pretty smart',
+		rewardstr2:'Wow, I thought that was obvious!',
+		give:15
+	}
+
+
 ];
 
 function guessing_game(who) {  // Yes, I know this is novice level scripting but it works :-)
 	var questions = undefined;
 	var old_questions = guess;
-	var question = undefined;	
+	var question = undefined;
 	var start_questions = 5;
-	var questions_left = start_questions;		
+	var questions_left = start_questions;
 	var done = false;
 	var wrong = 0;
 	var did = 0;
 	var correct = undefined;
 	var answer = undefined;
-	var x = 0;	
+	var x = 0;
 	var amt = 0;
-	
+
 	lln('  `2Since you are here, would you like to play');
 	lln('  a little game?');
 	sln('');
@@ -296,15 +318,15 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 	if ('YN'.indexOf(ch) == -1) {
 			ch = 'Y';
 	}
-	
+
 	sln(ch);
 	sln('');
-	
+
 	if(ch === 'N')
 	{
 		return false;
 	}
-	
+
 	get_head('Playing a game with '+who);
 	lln('  `2Excellent.  This is a Guessing Game.');
 	lln('  `2I will give you clues and you try to');
@@ -313,25 +335,25 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 	more_nomail();
 	lln('  There are `0'+pretty_int(start_questions)+' `2questions total.');
 	sln('');
-	
+
 	while(!done && did <= start_questions ) {
 		did += 1;
 		correct = false;
 		questions = [];
 		questions = old_questions;
-		question = questions[random(questions.length)];	
-		
+		question = questions[random(questions.length)];
+
 		for(var i = 0; i < questions.length; i++) {
 			if(questions[i].item === question.item) x = i;
 		}
-		
+
 		var i = 1;
 		while(!correct  && i <= 5) {
 			switch ( i ) {
 				case 1:
 					lw('  `$'+question.clue1+'. `2Your Guess? `%');
 				break;
-				
+
 				case 2:
 					lw('  `$'+question.clue2+'. `2Your Guess? `%');
 				break;
@@ -339,25 +361,25 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 				case 3:
 					lw('  `$'+question.clue3+'. `2Your Guess? `%');
 				break;
-				
+
 				case 4:
 					lw('  `$'+question.clue4+'. `2Your Guess? `%');
 				break;
-				
+
 				case 5:
 					lw('  `$'+question.clue5+'. `2Your Guess? `%');
-				break;								
+				break;
 			}
-			
+
 			answer = console.getstr({input_box:true}).trim().toUpperCase();
-			
+
 			if(answer.match(question.item)) {
 				sln('');
 				lln('  `0CORRECT!');
 				sln('');
-				if(i<4) lln('  `6'+question.rewardstr1); else lln('  `7'+question.rewardstr2);				
+				if(i<4) lln('  `6'+question.rewardstr1); else lln('  `7'+question.rewardstr2);
 				correct = true;
-				amt += player.level * question.give;			
+				amt += player.level * question.give;
 			}
 			else {
 				sln('');
@@ -366,9 +388,9 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 				wrong += 1;
 				i += 1;
 			}
-			
+
 		}
-		if(!correct) { 
+		if(!correct) {
 			lln('  `0The answer is `%'+question.item);
 			sln('');
 		}
@@ -377,18 +399,18 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 		old_questions = [];
 		old_questions = questions;
 		questions_left -= 1;
-		
+
 		sln('');
 			if(questions_left < 1)
 			{
 				lln('  `%"I am very tired "`, `0'+who+' says, `%"I think you');
-				lln('  should leave now! Come visit me at Turgons Arena."')
+				lln('  should leave now! Come visit me at Turgons Arena."');
 				sln('');
 				more_nomail();
 				done = true;
 				break;
 			}
-		
+
 		lln('  `2There are '+pretty_int(questions_left)+' remaining.');
 		sln('');
 		lln('  `2Would you like to play Again?');
@@ -403,27 +425,27 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 			}
 			sln(ch);
 			sln('');
-			
+
 			if(ch === 'N')
 			{
 				lln('  `%"No, I have had enough of this game.`"');
 				sln('');
 				done = true;
-			}		
+			}
 	}
-	
+
 	amt += amt * 5;
 	player.exp += amt;
 	sln('');
 	lln('  `0You Gained `%'+pretty_int(amt)+' `0Experince!');
 	sln('');
 	more_nomail();
-	
-	if(did == start_questions) {
+
+	if(did == start_questions) { // ignore how many were wrong answers
 		amt = player.level * 1000;
-		lln('  `2You answered all of the questions, very good');
+		lln('  `2Very good, You answered all of the questions!');
 		sln('');
-		lln('  `0You gain an Extra `%'+pretty_int(amt)+' Gold Coins');		
+		lln('  `0You gain an Extra `%'+pretty_int(amt)+' Gold Coins');
 		sln('');
 		more_nomail();
 		sln('');
@@ -435,13 +457,13 @@ function guessing_game(who) {  // Yes, I know this is novice level scripting but
 
 var nymph = nymphs[random(8)];
 
-function crandom(min, max) { 
-	return random(max-min+1) + min; 
+function crandom(min, max) {
+	return random(max-min+1) + min;
 }
 
-function pick_at_random(arr) 
-{ 
-	return arr[random(arr.length)] 
+function pick_at_random(arr) // unused but left for futue events
+{
+	return arr[random(arr.length)]
 }; // thanks DM
 
 function load_monster(num) {
@@ -484,32 +506,32 @@ function draw_man(x, y) { // partially ripped from Bark's House IGM
 }
 
 function walk() {
-draw_man(5,20);
-		mswait(500);
-		draw_man(10,20);
-		mswait(500);
-		draw_man(15,20);
-		mswait(500);
-		draw_man(20,20);
-		mswait(500);
-		draw_man(25,20);
-		mswait(500);
-		draw_man(30,20);
-		mswait(500);
-		draw_man(35,20);
-		mswait(500);
-		draw_man(40,20);
-		mswait(500);
-		draw_man(45,20);
-		mswait(500);
-		draw_man(50,20);
-		mswait(500);
-		dk.console.gotoxy(1,19);
-		dk.console.cleareol();			
-		dk.console.gotoxy(1,20);
-		dk.console.cleareol();
-		dk.console.gotoxy(1,21);
-		dk.console.cleareol();			
+	draw_man(5,20);
+	mswait(500);
+	draw_man(10,20);
+	mswait(500);
+	draw_man(15,20);
+	mswait(500);
+	draw_man(20,20);
+	mswait(500);
+	draw_man(25,20);
+	mswait(500);
+	draw_man(30,20);
+	mswait(500);
+	draw_man(35,20);
+	mswait(500);
+	draw_man(40,20);
+	mswait(500);
+	draw_man(45,20);
+	mswait(500);
+	draw_man(50,20);
+	mswait(500);
+	dk.console.gotoxy(1,19);
+	dk.console.cleareol();
+	dk.console.gotoxy(1,20);
+	dk.console.cleareol();
+	dk.console.gotoxy(1,21);
+	dk.console.cleareol();		
 	sln('');
 }
 
@@ -544,20 +566,11 @@ function wait() // ripped from Barak's House IGM
 	sw('.');
 }
 
-function place_holder() { // don't need this any more
-	sln('');
-	lln('  `2Some random text to keep you occupied while');
-	lln('  I code this shit up.  You get `%10 `0EXTRA EXPERIENCE!');	
-	sln('');
-	player.exp += 10;
-	player.forest_fights += 2;
-}
-
 function sleep_here(w) {
 	var out = new File(gamedir('out'+player.Record+'.lrd'));
 	if (!out.open('a')) {
 		throw('Unable to open '+out.name);
-	}	
+	}
 	out.writeln('grabbag/grabbag.js '+w);
 	out.close();
 	lln('  `0You feel very tired and drift off into a deep sleep!');
@@ -569,13 +582,13 @@ function sleep_here(w) {
 	exit(0);
 }
 
-function wake_up_at_veldores() { // changed from Veldore to current Trainer 
+function wake_up_at_veldores() { // changed from Veldore to current Trainer
 	var trainer = undefined;
-	if(player.level < 12) 
+	if(player.level < 12)
 	{
 		trainer = get_trainer(player.level);
 	}
-	else 
+	else
 	{
 		trainer = get_trainer(11);
 	}
@@ -596,17 +609,17 @@ function wake_up() {
 	var l_noun = '';
 	var p_noun = '';
 	
-	if(player.sex === 'M') 
-	{ 
-		lover = '`5Violet'; 
-		l_noun = 'She'; 
+	if(player.sex === 'M')
+	{
+		lover = '`5Violet';
+		l_noun = 'She';
 		p_noun = 'her'; 
 	}
 	else
-	{ 
-		lover = '`$Seth Able'; 
-		l_noun = 'He'; 
-		p_noun = 'his'; 
+	{
+		lover = '`$Seth Able';
+		l_noun = 'He';
+		p_noun = 'his';
 	}
 	
 	more_nomail();
@@ -647,10 +660,10 @@ function jennie_invite() { // changed from Jennie to Violet
 	display_file(gamedir('/grabbag/menus.lrd'));
 	more_nomail();
 	sclrscr();
-	log_line('  `5'+player.name+' `0was invited to Violet\'s Cabin');	
+	log_line('  `5'+player.name+' `0was invited to Violet\'s Cabin');
 	player.exp += 1000;
 	player.laid += 1;
-	get_head('Getting laid by `5Violet');	
+	get_head('Getting laid by `5Violet');
 	sln('');
 	lln('  `0After many hours of world rocking sex,');
 	lln('  `5Violet invites you to sleep over for');
@@ -667,10 +680,10 @@ function jennie_invite() { // changed from Jennie to Violet
 	sln(ch);
 	sln('');
 	
-	if(ch == 'A') {			
+	if(ch == 'A') {
 			sleep_here('w');
 	}
-	else 
+	else
 	{
 		lln('  `%"Thank you for the incredile sex, Violet, but I have');
 		lw('  be getting back to my Killing and ');
@@ -687,7 +700,7 @@ function jennie_invite() { // changed from Jennie to Violet
 				lln('Thieving type shit."`0,');
 			break;
 		}
-		lln('  you say as you don your '+player.arm+' and head back to town.')
+		lln('  you say as you don your '+player.arm+' and head back to town.');
 		sln('');
 		more_nomail();
 		good_bye('good');
@@ -696,7 +709,7 @@ function jennie_invite() { // changed from Jennie to Violet
 
 function seth_invite() {
 	var ch = '';
-	get_head('Seth Able Invited you to His Cabin');	
+	get_head('Seth Able Invited you to His Cabin');
 	lln('  `$Seth `0invites you to his nearby Cabin');
 	sln('');
 	lln('  `0He takes you by your hand leds the way.');
@@ -714,7 +727,7 @@ function seth_invite() {
 	
 	player.exp += 1000;
 	player.laid += 1;
-	get_head('Getting laid by `$Seth');	
+	get_head('Getting laid by `$Seth');
 	sln('');
 	lln('  `0After many hours of world rocking sex,');
 	lln('  `$Seth invites you to sleep over for');
@@ -729,12 +742,12 @@ function seth_invite() {
 		ch = 'D';
 	}
 	sln(ch);
-	sln('');	
+	sln('');
 	
-	if(ch == 'A') {			
-		sleep_here('w');	
+	if(ch == 'A') {
+		sleep_here('w');
 	}
-	else 
+	else
 	{
 		lln('  `%"Thank you for the incredile sex, Seth, but I have');
 		lw('  be getting back to my Killing and ');
@@ -751,11 +764,11 @@ function seth_invite() {
 				lln('Thieving type shit."`0,');
 			break;
 		}
-		lln('  you say as you don your '+player.arm+' and head back to town.')
+		lln('  you say as you don your '+player.arm+' and head back to town.');
 		sln('');
 		more_nomail();
 		good_bye('good');
-	}	
+	}
 }
 
 function veldore_invite() {
@@ -767,10 +780,10 @@ function veldore_invite() {
 	lln('  `2Veldore looks at you oddly, then says');
 	sln('');
 	guessing_game('Veldore');
-	sln('');	
+	sln('');
 	lln('  `2After a pleasant visit you decide to head back');
 	lln('  to town.');
-	sln('');					
+	sln('');				
 	more_nomail();
 	sln('');
 	lln('  `2Your Charm increases by `$2');
@@ -781,25 +794,13 @@ function veldore_invite() {
 	good_bye();
 }
 
-function nymph_tales() {
+function nymph_tales() { // for v.12
 	var tale = '';
 	
-	return tale;	
+	return tale;
 }
 
-function more_nymph_story() { // finish_this ... v1.2 will have all wood nymphs as object nymphDefs
-/*
-Dryads are the “ladies of the trees” — female nymphs who inhabit the forests, groves, woods, 
-and all other types of trees. The dry- part of dryad comes from the Greek word “oak” and used 
-to refer to only oak tree nymphs, but now it has become the overeaching term for all wood nymphs. 
-Dryads are known for being rather shy. They have long lives that can often be closely tied to 
-where their home (aka: tree) is. Hamadryads are dryads who are so tied to their tree that if their 
-tree dies, they die. If their tree grows or blossoms, so does the dryad.
-
-Not all dryads are tied to a particular tree. Some are tied to a location or section of trees like 
-a sacred grove, a glen, a vale, etc. Depending on which type of tree they inhabit or the location 
-of those trees, dryads can go by different names just like the naiads:
-*/	
+function more_nymph_story() {
 	
 	var who = undefined;
 	if(player.sex === 'M') who = 'Violet'; else who = 'Seth Able';
@@ -808,7 +809,7 @@ of those trees, dryads can go by different names just like the naiads:
 	lln('  of the Trees, Vales, Glens and Sacred Groves.');
 	sln('');
 	lln('  `0Many, many centruries ago, we were all human like you.');
-	sln('');		
+	sln('');
 	lln('  Our husbands and some of our children were all poisoned');
 	lln('  by `8Magic Mushrooms.');
 	lln('  `0They went crazy and ran off into the Forest, and became`%');
@@ -843,7 +844,7 @@ function nymph_sex() {
 			lln('  full of wet wood chips.');
 			sln('');
 			lln('  `0You spit them out and try something more conventional.');
-			sln('');			
+			sln('');
 		break;
 		
 		case 1:
@@ -862,7 +863,7 @@ function nymph_sex() {
 			lln('  Moments later, you notice that you are not alone, you');
 			lln('  you look over your shoulder and see that `%Jennie `0is');
 			lln('  watching you.  `%OH WELL! I\'LL DO HER LATER!"`0, you think');
-			lln('  to yourself and keep going!');			
+			lln('  to yourself and keep going!');
 		break;
 		
 		case 3:
@@ -905,14 +906,14 @@ function nymph_sex() {
 				lln('  thought it was food!.  You scream in agony, but are');
 				lln('  somehow able to keep going!');
 			}
-		break;	
+		break;
 	}
 	sln('');
 	more_nomail();
 	lln('  `0After 18 minutes of the strangest, yet most satisfying');
 	lln('  sex you have `$EVER `0experienced, you get dressed and');
 	lln('  head back to town!');
-	sln('');		
+	sln('');
 }
 
 function nymph_story() { // TODO: add random kids based on charm
@@ -922,7 +923,7 @@ function nymph_story() { // TODO: add random kids based on charm
 	var dryads1 = '';
 	var dryads2 = '';
 	dryads = '  Dryads are also known as `%\'Ladies of the Trees\'\r\n';
-	dryads += '  `0and We are ALL `$VERY, VERY HORNY!!';	
+	dryads += '  `0and We are ALL `$VERY, VERY HORNY!!';
 	
 	get_head('Getting to know '+nymph.name);
 	
@@ -931,7 +932,7 @@ function nymph_story() { // TODO: add random kids based on charm
 	lln('  It has been such a long time that I have met anyone that');
 	lln('  is able to touch me the way that you are able to.');
 	sln('');
-	more_nomail();	
+	more_nomail();
 	lln('  `0But, I see that you are reluctant, so I will tell you');
 	lln('  about me.  My name is `6'+nymph.name+'. `0I am a `%Dryad, `0a');
 	lln('  `$Wood Nymph`0, and I have been living here in these `$');
@@ -950,11 +951,11 @@ function nymph_story() { // TODO: add random kids based on charm
 		sln('');
 		more_nomail();
 	}
-	if(nymph.name === 'Maliades') {		
+	if(nymph.name === 'Maliades') {
 		lln('  `0My kind are very `5fertile`0,');
 	}
-						
-	sln('');	
+
+	sln('');
 	lln('  `%"Now that you know about me, will you PLEASE help me?"`2,');
 	lln('  `6'+nymph.name+' `2begs shyly.');
 	sln('');
@@ -970,20 +971,20 @@ function nymph_story() { // TODO: add random kids based on charm
 	}
 	sln(ch);
 	sln('');
-	sln('');		
+	sln('');
 	switch ( ch ) {
 		case 'L':
 			lln('  `%"This is too boring, `$'+nymph.name+'`%"`2, you tell');
 			lln('  her as you turn and walk back to town.');
 			sln('');
 			more_nomail();
-			amt = Math.round(player.level * 10);			
+			amt = Math.round(player.level * 10);
 			lln('  `0You lose `%2 Charm `0and gain `%'+pretty_int(amt)+' `0Experience');
 			player.cha -= 2;
 			log_line('  `5'+player.name+' `2pissed `6'+nymph+' `2off!');
-			good_bye('annoying');			
+			good_bye('annoying');
 		break;
-		
+
 		case 'P':
 			lln('  `%"Look, '+nymph.name+' you\'re very beautiful and all,');
 			lln('  and I am happy we met, hopefully we can see');
@@ -991,14 +992,14 @@ function nymph_story() { // TODO: add random kids based on charm
 			log_line('  `5'+player.name+' `0consoled the Wood Nymph `$'+nymph);
 			sln('');
 			more_nomail();
-			amt = Math.round(player.level * 10);	
+			amt = Math.round(player.level * 10);
 			lln('  `2You gain `22 Charm and '+pretty_int(amt)+' Experience!');
 			player.cha += 2;
 			player.exp += amt;
 			sln('');
 			good_bye('interesting');
 		break;
-		
+
 		case 'B':
 			lln('  `%"Um, sure, having sex with some animated wood chips');
 			lln('  isn\'t the weirdest thing I have ever done"`0, you say');
@@ -1015,8 +1016,8 @@ function nymph_story() { // TODO: add random kids based on charm
 			good_bye('satisfying');
 			
 		break;
-		
-		case 'A':			
+
+		case 'A':
 			more_nymph_story();
 			log_line('  `5'+player.name+' `2became friends with `6'+nymph.name);
 			sln('');
@@ -1034,10 +1035,10 @@ function nymph_story() { // TODO: add random kids based on charm
 
 function wood_nymph() {
 	var ch = '';
-	var amt = undefined;	
+	var amt = undefined;
 	get_head('Getting Seduced by a Naked Wood Nymph');
 	
-	lln('  `%"Hello?"`2, you cautiously reply.');	
+	lln('  `%"Hello?"`2, you cautiously reply.');
 	sln('');
 	lln('  Moments later, a naked wood nymph appears.');
 	sln('');
@@ -1046,7 +1047,7 @@ function wood_nymph() {
 	lln('  As you stare in awe, she approaches you closer and asks,');
 	sln('');
 	lln('  `%"Could you please help me?  I have been lonely for so long"`2,');
-	lln('  `2as she reaches down and gently caresses herself.');	
+	lln('  `2as she reaches down and gently caresses herself.');
 	sln('');
 	lln('  `2(`0A`2)ccept her sexual advances');
 	lln('  `2(`0G`2)et in her head and ask who she is');
@@ -1058,11 +1059,11 @@ function wood_nymph() {
 		ch = 'A';
 	}
 	sln(ch);
-	sln('');	
-	
+	sln('');
+
 	if(ch === 'A') {
 		player.laid += 1;
-		player.cha += 10;	
+		player.cha += 10;
 		player.exp += player.level * 10;
 		get_head('Having Sex with '+nymph.name);
 		if(player.sex === 'M')
@@ -1071,7 +1072,7 @@ function wood_nymph() {
 			lln('  your `$'+player.weapon+' `2to the ground, rip off your');
 			lln('  `$'+player.arm+' `2and fall into her embrace.');
 			sln('');
-			player.cha += 10;			
+			player.cha += 10;
 		}
 		else
 		{
@@ -1079,12 +1080,12 @@ function wood_nymph() {
 			lln('  begins to race.  The thoughts of having sex with this');
 			lln('  gorgeous creature seems to grow more and more intense.');
 			sln('');
-			more_nomail(); 
+			more_nomail();
 			lln('  `2You become so overwhelmed with sexual desire you throw');
 			lln('  your `$'+player.weapon+' `2to the ground, rip off');
 			lln('  `$'+player.arm+' `2and fall into her embrace.');
 			sln('');
-			player.cha += 10;			
+			player.cha += 10;
 		}
 		more_nomail();
 		// TODO: create a record for future encounters
@@ -1099,13 +1100,13 @@ function wood_nymph() {
 		more_nomail();
 		amt = player.exp / nymph.exp;
 		lln('  `$You Gained `%10 Charm `$and `%'+pretty_int(amt)+' Experience');
-		player.exp += amt;				
-		log_line('  `5'+player.name+' `0got seduced by the wood nymph, `%'+nymph.name+'!');	
+		player.exp += amt;
+		log_line('  `5'+player.name+' `0got seduced by the wood nymph, `%'+nymph.name+'!');
 		good_bye('exhilarating');
 	}
 	if(ch === 'G')
 	{
-		nymph_story();		
+		nymph_story();
 		sln('');
 		good_bye('pleasant');
 	}
@@ -1117,7 +1118,7 @@ function wood_nymph() {
 		sln('');
 		more_nomail();
 		amt = Math.round(player.exp/33);
-		lln('  `$YOU GAIN '+pretty_int(amt)+' EXPERIENCE and LOSE 5 CHARM!')
+		lln('  `$YOU GAIN '+pretty_int(amt)+' EXPERIENCE and LOSE 5 CHARM!');
 		player.exp += amt;
 		player.cha -= amt;
 		if(player.cha < 1) player.cha = 1;
@@ -1134,14 +1135,14 @@ function cabin_shit(who) {
 	var other = '';
 	var trainer = false;
 	var is_trainer = undefined;
-	
-	if(who === 'Veldore') 
+
+	if(who === 'Veldore')
 	{
-		if (player.level < 12) 
+		if (player.level < 12)
 		{
-			trainer = get_trainer(player.level);				
+			trainer = get_trainer(player.level);
 		}
-		else 
+		else
 		{
 			trainer = get_trainer(11);
 		}
@@ -1221,13 +1222,13 @@ function cabin_shit(who) {
 				break;
 			}
 			more_nomail();
-			good_bye('good');	
+			good_bye('good');
 		break;
 		
 		case 'T':
-			get_head('Selling the Map to '+who+'\'s Cabin');			
+			get_head('Selling the Map to '+who+'\'s Cabin');
 			lln('  `2You decide that visiting `%'+who+' `2is a waste');
-			sln('  of time, so you tuck the map away in your');			
+			sln('  of time, so you tuck the map away in your');
 			sln('  pocket and hope you find someone to sell it');
 			sln('  to!');
 			sln('');
@@ -1250,7 +1251,7 @@ function cabin_shit(who) {
 					lln('  `%"I saw you found a map to '+who+'\'s Cabin, would');
 					lln('  you like to sell it for, say `$'+pretty_int(amt)+' `%GOLD COINS?"');
 					sln('');
-					lw('  `2(`$Y`2)es or (`0N`2)o ? ');					
+					lw('  `2(`$Y`2)es or (`0N`2)o ? ');
 					ch = getkey().toUpperCase();
 					if ('YN'.indexOf(ch) == -1) {
 						ch = 'Y';
@@ -1323,7 +1324,7 @@ function cabin_shit(who) {
 						good_bye('good');
 					}
 					else
-					{						
+					{
 						say_slow2(pretty_int(player.weapon_num)+' FOREST FIGHTS');
 						player.forest_fights += player.level;
 						more_nomail();
@@ -1331,10 +1332,10 @@ function cabin_shit(who) {
 					}
 				break;
 				
-				case 2:	
+				case 2:
 					lln('  As you approach The Realm, you start to feel as');
 					lln('  though you should have visited `0'+who+'\'s Cabin! `%');	
-					sln('');			
+					sln('');
 					say_slow2('  YOU WASTED YOUR TRIP INTO THE FOREST!');
 					sln('');
 					more_nomail();
@@ -1358,7 +1359,7 @@ function cabin_shit(who) {
 						good_bye('boring');
 					}
 					else
-					{ 
+					{
 						lln('  `2Suddenly you hear a soft voice calling to you');
 						lln('  from behind some bushes.');
 						sln('');
@@ -1397,13 +1398,13 @@ function cabin_shit(who) {
 					if(player.sex === 'M') invite = 'Violet'; else invite = 'Seth';
 					lln('  `2Just as you are about to give up trying to find');
 					lln('  someone to sell the map to, you hear rustling in');
-					lw('  the bushes, you turn around and see `%');					
+					lw('  the bushes, you turn around and see `%');
 					
 					var srand = random(3);
 					
 					switch (srand) {
 						
-						case 0:							
+						case 0:						
 							say_slow2(other+'!');
 							sln('');
 							more_nomail();
@@ -1419,7 +1420,7 @@ function cabin_shit(who) {
 							sln('');
 							more_nomail();
 							player.bank += player.gold; // be nice and save their gold
-							fight_dragon(false);							
+							fight_dragon(false);		
 							lln('  `0Just as your life starts to drain from you, you');
 							lln('  jolt awake.  Was this just a dream?');
 							lln('  Is `%'+other.toUpperCase()+' `0actually `4The Red Dragon?');
@@ -1446,39 +1447,39 @@ function cabin_shit(who) {
 							sln('');
 							more_nomail();
 							lw('  `%"YOU CHEATING LITTLE PUKE"`0, '+invite+' yells as ');
-							if(player.sex === 'M') lw('she'); else lw('he');							
+							if(player.sex === 'M') lw('she'); else lw('he');
 							lln('  grabs');
 							lln('  the map from your pocket and runs off into the bushes.');
 							sln('');
 							lln('  `2Well, shit, you think to yourself as you continue');
 							lln('  on you way back to town');
-							sln('');							
+							sln('');
 							amt = player.level * 10;
 							lln('  `%You gain '+pretty_int(amt)+' Experience');
 							player.exp += amt;
 							player.forest_fights +=2;
 							more_nomail();
-							good_bye('disappointing');							
+							good_bye('disappointing');
 						break;
 						
-						case 2:							
+						case 2:
 							say_slow2(invite);
-							more_nomail();						
+							more_nomail();					
 							if(who != 'Veldore') {
 							if(player.sex === 'M') jennie_invite(); else seth_invite();
 							}
-							else veldore_invite();							
-						break;						
+							else veldore_invite();
+						break;			
 					}
-					sln('');					
-				break;				
-			}			
+					sln('');
+				break;		
+			}
 		break;
 	}
 }
 
 function follow(who) { // why is this even here? future random event? ... get followed by a wood nymph?
-	var ch = undefined;	
+	var ch = undefined;
 }
 
 function seth_cabin() {
@@ -1488,7 +1489,7 @@ function seth_cabin() {
 	var f = new File(gamedir('bar.lrd'));
 	if (!f.open('a')) {
 		throw('Unable to open '+f.name);
-	}	
+	}
 	get_head('Going to Seth\'s Cabin');
 	lln('  `2You decide that making an univited visit to');
 	lln('  `%Seth\'s Cabin `2seems like a good idea.');
@@ -1517,24 +1518,24 @@ function seth_cabin() {
 		sln('');
 		more_nomail();
 		amt = Math.round(player.exp/20);
-		lln('  `0You gained `$'+pretty_int(amt)+' Experience `2and `$1 Charm!'); 
+		lln('  `0You gained `$'+pretty_int(amt)+' Experience `2and `$1 Charm!');
 		player.cha += 1;
 		player.exp += amt;
 		sln('');
 		good_bye();
 	}
-		
-	if(ch === 'K') {			
+
+	if(ch === 'K') {
 		get_head('Knocking on Seth\'s Door');
 		lln('  `2You politely kncok on Jennie\'s door.');
 		sln('');
 		mswait(2000);
 		lln('  Moments later, the door opens and you are greeted');
-		lw('  by a `%'); wait(); wait(); wait();		
+		lw('  by a `%'); wait(); wait(); wait();
 		react = random(3);
-						
+
 		switch ( react ) {
-			case 0: // seth is home and happy					
+			case 0: // seth is home and happy
 				if(player.level < 2 || player.cha < 10 || settings.clean_mode) {
 					amt = Math.round(player.exp/10);
 					say_slow2('  smiling Seth!');
@@ -1544,7 +1545,7 @@ function seth_cabin() {
 					sln('');
 					lln('  `2After a pleasant visit you decide to head back');
 					lln('  to town.');
-					sln('');					
+					sln('');
 					more_nomail();
 					lln('  `2For being polite you recieve `%'+pretty_int(amt)+' Experience.');
 					sln('');
@@ -1565,7 +1566,7 @@ function seth_cabin() {
 					sln('');
 						lln('  `2After a pleasant visit you decide to head back');
 					lln('  to town.');
-					sln('');					
+					sln('');
 					more_nomail();
 					lln('  `2For being polite you recieve `%'+pretty_int(amt)+' Experience.');
 					sln('');
@@ -1575,25 +1576,24 @@ function seth_cabin() {
 					player.cha += 5;
 					player.forest_fights += 2;
 					player.gold += 1000;
-					lln('  `2On your way back to town you find `$1000 Gold Coins');	
+					lln('  `2On your way back to town you find `$1000 Gold Coins');
 					mswait(2000);
 					f.writeln('  `%Jennie:');
 					f.writeln('  `2'+player.name+', why were you visiting Seth today?');
-					f.close();				
-					good_bye();	
+					f.close();
+					good_bye();
 				}
 				else if(player.level > 3 || player.cha > 10 ) {
 					if(player.cha < 100) { // seth is horny
 						say_slow2(' a scantily clad Seth!');
 						sln('');
 						lln('`0');
-						say_slow2('  She, invites you in and escorts you to her bed.');
+						say_slow2('  He, invites you in and escorts you to his bed.');
 						sln('');
 						say_slow2('  Without saying a word, he removes his robe and');
 						sln('');
 						say_slow2('  helps you out of your '+player.arm);
-						sln('');
-						sln('');
+						sln2('');						
 						more_nomail();
 						display_file(gamedir('/grabbag/menus.lrd'));
 						mswait(1500);
@@ -1603,7 +1603,7 @@ function seth_cabin() {
 						sln('');
 						say_slow2('  SOMEWHERE MAGIC HAS HAPPENED!');
 						sln('');
-						sln('');						
+						sln('');
 						log_line('  `%'+player.name+' was seen leaving `$Seth\s Cabin `2smiling!');
 						player.laid += 1;
 						player.exp += player.level * 150;
@@ -1615,13 +1615,13 @@ function seth_cabin() {
 						f.close();
 						good_bye();
 					}
-					else // seth is horny, gets you pregnant 
+					else // seth is horny, gets you pregnant
 					{
 						say_slow2(' a totally naked Seth Able!');
 						lln('`0');
-						say_slow2('  Sethe, invites you in and escorts you to his bed.');
+						say_slow2('  Seth, invites you in and escorts you to his bed.');
 						sln('');
-						say_slow2('  Without saying a word, she removes he robe and');
+						say_slow2('  Without saying a word, he removes his robe and');
 						sln('');
 						say_slow2('  helps you out of your '+player.arm);
 						sln('');
@@ -1635,11 +1635,11 @@ function seth_cabin() {
 						sln('');
 						say_slow2('  SOMEWHERE MAGIC HAS HAPPENED!');
 						sln('');
-						sln('');						
+						sln('');
 						player.laid += 1;
 						player.exp += player.level * 150;
 						player.forest_fights += 2;
-						player.cha += 10;												
+						player.cha += 10;											
 						player.laid += 1;
 						player.exp += player.level * 150;
 						player.forest_fights += 2;
@@ -1652,12 +1652,12 @@ function seth_cabin() {
 						f.writeln('  `%Jennie:');
 						f.writeln('  `$'+player.name+', `2prepare to `4DIE! `2Seth Able knocked you up!');
 						f.close();
-						have_baby();						
+						have_baby();
 						good_bye();
 					}
 				}
 			break;
-				
+	
 			case 1:  // seth gets mad
 				say_slow2('  a very angrey Seth Able');
 				sln('');
@@ -1666,7 +1666,7 @@ function seth_cabin() {
 				lln('  you fall to the ground, crying like a baby!');
 				sln('');
 				more_nomail();
-				sln('  He then, grabs you by you '+player.arm+' and');
+				sln('  He then, grabs you by your '+player.arm+' and');
 				sln('  grags you off of his porch!');
 				sln('');
 				more_nomail();
@@ -1676,7 +1676,7 @@ function seth_cabin() {
 				lln('  On the way, you find `$100 Gold Coins');
 				sln('');
 				player.gold += 100;
-				good_bye();						
+				good_bye();			
 			break;
 				
 			case 2: // seth is not home
@@ -1693,7 +1693,7 @@ function seth_cabin() {
 				player.exp += 100;
 				player.cha += 1;
 				good_bye();
-			break;		
+			break;
 			}
 		}
 		
@@ -1707,13 +1707,13 @@ function seth_cabin() {
 			else react = random(4);
 			
 		switch ( react ) {
-			case 0: // seth makes tea					
+			case 0: // seth makes tea
 				lln('  `2He is happy to see  you in and pours you a');
 				sln('  cup of tea.');
 				sln('');
 				lln('  `2After a pleasant visit you decide to head back');
 				lln('  to town.');
-				sln('');					
+				sln('');
 				more_nomail();
 				lln('  `2For being a rude dick, you only recieve `%10 Experience.');
 				sln('');
@@ -1740,9 +1740,9 @@ function seth_cabin() {
 				log_line('  `%Seth Able `0kicked `$'+player.name+'\'s `0ASS!');
 				good_bye();
 			break;
-				
+	
 			case 2: // seth is horney
-				lln('  `%Seth Able is just getting out of the wash barrel.');				
+				lln('  `%Seth Able is just getting out of the wash barrel.');
 				lln('  `0His naked body shines as bright as an angel!');
 				sln('');
 				more_nomail();
@@ -1772,7 +1772,7 @@ function seth_cabin() {
 				f.writeln('  `%Jennie:');
 				f.writeln('  `$'+player.name+', `2what were you doing at Seth\'s Cabin?');
 				f.close();
-				good_bye();			
+				good_bye();
 			break;
 				
 			case 3: // seth 3 some (choice)
@@ -1833,12 +1833,12 @@ function seth_cabin() {
 				  player.laid +=2;
 				  player.exp += 1000;
 				  player.cha += 25;
-				  player.kids +=1; 
-				  have_baby();				  
-				  good_bye();				
-				}					
+				  player.kids +=1;
+				  have_baby();
+				  good_bye();
+				}				
 			break;
-		}		
+		}
 	}
 }
 
@@ -1849,7 +1849,7 @@ function jennie_cabin() {
 	var f = new File(gamedir('bar.lrd'));
 	if (!f.open('a')) {
 		throw('Unable to open '+f.name);
-	}	
+	}
 	get_head('Going to Jennie\'s Cabin');
 	lln('  `2You decide that making an univited visit to');
 	lln('  `%Jennie\'s Cabin `2seems like a good idea.');
@@ -1878,20 +1878,20 @@ function jennie_cabin() {
 		sln('');
 		more_nomail();
 		amt = Math.round(player.exp/20);
-		lln('  `0You gained `$'+pretty_int(amt)+' Experience `2and `$1 Charm!'); 
+		lln('  `0You gained `$'+pretty_int(amt)+' Experience `2and `$1 Charm!');
 		player.cha += 1;
 		player.exp += amt;
 		sln('');
 		good_bye();
 	}
 	
-	if(ch === 'K') {		
+	if(ch === 'K') {
 		get_head('Knocking on Jennie\'s Door');
 		lln('  `2You politely kncok on Jennie\'s door.');
 		sln('');
 		mswait(2000);
 		lln('  Moments later, the door opens and you are greeted');
-		lw('  by a `%'); wait(); wait(); wait();		
+		lw('  by a `%'); wait(); wait(); wait();
 		react = random(3);
 		
 		switch ( react ) {
@@ -1906,12 +1906,12 @@ function jennie_cabin() {
 					sln('');
 					lln('  `2After a pleasant visit you decide to head back');
 					lln('  to town.');
-					sln('');					
+					sln('');
 					more_nomail();
 					lln('  `2For being polite you recieve `%'+pretty_int(amt)+' Experience.');
 					sln('');
 					lln('  `2Your Charm increases by `$2');
-					sln('');
+					sln('');					
 					player.exp += amt;
 					player.cha += 2;
 					mswait(2000);
@@ -1928,7 +1928,7 @@ function jennie_cabin() {
 					sln('');
 					lln('  `2After a pleasant visit you decide to head back');
 					lln('  to town.');
-					sln('');					
+					sln('');				
 					more_nomail();
 					lln('  `2For being polite you recieve `%'+pretty_int(amt)+' Experience.');
 					sln('');
@@ -1938,15 +1938,15 @@ function jennie_cabin() {
 					player.cha += 5;
 					player.forest_fights += 2;
 					player.gold += 1000;
-					lln('  `2On your way back to town you find `$1000 Gold Coins');	
+					lln('  `2On your way back to town you find `$1000 Gold Coins');
 					mswait(2000);
 					f.writeln('  `%Seth Able:');
 					f.writeln('  `2'+player.name+', why were you visiting Jennie today?');
-					f.close();				
-					good_bye();	
+					f.close();
+					good_bye();
 				}
 				else if(player.level > 5 || player.cha > 50 ) {
-					if(player.cha < 100) { // jennie is horny
+						if(player.cha < 100) { // jennie is horny
 						say_slow2(' a scantily clad Jennie!');
 						sln('');
 						lln('`0');
@@ -1966,7 +1966,7 @@ function jennie_cabin() {
 						sln('');
 						say_slow2('  SOMEWHERE MAGIC HAS HAPPENED!');
 						sln('');
-						sln('');						
+						sln('');
 						log_line('  `%'+player.name+' was seen leaving `$Jennie\s Cabin `2whistling!');
 						player.laid += 1;
 						player.exp += player.level * 150;
@@ -1978,7 +1978,7 @@ function jennie_cabin() {
 						f.close();
 						good_bye();
 					}
-					else // jennie is horny, gets pregnant 
+					else // jennie is horny, gets pregnant
 					{
 						say_slow2(' a totally naked Jennie!');
 						lln('`0');
@@ -1998,11 +1998,11 @@ function jennie_cabin() {
 						sln('');
 						say_slow2('  SOMEWHERE MAGIC HAS HAPPENED!');
 						sln('');
-						sln('');						
+						sln('');
 						player.laid += 1;
 						player.exp += player.level * 150;
 						player.forest_fights += 2;
-						player.cha += 10;												
+						player.cha += 10;
 						player.laid += 1;
 						player.exp += player.level * 150;
 						player.forest_fights += 2;
@@ -2058,7 +2058,7 @@ function jennie_cabin() {
 				lln('  On the way, you find `$100 Gold Coins');
 				sln('');
 				player.gold += 100;
-				good_bye();						
+				good_bye();					
 			break;
 			
 			case 2: // jennie is not home
@@ -2076,7 +2076,7 @@ function jennie_cabin() {
 				player.exp += 100;
 				player.cha += 1;
 				good_bye();
-			break;		
+			break;
 		}
 	}
 	
@@ -2090,13 +2090,13 @@ function jennie_cabin() {
 			else react = random(4);
 			
 		switch ( react ) {
-			case 0: // jennie makes tea				
+			case 0: // jennie makes tea
 				lln('  `2She is happy to see  you in and pours you a');
 				sln('  cup of tea.');
 				sln('');
 				lln('  `2After a pleasant visit you decide to head back');
 				lln('  to town.');
-				sln('');					
+				sln('');
 				more_nomail();
 				lln('  `2For being a rude dick, you only recieve `%10 Experience.');
 				sln('');
@@ -2125,7 +2125,7 @@ function jennie_cabin() {
 			break;
 			
 			case 2: // jennie is horney
-				lln('  `%Jennie is just getting out of the wash barrel.');				
+				lln('  `%Jennie is just getting out of the wash barrel.');
 				lln('  `0Her naked body shines as bright as an angel!');
 				sln('');
 				more_nomail();
@@ -2145,9 +2145,8 @@ function jennie_cabin() {
 				sln('');
 				say_slow2('  SOMEWHERE MAGIC HAS HAPPENED!');
 				sln('');
-				sln('');						
-				log_line('  `%'+player.name+' was seen leaving `$Jennie\s Cabin `2whistling!');
-				player.laid += 1;
+				sln('');
+				log_line('  `%'+player.name+' was seen leaving `$Jennie\s Cabin `2whistling!');				player.laid += 1;
 				player.exp += player.level * 150;
 				player.forest_fights += 2;
 				player.cha += 10;
@@ -2155,7 +2154,7 @@ function jennie_cabin() {
 				f.writeln('  `%Seth Able:');
 				f.writeln('  `$'+player.name+', `2what were you doing at Jennie\'s Cabin?');
 				f.close();
-				good_bye();			
+				good_bye();
 			break;
 			
 			case 3: // jennie 3 some (choice)
@@ -2216,11 +2215,11 @@ function jennie_cabin() {
 				  	player.laid +=2;
 				  	player.exp += 1000;
 				  	player.cha += 25;
-				  	player.kids +=1; // but who's the daddy? you or seth ;-P				  
-				  	good_bye();				
-				}				
+				  	player.kids +=1; // but who's the daddy? you or seth ;-P
+				  	good_bye();
+				}
 			break;
-		}		
+		}
 		
 	}
 }
@@ -2257,7 +2256,7 @@ function veldore_cabin(trainer) {
 			sln('');
 			more_nomail();
 			amt = Math.round(player.exp/20);
-			lln('  `0You gained `$'+pretty_int(amt)+' Experience `2and `$1 Charm!'); 
+			lln('  `0You gained `$'+pretty_int(amt)+' Experience `2and `$1 Charm!');
 			player.cha += 1;
 			player.exp += amt;
 			sln('');
@@ -2266,7 +2265,7 @@ function veldore_cabin(trainer) {
 		
 		if(ch === 'K') {
 			var curse = undefined;
-			if(settings.clean_mode) curse = '`$IN TARNATION`%'; else curse = '`$THE FUCK`%';		
+			if(settings.clean_mode) curse = '`$IN TARNATION`%'; else curse = '`$THE FUCK`%';
 			get_head('Knocking on '+trainer.name+'\'s Door');
 			lln('  `2As a courteous Warrior, you politely knock');
 			sln('  on '+trainer.name+'\'s door.');
@@ -2281,7 +2280,7 @@ function veldore_cabin(trainer) {
 				case 0:
 					say_slow2(' drunk!');
 					sln('');
-					sln('');				
+					sln('');
 					lln('  `%"WHAT '+curse+' DO YOU WANT, KID?"`0,'+trainer.name+' Yells.');
 					sln('');
 					more_nomail();
@@ -2301,7 +2300,7 @@ function veldore_cabin(trainer) {
 					sln('');
 					more_nomail();
 					log_line('  `5'+player.name+' `0battled the drunk Monster `6'+husband.name);
-					good_bye('frightening');					
+					good_bye('frightening');
 				break;
 				
 				case 1:
@@ -2365,11 +2364,11 @@ function veldore_cabin(trainer) {
 							amt = player.level * 10;
 							player.exp += amt;
 							lln('  `0You earned '+pretty_int(amt)+' Experience');
-							sln('');							
+							sln('');
 							more_nomail();
 							good_bye();
 						break;
-					}					
+					}
 				break;
 				
 				case 2:
@@ -2432,13 +2431,13 @@ function veldore_cabin(trainer) {
 							lln('  `%Um, no, sorry, but I really have to go, but thank you!"');
 							lln('  `0you say as you turn around and leave.');
 							sln('');
-							lln('  `$You Gain '+pretty_int(player.level * 10)+' Experience!');							
-							player.exp += player.level * 10;							
+							lln('  `$You Gain '+pretty_int(player.level * 10)+' Experience!');
+							player.exp += player.level * 10;
 							sln('');
 							more_nomail();
 							good_bye();
 						break;
-					}										
+					}
 				break;
 				
 				case 3:
@@ -2470,11 +2469,11 @@ function veldore_cabin(trainer) {
 				case 4:
 					say_slow2(' busy');
 					sln('');
-					sln('');					
+					sln('');
 					more_nomail();
 					lln('  `%"Hey, '+player.name+' nice to see you but I am very busy!"`0,');
-					lln('  '+trainer.name+' says.  `%Come visit me at Turgons Training Camp."');					
-					sln('');					
+					lln('  '+trainer.name+' says.  `%Come visit me at Turgons Training Camp."');
+					sln('');
 					lln('  `$You Gain '+pretty_int(player.level * 10)+' Experience');
 					sln('');
 					more_nomail();
@@ -2487,12 +2486,12 @@ function veldore_cabin(trainer) {
 		}
 		
 		if(ch === 'W') {
-			if(settings.clean_mode) curse = '`$IN TARNATION`%'; else curse = '`$THE FUCK`%';		
+			if(settings.clean_mode) curse = '`$IN TARNATION`%'; else curse = '`$THE FUCK`%';
 			get_head('Breaking into '+trainer.name+'\'s Cabin');
 			lln('  `2You decide that knocking on a Warrior\'s door');
 			lln('  is beneath you, so you walk in like you own the');
 			sln('  place.  As you stand in the small front room you');
-			lw('  see that `6'+trainer.name+'`2 is `%'); wait(); wait(); wait();			
+			lw('  see that `6'+trainer.name+'`2 is `%'); wait(); wait(); wait();
 			sln('');
 			vrand = random(5);
 			
@@ -2506,17 +2505,17 @@ function veldore_cabin(trainer) {
 					switch( vrand ) {
 						case 0:
 							lln('A DRAGONS TOOTH!');
-							player.hp += 100;							
+							player.hp += 100;
 						break;
 						
 						case 1:
 							lln('AN AMULET OF ACCURACY!');
 							player.amulet = true;
 						break;
-							
+		
 						case 2:
 							lln('A FAIRY!');
-							player.has_fairy = true;	
+							player.has_fairy = true;
 						break;
 						
 						sln('');
@@ -2529,7 +2528,7 @@ function veldore_cabin(trainer) {
 				case 1: // trainer is pissed ... battle
 					say_slow2('  drunk!');
 					sln('');
-					sln('');				
+					sln('');
 					lln('  `%"WHAT '+curse+' DO YOU WANT, KID?"`0,'+trainer.name+' Yells.');
 					sln('');
 					more_nomail();
@@ -2550,7 +2549,7 @@ function veldore_cabin(trainer) {
 					more_nomail();
 					log_line('  `5'+player.name+' `0battled the drunk Monster `6'+husband.name);
 					good_bye('frightening');					
-				break
+				break;
 				
 				case 2: // trainer is busy ... sends you away
 					sln('  busy honing his '+trainer.weapon);
@@ -2592,7 +2591,7 @@ function veldore_cabin(trainer) {
 					}
 					sln(ch);
 					sln('');
-									
+		
 					switch ( ch ) {
 						case 'A':
 							get_head('Having a Drink with '+trainer.name);
@@ -2609,7 +2608,7 @@ function veldore_cabin(trainer) {
 								ch = 'S';
 							}
 							sln(ch);
-							sln('');							
+							sln('');
 							switch ( ch) {
 							
 							case 'A':
@@ -2620,9 +2619,7 @@ function veldore_cabin(trainer) {
 								more_nomail();
 								sleep_here('v');
 							break;
-														
-					
-						
+				
 							case 'P':
 								lln('  `2I didn\'t hear what you mumbled, but');
 								guessing_game(trainer.name);
@@ -2630,14 +2627,14 @@ function veldore_cabin(trainer) {
 								lln('  `%"Well, that was fun, '+trainer.name+'.  We should do it');
 								lln('  again sometime!"`0, you say as you get up and leave.');
 								sln('');
-								break;						
+								break;
 										
 							case 'S':
 								lln('  `%Um, no, sorry, but I really have to go, but thank you!"');
 								lln('  `0you say as you turn around and leave.');
 								sln('');
-								lln('  `$You Gain '+pretty_int(player.level * 10)+' Experience!');							
-								player.exp += player.level * 10;							
+								lln('  `$You Gain '+pretty_int(player.level * 10)+' Experience!');
+								player.exp += player.level * 10;
 								sln('');
 								more_nomail();
 								good_bye();
@@ -2646,7 +2643,7 @@ function veldore_cabin(trainer) {
 							}				
 				break;
 				
-				case 4: // trainer is happy ... plays cards
+				case 4: // trainer is happy ... plays game
 					lln('  pleasantly surprised');
 					sln('');
 					
@@ -2662,11 +2659,11 @@ function veldore_cabin(trainer) {
 					lln('  again sometime!"`0, you say as you get up and leave.');
 					sln('');
 					player.forest_fights+=3;
-					lln('  `$YOU GAIN 3 FOREST FIGHTS');					
+					lln('  `$YOU GAIN 3 FOREST FIGHTS');
 				break;
 			}
 			
-			more_nomail();			
+			more_nomail();
 			good_bye();
 		}
 }
@@ -2682,19 +2679,19 @@ function search() {
 	var found = '';
 	var reward = 0;
 	var trainer = undefined;
-	if (player.level < 12) 
+	if (player.level < 12)
 	{
 		trainer = get_trainer(player.level);
 	}
-	else 
+	else
 	{
 		trainer = get_trainer(11);
 	}
 	
-	get_head('Searching The Forest');	
+	get_head('Searching The Forest');
 	lrdfile('FOREST');
-	sln('');		
-	sln('');	
+	sln('');
+	sln('');
 	lln('  `2You decide that you\'d rather take your chances');
 	sln('  searching for items other Warriors may have lost');
 	sln('  while trudging through The Forest.');
@@ -2708,7 +2705,7 @@ function search() {
 	
 	var sum_shit = random(11);
 	
-	switch ( sum_shit ) {	
+	switch ( sum_shit ) {
 		case 0:
 			reward = Math.round(player.hp / 2);
 			say_slow2(' A DRAGON\'S TOOTH!');
@@ -2724,17 +2721,17 @@ function search() {
 			sln('');
 			lln('  `0YOU LOSE `%'+pretty_int(reward)+' `0HIT POINTS');
 			player.hp -= reward;
-			player.weapon = 'Rusty Sword';	
+			player.weapon = 'Rusty Sword';
 		break;
 		
 		case 2:
 			say_slow2('  AN AMULET OF ACCURACY!');
 			player.amulet = true;
-			log_line('  `5'+player.name+' `0Found an `$AMULET OF ACCURACY `0in The Forest');	
+			log_line('  `5'+player.name+' `0Found an `$AMULET OF ACCURACY `0in The Forest');
 		break;
 			
 		case 3:
-			reward = player.level * Math.round(player.exp/10);			
+			reward = player.level * Math.round(player.exp/10);
 			if(player.sex === 'M') {
 				say_slow2('  A MAP TO JENNIE\'S CABIN!');
 				sln('');
@@ -2746,19 +2743,19 @@ function search() {
 				sln('');
 				more_nomail();
 				cabin_shit('Seth');
-			}			
+			}
 		break;
 		
-		case 4:				
+		case 4:
 			player.exp += reward;
 			say_slow2(' A MAP TO '+trainer.name.toUpperCase()+'\'S CABIN!');
 			sln('');
 			more_nomail();
-			cabin_shit('Veldore');			
+			cabin_shit('Veldore');
 		break;
 		
 		case 5:
-			if(player.horse) 
+			if(player.horse)
 			{
 				say_slow2(' A LOST CHILD!');
 				player.kids += 1;
@@ -2768,7 +2765,7 @@ function search() {
 			{
 				say_slow2(' A HORSE!');
 				player.horse = true;
-			}			
+			}
 		break;
 		
 		case 6:
@@ -2778,18 +2775,19 @@ function search() {
 		break;
 		
 		case 7:
-			if(player.has_fairy) 
+			if(player.has_fairy)
 			{
-				if(settings.clean_mode) 
-				{ 
+				if(settings.clean_mode)
+				{
 					say_slow2(' A USED SNOT RAG!');
-				 	lln('  `0YOU LOSE `%1 `0CHARM'); 
+				 	lln('  `0YOU LOSE `%1 `0CHARM');
 				}
-				else 
-				{ 
+				else
+				{
 					say_slow2(' A USED CONDOM!');
-				  	lln('  `0YOU LOSE `%1 `0CHARM'); }
-					player.cha -= 1;				
+				  	lln('  `0YOU LOSE `%1 `0CHARM'); 
+				}
+					player.cha -= 1;
 				}
 			else
 			{
@@ -2808,7 +2806,7 @@ function search() {
 			reward = player.level;
 			if(reward < 3) reward = 3;
 			say_slow2(' A POUCH WITH '+pretty_int(reward)+' GEMS');
-			player.gem += reward;			
+			player.gem += reward;
 		break;
 		
 		case 10:
@@ -2821,14 +2819,14 @@ function search() {
 			lln('  at you yelling `%"Why you wake `6'+husband.name+'`%?"');
 			sln('');
 			more_nomail();
-			battle(husband, false, false);		
+			battle(husband, false, false);
 			log_line('  `5'+player.name+' `0startled the monster `6'+husband.name);
-		break;																
+		break;
 	}
 	
 	sln('');
-	more_nomail();	
-	good_bye();	
+	more_nomail();
+	good_bye();
 }
 
 function climb() {
@@ -2872,7 +2870,7 @@ function climb() {
 		break;
 		
 		case 1:
-			reward = 2 + player.level;			
+			reward = 2 + player.level;
 			say_slow2('  YOU FOUND A POUCH WITH '+pretty_int(reward)+' GEMS IN IT!');
 			player.gem += reward;
 		break;
@@ -2908,7 +2906,7 @@ function climb() {
 			player.hp += reward;
 			lln('  YOU GRABBED AN EMPTY POUCH!');
 			more_nomail();
-			say_slow2('  YOU LOSE '+pretty_int(reward)+' EXPERIENCE');	
+			say_slow2('  YOU LOSE '+pretty_int(reward)+' EXPERIENCE');
 		break;
 		
 		case 7:
@@ -2923,23 +2921,23 @@ function climb() {
 			
 			if(player.sex === 'M') {
 				say_slow2('  YOU FOUND A DINNER INVITATION FROM VILOET!');
-				var say1_lognow = '  `5'+player.name+' `2got laid by `5Violet!';							
+				var say1_lognow = '  `5'+player.name+' `2got laid by `5Violet!';
 			} else {
 				say_slow2('  YOU FOUND A DINNER INVITATION FROM SETH!');
-				var say1_lognow = '  `5'+player.name+' `2got laid by `$Seth Able!';			
+				var say1_lognow = '  `5'+player.name+' `2got laid by `$Seth Able!';
 			}
 			if(settings.clean_mode) {
 				sln('');
-				say_slow2('  YOUR CHARM GOES UP BY ' + pretty_int(reward));				
-			} else {			
+				say_slow2('  YOUR CHARM GOES UP BY ' + pretty_int(reward));
+			} else {
 				sln('');
 				lln('  `2You accept the invitation.  After 2 hours of');
 				lln('  great sex you feel invigorated!');
 				more_nomail();
 				lln('  `0YOUR CHARM GOES UP BY ' + pretty_int(reward));
 				player.laid += 1;
-				log_line(say1_lognow);				
-			}			
+				log_line(say1_lognow);
+			}
 		break;
 		
 		case 9:
@@ -2957,7 +2955,7 @@ function climb() {
 	sln('');
 	sln('');
 	more_nomail();
-	good_bye();	
+	good_bye();
 }
 
 function good_bye(what) {
@@ -2965,8 +2963,8 @@ function good_bye(what) {
 	sln('');
 	lln('  `2You have had a `$'+what+' `2visit to the Grab Bag today.');
 	sln('');
-	lw('  You continue your on you way back to `4');	
-	wait(), wait(); wait();	
+	lw('  You continue your on you way back to `4');
+	wait(), wait(); wait();
 	say_slow(' The Realm!');
 	mswait(1000);
 	exit(0);
@@ -2985,7 +2983,7 @@ function whats_this() {
 	lln('  for the night, battle a Monster, or even battle');
 	lw('  `4T`%he `4R`%ed `4D`%ragon`0!');
 	sln('');
-	more_nomail();	
+	more_nomail();
 }
 
 var grabbagDefs = [
@@ -3015,18 +3013,18 @@ function run_maint(b)
 // globals
 var bs;
 load('array.js'); // probably no longer needed
-var mnum = undefined;			
-if (player.level === 1) 
+var mnum = undefined;
+if (player.level === 1)
 {
 	mnum = random(10);
 }
-else 
+else
 {
-	if (random(6) !== 2) 
+	if (random(6) !== 2)
 	{
 		mnum = ((player.level-1)*11)+random(10);
 	}
-	else 
+	else
 	{
 		mnum = (random(player.level) * 11) + random(10);
 	}
@@ -3069,21 +3067,21 @@ function main()
 		run_maint(b);
 	}
 	
-	if(user.is_sysop) // allows for sysop to always be able to play for testing IGM
-	{ 
-		//player.sex = 'M'; // remove this, it is only for testing M/F 
-		player.forest_fights = player.forest_fights + 1; 
+	if(user.is_sysop || dk.system.mode === 'local') // allows for sysop to always be able to play for testing IGM
+	{
+		//player.sex = 'M'; // remove this, it is only for testing M/F
+		player.forest_fights = player.forest_fights + 1;
 		player.hp = player.hp_max + 1;
-		b.can_play[player.Record] = true; 
+		b.can_play[player.Record] = true;
 	}
 	
 	if(!b.can_play[player.Record] || player.forest_fights < 1) {
 		lln('  `2As you, begin your journey, you suddenly feel confused,');
-		sln('  it seems you have forgotten how to get there. You turn');		
-		sln('  around and head back to town.');		
+		sln('  it seems you have forgotten how to get there. You turn');
+		sln('  around and head back to town.');
 		sln('');
 		lln('  `$Maybe Tomorrow `2you\'ll remember the way!');
-		sln('');  
+		sln(''); 
 		more_nomail();
 		good_bye();
 	}
@@ -3092,15 +3090,15 @@ function main()
 	b.put();
 
 	if(settings.clean_mode) { lln('  `0Clean Mode is `$ON `0'); sln(''); }
-	else 
-	{ 
-		sln('');		
+	else
+	{
+		sln('');
 		lln('  `0Clean Mode is `$OFF`0');
 		sln('');
 		lln('  `0With clean mode `4OFF `0things can get');
 		lln('  a bit graphic in here!');
 		sln('');
-		lw('  (`$C`0)ontinue (`4L`0)eave? `%')
+		lw('  (`$C`0)ontinue (`4L`0)eave? `%');
 		ch = getkey().toUpperCase();
 		if('CL'.indexOf(ch) == -1) ch = 'C';
 		sln(ch);
@@ -3110,8 +3108,8 @@ function main()
 			sln('');
 			player.forest_fights += 2;
 			good_bye();
-		}		
-	}	
+		}
+	}
 
 var done = false;
 while(!done) {	// let's player view instructions without kicking them out as though they played
