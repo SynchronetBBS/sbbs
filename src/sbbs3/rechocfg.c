@@ -230,6 +230,7 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->auto_add_subs				= true;
 	cfg->auto_add_to_areafile		= true;
 	cfg->auto_utf8					= true;
+	cfg->strip_soft_cr				= true;
 	cfg->min_free_diskspace			= 10*1024*1024;
 }
 

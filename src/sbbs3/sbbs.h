@@ -1160,6 +1160,7 @@ extern "C" {
 	DLLEXPORT char *	strip_space(const char *str, char* dest);
 	DLLEXPORT char *	prep_file_desc(const char *str, char* dest);
 	DLLEXPORT char *	strip_ctrl(const char *str, char* dest);
+	DLLEXPORT char *	strip_char(const char* str, char* dest, char);
 	DLLEXPORT char *	net_addr(net_t* net);
 	DLLEXPORT BOOL		valid_ctrl_a_attr(char a);
 	DLLEXPORT BOOL		valid_ctrl_a_code(char a);

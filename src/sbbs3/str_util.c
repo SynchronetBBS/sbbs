@@ -115,6 +115,21 @@ char* strip_space(const char *str, char* dest)
 	return dest;
 }
 
+char* strip_char(const char* str, char* dest, char ch)
+{
+	const char* src;
+
+	if(dest == NULL && (dest = strdup(str)) == NULL)
+		return NULL;
+	char* retval = dest;
+	for(src = str; *src != '\0'; src++) {
+		if(*src != ch)
+			*(dest++) = *src;
+	}
+	*dest = '\0';
+	return retval;
+}
+
 char* prep_file_desc(const char *str, char* dest)
 {
 	int	i,j;

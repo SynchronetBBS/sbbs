@@ -3475,8 +3475,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 			continue;
 		}
 
-		if(ch == '\n' ||
-			(ch == FIDO_SOFT_CR && cfg.strip_soft_cr))
+		if(ch == '\n')
 			continue;
 		if(cr && (!strncmp((char *)fbuf+l,"--- ",4)
 			|| !strncmp((char *)fbuf+l,"---\r",4)))
@@ -3549,6 +3548,10 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 
 	if(smb_msg_is_utf8(&msg))
 		msg.hdr.auxattr |= MSG_HFIELDS_UTF8;
+	else {
+		if(cfg.strip_soft_cr)
+			strip_char((const char*)sbody, (char*)sbody, FIDO_SOFT_CR);
+	}
 
 	if(subnum==INVALID_SUB && !bodylen && !taillen && cfg.kill_empty_netmail) {
 		lprintf(LOG_INFO,"Empty NetMail - Ignored ");
