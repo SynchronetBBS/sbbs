@@ -116,7 +116,7 @@ options are supported (with default values):
     highlight = true
 
 The user's choice of the following settings is saved to their user properties
-list and restored for future game plays:
+file (data/user/*.ini) and used for future game plays:
 
     difficulty
     selector
