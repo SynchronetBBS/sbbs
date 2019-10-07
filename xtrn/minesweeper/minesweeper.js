@@ -31,6 +31,9 @@ const selectors = ["()", "[]", "<>", "{}", "--", "  "];
 
 require("sbbsdefs.js", "K_NONE");
 
+if(BG_HIGH === undefined)
+	BG_HIGH = 0x400;
+
 var options=load({}, "modopts.js", ini_section);
 if(!options)
 	options = {};
@@ -114,7 +117,7 @@ function isgamewon()
 		}
 	}
 	if(covered === 0) { 
-		game.end = time();
+		game.end = Date.now() / 1000;
 		if(options.sub) {
 			var msgbase = new MsgBase(options.sub);
 			var hdr = { 
@@ -148,7 +151,7 @@ function isgamewon()
 function lostgame(cause)
 {
 	gameover = true;
-	game.end = time();
+	game.end = Date.now() / 1000;
 	game.name = user.alias;
 	game.cause = cause;
 	json_lines.add(losers_list, game);
@@ -180,20 +183,20 @@ function compare_won_game(g1, g2)
 
 function secondstr(t)
 {
-	return format("%2u:%02u", t/60, t%60);
+	return format("%2u:%02u", Math.floor(t/60), Math.floor(t%60));
 }
 
-function show_winners()
+function show_winners(level)
 {
 	console.clear();
 	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
 	console_center(" " + title + " Top " + options.winners + " Winners ");
 	console.attributes = LIGHTGRAY;
-	
+
 	var list = json_lines.get(winners_list);
 	if(typeof list != 'object')
 		list = [];
-	
+
 	if(options.sub) {
 		var msgbase = new MsgBase(options.sub);
 		if(msgbase.get_index !== undefined && msgbase.open()) {
@@ -213,6 +216,8 @@ function show_winners()
 				var body = msgbase.get_msg_body(hdr, false, false, false);
 				if(!body)
 					continue;
+				body = body.split("\n===", 1)[0];
+				body = body.split("\n---", 1)[0];
 				var obj;
 				try {
 					obj = JSON.parse(strip_ctrl(body));
@@ -230,36 +235,51 @@ function show_winners()
 					obj.net_addr = hdr.from_net_addr;	// Not included in MD5 sum
 					list.push(obj);
 				} else {
-					log(LOG_INFO, title + 
-						" MD5 not " + calced + 
-						" in: "  + options.sub + 
+					log(LOG_INFO, title +
+						" MD5 not " + calced +
+						" in: "  + options.sub +
 						" msg " + hdr.number);
 				}
 			}
 			msgbase.close();
 		}
 	}
-	
+
+	if(level)
+		list = list.filter(function (obj) { var difficulty = calc_difficulty(obj);
+			return (difficulty <= level && difficulty > level - 1); });
+
 	if(!list.length) {
-		alert("No winners yet!");
+		alert("No " + (level ? ("level " + level) : "") + " winners yet!");
 		return;
 	}
 	console.attributes = WHITE;
-	console.print(format("Rank %-25s%-15s Lvl  Time  WxHxMines   Date   Rev\r\n", "User", ""));
-	
+	console.print(format("    %-25s%-15s Lvl   Time  WxHxMines   Date   Rev\r\n", "User", ""));
+
 	list.sort(compare_won_game);
-	
-	for(var i = 0; i < list.length && i < options.winners && !console.aborted; i++) {
+
+	var count = 0;
+	var displayed = 0;
+	var last_level = 0;
+	for(var i = 0; i < list.length && displayed < options.winners && !console.aborted; i++) {
 		var game = list[i];
-		if(i&1)
+		var level = calc_difficulty(game);
+		if(Math.ceil(level) != Math.ceil(last_level)) {
+			last_level = level;
+			count = 0;
+		} else {
+			if(level > 1.0 && count >= options.winners / max_difficulty)
+				continue;
+		}
+		if(displayed&1)
 			console.attributes = LIGHTCYAN;
 		else
 			console.attributes = BG_CYAN;
-		console.print(format("%4u %-25s%-15s %1.1f %s %3ux%2ux%-3u %s %s\x01>\r\n"
-			,i + 1
+		console.print(format("%3u %-25.25s%-15.15s %1.2f %s %3ux%2ux%-3u %s %s\x01>\r\n"
+			,count + 1
 			,game.name
 			,game.net_addr ? ('@'+game.net_addr) : ''
-			,calc_difficulty(game)
+			,level
 			,secondstr(game.end - game.start)
 			,game.width
 			,game.height
@@ -267,6 +287,8 @@ function show_winners()
 			,system.datestr(game.end)
 			,game.rev ? game.rev : ''
 			));
+		count++;
+		displayed++;
 	}
 	console.attributes = LIGHTGRAY;
 }
@@ -298,7 +320,7 @@ function show_log()
 		return;
 	}
 	console.attributes = WHITE;
-	console.print(format("Date      %-25s Lvl  Time  WxHxMines Rev  Result\r\n", "User", ""));
+	console.print(format("Date      %-25s Lvl   Time  WxHxMines Rev  Result\r\n", "User", ""));
 	
 	list.sort(compare_game);
 	
@@ -308,7 +330,7 @@ function show_log()
 			console.attributes = LIGHTCYAN;
 		else
 			console.attributes = BG_CYAN;
-		console.print(format("%s  %-25s %1.1f %s %3ux%2ux%-3u %3s  %s\x01>\x01n\r\n"
+		console.print(format("%s  %-25s %1.2f %s %3ux%2ux%-3u %3s  %s\x01>\x01n\r\n"
 			,system.datestr(game.end)
 			,game.name
 			,calc_difficulty(game)
@@ -482,10 +504,10 @@ function draw_board(full)
 	} else {
 		var elapsed = 0;
 		if(game.start)
-			elapsed = time() - game.start;
-		var timeleft = (options.timelimit * 60) - elapsed;
+			elapsed = (Date.now() / 1000) - game.start;
+		var timeleft = Math.max(0, (options.timelimit * 60) - elapsed);
 		console.attributes = LIGHTCYAN;
-		console_center(format("Mines: %-3d Lvl: %1.1f  %s%s"
+		console_center(format("%d Mines  Lvl %1.2f  %s%s"
 			, game.mines - totalflags(), calc_difficulty(game)
 			, game.start && !gameover && (timeleft / 60) <= options.timewarn ? "\x01r\x01h\x01i" : ""
 			, secondstr(timeleft)
@@ -573,7 +595,7 @@ function mined(x, y)
 function start_game()
 {
 	place_mines();
-	game.start = time();
+	game.start = Date.now() / 1000;
 }
 
 function uncover_cell(x, y)
@@ -723,7 +745,7 @@ function play()
 	var full_redraw = false;
 	while(bbs.online) {
 		if(!gameover && game.start
-			&& time() - game.start >= options.timelimit * 60) {
+			&& Date.now() - (game.start * 1000) >= options.timelimit * 60 * 1000) {
 			lostgame("timeout");
 			draw_board(true);
 		}
@@ -855,12 +877,17 @@ function play()
 				break;
 			}
 			case 'W':
-				console.line_counter = 0;
-				show_winners();
-				console.pause();
-				console.clear();
-				console.aborted = false;
-				full_redraw = true;
+				console.home();
+				console.down(top + 1);
+				var level = get_difficulty();
+				if(level >= 1) {
+					console.line_counter = 0;
+					show_winners(level);
+					console.pause();
+					console.clear();
+					console.aborted = false;
+					full_redraw = true;
+				}
 				break
 			case 'L':
 				console.line_counter = 0;
