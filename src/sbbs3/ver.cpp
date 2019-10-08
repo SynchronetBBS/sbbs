@@ -64,7 +64,7 @@ char* socklib_version(char* str, char* winsock_ver)
 
 #else
 	
-	strcpy(str,"No socket library version available");
+	strcpy(str,"");
 
 #endif
 
@@ -107,8 +107,6 @@ void sbbs_t::ver()
 	}
 #endif
 
-	socklib_version(str,SOCKLIB_DESC);
-
 #ifdef USE_CRYPTLIB
 	if(is_crypt_initialized()) {
 		int cl_major=0, cl_minor=0, cl_step=0;
@@ -117,11 +115,11 @@ void sbbs_t::ver()
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MINORVERSION, &cl_minor);
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_STEPPING, &cl_step);
 		(void)result;
-		sprintf(str + strlen(str), "  cryptlib %u.%u.%u (%u)", cl_major, cl_minor, cl_step, CRYPTLIB_VERSION);
+		sprintf(str, "  cryptlib %u.%u.%u (%u)", cl_major, cl_minor, cl_step, CRYPTLIB_VERSION);
+		center(str);
+		CRLF;
 	}
 #endif
-	center(str);
-	CRLF;
 
 	center(os_version(str));
 }
