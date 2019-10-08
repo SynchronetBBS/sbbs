@@ -1042,7 +1042,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		tp=strchr(sp,',');
 		if(tp!=NULL) {
 			tp++;
-			ansi_gotoxy(atoi(sp+7),atoi(tp));
+			cursor_xy(atoi(sp+7),atoi(tp));
 		}
 		return(nulstr);
 	}

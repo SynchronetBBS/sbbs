@@ -912,6 +912,20 @@ void sbbs_t::cursor_left(int count)
 		column=0;
 }
 
+bool sbbs_t::cursor_xy(int x, int y)
+{
+	long term = term_supports();
+	if(term&ANSI)
+		return ansi_gotoxy(x, y);
+	if(term&PETSCII) {
+		outcom(PETSCII_HOME);
+		cursor_down(y - 1);
+		cursor_right(x - 1);
+		return true;
+	}
+	return false;
+}
+
 void sbbs_t::cleartoeol(void)
 {
 	int i,j;
