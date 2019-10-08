@@ -1171,8 +1171,16 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	hdr.destpoint=dest.point;
 
 	hdr.attr=(FIDO_PRIVATE|FIDO_KILLSENT|FIDO_LOCAL);
-	if(msg != NULL && (msg->hdr.auxattr&MSG_FILEATTACH))
-		hdr.attr|=FIDO_FILE;
+	if(msg != NULL) {
+		if(msg->hdr.netattr&MSG_CRASH)
+			hdr.attr|=FIDO_CRASH;
+		if(msg->hdr.auxattr&MSG_FILEATTACH)
+			hdr.attr|=FIDO_FILE;
+		if(msg->hdr.auxattr&MSG_FILEREQUEST)
+			hdr.attr|=FIDO_FREQ;
+		if(msg->hdr.auxattr&MSG_RECEIPTREQ)
+			hdr.attr|=FIDO_RRREQ;
+	}
 
 	if(nodecfg != NULL) {
 		switch(nodecfg->status) {
