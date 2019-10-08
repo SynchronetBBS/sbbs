@@ -115,6 +115,7 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 		,auxattr&(MSG_FILEATTACH|MSG_MIMEATTACH) ? "Attach  "   :nulstr
 		,netattr&MSG_SENT						 ? "Sent  "		:nulstr
 		,netattr&MSG_INTRANSIT					 ? "InTransit  ":nulstr
+		,netattr&MSG_KILLSENT					 ? "KillSent  " :nulstr
 		);
 }
 
@@ -205,7 +206,7 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 			bprintf(pmode, msghdr_text(msg, MsgFrom), current_msg_from);
 			if(msg->from_ext)
 				bprintf(text[MsgFromExt],msg->from_ext);
-			if(msg->from_net.addr!=NULL && (current_msg_from == NULL || strchr(current_msg_from,'@')==NULL))
+			if(msg->from_net.addr!=NULL)
 				bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str));
 		}
 		if(!(msg->hdr.attr&MSG_POLL) && (msg->upvotes || msg->downvotes))
