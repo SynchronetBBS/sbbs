@@ -44,7 +44,6 @@ require('key_defs.js', 'KEY_UP');
 							    /********************************************/
 var   SYS_CLOSED	=(1<<0); 	/* System is closed to New Users		    */
 var   SYS_SYSSTAT	=(1<<1); 	/* Sysops activity included in statistics	*/
-var   SYS_NOBEEP	=(1<<2); 	/* No beep sound locally					*/
 var   SYS_NOSYSINFO	=(1<<2); 	/* Suppress system info display at logon	*/
 var   SYS_PWEDIT	=(1<<3); 	/* Allow users to change their passwords	*/
 var   SYS_RA_EMU	=(1<<4); 	/* Reverse R/A commands at msg read prompt	*/
@@ -56,8 +55,7 @@ var   SYS_WWIV 		=(1<<9); 	/* Expand WWIV color codes in messages		*/
 var   SYS_CELERITY	=(1<<10);	/* Expand Celerity color codes in messages	*/
 var   SYS_RENEGADE	=(1<<11);	/* Expand Renegade color codes in messages	*/
 var   SYS_ECHO_PW	=(1<<12);	/* Echo passwords locally					*/
-var   SYS_REQ_PW	=(1<<13);	/* Require passwords locally				*/
-var   SYS_L_SYSOP	=(1<<14);	/* Allow local sysop logon/commands 		*/
+var   SYS_AUTO_DST	=(1<<14);	/* Automatic Daylight Savings Toggle (US)	*/
 var   SYS_R_SYSOP	=(1<<15);	/* Allow remote sysop logon/commands		*/
 var   SYS_QUOTE_EM	=(1<<16);	/* Allow quoting of e-mail					*/
 var   SYS_EURODATE	=(1<<17);	/* European date format (DD/MM/YY)			*/
@@ -67,8 +65,7 @@ var   SYS_FILE_EM	=(1<<20);	/* Allow file attachments in E-mail 		*/
 var   SYS_SHRTPAGE	=(1<<21);	/* Short sysop page 						*/
 var   SYS_TIME_EXP	=(1<<22);	/* Set to expired values if out-of-time 	*/
 var   SYS_FASTMAIL	=(1<<23);	/* Fast e-mail storage mode 				*/
-var   SYS_QVALKEYS	=(1<<24);	/* Quick validation keys enabled			*/
-var   SYS_ERRALARM	=(1<<25);	/* Error beeps on							*/
+var   SYS_NONODELIST=(1<<24);	/* Suppress active node list during logon	*/
 var   SYS_FWDTONET	=(1<<26);	/* Allow forwarding of e-mail to netmail	*/
 var   SYS_DELREADM	=(1<<27);	/* Delete read mail automatically			*/
 var   SYS_NOCDTCVT	=(1<<28);	/* No credit to minute conversions allowed	*/
