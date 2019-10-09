@@ -14,6 +14,9 @@ const header_height = 4;
 const winners_list = js.exec_dir + "winners.jsonl";
 const losers_list = js.exec_dir + "losers.jsonl";
 const help_file = js.exec_dir + "minesweeper.hlp";
+const welcome_image = js.exec_dir + "welcome.bin";
+const winner_image = js.exec_dir + "winner.bin";
+const loser_image = js.exec_dir + "loser.bin";
 const max_difficulty = 5;
 const min_mine_density = 0.10;
 const mine_density_multiplier = 0.025;
@@ -47,6 +50,8 @@ if(!options.selector)
 	options.selector = 0;
 if(!options.highlight)
 	options.highlight = true;
+if(!options.image_delay)
+	options.image_delay = 1500;
 if(!options.sub)
     options.sub = load({}, "syncdata.js").find();
 
@@ -67,6 +72,26 @@ var highlight = userprops.get(ini_section, "highlight", options.highlight);
 var difficulty = userprops.get(ini_section, "difficulty", options.difficulty);
 
 log(LOG_DEBUG, title + " options: " + JSON.stringify(options));
+
+function show_image(filename, fx)
+{
+	var Graphic = load({}, "graphic.js");
+	var sauce_lib = load({}, "sauce_lib.js");
+	var sauce = sauce_lib.read(filename);
+	if(sauce && sauce.datatype == sauce_lib.defs.datatype.bin) {
+		try {
+			var graphic = new Graphic(sauce.cols, sauce.rows);
+			graphic.load(filename);
+			if(fx && graphic.revision >= 1.82)
+				graphic.drawfx('center', 'center');
+			else
+				graphic.draw('center', 'center');
+			sleep(options.image_delay);
+		} catch(e) { 
+			log(LOG_DEBUG, e);
+		}
+	}
+}
 
 function countmines(x, y)
 {
@@ -143,6 +168,8 @@ function isgamewon()
 		}
 		gamewon = true;
 		gameover = true;
+		draw_board(false);
+		show_image(winner_image, true);
 		return true;
 	}
 	return false;
@@ -155,6 +182,8 @@ function lostgame(cause)
 	game.name = user.alias;
 	game.cause = cause;
 	json_lines.add(losers_list, game);
+	draw_board(true);
+	show_image(loser_image, true);
 }
 	
 function calc_difficulty(game)
@@ -189,6 +218,7 @@ function secondstr(t)
 function show_winners(level)
 {
 	console.clear();
+	console.aborted = false;
 	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
 	console_center(" " + title + " Top " + options.winners + " Winners ");
 	console.attributes = LIGHTGRAY;
@@ -263,12 +293,12 @@ function show_winners(level)
 	var last_level = 0;
 	for(var i = 0; i < list.length && displayed < options.winners && !console.aborted; i++) {
 		var game = list[i];
-		var level = calc_difficulty(game);
-		if(Math.ceil(level) != Math.ceil(last_level)) {
-			last_level = level;
+		var difficulty = calc_difficulty(game);
+		if(Math.ceil(difficulty) != Math.ceil(last_level)) {
+			last_level = difficulty;
 			count = 0;
 		} else {
-			if(level > 1.0 && count >= options.winners / max_difficulty)
+			if(!level && difficulty > 1.0 && count >= options.winners / max_difficulty)
 				continue;
 		}
 		if(displayed&1)
@@ -279,7 +309,7 @@ function show_winners(level)
 			,count + 1
 			,game.name
 			,game.net_addr ? ('@'+game.net_addr) : ''
-			,level
+			,difficulty
 			,secondstr(game.end - game.start)
 			,game.width
 			,game.height
@@ -740,6 +770,8 @@ function change(x, y)
 
 function play()
 {
+	console.clear();
+	show_image(welcome_image);
 	init_game(difficulty);
 	draw_board(true);
 	var full_redraw = false;
