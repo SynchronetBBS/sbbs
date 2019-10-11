@@ -1,6 +1,7 @@
 load('sbbsdefs.js');
 load('frame.js');
 load('scrollbar.js');
+load('typeahead.js');
 
 const cache_ttl = 300; // seconds - make configgy
 const timeout = 30; // seconds - make configgyable
@@ -38,8 +39,28 @@ frames.help = new Frame(frames.top.x, frames.top.y + 1, frames.top.width, frames
 frames.content = new Frame(frames.top.x, frames.top.y + 1, frames.top.width, frames.top.height - 2, BG_BLACK|LIGHTGRAY, frames.top);
 frames.status_bar = new Frame(frames.top.x, frames.top.height, frames.top.width - 6, 1, BG_BLUE|WHITE, frames.top);
 frames.help_bar = new Frame(frames.status_bar.x + frames.status_bar.width, frames.status_bar.y, 6, 1, BG_BLUE|WHITE, frames.top);
-frames.scrollbar = new ScrollBar(frames.content);
 frames.help_bar.putmsg('H)elp');
+
+const scrollbar = new ScrollBar(frames.content);
+
+function get_address() {
+    const typeahead = new Typeahead({
+        x: 1,
+        y: 1,
+        prompt: 'Address: ',
+        text: 'gopher.floodgap.com:70'
+    });
+    const ret = typeahead.getstr().split(':');
+    typeahead.close();
+    frames.address_bar.invalidate();
+    frames.address_bar.draw();
+    return {
+        host: ret[0],
+        port: ret[1] ? parseInt(ret[1], 10) : 70,
+        selector: '',
+        type: 1
+    };
+}
 
 function parse_line(line) {
     line = line.split(/\t/);
@@ -117,7 +138,6 @@ function go_for(host, port, selector, type) {
     state.item_type = type;
     if (!go_cache(host, port, selector, type)) go_fetch(host, port, selector, type);
     set_address(host, port, selector);
-    set_status('');
 }
 
 function is_link(str) {
@@ -252,6 +272,7 @@ function print_document() {
         frames.top.invalidate();
         frames.top.draw();
     }
+    set_status('');
 }
 
 function go_get(host, port, selector, type) {
@@ -283,52 +304,59 @@ function go_forward() {
     print_document();
 }
 
-frames.top.open();
-frames.top.cycle();
-frames.scrollbar.cycle();
-go_get('gopher.quux.org', 70, '', '1');
+function main() {
+    frames.top.open();
+    frames.top.cycle();
+    scrollbar.cycle();
+    go_get('gopher.floodgap.com', 70, '', '1');
+    do {
+        switch (state.input) {
+            case '\t':
+                if (state.item_type == '1') {
+                    lowlight(state.doc[state.item], state.item);
+                    state.item = next_link();
+                    highlight(state.doc[state.item], state.item);
+                }
+                break;
+            case '`':
+                if (state.item_type == '1') {
+                    lowlight(state.doc[state.item], state.item);
+                    state.item = previous_link();
+                    highlight(state.doc[state.item], state.item);
+                }
+                break;
+            case '\r':
+            case '\s':
+                if (state.item_type == '1' && ['0', '1', '4', '5', '6', '9', 'g', 'I'].indexOf(state.doc[state.item].type) > -1) {
+                    go_get(state.doc[state.item].host, state.doc[state.item].port, state.doc[state.item].selector, state.doc[state.item].type);
+                }
+                break;
+            case 'g':
+            case 'G':
+                var addr = get_address();
+                if (addr && addr.host) go_get(addr.host, addr.port, addr.selector, addr.type);
+                break;
+            case KEY_LEFT:
+                go_back();
+                break;
+            case KEY_RIGHT:
+                go_forward();
+                break;
+            case KEY_UP:
+                if (frames.content.offset.y > 0) frames.content.scroll(0, -1);
+                break;
+            case KEY_DOWN:
+                if (frames.content.offset.y + frames.content.height < frames.content.data_height) frames.content.scroll(0, 1);
+                break;
+            default:
+                break;
+        }
+        if (frames.top.cycle()) {
+            scrollbar.cycle();
+            console.gotoxy(console.screen_columns, console.screen_rows);
+        }
+    } while ((state.input = console.getkey()).toLowerCase() != 'q');
+    frames.top.close();
+}
 
-do {
-    switch (state.input) {
-        case '\t':
-            if (state.item_type == '1') {
-                lowlight(state.doc[state.item], state.item);
-                state.item = next_link();
-                highlight(state.doc[state.item], state.item);
-            }
-            break;
-        case '`':
-            if (state.item_type == '1') {
-                lowlight(state.doc[state.item], state.item);
-                state.item = previous_link();
-                highlight(state.doc[state.item], state.item);
-            }
-            break;
-        case '\r':
-        case '\s':
-            if (state.item_type == '1' && ['0', '1', '4', '5', '6', '9', 'g', 'I'].indexOf(state.doc[state.item].type) > -1) {
-                go_get(state.doc[state.item].host, state.doc[state.item].port, state.doc[state.item].selector, state.doc[state.item].type);
-            }
-            break;
-        case KEY_LEFT:
-            go_back();
-            break;
-        case KEY_RIGHT:
-            go_forward();
-            break;
-        case KEY_UP:
-            if (frames.content.offset.y > 0) frames.content.scroll(0, -1);
-            break;
-        case KEY_DOWN:
-            if (frames.content.offset.y + frames.content.height < frames.content.data_height) frames.content.scroll(0, 1);
-            break;
-        default:
-            break;
-    }
-    if (frames.top.cycle()) {
-        frames.scrollbar.cycle();
-        console.gotoxy(console.screen_columns, console.screen_rows);
-    }
-} while ((state.input = console.getkey()).toLowerCase() != 'q');
-
-frames.top.close();
+main();
