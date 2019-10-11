@@ -1004,6 +1004,6 @@
 "\1n\1hLogging on to @BBS@ as @ALIAS@ @ELLIPSIS@\1n\r\n"\ 826 LoggingOn
     "@RESETPAUSE@"
 "\1n\1b[\1h\1wU\1n\1b] \1hInclude UTF-8 Characters     \1n\1b: \1c%s\r\n"	827 QWKSettingsUtf8
-"\1n\1m\1h%s\1n\1m posted a message to you via \1h%s\1n\1m\r\n"\            828 MsgPostedToYouVia
+"\1n\1m\1h%s\1n\1m%.0s posted to you "\                                     828 MsgPostedToYouVia
     "on \1h%s \1n\1m%s\r\n" 
 "unlimited"                                               829 Unlimited
