@@ -3,6 +3,27 @@ load('frame.js');
 load('scrollbar.js');
 load('typeahead.js');
 
+/* go-for
+ * a really lousy gopher client
+ * hit g to go to some address:port
+ * [enter]  select item
+ * [tab] next item
+ * ` (backtick) previous item
+ * [up]/[down] to scroll
+ * [left]/[right] history navigation
+ */
+
+/* To do
+ * - Help screen
+ * - Progressive load/unload of gopher directories in frame (slow/out of memory problems witl large listings)
+ *   (this would require a significant display overhaul)
+ * - Save current item idx for each element in history, so place isn't lost when going back
+ * - Support more item types (Index-Search Server, *maybe* telnet)
+ * - Improve status bar feedback re: document loading steps & progress
+ * - Improve address input (brighter, autodelete) (typeahead.js)
+ * - Include history / bookmarks / sysop mandated entries in typeahead address suggestions
+ */
+
 const cache_ttl = 300; // seconds - make configgy
 const timeout = 30; // seconds - make configgyable
 
@@ -73,71 +94,68 @@ function parse_line(line) {
     };
 }
 
-function go_cache(host, port, selector, type) {
-    const fn = format('%sgopher_%s-%s-%s', system.temp_dir, host, port, selector.replace(/[^a-zA-Z0-9\\.\\-]/g, '_'));
-    if (!file_exists(fn) || time() - file_date(fn) > cache_ttl) return false;
-    const f = new File(fn);
-    if (!f.open('r')) return false;
-    try {
-        state.doc = JSON.parse(f.read());
-    } catch (err) {
-        log(LOG_ERROR, err);
-        f.close();
-        return false;
-    }
-    f.close();
-    if (['4', '5', '9', 'g', 'I'].indexOf(type) > -1 && !file_exists(system.temp_dir + state.doc)) return false;
-    log('Cache hit for ' + fn);
-    return true;
+function get_cache_fn(host, port, selector) {
+    return format('%sgopher_%s-%s-%s', system.temp_dir, host, port, selector.replace(/[^a-zA-Z0-9\\.\\-]/g, '_'));
 }
 
-function go_cache_it(host, port, selector) {
-    const fn = format('%sgopher_%s-%s-%s', system.temp_dir, host, port, selector.replace(/[^a-zA-Z0-9\\.\\-]/g, '_'));
-    const f = new File(fn);
-    if (!f.open('w')) return;
-    f.write(JSON.stringify(state.doc));
-    f.close();
+function go_cache(host, port, selector) {
+    set_status('Checking cache ...');
+    const fn = get_cache_fn(host, port, selector);
+    if (!file_exists(fn) || time() - file_date(fn) > cache_ttl) return false;
+    return fn;
 }
 
 function go_fetch(host, port, selector, type) {
+
+    set_status('Connecting to ' + host + ':' + port);
+
     const socket = new Socket();
     if (!socket.connect(host, port)) return null;
+
+    const fn = get_cache_fn(host, port, selector);
+    const f = new File(fn);
+
+    set_status('Requesting ' + selector + '...');
     socket.sendline(selector);
     const dl_start = time();
-    if (type == '1') {
-        state.doc = [];
+    set_status('Downloading ' + selector + '...');
+
+    if (type == '1') { // this is a gopher directory
         var line;
+        f.open('w');
         while (time() - dl_start < timeout && !js.terminated && socket.is_connected && (line = socket.recvline()) != '.') {
-            state.doc.push(parse_line(line));
+            f.writeln(JSON.stringify(parse_line(line)));
         }
-    } else if (type == '0' || type == '6') {
-        var fn = format('%sgopher-txt_%s-%s-%s', system.temp_dir, host, port, selector.replace(/[^a-zA-Z0-9\\.\\-]/g, '_'));
-        state.doc = fn;
-        var f = new File(fn);
+        f.close();
+    } else if (type == '0' || type == '6') { // this is a text file
         f.open('w');
         while (time() - dl_start < timeout && !js.terminated && socket.is_connected) {
             f.writeln(socket.recvline());
         }
         f.close();
-    } else if (['4', '5', '9', 'g', 'I'].indexOf(type) > -1) {
-        var fn = format(system.temp_dir + selector.replace(/[^a-zA-Z0-9\\.\\-]/g, '_'));
-        state.doc = fn;
-        var f = new File(fn);
-        f.open('w+b');
+    } else if (['4', '5', '9', 'g', 'I'].indexOf(type) >  -1) { // this is a binary file
+        f.open('wb');
         while (time() - dl_start < timeout && !js.terminated && socket.is_connected) {
             f.writeBin(socket.recvBin(1), 1);
         }
         f.close();
     }
-    go_cache_it(host, port, selector);
+
+    set_status('Downloaded ' + selector);
+
+    return fn;
+
 }
 
 function go_for(host, port, selector, type) {
     set_status('Loading ...');
+    state.doc = [];
     state.item = -1;
     state.item_type = type;
-    if (!go_cache(host, port, selector, type)) go_fetch(host, port, selector, type);
+    var fn = go_cache(host, port, selector);
+    if (!fn) fn = go_fetch(host, port, selector, type);
     set_address(host, port, selector);
+    return fn;
 }
 
 function is_link(str) {
@@ -145,30 +163,30 @@ function is_link(str) {
 }
 
 function item_color(str) {
-    var ret = '\1n\1w';
+    var ret = BG_BLACK|LIGHTGRAY;
     switch (str) {
         case '0': // Text files
         case '6':
-            ret = '\1h\1y';
+            ret = BG_BLACK|YELLOW;
             break;
         case '1': // Directory
-            ret = '\1h\1c';
+            ret = BG_BLACK|LIGHTCYAN;
             break;
         case '2': // Unsupported
         case '7':
         case '8':
         case 'T':
-            ret = '\1h\1b';
+            ret = BG_BLACK|LIGHTBLUE;
             break;
         case '4': // Downloads
         case '5':
         case '9':
         case 'g':
         case 'I':
-            ret = '\1h\1g';
+            ret = BG_BLACK|LIGHTGREEN;
             break;
         case '3': // Error
-            ret = '\1h\1r';
+            ret = BG_BLACK|LIGHTRED;
             break;
     }
     return ret;
@@ -194,22 +212,13 @@ function previous_link() {
     return ret;
 }
 
-// Determine what line of the display item l of the current document appears on
-function get_row(l) {
+// Determine what line of the display item i appears on
+function get_row(i) {
     var row = 0;
-    for (var n = 0; n <= l && n < state.doc.length; n++) {
-        row += truncsp(word_wrap(state.doc[n].text)).split(/\n/).length;
+    for (var n = 0; n <= i && n < state.doc.length; n++) {
+        row += state.doc[n].rows;
     }
     return row;
-}
-
-function print_line(e, i) {
-    frames.content.gotoxy(1, get_row(i));
-    if (is_link(e.type)) {
-        frames.content.putmsg(item_color(e.type) + e.text + '\r\n');
-    } else {
-        frames.content.putmsg('\1n\1w' + e.text + '\r\n');
-    }
 }
 
 function scroll_to(i) {
@@ -226,15 +235,31 @@ function scroll_to(i) {
 }
 
 function lowlight(e, i) {
+    if (!e || !is_link(e.type)) return;
     scroll_to(i);
-    frames.content.putmsg(item_color(e.type) + e.text + '\r\n');
+    var data;
+    const row = get_row(i) - 1;
+    for (var y = row; y < row + state.doc[state.item].rows; y++) {
+        for (var x = 0; x < frames.content.width; x++) {
+            data = frames.content.getData(x, y, false);
+            frames.content.setData(x, y, data.ch, item_color(state.doc[state.item].type), false);
+        }
+    }
+    frames.content.draw();
 }
 
 function highlight(e, i) {
+    if (!e || !is_link(e.type)) return;
     scroll_to(i);
-    frames.content.attr = BG_CYAN|WHITE;
-    frames.content.putmsg(e.text + '\r\n');
-    frames.content.attr = BG_BLACK|LIGHTGRAY;
+    var data;
+    const row = get_row(i) - 1;
+    for (var y = row; y < row + state.doc[state.item].rows; y++) {
+        for (var x = 0; x < frames.content.width; x++) {
+            data = frames.content.getData(x, y, false);
+            frames.content.setData(x, y, data.ch, BG_BLUE|WHITE, false);
+        }
+    }
+    frames.content.draw();
     set_status(e.host + ':' + e.port + e.selector + ', type: ' + type_map[e.type]);
 }
 
@@ -249,30 +274,66 @@ function set_status(msg) {
     frames.top.cycle();
 }
 
-function print_document() {
+function print_document(fn) {
     frames.content.clear();
     if (state.item_type == '1') {
-        state.doc.forEach(print_line);
-        while (frames.content.up()) {
-            yield();
+        var item;
+        var line;
+        const f = new File(fn);
+        f.open('r');
+        while (!f.eof) { // To-do: paginated? progressive load? something to speed things up and not run out of memory.
+            line = f.readln();
+            item = JSON.parse(line); // should try/catch
+            if (!item) continue;
+            if (is_link(item.type)) {
+                frames.content.attr = item_color(item.type);
+                frames.content.putmsg(item.text + '\r\n');
+            } else {
+                frames.content.putmsg('\1n\1w' + item.text + '\r\n');
+            }
+            state.doc.push({
+                host: item.host,
+                port: item.port,
+                selector: item.selector,
+                type: item.type,
+                rows: truncsp(word_wrap(item.text, frames.content.width)).split(/\n/).length
+            });
         }
+        f.close();
+        frames.content.scrollTo(0, 0);
         state.item = next_link();
         highlight(state.doc[state.item], state.item);
     } else if (state.item_type == '0' || state.item_type == '6') {
         console.clear(BG_BLACK|LIGHTGRAY);
-        console.printfile(state.doc);
+        console.printfile(fn);
         console.pause();
         go_back();
         frames.top.invalidate();
         frames.top.draw();
     } else if (['4', '5', '9', 'g', 'I'].indexOf(state.item_type) > -1) {
         console.clear(BG_BLACK|LIGHTGRAY);
-        bbs.send_file(state.doc);
+        bbs.send_file(fn);
         go_back();
         frames.top.invalidate();
         frames.top.draw();
     }
     set_status('');
+}
+
+function go_back() {
+    if (state.history_idx <= 0) return;
+    state.history_idx--;
+    const loc = state.history[state.history_idx];
+    const fn = go_for(loc.host, loc.port, loc.selector, loc.type);
+    print_document(fn);
+}
+
+function go_forward() {
+    if (state.history_idx >= state.history.length - 1) return;
+    state.history_idx++;
+    const loc = state.history[state.history_idx];
+    const fn = go_for(loc.host, loc.port, loc.selector, loc.type);
+    print_document(fn);
 }
 
 function go_get(host, port, selector, type) {
@@ -284,24 +345,8 @@ function go_get(host, port, selector, type) {
         selector: selector,
         type: type
     };
-    go_for(host, port, selector, type);
-    print_document();
-}
-
-function go_back() {
-    if (state.history_idx <= 0) return;
-    state.history_idx--;
-    const loc = state.history[state.history_idx];
-    go_for(loc.host, loc.port, loc.selector, loc.type);
-    print_document();
-}
-
-function go_forward() {
-    if (state.history_idx >= state.history.length - 1) return;
-    state.history_idx++;
-    const loc = state.history[state.history_idx];
-    go_for(loc.host, loc.port, loc.selector, loc.type);
-    print_document();
+    const fn = go_for(host, port, selector, type);
+    print_document(fn);
 }
 
 function main() {
