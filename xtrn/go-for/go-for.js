@@ -212,8 +212,8 @@ function lowlight(e, i) {
 
 function highlight(e, i) {
     scroll_to(i);
-    frames.content.attr = BG_BLUE|WHITE;
-    frames.content.putmsg(item_color(e.type) + e.text + '\r\n');
+    frames.content.attr = BG_CYAN|WHITE;
+    frames.content.putmsg(e.text + '\r\n');
     frames.content.attr = BG_BLACK|LIGHTGRAY;
     set_status(e.host + ':' + e.port + e.selector + ', type: ' + type_map[e.type]);
 }
