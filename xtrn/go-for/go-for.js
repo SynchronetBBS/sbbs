@@ -3,8 +3,6 @@ load('scrollbox.js');
 load('typeahead.js');
 
 /* To do
- * - Help screen
- * - Save current item idx for each element in history, so place isn't lost when going back
  * - Add support for Index-Search
  * - Add sysop configurable host whitelist for telnet selectors (not the telnet addresses, but the gopher server's hostname)
  * - Improve address input (brighter, autodelete) (typeahead.js)
