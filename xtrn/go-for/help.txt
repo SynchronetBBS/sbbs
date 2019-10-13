@@ -10,6 +10,7 @@
 hc     [enter] w select the current item
 hc   j or [up] w scroll up
 hc k or [down] w scroll down
+hc           d w download the current document (text files only)
 hc           r w reload the current document, from cache if available
 hc           R w reload the current document, skipping the cache
 hc           q w quit
