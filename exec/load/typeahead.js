@@ -276,14 +276,10 @@ var Typeahead = function (options) {
             properties.position = properties.text.length + 1;
         }
 
-        if (typeof options.datasources !== 'undefined' &&
-            Array.isArray(options.datasources)
-        ) {
-            properties.datasources = options.datasources.filter(
-                function (d) {
-                    return (typeof d === 'function');
-                }
-            );  
+        if (typeof options.datasources !== 'undefined' && Array.isArray(options.datasources)) {
+            properties.datasources = options.datasources.filter(function (d) {
+                return (typeof d === 'function');
+            });  
         }
 
     }
@@ -306,7 +302,7 @@ var Typeahead = function (options) {
         display.frame.putmsg(properties.prompt);
 
         display.inputFrame = new Frame(
-            display.frame.x + properties.prompt.length,
+            display.frame.x + strip_ctrl(properties.prompt).length,
             display.frame.y,
             properties.len,
             1,
@@ -349,11 +345,9 @@ var Typeahead = function (options) {
     function suggest() {
 
         var suggestions = [];
-        properties.datasources.forEach(
-            function (datasource) {
-                suggestions = suggestions.concat(datasource(properties.text));
-            }
-        );
+        properties.datasources.forEach(function (datasource) {
+            suggestions = suggestions.concat(datasource(properties.text));
+        });
 
         if (typeof display.tree != 'undefined') {
             display.tree.close();
@@ -372,18 +366,14 @@ var Typeahead = function (options) {
         display.tree.colors.lbg = properties.hsbg;
 
         display.tree.addItem('');
-        suggestions.forEach(
-            function (suggestion) {
-                if (typeof suggestion === 'object' &&
-                    typeof suggestion.text === 'string'
-                ) {
-                    var item = display.tree.addItem(suggestion.text);
-                    item.suggestion = suggestion;
-                } else if (typeof suggestion === 'string') {
-                    display.tree.addItem(suggestion);
-                }
+        suggestions.forEach(function (suggestion) {
+            if (typeof suggestion === 'object' && typeof suggestion.text === 'string') {
+                var item = display.tree.addItem(suggestion.text);
+                item.suggestion = suggestion;
+            } else if (typeof suggestion === 'string') {
+                display.tree.addItem(suggestion);
             }
-        );
+        });
 
         display.tree.open();
 
@@ -454,9 +444,7 @@ var Typeahead = function (options) {
                 break;
             case '\r':
             case '\n':
-                if (typeof display.tree !== 'undefined'
-                    && display.tree.index > 0
-                ) {
+                if (typeof display.tree !== 'undefined' && display.tree.index > 0) {
                     if (typeof display.tree.currentItem.suggestion === 'undefined') {
                         ret = display.tree.currentItem.text;
                     } else {
@@ -559,19 +547,18 @@ var Typeahead = function (options) {
         display.frame.delete();
     }
 
-    this.__defineGetter__('focus', function () { return properties.focus; });
-    this.__defineSetter__(
-        'focus',
-        function (bool) {
-            if (typeof bool !== 'boolean') return;
-            properties.focus = bool;
-            if (!bool) {
-                display.cursor.bottom();
-            } else {
-                display.cursor.top();
-            }
+    this.__defineGetter__('focus', function () {
+        return properties.focus;
+    });
+    this.__defineSetter__('focus', function (bool) {
+        if (typeof bool !== 'boolean') return;
+        properties.focus = bool;
+        if (!bool) {
+            display.cursor.bottom();
+        } else {
+            display.cursor.top();
         }
-    );
+    });
 
     init();
 
