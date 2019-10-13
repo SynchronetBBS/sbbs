@@ -1,6 +1,5 @@
 load('sbbsdefs.js');
-load('frame.js');
-load('scrollbar.js');
+load('scrollbox.js');
 load('typeahead.js');
 
 /* go-for
@@ -44,25 +43,58 @@ const type_map = {
     'I': 'Image',
 };
 
+const scrollbox = new ScrollBox({
+    y1: 2,
+    y2: console.screen_rows - 1,
+    scrollbar: true
+});
+
 const state = {
     doc: [],
     item: -1,
     item_type: '1',
     history: [],
-    history_idx: -1
+    history_idx: -1,
+    host: 'gopher.floodgap.com',
+    port: 70,
+    selector: ''
 };
 
-const frames = {
-    top: new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLACK|LIGHTGRAY)
-};
-frames.address_bar = new Frame(frames.top.x, frames.top.y, frames.top.width, 1, BG_BLUE|WHITE, frames.top);
-frames.help = new Frame(frames.top.x, frames.top.y + 1, frames.top.width, frames.top.height - 2, BG_BLACK|LIGHTGRAY, frames.top);
-frames.content = new Frame(frames.top.x, frames.top.y + 1, frames.top.width, frames.top.height - 2, BG_BLACK|LIGHTGRAY, frames.top);
-frames.status_bar = new Frame(frames.top.x, frames.top.height, frames.top.width - 6, 1, BG_BLUE|WHITE, frames.top);
-frames.help_bar = new Frame(frames.status_bar.x + frames.status_bar.width, frames.status_bar.y, 6, 1, BG_BLUE|WHITE, frames.top);
-frames.help_bar.putmsg('H)elp');
+function is_link(str) {
+    return str.search(/[0-9\+gIT]/) > -1;
+}
 
-const scrollbar = new ScrollBar(frames.content);
+function item_color(str) {
+    var ret = '\0010\001n\001w';
+    switch (str) {
+        case '0': // Text files
+        case '6':
+            ret = '\001h\001y';
+            break;
+        case '1': // Directory
+            ret = '\001h\001c';
+            break;
+        case '2': // Unsupported
+        case '7':
+        case '8':
+        case 'T':
+            ret = '\001h\001b';
+            break;
+        case '4': // Downloads
+        case '5':
+        case '9':
+        case 'g':
+        case 'I':
+            ret = '\001h\001g';
+            break;
+        case '3': // Error
+            ret = '\001h\001r';
+            break;
+        default:
+            break;
+    }
+    return ret;
+}
 
 function get_address() {
     const typeahead = new Typeahead({
@@ -73,8 +105,6 @@ function get_address() {
     });
     const ret = typeahead.getstr().split(':');
     typeahead.close();
-    frames.address_bar.invalidate();
-    frames.address_bar.draw();
     return {
         host: ret[0],
         port: ret[1] ? parseInt(ret[1], 10) : 70,
@@ -154,170 +184,10 @@ function go_for(host, port, selector, type) {
     state.item_type = type;
     var fn = go_cache(host, port, selector);
     if (!fn) fn = go_fetch(host, port, selector, type);
-    set_address(host, port, selector);
+    state.host = host;
+    state.port = port;
+    state.selector = selector;
     return fn;
-}
-
-function is_link(str) {
-    return str.search(/[0-9\+gIT]/) > -1;
-}
-
-function item_color(str) {
-    var ret = BG_BLACK|LIGHTGRAY;
-    switch (str) {
-        case '0': // Text files
-        case '6':
-            ret = BG_BLACK|YELLOW;
-            break;
-        case '1': // Directory
-            ret = BG_BLACK|LIGHTCYAN;
-            break;
-        case '2': // Unsupported
-        case '7':
-        case '8':
-        case 'T':
-            ret = BG_BLACK|LIGHTBLUE;
-            break;
-        case '4': // Downloads
-        case '5':
-        case '9':
-        case 'g':
-        case 'I':
-            ret = BG_BLACK|LIGHTGREEN;
-            break;
-        case '3': // Error
-            ret = BG_BLACK|LIGHTRED;
-            break;
-    }
-    return ret;
-}
-
-function next_link() {
-    var ret = state.item;
-    for (var n = state.item + 1; n < state.doc.length; n++) {
-        if (!is_link(state.doc[n].type)) continue;
-        ret = n;
-        break;
-    }
-    return ret;
-}
-
-function previous_link() {
-    var ret = state.item;
-    for (var n = state.item - 1; n >= 0; n--) {
-        if (!is_link(state.doc[n].type)) continue;
-        ret = n;
-        break;
-    }
-    return ret;
-}
-
-// Determine what line of the display item i appears on
-function get_row(i) {
-    var row = 0;
-    for (var n = 0; n <= i && n < state.doc.length; n++) {
-        row += state.doc[n].rows;
-    }
-    return row;
-}
-
-function scroll_to(i) {
-    const row = get_row(i);
-    while (row > frames.content.offset.y + frames.content.height - 1) {
-        frames.content.down();
-        yield();
-    }
-    while (row < frames.content.offset.y + 1) {
-        frames.content.up();
-        yield();
-    }
-    frames.content.gotoxy(1, row - frames.content.offset.y);
-}
-
-function lowlight(e, i) {
-    if (!e || !is_link(e.type)) return;
-    scroll_to(i);
-    var data;
-    const row = get_row(i) - 1;
-    for (var y = row; y < row + state.doc[state.item].rows; y++) {
-        for (var x = 0; x < frames.content.width; x++) {
-            data = frames.content.getData(x, y, false);
-            frames.content.setData(x, y, data.ch, item_color(state.doc[state.item].type), false);
-        }
-    }
-    frames.content.draw();
-}
-
-function highlight(e, i) {
-    if (!e || !is_link(e.type)) return;
-    scroll_to(i);
-    var data;
-    const row = get_row(i) - 1;
-    for (var y = row; y < row + state.doc[state.item].rows; y++) {
-        for (var x = 0; x < frames.content.width; x++) {
-            data = frames.content.getData(x, y, false);
-            frames.content.setData(x, y, data.ch, BG_BLUE|WHITE, false);
-        }
-    }
-    frames.content.draw();
-    set_status(e.host + ':' + e.port + e.selector + ', type: ' + type_map[e.type]);
-}
-
-function set_address(host, port, selector) {
-    frames.address_bar.clear();
-    frames.address_bar.putmsg('gopher://' + host + ':' + port + selector);
-}
-
-function set_status(msg) {
-    frames.status_bar.clear();
-    frames.status_bar.putmsg(msg);
-    frames.top.cycle();
-}
-
-function print_document(fn) {
-    frames.content.clear();
-    if (state.item_type == '1') {
-        var item;
-        var line;
-        const f = new File(fn);
-        f.open('r');
-        while (!f.eof) { // To-do: paginated? progressive load? something to speed things up and not run out of memory.
-            line = f.readln();
-            item = JSON.parse(line); // should try/catch
-            if (!item) continue;
-            if (is_link(item.type)) {
-                frames.content.attr = item_color(item.type);
-                frames.content.putmsg(item.text + '\r\n');
-            } else {
-                frames.content.putmsg('\1n\1w' + item.text + '\r\n');
-            }
-            state.doc.push({
-                host: item.host,
-                port: item.port,
-                selector: item.selector,
-                type: item.type,
-                rows: truncsp(word_wrap(item.text, frames.content.width)).split(/\n/).length
-            });
-        }
-        f.close();
-        frames.content.scrollTo(0, 0);
-        state.item = next_link();
-        highlight(state.doc[state.item], state.item);
-    } else if (state.item_type == '0' || state.item_type == '6') {
-        console.clear(BG_BLACK|LIGHTGRAY);
-        console.printfile(fn);
-        console.pause();
-        go_back();
-        frames.top.invalidate();
-        frames.top.draw();
-    } else if (['4', '5', '9', 'g', 'I'].indexOf(state.item_type) > -1) {
-        console.clear(BG_BLACK|LIGHTGRAY);
-        bbs.send_file(fn);
-        go_back();
-        frames.top.invalidate();
-        frames.top.draw();
-    }
-    set_status('');
 }
 
 function go_back() {
@@ -349,10 +219,114 @@ function go_get(host, port, selector, type) {
     print_document(fn);
 }
 
+function next_link() {
+    var ret = state.item;
+    for (var n = state.item + 1; n < state.doc.length; n++) {
+        if (!is_link(state.doc[n].type)) continue;
+        ret = n;
+        break;
+    }
+    return ret;
+}
+
+function previous_link() {
+    var ret = state.item;
+    for (var n = state.item - 1; n >= 0; n--) {
+        if (!is_link(state.doc[n].type)) continue;
+        ret = n;
+        break;
+    }
+    return ret;
+}
+
+function lowlight(e, i) {
+    if (!e || !is_link(e.type)) return;
+    scrollbox.transform(i, function (str) {
+        return truncsp(word_wrap(str, scrollbox.width)).split(/\r*\n/).map(function (ee) {
+            return item_color(e.type) + ee.replace(/^(\x01.)*/g, '');
+        }).join(' ');
+    });
+}
+
+function highlight(e, i) {
+    if (!e || !is_link(e.type)) return;
+    scrollbox.transform(i, function (str) {
+        return truncsp(word_wrap(str, scrollbox.width)).split(/\r*\n/).map(function (e) {
+            return '\0014\001h\001w' + e;
+        }).join(' ');
+    });
+    set_status(e.host + ':' + e.port + e.selector + ', type: ' + type_map[e.type]);
+}
+
+function set_address() {
+    const a = console.attributes;
+    console.home();
+    console.putmsg(format('\0014\001h\001w%s:%s%s', state.host, state.port, state.selector));
+    console.cleartoeol(BG_BLUE|WHITE);
+    console.attributes = a;
+}
+
+function set_status(msg) {
+    if (typeof msg == 'string') state.status_msg = msg;
+    const a = console.attributes;
+    console.gotoxy(1, console.screen_rows);
+    console.putmsg('\0014\001h\001w' + state.status_msg);
+    console.cleartoeol(BG_BLUE|WHITE);
+    console.attributes = a;
+}
+
+function reset_display() {
+    set_address();
+    scrollbox.reset();
+    set_status('');
+}
+
+function print_document(fn) {
+    if (state.item_type == '1') {
+        var item;
+        var line;
+        reset_display();
+        const f = new File(fn);
+        var arr = [];
+        f.open('r');
+        while (!f.eof) {
+            line = f.readln();
+            item = JSON.parse(line); // should try/catch
+            if (!item) continue;
+            if (is_link(item.type)) {
+                arr.push(item_color(item.type) + item.text);
+            } else {
+                arr.push(item.text);
+            }
+            state.doc.push({
+                host: item.host,
+                port: item.port,
+                selector: item.selector,
+                type: item.type,
+                rows: truncsp(word_wrap(item.text, console.screen_columns)).split(/\n/).length
+            });
+        }
+        f.close();
+        scrollbox.load(arr);
+        state.item = next_link();
+        highlight(state.doc[state.item], state.item);
+    } else if (state.item_type == '0' || state.item_type == '6') {
+        console.write(format('\x1b[%s;%sr', 1, console.screen_rows));
+        console.clear(BG_BLACK|LIGHTGRAY);
+        console.printfile(fn);
+        console.pause();
+        go_back();
+        set_status('');
+    } else if (['4', '5', '9', 'g', 'I'].indexOf(state.item_type) > -1) {
+        reset_display();
+        bbs.send_file(fn);
+        set_status('');
+    }
+}
+
 function main() {
-    frames.top.open();
-    frames.top.cycle();
-    scrollbar.cycle();
+    scrollbox.init();
+    reset_display();
     go_get('gopher.floodgap.com', 70, '', '1');
     do {
         switch (state.input) {
@@ -361,6 +335,7 @@ function main() {
                     lowlight(state.doc[state.item], state.item);
                     state.item = next_link();
                     highlight(state.doc[state.item], state.item);
+                    scrollbox.scroll_into_view(state.item);
                 }
                 break;
             case '`':
@@ -368,6 +343,7 @@ function main() {
                     lowlight(state.doc[state.item], state.item);
                     state.item = previous_link();
                     highlight(state.doc[state.item], state.item);
+                    scrollbox.scroll_into_view(state.item);
                 }
                 break;
             case '\r':
@@ -388,20 +364,17 @@ function main() {
                 go_forward();
                 break;
             case KEY_UP:
-                if (frames.content.offset.y > 0) frames.content.scroll(0, -1);
+                scrollbox.getcmd(state.input);
+                set_status();
                 break;
             case KEY_DOWN:
-                if (frames.content.offset.y + frames.content.height < frames.content.data_height) frames.content.scroll(0, 1);
+                scrollbox.getcmd(state.input);
                 break;
             default:
                 break;
         }
-        if (frames.top.cycle()) {
-            scrollbar.cycle();
-            console.gotoxy(console.screen_columns, console.screen_rows);
-        }
     } while ((state.input = console.getkey()).toLowerCase() != 'q');
-    frames.top.close();
+    scrollbox.close();
 }
 
 main();
