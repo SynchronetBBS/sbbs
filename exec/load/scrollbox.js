@@ -74,13 +74,13 @@ ScrollBox.prototype.load_array = function (arr) {
 
 // Load a string
 ScrollBox.prototype.load_string = function (text) {
-    return this._load_array(text.split(/\r*\n/));
+    return this.load_array(text.split(/\r*\n/));
 }
 
 // Load a file
 ScrollBox.prototype.load_file = function (fn) {
     const f = new File(fn);
-    if (!f.open(r)) throw new Error('Failed to open ' + fn + ' for reading.');
+    if (!f.open('r')) throw new Error('Failed to open ' + fn + ' for reading.');
     const str = f.read();
     f.close();
     return this.load_string(str);
