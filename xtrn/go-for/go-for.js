@@ -14,8 +14,6 @@ load('typeahead.js');
 
 /* To do
  * - Help screen
- * - Progressive load/unload of gopher directories in frame (slow/out of memory problems witl large listings)
- *   (this would require a significant display overhaul)
  * - Save current item idx for each element in history, so place isn't lost when going back
  * - Support more item types (Index-Search Server, *maybe* telnet)
  * - Improve status bar feedback re: document loading steps & progress
