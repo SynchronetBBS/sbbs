@@ -309,11 +309,7 @@ function print_document(fn) {
         state.item = next_link();
         highlight(state.doc[state.item], state.item);
     } else if (state.item_type == '0' || state.item_type == '6') {
-        console.write(format('\x1b[%s;%sr', 1, console.screen_rows));
-        console.clear(BG_BLACK|LIGHTGRAY);
-        console.printfile(fn);
-        console.pause();
-        go_back();
+        scrollbox.load(fn);
         set_status('');
     } else if (['4', '5', '9', 'g', 'I'].indexOf(state.item_type) > -1) {
         reset_display();
