@@ -2,23 +2,18 @@ load('sbbsdefs.js');
 load('scrollbox.js');
 load('typeahead.js');
 
-/* go-for
- * a really lousy gopher client
- * hit g to go to some address:port
- * [enter]  select item
- * [tab] next item
- * ` (backtick) previous item
- * [up]/[down] to scroll
- * [left]/[right] history navigation
- */
-
 /* To do
  * - Help screen
  * - Save current item idx for each element in history, so place isn't lost when going back
- * - Support more item types (Index-Search Server, *maybe* telnet)
- * - Improve status bar feedback re: document loading steps & progress
+ * - Add support for Index-Search
+ * - Add sysop configurable host whitelist for telnet selectors (not the telnet addresses, but the gopher server's hostname)
  * - Improve address input (brighter, autodelete) (typeahead.js)
  * - Include history / bookmarks / sysop mandated entries in typeahead address suggestions
+ * - Improve highlight visibility
+ * - Page up / Page down (in scrollbox.js)
+ * - Shift-Tab?  Would have to store escaped state in input loop (I think)
+ * - Push/pop bbs.system_status; set SS_MOFF for duration of session
+ *   - Maybe have a pending notifications thingy
  */
 
 const cache_ttl = 300; // seconds - make configgy
@@ -98,7 +93,7 @@ function get_address() {
     const typeahead = new Typeahead({
         x: 1,
         y: 1,
-        prompt: 'Address: ',
+        prompt: '\0014\001h\001wAddress: ',
         text: 'gopher.floodgap.com:70'
     });
     const ret = typeahead.getstr().split(':');
@@ -181,8 +176,13 @@ function go_for(host, port, selector, type, skip_cache) {
     state.doc = [];
     state.item = -1;
     state.item_type = type;
-    var fn = skip_cache ? false : go_cache(host, port, selector);
-    if (!fn) fn = go_fetch(host, port, selector, type);
+    var fn;
+    if (host == 'go-for' && port == 0) {
+        fn = js.exec_dir + selector;
+    } else {
+        fn = skip_cache ? false : go_cache(host, port, selector);
+        if (!fn) fn = go_fetch(host, port, selector, type);
+    }
     state.host = host;
     state.port = port;
     state.selector = selector;
@@ -274,6 +274,8 @@ function set_status(msg) {
     console.gotoxy(1, console.screen_rows);
     console.putmsg('\0014\001h\001w' + state.status_msg);
     console.cleartoeol(BG_BLUE|WHITE);
+    console.gotoxy(console.screen_columns - 5, console.screen_rows);
+    console.putmsg('\0014\001h\001wH)elp');
     console.attributes = a;
 }
 
@@ -390,6 +392,9 @@ function main() {
             case 'k':
             case KEY_DOWN:
                 scrollbox.getcmd(state.input);
+                break;
+            case 'h':
+                go_get('go-for', 0, 'help.txt', '0');
                 break;
             default:
                 actioned = false;
