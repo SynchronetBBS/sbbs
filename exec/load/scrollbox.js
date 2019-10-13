@@ -116,7 +116,7 @@ ScrollBox.prototype.scroll_into_view = function (n) {
 }
 
 ScrollBox.prototype._redraw = function (n) {
-    if (this.wrap_map[n].index < this.y || this.wrap_map[n].index >= this.y + this.height) return;
+    if (this.wrap_map[n].index < this.y || this.wrap_map[n].index > this.y + this.height) return;
     for (var i = 0; i < this.wrap_map[n].rows; i++) {
         console.gotoxy(1, this.y1 + this.wrap_map[n].index - this.y + i);
         console.clearline();
