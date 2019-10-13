@@ -359,7 +359,7 @@ function main() {
             // Go (enter an address)
             case 'g':
                 var addr = get_address();
-                if (addr && addr.host) go_get(addr.host, addr.port, addr.selector, addr.type);
+                if (addr && addr.host && addr.host != 'go-for' && addr.port != 0) go_get(addr.host, addr.port, addr.selector, addr.type);
                 break;
             // Get root directory of current server
             case 'o':
