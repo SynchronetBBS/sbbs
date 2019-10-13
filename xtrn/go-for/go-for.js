@@ -130,6 +130,7 @@ function go_cache(host, port, selector) {
     set_status('Checking cache ...');
     const fn = get_cache_fn(host, port, selector);
     if (!file_exists(fn) || time() - file_date(fn) > cache_ttl) return false;
+    set_status(format('%s:%s %s found in cache', host, port, selector));
     return fn;
 }
 
@@ -143,10 +144,10 @@ function go_fetch(host, port, selector, type) {
     const fn = get_cache_fn(host, port, selector);
     const f = new File(fn);
 
-    set_status('Requesting ' + selector + '...');
+    set_status(format('Requesting %s:%s %s ...', host, port, selector));
     socket.sendline(selector);
     const dl_start = time();
-    set_status('Downloading ' + selector + '...');
+    set_status(format('Downloading %s:%s %s ...', host, port, selector));
 
     if (type == '1') { // this is a gopher directory
         var line;
@@ -169,22 +170,23 @@ function go_fetch(host, port, selector, type) {
         f.close();
     }
 
-    set_status('Downloaded ' + selector);
+    set_status(format('Downloaded %s:%s %s', host, port, selector));
 
     return fn;
 
 }
 
-function go_for(host, port, selector, type) {
-    set_status('Loading ...');
+function go_for(host, port, selector, type, skip_cache) {
+    set_status(format('Loading %s:%s %s ...', host, port, selector));
     state.doc = [];
     state.item = -1;
     state.item_type = type;
-    var fn = go_cache(host, port, selector);
+    var fn = skip_cache ? false : go_cache(host, port, selector);
     if (!fn) fn = go_fetch(host, port, selector, type);
     state.host = host;
     state.port = port;
     state.selector = selector;
+    set_status(format('%s %s:%s %s', type_map[type], host, port, selector));
     return fn;
 }
 
@@ -204,16 +206,18 @@ function go_forward() {
     print_document(fn);
 }
 
-function go_get(host, port, selector, type) {
-    state.history_idx++;
-    state.history.splice(state.history_idx);
-    state.history[state.history_idx] = {
-        host: host,
-        port: port,
-        selector: selector,
-        type: type
-    };
-    const fn = go_for(host, port, selector, type);
+function go_get(host, port, selector, type, skip_history, skip_cache) {
+    if (!skip_history) {
+        state.history_idx++;
+        state.history.splice(state.history_idx);
+        state.history[state.history_idx] = {
+            host: host,
+            port: port,
+            selector: selector,
+            type: type
+        };
+    }
+    const fn = go_for(host, port, selector, type, skip_cache);
     print_document(fn);
 }
 
@@ -253,7 +257,7 @@ function highlight(e, i) {
             return '\0014\001h\001w' + e;
         }).join(' ');
     });
-    set_status(e.host + ':' + e.port + e.selector + ', type: ' + type_map[e.type]);
+    set_status(format('%s %s:%s %s', type_map[e.type], e.host, e.port, e.selector));
 }
 
 function set_address() {
@@ -310,7 +314,6 @@ function print_document(fn) {
         highlight(state.doc[state.item], state.item);
     } else if (state.item_type == '0' || state.item_type == '6') {
         scrollbox.load(fn);
-        set_status('');
     } else if (['4', '5', '9', 'g', 'I'].indexOf(state.item_type) > -1) {
         reset_display();
         bbs.send_file(fn);
@@ -321,9 +324,13 @@ function print_document(fn) {
 function main() {
     scrollbox.init();
     reset_display();
-    go_get('gopher.floodgap.com', 70, '', '1');
+    go_get(state.host, state.port, state.selector, state.item_type);
+    console.gotoxy(console.screen_columns, console.screen_rows);
     do {
+        if (!state.input) continue;
+        var actioned = true;
         switch (state.input) {
+            // Highlight next link
             case '\t':
                 if (state.item_type == '1') {
                     lowlight(state.doc[state.item], state.item);
@@ -332,6 +339,7 @@ function main() {
                     scrollbox.scroll_into_view(state.item);
                 }
                 break;
+            // Highlight previous link
             case '`':
                 if (state.item_type == '1') {
                     lowlight(state.doc[state.item], state.item);
@@ -340,33 +348,54 @@ function main() {
                     scrollbox.scroll_into_view(state.item);
                 }
                 break;
+            // Select current item
             case '\r':
-            case '\s':
                 if (state.item_type == '1' && ['0', '1', '4', '5', '6', '9', 'g', 'I'].indexOf(state.doc[state.item].type) > -1) {
                     go_get(state.doc[state.item].host, state.doc[state.item].port, state.doc[state.item].selector, state.doc[state.item].type);
                 }
                 break;
+            // Go (enter an address)
             case 'g':
-            case 'G':
                 var addr = get_address();
                 if (addr && addr.host) go_get(addr.host, addr.port, addr.selector, addr.type);
                 break;
+            // Get root directory of current server
+            case 'o':
+                go_get(state.host, state.port, '', '1');
+                break;
+            // Go back (history)
+            case 'u':
             case KEY_LEFT:
                 go_back();
                 break;
+            // Reload / redraw current document (from cache if available)
+            case 'r':
+                go_get(state.host, state.port, state.selector, state.item_type, true, false);
+                break;
+            // Reload current document and skip cache
+            case 'R':
+                go_get(state.host, state.port, state.selector, state.item_type, true, true);
+                break;
+            // Go forward (history)
             case KEY_RIGHT:
                 go_forward();
                 break;
+            // Scroll up
+            case 'j':
             case KEY_UP:
                 scrollbox.getcmd(state.input);
                 set_status();
                 break;
+            // Scroll down
+            case 'k':
             case KEY_DOWN:
                 scrollbox.getcmd(state.input);
                 break;
             default:
+                actioned = false;
                 break;
         }
+        if (actioned) console.gotoxy(console.screen_columns, console.screen_rows);
     } while ((state.input = console.getkey()).toLowerCase() != 'q');
     scrollbox.close();
 }
