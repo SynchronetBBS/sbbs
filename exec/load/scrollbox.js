@@ -115,13 +115,23 @@ ScrollBox.prototype.scroll_into_view = function (n) {
     this._load();
 }
 
+ScrollBox.prototype._redraw = function (n) {
+    if (this.wrap_map[n].index < this.y || this.wrap_map[n].index >= this.y + this.height) return;
+    for (var i = 0; i < this.wrap_map[n].rows; i++) {
+        console.gotoxy(1, this.y1 + this.wrap_map[n].index - this.y + i);
+        console.clearline();
+        console.putmsg(this._text[this.wrap_map[n].index + i]);
+    }
+    if (this.scrollbar) this.draw_scrollbar();
+}
+
 ScrollBox.prototype.transform = function (n, transform) {
-    log('INDEX ' + n);
-    log(JSON.stringify(this.wrap_map));
     const str = transform(this._text.slice(this.wrap_map[n].index, this.wrap_map[n].index + this.wrap_map[n].rows).join(' '));
     const split = truncsp(word_wrap(str, this.width)).split(/\r*\n/);
     Array.prototype.splice.apply(this._text, [this.wrap_map[n].index, this.wrap_map[n].rows].concat(split));
+    var nl = false;
     if (split.length != this.wrap_map[n].rows) {
+        nl = true;
         this.wrap_map[n].rows = split.length;
         for (var i = n + 1; i < this.wrap_map.length; i++) {
             if (split.length > this.wrap_map[n].rows) {
@@ -132,7 +142,11 @@ ScrollBox.prototype.transform = function (n, transform) {
         }
     }
     if (this.wrap_map[n].index >= this.y && this.wrap_map[n].index <= this.y + this.height) {
-        this._load();
+        if (nl) {
+            this._load();
+        } else {
+            this._redraw(n);
+        }
     }
 }
 
