@@ -50,7 +50,8 @@ const state = {
     history_idx: -1,
     host: 'gopher.floodgap.com',
     port: 70,
-    selector: ''
+    selector: '',
+    fn: ''
 };
 
 function is_link(str) {
@@ -186,24 +187,34 @@ function go_for(host, port, selector, type, skip_cache) {
     state.host = host;
     state.port = port;
     state.selector = selector;
+    set_address();
     set_status(format('%s %s:%s %s', type_map[type], host, port, selector));
     return fn;
+}
+
+function go_history() {
+    const loc = state.history[state.history_idx];
+    state.fn = go_for(loc.host, loc.port, loc.selector, loc.type);
+    print_document(false);
+    if (loc.type == '1') {
+        lowlight(state.doc[state.item], state.item);
+        state.item = loc.item;
+        state.history[state.history_idx].item = loc.item;
+        highlight(state.doc[state.item], state.item);
+        scrollbox.scroll_into_view(state.item);
+    }
 }
 
 function go_back() {
     if (state.history_idx <= 0) return;
     state.history_idx--;
-    const loc = state.history[state.history_idx];
-    const fn = go_for(loc.host, loc.port, loc.selector, loc.type);
-    print_document(fn);
+    go_history();
 }
 
 function go_forward() {
     if (state.history_idx >= state.history.length - 1) return;
     state.history_idx++;
-    const loc = state.history[state.history_idx];
-    const fn = go_for(loc.host, loc.port, loc.selector, loc.type);
-    print_document(fn);
+    go_history();
 }
 
 function go_get(host, port, selector, type, skip_history, skip_cache) {
@@ -214,31 +225,30 @@ function go_get(host, port, selector, type, skip_history, skip_cache) {
             host: host,
             port: port,
             selector: selector,
-            type: type
+            type: type,
+            item: -1
         };
     }
-    const fn = go_for(host, port, selector, type, skip_cache);
-    print_document(fn);
+    state.fn = go_for(host, port, selector, type, skip_cache);
+    print_document(true);
 }
 
 function next_link() {
-    var ret = state.item;
     for (var n = state.item + 1; n < state.doc.length; n++) {
         if (!is_link(state.doc[n].type)) continue;
-        ret = n;
+        state.item = n;
+        state.history[state.history_idx].item = n;
         break;
     }
-    return ret;
 }
 
 function previous_link() {
-    var ret = state.item;
     for (var n = state.item - 1; n >= 0; n--) {
         if (!is_link(state.doc[n].type)) continue;
-        ret = n;
+        state.item = n;
+        state.history[state.history_idx].item = n;
         break;
     }
-    return ret;
 }
 
 function lowlight(e, i) {
@@ -263,7 +273,7 @@ function highlight(e, i) {
 function set_address() {
     const a = console.attributes;
     console.home();
-    console.putmsg(format('\0014\001h\001w%s:%s%s', state.host, state.port, state.selector));
+    console.putmsg(format('\0014\001h\001w%s:%s %s', state.host, state.port, state.selector));
     console.cleartoeol(BG_BLUE|WHITE);
     console.attributes = a;
 }
@@ -285,12 +295,12 @@ function reset_display() {
     set_status('');
 }
 
-function print_document(fn) {
+function print_document(auto_highlight) {
     if (state.item_type == '1') {
         var item;
         var line;
         reset_display();
-        const f = new File(fn);
+        const f = new File(state.fn);
         var arr = [];
         f.open('r');
         while (!f.eof) {
@@ -312,14 +322,17 @@ function print_document(fn) {
         }
         f.close();
         scrollbox.load(arr);
-        state.item = next_link();
-        highlight(state.doc[state.item], state.item);
+        if (auto_highlight) {
+            next_link();
+            highlight(state.doc[state.item], state.item);
+        }
     } else if (state.item_type == '0' || state.item_type == '6') {
-        scrollbox.load(fn);
+        scrollbox.load(state.fn);
     } else if (['4', '5', '9', 'g', 'I'].indexOf(state.item_type) > -1) {
+        console.clear(BG_BLACK|LIGHTGRAY);
+        bbs.send_file(state.fn);
         reset_display();
-        bbs.send_file(fn);
-        set_status('');
+        go_back();
     }
 }
 
@@ -336,7 +349,7 @@ function main() {
             case '\t':
                 if (state.item_type == '1') {
                     lowlight(state.doc[state.item], state.item);
-                    state.item = next_link();
+                    next_link();
                     highlight(state.doc[state.item], state.item);
                     scrollbox.scroll_into_view(state.item);
                 }
@@ -345,7 +358,7 @@ function main() {
             case '`':
                 if (state.item_type == '1') {
                     lowlight(state.doc[state.item], state.item);
-                    state.item = previous_link();
+                    previous_link();
                     highlight(state.doc[state.item], state.item);
                     scrollbox.scroll_into_view(state.item);
                 }
@@ -395,6 +408,14 @@ function main() {
                 break;
             case 'h':
                 go_get('go-for', 0, 'help.txt', '0');
+                break;
+            case 'd':
+                if (state.item_type == '0' || state.item_type == '6') {
+                    console.clear(BG_BLACK|LIGHTGRAY);
+                    bbs.send_file(state.fn);
+                    reset_display();
+                    go_get(state.host, state.port, state.selector, state.item_type, true, false);
+                }
                 break;
             default:
                 actioned = false;
