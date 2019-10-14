@@ -3,14 +3,13 @@ load('scrollbox.js');
 load('typeahead.js');
 
 /* To do
- * - Add support for Index-Search
+ * - Config file
+ * - User and system-wide bookmarks
+ * - Include history, user bookmarks, system-wide bookmarks in typeahead suggestions
  * - Add sysop configurable host whitelist for telnet selectors (not the telnet addresses, but the gopher server's hostname)
  * - Improve address input (brighter, autodelete) (typeahead.js)
- * - Include history / bookmarks / sysop mandated entries in typeahead address suggestions
  * - Improve highlight visibility
  * - Shift-Tab?  Would have to store escaped state in input loop (I think)
- * - Push/pop bbs.system_status; set SS_MOFF for duration of session
- *   - Maybe have a pending notifications thingy
  */
 
 const cache_ttl = 300; // seconds - make configgy
@@ -165,7 +164,7 @@ function go_fetch(host, port, selector, type, query) {
         var line;
         f.open('w');
         while (time() - dl_start < timeout && !js.terminated && socket.is_connected && (line = socket.recvline()) != '.') {
-            f.writeln(JSON.stringify(parse_line(line)));
+            if (line) f.writeln(JSON.stringify(parse_line(line)));
         }
         f.close();
     } else if (type == '0' || type == '6') { // this is a text file
