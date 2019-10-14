@@ -9,6 +9,11 @@ function ScrollBox(opts) {
     this.height = opts.y2 - opts.y1;
     this.wrap_map = [];
     this.ss = bbs.sys_status;
+    this.putmsg_mode = opts.putmsg_mode ? opts.putmsg_mode : P_NONE;
+}
+
+ScrollBox.prototype.putmsg = function (msg) {
+    console.putmsg(msg, this.putmsg_mode|P_NOPAUSE);
 }
 
 ScrollBox.prototype.draw_scrollbar = function () {
@@ -16,17 +21,17 @@ ScrollBox.prototype.draw_scrollbar = function () {
     const bar_y = Math.round((this.height - 2 - bar_height) * (this.y / (this._text.length - this.height)));
     const x = console.screen_columns - 1;
     console.gotoxy(x, this.y1);
-    console.putmsg(ascii(30));
+    this.putmsg(ascii(30));
     for (var y = 0; y <= this.height - 2; y++) {
         console.gotoxy(x, this.y1 + 1 + y);
-        console.putmsg(y < bar_y || y > bar_y + bar_height ? ascii(176) : ascii(219));
+        this.putmsg(y < bar_y || y > bar_y + bar_height ? ascii(176) : ascii(219));
     }
     console.gotoxy(x, this.y2);
-    console.putmsg(ascii(31));
+    this.putmsg(ascii(31));
 }
 
 ScrollBox.prototype.init = function () {
-    bbs.sys_status|=SS_PAUSEOFF;
+    bbs.sys_status|=SS_MOFF;
     console.write(format('\x1b[%s;%sr', this.y1, this.y2));
     console.gotoxy(1, this.y1);
 }
@@ -51,7 +56,7 @@ ScrollBox.prototype._load = function () {
     this.clear();
     console.gotoxy(1, this.y1);
     for (var y = 0; y <= this.height && this.y + y < this._text.length; y++) {
-        console.putmsg(this._text[this.y + y]);
+        this.putmsg(this._text[this.y + y]);
         if (y != this.height) console.crlf();
     }
     if (this.scrollbar) this.draw_scrollbar();
@@ -121,7 +126,7 @@ ScrollBox.prototype._redraw = function (n) {
     for (var i = 0; i < this.wrap_map[n].rows; i++) {
         console.gotoxy(1, this.y1 + this.wrap_map[n].index - this.y + i);
         console.clearline();
-        console.putmsg(this._text[this.wrap_map[n].index + i]);
+        this.putmsg(this._text[this.wrap_map[n].index + i]);
     }
     if (this.scrollbar) this.draw_scrollbar();
 }
@@ -157,7 +162,7 @@ ScrollBox.prototype.getcmd = function (c) {
             console.write('\x1b[1T');
             this.y--;
             console.gotoxy(1, this.y1);
-            console.putmsg(this._text[this.y]);
+            this.putmsg(this._text[this.y]);
             if (this.scrollbar) this.draw_scrollbar();
         }
         return true;
@@ -167,7 +172,7 @@ ScrollBox.prototype.getcmd = function (c) {
             console.write('\x1b[1S');
             this.y++;
             console.gotoxy(1, this.y2);
-            console.putmsg(this._text[this.y + (this.y2 - this.y1)])
+            this.putmsg(this._text[this.y + (this.y2 - this.y1)])
             if (this.scrollbar) this.draw_scrollbar();
         }
         return true;
