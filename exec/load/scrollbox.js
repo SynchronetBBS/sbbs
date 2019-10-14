@@ -177,19 +177,18 @@ ScrollBox.prototype.getcmd = function (c) {
         return true;
     }
     if (c == KEY_END) {
-        this.scroll_into_view(this.wrap_map.length - 1);
+        this.y = this._text.length - 1 - this.height;
+        this._load();
         return true;
     }
     if (c == KEY_PAGEUP) {
-        this.scroll_to(Math.max(0, this.y - this.height - 1));
+        this.y = Math.max(0, this.y - this.height);
+        this._load();
         return true;
     }
     if (c == KEY_PAGEDN) {
-        if (this.y + this.height + 1 >= this.wrap_map.length - 1) {
-            this.scroll_into_view(this.wrap_map.length - 1);
-        } else {
-            this.scroll_to(this.y + this.height + 1);
-        }
+        this.y = Math.min(this._text.length - 1 - this.height, this.y + this.height);
+        this._load();
         return true;
     }
 }
