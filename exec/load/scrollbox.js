@@ -5,7 +5,7 @@ function ScrollBox(opts) {
     this.y2 = opts.y2;
     this.y = 0; // Current item
     this.scrollbar = opts.scrollbar;
-    this.width = this.scrollbar ? console.screen_columns - 3 : console.screen_columns;
+    this.width = this.scrollbar ? console.screen_columns - 2 : console.screen_columns;
     this.height = opts.y2 - opts.y1;
     this.wrap_map = [];
     this.ss = bbs.sys_status;
@@ -14,13 +14,14 @@ function ScrollBox(opts) {
 ScrollBox.prototype.draw_scrollbar = function () {
     const bar_height = Math.round(Math.min(this.height - 2, Math.max(1, (this.height - 2) * (this.height / this._text.length))));
     const bar_y = Math.round((this.height - 2 - bar_height) * (this.y / (this._text.length - this.height)));
-    console.gotoxy(console.screen_columns - 1, this.y1);
+    const x = console.screen_columns - 1;
+    console.gotoxy(x, this.y1);
     console.putmsg(ascii(30));
     for (var y = 0; y <= this.height - 2; y++) {
-        console.gotoxy(console.screen_columns - 1, this.y1 + 1 + y);
+        console.gotoxy(x, this.y1 + 1 + y);
         console.putmsg(y < bar_y || y > bar_y + bar_height ? ascii(176) : ascii(219));
     }
-    console.gotoxy(console.screen_columns - 1, this.y2);
+    console.gotoxy(x, this.y2);
     console.putmsg(ascii(31));
 }
 
@@ -168,6 +169,26 @@ ScrollBox.prototype.getcmd = function (c) {
             console.gotoxy(1, this.y2);
             console.putmsg(this._text[this.y + (this.y2 - this.y1)])
             if (this.scrollbar) this.draw_scrollbar();
+        }
+        return true;
+    }
+    if (c == KEY_HOME) {
+        this.scroll_to(0);
+        return true;
+    }
+    if (c == KEY_END) {
+        this.scroll_into_view(this.wrap_map.length - 1);
+        return true;
+    }
+    if (c == KEY_PAGEUP) {
+        this.scroll_to(Math.max(0, this.y - this.height - 1));
+        return true;
+    }
+    if (c == KEY_PAGEDN) {
+        if (this.y + this.height + 1 >= this.wrap_map.length - 1) {
+            this.scroll_into_view(this.wrap_map.length - 1);
+        } else {
+            this.scroll_to(this.y + this.height + 1);
         }
         return true;
     }

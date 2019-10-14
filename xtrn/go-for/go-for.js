@@ -194,13 +194,12 @@ function go_history() {
     const loc = state.history[state.history_idx];
     state.fn = go_for(loc.host, loc.port, loc.selector, loc.type);
     print_document(false);
-    if (loc.type == '1') {
-        lowlight(state.doc[state.item], state.item);
-        state.item = loc.item;
-        state.history[state.history_idx].item = loc.item;
-        highlight(state.doc[state.item], state.item);
-        scrollbox.scroll_into_view(state.item);
-    }
+    if (loc.type != '1') return;
+    lowlight(state.doc[state.item], state.item);
+    state.item = loc.item;
+    state.history[state.history_idx].item = loc.item;
+    highlight(state.doc[state.item], state.item);
+    scrollbox.scroll_into_view(state.item);
 }
 
 function go_back() {
@@ -397,13 +396,17 @@ function main() {
             case 'j':
             case KEY_UP:
                 scrollbox.getcmd(state.input);
-                set_status();
+                set_status(); // SyncTERM fix
                 break;
             // Scroll down
             case 'k':
             case KEY_DOWN:
+            case KEY_PAGEUP:
+            case KEY_PAGEDN:
+            case KEY_HOME:
+            case KEY_END:
                 scrollbox.getcmd(state.input);
-                break;
+                break;                
             case 'h':
                 go_get('go-for', 0, 'help.txt', '0');
                 break;
