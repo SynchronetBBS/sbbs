@@ -36,7 +36,8 @@ const type_map = {
 const scrollbox = new ScrollBox({
     y1: 2,
     y2: console.screen_rows - 1,
-    scrollbar: true
+    scrollbar: true,
+    putmsg_mode: P_NOATCODES|P_NOXATTRS
 });
 
 const state = {
@@ -321,17 +322,12 @@ function print_document(auto_highlight) {
             line = f.readln();
             item = JSON.parse(line); // should try/catch
             if (!item) continue;
-            if (is_link(item.type)) {
-                arr.push(item_color(item.type) + item.text);
-            } else {
-                arr.push(item.text);
-            }
+            arr.push(item_color(item.type) + item.text);
             state.doc.push({
                 host: item.host,
                 port: item.port,
                 selector: item.selector,
-                type: item.type,
-                rows: truncsp(word_wrap(item.text, console.screen_columns)).split(/\n/).length
+                type: item.type
             });
         }
         f.close();
