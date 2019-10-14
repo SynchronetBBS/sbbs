@@ -8,7 +8,6 @@ load('typeahead.js');
  * - Improve address input (brighter, autodelete) (typeahead.js)
  * - Include history / bookmarks / sysop mandated entries in typeahead address suggestions
  * - Improve highlight visibility
- * - Page up / Page down (in scrollbox.js)
  * - Shift-Tab?  Would have to store escaped state in input loop (I think)
  * - Push/pop bbs.system_status; set SS_MOFF for duration of session
  *   - Maybe have a pending notifications thingy
@@ -67,7 +66,6 @@ function item_color(str) {
             ret = '\001h\001c';
             break;
         case '2': // Unsupported
-        case '7':
         case '8':
         case 'T':
             ret = '\001h\001b';
@@ -81,6 +79,9 @@ function item_color(str) {
             break;
         case '3': // Error
             ret = '\001h\001r';
+            break;
+        case '7':
+            ret = '\001h\001m';
             break;
         default:
             break;
@@ -103,6 +104,18 @@ function get_address() {
         selector: '',
         type: 1
     };
+}
+
+function get_query() {
+    const typeahead = new Typeahead({
+        x: 1,
+        y: 1,
+        prompt: '\0014\001h\001wQuery: ',
+        text: ''
+    });
+    const ret = typeahead.getstr().split(':');
+    typeahead.close();
+    return ret;
 }
 
 function parse_line(line) {
@@ -128,7 +141,7 @@ function go_cache(host, port, selector) {
     return fn;
 }
 
-function go_fetch(host, port, selector, type) {
+function go_fetch(host, port, selector, type, query) {
 
     set_status('Connecting to ' + host + ':' + port);
 
@@ -139,11 +152,15 @@ function go_fetch(host, port, selector, type) {
     const f = new File(fn);
 
     set_status(format('Requesting %s:%s %s ...', host, port, selector));
-    socket.sendline(selector);
+    if (type != '7') {
+        socket.sendline(selector);
+    } else {
+        socket.sendline(selector + '\t' + query);
+    }
     const dl_start = time();
     set_status(format('Downloading %s:%s %s ...', host, port, selector));
 
-    if (type == '1') { // this is a gopher directory
+    if (type == '1' || type == '7') { // this is a gopher directory
         var line;
         f.open('w');
         while (time() - dl_start < timeout && !js.terminated && socket.is_connected && (line = socket.recvline()) != '.') {
@@ -170,7 +187,7 @@ function go_fetch(host, port, selector, type) {
 
 }
 
-function go_for(host, port, selector, type, skip_cache) {
+function go_for(host, port, selector, type, skip_cache, query) {
     set_status(format('Loading %s:%s %s ...', host, port, selector));
     state.doc = [];
     state.item = -1;
@@ -180,7 +197,7 @@ function go_for(host, port, selector, type, skip_cache) {
         fn = js.exec_dir + selector;
     } else {
         fn = skip_cache ? false : go_cache(host, port, selector);
-        if (!fn) fn = go_fetch(host, port, selector, type);
+        if (!fn) fn = go_fetch(host, port, selector, type, query);
     }
     state.host = host;
     state.port = port;
@@ -194,7 +211,7 @@ function go_history() {
     const loc = state.history[state.history_idx];
     state.fn = go_for(loc.host, loc.port, loc.selector, loc.type);
     print_document(false);
-    if (loc.type != '1') return;
+    if (loc.type != '1' && loc.type != '7') return;
     lowlight(state.doc[state.item], state.item);
     state.item = loc.item;
     state.history[state.history_idx].item = loc.item;
@@ -214,7 +231,7 @@ function go_forward() {
     go_history();
 }
 
-function go_get(host, port, selector, type, skip_history, skip_cache) {
+function go_get(host, port, selector, type, skip_history, skip_cache, query) {
     if (!skip_history) {
         state.history_idx++;
         state.history.splice(state.history_idx);
@@ -226,7 +243,7 @@ function go_get(host, port, selector, type, skip_history, skip_cache) {
             item: -1
         };
     }
-    state.fn = go_for(host, port, selector, type, skip_cache);
+    state.fn = go_for(host, port, selector, type, skip_cache, query); // For now, always skip cache on searches.
     print_document(true);
 }
 
@@ -293,7 +310,7 @@ function reset_display() {
 }
 
 function print_document(auto_highlight) {
-    if (state.item_type == '1') {
+    if (state.item_type == '1' || state.item_type == '7') {
         var item;
         var line;
         reset_display();
@@ -344,7 +361,7 @@ function main() {
         switch (state.input) {
             // Highlight next link
             case '\t':
-                if (state.item_type == '1') {
+                if (state.item_type == '1' || state.item_type == '7') {
                     lowlight(state.doc[state.item], state.item);
                     next_link();
                     highlight(state.doc[state.item], state.item);
@@ -353,7 +370,7 @@ function main() {
                 break;
             // Highlight previous link
             case '`':
-                if (state.item_type == '1') {
+                if (state.item_type == '1' || state.item_type == '7') {
                     lowlight(state.doc[state.item], state.item);
                     previous_link();
                     highlight(state.doc[state.item], state.item);
@@ -362,8 +379,13 @@ function main() {
                 break;
             // Select current item
             case '\r':
-                if (state.item_type == '1' && ['0', '1', '4', '5', '6', '9', 'g', 'I'].indexOf(state.doc[state.item].type) > -1) {
+                if ((state.item_type == '1' || state.item_type == '7') && ['0', '1', '4', '5', '6', '9', 'g', 'I'].indexOf(state.doc[state.item].type) > -1) {
                     go_get(state.doc[state.item].host, state.doc[state.item].port, state.doc[state.item].selector, state.doc[state.item].type);
+                } else if (state.item_type == '1' && state.doc[state.item].type == '7') {
+                    var query = get_query();
+                    if (query && query.length) {
+                        go_get(state.doc[state.item].host, state.doc[state.item].port, state.doc[state.item].selector, '7', false, true, query);
+                    }
                 }
                 break;
             // Go (enter an address)
@@ -392,15 +414,13 @@ function main() {
             case KEY_RIGHT:
                 go_forward();
                 break;
-            // Scroll up
-            case 'j':
+            case 'j': // Scroll up
             case KEY_UP:
                 scrollbox.getcmd(state.input);
                 set_status(); // SyncTERM fix
                 break;
-            // Scroll down
-            case 'k':
-            case KEY_DOWN:
+            case 'k': // Scroll down
+            case KEY_DOWN: // Scroll down
             case KEY_PAGEUP:
             case KEY_PAGEDN:
             case KEY_HOME:
