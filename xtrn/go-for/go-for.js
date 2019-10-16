@@ -10,9 +10,16 @@ load('typeahead.js');
  * - Improve address input (brighter, autodelete) (typeahead.js)
  * - Improve highlight visibility
  * - Shift-Tab?  Would have to store escaped state in input loop (I think)
+ * - m to search for selector in page (typeahead autocomplete)
+ * - s to select character encoding?  Apparently some servers now do utf8.
+ * - t to toggle TLS (or perhaps have the user specify this with the address, or attempt to connect with TLS first and fall back)
+ * - . to display the source
  */
 
 const cache_ttl = 300; // seconds - make configgy
+const max_dir_size = 4096000;
+const max_file_size = 1073741824;
+const max_text_size = 4096000;
 const timeout = 30; // seconds - make configgyable
 
 const type_map = {
@@ -148,8 +155,8 @@ function go_fetch(host, port, selector, type, query) {
     const socket = new Socket();
     if (!socket.connect(host, port)) return null;
 
-    const fn = get_cache_fn(host, port, selector);
-    const f = new File(fn);
+    var fn = get_cache_fn(host, port, selector);
+    var f = new File(fn);
 
     set_status(format('Requesting %s:%s %s ...', host, port, selector));
     if (type != '7') {
@@ -157,31 +164,59 @@ function go_fetch(host, port, selector, type, query) {
     } else {
         socket.sendline(selector + '\t' + query);
     }
-    const dl_start = time();
+
     set_status(format('Downloading %s:%s %s ...', host, port, selector));
 
+    var line;
+    var fs = 0;
     if (type == '1' || type == '7') { // this is a gopher directory
-        var line;
+        var parsed;
         f.open('w');
-        while (time() - dl_start < timeout && !js.terminated && socket.is_connected && (line = socket.recvline()) != '.') {
-            if (line) f.writeln(JSON.stringify(parse_line(line)));
+        while (!js.terminated && !console.aborted && socket.is_connected && fs <= max_dir_size && (line = socket.recvline()) != '.') {
+            if (line) {
+                last_dl = time();
+                parsed = JSON.stringify(parse_line(line));
+                f.writeln(parsed);
+                fs += parsed.length;
+            }
         }
         f.close();
     } else if (type == '0' || type == '6') { // this is a text file
         f.open('w');
-        while (time() - dl_start < timeout && !js.terminated && socket.is_connected) {
-            f.writeln(socket.recvline());
+        while (!js.terminated && !console.aborted && socket.is_connected && fs <= max_text_size) {
+            line = socket.recvline();
+            f.writeln(line);
+            last_dl = time();
+            fs += line.length;
         }
         f.close();
     } else if (['4', '5', '9', 'g', 'I'].indexOf(type) >  -1) { // this is a binary file
         f.open('wb');
-        while (time() - dl_start < timeout && !js.terminated && socket.is_connected) {
+        while (!js.terminated && !console.aborted && socket.is_connected && fs <= max_file_size) {
             f.writeBin(socket.recvBin(1), 1);
+            last_dl = time();
+            fs++;
         }
         f.close();
     }
 
-    set_status(format('Downloaded %s:%s %s', host, port, selector));
+    if (console.aborted) {
+        console.aborted = false;
+        const msg = format('Aborted download of %s:%s %s.', host, port, selector);
+        f.remove();
+        fn = get_cache_fn(host, port, selector + '_error');
+        f = new File(fn);
+        f.open('w');
+        if (type == '1' || type == '7') {
+            f.writeln(JSON.stringify(parse_line('i' + msg + '\tnull\tnull\t0')));
+        } else {
+            f.writeln(msg);
+        }
+        f.close();
+        set_status(format('Download of %s:%s %s aborted', host, port, selector));
+    } else {
+        set_status(format('Downloaded %s:%s %s', host, port, selector));
+    }
 
     return fn;
 
@@ -203,7 +238,6 @@ function go_for(host, port, selector, type, skip_cache, query) {
     state.port = port;
     state.selector = selector;
     set_address();
-    set_status(format('%s %s:%s %s', type_map[type], host, port, selector));
     return fn;
 }
 
@@ -213,8 +247,12 @@ function go_history() {
     print_document(false);
     if (loc.type != '1' && loc.type != '7') return;
     lowlight(state.doc[state.item], state.item);
-    state.item = loc.item;
-    state.history[state.history_idx].item = loc.item;
+    if (loc.item < 0) {
+        next_link();
+    } else {
+        state.item = loc.item;
+        state.history[state.history_idx].item = loc.item;
+    }
     highlight(state.doc[state.item], state.item);
     scrollbox.scroll_into_view(state.item);
 }
@@ -340,6 +378,7 @@ function print_document(auto_highlight) {
     } else if (['4', '5', '9', 'g', 'I'].indexOf(state.item_type) > -1) {
         console.clear(BG_BLACK|LIGHTGRAY);
         bbs.send_file(state.fn);
+        file_remove(state.fn);
         reset_display();
         go_back();
     }
@@ -374,8 +413,13 @@ function main() {
                 break;
             // Select current item
             case '\r':
-                if ((state.item_type == '1' || state.item_type == '7') && ['0', '1', '4', '5', '6', '9', 'g', 'I'].indexOf(state.doc[state.item].type) > -1) {
+                // Fetch a potentially-cached text file or directory listing
+                if ((state.item_type == '1' || state.item_type == '7') && ['0', '1', '6'].indexOf(state.doc[state.item].type) > -1) {
                     go_get(state.doc[state.item].host, state.doc[state.item].port, state.doc[state.item].selector, state.doc[state.item].type);
+                // Fetch a downloadable type, don't bother checking the cache
+                } else if ((state.item_type == '1' || state.item_type == '7') && ['4', '5', '9', 'g', 'I'].indexOf(state.doc[state.item].type) > -1) {
+                    go_get(state.doc[state.item].host, state.doc[state.item].port, state.doc[state.item].selector, state.doc[state.item].type, false, true);
+                // Prompt for a query and then submit it to this index-search selector
                 } else if (state.item_type == '1' && state.doc[state.item].type == '7') {
                     var query = get_query();
                     if (query && query.length) {
