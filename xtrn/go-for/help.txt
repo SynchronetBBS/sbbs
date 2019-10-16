@@ -1,7 +1,7 @@
 
 hygo-for wgopher client chelp
 
-hc           g w go (enter an address:port to connecto to)
+hc           g w go (enter an address:port to connect to)
 hc           o w go to the root directory of the current server
 hc u or [left] w go back
 hc     [right] w go forward
@@ -13,6 +13,5 @@
 hc           d w download the current document (text files only)
 hc           r w reload the current document, from cache if available
 hc           R w reload the current document, skipping the cache
+hc      ctrl+c w abort a request in progress
 hc           q w quit
-
-hbechicken
