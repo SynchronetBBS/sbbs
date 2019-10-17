@@ -173,7 +173,7 @@ function go_fetch(host, port, selector, type, query) {
         var parsed;
         f.open('w');
         while (!js.terminated && !console.aborted && socket.is_connected && fs <= max_dir_size && (line = socket.recvline()) != '.') {
-            if (line) {
+            if (line !== null) {
                 last_dl = time();
                 parsed = JSON.stringify(parse_line(line));
                 f.writeln(parsed);
@@ -185,9 +185,11 @@ function go_fetch(host, port, selector, type, query) {
         f.open('w');
         while (!js.terminated && !console.aborted && socket.is_connected && fs <= max_text_size) {
             line = socket.recvline();
-            f.writeln(line);
-            last_dl = time();
-            fs += line.length;
+            if (line !== null) {
+                f.writeln(line);
+                last_dl = time();
+                fs += line.length;
+            }
         }
         f.close();
     } else if (['4', '5', '9', 'g', 'I'].indexOf(type) >  -1) { // this is a binary file
