@@ -557,7 +557,7 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 	if(xpos==undefined || xpos < 1)
 		xpos=1;
 	if(ypos == 'center')	// center
-		ypos = Math.floor((console.screen_rows - height) / 2) + 1;
+		ypos = Math.ceil((console.screen_rows - height) / 2) + 1;
 	if(ypos==undefined || ypos < 1)
 		ypos=1;
 	if(delay==undefined)
@@ -619,7 +619,7 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 	if(xpos == 'center')	// center
 		xpos = Math.floor((console.screen_columns - width) / 2) + 1;
 	if(ypos == 'center')	// center
-		ypos = Math.floor((console.screen_rows - height) / 2) + 1;
+		ypos = Math.ceil((console.screen_rows - height) / 2) + 1;
 	if(xoff+width > this.width || yoff+height > this.height) {
 		alert("Attempt to draw from outside of graphic: "+xoff+":"+yoff+" "+width+"x"+height+" "+this.width+"x"+this.height);
 		return(false);
