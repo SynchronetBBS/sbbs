@@ -776,6 +776,7 @@ bool bso_lock_node(fidoaddr_t dest)
 		if(terminated)
 			return false;
 		SLEEP(cfg.bso_lock_delay*1000);
+		mkpath(outbound); // Just in case something (e.g. Argus) deleted the outbound directory
 	}
 	strListPush(&locked_bso_nodes, fname);
 	lprintf(LOG_DEBUG, "Node (%s) successfully locked via: %s", smb_faddrtoa(&dest, NULL), fname);
