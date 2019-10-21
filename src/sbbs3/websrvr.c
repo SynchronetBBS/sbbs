@@ -2728,7 +2728,7 @@ static BOOL parse_headers(http_session_t * session)
 				default:
 					break;
 			}
-			sprintf(env_name,"HTTP_%s",head_line);
+			SAFEPRINTF(env_name,"HTTP_%s",head_line);
 			add_env(session,env_name,value);
 		}
 		free(head_line);
