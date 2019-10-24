@@ -474,7 +474,7 @@ BOOL sbbs_t::newuser()
 	answertime=starttime=time(NULL);	  /* set answertime to now */
 
 #ifdef JAVASCRIPT
-	js_create_user_objects();
+	js_create_user_objects(js_cx, js_glob);
 #endif
 
 	if(cfg.newuser_mod[0])

@@ -562,7 +562,7 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
-long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope)
+long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope, JSContext* js_cx)
 {
 	char*		p;
 	char*		args=NULL;
@@ -576,6 +576,9 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	jsval		old_js_argc = JSVAL_VOID;
 	jsval		rval;
 	int32		result=0;
+
+	if(js_cx == NULL)
+		js_cx = this->js_cx;
 
 	if(js_cx==NULL) {
 		errormsg(WHERE,ERR_CHK,"JavaScript support",0);
@@ -720,9 +723,8 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 		JS_RemoveValueRoot(js_cx, &old_js_argc);
 	}
 
-	JS_GC(js_cx);
-
 	JS_ENDREQUEST(js_cx);
+	JS_GC(js_cx);
 
 	return(result);
 }

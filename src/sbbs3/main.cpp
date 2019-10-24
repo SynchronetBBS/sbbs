@@ -1259,22 +1259,23 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	JS_RESUMEREQUEST(cx, rc);
 }
 
-bool sbbs_t::js_init(ulong* stack_frame)
+JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* desc)
 {
+	JSContext* js_cx;
+
 	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
-	lprintf(LOG_DEBUG,"JavaScript: Creating runtime: %lu bytes"
-		,startup->js.max_bytes);
+	lprintf(LOG_DEBUG,"JavaScript: Creating %s runtime: %lu bytes"
+		,desc, startup->js.max_bytes);
+	if((*runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__)) == NULL)
+		return NULL;
 
-	if((js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL)
-		return(false);
+	lprintf(LOG_DEBUG,"JavaScript: Initializing %s context (stack: %lu bytes)"
+		,desc, startup->js.cx_stack);
 
-	lprintf(LOG_DEBUG,"JavaScript: Initializing context (stack: %lu bytes)"
-		,startup->js.cx_stack);
-
-    if((js_cx = JS_NewContext(js_runtime, startup->js.cx_stack))==NULL)
-		return(false);
+    if((js_cx = JS_NewContext(*runtime, startup->js.cx_stack))==NULL)
+		return NULL;
 	JS_BEGINREQUEST(js_cx);
 
 	memset(&js_callback,0,sizeof(js_callback));
@@ -1300,22 +1301,22 @@ bool sbbs_t::js_init(ulong* stack_frame)
 					,&startup->js
 					,&client, client_socket, -1					/* client */
 					,&js_server_props							/* server */
-					,&js_glob
+					,glob
 			))
 			break;
 		rooted=true;
 
 #ifdef BUILD_JSDOCS
-		js_CreateUifcObject(js_cx, js_glob);
-		js_CreateConioObject(js_cx, js_glob);
+		js_CreateUifcObject(js_cx, *glob);
+		js_CreateConioObject(js_cx, *glob);
 #endif
 
 		/* BBS Object */
-		if(js_CreateBbsObject(js_cx, js_glob)==NULL)
+		if(js_CreateBbsObject(js_cx, *glob)==NULL)
 			break;
 
 		/* Console Object */
-		if(js_CreateConsoleObject(js_cx, js_glob)==NULL)
+		if(js_CreateConsoleObject(js_cx, *glob)==NULL)
 			break;
 
 		success=true;
@@ -1324,16 +1325,16 @@ bool sbbs_t::js_init(ulong* stack_frame)
 
 	if(!success) {
 		if(rooted)
-			JS_RemoveObjectRoot(js_cx, &js_glob);
+			JS_RemoveObjectRoot(js_cx, glob);
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
 		js_cx=NULL;
-		return(false);
+		return NULL;
 	}
 	else
 		JS_ENDREQUEST(js_cx);
 
-	return(true);
+	return js_cx;
 }
 
 void sbbs_t::js_cleanup(void)
@@ -1353,17 +1354,36 @@ void sbbs_t::js_cleanup(void)
 		jsrt_Release(js_runtime);
 		js_runtime=NULL;
 	}
+
+	if(js_hotkey_cx!=NULL) {
+		lprintf(LOG_DEBUG,"JavaScript: Destroying HotKey context");
+		JS_BEGINREQUEST(js_hotkey_cx);
+		JS_RemoveObjectRoot(js_hotkey_cx, &js_hotkey_glob);
+		JS_ENDREQUEST(js_hotkey_cx);
+		JS_DestroyContext(js_hotkey_cx);
+		js_hotkey_cx=NULL;
+	}
+
+	if(js_hotkey_runtime!=NULL) {
+		lprintf(LOG_DEBUG,"JavaScript: Destroying HotKey runtime");
+		jsrt_Release(js_hotkey_runtime);
+		js_hotkey_runtime=NULL;
+	}
+
 }
 
-void sbbs_t::js_create_user_objects(void)
+bool sbbs_t::js_create_user_objects(JSContext* cx, JSObject* glob)
 {
-	if(js_cx==NULL)
-		return;
-
-	JS_BEGINREQUEST(js_cx);
-	if(!js_CreateUserObjects(js_cx, js_glob, &cfg, &useron, &client, NULL, subscan))
-		lprintf(LOG_ERR,"!JavaScript ERROR creating user objects");
-	JS_ENDREQUEST(js_cx);
+	bool result = false;
+	if(cx != NULL) {
+		JS_BEGINREQUEST(cx);
+		if(!js_CreateUserObjects(cx, glob, &cfg, &useron, &client, NULL, subscan))
+			lprintf(LOG_ERR,"!JavaScript ERROR creating user objects");
+		else
+			result = true;
+		JS_ENDREQUEST(cx);
+	}
+	return result;
 }
 
 extern "C" BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
@@ -2490,7 +2510,6 @@ void output_thread(void* arg)
 
 void event_thread(void* arg)
 {
-	ulong		stack_frame;
 	char		str[MAX_PATH+1];
 	char		bat_list[MAX_PATH+1];
 	char		semfile[MAX_PATH+1];
@@ -2524,7 +2543,7 @@ void event_thread(void* arg)
 
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
-		if(!sbbs->js_init(&stack_frame)) /* This must be done in the context of the events thread */
+		if((sbbs->js_cx = sbbs->js_init(&sbbs->js_runtime, &sbbs->js_glob, "event")) == NULL) /* This must be done in the context of the events thread */
 			lprintf(LOG_ERR,"!JavaScript Initialization FAILURE");
 	}
 #endif
@@ -3389,6 +3408,8 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 #ifdef JAVASCRIPT
 	js_runtime=NULL;	/* runtime */
 	js_cx=NULL;			/* context */
+	js_hotkey_runtime = NULL;
+	js_hotkey_cx = NULL;
 #endif
 
 	for(i=0;i<TOTAL_TEXT;i++)
@@ -4407,7 +4428,6 @@ void sbbs_t::logoffstats()
 
 void node_thread(void* arg)
 {
-	ulong			stack_frame;
 	char			str[128];
 	int				file;
 	uint			curshell=0;
@@ -4427,7 +4447,7 @@ void node_thread(void* arg)
 
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
-		if(!sbbs->js_init(&stack_frame)) /* This must be done in the context of the node thread */
+		if((sbbs->js_cx = sbbs->js_init(&sbbs->js_runtime, &sbbs->js_glob, "node")) == NULL) /* This must be done in the context of the node thread */
 			lprintf(LOG_ERR,"Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
 	}
 #endif

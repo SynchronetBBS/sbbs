@@ -183,10 +183,14 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				attr(LIGHTGRAY);
 				CRLF; 
 			}
-			if(cfg.hotkey[i]->cmd[0]=='?')
-				js_execfile(cmdstr(cfg.hotkey[i]->cmd+1,nulstr,nulstr,NULL), /* startup_dir: */NULL, /* scope: */js_glob);
-			else
-				external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,NULL),0);
+			if(cfg.hotkey[i]->cmd[0]=='?') {
+				if(js_hotkey_cx == NULL) {
+					js_hotkey_cx = js_init(&js_hotkey_runtime, &js_hotkey_glob, "HotKey");
+					js_create_user_objects(js_hotkey_cx, js_hotkey_glob);
+				}
+				js_execfile(cmdstr(cfg.hotkey[i]->cmd+1,nulstr,nulstr,tmp), /* startup_dir: */NULL, /* scope: */js_hotkey_glob, js_hotkey_cx);
+			} else
+				external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,tmp),0);
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
 				RESTORELINE; 

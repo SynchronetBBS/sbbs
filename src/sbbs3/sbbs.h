@@ -394,11 +394,14 @@ public:
 	JSRuntime*		js_runtime;
 	JSContext*		js_cx;
 	JSObject*		js_glob;
+	JSRuntime*		js_hotkey_runtime;
+	JSContext*		js_hotkey_cx;
+	JSObject*		js_hotkey_glob;
 	js_callback_t	js_callback;
-	long			js_execfile(const char *fname, const char* startup_dir, JSObject* scope=NULL);
-	bool			js_init(ulong* stack_frame);
+	long			js_execfile(const char *fname, const char* startup_dir, JSObject* scope = NULL, JSContext* cx = NULL);
+	JSContext*		js_init(JSRuntime**, JSObject**, const char* desc);
 	void			js_cleanup(void);
-	void			js_create_user_objects(void);
+	bool			js_create_user_objects(JSContext*, JSObject* glob);
 
 #endif
 

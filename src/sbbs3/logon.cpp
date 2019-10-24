@@ -66,7 +66,7 @@ bool sbbs_t::logon()
 	client_on(client_socket,&client,TRUE /* update */);
 
 #ifdef JAVASCRIPT
-	js_create_user_objects();
+	js_create_user_objects(js_cx, js_glob);
 #endif
 
 	if(useron.rest&FLAG('Q'))
