@@ -15,7 +15,9 @@ const winners_list = js.exec_dir + "winners.jsonl";
 const losers_list = js.exec_dir + "losers.jsonl";
 const help_file = js.exec_dir + "minesweeper.hlp";
 const welcome_image = js.exec_dir + "welcome.bin";
+const mine_image = js.exec_dir + "mine.bin";
 const winner_image = js.exec_dir + "winner.bin";
+const boom_image = js.exec_dir + "boom?.bin";
 const loser_image = js.exec_dir + "loser.bin";
 const max_difficulty = 5;
 const min_mine_density = 0.10;
@@ -75,6 +77,8 @@ log(LOG_DEBUG, title + " options: " + JSON.stringify(options));
 
 function show_image(filename, fx)
 {
+	var dir = directory(filename);
+	filename = dir[random(dir.length)];
 	var Graphic = load({}, "graphic.js");
 	var sauce_lib = load({}, "sauce_lib.js");
 	var sauce = sauce_lib.read(filename);
@@ -111,9 +115,10 @@ function place_mines()
 		mined[i] = true;
 
 	for(var i = 0; i < game.mines; i++) {
-		var r = random(game.height * game.width);
-		if(r == (selected.y * game.width) + selected.x)
-			continue;
+		var r;
+		do {
+			r = random(game.height * game.width);
+		} while (r == (selected.y * game.width) + selected.x);
 		var tmp = mined[i];
 		mined[i] = mined[r];
 		mined[r] = tmp;
@@ -183,6 +188,7 @@ function lostgame(cause)
 	game.cause = cause;
 	json_lines.add(losers_list, game);
 	draw_board(true);
+	show_image(boom_image, false);
 	show_image(loser_image, true);
 }
 	
@@ -378,7 +384,7 @@ function show_log()
 function cell_val(x, y)
 {
 	if(gameover && board[y][x].mine) {
-		if(selected.x == x && selected.y == y)
+		if(board[y][x].detonated)
 			return char_detonated_mine;
 		return char_mine;
 	}
@@ -530,14 +536,14 @@ function draw_board(full)
 	} else if(gameover) {
 		console.attributes = RED|HIGH|BLINK;
 		console_center(((game.end - game.start) < options.timelimit * 60
-			? "Boom! " : "Time-out: ") + "Game Over");
+			? "" : "Time-out: ") + "Game Over");
 	} else {
 		var elapsed = 0;
 		if(game.start)
 			elapsed = (Date.now() / 1000) - game.start;
 		var timeleft = Math.max(0, (options.timelimit * 60) - elapsed);
 		console.attributes = LIGHTCYAN;
-		console_center(format("%d Mines  Lvl %1.2f  %s%s"
+		console_center(format("%2d Mines  Lvl %1.2f  %s%s "
 			, game.mines - totalflags(), calc_difficulty(game)
 			, game.start && !gameover && (timeleft / 60) <= options.timewarn ? "\x01r\x01h\x01i" : ""
 			, secondstr(timeleft)
@@ -639,7 +645,10 @@ function uncover_cell(x, y)
 	board[y][x].unsure = false;
 	board[y][x].changed = true;
 	
-	return mined(x, y);
+	if(!mined(x, y))
+		return false;
+	board[y][x].detonated = true;
+	return true;
 }
 
 function flagged(x, y)
@@ -676,7 +685,7 @@ function can_chord(x, y)
 	return !board[y][x].covered 
 		&& board[y][x].count
 		&& board[y][x].count == countflagged(x, y)
-		&& countunflagged(x, y)
+		&& countunflagged(x, y);
 }
 
 // Return true if mine denotated
@@ -772,6 +781,8 @@ function play()
 {
 	console.clear();
 	show_image(welcome_image);
+	show_image(mine_image, true);
+	sleep(500);
 	init_game(difficulty);
 	draw_board(true);
 	var full_redraw = false;
