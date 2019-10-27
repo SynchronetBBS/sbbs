@@ -4194,6 +4194,8 @@ bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr
 			continue;
 		if(check_psb(&seenbys, area.link[u]))
 			continue;
+		if(check_psb(&paths, area.link[u]))
+			continue;
 		if(hdr->origzone == area.link[u].zone
 			&& hdr->orignet == area.link[u].net
 			&& hdr->orignode == area.link[u].node
