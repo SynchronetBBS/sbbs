@@ -1761,14 +1761,19 @@ function try_fmutex(fname, str)
 
 function fmutex(fname, str)
 {
+	var end = time() + 15;
 	fname += '.lock';
 	if (str === undefined) {
 		while(!file_mutex(fname)) {
+			if (time() > end)
+				throw("Unable to create "+fname+" please notify Sysop");
 			mswait(1);
 		}
 	}
 	else {
 		while(!file_mutex(fname, str)) {
+			if (time() > end)
+				throw("Unable to create "+fname+" please notify Sysop");
 			mswait(1);
 		}
 	}
