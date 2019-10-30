@@ -22,6 +22,8 @@ if(options.show_avatar === undefined)
 	options.show_avatar = true;
 if(options.draw_avatar_right === undefined)
 	options.draw_avatar_right = true;
+if(options.show_logon_list === undefined)
+	options.show_logon_list = true;
 
 if(user.settings & USER_ICE_COLOR) {
 	var cterm = load({}, "cterm_lib.js");
@@ -159,7 +161,8 @@ if(user.security.level==99				/* Sysop logging on */
 // Last few callers
 console.aborted=false;
 console.clear(LIGHTGRAY);
-bbs.exec("?logonlist -l");
+if(options.show_logon_list === true)
+	bbs.exec("?logonlist -l");
 if(bbs.node_status != NODE_QUIET && ((system.settings&SYS_SYSSTAT) || !user.is_sysop))
 	bbs.mods.logonlist_lib.add();
 
