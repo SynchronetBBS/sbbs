@@ -4175,7 +4175,7 @@ outpkt_t* get_outpkt(fidoaddr_t orig, fidoaddr_t dest, nodecfg_t* nodecfg)
 /******************************************************************************
  This is where we put outgoing messages into packets.
 ******************************************************************************/
-bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr
+bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr, const fidoaddr_t* pkt_orig
 	,fmsghdr_t* hdr, addrlist_t seenbys, addrlist_t paths, bool rescan)
 {
 	unsigned u;
@@ -4200,7 +4200,9 @@ bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr
 			&& hdr->orignet == area.link[u].net
 			&& hdr->orignode == area.link[u].node
 			&& hdr->origpoint == area.link[u].point)
-			continue;	/* Don't loop messages back to originator */
+			continue;	// Don't loop messages back to message originator
+		if(pkt_orig != NULL	&& memcmp(pkt_orig, &area.link[u], sizeof(*pkt_orig)) == 0)
+			continue;	// Don't loop message back to packet originator
 		nodecfg_t* nodecfg = findnodecfg(&cfg, area.link[u],0);
 		if(nodecfg != NULL && nodecfg->passive)
 			continue;
@@ -4923,7 +4925,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 				if(cfg.area[u].sub == subnum) {
 					cfg.area[u].exported++;
 					write_to_pkts(fmsgbuf, cfg.area[u]
-						,nodecfg ? &nodecfg->addr : NULL, &hdr, msg_seen, msg_path, rescan);
+						,nodecfg ? &nodecfg->addr : NULL, /* pkt_orig: */NULL, &hdr, msg_seen, msg_path, rescan);
 					break;
 				}
 			}
@@ -5823,7 +5825,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 			if(cfg.area[i].sub==INVALID_SUB) {			/* Passthru */
 				strip_psb(fmsgbuf);
-				write_to_pkts(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path, /* rescan: */false);
+				write_to_pkts(fmsgbuf, curarea, NULL, &pkt_orig, &hdr, msg_seen, msg_path, /* rescan: */false);
 				printf("\n");
 				continue;
 			} 						/* On to the next message */
@@ -5865,7 +5867,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					lprintf(LOG_ERR, "ERROR %d (%s) line %d opening area #%d, sub #%d"
 						,result, smb[cur_smb].last_error, __LINE__, i+1, cfg.area[i].sub+1);
 					strip_psb(fmsgbuf);
-					write_to_pkts(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path, /* rescan: */false);
+					write_to_pkts(fmsgbuf, curarea, NULL, &pkt_orig, &hdr, msg_seen, msg_path, /* rescan: */false);
 					printf("\n");
 					continue;
 				}
@@ -5880,7 +5882,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 							,result, smb[cur_smb].last_error, __LINE__, smb[cur_smb].file);
 						smb_close(&smb[cur_smb]);
 						strip_psb(fmsgbuf);
-						write_to_pkts(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path, /* rescan: */false);
+						write_to_pkts(fmsgbuf, curarea, NULL, &pkt_orig, &hdr, msg_seen, msg_path, /* rescan: */false);
 						printf("\n");
 						continue;
 					}
@@ -5893,7 +5895,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				lprintf(LOG_NOTICE, "%s: Private posts disallowed from %s (%s) to %s, subject: %s"
 					,areatag, hdr.from, fmsghdr_srcaddr_str(&hdr), hdr.to, hdr.subj);
 				strip_psb(fmsgbuf);
-				write_to_pkts(fmsgbuf, curarea, NULL,&hdr, msg_seen, msg_path, /* rescan: */false);
+				write_to_pkts(fmsgbuf, curarea, NULL, &pkt_orig, &hdr, msg_seen, msg_path, /* rescan: */false);
 				printf("\n");
 				continue;
 			}
@@ -5915,7 +5917,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			}
 			else if(result==IMPORT_SUCCESS || (result==IMPORT_FILTERED_AGE && cfg.relay_filtered_msgs)) {	   /* Not a dupe */
 				strip_psb(fmsgbuf);
-				write_to_pkts(fmsgbuf, curarea, NULL, &hdr, msg_seen, msg_path, /* rescan: */false);
+				write_to_pkts(fmsgbuf, curarea, NULL, &pkt_orig, &hdr, msg_seen, msg_path, /* rescan: */false);
 			}
 
 			if(result==SMB_SUCCESS) {		/* Successful import */
