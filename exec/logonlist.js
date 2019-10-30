@@ -74,7 +74,7 @@ function print(hdr, num, days_ago)
 		var date = new Date(record.time * 1000);
 		console.print(format(options.last_few_callers_fmt || 
 			"\r\n\x01n\x01h\x01m%-3s\x01n\x01m%-6s \x01w\x01h%-25.25s \x01m%-25.25s" +
-			"\x01n\x01m%02u:%02u \x01h%-8.8s \x01n\x01m%3d"
+			"\x01n\x01m%2u:%02u \x01h%-8.8s \x01n\x01m%3d"
 			,record.total ? record.node : ""
 			,record.total ? record.total : ""
 			,record.user.alias
@@ -96,6 +96,6 @@ if(argv.indexOf('-l') >= 0) { // Last few callers?
 } else {
 	if(!this.print(format(options.logons_header_fmt || "\x01n\x01h\x01y\r\nLogons %s:\r\n", day)
 		,/* all: */0, days_ago))
-		console.print(format(options.noone_logged_on_fmt || "\r\nNo one logged on %s.", day.toLowerCase()));
+		console.print(format(options.nobody_logged_on_fmt || "\r\nNo one logged on %s.", day.toLowerCase()));
 	console.crlf();
 }
