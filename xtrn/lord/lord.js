@@ -6285,25 +6285,26 @@ function get_a_room()
 		if (player.cha < 100) {
 			player.gold -= 400 * player.level;
 		}
-
-		player.inn = true;
-		sclrscr();
-		sln('');
-		sln('');
-		foreground(15);
-		sln('  The Room At The Inn');
-		foreground(10);
-		sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
-		foreground(2);
-		sln('  You are escorted to a small but cozy room in the Inn.');
-		sln('  You relax on the soft bed, and soon fall asleep, still');
-		sln('  wearing your armour.');
-		sln('');
-		sln('');
-		player.on_now = false;
-		player.put();
-		exit(0);
 	}
+
+	player.inn = true;
+	sclrscr();
+	sln('');
+	sln('');
+	foreground(15);
+	sln('  The Room At The Inn');
+	foreground(10);
+	sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+	foreground(2);
+	sln('  You are escorted to a small but cozy room in the Inn.');
+	sln('  You relax on the soft bed, and soon fall asleep, still');
+	sln('  wearing your armour.');
+	sln('');
+	sln('');
+	player.on_now = false;
+	player.put();
+	exit(0);
+
 	return true;
 }
 
