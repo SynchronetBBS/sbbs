@@ -52,8 +52,12 @@ if(!options.selector)
 	options.selector = 0;
 if(!options.highlight)
 	options.highlight = true;
+if(!options.boom_delay)
+	options.boom_delay = 1000;
 if(!options.image_delay)
 	options.image_delay = 1500;
+if(!options.splash_delay)
+	options.splash_delay = 500;
 if(!options.sub)
     options.sub = load({}, "syncdata.js").find();
 
@@ -68,20 +72,26 @@ var board = [];
 var selected = {x:0, y:0};
 var gamewon = false;
 var gameover = false;
+var new_best = false;
+var win_rank = false;
+var view_details = false;
 var cell_width;	// either 3 or 2
 var selector = userprops.get(ini_section, "selector", options.selector);
 var highlight = userprops.get(ini_section, "highlight", options.highlight);
 var difficulty = userprops.get(ini_section, "difficulty", options.difficulty);
+var best = null;
 
 log(LOG_DEBUG, title + " options: " + JSON.stringify(options));
 
-function show_image(filename, fx)
+function show_image(filename, fx, delay)
 {
 	var dir = directory(filename);
 	filename = dir[random(dir.length)];
 	var Graphic = load({}, "graphic.js");
 	var sauce_lib = load({}, "sauce_lib.js");
 	var sauce = sauce_lib.read(filename);
+	if(delay === undefined)
+		delay = options.image_delay;
 	if(sauce && sauce.datatype == sauce_lib.defs.datatype.bin) {
 		try {
 			var graphic = new Graphic(sauce.cols, sauce.rows);
@@ -90,7 +100,7 @@ function show_image(filename, fx)
 				graphic.drawfx('center', 'center');
 			else
 				graphic.draw('center', 'center');
-			sleep(options.image_delay);
+			sleep(delay);
 		} catch(e) { 
 			log(LOG_DEBUG, e);
 		}
@@ -165,6 +175,14 @@ function isgamewon()
 			msgbase.close();
 			game.md5 = undefined;
 		}
+		var level = calc_difficulty(game);
+		if(!best || !best[level] || calc_time(game) < calc_time(best[level])) {
+			new_best = true;
+			if(!best)
+				best = {};
+			delete best[level];
+			best[level] = game;
+		}
 		game.name = user.alias;
 		var result = json_lines.add(winners_list, game);
 		if(result !== true) {
@@ -174,7 +192,18 @@ function isgamewon()
 		gamewon = true;
 		gameover = true;
 		draw_board(false);
-		show_image(winner_image, true);
+		show_image(winner_image, true, /* delay: */0);
+		var start = Date.now();
+		var winners = get_winners(Math.ceil(level));
+		for(var i = 0; i < options.winners; i++) {
+			if(winners[i].name == user.alias && winners[i].end == game.end) {
+				win_rank = i + 1;
+				break;
+			}
+		}
+		var now = Date.now();
+		if(now - start < options.image_delay)
+			sleep(options.image_delay - (now - start));
 		return true;
 	}
 	return false;
@@ -188,7 +217,7 @@ function lostgame(cause)
 	game.cause = cause;
 	json_lines.add(losers_list, game);
 	draw_board(true);
-	show_image(boom_image, false);
+	show_image(boom_image, false, options.boom_delay);
 	show_image(loser_image, true);
 }
 	
@@ -216,19 +245,15 @@ function compare_won_game(g1, g2)
 	return calc_time(g1) - calc_time(g2);
 }
 
-function secondstr(t)
+function secondstr(t, frac)
 {
+	if(frac)
+		return format("%2u:%06.3f", Math.floor(t/60), t%60);
 	return format("%2u:%02u", Math.floor(t/60), Math.floor(t%60));
 }
 
-function show_winners(level)
+function get_winners(level)
 {
-	console.clear();
-	console.aborted = false;
-	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
-	console_center(" " + title + " Top " + options.winners + " Winners ");
-	console.attributes = LIGHTGRAY;
-
 	var list = json_lines.get(winners_list);
 	if(typeof list != 'object')
 		list = [];
@@ -284,15 +309,31 @@ function show_winners(level)
 	if(level)
 		list = list.filter(function (obj) { var difficulty = calc_difficulty(obj);
 			return (difficulty <= level && difficulty > level - 1); });
+			
+	list.sort(compare_won_game);
+			
+	return list;
+}
 
+function show_winners(level)
+{
+	console.clear();
+	console.aborted = false;
+	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
+	var str = " " + title + " Top " + options.winners;
+	if(level)
+		str += " Level " + level;
+	str += " Winners ";
+	console_center(str);
+	console.attributes = LIGHTGRAY;
+
+	var list = get_winners(level);
 	if(!list.length) {
 		alert("No " + (level ? ("level " + level) : "") + " winners yet!");
 		return;
 	}
 	console.attributes = WHITE;
-	console.print(format("    %-25s%-15s Lvl   Time  WxHxMines   Date   Rev\r\n", "User", ""));
-
-	list.sort(compare_won_game);
+	console.print(format("    %-25s%-15s Lvl     Time    WxHxMines   Date\r\n", "User", ""));
 
 	var count = 0;
 	var displayed = 0;
@@ -311,17 +352,16 @@ function show_winners(level)
 			console.attributes = LIGHTCYAN;
 		else
 			console.attributes = BG_CYAN;
-		console.print(format("%3u %-25.25s%-15.15s %1.2f %s %3ux%2ux%-3u %s %s\x01>\r\n"
+		console.print(format("%3u %-25.25s%-15.15s %1.2f %s %3ux%2ux%-3u %s\x01>\r\n"
 			,count + 1
 			,game.name
 			,game.net_addr ? ('@'+game.net_addr) : ''
 			,difficulty
-			,secondstr(game.end - game.start)
+			,secondstr(calc_time(game), true)
 			,game.width
 			,game.height
 			,game.mines
 			,system.datestr(game.end)
-			,game.rev ? game.rev : ''
 			));
 		count++;
 		displayed++;
@@ -356,7 +396,7 @@ function show_log()
 		return;
 	}
 	console.attributes = WHITE;
-	console.print(format("Date      %-25s Lvl   Time  WxHxMines Rev  Result\r\n", "User", ""));
+	console.print(format("Date      %-25s Lvl     Time    WxHxMines Rev  Result\r\n", "User", ""));
 	
 	list.sort(compare_game);
 	
@@ -370,20 +410,50 @@ function show_log()
 			,system.datestr(game.end)
 			,game.name
 			,calc_difficulty(game)
-			,secondstr(game.end - game.start)
+			,secondstr(calc_time(game), true)
 			,game.width
 			,game.height
 			,game.mines
 			,game.rev ? game.rev : ''
-			,game.cause ? ("Lost: " + game.cause) : "Won"
+			,game.cause ? ("Lost: " + format("%.4s", game.cause)) : "Won"
 			));
 	}
 	console.attributes = LIGHTGRAY;
 }
 
+function show_best()
+{
+	console.clear(LIGHTGRAY);
+	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
+	console_center(" Your " + title + " Personal Best Wins ");
+	console.attributes = LIGHTGRAY;
+	
+	var wins = [];
+	for(var i in best)
+		wins.push(best[i]);
+	wins.reverse();	// Display newest first
+	
+	console.attributes = WHITE;
+	console.print("Date       Lvl     Time    WxHxMines  Rev\r\n");
+	
+	for(var i in wins) {
+		var game = wins[i];
+		if(i&1)
+			console.attributes = LIGHTCYAN;
+		else
+			console.attributes = BG_CYAN;
+		console.print(format("%s  %1.2f  %s  %3ux%2ux%-3u %s\x01>\x01n\r\n"
+			,system.datestr(game.end)
+			,calc_difficulty(game)
+			,secondstr(calc_time(game), true)
+			,game.width, game.height, game.mines
+			,game.rev ? game.rev : ''));
+	}
+}
+
 function cell_val(x, y)
 {
-	if(gameover && board[y][x].mine) {
+	if(gameover && board[y][x].mine && (!view_details || board[y][x].detonated)) {
 		if(board[y][x].detonated)
 			return char_detonated_mine;
 		return char_mine;
@@ -395,7 +465,7 @@ function cell_val(x, y)
 			return char_badflag;
 		return char_flag;
 	}
-	if(!gameover && board[y][x].covered)
+	if((view_details || !gameover) && board[y][x].covered)
 		return char_covered;
 	if(board[y][x].count)
 		return attr_count + board[y][x].count;
@@ -455,7 +525,6 @@ function countunflagged(x, y)
 	
 	return count;
 }
-
 
 function totalflags()
 {
@@ -532,15 +601,24 @@ function draw_board(full)
 		console.down(top + 1);
 	if(gamewon) {
 		console.attributes = YELLOW|BLINK;
-		console_center("Winner! Completed in " + secondstr(game.end - game.start).trim());
-	} else if(gameover) {
+		var blurb = "Winner! Cleared in";
+		if(win_rank)
+			blurb = "Rank " + win_rank + " Winner in";
+		else if(new_best)
+			blurb = "Personal Best Time";
+		console_center(blurb + " " + secondstr(calc_time(game), true).trim());
+	} else if(gameover && !view_details) {
 		console.attributes = RED|HIGH|BLINK;
-		console_center(((game.end - game.start) < options.timelimit * 60
+		console_center((calc_time(game) < options.timelimit * 60
 			? "" : "Time-out: ") + "Game Over");
 	} else {
 		var elapsed = 0;
-		if(game.start)
-			elapsed = (Date.now() / 1000) - game.start;
+		if(game.start) {
+			if(gameover)
+				elapsed = game.end - game.start;
+			else
+				elapsed = (Date.now() / 1000) - game.start;
+		}
 		var timeleft = Math.max(0, (options.timelimit * 60) - elapsed);
 		console.attributes = LIGHTCYAN;
 		console_center(format("%2d Mines  Lvl %1.2f  %s%s "
@@ -550,7 +628,10 @@ function draw_board(full)
 			));
 	}
 	var cmds = "";
-	if(!gameover) {
+	if(gameover) {
+		if(!gamewon)
+			cmds += "\x01n\x01hD\x01nisplay  ";
+	} else {
 		if(!board[selected.y][selected.x].covered) {
 			if(can_chord(selected.x, selected.y))
 				cmds += "\x01h\x01kDig  \x01n\x01hC\x01nhord  ";
@@ -565,9 +646,13 @@ function draw_board(full)
 		draw_border();
 		console.attributes = LIGHTGRAY;		
 		console_center(cmds);
-		draw_border();
-		console_center("\x01hW\x01ninners  \x01hL\x01nog  \x01hH\x01nelp");
 		cmds_shown = cmds;
+		draw_border();
+		cmds = "\x01hW\x01ninners  \x01hL\x01nog  ";
+		if(best)
+			cmds += "\x01hB\x01nest  ";
+		cmds += "\x01hH\x01nelp"
+		console_center(cmds);
 	} else if(!console.term_supports(USER_ANSI)) {
 		console.creturn();
 		console.down(2);
@@ -698,12 +783,22 @@ function chord(x, y)
 	return false;
 }
 
-function get_difficulty()
+function get_difficulty(all)
 {
 	console.creturn();
 	console.cleartoeol();
 	draw_border();
 	console.attributes = WHITE;
+	if(all) {
+		console.right((console.screen_columns - 20) / 2);
+		console.print(format("Level (1-%u) [All]: ", max_difficulty));
+		var key = console.getkeys("QA", max_difficulty);
+		if(key == 'A')
+			return 0;
+		if(key == 'Q')
+			return -1;
+		return key;
+	}
 	console.right((console.screen_columns - 24) / 2);
 	console.print(format("Difficulty Level (1-%u): ", max_difficulty));
 	return console.getnum(max_difficulty);
@@ -727,6 +822,9 @@ function init_game(difficulty)
 
 	gamewon = false;
 	gameover = false;
+	new_best = false;
+	win_rank = false;
+	view_details = false;
 	game = { rev: REVISION };
 	game.height = target_height(difficulty);
 	game.width = game.height;
@@ -780,9 +878,29 @@ function change(x, y)
 function play()
 {
 	console.clear();
-	show_image(welcome_image);
+	var start = Date.now();
+	show_image(welcome_image, /* fx: */false, /* delay: */0);
+
+	// Find "personal best" wins
+	var winners = json_lines.get(winners_list);
+	for(var i in winners) {
+		var win = winners[i];
+		if(win.name !== user.alias)
+			continue;
+		var level = calc_difficulty(win);
+		if(best && best[level] && calc_time(best[level]) < calc_time(win))
+			continue;
+		if(!best)
+			best = {};
+		delete best[level];
+		best[level] = win;
+	}
+	var now = Date.now();
+	if(now - start < options.splash_delay)
+		sleep(options.splash_delay - (now - start));
+
 	show_image(mine_image, true);
-	sleep(500);
+	sleep(options.splash_delay);
 	init_game(difficulty);
 	draw_board(true);
 	var full_redraw = false;
@@ -864,16 +982,22 @@ function play()
 				if(!gameover && selected.x < game.width - 1)
 					selected.x++;
 				break;
-			case 'D':	// Dig
+			case 'D':	// Dig (or Details)
 			case ' ':
-				if(!gameover
-					&& board[selected.y][selected.x].covered
-					&& !board[selected.y][selected.x].flagged) {
-					if(uncover(selected.x, selected.y))
-						lostgame("mine");
-					else
-						isgamewon();
-					full_redraw = gameover;
+				if(gameover) {
+					if(!gamewon) {
+						view_details = !view_details;
+						full_redraw = true;
+					}
+				} else {
+					if(board[selected.y][selected.x].covered
+						&& !board[selected.y][selected.x].flagged) {
+						if(uncover(selected.x, selected.y))
+							lostgame("mine");
+						else
+							isgamewon();
+						full_redraw = gameover;
+					}
 				}
 				break;
 			case 'C':	// Chord
@@ -922,8 +1046,8 @@ function play()
 			case 'W':
 				console.home();
 				console.down(top + 1);
-				var level = get_difficulty();
-				if(level >= 1) {
+				var level = get_difficulty(true);
+				if(level >= 0) {
 					console.line_counter = 0;
 					show_winners(level);
 					console.pause();
@@ -932,6 +1056,13 @@ function play()
 					full_redraw = true;
 				}
 				break
+			case 'T':
+				show_winners();
+				console.pause();
+				console.clear();
+				console.aborted = false;
+				full_redraw = true;
+				break;
 			case 'L':
 				console.line_counter = 0;
 				show_log();
@@ -940,6 +1071,16 @@ function play()
 				console.aborted = false;
 				full_redraw = true;
 				break
+			case 'B':
+				if(!best)
+					break;
+				console.line_counter = 0;
+				show_best();
+				console.pause();
+				console.clear();
+				console.aborted = false;
+				full_redraw = true;
+				break;
 			case '?':
 			case 'H':
 				console.line_counter = 0;
@@ -1012,9 +1153,9 @@ try {
 		difficulty = 1;
 	
 	play();
-	userprops.set(ini_section, "selector", selector%selectors.length);	
-	userprops.set(ini_section, "highlight", highlight);	
-	userprops.set(ini_section, "difficulty", difficulty);	
+	userprops.set(ini_section, "selector", selector%selectors.length);
+	userprops.set(ini_section, "highlight", highlight);
+	userprops.set(ini_section, "difficulty", difficulty);
 	
 } catch(e) {
 	
