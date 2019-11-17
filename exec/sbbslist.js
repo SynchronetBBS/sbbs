@@ -992,6 +992,7 @@ function add_entry(list)
 
 function list_page_of_bbs_entries(list, top, pagesize, current_idx, sort)
 {
+	var num_entries_written = 0;
 	for(var i = top; i-top < pagesize; ++i)
 	{
 		console.line_counter = 0;
@@ -999,11 +1000,13 @@ function list_page_of_bbs_entries(list, top, pagesize, current_idx, sort)
 		{
 			list_bbs_entry(list[i], i==current_idx, sort);
 			console.cleartoeol(i==current_idx ? color_cfg.selection : LIGHTGRAY);
+			++num_entries_written;
 		}
 		else
 			console.clearline(LIGHTGRAY);
 		console.crlf();
 	}
+	return num_entries_written;
 }
 
 function browse(list)
@@ -1063,6 +1066,9 @@ function browse(list)
 	var redraw_whole_list = true;
 	var new_page = false;
 	var start_screen_row = 3;
+	var num_entries_on_page = 0;
+	var prompt_row = 0;
+	var previous_prompt_row = 0;
 	while(!js.terminated) {
 //		console.clear(LIGHTGRAY);
 		console.home();
@@ -1090,7 +1096,7 @@ function browse(list)
 		else if(list_format < 0)
 			list_format = list_formats.length-1;
 
-		// Column headings
+		/* Column headings */
 		printf("%-*s", lib.max_len.name, sort=="name" ? "NAME":"Name");
 		for(var i in list_formats[list_format]) {
 			var fmt = "%-*s";
@@ -1112,7 +1118,7 @@ function browse(list)
 		var determine_top_ret_obj = determine_top(top, current, pagesize, list);
 		top = determine_top_ret_obj.top;
 		if (new_page || determine_top_ret_obj.new_page)
-			list_page_of_bbs_entries(list, top, pagesize, current, sort);
+			num_entries_on_page = list_page_of_bbs_entries(list, top, pagesize, current, sort);
 		else
 		{
 			var current_row = current - top + start_screen_row;
@@ -1129,13 +1135,24 @@ function browse(list)
 				}
 			}
 			else
-				list_page_of_bbs_entries(list, top, pagesize, current, sort);
+				num_entries_on_page = list_page_of_bbs_entries(list, top, pagesize, current, sort);
 		}
 		redraw_whole_list = true;
 		previous = current;
+		previous_prompt_row = prompt_row;
+		prompt_row = num_entries_on_page + 3;
 
 		if (console.term_supports(USER_ANSI))
-			console.gotoxy(1, console.screen_rows);
+		{
+			/* If we displayed a new page and the prompt row is higher than it
+			   was previously, then erase the previous prompt text */
+			if ((new_page || determine_top_ret_obj.new_page) && (prompt_row < previous_prompt_row))
+			{
+				console.gotoxy(1, previous_prompt_row);
+				console.cleartoeol("\1n");
+			}
+			console.gotoxy(1, prompt_row);
+		}
 //		console.attributes=LIGHTGRAY;
 		console.print(format(cmd_prompt_fmt, "List"));
 		console.mnemonics(format("~Sort, ~Reverse, ~GoTo, ~Find, fmt:0-%u, ~More, ~Quit, or [View] ~?"
