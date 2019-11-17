@@ -852,6 +852,14 @@ function list_bbs_entry(bbs, selected, sort)
 			printf(fmt, len, len, lib.property_value(bbs, list_formats[list_format][i]));
 		}
 	}
+	/* Ensure the rest of the line has the correct color */
+	if (selected)
+	{
+		console_color(color, selected);
+		console.cleartoeol();
+	}
+	else
+		console.cleartoeol("\1n");
 }
 
 function right_justify(text)
@@ -1123,7 +1131,7 @@ function browse(list)
 			else
 				list_page_of_bbs_entries(list, top, pagesize, current, sort);
 		}
-		redraw_whole_list = false;
+		redraw_whole_list = true;
 		previous = current;
 
 		if (console.term_supports(USER_ANSI))
@@ -1145,7 +1153,6 @@ function browse(list)
 			case 'V':
 			case '\r':
 				view(list, current);
-				redraw_whole_list = true;
 				continue;
 			case 'Q':
 				return;
@@ -1159,9 +1166,11 @@ function browse(list)
 				continue;
 			case KEY_UP:
 				current--;
+				redraw_whole_list = false;
 				break;
 			case KEY_DOWN:
 				current++;
+				redraw_whole_list = false;
 				break;
 			case KEY_PAGEDN:
 			case 'N':
@@ -1188,7 +1197,6 @@ function browse(list)
 					else
 						console_beep();
 				}
-				redraw_whole_list = true;
 				break;
 			case 'G':
 				console.clearline();
@@ -1217,10 +1225,7 @@ function browse(list)
 							break;
 					}
 					if(index < list.length)
-					{
 						current = index;
-						redraw_whole_list = true;
-					}
 					else
 						console_beep();
 				}
@@ -1228,7 +1233,6 @@ function browse(list)
 			case 'R':
 				list.reverse();
 				reversed = !reversed;
-				redraw_whole_list = true;
 				break;
 			case 'M':	/* More */
 				console.clearline();
@@ -1250,7 +1254,6 @@ function browse(list)
 					case 'E':
 						if(!list[current] || !can_edit(list[current])) {
 							console_beep();
-							redraw_whole_list = true;
 							continue;
 						}
 						console.clear();
@@ -1259,13 +1262,11 @@ function browse(list)
 						if(!bbs) {
 							alert("Edit aborted");
 							console.pause();
-							redraw_whole_list = true;
 							continue;
 						}
 						list[current] = bbs;
 						lib.replace(bbs);
 						console.pause();
-						redraw_whole_list = true;
 						continue;
 					case KEY_DEL:
 					case 'R':
@@ -1277,17 +1278,13 @@ function browse(list)
 						console.clear();
 						var entry_name = list[current].name;
 						if(console.noyes("Remove BBS entry: " + entry_name))
-						{
-							redraw_whole_list = true;
 							break;
-						}
 						if(lib.remove(list[current])) {
 							list.splice(current, 1);
 							alert(entry_name + " removed successfully");
 						}
 						orglist = list.slice();
 						console.pause();
-						redraw_whole_list = true;
 						break;
 					case 'Q':
 						break;
@@ -1319,14 +1316,12 @@ function browse(list)
 								}
 								break;
 						}
-						redraw_whole_list = true;
 						break;
 					case 'J':
 						console.clear();
 						console.write(lfexpand(JSON.stringify(list, null, 4)));
 						console.crlf();
 						console.pause();
-						redraw_whole_list = true;
 						break;
 					case 'S':
 					{
@@ -1343,7 +1338,6 @@ function browse(list)
 							lib.sort(list, sort = sort_fields[sort_field]);
 						if(reversed)
 							list.reverse();
-						redraw_whole_list = true;
 						break;
 					}
 					case 'F':
@@ -1356,7 +1350,6 @@ function browse(list)
 						var choice = console.uselect();
 						if(choice >= 0)
 							list_format = choice;
-						redraw_whole_list = true;
 						break;
 					}
 					case 'H':
@@ -1392,7 +1385,6 @@ function browse(list)
 					lib.sort(list, sort);
 				if(reversed)
 					list.reverse();
-				redraw_whole_list = true;
 				break;
 				console.clearline();
 				console.print("\1n\1y\1hSort: ");
@@ -1414,28 +1406,24 @@ function browse(list)
 						list = orglist.slice();
 						break;
 				}
-				redraw_whole_list = true;
 				break;
 			case KEY_LEFT:
 				list_format--;
-				redraw_whole_list = true;
 				break;
 			case KEY_RIGHT:
 				list_format++;
-				redraw_whole_list = true;
 				break;
 			case '?':
 			case 'H':
 				help();
-				redraw_whole_list = true;
 				break;
 			default:
 				if(key>='0' && key <='9')
 				{
 					var old_list_format = list_format;
 					list_format = parseInt(key);
-					if (list_format != old_list_format)
-						redraw_whole_list = true;
+					if (list_format == old_list_format)
+						redraw_whole_list = false;
 				}
 				break;
 		}
@@ -1762,22 +1750,17 @@ function view(list, current)
 			case 'R':
 				if(!can_edit(list[current])) {
 					console_beep();
-					redraw_whole_list = true;
 					continue;
 				}
 				console.clear();
 				var entry_name = list[current].name;
 				if(console.noyes("Remove BBS entry: " + entry_name))
-				{
-					redraw_whole_list = true;
 					break;
-				}
 				if(lib.remove(list[current])) {
 					list.splice(current, 1);
 					alert(entry_name + " removed successfully");
 				}
 				console.pause();
-				redraw_whole_list = true;
 				break;
 			case 'J':
 				if(user.is_sysop) {
@@ -1789,13 +1772,11 @@ function view(list, current)
 					} else
 						alert("Edit aborted");
 					console.pause();
-					redraw_whole_list = true;
 				}
 				break;
 			case 'V':
 				lib.verify_system(list[current], user.alias);
 				lib.replace(list[current]);
-				redraw_whole_list = true;
 				break;
 			case 'H':
 			case '?':
@@ -2226,6 +2207,35 @@ function install()
 	return true;
 }
 
+// Calculates & returns a page number (1-based) based on a top index
+// and number per page.
+//
+// Parameters:
+//  top_index: The index (0-based) of the topmost item on the page
+//  num_per_page: The number of items per page
+//
+// Return value: The page number (1-based)
+function calc_page_num_with_top_idx(top_index, num_per_page)
+{
+	return ((top_index / num_per_page) + 1);
+}
+
+// Calculates & returns a page number (1-based) based on a specific item index
+// and number per page.
+//
+// Parameters:
+//  current_index: The index (0-based) of an item
+//  num_per_page: The number of items per page
+//
+// Return value: The page number (1-based)
+function calc_page_num_with_current_idx(current_idx, num_per_page)
+{
+	var top_idx = 0;
+	while (current_idx >= top_idx+num_per_page)
+		top_idx += num_per_page;
+	return calc_page_num_with_top_idx(top_idx, num_per_page);
+}
+
 
 function main()
 {
@@ -2642,35 +2652,6 @@ function main()
 		}
     }
 	return 0;
-}
-
-// Calculates & returns a page number (1-based) based on a top index
-// and number per page.
-//
-// Parameters:
-//  top_index: The index (0-based) of the topmost item on the page
-//  num_per_page: The number of items per page
-//
-// Return value: The page number (1-based)
-function calc_page_num_with_top_idx(top_index, num_per_page)
-{
-	return ((top_index / num_per_page) + 1);
-}
-
-// Calculates & returns a page number (1-based) based on a specific item index
-// and number per page.
-//
-// Parameters:
-//  current_index: The index (0-based) of an item
-//  num_per_page: The number of items per page
-//
-// Return value: The page number (1-based)
-function calc_page_num_with_current_idx(current_idx, num_per_page)
-{
-	var top_idx = 0;
-	while (current_idx >= top_idx+num_per_page)
-		top_idx += num_per_page;
-	return calc_page_num_with_top_idx(top_idx, num_per_page);
 }
 
 exit(main());
