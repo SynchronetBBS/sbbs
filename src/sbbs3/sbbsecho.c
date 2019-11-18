@@ -5407,8 +5407,8 @@ void pack_netmail(void)
 			return;
 		}
 
+		nodecfg=findnodecfg(&cfg, addr, 0);
 		if(!sysfaddr_is_valid(find_sysfaddr(addr, false))) {
-			nodecfg=findnodecfg(&cfg, addr, 0);
 			if(nodecfg!=NULL && nodecfg->route.zone	&& nodecfg->status==MAIL_STATUS_NORMAL
 				&& !(hdr.attr&(FIDO_CRASH|FIDO_HOLD))) {
 				addr=nodecfg->route;		/* Routed */
