@@ -314,8 +314,13 @@ static BOOL mime_getattachment(const char* beg, const char* end, char* attachmen
 		if(*filename == '"') {
 			filename++;
 			term = strchr(filename, '"');
-		} else
+		} else {
+			char* wsp = filename;
+			FIND_WHITESPACE(wsp);
 			term = strchr(filename, ';');
+			if(term > wsp)
+				term = wsp;
+		}
 		if(term == NULL) {
 			term = filename;
 			FIND_WHITESPACE(term);
