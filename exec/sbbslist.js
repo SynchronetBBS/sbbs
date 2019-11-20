@@ -821,7 +821,7 @@ const list_formats = [
 	[ "verified_by", "verified_on" ],
 ];
 
-function list_bbs_entry(bbs, selected, sort)
+function list_bbs_entry(bbs, selected, sort, is_first_on_page)
 {
 	var sysop="";
 	var color = color_cfg.column[0];
@@ -829,7 +829,9 @@ function list_bbs_entry(bbs, selected, sort)
 	if(sort=="name")
 		color |= color_cfg.sorted;
 	console_color(color, selected);
-	printf("%-*s%c", lib.max_len.name, bbs.name, selected ? '<' : ' ');
+	var txt = format("%-*s%c", lib.max_len.name, bbs.name, selected ? '<' : ' ');
+	console.print(txt);
+	var line_screen_len = strip_ctrl(txt).length; // To help clearing to EOL for PETSCII
 
 	color = LIGHTMAGENTA;
 	if(!js.global.console || console.screen_columns >= 80) {
@@ -849,17 +851,29 @@ function list_bbs_entry(bbs, selected, sort)
 			console_color(color++, selected);
 			if(i > 0 && i == list_formats[list_format].length-1)
 				fmt = "%*.*s";
-			printf(fmt, len, len, lib.property_value(bbs, list_formats[list_format][i]));
+			if (selected && console.term_supports(USER_PETSCII) && !is_first_on_page)
+				--len;
+			txt = format(fmt, len, len, lib.property_value(bbs, list_formats[list_format][i]));
+			console.print(txt);
+			line_screen_len += strip_ctrl(txt).length;
 		}
 	}
 	/* Ensure the rest of the line has the correct color */
-	if (selected)
+	console_color(color, selected);
+	console.cleartoeol();
+	//console.cleartoeol(selected ? "" : "\1n");
+	/* Clear the text to the end of the line on the screen.  For PETSCII,
+	   it seems we have to take extra care to go only to the end of the line;
+	   console.cleartoeol() is causing a formatting issue with PETSCII. */
+	/*
+	if (console.term_supports(USER_PETSCII))
 	{
-		console_color(color, selected);
-		console.cleartoeol();
+		var len_to_clear = console.screen_columns - line_screen_len - 1;
+		printf("%" + len_to_clear + "s", "");
 	}
 	else
-		console.cleartoeol("\1n");
+		console.cleartoeol();
+	*/
 }
 
 function right_justify(text)
@@ -998,7 +1012,7 @@ function list_page_of_bbs_entries(list, top, pagesize, current_idx, sort)
 		console.line_counter = 0;
 		if (list[i])
 		{
-			list_bbs_entry(list[i], i==current_idx, sort);
+			list_bbs_entry(list[i], i==current_idx, sort, (i==top));
 			console.cleartoeol(i==current_idx ? color_cfg.selection : LIGHTGRAY);
 			++num_entries_written;
 		}
@@ -1064,6 +1078,7 @@ function browse(list)
 
 	console.line_counter = 0;
 	var redraw_whole_list = true;
+	var console_supports_cursor_movement = (console.term_supports(USER_ANSI) || console.term_supports(USER_PETSCII));
 	var new_page = false;
 	var start_screen_row = 3;
 	var num_entries_on_page = 0;
@@ -1123,14 +1138,22 @@ function browse(list)
 		{
 			var current_row = current - top + start_screen_row;
 			var previous_row = previous - top + start_screen_row;
-			if (console.term_supports(USER_ANSI) && !redraw_whole_list && (current_row >= start_screen_row) && (current_row < start_screen_row+pagesize))
+			if (console_supports_cursor_movement && !redraw_whole_list && (current_row >= start_screen_row) && (current_row < start_screen_row+pagesize))
 			{
 				if (previous != current)
 				{
+					/*
+					// Temporary
+					console.gotoxy(1, 1);
+					console.print("\1ntop: " + top + ", previous: " + previous + " (is top: " +
+					              (previous==top) + "), current: " + current + " (is top: " +
+								 (current==top) + ")     ");
+					// End Temporary
+					*/
 					console.gotoxy(1, previous_row);
-					list_bbs_entry(list[previous], false, sort);
+					list_bbs_entry(list[previous], false, sort, (previous==top));
 					console.gotoxy(1, current_row);
-					list_bbs_entry(list[current], true, sort);
+					list_bbs_entry(list[current], true, sort, (current==top));
 					console.gotoxy(1, console.screen_rows);
 				}
 			}
@@ -1142,7 +1165,7 @@ function browse(list)
 		previous_prompt_row = prompt_row;
 		prompt_row = num_entries_on_page + 3;
 
-		if (console.term_supports(USER_ANSI))
+		if (console_supports_cursor_movement)
 		{
 			/* If we displayed a new page and the prompt row is higher than it
 			   was previously, then erase the previous prompt text */
@@ -1154,10 +1177,21 @@ function browse(list)
 			console.gotoxy(1, prompt_row);
 		}
 //		console.attributes=LIGHTGRAY;
-		console.print(format(cmd_prompt_fmt, "List"));
-		console.mnemonics(format("~Sort, ~Reverse, ~GoTo, ~Find, fmt:0-%u, ~More, ~Quit, or [View] ~?"
-			,list_formats.length-1));
-		console.cleartoeol();
+		var prompt_str = format(cmd_prompt_fmt, "List")
+		               + format("~Sort, ~Reverse, ~GoTo, ~Find, fmt:0-%u, ~More, ~Quit, or [View] ~?", list_formats.length-1)
+		console.mnemonics(prompt_str);
+		/* Clear the text to the end of the line on the screen.  For PETSCII,
+		   it seems we have to take extra care to go only to the end of the line;
+		   console.cleartoeol() is causing a formatting issue with PETSCII. */
+		if (console.term_supports(USER_PETSCII))
+		{
+			var prompt_text_len = strip_ctrl(prompt_str).length;
+			var len_to_clear = console.screen_columns - prompt_text_len + 6;
+			printf("%" + len_to_clear + "s", "");
+			console.gotoxy(prompt_text_len-6, prompt_row);
+		}
+		else
+			console.cleartoeol(); // With PETSCII, this is causing a formatting issue
 		new_page = false;
 		var key = console.getkey(0);
 		switch(key.toUpperCase()) {
@@ -2517,7 +2551,8 @@ function main()
 								continue;
 						}
 					}
-					list_bbs_entry(list[i], false);
+					//list_bbs_entry(list[i], false);
+					list_bbs_entry(list[i], false, null, (i==top));
 					writeln();
 					count++;
 					if(optval["list"] && count >= optval["list"])
