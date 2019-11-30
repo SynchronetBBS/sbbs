@@ -143,7 +143,6 @@ void node_menu()
 			cfg.node_num=i+1;
 			save_node_cfg(&cfg,backup_level);
 			refresh_cfg(&cfg);
-			uifc.changes=1;
 			continue;
 		}
 
