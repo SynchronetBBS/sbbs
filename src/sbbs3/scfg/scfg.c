@@ -87,6 +87,8 @@ enum import_list_type determine_msg_list_type(const char* path)
 		return IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS;
 	if(stricmp(fname, "control.dat") == 0)
 		return IMPORT_LIST_TYPE_QWK_CONTROL_DAT;
+	if(stricmp(fname, "newsgroup.lst") == 0)
+		return IMPORT_LIST_TYPE_NEWSGROUPS;
 	return IMPORT_LIST_TYPE_BACKBONE_NA;
 }
 

@@ -226,6 +226,24 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			SAFECOPY(tmpsub.qwkname, p);
 			new_sub_misc = SUB_QNET;
 		}
+		else if(type == IMPORT_LIST_TYPE_NEWSGROUPS) {
+			char* p=str;
+			SKIP_WHITESPACE(p);
+			if(*p == 0)
+				continue;
+			char* tp = p + 1;
+			FIND_WHITESPACE(tp);
+			*tp = 0;
+			SAFECOPY(tmpsub.newsgroup, p);
+			if(strlen(p) > grpname_len && strnicmp(p, cfg.grp[grpnum]->sname, grpname_len) == 0)
+				p += grpname_len;
+			SKIP_CHAR(p, '.');
+			SAFECOPY(tmp_code, p);
+			SAFECOPY(tmpsub.lname, p);
+			SAFECOPY(tmpsub.sname, p);
+			SAFECOPY(tmpsub.qwkname, p);
+			new_sub_misc = SUB_INET;
+		}
 		else {
 			new_sub_misc = SUB_FIDO;
 			char* p=str;
@@ -279,7 +297,9 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 		truncsp(tmpsub.sname);
 		truncsp(tmpsub.lname);
 		truncsp(tmpsub.qwkname);
-		SAFECOPY(tmpsub.qwkname,tmpsub.sname);
+		if(tmpsub.qwkname[0] == 0) {
+			SAFECOPY(tmpsub.qwkname, tmpsub.sname);
+		}
 
 		if(tmpsub.code_suffix[0]==0	|| tmpsub.sname[0]==0)
 			continue;
@@ -834,6 +854,7 @@ void msgs_cfg()
 					strcpy(opt[k++],"areas.bbs       SBBSecho Area File");
 					strcpy(opt[k++],"backbone.na     FidoNet EchoList");
 					strcpy(opt[k++],"badareas.lst    SBBSecho Bad Area List");
+					strcpy(opt[k++],"newsgroup.lst   Newsgroup List");
 					opt[k][0]=0;
 					uifc.helpbuf=
 						"`Import Area File Format:`\n"
@@ -853,6 +874,9 @@ void msgs_cfg()
 						"`backbone.na` (also `fidonet.na` and `badareas.lst`)\n"
 						"  FidoNet standard EchoList containing standardized echo `Area Tags`\n"
 						"  and (optional) descriptions.\n"
+						"\n"
+						"`newsgroup.list`\n"
+						"  A simple listing of newsgroup names, one line per group.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_ACT,0,0,0,&import_list_type,0
 						,"Import Area File Format",opt);
@@ -874,6 +898,9 @@ void msgs_cfg()
 							break;
 						case IMPORT_LIST_TYPE_BACKBONE_NA:
 							sprintf(filename, "backbone.na");
+							break;
+						case IMPORT_LIST_TYPE_NEWSGROUPS:
+							SAFECOPY(filename, "newsgroup.lst");
 							break;
 						default:
 							sprintf(filename,"%sbadareas.lst", cfg.data_dir);
