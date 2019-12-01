@@ -107,7 +107,6 @@ struct js_msg_area_priv {
 BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, uint subnum)
 {
 	char		str[128];
-	int			c;
 	JSString*	js_str;
 	jsval		val;
 	sub_t*		sub;
@@ -154,36 +153,7 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 	if(!JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
-
-	if(sub->newsgroup[0])
-		SAFECOPY(str,sub->newsgroup);
-	else {
-		sprintf(str,"%s.%s",cfg->grp[sub->grp]->sname,sub->sname);
-		/*
-		 * From RFC5536:
-		 * newsgroup-name  =  component *( "." component )
-		 * component       =  1*component-char
-		 * component-char  =  ALPHA / DIGIT / "+" / "-" / "_"
-		 */
-		if (str[0] == '.')
-			str[0] = '_';
-		for(c=0;str[c];c++) {
-			/* Legal characters */
-			if ((str[c] >= 'A' && str[c] <= 'Z')
-					|| (str[c] >= 'a' && str[c] <= 'z')
-					|| (str[c] >= '0' && str[c] <= '9')
-					|| str[c] == '+'
-					|| str[c] == '-'
-					|| str[c] == '_'
-					|| str[c] == '.')
-				continue;
-			str[c] = '_';
-		}
-		c--;
-		if (str[c] == '.')
-			str[c] = '_';
-	}
-	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+	if((js_str=JS_NewStringCopyZ(cx, subnewsgroupname(cfg, sub, str, sizeof(str))))==NULL)
 		return(FALSE);
 	if(!JS_DefineProperty(cx, subobj, "newsgroup", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
