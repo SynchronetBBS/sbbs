@@ -234,12 +234,14 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			char* tp = p + 1;
 			FIND_WHITESPACE(tp);
 			*tp = 0;
+			tp++;
+			SKIP_WHITESPACE(tp);
 			SAFECOPY(tmpsub.newsgroup, p);
 			if(strlen(p) > grpname_len && strnicmp(p, cfg.grp[grpnum]->sname, grpname_len) == 0)
 				p += grpname_len;
 			SKIP_CHAR(p, '.');
 			SAFECOPY(tmp_code, p);
-			SAFECOPY(tmpsub.lname, p);
+			SAFECOPY(tmpsub.lname, tp);
 			SAFECOPY(tmpsub.sname, p);
 			SAFECOPY(tmpsub.qwkname, p);
 			new_sub_misc = SUB_INET;
@@ -723,6 +725,7 @@ void msgs_cfg()
 					strcpy(opt[k++],"subs.txt       Synchronet Sub-boards");
 					strcpy(opt[k++],"areas.bbs      SBBSecho Area File");
 					strcpy(opt[k++],"backbone.na    FidoNet EchoList");
+					strcpy(opt[k++],"newsgroup.lst  USENET Newsgroup List");
 					opt[k][0]=0;
 					uifc.helpbuf=
 						"`Export Area File Format:`\n"
@@ -741,7 +744,10 @@ void msgs_cfg()
 						"`backbone.na` (also `fidonet.na` and `badareas.lst`)\n"
 						"  FidoNet standard EchoList containing standardized echo `Area Tags`\n"
 						"  and (optional) descriptions.\n"
-
+						"\n"
+						"`newsgroup.lst`\n"
+						"  Standard (RFC3977) NNTP `LIST NEWSGROUPS` output format:\n"
+						"  Newsgroup names and (optional) descriptions, one line per newsgroup."
 					;
 					k = uifc.list(WIN_MID|WIN_ACT,0,0,0,&export_list_type,0
 						,"Export Area File Format",opt);
@@ -753,6 +759,8 @@ void msgs_cfg()
 						sprintf(str,"%sareas.bbs",cfg.data_dir);
 					else if(k==2)
 						sprintf(str,"backbone.na");
+					else if(k==3)
+						sprintf(str,"newsgroup.lst");
 					if(k==1)
 						if(uifc.input(WIN_MID|WIN_SAV,0,0,"Uplinks"
 							,str2,sizeof(str2)-1,0)<=0) {
@@ -810,6 +818,12 @@ void msgs_cfg()
 								,cfg.sub[j]->lname);
 							continue; 
 						}
+						if(k==3) {		/* newsgroup.lst */
+							fprintf(stream,"%s %s\n"
+								,subnewsgroupname(&cfg, cfg.sub[j], str, sizeof(str))
+								,cfg.sub[j]->lname);
+							continue;
+						}
 						fprintf(stream,"%s\n%s\n%s\n%s\n%s\n%s\n"
 								"%s\n%s\n%s\n"
 							,cfg.sub[j]->lname
@@ -854,7 +868,7 @@ void msgs_cfg()
 					strcpy(opt[k++],"areas.bbs       SBBSecho Area File");
 					strcpy(opt[k++],"backbone.na     FidoNet EchoList");
 					strcpy(opt[k++],"badareas.lst    SBBSecho Bad Area List");
-					strcpy(opt[k++],"newsgroup.lst   Newsgroup List");
+					strcpy(opt[k++],"newsgroup.lst   USENET Newsgroup List");
 					opt[k][0]=0;
 					uifc.helpbuf=
 						"`Import Area File Format:`\n"
@@ -867,6 +881,9 @@ void msgs_cfg()
 						"`subs.txt`\n"
 						"  Complete details of a group of sub-boards as exported from `SCFG`.\n"
 						"\n"
+						"`control.dat`\n"
+						"  Standard file contained within QWK packets (typically ZIP archives).\n"
+						"\n"
 						"`areas.bbs`\n"
 						"  FidoNet EchoMail Area File, in either `Generic` or `SBBSecho` flavors,\n"
 						"  as used by most FidoNet EchoMail Programs or SBBSecho.\n"
@@ -875,8 +892,9 @@ void msgs_cfg()
 						"  FidoNet standard EchoList containing standardized echo `Area Tags`\n"
 						"  and (optional) descriptions.\n"
 						"\n"
-						"`newsgroup.list`\n"
-						"  A simple listing of newsgroup names, one line per group.\n"
+						"`newsgroup.lst`\n"
+						"  Standard (RFC3977) NNTP `LIST NEWSGROUPS` output format:\n"
+						"  Newsgroup names and (optional) descriptions, one line per newsgroup."
 					;
 					k=uifc.list(WIN_MID|WIN_ACT,0,0,0,&import_list_type,0
 						,"Import Area File Format",opt);
