@@ -161,7 +161,7 @@ var interface_ip_address=0;
 var port_set=false;
 var tls=false;
 var no_path=false;
-area = new Array();
+var area = {};
 
 if(this.server!=undefined)
 	interface_ip_address=server.interface_ip_address;
@@ -178,7 +178,10 @@ if(!cfg_file.open("r")) {
 }
 
 while(!cfg_file.eof) {
-	line = truncsp(cfg_file.readln());
+	line = cfg_file.readln();
+	if(line == null)
+		continue;
+	line = truncsp(line);
 	if(line==null || line[0] == ';' || !line.length || line==undefined)
 		continue;
 	str=line.split(/\s+/);
@@ -212,8 +215,15 @@ while(!cfg_file.eof) {
 			global_flags=str[1];
 			break;
 		case "area":
-			area.push(str);
+			area[str[1]] = { newsgroup: str[2], flags: str[3], attachment_dir: str[4] };
 			break;
+		case "auto_areas":
+		{
+			for(var s in msg_area.sub)
+				if((msg_area.sub[s].settings & SUB_INET) && !area[s])
+					area[s] = {};
+			break;
+		}
 		case "debug":
 			debug=true;
 			break;
@@ -223,9 +233,9 @@ while(!cfg_file.eof) {
 		case "no_xover":
 			use_xover=false;
 			break;
-        case "no_path":
-            no_path=true;
-            break;
+		case "no_path":
+			no_path=true;
+			break;
 		case "slave":
 			slave=true;
 			break;
@@ -233,7 +243,7 @@ while(!cfg_file.eof) {
 			reader_mode = true;
 			break;
 		case "tagline":
-			str.shift();				// Remove first element (keyword)
+			str.shift();			// Remove first element (keyword)
 			tagline=str.join(' ');		// Combine remaining elements (tagline)
 			tagline+="\r\n";
 			break;
@@ -354,19 +364,16 @@ function save_ptr(ini_file, name, value)
 }
 
 printf("Scanning %lu message bases...\r\n",area.length);
-for(i in area) {
-	
+for(sub in area) {
+
 	if(!socket.is_connected)
 		break;
 
 	if(js.terminated || stop_sem_signaled())
 		break;
 
-//	printf("%s\r\n",area[i].toString());
-	
-	sub = area[i][1];
-	newsgroup = area[i][2];
-	flags = area[i][3];
+	newsgroup = area[sub].newsgroup;
+	flags = area[sub].flags;
 	if(flags==undefined)
 		flags="";
 	flags += global_flags;
@@ -383,7 +390,7 @@ for(i in area) {
 	if(newsgroup==undefined || newsgroup.length<2)
 		newsgroup=msgbase.cfg.newsgroup;
 
-	attachment_dir=area[i][4];
+	attachment_dir=area[sub].attachment_dir;
 	if(attachment_dir==undefined)
 		attachment_dir=msgbase.cfg.data_dir+"attach";
 	mkdir(attachment_dir);   
