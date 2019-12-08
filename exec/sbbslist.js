@@ -831,7 +831,7 @@ function list_bbs_entry(bbs, selected, sort, is_first_on_page)
 	console_color(color, selected);
 	var txt = format("%-*s%c", lib.max_len.name, bbs.name, selected ? '<' : ' ');
 	console.print(txt);
-	var line_screen_len = strip_ctrl(txt).length; // To help clearing to EOL for PETSCII
+	var line_screen_len = console.strlen(txt); // To help clearing to EOL for PETSCII
 
 	color = LIGHTMAGENTA;
 	if(!js.global.console || console.screen_columns >= 80) {
@@ -855,7 +855,7 @@ function list_bbs_entry(bbs, selected, sort, is_first_on_page)
 				--len;
 			txt = format(fmt, len, len, lib.property_value(bbs, list_formats[list_format][i]));
 			console.print(txt);
-			line_screen_len += strip_ctrl(txt).length;
+			line_screen_len += console.strlen(txt);
 		}
 	}
 	/* Ensure the rest of the line has the correct color */
@@ -1185,7 +1185,7 @@ function browse(list)
 		   console.cleartoeol() is causing a formatting issue with PETSCII. */
 		if (console.term_supports(USER_PETSCII))
 		{
-			var prompt_text_len = strip_ctrl(prompt_str).length;
+			var prompt_text_len = console.strlen(prompt_str);
 			var len_to_clear = console.screen_columns - prompt_text_len + 6;
 			printf("%" + len_to_clear + "s", "");
 			console.gotoxy(prompt_text_len-6, prompt_row);
