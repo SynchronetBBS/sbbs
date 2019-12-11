@@ -402,7 +402,7 @@ BinkP.prototype.parseArgs = function(data)
  * parameter string send with the M_OK message... hopefully either "secure"
  * or "non-secure"
  */
-BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
+BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host, tls)
 {
 	var pkt;
 	var i;
@@ -454,6 +454,11 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	}
 
 	log(LOG_DEBUG, "Connection to "+inet_host+":"+port+" successful");
+
+	if(tls === true) {
+		log(LOG_INFO, "Negotiating TLS");
+		this.sock.ssl_session = true;
+	}
 
 	this.authenticated = undefined;
 	if (this.crypt_support && !this.plain_auth_only && password !== '-')

@@ -387,6 +387,7 @@ function BinkITCfg()
 			this.node[sec].host = f.iniGetValue(section, 'BinkpHost');
 			this.node[sec].inbox = f.iniGetValue(section, 'inbox');
 			this.node[sec].outbox = f.iniGetValue(section, 'outbox');
+			this.node[sec].tls = f.iniGetValue(section, 'BinkpTLS', false);
 		}, this);
 		f.close();
 	}

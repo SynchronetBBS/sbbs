@@ -596,6 +596,7 @@ function callout(addr, scfg, locks, bicfg)
 	var bp = new BinkP(version_notice, undefined, rx_callback, tx_callback);
 	var port;
 	var host;
+	var tls = false;
 	var f;
 	var success = false;
 	var src_addr;
@@ -618,6 +619,7 @@ function callout(addr, scfg, locks, bicfg)
 		bp.cb_data.binkitpw = bp.cb_data.binkitcfg.node[addr].pass;
 		port = bp.cb_data.binkitcfg.node[addr].port;
 		host = bp.cb_data.binkitcfg.node[addr].host;
+		tls = bp.cb_data.binkitcfg.node[addr].tls;
 		if (bp.plain_auth_only) {
 			bp.require_md5 = false;
 			bp.require_crypt = false;
@@ -657,7 +659,7 @@ function callout(addr, scfg, locks, bicfg)
 
 	log(LOG_DEBUG, format("connecting to %s at %s", addr, host));
 	// We won't add files until the auth finishes...
-	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port, host);
+	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port, host, tls);
 	// Statistics
 	update_stats(stats.callout[success], addr, bp, host);
 	update_totals(stats.totals, addr, bp, true, success);
