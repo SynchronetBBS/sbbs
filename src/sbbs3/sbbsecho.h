@@ -129,6 +129,7 @@ typedef struct {
 	bool		binkp_plainAuthOnly;
 	bool		binkp_allowPlainAuth;
 	bool		binkp_allowPlainText;
+	bool		binkp_tls;
 	bool		binkp_poll;
 	uint16_t	binkp_port;
 	char		binkp_host[64];

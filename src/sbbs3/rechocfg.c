@@ -418,6 +418,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		ncfg->binkp_plainAuthOnly	= iniGetBool(ini, node, "BinkpPlainAuthOnly", FALSE);
 		ncfg->binkp_allowPlainAuth	= iniGetBool(ini, node, "BinkpAllowPlainAuth", FALSE);
 		ncfg->binkp_allowPlainText	= iniGetBool(ini, node, "BinkpAllowPlainText", TRUE);
+		ncfg->binkp_tls             = iniGetBool(ini, node, "BinkpTLS", FALSE);
 	}
 	strListFree(&nodelist);
 
@@ -617,6 +618,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		iniSetBool(&ini		,section,	"BinkpPlainAuthOnly",node->binkp_plainAuthOnly, &style);
 		iniSetBool(&ini		,section,	"BinkpAllowPlainAuth",node->binkp_allowPlainAuth, &style);
 		iniSetBool(&ini		,section,	"BinkpAllowPlainText",node->binkp_allowPlainText, &style);
+		iniSetBool(&ini		,section,	"BinkpTLS",node->binkp_tls, &style);
 		iniSetString(&ini	,section,	"BinkpSourceAddress",node->binkp_src, &style);
 	}
 
