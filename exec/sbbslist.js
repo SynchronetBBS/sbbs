@@ -2552,7 +2552,7 @@ function main()
 						}
 					}
 					//list_bbs_entry(list[i], false);
-					list_bbs_entry(list[i], false, null, (i==top));
+					list_bbs_entry(list[i], false, null);
 					writeln();
 					count++;
 					if(optval["list"] && count >= optval["list"])
