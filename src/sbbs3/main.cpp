@@ -2669,6 +2669,7 @@ void event_thread(void* arg)
 							sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
 								,errno, strerror(errno), g.gl_pathv[i], badpkt);
 						SAFEPRINTF(badpkt, "%u.rep.*.bad", sbbs->useron.number);
+						SAFEPRINTF(str,"%sfile/", sbbs->cfg.data_dir);
 						sbbs->delfiles(str, badpkt, /* keep: */10);
 					}
 					if(remove(semfile))
@@ -2896,7 +2897,7 @@ void event_thread(void* arg)
 								sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
 									,errno, strerror(errno), str, newname);
 							SAFEPRINTF(newname, "%s.q??.*.bad", sbbs->cfg.qhub[i]->id);
-							sbbs->delfiles(str, newname, /* keep: */10);
+							sbbs->delfiles(sbbs->cfg.data_dir, newname, /* keep: */10);
 						}
 						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
