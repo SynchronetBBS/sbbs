@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.28     2019-12-21   Bug fix: When the user changes to a different message
+                      area while reading a message, the reader would exit with
+                      an error due to an invalid last-read message number.
+                      This has been fixed.
 1.27     2019-09-16   Bug fix: Now displays the message score in the header
                       even if the message only has downvotes
 1.26     2019-09-12   Fixed a bug that was causing some of the message vote

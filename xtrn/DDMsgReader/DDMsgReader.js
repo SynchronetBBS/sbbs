@@ -50,6 +50,11 @@
  * 2019-09-16 Eric Oulashin     Version 1.27
  *                              Bug fix: Now displays the message score in the header
  *                              even if the message only has downvotes
+ * 2019-12-28 Eric Oulashin     Version 1.28
+ *                              Bug fix: When the user changes to a different message
+ *                              area while reading a message, the reader would exit
+ *                              with an error due to an invalid last-read message number.
+ *                              This has been fixed.
  */
 
 
@@ -152,8 +157,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.27";
-var READER_DATE = "2019-09-16";
+var READER_VERSION = "1.28";
+var READER_DATE = "2019-12-21";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -317,51 +322,54 @@ var SEARCH_TIMEOUT_MS = 10000;
 
 // Strings for the various message attributes (used by makeAllAttrStr(),
 // makeMainMsgAttrStr(), makeAuxMsgAttrStr(), and makeNetMsgAttrStr())
-var gMainMsgAttrStrs = new Object();
-gMainMsgAttrStrs[MSG_DELETE] = "Del";
-gMainMsgAttrStrs[MSG_PRIVATE] = "Priv";
-gMainMsgAttrStrs[MSG_READ] = "Read";
-gMainMsgAttrStrs[MSG_PERMANENT] = "Perm";
-gMainMsgAttrStrs[MSG_LOCKED] = "Lock";
-gMainMsgAttrStrs[MSG_ANONYMOUS] = "Anon";
-gMainMsgAttrStrs[MSG_KILLREAD] = "Killread";
-gMainMsgAttrStrs[MSG_MODERATED] = "Mod";
-gMainMsgAttrStrs[MSG_VALIDATED] = "Valid";
-gMainMsgAttrStrs[MSG_REPLIED] = "Repl";
-gMainMsgAttrStrs[MSG_NOREPLY] = "NoRepl";
-var gAuxMsgAttrStrs = new Object();
-gAuxMsgAttrStrs[MSG_FILEREQUEST] = "Freq";
-gAuxMsgAttrStrs[MSG_FILEATTACH] = "Attach";
+var gMainMsgAttrStrs = {
+	MSG_DELETE: "Del",
+	MSG_PRIVATE: "Priv",
+	MSG_READ: "Read",
+	MSG_PERMANENT: "Perm",
+	MSG_LOCKED: "Lock",
+	MSG_ANONYMOUS: "Anon",
+	MSG_KILLREAD: "Killread",
+	MSG_MODERATED: "Mod",
+	MSG_VALIDATED: "Valid",
+	MSG_REPLIED: "Repl",
+	MSG_NOREPLY: "NoRepl"
+};
+var gAuxMsgAttrStrs = {
+	MSG_FILEREQUEST: "Freq",
+	MSG_FILEATTACH: "Attach",
+	MSG_KILLFILE: "KillFile",
+	MSG_RECEIPTREQ: "RctReq",
+	MSG_CONFIRMREQ: "ConfReq",
+	MSG_NODISP: "NoDisp"
+};
 if (typeof(MSG_TRUNCFILE) != "undefined")
-	gAuxMsgAttrStrs[MSG_TRUNCFILE] = "TruncFile";
-gAuxMsgAttrStrs[MSG_KILLFILE] = "KillFile";
-gAuxMsgAttrStrs[MSG_RECEIPTREQ] = "RctReq";
-gAuxMsgAttrStrs[MSG_CONFIRMREQ] = "ConfReq";
-gAuxMsgAttrStrs[MSG_NODISP] = "NoDisp";
-var gNetMsgAttrStrs = new Object();
-gNetMsgAttrStrs[MSG_LOCAL] = "FromLocal";
-gNetMsgAttrStrs[MSG_INTRANSIT] = "Transit";
-gNetMsgAttrStrs[MSG_SENT] = "Sent";
-gNetMsgAttrStrs[MSG_KILLSENT] = "KillSent";
-gNetMsgAttrStrs[MSG_ARCHIVESENT] = "ArcSent";
-gNetMsgAttrStrs[MSG_HOLD] = "Hold";
-gNetMsgAttrStrs[MSG_CRASH] = "Crash";
-gNetMsgAttrStrs[MSG_IMMEDIATE] = "Now";
-gNetMsgAttrStrs[MSG_DIRECT] = "Direct";
+	gAuxMsgAttrStrs.MSG_TRUNCFILE = "TruncFile";
+var gNetMsgAttrStrs = {
+	MSG_LOCAL: "FromLocal",
+	MSG_INTRANSIT: "Transit",
+	MSG_SENT: "Sent",
+	MSG_KILLSENT: "KillSent",
+	MSG_ARCHIVESENT: "ArcSent",
+	MSG_HOLD: "Hold",
+	MSG_CRASH: "Crash",
+	MSG_IMMEDIATE: "Now",
+	MSG_DIRECT: "Direct"
+};
 if (typeof(MSG_GATE) != "undefined")
-	gNetMsgAttrStrs[MSG_GATE] = "Gate";
+	gNetMsgAttrStrs.MSG_GATE = "Gate";
 if (typeof(MSG_ORPHAN) != "undefined")
-	gNetMsgAttrStrs[MSG_ORPHAN] = "Orphan";
+	gNetMsgAttrStrs.MSG_ORPHAN = "Orphan";
 if (typeof(MSG_FPU) != "undefined")
-	gNetMsgAttrStrs[MSG_FPU] = "FPU";
+	gNetMsgAttrStrs.MSG_FPU = "FPU";
 if (typeof(MSG_TYPELOCAL) != "undefined")
-	gNetMsgAttrStrs[MSG_TYPELOCAL] = "ForLocal";
+	gNetMsgAttrStrs.MSG_TYPELOCAL = "ForLocal";
 if (typeof(MSG_TYPEECHO) != "undefined")
-	gNetMsgAttrStrs[MSG_TYPEECHO] = "ForEcho";
+	gNetMsgAttrStrs.MSG_TYPEECHO = "ForEcho";
 if (typeof(MSG_TYPENET) != "undefined")
-	gNetMsgAttrStrs[MSG_TYPENET] = "ForNetmail";
+	gNetMsgAttrStrs.MSG_TYPENET = "ForNetmail";
 if (typeof(MSG_MIMEATTACH) != "undefined")
-	gNetMsgAttrStrs[MSG_MIMEATTACH] = "MimeAttach";
+	gNetMsgAttrStrs.MSG_MIMEATTACH = "MimeAttach";
 
 // A regular expression to check whether a string is an email address
 var gEmailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -723,7 +731,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.PromptAndDeleteSelectedMessages = DigDistMsgReader_PromptAndDeleteSelectedMessages;
 	this.GetExtdMsgHdrInfo = DigDistMsgReader_GetExtdMsgHdrInfo;
 	this.GetMsgInfoForEnhancedReader = DigDistMsgReader_GetMsgInfoForEnhancedReader;
-	this.GetLastReadMsgIdx = DigDistMsgReader_GetLastReadMsgIdx;
+	this.GetLastReadMsgIdxAndNum = DigDistMsgReader_GetLastReadMsgIdxAndNum;
 	this.GetScanPtrMsgIdx = DigDistMsgReader_GetScanPtrMsgIdx;
 	this.RemoveFromSearchResults = DigDistMsgReader_RemoveFromSearchResults;
 	this.FindThreadNextOffset = DigDistMsgReader_FindThreadNextOffset;
@@ -751,16 +759,16 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	// hdrsForCurrentSubBoard is an array that will be populated with the
 	// message headers for the current sub-board.
-	this.hdrsForCurrentSubBoard = new Array();
+	this.hdrsForCurrentSubBoard = [];
 	// hdrsForCurrentSubBoardByMsgNum is an object that maps absolute message numbers
 	// to their index to hdrsForCurrentSubBoard
-	this.hdrsForCurrentSubBoardByMsgNum = new Object();
+	this.hdrsForCurrentSubBoardByMsgNum = {};
 
 	// msgSearchHdrs is an object containing message headers found via searching.
 	// It is indexed by internal message area code.  Each internal code index
 	// will specify an object containing the following properties:
 	//  indexed: A standard 0-based array containing message headers
-	this.msgSearchHdrs = new Object();
+	this.msgSearchHdrs = {};
 	this.searchString = ""; // To be used for message searching
 	// this.searchType will specify the type of search:
 	//  SEARCH_NONE (-1): No search
@@ -864,44 +872,45 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.numTabSpaces = 3;
 
 	// this.text is an object containing text used for various functionality.
-	this.text = new Object();
-	this.text.scrollbarBGChar = BLOCK1;
-	this.text.scrollbarScrollBlockChar = BLOCK2;
-	this.text.goToPrevMsgAreaPromptText = "\1n\1c\1hGo to the previous message area";
-	this.text.goToNextMsgAreaPromptText = "\1n\1c\1hGo to the next message area";
-	this.text.newMsgScanText = "\1c\1hN\1n\1cew \1hM\1n\1cessage \1hS\1n\1ccan";
-	this.text.newToYouMsgScanText = "\1c\1hN\1n\1cew \1hT\1n\1co \1hY\1n\1cou \1hM\1n\1cessage \1hS\1n\1ccan";
-	this.text.allToYouMsgScanText = "\1c\1hA\1n\1cll \1hM\1n\1cessages \1hT\1n\1co \1hY\1n\1cou \1hS\1n\1ccan";
-	this.text.scanScopePromptText = "\1n\1h\1wS\1n\1gub-board, \1h\1wG\1n\1group, or \1h\1wA\1n\1gll \1h(\1wENTER\1n\1g to cancel\1h)\1n\1g: \1h\1c";
-	this.text.goToMsgNumPromptText = "\1n\1cGo to message # (or \1hENTER\1n\1c to cancel)\1g\1h: \1c";
-	this.text.msgScanAbortedText = "\1n\1h\1cM\1n\1cessage scan \1h\1y\1iaborted\1n";
-	this.text.deleteMsgNumPromptText = "\1n\1cNumber of the message to be deleted (or \1hENTER\1n\1c to cancel)\1g\1h: \1c";
-	this.text.editMsgNumPromptText = "\1n\1cNumber of the message to be edited (or \1hENTER\1n\1c to cancel)\1g\1h: \1c";
-	this.text.searchingSubBoardAbovePromptText = "\1n\1cSearching (current sub-board: \1b\1h%s\1n\1c)";
-	this.text.searchingSubBoardText = "\1n\1cSearching \1h%s\1n\1c...";
-	this.text.noMessagesInSubBoardText = "\1n\1h\1bThere are no messages in the area \1w%s\1b.";
-	this.text.noSearchResultsInSubBoardText = "\1n\1h\1bNo messages were found in the area \1w%s\1b with the given search criteria.";
-	this.text.msgScanCompleteText = "\1n\1h\1cM\1n\1cessage scan complete\1h\1g.\1n";
-	this.text.invalidMsgNumText = "\1n\1y\1hInvalid message number: %d";
-	this.text.readMsgNumPromptText = "\1n\1g\1h\1i* \1n\1cRead message #: \1h";
-	this.text.msgHasBeenDeletedText = "\1n\1h\1g* \1yMessage #\1w%d \1yhas been deleted.";
-	this.text.noKludgeLinesForThisMsgText = "\1n\1h\1yThere are no kludge lines for this message.";
-	this.text.searchingPersonalMailText = "\1w\1hSearching personal mail\1n";
-	this.text.searchTextPromptText = "\1cEnter the search text\1g\1h:\1n\1c ";
-	this.text.fromNamePromptText = "\1cEnter the 'from' name to search for\1g\1h:\1n\1c ";
-	this.text.toNamePromptText = "\1cEnter the 'to' name to search for\1g\1h:\1n\1c ";
-	this.text.abortedText = "\1n\1y\1h\1iAborted\1n";
-	this.text.loadingPersonalMailText = "\1n\1cLoading %s...";
-	this.text.msgDelConfirmText = "\1n\1h\1yDelete\1n\1c message #\1h%d\1n\1c: Are you sure";
-	this.text.delSelectedMsgsConfirmText = "\1n\1h\1yDelete selected messages: Are you sure";
-	this.text.msgDeletedText = "\1n\1cMessage #\1h%d\1n\1c has been marked for deletion.";
-	this.text.selectedMsgsDeletedText = "\1n\1cSelected messages have been marked for deletion.";
-	this.text.cannotDeleteMsgText_notYoursNotASysop = "\1n\1h\1wCannot delete message #\1y%d \1wbecause it's not yours or you're not a sysop.";
-	this.text.cannotDeleteMsgText_notLastPostedMsg = "\1n\1h\1g* \1yCannot delete message #%d. You can only delete your last message in this area.\1n";
-	this.text.cannotDeleteAllSelectedMsgsText = "\1n\1y\1h* Cannot delete all selected messages";
-	this.text.msgEditConfirmText = "\1n\1cEdit message #\1h%d\1n\1c: Are you sure";
-	this.text.noPersonalEmailText = "\1n\1cYou have no messages.";
-	this.text.postOnSubBoard = "\1n\1gPost on %s %s";
+	this.text = {
+		scrollbarBGChar: BLOCK1,
+		scrollbarScrollBlockChar: BLOCK2,
+		goToPrevMsgAreaPromptText: "\1n\1c\1hGo to the previous message area",
+		goToNextMsgAreaPromptText: "\1n\1c\1hGo to the next message area",
+		newMsgScanText: "\1c\1hN\1n\1cew \1hM\1n\1cessage \1hS\1n\1ccan",
+		newToYouMsgScanText: "\1c\1hN\1n\1cew \1hT\1n\1co \1hY\1n\1cou \1hM\1n\1cessage \1hS\1n\1ccan",
+		allToYouMsgScanText: "\1c\1hA\1n\1cll \1hM\1n\1cessages \1hT\1n\1co \1hY\1n\1cou \1hS\1n\1ccan",
+		scanScopePromptText: "\1n\1h\1wS\1n\1gub-board, \1h\1wG\1n\1group, or \1h\1wA\1n\1gll \1h(\1wENTER\1n\1g to cancel\1h)\1n\1g: \1h\1c",
+		goToMsgNumPromptText: "\1n\1cGo to message # (or \1hENTER\1n\1c to cancel)\1g\1h: \1c",
+		msgScanAbortedText: "\1n\1h\1cM\1n\1cessage scan \1h\1y\1iaborted\1n",
+		deleteMsgNumPromptText: "\1n\1cNumber of the message to be deleted (or \1hENTER\1n\1c to cancel)\1g\1h: \1c",
+		editMsgNumPromptText: "\1n\1cNumber of the message to be edited (or \1hENTER\1n\1c to cancel)\1g\1h: \1c",
+		searchingSubBoardAbovePromptText: "\1n\1cSearching (current sub-board: \1b\1h%s\1n\1c)",
+		searchingSubBoardText: "\1n\1cSearching \1h%s\1n\1c...",
+		noMessagesInSubBoardText: "\1n\1h\1bThere are no messages in the area \1w%s\1b.",
+		noSearchResultsInSubBoardText: "\1n\1h\1bNo messages were found in the area \1w%s\1b with the given search criteria.",
+		msgScanCompleteText: "\1n\1h\1cM\1n\1cessage scan complete\1h\1g.\1n",
+		invalidMsgNumText: "\1n\1y\1hInvalid message number: %d",
+		readMsgNumPromptText: "\1n\1g\1h\1i* \1n\1cRead message #: \1h",
+		msgHasBeenDeletedText: "\1n\1h\1g* \1yMessage #\1w%d \1yhas been deleted.",
+		noKludgeLinesForThisMsgText: "\1n\1h\1yThere are no kludge lines for this message.",
+		searchingPersonalMailText: "\1w\1hSearching personal mail\1n",
+		searchTextPromptText: "\1cEnter the search text\1g\1h:\1n\1c ",
+		fromNamePromptText: "\1cEnter the 'from' name to search for\1g\1h:\1n\1c ",
+		toNamePromptText: "\1cEnter the 'to' name to search for\1g\1h:\1n\1c ",
+		abortedText: "\1n\1y\1h\1iAborted\1n",
+		loadingPersonalMailText: "\1n\1cLoading %s...",
+		msgDelConfirmText: "\1n\1h\1yDelete\1n\1c message #\1h%d\1n\1c: Are you sure",
+		delSelectedMsgsConfirmText: "\1n\1h\1yDelete selected messages: Are you sure",
+		msgDeletedText: "\1n\1cMessage #\1h%d\1n\1c has been marked for deletion.",
+		selectedMsgsDeletedText: "\1n\1cSelected messages have been marked for deletion.",
+		cannotDeleteMsgText_notYoursNotASysop: "\1n\1h\1wCannot delete message #\1y%d \1wbecause it's not yours or you're not a sysop.",
+		cannotDeleteMsgText_notLastPostedMsg: "\1n\1h\1g* \1yCannot delete message #%d. You can only delete your last message in this area.\1n",
+		cannotDeleteAllSelectedMsgsText: "\1n\1y\1h* Cannot delete all selected messages",
+		msgEditConfirmText: "\1n\1cEdit message #\1h%d\1n\1c: Are you sure",
+		noPersonalEmailText: "\1n\1cYou have no messages.",
+		postOnSubBoard: "\1n\1gPost on %s %s"
+	};
 
 
 	// These two variables keep track of whether we're doing a message scan that spans
@@ -1285,7 +1294,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// message group index.  The sub-board printf information is created
 	// on the fly the first time the user lists sub-boards for a message
 	// group.
-	this.subBoardListPrintfInfo = new Array();
+	this.subBoardListPrintfInfo = [];
 
 	// Variables to save the top message index for the traditional & lightbar
 	// message lists.  Initialize them to -1 to mean the message list hasn't been
@@ -1318,7 +1327,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// containing objects that contain message indexes (as properties) for the
 	// sub-boards.  Messages can be selected by the user for doing things such
 	// as a batch delete, etc.
-	this.selectedMessages = new Object();
+	this.selectedMessages = {};
 
 	// areaChangeHdrLines is an array of text lines to use as a header to display
 	// above the message area changer lists.
@@ -1353,7 +1362,7 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard()
 	if (this.subBoardCode == "mail")
 	{
 		this.hdrsForCurrentSubBoard = [];
-		this.hdrsForCurrentSubBoardByMsgNum = new Object();
+		this.hdrsForCurrentSubBoardByMsgNum = {};
 		return;
 	}
 
@@ -1404,7 +1413,7 @@ function DigDistMsgReader_FilterMsgHdrsIntoHdrsForCurrentSubBoard(pMsgHdrs, pCle
 	if (pClearFirst)
 	{
 		this.hdrsForCurrentSubBoard = [];
-		this.hdrsForCurrentSubBoardByMsgNum = new Object();
+		this.hdrsForCurrentSubBoardByMsgNum = {};
 	}
 	for (var prop in pMsgHdrs)
 	{
@@ -1658,7 +1667,7 @@ function DigDistMsgReader_ClearSearchData()
 			delete this.msgSearchHdrs[subCode];
 		}
 		delete this.msgSearchHdrs;
-		this.msgSearchHdrs = new Object();
+		this.msgSearchHdrs = {};
    }
 }
 
@@ -1688,8 +1697,9 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
                                              pAllowChgArea, pReturnOnNextAreaNav,
                                              pPauseOnNoMsgSrchResults)
 {
-	var retObj = new Object();
-	retObj.stoppedReading = false;
+	var retObj = {
+		stoppedReading: false
+	};
 
 	// Set the sub-board code if applicable
 	var previousSubBoardCode = this.subBoardCode;
@@ -1763,7 +1773,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		// (or the last message, if all messages have been read)
 		if (this.readingPersonalEmail)
 		{
-			selectedMessageOffset = this.GetLastReadMsgIdx(false); // Used to be true
+			selectedMessageOffset = this.GetLastReadMsgIdxAndNum(false).lastReadMsgIdx; // Used to be true
 			if ((selectedMessageOffset > -1) && (selectedMessageOffset < this.NumMessages() - 1))
 				++selectedMessageOffset;
 		}
@@ -2278,11 +2288,12 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pReturnOnMessageList,
                                        pAllowChgArea, pReturnOnNextAreaNav)
 {
-	var retObj = new Object();
-	retObj.lastUserInput = "";
-	retObj.lastAction = ACTION_NONE;
-	retObj.stoppedReading = false;
-	retObj.messageListReturn = false;
+	var retObj = {
+		lastUserInput: "",
+		lastAction: ACTION_NONE,
+		stoppedReading: false,
+		messageListReturn: false
+	};
 
 	// If the passed-in sub-board code was different than what was set in the object before,
 	// then open the new message sub-board.
@@ -2379,7 +2390,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		msgIndex = 0;
 	else
 	{
-		msgIndex = this.GetLastReadMsgIdx();
+		msgIndex = this.GetLastReadMsgIdxAndNum().lastReadMsgIdx;
 		if (msgIndex == -1)
 			msgIndex = 0;
 	}
@@ -2553,7 +2564,10 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 				// Change message sub-board.  If a different sub-board was
 				// chosen, then change some variables to use the new
 				// chosen sub-board.
+				var oldSubBoardCode = this.subBoardCode;
 				this.SelectMsgArea();
+				if (this.subBoardCode != oldSubBoardCode)
+					this.PopulateHdrsForCurrentSubBoard();
 				var chgSubBoardRetObj = this.EnhancedReaderChangeSubBoard(bbs.cursub_code);
 				if (chgSubBoardRetObj.succeeded)
 				{
@@ -2706,9 +2720,10 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 //                                  this will be -1.
 function DigDistMsgReader_ListMessages(pSubBoardCode, pAllowChgSubBoard)
 {
-	var retObj = new Object();
-	retObj.lastUserInput = "";
-	retObj.selectedMsgOffset = -1;
+	var retObj = {
+		lastUserInput: "",
+		selectedMsgOffset: -1
+	};
 
 	// If the passed-in sub-board code was different than what was set in the object before,
 	// then open the new message sub-board.
@@ -2792,9 +2807,10 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pAllowChgSubBoard)
 //                                  this will be -1.
 function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 {
-	var retObj = new Object();
-	retObj.lastUserInput = "";
-	retObj.selectedMsgOffset = -1;
+	var retObj = {
+		lastUserInput: "",
+		selectedMsgOffset: -1
+	};
 
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
@@ -3146,9 +3162,10 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 //                                  this will be -1.
 function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 {
-	var retObj = new Object();
-	retObj.lastUserInput = "";
-	retObj.selectedMsgOffset = -1;
+	var retObj = {
+		lastUserInput: "",
+		selectedMsgOffset: -1
+	};
 
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
@@ -4172,10 +4189,11 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pAllowChgSubBoard)
 {
 	// Create the return object and set some initial default values
-	var retObj = new Object();
-	retObj.continueOn = true;
-	retObj.userInput = "";
-	retObj.selectedMsgOffset = -1;
+	var retObj = {
+		continueOn: true,
+		userInput: "",
+		selectedMsgOffset: -1
+	};
 
 	var allowChgSubBoard = (typeof(pAllowChgSubBoard) == "boolean" ? pAllowChgSubBoard : true);
 
@@ -6323,11 +6341,12 @@ function DigDistMsgReader_EnhReaderPrepLast2LinesForPrompt()
 //                                   to the next message area
 function DigDistMsgReader_LookForNextOrPriorNonDeletedMsg(pOffset)
 {
-	var retObj = new Object();
-	retObj.newMsgOffset = 0;
-	retObj.nextAction = ACTION_NONE;
-	retObj.continueInputLoop = true;
-	retObj.promptGoToNextArea = false;
+	var retObj = {
+		newMsgOffset: 0,
+		nextAction: ACTION_NONE,
+		continueInputLoop: true,
+		promptGoToNextArea: false
+	};
 
 	// Look for a later message that isn't marked for deletion.
 	// If none is found, then look for a prior message that isn't
@@ -6409,10 +6428,11 @@ function DigDistMsgReader_DisplayEnhancedMsgReadHelpLine(pScreenRow, pDisplayChg
 //                                  the user read messages
 function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea)
 {
-	var retObj = new Object();
-	retObj.changedMsgArea = false;
-	retObj.msgIndex = -1;
-	retObj.shouldStopReading = false;
+	var retObj = {
+		changedMsgArea: false,
+		msgIndex: -1,
+		shouldStopReading: false
+	};
 
 	// Only allow this if pAllowChgMsgArea is true and we're not reading personal
 	// email.  If we're reading personal email, then msg_area.sub is unavailable
@@ -6539,10 +6559,11 @@ function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea)
 //                                  the user read messages
 function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
 {
-	var retObj = new Object();
-	retObj.changedMsgArea = false;
-	retObj.msgIndex = -1;
-	retObj.shouldStopReading = false;
+	var retObj = {
+		changedMsgArea: false,
+		msgIndex: -1,
+		shouldStopReading: false
+	};
 
 	// Only allow this if pAllowChgMsgArea is true and we're not reading personal
 	// email.  If we're reading personal email, then msg_area.sub is unavailable
@@ -6671,7 +6692,7 @@ function DigDistMsgReader_SetUpTraditionalMsgListVars()
 	var lastReadMsgIdx = 0;
 	if (!this.SearchingAndResultObjsDefinedForCurSub())
 	{
-		lastReadMsgIdx = this.GetLastReadMsgIdx();
+		lastReadMsgIdx = this.GetLastReadMsgIdxAndNum().lastReadMsgIdx;
 		if (lastReadMsgIdx == -1)
 			lastReadMsgIdx = 0;
 	}
@@ -6692,7 +6713,7 @@ function DigDistMsgReader_SetUpLightbarMsgListVars()
 	var lastReadMsgIdx = 0;
 	if (!this.SearchingAndResultObjsDefinedForCurSub() || this.readingPersonalEmail)
 	{
-		lastReadMsgIdx = this.GetLastReadMsgIdx();
+		lastReadMsgIdx = this.GetLastReadMsgIdxAndNum().lastReadMsgIdx;
 		if (lastReadMsgIdx == -1)
 			lastReadMsgIdx = 0;
 	}
@@ -6702,7 +6723,7 @@ function DigDistMsgReader_SetUpLightbarMsgListVars()
 		// message index to the last read message.
 		if (this.readingPersonalEmail)
 		{
-			lastReadMsgIdx = this.GetLastReadMsgIdx();
+			lastReadMsgIdx = this.GetLastReadMsgIdxAndNum().lastReadMsgIdx;
 			if (lastReadMsgIdx == -1)
 				lastReadMsgIdx = 0;
 		}
@@ -8875,13 +8896,15 @@ function DigDistMsgReader_FindNextNonDeletedMsgIdx(pOffset, pForward)
 //
 // Return value: An object with the following properties:
 //               succeeded: Boolean - True if succeeded or false if not
-//               lastReadMsgIdx: The index of the last message read in the sub-board.
+//               lastReadMsgIdx: The index of the last-read message in the sub-board
+//               lastReadMsgNum: The message number of the last-read message in the sub-board
 // 
 function DigDistMsgReader_ChangeSubBoard(pNewSubBoardCode)
 {
 	var retObj = {
 		succeeded: false,
-		lastReadMsgIdx: 0
+		lastReadMsgIdx: 0,
+		lastReadMsgNum: 0
 	};
 
 	var newSubBoardCode = bbs.cursub_code;
@@ -8914,9 +8937,12 @@ function DigDistMsgReader_ChangeSubBoard(pNewSubBoardCode)
 		return retObj;
 
 	// Get the index of the user's last-read message in this sub-board.
-	retObj.lastReadMsgIdx = this.GetLastReadMsgIdx();
+	var lastReadMsgInfo = this.GetLastReadMsgIdxAndNum();
+	retObj.lastReadMsgIdx = lastReadMsgInfo.lastReadMsgIdx;
+	retObj.lastReadMsgNum = lastReadMsgInfo.lastReadMsgNum;
 	if (retObj.lastReadMsgIdx == -1)
 		retObj.lastReadMsgIdx = 0;
+
 	retObj.succeeded = true;
 
 	return retObj;
@@ -11059,9 +11085,10 @@ function DigDistMsgReader_SelectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 	this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
 	this.WriteChgMsgAreaKeysHelpLine();
 
-	var curpos = new Object();
-	curpos.x = 1;
-	curpos.y = 2 + this.areaChangeHdrLines.length;
+	var curpos = {
+		x: 1,
+		y: 2 + this.areaChangeHdrLines.length
+	};
 	console.gotoxy(curpos);
 	printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
 	this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, false);
@@ -11672,7 +11699,7 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 	// List each sub-board in the message group.
 	var searchText = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
 	var subBoardArray = null;       // For sorting, if desired
-	var newestDate = new Object(); // For storing the date of the newest post in a sub-board
+	var newestDate = {}; // For storing the date of the newest post in a sub-board
 	var msgBase = null;    // For opening the sub-boards with a MsgBase object
 	var msgHeader = null;  // For getting the date & time of the newest post in a sub-board
 	var subBoardNum = 0;   // 0-based sub-board number (because the array index is the number as a str)
@@ -12102,7 +12129,7 @@ function DigDistMsgReader_WriteMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 	var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
 	if (msgBase.open())
 	{
-		var newestDate = new Object(); // For storing the date of the newest post
+		var newestDate = {}; // For storing the date of the newest post
 		// Get the date & time when the last message was imported.
 		//numReadableMsgs(pMsgbase, pSubBoardCode)
 		//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
@@ -12235,7 +12262,7 @@ function DigDistMsgReader_BuildSubBoardPrintfInfoForGrp(pGrpIndex)
    {
       var greatestNumMsgs = getGreatestNumMsgs(pGrpIndex);
 
-      this.subBoardListPrintfInfo[pGrpIndex] = new Object();
+      this.subBoardListPrintfInfo[pGrpIndex] = {};
       this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen = greatestNumMsgs.toString().length;
       // Sub-board name length: With a # items length of 4, this should be
       // 47 for an 80-column display.
@@ -12288,12 +12315,12 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 {
 	// If pMsgHdr is not valid, then just return an empty array.
 	if (typeof(pMsgHdr) != "object")
-		return new Array();
+		return [];
 
 	// Get the message header with fields expanded so we can get the most info possible.
 	var msgHdr = this.GetMsgHdrByAbsoluteNum(pMsgHdr.number, true, true);
 	if (msgHdr == null)
-		return new Array();
+		return [];
 	// The message header retrieved that way might not have vote information,
 	// so copy any additional header information from this.hdrsForCurrentSubBoard
 	// if there's a header there for this message.
@@ -12310,9 +12337,9 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 		}
 	}
 
-	var msgHdrInfoLines = new Array();
+	var msgHdrInfoLines = [];
 
-	var hdrInfoLineFields = new Array();
+	var hdrInfoLineFields = [];
 	var kludgeOnly = (typeof(pKludgeOnly) == "boolean" ? pKludgeOnly : false);
 	if (kludgeOnly)
 	{
@@ -12341,10 +12368,11 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 	//               lastNonBlankLineIdx: The index of the last non-blank line
 	function findHdrFieldDataArrayNonBlankLines(pHdrArray)
 	{
-		var retObj = new Object();
-		retObj.numNonBlankLines = 0;
-		retObj.firstNonBlankLineIdx = -1;
-		retObj.lastNonBlankLineIdx = -1;
+		var retObj = {
+			numNonBlankLines: 0,
+			firstNonBlankLineIdx: -1,
+			lastNonBlankLineIdx: -1
+		};
 
 		for (var lineIdx = 0; lineIdx < pHdrArray.length; ++lineIdx)
 		{
@@ -12893,10 +12921,16 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 //                       reading personal email.  Will stop looking at the first
 //                       unread message.  Defaults to false.
 //
-// Return value: The index of the last read message in the current message area
-function DigDistMsgReader_GetLastReadMsgIdx(pMailStartFromFirst)
+// Return value: An object containing the following properties:
+//               lastReadMsgIdx: The index of the last read message in the current message area
+//               lastReadMsgNum: The number of the last read message in the current message area
+function DigDistMsgReader_GetLastReadMsgIdxAndNum(pMailStartFromFirst)
 {
-	var msgIndex = -1;
+	var retObj = {
+		lastReadMsgIdx: -1,
+		lastReadMsgNum: -1
+	};
+
 	if (this.readingPersonalEmail)
 	{
 		if (this.SearchingAndResultObjsDefinedForCurSub())
@@ -12907,7 +12941,10 @@ function DigDistMsgReader_GetLastReadMsgIdx(pMailStartFromFirst)
 				for (var idx = 0; idx < this.msgSearchHdrs[this.subBoardCode].indexed.length; ++idx)
 				{
 					if ((this.msgSearchHdrs[this.subBoardCode].indexed[idx].attr & MSG_READ) == MSG_READ)
-						msgIndex = idx;
+					{
+						retObj.lastReadMsgIdx = idx;
+						retObj.lastReadMsgNum = this.msgSearchHdrs[this.subBoardCode].indexed[idx].number;
+					}
 					else
 						break;
 				}
@@ -12918,48 +12955,56 @@ function DigDistMsgReader_GetLastReadMsgIdx(pMailStartFromFirst)
 				{
 					if ((this.msgSearchHdrs[this.subBoardCode].indexed[idx].attr & MSG_READ) == MSG_READ)
 					{
-						msgIndex = idx;
+						retObj.lastReadMsgIdx = idx;
+						retObj.lastReadMsgNum = this.msgSearchHdrs[this.subBoardCode].indexed[idx].number;
 						break;
 					}
 				}
 			}
-			// Sanity checking for msgIndex (note: this function should return -1 if
+			// Sanity checking for retObj.lastReadMsgIdx (note: this function should return -1 if
 			// there is no last read message).
-			if (msgIndex >= this.msgSearchHdrs[this.subBoardCode].indexed.length)
-				msgIndex = this.msgSearchHdrs[this.subBoardCode].indexed.length - 1;
+			if (retObj.lastReadMsgIdx >= this.msgSearchHdrs[this.subBoardCode].indexed.length)
+			{
+				retObj.lastReadMsgIdx = this.msgSearchHdrs[this.subBoardCode].indexed.length - 1;
+				retObj.lastReadMsgNum = this.msgSearchHdrs[this.subBoardCode].indexed[retObj.lastReadMsgIdx].number;
+			}
 		}
 	}
 	else
 	{
-		//msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
-		msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
+		//retObj.lastReadMsgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
+		retObj.lastReadMsgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
+		retObj.lastReadMsgNum = msg_area.sub[this.subBoardCode].last_read;
 		/*
-		this.hdrsForCurrentSubBoard = new Array();
+		this.hdrsForCurrentSubBoard = [];
 		// hdrsForCurrentSubBoardByMsgNum is an object that maps absolute message numbers
 		// to their index to hdrsForCurrentSubBoard
-		this.hdrsForCurrentSubBoardByMsgNum = new Object();
+		this.hdrsForCurrentSubBoardByMsgNum = {};
 		*/
-		// Sanity checking for msgIndex (note: this function should return -1 if
+		// Sanity checking for retObj.lastReadMsgIdx (note: this function should return -1 if
 		// there is no last read message).
 		var msgbase = new MsgBase(this.subBoardCode);
 		if (msgbase.open())
 		{
-			// If msgIndex is -1, as a result of GetMsgIdx(), then see what the last read
+			// If retObj.lastReadMsgIdx is -1, as a result of GetMsgIdx(), then see what the last read
 			// message index is according to the Synchronet message base.  If
 			// this.hdrsForCurrentSubBoard.length has been populated, then if the last
 			// message index according to Synchronet is greater than that, then set the
 			// message index to the last index in this.hdrsForCurrentSubBoard.length.
-			if (msgIndex == -1)
+			if (retObj.lastReadMsgIdx == -1)
 			{
 				var msgIdxAccordingToMsgbase = absMsgNumToIdx(msgbase, msg_area.sub[this.subBoardCode].last_read);
 				if ((this.hdrsForCurrentSubBoard.length > 0) && (msgIdxAccordingToMsgbase >= this.hdrsForCurrentSubBoard.length))
-					msgIndex = this.hdrsForCurrentSubBoard.length - 1;
+				{
+					retObj.lastReadMsgIdx = this.hdrsForCurrentSubBoard.length - 1;
+					retObj.lastReadMsgNum = this.hdrsForCurrentSubBoard[retObj.lastReadMsgIdx].number;
+				}
 			}
-			//if (msgIndex >= msgbase.total_msgs)
-			//	msgIndex = msgbase.total_msgs - 1;
+			//if (retObj.lastReadMsgIdx >= msgbase.total_msgs)
+			//	retObj.lastReadMsgIdx = msgbase.total_msgs - 1;
 			// TODO: Is this code right?  Modified 3/24/2015 to replace
 			// the above 2 commented lines.
-			if ((msgIndex < 0) || (msgIndex >= msgbase.total_msgs))
+			if ((retObj.lastReadMsgIdx < 0) || (retObj.lastReadMsgIdx >= msgbase.total_msgs))
 			{
 				// Look for the first message not marked as deleted
 				var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(0, true);
@@ -12978,7 +13023,7 @@ function DigDistMsgReader_GetLastReadMsgIdx(pMailStartFromFirst)
 			}
 		}
 	}
-	return msgIndex;
+	return retObj;
 }
 
 // For the DigDistMsgReader class: Returns the index of the message pointed to
@@ -13538,16 +13583,16 @@ function DigDistMsgReader_CalcLightbarMsgListTopIdx(pPageNum)
 function DigDistMsgReader_CalcMsgListScreenIdxVarsFromMsgNum(pMsgNum)
 {
 	// Calculate the message list variables
-   var numItemsPerPage = this.tradMsgListNumLines;
-   if (this.msgListUseLightbarListInterface && canDoHighASCIIAndANSI())
-      numItemsPerPage = this.lightbarMsgListNumLines;
-   var newPageNum = findPageNumOfItemNum(pMsgNum, numItemsPerPage, this.NumMessages(), this.reverseListOrder);
-   this.CalcTraditionalMsgListTopIdx(newPageNum);
-   this.CalcLightbarMsgListTopIdx(newPageNum);
+	var numItemsPerPage = this.tradMsgListNumLines;
+	if (this.msgListUseLightbarListInterface && canDoHighASCIIAndANSI())
+		numItemsPerPage = this.lightbarMsgListNumLines;
+	var newPageNum = findPageNumOfItemNum(pMsgNum, numItemsPerPage, this.NumMessages(), this.reverseListOrder);
+	this.CalcTraditionalMsgListTopIdx(newPageNum);
+	this.CalcLightbarMsgListTopIdx(newPageNum);
 	this.lightbarListSelectedMsgIdx = pMsgNum - 1;
-   if (this.lightbarListCurPos == null)
-      this.lightbarListCurPos = new Object();
-   this.lightbarListCurPos.x = 1;
+	if (this.lightbarListCurPos == null)
+		this.lightbarListCurPos = {};
+	this.lightbarListCurPos.x = 1;
 	this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow + ((pMsgNum-1) - this.lightbarListTopMsgIdx);
 }
 
@@ -13571,9 +13616,10 @@ function DigDistMsgReader_CalcMsgListScreenIdxVarsFromMsgNum(pMsgNum)
 //                         be an empty string.
 function DigDistMsgReader_ValidateMsgAreaChoice(pGrpIdx, pSubIdx, pCurPos)
 {
-	var retObj = new Object();
-	retObj.msgAreaGood = true;
-	retObj.errorMsg = "";
+	var retObj = {
+		msgAreaGood: true,
+		errorMsg: ""
+	};
 
 	// Get the internal code of the sub-board from the given group & sub-board
 	// indexes
@@ -13735,9 +13781,10 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename, pStripCtrl, pMsgLine
 			return({ succeeded: false, errorMsg: "No message lines and null header object"});
 	}
 
-	var retObj = new Object();
-	retObj.succeeded = true;
-	retObj.errorMsg = "";
+	var retObj = {
+		succeeded: true,
+		errorMsg: ""
+	};
 
 	// If there are message attachments, then treat pFilename as a directory and
 	// create the directory for saving both the message text & attachments.
@@ -13866,7 +13913,7 @@ function DigDistMsgReader_ToggleSelectedMessage(pSubCode, pMsgIdx, pSelected)
 	// If the 'selected message' object doesn't have the sub code index,
 	// then add it.
 	if (!this.selectedMessages.hasOwnProperty(pSubCode))
-		this.selectedMessages[pSubCode] = new Object();
+		this.selectedMessages[pSubCode] = {};
 
 	// If pSelected is a boolean, then it specifies the specific selection
 	// state of the message (true = selected, false = not selected).
@@ -13954,9 +14001,10 @@ function DigDistMsgReader_AllSelectedMessagesCanBeDeleted()
 //               to delete in a sub-board, failure to open the sub-board, etc.
 function DigDistMsgReader_DeleteSelectedMessages()
 {
-	var retObj = new Object();
-	retObj.deletedAll = true;
-	retObj.failureList = new Object();
+	var retObj = {
+		deletedAll: true,
+		failureList: {}
+	};
 
 	var msgBase = null;
 	var msgHdr = null;
@@ -14020,7 +14068,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 						{
 							retObj.deletedAll = false;
 							if (!retObj.failureList.hasOwnProperty(subBoardCode))
-								retObj.failureList[subBoardCode] = new Array();
+								retObj.failureList[subBoardCode] = [];
 							retObj.failureList[subBoardCode].push(msgIdxNumber);
 						}
 					}
@@ -14028,7 +14076,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 					{
 						retObj.deletedAll = false;
 						if (!retObj.failureList.hasOwnProperty(subBoardCode))
-							retObj.failureList[subBoardCode] = new Array();
+							retObj.failureList[subBoardCode] = [];
 						retObj.failureList[subBoardCode].push(msgIdxNumber);
 					}
 				}
@@ -14046,7 +14094,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 				// sub-board code to indicate failure to delete all
 				// messages in the sub-board.
 				retObj.deletedAll = false;
-				retObj.failureList[subBoardCode] = new Array();
+				retObj.failureList[subBoardCode] = [];
 			}
 
 			msgBase.close();
@@ -14058,7 +14106,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 			// sub-board code to indicate failure to delete all messages
 			// in the sub-board.
 			retObj.deletedAll = false;
-			retObj.failureList[subBoardCode] = new Array();
+			retObj.failureList[subBoardCode] = [];
 		}
 	}
 
@@ -14405,10 +14453,11 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 
 	// Do some initial setup of the header for the vote message to be
 	// saved to the messagebase
-	var voteMsgHdr = new Object();
-	voteMsgHdr.thread_back = pMsgHdr.number;
-	voteMsgHdr.reply_id = pMsgHdr.id;
-	voteMsgHdr.from = (msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias;
+	var voteMsgHdr = {
+		thread_back: pMsgHdr.number,
+		reply_id: pMsgHdr.id,
+		from: (msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias
+	};
 	if (pMsgHdr.from.hasOwnProperty("from_net_type"))
 	{
 		voteMsgHdr.from_net_type = pMsgHdr.from_net_type;
@@ -15075,7 +15124,7 @@ function DisplayProgramInfo()
 // DigDistMessageReader class.
 function getDefaultColors()
 {
-	var colorObj = new Object();
+	var colorObj = {};
 
 	// Header line: "Current msg group:"
 	colorObj.msgListHeaderMsgGroupTextColor = "\1n\1" + "4\1c"; // Normal cyan on blue background
@@ -15587,11 +15636,12 @@ function getKeyWithESCChars(pGetKeyMode)
 //                            were valid.
 function findNextOrPrevNonEmptySubBoard(pStartGrpIdx, pStartSubIdx, pForward)
 {
-   var retObj = new Object();
-   retObj.grpIdx = pStartGrpIdx;
-   retObj.subIdx = pStartSubIdx;
-   retObj.subCode = msg_area.grp_list[pStartGrpIdx].sub_list[pStartSubIdx].code;
-   retObj.foundSubBoard = false;
+   var retObj = {
+	   grpIdx: pStartGrpIdx,
+	   subIdx: pStartSubIdx,
+	   subCode: msg_area.grp_list[pStartGrpIdx].sub_list[pStartSubIdx].code,
+	   foundSubBoard: false
+   };
 
    // Sanity checking
    retObj.paramsValid = ((pStartGrpIdx >= 0) && (pStartGrpIdx < msg_area.grp_list.length) &&
@@ -16011,9 +16061,10 @@ function scrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 	if (topLineIdxForLastPage < 0)
 		topLineIdxForLastPage = 0;
 
-	var retObj = new Object();
-	retObj.lastKeypress = "";
-	retObj.topLineIdx = pTopLineIdx;
+	var retObj = {
+		lastKeypress: "",
+		topLineIdx: pTopLineIdx
+	};
 
 	if (pTopLineIdx > 0)
 		pFrame.scrollTo(0, pTopLineIdx);
@@ -17871,13 +17922,14 @@ function curMsgSubBoardIsLast(pGrpIdx, pSubIdx)
 //               on the formats of the arguments passed in.
 function parseArgs(pArgArr)
 {
-	var argVals = new Object();
 	// Set default values for parameters that are just true/false values
-	argVals.chooseareafirst = false;
-	argVals.personalemail = false;
-	argVals.personalemailsent = false;
-	argVals.verboselogging = false;
-	argVals.suppresssearchtypetext = false;
+	var argVals = {
+		chooseareafirst: false,
+		personalemail: false,
+		personalemailsent: false,
+		verboselogging: false,
+		suppresssearchtypetext: false
+	};
 
 	// Sanity checking for pArgArr - Make sure it's an array
 	if ((typeof(pArgArr) != "object") || (typeof(pArgArr.length) != "number"))
@@ -18206,10 +18258,11 @@ function getSubBoardCodeFromNum(pSubBoardNum)
 //                         nothing went wrong, this will be an empty string.
 function determineMsgAttachments(pMsgHdr, pMsgText, pGetB64Data)
 {
-	var retObj = new Object();
-	retObj.msgText = "";
-	retObj.attachments = [];
-	retObj.errorMsg = "";
+	var retObj = {
+		msgText: "",
+		attachments: [],
+		errorMsg: ""
+	};
 
 	// Keep track of the user's inbox directory:  sbbs/data/file/<userNum>.in
 	var userInboxDir = backslash(backslash(system.data_dir + "file") + format("%04d.in", user.number));
@@ -18950,11 +19003,11 @@ function getAllowedKeyWithMode(pAllowedKeys, pMode)
 function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 {
 	if (typeof(pFilenameBase) != "string")
-		return new Array();
+		return [];
 
 	var maxNumLines = (typeof(pMaxNumLines) == "number" ? pMaxNumLines : -1);
 
-	var txtFileLines = new Array();
+	var txtFileLines = [];
 	// See if there is a header file that is made for the user's terminal
 	// width (areaChgHeader-<width>.ans/asc).  If not, then just go with
 	// msgHeader.ans/asc.
@@ -19127,8 +19180,9 @@ function getMsgAreaDescStr(pMsgbase)
 //               errorMsg: An error message on failure, or a blank string on success
 function editUser(pUsername)
 {
-	var retObj = new Object();
-	retObj.errorMsg = "";
+	var retObj = {
+		errorMsg: ""
+	};
 
 	if (typeof(pUsername) != "string")
 	{
@@ -19163,18 +19217,19 @@ function editUser(pUsername)
 //            header object
 function getBogusMsgHdr(pSubject)
 {
-	var msgHdr = new Object();
-	msgHdr.subject = (typeof(pSubject) == "string" ? pSubject : "");
-	msgHdr.when_imported_time = 0;
-	msgHdr.when_written_time = 0;
-	msgHdr.when_written_zone = 0;
-	msgHdr.date = "Fri, 1 Jan 1960 00:00:00 -0000";
-	msgHdr.attr = 0;
-	msgHdr.to = "Nobody";
-	msgHdr.from = "Nobody";
-	msgHdr.number = 0;
-	msgHdr.offset = 0;
-	msgHdr.isBogus = true;
+	var msgHdr = {
+		subject: (typeof(pSubject) == "string" ? pSubject : ""),
+		when_imported_time: 0,
+		when_written_time: 0,
+		when_written_zone: 0,
+		date: "Fri, 1 Jan 1960 00:00:00 -0000",
+		attr: 0,
+		to: "Nobody",
+		from: "Nobody",
+		number: 0,
+		offset: 0,
+		isBogus: true
+	};
 	return msgHdr;
 }
 
