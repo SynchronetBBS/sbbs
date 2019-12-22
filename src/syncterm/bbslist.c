@@ -2102,6 +2102,7 @@ get_emulation_str(cterm_emulation_t emu)
 		case CTERM_EMULATION_ATASCII:
 			return "ATASCII";
 	}
+	return "none";
 }
 
 void
