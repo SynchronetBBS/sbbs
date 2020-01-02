@@ -418,10 +418,17 @@ var dk = {
 		},
 		centre:function(str) {
 			'use strict';
-			var pos = (this.cols-str.length)/2;
+			var pos = parseInt((this.cols-str.length)/2);
 
-			this.movex(pos-this.remote_screen.pos.x);
+			if (this.remote_screen !== undefined)
+				this.movex(pos-this.remote_screen.pos.x);
+			else
+				this.movex(pos-this.local_io.screen.pos.x);
 			this.print(str);
+		},
+		center:function(str) {
+			'use strict';
+			this.centre(str);
 		},
 		beep:function() {
 			'use strict';
