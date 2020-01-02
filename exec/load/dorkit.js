@@ -1100,8 +1100,8 @@ Object.defineProperty(dk.console.pos, 'x', {
 	enumerable:true,
 	get: function() {
 		'use strict';
-		if (dk.console.remote_io !== undefined)
-			return dk.console.remote_io.screen.pos.x;
+		if (dk.console.remote_screen !== undefined)
+			return dk.console.remote_screen.pos.x;
 		return dk.console.local_io.screen.pos.x;
 	},
 });
@@ -1109,8 +1109,8 @@ Object.defineProperty(dk.console.pos, 'y', {
 	enumerable:true,
 	get: function() {
 		'use strict';
-		if (dk.console.remote_io !== undefined)
-			return dk.console.remote_io.screen.pos.y;
+		if (dk.console.remote_screen !== undefined)
+			return dk.console.remote_screen.pos.y;
 		return dk.console.local_io.screen.pos.y;
 	},
 });
