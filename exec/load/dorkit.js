@@ -321,10 +321,8 @@ var dk = {
 		 */
 		clear:function() {
 			'use strict';
-			if (this.remote_screen !== undefined && this.auto_pause && this.remote_screen.touched) {
-				this.auto_pause = false;
+			if (this.remote_screen !== undefined && this.remote_screen.new_lines && this.auto_pause) {
 				this.pause();
-				this.auto_pause = true;
 			}
 			this.attr=7;
 			if (this.local_io !== undefined) {
@@ -406,9 +404,7 @@ var dk = {
 			if (this.remote) {
 				if (this.remote_screen !== undefined) {
 					if (this.remote_screen.new_lines >= this.rows && this.auto_pause) {
-						this.auto_pause = false;
 						this.pause();
-						this.auto_pause = true;
 					}
 					this.remote_screen.print(string);
 					this.attr.value = this.remote_screen.attr.value;
@@ -536,13 +532,16 @@ var dk = {
 		pause:function() {
 			'use strict';
 			var attr = this.attr.value;
+			var oap = this.auto_pause;
 
+			this.auto_pause = false;
 			this.attr='HR';
 			this.aprint("[Hit a key]");
 			this.attr.value = attr;
 			while(!this.waitkey(10000)) {}
 			this.getkey();
 			this.print("\b".repeat(11)+" ".repeat(11)+"\b".repeat(11));
+			this.auto_pause = oap;
 			if (this.remote_screen !== undefined) {
 				this.remote_screen.new_lines = 0;
 				this.remote_screen.touched = [];
