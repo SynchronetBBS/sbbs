@@ -1598,6 +1598,7 @@ function play_game()
 		turn_order[turn].drawscreen(month);
 		dk.console.println("");
 		winner=turn_order[turn].move(month, turn_order[1-turn]);
+		dk.console.pause();
 		if(winner===false) {
 			turn_order[turn].produce();
 			turn++;
