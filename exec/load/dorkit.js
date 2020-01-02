@@ -420,10 +420,7 @@ var dk = {
 			'use strict';
 			var pos = parseInt((this.cols-str.length)/2);
 
-			if (this.remote_screen !== undefined)
-				this.movex(pos-this.remote_screen.pos.x);
-			else
-				this.movex(pos-this.local_io.screen.pos.x);
+			this.movex(pos-this.pos.x);
 			this.print(str);
 		},
 		center:function(str) {
@@ -832,6 +829,8 @@ var dk = {
 						this.movex(-(str.length-pos));
 				}
 			}
+		},
+		pos:{
 		}
 	},
 	connection:{
@@ -1096,6 +1095,24 @@ Object.defineProperty(dk.console.Private_attr, 'value', {
 			this.Private_value = val;
 		}
 	}
+});
+Object.defineProperty(dk.console.pos, 'x', {
+	enumerable:true,
+	get: function() {
+		'use strict';
+		if (dk.console.remote_io !== undefined)
+			return dk.console.remote_io.screen.pos.x;
+		return dk.console.local_io.screen.pos.x;
+	},
+});
+Object.defineProperty(dk.console.pos, 'y', {
+	enumerable:true,
+	get: function() {
+		'use strict';
+		if (dk.console.remote_io !== undefined)
+			return dk.console.remote_io.screen.pos.y;
+		return dk.console.local_io.screen.pos.y;
+	},
 });
 
 dk.parse_cmdline(argc, argv);
