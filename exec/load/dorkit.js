@@ -321,7 +321,7 @@ var dk = {
 		 */
 		clear:function() {
 			'use strict';
-			if (this.remote_screen !== undefined && this.remote_screen.new_lines && this.auto_pause) {
+			if (this.remote_screen !== undefined && this.remote_screen.new_lines > 0 && this.auto_pause) {
 				this.pause();
 			}
 			this.attr=7;
@@ -330,6 +330,10 @@ var dk = {
 			}
 			if (this.remote) {
 				this.remote_io.clear();
+				if (this.remote_screen !== undefined) {
+					this.remote_screen.new_lines = 0;
+					this.remote_screen.printed = false;
+				}
 			}
 		},
 
@@ -545,6 +549,7 @@ var dk = {
 			if (this.remote_screen !== undefined) {
 				this.remote_screen.new_lines = 0;
 				this.remote_screen.touched = [];
+				this.remote_screen.printed = false;
 			}
 		},
 
