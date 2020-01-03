@@ -10,7 +10,6 @@
 	Matt Johnson ( MCMLXXIX@BBS.THEBROKENBUBBLE.COM )
 */
 
-var oldpass=console.ctrl_key_passthru;
 var game_id = "boggle";
 
 load("graphic.js");
@@ -514,7 +513,9 @@ function open() {
 	client.subscribe(game_id,"players");
 	data.players[useralias].laston = time();
 	data.storePlayer();
+	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
+	js.on_exit("bbs.sys_status = " + bbs.sys_status);
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status |= SS_PAUSEOFF;	
 	if(file_exists(root + "boggle.bin")) {
@@ -531,9 +532,6 @@ function open() {
 function close() {
 	
 	client.unsubscribe(game_id,"players");
-	console.ctrlkey_passthru=oldpass;
-	bbs.sys_status&=~SS_MOFF;
-	bbs.sys_status&=~SS_PAUSEOFF;
 	console.attributes=ANSI_NORMAL;
 	console.clear();
 	var splash_filename=root + "exit.bin";
