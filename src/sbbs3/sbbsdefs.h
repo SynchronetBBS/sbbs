@@ -60,6 +60,8 @@
 #define COPYRIGHT_NOTICE	"Copyright 2019 Rob Swindell"
 #define COPYRIGHT_CRC		0x0E0503DF
 
+#define SBBSCTRL_DEFAULT	"/sbbs/ctrl"
+
 #define Y2K_2DIGIT_WINDOW	70
 
 #define FNOPEN_BUF_SIZE		(2*1024)

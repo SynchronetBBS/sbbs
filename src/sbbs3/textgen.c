@@ -191,9 +191,8 @@ int main(int argc, char **argv)
 	FILE			*text_js;
 	FILE			*text_defaults_c;
 
-	if((p=getenv("SBBSCTRL"))==NULL)
-		p="/sbbs/ctrl";
-	sprintf(path,"%s/text.dat",p);
+	p = get_ctrl_dir();
+	SAFEPRINTF(path,"%s/text.dat",p);
 	if((text_dat=fopen(path,"r"))==NULL) {
 		perror(path);
 		return(1);

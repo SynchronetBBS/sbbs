@@ -172,7 +172,6 @@ int main(int argc, char **argv)
 	FILE		*route,*users,*nodes;
 	time_t		now;
 	smbmsg_t	msg;
-	char		*ctrl_dir;
 	char		revision[16];
 
 	sscanf("$Revision$", "%*s %s", revision);
@@ -253,13 +252,7 @@ int main(int argc, char **argv)
 		}
 
 	cfg.size=sizeof(cfg);
-	ctrl_dir=getenv("SBBSCTRL");
-	if(ctrl_dir==NULL || ctrl_dir[0]==0) {
-		ctrl_dir="/sbbs/ctrl";          /* Not set? Use default */
-		printf("!SBBSCTRL environment variable not set, using default value: %s\n\n"
-				,ctrl_dir);
-	}
-	SAFECOPY(cfg.ctrl_dir, ctrl_dir);
+	SAFECOPY(cfg.ctrl_dir, get_ctrl_dir());
 
 	if(!load_cfg(&cfg, NULL, TRUE, str)) {
 		printf("\7\n%s\n",str);

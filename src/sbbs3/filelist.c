@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 {
 	char	revision[16];
 	char	error[512];
-	char	*p,str[256],fname[256],ext,not[MAX_NOTS][9];
+	char	str[256],fname[256],ext,not[MAX_NOTS][9];
 	uchar	*datbuf,*ixbbuf;
 	int 	i,j,file,dirnum,libnum,desc_off,lines,nots=0
 			,omode=O_WRONLY|O_CREAT|O_TRUNC;
@@ -152,18 +152,11 @@ int main(int argc, char **argv)
 		exit(0); 
 	}
 
-	p=getenv("SBBSCTRL");
-	if(p==NULL) {
-		printf("\nSBBSCTRL environment variable not set.\n");
-		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-		exit(1); 
-	}
-
 	now=time32(NULL);
 
 	memset(&scfg,0,sizeof(scfg));
 	scfg.size=sizeof(scfg);
-	SAFECOPY(scfg.ctrl_dir,p);
+	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir());
 
 	if(chdir(scfg.ctrl_dir)!=0)
 		fprintf(stderr,"!ERROR changing directory to: %s", scfg.ctrl_dir);

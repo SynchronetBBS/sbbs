@@ -1399,12 +1399,7 @@ int main(int argc, char** argv)
 	loginAttemptListInit(&login_attempt_list);
 	atexit(cleanup);
 
-	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
-	if(ctrl_dir==NULL || ctrl_dir[0]==0) {
-		ctrl_dir="/sbbs/ctrl";		/* Not set? Use default */
-		printf("!SBBSCTRL environment variable not set, using default value: %s\n\n"
-			,ctrl_dir);
-	}
+	ctrl_dir = get_ctrl_dir();
 
 	if(!winsock_startup())
 		return(-1);

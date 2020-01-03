@@ -1321,13 +1321,7 @@ int main(int argc, char **argv, char** env)
 
 #ifndef JSDOOR
 	if(scfg.ctrl_dir[0]==0) {
-		if((p=getenv("SBBSCTRL"))==NULL) {
-			fprintf(errfp,"\nSBBSCTRL environment variable not set and -c option not specified.\n");
-			fprintf(errfp,"\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-			fprintf(errfp,"\n     or: %s -c /sbbs/ctrl [module]\n",argv[0]);
-			return(do_bail(1)); 
-		}
-		SAFECOPY(scfg.ctrl_dir,p);
+		SAFECOPY(scfg.ctrl_dir, get_ctrl_dir());
 	}	
 #endif
 

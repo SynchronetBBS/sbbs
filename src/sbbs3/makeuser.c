@@ -105,12 +105,7 @@ int main(int argc, char **argv)
 	if(strcspn(argv[first_arg],"/\\")!=strlen(argv[first_arg]))
 		p=argv[first_arg++];
 	else
-		p=getenv("SBBSCTRL");
-	if(p==NULL) {
-		printf("\nSBBSCTRL environment variable not set.\n");
-		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-		exit(1); 
-	}
+		p = get_ctrl_dir();
 
 	memset(&scfg,0,sizeof(scfg));
 	scfg.size=sizeof(scfg);

@@ -1,4 +1,5 @@
 /* $Id$ */
+// vi: tabstop=4
 
 #include "sbbs.h"
 #include "crc32.h"
@@ -76,16 +77,7 @@ int main(int argc,char **argv)
 	fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 		"Finder\n", DUPEFIND_VER, PLATFORM_DESC);
 
-    p=getenv("SBBSCTRL");
-    if(p==NULL) {
-		fprintf(stderr,"\nSBBSCTRL environment variable must be set.\n");
-#ifdef __unix__
-		fprintf(stderr,"\nExample: export SBBSCTRL=/sbbs/ctrl\n");
-#else
-		fprintf(stderr,"\nExample: SET SBBSCTRL=C:\\SBBS\\CTRL\n");
-#endif
-        return(1); 
-	}
+    p = get_ctrl_dir();
 
 	if(argc>1 && (!stricmp(argv[1],"/?") || !stricmp(argv[1],"?") || !stricmp(argv[1],"-?"))) {
 		fprintf(stderr,"\n");

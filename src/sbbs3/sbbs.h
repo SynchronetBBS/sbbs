@@ -1176,6 +1176,7 @@ extern "C" {
 	DLLEXPORT BOOL		str_is_ascii(const char*);
 	DLLEXPORT char *	utf8_to_cp437_str(char* str);
 	DLLEXPORT char *	subnewsgroupname(scfg_t*, sub_t*, char*, size_t);
+	DLLEXPORT char * 	get_ctrl_dir(void);
 
 	/* msg_id.c */
 	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t*, smbmsg_t*, char* msgid, size_t);
