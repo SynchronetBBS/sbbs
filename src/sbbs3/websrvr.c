@@ -3649,6 +3649,8 @@ static BOOL check_request(http_session_t * session)
 		return(FALSE);
 	}
 
+	if (session->req.send_location >= MOVED_TEMP && session->redir_req[0])
+		return (TRUE);
 	if(stat(path,&sb) || IS_PATH_DELIM(*(lastchar(path))) || send404) {
 		/* OPTIONS requests never return 404 errors (ala Apache) */
 		if(session->req.method!=HTTP_OPTIONS) {
