@@ -6144,13 +6144,7 @@ int main(int argc, char **argv)
 	if(!opt_import_echomail && !opt_import_netmail)
 		opt_import_packets = false;
 
-	p=getenv("SBBSCTRL");
-	if(p==NULL) {
-		printf("\7\nSBBSCTRL environment variable not set.\n");
-		bail(1);
-		return -1;
-	}
-	SAFECOPY(scfg.ctrl_dir,p);
+	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir());
 
 	backslash(scfg.ctrl_dir);
 

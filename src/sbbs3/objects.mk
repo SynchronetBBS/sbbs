@@ -336,6 +336,7 @@ SMBACTIV_OBJS = \
 DSTSEDIT_OBJS = \
 			$(OBJODIR)$(DIRSEP)dstsedit$(OFILE)\
 			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
+			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
 
 READSAUCE_OBJS = \
