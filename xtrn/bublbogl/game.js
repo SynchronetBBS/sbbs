@@ -324,7 +324,17 @@ function boggle() {
 			}
 			return match;
 		}
+		// Linear search of dictionary (not recursive, not fast)
 		function scanDictionary(word,lower,upper,dict)
+		{
+			dict.rewind();
+			while(!dict.eof) {
+				if(word == dict.readln())
+					return true;
+			}
+			return false;
+		}
+		function scanDictionaryFast(word,lower,upper,dict)
 		{
 			middle=parseInt(lower+((upper-lower)/2),10);
 			dict.position=middle-25;
