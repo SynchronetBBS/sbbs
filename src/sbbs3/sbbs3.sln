@@ -64,6 +64,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "smbutil", "smbutil.vcxproj", "{D9C78CF8-0F08-417B-A242-22B86626F00D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "textgen", "textgen.vcxproj", "{A41D7A4A-2173-4DF6-96AF-9575C069CA8A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7428A1E8-56B7-4868-9C0E-29D031689FEB} = {7428A1E8-56B7-4868-9C0E-29D031689FEB}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uifc", "..\uifc\uifc.vcxproj", "{7BFB9820-0E57-4BE4-9BE9-E0A687874E19}"
 EndProject

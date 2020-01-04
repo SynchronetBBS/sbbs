@@ -2,33 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "sbbs.h"
 #include "dirwrap.h"	// MAX_PATH
 #include "gen_defs.h"
-
-/****************************************************************************/
-/* Converts an ASCII Hex string into an ulong                               */
-/* by Steve Deppe (Ille Homine Albe)										*/
-/****************************************************************************/
-/* Copied from str_util.c */
-ulong ahtoul(char *str)
-{
-    ulong l,val=0;
-
-	while((l=(*str++)|0x20)!=0x20)
-		val=(l&0xf)+(l>>6&1)*9+val*16;
-	return(val);
-}
-
-void truncsp(char* str)
-{
-	char* cp=strchr(str, 0);
-	if(cp && cp > str) {
-		cp--;
-		while(cp > str && isspace(*cp)) {
-			*(cp--)=0;
-		}
-	}
-}
 
 /****************************************************************************/
 /* Reads special TEXT.DAT printf style text lines, splicing multiple lines, */
