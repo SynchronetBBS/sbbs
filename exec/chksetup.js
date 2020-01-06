@@ -114,14 +114,17 @@ var tests = {
 		var output = [];
 		var long = 0;
 		var short = 0;
+		var dflt = 0;
 		const maxlen = 79 - " * Synchronet * ".length;
 		for(var s in msg_area.sub) {
 			var sub = msg_area.sub[s];
 			if(!(sub.settings & SUB_QNET))
 				continue;
-			var len = strip_ctrl(sub.fidonet_origin).length;
+			if(sub.qwknet_tagline == "My Brand-New BBS")
+				dflt++;
+			var len = strip_ctrl(sub.qwknet_tagline).length;
 			if(js.global.console)
-				len = console.strlen(sub.fidonet_origin);
+				len = console.strlen(sub.qwknet_tagline);
 			if(len > maxlen) {
 				if(options.verbose)
 					alert(format("QWK-networked sub (%s) has a long tagline", s));
@@ -140,6 +143,9 @@ var tests = {
 		if(short)
 			output.push(short
 				+ " msg sub-boards have QWKnet taglines with no content");
+		if(dflt)
+			output.push(dflt
+				+ " msg sub-boards have the default QWKnet tagline");
 		return output;
 	},
 
