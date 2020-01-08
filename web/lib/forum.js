@@ -312,6 +312,10 @@ function getMailHeaders(sent, ascending) {
     return headers;
 }
 
+function is_spam(header) {
+    return (header.attr&MSG_SPAM || (header.subject.search(/^SPAM:/) > -1));
+}
+
 function get_mail_headers(filter, ascending) {
     const ret = {
         headers: [],
@@ -330,7 +334,7 @@ function get_mail_headers(filter, ascending) {
             if (filter == 'sent') ret.headers.push(h);
         }
 	if (h.to_ext == user.number) {
-            if ((h.attr&MSG_SPAM) || (h.subject.search(/^SPAM:/) > -1)) {
+            if (is_spam(h)) {
                 h.attr&MSG_READ ? ret.spam.read++ : (ret.spam.unread++);
                 if (filter == 'spam') ret.headers.push(h);
             } else {
@@ -998,6 +1002,7 @@ function getMessageThreads(sub, max) {
         for (var m = start; m <= msgBase.last_msg; m++) {
             var header = msgBase.get_msg_header(m);
             if (header === null || header.attr&MSG_DELETE) continue;
+            if (settings.forum_no_spam && is_spam(header)) continue;
             headers[header.number] = header;
             c++;
             if (c >= count) break;
@@ -1020,6 +1025,11 @@ function getMessageThreads(sub, max) {
         function(h) {
 
             if (headers[h] === null || headers[h].attr&MSG_DELETE) {
+                delete headers[h];
+                return;
+            }
+
+            if (settings.forum_no_spam && is_spam(header)) {
                 delete headers[h];
                 return;
             }
