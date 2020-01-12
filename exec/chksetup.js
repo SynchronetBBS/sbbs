@@ -190,6 +190,8 @@ var tests = {
 		var finger_host = "vert.synchro.net";
 		var finger_query = "?bbs:" + system.name;
 		var finger_result = load({}, "finger_lib.js").request(finger_host, finger_query);
+		if(typeof finger_result == 'string')
+			return finger_result;
 		var finger_obj;
 		try {
 			finger_obj = JSON.parse(finger_result.join(''));
