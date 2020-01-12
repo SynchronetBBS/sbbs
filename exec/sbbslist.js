@@ -830,8 +830,7 @@ function list_bbs_entry(bbs, selected, sort, is_first_on_page)
 		color |= color_cfg.sorted;
 	console_color(color, selected);
 	var txt = format("%-*s%c", lib.max_len.name, bbs.name, selected ? '<' : ' ');
-	console.print(txt);
-	var line_screen_len = console.strlen(txt); // To help clearing to EOL for PETSCII
+	printf(txt);
 
 	color = LIGHTMAGENTA;
 	if(!js.global.console || console.screen_columns >= 80) {
@@ -854,26 +853,15 @@ function list_bbs_entry(bbs, selected, sort, is_first_on_page)
 			if (selected && console.term_supports(USER_PETSCII) && !is_first_on_page)
 				--len;
 			txt = format(fmt, len, len, lib.property_value(bbs, list_formats[list_format][i]));
-			console.print(txt);
-			line_screen_len += console.strlen(txt);
+			printf(txt);
 		}
 	}
 	/* Ensure the rest of the line has the correct color */
-	console_color(color, selected);
-	console.cleartoeol();
-	//console.cleartoeol(selected ? "" : "\1n");
-	/* Clear the text to the end of the line on the screen.  For PETSCII,
-	   it seems we have to take extra care to go only to the end of the line;
-	   console.cleartoeol() is causing a formatting issue with PETSCII. */
-	/*
-	if (console.term_supports(USER_PETSCII))
+	if (typeof(console) == "object")
 	{
-		var len_to_clear = console.screen_columns - line_screen_len - 1;
-		printf("%" + len_to_clear + "s", "");
-	}
-	else
+		console_color(color, selected);
 		console.cleartoeol();
-	*/
+	}
 }
 
 function right_justify(text)
