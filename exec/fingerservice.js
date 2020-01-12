@@ -387,7 +387,7 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 				var list = sbbslist.read_list();
 				var index = sbbslist.system_index(list, request.slice(4));
 				if(index < 0) {
-					writeln("!BBS NOT FOUND");
+					writeln("!BBS NOT FOUND: " + request.slice(4));
 					break;
 				}
 				writeln(JSON.stringify(list[index]));
