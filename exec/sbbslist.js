@@ -829,8 +829,7 @@ function list_bbs_entry(bbs, selected, sort, is_first_on_page)
 	if(sort=="name")
 		color |= color_cfg.sorted;
 	console_color(color, selected);
-	var txt = format("%-*s%c", lib.max_len.name, bbs.name, selected ? '<' : ' ');
-	printf(txt);
+	printf("%-*s%c", lib.max_len.name, bbs.name, selected ? '<' : ' ');
 
 	color = LIGHTMAGENTA;
 	if(!js.global.console || console.screen_columns >= 80) {
@@ -852,8 +851,7 @@ function list_bbs_entry(bbs, selected, sort, is_first_on_page)
 				fmt = "%*.*s";
 			if (selected && console.term_supports(USER_PETSCII) && !is_first_on_page)
 				--len;
-			txt = format(fmt, len, len, lib.property_value(bbs, list_formats[list_format][i]));
-			printf(txt);
+			printf(fmt, len, len, lib.property_value(bbs, list_formats[list_format][i]));
 		}
 	}
 	/* Ensure the rest of the line has the correct color */
