@@ -3,6 +3,7 @@
 // Sanity-check a Synchronet BBS installation
 
 "use strict";
+const REVISION = "$Revision$".split(' ')[1];
 require("sbbsdefs.js", 'USER_DELETED');
 
 function check_codes(desc, grp_list, sub_list)
@@ -274,6 +275,8 @@ var tests = {
 		return output;
 	}
 };
+
+print('Synchronet Check Setup v' + REVISION);
 
 var options = { verbose: argv.indexOf('-v') >= 0 || argv.indexOf('-V') >= 0};
 
