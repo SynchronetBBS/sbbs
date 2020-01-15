@@ -108,7 +108,7 @@ function get_high_temp(forecasts) {
 function get_forecast_day(forecasts) {
 	var forecast_utc = forecasts[0].dt * 1000;
 	var forecast_date = new Date(forecast_utc);
-	var day_str = days[forecast_date.getDay()] + ', ' + months[forecast_date.getMonth()] + ' ' + forecast_date.getDate();
+	var day_str = short_days[forecast_date.getDay()] + ', ' + short_months[forecast_date.getMonth()] + ' ' + forecast_date.getDate();
 	return "\1n\1w" + day_str;
 }
 
