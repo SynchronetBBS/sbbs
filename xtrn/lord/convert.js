@@ -58,7 +58,7 @@ Player_Info_Def = [
 	{prop:'arm_num', type:'SignedInteger16'},
 	{prop:'dead', type:'SignedInteger8'},
 	{prop:'inn', type:'SignedInteger8'},
-	{prop:'gem', type:'SignedInteger'},
+	{prop:'gem', type:'SignedInteger16'},
 	{prop:'exp', type:'SignedInteger'},
 	{prop:'sex', type:'SignedInteger8'},
 	{prop:'seen_bard', type:'SignedInteger8'},
