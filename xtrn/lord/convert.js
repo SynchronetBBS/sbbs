@@ -255,7 +255,7 @@ function convert_player(from, ext, p2, to)
 			pr = {des:false, des1:'', des2:''};
 
 		tr.name = fr.names;
-		tr.real_name = fr.real_names;
+		tr.real_name = fr.real_names.trim();
 		tr.hp = fr.hit;
 		tr.divorced = !!(fr.bad & 0x02);
 		tr.amulet = !!(fr.bad & 0x01);
