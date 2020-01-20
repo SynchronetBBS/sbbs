@@ -5173,8 +5173,11 @@ int export_netmail(void)
 		if((msg.idx.attr&MSG_DELETE) || msg.idx.to != 0)
 			continue;
 
-		if(smb_getmsghdr(email, &msg) != SMB_SUCCESS)
+		if((i = smb_getmsghdr(email, &msg)) != SMB_SUCCESS) {
+			lprintf(LOG_ERR,"ERROR %d (%s) line %d reading msg header #%u from %s"
+				,i, email->last_error, __LINE__, msg.idx.number, email->file);
 			continue;
+		}
 
 		if(msg.to_ext != 0 || msg.to_net.type != NET_FIDO)
 			continue;
