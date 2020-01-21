@@ -125,7 +125,7 @@ if(!hdrs.from)
 if(!hdrs.subject)
 	hdrs.subject = prompt("Subject");
 var num;
-if(!hdrs.to_ext && sub_code == 'mail' && (num = system.matchuser(hdrs.to)) != 0)
+if(!hdrs.to_ext && sub_code == 'mail' && !hdrs.to_net_addr && (num = system.matchuser(hdrs.to)) != 0)
 	hdrs.to_ext = num;
 if(!hdrs.from_ext && (num = system.matchuser(hdrs.from)) != 0)
 	hdrs.from_ext = num;
