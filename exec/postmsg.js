@@ -124,10 +124,11 @@ if(!hdrs.from)
 	hdrs.from = prompt("From User name");
 if(!hdrs.subject)
 	hdrs.subject = prompt("Subject");
-if(!hdrs.to_ext && sub_code == 'mail')
-	hdrs.to_ext = system.matchuser(hdrs.to);
-if(!hdrs.from_ext)
-	hdrs.from_ext = system.matchuser(hdrs.from);
+var num;
+if(!hdrs.to_ext && sub_code == 'mail' && (num = system.matchuser(hdrs.to)) != 0)
+	hdrs.to_ext = num;
+if(!hdrs.from_ext && (num = system.matchuser(hdrs.from)) != 0)
+	hdrs.from_ext = num;
 if(!msgbase.save_msg(hdrs, body)) {
 	alert("Error saving message: " + msgbase.last_error);
 	exit();
