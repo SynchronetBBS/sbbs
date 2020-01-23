@@ -13,12 +13,14 @@ if(!options.login_prompts)
 	options.login_prompts = 10;
 if(!options.inactive_hangup)
 	options.inactive_hangup = 30;	 // seconds
+if(options.guest === undefined)
+	options.guest = true;
 
 // The following 2 lines are only required for "Re-login" capability
 bbs.logout();
 system.node_list[bbs.node_num-1].status = NODE_LOGON;
 
-var guest = system.matchuser("guest");
+var guest = options.guest && system.matchuser("guest");
 
 if(!bbs.online)
 	exit();
