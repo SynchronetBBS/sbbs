@@ -1,0 +1,11 @@
+--- session/ssl_kmgmt.c.orig	2019-01-11 01:54:56.000000000 -0500
++++ session/ssl_kmgmt.c	2020-01-23 18:18:40.754040000 -0500
+@@ -448,7 +448,7 @@
+ 			status = krnlSendMessage( createInfo.cryptHandle, 
+ 									  IMESSAGE_SETATTRIBUTE, 
+ 									  ( MESSAGE_CAST ) &eccParams, 
+-									  CRYPT_IATTRIBUTE_KEY_DLPPARAM );
++									  CRYPT_IATTRIBUTE_KEY_ECCPARAM );
+ 			}
+ 		else
+ #endif /* USE_ECDH */

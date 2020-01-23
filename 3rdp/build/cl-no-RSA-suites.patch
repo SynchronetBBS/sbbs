@@ -1,5 +1,5 @@
---- misc/config.h.orig	2020-01-23 11:58:21.156148000 -0500
-+++ misc/config.h	2020-01-23 11:59:42.599159000 -0500
+--- misc/config.h.orig	2020-01-23 12:03:27.741075000 -0500
++++ misc/config.h	2020-01-23 12:03:27.806947000 -0500
 @@ -684,7 +684,7 @@
     64-bit systems, which by definition are going to be fairly recent */
  
