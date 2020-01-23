@@ -1699,16 +1699,6 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 						}
 						lprintf(LOG_INFO,"AreaFix (for %s) Unlinking area: %s", smb_faddrtoa(&addr,NULL), echotag);
 
-						/* Added 12/4/95 to remove link from connected link */
-
-						for(k=u;k<cfg.area[u].links-1;k++)
-							memcpy(&cfg.area[u].link[k],&cfg.area[u].link[k+1]
-								,sizeof(fidoaddr_t));
-						--cfg.area[u].links;
-						if(cfg.area[u].links==0) {
-							FREE_AND_NULL(cfg.area[u].link);
-						}
-
 						fprintf(afileout,"%-*s %-*s "
 							,LEN_EXTCODE, code
 							,FIDO_AREATAG_LEN, echotag);
