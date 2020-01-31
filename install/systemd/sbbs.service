@@ -21,7 +21,7 @@ Environment=SBBSROOT=/sbbs SBBSCTRL=/sbbs/ctrl
 User=sbbs
 Group=sbbs
 PermissionsStartOnly=true
-ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /sbbs/src/sbbs3/gcc.linux.x64.exe.release/sbbs
+ExecStartPre=/sbin/setcap 'cap_net_bind_service=+ep' /sbbs/src/sbbs3/gcc.linux.*.exe.*/sbbs
 ExecStart=/sbbs/exec/sbbs d
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
