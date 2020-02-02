@@ -5776,7 +5776,15 @@ NO_SSH:
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;
 			}
-			lprintf(LOG_INFO,"Node %d passthru socket listening on port %u"
+
+			tmp_addr_len=sizeof(tmp_addr);
+			if(getsockname(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len)) {
+				lprintf(LOG_ERR,"Node %d !ERROR %d getting passthru listener address"
+					,new_node->cfg.node_num, ERROR_VALUE);
+				close_socket(tmp_sock);
+				goto NO_PASSTHRU;
+			}
+			lprintf(LOG_DEBUG,"Node %d passthru socket listening on port %u"
 				,new_node->cfg.node_num, htons(tmp_addr.sin_port));
 
     		new_node->passthru_socket = open_socket(PF_INET, SOCK_STREAM, "passthru");
@@ -5790,16 +5798,6 @@ NO_SSH:
 
 			lprintf(LOG_DEBUG,"Node %d passthru connect socket %d opened"
 				,new_node->cfg.node_num, new_node->passthru_socket);
-
-			tmp_addr_len=sizeof(tmp_addr);
-			if(getsockname(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len)) {
-				lprintf(LOG_ERR,"Node %d !ERROR %d getting passthru listener address"
-					,new_node->cfg.node_num, ERROR_VALUE);
-				close_socket(tmp_sock);
-				close_socket(new_node->passthru_socket);
-				new_node->passthru_socket=INVALID_SOCKET;
-				goto NO_PASSTHRU;
-			}
 
 			result = connect(new_node->passthru_socket, (struct sockaddr *)&tmp_addr, tmp_addr_len);
 
