@@ -811,6 +811,7 @@ int main(int argc, char** argv)  {
 		"Rob Swindell\n",revision,PLATFORM_DESC,__DATE__+7);
 
 	SAFECOPY(ctrl_dir, get_ctrl_dir());
+	backslash(ctrl_dir);
 
 	gethostname(str,sizeof(str)-1);
 
@@ -819,7 +820,7 @@ int main(int argc, char** argv)  {
 	/* Initialize BBS startup structure */
 	memset(&bbs_startup,0,sizeof(bbs_startup));
 	bbs_startup.size=sizeof(bbs_startup);
-	strcpy(bbs_startup.ctrl_dir,ctrl_dir);
+	SAFECOPY(bbs_startup.ctrl_dir,ctrl_dir);
 
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
