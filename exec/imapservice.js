@@ -278,7 +278,7 @@ function send_fetch_response(msgnum, fmat, uid)
 			get_header();
 			if(!(hdr.attr & MSG_READ)) {
 				hdr.attr |= MSG_READ;
-				base.put_msg_header(msgnum);
+				base.put_msg_header(msgnum, hdr);
 				index=read_index(base);
 				hdr=base.get_msg_header(msgnum, /* expand_fields: */false);
 				if(hdr.attr & MSG_READ)
