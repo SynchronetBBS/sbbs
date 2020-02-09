@@ -27,6 +27,7 @@ AddItemHotkey()
 SetPos()
 SetSize()
 GetVal()
+AddAdditionalSelectItemKeys()
 
 To change the colors used for displaying the items, you can change the values
 in the colors object within the DDLightbarMenu object.  These are the current
@@ -59,6 +60,18 @@ Note that ampersandHotkeysInItems must be set before adding menu items.
 You can call the SetItemHotkey() method to set a single hotkey to be used for
 a menu item or AddItemHotkey() to add an additional hotkey for an item in
 addition to any existing hotkeys it might already have.
+
+You can call AddAdditionalSelectItemKeys() to add additional keys that can be
+used to select any item (in addition to Enter).  That function takes an array,
+and the keys are case-sensitive.  For example, to add the key E to select
+any item:
+lbMenu.AddAdditionalSelectItemKeys(["E"]);
+To make a case-insensitive verison, both the uppercase and lowercase letter
+would need to be added, as in the following example for E:
+lbMenu.AddAdditionalSelectItemKeys(["E", "e"]);
+
+Also, after showing the menu & getting a value from the user (using the GetVal()
+function), the lastUserInput property will have the user's last keypress.
 
 This menu class also supports an optional "numbered mode", where each option is
 displayed with a number to the left (starting at 1), and the user is allowed to
@@ -249,8 +262,10 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
 	this.additionalQuitKeys = []; // An array of additional keys besides ESC to quit out of the menu
+	this.additionalSelectItemKeys = []; // An array of additional keys to select any item
 	this.topBorderText = ""; // Text to display in the top border
 	this.bottomBorderText = ""; // Text to display in the bottom border
+	this.lastUserInput = null; // The user's last keypress when the menu was shown/used
 	
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
@@ -276,6 +291,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.SetTopItemIdxToTopOfLastPage = DDLightbarMenu_SetTopItemIdxToTopOfLastPage;
 	this.AddAdditionalQuitKeys = DDLightbarMenu_AddAdditionalQuitKeys;
 	this.QuitKeysIncludes = DDLightbarMenu_QuitKeysIncludes;
+	this.AddAdditionalSelectItemKeys = DDLightbarMenu_AddAdditionalSelectItemKeys;
+	this.SelectItemKeysIncludes = DDLightbarMenu_SelectItemKeysIncludes;
 
 	// Set some things based on the parameters passed in
 	if ((typeof(pX) == "number") && (typeof(pY) == "number"))
@@ -732,6 +749,8 @@ function DDLightbarMenu_RemoveAllItemHotkeys()
 //  pSelectedItemIndexes: Optional - An object containing indexes of selected items
 function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 {
+	this.lastUserInput = null;
+
 	if (this.items.length == 0)
 		return null;
 
@@ -748,8 +767,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	var continueOn = true;
 	while (continueOn)
 	{
-		var userInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF);
-		if ((userInput == KEY_UP) || (userInput == KEY_LEFT))
+		this.lastUserInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF);
+		if ((this.lastUserInput == KEY_UP) || (this.lastUserInput == KEY_LEFT))
 		{
 			if (this.selectedItemIdx > 0)
 			{
@@ -812,7 +831,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 			}
 		}
-		else if ((userInput == KEY_DOWN) || (userInput == KEY_RIGHT))
+		else if ((this.lastUserInput == KEY_DOWN) || (this.lastUserInput == KEY_RIGHT))
 		{
 			if (this.selectedItemIdx < this.items.length-1)
 			{
@@ -873,7 +892,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 			}
 		}
-		else if (userInput == KEY_PAGE_UP)
+		else if (this.lastUserInput == KEY_PAGE_UP)
 		{
 			var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
 			var newTopItemIdx = this.topItemIdx - numItemsPerPage;
@@ -888,7 +907,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				this.Draw(selectedItemIndexes);
 			}
 		}
-		else if (userInput == KEY_PAGE_DOWN)
+		else if (this.lastUserInput == KEY_PAGE_DOWN)
 		{
 			var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
 			// Figure out how many pages are needed to list all the items
@@ -912,7 +931,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				this.Draw(selectedItemIndexes);
 			}
 		}
-		else if (userInput == KEY_HOME)
+		else if (this.lastUserInput == KEY_HOME)
 		{
 			// Go to the first item on the current page
 			if (this.selectedItemIdx > this.topItemIdx)
@@ -932,7 +951,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 			}
 		}
-		else if (userInput == KEY_END)
+		else if (this.lastUserInput == KEY_END)
 		{
 			var numItemsPerPage = this.size.height;
 			if (this.borderEnabled)
@@ -957,7 +976,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 			}
 		}
-		else if (userInput == KEY_ENTER)
+		// Enter key or additional select-item key: Select the item & quit out of the input loop
+		else if ((this.lastUserInput == KEY_ENTER) || (this.SelectItemKeysIncludes(this.lastUserInput)))
 		{
 			// If multi-select is enabled and if the user hasn't made any choices,
 			// then add the current item to the user choices.  Otherwise, choose
@@ -971,7 +991,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				retVal = this.items[this.selectedItemIdx].retval;
 			continueOn = false;
 		}
-		else if (userInput == " ")
+		else if (this.lastUserInput == " ")
 		{
 			// Select the current item
 			if (this.multiSelect)
@@ -1016,7 +1036,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 			}
 		}
-		else if ((userInput == KEY_ESC) || (this.QuitKeysIncludes(userInput)))
+		else if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)))
 		{
 			continueOn = false;
 			// Ensure any returned choice objects are null/empty to signal
@@ -1027,13 +1047,13 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		}
 		// For numbered mode, if the user enters a number, allow the user to
 		// choose an item by typing its number.
-		else if (/[0-9]/.test(userInput) && this.numberedMode)
+		else if (/[0-9]/.test(this.lastUserInput) && this.numberedMode)
 		{
 			var originalCurpos = console.getxy();
 
 			// Put the user's input back in the input buffer to
 			// be used for getting the rest of the message number.
-			console.ungetstr(userInput);
+			console.ungetstr(this.lastUserInput);
 			// Move the cursor to the bottom of the screen and
 			// prompt the user for the message number.
 			var promptX = this.pos.x;
@@ -1085,9 +1105,9 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				{
 					var userPressedHotkey = false;
 					if (this.hotkeyCaseSensitive)
-						userPressedHotkey = (userInput == this.items[i].hotkeys[h]);
+						userPressedHotkey = (this.lastUserInput == this.items[i].hotkeys[h]);
 					else
-						userPressedHotkey = (userInput.toUpperCase() == this.items[i].hotkeys[h].toUpperCase());
+						userPressedHotkey = (this.lastUserInput.toUpperCase() == this.items[i].hotkeys[h].toUpperCase());
 					if (userPressedHotkey)
 					{
 						if (this.multiSelect)
@@ -1214,6 +1234,31 @@ function DDLightbarMenu_QuitKeysIncludes(pKey)
 	var includesKey = false;
 	for (var i = 0; (i < this.additionalQuitKeys.length) && !includesKey; ++i)
 		includesKey = (this.additionalQuitKeys[i] == pKey);
+	return includesKey;
+}
+
+// Adds additional key characters to select any item.  The keys will be case-sensitive.
+//
+// Parameters:
+//  pAdditionalQuitKeys: An array of key characters
+function DDLightbarMenu_AddAdditionalSelectItemKeys(pAdditionalAddItemKeys)
+{
+	this.additionalSelectItemKeys = this.additionalSelectItemKeys.concat(pAdditionalAddItemKeys);
+}
+
+// Returns whether or not the additional select-item keys array contains a given
+// key character.
+//
+// Parameters:
+//  pKey: The key to look for in the additional select-itemkeys
+//
+// Return value: Boolean - Whether or not the additional select-item keys includes
+//               pKey
+function DDLightbarMenu_SelectItemKeysIncludes(pKey)
+{
+	var includesKey = false;
+	for (var i = 0; (i < this.additionalSelectItemKeys.length) && !includesKey; ++i)
+		includesKey = (this.additionalSelectItemKeys[i] == pKey);
 	return includesKey;
 }
 
