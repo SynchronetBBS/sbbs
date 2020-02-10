@@ -261,8 +261,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.multiSelectItemChar = CHECK_CHAR; // The character to display for a selected item in multi-select mode
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
-	this.additionalQuitKeys = []; // An array of additional keys besides ESC to quit out of the menu
-	this.additionalSelectItemKeys = []; // An array of additional keys to select any item
+	this.additionalQuitKeys = ""; // A string of additional keys besides ESC to quit out of the menu
+	this.additionalSelectItemKeys = ""; // A string of additional keys to select any item
 	this.topBorderText = ""; // Text to display in the top border
 	this.bottomBorderText = ""; // Text to display in the bottom border
 	this.lastUserInput = null; // The user's last keypress when the menu was shown/used
@@ -291,8 +291,10 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.SetTopItemIdxToTopOfLastPage = DDLightbarMenu_SetTopItemIdxToTopOfLastPage;
 	this.AddAdditionalQuitKeys = DDLightbarMenu_AddAdditionalQuitKeys;
 	this.QuitKeysIncludes = DDLightbarMenu_QuitKeysIncludes;
+	this.ClearAdditionalQuitKeys = DDLightbarMenu_ClearAdditionalQuitKeys;
 	this.AddAdditionalSelectItemKeys = DDLightbarMenu_AddAdditionalSelectItemKeys;
 	this.SelectItemKeysIncludes = DDLightbarMenu_SelectItemKeysIncludes;
+	this.ClearAdditionalSelectItemKeys = DDLightbarMenu_ClearAdditionalSelectItemKeys;
 
 	// Set some things based on the parameters passed in
 	if ((typeof(pX) == "number") && (typeof(pY) == "number"))
@@ -1215,10 +1217,10 @@ function DDLightbarMenu_SetTopItemIdxToTopOfLastPage()
 // in addition to ESC.  The keys will be case-sensitive.
 //
 // Parameters:
-//  pAdditionalQuitKeys: An array of key characters
+//  pAdditionalQuitKeys: A string of key characters
 function DDLightbarMenu_AddAdditionalQuitKeys(pAdditionalQuitKeys)
 {
-	this.additionalQuitKeys = this.additionalQuitKeys.concat(pAdditionalQuitKeys);
+	this.additionalQuitKeys += pAdditionalQuitKeys;
 }
 
 // Returns whether or not the additional quit keys array contains a given
@@ -1231,19 +1233,22 @@ function DDLightbarMenu_AddAdditionalQuitKeys(pAdditionalQuitKeys)
 //               pKey
 function DDLightbarMenu_QuitKeysIncludes(pKey)
 {
-	var includesKey = false;
-	for (var i = 0; (i < this.additionalQuitKeys.length) && !includesKey; ++i)
-		includesKey = (this.additionalQuitKeys[i] == pKey);
-	return includesKey;
+	return (this.additionalQuitKeys.indexOf(pKey) > -1);
+}
+
+// Clears the string of additional key characters to quit out of the menu
+function DDLightbarMenu_ClearAdditionalQuitKeys()
+{
+	this.additionalQuitKeys = "";
 }
 
 // Adds additional key characters to select any item.  The keys will be case-sensitive.
 //
 // Parameters:
-//  pAdditionalQuitKeys: An array of key characters
+//  pAdditionalAddItemKeys: A string containing key characters
 function DDLightbarMenu_AddAdditionalSelectItemKeys(pAdditionalAddItemKeys)
 {
-	this.additionalSelectItemKeys = this.additionalSelectItemKeys.concat(pAdditionalAddItemKeys);
+	this.additionalSelectItemKeys += pAdditionalAddItemKeys;
 }
 
 // Returns whether or not the additional select-item keys array contains a given
@@ -1256,10 +1261,13 @@ function DDLightbarMenu_AddAdditionalSelectItemKeys(pAdditionalAddItemKeys)
 //               pKey
 function DDLightbarMenu_SelectItemKeysIncludes(pKey)
 {
-	var includesKey = false;
-	for (var i = 0; (i < this.additionalSelectItemKeys.length) && !includesKey; ++i)
-		includesKey = (this.additionalSelectItemKeys[i] == pKey);
-	return includesKey;
+	return (this.additionalSelectItemKeys.indexOf(pKey) > -1);
+}
+
+// Clears the string of additional key characters to select any item
+function DDLightbarMenu_ClearAdditionalSelectItemKeys()
+{
+	this.additionalSelectItemKeys = "";
 }
 
 // Inputs a keypress from the user and handles some ESC-based
