@@ -143,6 +143,10 @@
  * 2019-08-14 Eric Oulashin     Version 1.03
  *                              Made use of require() (if available) to load the .js
  *                              scripts.
+ * 2020-02-09 Eric Oulashin     Version 1.04
+ *                              Updated calls to AddAdditionalQuitKeys() in the
+ *                              DDLightbarMenu class per the updated version
+ *                              (requires the dd_lightbar_menu.js update).
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -212,8 +216,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.03";
-var SLYVOTE_DATE = "2019-08-14";
+var SLYVOTE_VERSION = "1.04";
+var SLYVOTE_DATE = "2020-02-09";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -573,7 +577,7 @@ function CreateMsgGrpMenu(pListTopRow, pDrawColRetObj, pMsgGrps)
 	var grpNameLen = pDrawColRetObj.textLen - 2;
 	grpMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
 	grpMenu.ampersandHotkeysInItems = false;
-	grpMenu.AddAdditionalQuitKeys(["q", "Q"]);
+	grpMenu.AddAdditionalQuitKeys("qQ");
 	for (var grpIdx in pMsgGrps)
 	{
 		var grpName = msg_area.grp_list[grpIdx].name;
@@ -600,7 +604,7 @@ function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
 	var areaNameLen = pDrawColRetObj.textLen - 2;
 	subBoardMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
 	subBoardMenu.ampersandHotkeysInItems = false;
-	subBoardMenu.AddAdditionalQuitKeys(["q", "Q"]);
+	subBoardMenu.AddAdditionalQuitKeys("qQ");
 	for (var i = 0; i < pMsgGrps[pGrpIdx].length; ++i)
 	{
 		var subCode = pMsgGrps[pGrpIdx][i];
