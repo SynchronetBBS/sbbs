@@ -67,7 +67,7 @@ $(CRYPT_SRC): | $(3RDPSRCDIR)
 $(CRYPT_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(CRYPT_IDIR)
 
-$(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)build/terminal-params.patch $(3RDP_ROOT)$(DIRSEP)build/cl-mingw32-static.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ranlib.patch $(3RDP_ROOT)$(DIRSEP)build/cl-win32-noasm.patch $(3RDP_ROOT)$(DIRSEP)build/cl-zz-country.patch $(3RDP_ROOT)$(DIRSEP)build/cl-algorithms.patch $(3RDP_ROOT)$(DIRSEP)build/cl-allow-duplicate-ext.patch $(3RDP_ROOT)$(DIRSEP)build/cl-macosx-minver.patch $(3RDP_ROOT)$(DIRSEP)build/cl-endian.patch $(3RDP_ROOT)$(DIRSEP)build/cl-cryptodev.patch $(3RDP_ROOT)$(DIRSEP)build/cl-posix-me-gently.patch $(3RDP_ROOT)$(DIRSEP)build/cl-tpm-linux.patch $(3RDP_ROOT)$(DIRSEP)build/cl-PAM-noprompts.patch $(3RDP_ROOT)$(DIRSEP)build/cl-zlib.patch $(3RDP_ROOT)$(DIRSEP)build/Dynamic-linked-static-lib.patch $(3RDP_ROOT)$(DIRSEP)build/SSL-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-bigger-maxattribute.patch $(3RDP_ROOT)$(DIRSEP)build/cl-vcxproj.patch $(3RDP_ROOT)$(DIRSEP)build/cl-mingw-vcver.patch $(3RDP_ROOT)$(DIRSEP)build/cl-win32-build-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-gcc-non-const-time-val.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-odbc.patch $(3RDP_ROOT)$(DIRSEP)build/cl-suites.patch $(3RDP_ROOT)$(DIRSEP)build/cl-noasm-defines.patch $(3RDP_ROOT)$(DIRSEP)build/cl-bn-noasm64-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-RSA-suites.patch $(3RDP_ROOT)$(DIRSEP)build/cl-fix-ECC-RSA.patch $(3RDP_ROOT)$(DIRSEP)build/cl-prefer-ECC.patch $(3RDP_ROOT)$(DIRSEP)build/cl-prefer-ECC-harder.patch $(3RDP_ROOT)$(DIRSEP)build/cl-more-RSA-ECC-fixes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-DH-key-init.patch $(3RDP_ROOT)$(DIRSEP)build/cl-clear-GCM-flag.patch $(3RDP_ROOT)$(DIRSEP)build/cl-use-ssh-ctr.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssh-list-ctr-modes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssh-incCtr.patch | $(CRYPT_SRC) $(CRYPT_IDIR)
+$(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)build/terminal-params.patch $(3RDP_ROOT)$(DIRSEP)build/cl-mingw32-static.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ranlib.patch $(3RDP_ROOT)$(DIRSEP)build/cl-win32-noasm.patch $(3RDP_ROOT)$(DIRSEP)build/cl-zz-country.patch $(3RDP_ROOT)$(DIRSEP)build/cl-algorithms.patch $(3RDP_ROOT)$(DIRSEP)build/cl-allow-duplicate-ext.patch $(3RDP_ROOT)$(DIRSEP)build/cl-macosx-minver.patch $(3RDP_ROOT)$(DIRSEP)build/cl-endian.patch $(3RDP_ROOT)$(DIRSEP)build/cl-cryptodev.patch $(3RDP_ROOT)$(DIRSEP)build/cl-posix-me-gently.patch $(3RDP_ROOT)$(DIRSEP)build/cl-tpm-linux.patch $(3RDP_ROOT)$(DIRSEP)build/cl-PAM-noprompts.patch $(3RDP_ROOT)$(DIRSEP)build/cl-zlib.patch $(3RDP_ROOT)$(DIRSEP)build/Dynamic-linked-static-lib.patch $(3RDP_ROOT)$(DIRSEP)build/SSL-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-bigger-maxattribute.patch $(3RDP_ROOT)$(DIRSEP)build/cl-vcxproj.patch $(3RDP_ROOT)$(DIRSEP)build/cl-mingw-vcver.patch $(3RDP_ROOT)$(DIRSEP)build/cl-win32-build-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-gcc-non-const-time-val.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-odbc.patch $(3RDP_ROOT)$(DIRSEP)build/cl-noasm-defines.patch $(3RDP_ROOT)$(DIRSEP)build/cl-bn-noasm64-fix.patch $(3RDP_ROOT)$(DIRSEP)build/cl-no-RSA-suites.patch $(3RDP_ROOT)$(DIRSEP)build/cl-fix-ECC-RSA.patch $(3RDP_ROOT)$(DIRSEP)build/cl-prefer-ECC.patch $(3RDP_ROOT)$(DIRSEP)build/cl-prefer-ECC-harder.patch $(3RDP_ROOT)$(DIRSEP)build/cl-more-RSA-ECC-fixes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-DH-key-init.patch $(3RDP_ROOT)$(DIRSEP)build/cl-clear-GCM-flag.patch $(3RDP_ROOT)$(DIRSEP)build/cl-use-ssh-ctr.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssh-list-ctr-modes.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssh-incCtr.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ssl-suite-blocksizes.patch | $(CRYPT_SRC) $(CRYPT_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(CRYPT_SRC)/*
 	$(QUIET)unzip -oa $(3RDPDISTDIR)$(DIRSEP)cryptlib.zip -d $(CRYPT_SRC)
@@ -94,7 +94,6 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)b
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-win32-build-fix.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-gcc-non-const-time-val.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-no-odbc.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-suites.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-noasm-defines.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-bn-noasm64-fix.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-no-RSA-suites.patch
@@ -107,6 +106,7 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)b
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-use-ssh-ctr.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-ssh-list-ctr-modes.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-ssh-incCtr.patch
+	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-ssl-suite-blocksizes.patch
 ifeq ($(CC),mingw32-gcc)
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make directories
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make toolscripts
