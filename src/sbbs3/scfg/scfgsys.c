@@ -560,7 +560,7 @@ void sys_cfg(void)
 								"with credits.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Allow Users to Depost Time in Minute Bank",opt);
+								,"Allow Users to Deposit Time in Minute Bank",opt);
 							if(!i && !(cfg.sys_misc&SM_TIMEBANK)) {
 								cfg.sys_misc|=SM_TIMEBANK;
 								uifc.changes=1; 
