@@ -15304,7 +15304,7 @@ function ye_old_bank()
 							sln('  Gold Not Sent!');
 							break;
 						}
-						op = player.get(to);
+						op = player_get(to);
 						player.bank -= amt;
 						player.transferred_gold += 1;
 						player.put();
