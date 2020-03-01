@@ -53,6 +53,7 @@ typedef struct
 {
 	private_t	*p;
 	BOOL		expand_fields;
+	BOOL		enumerated;
 	smbmsg_t	msg;
 	post_t		post;
 
@@ -1352,7 +1353,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	}
 
 	/* If we have already enumerated, we're done here... */
-	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL) {
+	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL || p->enumerated) {
 		if(name) free(name);
 		return JS_TRUE;
 	}
@@ -1639,10 +1640,7 @@ static JSBool js_get_msg_header_enumerate(JSContext *cx, JSObject *obj)
 	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_TRUE;
 
-	smb_freemsgmem(&(p->msg));
-	free(p);
-
-	JS_SetPrivate(cx, obj, NULL);
+	p->enumerated = TRUE;
 
 	return JS_TRUE;
 }
