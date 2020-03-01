@@ -271,10 +271,11 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_str(cfg->readmail_mod, stream);
 	put_str(cfg->scanposts_mod, stream);
 	put_str(cfg->scansubs_mod, stream);
+	put_str(cfg->listmsgs_mod, stream);
 
 	put_int(c,stream);
 	n=0;
-	for(i=0;i<62;i++)
+	for(i=0;i<30;i++)
 		put_int(n,stream);
 	n=0xffff;
 	for(i=0;i<254;i++)

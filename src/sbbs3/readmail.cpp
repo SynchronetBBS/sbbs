@@ -469,6 +469,14 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				break;
 			case 'L':     /* List mail */
 				domsg=0;
+				if(cfg.listmsgs_mod[0]) {
+					char cmdline[256];
+
+					safe_snprintf(cmdline, sizeof(cmdline), "%s %s %d %u %lu", cfg.listmsgs_mod, "mail", which, usernumber, lm_mode);
+					exec_bin(cmdline, &main_csi);
+					break;
+				}
+
 				bprintf(text[StartWithN],(long)smb.curmsg+1);
 				if((i=getnum(smb.msgs))>0)
 					i--;
