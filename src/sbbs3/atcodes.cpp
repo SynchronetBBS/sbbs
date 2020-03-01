@@ -132,9 +132,9 @@ int sbbs_t::show_atcode(const char *instr)
 		truncated = false;
 	if(p!=NULL) {
 		char* lp = p;
-		while(*lp && !isdigit(*lp))
+		while(*lp && !isdigit((uchar)*lp))
 			lp++;
-		if(*lp && isdigit(*lp))
+		if(*lp && isdigit((uchar)*lp))
 			disp_len=atoi(lp);
 		*p=0;
 	}
