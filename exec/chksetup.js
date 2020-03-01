@@ -242,6 +242,30 @@ var tests = {
 		return output;
 	},
 	
+	check_sub_cfgs: function(options)
+	{
+		var output = [];
+		for(var sub in msg_area.sub) {
+			var msgbase = new MsgBase(sub);
+			if(!msgbase.open()) {
+				if(options.verbose)
+					alert(format("Error (%s) opening sub: %s", msgbase.error, sub));
+				continue;
+			}
+			if(msgbase.max_crcs != msgbase.cfg.max_crcs)
+				output.push(format("MsgBase: %-16s max_crcs status (%d) does not match sub-board configuration: %d",
+					sub, msgbase.max_crcs, msgbase.cfg.max_crcs));
+			if(msgbase.max_msgs != msgbase.cfg.max_msgs)
+				output.push(format("MsgBase: %-16s max_msgs status (%d) does not match sub-board configuration: %d",
+					sub, msgbase.max_msgs, msgbase.cfg.max_msgs));
+			if(msgbase.max_age != msgbase.cfg.max_age)
+				output.push(format("MsgBase: %-16s max_age status (%d) does not match sub-board configuration: %d",
+					sub, msgbase.max_age, msgbase.cfg.max_age));
+			msgbase.close();
+		}
+		return output;
+	},
+	
 	check_sub_codes: function(options)
 	{
 		return check_codes("msg sub-board", msg_area.grp_list, 'sub_list');
