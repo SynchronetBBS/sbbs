@@ -3668,7 +3668,7 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	JSObject*	inarray[3]={NULL, NULL, NULL};
-	int		inarray_cnt = 0;
+	jsuint		inarray_cnt = 0;
 	JSObject*	robj;
 	JSObject*	rarray;
 	BOOL		poll_for_write=FALSE;
