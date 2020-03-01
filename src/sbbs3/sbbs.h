@@ -790,8 +790,8 @@ public:
 	long	getkeys(const char *str, ulong max, long mode = K_UPPER);
 	void	ungetkey(char ch);		/* Places 'ch' into the input buffer    */
 	char	question[MAX_TEXTDAT_ITEM_LEN+1];
-	bool	yesno(const char *str);
-	bool	noyes(const char *str);
+	bool	yesno(const char *str, long mode = 0);
+	bool	noyes(const char *str, long mode = 0);
 	void	pause(void);
 	const char *	mnestr;
 	void	mnemonics(const char *str);
