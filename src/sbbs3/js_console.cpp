@@ -1979,11 +1979,11 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,310
 	},
 	{"gettemplate",		js_gettemplate,		1, JSTYPE_STRING,	JSDOCSTR("format [,string] [,mode=<tt>0</tt>]")
-	,JSDOCSTR("get a string based on template")
+	,JSDOCSTR("get an input string based on specified template")
 	,310
 	},
 	{"ungetstr",		js_ungetstr,		1, JSTYPE_VOID,		JSDOCSTR("keys")
-	,JSDOCSTR("put a data (e.g. a string of characters) in the keyboard input buffer")
+	,JSDOCSTR("put one or more characters in the keyboard input buffer")
 	,310
 	},
 	{"yesno",			js_yesno,			1, JSTYPE_BOOLEAN,	JSDOCSTR("question [,mode = P_NONE]")
