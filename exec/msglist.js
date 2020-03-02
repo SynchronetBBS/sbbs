@@ -607,7 +607,7 @@ function mail_reply(msg)
 			addr = msg.from + '@' + msg.from_net_addr;
 		else
 			addr = msg.from_net_addr;
-		write(bbs.text(EnterNetMailAddress));
+		console.putmsg(bbs.text(EnterNetMailAddress));
 		addr = console.getstr(addr, 128, K_EDIT|K_AUTODEL|K_LINE);
 		if(!addr || console.aborted)
 			return;
