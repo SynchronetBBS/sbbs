@@ -38,6 +38,10 @@
  * 2020-03-03 Eric Oulashin     Updated the postMsgToSubBoard() to ensure the user
  *                              has posting access to the sub-board before posting the
  *                              message.
+ * 2020-03-04 Eric Oulashin     Updated the way postMsgToSubBoard() checks whether
+ *                              the user can post in a sub-board by checking the can_post
+ *                              property of the sub-board rather than checking the
+ *                              ARS.  The can_post property covers more cases.
  */
  
 if (typeof(require) === "function")
@@ -3562,7 +3566,7 @@ function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
 
 	// Check the posting access requirements for this sub-board.  If the
 	// user is not able to post in this sub-board, then don't let them.
-	if (!user.compare_ars(msg_area.sub[pSubBoardCode].post_ars))
+	if (!msg_area.sub[pSubBoardCode].can_post)
 		return fromUser.name + " cannot post in " + pSubBoardCode;
 
 	// Open the sub-board so that the message can be posted there.

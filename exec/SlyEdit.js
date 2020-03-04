@@ -104,6 +104,11 @@
  *                              spell check is allowed.  You might want to disable
  *                              spell check if the spell check feature causes SlyEdit
  *                              to abort with an error saying it's out of memory.
+ * 2020-03-04 Eric Oulashin     Version 1.72
+ *                              For cross-posting, to make sure the user can post in a
+ *                              sub-board, SlyEdit now checks the can_post property of
+ *                              the sub-board rather than checking the ARS.  The can_post
+ *                              property covers more cases.
  */
 
 /* Command-line arguments:
@@ -200,8 +205,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.71";
-const EDITOR_VER_DATE = "2020-03-03";
+const EDITOR_VERSION = "1.72";
+const EDITOR_VER_DATE = "2020-03-04";
 
 
 // Program variables
@@ -789,7 +794,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 
 					// Write the cross-posting message area on the user's screen.
 					printf("\1n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
-					if (user.compare_ars(msg_area.sub[subCode].post_ars))
+					if (msg_area.sub[subCode].can_post)
 					{
 						// If the user's auto-sign setting is enabled, then auto-sign
 						// the message and append their signature afterward.  Otherwise,
@@ -5760,7 +5765,7 @@ function crossPosting_selectSubBoardInGrp(pGrpIndex, pSelBoxUpperLeft, pSelBoxLo
 					// If the user is allowed to post in the selected sub, then add it
 					// to gCrossPostMsgSubs and refresh the line on the screen;
 					// otherwise, show an error message.
-					if (user.compare_ars(msg_area.sub[msgSubCode].post_ars))
+					if (msg_area.sub[msgSubCode].can_post)
 					{
 						gCrossPostMsgSubs.add(msgSubCode);
 						console.gotoxy(pSelBoxUpperLeft.x+1, curpos.y);
@@ -5850,7 +5855,7 @@ function crossPosting_selectSubBoardInGrp(pGrpIndex, pSelBoxUpperLeft, pSelBoxLo
 							// If the user is allowed to post in the selected sub, then add it
 							// to gCrossPostMsgSubs and refresh the line on the screen;
 							// otherwise, show an error message.
-							if (user.compare_ars(msg_area.sub[msgSubCode].post_ars))
+							if (msg_area.sub[msgSubCode].can_post)
 							{
 								gCrossPostMsgSubs.add(msgSubCode);
 								if ((chosenMsgSubIndex >= topMsgSubIndex) && (chosenMsgSubIndex <= bottomMsgSubIndex))
