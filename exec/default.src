@@ -324,7 +324,7 @@ cmdkey /S
 
 cmdkey U
 	print "\r\n\1c\1hList Users\r\n"
-	mnemonics "\r\n~Logons Today, ~Sub-board, or ~All: "
+	mnemonics "\r\n~Logons Today, ~Yesterday, ~Sub-board, or ~All: "
 	getcmd LSAY\r
 
 	cmdkey L
