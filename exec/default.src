@@ -164,7 +164,7 @@ cmdkey ;
 	if_true
 		shift_str 1
 	else
-		getstrupr 40
+		getstr 40
 		end_if
 	exec_bin "str_cmds %s"
 	end_cmd
@@ -202,8 +202,9 @@ if_true
 # Commands
 
 cmdkey A
-	auto_message
+	exec_bin "automsg.js"
 	end_cmd
+    
 cmdkey /A
 	compare_ars ANSI and not GUEST
 	if_false
@@ -227,6 +228,7 @@ cmdkey C
 
 cmdkey D
 	user_defaults
+	exec_bin "termsetup"
 	end_cmd
 
 cmdkey E
@@ -243,7 +245,7 @@ cmdkey /F
 	end_cmd
 
 cmdkey G
-	text_file_section
+	exec_bin "text_sec"
 	end_cmd
 
 cmdkey I
@@ -253,6 +255,10 @@ cmdkey I
 cmdkey J
 	msg_select_area
 	end_cmd
+    
+cmdkey L
+    exec_bin "msglist"
+    end_cmd
 
 cmdkey /L
 	exec_bin "nodelist"
@@ -319,10 +325,13 @@ cmdkey /S
 cmdkey U
 	print "\r\n\1c\1hList Users\r\n"
 	mnemonics "\r\n~Logons Today, ~Sub-board, or ~All: "
-	getcmd LSA\r
+	getcmd LSAY\r
 
 	cmdkey L
-		userlist_logons
+		exec_bin "logonlist"
+		end_cmd
+	cmdkey Y
+		exec_bin "logonlist -y"
 		end_cmd
 	cmdkey S
 		userlist_sub
@@ -634,7 +643,7 @@ cmdkey ;
 	if_true
 		shift_str 1
 	else
-                getstrupr 40
+        getstr 40
 		end_if
 	exec_bin "str_cmds %s"
 	end_cmd
