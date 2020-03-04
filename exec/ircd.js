@@ -202,6 +202,9 @@ js.auto_terminate=false; // we handle our own termination requests
 ///// Main Loop /////
 while (!js.terminated) {
 
+	if(file_date(system.ctrl_dir + "ircd.rehash") > time_config_read)
+		read_config_file();
+
 	// Setup a new socket if a connection is accepted.
 	for (pl in open_plines) {
 		if (open_plines[pl].poll()) {
@@ -698,6 +701,8 @@ function search_nickbuf(bufnick) {
 	return 0;
 }
 
+var time_config_read;
+
 function read_config_file() {
 	/* All of these variables are global. */
 	Admin1 = "";
@@ -735,6 +740,8 @@ function read_config_file() {
 		read_ini_config(fname);
 	else
 		read_conf_config(fname);
+
+	time_config_read = time();
 }
 
 function read_ini_config(fname) {
