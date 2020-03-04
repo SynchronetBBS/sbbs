@@ -174,7 +174,7 @@ var ESC_MENU_USER_SETTINGS = 12;
 var ESC_MENU_SPELL_CHECK = 13;
 
 
-var COPYRIGHT_YEAR = 2019;
+var COPYRIGHT_YEAR = 2020;
 
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.
@@ -558,7 +558,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 
 	// inputLoopeExitKeys is an object containing additional keypresses that will
 	// exit the input loop.
-	this.inputLoopExitKeys = new Object();
+	this.inputLoopExitKeys = {};
 
 	// For drawing the menu
 	this.pageNum = 0;
@@ -682,35 +682,35 @@ function ChoiceScrollbox_DelTextItem(pItemIndexOrStr)
 }
 function ChoiceScrollbox_ChgCharInTextItem(pItemIndexOrStr, pStrIndex, pNewText)
 {
-   // Find the item index
-   var itemIndex = -1;
-   if (typeof(pItemIndexOrStr) == "number")
-   {
-      if ((pItemIndexOrStr < 0) || (pItemIndexOrStr >= this.txtItemList.length))
-         return false;
-      else
-         itemIndex = pItemIndexOrStr;
-   }
-   else if (typeof(pItemIndexOrStr) == "string")
-   {
-      itemIndex = -1;
-      for (var i = 0; (i < this.txtItemList.length) && (itemIndex == -1); ++i)
-      {
-         if (this.txtItemList[i] == pItemIndexOrStr)
-            itemIndex = i;
-      }
-   }
-   else
-      return false;
+	// Find the item index
+	var itemIndex = -1;
+	if (typeof(pItemIndexOrStr) == "number")
+	{
+		if ((pItemIndexOrStr < 0) || (pItemIndexOrStr >= this.txtItemList.length))
+			return false;
+		else
+			itemIndex = pItemIndexOrStr;
+	}
+	else if (typeof(pItemIndexOrStr) == "string")
+	{
+		itemIndex = -1;
+		for (var i = 0; (i < this.txtItemList.length) && (itemIndex == -1); ++i)
+		{
+			if (this.txtItemList[i] == pItemIndexOrStr)
+				itemIndex = i;
+		}
+	}
+	else
+		return false;
 
-   // Change the character in the item
-   var changedIt = false;
-   if ((itemIndex > -1) && (itemIndex < this.txtItemList.length))
-   {
-      this.txtItemList[itemIndex] = chgCharInStr(this.txtItemList[itemIndex], pStrIndex, pNewText);
-      changedIt = true;
-   }
-   return changedIt;
+	// Change the character in the item
+	var changedIt = false;
+	if ((itemIndex > -1) && (itemIndex < this.txtItemList.length))
+	{
+		this.txtItemList[itemIndex] = chgCharInStr(this.txtItemList[itemIndex], pStrIndex, pNewText);
+		changedIt = true;
+	}
+	return changedIt;
 }
 function ChoiceScrollbox_GetChosenTextItemIndex()
 {
@@ -1327,8 +1327,9 @@ function displayHelpHeader()
 //  pIsSysop: Whether or not the user is the sysop.
 //  pTxtReplacments: Whether or not the text replacements feature is enabled
 //  pUserSettings: Whether or not the user settings feature is enabled
+//  pSpellCheck: Whether or not spell check is allowed
 function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSysop,
-                             pTxtReplacments, pUserSettings)
+                             pTxtReplacments, pUserSettings, pSpellCheck)
 {
 	if (pClear)
 		console.clear("\1n");
@@ -1390,7 +1391,6 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-W", "Word/text search", true);
 	displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
 	                             "Ctrl-D", "Delete line", true);
-	displayCmdKeyFormattedDouble("Ctrl-R", "Spell checker", "ESC", "Command menu", true);
 	if (isSysop)
 		displayCmdKeyFormattedDouble("Ctrl-O", "Import a file", "Ctrl-X", "Export to file", true);
 	if (pUserSettings && pCanCrossPost)
@@ -1399,7 +1399,9 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 		displayCmdKeyFormatted("Ctrl-C", "Cross-post selection", true);
 	else if (pUserSettings && !pCanCrossPost)
 		displayCmdKeyFormatted("Ctrl-U", "Your user settings", true);
-	displayCmdKeyFormatted("Ctrl-S", "Change subject", true);
+	displayCmdKeyFormattedDouble("Ctrl-S", "Change subject", "ESC", "Command menu", true);
+	if (pSpellCheck)
+		displayCmdKeyFormatted("Ctrl-R", "Spell checker", true);
 
 	if (pPause)
 		console.pause();
@@ -1563,150 +1565,154 @@ function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswer
 // Return value: An object containing the settings as properties.
 function ReadSlyEditConfigFile()
 {
-	var cfgObj = new Object(); // Configuration object
+	var cfgObj = {
+		userIsSysop: user.compare_ars("SYSOP"), // Whether or not the user is a sysop
+		// Default settings
+		thirdPartyLoadOnStart: [],
+		runJSOnStart: [],
+		thirdPartyLoadOnExit: [],
+		runJSOnExit: [],
+		displayEndInfoScreen: true,
+		userInputTimeout: true,
+		inputTimeoutMS: 300000,
+		reWrapQuoteLines: true,
+		allowColorSelection: true,
+		useQuoteLineInitials: true,
+		indentQuoteLinesWithInitials: true,
+		allowCrossPosting: true,
+		enableTextReplacements: false,
+		textReplacementsUseRegex: false,
+		enableTaglines: false,
+		tagLineFilename: genFullPathCfgFilename("SlyEdit_Taglines.txt", gStartupPath),
+		taglinePrefix: "... ",
+		quoteTaglines: false,
+		shuffleTaglines: false,
+		allowUserSettings: true,
+		allowEditQuoteLines: true,
+		allowSpellCheck: true,
+		dictionaryFilenames: [],
 
-	cfgObj.userIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
-	// Default settings
-	cfgObj.thirdPartyLoadOnStart = [];
-	cfgObj.runJSOnStart = [];
-	cfgObj.thirdPartyLoadOnExit = [];
-	cfgObj.runJSOnExit = [];
-	cfgObj.displayEndInfoScreen = true;
-	cfgObj.userInputTimeout = true;
-	cfgObj.inputTimeoutMS = 300000;
-	cfgObj.reWrapQuoteLines = true;
-	cfgObj.allowColorSelection = true;
-	cfgObj.useQuoteLineInitials = true;
-	cfgObj.indentQuoteLinesWithInitials = true;
-	cfgObj.allowCrossPosting = true;
-	cfgObj.enableTextReplacements = false;
-	cfgObj.textReplacementsUseRegex = false;
-	cfgObj.enableTaglines = false;
-	cfgObj.tagLineFilename = genFullPathCfgFilename("SlyEdit_Taglines.txt", gStartupPath);
-	cfgObj.taglinePrefix = "... ";
-	cfgObj.quoteTaglines = false;
-	cfgObj.shuffleTaglines = false;
-	cfgObj.allowUserSettings = true;
-	cfgObj.allowEditQuoteLines = true;
-	cfgObj.dictionaryFilenames = [];
+		// General SlyEdit color settings
+		genColors: {
+			// Cross-posting UI element colors
+			listBoxBorder: "\1n\1g",
+			listBoxBorderText: "\1n\1b\1h",
+			crossPostMsgAreaNum: "\1n\1h\1w",
+			crossPostMsgAreaNumHighlight: "\1n\1" + "4\1h\1w",
+			crossPostMsgAreaDesc: "\1n\1c",
+			crossPostMsgAreaDescHighlight: "\1n\1" + "4\1c",
+			crossPostChk: "\1n\1h\1y",
+			crossPostChkHighlight: "\1n\1" + "4\1h\1y",
+			crossPostMsgGrpMark: "\1n\1h\1g",
+			crossPostMsgGrpMarkHighlight: "\1n\1" + "4\1h\1g",
+			// Colors for certain output strings
+			msgWillBePostedHdr: "\1n\1c",
+			msgPostedGrpHdr: "\1n\1h\1b",
+			msgPostedSubBoardName: "\1n\1g",
+			msgPostedOriginalAreaText: "\1n\1c",
+			msgHasBeenSavedText: "\1n\1h\1c",
+			msgAbortedText: "\1n\1m\1h",
+			emptyMsgNotSentText: "\1n\1m\1h",
+			genMsgErrorText: "\1n\1m\1h",
+			listBoxItemText: "\1n\1c",
+			listBoxItemHighlight: "\1n\1" + "4\1w\1h"
+		},
 
-	// General SlyEdit color settings
-	cfgObj.genColors = new Object();
-	// Cross-posting UI element colors
-	cfgObj.genColors.listBoxBorder = "\1n\1g";
-	cfgObj.genColors.listBoxBorderText = "\1n\1b\1h";
-	cfgObj.genColors.crossPostMsgAreaNum = "\1n\1h\1w";
-	cfgObj.genColors.crossPostMsgAreaNumHighlight = "\1n\1" + "4\1h\1w";
-	cfgObj.genColors.crossPostMsgAreaDesc = "\1n\1c";
-	cfgObj.genColors.crossPostMsgAreaDescHighlight = "\1n\1" + "4\1c";
-	cfgObj.genColors.crossPostChk = "\1n\1h\1y";
-	cfgObj.genColors.crossPostChkHighlight = "\1n\1" + "4\1h\1y";
-	cfgObj.genColors.crossPostMsgGrpMark = "\1n\1h\1g";
-	cfgObj.genColors.crossPostMsgGrpMarkHighlight = "\1n\1" + "4\1h\1g";
-	// Colors for certain output strings
-	cfgObj.genColors.msgWillBePostedHdr = "\1n\1c";
-	cfgObj.genColors.msgPostedGrpHdr = "\1n\1h\1b";
-	cfgObj.genColors.msgPostedSubBoardName = "\1n\1g";
-	cfgObj.genColors.msgPostedOriginalAreaText = "\1n\1c";
-	cfgObj.genColors.msgHasBeenSavedText = "\1n\1h\1c";
-	cfgObj.genColors.msgAbortedText = "\1n\1m\1h";
-	cfgObj.genColors.emptyMsgNotSentText = "\1n\1m\1h";
-	cfgObj.genColors.genMsgErrorText = "\1n\1m\1h";
-	cfgObj.genColors.listBoxItemText = "\1n\1c";
-	cfgObj.genColors.listBoxItemHighlight = "\1n\1" + "4\1w\1h";
+		// Default Ice-style colors
+		iceColors: {
+			menuOptClassicColors: true,
+			// Ice color theme file
+			ThemeFilename: genFullPathCfgFilename("SlyIceColors_BlueIce.cfg", gStartupPath),
+			// Text edit color
+			TextEditColor: "\1n\1w",
+			// Quote line color
+			QuoteLineColor: "\1n\1c",
+			// Ice colors for the quote window
+			QuoteWinText: "\1n\1h\1w",            // White
+			QuoteLineHighlightColor: "\1" + "4\1h\1c", // High cyan on blue background
+			QuoteWinBorderTextColor: "\1n\1c\1h", // Bright cyan
+			BorderColor1: "\1n\1b",              // Blue
+			BorderColor2: "\1n\1b\1h",          // Bright blue
+			// Ice colors for multi-choice prompts
+			SelectedOptionBorderColor: "\1n\1b\1h\1" + "4",
+			SelectedOptionTextColor: "\1n\1c\1h\1" + "4",
+			UnselectedOptionBorderColor: "\1n\1b",
+			UnselectedOptionTextColor: "\1n\1w",
+			// Ice colors for the top info area
+			TopInfoBkgColor: "\1" + "4",
+			TopLabelColor: "\1c\1h",
+			TopLabelColonColor: "\1b\1h",
+			TopToColor: "\1w\1h",
+			TopFromColor: "\1w\1h",
+			TopSubjectColor: "\1w\1h",
+			TopTimeColor: "\1g\1h",
+			TopTimeLeftColor: "\1g\1h",
+			EditMode: "\1c\1h",
+			KeyInfoLabelColor: "\1c\1h"
+		},
 
-	// Default Ice-style colors
-	cfgObj.iceColors = new Object();
-	cfgObj.iceColors.menuOptClassicColors = true;
-	// Ice color theme file
-	cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename("SlyIceColors_BlueIce.cfg", gStartupPath);
-	// Text edit color
-	cfgObj.iceColors.TextEditColor = "\1n\1w";
-	// Quote line color
-	cfgObj.iceColors.QuoteLineColor = "\1n\1c";
-	// Ice colors for the quote window
-	cfgObj.iceColors.QuoteWinText = "\1n\1h\1w";            // White
-	cfgObj.iceColors.QuoteLineHighlightColor = "\1" + "4\1h\1c"; // High cyan on blue background
-	cfgObj.iceColors.QuoteWinBorderTextColor = "\1n\1c\1h"; // Bright cyan
-	cfgObj.iceColors.BorderColor1 = "\1n\1b";              // Blue
-	cfgObj.iceColors.BorderColor2 = "\1n\1b\1h";          // Bright blue
-	// Ice colors for multi-choice prompts
-	cfgObj.iceColors.SelectedOptionBorderColor = "\1n\1b\1h\1" + "4";
-	cfgObj.iceColors.SelectedOptionTextColor = "\1n\1c\1h\1" + "4"
-	cfgObj.iceColors.UnselectedOptionBorderColor = "\1n\1b";
-	cfgObj.iceColors.UnselectedOptionTextColor = "\1n\1w";
-	// Ice colors for the top info area
-	cfgObj.iceColors.TopInfoBkgColor = "\1" + "4";
-	cfgObj.iceColors.TopLabelColor = "\1c\1h";
-	cfgObj.iceColors.TopLabelColonColor = "\1b\1h";
-	cfgObj.iceColors.TopToColor = "\1w\1h";
-	cfgObj.iceColors.TopFromColor = "\1w\1h";
-	cfgObj.iceColors.TopSubjectColor = "\1w\1h";
-	cfgObj.iceColors.TopTimeColor = "\1g\1h";
-	cfgObj.iceColors.TopTimeLeftColor = "\1g\1h";
-	cfgObj.iceColors.EditMode = "\1c\1h";
-	cfgObj.iceColors.KeyInfoLabelColor = "\1c\1h";
-
-	// Default DCT-style colors
-	cfgObj.DCTColors = new Object();
-	// DCT color theme file
-	cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename("SlyDCTColors_Default.cfg", gStartupPath);
-	// Text edit color
-	cfgObj.DCTColors.TextEditColor = "\1n\1w";
-	// Quote line color
-	cfgObj.DCTColors.QuoteLineColor = "\1n\1c";
-	// DCT colors for the border stuff
-	cfgObj.DCTColors.TopBorderColor1 = "\1n\1r";
-	cfgObj.DCTColors.TopBorderColor2 = "\1n\1r\1h";
-	cfgObj.DCTColors.EditAreaBorderColor1 = "\1n\1g";
-	cfgObj.DCTColors.EditAreaBorderColor2 = "\1n\1g\1h";
-	cfgObj.DCTColors.EditModeBrackets = "\1n\1k\1h";
-	cfgObj.DCTColors.EditMode = "\1n\1w";
-	// DCT colors for the top informational area
-	cfgObj.DCTColors.TopLabelColor = "\1n\1b\1h";
-	cfgObj.DCTColors.TopLabelColonColor = "\1n\1b";
-	cfgObj.DCTColors.TopFromColor = "\1n\1c\1h";
-	cfgObj.DCTColors.TopFromFillColor = "\1n\1c";
-	cfgObj.DCTColors.TopToColor = "\1n\1c\1h";
-	cfgObj.DCTColors.TopToFillColor = "\1n\1c";
-	cfgObj.DCTColors.TopSubjColor = "\1n\1w\1h";
-	cfgObj.DCTColors.TopSubjFillColor = "\1n\1w";
-	cfgObj.DCTColors.TopAreaColor = "\1n\1g\1h";
-	cfgObj.DCTColors.TopAreaFillColor = "\1n\1g";
-	cfgObj.DCTColors.TopTimeColor = "\1n\1y\1h";
-	cfgObj.DCTColors.TopTimeFillColor = "\1n\1r";
-	cfgObj.DCTColors.TopTimeLeftColor = "\1n\1y\1h";
-	cfgObj.DCTColors.TopTimeLeftFillColor = "\1n\1r";
-	cfgObj.DCTColors.TopInfoBracketColor = "\1n\1m";
-	// DCT colors for the quote window
-	cfgObj.DCTColors.QuoteWinText = "\1n\1" + "7\1k";
-	cfgObj.DCTColors.QuoteLineHighlightColor = "\1n\1w";
-	cfgObj.DCTColors.QuoteWinBorderTextColor = "\1n\1" + "7\1r";
-	cfgObj.DCTColors.QuoteWinBorderColor = "\1n\1k\1" + "7";
-	// DCT colors for the quote window
-	cfgObj.DCTColors.QuoteWinText = "\1n\1" + "7\1b";
-	cfgObj.DCTColors.QuoteLineHighlightColor = "\1n\1w";
-	cfgObj.DCTColors.QuoteWinBorderTextColor = "\1n\1" + "7\1r";
-	cfgObj.DCTColors.QuoteWinBorderColor = "\1n\1k\1" + "7";
-	// DCT colors for the bottom row help text
-	cfgObj.DCTColors.BottomHelpBrackets = "\1n\1k\1h";
-	cfgObj.DCTColors.BottomHelpKeys = "\1n\1r\1h";
-	cfgObj.DCTColors.BottomHelpFill = "\1n\1r";
-	cfgObj.DCTColors.BottomHelpKeyDesc = "\1n\1c";
-	// DCT colors for text boxes
-	cfgObj.DCTColors.TextBoxBorder = "\1n\1k\1" + "7";
-	cfgObj.DCTColors.TextBoxBorderText = "\1n\1r\1" + "7";
-	cfgObj.DCTColors.TextBoxInnerText = "\1n\1b\1" + "7";
-	cfgObj.DCTColors.YesNoBoxBrackets = "\1n\1k\1" + "7";
-	cfgObj.DCTColors.YesNoBoxYesNoText = "\1n\1w\1h\1" + "7";
-	// DCT colors for the menus
-	cfgObj.DCTColors.SelectedMenuLabelBorders = "\1n\1w";
-	cfgObj.DCTColors.SelectedMenuLabelText = "\1n\1k\1" + "7";
-	cfgObj.DCTColors.UnselectedMenuLabelText = "\1n\1w\1h";
-	cfgObj.DCTColors.MenuBorders = "\1n\1k\1" + "7";
-	cfgObj.DCTColors.MenuSelectedItems = "\1n\1w";
-	cfgObj.DCTColors.MenuUnselectedItems = "\1n\1k\1" + "7";
-	cfgObj.DCTColors.MenuHotkeys = "\1n\1w\1h\1" + "7";
+		// Default DCT-style colors
+		DCTColors: {
+			// DCT color theme file
+			ThemeFilename: genFullPathCfgFilename("SlyDCTColors_Default.cfg", gStartupPath),
+			// Text edit color
+			TextEditColor: "\1n\1w",
+			// Quote line color
+			QuoteLineColor: "\1n\1c",
+			// DCT colors for the border stuff
+			TopBorderColor1: "\1n\1r",
+			TopBorderColor2: "\1n\1r\1h",
+			EditAreaBorderColor1: "\1n\1g",
+			EditAreaBorderColor2: "\1n\1g\1h",
+			EditModeBrackets: "\1n\1k\1h",
+			EditMode: "\1n\1w",
+			// DCT colors for the top informational area
+			TopLabelColor: "\1n\1b\1h",
+			TopLabelColonColor: "\1n\1b",
+			TopFromColor: "\1n\1c\1h",
+			TopFromFillColor: "\1n\1c",
+			TopToColor: "\1n\1c\1h",
+			TopToFillColor: "\1n\1c",
+			TopSubjColor: "\1n\1w\1h",
+			TopSubjFillColor: "\1n\1w",
+			TopAreaColor: "\1n\1g\1h",
+			TopAreaFillColor: "\1n\1g",
+			TopTimeColor: "\1n\1y\1h",
+			TopTimeFillColor: "\1n\1r",
+			TopTimeLeftColor: "\1n\1y\1h",
+			TopTimeLeftFillColor: "\1n\1r",
+			TopInfoBracketColor: "\1n\1m",
+			// DCT colors for the quote window
+			QuoteWinText: "\1n\1" + "7\1k",
+			QuoteLineHighlightColor: "\1n\1w",
+			QuoteWinBorderTextColor: "\1n\1" + "7\1r",
+			QuoteWinBorderColor: "\1n\1k\1" + "7",
+			// DCT colors for the quote window
+			QuoteWinText: "\1n\1" + "7\1b",
+			QuoteLineHighlightColor: "\1n\1w",
+			QuoteWinBorderTextColor: "\1n\1" + "7\1r",
+			QuoteWinBorderColor: "\1n\1k\1" + "7",
+			// DCT colors for the bottom row help text
+			BottomHelpBrackets: "\1n\1k\1h",
+			BottomHelpKeys: "\1n\1r\1h",
+			BottomHelpFill: "\1n\1r",
+			BottomHelpKeyDesc: "\1n\1c",
+			// DCT colors for text boxes
+			TextBoxBorder: "\1n\1k\1" + "7",
+			TextBoxBorderText: "\1n\1r\1" + "7",
+			TextBoxInnerText: "\1n\1b\1" + "7",
+			YesNoBoxBrackets: "\1n\1k\1" + "7",
+			YesNoBoxYesNoText: "\1n\1w\1h\1" + "7",
+			// DCT colors for the menus
+			SelectedMenuLabelBorders: "\1n\1w",
+			SelectedMenuLabelText: "\1n\1k\1" + "7",
+			UnselectedMenuLabelText: "\1n\1w\1h",
+			MenuBorders: "\1n\1k\1" + "7",
+			MenuSelectedItems: "\1n\1w",
+			MenuUnselectedItems: "\1n\1k\1" + "7",
+			MenuHotkeys: "\1n\1w\1h\1" + "7"
+		}
+	}
 
 	// Open the SlyEdit configuration file
 	var slyEdCfgFileName = genFullPathCfgFilename("SlyEdit.cfg", gStartupPath);
@@ -1827,6 +1833,8 @@ function ReadSlyEditConfigFile()
 						cfgObj.allowUserSettings = (valueUpper == "TRUE");
 					else if (settingUpper == "ALLOWEDITQUOTELINES")
 						cfgObj.allowEditQuoteLines = (valueUpper == "TRUE");
+					else if (settingUpper == "ALLOWSPELLCHECK")
+						cfgObj.allowSpellCheck = (valueUpper == "TRUE");
 					else if (settingUpper == "DICTIONARYFILENAMES")
 						cfgObj.dictionaryFilenames = parseDictionaryConfig(value, gStartupPath);
 				}

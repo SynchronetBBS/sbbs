@@ -98,6 +98,12 @@
  *                              where some quote blocks were sometimes not being included when
  *                              saving a message.  Also, quote lines are now wrapped
  *                              to the user's terminal width rather than 80 columns.
+ * 2020-03-03 Eric Oulashin     Version 1.71
+ *                              Added a new configuration option, allowSpellCheck,
+ *                              which the sysop can use to configure whether or not
+ *                              spell check is allowed.  You might want to disable
+ *                              spell check if the spell check feature causes SlyEdit
+ *                              to abort with an error saying it's out of memory.
  */
 
 /* Command-line arguments:
@@ -194,8 +200,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.70";
-const EDITOR_VER_DATE = "2019-08-15";
+const EDITOR_VERSION = "1.71";
+const EDITOR_VER_DATE = "2020-03-03";
 
 
 // Program variables
@@ -1121,7 +1127,8 @@ function doEditLoop()
 			case CMDLIST_HELP_KEY:
 			case CMDLIST_HELP_KEY_2:
 				displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
-				                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
+				                   gConfigSettings.enableTextReplacements,
+				                   gConfigSettings.allowUserSettings, gConfigSettings.allowSpellCheck);
 				clearEditAreaBuffer();
 				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
 				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
@@ -1427,7 +1434,9 @@ function doEditLoop()
 						{
 							displayProgramInfo(true, false);
 							displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop,
-							                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
+							                   gConfigSettings.enableTextReplacements,
+							                   gConfigSettings.allowUserSettings,
+							                   gConfigSettings.allowSpellCheck);
 							clearEditAreaBuffer();
 							fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
 							               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
@@ -1475,11 +1484,14 @@ function doEditLoop()
 				console.print(chooseEditColor()); // Make sure the edit color is correct
 				break;
 			case SPELL_CHECK_KEY:
-				var spellCheckRetObj = doSpellCheck(curpos, true);
-				curpos.x = spellCheckRetObj.x;
-				curpos.y = spellCheckRetObj.y;
-				currentWordLength = spellCheckRetObj.currentWordLength;
-				console.print(chooseEditColor()); // Make sure the edit color is correct
+				if (gConfigSettings.allowSpellCheck)
+				{
+					var spellCheckRetObj = doSpellCheck(curpos, true);
+					curpos.x = spellCheckRetObj.x;
+					curpos.y = spellCheckRetObj.y;
+					currentWordLength = spellCheckRetObj.currentWordLength;
+					console.print(chooseEditColor()); // Make sure the edit color is correct
+				}
 				break;
 			case IMPORT_FILE_KEY:
 				// Only let sysops import files.
@@ -1696,11 +1708,12 @@ function doEditLoop()
 	}
 
 
-	// If the user has not aborted the message, then prompt for spell check and adding
-	// a tagline if those options are enabled in the user settings
+	// If the user has not aborted the message, then if spell check is allowed,
+	// prompt for spell check and adding a tagline if those options are enabled
+	// in the user settings
 	if (returnCode == 0)
 	{
-		if (gUserSettings.promptSpellCheckOnSave)
+		if (gConfigSettings.allowSpellCheck && gUserSettings.promptSpellCheckOnSave)
 			doSpellCheck(curpos, true);
 
 		// If taglines is enabled in the user settings and the user is not editing their signature & is not editing an existing message, then
@@ -3615,7 +3628,9 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 			break;
 		case ESC_MENU_HELP_COMMAND_LIST:
 			displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
-			                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
+			                   gConfigSettings.enableTextReplacements,
+			                   gConfigSettings.allowUserSettings,
+			                   gConfigSettings.allowSpellCheck);
 			clearEditAreaBuffer();
 			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode,
 			               gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop), displayEditLines);
@@ -6340,7 +6355,9 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	// Add the options to the option box
 	const checkIdx = 48;
 	const TAGLINE_OPT_INDEX = optionBox.addTextItem("Taglines                                       [ ]");
-	const SPELLCHECK_ON_SAVE_OPT_INDEX = optionBox.addTextItem("Prompt for spell checker on save               [ ]");
+	var SPELLCHECK_ON_SAVE_OPT_INDEX = -1;
+	if (gConfigSettings.allowSpellCheck)
+		SPELLCHECK_ON_SAVE_OPT_INDEX = optionBox.addTextItem("Prompt for spell checker on save               [ ]");
 	const QUOTE_INITIALS_OPT_INDEX = optionBox.addTextItem("Quote with author's initials                   [ ]");
 	const QUOTE_INITIALS_INDENT_OPT_INDEX = optionBox.addTextItem("Indent quote lines containing initials         [ ]");
 	const TRIM_QUOTE_SPACES_OPT_INDEX = optionBox.addTextItem("Trim spaces from quote lines                   [ ]");
@@ -6352,7 +6369,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 		DICTIONARY_OPT_INDEX = optionBox.addTextItem("Spell-check dictionary/dictionaries");
 	if (gUserSettings.enableTaglines)
 		optionBox.chgCharInTextItem(TAGLINE_OPT_INDEX, checkIdx, CHECK_CHAR);
-	if (gUserSettings.promptSpellCheckOnSave)
+	if (gConfigSettings.allowSpellCheck && gUserSettings.promptSpellCheckOnSave)
 		optionBox.chgCharInTextItem(SPELLCHECK_ON_SAVE_OPT_INDEX, checkIdx, CHECK_CHAR);
 	if (gUserSettings.useQuoteLineInitials)
 		optionBox.chgCharInTextItem(QUOTE_INITIALS_OPT_INDEX, checkIdx, CHECK_CHAR);
@@ -6368,9 +6385,10 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 		optionBox.chgCharInTextItem(SIGN_EMAILS_REAL_NAME_OPT_INDEX, checkIdx, CHECK_CHAR);
 
 	// Create an object containing toggle values (true/false) for each option index
-	var optionToggles = new Object();
+	var optionToggles = {};
 	optionToggles[TAGLINE_OPT_INDEX] = gUserSettings.enableTaglines;
-	optionToggles[SPELLCHECK_ON_SAVE_OPT_INDEX] = gUserSettings.promptSpellCheckOnSave;
+	if (gConfigSettings.allowSpellCheck)
+		optionToggles[SPELLCHECK_ON_SAVE_OPT_INDEX] = gUserSettings.promptSpellCheckOnSave;
 	optionToggles[QUOTE_INITIALS_OPT_INDEX] = gUserSettings.useQuoteLineInitials;
 	optionToggles[QUOTE_INITIALS_INDENT_OPT_INDEX] = gUserSettings.indentQuoteLinesWithInitials;
 	optionToggles[TRIM_QUOTE_SPACES_OPT_INDEX] = gUserSettings.trimSpacesFromQuoteLines;
