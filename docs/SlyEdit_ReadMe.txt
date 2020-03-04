@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.68
-                        Release date: 2019-08-09
+                              Version 1.71
+                        Release date: 2020-03-03
 
                                   by
 
@@ -326,6 +326,12 @@ allowEditQuoteLines               Whether or not to allow the user to edit
                                   quote lines.  Valid values are true and
                                   false.  If this option is not specified, the
                                   default value is true.
+
+allowSpellCheck                   Whether or not to allow spell check.  Valid
+                                  values are true and false.  Defaults to true.
+                                  You might want to disable spell check if,
+                                  for instance, the spell check feature causes
+                                  an "out of memory" error on your system.
 
 useQuoteLineInitials              Whether or not to prefix quoted message lines
                                   with the previous author's initials when
