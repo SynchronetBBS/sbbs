@@ -4373,47 +4373,49 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, BOOL orig_
 						directive=strtok_r(header,":",&last);
 						if(directive != NULL)  {
 							value=strtok_r(NULL,"",&last);
-							SKIP_WHITESPACE(value);
-							i=get_header_type(directive);
-							switch (i)  {
-								case HEAD_LOCATION:
-									ret |= CGI_STUFF_VALID_HEADERS;
-									if(*value=='/')  {
-										unescape(value);
-										SAFECOPY(session->req.virtual_path,value);
-										session->req.send_location=MOVED_STAT;
-										if(cgi_status[0]==0)
-											SAFECOPY(cgi_status,error_302);
-									} else  {
-										SAFECOPY(session->req.virtual_path,value);
-										session->req.send_location=MOVED_TEMP;
-										if(cgi_status[0]==0)
-											SAFECOPY(cgi_status,error_302);
-									}
-									break;
-								case HEAD_STATUS:
-									SAFECOPY(cgi_status,value);
-									/*
-									 * 1xx, 204, and 304 responses don't have bodies, so don't
-									 * need a Location or Content-Type header to be valid.
-									 */
-									if (value[0] == '1' || ((value[0] == '2' || value[0] == '3') && value[1] == '0' && value[2] == '4'))
+							if(value != NULL) {
+								SKIP_WHITESPACE(value);
+								i=get_header_type(directive);
+								switch (i)  {
+									case HEAD_LOCATION:
 										ret |= CGI_STUFF_VALID_HEADERS;
-									break;
-								case HEAD_LENGTH:
-									session->req.keep_alive=orig_keep;
-									strListPush(&session->req.dynamic_heads,buf);
-									no_chunked=TRUE;
-									break;
-								case HEAD_TYPE:
-									ret |= CGI_STUFF_VALID_HEADERS;
-									strListPush(&session->req.dynamic_heads,buf);
-									break;
-								case HEAD_TRANSFER_ENCODING:
-									no_chunked=TRUE;
-									break;
-								default:
-									strListPush(&session->req.dynamic_heads,buf);
+										if(*value=='/')  {
+											unescape(value);
+											SAFECOPY(session->req.virtual_path,value);
+											session->req.send_location=MOVED_STAT;
+											if(cgi_status[0]==0)
+												SAFECOPY(cgi_status,error_302);
+										} else  {
+											SAFECOPY(session->req.virtual_path,value);
+											session->req.send_location=MOVED_TEMP;
+											if(cgi_status[0]==0)
+												SAFECOPY(cgi_status,error_302);
+										}
+										break;
+									case HEAD_STATUS:
+										SAFECOPY(cgi_status,value);
+										/*
+										 * 1xx, 204, and 304 responses don't have bodies, so don't
+										 * need a Location or Content-Type header to be valid.
+										 */
+										if (value[0] == '1' || ((value[0] == '2' || value[0] == '3') && value[1] == '0' && value[2] == '4'))
+											ret |= CGI_STUFF_VALID_HEADERS;
+										break;
+									case HEAD_LENGTH:
+										session->req.keep_alive=orig_keep;
+										strListPush(&session->req.dynamic_heads,buf);
+										no_chunked=TRUE;
+										break;
+									case HEAD_TYPE:
+										ret |= CGI_STUFF_VALID_HEADERS;
+										strListPush(&session->req.dynamic_heads,buf);
+										break;
+									case HEAD_TRANSFER_ENCODING:
+										no_chunked=TRUE;
+										break;
+									default:
+										strListPush(&session->req.dynamic_heads,buf);
+								}
 							}
 						}
 						if(directive == NULL || value == NULL) {
