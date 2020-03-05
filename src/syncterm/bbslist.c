@@ -1216,7 +1216,66 @@ void del_bbs(char *listpath, struct bbslist *bbs)
 	}
 }
 
-void change_settings(void)
+/*
+ * This is pretty sketchy...
+ * These are pointers to automatic variables in show_bbslist() which are
+ * used to redraw the entire menu set if the custom mode is current
+ * and is changed.
+ */
+static int *glob_sopt;
+static int *glob_sbar;
+static char **glob_settings_menu;
+
+static int *glob_listcount;
+static int *glob_opt;
+static int *glob_bar;
+static char *glob_list_title;
+static struct bbslist ***glob_list;
+
+/*
+ * This uses the above variables and therefore *must* be called from
+ * show_bbslist().
+ * 
+ * If show_bbslist() is not on the stack, this will do insane things.
+ */
+static void
+custom_mode_adjusted(int *cur, char **opt)
+{
+	struct text_info ti;
+	int cvmode;
+
+	gettextinfo(&ti);
+	if (ti.currmode != CIOLIB_MODE_CUSTOM) {
+		cvmode = find_vmode(ti.currmode);
+		vparams[cvmode].cols = settings.custom_cols;
+		vparams[cvmode].rows = settings.custom_rows;
+		vparams[cvmode].charheight = settings.custom_fontheight;
+		return;
+	}
+
+	uifcbail();
+	textmode(0);
+	cvmode = find_vmode(ti.currmode);
+	vparams[cvmode].cols = settings.custom_cols;
+	vparams[cvmode].rows = settings.custom_rows;
+	vparams[cvmode].charheight = settings.custom_fontheight;
+	textmode(ti.currmode);
+	init_uifc(TRUE, TRUE);
+
+	// Draw BBS List
+	uifc.list((*glob_listcount<MAX_OPTS?WIN_XTR:0)
+		|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
+		|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
+		|WIN_SEL|WIN_INACT
+		,0,0,0,glob_opt,glob_bar,glob_list_title,(char **)*glob_list);
+	// Draw settings menu
+	uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_ACT|WIN_INACT
+		,0,0,0,glob_sopt,glob_sbar,"SyncTERM Settings",glob_settings_menu);
+	// Draw program settings
+	uifc.list(WIN_MID|WIN_SAV|WIN_ACT|WIN_DYN|WIN_SEL|WIN_INACT,0,0,0,cur,NULL,"Program Settings",opt);
+}
+
+void change_settings(int connected)
 {
 	char	inipath[MAX_PATH+1];
 	FILE	*inifile;
@@ -1283,7 +1342,10 @@ void change_settings(void)
 		sprintf(opts[8],"Modem Dial String       %s",settings.mdm.dial_string);
 		sprintf(opts[9],"List Path               %s",settings.list_path);
 		sprintf(opts[10],"TERM For Shell          %s",settings.TERM);
-		sprintf(opts[11],"Custom Screen Mode");
+		if (connected)
+			opt[11] = NULL;
+		else
+			sprintf(opts[11],"Custom Screen Mode");
 		switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				check_exit(FALSE);
@@ -1505,13 +1567,10 @@ void change_settings(void)
 								"        Chooses the font size used by the custom screen mode\n";
 				j = 0;
 				for (k=0; k==0;) {
-					/* TODO: 
-					 * Show current values.
-					 * Apply on change
-					 */
-					subopts[0] = "Rows";
-					subopts[1] = "Columns";
-					subopts[2] = "Font Size";
+					// Beware case 2 below if adding things
+					asprintf(&subopts[0], "Rows      (%d)", settings.custom_rows);
+					asprintf(&subopts[1], "Columns   (%d)", settings.custom_cols);
+					asprintf(&subopts[2], "Font Size (%s)", settings.custom_fontheight == 8 ? "8x8" : settings.custom_fontheight == 14 ? "8x14" : "8x16");
 					subopts[3] = NULL;
 					switch (uifc.list(WIN_SAV,0,0,0,&j,NULL,"Video Output Mode",subopts)) {
 						case -1:
@@ -1531,6 +1590,7 @@ void change_settings(void)
 								else {
 									settings.custom_rows = l;
 									iniSetInteger(&inicontents, "SyncTERM", "CustomRows", settings.custom_rows, &ini_style);
+									custom_mode_adjusted(&cur, opt);
 								}
 							}
 							break;
@@ -1548,16 +1608,17 @@ void change_settings(void)
 								else {
 									settings.custom_cols = l;
 									iniSetInteger(&inicontents, "SyncTERM", "CustomColumns", settings.custom_cols, &ini_style);
+									custom_mode_adjusted(&cur, opt);
 								}
 							}
 							break;
 						case 2:
 							uifc.helpbuf=	"`Font Size`\n\n"
 											"Choose the font size for the custom mode.";
-							subopts[0] = "8x8";
-							subopts[1] = "8x14";
-							subopts[2] = "8x16";
-							subopts[3] = NULL;
+							subopts[4] = "8x8";
+							subopts[5] = "8x14";
+							subopts[6] = "8x16";
+							subopts[7] = NULL;
 							switch(settings.custom_fontheight) {
 								case 8:
 									l = 0;
@@ -1569,24 +1630,30 @@ void change_settings(void)
 									l = 2;
 									break;
 							}
-							switch (uifc.list(WIN_SAV, 0, 0, 0, &l, NULL, "Font Size", subopts)) {
+							switch (uifc.list(WIN_SAV, 0, 0, 0, &l, NULL, "Font Size", &subopts[4])) {
 								case -1:
 									check_exit(FALSE);
 									break;
 								case 0:
 									settings.custom_fontheight = 8;
 									iniSetInteger(&inicontents, "SyncTERM", "CustomFontHeight", settings.custom_fontheight, &ini_style);
+									custom_mode_adjusted(&cur, opt);
 									break;
 								case 1:
 									settings.custom_fontheight = 14;
 									iniSetInteger(&inicontents, "SyncTERM", "CustomFontHeight", settings.custom_fontheight, &ini_style);
+									custom_mode_adjusted(&cur, opt);
 									break;
 								case 2:
 									settings.custom_fontheight = 16;
 									iniSetInteger(&inicontents, "SyncTERM", "CustomFontHeight", settings.custom_fontheight, &ini_style);
+									custom_mode_adjusted(&cur, opt);
 									break;
 							}
 					}
+					free(subopts[0]);
+					free(subopts[1]);
+					free(subopts[2]);
 				}
 		}
 	}
@@ -1662,6 +1729,15 @@ struct bbslist *show_bbslist(char *current, int connected)
 	struct bbslist defaults;
 	char	shared_list[MAX_PATH+1];
 	char list_title[30];
+
+	glob_sbar = &sbar;
+	glob_sopt = &sopt;
+	glob_settings_menu = settings_menu;
+	glob_listcount = &listcount;
+	glob_opt = &opt;
+	glob_bar = &bar;
+	glob_list_title = list_title;
+	glob_list = &list;
 
 	if(init_uifc(connected?FALSE:TRUE, TRUE))
 		return(NULL);
@@ -2062,7 +2138,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 						}
 						break;
 					case 3:			/* Program settings */
-						change_settings();
+						change_settings(connected);
 						load_bbslist(list, BBSLIST_SIZE, &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?strdup(list[opt]->name):NULL);
 						oldopt=-1;
 						break;
