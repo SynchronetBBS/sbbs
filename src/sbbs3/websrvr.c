@@ -85,8 +85,11 @@ static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
 static const char*	http_scheme="http://";
 static const size_t	http_scheme_len=7;
+static const char*	https_scheme="https://";
+static const size_t	https_scheme_len=8;
 static const char*	error_301="301 Moved Permanently";
 static const char*	error_302="302 Moved Temporarily";
+static const char*	error_307="307 Temporary Redirect";
 static const char*	error_404="404 Not Found";
 static const char*	error_416="416 Requested Range Not Satisfiable";
 static const char*	error_500="500 Internal Server Error";
@@ -206,6 +209,9 @@ typedef struct  {
 	char		vhost[128];				/* The requested host. (virtual host) */
 	int			send_location;
 	BOOL			send_content;
+	BOOL			upgrading;
+	char*		location_to_send;
+	char*		vary_list;
 	const char*	mime_type;
 	str_list_t	headers;
 	char		status[MAX_REQUEST_LINE+1];
@@ -360,6 +366,10 @@ enum {
 	,HEAD_RANGE
 	,HEAD_IFRANGE
 	,HEAD_COOKIE
+	,HEAD_STS
+	,HEAD_UPGRADEINSECURE
+	,HEAD_VARY
+	,HEAD_CSP
 };
 
 static struct {
@@ -389,6 +399,10 @@ static struct {
 	{ HEAD_RANGE,			"Range"					},
 	{ HEAD_IFRANGE,			"If-Range"				},
 	{ HEAD_COOKIE,			"Cookie"				},
+	{ HEAD_STS,			"Strict-Transport-Security"		},
+	{ HEAD_UPGRADEINSECURE,		"Upgrade-Insecure-Requests"		},
+	{ HEAD_VARY,			"Vary"					},
+	{ HEAD_CSP,			"Content-Security-Policy"		},
 	{ -1,					NULL /* terminator */	},
 };
 
@@ -396,6 +410,7 @@ static struct {
 enum  {
 	 NO_LOCATION
 	,MOVED_PERM
+	,MOVED_TEMPREDIR
 	,MOVED_TEMP
 	,MOVED_STAT
 };
@@ -1088,6 +1103,8 @@ static void close_request(http_session_t * session)
 	FREE_AND_NULL(session->req.realm);
 	FREE_AND_NULL(session->req.digest_realm);
 	FREE_AND_NULL(session->req.fastcgi_socket);
+	FREE_AND_NULL(session->req.location_to_send);
+	FREE_AND_NULL(session->req.vary_list);
 
 	FREE_AND_NULL(session->req.auth_list);
 	FREE_AND_NULL(session->req.auth.digest_uri);
@@ -1274,17 +1291,21 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 			session->req.range_start=0;
 			session->req.range_end=0;
 		}
-		if(session->req.send_location==MOVED_PERM)  {
-			status_line=error_301;
+		if (session->req.send_location) {
 			ret=-1;
 			session->req.send_content = FALSE;
 			send_entity = FALSE;
-		}
-		if(session->req.send_location==MOVED_TEMP)  {
-			status_line=error_302;
-			ret=-1;
-			session->req.send_content = FALSE;
-			send_entity = FALSE;
+			switch (session->req.send_location) {
+				case MOVED_PERM:
+					status_line=error_301;
+					break;
+				case MOVED_TEMPREDIR:
+					status_line=error_307;
+					break;
+				case MOVED_TEMP:
+					status_line=error_302;
+					break;
+			}
 		}
 
 		stat_code=atoi(status_line);
@@ -1305,6 +1326,12 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		safecat(headers,header,MAX_HEADERS_SIZE);
 
 		/* General Headers */
+		if(session->is_tls && startup->options & WEB_OPT_HSTS_SAFE) {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_STS),"max-age=10886400; preload");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CSP),"block-all-mixed-content");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
 		ti=time(NULL);
 		if(gmtime_r(&ti,&tm)==NULL)
 			memset(&tm,0,sizeof(tm));
@@ -1325,6 +1352,10 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		/* Response Headers */
 		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
 		safecat(headers,header,MAX_HEADERS_SIZE);
+		if (session->req.vary_list) {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_VARY), session->req.vary_list);
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
 
 		/* Entity Headers */
 		if(session->req.dynamic) {
@@ -1341,7 +1372,10 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		}
 
 		if(session->req.send_location) {
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
+			if (session->req.location_to_send)
+				safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.location_to_send));
+			else
+				safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
 			safecat(headers,header,MAX_HEADERS_SIZE);
 		}
 
@@ -2522,6 +2556,7 @@ static BOOL parse_headers(http_session_t * session)
 	size_t	idx;
 	size_t	content_len=0;
 	char	env_name[128];
+	char	portstr[7]; // ":65535"
 
 	for(idx=0;session->req.headers[idx]!=NULL;idx++) {
 		/* TODO: strdup() is possibly too slow here... */
@@ -2725,6 +2760,33 @@ static BOOL parse_headers(http_session_t * session)
 				case HEAD_TYPE:
 					add_env(session,"CONTENT_TYPE",value);
 					break;
+				case HEAD_UPGRADEINSECURE:
+					if (startup->options & WEB_OPT_HSTS_SAFE) {
+						if (strcmp(value, "1") == 0) {
+							if (!session->is_tls) {
+								portstr[0] = 0;
+								if (startup->tls_port != 443)
+									sprintf(portstr, ":%hu", startup->tls_port);
+								p = realloc(session->req.vary_list, (session->req.vary_list ? strlen(session->req.vary_list) + 2 : 0) + strlen(get_header(HEAD_UPGRADEINSECURE)) + 1);
+								if (p == NULL)
+									send_error(session, __LINE__, error_500);
+								else {
+									if (session->req.vary_list)
+										strcat(p, ", ");
+									strcat(p, get_header(HEAD_UPGRADEINSECURE));
+									session->req.vary_list = p;
+
+									session->req.send_location = MOVED_TEMPREDIR;
+									session->req.upgrading = TRUE;
+									session->req.keep_alive = FALSE;
+									FREE_AND_NULL(session->req.location_to_send);
+									if (asprintf(&session->req.location_to_send, "https://%s%s%s", session->req.vhost, portstr, session->req.virtual_path) < 0)
+										send_error(session, __LINE__, error_500);
+								}
+							}
+						}
+					}
+					break;
 				default:
 					break;
 			}
@@ -2925,6 +2987,8 @@ static char *get_request(http_session_t * session, char *req_line)
 	char*	retval;
 	char*	last;
 	int		offset;
+	const char*	scheme = NULL;
+	size_t	scheme_len;
 
 	SKIP_WHITESPACE(req_line);
 	SAFECOPY(session->req.virtual_path,req_line);
@@ -2944,9 +3008,17 @@ static char *get_request(http_session_t * session, char *req_line)
 	SAFECOPY(session->req.physical_path,session->req.virtual_path);
 	unescape(session->req.physical_path);
 
-	if(!strnicmp(session->req.physical_path,http_scheme,http_scheme_len)) {
+	if (strnicmp(session->req.physical_path,http_scheme,http_scheme_len) == 0) {
+		scheme = http_scheme;
+		scheme_len = http_scheme_len;
+	}
+	else if (strnicmp(session->req.physical_path,https_scheme,https_scheme_len) == 0) {
+		scheme = https_scheme;
+		scheme_len = https_scheme_len;
+	}
+	if(scheme != NULL) {
 		/* Remove http:// from start of physical_path */
-		memmove(session->req.physical_path, session->req.physical_path+http_scheme_len, strlen(session->req.physical_path+http_scheme_len)+1);
+		memmove(session->req.physical_path, session->req.physical_path+scheme_len, strlen(session->req.physical_path+scheme_len)+1);
 
 		/* Set HOST value... ignore HOST header */
 		SAFECOPY(session->req.host,session->req.physical_path);
@@ -3459,6 +3531,8 @@ static BOOL check_request(http_session_t * session)
 
 	if(session->req.finished)
 		return(FALSE);
+	if (session->req.upgrading)
+		return(TRUE);
 
 	SAFECOPY(path,session->req.physical_path);
 	if(startup->options&WEB_OPT_DEBUG_TX)
