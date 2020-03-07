@@ -63,7 +63,7 @@ struct x11 {
 #ifndef XPutPixel
 	void	(*XPutPixel)	(XImage*,int,int,unsigned long);
 #endif
-	void	(*XPutImage)	(Display*, Drawable, GC, XImage *, int,int,int,int,unsigned int,unsigned int);
+	int	(*XPutImage)	(Display*, Drawable, GC, XImage *, int,int,int,int,unsigned int,unsigned int);
 #ifndef XDestroyImage
 	void	(*XDestroyImage)(XImage*);
 #endif
