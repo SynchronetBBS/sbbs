@@ -1,5 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -1752,13 +1753,13 @@ struct bbslist *show_bbslist(char *current, int connected)
 	uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_ACT|WIN_INACT
 		,0,0,0,&sopt,&sbar,"SyncTERM Settings",connected?connected_settings_menu:settings_menu);
 	for(;;) {
-		sprintf(list_title, "Directory (%d items)", listcount);
 		if (quitting) {
 			free(list);
 			return NULL;
 		}
 		if (!at_settings) {
 			for(;!at_settings;) {
+				sprintf(list_title, "Directory (%d items)", listcount);
 				if (quitting) {
 					free(list);
 					return NULL;
