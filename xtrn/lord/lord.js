@@ -7098,7 +7098,7 @@ function use_mystical_skill(op, pfight)
 	}
 	sln('');
 	lln('  `5(`#P`5)inch Real Hard                 `5(`%1`5)');
-	valid = '';
+	valid = 'P';
 	if (player.levelm > 3 && player.skillm > 3) {
 		lln('  `5(`#D`5)isappear                       `5(`%4`5)');
 		valid += 'D';
