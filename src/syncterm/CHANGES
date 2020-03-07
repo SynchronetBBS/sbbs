@@ -7,7 +7,7 @@ Fix logging on Windows
 Range check screen width and height, clamp at 255 rows/cols
 Add CSI = 1 n and CSI = 2 n ANSI commands (see cterm.txt for details)
 Fix CSI ? s and CSI ? n
-Update to Cryptlib 3.4.4
+Update to Cryptlib 3.4.5
 Ignore unsupported APC, DCS, OSC, PM, and SOS strings
 Add support for the palette redefinition/reset OSC commands from xterm
 Use XTerm 256-color palette
@@ -40,6 +40,8 @@ Added CSI Pn SP c to remove a specific tab stop
 Added CSI Pn k as an alias to CSI Pn A
 Support for a "Custom" video mode added
 X/Ymodem progress on Win32 fixed
+Enable SSH CTR modes
+Fix directory title to reflect changes to list size
 
 Version 1.0
 -----------
