@@ -541,12 +541,16 @@ static void scroll_text(int x1, int y1, int x2, int y2, int down)
 static void timedisplay(BOOL force)
 {
 	static time_t savetime;
+	static int savemin;
 	time_t now;
+	struct tm gm;
 
 	now=time(NULL);
-	if(force || difftime(now,savetime)>=60) {
+	localtime_r(&now, &gm);
+	if(force || savemin != gm.tm_min || difftime(now,savetime)>=60) {
 		uprintf(api->scrn_width-25,1,api->bclr|(api->cclr<<4),utimestr(&now));
 		savetime=now;
+		savemin = gm.tm_min;
 	}
 }
 
