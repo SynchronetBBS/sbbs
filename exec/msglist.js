@@ -818,7 +818,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							continue;
 						var val = property_value(msg, array[i]);
 						if(val)
-							propval.push(format("%.*s", options.preivew_properties_maxlen || 10, val));
+							propval.push(format("%.*s", options.preview_properties_maxlen || 10, val));
 					}
 					propval = propval.join(options.preview_properties_separator || ', ').trim();
 					if(propval.length) {
@@ -1083,8 +1083,14 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				console.clearline();
 				console.print("\x01n\x01y\x01hGo to Message: ");
 				var num = console.getstr(digits,K_LINE|K_NUMBER|K_NOCRLF);
-				if(num)
-					top = current = num - 1;
+				if(num) {
+					for(var i = 0; i < list.length; i++) {
+						if(list[i].num == num) {
+							top = current = i;
+							break;
+						}
+					}
+				}
 				console.clearline(LIGHTGRAY);
 				break;
 			case 'A':
@@ -1183,7 +1189,7 @@ function msg_attributes(msg, msgbase, short)
 	if(msg.attr&MSG_VALIDATED)						result.push(options.attr_valid || "Valid"), str += 'V';
 	if(msg.attr&MSG_PRIVATE)						result.push(options.attr_private || "Priv"), str += 'p';
 	if(msg.attr&MSG_POLL)							result.push(options.attr_poll || "Poll"), str += '?';
-	if(msg.netattr&MSG_SENT)						result.push(options.attr_intransit || "Sent"), str += 's';
+	if(msg.netattr&MSG_SENT)						result.push(options.attr_sent || "Sent"), str += 's';
 	if(msg.netattr&MSG_INTRANSIT)					result.push(options.attr_intransit || "InTransit"), str += 'T';
 	/*
 	if(sub_op(subnum) && msg->hdr.attr&MSG_ANONYMOUS)	return 'A';
