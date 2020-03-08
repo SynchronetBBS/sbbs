@@ -880,12 +880,14 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				for(var i in list)
 					if(list[i].flagged) {
 						list[i].attr ^= MSG_DELETE;
-						list[i].attributes = msg_attributes(list[i], msgbase);
+						if(!update_msg_attr(msgbase, list[i]))
+							alert("Delete failed");
 						flagged++;
 					}
 				if(!flagged) {
 					list[current].attr ^= MSG_DELETE;
-					list[current].attributes = msg_attributes(list[current], msgbase);
+					if(!update_msg_attr(msgbase, list[current]))
+						alert("Delete failed");
 					current++;
 				}
 				break;
@@ -917,7 +919,6 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							if(msgbase.cfg && !msg_area.sub[msgbase.cfg.code].is_operator)
 								break;
 							list[current].attr ^= MSG_DELETE;
-							list[current].attributes = msg_attributes(list[current], msgbase);
 							if(!update_msg_attr(msgbase, list[current]))
 								alert("Delete failed");
 							break;
@@ -993,8 +994,8 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 					var msg = list[current];
 					if(mail && msg.to_ext == user.number) {
 						msg.attr |= MSG_READ;
-						if(update_msg_attr(msgbase, msg))
-							msg.attributes = msg_attributes(msg, msgbase);
+						if(!update_msg_attr(msgbase, msg))
+							alert("failed to add read attribute");
 					}
 				}
 				break;
@@ -1203,16 +1204,17 @@ function msg_attributes(msg, msgbase, short)
 // Update a message header's attributes (only)
 function update_msg_attr(msgbase, msg)
 {
-	return true;
 	var hdr = msgbase.get_msg_header(msg.number, /* expand: */false);
 	if(hdr == null) {
-		alert("get_msg_header(" + msg.number +") failed");
+		alert("get_msg_header(" + msg.number + ") failed: " + msgbase.error);
 		return false;
 	}
 	hdr.attr = msg.attr;
 	var result =  msgbase.put_msg_header(hdr);
 	if(!result)
-		alert("put_msg_header(" + msg.number + ") failed");
+		alert("put_msg_header(" + msg.number + ") failed: " + msgbase.error);
+	else
+		msg.attributes = msg_attributes(msg, msgbase);
 	return result;
 }
 
