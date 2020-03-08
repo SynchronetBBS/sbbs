@@ -47,6 +47,7 @@
 	#define mswait(x) Sleep(x)
 #endif
 #include <genwrap.h>	// for alloca()
+#include <datewrap.h>	// localtime_r()
 
 #include "ciolib.h"
 #include "uifc.h"
