@@ -16757,7 +16757,7 @@ function cmdline()
 			i += 1;
 			settings.game_prefix = argv[i];
 		}
-		else if (argv[i].toUpperCase() === '-P' && argv.length > (i+1)) {
+		else if (argv[i].toUpperCase() === '-M' && argv.length > (i+1)) {
 			i += 1;
 			settings.menu_dir = argv[i];
 		}
