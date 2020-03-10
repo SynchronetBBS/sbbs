@@ -16753,11 +16753,11 @@ function cmdline()
 				stdout.writeln(argv[i]+' returned invalid value');
 			}
 		}
-		else if (argv[i].toUpperCase() === '-p' && argv.length > (i+1)) {
+		else if (argv[i].toUpperCase() === '-P' && argv.length > (i+1)) {
 			i += 1;
 			settings.game_prefix = argv[i];
 		}
-		else if (argv[i].toUpperCase() === '-m' && argv.length > (i+1)) {
+		else if (argv[i].toUpperCase() === '-P' && argv.length > (i+1)) {
 			i += 1;
 			settings.menu_dir = argv[i];
 		}
