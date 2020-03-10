@@ -16764,6 +16764,7 @@ function cmdline()
 		else if (argv[i].toUpperCase() === 'RESET') {
 			file_remove(gamedir('state.bin'));
 			file_remove(gamedir('player.bin'));
+			ret = false;
 		}
 	}
 	if (ret) {
