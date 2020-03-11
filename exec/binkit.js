@@ -390,13 +390,18 @@ function handle_freq(reqfname, bp)
 	}
 }
 
-function rename_or_move(src, dst)
+function rename_or_move(src, dst_dir, dst_fname)
 {
 	var sf;
 	var df;
 	var buf;
 	var remain;
 
+	if (!mkpath(dst_dir)) {
+		log(LOG_ERR, "Error " + errno + " making directory: " + dst_dir);
+		return false;
+	}
+	var dst = dst_dir + dst_fname;
 	if (file_rename(src, dst))
 		return true;
 	sf = new File(src);
@@ -463,7 +468,7 @@ function rx_callback(fname, bp)
 				log(LOG_ERROR, "No secure inbound configured in sbbsecho!  Leaving secure file as '"+fname+"'.");
 			else {
 				log(LOG_INFO, "Moving '"+fname+"' to '"+secure_inbound+file_getname(fname)+"'.");
-				if (!rename_or_move(fname, secure_inbound+file_getname(fname)))
+				if (!rename_or_move(fname, secure_inbound, file_getname(fname)))
 					return false;
 			}
 		}
@@ -473,7 +478,7 @@ function rx_callback(fname, bp)
 				log(LOG_ERROR, "No inbound configured in sbbsecho!  Leaving insecure file as '"+fname+"'.");
 			else {
 				log(LOG_INFO, "Moving '"+fname+"' to '"+inbound+file_getname(fname)+"'.");
-				if (!rename_or_move(fname, inbound+file_getname(fname)))
+				if (!rename_or_move(fname, inbound, file_getname(fname)))
 					return false;
 			}
 		}
