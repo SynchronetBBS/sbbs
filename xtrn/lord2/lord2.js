@@ -2261,7 +2261,7 @@ function run_ref(sec, fname)
 						lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
 						break;
 				}
-				draw_menu();
+				draw_map();
 			}
 		},
 		'saveglobals':function(args) {
@@ -2456,7 +2456,7 @@ rescan:
 							lw('`r0');
 							continue rescan;
 					}
-					draw_menu();
+					draw_map();
 				}
 			}
 		},
