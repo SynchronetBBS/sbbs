@@ -50,6 +50,8 @@ function exec_xtrn(prog)
 		eval(options.eval_before_exec);
 	load('fonts.js', 'xtrn:' + prog.code);
 	bbs.exec_xtrn(prog.code); 
+	console.attributes = 0;
+	console.attributes = LIGHTGRAY;
 	load('fonts.js', 'default');
 	if(options.eval_after_exec)
 		eval(options.eval_after_exec);
