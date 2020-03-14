@@ -144,7 +144,7 @@ while(bbs.online && !(console.aborted)) {
 			var msg = [];
 			while(msg.length < 5) {
 				write("\1n: \1h");
-				var line = console.getstr(70, msg.length < 4 ? (K_WRAP|K_MSG) : KMSG);
+				var line = console.getstr(70, msg.length < 4 ? (K_WRAP|K_MSG) : K_MSG);
 				if(!line)
 					break;
 				msg.push(line);
