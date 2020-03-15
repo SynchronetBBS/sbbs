@@ -1228,7 +1228,7 @@ function install()
 	for(var code in {"fidoin":0, "fidoout":0, "binkout":0, "binkpoll":0}) {
 		if (xtrn_area.event[code]
 			&& (xtrn_area.event[code].settings & EVENT_DISABLED)) {
-			print("Enabling timed event: " + xtrn_area.event[code].code);
+			print("Enabling timed event: " + code.toUpperCase());
 			xtrn_area.event[code].settings &= ~EVENT_DISABLED;
 			changed = true;
 		}
