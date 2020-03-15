@@ -181,7 +181,7 @@ if(confirm("Download and install " + netname + " EchoList")) {
 /* INSTALL BINKIT */
 /******************/
 if(confirm("Install BinkIT")) {
-	load("binkit.js", "install");
+	system.exec(system.exec_dir + "jsexec binkit install");
 }
 
 /************************/
@@ -205,13 +205,14 @@ if(confirm("Create an AreaFix request to link ALL EchoMail areas with "
 		exit(1);
 	}
 	msgbase.close();
-	print("AreaFix NetMail message created successfully");
+	file_touch(system.data_dir + "fidoout.now");
+	print("AreaFix NetMail message created successfully.");
 }
 
 /***********************/
 /* DISPLAY FINAL NOTES */
 /***********************/
-print(netname + " initial setup completely successfully");
+print(netname + " initial setup completely successfully.");
 print();
 if(your.node == 9999) {
 	print("You used a temporary (e.g. /9999) node address. You will need to update your");
