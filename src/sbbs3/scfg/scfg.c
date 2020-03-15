@@ -2188,7 +2188,10 @@ int lprintf(int level, char *fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
     strip_ctrl(sbuf,sbuf);
-    uifc.msg(sbuf);
+	if(uifc.msg == NULL)
+		puts(sbuf);
+	else
+    	uifc.msg(sbuf);
     return(0);
 }
 
