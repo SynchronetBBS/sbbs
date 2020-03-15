@@ -2370,31 +2370,12 @@ rescan:
 							amt = 1;
 							price = parseInt(itm.value / 2, 10);
 							if (!itm.sell) {
-								dk.console.gotoxy(21, 14);
-								lw(box_top(41, itm.name));
-								dk.console.gotoxy(21, 15);
-								lw(box_middle(41, ''));
-								dk.console.gotoxy(21, 16);
-								lw(box_middle(41, '`$They don\'t seem interested in that.'));
-								dk.console.gotoxy(21, 17);
-								lw(box_middle(41, ''));
-								dk.console.gotoxy(21, 18);
-								lw(box_bottom(41));
-								dk.console.gotoxy(59, 16);
+								draw_box(14, itm.name, ['','`$They don\'t seem interested in that.','']);
 								getkey();
 								continue rescan;
 							}
 							if (player.i[itm.Record] > 1) {
-								dk.console.gotoxy(17, 14);
-								lw(box_top(42, items[itm.Record].name));
-								dk.console.gotoxy(17, 15);
-								lw(box_middle(42, ''));
-								dk.console.gotoxy(17, 16);
-								lw(box_middle(42, '   `$Sell how many? '));
-								dk.console.gotoxy(17, 17);
-								lw(box_middle(42, ''));
-								dk.console.gotoxy(17, 18);
-								lw(box_bottom(42, ''));
+								draw_box(14, items[itm.Record].name, ['', '   `$Sell how many?               ',''])
 								dk.console.gotoxy(38, 16);
 								// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
 								ch = dk.console.getstr({edit:player.i[itm.Record].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
@@ -2404,20 +2385,7 @@ rescan:
 									continue rescan;
 								}
 							}
-							dk.console.gotoxy(20, 16);
-							lw(box_top(36, itm.name));
-							dk.console.gotoxy(20, 17);
-							lw(box_middle(36, ''));
-							dk.console.gotoxy(20, 18);
-							lw(box_middle(36, '`$Sell '+amt+' of \'em for '+(amt * price)+' gold?'));
-							dk.console.gotoxy(20, 19);
-							lw(box_middle(36, ''));
-							dk.console.gotoxy(20, 20);
-							lw(box_middle(36, '`r5`$Yes'));
-							dk.console.gotoxy(20, 21);
-							lw(box_middle(36, '`$No'));
-							dk.console.gotoxy(20, 22);
-							lw(box_bottom(36));
+							draw_box(16, itm.name ['', '`$Sell '+amt+' of \'em for '+(amt * price)+' gold?','','`r5`$Yes','`$No']);
 							dk.console.gotoxy(25,21);
 							yn = true;
 							do {
@@ -3396,6 +3364,31 @@ function box_middle(width, text, highlight)
 	return str;
 }
 
+function draw_box(y, title, lines, width)
+{
+	var x;
+
+	if (width === undefined) {
+		width = displen(title) + 6;
+		lines.forEach(function(l) {
+			var l = displen(lines) + 6;
+			if (l > width)
+				l = width;
+		});
+	}
+
+	x = Math.floor((80-width) / 2);
+
+	dk.console.gotoxy(x, y);
+	lw(box_top(width, title));
+	lines.forEach(function(l, i) {
+		dk.console.gotoxy(x, y + i + 1);
+		lw(box_middle(width, l));
+	});
+	dk.console.gotoxy(x, y + lines.length + 1);
+	lw(box_bottom(width));
+}
+
 // Assume width of 36
 // Assume position centered in inventory window thing
 function popup_menu(title, opts)
@@ -3478,16 +3471,7 @@ newpage:
 				cur = choice.cur;
 				switch(choice.ch) {
 					case 'D':
-						dk.console.gotoxy(17, 12);
-						lw(box_top(42, items[inv[cur] - 1].name));
-						dk.console.gotoxy(17, 13);
-						lw(box_middle(42, ''));
-						dk.console.gotoxy(17, 14);
-						lw(box_middle(42, '   `$Drop how many? '));
-						dk.console.gotoxy(17, 15);
-						lw(box_middle(42, ''));
-						dk.console.gotoxy(17, 16);
-						lw(box_bottom(42, ''));
+						draw_box(12, items[inv[cur] - 1].name, ['','   `$Drop how many?               ','']);
 						dk.console.gotoxy(38, 14);
 						// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
 						ch = dk.console.getstr({edit:player.i[inv[cur] - 1].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
@@ -4290,7 +4274,8 @@ function hail()
 			case 1:	// TODO: Attack...
 				break;
 			case 2: // TODO: Give Item
-				llnw('`c`r0`2                                `r1`%  GIVING.  `r0');
+				lln('`c`r0`2                                `r1`%  GIVING.  `r0');
+				sln('');
 				sln('');
 				sln('');
 				lw('`r5Item To Give                 Amount Owned');
@@ -4310,15 +4295,21 @@ function hail()
 				else {
 					// TODO: I'm not sure this is how it actually looks...
 					choice = items_menu(inv, 0, false, false, '', 7, 22);
-					draw_map();
-					update();
-					dk.console.gotoxy(0, 21);
 					if (items[inv[choice.cur] - 1].questitem) {
-						lw('  `$You don\'t think it would be wise to give that away.`2');
+						// This is presumably in a popup box too.
+						draw_box(12, '', ['','  `$You don\'t think it would be wise to give that away.`2  ','']);
+						getkey();
 					}
 					else {
-						lw('  `$Give how many?`2');
-						ch = parseInt(dk.console.getstr({len:6, crlf:false, integer:true}));
+						draw_box(12, items[inv[choice.cur] - 1].name, ['','  `$Give how many?`2        ','']);
+						// Confirmation box line 14, same title...
+						// '  `$Give 1 of `em to <name>`$?
+						//
+						//  Yes
+						// No
+						// Then stays in hail menu.
+						dk.console.gotoxy(46, 14);
+						ch = parseInt(dk.console.getstr({len:7, crlf:false, integer:true}));
 						if ((!isNaN(ch)) && ch > 0 && ch <= player.i[inv[choice.cur] - 1]) {
 							player.i[inv[choice.cur] - 1] -= ch;
 							f = new File(getfname(maildir+'con'+(op.Record + 1)+'.tmp'))
@@ -4330,8 +4321,10 @@ function hail()
 							// TODO: And a mail message or something?
 						}
 					}
+					draw_map();
+					update();
+					dk.console.gotoxy(0, 21);
 				}
-				// TODO: Write amount to the thingie
 				break;
 			case 3:
 				fn = file_getcase(maildir+'chat'+(player.Record + 1)+'.tmp');
