@@ -5878,7 +5878,7 @@ static void cleanup(int code)
 		if(stats.errors)
 			sprintf(str+strlen(str),", %lu errors", stats.errors);
 		if(stats.crit_errors)
-			sprintf(str+strlen(str),", %lu critcal", stats.crit_errors);
+			sprintf(str+strlen(str),", %lu critical", stats.crit_errors);
 
 		lprintf(LOG_INFO,"#### Mail Server thread terminated (%s)",str);
 	}
