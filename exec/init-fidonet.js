@@ -41,12 +41,17 @@ if(system.fido_addr_list.length
 var hub = {zone: NaN, net: NaN, node: NaN};
 do {
 	while(isNaN(hub.zone) || hub.zone < 1)
-		hub.zone = parseInt(prompt("Your hub/uplink's zone number (e.g. 1 for FidoNet North America)"));
+		hub.zone = parseInt(prompt("Your hub's zone number (e.g. 1 for FidoNet North America)"));
 	while(isNaN(hub.net) || hub.net < 1)
-		hub.net = parseInt(prompt("Your hub/uplink's network number"));
+		hub.net = parseInt(prompt("Your hub's network number"));
 	while(isNaN(hub.node) ||  hub.node < 0)
-		hub.node = parseInt(prompt("Your hub/uplink's node number"));
+		hub.node = parseInt(prompt("Your hub's node number"));
 } while(!confirm("Your hub's address is: " + fidoaddr.to_str(hub)));
+
+var hub_name;
+do {
+	hub_name = prompt("Your hub's name");
+} while(!hub_name || !confirm("Your hub's name: " + hub_name));
 
 if(hub.zone > 6) {
 	do {
@@ -136,6 +141,7 @@ if(confirm("Update FidoNet configuration file: sbbsecho.ini")) {
 		|| confirm("Overwrite hub [" + section + "] configuration in " + file.name)) {
 		if(!file.iniSetObject(section,
 			{
+				Name: hub_name,
 				AreaFixPwd: areafixpwd,
 				SessionPwd: sessionpwd,
 				GroupHub: netname,
