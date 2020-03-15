@@ -410,11 +410,12 @@ int view_log(char *filename, char *title)
 	if(fexist(filename)) {
 		if((buffile=sopen(filename,O_RDONLY,SH_DENYWR))>=0) {
 			j=filelength(buffile);
-			if((buf=(char *)alloca(j+1))!=NULL) {
+			if(j >= 0 && (buf=(char *)malloc(j+1))!=NULL) {
 				read(buffile,buf,j);
 				close(buffile);
 				*(buf+j)=0;
 				uifc.showbuf(WIN_MID,0,0,76,uifc.scrn_len-2,title,buf,NULL,NULL);
+				free(buf);
 				return(0);
 			}
 			close(buffile);
