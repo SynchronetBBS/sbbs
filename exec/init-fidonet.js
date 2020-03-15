@@ -20,9 +20,10 @@
 
 "use strict";
 
+const REVISION = "$Revision$".split(' ')[1];
 var netname = "FidoNet";
 var fidoaddr = load({}, 'fidoaddr.js');
-print("Initializing " + netname + " support in Synchronet");
+print(js.exec_file + " v" + REVISION + " Initializing " + netname + " support in Synchronet");
 print("Use Ctrl-C to abort the process, if desired");
 
 print("Reading Message Area configuration file: msgs.cnf");
