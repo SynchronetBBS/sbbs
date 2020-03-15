@@ -85,12 +85,20 @@ if(!msgs_cnf.fido_default_origin)
 if(!confirm("Your origin line (" +	msgs_cnf.fido_default_origin + ")")) {
 	msgs_cnf.fido_default_origin = prompt("Your origin line");
 }
+var sysop = system.operator;
+if(system.total_users) {
+	var u = new User(1);
+	if(u && u.name)
+		sysop = u.name;
+}
+while(!sysop || !confirm("Your name: " + sysop))
+	sysop = prompt("Your name");
 
 /*******************/
 /* UPDATE MSGS.CNF */
 /*******************/
 if(!msg_area.grp[netname.toLowerCase()]
-	&& confirm("Create " + netname + " message group")) {
+	&& confirm("Create " + netname + " message group in SCFG->Message Areas")) {
 	print("Adding Message Group: " + netname);
 	msgs_cnf.grp.push( {
 			"name": netname,
@@ -114,6 +122,13 @@ if(confirm("Update FidoNet configuration file: sbbsecho.ini")) {
 	var file = new File("sbbsecho.ini");
 	if(!file.open("r+")) {
 		alert("Error " + file.error + " opening " + file.name);
+		exit(1);
+	}
+	var binkp = file.iniGetObject("BinkP");
+	if(!binkp) binkp = {};
+	binkp.sysop = sysop;
+	if(!file.iniSetObject("binkp", binkp)) {
+		alert("Error" + file.error + " writign to " + file.name);
 		exit(1);
 	}
 	var section = "node:" + fidoaddr.to_str(hub);
@@ -224,6 +239,7 @@ if(your.node == 9999) {
 print("See your 'data/sbbsecho.log' file for mail import/export activity.");
 print("See your 'data/badareas.lst' file for unrecognized received EchoMail areas.");
 print("See your 'data/echostats.ini' file for detailed EchoMail statistics.");
+print("See your 'data/binkstats.ini' file for detailed BinkP statistics.");
 print("See your 'Events' log output for outbound BinkP connections.");
 print("See your 'Services' log output for inbound BinkP connections.");
 print("Use exec/echocfg for follow-up FidoNet-related configuration.");
