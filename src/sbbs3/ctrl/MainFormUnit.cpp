@@ -3919,3 +3919,10 @@ void __fastcall TMainForm::ClearFailedLoginsPopupMenuItemClick(
 }
 //---------------------------------------------------------------------------
 
+void __fastcall TMainForm::RefreshLogClick(TObject *Sender)
+{
+    TRichEdit* Log = (TRichEdit*)LogPopupMenu->PopupComponent;
+    Log->Refresh();
+}
+//---------------------------------------------------------------------------
+
