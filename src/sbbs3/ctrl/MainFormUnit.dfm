@@ -14244,11 +14244,16 @@ object MainForm: TMainForm
       end
     end
     object FidonetMenuItem: TMenuItem
-      Caption = 'FidoNet'
+      Caption = 'Fido&Net'
       object FidonetConfigureMenuItem: TMenuItem
         Caption = '&Configure'
         ImageIndex = 4
         OnClick = FidonetConfigureMenuItemClick
+      end
+      object FidonetPollMenuItem: TMenuItem
+        Caption = '&Poll'
+        ImageIndex = 0
+        OnClick = FidonetPollMenuItemClick
       end
       object N13: TMenuItem
         Caption = '-'

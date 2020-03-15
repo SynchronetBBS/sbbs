@@ -787,7 +787,7 @@ static void recycle(void* cbdata)
         );
     if(fp!=NULL)
         fclose(fp);
-	MainForm->SetLogControls();
+	MainForm->SetControls();
 }
 //---------------------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* Owner)
@@ -1638,7 +1638,7 @@ void __fastcall TMainForm::WriteFont(AnsiString subkey, TFont* Font)
     delete Registry;
 }
 
-void __fastcall TMainForm::SetLogControls(void)
+void __fastcall TMainForm::SetControls(void)
 {
     TelnetForm->LogLevelUpDown->Position=bbs_startup.log_level;
     TelnetForm->LogLevelText->Caption=LogLevelDesc[bbs_startup.log_level];
@@ -1650,7 +1650,13 @@ void __fastcall TMainForm::SetLogControls(void)
     WebForm->LogLevelText->Caption=LogLevelDesc[web_startup.log_level];
     ServicesForm->LogLevelUpDown->Position=services_startup.log_level;
     ServicesForm->LogLevelText->Caption=LogLevelDesc[services_startup.log_level];
+
+    if(cfg.total_faddrs)
+        FidonetMenuItem->Visible = true;
+    else
+        FidonetMenuItem->Visible = false;
 }
+
 void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 {
     bool	TelnetFormFloating=false;
@@ -2347,8 +2353,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
                 
     ServiceStatusTimer->Enabled=true;
 
-
-	SetLogControls();
+	SetControls();
 	
     if(!Application->Active)	/* Starting up minimized? */
     	FormMinimize(Sender);   /* Put icon in systray */
@@ -3375,7 +3380,7 @@ void __fastcall TMainForm::reload_config(void)
     	SoundToggle->Checked=false;
     else
     	SoundToggle->Checked=true;
-	SetLogControls();
+	SetControls();
 }
 //---------------------------------------------------------------------------
 
@@ -3928,9 +3933,9 @@ void __fastcall TMainForm::RefreshLogClick(TObject *Sender)
 
 void __fastcall TMainForm::FidonetConfigureMenuItemClick(TObject *Sender)
 {
-	char str[256];
+	char str[MAX_PATH + 1];
 
-    sprintf(str, "%sechocfg.exe", cfg.exec_dir);
+    SAFEPRINTF(str, "%sechocfg.exe", cfg.exec_dir);
     STARTUPINFO startup_info={0};
     PROCESS_INFORMATION process_info;
     startup_info.cb=sizeof(startup_info);
@@ -3953,4 +3958,17 @@ void __fastcall TMainForm::FidonetConfigureMenuItemClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+
+
+void __fastcall TMainForm::FidonetPollMenuItemClick(TObject *Sender)
+{
+	char path[MAX_PATH + 1];
+
+    SAFEPRINTF(path, "%sbinkpoll.now", cfg.data_dir);
+    int file=_sopen(path,O_CREAT|O_TRUNC|O_WRONLY
+	                ,SH_DENYRW,S_IREAD|S_IWRITE);
+    if (file!=-1)
+        close(file);
+}
+//---------------------------------------------------------------------------
 
