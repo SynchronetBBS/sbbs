@@ -17,7 +17,7 @@
  * Send an AreaFix %+ALL netmail to the hub
  * Generate a report with all details, mention log/lst/ini files
  */
- 
+
 "use strict";
 
 var netname = "FidoNet";
@@ -36,7 +36,7 @@ if (!msgs_cnf) {
 if(system.fido_addr_list.length
 	&& deny("You already have a " + netname + " Address (" + system.fido_addr_list[0] + "), continue"))
 	exit(0);
-	
+
 var hub = {zone: NaN, net: NaN, node: NaN};
 do {
 	while(isNaN(hub.zone) || hub.zone < 1)
@@ -80,7 +80,7 @@ var sessionpwd;
 while(!sessionpwd)
 	sessionpwd = prompt("Your BinkP Session Password (case sensitive)");
 if(!msgs_cnf.fido_default_origin)
-	msgs_cnf.fido_default_origin = system.name + " " + system.inet_addr;
+	msgs_cnf.fido_default_origin = system.name + " - " + system.inet_addr;
 if(!confirm("Your origin line (" +	msgs_cnf.fido_default_origin + ")")) {
 	msgs_cnf.fido_default_origin = prompt("Your origin line");
 }
@@ -97,13 +97,13 @@ if(!msg_area.grp[netname.toLowerCase()]
 			"ars": "",
 			"code_prefix": netname.toUpperCase() + "_"
 			});
-	if(confirm("Update Message Area configuration file: msgs.cnf")) {
-		if(!cnflib.write("msgs.cnf", undefined, msgs_cnf)) {
-			alert("Failed to write msgs.cnf");
-			exit(1);
-		}
-		print("msgs.cnf updated successfully.");
+}
+if(confirm("Update Message Area configuration file: msgs.cnf")) {
+	if(!cnflib.write("msgs.cnf", undefined, msgs_cnf)) {
+		alert("Failed to write msgs.cnf");
+		exit(1);
 	}
+	print("msgs.cnf updated successfully.");
 }
 
 /***********************/
@@ -116,7 +116,7 @@ if(confirm("Update FidoNet configuration file: sbbsecho.ini")) {
 		exit(1);
 	}
 	var section = "node:" + fidoaddr.to_str(hub);
-	if(!file.iniGetObject(section) 
+	if(!file.iniGetObject(section)
 		|| confirm("Overwrite hub [" + section + "] configuration in " + file.name)) {
 		if(!file.iniSetObject(section,
 			{
@@ -163,7 +163,7 @@ if(confirm("Download and install " + netname + " EchoList")) {
 		var http_request = new HTTPRequest();
 		var contents = http_request.Get(echolist_url);
 		if(http_request.response_code == 200) {
-			print("Successfully downloaded " + echolist_url + " to " + file.name);
+			print("Downloaded " + echolist_url + " to " + file.name);
 			file.write(contents);
 			file.close();
 			break;
@@ -173,7 +173,7 @@ if(confirm("Download and install " + netname + " EchoList")) {
 
 	if(confirm("Import " + echolist_fname)) {
 		print("Importing " + echolist_fname);
-		system.exec(system.exec_dir + "scfg -i" + echolist_fname + " -g" + netname);
+		system.exec(system.exec_dir + "scfg -import=" + echolist_fname + " -g" + netname);
 	}
 }
 
@@ -213,10 +213,12 @@ if(confirm("Create an AreaFix request to link ALL EchoMail areas with "
 /***********************/
 print(netname + " initial setup completely successfully");
 print();
-print("Note: If you used a temporary (e.g. /9999) node address, you will need to");
-print("update your SCFG->Networks->FidoNet->Address once your permanent node address");
-print("has been assigned to you.");
-print();
+if(your.node == 9999) {
+	print("You used a temporary (e.g. /9999) node address. You will need to update your");
+	print("SCFG->Networks->FidoNet->Address once your permanent node address has been");
+	print("assigned to you.");
+	print();
+}
 print("See your 'data/sbbsecho.log' file for mail import/export activity.");
 print("See your 'data/badareas.lst' file for unrecognized received EchoMail areas.");
 print("See your 'data/echostats.ini' file for detailed EchoMail statistics.");
