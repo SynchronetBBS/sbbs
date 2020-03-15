@@ -1224,12 +1224,14 @@ function install()
 				});
 		changed = true;
 	}
-	
-	for(var code in {"fidoin":0, "fidoout":0, "binkout":0, "binkpoll":0}) {
-		if (xtrn_area.event[code]
-			&& (xtrn_area.event[code].settings & EVENT_DISABLED)) {
-			print("Enabling timed event: " + code.toUpperCase());
-			xtrn_area.event[code].settings &= ~EVENT_DISABLED;
+
+	const timed_events = ["FIDOIN", "FIDOOUT", "BINKOUT", "BINKPOLL"];
+	for(var i in xtrn_cnf.event) {
+		if(timed_events.indexOf(xtrn_cnf.event[i].code) < 0)
+			continue;
+		if (xtrn_cnf.event[i].settings & EVENT_DISABLED) {
+			print("Enabling timed event: " + xtrn_cnf.event[i].code);
+			xtrn_cnf.event[i].settings &= ~EVENT_DISABLED;
 			changed = true;
 		}
 	}
