@@ -231,6 +231,8 @@ var CNF = new (function() {
 					return false;
 			}
 		}
+		if(js.terminated)
+			return false;
 		var f = new File(fullpath(fileName));
 		if(!f.open('wb'))
 			return false;
