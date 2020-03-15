@@ -86,7 +86,7 @@ if(!confirm("Your origin line (" +	msgs_cnf.fido_default_origin + ")")) {
 	msgs_cnf.fido_default_origin = prompt("Your origin line");
 }
 var sysop = system.operator;
-if(system.total_users) {
+if(system.stats.total_users) {
 	var u = new User(1);
 	if(u && u.name)
 		sysop = u.name;
@@ -213,7 +213,7 @@ if(confirm("Create an AreaFix request to link ALL EchoMail areas with "
 	if(!msgbase.save_msg({
 			to: "areafix",
 			to_net_addr: fidoaddr.to_str(hub),
-			from: system.operator,
+			from: sysop,
 			from_ext: 1,
 			subject: areafixpwd
 		}, /* body text: */ "%+ALL")) {
