@@ -14193,6 +14193,7 @@ object MainForm: TMainForm
       object WebEditMenuItem: TMenuItem
         AutoHotkeys = maManual
         Caption = 'Edit'
+        ImageIndex = 27
         object WebEditMimeTypesMenuItem: TMenuItem
           Caption = 'MIME Types'
           Hint = 'mime_types.ini'
@@ -14234,6 +14235,7 @@ object MainForm: TMainForm
       object ServicesEditMenuItem: TMenuItem
         AutoHotkeys = maManual
         Caption = 'Edit'
+        ImageIndex = 27
         object ServicesEditIniMenuOption: TMenuItem
           Caption = 'services.ini'
           Hint = 'services.ini'
