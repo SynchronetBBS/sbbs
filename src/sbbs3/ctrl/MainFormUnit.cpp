@@ -3946,7 +3946,7 @@ void __fastcall TMainForm::FidonetConfigureMenuItemClick(TObject *Sender)
 		NULL,  			// process security attributes
 		NULL,   		// thread security attributes
 		FALSE, 			// handle inheritance flag
-		CREATE_NEW_CONSOLE|CREATE_SEPARATE_WOW_VDM, // creation flags
+		0,              // creation flags
         NULL,  			// pointer to new environment block
 		cfg.ctrl_dir,	// pointer to current directory name
 		&startup_info,  // pointer to STARTUPINFO
