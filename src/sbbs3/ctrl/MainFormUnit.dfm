@@ -14268,7 +14268,7 @@ object MainForm: TMainForm
         end
         object sbbsechoLogViewMenuItem: TMenuItem
           Caption = 'SBBSecho Log'
-          Hint = 'sbbsecho.ini'
+          Hint = 'sbbsecho.log'
           OnClick = ViewLogClick
         end
         object badareasViewMenuItem: TMenuItem
