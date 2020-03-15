@@ -56,4 +56,14 @@ function to_filename(addr)
 	return format("%04x%04x", addr.net, addr.node);
 }
 
+function to_str(addr)
+{
+	if(typeof addr == "string")
+		return addr;
+
+	if(addr.point)
+		return format("%u:%u/%u.%u", addr.zone, addr.net, addr.node, addr.point);
+	return format("%u:%u/%u", addr.zone, addr.net, addr.node);
+}
+
 this;
