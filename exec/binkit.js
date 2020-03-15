@@ -1184,6 +1184,7 @@ function run_polls(ran)
 // First-time installation routine (only)
 function install()
 {
+	require("sbbsdefs.js", 'EVENT_DISABLED');
 	var cnflib = load({}, "cnflib.js");
 	var xtrn_cnf = cnflib.read("xtrn.cnf");
 	if (!xtrn_cnf)
@@ -1222,6 +1223,15 @@ function install()
 				"months": 0
 				});
 		changed = true;
+	}
+	
+	for(var code in {"fidoin":0, "fidoout":0, "binkout":0, "binkpoll":0}) {
+		if (xtrn_area.event[code]
+			&& (xtrn_area.event[code].settings & EVENT_DISABLED)) {
+			print("Enabling timed event: " + xtrn_area.event[code].code);
+			xtrn_area.event[code].settings &= ~EVENT_DISABLED;
+			changed = true;
+		}
 	}
 
 	if (changed && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
