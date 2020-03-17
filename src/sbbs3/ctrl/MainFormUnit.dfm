@@ -1,8 +1,8 @@
 object MainForm: TMainForm
-  Left = 633
-  Top = 318
+  Left = 760
+  Top = 266
   Width = 793
-  Height = 400
+  Height = 398
   Caption = 'Synchronet Control Panel'
   Color = clBtnFace
   UseDockManager = True
@@ -62,7 +62,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 174
     Width = 777
-    Height = 143
+    Height = 141
     Align = alClient
     AutoSize = True
     Center = True
@@ -13540,7 +13540,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 174
     Width = 777
-    Height = 143
+    Height = 141
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
@@ -13549,7 +13549,7 @@ object MainForm: TMainForm
       Left = 235
       Top = 0
       Width = 2
-      Height = 143
+      Height = 141
       Cursor = crHSplit
       MinSize = 1
     end
@@ -13557,7 +13557,7 @@ object MainForm: TMainForm
       Left = 0
       Top = 0
       Width = 235
-      Height = 143
+      Height = 141
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -13568,7 +13568,7 @@ object MainForm: TMainForm
       Left = 237
       Top = 0
       Width = 540
-      Height = 143
+      Height = 141
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -13578,7 +13578,7 @@ object MainForm: TMainForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 317
+    Top = 315
     Width = 777
     Height = 25
     Panels = <
@@ -13618,6 +13618,29 @@ object MainForm: TMainForm
     Left = 328
     object FileMenuItem: TMenuItem
       Caption = 'File'
+      object FileRunMenuItem: TMenuItem
+        Caption = '&Run'
+        ImageIndex = 0
+        object FileRunUpdateMenuItem: TMenuItem
+          Caption = 'Update'
+          Hint = 'update.js'
+          OnClick = RunJSClick
+        end
+        object FileRunChkSetupMenuItem: TMenuItem
+          Caption = 'Check Setup'
+          Hint = 'chksetup.js'
+          OnClick = RunJSClick
+        end
+        object FileRunInitFidonetMenuItem: TMenuItem
+          Caption = 'Initial FidoNet Setup'
+          Hint = 'init-fidonet.js'
+          OnClick = RunJSClick
+        end
+        object FileMenuRunJSMenuItem: TMenuItem
+          Caption = 'Other JavaScript Module'
+          Visible = False
+        end
+      end
       object FileEditMenuItem: TMenuItem
         Caption = 'Edit'
         ImageIndex = 27

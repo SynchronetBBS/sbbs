@@ -345,6 +345,11 @@ __published:	// IDE-managed Components
     TMenuItem *sbbsechoEditMenuItem;
     TMenuItem *areafileEditMenuItem;
     TMenuItem *FidonetPollMenuItem;
+    TMenuItem *FileRunMenuItem;
+    TMenuItem *FileRunUpdateMenuItem;
+    TMenuItem *FileRunChkSetupMenuItem;
+    TMenuItem *FileRunInitFidonetMenuItem;
+    TMenuItem *FileMenuRunJSMenuItem;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -400,6 +405,7 @@ __published:	// IDE-managed Components
     void __fastcall ExportSettings(TObject *Sender);
     void __fastcall BBSLoginMenuItemClick(TObject *Sender);
     void __fastcall ViewLogClick(TObject *Sender);
+    void __fastcall RunJSClick(TObject *Sender);
     void __fastcall UserListExecute(TObject *Sender);
     void __fastcall WebPageMenuItemClick(TObject *Sender);
     void __fastcall TrayIconRestore(TObject *Sender);

@@ -1430,7 +1430,7 @@ void __fastcall TMainForm::BBSConfigureMenuItemClick(TObject *Sender)
     PROCESS_INFORMATION process_info;
     startup_info.cb=sizeof(startup_info);
     startup_info.lpTitle="Synchronet Configuration Utility";
-	CreateProcess(
+	if(!CreateProcess(
 		NULL,			// pointer to name of executable module
 		str,  			// pointer to command line string
 		NULL,  			// process security attributes
@@ -1441,7 +1441,11 @@ void __fastcall TMainForm::BBSConfigureMenuItemClick(TObject *Sender)
 		cfg.ctrl_dir,	// pointer to current directory name
 		&startup_info,  // pointer to STARTUPINFO
 		&process_info  	// pointer to PROCESS_INFORMATION
-		);
+		))
+       	Application->MessageBox(AnsiString("ERROR " + IntToStr(GetLastError()) +
+            " executing " + str).c_str()
+            ,"ERROR"
+            ,MB_OK|MB_ICONEXCLAMATION);
 	// Resource leak if you don't close these:
 	CloseHandle(process_info.hThread);
 	CloseHandle(process_info.hProcess);
@@ -3124,6 +3128,39 @@ void __fastcall TMainForm::ViewLogClick(TObject *Sender)
     ViewFile(filename,((TMenuItem*)Sender)->Caption);
 }
 //---------------------------------------------------------------------------
+void __fastcall TMainForm::RunJSClick(TObject *Sender)
+{
+	char    cmdline[MAX_PATH+1];
+
+    SAFEPRINTF2(cmdline,"%sjsexec.exe -p %s"
+        ,MainForm->cfg.exec_dir
+        ,((TMenuItem*)Sender)->Hint.c_str()
+        );
+    STARTUPINFO startup_info={0};
+    PROCESS_INFORMATION process_info;
+    startup_info.cb=sizeof(startup_info);
+    startup_info.lpTitle = cmdline;
+	if(!CreateProcess(
+		NULL,			// pointer to name of executable module
+		cmdline,        // pointer to command line string
+		NULL,  			// process security attributes
+		NULL,   		// thread security attributes
+		FALSE, 			// handle inheritance flag
+		0,              // creation flags
+        NULL,  			// pointer to new environment block
+		cfg.ctrl_dir,	// pointer to current directory name
+		&startup_info,  // pointer to STARTUPINFO
+		&process_info  	// pointer to PROCESS_INFORMATION
+		))
+       	Application->MessageBox(AnsiString("ERROR " + IntToStr(GetLastError()) +
+            " executing " + cmdline).c_str()
+            ,"ERROR"
+            ,MB_OK|MB_ICONEXCLAMATION);
+	// Resource leak if you don't close these:
+	CloseHandle(process_info.hThread);
+	CloseHandle(process_info.hProcess);
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainForm::UserListExecute(TObject *Sender)
 {
     UserListForm->Show();
@@ -3940,7 +3977,7 @@ void __fastcall TMainForm::FidonetConfigureMenuItemClick(TObject *Sender)
     PROCESS_INFORMATION process_info;
     startup_info.cb=sizeof(startup_info);
     startup_info.lpTitle="Fidonet Configuration";
-	CreateProcess(
+	if(!CreateProcess(
 		NULL,			// pointer to name of executable module
 		str,  			// pointer to command line string
 		NULL,  			// process security attributes
@@ -3951,7 +3988,11 @@ void __fastcall TMainForm::FidonetConfigureMenuItemClick(TObject *Sender)
 		cfg.ctrl_dir,	// pointer to current directory name
 		&startup_info,  // pointer to STARTUPINFO
 		&process_info  	// pointer to PROCESS_INFORMATION
-		);
+		))
+       	Application->MessageBox(AnsiString("ERROR " + IntToStr(GetLastError()) +
+            " executing " + str).c_str()
+            ,"ERROR"
+            ,MB_OK|MB_ICONEXCLAMATION);
 	// Resource leak if you don't close these:
 	CloseHandle(process_info.hThread);
 	CloseHandle(process_info.hProcess);
@@ -3971,4 +4012,5 @@ void __fastcall TMainForm::FidonetPollMenuItemClick(TObject *Sender)
         close(file);
 }
 //---------------------------------------------------------------------------
+
 
