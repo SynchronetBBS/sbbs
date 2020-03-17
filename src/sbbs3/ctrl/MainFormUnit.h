@@ -450,6 +450,7 @@ __published:	// IDE-managed Components
     void __fastcall RefreshLogClick(TObject *Sender);
     void __fastcall FidonetConfigureMenuItemClick(TObject *Sender);
     void __fastcall FidonetPollMenuItemClick(TObject *Sender);
+    void __fastcall FileMenuRunJSMenuItemClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);

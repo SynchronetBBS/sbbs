@@ -13637,8 +13637,8 @@ object MainForm: TMainForm
           OnClick = RunJSClick
         end
         object FileMenuRunJSMenuItem: TMenuItem
-          Caption = 'Other JavaScript Module'
-          Visible = False
+          Caption = 'Other JavaScript Module...'
+          OnClick = FileMenuRunJSMenuItemClick
         end
       end
       object FileEditMenuItem: TMenuItem
