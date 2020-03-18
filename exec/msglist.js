@@ -365,7 +365,19 @@ function list_msg(msg, digits, selected, sort, msg_ctrl, exclude)
 	}
 }
 
-function view_msg(msg, lines, total_msgs, grp_name, sub_name)
+function msg_pmode(msgbase, msg)
+{
+	var pmode = msg.is_utf8 ? P_UTF8 : P_NONE;
+	if(msg.from_ext !== "1")
+		pmode |= P_NOATCODES;
+	if(msgbase.cfg) {
+		pmode |= msgbase.cfg.print_mode;
+		pmode &= ~msgbase.cfg.print_mode_neg;
+	}
+	return pmode;
+}
+
+function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name)
 {
 	var show_hdr = true;
 	var line_num = 0;
@@ -396,10 +408,11 @@ function view_msg(msg, lines, total_msgs, grp_name, sub_name)
 			line_num = 0;
 		var i = line_num;
 		var row = hdr_len;
+		var pmode = msg_pmode(msgbase, msg);
 		while(row < (console.screen_rows - 2)) {
 			console.line_counter = 0;
 			if(i < lines.length)
-				console.putmsg(lines[i++].trimRight(), msg.is_utf8 ? P_UTF8 : 0);
+				console.putmsg(lines[i++].trimRight(), pmode);
 			console.cleartoeol();
 			console.crlf();
 			row++;
@@ -408,7 +421,7 @@ function view_msg(msg, lines, total_msgs, grp_name, sub_name)
 //			bbs.download_msg_attachments(msg);
 		var line_range = "no content";
 		if(lines && lines.length) {
-			line_range =	format(options.view_lines_fmt || "%slines %u-%u"
+			line_range = format(options.view_lines_fmt || "%slines %u-%u"
 				,content_description(msg), line_num + 1, i);
 			line_range += format(options.view_total_lines_fmt || " of %u", lines.length);
 		}
@@ -836,9 +849,10 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			console.cleartoeol();
 			console.crlf();
 			console.attributes = msg_ctrl ? color_cfg.preview_active : color_cfg.preview_inactive;
+			var pmode = msg_pmode(msgbase, msg);
 			for(var i = offset; i < console.screen_rows; i++) {
 				if(text !== null && text[msg_line + (i - offset)])
-					console.write(strip_ctrl(text[msg_line + (i - offset)]));
+					console.putmsg(strip_ctrl(text[msg_line + (i - offset)]), pmode);
 				console.cleartoeol();
 				console.crlf();
 			}
@@ -896,7 +910,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				console.clear();
 				var viewed_msg = current;
 				while(!js.terminated && list[current]
-					&& (key = view_msg(list[current]
+					&& (key = view_msg(msgbase, list[current]
 						,get_msg_lines(msgbase, list[current], view_source, view_hex, view_wrapped)
 						,list.length
 						,grp_name, sub_name
