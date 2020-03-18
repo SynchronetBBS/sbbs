@@ -730,7 +730,10 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			console_beep();
 			current = list.length-1;
 		}
-
+		
+		if(msgbase.cfg) // Update "last read" pointer
+			msg_area.sub[msgbase.cfg.code].last_read = list[current].number;
+		
 		if(console.screen_columns >= 80)
 			right_justify(format(options.area_nums_fmt || "[message %u of %u]"
 				, current + 1, list.length));
@@ -973,6 +976,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							else {
 								console.clear();
 								bbs.post_msg(msgbase.subnum, list[current]);
+								return true;
 							}
 							break;
 						case 'M':
@@ -1026,6 +1030,8 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			case 'Q':
 				console.clear();
 				return false;
+			case ctrl('R'):				
+				return true;
 			case KEY_HOME:
 				if(msg_ctrl)
 					msg_line = 0;
@@ -1115,6 +1121,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				else {
 					console.clear();
 					bbs.post_msg(msgbase.subnum, list[current]);
+					return true; // reload msgs
 				}
 				break;
 			case 'M':
@@ -1237,6 +1244,7 @@ function load_msgs(msgbase, which, mode, usernumber)
 {
 	var mail = (msgbase.attributes & SMB_EMAIL);
 	var list = [];
+	msgbase.last_msg;	// Work around bug in MsgBase.get_index()/get_all_msg_headers() in v3.17c
 	if(mail && which !== undefined && which != MAIL_ALL) {
 		var idxlist = msgbase.get_index();
 		var total_msgs = idxlist.length;
@@ -1381,7 +1389,6 @@ function remove_list_format_property(name)
 	}
 }
 
-var curmsg = 0;
 if(msgbase.cfg) {
 	list_formats = sub_list_formats;
 	if(msgbase.cfg.settings & (SUB_FIDO | SUB_QNET | SUB_INET)) {
@@ -1396,7 +1403,6 @@ if(msgbase.cfg) {
 		remove_list_format_property("score");
 	if(!(msgbase.cfg.settings & SUB_TOUSER))
 		remove_list_format_property("to");
-	curmsg = msg_area.sub[msgbase.cfg.code].last_read;
 } else {
 	if(which === undefined)
 		which = MAIL_YOUR;
@@ -1422,13 +1428,6 @@ if(msgbase.attributes & SMB_EMAIL) {
 
 if(!usernumber)
 	usernumber = user.number;
-
-console.print("Loading messages \x01i...\x01n ");
-var list = load_msgs(msgbase, which, lm_mode, usernumber);
-if(!list || !list.length) {
-	alert("No messages");
-	exit();
-}
 
 js.on_exit("console.status = " + console.status);
 console.status |= CON_CR_CLREOL;
@@ -1463,10 +1462,15 @@ if(msgbase.cfg) {
 			break;
 	}
 }
-var result = list_msgs(msgbase, list, curmsg, preview, grp_name, sub_name);
-if(result) {
-	if(msgbase.cfg) {
-		msg_area.sub[msgbase.cfg.code].last_read = result;
-		bbs.scan_msgs(msgbase.cfg.code);
+
+do {
+	console.print("\x01[\x01>Loading messages \x01i...\x01n ");
+	var list = load_msgs(msgbase, which, lm_mode, usernumber);
+	if(!list || !list.length) {
+		alert("No messages");
+		break;
 	}
-}
+	var curmsg = 0;
+	if(msgbase.cfg)
+		curmsg = msg_area.sub[msgbase.cfg.code].last_read;
+} while(list_msgs(msgbase, list, curmsg, preview, grp_name, sub_name) === true);
