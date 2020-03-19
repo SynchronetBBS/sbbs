@@ -465,7 +465,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				break;
 			case 'H':
 				domsg=0;
-				msghdr(&msg);
+				dump_msghdr(&msg);
 				break;
 			case 'L':     /* List mail */
 				domsg=0;

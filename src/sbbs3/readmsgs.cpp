@@ -112,82 +112,16 @@ char *binstr(uchar *buf, ushort length, char* str)
 	return(str);
 }
 
-
-void sbbs_t::msghdr(smbmsg_t* msg)
+void sbbs_t::dump_msghdr(smbmsg_t* msg)
 {
-	int i;
-	char str[512];
-
-	CRLF;
-
-	/* variable fields */
-	for(i=0;i<msg->total_hfields;i++) {
-		char* p = str;
-		bprintf("%-16.16s ",smb_hfieldtype(msg->hfield[i].type));
-		switch(msg->hfield[i].type) {
-			case SMB_COLUMNS:
-				sprintf(str, "%u", *(uint8_t*)msg->hfield_dat[i]);
-				break;
-			case SENDERNETTYPE:
-			case RECIPIENTNETTYPE:
-			case REPLYTONETTYPE:
-				p = smb_nettype((enum smb_net_type)*(uint16_t*)msg->hfield_dat[i]);
-				break;
-			default:
-				p = binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length,str);
-				break;
+	newline();
+	str_list_t list = smb_msghdr_str_list(msg);
+	if(list != NULL) {
+		for(int i = 0; list[i] != NULL && !msgabort(); i++) {
+			bprintf("%s\r\n", list[i]);
 		}
-		bprintf("%s\r\n", p);
+		strListFree(&list);
 	}
-
-	/* fixed fields */
-	bprintf("%-16.16s %08X %04hX %.24s %s\r\n","when_written"	
-		,msg->hdr.when_written.time, msg->hdr.when_written.zone
-		,timestr(msg->hdr.when_written.time)
-		,smb_zonestr(msg->hdr.when_written.zone,NULL));
-	bprintf("%-16.16s %08X %04hX %.24s %s\r\n","when_imported"	
-		,msg->hdr.when_imported.time, msg->hdr.when_imported.zone
-		,timestr(msg->hdr.when_imported.time)
-		,smb_zonestr(msg->hdr.when_imported.zone,NULL));
-	bprintf("%-16.16s %04Xh\r\n"	,"type"			,msg->hdr.type);
-	bprintf("%-16.16s %04Xh\r\n"	,"version"		,msg->hdr.version);
-	bprintf("%-16.16s %04Xh\r\n"	,"attr"			,msg->hdr.attr);
-	bprintf("%-16.16s %08Xh\r\n"	,"auxattr"		,msg->hdr.auxattr);
-	bprintf("%-16.16s %08Xh\r\n"	,"netattr"		,msg->hdr.netattr);
-	bprintf("%-16.16s %06Xh\r\n"	,"header offset"	,msg->idx.offset);
-	bprintf("%-16.16s %u\r\n"	,"header length"	,msg->hdr.length);
-	bprintf("%-16.16s %d\r\n"	,"number"		,msg->hdr.number);
-
-	/* optional fixed fields */
-	if(msg->hdr.thread_id)
-		bprintf("%-16.16s %d\r\n"	,"thread_id"		,msg->hdr.thread_id);
-	if(msg->hdr.thread_back)
-		bprintf("%-16.16s %d\r\n"	,"thread_back"		,msg->hdr.thread_back);
-	if(msg->hdr.thread_next)
-		bprintf("%-16.16s %d\r\n"	,"thread_next"		,msg->hdr.thread_next);
-	if(msg->hdr.thread_first)
-		bprintf("%-16.16s %d\r\n"	,"thread_first"		,msg->hdr.thread_first);
-	if(msg->hdr.delivery_attempts)
-		bprintf("%-16.16s %hu\r\n"	,"delivery_attempts"	,msg->hdr.delivery_attempts);
-	if(msg->hdr.priority)
-		bprintf("%-16.16s %u\r\n"	,"priority"			,msg->hdr.priority);
-	if(msg->hdr.votes)
-		bprintf("%-16.16s %hu\r\n"	,"votes"		,msg->hdr.votes);
-
-	/* convenience integers */
-	if(msg->expiration)
-		bprintf("%-16.16s %s\r\n"	,"expiration"
-			,timestr(msg->expiration));
-	if(msg->cost)
-		bprintf("%-16.16s %u\r\n"	,"cost"				,msg->cost);
-
-	bprintf("%-16.16s %06Xh\r\n"	,"data offset"		,msg->hdr.offset);
-	for(i=0;i<msg->hdr.total_dfields;i++)
-		bprintf("data field[%u]    %s, offset %u, length %u\r\n"
-				,i
-				,smb_dfieldtype(msg->dfield[i].type)
-				,msg->dfield[i].offset
-				,msg->dfield[i].length);
 }
 
 /****************************************************************************/
@@ -1336,7 +1270,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							editmsg(&msg,subnum);
 							break;
 						case 'H':   /* View message header */
-							msghdr(&msg);
+							dump_msghdr(&msg);
 							domsg=0;
 							break;
 						case 'M':   /* Move message */
