@@ -89,29 +89,6 @@ long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long start, long pos
 	return(listed);
 }
 
-char *binstr(uchar *buf, ushort length, char* str)
-{
-	char tmp[128];
-	int i;
-
-	str[0]=0;
-	for(i=0;i<length;i++)
-		if(buf[i] && (buf[i]<' ' || buf[i]>=0x7f)
-			&& buf[i]!='\r' && buf[i]!='\n' && buf[i]!='\t')
-			break;
-	if(i==length)		/* not binary */
-		return((char*)buf);
-	for(i=0;i<length;i++) {
-		sprintf(tmp,"%02X ",buf[i]);
-		strcat(str,tmp); 
-		if(i >= 100) {
-			strcat(str,"...");
-			break;
-		}
-	}
-	return(str);
-}
-
 void sbbs_t::dump_msghdr(smbmsg_t* msg)
 {
 	newline();
