@@ -39,6 +39,7 @@
 #include <string.h>		/* strtok */
 #include "genwrap.h"	/* stricmp */
 #include "str_list.h"
+#include "xpprintf.h"
 
 str_list_t DLLCALL strListInit(void)
 {
@@ -269,6 +270,26 @@ size_t DLLCALL	strListAppendList(str_list_t* list, const str_list_t add_list)
 	return(count);
 }
 
+char* DLLCALL strListAppendFormat(str_list_t* list, const char* format, ...)
+{
+	char *ret;
+	char* buf = NULL;
+	int len;
+	va_list va;
+
+	va_start(va, format);
+	len = vasprintf(&buf, format, va);
+	va_end(va);
+
+	if(len == -1 || buf == NULL)
+		return NULL;
+
+	ret = str_list_append(list, buf, strListCount(*list));
+	if (ret == NULL)
+		free(buf);
+	return ret;
+}
+
 char* DLLCALL strListInsert(str_list_t* list, const char* str, size_t index)
 {
 	char* buf;
@@ -295,6 +316,26 @@ size_t DLLCALL strListInsertList(str_list_t* list, const str_list_t add_list, si
 			break;
 
 	return(i);
+}
+
+char* DLLCALL strListInsertFormat(str_list_t* list, size_t index, const char* format, ...)
+{
+	char *ret;
+	char* buf = NULL;
+	int len;
+	va_list va;
+
+	va_start(va, format);
+	len = vasprintf(&buf, format, va);
+	va_end(va);
+
+	if(len == -1 || buf == NULL)
+		return NULL;
+
+	ret = str_list_insert(list, buf, index);
+	if (ret == NULL)
+		free(buf);
+	return ret;
 }
 
 str_list_t DLLCALL strListSplit(str_list_t* lp, char* str, const char* delimit)

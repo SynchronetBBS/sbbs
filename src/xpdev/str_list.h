@@ -70,6 +70,9 @@ DLLEXPORT char* DLLCALL		strListAppend(str_list_t*, const char* str, size_t inde
 /* Append a string list onto another string list */
 DLLEXPORT size_t DLLCALL	strListAppendList(str_list_t*, const str_list_t append_list);
 
+/* Append a malloc'd formatted string to the end of the list */
+DLLEXPORT char* DLLCALL strListAppendFormat(str_list_t* list, const char* format, ...);
+
 /* Inserts a string into the list at a specific index */
 /* Pass a pointer to a string list, the string to add (insert) */
 /* The string to add is duplicated (using strdup) and the duplicate is added to the list */
@@ -77,6 +80,9 @@ DLLEXPORT char* DLLCALL		strListInsert(str_list_t*, const char* str, size_t inde
 
 /* Insert a string list into another string list */
 DLLEXPORT size_t DLLCALL	strListInsertList(str_list_t*, const str_list_t append_list, size_t index);
+
+/* Insert a malloc'd formatted string into the list */
+DLLEXPORT char* DLLCALL strListInsertFormat(str_list_t* list, size_t index, const char* format, ...);
 
 /* Remove a string at a specific index */
 DLLEXPORT char* DLLCALL		strListRemove(str_list_t*, size_t index);
