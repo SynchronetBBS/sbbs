@@ -128,6 +128,9 @@ enum {                              /* Access requirement binaries */
 	,AR_COLS
 	,AR_ROWS
 	,AR_PETSCII
+	,AR_ASCII
+	,AR_UTF8
+	,AR_CP437
     };
 
 #endif		/* Don't add anything after this line */

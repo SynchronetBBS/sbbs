@@ -662,7 +662,12 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define ICE_COLOR	(1L<<28)		/* Bright background color support		*/
 #define UTF8		(1L<<29)		/* UTF-8 terminal						*/
 
-#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|PETSCII|SWAP_DELETE|ICE_COLOR|UTF8)
+#define TERM_FLAGS		(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|PETSCII|SWAP_DELETE|ICE_COLOR|UTF8)
+#define CHARSET_FLAGS	(NO_EXASCII|PETSCII|UTF8)
+#define CHARSET_ASCII	NO_EXASCII	// US-ASCII
+#define CHARSET_PETSCII	PETSCII		// CBM-ASCII
+#define CHARSET_UTF8	UTF8
+#define CHARSET_CP437	0
 
 									/* Special terminal key mappings */
 #define TERM_KEY_HOME	CTRL_B

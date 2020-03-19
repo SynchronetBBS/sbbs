@@ -1532,6 +1532,9 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 		switch(artype) {
 			case AR_ANSI:				/* No arguments */
 			case AR_PETSCII:
+			case AR_ASCII:
+			case AR_UTF8:
+			case AR_CP437:
 			case AR_RIP:
 			case AR_WIP:
 			case AR_LOCAL:
@@ -1586,7 +1589,22 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				else result=!not;
 				break;
 			case AR_PETSCII:
-				if(user==NULL || !(user->misc&PETSCII))
+				if(user==NULL || (user->misc&CHARSET_FLAGS) != CHARSET_PETSCII)
+					result=not;
+				else result=!not;
+				break;
+			case AR_ASCII:
+				if(user==NULL || (user->misc&CHARSET_FLAGS) != CHARSET_ASCII)
+					result=not;
+				else result=!not;
+				break;
+			case AR_UTF8:
+				if(user==NULL || (user->misc&CHARSET_FLAGS) != CHARSET_UTF8)
+					result=not;
+				else result=!not;
+				break;
+			case AR_CP437:
+				if(user==NULL || (user->misc&CHARSET_FLAGS) != CHARSET_CP437)
 					result=not;
 				else result=!not;
 				break;
