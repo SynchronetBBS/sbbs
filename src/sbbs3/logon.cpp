@@ -63,6 +63,7 @@ bool sbbs_t::logon()
 		return(false);
 
 	client.user=useron.alias;
+	client.usernum = useron.number;
 	client_on(client_socket,&client,TRUE /* update */);
 
 #ifdef JAVASCRIPT

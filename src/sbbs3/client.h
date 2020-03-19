@@ -51,6 +51,7 @@ typedef struct {
 	time32_t	time;		/* connect time */
 	const char*	protocol;	/* protocol description */
 	const char*	user;		/* user name */
+	uint32_t	usernum;	/* user number (authenticated when non-zero) */
 } client_t;
 
 /* Used for ctrl/client.dab */

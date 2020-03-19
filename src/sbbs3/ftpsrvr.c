@@ -3142,6 +3142,7 @@ static void ctrl_thread(void* arg)
 	client.port=inet_addrport(&ftp.client_addr);
 	client.protocol="FTP";
 	client.user=STR_UNKNOWN_USER;
+	client.usernum = 0;
 	client_on(sock,&client,FALSE /* update */);
 
 	if(startup->login_attempt.throttle
@@ -3408,6 +3409,7 @@ static void ctrl_thread(void* arg)
 				sprintf(str,"%s <%.32s>",user.alias,password);
 				client.user=str;
 			}
+			client.usernum = user.number;
 			client_on(sock,&client,TRUE /* update */);
 
 			lprintf(LOG_INFO,"%04d <%s> logged in (%u today, %u total)"

@@ -358,7 +358,7 @@ extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
 	if(client==NULL)
 		return(-1);
 
-	if(client->user!=NULL && (i=smb_hfield_str(msg,SENDERUSERID,client->user))!=SMB_SUCCESS)
+	if(client->user!=NULL && client->usernum && (i=smb_hfield_str(msg,SENDERUSERID,client->user))!=SMB_SUCCESS)
 		return(i);
 	if(client->time
 		&& (i=smb_hfield_str(msg,SENDERTIME,xpDateTime_to_isoDateTimeStr(gmtime_to_xpDateTime(client->time)

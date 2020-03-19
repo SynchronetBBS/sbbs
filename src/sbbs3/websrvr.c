@@ -1613,6 +1613,7 @@ void http_logon(http_session_t * session, user_t *usr)
 		putuserdat(&scfg, &session->user);
 	}
 	session->client.user=session->username;
+	session->client.usernum = session->user.number;
 	client_on(session->socket, &session->client, /* update existing client record? */TRUE);
 
 	session->last_user_num=session->user.number;
@@ -6462,6 +6463,7 @@ void http_session_thread(void* arg)
 	session.client.protocol=session.is_tls ? "HTTPS":"HTTP";
 	session.client.user=session.username;
 	session.client.size=sizeof(session.client);
+	session.client.usernum = 0;
 	client_on(session.socket, &session.client, /* update existing client record? */FALSE);
 
 	if(startup->login_attempt.throttle

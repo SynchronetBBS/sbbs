@@ -1105,6 +1105,7 @@ static void pop3_thread(void* arg)
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&pop3.client_addr);
 	client.user=STR_UNKNOWN_USER;
+	client.usernum = 0;
 	client_on(socket,&client,FALSE /* update */);
 
 	SAFEPRINTF2(str,"%s: %s", client.protocol, host_ip);
@@ -1291,6 +1292,7 @@ static void pop3_thread(void* arg)
 
 		/* Update client display */
 		client.user=user.alias;
+		client.usernum = user.number;
 		client_on(socket,&client,TRUE /* update */);
 		activity=FALSE;
 
@@ -3149,6 +3151,7 @@ static void smtp_thread(void* arg)
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&smtp.client_addr);
 	client.user=STR_UNKNOWN_USER;
+	client.usernum = 0;
 	client_on(socket,&client,FALSE /* update */);
 
 	SAFEPRINTF(str,"SMTP: %s",host_ip);
@@ -4169,6 +4172,7 @@ static void smtp_thread(void* arg)
 
 			/* Update client display */
 			client.user=relay_user.alias;
+			client.usernum = relay_user.number;
 			client_on(socket,&client,TRUE /* update */);
 
 			lprintf(LOG_INFO,"%04d %s %s authenticated using %s authentication"
@@ -4256,6 +4260,7 @@ static void smtp_thread(void* arg)
 
 			/* Update client display */
 			client.user=relay_user.alias;
+			client.usernum = relay_user.number;
 			client_on(socket,&client,TRUE /* update */);
 
 			lprintf(LOG_INFO,"%04d %s %s authenticated using CRAM-MD5 authentication"
