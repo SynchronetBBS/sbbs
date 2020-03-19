@@ -2025,6 +2025,39 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_dump_msg_header(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+	if(argc >= 1 && JSVAL_IS_OBJECT(argv[0])) {
+		JSObject* hdr = JSVAL_TO_OBJECT(argv[0]);
+		if(hdr == NULL)		/* no header supplied? */
+			return JS_TRUE;
+		privatemsg_t* mp = (privatemsg_t*)JS_GetPrivate(cx, hdr);
+		if(mp == NULL)
+			return JS_TRUE;
+		str_list_t list = smb_msghdr_str_list(&mp->msg);
+		if(list != NULL) {
+			JSObject* array;
+			if((array = JS_NewArrayObject(cx, 0, NULL)) == NULL) {
+				JS_ReportError(cx, "JS_NewArrayObject failure");
+				return JS_FALSE;
+			}
+			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
+			for(int i = 0; list[i] != NULL; i++) {
+				JSString* js_str = JS_NewStringCopyZ(cx, list[i]);
+				if(js_str == NULL)
+					break;
+				JS_DefineElement(cx, array, i, STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE);
+			}
+			strListFree(&list);
+		}
+	}
+	return JS_TRUE;
+}
+
+static JSBool
 js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
@@ -3228,7 +3261,10 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,JSDOCSTR("Returns 0 for no votes, 1 for an up-vote, 2 for a down-vote, or in the case of a poll-response: a bit-field of votes.")
 	,317
 	},
-
+	{"dump_msg_header",		js_dump_msg_header,		1,	JSTYPE_ARRAY,	JSDOCSTR("object header")
+		,JSDOCSTR("dump a message header object to an array of strings for diagnostic uses")
+		,31702
+	},
 	{0}
 };
 
