@@ -62,101 +62,114 @@ static char *binstr(uchar *buf, uint16_t length)
 	return(str);
 }
 
-void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
+str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t* msg)
 {
 	int i;
 	time_t	tt;
+	str_list_t list = strListInit();
 
-	fprintf(fp,"%-20.20s %"PRId32"\n"		,"number"			,msg->hdr.number);
+	if(list == NULL)
+		return NULL;
 
-	/* convenience strings */
-	if(msg->subj)
-		fprintf(fp,"%-20.20s \"%s\"\n"	,"subject"			,msg->subj);
-	if(msg->to) {
-		fprintf(fp,"%-20.20s %s"	,"to"				,msg->to);
-		if(msg->to_net.type)
-			fprintf(fp," (%s: %s)",smb_nettype(msg->to_net.type), smb_netaddr(&msg->to_net));
-		if(msg->to_ext)
-			fprintf(fp," #%s",msg->to_ext);
-		fprintf(fp,"\n");
-	}
-	if(msg->from) {
-		fprintf(fp,"%-20.20s \"%s\""	,"from"				,msg->from);
-		if(msg->from_net.type)
-			fprintf(fp," (%s: %s)",smb_nettype(msg->from_net.type), smb_netaddr(&msg->from_net));
-		if(msg->from_ext)
-			fprintf(fp," #%s",msg->from_ext);
-		fprintf(fp,"\n");
-	}
-	if(msg->replyto) {
-		fprintf(fp,"%-20.20s \"%s\""	,"reply-to"			,msg->replyto);
-		if(msg->replyto_ext)
-			fprintf(fp," #%s",msg->replyto_ext);
-		if(msg->replyto_net.type)
-			fprintf(fp," (%s: %s)",smb_nettype(msg->replyto_net.type), smb_netaddr(&msg->replyto_net));
-		fprintf(fp,"\n");
-	}
-	if(msg->summary)
-		fprintf(fp,"%-20.20s \"%s\"\n"	,"summary"			,msg->summary);
+#define HFIELD_NAME_FMT "%-16.16s "
 
-	/* convenience integers */
-	if(msg->expiration) {
-		tt=msg->expiration;
-		fprintf(fp,"%-20.20s %.24s\n","expiration"	
-			,ctime(&tt));
+	/* variable fields */
+	for(i=0;i<msg->total_hfields;i++) {
+		switch(msg->hfield[i].type) {
+			case SMB_COLUMNS:
+				strListAppendFormat(&list, HFIELD_NAME_FMT "%u"
+					,smb_hfieldtype(msg->hfield[i].type)
+					,*(uint8_t*)msg->hfield_dat[i]);
+				break;
+			case SENDERNETTYPE:
+			case RECIPIENTNETTYPE:
+			case REPLYTONETTYPE:
+				strListAppendFormat(&list, HFIELD_NAME_FMT "%s"
+					,smb_hfieldtype(msg->hfield[i].type)
+					,smb_nettype((enum smb_net_type)*(uint16_t*)msg->hfield_dat[i]));
+				break;
+			default:
+				strListAppendFormat(&list, HFIELD_NAME_FMT "%s"
+					,smb_hfieldtype(msg->hfield[i].type)
+					,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length));
+				break;
+		}
 	}
 
 	/* fixed header fields */
 	tt=msg->hdr.when_written.time;
-	fprintf(fp,"%-20.20s %.24s  UTC%+d:%02d\n"	,"when_written"	
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%08X %04hX %.24s %s"	,"when_written"
+		,msg->hdr.when_written.time, msg->hdr.when_written.zone
 		,ctime(&tt)	
-		,smb_tzutc(msg->hdr.when_written.zone)/60
-		,abs(smb_tzutc(msg->hdr.when_written.zone)%60));
+		,smb_zonestr(msg->hdr.when_written.zone,NULL));
 	tt=msg->hdr.when_imported.time;
-	fprintf(fp,"%-20.20s %.24s  UTC%+d:%02d\n"	,"when_imported"	
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%08X %04hX %.24s %s"	,"when_imported"
+		,msg->hdr.when_imported.time, msg->hdr.when_imported.zone
 		,ctime(&tt)	
-		,smb_tzutc(msg->hdr.when_imported.zone)/60
-		,abs(smb_tzutc(msg->hdr.when_imported.zone)%60));
-	fprintf(fp,"%-20.20s %04Xh\n"	,"type"				,msg->hdr.type);
-	fprintf(fp,"%-20.20s %04Xh\n"	,"version"			,msg->hdr.version);
-	fprintf(fp,"%-20.20s %04Xh\n"	,"attr"				,msg->hdr.attr);
-	fprintf(fp,"%-20.20s %08"PRIX32"h\n"	,"auxattr"			,msg->hdr.auxattr);
-	fprintf(fp,"%-20.20s %08"PRIX32"h\n"	,"netattr"			,msg->hdr.netattr);
+		,smb_zonestr(msg->hdr.when_imported.zone,NULL));
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%04Xh"			,"type"				,msg->hdr.type);
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%04Xh"			,"version"			,msg->hdr.version);
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%04Xh"			,"attr"				,msg->hdr.attr);
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%08"PRIX32"h"	,"auxattr"			,msg->hdr.auxattr);
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%08"PRIX32"h"	,"netattr"			,msg->hdr.netattr);
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%06"PRIX32"h"	,"header_offset"	,msg->idx.offset);
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%u (calc: %lu)"	,"header_length"	,msg->hdr.length, smb_getmsghdrlen(msg));
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%"PRId32		,"number"			,msg->hdr.number);
 
 	/* optional fixed fields */
 	if(msg->hdr.thread_id)
-		fprintf(fp,"%-20.20s %"PRId32"\n"	,"thread_id"		,msg->hdr.thread_id);
+		strListAppendFormat(&list, HFIELD_NAME_FMT "%"PRId32	,"thread_id"		,msg->hdr.thread_id);
 	if(msg->hdr.thread_back)
-		fprintf(fp,"%-20.20s %"PRId32"\n"	,"thread_back"		,msg->hdr.thread_back);
+		strListAppendFormat(&list, HFIELD_NAME_FMT "%"PRId32	,"thread_back"		,msg->hdr.thread_back);
 	if(msg->hdr.thread_next)
-		fprintf(fp,"%-20.20s %"PRId32"\n"	,"thread_next"		,msg->hdr.thread_next);
+		strListAppendFormat(&list, HFIELD_NAME_FMT "%"PRId32	,"thread_next"		,msg->hdr.thread_next);
 	if(msg->hdr.thread_first)
-		fprintf(fp,"%-20.20s %"PRId32"\n"	,"thread_first"		,msg->hdr.thread_first);
+		strListAppendFormat(&list, HFIELD_NAME_FMT "%"PRId32	,"thread_first"		,msg->hdr.thread_first);
 	if(msg->hdr.delivery_attempts)
-		fprintf(fp,"%-20.20s %hu\n"	,"delivery_attempts",msg->hdr.delivery_attempts);
-	if(msg->hdr.times_downloaded)
-		fprintf(fp,"%-20.20s %"PRIu32"\n"	,"times_downloaded"	,msg->hdr.times_downloaded);
-	if(msg->hdr.last_downloaded) {
-		tt=msg->hdr.last_downloaded;
-		fprintf(fp,"%-20.20s %.24s\n"	,"last_downloaded"	,ctime(&tt));
+		strListAppendFormat(&list, HFIELD_NAME_FMT "%hu"		,"delivery_attempts",msg->hdr.delivery_attempts);
+	if(msg->hdr.votes)
+		strListAppendFormat(&list, HFIELD_NAME_FMT "%hu"		,"votes"			,msg->hdr.votes);
+	if(msg->hdr.type == SMB_MSG_TYPE_NORMAL) {
+		if(msg->hdr.priority)
+			strListAppendFormat(&list, HFIELD_NAME_FMT "%u"		,"priority"			,msg->hdr.priority);
+	} else { // FILE
+		if(msg->hdr.times_downloaded)
+			strListAppendFormat(&list, HFIELD_NAME_FMT "%"PRIu32,"times_downloaded"	,msg->hdr.times_downloaded);
+		if(msg->hdr.last_downloaded) {
+			tt=msg->hdr.last_downloaded;
+			strListAppendFormat(&list, HFIELD_NAME_FMT "%.24s"	,"last_downloaded"	,ctime(&tt));
+		}
 	}
 
-	fprintf(fp,"%-20.20s %06"PRIX32"h\n"	,"header offset"	,msg->idx.offset);
-	fprintf(fp,"%-20.20s %u\n"		,"header length"	,msg->hdr.length);
-	fprintf(fp,"%-20.20s %lu\n"		,"calculated length",smb_getmsghdrlen(msg));
-
-	/* variable fields */
-	for(i=0;i<msg->total_hfields;i++)
-		fprintf(fp,"%-20.20s \"%s\"\n"
-			,smb_hfieldtype(msg->hfield[i].type)
-			,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length));
+	/* convenience integers */
+	if(msg->expiration) {
+		tt=msg->expiration;
+		strListAppendFormat(&list, HFIELD_NAME_FMT "%.24s", "expiration", ctime(&tt));
+	}
+	if(msg->cost)
+		strListAppendFormat(&list, HFIELD_NAME_FMT "%u", "cost", msg->cost);
 
 	/* data fields */
-	fprintf(fp,"%-20.20s %06"PRIX32"h\n"	,"data offset"		,msg->hdr.offset);
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%06"PRIX32"h"	,"data_offset"		,msg->hdr.offset);
 	for(i=0;i<msg->hdr.total_dfields;i++)
-		fprintf(fp,"data field[%u]        %s, offset %"PRIu32", length %"PRIu32"\n"
+		strListAppendFormat(&list, "data_field[%u]    %s, offset %"PRIu32", length %"PRIu32
 			,i
 			,smb_dfieldtype(msg->dfield[i].type)
 			,msg->dfield[i].offset
 			,msg->dfield[i].length);
+
+	return list;
+}
+
+void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
+{
+	int i;
+
+	str_list_t list = smb_msghdr_str_list(msg);
+	if(list != NULL) {
+		for(i = 0; list[i] != NULL; i++) {
+			fprintf(fp, "%s\n", list[i]);
+		}
+		strListFree(&list);
+	}
 }
