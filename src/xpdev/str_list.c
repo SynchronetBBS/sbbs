@@ -270,6 +270,7 @@ size_t DLLCALL	strListAppendList(str_list_t* list, const str_list_t add_list)
 	return(count);
 }
 
+#if !defined(__BORLANDC__) // Doesn't have asprintf() or va_copy()_vscprintf()
 char* DLLCALL strListAppendFormat(str_list_t* list, const char* format, ...)
 {
 	char *ret;
@@ -289,6 +290,7 @@ char* DLLCALL strListAppendFormat(str_list_t* list, const char* format, ...)
 		free(buf);
 	return ret;
 }
+#endif
 
 char* DLLCALL strListInsert(str_list_t* list, const char* str, size_t index)
 {
@@ -318,6 +320,7 @@ size_t DLLCALL strListInsertList(str_list_t* list, const str_list_t add_list, si
 	return(i);
 }
 
+#if !defined(__BORLANDC__) // Doesn't have asprintf() or va_copy()_vscprintf()
 char* DLLCALL strListInsertFormat(str_list_t* list, size_t index, const char* format, ...)
 {
 	char *ret;
@@ -337,6 +340,7 @@ char* DLLCALL strListInsertFormat(str_list_t* list, size_t index, const char* fo
 		free(buf);
 	return ret;
 }
+#endif
 
 str_list_t DLLCALL strListSplit(str_list_t* lp, char* str, const char* delimit)
 {
