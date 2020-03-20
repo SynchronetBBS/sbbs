@@ -170,8 +170,8 @@ function unlock_flow(locks)
 function outbound_root(addr, scfg)
 {
 	if (FIDO.FTNDomains.outboundMap[addr.domain] === undefined)
-		return scfg.outbound.replace(/[\\\/]$/, '');
-	return FIDO.FTNDomains.outboundMap[addr.domain];
+		return fullpath(scfg.outbound.replace(/[\\\/]$/, ''));
+	return fullpath(FIDO.FTNDomains.outboundMap[addr.domain]);
 }
 
 /*
