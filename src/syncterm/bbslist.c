@@ -194,7 +194,7 @@ char *address_family_help =	"`Address Family`\n\n"
 							"`IPv4 only`...: Only uses IPv4 addresses.\n"
 							"`IPv6 only`...: Only uses IPv6 addresses.\n";
 
-char *address_help=	
+char *address_help=
 					"`Address`, `Phone Number`, `Serial Port`, or `Command`\n\n"
 					"Enter the hostname, IP address, phone number, or serial port device of\n"
 					"the system to connect to. Example: `nix.synchro.net`\n\n"
@@ -213,10 +213,10 @@ char *conn_type_help=			"`Connection Type`\n\n"
 								;
 
 ini_style_t ini_style = {
-	/* key_len */ 15, 
-	/* key_prefix */ "\t", 
-	/* section_separator */ "\n", 
-	/* value_separarator */NULL, 
+	/* key_len */ 15,
+	/* key_prefix */ "\t",
+	/* section_separator */ "\n",
+	/* value_separarator */NULL,
 	/* bit_separator */ NULL };
 
 void viewofflinescroll(void)
@@ -1166,7 +1166,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	else {
 		inifile=strListInit();
 	}
-	/* 
+	/*
 	 * Redundant:
 	 * iniAddSection(&inifile,bbs->name,NULL);
 	 */
@@ -1236,7 +1236,7 @@ static struct bbslist ***glob_list;
 /*
  * This uses the above variables and therefore *must* be called from
  * show_bbslist().
- * 
+ *
  * If show_bbslist() is not on the stack, this will do insane things.
  */
 static void
@@ -1328,21 +1328,21 @@ void change_settings(int connected)
 						"        The value to set the TERM envirnonment variable to goes here.\n\n"
 						"~ Custom Screen Mode ~\n"
 						"        Configure the Custom screen mode.\n\n";
-		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
-		sprintf(opts[1],"Prompt to Save          %s",settings.prompt_save?"Yes":"No");
-		sprintf(opts[2],"Startup Screen Mode     %s",screen_modes[settings.startup_mode]);
-		sprintf(opts[3],"Video Output Mode       %s",output_descrs[settings.output_mode]);
-		sprintf(opts[4],"Scrollback Buffer Lines %d",settings.backlines);
-		sprintf(opts[5],"Modem/Comm Device       %s",settings.mdm.device_name);
+		SAFEPRINTF(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
+		SAFEPRINTF(opts[1],"Prompt to Save          %s",settings.prompt_save?"Yes":"No");
+		SAFEPRINTF(opts[2],"Startup Screen Mode     %s",screen_modes[settings.startup_mode]);
+		SAFEPRINTF(opts[3],"Video Output Mode       %s",output_descrs[settings.output_mode]);
+		SAFEPRINTF(opts[4],"Scrollback Buffer Lines %d",settings.backlines);
+		SAFEPRINTF(opts[5],"Modem/Comm Device       %s",settings.mdm.device_name);
 		if(settings.mdm.com_rate)
 			sprintf(str,"%lubps",settings.mdm.com_rate);
 		else
 			strcpy(str,"Current");
-		sprintf(opts[6],"Modem/Comm Rate         %s",str);
-		sprintf(opts[7],"Modem Init String       %s",settings.mdm.init_string);
-		sprintf(opts[8],"Modem Dial String       %s",settings.mdm.dial_string);
-		sprintf(opts[9],"List Path               %s",settings.list_path);
-		sprintf(opts[10],"TERM For Shell          %s",settings.TERM);
+		SAFEPRINTF(opts[6],"Modem/Comm Rate         %s",str);
+		SAFEPRINTF(opts[7],"Modem Init String       %s",settings.mdm.init_string);
+		SAFEPRINTF(opts[8],"Modem Dial String       %s",settings.mdm.dial_string);
+		SAFEPRINTF(opts[9],"List Path               %s",settings.list_path);
+		SAFEPRINTF(opts[10],"TERM For Shell          %s",settings.TERM);
 		if (connected)
 			opt[11] = NULL;
 		else
@@ -1873,7 +1873,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 				}
 				else if(val&MSK_ON) {
 					char tmp[LIST_NAME_MAX+1];
-				
+
 					switch(val&MSK_ON) {
 						case MSK_INS:
 							if(listcount>=MAX_OPTS) {
