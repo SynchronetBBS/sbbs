@@ -297,7 +297,7 @@ DLLEXPORT int DLLCALL	get_errno(void);
 	#else
 		#define SLEEP(x)		({	int sleep_msecs=x; struct timespec ts={0}; \
 								ts.tv_sec=(sleep_msecs/1000); ts.tv_nsec=((sleep_msecs%1000)*1000000); \
-								nanosleep(&ts, NULL); })
+								while(nanosleep(&ts, &ts) != 0 && errno==EINTR && x > 1); })
 	#endif
 
 	#define YIELD()			SLEEP(1)
