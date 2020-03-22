@@ -12,6 +12,7 @@ all:		xpdev-mt \
 		uifc-mt \
 		ciolib-mt \
 		smblib \
+		encode \
 		$(EXEODIR) \
 		$(MTOBJODIR) \
 		$(SCFG)
