@@ -105,7 +105,7 @@ while(!sysop || !confirm("Your name: " + sysop))
 /*******************/
 /* UPDATE MSGS.CNF */
 /*******************/
-if(!msg_area.grp[netname.toLowerCase()]
+if(!msg_area.grp[netname]
 	&& confirm("Create " + netname + " message group in SCFG->Message Areas")) {
 	print("Adding Message Group: " + netname);
 	msgs_cnf.grp.push( {
@@ -121,6 +121,40 @@ if(confirm("Update Message Area configuration file: msgs.cnf")) {
 		exit(1);
 	}
 	print("msgs.cnf updated successfully.");
+}
+
+/*********************/
+/* DOWNLOAD ECHOLIST */
+/*********************/
+var echolist_fname;
+if(confirm("Download and install " + netname + " EchoList")) {
+	var echolist_url = "http://www.filegate.net/backbone/BACKBONE.NA";
+	load("http.js");
+	while(!js.terminated) {
+		while(!echolist_url	|| !confirm("Download EchoList from " + echolist_url)) {
+			echolist_url = prompt("Echolist URL");
+		}
+		echolist_fname = file_getname(echolist_url);
+		var file = new File(echolist_fname);
+		if(!file.open("w")) {
+			alert("Error " + file.error + " opening " + file.name);
+			exit(1);
+		}
+		var http_request = new HTTPRequest();
+		var contents = http_request.Get(echolist_url);
+		if(http_request.response_code == 200) {
+			print("Downloaded " + echolist_url + " to " + file.name);
+			file.write(contents);
+			file.close();
+			break;
+		}
+		alert("Error " + http_request.respons_code + " downloading " + echolist_url);
+	}
+
+	if(confirm("Import " + echolist_fname)) {
+		print("Importing " + echolist_fname);
+		system.exec(system.exec_dir + "scfg -import=" + echolist_fname + " -g" + netname);
+	}
 }
 
 /***********************/
@@ -165,41 +199,22 @@ if(confirm("Update FidoNet configuration file: sbbsecho.ini")) {
 			exit(1);
 		}
 	}
+	if(echolist_fname) {
+		var section = "echolist:" + echolist_fname;
+		if(!file.iniGetObject(section)
+			|| confirm("Overwrite [" + section + "] configuration in " + file.name)) {
+			if(!file.iniSetObject(section,
+				{
+					Hub: fidoaddr.to_str(hub),
+					Pwd: areafixpwd
+				})) {
+				alert("Error " + file.error + " writing to " + file.name);
+				exit(1);
+			}
+		}
+	}
 	file.close();
 	print(file.name + " updated successfully.");
-}
-
-/*********************/
-/* DOWNLOAD ECHOLIST */
-/*********************/
-if(confirm("Download and install " + netname + " EchoList")) {
-	var echolist_fname = "echolist.txt";
-	var echolist_url = "http://www.filegate.net/backbone/BACKBONE.NA";
-	load("http.js");
-	while(!js.terminated) {
-		while(!echolist_url	|| !confirm("Download EchoList from " + echolist_url)) {
-			echolist_url = prompt("Echolist URL");
-		}
-		var file = new File(echolist_fname);
-		if(!file.open("w")) {
-			alert("Error " + file.error + " opening " + file.name);
-			exit(1);
-		}
-		var http_request = new HTTPRequest();
-		var contents = http_request.Get(echolist_url);
-		if(http_request.response_code == 200) {
-			print("Downloaded " + echolist_url + " to " + file.name);
-			file.write(contents);
-			file.close();
-			break;
-		}
-		alert("Error " + http_request.respons_code + " downloading " + echolist_url);
-	}
-
-	if(confirm("Import " + echolist_fname)) {
-		print("Importing " + echolist_fname);
-		system.exec(system.exec_dir + "scfg -import=" + echolist_fname + " -g" + netname);
-	}
 }
 
 /******************/
@@ -243,7 +258,7 @@ if(confirm("Create an AreaFix request to link ALL EchoMail areas with "
 print(netname + " initial setup completely successfully.");
 print();
 if(your.node == 9999) {
-	print("You used a temporary node address (" + fidoaddr.to_str(your) + 
+	print("You used a temporary node address (" + fidoaddr.to_str(your) +
 		").  You will need to update your");
 	print("SCFG->Networks->FidoNet->Address once your permanent node address has been");
 	print("assigned to you.");
