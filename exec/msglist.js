@@ -16,6 +16,17 @@
 /* To install as mail reading module and message list module, run:
    jsexec msglist -install
  */
+ 
+/* TODO: 
+ * - display poll messages "correctly"
+ * - support voting
+ * - fix issues with operator sub-menu display
+ * - complete operator sub-menu commands
+ * - consider whether "source" view should be available to all
+ * - message attributes displayed in header aren't always current
+ * - regexp-style text searches
+ * - highlight found text in messages (?)
+ */
 
 "use strict";
 
@@ -516,30 +527,36 @@ function line_split(text, chop)
 }
 
 // Return an array of lines of text from the message body/tails/header fields
-function get_msg_lines(msgbase, msg, source, hex, wrap, chop)
+function get_msg_lines(msgbase, msg, hdr, source, hex, wrap, chop)
 {
-	if(msg.text && msg.source === source && msg.hex == hex && msg.wrapped == wrap) {
+	if(msg.text && msg.hdr === hdr && msg.source === source && msg.hex == hex && msg.wrapped == wrap) {
 		msg.lines = msg.text.length;
 		return msg.text;
 	}
 	const preparing_fmt = options.preparing_preview_fmt || "%25s";
 	msg.hex = hex;
+	msg.hdr = hdr;
 	msg.source = (source===true && !hex);
 	msg.wrapped = false;
 	msg.html = false;
-	console.print(format(preparing_fmt, options.reading_message_text || "\x01[Reading message text ..."));
-	var text = msgbase.get_msg_body(msg
-				,/* strip ctrl-a */msg.source
-				,/* dot-stuffing */false
-				,/* tails */true
-				,/* plain-text */!msg.source);
-	if(!text) {
-		console.clearline();
-		return [];
+	var text;
+	if(!hdr) {
+		console.print(format(preparing_fmt, options.reading_message_text || "\x01[Reading message text ..."));
+		text = msgbase.get_msg_body(msg
+					,/* strip ctrl-a */msg.source
+					,/* dot-stuffing */false
+					,/* tails */true
+					,/* plain-text */!msg.source);
+		if(!text) {
+			console.clearline();
+			return [];
+		}
+		if(text.length <= options.large_msg_threshold)
+			msg.wrapped = (wrap!==false && !hex);
 	}
-	if(text.length <= options.large_msg_threshold)
-		msg.wrapped = (wrap!==false && !hex);
-	if(hex) {
+	if(hdr) {
+		text = line_split(msgbase.dump_msg_header(msg).join('\n'));
+	} else if(hex) {
 		console.print(format(preparing_fmt, options.preparing_hex_dump || "\x01[Preparing hex-dump ..."));
 		text = text.slice(0, options.large_msg_threshold);
 		text = hexdump.generate(undefined, text, /* ASCII: */true, /* offsets: */true);
@@ -653,7 +670,9 @@ function download_msg_source(msg)
 function content_description(msg)
 {
 	var desc = [];
-	if(msg.hex)
+	if(msg.hdr)
+		desc.push('header');
+	else if(msg.hex)
 		desc.push('hex-dumpped');
 	else {
 		if(msg.wrapped)
@@ -707,6 +726,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 	var msg_line = 0;
 	var msg_ctrl = false;
 	var spam_visible = true;
+	var view_hdr = false;
 	var view_hex = false;
 	var view_wrapped = true;
 	var view_source = false;
@@ -896,14 +916,12 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				flagged = 0;
 				for(var i in list)
 					if(list[i].flagged) {
-						list[i].attr ^= MSG_DELETE;
-						if(!update_msg_attr(msgbase, list[i]))
+						if(!update_msg_attr(msgbase, list[i], list[i].attr | MSG_DELETE))
 							alert("Delete failed");
 						flagged++;
 					}
 				if(!flagged) {
-					list[current].attr ^= MSG_DELETE;
-					if(!update_msg_attr(msgbase, list[current]))
+					if(!update_msg_attr(msgbase, list[current], list[current].attr ^ MSG_DELETE))
 						alert("Delete failed");
 					current++;
 				}
@@ -914,7 +932,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				var viewed_msg = current;
 				while(!js.terminated && list[current]
 					&& (key = view_msg(msgbase, list[current]
-						,get_msg_lines(msgbase, list[current], view_source, view_hex, view_wrapped)
+						,get_msg_lines(msgbase, list[current], view_hdr, view_source, view_hex, view_wrapped)
 						,list.length
 						,grp_name, sub_name
 						)) != 'Q') {
@@ -935,8 +953,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 						case KEY_DEL:
 							if(msgbase.cfg && !msg_area.sub[msgbase.cfg.code].is_operator)
 								break;
-							list[current].attr ^= MSG_DELETE;
-							if(!update_msg_attr(msgbase, list[current]))
+							if(!update_msg_attr(msgbase, list[current], list[current].attr ^ MSG_DELETE))
 								alert("Delete failed");
 							break;
 						case KEY_LEFT:
@@ -995,6 +1012,41 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							view_wrapped = !view_wrapped;
 							list[current].text = null;
 							break;
+						case 'O':
+							if(!(user.is_sysop || (msgbase.cfg && msg_area.sub[msgbase.cfg.code].is_operator)))
+								break;
+							while(bbs.online) {
+								if(!(user.settings & USER_EXPERT)) {
+									console.clear(LIGHTGRAY);
+									bbs.menu("sysmscan");
+									console.crlf();
+								}
+								console.putmsg(options.operator_prompt || "\x01[\x01>\x01y\x01hOperator: ", K_NOCRLF);
+								switch(console.getkeys("?QHC", 0, K_NOCRLF|K_UPPER)) {
+									case '?':
+										if(user.settings & USER_EXPERT) {
+											console.line_counter = 0;
+											bbs.menu("sysmscan");
+											console.crlf();
+										}
+										continue;
+									case 'H':
+										view_hdr = !view_hdr;
+										list[current].text = null;
+										break;
+									case 'C':
+									{
+										var attr = bbs.change_msg_attr(list[current]);
+										if(attr == list[current].attr)
+											break;
+										if(!update_msg_attr(msgbase, list[current], attr))
+											alert("Message attribute update failed");
+										break;
+									}
+								}
+								break;
+							}
+							break;
 						default:
 							if(typeof key == "number") {
 								current = key -1;
@@ -1011,8 +1063,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				if(list[current]) {
 					var msg = list[current];
 					if(mail && msg.to_ext == user.number) {
-						msg.attr |= MSG_READ;
-						if(!update_msg_attr(msgbase, msg))
+						if(!update_msg_attr(msgbase, msg, msg.attr | MSG_READ))
 							alert("failed to add read attribute");
 					}
 				}
@@ -1223,19 +1274,21 @@ function msg_attributes(msg, msgbase, short)
 }
 
 // Update a message header's attributes (only)
-function update_msg_attr(msgbase, msg)
+function update_msg_attr(msgbase, msg, attr)
 {
 	var hdr = msgbase.get_msg_header(msg.number, /* expand: */false);
 	if(hdr == null) {
 		alert("get_msg_header(" + msg.number + ") failed: " + msgbase.error);
 		return false;
 	}
-	hdr.attr = msg.attr;
+	hdr.attr = attr;
 	var result =  msgbase.put_msg_header(hdr);
 	if(!result)
 		alert("put_msg_header(" + msg.number + ") failed: " + msgbase.error);
-	else
+	else {
+		msg.attr = attr;
 		msg.attributes = msg_attributes(msg, msgbase);
+	}
 	return result;
 }
 
