@@ -461,9 +461,11 @@
 	"validated!\1n\r\n"
 "\r\n\r\nNo external programs available.\r\n"           379 NoXtrnPrograms
 "\1l\1n\1c\1h%s \1n\1cExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
-"\1n\1cNum \1h\xb3\1n\1c Name                           "       381 XtrnProgLstTitles
-"\1h\xc4\xc4\xc4\xc4Å\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4      "               382 XtrnProgLstUnderline
-"\1h\1c%3u \xb3 \1n\1c%-25.25s\1h      "                        383 XtrnProgLstFmt
+"\1n\1cNum \1h\xb3\1n\1c Name                             "       381 XtrnProgLstTitles
+"\1h\xc4\xc4\xc4\xc4Å\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+	"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+	"\xc4\xc4\xc4\xc4\xc4\xc4 "               	382 XtrnProgLstUnderline
+"\1h\1c%3u \xb3 \1n\1c%-32.32s\1h "                        383 XtrnProgLstFmt
 "\r\n\1-\1cWhich or \1h~Q\1n\1cuit: \1h"                      384 WhichXtrnProg
 "\r\n%s is currently running %s on node %d.\r\n"\       385 UserRunningXtrn
 	"\r\nTry again later.\r\n\r\n"
