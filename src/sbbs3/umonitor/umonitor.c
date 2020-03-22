@@ -444,9 +444,10 @@ int view_logs(scfg_t *cfg)
 	localtime_r(&now,&tm);
 	now -= 60*60*24;
 	localtime_r(&now,&tm_yest);
-	if((opt=(char **)alloca(sizeof(char *)*(9+1)))==NULL)
-		allocfail(sizeof(char *)*(9+1));
-	for(i=0;i<(9+1);i++)
+	const int num_opts = 11;
+	if((opt=(char **)alloca(sizeof(char *)*(num_opts+1)))==NULL)
+		allocfail(sizeof(char *)*(num_opts+1));
+	for(i=0;i<(num_opts+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -458,6 +459,8 @@ int view_logs(scfg_t *cfg)
 	strcpy(opt[i++],"Yesterday's log");
 	strcpy(opt[i++],"Spam log");
 	strcpy(opt[i++],"SBBSecho log");
+	strcpy(opt[i++],"EchoMail stats");
+	strcpy(opt[i++],"Bad Areas list");
 	strcpy(opt[i++],"Guru log");
 	strcpy(opt[i++],"Hack log");
 	opt[i][0]=0;
@@ -471,6 +474,8 @@ int view_logs(scfg_t *cfg)
 	                "`Yesterday's log     : `View Yesterday's system activity.\n"
 	                "`Spam log            : `View the log of Spam E-Mail sent to the system.\n"
 	                "`SBBSecho log        : `View the FidoNet EchoMail program log.\n"
+	                "`EchoMail stats      : `view the EchoMail statistics.\n"
+	                "`Bad Areas list      : `view the list of unknown EchoMail areas.\n"
 	                "`Guru log            : `View the transcriptions of chats with the Guru.\n"
 	                "`Hack log            : `View the Hack attempt log.";
 
@@ -511,10 +516,18 @@ int view_logs(scfg_t *cfg)
 				view_log(str,"SBBSecho Log");
 				break;
 			case 7:
+				sprintf(str,"%sechostats.ini",cfg->data_dir);
+				view_log(str,"EchoMail Stats");
+				break;
+			case 8:
+				sprintf(str,"%sbadareas.lst",cfg->data_dir);
+				view_log(str,"Bad Area List");
+				break;
+			case 9:
 				sprintf(str,"%sguru.log",cfg->logs_dir);
 				view_log(str,"Guru Log");
 				break;
-			case 8:
+			case 10:
 				sprintf(str,"%shack.log",cfg->logs_dir);
 				view_log(str,"Hack Log");
 				break;
@@ -717,6 +730,7 @@ int edit_cfg(scfg_t *cfg)
 	strcpy(opt[i++],"mime_types.ini");
 	strcpy(opt[i++],"relay.cfg");
 	strcpy(opt[i++],"sbbsecho.ini");
+	strcpy(opt[i++],"../data/areas.bbs");
 	strcpy(opt[i++],"services.ini");
 	strcpy(opt[i++],"ftpalias.cfg");
 	strcpy(opt[i++],"sockopts.ini");
@@ -727,7 +741,7 @@ int edit_cfg(scfg_t *cfg)
 	uifc.helpbuf= "Highlight desired file and hit Enter to edit it.";
 	i=0;
 	while(1) {
-		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"System Options",opt))  {
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Edit Config File",opt))  {
 			case -1:
 				return(0);
 				break;
@@ -767,7 +781,7 @@ int edit_can(scfg_t *cfg)
 	uifc.helpbuf="Highlight desired file and hit Enter to edit it.";
 	i=0;
 	while(1) {
-		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"System Options",opt))  {
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Edit Filter File",opt))  {
 			case -1:
 				return(0);
 				break;
@@ -945,9 +959,10 @@ USAGE:
 		exit(1);
 	}
 
-	if((opt=(char **)alloca(sizeof(char *)*(10+1)))==NULL)
-		allocfail(sizeof(char *)*(10+1));
-	for(i=0;i<(10+1);i++)
+	const int main_menu_opts = 11;
+	if((opt=(char **)alloca(sizeof(char *)*(main_menu_opts+1)))==NULL)
+		allocfail(sizeof(char *)*(main_menu_opts+1));
+	for(i=0;i<(main_menu_opts+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -1035,31 +1050,34 @@ USAGE:
 
 			/* System Options */
 			i=0;
-			strcpy(opt[i++],"Run SCFG");
-			strcpy(opt[i++],"Run User Editor");
+			strcpy(opt[i++],"Configure BBS");
+			strcpy(opt[i++],"Configure FidoNet");
+			strcpy(opt[i++],"Edit Users");
 			strcpy(opt[i++],"Run SyncTERM");
-			strcpy(opt[i++],"View logs");
-			strcpy(opt[i++],"Force QWK Net callout");
-			strcpy(opt[i++],"Run event");
-			strcpy(opt[i++],"Recycle servers");
-			strcpy(opt[i++],"Edit CFG/INI files");
-			strcpy(opt[i++],"Edit trashcan files");
+			strcpy(opt[i++],"View Logs");
+			strcpy(opt[i++],"Force QWKnet Callout");
+			strcpy(opt[i++],"Force Timed Event");
+			strcpy(opt[i++],"Recycle Servers");
+			strcpy(opt[i++],"Edit Config Files");
+			strcpy(opt[i++],"Edit Filter Files");
 			sysop_chat_opt = i++;
 			opt[i][0]=0;
 			uifc.helpbuf=	"`System Options`\n"
 			                "`------------`\n\n"
-			                "`Run SCFG              : `Run the Synchronet Configuration Utility.\n"
-			                "`Run User Editor       : `Call up the User Editor.\n"
+			                "`Configure BBS         : `Run the Synchronet Configuration Utility (SCFG).\n"
+							"`Configure FidoNet     : `Run the FidoNet Configuration Utility (EchoCFG).\n"
+			                "`Edit Users            : `Run the Synchronet User Editor.\n"
 			                "`Run SyncTERM          : `Run SyncTERM for RLogin.  SyncTERM must be\n"
 			                 "                        in the exec directory.\n"
-			                "`View logs             : `View the various system logs.\n"
-			                "`Force QWK Net callout : `Force a callout to QWK Net Hub.  Select which\n"
+			                "`View Logs             : `View the various system logs.\n"
+			                "`Force QWKnet callout  : `Force a callout to QWK Network Hub. Select which\n"
 			                 "                        Hub from a popup list of configured Hubs.\n"
-			                "`Run Event             : `Call up a menu of system events that can be\n"
+			                "`Force Timed Event     : `Call up a menu of system events that can be\n"
 			                "                        manually.\n"
 			                "`Recycle Servers       : `Have the Servers reload their configuration \n"
 			                "                        files.\n"
-			                "`Edit trashcan files   : `Edit the various .can files.  i.e.; ip.can";
+			                "`Edit Config Files     : `Edit the various configuration files.\n"
+			                "`Edit Filter Files     : `Edit the various filter files, e.g. ip.can.";
 
 			done=0;
 			i=0;
@@ -1079,7 +1097,7 @@ USAGE:
 						do_cmd(str);
 						break;
 					case 1:
-						sprintf(str,"%suedit ",cfg.exec_dir);
+						sprintf(str,"%sechocfg ",cfg.exec_dir);
 						for(j=1; j<argc; j++) {
 							strcat(str,"'");
 							strcat(str,argv[j]);
@@ -1088,7 +1106,7 @@ USAGE:
 						do_cmd(str);
 						break;
 					case 2:
-						sprintf(str,"%ssyncterm",cfg.exec_dir);
+						sprintf(str,"%suedit ",cfg.exec_dir);
 						for(j=1; j<argc; j++) {
 							strcat(str,"'");
 							strcat(str,argv[j]);
@@ -1097,24 +1115,33 @@ USAGE:
 						do_cmd(str);
 						break;
 					case 3:
-						view_logs(&cfg);
+						sprintf(str,"%ssyncterm",cfg.exec_dir);
+						for(j=1; j<argc; j++) {
+							strcat(str,"'");
+							strcat(str,argv[j]);
+							strcat(str,"' ");
+						}
+						do_cmd(str);
 						break;
 					case 4:
-						qwk_callouts(&cfg);
+						view_logs(&cfg);
 						break;
 					case 5:
-						run_events(&cfg);
+						qwk_callouts(&cfg);
 						break;
 					case 6:
-						recycle_servers(&cfg);
+						run_events(&cfg);
 						break;
 					case 7:
-						edit_cfg(&cfg);
+						recycle_servers(&cfg);
 						break;
 					case 8:
-						edit_can(&cfg);
+						edit_cfg(&cfg);
 						break;
 					case 9:
+						edit_can(&cfg);
+						break;
+					case 10:
 						sysop_avail = !sysop_avail;
 						set_sysop_availability(&cfg, sysop_avail);
 						break;
