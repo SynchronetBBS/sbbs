@@ -1995,29 +1995,31 @@ int main(int argc, char** argv)
 #elif defined(__unix__)
 
 #ifdef USE_LINUX_CAPS /* set capabilities and change user before we start threads */
-    whoami();
-    if(list_caps() && linux_initialprivs()) {
-    	if(linux_keepcaps() < 0) {
-			lputs(LOG_ERR,"linux_keepcaps() FAILED");
-			lputs(LOG_ERR,strerror(errno));
-    	}
-		else {
-    		if(!change_user()) {
-				lputs(LOG_ERR,"change_user() FAILED");
+	if(getuid() == 0) {
+		whoami();
+		if(list_caps() && linux_initialprivs()) {
+			if(linux_keepcaps() < 0) {
+				lputs(LOG_ERR,"linux_keepcaps() FAILED");
+				lputs(LOG_ERR,strerror(errno));
 			}
 			else {
-    			if(!linux_minprivs()) {
-					lputs(LOG_ERR,"linux_minprivs() FAILED");
-					lputs(LOG_ERR,strerror(errno));
-    			}
+				if(!change_user()) {
+					lputs(LOG_ERR,"change_user() FAILED");
+				}
 				else {
-					capabilities_set=TRUE;
+					if(!linux_minprivs()) {
+						lputs(LOG_ERR,"linux_minprivs() FAILED");
+						lputs(LOG_ERR,strerror(errno));
+					}
+					else {
+						capabilities_set=TRUE;
+					}
 				}
 			}
 		}
+		whoami();
+		list_caps();
 	}
-    whoami();
-    list_caps();
 #endif /* USE_LINUX_CAPS */
 
     /* Set up blocked signals */
