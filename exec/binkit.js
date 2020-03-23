@@ -1351,6 +1351,11 @@ if(stats_file.open("r")) {
 
 log(LOG_INFO, version_notice + " invoked with options: " + argv.join(' '));
 
+if (system.fido_addr_list.length < 1) {
+	alert("No system FidoNet address configured");
+	exit(1);
+}
+
 // If we're running as a service, call run_inbound().
 if (sock !== undefined && sock.descriptor !== -1)
 	run_inbound(sock);
