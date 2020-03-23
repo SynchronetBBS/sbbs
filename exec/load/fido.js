@@ -150,8 +150,9 @@ var FIDO = {
 		var zone;
 		var domain;
 
-		m = addr.toString().match(/^(?:([0-9]+):)?([0-9]+)\/([0-9]+)(?:\.([0-9]+))?(?:@(.*))?$/);
-		if (m===null)
+		if(addr)
+			m = addr.toString().match(/^(?:([0-9]+):)?([0-9]+)\/([0-9]+)(?:\.([0-9]+))?(?:@(.*))?$/);
+		if (!m)
 			throw('invalid address '+addr);
 		zone = m[1];
 		domain = m[5];
