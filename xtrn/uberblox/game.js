@@ -1,7 +1,7 @@
 /*
 	UBER BLOX!
-	
-	A javascript block puzzle game similar to GameHouse "Super Collapse" 
+
+	A javascript block puzzle game similar to GameHouse "Super Collapse"
 	by Matt Johnson (2009)
 
 	for Synchronet v3.15+
@@ -10,7 +10,7 @@
 load("graphic.js");
 load("sbbsdefs.js")
 load("funclib.js");
- 
+
 var oldpass = console.ctrl_key_passthru;
 var useralias = user.alias.replace(/\./g,"_");
 var data = new GameData();
@@ -25,7 +25,7 @@ function processUpdates(update) {
 	case "UPDATE":
 		var p=update.location.split(".");
 		/* if we received something for a different game? */
-		if(p.shift().toUpperCase() != "UBERBLOX") 
+		if(p.shift().toUpperCase() != "UBERBLOX")
 			return;
 		var obj=data;
 		while(p.length > 1) {
@@ -52,7 +52,7 @@ function open()
 	client.callback=processUpdates;
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
 	bbs.sys_status|=SS_MOFF;
-	bbs.sys_status|=SS_PAUSEOFF;	
+	bbs.sys_status|=SS_PAUSEOFF;
 	if(file_exists(root + "uberblox.bin")) {
 		console.clear();
 		var splash=new Graphic(80,22);
@@ -60,7 +60,7 @@ function open()
 		splash.draw();
 		console.gotoxy(1,23);
 		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
-		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+		console.getkey(K_NOECHO|K_NOSPIN);
 	}
 	console.clear();
 	client.subscribe("uberblox","players");
@@ -80,10 +80,10 @@ function close()
 		var splash=new Graphic(80,21);
 		splash.load(splash_filename);
 		splash.draw();
-		
+
 		console.gotoxy(1,23);
 		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
-		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+		console.getkey(K_NOECHO|K_NOSPIN);
 	}
 	console.clear();
 }
@@ -98,20 +98,20 @@ function blox()
 	var points;
 	var current;
 	var gameover=false;
-	
+
 	const points_base=			15;
 	const points_increment=		10;
 	const points_bonus=			5000;
 	const minimum_cluster=		3;
 	const colors=				[3,3,3,4,4,4,5,5,5,6,6,6]; //COLORS PER MAP (DEFAULT ex.: levels 1-4 have 3 colors)
 	const tiles_per_color=		[8,7,6,10,9,8,11,10,9,12,11,10];	//TARGET FOR LEVEL COMPLETION (DEFAULT ex. level 1 target: 220 total tiles minus 8 tiles per color times 3 colors = 196)
-		
+
 	var lobby;
 	var logo;
 	var gameend;
 	var selx=0;
 	var sely=0;
-	
+
 	var selection=[];
 	var selected=false;
 	var counted;
@@ -125,7 +125,7 @@ function blox()
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k) {
 				switch(k.toUpperCase())	{
-				case "\x1b":	
+				case "\x1b":
 				case "Q":
 					return;
 				case "I":
@@ -150,11 +150,11 @@ function blox()
 	{
 		console.clear(ANSI_NORMAL);
 		bbs.sys_status&=~SS_PAUSEOFF;
-		bbs.sys_status|=SS_PAUSEON;	
+		bbs.sys_status|=SS_PAUSEON;
 		var helpfile=root + "help.doc";
 		if(file_exists(helpfile)) console.printfile(helpfile);
 		bbs.sys_status&=~SS_PAUSEON;
-		bbs.sys_status|=SS_PAUSEOFF;	
+		bbs.sys_status|=SS_PAUSEOFF;
 	}
 	function main()
 	{
@@ -170,7 +170,7 @@ function blox()
 		while(1) {
 			if(gameover) {
 				endGame();
-				while(console.inkey()=="");
+				console.getkey(K_NOECHO);
 				return;
 			}
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
@@ -204,13 +204,17 @@ function blox()
 				case "R":
 					redraw();
 					break;
-				case "\x1b":	
+				case "\x1b":
 				case "Q":
 					gameover=true;
 					break;
 				case "\r":
 				case "\n":
 					processSelection();
+					break;
+				case '?':
+					showInstructions();
+					redraw();
 					break;
 				default:
 					break;
@@ -242,7 +246,7 @@ function blox()
 			data.storePlayer();
 			data.allTime();
 		}
-		
+
 		console.clear();
 		gameend.draw();
 		console.gotoxy(52,5);
@@ -264,7 +268,7 @@ function blox()
 	{
 		var numcolors=colors[level];
 		var tiles_needed=(columns*rows)-(numcolors*tiles_per_color[level]);
-		
+
 		grid=new Array(columns);
 		for(var x=0;x<grid.length;x++) {
 			grid[x]=new Array(rows);
@@ -326,12 +330,12 @@ function blox()
 			case KEY_LEFT:
 				if(selx>0) selx--;
 				else selx=current.grid.length-1;
-				if(sely>=current.grid[selx].length)	sely=current.grid[selx].length-1;		
+				if(sely>=current.grid[selx].length)	sely=current.grid[selx].length-1;
 				break;
 			case KEY_RIGHT:
 				if(selx<current.grid.length-1) selx++;
 				else selx=0;
-				if(sely>=current.grid[selx].length)	sely=current.grid[selx].length-1;		
+				if(sely>=current.grid[selx].length)	sely=current.grid[selx].length-1;
 				break;
 		}
 		showPosition()
@@ -377,9 +381,9 @@ function blox()
 			}
 			else
 			{
-				if(selx>=current.grid.length) 
+				if(selx>=current.grid.length)
 					selx=current.grid.length-1;
-				if(sely>=current.grid[selx].length) 
+				if(sely>=current.grid[selx].length)
 					sely=current.grid[selx].length-1;
 				showPosition();
 			}
@@ -400,7 +404,7 @@ function blox()
 		var testcolor=current.grid[x][y].bg;
 		counted[x][y]=true;
 		selection.push(new Coord(x,y));
-		
+
 		for(var i=0;i<4;i++)
 		{
 			var spot=new Coord(x+xlist[i],y+ylist[i]);
@@ -422,17 +426,17 @@ function blox()
 	{
 		for(var n=0;n<selection.length;n++)
 		{
-			for(var m = 0; m < (selection.length-1); m++) 
+			for(var m = 0; m < (selection.length-1); m++)
 			{
-				if(selection[m].x < selection[m+1].x) 
+				if(selection[m].x < selection[m+1].x)
 				{
 					var holder = selection[m+1];
 					selection[m+1] = selection[m];
 					selection[m] = holder;
 				}
-				else if(selection[m].x == selection[m+1].x) 
+				else if(selection[m].x == selection[m+1].x)
 				{
-					if(selection[m].y < selection[m+1].y) 
+					if(selection[m].y < selection[m+1].y)
 					{
 						var holder = selection[m+1];
 						selection[m+1] = selection[m];
@@ -445,22 +449,22 @@ function blox()
 	function removeBlocks()
 	{
 		sortSelection();
-		
+
 		for(var s=0;s<selection.length;s++) {
 			var coord=selection[s];
 			current.grid[coord.x].splice(coord.y,1);
-			if(current.grid[coord.x].length==0) 
+			if(current.grid[coord.x].length==0)
 				current.grid.splice(coord.x,1);
 		}
 		current.tiles_remaining-=selection.length;
 		current.tiles+=selection.length;
-		if(current.tiles_remaining<0) 
+		if(current.tiles_remaining<0)
 			current.tiles_remaining=0;
 		points+=calculatePoints();
 		selection=[];
 		unselect();
 		showTiles();
-		
+
 	}
 	function showPosition()
 	{
@@ -508,7 +512,7 @@ function blox()
 		for(var x=0;x<current.grid.length;x++) {
 			for(var y=0;y<current.grid[x].length;y++) {
 				selection=[];
-				search(x,y); 
+				search(x,y);
 				if(selection.length>=minimum_cluster) {
 					selection=[];
 					return true;
@@ -542,14 +546,14 @@ function blox()
 		var posx=3;
 		var posy=4;
 		var index=0;
-		
+
 		var scores=sortScores().slice(0,13);
-		
+
 		for(var s in scores) {
 			var score=scores[s];
-			if(score.name==useralias) 
+			if(score.name==useralias)
 				console.attributes=YELLOW;
-			else 
+			else
 				console.attributes=BROWN;
 			console.gotoxy(posx,posy+index);
 			console.putmsg(score.name,P_SAVEATR);
@@ -585,18 +589,18 @@ function GameData()
 	this.alltime=client.read("uberblox","alltime",1);
 	this.update=false;
 	//this.month=new Date().getMonth();
-	
+
 	this.init=function()
 	{
 		// client.lock("uberblox","month",2);
 		// var month = client.read("uberblox","month");
-		// if(month != this.month) 
+		// if(month != this.month)
 			// this.reset();
 		// client.unlock("uberblox","month");
-		
-		if(!this.alltime) 
+
+		if(!this.alltime)
 			this.alltime={name:"none",score:0};
-		
+
 		if(!this.players)
 			this.players = {};
 		if(!this.players[useralias]) {
@@ -610,11 +614,11 @@ function GameData()
 		var m=date.getMonth()+1;
 		var d=date.getDate();
 		var y=date.getFullYear()-2000; //assuming no one goes back in time to 1999 to play this
-		
+
 		if(m<10) m="0"+m;
 		if(d<10) d="0"+d;
 		if(y<10) y="0"+y;
-		
+
 		return (m + "/" + d + "/" + y);
 	}
 	this.reset=function()
@@ -626,12 +630,12 @@ function GameData()
 	{
 		client.write("uberblox","players." + useralias,this.players[useralias],2);
 	}
-	this.allTime=function() 
+	this.allTime=function()
 	{
 		client.lock("uberblox","alltime",2);
 		if(this.players[useralias].score > this.alltime.score) {
 			this.alltime=client.read("uberblox","alltime");
-			if(!this.alltime) 
+			if(!this.alltime)
 				this.alltime={name:"none",score:0};
 			if(this.players[useralias].score > this.alltime.score) {
 				this.alltime.score = this.players[useralias].score;
@@ -676,7 +680,7 @@ function Tile(bg,fg)
 		{
 			console.attributes=this.bg;
 			console.putmsg("  ",P_SAVEATR);
-		}	
+		}
 	}
 }
 
