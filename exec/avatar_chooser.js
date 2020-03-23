@@ -1,3 +1,5 @@
+// $Id$
+
 load('sbbsdefs.js');
 load('frame.js');
 load('tree.js');
@@ -6,7 +8,10 @@ load('event-timer.js');
 load('ansiedit.js');
 
 const sauce_lib = load({}, 'sauce_lib.js');
-const avatar_lib = load({}, 'avatar_lib.js');
+if(bbs.mods.avatar_lib)
+	avatar_lib = bbs.mods.avatar_lib;
+else
+	avatar_lib = load({}, 'avatar_lib.js');
 const ansiterm = load({}, 'ansiterm_lib.js');
 
 const BORDER = [ BLUE, LIGHTBLUE, CYAN, LIGHTCYAN, WHITE ];
