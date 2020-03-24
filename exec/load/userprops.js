@@ -1,5 +1,7 @@
 // $Id$
 
+require("userdefs.js", 'UFLAG_G');
+
 function filename(usernum)
 {
 	return system.data_dir + format("user/%04u.ini", usernum);
@@ -7,8 +9,11 @@ function filename(usernum)
 
 function get(section, key, deflt, usernum)
 {
-	if(!usernum)
+	if(!usernum) {
 		usernum = user.number;
+		if(user.security.restrictions & UFLAG_G)
+			return deflt;
+	}
 	var file = new File(filename(usernum));
 	if(!file.open('r'))
 		return deflt;
@@ -25,8 +30,11 @@ function get(section, key, deflt, usernum)
 
 function set(section, key, value, usernum)
 {
-	if(!usernum)
+	if(!usernum) {
 		usernum = user.number;
+		if(user.security.restrictions & UFLAG_G)
+			return true;
+	}
 	var file = new File(filename(usernum));
 	if(!file.open(file.exists ? 'r+':'w+'))
 		return false;
