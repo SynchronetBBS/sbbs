@@ -157,6 +157,14 @@ if(confirm("Download and install " + netname + " EchoList")) {
 	}
 }
 
+function makepath(path)
+{
+	if(mkpath(path))
+		return true;
+	alert("Error " + errno + " (" + errno_str + ") creating " + path);
+	return false;
+}
+
 /***********************/
 /* UPDATE SBBSECHO.INI */
 /***********************/
@@ -166,6 +174,33 @@ if(confirm("Update FidoNet configuration file: sbbsecho.ini")) {
 		alert("Error " + file.error + " opening " + file.name);
 		exit(1);
 	}
+	var path = file.iniGetValue(null, "Inbound");
+	if(!path)
+		path = "../fido/nonsecure";
+	while(!path
+		|| !confirm("Non-secure inbound directory: " + path)
+		|| !makepath(path))
+		path = prompt("Non-secure inbound directory");
+	file.iniSetValue(null, "Inbound", path);
+
+	path = file.iniGetValue(null, "SecureInbound");
+	if(!path)
+		path = "../fido/inbound";
+	while(!path
+		|| !confirm("Secure inbound directory: " + path)
+		|| !makepath(path))
+		path = prompt("Secure inbound directory");
+	file.iniSetValue(null, "SecureInbound", path);
+
+	path = file.iniGetValue(null, "Outbound");
+	if(!path)
+		path = "../fido/outbound";
+	while(!path
+		|| !confirm("Outbound directory: " + path)
+		|| !makepath(path))
+		path = prompt("Outbound directory");
+	file.iniSetValue(null, "Outbound", path);
+
 	var binkp = file.iniGetObject("BinkP");
 	if(!binkp) binkp = {};
 	binkp.sysop = sysop;
