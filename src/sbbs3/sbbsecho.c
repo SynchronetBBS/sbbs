@@ -466,8 +466,11 @@ void fwrite_echostat_msg(FILE* fp, echostat_msg_t msg, const char* prefix)
 
 void fwrite_echostat(FILE* fp, echostat_t* stat)
 {
+	const char* desc = area_desc(stat->tag);
 	fprintf(fp, "[%s]\n"						, stat->tag);
 	fprintf(fp,	"Known = %s\n"					, stat->known ? "true" : "false");
+	if(desc != NULL)
+		fprintf(fp, "Title = %s\n"				, desc);
 	for(int type = 0; type < ECHOSTAT_MSG_TYPES; type++) {
 		char prefix[32];
 		sprintf(prefix, "First%s", echostat_msg_type[type])	, fwrite_echostat_msg(fp, stat->first[type], prefix);
