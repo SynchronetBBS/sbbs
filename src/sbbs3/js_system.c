@@ -577,19 +577,24 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	jsrefcount	rc;
 
 	js_system_private_t* sys;
-	if((sys = (js_system_private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((sys = (js_system_private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx, "JS_GetPrivate failure in %s", __FUNCTION__);
 		return JS_FALSE;
+	}
 	scfg_t* cfg = sys->cfg;
 
     JS_IdToValue(cx, id, &idval);
     tiny = JSVAL_TO_INT(idval);
 
-	rc=JS_SUSPENDREQUEST(cx);
-	if(!getstats(cfg, 0, &stats)) {
+	if(tiny < SYSSTAT_PROP_TOTALUSERS) {
+		rc=JS_SUSPENDREQUEST(cx);
+		if(!getstats(cfg, 0, &stats)) {
+			JS_RESUMEREQUEST(cx, rc);
+			JS_ReportError(cx, "getstats failure in %s", __FUNCTION__);
+			return JS_FALSE;
+		}
 		JS_RESUMEREQUEST(cx, rc);
-		return(FALSE);
 	}
-	JS_RESUMEREQUEST(cx, rc);
 
 	switch(tiny) {
 		case SYSSTAT_PROP_LOGONS:
