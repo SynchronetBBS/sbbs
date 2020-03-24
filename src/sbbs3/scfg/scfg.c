@@ -89,6 +89,8 @@ enum import_list_type determine_msg_list_type(const char* path)
 		return IMPORT_LIST_TYPE_QWK_CONTROL_DAT;
 	if(stricmp(fname, "newsgroup.lst") == 0)
 		return IMPORT_LIST_TYPE_NEWSGROUPS;
+	if(stricmp(fname, "echostats.ini") == 0)
+		return IMPORT_LIST_TYPE_ECHOSTATS;
 	return IMPORT_LIST_TYPE_BACKBONE_NA;
 }
 
@@ -371,7 +373,7 @@ int main(int argc, char **argv)
 			case msgbase:
 			{
 				enum import_list_type list_type = determine_msg_list_type(fname);
-				ported = import_msg_areas(list_type, fp, grpnum, 1, 99999, /* qhub: */NULL, &added);
+				ported = import_msg_areas(list_type, fp, grpnum, 1, 99999, /* qhub: */NULL, /* pkt_orig: */NULL, &added);
 				break;
 			}
 			case filebase:
