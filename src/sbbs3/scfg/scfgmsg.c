@@ -370,7 +370,8 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			SAFECOPY(cfg.sub[j]->lname,tmpsub.lname);
 			SAFECOPY(cfg.sub[j]->newsgroup,tmpsub.newsgroup);
 			SAFECOPY(cfg.sub[j]->qwkname,tmpsub.qwkname);
-			SAFECOPY(cfg.sub[j]->data_dir,tmpsub.data_dir);
+			if(tmpsub.data_dir[0])
+				SAFECOPY(cfg.sub[j]->data_dir,tmpsub.data_dir);
 		}
 		if(qhub != NULL)
 			new_qhub_sub(qhub, qhub->subs, cfg.sub[j], qwk_confnum);
