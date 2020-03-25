@@ -1182,95 +1182,6 @@ function run_polls(ran)
 	});
 }
 
-// First-time installation routine (only)
-function install()
-{
-	require("sbbsdefs.js", 'EVENT_DISABLED');
-	var cnflib = load({}, "cnflib.js");
-	var xtrn_cnf = cnflib.read("xtrn.cnf");
-	if (!xtrn_cnf)
-		return "Failed to read xtrn.cnf";
-
-	var changed = false;
-	if (!xtrn_area.event["binkout"]) {
-		printf("Adding timed event: BINKOUT\r\n");
-		xtrn_cnf.event.push( {
-				"code": "BINKOUT",
-				"cmd": "?binkit",
-				"days": 255,
-				"time": 0,
-				"node_num": 1,
-				"settings": 0,
-				"startup_dir": "",
-				"freq": 0,
-				"mdays": 0,
-				"months": 0
-				});
-		changed = true;
-	}
-
-	if (!xtrn_area.event["binkpoll"]) {
-		printf("Adding timed event: BINKPOLL\r\n");
-		xtrn_cnf.event.push( {
-				"code": "BINKPOLL",
-				"cmd": "?binkit -p",
-				"days": 255,
-				"time": 0,
-				"node_num": 1,
-				"settings": 0,
-				"startup_dir": "",
-				"freq": 60,
-				"mdays": 0,
-				"months": 0
-				});
-		changed = true;
-	}
-
-	const timed_events = ["FIDOIN", "FIDOOUT", "BINKOUT", "BINKPOLL"];
-	for(var i in xtrn_cnf.event) {
-		if(timed_events.indexOf(xtrn_cnf.event[i].code) < 0)
-			continue;
-		if (xtrn_cnf.event[i].settings & EVENT_DISABLED) {
-			print("Enabling timed event: " + xtrn_cnf.event[i].code);
-			xtrn_cnf.event[i].settings &= ~EVENT_DISABLED;
-			changed = true;
-		}
-	}
-
-	if (changed && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
-		return "Failed to write xtrn.cnf";
-
-	var ini = new File(file_cfgname(system.ctrl_dir, "sbbsecho.ini"));
-	if (!ini.open(file_exists(ini.name) ? 'r+':'w+'))
-		return ini.name + " open error " + ini.error;
-	printf("Updating %s\r\n", ini.name);
-	ini.iniSetValue(null, "BinkleyStyleOutbound", true);
-	ini.iniSetValue(null, "OutgoingSemaphore", "../data/binkout.now");
-	var links = ini.iniGetAllObjects("addr", "node:");
-	for (var i in links) {
-		if (links[i].addr.toUpperCase().indexOf('ALL') >= 0)	// Don't include wildcard links
-			continue;
-		var password = links[i].PacketPwd ? links[i].PacketPwd : links[i].AreaFixPwd;
-		ini.iniSetValue("node:"+links[i].addr, "SessionPwd", password === undefined ? '' : password);
-		ini.iniSetValue("node:"+links[i].addr, "Poll", links[i].GroupHub ? true : false);
-	}
-	ini.close();
-
-	ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
-	if (!ini.open(file_exists(ini.name) ? 'r+':'w+'))
-		return ini.name + " open error " + ini.error;
-	if(!ini.iniGetObject("BINKIT")) {
-		printf("Updating %s\r\n", ini.name);
-		var section = "BINKP";
-		ini.iniSetValue(section, "Enabled", true);
-		ini.iniSetValue(section, "Command", "binkit.js");
-		ini.iniSetValue(section, "Port", 24554);
-	}
-	ini.close();
-
-	return true;
-}
-
 // Upgrade from separate binkit.ini/sbbsecho.ini/ftn_domains.ini to a combined sbbsecho.ini
 function upgrade()
 {
@@ -1361,7 +1272,7 @@ if (sock !== undefined && sock.descriptor !== -1)
 	run_inbound(sock);
 else {
 	if (argv.indexOf('install') !== -1) {
-		var result = install();
+		var result = load({}, "install-binkit.js");
 		if (result != true) {
 			alert(result);
 			exit(1);

@@ -256,7 +256,11 @@ if(confirm("Update FidoNet configuration file: sbbsecho.ini")) {
 /* INSTALL BINKIT */
 /******************/
 if(confirm("Install BinkIT")) {
-	system.exec(system.exec_dir + "jsexec binkit install");
+	var result = load({}, "install-binkit.js");
+	if (result != true) {
+		alert(result);
+		exit(1);
+	}
 }
 
 print("Requesting Synchronet recycle (configuration-reload)");
