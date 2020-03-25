@@ -909,7 +909,7 @@ void xtrn_cfg(uint section)
 				"\n"
 				"This is the name or description of the online program (door).\n"
 			;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Name",str,25
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Name",str,40
 				,0)<1)
 				continue;
 			SAFECOPY(code,str);
