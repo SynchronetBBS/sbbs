@@ -361,10 +361,12 @@ void umsg(char *str)
 /****************************************************************************/
 void upop(char *str)
 {
+	static size_t len;
+
     if(str==NULL)
-        printf("\n");
+        printf("\r%*s\r", len, "");
     else
-        printf("\r%-79s",str);
+        len = printf("\r%s\r", str) - 2;
 }
 
 /****************************************************************************/
