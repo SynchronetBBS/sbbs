@@ -866,7 +866,7 @@ void txt_cfg()
 		int msk = i & MSK_ON;
 		i &= MSK_OFF;
 		if (msk == MSK_INS) {
-			strcpy(str,"ANSI Artwork");
+			strcpy(str,"");
 			uifc.helpbuf=
 				"`Text Section Name:`\n"
 				"\n"
@@ -941,9 +941,9 @@ void txt_cfg()
 		while(!done) {
 			k=0;
 			sprintf(opt[k++],"%-27.27s%s","Name",cfg.txtsec[i]->name);
+			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.txtsec[i]->code);
 			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
 				,cfg.txtsec[i]->arstr);
-			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.txtsec[i]->code);
 			opt[k][0]=0;
 			switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.txtsec[i]->name
 				,opt)) {
@@ -963,10 +963,6 @@ void txt_cfg()
 						strcpy(cfg.txtsec[i]->name,str);
 					break;
 				case 1:
-					sprintf(str,"%s Text Section",cfg.txtsec[i]->name);
-					getar(str,cfg.txtsec[i]->arstr);
-					break;
-				case 2:
 					strcpy(str,cfg.txtsec[i]->code);
 					uifc.helpbuf=
 						"`Text Section Internal Code:`\n"
@@ -985,6 +981,10 @@ void txt_cfg()
 						uifc.helpbuf=0; 
 					}
 					break; 
+				case 2:
+					sprintf(str,"%s Text Section",cfg.txtsec[i]->name);
+					getar(str,cfg.txtsec[i]->arstr);
+					break;
 			} 
 		} 
 	}
@@ -1118,9 +1118,9 @@ void shell_cfg()
 			static int bar;
 			k=0;
 			sprintf(opt[k++],"%-27.27s%s","Name",cfg.shell[i]->name);
+			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.shell[i]->code);
 			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
 				,cfg.shell[i]->arstr);
-			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.shell[i]->code);
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Command Shell:`\n"
@@ -1153,10 +1153,6 @@ void shell_cfg()
 						strcpy(cfg.shell[i]->name,str);
 					break;
 				case 1:
-					sprintf(str,"%s Command Shell",cfg.shell[i]->name);
-					getar(str,cfg.shell[i]->arstr);
-					break;
-				case 2:
 					strcpy(str,cfg.shell[i]->code);
 					uifc.helpbuf=
 						"`Command Shell Internal Code:`\n"
@@ -1178,6 +1174,10 @@ void shell_cfg()
 						uifc.msg("Invalid Code");
 						uifc.helpbuf=0; 
 					}
+					break;
+				case 2:
+					sprintf(str,"%s Command Shell",cfg.shell[i]->name);
+					getar(str,cfg.shell[i]->arstr);
 					break; 
 			} 
 		} 
