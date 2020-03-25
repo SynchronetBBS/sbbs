@@ -305,9 +305,10 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_str(cfg->scanposts_mod, instream);
 	get_str(cfg->scansubs_mod, instream);
 	get_str(cfg->listmsgs_mod, instream);
+	get_str(cfg->textsec_mod,instream);
+	if(!cfg->textsec_mod[0]) SAFECOPY(cfg->textsec_mod,"text_sec");
 
-	get_int(c,instream);
-	for(i=0;i<30;i++)					/* unused - initialized to NULL */
+	for(i=0;i<26;i++)					/* unused - initialized to NULL */
 		get_int(n,instream);
 	for(i=0;i<254;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
