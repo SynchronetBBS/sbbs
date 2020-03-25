@@ -141,7 +141,9 @@ function str_cmds(str)
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
 				try {
-					console.print(eval(get_arg(str)));
+					var result = eval(get_arg(str));
+					console.print(format("Result (%s): ", typeof result));
+					console.print(result);
 					console.crlf();
 				} catch(e) {
 					alert(e);
@@ -288,7 +290,7 @@ function str_cmds(str)
 			writeln("\texecutes the node utility with the passed parameters.");
 		}
 		if(word=="NODE") {
-			bbs.exec(system.exec_dir+str.toLowerCase(), EX_STDIO|EX_NATIVE);
+			bbs.exec(bbs.cmdstr("%!node%.") + str.substr(4).toLowerCase(), EX_STDIO|EX_NATIVE);
 			return;
 		}
 
@@ -334,7 +336,7 @@ function str_cmds(str)
 		if(str=="HELP")
 			writeln("SLOG\tExecutes the slog utility to display system statistics.");
 		if(str=="SLOG") {
-			bbs.exec(system.exec_dir+"slog /p",EX_STDIO|EX_NATIVE);
+			bbs.exec(bbs.cmdstr("%!slog%. /p"),EX_STDIO|EX_NATIVE);
 			return;
 		}
 
@@ -344,12 +346,12 @@ function str_cmds(str)
 			writeln("\tIf # is omitted, uses the current node.");
 		}
 		if(str=="NLOG") {
-			bbs.exec(system.exec_dir+"slog "+system.node_dir+" /p",EX_STDIO|EX_NATIVE);
+			bbs.exec(bbs.cmdstr("%!slog%. %n /p"),EX_STDIO|EX_NATIVE);
 			return;
 		}
 		if(word=="NLOG") {
 			str=str.substr(5);
-			bbs.exec(system.exec_dir+"slog "+system.node_dir+"../node"+get_nodenum(str)+" /p",EX_STDIO|EX_NATIVE);
+			bbs.exec(bbs.cmdstr("%!slog%. %n../node"+get_nodenum(str)+" /p"),EX_STDIO|EX_NATIVE);
 			return;
 		}
 
