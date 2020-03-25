@@ -1128,14 +1128,6 @@ function browse(list)
 			{
 				if (previous != current)
 				{
-					/*
-					// Temporary
-					console.gotoxy(1, 1);
-					console.print("\1ntop: " + top + ", previous: " + previous + " (is top: " +
-					              (previous==top) + "), current: " + current + " (is top: " +
-								 (current==top) + ")     ");
-					// End Temporary
-					*/
 					console.gotoxy(1, previous_row);
 					list_bbs_entry(list[previous], false, sort, (previous==top));
 					console.gotoxy(1, current_row);
@@ -1199,7 +1191,9 @@ function browse(list)
 				continue;
 			case KEY_END:
 				current=list.length-1;
-				redraw_whole_list = (current >= top+pagesize);
+				top = current - pagesize + 1;
+				new_page = true;
+				redraw_whole_list = true;
 				continue;
 			case KEY_UP:
 				current--;
