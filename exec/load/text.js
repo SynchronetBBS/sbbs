@@ -835,7 +835,10 @@ var IceColorTerminalQ=823;
 var Utf8TerminalQ=824;
 var MsgCarbonCopyList=825;
 var LoggingOn=826;
+var QWKSettingsUtf8=827;
+var MsgPostedToYouVia=828;
+var Unlimited=829;
 
-var TOTAL_TEXT=827;
+var TOTAL_TEXT=830;
 
 this;
