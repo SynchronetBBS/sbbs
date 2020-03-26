@@ -104,7 +104,7 @@ function read(fname)
 			obj.ice_color = true;
 		if(obj.datatype == defs.datatype.bin) {
 			obj.cols = obj.filetype * 2;
-			obj.rows = obj.filesize / (obj.cols * 2);
+			obj.rows = Math.floor(obj.filesize / (obj.cols * 2));
 		} else {
 			obj.cols = obj.tinfo1;
 			obj.rows = obj.tinfo2;
