@@ -312,7 +312,12 @@ function bbs_table_entry(num, bbs)
 writeln('<table>');
 writeln('<caption>');
 writeln(format("List of Synchronet BBSes (%u systems) exported from ", list.length) + system.name.link("http://" + system.inet_addr) + " on " + Date());
-writeln('<p></caption>');
+writeln('<p>');
+writeln(format("Download a %s compatible list file %s"
+	,"SyncTERM".link("http://syncterm.net")
+	,"here".link("ftp://ftp.synchro.net/syncterm.lst")));
+writeln('<p>');
+writeln('</caption>');
 writeln('<thead>');
 writeln('<tr>');
 writeln('<th style="width:25%;">BBS Name and Description</th>');
