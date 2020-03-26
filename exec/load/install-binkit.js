@@ -75,8 +75,10 @@ function install_binkit()
 		if (links[i].addr.toUpperCase().indexOf('ALL') >= 0)	// Don't include wildcard links
 			continue;
 		print("Updating " + ini.name + " [node:" + links[i].addr + "]");
-		var password = links[i].PacketPwd ? links[i].PacketPwd : links[i].AreaFixPwd;
-		ini.iniSetValue("node:"+links[i].addr, "SessionPwd", password === undefined ? '' : password);
+		if(links[i].SessionPwd === undefined) {
+			var password = links[i].PacketPwd ? links[i].PacketPwd : links[i].AreaFixPwd;
+			ini.iniSetValue("node:"+links[i].addr, "SessionPwd", password === undefined ? '' : password);
+		}
 		ini.iniSetValue("node:"+links[i].addr, "BinkpPoll", links[i].GroupHub ? true : false);
 	}
 	ini.close();
