@@ -201,7 +201,11 @@ var tests = {
 		}
 		var bbs = list[lib.system_index(list, system.name)];
 		bbs.entry = undefined;
+		bbs.total = undefined;
+		bbs.preview = undefined;
 		finger_obj.entry = undefined;
+		finger_obj.total = undefined;
+		finger_obj.preview = undefined;
 		if(JSON.stringify(finger_obj) != JSON.stringify(bbs)) {
 			if(options.verbose) {
 				print(finger_host + ":");
