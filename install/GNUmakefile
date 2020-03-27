@@ -141,7 +141,10 @@ ifndef NO_GTK
  endif
 endif
 
-all: binaries baja externals
+all: localdefs binaries baja externals
+
+localdefs: src
+	echo $(MKFLAGS) | tr ' ' '\n' > $(SBBSDIR)/src/build/localdefs.mk
 
 binaries:	sbbs3 gtkuseredit gtkchat gtkmonitor gtkuserlist syncview sexpots
 
