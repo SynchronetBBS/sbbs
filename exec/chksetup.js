@@ -202,8 +202,15 @@ var tests = {
 		var bbs = list[lib.system_index(list, system.name)];
 		bbs.entry = undefined;
 		finger_obj.entry = undefined;
-		if(JSON.stringify(finger_obj) != JSON.stringify(bbs))
+		if(JSON.stringify(finger_obj) != JSON.stringify(bbs)) {
+			if(options.verbose) {
+				print(finger_host + ":");
+				print(JSON.stringify(finger_obj, null, 4));
+				print("local:");
+				print(JSON.stringify(bbs, null, 4));
+			}
 			return format("'%s' BBS entry on %s is different than local", system.name, finger_host);
+		}
 	},
 	
 	check_syncdata: function(options)
