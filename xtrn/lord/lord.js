@@ -1869,7 +1869,7 @@ var settings = {
 	transfer_amount:2000000,
 	pvp_fights_per_day:3,
 	forest_fights:15,	// Forest fights per day
-	res_days:3,		// Number of days to ressurect inactive players for before leaving them dead until they return
+	res_days:3,		// Number of days to resurrect inactive players for before leaving them dead until they return
 	notime:'',		// Out of time filename
 	safe_node:true,		// Creates node.xx files and if it exists, marks the player as off.
 	use_fancy_more:true,	// If false, does not erase the MORE prompt.

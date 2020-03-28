@@ -25,7 +25,7 @@ For Synchronet BBSs, setup is straightforward:
 16: BBS Drop File Type         None
 17: Place Drop File In         Node Directory
 18: Time Options...
-c
+
 For non-synchronet systems, socket and stdio are both supported.  door.sys
 should be used with the socket handle passed on the command-line:
 
@@ -87,7 +87,7 @@ Number of forest fights a player gets per day by default.  This effectively
 sets how long it takes to slay the dragon as well as how long a days session
 takes to play.
 
-RessurectionDays=	3
+ResurrectionDays=	3
 Number of days a player will be resurrected from the dead after the last day he
 plays.  This only impacts players who miss player days... this is most easily
 explained using ann example.
