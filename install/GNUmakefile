@@ -29,6 +29,7 @@
 # NO_X = Don't include build conio library (ciolib) for X
 # NO_GTK = Don't build GTK-based sysop tools
 # X_PATH = /path/to/X (if not /usr/X11R6)
+# USE_DOSEMU = Set to 1 to enable Linux-DOSEMU support
 
 # the magic bit:
 MKFLAGS += MAKEFLAGS=
@@ -130,6 +131,10 @@ endif
 
 ifdef X_PATH
  MKFLAGS	+=	X_PATH=$(X_PATH)
+endif
+
+ifdef USE_DOSEMU
+ MKFLAGS	+=	USE_DOSEMU=$(USE_DOSEMU)
 endif
 
 # Check for GLADE
