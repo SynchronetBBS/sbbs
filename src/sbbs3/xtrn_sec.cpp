@@ -1723,9 +1723,6 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		logfile_fp=NULL;
 	}
 
-	sprintf(str,"%sINTRSBBS.DAT"
-			,cfg.xtrn[xtrnnum]->path[0] ? cfg.xtrn[xtrnnum]->path : cfg.node_dir);
-	removecase(str);
 	sprintf(str,"%shangup.now",cfg.node_dir);
 	removecase(str);
 	sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
