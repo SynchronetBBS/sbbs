@@ -1903,7 +1903,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                 case 'R':   /* Rows */
                     strncat(cmd,ultoa(rows,str,10), avail);
                     break;
-                case 'S':   /* File Spec (or Baja command str) */
+                case 'S':   /* File Spec (or Baja command str) or startup-directory */
                     strncat(cmd, fspec, avail);
                     break;
                 case 'T':   /* Time left in seconds */
