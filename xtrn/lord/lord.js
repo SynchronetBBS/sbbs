@@ -1905,7 +1905,7 @@ var settingsmap = {
 	transfer_amount:'MaximumTransferAmount',
 	pvp_fights_per_day:'PlayerFightsPerDay',
 	forest_fights:'ForestFightsPerDay',
-	res_days:'RessurectionDays',
+	res_days:'ResurrectionDays',
 	notime:'OutOfTimeFile',
 	safe_node:'SafeNode',
 	use_fancy_more:'UseFancyMore',
