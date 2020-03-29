@@ -17,7 +17,7 @@
 // The .ini sections and keys supported (zero or more of each may be included):
 //
 // [prog:<code>]
-// 		name 			= Program name or description (40 chars max)
+// 		name 			= program name or description (40 chars max)
 //		cmd 			= command-line to execute (63 chars max)
 //		clean_cmd 		= clean-up command-line, if needed (63 chars max)
 //		settings 		= bit-flags (see XTRN_* in sbbsdefs.js)
@@ -42,16 +42,24 @@
 //		months			= bit-field representing which months to execute
 //
 // [editor:<code>]
-//		name 			= Editr name or description (40 chars max)
+//		name 			= editor name or description (40 chars max)
 //		cmd 			= command-line to execute (63 chars max)
 //		type			= drop-file type (see XTRN_* in sbbsdefs.js)
 //		settings 		= bit-flags (see XTRN_* in sbbsdefs.js)
 //		ars				= access requirements string (40 chars max)
+//
+// [exec:<file>.js]
+//      args            = execute file.js with this argument string
+//		startup_dir		= directory to make current before execution
+//
+// [eval:<js-expression>]
+//      cmd             = evaluate this string rather than the js-expression
 
-// Additionally, each object can have the following optional keys that are only
-// used by this script
-//		note			= Note to sysop displayed before installation
-//		required		= If true, this item must be installed to continue
+// Additionally, each section can have the following optional keys that are
+// only used by this script (i.e. not written to any configuration files):
+//		note			= note to sysop displayed before installation
+//      prompt          = confirmation prompt (or false if no prompting)
+//		required		= if true, this item must be installed to continue
 //
 // Notes:
 //
@@ -65,8 +73,11 @@
 "use strict";
 
 load("sbbsdefs.js");
-const ini_fname = "install-xtrn.ini"
-var debug = false;
+const ini_fname = "install-xtrn.ini";
+var options = {
+	debug: false,
+	overwrite: false
+};
 
 function install_xtrn_item(cnf, type, desc, item)
 {
@@ -79,13 +90,17 @@ function install_xtrn_item(cnf, type, desc, item)
 	if (item.note)
 		print(item.note);
 	
-	if (!confirm("Install " + desc + ": " + item.name)) {
+	var prompt = "Install " + desc + ": " + item.name;
+	if (item.prompt !== undefined)
+		prompt = item.prompt;
+	
+	if (prompt && !confirm(prompt)) {
 		if (item.required == true)
 			return "Installation of " + item.name + " is required to continue";
 		return false;
 	}
 	
-	if(type == "xtrn") {
+	if (type == "xtrn") {
 		if (!xtrn_area.sec_list.length)
 			return "No external program sections have been created";
 		
@@ -94,7 +109,7 @@ function install_xtrn_item(cnf, type, desc, item)
 
 		var which;
 		while (!which || which > xtrn_area.sec_list.length)
-			which = prompt("Install " + item.name  + " into which External Program Section");
+			which = js.global.prompt("Install " + item.name  + " into which External Program Section");
 		which = parseInt(which, 10);
 		if (!which)
 			return false;
@@ -104,16 +119,18 @@ function install_xtrn_item(cnf, type, desc, item)
 	
 	function find_code(objs, code)
 	{
-		for(var i=0; i < objs.length; i++)
-			if(objs[i].code.toLowerCase() == code.toLowerCase())
-				return i;
+		if (!options.overwrite) {
+			for (var i=0; i < objs.length; i++)
+				if (objs[i].code.toLowerCase() == code.toLowerCase())
+					return i;
+		}
 		return -1;
 	}
 	
 	while (!item.code 
 		|| (find_code(cnf[type], item.code) >= 0
 			&& print(desc + " Internal Code (" + item.code + ") already exists!")))
-		item.code = prompt(desc + " Internal code");
+		item.code = js.global.prompt(desc + " Internal code");
 
 	try {
 		item.code = item.code.toUpperCase();
@@ -127,7 +144,7 @@ function install_xtrn_item(cnf, type, desc, item)
 		return e;
 	}
 	cnf[type].push(item);
-	if(debug)
+	if (options.debug)
 		print(JSON.stringify(cnf[type], null, 4));
 	
 	print(desc + " (" + item.name + ") installed successfully");
@@ -162,12 +179,13 @@ function main(ini_fname)
 		editor:	{ desc: "External Editor",		struct: "xedit" }
 	};
 	
-	for(var t in types) {
+	for (var t in types) {
 		var list = ini_file.iniGetAllObjects("code", t + ":");
 		for (var i = 0; i < list.length; i++) {
-			if (list[i].startup_dir === undefined)
-				list[i].startup_dir = startup_dir;
-			var result = install_xtrn_item(xtrn_cnf, types[t].struct, types[t].desc, list[i]);
+			var item = list[i];
+			if (item.startup_dir === undefined)
+				item.startup_dir = startup_dir;
+			var result = install_xtrn_item(xtrn_cnf, types[t].struct, types[t].desc, item);
 			if (typeof result !== 'boolean')
 				return result;
 			if (result === true)
@@ -175,8 +193,58 @@ function main(ini_fname)
 		}
 	}
 	
+	var list = ini_file.iniGetAllObjects("file", "exec:");
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		
+		if (file_getext(item.file) != ".js")
+			return "Only '.js' files may be executed: " + item.file;
+
+		if (item.note)
+			print(item.note);
+		
+		var prompt = "Execute: " + item.file;
+		if (item.prompt !== undefined)
+			prompt = item.prompt;
+		else if (item.args)
+			prompt += " " + item.args;
+	
+		if (prompt && !confirm(prompt)) {
+			if (item.required == true)
+				return prompt + " is required to continue";
+			continue;
+		}
+
+		if (item.startup_dir === undefined)
+			item.startup_dir = startup_dir;
+		if (typeof item.args == 'string' && item.args.indexOf(' ') > 0)
+			item.args = item.args.split(' ');
+		var result = js.exec(item.file, item.startup_dir, {}, item.args);
+		if (result !== 0 && item.required)
+			return "Error " + result + " executing " + item.file;
+	}
+	
+	var list = ini_file.iniGetAllObjects("str", "eval:");
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		if (!item.cmd)
+			item.cmd = item.str; // the str can't contain [], so allow cmd to override
+		var prompt = "Evaluate: " + item.cmd;
+		if (item.prompt !== undefined)
+			prompt = item.prompt;
+		if (prompt && !confirm(prompt)) {
+			if (item.required == true)
+				return prompt + " is required to continue";
+			continue;
+		}
+		if (!eval(item.cmd)) {
+			if (item.required == true)
+				return "Truthful evaluation of '" + item.cmd + "' is required to continue";
+		}
+	}
+
 	if (installed) {
-		if (!debug && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
+		if (!options.debug && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
 			return "Failed to write xtrn.cnf";
 		print("Installed " + installed + " items from " + ini_fname + " successfully");
 	}
@@ -187,15 +255,12 @@ function main(ini_fname)
 // Command-line argument parsing
 var ini_path;
 for (var i = 0; i < argc; i++) {
-	switch (argv[i]) {
-		case "-debug":
-			debug = true;
-			break;
-		default:
-			ini_path = argv[i];
-			break;
-	}
+	if (argv[i][0] == '-')
+		options[argv[i].substr(1)] = true;
+	else if (!ini_path)
+		ini_path = argv[i];
 }
+
 // Locate the .ini file
 if (file_isdir(ini_path))
 	ini_path = backslash(ini_path) + ini_fname;
