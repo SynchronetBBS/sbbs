@@ -89,9 +89,9 @@ int msgdump(FILE* fp, const char* fname)
 
 	printf("Subj: %.*s\n", (int)sizeof(hdr.subj)-1, hdr.subj);
 	printf("Attr: 0x%04hX %s\n", hdr.attr, fmsgattr_str(hdr.attr));
-	printf("To  : %.*s (%u.%u/%u.%u)\n", (int)sizeof(hdr.to)-1, hdr.to
+	printf("To  : %.*s (%u:%u/%u.%u)\n", (int)sizeof(hdr.to)-1, hdr.to
 		,hdr.destzone, hdr.destnet, hdr.destnode, hdr.destpoint);
-	printf("From: %.*s (%u.%u/%u.%u)\n", (int)sizeof(hdr.from)-1, hdr.from
+	printf("From: %.*s (%u:%u/%u.%u)\n", (int)sizeof(hdr.from)-1, hdr.from
 		,hdr.origzone, hdr.orignet, hdr.orignode, hdr.origpoint);
 	printf("Time: %.*s\n", (int)sizeof(hdr.time)-1, hdr.time);
 
