@@ -390,7 +390,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	free(cmd);
 
 	if(!fexistcase(path)) {
-		JS_ReportError(cx, "Can't find script");
+		JS_ReportError(cx, "Script file (%s) does not exist", path);
 		free(startup_dir);
 		return JS_FALSE;
 	}
@@ -449,7 +449,6 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	if(js_script == NULL) {
 		/* If the script fails to compile, it's not a fatal error
 		 * for the caller. */
-		free(startup_dir);
 		if (JS_IsExceptionPending(cx)) {
 			JS_GetPendingException(cx, &rval);
 			JS_SET_RVAL(cx, arglist, rval);
