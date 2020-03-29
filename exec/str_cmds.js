@@ -835,15 +835,22 @@ function str_cmds(str)
 
 //### Generic routine to ask user for parameter if one wasn't specified ###
 
-function get_arg(str, parm)
+function get_arg(str, parm, history)
 {
+	if(!history) {
+		if(!bbs.mods.str_cmds_parameter_history)
+			bbs.mods.str_cmds_parameter_history = [];
+		history = bbs.mods.str_cmds_parameter_history;
+	}
 	if(parm == undefined)
 		parm = "Parameter(s)";
 	str=str.replace(/^\s+/,"");
 	if(str=="") {
 		write(format("%s: ", parm));
-		str=console.getstr();
+		str=console.getstr(history);
 	}
+	if(str && history.indexOf(str) < 0)
+		history.unshift(str);
 
 	return(str);
 }
