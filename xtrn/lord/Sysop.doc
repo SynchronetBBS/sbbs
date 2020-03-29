@@ -26,7 +26,7 @@ For Synchronet BBSs, setup is straightforward:
 17: Place Drop File In         Node Directory
 18: Time Options...
 
-For non-synchronet systems, socket and stdio are both supported.  door.sys
+For non-Synchronet systems, socket and stdio are both supported.  door.sys
 should be used with the socket handle passed on the command-line:
 
 jsdoor lord.js -d /path/to/door.sys -s <handle>
@@ -154,7 +154,7 @@ kill.  Players didn't *actually* get this bonus though.
 
 GamePrefix=
 A file/path prefix for game data files.  This allows multiple LORD games to
-keep their data in the same directory without interferring with each other.
+keep their data in the same directory without interfering with each other.
 Generally you would use the -p option and a separate lord.ini for each game, so
 this option is not really needed.
 
@@ -210,7 +210,7 @@ Tournament Settings:
 LORD can also be ran in "tournament mode" which changes the winning conditions.
 Instead of requiring a fixed number of dragon kills, the winning stat can be
 something else, and the winner can be as soon as someone reaches a target
-number, or the the highest number after a specific numer of days.  These
+number, or the the highest number after a specific number of days.  These
 are set in the [Tournament] section of lord.ini.
 
 Enabled=		false
