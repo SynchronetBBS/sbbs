@@ -1049,12 +1049,24 @@ function browse(list)
 		else if (top < 0)
 			ret_obj.top = 0;
 
-		if ((current >= top+pagesize) || (current < top))
+		if (current >= top+pagesize)
 		{
-			var page_num = calc_page_num_with_current_idx(current, pagesize);
-			if (page_num > 0)
-				ret_obj.top = pagesize * (page_num - 1);
-			else
+			ret_obj.top = top + pagesize;
+			// If the number of entries is less than the page size (i.e., on the last
+			// page), then adjust top so that there will be a full page of entries
+			var num_entries_remaining = list.length - ret_obj.top;
+			if (num_entries_remaining < pagesize)
+			{
+				ret_obj.top = list.length - pagesize;
+				if (ret_obj.top < 0)
+					ret_obj.top = 0;
+			}
+			ret_obj.new_page = true;
+		}
+		else if (current < top)
+		{
+			ret_obj.top = top - pagesize;
+			if (ret_obj.top < 0)
 				ret_obj.top = 0;
 			ret_obj.new_page = true;
 		}
@@ -1207,6 +1219,15 @@ function browse(list)
 			case 'N':
 				current += pagesize;
 				top += pagesize;
+				// If the number of entries is less than the page size (i.e., on the last
+				// page), then adjust top so that there will be a full page of entries
+				var num_entries_remaining = list.length - top;
+				if (num_entries_remaining < pagesize)
+				{
+					top = list.length - pagesize;
+					if (top < 0)
+						top = 0;
+				}
 				new_page = true;
 				break;
 			case KEY_PAGEUP:
@@ -2236,35 +2257,6 @@ function install()
 		return "Failed to write xtrn.cnf";
 
 	return true;
-}
-
-// Calculates & returns a page number (1-based) based on a top index
-// and number per page.
-//
-// Parameters:
-//  top_index: The index (0-based) of the topmost item on the page
-//  num_per_page: The number of items per page
-//
-// Return value: The page number (1-based)
-function calc_page_num_with_top_idx(top_index, num_per_page)
-{
-	return ((top_index / num_per_page) + 1);
-}
-
-// Calculates & returns a page number (1-based) based on a specific item index
-// and number per page.
-//
-// Parameters:
-//  current_index: The index (0-based) of an item
-//  num_per_page: The number of items per page
-//
-// Return value: The page number (1-based)
-function calc_page_num_with_current_idx(current_idx, num_per_page)
-{
-	var top_idx = 0;
-	while (current_idx >= top_idx+num_per_page)
-		top_idx += num_per_page;
-	return calc_page_num_with_top_idx(top_idx, num_per_page);
 }
 
 
