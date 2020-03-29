@@ -402,22 +402,6 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	uintN nargc = 0;
 	for(i=arg; i<argc; i++) {
-		if(JSVAL_IS_OBJECT(argv[i]) && !JSVAL_IS_NULL(argv[i])) {
-			JSObject* objarg = JSVAL_TO_OBJECT(argv[i]);
-			if(JS_IsArrayObject(cx, objarg)) {		/* argument is an array (e.g. of strings) */
-				jsuint array_length = 0;
-				if(JS_GetArrayLength(cx, objarg, &array_length) && array_length) {
-					for(jsuint n = 0; n < array_length; n++) {
-						if(JS_GetElement(cx, objarg, n, &val)) {
-							JS_SetElement(cx, nargv, nargc, &val);
-							nargc++;
-						}
-					}
-					continue;
-				}
-
-			}
-		}
 		JS_SetElement(cx, nargv, nargc, &argv[i]);
 		nargc++;
 	}
@@ -737,9 +721,7 @@ static jsSyncMethodSpec js_functions[] = {
 	"<tt>on_exit()</tt> handlers will be evaluated in scripts scope when the script exists. <br>"
 	"NOTE: to get a child of the current scope, you need to create an object in the current scope. "
 	"An anonymous object can be created using '<tt>new function(){}</tt>'. <br>"
-	"NOTE: array-type arguments are treated specially: each element of the array is passed "
-	"as a separate argument (e.g. string) to the script in <tt>argv[]</tt>.  "
-	"This allows one script to generate a variable-length list of arguments to be passed to another.")
+	"NOTE: Use <tt>js.exec.apply()</tt> if you need to pass a variable number of arguments to the executed script.")
 	,31702
 	},
 	{0}
