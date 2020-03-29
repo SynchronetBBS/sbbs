@@ -717,9 +717,9 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("Executes a script optionally with a custom scope.  The main difference between this "
 	"and load() is that scripts called this way can call exit() without terminating the caller.  If it does, any "
 	"on_exit() handlers will be evaluated in scripts scope when the script exists. "
-	"NOTE: To get a child of the current scope, you need to create an object in the current scope "
-	"an anonymous object can be created using 'new function(){}'.")
-	,316
+	"NOTE: To get a child of the current scope, you need to create an object in the current scope. "
+	"An anonymous object can be created using 'new function(){}'.")
+	,31702
 	},
 	{0}
 };
