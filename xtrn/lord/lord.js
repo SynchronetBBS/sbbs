@@ -16762,8 +16762,10 @@ function cmdline()
 			settings.menu_dir = argv[i];
 		}
 		else if (argv[i].toUpperCase() === 'RESET') {
-			file_remove(gamedir('state.bin'));
-			file_remove(gamedir('player.bin'));
+			if(!bbs || !deny("Reset LORD")) {
+				file_remove(gamedir('state.bin'));
+				file_remove(gamedir('player.bin'));
+			}
 			ret = false;
 		}
 	}
