@@ -1051,7 +1051,7 @@ function browse(list)
 
 		if (current >= top+pagesize)
 		{
-			ret_obj.top = top + pagesize;
+			ret_obj.top = top + 1;
 			// If the number of entries is less than the page size (i.e., on the last
 			// page), then adjust top so that there will be a full page of entries
 			var num_entries_remaining = list.length - ret_obj.top;
@@ -1065,7 +1065,7 @@ function browse(list)
 		}
 		else if (current < top)
 		{
-			ret_obj.top = top - pagesize;
+			ret_obj.top = top - 1;
 			if (ret_obj.top < 0)
 				ret_obj.top = 0;
 			ret_obj.new_page = true;
@@ -1217,24 +1217,43 @@ function browse(list)
 				break;
 			case KEY_PAGEDN:
 			case 'N':
-				current += pagesize;
-				top += pagesize;
-				// If the number of entries is less than the page size (i.e., on the last
-				// page), then adjust top so that there will be a full page of entries
-				var num_entries_remaining = list.length - top;
-				if (num_entries_remaining < pagesize)
+				// Only do this if not already at the bottom
+				var last_possible_top = list.length - pagesize;
+				if (last_possible_top < 0)
+					last_possible_top = 0;
+				if (top < last_possible_top)
 				{
-					top = list.length - pagesize;
-					if (top < 0)
-						top = 0;
+					current += pagesize;
+					top += pagesize;
+					// If the number of entries is less than the page size (i.e., on the last
+					// page), then adjust top so that there will be a full page of entries
+					var num_entries_remaining = list.length - top;
+					if (num_entries_remaining < pagesize)
+					{
+						top = list.length - pagesize;
+						if (top < 0)
+							top = 0;
+						current = top;
+					}
+					new_page = true;
 				}
-				new_page = true;
 				break;
 			case KEY_PAGEUP:
 			case 'P':
-				current -= pagesize;
-				top -= pagesize;
-				new_page = true;
+				// Only do this if not already at the top
+				if (top > 0)
+				{
+					top -= pagesize;
+					if (top < 0)
+						top = 0;
+					new_page = true;
+				}
+				if (current > 0)
+				{
+					current -= pagesize;
+					if (current < 0)
+						current = 0;
+				}
 				break;
 			case 'F':
 				list = orglist.slice();
