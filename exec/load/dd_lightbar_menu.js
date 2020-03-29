@@ -99,7 +99,7 @@ lbMenu.multiSelect = true;
 lbMenu.maxNumSelections = 5;
 
 Example usage:
-load("DDLightbarMenu.js");
+require("dd_lightbar_menu.js", "DDLightbarMenu");
 // Create a menu at position 1, 3 with width 45 and height of 10
 var lbMenu = new DDLightbarMenu(1, 3, 45, 10);
 // Add 12 items to the menu, each of which will return the text of the item
@@ -449,8 +449,12 @@ function DDLightbarMenu_SetHeight(pHeight)
 //  pSelectedItemIndexes: An object that can contain multiple indexes of selected
 //                        items.  Only for multi-select mode.  These are used
 //                        for drawing a marking character in the item text.
-function DDLightbarMenu_Draw(pSelectedItemIndexes)
+//  pDrawBorders: Boolean - Whether or not to draw the borders, if borders are enabled.
+//                Defaults to true.
+function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders)
 {
+	var drawBorders = (typeof(pDrawBorders) == "boolean" ? pDrawBorders : true);
+
 	var itemLen = (this.showScrollbar ? this.size.width - 1 : this.size.width);
 	var curPos = { x: this.pos.x, y: this.pos.y }; // For writing the menu items
 	// If there is a border, then adjust the item length, starting x, and starting
@@ -460,7 +464,8 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes)
 		itemLen -= 2;
 		++curPos.x;
 		++curPos.y;
-		this.DrawBorder();
+		if (drawBorders)
+			this.DrawBorder();
 	}
 	// For numbered mode, we'll need to know the length of the longest item number
 	// so that we can use that space to display the item numbers.
@@ -935,47 +940,78 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		}
 		else if (this.lastUserInput == KEY_HOME)
 		{
-			// Go to the first item on the current page
-			if (this.selectedItemIdx > this.topItemIdx)
+			// Go to the first item in the list
+			if (this.selectedItemIdx > 0)
 			{
-				// Draw the current item in regular colors
-				if (this.borderEnabled)
-					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
+				// If the current item index is not on first current page, then scroll.
+				// Otherwise, draw more efficiently by drawing the current item in
+				// regular colors and the first item in highlighted colors.
+				this.topItemIdx = 0;
+				var numItemsPerPage = this.GetNumItemsPerPage();
+				if (this.selectedItemIdx >= 0 + numItemsPerPage)
+				{
+					this.selectedItemIdx = 0;
+					this.Draw(pSelectedItemIndexes, false);
+				}
 				else
-					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-				this.selectedItemIdx = this.topItemIdx;
-				// Draw the new current item in selected colors
-				if (this.borderEnabled)
-					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-				else
-					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				{
+					// We're already on the first page, so we can re-draw the
+					// 2 items more efficiently.
+					// Draw the current item in regular colors
+					if (this.borderEnabled)
+						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
+					else
+						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					this.selectedItemIdx = 0;
+					// Draw the new current item in selected colors
+					if (this.borderEnabled)
+						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
+					else
+						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				}
 			}
 		}
 		else if (this.lastUserInput == KEY_END)
 		{
-			var numItemsPerPage = this.size.height;
-			if (this.borderEnabled)
-				numItemsPerPage -= 2;
-			// Go to the last item on the current page
+			// Go to the last item in the list
+			var numItemsPerPage = this.GetNumItemsPerPage();
 			if (this.selectedItemIdx < this.items.length-1)
 			{
-				// Draw the current item in regular colors
-				if (this.borderEnabled)
-					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
+				var lastPossibleTop = this.items.length - numItemsPerPage;
+				if (lastPossibleTop < 0)
+					lastPossibleTop = 0;
+				var lastItemIdx = this.items.length - 1;
+				// If the last item index is below the current page, then scroll.
+				// Otherwise, draw more efficiently by drawing the current item in
+				// regular colors and the last item in highlighted colors.
+				if (lastItemIdx >= this.topItemIdx + numItemsPerPage)
+				{
+					this.topItemIdx = lastPossibleTop;
+					this.selectedItemIdx = lastItemIdx;
+					this.Draw(pSelectedItemIndexes, false);
+				}
 				else
-					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-				this.selectedItemIdx = this.topItemIdx + numItemsPerPage - 1;
-				if (this.selectedItemIdx >= this.items.length)
-					this.selectedItemIdx = this.items.length - 1;
-				// Draw the new current item in selected colors
-				if (this.borderEnabled)
-					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-				else
-					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				{
+					// We're already on the last page, so we can re-draw the
+					// 2 items more efficiently.
+					// Draw the current item in regular colors
+					if (this.borderEnabled)
+						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
+					else
+						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					this.selectedItemIdx = this.topItemIdx + numItemsPerPage - 1;
+					if (this.selectedItemIdx >= this.items.length)
+						this.selectedItemIdx = lastItemIdx;
+					// Draw the new current item in selected colors
+					if (this.borderEnabled)
+						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
+					else
+						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				}
 			}
 		}
 		// Enter key or additional select-item key: Select the item & quit out of the input loop
