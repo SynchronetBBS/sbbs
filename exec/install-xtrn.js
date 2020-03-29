@@ -217,9 +217,10 @@ function main(ini_fname)
 
 		if (item.startup_dir === undefined)
 			item.startup_dir = startup_dir;
-		if (typeof item.args == 'string' && item.args.indexOf(' ') > 0)
-			item.args = item.args.split(' ');
-		var result = js.exec(item.file, item.startup_dir, {}, item.args);
+		if (!item.args)
+			items.args = "";
+		var result = js.exec.apply(null
+			,[item.file, item.startup_dir, {}].concat(item.args.split(/\s+/)));
 		if (result !== 0 && item.required)
 			return "Error " + result + " executing " + item.file;
 	}
