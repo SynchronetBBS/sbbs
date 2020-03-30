@@ -39,6 +39,13 @@ print("*                 " + format("%-58s", "Initializing " + (netname || "Fido
 print("*                 Use Ctrl-C to abort the process if desired                 *");
 print("******************************************************************************");
 
+function aborted()
+{
+	if(js.terminated || (js.global.console && console.aborted))
+		exit(1);
+	return false;
+}
+
 if(!netzone) {
 	print("Reading FTN configuration file: sbbsecho.ini");
 	var file = new File("sbbsecho.ini");
@@ -73,7 +80,7 @@ if(!netzone) {
 				}
 			}
 			var which;
-			while(!which || which < 1)
+			while((!which || which < 1) && !aborted())
 				which = parseInt(prompt("Which zone/domain (network)"), 10);
 			netzone = which;
 			netname = zonemap[which];
@@ -115,18 +122,18 @@ for(var i = 0; i < system.fido_addr_list.length; i++) {
 
 var hub = {zone: netzone ? netzone : NaN, net: NaN, node: NaN};
 do {
-	while(isNaN(hub.zone) || hub.zone < 1)
+	while((isNaN(hub.zone) || hub.zone < 1) && !aborted())
 		hub.zone = parseInt(prompt("Your hub's zone number (e.g. 1 for FidoNet North America)"));
-	while(isNaN(hub.net) || hub.net < 1)
+	while((isNaN(hub.net) || hub.net < 1) && !aborted())
 		hub.net = parseInt(prompt("Your hub's network number"));
-	while(isNaN(hub.node) ||  hub.node < 0)
+	while((isNaN(hub.node) ||  hub.node < 0) && !aborted())
 		hub.node = parseInt(prompt("Your hub's node number"));
-} while(!confirm("Your hub's address is: " + fidoaddr.to_str(hub)));
+} while(!confirm("Your hub's address is: " + fidoaddr.to_str(hub)) && !aborted());
 
 var hub_name;
 do {
 	hub_name = prompt("Your hub's name");
-} while(!hub_name || !confirm("Your hub's name: " + hub_name));
+} while((!hub_name || !confirm("Your hub's name: " + hub_name)) && !aborted());
 
 if(hub.zone <= 6)
 	netname = "FidoNet";
@@ -134,32 +141,32 @@ do {
 	var str = prompt("Network name (no spaces or illegal filename chars) [" + netname + "]");
 	if(str)
 		netname = str;
-} while(!netname || !confirm("Network name is " + netname));
+} while((!netname || !confirm("Network name is " + netname)) && !aborted());
 
 if(!your.zone)
 	your.zone = hub.zone;
 if(!your.net)
 	your.net = hub.net;
-while(!confirm("Your node address is: " + fidoaddr.to_str(your))) {
+while(!confirm("Your node address is: " + fidoaddr.to_str(your)) && !aborted()) {
 	your.zone = NaN;
 	your.net = NaN;
 	your.node = NaN;
-	while(isNaN(your.zone) || your.zone < 1)
+	while((isNaN(your.zone) || your.zone < 1) && !aborted())
 		your.zone = parseInt(prompt("Your zone number (e.g. 1 for FidoNet North America)"));
-	while(isNaN(your.net) || your.net < 1)
+	while((isNaN(your.net) || your.net < 1) && !aborted())
 		your.net = parseInt(prompt("Your network number (i.e. normally the same as your hub)"));
-	while(isNaN(your.node) || your.node < 1)
+	while((isNaN(your.node) || your.node < 1) && !aborted())
 		your.node = parseInt(prompt("Your node number (e.g. 9999 for temporary node)"));
-	while(isNaN(your.point))
+	while((isNaN(your.point)) && !aborted())
 		your.point = parseInt(prompt("Your point number (i.e. 0 for a normal node)"));
 }
 msgs_cnf.fido_addr_list.push(your);
 
 var areafixpwd;
-while(!areafixpwd)
+while(!areafixpwd && !aborted())
 	areafixpwd = prompt("Your AreaFix (a.k.a. Area Manager) Password (case in-sensitive)");
 var sessionpwd;
-while(!sessionpwd)
+while(!sessionpwd && !aborted())
 	sessionpwd = prompt("Your BinkP Session Password (case sensitive)");
 if(!msgs_cnf.fido_default_origin)
 	msgs_cnf.fido_default_origin = system.name + " - " + system.inet_addr;
@@ -172,7 +179,7 @@ if(system.stats.total_users) {
 	if(u && u.name)
 		sysop = u.name;
 }
-while(!sysop || !confirm("Your name: " + sysop))
+while((!sysop || !confirm("Your name: " + sysop)) && !aborted())
 	sysop = prompt("Your name");
 
 /*******************/
@@ -202,8 +209,8 @@ if(confirm("Update Message Area configuration file: msgs.cnf")) {
 var echolist_fname;
 if(confirm("Download and install " + netname + " EchoList")) {
 	load("http.js");
-	while(!js.terminated) {
-		while(!echolist_url	|| !confirm("Download EchoList from " + echolist_url)) {
+	while(!aborted()) {
+		while((!echolist_url	|| !confirm("Download EchoList from " + echolist_url)) && !aborted()) {
 			echolist_url = prompt("Echolist URL");
 		}
 		echolist_fname = file_getname(echolist_url);
@@ -249,27 +256,27 @@ if(confirm("Update FidoNet configuration file: sbbsecho.ini")) {
 	var path = file.iniGetValue(null, "Inbound");
 	if(!path)
 		path = "../fido/nonsecure";
-	while(!path
+	while((!path
 		|| !confirm("Non-secure inbound directory: " + path)
-		|| !makepath(path))
+		|| !makepath(path)) && !aborted())
 		path = prompt("Non-secure inbound directory");
 	file.iniSetValue(null, "Inbound", path);
 
 	path = file.iniGetValue(null, "SecureInbound");
 	if(!path)
 		path = "../fido/inbound";
-	while(!path
+	while((!path
 		|| !confirm("Secure inbound directory: " + path)
-		|| !makepath(path))
+		|| !makepath(path)) && !aborted())
 		path = prompt("Secure inbound directory");
 	file.iniSetValue(null, "SecureInbound", path);
 
 	path = file.iniGetValue(null, "Outbound");
 	if(!path)
 		path = "../fido/outbound";
-	while(!path
+	while((!path
 		|| !confirm("Outbound directory: " + path)
-		|| !makepath(path))
+		|| !makepath(path)) && !aborted())
 		path = prompt("Outbound directory");
 	file.iniSetValue(null, "Outbound", path);
 
