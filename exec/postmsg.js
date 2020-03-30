@@ -1,6 +1,7 @@
 // $Id$
 
-// Post a message to a local sub-board, a preferred alternative to using "smbutil i"
+// Post a message to a local sub-board or mail message base
+// a preferred alternative to using "smbutil i"
 
 var hdrs = { };
 var sub_code;
@@ -14,7 +15,7 @@ function usage()
 	print("<sub-code> must be a valid sub-board (msgbase) internal code or 'mail'");
 	print();
 	print("options:");
-	print("\t-i<filename>  import text from filename rather than stdin");
+	print("\t-i<filename>  import body text from filename rather than stdin");
 	print("\t-t<name>      set 'to' user name");
 	print("\t-n<addr>      set 'to' netmail address");
 	print("\t-u<number>    set 'to' user number");
