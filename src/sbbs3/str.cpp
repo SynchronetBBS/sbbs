@@ -1207,7 +1207,7 @@ void sbbs_t::change_user(void)
 	if(online==ON_REMOTE) {
 		getuserrec(&cfg,i,U_LEVEL,2,str);
 		if(atoi(str)>logon_ml) {
-			getuserrec(&cfg,i,U_PASS,8,tmp);
+			getuserrec(&cfg,i,U_PASS,LEN_PASS,tmp);
 			bputs(text[ChUserPwPrompt]);
 			console|=CON_R_ECHOX;
 			getstr(str,8,K_UPPER);
