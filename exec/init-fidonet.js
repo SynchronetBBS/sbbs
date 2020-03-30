@@ -1,6 +1,8 @@
 // $Id$
 
-// Initial FidoNet setup script - interactive, run via JSexec
+// Initial FidoNet setup script - interactive, run via JSexec or ;exec
+
+// usage: init-fidonet.js [zone | othernet-name] [http://path/to/echolist.na]
 
 /* Prompt for FidoNet node address (support points and othernets)
  * Prompt for hub address
@@ -21,13 +23,76 @@
 "use strict";
 
 const REVISION = "$Revision$".split(' ')[1];
-var netname = "FidoNet";
+var netname;
+var netzone = parseInt(argv[0], 10);
+if(!netzone)
+	netname = argv[0];
+var echolist_url = argv[1];
+var echolist_map = {
+	1: "http://www.filegate.net/backbone/BACKBONE.NA",
+	21: "https://raw.githubusercontent.com/fsxnet/infopack/master/FSXNET.NA"
+};
 var fidoaddr = load({}, 'fidoaddr.js');
 print("******************************************************************************");
 print("*                            " + js.exec_file + " v" + format("%-30s", REVISION) + " *");
-print("*                 Initializing " + netname + " support in Synchronet                 *");
+print("*                 " + format("%-58s", "Initializing " + (netname || "FidoNet") + " support in Synchronet") +" *");
 print("*                 Use Ctrl-C to abort the process if desired                 *");
 print("******************************************************************************");
+
+if(!netzone) {
+	print("Reading FTN configuration file: sbbsecho.ini");
+	var file = new File("sbbsecho.ini");
+	if (!file.open("r")) {
+		alert("Error " + file.error + " opening " + file.name);
+		exit(1);
+	}
+	if(netname) {
+		netzone = file.iniGetValue("domain:" + netname, "Zones");
+		if(!netzone)
+			alert("Network Name not recognized: " + netname);
+	}
+	if(!netzone) {
+		var network_list = file.iniGetSections("domain:");
+		if(network_list) {
+			var zonemap = {};
+			for(var i = 0; i < network_list.length; i++) {
+				var section = network_list[i];
+				netname = section.substr(7)
+				var zones = file.iniGetValue(section, "Zones");
+				if(!zones)
+					continue;
+				if(typeof zones == 'number') {
+					print(format("%4u/", zones) + netname);
+					zonemap[zones] = netname;
+					continue;
+				}
+				zones = zones.split(',');
+				for(var j = 0; j < zones.length; j++) {
+					print(format("%4u/", zones[j]) + netname);
+					zonemap[zones[j]] = netname;
+				}
+			}
+			var which;
+			while(!which || which < 1)
+				which = parseInt(prompt("Which zone/domain (network)"), 10);
+			netzone = which;
+			netname = zonemap[which];
+		}
+	}
+	/*
+	if(!netzone) {
+		alert("Network Zone not recognized: " + netzone);
+		if(deny("Proceed"))
+			exit(1);
+	}
+	*/
+	file.close();
+}
+print("Network zone: " + netzone);
+if(!echolist_url)
+	echolist_url = echolist_map[netzone];
+if(!echolist_url)
+	echolist_url = echolist_map[1];
 
 print("Reading Message Area configuration file: msgs.cnf");
 var cnflib = load({}, "cnflib.js");
@@ -37,11 +102,18 @@ if (!msgs_cnf) {
 	exit(1);
 }
 
-if(system.fido_addr_list.length
-	&& deny("You already have a " + netname + " Address (" + system.fido_addr_list[0] + "), continue"))
-	exit(0);
+var your = {zone: NaN, net: NaN, node: 9999, point: 0};
+for(var i = 0; i < system.fido_addr_list.length; i++) {
+	var addr = fidoaddr.parse(system.fido_addr_list[i]);
+	if(!addr || addr.zone != netzone)
+		continue;
+	if(deny("You already have a " + netname + " Address (" + system.fido_addr_list[i] + "), continue"))
+		exit(0);
+	your = addr;
+	break;
+}
 
-var hub = {zone: NaN, net: NaN, node: NaN};
+var hub = {zone: netzone ? netzone : NaN, net: NaN, node: NaN};
 do {
 	while(isNaN(hub.zone) || hub.zone < 1)
 		hub.zone = parseInt(prompt("Your hub's zone number (e.g. 1 for FidoNet North America)"));
@@ -56,17 +128,18 @@ do {
 	hub_name = prompt("Your hub's name");
 } while(!hub_name || !confirm("Your hub's name: " + hub_name));
 
-if(hub.zone > 6) {
-	do {
-		var str = prompt("Network name (no spaces or illegal filename chars) [" + netname + "]");
-		if(str)
-			netname = str;
-	} while(!confirm("Network name is " + netname));
-}
+if(hub.zone <= 6)
+	netname = "FidoNet";
+do {
+	var str = prompt("Network name (no spaces or illegal filename chars) [" + netname + "]");
+	if(str)
+		netname = str;
+} while(!netname || !confirm("Network name is " + netname));
 
-var your = {zone: hub.zone, net: hub.net, node: 9999, point: 0};
-if(system.fido_addr_list.length)
-	your = fidoaddr.parse(system.fido_addr_list[0]);
+if(!your.zone)
+	your.zone = hub.zone;
+if(!your.net)
+	your.net = hub.net;
 while(!confirm("Your node address is: " + fidoaddr.to_str(your))) {
 	your.zone = NaN;
 	your.net = NaN;
@@ -128,7 +201,6 @@ if(confirm("Update Message Area configuration file: msgs.cnf")) {
 /*********************/
 var echolist_fname;
 if(confirm("Download and install " + netname + " EchoList")) {
-	var echolist_url = "http://www.filegate.net/backbone/BACKBONE.NA";
 	load("http.js");
 	while(!js.terminated) {
 		while(!echolist_url	|| !confirm("Download EchoList from " + echolist_url)) {
