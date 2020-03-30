@@ -147,6 +147,10 @@
  *                              Updated calls to AddAdditionalQuitKeys() in the
  *                              DDLightbarMenu class per the updated version
  *                              (requires the dd_lightbar_menu.js update).
+ * 2020-03-29 Eric Oulashin     Version 1.05
+ *                              Added a null check for the value returned by
+ *                              msgbase.get_index() before using the value
+ *                              wherever get_index() is called.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -216,8 +220,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.04";
-var SLYVOTE_DATE = "2020-02-09";
+var SLYVOTE_VERSION = "1.05";
+var SLYVOTE_DATE = "2020-03-29";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -2037,37 +2041,40 @@ function GetPollHdrs(pSubBoardCode, pCheckIfUserVoted, pOnlyOpenPolls)
 		if (typeof(msgbase.get_index) === "function")
 		{
 			var msgIndexes = msgbase.get_index();
-			for (var i = 0; i < msgIndexes.length; ++i)
+			if (msgIndexes != null)
 			{
-				// Skip deleted and unreadable messages
-				if ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE)
-					continue;
-
-				if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
+				for (var i = 0; i < msgIndexes.length; ++i)
 				{
-					var msgHdr = msgbase.get_msg_header(false, msgIndexes[i].number, true);
-					if (msgHdr != null)
-					{
-						// Note: IsReadableMsgHdr() checks the 'to' name for unvalidated messages
-						// for the sysop if the sub-board requires validation, but when using get_index(),
-						// the 'to' field seems to be numbers or undefined, so we use the full
-						// header for this check.
-						if (!IsReadableMsgHdr(msgHdr, pSubBoardCode))
-							continue;
+					// Skip deleted and unreadable messages
+					if ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE)
+						continue;
 
-						var includeThisPoll = true;
-						if (pOnlyOpenPolls)
-							includeThisPoll = ((msgHdr.auxattr & POLL_CLOSED) == 0);
-						if (includeThisPoll)
+					if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
+					{
+						var msgHdr = msgbase.get_msg_header(false, msgIndexes[i].number, true);
+						if (msgHdr != null)
 						{
-							retObj.pollsExist = true;
-							if (pCheckIfUserVoted)
+							// Note: IsReadableMsgHdr() checks the 'to' name for unvalidated messages
+							// for the sysop if the sub-board requires validation, but when using get_index(),
+							// the 'to' field seems to be numbers or undefined, so we use the full
+							// header for this check.
+							if (!IsReadableMsgHdr(msgHdr, pSubBoardCode))
+								continue;
+
+							var includeThisPoll = true;
+							if (pOnlyOpenPolls)
+								includeThisPoll = ((msgHdr.auxattr & POLL_CLOSED) == 0);
+							if (includeThisPoll)
 							{
-								if (!HasUserVotedOnMsg(msgHdr.number, pSubBoardCode, msgbase, user))
+								retObj.pollsExist = true;
+								if (pCheckIfUserVoted)
+								{
+									if (!HasUserVotedOnMsg(msgHdr.number, pSubBoardCode, msgbase, user))
+										retObj.msgHdrs.push(msgHdr);
+								}
+								else
 									retObj.msgHdrs.push(msgHdr);
 							}
-							else
-								retObj.msgHdrs.push(msgHdr);
 						}
 					}
 				}
@@ -3860,25 +3867,28 @@ function CountPollsInSubBoard(pSubBoardCode)
 		if (typeof(msgbase.get_index) === "function")
 		{
 			var msgIndexes = msgbase.get_index();
-			for (var i = 0; i < msgIndexes.length; ++i)
+			if (msgIndexes != null)
 			{
-				// Note: IsReadableMsgHdr() checks the 'to' name for unvalidated messages
-				// for the sysop if the sub-board requires validation, but when using get_index(),
-				// the 'to' field seems to be numbers or undefined, so for now this won't
-				// call IsReadableMsgHdr().
-				if ((msgIndexes[i] == null) || ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE) /*|| !IsReadableMsgHdr(msgHdr, pSubBoardCode)*/)
-					continue;
-				if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
+				for (var i = 0; i < msgIndexes.length; ++i)
 				{
-					++retObj.numPolls;
-					if (HasUserVotedOnMsg(msgIndexes[i].number, pSubBoardCode, msgbase, user))
-						++retObj.numPollsUserVotedOn;
-				}
-				var msgHdr = msgbase.get_msg_header(false, msgIndexes[i].number, true);
-				if (msgHdr != null)
-				{
-					if ((msgIndexes[i].auxattr & POLL_CLOSED) == POLL_CLOSED)
-						++retObj.numClosedPolls;
+					// Note: IsReadableMsgHdr() checks the 'to' name for unvalidated messages
+					// for the sysop if the sub-board requires validation, but when using get_index(),
+					// the 'to' field seems to be numbers or undefined, so for now this won't
+					// call IsReadableMsgHdr().
+					if ((msgIndexes[i] == null) || ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE) /*|| !IsReadableMsgHdr(msgHdr, pSubBoardCode)*/)
+						continue;
+					if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
+					{
+						++retObj.numPolls;
+						if (HasUserVotedOnMsg(msgIndexes[i].number, pSubBoardCode, msgbase, user))
+							++retObj.numPollsUserVotedOn;
+					}
+					var msgHdr = msgbase.get_msg_header(false, msgIndexes[i].number, true);
+					if (msgHdr != null)
+					{
+						if ((msgIndexes[i].auxattr & POLL_CLOSED) == POLL_CLOSED)
+							++retObj.numClosedPolls;
+					}
 				}
 			}
 		}
@@ -3938,12 +3948,15 @@ function subBoardHasPolls(pSubBoardCode)
 		if (typeof(msgbase.get_index) === "function")
 		{
 			var msgIndexes = msgbase.get_index();
-			for (var i = msgIndexes.length-1; !pollsExistInSubBoard && (i >= 0); --i)
+			if (msgIndexes != null)
 			{
-				if ((msgIndexes[i] == null) || ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE))
-					continue;
-				if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
-					pollsExistInSubBoard = true;
+				for (var i = msgIndexes.length-1; !pollsExistInSubBoard && (i >= 0); --i)
+				{
+					if ((msgIndexes[i] == null) || ((msgIndexes[i].attr & MSG_DELETE) == MSG_DELETE))
+						continue;
+					if ((msgIndexes[i].attr & MSG_POLL) == MSG_POLL)
+						pollsExistInSubBoard = true;
+				}
 			}
 		}
 		else
