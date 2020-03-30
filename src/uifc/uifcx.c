@@ -361,7 +361,7 @@ void umsg(char *str)
 /****************************************************************************/
 void upop(char *str)
 {
-	static size_t len;
+	static int len;
 
     if(str==NULL)
         printf("\r%*s\r", len, "");
