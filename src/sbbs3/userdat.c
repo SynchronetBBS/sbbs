@@ -296,6 +296,8 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	getrec(userdat,U_LOCATION,LEN_LOCATION,user->location);
 	getrec(userdat,U_ZIPCODE,LEN_ZIPCODE,user->zipcode);
 	getrec(userdat,U_PASS,LEN_PASS,user->pass);
+	if(user->pass[0] == 0)	// Backwards compatibility hack
+		getrec(userdat, U_OLDPASS, LEN_OLDPASS, user->pass);
 	getrec(userdat,U_PHONE,LEN_PHONE,user->phone);
 	getrec(userdat,U_BIRTH,LEN_BIRTH,user->birth);
 	getrec(userdat,U_MODEM,LEN_MODEM,user->modem);
@@ -530,6 +532,7 @@ int putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_ZIPCODE+LEN_ZIPCODE,2,crlf);
 
 	putrec(userdat,U_PASS,LEN_PASS,user->pass);
+	putrec(userdat,U_OLDPASS,LEN_OLDPASS,user->pass);	// So a sysop can downgrade to a previous build/version
 	putrec(userdat,U_PHONE,LEN_PHONE,user->phone);
 	putrec(userdat,U_BIRTH,LEN_BIRTH,user->birth);
 	putrec(userdat,U_MODEM,LEN_MODEM,user->modem);
@@ -580,7 +583,7 @@ int putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_CURXTRN,8,user->curxtrn);
 	putrec(userdat,U_CURXTRN+8,2,crlf);
 
-	putrec(userdat,U_XFER_CMD+LEN_XFER_CMD,2,crlf);
+	putrec(userdat,U_PASS+LEN_PASS, 2, crlf);
 
 	putrec(userdat,U_IPADDR+LEN_IPADDR,2,crlf);
 
@@ -2103,6 +2106,9 @@ int getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
 	for(c=0;c<length;c++)
 		if(str[c]==ETX || str[c]==CR) break;
 	str[c]=0;
+
+	if(c == 0 && start == LEN_PASS) // Backwards compatibility hack
+		return getuserrec(cfg, usernumber, U_OLDPASS, LEN_OLDPASS, str);
 
 	return(0);
 }
