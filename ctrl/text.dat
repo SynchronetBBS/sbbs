@@ -400,7 +400,7 @@
 "\1w\1hYou haven't changed your password in more "\       330 TimeToChangePw
 	"than %d days.\r\n\r\n"
 "\r\nEnter a different password"                        331 NewPasswordQ
-"\1_\1?\1y\1hNew password (4-8 chars): "                  332 NewPassword
+"\1_\1?\1y\1hNew password (%u-%u chars): "                  332 NewPasswordPromptFmt
 "\1_\1y\1hVerify (enter again): \1n"                        333 VerifyPassword
 "\7\1r\1hWrong!"                                          334 Wrong
 "\1w\1hPassword changed.\r\n"                             335 PasswordChanged
@@ -462,9 +462,9 @@
 "\r\n\r\nNo external programs available.\r\n"           379 NoXtrnPrograms
 "\1l\1n\1c\1h%s \1n\1cExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
 "\1n\1cNum \1h\xb3\1n\1c Name                             "       381 XtrnProgLstTitles
-"\1h\xc4\xc4\xc4\xc4Å\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+"\1h\xc4\xc4\xc4\xc4Å\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\ 382 XtrnProgLstUnderline
 	"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
-	"\xc4\xc4\xc4\xc4\xc4\xc4 "               	382 XtrnProgLstUnderline
+	"\xc4\xc4\xc4\xc4\xc4\xc4 "
 "\1h\1c%3u \xb3 \1n\1c%-32.32s\1h "                        383 XtrnProgLstFmt
 "\r\n\1-\1cWhich or \1h~Q\1n\1cuit: \1h"                      384 WhichXtrnProg
 "\r\n%s is currently running %s on node %d.\r\n"\       385 UserRunningXtrn
