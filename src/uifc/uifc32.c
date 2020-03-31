@@ -545,11 +545,15 @@ static void timedisplay(BOOL force)
 	static int savemin;
 	time_t now;
 	struct tm gm;
+	int old_hold;
 
 	now=time(NULL);
 	localtime_r(&now, &gm);
 	if(force || savemin != gm.tm_min || difftime(now,savetime)>=60) {
+		old_hold=hold_update;
+		hold_update=FALSE;
 		uprintf(api->scrn_width-25,1,api->bclr|(api->cclr<<4),utimestr(&now));
+		hold_update=old_hold;
 		savetime=now;
 		savemin = gm.tm_min;
 	}
