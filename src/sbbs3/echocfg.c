@@ -606,7 +606,7 @@ int main(int argc, char **argv)
 	ZERO_VAR(savedomain);
 
 	fprintf(stderr,"\nSynchronet FidoNet Configuration  Version %u.%02u  Copyright %s "
-		"Rob Swindell\n\n",SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR, __DATE__+7);
+		"Rob Swindell\n\n",SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR, &__DATE__[7]);
 
 	memset(&cfg,0,sizeof(cfg));
 	str[0]=0;

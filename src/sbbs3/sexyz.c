@@ -1547,7 +1547,7 @@ int main(int argc, char **argv)
 		"  Copyright %s Rob Swindell\n\n"
 		,revision
 		,PLATFORM_DESC
-		,__DATE__+7
+		,&__DATE__[7]
 		);
 
 	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected,NULL,flush);
