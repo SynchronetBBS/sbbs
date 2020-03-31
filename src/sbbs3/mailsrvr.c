@@ -1129,7 +1129,7 @@ static void pop3_thread(void* arg)
 		srand((unsigned int)(time(NULL) ^ (time_t)GetCurrentThreadId()));	/* seed random number generator */
 		rand();	/* throw-away first result */
 		safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%.128s>"
-			,rand(),socket,(ulong)time(NULL),clock(),startup->host_name);
+			,rand(),socket,(ulong)time(NULL),(ulong)clock(),startup->host_name);
 
 		sockprintf(socket,client.protocol,session,"+OK Synchronet %s Server %s-%s Ready %s"
 			,client.protocol, revision,PLATFORM_DESC,challenge);
@@ -4182,7 +4182,7 @@ static void smtp_thread(void* arg)
 		}
 		if(!stricmp(buf,"AUTH CRAM-MD5")) {
 			safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%s>"
-				,rand(),socket,(ulong)time(NULL),clock(),startup->host_name);
+				,rand(),socket,(ulong)time(NULL),(ulong)clock(),startup->host_name);
 #if 0
 			lprintf(LOG_DEBUG,"%04d SMTP CRAM-MD5 challenge: %s"
 				,socket,challenge);

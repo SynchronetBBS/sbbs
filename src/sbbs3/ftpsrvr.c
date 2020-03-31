@@ -2623,7 +2623,7 @@ static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts, cha
 static char* ftp_tmpfname(char* fname, char* ext, SOCKET sock)
 {
 	safe_snprintf(fname,MAX_PATH,"%sSBBS_FTP.%x%x%x%lx.%s"
-		,scfg.temp_dir,getpid(),sock,rand(),clock(),ext);
+		,scfg.temp_dir,getpid(),sock,rand(),(ulong)clock(),ext);
 	return(fname);
 }
 
@@ -3900,8 +3900,8 @@ static void ctrl_thread(void* arg)
 					,(ip_addr>>16)&0xff
 					,(ip_addr>>8)&0xff
 					,ip_addr&0xff
-					,(port>>8)&0xff
-					,port&0xff
+					,(ushort)((port>>8)&0xff)
+					,(ushort)(port&0xff)
 					);
 			}
 			mode="passive";
