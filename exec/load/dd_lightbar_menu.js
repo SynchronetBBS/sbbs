@@ -522,7 +522,7 @@ function DDLightbarMenu_DrawBorder()
 		// length is no longer than the maximum possible length (lineLen).
 		var borderText = shortenStrWithAttrCodes(this.topBorderText, lineLen);
 		console.print("\1n" + borderText + "\1n" + this.colors.borderColor);
-		var remainingLineLen = lineLen - strip_ctrl(borderText).length;
+		var remainingLineLen = lineLen - console.strlen(borderText);
 		for (var i = 0; i < remainingLineLen; ++i)
 			console.print(this.borderChars.top);
 	}
@@ -548,7 +548,7 @@ function DDLightbarMenu_DrawBorder()
 		// length is no longer than the maximum possible length (lineLen).
 		var borderText = shortenStrWithAttrCodes(this.bottomBorderText, lineLen);
 		console.print("\1n" + borderText + "\1n" + this.colors.borderColor);
-		var remainingLineLen = lineLen - strip_ctrl(borderText).length;
+		var remainingLineLen = lineLen - console.strlen(borderText);
 		for (var i = 0; i < remainingLineLen; ++i)
 			console.print(this.borderChars.bottom);
 	}
@@ -1374,7 +1374,7 @@ function getKeyWithESCChars(pGetKeyMode)
 //  pAmpersandHotkeysInItems: Boolean - Whether or not ampersand hotkeys are enabled for the item text
 function itemTextDisplayableLen(pText, pAmpersandHotkeysInItems)
 {
-	var textLen = strip_ctrl(pText).length;
+	var textLen = console.strlen(pText);
 	// If pAmpersandHotkeysInItems is true, look for ampersands immediately
 	// before a non-space and if found, don't count those.
 	if (pAmpersandHotkeysInItems)
