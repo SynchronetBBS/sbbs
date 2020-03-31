@@ -1320,7 +1320,6 @@ static int sdl_video_event_thread(void *data)
 					break;
 				case SDL_USEREVENT: {
 					struct rectlist *list;
-					struct rectlist *list_tail;
 					struct rectlist *old_next;
 					/* Tell SDL to do various stuff... */
 					if (ev.user.code != SDL_USEREVENT_FLUSH)
