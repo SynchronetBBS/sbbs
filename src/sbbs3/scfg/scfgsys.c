@@ -147,9 +147,6 @@ void sys_cfg(void)
 				uifc.input(WIN_MID,0,0,"Location",cfg.sys_location,sizeof(cfg.sys_location)-1,K_EDIT);
 				break;
 			case 2:
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				opt[2][0]=0;
 				i=0;
 				uifc.helpbuf=
 					"`United States Time Zone:`\n"
@@ -158,7 +155,7 @@ void sys_cfg(void)
 				;
 
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"United States Time Zone",opt);
+					,"United States Time Zone",uifcYesNoOpts);
 				if(i==-1)
 					break;
 				if(i==0) {
@@ -387,9 +384,6 @@ void sys_cfg(void)
 				uifc.input(WIN_MID,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
 				break;
 			case 5:
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				opt[2][0]=0;
 				i=1;
 				uifc.helpbuf=
 					"`Allow Users to Change Their Password:`\n"
@@ -399,7 +393,7 @@ void sys_cfg(void)
 					"For the highest level of security, set this option to `No.`\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Allow Users to Change Their Password",opt);
+					,"Allow Users to Change Their Password",uifcYesNoOpts);
 				if(!i && !(cfg.sys_misc&SM_PWEDIT)) {
 					cfg.sys_misc|=SM_PWEDIT;
 					uifc.changes=1; 
@@ -506,6 +500,8 @@ void sys_cfg(void)
 						,cfg.sys_misc&SM_EURODATE ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","User Expires When Out-of-time"
 						,cfg.sys_misc&SM_TIME_EXP ? "Yes" : "No");
+					sprintf(opt[i++],"%-33.33s%s","Require Sys Pass During Login"
+						,cfg.sys_misc&SM_SYSPASSLOGIN ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Display Sys Info During Logon"
 						,cfg.sys_misc&SM_NOSYSINFO ? "No" : "Yes");
 					sprintf(opt[i++],"%-33.33s%s","Display Node List During Logon"
@@ -523,9 +519,6 @@ void sys_cfg(void)
 							done=1;
 							break;
 						case 0:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.uq&UQ_ALIASES ? 0:1;
 							uifc.helpbuf=
 								"`Allow Users to Use Aliases:`\n"
@@ -535,7 +528,7 @@ void sys_cfg(void)
 								"users on your system to be known only by their real names, select `No`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Allow Users to Use Aliases",opt);
+								,"Allow Users to Use Aliases",uifcYesNoOpts);
 							if(!i && !(cfg.uq&UQ_ALIASES)) {
 								cfg.uq|=UQ_ALIASES;
 								uifc.changes=1; 
@@ -546,9 +539,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 1:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_TIMEBANK ? 0:1;
 							uifc.helpbuf=
 								"`Allow Time Banking:`\n"
@@ -560,7 +550,7 @@ void sys_cfg(void)
 								"with credits.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Allow Users to Deposit Time in Minute Bank",opt);
+								,"Allow Users to Deposit Time in Minute Bank",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_TIMEBANK)) {
 								cfg.sys_misc|=SM_TIMEBANK;
 								uifc.changes=1; 
@@ -571,9 +561,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 2:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_NOCDTCVT ? 1:0;
 							uifc.helpbuf=
 								"`Allow Credits to be Converted into Minutes:`\n"
@@ -584,7 +571,7 @@ void sys_cfg(void)
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 								,"Allow Users to Convert Credits into Minutes"
-								,opt);
+								,uifcYesNoOpts);
 							if(!i && cfg.sys_misc&SM_NOCDTCVT) {
 								cfg.sys_misc&=~SM_NOCDTCVT;
 								uifc.changes=1; 
@@ -595,9 +582,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 3:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_R_SYSOP ? 0:1;
 							uifc.helpbuf=
 								"`Allow Sysop Logins:`\n"
@@ -605,7 +589,7 @@ void sys_cfg(void)
 								"If you want to be able to login with sysop access, set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Allow Sysop Logins",opt);
+								,"Allow Sysop Logins",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_R_SYSOP)) {
 								cfg.sys_misc|=SM_R_SYSOP;
 								uifc.changes=1; 
@@ -616,9 +600,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 4:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_ECHO_PW ? 0:1;
 							uifc.helpbuf=
 								"`Display/Log Passwords Locally:`\n"
@@ -629,7 +610,7 @@ void sys_cfg(void)
 								"For elevated security, set this option to `No`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Display/Log Passwords Locally",opt);
+								,"Display/Log Passwords Locally",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_ECHO_PW)) {
 								cfg.sys_misc|=SM_ECHO_PW;
 								uifc.changes=1; 
@@ -640,9 +621,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 5:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_SHRTPAGE ? 0:1;
 							uifc.helpbuf=
 								"`Short Sysop Page:`\n"
@@ -651,7 +629,7 @@ void sys_cfg(void)
 								"than continuous random tones, set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Short Sysop Page"
-								,opt);
+								,uifcYesNoOpts);
 							if(i==1 && cfg.sys_misc&SM_SHRTPAGE) {
 								cfg.sys_misc&=~SM_SHRTPAGE;
 								uifc.changes=1; 
@@ -662,9 +640,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 6:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_SYSSTAT ? 0:1;
 							uifc.helpbuf=
 								"`Include Sysop Activity in System Statistics:`\n"
@@ -676,7 +651,7 @@ void sys_cfg(void)
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 								,"Include Sysop Activity in System Statistics"
-								,opt);
+								,uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_SYSSTAT)) {
 								cfg.sys_misc|=SM_SYSSTAT;
 								uifc.changes=1; 
@@ -687,9 +662,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 7:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_CLOSED ? 0:1;
 							uifc.helpbuf=
 								"`Closed to New Users:`\n"
@@ -697,7 +669,7 @@ void sys_cfg(void)
 								"If you want callers to be able to logon as `New`, set this option to `No`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Closed to New Users",opt);
+								,"Closed to New Users",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_CLOSED)) {
 								cfg.sys_misc|=SM_CLOSED;
 								uifc.changes=1; 
@@ -708,9 +680,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 8:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_LISTLOC ? 0:1;
 							uifc.helpbuf=
 								"`User Location in User Lists:`\n"
@@ -721,7 +690,7 @@ void sys_cfg(void)
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 								,"User Location (Instead of Note) in User Lists"
-								,opt);
+								,uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_LISTLOC)) {
 								cfg.sys_misc|=SM_LISTLOC;
 								uifc.changes=1; 
@@ -732,9 +701,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 9:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_MILITARY ? 0:1;
 							uifc.helpbuf=
 								"`Military:`\n"
@@ -743,7 +709,7 @@ void sys_cfg(void)
 								"format always, set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Use Military Time Format",opt);
+								,"Use Military Time Format",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_MILITARY)) {
 								cfg.sys_misc|=SM_MILITARY;
 								uifc.changes=1; 
@@ -754,9 +720,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 10:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_EURODATE ? 0:1;
 							uifc.helpbuf=
 								"`European Date Format:`\n"
@@ -765,7 +728,7 @@ void sys_cfg(void)
 								"instead of `MM/DD/YY` format, set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"European Date Format",opt);
+								,"European Date Format",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_EURODATE)) {
 								cfg.sys_misc|=SM_EURODATE;
 								uifc.changes=1; 
@@ -776,9 +739,6 @@ void sys_cfg(void)
 							}
 							break;
 						case 11:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
 							i=cfg.sys_misc&SM_TIME_EXP ? 0:1;
 							uifc.helpbuf=
 								"`User Expires When Out-of-time:`\n"
@@ -787,7 +747,7 @@ void sys_cfg(void)
 								"time online, then set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"User Expires When Out-of-time",opt);
+								,"User Expires When Out-of-time",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_TIME_EXP)) {
 								cfg.sys_misc|=SM_TIME_EXP;
 								uifc.changes=1; 
@@ -798,9 +758,26 @@ void sys_cfg(void)
 							}
 							break;
 						case 12:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
+							i=cfg.sys_misc&SM_SYSPASSLOGIN ? 0:1;
+							uifc.helpbuf=
+								"`Require System Password for Sysop Login:`\n"
+								"\n"
+								"If you want to require the correct system password to be provided during\n"
+								"system operator logins (in addition to the sysop's personal user account\n"
+								"password), set this option to `Yes`.\n"
+							;
+							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+								,"Require System Password for Sysop Logon",uifcYesNoOpts);
+							if(i==1 && cfg.sys_misc&SM_SYSPASSLOGIN) {
+								cfg.sys_misc&=~SM_SYSPASSLOGIN;
+								uifc.changes=1; 
+							}
+							else if(i==0 && !(cfg.sys_misc&SM_SYSPASSLOGIN)) {
+								cfg.sys_misc|=SM_SYSPASSLOGIN;
+								uifc.changes=1; 
+							}
+							break;
+						case 13:
 							i=cfg.sys_misc&SM_NOSYSINFO ? 1:0;
 							uifc.helpbuf=
 								"`Display System Information During Logon:`\n"
@@ -809,7 +786,7 @@ void sys_cfg(void)
 								"to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Display System Information During Logon",opt);
+								,"Display System Information During Logon",uifcYesNoOpts);
 							if(!i && cfg.sys_misc&SM_NOSYSINFO) {
 								cfg.sys_misc&=~SM_NOSYSINFO;
 								uifc.changes=1; 
@@ -819,10 +796,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 13:
-							strcpy(opt[0],"Yes");
-							strcpy(opt[1],"No");
-							opt[2][0]=0;
+						case 14:
 							i=cfg.sys_misc&SM_NONODELIST ? 1:0;
 							uifc.helpbuf=
 								"`Display Active Node List During Logon:`\n"
@@ -831,7 +805,7 @@ void sys_cfg(void)
 								"to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Display Active Node List During Logon",opt);
+								,"Display Active Node List During Logon",uifcYesNoOpts);
 							if(!i && cfg.sys_misc&SM_NONODELIST) {
 								cfg.sys_misc&=~SM_NONODELIST;
 								uifc.changes=1; 
