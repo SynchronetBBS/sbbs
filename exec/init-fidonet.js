@@ -28,10 +28,16 @@ var netzone = parseInt(argv[0], 10);
 if(!netzone)
 	netname = argv[0];
 var echolist_url = argv[1];
-var echolist_map = {
-	1: "http://www.filegate.net/backbone/BACKBONE.NA",
-	21: "https://raw.githubusercontent.com/fsxnet/infopack/master/FSXNET.NA"
+// If you want your Othernet listed here, please provide information
+// and an http[s] URL to your official EchoList
+var network_list = {
+	1:  { name: "FidoNet", desc: "North America", echolist: "http://www.filegate.net/backbone/BACKBONE.NA"},
+	2:  { name: "FidoNet", desc: "Europe, Former Soviet Union countries, and Israel" },
+	3:  { name: "FidoNet", desc: "Australasia" },
+	4:  { name: "FidoNet", desc: "Latin America (except Puerto Rico)" },
+	21: { name: "fsxNet", desc: "", echolist: "https://raw.githubusercontent.com/fsxnet/infopack/master/FSXNET.NA"}
 };
+var network;
 var fidoaddr = load({}, 'fidoaddr.js');
 print("******************************************************************************");
 print("*                            " + js.exec_file + " v" + format("%-30s", REVISION) + " *");
@@ -46,60 +52,86 @@ function aborted()
 	return false;
 }
 
-if(!netzone) {
+function lookup_network(info)
+{
+	print("Looking up network: " + info);
+	var result;
+	if(typeof info == "number") {
+		result = network_list[info];
+		if(result)
+			return result;
+	}
+	
 	print("Reading FTN configuration file: sbbsecho.ini");
 	var file = new File("sbbsecho.ini");
 	if (!file.open("r")) {
 		alert("Error " + file.error + " opening " + file.name);
-		exit(1);
+		return false;
 	}
-	if(netname) {
-		netzone = file.iniGetValue("domain:" + netname, "Zones");
-		if(!netzone)
-			alert("Network Name not recognized: " + netname);
-	}
-	if(!netzone) {
-		var network_list = file.iniGetSections("domain:");
-		if(network_list) {
+	
+	if(typeof info == "number") { // zone
+		var domain_list = file.iniGetSections("domain:");
+		if(domain_list) {
 			var zonemap = {};
-			for(var i = 0; i < network_list.length; i++) {
-				var section = network_list[i];
-				netname = section.substr(7)
+			for(var i = 0; i < domain_list.length; i++) {
+				var section = domain_list[i];
+				var netname = section.substr(7)
 				var zones = file.iniGetValue(section, "Zones");
 				if(!zones)
 					continue;
 				if(typeof zones == 'number') {
-					print(format("%4u/", zones) + netname);
-					zonemap[zones] = netname;
+					if(info == zones) {
+						result = netname;
+						break;
+					}
 					continue;
 				}
 				zones = zones.split(',');
 				for(var j = 0; j < zones.length; j++) {
-					print(format("%4u/", zones[j]) + netname);
-					zonemap[zones[j]] = netname;
+					if(info == zones[j]) {
+						result = netmame;
+						break;
+					}
 				}
 			}
-			var which;
-			while((!which || which < 1) && !aborted())
-				which = parseInt(prompt("Which zone/domain (network)"), 10);
-			netzone = which;
-			netname = zonemap[which];
 		}
+		file.close();
+		return { name: result };
 	}
-	/*
-	if(!netzone) {
-		alert("Network Zone not recognized: " + netzone);
-		if(deny("Proceed"))
-			exit(1);
-	}
-	*/
+	result = file.iniGetValue("domain:" + info, "Zones", 1);
 	file.close();
+	return result;
 }
+
+if(netzone)
+	network = lookup_network(netzone);
+else if(netname) {
+	netzone = lookup_network(netname);
+	network = network_list[netzone];
+}
+
+if(!netzone) {
+	for(var zone in network_list) {
+		print(format("%4u/%s %s", zone, network_list[zone].name, network_list[zone].desc));
+	}
+	var which;
+	while((!which || which < 1) && !aborted())
+		which = parseInt(prompt("Which zone/network"), 10);
+	netzone = which;
+	network = network_list[which];
+}
+
+if(network)
+	netname = network.name;
+else
+	network = {};
+
+if(!netname && netzone <= 6)
+	netname = "FidoNet";
+
 print("Network zone: " + netzone);
-if(!echolist_url)
-	echolist_url = echolist_map[netzone];
-if(!echolist_url)
-	echolist_url = echolist_map[1];
+print("Network name: " + netname);
+print("EchoList URL: " + network.echolist);
 
 print("Reading Message Area configuration file: msgs.cnf");
 var cnflib = load({}, "cnflib.js");
@@ -135,13 +167,12 @@ do {
 	hub_name = prompt("Your hub's name");
 } while((!hub_name || !confirm("Your hub's name: " + hub_name)) && !aborted());
 
-if(hub.zone <= 6)
-	netname = "FidoNet";
 do {
 	var str = prompt("Network name (no spaces or illegal filename chars) [" + netname + "]");
 	if(str)
 		netname = str;
-} while((!netname || !confirm("Network name is " + netname)) && !aborted());
+} while((!netname || netname.indexOf(' ') >= 0 || netname.length > 8 
+	|| !confirm("Network name is " + netname)) && !aborted());
 
 if(!your.zone)
 	your.zone = hub.zone;
@@ -208,9 +239,10 @@ if(confirm("Update Message Area configuration file: msgs.cnf")) {
 /*********************/
 var echolist_fname;
 if(confirm("Download and install " + netname + " EchoList")) {
+	var echolist_url = network.echolist;
 	load("http.js");
 	while(!aborted()) {
-		while((!echolist_url	|| !confirm("Download EchoList from " + echolist_url)) && !aborted()) {
+		while((!echolist_url || !confirm("Download EchoList from " + echolist_url)) && !aborted()) {
 			echolist_url = prompt("Echolist URL");
 		}
 		echolist_fname = file_getname(echolist_url);
@@ -232,7 +264,10 @@ if(confirm("Download and install " + netname + " EchoList")) {
 
 	if(confirm("Import " + echolist_fname)) {
 		print("Importing " + echolist_fname);
-		system.exec(system.exec_dir + "scfg -import=" + echolist_fname + " -g" + netname);
+		system.exec(system.exec_dir + "scfg"
+			+ " -import=" + echolist_fname 
+			+ " -g" + netname
+			+ " -faddr=" + fidoaddr.to_str(your));
 	}
 }
 
