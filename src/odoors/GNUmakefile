@@ -37,7 +37,7 @@
 #                  bcc - For Borland C++
 #                   cl - For Microsoft compilers
 #
-CC	:=	gcc
+CC	?=	gcc
 #
 #------------------------------------------------------------------------------
 #
@@ -53,7 +53,7 @@ OBJDIR	:=	objs-$(OS)/
 LIBDIR	:=	libs-$(OS)/
 EXEDIR	:=	exe-$(OS)/
 
-LD	:=	gcc
+LD	?=	gcc
 
 ifdef DEBUG
  CFLAGS	+=	-g -DOD_DEBUG
@@ -68,13 +68,14 @@ endif
 #
 CFLAGS	+=	-fPIC
 LDFLAGS	+=	-fPIC
-CFLAGS	+=	-O2 -L${LIBDIR} -I../xpdev -Wall
+CFLAGS	+=	-O2 -L${LIBDIR} -I../xpdev
 ifeq ($(OS),Darwin)
  CFLAGS		+=	-D__unix__
- LDFLAGS	+=	$(CFLAGS) -dynamiclib -single_module
+ LDFLAGS	:=	$(CFLAGS) -dynamiclib -single_module
 else
- LDFLAGS	+=	$(CFLAGS) -shared
+ LDFLAGS	:=	$(CFLAGS) -shared
 endif
+CFLAGS	+=	-Wall
 ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
  CFLAGS	+=	-DHAS_INTTYPES_H
 endif

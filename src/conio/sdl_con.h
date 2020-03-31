@@ -11,6 +11,7 @@ int sdl_init_mode(int mode);
 int sdl_setup_colours(void);
 int sdl_draw_char(unsigned short vch, int xpos, int ypos);
 int sdl_screen_redraw(void);
+void exit_sdl_con(void);
 
 /* High-level stuff */
 void sdl_setscaling(int new_value);

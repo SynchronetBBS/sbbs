@@ -141,10 +141,6 @@ options are supported (options are not case sensitive):
         default mode.  Additionally, a 'W' or 'F' can be specified to force
         windowed or full-screen mode respectively.
 
-    O[WF] - SDL Overlay output mode.  Uses the SDL library for output, and
-        supports hardware scaling if available.  Additionally, a 'W' or 'F'
-        can be specified to force windowed or full-screen mode respectively.
-
 -L##
     Specifies the number of lines on the "screen".  Supported values are:
     14, 21, 25 (default), 28, 43, 50, and 60.

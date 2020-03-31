@@ -1427,13 +1427,6 @@ void change_settings(int connected)
 								"        otherwise identical to X11 mode.\n\n"
 								"~ SDL Fullscreen ~\n"
 								"        As above, but starts in full-screen mode rather than a window\n\n"
-								"~ SDL Overlay ~\n"
-								"        The most resource intensive mode.  However, unlike the other\n"
-								"        graphical modes, this window can be scaled to any size and,\n"
-								"        when switched to full screen, will always use the entire\n"
-								"        display.\n\n"
-								"~ SDL Overlay Fullscreen ~\n"
-								"        As above, but starts in full-screen mode rather than a window\n\n"
 #endif
 								;
 				switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Video Output Mode",output_types)) {

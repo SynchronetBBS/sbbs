@@ -21,7 +21,7 @@ ifeq ($(os),openbsd)
  CFLAGS += -DHAVE_VASPRINTF
 endif
 ifeq ($(os),win32)
- CFLAGS += -I${SRC_ROOT}/../include/sdl
+ CFLAGS += -I${3RDP_ROOT}/win32.release/sdl2/include
 endif
 
 ifneq ($(os),win32)
@@ -60,33 +60,28 @@ endif
 ifdef USE_SDL
  ifndef WITH_SDL_AUDIO
   ifdef SDL_CONFIG
-   ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
-	WITH_SDL	:=	1
+   ifeq ($(shell if [ `${SDL_CONFIG} --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
+    WITH_SDL	:=	1
    endif
   else
    ifeq ($(os),darwin)
-	ifeq ($(shell if [ -d /Library/Frameworks/SDL.framework ] ; then echo YES ; fi),YES)
+    ifeq ($(shell if [ -d /Library/Frameworks/SDL.framework ] ; then echo YES ; fi),YES)
      SDL_FRAMEWORK_PATH ?= /Library/Frameworks
-	endif
+    endif
     ifdef SDL_FRAMEWORK_PATH
      WITH_SDL	:=	1
      CIOLIB-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
     endif
    else
-    ifeq ($(shell sdl12-config --cflags > /dev/null 2>&1 && echo YES),YES)
-     SDL_CONFIG := sdl12-config
+    ifeq ($(shell sdl2-config --cflags > /dev/null 2>&1 && echo YES),YES)
+     SDL_CONFIG := sdl2-config
      WITH_SDL	:=	1
     else
-	 ifeq ($(shell sdl-config --cflags > /dev/null 2>&1 && echo YES),YES)
+     ifeq ($(shell if [ `sdl-config --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
       SDL_CONFIG := sdl-config
       WITH_SDL	:=	1
-	 else
-      ifeq ($(shell sdl11-config --cflags > /dev/null 2>&1 && echo YES),YES)
-       SDL_CONFIG := sdl11-config
-       WITH_SDL	:=	1
-      endif
      endif
-	endif
+    endif
    endif
   endif
  endif

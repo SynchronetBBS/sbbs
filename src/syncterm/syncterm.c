@@ -67,7 +67,6 @@ char	*usage =
         "-e# =  set escape delay to #msec\n"
 		"-iX =  set interface mode to X (default=auto) where X is one of:\n"
 		"       S[W|F] = SDL surface mode W for windowed and F for fullscreen\n"
-		"       O[W|F] = SDL overlay mode (hardware scaled)\n"
 #ifdef __unix__
 		"       X = X11 mode\n"
 		"       C = Curses mode\n"
@@ -726,8 +725,6 @@ char *output_types[]={
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 	,"SDL"
 	,"SDL Fullscreen"
-	,"SDL Overlay"
-	,"SDL Overlay Fullscreen"
 #endif
 ,NULL};
 int output_map[]={
@@ -761,8 +758,6 @@ char *output_descrs[]={
 	,"Win32 Console Fullscreen"
 	,"SDL"
 	,"SDL Fullscreen"
-	,"SDL Overlay"
-	,"SDL Overlay Fullscreen"
 ,NULL};
 
 char *output_enum[]={
@@ -775,8 +770,6 @@ char *output_enum[]={
 	,"WinConsoleFullscreen"
 	,"SDL"
 	,"SDLFullscreen"
-	,"SDLOverlay"
-	,"SDLOverlayFullscreen"
 ,NULL};
 
 BOOL check_exit(BOOL force)
