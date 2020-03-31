@@ -129,7 +129,7 @@ bool sbbs_t::answer()
 							console&=~(CON_R_ECHOX|CON_L_ECHOX);
 						}
 						else {
-							if(REALSYSOP) {
+							if(REALSYSOP && (cfg.sys_misc&SM_SYSPASSLOGIN)) {
 								rioctl(IOFI);       /* flush input buffer */
 								if(!chksyspass())
 									bputs(text[InvalidLogon]);
@@ -229,7 +229,7 @@ bool sbbs_t::answer()
 				}
 				else {
 					SAFECOPY(rlogin_pass, tmp);
-					if(REALSYSOP) {
+					if(REALSYSOP && (cfg.sys_misc&SM_SYSPASSLOGIN)) {
 						rioctl(IOFI);       /* flush input buffer */
 						if(!chksyspass())
 							bputs(text[InvalidLogon]);
