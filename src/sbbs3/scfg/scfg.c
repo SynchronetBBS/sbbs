@@ -191,15 +191,15 @@ int main(int argc, char **argv)
             || argv[i][0]=='/'
 #endif
             ) {
-			if(strncmp(argv[i]+1, "import=", 7) == 0) {
+			if(strncmp(argv[i], "-import=", 8) == 0) {
 				import = argv[i] + 8;
 				continue;
 			}
-			if(strncmp(argv[i]+1, "faddr=", 6) == 0) {
-				faddr = atofaddr(argv[i] + 6);
+			if(strncmp(argv[i], "-faddr=", 7) == 0) {
+				faddr = atofaddr(argv[i] + 7);
 				continue;
 			}
-			if(strcmp(argv[i]+1, "insert") == 0) {
+			if(strcmp(argv[i], "-insert") == 0) {
 				uifc.insert_mode = TRUE;
 				continue;
 			}
