@@ -35,6 +35,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "utf8.h"
 
 /****************************************************************************/
 /* Waits for remote or local user to input a CR terminated string. 'length' */
@@ -52,13 +53,14 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
     uchar	ch;
 	uint	atr;
 	int		hidx = -1;
+	long	org_column = column;
 
 	long term = term_supports();
 	console&=~(CON_UPARROW|CON_DOWNARROW|CON_LEFTARROW|CON_BACKSPACE|CON_DELETELINE);
 	if(!(mode&K_WRAP))
 		console&=~CON_INSERT;
 	sys_status&=~SS_ABORT;
-	if(cols >= TERM_COLS_MIN
+	if(cols >= TERM_COLS_MIN && !(mode&K_NOECHO) && !(console&CON_R_ECHOX)
 		&& column + (long)maxlen >= cols)	/* Don't allow the terminal to auto line-wrap */
 		maxlen = cols-column-1;
 	if(mode&K_LINE && (term&(ANSI|PETSCII)) && !(mode&K_NOECHO)) {
@@ -85,7 +87,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 			i|=(cfg.color[clr_inputline]&0x77)>>4;
 			attr(i); 
 		}
-		column+=bputs(str1, P_AUTO_UTF8);
+		bputs(str1, P_AUTO_UTF8);
 		if(mode&K_EDIT && !(mode&(K_LINE|K_AUTODEL)))
 			cleartoeol();  /* destroy to eol */ 
 	}
@@ -364,7 +366,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 				break;
 			case CTRL_R:    /* Ctrl-R Redraw Line */
 				if(!(mode&K_NOECHO))
-					redrwstr(str1,i,l,0);
+					redrwstr(str1,i,l,K_GETSTR);
 				break;
 			case TERM_KEY_INSERT:	/* Ctrl-V			Toggles Insert/Overwrite */
 				if(mode&K_NOECHO)
@@ -600,7 +602,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 						if((term&UTF8) && (ch&0x80)) {
 							if(i>l)
 								l=i;
-							redrwstr(str1, i, l, P_UTF8);
+							str1[l]=0;
+							if(utf8_str_is_valid(str1))
+								redrwstr(str1, column - org_column, l, P_UTF8);
 						} else {
 							outchar(ch);
 						}
