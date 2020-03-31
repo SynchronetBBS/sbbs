@@ -53,12 +53,12 @@ enum {
 	,SYS_PROP_OP
 	,SYS_PROP_ID
 	,SYS_PROP_MISC
-	,SYS_PROP_PSNAME
-	,SYS_PROP_PSNUM
 	,SYS_PROP_INETADDR
 	,SYS_PROP_LOCATION
 	,SYS_PROP_TIMEZONE
 	,SYS_PROP_PWDAYS
+	,SYS_PROP_MINPWLEN
+	,SYS_PROP_MAXPWLEN
 	,SYS_PROP_DELDAYS
 	,SYS_PROP_AUTODEL
 
@@ -152,12 +152,6 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SYS_PROP_MISC:
 			*vp=UINT_TO_JSVAL(cfg->sys_misc);
 			break;
-		case SYS_PROP_PSNAME:
-			p=cfg->sys_psname;
-			break;
-		case SYS_PROP_PSNUM:
-			*vp = INT_TO_JSVAL(cfg->sys_psnum);
-			break;
 		case SYS_PROP_INETADDR:
 			p=cfg->sys_inetaddr;
 			break;
@@ -176,6 +170,12 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SYS_PROP_PWDAYS:
 			*vp = INT_TO_JSVAL(cfg->sys_pwdays);
+			break;
+		case SYS_PROP_MINPWLEN:
+			*vp = INT_TO_JSVAL(MIN_PASS_LEN);
+			break;
+		case SYS_PROP_MAXPWLEN:
+			*vp = INT_TO_JSVAL(LEN_PASS);
 			break;
 		case SYS_PROP_DELDAYS:
 			*vp = INT_TO_JSVAL(cfg->sys_deldays);
@@ -376,13 +376,13 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{	"operator",					SYS_PROP_OP,		SYSOBJ_FLAGS,		310  },
 	{	"qwk_id",					SYS_PROP_ID,		SYSOBJ_FLAGS,		310  },
 	{	"settings",					SYS_PROP_MISC,		JSPROP_ENUMERATE,	310  },
-	{	"psname",					SYS_PROP_PSNAME,	SYSOBJ_FLAGS,		310  },
-	{	"psnum",					SYS_PROP_PSNUM,		SYSOBJ_FLAGS,		310  },
 	{	"inetaddr",					SYS_PROP_INETADDR,	JSPROP_READONLY,	310  },	/* alias */
 	{	"inet_addr",				SYS_PROP_INETADDR,	SYSOBJ_FLAGS,		311  },
 	{	"location",					SYS_PROP_LOCATION,	SYSOBJ_FLAGS,		310  },
 	{	"timezone",					SYS_PROP_TIMEZONE,	SYSOBJ_FLAGS,		310  },
 	{	"pwdays",					SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		310  },
+	{	"min_password_length",		SYS_PROP_MINPWLEN,	SYSOBJ_FLAGS,		31702  },
+	{	"max_password_length",		SYS_PROP_MAXPWLEN,	SYSOBJ_FLAGS,		31702  },
 	{	"deldays",					SYS_PROP_DELDAYS,	SYSOBJ_FLAGS,		310  },
 	{	"autodel",					SYS_PROP_AUTODEL,	SYSOBJ_FLAGS,		31702  },
 
@@ -454,12 +454,12 @@ static char* sys_prop_desc[] = {
 	,"operator name"
 	,"system QWK-ID (for QWK packets)"
 	,"settings bitfield (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"PostLink name"
-	,"PostLink system number"
 	,"Internet address (host or domain name)"
 	,"location (city, state)"
 	,"timezone (use <i>system.zonestr()</i> to get string representation)"
-	,"days between forced user password changes"
+	,"days between forced user password changes (<tt>0</tt>=<i>never</i>)"
+	,"minimum number of characters in user passwords"
+	,"maximum number of characters in user passwords"
 	,"days to preserve deleted user records, record will not be reused/overwritten during this period"
 	,"days of user inactivity before auto-deletion (<tt>0</tt>=<i>disabled</i>), N/A to P-exempt users"
 
