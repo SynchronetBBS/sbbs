@@ -73,7 +73,7 @@ char *num_flags=
 
 void allocfail(uint size)
 {
-    printf("\7Error allocating %u bytes of memory.\r\n",size);
+    printf("\7Error allocating %u bytes of memory.\n",size);
     bail(1);
 }
 
@@ -170,8 +170,8 @@ int main(int argc, char **argv)
 	BOOL    door_mode=FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
 
-    printf("\r\nSynchronet Configuration Utility (%s)  v%s  Copyright %s "
-        "Rob Swindell\r\n",PLATFORM_DESC,VERSION,__DATE__+7);
+    printf("\nSynchronet Configuration Utility (%s)  v%s  " COPYRIGHT_NOTICE
+        "\n",PLATFORM_DESC,VERSION);
 
 	xp_randomize();
 	cfg.size=sizeof(cfg);
@@ -184,6 +184,7 @@ int main(int argc, char **argv)
 	const char* import = NULL;
 	const char* grpname = NULL;
 	unsigned int grpnum = 0;
+	faddr_t faddr = {0};
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
 #ifndef __unix__
@@ -192,6 +193,10 @@ int main(int argc, char **argv)
             ) {
 			if(strncmp(argv[i]+1, "import=", 7) == 0) {
 				import = argv[i] + 8;
+				continue;
+			}
+			if(strncmp(argv[i]+1, "faddr=", 6) == 0) {
+				faddr = atofaddr(argv[i] + 6);
 				continue;
 			}
 			if(strcmp(argv[i]+1, "insert") == 0) {
@@ -213,7 +218,7 @@ int main(int argc, char **argv)
         			uifc.mode|=UIFC_COLOR;
                     break;
                 case 'D':
-					printf("NOTICE: The -d option is deprecated, use -id instead\r\n");
+					printf("NOTICE: The -d option is deprecated, use -id instead\n");
 					SLEEP(2000);
                     door_mode=TRUE;
                     break;
@@ -283,30 +288,31 @@ int main(int argc, char **argv)
 					USAGE:
                     printf("\nusage: scfg [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
-                        "-f  =  force save of configuration files\r\n"
-                        "-a  =  update all message base status headers\r\n"
-                        "-h  =  don't update message base status headers\r\n"
+                        "-f  =  force save of configuration files\n"
+                        "-a  =  update all message base status headers\n"
+                        "-h  =  don't update message base status headers\n"
 						"-u# =  set file creation permissions mask (in octal)\n"
-						"-k  =  keyboard mode only (no mouse support)\r\n"
-						"-c  =  force color mode\r\n"
-						"-m  =  force monochrome mode\r\n"
-                        "-e# =  set escape delay to #msec\r\n"
-						"-import=<filename> = import a message area list file\r\n"
-						"-g# =  set group number (or name) to import into\r\n"
-						"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
+						"-k  =  keyboard mode only (no mouse support)\n"
+						"-c  =  force color mode\n"
+						"-m  =  force monochrome mode\n"
+                        "-e# =  set escape delay to #msec\n"
+						"-import=<filename> = import a message area list file\n"
+						"-faddr=<addr> = specify your FTN address for imported subs\n"
+						"-g# =  set group number (or name) to import into\n"
+						"-iX =  set interface mode to X (default=auto) where X is one of:\n"
 #ifdef __unix__
-						"       X = X11 mode\r\n"
-						"       C = Curses mode\r\n"
-						"       F = Curses mode with forced IBM charset\r\n"
+						"       X = X11 mode\n"
+						"       C = Curses mode\n"
+						"       F = Curses mode with forced IBM charset\n"
 #else
-						"       W = Win32 native mode\r\n"
+						"       W = Win32 native mode\n"
 #endif
-						"       A = ANSI mode\r\n"
-						"       D = standard input/output/door mode\r\n"
-                        "-v# =  set video mode to # (default=auto)\r\n"
-                        "-l# =  set screen lines to # (default=auto-detect)\r\n"
-                        "-b# =  set automatic back-up level (default=%d)\r\n"
-						"-y  =  automatically save changes (don't ask)\r\n"
+						"       A = ANSI mode\n"
+						"       D = standard input/output/door mode\n"
+                        "-v# =  set video mode to # (default=auto)\n"
+                        "-l# =  set screen lines to # (default=auto-detect)\n"
+                        "-b# =  set automatic back-up level (default=%d)\n"
+						"-y  =  automatically save changes (don't ask)\n"
 						,backup_level
                         );
         			exit(0);
@@ -373,7 +379,7 @@ int main(int argc, char **argv)
 			case msgbase:
 			{
 				enum import_list_type list_type = determine_msg_list_type(fname);
-				ported = import_msg_areas(list_type, fp, grpnum, 1, 99999, /* qhub: */NULL, /* pkt_orig: */NULL, &added);
+				ported = import_msg_areas(list_type, fp, grpnum, 1, 99999, /* qhub: */NULL, /* pkt_orig: */NULL, &faddr, &added);
 				break;
 			}
 			case filebase:
@@ -440,7 +446,7 @@ int main(int argc, char **argv)
 
 	sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
 	if(uifc.scrn(str)) {
-		printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
+		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		bail(1);
 	}
 

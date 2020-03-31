@@ -166,7 +166,7 @@ BOOL save_chat_cfg(scfg_t*, int);
 BOOL save_xtrn_cfg(scfg_t*, int);
 
 long import_msg_areas(enum import_list_type, FILE*, unsigned grpnum, int min_confnum, int max_confnum
-	, qhub_t*, const char* pkt_orig, long* added);
+	, qhub_t*, const char* pkt_orig, faddr_t* faddr, long* added);
 
 /* Prepare a string to be used as an internal code; Note: use the return value, Luke */
 char* prep_code(char *str, const char* prefix);
