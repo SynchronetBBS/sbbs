@@ -47,6 +47,7 @@
 /* XPDEV */
 #include "gen_defs.h"
 
+#include "md5.h"
 #include "ciolib.h"
 #include "uifc.h"
 #include "sbbs.h"
