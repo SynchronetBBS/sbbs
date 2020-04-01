@@ -458,8 +458,8 @@ if(!msg_area.grp[netname]
 			"name": netname,
 			"description": netname,
 			"ars": "",
-			"code_prefix": network.code_prefix === undefined 
-				? (netname.toUpperCase() + "_") : network.code_prefix
+			"code_prefix": network.areatag_prefix === undefined 
+				? (netname.toUpperCase() + "_") : network.areatag_prefix
 			});
 }
 if(confirm("Save Changes to Message Area configuration file: msgs.cnf")) {
