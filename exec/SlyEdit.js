@@ -109,6 +109,20 @@
  *                              sub-board, SlyEdit now checks the can_post property of
  *                              the sub-board rather than checking the ARS.  The can_post
  *                              property covers more cases.
+ * 2020-03-30 Eric Oulashin     Version 1.73 Beta
+ *                              Started working on updating tag line selection to use
+ *                              DDLightbarMenu instead of SlyEdit's own internal
+ *                              choice menu.
+ * 2020-03-31 Eric Oulashin     Version 1.73
+ *                              Finished updating the tag line selection to use DDLightbarMenu.
+ *                              Releasing this verison.
+ *                              I want to start working on updating lightbar menu behavior
+ *                              to scroll one at a time when using the up arrow at the
+ *                              top of the list or the down arrow at the bottom of the
+ *                              list, to be consistent with DDLightbarMenu and how
+ *                              scrolling normally behaves in other apps.  However, SlyEdit's
+ *                              choice menu now is only used for the user settings
+ *                              menu, where only 1 page of items is shown.
  */
 
 /* Command-line arguments:
@@ -205,8 +219,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.72";
-const EDITOR_VER_DATE = "2020-03-04";
+const EDITOR_VERSION = "1.73";
+const EDITOR_VER_DATE = "2020-03-31";
 
 
 // Program variables
@@ -298,41 +312,41 @@ gCrossPostMsgSubs.add = function(pSubCode) {
 // Parameters:
 //  pSubCode: The sub-code to remove
 gCrossPostMsgSubs.remove = function(pSubCode) {
-  if (typeof(pSubCode) != "string")
-    return;
+	if (typeof(pSubCode) != "string")
+		return;
 
-  var grpIndex = msg_area.sub[pSubCode].grp_index;
-  if (this.hasOwnProperty(grpIndex))
-  {
-    delete this[grpIndex][pSubCode];
-    if (numObjProperties(this[grpIndex]) == 0)
-      delete this[grpIndex];
-  }
+	var grpIndex = msg_area.sub[pSubCode].grp_index;
+	if (this.hasOwnProperty(grpIndex))
+	{
+		delete this[grpIndex][pSubCode];
+		if (numObjProperties(this[grpIndex]) == 0)
+			delete this[grpIndex];
+	}
 };
 // This function returns the number of message groups in
 // gCrossPostMsgSubs.
 gCrossPostMsgSubs.numMsgGrps = function() {
-  var msgGrpCount = 0;
-  for (var prop in this)
-  {
-    if (!this.propIsFuncName(prop))
-      ++msgGrpCount;
-  }
-  return msgGrpCount;
+	var msgGrpCount = 0;
+	for (var prop in this)
+	{
+		if (!this.propIsFuncName(prop))
+			++msgGrpCount;
+	}
+	return msgGrpCount;
 };
 // This function returns the number of sub-boards the user has chosen to post
 // the message into.
 gCrossPostMsgSubs.numSubBoards = function () {
-  var numMsgSubs = 0;
-  for (var grpIndex in this)
-  {
-    if (!this.propIsFuncName(grpIndex))
-    {
-      for (var subCode in gCrossPostMsgSubs[grpIndex])
-        ++numMsgSubs;
-    }
-  }
-  return numMsgSubs;
+	var numMsgSubs = 0;
+	for (var grpIndex in this)
+	{
+		if (!this.propIsFuncName(grpIndex))
+		{
+			for (var subCode in gCrossPostMsgSubs[grpIndex])
+				++numMsgSubs;
+		}
+	}
+	return numMsgSubs;
 }
 
 
@@ -6550,6 +6564,7 @@ function doUserDictionaryLanguageSelection(pBoxTopLeftX, pBoxTopLeftY, pBoxWidth
 		left: VERTICAL_SINGLE,
 		right: VERTICAL_SINGLE
 	});
+	dictMenu.scrollbarEnabled = true;
 	dictMenu.colors.borderColor = "\1g";
 	dictMenu.topBorderText = "\1b\1hSelect dictionary languages (\1cEnter\1g: \1bChoose, \1cSpacebar\1g: \1bMulti-select\1b)\1n";
 	dictMenu.bottomBorderText = "\1c\1hESC\1y/\1cQ\1g: \1bQuit\1n";
@@ -6590,28 +6605,73 @@ function doTaglineSelection()
 	// Create the list box for the taglines.  Make the box up to 14 lines tall.
 	var boxHeight = (taglines.length > 12 ? 14 : taglines.length+2);
 	var boxTopRow = gEditTop + Math.floor((gEditHeight/2) - (boxHeight/2));
-	var taglineBox = new ChoiceScrollbox(gEditLeft, boxTopRow, gEditWidth, boxHeight, "Taglines", gConfigSettings, true, false);
-	var bottomBorderText = "\1n\1h\1c\1b, \1c\1b, \1cN\1y)\1bext, \1cP\1y)\1brev, "
+
+	// Set up the menu
+	var taglineMenu = new DDLightbarMenu(gEditLeft, boxTopRow, gEditWidth, boxHeight);
+	taglineMenu.colors.borderColor = "\1g";
+	taglineMenu.colors.itemColor = "\1n\1c";
+	taglineMenu.colors.selectedItemColor = "\1n\1w\1h\1" + "4";
+	taglineMenu.borderEnabled = true;
+	taglineMenu.SetBorderChars({
+		upperLeft: UPPER_LEFT_SINGLE,
+		upperRight: UPPER_RIGHT_SINGLE,
+		lowerLeft: LOWER_LEFT_SINGLE,
+		lowerRight: LOWER_RIGHT_SINGLE,
+		top: HORIZONTAL_SINGLE,
+		bottom: HORIZONTAL_SINGLE,
+		left: VERTICAL_SINGLE,
+		right: VERTICAL_SINGLE
+	});
+	taglineMenu.topBorderText = "\1n\1g" + RIGHT_T_SINGLE + "\1b\1hTaglines\1n\1g" + LEFT_T_SINGLE;
+	taglineMenu.bottomBorderText = "\1n\1h\1c\1b, \1c\1b, \1cPgUp\1b/\1cPgDn\1b, "
 	                     + "\1cF\1y)\1birst, \1cL\1y)\1bast, \1cHOME\1b, \1cEND\1b, \1cEnter\1y=\1bSelect, "
 	                     + "\1cR\1y)\1bandom, \1cESC\1n\1c/\1h\1cQ\1y=\1bEnd";
-	taglineBox.setBottomBorderText(bottomBorderText, false, false);
-	// Add R as an input loop exit key, to choose a random tagline.
-	taglineBox.addInputLoopExitKey("R");
-	taglineBox.addInputLoopExitKey("r");
-
-	// Set the tagline item array in the list box.  Don't strip control characters
-	// because we've already done that when we read the file.
-	taglineBox.setItemArray(taglines, false);
-	// Let the user choose a tagline
-	var taglineRetObj = taglineBox.doInputLoop(true);
-	retObj.taglineWasSelected = taglineRetObj.itemWasSelected;
-	if (retObj.taglineWasSelected)
-		retObj.tagline = taglineRetObj.selectedItem;
-	// If the R key was pressed, then choose a random tagline.
-	else if ((taglineRetObj.lastKeypress == "R") || (taglineRetObj.lastKeypress == "r"))
+	taglineMenu.additionalQuitKeys = "RrQqFfLl";
+	taglineMenu.wrapNavigation = true;
+	taglineMenu.ampersandHotkeysInItems = false;
+	taglineMenu.scrollbarEnabled = true;
+	taglineMenu.multiSelect = false;
+	// Add the tag lines to the menu
+	for (var i = 0; i < taglines.length; ++i)
+		taglineMenu.Add(taglines[i], taglines[i]);
+	// Input loop for displaying the menu and letting the user make a selection.
+	// This input loop is here in order to respond to the F and L keys, to go
+	// to the first & last pages of the menu.
+	var continueOn = true;
+	while (continueOn)
 	{
-		retObj.tagline = taglines[random(taglines.length)];
-		retObj.taglineWasSelected = true;
+		var chosenTagline = taglineMenu.GetVal(true);
+		var lastUserInputUpper = taglineMenu.lastUserInput.toUpperCase();
+		// If the user pressed R, then choose a random tagline.
+		if (lastUserInputUpper == "R")
+		{
+			retObj.tagline = taglines[random(taglines.length)];
+			retObj.taglineWasSelected = true;
+			continueOn = false;
+		}
+		// First page
+		else if (lastUserInputUpper == "F")
+		{
+			taglineMenu.selectedItemIdx = 0;
+			taglineMenu.topItemIdx = 0;
+		}
+		// Last page
+		else if (lastUserInputUpper == "L")
+		{
+			var lastPageTopItemIdx = taglineMenu.GetTopItemIdxToTopOfLastPage();
+			taglineMenu.selectedItemIdx = lastPageTopItemIdx;
+			taglineMenu.topItemIdx = lastPageTopItemIdx;
+		}
+		// If the user chose a tagline, then use it.
+		else if (typeof(chosenTagline) == "string")
+		{
+			retObj.tagline = chosenTagline;
+			retObj.taglineWasSelected = true;
+			continueOn = false;
+		}
+		// If the user exited, then exit this loop.
+		else if (chosenTagline == null)
+			continueOn = false;
 	}
 
 	// If a tagline was selected, then add the tagline prefix in front of it, and
