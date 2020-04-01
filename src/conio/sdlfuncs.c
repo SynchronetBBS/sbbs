@@ -262,6 +262,7 @@ int init_sdl_video(void)
 	use_sdl_video=TRUE;
 
 	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1" );
+	sdl.SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1" );
 #ifdef _WIN32
 	/* Fail to windib (ie: No mouse attached) */
 	if(sdl.Init(SDL_INIT_VIDEO)) {
