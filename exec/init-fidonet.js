@@ -418,7 +418,7 @@ while((!sysop || !confirm("Your name is '" + sysop + "'")) && !aborted())
 /***********************************************/
 /* SEND NODE NUMBER REQUEST NETMAIL (Internet) */
 /***********************************************/
-if(your.node === 9999 && network.email 
+if(your.node === 9999 && network.email && network.email.indexOf('@') > 0 
 	&& confirm("Send a node number application to " + network.email)) {
 	var result = send_app_netmail(network.email);
 	if(result !== true) {
@@ -458,7 +458,8 @@ if(!msg_area.grp[netname]
 			"name": netname,
 			"description": netname,
 			"ars": "",
-			"code_prefix": netname.toUpperCase() + "_"
+			"code_prefix": network.code_prefix === undefined 
+				? (netname.toUpperCase() + "_") : network.code_prefix
 			});
 }
 if(confirm("Save Changes to Message Area configuration file: msgs.cnf")) {
