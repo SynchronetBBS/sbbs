@@ -72,19 +72,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->CreateRGBSurface=xp_dlsym(sdl_dll, SDL_CreateRGBSurface))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
 	if((sdlf->CreateRGBSurfaceFrom=xp_dlsym(sdl_dll, SDL_CreateRGBSurfaceFrom))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->FillRect=xp_dlsym(sdl_dll, SDL_FillRect))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->BlitSurface=xp_dlsym(sdl_dll, SDL_UpperBlit))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
@@ -104,31 +92,11 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->CreateThread=xp_dlsym(sdl_dll, SDL_CreateThread))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->WaitThread=xp_dlsym(sdl_dll, SDL_WaitThread))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
 	if((sdlf->WaitEventTimeout=xp_dlsym(sdl_dll, SDL_WaitEventTimeout))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->PollEvent=xp_dlsym(sdl_dll, SDL_PollEvent))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->CreateWindow=xp_dlsym(sdl_dll, SDL_CreateWindow))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
 	if((sdlf->CreateWindowAndRenderer=xp_dlsym(sdl_dll, SDL_CreateWindowAndRenderer))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->CreateRenderer=xp_dlsym(sdl_dll, SDL_CreateRenderer))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
@@ -141,10 +109,6 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->GetWindowSize=xp_dlsym(sdl_dll, SDL_GetWindowSize))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->GetWindowSurface=xp_dlsym(sdl_dll, SDL_GetWindowSurface))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
@@ -197,22 +161,6 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->GetAudioStatus=xp_dlsym(sdl_dll, SDL_GetAudioStatus))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->MapRGB=xp_dlsym(sdl_dll, SDL_MapRGB))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->LockSurface=xp_dlsym(sdl_dll, SDL_LockSurface))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->UnlockSurface=xp_dlsym(sdl_dll, SDL_UnlockSurface))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->ConvertSurface=xp_dlsym(sdl_dll, SDL_ConvertSurface))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
@@ -337,11 +285,6 @@ int init_sdl_audio(void)
 		return(0);
 	}
 	return(-1);
-}
-
-void run_sdl_drawing_thread(int (*drawing_thread)(void *data))
-{
-	sdl.CreateThread(drawing_thread, NULL);
 }
 
 static void QuitWrap(void)

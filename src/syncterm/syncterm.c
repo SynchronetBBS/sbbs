@@ -744,8 +744,6 @@ int output_map[]={
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 	,CIOLIB_MODE_SDL
 	,CIOLIB_MODE_SDL_FULLSCREEN
-	,CIOLIB_MODE_SDL_YUV
-	,CIOLIB_MODE_SDL_YUV_FULLSCREEN
 #endif
 ,0};
 char *output_descrs[]={
@@ -1439,17 +1437,6 @@ int main(int argc, char **argv)
 									break;
 								case 'F':
 									ciolib_mode=CIOLIB_MODE_SDL_FULLSCREEN;
-									break;
-							}
-							break;
-						case 'O':
-							switch(toupper(argv[i][3])) {
-								case 0:
-								case 'W':
-									ciolib_mode=CIOLIB_MODE_SDL_YUV;
-									break;
-								case 'F':
-									ciolib_mode=CIOLIB_MODE_SDL_YUV_FULLSCREEN;
 									break;
 							}
 							break;
