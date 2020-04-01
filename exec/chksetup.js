@@ -91,6 +91,7 @@ var tests = {
 		var output = [];
 		var usr = new User;
 		var lastuser = system.lastuser;
+		var password_list = {};
 		for(var u = 1; u <= lastuser; u++) {
 			usr.number = u;
 			if(usr == null)
@@ -101,11 +102,26 @@ var tests = {
 				output.push(format("User #%-4u has no password", usr.number));
 				continue;
 			}
+			if(!password_list[usr.security.password])
+				password_list[usr.security.password] = [];
+			password_list[usr.security.password].push(u);
+			if(system.min_password_length 
+				&& usr.security.password.length < system.min_password_length)
+				output.push(format("User #-4u has a password length (%u) < the minimum: %u"
+					, usr.number
+					, usr.security.password.length
+					, system.min_password_length));
 			if(!system.trashcan("password", usr.security.password))
 				continue;
 			output.push(format("User #%-4u has a disallowed password%s"
 				, usr.number
 				, options.verbose ? (': ' + usr.security.password) : ''));
+		}
+		for(var p in password_list) {
+			if(password_list[p].length > 2)
+				output.push("Password "
+					+ ( options.verbose ? (p  + ' '): '')
+					+ "shared between " + password_list[p].length + " users: " + password_list[p]);
 		}
 		return output;
 	},
