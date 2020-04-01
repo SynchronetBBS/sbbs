@@ -151,6 +151,9 @@
  *                              Added a null check for the value returned by
  *                              msgbase.get_index() before using the value
  *                              wherever get_index() is called.
+ * 2020-03-31 Eric Oulashin     Version 1.06
+ *                              Enabled scrollbars in some menus where it would be
+ *                              useful.  Requires the latest dd_scrollbar_menu.js.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -220,8 +223,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.05";
-var SLYVOTE_DATE = "2020-03-29";
+var SLYVOTE_VERSION = "1.06";
+var SLYVOTE_DATE = "2020-03-31";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -581,6 +584,7 @@ function CreateMsgGrpMenu(pListTopRow, pDrawColRetObj, pMsgGrps)
 	var grpNameLen = pDrawColRetObj.textLen - 2;
 	grpMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
 	grpMenu.ampersandHotkeysInItems = false;
+	grpMenu.scrollbarEnabled = true;
 	grpMenu.AddAdditionalQuitKeys("qQ");
 	for (var grpIdx in pMsgGrps)
 	{
@@ -608,6 +612,7 @@ function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
 	var areaNameLen = pDrawColRetObj.textLen - 2;
 	subBoardMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
 	subBoardMenu.ampersandHotkeysInItems = false;
+	subBoardMenu.scrollbarEnabled = true;
 	subBoardMenu.AddAdditionalQuitKeys("qQ");
 	for (var i = 0; i < pMsgGrps[pGrpIdx].length; ++i)
 	{
@@ -806,13 +811,14 @@ function ChooseVotePoll(pLetUserChoose)
 	var startCol = drawColRetObj.columnX1+drawColRetObj.colWidth-1;
 	var menuHeight = gBottomBorderRow-listTopRow;
 
-	// If we are to let the user chooes a poll, then display the list of voting polls
+	// If we are to let the user choose a poll, then display the list of voting polls
 	var letUserChoose = (typeof(pLetUserChoose) == "boolean" ? pLetUserChoose : true);
 	if (letUserChoose)
 	{
 		// Create the menu containing voting polls and get the user's choic
 		var pollsMenu = new DDLightbarMenu(startCol, listTopRow, drawColRetObj.textLen, menuHeight);
 		pollsMenu.ampersandHotkeysInItems = false;
+		pollsMenu.scrollbarEnabled = true;
 		for (var i = 0; i < votePollInfo.msgHdrs.length; ++i)
 			pollsMenu.Add(votePollInfo.msgHdrs[i].subject, votePollInfo.msgHdrs[i].number);
 		var drawPollsMenu = true;
@@ -942,6 +948,7 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 				// Create the poll options menu, and show it and let the user choose an option
 				var optionsMenu = new DDLightbarMenu(pStartCol, pStartRow, pMenuWidth, pMenuHeight);
 				optionsMenu.ampersandHotkeysInItems = false;
+				optionsMenu.scrollbarEnabled = true;
 				// If the poll allows multiple answers, enable the multi-choice
 				// property for the menu.
 				if (msgHdr.votes > 1)
