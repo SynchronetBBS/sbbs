@@ -696,6 +696,9 @@ static void setup_surfaces(void)
 			renderer = NULL;
 		}
 	}
+	else {
+		sdl.SetWindowSize(win, char_width, char_height);
+	}
 
 	if(win!=NULL) {
 		bitmap_drv_request_pixels();
