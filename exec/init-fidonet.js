@@ -24,19 +24,13 @@
 
 const REVISION = "$Revision$".split(' ')[1];
 var netname;
+var netdns;
 var netzone = parseInt(argv[0], 10);
 if(!netzone)
 	netname = argv[0];
 var echolist_url = argv[1];
 // If you want your Othernet listed here, please provide information
 // and an http[s] URL to your official EchoList
-var network_list = {
-	1:  { name: "FidoNet", desc: "North America", echolist: "http://www.filegate.net/backbone/BACKBONE.NA"},
-	2:  { name: "FidoNet", desc: "Europe, Former Soviet Union countries, and Israel" },
-	3:  { name: "FidoNet", desc: "Australasia" },
-	4:  { name: "FidoNet", desc: "Latin America (except Puerto Rico)" },
-	21: { name: "fsxNet", desc: "", echolist: "https://raw.githubusercontent.com/fsxnet/infopack/master/FSXNET.NA"}
-};
 var network;
 var fidoaddr = load({}, 'fidoaddr.js');
 print("******************************************************************************");
@@ -44,6 +38,15 @@ print("*                            " + js.exec_file + " v" + format("%-30s", RE
 print("*                 " + format("%-58s", "Initializing " + (netname || "FidoNet") + " support in Synchronet") +" *");
 print("*                 Use Ctrl-C to abort the process if desired                 *");
 print("******************************************************************************");
+
+var network_list = {};
+var file = new File("init-fidonet.ini");
+if (file.open("r")) {
+	var list = file.iniGetSections("zone:", "zone");
+	for(var i in list)
+		network_list[list[i].substr(5)] = file.iniGetObject(list[i]);
+	file.close();
+}
 
 function aborted()
 {
@@ -54,7 +57,7 @@ function aborted()
 
 function lookup_network(info)
 {
-	print("Looking up network: " + info);
+	print("Looking up network/zone: " + info);
 	var result;
 	if(typeof info == "number") {
 		result = network_list[info];
@@ -70,18 +73,20 @@ function lookup_network(info)
 	}
 	
 	if(typeof info == "number") { // zone
+		var dns;
 		var domain_list = file.iniGetSections("domain:");
 		if(domain_list) {
 			var zonemap = {};
-			for(var i = 0; i < domain_list.length; i++) {
+			for(var i = 0; i < domain_list.length && !result; i++) {
 				var section = domain_list[i];
 				var netname = section.substr(7)
 				var zones = file.iniGetValue(section, "Zones");
 				if(!zones)
 					continue;
+				var dns = file.iniGetValue(section, "DNSSuffix");
 				if(typeof zones == 'number') {
 					if(info == zones) {
-						result = netname;
+						result = { name: netname, dns: dns};
 						break;
 					}
 					continue;
@@ -89,14 +94,14 @@ function lookup_network(info)
 				zones = zones.split(',');
 				for(var j = 0; j < zones.length; j++) {
 					if(info == zones[j]) {
-						result = netmame;
+						result = { name: netname, dns: dns};
 						break;
 					}
 				}
 			}
 		}
 		file.close();
-		return { name: result };
+		return result;
 	}
 	result = file.iniGetValue("domain:" + info, "Zones", 1);
 	file.close();
@@ -112,11 +117,22 @@ else if(netname) {
 
 if(!netzone) {
 	for(var zone in network_list) {
-		print(format("%4u/%s %s", zone, network_list[zone].name, network_list[zone].desc));
+		var desc = "";
+		if(network_list[zone].desc)
+			desc = " (" + network_list[zone].desc + ")";
+		print(format("%6s %s%s", format("<%u>", zone), network_list[zone].name, desc));
+		if(network_list[zone].info)
+			print("       " + network_list[zone].info);
+		if(network_list[zone].coord || network_list[zone].email) {
+			var email = "";
+			if(network_list[zone].email)
+				email = " <" + network_list[zone].email + ">";
+			print("       coordinator: " + (network_list[zone].coord || "") + email);
+		}
 	}
 	var which;
 	while((!which || which < 1) && !aborted())
-		which = parseInt(prompt("Which zone/network"), 10);
+		which = parseInt(prompt("Which"), 10);
 	netzone = which;
 	network = network_list[which];
 }
@@ -129,9 +145,15 @@ else
 if(!netname && netzone <= 6)
 	netname = "FidoNet";
 
-print("Network zone: " + netzone);
-print("Network name: " + netname);
-print("EchoList URL: " + network.echolist);
+if(netname) {
+	print("Network name: " + netname);
+	print("Network zone: " + netzone);
+	print("Network info: " + network.info);
+	print("EchoList URL: " + network.echolist);
+	print("Network coordinator: " + network.coord 
+		+ (network.email ? (" <" + network.email + ">") : ""));
+} else
+	alert("Unrecognized network zone: " + netzone);
 
 print("Reading Message Area configuration file: msgs.cnf");
 var cnflib = load({}, "cnflib.js");
@@ -153,6 +175,8 @@ for(var i = 0; i < system.fido_addr_list.length; i++) {
 }
 
 var hub = {zone: netzone ? netzone : NaN, net: NaN, node: NaN};
+if(network.addr)
+	hub = fidoaddr.parse(network.addr);
 do {
 	while((isNaN(hub.zone) || hub.zone < 1) && !aborted())
 		hub.zone = parseInt(prompt("Your hub's zone number (e.g. 1 for FidoNet North America)"));
@@ -162,10 +186,25 @@ do {
 		hub.node = parseInt(prompt("Your hub's node number"));
 } while(!confirm("Your hub's address is: " + fidoaddr.to_str(hub)) && !aborted());
 
+if(fidoaddr.to_str(hub) == network.addr)
+	hub_name = network.coord;
+
 var hub_name;
-do {
-	hub_name = prompt("Your hub's name");
-} while((!hub_name || !confirm("Your hub's name: " + hub_name)) && !aborted());
+while((!hub_name || !confirm("Your hub's sysop's name: " + hub_name)) && !aborted()) {
+	hub_name = prompt("Your hub's sysop's name");
+}
+
+var hub_host = network.host;
+if(!network.dns) {
+	do {
+		hub_host = prompt("Your hub's hostname or IP address");
+	} while((!hub_host || !confirm("Your hub's hostname or IP address: " + hub_host)) && !aborted());
+}
+
+var hub_port = network.port || 24554;
+while(!hub_port || !confirm("Your hub's BinkP/TCP port number is: " + hub_port) && !aborted()) {
+	hub_port = paseInt(prompt("Your hub's BinkP/TCP port number"));
+}
 
 do {
 	var str = prompt("Network name (no spaces or illegal filename chars) [" + netname + "]");
@@ -328,10 +367,13 @@ if(confirm("Update FidoNet configuration file: sbbsecho.ini")) {
 		if(!file.iniSetObject(section,
 			{
 				Name: hub_name,
+				Comment: network.email,
 				AreaFixPwd: areafixpwd,
 				SessionPwd: sessionpwd,
 				GroupHub: netname,
-				BinkpPoll: true
+				BinkpPoll: true,
+				BinkpHost: hub_host,
+				BinkpPort: hub_port
 			})) {
 			alert("Error " + file.error + " writing to " + file.name);
 			exit(1);
