@@ -8,9 +8,7 @@
 #include "sdl_con.h"
 extern int sdl_video_initialized;
 
-#ifndef _WIN32
 struct sdlfuncs sdl;
-#endif
 
 /* Make xp_dl do static linking */
 #ifdef STATIC_SDL
@@ -34,12 +32,6 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	if((sdl_dll=xp_dlopen(libnames,RTLD_LAZY|RTLD_GLOBAL,SDL_PATCHLEVEL))==NULL)
 		return(-1);
 
-#ifdef _WIN32
-	if((sdlf->SetModuleHandle=xp_dlsym(sdl_dll, SDL_SetModuleHandle))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-#endif
 	if((sdlf->Init=xp_dlsym(sdl_dll, SDL_Init))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
@@ -262,9 +254,7 @@ int init_sdl_video(void)
 	if(sdl_video_initialized)
 		return(0);
 
-#ifndef _WIN32
 	load_sdl_funcs(&sdl);
-#endif
 
 	if (!sdl.gotfuncs)
 		return -1;

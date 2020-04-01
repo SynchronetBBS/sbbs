@@ -14,7 +14,6 @@
 struct sdlfuncs {
 	int	(HACK_HACK_HACK *Init)	(Uint32 flags);
 	void	(HACK_HACK_HACK *Quit)	(void);
-	void	(HACK_HACK_HACK *SetModuleHandle)	(void *hInst);
 	int	(HACK_HACK_HACK *mutexP)	(SDL_mutex *mutex);
 	int	(HACK_HACK_HACK *mutexV)	(SDL_mutex *mutex);
 	int	(HACK_HACK_HACK *PeepEvents)	(SDL_Event *events, int numevents,

@@ -54,6 +54,9 @@ ifneq ($(os),win32)
 else
  NO_X			 :=  1
  CIOLIB-MT_CFLAGS        +=  -DDISABLE_X11=1
+ ifdef USE_SDL
+  WITH_SDL := 1
+ endif
 endif
 
 # Find SDL headers!
@@ -129,6 +132,12 @@ ifdef WITH_SDL
 	CIOLIB_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
 	CIOLIB_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL.framework/Headers
 	CIOLIB_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL.framework/Headers
+   else
+    ifeq ($(os),win32)
+	CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
+	WITH_SDL	:=	1
+	CIOLIB_CFLAGS	+=	-DWITH_SDL
+    endif
    endif
   endif
  endif
