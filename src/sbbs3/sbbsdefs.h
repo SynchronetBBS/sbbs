@@ -528,6 +528,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_MAIN_CMD	34	/* Storage in user.dat for custom commands		*/
 #define LEN_PASS		40
 #define MIN_PASS_LEN	 4
+#define RAND_PASS_LEN	 8
 #define LEN_SCAN_CMD	35
 #define LEN_IPADDR		45
 #define LEN_CID 		45	/* Caller ID (phone number) 					*/
