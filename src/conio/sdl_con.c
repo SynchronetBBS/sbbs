@@ -325,7 +325,9 @@ static int sdl_user_func_ret(int func, ...)
 
 void exit_sdl_con(void)
 {
-	sdl_user_func(SDL_USEREVENT_QUIT);
+	// Avoid calling exit(0) from an atexit() function...
+	ciolib_reaper = 0;
+	sdl_user_func_ret(SDL_USEREVENT_QUIT);
 }
 
 void sdl_copytext(const char *text, size_t buflen)
@@ -550,6 +552,7 @@ int sdl_init(int mode)
 		return(0);
 	}
 
+	ciolib_reaper = 0;
 	sdl_user_func_ret(SDL_USEREVENT_QUIT);
 	return(-1);
 }
@@ -1331,7 +1334,7 @@ static void sdl_video_event_thread(void *data)
 					 * X is hit.
 					 */
 					if (ciolib_reaper)
-						exit(0);
+						sdl_user_func(SDL_USEREVENT_QUIT);
 					else
 						sdl_add_key(CIO_KEY_QUIT);
 					break;
@@ -1380,6 +1383,8 @@ static void sdl_video_event_thread(void *data)
 					switch(ev.user.code) {
 						case SDL_USEREVENT_QUIT:
 							sdl_ufunc_retval=0;
+							if (ciolib_reaper)
+								exit(0);
 							sdl.SemPost(sdl_ufunc_ret);
 							return;
 						case SDL_USEREVENT_FLUSH:
@@ -1408,7 +1413,9 @@ static void sdl_video_event_thread(void *data)
 							sdl.mutexV(win_mutex);
 							break;
 						case SDL_USEREVENT_SETNAME:
+							sdl.mutexP(win_mutex);
 							sdl.SetWindowTitle(win, (char *)ev.user.data1);
+							sdl.mutexV(win_mutex);
 							free(ev.user.data1);
 							break;
 						case SDL_USEREVENT_SETICON:
@@ -1424,11 +1431,15 @@ static void sdl_video_event_thread(void *data)
 									, *(DWORD *)"\0\0\377\0"
 									, *(DWORD *)"\0\0\0\377"
 							);
+							sdl.mutexP(win_mutex);
 							sdl.SetWindowIcon(win, sdl_icon);
+							sdl.mutexV(win_mutex);
 							free(ev.user.data2);
 							break;
 						case SDL_USEREVENT_SETTITLE:
+							sdl.mutexP(win_mutex);
 							sdl.SetWindowTitle(win, (char *)ev.user.data1);
+							sdl.mutexV(win_mutex);
 							free(ev.user.data1);
 							break;
 						case SDL_USEREVENT_SETVIDMODE:
@@ -1462,7 +1473,9 @@ static void sdl_video_event_thread(void *data)
 								SDL_SysWMinfo	wmi;
 
 								SDL_VERSION(&(wmi.version));
+								sdl.mutexP(win_mutex);
 								sdl.GetWindowWMInfo(win, &wmi);
+								sdl.mutexV(win_mutex);
 								sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 								copy_needs_events = 1;
 								sdl_x11.XSetSelectionOwner(wmi.info.x11.display, CONSOLE_CLIPBOARD, wmi.info.x11.window, CurrentTime);
@@ -1476,7 +1489,9 @@ static void sdl_video_event_thread(void *data)
 								SDL_SysWMinfo	wmi;
 
 								SDL_VERSION(&(wmi.version));
+								sdl.mutexP(win_mutex);
 								sdl.GetWindowWMInfo(win, &wmi);
+								sdl.mutexV(win_mutex);
 
 								paste_needs_events = 1;
 								sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
@@ -1545,7 +1560,9 @@ static void sdl_video_event_thread(void *data)
 									SDL_SysWMinfo	wmi;
 
 									SDL_VERSION(&(wmi.version));
+									sdl.mutexP(win_mutex);
 									sdl.GetWindowWMInfo(win, &wmi);
+									sdl.mutexV(win_mutex);
 									req=&(e->xselection);
 									if(req->requestor!=wmi.info.x11.window)
 										break;
