@@ -447,8 +447,6 @@ js_uifc_init(JSContext *cx, uintN argc, jsval *arglist)
 				ciolib_mode=CIOLIB_MODE_CONIO;
 			else if(!stricmp(mode,"SDL"))
 				ciolib_mode=CIOLIB_MODE_SDL;
-			else if(!stricmp(mode,"OVERLAY"))
-				ciolib_mode=CIOLIB_MODE_SDL_YUV;
 		}
 	}
 
@@ -782,7 +780,7 @@ js_finalize(JSContext *cx, JSObject *obj)
 static jsSyncMethodSpec js_functions[] = {
 	{"init",            js_uifc_init,       1,	JSTYPE_BOOLEAN,	JSDOCSTR("string title [, string mode]")
 	,JSDOCSTR("initialize.  <tt>mode</tt> is a string representing the desired conio mode... one of STDIO, AUTO, "
-	"X, CURSES, ANSI, CONIO, SDL, or OVERLAY.")
+	"X, CURSES, ANSI, CONIO, or SDL.")
 	,314
 	},		
 	{"bail",			js_uifc_bail,		0,	JSTYPE_VOID,	JSDOCSTR("")
