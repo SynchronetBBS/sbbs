@@ -446,7 +446,7 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 			cio_textinfo.normattr=0x6e;
 			break;
 		case C128_40X25:
-			cio_textinfo.normattr=6e;
+			cio_textinfo.normattr=0xbd;
 			break;
 		default:
 			cio_textinfo.normattr=LIGHTGRAY;
@@ -836,7 +836,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_textmode(int mode)
 			cio_textinfo.normattr=0x6e;
 			break;
 		case C128_40X25:
-			cio_textinfo.normattr=6e;
+			cio_textinfo.normattr=0xbd;
 			break;
 		default:
 			cio_textinfo.normattr=LIGHTGRAY;
