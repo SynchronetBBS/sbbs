@@ -62,6 +62,8 @@ struct  video_params {
 	int charheight;
 	int charwidth;
 	int	vmultiplier;
+	int	default_attr;
+	int	flags;
 };
 
 struct vstat_vmem {

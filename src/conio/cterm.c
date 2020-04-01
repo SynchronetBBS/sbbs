@@ -36,6 +36,7 @@
 #include <string.h>
 #if defined(_WIN32)
  #include <malloc.h>	/* alloca() on Win32 */
+ #include <xpprintf.h>	/* asprintf() on Win32 */
 #endif
 
 #include <genwrap.h>
@@ -3377,6 +3378,7 @@ void CIOLIBCALL cterm_start(struct cterminal *cterm)
 		cterm->fg_color += 16;
 		cterm->bg_color += 16;
 		TEXTATTR(cterm->attr);
+		ciolib_setcolour(cterm->fg_color, cterm->bg_color);
 		SETCURSORTYPE(cterm->cursor);
 		cterm->started=1;
 		if(ti.winleft != cterm->x || ti.wintop != cterm->y || ti.winright != cterm->x+cterm->width-1 || ti.winleft != cterm->y+cterm->height-1)
