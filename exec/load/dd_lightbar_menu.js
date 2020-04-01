@@ -4,7 +4,6 @@
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
  * Addresses: digitaldistortionbbs.com
- *            digdist.bbsindex.com
  *            digdist.synchro.net
 
 This is a lightbar menu library.  This allows creating a scrollable menu of
@@ -45,6 +44,23 @@ borderColor: The color for the borders (if borders are enabled)
 By default, the menu selection will wrap around to the beginning/end when using
 the down/up arrows.  That behavior can be disabled by setting the wrapNavigation
 property to false.
+
+You can enable the display of a scrollbar by setting the scrollbarEnabled property
+to true.  By default, it is false.  For instance (assuming the menu object is lbMenu):
+lbMenu.scrollbarEnabled = true;
+The scrollbar can help to visually show how far the user is through the menu.  When
+enabled, the scrollbar will appear on the right side of the menu.  If borders are enabled,
+the scrollbar will appear just inside the right border. Also, if the scrollbar is
+enabled but all the items would fit in a single "page" in the menu, then the scrollbar
+won't be displayed.
+The scrollbar uses block characters to draw the scrollbar: ASCII character 176 for
+the background and ASCII 177 for the block that moves on the scrollbar.  If you want
+to change those characters, you can change the scrollbarInfo.BGChar and
+scrollbarInfo.blockChar properties in the menu object.
+By default, the scrollbar colors are high (bright) black for the background and high
+(bright) white for the moving block character.  If desired, those can be changed
+with the colors.scrollbarBGColor and colors.scrollbarScrollBlockColor properties in
+the menu object.
 
 This menu object supports adding multiple hotkeys to each menu item.  A hotkey
 can be specified in the Add() method a couple of different ways - By specifying
@@ -157,7 +173,11 @@ lbMenu.topBorderText = "Options";
 lbMenu.bottomBorderText = "Enter = Select";
 */
 
-load("sbbsdefs.js");
+if (typeof(require) === "function")
+	require("sbbsdefs.js", "K_UPPER");
+else
+	load("sbbsdefs.js");
+
 
 // Keyboard keys
 var KEY_ESC = ascii(27);
@@ -207,6 +227,10 @@ var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
 var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
 // Other characters
 var CHECK_CHAR = "\xFB";
+var BLOCK1 = "\xB0"; // Dimmest block
+var BLOCK2 = "\xB1";
+var BLOCK3 = "\xB2";
+var BLOCK4 = "\xDB"; // Brightest block
 
 // Border types for a menu
 var BORDER_NONE = 0;
@@ -232,13 +256,16 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 		width: 45,
 		height: 10
 	};
-	this.showScrollbar = false;
+	this.scrollbarEnabled = false;
 	this.borderEnabled = false;
+	this.drawnAlready = false;
 	this.colors = {
 		itemColor: "\1n\1w\1" + "4",
 		selectedItemColor: "\1n\1b\1" + "7",
 		itemTextCharHighlightColor: "\1y\1h",
-		borderColor: "\1n\1b"
+		borderColor: "\1n\1b",
+		scrollbarScrollBlockColor: "\1h\1w",
+		scrollbarBGColor: "\1h\1k"
 	};
 	// Characters to use to draw the border
 	this.borderChars = {
@@ -251,6 +278,15 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 		left: VERTICAL_DOUBLE,
 		right: VERTICAL_DOUBLE
 	};
+	// Scrollbar information (characters, etc.)
+	this.scrollbarInfo = {
+		blockChar: BLOCK2,
+		BGChar: BLOCK1,
+		numSolidScrollBlocks: 0,
+		numNonSolidScrollBlocks: 0,
+		solidBlockLastStartRow: 0
+	};
+
 	this.selectedItemIdx = 0;
 	this.topItemIdx = 0;
 	this.wrapNavigation = true;
@@ -295,6 +331,12 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.AddAdditionalSelectItemKeys = DDLightbarMenu_AddAdditionalSelectItemKeys;
 	this.SelectItemKeysIncludes = DDLightbarMenu_SelectItemKeysIncludes;
 	this.ClearAdditionalSelectItemKeys = DDLightbarMenu_ClearAdditionalSelectItemKeys;
+	this.DisplayInitialScrollbar = DDLightbarMenu_DisplayInitialScrollbar;
+	this.UpdateScrollbar = DDLightbarMenu_UpdateScrollbar;
+	this.CalcScrollbarBlocks = DDLightbarMenu_CalcScrollbarBlocks;
+	this.CalcScrollbarSolidBlockStartRow = DDLightbarMenu_CalcScrollbarSolidBlockStartRow;
+	this.UpdateScrollbarWithHighlightedItem = DDLightbarMenu_UpdateScrollbarWithHighlightedItem;
+	this.CanShowAllItemsInWindow = DDLightbarMenu_CanShowAllItemsInWindow;
 
 	// Set some things based on the parameters passed in
 	if ((typeof(pX) == "number") && (typeof(pY) == "number"))
@@ -449,15 +491,19 @@ function DDLightbarMenu_SetHeight(pHeight)
 //  pSelectedItemIndexes: An object that can contain multiple indexes of selected
 //                        items.  Only for multi-select mode.  These are used
 //                        for drawing a marking character in the item text.
-//  pDrawBorders: Boolean - Whether or not to draw the borders, if borders are enabled.
-//                Defaults to true.
-function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders)
+//  pDrawBorders: Optional boolean - Whether or not to draw the borders, if borders
+//                are enabled.  Defaults to true.
+//  pDrawScrollbar: Optional boolean - Whether or not to draw the scrollbar, if
+//                  the scrollbar is enabled.  Defaults to this.scrollbarEnabled, and the scrollbar
+//                  will only be drawn if not all items can be shown in a single page.
+function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 {
 	var drawBorders = (typeof(pDrawBorders) == "boolean" ? pDrawBorders : true);
+	var drawScrollbar = (typeof(pDrawScrollbar) == "boolean" ? pDrawScrollbar : true);
 
-	var itemLen = (this.showScrollbar ? this.size.width - 1 : this.size.width);
 	var curPos = { x: this.pos.x, y: this.pos.y }; // For writing the menu items
-	// If there is a border, then adjust the item length, starting x, and starting
+	var itemLen = this.size.width;
+	// If borders are enabled, then adjust the item length, starting x, and starting
 	// y accordingly, and draw the border.
 	if (this.borderEnabled)
 	{
@@ -466,6 +512,15 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders)
 		++curPos.y;
 		if (drawBorders)
 			this.DrawBorder();
+	}
+	if (this.scrollbarEnabled && drawScrollbar && !this.CanShowAllItemsInWindow())
+	{
+		--itemLen; // Leave room for the scrollbar in the item lengths
+		this.CalcScrollbarBlocks();
+		if (!this.drawnAlready)
+			this.DisplayInitialScrollbar(this.pos.y);
+		else
+			this.UpdateScrollbarWithHighlightedItem();
 	}
 	// For numbered mode, we'll need to know the length of the longest item number
 	// so that we can use that space to display the item numbers.
@@ -499,6 +554,8 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders)
 			printf(this.colors.itemColor + "%-" + itemLen + "s", "");
 		}
 	}
+
+	this.drawnAlready = true;
 }
 
 // Draws the border around the menu items
@@ -600,7 +657,13 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 			itemLen = pItemLen;
 		else
 		{
-			itemLen = (this.showScrollbar ? this.size.width - 1 : this.size.width);
+			itemLen = this.size.width;
+			// If the scrollbar is enabled & we can't show all items in the window,
+			// then subtract 1 from itemLen to make room for the srollbar.
+			if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+				--itemLen;
+			// If borders are enabled, then subtract another 2 from itemLen to make
+			// room for the left & right borders
 			if (this.borderEnabled)
 				itemLen -= 2;
 			// For numbered mode, we'll need to know the length of the longest item number
@@ -612,6 +675,7 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 				--itemLen; // Have a space for separation between the numbers and items
 			}
 		}
+
 		var itemColor = "";
 		if (typeof(pHighlight) == "boolean")
 			itemColor = (pHighlight ? this.colors.selectedItemColor : this.colors.itemColor);
@@ -774,6 +838,9 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	var continueOn = true;
 	while (continueOn)
 	{
+		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			this.UpdateScrollbarWithHighlightedItem();
+
 		this.lastUserInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF);
 		if ((this.lastUserInput == KEY_UP) || (this.lastUserInput == KEY_LEFT))
 		{
@@ -1056,7 +1123,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					--XPos;
 					++YPos;
 				}
-				if (this.showScrollbar)
+				if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
 					--XPos;
 				console.gotoxy(XPos, YPos);
 				if (added)
@@ -1305,6 +1372,236 @@ function DDLightbarMenu_ClearAdditionalSelectItemKeys()
 {
 	this.additionalSelectItemKeys = "";
 }
+
+// Displays an initial scrollbar
+//
+// Parameters:
+//  pSolidBlockStartRow: The starting row for the solid/bright blocks
+//  pNumSolidBlocks: The number of solid/bright blocks to write.  If this
+//                   is omitted, this.scrollbarInfo.numSolidScrollBlocks
+//                   will be used.
+function DDLightbarMenu_DisplayInitialScrollbar(pSolidBlockStartRow, pNumSolidBlocks)
+{
+	var numSolidBlocks = (typeof(pNumSolidBlocks) == "number" ? pNumSolidBlocks : this.scrollbarInfo.numSolidScrollBlocks);
+
+	var numSolidBlocksWritten = 0;
+	var wroteBrightBlockColor = false;
+	var wroteDimBlockColor = false;
+	var startY = this.pos.y;
+	var screenBottomRow = this.pos.y + this.size.height - 1;
+	var scrollbarCol = this.pos.x + this.size.width - 1;
+	if (this.borderEnabled)
+	{
+		++startY;
+		--screenBottomRow;
+		--scrollbarCol;
+	}
+	this.scrollbarInfo.solidBlockLastStartRow = startY;
+	for (var screenY = startY; screenY <= screenBottomRow; ++screenY)
+	{
+		console.gotoxy(scrollbarCol, screenY);
+		if ((screenY >= pSolidBlockStartRow) && (numSolidBlocksWritten < numSolidBlocks))
+		{
+			if (!wroteBrightBlockColor)
+			{
+				console.print("\1n" + this.colors.scrollbarScrollBlockColor);
+				wroteBrightBlockColor = true;
+				wroteDimBlockColor = false;
+			}
+			console.print(this.scrollbarInfo.blockChar);
+			++numSolidBlocksWritten;
+		}
+		else
+		{
+			if (!wroteDimBlockColor)
+			{
+				console.print("\1n" + this.colors.scrollbarBGColor);
+				wroteDimBlockColor = true;
+			}
+			console.print(this.scrollbarInfo.BGChar);
+		}
+	}
+}
+
+// Calculates the starting row for the solid blocks on the scrollbar
+//
+// Return value: The starting row for the solid blocks on the scrollbar
+function DDLightbarMenu_CalcScrollbarSolidBlockStartRow()
+{
+	var scrollbarStartY = this.pos.y;
+	var scrollbarHeight = this.size.height;
+	if (this.borderEnabled)
+	{
+		++scrollbarStartY;
+		scrollbarHeight -= 2;
+	}
+	var scrollbarBottomY = scrollbarStartY + scrollbarHeight - 1;
+	var solidBlockStartRow = scrollbarStartY;
+	if (this.items.length > 0)
+	{
+		var scrollbarFraction = this.selectedItemIdx / this.items.length;
+		var scrollbarStartRow = scrollbarStartY + Math.floor(scrollbarHeight * scrollbarFraction);
+		solidBlockStartRow = scrollbarStartRow - Math.floor(this.scrollbarInfo.numSolidScrollBlocks / 2);
+		// Don't let the solid blocks go above the starting screen row or below the ending
+		// screen row of the scrollbar
+		if (solidBlockStartRow < scrollbarStartY)
+			solidBlockStartRow = scrollbarStartY;
+		else if (solidBlockStartRow + this.scrollbarInfo.numSolidScrollBlocks > scrollbarBottomY)
+			solidBlockStartRow = scrollbarBottomY - this.scrollbarInfo.numSolidScrollBlocks + 1;
+	}
+	return solidBlockStartRow;
+}
+
+// Updates the scrollbar position based on the currently-selected
+// item index, this.selectedItemIdx.
+function DDLightbarMenu_UpdateScrollbarWithHighlightedItem()
+{
+	var solidBlockStartRow = this.CalcScrollbarSolidBlockStartRow();
+	if (solidBlockStartRow != this.scrollbarInfo.solidBlockLastStartRow)
+		this.UpdateScrollbar(solidBlockStartRow, this.scrollbarInfo.solidBlockLastStartRow, this.scrollbarInfo.numSolidScrollBlocks);
+	this.scrollbarInfo.solidBlockLastStartRow = solidBlockStartRow;
+}
+
+function DDLightbarMenu_CanShowAllItemsInWindow()
+{
+	var pageHeight = (this.borderEnabled ? this.size.height - 2 : this.size.height);
+	return (this.items.length <= pageHeight);
+}
+
+// For the DigDistMsgReader class: Updates the scrollbar for a message, for use
+// in enhanced reader mode.  This does only the necessary character updates to
+// minimize the number of characters that need to be updated on the screen.
+//
+// Parameters:
+//  pNewStartRow: The new (current) start row for solid/bright blocks
+//  pOldStartRow: The old start row for solid/bright blocks
+//  pNumSolidBlocks: The number of solid/bright blocks.  If this is omitted,
+//                   this.scrollbarInfo.numSolidScrollBlocks will be used.
+function DDLightbarMenu_UpdateScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlocks)
+{
+	var numSolidBlocks = (typeof(pNumSolidBlocks) == "number" ? pNumSolidBlocks : this.scrollbarInfo.numSolidScrollBlocks);
+
+	var startY = this.pos.y;
+	var screenBottomRow = this.pos.y + this.size.height - 1;
+	var scrollbarCol = this.pos.x + this.size.width - 1;
+	if (this.borderEnabled)
+	{
+		++startY;
+		--screenBottomRow;
+		--scrollbarCol;
+	}
+
+	// Calculate the difference in the start row.  If the difference is positive,
+	// then the solid block section has moved down; if the diff is negative, the
+	// solid block section has moved up.
+	var solidBlockStartRowDiff = pNewStartRow - pOldStartRow;
+	var oldLastRow = pOldStartRow + numSolidBlocks - 1;
+	var newLastRow = pNewStartRow + numSolidBlocks - 1;
+	if (solidBlockStartRowDiff > 0)
+	{
+		// The solid block section has moved down
+		if (pNewStartRow > oldLastRow)
+		{
+			// No overlap
+			// Write dim blocks over the old solid block section
+			console.print("\1n" + this.colors.scrollbarBGColor);
+			for (var screenY = pOldStartRow; screenY <= oldLastRow; ++screenY)
+			{
+				console.gotoxy(scrollbarCol, screenY);
+				console.print(this.scrollbarInfo.BGChar);
+			}
+			// Write solid blocks in the new locations
+			console.print("\1n" + this.colors.scrollbarScrollBlockColor);
+			for (var screenY = pNewStartRow; screenY <= newLastRow; ++screenY)
+			{
+				console.gotoxy(scrollbarCol, screenY);
+				console.print(this.scrollbarInfo.blockChar);
+			}
+		}
+		else
+		{
+			// There is some overlap
+			// Write dim blocks on top
+			console.print("\1n" + this.colors.scrollbarBGColor);
+			for (var screenY = pOldStartRow; screenY < pNewStartRow; ++screenY)
+			{
+				console.gotoxy(scrollbarCol, screenY);
+				console.print(this.scrollbarInfo.BGChar);
+			}
+			// Write bright blocks on the bottom
+			console.print("\1n" + this.colors.scrollbarScrollBlockColor);
+			for (var screenY = oldLastRow+1; screenY <= newLastRow; ++screenY)
+			{
+				console.gotoxy(scrollbarCol, screenY);
+				console.print(this.scrollbarInfo.blockChar);
+			}
+		}
+	}
+	else if (solidBlockStartRowDiff < 0)
+	{
+		// The solid block section has moved up
+		if (pOldStartRow > newLastRow)
+		{
+			// No overlap
+			// Write dim blocks over the old solid block section
+			console.print("\1n" + this.colors.scrollbarBGColor);
+			for (var screenY = pOldStartRow; screenY <= oldLastRow; ++screenY)
+			{
+				console.gotoxy(scrollbarCol, screenY);
+				console.print(this.scrollbarInfo.BGChar);
+			}
+			// Write solid blocks in the new locations
+			console.print("\1n" + this.colors.scrollbarScrollBlockColor);
+			for (var screenY = pNewStartRow; screenY <= newLastRow; ++screenY)
+			{
+				console.gotoxy(scrollbarCol, screenY);
+				console.print(this.scrollbarInfo.blockChar);
+			}
+		}
+		else
+		{
+			// There is some overlap
+			// Write bright blocks on top
+			console.print("\1n" + this.colors.scrollbarScrollBlockColor);
+			var endRow = pOldStartRow;
+			for (var screenY = pNewStartRow; screenY < endRow; ++screenY)
+			{
+				console.gotoxy(scrollbarCol, screenY);
+				console.print(this.scrollbarInfo.blockChar);
+			}
+			// Write dim blocks on the bottom
+			console.print("\1n" + this.colors.scrollbarBGColor);
+			endRow = pOldStartRow + numSolidBlocks;
+			for (var screenY = pNewStartRow+numSolidBlocks; screenY < endRow; ++screenY)
+			{
+				console.gotoxy(scrollbarCol, screenY);
+				console.print(this.scrollbarInfo.BGChar);
+			}
+		}
+	}
+}
+
+// Calculates the number of solid scrollbar blocks & non-solid scrollbar blocks
+// to use.  Saves the information in this.scrollbarInfo.numSolidScrollBlocks and
+// this.scrollbarInfo.numNonSolidScrollBlocks.
+function DDLightbarMenu_CalcScrollbarBlocks()
+{
+	var menuDisplayHeight = this.size.height;
+	if (this.borderEnabled)
+		menuDisplayHeight -= 2;
+	var menuListFractionShown = menuDisplayHeight / this.items.length;
+	if (menuListFractionShown > 1)
+		menuListFractionShown = 1.0;
+	this.scrollbarInfo.numSolidScrollBlocks = Math.floor(menuDisplayHeight * menuListFractionShown);
+	if (this.scrollbarInfo.numSolidScrollBlocks <= 0)
+		this.scrollbarInfo.numSolidScrollBlocks = 1;
+	else if (this.scrollbarInfo.numSolidScrollBlocks > menuDisplayHeight)
+		this.scrollbarInfo.numSolidScrollBlocks = menuDisplayHeight;
+	this.scrollbarInfo.numNonSolidScrollBlocks = menuDisplayHeight - this.scrollbarInfo.numSolidScrollBlocks;
+}
+
+//////////////////////////////////////////////////////////
+// Helper functions, not part of the DDLightbarMenu class
 
 // Inputs a keypress from the user and handles some ESC-based
 // characters such as PageUp, PageDown, and ESC.  If PageUp
