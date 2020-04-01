@@ -52,6 +52,10 @@ struct sdlfuncs {
 	int (HACK_HACK_HACK *RenderClear)	(SDL_Renderer *renderer);
 	int (HACK_HACK_HACK *RenderCopy)	(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect *srcrect, const SDL_Rect *dstrect);
 	SDL_bool (HACK_HACK_HACK *SetHint)	(const char *name, const char *value);
+	const char * (HACK_HACK_HACK *GetHint)	(const char *name);
+	SDL_Keymod (HACK_HACK_HACK *GetModState)	(void);
+	void (HACK_HACK_HACK *SetWindowSize)	(SDL_Window *window, int w, int h);
+	void (HACK_HACK_HACK *DestroyTexture)	(SDL_Texture *texture);
 	int	gotfuncs;
 };
 
