@@ -5,16 +5,22 @@
 // Note: this module replaces the old ### E-mail section ### Baja code in exec/*.src
 // replace "call E-mail" with "exec_bin email_sec"
 
-load("sbbsdefs.js");
-var text = load({}, "text.js");
-var userprops = load({}, "userprops.js");
-var ini_section = "netmail sent";
+require("sbbsdefs.js", "WM_NONE");
+require("userdefs.js", "USER_EXPERT");
+var text = bbs.mods.text;
+if(!text)
+	text = load(bbs.mods.text = {}, "text.js");
+var userprops = bbs.mods.userprops;
+if(!userprops)
+	userprops = load(bbs.mods.userprops = {}, "userprops.js");
+const ini_section = "netmail sent";
 
 const NetmailAddressHistoryLength = 10;
 
 while(bbs.online) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu("e-mail");
+	bbs.nodesync();
 	console.print("\r\n\1_\1y\1hE-mail: \1n");
 	var wm_mode = WM_NONE;
 	var cmdkeys = "SARUFNKQ?\r";
@@ -23,10 +29,10 @@ while(bbs.online) {
 			bbs.read_mail(MAIL_YOUR, user.number);
 			break;
 		case 'U':	// Read your un-read mail
-			bbs.read_mail(MAIL_YOUR, user.number, LM_UNREAD);
+			bbs.read_mail(MAIL_YOUR, user.number, LM_UNREAD|LM_REVERSE);
 			break;
 		case 'K':	// Read/Kill sent mail
-			bbs.read_mail(MAIL_SENT, user.number);
+			bbs.read_mail(MAIL_SENT, user.number, LM_REVERSE);
 			break;
 		case 'F':	// Send Feedback
 			bbs.email(/* user # */1, bbs.text(text.ReFeedback));
