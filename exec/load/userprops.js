@@ -44,6 +44,8 @@ function set(section, key, value, usernum)
 	var result;
 	if(!section)
 		result = file.iniSetAllObjects(value);
+	else if(value === undefined)
+		result = file.iniSetObject(section, key);
 	else if(!key)
 		result = file.iniSetObject(section, value);
 	else
