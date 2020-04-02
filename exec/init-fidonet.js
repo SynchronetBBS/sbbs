@@ -77,6 +77,8 @@ function send_app_netmail(destaddr)
 	var body_text = "Hello, this is " + sysop + " from " + system.location + "\r\n";
 	body_text += "and I am requesting a node number for zone " + netzone + " in " + netname + ".\r\n";
 	body_text += "\r\n";
+	body_text += "My system is " + system.name + " at " + system.inet_addr + ".\r\n";
+	body_text += "\r\n";
 	body_text += "I am using Synchronet-" + system.platform + " v" + system.full_version 
 		+ " with SBBSecho and BinkIT.\r\n";
 	body_text += "\r\n";
@@ -88,7 +90,7 @@ function send_app_netmail(destaddr)
 		var str;
 		while((str=prompt("[done]")) && !aborted()) body_text += str + "\r\n";
 	}
-	if(aborted())
+	if(aborted() || !confirm("Send now"))
 		return false;
 	var msgbase = new MsgBase("mail");
 	if(msgbase.open() == false)
@@ -274,10 +276,12 @@ if(!netzone) {
 		print(format("%6s %s%s", format("<%u>", zone), network_list[zone].name, desc));
 		if(network_list[zone].info)
 			print("       " + network_list[zone].info);
-		if(network_list[zone].coord || network_list[zone].email) {
+		if(network_list[zone].coord || network_list[zone].email || network_list[zone].fido) {
 			var email = "";
 			if(network_list[zone].email)
 				email = " <" + network_list[zone].email + ">";
+			if(network_list[zone].fido)
+				email += " " + network_list[zone].fido;
 			print("       coordinator: " + (network_list[zone].coord || "") + email);
 		}
 	}
@@ -307,9 +311,10 @@ if(netname) {
 	print("Network name: " + netname);
 	print("Network zone: " + netzone);
 	print("Network info: " + network.info);
-	print("EchoList URL: " + network.echolist);
 	print("Network coordinator: " + network.coord 
-		+ (network.email ? (" <" + network.email + ">") : ""));
+		+ (network.email ? (" <" + network.email + ">") : "")
+		+ (network.fido ? (" " + network.fido) : ""));
+	print("EchoList: " + file_getname(network.echolist));
 } else
 	alert("Unrecognized network zone: " + netzone);
 
@@ -401,10 +406,7 @@ while(!confirm("Your node address is " + fidoaddr.to_str(your)) && !aborted()) {
 		your.point = parseInt(prompt("Your point number (i.e. 0 for a normal node)"));
 }
 
-while((!link.AreaFixPwd || !confirm("Your AreaFix Password is '" + link.AreaFixPwd + "'")) && !aborted())
-	link.AreaFixPwd = prompt("Your AreaFix (a.k.a. Area Manager) Password (case in-sensitive)");
-while((!link.SessionPwd || !confirm("Your BinkP Session Passowrd is '" + link.SessionPwd + "'")) && !aborted())
-	link.SessionPwd = prompt("Your BinkP Session Password (case sensitive)");
+/* Get/Confirm Sysop Name */
 var sysop = system.operator;
 if(system.stats.total_users) {
 	var u = new User(1);
@@ -415,16 +417,24 @@ sysop = get_binkp_sysop() || sysop;
 while((!sysop || !confirm("Your name is '" + sysop + "'")) && !aborted())
 	sysop = prompt("Your name");
 
+/* Get/Confirm passwords */
+while((!link.AreaFixPwd || !confirm("Your AreaFix Password is '" + link.AreaFixPwd + "'")) && !aborted())
+	link.AreaFixPwd = prompt("Your AreaFix (a.k.a. Area Manager) Password (case in-sensitive)");
+while((!link.SessionPwd || !confirm("Your BinkP Session Passowrd is '" + link.SessionPwd + "'")) && !aborted())
+	link.SessionPwd = prompt("Your BinkP Session Password (case sensitive)");
+
 /***********************************************/
 /* SEND NODE NUMBER REQUEST NETMAIL (Internet) */
 /***********************************************/
 if(your.node === 9999 && network.email && network.email.indexOf('@') > 0 
 	&& confirm("Send a node number application to " + network.email)) {
 	var result = send_app_netmail(network.email);
-	if(result !== true) {
+	if(typeof result !== 'boolean') {
 		alert(result);
 		exit(1);
 	}
+	if(aborted())
+		exit(0);
 	if(confirm("Come back when you have your permanently-assigned node address")) {
 		if(confirm("Save changes to FidoNet configuration file: sbbsecho.ini")) {
 			var result = update_sbbsecho_ini(hub, link);
@@ -476,7 +486,7 @@ if(confirm("Save Changes to Message Area configuration file: msgs.cnf")) {
 var echolist_fname = file_getname(network.echolist);
 if(network.echolist 
 	&& (network.echolist.indexOf("http://") == 0 || network.echolist.indexOf("https://") == 0)
-	&& confirm("Download " + netname + " EchoList")) {
+	&& confirm("Download " + netname + " EchoList: " + file_getname(network.echolist))) {
 	var echolist_url = network.echolist;
 	load("http.js");
 	while(!aborted()) {
@@ -489,14 +499,27 @@ if(network.echolist
 			exit(1);
 		}
 		var http_request = new HTTPRequest();
-		var contents = http_request.Get(echolist_url);
+		try {
+			var contents = http_request.Get(echolist_url);
+		} catch(e) {
+			alert(e);
+			file.close();
+			file_remove(file.name);
+			if(!confirm("Try again"))
+				break;
+			continue;
+		}
 		if(http_request.response_code == 200) {
 			print("Downloaded " + echolist_url + " to " + file.name);
 			file.write(contents);
 			file.close();
 			break;
 		}
-		alert("Error " + http_request.respons_code + " downloading " + echolist_url);
+		file.close();
+		file_remove(file.name);
+		alert("Error " + http_request.response_code + " downloading " + echolist_url);
+		if(!confirm("Try again"))
+			break;
 	}
 }
 while(!file_getcase(echolist_fname) && !aborted()) {
@@ -506,7 +529,8 @@ while(!file_getcase(echolist_fname) && !aborted()) {
 	prompt("Download and extract " + echolist_fname + " now... Press enter to continue");
 }
 echolist_fname = file_getcase(echolist_fname)	
-if(echolist_fname && confirm("Import " + netname + " EchoList: " + echolist_fname)) {
+if(echolist_fname && file_size(echolist_fname) > 0
+	&& confirm("Import  EchoList (" + echolist_fname + ") into Message Group: " + netname)) {
 	print("Importing " + echolist_fname);
 	system.exec(system.exec_dir + "scfg"
 		+ " -import=" + echolist_fname 
@@ -543,16 +567,25 @@ if(!file_touch(system.ctrl_dir + "recycle"))
 /******************************************/
 /* SEND NODE NUMBER REQUEST NETMAIL (FTN) */
 /******************************************/
-if(your.node === 9999
-	&& confirm("Send a node number application to "
+if(your.node === 9999) {
+	if(confirm("Send a node number application to "
 		+ fidoaddr.to_str(hub))) {
-	var result = send_app_netmail(fidoaddr.to_str(hub));
-	if(result !== true) {
-		alert(result);
-		exit(1);
-	}
-	if(confirm("Come back when you have a permanently-assigned node address"))
-		exit(0);
+		var result = send_app_netmail(fidoaddr.to_str(hub));
+		if(typeof result !== 'boolean') {
+			alert(result);
+			exit(1);
+		}
+		if(aborted() || confirm("Come back when you have a permanently-assigned node address"))
+			exit(0);
+	} else if(network.fido && confirm("Send a node number application to " + network.fido)) {
+		var result = send_app_netmail(network.fido);
+		if(typeof result !== 'boolean') {
+			alert(result);
+			exit(1);
+		}
+		if(aborted() || confirm("Come back when you have a permanently-assigned node address"))
+			exit(0);
+	}		
 }
 
 /************************/
