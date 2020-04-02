@@ -897,7 +897,7 @@ int main(int argc, char **argv)
 				break;
 			if(hash.number==0 || hash.number > smb.status.last_msg)
 				fprintf(stderr,"\r%sInvalid message number (%u > %u)\n", beep, hash.number, smb.status.last_msg), badhash++, print_hash(&hash);
-			else if(hash.time < 0x40000000 || hash.time > (ulong)now)
+			else if(hash.time < 0x40000000 || hash.time > (ulong)now + (60 * 60))
 				fprintf(stderr,"\r%sInvalid time (0x%08"PRIX32")\n", beep, hash.time), badhash++, print_hash(&hash);
 			else if(hash.length < 1 || hash.length > 1024*1024)
 				fprintf(stderr,"\r%sInvalid length (%"PRIu32")\n", beep, hash.length), badhash++, print_hash(&hash);
