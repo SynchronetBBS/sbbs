@@ -56,6 +56,12 @@ struct sdlfuncs {
 	SDL_Keymod (HACK_HACK_HACK *GetModState)	(void);
 	void (HACK_HACK_HACK *SetWindowSize)	(SDL_Window *window, int w, int h);
 	void (HACK_HACK_HACK *DestroyTexture)	(SDL_Texture *texture);
+	void (HACK_HACK_HACK *SetWindowFullscreen)	(SDL_Window *window, Uint32 flags);
+	void (HACK_HACK_HACK *LockTexture)	(SDL_Texture *texture, const SDL_Rect *rect, void **pixels, int *pitch);
+	void (HACK_HACK_HACK *UnlockTexture)	(SDL_Texture *texture);
+	void (HACK_HACK_HACK *QueryTexture)	(SDL_Texture *texture, Uint32 *format, int *access, int *w, int *h);
+	void (HACK_HACK_HACK *GetWindowPosition)	(SDL_Window *window, int *x, int *y);
+	void (HACK_HACK_HACK *SetWindowPosition)	(SDL_Window *window, int x, int y);
 	int	gotfuncs;
 };
 

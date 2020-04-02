@@ -95,6 +95,8 @@ struct video_stats {
 	int currattr;
 	int scaling;
 	int	vmultiplier;
+	int winwidth;
+	int winheight;
 	uint32_t flags;
 #define VIDMODES_FLAG_PALETTE_VMEM	1
 	uint32_t palette[16];

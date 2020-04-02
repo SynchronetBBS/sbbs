@@ -201,8 +201,6 @@ const struct sdl_keyvals sdl_keyval[] =
 	{0, 0, 0, 0, 0}	/** END **/
 };
 
-void sdl_setscaling(int new_value);
-
 #if !defined(NO_X) && defined(__unix__)
 #include "SDL_syswm.h"
 
@@ -463,21 +461,25 @@ static int sdl_init_mode(int mode)
 		pthread_mutex_unlock(&vstatlock);
 	}
 
-	oldcols = cvstat.cols;
-
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
+	oldcols = cvstat.cols;
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
-	if(oldcols != vstat.cols) {
-		if(oldcols == 40)
-			vstat.scaling /= 2;
-		if(vstat.cols == 40)
-			vstat.scaling *= 2;
+	vstat.winwidth = ((double)cvstat.winwidth / cvstat.cols) * vstat.cols;
+	vstat.winheight = ((double)cvstat.winheight / cvstat.rows / cvstat.vmultiplier) * (vstat.rows * vstat.vmultiplier);
+	if (oldcols != vstat.cols) {
+		if (oldcols == 40)
+			vstat.winwidth /= 2;
+		if (vstat.cols == 40)
+			vstat.winwidth *= 2;
 	}
-	if(vstat.scaling < 1)
-		vstat.scaling = 1;
+	// TODO: Integer scale the window?
+	if (vstat.winwidth < vstat.charwidth * vstat.cols)
+		vstat.winwidth = vstat.charwidth * vstat.cols;
+	if (vstat.winheight < vstat.charheight * vstat.rows)
+		vstat.winheight = vstat.charheight * vstat.rows;
 	if(vstat.vmultiplier < 1)
 		vstat.vmultiplier = 1;
 
@@ -557,16 +559,47 @@ int sdl_init(int mode)
 	return(-1);
 }
 
-void sdl_setscaling(int new_value)
+void sdl_setwinsize_locked(int w, int h)
+{
+	if (w > 16384)
+		w = 16384;
+	if (h > 16384)
+		h = 16384;
+	if (w < cvstat.charwidth * cvstat.cols)
+		w = cvstat.charwidth * cvstat.cols;
+	if (h < cvstat.charheight * cvstat.rows)
+		h = cvstat.charheight * cvstat.rows;
+	cvstat.winwidth = vstat.winwidth = w;
+	cvstat.winheight = vstat.winheight = h;
+}
+
+void sdl_setwinsize(int w, int h)
 {
 	pthread_mutex_lock(&vstatlock);
-	cvstat.scaling = vstat.scaling = new_value;
+	sdl_setwinsize_locked(w, h);
 	pthread_mutex_unlock(&vstatlock);
 }
 
-int sdl_getscaling(void)
+void sdl_setwinposition(int x, int y)
 {
-	return cvstat.scaling;
+	sdl.mutexP(win_mutex);
+	sdl.SetWindowPosition(win, x, y);
+	sdl.mutexV(win_mutex);
+}
+
+void sdl_getwinsize_locked(int *w, int *h)
+{
+	if (w)
+		*w = cvstat.winwidth;
+	if (h)
+		*h = cvstat.winheight;
+}
+
+void sdl_getwinsize(int *w, int *h)
+{
+	pthread_mutex_lock(&vstatlock);
+	sdl_getwinsize_locked(w, h);
+	pthread_mutex_unlock(&vstatlock);
 }
 
 /* Called from main thread only */
@@ -645,29 +678,32 @@ int sdl_hidemouse(void)
 int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 {
 	int ww, wh;
+	int wx, wy;
 
 	sdl.mutexP(win_mutex);
-	sdl.GetWindowSize(win, &ww, &wh);
+	if (width || height)
+		sdl.GetWindowSize(win, &ww, &wh);
+	if (xpos || ypos)
+		sdl.GetWindowPosition(win, &wx, &wy);
+	
 	if(width)
 		*width=ww;
 	if(height)
 		*height=wh;
 	if(xpos)
-		*xpos=-1;
+		*xpos=wx;
 	if(ypos)
-		*ypos=-1;
+		*ypos=wy;
 	sdl.mutexV(win_mutex);
 
 	return(1);
 }
 
-static void setup_surfaces(void)
+static void setup_surfaces_locked(void)
 {
-	int		char_width;
-	int		char_height;
 	int		flags=0;
 	SDL_Event	ev;
-	int charwidth, charheight, cols, scaling, rows, vmultiplier;
+	int charwidth, charheight, cols, rows, vmultiplier;
 
 	if(fullscreen)
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -678,16 +714,12 @@ static void setup_surfaces(void)
 	charwidth = cvstat.charwidth;
 	charheight = cvstat.charheight;
 	cols = cvstat.cols;
-	scaling = cvstat.scaling;
 	rows = cvstat.rows;
 	vmultiplier = cvstat.vmultiplier;
-	
-	char_width=charwidth*cols*scaling;
-	char_height=charheight*rows*scaling*vmultiplier;
 
 	if (win == NULL) {
 		// SDL2: This is slow sometimes... not sure why.
-		if (sdl.CreateWindowAndRenderer(char_width, char_height, flags, &win, &renderer) == 0) {
+		if (sdl.CreateWindowAndRenderer(cvstat.winwidth, cvstat.winheight, flags, &win, &renderer) == 0) {
 			sdl.RenderClear(renderer);
 			texture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, charwidth*cols, charheight*rows);
 		}
@@ -697,7 +729,8 @@ static void setup_surfaces(void)
 		}
 	}
 	else {
-		sdl.SetWindowSize(win, char_width, char_height);
+		sdl.SetWindowSize(win, cvstat.winwidth, cvstat.winheight);
+		texture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, charwidth*cols, charheight*rows);
 	}
 
 	if(win!=NULL) {
@@ -711,12 +744,20 @@ static void setup_surfaces(void)
 	sdl.mutexV(win_mutex);
 }
 
+static void setup_surfaces(void)
+{
+	pthread_mutex_lock(&vstatlock);
+	setup_surfaces_locked();
+	pthread_mutex_unlock(&vstatlock);
+}
+
 /* Called from event thread only */
 static void sdl_add_key(unsigned int keyval)
 {
 	if(keyval==0xa600) {
 		fullscreen=!fullscreen;
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
+		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 		setup_surfaces();
 		return;
 	}
@@ -1191,7 +1232,13 @@ static int win_to_text_xpos(int winpos)
 {
 	int ret;
 
-	ret = winpos/(cvstat.charwidth*cvstat.scaling)+1;
+	pthread_mutex_lock(&vstatlock);
+	ret = winpos/(((float)cvstat.winwidth)/cvstat.cols)+1;
+	if (ret > cvstat.cols)
+		ret = cvstat.cols;
+	if (ret < 1)
+		ret = 1;
+	pthread_mutex_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1199,17 +1246,25 @@ static int win_to_text_ypos(int winpos)
 {
 	int ret;
 
-	ret = winpos/(cvstat.charheight*cvstat.scaling*cvstat.vmultiplier)+1;
+	pthread_mutex_lock(&vstatlock);
+	ret = winpos/(((float)cvstat.winheight)/cvstat.rows)+1;
+	if (ret > cvstat.rows)
+		ret = cvstat.rows;
+	if (ret < 1)
+		ret = 1;
+	pthread_mutex_unlock(&vstatlock);
 	return ret;
 }
 
 static void sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
-	int			new_scaling = -1;
-	int			old_scaling;
+	int			old_w, old_h;
 
-	old_scaling = cvstat.scaling;
+	pthread_mutex_lock(&vstatlock);
+	old_w = cvstat.winwidth;
+	old_h = cvstat.winheight;
+	pthread_mutex_unlock(&vstatlock);
 
 	char	*driver;
 	if((driver = sdl.GetCurrentVideoDriver())!=NULL) {
@@ -1237,28 +1292,28 @@ static void sdl_video_event_thread(void *data)
 
 	while(1) {
 		if(sdl.WaitEventTimeout(&ev, 1)!=1) {
-			if (new_scaling != -1 || cvstat.scaling != old_scaling) {
-				if (new_scaling == -1)
-					new_scaling = cvstat.scaling;
-				sdl_setscaling(new_scaling);
-				new_scaling = -1;
-				if(cvstat.scaling < 1)
-					sdl_setscaling(1);
-				setup_surfaces();
-				old_scaling = cvstat.scaling;
+			pthread_mutex_lock(&vstatlock);
+			if (cvstat.winwidth != old_w || cvstat.winheight != old_h) {
+				sdl_setwinsize_locked(cvstat.winwidth, cvstat.winheight);
+				setup_surfaces_locked();
+				old_w = cvstat.winwidth;
+				old_h = cvstat.winheight;
+				sdl_getwinsize_locked(&cvstat.winwidth, &cvstat.winheight);
 			}
+			pthread_mutex_unlock(&vstatlock);
 		}
 		else {
 			switch (ev.type) {
 				case SDL_KEYDOWN:			/* Keypress */
-					if ((ev.key.keysym.mod & KMOD_GUI) &&
+					if ((ev.key.keysym.mod & KMOD_ALT) &&
 					    (ev.key.keysym.sym == SDLK_LEFT ||
 					     ev.key.keysym.sym == SDLK_RIGHT ||
 					     ev.key.keysym.sym == SDLK_UP ||
 					     ev.key.keysym.sym == SDLK_DOWN)) {
 						int w, h;
-						sdl.mutexP(win_mutex);
-						sdl.GetWindowSize(win, &w, &h);
+						pthread_mutex_lock(&vstatlock);
+						w = cvstat.winwidth;
+						h = cvstat.winheight;
 						switch(ev.key.keysym.sym) {
 							case SDLK_LEFT:
 								if (w % (cvstat.charwidth * cvstat.cols)) {
@@ -1275,7 +1330,7 @@ static void sdl_video_event_thread(void *data)
 								break;
 							case SDLK_UP:
 								if (h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier)) {
-									h = h - h % (cvstat.charheight * cvstat.rows);
+									h = h - h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
 								}
 								else {
 									h -= (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
@@ -1287,8 +1342,13 @@ static void sdl_video_event_thread(void *data)
 								h = (h - h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier)) + (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
 								break;
 						}
-						sdl.SetWindowSize(win, w, h);
-						sdl.mutexP(win_mutex);
+						if (w > 16384 || h > 16384)
+							beep();
+						else {
+							cvstat.winwidth = w;
+							cvstat.winheight = h;
+						}
+						pthread_mutex_unlock(&vstatlock);
 					}
 					else
 						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
@@ -1349,9 +1409,8 @@ static void sdl_video_event_thread(void *data)
 							{
 								// SDL2: Something resized window
 								const char *newh;
-								if(ev.window.data1 > 0 && ev.window.data2 > 0) {
-									new_scaling = (int)(ev.window.data1/(cvstat.charwidth*cvstat.cols));
-								}
+
+								pthread_mutex_lock(&vstatlock);
 								if ((ev.window.data1 % (cvstat.charwidth * cvstat.cols)) || (ev.window.data2 % (cvstat.charheight * cvstat.rows)))
 									newh = "2";
 								else
@@ -1364,15 +1423,11 @@ static void sdl_video_event_thread(void *data)
 									bitmap_drv_request_pixels();
 								}
 								sdl.mutexV(win_mutex);
+								pthread_mutex_unlock(&vstatlock);
 								break;
 							}
 						case SDL_WINDOWEVENT_EXPOSED:
-							{
-								sdl.mutexP(win_mutex);
-								sdl.RenderCopy(renderer, texture, NULL, NULL);
-								sdl.RenderPresent(renderer);
-								sdl.mutexV(win_mutex);
-							}
+							bitmap_drv_request_pixels();
 							break;
 					}
 					break;
@@ -1402,11 +1457,30 @@ static void sdl_video_event_thread(void *data)
 
 									old_next = list->next;
 									if (list->next == NULL) {
+										void *pixels;
+										int pitch;
+										int row;
+										int tw, th;
+
 										src.x = 0;
 										src.y = 0;
 										src.w = list->rect.width;
 										src.h = list->rect.height;
-										sdl.UpdateTexture(texture, &src, list->data, list->rect.width * sizeof(uint32_t));
+										sdl.QueryTexture(texture, NULL, NULL, &tw, &th);
+										sdl.LockTexture(texture, &src, &pixels, &pitch);
+										if (pitch != list->rect.width * sizeof(list->data[0])) {
+											// If this happens, we need to copy a row at a time...
+											for (row = 0; row < list->rect.height && row < th; row++) {
+												if (pitch < list->rect.width * sizeof(list->data[0]))
+													memcpy(pixels, &list->data[list->rect.width * row], pitch);
+												else
+													memcpy(pixels, &list->data[list->rect.width * row], list->rect.width * sizeof(list->data[0]));
+												pixels = (void *)((char*)pixels + pitch);
+											}
+										}
+										else
+											memcpy(pixels, list->data, list->rect.width * list->rect.height * sizeof(list->data[0]));
+										sdl.UnlockTexture(texture);
 										sdl.RenderCopy(renderer, texture, &src, NULL);
 									}
 									bitmap_drv_free_rect(list);
@@ -1446,9 +1520,11 @@ static void sdl_video_event_thread(void *data)
 							free(ev.user.data1);
 							break;
 						case SDL_USEREVENT_SETVIDMODE:
-							new_scaling = -1;
-							old_scaling = cvstat.scaling;
-							setup_surfaces();
+							pthread_mutex_lock(&vstatlock);
+							setup_surfaces_locked();
+							old_w = cvstat.winwidth;
+							old_h = cvstat.winheight;
+							pthread_mutex_unlock(&vstatlock);
 							sdl_ufunc_retval=0;
 							sdl.SemPost(sdl_ufunc_ret);
 							break;

@@ -1233,6 +1233,8 @@ void load_settings(struct syncterm_settings *set)
 	get_syncterm_filename(set->list_path, sizeof(set->list_path), SYNCTERM_PATH_LIST, FALSE);
 	iniReadString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path);
 	set->scaling_factor=iniReadInteger(inifile,"SyncTERM","ScalingFactor",0);
+	set->window_width=iniReadInteger(inifile,"SyncTERM","WindowWidth",0);
+	set->window_height=iniReadInteger(inifile,"SyncTERM","WindowHeight",0);
 
 	/* Modem settings */
 	iniReadString(inifile, "SyncTERM", "ModemInit", "AT&F&C1&D2", set->mdm.init_string);
@@ -1278,6 +1280,7 @@ int main(int argc, char **argv)
 	char	*last_bbs=NULL;
 	char	*p, *lp;
 	int	cvmode;
+	int	ww, wh, sf;
 	const char syncterm_termcap[]="\n# terminfo database entry for SyncTERM\n"
 				"syncterm|SyncTERM,\n"
 				"	am,bce,ccc,da,mir,msgr,ndscr,\n"	// sam?
@@ -1502,6 +1505,7 @@ int main(int argc, char **argv)
 	ciolib_reaper=FALSE;
 	seticon(syncterm_icon.pixel_data,syncterm_icon.width);
 	setscaling(settings.scaling_factor);
+	setwinsize(settings.window_width, settings.window_height);
 	textmode(text_mode);
 
     gettextinfo(&txtinfo);
@@ -1662,7 +1666,12 @@ int main(int argc, char **argv)
 	if (last_bbs)
 		free(last_bbs);
 	// Save changed settings
-	if(getscaling() > 0 && getscaling() != settings.scaling_factor) {
+	ww = wh = sf = -1;
+	get_window_info(&ww, &wh, NULL, NULL);
+	sf = getscaling();
+	if((sf > 0 && sf != settings.scaling_factor) ||
+	    (ww > 0 && ww != settings.window_width) ||
+	    (wh > 0 && wh != settings.window_height)) {
 		char	inipath[MAX_PATH+1];
 		FILE	*inifile;
 		str_list_t	inicontents;
@@ -1675,12 +1684,18 @@ int main(int argc, char **argv)
 		else {
 			inicontents=strListInit();
 		}
-		iniSetInteger(&inicontents,"SyncTERM","ScalingFactor",getscaling(),&ini_style);
+		if (sf > 0 && sf != settings.scaling_factor)
+			iniSetInteger(&inicontents,"SyncTERM","ScalingFactor",sf,&ini_style);
+		if (ww > 0 && ww != settings.window_width)
+			iniSetInteger(&inicontents,"SyncTERM","WindowWidth",ww,&ini_style);
+		if (wh > 0 && wh != settings.window_height)
+			iniSetInteger(&inicontents,"SyncTERM","WindowHeight",wh,&ini_style);
 		if((inifile=fopen(inipath,"w"))!=NULL) {
 			iniWriteFile(inifile,inicontents);
 			fclose(inifile);
 		}
 	}
+
 	uifcbail();
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0)
