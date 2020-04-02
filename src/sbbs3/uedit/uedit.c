@@ -2044,9 +2044,9 @@ int main(int argc, char** argv)  {
 		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	if((mopt=(char **)alloca(sizeof(char *)*4))==NULL)
-		allocfail(sizeof(char *)*4);
-	for(i=0;i<4;i++)
+	if((mopt=(char **)alloca(sizeof(char *)*5))==NULL)
+		allocfail(sizeof(char *)*5);
+	for(i=0;i<5;i++)
 		if((mopt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
