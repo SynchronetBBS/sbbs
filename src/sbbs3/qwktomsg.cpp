@@ -215,18 +215,18 @@ bool sbbs_t::qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset
 	}
 
 	if(msg->to==NULL)
-		smb_hfield_str(msg,RECIPIENT,to);
+		smb_hfield_str(msg,RECIPIENT,strip_ctrl(to, to));
 
 	if(parse_sender_hfields && msg->from==NULL) {
 		sprintf(str,"%25.25s",hdrblk+46);  
 		truncsp(str);
-		smb_hfield_str(msg,SENDER,str);
+		smb_hfield_str(msg,SENDER,strip_ctrl(str, str));
 	}
 
 	if(msg->subj==NULL) {
 		sprintf(str,"%25.25s",hdrblk+71);   /* Subject */
 		truncsp(str);
-		smb_hfield_str(msg,SUBJECT,str);
+		smb_hfield_str(msg,SUBJECT,strip_ctrl(str, str));
 	}
 
 	iniFreeStringList(msg_headers);
