@@ -1402,11 +1402,11 @@ static void sdl_video_event_thread(void *data)
 
 									old_next = list->next;
 									if (list->next == NULL) {
-										sdl.UpdateTexture(texture, NULL, list->data, list->rect.width * sizeof(uint32_t));
 										src.x = 0;
 										src.y = 0;
 										src.w = list->rect.width;
 										src.h = list->rect.height;
+										sdl.UpdateTexture(texture, &src, list->data, list->rect.width * sizeof(uint32_t));
 										sdl.RenderCopy(renderer, texture, &src, NULL);
 									}
 									bitmap_drv_free_rect(list);
