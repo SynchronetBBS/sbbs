@@ -1915,7 +1915,7 @@ int main(int argc, char** argv)  {
 	sscanf("$Revision$", "%*s %s", revision);
 
     printf("\nSynchronet User Editor %s-%s  Copyright %s "
-        "Rob Swindell\n",revision,PLATFORM_DESC,__DATE__+7);
+        "Rob Swindell\n",revision,PLATFORM_DESC,&__DATE__[7]);
 
 	SAFECOPY(ctrl_dir, get_ctrl_dir());
 
