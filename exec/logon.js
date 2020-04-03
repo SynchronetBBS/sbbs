@@ -25,6 +25,9 @@ if(options.draw_avatar_right === undefined)
 if(options.show_logon_list === undefined)
 	options.show_logon_list = true;
 
+if(options.eval_first)
+	eval(options.eval_first);
+
 if(user.settings & USER_ICE_COLOR) {
 	var cterm = load({}, "cterm_lib.js");
 	cterm.bright_background(true);
@@ -197,3 +200,6 @@ if(options.rlogin_xtrn_menu
 			load("avatar_chooser.js");
 	}
 }
+
+if(options.eval_last)
+	eval(options.eval_last);
