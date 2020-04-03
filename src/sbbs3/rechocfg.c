@@ -474,6 +474,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	if(cfg->maxbdlsize<1024)
 		cfg->maxbdlsize=DFLT_BDL_SIZE;
 
+	cfg->used_include = iniHasInclude(ini);
 	strListFree(&ini);
 
 	return true;

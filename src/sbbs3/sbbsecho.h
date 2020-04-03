@@ -228,6 +228,7 @@ typedef struct {
 	char		binkp_sysop[64];
 	bool		binkp_plainAuthOnly;
 	bool		binkp_plainTextOnly;
+	bool		used_include;
 } sbbsecho_cfg_t;
 
 char* pktTypeStringList[PKT_TYPES_SUPPORTED+1];

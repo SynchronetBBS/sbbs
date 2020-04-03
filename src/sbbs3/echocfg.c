@@ -738,6 +738,12 @@ int main(int argc, char **argv)
 		p=getfname(cfg.cfgfile);
 	uifc.printf(uifc.scrn_width-(strlen(p)+1),1,uifc.bclr|(uifc.cclr<<4),p);
 
+	if(cfg.used_include && uifc.deny("%s uses !include, continue read only", getfname(p))) {
+		uifc.pop("Exiting");
+		uifc.bail();
+		exit(0);
+	}
+
 	/* Remember current menu item selections using these vars: */
 	int netmail_opt = 0;
 	int echomail_opt = 0;
@@ -803,7 +809,7 @@ int main(int argc, char **argv)
 		sprintf(opt[i++],"Paths and Filenames...");
 		sprintf(opt[i++],"Domains...");
 		sprintf(opt[i++],"EchoLists...");
-		if(uifc.changes)
+		if(uifc.changes && !cfg.used_include)
 			snprintf(opt[i++],MAX_OPLN-1,"Save Changes to %s", getfname(cfg.cfgfile));
 		opt[i][0]=0;
 		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC,0,0,0,&dflt,0
@@ -2483,19 +2489,24 @@ int main(int argc, char **argv)
 				break;
 			case -1:
 				if(uifc.changes) {
-		uifc.helpbuf=
-		"~ Save Configuration File ~\n\n"
-		"Select `Yes` to save the config file, `No` to quit without saving,\n"
-		"or hit ~ ESC ~ to go back to the menu.\n\n";
-					i=0;
-					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Save Config File",uifcYesNoOpts);
-					if(i==-1) break;
-					if(i == 0) {
-						uifc.pop("Writing config ...");
-						bool success = sbbsecho_write_ini(&cfg);
-						uifc.pop(NULL);
-						if(!success)
-							uifc.msg("Error saving configuration file");
+					if(cfg.used_include) {
+						if(uifc.msg("Changes made will not be saved"))
+							break;
+					} else {
+						uifc.helpbuf=
+							"~ Save Configuration File ~\n\n"
+							"Select `Yes` to save the config file, `No` to quit without saving,\n"
+							"or hit ~ ESC ~ to go back to the menu.\n\n";
+						i=0;
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Save Config File",uifcYesNoOpts);
+						if(i==-1) break;
+						if(i == 0) {
+							uifc.pop("Writing config ...");
+							bool success = sbbsecho_write_ini(&cfg);
+							uifc.pop(NULL);
+							if(!success)
+								uifc.msg("Error saving configuration file");
+						}
 					}
 				}
 				uifc.pop("Exiting");
