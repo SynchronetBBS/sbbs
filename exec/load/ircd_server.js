@@ -621,7 +621,7 @@ function Server_Work(cmdline) {
 				if (!my_server)
 					break;
 				if (cmd[1] != "OK") {
-					my_server.quit("Server not configured.");
+					my_server.quit("S: Server not configured.");
 					break;
 				}
 				Servers[my_server.nick.toLowerCase()] = new IRC_Server();

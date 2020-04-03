@@ -204,7 +204,7 @@ function IRC_Unregistered_Commands(cmdline) {
 			      ( (this_nline.password == "*") && !this.outgoing
 				&& !(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
 			     ) && !qwk_slave) {
-				this.quit("Server not configured.");
+				this.quit("UR: Server not configured.");
 				return 0;
 			}
 			// Take care of registration right now.
