@@ -200,14 +200,13 @@ function IRC_Unregistered_Commands(cmdline) {
 						break;
 				}
 			}
-			if (parseInt(cmd[2]) < 2) {
-				if ( (!this_nline ||
-				      ( (this_nline.password == "*") && !this.outgoing
-					&& !(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
-				     ) && !qwk_slave) {
+			if ( (!this_nline ||
+			      ( (this_nline.password == "*") && !this.outgoing
+				&& !(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
+			     ) && !qwk_slave) {
+	     			if (parseInt(cmd[2]) < 2) {
 					this.quit("UR Server not configured.");
-					return 0;
-				}
+				return 0;
 			}
 			// Take care of registration right now.
 			Servers[cmd[1].toLowerCase()] = new IRC_Server();
