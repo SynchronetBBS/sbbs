@@ -277,6 +277,8 @@ DLLEXPORT BOOL 			iniRemoveSection(str_list_t*, const char* section);
 DLLEXPORT BOOL 			iniRemoveSections(str_list_t*, const char* prefix);
 DLLEXPORT BOOL 			iniRenameSection(str_list_t*, const char* section, const char* newname);
 
+DLLEXPORT BOOL 			iniHasInclude(const str_list_t);
+
 /*
  * Too handy to leave internal
  */

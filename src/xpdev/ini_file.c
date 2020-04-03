@@ -53,7 +53,7 @@
 #define INI_BIT_SEP				'|'
 #define INI_NEW_SECTION			((char*)~0)
 #define INI_EOF_DIRECTIVE		"!eof"
-#define INI_INCLUDE_DIRECTIVE	"!include"
+#define INI_INCLUDE_DIRECTIVE	"!include "
 #define INI_INCLUDE_MAX			10000
 
 static ini_style_t default_style;
@@ -2341,7 +2341,6 @@ str_list_t iniReadFile(FILE* fp)
 	for(i=0; list[i]!=NULL; i++) {
 		if(strnicmp(list[i],INI_INCLUDE_DIRECTIVE,inc_len)==0) {
 			p=list[i]+inc_len;
-			FIND_WHITESPACE(p);
 			SKIP_WHITESPACE(p);
 			truncsp(p);
 			if(inc_counter >= INI_INCLUDE_MAX)
@@ -2365,6 +2364,19 @@ str_list_t iniReadFile(FILE* fp)
 		truncnl(list[i]);
 
 	return(list);
+}
+
+BOOL iniHasInclude(const str_list_t list)
+{
+	size_t		i;
+
+	/* Look for !include directives */
+	size_t inc_len=strlen(INI_INCLUDE_DIRECTIVE) + 1;
+	for(i=0; list[i]!=NULL; i++) {
+		if(strnicmp(list[i], ";" INI_INCLUDE_DIRECTIVE, inc_len)==0)
+			return TRUE;
+	}
+	return FALSE;
 }
 
 BOOL iniWriteFile(FILE* fp, const str_list_t list)
