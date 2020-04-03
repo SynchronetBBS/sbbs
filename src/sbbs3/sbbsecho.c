@@ -1971,8 +1971,7 @@ bool alter_config(nodecfg_t* nodecfg, const char* key, const char* value)
 	SAFEPRINTF2(section, "node:%s@%s", smb_faddrtoa(&nodecfg->addr,NULL), nodecfg->domain);
 	if(!iniSectionExists(ini, section))
 		SAFEPRINTF(section, "node:%s", smb_faddrtoa(&nodecfg->addr,NULL));
-	ini_style_t style = {  .key_prefix = "\t", .value_separator = " = " };
-	iniSetString(&ini, section, key, value, &style);
+	iniSetString(&ini, section, key, value, &sbbsecho_ini_style);
 	iniWriteFile(fp, ini);
 	iniCloseFile(fp);
 	iniFreeStringList(ini);

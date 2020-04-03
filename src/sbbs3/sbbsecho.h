@@ -231,6 +231,8 @@ typedef struct {
 	bool		used_include;
 } sbbsecho_cfg_t;
 
+extern ini_style_t sbbsecho_ini_style;
+
 char* pktTypeStringList[PKT_TYPES_SUPPORTED+1];
 char* mailStatusStringList[4];
 
