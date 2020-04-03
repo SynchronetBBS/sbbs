@@ -1558,8 +1558,13 @@ void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 		if((fp=tmpfile())==NULL) {
 			lprintf(LOG_ERR,"ERROR line %d couldn't open tmpfile",__LINE__);
 		} else {
+			int longest = 0;
+			for(u = 0; area_list[u] != NULL; u++) {
+				int len = strlen(area_list[u]);
+				if(len > longest) longest = len;
+			}
 			for(u = 0; area_list[u] != NULL; u++)
-				fprintf(fp, "%-*s %s\r\n", FIDO_AREATAG_LEN, area_list[u], area_desc(area_list[u]));
+				fprintf(fp, "%-*s %s\r\n", longest, area_list[u], area_desc(area_list[u]));
 			file_to_netmail(fp,title,addr,to);
 			fclose(fp);
 		}
