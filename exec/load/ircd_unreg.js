@@ -314,7 +314,7 @@ function Unregistered_Quit(msg) {
 	if (this.outgoing) {
 		if (YLines[this.ircclass].active > 0) {
 			YLines[this.ircclass].active--;
-			log(LOG_DEBUG, "Class "+this_cline.ircclass+" down to "+YLines[this_cline.ircclass].active+" active out of "+YLines[this_cline.ircclass].maxlinks);
+			log(LOG_DEBUG, "Class "+this.ircclass+" down to "+YLines[this.ircclass].active+" active out of "+YLines[this.ircclass].maxlinks);
 		}
 		else
 			log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
