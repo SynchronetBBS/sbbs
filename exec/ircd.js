@@ -672,6 +672,7 @@ function connect_to_server(this_cline,the_port) {
 		Unregistered[new_id].outgoing = true; /* Outgoing Connection */
 		Unregistered[new_id].ircclass = this_cline.ircclass;
 		YLines[this_cline.ircclass].active++;
+		log(LOG_DEBUG, "Class "+this_cline.ircclass+" up to "+YLines[this_cline.ircclass].active+" active out of "+YLines[this_cline.ircclass].maxlinks);
 	}
 	else {
 		umode_notice(USERMODE_ROUTING,"Routing",

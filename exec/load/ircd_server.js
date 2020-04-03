@@ -1215,8 +1215,10 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 		if (this.socket!=undefined) {
 			this.socket.close();
 			if (this.outgoing) {
-				if (YLines[this.ircclass].active > 0)
-					YLines[this.ircclass].active;
+				if (YLines[this.ircclass].active > 0) {
+					YLines[this.ircclass].active--;
+					log(LOG_DEBUG, "Class "+this_cline.ircclass+" down to "+YLines[this_cline.ircclass].active+" active out of "+YLines[this_cline.ircclass].maxlinks);
+				}
 				else
 					log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
 			}
