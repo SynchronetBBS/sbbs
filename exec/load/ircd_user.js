@@ -148,6 +148,7 @@ function IRC_User(id) {
 	this.uprefix = "";
 	this.id = id;
 	this.throttle_count = 0;	/* Number of commands executed within 2 secs */
+	this.outgoing = false;
 	// Variables (consts, really) that point to various state information
 	this.socket = "";
 	////////// FUNCTIONS

@@ -50,6 +50,7 @@ function IRC_Server() {
 	this.parent = 0;
 	this.info = "";
 	this.idletime = time();
+	this.outgoing = false;
 	// Variables (consts, really) that point to various state information
 	this.socket = "";
 	this.type = BAHAMUT; /* Assume bahamut by default */
