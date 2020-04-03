@@ -3009,11 +3009,16 @@ void cleanup(void)
 		if(fp == NULL) {
 			lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), cfg.badareafile);
 		} else {
+			int longest = 0;
+			for(int i=0; bad_areas[i] != NULL; i++) {
+				int len = strlen(bad_areas[i]);
+				if(len > longest) longest = len;
+			}
 			strListSortAlpha(bad_areas);
 			for(int i=0; bad_areas[i] != NULL; i++) {
 				p = bad_areas[i];
 //				lprintf(LOG_DEBUG, "Writing '%s' (%p) to %s", p, p, cfg.badareafile);
-				fprintf(fp, "%-*s %s\n", FIDO_AREATAG_LEN, p, area_desc(p));
+				fprintf(fp, "%-*s %s\n", longest, p, area_desc(p));
 			}
 			fclose(fp);
 		}
