@@ -451,6 +451,7 @@ void sdl_flush(void)
 static int sdl_init_mode(int mode)
 {
 	int oldcols;
+	int cmw, cmh, nmw, nmh;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
 		pthread_mutex_lock(&vstatlock);
@@ -467,8 +468,8 @@ static int sdl_init_mode(int mode)
 	pthread_mutex_lock(&vstatlock);
 	oldcols = cvstat.cols;
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
-	vstat.winwidth = ((double)cvstat.winwidth / cvstat.cols) * vstat.cols;
-	vstat.winheight = ((double)cvstat.winheight / cvstat.rows / cvstat.vmultiplier) * (vstat.rows * vstat.vmultiplier);
+	vstat.winwidth = ((double)cvstat.winwidth / (cvstat.cols * cvstat.charwidth)) * (vstat.cols * vstat.charwidth);
+	vstat.winheight = ((double)cvstat.winheight / (cvstat.rows * cvstat.charheight * cvstat.vmultiplier)) * (vstat.rows * vstat.charwidth * vstat.vmultiplier);
 	if (oldcols != vstat.cols) {
 		if (oldcols == 40)
 			vstat.winwidth /= 2;
@@ -482,6 +483,13 @@ static int sdl_init_mode(int mode)
 		vstat.winheight = vstat.charheight * vstat.rows;
 	if(vstat.vmultiplier < 1)
 		vstat.vmultiplier = 1;
+	if (win) {
+		cmw = cvstat.charwidth * cvstat.cols;
+		nmw = vstat.charwidth * vstat.cols;
+		cmh = cvstat.charheight * cvstat.rows;
+		nmh = vstat.charheight * vstat.rows;
+		sdl.SetWindowMinimumSize(win, cmw < nmw ? cmw : nmw, cmh < nmh ? cmh : nmh);
+	}
 
 	cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
@@ -677,24 +685,26 @@ int sdl_hidemouse(void)
 
 int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 {
-	int ww, wh;
 	int wx, wy;
 
-	sdl.mutexP(win_mutex);
-	if (width || height)
-		sdl.GetWindowSize(win, &ww, &wh);
-	if (xpos || ypos)
+	if (xpos || ypos) {
+		sdl.mutexP(win_mutex);
 		sdl.GetWindowPosition(win, &wx, &wy);
-	
-	if(width)
-		*width=ww;
-	if(height)
-		*height=wh;
-	if(xpos)
-		*xpos=wx;
-	if(ypos)
-		*ypos=wy;
-	sdl.mutexV(win_mutex);
+		if(xpos)
+			*xpos=wx;
+		if(ypos)
+			*ypos=wy;
+		sdl.mutexV(win_mutex);
+	}
+
+	if (width || height) {
+		pthread_mutex_lock(&vstatlock);
+		if(width)
+			*width=cvstat.winwidth;
+		if(height)
+			*height=cvstat.winheight;
+		pthread_mutex_unlock(&vstatlock);
+	}
 
 	return(1);
 }
@@ -732,6 +742,7 @@ static void setup_surfaces_locked(void)
 		sdl.SetWindowSize(win, cvstat.winwidth, cvstat.winheight);
 		texture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, charwidth*cols, charheight*rows);
 	}
+	sdl.SetWindowMinimumSize(win, cvstat.charwidth * cvstat.cols, cvstat.charheight * cvstat.rows);
 
 	if(win!=NULL) {
 		bitmap_drv_request_pixels();
@@ -1416,6 +1427,8 @@ static void sdl_video_event_thread(void *data)
 								else
 									newh = "0";
 								sdl.mutexP(win_mutex);
+								if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
+									sdl.GetWindowSize(win, &cvstat.winwidth, &cvstat.winheight);
 								if (strcmp(newh, sdl.GetHint(SDL_HINT_RENDER_SCALE_QUALITY))) {
 									sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, newh );
 									sdl.DestroyTexture(texture);

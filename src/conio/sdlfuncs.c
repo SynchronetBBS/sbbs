@@ -224,6 +224,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->SetWindowMinimumSize=xp_dlsym(sdl_dll, SDL_SetWindowMinimumSize))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
 
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;

@@ -62,6 +62,7 @@ struct sdlfuncs {
 	void (HACK_HACK_HACK *QueryTexture)	(SDL_Texture *texture, Uint32 *format, int *access, int *w, int *h);
 	void (HACK_HACK_HACK *GetWindowPosition)	(SDL_Window *window, int *x, int *y);
 	void (HACK_HACK_HACK *SetWindowPosition)	(SDL_Window *window, int x, int y);
+	void (HACK_HACK_HACK *SetWindowMinimumSize)	(SDL_Window *window, int w, int y);
 	int	gotfuncs;
 };
 
