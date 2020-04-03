@@ -530,7 +530,7 @@ while(!file_getcase(echolist_fname) && !aborted()) {
 }
 echolist_fname = file_getcase(echolist_fname)	
 if(echolist_fname && file_size(echolist_fname) > 0
-	&& confirm("Import  EchoList (" + echolist_fname + ") into Message Group: " + netname)) {
+	&& confirm("Import EchoList (" + echolist_fname + ") into Message Group: " + netname)) {
 	print("Importing " + echolist_fname);
 	system.exec(system.exec_dir + "scfg"
 		+ " -import=" + echolist_fname 
@@ -592,7 +592,7 @@ if(your.node === 9999) {
 /* SEND AREAFIX NETMAIL */
 /************************/
 if(your.node !== 9999
-	&& confirm("Create an AreaFix request to link ALL EchoMail areas with "
+	&& confirm("Send AreaFix request to link ALL EchoMail areas with "
 		+ fidoaddr.to_str(hub))) {
 	var msgbase = new MsgBase("mail");
 	if(msgbase.open() == false) {
@@ -613,6 +613,40 @@ if(your.node !== 9999
 	print("AreaFix NetMail message created successfully.");
 }
 
+/**************************************************************/
+/* Add links to logs/stats files to "Operator" G-file section */
+/**************************************************************/
+function add_gfile(fname, desc, tail)
+{
+	function file_append(fname, text)
+	{
+		var file = new File(fname);
+		if(!file.open("at")) {
+			alert("Error " + file.error + " opening " + file.name);
+			return false;
+		}
+		file.writeAll(text);
+		file.close();
+		return true;
+	}
+	var file = new File(system.data_dir + "text/operator.ini");
+	if(!file.open(file.exists ? 'r+':'w+')) {
+		alert("Error " + file.error + " opening " + file.name);
+		return false;
+	}
+	var section = "%j" + fname;
+	if(file.iniGetObject(section) == null && confirm("Add " + desc)) {
+		if(file.iniSetObject(section, { desc: "Fido: " + desc, tail: tail }))
+			print("Added " + fname + " to " + file.name);
+	}
+	file.close();
+}
+print("Updating the 'Operator' Text File Section:");
+add_gfile("sbbsecho.log", "NetMail and EchoMail import/export activity log", 500);
+add_gfile("badareas.lst", "Unrecognized received EchoMail area list");
+add_gfile("echostats.ini", "Detailed EchoMail statistics");
+add_gfile("binkstats.ini", "Detailed BinkP (mail/file transfer) statistics");
+
 /***********************/
 /* DISPLAY FINAL NOTES */
 /***********************/
@@ -625,10 +659,7 @@ if(your.node == 9999) {
 	print("assigned to you.");
 	print();
 }
-print("See your 'data/sbbsecho.log' file for mail import/export activity.");
-print("See your 'data/badareas.lst' file for unrecognized received EchoMail areas.");
-print("See your 'data/echostats.ini' file for detailed EchoMail statistics.");
-print("See your 'data/binkstats.ini' file for detailed BinkP statistics.");
+
 print("See your 'Events' log output for outbound BinkP connections.");
 print("See your 'Services' log output for inbound BinkP connections.");
 print("Use exec/echocfg for follow-up FidoNet-related configuration.");
