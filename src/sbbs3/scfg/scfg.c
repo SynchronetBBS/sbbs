@@ -431,26 +431,13 @@ int main(int argc, char **argv)
 		if((mopt[i]=(char *)malloc(64))==NULL)
 			allocfail(64);
 
-	if((p=getenv("SBBSEXEC"))!=NULL)
-		SAFECOPY(str,p);
-	else {
-		SAFECOPY(str,exepath);
-		p=strrchr(str,'/');
-		if(p==NULL)
-			p=strrchr(str,'\\');
-		if(p!=NULL)
-			*p=0;
-		else 
-	   		sprintf(str,"%s../exec",cfg.ctrl_dir);
-	}
-
-	sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
+	SAFEPRINTF2(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
 	if(uifc.scrn(str)) {
 		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		bail(1);
 	}
 
-	sprintf(str,"%smain.cnf",cfg.ctrl_dir);
+	SAFEPRINTF(str,"%smain.cnf",cfg.ctrl_dir);
 	if(!fexist(str)) {
 		sprintf(errormsg,"Main configuration file (%s) missing!",str);
 		uifc.msg(errormsg);
