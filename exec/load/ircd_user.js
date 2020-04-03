@@ -1548,18 +1548,17 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 		umode_notice(USERMODE_CLIENT,"Client","Client exiting: " + this.nick
 			+ " (" + this.uprefix + "@" + this.hostname + ") [" + str + "] ["
 			+ this.ip + "]");
-		if (this.socket!=undefined) {
+		if (this.socket!=undefined)
 			this.socket.close();
-			if (this.outgoing) {
-				log(LOG_ERROR, "Outgoing USER connection detected!");
-				if (YLines[this.ircclass].active > 0) {
-					YLines[this.ircclass].active--;
-					log(LOG_DEBUG, "Class "+this_cline.ircclass+" down to "+YLines[this_cline.ircclass].active+" active out of "+YLines[this_cline.ircclass].maxlinks);
-				}
-				else
-					log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
-			}
+	}
+	if (this.outgoing) {
+		log(LOG_ERROR, "Outgoing USER connection detected!");
+		if (YLines[this.ircclass].active > 0) {
+			YLines[this.ircclass].active--;
+			log(LOG_DEBUG, "Class "+this_cline.ircclass+" down to "+YLines[this_cline.ircclass].active+" active out of "+YLines[this_cline.ircclass].maxlinks);
 		}
+		else
+			log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
 	}
 
 	delete Local_Sockets[this.id];
