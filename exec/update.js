@@ -90,10 +90,13 @@ function update_gfile_indexes()
 		file.close();
 		file = new File(ini_file);
 		printf("       to %-30s ", file.name);
-		if(!file.open("wt")) {
+		if(!file.open("w+")) {
 			alert("Error " + file.error + " creating " + file.name);
 			continue;
 		}
+		file.writeln("; Migrated from " + ixt_files[i] 
+			+ " by " + js.exec_file + " " + REVISION
+			+ " on " + new Date().toLocaleString());
 		file.iniSetAllObjects(list);
 		file.close();
 		print("Success");
