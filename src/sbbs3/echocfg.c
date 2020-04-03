@@ -605,8 +605,8 @@ int main(int argc, char **argv)
 	ZERO_VAR(savarcdef);
 	ZERO_VAR(savedomain);
 
-	fprintf(stderr,"\nSynchronet FidoNet Configuration  Version %u.%02u  Copyright %s "
-		"Rob Swindell\n\n",SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR, &__DATE__[7]);
+	fprintf(stderr,"\nSynchronet FidoNet Configuration  Version %u.%02u  " COPYRIGHT_NOTICE
+		"\n\n",SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR);
 
 	memset(&cfg,0,sizeof(cfg));
 	str[0]=0;
@@ -690,23 +690,12 @@ int main(int argc, char **argv)
 			SAFECOPY(str,argv[i]);
 	}
 	if(str[0]==0) {
-		p=getenv("SBBSCTRL");
-		if(!p) {
-			p=getenv("SBBSNODE");
-			if(!p) {
-				goto USAGE;
-			}
-			SAFECOPY(str,p);
-			backslash(str);
-			SAFECAT(str,"../ctrl/sbbsecho.ini");
-		}
-		else {
-			SAFECOPY(str,p);
-			backslash(str);
-			SAFECAT(str,"sbbsecho.ini");
-		}
+		SAFECOPY(cfg.cfgfile, get_ctrl_dir());
+		backslash(cfg.cfgfile);
+		SAFECAT(cfg.cfgfile, "sbbsecho.ini");
+	} else {
+		SAFECOPY(cfg.cfgfile,str);
 	}
-	SAFECOPY(cfg.cfgfile,str);
 
 	if(!sbbsecho_read_ini(&cfg)) {
 		fprintf(stderr, "ERROR %d (%s) reading %s\n", errno, strerror(errno), cfg.cfgfile);

@@ -193,9 +193,10 @@ SBBSECHO_OBJS = \
 ECHOCFG_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)echocfg$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)rechocfg$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(UIFC_OBJS) \
 			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE)
-			
+
 ADDFILES_OBJS = \
 			$(OBJODIR)$(DIRSEP)addfiles$(OFILE) \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
