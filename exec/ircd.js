@@ -1074,7 +1074,6 @@ function Queue_Recv(sock) {
 			this._recv_bytes = this._recv_bytes.substr(pos+1);
 			if (cmd[cmd.length-1] == '\r')
 				cmd = cmd.substr(0, cmd.length - 1);
-log(LOG_DEBUG, "Adding "+cmd);
 			this.add(cmd);
 		}
 	}

@@ -263,7 +263,6 @@ function User_Work(cmdline) {
 	   2 seconds from now. */
 	if ( (time() - this.idletime) <= 2) {
 		if (this.throttle_count >= 4) {
-log(LOG_DEBUG, "Prepending "+cmdline);
 			this.recvq.prepend(cmdline);
 			return 0;
 		}
