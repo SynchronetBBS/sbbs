@@ -66,6 +66,7 @@
 
 #include "bitmap_con.h"
 #include "ansi_cio.h"
+#include "syncicon64.h"
 
 CIOLIBEXPORT cioapi_t	cio_api;
 
@@ -455,6 +456,7 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 			cio_textinfo.normattr=LIGHTGRAY;
 			break;
 	}
+	ciolib_seticon(syncicon64, SYNCICON64_WIDTH);
 
 	_beginthread(ciolib_mouse_thread,0,NULL);
 	return(0);
