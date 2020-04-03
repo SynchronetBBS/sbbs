@@ -16,6 +16,8 @@ struct sdlfuncs sdl;
 #endif
 #include <xp_dl.h>
 
+#include "ciolib.h"
+
 static int sdl_funcs_loaded=0;
 static int sdl_initialized=0;
 static int sdl_audio_initialized=0;
@@ -227,6 +229,12 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	if((sdlf->SetWindowMinimumSize=xp_dlsym(sdl_dll, SDL_SetWindowMinimumSize))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
+	}
+	{
+		int (HACK_HACK_HACK *ra)(char *name, Uint32 style, void *hInst);
+		if ((ra = xp_dlsym(sdl_dll, SDL_RegisterApp)) != NULL) {
+			ra(ciolib_appname, 0, NULL);
+		}
 	}
 
 	sdlf->gotfuncs=1;

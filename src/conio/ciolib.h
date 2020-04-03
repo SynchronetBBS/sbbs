@@ -379,6 +379,7 @@ CIOLIBEXPORTVAR int ciolib_xlat;
 #define CIOLIB_XLAT_ALL		(CIOLIB_XLAT_CHARS | CIOLIB_XLAT_ATTR)
 
 CIOLIBEXPORTVAR int ciolib_reaper;
+CIOLIBEXPORTVAR char *ciolib_appname;
 
 #define _conio_kbhit()		kbhit()
 
