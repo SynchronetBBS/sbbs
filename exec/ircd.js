@@ -297,6 +297,7 @@ while (!js.terminated) {
 	for(thisCL in CLines) {
 		my_cline = CLines[thisCL];
 		if (my_cline.port && YLines[my_cline.ircclass].connfreq &&
+		    (YLines[my_cline.ircclass].maxlinks > YLines[my_cline.ircclass].active) &&
 		    (search_server_only(my_cline.servername) < 1) &&
 		     ((time() - my_cline.lastconnect) >
 		     YLines[my_cline.ircclass].connfreq)
@@ -669,6 +670,8 @@ function connect_to_server(this_cline,the_port) {
 		Unregistered[new_id]=new Unregistered_Client(new_id,connect_sock);
 		Unregistered[new_id].sendps = false; // Don't do P/S pair again
 		Unregistered[new_id].outgoing = true; /* Outgoing Connection */
+		Unregistered[new_id].ircclass = this_cline.ircclass;
+		YLines[this_cline.ircclass].active++;
 	}
 	else
 		connect_sock.close();
@@ -3087,6 +3090,7 @@ function YLine(pingfreq,connfreq,maxlinks,sendq) {
 	this.connfreq = connfreq;
 	this.maxlinks = maxlinks;
 	this.sendq = sendq;
+	this.active = 0;
 }
 
 function ZLine(ipmask,reason) {

@@ -1212,8 +1212,15 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 		gnotice("Closing Link: " + this.nick + " (" + str + ")");
 		this.rawout("ERROR :Closing Link: [" + this.uprefix + "@" + this.hostname + "] (" + str + ")");
 
-		if (this.socket!=undefined)
+		if (this.socket!=undefined) {
 			this.socket.close();
+			if (this.outgoing) {
+				if (YLines[this.ircclass].active > 0)
+					YLines[this.ircclass].active;
+				else
+					log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
+			}
+		}
 		delete Local_Sockets[this.id];
 	}
 	delete Local_Sockets[this.id];

@@ -307,6 +307,12 @@ function Unregistered_Quit(msg) {
 	if(server.clients != undefined)
 		log(LOG_DEBUG,format("%d clients", server.clients));
 	this.socket.close();
+	if (this.outgoing) {
+		if (YLines[this.ircclass].active > 0)
+			YLines[this.ircclass].active;
+		else
+			log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
+	}
 	delete Local_Sockets[this.id];
 	delete Local_Sockets_Map[this.id];
 	delete Unregistered[this.id];
