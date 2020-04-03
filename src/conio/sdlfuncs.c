@@ -230,6 +230,18 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->SetClipboardText=xp_dlsym(sdl_dll, SDL_SetClipboardText))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->GetClipboardText=xp_dlsym(sdl_dll, SDL_GetClipboardText))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->free=xp_dlsym(sdl_dll, SDL_free))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
 	{
 		int (HACK_HACK_HACK *ra)(char *name, Uint32 style, void *hInst);
 		if ((ra = xp_dlsym(sdl_dll, SDL_RegisterApp)) != NULL) {

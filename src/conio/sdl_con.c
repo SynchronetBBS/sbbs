@@ -1,9 +1,3 @@
-#if (defined(__MACH__) && defined(__APPLE__))
-#include <Carbon/Carbon.h>
-#define USE_PASTEBOARD
-#include "pasteboard.h"
-#endif
-
 #include <stdarg.h>
 #include <stdio.h>		/* NULL */
 #include <stdlib.h>
@@ -50,15 +44,6 @@ SDL_Texture	*texture=NULL;
 SDL_mutex	*win_mutex;
 SDL_Surface	*sdl_icon=NULL;
 
-/* *nix copy/paste stuff */
-int paste_needs_events;
-int copy_needs_events;
-SDL_sem	*sdl_pastebuf_set;
-SDL_sem	*sdl_pastebuf_copied;
-SDL_mutex	*sdl_copybuf_mutex;
-char *sdl_copybuf=NULL;
-char *sdl_pastebuf=NULL;
-
 SDL_sem *sdl_ufunc_ret;
 SDL_sem *sdl_ufunc_rec;
 SDL_mutex *sdl_ufunc_mtx;
@@ -73,10 +58,6 @@ int	sdl_init_good=0;
 SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
 static unsigned int sdl_pending_mousekeys=0;
-static int sdl_using_directx=0;
-static int sdl_using_quartz=0;
-static int sdl_using_x11=0;
-static int sdl_x11available=0;
 
 static struct video_stats cvstat;
 
@@ -101,8 +82,6 @@ enum {
 	,SDL_USEREVENT_SHOWMOUSE
 	,SDL_USEREVENT_HIDEMOUSE
 	,SDL_USEREVENT_INIT
-	,SDL_USEREVENT_COPY
-	,SDL_USEREVENT_PASTE
 	,SDL_USEREVENT_QUIT
 };
 
@@ -201,28 +180,300 @@ const struct sdl_keyvals sdl_keyval[] =
 	{0, 0, 0, 0, 0}	/** END **/
 };
 
-#if !defined(NO_X) && defined(__unix__)
-#include "SDL_syswm.h"
-
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-#include <X11/Xatom.h>
-
-#define CONSOLE_CLIPBOARD	XA_PRIMARY
-
-/* X functions */
-struct x11 {
-	int		(*XFree)		(void *data);
-	Window	(*XGetSelectionOwner)	(Display*, Atom);
-	int		(*XConvertSelection)	(Display*, Atom, Atom, Atom, Window, Time);
-	int		(*XGetWindowProperty)	(Display*, Window, Atom, long, long, Bool, Atom, Atom*, int*, unsigned long *, unsigned long *, unsigned char **);
-	int		(*XChangeProperty)		(Display*, Window, Atom, Atom, int, int, _Xconst unsigned char*, int);
-	Status	(*XSendEvent)	(Display*, Window, Bool, long, XEvent*);
-	int		(*XSetSelectionOwner)	(Display*, Atom, Window, Time);
+// Sorted by unicode codepoint...
+struct cp437map {
+	uint32_t	unicode;
+	uint8_t		cp437;
 };
-struct x11 sdl_x11;
-#endif
+
+static struct cp437map cp437_table[] = {
+	{0x00A0, 255}, {0x00A1, 173}, {0x00A2, 155}, {0x00A3, 156},
+	{0x00A5, 157}, {0x00AA, 166}, {0x00AB, 174}, {0x00AC, 170},
+	{0x00B0, 248}, {0x00B1, 241}, {0x00B2, 253}, {0x00B5, 230},
+	{0x00B7, 250}, {0x00BA, 167}, {0x00BB, 175}, {0x00BC, 172},
+	{0x00BD, 171}, {0x00BF, 168}, {0x00C4, 142}, {0x00C5, 143},
+	{0x00C6, 146}, {0x00C7, 128}, {0x00C9, 144}, {0x00D1, 165},
+	{0x00D6, 153}, {0x00DC, 154}, {0x00DF, 225}, {0x00E0, 133},
+	{0x00E1, 160}, {0x00E2, 131}, {0x00E4, 132}, {0x00E5, 134},
+	{0x00E6, 145}, {0x00E7, 135}, {0x00E8, 138}, {0x00E9, 130},
+	{0x00EA, 136}, {0x00EB, 137}, {0x00EC, 141}, {0x00ED, 161},
+	{0x00EE, 140}, {0x00EF, 139}, {0x00F1, 164}, {0x00F2, 149},
+	{0x00F3, 162}, {0x00F4, 147}, {0x00F6, 148}, {0x00F7, 246},
+	{0x00F9, 151}, {0x00FA, 163}, {0x00FB, 150}, {0x00FC, 129},
+	{0x00FF, 152}, {0x0192, 159}, {0x0393, 226}, {0x0398, 233},
+	{0x03A3, 228}, {0x03A6, 232}, {0x03A9, 234}, {0x03B1, 224},
+	{0x03B4, 235}, {0x03B5, 238}, {0x03C0, 227}, {0x03C3, 229},
+	{0x03C4, 231}, {0x03C6, 237}, {0x207F, 252}, {0x20A7, 158},
+	{0x2219, 249}, {0x221A, 251}, {0x221E, 236}, {0x2229, 239},
+	{0x2248, 247}, {0x2261, 240}, {0x2264, 243}, {0x2265, 242},
+	{0x2310, 169}, {0x2320, 244}, {0x2321, 245}, {0x2500, 196},
+	{0x2502, 179}, {0x250C, 218}, {0x2510, 191}, {0x2514, 192},
+	{0x2518, 217}, {0x251C, 195}, {0x2524, 180}, {0x252C, 194},
+	{0x2534, 193}, {0x253C, 197}, {0x2550, 205}, {0x2551, 186},
+	{0x2552, 213}, {0x2553, 214}, {0x2554, 201}, {0x2555, 184},
+	{0x2556, 183}, {0x2557, 187}, {0x2558, 212}, {0x2559, 211},
+	{0x255A, 200}, {0x255B, 190}, {0x255C, 189}, {0x255D, 188},
+	{0x255E, 198}, {0x255F, 199}, {0x2560, 204}, {0x2561, 181},
+	{0x2562, 182}, {0x2563, 185}, {0x2564, 209}, {0x2565, 210},
+	{0x2566, 203}, {0x2567, 207}, {0x2568, 208}, {0x2569, 202},
+	{0x256A, 216}, {0x256B, 215}, {0x256C, 206}, {0x2580, 223},
+	{0x2584, 220}, {0x2588, 219}, {0x258C, 221}, {0x2590, 222},
+	{0x2591, 176}, {0x2592, 177}, {0x2593, 178}, {0x25A0, 254}
+};
+
+static uint32_t unicode_table[] = {
+	0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7, 
+	0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5, 
+	0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9, 
+	0x00FF, 0x00D6, 0x00DC, 0x00A2, 0x00A3, 0x00A5, 0x20A7, 0x0192, 
+	0x00E1, 0x00ED, 0x00F3, 0x00FA, 0x00F1, 0x00D1, 0x00AA, 0x00BA, 
+	0x00BF, 0x2310, 0x00AC, 0x00BD, 0x00BC, 0x00A1, 0x00AB, 0x00BB, 
+	0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x2561, 0x2562, 0x2556, 
+	0x2555, 0x2563, 0x2551, 0x2557, 0x255D, 0x255C, 0x255B, 0x2510, 
+	0x2514, 0x2534, 0x252C, 0x251C, 0x2500, 0x253C, 0x255E, 0x255F, 
+	0x255A, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256C, 0x2567, 
+	0x2568, 0x2564, 0x2565, 0x2559, 0x2558, 0x2552, 0x2553, 0x256B, 
+	0x256A, 0x2518, 0x250C, 0x2588, 0x2584, 0x258C, 0x2590, 0x2580, 
+	0x03B1, 0x00DF, 0x0393, 0x03C0, 0x03A3, 0x03C3, 0x00B5, 0x03C4, 
+	0x03A6, 0x0398, 0x03A9, 0x03B4, 0x221E, 0x03C6, 0x03B5, 0x2229, 
+	0x2261, 0x00B1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00F7, 0x2248, 
+	0x00B0, 0x2219, 0x00B7, 0x221A, 0x207F, 0x00B2, 0x25A0, 0x00A0
+};
+
+static int cmptab(const void *key, const void *entry)
+{
+	const uint32_t *pkey = key;
+	const struct cp437map *pentry = entry;
+
+	if (*pkey == pentry->unicode)
+		return 0;
+	if (*pkey < pentry->unicode)
+		return -1;
+	return 1;
+}
+
+static int write_cp(uint8_t *str, uint32_t cp)
+{
+	if (cp < 128) {
+		*str = cp;
+		return 1;
+	}
+	if (cp < 0x800) {
+		*(str++) = 0xc0 | (cp >> 6);
+		*(str++) = 0x80 | (cp & 0x3f);
+		return 2;
+	}
+	if (cp < 0x10000) {
+		*(str++) = 0xe0 | (cp >> 12);
+		*(str++) = 0x80 | ((cp >> 6) & 0x3f);
+		*(str++) = 0x80 | (cp & 0x3f);
+		return 3;
+	}
+	if (cp < 0x110000) {
+		*(str++) = 0xf0 | (cp >> 18);
+		*(str++) = 0x80 | ((cp >> 12) & 0x3f);
+		*(str++) = 0x80 | ((cp >> 6) & 0x3f);
+		*(str++) = 0x80 | (cp & 0x3f);
+		return 4;
+	}
+	return -1;
+}
+
+static int read_cp(const uint8_t *str, uint32_t *cp)
+{
+	int incode;
+	const uint8_t *p = str;
+
+	if (cp == NULL)
+		goto error;
+
+	if (str == NULL)
+		goto error;
+
+	if (*p & 0x80) {
+		if ((*p & 0xe0) == 0xc0) {
+			incode = 1;
+			*cp = *p & 0x1f;
+		}
+		else if ((*p & 0xf0) == 0xe0) {
+			incode = 2;
+			*cp = *p & 0x0f;
+		}
+		else if ((*p & 0xf8) == 0xf0) {
+			incode = 3;
+			*cp = *p & 0x07;
+		}
+		else
+			goto error;
+
+		while (incode) {
+			p++;
+			incode--;
+			if ((*p & 0x0c) != 0x0c)
+				goto error;
+			*cp <<= 6;
+			*cp |= (*p & 0x3f);
+		}
+	}
+	else {
+		*cp = *p;
+	}
+	return p - str + 1;
+
+error:
+	if (cp)
+		*cp = 0xffff;
+	return -1;
+}
+
+static int utf8_bytes(uint32_t cp)
+{
+	if (cp < 0x80)
+		return 1;
+	if (cp < 0x800)
+		return 2;
+	if (cp < 0x10000)
+		return 3;
+	if (cp < 0x11000)
+		return 4;
+	return -1;
+}
+
+uint8_t *cp437_to_utf8(const char *cp437str, size_t buflen, size_t *outlen)
+{
+	size_t needed = 0;
+	int cplen;
+	uint8_t *ret = NULL;
+	uint8_t *rp;
+	size_t idx;
+	uint8_t ch;
+
+	// Calculate the number of bytes needed
+	for (idx = 0; idx < buflen; idx++) {
+		ch = cp437str[idx];
+		if (ch == 0)
+			cplen += 4;
+		else if (ch < 128)
+			cplen++;
+		else
+			cplen = utf8_bytes(ch - 128);
+		if (cplen == -1)
+			goto error;
+		needed += cplen;
+	}
+
+	ret = malloc(needed + 1);
+	if (ret == NULL)
+		goto error;
+
+	rp = ret;
+	for (idx = 0; idx < buflen; idx++) {
+		ch = cp437str[idx];
+		if (ch == 0) {
+			*(rp++) = 0xef;
+			*(rp++) = 0xbf;
+			*(rp++) = 0xbe;
+			cplen = 0;
+		}
+		else if (ch < 128) {
+			*rp = ch;
+			cplen = 1;
+		}
+		else {
+			cplen = write_cp(rp, unicode_table[ch - 128]);
+			if (cplen < 1)
+				goto error;
+		}
+		rp += cplen;
+	}
+	*rp = 0;
+	return ret;
+
+error:
+	free(ret);
+	return NULL;
+}
+
+/*
+ * Converts UTF-8 to CP437, replacing unmapped characters with unmapped
+ * if unmapped is zero, unmapped characters are stripped.
+ * 
+ * Returns NULL if there are invalid sequences or codepoints.
+ * Does not normalize the unicode, just a simple mapping
+ * (TODO: Normalize into combined chars etc)
+ */
+char *utf8_to_cp437(const uint8_t *utf8str, char unmapped)
+{
+	const uint8_t *p;
+	char *rp;
+	size_t outlen = 0;
+	int incode = 0;
+	uint32_t codepoint;
+	char *ret = NULL;
+	struct cp437map *mapped;
+
+	// TODO: Normalize UTF-8...
+
+	// Calculate the number of code points and validate.
+	for (p = utf8str; *p; p++) {
+		if (incode) {
+			switch (*p & 0xc0) {
+				case 0xc0:
+					incode--;
+					if (incode == 0)
+						outlen++;
+					break;
+				default:
+					goto error;
+			}
+		}
+		else {
+			if (*p & 0x80) {
+				if ((*p & 0xe0) == 0xc0)
+					incode = 1;
+				else if ((*p & 0xf0) == 0xe0)
+					incode = 2;
+				else if ((*p & 0xf8) == 0xf0)
+					incode = 3;
+				else
+					goto error;
+			}
+			else
+				outlen++;
+		}
+	}
+	ret = malloc(outlen + 1);
+	if (ret == NULL)
+		goto error;
+	rp = ret;
+
+	// Fill the string...
+	while (*utf8str) {
+		utf8str += read_cp(utf8str, &codepoint);
+		if (codepoint == 0xffff || codepoint == 0xfffe)
+			goto error;
+		if (codepoint < 128)
+			*(rp++) = codepoint;
+		// Multiple representations...
+		else if (codepoint == 0xa6) 
+			*(rp++) = '|';
+		else {
+			mapped = bsearch(&codepoint, cp437_table, 
+			    sizeof(cp437_table) / sizeof(cp437_table[0]),
+			    sizeof(cp437_table[0]), cmptab);
+			if (mapped == NULL)
+				*(rp++) = unmapped;
+			else
+				*(rp++) = mapped->cp437;
+		}
+	}
+	*rp = 0;
+
+	return ret;
+error:
+	free(ret);
+	return NULL;
+}
 
 static void sdl_video_event_thread(void *data);
 
@@ -237,9 +488,6 @@ static void sdl_user_func(int func, ...)
 	ev.user.data2=NULL;
 	ev.user.code=func;
 	sdl.mutexP(sdl_ufunc_mtx);
-	/* Drain the swamp */
-	if(sdl_x11available && sdl_using_x11)
-		while(sdl.SemWaitTimeout(sdl_ufunc_rec, 0)==0);
 	while (1) {
 		va_start(argptr, func);
 		switch(func) {
@@ -260,8 +508,6 @@ static void sdl_user_func(int func, ...)
 					return;
 				}
 				break;
-			case SDL_USEREVENT_COPY:
-			case SDL_USEREVENT_PASTE:
 			case SDL_USEREVENT_SHOWMOUSE:
 			case SDL_USEREVENT_HIDEMOUSE:
 			case SDL_USEREVENT_FLUSH:
@@ -273,11 +519,6 @@ static void sdl_user_func(int func, ...)
 		va_end(argptr);
 		while((rv = sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT))!=1)
 			YIELD();
-		if (func != SDL_USEREVENT_FLUSH) {
-			if(sdl_x11available && sdl_using_x11)
-				if ((rv = sdl.SemWaitTimeout(sdl_ufunc_rec, 2000)) != 0)
-					continue;
-		}
 		break;
 	}
 	sdl.mutexV(sdl_ufunc_mtx);
@@ -297,8 +538,6 @@ static int sdl_user_func_ret(int func, ...)
 	va_start(argptr, func);
 	sdl.mutexP(sdl_ufunc_mtx);
 	/* Drain the swamp */
-	if(sdl_x11available && sdl_using_x11)
-		while(sdl.SemWaitTimeout(sdl_ufunc_rec, 0)==0);
 	while(1) {
 		switch(func) {
 			case SDL_USEREVENT_SETVIDMODE:
@@ -330,100 +569,19 @@ void exit_sdl_con(void)
 
 void sdl_copytext(const char *text, size_t buflen)
 {
-#if (defined(__MACH__) && defined(__APPLE__))
-	if(!sdl_using_x11) {
-#if defined(USE_PASTEBOARD)
-		if (text && buflen)
-			OSX_copytext(text, buflen);
-		return;
-#endif
-#if defined(USE_SCRAP_MANAGER)
-		ScrapRef	scrap;
-		if(text && buflen) {
-			if(!ClearCurrentScrap()) {		/* purge the current contents of the scrap. */
-				if(!GetCurrentScrap(&scrap)) {		/* obtain a reference to the current scrap. */
-					PutScrapFlavor(scrap, kScrapFlavorTypeText, /* kScrapFlavorMaskTranslated */ kScrapFlavorMaskNone, buflen, text); 		/* write the data to the scrap */
-				}
-			}
-		}
-		return;
-#endif
-	}
-#endif
-
-#if !defined(NO_X) && defined(__unix__)
-	if(sdl_x11available && sdl_using_x11) {
-		sdl.mutexP(sdl_copybuf_mutex);
-		FREE_AND_NULL(sdl_copybuf);
-
-		sdl_copybuf=(char *)malloc(buflen+1);
-		if(sdl_copybuf!=NULL) {
-			strcpy(sdl_copybuf, text);
-			sdl_user_func(SDL_USEREVENT_COPY,0,0,0,0);
-		}
-		sdl.mutexV(sdl_copybuf_mutex);
-		return;
-	}
-#endif
-
-	sdl.mutexP(sdl_copybuf_mutex);
-	FREE_AND_NULL(sdl_copybuf);
-
-	sdl_copybuf=strdup(text);
-	sdl.mutexV(sdl_copybuf_mutex);
-	return;
+	size_t outlen;
+	uint8_t *u8 = cp437_to_utf8(text, buflen, &outlen);
+	sdl.SetClipboardText((char *)u8);
+	free(u8);
 }
 
 char *sdl_getcliptext(void)
 {
-	char *ret=NULL;
-
-#if (defined(__MACH__) && defined(__APPLE__))
-	if(!sdl_using_x11) {
-#if defined(USE_PASTEBOARD)
-		return OSX_getcliptext();
-#endif
-#if defined(USE_SCRAP_MANAGER)
-		ScrapRef	scrap;
-		UInt32	fl;
-		Size		scraplen;
-
-		if(!GetCurrentScrap(&scrap)) {		/* obtain a reference to the current scrap. */
-			if(!GetScrapFlavorFlags(scrap, kScrapFlavorTypeText, &fl) /* && (fl & kScrapFlavorMaskTranslated) */) {
-				if(!GetScrapFlavorSize(scrap, kScrapFlavorTypeText, &scraplen)) {
-					ret=(char *)malloc(scraplen+1);
-					if(ret!=NULL) {
-						if(GetScrapFlavorData(scrap, kScrapFlavorTypeText, &scraplen, sdl_pastebuf))
-							ret[scraplen]=0;
-					}
-				}
-			}
-		}
-		return ret;
-#endif
-	}
-#endif
-
-#if !defined(NO_X) && defined(__unix__)
-	if(sdl_x11available && sdl_using_x11) {
-		sdl_user_func(SDL_USEREVENT_PASTE,0,0,0,0);
-		sdl.SemWait(sdl_pastebuf_set);
-		if(sdl_pastebuf!=NULL) {
-			ret=(char *)malloc(strlen(sdl_pastebuf)+1);
-			if(ret!=NULL)
-				strcpy(ret,sdl_pastebuf);
-		}
-		else
-			ret=NULL;
-		sdl.SemPost(sdl_pastebuf_copied);
-		return(ret);
-	}
-#endif
-	sdl.mutexP(sdl_copybuf_mutex);
-	if(sdl_copybuf)
-		ret=strdup(sdl_copybuf);
-	sdl.mutexV(sdl_copybuf_mutex);
-	return(ret);
+	uint8_t *u8 = (uint8_t *)sdl.GetClipboardText();
+	char *ret;
+	ret = utf8_to_cp437(u8, '?');
+	sdl.free(u8);
+	return ret;
 }
 
 void sdl_drawrect(struct rectlist *data)
@@ -503,11 +661,6 @@ static int sdl_init_mode(int mode)
 /* Called from main thread only (Passes Event) */
 int sdl_init(int mode)
 {
-#if !defined(NO_X) && defined(__unix__)
-	dll_handle	dl;
-	const char *libnames[2]={"X11", NULL};
-#endif
-
 	bitmap_drv_init(sdl_drawrect, sdl_flush);
 
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
@@ -521,42 +674,6 @@ int sdl_init(int mode)
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 #ifdef _WIN32
 		FreeConsole();
-#endif
-#if !defined(NO_X) && defined(__unix__)
-		dl=xp_dlopen(libnames,RTLD_LAZY|RTLD_GLOBAL,7);
-		if(dl!=NULL) {
-			sdl_x11available=TRUE;
-			if(sdl_x11available && (sdl_x11.XFree=xp_dlsym(dl,XFree))==NULL) {
-				xp_dlclose(dl);
-				sdl_x11available=FALSE;
-			}
-			if(sdl_x11available && (sdl_x11.XGetSelectionOwner=xp_dlsym(dl,XGetSelectionOwner))==NULL) {
-				xp_dlclose(dl);
-				sdl_x11available=FALSE;
-			}
-			if(sdl_x11available && (sdl_x11.XConvertSelection=xp_dlsym(dl,XConvertSelection))==NULL) {
-				xp_dlclose(dl);
-				sdl_x11available=FALSE;
-			}
-			if(sdl_x11available && (sdl_x11.XGetWindowProperty=xp_dlsym(dl,XGetWindowProperty))==NULL) {
-				xp_dlclose(dl);
-				sdl_x11available=FALSE;
-			}
-			if(sdl_x11available && (sdl_x11.XChangeProperty=xp_dlsym(dl,XChangeProperty))==NULL) {
-				xp_dlclose(dl);
-				sdl_x11available=FALSE;
-			}
-			if(sdl_x11available && (sdl_x11.XSendEvent=xp_dlsym(dl,XSendEvent))==NULL) {
-				xp_dlclose(dl);
-				sdl_x11available=FALSE;
-			}
-			if(sdl_x11available && (sdl_x11.XSetSelectionOwner=xp_dlsym(dl,XSetSelectionOwner))==NULL) {
-				xp_dlclose(dl);
-				sdl_x11available=FALSE;
-			}
-		}
-#else
-		sdl_x11available=FALSE;
 #endif
 		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
 		return(0);
@@ -1132,6 +1249,7 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 						(!(mod & (KMOD_CTRL|KMOD_SHIFT|KMOD_ALT|KMOD_GUI) ))) {
 #if defined(_WIN32)
 					/*
+					 * SDL2: Is this comment still true?
 					 * Apparently, Win32 SDL doesn't interpret keypad with numlock...
 					 * and doesn't know the state of numlock either...
 					 * So, do that here. *sigh*
@@ -1276,30 +1394,6 @@ static void sdl_video_event_thread(void *data)
 	old_w = cvstat.winwidth;
 	old_h = cvstat.winheight;
 	pthread_mutex_unlock(&vstatlock);
-
-	char	*driver;
-	if((driver = sdl.GetCurrentVideoDriver())!=NULL) {
-#if defined(_WIN32)
-		if(!strcmp(driver,"directx"))
-			sdl_using_directx=TRUE;
-#else
-		sdl_using_directx=FALSE;
-#endif
-#if (defined(__MACH__) && defined(__APPLE__))
-		if(!strcmp(driver,"Quartz"))
-			sdl_using_quartz=TRUE;
-#else
-		sdl_using_quartz=FALSE;
-#endif
-#if !defined(NO_X) && defined(__unix__)
-		if(!strcmp(driver,"x11"))
-			sdl_using_x11=TRUE;
-		if(!strcmp(driver,"dga"))
-			sdl_using_x11=TRUE;
-#else
-		sdl_using_x11=FALSE;
-#endif
-	}
 
 	while(1) {
 		if(sdl.WaitEventTimeout(&ev, 1)!=1) {
@@ -1447,10 +1541,6 @@ static void sdl_video_event_thread(void *data)
 				case SDL_USEREVENT: {
 					struct rectlist *list;
 					struct rectlist *old_next;
-					/* Tell SDL to do various stuff... */
-					if (ev.user.code != SDL_USEREVENT_FLUSH)
-						if(sdl_x11available && sdl_using_x11)
-							sdl.SemPost(sdl_ufunc_rec);
 					switch(ev.user.code) {
 						case SDL_USEREVENT_QUIT:
 							sdl_ufunc_retval=0;
@@ -1559,159 +1649,10 @@ static void sdl_video_event_thread(void *data)
 							sdl_ufunc_retval=0;
 							sdl.SemPost(sdl_ufunc_ret);
 							break;
-						case SDL_USEREVENT_COPY:
-#if !defined(NO_X) && defined(__unix__) && defined(SDL_VIDEO_DRIVER_X11)
-							if(sdl_x11available && sdl_using_x11) {
-								SDL_SysWMinfo	wmi;
-
-								SDL_VERSION(&(wmi.version));
-								sdl.mutexP(win_mutex);
-								sdl.GetWindowWMInfo(win, &wmi);
-								sdl.mutexV(win_mutex);
-								sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-								copy_needs_events = 1;
-								sdl_x11.XSetSelectionOwner(wmi.info.x11.display, CONSOLE_CLIPBOARD, wmi.info.x11.window, CurrentTime);
-							}
-#endif
-							break;
-						case SDL_USEREVENT_PASTE:
-#if !defined(NO_X) && defined(__unix__) && defined(SDL_VIDEO_DRIVER_X11)
-							if(sdl_x11available && sdl_using_x11) {
-								Window sowner=None;
-								SDL_SysWMinfo	wmi;
-
-								SDL_VERSION(&(wmi.version));
-								sdl.mutexP(win_mutex);
-								sdl.GetWindowWMInfo(win, &wmi);
-								sdl.mutexV(win_mutex);
-
-								paste_needs_events = 1;
-								sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-								sowner=sdl_x11.XGetSelectionOwner(wmi.info.x11.display, CONSOLE_CLIPBOARD);
-								if(sowner==wmi.info.x11.window) {
-									/* Get your own primary selection */
-									if(sdl_copybuf==NULL) {
-										FREE_AND_NULL(sdl_pastebuf);
-									}
-									else
-										sdl_pastebuf=(char *)malloc(strlen(sdl_copybuf)+1);
-									if(sdl_pastebuf!=NULL)
-										strcpy(sdl_pastebuf,sdl_copybuf);
-									/* Set paste buffer */
-									sdl.SemPost(sdl_pastebuf_set);
-									sdl.SemWait(sdl_pastebuf_copied);
-									FREE_AND_NULL(sdl_pastebuf);
-									paste_needs_events = 0;
-									if (!copy_needs_events)
-										sdl.EventState(SDL_SYSWMEVENT, SDL_DISABLE);
-								}
-								else if(sowner!=None) {
-									sdl_x11.XConvertSelection(wmi.info.x11.display, CONSOLE_CLIPBOARD, XA_STRING, XA_STRING, wmi.info.x11.window, CurrentTime);
-								}
-								else {
-									/* Set paste buffer */
-									FREE_AND_NULL(sdl_pastebuf);
-									sdl.SemPost(sdl_pastebuf_set);
-									sdl.SemWait(sdl_pastebuf_copied);
-									paste_needs_events = 0;
-									if (!copy_needs_events)
-										sdl.EventState(SDL_SYSWMEVENT, SDL_DISABLE);
-								}
-							}
-#endif
-							break;
 					}
 					break;
 				}
 				case SDL_SYSWMEVENT:			/* ToDo... This is where Copy/Paste needs doing */
-				// SDL2: There's a better way...
-#if !defined(NO_X) && defined(__unix__) && defined(SDL_VIDEO_DRIVER_X11)
-					if(sdl_x11available && sdl_using_x11) {
-						XEvent *e;
-						e=&ev.syswm.msg->msg.x11.event;
-						switch(e->type) {
-							case SelectionClear: {
-									XSelectionClearEvent *req;
-
-									req=&(e->xselectionclear);
-									sdl.mutexP(sdl_copybuf_mutex);
-									if(req->selection==CONSOLE_CLIPBOARD) {
-										FREE_AND_NULL(sdl_copybuf);
-									}
-									sdl.mutexV(sdl_copybuf_mutex);
-									copy_needs_events = 0;
-									if (!paste_needs_events)
-										sdl.EventState(SDL_SYSWMEVENT, SDL_DISABLE);
-									break;
-							}
-							case SelectionNotify: {
-									int format=0;
-									unsigned long len, bytes_left, dummy;
-									Atom type;
-									XSelectionEvent *req;
-									SDL_SysWMinfo	wmi;
-
-									SDL_VERSION(&(wmi.version));
-									sdl.mutexP(win_mutex);
-									sdl.GetWindowWMInfo(win, &wmi);
-									sdl.mutexV(win_mutex);
-									req=&(e->xselection);
-									if(req->requestor!=wmi.info.x11.window)
-										break;
-									if(req->property) {
-										sdl_x11.XGetWindowProperty(wmi.info.x11.display, wmi.info.x11.window, req->property, 0, 0, 0, AnyPropertyType, &type, &format, &len, &bytes_left, (unsigned char **)(&sdl_pastebuf));
-										if(bytes_left > 0 && format==8)
-											sdl_x11.XGetWindowProperty(wmi.info.x11.display, wmi.info.x11.window, req->property,0,bytes_left,0,AnyPropertyType,&type,&format,&len,&dummy,(unsigned char **)&sdl_pastebuf);
-										else {
-											FREE_AND_NULL(sdl_pastebuf);
-										}
-									}
-									else {
-										FREE_AND_NULL(sdl_pastebuf);
-									}
-
-									/* Set paste buffer */
-									sdl.SemPost(sdl_pastebuf_set);
-									sdl.SemWait(sdl_pastebuf_copied);
-									paste_needs_events = 0;
-									if (!copy_needs_events)
-										sdl.EventState(SDL_SYSWMEVENT, SDL_DISABLE);
-									if(sdl_pastebuf!=NULL) {
-										sdl_x11.XFree(sdl_pastebuf);
-										sdl_pastebuf=NULL;
-									}
-									break;
-							}
-							case SelectionRequest: {
-									XSelectionRequestEvent *req;
-									XEvent respond;
-
-									req=&(e->xselectionrequest);
-									sdl.mutexP(sdl_copybuf_mutex);
-									if(sdl_copybuf==NULL) {
-										respond.xselection.property=None;
-									}
-									else {
-										if(req->target==XA_STRING) {
-											sdl_x11.XChangeProperty(req->display, req->requestor, req->property, XA_STRING, 8, PropModeReplace, (unsigned char *)sdl_copybuf, strlen(sdl_copybuf));
-											respond.xselection.property=req->property;
-										}
-										else
-											respond.xselection.property=None;
-									}
-									sdl.mutexV(sdl_copybuf_mutex);
-									respond.xselection.type=SelectionNotify;
-									respond.xselection.display=req->display;
-									respond.xselection.requestor=req->requestor;
-									respond.xselection.selection=req->selection;
-									respond.xselection.target=req->target;
-									respond.xselection.time=req->time;
-									sdl_x11.XSendEvent(req->display,req->requestor,0,0,&respond);
-									break;
-							}
-						}	/* switch */
-					}	/* usingx11 */
-#endif
 
 				/* Ignore this stuff */
 				case SDL_JOYAXISMOTION:
@@ -1740,10 +1681,5 @@ int sdl_initciolib(int mode)
 	sdl_headlock=sdl.SDL_CreateMutex();
 	win_mutex=sdl.SDL_CreateMutex();
 	sdl_keylock=sdl.SDL_CreateMutex();
-#if !defined(NO_X) && defined(__unix__)
-	sdl_pastebuf_set=sdl.SDL_CreateSemaphore(0);
-	sdl_pastebuf_copied=sdl.SDL_CreateSemaphore(0);
-	sdl_copybuf_mutex=sdl.SDL_CreateMutex();
-#endif
 	return(sdl_init(mode));
 }
