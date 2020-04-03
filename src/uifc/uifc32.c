@@ -48,6 +48,7 @@
 #endif
 #include <genwrap.h>	// for alloca()
 #include <datewrap.h>	// localtime_r()
+#include "xpprintf.h"
 
 #include "ciolib.h"
 #include "uifc.h"
@@ -80,7 +81,10 @@ static int  ulist(int mode, int left, int top, int width, int *dflt, int *bar
 	,char *title, char **option);
 static int  uinput(int imode, int left, int top, char *prompt, char *str
 	,int len ,int kmode);
-static void umsg(char *str);
+static int  umsg(char *str);
+static int  umsgf(char *fmt, ...);
+static BOOL confirm(char *fmt, ...);
+static BOOL deny(char *fmt, ...);
 static void upop(char *str);
 static void sethelp(int line, char* file);
 static void showbuf(int mode, int left, int top, int width, int height, char *title
@@ -210,12 +214,18 @@ int UIFCCALL uifcini32(uifcapi_t* uifcapi)
 
     api=uifcapi;
     if (api->chars == NULL)
-	api->chars = &cp437_chars;
+		api->chars = &cp437_chars;
+
+	if (api->yesNoOpts == NULL)
+		api->yesNoOpts = uifcYesNoOpts;
 
     /* install function handlers */
     api->bail=uifcbail;
     api->scrn=uscrn;
     api->msg=umsg;
+	api->msgf=umsgf;
+	api->confirm=confirm;
+	api->deny=deny;
     api->pop=upop;
     api->list=ulist;
     api->input=uinput;
@@ -1875,16 +1885,69 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 /****************************************************************************/
 /* Displays the message 'str' and waits for the user to select "OK"         */
 /****************************************************************************/
-void umsg(char *str)
+int  umsg(char *str)
 {
 	int i=0;
 	char *ok[2]={"OK",""};
 
 	if(api->mode&UIFC_INMSG)	/* non-cursive */
-		return;
+		return -1;
 	api->mode|=UIFC_INMSG;
-	ulist(WIN_SAV|WIN_MID,0,0,0,&i,0,str,ok);
+	i = ulist(WIN_SAV|WIN_MID,0,0,0,&i,0,str,ok);
 	api->mode&=~UIFC_INMSG;
+	return i;
+}
+
+/* Same as above, using printf-style varargs */
+int umsgf(char* fmt, ...)
+{
+	int retval = -1;
+	va_list va;
+	char* buf = NULL;
+
+	va_start(va, fmt);
+    vasprintf(&buf, fmt, va);
+    va_end(va);
+	if(buf != NULL) {
+		retval = umsg(buf);
+		free(buf);
+	}
+	return retval;
+}
+
+static int yesno(int dflt, char* fmt, va_list va)
+{
+	int retval;
+	char* buf = NULL;
+
+    vasprintf(&buf, fmt, va);
+	if(buf == NULL)
+		return dflt;
+	retval = ulist(WIN_SAV|WIN_MID,0,0,0,&dflt,0,buf,api->yesNoOpts);
+	free(buf);
+	return retval;
+}
+
+static BOOL confirm(char* fmt, ...)
+{
+	int retval;
+
+	va_list va;
+	va_start(va, fmt);
+	retval = yesno(0, fmt, va);
+	va_end(va);
+	return retval == 0;
+}
+
+static BOOL deny(char* fmt, ...)
+{
+	int retval;
+
+	va_list va;
+	va_start(va, fmt);
+	retval = yesno(1, fmt, va);
+	va_end(va);
+	return retval != 0;
 }
 
 /***************************************/

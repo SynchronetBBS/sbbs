@@ -35,6 +35,7 @@
 
 #include "genwrap.h"
 #include "gen_defs.h"
+#include "xpprintf.h"
 #include "uifc.h"
 
 #include <sys/types.h>
@@ -58,7 +59,10 @@ static int ulist(int mode, int left, int top, int width, int *dflt, int *bar
 	,char *title, char **option);
 static int uinput(int imode, int left, int top, char *prompt, char *str
 	,int len ,int kmode);
-static void umsg(char *str);
+static int umsg(char *str);
+static int umsgf(char *str, ...);
+static BOOL confirm(char *str, ...);
+static BOOL deny(char *str, ...);
 static void upop(char *str);
 static void sethelp(int line, char* file);
 
@@ -84,16 +88,23 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 /****************************************************************************/
 int UIFCCALL uifcinix(uifcapi_t* uifcapi)
 {
+	static char* yesNoOpts[] = {"Yes", "No", NULL};
 
     if(uifcapi==NULL || uifcapi->size!=sizeof(uifcapi_t))
         return(-1);
 
     api=uifcapi;
 
+	if (api->yesNoOpts == NULL)
+		api->yesNoOpts = yesNoOpts; // Not currently used in this interface instance
+
     /* install function handlers */
     api->bail=uifcbail;
     api->scrn=uscrn;
     api->msg=umsg;
+	api->msgf=umsgf;
+	api->confirm=confirm;
+	api->deny=deny;
     api->pop=upop;
     api->list=ulist;
     api->input=uinput;
@@ -159,7 +170,6 @@ static int getstr(char* str, int maxlen)
 
 	return(len);
 }
-
 
 /****************************************************************************/
 /* Local utility function.													*/
@@ -349,11 +359,57 @@ int uinput(int mode, int left, int top, char *prompt, char *outstr,
 }
 
 /****************************************************************************/
-/* Displays the message 'str' and waits for the user to select "OK"         */
+/* Displays the message 'str' and waits for the user to hit ENTER           */
 /****************************************************************************/
-void umsg(char *str)
+int umsg(char *str)
 {
-    printf("%s\n",str);
+	int ch;
+	printf("%s\nHit enter to continue:",str);
+	ch = getchar();
+	return ch == '\r' || ch == '\n';
+}
+
+/* Same as above, using printf-style varargs */
+int umsgf(char* fmt, ...)
+{
+	int retval = -1;
+	va_list va;
+	char* buf = NULL;
+
+	va_start(va, fmt);
+	vasprintf(&buf, fmt, va);
+	va_end(va);
+	if(buf != NULL) {
+		retval = umsg(buf);
+		free(buf);
+	}
+	return retval;
+}
+
+BOOL confirm(char* fmt, ...)
+{
+	int ch;
+	va_list va;
+
+	va_start(va, fmt);
+	vprintf(fmt, va);
+	va_end(va);
+	printf(" (Y/n)? ");
+	ch = getchar();
+	return tolower(ch) != 'n' && ch != EOF;
+}
+
+BOOL deny(char* fmt, ...)
+{
+	int ch;
+	va_list va;
+
+	va_start(va, fmt);
+	vprintf(fmt, va);
+	va_end(va);
+	printf(" (N/y)? ");
+	ch = getchar();
+	return tolower(ch) != 'y';
 }
 
 /****************************************************************************/

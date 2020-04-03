@@ -416,6 +416,11 @@ typedef struct {
 	uifc_graphics_t	*chars;
 
 /****************************************************************************/
+/* Allow application override												*/
+/****************************************************************************/
+	char** yesNoOpts;
+
+/****************************************************************************/
 /* Exit/uninitialize function.												*/
 /****************************************************************************/
     void    (*bail) (void);
@@ -428,7 +433,10 @@ typedef struct {
 /****************************************************************************/
 /* Popup a message, maybe wait for the user to hit a key or click button.	*/
 /****************************************************************************/
-    void    (*msg)  (char* str);
+	int		(*msg)  (char* str);
+	int		(*msgf) (char* fmt, ...);
+	BOOL	(*deny) (char* fmt, ...);
+	BOOL	(*confirm) (char* fmt, ...);
 /****************************************************************************/
 /* Popup/down a status message.												*/
 /* str is the message to display on popup.									*/
