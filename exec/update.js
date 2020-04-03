@@ -68,26 +68,26 @@ var sbbsecho_ini = system.ctrl_dir + "sbbsecho.ini";
 if(file_exists(sbbsecho_cfg) && !file_exists(sbbsecho_ini)) {
 	printf("Converting %s to %s: ", sbbsecho_cfg, sbbsecho_ini);
 	if(!test)
-		load({}, "sbbsecho_upgrade.js");
+		js.exec("sbbsecho_upgrade.js", {});
 }
 
 var binkit_ini = system.ctrl_dir + "binkit.ini";
 if(file_exists(binkit_ini) && file_exists(sbbsecho_ini)) {
 	printf("Merging %s with %s: ", binkit_ini, sbbsecho_ini);
 	if(!test)
-		load({}, "binkit.js", "upgrade");
+		js.exec("binkit.js", {}, "upgrade");
 }
 
 if(!file_exists(system.data_dir + "sbbslist.json")) {
 	print("Installing SBBSLIST v4 (replacing SBL v3)");
 	if(!test)
-		load({}, "sbbslist.js", "install");
+		js.exec("sbbslist.js", {}, "install");
 }
 
 if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
 	print("Installing Avatars feature");
 	if(!test)
-		load({}, "avatars.js", "install");
+		js.exec("avatars.js", {}, "install");
 }
 
 print("Updating (compiling) Baja modules");
