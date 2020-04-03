@@ -14,8 +14,8 @@
 struct sdlfuncs {
 	int	(HACK_HACK_HACK *Init)	(Uint32 flags);
 	void	(HACK_HACK_HACK *Quit)	(void);
-	int	(HACK_HACK_HACK *mutexP)	(SDL_mutex *mutex);
-	int	(HACK_HACK_HACK *mutexV)	(SDL_mutex *mutex);
+	int	(HACK_HACK_HACK *LockMutex)	(SDL_mutex *mutex);
+	int	(HACK_HACK_HACK *UnlockMutex)	(SDL_mutex *mutex);
 	int	(HACK_HACK_HACK *PeepEvents)	(SDL_Event *events, int numevents,
 					SDL_eventaction action, Uint32 minType, Uint32 maxType);
 	char	*(HACK_HACK_HACK *GetCurrentVideoDriver)	(void);
