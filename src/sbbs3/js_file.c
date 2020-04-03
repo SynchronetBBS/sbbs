@@ -2787,7 +2787,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,310
 	},
 	{"writeln",			js_writeln,			0,	JSTYPE_BOOLEAN, JSDOCSTR("[text]")
-	,JSDOCSTR("write a line-feed terminated string to the file")
+	,JSDOCSTR("write a new-line terminated string (a line of text) to the file")
 	,310
 	},
 	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value(s) [,bytes=<tt>4</tt>]")
@@ -2796,7 +2796,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,310
 	},
 	{"writeAll",		js_writeall,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("array lines")
-	,JSDOCSTR("write an array of strings to file")
+	,JSDOCSTR("write an array of new-line terminated strings (lines of text) to the file")
 	,310
 	},
 	{"raw_write",		js_raw_write,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
