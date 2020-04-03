@@ -23,32 +23,28 @@ function txtsec_data(sec)
 
 function read_list(sec)
 {
-	var f = new File(txtsec_data(sec) + ".ixt");
-	if(!f.open("r"))
+	var f = new File(txtsec_data(sec) + ".ini");
+	if(!f.open("rt"))
 		return [];
-	var lines = f.readAll();
+	var list = f.iniGetAllObjects();
 	f.close();
-	var list = [];
-	for(var i = 0; i < lines.length; i += 2) {
-		var fname = lines[i];
+	for(var i = 0; i < list.length; i++) {
+		var fname = list[i].name;
 		var path = file_getcase(txtsec_data(sec) + "/" + fname);
 		if(!path)
 			path = file_getcase(bbs.cmdstr(fname));
 		if(path)
-			list.push({ path: path, orig_path: lines[i], desc: lines[i + 1]});
+			list[i].path = path;
 	}
 	return list;
 }
 
 function write_list(sec, list)
 {
-	var f = new File(txtsec_data(sec) + ".ixt");
-	if(!f.open("w"))
+	var f = new File(txtsec_data(sec) + ".ini");
+	if(!f.open("wt"))
 		return false;
-	for(var i = 0; i < list.length; i++) {
-		f.writeln(list[i].orig_path || list[i].path);
-		f.writeln(list[i].desc);
-	}
+	f.iniSetAllObjects(list);
 	f.close();
 	return true;
 }
@@ -92,7 +88,7 @@ while(bbs.online) {
 		bbs.nodesync();
 		var keys = "Q?";
 		if(user.is_sysop) {
-			keys += "ARE";
+			keys += "ARED";
 			console.mnemonics(bbs.text(WhichTextFileSysop));
 		} else
 			console.mnemonics(bbs.text(WhichTextFile));
@@ -100,6 +96,9 @@ while(bbs.online) {
 		if(cmd == 'Q')
 			break;
 		switch(cmd) {
+			case 'D':
+				print(lfexpand(JSON.stringify(list, null, 4)));
+				break;
 			case 'A':
 			{	
 				var i = 0;
@@ -142,16 +141,35 @@ while(bbs.online) {
 				if(i < 1)
 					break;
 				i--;
-				console.editfile(list[i].path);
+				console.print("Desc: ");
+				{
+					var str = console.getstr(list[i].desc, 75, K_EDIT|K_LINE);
+					if(str)
+						list[i].desc = str;
+				}
+				if(!console.aborted
+					&& !console.noyes("Edit " + file_getname(list[i].path)))
+					console.editfile(list[i].path);
 				break;
 			default:
 				if(typeof(cmd) == "number") {
 					cmd--;
 					console.attributes = LIGHTGRAY;
-					console.printfile(list[cmd].path, P_CPM_EOF);
+					if(!bbs.compare_ars(list[cmd].ars)) {
+						alert("Sorry, you can't read that file");
+						break;
+					}
+					var mode = P_OPENCLOSE | P_CPM_EOF;
+					if(list[cmd].mode !== undefined)
+						mode = eval(list[cmd].mode);
+					if(list[cmd].tail)
+						console.printtail(list[cmd].path, list[cmd].tail, mode);
+					else
+						console.printfile(list[cmd].path, mode);
 					log(LOG_INFO, "read text file: " + list[cmd].path);
 					console.pause();
 				}
+				break;
 		}
 	}
 }
