@@ -55,6 +55,10 @@
  *                              area while reading a message, the reader would exit
  *                              with an error due to an invalid last-read message number.
  *                              This has been fixed.
+ * 2020-04-03 Eric Oulashin     Version 1.29
+ *                              In reader mode, if a message is written to the
+ *                              current user, the 'To' username in the header above
+ *                              the message is now written in a different color.
  */
 
 
@@ -120,9 +124,14 @@
 					 added in the future.
 */
 
-// TODOs - For sub-board area search:
-// - Enable searching in traditional interface
-// - Update the keys in the lightbar help line and traditional interface
+// TODOs:
+// - For pageUp & pageDown, enable alternate keys:
+//  - When reading a message - scrollTextLines()
+//  - When listing messages
+//  - When listing message groups & sub-boards for sub-board selection
+// - For sub-board area search:
+//  - Enable searching in traditional interface
+//  - Update the keys in the lightbar help line and traditional interface
 
 const requireFnExists = (typeof(require) === "function");
 
@@ -157,8 +166,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.28";
-var READER_DATE = "2019-12-21";
+var READER_VERSION = "1.29";
+var READER_DATE = "2020-04-03";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -638,6 +647,31 @@ if (gDoDDMR)
 
 // End of script execution.  Functions below:
 
+// Generates an internal enhanced reader header line for the 'To' user.
+//
+// Parameters:
+//  pColors: A JSON object containing the color settings read from the
+//           theme configuration file.  This function will use the
+//           'msgHdrToColor' or 'msgHdrToUserColor' property, depending
+//           on the pToReadingUser property.
+//  pToReadingUser: Boolean - Whether or not to generate the line with
+//                  the color/attribute for the reading user
+//
+// Return value: A string containing the internal enhanced reader header
+//               line specifying the 'to' user
+function genEnhHdrToUserLine(pColors, pToReadingUser)
+{
+	var toHdrLine = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
+		          + "\1gT\1n\1go  \1h\1c: " +
+		          (pToReadingUser ? pColors.msgHdrToUserColor : pColors.msgHdrToColor) +
+		          "@MSG_TO-L";
+	var numChars = console.screen_columns - 21;
+	for (var i = 0; i < numChars; ++i)
+		toHdrLine += "#";
+	toHdrLine += "@\1k" + VERTICAL_SINGLE;
+	return toHdrLine;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 // DigDistMsgReader class stuff
 
@@ -871,7 +905,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// extended read mode
 	this.numTabSpaces = 3;
 
-	// this.text is an object containing text used for various functionality.
+	// this.text is an object containing text used for various prompts & functions.
 	this.text = {
 		scrollbarBGChar: BLOCK1,
 		scrollbarScrollBlockChar: BLOCK2,
@@ -968,7 +1002,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		vote: "V",
 		showVotes: "T",
 		closePoll: "!",
-		bypassSubBoardInNewScan: "B"
+		bypassSubBoardInNewScan: "B",
+		threadView: "*" // TODO: Implement this
 	};
 	if (gIsSysop)
 		this.enhReaderKeys.validateMsg = "A";
@@ -1074,6 +1109,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// different terminal widths (i.e., msgHeader_80.ans for an 80-column console
 	// and msgHeader_132 for a 132-column console).
 	this.enhMsgHeaderLines = loadTextFileIntoArray("enhMsgHeader", 10);
+	// this.enhMsgHeaderLinesToReadingUser will be a copy of this.endMsgReaderLines
+	// but with the 'To' user line changed to highlight the name for messages to
+	// the logged-on reading user
+	this.enhMsgHeaderLinesToReadingUser = [];
 	// If the header file didn't exist, then populate the enhanced reader header
 	// array with default lines.
 	this.usingInternalEnhMsgHdr = (this.enhMsgHeaderLines.length == 0);
@@ -1099,36 +1138,35 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		hdrLine1 += "\1n\1c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h"
 		         + HORIZONTAL_SINGLE + UPPER_RIGHT_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine1);
+		this.enhMsgHeaderLinesToReadingUser.push(hdrLine1);
 		var hdrLine2 = "\1n\1c" + VERTICAL_SINGLE + "\1h\1k" + BLOCK1 + BLOCK2
-		             + BLOCK3 + "\1gM\1n\1gsg#\1h\1c: \1b@MSG_NUM_AND_TOTAL-L";
+		             + BLOCK3 + "\1gM\1n\1gsg#\1h\1c: " + this.colors.msgHdrMsgNumColor + "@MSG_NUM_AND_TOTAL-L";
 		numChars = console.screen_columns - 32;
 		for (var i = 0; i < numChars; ++i)
 			hdrLine2 += "#";
 		hdrLine2 += "@\1n\1c" + VERTICAL_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine2);
+		this.enhMsgHeaderLinesToReadingUser.push(hdrLine2);
 		var hdrLine3 = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
-					 + "\1gF\1n\1grom\1h\1c: \1b@MSG_FROM_AND_FROM_NET-L";
+					 + "\1gF\1n\1grom\1h\1c: " + this.colors.msgHdrFromColor + "@MSG_FROM_AND_FROM_NET-L";
 		numChars = console.screen_columns - 36;
 		for (var i = 0; i < numChars; ++i)
 			hdrLine3 += "#";
 		hdrLine3 += "@\1k" + VERTICAL_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine3);
-		var hdrLine4 = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
-		             + "\1gT\1n\1go  \1h\1c: \1b@MSG_TO-L";
-		numChars = console.screen_columns - 21;
-		for (var i = 0; i < numChars; ++i)
-			hdrLine4 += "#";
-		hdrLine4 += "@\1k" + VERTICAL_SINGLE;
-		this.enhMsgHeaderLines.push(hdrLine4);
+		this.enhMsgHeaderLinesToReadingUser.push(hdrLine3);
+		this.enhMsgHeaderLines.push(genEnhHdrToUserLine(this.colors, false));
+		this.enhMsgHeaderLinesToReadingUser.push(genEnhHdrToUserLine(this.colors, true));
 		var hdrLine5 = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
-		             + "\1gS\1n\1gubj\1h\1c: \1b@MSG_SUBJECT-L";
+		             + "\1gS\1n\1gubj\1h\1c: " + this.colors.msgHdrSubjColor + "@MSG_SUBJECT-L";
 		numChars = console.screen_columns - 26;
 		for (var i = 0; i < numChars; ++i)
 			hdrLine5 += "#";
 		hdrLine5 += "@\1k" + VERTICAL_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine5);
+		this.enhMsgHeaderLinesToReadingUser.push(hdrLine5);
 		var hdrLine6 = "\1n\1c" + VERTICAL_SINGLE + "\1h\1k" + BLOCK1 + BLOCK2 + BLOCK3
-		             + "\1gD\1n\1gate\1h\1c: \1b@MSG_DATE-L";
+		             + "\1gD\1n\1gate\1h\1c: " + this.colors.msgHdrDateColor + "@MSG_DATE-L";
 		//numChars = console.screen_columns - 23;
 		numChars = console.screen_columns - 67;
 		for (var i = 0; i < numChars; ++i)
@@ -1139,6 +1177,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 			hdrLine6 += " ";
 		hdrLine6 += "\1n\1c" + VERTICAL_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine6);
+		this.enhMsgHeaderLinesToReadingUser.push(hdrLine6);
 		var hdrLine7 = "\1n\1h\1c" + BOTTOM_T_SINGLE + HORIZONTAL_SINGLE + "\1n\1c"
 		             + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h\1k";
 		numChars = console.screen_columns - 8;
@@ -1147,6 +1186,18 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		hdrLine7 += "\1n\1c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h"
 		         + HORIZONTAL_SINGLE + BOTTOM_T_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine7);
+		this.enhMsgHeaderLinesToReadingUser.push(hdrLine7);
+	}
+	else
+	{
+		// We loaded the enhanced message header lines from a custom file.
+		// Copy from this.enhMsgHeaderLines to this.enhMsgHeaderLinesToReadingUser
+		// but change any 'To:' line to highlight the 'to' username.
+		this.enhMsgHeaderLinesToReadingUser = this.enhMsgHeaderLines.slice();
+		// Go through the header lines and ensure the 'To' line has a different
+		// color
+		for (var lineIdx = 0; lineIdx < this.enhMsgHeaderLinesToReadingUser.length; ++lineIdx)
+			this.enhMsgHeaderLinesToReadingUser[lineIdx] = syncAttrCodesToANSI(strWithToUserColor(this.enhMsgHeaderLinesToReadingUser[lineIdx], this.colors.msgHdrToUserColor));
 	}
 	// Save the enhanced reader header width.  This will be the length of the longest
 	// line in the header.
@@ -7613,13 +7664,16 @@ function DigDistMsgReader_ReadConfigFile()
 					    (setting == "areaChooserMsgAreaNumItemsHighlightColor") || (setting == "lightbarAreaChooserHelpLineBkgColor") ||
 					    (setting == "lightbarAreaChooserHelpLineGeneralColor") || (setting == "lightbarAreaChooserHelpLineHotkeyColor") ||
 					    (setting == "lightbarAreaChooserHelpLineParenColor") || (setting == "scrollbarBGColor") ||
-						(setting == "scrollbarScrollBlockColor") || (setting == "enhReaderPromptSepLineColor") ||
-						(setting == "enhReaderHelpLineBkgColor") || (setting == "enhReaderHelpLineGeneralColor") ||
-						(setting == "enhReaderHelpLineHotkeyColor") || (setting == "enhReaderHelpLineParenColor") ||
-						(setting == "hdrLineLabelColor") || (setting == "hdrLineValueColor") ||
-						(setting == "selectedMsgMarkColor") || (setting ==  "msgListScoreColor") ||
-						(setting == "msgListToUserScoreColor") || (setting == "msgListFromUserScoreColor") ||
-						(setting == "msgListScoreHighlightColor"))
+					    (setting == "scrollbarScrollBlockColor") || (setting == "enhReaderPromptSepLineColor") ||
+					    (setting == "enhReaderHelpLineBkgColor") || (setting == "enhReaderHelpLineGeneralColor") ||
+					    (setting == "enhReaderHelpLineHotkeyColor") || (setting == "enhReaderHelpLineParenColor") ||
+					    (setting == "hdrLineLabelColor") || (setting == "hdrLineValueColor") ||
+					    (setting == "selectedMsgMarkColor") || (setting ==  "msgListScoreColor") ||
+					    (setting == "msgListToUserScoreColor") || (setting == "msgListFromUserScoreColor") ||
+					    (setting == "msgListScoreHighlightColor") || (setting == "msgHdrMsgNumColor") ||
+					    (setting == "msgHdrFromColor") || (setting == "msgHdrToColor") ||
+					    (setting == "msgHdrToUserColor") || (setting == "msgHdrSubjColor") ||
+					    (setting == "msgHdrDateColor"))
 					{
 						// Trim leading & trailing spaces from the value when
 						// setting a color.  Also, replace any instances of "\1"
@@ -9482,9 +9536,13 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 {
 	if ((pMsgHdr == null) || (typeof(pMsgHdr) != "object"))
 		return;
-	if (this.enhMsgHeaderLines == null)
+	// For the set of enhanced header lines, choose the regular set or the set with
+	// the highlighted 'to' user, dependin on whether the message was written to the
+	// logged-in (reading) user.
+	var enhMsgHdrLines = (userNameHandleAliasMatch(pMsgHdr.to) ? this.enhMsgHeaderLinesToReadingUser : this.enhMsgHeaderLines);
+	if (enhMsgHdrLines == null)
 		return;
-	if ((this.enhMsgHeaderLines.length == 0) || (this.enhMsgHeaderWidth == 0))
+	if ((enhMsgHdrLines.length == 0) || (this.enhMsgHeaderWidth == 0))
 		return;
 
 	// Create a formatted date & time string.  Adjust the message's time to
@@ -9506,7 +9564,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	var msgIsAPoll = false;
 	if (typeof(MSG_POLL) != "undefined")
 		msgIsAPoll = ((pMsgHdr.attr & MSG_POLL) == MSG_POLL);
-	var enhHdrLines = this.enhMsgHeaderLines.slice(0);
+	var enhHdrLines = enhMsgHdrLines.slice(0);
 	if (this.usingInternalEnhMsgHdr && !msgIsAPoll && pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
 	{
 		// Only add the vote information if the total_votes value is non-zero
@@ -9525,7 +9583,6 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		// Display the header starting on the first column and the given screen row.
 		var screenX = 1;
 		var screenY = (typeof(pStartScreenRow) == "number" ? pStartScreenRow : 1);
-		//for (var hdrFileIdx = 0; hdrFileIdx < this.enhMsgHeaderLines.length; ++hdrFileIdx)
 		for (var hdrFileIdx = 0; hdrFileIdx < enhHdrLines.length; ++hdrFileIdx)
 		{
 			console.gotoxy(screenX, screenY++);
@@ -15124,130 +15181,136 @@ function DisplayProgramInfo()
 // DigDistMessageReader class.
 function getDefaultColors()
 {
-	var colorObj = {};
+	return {
+		// Colors for the message header displayed above messages in the scrollable reader mode
+		msgHdrMsgNumColor: "\1n\1b\1h", // Message #
+		msgHdrFromColor: "\1n\1b\1h",   // From username
+		msgHdrToColor: "\1n\1b\1h",     // To username
+		msgHdrToUserColor: "\1n\1g\1h", // To username when it's to the current user
+		msgHdrSubjColor: "\1n\1b\1h",   // Message subject
+		msgHdrDateColor: "\1n\1b\1h",   // Message date
 
-	// Header line: "Current msg group:"
-	colorObj.msgListHeaderMsgGroupTextColor = "\1n\1" + "4\1c"; // Normal cyan on blue background
-	//colorObj.msgListHeaderMsgGroupTextColor = "\1n\1" + "4\1w"; // Normal white on blue background
+		// Message list header line: "Current msg group:"
+		msgListHeaderMsgGroupTextColor: "\1n\1" + "4\1c", 	// Normal cyan on blue background
+		//	msgListHeaderMsgGroupTextColor: "\1n\1" + "4\1w", 	// Normal white on blue background
 
-	// Header line: Message group name
-	colorObj.msgListHeaderMsgGroupNameColor = "\1h\1c"; // High cyan
-	//colorObj.msgListHeaderMsgGroupNameColor = "\1h\1w"; // High white
+		// Message list header line: Message group name
+		msgListHeaderMsgGroupNameColor: "\1h\1c", 	// High cyan
+		//	msgListHeaderMsgGroupNameColor: "\1h\1w", 	// High white
 
-	// Header line: "Current sub-board:"
-	colorObj.msgListHeaderSubBoardTextColor = "\1n\1" + "4\1c"; // Normal cyan on blue background
-	//colorObj.msgListHeaderSubBoardTextColor = "\1n\1" + "4\1w"; // Normal white on blue background
+		// Message list header line: "Current sub-board:"
+		msgListHeaderSubBoardTextColor: "\1n\1" + "4\1c", 	// Normal cyan on blue background
+		//	msgListHeaderSubBoardTextColor: "\1n\1" + "4\1w", 	// Normal white on blue background
 
-	// Header line: Message sub-board name
-	colorObj.msgListHeaderMsgSubBoardName = "\1h\1c"; // High cyan
-	//colorObj.msgListHeaderMsgSubBoardName = "\1h\1w"; // High white
-	// Line with column headers
-	//colorObj.msgListColHeader = "\1h\1w"; // High white (keep blue background)
-	colorObj.msgListColHeader = "\1n\1h\1w"; // High white on black background
-	//colorObj.msgListColHeader = "\1h\1c"; // High cyan (keep blue background)
-	//colorObj.msgListColHeader = "\1" + "4\1h\1y"; // High yellow (keep blue background)
+		// Message list header line: Message sub-board name
+		msgListHeaderMsgSubBoardName: "\1h\1c", 	// High cyan
+		//	msgListHeaderMsgSubBoardName: "\1h\1w", 	// High white
+		// Line with column headers
+		//	msgListColHeader: "\1h\1w", 	// High white (keep blue background)
+		msgListColHeader: "\1n\1h\1w", 	// High white on black background
+		//	msgListColHeader: "\1h\1c", 	// High cyan (keep blue background)
+		//	msgListColHeader: "\1" + "4\1h\1y", 	// High yellow (keep blue background)
 
-	// Message list information
-	colorObj.msgListMsgNumColor = "\1n\1h\1y";
-	colorObj.msgListFromColor = "\1n\1c";
-	colorObj.msgListToColor = "\1n\1c";
-	colorObj.msgListSubjectColor = "\1n\1c";
-	colorObj.msgListScoreColor = "\1n\1c";
-	colorObj.msgListDateColor = "\1h\1b";
-	colorObj.msgListTimeColor = "\1h\1b";
-	// Message information for messages written to the user
-	colorObj.msgListToUserMsgNumColor = "\1n\1h\1y";
-	colorObj.msgListToUserFromColor = "\1h\1g";
-	colorObj.msgListToUserToColor = "\1h\1g";
-	colorObj.msgListToUserSubjectColor = "\1h\1g";
-	colorObj.msgListToUserScoreColor = "\1h\1g";
-	colorObj.msgListToUserDateColor = "\1h\1b";
-	colorObj.msgListToUserTimeColor = "\1h\1b";
-	// Message information for messages from the user
-	colorObj.msgListFromUserMsgNumColor = "\1n\1h\1y";
-	colorObj.msgListFromUserFromColor = "\1n\1c";
-	colorObj.msgListFromUserToColor = "\1n\1c";
-	colorObj.msgListFromUserSubjectColor = "\1n\1c";
-	colorObj.msgListFromUserScoreColor = "\1n\1c";
-	colorObj.msgListFromUserDateColor = "\1h\1b";
-	colorObj.msgListFromUserTimeColor = "\1h\1b";
+		// Message list information
+		msgListMsgNumColor: "\1n\1h\1y",
+		msgListFromColor: "\1n\1c",
+		msgListToColor: "\1n\1c",
+		msgListSubjectColor: "\1n\1c",
+		msgListScoreColor: "\1n\1c",
+		msgListDateColor: "\1h\1b",
+		msgListTimeColor: "\1h\1b",
+		// Message information for messages written to the user
+		msgListToUserMsgNumColor: "\1n\1h\1y",
+		msgListToUserFromColor: "\1h\1g",
+		msgListToUserToColor: "\1h\1g",
+		msgListToUserSubjectColor: "\1h\1g",
+		msgListToUserScoreColor: "\1h\1g",
+		msgListToUserDateColor: "\1h\1b",
+		msgListToUserTimeColor: "\1h\1b",
+		// Message information for messages from the user
+		msgListFromUserMsgNumColor: "\1n\1h\1y",
+		msgListFromUserFromColor: "\1n\1c",
+		msgListFromUserToColor: "\1n\1c",
+		msgListFromUserSubjectColor: "\1n\1c",
+		msgListFromUserScoreColor: "\1n\1c",
+		msgListFromUserDateColor: "\1h\1b",
+		msgListFromUserTimeColor: "\1h\1b",
 
-	// Message list highlight colors
-	colorObj.msgListHighlightBkgColor = "\1" + "4"; // Background
-	colorObj.msgListMsgNumHighlightColor = "\1h\1y";
-	colorObj.msgListFromHighlightColor = "\1h\1c";
-	colorObj.msgListToHighlightColor = "\1h\1c";
-	colorObj.msgListSubjHighlightColor = "\1h\1c";
-	colorObj.msgListScoreHighlightColor = "\1h\1c";
-	colorObj.msgListDateHighlightColor = "\1h\1w";
-	colorObj.msgListTimeHighlightColor = "\1h\1w";
+		// Message list highlight colors
+		msgListHighlightBkgColor: "\1" + "4", 	// Background
+		msgListMsgNumHighlightColor: "\1h\1y",
+		msgListFromHighlightColor: "\1h\1c",
+		msgListToHighlightColor: "\1h\1c",
+		msgListSubjHighlightColor: "\1h\1c",
+		msgListScoreHighlightColor: "\1h\1c",
+		msgListDateHighlightColor: "\1h\1w",
+		msgListTimeHighlightColor: "\1h\1w",
 
-	// Lightbar message list help line colors
-	colorObj.lightbarMsgListHelpLineBkgColor = "\1" + "7"; // Background
-	colorObj.lightbarMsgListHelpLineGeneralColor = "\1b";
-	colorObj.lightbarMsgListHelpLineHotkeyColor = "\1r";
-	colorObj.lightbarMsgListHelpLineParenColor = "\1m";
+		// Lightbar message list help line colors
+		lightbarMsgListHelpLineBkgColor: "\1" + "7", 	// Background
+		lightbarMsgListHelpLineGeneralColor: "\1b",
+		lightbarMsgListHelpLineHotkeyColor: "\1r",
+		lightbarMsgListHelpLineParenColor: "\1m",
 
-	// Continue prompt colors
-	colorObj.tradInterfaceContPromptMainColor = "\1n\1g"; // Main text color
-	colorObj.tradInterfaceContPromptHotkeyColor = "\1h\1c"; // Hotkey color
-	colorObj.tradInterfaceContPromptUserInputColor = "\1h\1g"; // User input color
+		// Continue prompt colors
+		tradInterfaceContPromptMainColor: "\1n\1g", 	// Main text color
+		tradInterfaceContPromptHotkeyColor: "\1h\1c", 	// Hotkey color
+		tradInterfaceContPromptUserInputColor: "\1h\1g", 	// User input color
 
-	// Message body color
-	colorObj.msgBodyColor = "\1n\1w";
+		// Message body color
+		msgBodyColor: "\1n\1w",
 
-	// Read message confirmation colors
-	colorObj.readMsgConfirmColor = "\1n\1c";
-	colorObj.readMsgConfirmNumberColor = "\1h\1c";
-	// Prompt for continuing to list messages after reading a message
-	colorObj.afterReadMsg_ListMorePromptColor = "\1n\1c";
+		// Read message confirmation colors
+		readMsgConfirmColor: "\1n\1c",
+		readMsgConfirmNumberColor: "\1h\1c",
+		// Prompt for continuing to list messages after reading a message
+		afterReadMsg_ListMorePromptColor: "\1n\1c",
 
-	// Help screen text color
-	colorObj.tradInterfaceHelpScreenColor = "\1n\1h\1w";
+		// Help screen text color
+		tradInterfaceHelpScreenColor: "\1n\1h\1w",
 
-	// Colors for choosing a message group & sub-board
-	colorObj.areaChooserMsgAreaNumColor = "\1n\1w\1h";
-	colorObj.areaChooserMsgAreaDescColor = "\1n\1c";
-	colorObj.areaChooserMsgAreaNumItemsColor = "\1b\1h";
-	colorObj.areaChooserMsgAreaHeaderColor = "\1n\1y\1h";
-	colorObj.areaChooserSubBoardHeaderColor = "\1n\1g";
-	colorObj.areaChooserMsgAreaMarkColor = "\1g\1h";
-	colorObj.areaChooserMsgAreaLatestDateColor = "\1n\1g";
-	colorObj.areaChooserMsgAreaLatestTimeColor = "\1n\1m";
-	// Highlighted colors (for lightbar mode)
-	colorObj.areaChooserMsgAreaBkgHighlightColor = "\1" + "4"; // Blue background
-	colorObj.areaChooserMsgAreaNumHighlightColor = "\1w\1h";
-	colorObj.areaChooserMsgAreaDescHighlightColor = "\1c";
-	colorObj.areaChooserMsgAreaDateHighlightColor = "\1w\1h";
-	colorObj.areaChooserMsgAreaTimeHighlightColor = "\1w\1h";
-	colorObj.areaChooserMsgAreaNumItemsHighlightColor = "\1w\1h";
-	// Lightbar area chooser help line
-	colorObj.lightbarAreaChooserHelpLineBkgColor = "\1" + "7"; // Background
-	colorObj.lightbarAreaChooserHelpLineGeneralColor = "\1b";
-	colorObj.lightbarAreaChooserHelpLineHotkeyColor = "\1r";
-	colorObj.lightbarAreaChooserHelpLineParenColor = "\1m";
+		// Colors for choosing a message group & sub-board
+		areaChooserMsgAreaNumColor: "\1n\1w\1h",
+		areaChooserMsgAreaDescColor: "\1n\1c",
+		areaChooserMsgAreaNumItemsColor: "\1b\1h",
+		areaChooserMsgAreaHeaderColor: "\1n\1y\1h",
+		areaChooserSubBoardHeaderColor: "\1n\1g",
+		areaChooserMsgAreaMarkColor: "\1g\1h",
+		areaChooserMsgAreaLatestDateColor: "\1n\1g",
+		areaChooserMsgAreaLatestTimeColor: "\1n\1m",
+		// Highlighted colors (for lightbar mode)
+		areaChooserMsgAreaBkgHighlightColor: "\1" + "4", 	// Blue background
+		areaChooserMsgAreaNumHighlightColor: "\1w\1h",
+		areaChooserMsgAreaDescHighlightColor: "\1c",
+		areaChooserMsgAreaDateHighlightColor: "\1w\1h",
+		areaChooserMsgAreaTimeHighlightColor: "\1w\1h",
+		areaChooserMsgAreaNumItemsHighlightColor: "\1w\1h",
+		// Lightbar area chooser help line
+		lightbarAreaChooserHelpLineBkgColor: "\1" + "7", 	// Background
+		lightbarAreaChooserHelpLineGeneralColor: "\1b",
+		lightbarAreaChooserHelpLineHotkeyColor: "\1r",
+		lightbarAreaChooserHelpLineParenColor: "\1m",
 
-	// Scrollbar background and scroll block colors (for the enhanced
-	// message reader interface)
-	colorObj.scrollbarBGColor = "\1n\1h\1k";
-	colorObj.scrollbarScrollBlockColor = "\1n\1h\1w";
-	// Color for the line drawn in the 2nd to last line of the message
-	// area in the enhanced reader mode before a prompt
-	colorObj.enhReaderPromptSepLineColor = "\1n\1h\1g";
-	// Colors for the enhanced reader help line
-	colorObj.enhReaderHelpLineBkgColor = "\1" + "7";
-	colorObj.enhReaderHelpLineGeneralColor = "\1b";
-	colorObj.enhReaderHelpLineHotkeyColor = "\1r";
-	colorObj.enhReaderHelpLineParenColor = "\1m";
+		// Scrollbar background and scroll block colors (for the enhanced
+		// message reader interface)
+		scrollbarBGColor: "\1n\1h\1k",
+		scrollbarScrollBlockColor: "\1n\1h\1w",
+		// Color for the line drawn in the 2nd to last line of the message
+		// area in the enhanced reader mode before a prompt
+		enhReaderPromptSepLineColor: "\1n\1h\1g",
+		// Colors for the enhanced reader help line
+		enhReaderHelpLineBkgColor: "\1" + "7",
+		enhReaderHelpLineGeneralColor: "\1b",
+		enhReaderHelpLineHotkeyColor: "\1r",
+		enhReaderHelpLineParenColor: "\1m",
 
-	// Message header line colors
-	colorObj.hdrLineLabelColor = "\1n\1c";
-	colorObj.hdrLineValueColor = "\1n\1b\1h";
+		// Message header line colors
+		hdrLineLabelColor: "\1n\1c",
+		hdrLineValueColor: "\1n\1b\1h",
 
-	// Selected message marker color
-	colorObj.selectedMsgMarkColor = "\1n\1w\1h";
-
-	return colorObj;
+		// Selected message marker color
+		selectedMsgMarkColor: "\1n\1w\1h"
+	};
 }
 
 // This function returns the month number (1-based) from a capitalized
@@ -17764,7 +17827,7 @@ function regexFirstIndexOf(pStr, pRegex)
 // Parameters:
 //  pText: The text with ANSI ;-delimited modes to convert
 //
-// Return value: The text with ANSI ;-delimited modes converted to Synchronet attributes
+// Return value: The text with ANSI ;-delimited codes converted to Synchronet attributes
 function ANSIMultiConvertToSyncCodes(pText)
 {
 	var multiMatches = pText.match(/\[[0-9]+(;[0-9]+)+m/g);
@@ -17823,6 +17886,48 @@ function ANSIMultiConvertToSyncCodes(pText)
 		updatedText = updatedText.replace(multiMatches[i], syncCodes);
 	}
 	return updatedText;
+}
+
+// Converts Synchronet attribute codes to ANSI ;-delimited modes (such as [Value;...;Valuem)
+//
+// Parameters:
+//  pText: The text with Synchronet codes to convert
+//
+// Return value: The text with Synchronet attributes converted to ANSI ;-delimited codes
+function syncAttrCodesToANSI(pText)
+{
+	// First, see if the text has any Synchronet attribute codes at
+	// all.  We'll be performing a bunch of search & replace commands,
+	// so we don't want to do all that work for nothing.. :)
+	if (hasSyncAttrCodes(pText))
+	{
+		var ANSIESCCodeStart = "[";
+		var newText = pText.replace(/\1n/gi, ANSIESCCodeStart + "0m"); // Normal
+		newText = newText.replace(/\1-/gi, ANSIESCCodeStart + "0m"); // Normal
+		newText = newText.replace(/\1_/gi, ANSIESCCodeStart + "0m"); // Normal
+		newText = newText.replace(/\1h/gi, ANSIESCCodeStart + "1m"); // High intensity/bold
+		newText = newText.replace(/\1i/gi, ANSIESCCodeStart + "5m"); // Blinking on
+		newText = newText.replace(/\1f/gi, ANSIESCCodeStart + "5m"); // Blinking on
+		newText = newText.replace(/\1k/gi, ANSIESCCodeStart + "30m"); // Black foreground
+		newText = newText.replace(/\1r/gi, ANSIESCCodeStart + "31m"); // Red foreground
+		newText = newText.replace(/\1g/gi, ANSIESCCodeStart + "32m"); // Green foreground
+		newText = newText.replace(/\1y/gi, ANSIESCCodeStart + "33m"); // Yellow/brown foreground
+		newText = newText.replace(/\1b/gi, ANSIESCCodeStart + "34m"); // Blue foreground
+		newText = newText.replace(/\1m/gi, ANSIESCCodeStart + "35m"); // Magenta foreground
+		newText = newText.replace(/\1c/gi, ANSIESCCodeStart + "36m"); // Cyan foreground
+		newText = newText.replace(/\1w/gi, ANSIESCCodeStart + "37m"); // White foreground
+		newText = newText.replace(/\1[0]/gi, ANSIESCCodeStart + "40m"); // Black background
+		newText = newText.replace(/\1[1]/gi, ANSIESCCodeStart + "41m"); // Red background
+		newText = newText.replace(/\1[2]/gi, ANSIESCCodeStart + "42m"); // Green background
+		newText = newText.replace(/\1[3]/gi, ANSIESCCodeStart + "43m"); // Yellow/brown background
+		newText = newText.replace(/\1[4]/gi, ANSIESCCodeStart + "44m"); // Blue background
+		newText = newText.replace(/\1[5]/gi, ANSIESCCodeStart + "45m"); // Magenta background
+		newText = newText.replace(/\1[6]/gi, ANSIESCCodeStart + "46m"); // Cyan background
+		newText = newText.replace(/\1[7]/gi, ANSIESCCodeStart + "47m"); // White background
+		return newText;
+	}
+	else
+		return pText; // No Synchronet-style attribute codes found, so just return the text.
 }
 
 // Given some text, this converts ANSI color codes to Synchronet codes and
@@ -19631,6 +19736,8 @@ function applyAttrsInMsgHdrInMessagbase(pMsgbaseOrSubCode, pMsgNum, pMsgAttrs)
 		if (msgHdr != null)
 		{
 			msgHdr.attr |= pMsgAttrs;
+			// TODO: Occasional when going to next message area:
+			// Error: Error -110 adding SENDERNETADDR field to message header
 			retObj.saveSucceeded = msgbase.put_msg_header(false, pMsgNum, msgHdr);
 			if (retObj.saveSucceeded)
 				retObj.msgAttrs = msgHdr.attr;
@@ -20138,6 +20245,56 @@ function getMsgAreaPageNumFromSearch(pText, pNumItemsPerPage, pSubBoard, pStartI
 	}
 
 	return retObj;
+}
+
+// Searches for a @MSG_TO @-code in a string and inserts a color/attribute code
+// before the @-code in the string.
+//
+// Parameters:
+//  pStr: The string to look in
+//  pToUserColor: The color/attribute code to insert before the @MSG_TO @-code
+//
+// Return value: A string with the given color/attribute code inserted before the
+//               @MSG_TO @-code
+function strWithToUserColor(pStr, pToUserColor)
+{
+	if ((typeof(pStr) != "string") || (typeof(pToUserColor) != "string"))
+		return "";
+	if (pToUserColor.length == 0)
+		return pStr;
+
+	// Find start & end indexes of a @MSG_TO* @-code, i.e.,
+	// @MSG_TO, @MSG_TO_NAME, @MSG_TO_EXT, @MSG_TO_NET
+	var toCodeStartIdx = pStr.indexOf("@MSG_TO");
+	if (toCodeStartIdx < 0)
+		return pStr;
+	// Insert the color in the right position and return the line
+	return pStr.substr(0, toCodeStartIdx) + "\1n" + pToUserColor + pStr.substr(toCodeStartIdx) + "\1n";
+	/*
+	// Insert the color in the right position, and
+	// put a \1n right after the end of the @-code
+	var str = "";
+	var toCodeEndIdx = pStr.indexOf("@", toCodeStartIdx+1);
+	if (toCodeEndIdx >= 0)
+	{
+		str = pStr.substr(0, toCodeStartIdx) + "\1n" + pToUserColor + pStr.substr(toCodeStartIdx, toCodeEndIdx-toCodeStartIdx+1)
+		    + "\1n" + pStr.substr(toCodeEndIdx);
+	}
+	else
+		str = pStr.substr(0, toCodeStartIdx) + "\1n" + pToUserColor + pStr.substr(toCodeStartIdx) + "\1n";
+	return str;
+	*/
+}
+
+// Returns whether a string has any Synchronet attribute codes
+//
+// Parameters:
+//  pStr: the string to check
+//
+// Return value: Boolean - Whether or not the string has any Synchronet attribute codes
+function hasSyncAttrCodes(pStr)
+{
+	return (pStr.search(/\1[krgybmcwhifn\-_01234567]/i) > -1);
 }
 
 // For debugging: Writes some text on the screen at a given location with a given pause.

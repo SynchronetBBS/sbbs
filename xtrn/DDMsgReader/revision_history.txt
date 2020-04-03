@@ -5,6 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.29     2020-04-03   When reading a message, if a message is written to the
+                      current user, the 'To' username in the header above the
+                      message is now written in a different color.  Also, there
+                      are new color settings available in the theme
+                      configuration file (see the readme for descriptions):
+                      msgHdrMsgNumColor, msgHdrFromColor, msgHdrToColor,
+                      msgHdrToUserColor, msgHdrSubjColor, msgHdrDateColor
 1.28     2019-12-21   Bug fix: When the user changes to a different message
                       area while reading a message, the reader would exit with
                       an error due to an invalid last-read message number.

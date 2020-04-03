@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.28
-                           Release date: 2019-12-21
+                                 Version 1.29
+                           Release date: 2020-04-03
 
                                      by
 
@@ -828,6 +828,27 @@ areaChooserMsgAreaLatestDateColor    Color for the latest message date when
 
 areaChooserMsgAreaLatestTimeColor    Color for the latest message date when
                                      choosing a different message area
+
+- Colors for the built-in header displayed above a message (if not using your
+  own message header ANSI -
+msgHdrMsgNumColor                    Color for the message number displayed in
+                                     the header above a message
+
+msgHdrFromColor                      Color for the 'From' name displayed in the
+                                     header above a message
+
+msgHdrToColor                        Color for the 'To' name displayed in the
+                                     header above a message
+
+msgHdrToUserColor                    Color for the 'To' name displayed in the
+                                     header above a message when the message is
+                                     written to the current user
+
+msgHdrSubjColor                      Color for the subject displayed in the
+                                     header above a message
+
+msgHdrDateColor                      Color for the message date displayed in
+                                     the header above a message
 
 - Highlighted versions of the above message area list colors:
 areaChooserMsgAreaBkgHighlightColor
