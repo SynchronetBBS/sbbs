@@ -306,6 +306,8 @@ function Unregistered_Quit(msg) {
 		server.client_remove(this.socket);
 	if(server.clients != undefined)
 		log(LOG_DEBUG,format("%d clients", server.clients));
+	else
+		log(LOG_INFO, "Unregistered_Quit(\""+msg+"\")");
 	this.socket.close();
 	if (this.outgoing) {
 		if (YLines[this.ircclass].active > 0)
