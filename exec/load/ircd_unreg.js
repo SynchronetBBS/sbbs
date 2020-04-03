@@ -200,10 +200,12 @@ function IRC_Unregistered_Commands(cmdline) {
 						break;
 				}
 			}
+log(LOG_DEBUG, "That's a SERVER if ever I saw one.");
 			if ( (!this_nline ||
 			      ( (this_nline.password == "*") && !this.outgoing
 				&& !(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
 			     ) && !qwk_slave) {
+log(LOG_DEBUG, "UR FACE");
 				this.quit("UR Server not configured.");
 				return 0;
 			}
@@ -302,14 +304,18 @@ function IRC_Unregistered_Commands(cmdline) {
 ////////// Functions //////////
 
 function Unregistered_Quit(msg) {
+log(LOG_DEBUG, "WHAT YOU SAY");
 	if (msg)
 		this.rawout("ERROR :" + msg);
+log(LOG_DEBUG, "SOMEONE SET UP US THE BOMB");
 	if (server.client_remove!=undefined)
 		server.client_remove(this.socket);
+log(LOG_DEBUG, "MAIN SCREEN TURN ON");
 	if(server.clients != undefined)
 		log(LOG_DEBUG,format("%d clients", server.clients));
 	else
 		log(LOG_INFO, "Unregistered_Quit(\""+msg+"\")");
+log(LOG_DEBUG, "ALL YOUR BASE");
 	this.socket.close();
 	if (this.outgoing) {
 		if (YLines[this.ircclass].active > 0) {
@@ -319,9 +325,13 @@ function Unregistered_Quit(msg) {
 		else
 			log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
 	}
+log(LOG_DEBUG, "ARE BELONG TO US");
 	delete Local_Sockets[this.id];
+log(LOG_DEBUG, "YOU HAVE NO CHANGE TO SURVIVE MAKE YOUR TIME");
 	delete Local_Sockets_Map[this.id];
+log(LOG_DEBUG, "MOVE 'ZIG'");
 	delete Unregistered[this.id];
+log(LOG_DEBUG, "FOR GREAT JUSTICE.");
 	delete this;
 	rebuild_socksel_array = true;
 }
