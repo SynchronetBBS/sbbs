@@ -673,8 +673,12 @@ function connect_to_server(this_cline,the_port) {
 		Unregistered[new_id].ircclass = this_cline.ircclass;
 		YLines[this_cline.ircclass].active++;
 	}
-	else
+	else {
+		umode_notice(USERMODE_ROUTING,"Routing",
+			"Failed to connect to " +
+			this_cline.servername + " ("+this_cline.host+")");
 		connect_sock.close();
+	}
 	this_cline.lastconnect = time();
 }
 
