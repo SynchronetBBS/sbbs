@@ -3008,7 +3008,9 @@ function IRCClient_check_queues() {
 	while (this.recvq.queue.length) {
 		cmd = this.recvq.del();
 		Global_CommandLine = cmd;
+log(LOG_DEBUG, "CMD: "+cmd);
 		this.work(cmd);
+log(LOG_DEBUG, "Replaced with? "+(this.replaced_with !== undefined));
 		if (this.replaced_with !== undefined)
 			this.replaced_with.check_queues();
 	}
