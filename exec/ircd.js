@@ -304,7 +304,7 @@ while (!js.terminated) {
 		   ) {
 			umode_notice(USERMODE_ROUTING,"Routing",
 				"Auto-connecting to " +
-				CLines[thisCL].servername);
+				CLines[thisCL].servername + " ("+CLines[thisCL].host+")");
 			connect_to_server(CLines[thisCL]);
 		}
 	}
