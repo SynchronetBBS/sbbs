@@ -93,7 +93,7 @@ while(bbs.online) {
 		} else
 			console.mnemonics(bbs.text(WhichTextFile));
 		var cmd = console.getkeys(keys, list.length);
-		if(cmd == 'Q')
+		if(cmd == 'Q' || !cmd)
 			break;
 		switch(cmd) {
 			case 'D':
@@ -109,16 +109,29 @@ while(bbs.online) {
 						break;
 					i--;
 				}
+				var path;
+				var files = directory(backslash(txtsec_data(usrsec[cursec])) + "*");
+				for(var f = 0; f < files.length; f++) {
+					var match = false;
+					for(var j = 0; j < list.length && !match; j++) {
+						if(file_getname(list[j].path) == file_getname(files[f]))
+							match = true;
+					}
+					if(!match) {
+						path = file_getname(files[f]);
+						break;
+					}
+				}
 				console.print(format(bbs.text(AddTextFilePath)
 					,system.data_dir, usrsec[cursec].code));
-				var path = console.getstr();
-				if(!path)
+				var path = console.getstr(path, 128, K_EDIT|K_LINE);
+				if(!path || console.aborted)
 					break;
 				console.print(bbs.text(AddTextFileDesc));
-				var desc = console.getstr();
-				if(!desc)
+				var desc = console.getstr(file_getname(path), 70, K_EDIT|K_LINE);
+				if(!desc || console.aborted)
 					break;
-				list.splice(i, 0, { path: path, desc: desc });
+				list.splice(i, 0, { name: file_getname(path), desc: desc });
 				write_list(usrsec[cursec], list);
 				break;
 			}
@@ -144,7 +157,7 @@ while(bbs.online) {
 				console.print("Desc: ");
 				{
 					var str = console.getstr(list[i].desc, 75, K_EDIT|K_LINE);
-					if(str)
+					if(str && !console.aborted)
 						list[i].desc = str;
 				}
 				if(!console.aborted
