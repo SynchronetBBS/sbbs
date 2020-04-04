@@ -43,7 +43,7 @@ function FTP(host, user, pass, port, dport, bindhost, account)
 			throw("Account required");
 		ret = parseInt(this.cmd("ACCOUNT "+this.account, true), 10);
 	}
-	if (ret !== 230) {
+	if (ret !== 230 && ret != 202) {
 		this.socket.close();
 		throw("Login failed");
 	}
@@ -70,6 +70,18 @@ FTP.prototype.cdup = function()
 
 	rstr = this.cmd("CDUP");
 	ret = parseInt(rstr, 10);
+	if (ret !== 200)
+		return false;
+	return true;
+}
+
+FTP.prototype.smnt = function(path)
+{
+	var rstr;
+	var ret;
+
+	rstr = this.cmd("SMNT");
+	ret = parseInt(rstr, 10);
 	if (ret !== 250)
 		return false;
 	return true;
@@ -85,6 +97,8 @@ FTP.prototype.logout = function()
 		return false;
 	return true;
 }
+
+// REIN... not implemented
 
 FTP.prototype.pwd = function()
 {
@@ -118,7 +132,7 @@ FTP.prototype.get = function(src, dest)
 FTP.prototype.put = function(src, dest)
 {
 	var rstr;
-	var data_socket = this.data_socket();
+	var data_socket;
 	var tmp_socket;
 	var selret;
 	var f;
@@ -126,21 +140,7 @@ FTP.prototype.put = function(src, dest)
 	var total = 0;
 	var error = false;
 
-	rstr = this.cmd("STOR "+dest, true);
-	if (parseInt(rstr, 10) !== 150) {
-		data_socket.close();
-		throw("PUT failed");
-	}
-	if (!this.passive) {
-		selret = socket_select([data_socket], this.timeout);
-		if (selret === null || selret.length === 0) {
-			data_socket.close();
-			throw("Timeout waiting for remote to connect");
-		}
-		tmp_socket = data_socket.accept();
-		data_socket.close();
-		data_socket = tmp_socket;
-	}
+	data_socket = this.data_socket("STOR "+dest)
 
 	f = new File(src);
 	if (!f.open("rb")) {
@@ -199,10 +199,11 @@ FTP.prototype.cmd = function(cmd, needresp)
 	return null;
 }
 
-FTP.prototype.data_socket = function()
+FTP.prototype.data_socket = function(cmd)
 {
 	var rstr;
 	var ds;
+	var ts;
 	var m;
 	var splitaddr;
 
@@ -212,6 +213,7 @@ FTP.prototype.data_socket = function()
 		rstr = this.cmd("TYPE I", true);
 	if (parseInt(rstr, 10) !== 200)
 		throw("Unable to create data socket");
+
 	if (this.passive) {
 		// TODO: Outgoing port?
 		rstr = this.cmd("EPSV", true);
@@ -237,13 +239,30 @@ FTP.prototype.data_socket = function()
 		ds.close();
 		throw("EPRT rejected");
 	}
+
+	rstr = this.cmd(cmd, true);
+	if (parseInt(rstr, 10) !== 150) {
+		ds.close();
+		throw(cmd+" failed");
+	}
+	if (!this.passive) {
+		selret = socket_select([ds], this.timeout);
+		if (selret === null || selret.length === 0) {
+			ds.close();
+			throw("Timeout waiting for remote to connect");
+		}
+		ts = ds.accept();
+		ds.close();
+		ds = ts;
+	}
+
 	return ds;
 }
 
 FTP.prototype.do_get = function(src, dest, isdir)
 {
 	var rstr;
-	var data_socket = this.data_socket();
+	var data_socket;
 	var tmp_socket;
 	var selret;
 	var f;
@@ -251,24 +270,7 @@ FTP.prototype.do_get = function(src, dest, isdir)
 	var rbuf;
 	var total = 0;
 
-	if (isdir)
-		rstr = this.cmd("LIST "+src, true);
-	else
-		rstr = this.cmd("RETR "+src, true);
-	if (parseInt(rstr, 10) !== 150) {
-		data_socket.close();
-		throw("GET failed");
-	}
-	if (!this.passive) {
-		selret = socket_select([data_socket], this.timeout);
-		if (selret === null || selret.length === 0) {
-			data_socket.close();
-			throw("Timeout waiting for remote to connect");
-		}
-		tmp_socket = data_socket.accept();
-		data_socket.close();
-		data_socket = tmp_socket;
-	}
+	data_socket = this.data_socket(isdir ? ("LIST "+src) : ("RETR "+src))
 
 	if (!isdir) {
 		f = new File(dest);
@@ -296,3 +298,9 @@ FTP.prototype.do_get = function(src, dest, isdir)
 		return ret;
 	return true;
 }
+
+var f = new FTP('fd0b:71d1:b5ec::1');
+f.passive = false;
+f.cwd("main");
+print(f.dir('.'));
+f.logout();
