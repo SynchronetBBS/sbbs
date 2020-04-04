@@ -298,10 +298,3 @@ FTP.prototype.do_get = function(src, dest, isdir)
 		return ret;
 	return true;
 }
-
-var f = new FTP('fd0b:71d1:b5ec::1');
-f.passive = false;
-f.cwd("main");
-print(f.pwd());
-print(f.dir('.'));
-f.logout();
