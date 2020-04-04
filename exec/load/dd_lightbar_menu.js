@@ -27,19 +27,41 @@ SetPos()
 SetSize()
 GetVal()
 AddAdditionalSelectItemKeys()
+SetBorderChars()
+SetColors()
 
 To change the colors used for displaying the items, you can change the values
 in the colors object within the DDLightbarMenu object.  These are the current
 supported colors:
 itemColor: The color to use for non-selected items (current default is white
-           on blue)
+           on blue).  This can be a string (with the color/attribute values)
+           or an array to specify colors for different sections of the item
+		   text to display in the menu.  See the note on item color arrays
+		   below.
 selectedItemColor: The color to use for selected items (current default is blue
-                   on white)
+                   on white).  This can be a string (with the color/attribute values)
+                   or an array to specify colors for different sections of the item
+		           text to display in the menu.  See the note on item color arrays
+		           below.
 itemTextCharHighlightColor: The color of a highlighted non-space character in an
                             item text (specified by having a & in the item text).
 							It's important not to specify a "\1n" in here in case
 							the item text should have a background color.
 borderColor: The color for the borders (if borders are enabled)
+You can also call SetColors() and pass in a JS object with any or all of the
+above properties to set the colors internally in the DDLightbarMenu object.
+
+Item color arrays: Currently, colors.itemColor and colors.seletedItemColor within
+a DDLightbarMenu object can be either a string (containing color/attribute codes)
+or an array with color/attribute codes for different sections of the item strings
+to display in the menu.  The array is to contain objects with the following
+properties:
+start: The index of the first character in the item string to apply the colors to
+end: One past the last character index in the string to apply the colors to
+attrs: The Synchronet attribute codes to apply to the section of the item string
+For the last item, the 'end' property can be -1, 0, or greater than the length
+of the item to apply the color/attribute codes to the rest of the string.
+
 
 By default, the menu selection will wrap around to the beginning/end when using
 the down/up arrows.  That behavior can be disabled by setting the wrapNavigation
@@ -158,19 +180,55 @@ setting the following properties of the borderChars object:
   right: The character to use for the right border
 For example:
 lbMenu.borderChars.upperLeft = "\xDA"; // Single-line upper-left character
+Alternately, you can call the SetBorderChars() function and pass in a JS object
+with any or all of the above properties to set those values internally in the
+DDLightbarMenu object.
 
 If you want hotkeys to be case-sensitive, you can set the hotkeyCaseSensitive
 property to true (it is false by default).  For example:
 lbMenu.hotkeyCaseSensitive = true;
 
 To add additional key characters as quit keys (in addition to ESC), call
-AddAdditionalQuitKeys() with an array of keys as strings.  For example:
-lbMenu.AddAdditionalQuitKeys(["q", "Q"]);
+AddAdditionalQuitKeys() with a string of characters.  For example:
+lbMenu.AddAdditionalQuitKeys("qQ");
 
 To enable the border and set top and bottom border text:
 lbMenu.borderEnabled = true;
 lbMenu.topBorderText = "Options";
 lbMenu.bottomBorderText = "Enter = Select";
+
+
+For a more advanced usage, if you have another large list of items you want
+to use in the menu instead of the menu's own list of items, you can replace
+the NumItems and GetItem functions in the menu object and write your own
+versions that access a different list of items.  This can be useful, for instance,
+if you're working with a Synchronet messagebase (which may include a large number
+of messages), so you can avoid the time taken to add those items to a DDLightbarMenu.
+NumItems() needs to return the number of items in the list.  GetItem() takes an item
+index as a parameter and needs to return an item object that is compatible with
+DDLightbarMenu.  You can get a default item object by calling MakeItemWithRetval()
+or MakeItemWithTextAndRetval(), then change its text and retval properties as
+needed, then return the item object.  In the item object, the 'text' property
+is the text to display in the menu, and the 'retval' proprety is the value to return
+when the user chooses that item.
+An example (assuming the lightbar menu object is called lbMenu):
+lbMenu.NumItems = function() {
+	// Do your own thing to get the number of items in your list.
+	// ...
+	// Assuming myNumItems is the number of items in your list:
+	return myNumItems;
+};
+lbMenu.GetItem = function(pItemIndex) {
+	// Get a default item object from the menu with an initial return value of -1
+	var menuItemObj = this.MakeItemWithRetval(-1);
+	// Do your own thing to get the item text and return value for the menu.
+	// ...
+	// Assuming itemText is the text to display in the menu and itemRetval is
+	// the return value to return from the menu:
+	menuItemObj.text = itemText;
+	menuItemObj.retval = itemRetval;
+	return menuItemObj; // The DDLightbarMenu object will use this when displaying the menu
+};
 */
 
 if (typeof(require) === "function")
@@ -260,8 +318,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.borderEnabled = false;
 	this.drawnAlready = false;
 	this.colors = {
-		itemColor: "\1n\1w\1" + "4",
-		selectedItemColor: "\1n\1b\1" + "7",
+		itemColor: "\1n\1w\1" + "4", // Can be either a string or an array specifying colors within the item
+		selectedItemColor: "\1n\1b\1" + "7", // Can be either a string or an array specifying colors within the item
 		itemTextCharHighlightColor: "\1y\1h",
 		borderColor: "\1n\1b",
 		scrollbarScrollBlockColor: "\1h\1w",
@@ -307,6 +365,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.Add = DDLightbarMenu_Add;
 	this.Remove = DDLightbarMenu_Remove;
 	this.RemoveAllItems = DDLightbarMenu_RemoveAllItems;
+	this.NumItems = DDLightbarMenu_NumItems;
+	this.GetItem = DDLightbarMenu_GetItem;
 	this.SetPos = DDLightbarMenu_SetPos;
 	this.SetSize = DDLightbarMenu_SetSize;
 	this.SetWidth = DDLightbarMenu_SetWidth;
@@ -322,6 +382,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.RemoveAllItemHotkeys = DDLightbarMenu_RemoveAllItemHotkeys;
 	this.GetVal = DDLightbarMenu_GetVal;
 	this.SetBorderChars = DDLightbarMenu_SetBorderChars;
+	this.SetColors = DDLightbarMenu_SetColors;
 	this.GetNumItemsPerPage = DDLightbarMenu_GetNumItemsPerPage;
 	this.GetTopItemIdxToTopOfLastPage = DDLightbarMenu_GetTopItemIdxToTopOfLastPage;
 	this.SetTopItemIdxToTopOfLastPage = DDLightbarMenu_SetTopItemIdxToTopOfLastPage;
@@ -337,6 +398,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.CalcScrollbarSolidBlockStartRow = DDLightbarMenu_CalcScrollbarSolidBlockStartRow;
 	this.UpdateScrollbarWithHighlightedItem = DDLightbarMenu_UpdateScrollbarWithHighlightedItem;
 	this.CanShowAllItemsInWindow = DDLightbarMenu_CanShowAllItemsInWindow;
+	this.MakeItemWithTextAndRetval = DDLightbarMenu_MakeItemWithTextAndRetval;
+	this.MakeItemWithRetval = DDLightbarMenu_MakeItemWithRetval;
 
 	// Set some things based on the parameters passed in
 	if ((typeof(pX) == "number") && (typeof(pY) == "number"))
@@ -416,6 +479,25 @@ function DDLightbarMenu_RemoveAllItems()
 	this.items = [];
 	this.selectedItemIdx = 0;
 	this.topItemIdx = 0;
+}
+
+// Returns the number of items in the menu
+function DDLightbarMenu_NumItems()
+{
+	return this.items.length;
+}
+
+// Returns an item from the list
+//
+// Parameters:
+//  pItemIndex: The index of the item to get
+//
+// Return value: The item (or null if pItemIndex is invalid)
+function DDLightbarMenu_GetItem(pItemIndex)
+{
+	if ((pItemIndex < 0) || (pItemIndex >= this.items.length))
+		return null;
+	return this.items[pItemIndex];
 }
 
 // Sets the menu's upper-left corner position
@@ -526,7 +608,7 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 	// so that we can use that space to display the item numbers.
 	if (this.numberedMode)
 	{
-		this.itemNumLen = this.items.length.toString().length;
+		this.itemNumLen = this.NumItems().toString().length;
 		itemLen -= this.itemNumLen;
 		--itemLen; // Have a space for separation between the numbers and items
 	}
@@ -534,7 +616,7 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 	// Write the menu items, only up to the height of the menu
 	var numPossibleItems = (this.borderEnabled ? this.size.height - 2 : this.size.height);
 	var numItemsWritten = 0;
-	for (var idx = this.topItemIdx; (idx < this.items.length) && (numItemsWritten < numPossibleItems); ++idx)
+	for (var idx = this.topItemIdx; (idx < this.NumItems()) && (numItemsWritten < numPossibleItems); ++idx)
 	{
 		console.gotoxy(curPos.x, curPos.y++);
 		var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
@@ -650,7 +732,8 @@ function DDLightbarMenu_DrawBorder()
 //             at the end of the item's text.
 function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 {
-	if ((pIdx >= 0) && (pIdx < this.items.length))
+	var numItems = this.NumItems();
+	if ((pIdx >= 0) && (pIdx < numItems))
 	{
 		var itemLen = 0;
 		if (typeof(pItemLen) == "number")
@@ -670,7 +753,7 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 			// so that we can use that space to display the item numbers.
 			if (this.numberedMode)
 			{
-				this.itemNumLen = this.items.length.toString().length;
+				this.itemNumLen = numItems.toString().length;
 				itemLen -= this.itemNumLen;
 				--itemLen; // Have a space for separation between the numbers and items
 			}
@@ -684,11 +767,11 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 		var selected = (typeof(pSelected) == "boolean" ? pSelected : false);
 
 		// Get the item text, and truncate it to the displayable item width
-		var itemText = this.items[pIdx].text;
+		var itemText = this.GetItem(pIdx).text;
 		if (itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems) > itemLen)
 			itemText = itemText.substr(0, itemLen);
 		// Add the item color to the text
-		itemText = itemColor + itemText;
+		itemText = addAttrsToString(itemText, itemColor);
 		// If ampersandHotkeysInItems is true, see if there's an ampersand in
 		// the item text.  If so, we'll want to highlight the next character
 		// with a different color.
@@ -822,7 +905,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 {
 	this.lastUserInput = null;
 
-	if (this.items.length == 0)
+	var numItems = this.NumItems();
+	if (numItems == 0)
 		return null;
 
 	var draw = (typeof(pDraw) == "boolean" ? pDraw : true);
@@ -885,10 +969,10 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
 					this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					// Go to the last item and scroll to the bottom if necessary
-					this.selectedItemIdx = this.items.length - 1;
+					this.selectedItemIdx = numItems - 1;
 					var oldTopItemIdx = this.topItemIdx;
 					var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-					this.topItemIdx = this.items.length - numItemsPerPage;
+					this.topItemIdx = numItems - numItemsPerPage;
 					if (this.topItemIdx < 0)
 						this.topItemIdx = 0;
 					if (this.topItemIdx != oldTopItemIdx)
@@ -907,7 +991,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		}
 		else if ((this.lastUserInput == KEY_DOWN) || (this.lastUserInput == KEY_RIGHT))
 		{
-			if (this.selectedItemIdx < this.items.length-1)
+			if (this.selectedItemIdx < numItems-1)
 			{
 				// Draw the current item in regular colors
 				if (this.borderEnabled)
@@ -980,19 +1064,36 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					this.selectedItemIdx = 0;
 				this.Draw(selectedItemIndexes);
 			}
+			else
+			{
+				// The top index is the top index for the last page.
+				// If wrapping is enabled, then go back to the first page.
+				if (this.wrapNavigation)
+				{
+					var topIndexForLastPage = numItems - numItemsPerPage;
+					if (topIndexForLastPage < 0)
+						topIndexForLastPage = 0;
+					else if (topIndexForLastPage >= numItems)
+						topIndexForLastPage = numItems - 1;
+
+					this.topItemIdx = topIndexForLastPage;
+					this.selectedItemIdx = topIndexForLastPage;
+					this.Draw(selectedItemIndexes);
+				}
+			}
 		}
 		else if (this.lastUserInput == KEY_PAGE_DOWN)
 		{
 			var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
 			// Figure out how many pages are needed to list all the items
-			//var numPages = Math.ceil(this.items.length / this.size.height);
+			//var numPages = Math.ceil(numItems / this.size.height);
 			// Figure out the top index for the last page.
 			//var topIndexForLastPage = (this.size.height * numPages) - this.size.height;
-			var topIndexForLastPage = this.items.length - numItemsPerPage;
+			var topIndexForLastPage = numItems - numItemsPerPage;
 			if (topIndexForLastPage < 0)
 				topIndexForLastPage = 0;
-			else if (topIndexForLastPage >= this.items.length)
-				topIndexForLastPage = this.items.length - 1;
+			else if (topIndexForLastPage >= numItems)
+				topIndexForLastPage = numItems - 1;
 			if (topIndexForLastPage != this.topItemIdx)
 			{
 				// Update the selected & top item indexes
@@ -1002,6 +1103,17 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					this.selectedItemIdx = topIndexForLastPage;
 				if (this.topItemIdx > topIndexForLastPage)
 					this.topItemIdx = topIndexForLastPage;
+				this.Draw(selectedItemIndexes);
+			}
+			else
+			{
+				// The top index is the top index for the last page.
+				// If wrapping is enabled, then go back to the first page.
+				if (this.wrapNavigation)
+				{
+					this.topItemIdx = 0;
+					this.selectedItemIdx = 0;
+				}
 				this.Draw(selectedItemIndexes);
 			}
 		}
@@ -1044,12 +1156,12 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		{
 			// Go to the last item in the list
 			var numItemsPerPage = this.GetNumItemsPerPage();
-			if (this.selectedItemIdx < this.items.length-1)
+			if (this.selectedItemIdx < numItems-1)
 			{
-				var lastPossibleTop = this.items.length - numItemsPerPage;
+				var lastPossibleTop = numItems - numItemsPerPage;
 				if (lastPossibleTop < 0)
 					lastPossibleTop = 0;
-				var lastItemIdx = this.items.length - 1;
+				var lastItemIdx = numItems - 1;
 				// If the last item index is below the current page, then scroll.
 				// Otherwise, draw more efficiently by drawing the current item in
 				// regular colors and the last item in highlighted colors.
@@ -1070,7 +1182,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
 					this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					this.selectedItemIdx = this.topItemIdx + numItemsPerPage - 1;
-					if (this.selectedItemIdx >= this.items.length)
+					if (this.selectedItemIdx >= numItems)
 						this.selectedItemIdx = lastItemIdx;
 					// Draw the new current item in selected colors
 					if (this.borderEnabled)
@@ -1093,7 +1205,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					selectedItemIndexes[this.selectedItemIdx] = true;
 			}
 			else
-				retVal = this.items[this.selectedItemIdx].retval;
+				retVal = this.GetItem(this.selectedItemIdx).retval;
 			continueOn = false;
 		}
 		else if (this.lastUserInput == " ")
@@ -1135,8 +1247,9 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					// If any of the item text is right at the end, then display it.  Otherwise,
 					// display 2 spaces.
 					var textToPrint = "  ";
-					if (this.items[this.selectedItemIdx].text.length >= this.size.width)
-						textToPrint = this.items[this.selectedItemIdx].text.substr(this.size.width-2, 2);
+					var theItem = this.GetItem(this.selectedItemIdx);
+					if (theItem.text.length >= this.size.width)
+						textToPrint = theItem.text.substr(this.size.width-2, 2);
 					console.print(this.colors.selectedItemColor + textToPrint + "\1n");
 				}
 			}
@@ -1167,7 +1280,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			printf("\1n%" + this.size.width + "s", ""); // Blank out what might be on the screen already
 			console.gotoxy(promptX, promptY);
 			console.print("\1cItem #: \1h");
-			var userEnteredItemNum = console.getnum(this.items.length);
+			var userEnteredItemNum = console.getnum(numItems);
 			// Blank out the input prompt
 			console.gotoxy(promptX, promptY);
 			printf("\1n%" + this.size.width + "s", "");
@@ -1193,7 +1306,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 				else
 				{
-					retVal = this.items[this.selectedItemIdx].retval;
+					retVal = this.GetItem(this.selectedItemIdx).retval;
 					continueOn = false;
 				}
 			}
@@ -1204,15 +1317,16 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		{
 			// See if the user pressed a hotkey set for one of the items.  If so,
 			// then choose that item.
-			for (var i = 0; i < this.items.length; ++i)
+			for (var i = 0; i < numItems; ++i)
 			{
-				for (var h = 0; h < this.items[i].hotkeys.length; ++h)
+				var theItem = this.GetItem(i);
+				for (var h = 0; h < theItem.hotkeys.length; ++h)
 				{
 					var userPressedHotkey = false;
 					if (this.hotkeyCaseSensitive)
-						userPressedHotkey = (this.lastUserInput == this.items[i].hotkeys[h]);
+						userPressedHotkey = (this.lastUserInput == theItem.hotkeys[h]);
 					else
-						userPressedHotkey = (this.lastUserInput.toUpperCase() == this.items[i].hotkeys[h].toUpperCase());
+						userPressedHotkey = (this.lastUserInput.toUpperCase() == theItem.hotkeys[h].toUpperCase());
 					if (userPressedHotkey)
 					{
 						if (this.multiSelect)
@@ -1231,7 +1345,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						}
 						else
 						{
-							retVal = this.items[i].retval;
+							retVal = theItem.retval;
 							this.selectedItemIdx = i;
 							continueOn = false;
 						}
@@ -1252,13 +1366,15 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	{
 		userChoices = [];
 		for (var prop in selectedItemIndexes)
-			userChoices.push(this.items[prop].retval);
+			userChoices.push(this.GetItem(prop).retval);
 	}
 
 	return (this.multiSelect ? userChoices : retVal);
 }
 
-// Sets the characters to use for drawing the border
+// Sets the characters to use for drawing the border.  Takes an object specifying
+// the values to set, but does not overwrite the whole borderChars object in the
+// menu object.
 //
 // Parameters:
 //  pBorderChars: An object with the following properties:
@@ -1284,6 +1400,37 @@ function DDLightbarMenu_SetBorderChars(pBorderChars)
 	}
 }
 
+// Sets the colors to use with the menu.  Takes an object specifying the values
+// to set, but does not overwrite the whole colors object in the menu object.
+//
+// Parameters:
+//  pColors: An object with the following properties:
+//           itemColor: The color to use for non-highlighted items
+//           selectedItemColor: The color to use for selected items
+//           itemTextCharHighlightColor: The color to use for a highlighted
+//                                       non-space character in an item text
+//                                       (specified by having a & in the item
+//                                       text).
+//                                       It's important not to specify a "\1n"
+//                                       in here in case the item text should
+//                                       have a background color.
+//           borderColor: The color to use for the border
+//           scrollbarScrollBlockColor: The color to use for the scrollbar block
+//           scrollbarBGColor: The color to use for the scrollbar background
+function DDLightbarMenu_SetColors(pColors)
+{
+	if (typeof(pColors) != "object")
+		return;
+
+	var colorPropNames = [ "itemColor", "selectedItemColor", "itemTextCharHighlightColor",
+	                       "borderColor", "scrollbarScrollBlockColor", "scrollbarBGColor" ];
+	for (var i = 0; i < colorPropNames.length; ++i)
+	{
+		if (pColors.hasOwnProperty(colorPropNames[i]))
+			this.colors[colorPropNames[i]] = pColors[colorPropNames[i]];
+	}
+}
+
 // Returns the number of (possible) items per page
 function DDLightbarMenu_GetNumItemsPerPage()
 {
@@ -1299,7 +1446,7 @@ function DDLightbarMenu_GetTopItemIdxToTopOfLastPage()
 	var numItemsPerPage = this.size.height;
 	if (this.borderEnabled)
 		numItemsPerPage -= 2;
-	var topItemIndex = this.items.length - numItemsPerPage;
+	var topItemIndex = this.NumItems() - numItemsPerPage;
 	if (topItemIndex < 0)
 		topItemIndex = 0;
 	return topItemIndex;
@@ -1311,7 +1458,7 @@ function DDLightbarMenu_SetTopItemIdxToTopOfLastPage()
 	var numItemsPerPage = this.size.height;
 	if (this.borderEnabled)
 		numItemsPerPage -= 2;
-	this.topItemIdx = this.items.length - numItemsPerPage;
+	this.topItemIdx = this.NumItems() - numItemsPerPage;
 	if (this.topItemIdx < 0)
 		this.topItemIdx = 0;
 }
@@ -1421,51 +1568,6 @@ function DDLightbarMenu_DisplayInitialScrollbar(pSolidBlockStartRow, pNumSolidBl
 			console.print(this.scrollbarInfo.BGChar);
 		}
 	}
-}
-
-// Calculates the starting row for the solid blocks on the scrollbar
-//
-// Return value: The starting row for the solid blocks on the scrollbar
-function DDLightbarMenu_CalcScrollbarSolidBlockStartRow()
-{
-	var scrollbarStartY = this.pos.y;
-	var scrollbarHeight = this.size.height;
-	if (this.borderEnabled)
-	{
-		++scrollbarStartY;
-		scrollbarHeight -= 2;
-	}
-	var scrollbarBottomY = scrollbarStartY + scrollbarHeight - 1;
-	var solidBlockStartRow = scrollbarStartY;
-	if (this.items.length > 0)
-	{
-		var scrollbarFraction = this.selectedItemIdx / this.items.length;
-		var scrollbarStartRow = scrollbarStartY + Math.floor(scrollbarHeight * scrollbarFraction);
-		solidBlockStartRow = scrollbarStartRow - Math.floor(this.scrollbarInfo.numSolidScrollBlocks / 2);
-		// Don't let the solid blocks go above the starting screen row or below the ending
-		// screen row of the scrollbar
-		if (solidBlockStartRow < scrollbarStartY)
-			solidBlockStartRow = scrollbarStartY;
-		else if (solidBlockStartRow + this.scrollbarInfo.numSolidScrollBlocks > scrollbarBottomY)
-			solidBlockStartRow = scrollbarBottomY - this.scrollbarInfo.numSolidScrollBlocks + 1;
-	}
-	return solidBlockStartRow;
-}
-
-// Updates the scrollbar position based on the currently-selected
-// item index, this.selectedItemIdx.
-function DDLightbarMenu_UpdateScrollbarWithHighlightedItem()
-{
-	var solidBlockStartRow = this.CalcScrollbarSolidBlockStartRow();
-	if (solidBlockStartRow != this.scrollbarInfo.solidBlockLastStartRow)
-		this.UpdateScrollbar(solidBlockStartRow, this.scrollbarInfo.solidBlockLastStartRow, this.scrollbarInfo.numSolidScrollBlocks);
-	this.scrollbarInfo.solidBlockLastStartRow = solidBlockStartRow;
-}
-
-function DDLightbarMenu_CanShowAllItemsInWindow()
-{
-	var pageHeight = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-	return (this.items.length <= pageHeight);
 }
 
 // For the DigDistMsgReader class: Updates the scrollbar for a message, for use
@@ -1581,6 +1683,85 @@ function DDLightbarMenu_UpdateScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlo
 	}
 }
 
+// Calculates the starting row for the solid blocks on the scrollbar
+//
+// Return value: The starting row for the solid blocks on the scrollbar
+function DDLightbarMenu_CalcScrollbarSolidBlockStartRow()
+{
+	var scrollbarStartY = this.pos.y;
+	var scrollbarHeight = this.size.height;
+	if (this.borderEnabled)
+	{
+		++scrollbarStartY;
+		scrollbarHeight -= 2;
+	}
+	var scrollbarBottomY = scrollbarStartY + scrollbarHeight - 1;
+	var solidBlockStartRow = scrollbarStartY;
+	var numMenuItems = this.NumItems();
+	if (numMenuItems > 0)
+	{
+		var scrollbarFraction = this.selectedItemIdx / numMenuItems;
+		var scrollbarStartRow = scrollbarStartY + Math.floor(scrollbarHeight * scrollbarFraction);
+		solidBlockStartRow = scrollbarStartRow - Math.floor(this.scrollbarInfo.numSolidScrollBlocks / 2);
+		// Don't let the solid blocks go above the starting screen row or below the ending
+		// screen row of the scrollbar
+		if (solidBlockStartRow < scrollbarStartY)
+			solidBlockStartRow = scrollbarStartY;
+		else if (solidBlockStartRow + this.scrollbarInfo.numSolidScrollBlocks > scrollbarBottomY)
+			solidBlockStartRow = scrollbarBottomY - this.scrollbarInfo.numSolidScrollBlocks + 1;
+	}
+	return solidBlockStartRow;
+}
+
+// Updates the scrollbar position based on the currently-selected
+// item index, this.selectedItemIdx.
+function DDLightbarMenu_UpdateScrollbarWithHighlightedItem()
+{
+	var solidBlockStartRow = this.CalcScrollbarSolidBlockStartRow();
+	if (solidBlockStartRow != this.scrollbarInfo.solidBlockLastStartRow)
+		this.UpdateScrollbar(solidBlockStartRow, this.scrollbarInfo.solidBlockLastStartRow, this.scrollbarInfo.numSolidScrollBlocks);
+	this.scrollbarInfo.solidBlockLastStartRow = solidBlockStartRow;
+}
+
+function DDLightbarMenu_CanShowAllItemsInWindow()
+{
+	var pageHeight = (this.borderEnabled ? this.size.height - 2 : this.size.height);
+	return (this.NumItems() <= pageHeight);
+}
+
+// Makes an item object that is compatible with DDLightbarMenu, with a given
+// item text and return value.
+//
+// Parameters:
+//  pText: The text to show in the menu for the item
+//  pRetval: The return value of the item when the user selects it from the menu
+//
+// Return value: An object with the given text & return value compatible with DDLightbarMenu
+function DDLightbarMenu_MakeItemWithTextAndRetval(pText, pRetval)
+{
+	return {
+		text: pText,
+		retval: pRetval,
+		hotkeys: []
+	};
+}
+
+// Makes an item object that is compatible with DDLightbarMenu, with a given
+// return value.
+//
+// Parameters:
+//  pRetval: The return value of the item when the user selects it from the menu
+//
+// Return value: An object with the given return value compatible with DDLightbarMenu
+function DDLightbarMenu_MakeItemWithRetval(pRetval)
+{
+	return {
+		text: "",
+		retval: pRetval,
+		hotkeys: []
+	};
+}
+
 // Calculates the number of solid scrollbar blocks & non-solid scrollbar blocks
 // to use.  Saves the information in this.scrollbarInfo.numSolidScrollBlocks and
 // this.scrollbarInfo.numNonSolidScrollBlocks.
@@ -1589,15 +1770,24 @@ function DDLightbarMenu_CalcScrollbarBlocks()
 	var menuDisplayHeight = this.size.height;
 	if (this.borderEnabled)
 		menuDisplayHeight -= 2;
-	var menuListFractionShown = menuDisplayHeight / this.items.length;
-	if (menuListFractionShown > 1)
-		menuListFractionShown = 1.0;
-	this.scrollbarInfo.numSolidScrollBlocks = Math.floor(menuDisplayHeight * menuListFractionShown);
-	if (this.scrollbarInfo.numSolidScrollBlocks <= 0)
-		this.scrollbarInfo.numSolidScrollBlocks = 1;
-	else if (this.scrollbarInfo.numSolidScrollBlocks > menuDisplayHeight)
+	var numMenuItems = this.NumItems();
+	if (numMenuItems > 0)
+	{
+		var menuListFractionShown = menuDisplayHeight / numMenuItems;
+		if (menuListFractionShown > 1)
+			menuListFractionShown = 1.0;
+		this.scrollbarInfo.numSolidScrollBlocks = Math.floor(menuDisplayHeight * menuListFractionShown);
+		if (this.scrollbarInfo.numSolidScrollBlocks <= 0)
+			this.scrollbarInfo.numSolidScrollBlocks = 1;
+		else if (this.scrollbarInfo.numSolidScrollBlocks > menuDisplayHeight)
+			this.scrollbarInfo.numSolidScrollBlocks = menuDisplayHeight;
+		this.scrollbarInfo.numNonSolidScrollBlocks = menuDisplayHeight - this.scrollbarInfo.numSolidScrollBlocks;
+	}
+	else
+	{
 		this.scrollbarInfo.numSolidScrollBlocks = menuDisplayHeight;
-	this.scrollbarInfo.numNonSolidScrollBlocks = menuDisplayHeight - this.scrollbarInfo.numSolidScrollBlocks;
+		this.scrollbarInfo.numNonSolidScrollBlocks = 0;
+	}
 }
 
 //////////////////////////////////////////////////////////
@@ -1743,4 +1933,86 @@ function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
 		}
 	}
 	return strCopy;
+}
+
+// Adds color/attribute codes to a string.
+//
+// Parameters:
+//  pStr: The string to add attribute codes to
+//  pAttrs: This can be either a string containing attribute codes or an array
+//          of objects with start, end, and color properties, for applying attribute
+//          codes to different parts of the string.  These are the properties of
+//          each object in the string (note: for the last one, end can be 0 or -1
+//          to apply the attributes to the rest of the string):
+//           start: The start index in the string to apply the attributes to
+//           end: One past the last index in the part of the string to apply the attributes to
+//           attrs: The attributes to apply to that part of the string
+//
+// Return value: A copy of the string with attributes applied
+function addAttrsToString(pStr, pAttrs)
+{
+	if (typeof(pStr) != "string")
+		return "";
+	else if (pStr.length == 0)
+		return "";
+
+	var str;
+	if (Array.isArray(pAttrs))
+	{
+		if (pAttrs.length > 0)
+		{
+			// Ensure each element of the array has start, end, and attrs properties
+			var allElementsHaveCorrectProps = true;
+			for (var i = 0; (i < pAttrs.length) && allElementsHaveCorrectProps; ++i)
+			{
+				allElementsHaveCorrectProps = ((typeof(pAttrs[i]) == "object") &&
+				                               pAttrs[i].hasOwnProperty("start") &&
+				                               pAttrs[i].hasOwnProperty("end") &&
+				                               pAttrs[i].hasOwnProperty("attrs") &&
+				                               (typeof(pAttrs[i].start) == "number") &&
+				                               (typeof(pAttrs[i].end) == "number") &&
+				                               (typeof(pAttrs[i].attrs) == "string"));
+			}
+			if (!allElementsHaveCorrectProps)
+				return pStr;
+
+			// Colorize the string with the object in pAttrs.
+			// Don't do the last object in this loop, because for the last object,
+			// we'll want to check if its end index is valid.
+			str = "";
+			var lastEnd = -1;
+			for (var i = 0; i < pAttrs.length; ++i)
+			{
+				// If the current object's start is more than 1 character after
+				// the last's end, then append the gap in the string with the
+				// normal attribute
+				if ((i > 0) && (pAttrs[i].start > pAttrs[i-1].end))
+					str += "\1n" + pStr.substring(pAttrs[i-1].end, pAttrs[i].start);
+				// If the properties for the current attrib object are all valid, append
+				// the current part of the string with the given attributes
+				if ((pAttrs[i].start >= lastEnd) && (pAttrs[i].start >= 0) && (pAttrs[i].start < pStr.length) && (pAttrs[i].end > pAttrs[i].start) && (pAttrs[i].end <= pStr.length))
+					str += "\1n" + pAttrs[i].attrs + pStr.substring(pAttrs[i].start, pAttrs[i].end);
+				// For the last attribute object, allow the end index to be <= 0 or
+				// more than the length of the string to apply the attributes to the
+				// rest of the string.
+				//else if ((i == pAttrs.length-1) && (pAttrs[i].start >= lastEnd) && (pAttrs[i].start >= 0) && (pAttrs[i].start < pStr.length) && (pAttrs[i].end <= 0))
+				else if ((i == pAttrs.length-1) && (pAttrs[i].start >= lastEnd) && (pAttrs[i].start >= 0) && (pAttrs[i].start < pStr.length) && ((pAttrs[i].end <= 0) || (pAttrs[i].end > pStr.length)))
+					str += "\1n" + pAttrs[i].attrs + pStr.substring(pAttrs[i].start);
+				lastEnd = pAttrs[i].end;
+			}
+
+			// If str is shorter than the passed-in string, then append the rest of the string
+			// with the normal attribute.
+			var theStrLen = console.strlen(str);
+			if (theStrLen < pStr.length)
+				str += "\1n" + pStr.substring(theStrLen);
+		}
+		else
+			str = pStr;
+	}
+	else if (typeof(pAttrs) == "string")
+		str = "\1n" + pAttrs + pStr;
+	else
+		str = pStr;
+	return str;
 }
