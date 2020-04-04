@@ -12,7 +12,7 @@ function FTP(host, user, pass, port, dport, bindhost)
 	if (port === undefined)
 		port = 21;
 	if (dport === undefined)
-		dport = port - 1;
+		dport = 0;
 	if (user === undefined)
 		user = 'anonymous';
 	if (pass === undefined)
@@ -207,7 +207,7 @@ FTP.prototype.data_socket = function()
 
 	// TODO: No way to check if IPv6...
 	ds = new Socket(SOCK_STREAM, "FTP-Data", (this.socket.local_ip_address.indexOf(':') !== -1));
-	ds.bind(0, this.socket.local_ip_address);
+	ds.bind(this.dport, this.socket.local_ip_address);
 	ds.listen();
 	try {
 		rstr = this.cmd("EPRT |" + (ds.local_ip_address.indexOf(':') === -1 ? '1' : '2') + "|" + ds.local_ip_address + "|" + ds.local_port + "|", true);
