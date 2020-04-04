@@ -201,7 +201,7 @@ FTP.prototype.data_socket = function()
 			throw("EPSV Failed");
 		m = rstr.match(/\(\|\|\|([0-9]+)\|\)/);
 		if (m === null)
-			throw("Unable to parse PASV reply");
+			throw("Unable to parse EPSV reply");
 		return new ConnectedSocket(this.host, parseInt(m[1], 10), {protocol:'FTP-Data', timeout:this.timeout, binadaddrs:this.bindhost});
 	}
 
