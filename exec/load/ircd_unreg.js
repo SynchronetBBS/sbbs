@@ -166,38 +166,41 @@ function IRC_Unregistered_Commands(cmdline) {
 				break;
 			}
 			if (Servers[cmd[1].toLowerCase()]) {
-				this.quit("Server already exists.");
+	     			if (parseInt(cmd[2]) < 2)
+					this.quit("Server already exists.");
 				return 0;
 			}
 			var this_nline = 0;
 			var qwk_slave = false;
 			var qwkid = cmd[1].slice(0,cmd[1].indexOf(".")).toUpperCase();
-			for (nl in NLines) {
-				if ((NLines[nl].flags&NLINE_CHECK_QWKPASSWD) &&
-				    wildmatch(cmd[1],NLines[nl].servername)) {
-					if (check_qwk_passwd(qwkid,this.password)) {
-						this_nline = NLines[nl];
-						break;
-					}
-				} else if ((NLines[nl].flags&NLINE_CHECK_WITH_QWKMASTER) &&
-					   wildmatch(cmd[1],NLines[nl].servername)) {
-						for (qwkm_nl in NLines) {
-							if (NLines[qwkm_nl].flags&NLINE_IS_QWKMASTER) {
-								var qwk_master = searchbyserver(NLines[qwkm_nl].servername);
-								if (!qwk_master) {
-									this.quit("No QWK master available for authorization.");
-									return 0;
-								} else {
-									qwk_master.rawout(":" + servername + " PASS " + this.password + " :" + qwkid + " QWK");
-									qwk_slave = true;
+     			if (parseInt(cmd[2]) < 2) {
+				for (nl in NLines) {
+					if ((NLines[nl].flags&NLINE_CHECK_QWKPASSWD) &&
+					    wildmatch(cmd[1],NLines[nl].servername)) {
+						if (check_qwk_passwd(qwkid,this.password)) {
+							this_nline = NLines[nl];
+							break;
+						}
+					} else if ((NLines[nl].flags&NLINE_CHECK_WITH_QWKMASTER) &&
+						   wildmatch(cmd[1],NLines[nl].servername)) {
+							for (qwkm_nl in NLines) {
+								if (NLines[qwkm_nl].flags&NLINE_IS_QWKMASTER) {
+									var qwk_master = searchbyserver(NLines[qwkm_nl].servername);
+									if (!qwk_master) {
+										this.quit("No QWK master available for authorization.");
+										return 0;
+									} else {
+										qwk_master.rawout(":" + servername + " PASS " + this.password + " :" + qwkid + " QWK");
+										qwk_slave = true;
+									}
 								}
 							}
-						}
-				} else if ((NLines[nl].password == this.password) &&
-					   (wildmatch(cmd[1],NLines[nl].servername))
-					  ) {
-						this_nline = NLines[nl];
-						break;
+					} else if ((NLines[nl].password == this.password) &&
+						   (wildmatch(cmd[1],NLines[nl].servername))
+						  ) {
+							this_nline = NLines[nl];
+							break;
+					}
 				}
 			}
 			if ( (!this_nline ||
