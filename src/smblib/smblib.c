@@ -1827,8 +1827,8 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	}
 	if(smb_hdrblocks(hdrlen) > smb_hdrblocks(msg->hdr.length)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s illegal header length increase: %lu (%lu blocks) vs %hu (%lu blocks)", __FUNCTION__
-			,hdrlen, smb_hdrblocks(hdrlen)
+			,"%s illegal header length increase: %lu (%lu blocks, %hu hfields, %hu dfields) vs %hu (%lu blocks)", __FUNCTION__
+			,hdrlen, smb_hdrblocks(hdrlen), msg->total_hfields, msg->hdr.total_dfields
 			,msg->hdr.length, smb_hdrblocks(msg->hdr.length));
 		return(SMB_ERR_HDR_LEN);
 	}
