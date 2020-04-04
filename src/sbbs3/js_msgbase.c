@@ -259,7 +259,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 				char fulladdr[128];
 				msg->idx.to = qwk_route(scfg, msg->to_net.addr, fulladdr, sizeof(fulladdr)-1);
 				if(fulladdr[0]==0) {
-					JS_ReportError(cx, "Unrouteable QWKnet \"to_net_addr\" (%s) in recipient object"
+					JS_ReportError(cx, "Unroutable QWKnet \"to_net_addr\" (%s) in recipient object"
 						,msg->to_net.addr);
 					return(FALSE);
 				}
@@ -1390,7 +1390,11 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_TRUNCSP_NULL("replyto", p->msg.replyto, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("replyto_ext", p->msg.replyto_ext, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("replyto_list", p->msg.replyto_list, JSPROP_ENUMERATE);
-	LAZY_STRING_TRUNCSP_NULL("reverse_path", p->msg.reverse_path, JSPROP_ENUMERATE);
+	if(p->expand_fields) {
+		LAZY_STRING_TRUNCSP_NULL("reverse_path", p->msg.reverse_path, JSPROP_ENUMERATE);
+	} else {
+		LAZY_STRING_COND("reverse_path", (val=smb_get_hfield(&(p->msg),SMTPREVERSEPATH,NULL))!=NULL, val, JSPROP_ENUMERATE);
+	}
 	LAZY_STRING_TRUNCSP_NULL("forward_path", p->msg.forward_path, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("to_agent", p->msg.to_agent, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("from_agent", p->msg.from_agent, JSPROP_ENUMERATE);
