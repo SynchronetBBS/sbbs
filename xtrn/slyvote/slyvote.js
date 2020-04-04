@@ -154,6 +154,12 @@
  * 2020-03-31 Eric Oulashin     Version 1.06
  *                              Enabled scrollbars in some menus where it would be
  *                              useful.  Requires the latest dd_scrollbar_menu.js.
+ * 2020-04-04 Eric Oulashin     Version 1.07
+ *                              Made use of the updated DDLightbarMenu, which allows
+ *                              replacing the NumItems() and GetItem() functions to
+ *                              let the menu use a differnet list of items, to avoid
+ *                              adding/copying a bunch of items via DDLightbarMenu's Add()
+ *                              function.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -223,8 +229,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.06";
-var SLYVOTE_DATE = "2020-03-31";
+var SLYVOTE_VERSION = "1.07";
+var SLYVOTE_DATE = "2020-04-04";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -581,17 +587,22 @@ function ChooseVotingSubBoard(pMsgGrps)
 // Return value: A DDLightbarMenu object for the message group menu
 function CreateMsgGrpMenu(pListTopRow, pDrawColRetObj, pMsgGrps)
 {
-	var grpNameLen = pDrawColRetObj.textLen - 2;
 	grpMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
 	grpMenu.ampersandHotkeysInItems = false;
 	grpMenu.scrollbarEnabled = true;
 	grpMenu.AddAdditionalQuitKeys("qQ");
-	for (var grpIdx in pMsgGrps)
-	{
-		var grpName = msg_area.grp_list[grpIdx].name;
-		var itemText = format("%-" + grpNameLen + "s", grpName.substr(0, grpNameLen));
-		grpMenu.Add(itemText, grpIdx);
-	}
+	grpMenu.NumItems = function() {
+		return msg_area.grp_list.length;
+	};
+	grpMenu.GetItem = function(pItemIndex) {
+		var menuItemObj = this.MakeItemWithRetval(-1);
+		if ((pItemIndex >= 0) && (pItemIndex < msg_area.grp_list.length))
+		{
+			menuItemObj.text = msg_area.grp_list[pItemIndex].name;
+			menuItemObj.retval = pItemIndex;
+		}
+		return menuItemObj;
+	};
 	return grpMenu;
 }
 // Helper for ChooseVotingSubBoard().  Creates a sub-board menu.
@@ -609,17 +620,39 @@ function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
 	var topItemIndex = 0;
 	var selectedItemIndex = 0;
 	// Populate the sub-board menu for the group with its list of sub-boards
-	var areaNameLen = pDrawColRetObj.textLen - 2;
+	var areaNameLen = pDrawColRetObj.textLen - 3;
 	subBoardMenu = new DDLightbarMenu(pDrawColRetObj.columnX1+pDrawColRetObj.colWidth-1, pListTopRow, pDrawColRetObj.textLen, pDrawColRetObj.colHeight);
+	subBoardMenu.areaNameLen = areaNameLen;
 	subBoardMenu.ampersandHotkeysInItems = false;
 	subBoardMenu.scrollbarEnabled = true;
 	subBoardMenu.AddAdditionalQuitKeys("qQ");
+	subBoardMenu.msgGrp = pMsgGrps[pGrpIdx];
+	subBoardMenu.numSubBoardsInChosenMsgGrp = pMsgGrps[pGrpIdx].length;
+	subBoardMenu.subBoardCode = pMsgGrps[pGrpIdx][i];
+	subBoardMenu.subBoardHasPolls = subBoardHasPolls;
+	subBoardMenu.subBoardPollCounts = {};
+	subBoardMenu.NumItems = function() {
+		return this.numSubBoardsInChosenMsgGrp;
+	};
+	subBoardMenu.GetItem = function(pItemIndex) {
+		var subCode = this.msgGrp[pItemIndex];
+		var pollCount = 0;
+		if (this.subBoardPollCounts.hasOwnProperty(subCode))
+			pollCount = this.subBoardPollCounts[subCode];
+		else
+		{
+			pollCount = this.subBoardHasPolls(subCode);
+			this.subBoardPollCounts[subCode] = pollCount;
+		}
+		var menuItemObj = this.MakeItemWithRetval(-1);
+		var hasPollsChar = (pollCount ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
+		menuItemObj.text = format("%-" + this.areaNameLen + "s %s", msg_area.sub[subCode].name.substr(0, this.areaNameLen), hasPollsChar);
+		menuItemObj.retval = subCode;
+		return menuItemObj;
+	};
 	for (var i = 0; i < pMsgGrps[pGrpIdx].length; ++i)
 	{
 		var subCode = pMsgGrps[pGrpIdx][i];
-		var hasPollsChar = (subBoardHasPolls(subCode) ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
-		var itemText = format("%-" + areaNameLen + "s %s", msg_area.sub[subCode].name.substr(0, areaNameLen), hasPollsChar);
-		subBoardMenu.Add(itemText, subCode);
 		if (subCode == gSubBoardCode)
 		{
 			topItemIndex = i;
@@ -819,8 +852,16 @@ function ChooseVotePoll(pLetUserChoose)
 		var pollsMenu = new DDLightbarMenu(startCol, listTopRow, drawColRetObj.textLen, menuHeight);
 		pollsMenu.ampersandHotkeysInItems = false;
 		pollsMenu.scrollbarEnabled = true;
-		for (var i = 0; i < votePollInfo.msgHdrs.length; ++i)
-			pollsMenu.Add(votePollInfo.msgHdrs[i].subject, votePollInfo.msgHdrs[i].number);
+		pollsMenu.votePollInfo = votePollInfo;
+		pollsMenu.NumItems = function() {
+			return this.votePollInfo.msgHdrs.length;
+		};
+		pollsMenu.GetItem = function(pItemIndex) {
+			var menuItemObj = this.MakeItemWithRetval(-1);
+			menuItemObj.text = votePollInfo.msgHdrs[pItemIndex].subject;
+			menuItemObj.retval = votePollInfo.msgHdrs[pItemIndex].number;
+			return menuItemObj;
+		};
 		var drawPollsMenu = true;
 		while (nextProgramState == VOTING_ON_A_POLL)
 		{
