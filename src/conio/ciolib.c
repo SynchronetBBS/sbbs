@@ -457,6 +457,7 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 			break;
 	}
 	ciolib_seticon(syncicon64, SYNCICON64_WIDTH);
+	ciolib_textattr(cio_textinfo.normattr);
 
 	_beginthread(ciolib_mouse_thread,0,NULL);
 	return(0);
@@ -847,6 +848,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_textmode(int mode)
 			cio_textinfo.normattr=LIGHTGRAY;
 			break;
 	}
+	ciolib_textattr(cio_textinfo.normattr);
 }
 
 /* Optional */
