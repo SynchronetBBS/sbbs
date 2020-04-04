@@ -108,7 +108,7 @@ FTP.prototype.pwd = function()
 	rstr = this.cmd("PWD", true);
 	ret = parseInt(rstr, 10);
 	if (ret === 257)
-		return rstr.replace(/^[0-9]+ /, '');
+		return rstr.replace(/^257 "(.*)".*?$/, '$1');
 	return null;
 }
 
@@ -302,5 +302,6 @@ FTP.prototype.do_get = function(src, dest, isdir)
 var f = new FTP('fd0b:71d1:b5ec::1');
 f.passive = false;
 f.cwd("main");
+print(f.pwd());
 print(f.dir('.'));
 f.logout();
