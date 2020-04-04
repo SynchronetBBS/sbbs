@@ -206,6 +206,9 @@ FTP.prototype.data_socket = function(cmd)
 	var ts;
 	var m;
 	var splitaddr;
+	var ip6;
+	var rhost;
+	var rport;
 
 	if (this.ascii === true)
 		rstr = this.cmd("TYPE A", true);
@@ -214,30 +217,54 @@ FTP.prototype.data_socket = function(cmd)
 	if (parseInt(rstr, 10) !== 200)
 		throw("Unable to create data socket");
 
+	ip6 = this.socket.local_ip_address.indexOf(':') !== -1;
 	if (this.passive) {
 		// TODO: Outgoing port?
-		rstr = this.cmd("EPSV", true);
-		if (parseInt(rstr, 10) !== 229)
-			throw("EPSV Failed");
-		m = rstr.match(/\(\|\|\|([0-9]+)\|\)/);
-		if (m === null)
-			throw("Unable to parse EPSV reply");
-		return new ConnectedSocket(this.host, parseInt(m[1], 10), {protocol:'FTP-Data', timeout:this.timeout, binadaddrs:this.bindhost});
+		if (ip6) {
+			rstr = this.cmd("EPSV", true);
+			if (parseInt(rstr, 10) !== 229)
+				throw("EPSV Failed");
+			m = rstr.match(/\(\|\|\|([0-9]+)\|\)/);
+			if (m === null)
+				throw("Unable to parse EPSV reply");
+			rhost = this.host;
+			rport = parseInt(m[1], 10);
+		}
+		else {
+			rstr = this.cmd("PASV", true);
+			if (parseInt(rstr, 10) !== 227)
+				throw("EPSV Failed");
+			m = rstr.match(/\(([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)\)/);
+			if (m === null)
+				throw("Unable to parse EPSV reply");
+			rhost = m[1] + '.' + m[2] + '.' + m[3] + '.' + m[4];
+			rport = (parseInt(m[5], 10) << 8) | parseInt(m[6], 10);
+		}
+		ds = new ConnectedSocket(rhost, rport, {protocol:'FTP-Data', timeout:this.timeout, binadaddrs:this.bindhost});
 	}
-
-	// TODO: No way to check if IPv6...
-	ds = new Socket(SOCK_STREAM, "FTP-Data", (this.socket.local_ip_address.indexOf(':') !== -1));
-	ds.bind(this.dport, this.socket.local_ip_address);
-	ds.listen();
-	try {
-		rstr = this.cmd("EPRT |" + (ds.local_ip_address.indexOf(':') === -1 ? '1' : '2') + "|" + ds.local_ip_address + "|" + ds.local_port + "|", true);
-	} catch(e) {
-		ds.close();
-		throw(e);
-	}
-	if (parseInt(rstr, 10) !== 200) {
-		ds.close();
-		throw("EPRT rejected");
+	else {
+		// TODO: No way to check if IPv6...
+		ds = new Socket(SOCK_STREAM, "FTP-Data", (ip6));
+		ds.bind(this.dport, this.socket.local_ip_address);
+		ds.listen();
+		try {
+			if (ip6) {
+				rstr = this.cmd("EPRT |" + (ds.local_ip_address.indexOf(':') === -1 ? '1' : '2') + "|" + ds.local_ip_address + "|" + ds.local_port + "|", true);
+			}
+			else {
+				var addrport = this.socket.local_ip_address.split(/\./);
+				addrport.push(ds.local_port >> 8);
+				addrport.push(ds.local_port & 0xff);
+				rstr = this.cmd("PORT "+addrport.join(",")+"", true);
+			}
+		} catch(e) {
+			ds.close();
+			throw(e);
+		}
+		if (parseInt(rstr, 10) !== 200) {
+			ds.close();
+			throw("EPRT/PORT rejected");
+		}
 	}
 
 	rstr = this.cmd(cmd, true);
@@ -245,6 +272,7 @@ FTP.prototype.data_socket = function(cmd)
 		ds.close();
 		throw(cmd+" failed");
 	}
+
 	if (!this.passive) {
 		selret = socket_select([ds], this.timeout);
 		if (selret === null || selret.length === 0) {
