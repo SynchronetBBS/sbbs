@@ -554,9 +554,11 @@ int bufprintf(char *buf, int attr, char *fmat, ...)
 	ret=_vsnprintf(str,sizeof(str)-1,fmat,argptr);
 #else
     ret=vsnprintf(NULL,0,fmat,argptr);
+	va_end(argptr);
 	str=(char *)malloc(ret+1);
 	if(str==NULL)
 		return(EOF);
+    va_start(argptr,fmat);
 	ret=vsprintf(str,fmat,argptr);
 #endif
     va_end(argptr);
