@@ -68,7 +68,7 @@ FTP.prototype.cdup = function()
 	var rstr;
 	var ret;
 
-	rstr = this.cmd("CDUP");
+	rstr = this.cmd("CDUP", true);
 	ret = parseInt(rstr, 10);
 	if (ret !== 200)
 		return false;
@@ -108,7 +108,7 @@ FTP.prototype.pwd = function()
 	rstr = this.cmd("PWD", true);
 	ret = parseInt(rstr, 10);
 	if (ret === 257)
-		return rstr.replace(/^257 "(.*)".*?$/, '$1');
+		return rstr.replace(/^257 "(.*)".*?$/, "$1");
 	return null;
 }
 
