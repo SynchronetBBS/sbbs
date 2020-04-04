@@ -40,7 +40,8 @@ print("*                 Use Ctrl-C to abort the process if desired             
 print("******************************************************************************");
 
 var network_list = {};
-var file = new File("init-fidonet.ini");
+var file = new File(js.exec_dir + "init-fidonet.ini");
+alert(file.name);
 if (file.open("r")) {
 	var list = file.iniGetSections("zone:", "zone");
 	for(var i in list)
@@ -286,8 +287,12 @@ if(!netzone) {
 		}
 	}
 	var which;
-	while((!which || which < 1) && !aborted())
-		which = parseInt(prompt("Which"), 10);
+	while((!which || which < 1) && !aborted()) {
+		var str = prompt("Which or [Q]uit");
+		if(str.toUpperCase() == 'Q')
+			exit(0);
+		which = parseInt(str, 10);
+	}
 	netzone = which;
 	network = network_list[which];
 }
