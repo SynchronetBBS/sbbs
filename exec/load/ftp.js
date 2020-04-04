@@ -2,7 +2,7 @@
 
 require('sockdefs.js', 'SOCK_STREAM');
 
-function FTP(host, user, pass, port, dport, bindhost)
+function FTP(host, user, pass, port, dport, bindhost, account)
 {
 	var ret;
 
@@ -29,14 +29,18 @@ function FTP(host, user, pass, port, dport, bindhost)
 	this.bindhost = bindhost;
 	this.timeout = 300;
 	this.maxline = 500;
+	this.account = account;
 	this.socket = new ConnectedSocket(host, port, {protocol:'FTP', timeout:this.timeout, binadaddrs:this.bindhost});
 	if (parseInt(this.cmd(undefined, true), 10) !== 220) {
 		this.socket.close();
 		throw("Invalid response from server");
 	}
 	ret = parseInt(this.cmd("USER "+this.user, true), 10)
-	if (ret === 331)
-		ret = parseInt(this.cmd("PASS "+this.pass, true), 10);
+	if (ret === 332) {
+		if (this.account === undefined)
+			throw("Account required");
+		ret = parseInt(this.cmd("ACCOUNT "+this.account, true), 10);
+	}
 	if (ret !== 230) {
 		this.socket.close();
 		throw("Login failed");
@@ -45,15 +49,26 @@ function FTP(host, user, pass, port, dport, bindhost)
 	this.passive = true;
 }
 
+FTP.prototype.cwd = function(path)
+{
+	var rstr;
+	var ret;
+
+	rstr = this.cmd("CWD "+path, true);
+	ret = parseInt(rstr, 10);
+	if (ret !== 250)
+		return false;
+	return true;
+}
+
 FTP.prototype.logout = function()
 {
 	var ret;
 
 	ret = parseInt(this.cmd("QUIT", true), 10)
-	// TODO: Hrm....
+	this.socket.close();
 	if (ret !== 221)
 		return false;
-	this.socket.close();
 	return true;
 }
 
@@ -67,18 +82,6 @@ FTP.prototype.pwd = function()
 	if (ret === 257)
 		return rstr.replace(/^[0-9]+ /, '');
 	return null;
-}
-
-FTP.prototype.cwd = function(path)
-{
-	var rstr;
-	var ret;
-
-	rstr = this.cmd("CWD "+path, true);
-	ret = parseInt(rstr, 10);
-	if (ret !== 250)
-		return false;
-	return true;
 }
 
 FTP.prototype.dir = function(path)
@@ -160,7 +163,7 @@ FTP.prototype.cmd = function(cmd, needresp)
 
 	if (cmd !== undefined) {
 		cmdline = cmd + '\r\n';
-		log(LOG_DEBUG, "CMD: '"+cmd+"'");
+		log(LOG_DEBUG, "CMD: '"+cmd.replace(/\xff/g, "\xff\xff")+"'");
 		if (this.socket.send(cmdline) != cmdline.length)
 			throw("Error sending command");
 	}
@@ -171,6 +174,7 @@ FTP.prototype.cmd = function(cmd, needresp)
 		do {
 			rd = this.socket.recvline(this.maxline, this.timeout - (time() - start));
 			if (rd !== null) {
+				rd = rd.replace(/\xff\xff/g, "\xff");
 				log(LOG_DEBUG, "RSP: '"+rd+"'");
 				if (rd.length === 0)
 					continue;
