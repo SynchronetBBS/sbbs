@@ -36,6 +36,8 @@ function FTP(host, user, pass, port, dport, bindhost, account)
 		throw("Invalid response from server");
 	}
 	ret = parseInt(this.cmd("USER "+this.user, true), 10)
+	if (ret === 331)
+		ret = parseInt(this.cmd("PASS "+this.pass, true), 10);
 	if (ret === 332) {
 		if (this.account === undefined)
 			throw("Account required");
@@ -55,6 +57,18 @@ FTP.prototype.cwd = function(path)
 	var ret;
 
 	rstr = this.cmd("CWD "+path, true);
+	ret = parseInt(rstr, 10);
+	if (ret !== 250)
+		return false;
+	return true;
+}
+
+FTP.prototype.cdup = function()
+{
+	var rstr;
+	var ret;
+
+	rstr = this.cmd("CDUP");
 	ret = parseInt(rstr, 10);
 	if (ret !== 250)
 		return false;
