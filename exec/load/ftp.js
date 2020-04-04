@@ -51,6 +51,42 @@ function FTP(host, user, pass, port, dport, bindhost, account)
 	this.passive = true;
 }
 
+FTP.prototype.allo = function(size, pagesize)
+{
+	var cmd = "ALLO "+size;
+	if (pagesize !== undefined)
+		cmd += ' '+pagesize;
+	switch(parseInt(this.cmd(cmd, true))) {
+		case 200:
+		case 202:
+			return true;
+	}
+	return false;
+}
+FTP.prototype.allocate = FTP.prototype.allo;
+
+FTP.prototype.appe = function(src, dest)
+{
+	var data_socket;
+
+	data_socket = this.data_socket("APPE "+dest)
+
+	return this.do_sendfile(src, data_socket);
+}
+FTP.prototype.append = FTP.prototype.appe;
+
+FTP.prototype.cdup = function()
+{
+	var rstr;
+	var ret;
+
+	rstr = this.cmd("CDUP", true);
+	ret = parseInt(rstr, 10);
+	if (ret !== 200)
+		return false;
+	return true;
+}
+
 FTP.prototype.cwd = function(path)
 {
 	var rstr;
@@ -63,14 +99,109 @@ FTP.prototype.cwd = function(path)
 	return true;
 }
 
-FTP.prototype.cdup = function()
+FTP.prototype.dele = function(path)
+{
+	if (parseInt(this.cmd("DELE "+path, true), 10) !== 250)
+		return false;
+	return true;
+}
+FTP.prototype.delete = FTP.prototype.dele;
+
+FTP.prototype.list = function(path)
+{
+	return this.do_get("LIST "+path);
+}
+FTP.prototype.dir = FTP.prototype.list;
+
+FTP.prototype.help = function(cmd)
+{
+	var ret;
+
+	if (cmd === undefined)
+		ret = this.cmd("HELP", true);
+	else
+		ret = this.cmd("HELP "+cmd, true);
+	switch(parseInt(ret, 10)) {
+		case 211:
+		case 214:
+			return ret.replace(/^[0-9]+[ -]/mg,'');;
+	}
+	return null;
+}
+
+// TODO: Not tested
+FTP.prototype.mkd = function(path)
+{
+	if (parseInt(this.cmd("MKD "+path, true), 10) !== 257)
+		return false;
+	return true;
+}
+FTP.prototype.make_directory = FTP.prototype.mkd;
+
+FTP.prototype.nlst = function(path)
+{
+	return this.do_get("NLST "+path);
+}
+FTP.prototype.name_list = FTP.prototype.nlst;
+
+FTP.prototype.pwd = function()
 {
 	var rstr;
 	var ret;
 
-	rstr = this.cmd("CDUP", true);
+	rstr = this.cmd("PWD", true);
 	ret = parseInt(rstr, 10);
-	if (ret !== 200)
+	if (ret === 257)
+		return rstr.replace(/^257 "(.*)".*?$/, "$1");
+	return null;
+}
+
+FTP.prototype.quit = function()
+{
+	var ret;
+
+	ret = parseInt(this.cmd("QUIT", true), 10)
+	this.socket.close();
+	if (ret !== 221)
+		return false;
+	return true;
+}
+FTP.prototype.logout = FTP.prototype.quit
+
+FTP.prototype.retr = function(src, dest)
+{
+	return this.do_get("RETR "+src, dest);
+}
+FTP.prototype.get = FTP.prototype.retr;
+FTP.prototype.retrieve = FTP.prototype.retr;
+
+// TODO: Not tested
+FTP.prototype.rmd = function(path)
+{
+	if (parseInt(this.cmd("RMD "+path, true), 10) !== 221)
+		return false;
+	return true;
+}
+FTP.prototype.remove_directory = FTP.prototype.rmd;
+
+// TODO: untested.
+FTP.prototype.rename = function(from, to)
+{
+	switch(parseInt(this.cmd("RNFR "+from, true), 10)) {
+		case 350:
+			break;
+		default:
+			return false;
+	}
+	if(parseInt(this.cmd("RNTO "+from, true), 10) !== 250)
+		return false;
+	return true;
+}
+
+// TODO: Not tested
+FTP.prototype.site = function(str)
+{
+	if (parseInt(this.cmd("SITE "+str, true), 10) !== 200)
 		return false;
 	return true;
 }
@@ -87,64 +218,6 @@ FTP.prototype.smnt = function(path)
 	return true;
 }
 
-FTP.prototype.logout = function()
-{
-	var ret;
-
-	ret = parseInt(this.cmd("QUIT", true), 10)
-	this.socket.close();
-	if (ret !== 221)
-		return false;
-	return true;
-}
-
-// REIN... not implemented
-
-FTP.prototype.pwd = function()
-{
-	var rstr;
-	var ret;
-
-	rstr = this.cmd("PWD", true);
-	ret = parseInt(rstr, 10);
-	if (ret === 257)
-		return rstr.replace(/^257 "(.*)".*?$/, "$1");
-	return null;
-}
-
-FTP.prototype.list = function(path)
-{
-	return this.do_get("LIST "+path);
-}
-
-FTP.prototype.dir = FTP.prototype.list;
-
-FTP.prototype.nlst = function(path)
-{
-	return this.do_get("NLST "+path);
-}
-
-FTP.prototype.name_list = FTP.prototype.nlst;
-
-FTP.prototype.dele = function(path)
-{
-	if (parseInt(this.cmd("DELE "+path, true), 10) !== 250)
-		return false;
-	return true;
-}
-
-// delete is an alias
-FTP.prototype.delete = FTP.prototype.dele;
-
-FTP.prototype.retr = function(src, dest)
-{
-	return this.do_get("RETR "+src, dest);
-}
-
-// get is an alias
-FTP.prototype.get = FTP.prototype.retr;
-FTP.prototype.retrieve = FTP.prototype.retr;
-
 FTP.prototype.stor = function(src, dest)
 {
 	var data_socket;
@@ -153,8 +226,6 @@ FTP.prototype.stor = function(src, dest)
 
 	return this.do_sendfile(src, data_socket);
 }
-
-// put is an alias
 FTP.prototype.put = FTP.prototype.stor;
 FTP.prototype.store = FTP.prototype.stor;
 
@@ -178,89 +249,6 @@ FTP.prototype.stou = function(src)
 }
 FTP.prototype.store_unique = FTP.prototype.stou;
 
-FTP.prototype.appe = function(src, dest)
-{
-	var data_socket;
-
-	data_socket = this.data_socket("APPE "+dest)
-
-	return this.do_sendfile(src, data_socket);
-}
-
-// append is an alias
-FTP.prototype.append = FTP.prototype.appe;
-
-FTP.prototype.allo = function(size, pagesize)
-{
-	var cmd = "ALLO "+size;
-	if (pagesize !== undefined)
-		cmd += ' '+pagesize;
-	switch(parseInt(this.cmd(cmd, true))) {
-		case 200:
-		case 202:
-			return true;
-	}
-	return false;
-}
-
-FTP.prototype.allocate = FTP.prototype.allo;
-
-// REST not implemented
-
-// TODO: Not supported by Synchronet, untested.
-FTP.prototype.rename = function(from, to)
-{
-	switch(parseInt(this.cmd("RNFR "+from, true), 10)) {
-		case 350:
-			break;
-		default:
-			return false;
-	}
-	if(parseInt(this.cmd("RNTO "+from, true), 10) !== 250)
-		return false;
-	return true;
-}
-
-// TODO: Not tested
-FTP.prototype.rmd = function(path)
-{
-	if (parseInt(this.cmd("RMD "+path, true), 10) !== 221)
-		return false;
-	return true;
-}
-
-FTP.prototype.remove_directory = FTP.prototype.rmd;
-
-// TODO: Not tested
-FTP.prototype.mkd = function(path)
-{
-	if (parseInt(this.cmd("MKD "+path, true), 10) !== 257)
-		return false;
-	return true;
-}
-
-FTP.prototype.make_directory = FTP.prototype.mkd;
-
-// TODO: Not tested
-FTP.prototype.site = function(str)
-{
-	if (parseInt(this.cmd("SITE "+str, true), 10) !== 200)
-		return false;
-	return true;
-}
-
-FTP.prototype.syst = function()
-{
-	var ret;
-
-	ret = this.cmd("SYST", true);
-	if (parseInt(ret, 10) !== 215)
-		return null;
-	return ret.replace(/^[0-9]+[ -]/mg,'');;
-}
-
-FTP.prototype.system = FTP.prototype.syst;
-
 FTP.prototype.stat = function(path)
 {
 	var ret;
@@ -277,24 +265,18 @@ FTP.prototype.stat = function(path)
 	}
 	return null;
 }
+FTP.prototype.status = FTP.prototype.stat;
 
-FTP.prototype.help = function(cmd)
+FTP.prototype.syst = function()
 {
 	var ret;
 
-	if (cmd === undefined)
-		ret = this.cmd("HELP", true);
-	else
-		ret = this.cmd("HELP "+cmd, true);
-	switch(parseInt(ret, 10)) {
-		case 211:
-		case 214:
-			return ret.replace(/^[0-9]+[ -]/mg,'');;
-	}
-	return null;
+	ret = this.cmd("SYST", true);
+	if (parseInt(ret, 10) !== 215)
+		return null;
+	return ret.replace(/^[0-9]+[ -]/mg,'');;
 }
-
-FTP.prototype.status = FTP.prototype.stat;
+FTP.prototype.system = FTP.prototype.syst;
 
 FTP.prototype.do_sendfile = function(src, data_socket)
 {
