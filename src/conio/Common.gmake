@@ -76,7 +76,7 @@ ifdef USE_SDL
      CIOLIB-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
     endif
    else
-    ifeq ($(shell command -v sdl2-config && sdl2-config --cflags > /dev/null 2>&1 && echo YES ; fi),YES)
+    ifeq ($(shell command -v sdl2-config && sdl2-config --cflags > /dev/null 2>&1 && echo YES),YES)
      SDL_CONFIG := sdl2-config
      WITH_SDL	:=	1
     else
