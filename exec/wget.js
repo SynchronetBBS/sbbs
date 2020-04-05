@@ -1,6 +1,8 @@
 /* $Id$ */
 
-load("http.js");
+require("http.js", 'HTTPRequest');
+require("ftp.js", 'FTP');
+require("url.js", 'URL');
 
 var url = argv[0];	// First argument is the URL (required).
 var outfile;		// Pass a second argument as the outfile (optional).
@@ -13,14 +15,32 @@ if (argv[1]) {
 	filename += file_getname(url);
 }
 
+var purl = new URL(url);
+
 print("Writing to file: " + filename);
 
 var file = new File(filename);
 
-if(!file.open("w"))
-	print("error " + file.error + " opening " + file.name);
-else {
-	var contents = new HTTPRequest().Get(url);
-	file.write(contents);
-	file.close();
+switch(purl.scheme) {
+	case 'ftp':
+		try {
+			var ftp = new FTP(purl.host);
+			ftp.retr(purl.path, filename);
+			ftp.quit();
+		} catch(e) {
+			print("Fetch failed: "+e);
+		}
+		break;
+	case 'http':
+	case 'https':
+		if(!file.open("w"))
+			print("error " + file.error + " opening " + file.name);
+		else {
+			var contents = new HTTPRequest().Get(url);
+			file.write(contents);
+			file.close();
+		}
+		break;
+	default:
+		print("Unhandled URL scheme '"+purl.scheme+"'");
 }
