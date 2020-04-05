@@ -661,7 +661,7 @@ function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
 	}
 	// If the top item index is on the last page of the menu, then
 	// set the top item index to the first item on the last page.
-	if ((topItemIndex <= subBoardMenu.items.length - 1) && (topItemIndex >= subBoardMenu.GetTopItemIdxToTopOfLastPage()))
+	if ((topItemIndex <= subBoardMenu.items.length - 1) && (topItemIndex >= subBoardMenu.GetTopItemIdxOfLastPage()))
 		subBoardMenu.SetTopItemIdxToTopOfLastPage();
 	else
 		subBoardMenu.topItemIdx = topItemIndex;

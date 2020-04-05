@@ -6658,7 +6658,7 @@ function doTaglineSelection()
 		// Last page
 		else if (lastUserInputUpper == "L")
 		{
-			var lastPageTopItemIdx = taglineMenu.GetTopItemIdxToTopOfLastPage();
+			var lastPageTopItemIdx = taglineMenu.GetTopItemIdxOfLastPage();
 			taglineMenu.selectedItemIdx = lastPageTopItemIdx;
 			taglineMenu.topItemIdx = lastPageTopItemIdx;
 		}
