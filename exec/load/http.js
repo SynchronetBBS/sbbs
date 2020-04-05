@@ -24,6 +24,8 @@ function HTTPRequest(username,password,extra_headers)
 	this.username=username;
 	this.password=password;
 	this.user_agent='SYNXv0.1';
+	
+	this.status = { ok: 200, created: 201, accepted: 202, no_content: 204 };
 }
 
 HTTPRequest.prototype.AddDefaultHeaders=function(){
