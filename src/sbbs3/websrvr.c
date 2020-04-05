@@ -4116,7 +4116,8 @@ static int fastcgi_read(void *arg, char *buf, size_t sz)
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
 
 	if (cd->body == NULL) {
-		cd->body = fastcgi_read_body(cd->sock);
+		if (cd->header.type != 0)
+			cd->body = fastcgi_read_body(cd->sock);
 		if (cd->body == NULL)
 			return -1;
 	}
@@ -4147,7 +4148,8 @@ static int fastcgi_readln_out(void *arg, char *buf, size_t bufsz, char *fbuf, si
 	outpos = 0;
 
 	if (cd->body == NULL) {
-		cd->body = fastcgi_read_body(cd->sock);
+		if (cd->header.type != 0)
+			cd->body = fastcgi_read_body(cd->sock);
 		if (cd->body == NULL)
 			return -1;
 	}
