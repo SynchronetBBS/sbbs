@@ -4011,6 +4011,7 @@ struct fastcgi_data {
 	struct fastcgi_header header;
 	struct fastcgi_body *body;
 	size_t used;
+	int request_ended;
 };
 
 static struct fastcgi_body * fastcgi_read_body(SOCKET sock)
@@ -4047,6 +4048,8 @@ static int fastcgi_read_wait_timeout(void *arg)
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
 	struct fastcgi_body *body;
 
+	if (cd->request_ended)
+		return CGI_PROCESS_TERMINATED;
 	switch (cd->header.type) {
 		case FCGI_STDOUT:
 			return CGI_OUTPUT_READY;
@@ -4079,6 +4082,7 @@ static int fastcgi_read_wait_timeout(void *arg)
 					break;
 				case FCGI_END_REQUEST:
 					ret |= CGI_PROCESS_TERMINATED;
+					cd.request_ended = 1;
 					// Fall-through
 				case FCGI_BEGIN_REQUEST:
 				case FCGI_ABORT_REQUEST:
@@ -4115,6 +4119,8 @@ static int fastcgi_read(void *arg, char *buf, size_t sz)
 {
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
 
+	if (cd->request_ended)
+		return -1;
 	if (cd->body == NULL) {
 		if (cd->header.type != 0)
 			cd->body = fastcgi_read_body(cd->sock);
@@ -4147,6 +4153,8 @@ static int fastcgi_readln_out(void *arg, char *buf, size_t bufsz, char *fbuf, si
 
 	outpos = 0;
 
+	if (cd->request_ended)
+		return -1;
 	if (cd->body == NULL) {
 		if (cd->header.type != 0)
 			cd->body = fastcgi_read_body(cd->sock);
@@ -4204,6 +4212,8 @@ static int fastcgi_done_wait(void *arg)
 {
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
 
+	if (cd->request_ended)
+		return 1;
 	return (!socket_check(cd->sock, NULL, NULL, /* timeout: */0));
 }
 
@@ -4652,6 +4662,7 @@ static BOOL exec_fastcgi(http_session_t *session)
 	// TODO handle stdin better
 	memset(&cd, 0, sizeof(cd));
 	cd.sock = sock;
+	cd.request_ended = 0;
 	fastcgi_write_in(&cd, session->req.post_data, session->req.post_len);
 	msg->head.len = 0;
 	msg->head.type = FCGI_STDIN;
