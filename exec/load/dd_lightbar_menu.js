@@ -421,7 +421,7 @@ function DDLightbarMenu_Add(pText, pRetval, pHotkey)
 	var item = {
 		text: pText,
 		retval: pRetval,
-		hotkeys: []
+		hotkeys: ""
 	};
 	if (pRetval == undefined)
 		item.retval = this.items.length;
@@ -430,7 +430,7 @@ function DDLightbarMenu_Add(pText, pRetval, pHotkey)
 	// and if there's a non-space after it, then use that character as the
 	// hotkey.
 	if (typeof(pHotkey) == "string")
-		item.hotkeys.push(pHotkey);
+		item.hotkeys += pHotkey;
 
 	if (this.ampersandHotkeysInItems)
 	{
@@ -443,7 +443,7 @@ function DDLightbarMenu_Add(pText, pRetval, pHotkey)
 			{
 				var nextChar = pText.substr(ampersandIndex+1, 1);
 				if (nextChar != " ")
-					item.hotkeys.push(nextChar);
+					item.hotkeys += nextChar;
 			}
 		}
 	}
@@ -844,10 +844,7 @@ function DDLightbarMenu_Erase()
 function DDLightbarMenu_SetItemHotkey(pIdx, pHotkey)
 {
 	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length) && (typeof(pHotkey) == "string"))
-	{
-		this.items[pIdx].hotkeys = [];
-		this.items[pIdx].hotkeys.push(pHotkey);
-	}
+		this.items[pIdx].hotkeys = pHotkey;
 }
 
 // Adds a hotkey for a menu item (in addition to the item's other hotkeys)
@@ -857,8 +854,8 @@ function DDLightbarMenu_SetItemHotkey(pIdx, pHotkey)
 //  pHotkey: The hotkey to add for the menu item
 function DDLightbarMenu_AddItemHotkey(pIdx, pHotkey)
 {
-	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length) && (typeof(pHotkey) == "string"))
-		this.items[pIdx].hotkeys.push(pHotkey);
+	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length) && (typeof(pHotkey) == "string") && (this.items[pIdx].hotkeys.indexOf(pHotkey) == -1))
+		this.items[pIdx].hotkeys += pHotkey;
 }
 
 // Removes a specific hotkey from an item.
@@ -870,10 +867,11 @@ function DDLightbarMenu_RemoveItemHotkey(pIdx, pHotkey)
 {
 	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length))
 	{
-		for (var i = 0; i < this.items[pIdx].hotkeys.length; ++i)
+		var hotkeyIdx = this.items[pIdx].hotkeys.indexOf(pHotkey);
+		while (hotkeyIdx > -1)
 		{
-			if (this.items[pIdx].hotkeys[i] == pHotkey)
-				this.items[pIdx].hotkeys.splice(i, 1);
+			this.items[pIdx].hotkeys = this.items[pIdx].hotkeys.substr(0, hotkeyIdx) + this.items[pIdx].hotkeys.substr(hotkeyIdx+1);
+			hotkeyIdx = this.items[pIdx].hotkeys.indexOf(pHotkey);
 		}
 	}
 }
@@ -885,14 +883,14 @@ function DDLightbarMenu_RemoveItemHotkey(pIdx, pHotkey)
 function  DDLightbarMenu_RemoveItemHotkeys(pIdx)
 {
 	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length))
-		this.items[pIdx].hotkeys = [];
+		this.items[pIdx].hotkeys = "";
 }
 
 // Removes the hotkeys from all items
 function DDLightbarMenu_RemoveAllItemHotkeys()
 {
 	for (var i = 0; i < this.items.length; ++i)
-		this.items[i].hotkeys = [];
+		this.items[i].hotkeys = "";
 }
 
 // Waits for user input, optionally drawing the menu first.
@@ -1324,9 +1322,9 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				{
 					var userPressedHotkey = false;
 					if (this.hotkeyCaseSensitive)
-						userPressedHotkey = (this.lastUserInput == theItem.hotkeys[h]);
+						userPressedHotkey = (this.lastUserInput == theItem.hotkeys.charAt(h));
 					else
-						userPressedHotkey = (this.lastUserInput.toUpperCase() == theItem.hotkeys[h].toUpperCase());
+						userPressedHotkey = (this.lastUserInput.toUpperCase() == theItem.hotkeys.charAt(h).toUpperCase());
 					if (userPressedHotkey)
 					{
 						if (this.multiSelect)
@@ -1742,7 +1740,7 @@ function DDLightbarMenu_MakeItemWithTextAndRetval(pText, pRetval)
 	return {
 		text: pText,
 		retval: pRetval,
-		hotkeys: []
+		hotkeys: ""
 	};
 }
 
@@ -1758,7 +1756,7 @@ function DDLightbarMenu_MakeItemWithRetval(pRetval)
 	return {
 		text: "",
 		retval: pRetval,
-		hotkeys: []
+		hotkeys: ""
 	};
 }
 
