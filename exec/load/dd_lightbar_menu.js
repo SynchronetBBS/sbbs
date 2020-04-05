@@ -320,6 +320,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.colors = {
 		itemColor: "\1n\1w\1" + "4", // Can be either a string or an array specifying colors within the item
 		selectedItemColor: "\1n\1b\1" + "7", // Can be either a string or an array specifying colors within the item
+		altItemColor: "\1n\1w\1" + "4", // Alternate item color.  Can be either a string or an array specifying colors within the item
+		altSelectedItemColor: "\1n\1b\1" + "7", // Alternate selected item color.  Can be either a string or an array specifying colors within the item
 		itemTextCharHighlightColor: "\1y\1h",
 		borderColor: "\1n\1b",
 		scrollbarScrollBlockColor: "\1h\1w",
@@ -400,6 +402,9 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.CanShowAllItemsInWindow = DDLightbarMenu_CanShowAllItemsInWindow;
 	this.MakeItemWithTextAndRetval = DDLightbarMenu_MakeItemWithTextAndRetval;
 	this.MakeItemWithRetval = DDLightbarMenu_MakeItemWithRetval;
+	this.ItemUsesAltColors = DDLightbarMenu_ItemUsesAltColors;
+	this.GetColorForItem = DDLightbarMenu_GetColorForItem;
+	this.GetSelectedColorForItem = DDLightbarMenu_GetSelectedColorForItem;
 
 	// Set some things based on the parameters passed in
 	if ((typeof(pX) == "number") && (typeof(pY) == "number"))
@@ -421,7 +426,8 @@ function DDLightbarMenu_Add(pText, pRetval, pHotkey)
 	var item = {
 		text: pText,
 		retval: pRetval,
-		hotkeys: ""
+		hotkeys: "",
+		useAltColors: false
 	};
 	if (pRetval == undefined)
 		item.retval = this.items.length;
@@ -633,7 +639,8 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 			console.print("\1n");
 			if (this.numberedMode)
 				printf("\1n%" + this.itemNumLen + "s ", "");
-			printf(this.colors.itemColor + "%-" + itemLen + "s", "");
+			var itemText = addAttrsToString(format("%-" + itemLen + "s", ""), this.colors.itemColor);
+			console.print(itemText);
 		}
 	}
 
@@ -759,15 +766,19 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 			}
 		}
 
+		// Decide which color(s) to use for the item text
+		var menuItem = this.GetItem(pIdx);
+		var normalItemColor = (menuItem.useAltColors ? this.colors.altItemColor : this.colors.itemColor);
+		var selectedItemColor = (menuItem.useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
 		var itemColor = "";
 		if (typeof(pHighlight) == "boolean")
-			itemColor = (pHighlight ? this.colors.selectedItemColor : this.colors.itemColor);
+			itemColor = (pHighlight ? selectedItemColor : normalItemColor);
 		else
-			itemColor = (pIdx == this.selectedItemIdx ? this.colors.selectedItemColor : this.colors.itemColor);
+			itemColor = (pIdx == this.selectedItemIdx ? selectedItemColor : normalItemColor);
 		var selected = (typeof(pSelected) == "boolean" ? pSelected : false);
 
 		// Get the item text, and truncate it to the displayable item width
-		var itemText = this.GetItem(pIdx).text;
+		var itemText = menuItem.text;
 		if (itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems) > itemLen)
 			itemText = itemText.substr(0, itemLen);
 		// Add the item color to the text
@@ -1225,7 +1236,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						added = true;
 					}
 				}
-				// Draw a character next to the item if it's selected, or nothing if it't not selected
+				// Draw a character next to the item if it's selected, or nothing if it's not selected
 				var XPos = this.pos.x + this.size.width - 2;
 				var YPos = this.pos.y+(this.selectedItemIdx-this.topItemIdx);
 				if (this.borderEnabled)
@@ -1238,7 +1249,11 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				console.gotoxy(XPos, YPos);
 				if (added)
 				{
-					console.print(this.colors.selectedItemColor + " " + this.multiSelectItemChar + "\1n");
+					var itemColor = this.GetColorForItem(this.selectedItemIdx);
+					// If the item color is an array, then default to a color string here
+					if (Array.isArray(itemColor))
+						itemColor = "\1n\1h\1g";
+					console.print(itemColor + " " + this.multiSelectItemChar + "\1n");
 				}
 				else
 				{
@@ -1420,8 +1435,9 @@ function DDLightbarMenu_SetColors(pColors)
 	if (typeof(pColors) != "object")
 		return;
 
-	var colorPropNames = [ "itemColor", "selectedItemColor", "itemTextCharHighlightColor",
-	                       "borderColor", "scrollbarScrollBlockColor", "scrollbarBGColor" ];
+	var colorPropNames = ["itemColor", "selectedItemColor", "altItemColor", "altSelectedItemColor",
+	                      "itemTextCharHighlightColor", "borderColor", "scrollbarScrollBlockColor",
+	                      "scrollbarBGColor"];
 	for (var i = 0; i < colorPropNames.length; ++i)
 	{
 		if (pColors.hasOwnProperty(colorPropNames[i]))
@@ -1740,7 +1756,8 @@ function DDLightbarMenu_MakeItemWithTextAndRetval(pText, pRetval)
 	return {
 		text: pText,
 		retval: pRetval,
-		hotkeys: ""
+		hotkeys: "",
+		useAltColors: false
 	};
 }
 
@@ -1756,8 +1773,51 @@ function DDLightbarMenu_MakeItemWithRetval(pRetval)
 	return {
 		text: "",
 		retval: pRetval,
-		hotkeys: ""
+		hotkeys: "",
+		useAltColors: false
 	};
+}
+
+// Returns whether an item is set to use the alternate item colors
+//
+// Parameters:
+//  pItemIndex: The index of the item
+//
+// Return value: Boolean - Whether or not an item is configured to use alternate item colors
+function DDLightbarMenu_ItemUsesAltColors(pItemIndex)
+{
+	if ((pItemIndex < 0) || (pItemIndex >= this.NumItems()))
+		return false;
+
+	return this.GetItem(pItemIndex).useAltColors;
+}
+
+// Returns either the normal or alternate color for an item
+//
+// Parameters:
+//  pItemIndex: The index of the item
+//
+// Return value: Either colors.itemColor or colors.altItemColor
+function DDLightbarMenu_GetColorForItem(pItemIndex)
+{
+	if ((pItemIndex < 0) || (pItemIndex >= this.NumItems()))
+		return "";
+
+	return (this.GetItem(pItemIndex).useAltColors ? this.colors.altItemColor : this.colors.itemColor);
+}
+
+// Returns either the selected or alternate selected color for an item
+//
+// Parameters:
+//  pItemIndex: The index of the item
+//
+// Return value: Either colors.selectedItemColor or colors.altSelectedItemColor
+function DDLightbarMenu_GetSelectedColorForItem(pItemIndex)
+{
+	if ((pItemIndex < 0) || (pItemIndex >= this.NumItems()))
+		return "";
+
+	return (this.GetItem(pItemIndex).useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
 }
 
 // Calculates the number of solid scrollbar blocks & non-solid scrollbar blocks
