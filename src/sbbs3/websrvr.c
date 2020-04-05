@@ -4082,7 +4082,7 @@ static int fastcgi_read_wait_timeout(void *arg)
 					break;
 				case FCGI_END_REQUEST:
 					ret |= CGI_PROCESS_TERMINATED;
-					cd.request_ended = 1;
+					cd->request_ended = 1;
 					// Fall-through
 				case FCGI_BEGIN_REQUEST:
 				case FCGI_ABORT_REQUEST:
