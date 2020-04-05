@@ -63,7 +63,7 @@ endif
 ifdef USE_SDL
  ifndef WITH_SDL_AUDIO
   ifdef SDL_CONFIG
-   ifeq ($(shell if [ `${SDL_CONFIG} --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
+   ifeq ($(shell command -v ${SDL_CONFIG} && if [ `${SDL_CONFIG} --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
     WITH_SDL	:=	1
    endif
   else
@@ -76,11 +76,11 @@ ifdef USE_SDL
      CIOLIB-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
     endif
    else
-    ifeq ($(shell sdl2-config --cflags > /dev/null 2>&1 && echo YES),YES)
+    ifeq ($(shell command -v sdl2-config && sdl2-config --cflags > /dev/null 2>&1 && echo YES ; fi),YES)
      SDL_CONFIG := sdl2-config
      WITH_SDL	:=	1
     else
-     ifeq ($(shell if [ `sdl-config --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
+     ifeq ($(shell command -v sdl-config && if [ `sdl-config --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
       SDL_CONFIG := sdl-config
       WITH_SDL	:=	1
      endif
