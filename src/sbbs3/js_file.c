@@ -313,7 +313,7 @@ js_raw_pollin(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argc) {
+	if(argc && !JSVAL_NULL_OR_VOID(argv[0])) {
 		if(!JS_ValueToInt32(cx,argv[0],&timeout))
 			return(JS_FALSE);
 	}
@@ -380,7 +380,7 @@ js_raw_read(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argc) {
+	if(argc && !JSVAL_NULL_OR_VOID(argv[0])) {
 		if(!JS_ValueToInt32(cx,argv[0],&len))
 			return(JS_FALSE);
 	} else
@@ -393,6 +393,7 @@ js_raw_read(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	len = read(fileno(p->fp),buf,len);
+	dbprintf(FALSE, p, "read %u raw bytes",len);
 	if(len<0)
 		len=0;
 
@@ -405,10 +406,6 @@ js_raw_read(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
-
-	rc=JS_SUSPENDREQUEST(cx);
-	dbprintf(FALSE, p, "read %u raw bytes",len);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
 }
@@ -438,7 +435,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argc) {
+	if(argc && !JSVAL_NULL_OR_VOID(argv[0])) {
 		if(!JS_ValueToInt32(cx,argv[0],&len))
 			return(JS_FALSE);
 	} else {
@@ -457,6 +454,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	len = fread(buf,1,len,p->fp);
+	dbprintf(FALSE, p, "read %u bytes",len);
 	if(len<0)
 		len=0;
 	buf[len]=0;
@@ -501,10 +499,6 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 
-	rc=JS_SUSPENDREQUEST(cx);
-	dbprintf(FALSE, p, "read %u bytes",len);
-	JS_RESUMEREQUEST(cx, rc);
-
 	return(JS_TRUE);
 }
 
@@ -529,7 +523,7 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argc) {
+	if(argc && !JSVAL_NULL_OR_VOID(argv[0])) {
 		if(!JS_ValueToInt32(cx,argv[0],&len))
 			return(JS_FALSE);
 	}
@@ -587,10 +581,10 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argc) {
+	if(argc && !JSVAL_NULL_OR_VOID(argv[0])) {
 		if(!JS_ValueToInt32(cx,argv[0],&size))
 			return(JS_FALSE);
-		if(argc>1) {
+		if(argc>1 && !JSVAL_NULL_OR_VOID(argv[1])) {
 			if(!JS_ValueToInt32(cx,argv[1],&count))
 				return(JS_FALSE);
 		}
@@ -1679,7 +1673,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_RESUMEREQUEST(cx, rc);
 	tlen=len;
-	if(argc>1) {
+	if(argc>1 && !JSVAL_NULL_OR_VOID(argv[1])) {
 		if(!JS_ValueToInt32(cx,argv[1],&i)) {
 			free(cp);
 			return(JS_FALSE);
@@ -1816,11 +1810,11 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 		else
 			array=NULL;
 	}
-	if(array==NULL) {
+	if(array==NULL && !JSVAL_NULL_OR_VOID(argv[0])) {
 		if(!JS_ValueToNumber(cx,argv[0],&val))
 			return(JS_FALSE);
 	}
-	if(argc>1) {
+	if(argc>1 && !JSVAL_NULL_OR_VOID(argv[1])) {
 		if(!JS_ValueToInt32(cx,argv[1],&size))
 			return(JS_FALSE);
 	}
@@ -2126,7 +2120,7 @@ js_truncate(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
-	if(argc) {
+	if(argc && !JSVAL_NULL_OR_VOID(argv[0])) {
 		if(!JS_ValueToInt32(cx,argv[0],&len))
 			return(JS_FALSE);
 	}
