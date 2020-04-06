@@ -1602,7 +1602,7 @@ function player_new(leave_locked)
 		pfile_init();
 	}
 	if (pfile !== undefined) {
-		ret = pfile.new(leave_locked);
+		ret = pfile.new(1000, leave_locked);
 		if (ret !== null) {
 			ret.Yours = true;
 		}
