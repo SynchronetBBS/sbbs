@@ -179,7 +179,8 @@ struct cterminal {
 	void				*apc_handler_data;
 
 	/* Mouse state change callback */
-	void (*mouse_state_change)(int parameter, int enable);
+	void (*mouse_state_change)(int parameter, int enable, void *cbdata);
+	void *mouse_state_change_cbdata;
 
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO

@@ -1816,7 +1816,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									case 1007:
 									case 1015:
 										if (cterm->mouse_state_change)
-											cterm->mouse_state_change(seq->param_int[i], 1);
+											cterm->mouse_state_change(seq->param_int[i], 1, cterm->mouse_state_change_cbdata);
 										break;
 								}
 							}
@@ -1888,7 +1888,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									case 1007:
 									case 1015:
 										if (cterm->mouse_state_change)
-											cterm->mouse_state_change(seq->param_int[i], 0);
+											cterm->mouse_state_change(seq->param_int[i], 0, cterm->mouse_state_change_cbdata);
 										break;
 								}
 							}
