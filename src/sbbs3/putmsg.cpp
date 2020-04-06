@@ -146,8 +146,9 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 			else if(str[l+1] == 'Z')	/* Ctrl-AZ==EOF (uppercase 'Z' only) */
 				break;
 			else {
+				bool was_tos = tos;
 				ctrl_a(str[l+1]);
-				if((sys_status&SS_ABORT) && !lines_printed)	/* Aborted at (auto) pause prompt (e.g. due to CLS)? */
+				if(tos && !was_tos && (sys_status&SS_ABORT) && !lines_printed)	/* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					sys_status &= ~SS_ABORT;				/* Clear the abort flag (keep displaying the msg/file) */
 				l+=2;
 			}
@@ -323,6 +324,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 					break;
 				if(memcmp(str+l, "@CLEAR@", 7) == 0) {
 					CLS;
+					sys_status &= ~SS_ABORT;
 					l += 7;
 					while(str[l] != 0 && (str[l] == '\r' || str[l] == '\n'))
 						l++;
@@ -363,10 +365,10 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 					mode |= P_NOABORT;
 					continue;
 				}
-
-				i=show_atcode((char *)str+l);	/* returns 0 if not valid @ code */
+				bool was_tos = tos;
+ 				i=show_atcode((char *)str+l);	/* returns 0 if not valid @ code */
 				l+=i;					/* i is length of code string */
-				if((sys_status&SS_ABORT) && !lines_printed)	/* Aborted at (auto) pause prompt (e.g. due to CLS)? */
+				if(tos && !was_tos && (sys_status&SS_ABORT) && !lines_printed)	/* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					sys_status &= ~SS_ABORT;				/* Clear the abort flag (keep displaying the msg/file) */
 				if(i)					/* if valid string, go to top */
 					continue;
