@@ -137,6 +137,7 @@ Lightbar.prototype.getval = function(current,key)
 	if(key) loop=false;
 	var ret=undefined;
 	var last_cur;
+	var ansi = '';
 	
 	if(!this.nodraw)
 		this.draw();
@@ -146,18 +147,13 @@ Lightbar.prototype.getval = function(current,key)
 	
 		last_cur=this.current;
 		/* Get input */
-		/*
-		 * ToDo: K_GETSTR is to ensure that the users SPIN mode isn't used
-		 * This is a hack which triples the time that an ESC takes to be
-		 * procesed.
-		 */
-		if(key==undefined || key=='' || key==null) {
+		if(key==undefined || key=='' || key==null || ansi.length > 0) {
 			if(this.callback != undefined)
 				this.callback();
 			if(this.timeout>1)
-				key=console.inkey(K_UPPER|(user.settings&USER_SPIN?K_GETSTR:0),this.timeout);
+				key=console.inkey(K_UPPER,this.timeout);
 			else
-				key=console.getkey(K_UPPER|(user.settings&USER_SPIN?K_GETSTR:0));
+				key=console.getkey(K_UPPER|K_NOSPIN);
 		}
 		
 		else {
