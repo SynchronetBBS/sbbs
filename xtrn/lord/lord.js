@@ -5958,8 +5958,10 @@ function new_player()
 			sln('');
 			lln('  `)YOU\'RE NOTHING BUT A WEENIE!');
 			sln('');
-			player.on_now = false;
-			player.put();
+			if (player !== undefined) {
+				player.on_now = false;
+				player.put();
+			}
 			exit(0);
 		}
 		foreground(10);
