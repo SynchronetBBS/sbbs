@@ -284,7 +284,6 @@ Lightbar.prototype.getval = function(current,key)
 			
 			switch(key) {
 				case 'Mouse':
-					ansi = '';
 					if (button === 0) {
 						var hit = this.mouse_hit(x, y);
 						if (hit === -1) {

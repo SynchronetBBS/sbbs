@@ -383,7 +383,7 @@ function Filedirmenu(x, y, changenewscan)
 	this.add("|Library ("+file_area.lib_list[bbs.curlib].name+")","L",width);
 	this.add("|Directory ("+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name+")","D",width);
 	if(changenewscan)
-		this.add("Change New Scan |Date","N",width);
+		this.add("Change |New Scan Date","N",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
 Filedirmenu.prototype=ShellLB.prototype;
@@ -1067,7 +1067,7 @@ function show_filemenu()
 							console.putmsg("\r\nchNew File Scan (Lib)\r\n");
 							for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++)
 								if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number,FL_ULTIME)<0)
-                                    break;
+									break;
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
@@ -1095,6 +1095,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							menus_displayed.pop();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:	// Anything else will escape.
 							typemenu.erase();
 							filemenu.nodraw=true;
@@ -1123,7 +1129,7 @@ function show_filemenu()
 							for(i=0; i<file_area.lib_list.length; i++) {
 								for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
 									if(bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,0)<0)
-                                        break;
+										break;
 							}
 							console.pause();
 							draw_main(true);
@@ -1136,7 +1142,7 @@ function show_filemenu()
 							var spec=bbs.get_filespec();
 							for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
 								if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,0)<0)
-                                    break;
+									break;
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
@@ -1158,6 +1164,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:	// Anything else will escape.
 							typemenu.erase();
 							filemenu.nodraw=true;
@@ -1224,6 +1236,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:	// Anything else will escape.
 							typemenu.erase();
 							filemenu.nodraw=true;
@@ -1279,6 +1297,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							typemenu.erase();
 							filemenu.nodraw=true;
@@ -1347,6 +1371,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							typemenu.erase();
 							filemenu.nodraw=true;
@@ -1509,6 +1539,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							typemenu.erase();
 							menus_displayed.pop();
@@ -1557,6 +1593,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							filemenu.nodraw=true;
@@ -1781,6 +1823,12 @@ function show_messagemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							messagemenu.nodraw=true;
@@ -1852,6 +1900,12 @@ function show_messagemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							messagemenu.nodraw=true;
@@ -1944,6 +1998,12 @@ function show_messagemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							messagemenu.nodraw=true;
@@ -2117,6 +2177,12 @@ function show_emailmenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough XXXX
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							emailmenu.nodraw=true;
@@ -2281,6 +2347,12 @@ function show_chatmenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							chatmenu.nodraw=true;
