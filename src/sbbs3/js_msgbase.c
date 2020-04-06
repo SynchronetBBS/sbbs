@@ -86,6 +86,13 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	private_t* p;
 	jsrefcount	rc;
+	scfg_t*		scfg;
+
+	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	if(scfg == NULL) {
+		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
+		return JS_FALSE;
+	}
 
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
@@ -101,9 +108,15 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if((p->smb_result=smb_open(&(p->smb)))!=SMB_SUCCESS) {
+	if((p->smb_result = smb_open_sub(scfg, &(p->smb), p->smb.subnum)) != SMB_SUCCESS) {
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
+	}
+	if(filelength(fileno(p->smb.shd_fp)) < 1) { /* MsgBase doesn't exist yet, create it */
+		if((p->smb_result = smb_create(&(p->smb))) != SMB_SUCCESS) {
+			JS_RESUMEREQUEST(cx, rc);
+			return JS_TRUE;
+		}
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
