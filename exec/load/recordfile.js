@@ -643,6 +643,8 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			if(val > 2147483647) {
 				val = 2147483647;
 			}
+			if (val < 0)
+				val += 4294967296;
 			this.file.writeBin(val,4);
 			break;
 		case "Integer":
@@ -667,6 +669,8 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			if(val > 32767) {
 				val = 32767;
 			}
+			if (val < 0)
+				val += 65536;
 			this.file.writeBin(val,2);
 			break;
 		case "Integer16":
@@ -691,6 +695,8 @@ RecordFile.prototype.writeField = function(val, fieldtype, def)
 			if(val > 127) {
 				val = 127;
 			}
+			if (val < 0)
+				val += 256;
 			this.file.writeBin(val,1);
 			break;
 		case "Integer8":
