@@ -165,15 +165,14 @@ Lightbar.prototype.getval = function(current,key)
 		if(key==undefined || key=='' || key==null || ansi.length > 0) {
 			if(this.callback != undefined)
 				this.callback();
-			console.write("\x1b[?1006h");
 			console.write("\x1b[?1000h");
+			console.write("\x1b[?1003h");
 			if(this.timeout>1)
 				key=console.inkey(0,this.timeout);
 			else
 				key=console.getkey(K_NOSPIN);
 			console.write("\x1b[?1000l");
 			if (key !== '') {
-log("Key = "+ascii(key));
 				if (key === '\x1b') {
 					if (ansi.length > 0) {
 						ansi += key;
@@ -221,8 +220,13 @@ log("Key = "+ascii(key));
 							mods = (ascii(ansi[3]) - ascii(' ')) & 0x1c;
 							x = ascii(ansi[4]) - ascii('!') + 1;
 							y = ascii(ansi[5]) - ascii('!') + 1;
-							key = 'Mouse';
-							this.mouse_miss_str = ansi;
+							if (mods === 0 && button == 0 && motion == 0) {
+								key = 'Mouse';
+								this.mouse_miss_str = ansi;
+							}
+							else {
+								key = undefined;
+							}
 							ansi = '';
 						}
 					}
@@ -238,8 +242,6 @@ log("Key = "+ascii(key));
 								key = '\x1b';
 							}
 							else {
-								this.mouse_miss_str = ansi;
-								ansi = '';
 								button = parseInt(m[1], 10);
 								motion = button & 0x20;
 								mods = button & 0x1c;
@@ -247,11 +249,15 @@ log("Key = "+ascii(key));
 								x = parseInt(m[2], 10);
 								y = parseInt(m[3], 10);
 
-								// We're not interested in release right now...
-								if (key === 'M')
+								// We're not interested in release or modifier keys right now...
+								if (key === 'M' && mods === 0 && button == 0 && motion == 0) {
+									this.mouse_miss_str = ansi;
 									key = 'Mouse';
-								else
+								}
+								else {
 									key = undefined;
+								}
+								ansi = '';
 							}
 						}
 						else {
@@ -260,7 +266,8 @@ log("Key = "+ascii(key));
 					}
 					else {
 						// Shouldn't happen...
-						key = undefined;
+						restuff();
+						key = '\x1b';
 					}
 				}
 				else {

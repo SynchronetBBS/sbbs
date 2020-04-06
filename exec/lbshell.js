@@ -60,7 +60,8 @@ var hangup_now=false;
 function mangle_mouse_seq(seq)
 {
 	var len = seq.length;
-	return seq[0]+seq[len - 1]+seq.substr(1,len - 2);
+
+	return '' + seq[0] + seq[len - 1] + seq.substr(1,len - 2);
 }
 
 function handle_a_ctrlkey(key)
