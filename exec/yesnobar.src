@@ -36,6 +36,7 @@ and aborted SS_ABORT
 compare aborted SS_ABORT
 if_not_equal
     getkey
+    print "\b\b\b\b\b\b\b\b\b\1n\1h\1>"    
     int aborted
     copy aborted _sys_status
     and aborted SS_ABORT
@@ -44,7 +45,6 @@ if_not_equal
         return
         end_if
     end_if
-print "\b\b\b\b\b\b\b\b\b\1n\1h\1>"
 if_equal
     return
     end_if
