@@ -304,12 +304,12 @@ CSI Ps1 ; Ps2 sp D
 	font selection.  Only X11 and SDL currently do.
 	Supported Ps1 values:
 		0  - Default font
-		1  - Font selected by the high intensity bit when CSI [ ? 31 h
+		1  - Font selected by the high intensity bit when CSI ? 31 h
 		     is enabled
-		2  - Font selected by the blink intensity bit when CSI [ ? 34 h
+		2  - Font selected by the blink intensity bit when CSI ? 34 h
 		     is enabled
 		3  - Font selected by both the high intensity and blink bits
-		     when both CSI [ ? 31 h and CSI [ ? 34 h are enabled
+		     when both CSI ? 31 h and CSI ? 34 h are enabled
 	Currently included fonts are:
 		0  - Codepage 437 English
 		1  - Codepage 1251 Cyrillic, (swiss)
@@ -640,6 +640,11 @@ CSI ? Ps... h
 	     row will move the cursor to the start of the next line triggering
 	     a scroll if required to create a new line.  Defaults to set.
 	     SOURCE: Digital VT102 User Guide
+	9 -  X10 compatible mouse reporting
+	     Mouse button presses will send a CSI M <button> <x> <y>
+	     Where <button> is ' ' + button number (0-based)
+	     <x> and <y> are '!' + position (0-based)
+	     SOURCE: xterm
 	25 - Display the cursor.  Defaults to set.
 	     SOURCE: "Installing and Using the VT320 Video Terminal"
 	31 - Enable bright alt character set
@@ -669,6 +674,53 @@ CSI ? Ps... h
 	     position is the one in which the bottom sixel is in.
 	     Defaults to set.
 	     SOURCE: VT330/VT340 Programmer Reference Manual
+	1000 -  Normal tracking mode mouse reporting
+	     Mouse button presses will send a CSI M <button> <x> <y>
+	     Where <button> is ' ' + button number (0-based)
+	     Mouse button releases will use a button number of 4
+	     <x> and <y> are '!' + position (0-based)
+	     SOURCE: xterm
+	1001 -  Highlight tracking mode mouse reporting
+	     (Not supported by SyncTERM)
+	     SOURCE: xterm
+	1002 -  Button-event tracking mode mouse reporting
+	     Mouse button presses and movement when a button is pressed
+	     will send a CSI M <button> <x> <y>
+	     Where <button> is ' ' + button number (0-based)
+	     32 is added to the button number for movement events.
+	     Mouse button releases will use a button number of 4
+	     <x> and <y> are '!' + position (0-based)
+	     SOURCE: xterm
+	1003 -  Any-event tracking mode mouse reporting
+	     Mouse button presses and movement
+	     will send a CSI M <button> <x> <y>
+	     Where <button> is ' ' + button number (0-based)
+	     32 is added to the button number for movement events.
+	     Mouse button releases will use a button number of 4
+	     <x> and <y> are '!' + position (0-based)
+	     If no button is pressed, it acts as though button 0 is.
+	     SOURCE: xterm
+	1004 -  Focus-event tracking mode mouse reporting
+	     (Not supported by SyncTERM)
+	     SOURCE: xterm
+	1005 -  UTF-8 encoded extended coordinates
+	     (Not supported by SyncTERM)
+	     SOURCE: xterm
+	1006 -  SGR encoded extended coordinates
+	     Instead of the CSI M method, the format of mouse reporting
+	     is change to CSI < Pb ; Px ; Py M for presses and
+	     CSI < Pb ; Px ; Py m for releases.
+	     Instead of CSI M
+	     Px and Py are one-based.
+	     Pb remains the same (32 added for movement)
+	     Button 3 is not used for release (separate code)
+	     SOURCE: xterm
+	1007 -  Alternate scroll mode
+	     (Not supported by SyncTERM)
+	     SOURCE: xterm
+	1015 -  URXVT encoded extended coordinates
+	     (Not supported by SyncTERM)
+	     SOURCE: xterm
 
 CSI Pn k
 	Line Position Backward
@@ -701,6 +753,7 @@ CSI ? Ps... l
 	     overwriting anything which was previously written to the same
 	     position.
 	     SOURCE: Digital VT102 User Guide
+	9 -  Disable X10 compatible mouse reporting
 	25 - Hide the cursor.  Defaults to set.
 	     SOURCE: "Installing and Using the VT320 Video Terminal"
 	31 - Disable bright alt character set
@@ -727,6 +780,29 @@ CSI ? Ps... l
 	     position is unchanged from where it was when the sixel string
 	     started.  Defaults to set.
 	     SOURCE: VT330/VT340 Programmer Reference Manual
+	1000 -  Disable Normal tracking mode mouse reporting
+	     SOURCE: xterm
+	1001 -  Disable Highlight tracking mode mouse reporting
+	     (Not supported by SyncTERM)
+	     SOURCE: xterm
+	1002 -  BDisable utton-event tracking mode mouse reporting
+	     SOURCE: xterm
+	1003 -  Disable Any-event tracking mode mouse reporting
+	     SOURCE: xterm
+	1004 -  Disable Focus-event tracking mode mouse reporting
+	     (Not supported by SyncTERM)
+	     SOURCE: xterm
+	1005 -  Disable UTF-8 encoded extended coordinates
+	     (Not supported by SyncTERM)
+	     SOURCE: xterm
+	1006 -  Disable SGR encoded extended coordinates
+	     SOURCE: xterm
+	1007 -  Disable Alternate scroll mode
+	     (Not supported by SyncTERM)
+	     SOURCE: xterm
+	1015 -  Disable URXVT encoded extended coordinates
+	     (Not supported by SyncTERM)
+	     SOURCE: xterm
 
 CSI Ps... m
 	Select Graphic Rendition
@@ -820,7 +896,7 @@ CSI Ps n
 		  and x is
 		  the current row.
 	255	- NON-STANDARD EXTENSION
-		  Replies as though a CSI [ 6 n was received with the cursor in
+		  Replies as though a CSI 6 n was received with the cursor in
 		  the bottom right corner.  i.e.: Returns the terminal size as
 		  a position report.
 
