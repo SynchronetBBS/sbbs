@@ -264,7 +264,7 @@ function get_winners(level)
 			var to_crc = crc16_calc(title.toLowerCase());
 			var subj_crc = crc16_calc(winner_subject.toLowerCase());
 			var index = msgbase.get_index();
-			for(var i = 0; i < index.length; i++) {
+			for(var i = 0; index && i < index.length; i++) {
 				var idx = index[i];
 				if((idx.attr&MSG_DELETE)
 					|| idx.to != to_crc || idx.subject != subj_crc)
@@ -329,7 +329,7 @@ function show_winners(level)
 
 	var list = get_winners(level);
 	if(!list.length) {
-		alert("No " + (level ? ("level " + level) : "") + " winners yet!");
+		alert("No " + (level ? ("level " + level + " ") : "") + "winners yet!");
 		return;
 	}
 	console.attributes = WHITE;
