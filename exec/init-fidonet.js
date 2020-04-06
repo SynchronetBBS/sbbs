@@ -362,6 +362,8 @@ if(netname) {
 	print("Network coordinator: " + network.coord 
 		+ (network.email ? (" <" + network.email + ">") : "")
 		+ (network.fido ? (" " + network.fido) : ""));
+	if(network.also)
+		print("        also: " + network.also);
 	print("EchoList: " + file_getname(network.echolist));
 } else
 	alert("Unrecognized network zone: " + netzone);
