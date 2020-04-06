@@ -1805,6 +1805,19 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									case 80:
 										cterm->extattr |= CTERM_EXTATTR_SXSCROLL;
 										break;
+									case 9:
+									case 1000:
+									case 1001:
+									case 1002:
+									case 1003:
+									case 1004:
+									case 1005:
+									case 1006:
+									case 1007:
+									case 1015:
+										if (cterm->mouse_state_change)
+											cterm->mouse_state_change(seq->param_int[i], 1);
+										break;
 								}
 							}
 							if (updfg || updbg) {
@@ -1863,6 +1876,19 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										break;
 									case 80:
 										cterm->extattr &= ~CTERM_EXTATTR_SXSCROLL;
+										break;
+									case 9:
+									case 1000:
+									case 1001:
+									case 1002:
+									case 1003:
+									case 1004:
+									case 1005:
+									case 1006:
+									case 1007:
+									case 1015:
+										if (cterm->mouse_state_change)
+											cterm->mouse_state_change(seq->param_int[i], 0);
 										break;
 								}
 							}

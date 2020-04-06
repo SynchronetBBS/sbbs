@@ -2220,9 +2220,56 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 	}
 }
 
+void mouse_state_change(int type, int action)
+{
+	if (!action) {
+		setup_mouse_events();
+	}
+	else {
+		ciomouse_setevents(0);
+		if (type == 9) {
+			ciomouse_addevent(CIOLIB_BUTTON_1_PRESS);
+			ciomouse_addevent(CIOLIB_BUTTON_2_PRESS);
+			ciomouse_addevent(CIOLIB_BUTTON_3_PRESS);
+		}
+		if (type == 1000) {
+			ciomouse_addevent(CIOLIB_BUTTON_1_PRESS);
+			ciomouse_addevent(CIOLIB_BUTTON_1_RELEASE);
+			ciomouse_addevent(CIOLIB_BUTTON_2_PRESS);
+			ciomouse_addevent(CIOLIB_BUTTON_2_RELEASE);
+			ciomouse_addevent(CIOLIB_BUTTON_3_PRESS);
+			ciomouse_addevent(CIOLIB_BUTTON_3_RELEASE);
+		}
+	}
+}
+
+static void fill_mevent(char *buf, int button, int x, int y)
+{
+	if (button > 3)
+		button = 3;
+	if (button < 0)
+		button = 0;
+	if (x < 0)
+		x = 0;
+	if (x > 222)
+		x = 222;
+	if (y < 0)
+		y = 0;
+	if (y > 222)
+		y = 222;
+	buf[0] = '\x1b';
+	buf[1] = '[';
+	buf[2] = 'M';
+	buf[3] = ' '+button;
+	buf[4] = '!'+x;
+	buf[5] = '!'+y;
+fprintf(stderr, "%c%c%c%c%c\n", buf[1], buf[2], buf[3], buf[4], buf[5]);
+}
+
 BOOL doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
+	char mouse_buf[6];
 	unsigned char outbuf[OUTBUF_SIZE];
 	size_t outbuf_size=0;
 	int	key;
@@ -2273,6 +2320,7 @@ BOOL doterm(struct bbslist *bbs)
 	}
 	cterm->apc_handler = apc_handler;
 	cterm->apc_handler_data = bbs;
+	cterm->mouse_state_change = mouse_state_change;
 	scrollback_cols=term.width;
 	cterm->music_enable=bbs->music;
 	ch[1]=0;
@@ -2437,6 +2485,30 @@ BOOL doterm(struct bbslist *bbs)
 				case CIO_KEY_MOUSE:
 					getmouse(&mevent);
 					switch(mevent.event) {
+						case CIOLIB_BUTTON_1_PRESS:
+							fill_mevent(mouse_buf, 0, mevent.startx-1, mevent.starty-1);
+							conn_send(mouse_buf, 6, 0);
+							break;
+						case CIOLIB_BUTTON_1_RELEASE:
+							fill_mevent(mouse_buf, 3, mevent.startx-1, mevent.starty-1);
+							conn_send(mouse_buf, 6, 0);
+							break;
+						case CIOLIB_BUTTON_2_PRESS:
+							fill_mevent(mouse_buf, 1, mevent.startx-1, mevent.starty-1);
+							conn_send(mouse_buf, 6, 0);
+							break;
+						case CIOLIB_BUTTON_2_RELEASE:
+							fill_mevent(mouse_buf, 3, mevent.startx-1, mevent.starty-1);
+							conn_send(mouse_buf, 6, 0);
+							break;
+						case CIOLIB_BUTTON_3_PRESS:
+							fill_mevent(mouse_buf, 2, mevent.startx-1, mevent.starty-1);
+							conn_send(mouse_buf, 6, 0);
+							break;
+						case CIOLIB_BUTTON_3_RELEASE:
+							fill_mevent(mouse_buf, 3, mevent.startx-1, mevent.starty-1);
+							conn_send(mouse_buf, 6, 0);
+							break;
 						case CIOLIB_BUTTON_1_DRAG_START:
 							mousedrag(scrollback_buf);
 							break;

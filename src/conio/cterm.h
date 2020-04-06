@@ -178,6 +178,9 @@ struct cterminal {
 	void				(*apc_handler)(char *strbuf, size_t strlen, void *cbdata);
 	void				*apc_handler_data;
 
+	/* Mouse state change callback */
+	void (*mouse_state_change)(int parameter, int enable);
+
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO
 	void	(*ciolib_gotoxy)		(struct cterminal *,int,int);
