@@ -870,6 +870,7 @@ function lord_to_ansi(str)
 					ret += '\x1b[0;34m';
 					break;
 				case '*':
+					// TODO: This may not do 41...
 					ret += '\x1b[0;30;41m';
 					break;
 				case '2':
@@ -1036,20 +1037,20 @@ function more()
 	dk.console.attr.value = oa;
 }
 
-function lw(str) {
+function handle_lordcodes(str)
+{
 	var i;
 	var to;
 	var oop;
 	var snip = '';
 	var lwch;
 
-	str = replace_vars(str);
 	for (i=0; i<str.length; i += 1) {
 		if (str[i] === '`') {
 			sw(snip);
 			snip = '';
 			i += 1;
-			if (i > str.length) {
+			if (i >= str.length) {
 				break;
 			}
 			switch(str[i]) {
@@ -1111,6 +1112,7 @@ function lw(str) {
 					foreground(15);
 					break;
 				case '^':
+				case '*':
 					foreground(0);
 					break;
 				case 'b':
@@ -1126,7 +1128,7 @@ function lw(str) {
 				case 'r':
 				case 'R':
 					i += 1;
-					if (i > str.length) {
+					if (i >= str.length) {
 						break;
 					}
 					switch (str[i]) {
@@ -1163,7 +1165,11 @@ function lw(str) {
 		}
 	}
 	sw(snip);
+}
 
+function lw(str) {
+	str = replace_vars(str);
+	handle_lordcodes(str);
 }
 
 function lln(str)
@@ -1962,7 +1968,8 @@ function run_ref(sec, fname)
 					for (i = 0; i < 22; i++) {
 						if (p*22+i >= l.length)
 							continue;
-						lln(l[p*22+i]);
+						handle_lordcodes(l[p*22+i]);
+						sln('');
 					}
 					sattr = dk.console.attr.value;
 					dk.console.gotoxy(0, 22);
