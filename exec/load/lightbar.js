@@ -141,8 +141,12 @@ Lightbar.prototype.getval = function(current,key)
 	var last_cur;
 	var ansi = '';
 	var button;
+	var motion;
+	var mods;
+	var pressed;
 	var x;
 	var y;
+	var m;
 
 	function restuff()
 	{
@@ -161,13 +165,15 @@ Lightbar.prototype.getval = function(current,key)
 		if(key==undefined || key=='' || key==null || ansi.length > 0) {
 			if(this.callback != undefined)
 				this.callback();
+			console.write("\x1b[?1006h");
 			console.write("\x1b[?1000h");
 			if(this.timeout>1)
-				key=console.inkey(K_UPPER,this.timeout);
+				key=console.inkey(0,this.timeout);
 			else
-				key=console.getkey(K_UPPER|K_NOSPIN);
+				key=console.getkey(K_NOSPIN);
 			console.write("\x1b[?1000l");
 			if (key !== '') {
+log("Key = "+ascii(key));
 				if (key === '\x1b') {
 					if (ansi.length > 0) {
 						ansi += key;
@@ -195,6 +201,10 @@ Lightbar.prototype.getval = function(current,key)
 						ansi += key;
 						key = undefined;
 					}
+					else if (key === '<') {
+						ansi += key;
+						key = undefined;
+					}
 					else {
 						ansi += key;
 						restuff();
@@ -203,15 +213,58 @@ Lightbar.prototype.getval = function(current,key)
 				}
 				else if (ansi.length > 2) {
 					ansi += key;
-					key = undefined;
-					if (ansi.length >= 6) {
-						button = ascii(ansi[3]) - ascii(' ');
-						x = ascii(ansi[4]) - ascii('!') + 1;
-						y = ascii(ansi[5]) - ascii('!') + 1;
-						key = 'Mouse';
-						this.mouse_miss_str = ansi;
-						ansi = '';
+					if (ansi[2] === 'M') {
+						key = undefined;
+						if (ansi.length >= 6) {
+							button = (ascii(ansi[3]) - ascii(' ')) & 0xc3;
+							motion = (ascii(ansi[3]) - ascii(' ')) & 0x20;
+							mods = (ascii(ansi[3]) - ascii(' ')) & 0x1c;
+							x = ascii(ansi[4]) - ascii('!') + 1;
+							y = ascii(ansi[5]) - ascii('!') + 1;
+							key = 'Mouse';
+							this.mouse_miss_str = ansi;
+							ansi = '';
+						}
 					}
+					else if (ansi[2] === '<') {
+						if ("0123456789;Mm".indexOf(key) === -1) {
+							restuff();
+							key = '\x1b';
+						}
+						else if (key === 'M' || key === 'm') {
+							m = ansi.match(/^\x1b\[<([0-9]+);([0-9]+);([0-9]+)([Mm])$/);
+							if (m === null) {
+								restuff();
+								key = '\x1b';
+							}
+							else {
+								this.mouse_miss_str = ansi;
+								ansi = '';
+								button = parseInt(m[1], 10);
+								motion = button & 0x20;
+								mods = button & 0x1c;
+								button &= 0xc3;
+								x = parseInt(m[2], 10);
+								y = parseInt(m[3], 10);
+
+								// We're not interested in release right now...
+								if (key === 'M')
+									key = 'Mouse';
+								else
+									key = undefined;
+							}
+						}
+						else {
+							key = undefined;
+						}
+					}
+					else {
+						// Shouldn't happen...
+						key = undefined;
+					}
+				}
+				else {
+					key = key.toUpperCase();
 				}
 			}
 		}

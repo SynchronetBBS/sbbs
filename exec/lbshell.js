@@ -59,7 +59,8 @@ var hangup_now=false;
  */
 function mangle_mouse_seq(seq)
 {
-	return seq[0]+seq[5]+seq.substr(1,4);
+	var len = seq.length;
+	return seq[0]+seq[len - 1]+seq.substr(1,len - 2);
 }
 
 function handle_a_ctrlkey(key)
