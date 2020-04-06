@@ -48,8 +48,7 @@
 //		settings 		= bit-flags (see XTRN_* in sbbsdefs.js)
 //		ars				= access requirements string (40 chars max)
 //
-// [exec:<file>.js]
-//      args            = execute file.js with this argument string
+// [exec:<file>.js [args]]  ; execute file.js with these arguments
 //		startup_dir		= directory to make current before execution
 //
 // [eval:<js-expression>]
@@ -72,12 +71,22 @@
 
 "use strict";
 
-load("sbbsdefs.js");
+const REVISION = "$Revision$".split(' ')[1];
 const ini_fname = "install-xtrn.ini";
+
+load("sbbsdefs.js");
+
 var options = {
 	debug: false,
 	overwrite: false
 };
+
+function aborted()
+{
+	if(js.terminated || (js.global.console && console.aborted))
+		exit(1);
+	return false;
+}
 
 function install_xtrn_item(cnf, type, desc, item)
 {
@@ -86,36 +95,6 @@ function install_xtrn_item(cnf, type, desc, item)
 
 	if (!item.name)
 		item.name = item.code;
-	
-	if (item.note)
-		print(item.note);
-	
-	var prompt = "Install " + desc + ": " + item.name;
-	if (item.prompt !== undefined)
-		prompt = item.prompt;
-	
-	if (prompt && !confirm(prompt)) {
-		if (item.required == true)
-			return "Installation of " + item.name + " is required to continue";
-		return false;
-	}
-	
-	if (type == "xtrn") {
-		if (!xtrn_area.sec_list.length)
-			return "No external program sections have been created";
-		
-		for (var i = 0; i < xtrn_area.sec_list.length; i++)
-			print(format("%2u: ", i + 1) + xtrn_area.sec_list[i].name);
-
-		var which;
-		while (!which || which > xtrn_area.sec_list.length)
-			which = js.global.prompt("Install " + item.name  + " into which External Program Section");
-		which = parseInt(which, 10);
-		if (!which)
-			return false;
-		
-		item.sec = xtrn_area.sec_list[which - 1].number;
-	}
 	
 	function find_code(objs, code)
 	{
@@ -127,10 +106,54 @@ function install_xtrn_item(cnf, type, desc, item)
 		return -1;
 	}
 	
-	while (!item.code 
+	if(find_code(cnf[type], item.code) >= 0) {
+		if(options.auto
+			|| deny(desc + " (" + item.code + ") already exists, continue"))
+			return false;
+	}
+	
+	while (!item.code && !aborted()
 		|| (find_code(cnf[type], item.code) >= 0
 			&& print(desc + " Internal Code (" + item.code + ") already exists!")))
 		item.code = js.global.prompt(desc + " Internal code");
+
+	if(aborted())
+		return false;
+	
+	if (item.note)
+		print(item.note);
+	
+	var prompt = "Install " + desc + ": " + item.name;
+	if (item.prompt !== undefined)
+		prompt = item.prompt;
+	
+	if (prompt && !confirm(prompt)) {
+/**		
+		if (item.required == true)
+			return "Installation of " + item.name + " is required to continue";
+**/
+		return false;
+	}
+	
+	if (type == "xtrn") {
+		if (!xtrn_area.sec_list.length)
+			return "No external program sections have been created";
+		
+		for (var i = 0; i < xtrn_area.sec_list.length; i++)
+			print(format("%2u: ", i + 1) + xtrn_area.sec_list[i].name);
+
+		var which;
+		while ((!which || which > xtrn_area.sec_list.length) && !aborted())
+			which = js.global.prompt("Install " + item.name  + " into which External Program Section");
+		if(aborted())
+			return false;
+		which = parseInt(which, 10);
+		if (!which)
+			return false;
+		
+		item.sec = xtrn_area.sec_list[which - 1].number;
+	}
+
 
 	try {
 		item.code = item.code.toUpperCase();
@@ -151,17 +174,19 @@ function install_xtrn_item(cnf, type, desc, item)
 	return true;
 }
 
-function main(ini_fname)
+function install(ini_fname)
 {
+	ini_fname = fullpath(ini_fname);
 	var installed = 0;
-	var banner = "* Installing " + ini_fname + " use Ctrl-C to abort *";
-	var line = "";
-	for (var i = 0; i < banner.length; i++)
-		line += "*";
-	print(line);
-	print(banner);
-	print(line);
-	
+	if(!options.auto) {
+		var banner = "* Installing " + ini_fname + " use Ctrl-C to abort *";
+		var line = "";
+		for (var i = 0; i < banner.length; i++)
+			line += "*";
+		print(line);
+		print(banner);
+		print(line);
+	}
 	var ini_file = new File(ini_fname);
 	if (!ini_file.open("r"))
 		return ini_file.name + " open error " + ini_file.error;
@@ -190,24 +215,26 @@ function main(ini_fname)
 				return result;
 			if (result === true)
 				installed++;
+			else if(item.required)
+				return false;
 		}
 	}
 	
-	var list = ini_file.iniGetAllObjects("file", "exec:");
+	var list = ini_file.iniGetAllObjects("cmd", "exec:");
 	for (var i = 0; i < list.length; i++) {
 		var item = list[i];
+		var js_args = item.cmd.split(/\s+/);
+		var js_file = js_args.shift();
 		
-		if (file_getext(item.file) != ".js")
-			return "Only '.js' files may be executed: " + item.file;
+		if (file_getext(js_file).toLowerCase() != ".js")
+			return "Only '.js' files may be executed: " + js_file;
 
 		if (item.note)
 			print(item.note);
 		
-		var prompt = "Execute: " + item.file;
+		var prompt = "Execute: " + item.cmd;
 		if (item.prompt !== undefined)
 			prompt = item.prompt;
-		else if (item.args)
-			prompt += " " + item.args;
 	
 		if (prompt && !confirm(prompt)) {
 			if (item.required == true)
@@ -220,9 +247,9 @@ function main(ini_fname)
 		if (!item.args)
 			items.args = "";
 		var result = js.exec.apply(null
-			,[item.file, item.startup_dir, {}].concat(item.args.split(/\s+/)));
+			,[js_file, item.startup_dir, {}].concat(js_args));
 		if (result !== 0 && item.required)
-			return "Error " + result + " executing " + item.file;
+			return "Error " + result + " executing " + item.cmd;
 	}
 	
 	var list = ini_file.iniGetAllObjects("str", "eval:");
@@ -253,27 +280,58 @@ function main(ini_fname)
 	return installed >= 1; // success
 }
 
+print(js.exec_file + " v" + REVISION);
+
 // Command-line argument parsing
-var ini_path;
+var ini_list = [];
 for (var i = 0; i < argc; i++) {
 	if (argv[i][0] == '-')
 		options[argv[i].substr(1)] = true;
-	else if (!ini_path)
-		ini_path = argv[i];
+	else
+		ini_list.push(argv[i]);
 }
 
-// Locate the .ini file
-if (file_isdir(ini_path))
-	ini_path = backslash(ini_path) + ini_fname;
-while (!ini_path || !file_exists(ini_path)) {
-	ini_path = prompt("Location of " + ini_fname);
+var xtrn_dirs = fullpath(system.ctrl_dir + "../xtrn/*");
+if(!ini_list.length) {
+	var dir_list = directory(xtrn_dirs);
+	for(var d in dir_list) {
+		var fname = file_getcase(dir_list[d] + ini_fname);
+		if(fname)
+			ini_list.push(fname);
+	}
+}
+
+if(!ini_list.length) {
+	if(options.auto) {
+		alert("No install files (" + ini_fname + ") found in " + xtrn_dirs);
+		exit(0);
+	}
+	var ini_path;
+	while (!ini_path || !file_exists(ini_path)) {
+		ini_path = prompt("Location of " + ini_fname);
+		if (file_isdir(ini_path))
+			ini_path = backslash(ini_path) + ini_fname;
+	}
+	ini_list.push(ini_path);
+}
+
+var installed = 0;
+for(var i in ini_list) {
+	var ini_path = ini_list[i];
+	// Locate the .ini file
 	if (file_isdir(ini_path))
 		ini_path = backslash(ini_path) + ini_fname;
-}
+	if (!file_exists(ini_path)) {
+		alert(ini_path + " does not exist");
+		continue;
+	}
 		
-var result = main(ini_path);
-if (result !== true) {
-	if (typeof result !== 'boolean')
+	var result = install(ini_path);
+	if(aborted())
+		break;
+	if (result === true)
+		installed++;
+	else if (typeof result !== 'boolean')
 		alert(result);
-	exit(1);
 }
+print("Installed " + installed + " external programs.");
