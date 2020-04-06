@@ -423,14 +423,9 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 //  pHotkey: Optional - A key to select the item when pressed by the user
 function DDLightbarMenu_Add(pText, pRetval, pHotkey)
 {
-	var item = {
-		text: pText,
-		retval: pRetval,
-		hotkeys: "",
-		useAltColors: false
-	};
-	if (pRetval == undefined)
-		item.retval = this.items.length;
+	var item = getDefaultMenuItem();
+	item.text = pText;
+	item.retval = (pRetval == undefined ? this.NumItems() : pRetval);
 	// If pHotkey is defined, then use it as the hotkey.  Otherwise, if
 	// ampersandHotkeysInItems is true, look for the first & in the item text
 	// and if there's a non-space after it, then use that character as the
@@ -768,8 +763,16 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 
 		// Decide which color(s) to use for the item text
 		var menuItem = this.GetItem(pIdx);
-		var normalItemColor = (menuItem.useAltColors ? this.colors.altItemColor : this.colors.itemColor);
-		var selectedItemColor = (menuItem.useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
+		var normalItemColor;
+		var selectedItemColor;
+		if (menuItem.itemColor != null)
+			normalItemColor = menuItem.itemColor;
+		else
+			normalItemColor = (menuItem.useAltColors ? this.colors.altItemColor : this.colors.itemColor);
+		if (menuItem.itemSelectedColor != null)
+			selectedItemColor = menuItem.itemSelectedColor;
+		else
+			selectedItemColor = (menuItem.useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
 		var itemColor = "";
 		if (typeof(pHighlight) == "boolean")
 			itemColor = (pHighlight ? selectedItemColor : normalItemColor);
@@ -1753,12 +1756,10 @@ function DDLightbarMenu_CanShowAllItemsInWindow()
 // Return value: An object with the given text & return value compatible with DDLightbarMenu
 function DDLightbarMenu_MakeItemWithTextAndRetval(pText, pRetval)
 {
-	return {
-		text: pText,
-		retval: pRetval,
-		hotkeys: "",
-		useAltColors: false
-	};
+	var item = getDefaultMenuItem();
+	item.text = pText;
+	item.retval = pRetval;
+	return item;
 }
 
 // Makes an item object that is compatible with DDLightbarMenu, with a given
@@ -1770,12 +1771,9 @@ function DDLightbarMenu_MakeItemWithTextAndRetval(pText, pRetval)
 // Return value: An object with the given return value compatible with DDLightbarMenu
 function DDLightbarMenu_MakeItemWithRetval(pRetval)
 {
-	return {
-		text: "",
-		retval: pRetval,
-		hotkeys: "",
-		useAltColors: false
-	};
+	var item = getDefaultMenuItem();
+	item.retval = pRetval;
+	return item;
 }
 
 // Returns whether an item is set to use the alternate item colors
@@ -2073,4 +2071,16 @@ function addAttrsToString(pStr, pAttrs)
 	else
 		str = pStr;
 	return str;
+}
+
+// Returns a default item object for a DDLightbarMenu
+function getDefaultMenuItem() {
+	return {
+		text: "",
+		retval: null,
+		hotkeys: "",
+		useAltColors: false,
+		itemColor: null,
+		itemSelectedColor: null
+	};
 }
