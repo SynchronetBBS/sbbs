@@ -42,6 +42,9 @@ Support for a "Custom" video mode added
 X/Ymodem progress on Win32 fixed
 Enable SSH CTR modes
 Fix directory title to reflect changes to list size
+Update to SDL2 
+Allow snapping to scale using ALT-<arrow-key> in SDL mode
+Support XTerm style mouse reporting (except drag and keyboard modbits)
 
 Version 1.0
 -----------
