@@ -76,6 +76,8 @@ Lightbar.prototype.hblanks=2;
 Lightbar.prototype.hotkeys='';
 Lightbar.prototype.callback=undefined;
 Lightbar.prototype.timeout=0;
+Lightbar.prototype.mouse_miss_key=undefined;
+Lightbar.prototype.mouse_miss_str=undefined;
 
 Lightbar.prototype.add = function(txt, retval, width, lpadding, rpadding, disabled, nodraw)
 {
@@ -138,24 +140,82 @@ Lightbar.prototype.getval = function(current,key)
 	var ret=undefined;
 	var last_cur;
 	var ansi = '';
-	
+	var button;
+	var x;
+	var y;
+
+	function restuff()
+	{
+		console.ungetstr(ansi.substr(1));
+		ansi = '';
+	}
+
 	if(!this.nodraw)
 		this.draw();
-		
+	delete this.mouse_miss_str;
+
 	/* Main loop */
 	while(bbs.online) {
-	
 		last_cur=this.current;
 		/* Get input */
 		if(key==undefined || key=='' || key==null || ansi.length > 0) {
 			if(this.callback != undefined)
 				this.callback();
+			console.write("\x1b[?1000h");
 			if(this.timeout>1)
 				key=console.inkey(K_UPPER,this.timeout);
 			else
 				key=console.getkey(K_UPPER|K_NOSPIN);
+			console.write("\x1b[?1000l");
+			if (key !== '') {
+				if (key === '\x1b') {
+					if (ansi.length > 0) {
+						ansi += key;
+						restuff();
+						key = '\x1b';
+					}
+					else {
+						ansi += key;
+						key = undefined;
+					}
+				}
+				else if (ansi.length === 1) {
+					if (key === '[') {
+						ansi += key;
+						key = undefined;
+					}
+					else {
+						ansi += key;
+						restuff();
+						key = '\x1b';
+					}
+				}
+				else if (ansi.length === 2) {
+					if (key === 'M') {
+						ansi += key;
+						key = undefined;
+					}
+					else {
+						ansi += key;
+						restuff();
+						key = '\x1b';
+					}
+				}
+				else if (ansi.length > 2) {
+					ansi += key;
+					key = undefined;
+					if (ansi.length >= 6) {
+						button = ascii(ansi[3]) - ascii(' ');
+						x = ascii(ansi[4]) - ascii('!') + 1;
+						y = ascii(ansi[5]) - ascii('!') + 1;
+						key = 'Mouse';
+						this.mouse_miss_str = ansi;
+						ansi = '';
+					}
+				}
+			}
 		}
-		
+
 		else {
 			if(this.hotkeys.indexOf(key)!=-1) {
 				this.nodraw=false;
@@ -163,6 +223,27 @@ Lightbar.prototype.getval = function(current,key)
 			}
 			
 			switch(key) {
+				case 'Mouse':
+					ansi = '';
+					if (button === 0) {
+						var hit = this.mouse_hit(x, y);
+						if (hit === -1) {
+							if (this.mouse_miss_key !== undefined) {
+								return this.mouse_miss_key;
+							}
+						}
+						else {
+							delete this.mouse_miss_str;
+							this.draw(hit);
+							this.nodraw=false;
+							if(this.items[this.current].retval==undefined)
+								return(undefined);
+							return(this.items[this.current].retval);
+						}
+					}
+					else
+						delete this.mouse_miss_str;
+					break;
 				case KEY_UP:
 					if(this.direction==0) {
 						do {
@@ -246,6 +327,77 @@ Lightbar.prototype.getval = function(current,key)
 			key=undefined;
 		} 
 	}
+};
+
+Lightbar.prototype.mouse_hit = function(x, y)
+{
+	if(this.direction < 0 || this.direction > 1) {
+		alert("Unknown lightbar direction!");
+		return -1;
+	}
+
+	var i;
+	var curx=this.xpos;
+	var cury=this.ypos;
+
+	for(i=0; i<this.items.length; i++) {
+		var width;
+
+		// Some basic validation.
+		if(this.items[i]==undefined) {
+			alert("Sparse items array!");
+			return -1;
+		}
+		if(this.items[i].text==undefined) {
+			alert("No text for item "+i+"!");
+			return -1;
+		}
+
+		// Set up a cleaned version for length calculations.
+		var cleaned=this.items[i].text;
+		cleaned=cleaned.replace(/\|/g,'');
+
+		/*
+		 * Calculate the width.  Forced width, item width, text width
+		 * In that order.  First one wins.
+		 */
+		if(this.force_width>0)
+			width=this.force_width;
+		else {
+			if(this.items[i].width!=undefined)
+				width=this.items[i].width;
+			else
+				width=cleaned.length;
+		}
+
+		var lpadding=this.lpadding;
+		if(this.items[i].lpadding!=undefined)
+			lpadding=this.items[i].lpadding;
+
+		if(lpadding != undefined && lpadding != null) {
+			curx+=lpadding.length;
+		}
+
+		if (cury === y) {
+			if (x >= curx && x <= curx + width)
+				return i;
+		}
+		curx += width;
+
+		var rpadding=this.rpadding;
+		if(this.items[i].rpadding!=undefined)
+			rpadding=this.items[i].rpadding;
+		curx += rpadding.length;
+
+		if(this.direction==0) {
+			cury++;
+			curx=this.xpos;
+		}
+		else {
+			curx += this.hblanks;
+		}
+	}
+	return -1;
 };
 
 Lightbar.prototype.draw = function(current)

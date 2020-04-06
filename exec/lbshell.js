@@ -51,6 +51,17 @@ var lastmessage_type=0;
 var orig_passthru=console.ctrlkey_passthru;
 var hangup_now=false;
 
+/*
+ * TODO: This mangles the ANSI sequence so it will pass through inkey()
+ * properly... inkey re-inserts ESC back into the stream using ungetkey()
+ * which changes the order of if the string, putting sequence arguments
+ * at the end.
+ */
+function mangle_mouse_seq(seq)
+{
+	return seq[0]+seq[5]+seq.substr(1,4);
+}
+
 function handle_a_ctrlkey(key)
 {
 	var i;
@@ -233,6 +244,7 @@ ShellLB.prototype.rpadding="\xb3";
 ShellLB.prototype.timeout=100;
 ShellLB.prototype.callback = message_callback;
 ShellLB.prototype.hotkeys = KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+ShellLB.prototype.mouse_miss_key = '\b';
 
 function Mainbar()
 {
@@ -241,6 +253,7 @@ function Mainbar()
 	this.xpos=2;
 	this.ypos=1;
 	this.hotkeys=KEY_DOWN+";"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+	this.mouse_miss_key = undefined;
 	this.add("|File","F",undefined,undefined,undefined,bbs.compare_ars("REST T"));
 	this.add("|Messages","M");
 	this.add("|Email","E",undefined,undefined,undefined,bbs.compare_ars("REST SE"));
@@ -639,8 +652,13 @@ while(bbs.online) {
 					main_right();
 					break;
 				}
-				if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b')
+				if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b') {
+					if (xtrnsec.mouse_miss_str !== undefined) {
+						console.ungetstr(mangle_mouse_seq(xtrnsec.mouse_miss_str));
+						delete xtrnsec.mouse_miss_str;
+					}
 					break;
+				}
 				if(x_sec==ctrl('O')
 						|| x_sec==ctrl('U')
 						|| x_sec==ctrl('T')
@@ -663,6 +681,10 @@ while(bbs.online) {
 					}
 					if(x_prog==KEY_RIGHT || x_prog=='\b' || x_prog=='\x7f' || x_prog=='\x1b') {
 						this_xtrnsec.erase();
+						if (this_xtrnsec.mouse_miss_str !== undefined) {
+							console.ungetstr(mangle_mouse_seq(this_xtrnsec.mouse_miss_str));
+							delete this_xtrnsec.mouse_miss_str;
+						}
 						break;
 					}
 					if(x_prog==ctrl('O')
@@ -758,6 +780,10 @@ while(bbs.online) {
 									break infoloop;
 								case KEY_RIGHT:
 								case '\b':
+									if (userlists.mouse_miss_str !== undefined) {
+										console.ungetstr(mangle_mouse_seq(userlists.mouse_miss_str));
+										delete userlists.mouse_miss_str;
+									}
 								case '\x7f':
 								case '\x1b':
 									userlists.erase();
@@ -797,6 +823,10 @@ while(bbs.online) {
 						done=1;
 						break infoloop;
 					case '\b':
+						if (infomenu.mouse_miss_str !== undefined) {
+							console.ungetstr(mangle_mouse_seq(infomenu.mouse_miss_str));
+							delete infomenu.mouse_miss_str;
+						}
 					case '\x7f':
 					case '\x1b':
 						break infoloop;
@@ -914,6 +944,10 @@ function show_filemenu()
 				menus_displayed.pop();
 				return;
 			case '\b':
+				if (filemenu.mouse_miss_str !== undefined) {
+					console.ungetstr(mangle_mouse_seq(filemenu.mouse_miss_str));
+					delete filemenu.mouse_miss_str;
+				}
 			case '\x7f':
 			case '\x1b':
 				filemenu.erase();
@@ -1571,6 +1605,10 @@ function show_messagemenu()
 				main_left();
 				return;
 			case '\b':
+				if (messagemenu.mouse_miss_str !== undefined) {
+					console.ungetstr(mangle_mouse_seq(messagemenu.mouse_miss_str));
+					delete messagemenu.mouse_miss_str;
+				}
 			case '\x7f':
 			case '\x1b':
 				cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
@@ -1975,6 +2013,10 @@ function show_emailmenu()
 				menus_displayed.pop();
 				return;
 			case '\b':
+				if (emailmenu.mouse_miss_str !== undefined) {
+					console.ungetstr(mangle_mouse_seq(emailmenu.mouse_miss_str));
+					delete emailmenu.mouse_miss_str;
+				}
 			case '\x7f':
 			case '\x1b':
 				cleararea(emailmenu.xpos,emailmenu.ypos,emailmenu.items[0].text.length,emailmenu.items.length,true);
@@ -2133,6 +2175,10 @@ function show_chatmenu()
 				menus_displayed.pop();
 				return;
 			case '\b':
+				if (chatmenu.mouse_miss_str !== undefined) {
+					console.ungetstr(mangle_mouse_seq(chatmenu.mouse_miss_str));
+					delete chatmenu.mouse_miss_str;
+				}
 			case '\x7f':
 			case '\x1b':
 				cleararea(chatmenu.xpos,chatmenu.ypos,chatmenu.items[0].text.length,chatmenu.items.length,true);
@@ -2290,6 +2336,10 @@ function show_settingsmenu()
 				menus_displayed.pop();
 				return;
 			case '\b':
+				if (settingsmenu.mouse_miss_str !== undefined) {
+					console.ungetstr(mangle_mouse_seq(settingsmenu.mouse_miss_str));
+					delete settingsmenu.mouse_miss_str;
+				}
 			case '\x7f':
 			case '\x1b':
 				settingsmenu.erase();
