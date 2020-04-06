@@ -165,8 +165,8 @@ Lightbar.prototype.getval = function(current,key)
 		if(key==undefined || key=='' || key==null || ansi.length > 0) {
 			if(this.callback != undefined)
 				this.callback();
+			console.write("\x1b[?1006h");
 			console.write("\x1b[?1000h");
-			console.write("\x1b[?1003h");
 			if(this.timeout>1)
 				key=console.inkey(0,this.timeout);
 			else
