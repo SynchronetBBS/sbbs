@@ -100,7 +100,7 @@ static bool new_grp(unsigned new_grpnum)
 
 // Return number of imported (including over-written) subs or negative on error
 long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
-	, int min_confnum, int max_confnum, qhub_t* qhub, const char* pkt_orig, faddr_t* faddr
+	, int min_confnum, int max_confnum, qhub_t* qhub, const char* pkt_orig, faddr_t* faddr, uint32_t misc
 	, long* added)
 {
 	char		str[256];
@@ -156,6 +156,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			new_sub_misc = SUB_FIDO;
 			break;
 	}
+	new_sub_misc |= misc;
 
 	while(1) {
 		memset(&tmpsub,0,sizeof(tmpsub));
@@ -1026,7 +1027,8 @@ void msgs_cfg()
 					}
 					uifc.pop("Importing Areas...");
 					long added = 0;
-					ported = import_msg_areas(k, stream, i, min_confnum, max_confnum, /* qhub: */NULL, pkt_orig, /* faddr: */NULL, &added);
+					ported = import_msg_areas(k, stream, i, min_confnum, max_confnum, /* qhub: */NULL
+						, pkt_orig, /* faddr: */NULL, /* misc: */0, &added);
 					fclose(stream);
 					uifc.pop(0);
 					if(ported < 0)

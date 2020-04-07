@@ -185,6 +185,7 @@ int main(int argc, char **argv)
 	const char* grpname = NULL;
 	unsigned int grpnum = 0;
 	faddr_t faddr = {0};
+	uint32_t misc = 0;
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
 #ifndef __unix__
@@ -197,6 +198,10 @@ int main(int argc, char **argv)
 			}
 			if(strncmp(argv[i], "-faddr=", 7) == 0) {
 				faddr = atofaddr(argv[i] + 7);
+				continue;
+			}
+			if(strncmp(argv[i], "-misc=", 6) == 0) {
+				misc = strtoul(argv[i] + 7, NULL, 0);
 				continue;
 			}
 			if(strcmp(argv[i], "-insert") == 0) {
@@ -298,6 +303,7 @@ int main(int argc, char **argv)
                         "-e# =  set escape delay to #msec\n"
 						"-import=<filename> = import a message area list file\n"
 						"-faddr=<addr> = specify your FTN address for imported subs\n"
+						"-misc=<value> = specify option flags for imported subs\n"
 						"-g# =  set group number (or name) to import into\n"
 						"-iX =  set interface mode to X (default=auto) where X is one of:\n"
 #ifdef __unix__
@@ -379,7 +385,7 @@ int main(int argc, char **argv)
 			case msgbase:
 			{
 				enum import_list_type list_type = determine_msg_list_type(fname);
-				ported = import_msg_areas(list_type, fp, grpnum, 1, 99999, /* qhub: */NULL, /* pkt_orig: */NULL, &faddr, &added);
+				ported = import_msg_areas(list_type, fp, grpnum, 1, 99999, /* qhub: */NULL, /* pkt_orig: */NULL, &faddr, misc, &added);
 				break;
 			}
 			case filebase:
