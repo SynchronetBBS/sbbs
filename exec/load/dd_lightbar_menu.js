@@ -1247,33 +1247,6 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 			}
 		}
-		else if ((this.lastUserInput == "F") || (this.lastUserInput == "f"))
-		{
-			// Go to the first page
-			if (this.topItemIdx > 0)
-			{
-				this.selectedItemIdx = 0;
-				this.topItemIdx = 0;
-				// Re-draw the list items, but don't redraw the borders or scrollbar.
-				// The scrollbar will be drawn already, and we don't need to redraw
-				// the borders.
-				this.Draw(pSelectedItemIndexes, false, false);
-			}
-		}
-		else if ((this.lastUserInput == "L") || (this.lastUserInput == "l"))
-		{
-			// Go to the last page
-			var lastPageTopIdx = this.GetTopItemIdxOfLastPage();
-			if (this.topItemIdx < lastPageTopIdx)
-			{
-				this.topItemIdx = lastPageTopIdx;
-				this.selectedItemIdx = this.topItemIdx;
-				// Re-draw the list items, but don't redraw the borders or scrollbar.
-				// The scrollbar will be drawn already, and we don't need to redraw
-				// the borders.
-				this.Draw(pSelectedItemIndexes, false, false);
-			}
-		}
 		// Enter key or additional select-item key: Select the item & quit out of the input loop
 		else if ((this.lastUserInput == KEY_ENTER) || (this.SelectItemKeysIncludes(this.lastUserInput)))
 		{
