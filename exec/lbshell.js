@@ -76,6 +76,7 @@ function handle_a_ctrlkey(key)
 		case ctrl('K'):	/* CTRL-K Control Key Menu */
 			pause=true;
 		case ctrl('P'):	/* Ctrl-P Messages */
+			stop_mouse();
 			clear_screen();
 			console.handle_ctrlkey(key);
 			if(pause)
@@ -83,6 +84,7 @@ function handle_a_ctrlkey(key)
 			draw_main(true);
 			for(i=0; i<menus_displayed.length; i++)
 				menus_displayed[i].draw();
+			start_mouse();
 			break;
 	}
 }
@@ -122,11 +124,13 @@ function get_message()
 
 	/* Sysop Chat? */
 	if(system.node_list[bbs.node_num-1].misc & NODE_LCHAT) {
+		stop_mouse();
 		bbs.private_chat(true);
 		bbs.nodesync();
 		draw_main(true);
 		for(i=0; i<menus_displayed.length; i++)
 			menus_displayed[i].draw();
+		start_mouse();
 	}
 
 	/* Time left warning? */
@@ -137,6 +141,7 @@ function get_message()
 
 	if(bbs.time_left==0) {
 		/* Call get_time_left() to handle the hangup and such */
+		stop_mouse();
 		clear_screen();
 		bbs.get_time_left();
 		bbs.hangup();
@@ -247,6 +252,7 @@ ShellLB.prototype.timeout=100;
 ShellLB.prototype.callback = message_callback;
 ShellLB.prototype.hotkeys = KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 ShellLB.prototype.mouse_miss_key = '\b';
+ShellLB.prototype.mouse_enabled = true;
 
 function Mainbar()
 {
@@ -569,6 +575,7 @@ var mainbar=new Mainbar;
 
 draw_main(true);
 var next_key='';
+start_mouse();
 while(bbs.online) {
 	var done=0;
 	var key=next_key;
@@ -593,6 +600,7 @@ while(bbs.online) {
 			handle_a_ctrlkey(key);
 			break;
 		case ';':
+			stop_mouse();
 			mainbar.current=8;
 			mainbar.draw();
 			console.gotoxy(1,2);
@@ -623,6 +631,7 @@ while(bbs.online) {
 			}
 			else
 				cleararea(1,2,console.screen_columns,1,true);
+			start_mouse();
 			break;
 		case 'F':
 			show_filemenu();
@@ -697,6 +706,7 @@ while(bbs.online) {
 						handle_a_ctrlkey(x_prog);
 						continue;
 					}
+					stop_mouse();
 					clear_screen();
 					if(file_exists("../xtrn/doorscan/doorscan.js")) {
 						try {
@@ -710,7 +720,7 @@ while(bbs.online) {
 					else {
 						bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
 					}
-					
+					start_mouse();
 					draw_main(true);
 					xtrnsec.draw();
 				}
@@ -733,28 +743,36 @@ while(bbs.online) {
 						handle_a_ctrlkey(key);
 						break;
 					case 'I':
+						stop_mouse();
 						clear_screen();
 						bbs.sys_info();
 						console.pause();
 						draw_main(true);
+						start_mouse();
 						break;
 					case 'V':
+						stop_mouse();
 						clear_screen();
 						bbs.ver();
 						console.pause();
 						draw_main(true);
+						start_mouse();
 						break;
 					case 'S':
+						stop_mouse();
 						clear_screen();
 						bbs.sub_info();
 						console.pause();
 						draw_main(true);
+						start_mouse();
 						break;
 					case 'Y':
+						stop_mouse();
 						clear_screen();
 						bbs.user_info();
 						console.pause();
 						draw_main(true);
+						start_mouse();
 						break;
 					case KEY_LEFT:
 						if(infomenu.items[infomenu.current].retval!='U') {
@@ -791,34 +809,42 @@ while(bbs.online) {
 									userlists.erase();
 									break userlistloop;
 								case 'L':
+									stop_mouse();
 									clear_screen();
 									bbs.list_logons();
 									console.pause();
 									draw_main(true);
 									infomenu.draw();
+									start_mouse();
 									break;
 								case 'S':
+									stop_mouse();
 									clear_screen();
 									bbs.list_users(UL_SUB);
 									console.pause();
 									draw_main(true);
 									infomenu.draw();
+									start_mouse();
 									break;
 								case 'A':
+									stop_mouse();
 									clear_screen();
 									bbs.list_users(UL_ALL);
 									console.pause();
 									draw_main(true);
 									infomenu.draw();
+									start_mouse();
 									break;
 							}
 						}
 						menus_displayed.pop();
 						break;
 					case 'T':
+						stop_mouse();
 						clear_screen();
 						bbs.text_sec();
 						draw_main(true);
+						start_mouse();
 						break infoloop;
 					case KEY_RIGHT:
 						main_right();
@@ -839,10 +865,11 @@ while(bbs.online) {
 			break;
 		case 'G':       // Goodbye
 			if(!extra_select) {
-                console.clear(LIGHTGRAY);
-                bbs.logoff(/* prompt? */false);
+				stop_mouse();
+				console.clear(LIGHTGRAY);
+				bbs.logoff(/* prompt? */false);
 				draw_main(true);
-           }
+			}
 	}
 }
 
@@ -850,6 +877,19 @@ function todo_getfiles(lib, dir)
 {
 	var path=format("%s%s.ixb", file_area.lib_list[lib].dir_list[dir].data_dir, file_area.lib_list[lib].dir_list[dir].code);
 	return(file_size(path)/22);	/* F_IXBSIZE */
+}
+
+function start_mouse()
+{
+	console.write("\x1b[?1006h");
+	console.write("\x1b[?1000h");
+}
+
+function stop_mouse()
+{
+	console.write("\x1b[?1000l");
+	if (console.inkey(100) != '')
+		while(console.inkey() !== '');
 }
 
 function clear_screen()
@@ -961,6 +1001,7 @@ function show_filemenu()
 				menus_displayed.pop();
 				return;
 			case 'C':
+				stop_mouse();
 				clear_screen();
 				changedir: do {
 					if(!file_area.lib_list.length)
@@ -1033,12 +1074,15 @@ function show_filemenu()
 					}
 				} while(0);
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'L':
+				stop_mouse();
 				clear_screen();
 				bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
 				console.pause();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'N':
 				var typemenu=new Filedirmenu(filemenu.xpos+filemenu.full_width, filemenu.current+1, true);
@@ -1054,15 +1098,18 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchNew File Scan (All)\r\n");
 							bbs.scan_dirs(FL_ULTIME,true);
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'L':
 							/* Scan this lib only */
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchNew File Scan (Lib)\r\n");
 							for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++)
@@ -1071,22 +1118,27 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'D':
 							/* Scan this dir only */
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchNew File Scan (Dir)\r\n");
 							bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,FL_ULTIME);
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'N':
 							// ToDo: Don't clear screen here, just do one line
+							stop_mouse();
 							clear_screen();
 							bbs.new_file_time=bbs.get_newscantime(bbs.new_file_time);
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case KEY_RIGHT:
 							typemenu.erase();
@@ -1123,6 +1175,7 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchSearch for Filename(s) (All)\r\n");
 							var spec=bbs.get_filespec();
@@ -1134,9 +1187,11 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'L':
 							/* Scan this lib only */
+							stop_mouse();
 							clear_screen();
 								console.putmsg("\r\nchSearch for Filename(s) (Lib)\r\n");
 							var spec=bbs.get_filespec();
@@ -1146,9 +1201,11 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'D':
 							/* Scan this dir only */
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchSearch for Filename(s) (Dir)\r\n");
 							var spec=bbs.get_filespec();
@@ -1156,13 +1213,16 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case KEY_RIGHT:
+							stop_mouse();
 							filemenu.erase();
 							typemenu.erase();
 							menus_displayed.pop();
 							menus_displayed.pop();
 							main_right();
+							start_mouse();
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
@@ -1192,6 +1252,7 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchSearch for Text in Description(s) (All)\r\n");
 							console.putmsg(bbs.text(SearchStringPrompt));
@@ -1204,9 +1265,11 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'L':
 							/* Scan this lib only */
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchSearch for Text in Description(s) (Lib)\r\n");
 							console.putmsg(bbs.text(SearchStringPrompt));
@@ -1217,9 +1280,11 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'D':
 							/* Scan this dir only */
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchSearch for Text in Description(s) (Dir)\r\n");
 							console.putmsg(bbs.text(SearchStringPrompt));
@@ -1228,6 +1293,7 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case KEY_RIGHT:
 							filemenu.erase();
@@ -1271,24 +1337,30 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'B':
+							stop_mouse();
 							clear_screen();
 							bbs.batch_download();
 							/* Redraw just in case */
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'N':
+							stop_mouse();
 							clear_screen();
 							var spec=bbs.get_filespec();
 							bbs.list_file_info(bbs.curdir,spec,FI_DOWNLOAD);
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'U':
+							stop_mouse();
 							clear_screen();
 							bbs.list_file_info(bbs.curdir,spec,FI_USERXFER);
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case KEY_RIGHT:
 							filemenu.erase();
@@ -1342,28 +1414,37 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'C':	// Current dir
+							stop_mouse();
 							clear_screen();
 							bbs.upload_file(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'P':	// Upload dir
+							stop_mouse();
 							clear_screen();
 							bbs.upload_file(file_area.upload_dir);
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'S':	// Sysop dir
+							stop_mouse();
 							clear_screen();
 							bbs.upload_file(file_area.sysop_dir);
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'U':	// To user
+							stop_mouse();
 							clear_screen();
 							bbs.upload_file(file_area.user_dir);
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
+							break;
 						case KEY_RIGHT:
 							filemenu.erase();
 							typemenu.erase();
@@ -1386,6 +1467,7 @@ function show_filemenu()
 				}
 				break;
 			case 'R':
+				stop_mouse();
 				clear_screen();
 				fileremove: do {
 					console.putmsg("\r\nchRemove/Edit File(s)\r\n");
@@ -1418,12 +1500,15 @@ function show_filemenu()
 					}
 				} while(0);
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'B':
+				stop_mouse();
 				console.attributes=LBShell_Attr;
 				clear_screen();
 				bbs.batch_menu();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'V':
 				var typemenu=new ShellLB;
@@ -1450,6 +1535,7 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'C':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchView File(s)\r\n");
 							str=bbs.get_filespec();
@@ -1478,8 +1564,10 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'I':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchView File Information\r\n");
 							str=bbs.get_filespec();
@@ -1508,27 +1596,34 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'P':
+							stop_mouse();
 							clear_screen();
 							bbs.xfer_policy();
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'D':
+							stop_mouse();
 							clear_screen();
 							bbs.dir_info();
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'U':
+							stop_mouse();
 							clear_screen();
 							bbs.list_users(UL_DIR);
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'S':
 							break;
@@ -1664,6 +1759,7 @@ function show_messagemenu()
 				menus_displayed.pop();
 				return;
 			case 'C':
+				stop_mouse();
 				clear_screen();
 				if(!msg_area.grp_list.length)
 					break;
@@ -1740,11 +1836,14 @@ function show_messagemenu()
 					break;
 				}
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'R':
+				stop_mouse();
 				clear_screen();
 				bbs.scan_posts();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'N':
 				var typemenu=new ShellLB;
@@ -1775,13 +1874,16 @@ function show_messagemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
 							bbs.scan_subs(SCAN_NEW|SCAN_MSGSONLY,/* All? */ true);
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case 'G':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
  							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
@@ -1790,31 +1892,40 @@ function show_messagemenu()
 									break;
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case 'S':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
 							bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_NEW);
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case 'C':
+							stop_mouse();
 							clear_screen();
 							bbs.cfg_msg_scan(SCAN_CFG_NEW);
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case 'P':
+							stop_mouse();
 							clear_screen();
 							bbs.cfg_msg_ptrs(SCAN_CFG_NEW);
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case 'R':
+							stop_mouse();
 							clear_screen();
 							bbs.reinit_msg_ptrs()
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case KEY_RIGHT:
 							cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
@@ -1864,13 +1975,16 @@ function show_messagemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
 							bbs.scan_subs(SCAN_TOYOU, /* All? */ true);
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case 'G':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
  							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
@@ -1879,19 +1993,24 @@ function show_messagemenu()
 									break;
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case 'S':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
 							bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_TOYOU);
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case 'C':
+							stop_mouse();
 							clear_screen();
 							bbs.cfg_msg_scan(SCAN_CFG_TOYOU);
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case KEY_RIGHT:
 							cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
@@ -1942,6 +2061,7 @@ function show_messagemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
 							bbs.scan_subs(SCAN_FIND, /* All? */true);
@@ -1950,8 +2070,10 @@ function show_messagemenu()
 								console.pause();
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case 'G':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
 							subonly=console.yesno(bbs.text(DisplaySubjectsOnlyQ));
@@ -1972,8 +2094,10 @@ function show_messagemenu()
 								console.pause();
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case 'S':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
 							subonly=console.yesno(bbs.text(DisplaySubjectsOnlyQ));
@@ -1990,6 +2114,7 @@ function show_messagemenu()
 								console.pause();
 							draw_main(true);
 							messagemenu.draw();
+							start_mouse();
 							break;
 						case KEY_RIGHT:
 							cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
@@ -2013,25 +2138,33 @@ function show_messagemenu()
 				}
 				break;
 			case 'P':
+				stop_mouse();
 				clear_screen();
 				bbs.post_msg();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'A':
+				stop_mouse();
 				clear_screen();
 				bbs.auto_msg();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'Q':
+				stop_mouse();
 				clear_screen();
 				bbs.qwk_sec();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'V':
+				stop_mouse();
 				clear_screen();
 				bbs.sub_info();
 				console.pause();
 				draw_main(true);
+				start_mouse();
 				break;
 		}
 		cur=messagemenu.current;
@@ -2113,12 +2246,15 @@ function show_emailmenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'S':
+							stop_mouse();
 							clear_screen();
 							bbs.email(1,WM_EMAIL,bbs.text(ReFeedback));
 							draw_main(true);
 							emailmenu.draw();
+							start_mouse();
 							break;
 						case 'L':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
 							str=console.getstr("",40,K_UPRLWR);
@@ -2135,8 +2271,10 @@ function show_emailmenu()
 							}
 							draw_main(true);
 							emailmenu.draw();
+							start_mouse();
 							break;
 						case 'A':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
 							str=console.getstr("",40,K_UPRLWR);
@@ -2147,8 +2285,10 @@ function show_emailmenu()
 							}
 							draw_main(true);
 							emailmenu.draw();
+							start_mouse();
 							break;
 						case 'R':
+							stop_mouse();
 							clear_screen();
 							if(console.noyes("\r\nAttach a file"))
 								i=0;
@@ -2160,8 +2300,10 @@ function show_emailmenu()
 								bbs.netmail(str,i);
 							draw_main(true);
 							emailmenu.draw();
+							start_mouse();
 							break;
 						case 'T':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
 							str=console.getstr("",40,K_UPRLWR);
@@ -2169,6 +2311,7 @@ function show_emailmenu()
 								bbs.netmail(str,WM_FILE);
 							draw_main(true);
 							emailmenu.draw();
+							start_mouse();
 							break;
 						case KEY_RIGHT:
 							cleararea(emailmenu.xpos,emailmenu.ypos,emailmenu.items[0].text.length,emailmenu.items.length,true);
@@ -2192,16 +2335,20 @@ function show_emailmenu()
 				}
 				break;
 			case 'R':
+				stop_mouse();
 				clear_screen();
 				bbs.read_mail(MAIL_YOUR);
 				console.pause();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'M':
+				stop_mouse();
 				clear_screen();
 				bbs.read_mail(MAIL_SENT);
 				console.pause();
 				draw_main(true);
+				start_mouse();
 				break;
 		}
 		cur=emailmenu.current;
@@ -2258,33 +2405,44 @@ function show_chatmenu()
 				menus_displayed.pop();
 				return;
 			case 'M':
+				stop_mouse();
 				clear_screen();
 				bbs.multinode_chat();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'P':
+				stop_mouse();
 				clear_screen();
 				bbs.private_chat();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'C':
+				stop_mouse();
 				clear_screen();
 				if(!bbs.page_sysop())
 					bbs.page_guru();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'T':
+				stop_mouse();
 				clear_screen();
 				bbs.page_guru();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'F':
+				stop_mouse();
 				clear_screen();
 				bbs.exec("?finger");
 				console.pause();
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'R':
+				stop_mouse();
 				clear_screen();
 				{
 					var server = "irc.synchro.net 6667";
@@ -2300,11 +2458,14 @@ function show_chatmenu()
 						bbs.exec("?irc -a " + server + " " + channel);
 				}
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'I':
+				stop_mouse();
 				clear_screen();
 				bbs.exec("?sbbsimsg");
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'S':
 				while(bbs.online) {
@@ -2384,6 +2545,7 @@ function show_settingsmenu()
 				handle_a_ctrlkey(ret);
 				break;
 			case 'U':
+				stop_mouse();
 				clear_screen();
 				user.cached=false;
 				var oldshell=user.command_shell;
@@ -2393,11 +2555,14 @@ function show_settingsmenu()
 				if(user.command_shell != oldshell)
 					exit(0);
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'B':
+				stop_mouse();
 				clear_screen();
 				bbs.time_bank();
 				draw_main(true);
+				start_mouse();
 				break;
 			case KEY_RIGHT:
 				settingsmenu.erase();

@@ -78,6 +78,7 @@ Lightbar.prototype.callback=undefined;
 Lightbar.prototype.timeout=0;
 Lightbar.prototype.mouse_miss_key=undefined;
 Lightbar.prototype.mouse_miss_str=undefined;
+Lightbar.prototype.mouse_enabled=false;
 
 Lightbar.prototype.add = function(txt, retval, width, lpadding, rpadding, disabled, nodraw)
 {
@@ -165,13 +166,16 @@ Lightbar.prototype.getval = function(current,key)
 		if(key==undefined || key=='' || key==null || ansi.length > 0) {
 			if(this.callback != undefined)
 				this.callback();
-			console.write("\x1b[?1006h");
-			console.write("\x1b[?1000h");
+			if (!this.mouse_enabled) {
+				console.write("\x1b[?1006h");
+				console.write("\x1b[?1000h");
+			}
 			if(this.timeout>1)
 				key=console.inkey(0,this.timeout);
 			else
 				key=console.getkey(K_NOSPIN);
-			console.write("\x1b[?1000l");
+			if (!this.mouse_enabled)
+				console.write("\x1b[?1000l");
 			if (key !== '') {
 				if (key === '\x1b') {
 					if (ansi.length > 0) {
