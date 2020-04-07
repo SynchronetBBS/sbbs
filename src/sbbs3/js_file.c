@@ -1779,11 +1779,16 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	BYTE		*b;
-	WORD		*w;
-	DWORD		*l;
+	union {
+		uint8_t		*b;
+		uint16_t	*w;
+		uint32_t	*l;
+		int8_t		*sb;
+		int16_t		*sw;
+		int32_t		*sl;
+	} o;
 	size_t		wr=0;
-	int32		size=sizeof(DWORD);
+	int32		size=sizeof(int32_t);
 	jsuint		count=1;
 	void		*buffer;
 	private_t*	p;
@@ -1810,7 +1815,7 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 		else
 			array=NULL;
 	}
-	if(array==NULL && !JSVAL_NULL_OR_VOID(argv[0])) {
+	if(array==NULL) {
 		if(!JS_ValueToNumber(cx,argv[0],&val))
 			return(JS_FALSE);
 	}
@@ -1831,27 +1836,34 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_FALSE);
 	}
-	b=buffer;
-	w=buffer;
-	l=buffer;
+	o.b=buffer;
 	if(array==NULL) {
 		switch(size) {
-			case sizeof(BYTE):
-				*b=(BYTE)val;
-				break;
-			case sizeof(WORD):
-				*w=(WORD)val;
-				if (p->network_byte_order)
-					*w = BE_SHORT(*w);
+			case sizeof(int8_t):
+				if(val < 0)
+					*o.sb=(int8_t)val;
 				else
-					*w = LE_SHORT(*w);
+					*o.b=(uint8_t)val;
 				break;
-			case sizeof(DWORD):
-				*l=(DWORD)val;
-				if (p->network_byte_order)
-					*l = BE_LONG(*l);
+			case sizeof(int16_t):
+				if(val < 0)
+					*o.sw=(int16_t)val;
 				else
-					*l = LE_LONG(*l);
+					*o.w=(uint16_t)val;
+				if (p->network_byte_order)
+					*o.w = BE_SHORT(*o.w);
+				else
+					*o.w = LE_SHORT(*o.w);
+				break;
+			case sizeof(int32_t):
+				if(val < 0)
+					*o.sl=(int32_t)val;
+				else
+					*o.l=(uint32_t)val;
+				if (p->network_byte_order)
+					*o.l = BE_LONG(*o.l);
+				else
+					*o.l = LE_LONG(*o.l);
 				break;
 		}
 	}
@@ -1862,24 +1874,34 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 			if(!JS_ValueToNumber(cx,elemval,&val))
 				goto end;
 			switch(size) {
-				case sizeof(BYTE):
-					*(b++)=(BYTE)val;
-					break;
-				case sizeof(WORD):
-					*(w)=(WORD)val;
-					if (p->network_byte_order)
-						*w = BE_SHORT(*w);
+				case sizeof(int8_t):
+					if(val < 0)
+						*o.sb=(int8_t)val;
 					else
-						*w = LE_SHORT(*w);
-					w++;
+						*o.b=(uint8_t)val;
+					o.b++;
 					break;
-				case sizeof(DWORD):
-					*(l)=(DWORD)val;
-					if (p->network_byte_order)
-						*l = BE_LONG(*l);
+				case sizeof(int16_t):
+					if(val < 0)
+						*o.sw=(int16_t)val;
 					else
-						*l = LE_LONG(*l);
-					l++;
+						*o.w=(uint16_t)val;
+					if (p->network_byte_order)
+						*o.w = BE_SHORT(*o.w);
+					else
+						*o.w = LE_SHORT(*o.w);
+					o.w++;
+					break;
+				case sizeof(int32_t):
+					if(val < 0)
+						*o.sl=(int32_t)val;
+					else
+						*o.l=(uint32_t)val;
+					if (p->network_byte_order)
+						*o.l = BE_LONG(*o.l);
+					else
+						*o.l = LE_LONG(*o.l);
+					o.l++;
 					break;
 			}
 		}
