@@ -61,6 +61,11 @@ size_t DLLCALL strListCount(const str_list_t list)
 	return(i);
 }
 
+BOOL DLLCALL strListIsEmpty(const str_list_t list)
+{
+	return (list == NULL) || (list[0] == NULL);
+}
+
 int DLLCALL strListIndexOf(const str_list_t list, const char* str)
 {
 	size_t		i;
@@ -612,6 +617,31 @@ size_t DLLCALL strListWriteFile(FILE* fp, const str_list_t list, const char* sep
 	}
 	
 	return(i);
+}
+
+char* strListJoin(const str_list_t list, char* buf, size_t buflen, const char* separator)
+{
+	size_t		i;
+
+	if(buflen < 1)
+		return NULL;
+
+	*buf = '\0';
+
+	if(list == NULL)
+		return buf;
+
+	if(separator == NULL)
+		separator = ", ";
+
+	for(i = 0; list[i] != NULL; i++) {
+		if(strlen(buf) + strlen(separator) + strlen(list[i]) >= buflen)
+			break;
+		if(i > 0)
+			strcat(buf, separator);
+		strcat(buf, list[i]);
+	}
+	return buf;
 }
 
 size_t DLLCALL strListBlockLength(char* block)
