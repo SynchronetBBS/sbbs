@@ -362,6 +362,17 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.topBorderText = ""; // Text to display in the top border
 	this.bottomBorderText = ""; // Text to display in the bottom border
 	this.lastUserInput = null; // The user's last keypress when the menu was shown/used
+	// this.nextDrawOnlyItemSubstr can be an object containing start & end properties, as
+	// indexes (end is one past last index) for drawing shortened versions of items on the
+	// next draw
+	this.nextDrawOnlyItemSubstr = null;
+
+	// This is a regex to do a case-insensitive test for Synchronet attribute
+	// codes in strings.
+	// For one that looks at the whole word having only Synchronet attribute
+	// codes, it would have ^ and $ around it, as in
+	// /^\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i
+	this.syncAttrRegex = /\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]/i;
 	
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
@@ -619,9 +630,10 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 	var numItemsWritten = 0;
 	for (var idx = this.topItemIdx; (idx < this.NumItems()) && (numItemsWritten < numPossibleItems); ++idx)
 	{
-		console.gotoxy(curPos.x, curPos.y++);
+		console.gotoxy(curPos.x, curPos.y);
 		var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
-		this.WriteItem(idx, itemLen, idx == this.selectedItemIdx, showMultiSelectMark);
+		this.WriteItem(idx, itemLen, idx == this.selectedItemIdx, showMultiSelectMark, curPos.x, curPos.y);
+		++curPos.y;
 		++numItemsWritten;
 	}
 	// If there are fewer items than the height of the menu, then write blank lines to fill
@@ -640,6 +652,7 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 	}
 
 	this.drawnAlready = true;
+	this.nextDrawOnlyItemSubstr = null;
 }
 
 // Draws the border around the menu items
@@ -732,7 +745,9 @@ function DDLightbarMenu_DrawBorder()
 //  pSelected: Optional - Whether or not this item is selected (mainly intended for multi-select
 //             mode).  Defaults to false.  If true, then a mark character will be displayed
 //             at the end of the item's text.
-function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
+//  pScreenX: Optional - The horizontal screen coordinate of the start of the item
+//  pScreenY: Optional - The vertical screen coordinate of the start of the item
+function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreenX, pScreenY)
 {
 	var numItems = this.NumItems();
 	if ((pIdx >= 0) && (pIdx < numItems))
@@ -780,11 +795,14 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 			itemColor = (pIdx == this.selectedItemIdx ? selectedItemColor : normalItemColor);
 		var selected = (typeof(pSelected) == "boolean" ? pSelected : false);
 
-		// Get the item text, and truncate it to the displayable item width
-		var itemText = menuItem.text;
+		// Get the item text, and truncate it to the displayable item width.
+		// Use strip_ctrl to ensure there are no attribute codes, since we will
+		// apply our own.  This might be only a temporary item returned by a
+		// replaced GetItem(), so we just have to strip_ctrl() it here.
+		var itemText = strip_ctrl(menuItem.text);
 		if (itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems) > itemLen)
 			itemText = itemText.substr(0, itemLen);
-		// Add the item color to the text
+		// Add the item color to the item text
 		itemText = addAttrsToString(itemText, itemColor);
 		// If ampersandHotkeysInItems is true, see if there's an ampersand in
 		// the item text.  If so, we'll want to highlight the next character
@@ -832,7 +850,19 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected)
 		// If in numbered mode, add the item number to the front of the item text.
 		if (this.numberedMode)
 			itemText = format("\1n%" + this.itemNumLen + "d ", pIdx+1) + itemText;
-		console.print(itemText + "\1n");
+		// If this.nextDrawOnlyItemSubstr is an object with start & end properties,
+		// then create a string that is shortened from itemText from those start & end
+		// indexes, and add color to it.
+		// Otherwise, just print the full item text.
+		if ((this.nextDrawOnlyItemSubstr != null) && (typeof(this.nextDrawOnlyItemSubstr) == "object") && this.nextDrawOnlyItemSubstr.hasOwnProperty("start") && this.nextDrawOnlyItemSubstr.hasOwnProperty("end") && (typeof(pScreenX) == "number") && (typeof(pScreenY) == "number"))
+		{
+			var len = this.nextDrawOnlyItemSubstr.end - this.nextDrawOnlyItemSubstr.start;
+			var shortenedText = substrWithAttrCodes(itemText, this.nextDrawOnlyItemSubstr.start, len);
+			console.gotoxy(pScreenX+this.nextDrawOnlyItemSubstr.start, pScreenY);
+			console.print(shortenedText + "\1n");
+		}
+		else
+			console.print(itemText + "\1n");
 	}
 }
 
@@ -2083,4 +2113,107 @@ function getDefaultMenuItem() {
 		itemColor: null,
 		itemSelectedColor: null
 	};
+}
+
+// Returns a substring of a string, accounting for Synchronet attribute
+// codes (not including the attribute codes in the start index or length)
+//
+// Parameters:
+//  pStr: The string to perform the substring on
+//  pLen: The length of the substring
+//
+// Return value: A substring of the string according to the parameters
+function substrWithAttrCodes(pStr, pStartIdx, pLen)
+{
+	if (typeof(pStr) != "string")
+		return "";
+	if (typeof(pStartIdx) != "number")
+		return "";
+	if (typeof(pLen) != "number")
+		return "";
+	if ((pStartIdx <= 0) && (pLen >= console.strlen(pStr)))
+		return pStr;
+
+	// Find the real start index.  If there are Synchronet attribute 
+	var startIdx = printedToRealIdxInStr(pStr, pStartIdx);
+	if (startIdx < 0)
+		return "";
+	// Find the actual length of the string to get
+	var len = pLen;
+	var printableCharCount = 0;
+	var syncAttrCount = 0;
+	var syncAttrRegexWholeWord = /^\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i;
+	var i = startIdx;
+	while ((printableCharCount < pLen) && (i < pStr.length))
+	{
+		if (syncAttrRegexWholeWord.test(pStr.substr(i, 2)))
+		{
+			++syncAttrCount;
+			i += 2;
+		}
+		else
+		{
+			++printableCharCount;
+			++i;
+		}
+	}
+	len += (syncAttrCount * 2);
+	var shortenedStr = pStr.substr(startIdx, len);
+	// Include any attribute codes that might appear before the start index
+	// in the string
+	var attrIdx = pStr.lastIndexOf("\1", startIdx);
+	if (attrIdx >= 0)
+	{
+		var attrStartIdx = -1;
+		// Generate a string of all Synchronet attributes at the found location
+		for (var i = attrIdx; i >= 0; i -= 2)
+		{
+			if (syncAttrRegexWholeWord.test(pStr.substr(i, 2)))
+				attrStartIdx = i;
+			else
+				break;
+		}
+		if (attrStartIdx > -1)
+		{
+			var attrStr = pStr.substring(attrStartIdx, attrIdx+2);
+			shortenedStr = attrStr + shortenedStr;
+		}
+	}
+	return shortenedStr;
+}
+
+// Converts a 'printed' index in a string to its real index in the string
+//
+// Parameters:
+//  pStr: The string to search in
+//  pIdx: The printed index in the string
+//
+// Return value: The actual index in the string object, or -1 on error
+function printedToRealIdxInStr(pStr, pIdx)
+{
+	if (typeof(pStr) != "string")
+		return -1;
+	if ((pIdx < 0) || (pIdx >= pStr.length))
+		return -1;
+
+	// Store the character at the given index if the string didn't have attribute codes.
+	// Also, to help ensure this returns the correct index, get a substring with several
+	// characters starting at the given index to match a word within the string
+	var strWithoutAttrCodes = strip_ctrl(pStr);
+	var substr_len = 5;
+	var substrWithoutAttrCodes = strWithoutAttrCodes.substr(pIdx, substr_len);
+	var printableCharAtIdx = strWithoutAttrCodes.charAt(pIdx);
+	// Iterate through pStr until we find that character and return that index.
+	var realIdx = 0;
+	for (var i = 0; i < pStr.length; ++i)
+	{
+		// tempStr is the string to compare with substrWithoutAttrCodes
+		var tempStr = strip_ctrl(pStr.substr(i)).substr(0, substr_len);
+		if ((pStr.charAt(i) == printableCharAtIdx) && (tempStr == substrWithoutAttrCodes))
+		{
+			realIdx = i;
+			break;
+		}
+	}
+	return realIdx;
 }
