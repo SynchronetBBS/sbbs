@@ -607,9 +607,12 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 		if (drawBorders)
 			this.DrawBorder();
 	}
-	if (this.scrollbarEnabled && drawScrollbar && !this.CanShowAllItemsInWindow())
-	{
+	if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
 		--itemLen; // Leave room for the scrollbar in the item lengths
+	// If the scrollbar is enabled & needed and we are to update it,
+	// then calculate the scrollbar blocks and update it on the screen.
+	if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow() && drawScrollbar)
+	{
 		this.CalcScrollbarBlocks();
 		if (!this.drawnAlready)
 			this.DisplayInitialScrollbar(this.pos.y);
@@ -968,7 +971,16 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			this.UpdateScrollbarWithHighlightedItem();
 
 		this.lastUserInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF);
-		if ((this.lastUserInput == KEY_UP) || (this.lastUserInput == KEY_LEFT))
+		if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)))
+		{
+			continueOn = false;
+			// Ensure any returned choice objects are null/empty to signal
+			// that the user aborted
+			userChoices = null; // For multi-select mode
+			selectedItemIndexes = { }; // For multi-select mode
+			retVal = null; // For single-choice mode
+		}
+		else if ((this.lastUserInput == KEY_UP) || (this.lastUserInput == KEY_LEFT))
 		{
 			if (this.selectedItemIdx > 0)
 			{
@@ -1235,6 +1247,33 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 			}
 		}
+		else if ((this.lastUserInput == "F") || (this.lastUserInput == "f"))
+		{
+			// Go to the first page
+			if (this.topItemIdx > 0)
+			{
+				this.selectedItemIdx = 0;
+				this.topItemIdx = 0;
+				// Re-draw the list items, but don't redraw the borders or scrollbar.
+				// The scrollbar will be drawn already, and we don't need to redraw
+				// the borders.
+				this.Draw(pSelectedItemIndexes, false, false);
+			}
+		}
+		else if ((this.lastUserInput == "L") || (this.lastUserInput == "l"))
+		{
+			// Go to the last page
+			var lastPageTopIdx = this.GetTopItemIdxOfLastPage();
+			if (this.topItemIdx < lastPageTopIdx)
+			{
+				this.topItemIdx = lastPageTopIdx;
+				this.selectedItemIdx = this.topItemIdx;
+				// Re-draw the list items, but don't redraw the borders or scrollbar.
+				// The scrollbar will be drawn already, and we don't need to redraw
+				// the borders.
+				this.Draw(pSelectedItemIndexes, false, false);
+			}
+		}
 		// Enter key or additional select-item key: Select the item & quit out of the input loop
 		else if ((this.lastUserInput == KEY_ENTER) || (this.SelectItemKeysIncludes(this.lastUserInput)))
 		{
@@ -1249,15 +1288,6 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			else
 				retVal = this.GetItem(this.selectedItemIdx).retval;
 			continueOn = false;
-		}
-		else if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)))
-		{
-			continueOn = false;
-			// Ensure any returned choice objects are null/empty to signal
-			// that the user aborted
-			userChoices = null; // For multi-select mode
-			selectedItemIndexes = { }; // For multi-select mode
-			retVal = null; // For single-choice mode
 		}
 		else if (this.lastUserInput == " ")
 		{
