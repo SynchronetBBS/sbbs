@@ -97,6 +97,34 @@ function remove_lines_from_file(filename, patterns, maxlinelen)
 	return result;
 }
 
+function remove_prefix_from_title(filename, prefix)
+{
+	var file = new File(filename);
+	if(!file.open("r"))
+		return "Error " + file.error + " opening " + file.name;
+	var lines = file.readAll(1000);
+	file.close();
+	var longest = 0;
+	var list = [];
+	for(var i = 0; i < lines.length; i++) {
+		var a = lines[i].split(/\s+/);
+		var tag = a.shift();
+		if(tag.length > longest)
+			longest = tag.length;
+		var title = a.join(' ');
+		if(title.toLowerCase().indexOf(prefix.toLowerCase()) == 0)
+			title = title.substr(prefix.length);
+		list.push({ tag: tag, title: title});
+	}
+	var file = new File(filename);
+	if(!file.open("w"))
+		return "Error " + file.error + " opening " + file.name;
+	for(var i in list)
+		file.writeln(format("%-*s %s", longest, list[i].tag, list[i].title));
+	file.close();
+	return true;
+}
+
 function find_sys_addr(addr)
 {
 	for(var i = 0; i < system.fido_addr_list.length; i++) {
@@ -332,7 +360,7 @@ if(!netzone) {
 	var which;
 	while((!which || which < 1) && !aborted()) {
 		var str = prompt("Which or [Q]uit");
-		if(str.toUpperCase() == 'Q')
+		if(str && str.toUpperCase() == 'Q')
 			exit(0);
 		which = parseInt(str, 10);
 	}
@@ -586,12 +614,23 @@ if(echolist_fname && file_size(echolist_fname) > 0) {
 		if(result !== true)
 			alert(result);
 	}
+	if(network.areatitle_prefix) {
+		print("Removing " + network.areatitle_prefix + " Title Prefixes from " + echolist_fname);
+		var result = remove_prefix_from_titles(echolist_fname, network.areatitle_prefix);
+		if(result !== true)
+			alert(result);
+	}
 	if(confirm("Import EchoList (" + echolist_fname + ") into Message Group: " + netname)) {
 		print("Importing " + echolist_fname);
+		var misc = 0;
+		if(!network.handles)
+			misc |= SUB_NAME;
 		system.exec(system.exec_dir + "scfg"
 			+ " -import=" + echolist_fname 
 			+ " -g" + netname
-			+ " -faddr=" + fidoaddr.to_str(your));
+			+ " -faddr=" + fidoaddr.to_str(your)
+			+ " -misc=" + misc
+			);
 	}
 }
 
