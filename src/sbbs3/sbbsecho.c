@@ -4191,6 +4191,12 @@ bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr, const
 	fidoaddr_t sysaddr;
 	unsigned pkts_written = 0;
 	char* rescanned_from = NULL;
+	char exceptions[128];
+	unsigned msg_seen = 0;
+	unsigned msg_path = 0;
+	unsigned msg_origin = 0;
+	unsigned pkt_origin = 0;
+	unsigned passive_node = 0;
 
 	if(!rescan)
 		rescanned_from = parse_control_line(fbuf, "RESCANNED ");
@@ -4198,20 +4204,30 @@ bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr, const
 	for(u=0; u<area.links; u++) {
 		if(faddr != NULL && memcmp(faddr,&area.link[u], sizeof(fidoaddr_t)) != 0)
 			continue;
-		if(check_psb(&seenbys, area.link[u]))
+		if(check_psb(&seenbys, area.link[u])) {
+			msg_seen++;
 			continue;
-		if(check_psb(&paths, area.link[u]))
+		}
+		if(check_psb(&paths, area.link[u])) {
+			msg_path++;
 			continue;
+		}
 		if(hdr->origzone == area.link[u].zone
 			&& hdr->orignet == area.link[u].net
 			&& hdr->orignode == area.link[u].node
-			&& hdr->origpoint == area.link[u].point)
+			&& hdr->origpoint == area.link[u].point) {
+			msg_origin++;
 			continue;	// Don't loop messages back to message originator
-		if(pkt_orig != NULL	&& memcmp(pkt_orig, &area.link[u], sizeof(*pkt_orig)) == 0)
+		}
+		if(pkt_orig != NULL	&& memcmp(pkt_orig, &area.link[u], sizeof(*pkt_orig)) == 0) {
+			pkt_origin++;
 			continue;	// Don't loop message back to packet originator
+		}
 		nodecfg_t* nodecfg = findnodecfg(&cfg, area.link[u],0);
-		if(nodecfg != NULL && nodecfg->passive)
+		if(nodecfg != NULL && nodecfg->passive) {
+			passive_node++;
 			continue;
+		}
 		if(rescanned_from != NULL) {
 			lprintf(LOG_DEBUG, "NOT EXPORTING (to %s) previously-rescanned message from: %s"
 				,smb_faddrtoa(&area.link[u], NULL), rescanned_from);
@@ -4233,10 +4249,27 @@ bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr, const
 		pkts_written++;
 	}
 	free(rescanned_from);
-	lprintf(LOG_DEBUG, "Message from %s (%s) added to packets for %u links"
+	str_list_t details = strListInit();
+	if(msg_seen)
+		strListAppendFormat(&details, "%u seen", msg_seen);
+	if(msg_path)
+		strListAppendFormat(&details, "%u path", msg_path);
+	if(msg_origin)
+		strListAppendFormat(&details, "%u origin", msg_origin);
+	if(pkt_origin)
+		strListAppendFormat(&details, "%u pkt-origin", pkt_origin);
+	if(passive_node)
+		strListAppendFormat(&details, "%u passive", passive_node);
+	strListJoin(details, exceptions, sizeof(exceptions), ", ");
+	if(*exceptions == '\0')
+		SAFECOPY(exceptions, "none");
+	lprintf(LOG_DEBUG, "Added %s message from %s (%s) to packets for %u links (exceptions: %s)"
+		,area.tag
 		,hdr->from
 		,fmsghdr_srcaddr_str(hdr)
-		,pkts_written);
+		,pkts_written
+		,exceptions);
+
 	return pkts_written > 0;
 }
 
