@@ -4233,6 +4233,10 @@ bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr, const
 		pkts_written++;
 	}
 	free(rescanned_from);
+	lprintf(LOG_DEBUG, "Message from %s (%s) added to packets for %u links"
+		,hdr->from
+		,fmsghdr_srcaddr_str(hdr)
+		,pkts_written);
 	return pkts_written > 0;
 }
 
@@ -4934,9 +4938,13 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 
 			for(uint u=0; u < cfg.areas; u++) {
 				if(cfg.area[u].sub == subnum) {
-					cfg.area[u].exported++;
-					write_to_pkts(fmsgbuf, cfg.area[u]
-						,nodecfg ? &nodecfg->addr : NULL, /* pkt_orig: */NULL, &hdr, msg_seen, msg_path, rescan);
+					if(cfg.area[u].links == 0) {
+						lprintf(LOG_ERR, "No links for sub: %s", scfg.sub[subnum]->code);
+					} else {
+						if(write_to_pkts(fmsgbuf, cfg.area[u]
+							,nodecfg ? &nodecfg->addr : NULL, /* pkt_orig: */NULL, &hdr, msg_seen, msg_path, rescan))
+							cfg.area[u].exported++;
+					}
 					break;
 				}
 			}
