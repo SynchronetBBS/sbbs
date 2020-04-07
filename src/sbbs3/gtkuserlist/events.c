@@ -126,7 +126,9 @@ G_MODULE_EXPORT void update_userlist_callback(GtkWidget *wiggy, gpointer data)
 
 	free_cfg(&cfg);
 	if(!load_cfg(&cfg, NULL, TRUE, str)) {
-		display_message("Load Error","Cannot load configuration data","gtk-dialog-error");
+		char error[256];
+		SAFEPRINTF(error, "ERROR Loading Configuration Data: %s", str);
+		display_message("Load Error",error,"gtk-dialog-error");
 		return;
     }
 
