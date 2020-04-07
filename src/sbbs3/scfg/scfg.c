@@ -166,7 +166,6 @@ int main(int argc, char **argv)
     char    errormsg[MAX_PATH*2];
 	int 	i,j,main_dflt=0,chat_dflt=0;
 	char 	str[MAX_PATH+1];
- 	char	exepath[MAX_PATH+1];
 	BOOL    door_mode=FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
 
@@ -327,12 +326,6 @@ int main(int argc, char **argv)
 		else
 			SAFECOPY(cfg.ctrl_dir,argv[i]);
     }
-
-#ifdef _WIN32
-	FULLPATH(exepath,argv[0],sizeof(exepath));	/* Must do this before chdir */
-#else
-	exepath[0]=0;
-#endif
 
 	if(chdir(cfg.ctrl_dir)!=0) {
 		printf("!ERROR %d changing current directory to: %s\n"
