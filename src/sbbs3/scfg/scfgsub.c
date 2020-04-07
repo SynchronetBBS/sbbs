@@ -1333,7 +1333,8 @@ void sub_cfg(uint grpnum)
 								;
 								uifc.input(WIN_MID|WIN_SAV,0,0,"FidoNet Address"
 									,str,25,K_EDIT);
-								cfg.sub[i]->faddr=atofaddr(str);
+								if(str[0])
+									cfg.sub[i]->faddr=atofaddr(str);
 								break;
 							case 8:
 								uifc.helpbuf=
