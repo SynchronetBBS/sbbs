@@ -881,7 +881,10 @@ function screen_to_board(mouse)
 	const margin = Math.floor((console.screen_columns - (game.width * cell_width)) / 2);
 	top = Math.floor(Math.max(0, (console.screen_rows - (header_height + game.height)) - 1) / 2);
 
-	mouse.x = parseInt((mouse.x - margin + 2) / cell_width, 10);
+	var x = (mouse.x - margin + (cell_width - 2)) / cell_width;
+	if (Math.floor(x) !== x)
+		return false;
+	mouse.x = x;
 	mouse.y = (mouse.y - top - header_height);
 	if (mouse.x < 1 || mouse.y < 1 ||
 	    mouse.x > game.width || mouse.y > game.height)
