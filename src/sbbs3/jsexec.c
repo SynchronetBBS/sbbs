@@ -51,8 +51,15 @@
 #include "js_request.h"
 #include "jsdebug.h"
 
-#define DEFAULT_LOG_LEVEL	LOG_DEBUG	/* Display all LOG levels */
+#define DEFAULT_LOG_LEVEL	LOG_INFO
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
+
+static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
+static const char*	strJavaScriptContextStack	="JavaScriptContextStack";
+static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
+static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
+static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
+static const char*	strJavaScriptLoadPath		="JavaScriptLoadPath";
 
 js_startup_t	startup;
 JSRuntime*	js_runtime;
@@ -77,6 +84,7 @@ BOOL		terminated=FALSE;
 BOOL		recycled;
 int			log_level=DEFAULT_LOG_LEVEL;
 int  		err_level=DEFAULT_ERR_LOG_LVL;
+long		umask_val = -1;
 pthread_mutex_t output_mutex;
 #if defined(__unix__)
 BOOL		daemonize=FALSE;
@@ -1119,6 +1127,23 @@ int parseLogLevel(const char* p)
 	return DEFAULT_LOG_LEVEL;
 }
 
+void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
+{
+	log_level = iniGetLogLevel(ini, section, "LogLevel" , log_level);
+	err_level = iniGetLogLevel(ini, section, "ErrorLevel" , err_level);
+	debugger = iniGetBool(ini, section, "Debugger", debugger);
+	pause_on_exit = iniGetBool(ini, section, "PauseOnExit", pause_on_exit);
+	pause_on_error = iniGetBool(ini, section, "PauseOnError", pause_on_error);
+	umask_val = iniGetInteger(ini, section, "umask", umask_val);
+
+	js_max_bytes		= (ulong)iniGetBytes(ini, section, strJavaScriptMaxBytes	,/* unit: */1, js_max_bytes);
+	js_cx_stack			= (ulong)iniGetBytes(ini, section, strJavaScriptContextStack,/* unit: */1, js_cx_stack);
+	cb->limit			= iniGetInteger(ini, section, strJavaScriptTimeLimit		, cb->limit);
+	cb->gc_interval		= iniGetInteger(ini, section, strJavaScriptGcInterval		, cb->gc_interval);
+	cb->yield_interval	= iniGetInteger(ini, section, strJavaScriptYieldInterval	, cb->yield_interval);
+	cb->auto_terminate	= iniGetBool(ini, section, "AutoTerminate"					, cb->auto_terminate);
+}
+
 /*********************/
 /* Entry point (duh) */
 /*********************/
@@ -1136,6 +1161,9 @@ int main(int argc, char **argv, char** env)
 	BOOL	loop=FALSE;
 	BOOL	nonbuffered_con=FALSE;
 	BOOL	change_cwd=TRUE;
+	FILE*	fp;
+	char	ini_fname[MAX_PATH + 1];
+	str_list_t ini = NULL;
 
 	confp=stdout;
 	errfp=stderr;
@@ -1166,6 +1194,16 @@ int main(int argc, char **argv, char** env)
 
 	if(!winsock_startup())
 		return(do_bail(2));
+
+	SAFECOPY(ini_fname, argv[0]);
+	if((p = getfext(ini_fname)) != NULL)
+		*p = 0;
+	SAFECAT(ini_fname, ".ini");
+	if((fp = iniOpenFile(ini_fname, /* create: */FALSE)) != NULL) {
+		ini = iniReadFile(fp);
+		iniCloseFile(fp);
+	}
+	get_ini_values(ini, /* section (global): */NULL, &cb);
 
 	getcwd(orig_cwd, sizeof(orig_cwd));
 	backslash(orig_cwd);
@@ -1255,7 +1293,7 @@ int main(int argc, char **argv, char** env)
 							cb.limit=strtoul(p,NULL,0);
 							break;
 						case 'u':
-							umask(strtol(p,NULL,8));
+							umask_val = strtol(p,NULL,8);
 							break;
 						case 'y':
 							cb.yield_interval=strtoul(p,NULL,0);
@@ -1316,7 +1354,12 @@ int main(int argc, char **argv, char** env)
 			}
 			continue;
 		}
+		char ini_section[MAX_PATH + 1];
 		module=argv[argn];
+		SAFECOPY(ini_section, getfname(module));
+		if((p = getfext(ini_section)) != NULL)
+			*p = 0;
+		get_ini_values(ini, ini_section, &cb);
 	}
 
 #ifndef JSDOOR
@@ -1324,6 +1367,9 @@ int main(int argc, char **argv, char** env)
 		SAFECOPY(scfg.ctrl_dir, get_ctrl_dir());
 	}	
 #endif
+
+	if(umask_val >= 0)
+		umask(umask_val);
 
 	if(module==NULL && isatty(fileno(stdin))) {
 		fprintf(errfp,"\n!Module name not specified\n");
@@ -1425,6 +1471,7 @@ int main(int argc, char **argv, char** env)
 
 	} while((recycled || loop) && !terminated);
 
+	iniFreeStringList(ini);
 	return(do_bail(result));
 }
 
