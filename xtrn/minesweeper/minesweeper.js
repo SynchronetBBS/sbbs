@@ -1162,7 +1162,7 @@ function play()
 					console.attributes = LIGHTRED;
 					console.right((console.screen_columns - 16) / 2);
 					console.print("Quit Game (Y/N) ?");
-					if(console.getkey(K_UPPER) != 'Y') }
+					if(console.getkey(K_UPPER) != 'Y') {
 						console.write("\x1b[?1000;1006h");
 						break;
 					}
