@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.30     2020-04-07   The message list features now uses DDLightbarMenu rather
+                      than the internal lightbar menu code.  Requires the
+                      latest dd_lightbar_menu.js (in sbbs/exec/load).
+                      Later I also plan to update the area chooser code to also
+                      use DDLightbarMenu and remove the internal lightbar
+                      chooser code from DDMsgReader altogether.
 1.29     2020-04-03   When reading a message, if a message is written to the
                       current user, the 'To' username in the header above the
                       message is now written in a different color.  Also, there

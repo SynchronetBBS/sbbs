@@ -56,9 +56,15 @@
  *                              with an error due to an invalid last-read message number.
  *                              This has been fixed.
  * 2020-04-03 Eric Oulashin     Version 1.29
- *                              In reader mode, if a message is written to the
+ *                              When reading a message, if a message is written to the
  *                              current user, the 'To' username in the header above
  *                              the message is now written in a different color.
+ * 2020-04-07 Eric Oulashin     Version 1.30
+ *                              The message list features now uses DDLightbarMenu
+ *                              rather than the internal lightbar chooser code.
+ *                              Later I also plan to update the area chooser code
+ *                              to use DDLightbarMenu as well and remove the
+ *                              internal lightbar chooser code altogether.
  */
 
 
@@ -141,6 +147,7 @@ if (requireFnExists)
 	require("text.js", "Email"); // Text string definitions (referencing text.dat)
 	require("utf8_cp437.js", "utf8_cp437");
 	require("userdefs.js", "USER_UTF8");
+	require("dd_lightbar_menu.js", "DDLightbarMenu");
 }
 else
 {
@@ -148,6 +155,7 @@ else
 	load("text.js"); // Text string definitions (referencing text.dat)
 	load("utf8_cp437.js");
 	load("userdefs.js");
+	load("dd_lightbar_menu.js");
 }
 
 // This script requires Synchronet version 3.15 or higher.
@@ -166,8 +174,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.29";
-var READER_DATE = "2020-04-03";
+var READER_VERSION = "1.30";
+var READER_DATE = "2020-04-07";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -707,6 +715,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.ListMessages = DigDistMsgReader_ListMessages;
 	this.ListMessages_Traditional = DigDistMsgReader_ListMessages_Traditional;
 	this.ListMessages_Lightbar = DigDistMsgReader_ListMessages_Lightbar;
+	this.CreateLightbarMsgListMenu = DigDistMsgReader_CreateLightbarMsgListMenu;
+	this.AdjustLightbarMsgListMenuIdxes = DigDistMsgReader_AdjustLightbarMsgListMenuIdxes;
 	this.ClearSearchData = DigDistMsgReader_ClearSearchData;
 	this.ReadOrListSubBoard = DigDistMsgReader_ReadOrListSubBoard;
 	this.PopulateHdrsIfSearch_DispErrorIfNoMsgs = DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs;
@@ -1518,7 +1528,11 @@ function DigDistMsgReader_GetMsgIdx(pHdrOrMsgNum)
 		if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(msgNum))
 			msgIdx = this.hdrsForCurrentSubBoardByMsgNum[msgNum];
 		else
-			msgIdx = -1;
+		{
+			msgIdx = msgNumToIdxFromMsgbase(this.subBoardCode, msgNum);
+			if (msgIdx != -1)
+				this.hdrsForCurrentSubBoardByMsgNum[msgNum] = msgIdx;
+		}
 	}
 	else
 		msgIdx = msgNumToIdxFromMsgbase(this.subBoardCode, msgNum);
@@ -3245,13 +3259,6 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 	this.readAMessage = false;
 	this.deniedReadingMessage = false;
 
-	var msgbase = new MsgBase(this.subBoardCode);
-	if (!msgbase.open())
-	{
-		console.center("\1n\1h\1yError: \1wUnable to open the sub-board.\r\n\1p");
-		return retObj;
-	}
-
 	this.RecalcMsgListWidthsAndFormatStrs();
 
 	var allowChgSubBoard = (typeof(pAllowChgSubBoard) == "boolean" ? pAllowChgSubBoard : true);
@@ -3278,227 +3285,44 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		this.SetUpLightbarMsgListVars();
 	}
 
-	// List a screenful of message headers
-	console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-	var lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-	// Move the cursor to where it needs to be
-	console.gotoxy(this.lightbarListCurPos);
-	// User input loop
-	var bottomMsgIndex = 0;
-	var userInput = "";
+	// Use a DDLightbarMenu to list messages
+	var msgListMenu = this.CreateLightbarMsgListMenu();
 	var msgHeader = null;
+	var drawMenu = true;
 	var continueOn = true;
 	while (continueOn)
 	{
-		bbs.command_str = ""; // To prevent weirdness
-
-		retObj.selectedMsgOffset = -1;
-
-		// Calculate the message number (0-based) of the message
-		// appearing on the bottom of the screen.
-		if (this.reverseListOrder)
+		var userChoice = msgListMenu.GetVal(drawMenu);
+		drawMenu = true;
+		var lastUserInputUpper = (typeof(msgListMenu.lastUserInput) == "string" ? msgListMenu.lastUserInput.toUpperCase() : msgListMenu.lastUserInput);
+		this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
+		// If userChoice is a number, then it will be a message number for a message to read
+		if (typeof(userChoice) == "number")
 		{
-			bottomMsgIndex = this.lightbarListTopMsgIdx - this.lightbarMsgListNumLines + 1;
-			if (bottomMsgIndex < 0)
-				bottomMsgIndex = 0;
-		}
-		else
-		{
-			var totalNumMessages = this.NumMessages();
-			bottomMsgIndex = this.lightbarListTopMsgIdx + this.lightbarMsgListNumLines - 1;
-			if (bottomMsgIndex >= totalNumMessages)
-				bottomMsgIndex = totalNumMessages - 1;
-		}
-
-		// Write the current message information with highlighting colors
-		msgHeader = this.GetMsgHdrByIdx(this.lightbarListSelectedMsgIdx, this.showScoresInMsgList);
-		this.PrintMessageInfo(msgHeader, true, this.lightbarListSelectedMsgIdx+1);
-		console.gotoxy(this.lightbarListCurPos); // Make sure the cursor is still in the right place
-
-		// Get a key from the user (upper-case) and take appropriate action.
-		userInput = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
-		retObj.lastUserInput = userInput;
-		// Q: Quit
-		if (userInput == "Q")
-		{
-			// Quit
-			continueOn = false;
-			break;
-		}
-		// ?: Show help
-		else if (userInput == "?")
-		{
-			// Display help
-			console.clear("\1n");
-			this.DisplayMsgListHelp(allowChgSubBoard, true);
-
-			// Re-draw the message list on the screen
-			console.clear("\1n");
-			this.WriteMsgListScreenTopHeader();
-			DisplayHelpLine(this.msgListLightbarModeHelpLine);
-			console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-			lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-			console.gotoxy(this.lightbarListCurPos); // Put the cursor back where it should be
-		}
-		// Up arrow: Highlight the previous message
-		else if (userInput == KEY_UP)
-		{
-			// Make sure this.lightbarListSelectedMsgIdx is within bounds before moving down.
-			if (this.reverseListOrder)
-			{
-				if (this.lightbarListSelectedMsgIdx >= this.NumMessages() - 1)
-					continue;
-			}
-			else
-			{
-				if (this.lightbarListSelectedMsgIdx <= 0)
-					continue;
-			}
-
-			// Print the current message information with regular colors
-			this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
-
-			if (this.reverseListOrder)
-				++this.lightbarListSelectedMsgIdx;
-			else
-				--this.lightbarListSelectedMsgIdx;
-
-			// If the current screen row is above the first line allowed, then
-			// move the cursor up one row.
-			if (this.lightbarListCurPos.y > this.lightbarMsgListStartScreenRow)
-			{
-				console.gotoxy(1, this.lightbarListCurPos.y-1);
-				this.lightbarListCurPos.x = 1;
-				--this.lightbarListCurPos.y;
-			}
-			else
-			{
-				// Go onto the previous page, with the cursor highlighting
-				// the last message on the page.
-				if (this.reverseListOrder)
-					this.lightbarListTopMsgIdx = this.lightbarListSelectedMsgIdx + this.lightbarMsgListNumLines - 1;
-				else
-					this.lightbarListTopMsgIdx = this.lightbarListSelectedMsgIdx - this.lightbarMsgListNumLines + 1;
-
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow+this.lightbarMsgListNumLines-1);
-				this.lightbarListCurPos.x = 1;
-				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow+this.lightbarMsgListNumLines-1;
-			}
-		}
-		// Down arrow: Highlight the next message
-		else if (userInput == KEY_DOWN)
-		{
-			// Make sure this.lightbarListSelectedMsgIdx is within bounds before moving down.
-			if (this.reverseListOrder)
-			{
-				if (this.lightbarListSelectedMsgIdx <= 0)
-					continue;
-			}
-			else
-			{
-				if (this.lightbarListSelectedMsgIdx >= this.NumMessages() - 1)
-					continue;
-			}
-
-			// Print the current message information with regular colors
-			this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
-
-			if (this.reverseListOrder)
-				--this.lightbarListSelectedMsgIdx;
-			else
-				++this.lightbarListSelectedMsgIdx;
-
-			// If the current screen row is below the last line allowed, then
-			// move the cursor down one row.
-			if (this.lightbarListCurPos.y < this.lightbarMsgListStartScreenRow+this.lightbarMsgListNumLines-1)
-			{
-				console.gotoxy(1, this.lightbarListCurPos.y+1);
-				this.lightbarListCurPos.x = 1;
-				++this.lightbarListCurPos.y;
-			}
-			else
-			{
-				// Go onto the next page, with the cursor highlighting
-				// the first message on the page.
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				this.lightbarListTopMsgIdx = this.lightbarListSelectedMsgIdx;
-				lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-				// If we were on the last page, then clear the screen from
-				// the current line to the end of the screen.
-				if (lastPage)
-				{
-					this.lightbarListCurPos = console.getxy();
-					clearToEOS(this.lightbarListCurPos.y);
-					// Make sure the help line is still there
-					DisplayHelpLine(this.msgListLightbarModeHelpLine);
-				}
-
-				// Move the cursor to the top of the list
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				this.lightbarListCurPos.x = 1;
-				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
-			}
-		}
-		// HOME key: Go to the first message on the screen
-		else if (userInput == KEY_HOME)
-		{
-			// Print the current message information with regular colors
-			this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
-			// Go to the first message of the current page
-			if (this.reverseListOrder)
-				this.lightbarListSelectedMsgIdx += (this.lightbarListCurPos.y - this.lightbarMsgListStartScreenRow);
-			else
-				this.lightbarListSelectedMsgIdx -= (this.lightbarListCurPos.y - this.lightbarMsgListStartScreenRow);
-			// Move the cursor to the first message line
-			console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-			this.lightbarListCurPos.x = 1;
-			this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
-		}
-		// END key: Go to the last message on the screen
-		else if (userInput == KEY_END)
-		{
-			// Print the current message information with regular colors
-			this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
-			// Update the selected message #
-			this.lightbarListSelectedMsgIdx = bottomMsgIndex;
-			// Go to the last message of the current page
-			if (this.reverseListOrder)
-				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow + this.lightbarListTopMsgIdx - bottomMsgIndex;
-			else
-				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow + bottomMsgIndex - this.lightbarListTopMsgIdx;
-			console.gotoxy(this.lightbarListCurPos);
-		}
-		// Enter key: Select a message to read
-		else if (userInput == KEY_ENTER)
-		{
-			// See if the current message header has our "isBogus" property and it's true.
-			// Only let the user read the message if it's not a bogus message header.
-			// The message header could have the "isBogus" property, for instance, if
-			// it's a vote message (introduced in Synchronet 3.17).
+			// The user choice a message to read
+			this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
+			msgHeader = this.GetMsgHdrByIdx(this.lightbarListSelectedMsgIdx, this.showScoresInMsgList);
+			this.PrintMessageInfo(msgHeader, true, this.lightbarListSelectedMsgIdx+1);
+			console.gotoxy(this.lightbarListCurPos); // Make sure the cursor is still in the right place
 			var hdrIsBogus = (msgHeader.hasOwnProperty("isBogus") ? msgHeader.isBogus : false);
 			if (!hdrIsBogus)
 			{
-				var originalCurpos = console.getxy();
-
 				// Allow the user to read the current message.
 				var readMsg = true;
 				if (this.promptToReadMessage)
 				{
 					// Confirm with the user whether to read the message.
-					var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
+					var sReadMsgConfirmText = this.colors.readMsgConfirmColor
 											+ "Read message "
-											+ this.colors["readMsgConfirmNumberColor"]
+											+ this.colors.readMsgConfirmNumberColor
 											+ +(this.GetMsgIdx(msgHeader.number) + 1)
-											+ this.colors["readMsgConfirmColor"]
+											+ this.colors.readMsgConfirmColor
 											+ ": Are you sure";
 					console.gotoxy(1, console.screen_rows);
 					console.print("\1n");
 					console.clearline();
 					readMsg = console.yesno(sReadMsgConfirmText);
 				}
-				var repliedToMessage = false;
 				if (readMsg)
 				{
 					// If there is a search specified and the search result objects are
@@ -3518,7 +3342,6 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// Return from here so that the calling function can switch into
 					// reader mode.
 					continueOn = false;
-					msgbase.close();
 					return retObj;
 				}
 				else
@@ -3526,212 +3349,36 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 				// Ask the user if  they want to continue reading messages
 				if (this.promptToContinueListingMessages)
-				{
-					continueOn = console.yesno(this.colors["afterReadMsg_ListMorePromptColor"] +
-					"Continue listing messages");
-				}
+					continueOn = console.yesno(this.colors["afterReadMsg_ListMorePromptColor"] + "Continue listing messages");
 				// If the user chose to continue reading messages, then refresh
 				// the screen.  Even if the user chooses not to read the message,
 				// the screen needs to be re-drawn so it appears properly.
 				if (continueOn)
 				{
-					console.clear("\1n");
 					this.WriteMsgListScreenTopHeader();
 					DisplayHelpLine(this.msgListLightbarModeHelpLine);
-					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-					// If we're dispaying in reverse order and the user replied
-					// to the message, then we'll have to re-arrange the screen
-					// a bit to make way for the new message that will appear
-					// in the list.
-					if (this.reverseListOrder && repliedToMessage)
-					{
-						// Make way for the new message, which will appear at the
-						// top.
-						++this.lightbarListTopMsgIdx;
-						// If the cursor is below the bottommost line displaying
-						// messages, then advance the cursor down one position.
-						// Otherwise, increment this.lightbarListSelectedMsgIdx (since a new message
-						// will appear at the top, the previous selected message
-						// will be pushed to the next page).
-						if (this.lightbarListCurPos.y < console.screen_rows - 1)
-						{
-							++originalCurpos.y;
-							++this.lightbarListCurPos.y;
-						}
-						else
-							++this.lightbarListSelectedMsgIdx;
-					}
-					lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-					console.gotoxy(originalCurpos); // Put the cursor back where it should be
 				}
 			}
 		}
-		// PageDown: Next page
-		else if (userInput == KEY_PAGE_DOWN)
+		// If userChoice is not a number, then it should be null in this case,
+		// and the user would have pressed one of the additional quit keys set
+		// up for the menu.  So look at the menu's lastUserInput and do the
+		// appropriate thing.
+		else if ((lastUserInputUpper == "Q") || (lastUserInputUpper == KEY_ESC)) // Quit
 		{
-			// Next page
-			if (!lastPage)
-			{
-				if (this.reverseListOrder)
-					this.lightbarListTopMsgIdx -= this.lightbarMsgListNumLines;
-				else
-					this.lightbarListTopMsgIdx += this.lightbarMsgListNumLines;
-				this.lightbarListSelectedMsgIdx = this.lightbarListTopMsgIdx;
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				this.lightbarListCurPos.x = 1;
-				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
-				lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-
-				// If we were on the last page, then clear the screen from
-				// the current line to the end of the screen.
-				if (lastPage)
-				{
-					this.lightbarListCurPos = console.getxy();
-					clearToEOS(this.lightbarListCurPos.y);
-					// Make sure the help line is still there
-					DisplayHelpLine(this.msgListLightbarModeHelpLine);
-				}
-
-				// Move the cursor back to the first message info line
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				this.lightbarListCurPos.x = 1;
-				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
-			}
-			else {
-				// The user is on the last page - Go to the last message on the page.
-				if (this.lightbarListSelectedMsgIdx != bottomMsgIndex)
-				{
-					// Print the current message information with regular colors
-					this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
-					// Update the selected message #
-					this.lightbarListSelectedMsgIdx = bottomMsgIndex;
-					this.lightbarListCurPos.x = 1;
-					if (this.reverseListOrder)
-						this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow + this.lightbarListTopMsgIdx - bottomMsgIndex;
-					else
-						this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow + bottomMsgIndex - this.lightbarListTopMsgIdx;
-					console.gotoxy(this.lightbarListCurPos);
-				}
-			}
-		}
-		// PageUp: Previous page
-		else if (userInput == KEY_PAGE_UP)
-		{
-			var canGoToPrevious = false;
-			if (this.reverseListOrder)
-				canGoToPrevious = (this.lightbarListTopMsgIdx < this.NumMessages() - 1);
-			else
-				canGoToPrevious = (this.lightbarListTopMsgIdx > 0);
-
-			if (canGoToPrevious)
-			{
-				if (this.reverseListOrder)
-					this.lightbarListTopMsgIdx += this.lightbarMsgListNumLines;
-				else
-					this.lightbarListTopMsgIdx -= this.lightbarMsgListNumLines;
-				this.lightbarListSelectedMsgIdx = this.lightbarListTopMsgIdx;
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				this.lightbarListCurPos.x = 1;
-				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
-			}
-			else
-			{
-				// The user is on the first page - Go to the first message on the page.
-				if (this.lightbarListSelectedMsgIdx != 0)
-				{
-					// Print the current message information with regular colors
-					this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
-					// Go to the first message of the current page
-					if (this.reverseListOrder)
-						this.lightbarListSelectedMsgIdx += (this.lightbarListCurPos.y - this.lightbarMsgListStartScreenRow);
-					else
-						this.lightbarListSelectedMsgIdx -= (this.lightbarListCurPos.y - this.lightbarMsgListStartScreenRow);
-					// Move the cursor to the first message line
-					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-					this.lightbarListCurPos.x = 1;
-					this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
-				}
-			}
-		}
-		// F: First page
-		else if (userInput == "F")
-		{
-			var canGoToFirst = false;
-			if (this.reverseListOrder)
-				canGoToFirst = (this.lightbarListTopMsgIdx < this.NumMessages() - 1);
-			else
-				canGoToFirst = (this.lightbarListTopMsgIdx > 0);
-
-			if (canGoToFirst)
-			{
-				if (this.reverseListOrder)
-					this.lightbarListTopMsgIdx = this.NumMessages() - 1;
-				else
-					this.lightbarListTopMsgIdx = 0;
-				this.lightbarListSelectedMsgIdx = this.lightbarListTopMsgIdx;
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				this.lightbarListCurPos.x = 1;
-				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
-			}
-		}
-		// L: Last page
-		else if (userInput == "L")
-		{
-			if (!lastPage)
-			{
-				// Set the top message index.  If this.lightbarListTopMsgIdx is beyond the last
-				// message in the sub-board, then move back a full page of messages.
-				if (this.reverseListOrder)
-				{
-					this.lightbarListTopMsgIdx = (this.NumMessages() % this.lightbarMsgListNumLines) - 1;
-					// If this.lightbarListTopMsgIdx is now invalid (below 0), then adjust it
-					// to properly display the last page of messages.
-					if (this.lightbarListTopMsgIdx < 0)
-						this.lightbarListTopMsgIdx = this.lightbarMsgListNumLines - 1;
-				}
-				else
-				{
-					var totalNumMessages = this.NumMessages();
-					this.lightbarListTopMsgIdx = totalNumMessages - (totalNumMessages % this.lightbarMsgListNumLines);
-					if (this.lightbarListTopMsgIdx >= totalNumMessages)
-						this.lightbarListTopMsgIdx = totalNumMessages - this.lightbarMsgListNumLines;
-				}
-
-				this.lightbarListSelectedMsgIdx = this.lightbarListTopMsgIdx;
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-				// If we were on the last page, then clear the screen from
-				// the current line to the end of the screen.
-				if (lastPage)
-				{
-					this.lightbarListCurPos = console.getxy();
-					clearToEOS(this.lightbarListCurPos.y);
-					// Make sure the help line is still there
-					DisplayHelpLine(this.msgListLightbarModeHelpLine);
-				}
-
-				// Move the cursor back to the first message info line
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				this.lightbarListCurPos.x = 1;
-				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
-			}
+			continueOn = false;
+			retObj.lastUserInput = "Q"; // So the reader will quit out
 		}
 		// Numeric digit: The start of a number of a message to read
-		else if (userInput.match(/[0-9]/))
+		else if (lastUserInputUpper.match(/[0-9]/))
 		{
-			var originalCurpos = console.getxy();
-
 			// Put the user's input back in the input buffer to
 			// be used for getting the rest of the message number.
-			console.ungetstr(userInput);
+			console.ungetstr(lastUserInputUpper);
 			// Move the cursor to the bottom of the screen and
 			// prompt the user for the message number.
 			console.gotoxy(1, console.screen_rows);
-			userInput = this.PromptForMsgNum({ x: 1, y: console.screen_rows }, this.text.readMsgNumPromptText, true, ERROR_PAUSE_WAIT_MS, false);
+			var userInput = this.PromptForMsgNum({ x: 1, y: console.screen_rows }, this.text.readMsgNumPromptText, true, ERROR_PAUSE_WAIT_MS, false);
 			if (userInput > 0)
 			{
 				// See if the current message header has our "isBogus" property and it's true.
@@ -3747,12 +3394,12 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					var readMsg = true;
 					if (this.promptToReadMessage)
 					{
-						var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
+						var sReadMsgConfirmText = this.colors.readMsgConfirmColor
 												+ "Read message "
-												+ this.colors["readMsgConfirmNumberColor"]
-												+ userInput + this.colors["readMsgConfirmColor"]
+												+ this.colors.readMsgConfirmNumberColor
+												+ userInput + this.colors.readMsgConfirmColor
 												+ ": Are you sure";
-						readMsg = console.yesno(sReadMsgConfirmText);
+												readMsg = console.yesno(sReadMsgConfirmText);
 					}
 					if (readMsg)
 					{
@@ -3761,7 +3408,6 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 						retObj.selectedMsgOffset = userInput - 1;
 						// Return from here so that the calling function can switch
 						// into reader mode.
-						msgbase.close();
 						return retObj;
 					}
 					else
@@ -3770,37 +3416,25 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// Prompt the user whether or not to continue listing
 					// messages.
 					if (this.promptToContinueListingMessages)
-					{
-						continueOn = console.yesno(this.colors["afterReadMsg_ListMorePromptColor"] +
-												   "Continue listing messages");
-					}
+						continueOn = console.yesno(this.colors.afterReadMsg_ListMorePromptColor + "Continue listing messages");
 				}
 				else
-				{
-					writeWithPause(1, console.screen_rows, "\1n\1h\1yThat's not a readable message.",
-					               ERROR_PAUSE_WAIT_MS, "\1n", true);
-				}
+					writeWithPause(1, console.screen_rows, "\1n\1h\1yThat's not a readable message.", ERROR_PAUSE_WAIT_MS, "\1n", true);
 			}
 
 			// If the user chose to continue listing messages, then re-draw
 			// the screen.
 			if (continueOn)
 			{
-				console.clear("\1n");
 				this.WriteMsgListScreenTopHeader();
 				DisplayHelpLine(this.msgListLightbarModeHelpLine);
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-				console.gotoxy(originalCurpos); // Put the cursor back where it should be
 			}
 		}
 		// DEL key: Delete a message
-		else if (userInput == KEY_DEL)
+		else if (lastUserInputUpper == KEY_DEL)
 		{
 			if (this.CanDelete() || this.CanDeleteLastMsg())
 			{
-				var originalCurpos = console.getxy();
-
 				console.gotoxy(1, console.screen_rows);
 				console.print("\1n");
 				console.clearline();
@@ -3808,40 +3442,23 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				// The PromptAndDeleteMessage() method will prompt the user for confirmation
 				// to delete the message and then delete it if confirmed.
 				this.PromptAndDeleteMessage(this.lightbarListSelectedMsgIdx, { x: 1, y: console.screen_rows});
-				
+
 				// In case all messages were deleted, if that's the case, show
 				// an appropriate message and don't continue listing messages.
 				//if (this.NumMessages(true) == 0)
 				if (!this.NonDeletedMessagesExist())
-				{
 					continueOn = false;
-					// Note: The following doesn't seem to be necessary, since
-					// the ReadOrListSubBoard() method will show a message saying
-					// there are no messages to read and then will quit out.
-					/*
-					msgbase.close();
-					msgbase = null;
-					console.clear("\1n");
-					console.center("\1n\1h\1yThere are no messages to display.");
-					console.crlf();
-					console.pause();
-					*/
-				}
 				else
 				{
 					// There are still some messages to show, so refresh the screen.
-					// Refresh the screen
-					console.clear("\1n");
+					// Refresh the header & help line.
 					this.WriteMsgListScreenTopHeader();
 					DisplayHelpLine(this.msgListLightbarModeHelpLine);
-					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-					lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-					console.gotoxy(originalCurpos); // Put the cursor back where it should be
 				}
 			}
 		}
 		// E: Edit a message
-		else if (userInput == "E")
+		else if (lastUserInputUpper == "E")
 		{
 			if (this.CanEdit())
 			{
@@ -3849,43 +3466,38 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				// Only let the user edit the message if it's not a bogus message header.
 				// The message header could have the "isBogus" property, for instance, if
 				// it's a vote message (introduced in Synchronet 3.17).
-				var hdrIsBogus = (msgHeader.hasOwnProperty("isBogus") ? msgHeader.isBogus : false);
+				var tmpMsgHdr = this.GetMsgHdrByIdx(this.lightbarListSelectedMsgIdx, false);
+				var hdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
 				if (!hdrIsBogus)
 				{
-					var originalCurpos = console.getxy();
-
 					// Ask the user if they really want to edit the message
 					console.gotoxy(1, console.screen_rows);
 					console.print("\1n");
 					console.clearline();
 					// Let the user edit the message
-					//var returnObj = this.EditExistingMsg(msgHeader.offset);
+					//var returnObj = this.EditExistingMsg(tmpMsgHdr.offset);
 					var returnObj = this.EditExistingMsg(this.lightbarListSelectedMsgIdx);
-					// Refresh the screen
-					console.clear("\1n");
+					// Refresh the header & help line
 					this.WriteMsgListScreenTopHeader();
 					DisplayHelpLine(this.msgListLightbarModeHelpLine);
-					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-					lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-					console.gotoxy(originalCurpos); // Put the cursor back where it should be
 				}
 			}
+			else
+				drawMenu = false; // No need to re-draw the menu
 		}
 		// G: Go to a specific message by # (highlight or place that message on the top)
-		else if (userInput == "G")
+		else if (lastUserInputUpper == "G")
 		{
-			var originalCurpos = console.getxy();
-
 			// Move the cursor to the bottom of the screen and
 			// prompt the user for a message number.
 			console.gotoxy(1, console.screen_rows);
-			userInput = this.PromptForMsgNum({ x: 1, y: console.screen_rows }, "\n" + this.text.goToMsgNumPromptText, true, ERROR_PAUSE_WAIT_MS, false);
-			if (userInput > 0)
+			var userMsgNum = this.PromptForMsgNum({ x: 1, y: console.screen_rows }, "\n" + this.text.goToMsgNumPromptText, true, ERROR_PAUSE_WAIT_MS, false);
+			if (userMsgNum > 0)
 			{
 				// Make sure the message number is for a valid message (i.e., it
 				// could be an invalid message number if there is a search, where
 				// not all message numbers are consecutive).
-				if (this.GetMsgHdrByMsgNum(userInput) != null)
+				if (this.GetMsgHdrByMsgNum(userMsgNum) != null)
 				{
 					// If the message is on the current page, then just go to and
 					// highlight it.  Otherwise, set the user's selected message on the
@@ -3893,37 +3505,32 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// originalCurpos.y are set correctly.  Also, account for search
 					// results if there are any (we'll need to have the correct array
 					// index for the search results).
-					var chosenMsgIndex = userInput - 1;
+					var chosenMsgIndex = userMsgNum - 1;
 					if ((chosenMsgIndex <= bottomMsgIndex) && (chosenMsgIndex >= this.lightbarListTopMsgIdx))
 					{
 						this.lightbarListSelectedMsgIdx = chosenMsgIndex;
-						originalCurpos.y = this.lightbarListCurPos.y = this.lightbarListSelectedMsgIdx - this.lightbarListTopMsgIdx + this.lightbarMsgListStartScreenRow;
+						msgListMenu.selectedItemIdx = this.lightbarListSelectedMsgIdx;
 					}
 					else
 					{
 						this.lightbarListTopMsgIdx = this.lightbarListSelectedMsgIdx = chosenMsgIndex;
-						originalCurpos.y = this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
+						msgListMenu.topItemIdx = this.lightbarListTopMsgIdx;
 					}
 				}
 				else
 				{
 					// The user entered an invalid message number
-					console.print("\1n" + this.text.invalidMsgNumText.replace("%d", userInput) + "\1n");
+					console.print("\1n" + this.text.invalidMsgNumText.replace("%d", userMsgNum) + "\1n");
 					console.inkey(K_NONE, ERROR_PAUSE_WAIT_MS);
 				}
 			}
 
-			// Clear & re-draw the screen, to fix any possible alignment problems
-			// caused by newline output after the user inputs their choice.
-			console.clear("\1n");
+			// Refresh the header & help lines
 			this.WriteMsgListScreenTopHeader();
 			DisplayHelpLine(this.msgListLightbarModeHelpLine);
-			console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-			lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-			console.gotoxy(originalCurpos); // Put the cursor back where it should be
 		}
 		// C: Change to another message area (sub-board)
-		else if (userInput == "C")
+		else if (lastUserInputUpper == "C")
 		{
 			if (allowChgSubBoard && (this.subBoardCode != "mail"))
 			{
@@ -3937,38 +3544,51 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				{
 					var chgSubRetval = this.ChangeSubBoard(bbs.cursub_code);
 					continueOn = chgSubRetval.succeeded;
+					if (chgSubRetval.succeeded)
+					{
+						console.print("\1n");
+						console.gotoxy(1, console.screen_rows);
+						console.cleartoeol("\1n");
+						console.gotoxy(1, console.screen_rows);
+						console.print("Loading...");
+						this.PopulateHdrsForCurrentSubBoard();
+						this.SetUpLightbarMsgListVars();
+					}
 				}
-				// Update the lightbar list variables and refresh the screen
+				// Update the lightbar list variables and refresh the header & help lines
 				if (continueOn)
 				{
-					this.SetUpLightbarMsgListVars();
 					console.clear("\1n");
+					// Adjust the menu indexes to ensure they're correct for the current sub-board
+					this.AdjustLightbarMsgListMenuIdxes(msgListMenu);
 					this.WriteMsgListScreenTopHeader();
 					DisplayHelpLine(this.msgListLightbarModeHelpLine);
-					// List a screenful of message headers
-					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-					var lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-					// Move the cursor to where it needs to be
-					console.gotoxy(this.lightbarListCurPos);
 				}
 			}
+			else
+				drawMenu = false; // No need to re-draw the menu
+		}
+		else if (lastUserInputUpper == "?") // Show help
+		{
+			console.clear("\1n");
+			this.DisplayMsgListHelp(allowChgSubBoard, true);
+			// Re-draw the message list header & help line before
+			// the menu is re-drawn
+			this.WriteMsgListScreenTopHeader();
+			DisplayHelpLine(this.msgListLightbarModeHelpLine);
 		}
 		// Spacebar: Select a message for batch operations (such as batch
 		// delete, etc.)
-		else if (userInput == " ")
-			this.ToggleSelectedMessage(this.subBoardCode, this.lightbarListSelectedMsgIdx);
-		// Ctrl-A: Select/de-select all messages
-		else if (userInput == CTRL_A)
+		else if (lastUserInputUpper == " ")
 		{
-			//this.reverseListOrder
-			/*
-			this.lightbarListTopMsgIdx = -1;
-			this.lightbarMsgListNumLines = console.screen_rows-2;
-			this.lightbarMsgListStartScreenRow = 2; // The first line number on the screen for the message list
-			this.lightbarListSelectedMsgIdx = -1;
-			this.lightbarListCurPos = null;
-			*/
-			var originalCurpos = console.getxy();
+			this.ToggleSelectedMessage(this.subBoardCode, this.lightbarListSelectedMsgIdx);
+			// Have the menu draw only the check character column in the
+			// next iteration
+			msgListMenu.nextDrawOnlyItemSubstr = { start: this.MSGNUM_LEN, end: this.MSGNUM_LEN+1 };
+		}
+		// Ctrl-A: Select/de-select all messages
+		else if (lastUserInputUpper == CTRL_A)
+		{
 			console.gotoxy(1, console.screen_rows);
 			console.print("\1n");
 			console.clearline();
@@ -3985,53 +3605,19 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				var messageIndex = 0;
 				for (messageIndex = 0; messageIndex < totalNumMessages; ++messageIndex)
 					this.ToggleSelectedMessage(this.subBoardCode, messageIndex, messageSelectToggle);
-
-				// A unction to display a checkmark on the screen
-				function displayScreenMark(pMsgIdx, pCurrentRow, pReaderObj)
-				{
-					// Skip the current selected message because that one's checkmark
-					// will be refreshed.  Also skip this one if the message has been
-					// marked as deleted already.
-					if (!pReaderObj.MessageIsDeleted(pMsgIdx) && (pMsgIdx != pReaderObj.lightbarListSelectedMsgIdx))
-					{
-						console.gotoxy(pReaderObj.MSGNUM_LEN+1, pCurrentRow);
-						console.print("\1n");
-						if (pReaderObj.MessageIsSelected(pReaderObj.subBoardCode, pMsgIdx))
-							console.print(pReaderObj.colors.selectedMsgMarkColor + CHECK_CHAR + "\1n");
-						else
-							console.print(" \1n");
-					}
-				}
-				// Refresh the selected message checkmarks on the screen - Add the
-				// checkmarks for messages that are selected, and write a blank space
-				// (no checkmark) for messages that are not selected.
-				var currentRow = this.lightbarMsgListStartScreenRow;
-				var messageIndexEnd = 0;
-				if (!this.reverseListOrder) // The message list is forward-order
-				{
-					messageIndexEnd = this.lightbarListTopMsgIdx + this.lightbarMsgListNumLines;
-					for (messageIndex = this.lightbarListTopMsgIdx; messageIndex < messageIndexEnd; ++messageIndex)
-						displayScreenMark(messageIndex, currentRow++, this);
-				}
-				else // The message list is reverse-order
-				{
-					messageIndexEnd = this.lightbarListTopMsgIdx - this.lightbarMsgListNumLines + 1;
-					if (messageIndexEnd < 0)
-						messageIndexEnd = 0;
-					for (messageIndex = this.lightbarListTopMsgIdx; (messageIndex >= messageIndexEnd) && (messageIndex >= 0); --messageIndex)
-						displayScreenMark(messageIndex, currentRow++, this);
-				}
+				// Have the menu draw only the check character column in the
+				// next iteration
+				msgListMenu.nextDrawOnlyItemSubstr = { start: this.MSGNUM_LEN, end: this.MSGNUM_LEN+1 };
 			}
+			else
+				drawMenu = false; // No need to re-draw the menu
 
-			// Refresh the help line and move the cursor back to its original position
-			console.gotoxy(1, console.screen_rows);
+			// Refresh the help line
 			DisplayHelpLine(this.msgListLightbarModeHelpLine);
-			console.gotoxy(originalCurpos);
 		}
 		// Ctrl-D: Batch delete (for selected messages)
-		else if (userInput == CTRL_D)
+		else if (lastUserInputUpper == CTRL_D)
 		{
-			var originalCurpos = console.getxy();
 			if (this.NumSelectedMessages() > 0)
 			{
 				console.gotoxy(1, console.screen_rows);
@@ -4046,46 +3632,173 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				// an appropriate message and don't continue listing messages.
 				//if (this.NumMessages(true) == 0)
 				if (!this.NonDeletedMessagesExist())
-				{
 					continueOn = false;
-					// Note: The following doesn't seem to be necessary, since
-					// the ReadOrListSubBoard() method will show a message saying
-					// there are no messages to read and then will quit out.
-					/*
-					msgbase.close();
-					msgbase = null;
-					console.clear("\1n");
-					console.center("\1n\1h\1yThere are no messages to display.");
-					console.crlf();
-					console.pause();
-					*/
-				}
 				else
 				{
-					// There are still messages to list, so refresh the screen.
-					console.clear("\1n");
+					// There are still messages to list, so refresh the header & help lines
 					this.WriteMsgListScreenTopHeader();
 					DisplayHelpLine(this.msgListLightbarModeHelpLine);
-					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-					lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-					console.gotoxy(originalCurpos); // Put the cursor back where it should be
 				}
 			}
 			else
 			{
 				// There are no selected messages
 				writeWithPause(1, console.screen_rows, "\1n\1h\1yThere are no selected messages.",
-				               ERROR_PAUSE_WAIT_MS, "\1n", true);
-				// Refresh the help line and move the cursor back to its original position
+				ERROR_PAUSE_WAIT_MS, "\1n", true);
+				// Refresh the help line
 				DisplayHelpLine(this.msgListLightbarModeHelpLine);
-				console.gotoxy(originalCurpos);
 			}
 		}
 	}
-
-	msgbase.close();
+	this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
+	this.lightbarListTopMsgIdx = msgListMenu.topItemIdx;
 
 	return retObj;
+}
+// For the DigDistMsgLister class: Creates & returns a DDLightbarMenu for
+// performing the lightbar message list.
+function DigDistMsgReader_CreateLightbarMsgListMenu()
+{
+	// Start & end indexes for the various items in each message list row
+	// TODO: When a message is marked for deletion, currently this will use
+	// the select mark attributes
+	var msgListIdxes = {
+		msgNumStart: 0,
+		msgNumEnd: this.MSGNUM_LEN,
+		selectMarkStart: this.MSGNUM_LEN,
+		selectMarkEnd: this.MSGNUM_LEN+1,
+	};
+	msgListIdxes.fromNameStart = this.MSGNUM_LEN + 1;
+	msgListIdxes.fromNameEnd = msgListIdxes.fromNameStart + +this.FROM_LEN + 1;
+	msgListIdxes.toNameStart = msgListIdxes.fromNameEnd;
+	msgListIdxes.toNameEnd = msgListIdxes.toNameStart + +this.TO_LEN + 1;
+	msgListIdxes.subjStart = msgListIdxes.toNameEnd;
+	msgListIdxes.subjEnd = msgListIdxes.subjStart + +this.SUBJ_LEN + 1;
+	msgListIdxes.dateStart = msgListIdxes.subjEnd;
+	msgListIdxes.dateEnd = msgListIdxes.dateStart + +this.DATE_LEN + 1;
+	msgListIdxes.timeStart = msgListIdxes.dateEnd;
+	msgListIdxes.timeEnd = msgListIdxes.timeStart + +this.TIME_LEN + 1;
+	var msgListMenuHeight = console.screen_rows - this.lightbarMsgListStartScreenRow;
+	var msgListMenu = new DDLightbarMenu(1, this.lightbarMsgListStartScreenRow, console.screen_columns, msgListMenuHeight);
+	msgListMenu.scrollbarEnabled = true;
+	msgListMenu.borderEnabled = false;
+	msgListMenu.SetColors({
+		itemColor: [{start: msgListIdxes.msgNumStart, end: msgListIdxes.msgNumEnd, attrs: this.colors.msgListMsgNumColor},
+		            {start: msgListIdxes.selectMarkStart, end: msgListIdxes.selectMarkEnd, attrs: this.colors.selectedMsgMarkColor},
+		            {start: msgListIdxes.fromNameStart, end: msgListIdxes.fromNameEnd, attrs: this.colors.msgListFromColor},
+		            {start: msgListIdxes.toNameStart, end: msgListIdxes.toNameEnd, attrs: this.colors.msgListToColor},
+		            {start: msgListIdxes.subjStart, end: msgListIdxes.subjEnd, attrs: this.colors.msgListSubjectColor},
+		            {start: msgListIdxes.dateStart, end: msgListIdxes.dateEnd, attrs: this.colors.msgListDateColor},
+		            {start: msgListIdxes.timeStart, end: msgListIdxes.timeEnd, attrs: this.colors.msgListTimeColor}],
+		altItemColor: [{start: msgListIdxes.msgNumStart, end: msgListIdxes.msgNumEnd, attrs: this.colors.msgListToUserMsgNumColor},
+		               {start: msgListIdxes.selectMarkStart, end: msgListIdxes.selectMarkEnd, attrs: this.colors.selectedMsgMarkColor},
+		               {start: msgListIdxes.fromNameStart, end: msgListIdxes.fromNameEnd, attrs: this.colors.msgListToUserFromColor},
+		               {start: msgListIdxes.toNameStart, end: msgListIdxes.toNameEnd, attrs: this.colors.msgListToUserToColor},
+		               {start: msgListIdxes.subjStart, end: msgListIdxes.subjEnd, attrs: this.colors.msgListToUserSubjectColor},
+		               {start: msgListIdxes.dateStart, end: msgListIdxes.dateEnd, attrs: this.colors.msgListToUserDateColor},
+		               {start: msgListIdxes.timeStart, end: msgListIdxes.timeEnd, attrs: this.colors.msgListToUserTimeColor}],
+		selectedItemColor: [{start: msgListIdxes.msgNumStart, end: msgListIdxes.msgNumEnd, attrs: this.colors.msgListMsgNumHighlightColor},
+		                    {start: msgListIdxes.selectMarkStart, end: msgListIdxes.selectMarkEnd, attrs: this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor},
+		                    {start: msgListIdxes.fromNameStart, end: msgListIdxes.fromNameEnd, attrs: this.colors.msgListFromHighlightColor},
+		                    {start: msgListIdxes.toNameStart, end: msgListIdxes.toNameEnd, attrs: this.colors.msgListToHighlightColor},
+		                    {start: msgListIdxes.subjStart, end: msgListIdxes.subjEnd, attrs: this.colors.msgListSubjHighlightColor},
+		                    {start: msgListIdxes.dateStart, end: msgListIdxes.dateEnd, attrs: this.colors.msgListDateHighlightColor},
+		                    {start: msgListIdxes.timeStart, end: msgListIdxes.timeEnd, attrs: this.colors.msgListTimeHighlightColor}],
+		altSelectedItemColor: [{start: msgListIdxes.msgNumStart, end: msgListIdxes.msgNumEnd, attrs: this.colors.msgListMsgNumHighlightColor},
+		                       {start: msgListIdxes.selectMarkStart, end: msgListIdxes.selectMarkEnd, attrs: this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor},
+		                       {start: msgListIdxes.fromNameStart, end: msgListIdxes.fromNameEnd, attrs: this.colors.msgListFromHighlightColor},
+		                       {start: msgListIdxes.toNameStart, end: msgListIdxes.toNameEnd, attrs: this.colors.msgListToHighlightColor},
+		                       {start: msgListIdxes.subjStart, end: msgListIdxes.subjEnd, attrs: this.colors.msgListSubjHighlightColor},
+		                       {start: msgListIdxes.dateStart, end: msgListIdxes.dateEnd, attrs: this.colors.msgListDateHighlightColor},
+		                       {start: msgListIdxes.timeStart, end: msgListIdxes.timeEnd, attrs: this.colors.msgListTimeHighlightColor}]
+	});
+
+	msgListMenu.multiSelect = false;
+	msgListMenu.ampersandHotkeysInItems = false;
+	msgListMenu.wrapNavigation = false;
+
+	// Add additional keypresses for quitting the menu's input loop so we can
+	// respond to these keys
+	var additionalQuitKeys = "EeqQgGcC ?0123456789" + CTRL_A + CTRL_D;
+	if (this.CanDelete() || this.CanDeleteLastMsg())
+		additionalQuitKeys += KEY_DEL;
+	if (this.CanEdit())
+		additionalQuitKeys += "E";
+	msgListMenu.AddAdditionalQuitKeys(additionalQuitKeys);
+
+	// Change the menu's NumItems() and GetItem() function to reference
+	// the message list in this object rather than add the menu items
+	// to the menu
+	msgListMenu.msgReader = this; // Add this object to the menu object
+	msgListMenu.NumItems = function() {
+		return this.msgReader.NumMessages();
+	};
+	msgListMenu.GetItem = function(pItemIndex) {
+		var menuItemObj = this.MakeItemWithRetval(-1);
+		var itemIdx = (this.msgReader.reverseListOrder ? this.msgReader.NumMessages() - pItemIndex - 1 : pItemIndex);
+		var msgHdr = this.msgReader.GetMsgHdrByIdx(itemIdx);
+		if (msgHdr != null)
+		{
+			// When setting the item text, call PrintMessageInfo with true as
+			// the last parameter to return the string instead
+			menuItemObj.text = strip_ctrl(this.msgReader.PrintMessageInfo(msgHdr, false, itemIdx+1, true));
+			menuItemObj.retval = msgHdr.number;
+			if (this.msgReader.subBoardCode != "mail")
+				menuItemObj.useAltColors = userHandleAliasNameMatch(msgHdr.to);
+			// If the message is marked as deleted, ensure the correct color is used
+			// for the mark character in the menu
+			if ((msgHdr.attr & MSG_DELETE) == MSG_DELETE)
+			{
+				var fromColor = this.msgReader.colors.msgListFromColor;
+				var toColor = this.msgReader.colors.msgListToColor;
+				var subjColor = this.msgReader.colors.msgListSubjectColor;
+				if ((this.msgReader.subBoardCode != "mail") && (userHandleAliasNameMatch(msgHdr.to)))
+				{
+					fromColor = this.msgReader.colors.msgListToUserFromColor;
+					toColor = this.msgReader.colors.msgListToUserToColor;
+					subjColor = this.msgReader.colors.msgListToUserSubjectColor;
+				}
+				menuItemObj.itemColor = [{start: msgListIdxes.msgNumStart, end: msgListIdxes.msgNumEnd, attrs: this.msgReader.colors.msgListMsgNumColor},
+				                         {start: msgListIdxes.selectMarkStart, end: msgListIdxes.selectMarkEnd, attrs: "\1r\1h\1i"},
+				                         {start: msgListIdxes.fromNameStart, end: msgListIdxes.fromNameEnd, attrs: fromColor},
+				                         {start: msgListIdxes.toNameStart, end: msgListIdxes.toNameEnd, attrs: toColor},
+				                         {start: msgListIdxes.subjStart, end: msgListIdxes.subjEnd, attrs: subjColor},
+				                         {start: msgListIdxes.dateStart, end: msgListIdxes.dateEnd, attrs: this.msgReader.colors.msgListDateColor},
+				                         {start: msgListIdxes.timeStart, end: msgListIdxes.timeEnd, attrs: this.msgReader.colors.msgListTimeColor}];
+				menuItemObj.itemSelectedColor = [{start: msgListIdxes.msgNumStart, end: msgListIdxes.msgNumEnd, attrs: this.msgReader.colors.msgListMsgNumHighlightColor},
+				                                 {start: msgListIdxes.selectMarkStart, end: msgListIdxes.selectMarkEnd, attrs: "\1r\1h\1i" + this.msgReader.colors.msgListHighlightBkgColor},
+				                                 {start: msgListIdxes.fromNameStart, end: msgListIdxes.fromNameEnd, attrs: this.msgReader.colors.msgListFromHighlightColor},
+				                                 {start: msgListIdxes.toNameStart, end: msgListIdxes.toNameEnd, attrs: this.msgReader.colors.msgListToHighlightColor},
+				                                 {start: msgListIdxes.subjStart, end: msgListIdxes.subjEnd, attrs: this.msgReader.colors.msgListSubjHighlightColor},
+				                                 {start: msgListIdxes.dateStart, end: msgListIdxes.dateEnd, attrs: this.msgReader.colors.msgListDateHighlightColor},
+				                                 {start: msgListIdxes.timeStart, end: msgListIdxes.timeEnd, attrs: this.msgReader.colors.msgListTimeHighlightColor}];
+			}
+		}
+		return menuItemObj;
+	};
+
+	// Adjust the menu indexes to ensure they're correct for the current sub-board
+	this.AdjustLightbarMsgListMenuIdxes(msgListMenu);
+
+	return msgListMenu;
+}
+// For the DigDistMsgLister class: Adjusts lightbar menu indexes for a message list menu
+function DigDistMsgReader_AdjustLightbarMsgListMenuIdxes(pMsgListMenu)
+{
+	pMsgListMenu.selectedItemIdx = this.lightbarListSelectedMsgIdx;
+	pMsgListMenu.topItemIdx = this.lightbarListTopMsgIdx;
+
+	// In the DDLightbarMenu class, the top index on the last page should
+	// allow for displaying a full page of items.  So if
+	// this.lightbarListTopMsgIdx is beyond the top index for the last
+	// page in the menu object, then adjust this.lightbarListTopMsgIdx.
+	var menuTopItemIdxOnLastPage = pMsgListMenu.GetTopItemIdxOfLastPage();
+	if (pMsgListMenu.topItemIdx > menuTopItemIdxOnLastPage)
+	{
+		pMsgListMenu.topItemIdx = menuTopItemIdxOnLastPage;
+		this.lightbarListTopMsgIdx = menuTopItemIdxOnLastPage;
+	}
+	// TODO: Ensure this.lightbarListTopMsgIdx is always correct for the last page
 }
 // For the DigDistMsgListerClass: Prints a line of information about
 // a message.
@@ -4096,7 +3809,9 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 //              use the standard colors (false).
 //  pMsgNum: Optional - A number to use for the message instead of the number/offset
 //           in the message header
-function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
+//  pReturnStrInstead: Optional boolean - Whether or not to return a formatted string
+//                     instead of printing to the console.  Defaults to false.
+function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pReturnStrInstead)
 {
 	// pMsgHeader must be a valid object.
 	if (typeof(pMsgHeader) == "undefined")
@@ -4156,7 +3871,8 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 	else if (msgVoteInfo.voteScore < -999)
 		msgVoteInfo.voteScore = -999;
 
-	// Write the message header information.
+	// Generate the string with the message header information.
+	var msgHdrStr = "";
 	// Note: The message header has the following fields:
 	// 'number': The message number
 	// 'offset': The message offset
@@ -4173,7 +3889,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 			msgIndicatorChar = "\1n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + CHECK_CHAR + "\1n";
 		if (this.showScoresInMsgList)
 		{
-			printf(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
+			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
 			       pMsgHeader.from.substr(0, this.FROM_LEN),
 			       pMsgHeader.to.substr(0, this.TO_LEN),
 			       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
@@ -4181,7 +3897,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 		}
 		else
 		{
-			printf(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
+			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
 			       pMsgHeader.from.substr(0, this.FROM_LEN),
 			       pMsgHeader.to.substr(0, this.TO_LEN),
 			       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
@@ -4208,18 +3924,25 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 			formatStr = (msgToUser ? this.sMsgInfoToUserFormatStr : (msgIsFromUser ? this.sMsgInfoFromUserFormatStr : this.sMsgInfoFormatStr));
 		if (this.showScoresInMsgList)
 		{
-			printf(formatStr, msgNum, msgIndicatorChar, pMsgHeader.from.substr(0, this.FROM_LEN),
+			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, pMsgHeader.from.substr(0, this.FROM_LEN),
 			       pMsgHeader.to.substr(0, this.TO_LEN), pMsgHeader.subject.substr(0, this.SUBJ_LEN),
 			       msgVoteInfo.voteScore, sDate, sTime);
 		}
 		else
 		{
-			printf(formatStr, msgNum, msgIndicatorChar, pMsgHeader.from.substr(0, this.FROM_LEN),
+			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, pMsgHeader.from.substr(0, this.FROM_LEN),
 			       pMsgHeader.to.substr(0, this.TO_LEN), pMsgHeader.subject.substr(0, this.SUBJ_LEN),
 			       sDate, sTime);
 		}
 	}
-	console.cleartoeol("\1n"); // To clear away any extra text that may have been entered by the user
+
+	var returnStrInstead = (typeof(pReturnStrInstead) == "boolean" ? pReturnStrInstead : false);
+	if (!returnStrInstead)
+	{
+		console.print(msgHdrStr);
+		console.cleartoeol("\1n"); // To clear away any extra text that may have been entered by the user
+	}
+	return msgHdrStr;
 }
 // For the traditional interface of DigDistMsgListerClass: Prompts the user to
 // continue or read a message (by number).
@@ -7271,7 +6994,6 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 	                                + this.colors["tradInterfaceContPromptUserInputColor"];
 
 	// Set the lightbar help text for message listing
-	var extraCommas = true; // Whether there's room for commas between the last options
 	this.msgListLightbarModeHelpLine = this.colors.lightbarMsgListHelpLineHotkeyColor + UP_ARROW
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
 							   + this.colors.lightbarMsgListHelpLineHotkeyColor + DOWN_ARROW
@@ -7290,7 +7012,6 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 	{
 		this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineGeneralColor + ", "
 		                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "DEL";
-		extraCommas = false;
 	}
 	this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineGeneralColor
 	                                 + ", " + this.colors.lightbarMsgListHelpLineHotkeyColor
@@ -7301,28 +7022,21 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 		this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineHotkeyColor
 		                           + "E" + this.colors.lightbarMsgListHelpLineParenColor
 								   + ")" + this.colors.lightbarMsgListHelpLineGeneralColor
-								   + "dit ";
+								   + "dit, ";
 	}
-	this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineHotkeyColor + "F"
-	                           + this.colors.lightbarMsgListHelpLineParenColor + ")"
-							   + this.colors.lightbarMsgListHelpLineGeneralColor + (extraCommas ? "irst pg, " : "irst pg ")
-	                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "L"
-	                           + this.colors.lightbarMsgListHelpLineParenColor + ")"
-							   + this.colors.lightbarMsgListHelpLineGeneralColor
-	                           + (extraCommas ? "ast pg, " : "ast pg ")
-	                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "G"
+	this.msgListLightbarModeHelpLine += this.colors.lightbarMsgListHelpLineHotkeyColor + "G"
 							   + this.colors.lightbarMsgListHelpLineParenColor + ")"
-	                           + this.colors.lightbarMsgListHelpLineGeneralColor + (extraCommas ? "o, " : "o ")
+	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "o, "
 	                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "Q"
 							   + this.colors.lightbarMsgListHelpLineParenColor + ")"
-	                           + this.colors.lightbarMsgListHelpLineGeneralColor + (extraCommas ? "uit, " : "uit ")
+	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "uit, "
 	                           + this.colors.lightbarMsgListHelpLineHotkeyColor + "?  ";
 
 
 	// Add spaces to the end of sLightbarModeHelpLine up until one char
 	// less than the width of the screen.
 	var lbHelpLineLen = console.strlen(this.msgListLightbarModeHelpLine);
-	var numChars = console.screen_columns - lbHelpLineLen - 3;
+	var numChars = console.screen_columns - lbHelpLineLen - 1;
 	if (numChars > 0)
 	{
 		// Gradient block characters: °±²Û
