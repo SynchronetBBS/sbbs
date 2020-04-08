@@ -103,8 +103,10 @@ bool sbbs_t::answer()
 			SAFECOPY(rlogin_pass, str);
 			/* Truncate terminal speed (e.g. "/57600") from terminal-type string 
 			   (but keep full terminal type/speed string in rlogin_term): */
-			truncstr(terminal,"/");	
-			useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
+			truncstr(terminal,"/");
+			useron.number = 0;
+			if(rlogin_name[0])
+				useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
 				useron.misc&=~TERM_FLAGS;
