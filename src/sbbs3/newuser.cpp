@@ -202,11 +202,11 @@ BOOL sbbs_t::newuser()
 		if(rlogin_name[0])
 			SAFECOPY(useron.alias,rlogin_name);
 
-		while(online) {
-			if(cfg.uq&UQ_ALIASES)
-				bputs(text[EnterYourAlias]);
-			else
-				bputs(text[EnterYourRealName]);
+		char* prompt = text[EnterYourRealName];
+		if(cfg.uq&UQ_ALIASES)
+			prompt = text[EnterYourAlias];
+		while(*prompt && online) {
+			bputs(prompt);
 			getstr(useron.alias,LEN_ALIAS,kmode);
 			truncsp(useron.alias);
 			if (!check_name(&cfg,useron.alias)
@@ -220,7 +220,7 @@ BOOL sbbs_t::newuser()
 		}
 		if(!online) return(FALSE);
 		if((cfg.uq&UQ_ALIASES) && (cfg.uq&UQ_REALNAME)) {
-			while(online) {
+			while(online && text[EnterYourRealName][0]) {
 				bputs(text[EnterYourRealName]);
 				getstr(useron.name,LEN_NAME,kmode);
 				if (!check_name(&cfg,useron.name)
@@ -234,16 +234,20 @@ BOOL sbbs_t::newuser()
 					return(FALSE);
 			} 
 		}
-		else if(cfg.uq&UQ_COMPANY) {
+		else if(cfg.uq&UQ_COMPANY && text[EnterYourCompany][0]) {
 				bputs(text[EnterYourCompany]);
 				getstr(useron.name,LEN_NAME,(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL); 
+		}
+		if(!useron.alias[0]) {
+			errormsg(WHERE, ERR_CHK, "alias", 0);
+			return FALSE;
 		}
 		if(!useron.name[0])
 			SAFECOPY(useron.name,useron.alias);
 		if(!online) return(FALSE);
 		if(!useron.handle[0])
 			SAFECOPY(useron.handle,useron.alias);
-		while((cfg.uq&UQ_HANDLE) && online) {
+		while((cfg.uq&UQ_HANDLE) && online && text[EnterYourHandle][0]) {
 			bputs(text[EnterYourHandle]);
 			if(!getstr(useron.handle,LEN_HANDLE
 				,K_LINE|K_EDIT|K_AUTODEL|(cfg.uq&UQ_NOEXASC))
@@ -259,13 +263,13 @@ BOOL sbbs_t::newuser()
 		}
 		if(!online) return(FALSE);
 		if(cfg.uq&UQ_ADDRESS)
-			while(online) { 	   /* Get address and zip code */
+			while(online && text[EnterYourAddress][0]) { 	   /* Get address and zip code */
 				bputs(text[EnterYourAddress]);
 				if(getstr(useron.address,LEN_ADDRESS,kmode))
 					break; 
 			}
 		if(!online) return(FALSE);
-		while((cfg.uq&UQ_LOCATION) && online) {
+		while((cfg.uq&UQ_LOCATION) && online && text[EnterYourCityState][0]) {
 			bputs(text[EnterYourCityState]);
 			if(getstr(useron.location,LEN_LOCATION,kmode)
 				&& ((cfg.uq&UQ_NOCOMMAS) || strchr(useron.location,',')))
@@ -274,14 +278,14 @@ BOOL sbbs_t::newuser()
 			useron.location[0]=0; 
 		}
 		if(cfg.uq&UQ_ADDRESS)
-			while(online) {
+			while(online && text[EnterYourZipCode][0]) {
 				bputs(text[EnterYourZipCode]);
 				if(getstr(useron.zipcode,LEN_ZIPCODE
 					,K_UPPER|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL))
 					break; 
 			}
 		if(!online) return(FALSE);
-		if(cfg.uq&UQ_PHONE) {
+		if((cfg.uq&UQ_PHONE) && text[EnterYourPhoneNumber][0]) {
 			if(text[CallingFromNorthAmericaQ][0])
 				usa=yesno(text[CallingFromNorthAmericaQ]);
 			else
@@ -303,18 +307,18 @@ BOOL sbbs_t::newuser()
 			} 
 		}
 		if(!online) return(FALSE);
-		if(cfg.uq&UQ_SEX) {
+		if((cfg.uq&UQ_SEX) && text[EnterYourSex][0]) {
 			bputs(text[EnterYourSex]);
 			useron.sex=(char)getkeys("MF",0); 
 		}
-		while((cfg.uq&UQ_BIRTH) && online) {
+		while((cfg.uq&UQ_BIRTH) && online && text[EnterYourBirthday][0]) {
 			bprintf(text[EnterYourBirthday]
 				,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
 			if(gettmplt(useron.birth,"nn/nn/nn",K_EDIT)==8 && getage(&cfg,useron.birth))
 				break; 
 		}
 		if(!online) return(FALSE);
-		while(!(cfg.uq&UQ_NONETMAIL) && online) {
+		while(!(cfg.uq&UQ_NONETMAIL) && online && text[EnterNetMailAddress][0]) {
 			bputs(text[EnterNetMailAddress]);
 			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
 				&& !trashcan(useron.netmail,"email"))
@@ -353,7 +357,7 @@ BOOL sbbs_t::newuser()
 			useron.xedit=0;
 	}
 
-	if(cfg.total_shells>1 && (cfg.uq&UQ_CMDSHELL)) {
+	if(cfg.total_shells>1 && (cfg.uq&UQ_CMDSHELL) && text[CommandShellHeading][0]) {
 		for(i=0;i<cfg.total_shells;i++)
 			uselect(1,i,text[CommandShellHeading],cfg.shell[i]->name,cfg.shell[i]->ar);
 		if((int)(i=uselect(0,useron.shell,0,0,0))>=0)
@@ -415,7 +419,7 @@ BOOL sbbs_t::newuser()
 	}
 
 	if(!online) return(FALSE);
-	if(cfg.new_magic[0]) {
+	if(cfg.new_magic[0] && text[MagicWordPrompt][0]) {
 		bputs(text[MagicWordPrompt]);
 		str[0]=0;
 		getstr(str,50,K_UPPER);
