@@ -2305,8 +2305,8 @@ int mouse_state_query(int type, void *pms)
 static int fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state *ms)
 {
 	int button;
-	int x = me->startx;
-	int y = me->starty;
+	int x = me->startx - cterm->x + 1;
+	int y = me->starty - cterm->y + 1;
 	int bit;
 	int ret;
 	bool release;
