@@ -49,16 +49,16 @@
 /* Constants */
 /*************/
 
-#define VERSION 	"3.17"  /* Version: Major.minor  */
-#define REVISION	'c'     /* Revision: lowercase letter */
-#define VERSION_NUM	(31700	 + (tolower(REVISION)-'a'))
-#define VERSION_HEX	(0x31700 + (tolower(REVISION)-'a'))
+#define VERSION 	"3.18"  /* Version: Major.minor  */
+#define REVISION	'a'     /* Revision: lowercase letter */
+#define VERSION_NUM	(31800	 + (tolower(REVISION)-'a'))
+#define VERSION_HEX	(0x31800 + (tolower(REVISION)-'a'))
 
 #define VERSION_NOTICE		"Synchronet BBS for " PLATFORM_DESC\
 								"  Version " VERSION
 #define SYNCHRONET_CRC		0x9BCDD162
-#define COPYRIGHT_NOTICE	"Copyright 2019 Rob Swindell"
-#define COPYRIGHT_CRC		0x0E0503DF
+#define COPYRIGHT_NOTICE	"Copyright 2020 Rob Swindell"
+#define COPYRIGHT_CRC		0xB12E96E6
 
 #define SBBSCTRL_DEFAULT	"/sbbs/ctrl"
 
