@@ -7,6 +7,8 @@ function mouse_getkey(mode, timeout, enabled)
 	var y;
 	var motion;
 	var mods;
+	var press;
+
 	// TODO: Fake these modes...
 	var safe_mode = mode & ~(K_UPPER|K_UPRLWR|K_NUMBER|K_ALPHA|K_NOEXASC);
 
@@ -81,6 +83,10 @@ function mouse_getkey(mode, timeout, enabled)
 					mods = (ascii(ansi[3]) - ascii(' ')) & 0x1c;
 					x = ascii(ansi[4]) - ascii('!') + 1;
 					y = ascii(ansi[5]) - ascii('!') + 1;
+					if (button === 3)
+						press = false;
+					else
+						press = true;
 					key = 'Mouse';
 				}
 			}
@@ -102,6 +108,7 @@ function mouse_getkey(mode, timeout, enabled)
 						button &= 0xc3;
 						x = parseInt(m[2], 10);
 						y = parseInt(m[3], 10);
+						press = (m[4] === 'M');
 						key = 'Mouse';
 					}
 				}
@@ -120,7 +127,7 @@ function mouse_getkey(mode, timeout, enabled)
 		}
 	} while(key === undefined);
 	if (key === 'Mouse') {
-		return {key:'', mouse:{button:button, x:x, y:y, mods:mods, motion:motion, ansi:ansi}};
+		return {key:'', mouse:{button:button, press:press, x:x, y:y, mods:mods, motion:motion, ansi:ansi}};
 	}
 	// TODO: Fake modes...
 	return {key:key, mouse:null};
