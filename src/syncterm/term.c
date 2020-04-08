@@ -2293,6 +2293,15 @@ void mouse_state_change(int type, int action, void *pms)
 	}
 }
 
+int mouse_state_query(int type, void *pms)
+{
+	struct mouse_state *ms = (struct mouse_state *)pms;
+
+	if (type == MS_SGR_SET)
+		return ms->flags & MS_FLAGS_SGR;
+	return type == ms->mode;
+}
+
 static int fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state *ms)
 {
 	int button;
@@ -2418,6 +2427,8 @@ BOOL doterm(struct bbslist *bbs)
 	cterm->apc_handler_data = bbs;
 	cterm->mouse_state_change = mouse_state_change;
 	cterm->mouse_state_change_cbdata = &ms;
+	cterm->mouse_state_query = mouse_state_query;
+	cterm->mouse_state_query_cbdata = &ms;
 	scrollback_cols=term.width;
 	cterm->music_enable=bbs->music;
 	ch[1]=0;

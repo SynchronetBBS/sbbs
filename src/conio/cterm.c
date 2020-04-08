@@ -1931,6 +1931,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										strcat(tmp, ";6");
 									if (cterm->extattr & CTERM_EXTATTR_AUTOWRAP)
 										strcat(tmp, ";7");
+									if (cterm->mouse_state_query(9, cterm->mouse_state_query_cbdata))
+										strcat(tmp, ";9");
 									if(cterm->cursor == _NORMALCURSOR)
 										strcat(tmp, ";25");
 									if(vidflags & CIOLIB_VIDEO_ALTCHARS)
@@ -1945,6 +1947,24 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										strcat(tmp, ";35");
 									if (cterm->extattr & CTERM_EXTATTR_SXSCROLL)
 										strcat(tmp, ";80");
+									if (cterm->mouse_state_query(1000, cterm->mouse_state_query_cbdata))
+										strcat(tmp, ";1000");
+									if (cterm->mouse_state_query(1001, cterm->mouse_state_query_cbdata))
+										strcat(tmp, ";1001");
+									if (cterm->mouse_state_query(1002, cterm->mouse_state_query_cbdata))
+										strcat(tmp, ";1002");
+									if (cterm->mouse_state_query(1003, cterm->mouse_state_query_cbdata))
+										strcat(tmp, ";1003");
+									if (cterm->mouse_state_query(1004, cterm->mouse_state_query_cbdata))
+										strcat(tmp, ";1004");
+									if (cterm->mouse_state_query(1005, cterm->mouse_state_query_cbdata))
+										strcat(tmp, ";1005");
+									if (cterm->mouse_state_query(1006, cterm->mouse_state_query_cbdata))
+										strcat(tmp, ";1006");
+									if (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata))
+										strcat(tmp, ";1007");
+									if (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata))
+										strcat(tmp, ";1015");
 									if (strlen(tmp) == 4) {	// Nothing set
 										strcat(tmp, ";");
 									}
@@ -1972,8 +1992,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							flags = GETVIDEOFLAGS();
 							if(seq->param_count == 0) {
 								/* All the save stuff... */
-								cterm->saved_mode_mask |= (CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN|CTERM_SAVEMODE_SIXEL_SCROLL);
-								cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN|CTERM_SAVEMODE_SIXEL_SCROLL);
+								cterm->saved_mode_mask |= (CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|
+								    CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN|CTERM_SAVEMODE_SIXEL_SCROLL|
+								    CTERM_SAVEMODE_MOUSE_X10|CTERM_SAVEMODE_MOUSE_NORMAL|CTERM_SAVEMODE_MOUSE_HIGHLIGHT|
+								    CTERM_SAVEMODE_MOUSE_BUTTONTRACK|CTERM_SAVEMODE_MOUSE_ANY|CTERM_SAVEMODE_MOUSE_FOCUS|
+								    CTERM_SAVEMODE_MOUSE_UTF8|CTERM_SAVEMODE_MOUSE_SGR|CTERM_SAVEMODE_MOUSE_ALTSCROLL|CTERM_SAVEMODE_MOUSE_URXVT);
+								cterm->saved_mode &= ~(cterm->saved_mode_mask);
 								cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_AUTOWRAP)?CTERM_SAVEMODE_AUTOWRAP:0;
 								cterm->saved_mode |= (cterm->cursor==_NORMALCURSOR)?CTERM_SAVEMODE_CURSOR:0;
 								cterm->saved_mode |= (flags & CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
@@ -1983,6 +2007,16 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
 								cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_ORIGINMODE)?CTERM_SAVEMODE_ORIGIN:0;
 								cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_SXSCROLL)?CTERM_SAVEMODE_SIXEL_SCROLL:0;
+								cterm->saved_mode |= (cterm->mouse_state_query(9, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_X10 : 0);
+								cterm->saved_mode |= (cterm->mouse_state_query(1000, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_NORMAL : 0);
+								cterm->saved_mode |= (cterm->mouse_state_query(1001, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_HIGHLIGHT : 0);
+								cterm->saved_mode |= (cterm->mouse_state_query(1002, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_BUTTONTRACK : 0);
+								cterm->saved_mode |= (cterm->mouse_state_query(1003, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ANY : 0);
+								cterm->saved_mode |= (cterm->mouse_state_query(1004, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_FOCUS : 0);
+								cterm->saved_mode |= (cterm->mouse_state_query(1005, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_UTF8 : 0);
+								cterm->saved_mode |= (cterm->mouse_state_query(1006, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_SGR : 0);
+								cterm->saved_mode |= (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ALTSCROLL : 0);
+								cterm->saved_mode |= (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_URXVT : 0);
 								break;
 							}
 							else {
@@ -1990,13 +2024,18 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									switch(seq->param_int[i]) {
 										case 6:
 											cterm->saved_mode_mask |= CTERM_SAVEMODE_ORIGIN;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN);
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_ORIGIN);
 											cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_ORIGINMODE)?CTERM_SAVEMODE_ORIGIN:0;
 											break;
 										case 7:
 											cterm->saved_mode_mask |= CTERM_SAVEMODE_AUTOWRAP;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT);
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP);
 											cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_AUTOWRAP)?CTERM_SAVEMODE_AUTOWRAP:0;
+											break;
+										case 9:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_X10;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_X10);
+											cterm->saved_mode |= (cterm->mouse_state_query(9, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_X10 : 0);
 											break;
 										case 25:
 											cterm->saved_mode_mask |= CTERM_SAVEMODE_CURSOR;
@@ -2032,6 +2071,51 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											cterm->saved_mode_mask |= CTERM_SAVEMODE_SIXEL_SCROLL;
 											cterm->saved_mode &= ~(CTERM_SAVEMODE_SIXEL_SCROLL);
 											cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_SXSCROLL)?CTERM_SAVEMODE_SIXEL_SCROLL:0;
+											break;
+										case 1000:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_NORMAL;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_NORMAL);
+											cterm->saved_mode |= (cterm->mouse_state_query(1000, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_NORMAL : 0);
+											break;
+										case 1001:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_HIGHLIGHT;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_HIGHLIGHT);
+											cterm->saved_mode |= (cterm->mouse_state_query(1001, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_HIGHLIGHT : 0);
+											break;
+										case 1002:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_BUTTONTRACK;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_BUTTONTRACK);
+											cterm->saved_mode |= (cterm->mouse_state_query(1002, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_BUTTONTRACK : 0);
+											break;
+										case 1003:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_ANY;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_ANY);
+											cterm->saved_mode |= (cterm->mouse_state_query(1003, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ANY : 0);
+											break;
+										case 1004:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_FOCUS;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_FOCUS);
+											cterm->saved_mode |= (cterm->mouse_state_query(1004, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_FOCUS : 0);
+											break;
+										case 1005:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_UTF8;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_UTF8);
+											cterm->saved_mode |= (cterm->mouse_state_query(1005, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_UTF8 : 0);
+											break;
+										case 1006:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_SGR;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_SGR);
+											cterm->saved_mode |= (cterm->mouse_state_query(1006, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_SGR : 0);
+											break;
+										case 1007:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_ALTSCROLL;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_ALTSCROLL);
+											cterm->saved_mode |= (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ALTSCROLL : 0);
+											break;
+										case 1015:
+											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_URXVT;
+											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_URXVT);
+											cterm->saved_mode |= (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_URXVT : 0);
 											break;
 									}
 								}
@@ -2100,6 +2184,26 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										flags &= ~CIOLIB_VIDEO_BGBRIGHT;
 								}
 								SETVIDEOFLAGS(flags);
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_X10)
+									cterm->mouse_state_change(9, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_X10, cterm->mouse_state_change_cbdata);
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_NORMAL)
+									cterm->mouse_state_change(1000, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_NORMAL, cterm->mouse_state_change_cbdata);
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_HIGHLIGHT)
+									cterm->mouse_state_change(1001, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_HIGHLIGHT, cterm->mouse_state_change_cbdata);
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_BUTTONTRACK)
+									cterm->mouse_state_change(1002, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_BUTTONTRACK, cterm->mouse_state_change_cbdata);
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ANY)
+									cterm->mouse_state_change(1003, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ANY, cterm->mouse_state_change_cbdata);
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_FOCUS)
+									cterm->mouse_state_change(1004, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_FOCUS, cterm->mouse_state_change_cbdata);
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_UTF8)
+									cterm->mouse_state_change(1005, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_UTF8, cterm->mouse_state_change_cbdata);
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_SGR)
+									cterm->mouse_state_change(1006, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_SGR, cterm->mouse_state_change_cbdata);
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ALTSCROLL)
+									cterm->mouse_state_change(1007, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ALTSCROLL, cterm->mouse_state_change_cbdata);
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_URXVT)
+									cterm->mouse_state_change(1015, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_URXVT, cterm->mouse_state_change_cbdata);
 								break;
 							}
 							else {
@@ -2120,6 +2224,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												else
 													cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
 											}
+											break;
+										case 9:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_X10)
+												cterm->mouse_state_change(9, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_X10, cterm->mouse_state_change_cbdata);
 											break;
 										case 25:
 											if(cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR) {
@@ -2179,6 +2287,42 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												else
 													cterm->extattr &= ~CTERM_EXTATTR_SXSCROLL;
 											}
+											break;
+										case 1000:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_NORMAL)
+												cterm->mouse_state_change(1000, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_NORMAL, cterm->mouse_state_change_cbdata);
+											break;
+										case 1001:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_HIGHLIGHT)
+												cterm->mouse_state_change(1001, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_HIGHLIGHT, cterm->mouse_state_change_cbdata);
+											break;
+										case 1002:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_BUTTONTRACK)
+												cterm->mouse_state_change(1002, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_BUTTONTRACK, cterm->mouse_state_change_cbdata);
+											break;
+										case 1003:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ANY)
+												cterm->mouse_state_change(1003, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ANY, cterm->mouse_state_change_cbdata);
+											break;
+										case 1004:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_FOCUS)
+												cterm->mouse_state_change(1004, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_FOCUS, cterm->mouse_state_change_cbdata);
+											break;
+										case 1005:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_UTF8)
+												cterm->mouse_state_change(1005, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_UTF8, cterm->mouse_state_change_cbdata);
+											break;
+										case 1006:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_SGR)
+												cterm->mouse_state_change(1006, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_SGR, cterm->mouse_state_change_cbdata);
+											break;
+										case 1007:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ALTSCROLL)
+												cterm->mouse_state_change(1007, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ALTSCROLL, cterm->mouse_state_change_cbdata);
+											break;
+										case 1015:
+											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_URXVT)
+												cterm->mouse_state_change(1015, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_URXVT, cterm->mouse_state_change_cbdata);
 											break;
 									}
 								}
