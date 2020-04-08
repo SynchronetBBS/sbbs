@@ -29,7 +29,7 @@ void viewscroll(void)
 	x=wherex();
 	y=wherey();
 	uifcbail();
-    gettextinfo(&txtinfo);
+	gettextinfo(&txtinfo);
 	/* too large for alloca() */
 	scrollback=malloc((scrollback_buf==NULL?0:(term.width*sizeof(*scrollback)*settings.backlines))+(txtinfo.screenheight*txtinfo.screenwidth*sizeof(*scrollback)));
 	if(scrollback==NULL)
