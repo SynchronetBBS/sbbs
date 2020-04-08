@@ -5,6 +5,7 @@
 
 /* ToDo: Support multiple columns */
 require("sbbsdefs.js", 'SYS_CLOSED');
+require("mouse_getkey.js", 'mouse_getkey');
 
 /*
  * Lightbar object
@@ -140,20 +141,7 @@ Lightbar.prototype.getval = function(current,key)
 	if(key) loop=false;
 	var ret=undefined;
 	var last_cur;
-	var ansi = '';
-	var button;
-	var motion;
-	var mods;
-	var pressed;
-	var x;
-	var y;
-	var m;
-
-	function restuff()
-	{
-		console.ungetstr(ansi.substr(1));
-		ansi = '';
-	}
+	var mk;
 
 	if(!this.nodraw)
 		this.draw();
@@ -163,120 +151,20 @@ Lightbar.prototype.getval = function(current,key)
 	while(bbs.online) {
 		last_cur=this.current;
 		/* Get input */
-		if(key==undefined || key=='' || key==null || ansi.length > 0) {
-			if(this.callback != undefined)
-				this.callback();
-			if (!this.mouse_enabled) {
-				console.write("\x1b[?1006h");
-				console.write("\x1b[?1000h");
-			}
-			if(this.timeout>1)
-				key=console.inkey(0,this.timeout);
-			else
-				key=console.getkey(K_NOSPIN);
-			if (!this.mouse_enabled)
-				console.write("\x1b[?1000l");
-			if (key !== '') {
-				if (key === '\x1b') {
-					if (ansi.length > 0) {
-						ansi += key;
-						restuff();
-						key = '\x1b';
-					}
-					else {
-						ansi += key;
-						key = undefined;
-					}
-				}
-				else if (ansi.length === 1) {
-					if (key === '[') {
-						ansi += key;
-						key = undefined;
-					}
-					else {
-						ansi += key;
-						restuff();
-						key = '\x1b';
-					}
-				}
-				else if (ansi.length === 2) {
-					if (key === 'M') {
-						ansi += key;
-						key = undefined;
-					}
-					else if (key === '<') {
-						ansi += key;
-						key = undefined;
-					}
-					else {
-						ansi += key;
-						restuff();
-						key = '\x1b';
-					}
-				}
-				else if (ansi.length > 2) {
-					ansi += key;
-					if (ansi[2] === 'M') {
-						key = undefined;
-						if (ansi.length >= 6) {
-							button = (ascii(ansi[3]) - ascii(' ')) & 0xc3;
-							motion = (ascii(ansi[3]) - ascii(' ')) & 0x20;
-							mods = (ascii(ansi[3]) - ascii(' ')) & 0x1c;
-							x = ascii(ansi[4]) - ascii('!') + 1;
-							y = ascii(ansi[5]) - ascii('!') + 1;
-							if (mods === 0 && button == 0 && motion == 0) {
-								key = 'Mouse';
-								this.mouse_miss_str = ansi;
-							}
-							else {
-								key = undefined;
-							}
-							ansi = '';
-						}
-					}
-					else if (ansi[2] === '<') {
-						if ("0123456789;Mm".indexOf(key) === -1) {
-							restuff();
-							key = '\x1b';
-						}
-						else if (key === 'M' || key === 'm') {
-							m = ansi.match(/^\x1b\[<([0-9]+);([0-9]+);([0-9]+)([Mm])$/);
-							if (m === null) {
-								restuff();
-								key = '\x1b';
-							}
-							else {
-								button = parseInt(m[1], 10);
-								motion = button & 0x20;
-								mods = button & 0x1c;
-								button &= 0xc3;
-								x = parseInt(m[2], 10);
-								y = parseInt(m[3], 10);
-
-								// We're not interested in release or modifier keys right now...
-								if (key === 'M' && mods === 0 && button == 0 && motion == 0) {
-									this.mouse_miss_str = ansi;
-									key = 'Mouse';
-								}
-								else {
-									key = undefined;
-								}
-								ansi = '';
-							}
-						}
-						else {
-							key = undefined;
-						}
-					}
-					else {
-						// Shouldn't happen...
-						restuff();
-						key = '\x1b';
-					}
+		if(key==undefined || key=='' || key==null) {
+			mk = mouse_getkey(K_NOSPIN, this.timeout, this.mouse_enabled);
+			if (mk.mouse !== null) {
+				// Mouse
+				if (mk.mouse.mods === 0 && mk.mouse.button == 0 && mk.mouse.motion == 0) {
+					key = 'Mouse';
+					this.mouse_miss_str = mk.mouse.ansi;
 				}
 				else {
-					key = key.toUpperCase();
+					key = undefined;
 				}
+			}
+			else {
+				key = mk.key.toUpperCase();
 			}
 		}
 
@@ -288,8 +176,8 @@ Lightbar.prototype.getval = function(current,key)
 			
 			switch(key) {
 				case 'Mouse':
-					if (button === 0) {
-						var hit = this.mouse_hit(x, y);
+					if (mk.mouse.button === 0) {
+						var hit = this.mouse_hit(mk.mouse.x, mk.mouse.y);
 						if (hit === -1) {
 							if (this.mouse_miss_key !== undefined) {
 								return this.mouse_miss_key;
