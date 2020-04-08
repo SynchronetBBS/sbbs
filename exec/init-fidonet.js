@@ -154,6 +154,9 @@ function send_app_netmail(destaddr)
 	body_text += "\r\n";
 	body_text += "My requested AreaFix password is: '" + link.AreaFixPwd + "'\r\n";
 	body_text += "My requested BinkP Session password is: '" + link.SessionPwd + "'\r\n";
+	body_text += "\r\n";
+	body_text += "I will be using 'Type-2+' (FSC-39) packets with no password.\r\n";
+	body_text += "Uncompressed or PKZIP-archived EchoMail bundles will work fine.\r\n";
 	print(body_text);
 	while(confirm("Add more text") && !aborted()) {
 		body_text += "\r\n";
@@ -451,7 +454,7 @@ while(!network.dns && (!link.BinkpHost
 if(!link.BinkpPort)
 	link.BinkpPort = network.port || 24554;
 while(!link.BinkpPort || !confirm("Your hub's BinkP/TCP port number is " + link.BinkpPort) && !aborted()) {
-	link.BinkpPort = paseInt(prompt("Your hub's BinkP/TCP port number"));
+	link.BinkpPort = parseInt(prompt("Your hub's BinkP/TCP port number"));
 }
 
 if(!link.Comment)
