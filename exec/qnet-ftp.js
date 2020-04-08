@@ -12,7 +12,7 @@ require('ftp.js', 'FTP');
 
 var hubid = argv[0];
 var addr = argv[1];
-var username = "testman"; // system.qwk_id
+var username = system.qwk_id
 var password = argv[2];
 var port = argv[3] || 21;
 
