@@ -140,8 +140,10 @@ bool sbbs_t::answer()
 									break;
 								}
 							}
-							else
+							else {
+								i = 0;
 								break;
+							}
 						}
 					}
 					if(i) {
@@ -240,8 +242,10 @@ bool sbbs_t::answer()
 							break;
 						}
 					}
-					else
+					else {
+						i = 0;
 						break;
+					}
 				}
 			}
 			if(i) {
