@@ -382,10 +382,10 @@ FTP.prototype.data_socket = function(cmd)
 		else {
 			rstr = this.cmd("PASV", true);
 			if (parseInt(rstr, 10) !== 227)
-				throw("EPSV Failed: " + rstr);
+				throw("PASV Failed: " + rstr);
 			m = rstr.match(/\(([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)\)/);
 			if (m === null)
-				throw("Unable to parse EPSV reply: " + rstr);
+				throw("Unable to parse PASV reply: " + rstr);
 			rhost = m[1] + '.' + m[2] + '.' + m[3] + '.' + m[4];
 			rport = (parseInt(m[5], 10) << 8) | parseInt(m[6], 10);
 		}
