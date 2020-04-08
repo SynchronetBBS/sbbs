@@ -681,7 +681,7 @@ function draw_board(full)
 	}
 	var height = game.height;
 	if(full) {
-		if(game.height + header_height < console.screen_rows - 1) {
+		if(game.height + header_height < console.screen_rows) {
 			height++;
 			console.down();
 			console.creturn();
