@@ -35,6 +35,7 @@ const winner_subject = "Winner";
 const selectors = ["()", "[]", "<>", "{}", "--", "  "];
 
 require("sbbsdefs.js", "K_NONE");
+require("mouse_getkey.js", "mouse_getkey");
 
 if(BG_HIGH === undefined)
 	BG_HIGH = 0x400;
@@ -875,6 +876,19 @@ function change(x, y)
 	}
 }
 
+function screen_to_board(mouse)
+{
+	const margin = Math.floor((console.screen_columns - (game.width * cell_width)) / 2);
+	top = Math.floor(Math.max(0, (console.screen_rows - (header_height + game.height)) - 1) / 2);
+
+	mouse.x = parseInt((mouse.x - margin + 2) / cell_width, 10);
+	mouse.y = (mouse.y - top - header_height);
+	if (mouse.x < 1 || mouse.y < 1 ||
+	    mouse.x > game.width || mouse.y > game.height)
+		return false;
+	return true;
+}
+
 function play()
 {
 	console.clear();
@@ -904,19 +918,45 @@ function play()
 	init_game(difficulty);
 	draw_board(true);
 	var full_redraw = false;
+	console.write("\x1b[?1000;1006h");
 	while(bbs.online) {
 		if(!gameover && game.start
 			&& Date.now() - (game.start * 1000) >= options.timelimit * 60 * 1000) {
 			lostgame("timeout");
 			draw_board(true);
 		}
-		var key = console.inkey(K_NONE, 1000);
-		if(!key) {
+		var mk = mouse_getkey(K_NONE, 1000, true);
+		var key = mk.key;
+		if (mk.mouse !== null) {
+			if ((!mk.mouse.press) || mk.mouse.motion || !screen_to_board(mk.mouse)) {
+				key = null;
+			}
+			else {
+				switch(mk.mouse.button) {
+					case 0:
+						key = 'D';
+						break;
+					case 1:
+						key = 'C';
+						break;
+					case 2:
+						key = 'F';
+						break;
+					default:
+						key = null;
+				}
+			}
+		}
+		if(key === '' || key === null) {
 			if(game.start && !gameover)
 				draw_board(false);	// update the time display
 			continue;
 		}
 		change(selected.x, selected.y);
+		if (mk.mouse !== null) {
+			selected.x = mk.mouse.x - 1;
+			selected.y = mk.mouse.y - 1;
+		}
 		switch(key.toUpperCase()) {
 			case KEY_HOME:
 				if(!gameover)
@@ -1026,6 +1066,7 @@ function play()
 				break;
 			case 'N':
 			{
+				console.write("\x1b[?1000;1006l");
 				console.home();
 				console.down(top + 1);
 				if(game.start && !gameover) {
@@ -1041,9 +1082,11 @@ function play()
 				if(new_difficulty > 0)
 					difficulty = init_game(new_difficulty);
 				full_redraw = true;
+				console.write("\x1b[?1000;1006h");
 				break;
 			}
 			case 'W':
+				console.write("\x1b[?1000;1006l");
 				console.home();
 				console.down(top + 1);
 				var level = get_difficulty(true);
@@ -1055,23 +1098,29 @@ function play()
 					console.aborted = false;
 					full_redraw = true;
 				}
+				console.write("\x1b[?1000;1006h");
 				break
 			case 'T':
+				console.write("\x1b[?1000;1006l");
 				show_winners();
 				console.pause();
 				console.clear();
 				console.aborted = false;
 				full_redraw = true;
+				console.write("\x1b[?1000;1006h");
 				break;
 			case 'L':
+				console.write("\x1b[?1000;1006l");
 				console.line_counter = 0;
 				show_log();
 				console.pause();
 				console.clear();
 				console.aborted = false;
 				full_redraw = true;
+				console.write("\x1b[?1000;1006h");
 				break
 			case 'B':
+				console.write("\x1b[?1000;1006l");
 				if(!best)
 					break;
 				console.line_counter = 0;
@@ -1080,15 +1129,18 @@ function play()
 				console.clear();
 				console.aborted = false;
 				full_redraw = true;
+				console.write("\x1b[?1000;1006h");
 				break;
 			case '?':
 			case 'H':
+				console.write("\x1b[?1000;1006l");
 				console.line_counter = 0;
 				console.clear();
 				console.printfile(help_file);
 				console.clear();
 				console.aborted = false;
 				full_redraw = true;
+				console.write("\x1b[?1000;1006h");
 				break;
 			case '\t':
 				highlight = !highlight;
@@ -1101,6 +1153,7 @@ function play()
 				selector++;
 				break;
 			case 'Q':
+				console.write("\x1b[?1000;1006l");
 				if(game.start && !gameover) {
 					console.home();
 					console.down(top + 1);
@@ -1109,8 +1162,10 @@ function play()
 					console.attributes = LIGHTRED;
 					console.right((console.screen_columns - 16) / 2);
 					console.print("Quit Game (Y/N) ?");
-					if(console.getkey(K_UPPER) != 'Y')
+					if(console.getkey(K_UPPER) != 'Y') }
+						console.write("\x1b[?1000;1006h");
 						break;
+					}
 				}
 				return;
 		}
