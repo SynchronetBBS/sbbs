@@ -56,6 +56,7 @@ static int lastattr=0;
 static long mode;
 static int vflags=0;
 static int suspended = 0;
+static int mpress = 0;
 void curs_resume(void);
 
 static short curses_color(short color)
@@ -646,8 +647,10 @@ int curs_kbhit(void)
 
 	if(curs_nextgetch)
 		return(1);
-	if(mouse_trywait())
+	if(mpress || mouse_trywait()) {
+		mpress = 1;
 		return(1);
+	}
 	timeout.tv_sec=0;
 	timeout.tv_usec=0;
 	FD_ZERO(&rfds);
@@ -747,8 +750,9 @@ int curs_initciolib(long inmode)
 			mouseinterval(0);
 			cio_api.mouse=1;
 		}
-		else
+		else {
 			mousemask(0,NULL);
+		}
 #endif
 
 	if (COLORS >= 16)
@@ -791,7 +795,8 @@ int curs_getch(void)
 	else {
 		curs_resume();
 		while((ch=getch())==ERR) {
-			if(mouse_trywait()) {
+			if(mpress || mouse_trywait()) {
+				mpress = 0;
 				curs_nextgetch=CIO_KEY_MOUSE>>8;
 				return(CIO_KEY_MOUSE & 0xff);
 			}
