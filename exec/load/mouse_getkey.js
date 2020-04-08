@@ -26,8 +26,7 @@ function mouse_getkey(mode, timeout, enabled)
 		enabled = false;
 
 	if (!enabled) {
-		console.write("\x1b[?1006h");
-		console.write("\x1b[?1000h");
+		console.write("\x1b[?1006;1000h");
 	}
 	do {
 		if(timeout !== undefined)
