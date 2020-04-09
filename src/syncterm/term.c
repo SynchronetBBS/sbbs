@@ -2338,7 +2338,6 @@ static int fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct m
 		if (bit == 0)
 			bit = 4;
 		button = bit - 1;
-		button += 32;
 		release = false;
 	}
 	else {
@@ -2348,7 +2347,7 @@ static int fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct m
 	}
 	if (button < 0)
 		return 0;
-	if (button > 11)
+	if ((button > 11)
 		return 0;
 	if (button > 7)
 		button += 128;
