@@ -865,8 +865,6 @@ function start_mouse()
 function stop_mouse()
 {
 	console.write("\x1b[?1000l");
-	if (console.inkey(100) != '')
-		while(console.inkey() !== '');
 }
 
 function clear_screen()
