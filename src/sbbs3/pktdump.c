@@ -47,7 +47,7 @@ bool freadstr(FILE* fp, char* str, size_t maxlen)
 	return str[maxlen-1] == 0;
 }
 
-int pktdump(FILE* fp, const char* fname, FILE* out)
+int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 {
 	int			ch,lastch=0;
 	char		buf[128];
@@ -121,9 +121,10 @@ int pktdump(FILE* fp, const char* fname, FILE* out)
 	if(pkthdr.type2.password[0])
 		fprintf(stdout,"Password: '%.*s'\n",(int)sizeof(pkthdr.type2.password),pkthdr.type2.password);
 
-	if(out != NULL)
-		fwrite(&pkthdr, sizeof(pkthdr), 1, out);
-
+	if(good != NULL)
+		fwrite(&pkthdr, sizeof(pkthdr), 1, good);
+	if(bad != NULL)
+		fwrite(&pkthdr, sizeof(pkthdr), 1, bad);
 	fseek(fp,sizeof(pkthdr),SEEK_SET);
 
 	/* Read/Display packed messages */
@@ -164,15 +165,28 @@ int pktdump(FILE* fp, const char* fname, FILE* out)
 			|| from[sizeof(from) - 1] != '\0'
 			|| subj[sizeof(subj) - 1] != '\0'
 			)) {
-			printf("%s %06lX Corrupted Message Header (variable portion)\n"
+			printf("%s %06lX Corrupted Message Header (variable-length fields)\n"
 				,fname
 				,offset);
 			corrupted = true;
 		}
 
 		if(corrupted) { // Seek to the end of the message body (hopefully)
-			while((ch = fgetc(fp)) != EOF && ch != 0)
-				;
+			if(bad != NULL) {
+				fwrite(&pkdmsg, sizeof(pkdmsg), 1, bad);
+				for(int i = 0, ch = EOF; i < sizeof(to) && ch != '\0'; i++)
+					fputc(ch = to[i], bad);
+				for(int i = 0, ch = EOF; i < sizeof(from) && ch != '\0'; i++)
+					fputc(ch = from[i], bad);
+				for(int i = 0, ch = EOF; i < sizeof(subj) && ch != '\0'; i++)
+					fputc(ch = subj[i], bad);
+			}
+			while((ch = fgetc(fp)) != EOF && ch != 0) {
+				if(bad != NULL)
+					fputc(ch, bad);
+			}
+			if(bad != NULL)
+				fputc('\0', bad);
 			continue;
 		}
 
@@ -191,11 +205,11 @@ int pktdump(FILE* fp, const char* fname, FILE* out)
 		printf("%-4s : %s\n","From",from);
 		printf("%-4s : %s\n","Subj",subj);
 
-		if(out != NULL) {
-			fwrite(&pkdmsg, sizeof(pkdmsg), 1, out);
-			fwrite(to, strlen(to) + 1, 1, out);
-			fwrite(from, strlen(from) + 1, 1, out);
-			fwrite(subj, strlen(subj) + 1, 1, out);
+		if(good != NULL) {
+			fwrite(&pkdmsg, sizeof(pkdmsg), 1, good);
+			fwrite(to, strlen(to) + 1, 1, good);
+			fwrite(from, strlen(from) + 1, 1, good);
+			fwrite(subj, strlen(subj) + 1, 1, good);
 		}
 
 		fprintf(bodyfp,"\n-start of message text-\n");
@@ -204,27 +218,32 @@ int pktdump(FILE* fp, const char* fname, FILE* out)
 			if(lastch=='\r' && ch!='\n')
 				fputc('\n',bodyfp);
 			fputc(lastch=ch,bodyfp);
-			if(out != NULL)
-				fputc(ch, out);
+			if(good != NULL)
+				fputc(ch, good);
 		}
-		if(out != NULL)
-			fputc('\0', out);
+		if(good != NULL)
+			fputc('\0', good);
 
 		fprintf(bodyfp,"\n-end of message text-\n");
 	}
-	if(out != NULL) { // Final terminating NULL bytes
-		fputc('\0', out);
-		fputc('\0', out);
+	if(good != NULL) { // Final terminating NULL bytes
+		fputc('\0', good);
+		fputc('\0', good);
+	}
+	if(bad != NULL) { // Final terminating NULL bytes
+		fputc('\0', bad);
+		fputc('\0', bad);
 	}
 
 	return(0);
 }
 
-char* usage = "usage: pktdump [-body] [-recover] <file1.pkt> [file2.pkt] [...]\n";
+char* usage = "usage: pktdump [-body] [-recover | -split] <file1.pkt> [file2.pkt] [...]\n";
 
 int main(int argc, char** argv)
 {
 	FILE*	fp;
+	bool	split = false;
 	bool	recover = false;
 	int		i;
 	char	revision[16];
@@ -268,6 +287,9 @@ int main(int argc, char** argv)
 				case 'r':
 					recover=true;
 					break;
+				case 's':
+					split=true;
+					break;
 				default:
 					printf("%s",usage);
 					return(0);
@@ -279,21 +301,42 @@ int main(int argc, char** argv)
 			perror(argv[i]);
 			continue;
 		}
-		FILE* out = NULL;
-		if(recover) {
-			char fname[MAX_PATH + 1];
-			SAFEPRINTF(fname, "%s.recovered", argv[i]);
-			if((out = fopen(fname, "wb")) == NULL) {
+		FILE* good = NULL;
+		FILE* bad = NULL;
+		char good_fname[MAX_PATH + 1] = "";
+		char bad_fname[MAX_PATH + 1] = "";
+		if(recover || split) {
+			SAFEPRINTF(good_fname, "%s.good", argv[i]);
+			if((good = fopen(good_fname, "wb")) == NULL) {
 				perror(argv[i]);
 				return EXIT_FAILURE;
 			}
 		}
-		pktdump(fp, argv[i], out);
-		fclose(fp);
-		if(out != NULL) {
-			fclose(out);
-			out = NULL;
+		if(split) {
+			SAFEPRINTF(bad_fname, "%s.bad", argv[i]);
+			if((bad = fopen(bad_fname, "wb")) == NULL) {
+				perror(argv[i]);
+				return EXIT_FAILURE;
+			}
 		}
+		pktdump(fp, argv[i], good, bad);
+		if(good != NULL) {
+			long length = ftell(good);
+			fclose(good);
+			good = NULL;
+			if(length <= sizeof(fpkthdr_t) + sizeof(uint16_t) // no messages
+				|| length == ftell(fp))
+				remove(good_fname);
+		}
+		if(bad != NULL) {
+			long length = ftell(bad);
+			fclose(bad);
+			bad = NULL;
+			if(length <= sizeof(fpkthdr_t) + sizeof(uint16_t) // no messages
+				|| length == ftell(fp))
+				remove(bad_fname);
+		}
+		fclose(fp);
 	}
 
 	return(0);
