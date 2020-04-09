@@ -1725,6 +1725,7 @@ enum {
 	,SOCK_PROP_REMOTE_IP
 	,SOCK_PROP_REMOTE_PORT
 	,SOCK_PROP_TYPE
+	,SOCK_PROP_FAMILY
 	,SOCK_PROP_NETWORK_ORDER
 	,SOCK_PROP_SSL_SESSION
 	,SOCK_PROP_SSL_SERVER
@@ -1750,6 +1751,7 @@ static char* socket_prop_desc[] = {
 	,"remote IP address (string in dotted-decimal format)"
 	,"remote TCP or UDP port number"
 	,"socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)"
+	,"socket protocol family, <tt>PF_INET</tt> (IPv4) or <tt>PF_INET6</tt> (IPv6)"
 	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>"
 	,"set to <i>true</i> to enable SSL as a client on the socket"
 	,"set to <i>true</i> to enable SSL as a server on the socket"
@@ -2028,6 +2030,17 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SOCK_PROP_TYPE:
 			*vp = INT_TO_JSVAL(p->type);
 			break;
+		case SOCK_PROP_FAMILY:
+			if(p->sock != INVALID_SOCKET) {
+				if(getsockname(p->sock, &addr.addr, &len)!=0)
+					return(JS_FALSE);
+				JS_RESUMEREQUEST(cx, rc);
+				*vp = INT_TO_JSVAL(addr.addr.sa_family);
+				rc=JS_SUSPENDREQUEST(cx);
+			}
+			else
+				*vp=JSVAL_VOID;
+			break;
 		case SOCK_PROP_NETWORK_ORDER:
 			*vp = BOOLEAN_TO_JSVAL(p->network_byte_order);
 			break;
@@ -2063,6 +2076,7 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{	"remote_ip_address"	,SOCK_PROP_REMOTE_IP	,SOCK_PROP_FLAGS,	310 },
 	{	"remote_port"		,SOCK_PROP_REMOTE_PORT	,SOCK_PROP_FLAGS,	310 },
 	{	"type"				,SOCK_PROP_TYPE			,SOCK_PROP_FLAGS,	310 },
+	{	"family"				,SOCK_PROP_FAMILY			,SOCK_PROP_FAMILY,	318 },
 	{	"network_byte_order",SOCK_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	311 },
 	{	"ssl_session"		,SOCK_PROP_SSL_SESSION	,JSPROP_ENUMERATE,	316	},
 	{	"ssl_server"		,SOCK_PROP_SSL_SERVER	,JSPROP_ENUMERATE,	316	},
@@ -2873,7 +2887,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		"where <i>interface</i> = A array or strings or a single string of hostnames or address optionally including a :port suffix<br>"
 		"<i>port</i> = a port to use when the interface doesn't specify one<br>"
 		"<i>protocol</i> = protocol name, used for socket options and logging.<br>"
-		"<i>domain</i> (optional) = <tt>PF_UNSPEC</tt> (default) for IPv4 or IPv6, <tt>PF_INET</tt> for IPv4, or <tt>PF_INET6</tt> for IPv6<br>"
+		"<i>domain</i> (optional) = <tt>PF_UNSPEC</tt> (default) for IPv4 or IPv6, <tt>AF_INET</tt> for IPv4, or <tt>AF_INET6</tt> for IPv6<br>"
 		"<i>proto</i> (optional) = <tt>IPPROTO_IP</tt> (default)<br>"
 		"<i>type</i> (optional) = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP<br>"
 		"<i>retry_count</i> (optional) = <tt>0</tt> (default) number of times to retry binding<br>"
@@ -2998,6 +3012,8 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 	JSObject*	sockproto;
 	JSObject*	csockobj;
 	JSObject*	lsockobj;
+	jsval		val;
+	JSObject*	constructor;
 
 	sockobj = JS_InitClass(cx, parent, NULL
 		,&js_socket_class
@@ -3008,6 +3024,17 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 		,NULL,NULL);
 	if (sockobj == NULL)
 		return sockobj;
+	if(JS_GetProperty(cx, parent, js_socket_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JS_ValueToObject(cx,val,&constructor);
+		JS_DefineProperty(cx, constructor, "PF_INET", INT_TO_JSVAL(PF_INET), NULL, NULL
+			, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+		JS_DefineProperty(cx, constructor, "PF_INET6", INT_TO_JSVAL(PF_INET6), NULL, NULL
+			, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+		JS_DefineProperty(cx, constructor, "AF_INET", INT_TO_JSVAL(AF_INET), NULL, NULL
+			, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+		JS_DefineProperty(cx, constructor, "AF_INET6", INT_TO_JSVAL(AF_INET6), NULL, NULL
+			, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+	}
 	sockproto = JS_GetPrototype(cx, sockobj);
 	csockobj = JS_InitClass(cx, parent, sockproto
 		,&js_connected_socket_class
