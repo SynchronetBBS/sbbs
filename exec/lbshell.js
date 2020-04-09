@@ -859,8 +859,7 @@ function todo_getfiles(lib, dir)
 
 function start_mouse()
 {
-	console.write("\x1b[?1006h");
-	console.write("\x1b[?1000h");
+	console.write("\x1b[?1006;1000h");
 }
 
 function stop_mouse()
