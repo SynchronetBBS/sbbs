@@ -6,6 +6,7 @@
 #include "xpendian.h"	/* swap */
 #include "dirwrap.h"	/* _PATH_DEVNULL */
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 
 FILE* nulfp;
@@ -31,24 +32,22 @@ char *faddrtoa(struct fidoaddr* addr, char* outstr)
 	return(outstr);
 }
 
-char* freadstr(FILE* fp, char* str, size_t maxlen)
+bool freadstr(FILE* fp, char* str, size_t maxlen)
 {
 	int		ch;
 	size_t	len=0;
 
+	memset(str, 0, maxlen);
 	while((ch=fgetc(fp))!=EOF && len<maxlen) {
 		str[len++]=ch;
 		if(ch==0)
 			break;
 	}
 
-	str[maxlen-1]=0;
-
-	return(str);
+	return str[maxlen-1] == 0;
 }
-	
 
-int pktdump(FILE* fp, const char* fname)
+int pktdump(FILE* fp, const char* fname, FILE* out)
 {
 	int			ch,lastch=0;
 	char		buf[128];
@@ -116,22 +115,46 @@ int pktdump(FILE* fp, const char* fname)
 	} else
 		fprintf(stdout,"2.0 (prod: %02X, serial: %u)", pkthdr.type2.prodcode, pkthdr.type2.sernum);
 
-	printf(" from %s",faddrtoa(&orig,NULL));
-	printf(" to %s\n"	,faddrtoa(&dest,NULL));
+	printf(" from %s", faddrtoa(&orig,NULL));
+	printf(" to %s\n", faddrtoa(&dest,NULL));
 
 	if(pkthdr.type2.password[0])
 		fprintf(stdout,"Password: '%.*s'\n",(int)sizeof(pkthdr.type2.password),pkthdr.type2.password);
+
+	if(out != NULL)
+		fwrite(&pkthdr, sizeof(pkthdr), 1, out);
 
 	fseek(fp,sizeof(pkthdr),SEEK_SET);
 
 	/* Read/Display packed messages */
 	while(!feof(fp)) {
 
-		printf("%08lX\n",offset=ftell(fp));
+		offset=ftell(fp);
 
-		/* Read fixed-length header fields */
+		/* Read fixed-length header fields (or final NULL byte) */
 		if(fread(&pkdmsg,sizeof(BYTE),sizeof(pkdmsg),fp)!=sizeof(pkdmsg))
 			break;
+
+		/* Read variable-length header fields */
+		freadstr(fp,to,sizeof(to));
+		freadstr(fp,from,sizeof(from));
+		freadstr(fp,subj,sizeof(subj));
+		if(pkdmsg.type != 2
+			|| to[sizeof(to) - 1] != '\0'
+			|| from[sizeof(from) - 1] != '\0'
+			|| subj[sizeof(subj) - 1] != '\0'
+			|| from[0] == '\0'
+			|| pkdmsg.time[0] == '\0'
+			|| pkdmsg.time[sizeof(pkdmsg.time) - 1] != '\0'
+			) {
+			printf("%s %06lX Corrupted Message Header\n"
+				,fname
+				,offset);
+			while((ch = fgetc(fp)) != EOF && ch != 0)
+				;
+			continue;
+		}
+
 		/* Display fixed-length fields */
 		printf("%s %06lX Packed Message Type: %d from %u/%u to %u/%u\n"
 			,fname
@@ -141,16 +164,18 @@ int pktdump(FILE* fp, const char* fname)
 			,pkdmsg.destnet, pkdmsg.destnode);
 		printf("Attribute: %04X\n",pkdmsg.attr);
 		printf("Date/Time: %s\n",pkdmsg.time);
-
-		/* Read variable-length header fields */
-		freadstr(fp,to,sizeof(to));
-		freadstr(fp,from,sizeof(from));
-		freadstr(fp,subj,sizeof(subj));
 	
 		/* Display variable-length fields */
 		printf("%-4s : %s\n","To",to);
 		printf("%-4s : %s\n","From",from);
 		printf("%-4s : %s\n","Subj",subj);
+
+		if(out != NULL) {
+			fwrite(&pkdmsg, sizeof(pkdmsg), 1, out);
+			fwrite(to, strlen(to) + 1, 1, out);
+			fwrite(from, strlen(from) + 1, 1, out);
+			fwrite(subj, strlen(subj) + 1, 1, out);
+		}
 
 		fprintf(bodyfp,"\n-start of message text-\n");
 
@@ -158,19 +183,28 @@ int pktdump(FILE* fp, const char* fname)
 			if(lastch=='\r' && ch!='\n')
 				fputc('\n',bodyfp);
 			fputc(lastch=ch,bodyfp);
+			if(out != NULL)
+				fputc(ch, out);
 		}
+		if(out != NULL)
+			fputc('\0', out);
 
 		fprintf(bodyfp,"\n-end of message text-\n");
+	}
+	if(out != NULL) { // Final terminating NULL bytes
+		fputc('\0', out);
+		fputc('\0', out);
 	}
 
 	return(0);
 }
 
-char* usage = "usage: pktdump [-body] <file1.pkt> [file2.pkt] [...]\n";
+char* usage = "usage: pktdump [-body] [-recover] <file1.pkt> [file2.pkt] [...]\n";
 
 int main(int argc, char** argv)
 {
 	FILE*	fp;
+	bool	recover = false;
 	int		i;
 	char	revision[16];
 
@@ -208,7 +242,10 @@ int main(int argc, char** argv)
 		if(argv[i][0]=='-') {
 			switch(tolower(argv[i][1])) {
 				case 'b':
-					bodyfp=stdout;;
+					bodyfp=stdout;
+					break;
+				case 'r':
+					recover=true;
 					break;
 				default:
 					printf("%s",usage);
@@ -221,8 +258,21 @@ int main(int argc, char** argv)
 			perror(argv[i]);
 			continue;
 		}
-		pktdump(fp, argv[i]);
+		FILE* out = NULL;
+		if(recover) {
+			char fname[MAX_PATH + 1];
+			SAFEPRINTF(fname, "%s.recovered", argv[i]);
+			if((out = fopen(fname, "wb")) == NULL) {
+				perror(argv[i]);
+				return EXIT_FAILURE;
+			}
+		}
+		pktdump(fp, argv[i], out);
 		fclose(fp);
+		if(out != NULL) {
+			fclose(out);
+			out = NULL;
+		}
 	}
 
 	return(0);
