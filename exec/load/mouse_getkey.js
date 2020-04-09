@@ -26,7 +26,7 @@ function mouse_getkey(mode, timeout, enabled)
 		enabled = false;
 
 	if (!enabled) {
-		console.write("\x1b[?1006;1000h");
+		console.write("\x1b[?1006;9h");
 	}
 	do {
 		if(timeout !== undefined)
@@ -34,7 +34,7 @@ function mouse_getkey(mode, timeout, enabled)
 		else
 			key=console.getkey(mode);
 		if (!enabled)
-			console.write("\x1b[?1000l");
+			console.write("\x1b[?9l");
 
 		if (key === '' || key === undefined || key === null) {
 			ansi += key;

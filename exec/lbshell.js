@@ -859,12 +859,12 @@ function todo_getfiles(lib, dir)
 
 function start_mouse()
 {
-	console.write("\x1b[?1006;1000h");
+	console.write("\x1b[?1006;9h");
 }
 
 function stop_mouse()
 {
-	console.write("\x1b[?1000l");
+	console.write("\x1b[?9l");
 }
 
 function clear_screen()
