@@ -155,7 +155,7 @@ Lightbar.prototype.getval = function(current,key)
 			mk = mouse_getkey(K_NOSPIN, this.timeout > 1 ? this.timeout : undefined, this.mouse_enabled);
 			if (mk.mouse !== null) {
 				// Mouse
-				if (mk.mouse.press && mk.mouse.mods === 0 && mk.mouse.button == 0 && mk.mouse.motion == 0) {
+				if (!mk.mouse.press && mk.mouse.mods === 0 && mk.mouse.button == 0 && mk.mouse.motion == 0) {
 					key = 'Mouse';
 					this.mouse_miss_str = mk.mouse.ansi;
 				}
