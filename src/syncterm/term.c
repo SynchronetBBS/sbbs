@@ -2336,7 +2336,7 @@ static int fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct m
 		}
 		bit = my_ffs(me->kbsm & me->bstate);
 		if (bit == 0)
-			bit = 1;
+			bit = 4;
 		button = bit - 1;
 		button += 32;
 		release = false;
