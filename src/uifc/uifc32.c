@@ -1099,6 +1099,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if((win=malloc((width+3)*(height+2)*sizeof(*win)))==NULL) {
 								cprintf("UIFC line %d: error allocating %u bytes."
 									,__LINE__,(width+3)*(height+2)*sizeof(*win));
+								if(!(api->mode&UIFC_NHM))
+									uifc_mouse_enable();
 								return(-1);
 							}
 							inactive_win(win, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr, top);
