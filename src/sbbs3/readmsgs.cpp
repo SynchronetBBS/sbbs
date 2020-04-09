@@ -64,7 +64,7 @@ long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long start, long pos
 {
 	smbmsg_t msg;
 	long listed=0;
-	
+
 	for(long i = start; i<posts && !msgabort(); i++) {
 		if(mode&SCAN_NEW && post[i].idx.number<=subscan[subnum].ptr)
 			continue;
@@ -1614,6 +1614,13 @@ long sbbs_t::listsub(uint subnum, long mode, long start, const char* search)
 	long	displayed = 0;
 	long	lp_mode = LP_BYSELF;
 	post_t	*post;
+
+	if((mode&SCAN_INDEX) && cfg.listmsgs_mod[0]) {
+		char cmdline[256];
+
+		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %ld", cfg.listmsgs_mod, cfg.sub[subnum]->code, mode);
+		return exec_bin(cmdline, &main_csi);
+	}
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
