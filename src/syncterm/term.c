@@ -2302,6 +2302,19 @@ int mouse_state_query(int type, void *pms)
 	return type == ms->mode;
 }
 
+/* Win32 doesn't have ffs()... just use this everywhere. */
+static int
+my_ffs(int mask)
+{
+	int bit;
+
+	if (mask == 0)
+		return(0);
+	for (bit = 1; !(mask & 1); bit++)
+		mask = (unsigned int)mask >> 1;
+	return (bit);
+}
+
 static int fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state *ms)
 {
 	int button;
@@ -2317,7 +2330,7 @@ static int fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct m
 			if (ms->mode == MM_BUTTON_EVENT_TRACKING)
 				return 0;
 		}
-		bit = ffs(me->kbsm & me->bstate);
+		bit = my_ffs(me->kbsm & me->bstate);
 		if (bit == 0)
 			bit = 1;
 		button = bit - 1;
