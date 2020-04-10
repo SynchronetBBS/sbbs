@@ -417,9 +417,16 @@ FTP.prototype.data_socket = function(cmd)
 	}
 
 	rstr = this.cmd(cmd, true);
-	if (parseInt(rstr, 10) !== 150) {
-		ds.close();
-		throw(cmd+" failed: " + rstr);
+	switch (parseInt(rstr, 10)) {
+		case 150:
+			break;
+		case 125:
+			if (ds.is_connected)
+				break;
+			// Fall-through
+		default:
+			ds.close();
+			throw(cmd+" failed: " + rstr);
 	}
 
 	if (!this.passive) {
