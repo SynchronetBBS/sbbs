@@ -1169,6 +1169,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					if(!(api->mode&UIFC_NOCTRL))
 						gotkey=CIO_KEY_HOME;
 					break;
+				case CTRL_C:
+					if(!(api->mode&UIFC_NOCTRL))
+						gotkey=CIO_KEY_F(5);	/* copy */
+					break;
+				case CTRL_D:
+					if(!(api->mode&UIFC_NOCTRL))
+						gotkey=CIO_KEY_NPAGE;
+					break;
 				case CTRL_E:
 					if(!(api->mode&UIFC_NOCTRL))
 						gotkey=CIO_KEY_END;
@@ -1177,25 +1185,17 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					if(!(api->mode&UIFC_NOCTRL))
 						gotkey=CIO_KEY_PPAGE;
 					break;
-				case CTRL_D:
+				case CTRL_V:
 					if(!(api->mode&UIFC_NOCTRL))
-						gotkey=CIO_KEY_NPAGE;
-					break;
-				case CTRL_Z:
-					if(!(api->mode&UIFC_NOCTRL))
-						gotkey=CIO_KEY_F(1);	/* help */
-					break;
-				case CTRL_C:
-					if(!(api->mode&UIFC_NOCTRL))
-						gotkey=CIO_KEY_F(5);	/* copy */
+						gotkey=CIO_KEY_F(6);	/* paste */
 					break;
 				case CTRL_X:
 					if(!(api->mode&UIFC_NOCTRL))
 						gotkey=CIO_KEY_SHIFT_DC;	/* cut */
 					break;
-				case CTRL_V:
+				case CTRL_Z:
 					if(!(api->mode&UIFC_NOCTRL))
-						gotkey=CIO_KEY_F(6);	/* paste */
+						gotkey=CIO_KEY_F(1);	/* help */
 					break;
 				case CIO_KEY_ABORTED:
 					gotkey=ESC;
@@ -1711,6 +1711,81 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							return(-1);
+						case CTRL_F:			/* find */
+							if(/*!(api->mode&UIFC_NOCTRL)*/1) { // No no, *this* control key is fine!
+								if (api->input(WIN_MID|WIN_SAV, 0, 0, "Find", search, sizeof(search), 0) > 0) {
+									for (j = (*cur) + 1; j != *cur; j++, j = option[j] == NULL ? 0 : j) {   /* a = search count */
+										if (strcasestr(option[j], search) != NULL) {
+											// Copy/pasted from search above.
+											if(y+(j-(*cur))+2>height+top) {
+												(*cur)=j;
+												gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
+												textattr(lclr|(bclr<<4));
+												putch(api->chars->up_arrow);	   /* put the up arrow */
+												if((*cur)==opts-1) {
+													gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
+													putch(' ');	/* delete the down arrow */
+												}
+												for(i=((*cur)+vbrdrsize+1)-height,j=0;i<(*cur)+1;i++,j++)
+													uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
+														,i==(*cur) ? lbclr
+															: lclr|(bclr<<4)
+														,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
+												y=top+height-bbrdrwidth-1;
+												if(bar)
+													(*bar)=optheight-vbrdrsize-1;
+												break;
+											}
+											if(y-((*cur)-j)<top+tbrdrwidth) {
+												(*cur)=j;
+												gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
+												textattr(lclr|(bclr<<4));
+												if(!(*cur))
+													putch(' ');    /* Delete the up arrow */
+												gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
+												putch(api->chars->down_arrow);	   /* put the down arrow */
+												uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth
+													,lbclr
+													,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[(*cur)]);
+												for(i=1;i<height-vbrdrsize;i++) 	/* re-display options */
+													uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+i
+														,lclr|(bclr<<4)
+														,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+														,option[(*cur)+i]);
+												y=top+tbrdrwidth;
+												if(bar)
+													(*bar)=0;
+												break;
+											}
+											vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
+												,s_left+left+width-rbrdrwidth-1,s_top+y,line);
+											for(i=0; i<width; i++)
+												set_vmem_attr(&line[i], lclr|(bclr<<4));
+											vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
+												,s_left+left+width-rbrdrwidth-1,s_top+y,line);
+											if((*cur)>j)
+												y-=(*cur)-j;
+											else
+												y+=j-(*cur);
+											if(bar) {
+												if((*cur)>j)
+													(*bar)-=(*cur)-j;
+												else
+													(*bar)+=j-(*cur);
+											}
+											(*cur)=j;
+											vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
+												,s_left+left+width-rbrdrwidth-1,s_top+y,line);
+											for(i=0; i < width; i++)
+												set_vmem_attr(&line[i], lbclr);
+											vmem_puttext(s_left+lbrdrwidth+2+left,s_top+y
+												,s_left+left+width-rbrdrwidth-1,s_top+y,line);
+											break;
+										}
+									}
+								}
+							}
+							break;
 						default:
 							if(mode&WIN_EXTKEYS)
 								return(-2-gotkey);
