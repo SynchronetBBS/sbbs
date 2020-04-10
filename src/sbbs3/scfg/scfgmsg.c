@@ -421,6 +421,12 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			SAFECOPY(cfg.sub[j]->qwkname,tmpsub.qwkname);
 			if(tmpsub.data_dir[0])
 				SAFECOPY(cfg.sub[j]->data_dir,tmpsub.data_dir);
+			if(strcasestr(tmpsub.lname, "sysop") != NULL && strcasestr(tmpsub.lname, "only") != NULL) {
+				if(cfg.sub[j]->arstr[0]) {
+					SAFECAT(cfg.sub[j]->arstr, " ");
+				}
+				SAFECAT(cfg.sub[j]->arstr, "SYSOP");
+			}
 		}
 		if(faddr != NULL && faddr->zone)
 			cfg.sub[j]->faddr = *faddr;
