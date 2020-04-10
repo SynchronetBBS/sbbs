@@ -742,7 +742,7 @@ BinkP.prototype.session = function()
 										this.sendCmd(this.command.M_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
 									}
 									if (!tmp.open(tmp.exists ? "r+b" : "wb")) {
-										log(LOG_ERROR, "Unable to open file "+tmp.name  + " from remote: " + this.remote_addrs );
+										log(LOG_ERROR, "Error " + tmp.error + " opening file "+tmp.name  + " from remote: " + this.remote_addrs );
 										this.sendCmd(this.command.M_SKIP, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]);
 										break;
 									}
@@ -1259,7 +1259,7 @@ BinkP.prototype.addFile = function(path, sendas, waitget)
 	if (waitget === undefined)
 		waitget = true;
 	if (!file.open("rb", true)) {
-		log(LOG_WARNING, "Unable to open '"+file.name+"'.  Not sending.");
+		log(LOG_WARNING, "Error " + file.error + " opening '"+file.name+"'.  Not sending.");
 		return false;
 	}
 	if (this.debug)
