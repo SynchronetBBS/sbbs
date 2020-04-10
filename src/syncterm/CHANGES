@@ -45,6 +45,7 @@ Fix directory title to reflect changes to list size
 Update to SDL2 
 Allow snapping to scale using ALT-<arrow-key> in SDL mode
 Support XTerm style mouse reporting (except drag and keyboard modbits)
+CTRL-F/CTRL-G will now search the listing
 
 Version 1.0
 -----------
