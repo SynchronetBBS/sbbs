@@ -42,7 +42,7 @@ function FTP(host, user, pass, port, dport, bindhost, account)
 	if (ret === 332) {
 		if (this.account === undefined)
 			throw("Account required");
-		ret = parseInt(response = this.cmd("ACCOUNT "+this.account, true), 10);
+		ret = parseInt(response = this.cmd("ACCT "+this.account, true), 10);
 	}
 	if (ret !== 230 && ret != 202) {
 		this.socket.close();
@@ -179,7 +179,7 @@ FTP.prototype.retrieve = FTP.prototype.retr;
 // TODO: Not tested
 FTP.prototype.rmd = function(path)
 {
-	if (parseInt(this.cmd("RMD "+path, true), 10) !== 221)
+	if (parseInt(this.cmd("RMD "+path, true), 10) !== 250)
 		return false;
 	return true;
 }
@@ -223,7 +223,7 @@ FTP.prototype.stor = function(src, dest)
 {
 	var data_socket;
 
-	data_socket = this.data_socket("STOR "+dest)
+	data_socket = this.data_socket("STOR "+dest);
 
 	return this.do_sendfile(src, data_socket);
 }
@@ -306,8 +306,11 @@ FTP.prototype.do_sendfile = function(src, data_socket)
 	} while((!f.eof) && data_socket.is_connected && this.socket.is_connected);
 	data_socket.close();
 	f.close();
-	if (parseInt(this.cmd(undefined, true), 10) !== 226)
-		return false;
+
+	rstr = this.cmd(undefined, true), 10);
+	if (parseInt(rstr, 10) !== 226) {
+		throw("Data connection not closed: "+rstr);
+	}
 	if (!error)
 		log(LOG_DEBUG, "Sent "+total+" bytes.");
 	return !error;
@@ -322,6 +325,11 @@ FTP.prototype.cmd = function(cmd, needresp)
 
 	if (!this.socket.is_connected)
 		throw("Socket disconnected");
+
+	while (this.socket.data_waiting) {
+		start = time();
+		log(LOG_ERROR, "Error: Unexpected data on control connection: "+this.socket.recvline(this.maxline, this.timeout - (time() - start)));
+	}
 
 	if (cmd !== undefined) {
 		cmdline = cmd + '\r\n';
