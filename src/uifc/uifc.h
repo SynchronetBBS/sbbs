@@ -205,6 +205,7 @@
 								/* Input area (NOT outside of window!)		*/
 								/* And ungets the mouse event.				*/
 #define K_PASSWORD	(1L<<16)	/* Does not display text while editing		*/
+#define K_FIND		(1L<<17)	/* Don't set the "changes" flag				*/
 
 
 						/* Extra exit flags */

@@ -1714,7 +1714,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						case CTRL_F:			/* find */
 						case CTRL_G:
 							if(/*!(api->mode&UIFC_NOCTRL)*/1) { // No no, *this* control key is fine!
-								if (gotkey == CTRL_G || api->input(WIN_MID|WIN_SAV, 0, 0, "Find", search, sizeof(search), K_EDIT) > 0) {
+								if (gotkey == CTRL_G || api->input(WIN_MID|WIN_SAV, 0, 0, "Find", search, sizeof(search), K_EDIT|K_FIND) > 0) {
 									for (j = (*cur) + 1; j != *cur; j++, j = (j >= opts) ? 0 : j) {
 										if (strcasestr(option[j], search) != NULL) {
 											// Copy/pasted from search above.
@@ -2370,12 +2370,12 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	if(mode&K_EDIT)
 	{
 		truncspctrl(str);
-		if(strcmp(outstr,str))
+		if(!(mode&K_FIND) && strcmp(outstr,str))
 			api->changes=1;
 	}
 	else
 	{
-		if(j)
+		if(!(mode&K_FIND) && j)
 			api->changes=1;
 	}
 	strcpy(outstr,str);
