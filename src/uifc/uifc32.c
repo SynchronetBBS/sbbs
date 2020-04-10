@@ -606,7 +606,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	, char *initial_title, char **option)
 {
 	struct vmem_cell *ptr, *win, shade[MAX_LINES*2], line[MAX_COLS];
-	char search[MAX_OPLN];
+	static char search[MAX_OPLN] = {};
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
 	int	is_redraw=0;
@@ -1713,7 +1713,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							return(-1);
 						case CTRL_F:			/* find */
 							if(/*!(api->mode&UIFC_NOCTRL)*/1) { // No no, *this* control key is fine!
-								if (api->input(WIN_MID|WIN_SAV, 0, 0, "Find", search, sizeof(search), 0) > 0) {
+								if (api->input(WIN_MID|WIN_SAV, 0, 0, "Find", search, sizeof(search), K_EDIT) > 0) {
 									for (j = (*cur) + 1; j != *cur; j++, j = option[j] == NULL ? 0 : j) {   /* a = search count */
 										if (strcasestr(option[j], search) != NULL) {
 											// Copy/pasted from search above.
