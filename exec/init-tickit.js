@@ -9,7 +9,7 @@
 
 "use strict";
 
-var init_ini = js.exec_dir + "init-ticket.ini";     
+var init_ini = js.exec_dir + "init-tickit.ini";     
 var tickit_ini = system.ctrl_dir + "tickit.ini";
 
 var ini = [];
@@ -24,23 +24,26 @@ if(!f.open("w")) {
 	alert("Error " + f.error + " opening " + f.name);
 	exit(1);
 }
-
+var list = {};
+for(var i in ini) {
+	list[ini[i].name] = ini[i];
+}
 for(var code in file_area.dir) {
 
 	var area = file_area.dir[code];
 	var ticline;
 	f.writeln('[' + area.name + "]\nDir=" + code.toUpperCase());
-	if (ini[area.name]) {
-		if(ini[area.name].domain) {
+	if (list[area.name]) {
+		if(list[area.name].domain) {
 			f.writeln('Handler=tickit/nodelist_handler.js');
-			ticline = 'HandlerArg={"domain":"' + ini[area.name].domain + '"';
-			if (ini[area.name].match) {
-				ticline += ' ,"match":"' + ini[area.name].match + '"';
+			ticline = 'HandlerArg={"domain":"' + list[area.name].domain + '"';
+			if (list[area.name].match) {
+				ticline += ' ,"match":"' + list[area.name].match + '"';
 			}
-			ticline  += ', "nlmatch":"' + ini[area.name].nlmatch + '"}';
+			ticline  += ', "nlmatch":"' + list[area.name].nlmatch + '"}';
 			f.writeln(ticline);
 		}
-		if (ini[area.name].forcereplace)
+		if (list[area.name].forcereplace)
 			f.writeln('Forcereplace = true');
 	}
 	f.writeln();
