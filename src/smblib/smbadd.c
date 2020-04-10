@@ -59,6 +59,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 	hash_t		found;
 	hash_t**	hashes=NULL;	/* This is a NULL-terminated list of hashes */
 	smbmsg_t	remsg;
+	time_t		start = 0;
 
 	if(!SMB_IS_OPEN(smb)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s msgbase not open", __FUNCTION__);
@@ -79,7 +80,15 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 	/* try */
 	do {
 
-		if((retval=smb_getstatus(smb))!=SMB_SUCCESS)
+		while((retval=smb_getstatus(smb)) == SMB_ERR_READ) {
+			if(!start)
+				start=time(NULL);
+			else
+				if(time(NULL)-start>=(time_t)smb->retry_time)
+					break; 
+			SLEEP(smb->retry_delay);
+		}
+		if(retval != SMB_SUCCESS)
 			break;
 
 		msg->hdr.number=smb->status.last_msg+1;
