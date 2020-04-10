@@ -10,6 +10,17 @@ current line, not on the next character.  A tab will wrap
 to the next line only if the current cursor position is the
 last character on the line.
 
+I'm often asked why I don't use VT semantics for wrapping.
+The primary reason is that the person asking almost certainly
+doesn't know what the VT semantics are, they just want
+SyncTERM to behave the same as some other terminal they like.
+
+Not only have the VT semantics never been properly
+implemented in any terminal, they even varied between
+different actual hardware VT terminals.  Luckily, everything
+is on the internet now, so you can see the details and results
+here: https://github.com/mattiase/wraptest
+
 Control characters:
 
 NUL:
