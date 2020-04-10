@@ -32,7 +32,7 @@ function FTP(host, user, pass, port, dport, bindhost, account)
 	this.account = account;
 	this.socket = new ConnectedSocket(host, port, {protocol:'FTP', timeout:this.timeout, binadaddrs:this.bindhost});
 	var response = this.cmd(undefined, true);
-	if (parseInt(response, 10) !== 120) {
+	if (parseInt(response, 10) === 120) {
 		log(LOG_NOTICE, "Connection delay: "+response);
 		response = this.cmd(undefined, true);
 	}
@@ -311,7 +311,7 @@ FTP.prototype.do_sendfile = function(src, data_socket)
 	data_socket.close();
 	f.close();
 
-	rstr = this.cmd(undefined, true), 10);
+	rstr = this.cmd(undefined, true);
 	if (parseInt(rstr, 10) !== 226) {
 		throw("Data connection not closed: "+rstr);
 	}
@@ -326,6 +326,9 @@ FTP.prototype.cmd = function(cmd, needresp)
 	var start;
 	var rd;
 	var ret = '';
+	var rsp;
+	var m;
+	var done = false;
 
 	if (!this.socket.is_connected)
 		throw("Socket disconnected");
@@ -348,13 +351,26 @@ FTP.prototype.cmd = function(cmd, needresp)
 		do {
 			rd = this.socket.recvline(this.maxline, this.timeout - (time() - start));
 			if (rd !== null) {
+				m = rd.match(/^([0-9]{3})([- ])/);
+				if (rsp === undefined) {
+					if (m === null) {
+						throw("Invalid response: "+rd);
+					}
+					rsp = m[1];
+					if (m[2] === ' ')
+						done = true;
+				}
+				else if(m !== null) {
+					if (m[1] === rsp && m[2] === ' ')
+						done = true;
+				}
 				rd = rd.replace(/\xff\xff/g, "\xff");
 				log(LOG_DEBUG, "RSP: '"+rd+"'");
 				ret += rd + "\r\n";
 				if (rd.length === 0)
 					continue;
 			}
-		} while(this.socket.is_connected && (rd[0] === ' ' || rd[3] === '-'));
+		} while(this.socket.is_connected && !done);
 		return ret;
 	}
 	return null;
