@@ -1324,18 +1324,29 @@ void sub_cfg(uint grpnum)
 								}
 								break;
 							case 7:
-								smb_faddrtoa(&cfg.sub[i]->faddr,str);
+							{
+								int k = 0;
+								if(!cfg.total_faddrs) {
+									uifc.msg("You must configure a FidoNet address in SCFG->Networks->FidoNet");
+									break;
+								}
 								uifc.helpbuf=
 									"`Sub-board FidoNet Address:`\n"
 									"\n"
 									"If this sub-board is part of a FidoNet EchoMail conference, this is\n"
-									"the address used for this sub-board. Format: `Zone:Net/Node[.Point]`\n"
+									"the address used for this sub-board.\n"
 								;
-								uifc.input(WIN_MID|WIN_SAV,0,0,"FidoNet Address"
-									,str,25,K_EDIT);
-								if(str[0])
-									cfg.sub[i]->faddr=atofaddr(str);
+								for(n=0; n<cfg.total_faddrs && n<MAX_OPTS; n++) {
+									if(memcmp(&cfg.sub[i]->faddr, &cfg.faddr[n], sizeof(cfg.faddr[n])) == 0)
+										k = i;
+									strcpy(opt[n], smb_faddrtoa(&cfg.faddr[n],NULL)); 
+								}
+								opt[n][0]=0;
+								n = uifc.list(WIN_RHT|WIN_SAV|WIN_ACT|WIN_INSACT, 0, 0, 0, &k, NULL, "FidoNet Address", opt);
+								if(n >= 0 && n < cfg.total_faddrs)
+									cfg.sub[i]->faddr = cfg.faddr[n];
 								break;
+							}
 							case 8:
 								uifc.helpbuf=
 									"`Sub-board FidoNet Origin Line:`\n"
