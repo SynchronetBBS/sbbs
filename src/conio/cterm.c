@@ -675,6 +675,7 @@ coord_conv_xy(struct cterminal *cterm, enum cterm_coordinates from_coord,
 {
 	if (from_coord == to_coord)
 		return;
+
 	if (x) {
 		if (from_coord == CTERM_COORD_CURR) {
 			if (cterm->extattr & CTERM_EXTATTR_ORIGINMODE)
@@ -709,6 +710,46 @@ coord_conv_xy(struct cterminal *cterm, enum cterm_coordinates from_coord,
 				// Fall-through
 			case CTERM_COORD_ABSTERM:
 				*x -= cterm->x - 1;
+				break;
+			case CTERM_COORD_CURR:
+				// Silence warnings
+				break;
+		}
+	}
+	if (y) {
+		if (from_coord == CTERM_COORD_CURR) {
+			if (cterm->extattr & CTERM_EXTATTR_ORIGINMODE)
+				from_coord = CTERM_COORD_TERM;
+			else
+				from_coord = CTERM_COORD_ABSTERM;
+		}
+		switch(from_coord) {
+			case CTERM_COORD_SCREEN:
+				break;
+			case CTERM_COORD_TERM:
+				*y += cterm->top_margin - 1;
+				// Fall-through
+			case CTERM_COORD_ABSTERM:
+				*y += cterm->y - 1;
+				break;
+			case CTERM_COORD_CURR:
+				// Silence warnings
+				break;
+		}
+		if (to_coord == CTERM_COORD_CURR) {
+			if (cterm->extattr & CTERM_EXTATTR_ORIGINMODE)
+				to_coord = CTERM_COORD_TERM;
+			else
+				to_coord = CTERM_COORD_ABSTERM;
+		}
+		switch(to_coord) {
+			case CTERM_COORD_SCREEN:
+				break;
+			case CTERM_COORD_TERM:
+				*y -= cterm->top_margin - 1;
+				// Fall-through
+			case CTERM_COORD_ABSTERM:
+				*y -= cterm->y - 1;
 				break;
 			case CTERM_COORD_CURR:
 				// Silence warnings
