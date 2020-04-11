@@ -333,12 +333,11 @@ FTP.prototype.cmd = function(cmd, needresp)
 	if (!this.socket.is_connected)
 		throw("Socket disconnected");
 
-	while (this.socket.data_waiting) {
-		start = time();
-		log(LOG_ERROR, "Error: Unexpected data on control connection: "+this.socket.recvline(this.maxline, this.timeout - (time() - start)));
-	}
-
 	if (cmd !== undefined) {
+		while (this.socket.data_waiting) {
+			start = time();
+			log(LOG_ERROR, "Error: Unexpected data on control connection: "+this.socket.recvline(this.maxline, this.timeout - (time() - start)));
+		}
 		cmdline = cmd + '\r\n';
 		log(LOG_DEBUG, "CMD: '"+cmd.replace(/\xff/g, "\xff\xff")+"'");
 		if (this.socket.send(cmdline) != cmdline.length)
