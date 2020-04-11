@@ -647,7 +647,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ENDREQUEST(bg->cx);
 		JS_ClearContextThread(bg->cx);
 		bg->sem=&p->bg_sem;
-		lprintf(LOG_DEBUG, "JavaScript Background Load: %s", path);
+//		lprintf(LOG_DEBUG, "JavaScript Background Load: %s", path); // non-contextual (always logs to terminal server)
 		success = _beginthread(background_thread,0,bg)!=-1;
 		JS_RESUMEREQUEST(cx, rc);
 		if(success) {
