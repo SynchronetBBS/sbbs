@@ -1871,1473 +1871,1453 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 	struct vmem_cell *vc;
 
 	seq = parse_sequence(cterm->escbuf);
-	if (seq == NULL)
-		return;
-
-	switch(seq->c1_byte) {
-		case '[':
-			/* ANSI stuff */
-			p=cterm->escbuf+strlen(cterm->escbuf)-1;
-			if(seq->param_str[0]>=60 && seq->param_str[0] <= 63) {	/* Private extensions */
-				switch(seq->final_byte) {
-					case 'M':
-						if(seq->param_str[0] == '=' && parse_parameters(seq)) {	/* ANSI Music setup */
-							seq_default(seq, 0, 0);
-							switch(seq->param_int[0]) {
-								case 0:					/* Disable ANSI Music */
-									cterm->music_enable=CTERM_MUSIC_SYNCTERM;
-									break;
-								case 1:					/* BANSI (ESC[N) music only) */
-									cterm->music_enable=CTERM_MUSIC_BANSI;
-									break;
-								case 2:					/* ESC[M ANSI music */
-									cterm->music_enable=CTERM_MUSIC_ENABLED;
-									break;
-							}
-						}
-						break;
-					case 'S':		// XTerm graphics query
-						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
-							if (seq->param_int[0] == 2 && seq->param_int[1] == 1) {
-								struct text_info ti;
-								int vmode;
-
-								tmp[0] = 0;
-								GETTEXTINFO(&ti);
-								vmode = find_vmode(ti.currmode);
-								if (vmode != -1)
-									sprintf(tmp, "\x1b[?2;0;%u;%uS", vparams[vmode].charwidth*cterm->width, vparams[vmode].charheight*cterm->height);
-								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
-									strcat(retbuf, tmp);
-							}
-						}
-						break;
-					case 'c':
-						/* SyncTERM Device Attributes */
-						if (seq->param_str[0] == '<' && parse_parameters(seq)) {
-							seq_default(seq, 0, 0);
-							tmp[0] = 0;
-							for (i=0; i<seq->param_count; i++) {
-								switch (seq->param_int[i]) {
-									case 0:		/* Advanced features */
-										strcpy(tmp, "\x1b[<0");
-										if (cio_api.options & CONIO_OPT_LOADABLE_FONTS)
-											strcat(tmp, ";1");
-										if (cio_api.options & CONIO_OPT_BRIGHT_BACKGROUND)
-											strcat(tmp, ";2");
-										if (cio_api.options & CONIO_OPT_PALETTE_SETTING)
-											strcat(tmp, ";3");
-										if (cio_api.options & CONIO_OPT_SET_PIXEL)
-											strcat(tmp, ";4");
-										if (cio_api.options & CONIO_OPT_FONT_SELECT)
-											strcat(tmp, ";5");
-										if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)
-											strcat(tmp, ";6");
-										if (cio_api.mouse)
-											strcat(tmp, ";7");
-										strcat(tmp, "n");
-								}
-							}
-							if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
-								strcat(retbuf, tmp);
-						}
-						break;
-					case 'h':
-						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
-							attr2palette(cterm->attr, &oldfg, &oldbg);
-							updfg = (oldfg == cterm->fg_color);
-							updbg = (oldbg == cterm->bg_color);
-							for (i=0; i<seq->param_count; i++) {
-								switch(seq->param_int[i]) {
-									case 6:
-										cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
-										GOTOXY(1,cterm->top_margin);
+	if (seq != NULL) {
+		switch(seq->c1_byte) {
+			case '[':
+				/* ANSI stuff */
+				p=cterm->escbuf+strlen(cterm->escbuf)-1;
+				if(seq->param_str[0]>=60 && seq->param_str[0] <= 63) {	/* Private extensions */
+					switch(seq->final_byte) {
+						case 'M':
+							if(seq->param_str[0] == '=' && parse_parameters(seq)) {	/* ANSI Music setup */
+								seq_default(seq, 0, 0);
+								switch(seq->param_int[0]) {
+									case 0:					/* Disable ANSI Music */
+										cterm->music_enable=CTERM_MUSIC_SYNCTERM;
 										break;
-									case 7:
-										cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
+									case 1:					/* BANSI (ESC[N) music only) */
+										cterm->music_enable=CTERM_MUSIC_BANSI;
 										break;
-									case 25:
-										cterm->cursor=_NORMALCURSOR;
-										SETCURSORTYPE(cterm->cursor);
-										break;
-									case 31:
-										flags = GETVIDEOFLAGS();
-										flags |= CIOLIB_VIDEO_ALTCHARS;
-										SETVIDEOFLAGS(flags);
-										break;
-									case 32:
-										flags = GETVIDEOFLAGS();
-										flags |= CIOLIB_VIDEO_NOBRIGHT;
-										SETVIDEOFLAGS(flags);
-										break;
-									case 33:
-										flags = GETVIDEOFLAGS();
-										flags |= CIOLIB_VIDEO_BGBRIGHT;
-										SETVIDEOFLAGS(flags);
-										break;
-									case 34:
-										flags = GETVIDEOFLAGS();
-										flags |= CIOLIB_VIDEO_BLINKALTCHARS;
-										SETVIDEOFLAGS(flags);
-										break;
-									case 35:
-										flags = GETVIDEOFLAGS();
-										flags |= CIOLIB_VIDEO_NOBLINK;
-										SETVIDEOFLAGS(flags);
-										break;
-									case 69:
-										cterm->extattr |= CTERM_EXTATTR_DECLRMM;
-										break;
-									case 80:
-										cterm->extattr |= CTERM_EXTATTR_SXSCROLL;
-										break;
-									case 9:
-									case 1000:
-									case 1001:
-									case 1002:
-									case 1003:
-									case 1004:
-									case 1005:
-									case 1006:
-									case 1007:
-									case 1015:
-										if (cterm->mouse_state_change)
-											cterm->mouse_state_change(seq->param_int[i], 1, cterm->mouse_state_change_cbdata);
+									case 2:					/* ESC[M ANSI music */
+										cterm->music_enable=CTERM_MUSIC_ENABLED;
 										break;
 								}
 							}
-							if (updfg || updbg) {
-								attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
-								if (updfg)
-									FREE_AND_NULL(cterm->fg_tc_str);
-								if (updbg)
-									FREE_AND_NULL(cterm->bg_tc_str);
-							}
-						}
-						else if(!strcmp(seq->param_str,"=255"))
-							cterm->doorway_mode=1;
-						break;
-					case 'l':
-						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
-							attr2palette(cterm->attr, &oldfg, &oldbg);
-							updfg = (oldfg == cterm->fg_color);
-							updbg = (oldbg == cterm->bg_color);
-							for (i=0; i<seq->param_count; i++) {
-								switch(seq->param_int[i]) {
-									case 6:
-										cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
-										GOTOXY(1,1);
-										break;
-									case 7:
-										cterm->extattr &= ~(CTERM_EXTATTR_AUTOWRAP);
-										break;
-									case 25:
-										cterm->cursor=_NOCURSOR;
-										SETCURSORTYPE(cterm->cursor);
-										break;
-									case 31:
-										flags = GETVIDEOFLAGS();
-										flags &= ~CIOLIB_VIDEO_ALTCHARS;
-										SETVIDEOFLAGS(flags);
-										break;
-									case 32:
-										flags = GETVIDEOFLAGS();
-										flags &= ~CIOLIB_VIDEO_NOBRIGHT;
-										SETVIDEOFLAGS(flags);
-										break;
-									case 33:
-										flags = GETVIDEOFLAGS();
-										flags &= ~CIOLIB_VIDEO_BGBRIGHT;
-										SETVIDEOFLAGS(flags);
-										break;
-									case 34:
-										flags = GETVIDEOFLAGS();
-										flags &= ~CIOLIB_VIDEO_BLINKALTCHARS;
-										SETVIDEOFLAGS(flags);
-										break;
-									case 35:
-										flags = GETVIDEOFLAGS();
-										flags &= ~CIOLIB_VIDEO_NOBLINK;
-										SETVIDEOFLAGS(flags);
-										break;
-									case 69:
-										cterm->extattr &= ~(CTERM_EXTATTR_DECLRMM);
-										break;
-									case 80:
-										cterm->extattr &= ~CTERM_EXTATTR_SXSCROLL;
-										break;
-									case 9:
-									case 1000:
-									case 1001:
-									case 1002:
-									case 1003:
-									case 1004:
-									case 1005:
-									case 1006:
-									case 1007:
-									case 1015:
-										if (cterm->mouse_state_change)
-											cterm->mouse_state_change(seq->param_int[i], 0, cterm->mouse_state_change_cbdata);
-										break;
-								}
-							}
-							if (updfg || updbg) {
-								attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
-								if (updfg)
-									FREE_AND_NULL(cterm->fg_tc_str);
-								if (updbg)
-									FREE_AND_NULL(cterm->bg_tc_str);
-							}
-						}
-						else if(!strcmp(seq->param_str,"=255"))
-							cterm->doorway_mode=0;
-						break;
-					case 'n':	/* Query (extended) state information */
-						if (seq->param_str[0] == '=' && parse_parameters(seq)) {
-							int vidflags;
-
-							if(retbuf == NULL)
-								break;
-							tmp[0] = 0;
-							if (seq->param_count > 1)
-								break;
-							seq_default(seq, 0, 1);
-							switch(seq->param_int[0]) {
-								case 1:
-									sprintf(tmp, "\x1b[=1;%u;%u;%u;%u;%u;%un"
-										,CONIO_FIRST_FREE_FONT
-										,(uint8_t)cterm->setfont_result
-										,(uint8_t)cterm->altfont[0]
-										,(uint8_t)cterm->altfont[1]
-										,(uint8_t)cterm->altfont[2]
-										,(uint8_t)cterm->altfont[3]
-									);
-									break;
-								case 2:
-									vidflags = GETVIDEOFLAGS();
-									strcpy(tmp, "\x1b[=2");
-									if(cterm->extattr & CTERM_EXTATTR_ORIGINMODE)
-										strcat(tmp, ";6");
-									if (cterm->extattr & CTERM_EXTATTR_AUTOWRAP)
-										strcat(tmp, ";7");
-									if (cterm->mouse_state_query(9, cterm->mouse_state_query_cbdata))
-										strcat(tmp, ";9");
-									if(cterm->cursor == _NORMALCURSOR)
-										strcat(tmp, ";25");
-									if(vidflags & CIOLIB_VIDEO_ALTCHARS)
-										strcat(tmp, ";31");
-									if(vidflags & CIOLIB_VIDEO_NOBRIGHT)
-										strcat(tmp, ";32");
-									if(vidflags & CIOLIB_VIDEO_BGBRIGHT)
-										strcat(tmp, ";33");
-									if(vidflags & CIOLIB_VIDEO_BLINKALTCHARS)
-										strcat(tmp, ";34");
-									if(vidflags & CIOLIB_VIDEO_NOBLINK)
-										strcat(tmp, ";35");
-									if (cterm->extattr & CTERM_EXTATTR_DECLRMM)
-										strcat(tmp, ";69");
-									if (cterm->extattr & CTERM_EXTATTR_SXSCROLL)
-										strcat(tmp, ";80");
-									if (cterm->mouse_state_query(1000, cterm->mouse_state_query_cbdata))
-										strcat(tmp, ";1000");
-									if (cterm->mouse_state_query(1001, cterm->mouse_state_query_cbdata))
-										strcat(tmp, ";1001");
-									if (cterm->mouse_state_query(1002, cterm->mouse_state_query_cbdata))
-										strcat(tmp, ";1002");
-									if (cterm->mouse_state_query(1003, cterm->mouse_state_query_cbdata))
-										strcat(tmp, ";1003");
-									if (cterm->mouse_state_query(1004, cterm->mouse_state_query_cbdata))
-										strcat(tmp, ";1004");
-									if (cterm->mouse_state_query(1005, cterm->mouse_state_query_cbdata))
-										strcat(tmp, ";1005");
-									if (cterm->mouse_state_query(1006, cterm->mouse_state_query_cbdata))
-										strcat(tmp, ";1006");
-									if (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata))
-										strcat(tmp, ";1007");
-									if (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata))
-										strcat(tmp, ";1015");
-									if (strlen(tmp) == 4) {	// Nothing set
-										strcat(tmp, ";");
-									}
-									strcat(tmp, "n");
-									break;
-								case 3:	/* Query font char dimensions */
-								{
+							break;
+						case 'S':		// XTerm graphics query
+							if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+								if (seq->param_int[0] == 2 && seq->param_int[1] == 1) {
 									struct text_info ti;
 									int vmode;
 
+									tmp[0] = 0;
 									GETTEXTINFO(&ti);
 									vmode = find_vmode(ti.currmode);
 									if (vmode != -1)
-										sprintf(tmp, "\x1b[=3;%u;%un", vparams[vmode].charheight, vparams[vmode].charwidth);
-									break;
-								}
-							}
-							if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
-								strcat(retbuf, tmp);
-						}
-						break;
-					case 's':
-						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
-							GETTEXTINFO(&ti);
-							flags = GETVIDEOFLAGS();
-							if(seq->param_count == 0) {
-								/* All the save stuff... */
-								cterm->saved_mode_mask |= (CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|
-								    CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN|CTERM_SAVEMODE_SIXEL_SCROLL|
-								    CTERM_SAVEMODE_MOUSE_X10|CTERM_SAVEMODE_MOUSE_NORMAL|CTERM_SAVEMODE_MOUSE_HIGHLIGHT|
-								    CTERM_SAVEMODE_MOUSE_BUTTONTRACK|CTERM_SAVEMODE_MOUSE_ANY|CTERM_SAVEMODE_MOUSE_FOCUS|
-								    CTERM_SAVEMODE_MOUSE_UTF8|CTERM_SAVEMODE_MOUSE_SGR|CTERM_SAVEMODE_MOUSE_ALTSCROLL|CTERM_SAVEMODE_MOUSE_URXVT|CTERM_SAVEMODE_DECLRMM);
-								cterm->saved_mode &= ~(cterm->saved_mode_mask);
-								cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_AUTOWRAP)?CTERM_SAVEMODE_AUTOWRAP:0;
-								cterm->saved_mode |= (cterm->cursor==_NORMALCURSOR)?CTERM_SAVEMODE_CURSOR:0;
-								cterm->saved_mode |= (flags & CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
-								cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
-								cterm->saved_mode |= (flags & CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
-								cterm->saved_mode |= (flags & CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
-								cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
-								cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_ORIGINMODE)?CTERM_SAVEMODE_ORIGIN:0;
-								cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_SXSCROLL)?CTERM_SAVEMODE_SIXEL_SCROLL:0;
-								cterm->saved_mode |= (cterm->mouse_state_query(9, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_X10 : 0);
-								cterm->saved_mode |= (cterm->mouse_state_query(1000, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_NORMAL : 0);
-								cterm->saved_mode |= (cterm->mouse_state_query(1001, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_HIGHLIGHT : 0);
-								cterm->saved_mode |= (cterm->mouse_state_query(1002, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_BUTTONTRACK : 0);
-								cterm->saved_mode |= (cterm->mouse_state_query(1003, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ANY : 0);
-								cterm->saved_mode |= (cterm->mouse_state_query(1004, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_FOCUS : 0);
-								cterm->saved_mode |= (cterm->mouse_state_query(1005, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_UTF8 : 0);
-								cterm->saved_mode |= (cterm->mouse_state_query(1006, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_SGR : 0);
-								cterm->saved_mode |= (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ALTSCROLL : 0);
-								cterm->saved_mode |= (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_URXVT : 0);
-								cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_DECLRMM) ? CTERM_SAVEMODE_DECLRMM : 0;
-								break;
-							}
-							else {
-								for (i=0; i<seq->param_count; i++) {
-									switch(seq->param_int[i]) {
-										case 6:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_ORIGIN;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_ORIGIN);
-											cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_ORIGINMODE)?CTERM_SAVEMODE_ORIGIN:0;
-											break;
-										case 7:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_AUTOWRAP;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP);
-											cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_AUTOWRAP)?CTERM_SAVEMODE_AUTOWRAP:0;
-											break;
-										case 9:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_X10;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_X10);
-											cterm->saved_mode |= (cterm->mouse_state_query(9, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_X10 : 0);
-											break;
-										case 25:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_CURSOR;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_CURSOR);
-											cterm->saved_mode |= (cterm->cursor==_NORMALCURSOR)?CTERM_SAVEMODE_CURSOR:0;
-											break;
-										case 31:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_ALTCHARS;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_ALTCHARS);
-											cterm->saved_mode |= (flags & CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
-											break;
-										case 32:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBRIGHT;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBRIGHT);
-											cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
-											break;
-										case 33:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_BGBRIGHT;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_BGBRIGHT);
-											cterm->saved_mode |= (flags & CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
-											break;
-										case 34:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_BLINKALTCHARS;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_BLINKALTCHARS);
-											cterm->saved_mode |= (flags & CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
-											break;
-										case 35:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBLINK;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBLINK);
-											cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
-											break;
-										case 69:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_DECLRMM;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_DECLRMM);
-											cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_DECLRMM) ? CTERM_SAVEMODE_DECLRMM : 0;
-											break;
-										case 80:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_SIXEL_SCROLL;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_SIXEL_SCROLL);
-											cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_SXSCROLL)?CTERM_SAVEMODE_SIXEL_SCROLL:0;
-											break;
-										case 1000:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_NORMAL;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_NORMAL);
-											cterm->saved_mode |= (cterm->mouse_state_query(1000, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_NORMAL : 0);
-											break;
-										case 1001:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_HIGHLIGHT;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_HIGHLIGHT);
-											cterm->saved_mode |= (cterm->mouse_state_query(1001, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_HIGHLIGHT : 0);
-											break;
-										case 1002:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_BUTTONTRACK;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_BUTTONTRACK);
-											cterm->saved_mode |= (cterm->mouse_state_query(1002, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_BUTTONTRACK : 0);
-											break;
-										case 1003:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_ANY;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_ANY);
-											cterm->saved_mode |= (cterm->mouse_state_query(1003, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ANY : 0);
-											break;
-										case 1004:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_FOCUS;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_FOCUS);
-											cterm->saved_mode |= (cterm->mouse_state_query(1004, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_FOCUS : 0);
-											break;
-										case 1005:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_UTF8;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_UTF8);
-											cterm->saved_mode |= (cterm->mouse_state_query(1005, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_UTF8 : 0);
-											break;
-										case 1006:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_SGR;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_SGR);
-											cterm->saved_mode |= (cterm->mouse_state_query(1006, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_SGR : 0);
-											break;
-										case 1007:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_ALTSCROLL;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_ALTSCROLL);
-											cterm->saved_mode |= (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ALTSCROLL : 0);
-											break;
-										case 1015:
-											cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_URXVT;
-											cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_URXVT);
-											cterm->saved_mode |= (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_URXVT : 0);
-											break;
-									}
-								}
-							}
-						}
-						break;
-					case 'u':
-						if (seq->param_str[0] == '?' && parse_parameters(seq)) {
-							GETTEXTINFO(&ti);
-							flags = GETVIDEOFLAGS();
-							attr2palette(cterm->attr, &oldfg, &oldbg);
-							updfg = (oldfg == cterm->fg_color);
-							updbg = (oldbg == cterm->bg_color);
-							if(seq->param_count == 0) {
-								/* All the save stuff... */
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_ORIGIN) {
-									if (cterm->saved_mode & CTERM_SAVEMODE_ORIGIN)
-										cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
-									else
-										cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
-								}
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_AUTOWRAP) {
-									if (cterm->saved_mode & CTERM_SAVEMODE_AUTOWRAP)
-										cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
-									else
-										cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
-								}
-	 							if(cterm->saved_mode_mask & CTERM_SAVEMODE_SIXEL_SCROLL) {
-									if (cterm->saved_mode & CTERM_SAVEMODE_SIXEL_SCROLL)
-										cterm->extattr |= CTERM_EXTATTR_SXSCROLL;
-									else
-										cterm->extattr &= ~CTERM_EXTATTR_SXSCROLL;
-								}
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR) {
-									cterm->cursor = (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) ? _NORMALCURSOR : _NOCURSOR;
-									SETCURSORTYPE(cterm->cursor);
-								}
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_ALTCHARS) {
-									if(cterm->saved_mode & CTERM_SAVEMODE_ALTCHARS)
-										flags |= CIOLIB_VIDEO_ALTCHARS;
-									else
-										flags &= ~CIOLIB_VIDEO_ALTCHARS;
-								}
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_BLINKALTCHARS) {
-									if(cterm->saved_mode & CTERM_SAVEMODE_BLINKALTCHARS)
-										flags |= CIOLIB_VIDEO_BLINKALTCHARS;
-									else
-										flags &= ~CIOLIB_VIDEO_BLINKALTCHARS;
-								}
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBRIGHT) {
-									if(cterm->saved_mode & CTERM_SAVEMODE_NOBRIGHT)
-										flags |= CIOLIB_VIDEO_NOBRIGHT;
-									else
-										flags &= ~CIOLIB_VIDEO_NOBRIGHT;
-								}
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBLINK) {
-									if(cterm->saved_mode & CTERM_SAVEMODE_NOBLINK)
-										flags |= CIOLIB_VIDEO_NOBLINK;
-									else
-										flags &= ~CIOLIB_VIDEO_NOBLINK;
-								}
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_BGBRIGHT) {
-									if(cterm->saved_mode & CTERM_SAVEMODE_BGBRIGHT)
-										flags |= CIOLIB_VIDEO_BGBRIGHT;
-									else
-										flags &= ~CIOLIB_VIDEO_BGBRIGHT;
-								}
-								SETVIDEOFLAGS(flags);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_X10)
-									cterm->mouse_state_change(9, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_X10, cterm->mouse_state_change_cbdata);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_NORMAL)
-									cterm->mouse_state_change(1000, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_NORMAL, cterm->mouse_state_change_cbdata);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_HIGHLIGHT)
-									cterm->mouse_state_change(1001, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_HIGHLIGHT, cterm->mouse_state_change_cbdata);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_BUTTONTRACK)
-									cterm->mouse_state_change(1002, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_BUTTONTRACK, cterm->mouse_state_change_cbdata);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ANY)
-									cterm->mouse_state_change(1003, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ANY, cterm->mouse_state_change_cbdata);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_FOCUS)
-									cterm->mouse_state_change(1004, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_FOCUS, cterm->mouse_state_change_cbdata);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_UTF8)
-									cterm->mouse_state_change(1005, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_UTF8, cterm->mouse_state_change_cbdata);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_SGR)
-									cterm->mouse_state_change(1006, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_SGR, cterm->mouse_state_change_cbdata);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ALTSCROLL)
-									cterm->mouse_state_change(1007, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ALTSCROLL, cterm->mouse_state_change_cbdata);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_URXVT)
-									cterm->mouse_state_change(1015, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_URXVT, cterm->mouse_state_change_cbdata);
-								if(cterm->saved_mode_mask & CTERM_SAVEMODE_DECLRMM) {
-									if (cterm->saved_mode & CTERM_SAVEMODE_DECLRMM)
-										cterm->extattr |= CTERM_EXTATTR_DECLRMM;
-									else
-										cterm->extattr &= ~CTERM_EXTATTR_DECLRMM;
-								}
-								break;
-							}
-							else {
-								for (i=0; i<seq->param_count; i++) {
-									switch(seq->param_int[i]) {
-										case 6:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_ORIGIN) {
-												if (cterm->saved_mode & CTERM_SAVEMODE_ORIGIN)
-													cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
-												else
-													cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
-											}
-											break;
-										case 7:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_AUTOWRAP) {
-												if (cterm->saved_mode & CTERM_SAVEMODE_AUTOWRAP)
-													cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
-												else
-													cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
-											}
-											break;
-										case 9:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_X10)
-												cterm->mouse_state_change(9, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_X10, cterm->mouse_state_change_cbdata);
-											break;
-										case 25:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR) {
-												cterm->cursor = (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) ? _NORMALCURSOR : _NOCURSOR;
-												SETCURSORTYPE(cterm->cursor);
-											}
-											break;
-										case 31:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_ALTCHARS) {
-												if(cterm->saved_mode & CTERM_SAVEMODE_ALTCHARS)
-													flags |= CIOLIB_VIDEO_ALTCHARS;
-												else
-													flags &= ~CIOLIB_VIDEO_ALTCHARS;
-												SETVIDEOFLAGS(flags);
-											}
-											break;
-										case 32:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBRIGHT) {
-												if(cterm->saved_mode & CTERM_SAVEMODE_NOBRIGHT)
-													flags |= CIOLIB_VIDEO_NOBRIGHT;
-												else
-													flags &= ~CIOLIB_VIDEO_NOBRIGHT;
-												SETVIDEOFLAGS(flags);
-											}
-											break;
-										case 33:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_BGBRIGHT) {
-												if(cterm->saved_mode & CTERM_SAVEMODE_BGBRIGHT)
-													flags |= CIOLIB_VIDEO_BGBRIGHT;
-												else
-													flags &= ~CIOLIB_VIDEO_BGBRIGHT;
-												SETVIDEOFLAGS(flags);
-											}
-											break;
-										case 34:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_BLINKALTCHARS) {
-												if(cterm->saved_mode & CTERM_SAVEMODE_BLINKALTCHARS)
-													flags |= CIOLIB_VIDEO_BLINKALTCHARS;
-												else
-													flags &= ~CIOLIB_VIDEO_BLINKALTCHARS;
-												SETVIDEOFLAGS(flags);
-											}
-											break;
-										case 35:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBLINK) {
-												if(cterm->saved_mode & CTERM_SAVEMODE_NOBLINK)
-													flags |= CIOLIB_VIDEO_NOBLINK;
-												else
-													flags &= ~CIOLIB_VIDEO_NOBLINK;
-												SETVIDEOFLAGS(flags);
-											}
-											break;
-										case 69:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_DECLRMM) {
-												if (cterm->saved_mode & CTERM_SAVEMODE_DECLRMM)
-													cterm->extattr |= CTERM_EXTATTR_DECLRMM;
-												else
-													cterm->extattr &= ~CTERM_EXTATTR_DECLRMM;
-											}
-											break;
-										case 80:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_SIXEL_SCROLL) {
-												if (cterm->saved_mode & CTERM_SAVEMODE_SIXEL_SCROLL)
-													cterm->extattr |= CTERM_EXTATTR_SXSCROLL;
-												else
-													cterm->extattr &= ~CTERM_EXTATTR_SXSCROLL;
-											}
-											break;
-										case 1000:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_NORMAL)
-												cterm->mouse_state_change(1000, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_NORMAL, cterm->mouse_state_change_cbdata);
-											break;
-										case 1001:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_HIGHLIGHT)
-												cterm->mouse_state_change(1001, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_HIGHLIGHT, cterm->mouse_state_change_cbdata);
-											break;
-										case 1002:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_BUTTONTRACK)
-												cterm->mouse_state_change(1002, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_BUTTONTRACK, cterm->mouse_state_change_cbdata);
-											break;
-										case 1003:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ANY)
-												cterm->mouse_state_change(1003, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ANY, cterm->mouse_state_change_cbdata);
-											break;
-										case 1004:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_FOCUS)
-												cterm->mouse_state_change(1004, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_FOCUS, cterm->mouse_state_change_cbdata);
-											break;
-										case 1005:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_UTF8)
-												cterm->mouse_state_change(1005, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_UTF8, cterm->mouse_state_change_cbdata);
-											break;
-										case 1006:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_SGR)
-												cterm->mouse_state_change(1006, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_SGR, cterm->mouse_state_change_cbdata);
-											break;
-										case 1007:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ALTSCROLL)
-												cterm->mouse_state_change(1007, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ALTSCROLL, cterm->mouse_state_change_cbdata);
-											break;
-										case 1015:
-											if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_URXVT)
-												cterm->mouse_state_change(1015, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_URXVT, cterm->mouse_state_change_cbdata);
-											break;
-									}
-								}
-							}
-							if (updfg || updbg) {
-								attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
-								if (updfg)
-									FREE_AND_NULL(cterm->fg_tc_str);
-								if (updbg)
-									FREE_AND_NULL(cterm->bg_tc_str);
-							}
-						}
-						break;
-					case '{':
-						if(seq->param_str[0] == '=' && parse_parameters(seq)) {	/* Font loading */
-							seq_default(seq, 0, 255);
-							seq_default(seq, 1, 0);
-							if(seq->param_int[0]>255)
-								break;
-							cterm->font_read=0;
-							cterm->font_slot=seq->param_int[0];
-							switch(seq->param_int[1]) {
-								case 0:
-									cterm->font_size=4096;
-									break;
-								case 1:
-									cterm->font_size=3584;
-									break;
-								case 2:
-									cterm->font_size=2048;
-									break;
-								default:
-									cterm->font_size=0;
-									break;
-							}
-						}
-						break;
-				}
-				break;
-			}
-			else if (seq->ctrl_func[1]) {	// Control Function with Intermediate Character
-				// Shift left
-				if (strcmp(seq->ctrl_func, " @") == 0) {
-					row = TERM_MINY;
-					col = TERM_MINX;
-					max_row = TERM_MAXY;
-					max_col = TERM_MAXX;
-
-					coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
-					coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
-					seq_default(seq, 0, 1);
-					i = seq->param_int[0];
-					if(i > TERM_MAXX)
-						i = TERM_MAXX;
-					MOVETEXT(col + i, row, max_col, max_row, col, row);
-					j = i * TERM_MAXY;
-					vc = malloc(j * sizeof(*vc));
-					if (vc != NULL) {
-						for(k=0; k < j; k++) {
-							vc[k].ch=' ';
-							vc[k].legacy_attr=cterm->attr;
-							vc[k].fg=cterm->fg_color;
-							vc[k].bg=cterm->bg_color;
-							vc[k].font = ciolib_attrfont(cterm->attr);
-						}
-						vmem_puttext(max_col - i, row, max_col, max_row, vc);
-						free(vc);
-					}
-				}
-				// Shift right
-				else if (strcmp(seq->ctrl_func, " A") == 0) {
-					row = TERM_MINY;
-					col = TERM_MINX;
-					max_row = TERM_MAXY;
-					max_col = TERM_MAXX;
-
-					coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
-					coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
-					seq_default(seq, 0, 1);
-					i = seq->param_int[0];
-					if(i > cterm->width)
-						i = cterm->width;
-					MOVETEXT(col, row, max_col - i, max_row, col + i, row);
-					j = i * TERM_MAXY;
-					vc = malloc(j * sizeof(*vc));
-					if (vc != NULL) {
-						for(k=0; k < j; k++) {
-							vc[k].ch=' ';
-							vc[k].legacy_attr=cterm->attr;
-							vc[k].fg=cterm->fg_color;
-							vc[k].bg=cterm->bg_color;
-							vc[k].font = ciolib_attrfont(cterm->attr);
-						}
-						vmem_puttext(col, row, col + i - 1, max_row, vc);
-						free(vc);
-					}
-				}
-				// Font Select
-				else if (strcmp(seq->ctrl_func, " D") == 0) {
-					seq_default(seq, 0, 0);
-					seq_default(seq, 1, 0);
-					switch(seq->param_int[0]) {
-						case 0:	/* Four fonts are currently supported */
-						case 1:
-						case 2:
-						case 3:
-							/* For compatibility with ciolib.c v1.136-v1.164 */
-							/* Feature introduced in CTerm v1.160, return value modified later */
-							if (SETFONT(seq->param_int[1],FALSE,seq->param_int[0]+1) == 0)
-								cterm->setfont_result = 1;
-							else
-								cterm->setfont_result = 0;
-							if(cterm->setfont_result == 0)
-								cterm->altfont[seq->param_int[0]] = seq->param_int[1];
-							break;
-					}
-				}
-				// Font Select
-				else if (strcmp(seq->ctrl_func, " c") == 0) {
-					if (seq->param_count > 0) {
-						delete_tabstop(cterm, seq->param_int[0]);
-					}
-				}
-				/* 
-				 * END OF STANDARD CONTROL FUNCTIONS
-				 * AFTER THIS IS ALL PRIVATE EXTENSIONS
-				 */
-				// Tab report
-				else if (strcmp(seq->ctrl_func, "$w") == 0) {
-					seq_default(seq, 0, 0);
-					if (seq->param_int[0] == 2) {
-						strcpy(tmp, "\x1bP2$u");
-						p2 = strchr(tmp, 0);
-						for (i = 0; i < cterm->tab_count && cterm->tabs[i] <= cterm->width; i++) {
-							if (i != 0)
-								*(p2++) = '/';
-							p2 += sprintf(p2, "%d", cterm->tabs[i]);
-						}
-						strcat(p2, "\x1b\\");
-						if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
-							strcat(retbuf, tmp);
-					}
-				}
-				// Communication speed
-				else if (strcmp(seq->ctrl_func, "*r") == 0) {
-					/*
-					 * Ps1 			Comm Line 		Ps2 		Communication Speed
-					 * none, 0, 1 	Host Transmit 	none, 0 	Use default speed.
-					 * 2		 	Host Receive 	1 			300
-					 * 3 			Printer 		2 			600
-					 * 4		 	Modem Hi 		3 			1200
-					 * 5		 	Modem Lo 		4 			2400
-					 * 								5 			4800
-					 * 								6 			9600
-					 * 								7 			19200
-					 * 								8 			38400
-					 * 								9 			57600
-					 * 								10 			76800
-					 * 								11 			115200
-					 */
-					int newspeed=-1;
-
-					seq_default(seq, 0, 0);
-					seq_default(seq, 1, 0);
-
-					if (seq->param_int[0] < 2) {
-						switch(seq->param_int[1]) {
-							case 0:
-								newspeed=0;
-								break;
-							case 1:
-								newspeed=300;
-								break;
-							case 2:
-								newspeed=600;
-								break;
-							case 3:
-								newspeed=1200;
-								break;
-							case 4:
-								newspeed=2400;
-								break;
-							case 5:
-								newspeed=4800;
-								break;
-							case 6:
-								newspeed=9600;
-								break;
-							case 7:
-								newspeed=19200;
-								break;
-							case 8:
-								newspeed=38400;
-								break;
-							case 9:
-								newspeed=57600;
-								break;
-							case 10:
-								newspeed=76800;
-								break;
-							case 11:
-								newspeed=115200;
-								break;
-						}
-					}
-					if(newspeed >= 0)
-						*speed = newspeed;
-				}
-			}
-			else {
-				switch(seq->final_byte) {
-					case '@':	/* Insert Char */
-						TERM_XY(&i, &j);
-						col = i;
-						row = j;
-						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
-						max_col = TERM_MAXX;
-						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, NULL);
-						seq_default(seq, 0, 1);
-						if(seq->param_int[0] < 1)
-							seq->param_int[0] = 1;
-						if(seq->param_int[0] > cterm->width - j)
-							seq->param_int[0] = cterm->width - j;
-						MOVETEXT(col, row, max_col - seq->param_int[0], row, col + seq->param_int[0], row);
-						for(l=0; l < seq->param_int[0]; l++)
-							PUTCH(' ');
-						GOTOXY(i,j);
-						break;
-					case 'A':	/* Cursor Up */
-					case 'F':	/* Cursor preceding line */
-					case 'k':	/* Line Position Backward */
-						seq_default(seq, 0, 1);
-						TERM_XY(&col, &row);
-						row -= seq->param_int[0];
-						if(row < TERM_MINY)
-							row = TERM_MINY;
-						GOTOXY(col, row);
-						break;
-					case 'B':	/* Cursor Down */
-					case 'E':	/* Cursor next line */
-					case 'e':	/* Line Position Forward */
-						seq_default(seq, 0, 1);
-						TERM_XY(&col, &row);
-						row += seq->param_int[0];
-						if(row > TERM_MAXY)
-							row = TERM_MAXY;
-						GOTOXY(col, row);
-						break;
-					case 'a':	/* Character Position Forward */
-					case 'C':	/* Cursor Right */
-						seq_default(seq, 0, 1);
-						TERM_XY(&col, &row);
-						col += seq->param_int[0];
-						if(col > TERM_MAXX)
-							i = TERM_MAXX;
-						GOTOXY(col, row);
-						break;
-					case 'j':	/* Character Position Backward */
-					case 'D':	/* Cursor Left */
-						seq_default(seq, 0, 1);
-						TERM_XY(&col, &row);
-						col -= seq->param_int[0];
-						if(col < TERM_MINX)
-							col = TERM_MINX;
-						GOTOXY(col, row);
-						break;
-						seq_default(seq, 0, 1);
-						TERM_XY(&col, &row);
-						row += seq->param_int[0];
-						if(i>cterm->bottom_margin)
-							i=cterm->bottom_margin;
-						GOTOXY(1,i);
-						break;
-					// for case 'E' see case 'B'
-					// for case 'F' see case 'A'
-					case '`':
-					case 'G':	/* Cursor Position Absolute */
-						seq_default(seq, 0, 1);
-						TERM_XY(NULL, &row);
-						col = seq->param_int[0];
-						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_TERM, &col, NULL);
-						if(col >= TERM_MINX && col <= TERM_MAXX) {
-							GOTOXY(col, row);
-						}
-						break;
-					case 'f':	/* Character And Line Position */
-					case 'H':	/* Cursor Position */
-						seq_default(seq, 0, 1);
-						seq_default(seq, 1, 1);
-						row=seq->param_int[0];
-						col=seq->param_int[1];
-						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_TERM, &col, &row);
-						if (row < TERM_MINY)
-							row = TERM_MINY;
-						if(col < TERM_MINX)
-							col = TERM_MINX;
-						if(row > TERM_MAXY)
-							row = TERM_MAXY;
-						if(col > TERM_MAXX)
-							col = TERM_MAXX;
-						GOTOXY(col,row);
-						break;
-					case 'I':	/* TODO? Cursor Forward Tabulation */
-						break;
-					case 'J':	/* Erase In Page */
-						seq_default(seq, 0, 0);
-						switch(seq->param_int[0]) {
-							case 0:
-								CLREOL();
-								TERM_XY(&col, &row);
-								for (i = row + 1; i <= TERM_MAXY; i++) {
-									GOTOXY(TERM_MINY, i);
-									CLREOL();
-								}
-								GOTOXY(col, row);
-								break;
-							case 1:
-								clear2bol(cterm);
-								TERM_XY(&col, &row);
-								for (i = row - 1; i >= TERM_MINY; i--) {
-									GOTOXY(TERM_MINX, i);
-									CLREOL();
-								}
-								GOTOXY(col,row);
-								break;
-							case 2:
-								cterm_clearscreen(cterm, (char)cterm->attr);
-								GOTOXY(TERM_MINX, TERM_MINY);
-								break;
-						}
-						break;
-					case 'K':	/* Erase In Line */
-						seq_default(seq, 0, 0);
-						switch(seq->param_int[0]) {
-							case 0:
-								CLREOL();
-								break;
-							case 1:
-								clear2bol(cterm);
-								break;
-							case 2:
-								TERM_XY(&col, &row);
-								GOTOXY(TERM_MINX, row);
-								CLREOL();
-								GOTOXY(col, row);
-								break;
-						}
-						break;
-					case 'L':		/* Insert line */
-						TERM_XY(&col, &row);
-						if(row < TERM_MINY || row > TERM_MAXY)
-							break;
-						seq_default(seq, 0, 1);
-						i = seq->param_int[0];
-						if(i > TERM_MAXY - row)
-							i = TERM_MAXY - row;
-						col2 = TERM_MINX;
-						row2 = row;
-						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col2, &row2);
-						max_col = TERM_MAXX;
-						max_row = TERM_MAXY;
-						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
-						if(i)
-							MOVETEXT(col2, row2, max_col, max_row - i, col2, row2 + i);
-						for (j = 0; j < i; j++) {
-							GOTOXY(TERM_MINX, row+j);
-							CLREOL();
-						}
-						GOTOXY(col, row);
-						break;
-					case 'M':	/* Delete Line (also ANSI music) */
-						if(cterm->music_enable==CTERM_MUSIC_ENABLED) {
-							cterm->music=1;
-						}
-						else {
-							TERM_XY(NULL, &row);
-							if(row >= TERM_MINY && row <= TERM_MAXY) {
-								seq_default(seq, 0, 1);
-								i = seq->param_int[0];
-								dellines(cterm, i);
-							}
-						}
-						break;
-					case 'N':	/* Erase In Field (also ANSI Music) */
-						/* BananANSI style... does NOT start with MF or MB */
-						/* This still conflicts (ANSI erase field) */
-						if(cterm->music_enable >= CTERM_MUSIC_BANSI)
-							cterm->music=2;
-						break;
-					case 'O':	/* TODO? Erase In Area */
-						break;
-					case 'P':	/* Delete char */
-						seq_default(seq, 0, 1);
-						TERM_XY(&col, &row);
-						i = seq->param_int[0];
-						if(i > TERM_MAXX - col + 1)
-							i = TERM_MAXX - col + 1;
-						max_col = TERM_MAXX;
-						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, NULL);
-						col2 = col;
-						row2 = row;
-						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col2, &row2);
-						MOVETEXT(col2 + i, row2, max_col, row2, col2, row2);
-						GOTOXY(TERM_MAXX - i,row);
-						CLREOL();
-						GOTOXY(col, row);
-						break;
-					case 'Q':	/* TODO? Select Editing Extent */
-						break;
-					case 'R':	/* TODO? Active Position Report */
-						break;
-					case 'S':	/* Scroll Up */
-						seq_default(seq, 0, 1);
-						for(j=0; j<seq->param_int[0]; j++)
-							scrollup(cterm);
-						break;
-					case 'T':	/* Scroll Down */
-						seq_default(seq, 0, 1);
-						for(j=0; j<seq->param_int[0]; j++)
-							scrolldown(cterm);
-						break;
-#if 0
-					case 'U':	/* Next Page */
-						GETTEXTINFO(&ti);
-						cterm_clearscreen(cterm, ti.normattr);
-						if(cterm->extattr & CTERM_EXTATTR_ORIGINMODE)
-							GOTOXY(1,cterm->top_margin);
-						else
-							GOTOXY(1,1);
-						break;
-#endif
-					case 'V':	/* TODO? Preceding Page */
-						break;
-					case 'W':	/* TODO? Cursor Tabulation Control */
-						break;
-					case 'X':	/* Erase Character */
-						seq_default(seq, 0, 1);
-						i=seq->param_int[0];
-						TERM_XY(&col, &row);
-						if(i > TERM_MAXX - col)
-							i=TERM_MAXX - col;
-						vc=malloc(i * sizeof(*vc));
-						for(k=0; k < i; k++) {
-							vc[k].ch=' ';
-							vc[k].legacy_attr=cterm->attr;
-							vc[k].fg=cterm->fg_color;
-							vc[k].bg=cterm->bg_color;
-							vc[k].font = ciolib_attrfont(cterm->attr);
-						}
-						col2 = col;
-						row2 = row;
-						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col2, &row2);
-						max_col = TERM_MAXX;
-						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, NULL);
-						vmem_puttext(col2, row2, col2 + i - 1, row2, vc);
-						free(vc);
-						break;
-					case 'Y':	/* Cursor Line Tabulation */
-						seq_default(seq, 0, 1);
-						if (seq->param_int[0] < 1)
-							break;
-						TERM_XY(&col, &row);
-						for(i = 0; i < cterm->tab_count; i++) {
-							if(cterm->tabs[i] > col)
-								break;
-						}
-						if (i == cterm->tab_count)
-							break;
-						for (k = 1; k < seq->param_int[0]; k++) {
-							if (cterm->tabs[k] <= TERM_MAXX)
-								col = cterm->tabs[k];
-							else
-								break;
-						}
-						GOTOXY(col,row);
-						break;
-					case 'Z':	/* Cursor Backward Tabulation */
-						seq_default(seq, 0, 1);
-						i=strtoul(cterm->escbuf+1,NULL,10);
-						TERM_XY(&col, &row);
-						for (j = cterm->tab_count - 1; j >= 0; j--) {
-							if (cterm->tabs[j] < col) {
-								k = j - seq->param_int[0] + 1;
-								if (k < 0)
-									k = 0;
-								GOTOXY(cterm->tabs[k], row);
-								break;
-							}
-						}
-						break;
-					case '[':	/* TODO? Start Reversed String */
-						break;
-					case '\\':	/* TODO? Parallel Texts */
-						break;
-					case ']':	/* TODO? Start Directed String */
-						break;
-					case '^':	/* TODO? Select Implicit Movement Direction */
-						break;
-					case '_':	/* NOT DEFIFINED IN STANDARD */
-						break;
-					// for case '`': see case 'G':
-					// for case 'a': see case 'C':
-					case 'b':	/* Repeat */
-						if (last != 0) {
-							seq_default(seq, 0, 1);
-							i = seq->param_int[0];
-							if (i > 0) {
-								p2 = malloc(i+1);
-								if (p2) {
-									memset(p2, last, i);
-									p2[i] = 0;
-									ctputs(cterm, p2);
-									free(p2);
-								}
-							}
-						}
-						break;
-					case 'c':	/* Device Attributes */
-						seq_default(seq, 0, 0);
-						if(!seq->param_int[0]) {
-							if(retbuf!=NULL) {
-								if(strlen(retbuf) + strlen(cterm->DA)  < retsize)
-									strcat(retbuf,cterm->DA);
-							}
-						}
-						break;
-					case 'd':	/* Line Position Absolute */
-						seq_default(seq, 0, 1);
-						TERM_XY(&col, NULL);
-						row = seq->param_int[0];
-						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_TERM, NULL, &row);
-						if (row < 1)
-							row = 1;
-						if (row > TERM_MAXY)
-							row = TERM_MAXY;
-						GOTOXY(col, row);
-						break;
-					// for case 'e': see case 'B':
-					// for case 'f': see case 'H':
-					case 'g':	/* Tabulation Clear */
-						seq_default(seq, 0, 0);
-						switch(seq->param_int[0]) {
-							case 0:
-								delete_tabstop(cterm, WHEREX());
-								break;
-							case 3:
-								cterm->tab_count = 0;
-								break;
-						}
-						break;
-					case 'h':	/* TODO? Set Mode */
-						break;
-					case 'i':	/* ToDo?  Media Copy (Printing) */
-						break;
-					// for case 'j': see case 'D':
-					// for case 'k': see case 'A':
-					case 'l':	/* TODO? Reset Mode */
-						break;
-					case 'm':	/* Select Graphic Rendition */
-						seq_default(seq, 0, 0);
-						GETTEXTINFO(&ti);
-						flags = GETVIDEOFLAGS();
-						for (i=0; i < seq->param_count; i++) {
-							switch(seq->param_int[i]) {
-								case 0:
-									cterm->attr=ti.normattr;
-									attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 1:
-									cterm->attr|=8;
-									if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
-									}
-									break;
-								case 2:
-									cterm->attr&=247;
-									if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
-									}
-									break;
-								case 4:	/* Underscore */
-									break;
-								case 5:
-								case 6:
-									cterm->attr|=128;
-									if (flags & CIOLIB_VIDEO_BGBRIGHT) {
-										attr2palette(cterm->attr, NULL, &cterm->bg_color);
-										FREE_AND_NULL(cterm->bg_tc_str);
-									}
-									break;
-								case 7:
-									j=cterm->attr&112;
-									cterm->attr = (cterm->attr << 4) & 0x70;
-									cterm->attr |= j>>4;
-									attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 8:
-									j=cterm->attr&112;
-									cterm->attr&=112;
-									cterm->attr |= j>>4;
-									attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 22:
-									cterm->attr &= 0xf7;
-									if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
-									}
-									break;
-								case 25:
-									cterm->attr &= 0x7f;
-									if (flags & CIOLIB_VIDEO_BGBRIGHT) {
-										attr2palette(cterm->attr, NULL, &cterm->bg_color);
-										FREE_AND_NULL(cterm->bg_tc_str);
-									}
-									break;
-								case 27:
-									i=cterm->attr&7;
-									j=cterm->attr&112;
-									cterm->attr &= 136;
-									cterm->attr |= j>>4;
-									cterm->attr |= i<<4;
-									attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 30:
-									cterm->attr&=248;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									break;
-								case 31:
-									cterm->attr&=248;
-									cterm->attr|=4;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									break;
-								case 32:
-									cterm->attr&=248;
-									cterm->attr|=2;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									break;
-								case 33:
-									cterm->attr&=248;
-									cterm->attr|=6;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									break;
-								case 34:
-									cterm->attr&=248;
-									cterm->attr|=1;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									break;
-								case 35:
-									cterm->attr&=248;
-									cterm->attr|=5;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									break;
-								case 36:
-									cterm->attr&=248;
-									cterm->attr|=3;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									break;
-								case 38:
-									parse_extended_colour(seq, &i, cterm, 1);
-									break;
-								case 37:
-								case 39:
-									cterm->attr&=248;
-									cterm->attr|=7;
-									attr2palette(cterm->attr, &cterm->fg_color, NULL);
-									FREE_AND_NULL(cterm->fg_tc_str);
-									break;
-								case 49:
-								case 40:
-									cterm->attr&=143;
-									attr2palette(cterm->attr, NULL, &cterm->bg_color);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 41:
-									cterm->attr&=143;
-									cterm->attr|=4<<4;
-									attr2palette(cterm->attr, NULL, &cterm->bg_color);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 42:
-									cterm->attr&=143;
-									cterm->attr|=2<<4;
-									attr2palette(cterm->attr, NULL, &cterm->bg_color);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 43:
-									cterm->attr&=143;
-									cterm->attr|=6<<4;
-									attr2palette(cterm->attr, NULL, &cterm->bg_color);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 44:
-									cterm->attr&=143;
-									cterm->attr|=1<<4;
-									attr2palette(cterm->attr, NULL, &cterm->bg_color);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 45:
-									cterm->attr&=143;
-									cterm->attr|=5<<4;
-									attr2palette(cterm->attr, NULL, &cterm->bg_color);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 46:
-									cterm->attr&=143;
-									cterm->attr|=3<<4;
-									attr2palette(cterm->attr, NULL, &cterm->bg_color);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 47:
-									cterm->attr&=143;
-									cterm->attr|=7<<4;
-									attr2palette(cterm->attr, NULL, &cterm->bg_color);
-									FREE_AND_NULL(cterm->bg_tc_str);
-									break;
-								case 48:
-									parse_extended_colour(seq, &i, cterm, 0);
-									break;
-							}
-						}
-						TEXTATTR(cterm->attr);
-						setcolour(cterm->fg_color, cterm->bg_color);
-						break;
-					case 'n':	/* Device Status Report */
-						seq_default(seq, 0, 0);
-						switch(seq->param_int[0]) {
-							case 5:
-								if(retbuf!=NULL) {
-									strcpy(tmp,"\x1b[0n");
-									if(strlen(retbuf)+strlen(tmp) < retsize)
-										strcat(retbuf,tmp);
-								}
-								break;
-							case 6:
-								if(retbuf!=NULL) {
-									CURR_XY(&col, &row);
-									sprintf(tmp,"\x1b[%d;%dR",row,col);
-									if(strlen(retbuf)+strlen(tmp) < retsize)
-										strcat(retbuf,tmp);
-								}
-								break;
-							case 255:
-								if (retbuf != NULL) {
-									sprintf(tmp, "\x1b[%d;%dR", CURR_MAXY,CURR_MAXX);
-									if (strlen(retbuf) + strlen(tmp) < retsize)
+										sprintf(tmp, "\x1b[?2;0;%u;%uS", vparams[vmode].charwidth*cterm->width, vparams[vmode].charheight*cterm->height);
+									if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
 										strcat(retbuf, tmp);
 								}
+							}
+							break;
+						case 'c':
+							/* SyncTERM Device Attributes */
+							if (seq->param_str[0] == '<' && parse_parameters(seq)) {
+								seq_default(seq, 0, 0);
+								tmp[0] = 0;
+								for (i=0; i<seq->param_count; i++) {
+									switch (seq->param_int[i]) {
+										case 0:		/* Advanced features */
+											strcpy(tmp, "\x1b[<0");
+											if (cio_api.options & CONIO_OPT_LOADABLE_FONTS)
+												strcat(tmp, ";1");
+											if (cio_api.options & CONIO_OPT_BRIGHT_BACKGROUND)
+												strcat(tmp, ";2");
+											if (cio_api.options & CONIO_OPT_PALETTE_SETTING)
+												strcat(tmp, ";3");
+											if (cio_api.options & CONIO_OPT_SET_PIXEL)
+												strcat(tmp, ";4");
+											if (cio_api.options & CONIO_OPT_FONT_SELECT)
+												strcat(tmp, ";5");
+											if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)
+												strcat(tmp, ";6");
+											if (cio_api.mouse)
+												strcat(tmp, ";7");
+											strcat(tmp, "n");
+									}
+								}
+								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+									strcat(retbuf, tmp);
+							}
+							break;
+						case 'h':
+							if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+								attr2palette(cterm->attr, &oldfg, &oldbg);
+								updfg = (oldfg == cterm->fg_color);
+								updbg = (oldbg == cterm->bg_color);
+								for (i=0; i<seq->param_count; i++) {
+									switch(seq->param_int[i]) {
+										case 6:
+											cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
+											GOTOXY(1,cterm->top_margin);
+											break;
+										case 7:
+											cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
+											break;
+										case 25:
+											cterm->cursor=_NORMALCURSOR;
+											SETCURSORTYPE(cterm->cursor);
+											break;
+										case 31:
+											flags = GETVIDEOFLAGS();
+											flags |= CIOLIB_VIDEO_ALTCHARS;
+											SETVIDEOFLAGS(flags);
+											break;
+										case 32:
+											flags = GETVIDEOFLAGS();
+											flags |= CIOLIB_VIDEO_NOBRIGHT;
+											SETVIDEOFLAGS(flags);
+											break;
+										case 33:
+											flags = GETVIDEOFLAGS();
+											flags |= CIOLIB_VIDEO_BGBRIGHT;
+											SETVIDEOFLAGS(flags);
+											break;
+										case 34:
+											flags = GETVIDEOFLAGS();
+											flags |= CIOLIB_VIDEO_BLINKALTCHARS;
+											SETVIDEOFLAGS(flags);
+											break;
+										case 35:
+											flags = GETVIDEOFLAGS();
+											flags |= CIOLIB_VIDEO_NOBLINK;
+											SETVIDEOFLAGS(flags);
+											break;
+										case 69:
+											cterm->extattr |= CTERM_EXTATTR_DECLRMM;
+											break;
+										case 80:
+											cterm->extattr |= CTERM_EXTATTR_SXSCROLL;
+											break;
+										case 9:
+										case 1000:
+										case 1001:
+										case 1002:
+										case 1003:
+										case 1004:
+										case 1005:
+										case 1006:
+										case 1007:
+										case 1015:
+											if (cterm->mouse_state_change)
+												cterm->mouse_state_change(seq->param_int[i], 1, cterm->mouse_state_change_cbdata);
+											break;
+									}
+								}
+								if (updfg || updbg) {
+									attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
+									if (updfg)
+										FREE_AND_NULL(cterm->fg_tc_str);
+									if (updbg)
+										FREE_AND_NULL(cterm->bg_tc_str);
+								}
+							}
+							else if(!strcmp(seq->param_str,"=255"))
+								cterm->doorway_mode=1;
+							break;
+						case 'l':
+							if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+								attr2palette(cterm->attr, &oldfg, &oldbg);
+								updfg = (oldfg == cterm->fg_color);
+								updbg = (oldbg == cterm->bg_color);
+								for (i=0; i<seq->param_count; i++) {
+									switch(seq->param_int[i]) {
+										case 6:
+											cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
+											GOTOXY(1,1);
+											break;
+										case 7:
+											cterm->extattr &= ~(CTERM_EXTATTR_AUTOWRAP);
+											break;
+										case 25:
+											cterm->cursor=_NOCURSOR;
+											SETCURSORTYPE(cterm->cursor);
+											break;
+										case 31:
+											flags = GETVIDEOFLAGS();
+											flags &= ~CIOLIB_VIDEO_ALTCHARS;
+											SETVIDEOFLAGS(flags);
+											break;
+										case 32:
+											flags = GETVIDEOFLAGS();
+											flags &= ~CIOLIB_VIDEO_NOBRIGHT;
+											SETVIDEOFLAGS(flags);
+											break;
+										case 33:
+											flags = GETVIDEOFLAGS();
+											flags &= ~CIOLIB_VIDEO_BGBRIGHT;
+											SETVIDEOFLAGS(flags);
+											break;
+										case 34:
+											flags = GETVIDEOFLAGS();
+											flags &= ~CIOLIB_VIDEO_BLINKALTCHARS;
+											SETVIDEOFLAGS(flags);
+											break;
+										case 35:
+											flags = GETVIDEOFLAGS();
+											flags &= ~CIOLIB_VIDEO_NOBLINK;
+											SETVIDEOFLAGS(flags);
+											break;
+										case 69:
+											cterm->extattr &= ~(CTERM_EXTATTR_DECLRMM);
+											break;
+										case 80:
+											cterm->extattr &= ~CTERM_EXTATTR_SXSCROLL;
+											break;
+										case 9:
+										case 1000:
+										case 1001:
+										case 1002:
+										case 1003:
+										case 1004:
+										case 1005:
+										case 1006:
+										case 1007:
+										case 1015:
+											if (cterm->mouse_state_change)
+												cterm->mouse_state_change(seq->param_int[i], 0, cterm->mouse_state_change_cbdata);
+											break;
+									}
+								}
+								if (updfg || updbg) {
+									attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
+									if (updfg)
+										FREE_AND_NULL(cterm->fg_tc_str);
+									if (updbg)
+										FREE_AND_NULL(cterm->bg_tc_str);
+								}
+							}
+							else if(!strcmp(seq->param_str,"=255"))
+								cterm->doorway_mode=0;
+							break;
+						case 'n':	/* Query (extended) state information */
+							if (seq->param_str[0] == '=' && parse_parameters(seq)) {
+								int vidflags;
+
+								if(retbuf == NULL)
+									break;
+								tmp[0] = 0;
+								if (seq->param_count > 1)
+									break;
+								seq_default(seq, 0, 1);
+								switch(seq->param_int[0]) {
+									case 1:
+										sprintf(tmp, "\x1b[=1;%u;%u;%u;%u;%u;%un"
+											,CONIO_FIRST_FREE_FONT
+											,(uint8_t)cterm->setfont_result
+											,(uint8_t)cterm->altfont[0]
+											,(uint8_t)cterm->altfont[1]
+											,(uint8_t)cterm->altfont[2]
+											,(uint8_t)cterm->altfont[3]
+										);
+										break;
+									case 2:
+										vidflags = GETVIDEOFLAGS();
+										strcpy(tmp, "\x1b[=2");
+										if(cterm->extattr & CTERM_EXTATTR_ORIGINMODE)
+											strcat(tmp, ";6");
+										if (cterm->extattr & CTERM_EXTATTR_AUTOWRAP)
+											strcat(tmp, ";7");
+										if (cterm->mouse_state_query(9, cterm->mouse_state_query_cbdata))
+											strcat(tmp, ";9");
+										if(cterm->cursor == _NORMALCURSOR)
+											strcat(tmp, ";25");
+										if(vidflags & CIOLIB_VIDEO_ALTCHARS)
+											strcat(tmp, ";31");
+										if(vidflags & CIOLIB_VIDEO_NOBRIGHT)
+											strcat(tmp, ";32");
+										if(vidflags & CIOLIB_VIDEO_BGBRIGHT)
+											strcat(tmp, ";33");
+										if(vidflags & CIOLIB_VIDEO_BLINKALTCHARS)
+											strcat(tmp, ";34");
+										if(vidflags & CIOLIB_VIDEO_NOBLINK)
+											strcat(tmp, ";35");
+										if (cterm->extattr & CTERM_EXTATTR_DECLRMM)
+											strcat(tmp, ";69");
+										if (cterm->extattr & CTERM_EXTATTR_SXSCROLL)
+											strcat(tmp, ";80");
+										if (cterm->mouse_state_query(1000, cterm->mouse_state_query_cbdata))
+											strcat(tmp, ";1000");
+										if (cterm->mouse_state_query(1001, cterm->mouse_state_query_cbdata))
+											strcat(tmp, ";1001");
+										if (cterm->mouse_state_query(1002, cterm->mouse_state_query_cbdata))
+											strcat(tmp, ";1002");
+										if (cterm->mouse_state_query(1003, cterm->mouse_state_query_cbdata))
+											strcat(tmp, ";1003");
+										if (cterm->mouse_state_query(1004, cterm->mouse_state_query_cbdata))
+											strcat(tmp, ";1004");
+										if (cterm->mouse_state_query(1005, cterm->mouse_state_query_cbdata))
+											strcat(tmp, ";1005");
+										if (cterm->mouse_state_query(1006, cterm->mouse_state_query_cbdata))
+											strcat(tmp, ";1006");
+										if (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata))
+											strcat(tmp, ";1007");
+										if (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata))
+											strcat(tmp, ";1015");
+										if (strlen(tmp) == 4) {	// Nothing set
+											strcat(tmp, ";");
+										}
+										strcat(tmp, "n");
+										break;
+									case 3:	/* Query font char dimensions */
+									{
+										struct text_info ti;
+										int vmode;
+
+										GETTEXTINFO(&ti);
+										vmode = find_vmode(ti.currmode);
+										if (vmode != -1)
+											sprintf(tmp, "\x1b[=3;%u;%un", vparams[vmode].charheight, vparams[vmode].charwidth);
+										break;
+									}
+								}
+								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+									strcat(retbuf, tmp);
+							}
+							break;
+						case 's':
+							if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+								GETTEXTINFO(&ti);
+								flags = GETVIDEOFLAGS();
+								if(seq->param_count == 0) {
+									/* All the save stuff... */
+									cterm->saved_mode_mask |= (CTERM_SAVEMODE_AUTOWRAP|CTERM_SAVEMODE_CURSOR|CTERM_SAVEMODE_ALTCHARS|
+									    CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN|CTERM_SAVEMODE_SIXEL_SCROLL|
+									    CTERM_SAVEMODE_MOUSE_X10|CTERM_SAVEMODE_MOUSE_NORMAL|CTERM_SAVEMODE_MOUSE_HIGHLIGHT|
+									    CTERM_SAVEMODE_MOUSE_BUTTONTRACK|CTERM_SAVEMODE_MOUSE_ANY|CTERM_SAVEMODE_MOUSE_FOCUS|
+									    CTERM_SAVEMODE_MOUSE_UTF8|CTERM_SAVEMODE_MOUSE_SGR|CTERM_SAVEMODE_MOUSE_ALTSCROLL|CTERM_SAVEMODE_MOUSE_URXVT|CTERM_SAVEMODE_DECLRMM);
+									cterm->saved_mode &= ~(cterm->saved_mode_mask);
+									cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_AUTOWRAP)?CTERM_SAVEMODE_AUTOWRAP:0;
+									cterm->saved_mode |= (cterm->cursor==_NORMALCURSOR)?CTERM_SAVEMODE_CURSOR:0;
+									cterm->saved_mode |= (flags & CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
+									cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
+									cterm->saved_mode |= (flags & CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
+									cterm->saved_mode |= (flags & CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
+									cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
+									cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_ORIGINMODE)?CTERM_SAVEMODE_ORIGIN:0;
+									cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_SXSCROLL)?CTERM_SAVEMODE_SIXEL_SCROLL:0;
+									cterm->saved_mode |= (cterm->mouse_state_query(9, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_X10 : 0);
+									cterm->saved_mode |= (cterm->mouse_state_query(1000, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_NORMAL : 0);
+									cterm->saved_mode |= (cterm->mouse_state_query(1001, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_HIGHLIGHT : 0);
+									cterm->saved_mode |= (cterm->mouse_state_query(1002, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_BUTTONTRACK : 0);
+									cterm->saved_mode |= (cterm->mouse_state_query(1003, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ANY : 0);
+									cterm->saved_mode |= (cterm->mouse_state_query(1004, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_FOCUS : 0);
+									cterm->saved_mode |= (cterm->mouse_state_query(1005, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_UTF8 : 0);
+									cterm->saved_mode |= (cterm->mouse_state_query(1006, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_SGR : 0);
+									cterm->saved_mode |= (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ALTSCROLL : 0);
+									cterm->saved_mode |= (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_URXVT : 0);
+									cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_DECLRMM) ? CTERM_SAVEMODE_DECLRMM : 0;
+									break;
+								}
+								else {
+									for (i=0; i<seq->param_count; i++) {
+										switch(seq->param_int[i]) {
+											case 6:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_ORIGIN;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_ORIGIN);
+												cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_ORIGINMODE)?CTERM_SAVEMODE_ORIGIN:0;
+												break;
+											case 7:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_AUTOWRAP;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_AUTOWRAP);
+												cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_AUTOWRAP)?CTERM_SAVEMODE_AUTOWRAP:0;
+												break;
+											case 9:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_X10;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_X10);
+												cterm->saved_mode |= (cterm->mouse_state_query(9, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_X10 : 0);
+												break;
+											case 25:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_CURSOR;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_CURSOR);
+												cterm->saved_mode |= (cterm->cursor==_NORMALCURSOR)?CTERM_SAVEMODE_CURSOR:0;
+												break;
+											case 31:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_ALTCHARS;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_ALTCHARS);
+												cterm->saved_mode |= (flags & CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
+												break;
+											case 32:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBRIGHT;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBRIGHT);
+												cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
+												break;
+											case 33:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_BGBRIGHT;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_BGBRIGHT);
+												cterm->saved_mode |= (flags & CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
+												break;
+											case 34:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_BLINKALTCHARS;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_BLINKALTCHARS);
+												cterm->saved_mode |= (flags & CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
+												break;
+											case 35:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBLINK;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBLINK);
+												cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
+												break;
+											case 69:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_DECLRMM;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_DECLRMM);
+												cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_DECLRMM) ? CTERM_SAVEMODE_DECLRMM : 0;
+												break;
+											case 80:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_SIXEL_SCROLL;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_SIXEL_SCROLL);
+												cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_SXSCROLL)?CTERM_SAVEMODE_SIXEL_SCROLL:0;
+												break;
+											case 1000:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_NORMAL;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_NORMAL);
+												cterm->saved_mode |= (cterm->mouse_state_query(1000, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_NORMAL : 0);
+												break;
+											case 1001:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_HIGHLIGHT;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_HIGHLIGHT);
+												cterm->saved_mode |= (cterm->mouse_state_query(1001, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_HIGHLIGHT : 0);
+												break;
+											case 1002:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_BUTTONTRACK;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_BUTTONTRACK);
+												cterm->saved_mode |= (cterm->mouse_state_query(1002, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_BUTTONTRACK : 0);
+												break;
+											case 1003:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_ANY;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_ANY);
+												cterm->saved_mode |= (cterm->mouse_state_query(1003, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ANY : 0);
+												break;
+											case 1004:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_FOCUS;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_FOCUS);
+												cterm->saved_mode |= (cterm->mouse_state_query(1004, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_FOCUS : 0);
+												break;
+											case 1005:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_UTF8;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_UTF8);
+												cterm->saved_mode |= (cterm->mouse_state_query(1005, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_UTF8 : 0);
+												break;
+											case 1006:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_SGR;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_SGR);
+												cterm->saved_mode |= (cterm->mouse_state_query(1006, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_SGR : 0);
+												break;
+											case 1007:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_ALTSCROLL;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_ALTSCROLL);
+												cterm->saved_mode |= (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ALTSCROLL : 0);
+												break;
+											case 1015:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_URXVT;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_MOUSE_URXVT);
+												cterm->saved_mode |= (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_URXVT : 0);
+												break;
+										}
+									}
+								}
+							}
+							break;
+						case 'u':
+							if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+								GETTEXTINFO(&ti);
+								flags = GETVIDEOFLAGS();
+								attr2palette(cterm->attr, &oldfg, &oldbg);
+								updfg = (oldfg == cterm->fg_color);
+								updbg = (oldbg == cterm->bg_color);
+								if(seq->param_count == 0) {
+									/* All the save stuff... */
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_ORIGIN) {
+										if (cterm->saved_mode & CTERM_SAVEMODE_ORIGIN)
+											cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
+										else
+											cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
+									}
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_AUTOWRAP) {
+										if (cterm->saved_mode & CTERM_SAVEMODE_AUTOWRAP)
+											cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
+										else
+											cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
+									}
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_SIXEL_SCROLL) {
+										if (cterm->saved_mode & CTERM_SAVEMODE_SIXEL_SCROLL)
+											cterm->extattr |= CTERM_EXTATTR_SXSCROLL;
+										else
+											cterm->extattr &= ~CTERM_EXTATTR_SXSCROLL;
+									}
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR) {
+										cterm->cursor = (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) ? _NORMALCURSOR : _NOCURSOR;
+										SETCURSORTYPE(cterm->cursor);
+									}
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_ALTCHARS) {
+										if(cterm->saved_mode & CTERM_SAVEMODE_ALTCHARS)
+											flags |= CIOLIB_VIDEO_ALTCHARS;
+										else
+											flags &= ~CIOLIB_VIDEO_ALTCHARS;
+									}
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_BLINKALTCHARS) {
+										if(cterm->saved_mode & CTERM_SAVEMODE_BLINKALTCHARS)
+											flags |= CIOLIB_VIDEO_BLINKALTCHARS;
+										else
+											flags &= ~CIOLIB_VIDEO_BLINKALTCHARS;
+									}
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBRIGHT) {
+										if(cterm->saved_mode & CTERM_SAVEMODE_NOBRIGHT)
+											flags |= CIOLIB_VIDEO_NOBRIGHT;
+										else
+											flags &= ~CIOLIB_VIDEO_NOBRIGHT;
+									}
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBLINK) {
+										if(cterm->saved_mode & CTERM_SAVEMODE_NOBLINK)
+											flags |= CIOLIB_VIDEO_NOBLINK;
+										else
+											flags &= ~CIOLIB_VIDEO_NOBLINK;
+									}
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_BGBRIGHT) {
+										if(cterm->saved_mode & CTERM_SAVEMODE_BGBRIGHT)
+											flags |= CIOLIB_VIDEO_BGBRIGHT;
+										else
+											flags &= ~CIOLIB_VIDEO_BGBRIGHT;
+									}
+									SETVIDEOFLAGS(flags);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_X10)
+										cterm->mouse_state_change(9, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_X10, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_NORMAL)
+										cterm->mouse_state_change(1000, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_NORMAL, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_HIGHLIGHT)
+										cterm->mouse_state_change(1001, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_HIGHLIGHT, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_BUTTONTRACK)
+										cterm->mouse_state_change(1002, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_BUTTONTRACK, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ANY)
+										cterm->mouse_state_change(1003, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ANY, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_FOCUS)
+										cterm->mouse_state_change(1004, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_FOCUS, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_UTF8)
+										cterm->mouse_state_change(1005, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_UTF8, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_SGR)
+										cterm->mouse_state_change(1006, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_SGR, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ALTSCROLL)
+										cterm->mouse_state_change(1007, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ALTSCROLL, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_URXVT)
+										cterm->mouse_state_change(1015, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_URXVT, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_DECLRMM) {
+										if (cterm->saved_mode & CTERM_SAVEMODE_DECLRMM)
+											cterm->extattr |= CTERM_EXTATTR_DECLRMM;
+										else
+											cterm->extattr &= ~CTERM_EXTATTR_DECLRMM;
+									}
+									break;
+								}
+								else {
+									for (i=0; i<seq->param_count; i++) {
+										switch(seq->param_int[i]) {
+											case 6:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_ORIGIN) {
+													if (cterm->saved_mode & CTERM_SAVEMODE_ORIGIN)
+														cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
+													else
+														cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
+												}
+												break;
+											case 7:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_AUTOWRAP) {
+													if (cterm->saved_mode & CTERM_SAVEMODE_AUTOWRAP)
+														cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
+													else
+														cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
+												}
+												break;
+											case 9:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_X10)
+													cterm->mouse_state_change(9, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_X10, cterm->mouse_state_change_cbdata);
+												break;
+											case 25:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR) {
+													cterm->cursor = (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) ? _NORMALCURSOR : _NOCURSOR;
+													SETCURSORTYPE(cterm->cursor);
+												}
+												break;
+											case 31:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_ALTCHARS) {
+													if(cterm->saved_mode & CTERM_SAVEMODE_ALTCHARS)
+														flags |= CIOLIB_VIDEO_ALTCHARS;
+													else
+														flags &= ~CIOLIB_VIDEO_ALTCHARS;
+													SETVIDEOFLAGS(flags);
+												}
+												break;
+											case 32:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBRIGHT) {
+													if(cterm->saved_mode & CTERM_SAVEMODE_NOBRIGHT)
+														flags |= CIOLIB_VIDEO_NOBRIGHT;
+													else
+														flags &= ~CIOLIB_VIDEO_NOBRIGHT;
+													SETVIDEOFLAGS(flags);
+												}
+												break;
+											case 33:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_BGBRIGHT) {
+													if(cterm->saved_mode & CTERM_SAVEMODE_BGBRIGHT)
+														flags |= CIOLIB_VIDEO_BGBRIGHT;
+													else
+														flags &= ~CIOLIB_VIDEO_BGBRIGHT;
+													SETVIDEOFLAGS(flags);
+												}
+												break;
+											case 34:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_BLINKALTCHARS) {
+													if(cterm->saved_mode & CTERM_SAVEMODE_BLINKALTCHARS)
+														flags |= CIOLIB_VIDEO_BLINKALTCHARS;
+													else
+														flags &= ~CIOLIB_VIDEO_BLINKALTCHARS;
+													SETVIDEOFLAGS(flags);
+												}
+												break;
+											case 35:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBLINK) {
+													if(cterm->saved_mode & CTERM_SAVEMODE_NOBLINK)
+														flags |= CIOLIB_VIDEO_NOBLINK;
+													else
+														flags &= ~CIOLIB_VIDEO_NOBLINK;
+													SETVIDEOFLAGS(flags);
+												}
+												break;
+											case 69:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_DECLRMM) {
+													if (cterm->saved_mode & CTERM_SAVEMODE_DECLRMM)
+														cterm->extattr |= CTERM_EXTATTR_DECLRMM;
+													else
+														cterm->extattr &= ~CTERM_EXTATTR_DECLRMM;
+												}
+												break;
+											case 80:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_SIXEL_SCROLL) {
+													if (cterm->saved_mode & CTERM_SAVEMODE_SIXEL_SCROLL)
+														cterm->extattr |= CTERM_EXTATTR_SXSCROLL;
+													else
+														cterm->extattr &= ~CTERM_EXTATTR_SXSCROLL;
+												}
+												break;
+											case 1000:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_NORMAL)
+													cterm->mouse_state_change(1000, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_NORMAL, cterm->mouse_state_change_cbdata);
+												break;
+											case 1001:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_HIGHLIGHT)
+													cterm->mouse_state_change(1001, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_HIGHLIGHT, cterm->mouse_state_change_cbdata);
+												break;
+											case 1002:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_BUTTONTRACK)
+													cterm->mouse_state_change(1002, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_BUTTONTRACK, cterm->mouse_state_change_cbdata);
+												break;
+											case 1003:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ANY)
+													cterm->mouse_state_change(1003, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ANY, cterm->mouse_state_change_cbdata);
+												break;
+											case 1004:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_FOCUS)
+													cterm->mouse_state_change(1004, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_FOCUS, cterm->mouse_state_change_cbdata);
+												break;
+											case 1005:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_UTF8)
+													cterm->mouse_state_change(1005, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_UTF8, cterm->mouse_state_change_cbdata);
+												break;
+											case 1006:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_SGR)
+													cterm->mouse_state_change(1006, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_SGR, cterm->mouse_state_change_cbdata);
+												break;
+											case 1007:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_ALTSCROLL)
+													cterm->mouse_state_change(1007, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ALTSCROLL, cterm->mouse_state_change_cbdata);
+												break;
+											case 1015:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_URXVT)
+													cterm->mouse_state_change(1015, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_URXVT, cterm->mouse_state_change_cbdata);
+												break;
+										}
+									}
+								}
+								if (updfg || updbg) {
+									attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
+									if (updfg)
+										FREE_AND_NULL(cterm->fg_tc_str);
+									if (updbg)
+										FREE_AND_NULL(cterm->bg_tc_str);
+								}
+							}
+							break;
+						case '{':
+							if(seq->param_str[0] == '=' && parse_parameters(seq)) {	/* Font loading */
+								seq_default(seq, 0, 255);
+								seq_default(seq, 1, 0);
+								if(seq->param_int[0]>255)
+									break;
+								cterm->font_read=0;
+								cterm->font_slot=seq->param_int[0];
+								switch(seq->param_int[1]) {
+									case 0:
+										cterm->font_size=4096;
+										break;
+									case 1:
+										cterm->font_size=3584;
+										break;
+									case 2:
+										cterm->font_size=2048;
+										break;
+									default:
+										cterm->font_size=0;
+										break;
+								}
+							}
+							break;
+					}
+					break;
+				}
+				else if (seq->ctrl_func[1]) {	// Control Function with Intermediate Character
+					// Shift left
+					if (strcmp(seq->ctrl_func, " @") == 0) {
+						row = TERM_MINY;
+						col = TERM_MINX;
+						max_row = TERM_MAXY;
+						max_col = TERM_MAXX;
+
+						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
+						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
+						seq_default(seq, 0, 1);
+						i = seq->param_int[0];
+						if(i > TERM_MAXX)
+							i = TERM_MAXX;
+						MOVETEXT(col + i, row, max_col, max_row, col, row);
+						j = i * TERM_MAXY;
+						vc = malloc(j * sizeof(*vc));
+						if (vc != NULL) {
+							for(k=0; k < j; k++) {
+								vc[k].ch=' ';
+								vc[k].legacy_attr=cterm->attr;
+								vc[k].fg=cterm->fg_color;
+								vc[k].bg=cterm->bg_color;
+								vc[k].font = ciolib_attrfont(cterm->attr);
+							}
+							vmem_puttext(max_col - i, row, max_col, max_row, vc);
+							free(vc);
+						}
+					}
+					// Shift right
+					else if (strcmp(seq->ctrl_func, " A") == 0) {
+						row = TERM_MINY;
+						col = TERM_MINX;
+						max_row = TERM_MAXY;
+						max_col = TERM_MAXX;
+
+						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
+						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
+						seq_default(seq, 0, 1);
+						i = seq->param_int[0];
+						if(i > cterm->width)
+							i = cterm->width;
+						MOVETEXT(col, row, max_col - i, max_row, col + i, row);
+						j = i * TERM_MAXY;
+						vc = malloc(j * sizeof(*vc));
+						if (vc != NULL) {
+							for(k=0; k < j; k++) {
+								vc[k].ch=' ';
+								vc[k].legacy_attr=cterm->attr;
+								vc[k].fg=cterm->fg_color;
+								vc[k].bg=cterm->bg_color;
+								vc[k].font = ciolib_attrfont(cterm->attr);
+							}
+							vmem_puttext(col, row, col + i - 1, max_row, vc);
+							free(vc);
+						}
+					}
+					// Font Select
+					else if (strcmp(seq->ctrl_func, " D") == 0) {
+						seq_default(seq, 0, 0);
+						seq_default(seq, 1, 0);
+						switch(seq->param_int[0]) {
+							case 0:	/* Four fonts are currently supported */
+							case 1:
+							case 2:
+							case 3:
+								/* For compatibility with ciolib.c v1.136-v1.164 */
+								/* Feature introduced in CTerm v1.160, return value modified later */
+								if (SETFONT(seq->param_int[1],FALSE,seq->param_int[0]+1) == 0)
+									cterm->setfont_result = 1;
+								else
+									cterm->setfont_result = 0;
+								if(cterm->setfont_result == 0)
+									cterm->altfont[seq->param_int[0]] = seq->param_int[1];
 								break;
 						}
-						break;
-					case 'o': /* ToDo?  Define Area Qualification */
-						break;
+					}
+					// Font Select
+					else if (strcmp(seq->ctrl_func, " c") == 0) {
+						if (seq->param_count > 0) {
+							delete_tabstop(cterm, seq->param_int[0]);
+						}
+					}
 					/* 
 					 * END OF STANDARD CONTROL FUNCTIONS
 					 * AFTER THIS IS ALL PRIVATE EXTENSIONS
 					 */
-					case 'p': /* ToDo?  ANSI keyboard reassignment, pointer mode */
-						break;
-					case 'q': /* ToDo?  VT100 keyboard lights, cursor style, protection */
-						break;
-					case 'r': /* Scrolling reigon */
-						seq_default(seq, 0, 1);
-						seq_default(seq, 1, cterm->height);
-						row = seq->param_int[0];
-						max_row = seq->param_int[1];
-						if(row >= ABS_MINY && max_row > row && max_row <= ABS_MAXY) {
-							cterm->top_margin = row;
-							cterm->bottom_margin = max_row;
-							col = TERM_MINX;
-							row = TERM_MINY;
+					// Tab report
+					else if (strcmp(seq->ctrl_func, "$w") == 0) {
+						seq_default(seq, 0, 0);
+						if (seq->param_int[0] == 2) {
+							strcpy(tmp, "\x1bP2$u");
+							p2 = strchr(tmp, 0);
+							for (i = 0; i < cterm->tab_count && cterm->tabs[i] <= cterm->width; i++) {
+								if (i != 0)
+									*(p2++) = '/';
+								p2 += sprintf(p2, "%d", cterm->tabs[i]);
+							}
+							strcat(p2, "\x1b\\");
+							if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+								strcat(retbuf, tmp);
+						}
+					}
+					// Communication speed
+					else if (strcmp(seq->ctrl_func, "*r") == 0) {
+						/*
+						 * Ps1 			Comm Line 		Ps2 		Communication Speed
+						 * none, 0, 1 	Host Transmit 	none, 0 	Use default speed.
+						 * 2		 	Host Receive 	1 			300
+						 * 3 			Printer 		2 			600
+						 * 4		 	Modem Hi 		3 			1200
+						 * 5		 	Modem Lo 		4 			2400
+						 * 								5 			4800
+						 * 								6 			9600
+						 * 								7 			19200
+						 * 								8 			38400
+						 * 								9 			57600
+						 * 								10 			76800
+						 * 								11 			115200
+						 */
+						int newspeed=-1;
+
+						seq_default(seq, 0, 0);
+						seq_default(seq, 1, 0);
+
+						if (seq->param_int[0] < 2) {
+							switch(seq->param_int[1]) {
+								case 0:
+									newspeed=0;
+									break;
+								case 1:
+									newspeed=300;
+									break;
+								case 2:
+									newspeed=600;
+									break;
+								case 3:
+									newspeed=1200;
+									break;
+								case 4:
+									newspeed=2400;
+									break;
+								case 5:
+									newspeed=4800;
+									break;
+								case 6:
+									newspeed=9600;
+									break;
+								case 7:
+									newspeed=19200;
+									break;
+								case 8:
+									newspeed=38400;
+									break;
+								case 9:
+									newspeed=57600;
+									break;
+								case 10:
+									newspeed=76800;
+									break;
+								case 11:
+									newspeed=115200;
+									break;
+							}
+						}
+						if(newspeed >= 0)
+							*speed = newspeed;
+					}
+				}
+				else {
+					switch(seq->final_byte) {
+						case '@':	/* Insert Char */
+							TERM_XY(&i, &j);
+							col = i;
+							row = j;
 							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
+							max_col = TERM_MAXX;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, NULL);
+							seq_default(seq, 0, 1);
+							if(seq->param_int[0] < 1)
+								seq->param_int[0] = 1;
+							if(seq->param_int[0] > cterm->width - j)
+								seq->param_int[0] = cterm->width - j;
+							MOVETEXT(col, row, max_col - seq->param_int[0], row, col + seq->param_int[0], row);
+							for(l=0; l < seq->param_int[0]; l++)
+								PUTCH(' ');
+							GOTOXY(i,j);
+							break;
+						case 'A':	/* Cursor Up */
+						case 'F':	/* Cursor preceding line */
+						case 'k':	/* Line Position Backward */
+							seq_default(seq, 0, 1);
+							TERM_XY(&col, &row);
+							row -= seq->param_int[0];
+							if(row < TERM_MINY)
+								row = TERM_MINY;
+							GOTOXY(col, row);
+							break;
+						case 'B':	/* Cursor Down */
+						case 'E':	/* Cursor next line */
+						case 'e':	/* Line Position Forward */
+							seq_default(seq, 0, 1);
+							TERM_XY(&col, &row);
+							row += seq->param_int[0];
+							if(row > TERM_MAXY)
+								row = TERM_MAXY;
+							GOTOXY(col, row);
+							break;
+						case 'a':	/* Character Position Forward */
+						case 'C':	/* Cursor Right */
+							seq_default(seq, 0, 1);
+							TERM_XY(&col, &row);
+							col += seq->param_int[0];
+							if(col > TERM_MAXX)
+								i = TERM_MAXX;
+							GOTOXY(col, row);
+							break;
+						case 'j':	/* Character Position Backward */
+						case 'D':	/* Cursor Left */
+							seq_default(seq, 0, 1);
+							TERM_XY(&col, &row);
+							col -= seq->param_int[0];
+							if(col < TERM_MINX)
+								col = TERM_MINX;
+							GOTOXY(col, row);
+							break;
+							seq_default(seq, 0, 1);
+							TERM_XY(&col, &row);
+							row += seq->param_int[0];
+							if(i>cterm->bottom_margin)
+								i=cterm->bottom_margin;
+							GOTOXY(1,i);
+							break;
+						// for case 'E' see case 'B'
+						// for case 'F' see case 'A'
+						case '`':
+						case 'G':	/* Cursor Position Absolute */
+							seq_default(seq, 0, 1);
+							TERM_XY(NULL, &row);
+							col = seq->param_int[0];
+							coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_TERM, &col, NULL);
+							if(col >= TERM_MINX && col <= TERM_MAXX) {
+								GOTOXY(col, row);
+							}
+							break;
+						case 'f':	/* Character And Line Position */
+						case 'H':	/* Cursor Position */
+							seq_default(seq, 0, 1);
+							seq_default(seq, 1, 1);
+							row=seq->param_int[0];
+							col=seq->param_int[1];
+							coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_TERM, &col, &row);
+							if (row < TERM_MINY)
+								row = TERM_MINY;
+							if(col < TERM_MINX)
+								col = TERM_MINX;
+							if(row > TERM_MAXY)
+								row = TERM_MAXY;
+							if(col > TERM_MAXX)
+								col = TERM_MAXX;
+							GOTOXY(col,row);
+							break;
+						case 'I':	/* TODO? Cursor Forward Tabulation */
+							break;
+						case 'J':	/* Erase In Page */
+							seq_default(seq, 0, 0);
+							switch(seq->param_int[0]) {
+								case 0:
+									CLREOL();
+									TERM_XY(&col, &row);
+									for (i = row + 1; i <= TERM_MAXY; i++) {
+										GOTOXY(TERM_MINY, i);
+										CLREOL();
+									}
+									GOTOXY(col, row);
+									break;
+								case 1:
+									clear2bol(cterm);
+									TERM_XY(&col, &row);
+									for (i = row - 1; i >= TERM_MINY; i--) {
+										GOTOXY(TERM_MINX, i);
+										CLREOL();
+									}
+									GOTOXY(col,row);
+									break;
+								case 2:
+									cterm_clearscreen(cterm, (char)cterm->attr);
+									GOTOXY(TERM_MINX, TERM_MINY);
+									break;
+							}
+							break;
+						case 'K':	/* Erase In Line */
+							seq_default(seq, 0, 0);
+							switch(seq->param_int[0]) {
+								case 0:
+									CLREOL();
+									break;
+								case 1:
+									clear2bol(cterm);
+									break;
+								case 2:
+									TERM_XY(&col, &row);
+									GOTOXY(TERM_MINX, row);
+									CLREOL();
+									GOTOXY(col, row);
+									break;
+							}
+							break;
+						case 'L':		/* Insert line */
+							TERM_XY(&col, &row);
+							if(row < TERM_MINY || row > TERM_MAXY)
+								break;
+							seq_default(seq, 0, 1);
+							i = seq->param_int[0];
+							if(i > TERM_MAXY - row)
+								i = TERM_MAXY - row;
+							col2 = TERM_MINX;
+							row2 = row;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col2, &row2);
 							max_col = TERM_MAXX;
 							max_row = TERM_MAXY;
 							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
-							WINDOW(col, row, max_col, max_row);
-						}
-						break;
-					case 's':
-						if (cterm->extattr & CTERM_EXTATTR_DECLRMM) {
-							seq_default(seq, 0, ABS_MINX);
-							seq_default(seq, 1, ABS_MAXX);
-							col = seq->param_int[0];
-							max_col = seq->param_int[1];
-							if(col >= ABS_MINX && max_col > col && max_col <= ABS_MAXX) {
-								cterm->left_margin = col;
-								cterm->right_margin = max_col;
+							if(i)
+								MOVETEXT(col2, row2, max_col, max_row - i, col2, row2 + i);
+							for (j = 0; j < i; j++) {
+								GOTOXY(TERM_MINX, row+j);
+								CLREOL();
+							}
+							GOTOXY(col, row);
+							break;
+						case 'M':	/* Delete Line (also ANSI music) */
+							if(cterm->music_enable==CTERM_MUSIC_ENABLED) {
+								cterm->music=1;
+							}
+							else {
+								TERM_XY(NULL, &row);
+								if(row >= TERM_MINY && row <= TERM_MAXY) {
+									seq_default(seq, 0, 1);
+									i = seq->param_int[0];
+									dellines(cterm, i);
+								}
+							}
+							break;
+						case 'N':	/* Erase In Field (also ANSI Music) */
+							/* BananANSI style... does NOT start with MF or MB */
+							/* This still conflicts (ANSI erase field) */
+							if(cterm->music_enable >= CTERM_MUSIC_BANSI)
+								cterm->music=2;
+							break;
+						case 'O':	/* TODO? Erase In Area */
+							break;
+						case 'P':	/* Delete char */
+							seq_default(seq, 0, 1);
+							TERM_XY(&col, &row);
+							i = seq->param_int[0];
+							if(i > TERM_MAXX - col + 1)
+								i = TERM_MAXX - col + 1;
+							max_col = TERM_MAXX;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, NULL);
+							col2 = col;
+							row2 = row;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col2, &row2);
+							MOVETEXT(col2 + i, row2, max_col, row2, col2, row2);
+							GOTOXY(TERM_MAXX - i,row);
+							CLREOL();
+							GOTOXY(col, row);
+							break;
+						case 'Q':	/* TODO? Select Editing Extent */
+							break;
+						case 'R':	/* TODO? Active Position Report */
+							break;
+						case 'S':	/* Scroll Up */
+							seq_default(seq, 0, 1);
+							for(j=0; j<seq->param_int[0]; j++)
+								scrollup(cterm);
+							break;
+						case 'T':	/* Scroll Down */
+							seq_default(seq, 0, 1);
+							for(j=0; j<seq->param_int[0]; j++)
+								scrolldown(cterm);
+							break;
+	#if 0
+						case 'U':	/* Next Page */
+							GETTEXTINFO(&ti);
+							cterm_clearscreen(cterm, ti.normattr);
+							if(cterm->extattr & CTERM_EXTATTR_ORIGINMODE)
+								GOTOXY(1,cterm->top_margin);
+							else
+								GOTOXY(1,1);
+							break;
+	#endif
+						case 'V':	/* TODO? Preceding Page */
+							break;
+						case 'W':	/* TODO? Cursor Tabulation Control */
+							break;
+						case 'X':	/* Erase Character */
+							seq_default(seq, 0, 1);
+							i=seq->param_int[0];
+							TERM_XY(&col, &row);
+							if(i > TERM_MAXX - col)
+								i=TERM_MAXX - col;
+							vc=malloc(i * sizeof(*vc));
+							for(k=0; k < i; k++) {
+								vc[k].ch=' ';
+								vc[k].legacy_attr=cterm->attr;
+								vc[k].fg=cterm->fg_color;
+								vc[k].bg=cterm->bg_color;
+								vc[k].font = ciolib_attrfont(cterm->attr);
+							}
+							col2 = col;
+							row2 = row;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col2, &row2);
+							max_col = TERM_MAXX;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, NULL);
+							vmem_puttext(col2, row2, col2 + i - 1, row2, vc);
+							free(vc);
+							break;
+						case 'Y':	/* Cursor Line Tabulation */
+							seq_default(seq, 0, 1);
+							if (seq->param_int[0] < 1)
+								break;
+							TERM_XY(&col, &row);
+							for(i = 0; i < cterm->tab_count; i++) {
+								if(cterm->tabs[i] > col)
+									break;
+							}
+							if (i == cterm->tab_count)
+								break;
+							for (k = 1; k < seq->param_int[0]; k++) {
+								if (cterm->tabs[k] <= TERM_MAXX)
+									col = cterm->tabs[k];
+								else
+									break;
+							}
+							GOTOXY(col,row);
+							break;
+						case 'Z':	/* Cursor Backward Tabulation */
+							seq_default(seq, 0, 1);
+							i=strtoul(cterm->escbuf+1,NULL,10);
+							TERM_XY(&col, &row);
+							for (j = cterm->tab_count - 1; j >= 0; j--) {
+								if (cterm->tabs[j] < col) {
+									k = j - seq->param_int[0] + 1;
+									if (k < 0)
+										k = 0;
+									GOTOXY(cterm->tabs[k], row);
+									break;
+								}
+							}
+							break;
+						case '[':	/* TODO? Start Reversed String */
+							break;
+						case '\\':	/* TODO? Parallel Texts */
+							break;
+						case ']':	/* TODO? Start Directed String */
+							break;
+						case '^':	/* TODO? Select Implicit Movement Direction */
+							break;
+						case '_':	/* NOT DEFIFINED IN STANDARD */
+							break;
+						// for case '`': see case 'G':
+						// for case 'a': see case 'C':
+						case 'b':	/* Repeat */
+							if (last != 0) {
+								seq_default(seq, 0, 1);
+								i = seq->param_int[0];
+								if (i > 0) {
+									p2 = malloc(i+1);
+									if (p2) {
+										memset(p2, last, i);
+										p2[i] = 0;
+										ctputs(cterm, p2);
+										free(p2);
+									}
+								}
+							}
+							break;
+						case 'c':	/* Device Attributes */
+							seq_default(seq, 0, 0);
+							if(!seq->param_int[0]) {
+								if(retbuf!=NULL) {
+									if(strlen(retbuf) + strlen(cterm->DA)  < retsize)
+										strcat(retbuf,cterm->DA);
+								}
+							}
+							break;
+						case 'd':	/* Line Position Absolute */
+							seq_default(seq, 0, 1);
+							TERM_XY(&col, NULL);
+							row = seq->param_int[0];
+							coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_TERM, NULL, &row);
+							if (row < 1)
+								row = 1;
+							if (row > TERM_MAXY)
+								row = TERM_MAXY;
+							GOTOXY(col, row);
+							break;
+						// for case 'e': see case 'B':
+						// for case 'f': see case 'H':
+						case 'g':	/* Tabulation Clear */
+							seq_default(seq, 0, 0);
+							switch(seq->param_int[0]) {
+								case 0:
+									delete_tabstop(cterm, WHEREX());
+									break;
+								case 3:
+									cterm->tab_count = 0;
+									break;
+							}
+							break;
+						case 'h':	/* TODO? Set Mode */
+							break;
+						case 'i':	/* ToDo?  Media Copy (Printing) */
+							break;
+						// for case 'j': see case 'D':
+						// for case 'k': see case 'A':
+						case 'l':	/* TODO? Reset Mode */
+							break;
+						case 'm':	/* Select Graphic Rendition */
+							seq_default(seq, 0, 0);
+							GETTEXTINFO(&ti);
+							flags = GETVIDEOFLAGS();
+							for (i=0; i < seq->param_count; i++) {
+								switch(seq->param_int[i]) {
+									case 0:
+										cterm->attr=ti.normattr;
+										attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 1:
+										cterm->attr|=8;
+										if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
+											attr2palette(cterm->attr, &cterm->fg_color, NULL);
+											FREE_AND_NULL(cterm->fg_tc_str);
+										}
+										break;
+									case 2:
+										cterm->attr&=247;
+										if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
+											attr2palette(cterm->attr, &cterm->fg_color, NULL);
+											FREE_AND_NULL(cterm->fg_tc_str);
+										}
+										break;
+									case 4:	/* Underscore */
+										break;
+									case 5:
+									case 6:
+										cterm->attr|=128;
+										if (flags & CIOLIB_VIDEO_BGBRIGHT) {
+											attr2palette(cterm->attr, NULL, &cterm->bg_color);
+											FREE_AND_NULL(cterm->bg_tc_str);
+										}
+										break;
+									case 7:
+										j=cterm->attr&112;
+										cterm->attr = (cterm->attr << 4) & 0x70;
+										cterm->attr |= j>>4;
+										attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 8:
+										j=cterm->attr&112;
+										cterm->attr&=112;
+										cterm->attr |= j>>4;
+										attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 22:
+										cterm->attr &= 0xf7;
+										if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
+											attr2palette(cterm->attr, &cterm->fg_color, NULL);
+											FREE_AND_NULL(cterm->fg_tc_str);
+										}
+										break;
+									case 25:
+										cterm->attr &= 0x7f;
+										if (flags & CIOLIB_VIDEO_BGBRIGHT) {
+											attr2palette(cterm->attr, NULL, &cterm->bg_color);
+											FREE_AND_NULL(cterm->bg_tc_str);
+										}
+										break;
+									case 27:
+										i=cterm->attr&7;
+										j=cterm->attr&112;
+										cterm->attr &= 136;
+										cterm->attr |= j>>4;
+										cterm->attr |= i<<4;
+										attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 30:
+										cterm->attr&=248;
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										break;
+									case 31:
+										cterm->attr&=248;
+										cterm->attr|=4;
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										break;
+									case 32:
+										cterm->attr&=248;
+										cterm->attr|=2;
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										break;
+									case 33:
+										cterm->attr&=248;
+										cterm->attr|=6;
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										break;
+									case 34:
+										cterm->attr&=248;
+										cterm->attr|=1;
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										break;
+									case 35:
+										cterm->attr&=248;
+										cterm->attr|=5;
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										break;
+									case 36:
+										cterm->attr&=248;
+										cterm->attr|=3;
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										break;
+									case 38:
+										parse_extended_colour(seq, &i, cterm, 1);
+										break;
+									case 37:
+									case 39:
+										cterm->attr&=248;
+										cterm->attr|=7;
+										attr2palette(cterm->attr, &cterm->fg_color, NULL);
+										FREE_AND_NULL(cterm->fg_tc_str);
+										break;
+									case 49:
+									case 40:
+										cterm->attr&=143;
+										attr2palette(cterm->attr, NULL, &cterm->bg_color);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 41:
+										cterm->attr&=143;
+										cterm->attr|=4<<4;
+										attr2palette(cterm->attr, NULL, &cterm->bg_color);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 42:
+										cterm->attr&=143;
+										cterm->attr|=2<<4;
+										attr2palette(cterm->attr, NULL, &cterm->bg_color);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 43:
+										cterm->attr&=143;
+										cterm->attr|=6<<4;
+										attr2palette(cterm->attr, NULL, &cterm->bg_color);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 44:
+										cterm->attr&=143;
+										cterm->attr|=1<<4;
+										attr2palette(cterm->attr, NULL, &cterm->bg_color);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 45:
+										cterm->attr&=143;
+										cterm->attr|=5<<4;
+										attr2palette(cterm->attr, NULL, &cterm->bg_color);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 46:
+										cterm->attr&=143;
+										cterm->attr|=3<<4;
+										attr2palette(cterm->attr, NULL, &cterm->bg_color);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 47:
+										cterm->attr&=143;
+										cterm->attr|=7<<4;
+										attr2palette(cterm->attr, NULL, &cterm->bg_color);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										break;
+									case 48:
+										parse_extended_colour(seq, &i, cterm, 0);
+										break;
+								}
+							}
+							TEXTATTR(cterm->attr);
+							setcolour(cterm->fg_color, cterm->bg_color);
+							break;
+						case 'n':	/* Device Status Report */
+							seq_default(seq, 0, 0);
+							switch(seq->param_int[0]) {
+								case 5:
+									if(retbuf!=NULL) {
+										strcpy(tmp,"\x1b[0n");
+										if(strlen(retbuf)+strlen(tmp) < retsize)
+											strcat(retbuf,tmp);
+									}
+									break;
+								case 6:
+									if(retbuf!=NULL) {
+										CURR_XY(&col, &row);
+										sprintf(tmp,"\x1b[%d;%dR",row,col);
+										if(strlen(retbuf)+strlen(tmp) < retsize)
+											strcat(retbuf,tmp);
+									}
+									break;
+								case 255:
+									if (retbuf != NULL) {
+										sprintf(tmp, "\x1b[%d;%dR", CURR_MAXY,CURR_MAXX);
+										if (strlen(retbuf) + strlen(tmp) < retsize)
+											strcat(retbuf, tmp);
+									}
+									break;
+							}
+							break;
+						case 'o': /* ToDo?  Define Area Qualification */
+							break;
+						/* 
+						 * END OF STANDARD CONTROL FUNCTIONS
+						 * AFTER THIS IS ALL PRIVATE EXTENSIONS
+						 */
+						case 'p': /* ToDo?  ANSI keyboard reassignment, pointer mode */
+							break;
+						case 'q': /* ToDo?  VT100 keyboard lights, cursor style, protection */
+							break;
+						case 'r': /* Scrolling reigon */
+							seq_default(seq, 0, 1);
+							seq_default(seq, 1, cterm->height);
+							row = seq->param_int[0];
+							max_row = seq->param_int[1];
+							if(row >= ABS_MINY && max_row > row && max_row <= ABS_MAXY) {
+								cterm->top_margin = row;
+								cterm->bottom_margin = max_row;
 								col = TERM_MINX;
 								row = TERM_MINY;
 								coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
@@ -3346,352 +3326,371 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
 								WINDOW(col, row, max_col, max_row);
 							}
-						}
-						else {
-							cterm->save_xpos=WHEREX();
-							cterm->save_ypos=WHEREY();
-						}
-						break;
-					case 't':
-						if (seq->param_count >= 4) {
-							uint32_t *c = NULL;
-							uint32_t nc;
+							break;
+						case 's':
+							if (cterm->extattr & CTERM_EXTATTR_DECLRMM) {
+								seq_default(seq, 0, ABS_MINX);
+								seq_default(seq, 1, ABS_MAXX);
+								col = seq->param_int[0];
+								max_col = seq->param_int[1];
+								if(col >= ABS_MINX && max_col > col && max_col <= ABS_MAXX) {
+									cterm->left_margin = col;
+									cterm->right_margin = max_col;
+									col = TERM_MINX;
+									row = TERM_MINY;
+									coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
+									max_col = TERM_MAXX;
+									max_row = TERM_MAXY;
+									coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
+									WINDOW(col, row, max_col, max_row);
+								}
+							}
+							else {
+								cterm->save_xpos=WHEREX();
+								cterm->save_ypos=WHEREY();
+							}
+							break;
+						case 't':
+							if (seq->param_count >= 4) {
+								uint32_t *c = NULL;
+								uint32_t nc;
 
-							if (seq->param_int[0] == 0)
-								c = &cterm->bg_color;
-							else if (seq->param_int[0] == 1)
-								c = &cterm->fg_color;
-							if (c == NULL)
-								break;
-							nc = map_rgb(seq->param_int[1]<<8, seq->param_int[2]<<8, seq->param_int[3]<<8);
-							if (nc != UINT32_MAX)
-								*c = nc;
-						}
-						break;
-					case 'u':
-						if(cterm->save_ypos>0 && cterm->save_ypos<=cterm->height
-								&& cterm->save_xpos>0 && cterm->save_xpos<=cterm->width) {
-							// TODO: What to do about the window when position is restored...
-							//       Absolute position stored?  Relative?
-							if(cterm->save_ypos < TERM_MINY || cterm->save_ypos > TERM_MAXY || cterm->save_xpos < TERM_MINX || cterm->save_xpos > TERM_MAXX)
-								break;
-							GOTOXY(cterm->save_xpos,cterm->save_ypos);
-						}
-						break;
-					case 'y':	/* ToDo?  VT100 Tests */
-						break;
-					case 'z':	/* ToDo?  Reset */
-						break;
-					case '|':	/* SyncTERM ANSI Music */
-						cterm->music=1;
-						break;
-				}
-			}
-			break;
-		case 'E':	// Next Line
-			TERM_XY(&col, &row);
-			row++;
-			if(row > TERM_MAXY)
-				i = TERM_MAXY;
-			GOTOXY(col, row);
-			break;
-		case 'H':
-			insert_tabstop(cterm, WHEREX());
-			break;
-		case 'M':	// Previous line
-			TERM_XY(&col, &row);
-			row--;
-			if(row < TERM_MINY)
-				i = TERM_MINY;
-			GOTOXY(col, row);
-			break;
-		case 'P':	// Device Control String - DCS
-			cterm->string = CTERM_STRING_DCS;
-			cterm->sixel = SIXEL_POSSIBLE;
-			FREE_AND_NULL(cterm->strbuf);
-			cterm->strbuf = malloc(1024);
-			cterm->strbufsize = 1024;
-			cterm->strbuflen = 0;
-			break;
-		case 'X':	// Start Of String - SOS
-			cterm->string = CTERM_STRING_SOS;
-			FREE_AND_NULL(cterm->strbuf);
-			cterm->strbuf = malloc(1024);
-			cterm->strbufsize = 1024;
-			cterm->strbuflen = 0;
-			break;
-		case 'c':
-			CLRSCR();
-			cterm_reset(cterm);
-			GOTOXY(TERM_MINX, TERM_MINY);
-			break;
-		case '\\':
-			if (cterm->strbuf) {
-				if (cterm->strbufsize == cterm->strbuflen-1) {
-					p = realloc(cterm->strbuf, cterm->strbufsize+1);
-					if (p == NULL) {
-						// SO CLOSE!
-						cterm->string = 0;
-					}
-					else {
-						cterm->strbuf = p;
-						cterm->strbufsize++;
+								if (seq->param_int[0] == 0)
+									c = &cterm->bg_color;
+								else if (seq->param_int[0] == 1)
+									c = &cterm->fg_color;
+								if (c == NULL)
+									break;
+								nc = map_rgb(seq->param_int[1]<<8, seq->param_int[2]<<8, seq->param_int[3]<<8);
+								if (nc != UINT32_MAX)
+									*c = nc;
+							}
+							break;
+						case 'u':
+							if(cterm->save_ypos>0 && cterm->save_ypos<=cterm->height
+									&& cterm->save_xpos>0 && cterm->save_xpos<=cterm->width) {
+								// TODO: What to do about the window when position is restored...
+								//       Absolute position stored?  Relative?
+								if(cterm->save_ypos < TERM_MINY || cterm->save_ypos > TERM_MAXY || cterm->save_xpos < TERM_MINX || cterm->save_xpos > TERM_MAXX)
+									break;
+								GOTOXY(cterm->save_xpos,cterm->save_ypos);
+							}
+							break;
+						case 'y':	/* ToDo?  VT100 Tests */
+							break;
+						case 'z':	/* ToDo?  Reset */
+							break;
+						case '|':	/* SyncTERM ANSI Music */
+							cterm->music=1;
+							break;
 					}
 				}
-				cterm->strbuf[cterm->strbuflen] = 0;
-				switch (cterm->string) {
-					case CTERM_STRING_APC:
-						if (cterm->apc_handler)
-							cterm->apc_handler(cterm->strbuf, cterm->strbuflen, cterm->apc_handler_data);
-						break;
-					case CTERM_STRING_DCS:
-						if (cterm->sixel == SIXEL_STARTED)
-							parse_sixel_string(cterm, true);
+				break;
+			case 'E':	// Next Line
+				TERM_XY(&col, &row);
+				row++;
+				if(row > TERM_MAXY)
+					i = TERM_MAXY;
+				GOTOXY(col, row);
+				break;
+			case 'H':
+				insert_tabstop(cterm, WHEREX());
+				break;
+			case 'M':	// Previous line
+				TERM_XY(&col, &row);
+				row--;
+				if(row < TERM_MINY)
+					i = TERM_MINY;
+				GOTOXY(col, row);
+				break;
+			case 'P':	// Device Control String - DCS
+				cterm->string = CTERM_STRING_DCS;
+				cterm->sixel = SIXEL_POSSIBLE;
+				FREE_AND_NULL(cterm->strbuf);
+				cterm->strbuf = malloc(1024);
+				cterm->strbufsize = 1024;
+				cterm->strbuflen = 0;
+				break;
+			case 'X':	// Start Of String - SOS
+				cterm->string = CTERM_STRING_SOS;
+				FREE_AND_NULL(cterm->strbuf);
+				cterm->strbuf = malloc(1024);
+				cterm->strbufsize = 1024;
+				cterm->strbuflen = 0;
+				break;
+			case 'c':
+				CLRSCR();
+				cterm_reset(cterm);
+				GOTOXY(TERM_MINX, TERM_MINY);
+				break;
+			case '\\':
+				if (cterm->strbuf) {
+					if (cterm->strbufsize == cterm->strbuflen-1) {
+						p = realloc(cterm->strbuf, cterm->strbufsize+1);
+						if (p == NULL) {
+							// SO CLOSE!
+							cterm->string = 0;
+						}
 						else {
-							if (strncmp(cterm->strbuf, "CTerm:Font:", 11) == 0) {
-								cterm->font_slot = strtoul(cterm->strbuf+11, &p, 10);
-								if(cterm->font_slot < CONIO_FIRST_FREE_FONT)
-									break;
-								if (cterm->font_slot > 255)
-									break;
-								if (p && *p == ':') {
-									p++;
-									i = b64_decode(cterm->fontbuf, sizeof(cterm->fontbuf), p, 0);
-									p2 = malloc(i);
-									if (p2) {
-										memcpy(p2, cterm->fontbuf, i);
-										replace_font(cterm->font_slot, strdup("Remote Defined Font"), p2, i);
+							cterm->strbuf = p;
+							cterm->strbufsize++;
+						}
+					}
+					cterm->strbuf[cterm->strbuflen] = 0;
+					switch (cterm->string) {
+						case CTERM_STRING_APC:
+							if (cterm->apc_handler)
+								cterm->apc_handler(cterm->strbuf, cterm->strbuflen, cterm->apc_handler_data);
+							break;
+						case CTERM_STRING_DCS:
+							if (cterm->sixel == SIXEL_STARTED)
+								parse_sixel_string(cterm, true);
+							else {
+								if (strncmp(cterm->strbuf, "CTerm:Font:", 11) == 0) {
+									cterm->font_slot = strtoul(cterm->strbuf+11, &p, 10);
+									if(cterm->font_slot < CONIO_FIRST_FREE_FONT)
+										break;
+									if (cterm->font_slot > 255)
+										break;
+									if (p && *p == ':') {
+										p++;
+										i = b64_decode(cterm->fontbuf, sizeof(cterm->fontbuf), p, 0);
+										p2 = malloc(i);
+										if (p2) {
+											memcpy(p2, cterm->fontbuf, i);
+											replace_font(cterm->font_slot, strdup("Remote Defined Font"), p2, i);
+										}
 									}
 								}
-							}
-							else if (strncmp(cterm->strbuf, "$q", 2) == 0) {
-								// DECRQSS - VT-420
-								switch (cterm->strbuf[2]) {
-									case 'm':
-										if (cterm->strbuf[3] == 0) {
-											strcpy(tmp, "\x1bP1$r0");
-											if (cterm->attr & 8)
-												strcat(tmp, ";1");
-											if (cterm->attr & 128)
-												strcat(tmp, ";5");
-											if (cterm->fg_tc_str == NULL) {
-												switch (cterm->attr & 7) {
-													case 0:
-														strcat(tmp, ";30");
-														break;
-													case 1:
-														strcat(tmp, ";34");
-														break;
-													case 2:
-														strcat(tmp, ";32");
-														break;
-													case 3:
-														strcat(tmp, ";36");
-														break;
-													case 4:
-														strcat(tmp, ";31");
-														break;
-													case 5:
-														strcat(tmp, ";35");
-														break;
-													case 6:
-														strcat(tmp, ";33");
-														break;
+								else if (strncmp(cterm->strbuf, "$q", 2) == 0) {
+									// DECRQSS - VT-420
+									switch (cterm->strbuf[2]) {
+										case 'm':
+											if (cterm->strbuf[3] == 0) {
+												strcpy(tmp, "\x1bP1$r0");
+												if (cterm->attr & 8)
+													strcat(tmp, ";1");
+												if (cterm->attr & 128)
+													strcat(tmp, ";5");
+												if (cterm->fg_tc_str == NULL) {
+													switch (cterm->attr & 7) {
+														case 0:
+															strcat(tmp, ";30");
+															break;
+														case 1:
+															strcat(tmp, ";34");
+															break;
+														case 2:
+															strcat(tmp, ";32");
+															break;
+														case 3:
+															strcat(tmp, ";36");
+															break;
+														case 4:
+															strcat(tmp, ";31");
+															break;
+														case 5:
+															strcat(tmp, ";35");
+															break;
+														case 6:
+															strcat(tmp, ";33");
+															break;
+													}
 												}
-											}
-											if (cterm->bg_tc_str == NULL) {
-												switch ((cterm->attr >> 4) & 7) {
-													case 1:
-														strcat(tmp, ";44");
-														break;
-													case 2:
-														strcat(tmp, ";42");
-														break;
-													case 3:
-														strcat(tmp, ";46");
-														break;
-													case 4:
-														strcat(tmp, ";41");
-														break;
-													case 5:
-														strcat(tmp, ";45");
-														break;
-													case 6:
-														strcat(tmp, ";43");
-														break;
-													case 7:
-														strcat(tmp, ";47");
-														break;
+												if (cterm->bg_tc_str == NULL) {
+													switch ((cterm->attr >> 4) & 7) {
+														case 1:
+															strcat(tmp, ";44");
+															break;
+														case 2:
+															strcat(tmp, ";42");
+															break;
+														case 3:
+															strcat(tmp, ";46");
+															break;
+														case 4:
+															strcat(tmp, ";41");
+															break;
+														case 5:
+															strcat(tmp, ";45");
+															break;
+														case 6:
+															strcat(tmp, ";43");
+															break;
+														case 7:
+															strcat(tmp, ";47");
+															break;
+													}
 												}
+												if (cterm->fg_tc_str) {
+													strcat(tmp, ";");
+													strcat(tmp, cterm->fg_tc_str);
+												}
+												if (cterm->bg_tc_str) {
+													strcat(tmp, ";");
+													strcat(tmp, cterm->bg_tc_str);
+												}
+												strcat(tmp, "m\x1b\\");
+												if(strlen(retbuf)+strlen(tmp) < retsize)
+													strcat(retbuf, tmp);
 											}
-											if (cterm->fg_tc_str) {
-												strcat(tmp, ";");
-												strcat(tmp, cterm->fg_tc_str);
-											}
-											if (cterm->bg_tc_str) {
-												strcat(tmp, ";");
-												strcat(tmp, cterm->bg_tc_str);
-											}
-											strcat(tmp, "m\x1b\\");
-											if(strlen(retbuf)+strlen(tmp) < retsize)
-												strcat(retbuf, tmp);
-										}
-										break;
-									case 'r':
-										if (cterm->strbuf[3] == 0) {
-											sprintf(tmp, "\x1bP1$r%d;%dr\x1b\\", cterm->top_margin, cterm->bottom_margin);
-											if(strlen(retbuf)+strlen(tmp) < retsize)
-												strcat(retbuf, tmp);
-										}
-										break;
-									case 's':
-										if (cterm->strbuf[3] == 0) {
-											sprintf(tmp, "\x1bP1$r%d;%dr\x1b\\", cterm->left_margin, cterm->right_margin);
-											if(strlen(retbuf)+strlen(tmp) < retsize)
-												strcat(retbuf, tmp);
-										}
-										break;
-									case 't':
-										if (cterm->strbuf[3] == 0) {
-											sprintf(tmp, "\x1bP1$r%dt\x1b\\", cterm->height);
-											if(strlen(retbuf)+strlen(tmp) < retsize)
-												strcat(retbuf, tmp);
-										}
-										break;
-									case '$':
-										if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
-											sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->width);
-											if(strlen(retbuf)+strlen(tmp) < retsize)
-												strcat(retbuf, tmp);
-										}
-										break;
-									case '*':
-										if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
-											sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->height);
-											if(strlen(retbuf)+strlen(tmp) < retsize)
-												strcat(retbuf, tmp);
-										}
-										break;
-									default:
-										if(retbuf!=NULL) {
-											strcpy(tmp,"\x1b[0n");
-											// TODO: If the string is too long, this is likely terrible.
-											if (strlen(retbuf)+5 < retsize)
-												strcat(retbuf, "\x1bP0$r");
-											if (strlen(retbuf)+strlen(&cterm->strbuf[2]) < retsize)
-												strcat(retbuf, &cterm->strbuf[2]);
-											if (strlen(retbuf)+2 < retsize)
-												strcat(retbuf, "\x1b_");
-										}
-								}
-							}
-						}
-						cterm->sixel = SIXEL_INACTIVE;
-						break;
-					case CTERM_STRING_OSC:
-						/* Is this an xterm Change Color(s)? */
-						if (cterm->strbuf[0] == '4' && cterm->strbuf[1] == ';') {
-							unsigned long index = ULONG_MAX;
-							char *seqlast;
-
-							p2 = &cterm->strbuf[2];
-							while ((p = strtok_r(p2, ";", &seqlast)) != NULL) {
-								p2=NULL;
-								if (index == ULONG_MAX) {
-									index = strtoull(p, NULL, 10);
-									if (index == ULONG_MAX || index > 13200)
-										break;
-								}
-								else {
-
-									if (strncmp(p, "rgb:", 4))
-										break;
-									char *p3;
-									char *p4;
-									char *collast;
-									uint16_t rgb[3];
-									int ccount = 0;
-									bool broken=false;
-
-									p4 = &p[4];
-									while (ccount < 3 && (p3 = strtok_r(p4, "/", &collast))!=NULL) {
-										p4 = NULL;
-										unsigned long v;
-										v = strtoul(p3, NULL, 16);
-										if (v > UINT16_MAX)
 											break;
-										switch(strlen(p3)) {
-											case 1:	// 4-bit colour
-												rgb[ccount] = v | (v<<4) | (v<<8) | (v<<12);
-												break;
-											case 2:	// 8-bit colour
-												rgb[ccount] = v | (v<<8);
-												break;
-											case 3:	// 12-bit colour
-												rgb[ccount] = (v & 0x0f) | (v<<4);
-												break;
-											case 4:
-												rgb[ccount] = v;
-												break;
-											default:
-												broken = true;
-												break;
-										}
-										ccount++;
+										case 'r':
+											if (cterm->strbuf[3] == 0) {
+												sprintf(tmp, "\x1bP1$r%d;%dr\x1b\\", cterm->top_margin, cterm->bottom_margin);
+												if(strlen(retbuf)+strlen(tmp) < retsize)
+													strcat(retbuf, tmp);
+											}
+											break;
+										case 's':
+											if (cterm->strbuf[3] == 0) {
+												sprintf(tmp, "\x1bP1$r%d;%dr\x1b\\", cterm->left_margin, cterm->right_margin);
+												if(strlen(retbuf)+strlen(tmp) < retsize)
+													strcat(retbuf, tmp);
+											}
+											break;
+										case 't':
+											if (cterm->strbuf[3] == 0) {
+												sprintf(tmp, "\x1bP1$r%dt\x1b\\", cterm->height);
+												if(strlen(retbuf)+strlen(tmp) < retsize)
+													strcat(retbuf, tmp);
+											}
+											break;
+										case '$':
+											if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
+												sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->width);
+												if(strlen(retbuf)+strlen(tmp) < retsize)
+													strcat(retbuf, tmp);
+											}
+											break;
+										case '*':
+											if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
+												sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->height);
+												if(strlen(retbuf)+strlen(tmp) < retsize)
+													strcat(retbuf, tmp);
+											}
+											break;
+										default:
+											if(retbuf!=NULL) {
+												strcpy(tmp,"\x1b[0n");
+												// TODO: If the string is too long, this is likely terrible.
+												if (strlen(retbuf)+5 < retsize)
+													strcat(retbuf, "\x1bP0$r");
+												if (strlen(retbuf)+strlen(&cterm->strbuf[2]) < retsize)
+													strcat(retbuf, &cterm->strbuf[2]);
+												if (strlen(retbuf)+2 < retsize)
+													strcat(retbuf, "\x1b_");
+											}
 									}
-									if (ccount == 3 && !broken)
-										setpalette(index+16, rgb[0], rgb[1], rgb[2]);
-									index = ULONG_MAX;
 								}
 							}
-						}
-						else if (strncmp("104", cterm->strbuf, 3)==0) {
-							if (strlen(cterm->strbuf) == 3) {
-								// Reset all colours
-								for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
-									setpalette(i+16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
-							}
-							else if(cterm->strbuf[3] == ';') {
+							cterm->sixel = SIXEL_INACTIVE;
+							break;
+						case CTERM_STRING_OSC:
+							/* Is this an xterm Change Color(s)? */
+							if (cterm->strbuf[0] == '4' && cterm->strbuf[1] == ';') {
+								unsigned long index = ULONG_MAX;
 								char *seqlast;
-								unsigned long pi;
 
-								p2 = &cterm->strbuf[4];
+								p2 = &cterm->strbuf[2];
 								while ((p = strtok_r(p2, ";", &seqlast)) != NULL) {
 									p2=NULL;
-									pi = strtoull(p, NULL, 10);
-									if (pi < sizeof(dac_default)/sizeof(struct dac_colors))
-										setpalette(pi+16, dac_default[pi].red << 8 | dac_default[pi].red, dac_default[pi].green << 8 | dac_default[pi].green, dac_default[pi].blue << 8 | dac_default[pi].blue);
+									if (index == ULONG_MAX) {
+										index = strtoull(p, NULL, 10);
+										if (index == ULONG_MAX || index > 13200)
+											break;
+									}
+									else {
+
+										if (strncmp(p, "rgb:", 4))
+											break;
+										char *p3;
+										char *p4;
+										char *collast;
+										uint16_t rgb[3];
+										int ccount = 0;
+										bool broken=false;
+
+										p4 = &p[4];
+										while (ccount < 3 && (p3 = strtok_r(p4, "/", &collast))!=NULL) {
+											p4 = NULL;
+											unsigned long v;
+											v = strtoul(p3, NULL, 16);
+											if (v > UINT16_MAX)
+												break;
+											switch(strlen(p3)) {
+												case 1:	// 4-bit colour
+													rgb[ccount] = v | (v<<4) | (v<<8) | (v<<12);
+													break;
+												case 2:	// 8-bit colour
+													rgb[ccount] = v | (v<<8);
+													break;
+												case 3:	// 12-bit colour
+													rgb[ccount] = (v & 0x0f) | (v<<4);
+													break;
+												case 4:
+													rgb[ccount] = v;
+													break;
+												default:
+													broken = true;
+													break;
+											}
+											ccount++;
+										}
+										if (ccount == 3 && !broken)
+											setpalette(index+16, rgb[0], rgb[1], rgb[2]);
+										index = ULONG_MAX;
+									}
 								}
 							}
-						}
-						break;
+							else if (strncmp("104", cterm->strbuf, 3)==0) {
+								if (strlen(cterm->strbuf) == 3) {
+									// Reset all colours
+									for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
+										setpalette(i+16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+								}
+								else if(cterm->strbuf[3] == ';') {
+									char *seqlast;
+									unsigned long pi;
+
+									p2 = &cterm->strbuf[4];
+									while ((p = strtok_r(p2, ";", &seqlast)) != NULL) {
+										p2=NULL;
+										pi = strtoull(p, NULL, 10);
+										if (pi < sizeof(dac_default)/sizeof(struct dac_colors))
+											setpalette(pi+16, dac_default[pi].red << 8 | dac_default[pi].red, dac_default[pi].green << 8 | dac_default[pi].green, dac_default[pi].blue << 8 | dac_default[pi].blue);
+									}
+								}
+							}
+							break;
+					}
 				}
-			}
-			FREE_AND_NULL(cterm->strbuf);
-			cterm->strbufsize = cterm->strbuflen = 0;
-			cterm->string = 0;
-			break;
-		case ']':	// Operating System Command - OSC
-			cterm->string = CTERM_STRING_OSC;
-			FREE_AND_NULL(cterm->strbuf);
-			cterm->strbuf = malloc(1024);
-			cterm->strbufsize = 1024;
-			cterm->strbuflen = 0;
-			break;
-		case '^':	// Privacy Message - PM
-			cterm->string = CTERM_STRING_PM;
-			FREE_AND_NULL(cterm->strbuf);
-			cterm->strbuf = malloc(1024);
-			cterm->strbufsize = 1024;
-			cterm->strbuflen = 0;
-			break;
-		case '_':	// Application Program Command - APC
-			cterm->string = CTERM_STRING_APC;
-			FREE_AND_NULL(cterm->strbuf);
-			cterm->strbuf = malloc(1024);
-			cterm->strbufsize = 1024;
-			cterm->strbuflen = 0;
-			break;
+				FREE_AND_NULL(cterm->strbuf);
+				cterm->strbufsize = cterm->strbuflen = 0;
+				cterm->string = 0;
+				break;
+			case ']':	// Operating System Command - OSC
+				cterm->string = CTERM_STRING_OSC;
+				FREE_AND_NULL(cterm->strbuf);
+				cterm->strbuf = malloc(1024);
+				cterm->strbufsize = 1024;
+				cterm->strbuflen = 0;
+				break;
+			case '^':	// Privacy Message - PM
+				cterm->string = CTERM_STRING_PM;
+				FREE_AND_NULL(cterm->strbuf);
+				cterm->strbuf = malloc(1024);
+				cterm->strbufsize = 1024;
+				cterm->strbuflen = 0;
+				break;
+			case '_':	// Application Program Command - APC
+				cterm->string = CTERM_STRING_APC;
+				FREE_AND_NULL(cterm->strbuf);
+				cterm->strbuf = malloc(1024);
+				cterm->strbufsize = 1024;
+				cterm->strbuflen = 0;
+				break;
+		}
 	}
 	free_sequence(seq);
 	cterm->escbuf[0]=0;

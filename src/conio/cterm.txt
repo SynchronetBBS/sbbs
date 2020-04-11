@@ -58,10 +58,7 @@ Control Codes:
 --------------
 
 Control codes are in the following format:
-ESC {SPACE to '/'}{'0' (ZERO) to '~'}
-	There may be multiple characters from the {SPACE to '/'} set
-	before the terminating '0' to '~'
-
+ESC {'0' (ZERO) to '~'}
 	Legal combinations which are not handled are silently dropped.
 
 ESC H	Set Tab
