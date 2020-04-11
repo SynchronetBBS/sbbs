@@ -80,15 +80,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 	/* try */
 	do {
 
-		while((retval=smb_getstatus(smb)) == SMB_ERR_READ) {
-			if(!start)
-				start=time(NULL);
-			else
-				if(time(NULL)-start>=(time_t)smb->retry_time)
-					break; 
-			SLEEP(smb->retry_delay);
-		}
-		if(retval != SMB_SUCCESS)
+		if((retval = smb_getstatus(smb)) != SMB_SUCCESS)
 			break;
 
 		msg->hdr.number=smb->status.last_msg+1;

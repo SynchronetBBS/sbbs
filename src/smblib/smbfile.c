@@ -98,7 +98,7 @@ size_t SMBCALL smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 	while(1) {
 		if((ret=fread(buf,sizeof(char),bytes,fp))==bytes)
 			return(ret);
-		if(get_errno()!=EDEADLOCK)
+		if(get_errno()!=EDEADLOCK && get_errno()!=EACCES)
 			return(ret);
 		if(!start)
 			start=time(NULL);
@@ -182,12 +182,7 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 		close(file);
 		return(SMB_ERR_OPEN); 
 	}
-#if 0	/* This causes a noticeable performance hit when new-scanning subs */
-	if(fp==&smb->sid_fp)
-		setvbuf(*fp,NULL,_IONBF,0);	/* no buffering (cause of *.sid corruption?) */
-	else
-#endif
-		setvbuf(*fp,NULL,_IOFBF,2*1024);
+	setvbuf(*fp,NULL,_IOFBF, 2*1024);
 	return(SMB_SUCCESS);
 }
 
