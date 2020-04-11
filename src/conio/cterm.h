@@ -81,6 +81,8 @@ struct cterminal {
 	int					width;			// Width of the terminal buffer
 	int					top_margin;
 	int					bottom_margin;
+	int					left_margin;
+	int					right_margin;
 	int					quiet;			// No sounds are made
 	struct vmem_cell	*scrollback;
 	int					backlines;		// Number of lines in scrollback
@@ -104,6 +106,7 @@ struct cterminal {
 #define CTERM_SAVEMODE_MOUSE_SGR		0x10000
 #define CTERM_SAVEMODE_MOUSE_ALTSCROLL		0x20000
 #define CTERM_SAVEMODE_MOUSE_URXVT		0x40000
+#define CTERM_SAVEMODE_DECLRMM			0x80000
 	int32_t				saved_mode;
 	int32_t				saved_mode_mask;
 
@@ -117,6 +120,7 @@ struct cterminal {
 #define CTERM_EXTATTR_AUTOWRAP		0x0001
 #define CTERM_EXTATTR_ORIGINMODE	0x0002
 #define CTERM_EXTATTR_SXSCROLL		0x0004
+#define CTERM_EXTATTR_DECLRMM		0x0008
 	int					save_xpos;		// Saved position (for later restore)
 	int					save_ypos;
 	int					sequence;		// An escape sequence is being parsed

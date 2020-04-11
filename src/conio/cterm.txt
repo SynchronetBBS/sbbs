@@ -175,6 +175,7 @@ ESC P	Device Control String
 
 		m	Request SGR parameters
 		r	Request top and bottom margins
+		s	Request left and right margins
 		t	Request height in lines
 		$|	Request width in columns
 		*|	Request height in lines
@@ -599,6 +600,8 @@ CSI < Ps c
 	4 - The current font may be selected via CSI Ps1 ; Ps2 sp D
 	5 - More than the standard 16 colours may by configured via
 	    Operating System Command strings
+	6 - Extended palette is available
+	7 - Mouse is available
 
 CSI Ps d
 	Line Position Absolute
@@ -676,6 +679,9 @@ CSI ? Ps... h
 	     This makes the blink (5, 6) graphic renditions not cause the
 	     character to blink.  Mostly for use with CSI ? 34 h to permit
 	     fonts to be used without blinking.  Defaults to reset.
+	69 - DEC Left Right Margin Mode enabled
+	     Enables CSI s to set the left/right margins, and disables CSI s
+	     from saving the current cursor position.
 	80 - Sixel Scrolling Enabled
 	     When this is set, the sixel active position begins in the
 	     upper-left corner of the currently active text position.
@@ -783,6 +789,10 @@ CSI ? Ps... l
 	35 - Blink Enable
 	     With this mode reset, the blink (5,6) graphic renditions behave
 	     normally (cause the characters to blink).  Defaults to reset.
+	69 - DEC Left Right Margin Mode disabled
+	     Disables CSI s from setting the left/right margins, and changes
+	     it back to saving the current cursor position.  The current
+	     left/right margins are maintained.
 	80 - Sixel Scrolling Disabled
 	     When this is reset, the sixel active position begins in the
 	     upper-left corner of the page.  Any commands that attempt to
@@ -796,7 +806,7 @@ CSI ? Ps... l
 	1001 -  Disable Highlight tracking mode mouse reporting
 	     (Not supported by SyncTERM)
 	     SOURCE: xterm
-	1002 -  BDisable utton-event tracking mode mouse reporting
+	1002 -  Disable Button-event tracking mode mouse reporting
 	     SOURCE: xterm
 	1003 -  Disable Any-event tracking mode mouse reporting
 	     SOURCE: xterm
@@ -921,7 +931,7 @@ CSI = Ps n
 	Defaults: Ps = 1
 
 	When Ps is 1, CTerm will respond with a Font State Report of the form
-        CSI = 1 ;pF ;pR ;pS0 ;pS1 ;pS2 ;pS3 n
+	CSI = 1 ;pF ;pR ;pS0 ;pS1 ;pS2 ;pS3 n
 	pF is the first available loadable-font slot number
 	pR is the result of the previous "Font Selection" request:
 		0 = successful font selection
@@ -943,6 +953,11 @@ CSI = Ps n
 	Report.  If no modes are currently set, an empty parameter will be
 	included as the first and only pN.
 
+	When Ps is 3, CTerm will respond with a Mode Report of the form
+	CSI = 3 ; pH ; pW n
+	Where pH is the height of a character cell in pixels, and pW is
+	the width of a character cell in pixels.
+
 	SOURCE: CTerm only.
 
 CSI Pn1 ; Pn2 r
@@ -953,6 +968,8 @@ CSI Pn1 ; Pn2 r
 	Selects top and bottom margins, defining the scrolling region. Pn1 is
 	the line number of the first line in the scrolling region. Pn2 is the
 	line number of the bottom line.
+	
+	SOURCE: xterm
 
 CSI Ps1 ; Ps2 * r
 	NON-STANDARD EXTENSION.
@@ -988,7 +1005,20 @@ CSI ? Ps... s
 
 	SOURCE: SyncTERM only
 
+CSI Pn1 ; Pn2 s
+        (Only when DEC Left Right Margin Mode  - 69 - is enabled)
+	NON-STANDARD EXTENSION.
+	Set Left and Right Margins
+	Defaults: Pn1 = 1
+	          Pn2 = last column on screen
+	Selects left and right margins, defining the scrolling region. Pn1 is
+	the column number of the first column in the scrolling region. Pn2 is
+	the column number of the right column.
+
+	SOURCE: xterm
+
 CSI s
+        (Only when DEC Left Right Margin Mode  - 69 - is disabled)
 	NON-STANDARD EXTENSION
 	Save Current Position
 	Saves the current cursor position for later restoring with CSI u
