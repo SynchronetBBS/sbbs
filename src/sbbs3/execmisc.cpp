@@ -99,10 +99,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					if(op==VAR_PRINTF)
 						putmsg(cmdstr(p,path,csi->str,buf),P_SAVEATR|P_NOABORT|P_NOATCODES);
 					else {
-						if(online==ON_LOCAL)
-							eprintf(LOG_INFO,"%s",cmdstr(p,path,csi->str,buf));
-						else
-							lputs(LOG_INFO,cmdstr(p,path,csi->str,buf));
+						lputs(LOG_INFO,cmdstr(p,path,csi->str,buf));
 					}
 					free(p);
 					return(0);

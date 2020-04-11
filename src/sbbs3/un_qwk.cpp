@@ -36,13 +36,13 @@
 #include "sbbs.h"
 #include "qwk.h"
 
-static void log_qwk_import_stats(ulong msgs, time_t start)
+static void log_qwk_import_stats(sbbs_t* sbbs, ulong msgs, time_t start)
 {
 	if(msgs) {
 		time_t t = time(NULL) - start;
 		if(t < 1)
 			t = 1;
-		eprintf(LOG_INFO,"Imported %lu QWK messages in %lu seconds (%lu msgs/sec)", msgs, (ulong)t, (ulong)(msgs/t));
+		sbbs->lprintf(LOG_INFO,"Imported %lu QWK messages in %lu seconds (%lu msgs/sec)", msgs, (ulong)t, (ulong)(msgs/t));
 	}
 }
 
@@ -131,7 +131,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	/********************/
 	/* Process messages */
 	/********************/
-	eprintf(LOG_INFO,"Importing QWK Network Packet: %s",packet);
+	lprintf(LOG_INFO,"Importing QWK Network Packet: %s",packet);
 
 	ip_can=trashcan_list(&cfg,"ip");
 	host_can=trashcan_list(&cfg,"host");
@@ -142,13 +142,13 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 	for(l=QWK_BLOCK_LEN;l<size;l+=blocks*QWK_BLOCK_LEN) {
 		if(terminated) {
-			eprintf(LOG_NOTICE,"!Terminated");
+			lprintf(LOG_NOTICE,"!Terminated");
 			break;
 		}
 		fseek(qwk,l,SEEK_SET);
 		fread(block,QWK_BLOCK_LEN,1,qwk);
 		if(block[0]<' ' || block[0]&0x80) {
-			eprintf(LOG_NOTICE,"!Invalid QWK message status (%02X) at offset %lu in %s"
+			lprintf(LOG_NOTICE,"!Invalid QWK message status (%02X) at offset %lu in %s"
 				,block[0], l, packet);
 			blocks=1;
 			errors++;
@@ -165,7 +165,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				}
 				continue;
 			}
-			eprintf(LOG_NOTICE,"!Invalid number of QWK blocks (%d) at offset %lu in %s"
+			lprintf(LOG_NOTICE,"!Invalid number of QWK blocks (%d) at offset %lu in %s"
 				,blocks, l+116, packet);
 			errors++;
 			blocks=1;
@@ -179,14 +179,14 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 		if(cfg.max_qwkmsgage && msg.hdr.when_written.time < (uint32_t)now
 			&& (now-msg.hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
-			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to age: %u days"
+			lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to age: %u days"
 				,msg.from
 				,(unsigned int)(now-msg.hdr.when_written.time)/(24*60*60)); 
 			continue;
 		}
 
 		if(findstr_in_list(msg.from_ip,ip_can)) {
-			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked IP: %s"
+			lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked IP: %s"
 				,msg.from
 				,msg.from_ip); 
 			continue;
@@ -194,21 +194,21 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 		hostname=getHostNameByAddr(msg.from_host);
 		if(findstr_in_list(hostname,host_can)) {
-			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked hostname: %s"
+			lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked hostname: %s"
 				,msg.from
 				,hostname); 
 			continue;
 		}
 
 		if(findstr_in_list(msg.subj,subject_can)) {
-			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to filtered subject: %s"
+			lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to filtered subject: %s"
 				,msg.from
 				,msg.subj); 
 			continue;
 		}
 
 		if(!n) {		/* NETMAIL */
-			eprintf(LOG_INFO,"QWK NetMail from %s to %s", cfg.qhub[hubnum]->id, msg.to);
+			lprintf(LOG_INFO,"QWK NetMail from %s to %s", cfg.qhub[hubnum]->id, msg.to);
 			if(!stricmp(msg.to,"NETMAIL")) {  /* QWK to FidoNet NetMail */
 				qwktonetmail(qwk,(char *)block,NULL,hubnum+1);
 				continue; 
@@ -223,7 +223,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if(!usernum)
 				usernum=matchuser(&cfg,msg.to,TRUE /* sysop_alias */);
 			if(!usernum) {
-				eprintf(LOG_NOTICE,"!QWK NetMail from %s to UNKNOWN USER: %s", cfg.qhub[hubnum]->id, msg.to);
+				lprintf(LOG_NOTICE,"!QWK NetMail from %s to UNKNOWN USER: %s", cfg.qhub[hubnum]->id, msg.to);
 				continue; 
 			}
 
@@ -275,7 +275,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			smb_unlocksmbhdr(&smb);
 			bool dupe=false;
 			if(qwk_import_msg(qwk, (char *)block, blocks, hubnum+1, &smb, usernum, &msg, &dupe)) {
-				eprintf(LOG_INFO,"Imported QWK mail message from %s to %s #%u", msg.from, msg.to, usernum);
+				lprintf(LOG_INFO,"Imported QWK mail message from %s to %s #%u", msg.from, msg.to, usernum);
 				SAFEPRINTF(str,text[UserSentYouMail],msg.from);
 				putsmsg(&cfg,usernum,str);
 				tmsgs++;
@@ -294,7 +294,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		/*********************************/
 
 		if((j = resolve_qwkconf(n, hubnum)) == INVALID_SUB) {	/* ignore messages for subs not in config */
-			eprintf(LOG_NOTICE,"!Message from %s on UNKNOWN QWK CONFERENCE NUMBER: %u"
+			lprintf(LOG_NOTICE,"!Message from %s on UNKNOWN QWK CONFERENCE NUMBER: %u"
 				,cfg.qhub[hubnum]->id, n);
 			errors++;
 			continue;
@@ -302,7 +302,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 		/* TWIT FILTER */
 		if(findstr_in_list(msg.from,twit_list) || findstr_in_list(msg.to,twit_list)) {
-			eprintf(LOG_NOTICE,"!Filtering QWK post from %s to %s on %s %s"
+			lprintf(LOG_NOTICE,"!Filtering QWK post from '%s' to '%s' on %s %s"
 				,msg.from
 				,msg.to
 				,cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname); 
@@ -312,11 +312,11 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		if(j!=lastsub) {
 
 			if(lastsub != INVALID_SUB)
-				log_qwk_import_stats(msgs, startsub);
+				log_qwk_import_stats(this, msgs, startsub);
 			msgs=0;
 			startsub=time(NULL);
 
-			eprintf(LOG_INFO,"Importing QWK messages from %s into %s %s"
+			lprintf(LOG_INFO,"Importing QWK messages from %s into %s %s"
 				,cfg.qhub[hubnum]->id, cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname);
 
 			if(lastsub!=INVALID_SUB)
@@ -379,7 +379,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		}
 	}
 	if(lastsub != INVALID_SUB) {
-		log_qwk_import_stats(msgs, startsub);
+		log_qwk_import_stats(this, msgs, startsub);
 		smb_close(&smb);
 	}
 
@@ -418,7 +418,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			continue;
 
 		if(::trashcan(&cfg, dirent->d_name, "file")) {
-			eprintf(LOG_NOTICE,"Ignored blocked filename from %s: %s", cfg.qhub[hubnum]->id, dirent->d_name);
+			lprintf(LOG_NOTICE,"Ignored blocked filename from %s: %s", cfg.qhub[hubnum]->id, dirent->d_name);
 			continue;
 		}
 
@@ -431,7 +431,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		mv(str,fname,1 /* overwrite */);
 		sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,cfg.qhub[hubnum]->id);
 		putsmsg(&cfg,1,str);
-		eprintf(LOG_INFO,"Received file from %s: %s", cfg.qhub[hubnum]->id, dirent->d_name);
+		lprintf(LOG_INFO,"Received file from %s: %s", cfg.qhub[hubnum]->id, dirent->d_name);
 	}
 	if(dir!=NULL)
 		closedir(dir);
@@ -440,7 +440,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	if(tmsgs || errors || dupes) {
 		if(t<1)
 			t=1;
-		eprintf(LOG_INFO,"Finished Importing QWK Network Packet from %s: "
+		lprintf(LOG_INFO,"Finished Importing QWK Network Packet from %s: "
 			"(%lu msgs) in %lu seconds (%lu msgs/sec), %lu errors, %lu dupes"
 			,cfg.qhub[hubnum]->id, tmsgs, t, tmsgs/t, errors, dupes);
 		/* trigger timed event with internal code of 'qnet-qwk' to run */

@@ -73,7 +73,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	if(prepack) {
 		ex|=EX_OFFLINE;
 		if(is_user_online(&cfg, useron.number)) { /* Don't pre-pack with user online */
-			eprintf(LOG_NOTICE, "User #%u is concurrently logged-in, QWK packet creation aborted", useron.number);
+			lprintf(LOG_NOTICE, "User #%u is concurrently logged-in, QWK packet creation aborted", useron.number);
 			return(false); 
 		}
 	}
@@ -721,7 +721,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 	if(prepack) {
 		if(is_user_online(&cfg, useron.number)) { /* Don't pre-pack with user online */
-			eprintf(LOG_NOTICE, "User #%u is concurrently logged-in, QWK packet creation aborted", useron.number);
+			lprintf(LOG_NOTICE, "User #%u is concurrently logged-in, QWK packet creation aborted", useron.number);
 			return(false); 
 		}
 	}

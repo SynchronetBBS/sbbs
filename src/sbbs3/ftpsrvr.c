@@ -1132,52 +1132,6 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 
 #endif	/* ifdef JAVASCRIPT */
 
-BOOL upload_stats(ulong bytes)
-{
-	char	str[MAX_PATH+1];
-	int		file;
-	uint32_t	val;
-
-	sprintf(str,"%sdsts.dab",scfg.ctrl_dir);
-	if((file=nopen(str,O_RDWR))==-1) 
-		return(FALSE);
-
-	lseek(file,20L,SEEK_SET);   /* Skip timestamp, logons and logons today */
-	read(file,&val,4);        /* Uploads today         */
-	val++;
-	lseek(file,-4L,SEEK_CUR);
-	write(file,&val,4);
-	read(file,&val,4);        /* Upload bytes today    */
-	val+=bytes;
-	lseek(file,-4L,SEEK_CUR);
-	write(file,&val,4);
-	close(file);
-	return(TRUE);
-}
-
-BOOL download_stats(ulong bytes)
-{
-	char	str[MAX_PATH+1];
-	int		file;
-	uint32_t	val;
-
-	sprintf(str,"%sdsts.dab",scfg.ctrl_dir);
-	if((file=nopen(str,O_RDWR))==-1) 
-		return(FALSE);
-
-	lseek(file,28L,SEEK_SET);   /* Skip timestamp, logons and logons today */
-	read(file,&val,4);        /* Downloads today         */
-	val++;
-	lseek(file,-4L,SEEK_CUR);
-	write(file,&val,4);
-	read(file,&val,4);        /* Download bytes today    */
-	val+=bytes;
-	lseek(file,-4L,SEEK_CUR);
-	write(file,&val,4);
-	close(file);
-	return(TRUE);
-}
-
 void recverror(SOCKET socket, int rd, int line)
 {
 	if(rd==0) 
@@ -1631,7 +1585,7 @@ static void send_thread(void* arg)
 				}
 			}
 			if(!xfer.tmpfile && !xfer.delfile && !(scfg.dir[f.dir]->misc&DIR_NOSTAT))
-				download_stats(total);
+				inc_sys_download_stats(&scfg, 1, total);
 		}	
 
 		if(xfer.credits) {
@@ -1957,7 +1911,7 @@ static void receive_thread(void* arg)
 						,(ulong)(f.cdt*(scfg.dir[f.dir]->up_pct/100.0))); 
 			}
 			if(!(scfg.dir[f.dir]->misc&DIR_NOSTAT))
-				upload_stats(total);
+				inc_sys_upload_stats(&scfg, 1, total);
 		}
 		/* Send ACK */
 		sockprintf(xfer.ctrl_sock,sess,"226 Upload complete (%lu cps).",cps);

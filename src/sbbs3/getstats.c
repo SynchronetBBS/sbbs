@@ -88,3 +88,49 @@ ulong DLLCALL getposts(scfg_t* cfg, uint subnum)
 		return(0);
 	return(l/sizeof(idxrec_t));
 }
+
+BOOL inc_sys_upload_stats(scfg_t* cfg, ulong files, ulong bytes)
+{
+	char	str[MAX_PATH+1];
+	int		file;
+	uint32_t	val;
+
+	sprintf(str,"%sdsts.dab",cfg->ctrl_dir);
+	if((file=nopen(str,O_RDWR))==-1) 
+		return(FALSE);
+
+	lseek(file,20L,SEEK_SET);   /* Skip timestamp, logons and logons today */
+	read(file,&val,4);        /* Uploads today         */
+	val+=files;
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
+	read(file,&val,4);        /* Upload bytes today    */
+	val+=bytes;
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
+	close(file);
+	return(TRUE);
+}
+
+BOOL inc_sys_download_stats(scfg_t* cfg, ulong files, ulong bytes)
+{
+	char	str[MAX_PATH+1];
+	int		file;
+	uint32_t	val;
+
+	sprintf(str,"%sdsts.dab",cfg->ctrl_dir);
+	if((file=nopen(str,O_RDWR))==-1) 
+		return(FALSE);
+
+	lseek(file,28L,SEEK_SET);   /* Skip timestamp, logons and logons today */
+	read(file,&val,4);        /* Downloads today         */
+	val+=files;
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
+	read(file,&val,4);        /* Download bytes today    */
+	val+=bytes;
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
+	close(file);
+	return(TRUE);
+}
