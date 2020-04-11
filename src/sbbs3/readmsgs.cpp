@@ -776,16 +776,17 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			lncntr--;
 		bprintf(text[ReadingSub],ugrp,cfg.grp[cfg.sub[subnum]->grp]->sname
 			,usub,cfg.sub[subnum]->sname,smb.curmsg+1,smb.msgs);
-		sprintf(str,"ABCDEFHILMNPQRTUVY?*<>[]{}-+()\b");
+		sprintf(str,"ABCDEFHILMNPQRTUVY?*<>[]{}-+()\b%c%c%c%c"
+			,TERM_KEY_LEFT
+			,TERM_KEY_RIGHT
+			,TERM_KEY_HOME
+			,TERM_KEY_END
+			);
 		if(thread_mode)
-			sprintf(str+strlen(str),"%c%c%c%c%c%c"
-				,TERM_KEY_LEFT
-				,TERM_KEY_RIGHT
+			sprintf(str+strlen(str),"%c%c"
 				,TERM_KEY_UP
-				,TERM_KEY_DOWN
-				,TERM_KEY_HOME
-				,TERM_KEY_END
-				);
+				,TERM_KEY_DOWN);
+
 		if(sub_op(subnum))
 			strcat(str,"O");
 		do_find=true;
@@ -1362,6 +1363,11 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				break;
 			case TERM_KEY_HOME:	/* Home */
 			{
+				if(!thread_mode) {
+					smb.curmsg = 0;
+					newline();
+					break;
+				}
 				uint32_t first = smb_first_in_thread(&smb, &msg, NULL);
 				if(first <= 0) {
 					bputs(text[NoMessagesFound]);
@@ -1375,6 +1381,11 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			}
 			case TERM_KEY_END:	/* End */
 			{
+				if(!thread_mode) {
+					smb.curmsg = smb.msgs -1;
+					newline();
+					break;
+				}
 				uint32_t last = smb_last_in_thread(&smb, &msg);
 				if(last <= 0) {
 					bputs(text[NoMessagesFound]);
@@ -1410,6 +1421,14 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				do_find=false;
 				break;
 			case TERM_KEY_RIGHT:	/* Right-arrow */
+				if(!thread_mode) {
+					if(smb.curmsg<smb.msgs-1)
+						smb.curmsg++;
+					else
+						done=1;
+					newline();
+					break;
+				}
                 l=msg.hdr.thread_first;
                 if(!l) l=msg.hdr.thread_next;
                 if(!l) {
@@ -1428,8 +1447,13 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				}
 				do_find=false;
 				break;
-			case '(':   /* Thread backwards */
 			case TERM_KEY_LEFT:	/* left arrow */
+				if(!thread_mode) {
+					if(smb.curmsg>0) smb.curmsg--;
+					newline();
+					break;
+				}
+			case '(':   /* Thread backwards */
 				if(!msg.hdr.thread_back) {
 					domsg=0;
 					outchar('\a');
