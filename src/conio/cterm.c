@@ -224,6 +224,7 @@ struct note_params {
 #endif
 
 static void ctputs(struct cterminal *cterm, char *buf);
+static void cterm_reset(struct cterminal *cterm);
 
 #ifdef CTERM_WITHOUT_CONIO
 /***************************************************************/
@@ -2700,6 +2701,11 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					if(newspeed >= 0)
 						*speed = newspeed;
 				}
+				else if (strcmp(seq->ctrl_func, "!p") == 0) {
+					CLRSCR();
+					cterm_reset(cterm);
+					GOTOXY(TERM_MINX, TERM_MINY);
+				}
 				break;
 			}
 			else {
@@ -3646,43 +3652,33 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 			cterm->strbufsize = 1024;
 			cterm->strbuflen = 0;
 			break;
-		case 'c':
-			/* ToDo: Reset Terminal */
-			break;
 	}
 	free_sequence(seq);
 	cterm->escbuf[0]=0;
 	cterm->sequence=0;
 }
 
-struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, struct vmem_cell *scrollback, int emulation)
+static void
+cterm_reset(struct cterminal *cterm)
 {
-	char	*revision="$Revision$";
-	char *in;
-	char	*out;
-	int		i;
-	struct cterminal *cterm;
+	int  i;
+	struct text_info ti;
+	int wx, wy, ww, wh;
 
-	if((cterm=malloc(sizeof(struct cterminal)))==NULL)
-		return cterm;
-	memset(cterm, 0, sizeof(struct cterminal));
 	cterm->altfont[0] = cterm->altfont[1] = cterm->altfont[2] = cterm->altfont[3] = getfont(1);
-	cterm->x=xpos;
-	cterm->y=ypos;
-	cterm->height=height;
-	cterm->width=width;
 	cterm->top_margin=1;
-	cterm->bottom_margin=height;
+	cterm->bottom_margin=cterm->height;
 	cterm->left_margin=1;
-	cterm->right_margin=width;
+	cterm->right_margin=cterm->width;
 	cterm->save_xpos=0;
 	cterm->save_ypos=0;
 	cterm->escbuf[0]=0;
 	cterm->sequence=0;
 	cterm->string = 0;
-	cterm->strbuf = NULL;
+	FREE_AND_NULL(cterm->strbuf);
 	cterm->strbuflen = 0;
 	cterm->strbufsize = 0;
+	cterm->musicbuf[0] = 0;
 	cterm->music_enable=CTERM_MUSIC_BANSI;
 	cterm->music=0;
 	cterm->tempo=120;
@@ -3691,44 +3687,51 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->noteshape=CTERM_MUSIC_NORMAL;
 	cterm->musicfore=TRUE;
 	cterm->backpos=0;
-	cterm->backlines=backlines;
-	cterm->scrollback=scrollback;
-	cterm->log=CTERM_LOG_NONE;
-	cterm->logfile=NULL;
-	cterm->emulation=emulation;
+	cterm->xpos = TERM_MINX;
+	cterm->ypos = TERM_MINY;
 	cterm->cursor=_NORMALCURSOR;
 	cterm->extattr = CTERM_EXTATTR_AUTOWRAP | CTERM_EXTATTR_SXSCROLL;
-	cterm->fg_color = UINT32_MAX;
-	cterm->bg_color = UINT32_MAX;
-	cterm->tabs = malloc(sizeof(cterm_tabs));
-	if (cterm->tabs == NULL) {
-		free(cterm);
-		return NULL;
-	}
 	memcpy(cterm->tabs, cterm_tabs, sizeof(cterm_tabs));
 	cterm->tab_count = sizeof(cterm_tabs) / sizeof(cterm_tabs[0]);
-	if(cterm->scrollback!=NULL)
-		memset(cterm->scrollback,0,cterm->width*2*cterm->backlines);
-	strcpy(cterm->DA,"\x1b[=67;84;101;114;109;");
-	out=strchr(cterm->DA, 0);
-	if(out != NULL) {
-		for(in=revision; *in; in++) {
-			if(isdigit(*in))
-				*(out++)=*in;
-			if(*in=='.')
-				*(out++)=';';
-		}
-		*out=0;
-	}
-	strcat(cterm->DA,"c");
 	cterm->setfont_result = CTERM_NO_SETFONT_REQUESTED;
-	/* Fire up note playing thread */
-	if(!cterm->playnote_thread_running) {
-		listInit(&cterm->notes, LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
-		sem_init(&cterm->note_completed_sem,0,0);
-		sem_init(&cterm->playnote_thread_terminated,0,0);
-		_beginthread(playnote_thread, 0, cterm);
-	}
+	cterm->saved_mode = 0;
+	cterm->saved_mode_mask = 0;
+	cterm->c64reversemode = 0;
+	gettextinfo(&ti);
+	cterm->attr = ti.normattr;
+	attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+	cterm->doorway_mode = 0;
+	cterm->doorway_char = 0;
+	FREE_AND_NULL(cterm->fg_tc_str);
+	FREE_AND_NULL(cterm->bg_tc_str);
+	cterm->sixel = SIXEL_INACTIVE;
+	cterm->sx_iv = 0;
+	cterm->sx_ih = 0;
+	cterm->sx_trans = 0;
+	cterm->sx_repeat = 0;
+	cterm->sx_left = 0;
+	cterm->sx_x = 0;
+	cterm->sx_y = 0;
+	cterm->sx_bg = 0;
+	cterm->sx_fg = 0;
+	cterm->sx_pixels_sent = 0;
+	cterm->sx_first_pass = 0;
+	cterm->sx_hold_update = 0;
+	cterm->sx_start_x = 0;
+	cterm->sx_start_y = 0;
+	cterm->sx_row_max_x = 0;
+	FREE_AND_NULL(cterm->sx_pixels);
+	cterm->sx_width = 0;
+	cterm->sx_height = 0;
+	FREE_AND_NULL(cterm->sx_mask);
+	wx = TERM_MINX;
+	wy = TERM_MINY;
+	ww = TERM_MAXX;
+	wh = TERM_MAXY;
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &wx, &wy);
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &ww, &wh);
+	if(ti.winleft != wx || ti.wintop != wy || ti.winright != ww || ti.winleft != wh)
+		WINDOW(wx, wy, ww, wh);
 
 	/* Set up tabs for ATASCII */
 	if(cterm->emulation == CTERM_EMULATION_ATASCII) {
@@ -3739,6 +3742,17 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	/* Set up a shadow palette */
 	for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
 		setpalette(i+16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+}
+
+struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, struct vmem_cell *scrollback, int emulation)
+{
+	char	*revision="$Revision$";
+	char *in;
+	char	*out;
+	struct cterminal *cterm;
+
+	if((cterm=calloc(1, sizeof(struct cterminal)))==NULL)
+		return cterm;
 
 #ifndef CTERM_WITHOUT_CONIO
 	cterm->ciolib_gotoxy=ciolib_gotoxy;
@@ -3765,6 +3779,43 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->puttext_can_move=&puttext_can_move;
 	cterm->hold_update=&hold_update;
 #endif
+
+	cterm->x=xpos;
+	cterm->y=ypos;
+	cterm->height=height;
+	cterm->width=width;
+	cterm->backlines=backlines;
+	cterm->scrollback=scrollback;
+	cterm->log=CTERM_LOG_NONE;
+	cterm->logfile=NULL;
+	cterm->emulation=emulation;
+	cterm->tabs = malloc(sizeof(cterm_tabs));
+	if (cterm->tabs == NULL) {
+		free(cterm);
+		return NULL;
+	}
+	cterm_reset(cterm);
+	if(cterm->scrollback!=NULL)
+		memset(cterm->scrollback,0,cterm->width*2*cterm->backlines);
+	strcpy(cterm->DA,"\x1b[=67;84;101;114;109;");
+	out=strchr(cterm->DA, 0);
+	if(out != NULL) {
+		for(in=revision; *in; in++) {
+			if(isdigit(*in))
+				*(out++)=*in;
+			if(*in=='.')
+				*(out++)=';';
+		}
+		*out=0;
+	}
+	strcat(cterm->DA,"c");
+	/* Fire up note playing thread */
+	if(!cterm->playnote_thread_running) {
+		listInit(&cterm->notes, LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
+		sem_init(&cterm->note_completed_sem,0,0);
+		sem_init(&cterm->playnote_thread_terminated,0,0);
+		_beginthread(playnote_thread, 0, cterm);
+	}
 
 	return cterm;
 }
