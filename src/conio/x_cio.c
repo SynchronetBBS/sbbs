@@ -139,6 +139,7 @@ void x_copytext(const char *text, size_t buflen)
 	if(copybuf) {
 		ev.type=X11_LOCAL_COPY;
 		write_event(&ev);
+		copybuf_format = XA_STRING;
 	}
 	pthread_mutex_unlock(&copybuf_mutex);
 	return;

@@ -27,6 +27,7 @@
 #include "link_list.h"
 #include "x_events.h"
 #include "x_cio.h"
+#include "utf8_codepages.h"
 
 /*
  * Exported variables 
@@ -51,6 +52,9 @@ int x11_window_height;
 int x11_initialized=0;
 sem_t	event_thread_complete;
 int	terminate = 0;
+Atom	copybuf_format;
+Atom	pastebuf_format;
+
 /*
  * Local variables
  */
@@ -245,10 +249,11 @@ static int init_window()
 	XVisualInfo *vi;
 
 	dpy = x11.XOpenDisplay(NULL);
-    if (dpy == NULL) {
+	if (dpy == NULL) {
 		return(-1);
 	}
-    xfd = ConnectionNumber(dpy);
+	xfd = ConnectionNumber(dpy);
+	x11.utf8 = x11.XInternAtom(dpy, "UTF8_STRING", False);
 
 	template.screen = DefaultScreen(dpy);
 	template.class = TrueColor;
@@ -598,16 +603,24 @@ static int x11_event(XEvent *ev)
 			{
 				int format;
 				unsigned long len, bytes_left, dummy;
-				Atom type;
 
 				if(ev->xselection.selection != CONSOLE_CLIPBOARD)
 					break;
 				if(ev->xselection.requestor!=win)
 					break;
 				if(ev->xselection.property) {
-					x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, 0, 0, AnyPropertyType, &type, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
-					if(bytes_left > 0 && format==8)
-						x11.XGetWindowProperty(dpy, win, ev->xselection.property,0,bytes_left,0,AnyPropertyType,&type,&format,&len,&dummy,(unsigned char **)&pastebuf);
+					x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, 0, 0, AnyPropertyType, &pastebuf_format, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
+					if(bytes_left > 0 && format==8) {
+						x11.XGetWindowProperty(dpy, win, ev->xselection.property,0,bytes_left,0,AnyPropertyType,&pastebuf_format,&format,&len,&dummy,(unsigned char **)&pastebuf);
+						if (x11.utf8 && pastebuf_format == x11.utf8) {
+							char *opb = pastebuf;
+							pastebuf = (char *)utf8_to_cp437((uint8_t *)pastebuf, '?');
+							if (pastebuf == NULL)
+								pastebuf = opb;
+							else
+								x11.XFree(opb);
+						}
+					}
 					else
 						pastebuf=NULL;
 				}
@@ -617,7 +630,10 @@ static int x11_event(XEvent *ev)
 				/* Set paste buffer */
 				sem_post(&pastebuf_set);
 				sem_wait(&pastebuf_used);
-				x11.XFree(pastebuf);
+				if (x11.utf8 && pastebuf_format == x11.utf8)
+					free(pastebuf);
+				else
+					x11.XFree(pastebuf);
 				pastebuf=NULL;
 			}
 			break;
@@ -635,6 +651,15 @@ static int x11_event(XEvent *ev)
 					if(req->target==XA_STRING) {
 						x11.XChangeProperty(dpy, req->requestor, req->property, XA_STRING, 8, PropModeReplace, (unsigned char *)copybuf, strlen(copybuf));
 						respond.xselection.property=req->property;
+					}
+					else if(req->target == x11.utf8) {
+						uint8_t *utf8_str = cp437_to_utf8(copybuf, strlen(copybuf), NULL);
+						if (utf8_str == NULL)
+							respond.xselection.property=None;
+						else {
+							x11.XChangeProperty(dpy, req->requestor, req->property, x11.utf8, 8, PropModeReplace, utf8_str, strlen((char *)utf8_str));
+							respond.xselection.property=req->property;
+						}
 					}
 					else
 						respond.xselection.property=None;
@@ -1031,15 +1056,17 @@ void x11_event_thread(void *args)
 									/* Get your own primary selection */
 									if(copybuf==NULL)
 										pastebuf=NULL;
-									else
+									else {
 										pastebuf=strdup(copybuf);
+										pastebuf_format = copybuf_format;
+									}
 									/* Set paste buffer */
 									sem_post(&pastebuf_set);
 									sem_wait(&pastebuf_used);
 									FREE_AND_NULL(pastebuf);
 								}
 								else if(sowner!=None) {
-									x11.XConvertSelection(dpy, CONSOLE_CLIPBOARD, XA_STRING, XA_STRING, win, CurrentTime);
+									x11.XConvertSelection(dpy, CONSOLE_CLIPBOARD, x11.utf8 ? x11.utf8 : XA_STRING, x11.utf8 ? x11.utf8 : XA_STRING, win, CurrentTime);
 								}
 								else {
 									/* Set paste buffer */
