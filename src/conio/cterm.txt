@@ -973,12 +973,6 @@ CSI = Ps n
 
 	SOURCE: CTerm only.
 
-CSI ! p
-	NON-STANDARD EXTENSION.
-	Resets the terminal.  This is the same sequence used for a soft
-	reset in xterm and DEC standards, but performs the equivilent
-	of a hard reset in SyncTERM.
-
 CSI Pn1 ; Pn2 r
 	NON-STANDARD EXTENSION.
 	Set Top and Bottom Margins
