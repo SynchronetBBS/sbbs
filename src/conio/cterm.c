@@ -3294,7 +3294,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							WINDOW(col, row, max_col, max_row);
 						}
 						break;
-					case 's': /* ToDo?  Also set left/right margins! */
+					case 's':
 						if (cterm->extattr & CTERM_EXTATTR_DECLRMM) {
 							seq_default(seq, 0, ABS_MINX);
 							seq_default(seq, 1, ABS_MAXX);
