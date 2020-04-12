@@ -59,7 +59,6 @@ static const char*	strJavaScriptContextStack	="JavaScriptContextStack";
 static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
 static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
 static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
-static const char*	strJavaScriptLoadPath		="JavaScriptLoadPath";
 
 js_startup_t	startup;
 JSRuntime*	js_runtime;
