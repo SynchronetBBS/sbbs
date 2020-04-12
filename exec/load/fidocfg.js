@@ -75,6 +75,15 @@ function TickITCfg() {
 		if (require(this.gcfg.handler, tmp, "Handle_TIC") == null)
 			delete this.gcfg.handler;
 	}
+	var auto_areas = tcfg.iniGetValue(null, "AutoAreas", []);
+	for(var code in file_area.dir) {
+		var dir = file_area.dir[code];
+		if(auto_areas.indexOf(dir.lib_name) < 0)
+			continue;
+		if(dir.name.indexOf(' ') >= 0) // Invalid areatag
+			continue;
+		this.acfg[dir.name.toLowerCase()] = { dir: code };
+	}
 	sects = tcfg.iniGetSections();
 	for (i=0; i<sects.length; i++) {
 		this.acfg[sects[i].toLowerCase()] = tcfg.iniGetObject(sects[i]);
