@@ -2305,6 +2305,71 @@ BOOL user_downloaded(scfg_t* cfg, user_t* user, int files, long bytes)
 	return(TRUE);
 }
 
+#ifdef SBBS
+BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
+	uint dirnum, const char* filename, ulong bytes)
+{
+	file_t f = {{0}};
+
+	f.dir = dirnum;
+	padfname(getfname(filename), f.name);
+	if(!getfileixb(cfg, &f) || !getfiledat(cfg, &f))
+		return FALSE;
+
+	if(!bytes)
+		bytes = f.size;
+
+	f.timesdled++;
+	f.datedled=time32(NULL);
+	if(!putfiledat(cfg, &f) || !putfileixb(cfg, &f))
+		return FALSE;
+
+	/**************************/
+	/* Update Uploader's Info */
+	/**************************/
+	user_t uploader = {{0}};
+	uploader.number=matchuser(cfg, f.uler, TRUE /*sysop_alias*/);
+	if(uploader.number
+		&& uploader.number != user->number 
+		&& getuserdat(cfg, &uploader) == 0
+		&& uploader.firston < f.dateuled) {
+		ulong l = f.cdt;
+		if(!(cfg->dir[f.dir]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
+			l=0;
+		ulong mod=(ulong)(l*(cfg->dir[f.dir]->dn_pct/100.0));
+		adjustuserrec(cfg, uploader.number, U_CDT, 10, mod);
+		if(cfg->text != NULL) {
+			char str[256];
+			char tmp[128];
+			ultoac(mod,tmp);
+			char username[64];
+			if(client != NULL && uploader.level >= SYSOP_LEVEL)
+				SAFEPRINTF2(username,"%s [%s]", user->alias, client->host);
+			else
+				SAFECOPY(username, user->alias);
+			/* Inform uploader of downloaded file */
+			SAFEPRINTF4(str, cfg->text[DownloadUserMsg]
+				,getfname(filename)
+				,(strcmp(cfg->dir[f.dir]->code, "TEMP") == 0)
+					|| (bytes < (ulong)f.size) ? cfg->text[Partially] : nulstr
+				,username, tmp);
+			putsmsg(cfg, uploader.number, str);
+		}
+	}
+	/****************************/
+	/* Update Downloader's Info */
+	/****************************/
+	user_downloaded(cfg, user, /* files: */1, bytes);
+	if(!is_download_free(cfg, f.dir, user, client))
+		subtract_cdt(cfg, user, f.cdt);
+
+	if(!(cfg->dir[f.dir]->misc&DIR_NOSTAT))
+		inc_sys_download_stats(cfg, /* files: */1, bytes);
+
+	return TRUE;
+}
+#endif
+
 BOOL user_uploaded(scfg_t* cfg, user_t* user, int files, long bytes)
 {
 	if(user==NULL)
