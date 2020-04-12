@@ -769,6 +769,8 @@ int curs_initciolib(long inmode)
 	char *p;
 
 	setlocale(LC_ALL, "");
+	if (inmode == CIOLIB_MODE_AUTO)
+		inmode = CIOLIB_MODE_CURSES;
 	if (inmode == CIOLIB_MODE_CURSES) {
 		p = nl_langinfo(CODESET);
 		if (p == NULL)
