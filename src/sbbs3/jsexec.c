@@ -67,6 +67,7 @@ JSContext*	js_cx;
 JSObject*	js_glob;
 js_callback_t	cb;
 scfg_t		scfg;
+char*		text[TOTAL_TEXT];
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
 ulong		js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 FILE*		confp;
@@ -1391,7 +1392,7 @@ int main(int argc, char **argv, char** env)
 		fprintf(errfp,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
 	fprintf(statfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
-	if(!load_cfg(&scfg,NULL,TRUE,error)) {
+	if(!load_cfg(&scfg,text,TRUE,error)) {
 		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
 		return(do_bail(1));
 	}

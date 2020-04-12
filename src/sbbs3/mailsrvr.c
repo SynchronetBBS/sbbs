@@ -89,6 +89,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 static mail_startup_t* startup=NULL;
 static scfg_t	scfg;
+static char*	text[TOTAL_TEXT];
 static struct xpms_set	*mail_set=NULL;
 static BOOL terminated=FALSE;
 static protected_uint32_t active_clients;
@@ -6038,7 +6039,7 @@ void DLLCALL mail_server(void* arg)
 		lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
 		SAFECOPY(error,UNKNOWN_LOAD_ERROR);
-		if(!load_cfg(&scfg, NULL, TRUE, error)) {
+		if(!load_cfg(&scfg, text, TRUE, error)) {
 			lprintf(LOG_CRIT,"!ERROR %s",error);
 			lprintf(LOG_CRIT,"!Failed to load configuration files");
 			cleanup(1);

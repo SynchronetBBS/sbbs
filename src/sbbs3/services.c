@@ -71,6 +71,7 @@
 
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
+static char*	text[TOTAL_TEXT];
 static volatile BOOL	terminated=FALSE;
 static time_t	uptime=0;
 static ulong	served=0;
@@ -1815,7 +1816,7 @@ void DLLCALL services_thread(void* arg)
 		lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
 		SAFECOPY(error,UNKNOWN_LOAD_ERROR);
-		if(!load_cfg(&scfg, NULL, TRUE, error)) {
+		if(!load_cfg(&scfg, text, TRUE, error)) {
 			lprintf(LOG_CRIT,"!ERROR %s",error);
 			lprintf(LOG_CRIT,"!Failed to load configuration files");
 			cleanup(1);

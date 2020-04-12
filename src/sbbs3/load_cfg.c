@@ -118,6 +118,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 				,TOTAL_TEXT,fname);
 			return(FALSE); 
 		}
+		cfg->text = text;
 	}
 #endif
 
@@ -306,6 +307,9 @@ void DLLCALL free_cfg(scfg_t* cfg)
 	free_chat_cfg(cfg);
 	free_xtrn_cfg(cfg);
 	free_attr_cfg(cfg);
+
+	if(cfg->text != NULL)
+		free_text(cfg->text);
 }
 
 void DLLCALL free_text(char* text[])
