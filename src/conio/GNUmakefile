@@ -42,6 +42,10 @@ ifeq ($(os),netbsd)
  endif
 endif
 
+ifeq ($(shell [ -e /usr/include/ncursesw/ncurses.h ] ; then echo YES ; fi),YES)
+ CFLAGS += -DDEBIAN_HATES_YOU
+endif
+
 ifdef NEED_BITMAP
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)bitmap_con$(OFILE)
 endif
