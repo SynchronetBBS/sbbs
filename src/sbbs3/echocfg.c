@@ -1068,7 +1068,10 @@ int main(int argc, char **argv)
 	"~ Domain ~\n\n"
 	"This is the domain portion of the 5D FTN address of this linked node\n"
 	"(e.g. '`fidonet`').  FTN domains are limited to 8 characters and must not\n"
-	"contain the characters '@' or '.'";
+	"contain the characters '@' or '.'.\n"
+	"\n"
+	"This setting is currently not used by SBBSecho but is available and\n"
+	"managed here for 5D address use by BinkIT.";
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Domain"
 									,cfg.nodecfg[i].domain, sizeof(cfg.nodecfg[i].domain)-1
