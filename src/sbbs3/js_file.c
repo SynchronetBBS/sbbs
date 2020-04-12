@@ -2878,7 +2878,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("[section=<i>root</i>] [lowercase=<tt>false</tt>]")
 	,JSDOCSTR("parse an entire section from a .ini file "
 		"and return all of its keys (optionally lowercased) and values as properties of an object. "
-		"if <i>section</i> is undefined, returns keys and values from the <i>root</i> section. "
+		"if <i>section</i> is <tt>null</tt> or <tt>undefined</tt>, returns keys and values from the <i>root</i> section. "
 		"Returns <i>null</i> if the specified <i>section</i> does not exist in the file or the file has not been opened.")
 	,311
 	},
