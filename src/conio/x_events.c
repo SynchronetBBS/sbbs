@@ -254,6 +254,7 @@ static int init_window()
 	}
 	xfd = ConnectionNumber(dpy);
 	x11.utf8 = x11.XInternAtom(dpy, "UTF8_STRING", False);
+	x11.targets = x11.XInternAtom(dpy, "TARGETS", False);
 
 	template.screen = DefaultScreen(dpy);
 	template.class = TrueColor;
@@ -641,6 +642,7 @@ static int x11_event(XEvent *ev)
 			{
 				XSelectionRequestEvent *req;
 				XEvent respond;
+				Atom supported[2];
 
 				req=&(ev->xselectionrequest);
 				pthread_mutex_lock(&copybuf_mutex);
@@ -660,6 +662,15 @@ static int x11_event(XEvent *ev)
 							x11.XChangeProperty(dpy, req->requestor, req->property, x11.utf8, 8, PropModeReplace, utf8_str, strlen((char *)utf8_str));
 							respond.xselection.property=req->property;
 						}
+					}
+					else if(req->target == x11.targets) {
+						supported[0] = XA_STRING;
+						if (x11.utf8) {
+							supported[1] = x11.utf8;
+							x11.XChangeProperty(dpy, req->requestor, req->property, req->target, 32, PropModeReplace, (unsigned char *)supported, 2);
+						}
+						else
+							x11.XChangeProperty(dpy, req->requestor, req->property, req->target, 32, PropModeReplace, (unsigned char *)supported, 1);
 					}
 					else
 						respond.xselection.property=None;

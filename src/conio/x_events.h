@@ -81,6 +81,7 @@ struct x11 {
                        unsigned int class, Visual *visual, unsigned long valuemask, XSetWindowAttributes *attributes);
 	Colormap (*XCreateColormap)(Display *display, Window w, Visual *visual, int alloc);
 	Atom utf8;
+	Atom targets;
 };
 
 extern int local_pipe[2];			/* Used for passing local events */
