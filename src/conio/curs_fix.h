@@ -31,6 +31,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#define NCURSES_WIDECHAR 1
 #ifdef XCURSES
  #include <xcurses.h>
 #endif
@@ -157,4 +158,121 @@
 
 #ifndef ACS_SDSD
 #define	ACS_SDSD	ACS_SSSS
+#endif
+
+// Now wide...
+#ifndef	WACS_SBSD
+#define WACS_SBSD	WACS_SBSS
+#endif
+
+#ifndef WACS_DBDS
+#define WACS_DBDS	WACS_SBSS
+#endif
+
+#ifndef WACS_BBDS
+#define	WACS_BBDS	WACS_BBSS
+#endif
+
+#ifndef WACS_BBSD
+#define WACS_BBSD	WACS_BBSS
+#endif
+
+#ifndef WACS_DBDD
+#define	WACS_DBDD	WACS_SBSS
+#endif
+
+#ifndef	WACS_DBDB
+#define	WACS_DBDB	WACS_SBSB
+#endif
+
+#ifndef WACS_BBDD
+#define WACS_BBDD	WACS_BBSS
+#endif
+
+#ifndef WACS_DBBD
+#define WACS_DBBD	WACS_SBBS
+#endif
+
+#ifndef WACS_DBBS
+#define WACS_DBBS	WACS_SBBS
+#endif
+
+#ifndef WACS_SBBD
+#define WACS_SBBD	WACS_SBBS
+#endif
+
+#ifndef WACS_SDSB
+#define WACS_SDSB	WACS_SSSB
+#endif
+
+#ifndef	WACS_DSDB
+#define WACS_DSDB	WACS_SSSB
+#endif
+
+#ifndef WACS_DDBB
+#define	WACS_DDBB	WACS_SSBB
+#endif
+
+#ifndef WACS_BDDB
+#define WACS_BDDB	WACS_BSSB
+#endif
+
+#ifndef WACS_DDBD
+#define WACS_DDBD	WACS_SSBS
+#endif
+
+#ifndef WACS_BDDD
+#define	WACS_BDDD	WACS_BSSS
+#endif
+
+#ifndef WACS_DDDB
+#define WACS_DDDB	WACS_SSSB
+#endif
+
+#ifndef WACS_BDBD
+#define WACS_BDBD	WACS_BSBS
+#endif
+
+#ifndef WACS_DDDD
+#define	WACS_DDDD	WACS_SSSS
+#endif
+
+#ifndef WACS_SDBD
+#define WACS_SDBD	WACS_SSBS
+#endif
+
+#ifndef WACS_DSBS
+#define WACS_DSBS	WACS_SSBS
+#endif
+
+#ifndef WACS_BDSD
+#define WACS_BDSD	WACS_BSSS
+#endif
+
+#ifndef	WACS_BSDS
+#define WACS_BSDS	WACS_BSSS
+#endif
+
+#ifndef	WACS_DSBB
+#define WACS_DSBB	WACS_SSBB
+#endif
+
+#ifndef WACS_SDBB
+#define WACS_SDBB	WACS_SSBB
+#endif
+
+#ifndef WACS_BDSB
+#define WACS_BDSB	WACS_BSSB
+#endif
+
+#ifndef WACS_BSDB
+#define WACS_BSDB	WACS_BSSB
+#endif
+
+#ifndef WACS_DSDS
+#define	WACS_DSDS	WACS_SSSS
+#endif
+
+#ifndef WACS_SDSD
+#define	WACS_SDSD	WACS_SSSS
 #endif

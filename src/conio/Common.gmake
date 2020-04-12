@@ -1,7 +1,7 @@
 #ifeq ($(os),sunos)
 # CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)
 #else
-# CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
+# CIOLIB-MT_LIBS		+=	$(UL_PRE)ncursesw$(UL_SUF)
 #endif
 
 # OSs with vasprintf...
@@ -28,7 +28,7 @@ ifneq ($(os),win32)
  ifdef USE_SYSTEM_CURSES
   CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)
  else
-  CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
+  CIOLIB-MT_LIBS		+=	$(UL_PRE)ncursesw$(UL_SUF)
  endif
  ifndef NO_X
   ifdef STATIC
