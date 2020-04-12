@@ -1209,7 +1209,7 @@ js_iniGetObject(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	uintN argn = 0;
-	if(argc > argn && !JSVAL_IS_BOOLEAN(argv[argn])) {
+	if(argc > argn && !JSVAL_IS_BOOLEAN(argv[argn]) && !JSVAL_NULL_OR_VOID(argv[argn])) {
 		JSVALUE_TO_MSTRING(cx, argv[argn], section, NULL);
 		HANDLE_PENDING(cx, section);
 		argn++;
