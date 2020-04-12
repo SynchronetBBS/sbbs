@@ -413,6 +413,7 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 #else
 		case CIOLIB_MODE_CURSES:
 		case CIOLIB_MODE_CURSES_IBM:
+		case CIOLIB_MODE_CURSES_ASCII:
 			try_curses_init(mode);
 			break;
 
