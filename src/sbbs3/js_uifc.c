@@ -441,6 +441,10 @@ js_uifc_init(JSContext *cx, uintN argc, jsval *arglist)
 				ciolib_mode=CIOLIB_MODE_X;
 			else if(!stricmp(mode,"CURSES"))
 				ciolib_mode=CIOLIB_MODE_CURSES;
+			else if(!stricmp(mode,"CURSES_IBM"))
+				ciolib_mode=CIOLIB_MODE_CURSES_IBM;
+			else if(!stricmp(mode,"CURSES_ASCII"))
+				ciolib_mode=CIOLIB_MODE_CURSES_ASCII;
 			else if(!stricmp(mode,"ANSI"))
 				ciolib_mode=CIOLIB_MODE_ANSI;
 			else if(!stricmp(mode,"CONIO"))
