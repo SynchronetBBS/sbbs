@@ -70,6 +70,7 @@ char	*usage =
 #ifdef __unix__
 		"       X = X11 mode\n"
 		"       C = Curses mode\n"
+		"       I = Curses mode with forced ASCII charset\n"
 		"       F = Curses mode with forced IBM charset\n"
 #else
 		"       W[F] = Win32 native mode, F for fullscreen\n"
@@ -1420,6 +1421,9 @@ int main(int argc, char **argv)
 							/* Fall-through */
 						case 'F':
 							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
+							break;
+						case 'I':
+							ciolib_mode=CIOLIB_MODE_CURSES_ASCII;
 							break;
 						case 'X':
 							ciolib_mode=CIOLIB_MODE_X;
