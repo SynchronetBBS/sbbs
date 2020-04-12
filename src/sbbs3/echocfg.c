@@ -638,6 +638,9 @@ int main(int argc, char **argv)
 						case 'F':
 							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
 							break;
+						case 'I':
+							ciolib_mode=CIOLIB_MODE_CURSES_ASCII;
+							break;
 						case 'X':
 							ciolib_mode=CIOLIB_MODE_X;
 							break;
@@ -676,6 +679,7 @@ int main(int argc, char **argv)
 						"       X = X11 mode\n"
 						"       C = Curses mode\n"
 						"       F = Curses mode with forced IBM charset\n"
+						"       I = Curses mode with forced ASCII charset\n"
 #else
 						"       W = Win32 native mode\n"
 #endif
