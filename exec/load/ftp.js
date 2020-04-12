@@ -369,6 +369,9 @@ FTP.prototype.cmd = function(cmd, needresp)
 				if (rd.length === 0)
 					continue;
 			}
+			else {
+				throw("recvline() returned null");
+			}
 		} while(this.socket.is_connected && !done);
 		return ret;
 	}
