@@ -362,10 +362,13 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.topBorderText = ""; // Text to display in the top border
 	this.bottomBorderText = ""; // Text to display in the bottom border
 	this.lastUserInput = null; // The user's last keypress when the menu was shown/used
-	// this.nextDrawOnlyItemSubstr can be an object containing start & end properties, as
+	// nextDrawOnlyItemSubstr can be an object containing start & end properties, as
 	// indexes (end is one past last index) for drawing shortened versions of items on the
 	// next draw
 	this.nextDrawOnlyItemSubstr = null;
+	// nextDrawOnlyItems is an array specifying the indexes of the items to write
+	// on the next draw.  If this is empty, then all items on the page will be drawn.
+	this.nextDrawOnlyItems = [];
 
 	// This is a regex to do a case-insensitive test for Synchronet attribute
 	// codes in strings.
@@ -631,11 +634,16 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 	// Write the menu items, only up to the height of the menu
 	var numPossibleItems = (this.borderEnabled ? this.size.height - 2 : this.size.height);
 	var numItemsWritten = 0;
+	var writeTheItem = true;
 	for (var idx = this.topItemIdx; (idx < this.NumItems()) && (numItemsWritten < numPossibleItems); ++idx)
 	{
-		console.gotoxy(curPos.x, curPos.y);
-		var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
-		this.WriteItem(idx, itemLen, idx == this.selectedItemIdx, showMultiSelectMark, curPos.x, curPos.y);
+		writeTheItem = ((this.nextDrawOnlyItems.length == 0) || (this.nextDrawOnlyItems.indexOf(idx) > -1));
+		if (writeTheItem)
+		{
+			console.gotoxy(curPos.x, curPos.y);
+			var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
+			this.WriteItem(idx, itemLen, idx == this.selectedItemIdx, showMultiSelectMark, curPos.x, curPos.y);
+		}
 		++curPos.y;
 		++numItemsWritten;
 	}
@@ -645,17 +653,22 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
 	{
 		for (; numItemsWritten < numPossibleItems; ++numItemsWritten)
 		{
-			console.gotoxy(curPos.x, curPos.y++);
-			console.print("\1n");
-			if (this.numberedMode)
-				printf("\1n%" + this.itemNumLen + "s ", "");
-			var itemText = addAttrsToString(format("%-" + itemLen + "s", ""), this.colors.itemColor);
-			console.print(itemText);
+			writeTheItem = ((this.nextDrawOnlyItems.length == 0) || (this.nextDrawOnlyItems.indexOf(numItemsWritten) > -1));
+			if (writeTheItem)
+			{
+				console.gotoxy(curPos.x, curPos.y++);
+				console.print("\1n");
+				if (this.numberedMode)
+					printf("\1n%" + this.itemNumLen + "s ", "");
+				var itemText = addAttrsToString(format("%-" + itemLen + "s", ""), this.colors.itemColor);
+				console.print(itemText);
+			}
 		}
 	}
 
 	this.drawnAlready = true;
 	this.nextDrawOnlyItemSubstr = null;
+	this.nextDrawOnlyItems = [];
 }
 
 // Draws the border around the menu items
