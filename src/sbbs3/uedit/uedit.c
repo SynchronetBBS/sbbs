@@ -1983,10 +1983,13 @@ int main(int argc, char** argv)  {
 							ciolib_mode=CIOLIB_MODE_CURSES;
 							break;
 						case 0:
-							printf("NOTICE: The -i option is deprecated, use -if instead\r\n");
+							printf("NOTICE: The -i option is deprecated, use -if instead\n");
 							SLEEP(2000);
 						case 'F':
 							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
+							break;
+						case 'I':
+							ciolib_mode=CIOLIB_MODE_CURSES_ASCII;
 							break;
 						case 'X':
 							ciolib_mode=CIOLIB_MODE_X;
@@ -2004,15 +2007,16 @@ int main(int argc, char** argv)  {
                         "\n\noptions:\n\n"
                         "-c  =  force color mode\n"
                         "-e# =  set escape delay to #msec\n"
-						"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
+						"-iX =  set interface mode to X (default=auto) where X is one of:\n"
 #ifdef __unix__
-						"       X = X11 mode\r\n"
-						"       C = Curses mode\r\n"
-						"       F = Curses mode with forced IBM charset\r\n"
+						"       X = X11 mode\n"
+						"       C = Curses mode\n"
+						"       F = Curses mode with forced IBM charset\n"
+						"       I = Curses mode with forced ASCII charset\n"
 #else
-						"       W = Win32 native mode\r\n"
+						"       W = Win32 native mode\n"
 #endif
-						"       A = ANSI mode\r\n"
+						"       A = ANSI mode\n"
                         "-l# =  set screen lines to #\n"
 						,argv[0]
                         );
