@@ -31,12 +31,13 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <langinfo.h>
+#include <locale.h>
 #include <sys/time.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <langinfo.h>
 
 #include "gen_defs.h"	/* xpdev, for BOOL/TRUE/FALSE */
 
@@ -767,6 +768,7 @@ int curs_initciolib(long inmode)
 	short	fg, bg, pair=0;
 	char *p;
 
+	setlocale(LC_ALL, "");
 	if (inmode == CIOLIB_MODE_CURSES) {
 		p = nl_langinfo(CODESET);
 		if (p == NULL)
