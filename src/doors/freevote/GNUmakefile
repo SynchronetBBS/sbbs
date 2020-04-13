@@ -1,4 +1,4 @@
-CPP	:= g++
+CPP	?= g++
 CC	?= gcc
 XPDEV	?=	../../xpdev
 
